@@ -1,6 +1,6 @@
 # MVP Sprint 001
 
-- Status: active
+- Status: done
 - Date: 2026-03-13
 - Project: `mvp`
 - Sprint: `sprint-001`
@@ -38,3 +38,4 @@
 
 1. 新任务先写入 `tasks/checklist.md`，再同步 `tasks/tasks.csv` 和对应 `TK-xxx.md`。
 2. 评审和复核记录统一追加到同一个 CR 文件，并放在 `code-review/` 目录。
+3. 当前 sprint 已收口完成，后续规划与执行已切换到 `docs/mvp/sprint-002/`。

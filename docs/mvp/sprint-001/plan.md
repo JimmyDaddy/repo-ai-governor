@@ -1,6 +1,6 @@
 # MVP Sprint 001 Plan
 
-- Status: active
+- Status: done
 - Date: 2026-03-13
 
 ## Goal
@@ -60,6 +60,11 @@
 2. 配置结构、schema、加载合并逻辑和任务产物规范都已定稿。
 3. `init` 和 `doctor` 具备最小实现路径，并能落到现有仓库目录结构。
 4. 当前 sprint 的 checklist、CSV 和任务卡已经覆盖全部首批任务。
+
+## Closure
+
+1. `sprint-001` 已完成并满足全部 exit criteria。
+2. 后续规划与执行基线已切换到 `docs/mvp/sprint-002/`。
 
 ## Output Paths
 
