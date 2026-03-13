@@ -103,7 +103,7 @@ docs/
 6. CR 文件状态流转固定为 `review_<slug>.md` -> `verified_review_<slug>.md` -> `resolved_review_<slug>.md`
 7. `<slug>` 使用小写 kebab-case，且应包含任务编号或变更主题，例如 `tk-101-design-config-layout`
 
-当前 sprint 内的落地样例见 [docs/mvp/sprint-001/repository-layout-conventions.md](./mvp/sprint-001/repository-layout-conventions.md)。
+当前 sprint 内的落地样例见 [docs/mvp/sprint-001/repository-layout-conventions.md](./mvp/sprint-001/repository-layout-conventions.md) 和 [docs/mvp/sprint-001/project-sprint-artifact-conventions.md](./mvp/sprint-001/project-sprint-artifact-conventions.md)。
 
 ## 4. 配置分层模型
 

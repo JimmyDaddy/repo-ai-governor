@@ -19,8 +19,10 @@
   - 执行记录：plan=在 `TK-101` 基础上补齐 schema 字段、默认值和版本策略;result=已创建任务卡并确认依赖 `TK-101`;verify=与 `docs/config-schema-draft.md` 和 `docs/mvp-issue-backlog.md` 对齐
   - 执行记录：plan=产出可直接消费的 schema bundle，覆盖仓库配置、插槽配置和适配器配置，并提供代码侧 schema 入口;result=已新增 `src/config/schema/shared.schema.json`、`governor.schema.json`、`slot.schema.json`、`adapter.schema.json` 与 `index.js`，统一收口字段、默认值和版本约束;verify=`test/config/schema.test.js` 已通过 governor/slot/adapter schema 编译与样例校验
   - 执行记录：review_delta=已完成 `TK-102` 自检复核，CR 结果落盘为 `code-review/verified_review_tk-102-design-config-schema-v1.md`，结论为无阻断问题;verify=`/opt/homebrew/bin/npm run test` 通过，文档与 schema bundle 已对齐
-- [ ] **TK-106** 设计项目/sprint 任务产物目录规范（负责人：Workflow｜优先级：P0｜截止：2026-03-19｜状态：todo）
+- [x] **TK-106** 设计项目/sprint 任务产物目录规范（负责人：Workflow｜优先级：P0｜截止：2026-03-19｜状态：done）
   - 执行记录：plan=固化 checklist、CSV、任务卡和 `code-review/` 的目录及命名规范;result=已创建任务卡并排入当前 sprint;verify=与 `docs/mvp-execution-plan.md` 和 `docs/config-schema-draft.md` 对齐
+  - 执行记录：plan=将 project/sprint 产物规范收口为独立基线文档，并把 `tasks.csv` 字段约束同步到代码侧常量;result=已新增 `project-sprint-artifact-conventions.md`，并在 `src/config/repository-layout.js` 中补充 `DEFAULT_TASK_CSV_COLUMNS` 与对应测试;verify=`/opt/homebrew/bin/npm run test` 通过，目录职责、CSV 字段和 CR 生命周期已与 schema / init / doctor 对齐
+  - 执行记录：review_delta=已完成 `TK-106` 自检复核，CR 结果落盘为 `code-review/verified_review_tk-106-design-project-sprint-artifacts.md`，结论为无阻断问题;verify=复核确认文档基线、代码常量和测试覆盖已经对齐
 - [x] **TK-103** 实现配置加载与合并逻辑（负责人：Platform｜优先级：P0｜截止：2026-03-20｜状态：done）
   - 执行记录：plan=在 schema 定稿后实现默认配置、仓库配置和 CLI 参数的分层覆盖;result=已创建任务卡并确认依赖 `TK-102`;verify=与 `docs/mvp-issue-backlog.md` 对齐
   - 执行记录：plan=实现统一配置加载入口，串起 schema 默认值、YAML 主配置、slot/adapters 定义、环境变量覆盖和 CLI 覆盖，并为冲突和重复定义提供明确错误;result=已新增 `src/config/errors.js`、`src/config/schema/validator.js`、`src/config/load-config.js` 与 `test/config/load-config.test.js`，同时将当前 CLI 占位命令接入 resolved config 入口;verify=`/opt/homebrew/bin/npm run test`、`/opt/homebrew/bin/node ./bin/repo-ai-governor.js doctor --project mvp --sprint sprint-001 --verbose`、带 `REPO_AI_GOVERNOR__` 覆盖的 `init --format json` 均通过

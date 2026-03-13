@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  DEFAULT_TASK_CSV_COLUMNS,
   DEFAULT_REPOSITORY_LAYOUT,
   createReviewFileName,
   createReviewSlug,
@@ -30,6 +31,7 @@ test("resolveRepositoryLayout returns default config and sprint artifact paths",
   assert.equal(layout.relative.taskChecklistFile, "docs/mvp/sprint-001/tasks/checklist.md");
   assert.equal(layout.relative.taskCsvFile, "docs/mvp/sprint-001/tasks/tasks.csv");
   assert.equal(layout.relative.codeReviewDir, "docs/mvp/sprint-001/code-review");
+  assert.deepEqual(layout.naming.taskCsvColumns, DEFAULT_TASK_CSV_COLUMNS);
   assert.equal(
     layout.absolute.configFile,
     "/workspace/repo-ai-governor/.repo-ai-governor/governor.yaml"
@@ -56,6 +58,7 @@ test("resolveRepositoryLayout exposes stable review filename conventions", () =>
   const layout = resolveRepositoryLayout();
 
   assert.deepEqual(layout.naming.reviewPatterns, DEFAULT_REPOSITORY_LAYOUT.artifacts.reviewFiles);
+  assert.deepEqual(layout.naming.taskCsvColumns, DEFAULT_REPOSITORY_LAYOUT.artifacts.taskFiles.csvColumns);
   assert.equal(layout.naming.reviewExamples.pending, "review_tk-101-design-config-layout.md");
   assert.equal(
     layout.naming.reviewExamples.resolved,

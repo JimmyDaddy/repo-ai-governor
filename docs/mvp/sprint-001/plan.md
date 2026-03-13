@@ -18,6 +18,7 @@
 7. `TK-103` 已完成，产出统一的配置加载与合并入口，并接入当前 CLI 占位命令。
 8. `TK-104` 已完成，`init` 现可生成主配置、`AGENTS.md`、adapter 模板和当前项目/sprint 的基础脚手架。
 9. `TK-105` 已完成，`doctor` 现可对环境、配置、目录与关键产物执行结构化自检，并支持安全目录修复。
+10. `TK-106` 已完成，项目/sprint 产物结构、checklist/CSV 约定和 CR 生命周期已收口为文档基线，并同步到代码常量。
 
 ## In Scope
 
@@ -68,6 +69,7 @@
 - `docs/mvp/sprint-001/config-loading-strategy.md`
 - `docs/mvp/sprint-001/init-command-bootstrap.md`
 - `docs/mvp/sprint-001/doctor-command-runtime.md`
+- `docs/mvp/sprint-001/project-sprint-artifact-conventions.md`
 - `docs/mvp/sprint-001/tasks/checklist.md`
 - `docs/mvp/sprint-001/tasks/tasks.csv`
 - `docs/mvp/sprint-001/tasks/TK-002.md`
@@ -84,4 +86,5 @@
 - `docs/mvp/sprint-001/code-review/verified_review_tk-103-implement-config-loader.md`
 - `docs/mvp/sprint-001/code-review/resolved_review_tk-104-implement-init-command.md`
 - `docs/mvp/sprint-001/code-review/verified_review_tk-105-implement-doctor-command.md`
+- `docs/mvp/sprint-001/code-review/verified_review_tk-106-design-project-sprint-artifacts.md`
 - `.codex/skills/workspace-delivery-finisher/SKILL.md`

@@ -11,6 +11,23 @@ const REVIEW_STATUS_PREFIXES = Object.freeze({
   resolved: "resolved_review"
 });
 
+export const DEFAULT_TASK_CSV_COLUMNS = Object.freeze([
+  "execution_id",
+  "task_id",
+  "title",
+  "owner",
+  "priority",
+  "due_date",
+  "status",
+  "project",
+  "sprint",
+  "plan",
+  "result",
+  "verify",
+  "review_delta",
+  "recorded_at"
+]);
+
 export const DEFAULT_REPOSITORY_LAYOUT = Object.freeze({
   configRoot: ".repo-ai-governor",
   configFile: "governor.yaml",
@@ -33,7 +50,8 @@ export const DEFAULT_REPOSITORY_LAYOUT = Object.freeze({
     }),
     taskFiles: Object.freeze({
       checklist: "checklist.md",
-      csv: "tasks.csv"
+      csv: "tasks.csv",
+      csvColumns: DEFAULT_TASK_CSV_COLUMNS
     }),
     reviewFiles: Object.freeze({
       pending: "review_<slug>.md",
@@ -160,6 +178,7 @@ export function resolveRepositoryLayout(options = {}) {
       sprintExample: "sprint-001",
       taskPattern: "TK-xxx.md",
       taskExample: createTaskFileName("TK-101"),
+      taskCsvColumns: DEFAULT_TASK_CSV_COLUMNS,
       reviewPatterns: artifacts.reviewFiles,
       reviewExamples: {
         pending: createReviewFileName({ status: "pending", slug: reviewExampleSlug }),
