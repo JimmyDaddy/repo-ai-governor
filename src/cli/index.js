@@ -1,6 +1,7 @@
 import { createRequire } from "node:module";
 import { Command, CommanderError } from "commander";
 import { executeInitCommand } from "../commands/init-command.js";
+import { executeDoctorCommand } from "../commands/doctor-command.js";
 import { commandDefinitions, globalOptionDefinitions } from "./command-registry.js";
 import { ConfigurationError } from "../config/errors.js";
 import { loadResolvedConfig } from "../config/load-config.js";
@@ -213,6 +214,7 @@ function buildProgram(io) {
   const logger = createLogger({ stdout, stderr });
 
   const program = new Command();
+  program.repoAiGovernorExitCode = EXIT_CODES.success;
 
   program
     .name("repo-ai-governor")
@@ -276,12 +278,17 @@ function buildProgram(io) {
         verbose: commandContext.verbose
       });
 
+      let exitCode = EXIT_CODES.success;
+
       if (commandDefinition.name === "init") {
-        executeInitCommand(commandContext, commandLogger);
-        return;
+        exitCode = executeInitCommand(commandContext, commandLogger) ?? EXIT_CODES.success;
+      } else if (commandDefinition.name === "doctor") {
+        exitCode = executeDoctorCommand(commandContext, commandLogger);
+      } else {
+        writeRegisteredCommand(commandLogger, commandContext);
       }
 
-      writeRegisteredCommand(commandLogger, commandContext);
+      program.repoAiGovernorExitCode = exitCode;
     });
   }
 
@@ -301,7 +308,7 @@ export async function runCli(argv, io = {}) {
 
   try {
     await program.parseAsync(argv, { from: "user" });
-    return EXIT_CODES.success;
+    return program.repoAiGovernorExitCode ?? EXIT_CODES.success;
   } catch (error) {
     if (error instanceof CommanderError) {
       const exitCode = mapCommanderErrorToExitCode(error.code);

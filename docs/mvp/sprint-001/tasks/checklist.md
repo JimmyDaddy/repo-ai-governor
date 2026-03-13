@@ -30,8 +30,10 @@
   - 执行记录：plan=实现 `init` 命令真实落盘能力，生成主配置、adapter 模板、`AGENTS.md` 与当前项目/sprint 基础目录，并支持 `--dry-run` 与冲突保护;result=已新增 `src/commands/init-command.js` 与 `test/commands/init-command.test.js`，当前 `init` 可生成 `.repo-ai-governor/`、`docs/<project>/sprint-xxx/` 脚手架和基础台账文件;verify=`/opt/homebrew/bin/npm run test` 通过，且在临时目录验证了 `init --format json --dry-run` 与真实初始化输出
   - 执行记录：review_delta=已完成 `TK-104` 自检复核，CR 结果落盘为 `code-review/verified_review_tk-104-implement-init-command.md`，结论为无阻断问题;verify=复核确认 CLI 接线、冲突保护、初始化产物和测试覆盖已经对齐
   - 执行记录：review_delta=按评审意见将 `init` 文案抽离到 `src/commands/templates/init-documents.js`，为 `AGENTS.md`、sprint 文档和 checklist/CSV 提供 locale-aware 模板入口，并补充 `en-US` 模板验证;verify=`/opt/homebrew/bin/npm run test` 通过，`init --locale en-US` 生成结果已通过测试覆盖
-- [ ] **TK-105** 实现 `doctor` 命令（负责人：CLI｜优先级：P0｜截止：2026-03-25｜状态：todo）
+- [x] **TK-105** 实现 `doctor` 命令（负责人：CLI｜优先级：P0｜截止：2026-03-25｜状态：done）
   - 执行记录：plan=依赖配置加载能力，输出环境检查、配置校验和修复建议;result=已创建任务卡并确认依赖 `TK-103`;verify=与 `docs/cli-command-design.md` 和 `docs/mvp-issue-backlog.md` 对齐
+  - 执行记录：plan=实现 `doctor` 命令，对 Node.js、主配置、标准目录和关键产物进行自检，支持 `--strict`、`--fix` 与结构化输出;result=已新增 `src/commands/doctor-command.js` 与 `test/commands/doctor-command.test.js`，当前 `doctor` 可返回稳定退出码、结构化检查结果，并自动修复安全的缺失目录;verify=`/opt/homebrew/bin/npm run test` 通过，且已在临时目录验证健康仓库与 `--fix` 场景的 CLI 输出
+  - 执行记录：review_delta=已完成 `TK-105` 自检复核，CR 结果落盘为 `code-review/verified_review_tk-105-implement-doctor-command.md`，结论为无阻断问题;verify=复核确认 CLI 退出码、检查项、目录修复策略和测试覆盖已经对齐
 - [x] **TK-108** 新增仓库级交付收尾 Skill（负责人：Workflow｜优先级：P1｜截止：2026-03-13｜状态：done）
   - 执行记录：plan=为当前仓库新增本地 skill，将 `收尾`、`提交并推送`、`收尾并推送` 映射到统一的交付流程，并同步到 `AGENTS.md`;result=已创建 `.codex/skills/workspace-delivery-finisher/SKILL.md` 与 `agents/openai.yaml`，明确 plain finish 只 commit，push 仅在明确要求时执行;verify=技能结构已初始化完成，`AGENTS.md` 已增加本地触发规则
   - 执行记录：plan=补齐仓库内 skill 结构校验，避免外部 Python 依赖阻塞当前仓库的本地验证;result=已新增 `test/skills/workspace-delivery-finisher.test.js`，校验 frontmatter、触发词、门禁命令和 `agents/openai.yaml` 元数据;verify=`/opt/homebrew/bin/npm run check` 通过，`quick_validate.py` 因缺少 `PyYAML` 未执行成功但 skill 内容已由仓库测试兜底

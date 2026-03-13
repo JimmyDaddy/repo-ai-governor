@@ -129,13 +129,18 @@ repo-ai-governor doctor [options]
 1. `--strict`
    - 把警告视为失败
 2. `--fix`
-   - 仅对安全问题执行自动修复
+   - 仅对安全问题执行自动修复，MVP 中只自动补齐缺失目录，不重写文件
 
 输出：
 
 1. 环境检查结果
 2. 配置校验结果
 3. 修复建议
+
+退出条件：
+
+1. 无 error 且无 strict warning 时返回 `0`
+2. 存在 error，或 `--strict` 下存在 warning 时返回 `1`
 
 ### 5.3 `plan`
 
