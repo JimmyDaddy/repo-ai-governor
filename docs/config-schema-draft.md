@@ -124,6 +124,17 @@ docs/
 3. 列表默认整体替换，必要时支持显式合并策略。
 4. 冲突且无法自动决策时，直接报错并提示来源。
 
+### 4.1 当前实现口径
+
+`TK-103` 当前已将分层加载落地到 `src/config/load-config.js`，实际约定如下：
+
+1. schema 默认值通过 `Ajv2020` 注入
+2. 主配置通过 `.repo-ai-governor/governor.yaml` 加载
+3. slot 与 adapter 目录会被扫描并校验，但 definition 以独立集合返回，不直接覆写主配置对象
+4. 环境变量前缀固定为 `REPO_AI_GOVERNOR__`
+5. CLI 当前支持映射 `project`、`sprint`、`locale`、`language`、`preset`、`adapter`
+6. 同一路径的类型冲突会直接失败，并附带冲突路径与 layer 信息
+
 ## 5. 主配置结构
 
 主配置文件建议包含以下顶层字段：
@@ -692,5 +703,8 @@ MVP 建议支持三类校验：
 3. 适配器 schema v1
 4. `Ajv2020` 编译与样例校验测试
 5. `src/config/schema/index.js` 的 schema bundle 入口
+6. `src/config/load-config.js` 的运行时加载与合并入口
+7. `src/config/schema/validator.js` 的 schema 验证器
+8. `test/config/load-config.test.js` 的配置加载测试
 
-当前 sprint 内的设计摘要见 [docs/mvp/sprint-001/config-schema-v1.md](./mvp/sprint-001/config-schema-v1.md)。
+当前 sprint 内的设计摘要见 [docs/mvp/sprint-001/config-schema-v1.md](./mvp/sprint-001/config-schema-v1.md) 和 [docs/mvp/sprint-001/config-loading-strategy.md](./mvp/sprint-001/config-loading-strategy.md)。

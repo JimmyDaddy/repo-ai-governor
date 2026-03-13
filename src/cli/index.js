@@ -1,6 +1,8 @@
 import { createRequire } from "node:module";
 import { Command, CommanderError } from "commander";
 import { commandDefinitions, globalOptionDefinitions } from "./command-registry.js";
+import { ConfigurationError } from "../config/errors.js";
+import { loadResolvedConfig } from "../config/load-config.js";
 import {
   createReviewFileName,
   createReviewSlug,
@@ -8,7 +10,7 @@ import {
   resolveRepositoryLayout
 } from "../config/repository-layout.js";
 import { createCommandContext } from "./runtime/context.js";
-import { InputError, InternalExecutionError, isCliError } from "./runtime/errors.js";
+import { ConfigError, InputError, InternalExecutionError, isCliError } from "./runtime/errors.js";
 import { EXIT_CODES, mapCommanderErrorToExitCode } from "./runtime/exit-codes.js";
 import { createLogger } from "./ui/logger.js";
 
@@ -59,6 +61,7 @@ function createCommandHelpText(commandDefinition) {
 function renderRegisteredCommand(commandContext) {
   let repositoryLayout;
   let reviewSlug;
+  let resolvedConfiguration;
 
   try {
     repositoryLayout = resolveRepositoryLayout({
@@ -71,6 +74,14 @@ function renderRegisteredCommand(commandContext) {
       commandContext.globalOptions.project ?? "default",
       commandContext.globalOptions.sprint ?? "sprint-001"
     );
+    resolvedConfiguration = loadResolvedConfig({
+      cwd: commandContext.globalOptions.cwd,
+      configPath: commandContext.globalOptions.config,
+      cliOverrides: {
+        ...commandContext.globalOptions,
+        ...commandContext.commandOptions
+      }
+    });
   } catch (error) {
     if (error instanceof TypeError) {
       throw new InputError(error.message, {
@@ -79,6 +90,13 @@ function renderRegisteredCommand(commandContext) {
           project: commandContext.globalOptions.project,
           sprint: commandContext.globalOptions.sprint
         }
+      });
+    }
+
+    if (error instanceof ConfigurationError) {
+      throw new ConfigError(error.message, {
+        code: error.code,
+        details: error.details
       });
     }
 
@@ -106,6 +124,20 @@ function renderRegisteredCommand(commandContext) {
           reviewResolved: createReviewFileName({ status: "resolved", slug: reviewSlug })
         }
       }
+    },
+    resolvedConfiguration: {
+      configFile: resolvedConfiguration.paths.configFile,
+      slotsDirectory: resolvedConfiguration.paths.slotsDirectory,
+      adaptersDirectory: resolvedConfiguration.paths.adaptersDirectory,
+      currentProject: resolvedConfiguration.config.execution.currentProject,
+      currentSprint: resolvedConfiguration.config.execution.currentSprint,
+      enabledSlots: resolvedConfiguration.config.slots.enabled,
+      enabledAdapters: resolvedConfiguration.config.adapters.enabled,
+      loadedSlotDefinitions: resolvedConfiguration.slotDefinitions.map((definition) => definition.id),
+      loadedAdapterDefinitions: resolvedConfiguration.adapterDefinitions.map(
+        (definition) => definition.id
+      ),
+      layers: resolvedConfiguration.layers
     }
   };
 
@@ -129,7 +161,12 @@ function writeRegisteredCommand(logger, commandContext) {
         `- Message: ${payload.message}`,
         `- Global options: \`${JSON.stringify(payload.globalOptions)}\``,
         `- Command options: \`${JSON.stringify(payload.commandOptions)}\``,
-        `- Positionals: \`${JSON.stringify(payload.positionals)}\``
+        `- Positionals: \`${JSON.stringify(payload.positionals)}\``,
+        `- Resolved config file: \`${payload.resolvedConfiguration.configFile}\``,
+        `- Loaded slots: \`${JSON.stringify(payload.resolvedConfiguration.loadedSlotDefinitions)}\``,
+        `- Loaded adapters: \`${JSON.stringify(
+          payload.resolvedConfiguration.loadedAdapterDefinitions
+        )}\``
       ].join("\n"),
       { ignoreQuiet: true }
     );
@@ -143,11 +180,25 @@ function writeRegisteredCommand(logger, commandContext) {
   logger.keyValue("Command options", JSON.stringify(payload.commandOptions));
   logger.keyValue("Positionals", JSON.stringify(payload.positionals));
   logger.keyValue("Config file", payload.repositoryLayout.relativePaths.configFile);
+  logger.keyValue("Resolved config file", payload.resolvedConfiguration.configFile);
+  logger.keyValue("Loaded slots", JSON.stringify(payload.resolvedConfiguration.loadedSlotDefinitions));
+  logger.keyValue(
+    "Loaded adapters",
+    JSON.stringify(payload.resolvedConfiguration.loadedAdapterDefinitions)
+  );
 
   if (payload.repositoryLayout.relativePaths.sprintDir) {
     logger.keyValue("Sprint dir", payload.repositoryLayout.relativePaths.sprintDir);
     logger.keyValue("Tasks dir", payload.repositoryLayout.relativePaths.tasksDir);
     logger.keyValue("Code review dir", payload.repositoryLayout.relativePaths.codeReviewDir);
+  }
+
+  if (payload.resolvedConfiguration.currentProject) {
+    logger.keyValue("Resolved project", payload.resolvedConfiguration.currentProject);
+  }
+
+  if (payload.resolvedConfiguration.currentSprint) {
+    logger.keyValue("Resolved sprint", payload.resolvedConfiguration.currentSprint);
   }
 
   logger.keyValue("Task file naming", payload.repositoryLayout.naming.examples.taskFile);

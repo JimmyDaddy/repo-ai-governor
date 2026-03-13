@@ -21,8 +21,10 @@
   - 执行记录：review_delta=已完成 `TK-102` 自检复核，CR 结果落盘为 `code-review/verified_review_tk-102-design-config-schema-v1.md`，结论为无阻断问题;verify=`/opt/homebrew/bin/npm run test` 通过，文档与 schema bundle 已对齐
 - [ ] **TK-106** 设计项目/sprint 任务产物目录规范（负责人：Workflow｜优先级：P0｜截止：2026-03-19｜状态：todo）
   - 执行记录：plan=固化 checklist、CSV、任务卡和 `code-review/` 的目录及命名规范;result=已创建任务卡并排入当前 sprint;verify=与 `docs/mvp-execution-plan.md` 和 `docs/config-schema-draft.md` 对齐
-- [ ] **TK-103** 实现配置加载与合并逻辑（负责人：Platform｜优先级：P0｜截止：2026-03-20｜状态：todo）
+- [x] **TK-103** 实现配置加载与合并逻辑（负责人：Platform｜优先级：P0｜截止：2026-03-20｜状态：done）
   - 执行记录：plan=在 schema 定稿后实现默认配置、仓库配置和 CLI 参数的分层覆盖;result=已创建任务卡并确认依赖 `TK-102`;verify=与 `docs/mvp-issue-backlog.md` 对齐
+  - 执行记录：plan=实现统一配置加载入口，串起 schema 默认值、YAML 主配置、slot/adapters 定义、环境变量覆盖和 CLI 覆盖，并为冲突和重复定义提供明确错误;result=已新增 `src/config/errors.js`、`src/config/schema/validator.js`、`src/config/load-config.js` 与 `test/config/load-config.test.js`，同时将当前 CLI 占位命令接入 resolved config 入口;verify=`/opt/homebrew/bin/npm run test`、`/opt/homebrew/bin/node ./bin/repo-ai-governor.js doctor --project mvp --sprint sprint-001 --verbose`、带 `REPO_AI_GOVERNOR__` 覆盖的 `init --format json` 均通过
+  - 执行记录：review_delta=已完成 `TK-103` 自检复核，CR 结果落盘为 `code-review/verified_review_tk-103-implement-config-loader.md`，结论为无阻断问题;verify=复核确认 loader、CLI 集成、测试覆盖和文档口径已对齐
 - [ ] **TK-104** 实现 `init` 命令与初始化脚手架（负责人：CLI｜优先级：P0｜截止：2026-03-24｜状态：todo）
   - 执行记录：plan=依赖配置加载与 schema 能力，输出初始化命令、默认模板和只读预览模式;result=已创建任务卡并确认依赖 `TK-102`、`TK-103`;verify=与 `docs/cli-command-design.md` 和 `docs/mvp-issue-backlog.md` 对齐
 - [ ] **TK-105** 实现 `doctor` 命令（负责人：CLI｜优先级：P0｜截止：2026-03-25｜状态：todo）
