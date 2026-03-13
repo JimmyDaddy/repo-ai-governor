@@ -297,6 +297,23 @@ TK-201 v1 收口：
 5. `render.aiView`
 6. `render.humanView`
 
+TK-203 v1 收口：
+
+1. `preset` 指向标准规范包 ID，MVP 内置 `official/base`。
+2. 完整规范包定义单独收口到 `standards-package.schema.json`。
+3. 规范包顶层结构包括：
+   - `meta`
+   - `locales`
+   - `categories`
+   - `rules`
+4. `rules` 至少区分：
+   - `level`: `required` / `recommended`
+   - `consumers`: `plan` / `check` / `review` / `review-verify` 等消费面
+   - `automation`: 阻断和严重级别
+   - `views.ai`
+   - `views.human`
+5. v1 固定支持五类规范：`code`、`engineering`、`process`、`quality`、`collaboration`。
+
 ### 6.5 `slots`
 
 用途：

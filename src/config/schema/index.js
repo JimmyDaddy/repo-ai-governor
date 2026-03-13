@@ -7,6 +7,7 @@ export const SCHEMA_FILE_NAMES = Object.freeze({
   shared: "shared.schema.json",
   governor: "governor.schema.json",
   workflowTemplate: "workflow-template.schema.json",
+  standardsPackage: "standards-package.schema.json",
   slot: "slot.schema.json",
   adapter: "adapter.schema.json"
 });

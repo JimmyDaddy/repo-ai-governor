@@ -1,0 +1,250 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://repo-ai-governor.dev/schemas/v1/standards-package.schema.json",
+  "title": "Repo AI Governor Standards Package Schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "version", "kind", "meta", "locales", "categories", "rules"],
+  "properties": {
+    "id": {
+      "$ref": "./shared.schema.json#/$defs/slug"
+    },
+    "version": {
+      "type": "string",
+      "const": "1",
+      "default": "1"
+    },
+    "kind": {
+      "type": "string",
+      "const": "standards-package"
+    },
+    "meta": {
+      "$ref": "#/$defs/packageMeta"
+    },
+    "locales": {
+      "$ref": "#/$defs/standardsLocales"
+    },
+    "categories": {
+      "type": "array",
+      "minItems": 5,
+      "items": {
+        "$ref": "#/$defs/category"
+      }
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/rule"
+      },
+      "default": []
+    }
+  },
+  "$defs": {
+    "categoryId": {
+      "type": "string",
+      "enum": ["code", "engineering", "process", "quality", "collaboration"]
+    },
+    "ruleLevel": {
+      "type": "string",
+      "enum": ["required", "recommended"]
+    },
+    "consumer": {
+      "type": "string",
+      "enum": ["init", "plan", "check", "review", "review-verify", "report"]
+    },
+    "packageMeta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "$ref": "./shared.schema.json#/$defs/localizedText"
+        },
+        "description": {
+          "$ref": "./shared.schema.json#/$defs/localizedText"
+        },
+        "preset": {
+          "$ref": "./shared.schema.json#/$defs/nonEmptyString"
+        }
+      }
+    },
+    "standardsLocales": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "default": {
+          "$ref": "./shared.schema.json#/$defs/localeCode",
+          "default": "zh-CN"
+        },
+        "supported": {
+          "$ref": "./shared.schema.json#/$defs/localeList",
+          "default": ["zh-CN", "en-US"]
+        }
+      },
+      "default": {
+        "default": "zh-CN",
+        "supported": ["zh-CN", "en-US"]
+      }
+    },
+    "category": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "description"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/categoryId"
+        },
+        "name": {
+          "$ref": "./shared.schema.json#/$defs/localizedText"
+        },
+        "description": {
+          "$ref": "./shared.schema.json#/$defs/localizedText"
+        }
+      }
+    },
+    "appliesTo": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "languages": {
+          "$ref": "./shared.schema.json#/$defs/stringList",
+          "default": []
+        },
+        "frameworks": {
+          "$ref": "./shared.schema.json#/$defs/stringList",
+          "default": []
+        },
+        "paths": {
+          "$ref": "./shared.schema.json#/$defs/stringList",
+          "default": []
+        },
+        "tags": {
+          "$ref": "./shared.schema.json#/$defs/stringList",
+          "default": []
+        }
+      },
+      "default": {
+        "languages": [],
+        "frameworks": [],
+        "paths": [],
+        "tags": []
+      }
+    },
+    "automation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "blockOnViolation": {
+          "type": "boolean",
+          "default": false
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["error", "warn", "info"],
+          "default": "warn"
+        },
+        "stages": {
+          "$ref": "./shared.schema.json#/$defs/stageList",
+          "default": []
+        }
+      },
+      "default": {
+        "blockOnViolation": false,
+        "severity": "warn",
+        "stages": []
+      }
+    },
+    "aiView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["instruction"],
+      "properties": {
+        "instruction": {
+          "$ref": "./shared.schema.json#/$defs/localizedText"
+        },
+        "verification": {
+          "$ref": "./shared.schema.json#/$defs/localizedText"
+        }
+      }
+    },
+    "humanView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["summary"],
+      "properties": {
+        "summary": {
+          "$ref": "./shared.schema.json#/$defs/localizedText"
+        },
+        "rationale": {
+          "$ref": "./shared.schema.json#/$defs/localizedText"
+        },
+        "remediation": {
+          "$ref": "./shared.schema.json#/$defs/localizedText"
+        }
+      }
+    },
+    "views": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ai", "human"],
+      "properties": {
+        "ai": {
+          "$ref": "#/$defs/aiView"
+        },
+        "human": {
+          "$ref": "#/$defs/humanView"
+        }
+      }
+    },
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "category", "level", "title", "statement", "consumers", "views"],
+      "properties": {
+        "id": {
+          "$ref": "./shared.schema.json#/$defs/slug"
+        },
+        "category": {
+          "$ref": "#/$defs/categoryId"
+        },
+        "level": {
+          "$ref": "#/$defs/ruleLevel"
+        },
+        "title": {
+          "$ref": "./shared.schema.json#/$defs/localizedText"
+        },
+        "statement": {
+          "$ref": "./shared.schema.json#/$defs/localizedText"
+        },
+        "appliesTo": {
+          "$ref": "#/$defs/appliesTo",
+          "default": {
+            "languages": [],
+            "frameworks": [],
+            "paths": [],
+            "tags": []
+          }
+        },
+        "consumers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/consumer"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "automation": {
+          "$ref": "#/$defs/automation",
+          "default": {
+            "blockOnViolation": false,
+            "severity": "warn",
+            "stages": []
+          }
+        },
+        "views": {
+          "$ref": "#/$defs/views"
+        }
+      }
+    }
+  }
+}

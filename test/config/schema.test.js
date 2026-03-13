@@ -29,9 +29,17 @@ function createAjvWithBundle() {
 
 test("schema bundle resolves all expected file paths", () => {
   assert.equal(CONFIG_SCHEMA_VERSION, "1");
-  assert.deepEqual(Object.keys(SCHEMA_FILE_NAMES), ["shared", "governor", "workflowTemplate", "slot", "adapter"]);
+  assert.deepEqual(Object.keys(SCHEMA_FILE_NAMES), [
+    "shared",
+    "governor",
+    "workflowTemplate",
+    "standardsPackage",
+    "slot",
+    "adapter"
+  ]);
   assert.match(resolveSchemaPath("governor"), /src\/config\/schema\/governor\.schema\.json$/);
   assert.match(resolveSchemaPath("workflowTemplate"), /src\/config\/schema\/workflow-template\.schema\.json$/);
+  assert.match(resolveSchemaPath("standardsPackage"), /src\/config\/schema\/standards-package\.schema\.json$/);
   assert.match(resolveSchemaPath("slot"), /src\/config\/schema\/slot\.schema\.json$/);
   assert.match(resolveSchemaPath("adapter"), /src\/config\/schema\/adapter\.schema\.json$/);
 });
@@ -176,6 +184,88 @@ test("workflow template schema validates the standard serial workflow shape", ()
   assert.equal(workflowTemplate.execution.allowSkipStages, false);
   assert.equal(workflowTemplate.stages[0].required, true);
   assert.equal(workflowTemplate.stages[1].gates.exit[0].expectedStatus, "verified");
+});
+
+test("standards package schema validates bilingual dual-view rules", () => {
+  const { ajv, bundle } = createAjvWithBundle();
+  const validate = ajv.getSchema(bundle.standardsPackage.$id);
+  const standardsPackage = {
+    id: "official-base",
+    version: "1",
+    kind: "standards-package",
+    meta: {
+      name: {
+        "zh-CN": "官方基础规范包",
+        "en-US": "Official Base Standards Package"
+      },
+      preset: "official/base"
+    },
+    locales: {
+      default: "zh-CN",
+      supported: ["zh-CN", "en-US"]
+    },
+    categories: [
+      {
+        id: "code",
+        name: { "zh-CN": "代码规范", "en-US": "Code Standards" },
+        description: { "zh-CN": "代码要求", "en-US": "Code requirements" }
+      },
+      {
+        id: "engineering",
+        name: { "zh-CN": "工程规范", "en-US": "Engineering Standards" },
+        description: { "zh-CN": "工程要求", "en-US": "Engineering requirements" }
+      },
+      {
+        id: "process",
+        name: { "zh-CN": "流程规范", "en-US": "Process Standards" },
+        description: { "zh-CN": "流程要求", "en-US": "Process requirements" }
+      },
+      {
+        id: "quality",
+        name: { "zh-CN": "质量规范", "en-US": "Quality Standards" },
+        description: { "zh-CN": "质量要求", "en-US": "Quality requirements" }
+      },
+      {
+        id: "collaboration",
+        name: { "zh-CN": "协作规范", "en-US": "Collaboration Standards" },
+        description: { "zh-CN": "协作要求", "en-US": "Collaboration requirements" }
+      }
+    ],
+    rules: [
+      {
+        id: "lint-must-pass",
+        category: "quality",
+        level: "required",
+        title: {
+          "zh-CN": "Lint 必须通过",
+          "en-US": "Lint Must Pass"
+        },
+        statement: {
+          "zh-CN": "提交前必须通过 lint。",
+          "en-US": "Lint must pass before delivery."
+        },
+        consumers: ["check", "review"],
+        views: {
+          "ai": {
+            instruction: {
+              "zh-CN": "在交付前执行 lint，并在失败时阻断流程。",
+              "en-US": "Run lint before delivery and block the workflow on failure."
+            }
+          },
+          "human": {
+            summary: {
+              "zh-CN": "交付前必须通过 lint。",
+              "en-US": "Lint must pass before delivery."
+            }
+          }
+        }
+      }
+    ]
+  };
+
+  assert.equal(validate(standardsPackage), true, JSON.stringify(validate.errors, null, 2));
+  assert.equal(standardsPackage.rules[0].automation.severity, "warn");
+  assert.deepEqual(standardsPackage.rules[0].appliesTo.languages, []);
 });
 
 test("adapter schema validates mainstream adapter configuration", () => {
