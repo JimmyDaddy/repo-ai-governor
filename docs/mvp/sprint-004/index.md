@@ -32,4 +32,4 @@
 
 1. `sprint-004` 以“补齐 review 闭环与统一报告模型”为核心目标。
 2. `TK-207`、`TK-208`、`TK-501`、`TK-502` 已完成，当前已跑通 `review -> review-verify -> report` 主线能力。
-3. `sprint-004` 已收口，`TK-503` 及后续工作待新的 sprint 规划完成后再进入执行。
+3. `sprint-004` 已收口，后续执行基线已切换到 `docs/mvp/sprint-005/`，`TK-503` 及后续工作转入新 sprint 规划。
