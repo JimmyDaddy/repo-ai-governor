@@ -328,6 +328,32 @@ TK-203 v1 收口：
 3. `directory`
 4. `conflictPolicy`
 
+TK-301 v1 收口：
+
+1. 完整插槽定义继续单独收口到 `slot.schema.json`。
+2. `meta` 至少支持：
+   - `source`
+   - `slotType`
+   - `owner`
+   - `tags`
+3. `trigger` 至少支持：
+   - `match`
+   - `when.paths`
+   - `when.stages`
+   - `when.events`
+   - `when.adapters`
+   - `when.commands`
+4. `behavior` 至少支持：
+   - `blockOnFailure`
+   - `priority`
+   - `requiresApproval`
+   - `conflictPolicy`
+   - `dependsOn`
+   - `supersedes`
+   - `inject`
+5. `source` 固定支持 `project-local`、`team-shared`、`official`。
+6. `slotType` 固定支持架构约束、安全合规、领域知识、测试策略、发布审批、文档产出和 `custom`。
+
 ### 6.6 `adapters`
 
 用途：
@@ -514,19 +540,25 @@ meta:
   name:
     zh-CN: 安全审查
     en-US: Security Review
+  source: official
+  slotType: security-compliance
   owner: platform
 trigger:
+  match: any
   when:
     paths:
       - src/**
     stages:
       - review
+    adapters:
+      - codex
 scope:
   languages:
     - typescript
 behavior:
   blockOnFailure: true
   priority: 100
+  conflictPolicy: error
   inject:
     ai:
       promptKey: security-review
@@ -544,13 +576,13 @@ checks:
 2. `version`
    - 插槽自身版本
 3. `meta`
-   - 名称、负责人、说明
+   - 名称、来源、类型、负责人、说明
 4. `trigger`
-   - 触发条件
+   - 触发条件和命中策略
 5. `scope`
    - 适用范围
 6. `behavior`
-   - 优先级、阻断、注入方式
+   - 优先级、阻断、审批、冲突策略、注入方式
 7. `checks`
    - 前置或后置检查
 

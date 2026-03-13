@@ -104,7 +104,12 @@ test("slot schema validates slot configuration defaults", () => {
   assert.equal(validate(slotConfig), true, JSON.stringify(validate.errors, null, 2));
   assert.equal(slotConfig.behavior.blockOnFailure, true);
   assert.equal(slotConfig.behavior.priority, 100);
+  assert.equal(slotConfig.meta.source, "project-local");
+  assert.equal(slotConfig.meta.slotType, "custom");
+  assert.equal(slotConfig.trigger.match, "any");
   assert.deepEqual(slotConfig.trigger.when.stages, []);
+  assert.deepEqual(slotConfig.trigger.when.adapters, []);
+  assert.equal(slotConfig.behavior.conflictPolicy, "error");
 });
 
 test("workflow template schema validates the standard serial workflow shape", () => {
