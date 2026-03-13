@@ -1,6 +1,6 @@
 # MVP Sprint 002 Plan
 
-- Status: planned
+- Status: active
 - Date: 2026-03-13
 
 ## Goal
@@ -44,3 +44,7 @@
 1. 至少完成 `TK-201` 与 `TK-203`，形成后续命令实现所需的核心模型。
 2. `TK-301` 与 `TK-401` 至少完成首版草案并与已有 schema / layout 口径对齐。
 3. 当前 sprint 的 checklist、CSV 和任务卡保持同步。
+
+## Progress
+
+1. `TK-201` 已完成，产出流程模板 schema、标准串行模板和覆盖解析 helper，为 `TK-202` 提供直接输入。

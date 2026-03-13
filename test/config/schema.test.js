@@ -29,8 +29,9 @@ function createAjvWithBundle() {
 
 test("schema bundle resolves all expected file paths", () => {
   assert.equal(CONFIG_SCHEMA_VERSION, "1");
-  assert.deepEqual(Object.keys(SCHEMA_FILE_NAMES), ["shared", "governor", "slot", "adapter"]);
+  assert.deepEqual(Object.keys(SCHEMA_FILE_NAMES), ["shared", "governor", "workflowTemplate", "slot", "adapter"]);
   assert.match(resolveSchemaPath("governor"), /src\/config\/schema\/governor\.schema\.json$/);
+  assert.match(resolveSchemaPath("workflowTemplate"), /src\/config\/schema\/workflow-template\.schema\.json$/);
   assert.match(resolveSchemaPath("slot"), /src\/config\/schema\/slot\.schema\.json$/);
   assert.match(resolveSchemaPath("adapter"), /src\/config\/schema\/adapter\.schema\.json$/);
 });
@@ -96,6 +97,85 @@ test("slot schema validates slot configuration defaults", () => {
   assert.equal(slotConfig.behavior.blockOnFailure, true);
   assert.equal(slotConfig.behavior.priority, 100);
   assert.deepEqual(slotConfig.trigger.when.stages, []);
+});
+
+test("workflow template schema validates the standard serial workflow shape", () => {
+  const { ajv, bundle } = createAjvWithBundle();
+  const validate = ajv.getSchema(bundle.workflowTemplate.$id);
+  const workflowTemplate = {
+    id: "standard",
+    version: "1",
+    kind: "workflow-template",
+    meta: {
+      name: {
+        "zh-CN": "标准流程",
+        "en-US": "Standard Workflow"
+      }
+    },
+    execution: {
+      mode: "serial"
+    },
+    stages: [
+      {
+        id: "plan",
+        name: {
+          "zh-CN": "方案",
+          "en-US": "Plan"
+        },
+        executor: {
+          kind: "command",
+          ref: "plan",
+          command: "plan"
+        },
+        outputs: [
+          {
+            kind: "artifact",
+            ref: "plan.md"
+          }
+        ]
+      },
+      {
+        id: "review-verify",
+        name: {
+          "zh-CN": "评审复核",
+          "en-US": "Review Verify"
+        },
+        dependsOn: ["plan"],
+        executor: {
+          kind: "command",
+          ref: "review-verify",
+          command: "review-verify"
+        },
+        inputs: [
+          {
+            kind: "review-record",
+            ref: "code-review/review_<slug>.md"
+          }
+        ],
+        outputs: [
+          {
+            kind: "review-record",
+            ref: "code-review/verified_review_<slug>.md"
+          }
+        ],
+        gates: {
+          exit: [
+            {
+              id: "review-verified",
+              kind: "review-status",
+              refs: ["code-review/verified_review_<slug>.md"],
+              expectedStatus: "verified"
+            }
+          ]
+        }
+      }
+    ]
+  };
+
+  assert.equal(validate(workflowTemplate), true, JSON.stringify(validate.errors, null, 2));
+  assert.equal(workflowTemplate.execution.allowSkipStages, false);
+  assert.equal(workflowTemplate.stages[0].required, true);
+  assert.equal(workflowTemplate.stages[1].gates.exit[0].expectedStatus, "verified");
 });
 
 test("adapter schema validates mainstream adapter configuration", () => {

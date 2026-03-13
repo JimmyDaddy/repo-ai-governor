@@ -1,0 +1,232 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://repo-ai-governor.dev/schemas/v1/workflow-template.schema.json",
+  "title": "Repo AI Governor Workflow Template Schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "version", "kind", "meta", "execution", "stages"],
+  "properties": {
+    "id": {
+      "$ref": "./shared.schema.json#/$defs/slug"
+    },
+    "version": {
+      "type": "string",
+      "const": "1",
+      "default": "1"
+    },
+    "kind": {
+      "type": "string",
+      "const": "workflow-template"
+    },
+    "meta": {
+      "$ref": "#/$defs/workflowMeta"
+    },
+    "execution": {
+      "$ref": "#/$defs/workflowExecution"
+    },
+    "stages": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/workflowStage"
+      },
+      "minItems": 1
+    }
+  },
+  "$defs": {
+    "workflowMeta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "$ref": "./shared.schema.json#/$defs/localizedText"
+        },
+        "description": {
+          "$ref": "./shared.schema.json#/$defs/localizedText"
+        }
+      }
+    },
+    "workflowExecution": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["serial"],
+          "default": "serial"
+        },
+        "allowSkipStages": {
+          "type": "boolean",
+          "default": false
+        },
+        "stopOnFailure": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "default": {
+        "mode": "serial",
+        "allowSkipStages": false,
+        "stopOnFailure": true
+      }
+    },
+    "workflowExecutor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "ref"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["command", "manual", "internal"]
+        },
+        "ref": {
+          "$ref": "./shared.schema.json#/$defs/nonEmptyString"
+        },
+        "command": {
+          "$ref": "./shared.schema.json#/$defs/nonEmptyString"
+        },
+        "options": {
+          "$ref": "./shared.schema.json#/$defs/jsonObject"
+        }
+      }
+    },
+    "workflowBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "ref"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "context",
+            "config",
+            "artifact",
+            "workspace",
+            "review-record",
+            "check-result",
+            "task-record"
+          ]
+        },
+        "ref": {
+          "$ref": "./shared.schema.json#/$defs/nonEmptyString"
+        },
+        "required": {
+          "type": "boolean",
+          "default": true
+        },
+        "multiple": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "workflowGateCondition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind"],
+      "properties": {
+        "id": {
+          "$ref": "./shared.schema.json#/$defs/slug"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "artifacts-exist",
+            "checks-pass",
+            "review-status",
+            "task-record-updated",
+            "manual-approval"
+          ]
+        },
+        "refs": {
+          "$ref": "./shared.schema.json#/$defs/stringList"
+        },
+        "expectedStatus": {
+          "$ref": "./shared.schema.json#/$defs/nonEmptyString"
+        },
+        "message": {
+          "$ref": "./shared.schema.json#/$defs/localizedText"
+        }
+      }
+    },
+    "workflowGateSet": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enter": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/workflowGateCondition"
+          },
+          "default": []
+        },
+        "exit": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/workflowGateCondition"
+          },
+          "default": []
+        }
+      },
+      "default": {
+        "enter": [],
+        "exit": []
+      }
+    },
+    "workflowStage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "executor"],
+      "properties": {
+        "id": {
+          "$ref": "./shared.schema.json#/$defs/stageId"
+        },
+        "name": {
+          "$ref": "./shared.schema.json#/$defs/localizedText"
+        },
+        "description": {
+          "$ref": "./shared.schema.json#/$defs/localizedText"
+        },
+        "dependsOn": {
+          "$ref": "./shared.schema.json#/$defs/stageList"
+        },
+        "executor": {
+          "$ref": "#/$defs/workflowExecutor"
+        },
+        "inputs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/workflowBinding"
+          },
+          "default": []
+        },
+        "outputs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/workflowBinding"
+          },
+          "default": []
+        },
+        "gates": {
+          "$ref": "#/$defs/workflowGateSet"
+        },
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "required": {
+          "type": "boolean",
+          "default": true
+        },
+        "onFailure": {
+          "$ref": "./shared.schema.json#/$defs/failurePolicy",
+          "default": "stop"
+        },
+        "requiresApproval": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    }
+  }
+}

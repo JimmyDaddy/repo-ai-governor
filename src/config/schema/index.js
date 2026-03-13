@@ -6,6 +6,7 @@ export const CONFIG_SCHEMA_VERSION = "1";
 export const SCHEMA_FILE_NAMES = Object.freeze({
   shared: "shared.schema.json",
   governor: "governor.schema.json",
+  workflowTemplate: "workflow-template.schema.json",
   slot: "slot.schema.json",
   adapter: "adapter.schema.json"
 });

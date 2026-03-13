@@ -266,6 +266,21 @@ agentEntry:
 4. `stopOnFailure`
 5. `requireHumanApprovalFor`
 
+TK-201 v1 收口：
+
+1. `template` 指向流程模板 ID，MVP 内置 `standard`。
+2. `stages` 不是完整模板定义，而是对模板阶段的覆盖项，当前只覆盖 `enabled`、`required`、`onFailure`、`requiresApproval`。
+3. 完整模板定义单独收口到 `workflow-template.schema.json`，包含：
+   - `meta`
+   - `execution`
+   - `stages`
+   - `inputs`
+   - `outputs`
+   - `gates.enter`
+   - `gates.exit`
+4. 标准模板顺序固定为 `plan -> breakdown -> implement -> self-check -> review -> review-verify -> task-sync`。
+5. `task-sync` 阶段用于把执行与复核结果回写到 `tasks/checklist.md` 与 `tasks/tasks.csv`。
+
 ### 6.4 `standards`
 
 用途：
