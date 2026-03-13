@@ -10,6 +10,10 @@
 ## Completed Baseline
 
 1. `TK-001` 已完成，用于建立 `docs/mvp/sprint-001/` 基础目录、checklist、CSV 台账和 CR 模板。
+2. `TK-002` 已完成，建立 Commander 驱动的 CLI 入口、命令注册和参数解析基础层。
+3. `TK-003` 已完成，建立统一 logger、错误模型和退出码基础设施。
+4. `TK-101` 已完成，固定配置目录结构与文件命名规则，并提供 `src/config/repository-layout.js` 作为代码参考实现。
+5. `TK-108` 已完成，新增仓库级交付收尾 skill，并将 `收尾 / 提交并推送 / 收尾并推送` 映射为标准交付流程。
 
 ## In Scope
 
@@ -55,6 +59,7 @@
 ## Output Paths
 
 - `docs/mvp/sprint-001/cli-ux-technical-solution.md`
+- `docs/mvp/sprint-001/repository-layout-conventions.md`
 - `docs/mvp/sprint-001/tasks/checklist.md`
 - `docs/mvp/sprint-001/tasks/tasks.csv`
 - `docs/mvp/sprint-001/tasks/TK-002.md`
@@ -65,4 +70,6 @@
 - `docs/mvp/sprint-001/tasks/TK-104.md`
 - `docs/mvp/sprint-001/tasks/TK-105.md`
 - `docs/mvp/sprint-001/tasks/TK-106.md`
+- `docs/mvp/sprint-001/tasks/TK-108.md`
 - `docs/mvp/sprint-001/code-review/review_tk-001-initialize-sprint-templates.md`
+- `.codex/skills/workspace-delivery-finisher/SKILL.md`

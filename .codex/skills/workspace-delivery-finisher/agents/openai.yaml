@@ -1,0 +1,4 @@
+interface:
+  display_name: "Workspace Delivery"
+  short_description: "Run gates, commit, and optionally push"
+  default_prompt: "Use $workspace-delivery-finisher to run the repository gate, create a Conventional Commit, and optionally push after a successful finish."

@@ -2,7 +2,7 @@
 
 - 文档版本：v0.1
 - 状态：草案
-- 日期：2026-03-12
+- 日期：2026-03-13
 - 关联文档：[product-requirements.md](./product-requirements.md)、[mvp-execution-plan.md](./mvp-execution-plan.md)
 
 ## 1. 设计目标
@@ -78,6 +78,20 @@ docs/
    - 单任务明细文档目录
 9. `docs/<project>/sprint-xxx/code-review/`
    - 状态化 CR 文档目录，文件名应包含任务编号或变更主题 slug
+
+### 3.1 命名规则
+
+默认命名约定如下：
+
+1. `<project>` 使用小写 kebab-case，例如 `mvp`、`platform-core`
+2. `sprint` 目录固定使用 `sprint-xxx`，编号使用三位数字，例如 `sprint-001`
+3. 单任务文件固定使用 `TK-xxx.md`
+4. 插槽文件固定使用 `.repo-ai-governor/slots/*.yaml`
+5. 适配器文件固定使用 `.repo-ai-governor/adapters/*.yaml`
+6. CR 文件状态流转固定为 `review_<slug>.md` -> `verified_review_<slug>.md` -> `resolved_review_<slug>.md`
+7. `<slug>` 使用小写 kebab-case，且应包含任务编号或变更主题，例如 `tk-101-design-config-layout`
+
+当前 sprint 内的落地样例见 [docs/mvp/sprint-001/repository-layout-conventions.md](./mvp/sprint-001/repository-layout-conventions.md)。
 
 ## 4. 配置分层模型
 

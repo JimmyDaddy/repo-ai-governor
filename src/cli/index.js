@@ -1,8 +1,14 @@
 import { createRequire } from "node:module";
 import { Command, CommanderError } from "commander";
 import { commandDefinitions, globalOptionDefinitions } from "./command-registry.js";
+import {
+  createReviewFileName,
+  createReviewSlug,
+  createTaskFileName,
+  resolveRepositoryLayout
+} from "../config/repository-layout.js";
 import { createCommandContext } from "./runtime/context.js";
-import { InternalExecutionError, isCliError } from "./runtime/errors.js";
+import { InputError, InternalExecutionError, isCliError } from "./runtime/errors.js";
 import { EXIT_CODES, mapCommanderErrorToExitCode } from "./runtime/exit-codes.js";
 import { createLogger } from "./ui/logger.js";
 
@@ -51,13 +57,56 @@ function createCommandHelpText(commandDefinition) {
 }
 
 function renderRegisteredCommand(commandContext) {
+  let repositoryLayout;
+  let reviewSlug;
+
+  try {
+    repositoryLayout = resolveRepositoryLayout({
+      cwd: commandContext.globalOptions.cwd,
+      project: commandContext.globalOptions.project,
+      sprint: commandContext.globalOptions.sprint
+    });
+    reviewSlug = createReviewSlug(
+      commandContext.command,
+      commandContext.globalOptions.project ?? "default",
+      commandContext.globalOptions.sprint ?? "sprint-001"
+    );
+  } catch (error) {
+    if (error instanceof TypeError) {
+      throw new InputError(error.message, {
+        code: "cli.invalid_naming_convention",
+        details: {
+          project: commandContext.globalOptions.project,
+          sprint: commandContext.globalOptions.sprint
+        }
+      });
+    }
+
+    throw error;
+  }
+
   const payload = {
     command: commandContext.command,
     status: "registered",
     message: `Command ${commandContext.command} is wired into the CLI registry. Implementation lands in a follow-up task.`,
     globalOptions: commandContext.globalOptions,
     commandOptions: commandContext.commandOptions,
-    positionals: commandContext.positionals
+    positionals: commandContext.positionals,
+    repositoryLayout: {
+      relativePaths: repositoryLayout.relative,
+      naming: {
+        projectPattern: repositoryLayout.naming.projectPattern,
+        sprintPattern: repositoryLayout.naming.sprintPattern,
+        taskPattern: repositoryLayout.naming.taskPattern,
+        reviewPatterns: repositoryLayout.naming.reviewPatterns,
+        examples: {
+          taskFile: createTaskFileName("TK-101"),
+          reviewPending: createReviewFileName({ status: "pending", slug: reviewSlug }),
+          reviewVerified: createReviewFileName({ status: "verified", slug: reviewSlug }),
+          reviewResolved: createReviewFileName({ status: "resolved", slug: reviewSlug })
+        }
+      }
+    }
   };
 
   return payload;
@@ -93,6 +142,16 @@ function writeRegisteredCommand(logger, commandContext) {
   logger.keyValue("Global options", JSON.stringify(payload.globalOptions));
   logger.keyValue("Command options", JSON.stringify(payload.commandOptions));
   logger.keyValue("Positionals", JSON.stringify(payload.positionals));
+  logger.keyValue("Config file", payload.repositoryLayout.relativePaths.configFile);
+
+  if (payload.repositoryLayout.relativePaths.sprintDir) {
+    logger.keyValue("Sprint dir", payload.repositoryLayout.relativePaths.sprintDir);
+    logger.keyValue("Tasks dir", payload.repositoryLayout.relativePaths.tasksDir);
+    logger.keyValue("Code review dir", payload.repositoryLayout.relativePaths.codeReviewDir);
+  }
+
+  logger.keyValue("Task file naming", payload.repositoryLayout.naming.examples.taskFile);
+  logger.keyValue("Pending review naming", payload.repositoryLayout.naming.examples.reviewPending);
 }
 
 function buildProgram(io) {

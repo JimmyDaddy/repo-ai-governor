@@ -10,7 +10,8 @@
   "scripts": {
     "start": "node ./bin/repo-ai-governor.js",
     "help": "node ./bin/repo-ai-governor.js --help",
-    "check": "node ./bin/repo-ai-governor.js --help"
+    "test": "node --test",
+    "check": "npm run test"
   },
   "engines": {
     "node": ">=18.0.0"

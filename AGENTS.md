@@ -52,3 +52,14 @@
 6. Append verify results into the same CR file and rename it to `verified_review_<slug>.md`.
 7. After accepted items are fixed, rename it to `resolved_review_<slug>.md`.
 8. Append execution records to `tasks/checklist.md` and `tasks/tasks.csv`.
+
+## Local Skills
+
+1. `workspace-delivery-finisher`
+   - Path: `.codex/skills/workspace-delivery-finisher/SKILL.md`
+   - Use when the user says `收尾`、`提交并推送`、`收尾并推送`
+   - Trigger mapping:
+     - `收尾`: run the repository gate, generate a Conventional Commit message, and create a local commit only
+     - `提交并推送`: run the same finish flow, then push to the current remote branch
+     - `收尾并推送`: same as `提交并推送`
+   - This local skill overrides the generic `delivery-finisher` behavior for this repository

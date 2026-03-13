@@ -11,8 +11,10 @@
   - 执行记录：plan=评估现有 CLI 基础库和交互工具，输出命令体验优化推荐列表与迁移技术方案;result=已形成 `cli-ux-technical-solution.md`，明确推荐 `Commander 13.x + @inquirer/prompts + listr2 + yoctocolors + terminal-link`;verify=已对齐官方文档并纳入 sprint 文档索引
   - 执行记录：plan=将当前手写命令解析层迁到 `Commander 13.x`，优先替换命令注册、帮助页和参数解析，不改业务命令语义;result=已安装 `commander@13.1.0`，CLI 现改为基于 Commander 构建程序对象，根帮助页、子命令帮助页、`help [command]`、建议错误提示和命令后置全局参数解析均已接管;verify=`node ./bin/repo-ai-governor.js --help`、`node ./bin/repo-ai-governor.js review --help`、`node ./bin/repo-ai-governor.js init --project mvp --format json --adapter codex`、`node ./bin/repo-ai-governor.js doctor --project mvp --sprint sprint-001 --strict`、`node ./bin/repo-ai-governor.js init --version` 通过
   - 执行记录：plan=补齐统一 logger、错误模型和退出码层，并让 `--quiet`、`--verbose`、参数错误出口、业务占位输出都走同一基础设施;result=已新增 `runtime/exit-codes`、`runtime/errors`、`runtime/context`、`ui/logger`、`ui/theme`，CLI 现可区分 `SUCCESS/INFO/DEBUG/ERROR`，未知命令和缺参数错误按文档返回退出码 `4`;verify=`node ./bin/repo-ai-governor.js doctor --project mvp --sprint sprint-001 --strict`、`--quiet`、`--verbose`、`./bin/repo-ai-governor.js unknown`、`./bin/repo-ai-governor.js review --base` 均已验证
-- [ ] **TK-101** 设计配置目录结构与文件命名（负责人：Platform｜优先级：P0｜截止：2026-03-17｜状态：todo）
+- [x] **TK-101** 设计配置目录结构与文件命名（负责人：Platform｜优先级：P0｜截止：2026-03-17｜状态：done）
   - 执行记录：plan=纳入 sprint-001 Wave B，先固定主配置、插槽、适配器和项目/sprint 目录约定;result=已创建任务卡并排入当前 sprint;verify=与 `docs/config-schema-draft.md` 对齐
+  - 执行记录：plan=固化 `.repo-ai-governor`、`docs/<project>/sprint-xxx/`、`tasks/`、`code-review/` 和状态化 CR 文件的默认命名规则，并提供代码侧统一路径常量;result=已新增 `docs/mvp/sprint-001/repository-layout-conventions.md`、`src/config/repository-layout.js`、`test/config/repository-layout.test.js`，并让当前 CLI 占位输出复用这套路径与命名规则;verify=`/opt/homebrew/bin/npm run test`、`/opt/homebrew/bin/node ./bin/repo-ai-governor.js init --project mvp --sprint sprint-001 --format json`、`/opt/homebrew/bin/node ./bin/repo-ai-governor.js doctor --project mvp --sprint sprint-001 --verbose` 均通过
+  - 执行记录：review_delta=已完成 `TK-101` 自检复核，CR 结果落盘为 `code-review/verified_review_tk-101-design-config-layout.md`，结论为无阻断问题;verify=复核结论已追加在同一份 CR 文件中，无需额外修复
 - [ ] **TK-102** 设计治理配置 schema v1（负责人：Platform｜优先级：P0｜截止：2026-03-18｜状态：todo）
   - 执行记录：plan=在 `TK-101` 基础上补齐 schema 字段、默认值和版本策略;result=已创建任务卡并确认依赖 `TK-101`;verify=与 `docs/config-schema-draft.md` 和 `docs/mvp-issue-backlog.md` 对齐
 - [ ] **TK-106** 设计项目/sprint 任务产物目录规范（负责人：Workflow｜优先级：P0｜截止：2026-03-19｜状态：todo）
@@ -23,3 +25,7 @@
   - 执行记录：plan=依赖配置加载与 schema 能力，输出初始化命令、默认模板和只读预览模式;result=已创建任务卡并确认依赖 `TK-102`、`TK-103`;verify=与 `docs/cli-command-design.md` 和 `docs/mvp-issue-backlog.md` 对齐
 - [ ] **TK-105** 实现 `doctor` 命令（负责人：CLI｜优先级：P0｜截止：2026-03-25｜状态：todo）
   - 执行记录：plan=依赖配置加载能力，输出环境检查、配置校验和修复建议;result=已创建任务卡并确认依赖 `TK-103`;verify=与 `docs/cli-command-design.md` 和 `docs/mvp-issue-backlog.md` 对齐
+- [x] **TK-108** 新增仓库级交付收尾 Skill（负责人：Workflow｜优先级：P1｜截止：2026-03-13｜状态：done）
+  - 执行记录：plan=为当前仓库新增本地 skill，将 `收尾`、`提交并推送`、`收尾并推送` 映射到统一的交付流程，并同步到 `AGENTS.md`;result=已创建 `.codex/skills/workspace-delivery-finisher/SKILL.md` 与 `agents/openai.yaml`，明确 plain finish 只 commit，push 仅在明确要求时执行;verify=技能结构已初始化完成，`AGENTS.md` 已增加本地触发规则
+  - 执行记录：plan=补齐仓库内 skill 结构校验，避免外部 Python 依赖阻塞当前仓库的本地验证;result=已新增 `test/skills/workspace-delivery-finisher.test.js`，校验 frontmatter、触发词、门禁命令和 `agents/openai.yaml` 元数据;verify=`/opt/homebrew/bin/npm run check` 通过，`quick_validate.py` 因缺少 `PyYAML` 未执行成功但 skill 内容已由仓库测试兜底
+  - 执行记录：review_delta=已完成 `TK-108` 自检复核，CR 结果落盘为 `code-review/verified_review_tk-108-add-workspace-delivery-skill.md`，结论为无阻断问题;verify=复核确认本地 skill、AGENTS 触发规则和仓库内 Node 校验测试已经对齐
