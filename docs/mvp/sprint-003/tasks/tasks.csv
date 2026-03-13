@@ -1,0 +1,5 @@
+execution_id,task_id,title,owner,priority,due_date,status,project,sprint,plan,result,verify,review_delta,recorded_at
+TK-202-01,TK-202,Implement minimal governance engine,Workflow,P0,2026-04-07,todo,mvp,sprint-003,"实现阶段状态机、阶段执行结果模型和失败中止逻辑，作为 plan/check/review 的统一上游执行入口","已创建任务卡并纳入 sprint-003","与 docs/mvp-issue-backlog.md 和 docs/mvp/sprint-002/workflow-template-model.md 对齐","",2026-03-13
+TK-204-01,TK-204,Author standards package v1 content,Standards,P0,2026-04-08,todo,mvp,sprint-003,"编写官方默认规范内容与中英文文本，覆盖代码、工程、流程、质量、协作五类规则","已创建任务卡并纳入 sprint-003","与 docs/mvp-issue-backlog.md 和 docs/mvp/sprint-002/standards-package-model.md 对齐","",2026-03-13
+TK-205-01,TK-205,Implement plan command,CLI,P0,2026-04-10,todo,mvp,sprint-003,"接入执行器与规范包，生成方案、任务拆解、checklist、CSV 和单任务文件","已创建任务卡并纳入 sprint-003","与 docs/mvp-issue-backlog.md、docs/cli-command-design.md 和项目/sprint 产物规范对齐","",2026-03-13
+TK-206-01,TK-206,Implement check command,CLI,P0,2026-04-11,todo,mvp,sprint-003,"接入执行器与规范包，输出最小治理检查结论、阶段汇总和失败原因","已创建任务卡并纳入 sprint-003","与 docs/mvp-issue-backlog.md、docs/cli-command-design.md 和 TK-202/TK-204 依赖关系对齐","",2026-03-13

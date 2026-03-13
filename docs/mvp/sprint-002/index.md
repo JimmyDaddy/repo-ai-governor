@@ -1,6 +1,6 @@
 # MVP Sprint 002
 
-- Status: active
+- Status: done
 - Date: 2026-03-13
 - Project: `mvp`
 - Sprint: `sprint-002`
@@ -30,5 +30,5 @@
 
 ## Notes
 
-1. `sprint-002` 以“流程模型 + 规范模型 + 插槽/适配器接口设计”为核心目标。
-2. 新任务先写入 `tasks/checklist.md`，再同步 `tasks/tasks.csv` 和对应 `TK-xxx.md`。
+1. `sprint-002` 已完成“流程模型 + 规范模型 + 插槽/适配器接口设计”这一轮设计基线目标。
+2. 后续规划与执行上下文已切换到 `docs/mvp/sprint-003/`。
