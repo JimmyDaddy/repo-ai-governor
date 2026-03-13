@@ -15,6 +15,7 @@
 - [governance-engine-runtime.md](./governance-engine-runtime.md): `TK-202` 固化的最小执行器实现摘要。
 - [standards-package-v1-content.md](./standards-package-v1-content.md): `TK-204` 固化的官方规范包内容摘要。
 - [plan-command-runtime.md](./plan-command-runtime.md): `TK-205` 固化的 `plan` 命令实现摘要。
+- [check-command-runtime.md](./check-command-runtime.md): `TK-206` 固化的 `check` 命令实现摘要。
 - [tasks/checklist.md](./tasks/checklist.md): 当前 sprint 的任务执行清单。
 - [tasks/tasks.csv](./tasks/tasks.csv): 当前 sprint 的执行台账。
 - [tasks/TK-202.md](./tasks/TK-202.md): `TK-202` 的最小执行器任务卡。
@@ -25,6 +26,7 @@
 - [code-review/verified_review_tk-202-implement-governance-engine.md](./code-review/verified_review_tk-202-implement-governance-engine.md): `TK-202` 的已复核 CR 记录。
 - [code-review/verified_review_tk-204-author-standards-package-v1.md](./code-review/verified_review_tk-204-author-standards-package-v1.md): `TK-204` 的已复核 CR 记录。
 - [code-review/verified_review_tk-205-implement-plan-command.md](./code-review/verified_review_tk-205-implement-plan-command.md): `TK-205` 的已复核 CR 记录。
+- [code-review/verified_review_tk-206-implement-check-command.md](./code-review/verified_review_tk-206-implement-check-command.md): `TK-206` 的已复核 CR 记录。
 
 ## Notes
 

@@ -1,0 +1,158 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { runCli } from "../../src/cli/index.js";
+import { EXIT_CODES } from "../../src/cli/runtime/exit-codes.js";
+
+function createTempRepo() {
+  return fs.mkdtempSync(path.join(os.tmpdir(), "repo-ai-governor-check-"));
+}
+
+function createBufferedStream() {
+  const chunks = [];
+
+  return {
+    isTTY: false,
+    write(chunk) {
+      chunks.push(String(chunk));
+      return true;
+    },
+    toString() {
+      return chunks.join("");
+    }
+  };
+}
+
+async function runCommand(argv) {
+  const stdout = createBufferedStream();
+  const stderr = createBufferedStream();
+  const exitCode = await runCli(argv, { stdout, stderr });
+
+  return {
+    exitCode,
+    stdout: stdout.toString(),
+    stderr: stderr.toString()
+  };
+}
+
+async function bootstrapRepo(cwd) {
+  const initResult = await runCommand([
+    "init",
+    "--cwd",
+    cwd,
+    "--project",
+    "demo",
+    "--sprint",
+    "sprint-001",
+    "--adapter",
+    "codex",
+    "--format",
+    "json"
+  ]);
+
+  assert.equal(initResult.exitCode, EXIT_CODES.success);
+
+  const planResult = await runCommand([
+    "plan",
+    "--cwd",
+    cwd,
+    "--project",
+    "demo",
+    "--sprint",
+    "sprint-001",
+    "--title",
+    "Implement governance checks",
+    "--format",
+    "json"
+  ]);
+
+  assert.equal(planResult.exitCode, EXIT_CODES.success);
+}
+
+test("check passes on generated planning artifacts", async () => {
+  const cwd = createTempRepo();
+  await bootstrapRepo(cwd);
+
+  const result = await runCommand([
+    "check",
+    "--cwd",
+    cwd,
+    "--project",
+    "demo",
+    "--sprint",
+    "sprint-001",
+    "--format",
+    "json"
+  ]);
+  const payload = JSON.parse(result.stdout);
+
+  assert.equal(result.exitCode, EXIT_CODES.success);
+  assert.equal(payload.status, "pass");
+  assert.equal(payload.workflow.status, "passed");
+  assert.deepEqual(payload.workflow.selectedStageIds, ["plan", "breakdown", "self-check"]);
+  assert.equal(payload.summary.errors, 0);
+  assert.ok(payload.standards.matchedRuleIds.includes("process-plan-must-state-scope"));
+  assert.ok(payload.standards.matchedRuleIds.includes("process-task-records-must-sync"));
+  assert.ok(payload.standards.matchedRuleIds.includes("quality-check-results-must-be-recorded"));
+});
+
+test("check fails when the plan is missing required governance sections", async () => {
+  const cwd = createTempRepo();
+  await bootstrapRepo(cwd);
+
+  const planFile = path.join(cwd, "docs/demo/sprint-001/plan.md");
+  const brokenPlan = fs
+    .readFileSync(planFile, "utf8")
+    .replace(/^## Acceptance[\s\S]*?^## Verification Path/m, "## Verification Path");
+
+  fs.writeFileSync(planFile, brokenPlan, "utf8");
+
+  const result = await runCommand([
+    "check",
+    "--cwd",
+    cwd,
+    "--project",
+    "demo",
+    "--sprint",
+    "sprint-001",
+    "--format",
+    "json"
+  ]);
+  const payload = JSON.parse(result.stdout);
+  const acceptanceFinding = payload.checks.find((check) => check.id === "check.plan.section.acceptance");
+
+  assert.equal(result.exitCode, EXIT_CODES.businessCheckFailed);
+  assert.equal(payload.status, "fail");
+  assert.equal(payload.workflow.stages.find((stage) => stage.id === "plan")?.status, "failed");
+  assert.equal(payload.workflow.stages.find((stage) => stage.id === "breakdown")?.status, "blocked");
+  assert.equal(acceptanceFinding?.status, "fail");
+});
+
+test("check can write a report file and warns when changed-only falls back to full scan", async () => {
+  const cwd = createTempRepo();
+  await bootstrapRepo(cwd);
+
+  const result = await runCommand([
+    "check",
+    "--cwd",
+    cwd,
+    "--project",
+    "demo",
+    "--sprint",
+    "sprint-001",
+    "--changed-only",
+    "--write-report",
+    "--format",
+    "json"
+  ]);
+  const payload = JSON.parse(result.stdout);
+  const reportFilePath = path.join(cwd, ".repo-ai-governor/reports/latest.json");
+
+  assert.equal(result.exitCode, EXIT_CODES.success);
+  assert.equal(payload.status, "warn");
+  assert.equal(payload.reportFile, ".repo-ai-governor/reports/latest.json");
+  assert.equal(fs.existsSync(reportFilePath), true);
+  assert.match(fs.readFileSync(reportFilePath, "utf8"), /"command": "check"/);
+});

@@ -56,6 +56,7 @@
 2. `TK-202` 已完成，产出最小 Governance Engine 执行器、阶段结果模型、依赖展开和失败阻断逻辑，为 `TK-205` 与 `TK-206` 提供统一执行入口。
 3. `TK-204` 已完成，产出 `official/base` 标准规范内容和消费者过滤 helper，为 `TK-205`、`TK-206` 与后续 `review/report` 提供真实规则输入。
 4. `TK-205` 已完成，`plan` 命令现可真实生成 `plan.md`、`tasks/checklist.md`、`tasks/tasks.csv` 和 `tasks/TK-xxx.md`，并支持 `--dry-run` 与 `--out`。
+5. `TK-206` 已完成，`check` 命令现可真实执行最小治理检查，输出阶段汇总、命中规则、findings 和可选报告文件，并返回稳定退出码。
 
 ## Output Paths
 
@@ -63,6 +64,7 @@
 - `docs/mvp/sprint-003/governance-engine-runtime.md`
 - `docs/mvp/sprint-003/standards-package-v1-content.md`
 - `docs/mvp/sprint-003/plan-command-runtime.md`
+- `docs/mvp/sprint-003/check-command-runtime.md`
 - `docs/mvp/sprint-003/tasks/checklist.md`
 - `docs/mvp/sprint-003/tasks/tasks.csv`
 - `docs/mvp/sprint-003/tasks/TK-202.md`

@@ -158,11 +158,11 @@ export const OFFICIAL_BASE_PACKAGE_RULES = Object.freeze([
       "任务拆解完成后，必须同步生成或更新 checklist、tasks.csv 和单任务文件。",
       "After task breakdown, checklist, tasks.csv, and individual task files must be generated or updated together."
     ),
-    consumers: ["plan", "review-verify"],
+    consumers: ["plan", "check", "review-verify"],
     automation: {
       blockOnViolation: true,
       severity: "error",
-      stages: ["plan", "review-verify"]
+      stages: ["plan", "breakdown", "review-verify"]
     },
     views: {
       ai: {

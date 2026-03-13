@@ -12,5 +12,8 @@
   - 执行记录：plan=纳入 sprint-003 Wave B，负责将流程模板和规范包接入方案生成与任务拆解产物写入;result=已创建任务卡并排入当前 sprint;verify=与 `docs/mvp-issue-backlog.md`、`docs/cli-command-design.md` 和项目/sprint 产物规范对齐
   - 执行记录：plan=实现 `plan` 命令，复用 Governance Engine 执行 `plan -> breakdown`，并真实生成 `plan.md`、`tasks/checklist.md`、`tasks/tasks.csv` 与 `tasks/TK-xxx.md`;result=已新增 `docs/mvp/sprint-003/plan-command-runtime.md`、`src/commands/plan-command.js`、`src/commands/templates/plan-documents.js` 与对应测试，CLI 现支持 `plan --dry-run`、`--out` 和 JSON/Markdown 输出;verify=`/opt/homebrew/bin/npm run check` 通过
   - 执行记录：review_delta=已完成 `TK-205` 自检复核，CR 结果落盘为 `code-review/verified_review_tk-205-implement-plan-command.md`，结论为无阻断问题;verify=复核确认命令实现、模板、测试、任务记录和实现摘要已经对齐
-- [ ] **TK-206** 实现 `check` 命令（负责人：CLI｜优先级：P0｜截止：2026-04-11｜状态：todo）
+- [x] **TK-206** 实现 `check` 命令（负责人：CLI｜优先级：P0｜截止：2026-04-11｜状态：done）
   - 执行记录：plan=纳入 sprint-003 Wave B，负责执行最小治理检查并输出阶段汇总与失败原因;result=已创建任务卡并排入当前 sprint;verify=与 `docs/mvp-issue-backlog.md`、`docs/cli-command-design.md` 和 `TK-202/TK-204` 依赖关系对齐
+  - 执行记录：plan=实现 `check` 命令，复用 Governance Engine 校验 plan、breakdown 和 self-check 三段治理产物，并支持 `--stage`、`--changed-only` 与 `--write-report`;result=已新增 `docs/mvp/sprint-003/check-command-runtime.md`、`src/commands/check-command.js` 与对应测试，CLI 现可输出阶段汇总、命中规则、findings 和报告文件;verify=`/opt/homebrew/bin/npm run check` 通过
+  - 执行记录：review_delta=为让 `check` 校验真实产物而不是放宽规则，已同步补齐 `plan.md` 模板中的范围/验收/验证路径章节，并把任务拆解同步规则纳入 `check` 消费面;verify=复核确认 `plan` 产物、规范内容和 `check` 规则保持一致
+  - 执行记录：review_delta=已完成 `TK-206` 自检复核，CR 结果落盘为 `code-review/verified_review_tk-206-implement-check-command.md`，结论为无阻断问题;verify=复核确认命令实现、测试、任务记录和实现摘要已经对齐

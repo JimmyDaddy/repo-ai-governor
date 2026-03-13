@@ -301,6 +301,36 @@ function createPlanStrategy(locale, title) {
       ];
 }
 
+function createPlanScope(locale, title) {
+  if (locale === "en-US") {
+    return {
+      inScope: [
+        `Generate an executable sprint plan for ${title}.`,
+        "Create synchronized checklist, CSV, and task card artifacts.",
+        "Apply official standards and workflow guidance to the generated artifacts."
+      ],
+      outOfScope: [
+        "Implement the feature itself.",
+        "Run code review or review verification flows.",
+        "Automate CI reporting beyond the generated planning artifacts."
+      ]
+    };
+  }
+
+  return {
+    inScope: [
+      `为 ${title} 生成可执行的 sprint 方案。`,
+      "同步生成 checklist、CSV 和任务卡产物。",
+      "把官方规范和 workflow 约束应用到生成结果里。"
+    ],
+    outOfScope: [
+      "不直接实现业务功能本身。",
+      "不在本命令里执行 review 或 review-verify。",
+      "不在本命令里收口 CI 报告能力。"
+    ]
+  };
+}
+
 function createPlanRisks(locale, title, hasInputFile) {
   return locale === "en-US"
     ? [
@@ -316,6 +346,34 @@ function createPlanRisks(locale, title, hasInputFile) {
         hasInputFile
           ? "当前需求来自输入文件，仍需确认是否存在尚未写入文件的补充约束。"
           : "当前需求来自命令行标题，仍需确认是否存在外部背景或隐藏约束。"
+      ];
+}
+
+function createPlanAcceptance(locale) {
+  return locale === "en-US"
+    ? [
+        "The generated plan states the goal, scope, risks, acceptance criteria, and verification path.",
+        "Checklist, CSV, and task cards are generated together under the current project and sprint.",
+        "The generated tasks can be consumed by later check, review, and delivery flows."
+      ]
+    : [
+        "生成的 plan.md 明确包含目标、范围、风险、验收标准和验证路径。",
+        "checklist、CSV 和任务卡在当前项目与 sprint 目录下同步生成。",
+        "生成的任务可被后续 check、review 和交付流程直接消费。"
+      ];
+}
+
+function createPlanVerificationPath(locale) {
+  return locale === "en-US"
+    ? [
+        "Run `repo-ai-governor check --project <project> --sprint <sprint> --format json` after planning artifacts are generated.",
+        "Confirm checklist, tasks.csv, and task cards stay in sync for the same task IDs.",
+        "Verify the generated plan includes standards guidance, risks, and acceptance criteria."
+      ]
+    : [
+        "在生成计划产物后运行 `repo-ai-governor check --project <project> --sprint <sprint> --format json`。",
+        "确认 checklist、tasks.csv 和任务卡的任务编号保持同步。",
+        "确认 plan.md 包含规范约束、风险和验收标准。"
       ];
 }
 
@@ -414,7 +472,10 @@ function buildPlanRun(commandContext) {
     taskPrefix
   );
   const strategy = createPlanStrategy(locale, intent.title);
+  const scope = createPlanScope(locale, intent.title);
   const risks = createPlanRisks(locale, intent.title, Boolean(intent.inputFile));
+  const acceptance = createPlanAcceptance(locale);
+  const verificationPath = createPlanVerificationPath(locale);
 
   return {
     cwd,
@@ -427,7 +488,10 @@ function buildPlanRun(commandContext) {
     planRules,
     planningTasks,
     strategy,
-    risks
+    risks,
+    scope,
+    acceptance,
+    verificationPath
   };
 }
 
@@ -509,10 +573,14 @@ function createWorkflowHandlers(runState) {
             ? `Prepare an executable sprint plan and task breakdown for ${runState.intent.title}.`
             : `为 ${runState.intent.title} 生成可执行的 sprint 方案和任务拆解。`,
         requirementSummary: runState.intent.requirementSummary,
+        inScope: runState.scope.inScope,
+        outOfScope: runState.scope.outOfScope,
         workflowStages: selectedStageIds,
         planRules: runState.planRules,
         strategy: runState.strategy,
         risks: runState.risks,
+        acceptance: runState.acceptance,
+        verificationPath: runState.verificationPath,
         tasks: runState.planningTasks
       });
 
