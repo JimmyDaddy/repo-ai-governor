@@ -69,9 +69,11 @@ test("init dry-run renders planned bootstrap files without writing to disk", asy
   assert.deepEqual(payload.enabledAdapters, ["codex"]);
   assert.equal(fs.existsSync(path.join(cwd, ".repo-ai-governor/governor.yaml")), false);
   assert.equal(fs.existsSync(path.join(cwd, "AGENTS.md")), false);
+  assert.equal(fs.existsSync(path.join(cwd, ".repo-ai-governor/context/current-context.md")), false);
   assert.equal(fs.existsSync(path.join(cwd, "docs/mvp/sprint-001/plan.md")), false);
   assert.ok(plannedFiles.has(".repo-ai-governor/governor.yaml"));
   assert.ok(plannedFiles.has("AGENTS.md"));
+  assert.ok(plannedFiles.has(".repo-ai-governor/context/current-context.md"));
   assert.ok(plannedFiles.has(".repo-ai-governor/adapters/codex.yaml"));
   assert.ok(plannedFiles.has("docs/mvp/sprint-001/index.md"));
   assert.ok(plannedFiles.has("docs/mvp/sprint-001/plan.md"));
@@ -97,6 +99,10 @@ test("init creates config agents and sprint scaffolding for a new repository", a
   const configFilePath = path.join(cwd, ".repo-ai-governor/governor.yaml");
   const configDocument = YAML.parse(fs.readFileSync(configFilePath, "utf8"));
   const agentsContent = fs.readFileSync(path.join(cwd, "AGENTS.md"), "utf8");
+  const currentContextContent = fs.readFileSync(
+    path.join(cwd, ".repo-ai-governor/context/current-context.md"),
+    "utf8"
+  );
   const checklistContent = fs.readFileSync(
     path.join(cwd, "docs/mvp/sprint-001/tasks/checklist.md"),
     "utf8"
@@ -112,11 +118,13 @@ test("init creates config agents and sprint scaffolding for a new repository", a
   assert.equal(configDocument.execution.currentSprint, "sprint-001");
   assert.deepEqual(configDocument.adapters.enabled, ["codex"]);
   assert.equal(fs.existsSync(path.join(cwd, ".repo-ai-governor/adapters/codex.yaml")), true);
+  assert.equal(fs.existsSync(path.join(cwd, ".repo-ai-governor/context/current-context.md")), true);
   assert.equal(fs.existsSync(path.join(cwd, "docs/mvp/sprint-001/index.md")), true);
   assert.equal(fs.existsSync(path.join(cwd, "docs/mvp/sprint-001/plan.md")), true);
   assert.equal(fs.statSync(path.join(cwd, "docs/mvp/sprint-001/code-review")).isDirectory(), true);
-  assert.match(agentsContent, /Current project: `mvp`/);
-  assert.match(agentsContent, /Current sprint: `sprint-001`/);
+  assert.match(agentsContent, /Read `.repo-ai-governor\/context\/current-context.md` before acting/);
+  assert.match(currentContextContent, /Project: `mvp`/);
+  assert.match(currentContextContent, /Sprint: `sprint-001`/);
   assert.match(checklistContent, /\*\*TK-001\*\*/);
   assert.match(csvContent, /^execution_id,task_id,title,owner,priority,due_date,status,project,sprint,plan,result,verify,review_delta,recorded_at/m);
 });

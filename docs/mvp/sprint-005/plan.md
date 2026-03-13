@@ -1,6 +1,6 @@
 # MVP Sprint 005 Plan
 
-- Status: active
+- Status: done
 - Date: 2026-03-14
 
 ## Goal
@@ -59,6 +59,12 @@
 3. `TK-503` 已完成，当前已补齐 CI 调用脚本、退出码约定文档，并为 `review` 与 `review-verify` 增加 `--strict` 模式，支持 warning 阻断流水线。
 4. `TK-504` 已完成，当前已提供 GitHub Actions 模板和配套说明，复用 `scripts/ci/` 下的治理脚本执行门禁与报告渲染。
 5. `TK-505` 已完成，当前已提供 MVP 验收脚本、需求输入、记录模板与端到端自动化测试，可在临时工作区跑通治理闭环。
+
+## Closure
+
+1. `sprint-005` 已满足全部 exit criteria，可正式标记为完成。
+2. 后续执行基线已切换到 `docs/mvp/sprint-006/`，下一轮优先补齐 `TK-302` 的插槽运行时，以及适配器接入样例。
+3. `sprint-005` 仅保留收口、回顾与历史记录用途，不再承接新的实现任务。
 
 ## Output Paths
 

@@ -66,6 +66,7 @@ function buildInitTemplateContext(config, options = {}) {
     codeReviewDirectoryName: config.artifacts.directories.codeReview,
     configFilePath: options.configFilePath ?? ".repo-ai-governor/governor.yaml",
     agentEntryPath: options.agentEntryPath ?? config.agentEntry.target,
+    contextFilePath: options.contextFilePath ?? config.agentEntry.contextFile,
     enabledAdaptersMarkdown:
       config.adapters.enabled.length > 0
         ? config.adapters.enabled.map((adapterId) => `\`${adapterId}\``).join(", ")
@@ -124,6 +125,7 @@ function applyConfigRootOverrides(config, cwd, configFilePath) {
   config.slots.directory = joinPath("slots");
   config.adapters.directory = joinPath("adapters");
   config.reporting.outputDir = joinPath("reports");
+  config.agentEntry.contextFile = joinPath("context/current-context.md");
 
   return config;
 }
@@ -147,10 +149,12 @@ function buildInitPlan(commandContext) {
   const dateStamp = formatDate();
   const sprintArtifacts = resolveSprintArtifacts(cwd, config);
   const agentEntryPath = path.resolve(cwd, config.agentEntry.target);
+  const contextFilePath = path.resolve(cwd, config.agentEntry.contextFile);
   const templateContext = buildInitTemplateContext(config, {
     dateStamp,
     configFilePath: toRelativePath(cwd, resolved.paths.configFile),
-    agentEntryPath: toRelativePath(cwd, agentEntryPath)
+    agentEntryPath: toRelativePath(cwd, agentEntryPath),
+    contextFilePath: toRelativePath(cwd, contextFilePath)
   });
 
   const directories = [
@@ -159,6 +163,7 @@ function buildInitPlan(commandContext) {
     path.resolve(cwd, config.adapters.directory),
     path.resolve(cwd, config.reporting.outputDir),
     path.resolve(path.dirname(resolved.paths.configFile), "templates"),
+    path.dirname(contextFilePath),
     sprintArtifacts.projectRoot,
     sprintArtifacts.sprintRoot,
     sprintArtifacts.tasksRoot,
@@ -179,6 +184,11 @@ function buildInitPlan(commandContext) {
       path: agentEntryPath,
       content: renderInitDocument("agents", templateContext),
       action: fs.existsSync(agentEntryPath) ? "update" : "create"
+    },
+    {
+      path: contextFilePath,
+      content: renderInitDocument("currentContext", templateContext),
+      action: fs.existsSync(contextFilePath) ? "update" : "create"
     },
     {
       path: sprintArtifacts.indexFile,
@@ -218,6 +228,7 @@ function buildInitPlan(commandContext) {
     config,
     configFilePath: resolved.paths.configFile,
     agentEntryPath,
+    contextFilePath,
     sprintArtifacts,
     directories: [...new Set(directories)],
     files
@@ -237,6 +248,7 @@ function renderInitPayload(plan, commandContext, options = {}) {
     cwd: plan.cwd,
     configFile: plan.configFilePath,
     agentEntry: plan.agentEntryPath,
+    contextFile: plan.contextFilePath,
     currentProject: plan.config.execution.currentProject,
     currentSprint: plan.config.execution.currentSprint,
     enabledAdapters: plan.config.adapters.enabled,
@@ -262,6 +274,7 @@ function writeInitSummary(logger, payload, format) {
         `- Status: ${payload.status}`,
         `- Dry run: ${payload.dryRun}`,
         `- Config file: \`${payload.configFile}\``,
+        `- Context file: \`${payload.contextFile}\``,
         `- Project: \`${payload.currentProject}\``,
         `- Sprint: \`${payload.currentSprint}\``,
         `- Enabled adapters: \`${JSON.stringify(payload.enabledAdapters)}\``,
@@ -276,6 +289,7 @@ function writeInitSummary(logger, payload, format) {
   logger.success(payload.dryRun ? "init plan is ready" : "repository init completed");
   logger.keyValue("Config file", toRelativePath(payload.cwd, payload.configFile));
   logger.keyValue("Agent entry", toRelativePath(payload.cwd, payload.agentEntry));
+  logger.keyValue("Context file", toRelativePath(payload.cwd, payload.contextFile));
   logger.keyValue("Project", payload.currentProject);
   logger.keyValue("Sprint", payload.currentSprint);
   logger.keyValue("Enabled adapters", JSON.stringify(payload.enabledAdapters));

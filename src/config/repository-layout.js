@@ -32,12 +32,14 @@ export const DEFAULT_REPOSITORY_LAYOUT = Object.freeze({
   configRoot: ".repo-ai-governor",
   configFile: "governor.yaml",
   configDirectories: Object.freeze({
+    context: "context",
     slots: "slots",
     adapters: "adapters",
     reports: "reports",
     templates: "templates"
   }),
   agentEntry: "AGENTS.md",
+  agentContext: ".repo-ai-governor/context/current-context.md",
   artifacts: Object.freeze({
     baseDir: "docs",
     files: Object.freeze({
@@ -137,6 +139,8 @@ export function resolveRepositoryLayout(options = {}) {
   const relative = {
     configRoot,
     configFile: joinRelativePath(configRoot, DEFAULT_REPOSITORY_LAYOUT.configFile),
+    contextDir: joinRelativePath(configRoot, configDirectories.context),
+    currentContextFile: DEFAULT_REPOSITORY_LAYOUT.agentContext,
     slotsDir: joinRelativePath(configRoot, configDirectories.slots),
     adaptersDir: joinRelativePath(configRoot, configDirectories.adapters),
     reportsDir: joinRelativePath(configRoot, configDirectories.reports),

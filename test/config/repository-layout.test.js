@@ -21,6 +21,8 @@ test("resolveRepositoryLayout returns default config and sprint artifact paths",
 
   assert.equal(layout.relative.configRoot, ".repo-ai-governor");
   assert.equal(layout.relative.configFile, ".repo-ai-governor/governor.yaml");
+  assert.equal(layout.relative.contextDir, ".repo-ai-governor/context");
+  assert.equal(layout.relative.currentContextFile, ".repo-ai-governor/context/current-context.md");
   assert.equal(layout.relative.slotsDir, ".repo-ai-governor/slots");
   assert.equal(layout.relative.adaptersDir, ".repo-ai-governor/adapters");
   assert.equal(layout.relative.projectDir, "docs/mvp");
@@ -35,6 +37,10 @@ test("resolveRepositoryLayout returns default config and sprint artifact paths",
   assert.equal(
     layout.absolute.configFile,
     "/workspace/repo-ai-governor/.repo-ai-governor/governor.yaml"
+  );
+  assert.equal(
+    layout.absolute.currentContextFile,
+    "/workspace/repo-ai-governor/.repo-ai-governor/context/current-context.md"
   );
   assert.equal(
     layout.absolute.codeReviewDir,

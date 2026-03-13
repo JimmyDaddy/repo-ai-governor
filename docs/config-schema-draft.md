@@ -47,6 +47,8 @@
 ```text
 .repo-ai-governor/
   governor.yaml
+  context/
+    current-context.md
   slots/
     security-review.yaml
     doc-output.yaml
@@ -76,19 +78,21 @@ docs/
    - 仓库主配置文件
 2. `.repo-ai-governor/slots/*.yaml`
    - 项目本地插槽定义
-3. `.repo-ai-governor/adapters/*.yaml`
+3. `.repo-ai-governor/context/current-context.md`
+   - 当前主执行流和并发执行流上下文文件，供 `AGENTS.md` 依赖
+4. `.repo-ai-governor/adapters/*.yaml`
    - 工具适配器覆盖配置
-4. `.repo-ai-governor/reports/`
+5. `.repo-ai-governor/reports/`
    - 默认报告输出目录
-5. `.repo-ai-governor/templates/`
+6. `.repo-ai-governor/templates/`
    - 预留给模板覆盖或扩展使用
-6. `AGENTS.md`
-   - 仓库级 AI 执行入口文件
-7. `docs/<project>/sprint-xxx/`
+7. `AGENTS.md`
+   - 仓库级 AI 执行入口文件，应依赖 `current-context.md` 而不是内联频繁变化的上下文
+8. `docs/<project>/sprint-xxx/`
    - 当前项目和当前 sprint 的任务产物目录
-8. `docs/<project>/sprint-xxx/tasks/`
+9. `docs/<project>/sprint-xxx/tasks/`
    - 单任务明细文档目录
-9. `docs/<project>/sprint-xxx/code-review/`
+10. `docs/<project>/sprint-xxx/code-review/`
    - 状态化 CR 文档目录，文件名应包含任务编号或变更主题 slug
 
 ### 3.1 命名规则
@@ -219,6 +223,7 @@ artifacts:
     resolved: resolved_review_<slug>.md
 agentEntry:
   target: AGENTS.md
+  contextFile: .repo-ai-governor/context/current-context.md
   mode: generated-from-structured-config
 ```
 
@@ -467,8 +472,9 @@ TK-401 v1 收口：
 建议字段：
 
 1. `target`
-2. `mode`
-3. `includeSections`
+2. `contextFile`
+3. `mode`
+4. `includeSections`
 
 ## 7. 阶段配置结构
 

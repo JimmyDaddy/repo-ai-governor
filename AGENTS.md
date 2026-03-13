@@ -2,11 +2,9 @@
 
 ## Current Context
 
-- Current project: `mvp`
-- Current sprint: `sprint-005`
-- Project docs root: `docs/mvp/sprint-005/`
-- Task records: `docs/mvp/sprint-005/tasks/`
-- Code review records: `docs/mvp/sprint-005/code-review/`
+1. Read `.repo-ai-governor/context/current-context.md` before acting.
+2. Treat that file as the mutable source for the primary execution stream and any parallel streams.
+3. Update the context file instead of editing `AGENTS.md` when project, sprint, or stream ownership changes.
 
 ## Source Of Truth
 
@@ -16,19 +14,15 @@
 
 ## Working Rules
 
-1. New planning or execution work for the current stream should be written under `docs/mvp/sprint-005/`.
-2. Task decomposition must update:
-   - `docs/mvp/sprint-005/plan.md`
-   - `docs/mvp/sprint-005/tasks/checklist.md`
-   - `docs/mvp/sprint-005/tasks/tasks.csv`
-   - `docs/mvp/sprint-005/tasks/TK-xxx.md`
-3. Code review output must be written under `docs/mvp/sprint-005/code-review/` and use meaningful status-prefixed file names.
+1. New planning or execution work should follow the active stream paths declared in `.repo-ai-governor/context/current-context.md`.
+2. Task decomposition for the primary stream must update the stream-specific `plan.md`, `tasks/checklist.md`, `tasks/tasks.csv`, and `tasks/TK-xxx.md` paths declared in the context file.
+3. Code review output must be written under the stream-specific `code-review/` directory declared in the context file and use meaningful status-prefixed file names.
 4. Default CR lifecycle:
    - `review_<slug>.md`: review generated and pending verify
    - `verified_review_<slug>.md`: verify completed
    - `resolved_review_<slug>.md`: accepted findings resolved
 5. Review re-check must append results into the same CR file, then rename the file to the next status.
-6. Sprint execution progress must be maintained in `docs/mvp/sprint-005/tasks/checklist.md`, and each task entry should append execution records.
+6. Sprint execution progress must be maintained in the primary stream checklist, and each task entry should append execution records.
 
 ## Naming Rules
 

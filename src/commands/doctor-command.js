@@ -174,8 +174,11 @@ function buildArtifactPaths(cwd, resolvedConfig) {
   const reportingDir = path.resolve(cwd, resolvedConfig.config.reporting.outputDir);
   const templatesDir = path.resolve(configRoot, "templates");
   const agentEntryPath = path.resolve(cwd, resolvedConfig.config.agentEntry.target);
+  const contextFilePath = path.resolve(cwd, resolvedConfig.config.agentEntry.contextFile);
   const artifactPaths = {
     configRoot,
+    contextDir: path.dirname(contextFilePath),
+    contextFilePath,
     slotsDir: resolvedConfig.paths.slotsDirectory,
     adaptersDir: resolvedConfig.paths.adaptersDirectory,
     reportsDir: reportingDir,
@@ -466,6 +469,11 @@ export function executeDoctorCommand(commandContext, logger) {
         id: "artifacts.templates-directory",
         path: artifactPaths.templatesDir,
         message: "Templates directory is present."
+      },
+      {
+        id: "artifacts.context-directory",
+        path: artifactPaths.contextDir,
+        message: "Current context directory is present."
       }
     ];
 
@@ -514,6 +522,14 @@ export function executeDoctorCommand(commandContext, logger) {
         id: "artifacts.agent-entry",
         path: artifactPaths.agentEntryPath,
         message: "Agent entry file is present."
+      },
+      {
+        id: "artifacts.current-context-file",
+        path: artifactPaths.contextFilePath,
+        severity: "warning",
+        message: "Current context file is present.",
+        suggestion:
+          "Generate the context file with `repo-ai-governor init --force` or create it manually."
       }
     ];
 
@@ -548,12 +564,13 @@ export function executeDoctorCommand(commandContext, logger) {
           cwd,
           id: fileCheck.id,
           category: "artifacts",
-          severity: "warning",
+          severity: fileCheck.severity ?? "warning",
           kind: "file",
           path: fileCheck.path,
           missingMessage: fileCheck.message.replace("is present", "is missing"),
           presentMessage: fileCheck.message,
           suggestion:
+            fileCheck.suggestion ??
             "Regenerate bootstrap files with `repo-ai-governor init --force` after reviewing existing repository state."
         })
       );

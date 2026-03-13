@@ -141,6 +141,7 @@ test("doctor strict fails on missing artifact warnings and --fix recreates safe 
   assert.equal(fixResult.exitCode, EXIT_CODES.success);
   assert.ok(fixPayload.summary.fixesApplied > 0);
   assert.ok(fixedChecks.length > 0);
+  assert.equal(fs.statSync(path.join(cwd, ".repo-ai-governor/context")).isDirectory(), true);
   assert.equal(fs.statSync(path.join(cwd, ".repo-ai-governor/slots")).isDirectory(), true);
   assert.equal(fs.statSync(path.join(cwd, ".repo-ai-governor/adapters")).isDirectory(), true);
   assert.equal(fs.statSync(path.join(cwd, ".repo-ai-governor/reports")).isDirectory(), true);

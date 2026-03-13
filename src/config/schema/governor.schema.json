@@ -164,6 +164,7 @@
       "$ref": "#/$defs/agentEntryConfig",
       "default": {
         "target": "AGENTS.md",
+        "contextFile": ".repo-ai-governor/context/current-context.md",
         "mode": "generated-from-structured-config",
         "includeSections": [
           "current-context",
@@ -731,6 +732,10 @@
         "target": {
           "$ref": "./shared.schema.json#/$defs/relativePath",
           "default": "AGENTS.md"
+        },
+        "contextFile": {
+          "$ref": "./shared.schema.json#/$defs/relativePath",
+          "default": ".repo-ai-governor/context/current-context.md"
         },
         "mode": {
           "type": "string",

@@ -1,6 +1,6 @@
 # MVP Sprint 005
 
-- Status: active
+- Status: done
 - Date: 2026-03-14
 - Project: `mvp`
 - Sprint: `sprint-005`
@@ -32,4 +32,4 @@
 
 1. `sprint-005` 以“补齐 CI 接入与 MVP 验收闭环”为核心目标。
 2. `TK-303`、`TK-503`、`TK-504`、`TK-505` 已完成，当前已具备示例插槽、CI 脚本、GitHub Actions 模板和 MVP 验收脚本。
-3. 新任务先写入 `tasks/checklist.md`，再同步 `tasks/tasks.csv` 和对应 `TK-xxx.md`。
+3. `sprint-005` 已收口，后续执行基线已切换到 `docs/mvp/sprint-006/`，优先进入插槽运行时与适配器接入样例阶段。

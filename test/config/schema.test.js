@@ -66,6 +66,7 @@ test("governor schema validates minimal repository config and applies defaults",
   assert.equal(config.automation.mode, "assisted");
   assert.equal(config.reporting.outputDir, ".repo-ai-governor/reports");
   assert.equal(config.artifacts.reviewFiles.pending, "review_<slug>.md");
+  assert.equal(config.agentEntry.contextFile, ".repo-ai-governor/context/current-context.md");
   assert.deepEqual(config.reporting.formats, ["summary", "markdown", "json"]);
 });
 
