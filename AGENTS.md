@@ -3,10 +3,11 @@
 ## Current Context
 
 - Current project: `mvp`
-- Current sprint: `sprint-004`
-- Project docs root: `docs/mvp/sprint-004/`
-- Task records: `docs/mvp/sprint-004/tasks/`
-- Code review records: `docs/mvp/sprint-004/code-review/`
+- Current sprint: `none`
+- Active sprint docs root: `not started`
+- Last completed sprint docs root: `docs/mvp/sprint-004/`
+- Last completed task records: `docs/mvp/sprint-004/tasks/`
+- Last completed code review records: `docs/mvp/sprint-004/code-review/`
 
 ## Source Of Truth
 
@@ -16,19 +17,21 @@
 
 ## Working Rules
 
-1. New planning or execution work for the current stream should be written under `docs/mvp/sprint-004/`.
-2. Task decomposition must update:
-   - `docs/mvp/sprint-004/plan.md`
-   - `docs/mvp/sprint-004/tasks/checklist.md`
-   - `docs/mvp/sprint-004/tasks/tasks.csv`
-   - `docs/mvp/sprint-004/tasks/TK-xxx.md`
-3. Code review output must be written under `docs/mvp/sprint-004/code-review/` and use meaningful status-prefixed file names.
-4. Default CR lifecycle:
+1. `sprint-004` is closed. Do not start new implementation tasks or new `TK-xxx` work until the next sprint is explicitly planned.
+2. Before executing follow-up work such as `TK-503`, create the next sprint directory under `docs/mvp/sprint-xxx/` and update `AGENTS.md` to point to it.
+3. Sprint closeout, retrospective, or cross-sprint planning updates may still write under `docs/mvp/sprint-004/`.
+4. Once a new sprint is opened, task decomposition must update that sprint's:
+   - `plan.md`
+   - `tasks/checklist.md`
+   - `tasks/tasks.csv`
+   - `tasks/TK-xxx.md`
+5. Code review output for an active sprint must be written under that sprint's `code-review/` directory and use meaningful status-prefixed file names.
+6. Default CR lifecycle:
    - `review_<slug>.md`: review generated and pending verify
    - `verified_review_<slug>.md`: verify completed
    - `resolved_review_<slug>.md`: accepted findings resolved
-5. Review re-check must append results into the same CR file, then rename the file to the next status.
-6. Sprint execution progress must be maintained in `docs/mvp/sprint-003/tasks/checklist.md`, and each task entry should append execution records.
+7. Review re-check must append results into the same CR file, then rename the file to the next status.
+8. Sprint execution progress must be maintained in the active sprint's `tasks/checklist.md`, and each task entry should append execution records.
 
 ## Naming Rules
 

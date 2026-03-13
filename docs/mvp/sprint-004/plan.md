@@ -1,6 +1,6 @@
 # MVP Sprint 004 Plan
 
-- Status: active
+- Status: done
 - Date: 2026-03-13
 
 ## Goal
@@ -57,6 +57,12 @@
 3. `TK-208` 已完成，`review-verify` 命令现可复核 pending/verified review 文件，回写 verify log，并在无剩余 findings 时推进到 `resolved_review_<slug>.md`。
 4. `TK-501` 已完成，已新增统一报告模型与三类格式渲染，并把 `check --write-report` 接到该模型上，作为后续 `report` 命令的直接上游。
 5. `TK-502` 已完成，`report` 命令现可消费统一报告 JSON、原始命令 JSON payload 以及 review lifecycle Markdown，并输出 `summary/markdown/json` 三类结果。
+
+## Closure
+
+1. `sprint-004` 已满足全部 exit criteria，可正式标记为完成。
+2. 当前仓库尚未启动新的 sprint，因此 `TK-503` 没有进入执行；后续任务需要先完成下一轮 sprint 规划与目录初始化。
+3. 在下一轮 sprint 产生前，仅允许进行 `sprint-004` 收口、回顾或跨 sprint 规划类文档更新，不直接开始新的实现任务。
 
 ## Output Paths
 
