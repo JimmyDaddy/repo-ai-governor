@@ -10,6 +10,7 @@ import {
   resolveStandardsPackage
 } from "../standards/official-base-package.js";
 import { executeWorkflow } from "../workflow/governance-engine.js";
+import { buildUnifiedReport, renderUnifiedReport } from "../reporting/report-model.js";
 
 const CHECK_WORKFLOW_TEMPLATE = Object.freeze({
   id: "governance-check",
@@ -701,45 +702,8 @@ function writeCheckSummary(logger, payload, format) {
 }
 
 function buildReportContent(payload, format) {
-  if (format === "json") {
-    return `${JSON.stringify(payload, null, 2)}\n`;
-  }
-
-  if (format === "markdown") {
-    return [
-      "# check",
-      "",
-      `- Status: ${payload.status}`,
-      `- Project: \`${payload.currentProject}\``,
-      `- Sprint: \`${payload.currentSprint}\``,
-      `- Selected stage: \`${payload.selectedStage}\``,
-      "",
-      "## Workflow",
-      "",
-      ...payload.workflow.stages.map(
-        (stage) => `- \`${stage.id}\`: ${stage.status} - ${stage.summary ?? ""}`.trim()
-      ),
-      "",
-      "## Findings",
-      "",
-      ...payload.checks.map(
-        (finding) =>
-          `- [${finding.severity}] \`${finding.id}\` ${finding.message} (\`${finding.target}\`)`
-      )
-    ].join("\n") + "\n";
-  }
-
-  return [
-    `status=${payload.status}`,
-    `project=${payload.currentProject}`,
-    `sprint=${payload.currentSprint}`,
-    `selected_stage=${payload.selectedStage}`,
-    `workflow=${JSON.stringify(payload.workflow.summary)}`,
-    `matched_rules=${payload.standards.matchedRuleIds.join(",")}`,
-    ...payload.checks.map(
-      (finding) => `${finding.severity}:${finding.id}:${finding.message}:${finding.target}`
-    )
-  ].join("\n") + "\n";
+  const report = buildUnifiedReport(payload);
+  return renderUnifiedReport(report, format);
 }
 
 function writeReportFile(runState, payload, format) {

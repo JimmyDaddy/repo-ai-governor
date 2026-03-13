@@ -55,12 +55,14 @@
 1. 已创建 `TK-207`、`TK-208`、`TK-501`、`TK-502` 任务卡，并完成 sprint-004 首轮排期。
 2. `TK-207` 已完成，`review` 命令现可真实输出治理评审结论、发现列表和 `review_<slug>.md` 状态化 CR 文件，并支持默认从 git working tree 推断评审目标。
 3. `TK-208` 已完成，`review-verify` 命令现可复核 pending/verified review 文件，回写 verify log，并在无剩余 findings 时推进到 `resolved_review_<slug>.md`。
+4. `TK-501` 已完成，已新增统一报告模型与三类格式渲染，并把 `check --write-report` 接到该模型上，作为后续 `report` 命令的直接上游。
 
 ## Output Paths
 
 - `docs/mvp/sprint-004/plan.md`
 - `docs/mvp/sprint-004/review-command-runtime.md`
 - `docs/mvp/sprint-004/review-verify-command-runtime.md`
+- `docs/mvp/sprint-004/unified-report-model.md`
 - `docs/mvp/sprint-004/tasks/checklist.md`
 - `docs/mvp/sprint-004/tasks/tasks.csv`
 - `docs/mvp/sprint-004/tasks/TK-207.md`
