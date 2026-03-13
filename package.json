@@ -1,0 +1,21 @@
+{
+  "name": "repo-ai-governor",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Repository-local AI governance CLI.",
+  "type": "module",
+  "bin": {
+    "repo-ai-governor": "./bin/repo-ai-governor.js"
+  },
+  "scripts": {
+    "start": "node ./bin/repo-ai-governor.js",
+    "help": "node ./bin/repo-ai-governor.js --help",
+    "check": "node ./bin/repo-ai-governor.js --help"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "commander": "^13.1.0"
+  }
+}

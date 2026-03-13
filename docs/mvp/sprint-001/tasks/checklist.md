@@ -1,0 +1,25 @@
+# Sprint 001 Checklist
+
+- [x] **TK-001** 初始化 sprint 模板与执行规范（负责人：Repo Governor｜优先级：P0｜截止：2026-03-13｜状态：done）
+  - 执行记录：plan=建立 `docs/mvp/sprint-001/` 目录、任务台账与 CR 模板;result=已创建 `plan.md`、`tasks/checklist.md`、`tasks/tasks.csv`、`tasks/TK-001.md`、`code-review/review_tk-001-initialize-sprint-templates.md` 和 `AGENTS.md`;verify=已完成目录结构与关键引用检查
+  - 执行记录：review_delta=按最新评论移除 sprint 汇总文件，将 checklist 改为单列表执行记录格式，并把 CR 文件命名改成业务含义 slug;verify=已同步更新需求、执行计划、配置草案和 CLI 设计中的相关约定
+- [x] **TK-002** 建立 CLI 命令注册与参数解析层（负责人：CLI｜优先级：P0｜截止：2026-03-16｜状态：done）
+  - 执行记录：plan=纳入 sprint-001 Wave A，负责 CLI 入口、子命令注册和全局参数解析;result=已创建任务卡并排入当前 sprint;verify=与 `docs/mvp-issue-backlog.md` 和 `docs/cli-command-design.md` 对齐
+  - 执行记录：plan=补齐最小 npm 包骨架并实现 CLI 入口、命令注册表、通用参数解析器和帮助输出;result=已新增 `package.json`、`bin/repo-ai-governor.js` 和 `src/cli/*`，8 个 MVP 命令已接入统一注册层;verify=`node ./bin/repo-ai-governor.js --help`、`node ./bin/repo-ai-governor.js review --help`、`node ./bin/repo-ai-governor.js init --project mvp --format json --adapter codex` 和 `./bin/repo-ai-governor.js --version` 均通过
+- [x] **TK-003** 统一日志、错误码与终端输出规范（负责人：CLI｜优先级：P0｜截止：2026-03-17｜状态：done）
+  - 执行记录：plan=纳入 sprint-001 Wave A，统一日志级别、错误模型和退出码语义;result=已创建任务卡并确认依赖 `TK-002`;verify=与 `docs/mvp-issue-backlog.md` 和 `docs/cli-command-design.md` 对齐
+  - 执行记录：plan=评估现有 CLI 基础库和交互工具，输出命令体验优化推荐列表与迁移技术方案;result=已形成 `cli-ux-technical-solution.md`，明确推荐 `Commander 13.x + @inquirer/prompts + listr2 + yoctocolors + terminal-link`;verify=已对齐官方文档并纳入 sprint 文档索引
+  - 执行记录：plan=将当前手写命令解析层迁到 `Commander 13.x`，优先替换命令注册、帮助页和参数解析，不改业务命令语义;result=已安装 `commander@13.1.0`，CLI 现改为基于 Commander 构建程序对象，根帮助页、子命令帮助页、`help [command]`、建议错误提示和命令后置全局参数解析均已接管;verify=`node ./bin/repo-ai-governor.js --help`、`node ./bin/repo-ai-governor.js review --help`、`node ./bin/repo-ai-governor.js init --project mvp --format json --adapter codex`、`node ./bin/repo-ai-governor.js doctor --project mvp --sprint sprint-001 --strict`、`node ./bin/repo-ai-governor.js init --version` 通过
+  - 执行记录：plan=补齐统一 logger、错误模型和退出码层，并让 `--quiet`、`--verbose`、参数错误出口、业务占位输出都走同一基础设施;result=已新增 `runtime/exit-codes`、`runtime/errors`、`runtime/context`、`ui/logger`、`ui/theme`，CLI 现可区分 `SUCCESS/INFO/DEBUG/ERROR`，未知命令和缺参数错误按文档返回退出码 `4`;verify=`node ./bin/repo-ai-governor.js doctor --project mvp --sprint sprint-001 --strict`、`--quiet`、`--verbose`、`./bin/repo-ai-governor.js unknown`、`./bin/repo-ai-governor.js review --base` 均已验证
+- [ ] **TK-101** 设计配置目录结构与文件命名（负责人：Platform｜优先级：P0｜截止：2026-03-17｜状态：todo）
+  - 执行记录：plan=纳入 sprint-001 Wave B，先固定主配置、插槽、适配器和项目/sprint 目录约定;result=已创建任务卡并排入当前 sprint;verify=与 `docs/config-schema-draft.md` 对齐
+- [ ] **TK-102** 设计治理配置 schema v1（负责人：Platform｜优先级：P0｜截止：2026-03-18｜状态：todo）
+  - 执行记录：plan=在 `TK-101` 基础上补齐 schema 字段、默认值和版本策略;result=已创建任务卡并确认依赖 `TK-101`;verify=与 `docs/config-schema-draft.md` 和 `docs/mvp-issue-backlog.md` 对齐
+- [ ] **TK-106** 设计项目/sprint 任务产物目录规范（负责人：Workflow｜优先级：P0｜截止：2026-03-19｜状态：todo）
+  - 执行记录：plan=固化 checklist、CSV、任务卡和 `code-review/` 的目录及命名规范;result=已创建任务卡并排入当前 sprint;verify=与 `docs/mvp-execution-plan.md` 和 `docs/config-schema-draft.md` 对齐
+- [ ] **TK-103** 实现配置加载与合并逻辑（负责人：Platform｜优先级：P0｜截止：2026-03-20｜状态：todo）
+  - 执行记录：plan=在 schema 定稿后实现默认配置、仓库配置和 CLI 参数的分层覆盖;result=已创建任务卡并确认依赖 `TK-102`;verify=与 `docs/mvp-issue-backlog.md` 对齐
+- [ ] **TK-104** 实现 `init` 命令与初始化脚手架（负责人：CLI｜优先级：P0｜截止：2026-03-24｜状态：todo）
+  - 执行记录：plan=依赖配置加载与 schema 能力，输出初始化命令、默认模板和只读预览模式;result=已创建任务卡并确认依赖 `TK-102`、`TK-103`;verify=与 `docs/cli-command-design.md` 和 `docs/mvp-issue-backlog.md` 对齐
+- [ ] **TK-105** 实现 `doctor` 命令（负责人：CLI｜优先级：P0｜截止：2026-03-25｜状态：todo）
+  - 执行记录：plan=依赖配置加载能力，输出环境检查、配置校验和修复建议;result=已创建任务卡并确认依赖 `TK-103`;verify=与 `docs/cli-command-design.md` 和 `docs/mvp-issue-backlog.md` 对齐
