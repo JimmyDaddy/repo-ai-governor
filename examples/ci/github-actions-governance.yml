@@ -1,0 +1,46 @@
+name: Repo AI Governor
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  governance:
+    runs-on: ubuntu-latest
+    env:
+      REPO_AI_GOVERNOR_CWD: .
+      REPO_AI_GOVERNOR_PROJECT: mvp
+      REPO_AI_GOVERNOR_SPRINT: sprint-005
+      REPO_AI_GOVERNOR_FORMAT: json
+      REPO_AI_GOVERNOR_REPORT_FORMAT: markdown
+      REPO_AI_GOVERNOR_REPORT_OUT: .repo-ai-governor/reports/ci-latest.md
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run governance doctor + check
+        run: ./scripts/ci/run-governance-check.sh
+
+      - name: Render governance report
+        if: always()
+        run: ./scripts/ci/render-governance-report.sh
+        env:
+          REPO_AI_GOVERNOR_REPORT_SOURCE: .repo-ai-governor/reports/latest.json
+
+      - name: Upload governance artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: repo-ai-governor-report
+          path: .repo-ai-governor/reports/

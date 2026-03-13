@@ -238,6 +238,7 @@ function buildMarkdownOutput(payload) {
       "## Scope",
       "",
       "Command: `review-verify`",
+      payload.strict ? "Strict mode: `true`" : "",
       `Source review: \`${payload.sourceFile}\``,
       payload.pathOption ? `Path override: \`${payload.pathOption}\`` : "",
       payload.base ? `Base override: \`${payload.base}\`` : "",
@@ -352,6 +353,7 @@ function buildReviewVerifyRun(commandContext) {
     pathOption: commandContext.commandOptions.path ?? null,
     base: commandContext.commandOptions.base ?? null,
     head: commandContext.commandOptions.head ?? null,
+    strict: commandContext.commandOptions.strict === true,
     dryRun: commandContext.globalOptions.dryRun === true,
     locale: commandContext.globalOptions.locale ?? resolvedConfig.config.execution.defaultLocale,
     previousVerifyEntries: parseNumberedSectionItems(sourceContent, "Verify Append Log").filter(
@@ -373,10 +375,12 @@ async function executeReviewVerifyWorkflow(runState) {
     handlers: {
       "review-verify"() {
         const analysis = analyzeTargets(runState);
-        const summary = summarizeFindings(analysis.findings);
+        const summary = summarizeFindings(analysis.findings, {
+          failOnWarnings: runState.strict
+        });
 
         return {
-          status: summary.errors > 0 ? "failed" : "passed",
+          status: summary.exitCode === 0 ? "passed" : "failed",
           summary:
             summary.status === "pass"
               ? "Review verification completed without remaining findings."
@@ -401,7 +405,9 @@ async function executeReviewVerifyWorkflow(runState) {
   return {
     workflowResult,
     analysis: verifyStage?.outputs.analysis ?? { findings: [], matchedRuleIds: [], relativeTargets: [] },
-    summary: verifyStage?.outputs.summary ?? summarizeFindings([])
+    summary: verifyStage?.outputs.summary ?? summarizeFindings([], {
+      failOnWarnings: runState.strict
+    })
   };
 }
 
@@ -424,6 +430,7 @@ function buildReviewVerifyPayload(runState, workflowResult, analysis, summary, o
     sourceFile: toRelativePath(runState.cwd, runState.sourceFilePath),
     reviewStatusBefore: runState.sourceStatus,
     reviewStatusAfter,
+    strict: runState.strict,
     slug: runState.slug,
     pathOption: runState.pathOption,
     base: runState.base,

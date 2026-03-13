@@ -83,14 +83,16 @@ function createFinding(options) {
   };
 }
 
-export function summarizeFindings(findings) {
+export function summarizeFindings(findings, options = {}) {
   const errors = findings.filter((finding) => finding.severity === "error").length;
   const warnings = findings.filter((finding) => finding.severity === "warning").length;
+  const failOnWarnings = options.failOnWarnings === true;
   const status = errors > 0 ? "fail" : warnings > 0 ? "warn" : "pass";
+  const shouldFail = errors > 0 || (failOnWarnings && warnings > 0);
 
   return {
     status,
-    exitCode: errors > 0 ? EXIT_CODES.businessCheckFailed : EXIT_CODES.success,
+    exitCode: shouldFail ? EXIT_CODES.businessCheckFailed : EXIT_CODES.success,
     errors,
     warnings,
     passed: findings.filter((finding) => finding.status === "pass").length
@@ -312,6 +314,7 @@ function buildReviewRun(commandContext) {
     pathOption: commandContext.commandOptions.path ?? null,
     base: commandContext.commandOptions.base ?? null,
     head: commandContext.commandOptions.head ?? null,
+    strict: commandContext.commandOptions.strict === true,
     dryRun: commandContext.globalOptions.dryRun === true,
     locale: commandContext.globalOptions.locale ?? resolvedConfig.config.execution.defaultLocale
   };
@@ -570,6 +573,7 @@ function buildMarkdownOutput(payload) {
       "## Scope",
       "",
       `Command: \`review\``,
+      runStateLine("Strict mode", payload.strict ? "true" : ""),
       runStateLine("Path", payload.pathOption),
       runStateLine("Base", payload.base),
       runStateLine("Head", payload.head),
@@ -630,6 +634,7 @@ function buildReviewPayload(runState, workflowResult, analysis, summary, reviewF
     pathOption: runState.pathOption,
     base: runState.base,
     head: runState.head,
+    strict: runState.strict,
     generatedAt: formatDateTime(),
     slug,
     workflow: {
@@ -718,10 +723,12 @@ async function executeReviewWorkflow(runState) {
     handlers: {
       review() {
         const analysis = analyzeTargets(runState);
-        const summary = summarizeFindings(analysis.findings);
+        const summary = summarizeFindings(analysis.findings, {
+          failOnWarnings: runState.strict
+        });
 
         return {
-          status: summary.errors > 0 ? "failed" : "passed",
+          status: summary.exitCode === EXIT_CODES.success ? "passed" : "failed",
           summary:
             summary.status === "pass"
               ? "Review completed without findings."
@@ -746,7 +753,9 @@ async function executeReviewWorkflow(runState) {
   return {
     workflowResult,
     analysis: reviewStage?.outputs.analysis ?? { findings: [], matchedRuleIds: [], relativeTargets: [] },
-    summary: reviewStage?.outputs.summary ?? summarizeFindings([])
+    summary: reviewStage?.outputs.summary ?? summarizeFindings([], {
+      failOnWarnings: runState.strict
+    })
   };
 }
 

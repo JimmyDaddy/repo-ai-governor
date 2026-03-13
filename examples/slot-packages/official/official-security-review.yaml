@@ -1,0 +1,51 @@
+id: official-security-review
+version: "1"
+kind: governance-slot
+meta:
+  name:
+    zh-CN: 安全审查插槽
+    en-US: Security Review Slot
+  source: official
+  slotType: security-compliance
+  owner: repo-ai-governor
+  description:
+    zh-CN: 在 review 与 review-verify 阶段追加安全审查关注点，用于样例流程和验收仓库。
+    en-US: Adds security review focus points during review and review-verify for sample flows and acceptance fixtures.
+  tags:
+    - official
+    - security
+trigger:
+  match: any
+  when:
+    stages:
+      - review
+      - review-verify
+    commands:
+      - review
+      - review-verify
+    adapters:
+      - codex
+      - github-copilot
+      - claude-code
+scope:
+  languages:
+    - javascript
+    - typescript
+  files:
+    - src/**/*.js
+    - src/**/*.ts
+behavior:
+  blockOnFailure: true
+  priority: 220
+  requiresApproval: false
+  conflictPolicy: error
+  inject:
+    ai:
+      promptKey: security-review-checklist
+    human:
+      docSection: Security Review
+checks:
+  before:
+    - 确认敏感配置、secrets 和权限边界相关改动需要人工复核
+  after:
+    - 对发现的安全风险补充 review 结论或 verify 记录

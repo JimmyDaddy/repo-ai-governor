@@ -55,11 +55,18 @@
 ## Progress
 
 1. 已创建 `TK-303`、`TK-503`、`TK-504`、`TK-505` 任务卡，并完成 sprint-005 首轮排期。
-2. `TK-303`、`TK-503`、`TK-504`、`TK-505` 当前均处于待执行状态，尚未进入实现阶段。
+2. `TK-303` 已完成，当前已新增两份官方示例插槽 YAML、接入说明和自动化校验测试，供样例流程与验收脚本直接复用。
+3. `TK-503` 已完成，当前已补齐 CI 调用脚本、退出码约定文档，并为 `review` 与 `review-verify` 增加 `--strict` 模式，支持 warning 阻断流水线。
+4. `TK-504` 已完成，当前已提供 GitHub Actions 模板和配套说明，复用 `scripts/ci/` 下的治理脚本执行门禁与报告渲染。
+5. `TK-505` 已完成，当前已提供 MVP 验收脚本、需求输入、记录模板与端到端自动化测试，可在临时工作区跑通治理闭环。
 
 ## Output Paths
 
 - `docs/mvp/sprint-005/plan.md`
+- `docs/mvp/sprint-005/example-slot-package.md`
+- `docs/mvp/sprint-005/ci-invocation-contract.md`
+- `docs/mvp/sprint-005/github-actions-template.md`
+- `docs/mvp/sprint-005/mvp-acceptance-kit.md`
 - `docs/mvp/sprint-005/tasks/checklist.md`
 - `docs/mvp/sprint-005/tasks/tasks.csv`
 - `docs/mvp/sprint-005/tasks/TK-303.md`

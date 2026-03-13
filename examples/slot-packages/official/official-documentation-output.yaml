@@ -1,0 +1,43 @@
+id: official-documentation-output
+version: "1"
+kind: governance-slot
+meta:
+  name:
+    zh-CN: 文档产出插槽
+    en-US: Documentation Output Slot
+  source: official
+  slotType: documentation-output
+  owner: repo-ai-governor
+  description:
+    zh-CN: 在 plan 与 report 阶段补充文档产出要求，确保方案、报告和验收记录可复用。
+    en-US: Adds documentation output expectations during plan and report stages so plans, reports, and acceptance records remain reusable.
+  tags:
+    - official
+    - docs
+trigger:
+  match: any
+  when:
+    stages:
+      - plan
+      - report
+    commands:
+      - plan
+      - report
+scope:
+  tags:
+    - documentation
+behavior:
+  blockOnFailure: false
+  priority: 160
+  requiresApproval: false
+  conflictPolicy: merge
+  inject:
+    ai:
+      promptKey: documentation-output-checklist
+    human:
+      docSection: Documentation Outputs
+checks:
+  before:
+    - 方案中需明确输出文件与验收路径
+  after:
+    - 报告中需记录最终产物路径与验证结果

@@ -117,6 +117,49 @@ test("review-verify appends verification results and renames pending review file
   assert.match(fs.readFileSync(verifiedFilePath, "utf8"), /Re-ran review verification/);
 });
 
+test("review-verify strict mode fails when warning findings remain", async () => {
+  const cwd = createTempRepo();
+  await bootstrapRepo(cwd);
+
+  fs.mkdirSync(path.join(cwd, "src"), { recursive: true });
+  fs.writeFileSync(path.join(cwd, "src", "strict-example.js"), "export function example() {\n  // TODO: refine\n  return 1;\n}\n", "utf8");
+
+  const reviewResult = await runCommand([
+    "review",
+    "--cwd",
+    cwd,
+    "--project",
+    "demo",
+    "--sprint",
+    "sprint-001",
+    "--path",
+    "src/strict-example.js",
+    "--format",
+    "json"
+  ]);
+  const reviewPayload = JSON.parse(reviewResult.stdout);
+
+  const verifyResult = await runCommand([
+    "review-verify",
+    "--cwd",
+    cwd,
+    "--project",
+    "demo",
+    "--sprint",
+    "sprint-001",
+    "--source",
+    reviewPayload.reviewFile,
+    "--strict",
+    "--format",
+    "json"
+  ]);
+  const verifyPayload = JSON.parse(verifyResult.stdout);
+
+  assert.equal(verifyResult.exitCode, EXIT_CODES.businessCheckFailed);
+  assert.equal(verifyPayload.status, "warn");
+  assert.equal(verifyPayload.strict, true);
+});
+
 test("review-verify can promote a verified review file to resolved after findings are fixed", async () => {
   const cwd = createTempRepo();
   await bootstrapRepo(cwd);

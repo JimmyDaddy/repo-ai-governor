@@ -191,6 +191,12 @@ export const commandDefinitions = [
     description: "按治理规则执行代码评审检查",
     options: [
       {
+        long: "--strict",
+        key: "strict",
+        description: "把 warning 视为失败，便于在 CI 中阻断",
+        type: "boolean"
+      },
+      {
         long: "--path",
         key: "path",
         valueName: "file-or-dir",
@@ -217,6 +223,12 @@ export const commandDefinitions = [
     name: "review-verify",
     description: "对 review 结果执行复核",
     options: [
+      {
+        long: "--strict",
+        key: "strict",
+        description: "把 warning 视为失败，便于在 CI 中阻断",
+        type: "boolean"
+      },
       {
         long: "--source",
         key: "source",

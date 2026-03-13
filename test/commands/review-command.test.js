@@ -117,6 +117,34 @@ test("review creates a pending CR file with warning findings for TODO markers an
   assert.match(fs.readFileSync(reviewFilePath, "utf8"), /Pending verification/);
 });
 
+test("review strict mode fails the command when warning findings remain", async () => {
+  const cwd = createTempRepo();
+  await bootstrapRepo(cwd);
+
+  fs.mkdirSync(path.join(cwd, "src"), { recursive: true });
+  fs.writeFileSync(path.join(cwd, "src", "strict-example.js"), "export function example() {\n  // TODO: refine\n  return 1;\n}\n", "utf8");
+
+  const result = await runCommand([
+    "review",
+    "--cwd",
+    cwd,
+    "--project",
+    "demo",
+    "--sprint",
+    "sprint-001",
+    "--path",
+    "src/strict-example.js",
+    "--strict",
+    "--format",
+    "json"
+  ]);
+  const payload = JSON.parse(result.stdout);
+
+  assert.equal(result.exitCode, EXIT_CODES.businessCheckFailed);
+  assert.equal(payload.status, "warn");
+  assert.equal(payload.strict, true);
+});
+
 test("review fails when sprint task records are out of sync", async () => {
   const cwd = createTempRepo();
   await bootstrapRepo(cwd);
