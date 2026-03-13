@@ -1,6 +1,6 @@
 # AI 开发治理工具配置 Schema 草案
 
-- 文档版本：v0.1
+- 文档版本：v0.2
 - 状态：草案
 - 日期：2026-03-13
 - 关联文档：[product-requirements.md](./product-requirements.md)、[mvp-execution-plan.md](./mvp-execution-plan.md)
@@ -27,6 +27,18 @@
 1. YAML 更适合手写和加注释。
 2. JSON Schema 更适合做程序校验和版本迁移。
 3. 可以兼顾人类可维护性和工具可执行性。
+
+## 2.1 已落地的 Schema Bundle
+
+当前仓库已经产出可直接消费的 schema bundle：
+
+1. `src/config/schema/shared.schema.json`
+2. `src/config/schema/governor.schema.json`
+3. `src/config/schema/slot.schema.json`
+4. `src/config/schema/adapter.schema.json`
+5. `src/config/schema/index.js`
+
+本节之后的字段草案均以这组 schema 文件为当前实现基线。
 
 ## 3. 目录结构草案
 
@@ -671,10 +683,14 @@ MVP 建议支持三类校验：
 3. 脚本型插槽正式执行配置
 4. 多仓库集中式配置联动
 
-## 16. 建议的下一步
+## 16. 当前实现产物
 
-如果要进入实现，建议下一步先产出：
+`TK-102` 当前已完成以下产物：
 
-1. `governor.yaml` 的 JSON Schema 文件草案
-2. 插槽 schema 文件草案
-3. 适配器 schema 文件草案
+1. `governor.yaml` 的 JSON Schema v1
+2. 插槽 schema v1
+3. 适配器 schema v1
+4. `Ajv2020` 编译与样例校验测试
+5. `src/config/schema/index.js` 的 schema bundle 入口
+
+当前 sprint 内的设计摘要见 [docs/mvp/sprint-001/config-schema-v1.md](./mvp/sprint-001/config-schema-v1.md)。

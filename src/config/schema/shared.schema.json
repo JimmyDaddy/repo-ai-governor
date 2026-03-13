@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://repo-ai-governor.dev/schemas/v1/shared.schema.json",
+  "title": "Repo AI Governor Shared Schema Definitions",
+  "$defs": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "projectSlug": {
+      "$ref": "#/$defs/slug"
+    },
+    "slotId": {
+      "$ref": "#/$defs/slug"
+    },
+    "adapterId": {
+      "$ref": "#/$defs/slug"
+    },
+    "sprintName": {
+      "type": "string",
+      "pattern": "^sprint-\\d{3}$"
+    },
+    "taskPrefix": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9-]*$"
+    },
+    "relativePath": {
+      "type": "string",
+      "pattern": "^(?!/)(?![A-Za-z]:[\\\\/]).+$"
+    },
+    "stageId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$"
+    },
+    "failurePolicy": {
+      "type": "string",
+      "enum": ["stop", "continue", "warn"]
+    },
+    "localeCode": {
+      "type": "string",
+      "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+    },
+    "localizedText": {
+      "type": "object",
+      "properties": {
+        "zh-CN": {
+          "type": "string",
+          "minLength": 1
+        },
+        "en-US": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false,
+      "minProperties": 1
+    },
+    "stringList": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true,
+      "default": []
+    },
+    "slugList": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/slug"
+      },
+      "uniqueItems": true,
+      "default": []
+    },
+    "stageList": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/stageId"
+      },
+      "uniqueItems": true,
+      "default": []
+    },
+    "localeList": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/localeCode"
+      },
+      "uniqueItems": true,
+      "default": []
+    },
+    "jsonValue": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/jsonValue"
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/jsonValue"
+          }
+        }
+      ]
+    },
+    "jsonObject": {
+      "type": "object",
+      "default": {},
+      "additionalProperties": {
+        "$ref": "#/$defs/jsonValue"
+      }
+    },
+    "reviewFileTemplate": {
+      "type": "string",
+      "pattern": "^(?:review|verified_review|resolved_review)_<slug>\\.md$"
+    }
+  }
+}

@@ -14,6 +14,7 @@
 3. `TK-003` 已完成，建立统一 logger、错误模型和退出码基础设施。
 4. `TK-101` 已完成，固定配置目录结构与文件命名规则，并提供 `src/config/repository-layout.js` 作为代码参考实现。
 5. `TK-108` 已完成，新增仓库级交付收尾 skill，并将 `收尾 / 提交并推送 / 收尾并推送` 映射为标准交付流程。
+6. `TK-102` 已完成，产出可编译的 schema bundle，并通过 `Ajv2020` 验证主配置、插槽配置和适配器配置样例。
 
 ## In Scope
 
@@ -60,6 +61,7 @@
 
 - `docs/mvp/sprint-001/cli-ux-technical-solution.md`
 - `docs/mvp/sprint-001/repository-layout-conventions.md`
+- `docs/mvp/sprint-001/config-schema-v1.md`
 - `docs/mvp/sprint-001/tasks/checklist.md`
 - `docs/mvp/sprint-001/tasks/tasks.csv`
 - `docs/mvp/sprint-001/tasks/TK-002.md`
@@ -72,4 +74,5 @@
 - `docs/mvp/sprint-001/tasks/TK-106.md`
 - `docs/mvp/sprint-001/tasks/TK-108.md`
 - `docs/mvp/sprint-001/code-review/review_tk-001-initialize-sprint-templates.md`
+- `docs/mvp/sprint-001/code-review/verified_review_tk-102-design-config-schema-v1.md`
 - `.codex/skills/workspace-delivery-finisher/SKILL.md`

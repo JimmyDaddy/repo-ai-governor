@@ -1,0 +1,196 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://repo-ai-governor.dev/schemas/v1/slot.schema.json",
+  "title": "Repo AI Governor Slot Schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "version", "kind"],
+  "properties": {
+    "id": {
+      "$ref": "./shared.schema.json#/$defs/slotId"
+    },
+    "version": {
+      "type": "string",
+      "const": "1"
+    },
+    "kind": {
+      "type": "string",
+      "const": "governance-slot"
+    },
+    "meta": {
+      "$ref": "#/$defs/metaConfig",
+      "default": {
+        "tags": []
+      }
+    },
+    "trigger": {
+      "$ref": "#/$defs/triggerConfig",
+      "default": {
+        "when": {
+          "paths": [],
+          "stages": [],
+          "events": []
+        }
+      }
+    },
+    "scope": {
+      "$ref": "#/$defs/scopeConfig",
+      "default": {
+        "languages": [],
+        "frameworks": [],
+        "projects": [],
+        "files": []
+      }
+    },
+    "behavior": {
+      "$ref": "#/$defs/behaviorConfig",
+      "default": {
+        "blockOnFailure": true,
+        "priority": 100,
+        "inject": {}
+      }
+    },
+    "checks": {
+      "$ref": "#/$defs/checksConfig",
+      "default": {
+        "before": [],
+        "after": []
+      }
+    }
+  },
+  "$defs": {
+    "metaConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "$ref": "./shared.schema.json#/$defs/localizedText"
+        },
+        "owner": {
+          "$ref": "./shared.schema.json#/$defs/nonEmptyString"
+        },
+        "description": {
+          "$ref": "./shared.schema.json#/$defs/localizedText"
+        },
+        "tags": {
+          "$ref": "./shared.schema.json#/$defs/slugList",
+          "default": []
+        }
+      }
+    },
+    "triggerWhenConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "paths": {
+          "$ref": "./shared.schema.json#/$defs/stringList",
+          "default": []
+        },
+        "stages": {
+          "$ref": "./shared.schema.json#/$defs/stageList",
+          "default": []
+        },
+        "events": {
+          "$ref": "./shared.schema.json#/$defs/stringList",
+          "default": []
+        }
+      }
+    },
+    "triggerConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "when": {
+          "$ref": "#/$defs/triggerWhenConfig",
+          "default": {
+            "paths": [],
+            "stages": [],
+            "events": []
+          }
+        }
+      }
+    },
+    "scopeConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "languages": {
+          "$ref": "./shared.schema.json#/$defs/stringList",
+          "default": []
+        },
+        "frameworks": {
+          "$ref": "./shared.schema.json#/$defs/stringList",
+          "default": []
+        },
+        "projects": {
+          "type": "array",
+          "items": {
+            "$ref": "./shared.schema.json#/$defs/projectSlug"
+          },
+          "uniqueItems": true,
+          "default": []
+        },
+        "files": {
+          "$ref": "./shared.schema.json#/$defs/stringList",
+          "default": []
+        }
+      }
+    },
+    "injectConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ai": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "promptKey": {
+              "$ref": "./shared.schema.json#/$defs/nonEmptyString"
+            }
+          }
+        },
+        "human": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "docSection": {
+              "$ref": "./shared.schema.json#/$defs/nonEmptyString"
+            }
+          }
+        }
+      }
+    },
+    "behaviorConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "blockOnFailure": {
+          "type": "boolean",
+          "default": true
+        },
+        "priority": {
+          "type": "integer",
+          "default": 100
+        },
+        "inject": {
+          "$ref": "#/$defs/injectConfig",
+          "default": {}
+        }
+      }
+    },
+    "checksConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "before": {
+          "$ref": "./shared.schema.json#/$defs/stringList",
+          "default": []
+        },
+        "after": {
+          "$ref": "./shared.schema.json#/$defs/stringList",
+          "default": []
+        }
+      }
+    }
+  }
+}

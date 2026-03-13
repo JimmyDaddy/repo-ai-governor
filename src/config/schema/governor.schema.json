@@ -1,0 +1,754 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://repo-ai-governor.dev/schemas/v1/governor.schema.json",
+  "title": "Repo AI Governor Main Configuration Schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion"],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1",
+      "default": "1"
+    },
+    "project": {
+      "$ref": "#/$defs/projectConfig",
+      "default": {
+        "language": "typescript",
+        "framework": "node",
+        "packageManager": "npm",
+        "rootDir": "."
+      }
+    },
+    "workflow": {
+      "$ref": "#/$defs/workflowConfig",
+      "default": {
+        "template": "standard",
+        "stages": [],
+        "allowSkipStages": false,
+        "stopOnFailure": true,
+        "requireHumanApprovalFor": []
+      }
+    },
+    "standards": {
+      "$ref": "#/$defs/standardsConfig",
+      "default": {
+        "preset": "official/base",
+        "overrides": {},
+        "locales": {
+          "default": "zh-CN",
+          "supported": ["zh-CN", "en-US"]
+        },
+        "render": {
+          "aiView": true,
+          "humanView": true
+        }
+      }
+    },
+    "slots": {
+      "$ref": "#/$defs/slotsConfig",
+      "default": {
+        "enabled": [],
+        "disabled": [],
+        "directory": ".repo-ai-governor/slots",
+        "conflictPolicy": "error"
+      }
+    },
+    "adapters": {
+      "$ref": "#/$defs/adaptersConfig",
+      "default": {
+        "enabled": [],
+        "directory": ".repo-ai-governor/adapters",
+        "defaults": {},
+        "strictMode": false
+      }
+    },
+    "execution": {
+      "$ref": "#/$defs/executionConfig",
+      "default": {
+        "taskPrefix": "TK"
+      }
+    },
+    "automation": {
+      "$ref": "#/$defs/automationConfig",
+      "default": {
+        "mode": "assisted",
+        "permissions": {
+          "allowRead": true,
+          "allowEditCode": true,
+          "allowEditDocs": true,
+          "allowRunChecks": true,
+          "allowCommit": true,
+          "allowPush": true,
+          "allowPullRequest": true,
+          "allowSecretsEdit": false,
+          "allowInfraEdit": false,
+          "allowProductionConfigEdit": false,
+          "allowDangerousCommands": false
+        },
+        "gates": {
+          "requireApprovalFor": []
+        },
+        "audit": {
+          "enabled": true,
+          "logPrompts": false,
+          "logCommands": true
+        }
+      }
+    },
+    "ci": {
+      "$ref": "#/$defs/ciConfig",
+      "default": {
+        "enabled": true,
+        "commandProfile": "default",
+        "failOn": ["errors"],
+        "writeJsonReport": true,
+        "writeMarkdownReport": false
+      }
+    },
+    "reporting": {
+      "$ref": "#/$defs/reportingConfig",
+      "default": {
+        "outputDir": ".repo-ai-governor/reports",
+        "formats": ["summary", "markdown", "json"],
+        "overwrite": false,
+        "includeSummary": true,
+        "fileNames": {
+          "summary": "latest.txt",
+          "markdown": "latest.md",
+          "json": "latest.json"
+        }
+      }
+    },
+    "artifacts": {
+      "$ref": "#/$defs/artifactsConfig",
+      "default": {
+        "baseDir": "docs",
+        "structure": "project-sprint",
+        "files": {
+          "index": "index.md",
+          "plan": "plan.md"
+        },
+        "directories": {
+          "tasks": "tasks",
+          "codeReview": "code-review"
+        },
+        "taskFiles": {
+          "checklist": "checklist.md",
+          "csv": "tasks.csv",
+          "csvColumns": [
+            "execution_id",
+            "task_id",
+            "title",
+            "owner",
+            "priority",
+            "due_date",
+            "status",
+            "project",
+            "sprint",
+            "plan",
+            "result",
+            "verify",
+            "review_delta",
+            "recorded_at"
+          ]
+        },
+        "reviewFiles": {
+          "pending": "review_<slug>.md",
+          "verified": "verified_review_<slug>.md",
+          "resolved": "resolved_review_<slug>.md"
+        }
+      }
+    },
+    "agentEntry": {
+      "$ref": "#/$defs/agentEntryConfig",
+      "default": {
+        "target": "AGENTS.md",
+        "mode": "generated-from-structured-config",
+        "includeSections": [
+          "current-context",
+          "source-of-truth",
+          "working-rules",
+          "naming-rules",
+          "default-workflow",
+          "local-skills"
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "projectConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "$ref": "./shared.schema.json#/$defs/nonEmptyString"
+        },
+        "language": {
+          "type": "string",
+          "default": "typescript"
+        },
+        "framework": {
+          "type": "string",
+          "default": "node"
+        },
+        "packageManager": {
+          "type": "string",
+          "default": "npm"
+        },
+        "rootDir": {
+          "$ref": "./shared.schema.json#/$defs/relativePath",
+          "default": "."
+        }
+      }
+    },
+    "workflowStage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "$ref": "./shared.schema.json#/$defs/stageId"
+        },
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "required": {
+          "type": "boolean",
+          "default": true
+        },
+        "onFailure": {
+          "$ref": "./shared.schema.json#/$defs/failurePolicy",
+          "default": "stop"
+        },
+        "requiresApproval": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "workflowConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "template": {
+          "type": "string",
+          "default": "standard"
+        },
+        "stages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/workflowStage"
+          },
+          "default": []
+        },
+        "allowSkipStages": {
+          "type": "boolean",
+          "default": false
+        },
+        "stopOnFailure": {
+          "type": "boolean",
+          "default": true
+        },
+        "requireHumanApprovalFor": {
+          "$ref": "./shared.schema.json#/$defs/stringList",
+          "default": []
+        }
+      }
+    },
+    "standardsLocales": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "default": {
+          "$ref": "./shared.schema.json#/$defs/localeCode",
+          "default": "zh-CN"
+        },
+        "supported": {
+          "$ref": "./shared.schema.json#/$defs/localeList",
+          "default": ["zh-CN", "en-US"]
+        }
+      }
+    },
+    "standardsRender": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "aiView": {
+          "type": "boolean",
+          "default": true
+        },
+        "humanView": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
+    "standardsConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "preset": {
+          "type": "string",
+          "default": "official/base"
+        },
+        "overrides": {
+          "$ref": "./shared.schema.json#/$defs/jsonObject",
+          "default": {}
+        },
+        "locales": {
+          "$ref": "#/$defs/standardsLocales",
+          "default": {
+            "default": "zh-CN",
+            "supported": ["zh-CN", "en-US"]
+          }
+        },
+        "render": {
+          "$ref": "#/$defs/standardsRender",
+          "default": {
+            "aiView": true,
+            "humanView": true
+          }
+        }
+      }
+    },
+    "slotsConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "$ref": "./shared.schema.json#/$defs/slugList",
+          "default": []
+        },
+        "disabled": {
+          "$ref": "./shared.schema.json#/$defs/slugList",
+          "default": []
+        },
+        "directory": {
+          "$ref": "./shared.schema.json#/$defs/relativePath",
+          "default": ".repo-ai-governor/slots"
+        },
+        "conflictPolicy": {
+          "type": "string",
+          "enum": ["error", "merge", "replace"],
+          "default": "error"
+        }
+      }
+    },
+    "adaptersConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "$ref": "./shared.schema.json#/$defs/slugList",
+          "default": []
+        },
+        "directory": {
+          "$ref": "./shared.schema.json#/$defs/relativePath",
+          "default": ".repo-ai-governor/adapters"
+        },
+        "defaults": {
+          "$ref": "./shared.schema.json#/$defs/jsonObject",
+          "default": {}
+        },
+        "strictMode": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "executionConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "currentProject": {
+          "$ref": "./shared.schema.json#/$defs/projectSlug"
+        },
+        "currentSprint": {
+          "$ref": "./shared.schema.json#/$defs/sprintName"
+        },
+        "taskPrefix": {
+          "$ref": "./shared.schema.json#/$defs/taskPrefix",
+          "default": "TK"
+        },
+        "defaultOwner": {
+          "$ref": "./shared.schema.json#/$defs/nonEmptyString"
+        }
+      }
+    },
+    "automationPermissions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "allowRead": {
+          "type": "boolean",
+          "default": true
+        },
+        "allowEditCode": {
+          "type": "boolean",
+          "default": true
+        },
+        "allowEditDocs": {
+          "type": "boolean",
+          "default": true
+        },
+        "allowRunChecks": {
+          "type": "boolean",
+          "default": true
+        },
+        "allowCommit": {
+          "type": "boolean",
+          "default": true
+        },
+        "allowPush": {
+          "type": "boolean",
+          "default": true
+        },
+        "allowPullRequest": {
+          "type": "boolean",
+          "default": true
+        },
+        "allowSecretsEdit": {
+          "type": "boolean",
+          "default": false
+        },
+        "allowInfraEdit": {
+          "type": "boolean",
+          "default": false
+        },
+        "allowProductionConfigEdit": {
+          "type": "boolean",
+          "default": false
+        },
+        "allowDangerousCommands": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "automationGates": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "requireApprovalFor": {
+          "$ref": "./shared.schema.json#/$defs/stringList",
+          "default": []
+        }
+      }
+    },
+    "automationAudit": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "logPrompts": {
+          "type": "boolean",
+          "default": false
+        },
+        "logCommands": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
+    "automationConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["manual", "assisted", "autonomous"],
+          "default": "assisted"
+        },
+        "permissions": {
+          "$ref": "#/$defs/automationPermissions",
+          "default": {
+            "allowRead": true,
+            "allowEditCode": true,
+            "allowEditDocs": true,
+            "allowRunChecks": true,
+            "allowCommit": true,
+            "allowPush": true,
+            "allowPullRequest": true,
+            "allowSecretsEdit": false,
+            "allowInfraEdit": false,
+            "allowProductionConfigEdit": false,
+            "allowDangerousCommands": false
+          }
+        },
+        "gates": {
+          "$ref": "#/$defs/automationGates",
+          "default": {
+            "requireApprovalFor": []
+          }
+        },
+        "audit": {
+          "$ref": "#/$defs/automationAudit",
+          "default": {
+            "enabled": true,
+            "logPrompts": false,
+            "logCommands": true
+          }
+        }
+      }
+    },
+    "ciConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "commandProfile": {
+          "type": "string",
+          "default": "default"
+        },
+        "failOn": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["errors", "warnings"]
+          },
+          "uniqueItems": true,
+          "default": ["errors"]
+        },
+        "writeJsonReport": {
+          "type": "boolean",
+          "default": true
+        },
+        "writeMarkdownReport": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "reportingFileNames": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "summary": {
+          "type": "string",
+          "default": "latest.txt"
+        },
+        "markdown": {
+          "type": "string",
+          "default": "latest.md"
+        },
+        "json": {
+          "type": "string",
+          "default": "latest.json"
+        }
+      }
+    },
+    "reportingConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "outputDir": {
+          "$ref": "./shared.schema.json#/$defs/relativePath",
+          "default": ".repo-ai-governor/reports"
+        },
+        "formats": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["summary", "markdown", "json"]
+          },
+          "uniqueItems": true,
+          "default": ["summary", "markdown", "json"]
+        },
+        "overwrite": {
+          "type": "boolean",
+          "default": false
+        },
+        "includeSummary": {
+          "type": "boolean",
+          "default": true
+        },
+        "fileNames": {
+          "$ref": "#/$defs/reportingFileNames",
+          "default": {
+            "summary": "latest.txt",
+            "markdown": "latest.md",
+            "json": "latest.json"
+          }
+        }
+      }
+    },
+    "artifactFiles": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "index": {
+          "type": "string",
+          "default": "index.md"
+        },
+        "plan": {
+          "type": "string",
+          "default": "plan.md"
+        }
+      }
+    },
+    "artifactDirectories": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tasks": {
+          "type": "string",
+          "default": "tasks"
+        },
+        "codeReview": {
+          "type": "string",
+          "default": "code-review"
+        }
+      }
+    },
+    "artifactTaskFiles": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "checklist": {
+          "type": "string",
+          "default": "checklist.md"
+        },
+        "csv": {
+          "type": "string",
+          "default": "tasks.csv"
+        },
+        "csvColumns": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true,
+          "default": [
+            "execution_id",
+            "task_id",
+            "title",
+            "owner",
+            "priority",
+            "due_date",
+            "status",
+            "project",
+            "sprint",
+            "plan",
+            "result",
+            "verify",
+            "review_delta",
+            "recorded_at"
+          ]
+        }
+      }
+    },
+    "artifactReviewFiles": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "pending": {
+          "$ref": "./shared.schema.json#/$defs/reviewFileTemplate",
+          "default": "review_<slug>.md"
+        },
+        "verified": {
+          "$ref": "./shared.schema.json#/$defs/reviewFileTemplate",
+          "default": "verified_review_<slug>.md"
+        },
+        "resolved": {
+          "$ref": "./shared.schema.json#/$defs/reviewFileTemplate",
+          "default": "resolved_review_<slug>.md"
+        }
+      }
+    },
+    "artifactsConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "baseDir": {
+          "type": "string",
+          "default": "docs"
+        },
+        "structure": {
+          "type": "string",
+          "enum": ["project-sprint"],
+          "default": "project-sprint"
+        },
+        "files": {
+          "$ref": "#/$defs/artifactFiles",
+          "default": {
+            "index": "index.md",
+            "plan": "plan.md"
+          }
+        },
+        "directories": {
+          "$ref": "#/$defs/artifactDirectories",
+          "default": {
+            "tasks": "tasks",
+            "codeReview": "code-review"
+          }
+        },
+        "taskFiles": {
+          "$ref": "#/$defs/artifactTaskFiles",
+          "default": {
+            "checklist": "checklist.md",
+            "csv": "tasks.csv",
+            "csvColumns": [
+              "execution_id",
+              "task_id",
+              "title",
+              "owner",
+              "priority",
+              "due_date",
+              "status",
+              "project",
+              "sprint",
+              "plan",
+              "result",
+              "verify",
+              "review_delta",
+              "recorded_at"
+            ]
+          }
+        },
+        "reviewFiles": {
+          "$ref": "#/$defs/artifactReviewFiles",
+          "default": {
+            "pending": "review_<slug>.md",
+            "verified": "verified_review_<slug>.md",
+            "resolved": "resolved_review_<slug>.md"
+          }
+        }
+      }
+    },
+    "agentEntryConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "target": {
+          "$ref": "./shared.schema.json#/$defs/relativePath",
+          "default": "AGENTS.md"
+        },
+        "mode": {
+          "type": "string",
+          "enum": ["generated-from-structured-config", "manual-sync"],
+          "default": "generated-from-structured-config"
+        },
+        "includeSections": {
+          "$ref": "./shared.schema.json#/$defs/stringList",
+          "default": [
+            "current-context",
+            "source-of-truth",
+            "working-rules",
+            "naming-rules",
+            "default-workflow",
+            "local-skills"
+          ]
+        }
+      }
+    }
+  }
+}

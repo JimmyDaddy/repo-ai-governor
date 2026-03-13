@@ -15,8 +15,10 @@
   - 执行记录：plan=纳入 sprint-001 Wave B，先固定主配置、插槽、适配器和项目/sprint 目录约定;result=已创建任务卡并排入当前 sprint;verify=与 `docs/config-schema-draft.md` 对齐
   - 执行记录：plan=固化 `.repo-ai-governor`、`docs/<project>/sprint-xxx/`、`tasks/`、`code-review/` 和状态化 CR 文件的默认命名规则，并提供代码侧统一路径常量;result=已新增 `docs/mvp/sprint-001/repository-layout-conventions.md`、`src/config/repository-layout.js`、`test/config/repository-layout.test.js`，并让当前 CLI 占位输出复用这套路径与命名规则;verify=`/opt/homebrew/bin/npm run test`、`/opt/homebrew/bin/node ./bin/repo-ai-governor.js init --project mvp --sprint sprint-001 --format json`、`/opt/homebrew/bin/node ./bin/repo-ai-governor.js doctor --project mvp --sprint sprint-001 --verbose` 均通过
   - 执行记录：review_delta=已完成 `TK-101` 自检复核，CR 结果落盘为 `code-review/verified_review_tk-101-design-config-layout.md`，结论为无阻断问题;verify=复核结论已追加在同一份 CR 文件中，无需额外修复
-- [ ] **TK-102** 设计治理配置 schema v1（负责人：Platform｜优先级：P0｜截止：2026-03-18｜状态：todo）
+- [x] **TK-102** 设计治理配置 schema v1（负责人：Platform｜优先级：P0｜截止：2026-03-18｜状态：done）
   - 执行记录：plan=在 `TK-101` 基础上补齐 schema 字段、默认值和版本策略;result=已创建任务卡并确认依赖 `TK-101`;verify=与 `docs/config-schema-draft.md` 和 `docs/mvp-issue-backlog.md` 对齐
+  - 执行记录：plan=产出可直接消费的 schema bundle，覆盖仓库配置、插槽配置和适配器配置，并提供代码侧 schema 入口;result=已新增 `src/config/schema/shared.schema.json`、`governor.schema.json`、`slot.schema.json`、`adapter.schema.json` 与 `index.js`，统一收口字段、默认值和版本约束;verify=`test/config/schema.test.js` 已通过 governor/slot/adapter schema 编译与样例校验
+  - 执行记录：review_delta=已完成 `TK-102` 自检复核，CR 结果落盘为 `code-review/verified_review_tk-102-design-config-schema-v1.md`，结论为无阻断问题;verify=`/opt/homebrew/bin/npm run test` 通过，文档与 schema bundle 已对齐
 - [ ] **TK-106** 设计项目/sprint 任务产物目录规范（负责人：Workflow｜优先级：P0｜截止：2026-03-19｜状态：todo）
   - 执行记录：plan=固化 checklist、CSV、任务卡和 `code-review/` 的目录及命名规范;result=已创建任务卡并排入当前 sprint;verify=与 `docs/mvp-execution-plan.md` 和 `docs/config-schema-draft.md` 对齐
 - [ ] **TK-103** 实现配置加载与合并逻辑（负责人：Platform｜优先级：P0｜截止：2026-03-20｜状态：todo）

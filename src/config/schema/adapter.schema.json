@@ -1,0 +1,142 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://repo-ai-governor.dev/schemas/v1/adapter.schema.json",
+  "title": "Repo AI Governor Adapter Schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "version", "type"],
+  "properties": {
+    "id": {
+      "$ref": "./shared.schema.json#/$defs/adapterId"
+    },
+    "version": {
+      "type": "string",
+      "const": "1"
+    },
+    "type": {
+      "type": "string",
+      "enum": ["ide", "cli", "ide-or-cli", "agent", "ci"]
+    },
+    "enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "capabilities": {
+      "$ref": "#/$defs/capabilitiesConfig",
+      "default": {
+        "promptInjection": true,
+        "structuredOutput": true,
+        "toolCalling": true,
+        "fileSystemAccess": false,
+        "terminalAccess": false
+      }
+    },
+    "injection": {
+      "$ref": "#/$defs/injectionConfig",
+      "default": {
+        "mode": "file-and-template",
+        "sources": ["standards", "workflow", "slots"]
+      }
+    },
+    "render": {
+      "$ref": "#/$defs/renderConfig",
+      "default": {
+        "locale": "zh-CN",
+        "views": ["ai"]
+      }
+    },
+    "policy": {
+      "$ref": "#/$defs/policyConfig",
+      "default": {
+        "strictWorkflow": true,
+        "nonInteractiveSafe": true,
+        "allowAutonomousExecution": false
+      }
+    }
+  },
+  "$defs": {
+    "capabilitiesConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "promptInjection": {
+          "type": "boolean",
+          "default": true
+        },
+        "structuredOutput": {
+          "type": "boolean",
+          "default": true
+        },
+        "toolCalling": {
+          "type": "boolean",
+          "default": true
+        },
+        "fileSystemAccess": {
+          "type": "boolean",
+          "default": false
+        },
+        "terminalAccess": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "injectionConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["file", "template", "file-and-template", "direct-prompt"],
+          "default": "file-and-template"
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["standards", "workflow", "slots", "agent-entry", "artifacts"]
+          },
+          "uniqueItems": true,
+          "default": ["standards", "workflow", "slots"]
+        }
+      }
+    },
+    "renderConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "locale": {
+          "$ref": "./shared.schema.json#/$defs/localeCode",
+          "default": "zh-CN"
+        },
+        "views": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["ai", "human"]
+          },
+          "uniqueItems": true,
+          "default": ["ai"]
+        }
+      }
+    },
+    "policyConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "strictWorkflow": {
+          "type": "boolean",
+          "default": true
+        },
+        "nonInteractiveSafe": {
+          "type": "boolean",
+          "default": true
+        },
+        "allowAutonomousExecution": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    }
+  }
+}
