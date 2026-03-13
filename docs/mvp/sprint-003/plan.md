@@ -1,6 +1,6 @@
 # MVP Sprint 003 Plan
 
-- Status: active
+- Status: done
 - Date: 2026-03-13
 
 ## Goal
@@ -57,6 +57,11 @@
 3. `TK-204` 已完成，产出 `official/base` 标准规范内容和消费者过滤 helper，为 `TK-205`、`TK-206` 与后续 `review/report` 提供真实规则输入。
 4. `TK-205` 已完成，`plan` 命令现可真实生成 `plan.md`、`tasks/checklist.md`、`tasks/tasks.csv` 和 `tasks/TK-xxx.md`，并支持 `--dry-run` 与 `--out`。
 5. `TK-206` 已完成，`check` 命令现可真实执行最小治理检查，输出阶段汇总、命中规则、findings 和可选报告文件，并返回稳定退出码。
+
+## Closure
+
+1. `sprint-003` 已完成并满足当前定义的 exit criteria。
+2. 后续执行基线已切换到 `docs/mvp/sprint-004/`，优先进入 `review`、`review-verify` 与统一报告能力实现。
 
 ## Output Paths
 

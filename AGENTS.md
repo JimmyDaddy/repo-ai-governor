@@ -3,10 +3,10 @@
 ## Current Context
 
 - Current project: `mvp`
-- Current sprint: `sprint-003`
-- Project docs root: `docs/mvp/sprint-003/`
-- Task records: `docs/mvp/sprint-003/tasks/`
-- Code review records: `docs/mvp/sprint-003/code-review/`
+- Current sprint: `sprint-004`
+- Project docs root: `docs/mvp/sprint-004/`
+- Task records: `docs/mvp/sprint-004/tasks/`
+- Code review records: `docs/mvp/sprint-004/code-review/`
 
 ## Source Of Truth
 
@@ -16,13 +16,13 @@
 
 ## Working Rules
 
-1. New planning or execution work for the current stream should be written under `docs/mvp/sprint-003/`.
+1. New planning or execution work for the current stream should be written under `docs/mvp/sprint-004/`.
 2. Task decomposition must update:
-   - `docs/mvp/sprint-003/plan.md`
-   - `docs/mvp/sprint-003/tasks/checklist.md`
-   - `docs/mvp/sprint-003/tasks/tasks.csv`
-   - `docs/mvp/sprint-003/tasks/TK-xxx.md`
-3. Code review output must be written under `docs/mvp/sprint-003/code-review/` and use meaningful status-prefixed file names.
+   - `docs/mvp/sprint-004/plan.md`
+   - `docs/mvp/sprint-004/tasks/checklist.md`
+   - `docs/mvp/sprint-004/tasks/tasks.csv`
+   - `docs/mvp/sprint-004/tasks/TK-xxx.md`
+3. Code review output must be written under `docs/mvp/sprint-004/code-review/` and use meaningful status-prefixed file names.
 4. Default CR lifecycle:
    - `review_<slug>.md`: review generated and pending verify
    - `verified_review_<slug>.md`: verify completed

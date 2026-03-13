@@ -1,6 +1,6 @@
 # MVP Sprint 003
 
-- Status: active
+- Status: done
 - Date: 2026-03-13
 - Project: `mvp`
 - Sprint: `sprint-003`
@@ -30,6 +30,6 @@
 
 ## Notes
 
-1. `sprint-003` 以“模型变执行器、规范变可消费内容、命令变可运行闭环”为核心目标。
-2. 新任务先写入 `tasks/checklist.md`，再同步 `tasks/tasks.csv` 和对应 `TK-xxx.md`。
-3. `review / review-verify / report / 插槽运行时 / 适配器样例` 暂留到后续 sprint。
+1. `sprint-003` 已完成“模型变执行器、规范变可消费内容、命令变可运行闭环”的既定目标。
+2. 后续规划与执行上下文已切换到 `docs/mvp/sprint-004/`。
+3. `review / review-verify / report / 插槽运行时 / 适配器样例` 进入后续 sprint 继续推进。
