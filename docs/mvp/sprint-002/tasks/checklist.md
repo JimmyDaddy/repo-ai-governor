@@ -12,5 +12,7 @@
   - 执行记录：plan=定义插槽元信息、触发条件和阻断策略字段;result=已创建任务卡并纳入 sprint-002;verify=与 `docs/mvp-issue-backlog.md` 对齐
   - 执行记录：plan=升级 slot schema，补齐来源、类型、命中条件、冲突策略和依赖字段，并新增 slot model helper 供后续排序与来源判断复用;result=已新增 `docs/mvp/sprint-002/declarative-slot-schema.md`、`src/slots/slot-model.js` 与对应测试，`slot.schema.json` 现支持 `project-local/team-shared/official`、`match`、`adapters/commands`、`conflictPolicy/dependsOn/supersedes`;verify=`/opt/homebrew/bin/npm run check` 通过
   - 执行记录：review_delta=已完成 `TK-301` 自检复核，CR 结果落盘为 `code-review/verified_review_tk-301-design-declarative-slot-schema.md`，结论为无阻断问题;verify=复核确认插槽模型文档、schema、helper 和测试已经对齐
-- [ ] **TK-401** 设计统一适配器接口（负责人：Adapters｜优先级：P0｜截止：2026-04-03｜状态：todo）
+- [x] **TK-401** 设计统一适配器接口（负责人：Adapters｜优先级：P0｜截止：2026-04-03｜状态：done）
   - 执行记录：plan=定义适配器输入输出模型、规则注入接口与工具差异化能力声明;result=已创建任务卡并纳入 sprint-002;verify=与 `docs/mvp-issue-backlog.md` 对齐
+  - 执行记录：plan=升级 adapter schema，补齐 meta、targets、contract、promptSections 和审批策略字段，并新增 adapter model helper 与首批三类预设;result=已新增 `docs/mvp/sprint-002/unified-adapter-interface.md`、`src/adapters/adapter-model.js` 与对应测试，`adapter.schema.json` 现支持统一输入输出契约和 `codex/github-copilot/claude-code` 预设;verify=`/opt/homebrew/bin/npm run check` 通过
+  - 执行记录：review_delta=已完成 `TK-401` 自检复核，CR 结果落盘为 `code-review/verified_review_tk-401-design-unified-adapter-interface.md`，结论为无阻断问题;verify=复核确认适配器接口文档、schema、helper 和测试已经对齐

@@ -280,10 +280,33 @@ test("adapter schema validates mainstream adapter configuration", () => {
     id: "codex",
     version: "1",
     type: "ide-or-cli",
+    meta: {
+      name: {
+        "zh-CN": "Codex",
+        "en-US": "Codex"
+      },
+      provider: "openai"
+    },
+    targets: {
+      products: ["codex", "codex-cli"],
+      entrypoints: ["ide", "cli"],
+      protocols: ["file", "template", "prompt"]
+    },
     capabilities: {
       promptInjection: true,
       structuredOutput: true,
       toolCalling: true
+    },
+    contract: {
+      input: {
+        sources: ["workflow", "standards", "slots"],
+        requiredViews: ["ai"],
+        supportedFormats: ["markdown", "json"]
+      },
+      output: {
+        artifactKinds: ["plan", "review-report", "task-record"],
+        supportedFormats: ["markdown", "json", "text"]
+      }
     },
     injection: {
       mode: "file-and-template",
@@ -301,4 +324,6 @@ test("adapter schema validates mainstream adapter configuration", () => {
   assert.equal(validate(adapterConfig), true, JSON.stringify(validate.errors, null, 2));
   assert.equal(adapterConfig.enabled, true);
   assert.equal(adapterConfig.policy.nonInteractiveSafe, true);
+  assert.deepEqual(adapterConfig.contract.input.sources, ["workflow", "standards", "slots"]);
+  assert.equal(adapterConfig.capabilities.patchEditing, false);
 });

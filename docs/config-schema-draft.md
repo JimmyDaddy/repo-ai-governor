@@ -368,6 +368,17 @@ TK-301 v1 收口：
 3. `defaults`
 4. `strictMode`
 
+TK-401 v1 收口：
+
+1. 完整适配器定义继续单独收口到 `adapter.schema.json`。
+2. `meta` 至少支持 `name`、`provider`、`description`。
+3. `targets` 至少支持 `products`、`entrypoints`、`protocols`。
+4. `capabilities` 至少支持 `promptInjection`、`structuredOutput`、`toolCalling`、`fileSystemAccess`、`terminalAccess`、`patchEditing`、`approvalControl`。
+5. `contract.input` 至少支持 `sources`、`requiredViews`、`supportedFormats`。
+6. `contract.output` 至少支持 `artifactKinds`、`supportedFormats`、`supportsReviewLifecycle`。
+7. `injection` 至少支持 `mode`、`sources`、`promptSections`、`templateVariables`。
+8. 首批预设目标为 `codex`、`github-copilot`、`claude-code`。
+
 ### 6.7 `automation`
 
 用途：
@@ -595,15 +606,55 @@ id: codex
 version: "1"
 type: ide-or-cli
 enabled: true
+meta:
+  name:
+    zh-CN: Codex
+    en-US: Codex
+  provider: openai
+targets:
+  products:
+    - codex
+    - codex-cli
+  entrypoints:
+    - ide
+    - cli
+  protocols:
+    - file
+    - template
+    - prompt
 capabilities:
   promptInjection: true
   structuredOutput: true
   toolCalling: true
+contract:
+  input:
+    sources:
+      - workflow
+      - standards
+      - slots
+    requiredViews:
+      - ai
+    supportedFormats:
+      - markdown
+      - json
+  output:
+    artifactKinds:
+      - plan
+      - review-report
+      - task-record
+    supportedFormats:
+      - markdown
+      - json
+      - text
 injection:
   mode: file-and-template
   sources:
     - standards
     - workflow
+    - slots
+  promptSections:
+    - workflow
+    - standards
     - slots
 render:
   locale: zh-CN
@@ -615,13 +666,17 @@ policy:
 
 关键字段：
 
-1. `capabilities`
+1. `targets`
+   - 描述目标产品、入口和协议
+2. `capabilities`
    - 描述工具能力差异
-2. `injection`
+3. `contract`
+   - 定义输入输出契约
+4. `injection`
    - 规定如何注入规则
-3. `render`
+5. `render`
    - 指定渲染语言和视图
-4. `policy`
+6. `policy`
    - 定义是否严格执行流程约束
 
 ## 11. 自动化权限结构

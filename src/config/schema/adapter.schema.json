@@ -21,6 +21,18 @@
       "type": "boolean",
       "default": true
     },
+    "meta": {
+      "$ref": "#/$defs/metaConfig",
+      "default": {}
+    },
+    "targets": {
+      "$ref": "#/$defs/targetsConfig",
+      "default": {
+        "products": [],
+        "entrypoints": [],
+        "protocols": []
+      }
+    },
     "capabilities": {
       "$ref": "#/$defs/capabilitiesConfig",
       "default": {
@@ -28,21 +40,41 @@
         "structuredOutput": true,
         "toolCalling": true,
         "fileSystemAccess": false,
-        "terminalAccess": false
+        "terminalAccess": false,
+        "patchEditing": false,
+        "approvalControl": false
+      }
+    },
+    "contract": {
+      "$ref": "#/$defs/contractConfig",
+      "default": {
+        "input": {
+          "sources": ["workflow", "standards", "slots"],
+          "requiredViews": ["ai"],
+          "supportedFormats": ["markdown", "json"]
+        },
+        "output": {
+          "artifactKinds": ["plan", "check-report", "review-report", "task-record"],
+          "supportedFormats": ["markdown", "json", "text"],
+          "supportsReviewLifecycle": true
+        }
       }
     },
     "injection": {
       "$ref": "#/$defs/injectionConfig",
       "default": {
         "mode": "file-and-template",
-        "sources": ["standards", "workflow", "slots"]
+        "sources": ["standards", "workflow", "slots"],
+        "promptSections": ["workflow", "standards", "slots"],
+        "templateVariables": []
       }
     },
     "render": {
       "$ref": "#/$defs/renderConfig",
       "default": {
         "locale": "zh-CN",
-        "views": ["ai"]
+        "views": ["ai"],
+        "fileNameTemplate": ""
       }
     },
     "policy": {
@@ -50,11 +82,55 @@
       "default": {
         "strictWorkflow": true,
         "nonInteractiveSafe": true,
-        "allowAutonomousExecution": false
+        "allowAutonomousExecution": false,
+        "requiresApprovalFor": []
       }
     }
   },
   "$defs": {
+    "metaConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "$ref": "./shared.schema.json#/$defs/localizedText"
+        },
+        "provider": {
+          "$ref": "./shared.schema.json#/$defs/nonEmptyString"
+        },
+        "description": {
+          "$ref": "./shared.schema.json#/$defs/localizedText"
+        }
+      }
+    },
+    "targetsConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "products": {
+          "$ref": "./shared.schema.json#/$defs/stringList",
+          "default": []
+        },
+        "entrypoints": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["ide", "cli", "agent", "ci"]
+          },
+          "uniqueItems": true,
+          "default": []
+        },
+        "protocols": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["file", "template", "prompt", "command", "agent-entry"]
+          },
+          "uniqueItems": true,
+          "default": []
+        }
+      }
+    },
     "capabilitiesConfig": {
       "type": "object",
       "additionalProperties": false,
@@ -78,6 +154,97 @@
         "terminalAccess": {
           "type": "boolean",
           "default": false
+        },
+        "patchEditing": {
+          "type": "boolean",
+          "default": false
+        },
+        "approvalControl": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "contractEndpointConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["workflow", "standards", "slots", "agent-entry", "artifacts", "runtime-context"]
+          },
+          "uniqueItems": true,
+          "default": []
+        },
+        "requiredViews": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["ai", "human"]
+          },
+          "uniqueItems": true,
+          "default": []
+        },
+        "supportedFormats": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["markdown", "json", "yaml", "text"]
+          },
+          "uniqueItems": true,
+          "default": []
+        }
+      }
+    },
+    "contractOutputConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "artifactKinds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["plan", "check-report", "review-report", "task-record", "summary", "agent-entry"]
+          },
+          "uniqueItems": true,
+          "default": []
+        },
+        "supportedFormats": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["markdown", "json", "yaml", "text"]
+          },
+          "uniqueItems": true,
+          "default": []
+        },
+        "supportsReviewLifecycle": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
+    "contractConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "input": {
+          "$ref": "#/$defs/contractEndpointConfig",
+          "default": {
+            "sources": ["workflow", "standards", "slots"],
+            "requiredViews": ["ai"],
+            "supportedFormats": ["markdown", "json"]
+          }
+        },
+        "output": {
+          "$ref": "#/$defs/contractOutputConfig",
+          "default": {
+            "artifactKinds": ["plan", "check-report", "review-report", "task-record"],
+            "supportedFormats": ["markdown", "json", "text"],
+            "supportsReviewLifecycle": true
+          }
         }
       }
     },
@@ -98,6 +265,19 @@
           },
           "uniqueItems": true,
           "default": ["standards", "workflow", "slots"]
+        },
+        "promptSections": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["workflow", "standards", "slots", "agent-entry", "artifacts"]
+          },
+          "uniqueItems": true,
+          "default": ["workflow", "standards", "slots"]
+        },
+        "templateVariables": {
+          "$ref": "./shared.schema.json#/$defs/stringList",
+          "default": []
         }
       }
     },
@@ -117,6 +297,10 @@
           },
           "uniqueItems": true,
           "default": ["ai"]
+        },
+        "fileNameTemplate": {
+          "type": "string",
+          "default": ""
         }
       }
     },
@@ -135,6 +319,10 @@
         "allowAutonomousExecution": {
           "type": "boolean",
           "default": false
+        },
+        "requiresApprovalFor": {
+          "$ref": "./shared.schema.json#/$defs/stringList",
+          "default": []
         }
       }
     }
