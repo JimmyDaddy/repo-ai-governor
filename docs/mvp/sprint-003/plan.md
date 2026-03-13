@@ -53,10 +53,12 @@
 ## Progress
 
 1. 已创建 `TK-202`、`TK-204`、`TK-205`、`TK-206` 任务卡，并完成 sprint-003 首轮排期。
+2. `TK-202` 已完成，产出最小 Governance Engine 执行器、阶段结果模型、依赖展开和失败阻断逻辑，为 `TK-205` 与 `TK-206` 提供统一执行入口。
 
 ## Output Paths
 
 - `docs/mvp/sprint-003/plan.md`
+- `docs/mvp/sprint-003/governance-engine-runtime.md`
 - `docs/mvp/sprint-003/tasks/checklist.md`
 - `docs/mvp/sprint-003/tasks/tasks.csv`
 - `docs/mvp/sprint-003/tasks/TK-202.md`

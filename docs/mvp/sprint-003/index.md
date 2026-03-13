@@ -12,6 +12,7 @@
 ## Files
 
 - [plan.md](./plan.md): 当前 sprint 的目标、范围、里程碑和任务拆解。
+- [governance-engine-runtime.md](./governance-engine-runtime.md): `TK-202` 固化的最小执行器实现摘要。
 - [tasks/checklist.md](./tasks/checklist.md): 当前 sprint 的任务执行清单。
 - [tasks/tasks.csv](./tasks/tasks.csv): 当前 sprint 的执行台账。
 - [tasks/TK-202.md](./tasks/TK-202.md): `TK-202` 的最小执行器任务卡。
@@ -19,6 +20,7 @@
 - [tasks/TK-205.md](./tasks/TK-205.md): `TK-205` 的 `plan` 命令任务卡。
 - [tasks/TK-206.md](./tasks/TK-206.md): `TK-206` 的 `check` 命令任务卡。
 - [code-review/README.md](./code-review/README.md): 当前 sprint 的 CR 目录说明。
+- [code-review/verified_review_tk-202-implement-governance-engine.md](./code-review/verified_review_tk-202-implement-governance-engine.md): `TK-202` 的已复核 CR 记录。
 
 ## Notes
 
