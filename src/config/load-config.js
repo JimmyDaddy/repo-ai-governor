@@ -433,8 +433,10 @@ export function loadResolvedConfig(options = {}) {
     }
   );
 
-  ensureEnabledDefinitionsExist(resolvedConfig, loadedSlots.definitions, "slots");
-  ensureEnabledDefinitionsExist(resolvedConfig, loadedAdapters.definitions, "adapters");
+  if (!options.skipEnabledDefinitionCheck) {
+    ensureEnabledDefinitionsExist(resolvedConfig, loadedSlots.definitions, "slots");
+    ensureEnabledDefinitionsExist(resolvedConfig, loadedAdapters.definitions, "adapters");
+  }
 
   return {
     cwd,

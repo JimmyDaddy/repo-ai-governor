@@ -16,6 +16,7 @@
 5. `TK-108` 已完成，新增仓库级交付收尾 skill，并将 `收尾 / 提交并推送 / 收尾并推送` 映射为标准交付流程。
 6. `TK-102` 已完成，产出可编译的 schema bundle，并通过 `Ajv2020` 验证主配置、插槽配置和适配器配置样例。
 7. `TK-103` 已完成，产出统一的配置加载与合并入口，并接入当前 CLI 占位命令。
+8. `TK-104` 已完成，`init` 现可生成主配置、`AGENTS.md`、adapter 模板和当前项目/sprint 的基础脚手架。
 
 ## In Scope
 
@@ -64,6 +65,7 @@
 - `docs/mvp/sprint-001/repository-layout-conventions.md`
 - `docs/mvp/sprint-001/config-schema-v1.md`
 - `docs/mvp/sprint-001/config-loading-strategy.md`
+- `docs/mvp/sprint-001/init-command-bootstrap.md`
 - `docs/mvp/sprint-001/tasks/checklist.md`
 - `docs/mvp/sprint-001/tasks/tasks.csv`
 - `docs/mvp/sprint-001/tasks/TK-002.md`
@@ -78,4 +80,5 @@
 - `docs/mvp/sprint-001/code-review/review_tk-001-initialize-sprint-templates.md`
 - `docs/mvp/sprint-001/code-review/verified_review_tk-102-design-config-schema-v1.md`
 - `docs/mvp/sprint-001/code-review/verified_review_tk-103-implement-config-loader.md`
+- `docs/mvp/sprint-001/code-review/resolved_review_tk-104-implement-init-command.md`
 - `.codex/skills/workspace-delivery-finisher/SKILL.md`

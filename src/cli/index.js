@@ -1,5 +1,6 @@
 import { createRequire } from "node:module";
 import { Command, CommanderError } from "commander";
+import { executeInitCommand } from "../commands/init-command.js";
 import { commandDefinitions, globalOptionDefinitions } from "./command-registry.js";
 import { ConfigurationError } from "../config/errors.js";
 import { loadResolvedConfig } from "../config/load-config.js";
@@ -80,7 +81,8 @@ function renderRegisteredCommand(commandContext) {
       cliOverrides: {
         ...commandContext.globalOptions,
         ...commandContext.commandOptions
-      }
+      },
+      skipEnabledDefinitionCheck: commandContext.command === "init"
     });
   } catch (error) {
     if (error instanceof TypeError) {
@@ -258,7 +260,7 @@ function buildProgram(io) {
     applyOptions(command, inheritedGlobalOptions);
     applyOptions(command, commandDefinition.options);
 
-    command.action(function (...actionArgs) {
+    command.action(async function (...actionArgs) {
       const lastArgument = actionArgs.at(-1);
       const commandInstance = lastArgument instanceof Command ? lastArgument : this;
       const positionals = commandInstance.args ?? [];
@@ -273,6 +275,11 @@ function buildProgram(io) {
         quiet: commandContext.quiet,
         verbose: commandContext.verbose
       });
+
+      if (commandDefinition.name === "init") {
+        executeInitCommand(commandContext, commandLogger);
+        return;
+      }
 
       writeRegisteredCommand(commandLogger, commandContext);
     });

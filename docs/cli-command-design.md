@@ -102,7 +102,9 @@ repo-ai-governor init [options]
 
 1. 创建 `.repo-ai-governor/` 目录
 2. 创建 `governor.yaml`
-3. 输出初始化摘要
+3. 生成或更新仓库根目录 `AGENTS.md`
+4. 初始化 `docs/<project>/sprint-xxx/` 下的基础任务与 `code-review/` 目录
+5. 输出初始化摘要
 
 退出条件：
 
