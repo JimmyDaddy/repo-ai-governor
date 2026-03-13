@@ -12,5 +12,7 @@
   - 执行记录：plan=纳入 sprint-004 Wave B，负责收口 summary、markdown、json 的统一报告结构;result=已创建任务卡并排入当前 sprint;verify=与 `docs/mvp-issue-backlog.md` 和当前 `check --write-report` 能力边界对齐
   - 执行记录：plan=实现统一报告模型，归一 `check`、`review`、`review-verify` 的输出结构，并提供 `summary/markdown/json` 三类渲染;result=已新增 `docs/mvp/sprint-004/unified-report-model.md`、`src/reporting/report-model.js` 与对应测试，`check --write-report` 已切到统一模型;verify=`/opt/homebrew/bin/npm run check` 通过
   - 执行记录：review_delta=已完成 `TK-501` 自检复核，CR 结果落盘为 `code-review/verified_review_tk-501-design-unified-report-model.md`;verify=复核确认模型结构、`check` 集成点、测试覆盖和任务记录已经对齐
-- [ ] **TK-502** 实现 `report` 命令（负责人：CLI｜优先级：P0｜截止：2026-04-17｜状态：todo）
+- [x] **TK-502** 实现 `report` 命令（负责人：CLI｜优先级：P0｜截止：2026-04-17｜状态：done）
   - 执行记录：plan=纳入 sprint-004 Wave B，负责按统一报告模型渲染已有执行结果;result=已创建任务卡并排入当前 sprint;verify=与 `docs/mvp-issue-backlog.md`、`docs/cli-command-design.md` 和 `TK-501` 依赖关系对齐
+  - 执行记录：plan=实现 `report` 命令，支持消费统一报告 JSON、原始命令 JSON payload 和 review lifecycle Markdown，并输出 `summary/markdown/json`;result=已新增 `docs/mvp/sprint-004/report-command-runtime.md`、`src/commands/report-command.js`、`src/reporting/report-source.js` 与对应测试，CLI 现可默认落盘到 `.repo-ai-governor/reports/`;verify=`/opt/homebrew/bin/npm run check` 通过
+  - 执行记录：review_delta=已完成 `TK-502` 自检复核，CR 结果落盘为 `code-review/verified_review_tk-502-implement-report-command.md`;verify=复核确认 source 解析、CLI 接线、默认落盘逻辑、测试覆盖和任务记录已经对齐
