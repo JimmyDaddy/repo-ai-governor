@@ -58,7 +58,7 @@ const TEXT_FILE_EXTENSIONS = new Set([".js", ".mjs", ".cjs", ".json", ".md", ".y
 const SOURCE_FILE_EXTENSIONS = new Set([".js", ".mjs", ".cjs"]);
 const TODO_PATTERN = /\b(TODO|FIXME|HACK)\b/;
 
-function toRelativePath(cwd, absolutePath) {
+export function toRelativePath(cwd, absolutePath) {
   const relativePath = path.relative(cwd, absolutePath).split(path.sep).join("/");
   return relativePath || ".";
 }
@@ -83,7 +83,7 @@ function createFinding(options) {
   };
 }
 
-function summarizeFindings(findings) {
+export function summarizeFindings(findings) {
   const errors = findings.filter((finding) => finding.severity === "error").length;
   const warnings = findings.filter((finding) => finding.severity === "warning").length;
   const status = errors > 0 ? "fail" : warnings > 0 ? "warn" : "pass";
@@ -120,7 +120,7 @@ function collectFilesRecursively(targetPath, files = []) {
   return files;
 }
 
-function collectPathTargets(cwd, targetPath) {
+export function collectPathTargets(cwd, targetPath) {
   const absoluteTargetPath = path.resolve(cwd, targetPath);
 
   if (!fs.existsSync(absoluteTargetPath)) {
@@ -187,7 +187,7 @@ function readGitStatusFiles(cwd) {
   }
 }
 
-function collectGitTargets(cwd, base, head) {
+export function collectGitTargets(cwd, base, head) {
   if (base || head) {
     const safeBase = base ?? "HEAD";
     const safeHead = head ?? "HEAD";
@@ -231,7 +231,7 @@ function compareTaskIdSets(left, right) {
   return true;
 }
 
-function buildArtifactPaths(cwd, resolvedConfig) {
+export function buildArtifactPaths(cwd, resolvedConfig) {
   const currentProject = resolvedConfig.config.execution.currentProject;
   const currentSprint = resolvedConfig.config.execution.currentSprint;
 
@@ -317,7 +317,7 @@ function buildReviewRun(commandContext) {
   };
 }
 
-function collectReviewRuleViews(standardsPackage, locale) {
+export function collectReviewRuleViews(standardsPackage, locale) {
   return renderRulesForConsumer(standardsPackage, "review", locale);
 }
 
@@ -396,7 +396,7 @@ function maybeAddTaskSyncFinding(runState, relativeTargets, findings, matchedRul
   );
 }
 
-function analyzeTargets(runState) {
+export function analyzeTargets(runState) {
   const findings = [];
   const matchedRuleIds = new Set();
   const relativeTargets = runState.targetFiles.map((filePath) => toRelativePath(runState.cwd, filePath));

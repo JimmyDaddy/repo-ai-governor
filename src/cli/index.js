@@ -5,6 +5,7 @@ import { executeDoctorCommand } from "../commands/doctor-command.js";
 import { executePlanCommand } from "../commands/plan-command.js";
 import { executeCheckCommand } from "../commands/check-command.js";
 import { executeReviewCommand } from "../commands/review-command.js";
+import { executeReviewVerifyCommand } from "../commands/review-verify-command.js";
 import { commandDefinitions, globalOptionDefinitions } from "./command-registry.js";
 import { ConfigurationError } from "../config/errors.js";
 import { loadResolvedConfig } from "../config/load-config.js";
@@ -293,6 +294,9 @@ function buildProgram(io) {
         exitCode = (await executeCheckCommand(commandContext, commandLogger)) ?? EXIT_CODES.success;
       } else if (commandDefinition.name === "review") {
         exitCode = (await executeReviewCommand(commandContext, commandLogger)) ?? EXIT_CODES.success;
+      } else if (commandDefinition.name === "review-verify") {
+        exitCode =
+          (await executeReviewVerifyCommand(commandContext, commandLogger)) ?? EXIT_CODES.success;
       } else {
         writeRegisteredCommand(commandLogger, commandContext);
       }
