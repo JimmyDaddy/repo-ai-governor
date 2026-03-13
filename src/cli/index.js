@@ -2,6 +2,7 @@ import { createRequire } from "node:module";
 import { Command, CommanderError } from "commander";
 import { executeInitCommand } from "../commands/init-command.js";
 import { executeDoctorCommand } from "../commands/doctor-command.js";
+import { executePlanCommand } from "../commands/plan-command.js";
 import { commandDefinitions, globalOptionDefinitions } from "./command-registry.js";
 import { ConfigurationError } from "../config/errors.js";
 import { loadResolvedConfig } from "../config/load-config.js";
@@ -284,6 +285,8 @@ function buildProgram(io) {
         exitCode = executeInitCommand(commandContext, commandLogger) ?? EXIT_CODES.success;
       } else if (commandDefinition.name === "doctor") {
         exitCode = executeDoctorCommand(commandContext, commandLogger);
+      } else if (commandDefinition.name === "plan") {
+        exitCode = (await executePlanCommand(commandContext, commandLogger)) ?? EXIT_CODES.success;
       } else {
         writeRegisteredCommand(commandLogger, commandContext);
       }
