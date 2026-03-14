@@ -44,14 +44,14 @@
 ## Risks
 
 1. `TK-107` 如果只改模板不改当前仓库入口文件和校验链路，后续仍会继续出现 `AGENTS.md` 高频漂移。
-2. 三类工具的规则注入入口并不完全一致，若没有一个统一的适配样例结构，`TK-402/403/404` 很容易重复发明模板。
+2. GitHub Copilot 与 Claude Code 的规则注入入口并不完全一致，若没有一个统一的适配样例结构，`TK-403/404` 很容易重复发明模板。
 3. 当前已有验收脚本以本仓库 CLI 为核心，若接入样例与 CLI 命令约定漂移，会导致“工具样例可看但不可验收”的问题。
 
 ## Exit Criteria
 
 1. `TK-107` 使 `AGENTS.md` 改为依赖独立上下文文件，并让 `init`/`doctor`/schema 同步支持该结构。
 2. `TK-302` 已发现已启用插槽、按优先级处理冲突，并把有效插槽接入治理执行上下文。
-3. `TK-402` 提供可复现的 Codex / Codex CLI 注入样例。
+3. `TK-402` 已提供可复现的 Codex / Codex CLI 注入样例。
 4. `TK-403` 提供可复现的 GitHub Copilot / GitHub Copilot CLI 注入样例。
 5. `TK-404` 提供可复现的 Claude Code 注入样例。
 6. 当前 sprint 的 checklist、CSV 和任务卡保持同步。
@@ -61,7 +61,9 @@
 1. 已创建 `TK-107`、`TK-302`、`TK-402`、`TK-403`、`TK-404` 任务卡，并完成 sprint-006 排期调整。
 2. `TK-107` 已完成，用于外置 `AGENTS.md` 当前上下文。
 3. `TK-302` 已完成，补齐了 slot runtime、冲突处理、Governance Engine 接入和 `check` 命令消费链路。
-4. `TK-402`、`TK-403`、`TK-404` 当前仍处于待执行状态。
+4. `TK-402` 已完成，交付了 Codex bundle 渲染器、样例目录与验收路径。
+5. `TK-403` 已完成，交付了 GitHub Copilot bundle 渲染器、IDE instructions / CLI prompt 输出和样例目录。
+6. `TK-404` 当前仍处于待执行状态。
 
 ## Output Paths
 
@@ -75,4 +77,5 @@
 - `docs/mvp/sprint-006/tasks/TK-404.md`
 - `docs/mvp/sprint-006/agent-entry-context-decoupling.md`
 - `docs/mvp/sprint-006/slot-runtime-integration.md`
+- `docs/mvp/sprint-006/codex-adapter-example.md`
 - `docs/mvp/sprint-006/code-review/`
