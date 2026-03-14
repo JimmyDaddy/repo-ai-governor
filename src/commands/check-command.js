@@ -9,6 +9,7 @@ import {
   renderRulesForConsumer,
   resolveStandardsPackage
 } from "../standards/official-base-package.js";
+import { buildSlotRuntime } from "../slots/runtime.js";
 import { executeWorkflow } from "../workflow/governance-engine.js";
 import { buildUnifiedReport, renderUnifiedReport } from "../reporting/report-model.js";
 
@@ -100,6 +101,10 @@ const PLAN_SECTION_PATTERNS = Object.freeze({
 function toRelativePath(cwd, absolutePath) {
   const relativePath = path.relative(cwd, absolutePath).split(path.sep).join("/");
   return relativePath || ".";
+}
+
+function cloneValue(value) {
+  return structuredClone(value);
 }
 
 function createFinding(options) {
@@ -238,6 +243,10 @@ function buildCheckRun(commandContext) {
     selectedStage,
     resolvedConfig,
     standardsPackage,
+    slotRuntime: buildSlotRuntime({
+      config: resolvedConfig.config,
+      slotDefinitions: resolvedConfig.slotDefinitions
+    }),
     artifactPaths,
     changedOnly: commandContext.commandOptions.changedOnly === true,
     writeReport: commandContext.commandOptions.writeReport === true
@@ -280,7 +289,25 @@ function createStageResult(stageId, matchedRules, findings, successMessage, fail
   };
 }
 
-function validatePlanStage(runState) {
+function buildSlotStageDetails(stageContext) {
+  return cloneValue(
+    stageContext?.slotResolution ?? {
+      activeSlots: [],
+      blockedSlots: [],
+      suppressedSlots: [],
+      injections: {
+        aiPromptKeys: [],
+        humanDocSections: []
+      },
+      checks: {
+        before: [],
+        after: []
+      }
+    }
+  );
+}
+
+function validatePlanStage(runState, stageContext) {
   const target = toRelativePath(runState.cwd, runState.artifactPaths.planFile);
   const matchedRules = getStageRules(
     runState.standardsPackage,
@@ -302,13 +329,16 @@ function validatePlanStage(runState) {
       })
     );
 
-    return createStageResult(
+    const stageResult = createStageResult(
       "plan",
       matchedRules,
       findings,
       "Plan checks passed.",
       "Plan checks failed because the sprint plan is missing."
     );
+
+    stageResult.details.slots = buildSlotStageDetails(stageContext);
+    return stageResult;
   }
 
   const content = readTextFile(runState.artifactPaths.planFile);
@@ -351,16 +381,19 @@ function validatePlanStage(runState) {
     );
   }
 
-  return createStageResult(
+  const stageResult = createStageResult(
     "plan",
     matchedRules,
     findings,
     "Plan structure satisfies the current governance rules.",
     "Plan structure does not satisfy the current governance rules."
   );
+
+  stageResult.details.slots = buildSlotStageDetails(stageContext);
+  return stageResult;
 }
 
-function validateBreakdownStage(runState) {
+function validateBreakdownStage(runState, stageContext) {
   const checklistTarget = toRelativePath(runState.cwd, runState.artifactPaths.checklistFile);
   const csvTarget = toRelativePath(runState.cwd, runState.artifactPaths.taskCsvFile);
   const matchedRules = getStageRules(
@@ -418,13 +451,16 @@ function validateBreakdownStage(runState) {
   }
 
   if (findings.some((finding) => finding.severity === "error")) {
-    return createStageResult(
+    const stageResult = createStageResult(
       "breakdown",
       matchedRules,
       findings,
       "Breakdown artifacts are in sync.",
       "Breakdown artifacts are missing required task records."
     );
+
+    stageResult.details.slots = buildSlotStageDetails(stageContext);
+    return stageResult;
   }
 
   const checklistTaskIds = extractTaskIds(readTextFile(runState.artifactPaths.checklistFile));
@@ -461,16 +497,19 @@ function validateBreakdownStage(runState) {
     );
   }
 
-  return createStageResult(
+  const stageResult = createStageResult(
     "breakdown",
     matchedRules,
     findings,
     "Breakdown artifacts are synchronized.",
     "Breakdown artifacts are not synchronized."
   );
+
+  stageResult.details.slots = buildSlotStageDetails(stageContext);
+  return stageResult;
 }
 
-function validateSelfCheckStage(runState) {
+function validateSelfCheckStage(runState, stageContext) {
   const checklistTarget = toRelativePath(runState.cwd, runState.artifactPaths.checklistFile);
   const csvTarget = toRelativePath(runState.cwd, runState.artifactPaths.taskCsvFile);
   const matchedRules = getStageRules(
@@ -581,17 +620,36 @@ function validateSelfCheckStage(runState) {
     );
   }
 
-  return createStageResult(
+  const stageResult = createStageResult(
     "self-check",
     matchedRules,
     findings,
     "Execution records satisfy the minimum governance checks.",
     "Execution records do not satisfy the minimum governance checks."
   );
+
+  stageResult.details.slots = buildSlotStageDetails(stageContext);
+  return stageResult;
 }
 
 function flattenWorkflowFindings(workflowResult) {
-  return workflowResult.stages.flatMap((stageResult) => stageResult.details?.findings ?? []);
+  const findings = workflowResult.stages.flatMap((stageResult) => stageResult.details?.findings ?? []);
+
+  if (workflowResult.status === "failed" && workflowResult.failure) {
+    findings.push(
+      createFinding({
+        id: `check.workflow.${workflowResult.failure.stageId}`,
+        stageId: workflowResult.failure.stageId,
+        severity: "error",
+        status: "fail",
+        message: workflowResult.failure.message,
+        target: workflowResult.failure.stageId,
+        suggestion: "Resolve the stage-level workflow failure before rerunning check."
+      })
+    );
+  }
+
+  return findings;
 }
 
 function renderWorkflowStage(stageResult) {
@@ -600,7 +658,16 @@ function renderWorkflowStage(stageResult) {
     status: stageResult.status,
     summary: stageResult.summary,
     blockedBy: stageResult.blockedBy,
-    matchedRules: stageResult.details?.matchedRules ?? []
+    matchedRules: stageResult.details?.matchedRules ?? [],
+    slots: {
+      active: stageResult.details?.slots?.activeSlots ?? [],
+      blocked: stageResult.details?.slots?.blockedSlots ?? [],
+      suppressed: stageResult.details?.slots?.suppressedSlots ?? [],
+      injections: stageResult.details?.slots?.injections ?? {
+        aiPromptKeys: [],
+        humanDocSections: []
+      }
+    }
   };
 }
 
@@ -720,9 +787,9 @@ function writeReportFile(runState, payload, format) {
 
 function createCheckHandlers(runState) {
   return {
-    plan: () => validatePlanStage(runState),
-    breakdown: () => validateBreakdownStage(runState),
-    "self-check": () => validateSelfCheckStage(runState)
+    plan: (stageContext) => validatePlanStage(runState, stageContext),
+    breakdown: (stageContext) => validateBreakdownStage(runState, stageContext),
+    "self-check": (stageContext) => validateSelfCheckStage(runState, stageContext)
   };
 }
 
@@ -732,9 +799,13 @@ export async function executeCheckCommand(commandContext, logger) {
     template: CHECK_WORKFLOW_TEMPLATE,
     targetStages: [runState.selectedStage],
     handlers: createCheckHandlers(runState),
+    slotRuntime: runState.slotRuntime,
     metadata: {
       command: "check",
-      changedOnly: runState.changedOnly
+      changedOnly: runState.changedOnly,
+      currentProject: runState.resolvedConfig.config.execution.currentProject,
+      language: runState.resolvedConfig.config.project.language,
+      framework: runState.resolvedConfig.config.project.framework
     }
   });
   const summary = summarizeFindings(flattenWorkflowFindings(workflowResult));

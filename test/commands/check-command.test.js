@@ -3,11 +3,17 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import YAML from "yaml";
 import { runCli } from "../../src/cli/index.js";
 import { EXIT_CODES } from "../../src/cli/runtime/exit-codes.js";
 
 function createTempRepo() {
   return fs.mkdtempSync(path.join(os.tmpdir(), "repo-ai-governor-check-"));
+}
+
+function writeFile(filePath, content) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, content, "utf8");
 }
 
 function createBufferedStream() {
@@ -155,4 +161,64 @@ test("check can write a report file and warns when changed-only falls back to fu
   assert.equal(payload.reportFile, ".repo-ai-governor/reports/latest.json");
   assert.equal(fs.existsSync(reportFilePath), true);
   assert.match(fs.readFileSync(reportFilePath, "utf8"), /"command": "check"/);
+});
+
+test("check exposes active slot runtime details when enabled slots match a stage", async () => {
+  const cwd = createTempRepo();
+  await bootstrapRepo(cwd);
+
+  const configFilePath = path.join(cwd, ".repo-ai-governor/governor.yaml");
+  const config = YAML.parse(fs.readFileSync(configFilePath, "utf8"));
+  config.slots.enabled = ["check-plan-slot"];
+  fs.writeFileSync(configFilePath, YAML.stringify(config), "utf8");
+
+  writeFile(
+    path.join(cwd, ".repo-ai-governor/slots/check-plan-slot.yaml"),
+    [
+      "id: check-plan-slot",
+      'version: "1"',
+      "kind: governance-slot",
+      "meta:",
+      "  owner: platform",
+      "  source: project-local",
+      "  slotType: documentation-output",
+      "  name:",
+      '    zh-CN: 检查方案插槽',
+      '    en-US: Check Plan Slot',
+      "trigger:",
+      "  match: all",
+      "  when:",
+      "    stages:",
+      "      - plan",
+      "    commands:",
+      "      - check",
+      "behavior:",
+      "  priority: 200",
+      "  conflictPolicy: merge",
+      "  inject:",
+      "    ai:",
+      "      promptKey: plan-check-checklist",
+      "checks:",
+      "  before:",
+      "    - 检查 plan 阶段是否命中自定义插槽"
+    ].join("\n")
+  );
+
+  const result = await runCommand([
+    "check",
+    "--cwd",
+    cwd,
+    "--project",
+    "demo",
+    "--sprint",
+    "sprint-001",
+    "--format",
+    "json"
+  ]);
+  const payload = JSON.parse(result.stdout);
+  const planStage = payload.workflow.stages.find((stage) => stage.id === "plan");
+
+  assert.equal(result.exitCode, EXIT_CODES.success);
+  assert.deepEqual(planStage?.slots.active.map((slot) => slot.id), ["check-plan-slot"]);
+  assert.deepEqual(planStage?.slots.injections.aiPromptKeys, ["plan-check-checklist"]);
 });

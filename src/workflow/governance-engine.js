@@ -1,4 +1,5 @@
 import { resolveWorkflowTemplate, validateWorkflowTemplate } from "./template-model.js";
+import { SlotConflictError, resolveApplicableSlots } from "../slots/runtime.js";
 
 export const WORKFLOW_STAGE_RESULT_STATUS = Object.freeze({
   pending: "pending",
@@ -123,7 +124,8 @@ function createStageContext({
   dependencyResults,
   previousResults,
   runtimeState,
-  metadata
+  metadata,
+  slotResolution
 }) {
   return {
     template,
@@ -135,7 +137,9 @@ function createStageContext({
     state: runtimeState.values,
     runtime: runtimeState,
     artifacts: runtimeState.artifacts,
-    metadata: cloneValue(metadata ?? {})
+    metadata: cloneValue(metadata ?? {}),
+    slots: cloneValue(slotResolution?.activeSlots ?? []),
+    slotResolution: cloneValue(slotResolution ?? null)
   };
 }
 
@@ -149,6 +153,50 @@ function mergeStageOutputs(runtimeState, outputs) {
   }
 
   Object.assign(runtimeState.artifacts, cloneValue(outputs));
+}
+
+function createStageSlotDetails(slotResolution) {
+  if (!slotResolution) {
+    return {
+      activeSlots: [],
+      blockedSlots: [],
+      suppressedSlots: [],
+      injections: {
+        aiPromptKeys: [],
+        humanDocSections: []
+      },
+      checks: {
+        before: [],
+        after: []
+      }
+    };
+  }
+
+  return {
+    activeSlots: cloneValue(slotResolution.activeSlots),
+    blockedSlots: cloneValue(slotResolution.blockedSlots),
+    suppressedSlots: cloneValue(slotResolution.suppressedSlots),
+    injections: cloneValue(slotResolution.injections),
+    checks: cloneValue(slotResolution.checks)
+  };
+}
+
+function resolveStageSlotResolution(stage, metadata, slotRuntime) {
+  if (!slotRuntime) {
+    return null;
+  }
+
+  return resolveApplicableSlots(slotRuntime, {
+    stageId: stage.id,
+    commandId: metadata?.command ?? stage.executor?.command ?? stage.executor?.ref ?? null,
+    adapterId: metadata?.adapterId ?? null,
+    eventId: metadata?.eventId ?? null,
+    project: metadata?.currentProject ?? metadata?.project ?? null,
+    language: metadata?.language ?? null,
+    framework: metadata?.framework ?? null,
+    tags: metadata?.tags ?? [],
+    paths: metadata?.paths ?? metadata?.changedPaths ?? []
+  });
 }
 
 export function selectWorkflowStages(template, stageIds) {
@@ -202,6 +250,7 @@ export async function executeWorkflow(options = {}) {
   };
   const metadata = cloneValue(options.metadata ?? {});
   const handlers = options.handlers ?? {};
+  const slotRuntime = options.slotRuntime ?? null;
   const stageResults = [];
   const stageResultsById = new Map();
   const startedAt = new Date().toISOString();
@@ -290,6 +339,46 @@ export async function executeWorkflow(options = {}) {
 
     const stageStartedAt = new Date().toISOString();
     const stageStartedAtMs = Date.now();
+    let slotResolution = null;
+
+    try {
+      slotResolution = resolveStageSlotResolution(stage, metadata, slotRuntime);
+    } catch (error) {
+      if (!(error instanceof SlotConflictError)) {
+        throw error;
+      }
+
+      const failedStage = createSkippedStageResult(stage, {
+        status: WORKFLOW_STAGE_RESULT_STATUS.failed,
+        dependencyStatuses,
+        summary: error.message,
+        details: {
+          slots: createStageSlotDetails({
+            activeSlots: [],
+            blockedSlots: [],
+            suppressedSlots: [],
+            injections: {
+              aiPromptKeys: [],
+              humanDocSections: []
+            },
+            checks: {
+              before: [],
+              after: []
+            }
+          }),
+          slotConflict: cloneValue(error.details ?? {})
+        },
+        error: {
+          message: error.message,
+          code: error.code ?? "slots.conflict"
+        }
+      });
+
+      stageResults.push(failedStage);
+      stageResultsById.set(stage.id, failedStage);
+      firstFailedStageId ??= stage.id;
+      continue;
+    }
 
     try {
       const rawResult = await handler(
@@ -301,7 +390,8 @@ export async function executeWorkflow(options = {}) {
           dependencyResults,
           previousResults: stageResults,
           runtimeState,
-          metadata
+          metadata,
+          slotResolution
         })
       );
       const normalizedResult = normalizeHandlerResult(stage, rawResult);
@@ -317,7 +407,10 @@ export async function executeWorkflow(options = {}) {
         dependsOn: [...(stage.dependsOn ?? [])],
         dependencyStatuses,
         summary: normalizedResult.summary,
-        details: normalizedResult.details,
+        details: {
+          ...(isPlainObject(normalizedResult.details) ? normalizedResult.details : {}),
+          slots: createStageSlotDetails(slotResolution)
+        },
         outputs: normalizedResult.outputs,
         gates: normalizedResult.gates,
         warnings: normalizedResult.warnings,

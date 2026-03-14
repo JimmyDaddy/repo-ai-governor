@@ -19,10 +19,12 @@
 - [tasks/TK-402.md](./tasks/TK-402.md): `TK-402` 的 Codex 接入样例任务卡。
 - [tasks/TK-403.md](./tasks/TK-403.md): `TK-403` 的 GitHub Copilot 接入样例任务卡。
 - [tasks/TK-404.md](./tasks/TK-404.md): `TK-404` 的 Claude Code 接入样例任务卡。
+- [slot-runtime-integration.md](./slot-runtime-integration.md): `TK-302` 的插槽运行时设计与接入说明。
 - [code-review/README.md](./code-review/README.md): 当前 sprint 的 CR 目录说明。
+- [code-review/verified_review_tk-302-implement-slot-runtime.md](./code-review/verified_review_tk-302-implement-slot-runtime.md): `TK-302` 的已复核 CR 记录。
 
 ## Notes
 
 1. `sprint-006` 以“把插槽运行时接入执行链路，并补齐主流工具适配样例”为核心目标。
-2. `TK-107` 已完成，`TK-302` 是当前优先级最高的后续基础任务。
+2. `TK-107`、`TK-302` 已完成，下一步进入 `TK-402`、`TK-403`、`TK-404` 的适配器样例落地。
 3. 新任务先写入 `tasks/checklist.md`，再同步 `tasks/tasks.csv` 和对应 `TK-xxx.md`。
