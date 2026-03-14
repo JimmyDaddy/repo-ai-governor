@@ -1,0 +1,91 @@
+name: Release GA
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Package version to release. Must match package.json.
+        required: true
+        type: string
+      publish_npm:
+        description: Publish the package to npm.
+        required: false
+        default: false
+        type: boolean
+      create_github_release:
+        description: Create git tag and GitHub release.
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  release-ga:
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_VERSION: ${{ inputs.version }}
+      RELEASE_NOTES_PATH: .repo-ai-governor/release/release-notes.md
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate workflow version
+        run: |
+          PACKAGE_VERSION="$(node -p "require('./package.json').version")"
+          if [ "$PACKAGE_VERSION" != "$RELEASE_VERSION" ]; then
+            echo "package.json version ($PACKAGE_VERSION) does not match workflow input ($RELEASE_VERSION)."
+            exit 1
+          fi
+
+      - name: Run GA release gate
+        run: npm run release:ga-check
+
+      - name: Render release notes
+        run: node ./scripts/release/render-release-notes.js --version "$RELEASE_VERSION" --out "$RELEASE_NOTES_PATH"
+
+      - name: Pack release tarball
+        run: npm pack --json > .repo-ai-governor/release/pack.json
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: repo-ai-governor-release-${{ env.RELEASE_VERSION }}
+          path: |
+            .repo-ai-governor/release/
+            repo-ai-governor-${{ env.RELEASE_VERSION }}.tgz
+
+      - name: Create and push git tag
+        if: inputs.create_github_release == true
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag "v$RELEASE_VERSION"
+          git push origin "v$RELEASE_VERSION"
+
+      - name: Create GitHub release
+        if: inputs.create_github_release == true
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.RELEASE_VERSION }}
+          body_path: ${{ env.RELEASE_NOTES_PATH }}
+          files: repo-ai-governor-${{ env.RELEASE_VERSION }}.tgz
+
+      - name: Publish to npm
+        if: inputs.publish_npm == true
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public

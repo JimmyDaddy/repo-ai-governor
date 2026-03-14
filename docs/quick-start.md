@@ -1,0 +1,135 @@
+# Quick Start
+
+- Date: 2026-03-14
+- Audience: first-time users
+
+## Goal
+
+在一个全新目录中，用最短路径跑通 `Repo AI Governor` 的最小体验。
+
+## Prerequisites
+
+1. Node.js `>=18`
+2. 可用的 `npm`、`pnpm` 或 `npx`
+
+## 1. Create A Workspace
+
+```bash
+TMP_DIR="$(mktemp -d /tmp/repo-ai-governor-quickstart.XXXXXX)"
+echo "$TMP_DIR"
+```
+
+## 2. Initialize Governance
+
+```bash
+npx repo-ai-governor init \
+  --cwd "$TMP_DIR" \
+  --project demo \
+  --sprint sprint-001 \
+  --adapter codex \
+  --format json
+```
+
+Expected:
+
+1. `.repo-ai-governor/governor.yaml`
+2. `AGENTS.md`
+3. `.repo-ai-governor/context/current-context.md`
+4. `docs/demo/sprint-001/`
+
+## 3. Check Repository Health
+
+```bash
+npx repo-ai-governor doctor \
+  --cwd "$TMP_DIR" \
+  --project demo \
+  --sprint sprint-001 \
+  --strict \
+  --format json
+```
+
+Expected:
+
+1. `status: "pass"`
+2. no config/layout errors
+
+## 4. Generate A Plan
+
+```bash
+cat > "$TMP_DIR/request.md" <<'EOF'
+# Requirement
+
+Create a repository governance demo flow.
+EOF
+
+npx repo-ai-governor plan \
+  --cwd "$TMP_DIR" \
+  --project demo \
+  --sprint sprint-001 \
+  --input "$TMP_DIR/request.md" \
+  --title "Repository governance demo flow" \
+  --format json
+```
+
+Expected:
+
+1. `docs/demo/sprint-001/plan.md`
+2. `docs/demo/sprint-001/tasks/checklist.md`
+3. `docs/demo/sprint-001/tasks/tasks.csv`
+4. at least one `TK-xxx.md`
+
+## 5. Run Governance Check
+
+```bash
+npx repo-ai-governor check \
+  --cwd "$TMP_DIR" \
+  --project demo \
+  --sprint sprint-001 \
+  --format json
+```
+
+## 6. Run A Review
+
+Prepare a simple file first:
+
+```bash
+mkdir -p "$TMP_DIR/src"
+cat > "$TMP_DIR/src/demo.js" <<'EOF'
+export function demo() {
+  // TODO: refine
+  return 1;
+}
+EOF
+```
+
+Then run review:
+
+```bash
+npx repo-ai-governor review \
+  --cwd "$TMP_DIR" \
+  --project demo \
+  --sprint sprint-001 \
+  --path src/demo.js \
+  --format json
+```
+
+Expected:
+
+1. a `review_<slug>.md` file under `code-review/`
+2. findings for TODO markers or missing tests when applicable
+
+## 7. Render A Report
+
+```bash
+npx repo-ai-governor report \
+  --cwd "$TMP_DIR" \
+  --source docs/demo/sprint-001/code-review/review_src-demo-js.md \
+  --format json \
+  --dry-run
+```
+
+## Next
+
+1. [Getting Started Example](/Users/jimmydaddy/study/repo-ai-governor/docs/getting-started-example.md)
+2. [MVP Acceptance Kit](/Users/jimmydaddy/study/repo-ai-governor/examples/mvp-acceptance/README.md)
+3. [GA Release Flow](/Users/jimmydaddy/study/repo-ai-governor/docs/release-ga/sprint-001/ga-release-flow.md)

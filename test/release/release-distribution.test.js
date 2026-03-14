@@ -18,6 +18,14 @@ test("release readiness script validates package metadata and dry-run tarball co
 
   assert.equal(payload.status, "pass");
   assert.equal(payload.private, false);
+  assert.equal(payload.publishAccess, "public");
+  assert.equal(payload.changelogExists, true);
+  assert.equal(payload.changelogZhExists, true);
+  assert.equal(payload.readmeExists, true);
+  assert.equal(payload.readmeZhExists, true);
+  assert.equal(payload.gettingStartedScriptExists, true);
+  assert.ok(Array.isArray(payload.requiredChecks));
+  assert.ok(payload.requiredChecks.includes("npm run release:verify-local"));
   assert.ok(payload.bundledFiles.includes("bin/repo-ai-governor.js"));
   assert.ok(payload.bundledFiles.some((entry) => entry.startsWith("src/")));
 });

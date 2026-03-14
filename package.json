@@ -19,8 +19,10 @@
     "test": "node --test",
     "check": "npm run test",
     "release:check": "node ./scripts/release/check-release-ready.js",
+    "release:notes": "node ./scripts/release/render-release-notes.js",
     "release:verify-local": "node ./scripts/release/verify-local-distribution.js",
     "release:candidate": "npm run check && npm run release:check && npm run release:verify-local",
+    "release:ga-check": "npm run release:candidate",
     "release:pack": "npm pack --json"
   },
   "engines": {

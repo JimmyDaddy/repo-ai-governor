@@ -1,6 +1,6 @@
 # MVP Sprint 008
 
-- Status: active
+- Status: done
 - Date: 2026-03-14
 - Project: `mvp`
 - Sprint: `sprint-008`
@@ -27,4 +27,4 @@
 1. `sprint-008` 以“在保持安全边界的前提下打开高级扩展能力，并规划第二批适配对象”为核心目标。
 2. `TK-304` 已完成，当前已把脚本扩展接口接入 slot schema / model / runtime summary，并明确“只声明、不执行”的安全边界。
 3. `TK-405` 已完成，当前已给出 `Cursor / VS Code 通用工作流 / Cline / Roo Code / API 驱动模式` 的第二批接入路线图。
-4. 当前 sprint 已满足计划内范围，可以在需要时进入 closeout。
+4. `sprint-008` 已正式收口，MVP 当前主线已完成，后续项目建议见 [../../post-mvp-project-recommendation.md](../../post-mvp-project-recommendation.md)。

@@ -2,16 +2,16 @@
 
 ## Primary Stream
 
-- Status: active
-- Project: `mvp`
-- Sprint: `sprint-008`
-- Docs root: `docs/mvp/sprint-008/`
-- Task records: `docs/mvp/sprint-008/tasks/`
-- Code review records: `docs/mvp/sprint-008/code-review/`
+- Status: idle
+- Project: `none`
+- Sprint: `none`
+- Docs root: `none`
+- Task records: `none`
+- Code review records: `none`
 
 ## Active Streams
 
-- `primary`: project=`mvp`, sprint=`sprint-008`, docs=`docs/mvp/sprint-008/`, status=`active`
+- `none`: no active streams
 
 ## Update Rules
 

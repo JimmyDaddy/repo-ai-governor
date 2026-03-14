@@ -1,6 +1,6 @@
 # MVP Sprint 008 Plan
 
-- Status: active
+- Status: done
 - Date: 2026-03-14
 
 ## Goal
@@ -53,7 +53,13 @@
 1. 已创建 `TK-304`、`TK-405` 任务卡，并完成 `sprint-008` 骨架初始化。
 2. `TK-304` 已完成，当前已把脚本扩展接口补进 slot schema、slot model、config loader 和 runtime summary。
 3. `TK-405` 已完成，当前已给出第二批适配对象的优先级标准、工具清单和工作量预估。
-4. 当前 sprint 已满足 exit criteria，可在需要时进入 closeout。
+4. 当前 sprint 已满足 exit criteria，可正式标记为完成。
+
+## Closure
+
+1. `sprint-008` 已满足全部 exit criteria，可正式标记为完成。
+2. 当前 MVP 已补齐脚本扩展接口预留和第二批适配路线图，主线目标已经从“补缺”转向“选择下一阶段产品方向”。
+3. 后续不自动开启新 sprint；下一阶段建议先按 Project 维度重新规划，见 [../../post-mvp-project-recommendation.md](../../post-mvp-project-recommendation.md)。
 
 ## Output Paths
 
