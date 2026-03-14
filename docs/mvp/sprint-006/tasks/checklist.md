@@ -12,5 +12,6 @@
 - [x] **TK-403** 完成 GitHub Copilot / GitHub Copilot CLI 接入样例（负责人：Adapters｜优先级：P0｜截止：2026-04-25｜状态：done）
   - 执行记录：plan=提供 GitHub Copilot / GitHub Copilot CLI 的规则注入方案、说明和验收样例，并把当前治理资产渲染成可直接落盘的 instructions 与 CLI prompt;result=已新增 `src/adapters/github-copilot-bundle.js`、`src/adapters/bundle-shared.js`、`scripts/examples/render-github-copilot-adapter-bundle.js`、`examples/adapters/github-copilot/` 与对应测试;verify=`PATH=/opt/homebrew/bin:$PATH /opt/homebrew/bin/npm run check`
   - 执行记录：review_delta=已完成 `TK-403` 自检复核，CR 结果落盘为 `code-review/verified_review_tk-403-provide-github-copilot-adapter-example.md`;verify=复核确认 GitHub Copilot bundle 渲染器、样例目录、验收步骤、测试覆盖和 sprint 文档已经对齐
-- [ ] **TK-404** 完成 Claude Code 接入样例（负责人：Adapters｜优先级：P0｜截止：2026-04-26｜状态：todo）
-  - 执行记录：plan=纳入 sprint-006 Wave B，负责提供 Claude Code 的规则注入方案、说明和验收样例;result=已创建任务卡并排入当前 sprint;verify=与 `docs/mvp-issue-backlog.md`、`TK-401`、`TK-204` 和 `TK-302` 的目标顺序对齐
+- [x] **TK-404** 完成 Claude Code 接入样例（负责人：Adapters｜优先级：P0｜截止：2026-04-26｜状态：done）
+  - 执行记录：plan=提供 Claude Code 的规则注入方案、说明和验收样例，并把当前治理资产渲染成可直接落盘的 system prompt 与 task prompt;result=已新增 `src/adapters/claude-code-bundle.js`、`scripts/examples/render-claude-code-adapter-bundle.js`、`examples/adapters/claude-code/` 与对应测试;verify=`PATH=/opt/homebrew/bin:$PATH /opt/homebrew/bin/npm run check`
+  - 执行记录：review_delta=已完成 `TK-404` 自检复核，CR 结果落盘为 `code-review/verified_review_tk-404-provide-claude-code-adapter-example.md`;verify=复核确认 Claude Code bundle 渲染器、样例目录、验收步骤、测试覆盖和 sprint 文档已经对齐

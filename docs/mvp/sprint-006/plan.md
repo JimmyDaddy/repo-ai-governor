@@ -1,6 +1,6 @@
 # MVP Sprint 006 Plan
 
-- Status: active
+- Status: done
 - Date: 2026-03-14
 
 ## Goal
@@ -63,7 +63,13 @@
 3. `TK-302` 已完成，补齐了 slot runtime、冲突处理、Governance Engine 接入和 `check` 命令消费链路。
 4. `TK-402` 已完成，交付了 Codex bundle 渲染器、样例目录与验收路径。
 5. `TK-403` 已完成，交付了 GitHub Copilot bundle 渲染器、IDE instructions / CLI prompt 输出和样例目录。
-6. `TK-404` 当前仍处于待执行状态。
+6. `TK-404` 已完成，交付了 Claude Code bundle 渲染器、system prompt / task prompt 输出和样例目录。
+
+## Closure
+
+1. `sprint-006` 已满足全部 exit criteria，可正式标记为完成。
+2. 当前已补齐 `Codex / GitHub Copilot / Claude Code` 三类首批工具接入样例，MVP 在适配器样例层面的目标已达成。
+3. 当前尚未启动新的 sprint；后续如继续推进，应先创建新的活动 stream 再承接任务。
 
 ## Output Paths
 
