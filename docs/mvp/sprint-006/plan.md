@@ -69,7 +69,7 @@
 
 1. `sprint-006` 已满足全部 exit criteria，可正式标记为完成。
 2. 当前已补齐 `Codex / GitHub Copilot / Claude Code` 三类首批工具接入样例，MVP 在适配器样例层面的目标已达成。
-3. 当前尚未启动新的 sprint；后续如继续推进，应先创建新的活动 stream 再承接任务。
+3. 后续执行基线已切换到 `docs/mvp/sprint-007/`，下一轮优先补齐发布与升级相关能力。
 
 ## Output Paths
 

@@ -7,6 +7,7 @@ import { executeCheckCommand } from "../commands/check-command.js";
 import { executeReviewCommand } from "../commands/review-command.js";
 import { executeReviewVerifyCommand } from "../commands/review-verify-command.js";
 import { executeReportCommand } from "../commands/report-command.js";
+import { executeUpgradeCommand } from "../commands/upgrade-command.js";
 import { commandDefinitions, globalOptionDefinitions } from "./command-registry.js";
 import { ConfigurationError } from "../config/errors.js";
 import { loadResolvedConfig } from "../config/load-config.js";
@@ -300,6 +301,9 @@ function buildProgram(io) {
           (await executeReviewVerifyCommand(commandContext, commandLogger)) ?? EXIT_CODES.success;
       } else if (commandDefinition.name === "report") {
         exitCode = (await executeReportCommand(commandContext, commandLogger)) ?? EXIT_CODES.success;
+      } else if (commandDefinition.name === "upgrade") {
+        exitCode =
+          (await executeUpgradeCommand(commandContext, commandLogger)) ?? EXIT_CODES.success;
       } else {
         writeRegisteredCommand(commandLogger, commandContext);
       }

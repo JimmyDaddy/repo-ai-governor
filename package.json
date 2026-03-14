@@ -1,20 +1,33 @@
 {
   "name": "repo-ai-governor",
   "version": "0.1.0",
-  "private": true,
+  "private": false,
   "description": "Repository-local AI governance CLI.",
+  "license": "MIT",
   "type": "module",
   "bin": {
     "repo-ai-governor": "./bin/repo-ai-governor.js"
   },
+  "files": [
+    "bin",
+    "src",
+    "scripts/examples"
+  ],
   "scripts": {
     "start": "node ./bin/repo-ai-governor.js",
     "help": "node ./bin/repo-ai-governor.js --help",
     "test": "node --test",
-    "check": "npm run test"
+    "check": "npm run test",
+    "release:check": "node ./scripts/release/check-release-ready.js",
+    "release:verify-local": "node ./scripts/release/verify-local-distribution.js",
+    "release:candidate": "npm run check && npm run release:check && npm run release:verify-local",
+    "release:pack": "npm pack --json"
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "dependencies": {
     "ajv": "^8.18.0",
