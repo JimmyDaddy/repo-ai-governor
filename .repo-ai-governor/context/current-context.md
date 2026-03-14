@@ -4,14 +4,14 @@
 
 - Status: active
 - Project: `mvp`
-- Sprint: `sprint-007`
-- Docs root: `docs/mvp/sprint-007/`
-- Task records: `docs/mvp/sprint-007/tasks/`
-- Code review records: `docs/mvp/sprint-007/code-review/`
+- Sprint: `sprint-008`
+- Docs root: `docs/mvp/sprint-008/`
+- Task records: `docs/mvp/sprint-008/tasks/`
+- Code review records: `docs/mvp/sprint-008/code-review/`
 
 ## Active Streams
 
-- `primary`: project=`mvp`, sprint=`sprint-007`, docs=`docs/mvp/sprint-007/`, status=`active`
+- `primary`: project=`mvp`, sprint=`sprint-008`, docs=`docs/mvp/sprint-008/`, status=`active`
 
 ## Update Rules
 

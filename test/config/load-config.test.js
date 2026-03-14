@@ -179,3 +179,28 @@ test("loadResolvedConfig rejects enabled definitions that are missing on disk", 
 
   assert.throws(() => loadResolvedConfig({ cwd }), ConfigurationError);
 });
+
+test("loadResolvedConfig rejects duplicate script extension ids within a slot definition", () => {
+  const cwd = createTempRepo();
+
+  writeFile(
+    path.join(cwd, ".repo-ai-governor/slots/docs-output.yaml"),
+    [
+      "id: docs-output",
+      'version: "1"',
+      "kind: governance-slot",
+      "extensions:",
+      "  scripts:",
+      "    - id: shared-hook",
+      "      runtime:",
+      "        kind: command",
+      "        entry: node ./scripts/docs-output.js",
+      "    - id: shared-hook",
+      "      runtime:",
+      "        kind: command",
+      "        entry: node ./scripts/docs-output-2.js"
+    ].join("\n")
+  );
+
+  assert.throws(() => loadResolvedConfig({ cwd }), ConfigurationError);
+});

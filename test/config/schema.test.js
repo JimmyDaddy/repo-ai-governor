@@ -99,6 +99,17 @@ test("slot schema validates slot configuration defaults", () => {
         "en-US": "Security Review"
       },
       owner: "platform"
+    },
+    extensions: {
+      scripts: [
+        {
+          id: "security-summary",
+          runtime: {
+            kind: "command",
+            entry: "node ./scripts/security-summary.js"
+          }
+        }
+      ]
     }
   };
 
@@ -111,6 +122,11 @@ test("slot schema validates slot configuration defaults", () => {
   assert.deepEqual(slotConfig.trigger.when.stages, []);
   assert.deepEqual(slotConfig.trigger.when.adapters, []);
   assert.equal(slotConfig.behavior.conflictPolicy, "error");
+  assert.equal(slotConfig.extensions.scripts[0].hook, "after");
+  assert.equal(slotConfig.extensions.scripts[0].failurePolicy, "stop");
+  assert.equal(slotConfig.extensions.scripts[0].runtime.timeoutMs, 30000);
+  assert.equal(slotConfig.extensions.scripts[0].permissions.network, "forbid");
+  assert.deepEqual(slotConfig.extensions.scripts[0].audit.capture, ["exitCode", "stdout", "stderr"]);
 });
 
 test("workflow template schema validates the standard serial workflow shape", () => {

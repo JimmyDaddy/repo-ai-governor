@@ -57,6 +57,9 @@ function createSlotDefinition(overrides = {}) {
     checks: {
       before: overrides.checks?.before ?? [],
       after: overrides.checks?.after ?? []
+    },
+    extensions: {
+      scripts: overrides.extensions?.scripts ?? []
     }
   };
 }
@@ -270,4 +273,58 @@ test("slot runtime throws an explainable error when conflicting slots cannot be 
       return true;
     }
   );
+});
+
+test("slot runtime surfaces declarative script extensions for active slots without executing them", () => {
+  const slotRuntime = buildSlotRuntime({
+    config: {
+      execution: {
+        currentProject: "mvp"
+      },
+      slots: {
+        enabled: ["docs-output"],
+        disabled: [],
+        conflictPolicy: "error"
+      }
+    },
+    slotDefinitions: [
+      {
+        config: createSlotDefinition({
+          id: "docs-output",
+          scope: {
+            projects: ["mvp"]
+          },
+          trigger: {
+            when: {
+              stages: ["report"],
+              commands: ["report"]
+            }
+          },
+          extensions: {
+            scripts: [
+              {
+                id: "render-doc-index",
+                hook: "after",
+                runtime: {
+                  kind: "command",
+                  entry: "node ./scripts/render-doc-index.js"
+                }
+              }
+            ]
+          }
+        })
+      }
+    ]
+  });
+
+  const resolution = resolveApplicableSlots(slotRuntime, {
+    stageId: "report",
+    commandId: "report",
+    project: "mvp"
+  });
+
+  assert.equal(resolution.extensions.scriptCount, 1);
+  assert.equal(resolution.extensions.scripts[0].slotId, "docs-output");
+  assert.equal(resolution.extensions.scripts[0].runtime.entry, "node ./scripts/render-doc-index.js");
+  assert.equal(resolution.activeSlots[0].extensions.scripts[0].id, "render-doc-index");
 });

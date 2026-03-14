@@ -1,6 +1,6 @@
 # MVP Sprint 007
 
-- Status: active
+- Status: done
 - Date: 2026-03-14
 - Project: `mvp`
 - Sprint: `sprint-007`
@@ -29,4 +29,4 @@
 
 1. `sprint-007` 以“让 MVP 进入可分发、可安装、可升级的发布就绪状态”为核心目标。
 2. `TK-004`、`TK-005`、`TK-006` 已完成，当前 sprint 已具备发布候选、升级命令和本地安装验收三条主线能力。
-3. 当前 sprint 尚未正式收口；如果继续保持当前范围，可以进入 closeout。
+3. `sprint-007` 已正式收口，后续执行基线已切换到 `docs/mvp/sprint-008/`。

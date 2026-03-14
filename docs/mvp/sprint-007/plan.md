@@ -1,6 +1,6 @@
 # MVP Sprint 007 Plan
 
-- Status: active
+- Status: done
 - Date: 2026-03-14
 
 ## Goal
@@ -56,6 +56,12 @@
 2. `TK-004` 已完成，当前已补齐发布元数据、发布前检查脚本和发布候选链路。
 3. `TK-005` 已完成，当前已补齐 `upgrade` 命令最小版本及 preview/backup 语义。
 4. `TK-006` 已完成，当前已补齐 tarball / `npx` 本地安装验收链路。
+
+## Closure
+
+1. `sprint-007` 已满足全部 exit criteria，可正式标记为完成。
+2. 当前仓库已经具备发布候选检查、`upgrade` 最小版本和本地分发验收三条发布就绪能力。
+3. 后续执行基线已切换到 `docs/mvp/sprint-008/`，下一轮优先补齐脚本扩展接口与后续适配路线图。
 
 ## Output Paths
 

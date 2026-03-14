@@ -265,7 +265,8 @@ function toSerializableSlot(entry) {
     dependsOn: [...entry.definition.behavior.dependsOn],
     supersedes: [...entry.definition.behavior.supersedes],
     inject: cloneValue(entry.definition.behavior.inject),
-    checks: cloneValue(entry.definition.checks)
+    checks: cloneValue(entry.definition.checks),
+    extensions: cloneValue(entry.definition.extensions)
   };
 }
 
@@ -284,6 +285,28 @@ function collectChecksSummary(activeEntries) {
   return {
     before: uniqueValues(activeEntries.flatMap((entry) => entry.definition.checks.before)),
     after: uniqueValues(activeEntries.flatMap((entry) => entry.definition.checks.after))
+  };
+}
+
+function collectExtensionSummary(activeEntries) {
+  const scripts = activeEntries.flatMap((entry) =>
+    (entry.definition.extensions?.scripts ?? []).map((scriptExtension) => ({
+      slotId: entry.id,
+      slotSource: entry.definition.meta.source,
+      slotType: entry.definition.meta.slotType,
+      id: scriptExtension.id,
+      hook: scriptExtension.hook,
+      failurePolicy: scriptExtension.failurePolicy,
+      runtime: cloneValue(scriptExtension.runtime),
+      permissions: cloneValue(scriptExtension.permissions),
+      audit: cloneValue(scriptExtension.audit),
+      isolation: cloneValue(scriptExtension.isolation)
+    }))
+  );
+
+  return {
+    scriptCount: scripts.length,
+    scripts
   };
 }
 
@@ -574,6 +597,7 @@ export function resolveApplicableSlots(slotRuntime, criteria = {}) {
     conflicts: conflictResolution.decisions,
     injections: collectInjectionSummary(activeSlots),
     checks: collectChecksSummary(activeSlots),
+    extensions: collectExtensionSummary(activeSlots),
     requiresApproval: activeSlots.some((entry) => entry.definition.behavior.requiresApproval),
     blockOnFailure: activeSlots.some((entry) => entry.definition.behavior.blockOnFailure)
   };

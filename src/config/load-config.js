@@ -8,6 +8,7 @@ import {
 } from "./errors.js";
 import { resolveRepositoryLayout } from "./repository-layout.js";
 import { buildDefaultGovernorConfig, validateSchemaDocument } from "./schema/validator.js";
+import { validateSlotDefinition } from "../slots/slot-model.js";
 
 export const CONFIG_ENV_PREFIX = "REPO_AI_GOVERNOR__";
 
@@ -248,9 +249,12 @@ function loadDefinitionDirectory(cwd, relativeDirectoryPath, schemaName, kind) {
 
   for (const filePath of filePaths) {
     const document = readYamlDocument(filePath);
-    const config = validateSchemaDocument(schemaName, document, {
-      source: filePath
-    });
+    const config =
+      schemaName === "slot"
+        ? validateSlotDefinition(document)
+        : validateSchemaDocument(schemaName, document, {
+            source: filePath
+          });
 
     if (seenIds.has(config.id)) {
       throw new ConfigurationConflictError(`Duplicate ${kind} id "${config.id}"`, {

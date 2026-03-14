@@ -1,3 +1,4 @@
+import { ConfigurationValidationError } from "../config/errors.js";
 import { validateSchemaDocument } from "../config/schema/validator.js";
 
 export const SLOT_SOURCES = Object.freeze(["project-local", "team-shared", "official"]);
@@ -10,6 +11,15 @@ export const SLOT_TYPES = Object.freeze([
   "documentation-output",
   "custom"
 ]);
+export const SCRIPT_EXTENSION_HOOKS = Object.freeze(["before", "after"]);
+export const SCRIPT_EXTENSION_RUNTIME_KINDS = Object.freeze(["command", "node-module"]);
+export const SCRIPT_EXTENSION_NETWORK_POLICIES = Object.freeze(["forbid", "allow"]);
+export const SCRIPT_EXTENSION_GIT_POLICIES = Object.freeze(["forbid", "read", "write"]);
+export const SCRIPT_EXTENSION_SECRET_POLICIES = Object.freeze(["forbid", "allow-inherited"]);
+
+function cloneValue(value) {
+  return structuredClone(value);
+}
 
 function createLocalizedText(zhCN, enUS) {
   return {
@@ -18,8 +28,30 @@ function createLocalizedText(zhCN, enUS) {
   };
 }
 
+function ensureUniqueScriptExtensionIds(slotDefinition) {
+  const seenIds = new Set();
+
+  for (const scriptExtension of slotDefinition.extensions?.scripts ?? []) {
+    if (seenIds.has(scriptExtension.id)) {
+      throw new ConfigurationValidationError(
+        `Invalid slot document: duplicate script extension id "${scriptExtension.id}"`,
+        {
+          details: {
+            slotId: slotDefinition.id,
+            scriptExtensionId: scriptExtension.id
+          }
+        }
+      );
+    }
+
+    seenIds.add(scriptExtension.id);
+  }
+
+  return slotDefinition;
+}
+
 export function validateSlotDefinition(slotDefinition) {
-  return validateSchemaDocument("slot", slotDefinition);
+  return ensureUniqueScriptExtensionIds(validateSchemaDocument("slot", slotDefinition));
 }
 
 export const PROJECT_LOCAL_SLOT_SKELETON = Object.freeze(
@@ -77,6 +109,22 @@ export function listSlotTriggerTargets(slotDefinition) {
     adapters: slot.trigger.when.adapters,
     commands: slot.trigger.when.commands
   };
+}
+
+export function listSlotScriptExtensions(slotDefinition) {
+  const slot = validateSlotDefinition(slotDefinition);
+
+  return (slot.extensions?.scripts ?? []).map((scriptExtension) => ({
+    slotId: slot.id,
+    slotSource: slot.meta.source,
+    id: scriptExtension.id,
+    hook: scriptExtension.hook,
+    failurePolicy: scriptExtension.failurePolicy,
+    runtime: cloneValue(scriptExtension.runtime),
+    permissions: cloneValue(scriptExtension.permissions),
+    audit: cloneValue(scriptExtension.audit),
+    isolation: cloneValue(scriptExtension.isolation)
+  }));
 }
 
 export function compareSlotsByPriority(leftSlot, rightSlot) {

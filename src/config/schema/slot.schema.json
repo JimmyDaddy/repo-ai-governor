@@ -66,6 +66,12 @@
         "before": [],
         "after": []
       }
+    },
+    "extensions": {
+      "$ref": "#/$defs/extensionsConfig",
+      "default": {
+        "scripts": []
+      }
     }
   },
   "$defs": {
@@ -252,6 +258,165 @@
         },
         "after": {
           "$ref": "./shared.schema.json#/$defs/stringList",
+          "default": []
+        }
+      }
+    },
+    "scriptExtensionRuntimeConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "entry"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["command", "node-module"]
+        },
+        "entry": {
+          "$ref": "./shared.schema.json#/$defs/nonEmptyString"
+        },
+        "args": {
+          "$ref": "./shared.schema.json#/$defs/stringList",
+          "default": []
+        },
+        "cwd": {
+          "$ref": "./shared.schema.json#/$defs/relativePath"
+        },
+        "timeoutMs": {
+          "type": "integer",
+          "minimum": 1000,
+          "default": 30000
+        }
+      }
+    },
+    "scriptExtensionFilesystemPermissionsConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "read": {
+          "$ref": "./shared.schema.json#/$defs/stringList",
+          "default": []
+        },
+        "write": {
+          "$ref": "./shared.schema.json#/$defs/stringList",
+          "default": []
+        }
+      }
+    },
+    "scriptExtensionPermissionsConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "filesystem": {
+          "$ref": "#/$defs/scriptExtensionFilesystemPermissionsConfig",
+          "default": {
+            "read": [],
+            "write": []
+          }
+        },
+        "network": {
+          "type": "string",
+          "enum": ["forbid", "allow"],
+          "default": "forbid"
+        },
+        "git": {
+          "type": "string",
+          "enum": ["forbid", "read", "write"],
+          "default": "forbid"
+        },
+        "secrets": {
+          "type": "string",
+          "enum": ["forbid", "allow-inherited"],
+          "default": "forbid"
+        }
+      }
+    },
+    "scriptExtensionAuditConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "logKey": {
+          "$ref": "./shared.schema.json#/$defs/nonEmptyString"
+        },
+        "capture": {
+          "$ref": "./shared.schema.json#/$defs/stringList",
+          "default": ["exitCode", "stdout", "stderr"]
+        },
+        "redact": {
+          "$ref": "./shared.schema.json#/$defs/stringList",
+          "default": []
+        }
+      }
+    },
+    "scriptExtensionIsolationConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["process", "external-runner"],
+          "default": "process"
+        }
+      }
+    },
+    "scriptExtensionConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "runtime"],
+      "properties": {
+        "id": {
+          "$ref": "./shared.schema.json#/$defs/slug"
+        },
+        "description": {
+          "$ref": "./shared.schema.json#/$defs/localizedText"
+        },
+        "hook": {
+          "type": "string",
+          "enum": ["before", "after"],
+          "default": "after"
+        },
+        "failurePolicy": {
+          "$ref": "./shared.schema.json#/$defs/failurePolicy",
+          "default": "stop"
+        },
+        "runtime": {
+          "$ref": "#/$defs/scriptExtensionRuntimeConfig"
+        },
+        "permissions": {
+          "$ref": "#/$defs/scriptExtensionPermissionsConfig",
+          "default": {
+            "filesystem": {
+              "read": [],
+              "write": []
+            },
+            "network": "forbid",
+            "git": "forbid",
+            "secrets": "forbid"
+          }
+        },
+        "audit": {
+          "$ref": "#/$defs/scriptExtensionAuditConfig",
+          "default": {
+            "capture": ["exitCode", "stdout", "stderr"],
+            "redact": []
+          }
+        },
+        "isolation": {
+          "$ref": "#/$defs/scriptExtensionIsolationConfig",
+          "default": {
+            "mode": "process"
+          }
+        }
+      }
+    },
+    "extensionsConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "scripts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/scriptExtensionConfig"
+          },
           "default": []
         }
       }
