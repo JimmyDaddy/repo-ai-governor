@@ -22,6 +22,9 @@ concurrency:
 jobs:
   publish-npm:
     runs-on: ubuntu-latest
+    env:
+      NODE_AUTH_TOKEN: ""
+      NPM_TOKEN: ""
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -41,6 +44,9 @@ jobs:
 
       - name: Run release gate
         run: npm run release:ga-check
+
+      - name: Sanitize npm auth for trusted publishing
+        run: npm config delete //registry.npmjs.org/:_authToken || true
 
       - name: Publish to npm
         run: npm publish --provenance --access public

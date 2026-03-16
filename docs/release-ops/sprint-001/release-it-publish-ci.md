@@ -46,6 +46,7 @@
 3. 当前 changelog 自动生成以 `CHANGELOG.md` 为主，`CHANGELOG.zh-CN.md` 仍保留人工校对更新。
 4. 为避免 scoped package 导致 tarball 文件名变化，`release-ga.yml` 现已改为动态解析 `npm pack --json` 输出，不再写死 tarball 名称。
 5. 这次 GitHub CI 报错的根因不是 npm publish 权限，而是 `run-getting-started-check.sh` 之前把 `NODE_BIN / NPM_BIN` 默认写死成了 `/opt/homebrew/bin/*`，在 GitHub runner 上不存在。
+6. 当仓库或组织级别存在 `NODE_AUTH_TOKEN` 时，`publish-npm.yml` 现已在 job 环境中显式清空 `NODE_AUTH_TOKEN / NPM_TOKEN`，并在发布前删除 `//registry.npmjs.org/:_authToken`，确保发布步骤走 OIDC trusted publishing，而不是意外回落到 token 发布路径。
 
 ## Verification
 
