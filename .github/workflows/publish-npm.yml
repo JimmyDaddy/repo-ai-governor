@@ -44,4 +44,4 @@ jobs:
 
       - name: Publish to npm
         run: |
-          npm publish --access public
+          npm publish --provenance --access public
