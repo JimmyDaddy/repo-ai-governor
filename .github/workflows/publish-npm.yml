@@ -44,8 +44,4 @@ jobs:
 
       - name: Publish to npm
         run: |
-          # Clear setup-node auto-provisioned auth so npm CLI
-          # performs its own OIDC exchange for trusted publishing
-          npm config delete //registry.npmjs.org/:_authToken 2>/dev/null || true
-          unset NODE_AUTH_TOKEN
-          npm publish --provenance --access public
+          npm publish
