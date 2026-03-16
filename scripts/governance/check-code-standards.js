@@ -223,6 +223,22 @@ function writeOutput(payload, format) {
     for (const failure of payload.failures) {
       process.stderr.write(`${failure.message}\n`);
     }
+
+    const failedCommand = payload.commands.find((command) => command.status === "fail");
+
+    if (failedCommand) {
+      process.stderr.write(
+        [
+          "",
+          `Failed command: ${failedCommand.command}`,
+          `Exit code: ${failedCommand.exitCode}`,
+          failedCommand.stdout ? `stdout:\n${failedCommand.stdout}` : "",
+          failedCommand.stderr ? `stderr:\n${failedCommand.stderr}` : ""
+        ]
+          .filter(Boolean)
+          .join("\n") + "\n"
+      );
+    }
   }
 }
 
