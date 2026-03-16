@@ -53,12 +53,15 @@ test("publish workflow runs GA gate before npm publish with provenance", () => {
   assert.match(workflow, /release:\s*\n\s*types:\s*\n\s*-\s*published/);
   assert.match(workflow, /workflow_dispatch:/);
   assert.match(workflow, /id-token:\s*write/);
+  assert.match(workflow, /node-version:\s*24/);
   assert.match(workflow, /NODE_AUTH_TOKEN:\s*""/);
   assert.match(workflow, /NPM_TOKEN:\s*""/);
+  assert.match(workflow, /unset NODE_AUTH_TOKEN/);
+  assert.match(workflow, /unset NPM_TOKEN/);
   assert.match(workflow, /npm ci/);
   assert.match(workflow, /npm run release:ga-check/);
   assert.match(workflow, /npm config delete \/\/registry\.npmjs\.org\/:_authToken \|\| true/);
-  assert.match(workflow, /npm publish --provenance --access public/);
+  assert.match(workflow, /npm publish --access public/);
 });
 
 test("release-it config uses GA gate and delegates npm publish to CI", () => {

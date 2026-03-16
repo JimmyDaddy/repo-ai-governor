@@ -22,9 +22,6 @@ concurrency:
 jobs:
   publish-npm:
     runs-on: ubuntu-latest
-    env:
-      NODE_AUTH_TOKEN: ""
-      NPM_TOKEN: ""
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -33,9 +30,9 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
           registry-url: https://registry.npmjs.org
 
@@ -45,8 +42,7 @@ jobs:
       - name: Run release gate
         run: npm run release:ga-check
 
-      - name: Sanitize npm auth for trusted publishing
-        run: npm config delete //registry.npmjs.org/:_authToken || true
-
-      - name: Publish to npm
-        run: npm publish --provenance --access public
+      - name: Publish to npm (trusted publishing via OIDC)
+        run: |
+          npm config delete //registry.npmjs.org/:_authToken || true
+          npm publish --provenance --access public

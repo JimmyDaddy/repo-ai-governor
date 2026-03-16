@@ -23,6 +23,7 @@
 7. 已核对 scoped package 名影响面，确认当前安装文档已明确包名为 `@cjhdev/repo-ai-governor`、CLI 仍为 `repo-ai-governor`，且 `release-ga.yml` 已改为动态解析 tarball 文件名。
 8. 已核对 [run-getting-started-check.sh](/Users/jimmydaddy/study/repo-ai-governor/scripts/release/run-getting-started-check.sh)，确认脚本不再默认依赖 `/opt/homebrew/bin/node` 与 `/opt/homebrew/bin/npm`，因此 GitHub runner 可通过系统 PATH 正常执行。
 9. 已核对 [publish-npm.yml](/Users/jimmydaddy/study/repo-ai-governor/.github/workflows/publish-npm.yml)，确认 job 级环境显式清空 `NODE_AUTH_TOKEN/NPM_TOKEN`，并在发布前执行 `npm config delete //registry.npmjs.org/:_authToken || true`，避免仓库级 token 覆盖 OIDC trusted publishing。
+10. 已核对 [publish-npm.yml](/Users/jimmydaddy/study/repo-ai-governor/.github/workflows/publish-npm.yml) 与 [test/release/release-automation.test.js](/Users/jimmydaddy/study/repo-ai-governor/test/release/release-automation.test.js)，确认发布运行时升级为 Node `24`，并在 publish step 级别 `unset NODE_AUTH_TOKEN/NPM_TOKEN`，以规避 `ENEEDAUTH` 场景下的身份路径混用。
 
 ## Conclusion
 
