@@ -192,11 +192,47 @@ function ensureLocalPackageManifest(cwd, dependencyName, dependencyVersionRange)
   };
 }
 
-function installLocalToolDependency(cwd, dependencyName, dependencyVersionRange) {
+function installLocalToolDependency(
+  cwd,
+  dependencyName,
+  dependencyVersionRange,
+  options = {}
+) {
+  const installTargetOverride = options.installTargetOverride?.trim() || null;
+  const saveDependency = options.saveDependency !== false;
+  const installTarget = installTargetOverride ?? `${dependencyName}@${dependencyVersionRange}`;
+
+  if (installTargetOverride) {
+    const result = spawnSync("npm", ["install", "--no-save", installTarget], {
+      cwd,
+      encoding: "utf8"
+    });
+
+    if (result.status !== 0) {
+      throw new ConfigError(`Failed to install ${installTarget} via npm.`, {
+        code: "cli.init_dependency_install_failed",
+        details: {
+          packageManager: "npm",
+          command: "npm",
+          args: ["install", "--no-save", installTarget],
+          stdout: result.stdout,
+          stderr: result.stderr
+        }
+      });
+    }
+
+    return {
+      packageManager: "npm",
+      command: "npm",
+      args: ["install", "--no-save", installTarget],
+      installTarget
+    };
+  }
+
   const packageManager = resolvePackageManager(cwd);
-  const installTarget = `${dependencyName}@${dependencyVersionRange}`;
   const [command, ...baseArgs] = packageManager.installCommand;
-  const result = spawnSync(command, [...baseArgs, installTarget], {
+  const installArgs = saveDependency ? [...baseArgs, installTarget] : [installTarget];
+  const result = spawnSync(command, installArgs, {
     cwd,
     encoding: "utf8"
   });
@@ -207,7 +243,7 @@ function installLocalToolDependency(cwd, dependencyName, dependencyVersionRange)
       details: {
         packageManager: packageManager.name,
         command,
-        args: [...baseArgs, installTarget],
+        args: installArgs,
         stdout: result.stdout,
         stderr: result.stderr
       }
@@ -217,7 +253,8 @@ function installLocalToolDependency(cwd, dependencyName, dependencyVersionRange)
   return {
     packageManager: packageManager.name,
     command,
-    args: [...baseArgs, installTarget]
+    args: installArgs,
+    installTarget
   };
 }
 
@@ -582,13 +619,15 @@ export function executeInitCommand(commandContext, logger) {
   const selfInstallRequested = commandContext.commandOptions.selfInstall === true;
   const skipSelfInstall = commandContext.commandOptions.skipSelfInstall === true;
   const skipSkillInstall = commandContext.commandOptions.skipSkillInstall === true;
+  const selfInstallSource = process.env.REPO_AI_GOVERNOR_SELF_INSTALL_SOURCE?.trim() || null;
   const shouldSelfInstall = !dryRun && !skipSelfInstall && (selfInstallRequested || isNpxInvocation());
   const shouldInstallSkills = !dryRun && !skipSkillInstall;
   const dependencyBootstrap = {
     enabled: shouldSelfInstall,
     reason: shouldSelfInstall ? (selfInstallRequested ? "explicit" : "npx-auto") : "disabled",
     packageName: packageJson.name,
-    versionRange: `^${packageJson.version}`
+    versionRange: `^${packageJson.version}`,
+    installSource: selfInstallSource ? "override" : "registry"
   };
   let skillBootstrap = {
     enabled: shouldInstallSkills,
@@ -624,7 +663,11 @@ export function executeInitCommand(commandContext, logger) {
       const installResult = installLocalToolDependency(
         plan.cwd,
         packageJson.name,
-        dependencyBootstrap.versionRange
+        dependencyBootstrap.versionRange,
+        {
+          installTargetOverride: selfInstallSource,
+          saveDependency: !selfInstallSource
+        }
       );
 
       dependencyBootstrap.packageFile = toRelativePath(plan.cwd, manifestResult.packageFilePath);
@@ -633,6 +676,7 @@ export function executeInitCommand(commandContext, logger) {
       dependencyBootstrap.dependencyAddedOrUpdated = manifestResult.dependencyAddedOrUpdated;
       dependencyBootstrap.packageManager = installResult.packageManager;
       dependencyBootstrap.installCommand = [installResult.command, ...installResult.args].join(" ");
+      dependencyBootstrap.installTarget = installResult.installTarget;
     }
 
     if (shouldInstallSkills) {

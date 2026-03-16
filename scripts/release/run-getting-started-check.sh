@@ -75,6 +75,7 @@ TARBALL_FILENAME="$("$NODE_BIN" --input-type=module -e 'const payload = JSON.par
 TARBALL_PATH="$ROOT_DIR/$TARBALL_FILENAME"
 
 "$NPM_BIN" install --prefix "$INSTALL_DIR" "$TARBALL_PATH" >/dev/null
+export REPO_AI_GOVERNOR_SELF_INSTALL_SOURCE="$TARBALL_PATH"
 
 CLI=(npx --no-install repo-ai-governor)
 

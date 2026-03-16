@@ -48,6 +48,7 @@
 5. 这次 GitHub CI 报错的根因不是 npm publish 权限，而是 `run-getting-started-check.sh` 之前把 `NODE_BIN / NPM_BIN` 默认写死成了 `/opt/homebrew/bin/*`，在 GitHub runner 上不存在。
 6. 当仓库或组织级别存在 `NODE_AUTH_TOKEN` 时，`publish-npm.yml` 现已在 job 环境中显式清空 `NODE_AUTH_TOKEN / NPM_TOKEN`，并在发布前删除 `//registry.npmjs.org/:_authToken`，确保发布步骤走 OIDC trusted publishing，而不是意外回落到 token 发布路径。
 7. 为满足 npm Trusted Publishing 的运行时要求，`publish-npm.yml` 的 `setup-node` 已升级到 Node `24`，并在 `Publish to npm` step 中再次执行 step 级 token 清空与 `unset`，避免外部环境变量覆盖。
+8. 为避免 `release:ga-check` 在“新版本尚未 publish 到 npm”阶段失败，`run-getting-started-check.sh` 现会把本地 tarball 路径通过 `REPO_AI_GOVERNOR_SELF_INSTALL_SOURCE` 传给 `init`，使 `init` 在 npx 场景优先从本地 tarball 自安装，而不是强依赖 registry 中已有 `^当前版本`。
 
 ## Verification
 
