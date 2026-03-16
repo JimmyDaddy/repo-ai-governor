@@ -1,0 +1,4 @@
+interface:
+  display_name: "Governor Plan Runner"
+  short_description: "Generate request input and run repo-ai-governor plan"
+  default_prompt: "Use $governor-plan-runner to organize the requirement, optionally scaffold a request draft, run repo-ai-governor plan, and verify that plan.md, checklist, tasks.csv, and task cards were produced."

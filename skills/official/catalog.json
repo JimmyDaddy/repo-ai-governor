@@ -26,5 +26,30 @@
       "mode": "native"
     }
   },
-  "skills": []
+  "skills": [
+    {
+      "id": "governor-context-loader",
+      "manifestPath": "skills/official/governor-context-loader/skill.json",
+      "surfaces": ["codex", "github-copilot", "claude-code"],
+      "defaultInstallMode": "native"
+    },
+    {
+      "id": "governor-plan-runner",
+      "manifestPath": "skills/official/governor-plan-runner/skill.json",
+      "surfaces": ["codex", "github-copilot", "claude-code"],
+      "defaultInstallMode": "native"
+    },
+    {
+      "id": "governor-task-implementer",
+      "manifestPath": "skills/official/governor-task-implementer/skill.json",
+      "surfaces": ["codex", "github-copilot", "claude-code"],
+      "defaultInstallMode": "native"
+    },
+    {
+      "id": "governor-delivery-finisher",
+      "manifestPath": "skills/official/governor-delivery-finisher/skill.json",
+      "surfaces": ["codex", "github-copilot", "claude-code"],
+      "defaultInstallMode": "native"
+    }
+  ]
 }

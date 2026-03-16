@@ -1,0 +1,4 @@
+interface:
+  display_name: "Governor Task Implementer"
+  short_description: "Implement one TK task and sync execution records"
+  default_prompt: "Use $governor-task-implementer to read the target TK task card, implement only that scoped change, run the minimum self-check, and append execution records to the active sprint checklist and CSV."

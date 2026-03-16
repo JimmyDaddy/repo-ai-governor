@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "1",
+  "id": "governor-context-loader",
+  "version": "0.1.0",
+  "kind": "governor-skill",
+  "displayName": "Governor Context Loader",
+  "description": "Resolve AGENTS.md, current-context.md, and the active artifact paths before other governance skills run.",
+  "entry": {
+    "skillFile": "SKILL.md",
+    "agentFiles": ["agents/openai.yaml"],
+    "scriptsDir": "scripts",
+    "templatesDir": "templates",
+    "referencesDir": "references"
+  },
+  "triggers": {
+    "keywords": ["$governor-context-loader", "load context", "读取上下文"],
+    "intents": ["resolve active stream", "read AGENTS and current context", "解析当前项目和 sprint"]
+  },
+  "compatibility": {
+    "repoAiGovernor": "^0.1.0",
+    "installModes": {
+      "codex": "native",
+      "github-copilot": "native",
+      "claude-code": "native"
+    }
+  },
+  "distribution": {
+    "channel": "official",
+    "root": "skills/official/governor-context-loader"
+  },
+  "surfaces": ["codex", "github-copilot", "claude-code"]
+}

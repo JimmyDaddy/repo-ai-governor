@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "1",
+  "id": "governor-task-implementer",
+  "version": "0.1.0",
+  "kind": "governor-skill",
+  "displayName": "Governor Task Implementer",
+  "description": "Implement a bounded TK task card, run a minimum self-check, and sync execution records.",
+  "entry": {
+    "skillFile": "SKILL.md",
+    "agentFiles": ["agents/openai.yaml"],
+    "scriptsDir": "scripts",
+    "templatesDir": "templates",
+    "referencesDir": "references"
+  },
+  "triggers": {
+    "keywords": ["$governor-task-implementer", "start task", "开始 TK"],
+    "intents": ["implement task card", "execute TK item", "按任务卡实现"]
+  },
+  "compatibility": {
+    "repoAiGovernor": "^0.1.0",
+    "installModes": {
+      "codex": "native",
+      "github-copilot": "native",
+      "claude-code": "native"
+    }
+  },
+  "distribution": {
+    "channel": "official",
+    "root": "skills/official/governor-task-implementer"
+  },
+  "surfaces": ["codex", "github-copilot", "claude-code"]
+}

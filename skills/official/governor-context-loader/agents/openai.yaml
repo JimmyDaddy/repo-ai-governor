@@ -1,0 +1,4 @@
+interface:
+  display_name: "Governor Context Loader"
+  short_description: "Resolve active stream paths before other skills run"
+  default_prompt: "Use $governor-context-loader to read AGENTS.md, current-context.md, and summarize the active project, sprint, and artifact paths before other governance actions."

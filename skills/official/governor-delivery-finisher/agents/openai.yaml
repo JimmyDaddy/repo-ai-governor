@@ -1,0 +1,4 @@
+interface:
+  display_name: "Governor Delivery Finisher"
+  short_description: "Run gates, commit, and optionally push governed work"
+  default_prompt: "Use $governor-delivery-finisher to inspect git state, run the documented repository gate, create a Conventional Commit, and push only if the user explicitly asked for it."

@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "1",
+  "id": "governor-delivery-finisher",
+  "version": "0.1.0",
+  "kind": "governor-skill",
+  "displayName": "Governor Delivery Finisher",
+  "description": "Run repository gates, create a Conventional Commit, and optionally push after explicit approval.",
+  "entry": {
+    "skillFile": "SKILL.md",
+    "agentFiles": ["agents/openai.yaml"],
+    "scriptsDir": "scripts",
+    "templatesDir": "templates",
+    "referencesDir": "references"
+  },
+  "triggers": {
+    "keywords": ["$governor-delivery-finisher", "finish", "收尾"],
+    "intents": ["create final commit", "run delivery gate", "提交当前修改"]
+  },
+  "compatibility": {
+    "repoAiGovernor": "^0.1.0",
+    "installModes": {
+      "codex": "native",
+      "github-copilot": "native",
+      "claude-code": "native"
+    }
+  },
+  "distribution": {
+    "channel": "official",
+    "root": "skills/official/governor-delivery-finisher"
+  },
+  "surfaces": ["codex", "github-copilot", "claude-code"]
+}

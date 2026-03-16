@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "1",
+  "id": "governor-plan-runner",
+  "version": "0.1.0",
+  "kind": "governor-skill",
+  "displayName": "Governor Plan Runner",
+  "description": "Generate request input, run repo-ai-governor plan, and verify sprint planning artifacts.",
+  "entry": {
+    "skillFile": "SKILL.md",
+    "agentFiles": ["agents/openai.yaml"],
+    "scriptsDir": "scripts",
+    "templatesDir": "templates",
+    "referencesDir": "references"
+  },
+  "triggers": {
+    "keywords": ["$governor-plan-runner", "plan this", "拆解任务"],
+    "intents": ["generate plan artifacts", "create task breakdown", "根据需求生成任务卡"]
+  },
+  "compatibility": {
+    "repoAiGovernor": "^0.1.0",
+    "installModes": {
+      "codex": "native",
+      "github-copilot": "native",
+      "claude-code": "native"
+    }
+  },
+  "distribution": {
+    "channel": "official",
+    "root": "skills/official/governor-plan-runner"
+  },
+  "surfaces": ["codex", "github-copilot", "claude-code"]
+}
