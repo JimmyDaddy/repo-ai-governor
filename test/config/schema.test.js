@@ -35,13 +35,17 @@ test("schema bundle resolves all expected file paths", () => {
     "workflowTemplate",
     "standardsPackage",
     "slot",
-    "adapter"
+    "adapter",
+    "skillManifest",
+    "skillCatalog"
   ]);
   assert.match(resolveSchemaPath("governor"), /src\/config\/schema\/governor\.schema\.json$/);
   assert.match(resolveSchemaPath("workflowTemplate"), /src\/config\/schema\/workflow-template\.schema\.json$/);
   assert.match(resolveSchemaPath("standardsPackage"), /src\/config\/schema\/standards-package\.schema\.json$/);
   assert.match(resolveSchemaPath("slot"), /src\/config\/schema\/slot\.schema\.json$/);
   assert.match(resolveSchemaPath("adapter"), /src\/config\/schema\/adapter\.schema\.json$/);
+  assert.match(resolveSchemaPath("skillManifest"), /src\/config\/schema\/skill-manifest\.schema\.json$/);
+  assert.match(resolveSchemaPath("skillCatalog"), /src\/config\/schema\/skill-catalog\.schema\.json$/);
 });
 
 test("governor schema validates minimal repository config and applies defaults", () => {
@@ -343,4 +347,77 @@ test("adapter schema validates mainstream adapter configuration", () => {
   assert.equal(adapterConfig.policy.nonInteractiveSafe, true);
   assert.deepEqual(adapterConfig.contract.input.sources, ["workflow", "standards", "slots"]);
   assert.equal(adapterConfig.capabilities.patchEditing, false);
+});
+
+test("skill manifest schema validates first-party skill metadata", () => {
+  const { ajv, bundle } = createAjvWithBundle();
+  const validate = ajv.getSchema(bundle.skillManifest.$id);
+  const manifest = {
+    schemaVersion: "1",
+    id: "governor-plan-runner",
+    version: "0.1.0",
+    kind: "governor-skill",
+    displayName: "Governor Plan Runner",
+    description: "Run plan-oriented governance workflow actions.",
+    surfaces: ["codex", "github-copilot", "claude-code"],
+    entry: {
+      skillFile: "SKILL.md",
+      agentFiles: ["agents/openai.yaml"]
+    },
+    compatibility: {
+      repoAiGovernor: "^0.1.0",
+      installModes: {
+        codex: "native",
+        "github-copilot": "hybrid",
+        "claude-code": "native"
+      }
+    },
+    distribution: {
+      channel: "official",
+      root: "skills/official/governor-plan-runner"
+    }
+  };
+
+  assert.equal(validate(manifest), true, JSON.stringify(validate.errors, null, 2));
+  assert.equal(manifest.entry.scriptsDir, "scripts");
+  assert.equal(manifest.entry.templatesDir, "templates");
+  assert.equal(manifest.entry.referencesDir, "references");
+});
+
+test("skill catalog schema validates bundled official package metadata", () => {
+  const { ajv, bundle } = createAjvWithBundle();
+  const validate = ajv.getSchema(bundle.skillCatalog.$id);
+  const catalog = {
+    schemaVersion: "1",
+    id: "repo-ai-governor-official",
+    version: "0.1.0",
+    kind: "skill-catalog",
+    packageRoot: "skills",
+    officialRoot: "skills/official",
+    sharedRoot: "skills/shared",
+    compatibility: {
+      repoAiGovernor: "^0.1.0"
+    },
+    installTargets: {
+      codex: {
+        repoLocal: ".codex/skills",
+        userLocal: "$CODEX_HOME/skills",
+        mode: "native"
+      },
+      "github-copilot": {
+        repoLocal: ".github/skills",
+        userLocal: "$HOME/.copilot/skills",
+        mode: "hybrid"
+      },
+      "claude-code": {
+        repoLocal: ".claude/skills",
+        userLocal: "$HOME/.claude/skills",
+        mode: "native"
+      }
+    },
+    skills: []
+  };
+
+  assert.equal(validate(catalog), true, JSON.stringify(validate.errors, null, 2));
+  assert.deepEqual(catalog.skills, []);
 });

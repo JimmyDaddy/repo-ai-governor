@@ -9,7 +9,9 @@ export const SCHEMA_FILE_NAMES = Object.freeze({
   workflowTemplate: "workflow-template.schema.json",
   standardsPackage: "standards-package.schema.json",
   slot: "slot.schema.json",
-  adapter: "adapter.schema.json"
+  adapter: "adapter.schema.json",
+  skillManifest: "skill-manifest.schema.json",
+  skillCatalog: "skill-catalog.schema.json"
 });
 
 const schemaDirectoryUrl = new URL("./", import.meta.url);

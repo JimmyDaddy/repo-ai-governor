@@ -1,0 +1,30 @@
+{
+  "schemaVersion": "1",
+  "id": "repo-ai-governor-official",
+  "version": "0.1.0",
+  "kind": "skill-catalog",
+  "packageRoot": "skills",
+  "officialRoot": "skills/official",
+  "sharedRoot": "skills/shared",
+  "compatibility": {
+    "repoAiGovernor": "^0.1.0"
+  },
+  "installTargets": {
+    "codex": {
+      "repoLocal": ".codex/skills",
+      "userLocal": "$CODEX_HOME/skills",
+      "mode": "native"
+    },
+    "github-copilot": {
+      "repoLocal": ".github/skills",
+      "userLocal": "$HOME/.copilot/skills",
+      "mode": "hybrid"
+    },
+    "claude-code": {
+      "repoLocal": ".claude/skills",
+      "userLocal": "$HOME/.claude/skills",
+      "mode": "native"
+    }
+  },
+  "skills": []
+}

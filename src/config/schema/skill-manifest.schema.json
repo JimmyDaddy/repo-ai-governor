@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://repo-ai-governor.dev/schemas/v1/skill-manifest.schema.json",
+  "title": "Repo AI Governor Skill Manifest",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "id",
+    "version",
+    "kind",
+    "displayName",
+    "description",
+    "entry",
+    "compatibility",
+    "distribution",
+    "surfaces"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1"
+    },
+    "id": {
+      "$ref": "https://repo-ai-governor.dev/schemas/v1/shared.schema.json#/$defs/slug"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?$"
+    },
+    "kind": {
+      "type": "string",
+      "const": "governor-skill"
+    },
+    "displayName": {
+      "$ref": "https://repo-ai-governor.dev/schemas/v1/shared.schema.json#/$defs/nonEmptyString"
+    },
+    "description": {
+      "$ref": "https://repo-ai-governor.dev/schemas/v1/shared.schema.json#/$defs/nonEmptyString"
+    },
+    "surfaces": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["codex", "github-copilot", "claude-code"]
+      },
+      "uniqueItems": true,
+      "minItems": 1
+    },
+    "entry": {
+      "type": "object",
+      "required": ["skillFile"],
+      "properties": {
+        "skillFile": {
+          "type": "string",
+          "const": "SKILL.md"
+        },
+        "agentFiles": {
+          "type": "array",
+          "items": {
+            "$ref": "https://repo-ai-governor.dev/schemas/v1/shared.schema.json#/$defs/relativePath"
+          },
+          "default": [],
+          "uniqueItems": true
+        },
+        "scriptsDir": {
+          "type": "string",
+          "default": "scripts"
+        },
+        "templatesDir": {
+          "type": "string",
+          "default": "templates"
+        },
+        "referencesDir": {
+          "type": "string",
+          "default": "references"
+        }
+      },
+      "additionalProperties": false
+    },
+    "triggers": {
+      "type": "object",
+      "properties": {
+        "keywords": {
+          "$ref": "https://repo-ai-governor.dev/schemas/v1/shared.schema.json#/$defs/stringList"
+        },
+        "intents": {
+          "$ref": "https://repo-ai-governor.dev/schemas/v1/shared.schema.json#/$defs/stringList"
+        }
+      },
+      "additionalProperties": false,
+      "default": {}
+    },
+    "compatibility": {
+      "type": "object",
+      "required": ["repoAiGovernor", "installModes"],
+      "properties": {
+        "repoAiGovernor": {
+          "type": "string",
+          "pattern": "^(?:\\^|~|>=|<=|>|<)?\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?$"
+        },
+        "installModes": {
+          "type": "object",
+          "properties": {
+            "codex": {
+              "type": "string",
+              "enum": ["native", "hybrid", "projection"]
+            },
+            "github-copilot": {
+              "type": "string",
+              "enum": ["native", "hybrid", "projection"]
+            },
+            "claude-code": {
+              "type": "string",
+              "enum": ["native", "hybrid", "projection"]
+            }
+          },
+          "additionalProperties": false,
+          "minProperties": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "distribution": {
+      "type": "object",
+      "required": ["channel", "root"],
+      "properties": {
+        "channel": {
+          "type": "string",
+          "enum": ["official", "project-local", "team-shared"]
+        },
+        "root": {
+          "$ref": "https://repo-ai-governor.dev/schemas/v1/shared.schema.json#/$defs/relativePath"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

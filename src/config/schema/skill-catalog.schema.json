@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://repo-ai-governor.dev/schemas/v1/skill-catalog.schema.json",
+  "title": "Repo AI Governor Official Skill Catalog",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "id",
+    "version",
+    "kind",
+    "packageRoot",
+    "officialRoot",
+    "sharedRoot",
+    "compatibility",
+    "installTargets",
+    "skills"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1"
+    },
+    "id": {
+      "type": "string",
+      "const": "repo-ai-governor-official"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?$"
+    },
+    "kind": {
+      "type": "string",
+      "const": "skill-catalog"
+    },
+    "packageRoot": {
+      "type": "string",
+      "const": "skills"
+    },
+    "officialRoot": {
+      "type": "string",
+      "const": "skills/official"
+    },
+    "sharedRoot": {
+      "type": "string",
+      "const": "skills/shared"
+    },
+    "compatibility": {
+      "type": "object",
+      "required": ["repoAiGovernor"],
+      "properties": {
+        "repoAiGovernor": {
+          "type": "string",
+          "pattern": "^(?:\\^|~|>=|<=|>|<)?\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "installTargets": {
+      "type": "object",
+      "required": ["codex", "github-copilot", "claude-code"],
+      "properties": {
+        "codex": { "$ref": "#/$defs/installTarget" },
+        "github-copilot": { "$ref": "#/$defs/installTarget" },
+        "claude-code": { "$ref": "#/$defs/installTarget" }
+      },
+      "additionalProperties": false
+    },
+    "skills": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/catalogEntry"
+      },
+      "default": []
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "installTarget": {
+      "type": "object",
+      "required": ["repoLocal", "userLocal", "mode"],
+      "properties": {
+        "repoLocal": {
+          "type": "string",
+          "minLength": 1
+        },
+        "userLocal": {
+          "type": "string",
+          "minLength": 1
+        },
+        "mode": {
+          "type": "string",
+          "enum": ["native", "hybrid", "projection"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "catalogEntry": {
+      "type": "object",
+      "required": ["id", "manifestPath", "surfaces", "defaultInstallMode"],
+      "properties": {
+        "id": {
+          "$ref": "https://repo-ai-governor.dev/schemas/v1/shared.schema.json#/$defs/slug"
+        },
+        "manifestPath": {
+          "$ref": "https://repo-ai-governor.dev/schemas/v1/shared.schema.json#/$defs/relativePath"
+        },
+        "surfaces": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["codex", "github-copilot", "claude-code"]
+          },
+          "uniqueItems": true,
+          "minItems": 1
+        },
+        "defaultInstallMode": {
+          "type": "string",
+          "enum": ["native", "hybrid", "projection"]
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
