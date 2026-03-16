@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.1.5](https://github.com/JimmyDaddy/repo-ai-governor/compare/v0.1.4...v0.1.5) (2026-03-16)
+
+### Features
+
+* add repository-level code standards and verification commands ([e0fcde2](https://github.com/JimmyDaddy/repo-ai-governor/commit/e0fcde2afb67b96a181d5d709bbf5677514e9150))
+
+### Bug Fixes
+
+* **i18n:** localize command outputs and validation messages ([66ea07f](https://github.com/JimmyDaddy/repo-ai-governor/commit/66ea07f02cc34272cccab330721f0083b61ee630))
+* **release:** use local tarball for gate-time init bootstrap ([e8aa46c](https://github.com/JimmyDaddy/repo-ai-governor/commit/e8aa46c8e51af493e4424fcf96a2a5d401ff858f))
+
 ## [0.1.4](https://github.com/JimmyDaddy/repo-ai-governor/compare/v0.1.3...v0.1.4) (2026-03-16)
 
 ### Bug Fixes

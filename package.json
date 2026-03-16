@@ -1,6 +1,6 @@
 {
   "name": "@cjhdev/repo-ai-governor",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "private": false,
   "description": "Repository-local AI governance CLI.",
   "license": "MIT",
