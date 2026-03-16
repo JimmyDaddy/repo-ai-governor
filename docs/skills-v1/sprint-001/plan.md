@@ -1,6 +1,6 @@
 # Skills V1 Sprint 001 Plan
 
-- Status: active
+- Status: done
 - Date: 2026-03-16
 
 ## Goal
@@ -58,6 +58,12 @@
 3. `TK-802` 已完成，当前已补齐 `skills install / list / doctor` 命令面、catalog/runtime 基础模块与命令级测试。
 4. `TK-803` 已完成，当前 bundled catalog 已能分发 4 个首批官方 skill，并包含一个 `script-assisted` 示例。
 5. `TK-804` 已完成，当前 `Codex / GitHub Copilot / Claude Code` 都有官方 skill 的原生安装说明与补充投影层边界。
+
+## Closure
+
+1. `skills-v1 / sprint-001` 已完成收口。
+2. 当前 sprint 的 4 个任务都已交付，且 `skills install / list / doctor`、官方 skill 资产和三类 adapter 接线基线都已落地。
+3. 当前仓库上下文已切回 idle；若继续推进 `skills-v1`，应先规划 `sprint-002`。
 
 ## Output Paths
 

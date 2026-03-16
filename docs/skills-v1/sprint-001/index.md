@@ -1,6 +1,6 @@
 # Skills V1 Sprint 001
 
-- Status: active
+- Status: done
 - Date: 2026-03-16
 - Project: `skills-v1`
 - Sprint: `sprint-001`
@@ -36,3 +36,4 @@
 4. `TK-803` 已完成，当前默认 bundled catalog 已能安装 4 个官方 skill。
 5. `TK-804` 已完成，当前三类首批 adapter 都已明确 native skill 安装路径与补充投影层边界。
 6. 所有产物都应与 [../../skill-system-design.md](../../skill-system-design.md) 保持一致。
+7. 当前 sprint 已正式完成；后续如继续推进 `skills-v1`，应新建下一轮 sprint 再继续执行。

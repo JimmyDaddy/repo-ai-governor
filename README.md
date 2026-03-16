@@ -59,11 +59,12 @@ Node.js `>=18` is required.
 The shortest path is:
 
 1. initialize governance
-2. verify repository health
-3. generate a plan
-4. run governance checks
-5. review code changes
-6. render a report
+2. install official skills for your AI tool
+3. verify repository health
+4. generate a plan
+5. run governance checks
+6. review code changes
+7. render a report
 
 Example:
 
@@ -77,6 +78,11 @@ npx repo-ai-governor init \
   --adapter codex \
   --format json
 
+npx repo-ai-governor skills install \
+  --cwd "$TMP_DIR" \
+  --surface codex \
+  --format json
+
 npx repo-ai-governor doctor \
   --cwd "$TMP_DIR" \
   --project demo \
@@ -84,6 +90,37 @@ npx repo-ai-governor doctor \
   --strict \
   --format json
 ```
+
+If you are using another AI surface, replace `codex` with:
+
+1. `github-copilot`
+2. `claude-code`
+
+The native install targets are:
+
+1. `Codex`: `.codex/skills/`
+2. `GitHub Copilot`: `.github/skills/`
+3. `Claude Code`: `.claude/skills/`
+
+## Skills Quick Path
+
+After `skills install`, the repository contains first-party governance skills such as:
+
+1. `governor-context-loader`
+2. `governor-plan-runner`
+3. `governor-task-implementer`
+4. `governor-delivery-finisher`
+
+The shortest way to combine them with AI is:
+
+1. point your AI tool at the repository
+2. let it read `AGENTS.md` and `.repo-ai-governor/context/current-context.md`
+3. trigger an installed skill directly, for example:
+   - `$governor-plan-runner`
+   - `$governor-task-implementer`
+   - `$governor-delivery-finisher`
+
+`Codex`, `GitHub Copilot`, and `Claude Code` can all consume the same official skill set. Adapter-specific bundle, instructions, or prompt files remain useful as supplementary context, but they do not replace the installed skills.
 
 Then prepare a requirement file and generate sprint artifacts:
 
@@ -131,6 +168,7 @@ For a fuller step-by-step path, see:
 1. [Quick Start](/Users/jimmydaddy/study/repo-ai-governor/docs/quick-start.md)
 2. [Getting Started Example](/Users/jimmydaddy/study/repo-ai-governor/docs/getting-started-example.md)
 3. [Ten-Minute Getting Started](/Users/jimmydaddy/study/repo-ai-governor/docs/release-ga/sprint-001/ten-minute-getting-started.md)
+4. [Skills V1 Sprint 001](/Users/jimmydaddy/study/repo-ai-governor/docs/skills-v1/sprint-001/index.md)
 
 ## Commands
 

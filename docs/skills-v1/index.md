@@ -17,4 +17,4 @@
 
 1. `skills-v1` 是从 `Repo AI Governor` 的 skill 体系设计直接拆出来的新项目。
 2. 当前优先目标不是自动化编排，而是先把“官方 skills 可安装、可触发、可与 CLI / adapter 协同”做实。
-3. 首个 sprint 聚焦 skill 资产打包、安装入口、首批官方 skill 和适配器接线基线。
+3. `sprint-001` 已完成，覆盖了 skill 资产打包、安装入口、首批官方 skill 和适配器接线基线。

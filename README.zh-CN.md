@@ -59,11 +59,12 @@ pnpm exec repo-ai-governor --help
 最短路径是：
 
 1. 初始化治理目录
-2. 校验仓库健康度
-3. 生成计划与任务
-4. 执行治理检查
-5. 评审改动
-6. 渲染报告
+2. 为当前 AI 工具安装官方 skills
+3. 校验仓库健康度
+4. 生成计划与任务
+5. 执行治理检查
+6. 评审改动
+7. 渲染报告
 
 示例：
 
@@ -77,6 +78,11 @@ npx repo-ai-governor init \
   --adapter codex \
   --format json
 
+npx repo-ai-governor skills install \
+  --cwd "$TMP_DIR" \
+  --surface codex \
+  --format json
+
 npx repo-ai-governor doctor \
   --cwd "$TMP_DIR" \
   --project demo \
@@ -84,6 +90,37 @@ npx repo-ai-governor doctor \
   --strict \
   --format json
 ```
+
+如果你使用的是其他 AI 工具，把 `codex` 替换为：
+
+1. `github-copilot`
+2. `claude-code`
+
+对应的原生安装目录是：
+
+1. `Codex`: `.codex/skills/`
+2. `GitHub Copilot`: `.github/skills/`
+3. `Claude Code`: `.claude/skills/`
+
+## Skills 上手
+
+执行 `skills install` 之后，仓库里会出现一组官方治理 skill，例如：
+
+1. `governor-context-loader`
+2. `governor-plan-runner`
+3. `governor-task-implementer`
+4. `governor-delivery-finisher`
+
+和 AI 配合的最短路径是：
+
+1. 让 AI 指向当前仓库
+2. 先读取 `AGENTS.md` 和 `.repo-ai-governor/context/current-context.md`
+3. 直接触发已安装的 skill，例如：
+   - `$governor-plan-runner`
+   - `$governor-task-implementer`
+   - `$governor-delivery-finisher`
+
+`Codex`、`GitHub Copilot`、`Claude Code` 现在都可以消费同一套官方 skill。adapter 额外生成的 bundle、instructions、prompt 仍然有价值，但它们是补充层，不替代已安装的 skill 本体。
 
 然后准备需求文件并生成 sprint 产物：
 
@@ -131,6 +168,7 @@ npx repo-ai-governor report \
 1. [Quick Start](/Users/jimmydaddy/study/repo-ai-governor/docs/quick-start.md)
 2. [Getting Started Example](/Users/jimmydaddy/study/repo-ai-governor/docs/getting-started-example.md)
 3. [Ten-Minute Getting Started](/Users/jimmydaddy/study/repo-ai-governor/docs/release-ga/sprint-001/ten-minute-getting-started.md)
+4. [Skills V1 Sprint 001](/Users/jimmydaddy/study/repo-ai-governor/docs/skills-v1/sprint-001/index.md)
 
 ## 命令
 

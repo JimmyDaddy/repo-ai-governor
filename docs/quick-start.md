@@ -5,7 +5,7 @@
 
 ## Goal
 
-在一个全新目录中，用最短路径跑通 `Repo AI Governor` 的最小体验。
+在一个全新目录中，用最短路径跑通 `Repo AI Governor` 的最小体验，并为当前 AI 工具安装官方 skills。
 
 ## Prerequisites
 
@@ -37,7 +37,26 @@ Expected:
 3. `.repo-ai-governor/context/current-context.md`
 4. `docs/demo/sprint-001/`
 
-## 3. Check Repository Health
+## 3. Install Official Skills
+
+```bash
+npx repo-ai-governor skills install \
+  --cwd "$TMP_DIR" \
+  --surface codex \
+  --format json
+```
+
+Expected:
+
+1. `status: "installed"` 或 `status: "planned"`
+2. `.codex/skills/` 下出现官方治理 skill
+
+如果你不是用 `Codex`，可以改成：
+
+1. `github-copilot`
+2. `claude-code`
+
+## 4. Check Repository Health
 
 ```bash
 npx repo-ai-governor doctor \
@@ -53,7 +72,7 @@ Expected:
 1. `status: "pass"`
 2. no config/layout errors
 
-## 4. Generate A Plan
+## 5. Generate A Plan
 
 ```bash
 cat > "$TMP_DIR/request.md" <<'EOF'
@@ -78,7 +97,7 @@ Expected:
 3. `docs/demo/sprint-001/tasks/tasks.csv`
 4. at least one `TK-xxx.md`
 
-## 5. Run Governance Check
+## 6. Run Governance Check
 
 ```bash
 npx repo-ai-governor check \
@@ -88,7 +107,7 @@ npx repo-ai-governor check \
   --format json
 ```
 
-## 6. Run A Review
+## 7. Run A Review
 
 Prepare a simple file first:
 
@@ -118,7 +137,7 @@ Expected:
 1. a `review_<slug>.md` file under `code-review/`
 2. findings for TODO markers or missing tests when applicable
 
-## 7. Render A Report
+## 8. Render A Report
 
 ```bash
 npx repo-ai-governor report \
@@ -133,3 +152,7 @@ npx repo-ai-governor report \
 1. [Getting Started Example](/Users/jimmydaddy/study/repo-ai-governor/docs/getting-started-example.md)
 2. [MVP Acceptance Kit](/Users/jimmydaddy/study/repo-ai-governor/examples/mvp-acceptance/README.md)
 3. [GA Release Flow](/Users/jimmydaddy/study/repo-ai-governor/docs/release-ga/sprint-001/ga-release-flow.md)
+4. 安装完官方 skills 后，可让 AI 直接触发：
+   - `$governor-plan-runner`
+   - `$governor-task-implementer`
+   - `$governor-delivery-finisher`
