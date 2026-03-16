@@ -114,7 +114,7 @@ test("review-verify appends verification results and renames pending review file
   assert.equal(verifyPayload.reviewStatusAfter, "verified");
   assert.equal(fs.existsSync(path.join(cwd, reviewPayload.reviewFile)), false);
   assert.equal(fs.existsSync(verifiedFilePath), true);
-  assert.match(fs.readFileSync(verifiedFilePath, "utf8"), /Re-ran review verification/);
+  assert.match(fs.readFileSync(verifiedFilePath, "utf8"), /重新执行 review-verify/);
 });
 
 test("review-verify strict mode fails when warning findings remain", async () => {
@@ -222,5 +222,5 @@ test("review-verify can promote a verified review file to resolved after finding
   assert.equal(secondVerifyPayload.reviewStatusAfter, "resolved");
   assert.equal(fs.existsSync(path.join(cwd, firstVerifyPayload.outputFile)), false);
   assert.equal(fs.existsSync(resolvedFilePath), true);
-  assert.match(fs.readFileSync(resolvedFilePath, "utf8"), /lifecycle promoted to resolved/);
+  assert.match(fs.readFileSync(resolvedFilePath, "utf8"), /生命周期已推进为 resolved/);
 });

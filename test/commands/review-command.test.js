@@ -114,7 +114,7 @@ test("review creates a pending CR file with warning findings for TODO markers an
   assert.equal(fs.existsSync(reviewFilePath), true);
   assert.ok(payload.findings.some((finding) => finding.id.startsWith("review.todo-marker")));
   assert.ok(payload.findings.some((finding) => finding.id.startsWith("review.mirrored-test")));
-  assert.match(fs.readFileSync(reviewFilePath, "utf8"), /Pending verification/);
+  assert.match(fs.readFileSync(reviewFilePath, "utf8"), /待复核/);
 });
 
 test("review strict mode fails the command when warning findings remain", async () => {

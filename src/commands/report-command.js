@@ -10,17 +10,33 @@ function toRelativePath(cwd, absolutePath) {
   return relativePath || ".";
 }
 
+function normalizeLocale(locale) {
+  return locale === "en-US" ? "en-US" : "zh-CN";
+}
+
+function t(locale, zhCN, enUS) {
+  return normalizeLocale(locale) === "en-US" ? enUS : zhCN;
+}
+
 function buildReportRun(commandContext) {
   const cwd = path.resolve(commandContext.globalOptions.cwd ?? process.cwd());
   const sourceOption = commandContext.commandOptions.source;
+  const requestedLocale = normalizeLocale(commandContext.globalOptions.locale);
 
   if (!sourceOption) {
-    throw new InputError("Report command requires --source to point to an existing result file.", {
-      code: "cli.report_missing_source",
-      details: {
-        cwd
+    throw new InputError(
+      t(
+        requestedLocale,
+        "report 命令需要 --source 指向一个已存在的结果文件。",
+        "Report command requires --source to point to an existing result file."
+      ),
+      {
+        code: "cli.report_missing_source",
+        details: {
+          cwd
+        }
       }
-    });
+    );
   }
 
   const resolvedConfig = loadResolvedConfig({
@@ -31,8 +47,11 @@ function buildReportRun(commandContext) {
       ...commandContext.commandOptions
     }
   });
+  const locale = normalizeLocale(
+    commandContext.globalOptions.locale ?? resolvedConfig.config.standards.locales.default
+  );
   const sourceFilePath = path.resolve(cwd, sourceOption);
-  const { sourceKind, report } = loadReportSource(sourceFilePath);
+  const { sourceKind, report } = loadReportSource(sourceFilePath, { locale });
   const format = commandContext.format;
   const configuredOutputPath = path.resolve(
     cwd,
@@ -50,6 +69,7 @@ function buildReportRun(commandContext) {
     sourceFilePath,
     sourceKind,
     report,
+    locale: normalizeLocale(report?.context?.locale ?? locale),
     format,
     dryRun: commandContext.globalOptions.dryRun === true,
     outputFilePath: configuredOutputPath
@@ -62,6 +82,8 @@ function writeRenderedOutput(outputFilePath, content) {
 }
 
 function writeReportCommandOutput(logger, commandContext, payload, content) {
+  const locale = normalizeLocale(payload.locale);
+
   if (commandContext.format === "json" || commandContext.format === "markdown") {
     logger.raw(content.trimEnd(), { ignoreQuiet: true });
     return;
@@ -70,7 +92,7 @@ function writeReportCommandOutput(logger, commandContext, payload, content) {
   logger.raw(content.trimEnd(), { ignoreQuiet: true });
 
   if (payload.outputFile) {
-    logger.keyValue("Output file", payload.outputFile, { force: true });
+    logger.keyValue(t(locale, "输出文件", "Output file"), payload.outputFile, { force: true });
   }
 }
 
@@ -85,6 +107,7 @@ export async function executeReportCommand(commandContext, logger) {
   const payload = {
     command: "report",
     status: "rendered",
+    locale: runState.locale,
     sourceFile: toRelativePath(runState.cwd, runState.sourceFilePath),
     sourceKind: runState.sourceKind,
     format: runState.format,

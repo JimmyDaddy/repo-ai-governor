@@ -220,6 +220,8 @@ test("skills doctor passes for a valid installed skill", async () => {
     "doctor",
     "--cwd",
     cwd,
+    "--locale",
+    "en-US",
     "--catalog",
     catalogPath,
     "--surface",
@@ -271,5 +273,5 @@ test("skills doctor fails when installed skill structure is broken", async () =>
   assert.equal(result.exitCode, EXIT_CODES.businessCheckFailed);
   assert.equal(payload.status, "fail");
   assert.equal(payload.summary.errors, 1);
-  assert.match(result.stderr, /skills doctor found blocking issues/);
+  assert.match(result.stderr, /(skills doctor found blocking issues|skills doctor 发现阻断问题)/);
 });

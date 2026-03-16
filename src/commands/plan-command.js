@@ -22,6 +22,14 @@ function toRelativePath(cwd, absolutePath) {
   return relativePath || ".";
 }
 
+function normalizeLocale(locale) {
+  return locale === "en-US" ? "en-US" : "zh-CN";
+}
+
+function t(locale, zhCN, enUS) {
+  return normalizeLocale(locale) === "en-US" ? enUS : zhCN;
+}
+
 function formatDate(date = new Date()) {
   return date.toISOString().slice(0, 10);
 }
@@ -36,16 +44,19 @@ function ensureTrailingNewline(content) {
   return content.endsWith("\n") ? content : `${content}\n`;
 }
 
-function readInputFile(cwd, inputPath) {
+function readInputFile(cwd, inputPath, locale = "zh-CN") {
   const absoluteInputPath = path.resolve(cwd, inputPath);
 
   if (!fs.existsSync(absoluteInputPath)) {
-    throw new InputError(`Plan input file not found: ${absoluteInputPath}`, {
+    throw new InputError(
+      t(locale, `未找到 plan 输入文件：${absoluteInputPath}`, `Plan input file not found: ${absoluteInputPath}`),
+      {
       code: "cli.plan_input_missing",
       details: {
         inputPath: absoluteInputPath
       }
-    });
+      }
+    );
   }
 
   return {
@@ -377,12 +388,12 @@ function createPlanVerificationPath(locale) {
       ];
 }
 
-function resolveArtifactPaths(cwd, config, commandContext) {
+function resolveArtifactPaths(cwd, config, commandContext, locale) {
   const currentProject = commandContext.globalOptions.project ?? config.execution.currentProject;
   const currentSprint = commandContext.globalOptions.sprint ?? config.execution.currentSprint;
 
   if (!currentProject || !currentSprint) {
-    throw new ConfigError("Plan command requires a current project and sprint", {
+    throw new ConfigError(t(locale, "plan 命令需要当前 project 与 sprint。", "Plan command requires a current project and sprint"), {
       code: "cli.plan_missing_context",
       details: {
         currentProject,
@@ -420,14 +431,14 @@ function resolveArtifactPaths(cwd, config, commandContext) {
   };
 }
 
-function resolvePlanIntent(cwd, commandContext) {
+function resolvePlanIntent(cwd, commandContext, locale) {
   const inputFile = commandContext.commandOptions.input
-    ? readInputFile(cwd, commandContext.commandOptions.input)
+    ? readInputFile(cwd, commandContext.commandOptions.input, locale)
     : null;
   const title = commandContext.commandOptions.title ?? summarizeText(inputFile?.content ?? "");
 
   if (!title) {
-    throw new InputError("Plan command requires --title or --input", {
+    throw new InputError(t(locale, "plan 命令需要 --title 或 --input。", "Plan command requires --title or --input"), {
       code: "cli.plan_missing_title"
     });
   }
@@ -450,10 +461,10 @@ function buildPlanRun(commandContext) {
     }
   });
   const locale = resolvePlanTemplateLocale(
-    resolved.config.standards.locales.default ?? commandContext.globalOptions.locale
+    commandContext.globalOptions.locale ?? resolved.config.standards.locales.default
   );
-  const intent = resolvePlanIntent(cwd, commandContext);
-  const artifactPaths = resolveArtifactPaths(cwd, resolved.config, commandContext);
+  const intent = resolvePlanIntent(cwd, commandContext, locale);
+  const artifactPaths = resolveArtifactPaths(cwd, resolved.config, commandContext, locale);
   const standardsPackage = resolveStandardsPackage(resolved.config.standards);
   const existingTaskNumbers = collectExistingTaskNumbers(artifactPaths, normalizeTaskPrefix(resolved.config.execution.taskPrefix));
   const nextTaskNumber = Math.max(...existingTaskNumbers, 0) + 1;
@@ -676,6 +687,8 @@ function renderPlanPayload(runState, workflowResult, commandContext, files, outp
 }
 
 function writePlanSummary(logger, payload, format) {
+  const locale = normalizeLocale(payload.locale);
+
   if (format === "json") {
     logger.raw(JSON.stringify(payload, null, 2), { ignoreQuiet: true });
     return;
@@ -701,18 +714,28 @@ function writePlanSummary(logger, payload, format) {
     return;
   }
 
-  logger.success(payload.dryRun ? "plan dry-run is ready" : "plan artifacts generated");
-  logger.keyValue("Project", payload.currentProject);
-  logger.keyValue("Sprint", payload.currentSprint);
-  logger.keyValue("Title", payload.title);
-  logger.keyValue("Workflow status", payload.workflow.status);
-  logger.keyValue("Workflow stages", JSON.stringify(payload.workflow.selectedStageIds));
-  logger.keyValue("Standards preset", payload.standards.preset);
-  logger.keyValue("Generated tasks", JSON.stringify(payload.tasks.map((task) => task.id)));
-  logger.keyValue("Files", JSON.stringify(payload.files));
+  logger.success(
+    payload.dryRun
+      ? t(locale, "plan 预览已就绪", "plan dry-run is ready")
+      : t(locale, "plan 产物已生成", "plan artifacts generated")
+  );
+  logger.keyValue(t(locale, "项目", "Project"), payload.currentProject);
+  logger.keyValue(t(locale, "Sprint", "Sprint"), payload.currentSprint);
+  logger.keyValue(t(locale, "标题", "Title"), payload.title);
+  logger.keyValue(t(locale, "流程状态", "Workflow status"), payload.workflow.status);
+  logger.keyValue(
+    t(locale, "流程阶段", "Workflow stages"),
+    JSON.stringify(payload.workflow.selectedStageIds)
+  );
+  logger.keyValue(t(locale, "规范预设", "Standards preset"), payload.standards.preset);
+  logger.keyValue(
+    t(locale, "生成任务", "Generated tasks"),
+    JSON.stringify(payload.tasks.map((task) => task.id))
+  );
+  logger.keyValue(t(locale, "文件", "Files"), JSON.stringify(payload.files));
 
   if (payload.outputFile) {
-    logger.keyValue("Output file", payload.outputFile);
+    logger.keyValue(t(locale, "输出文件", "Output file"), payload.outputFile);
   }
 }
 

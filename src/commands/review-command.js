@@ -71,6 +71,18 @@ function formatDateTime(date = new Date()) {
   return date.toISOString();
 }
 
+function normalizeLocale(locale) {
+  return locale === "en-US" ? "en-US" : "zh-CN";
+}
+
+function isEnglishLocale(locale) {
+  return normalizeLocale(locale) === "en-US";
+}
+
+function t(locale, zhCN, enUS) {
+  return isEnglishLocale(locale) ? enUS : zhCN;
+}
+
 function createFinding(options) {
   return {
     id: options.id,
@@ -122,11 +134,11 @@ function collectFilesRecursively(targetPath, files = []) {
   return files;
 }
 
-export function collectPathTargets(cwd, targetPath) {
+export function collectPathTargets(cwd, targetPath, locale = "zh-CN") {
   const absoluteTargetPath = path.resolve(cwd, targetPath);
 
   if (!fs.existsSync(absoluteTargetPath)) {
-    throw new InputError(`Review target path not found: ${absoluteTargetPath}`, {
+    throw new InputError(t(locale, `未找到评审目标路径：${absoluteTargetPath}`, `Review target path not found: ${absoluteTargetPath}`), {
       code: "cli.review_path_missing",
       details: {
         path: absoluteTargetPath
@@ -233,12 +245,12 @@ function compareTaskIdSets(left, right) {
   return true;
 }
 
-export function buildArtifactPaths(cwd, resolvedConfig) {
+export function buildArtifactPaths(cwd, resolvedConfig, locale = "zh-CN") {
   const currentProject = resolvedConfig.config.execution.currentProject;
   const currentSprint = resolvedConfig.config.execution.currentSprint;
 
   if (!currentProject || !currentSprint) {
-    throw new ConfigError("Review command requires a current project and sprint", {
+    throw new ConfigError(t(locale, "review 命令需要当前 project 与 sprint。", "Review command requires a current project and sprint"), {
       code: "cli.review_missing_context",
       details: {
         currentProject,
@@ -283,16 +295,23 @@ function buildReviewRun(commandContext) {
       ...commandContext.commandOptions
     }
   });
-  const artifactPaths = buildArtifactPaths(cwd, resolvedConfig);
+  const locale = normalizeLocale(
+    commandContext.globalOptions.locale ?? resolvedConfig.config.standards.locales.default
+  );
+  const artifactPaths = buildArtifactPaths(cwd, resolvedConfig, locale);
   const standardsPackage = resolveStandardsPackage(resolvedConfig.config.standards);
   const targetFiles =
     commandContext.commandOptions.path
-      ? collectPathTargets(cwd, commandContext.commandOptions.path)
+      ? collectPathTargets(cwd, commandContext.commandOptions.path, locale)
       : collectGitTargets(cwd, commandContext.commandOptions.base, commandContext.commandOptions.head);
 
   if (targetFiles.length === 0) {
     throw new InputError(
-      "Review command could not find any target files. Use --path or run inside a git working tree with changes.",
+      t(
+        locale,
+        "review 命令未找到可评审文件。请使用 --path，或在存在变更的 git 工作区中执行。",
+        "Review command could not find any target files. Use --path or run inside a git working tree with changes."
+      ),
       {
         code: "cli.review_no_targets",
         details: {
@@ -316,7 +335,7 @@ function buildReviewRun(commandContext) {
     head: commandContext.commandOptions.head ?? null,
     strict: commandContext.commandOptions.strict === true,
     dryRun: commandContext.globalOptions.dryRun === true,
-    locale: commandContext.globalOptions.locale ?? resolvedConfig.config.execution.defaultLocale
+    locale
   };
 }
 
@@ -373,7 +392,11 @@ function maybeAddTaskSyncFinding(runState, relativeTargets, findings, matchedRul
         ruleId: "process-task-records-must-sync",
         severity: "info",
         status: "pass",
-        message: "Task checklist, CSV, and task cards stay synchronized for the reviewed scope.",
+        message: t(
+          runState.locale,
+          "当前评审范围内的 checklist、CSV 与任务卡保持同步。",
+          "Task checklist, CSV, and task cards stay synchronized for the reviewed scope."
+        ),
         target: [
           toRelativePath(runState.cwd, runState.artifactPaths.checklistFile),
           toRelativePath(runState.cwd, runState.artifactPaths.taskCsvFile)
@@ -389,12 +412,20 @@ function maybeAddTaskSyncFinding(runState, relativeTargets, findings, matchedRul
       ruleId: "process-task-records-must-sync",
       severity: "error",
       status: "fail",
-      message: "Task checklist, CSV, and task cards are not synchronized.",
+      message: t(
+        runState.locale,
+        "任务 checklist、CSV 与任务卡未保持同步。",
+        "Task checklist, CSV, and task cards are not synchronized."
+      ),
       target: [
         toRelativePath(runState.cwd, runState.artifactPaths.checklistFile),
         toRelativePath(runState.cwd, runState.artifactPaths.taskCsvFile)
       ].join(", "),
-      suggestion: "Sync the task IDs and execution records across checklist, tasks.csv, and task files before delivery."
+      suggestion: t(
+        runState.locale,
+        "交付前请先同步 checklist、tasks.csv 与任务卡中的任务编号及执行记录。",
+        "Sync the task IDs and execution records across checklist, tasks.csv, and task files before delivery."
+      )
     })
   );
 }
@@ -422,9 +453,17 @@ export function analyzeTargets(runState) {
           ruleId: "collaboration-risks-and-assumptions-explicit",
           severity: "warning",
           status: "warn",
-          message: "File contains TODO/FIXME/HACK markers that should be made explicit before delivery.",
+          message: t(
+            runState.locale,
+            "文件中存在 TODO/FIXME/HACK 标记，交付前应显式处理。",
+            "File contains TODO/FIXME/HACK markers that should be made explicit before delivery."
+          ),
           target: relativeTarget,
-          suggestion: "Resolve the marker or capture the remaining risk explicitly in the task record or review note."
+          suggestion: t(
+            runState.locale,
+            "请处理该标记，或在任务记录/评审备注中显式记录剩余风险。",
+            "Resolve the marker or capture the remaining risk explicitly in the task record or review note."
+          )
         })
       );
     }
@@ -440,7 +479,11 @@ export function analyzeTargets(runState) {
             ruleId: "quality-verification-before-delivery",
             severity: "info",
             status: "pass",
-            message: "Source file has a matching test file.",
+            message: t(
+              runState.locale,
+              "源文件已存在对应测试文件。",
+              "Source file has a matching test file."
+            ),
             target: `${relativeTarget} -> ${toRelativePath(runState.cwd, mirroredTestFile)}`
           })
         );
@@ -451,9 +494,17 @@ export function analyzeTargets(runState) {
             ruleId: "quality-verification-before-delivery",
             severity: "warning",
             status: "warn",
-            message: "Source file does not have a mirrored test file in test/.",
+            message: t(
+              runState.locale,
+              "源文件在 test/ 下未找到镜像测试文件。",
+              "Source file does not have a mirrored test file in test/."
+            ),
             target: relativeTarget,
-            suggestion: "Add a mirrored test file under test/ or document why the change is intentionally untested."
+            suggestion: t(
+              runState.locale,
+              "请在 test/ 下补充镜像测试文件，或说明该改动为何有意不覆盖测试。",
+              "Add a mirrored test file under test/ or document why the change is intentionally untested."
+            )
           })
         );
       }
@@ -521,23 +572,25 @@ function buildReviewSlug(runState, relativeTargets) {
 }
 
 function buildMarkdownOutput(payload) {
+  const locale = normalizeLocale(payload.locale);
+  const localized = (zhCN, enUS) => t(locale, zhCN, enUS);
   const lifecycle = payload.reviewLifecycle;
   const findingsSection =
     payload.findings.length === 0
-      ? "1. No blocking or warning findings."
+      ? localized("1. 无阻断或告警级评审发现。", "1. No blocking or warning findings.")
       : payload.findings
           .map((finding, index) => {
             const lines = [
               `${index + 1}. [${finding.severity}] ${finding.message}`,
-              `Target: \`${finding.target}\``
+              `${localized("目标", "Target")}: \`${finding.target}\``
             ];
 
             if (finding.ruleId) {
-              lines.push(`Rule: \`${finding.ruleId}\``);
+              lines.push(`${localized("规则", "Rule")}: \`${finding.ruleId}\``);
             }
 
             if (finding.suggestion) {
-              lines.push(`Suggestion: ${finding.suggestion}`);
+              lines.push(`${localized("建议", "Suggestion")}: ${finding.suggestion}`);
             }
 
             return lines.join("\n");
@@ -546,11 +599,11 @@ function buildMarkdownOutput(payload) {
 
   const standardsSection =
     payload.standards.reviewRules.length === 0
-      ? "1. No review-facing standards were loaded."
+      ? localized("1. 未加载面向 review 阶段的规范。", "1. No review-facing standards were loaded.")
       : payload.standards.reviewRules
           .map(
             (rule, index) =>
-              `${index + 1}. \`${rule.id}\` ${rule.title}\nSummary: ${rule.summary}`
+              `${index + 1}. \`${rule.id}\` ${rule.title}\n${localized("摘要", "Summary")}: ${rule.summary}`
           )
           .join("\n\n");
 
@@ -558,51 +611,54 @@ function buildMarkdownOutput(payload) {
 
   return ensureTrailingNewline(
     [
-      `# Review ${payload.slug}`,
+      `${localized("# 评审", "# Review")} ${payload.slug}`,
       "",
-      `- Status: pending`,
-      `- Result: ${payload.status}`,
-      `- Date: ${payload.generatedAt}`,
-      `- Project: \`${payload.currentProject}\``,
-      `- Sprint: \`${payload.currentSprint}\``,
-      `- File lifecycle:`,
-      `  - Pending verify: \`${lifecycle.pending}\``,
-      `  - Verified: \`${lifecycle.verified}\``,
-      `  - Resolved: \`${lifecycle.resolved}\``,
+      `- ${localized("状态", "Status")}: pending`,
+      `- ${localized("结果", "Result")}: ${payload.status}`,
+      `- ${localized("时间", "Date")}: ${payload.generatedAt}`,
+      `- ${localized("项目", "Project")}: \`${payload.currentProject}\``,
+      `- ${localized("Sprint", "Sprint")}: \`${payload.currentSprint}\``,
+      `- ${localized("文件生命周期", "File lifecycle")}:`,
+      `  - ${localized("待复核", "Pending verify")}: \`${lifecycle.pending}\``,
+      `  - ${localized("已复核", "Verified")}: \`${lifecycle.verified}\``,
+      `  - ${localized("已解决", "Resolved")}: \`${lifecycle.resolved}\``,
       "",
-      "## Scope",
+      `## ${localized("评审范围", "Scope")}`,
       "",
-      `Command: \`review\``,
-      runStateLine("Strict mode", payload.strict ? "true" : ""),
-      runStateLine("Path", payload.pathOption),
-      runStateLine("Base", payload.base),
-      runStateLine("Head", payload.head),
+      `${localized("命令", "Command")}: \`review\``,
+      runStateLine(localized("严格模式", "Strict mode"), payload.strict ? "true" : ""),
+      runStateLine(localized("路径", "Path"), payload.pathOption),
+      runStateLine(localized("Base", "Base"), payload.base),
+      runStateLine(localized("Head", "Head"), payload.head),
       "",
-      "## Targets",
+      `## ${localized("目标文件", "Targets")}`,
       "",
       targetSection,
       "",
-      "## Summary",
+      `## ${localized("摘要", "Summary")}`,
       "",
-      `1. Review result: \`${payload.status}\``,
-      `2. Findings: \`${payload.findings.length}\``,
-      `3. Errors: \`${payload.summary.errors}\`, warnings: \`${payload.summary.warnings}\``,
+      `1. ${localized("评审结果", "Review result")}: \`${payload.status}\``,
+      `2. ${localized("发现数", "Findings")}: \`${payload.findings.length}\``,
+      `3. ${localized("错误", "Errors")}: \`${payload.summary.errors}\`, ${localized("告警", "Warnings")}: \`${payload.summary.warnings}\``,
       "",
-      "## Review Findings",
+      `## ${localized("评审发现", "Review Findings")}`,
       "",
       findingsSection,
       "",
-      "## Matched Standards",
+      `## ${localized("命中规范", "Matched Standards")}`,
       "",
       standardsSection,
       "",
-      "## Verify Append Log",
+      `## ${localized("复核追加记录", "Verify Append Log")}`,
       "",
-      "1. Pending verification. Append review-verify results to this file and rename it to the next review status.",
+      localized(
+        "1. 待复核。请将 review-verify 结果追加到本文件，并重命名为下一状态文件。",
+        "1. Pending verification. Append review-verify results to this file and rename it to the next review status."
+      ),
       "",
-      "## Resolution Log",
+      `## ${localized("解决记录", "Resolution Log")}`,
       "",
-      "1. No resolutions have been applied yet."
+      localized("1. 尚未应用任何解决动作。", "1. No resolutions have been applied yet.")
     ]
       .filter(Boolean)
       .join("\n")
@@ -636,6 +692,7 @@ function buildReviewPayload(runState, workflowResult, analysis, summary, reviewF
     head: runState.head,
     strict: runState.strict,
     generatedAt: formatDateTime(),
+    locale: runState.locale,
     slug,
     workflow: {
       status: workflowResult.status,
@@ -690,16 +747,16 @@ function writeReviewOutput(logger, commandContext, payload) {
   }
 
   if (payload.status === "fail") {
-    logger.error("Review found blocking issues");
+    logger.error(t(payload.locale, "评审发现阻断问题", "Review found blocking issues"));
   } else if (payload.status === "warn") {
-    logger.warn("Review found non-blocking issues");
+    logger.warn(t(payload.locale, "评审发现非阻断问题", "Review found non-blocking issues"));
   } else {
-    logger.success("Review passed");
+    logger.success(t(payload.locale, "评审通过", "Review passed"));
   }
 
-  logger.keyValue("Targets", String(payload.targets.length));
-  logger.keyValue("Findings", String(payload.findings.length));
-  logger.keyValue("Review file", payload.reviewFile);
+  logger.keyValue(t(payload.locale, "目标文件", "Targets"), String(payload.targets.length));
+  logger.keyValue(t(payload.locale, "评审发现", "Findings"), String(payload.findings.length));
+  logger.keyValue(t(payload.locale, "评审文件", "Review file"), payload.reviewFile);
 
   for (const finding of payload.findings) {
     const emitter =
@@ -731,8 +788,12 @@ async function executeReviewWorkflow(runState) {
           status: summary.exitCode === EXIT_CODES.success ? "passed" : "failed",
           summary:
             summary.status === "pass"
-              ? "Review completed without findings."
-              : `Review completed with ${analysis.findings.length} findings.`,
+              ? t(runState.locale, "评审完成，无待处理发现。", "Review completed without findings.")
+              : t(
+                  runState.locale,
+                  `评审完成，共有 ${analysis.findings.length} 条发现。`,
+                  `Review completed with ${analysis.findings.length} findings.`
+                ),
           outputs: {
             analysis,
             summary
@@ -742,7 +803,13 @@ async function executeReviewWorkflow(runState) {
           },
           warnings:
             summary.warnings > 0
-              ? [`Review reported ${summary.warnings} warning findings.`]
+              ? [
+                  t(
+                    runState.locale,
+                    `评审报告包含 ${summary.warnings} 条告警发现。`,
+                    `Review reported ${summary.warnings} warning findings.`
+                  )
+                ]
               : []
         };
       }

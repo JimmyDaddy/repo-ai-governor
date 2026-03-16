@@ -66,6 +66,8 @@ test("upgrade preview renders planned operations without mutating files", async 
     "upgrade",
     "--cwd",
     cwd,
+    "--locale",
+    "en-US",
     "--to-version",
     "1",
     "--preview",
@@ -114,7 +116,10 @@ test("upgrade with backup rewrites generated files and stores backups", async ()
   assert.equal(payload.backups.length >= 1, true);
   assert.equal(fs.existsSync(backupAgents), true);
   assert.equal(fs.readFileSync(backupAgents, "utf8"), "# stale\n");
-  assert.match(fs.readFileSync(agentsPath, "utf8"), /Read `.repo-ai-governor\/context\/current-context.md` before acting/);
+  assert.match(
+    fs.readFileSync(agentsPath, "utf8"),
+    /执行前先阅读 `.repo-ai-governor\/context\/current-context.md`/
+  );
   assert.equal(upgradedConfig.schemaVersion, "1");
   assert.equal(upgradedConfig.reporting.outputDir, ".repo-ai-governor/reports");
 });
@@ -132,5 +137,5 @@ test("upgrade rejects unsupported target versions", async () => {
   ]);
 
   assert.equal(result.exitCode, EXIT_CODES.inputError);
-  assert.match(result.stderr, /Unsupported upgrade target version/);
+  assert.match(result.stderr, /(Unsupported upgrade target version|不支持的升级目标版本)/);
 });

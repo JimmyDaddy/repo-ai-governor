@@ -15,6 +15,22 @@ function toRelativePath(cwd, targetPath) {
   return relativePath || ".";
 }
 
+function normalizeLocale(locale) {
+  return locale === "en-US" ? "en-US" : "zh-CN";
+}
+
+function t(locale, zhCN, enUS) {
+  return normalizeLocale(locale) === "en-US" ? enUS : zhCN;
+}
+
+function resolveLocale(commandContext, resolvedConfig = null) {
+  return normalizeLocale(
+    commandContext.globalOptions.locale ??
+      resolvedConfig?.config?.standards?.locales?.default ??
+      "zh-CN"
+  );
+}
+
 function parseVersion(value) {
   const match = String(value).trim().match(/^v?(\d+)(?:\.(\d+))?(?:\.(\d+))?/);
 
@@ -61,7 +77,7 @@ function createFinding(options) {
   };
 }
 
-function createNodeVersionFinding() {
+function createNodeVersionFinding(locale = "zh-CN") {
   const runtimeVersion = parseVersion(process.versions.node);
   const minimumVersion = parseMinimumVersion(packageJson.engines?.node);
   const target = `node ${process.versions.node}`;
@@ -72,9 +88,17 @@ function createNodeVersionFinding() {
       category: "environment",
       severity: "warning",
       status: "warn",
-      message: "Unable to validate Node.js version against package engines.",
+      message: t(
+        locale,
+        "无法基于 package engines 校验当前 Node.js 版本。",
+        "Unable to validate Node.js version against package engines."
+      ),
       target,
-      suggestion: "Review package.json engines.node and verify the active runtime manually."
+      suggestion: t(
+        locale,
+        "请检查 package.json 的 engines.node，并手动确认当前运行时版本。",
+        "Review package.json engines.node and verify the active runtime manually."
+      )
     });
   }
 
@@ -84,9 +108,17 @@ function createNodeVersionFinding() {
       category: "environment",
       severity: "error",
       status: "fail",
-      message: `Node.js ${process.versions.node} does not satisfy ${packageJson.engines.node}.`,
+      message: t(
+        locale,
+        `Node.js ${process.versions.node} 不满足 ${packageJson.engines.node} 要求。`,
+        `Node.js ${process.versions.node} does not satisfy ${packageJson.engines.node}.`
+      ),
       target,
-      suggestion: `Upgrade Node.js to ${packageJson.engines.node} or newer before running the CLI.`
+      suggestion: t(
+        locale,
+        `请先升级 Node.js 至 ${packageJson.engines.node} 或更高版本，再运行 CLI。`,
+        `Upgrade Node.js to ${packageJson.engines.node} or newer before running the CLI.`
+      )
     });
   }
 
@@ -95,7 +127,11 @@ function createNodeVersionFinding() {
     category: "environment",
     severity: "info",
     status: "pass",
-    message: `Node.js ${process.versions.node} satisfies ${packageJson.engines.node}.`,
+    message: t(
+      locale,
+      `Node.js ${process.versions.node} 满足 ${packageJson.engines.node} 要求。`,
+      `Node.js ${process.versions.node} satisfies ${packageJson.engines.node}.`
+    ),
     target
   });
 }
@@ -123,9 +159,17 @@ function createPathFinding(options) {
       category: options.category,
       severity: "error",
       status: "fail",
-      message: "Expected directory path exists but is not a directory.",
+      message: t(
+        options.locale,
+        "目标目录路径存在，但不是目录。",
+        "Expected directory path exists but is not a directory."
+      ),
       target: relativeTarget,
-      suggestion: "Replace the path with a directory or update the repository configuration."
+      suggestion: t(
+        options.locale,
+        "请将该路径替换为目录，或更新仓库配置。",
+        "Replace the path with a directory or update the repository configuration."
+      )
     });
   }
 
@@ -135,9 +179,17 @@ function createPathFinding(options) {
       category: options.category,
       severity: "error",
       status: "fail",
-      message: "Expected file path exists but is not a regular file.",
+      message: t(
+        options.locale,
+        "目标文件路径存在，但不是普通文件。",
+        "Expected file path exists but is not a regular file."
+      ),
       target: relativeTarget,
-      suggestion: "Replace the path with a file or update the repository configuration."
+      suggestion: t(
+        options.locale,
+        "请将该路径替换为文件，或更新仓库配置。",
+        "Replace the path with a file or update the repository configuration."
+      )
     });
   }
 
@@ -155,6 +207,7 @@ function buildDoctorPayload(options = {}) {
   return {
     command: "doctor",
     status: options.status,
+    locale: options.locale,
     strict: options.strict,
     fix: options.fix,
     cwd: options.cwd,
@@ -226,7 +279,7 @@ function buildArtifactPaths(cwd, resolvedConfig) {
   return artifactPaths;
 }
 
-function applySafeFixes(findings) {
+function applySafeFixes(findings, locale) {
   let fixesApplied = 0;
 
   for (const finding of findings) {
@@ -237,7 +290,7 @@ function applySafeFixes(findings) {
     fs.mkdirSync(finding.absoluteTarget, { recursive: true });
     finding.status = "fixed";
     finding.fixed = true;
-    finding.message = `${finding.message} Automatically created by --fix.`;
+    finding.message = `${finding.message} ${t(locale, "已由 --fix 自动创建。", "Automatically created by --fix.")}`;
     fixesApplied += 1;
   }
 
@@ -273,6 +326,8 @@ function summarizeChecks(findings, strict, fixesApplied) {
 }
 
 function writeDoctorSummary(logger, payload, format) {
+  const locale = normalizeLocale(payload.locale);
+
   if (format === "json") {
     logger.raw(JSON.stringify(payload, null, 2), { ignoreQuiet: true });
     return;
@@ -283,14 +338,14 @@ function writeDoctorSummary(logger, payload, format) {
       [
         "# doctor",
         "",
-        `- Status: ${payload.status}`,
-        `- Strict: ${payload.strict}`,
-        `- Fix: ${payload.fix}`,
-        `- Config file: \`${payload.configFile}\``,
-        `- Project: \`${payload.currentProject ?? ""}\``,
-        `- Sprint: \`${payload.currentSprint ?? ""}\``,
-        `- Summary: \`${JSON.stringify(payload.summary)}\``,
-        `- Checks: \`${JSON.stringify(payload.checks)}\``
+        `- ${t(locale, "状态", "Status")}: ${payload.status}`,
+        `- ${t(locale, "严格模式", "Strict")}: ${payload.strict}`,
+        `- ${t(locale, "自动修复", "Fix")}: ${payload.fix}`,
+        `- ${t(locale, "配置文件", "Config file")}: \`${payload.configFile}\``,
+        `- ${t(locale, "项目", "Project")}: \`${payload.currentProject ?? ""}\``,
+        `- ${t(locale, "Sprint", "Sprint")}: \`${payload.currentSprint ?? ""}\``,
+        `- ${t(locale, "摘要", "Summary")}: \`${JSON.stringify(payload.summary)}\``,
+        `- ${t(locale, "检查项", "Checks")}: \`${JSON.stringify(payload.checks)}\``
       ].join("\n"),
       { ignoreQuiet: true }
     );
@@ -298,18 +353,18 @@ function writeDoctorSummary(logger, payload, format) {
   }
 
   if (payload.status === "pass") {
-    logger.success("doctor checks passed");
+    logger.success(t(locale, "doctor 检查通过", "doctor checks passed"));
   } else if (payload.status === "warn") {
-    logger.warn("doctor checks completed with warnings");
+    logger.warn(t(locale, "doctor 检查完成，存在告警", "doctor checks completed with warnings"));
   } else {
-    logger.error("doctor checks failed");
+    logger.error(t(locale, "doctor 检查失败", "doctor checks failed"));
   }
 
-  logger.keyValue("Config file", toRelativePath(payload.cwd, payload.configFile));
-  logger.keyValue("Project", payload.currentProject ?? "(unset)");
-  logger.keyValue("Sprint", payload.currentSprint ?? "(unset)");
+  logger.keyValue(t(locale, "配置文件", "Config file"), toRelativePath(payload.cwd, payload.configFile));
+  logger.keyValue(t(locale, "项目", "Project"), payload.currentProject ?? t(locale, "(未设置)", "(unset)"));
+  logger.keyValue(t(locale, "Sprint", "Sprint"), payload.currentSprint ?? t(locale, "(未设置)", "(unset)"));
   logger.keyValue(
-    "Summary",
+    t(locale, "摘要", "Summary"),
     JSON.stringify({
       errors: payload.summary.errors,
       warnings: payload.summary.warnings,
@@ -347,17 +402,23 @@ export function executeDoctorCommand(commandContext, logger) {
     : layout.absolute.configFile;
   const strict = commandContext.commandOptions.strict === true;
   const fix = commandContext.commandOptions.fix === true;
-  const findings = [createNodeVersionFinding()];
+  const locale = resolveLocale(commandContext);
+  const findings = [createNodeVersionFinding(locale)];
   const configFileFinding = createPathFinding({
+    locale,
     cwd,
     id: "config.main-file",
     category: "config",
     severity: "error",
     kind: "file",
     path: configFilePath,
-    missingMessage: "Main governor config file is missing.",
-    presentMessage: "Main governor config file is present.",
-    suggestion: "Run `repo-ai-governor init` to bootstrap repository configuration."
+    missingMessage: t(locale, "主配置文件缺失。", "Main governor config file is missing."),
+    presentMessage: t(locale, "主配置文件已存在。", "Main governor config file is present."),
+    suggestion: t(
+      locale,
+      "请执行 `repo-ai-governor init` 初始化仓库治理配置。",
+      "Run `repo-ai-governor init` to bootstrap repository configuration."
+    )
   });
 
   findings.push(configFileFinding);
@@ -380,7 +441,7 @@ export function executeDoctorCommand(commandContext, logger) {
           category: "config",
           severity: "info",
           status: "pass",
-          message: "Governor configuration loaded successfully.",
+          message: t(locale, "治理配置加载成功。", "Governor configuration loaded successfully."),
           target: toRelativePath(cwd, resolvedConfig.paths.configFile)
         })
       );
@@ -404,8 +465,11 @@ export function executeDoctorCommand(commandContext, logger) {
             status: "fail",
             message: error.message,
             target: toRelativePath(cwd, configFilePath),
-            suggestion:
+            suggestion: t(
+              locale,
+              "请先修复配置错误，或在确认仓库设置后重新执行 `repo-ai-governor init`。",
               "Fix the configuration error, or rerun `repo-ai-governor init` after reviewing repository settings."
+            )
           })
         );
       } else {
@@ -422,9 +486,13 @@ export function executeDoctorCommand(commandContext, logger) {
           category: "config",
           severity: "warning",
           status: "warn",
-          message: "Current project is not set in the resolved configuration.",
+          message: t(locale, "解析后的配置未设置 currentProject。", "Current project is not set in the resolved configuration."),
           target: toRelativePath(cwd, resolvedConfig.paths.configFile),
-          suggestion: "Set execution.currentProject in governor.yaml or pass --project when running commands."
+          suggestion: t(
+            locale,
+            "请在 governor.yaml 设置 execution.currentProject，或执行命令时传入 --project。",
+            "Set execution.currentProject in governor.yaml or pass --project when running commands."
+          )
         })
       );
     }
@@ -436,9 +504,13 @@ export function executeDoctorCommand(commandContext, logger) {
           category: "config",
           severity: "warning",
           status: "warn",
-          message: "Current sprint is not set in the resolved configuration.",
+          message: t(locale, "解析后的配置未设置 currentSprint。", "Current sprint is not set in the resolved configuration."),
           target: toRelativePath(cwd, resolvedConfig.paths.configFile),
-          suggestion: "Set execution.currentSprint in governor.yaml or pass --sprint when running commands."
+          suggestion: t(
+            locale,
+            "请在 governor.yaml 设置 execution.currentSprint，或执行命令时传入 --sprint。",
+            "Set execution.currentSprint in governor.yaml or pass --sprint when running commands."
+          )
         })
       );
     }
@@ -448,32 +520,38 @@ export function executeDoctorCommand(commandContext, logger) {
       {
         id: "artifacts.config-root",
         path: artifactPaths.configRoot,
-        message: "Config root directory is present."
+        presentMessage: t(locale, "配置根目录已存在。", "Config root directory is present."),
+        missingMessage: t(locale, "配置根目录缺失。", "Config root directory is missing.")
       },
       {
         id: "artifacts.slots-directory",
         path: artifactPaths.slotsDir,
-        message: "Slots directory is present."
+        presentMessage: t(locale, "slots 目录已存在。", "Slots directory is present."),
+        missingMessage: t(locale, "slots 目录缺失。", "Slots directory is missing.")
       },
       {
         id: "artifacts.adapters-directory",
         path: artifactPaths.adaptersDir,
-        message: "Adapters directory is present."
+        presentMessage: t(locale, "adapters 目录已存在。", "Adapters directory is present."),
+        missingMessage: t(locale, "adapters 目录缺失。", "Adapters directory is missing.")
       },
       {
         id: "artifacts.reports-directory",
         path: artifactPaths.reportsDir,
-        message: "Reports directory is present."
+        presentMessage: t(locale, "reports 目录已存在。", "Reports directory is present."),
+        missingMessage: t(locale, "reports 目录缺失。", "Reports directory is missing.")
       },
       {
         id: "artifacts.templates-directory",
         path: artifactPaths.templatesDir,
-        message: "Templates directory is present."
+        presentMessage: t(locale, "templates 目录已存在。", "Templates directory is present."),
+        missingMessage: t(locale, "templates 目录缺失。", "Templates directory is missing.")
       },
       {
         id: "artifacts.context-directory",
         path: artifactPaths.contextDir,
-        message: "Current context directory is present."
+        presentMessage: t(locale, "current context 目录已存在。", "Current context directory is present."),
+        missingMessage: t(locale, "current context 目录缺失。", "Current context directory is missing.")
       }
     ];
 
@@ -482,33 +560,40 @@ export function executeDoctorCommand(commandContext, logger) {
         {
           id: "artifacts.sprint-directory",
           path: artifactPaths.sprintRoot,
-          message: "Sprint root directory is present."
+          presentMessage: t(locale, "sprint 根目录已存在。", "Sprint root directory is present."),
+          missingMessage: t(locale, "sprint 根目录缺失。", "Sprint root directory is missing.")
         },
         {
           id: "artifacts.tasks-directory",
           path: artifactPaths.tasksRoot,
-          message: "Tasks directory is present."
+          presentMessage: t(locale, "tasks 目录已存在。", "Tasks directory is present."),
+          missingMessage: t(locale, "tasks 目录缺失。", "Tasks directory is missing.")
         },
         {
           id: "artifacts.code-review-directory",
           path: artifactPaths.codeReviewRoot,
-          message: "Code review directory is present."
+          presentMessage: t(locale, "code-review 目录已存在。", "Code review directory is present."),
+          missingMessage: t(locale, "code-review 目录缺失。", "Code review directory is missing.")
         }
       );
     }
 
     for (const directoryCheck of directoryChecks) {
       const finding = createPathFinding({
+        locale,
         cwd,
         id: directoryCheck.id,
         category: "artifacts",
         severity: "warning",
         kind: "directory",
         path: directoryCheck.path,
-        missingMessage: directoryCheck.message.replace("is present", "is missing"),
-        presentMessage: directoryCheck.message,
-        suggestion:
-          "Run `repo-ai-governor doctor --fix` to create the missing directory, or rerun `repo-ai-governor init` after review.",
+        missingMessage: directoryCheck.missingMessage,
+        presentMessage: directoryCheck.presentMessage,
+        suggestion: t(
+          locale,
+          "请执行 `repo-ai-governor doctor --fix` 创建缺失目录，或复核后重新执行 `repo-ai-governor init`。",
+          "Run `repo-ai-governor doctor --fix` to create the missing directory, or rerun `repo-ai-governor init` after review."
+        ),
         fixable: true
       });
 
@@ -521,15 +606,20 @@ export function executeDoctorCommand(commandContext, logger) {
       {
         id: "artifacts.agent-entry",
         path: artifactPaths.agentEntryPath,
-        message: "Agent entry file is present."
+        presentMessage: t(locale, "Agent 入口文件已存在。", "Agent entry file is present."),
+        missingMessage: t(locale, "Agent 入口文件缺失。", "Agent entry file is missing.")
       },
       {
         id: "artifacts.current-context-file",
         path: artifactPaths.contextFilePath,
         severity: "warning",
-        message: "Current context file is present.",
-        suggestion:
+        presentMessage: t(locale, "current context 文件已存在。", "Current context file is present."),
+        missingMessage: t(locale, "current context 文件缺失。", "Current context file is missing."),
+        suggestion: t(
+          locale,
+          "请使用 `repo-ai-governor init --force` 生成 context 文件，或手动创建。",
           "Generate the context file with `repo-ai-governor init --force` or create it manually."
+        )
       }
     ];
 
@@ -538,22 +628,26 @@ export function executeDoctorCommand(commandContext, logger) {
         {
           id: "artifacts.sprint-index",
           path: artifactPaths.indexFile,
-          message: "Sprint index file is present."
+          presentMessage: t(locale, "sprint index 文件已存在。", "Sprint index file is present."),
+          missingMessage: t(locale, "sprint index 文件缺失。", "Sprint index file is missing.")
         },
         {
           id: "artifacts.sprint-plan",
           path: artifactPaths.planFile,
-          message: "Sprint plan file is present."
+          presentMessage: t(locale, "sprint plan 文件已存在。", "Sprint plan file is present."),
+          missingMessage: t(locale, "sprint plan 文件缺失。", "Sprint plan file is missing.")
         },
         {
           id: "artifacts.sprint-checklist",
           path: artifactPaths.checklistFile,
-          message: "Sprint checklist file is present."
+          presentMessage: t(locale, "sprint checklist 文件已存在。", "Sprint checklist file is present."),
+          missingMessage: t(locale, "sprint checklist 文件缺失。", "Sprint checklist file is missing.")
         },
         {
           id: "artifacts.sprint-task-csv",
           path: artifactPaths.taskCsvFile,
-          message: "Sprint task CSV file is present."
+          presentMessage: t(locale, "sprint tasks.csv 文件已存在。", "Sprint task CSV file is present."),
+          missingMessage: t(locale, "sprint tasks.csv 文件缺失。", "Sprint task CSV file is missing.")
         }
       );
     }
@@ -561,26 +655,30 @@ export function executeDoctorCommand(commandContext, logger) {
     for (const fileCheck of fileChecks) {
       findings.push(
         createPathFinding({
+          locale,
           cwd,
           id: fileCheck.id,
           category: "artifacts",
           severity: fileCheck.severity ?? "warning",
           kind: "file",
           path: fileCheck.path,
-          missingMessage: fileCheck.message.replace("is present", "is missing"),
-          presentMessage: fileCheck.message,
-          suggestion:
-            fileCheck.suggestion ??
+          missingMessage: fileCheck.missingMessage,
+          presentMessage: fileCheck.presentMessage,
+          suggestion: fileCheck.suggestion ?? t(
+            locale,
+            "请在复核当前仓库状态后，通过 `repo-ai-governor init --force` 重新生成初始化文件。",
             "Regenerate bootstrap files with `repo-ai-governor init --force` after reviewing existing repository state."
+          )
         })
       );
     }
   }
 
-  const fixesApplied = fix ? applySafeFixes(findings) : 0;
+  const fixesApplied = fix ? applySafeFixes(findings, locale) : 0;
   const summary = summarizeChecks(findings, strict, fixesApplied);
   const payload = buildDoctorPayload({
     status: summary.status,
+    locale: resolveLocale(commandContext, resolvedConfig) ?? locale,
     strict,
     fix,
     cwd,

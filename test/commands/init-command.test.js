@@ -122,9 +122,9 @@ test("init creates config agents and sprint scaffolding for a new repository", a
   assert.equal(fs.existsSync(path.join(cwd, "docs/mvp/sprint-001/index.md")), true);
   assert.equal(fs.existsSync(path.join(cwd, "docs/mvp/sprint-001/plan.md")), true);
   assert.equal(fs.statSync(path.join(cwd, "docs/mvp/sprint-001/code-review")).isDirectory(), true);
-  assert.match(agentsContent, /Read `.repo-ai-governor\/context\/current-context.md` before acting/);
-  assert.match(currentContextContent, /Project: `mvp`/);
-  assert.match(currentContextContent, /Sprint: `sprint-001`/);
+  assert.match(agentsContent, /执行前先阅读 `.repo-ai-governor\/context\/current-context.md`/);
+  assert.match(currentContextContent, /项目：`mvp`/);
+  assert.match(currentContextContent, /Sprint：`sprint-001`/);
   assert.match(checklistContent, /\*\*TK-001\*\*/);
   assert.match(csvContent, /^execution_id,task_id,title,owner,priority,due_date,status,project,sprint,plan,result,verify,review_delta,recorded_at/m);
 });
@@ -147,7 +147,10 @@ test("init refuses to overwrite existing bootstrap targets without force", async
   ]);
 
   assert.equal(result.exitCode, EXIT_CODES.configError);
-  assert.match(result.stderr, /Refusing to overwrite existing init targets without --force/);
+  assert.match(
+    result.stderr,
+    /(Refusing to overwrite existing init targets without --force|检测到现有初始化目标文件；如需覆盖请显式传入 --force)/
+  );
 });
 
 test("init can render locale-specific bootstrap templates", async () => {
@@ -169,12 +172,19 @@ test("init can render locale-specific bootstrap templates", async () => {
   ]);
   const indexContent = fs.readFileSync(path.join(cwd, "docs/mvp/sprint-001/index.md"), "utf8");
   const planContent = fs.readFileSync(path.join(cwd, "docs/mvp/sprint-001/plan.md"), "utf8");
+  const agentsContent = fs.readFileSync(path.join(cwd, "AGENTS.md"), "utf8");
+  const currentContextContent = fs.readFileSync(
+    path.join(cwd, ".repo-ai-governor/context/current-context.md"),
+    "utf8"
+  );
   const checklistContent = fs.readFileSync(
     path.join(cwd, "docs/mvp/sprint-001/tasks/checklist.md"),
     "utf8"
   );
 
   assert.equal(result.exitCode, EXIT_CODES.success);
+  assert.match(agentsContent, /Read `.repo-ai-governor\/context\/current-context.md` before acting/);
+  assert.match(currentContextContent, /# Workspace Current Context/);
   assert.match(indexContent, /This directory stores execution artifacts/);
   assert.match(planContent, /Bootstrap repository governance/);
   assert.match(checklistContent, /Add the first real task to this sprint/);

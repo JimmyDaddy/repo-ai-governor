@@ -23,6 +23,14 @@ function toRelativePath(cwd, targetPath) {
   return relativePath || ".";
 }
 
+function normalizeLocale(locale) {
+  return locale === "en-US" ? "en-US" : "zh-CN";
+}
+
+function t(locale, zhCN, enUS) {
+  return normalizeLocale(locale) === "en-US" ? enUS : zhCN;
+}
+
 function ensureDirectory(directoryPath) {
   fs.mkdirSync(directoryPath, { recursive: true });
 }
@@ -37,7 +45,7 @@ function readInstalledSkill(manifestPath) {
   };
 }
 
-function inspectInstalledSkill(skillRoot, surface) {
+function inspectInstalledSkill(skillRoot, surface, locale = "zh-CN") {
   const manifestPath = path.resolve(skillRoot, "skill.json");
   const installedSkill = {
     id: path.basename(skillRoot),
@@ -51,7 +59,7 @@ function inspectInstalledSkill(skillRoot, surface) {
 
   if (!fs.existsSync(manifestPath)) {
     installedSkill.status = "external";
-    installedSkill.issues.push("not managed by repo-ai-governor");
+    installedSkill.issues.push(t(locale, "非 repo-ai-governor 管理", "not managed by repo-ai-governor"));
     return installedSkill;
   }
 
@@ -68,12 +76,14 @@ function inspectInstalledSkill(skillRoot, surface) {
 
   if (!fs.existsSync(installedSkill.skillFilePath)) {
     installedSkill.status = "invalid";
-    installedSkill.issues.push("missing SKILL.md");
+    installedSkill.issues.push(t(locale, "缺少 SKILL.md", "missing SKILL.md"));
   }
 
   if (!installedSkill.manifest.surfaces.includes(surface)) {
     installedSkill.status = "invalid";
-    installedSkill.issues.push(`surface mismatch for ${surface}`);
+    installedSkill.issues.push(
+      t(locale, `surface 与 ${surface} 不匹配`, `surface mismatch for ${surface}`)
+    );
   }
 
   if (
@@ -81,7 +91,11 @@ function inspectInstalledSkill(skillRoot, surface) {
   ) {
     installedSkill.status = "invalid";
     installedSkill.issues.push(
-      `repo-ai-governor ${packageJson.version} does not satisfy ${installedSkill.manifest.compatibility.repoAiGovernor}`
+      t(
+        locale,
+        `repo-ai-governor ${packageJson.version} 不满足 ${installedSkill.manifest.compatibility.repoAiGovernor} 版本约束`,
+        `repo-ai-governor ${packageJson.version} does not satisfy ${installedSkill.manifest.compatibility.repoAiGovernor}`
+      )
     );
   }
 
@@ -131,15 +145,19 @@ function summarizeFindings(findings, strict) {
 
 function getSkillAction(commandContext) {
   const action = commandContext.positionals[0] ?? "list";
+  const locale = normalizeLocale(commandContext.globalOptions.locale);
 
   if (!SUPPORTED_SKILL_ACTIONS.includes(action)) {
-    throw new InputError(`Unsupported skills action: ${action}`, {
-      code: "cli.skills_unsupported_action",
-      details: {
-        action,
-        supportedActions: SUPPORTED_SKILL_ACTIONS
+    throw new InputError(
+      t(locale, `不支持的 skills 动作：${action}`, `Unsupported skills action: ${action}`),
+      {
+        code: "cli.skills_unsupported_action",
+        details: {
+          action,
+          supportedActions: SUPPORTED_SKILL_ACTIONS
+        }
       }
-    });
+    );
   }
 
   return action;
@@ -147,12 +165,20 @@ function getSkillAction(commandContext) {
 
 function getRequestedSurface(commandContext, action) {
   const surface = commandContext.commandOptions.surface;
+  const locale = normalizeLocale(commandContext.globalOptions.locale);
 
   if (!surface) {
     if (action === "install") {
-      throw new InputError("skills install requires --surface to select an adapter target.", {
+      throw new InputError(
+        t(
+          locale,
+          "skills install 需要通过 --surface 指定目标适配器。",
+          "skills install requires --surface to select an adapter target."
+        ),
+        {
         code: "cli.skills_missing_surface"
-      });
+      }
+      );
     }
 
     return null;
@@ -161,29 +187,36 @@ function getRequestedSurface(commandContext, action) {
   try {
     return validateSkillSurface(surface);
   } catch (error) {
-    throw new InputError(error.message, {
+    throw new InputError(
+      t(locale, `无效的 surface：${surface}`, error.message),
+      {
       code: "cli.skills_invalid_surface",
       details: {
         surface,
         supportedSurfaces: SUPPORTED_SKILL_SURFACES
       }
-    });
+      }
+    );
   }
 }
 
 function getRequestedScope(commandContext) {
   const scope = commandContext.commandOptions.scope ?? "repo";
+  const locale = normalizeLocale(commandContext.globalOptions.locale);
 
   try {
     return validateSkillScope(scope);
   } catch (error) {
-    throw new InputError(error.message, {
+    throw new InputError(
+      t(locale, `无效的 scope：${scope}`, error.message),
+      {
       code: "cli.skills_invalid_scope",
       details: {
         scope,
         supportedScopes: SUPPORTED_SKILL_SCOPES
       }
-    });
+      }
+    );
   }
 }
 
@@ -198,6 +231,7 @@ function loadSkillState(commandContext, action) {
 
   return {
     cwd,
+    locale: normalizeLocale(commandContext.globalOptions.locale),
     action,
     surface,
     scope,
@@ -228,7 +262,11 @@ function resolveCatalogCompatibilityFinding(state) {
       id: "skills.catalog.compatibility",
       severity: "info",
       status: "pass",
-      message: `Bundled skill catalog supports repo-ai-governor ${packageJson.version}.`,
+      message: t(
+        state.locale,
+        `内置 skill catalog 支持 repo-ai-governor ${packageJson.version}。`,
+        `Bundled skill catalog supports repo-ai-governor ${packageJson.version}.`
+      ),
       target: toRelativePath(state.cwd, state.catalogState.catalogPath)
     });
   }
@@ -237,9 +275,17 @@ function resolveCatalogCompatibilityFinding(state) {
     id: "skills.catalog.compatibility",
     severity: "error",
     status: "fail",
-    message: `Bundled skill catalog requires ${state.catalogState.catalog.compatibility.repoAiGovernor}, current version is ${packageJson.version}.`,
+    message: t(
+      state.locale,
+      `内置 skill catalog 需要 ${state.catalogState.catalog.compatibility.repoAiGovernor}，当前版本为 ${packageJson.version}。`,
+      `Bundled skill catalog requires ${state.catalogState.catalog.compatibility.repoAiGovernor}, current version is ${packageJson.version}.`
+    ),
     target: toRelativePath(state.cwd, state.catalogState.catalogPath),
-    suggestion: "Upgrade repo-ai-governor or refresh the installed skill catalog."
+    suggestion: t(
+      state.locale,
+      "请升级 repo-ai-governor，或刷新已安装的 skill catalog。",
+      "Upgrade repo-ai-governor or refresh the installed skill catalog."
+    )
   });
 }
 
@@ -251,7 +297,9 @@ function discoverInstalledSkills(state, surface) {
     targetPath: state.targetPath
   });
   const installedRoots = listInstalledSkillRoots(target.targetPath);
-  const installedSkills = installedRoots.map((skillRoot) => inspectInstalledSkill(skillRoot, surface));
+  const installedSkills = installedRoots.map((skillRoot) =>
+    inspectInstalledSkill(skillRoot, surface, state.locale)
+  );
 
   return {
     target,
@@ -260,48 +308,58 @@ function discoverInstalledSkills(state, surface) {
 }
 
 function renderSkillsOutput(logger, commandContext, payload) {
+  const locale = normalizeLocale(payload.locale);
+
   if (commandContext.format === "json") {
     logger.raw(JSON.stringify(payload, null, 2), { ignoreQuiet: true });
     return;
   }
 
   if (commandContext.format === "markdown") {
-    const lines = [`# skills ${payload.action}`, "", `- Status: ${payload.status}`];
+    const lines = [
+      `# skills ${payload.action}`,
+      "",
+      `- ${t(locale, "状态", "Status")}: ${payload.status}`
+    ];
 
     if (payload.surface) {
-      lines.push(`- Surface: \`${payload.surface}\``);
+      lines.push(`- ${t(locale, "Surface", "Surface")}: \`${payload.surface}\``);
     }
 
     if (payload.scope) {
-      lines.push(`- Scope: \`${payload.scope}\``);
+      lines.push(`- ${t(locale, "范围", "Scope")}: \`${payload.scope}\``);
     }
 
     if (payload.catalogFile) {
-      lines.push(`- Catalog: \`${payload.catalogFile}\``);
+      lines.push(`- ${t(locale, "目录索引", "Catalog")}: \`${payload.catalogFile}\``);
     }
 
     if (payload.targetRoot) {
-      lines.push(`- Target: \`${payload.targetRoot}\``);
+      lines.push(`- ${t(locale, "目标目录", "Target")}: \`${payload.targetRoot}\``);
     }
 
     if (payload.summary) {
-      lines.push(`- Summary: \`${JSON.stringify(payload.summary)}\``);
+      lines.push(`- ${t(locale, "摘要", "Summary")}: \`${JSON.stringify(payload.summary)}\``);
     }
 
     if (payload.availableSkills) {
-      lines.push(`- Available skills: \`${JSON.stringify(payload.availableSkills)}\``);
+      lines.push(
+        `- ${t(locale, "可用 skills", "Available skills")}: \`${JSON.stringify(payload.availableSkills)}\``
+      );
     }
 
     if (payload.installedSkills) {
-      lines.push(`- Installed skills: \`${JSON.stringify(payload.installedSkills)}\``);
+      lines.push(
+        `- ${t(locale, "已安装 skills", "Installed skills")}: \`${JSON.stringify(payload.installedSkills)}\``
+      );
     }
 
     if (payload.operations) {
-      lines.push(`- Operations: \`${JSON.stringify(payload.operations)}\``);
+      lines.push(`- ${t(locale, "执行操作", "Operations")}: \`${JSON.stringify(payload.operations)}\``);
     }
 
     if (payload.findings) {
-      lines.push(`- Findings: \`${JSON.stringify(payload.findings)}\``);
+      lines.push(`- ${t(locale, "发现项", "Findings")}: \`${JSON.stringify(payload.findings)}\``);
     }
 
     logger.raw(lines.join("\n"), { ignoreQuiet: true });
@@ -314,38 +372,44 @@ function renderSkillsOutput(logger, commandContext, payload) {
       : payload.status === "warn"
         ? logger.warn.bind(logger)
         : logger.success.bind(logger);
-  statusWriter(`skills ${payload.action} ${payload.status}`);
+  statusWriter(
+    t(
+      locale,
+      `skills ${payload.action} 执行结果：${payload.status}`,
+      `skills ${payload.action} ${payload.status}`
+    )
+  );
 
   if (payload.surface) {
-    logger.keyValue("Surface", payload.surface);
+    logger.keyValue(t(locale, "Surface", "Surface"), payload.surface);
   }
 
   if (payload.scope) {
-    logger.keyValue("Scope", payload.scope);
+    logger.keyValue(t(locale, "范围", "Scope"), payload.scope);
   }
 
   if (payload.catalogFile) {
-    logger.keyValue("Catalog", payload.catalogFile);
+    logger.keyValue(t(locale, "目录索引", "Catalog"), payload.catalogFile);
   }
 
   if (payload.targetRoot) {
-    logger.keyValue("Target", payload.targetRoot);
+    logger.keyValue(t(locale, "目标目录", "Target"), payload.targetRoot);
   }
 
   if (payload.summary) {
-    logger.keyValue("Summary", JSON.stringify(payload.summary));
+    logger.keyValue(t(locale, "摘要", "Summary"), JSON.stringify(payload.summary));
   }
 
   if (payload.availableSkills) {
-    logger.keyValue("Available skills", JSON.stringify(payload.availableSkills));
+    logger.keyValue(t(locale, "可用 skills", "Available skills"), JSON.stringify(payload.availableSkills));
   }
 
   if (payload.installedSkills) {
-    logger.keyValue("Installed skills", JSON.stringify(payload.installedSkills));
+    logger.keyValue(t(locale, "已安装 skills", "Installed skills"), JSON.stringify(payload.installedSkills));
   }
 
   if (payload.operations) {
-    logger.keyValue("Operations", JSON.stringify(payload.operations));
+    logger.keyValue(t(locale, "执行操作", "Operations"), JSON.stringify(payload.operations));
   }
 
   if (payload.warnings) {
@@ -399,6 +463,7 @@ function buildListPayload(state) {
   return {
     command: "skills",
     action: "list",
+    locale: state.locale,
     status: "listed",
     cwd: state.cwd,
     scope: state.scope,
@@ -424,7 +489,11 @@ function buildInstallPayload(state) {
 
     if (missingSkillIds.length > 0) {
       throw new InputError(
-        `Requested skills are not available for ${state.surface}: ${missingSkillIds.join(", ")}`,
+        t(
+          state.locale,
+          `以下 skills 在 ${state.surface} 上不可用：${missingSkillIds.join(", ")}`,
+          `Requested skills are not available for ${state.surface}: ${missingSkillIds.join(", ")}`
+        ),
         {
           code: "cli.skills_missing_skill_ids",
           details: {
@@ -450,7 +519,13 @@ function buildInstallPayload(state) {
   const warnings = [];
 
   if (selectedSkills.length === 0) {
-    warnings.push(`No official skills are currently available for ${state.surface}.`);
+    warnings.push(
+      t(
+        state.locale,
+        `${state.surface} 当前没有可安装的官方 skills。`,
+        `No official skills are currently available for ${state.surface}.`
+      )
+    );
   }
 
   if (!state.dryRun && selectedSkills.length > 0) {
@@ -487,6 +562,7 @@ function buildInstallPayload(state) {
   return {
     command: "skills",
     action: "install",
+    locale: state.locale,
     status: state.dryRun ? "planned" : "installed",
     cwd: state.cwd,
     scope: state.scope,
@@ -520,9 +596,17 @@ function buildDoctorPayload(state) {
           id: `skills.${surface}.target`,
           severity: "warning",
           status: "warn",
-          message: `Skill install target is missing for ${surface}.`,
+          message: t(
+            state.locale,
+            `${surface} 的 skill 安装目标目录缺失。`,
+            `Skill install target is missing for ${surface}.`
+          ),
           target: targetRelativePath,
-          suggestion: `Run \`repo-ai-governor skills install --surface ${surface}\` to bootstrap the target.`
+          suggestion: t(
+            state.locale,
+            `请执行 \`repo-ai-governor skills install --surface ${surface}\` 初始化该目录。`,
+            `Run \`repo-ai-governor skills install --surface ${surface}\` to bootstrap the target.`
+          )
         })
       );
       continue;
@@ -533,7 +617,11 @@ function buildDoctorPayload(state) {
         id: `skills.${surface}.target`,
         severity: "info",
         status: "pass",
-        message: `Skill install target is present for ${surface}.`,
+        message: t(
+          state.locale,
+          `${surface} 的 skill 安装目标目录已存在。`,
+          `Skill install target is present for ${surface}.`
+        ),
         target: targetRelativePath
       })
     );
@@ -545,7 +633,11 @@ function buildDoctorPayload(state) {
             id: `skills.${surface}.${installedSkill.id}`,
             severity: "info",
             status: "pass",
-            message: `Installed skill ${installedSkill.id} is healthy.`,
+            message: t(
+              state.locale,
+              `已安装 skill ${installedSkill.id} 状态正常。`,
+              `Installed skill ${installedSkill.id} is healthy.`
+            ),
             target: toRelativePath(state.cwd, installedSkill.skillRoot)
           })
         );
@@ -558,7 +650,11 @@ function buildDoctorPayload(state) {
             id: `skills.${surface}.${installedSkill.id}`,
             severity: "info",
             status: "pass",
-            message: `Found external skill ${installedSkill.id}; skipped manifest validation.`,
+            message: t(
+              state.locale,
+              `发现外部 skill ${installedSkill.id}，已跳过 manifest 校验。`,
+              `Found external skill ${installedSkill.id}; skipped manifest validation.`
+            ),
             target: toRelativePath(state.cwd, installedSkill.skillRoot)
           })
         );
@@ -570,9 +666,17 @@ function buildDoctorPayload(state) {
           id: `skills.${surface}.${installedSkill.id}`,
           severity: "error",
           status: "fail",
-          message: `Installed skill ${installedSkill.id} is invalid: ${installedSkill.issues.join("; ")}`,
+          message: t(
+            state.locale,
+            `已安装 skill ${installedSkill.id} 无效：${installedSkill.issues.join("；")}`,
+            `Installed skill ${installedSkill.id} is invalid: ${installedSkill.issues.join("; ")}`
+          ),
           target: toRelativePath(state.cwd, installedSkill.skillRoot),
-          suggestion: `Reinstall ${installedSkill.id} with \`repo-ai-governor skills install --surface ${surface} --skill ${installedSkill.id} --force\`.`
+          suggestion: t(
+            state.locale,
+            `请执行 \`repo-ai-governor skills install --surface ${surface} --skill ${installedSkill.id} --force\` 重新安装。`,
+            `Reinstall ${installedSkill.id} with \`repo-ai-governor skills install --surface ${surface} --skill ${installedSkill.id} --force\`.`
+          )
         })
       );
     }
@@ -584,9 +688,13 @@ function buildDoctorPayload(state) {
         id: "skills.catalog.empty",
         severity: "warning",
         status: "warn",
-        message: "Official skill catalog is currently empty.",
+        message: t(state.locale, "官方 skill catalog 当前为空。", "Official skill catalog is currently empty."),
         target: toRelativePath(state.cwd, state.catalogState.catalogPath),
-        suggestion: "Populate official skill assets before expecting install to copy bundled skills."
+        suggestion: t(
+          state.locale,
+          "请先补充官方 skill 资源，再使用 install 复制内置技能。",
+          "Populate official skill assets before expecting install to copy bundled skills."
+        )
       })
     );
   }
@@ -596,6 +704,7 @@ function buildDoctorPayload(state) {
   return {
     command: "skills",
     action: "doctor",
+    locale: state.locale,
     status: summary.status,
     cwd: state.cwd,
     scope: state.scope,
@@ -633,18 +742,21 @@ export async function executeSkillsCommand(commandContext, logger) {
     renderSkillsOutput(logger, commandContext, payload);
 
     if (payload.exitCode === EXIT_CODES.businessCheckFailed) {
-      throw new BusinessCheckError("skills doctor found blocking issues.", {
-        code: "cli.skills_doctor_failed",
-        details: {
-          summary: payload.summary
+      throw new BusinessCheckError(
+        t(state.locale, "skills doctor 发现阻断问题。", "skills doctor found blocking issues."),
+        {
+          code: "cli.skills_doctor_failed",
+          details: {
+            summary: payload.summary
+          }
         }
-      });
+      );
     }
 
     return payload.exitCode;
   }
 
-  throw new InputError(`Unsupported skills action: ${action}`, {
+  throw new InputError(t(state.locale, `不支持的 skills 动作：${action}`, `Unsupported skills action: ${action}`), {
     code: "cli.skills_unsupported_action"
   });
 }

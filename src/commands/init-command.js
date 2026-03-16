@@ -22,6 +22,14 @@ function toRelativePath(cwd, absolutePath) {
   return relativePath || ".";
 }
 
+function normalizeLocale(locale) {
+  return locale === "en-US" ? "en-US" : "zh-CN";
+}
+
+function t(locale, zhCN, enUS) {
+  return normalizeLocale(locale) === "en-US" ? enUS : zhCN;
+}
+
 function formatDate(date = new Date()) {
   return date.toISOString().slice(0, 10);
 }
@@ -549,6 +557,7 @@ function renderInitPayload(plan, commandContext, options = {}) {
   return {
     command: "init",
     status: options.dryRun ? "planned" : "initialized",
+    locale: normalizeLocale(plan.config.standards.locales.default),
     dryRun: options.dryRun,
     force: commandContext.commandOptions.force === true,
     cwd: plan.cwd,
@@ -569,6 +578,8 @@ function renderInitPayload(plan, commandContext, options = {}) {
 }
 
 function writeInitSummary(logger, payload, format) {
+  const locale = normalizeLocale(payload.locale);
+
   if (format === "json") {
     logger.raw(JSON.stringify(payload, null, 2), { ignoreQuiet: true });
     return;
@@ -579,40 +590,50 @@ function writeInitSummary(logger, payload, format) {
       [
         "# init",
         "",
-        `- Status: ${payload.status}`,
-        `- Dry run: ${payload.dryRun}`,
-        `- Config file: \`${payload.configFile}\``,
-        `- Context file: \`${payload.contextFile}\``,
-        `- Project: \`${payload.currentProject}\``,
-        `- Sprint: \`${payload.currentSprint}\``,
-        `- Enabled adapters: \`${JSON.stringify(payload.enabledAdapters)}\``,
-        `- Directories: \`${JSON.stringify(payload.directories)}\``,
-        `- Files: \`${JSON.stringify(payload.files)}\``
+        `- ${t(locale, "状态", "Status")}: ${payload.status}`,
+        `- ${t(locale, "预览模式", "Dry run")}: ${payload.dryRun}`,
+        `- ${t(locale, "配置文件", "Config file")}: \`${payload.configFile}\``,
+        `- ${t(locale, "上下文文件", "Context file")}: \`${payload.contextFile}\``,
+        `- ${t(locale, "项目", "Project")}: \`${payload.currentProject}\``,
+        `- ${t(locale, "Sprint", "Sprint")}: \`${payload.currentSprint}\``,
+        `- ${t(locale, "已启用适配器", "Enabled adapters")}: \`${JSON.stringify(payload.enabledAdapters)}\``,
+        `- ${t(locale, "目录", "Directories")}: \`${JSON.stringify(payload.directories)}\``,
+        `- ${t(locale, "文件", "Files")}: \`${JSON.stringify(payload.files)}\``
       ].join("\n"),
       { ignoreQuiet: true }
     );
     return;
   }
 
-  logger.success(payload.dryRun ? "init plan is ready" : "repository init completed");
-  logger.keyValue("Config file", toRelativePath(payload.cwd, payload.configFile));
-  logger.keyValue("Agent entry", toRelativePath(payload.cwd, payload.agentEntry));
-  logger.keyValue("Context file", toRelativePath(payload.cwd, payload.contextFile));
-  logger.keyValue("Project", payload.currentProject);
-  logger.keyValue("Sprint", payload.currentSprint);
-  logger.keyValue("Enabled adapters", JSON.stringify(payload.enabledAdapters));
+  logger.success(
+    payload.dryRun
+      ? t(locale, "init 预览已就绪", "init plan is ready")
+      : t(locale, "仓库初始化完成", "repository init completed")
+  );
+  logger.keyValue(t(locale, "配置文件", "Config file"), toRelativePath(payload.cwd, payload.configFile));
+  logger.keyValue(t(locale, "入口文件", "Agent entry"), toRelativePath(payload.cwd, payload.agentEntry));
+  logger.keyValue(t(locale, "上下文文件", "Context file"), toRelativePath(payload.cwd, payload.contextFile));
+  logger.keyValue(t(locale, "项目", "Project"), payload.currentProject);
+  logger.keyValue(t(locale, "Sprint", "Sprint"), payload.currentSprint);
+  logger.keyValue(t(locale, "已启用适配器", "Enabled adapters"), JSON.stringify(payload.enabledAdapters));
   if (payload.dependencyBootstrap) {
-    logger.keyValue("Dependency bootstrap", JSON.stringify(payload.dependencyBootstrap));
+    logger.keyValue(
+      t(locale, "依赖自安装", "Dependency bootstrap"),
+      JSON.stringify(payload.dependencyBootstrap)
+    );
   }
   if (payload.skillBootstrap) {
-    logger.keyValue("Skill bootstrap", JSON.stringify(payload.skillBootstrap));
+    logger.keyValue(t(locale, "Skill 安装", "Skill bootstrap"), JSON.stringify(payload.skillBootstrap));
   }
-  logger.keyValue("Directories", JSON.stringify(payload.directories));
-  logger.keyValue("Files", JSON.stringify(payload.files));
+  logger.keyValue(t(locale, "目录", "Directories"), JSON.stringify(payload.directories));
+  logger.keyValue(t(locale, "文件", "Files"), JSON.stringify(payload.files));
 }
 
 export function executeInitCommand(commandContext, logger) {
   const plan = buildInitPlan(commandContext);
+  const locale = normalizeLocale(
+    commandContext.globalOptions.locale ?? plan.config.standards.locales.default
+  );
   const conflicts = detectConflicts(plan.files);
   const dryRun = commandContext.globalOptions.dryRun === true;
   const force = commandContext.commandOptions.force === true;
@@ -637,12 +658,19 @@ export function executeInitCommand(commandContext, logger) {
   };
 
   if (conflicts.length > 0 && !dryRun && !force) {
-    throw new ConfigError("Refusing to overwrite existing init targets without --force", {
+    throw new ConfigError(
+      t(
+        locale,
+        "检测到现有初始化目标文件；如需覆盖请显式传入 --force。",
+        "Refusing to overwrite existing init targets without --force"
+      ),
+      {
       code: "cli.init_conflict",
       details: {
         conflicts
       }
-    });
+      }
+    );
   }
 
   if (!dryRun) {

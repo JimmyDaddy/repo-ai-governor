@@ -83,6 +83,8 @@ test("report renders a check JSON payload into markdown and writes the default r
     "demo",
     "--sprint",
     "sprint-001",
+    "--locale",
+    "en-US",
     "--format",
     "json"
   ]);

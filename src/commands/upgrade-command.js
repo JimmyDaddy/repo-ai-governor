@@ -14,7 +14,15 @@ import {
 
 const SUPPORTED_SCHEMA_VERSIONS = new Set(["1"]);
 
-function parseGovernorDocument(filePath) {
+function normalizeLocale(locale) {
+  return locale === "en-US" ? "en-US" : "zh-CN";
+}
+
+function t(locale, zhCN, enUS) {
+  return normalizeLocale(locale) === "en-US" ? enUS : zhCN;
+}
+
+function parseGovernorDocument(filePath, locale = "zh-CN") {
   try {
     const rawContent = fs.readFileSync(filePath, "utf8");
     const document = YAML.parse(rawContent);
@@ -23,13 +31,16 @@ function parseGovernorDocument(filePath) {
       document: document && typeof document === "object" ? document : {}
     };
   } catch (error) {
-    throw new ConfigError(`Failed to read upgrade source config: ${filePath}`, {
-      code: "cli.upgrade_read_failed",
-      details: {
-        filePath,
-        cause: error instanceof Error ? error.message : String(error)
+    throw new ConfigError(
+      t(locale, `读取升级来源配置失败：${filePath}`, `Failed to read upgrade source config: ${filePath}`),
+      {
+        code: "cli.upgrade_read_failed",
+        details: {
+          filePath,
+          cause: error instanceof Error ? error.message : String(error)
+        }
       }
-    });
+    );
   }
 }
 
@@ -47,16 +58,24 @@ function listUpgradeFiles(workspaceFiles) {
 
 function buildUpgradePlan(commandContext) {
   const cwd = path.resolve(commandContext.globalOptions.cwd ?? process.cwd());
+  const requestedLocale = normalizeLocale(commandContext.globalOptions.locale);
   const targetVersion = commandContext.commandOptions.toVersion ?? "1";
 
   if (!SUPPORTED_SCHEMA_VERSIONS.has(targetVersion)) {
-    throw new InputError(`Unsupported upgrade target version: ${targetVersion}`, {
-      code: "cli.upgrade_unsupported_target",
-      details: {
-        targetVersion,
-        supportedVersions: [...SUPPORTED_SCHEMA_VERSIONS]
+    throw new InputError(
+      t(
+        requestedLocale,
+        `不支持的升级目标版本：${targetVersion}`,
+        `Unsupported upgrade target version: ${targetVersion}`
+      ),
+      {
+        code: "cli.upgrade_unsupported_target",
+        details: {
+          targetVersion,
+          supportedVersions: [...SUPPORTED_SCHEMA_VERSIONS]
+        }
       }
-    });
+    );
   }
 
   const resolvedConfig = loadResolvedConfig({
@@ -69,15 +88,25 @@ function buildUpgradePlan(commandContext) {
   });
 
   if (!fs.existsSync(resolvedConfig.paths.configFile)) {
-    throw new ConfigError("Upgrade requires an existing repository config file.", {
-      code: "cli.upgrade_missing_config",
-      details: {
-        configFile: resolvedConfig.paths.configFile
+    throw new ConfigError(
+      t(
+        requestedLocale,
+        "upgrade 命令需要仓库中已有配置文件。",
+        "Upgrade requires an existing repository config file."
+      ),
+      {
+        code: "cli.upgrade_missing_config",
+        details: {
+          configFile: resolvedConfig.paths.configFile
+        }
       }
-    });
+    );
   }
 
-  const { document: currentDocument } = parseGovernorDocument(resolvedConfig.paths.configFile);
+  const { document: currentDocument } = parseGovernorDocument(
+    resolvedConfig.paths.configFile,
+    requestedLocale
+  );
   const currentVersion = currentDocument.schemaVersion ?? "unversioned";
   const dateStamp = formatDate();
   const upgradedConfig = applyConfigRootOverrides(
@@ -86,6 +115,7 @@ function buildUpgradePlan(commandContext) {
     resolvedConfig.paths.configFile
   );
   upgradedConfig.schemaVersion = targetVersion;
+  const locale = normalizeLocale(upgradedConfig.standards.locales.default);
 
   const workspaceFiles = buildGeneratedWorkspaceFiles({
     cwd,
@@ -101,16 +131,27 @@ function buildUpgradePlan(commandContext) {
 
   if (currentVersion === targetVersion) {
     warnings.push(
-      `Schema version is already ${targetVersion}; upgrade will normalize config and regenerate generated entry files.`
+      t(
+        locale,
+        `当前 schemaVersion 已是 ${targetVersion}；upgrade 将执行配置归一化并重建入口生成文件。`,
+        `Schema version is already ${targetVersion}; upgrade will normalize config and regenerate generated entry files.`
+      )
     );
   }
 
   if (currentDocument.schemaVersion === undefined) {
-    warnings.push("Current config did not declare schemaVersion explicitly; upgrade will write schemaVersion=1.");
+    warnings.push(
+      t(
+        locale,
+        "当前配置未显式声明 schemaVersion；upgrade 将写入 schemaVersion=1。",
+        "Current config did not declare schemaVersion explicitly; upgrade will write schemaVersion=1."
+      )
+    );
   }
 
   return {
     cwd,
+    locale,
     currentVersion,
     targetVersion,
     preview,
@@ -160,6 +201,7 @@ function createUpgradePayload(plan, backupTargets) {
   return {
     command: "upgrade",
     status: plan.preview ? "planned" : "upgraded",
+    locale: plan.locale,
     cwd: plan.cwd,
     currentVersion: plan.currentVersion,
     targetVersion: plan.targetVersion,
@@ -176,6 +218,8 @@ function createUpgradePayload(plan, backupTargets) {
 }
 
 function writeUpgradeSummary(logger, payload, format) {
+  const locale = normalizeLocale(payload.locale);
+
   if (format === "json") {
     logger.raw(JSON.stringify(payload, null, 2), { ignoreQuiet: true });
     return;
@@ -186,31 +230,35 @@ function writeUpgradeSummary(logger, payload, format) {
       [
         "# upgrade",
         "",
-        `- Status: ${payload.status}`,
-        `- Current version: \`${payload.currentVersion}\``,
-        `- Target version: \`${payload.targetVersion}\``,
-        `- Preview: ${payload.preview}`,
-        `- Backup: ${payload.backup}`,
-        `- Backup dir: \`${payload.backupDir ?? "none"}\``,
-        `- Operations: \`${JSON.stringify(payload.operations)}\``,
-        `- Warnings: \`${JSON.stringify(payload.warnings)}\``
+        `- ${t(locale, "状态", "Status")}: ${payload.status}`,
+        `- ${t(locale, "当前版本", "Current version")}: \`${payload.currentVersion}\``,
+        `- ${t(locale, "目标版本", "Target version")}: \`${payload.targetVersion}\``,
+        `- ${t(locale, "预览模式", "Preview")}: ${payload.preview}`,
+        `- ${t(locale, "备份", "Backup")}: ${payload.backup}`,
+        `- ${t(locale, "备份目录", "Backup dir")}: \`${payload.backupDir ?? t(locale, "无", "none")}\``,
+        `- ${t(locale, "变更操作", "Operations")}: \`${JSON.stringify(payload.operations)}\``,
+        `- ${t(locale, "告警", "Warnings")}: \`${JSON.stringify(payload.warnings)}\``
       ].join("\n"),
       { ignoreQuiet: true }
     );
     return;
   }
 
-  logger.success(payload.preview ? "upgrade plan is ready" : "repository upgrade completed");
-  logger.keyValue("Current version", payload.currentVersion);
-  logger.keyValue("Target version", payload.targetVersion);
-  logger.keyValue("Preview", String(payload.preview));
-  logger.keyValue("Backup", String(payload.backup));
+  logger.success(
+    payload.preview
+      ? t(locale, "upgrade 预览已就绪", "upgrade plan is ready")
+      : t(locale, "仓库升级完成", "repository upgrade completed")
+  );
+  logger.keyValue(t(locale, "当前版本", "Current version"), payload.currentVersion);
+  logger.keyValue(t(locale, "目标版本", "Target version"), payload.targetVersion);
+  logger.keyValue(t(locale, "预览模式", "Preview"), String(payload.preview));
+  logger.keyValue(t(locale, "备份", "Backup"), String(payload.backup));
 
   if (payload.backupDir) {
-    logger.keyValue("Backup dir", payload.backupDir);
+    logger.keyValue(t(locale, "备份目录", "Backup dir"), payload.backupDir);
   }
 
-  logger.keyValue("Operations", JSON.stringify(payload.operations));
+  logger.keyValue(t(locale, "变更操作", "Operations"), JSON.stringify(payload.operations));
 
   for (const warning of payload.warnings) {
     logger.warn(warning);

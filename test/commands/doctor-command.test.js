@@ -97,7 +97,7 @@ test("doctor fails when the main config file is missing", async () => {
   assert.equal(payload.status, "fail");
   assert.equal(payload.summary.errors, 1);
   assert.equal(configCheck.status, "fail");
-  assert.match(configCheck.message, /Main governor config file is missing/);
+  assert.match(configCheck.message, /(Main governor config file is missing|主配置文件缺失)/);
 });
 
 test("doctor strict fails on missing artifact warnings and --fix recreates safe directories", async () => {

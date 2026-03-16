@@ -90,17 +90,25 @@ const STAGE_RULE_IDS = Object.freeze({
 });
 
 const PLAN_SECTION_PATTERNS = Object.freeze({
-  goal: [/^##\s+Goal\b/m, /^##\s+目标\b/m],
-  inScope: [/^##\s+In Scope\b/m, /^##\s+纳入范围\b/m],
-  outOfScope: [/^##\s+Out Of Scope\b/m, /^##\s+非范围\b/m],
-  risks: [/^##\s+Risks\b/m, /^##\s+风险\b/m],
-  acceptance: [/^##\s+Acceptance\b/m, /^##\s+验收标准\b/m],
-  verificationPath: [/^##\s+Verification Path\b/m, /^##\s+验证路径\b/m]
+  goal: [/^##\s+Goal\b/m, /^##\s+目标$/m],
+  inScope: [/^##\s+In Scope\b/m, /^##\s+纳入范围$/m],
+  outOfScope: [/^##\s+Out Of Scope\b/m, /^##\s+非范围$/m],
+  risks: [/^##\s+Risks\b/m, /^##\s+风险$/m],
+  acceptance: [/^##\s+Acceptance\b/m, /^##\s+验收标准$/m],
+  verificationPath: [/^##\s+Verification Path\b/m, /^##\s+验证路径$/m]
 });
 
 function toRelativePath(cwd, absolutePath) {
   const relativePath = path.relative(cwd, absolutePath).split(path.sep).join("/");
   return relativePath || ".";
+}
+
+function normalizeLocale(locale) {
+  return locale === "en-US" ? "en-US" : "zh-CN";
+}
+
+function t(locale, zhCN, enUS) {
+  return normalizeLocale(locale) === "en-US" ? enUS : zhCN;
 }
 
 function cloneValue(value) {
@@ -172,12 +180,12 @@ function compareTaskIdSets(left, right) {
   return true;
 }
 
-function buildArtifactPaths(cwd, resolvedConfig) {
+function buildArtifactPaths(cwd, resolvedConfig, locale = "zh-CN") {
   const currentProject = resolvedConfig.config.execution.currentProject;
   const currentSprint = resolvedConfig.config.execution.currentSprint;
 
   if (!currentProject || !currentSprint) {
-    throw new ConfigError("Check command requires a current project and sprint", {
+    throw new ConfigError(t(locale, "check 命令需要当前 project 与 sprint。", "Check command requires a current project and sprint"), {
       code: "cli.check_missing_context",
       details: {
         currentProject,
@@ -224,22 +232,29 @@ function buildCheckRun(commandContext) {
       ...commandContext.commandOptions
     }
   });
-  const artifactPaths = buildArtifactPaths(cwd, resolvedConfig);
+  const locale = normalizeLocale(
+    commandContext.globalOptions.locale ?? resolvedConfig.config.standards.locales.default
+  );
+  const artifactPaths = buildArtifactPaths(cwd, resolvedConfig, locale);
   const standardsPackage = resolveStandardsPackage(resolvedConfig.config.standards);
   const selectedStage = commandContext.commandOptions.stage ?? "self-check";
 
   if (!CHECK_WORKFLOW_TEMPLATE.stages.some((stage) => stage.id === selectedStage)) {
-    throw new InputError(`Unsupported check stage: ${selectedStage}`, {
+    throw new InputError(
+      t(locale, `不支持的 check 阶段：${selectedStage}`, `Unsupported check stage: ${selectedStage}`),
+      {
       code: "cli.check_invalid_stage",
       details: {
         stage: selectedStage,
         supportedStages: CHECK_WORKFLOW_TEMPLATE.stages.map((stage) => stage.id)
       }
-    });
+      }
+    );
   }
 
   return {
     cwd,
+    locale,
     selectedStage,
     resolvedConfig,
     standardsPackage,
@@ -308,6 +323,7 @@ function buildSlotStageDetails(stageContext) {
 }
 
 function validatePlanStage(runState, stageContext) {
+  const locale = runState.locale;
   const target = toRelativePath(runState.cwd, runState.artifactPaths.planFile);
   const matchedRules = getStageRules(
     runState.standardsPackage,
@@ -323,9 +339,13 @@ function validatePlanStage(runState, stageContext) {
         stageId: "plan",
         severity: "error",
         status: "fail",
-        message: "Sprint plan file is missing.",
+        message: t(locale, "未找到 sprint 计划文件。", "Sprint plan file is missing."),
         target,
-        suggestion: "Run `repo-ai-governor plan` before running the governance check."
+        suggestion: t(
+          locale,
+          "请先执行 `repo-ai-governor plan` 再运行治理检查。",
+          "Run `repo-ai-governor plan` before running the governance check."
+        )
       })
     );
 
@@ -333,8 +353,8 @@ function validatePlanStage(runState, stageContext) {
       "plan",
       matchedRules,
       findings,
-      "Plan checks passed.",
-      "Plan checks failed because the sprint plan is missing."
+      t(locale, "计划检查通过。", "Plan checks passed."),
+      t(locale, "计划检查失败：未找到 sprint 计划文件。", "Plan checks failed because the sprint plan is missing.")
     );
 
     stageResult.details.slots = buildSlotStageDetails(stageContext);
@@ -343,15 +363,59 @@ function validatePlanStage(runState, stageContext) {
 
   const content = readTextFile(runState.artifactPaths.planFile);
   const requiredSections = [
-    ["goal", "process-plan-must-state-scope", "Plan contains a goal section.", "Add a Goal section to plan.md."],
-    ["inScope", "process-plan-must-state-scope", "Plan contains an in-scope section.", "Add an In Scope section to plan.md."],
-    ["outOfScope", "process-plan-must-state-scope", "Plan contains an out-of-scope section.", "Add an Out Of Scope section to plan.md."],
-    ["risks", "process-plan-must-state-scope", "Plan contains a risks section.", "Add a Risks section to plan.md."],
-    ["acceptance", "process-plan-must-state-scope", "Plan contains an acceptance section.", "Add an Acceptance section to plan.md."],
-    ["verificationPath", "quality-verification-before-delivery", "Plan contains a verification path section.", "Add a Verification Path section to plan.md with the intended validation steps."]
+    {
+      sectionId: "goal",
+      ruleId: "process-plan-must-state-scope",
+      passMessage: t(locale, "plan 已包含目标章节。", "Plan contains a goal section."),
+      missingMessage: t(locale, "plan 缺少必需章节：goal。", "Plan is missing the required goal section."),
+      suggestion: t(locale, "请在 plan.md 中补充 Goal/目标 章节。", "Add a Goal section to plan.md.")
+    },
+    {
+      sectionId: "inScope",
+      ruleId: "process-plan-must-state-scope",
+      passMessage: t(locale, "plan 已包含纳入范围章节。", "Plan contains an in-scope section."),
+      missingMessage: t(locale, "plan 缺少必需章节：inScope。", "Plan is missing the required inScope section."),
+      suggestion: t(locale, "请在 plan.md 中补充 In Scope/纳入范围 章节。", "Add an In Scope section to plan.md.")
+    },
+    {
+      sectionId: "outOfScope",
+      ruleId: "process-plan-must-state-scope",
+      passMessage: t(locale, "plan 已包含非范围章节。", "Plan contains an out-of-scope section."),
+      missingMessage: t(locale, "plan 缺少必需章节：outOfScope。", "Plan is missing the required outOfScope section."),
+      suggestion: t(locale, "请在 plan.md 中补充 Out Of Scope/非范围 章节。", "Add an Out Of Scope section to plan.md.")
+    },
+    {
+      sectionId: "risks",
+      ruleId: "process-plan-must-state-scope",
+      passMessage: t(locale, "plan 已包含风险章节。", "Plan contains a risks section."),
+      missingMessage: t(locale, "plan 缺少必需章节：risks。", "Plan is missing the required risks section."),
+      suggestion: t(locale, "请在 plan.md 中补充 Risks/风险 章节。", "Add a Risks section to plan.md.")
+    },
+    {
+      sectionId: "acceptance",
+      ruleId: "process-plan-must-state-scope",
+      passMessage: t(locale, "plan 已包含验收标准章节。", "Plan contains an acceptance section."),
+      missingMessage: t(locale, "plan 缺少必需章节：acceptance。", "Plan is missing the required acceptance section."),
+      suggestion: t(locale, "请在 plan.md 中补充 Acceptance/验收标准 章节。", "Add an Acceptance section to plan.md.")
+    },
+    {
+      sectionId: "verificationPath",
+      ruleId: "quality-verification-before-delivery",
+      passMessage: t(locale, "plan 已包含验证路径章节。", "Plan contains a verification path section."),
+      missingMessage: t(
+        locale,
+        "plan 缺少必需章节：verificationPath。",
+        "Plan is missing the required verificationPath section."
+      ),
+      suggestion: t(
+        locale,
+        "请在 plan.md 中补充 Verification Path/验证路径，并写明验证步骤。",
+        "Add a Verification Path section to plan.md with the intended validation steps."
+      )
+    }
   ];
 
-  for (const [sectionId, ruleId, passMessage, suggestion] of requiredSections) {
+  for (const { sectionId, ruleId, passMessage, missingMessage, suggestion } of requiredSections) {
     if (hasAnyPattern(content, PLAN_SECTION_PATTERNS[sectionId])) {
       findings.push(
         createFinding({
@@ -374,7 +438,7 @@ function validatePlanStage(runState, stageContext) {
         ruleId,
         severity: "error",
         status: "fail",
-        message: `Plan is missing the required ${sectionId} section.`,
+        message: missingMessage,
         target,
         suggestion
       })
@@ -385,8 +449,12 @@ function validatePlanStage(runState, stageContext) {
     "plan",
     matchedRules,
     findings,
-    "Plan structure satisfies the current governance rules.",
-    "Plan structure does not satisfy the current governance rules."
+    t(locale, "计划结构满足当前治理规则。", "Plan structure satisfies the current governance rules."),
+    t(
+      locale,
+      "计划结构未满足当前治理规则。",
+      "Plan structure does not satisfy the current governance rules."
+    )
   );
 
   stageResult.details.slots = buildSlotStageDetails(stageContext);
@@ -394,6 +462,7 @@ function validatePlanStage(runState, stageContext) {
 }
 
 function validateBreakdownStage(runState, stageContext) {
+  const locale = runState.locale;
   const checklistTarget = toRelativePath(runState.cwd, runState.artifactPaths.checklistFile);
   const csvTarget = toRelativePath(runState.cwd, runState.artifactPaths.taskCsvFile);
   const matchedRules = getStageRules(
@@ -411,9 +480,13 @@ function validateBreakdownStage(runState, stageContext) {
         ruleId: "process-task-records-must-sync",
         severity: "error",
         status: "fail",
-        message: "Checklist file is missing.",
+        message: t(locale, "未找到 checklist 文件。", "Checklist file is missing."),
         target: checklistTarget,
-        suggestion: "Generate or restore tasks/checklist.md before running check."
+        suggestion: t(
+          locale,
+          "请在运行 check 之前生成或恢复 tasks/checklist.md。",
+          "Generate or restore tasks/checklist.md before running check."
+        )
       })
     );
   }
@@ -426,9 +499,13 @@ function validateBreakdownStage(runState, stageContext) {
         ruleId: "process-task-records-must-sync",
         severity: "error",
         status: "fail",
-        message: "tasks.csv is missing.",
+        message: t(locale, "未找到 tasks.csv。", "tasks.csv is missing."),
         target: csvTarget,
-        suggestion: "Generate or restore tasks/tasks.csv before running check."
+        suggestion: t(
+          locale,
+          "请在运行 check 之前生成或恢复 tasks/tasks.csv。",
+          "Generate or restore tasks/tasks.csv before running check."
+        )
       })
     );
   }
@@ -443,9 +520,13 @@ function validateBreakdownStage(runState, stageContext) {
         ruleId: "process-task-records-must-sync",
         severity: "error",
         status: "fail",
-        message: "No task card files were found under tasks/.",
+        message: t(locale, "在 tasks/ 下未找到任务卡文件。", "No task card files were found under tasks/."),
         target: toRelativePath(runState.cwd, runState.artifactPaths.tasksRoot),
-        suggestion: "Generate task cards so checklist, CSV, and task files can stay aligned."
+        suggestion: t(
+          locale,
+          "请先生成任务卡，确保 checklist、CSV 与任务文件可保持一致。",
+          "Generate task cards so checklist, CSV, and task files can stay aligned."
+        )
       })
     );
   }
@@ -455,8 +536,8 @@ function validateBreakdownStage(runState, stageContext) {
       "breakdown",
       matchedRules,
       findings,
-      "Breakdown artifacts are in sync.",
-      "Breakdown artifacts are missing required task records."
+      t(locale, "任务拆解产物已同步。", "Breakdown artifacts are in sync."),
+      t(locale, "任务拆解产物缺少必需记录。", "Breakdown artifacts are missing required task records.")
     );
 
     stageResult.details.slots = buildSlotStageDetails(stageContext);
@@ -478,9 +559,17 @@ function validateBreakdownStage(runState, stageContext) {
         ruleId: "process-task-records-must-sync",
         severity: "error",
         status: "fail",
-        message: "Checklist, CSV, and task files do not reference the same task IDs.",
+        message: t(
+          locale,
+          "checklist、CSV 与任务文件引用的任务编号不一致。",
+          "Checklist, CSV, and task files do not reference the same task IDs."
+        ),
         target: `${checklistTarget}, ${csvTarget}`,
-        suggestion: "Resync checklist.md, tasks.csv, and tasks/TK-xxx.md so they reference the same task IDs."
+        suggestion: t(
+          locale,
+          "请同步 checklist.md、tasks.csv 与 tasks/TK-xxx.md，使其引用相同任务编号。",
+          "Resync checklist.md, tasks.csv, and tasks/TK-xxx.md so they reference the same task IDs."
+        )
       })
     );
   } else {
@@ -491,7 +580,11 @@ function validateBreakdownStage(runState, stageContext) {
         ruleId: "process-task-records-must-sync",
         severity: "info",
         status: "pass",
-        message: "Checklist, CSV, and task files reference the same task IDs.",
+        message: t(
+          locale,
+          "checklist、CSV 与任务文件引用的任务编号一致。",
+          "Checklist, CSV, and task files reference the same task IDs."
+        ),
         target: `${checklistTarget}, ${csvTarget}`
       })
     );
@@ -501,8 +594,8 @@ function validateBreakdownStage(runState, stageContext) {
     "breakdown",
     matchedRules,
     findings,
-    "Breakdown artifacts are synchronized.",
-    "Breakdown artifacts are not synchronized."
+    t(locale, "任务拆解产物已保持同步。", "Breakdown artifacts are synchronized."),
+    t(locale, "任务拆解产物未保持同步。", "Breakdown artifacts are not synchronized.")
   );
 
   stageResult.details.slots = buildSlotStageDetails(stageContext);
@@ -510,6 +603,7 @@ function validateBreakdownStage(runState, stageContext) {
 }
 
 function validateSelfCheckStage(runState, stageContext) {
+  const locale = runState.locale;
   const checklistTarget = toRelativePath(runState.cwd, runState.artifactPaths.checklistFile);
   const csvTarget = toRelativePath(runState.cwd, runState.artifactPaths.taskCsvFile);
   const matchedRules = getStageRules(
@@ -532,7 +626,7 @@ function validateSelfCheckStage(runState, stageContext) {
         ruleId: "quality-check-results-must-be-recorded",
         severity: "info",
         status: "pass",
-        message: "Checklist contains execution log records.",
+        message: t(locale, "checklist 已包含执行记录。", "Checklist contains execution log records."),
         target: checklistTarget
       })
     );
@@ -544,9 +638,13 @@ function validateSelfCheckStage(runState, stageContext) {
         ruleId: "quality-check-results-must-be-recorded",
         severity: "error",
         status: "fail",
-        message: "Checklist does not contain execution log records.",
+        message: t(locale, "checklist 未包含执行记录。", "Checklist does not contain execution log records."),
         target: checklistTarget,
-        suggestion: "Append execution records under each task entry in checklist.md."
+        suggestion: t(
+          locale,
+          "请在 checklist.md 每个任务条目下追加执行记录。",
+          "Append execution records under each task entry in checklist.md."
+        )
       })
     );
   }
@@ -559,7 +657,11 @@ function validateSelfCheckStage(runState, stageContext) {
         ruleId: "quality-check-results-must-be-recorded",
         severity: "info",
         status: "pass",
-        message: "tasks.csv contains the expected governance ledger columns.",
+        message: t(
+          locale,
+          "tasks.csv 已包含预期的治理台账字段。",
+          "tasks.csv contains the expected governance ledger columns."
+        ),
         target: csvTarget
       })
     );
@@ -571,9 +673,17 @@ function validateSelfCheckStage(runState, stageContext) {
         ruleId: "quality-check-results-must-be-recorded",
         severity: "error",
         status: "fail",
-        message: "tasks.csv is missing one or more expected governance ledger columns.",
+        message: t(
+          locale,
+          "tasks.csv 缺少一个或多个预期治理台账字段。",
+          "tasks.csv is missing one or more expected governance ledger columns."
+        ),
         target: csvTarget,
-        suggestion: "Restore the standard tasks.csv header so verify and review_delta fields are present."
+        suggestion: t(
+          locale,
+          "请恢复标准 tasks.csv 表头，确保 verify 与 review_delta 字段存在。",
+          "Restore the standard tasks.csv header so verify and review_delta fields are present."
+        )
       })
     );
   }
@@ -586,7 +696,7 @@ function validateSelfCheckStage(runState, stageContext) {
         ruleId: "quality-check-results-must-be-recorded",
         severity: "info",
         status: "pass",
-        message: "tasks.csv contains execution rows.",
+        message: t(locale, "tasks.csv 已包含执行记录行。", "tasks.csv contains execution rows."),
         target: csvTarget
       })
     );
@@ -598,9 +708,13 @@ function validateSelfCheckStage(runState, stageContext) {
         ruleId: "quality-check-results-must-be-recorded",
         severity: "error",
         status: "fail",
-        message: "tasks.csv does not contain any execution rows.",
+        message: t(locale, "tasks.csv 尚未包含任何执行记录行。", "tasks.csv does not contain any execution rows."),
         target: csvTarget,
-        suggestion: "Append at least one execution record row to tasks.csv."
+        suggestion: t(
+          locale,
+          "请至少在 tasks.csv 追加一条执行记录行。",
+          "Append at least one execution record row to tasks.csv."
+        )
       })
     );
   }
@@ -613,9 +727,17 @@ function validateSelfCheckStage(runState, stageContext) {
         severity: "warning",
         status: "warn",
         message:
-          "changed-only mode currently falls back to the full sprint artifact scan in MVP.",
+          t(
+            locale,
+            "changed-only 模式在 MVP 阶段会回退为全量 sprint 产物扫描。",
+            "changed-only mode currently falls back to the full sprint artifact scan in MVP."
+          ),
         target: toRelativePath(runState.cwd, runState.artifactPaths.sprintRoot),
-        suggestion: "Treat this run as a full governance scan; changed-only filtering lands in a later iteration."
+        suggestion: t(
+          locale,
+          "请将本次结果视为全量治理扫描；changed-only 精确过滤将在后续迭代提供。",
+          "Treat this run as a full governance scan; changed-only filtering lands in a later iteration."
+        )
       })
     );
   }
@@ -624,15 +746,19 @@ function validateSelfCheckStage(runState, stageContext) {
     "self-check",
     matchedRules,
     findings,
-    "Execution records satisfy the minimum governance checks.",
-    "Execution records do not satisfy the minimum governance checks."
+    t(locale, "执行记录满足最小治理检查要求。", "Execution records satisfy the minimum governance checks."),
+    t(
+      locale,
+      "执行记录未满足最小治理检查要求。",
+      "Execution records do not satisfy the minimum governance checks."
+    )
   );
 
   stageResult.details.slots = buildSlotStageDetails(stageContext);
   return stageResult;
 }
 
-function flattenWorkflowFindings(workflowResult) {
+function flattenWorkflowFindings(workflowResult, locale) {
   const findings = workflowResult.stages.flatMap((stageResult) => stageResult.details?.findings ?? []);
 
   if (workflowResult.status === "failed" && workflowResult.failure) {
@@ -644,7 +770,7 @@ function flattenWorkflowFindings(workflowResult) {
         status: "fail",
         message: workflowResult.failure.message,
         target: workflowResult.failure.stageId,
-        suggestion: "Resolve the stage-level workflow failure before rerunning check."
+        suggestion: t(locale, "请先修复该阶段失败原因后再重新执行 check。", "Resolve the stage-level workflow failure before rerunning check.")
       })
     );
   }
@@ -675,6 +801,7 @@ function buildCheckPayload(runState, workflowResult, summary, reportFilePath = n
   return {
     command: "check",
     status: summary.status,
+    locale: runState.locale,
     cwd: runState.cwd,
     configFile: runState.resolvedConfig.paths.configFile,
     currentProject: runState.resolvedConfig.config.execution.currentProject,
@@ -700,12 +827,14 @@ function buildCheckPayload(runState, workflowResult, summary, reportFilePath = n
       )
     },
     summary,
-    checks: flattenWorkflowFindings(workflowResult),
+    checks: flattenWorkflowFindings(workflowResult, runState.locale),
     reportFile: reportFilePath ? toRelativePath(runState.cwd, reportFilePath) : null
   };
 }
 
 function writeCheckSummary(logger, payload, format) {
+  const locale = normalizeLocale(payload.locale);
+
   if (format === "json") {
     logger.raw(JSON.stringify(payload, null, 2), { ignoreQuiet: true });
     return;
@@ -716,13 +845,13 @@ function writeCheckSummary(logger, payload, format) {
       [
         "# check",
         "",
-        `- Status: ${payload.status}`,
-        `- Project: \`${payload.currentProject}\``,
+        `- ${t(locale, "状态", "Status")}: ${payload.status}`,
+        `- ${t(locale, "项目", "Project")}: \`${payload.currentProject}\``,
         `- Sprint: \`${payload.currentSprint}\``,
-        `- Selected stage: \`${payload.selectedStage}\``,
-        `- Workflow: \`${JSON.stringify(payload.workflow.summary)}\``,
-        `- Matched rules: \`${JSON.stringify(payload.standards.matchedRuleIds)}\``,
-        `- Findings: \`${JSON.stringify(payload.checks)}\``
+        `- ${t(locale, "选定阶段", "Selected stage")}: \`${payload.selectedStage}\``,
+        `- ${t(locale, "流程", "Workflow")}: \`${JSON.stringify(payload.workflow.summary)}\``,
+        `- ${t(locale, "命中规则", "Matched rules")}: \`${JSON.stringify(payload.standards.matchedRuleIds)}\``,
+        `- ${t(locale, "发现", "Findings")}: \`${JSON.stringify(payload.checks)}\``
       ].join("\n"),
       { ignoreQuiet: true }
     );
@@ -730,18 +859,18 @@ function writeCheckSummary(logger, payload, format) {
   }
 
   if (payload.status === "pass") {
-    logger.success("governance checks passed");
+    logger.success(t(locale, "治理检查通过", "governance checks passed"));
   } else if (payload.status === "warn") {
-    logger.warn("governance checks completed with warnings");
+    logger.warn(t(locale, "治理检查完成（含告警）", "governance checks completed with warnings"));
   } else {
-    logger.error("governance checks failed");
+    logger.error(t(locale, "治理检查失败", "governance checks failed"));
   }
 
-  logger.keyValue("Project", payload.currentProject);
+  logger.keyValue(t(locale, "项目", "Project"), payload.currentProject);
   logger.keyValue("Sprint", payload.currentSprint);
-  logger.keyValue("Selected stage", payload.selectedStage);
-  logger.keyValue("Workflow summary", JSON.stringify(payload.workflow.summary));
-  logger.keyValue("Matched rules", JSON.stringify(payload.standards.matchedRuleIds));
+  logger.keyValue(t(locale, "选定阶段", "Selected stage"), payload.selectedStage);
+  logger.keyValue(t(locale, "流程摘要", "Workflow summary"), JSON.stringify(payload.workflow.summary));
+  logger.keyValue(t(locale, "命中规则", "Matched rules"), JSON.stringify(payload.standards.matchedRuleIds));
 
   for (const stage of payload.workflow.stages) {
     logger.keyValue(`Stage ${stage.id}`, `${stage.status}: ${stage.summary ?? ""}`.trim());
@@ -764,7 +893,7 @@ function writeCheckSummary(logger, payload, format) {
   }
 
   if (payload.reportFile) {
-    logger.keyValue("Report file", payload.reportFile);
+    logger.keyValue(t(locale, "报告文件", "Report file"), payload.reportFile);
   }
 }
 

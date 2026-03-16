@@ -2,6 +2,18 @@ function uniqueValues(values) {
   return Array.from(new Set(values.filter(Boolean)));
 }
 
+function normalizeLocale(locale) {
+  return locale === "zh-CN" ? "zh-CN" : "en-US";
+}
+
+function isEnglishLocale(locale) {
+  return normalizeLocale(locale) === "en-US";
+}
+
+function t(locale, zhCN, enUS) {
+  return isEnglishLocale(locale) ? enUS : zhCN;
+}
+
 function normalizeFinding(finding, index) {
   return {
     id: finding.id ?? `finding-${index + 1}`,
@@ -64,7 +76,7 @@ function buildArtifacts(payload) {
   };
 }
 
-function buildNextActions(payload, findings) {
+function buildNextActions(payload, findings, locale) {
   const suggestedActions = uniqueValues(
     findings
       .filter((finding) => finding.severity === "error" || finding.severity === "warning")
@@ -76,20 +88,33 @@ function buildNextActions(payload, findings) {
   }
 
   if (payload.status === "fail") {
-    return ["Investigate the blocking findings and rerun the relevant governance command."];
+    return [
+      t(
+        locale,
+        "请排查阻断发现并重新执行对应治理命令。",
+        "Investigate the blocking findings and rerun the relevant governance command."
+      )
+    ];
   }
 
   if (payload.status === "warn") {
-    return ["Review the warning findings and decide whether they require fixes or explicit risk notes."];
+    return [
+      t(
+        locale,
+        "请审阅告警发现并判断是否需要修复或显式记录风险。",
+        "Review the warning findings and decide whether they require fixes or explicit risk notes."
+      )
+    ];
   }
 
-  return ["No follow-up actions required."];
+  return [t(locale, "无需后续动作。", "No follow-up actions required.")];
 }
 
 export function buildUnifiedReport(payload, options = {}) {
   const findings = normalizeFindings(payload);
   const workflow = normalizeWorkflow(payload);
   const standards = normalizeStandards(payload, findings);
+  const locale = normalizeLocale(options.locale ?? payload.locale);
 
   return {
     schemaVersion: "1",
@@ -102,14 +127,14 @@ export function buildUnifiedReport(payload, options = {}) {
       configFile: payload.configFile ?? null,
       project: payload.currentProject ?? null,
       sprint: payload.currentSprint ?? null,
-      locale: options.locale ?? payload.locale ?? null
+      locale
     },
     summary: payload.summary ?? null,
     workflow,
     standards,
     findings,
     artifacts: buildArtifacts(payload),
-    nextActions: buildNextActions(payload, findings)
+    nextActions: buildNextActions(payload, findings, locale)
   };
 }
 
@@ -140,11 +165,12 @@ function renderSummary(report) {
 }
 
 function renderMarkdown(report) {
+  const locale = normalizeLocale(report.context?.locale);
   const workflowSection =
     report.workflow === null
-      ? "1. No workflow data."
+      ? t(locale, "1. 无流程数据。", "1. No workflow data.")
       : report.workflow.stages.length === 0
-        ? "1. No workflow stages."
+        ? t(locale, "1. 无流程阶段数据。", "1. No workflow stages.")
         : report.workflow.stages
             .map(
               (stage, index) =>
@@ -154,7 +180,7 @@ function renderMarkdown(report) {
 
   const findingsSection =
     report.findings.length === 0
-      ? "1. No findings."
+      ? t(locale, "1. 无发现。", "1. No findings.")
       : report.findings
           .map((finding, index) => {
             const lines = [
@@ -162,15 +188,15 @@ function renderMarkdown(report) {
             ];
 
             if (finding.target) {
-              lines.push(`Target: \`${finding.target}\``);
+              lines.push(`${t(locale, "目标", "Target")}: \`${finding.target}\``);
             }
 
             if (finding.ruleId) {
-              lines.push(`Rule: \`${finding.ruleId}\``);
+              lines.push(`${t(locale, "规则", "Rule")}: \`${finding.ruleId}\``);
             }
 
             if (finding.suggestion) {
-              lines.push(`Suggestion: ${finding.suggestion}`);
+              lines.push(`${t(locale, "建议", "Suggestion")}: ${finding.suggestion}`);
             }
 
             return lines.join("\n");
@@ -182,22 +208,22 @@ function renderMarkdown(report) {
     .join("\n");
 
   return [
-    `# Governance Report: ${report.command}`,
+    `${t(locale, "# 治理报告", "# Governance Report")}: ${report.command}`,
     "",
-    `- Status: ${report.status}`,
-    `- Project: \`${report.context.project ?? ""}\``,
+    `- ${t(locale, "状态", "Status")}: ${report.status}`,
+    `- ${t(locale, "项目", "Project")}: \`${report.context.project ?? ""}\``,
     `- Sprint: \`${report.context.sprint ?? ""}\``,
-    `- Generated At: ${report.generatedAt}`,
+    `- ${t(locale, "生成时间", "Generated At")}: ${report.generatedAt}`,
     "",
-    "## Workflow",
+    `## ${t(locale, "流程", "Workflow")}`,
     "",
     workflowSection,
     "",
-    "## Findings",
+    `## ${t(locale, "发现", "Findings")}`,
     "",
     findingsSection,
     "",
-    "## Next Actions",
+    `## ${t(locale, "后续动作", "Next Actions")}`,
     "",
     nextActionsSection
   ].join("\n") + "\n";

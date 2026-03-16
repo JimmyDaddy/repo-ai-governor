@@ -60,7 +60,19 @@ function formatDateTime(date = new Date()) {
   return date.toISOString();
 }
 
-function detectReviewStatus(fileName) {
+function normalizeLocale(locale) {
+  return locale === "en-US" ? "en-US" : "zh-CN";
+}
+
+function isEnglishLocale(locale) {
+  return normalizeLocale(locale) === "en-US";
+}
+
+function t(locale, zhCN, enUS) {
+  return isEnglishLocale(locale) ? enUS : zhCN;
+}
+
+function detectReviewStatus(fileName, locale = "zh-CN") {
   if (fileName.startsWith("review_")) {
     return "pending";
   }
@@ -73,12 +85,15 @@ function detectReviewStatus(fileName) {
     return "resolved";
   }
 
-  throw new InputError(`Unsupported review file name: ${fileName}`, {
-    code: "cli.review_verify_invalid_source_name",
-    details: {
-      fileName
+  throw new InputError(
+    t(locale, `不支持的评审文件命名：${fileName}`, `Unsupported review file name: ${fileName}`),
+    {
+      code: "cli.review_verify_invalid_source_name",
+      details: {
+        fileName
+      }
     }
-  });
+  );
 }
 
 function extractReviewSlugFromFileName(fileName) {
@@ -89,15 +104,24 @@ function extractReviewSlugFromFileName(fileName) {
     .replace(/\.md$/, "");
 }
 
-function extractSectionBody(content, heading) {
-  const escapedHeading = heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const pattern = new RegExp(`## ${escapedHeading}\\n([\\s\\S]*?)(?=\\n## |$)`);
-  const match = content.match(pattern);
-  return match ? match[1].trim() : "";
+function extractSectionBody(content, headings) {
+  const headingList = Array.isArray(headings) ? headings : [headings];
+
+  for (const heading of headingList) {
+    const escapedHeading = heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const pattern = new RegExp(`## ${escapedHeading}\\n([\\s\\S]*?)(?=\\n## |$)`);
+    const match = content.match(pattern);
+
+    if (match) {
+      return match[1].trim();
+    }
+  }
+
+  return "";
 }
 
-function parseNumberedSectionItems(content, heading) {
-  const body = extractSectionBody(content, heading);
+function parseNumberedSectionItems(content, headings) {
+  const body = extractSectionBody(content, headings);
 
   if (!body) {
     return [];
@@ -110,38 +134,38 @@ function parseNumberedSectionItems(content, heading) {
 }
 
 function extractTargetsFromSource(cwd, sourceContent) {
-  const targetsSection = extractSectionBody(sourceContent, "Targets");
+  const targetsSection = extractSectionBody(sourceContent, ["Targets", "目标文件"]);
   const matches = Array.from(targetsSection.matchAll(/`([^`]+)`/g), (match) => match[1]);
 
   return matches.map((target) => path.resolve(cwd, target)).filter((target) => fs.existsSync(target));
 }
 
-function formatNumberedList(items) {
+function formatNumberedList(items, locale) {
   if (items.length === 0) {
-    return "1. No entries recorded.";
+    return t(locale, "1. 暂无记录。", "1. No entries recorded.");
   }
 
   return items.map((item, index) => `${index + 1}. ${item}`).join("\n");
 }
 
-function renderFindingsList(findings) {
+function renderFindingsList(findings, locale) {
   if (findings.length === 0) {
-    return "1. No remaining review findings.";
+    return t(locale, "1. 无剩余评审发现。", "1. No remaining review findings.");
   }
 
   return findings
     .map((finding, index) => {
       const lines = [
         `${index + 1}. [${finding.severity}] ${finding.message}`,
-        `Target: \`${finding.target}\``
+        `${t(locale, "目标", "Target")}: \`${finding.target}\``
       ];
 
       if (finding.ruleId) {
-        lines.push(`Rule: \`${finding.ruleId}\``);
+        lines.push(`${t(locale, "规则", "Rule")}: \`${finding.ruleId}\``);
       }
 
       if (finding.suggestion) {
-        lines.push(`Suggestion: ${finding.suggestion}`);
+        lines.push(`${t(locale, "建议", "Suggestion")}: ${finding.suggestion}`);
       }
 
       return lines.join("\n");
@@ -149,15 +173,15 @@ function renderFindingsList(findings) {
     .join("\n\n");
 }
 
-function renderStandardsList(standards) {
+function renderStandardsList(standards, locale) {
   if (standards.length === 0) {
-    return "1. No review-verify standards were loaded.";
+    return t(locale, "1. 未加载面向 review-verify 阶段的规范。", "1. No review-verify standards were loaded.");
   }
 
   return standards
     .map(
       (rule, index) =>
-        `${index + 1}. \`${rule.id}\` ${rule.title}\nSummary: ${rule.summary}`
+        `${index + 1}. \`${rule.id}\` ${rule.title}\n${t(locale, "摘要", "Summary")}: ${rule.summary}`
     )
     .join("\n\n");
 }
@@ -185,16 +209,34 @@ function determineNextStatus(sourceStatus, summaryStatus) {
 function buildVerifyEntries(runState, analysis, summary) {
   const entries = [...runState.previousVerifyEntries];
 
-  entries.push(`Re-ran review verification for ${analysis.relativeTargets.length} target(s).`);
-  entries.push(`Verification result: \`${summary.status}\`; errors=\`${summary.errors}\`, warnings=\`${summary.warnings}\`.`);
+  entries.push(
+    t(
+      runState.locale,
+      `重新执行 review-verify，覆盖 ${analysis.relativeTargets.length} 个目标。`,
+      `Re-ran review verification for ${analysis.relativeTargets.length} target(s).`
+    )
+  );
+  entries.push(
+    t(
+      runState.locale,
+      `复核结果：\`${summary.status}\`；errors=\`${summary.errors}\`，warnings=\`${summary.warnings}\`。`,
+      `Verification result: \`${summary.status}\`; errors=\`${summary.errors}\`, warnings=\`${summary.warnings}\`.`
+    )
+  );
 
   if (analysis.findings.length === 0) {
-    entries.push("No remaining review findings were detected.");
+    entries.push(t(runState.locale, "未发现剩余评审问题。", "No remaining review findings were detected."));
   } else {
     entries.push(
-      `Remaining findings: ${analysis.findings
-        .map((finding) => `[${finding.severity}] ${finding.message} (${finding.target})`)
-        .join("; ")}`
+      t(
+        runState.locale,
+        `剩余发现：${analysis.findings
+          .map((finding) => `[${finding.severity}] ${finding.message} (${finding.target})`)
+          .join("；")}`,
+        `Remaining findings: ${analysis.findings
+          .map((finding) => `[${finding.severity}] ${finding.message} (${finding.target})`)
+          .join("; ")}`
+      )
     );
   }
 
@@ -205,7 +247,13 @@ function buildResolutionEntries(runState, nextStatus, summary) {
   const entries = [...runState.previousResolutionEntries];
 
   if (nextStatus === "resolved") {
-    entries.push("Verification rerun confirmed no remaining findings; lifecycle promoted to resolved.");
+    entries.push(
+      t(
+        runState.locale,
+        "复核复跑确认无剩余发现；生命周期已推进为 resolved。",
+        "Verification rerun confirmed no remaining findings; lifecycle promoted to resolved."
+      )
+    );
     return entries;
   }
 
@@ -214,62 +262,69 @@ function buildResolutionEntries(runState, nextStatus, summary) {
   }
 
   if (summary.status === "pass") {
-    return ["No additional fixes were required before verification."];
+    return [t(runState.locale, "复核前无需额外修复。", "No additional fixes were required before verification.")];
   }
 
-  return ["Remaining findings are tracked in the verified review file."];
+  return [
+    t(
+      runState.locale,
+      "剩余发现已记录在 verified review 文件中。",
+      "Remaining findings are tracked in the verified review file."
+    )
+  ];
 }
 
 function buildMarkdownOutput(payload) {
+  const locale = normalizeLocale(payload.locale);
   return ensureTrailingNewline(
     [
-      `# Review ${payload.slug}`,
+      `${t(locale, "# 评审", "# Review")} ${payload.slug}`,
       "",
-      `- Status: ${payload.reviewStatusAfter}`,
-      `- Result: ${payload.status}`,
-      `- Date: ${payload.generatedAt}`,
-      `- Project: \`${payload.currentProject}\``,
-      `- Sprint: \`${payload.currentSprint}\``,
-      `- File lifecycle:`,
-      `  - Pending verify: \`${payload.reviewLifecycle.pending}\``,
-      `  - Verified: \`${payload.reviewLifecycle.verified}\``,
-      `  - Resolved: \`${payload.reviewLifecycle.resolved}\``,
+      `- ${t(locale, "状态", "Status")}: ${payload.reviewStatusAfter}`,
+      `- ${t(locale, "结果", "Result")}: ${payload.status}`,
+      `- ${t(locale, "时间", "Date")}: ${payload.generatedAt}`,
+      `- ${t(locale, "项目", "Project")}: \`${payload.currentProject}\``,
+      `- ${t(locale, "Sprint", "Sprint")}: \`${payload.currentSprint}\``,
+      `- ${t(locale, "文件生命周期", "File lifecycle")}:`,
+      `  - ${t(locale, "待复核", "Pending verify")}: \`${payload.reviewLifecycle.pending}\``,
+      `  - ${t(locale, "已复核", "Verified")}: \`${payload.reviewLifecycle.verified}\``,
+      `  - ${t(locale, "已解决", "Resolved")}: \`${payload.reviewLifecycle.resolved}\``,
       "",
-      "## Scope",
+      `## ${t(locale, "复核范围", "Scope")}`,
       "",
-      "Command: `review-verify`",
-      payload.strict ? "Strict mode: `true`" : "",
-      `Source review: \`${payload.sourceFile}\``,
-      payload.pathOption ? `Path override: \`${payload.pathOption}\`` : "",
-      payload.base ? `Base override: \`${payload.base}\`` : "",
-      payload.head ? `Head override: \`${payload.head}\`` : "",
+      `${t(locale, "命令", "Command")}: \`review-verify\``,
+      payload.strict ? `${t(locale, "严格模式", "Strict mode")}: \`true\`` : "",
+      `${t(locale, "来源评审文件", "Source review")}: \`${payload.sourceFile}\``,
+      payload.pathOption ? `${t(locale, "路径覆盖", "Path override")}: \`${payload.pathOption}\`` : "",
+      payload.base ? `${t(locale, "Base 覆盖", "Base override")}: \`${payload.base}\`` : "",
+      payload.head ? `${t(locale, "Head 覆盖", "Head override")}: \`${payload.head}\`` : "",
       "",
-      "## Targets",
+      `## ${t(locale, "目标文件", "Targets")}`,
       "",
-      formatNumberedList(payload.targets.map((target) => `\`${target}\``)),
+      formatNumberedList(payload.targets.map((target) => `\`${target}\``), locale),
       "",
-      "## Summary",
+      `## ${t(locale, "摘要", "Summary")}`,
       "",
-      `1. Verification result: \`${payload.status}\``,
-      `2. Review lifecycle: \`${payload.reviewStatusBefore}\` -> \`${payload.reviewStatusAfter}\``,
-      `3. Remaining findings: \`${payload.findings.length}\``,
-      `4. Errors: \`${payload.summary.errors}\`, warnings: \`${payload.summary.warnings}\``,
+      `1. ${t(locale, "复核结果", "Verification result")}: \`${payload.status}\``,
+      `2. ${t(locale, "评审生命周期", "Review lifecycle")}: \`${payload.reviewStatusBefore}\` -> \`${payload.reviewStatusAfter}\``,
+      `3. ${t(locale, "剩余发现", "Remaining findings")}: \`${payload.findings.length}\``,
+      `4. ${t(locale, "错误", "Errors")}: \`${payload.summary.errors}\`，${t(locale, "告警", "Warnings")}: \`${payload.summary.warnings}\``,
       "",
-      "## Review Findings",
+      `## ${t(locale, "评审发现", "Review Findings")}`,
       "",
-      renderFindingsList(payload.findings),
+      renderFindingsList(payload.findings, locale),
       "",
-      "## Matched Standards",
+      `## ${t(locale, "命中规范", "Matched Standards")}`,
       "",
-      renderStandardsList(payload.standards.reviewVerifyRules),
+      renderStandardsList(payload.standards.reviewVerifyRules, locale),
       "",
-      "## Verify Append Log",
+      `## ${t(locale, "复核追加记录", "Verify Append Log")}`,
       "",
-      formatNumberedList(payload.verifyEntries),
+      formatNumberedList(payload.verifyEntries, locale),
       "",
-      "## Resolution Log",
+      `## ${t(locale, "解决记录", "Resolution Log")}`,
       "",
-      formatNumberedList(payload.resolutionEntries)
+      formatNumberedList(payload.resolutionEntries, locale)
     ]
       .filter(Boolean)
       .join("\n")
@@ -279,37 +334,55 @@ function buildMarkdownOutput(payload) {
 function buildReviewVerifyRun(commandContext) {
   const cwd = path.resolve(commandContext.globalOptions.cwd ?? process.cwd());
   const sourceOption = commandContext.commandOptions.source;
+  const requestedLocale = normalizeLocale(commandContext.globalOptions.locale);
 
   if (!sourceOption) {
-    throw new InputError("Review-verify command requires --source to point to an existing review file.", {
-      code: "cli.review_verify_missing_source",
-      details: {
-        cwd
+    throw new InputError(
+      t(
+        requestedLocale,
+        "review-verify 命令需要 --source 指向一个已存在的评审文件。",
+        "Review-verify command requires --source to point to an existing review file."
+      ),
+      {
+        code: "cli.review_verify_missing_source",
+        details: {
+          cwd
+        }
       }
-    });
+    );
   }
 
   const sourceFilePath = path.resolve(cwd, sourceOption);
 
   if (!fs.existsSync(sourceFilePath)) {
-    throw new InputError(`Review source file not found: ${sourceFilePath}`, {
-      code: "cli.review_verify_source_missing",
-      details: {
-        source: sourceFilePath
+    throw new InputError(
+      t(requestedLocale, `未找到评审来源文件：${sourceFilePath}`, `Review source file not found: ${sourceFilePath}`),
+      {
+        code: "cli.review_verify_source_missing",
+        details: {
+          source: sourceFilePath
+        }
       }
-    });
+    );
   }
 
   const sourceFileName = path.basename(sourceFilePath);
-  const sourceStatus = detectReviewStatus(sourceFileName);
+  const sourceStatus = detectReviewStatus(sourceFileName, requestedLocale);
 
   if (sourceStatus === "resolved") {
-    throw new InputError("Resolved review files do not require another review-verify pass.", {
-      code: "cli.review_verify_already_resolved",
-      details: {
-        source: sourceFilePath
+    throw new InputError(
+      t(
+        requestedLocale,
+        "resolved 状态的评审文件无需再次执行 review-verify。",
+        "Resolved review files do not require another review-verify pass."
+      ),
+      {
+        code: "cli.review_verify_already_resolved",
+        details: {
+          source: sourceFilePath
+        }
       }
-    });
+    );
   }
 
   const resolvedConfig = loadResolvedConfig({
@@ -320,23 +393,33 @@ function buildReviewVerifyRun(commandContext) {
       ...commandContext.commandOptions
     }
   });
-  const artifactPaths = buildArtifactPaths(cwd, resolvedConfig);
+  const locale = normalizeLocale(
+    commandContext.globalOptions.locale ?? resolvedConfig.config.standards.locales.default
+  );
+  const artifactPaths = buildArtifactPaths(cwd, resolvedConfig, locale);
   const standardsPackage = resolveStandardsPackage(resolvedConfig.config.standards);
   const sourceContent = fs.readFileSync(sourceFilePath, "utf8");
   const targetFiles =
     commandContext.commandOptions.path
-      ? collectPathTargets(cwd, commandContext.commandOptions.path)
+      ? collectPathTargets(cwd, commandContext.commandOptions.path, locale)
       : commandContext.commandOptions.base || commandContext.commandOptions.head
         ? collectGitTargets(cwd, commandContext.commandOptions.base, commandContext.commandOptions.head)
         : extractTargetsFromSource(cwd, sourceContent);
 
   if (targetFiles.length === 0) {
-    throw new InputError("Review-verify could not resolve any target files from the source review or CLI options.", {
-      code: "cli.review_verify_no_targets",
-      details: {
-        source: sourceFilePath
+    throw new InputError(
+      t(
+        locale,
+        "review-verify 未能从来源评审文件或 CLI 参数解析出目标文件。",
+        "Review-verify could not resolve any target files from the source review or CLI options."
+      ),
+      {
+        code: "cli.review_verify_no_targets",
+        details: {
+          source: sourceFilePath
+        }
       }
-    });
+    );
   }
 
   return {
@@ -355,12 +438,20 @@ function buildReviewVerifyRun(commandContext) {
     head: commandContext.commandOptions.head ?? null,
     strict: commandContext.commandOptions.strict === true,
     dryRun: commandContext.globalOptions.dryRun === true,
-    locale: commandContext.globalOptions.locale ?? resolvedConfig.config.execution.defaultLocale,
-    previousVerifyEntries: parseNumberedSectionItems(sourceContent, "Verify Append Log").filter(
-      (entry) => !entry.startsWith("Pending verification.")
+    locale,
+    previousVerifyEntries: parseNumberedSectionItems(sourceContent, [
+      "Verify Append Log",
+      "复核追加记录"
+    ]).filter(
+      (entry) =>
+        entry !== "Pending verification. Append review-verify results to this file and rename it to the next review status." &&
+        entry !== "待复核。请将 review-verify 结果追加到本文件，并重命名为下一状态文件。"
     ),
-    previousResolutionEntries: parseNumberedSectionItems(sourceContent, "Resolution Log").filter(
-      (entry) => entry !== "No resolutions have been applied yet."
+    previousResolutionEntries: parseNumberedSectionItems(sourceContent, [
+      "Resolution Log",
+      "解决记录"
+    ]).filter(
+      (entry) => entry !== "No resolutions have been applied yet." && entry !== "尚未应用任何解决动作。"
     )
   };
 }
@@ -383,8 +474,16 @@ async function executeReviewVerifyWorkflow(runState) {
           status: summary.exitCode === 0 ? "passed" : "failed",
           summary:
             summary.status === "pass"
-              ? "Review verification completed without remaining findings."
-              : `Review verification completed with ${analysis.findings.length} remaining findings.`,
+              ? t(
+                  runState.locale,
+                  "复核完成，无剩余评审发现。",
+                  "Review verification completed without remaining findings."
+                )
+              : t(
+                  runState.locale,
+                  `复核完成，剩余 ${analysis.findings.length} 条评审发现。`,
+                  `Review verification completed with ${analysis.findings.length} remaining findings.`
+                ),
           outputs: {
             analysis,
             summary
@@ -394,7 +493,13 @@ async function executeReviewVerifyWorkflow(runState) {
           },
           warnings:
             summary.warnings > 0
-              ? [`Review verification reported ${summary.warnings} warning findings.`]
+              ? [
+                  t(
+                    runState.locale,
+                    `复核报告包含 ${summary.warnings} 条告警发现。`,
+                    `Review verification reported ${summary.warnings} warning findings.`
+                  )
+                ]
               : []
         };
       }
@@ -427,6 +532,7 @@ function buildReviewVerifyPayload(runState, workflowResult, analysis, summary, o
     currentProject: runState.resolvedConfig.config.execution.currentProject,
     currentSprint: runState.resolvedConfig.config.execution.currentSprint,
     generatedAt: formatDateTime(),
+    locale: runState.locale,
     sourceFile: toRelativePath(runState.cwd, runState.sourceFilePath),
     reviewStatusBefore: runState.sourceStatus,
     reviewStatusAfter,
@@ -495,18 +601,18 @@ function writeReviewVerifyOutput(logger, commandContext, payload) {
   }
 
   if (payload.status === "fail") {
-    logger.error("Review verification found blocking issues");
+    logger.error(t(payload.locale, "复核发现阻断问题", "Review verification found blocking issues"));
   } else if (payload.status === "warn") {
-    logger.warn("Review verification found non-blocking issues");
+    logger.warn(t(payload.locale, "复核发现非阻断问题", "Review verification found non-blocking issues"));
   } else {
-    logger.success("Review verification passed");
+    logger.success(t(payload.locale, "复核通过", "Review verification passed"));
   }
 
-  logger.keyValue("Source file", payload.sourceFile);
-  logger.keyValue("Lifecycle", `${payload.reviewStatusBefore} -> ${payload.reviewStatusAfter}`);
-  logger.keyValue("Targets", String(payload.targets.length));
-  logger.keyValue("Findings", String(payload.findings.length));
-  logger.keyValue("Output file", payload.outputFile);
+  logger.keyValue(t(payload.locale, "来源文件", "Source file"), payload.sourceFile);
+  logger.keyValue(t(payload.locale, "生命周期", "Lifecycle"), `${payload.reviewStatusBefore} -> ${payload.reviewStatusAfter}`);
+  logger.keyValue(t(payload.locale, "目标文件", "Targets"), String(payload.targets.length));
+  logger.keyValue(t(payload.locale, "评审发现", "Findings"), String(payload.findings.length));
+  logger.keyValue(t(payload.locale, "输出文件", "Output file"), payload.outputFile);
 }
 
 export async function executeReviewVerifyCommand(commandContext, logger) {

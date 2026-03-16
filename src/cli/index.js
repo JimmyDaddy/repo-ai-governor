@@ -26,6 +26,14 @@ import { createLogger } from "./ui/logger.js";
 const require = createRequire(import.meta.url);
 const packageJson = require("../../package.json");
 
+function normalizeLocale(locale) {
+  return locale === "en-US" ? "en-US" : "zh-CN";
+}
+
+function t(locale, zhCN, enUS) {
+  return normalizeLocale(locale) === "en-US" ? enUS : zhCN;
+}
+
 function collectValues(value, previousValues = []) {
   return [...previousValues, value];
 }
@@ -57,7 +65,7 @@ function applyArguments(target, definitions = []) {
 function createProgramHelpText() {
   return [
     "",
-    "Examples:",
+    "示例 / Examples:",
     "  repo-ai-governor init --language typescript --adapter codex",
     "  repo-ai-governor skills list --surface codex --format json",
     "  repo-ai-governor doctor --project mvp --sprint sprint-001 --strict",
@@ -69,8 +77,8 @@ function createProgramHelpText() {
 function createCommandHelpText(commandDefinition) {
   return [
     "",
-    "Tip:",
-    `  Use \`repo-ai-governor ${commandDefinition.name} --format json\` when the caller is an AI agent or CI.`
+    "提示 / Tip:",
+    `  当调用方是 AI 或 CI 时，可使用 \`repo-ai-governor ${commandDefinition.name} --format json\`。`
   ].join("\n");
 }
 
@@ -78,6 +86,7 @@ function renderRegisteredCommand(commandContext) {
   let repositoryLayout;
   let reviewSlug;
   let resolvedConfiguration;
+  const locale = normalizeLocale(commandContext.globalOptions.locale);
 
   try {
     repositoryLayout = resolveRepositoryLayout({
@@ -123,7 +132,11 @@ function renderRegisteredCommand(commandContext) {
   const payload = {
     command: commandContext.command,
     status: "registered",
-    message: `Command ${commandContext.command} is wired into the CLI registry. Implementation lands in a follow-up task.`,
+    message: t(
+      locale,
+      `命令 ${commandContext.command} 已挂载到 CLI 注册表，具体实现将在后续任务补齐。`,
+      `Command ${commandContext.command} is wired into the CLI registry. Implementation lands in a follow-up task.`
+    ),
     globalOptions: commandContext.globalOptions,
     commandOptions: commandContext.commandOptions,
     positionals: commandContext.positionals,
@@ -163,6 +176,7 @@ function renderRegisteredCommand(commandContext) {
 
 function writeRegisteredCommand(logger, commandContext) {
   const payload = renderRegisteredCommand(commandContext);
+  const locale = normalizeLocale(commandContext.globalOptions.locale);
 
   if (commandContext.format === "json") {
     logger.raw(JSON.stringify(payload, null, 2), { ignoreQuiet: true });
@@ -174,14 +188,14 @@ function writeRegisteredCommand(logger, commandContext) {
       [
         `# ${payload.command}`,
         "",
-        `- Status: ${payload.status}`,
-        `- Message: ${payload.message}`,
-        `- Global options: \`${JSON.stringify(payload.globalOptions)}\``,
-        `- Command options: \`${JSON.stringify(payload.commandOptions)}\``,
-        `- Positionals: \`${JSON.stringify(payload.positionals)}\``,
-        `- Resolved config file: \`${payload.resolvedConfiguration.configFile}\``,
-        `- Loaded slots: \`${JSON.stringify(payload.resolvedConfiguration.loadedSlotDefinitions)}\``,
-        `- Loaded adapters: \`${JSON.stringify(
+        `- ${t(locale, "状态", "Status")}: ${payload.status}`,
+        `- ${t(locale, "说明", "Message")}: ${payload.message}`,
+        `- ${t(locale, "全局选项", "Global options")}: \`${JSON.stringify(payload.globalOptions)}\``,
+        `- ${t(locale, "命令选项", "Command options")}: \`${JSON.stringify(payload.commandOptions)}\``,
+        `- ${t(locale, "位置参数", "Positionals")}: \`${JSON.stringify(payload.positionals)}\``,
+        `- ${t(locale, "解析后的配置文件", "Resolved config file")}: \`${payload.resolvedConfiguration.configFile}\``,
+        `- ${t(locale, "已加载 slots", "Loaded slots")}: \`${JSON.stringify(payload.resolvedConfiguration.loadedSlotDefinitions)}\``,
+        `- ${t(locale, "已加载 adapters", "Loaded adapters")}: \`${JSON.stringify(
           payload.resolvedConfiguration.loadedAdapterDefinitions
         )}\``
       ].join("\n"),
@@ -191,35 +205,41 @@ function writeRegisteredCommand(logger, commandContext) {
   }
 
   logger.debug(`Execution context: ${JSON.stringify(commandContext)}`);
-  logger.success(`${payload.command} is registered`);
+  logger.success(t(locale, `${payload.command} 已注册`, `${payload.command} is registered`));
   logger.info(payload.message);
-  logger.keyValue("Global options", JSON.stringify(payload.globalOptions));
-  logger.keyValue("Command options", JSON.stringify(payload.commandOptions));
-  logger.keyValue("Positionals", JSON.stringify(payload.positionals));
-  logger.keyValue("Config file", payload.repositoryLayout.relativePaths.configFile);
-  logger.keyValue("Resolved config file", payload.resolvedConfiguration.configFile);
-  logger.keyValue("Loaded slots", JSON.stringify(payload.resolvedConfiguration.loadedSlotDefinitions));
+  logger.keyValue(t(locale, "全局选项", "Global options"), JSON.stringify(payload.globalOptions));
+  logger.keyValue(t(locale, "命令选项", "Command options"), JSON.stringify(payload.commandOptions));
+  logger.keyValue(t(locale, "位置参数", "Positionals"), JSON.stringify(payload.positionals));
+  logger.keyValue(t(locale, "配置文件", "Config file"), payload.repositoryLayout.relativePaths.configFile);
+  logger.keyValue(t(locale, "解析后的配置文件", "Resolved config file"), payload.resolvedConfiguration.configFile);
+  logger.keyValue(t(locale, "已加载 slots", "Loaded slots"), JSON.stringify(payload.resolvedConfiguration.loadedSlotDefinitions));
   logger.keyValue(
-    "Loaded adapters",
+    t(locale, "已加载 adapters", "Loaded adapters"),
     JSON.stringify(payload.resolvedConfiguration.loadedAdapterDefinitions)
   );
 
   if (payload.repositoryLayout.relativePaths.sprintDir) {
-    logger.keyValue("Sprint dir", payload.repositoryLayout.relativePaths.sprintDir);
-    logger.keyValue("Tasks dir", payload.repositoryLayout.relativePaths.tasksDir);
-    logger.keyValue("Code review dir", payload.repositoryLayout.relativePaths.codeReviewDir);
+    logger.keyValue(t(locale, "Sprint 目录", "Sprint dir"), payload.repositoryLayout.relativePaths.sprintDir);
+    logger.keyValue(t(locale, "Tasks 目录", "Tasks dir"), payload.repositoryLayout.relativePaths.tasksDir);
+    logger.keyValue(
+      t(locale, "Code review 目录", "Code review dir"),
+      payload.repositoryLayout.relativePaths.codeReviewDir
+    );
   }
 
   if (payload.resolvedConfiguration.currentProject) {
-    logger.keyValue("Resolved project", payload.resolvedConfiguration.currentProject);
+    logger.keyValue(t(locale, "解析后的 project", "Resolved project"), payload.resolvedConfiguration.currentProject);
   }
 
   if (payload.resolvedConfiguration.currentSprint) {
-    logger.keyValue("Resolved sprint", payload.resolvedConfiguration.currentSprint);
+    logger.keyValue(t(locale, "解析后的 sprint", "Resolved sprint"), payload.resolvedConfiguration.currentSprint);
   }
 
-  logger.keyValue("Task file naming", payload.repositoryLayout.naming.examples.taskFile);
-  logger.keyValue("Pending review naming", payload.repositoryLayout.naming.examples.reviewPending);
+  logger.keyValue(t(locale, "任务文件命名", "Task file naming"), payload.repositoryLayout.naming.examples.taskFile);
+  logger.keyValue(
+    t(locale, "待复核文件命名", "Pending review naming"),
+    payload.repositoryLayout.naming.examples.reviewPending
+  );
 }
 
 function buildProgram(io) {

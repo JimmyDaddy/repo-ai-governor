@@ -109,9 +109,10 @@ test("check fails when the plan is missing required governance sections", async 
   await bootstrapRepo(cwd);
 
   const planFile = path.join(cwd, "docs/demo/sprint-001/plan.md");
-  const brokenPlan = fs
-    .readFileSync(planFile, "utf8")
-    .replace(/^## Acceptance[\s\S]*?^## Verification Path/m, "## Verification Path");
+  const currentPlan = fs.readFileSync(planFile, "utf8");
+  const brokenPlan = currentPlan.includes("## 验收标准")
+    ? currentPlan.replace(/^## 验收标准[\s\S]*?^## 验证路径/m, "## 验证路径")
+    : currentPlan.replace(/^## Acceptance[\s\S]*?^## Verification Path/m, "## Verification Path");
 
   fs.writeFileSync(planFile, brokenPlan, "utf8");
 
