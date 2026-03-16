@@ -1,6 +1,11 @@
 # GitHub Copilot Adapter Example
 
-该目录提供 `TK-403` 的最小 GitHub Copilot / GitHub Copilot CLI 接入样例，目标是把当前治理资产渲染成两类 Copilot 可消费的规则产物：
+该目录提供 `TK-403` 与 `TK-804` 的最小 GitHub Copilot / GitHub Copilot CLI 接入样例，目标是同时展示：
+
+1. 官方 skills 的原生安装入口
+2. 两类 Copilot 可消费的补充规则产物
+
+补充规则产物包括：
 
 1. IDE 侧 `copilot-instructions`
 2. CLI 侧 prompt bundle
@@ -19,11 +24,18 @@
 推荐接入步骤：
 
 1. 在目标仓库执行 `repo-ai-governor init --adapter github-copilot`
-2. 确认仓库存在：
+2. 安装官方 skills：
+
+```bash
+repo-ai-governor skills install --surface github-copilot
+```
+
+3. 确认仓库存在：
    - `AGENTS.md`
    - `.repo-ai-governor/context/current-context.md`
    - `.repo-ai-governor/adapters/github-copilot.yaml`
-3. 渲染 IDE 规则文件：
+   - `.github/skills/`
+4. 渲染 IDE 规则文件：
 
 ```bash
 node ./scripts/examples/render-github-copilot-adapter-bundle.js \
@@ -35,7 +47,7 @@ node ./scripts/examples/render-github-copilot-adapter-bundle.js \
   --format copilot-instructions
 ```
 
-4. 渲染 Copilot CLI prompt：
+5. 渲染 Copilot CLI prompt：
 
 ```bash
 node ./scripts/examples/render-github-copilot-adapter-bundle.js \
@@ -47,9 +59,12 @@ node ./scripts/examples/render-github-copilot-adapter-bundle.js \
   --format copilot-cli-prompt
 ```
 
-5. 将生成结果分别写入：
+6. 将生成结果分别写入：
    - `.github/copilot-instructions.md`
    - `.repo-ai-governor/templates/github-copilot-cli.prompt.md`
+7. 使用方式：
+   - 优先让 GitHub Copilot 原生消费 `.github/skills/`
+   - `copilot-instructions` 与 CLI prompt 作为补充规则注入
 
 ## What The Bundle Includes
 
@@ -62,6 +77,6 @@ node ./scripts/examples/render-github-copilot-adapter-bundle.js \
 
 ## Notes
 
-1. GitHub Copilot 样例更强调“规则文件 + prompt 片段”注入，而不是直接消费 `agent-entry` 文件内容。
+1. 在 `GitHub Copilot` 下，官方 skills 是原生入口，`copilot-instructions` 与 CLI prompt 是补充层。
 2. `plan` 适合演示 IDE instructions；`review` 适合演示 CLI prompt，因为它更依赖明确的产物路径和 CR 生命周期约束。
-3. `TK-404` 会延续相同的 bundle 结构，但会恢复对 `agent-entry` 直连的展示。
+3. `agent-entry`、workflow、standards、slots 仍然会继续通过补充投影层被利用，而不是丢弃。

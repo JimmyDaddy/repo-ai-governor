@@ -1,6 +1,11 @@
 # Claude Code Adapter Example
 
-该目录提供 `TK-404` 的最小 Claude Code 接入样例，目标是把当前治理资产渲染成 Claude Code 可直接消费的两段 prompt：
+该目录提供 `TK-404` 与 `TK-804` 的最小 Claude Code 接入样例，目标是同时展示：
+
+1. 官方 skills 的原生安装入口
+2. Claude Code 可直接消费的两段补充 prompt
+
+补充 prompt 包括：
 
 1. `system prompt`
 2. `task prompt`
@@ -19,11 +24,18 @@
 推荐接入步骤：
 
 1. 在目标仓库执行 `repo-ai-governor init --adapter claude-code`
-2. 确认仓库存在：
+2. 安装官方 skills：
+
+```bash
+repo-ai-governor skills install --surface claude-code
+```
+
+3. 确认仓库存在：
    - `AGENTS.md`
    - `.repo-ai-governor/context/current-context.md`
    - `.repo-ai-governor/adapters/claude-code.yaml`
-3. 渲染 Claude Code system prompt：
+   - `.claude/skills/`
+4. 渲染 Claude Code system prompt：
 
 ```bash
 node ./scripts/examples/render-claude-code-adapter-bundle.js \
@@ -35,7 +47,7 @@ node ./scripts/examples/render-claude-code-adapter-bundle.js \
   --format system-prompt
 ```
 
-4. 渲染 Claude Code task prompt：
+5. 渲染 Claude Code task prompt：
 
 ```bash
 node ./scripts/examples/render-claude-code-adapter-bundle.js \
@@ -47,9 +59,12 @@ node ./scripts/examples/render-claude-code-adapter-bundle.js \
   --format task-prompt
 ```
 
-5. 将生成结果分别写入：
+6. 将生成结果分别写入：
    - `.repo-ai-governor/templates/claude-code-system.prompt.md`
    - `.repo-ai-governor/templates/claude-code-task.prompt.md`
+7. 使用方式：
+   - 优先让 Claude Code 原生消费 `.claude/skills/`
+   - `system prompt` 与 `task prompt` 作为补充上下文
 
 ## What The Bundle Includes
 
@@ -62,6 +77,6 @@ node ./scripts/examples/render-claude-code-adapter-bundle.js \
 
 ## Notes
 
-1. Claude Code 样例恢复了对 `AGENTS.md` 与 `current-context.md` 的直连展示，更贴合 agent 入口。
+1. 在 `Claude Code` 下，官方 skills 是原生入口，prompt 是补充层。
 2. `system prompt` 负责稳定治理规则，`task prompt` 负责注入本次 command/stage 的运行时上下文。
-3. 这版样例和 `TK-402`、`TK-403` 共用同一套 bundle 基础构建逻辑，方便后续继续扩充工具矩阵。
+3. 原生 skill 安装路径也兼容后续与 subagent 组合的场景。

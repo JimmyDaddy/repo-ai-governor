@@ -18,7 +18,16 @@ node ./bin/repo-ai-governor.js init \
   --format json
 ```
 
-2. 生成一轮 planning 产物：
+2. 安装官方 skills：
+
+```bash
+node ./bin/repo-ai-governor.js skills install \
+  --cwd "$TMP_DIR" \
+  --surface codex \
+  --format json
+```
+
+3. 生成一轮 planning 产物：
 
 ```bash
 node ./bin/repo-ai-governor.js plan \
@@ -29,7 +38,7 @@ node ./bin/repo-ai-governor.js plan \
   --format json
 ```
 
-3. 渲染 Codex bundle：
+4. 渲染 Codex bundle：
 
 ```bash
 node ./scripts/examples/render-codex-adapter-bundle.js \
@@ -50,6 +59,8 @@ node ./scripts/examples/render-codex-adapter-bundle.js \
 4. workflow 阶段顺序
 5. `plan` 面向 AI 的 standards 指令
 6. 当前 stage 命中的 slot 摘要
+7. `.codex/skills/governor-context-loader/SKILL.md`
+8. 原生 skills + bundle 补充层的接线思路
 
 ## Optional Validation
 

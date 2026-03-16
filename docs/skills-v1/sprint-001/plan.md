@@ -57,7 +57,7 @@
 2. `TK-801` 已完成，当前已补齐官方 skill package layout helper、manifest schema、catalog 入口和 install target 基线。
 3. `TK-802` 已完成，当前已补齐 `skills install / list / doctor` 命令面、catalog/runtime 基础模块与命令级测试。
 4. `TK-803` 已完成，当前 bundled catalog 已能分发 4 个首批官方 skill，并包含一个 `script-assisted` 示例。
-5. 当前优先推进 `TK-804`，开始补三类 adapter 的 skill 接线基线。
+5. `TK-804` 已完成，当前 `Codex / GitHub Copilot / Claude Code` 都有官方 skill 的原生安装说明与补充投影层边界。
 
 ## Output Paths
 
@@ -65,6 +65,7 @@
 - `docs/skills-v1/sprint-001/official-skill-package-layout.md`
 - `docs/skills-v1/sprint-001/skills-command-baseline.md`
 - `docs/skills-v1/sprint-001/official-skill-assets.md`
+- `docs/skills-v1/sprint-001/adapter-skill-wiring-baseline.md`
 - `docs/skills-v1/sprint-001/tasks/checklist.md`
 - `docs/skills-v1/sprint-001/tasks/tasks.csv`
 - `docs/skills-v1/sprint-001/tasks/TK-801.md`

@@ -1,6 +1,9 @@
 # Codex Adapter Example
 
-该目录提供 `TK-402` 的最小 Codex / Codex CLI 接入样例，目标是把当前治理资产渲染成 Codex 可直接消费的入口说明和 prompt bundle。
+该目录提供 `TK-402` 与 `TK-804` 的最小 Codex / Codex CLI 接入样例，目标是同时展示：
+
+1. 官方 skills 的原生安装入口
+2. 当前治理资产渲染成 Codex 可直接消费的补充 bundle
 
 ## Contents
 
@@ -16,11 +19,18 @@
 推荐接入步骤：
 
 1. 在目标仓库执行 `repo-ai-governor init --adapter codex`
-2. 确认仓库存在：
+2. 安装官方 skills：
+
+```bash
+repo-ai-governor skills install --surface codex
+```
+
+3. 确认仓库存在：
    - `AGENTS.md`
    - `.repo-ai-governor/context/current-context.md`
    - `.repo-ai-governor/adapters/codex.yaml`
-3. 使用渲染脚本生成 Codex bundle：
+   - `.codex/skills/`
+4. 使用渲染脚本生成 Codex bundle：
 
 ```bash
 node ./scripts/examples/render-codex-adapter-bundle.js \
@@ -31,7 +41,9 @@ node ./scripts/examples/render-codex-adapter-bundle.js \
   --stage plan
 ```
 
-4. 将生成结果作为 Codex 当前任务的补充上下文，配合 `AGENTS.md` 一起使用。
+5. 使用方式：
+   - 优先让 Codex 原生消费 `.codex/skills/` 下的官方 skills
+   - 再把 bundle 作为当前 command/stage 的补充上下文
 
 ## What The Bundle Includes
 
@@ -43,6 +55,6 @@ node ./scripts/examples/render-codex-adapter-bundle.js \
 
 ## Notes
 
-1. 当前样例优先覆盖 `plan` 场景，因为它最能展示 workflow + standards + slots + agent-entry 的组合效果。
-2. `review`、`review-verify` 场景可通过 `--command review --stage review` 等参数复用同一渲染器。
-3. `TK-403` 已沿用同一思路补齐 GitHub Copilot 样例；`TK-404` 将继续复用相同的 bundle 骨架补齐 Claude Code 样例。
+1. 在 `Codex` 下，官方 skills 是原生入口，bundle 是补充层。
+2. 当前样例优先覆盖 `plan` 场景，因为它最能展示 workflow + standards + slots + agent-entry 的组合效果。
+3. `review`、`review-verify` 场景可通过 `--command review --stage review` 等参数复用同一渲染器。

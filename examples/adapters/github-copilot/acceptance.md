@@ -18,7 +18,16 @@ node ./bin/repo-ai-governor.js init \
   --format json
 ```
 
-2. 生成一轮 planning 产物：
+2. 安装官方 skills：
+
+```bash
+node ./bin/repo-ai-governor.js skills install \
+  --cwd "$TMP_DIR" \
+  --surface github-copilot \
+  --format json
+```
+
+3. 生成一轮 planning 产物：
 
 ```bash
 node ./bin/repo-ai-governor.js plan \
@@ -29,7 +38,7 @@ node ./bin/repo-ai-governor.js plan \
   --format json
 ```
 
-3. 渲染 IDE instructions：
+4. 渲染 IDE instructions：
 
 ```bash
 node ./scripts/examples/render-github-copilot-adapter-bundle.js \
@@ -41,7 +50,7 @@ node ./scripts/examples/render-github-copilot-adapter-bundle.js \
   --format copilot-instructions
 ```
 
-4. 渲染 Copilot CLI prompt：
+5. 渲染 Copilot CLI prompt：
 
 ```bash
 node ./scripts/examples/render-github-copilot-adapter-bundle.js \
@@ -63,6 +72,8 @@ node ./scripts/examples/render-github-copilot-adapter-bundle.js \
 4. `plan` / `review` 面向 AI 的 standards 指令
 5. 当前 stage 命中的 slot 摘要
 6. `plan.md`、`checklist.md`、`tasks.csv` 与 `code-review/` 的路径约束
+7. `.github/skills/governor-context-loader/SKILL.md`
+8. native skills + instructions/prompt 补充层的接线思路
 
 ## Optional Validation
 
