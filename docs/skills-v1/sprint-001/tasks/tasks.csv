@@ -1,0 +1,5 @@
+execution_id,task_id,title,owner,priority,due_date,status,project,sprint,plan,result,verify,review_delta,recorded_at
+TK-801-00,TK-801,Define official skill package layout and manifest,Platform,P0,2026-03-19,todo,skills-v1,sprint-001,"将 skill-system-design 中的目录建议收敛成正式 package layout、manifest 字段和版本边界，作为后续 CLI 安装与 adapter 接线的事实源","待执行","待执行","","2026-03-16"
+TK-802-00,TK-802,Implement minimal skills install list and doctor commands,CLI,P0,2026-03-20,todo,skills-v1,sprint-001,"新增 skill 安装、发现和健康检查命令，确保用户安装本工具后能直接把官方 skills 安装到目标仓库","待执行","待执行","","2026-03-16"
+TK-803-00,TK-803,Ship first-party official skill assets,Workflow,P0,2026-03-21,todo,skills-v1,sprint-001,"交付 governor-context-loader、governor-plan-runner、governor-task-implementer、governor-delivery-finisher 的正式资产和元数据","待执行","待执行","","2026-03-16"
+TK-804-00,TK-804,Provide baseline adapter skill wiring,Adapters,P1,2026-03-22,todo,skills-v1,sprint-001,"把同一套官方 skills 接到 Codex、GitHub Copilot、Claude Code 的安装入口或投影入口上，并提供可复现验收路径","待执行","待执行","","2026-03-16"
