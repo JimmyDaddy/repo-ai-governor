@@ -2,10 +2,34 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-NODE_BIN="${NODE_BIN:-/opt/homebrew/bin/node}"
-NPM_BIN="${NPM_BIN:-/opt/homebrew/bin/npm}"
+NODE_BIN="${NODE_BIN:-}"
+NPM_BIN="${NPM_BIN:-}"
 FORMAT="summary"
 KEEP_ARTIFACTS="false"
+
+resolve_runtime_bin() {
+  local explicit_value="$1"
+  local command_name="$2"
+  local fallback_path="$3"
+
+  if [[ -n "$explicit_value" ]]; then
+    printf '%s\n' "$explicit_value"
+    return 0
+  fi
+
+  if command -v "$command_name" >/dev/null 2>&1; then
+    command -v "$command_name"
+    return 0
+  fi
+
+  if [[ -x "$fallback_path" ]]; then
+    printf '%s\n' "$fallback_path"
+    return 0
+  fi
+
+  printf 'Unable to resolve required runtime binary: %s\n' "$command_name" >&2
+  return 1
+}
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -22,6 +46,9 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+NODE_BIN="$(resolve_runtime_bin "$NODE_BIN" node /opt/homebrew/bin/node)"
+NPM_BIN="$(resolve_runtime_bin "$NPM_BIN" npm /opt/homebrew/bin/npm)"
 
 WORKSPACE="${1:-$(mktemp -d "${TMPDIR:-/tmp}/repo-ai-governor-getting-started.XXXXXX")}"
 INSTALL_DIR="$(mktemp -d "${TMPDIR:-/tmp}/repo-ai-governor-install.XXXXXX")"

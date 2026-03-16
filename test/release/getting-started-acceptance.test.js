@@ -19,7 +19,7 @@ test("getting-started acceptance script installs the package and produces onboar
       encoding: "utf8",
       env: {
         ...process.env,
-        PATH: `/opt/homebrew/bin:${process.env.PATH ?? ""}`
+        PATH: process.env.PATH ?? ""
       }
     }
   );
