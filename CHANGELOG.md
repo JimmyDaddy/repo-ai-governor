@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.1.4](https://github.com/JimmyDaddy/repo-ai-governor/compare/v0.1.3...v0.1.4) (2026-03-16)
+
+### Bug Fixes
+
+* **ci:** add environment specification for npm publish job ([9a84959](https://github.com/JimmyDaddy/repo-ai-governor/commit/9a8495969d02d2d7c4316de28479bafef85db124))
+* **ci:** enforce oidc-only npm publish flow ([591c9ed](https://github.com/JimmyDaddy/repo-ai-governor/commit/591c9edaf12b9d301886d2027a364ae27e72a286))
+* **ci:** remove environment specification from npm publish job ([b1a007d](https://github.com/JimmyDaddy/repo-ai-governor/commit/b1a007dbafcb5d38cadc2d4a3d83b280f21ab335))
+* **init:** bootstrap dependencies and skills for npx onboarding ([5c83869](https://github.com/JimmyDaddy/repo-ai-governor/commit/5c8386913040bab45ba1c4d8f5d48d58c8a582a8))
+* **publish:** add provenance flag to npm publish command and update publishConfig ([c170a04](https://github.com/JimmyDaddy/repo-ai-governor/commit/c170a043967264e3d228e16747528abde53a711a))
+* **publish:** add public access flag to npm publish command ([cebb083](https://github.com/JimmyDaddy/repo-ai-governor/commit/cebb0835af1d287109aa278d5276a0e9b13d3614))
+* **publish:** add registry-url to setup-node step and enhance npm publish command ([2ea5464](https://github.com/JimmyDaddy/repo-ai-governor/commit/2ea54640bbcb23e037db30af2c86edc61faa4500))
+* **publish:** downgrade setup-node action to v4 in npm publish workflow ([f5d748a](https://github.com/JimmyDaddy/repo-ai-governor/commit/f5d748a725fcd1b374acad8c88361ce19780692e))
+* **publish:** remove unnecessary registry-url from setup-node step ([594e2ef](https://github.com/JimmyDaddy/repo-ai-governor/commit/594e2ef9c4aa116b2e151d95beab46035ddb8dce))
+* **publish:** simplify npm publish command by removing authentication cleanup ([c966f2f](https://github.com/JimmyDaddy/repo-ai-governor/commit/c966f2f27289ef3737e6989205117a24fd3b88ed))
+* **publish:** simplify npm publish step by removing OIDC auth token deletion ([0e6d06d](https://github.com/JimmyDaddy/repo-ai-governor/commit/0e6d06dfa66405db71e5d7018dbf167d60c38384))
+* **publish:** upgrade Node.js to 24 and ensure OIDC trusted publishing by clearing NODE_AUTH_TOKEN/NPM_TOKEN ([fdf494e](https://github.com/JimmyDaddy/repo-ai-governor/commit/fdf494ecb1a2de400db79eeec3363b0e533a5be5))
+
 ## 0.1.3 (2026-03-16)
 
 ### Features
