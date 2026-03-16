@@ -1,10 +1,18 @@
 {
-  "name": "repo-ai-governor",
+  "name": "@cjhdev/repo-ai-governor",
   "version": "0.1.2",
   "private": false,
   "description": "Repository-local AI governance CLI.",
   "license": "MIT",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JimmyDaddy/repo-ai-governor.git"
+  },
+  "bugs": {
+    "url": "https://github.com/JimmyDaddy/repo-ai-governor/issues"
+  },
+  "homepage": "https://github.com/JimmyDaddy/repo-ai-governor",
   "bin": {
     "repo-ai-governor": "./bin/repo-ai-governor.js"
   },
@@ -19,6 +27,8 @@
     "help": "node ./bin/repo-ai-governor.js --help",
     "test": "node --test",
     "check": "npm run test",
+    "release": "release-it",
+    "release:dry-run": "release-it --dry-run",
     "release:check": "node ./scripts/release/check-release-ready.js",
     "release:notes": "node ./scripts/release/render-release-notes.js",
     "release:verify-local": "node ./scripts/release/verify-local-distribution.js",
@@ -30,12 +40,17 @@
     "node": ">=18.0.0"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "provenance": true
   },
   "dependencies": {
     "ajv": "^8.18.0",
     "ajv-formats": "^3.0.1",
     "commander": "^13.1.0",
     "yaml": "^2.8.2"
+  },
+  "devDependencies": {
+    "@release-it/conventional-changelog": "^9.0.4",
+    "release-it": "^17.11.0"
   }
 }

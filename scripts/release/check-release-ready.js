@@ -50,6 +50,8 @@ function main() {
   const readmePath = path.join(ROOT_DIR, "README.md");
   const readmeZhPath = path.join(ROOT_DIR, "README.zh-CN.md");
   const remoteWorkflowPath = path.join(ROOT_DIR, ".github", "workflows", "release-ga.yml");
+  const publishWorkflowPath = path.join(ROOT_DIR, ".github", "workflows", "publish-npm.yml");
+  const releaseItConfigPath = path.join(ROOT_DIR, ".release-it.json");
   const releaseNotesScriptPath = path.join(ROOT_DIR, "scripts", "release", "render-release-notes.js");
   const gettingStartedScriptPath = path.join(ROOT_DIR, "scripts", "release", "run-getting-started-check.sh");
   const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
@@ -64,9 +66,16 @@ function main() {
   const readmeExists = fs.existsSync(readmePath);
   const readmeZhExists = fs.existsSync(readmeZhPath);
   const remoteWorkflowExists = fs.existsSync(remoteWorkflowPath);
+  const publishWorkflowExists = fs.existsSync(publishWorkflowPath);
+  const releaseItConfigExists = fs.existsSync(releaseItConfigPath);
   const releaseNotesScriptExists = fs.existsSync(releaseNotesScriptPath);
   const gettingStartedScriptExists = fs.existsSync(gettingStartedScriptPath);
   const publishAccess = packageJson.publishConfig?.access ?? null;
+  const publishProvenance = packageJson.publishConfig?.provenance ?? null;
+  const repositoryUrl =
+    typeof packageJson.repository === "string"
+      ? packageJson.repository
+      : packageJson.repository?.url ?? null;
   const requiredChecks = [
     "npm run check",
     "npm run release:check",
@@ -76,23 +85,28 @@ function main() {
     "确认 CHANGELOG.md / CHANGELOG.zh-CN.md 已更新并包含本次发布说明",
     "确认 README.md / README.zh-CN.md 与当前 CLI 能力一致",
     "确认升级说明、破坏性变更和人工确认项已记录",
-    "确认 npm 发布凭据和远端 release 前置条件可用"
+    "确认 npm Trusted Publisher 已绑定 `.github/workflows/publish-npm.yml`，或已准备好等价发布认证方案"
   ];
 
   assertCondition(packageJson.private === false, "package.json must set private=false.", failures);
   assertCondition(typeof packageJson.bin?.["repo-ai-governor"] === "string", "CLI bin entry is required.", failures);
   assertCondition(Array.isArray(packageJson.files) && packageJson.files.length > 0, "package.json files whitelist is required.", failures);
+  assertCondition(typeof packageJson.scripts?.release === "string", "release script is required.", failures);
   assertCondition(typeof packageJson.scripts?.["release:verify-local"] === "string", "release:verify-local script is required.", failures);
   assertCondition(typeof packageJson.scripts?.["release:candidate"] === "string", "release:candidate script is required.", failures);
   assertCondition(typeof packageJson.scripts?.["release:ga-check"] === "string", "release:ga-check script is required.", failures);
   assertCondition(typeof packageJson.license === "string" && packageJson.license.length > 0, "package.json license is required.", failures);
   assertCondition(semverPattern.test(packageJson.version), "package.json version must follow semver.", failures);
   assertCondition(publishAccess === "public", "publishConfig.access must be public.", failures);
+  assertCondition(publishProvenance === true, "publishConfig.provenance must be true.", failures);
+  assertCondition(typeof repositoryUrl === "string" && repositoryUrl.length > 0, "package.json repository.url is required.", failures);
   assertCondition(changelogExists, "CHANGELOG.md is required for GA release readiness.", failures);
   assertCondition(changelogZhExists, "CHANGELOG.zh-CN.md is required for GA release readiness.", failures);
   assertCondition(readmeExists, "README.md is required for GA release readiness.", failures);
   assertCondition(readmeZhExists, "README.zh-CN.md is required for GA release readiness.", failures);
   assertCondition(remoteWorkflowExists, ".github/workflows/release-ga.yml is required for GA release readiness.", failures);
+  assertCondition(publishWorkflowExists, ".github/workflows/publish-npm.yml is required for GA release readiness.", failures);
+  assertCondition(releaseItConfigExists, ".release-it.json is required for GA release readiness.", failures);
   assertCondition(releaseNotesScriptExists, "scripts/release/render-release-notes.js is required for GA release readiness.", failures);
   assertCondition(gettingStartedScriptExists, "scripts/release/run-getting-started-check.sh is required for GA release readiness.", failures);
   assertCondition(bundledFiles.includes("bin/repo-ai-governor.js"), "Packed tarball must include bin/repo-ai-governor.js.", failures);
@@ -103,12 +117,16 @@ function main() {
     packageName: packageJson.name,
     version: packageJson.version,
     private: packageJson.private,
+    repositoryUrl,
     publishAccess,
+    publishProvenance,
     changelogExists,
     changelogZhExists,
     readmeExists,
     readmeZhExists,
     remoteWorkflowExists,
+    publishWorkflowExists,
+    releaseItConfigExists,
     releaseNotesScriptExists,
     gettingStartedScriptExists,
     requiredChecks,
@@ -126,12 +144,16 @@ function main() {
         `status=${payload.status}`,
         `package=${payload.packageName}`,
         `version=${payload.version}`,
+        `repository=${payload.repositoryUrl}`,
         `publishAccess=${payload.publishAccess}`,
+        `publishProvenance=${payload.publishProvenance}`,
         `changelog=${payload.changelogExists}`,
         `changelogZh=${payload.changelogZhExists}`,
         `readme=${payload.readmeExists}`,
         `readmeZh=${payload.readmeZhExists}`,
         `remoteWorkflow=${payload.remoteWorkflowExists}`,
+        `publishWorkflow=${payload.publishWorkflowExists}`,
+        `releaseItConfig=${payload.releaseItConfigExists}`,
         `releaseNotesScript=${payload.releaseNotesScriptExists}`,
         `gettingStartedScript=${payload.gettingStartedScriptExists}`,
         `tarball=${payload.tarball}`

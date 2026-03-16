@@ -41,6 +41,31 @@ test("release workflow skeleton includes gate notes and publish steps", () => {
   assert.match(workflow, /NODE_AUTH_TOKEN: \$\{\{ secrets\.NPM_TOKEN \}\}/);
 });
 
+test("publish workflow runs GA gate before npm publish with provenance", () => {
+  const workflowPath = path.join(ROOT_DIR, ".github", "workflows", "publish-npm.yml");
+  const workflow = fs.readFileSync(workflowPath, "utf8");
+
+  assert.match(workflow, /release:\s*\n\s*types:\s*\n\s*-\s*published/);
+  assert.match(workflow, /workflow_dispatch:/);
+  assert.match(workflow, /id-token:\s*write/);
+  assert.match(workflow, /npm ci/);
+  assert.match(workflow, /npm run release:ga-check/);
+  assert.match(workflow, /npm publish --provenance --access public/);
+});
+
+test("release-it config uses GA gate and delegates npm publish to CI", () => {
+  const configPath = path.join(ROOT_DIR, ".release-it.json");
+  const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+
+  assert.equal(config.git.commitMessage, "chore(release): ${version}");
+  assert.equal(config.git.tagName, "v${version}");
+  assert.deepEqual(config.git.requireBranch, ["main"]);
+  assert.equal(config.npm.publish, false);
+  assert.equal(config.github.release, true);
+  assert.ok(Array.isArray(config.hooks["before:init"]));
+  assert.ok(config.hooks["before:init"].includes("npm run release:ga-check"));
+});
+
 test("render-release-notes can write release notes to an output file", () => {
   const outputDir = fs.mkdtempSync(path.join(os.tmpdir(), "repo-ai-governor-release-notes-"));
   const outputPath = path.join(outputDir, "release-notes.md");

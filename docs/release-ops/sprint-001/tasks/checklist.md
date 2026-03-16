@@ -1,0 +1,5 @@
+# Release Ops Sprint 001 Checklist
+
+- [x] **TK-901** 集成 `release-it + publish CI`（负责人：Release｜优先级：P0｜截止：2026-03-19｜状态：done）
+  - 执行记录：plan=参考 `react-native-image-marker` 的 `release-it + CI` 思路，为当前仓库补齐发布配置、publish workflow、release gate 对齐和验证覆盖;result=已新增 `.release-it.json`、`.github/workflows/publish-npm.yml`、`release`/`release:dry-run` scripts、`publishConfig.provenance`、仓库元数据与 `package-lock.json`，并让 `release:check` 校验 `release-it` 配置和 publish workflow;verify=`PATH=/opt/homebrew/bin:$PATH /opt/homebrew/bin/node --test test/release/release-automation.test.js test/release/release-distribution.test.js && PATH=/opt/homebrew/bin:$PATH /opt/homebrew/bin/npm run release:check && PATH=/opt/homebrew/bin:$PATH /opt/homebrew/bin/npm ci && PATH=/opt/homebrew/bin:$PATH /opt/homebrew/bin/npm run check`
+  - 执行记录：review_delta=已完成 `TK-901` 自检复核，CR 结果落盘为 `code-review/verified_review_tk-901-integrate-release-it-publish-ci.md`;verify=复核确认当前推荐发布路径为 `npm run release` 触发 `release-it` 创建 GitHub Release，随后由 `publish-npm.yml` 在 Release published 事件中执行 npm publish

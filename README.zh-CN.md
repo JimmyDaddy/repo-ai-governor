@@ -232,6 +232,8 @@ MVP 和后续项目的规划执行记录位于：
 
 ```bash
 npm run check
+npm run release:dry-run
+npm run release
 npm run release:check
 npm run release:verify-local
 npm run release:ga-check
@@ -243,3 +245,10 @@ npm run release:ga-check
 2. [CHANGELOG.md](/Users/jimmydaddy/study/repo-ai-governor/CHANGELOG.md)
 3. [CHANGELOG.zh-CN.md](/Users/jimmydaddy/study/repo-ai-governor/CHANGELOG.zh-CN.md)
 4. [Remote Release Automation](/Users/jimmydaddy/study/repo-ai-governor/docs/release-ga/sprint-001/remote-release-automation.md)
+5. [Release Ops Sprint 001](/Users/jimmydaddy/study/repo-ai-governor/docs/release-ops/sprint-001/index.md)
+
+当前推荐的发布路径：
+
+1. 先运行 `npm run release:dry-run` 预演下一个版本发布。
+2. 再运行 `npm run release`，通过 `release-it` 完成版本提升、打 tag 和创建 GitHub Release。
+3. 当 GitHub Release 发布后，由 [.github/workflows/publish-npm.yml](/Users/jimmydaddy/study/repo-ai-governor/.github/workflows/publish-npm.yml) 自动完成 npm publish。

@@ -232,6 +232,8 @@ Current release gate commands:
 
 ```bash
 npm run check
+npm run release:dry-run
+npm run release
 npm run release:check
 npm run release:verify-local
 npm run release:ga-check
@@ -243,3 +245,10 @@ Release policy and GA criteria are documented in:
 2. [CHANGELOG.md](/Users/jimmydaddy/study/repo-ai-governor/CHANGELOG.md)
 3. [CHANGELOG.zh-CN.md](/Users/jimmydaddy/study/repo-ai-governor/CHANGELOG.zh-CN.md)
 4. [Remote Release Automation](/Users/jimmydaddy/study/repo-ai-governor/docs/release-ga/sprint-001/remote-release-automation.md)
+5. [Release Ops Sprint 001](/Users/jimmydaddy/study/repo-ai-governor/docs/release-ops/sprint-001/index.md)
+
+Current recommended publish path:
+
+1. Run `npm run release:dry-run` to preview the next release.
+2. Run `npm run release` to let `release-it` bump, tag, and create the GitHub Release.
+3. Let [.github/workflows/publish-npm.yml](/Users/jimmydaddy/study/repo-ai-governor/.github/workflows/publish-npm.yml) publish the package to npm when the GitHub Release is published.
