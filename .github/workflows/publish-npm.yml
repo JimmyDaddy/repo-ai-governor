@@ -22,9 +22,7 @@ concurrency:
 jobs:
   publish-npm:
     runs-on: ubuntu-latest
-    env:
-      NODE_AUTH_TOKEN: ""
-      NPM_TOKEN: ""
+    environment: npm-publish
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -33,7 +31,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
@@ -46,11 +44,5 @@ jobs:
         run: npm run release:ga-check
 
       - name: Publish to npm
-        env:
-          NODE_AUTH_TOKEN: ""
-          NPM_TOKEN: ""
         run: |
-          unset NODE_AUTH_TOKEN
-          unset NPM_TOKEN
-          npm config delete //registry.npmjs.org/:_authToken || true
-          npm publish --access public
+          npm publish --provenance --access public
