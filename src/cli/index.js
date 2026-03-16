@@ -1,6 +1,7 @@
 import { createRequire } from "node:module";
 import { Command, CommanderError } from "commander";
 import { executeInitCommand } from "../commands/init-command.js";
+import { executeSkillsCommand } from "../commands/skills-command.js";
 import { executeDoctorCommand } from "../commands/doctor-command.js";
 import { executePlanCommand } from "../commands/plan-command.js";
 import { executeCheckCommand } from "../commands/check-command.js";
@@ -47,11 +48,18 @@ function applyOptions(target, definitions) {
   }
 }
 
+function applyArguments(target, definitions = []) {
+  for (const definition of definitions) {
+    target.argument(definition.name, definition.description);
+  }
+}
+
 function createProgramHelpText() {
   return [
     "",
     "Examples:",
     "  repo-ai-governor init --language typescript --adapter codex",
+    "  repo-ai-governor skills list --surface codex --format json",
     "  repo-ai-governor doctor --project mvp --sprint sprint-001 --strict",
     "  repo-ai-governor review --path src/cli --base main --head HEAD",
     "  repo-ai-governor help review-verify"
@@ -265,6 +273,7 @@ function buildProgram(io) {
         !commandDefinition.options.some((commandOption) => commandOption.long === definition.long)
     );
 
+    applyArguments(command, commandDefinition.arguments);
     applyOptions(command, inheritedGlobalOptions);
     applyOptions(command, commandDefinition.options);
 
@@ -288,6 +297,9 @@ function buildProgram(io) {
 
       if (commandDefinition.name === "init") {
         exitCode = executeInitCommand(commandContext, commandLogger) ?? EXIT_CODES.success;
+      } else if (commandDefinition.name === "skills") {
+        exitCode =
+          (await executeSkillsCommand(commandContext, commandLogger)) ?? EXIT_CODES.success;
       } else if (commandDefinition.name === "doctor") {
         exitCode = executeDoctorCommand(commandContext, commandLogger);
       } else if (commandDefinition.name === "plan") {

@@ -55,12 +55,14 @@
 
 1. 已创建 `TK-801`、`TK-802`、`TK-803`、`TK-804` 任务卡，并完成 `skills-v1 / sprint-001` 骨架初始化。
 2. `TK-801` 已完成，当前已补齐官方 skill package layout helper、manifest schema、catalog 入口和 install target 基线。
-3. 当前优先推进 `TK-802`，开始实现 `skills install / list / doctor` 最小命令面。
+3. `TK-802` 已完成，当前已补齐 `skills install / list / doctor` 命令面、catalog/runtime 基础模块与命令级测试。
+4. 当前优先推进 `TK-803`，开始补首批官方 skill 资产。
 
 ## Output Paths
 
 - `docs/skills-v1/sprint-001/plan.md`
 - `docs/skills-v1/sprint-001/official-skill-package-layout.md`
+- `docs/skills-v1/sprint-001/skills-command-baseline.md`
 - `docs/skills-v1/sprint-001/tasks/checklist.md`
 - `docs/skills-v1/sprint-001/tasks/tasks.csv`
 - `docs/skills-v1/sprint-001/tasks/TK-801.md`

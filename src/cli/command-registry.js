@@ -103,6 +103,66 @@ export const commandDefinitions = [
     ]
   },
   {
+    name: "skills",
+    description: "管理官方 skills 的发现、安装与健康检查",
+    arguments: [
+      {
+        name: "[action]",
+        description: "install|list|doctor"
+      }
+    ],
+    options: [
+      {
+        long: "--surface",
+        key: "surface",
+        valueName: "codex|github-copilot|claude-code",
+        description: "指定 skill 安装或检查的目标 surface",
+        type: "string"
+      },
+      {
+        long: "--scope",
+        key: "scope",
+        valueName: "repo|user",
+        description: "指定 repo 级或 user 级安装范围",
+        type: "string"
+      },
+      {
+        long: "--skill",
+        key: "skill",
+        valueName: "id",
+        description: "只安装指定 skill，可重复传入",
+        type: "string",
+        multiple: true
+      },
+      {
+        long: "--target",
+        key: "target",
+        valueName: "path",
+        description: "覆盖默认安装目标目录",
+        type: "string"
+      },
+      {
+        long: "--catalog",
+        key: "catalog",
+        valueName: "path",
+        description: "指定官方 skill catalog 路径，便于自定义分发或测试",
+        type: "string"
+      },
+      {
+        long: "--force",
+        key: "force",
+        description: "安装时覆盖已有 skill 目录",
+        type: "boolean"
+      },
+      {
+        long: "--strict",
+        key: "strict",
+        description: "在 doctor 时把 warning 视为失败",
+        type: "boolean"
+      }
+    ]
+  },
+  {
     name: "doctor",
     description: "检查仓库是否满足运行条件",
     options: [
