@@ -42,7 +42,5 @@ jobs:
       - name: Run release gate
         run: npm run release:ga-check
 
-      - name: Publish to npm (trusted publishing via OIDC)
-        run: |
-          npm config delete //registry.npmjs.org/:_authToken || true
-          npm publish --provenance --access public
+      - name: Publish to npm
+        run: npm publish --provenance --access public
