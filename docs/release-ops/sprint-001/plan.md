@@ -39,3 +39,4 @@
 ## Tasks
 
 1. `TK-901` 集成 `release-it + publish CI`
+2. `TK-902` 修复 npm 安装后 `init` 首次上手可用性

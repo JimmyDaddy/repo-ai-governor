@@ -165,6 +165,48 @@ const ZH_CN_TEMPLATES = {
         context.dateStamp
       ])
     ].join("\n");
+  },
+  adaptersReadme() {
+    return [
+      "# Adapters Directory",
+      "",
+      "存放 adapter 配置文件（例如 `codex.yaml`、`github-copilot.yaml`、`claude-code.yaml`）。",
+      "",
+      "1. `init --adapter <name>` 会自动生成对应适配器文件。",
+      "2. 你也可以按项目需要手工新增或覆盖这些文件。",
+      "3. `doctor` 会校验已启用 adapter 的配置是否可用。"
+    ].join("\n");
+  },
+  slotsReadme() {
+    return [
+      "# Slots Directory",
+      "",
+      "存放项目自定义 slot 定义文件，用于扩展治理流程规则。",
+      "",
+      "1. 新增 slot 后，请在 `governor.yaml` 的 `slots.enabled` 中启用。",
+      "2. `check/review/report` 会按当前阶段解析并应用命中的 slot。",
+      "3. script extension 仅做声明，不会在默认模式下直接执行。"
+    ].join("\n");
+  },
+  templatesReadme() {
+    return [
+      "# Templates Directory",
+      "",
+      "存放仓库本地可复用的文档或提示词模板。",
+      "",
+      "1. 可用于 `plan/review/report` 的项目特化模板。",
+      "2. 建议和 `skills/*/templates` 协同使用，避免重复维护。"
+    ].join("\n");
+  },
+  reportsReadme() {
+    return [
+      "# Reports Directory",
+      "",
+      "存放 `check/review/review-verify/report` 生成的结构化报告和渲染结果。",
+      "",
+      "1. `check --write-report` 会生成或更新最新报告。",
+      "2. `report` 可以将 JSON 或 CR 记录渲染成 markdown/json/summary。"
+    ].join("\n");
   }
 };
 
@@ -310,6 +352,48 @@ const EN_US_TEMPLATES = {
         "",
         context.dateStamp
       ])
+    ].join("\n");
+  },
+  adaptersReadme() {
+    return [
+      "# Adapters Directory",
+      "",
+      "Stores adapter configuration files such as `codex.yaml`, `github-copilot.yaml`, and `claude-code.yaml`.",
+      "",
+      "1. `init --adapter <name>` generates adapter files automatically.",
+      "2. You can still add or override adapter files for project-specific behavior.",
+      "3. `doctor` validates enabled adapter definitions."
+    ].join("\n");
+  },
+  slotsReadme() {
+    return [
+      "# Slots Directory",
+      "",
+      "Stores project-local slot definitions used to extend governance behavior.",
+      "",
+      "1. Add new slot files and enable them in `governor.yaml` under `slots.enabled`.",
+      "2. `check/review/report` resolve and apply matching slots by stage.",
+      "3. Script extensions are declarative by default and are not executed automatically."
+    ].join("\n");
+  },
+  templatesReadme() {
+    return [
+      "# Templates Directory",
+      "",
+      "Stores reusable repository-local prompt and document templates.",
+      "",
+      "1. Use this directory for project-specific `plan/review/report` template variants.",
+      "2. Prefer sharing logic with `skills/*/templates` to avoid drift."
+    ].join("\n");
+  },
+  reportsReadme() {
+    return [
+      "# Reports Directory",
+      "",
+      "Stores generated governance reports from `check/review/review-verify/report`.",
+      "",
+      "1. `check --write-report` updates latest report artifacts.",
+      "2. `report` renders JSON or review records into markdown/json/summary."
     ].join("\n");
   }
 };

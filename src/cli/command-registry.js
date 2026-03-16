@@ -99,6 +99,24 @@ export const commandDefinitions = [
         key: "force",
         description: "允许覆盖可覆盖文件",
         type: "boolean"
+      },
+      {
+        long: "--self-install",
+        key: "selfInstall",
+        description: "初始化后将 @cjhdev/repo-ai-governor 写入 package.json 并安装依赖",
+        type: "boolean"
+      },
+      {
+        long: "--skip-self-install",
+        key: "skipSelfInstall",
+        description: "跳过 init 阶段的依赖自安装（默认 npx 模式会自动安装）",
+        type: "boolean"
+      },
+      {
+        long: "--skip-skill-install",
+        key: "skipSkillInstall",
+        description: "跳过 init 阶段的官方 skills 自动安装",
+        type: "boolean"
       }
     ]
   },
