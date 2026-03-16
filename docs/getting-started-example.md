@@ -13,8 +13,9 @@
 
 ```bash
 TMP_DIR="$(mktemp -d /tmp/repo-ai-governor-example.XXXXXX)"
+CLI="npx @cjhdev/repo-ai-governor"
 
-npx repo-ai-governor init \
+$CLI init \
   --cwd "$TMP_DIR" \
   --project demo \
   --sprint sprint-001 \
@@ -26,7 +27,7 @@ npx repo-ai-governor init \
 ### 2. Validate
 
 ```bash
-npx repo-ai-governor doctor \
+$CLI doctor \
   --cwd "$TMP_DIR" \
   --project demo \
   --sprint sprint-001 \
@@ -48,7 +49,7 @@ Acceptance:
 - Support review and report rendering.
 EOF
 
-npx repo-ai-governor plan \
+$CLI plan \
   --cwd "$TMP_DIR" \
   --project demo \
   --sprint sprint-001 \
@@ -60,7 +61,7 @@ npx repo-ai-governor plan \
 ### 4. Check
 
 ```bash
-npx repo-ai-governor check \
+$CLI check \
   --cwd "$TMP_DIR" \
   --project demo \
   --sprint sprint-001 \
@@ -79,14 +80,14 @@ export function demo() {
 }
 EOF
 
-npx repo-ai-governor review \
+$CLI review \
   --cwd "$TMP_DIR" \
   --project demo \
   --sprint sprint-001 \
   --path src/demo.js \
   --format json
 
-npx repo-ai-governor review-verify \
+$CLI review-verify \
   --cwd "$TMP_DIR" \
   --project demo \
   --sprint sprint-001 \
@@ -97,7 +98,7 @@ npx repo-ai-governor review-verify \
 ### 6. Render A Final Report
 
 ```bash
-npx repo-ai-governor report \
+$CLI report \
   --cwd "$TMP_DIR" \
   --source .repo-ai-governor/reports/latest.json \
   --format markdown \

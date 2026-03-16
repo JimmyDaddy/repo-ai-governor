@@ -35,24 +35,29 @@ MVP 主线已经完成。
 ### `npx`
 
 ```bash
-npx repo-ai-governor --help
+npx @cjhdev/repo-ai-governor --help
 ```
 
 ### `npm`
 
 ```bash
-npm install --save-dev repo-ai-governor
+npm install --save-dev @cjhdev/repo-ai-governor
 npx repo-ai-governor --help
 ```
 
 ### `pnpm`
 
 ```bash
-pnpm add -D repo-ai-governor
+pnpm add -D @cjhdev/repo-ai-governor
 pnpm exec repo-ai-governor --help
 ```
 
 需要 Node.js `>=18`。
+
+包名和 CLI 命令名是分开的：
+
+1. npm 包名：`@cjhdev/repo-ai-governor`
+2. 可执行命令：`repo-ai-governor`
 
 ## 快速开始
 
@@ -70,20 +75,21 @@ pnpm exec repo-ai-governor --help
 
 ```bash
 TMP_DIR="$(mktemp -d /tmp/repo-ai-governor-demo.XXXXXX)"
+CLI="npx @cjhdev/repo-ai-governor"
 
-npx repo-ai-governor init \
+$CLI init \
   --cwd "$TMP_DIR" \
   --project demo \
   --sprint sprint-001 \
   --adapter codex \
   --format json
 
-npx repo-ai-governor skills install \
+$CLI skills install \
   --cwd "$TMP_DIR" \
   --surface codex \
   --format json
 
-npx repo-ai-governor doctor \
+$CLI doctor \
   --cwd "$TMP_DIR" \
   --project demo \
   --sprint sprint-001 \
@@ -131,7 +137,7 @@ cat > "$TMP_DIR/request.md" <<'EOF'
 Build a repository governance MVP validation flow.
 EOF
 
-npx repo-ai-governor plan \
+$CLI plan \
   --cwd "$TMP_DIR" \
   --project demo \
   --sprint sprint-001 \
@@ -143,20 +149,20 @@ npx repo-ai-governor plan \
 接着执行检查、评审和报告：
 
 ```bash
-npx repo-ai-governor check \
+$CLI check \
   --cwd "$TMP_DIR" \
   --project demo \
   --sprint sprint-001 \
   --format json
 
-npx repo-ai-governor review \
+$CLI review \
   --cwd "$TMP_DIR" \
   --project demo \
   --sprint sprint-001 \
   --path src \
   --format json
 
-npx repo-ai-governor report \
+$CLI report \
   --cwd "$TMP_DIR" \
   --source .repo-ai-governor/reports/latest.json \
   --format markdown \

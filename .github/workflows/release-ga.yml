@@ -1,4 +1,4 @@
-name: Release GA
+name: Release GA (Manual)
 
 on:
   workflow_dispatch:
@@ -7,11 +7,6 @@ on:
         description: Package version to release. Must match package.json.
         required: true
         type: string
-      publish_npm:
-        description: Publish the package to npm.
-        required: false
-        default: false
-        type: boolean
       create_github_release:
         description: Create git tag and GitHub release.
         required: false
@@ -27,6 +22,7 @@ jobs:
     env:
       RELEASE_VERSION: ${{ inputs.version }}
       RELEASE_NOTES_PATH: .repo-ai-governor/release/release-notes.md
+      RELEASE_PACK_PATH: .repo-ai-governor/release/pack.json
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -58,7 +54,11 @@ jobs:
         run: node ./scripts/release/render-release-notes.js --version "$RELEASE_VERSION" --out "$RELEASE_NOTES_PATH"
 
       - name: Pack release tarball
-        run: npm pack --json > .repo-ai-governor/release/pack.json
+        run: |
+          PACK_JSON="$(npm pack --json)"
+          printf '%s\n' "$PACK_JSON" > "$RELEASE_PACK_PATH"
+          TARBALL_FILE="$(node -e "const payload = JSON.parse(process.argv[1]); const latest = Array.isArray(payload) ? payload.at(-1) : payload; process.stdout.write(latest.filename);" "$PACK_JSON")"
+          echo "RELEASE_TARBALL=$TARBALL_FILE" >> "$GITHUB_ENV"
 
       - name: Upload release artifacts
         uses: actions/upload-artifact@v4
@@ -66,7 +66,7 @@ jobs:
           name: repo-ai-governor-release-${{ env.RELEASE_VERSION }}
           path: |
             .repo-ai-governor/release/
-            repo-ai-governor-${{ env.RELEASE_VERSION }}.tgz
+            ${{ env.RELEASE_TARBALL }}
 
       - name: Create and push git tag
         if: inputs.create_github_release == true
@@ -82,10 +82,4 @@ jobs:
         with:
           tag_name: v${{ env.RELEASE_VERSION }}
           body_path: ${{ env.RELEASE_NOTES_PATH }}
-          files: repo-ai-governor-${{ env.RELEASE_VERSION }}.tgz
-
-      - name: Publish to npm
-        if: inputs.publish_npm == true
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --access public
+          files: ${{ env.RELEASE_TARBALL }}

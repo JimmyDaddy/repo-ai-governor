@@ -16,13 +16,14 @@
 
 ```bash
 TMP_DIR="$(mktemp -d /tmp/repo-ai-governor-quickstart.XXXXXX)"
+CLI="npx @cjhdev/repo-ai-governor"
 echo "$TMP_DIR"
 ```
 
 ## 2. Initialize Governance
 
 ```bash
-npx repo-ai-governor init \
+$CLI init \
   --cwd "$TMP_DIR" \
   --project demo \
   --sprint sprint-001 \
@@ -40,7 +41,7 @@ Expected:
 ## 3. Install Official Skills
 
 ```bash
-npx repo-ai-governor skills install \
+$CLI skills install \
   --cwd "$TMP_DIR" \
   --surface codex \
   --format json
@@ -59,7 +60,7 @@ Expected:
 ## 4. Check Repository Health
 
 ```bash
-npx repo-ai-governor doctor \
+$CLI doctor \
   --cwd "$TMP_DIR" \
   --project demo \
   --sprint sprint-001 \
@@ -81,7 +82,7 @@ cat > "$TMP_DIR/request.md" <<'EOF'
 Create a repository governance demo flow.
 EOF
 
-npx repo-ai-governor plan \
+$CLI plan \
   --cwd "$TMP_DIR" \
   --project demo \
   --sprint sprint-001 \
@@ -100,7 +101,7 @@ Expected:
 ## 6. Run Governance Check
 
 ```bash
-npx repo-ai-governor check \
+$CLI check \
   --cwd "$TMP_DIR" \
   --project demo \
   --sprint sprint-001 \
@@ -124,7 +125,7 @@ EOF
 Then run review:
 
 ```bash
-npx repo-ai-governor review \
+$CLI review \
   --cwd "$TMP_DIR" \
   --project demo \
   --sprint sprint-001 \
@@ -140,12 +141,17 @@ Expected:
 ## 8. Render A Report
 
 ```bash
-npx repo-ai-governor report \
+$CLI report \
   --cwd "$TMP_DIR" \
   --source docs/demo/sprint-001/code-review/review_src-demo-js.md \
   --format json \
   --dry-run
 ```
+
+说明：
+
+1. npm 包名是 `@cjhdev/repo-ai-governor`
+2. CLI 命令名仍然是 `repo-ai-governor`
 
 ## Next
 

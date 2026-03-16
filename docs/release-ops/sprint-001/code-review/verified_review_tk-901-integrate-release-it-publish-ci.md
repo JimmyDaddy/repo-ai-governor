@@ -19,6 +19,8 @@
 3. 已核对 [package.json](/Users/jimmydaddy/study/repo-ai-governor/package.json)，确认新增 `release`、`release:dry-run`、`repository`、`bugs`、`homepage` 和 `publishConfig.provenance`。
 4. 已核对 [test/release/release-automation.test.js](/Users/jimmydaddy/study/repo-ai-governor/test/release/release-automation.test.js) 与 [test/release/release-distribution.test.js](/Users/jimmydaddy/study/repo-ai-governor/test/release/release-distribution.test.js)，确认新发布链路已有自动校验。
 5. 已核对 [README.md](/Users/jimmydaddy/study/repo-ai-governor/README.md) 和 [README.zh-CN.md](/Users/jimmydaddy/study/repo-ai-governor/README.zh-CN.md)，确认维护者入口已解释 `release-it + publish CI` 的推荐路径。
+6. 已核对 [release-ga.yml](/Users/jimmydaddy/study/repo-ai-governor/.github/workflows/release-ga.yml)，确认其已收敛为手动备用流，不再直接执行 npm publish。
+7. 已核对 scoped package 名影响面，确认当前安装文档已明确包名为 `@cjhdev/repo-ai-governor`、CLI 仍为 `repo-ai-governor`，且 `release-ga.yml` 已改为动态解析 tarball 文件名。
 
 ## Conclusion
 

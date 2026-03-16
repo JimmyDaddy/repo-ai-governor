@@ -35,10 +35,15 @@ test("release workflow skeleton includes gate notes and publish steps", () => {
   const workflow = fs.readFileSync(workflowPath, "utf8");
 
   assert.match(workflow, /workflow_dispatch:/);
+  assert.match(workflow, /name:\s*Release GA \(Manual\)/);
   assert.match(workflow, /npm run release:ga-check/);
   assert.match(workflow, /render-release-notes\.js/);
+  assert.match(workflow, /RELEASE_TARBALL=/);
   assert.match(workflow, /softprops\/action-gh-release@v2/);
-  assert.match(workflow, /NODE_AUTH_TOKEN: \$\{\{ secrets\.NPM_TOKEN \}\}/);
+  assert.doesNotMatch(workflow, /publish_npm/);
+  assert.doesNotMatch(workflow, /NODE_AUTH_TOKEN: \$\{\{ secrets\.NPM_TOKEN \}\}/);
+  assert.doesNotMatch(workflow, /npm publish --access public/);
+  assert.doesNotMatch(workflow, /repo-ai-governor-\$\{\{ env\.RELEASE_VERSION \}\}\.tgz/);
 });
 
 test("publish workflow runs GA gate before npm publish with provenance", () => {

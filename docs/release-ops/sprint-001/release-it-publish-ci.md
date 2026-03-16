@@ -23,6 +23,7 @@
    - 新增 `release` 与 `release:dry-run`
    - 增加 `repository / bugs / homepage`
    - 开启 `publishConfig.provenance`
+   - 当前 npm 包名为 `@cjhdev/repo-ai-governor`，CLI 命令仍为 `repo-ai-governor`
 4. 更新 [check-release-ready.js](/Users/jimmydaddy/study/repo-ai-governor/scripts/release/check-release-ready.js)
    - 将 `.release-it.json` 与 `publish-npm.yml` 纳入 release readiness 校验
 
@@ -37,8 +38,9 @@
 ## Notes
 
 1. 该 workflow 采用 npm Trusted Publishing 推荐模式，因此需要在 npm 后台将本仓库与 `.github/workflows/publish-npm.yml` 绑定为 trusted publisher。
-2. 保留现有 [release-ga.yml](/Users/jimmydaddy/study/repo-ai-governor/.github/workflows/release-ga.yml) 作为运维备用路径；当前推荐路径以 `release-it + publish-npm.yml` 为主。
+2. [release-ga.yml](/Users/jimmydaddy/study/repo-ai-governor/.github/workflows/release-ga.yml) 已收敛为“手动创建 tag / GitHub Release 的备用流”，不再直接负责 npm publish；当前唯一 npm 发布入口是 `publish-npm.yml`。
 3. 当前 changelog 自动生成以 `CHANGELOG.md` 为主，`CHANGELOG.zh-CN.md` 仍保留人工校对更新。
+4. 为避免 scoped package 导致 tarball 文件名变化，`release-ga.yml` 现已改为动态解析 `npm pack --json` 输出，不再写死 tarball 名称。
 
 ## Verification
 

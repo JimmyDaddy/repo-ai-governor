@@ -35,24 +35,29 @@ What is not fully shipped yet:
 ### `npx`
 
 ```bash
-npx repo-ai-governor --help
+npx @cjhdev/repo-ai-governor --help
 ```
 
 ### `npm`
 
 ```bash
-npm install --save-dev repo-ai-governor
+npm install --save-dev @cjhdev/repo-ai-governor
 npx repo-ai-governor --help
 ```
 
 ### `pnpm`
 
 ```bash
-pnpm add -D repo-ai-governor
+pnpm add -D @cjhdev/repo-ai-governor
 pnpm exec repo-ai-governor --help
 ```
 
 Node.js `>=18` is required.
+
+Package name and CLI name are different:
+
+1. npm package: `@cjhdev/repo-ai-governor`
+2. executable command: `repo-ai-governor`
 
 ## Quick Start
 
@@ -70,20 +75,21 @@ Example:
 
 ```bash
 TMP_DIR="$(mktemp -d /tmp/repo-ai-governor-demo.XXXXXX)"
+CLI="npx @cjhdev/repo-ai-governor"
 
-npx repo-ai-governor init \
+$CLI init \
   --cwd "$TMP_DIR" \
   --project demo \
   --sprint sprint-001 \
   --adapter codex \
   --format json
 
-npx repo-ai-governor skills install \
+$CLI skills install \
   --cwd "$TMP_DIR" \
   --surface codex \
   --format json
 
-npx repo-ai-governor doctor \
+$CLI doctor \
   --cwd "$TMP_DIR" \
   --project demo \
   --sprint sprint-001 \
@@ -131,7 +137,7 @@ cat > "$TMP_DIR/request.md" <<'EOF'
 Build a repository governance MVP validation flow.
 EOF
 
-npx repo-ai-governor plan \
+$CLI plan \
   --cwd "$TMP_DIR" \
   --project demo \
   --sprint sprint-001 \
@@ -143,20 +149,20 @@ npx repo-ai-governor plan \
 Run checks, review, and reporting:
 
 ```bash
-npx repo-ai-governor check \
+$CLI check \
   --cwd "$TMP_DIR" \
   --project demo \
   --sprint sprint-001 \
   --format json
 
-npx repo-ai-governor review \
+$CLI review \
   --cwd "$TMP_DIR" \
   --project demo \
   --sprint sprint-001 \
   --path src \
   --format json
 
-npx repo-ai-governor report \
+$CLI report \
   --cwd "$TMP_DIR" \
   --source .repo-ai-governor/reports/latest.json \
   --format markdown \

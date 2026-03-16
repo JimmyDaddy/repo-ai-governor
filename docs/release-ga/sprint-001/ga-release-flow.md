@@ -68,8 +68,13 @@
 3. 运行 `npm run release:ga-check`
 4. 准备 release notes
 5. 创建 tag / release
-6. 执行 `npm publish --access public`
+6. 由 `publish-npm.yml` 在 `release.published` 后执行 npm publish
 7. 回填 release 记录和验证结果
+
+说明：
+
+1. 当前发布包名是 `@cjhdev/repo-ai-governor`，但 CLI 可执行命令仍然是 `repo-ai-governor`。
+2. `release-ga.yml` 已改为动态解析 tarball 文件名，不再假设文件名固定为 `repo-ai-governor-<version>.tgz`。
 
 ## Current Limitation
 
