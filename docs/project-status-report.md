@@ -37,9 +37,9 @@
 
 代表性入口：
 
-- [MVP Execution Plan](/Users/jimmydaddy/study/repo-ai-governor/docs/mvp-execution-plan.md)
-- [MVP Sprint 008](/Users/jimmydaddy/study/repo-ai-governor/docs/mvp/sprint-008/index.md)
-- [Commands](/Users/jimmydaddy/study/repo-ai-governor/src/commands)
+- [MVP Execution Plan](./mvp-execution-plan.md)
+- [MVP Sprint 008](./mvp/sprint-008/index.md)
+- [Commands](../src/commands)
 
 ### `release-ga`
 
@@ -57,10 +57,10 @@
 
 代表性入口：
 
-- [Release GA Sprint 001](/Users/jimmydaddy/study/repo-ai-governor/docs/release-ga/sprint-001/index.md)
-- [README](/Users/jimmydaddy/study/repo-ai-governor/README.md)
-- [README.zh-CN](/Users/jimmydaddy/study/repo-ai-governor/README.zh-CN.md)
-- [Quick Start](/Users/jimmydaddy/study/repo-ai-governor/docs/quick-start.md)
+- [Release GA Sprint 001](./release-ga/sprint-001/index.md)
+- [README](../README.md)
+- [README.zh-CN](../README.zh-CN.md)
+- [Quick Start](./quick-start.md)
 
 ### `skills-v1`
 
@@ -77,9 +77,9 @@
 
 代表性入口：
 
-- [Skills V1 Sprint 001](/Users/jimmydaddy/study/repo-ai-governor/docs/skills-v1/sprint-001/index.md)
-- [Skill System Design](/Users/jimmydaddy/study/repo-ai-governor/docs/skill-system-design.md)
-- [Official Skill Catalog](/Users/jimmydaddy/study/repo-ai-governor/skills/official/catalog.json)
+- [Skills V1 Sprint 001](./skills-v1/sprint-001/index.md)
+- [Skill System Design](./skill-system-design.md)
+- [Official Skill Catalog](../skills/official/catalog.json)
 
 ## Requirement Alignment
 
@@ -113,8 +113,8 @@
 
 相关入口：
 
-- [CLI Registry](/Users/jimmydaddy/study/repo-ai-governor/src/cli/command-registry.js)
-- [CLI Index](/Users/jimmydaddy/study/repo-ai-governor/src/cli/index.js)
+- [CLI Registry](../src/cli/command-registry.js)
+- [CLI Index](../src/cli/index.js)
 
 ### Adapters
 
@@ -126,9 +126,9 @@
 
 相关入口：
 
-- [Codex README](/Users/jimmydaddy/study/repo-ai-governor/examples/adapters/codex/README.md)
-- [GitHub Copilot README](/Users/jimmydaddy/study/repo-ai-governor/examples/adapters/github-copilot/README.md)
-- [Claude Code README](/Users/jimmydaddy/study/repo-ai-governor/examples/adapters/claude-code/README.md)
+- [Codex README](../examples/adapters/codex/README.md)
+- [GitHub Copilot README](../examples/adapters/github-copilot/README.md)
+- [Claude Code README](../examples/adapters/claude-code/README.md)
 
 ### Skills
 
@@ -141,7 +141,7 @@
 
 相关入口：
 
-- [Official Skills](/Users/jimmydaddy/study/repo-ai-governor/skills/official)
+- [Official Skills](../skills/official)
 
 ## Remaining Gaps
 

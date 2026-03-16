@@ -107,8 +107,8 @@ $CLI report \
 
 ## Related Assets
 
-1. [Quick Start](/Users/jimmydaddy/study/repo-ai-governor/docs/quick-start.md)
-2. [MVP Acceptance Kit](/Users/jimmydaddy/study/repo-ai-governor/examples/mvp-acceptance/README.md)
-3. [Codex Example](/Users/jimmydaddy/study/repo-ai-governor/examples/adapters/codex/README.md)
-4. [GitHub Copilot Example](/Users/jimmydaddy/study/repo-ai-governor/examples/adapters/github-copilot/README.md)
-5. [Claude Code Example](/Users/jimmydaddy/study/repo-ai-governor/examples/adapters/claude-code/README.md)
+1. [Quick Start](./quick-start.md)
+2. [MVP Acceptance Kit](../examples/mvp-acceptance/README.md)
+3. [Codex Example](../examples/adapters/codex/README.md)
+4. [GitHub Copilot Example](../examples/adapters/github-copilot/README.md)
+5. [Claude Code Example](../examples/adapters/claude-code/README.md)

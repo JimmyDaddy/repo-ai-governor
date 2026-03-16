@@ -9,4 +9,4 @@
 
 ## Sprints
 
-1. [sprint-001](/Users/jimmydaddy/study/repo-ai-governor/docs/release-ops/sprint-001/index.md): 集成 `release-it` 与 publish CI。
+1. [sprint-001](./sprint-001/index.md): 集成 `release-it` 与 publish CI。

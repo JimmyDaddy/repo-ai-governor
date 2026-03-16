@@ -1,0 +1,22 @@
+# Code Standards
+
+This file defines repository-level coding standards and the executable gate commands that enforce them.
+
+## Non-negotiable Rules
+
+- [CS-001] All code changes must pass automated tests before delivery.
+- [CS-002] Commit messages for delivered changes must follow Conventional Commits.
+- [CS-003] Any TODO/FIXME/HACK marker must be resolved or explicitly recorded as known risk.
+- [CS-004] Delivery records must include verification evidence for implemented tasks.
+
+## Verification Commands
+
+```bash
+npm run test -- --test-concurrency=1
+node ./bin/repo-ai-governor.js --help >/dev/null
+```
+
+## Notes
+
+1. Do not use `npm run check` in verification commands to avoid recursive gate execution.
+2. Prefer deterministic commands that can run in CI.

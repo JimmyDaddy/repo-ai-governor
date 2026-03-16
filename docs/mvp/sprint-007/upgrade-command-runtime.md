@@ -10,17 +10,17 @@
 
 ## What Landed
 
-1. 新增 [upgrade-command.js](/Users/jimmydaddy/study/repo-ai-governor/src/commands/upgrade-command.js)
+1. 新增 [upgrade-command.js](../../../src/commands/upgrade-command.js)
    - 支持 `--to-version`
    - 支持 `--preview`
    - 支持 `--backup`
    - 输出升级计划、警告和迁移结果
-2. 新增 [bootstrap-shared.js](/Users/jimmydaddy/study/repo-ai-governor/src/commands/bootstrap-shared.js)
+2. 新增 [bootstrap-shared.js](../../../src/commands/bootstrap-shared.js)
    - 抽出 bootstrap 模板生成逻辑
    - 复用到 `init`/`upgrade` 两类场景
-3. 更新 [index.js](/Users/jimmydaddy/study/repo-ai-governor/src/cli/index.js)
+3. 更新 [index.js](../../../src/cli/index.js)
    - 将 `upgrade` 命令接入真实执行链路
-4. 新增 [upgrade-command.test.js](/Users/jimmydaddy/study/repo-ai-governor/test/commands/upgrade-command.test.js)
+4. 新增 [upgrade-command.test.js](../../../test/commands/upgrade-command.test.js)
 
 ## Runtime Behavior
 

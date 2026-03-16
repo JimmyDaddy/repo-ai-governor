@@ -2,139 +2,63 @@
 
 [English](./README.md) | [简体中文](./README.zh-CN.md)
 
-Repository-local AI governance CLI for teams who want AI coding tools to follow the same workflow, quality gates, and delivery rules inside a repo.
+`Repo AI Governor` is a repository-local CLI that helps teams keep AI coding aligned with one shared workflow and quality standard.
 
-`Repo AI Governor` helps a repository enforce:
+## What It Solves
 
-1. planning before coding
-2. task decomposition with sprint artifacts
-3. check / review / review-verify workflow
-4. standards and slot-based rule injection
-5. consistent behavior across `Codex`, `GitHub Copilot`, and `Claude Code`
-
-## Current Status
-
-The MVP core is implemented.
-
-What is already available:
-
-1. `init`, `doctor`, `plan`, `check`, `review`, `review-verify`, `report`, `upgrade`
-2. repository bootstrap and governance config
-3. standards package, workflow engine, slot runtime, and reporting
-4. CI invocation scripts and acceptance kit
-5. adapter examples for `Codex`, `GitHub Copilot`, and `Claude Code`
-
-What is not fully shipped yet:
-
-1. automation mode `v1`
-2. second-wave adapter implementations such as `Cursor` and `Cline`
-3. broader multi-language governance templates beyond the current MVP baseline
+1. Enforce plan-first delivery (`plan -> implement -> check -> review`).
+2. Keep sprint artifacts consistent (`plan.md`, task checklist, CSV ledger, task cards, CR files).
+3. Inject standards and project-specific rules through config + slots.
+4. Reuse the same governance layer across `Codex`, `GitHub Copilot`, and `Claude Code`.
 
 ## Install
 
-### `npx`
+Node.js `>=18` is required.
 
 ```bash
+# run without installation
 npx @cjhdev/repo-ai-governor --help
-```
 
-### `npm`
-
-```bash
+# or install as dev dependency
 npm install --save-dev @cjhdev/repo-ai-governor
 npx repo-ai-governor --help
 ```
 
-### `pnpm`
+Package name and CLI command are different:
 
-```bash
-pnpm add -D @cjhdev/repo-ai-governor
-pnpm exec repo-ai-governor --help
-```
-
-Node.js `>=18` is required.
-
-Package name and CLI name are different:
-
-1. npm package: `@cjhdev/repo-ai-governor`
-2. executable command: `repo-ai-governor`
+1. Package: `@cjhdev/repo-ai-governor`
+2. Command: `repo-ai-governor`
 
 ## Quick Start
-
-The shortest path is:
-
-1. initialize governance
-2. install official skills for your AI tool
-3. verify repository health
-4. generate a plan
-5. run governance checks
-6. review code changes
-7. render a report
-
-Example:
 
 ```bash
 TMP_DIR="$(mktemp -d /tmp/repo-ai-governor-demo.XXXXXX)"
 CLI="npx @cjhdev/repo-ai-governor"
 
+# 1) bootstrap governance files
 $CLI init \
   --cwd "$TMP_DIR" \
   --project demo \
   --sprint sprint-001 \
   --adapter codex \
-  --format json
+  --locale en-US
 
+# 2) install official skills for your AI tool
 $CLI skills install \
   --cwd "$TMP_DIR" \
-  --surface codex \
-  --format json
+  --surface codex
 
+# 3) validate baseline
 $CLI doctor \
   --cwd "$TMP_DIR" \
   --project demo \
   --sprint sprint-001 \
-  --strict \
-  --format json
-```
+  --strict
 
-If you are using another AI surface, replace `codex` with:
-
-1. `github-copilot`
-2. `claude-code`
-
-The native install targets are:
-
-1. `Codex`: `.codex/skills/`
-2. `GitHub Copilot`: `.github/skills/`
-3. `Claude Code`: `.claude/skills/`
-
-## Skills Quick Path
-
-After `skills install`, the repository contains first-party governance skills such as:
-
-1. `governor-context-loader`
-2. `governor-plan-runner`
-3. `governor-task-implementer`
-4. `governor-delivery-finisher`
-
-The shortest way to combine them with AI is:
-
-1. point your AI tool at the repository
-2. let it read `AGENTS.md` and `.repo-ai-governor/context/current-context.md`
-3. trigger an installed skill directly, for example:
-   - `$governor-plan-runner`
-   - `$governor-task-implementer`
-   - `$governor-delivery-finisher`
-
-`Codex`, `GitHub Copilot`, and `Claude Code` can all consume the same official skill set. Adapter-specific bundle, instructions, or prompt files remain useful as supplementary context, but they do not replace the installed skills.
-
-Then prepare a requirement file and generate sprint artifacts:
-
-```bash
+# 4) create a requirement and generate sprint plan
 cat > "$TMP_DIR/request.md" <<'EOF'
 # Requirement
-
-Build a repository governance MVP validation flow.
+Build a repository governance demo flow.
 EOF
 
 $CLI plan \
@@ -142,119 +66,74 @@ $CLI plan \
   --project demo \
   --sprint sprint-001 \
   --input "$TMP_DIR/request.md" \
-  --title "Repository governance MVP validation" \
-  --format json
+  --title "Repository governance demo flow"
 ```
 
-Run checks, review, and reporting:
+Generated outputs include:
+
+1. `.repo-ai-governor/governor.yaml`
+2. `AGENTS.md`
+3. `.repo-ai-governor/context/current-context.md`
+4. `docs/<project>/<sprint>/plan.md`
+5. `docs/<project>/<sprint>/tasks/*`
+6. `docs/<project>/<sprint>/code-review/*`
+
+## Use With AI Tools
+
+Install skills by surface:
+
+1. `codex` -> `.codex/skills/`
+2. `github-copilot` -> `.github/skills/`
+3. `claude-code` -> `.claude/skills/`
+
+After installation, ask your AI assistant to:
+
+1. read `AGENTS.md` and `.repo-ai-governor/context/current-context.md`
+2. execute with installed skills (for example `$governor-plan-runner`, `$governor-task-implementer`, `$governor-delivery-finisher`)
+
+## Core Commands
+
+1. `init`: bootstrap governance config and sprint structure.
+2. `skills`: list/install/validate official skills.
+3. `doctor`: validate environment, config, and layout.
+4. `plan`: generate plan and task artifacts from a requirement.
+5. `check`: run governance checks on sprint artifacts.
+6. `review`: generate code review records.
+7. `review-verify`: append re-check results and advance CR status.
+8. `report`: render governance output into summary/markdown/json.
+9. `upgrade`: upgrade generated config/templates safely.
+
+## Customize Standards And Project Rules
+
+`governor.yaml` supports both standards and slot-based customization:
+
+```yaml
+standards:
+  preset: official/base
+  overrides:
+    quality:
+      tests: required
+slots:
+  enabled:
+    - security-review
+```
+
+Project-specific slot files live under `.repo-ai-governor/slots/*.yaml`.
+
+If your team already has a `code_standards.md`, you can turn it into an executable gate by defining a `## Verification Commands` section and running:
 
 ```bash
-$CLI check \
-  --cwd "$TMP_DIR" \
-  --project demo \
-  --sprint sprint-001 \
-  --format json
-
-$CLI review \
-  --cwd "$TMP_DIR" \
-  --project demo \
-  --sprint sprint-001 \
-  --path src \
-  --format json
-
-$CLI report \
-  --cwd "$TMP_DIR" \
-  --source .repo-ai-governor/reports/latest.json \
-  --format markdown \
-  --dry-run
+npm run check:code-standards
 ```
 
-For a fuller step-by-step path, see:
+In this repository, `npm run check` is wired to that standards gate.
 
-1. [Quick Start](/Users/jimmydaddy/study/repo-ai-governor/docs/quick-start.md)
-2. [Getting Started Example](/Users/jimmydaddy/study/repo-ai-governor/docs/getting-started-example.md)
-3. [Ten-Minute Getting Started](/Users/jimmydaddy/study/repo-ai-governor/docs/release-ga/sprint-001/ten-minute-getting-started.md)
-4. [Skills V1 Sprint 001](/Users/jimmydaddy/study/repo-ai-governor/docs/skills-v1/sprint-001/index.md)
+## Documentation
 
-## Commands
-
-### `init`
-
-Bootstrap governance config, `AGENTS.md`, context file, adapter config, and sprint artifacts.
-
-### `doctor`
-
-Validate environment, config, and repository layout. Supports `--strict` and `--fix`.
-
-### `plan`
-
-Generate `plan.md`, `tasks/checklist.md`, `tasks/tasks.csv`, and `TK-xxx.md` task cards.
-
-### `check`
-
-Run governance checks against plan and artifact quality. Can write unified reports.
-
-### `review`
-
-Run repository-aware code review checks and emit status-prefixed CR files.
-
-### `review-verify`
-
-Re-check a review record and advance it through the CR lifecycle.
-
-### `report`
-
-Render summary, markdown, or JSON reports from governance payloads or CR files.
-
-### `upgrade`
-
-Preview and apply config / template upgrades with backup support.
-
-## Examples
-
-Adapter examples:
-
-1. [Codex](/Users/jimmydaddy/study/repo-ai-governor/examples/adapters/codex/README.md)
-2. [GitHub Copilot](/Users/jimmydaddy/study/repo-ai-governor/examples/adapters/github-copilot/README.md)
-3. [Claude Code](/Users/jimmydaddy/study/repo-ai-governor/examples/adapters/claude-code/README.md)
-
-Acceptance assets:
-
-1. [MVP Acceptance Kit](/Users/jimmydaddy/study/repo-ai-governor/examples/mvp-acceptance/README.md)
-2. [Official Example Slots](/Users/jimmydaddy/study/repo-ai-governor/examples/slot-packages/official/README.md)
-3. [CI Example](/Users/jimmydaddy/study/repo-ai-governor/examples/ci/github-actions-governance.yml)
-
-## Repository Docs
-
-Planning and execution records for the MVP are kept under:
-
-1. [mvp](/Users/jimmydaddy/study/repo-ai-governor/docs/mvp)
-2. [post-mvp project recommendation](/Users/jimmydaddy/study/repo-ai-governor/docs/post-mvp-project-recommendation.md)
-3. [release-ga sprint-001](/Users/jimmydaddy/study/repo-ai-governor/docs/release-ga/sprint-001/index.md)
-
-## Release Readiness
-
-Current release gate commands:
-
-```bash
-npm run check
-npm run release:dry-run
-npm run release
-npm run release:check
-npm run release:verify-local
-npm run release:ga-check
-```
-
-Release policy and GA criteria are documented in:
-
-1. [GA Release Flow](/Users/jimmydaddy/study/repo-ai-governor/docs/release-ga/sprint-001/ga-release-flow.md)
-2. [CHANGELOG.md](/Users/jimmydaddy/study/repo-ai-governor/CHANGELOG.md)
-3. [CHANGELOG.zh-CN.md](/Users/jimmydaddy/study/repo-ai-governor/CHANGELOG.zh-CN.md)
-4. [Remote Release Automation](/Users/jimmydaddy/study/repo-ai-governor/docs/release-ga/sprint-001/remote-release-automation.md)
-5. [Release Ops Sprint 001](/Users/jimmydaddy/study/repo-ai-governor/docs/release-ops/sprint-001/index.md)
-
-Current recommended publish path:
-
-1. Run `npm run release:dry-run` to preview the next release.
-2. Run `npm run release` to let `release-it` bump, tag, and create the GitHub Release.
-3. Let [.github/workflows/publish-npm.yml](/Users/jimmydaddy/study/repo-ai-governor/.github/workflows/publish-npm.yml) publish the package to npm when the GitHub Release is published.
+1. [Quick Start](./docs/quick-start.md)
+2. [Getting Started Example](./docs/getting-started-example.md)
+3. [Codex Adapter Example](./examples/adapters/codex/README.md)
+4. [GitHub Copilot Adapter Example](./examples/adapters/github-copilot/README.md)
+5. [Claude Code Adapter Example](./examples/adapters/claude-code/README.md)
+6. [Official Example Slots](./examples/slot-packages/official/README.md)
+7. [CHANGELOG](./CHANGELOG.md)

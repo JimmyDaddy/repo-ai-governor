@@ -10,7 +10,7 @@
 
 ## What Landed
 
-1. 更新 [package.json](/Users/jimmydaddy/study/repo-ai-governor/package.json)
+1. 更新 [package.json](../../../package.json)
    - `private` 改为 `false`
    - 增加 `files` 白名单
    - 增加 `license` 与 `publishConfig`

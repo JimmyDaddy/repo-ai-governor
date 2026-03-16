@@ -155,9 +155,9 @@ $CLI report \
 
 ## Next
 
-1. [Getting Started Example](/Users/jimmydaddy/study/repo-ai-governor/docs/getting-started-example.md)
-2. [MVP Acceptance Kit](/Users/jimmydaddy/study/repo-ai-governor/examples/mvp-acceptance/README.md)
-3. [GA Release Flow](/Users/jimmydaddy/study/repo-ai-governor/docs/release-ga/sprint-001/ga-release-flow.md)
+1. [Getting Started Example](./getting-started-example.md)
+2. [MVP Acceptance Kit](../examples/mvp-acceptance/README.md)
+3. [GA Release Flow](./release-ga/sprint-001/ga-release-flow.md)
 4. 安装完官方 skills 后，可让 AI 直接触发：
    - `$governor-plan-runner`
    - `$governor-task-implementer`

@@ -2,139 +2,63 @@
 
 [English](./README.md) | [简体中文](./README.zh-CN.md)
 
-`Repo AI Governor` 是一个仓库内 AI 治理 CLI，适合希望让 AI 编码工具在同一个仓库里遵守统一流程、质量门禁和交付规则的团队。
+`Repo AI Governor` 是一个仓库内 AI 治理 CLI，帮助团队让 AI 编码过程始终遵循统一流程和质量规则。
 
-它当前可以帮助仓库稳定执行：
+## 解决什么问题
 
-1. 先规划再编码
-2. 基于 sprint 产物的任务拆解
-3. `check / review / review-verify` 治理闭环
-4. 标准规范包与 slot 规则注入
-5. 在 `Codex`、`GitHub Copilot`、`Claude Code` 之间保持一致行为
-
-## 当前状态
-
-MVP 主线已经完成。
-
-当前已提供：
-
-1. `init`、`doctor`、`plan`、`check`、`review`、`review-verify`、`report`、`upgrade`
-2. 仓库初始化脚手架与治理配置
-3. 标准规范包、workflow engine、slot runtime 和统一报告
-4. CI 调用脚本与验收套件
-5. `Codex`、`GitHub Copilot`、`Claude Code` 三类适配示例
-
-尚未完全交付：
-
-1. 自动化模式 `v1`
-2. `Cursor`、`Cline` 等第二批适配器真实实现
-3. 超出当前 MVP 基线的更广泛多语言治理模板
+1. 强制先方案后编码（`plan -> implement -> check -> review`）。
+2. 让 sprint 产物保持一致（`plan.md`、checklist、CSV 台账、任务卡、CR 文件）。
+3. 通过规范包与 slot 注入项目特有规则。
+4. 在 `Codex`、`GitHub Copilot`、`Claude Code` 之间复用同一套治理能力。
 
 ## 安装
 
-### `npx`
+需要 Node.js `>=18`。
 
 ```bash
+# 直接运行
 npx @cjhdev/repo-ai-governor --help
-```
 
-### `npm`
-
-```bash
+# 或安装为开发依赖
 npm install --save-dev @cjhdev/repo-ai-governor
 npx repo-ai-governor --help
 ```
 
-### `pnpm`
+包名和命令名不同：
 
-```bash
-pnpm add -D @cjhdev/repo-ai-governor
-pnpm exec repo-ai-governor --help
-```
-
-需要 Node.js `>=18`。
-
-包名和 CLI 命令名是分开的：
-
-1. npm 包名：`@cjhdev/repo-ai-governor`
-2. 可执行命令：`repo-ai-governor`
+1. 包名：`@cjhdev/repo-ai-governor`
+2. 命令名：`repo-ai-governor`
 
 ## 快速开始
-
-最短路径是：
-
-1. 初始化治理目录
-2. 为当前 AI 工具安装官方 skills
-3. 校验仓库健康度
-4. 生成计划与任务
-5. 执行治理检查
-6. 评审改动
-7. 渲染报告
-
-示例：
 
 ```bash
 TMP_DIR="$(mktemp -d /tmp/repo-ai-governor-demo.XXXXXX)"
 CLI="npx @cjhdev/repo-ai-governor"
 
+# 1) 初始化治理目录
 $CLI init \
   --cwd "$TMP_DIR" \
   --project demo \
   --sprint sprint-001 \
   --adapter codex \
-  --format json
+  --locale zh-CN
 
+# 2) 按当前 AI 工具安装官方 skills
 $CLI skills install \
   --cwd "$TMP_DIR" \
-  --surface codex \
-  --format json
+  --surface codex
 
+# 3) 做一次基线校验
 $CLI doctor \
   --cwd "$TMP_DIR" \
   --project demo \
   --sprint sprint-001 \
-  --strict \
-  --format json
-```
+  --strict
 
-如果你使用的是其他 AI 工具，把 `codex` 替换为：
-
-1. `github-copilot`
-2. `claude-code`
-
-对应的原生安装目录是：
-
-1. `Codex`: `.codex/skills/`
-2. `GitHub Copilot`: `.github/skills/`
-3. `Claude Code`: `.claude/skills/`
-
-## Skills 上手
-
-执行 `skills install` 之后，仓库里会出现一组官方治理 skill，例如：
-
-1. `governor-context-loader`
-2. `governor-plan-runner`
-3. `governor-task-implementer`
-4. `governor-delivery-finisher`
-
-和 AI 配合的最短路径是：
-
-1. 让 AI 指向当前仓库
-2. 先读取 `AGENTS.md` 和 `.repo-ai-governor/context/current-context.md`
-3. 直接触发已安装的 skill，例如：
-   - `$governor-plan-runner`
-   - `$governor-task-implementer`
-   - `$governor-delivery-finisher`
-
-`Codex`、`GitHub Copilot`、`Claude Code` 现在都可以消费同一套官方 skill。adapter 额外生成的 bundle、instructions、prompt 仍然有价值，但它们是补充层，不替代已安装的 skill 本体。
-
-然后准备需求文件并生成 sprint 产物：
-
-```bash
+# 4) 准备需求并生成计划
 cat > "$TMP_DIR/request.md" <<'EOF'
 # Requirement
-
-Build a repository governance MVP validation flow.
+Build a repository governance demo flow.
 EOF
 
 $CLI plan \
@@ -142,119 +66,74 @@ $CLI plan \
   --project demo \
   --sprint sprint-001 \
   --input "$TMP_DIR/request.md" \
-  --title "Repository governance MVP validation" \
-  --format json
+  --title "Repository governance demo flow"
 ```
 
-接着执行检查、评审和报告：
+会生成的核心产物：
+
+1. `.repo-ai-governor/governor.yaml`
+2. `AGENTS.md`
+3. `.repo-ai-governor/context/current-context.md`
+4. `docs/<project>/<sprint>/plan.md`
+5. `docs/<project>/<sprint>/tasks/*`
+6. `docs/<project>/<sprint>/code-review/*`
+
+## 与 AI 工具结合
+
+按工具类型安装 skills：
+
+1. `codex` -> `.codex/skills/`
+2. `github-copilot` -> `.github/skills/`
+3. `claude-code` -> `.claude/skills/`
+
+安装后建议让 AI 助手先做两件事：
+
+1. 读取 `AGENTS.md` 与 `.repo-ai-governor/context/current-context.md`
+2. 按已安装 skill 执行（例如 `$governor-plan-runner`、`$governor-task-implementer`、`$governor-delivery-finisher`）
+
+## 核心命令
+
+1. `init`：初始化治理配置与 sprint 结构。
+2. `skills`：列出、安装、校验官方 skills。
+3. `doctor`：校验环境、配置和目录结构。
+4. `plan`：根据需求生成计划与任务产物。
+5. `check`：执行治理检查。
+6. `review`：生成 code review 记录。
+7. `review-verify`：复核并推进 CR 状态流转。
+8. `report`：输出 summary/markdown/json 报告。
+9. `upgrade`：安全升级生成式配置与模板。
+
+## 自定义规范与项目规则
+
+`governor.yaml` 支持规范覆盖和 slot 配置：
+
+```yaml
+standards:
+  preset: official/base
+  overrides:
+    quality:
+      tests: required
+slots:
+  enabled:
+    - security-review
+```
+
+项目自定义 slot 文件路径：`.repo-ai-governor/slots/*.yaml`。
+
+如果你的团队已经有 `code_standards.md`，可以在文档里加入 `## Verification Commands` 段落，把它变成可执行门禁：
 
 ```bash
-$CLI check \
-  --cwd "$TMP_DIR" \
-  --project demo \
-  --sprint sprint-001 \
-  --format json
-
-$CLI review \
-  --cwd "$TMP_DIR" \
-  --project demo \
-  --sprint sprint-001 \
-  --path src \
-  --format json
-
-$CLI report \
-  --cwd "$TMP_DIR" \
-  --source .repo-ai-governor/reports/latest.json \
-  --format markdown \
-  --dry-run
+npm run check:code-standards
 ```
 
-更完整的路径见：
+当前仓库里 `npm run check` 已经接到了这个 standards 门禁。
 
-1. [Quick Start](/Users/jimmydaddy/study/repo-ai-governor/docs/quick-start.md)
-2. [Getting Started Example](/Users/jimmydaddy/study/repo-ai-governor/docs/getting-started-example.md)
-3. [Ten-Minute Getting Started](/Users/jimmydaddy/study/repo-ai-governor/docs/release-ga/sprint-001/ten-minute-getting-started.md)
-4. [Skills V1 Sprint 001](/Users/jimmydaddy/study/repo-ai-governor/docs/skills-v1/sprint-001/index.md)
+## 参考文档
 
-## 命令
-
-### `init`
-
-生成治理配置、`AGENTS.md`、context 文件、adapter 配置和 sprint 目录骨架。
-
-### `doctor`
-
-校验环境、配置和仓库结构，支持 `--strict` 和 `--fix`。
-
-### `plan`
-
-生成 `plan.md`、`tasks/checklist.md`、`tasks/tasks.csv` 和 `TK-xxx.md` 任务卡。
-
-### `check`
-
-按当前治理规范执行检查，可输出统一报告。
-
-### `review`
-
-执行仓库感知的 code review 检查，并生成带状态前缀的 CR 文件。
-
-### `review-verify`
-
-复核 review 记录，并推动其沿 CR 生命周期流转。
-
-### `report`
-
-把治理 payload 或 CR 文件渲染成 summary、markdown 或 JSON 报告。
-
-### `upgrade`
-
-预览并执行配置 / 模板升级，支持备份。
-
-## 示例
-
-适配器示例：
-
-1. [Codex](/Users/jimmydaddy/study/repo-ai-governor/examples/adapters/codex/README.md)
-2. [GitHub Copilot](/Users/jimmydaddy/study/repo-ai-governor/examples/adapters/github-copilot/README.md)
-3. [Claude Code](/Users/jimmydaddy/study/repo-ai-governor/examples/adapters/claude-code/README.md)
-
-验收资产：
-
-1. [MVP Acceptance Kit](/Users/jimmydaddy/study/repo-ai-governor/examples/mvp-acceptance/README.md)
-2. [Official Example Slots](/Users/jimmydaddy/study/repo-ai-governor/examples/slot-packages/official/README.md)
-3. [CI Example](/Users/jimmydaddy/study/repo-ai-governor/examples/ci/github-actions-governance.yml)
-
-## 仓库文档
-
-MVP 和后续项目的规划执行记录位于：
-
-1. [mvp](/Users/jimmydaddy/study/repo-ai-governor/docs/mvp)
-2. [post-mvp project recommendation](/Users/jimmydaddy/study/repo-ai-governor/docs/post-mvp-project-recommendation.md)
-3. [release-ga sprint-001](/Users/jimmydaddy/study/repo-ai-governor/docs/release-ga/sprint-001/index.md)
-
-## 发布准备
-
-当前发布门禁命令：
-
-```bash
-npm run check
-npm run release:dry-run
-npm run release
-npm run release:check
-npm run release:verify-local
-npm run release:ga-check
-```
-
-发布策略与 GA 标准见：
-
-1. [GA Release Flow](/Users/jimmydaddy/study/repo-ai-governor/docs/release-ga/sprint-001/ga-release-flow.md)
-2. [CHANGELOG.md](/Users/jimmydaddy/study/repo-ai-governor/CHANGELOG.md)
-3. [CHANGELOG.zh-CN.md](/Users/jimmydaddy/study/repo-ai-governor/CHANGELOG.zh-CN.md)
-4. [Remote Release Automation](/Users/jimmydaddy/study/repo-ai-governor/docs/release-ga/sprint-001/remote-release-automation.md)
-5. [Release Ops Sprint 001](/Users/jimmydaddy/study/repo-ai-governor/docs/release-ops/sprint-001/index.md)
-
-当前推荐的发布路径：
-
-1. 先运行 `npm run release:dry-run` 预演下一个版本发布。
-2. 再运行 `npm run release`，通过 `release-it` 完成版本提升、打 tag 和创建 GitHub Release。
-3. 当 GitHub Release 发布后，由 [.github/workflows/publish-npm.yml](/Users/jimmydaddy/study/repo-ai-governor/.github/workflows/publish-npm.yml) 自动完成 npm publish。
+1. [Quick Start](./docs/quick-start.md)
+2. [Getting Started Example](./docs/getting-started-example.md)
+3. [Codex Adapter Example](./examples/adapters/codex/README.md)
+4. [GitHub Copilot Adapter Example](./examples/adapters/github-copilot/README.md)
+5. [Claude Code Adapter Example](./examples/adapters/claude-code/README.md)
+6. [Official Example Slots](./examples/slot-packages/official/README.md)
+7. [CHANGELOG](./CHANGELOG.zh-CN.md)
