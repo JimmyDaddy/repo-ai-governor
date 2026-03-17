@@ -1,4 +1,12 @@
 import { validateSchemaDocument } from "../config/schema/validator.js";
+import {
+  STANDARDS_CATEGORIES,
+  STANDARDS_CONSUMERS,
+  STANDARDS_RULE_LEVELS,
+  type StandardsCategoryEnum,
+  type StandardsConsumerEnum,
+  type StandardsRuleLevelEnum,
+} from "../constants/standards-package.js";
 import { cloneValue } from "../utils/common.js";
 
 export type LocalizedText = {
@@ -8,31 +16,13 @@ export type LocalizedText = {
 
 export const STANDARDS_PACKAGE_ID = "official-base";
 export const STANDARDS_PACKAGE_PRESET = "official/base";
+export { STANDARDS_CATEGORIES, STANDARDS_RULE_LEVELS, STANDARDS_CONSUMERS };
 
-export const STANDARDS_CATEGORIES = Object.freeze([
-  "code",
-  "engineering",
-  "process",
-  "quality",
-  "collaboration",
-] as const);
+export type StandardsCategoryId = `${StandardsCategoryEnum}`;
 
-export type StandardsCategoryId = (typeof STANDARDS_CATEGORIES)[number];
+export type StandardsRuleLevel = `${StandardsRuleLevelEnum}`;
 
-export const STANDARDS_RULE_LEVELS = Object.freeze(["required", "recommended"] as const);
-
-export type StandardsRuleLevel = (typeof STANDARDS_RULE_LEVELS)[number];
-
-export const STANDARDS_CONSUMERS = Object.freeze([
-  "init",
-  "plan",
-  "check",
-  "review",
-  "review-verify",
-  "report",
-] as const);
-
-export type StandardsConsumer = (typeof STANDARDS_CONSUMERS)[number];
+export type StandardsConsumer = `${StandardsConsumerEnum}`;
 
 export type StandardsCategory = {
   id: StandardsCategoryId;

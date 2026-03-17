@@ -1,24 +1,3 @@
 {
-  "pathAllowList": [
-    {
-      "path": "src/adapters/adapter-model.ts",
-      "reason": "legacy finite literal set declarations pending migration to src/constants"
-    },
-    {
-      "path": "src/commands/run-command.ts",
-      "reason": "legacy finite literal set declarations pending migration to src/constants"
-    },
-    {
-      "path": "src/standards/package-model.ts",
-      "reason": "legacy finite literal set declarations pending migration to src/constants"
-    },
-    {
-      "path": "src/workflow/governance-engine.ts",
-      "reason": "legacy finite literal set declarations pending migration to src/constants"
-    },
-    {
-      "path": "src/workflow/template-model.ts",
-      "reason": "legacy finite literal set declarations pending migration to src/constants"
-    }
-  ]
+  "pathAllowList": []
 }

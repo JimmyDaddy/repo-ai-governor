@@ -1,34 +1,20 @@
 import { validateSchemaDocument } from "../config/schema/validator.js";
+import {
+  ADAPTER_INPUT_SOURCES,
+  ADAPTER_OUTPUT_ARTIFACTS,
+  type AdapterInputSourceEnum,
+  type AdapterOutputArtifactEnum,
+  MAINSTREAM_ADAPTER_IDS,
+  type MainstreamAdapterIdEnum,
+} from "../constants/adapter-model.js";
 
-export const ADAPTER_INPUT_SOURCES = Object.freeze([
-  "workflow",
-  "standards",
-  "slots",
-  "agent-entry",
-  "artifacts",
-  "runtime-context",
-] as const);
+export { ADAPTER_INPUT_SOURCES, ADAPTER_OUTPUT_ARTIFACTS, MAINSTREAM_ADAPTER_IDS };
 
-export type AdapterInputSource = (typeof ADAPTER_INPUT_SOURCES)[number];
+export type AdapterInputSource = `${AdapterInputSourceEnum}`;
 
-export const ADAPTER_OUTPUT_ARTIFACTS = Object.freeze([
-  "plan",
-  "check-report",
-  "review-report",
-  "task-record",
-  "summary",
-  "agent-entry",
-] as const);
+export type AdapterOutputArtifact = `${AdapterOutputArtifactEnum}`;
 
-export type AdapterOutputArtifact = (typeof ADAPTER_OUTPUT_ARTIFACTS)[number];
-
-export const MAINSTREAM_ADAPTER_IDS = Object.freeze([
-  "codex",
-  "github-copilot",
-  "claude-code",
-] as const);
-
-export type MainstreamAdapterId = (typeof MAINSTREAM_ADAPTER_IDS)[number];
+export type MainstreamAdapterId = `${MainstreamAdapterIdEnum}`;
 
 export type LocalizedText = {
   "zh-CN": string;

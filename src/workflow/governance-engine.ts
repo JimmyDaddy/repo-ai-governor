@@ -1,3 +1,7 @@
+import {
+  WORKFLOW_EXECUTION_STATUS,
+  WORKFLOW_STAGE_RESULT_STATUS,
+} from "../constants/workflow-status.js";
 import { SlotConflictError, resolveApplicableSlots } from "../slots/runtime.js";
 import { cloneValue, isPlainObject } from "../utils/common.js";
 import {
@@ -16,23 +20,10 @@ type RuntimeState = {
   artifacts: GenericRecord;
   values: GenericRecord;
 };
-
-export const WORKFLOW_STAGE_RESULT_STATUS = Object.freeze({
-  pending: "pending",
-  running: "running",
-  passed: "passed",
-  failed: "failed",
-  skipped: "skipped",
-  blocked: "blocked",
-} as const);
+export { WORKFLOW_STAGE_RESULT_STATUS, WORKFLOW_EXECUTION_STATUS };
 
 export type WorkflowStageResultStatus =
   (typeof WORKFLOW_STAGE_RESULT_STATUS)[keyof typeof WORKFLOW_STAGE_RESULT_STATUS];
-
-export const WORKFLOW_EXECUTION_STATUS = Object.freeze({
-  passed: "passed",
-  failed: "failed",
-} as const);
 
 export type WorkflowExecutionStatus =
   (typeof WORKFLOW_EXECUTION_STATUS)[keyof typeof WORKFLOW_EXECUTION_STATUS];

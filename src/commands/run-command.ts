@@ -6,6 +6,14 @@ import YAML from "yaml";
 import { ConfigError, InputError } from "../cli/runtime/errors.js";
 import { EXIT_CODES } from "../cli/runtime/exit-codes.js";
 import { loadResolvedConfig } from "../config/load-config.js";
+import {
+  ACTION_PERMISSION_FIELD,
+  DEFAULT_APPROVAL_RISK_TAGS,
+  DEFAULT_TASK_COMPLETION_STATUSES,
+  DEFAULT_TASK_LOOP,
+  HIGH_RISK_PERMISSION_FIELD,
+  REVIEW_STATUS_WEIGHT,
+} from "../constants/run-command.js";
 import { buildSlotRuntime } from "../slots/runtime.js";
 import {
   cloneValue,
@@ -32,8 +40,6 @@ import {
 type AnyRecord = Record<string, any>;
 
 const RUN_MODES = new Set(["manual", "assisted", "autonomous"]);
-
-const DEFAULT_TASK_COMPLETION_STATUSES = Object.freeze(["done", "resolved", "completed", "closed"]);
 
 const DEFAULT_PROCESS_STAGES = Object.freeze([
   {
@@ -97,13 +103,6 @@ const DEFAULT_PROCESS_STAGES = Object.freeze([
     },
   },
 ]);
-
-const DEFAULT_TASK_LOOP = Object.freeze({
-  stageId: "task-delivery-loop",
-  implementationRouteKey: "task-implementation",
-  codeReviewRouteKey: "task-code-review",
-  maxReviewCycles: 3,
-});
 
 const LOOP_COMPLETION_POLICIES = new Set(["first-cycle", "max-cycles"]);
 
@@ -178,12 +177,6 @@ const BUILTIN_SURFACE_PROBES = Object.freeze({
   }),
 });
 
-const REVIEW_STATUS_WEIGHT = Object.freeze({
-  review: 1,
-  verified_review: 2,
-  resolved_review: 3,
-});
-
 const ROUTE_ACTION_RULES = Object.freeze({
   "requirements-draft": Object.freeze(["editDocs"]),
   "draft-review": Object.freeze(["editDocs"]),
@@ -210,24 +203,6 @@ const ROUTE_ACTION_HINTS = Object.freeze([
     action: "editDocs",
   }),
 ]);
-
-const ACTION_PERMISSION_FIELD = Object.freeze({
-  read: "allowRead",
-  editCode: "allowEditCode",
-  editDocs: "allowEditDocs",
-  runChecks: "allowRunChecks",
-  commit: "allowCommit",
-  push: "allowPush",
-  pullRequest: "allowPullRequest",
-});
-
-const HIGH_RISK_PERMISSION_FIELD = Object.freeze({
-  secrets_or_credentials: "allowSecretsEdit",
-  infra_or_deploy: "allowInfraEdit",
-  ci_workflow_modification: "allowInfraEdit",
-  dangerous_command: "allowDangerousCommands",
-  production_config_edit: "allowProductionConfigEdit",
-});
 
 const HIGH_RISK_RULES = Object.freeze([
   Object.freeze({
@@ -288,16 +263,6 @@ const HIGH_RISK_RULES = Object.freeze([
       /(线上配置|生产配置|生产环境)/i,
     ]),
   }),
-]);
-
-const DEFAULT_APPROVAL_RISK_TAGS = Object.freeze([
-  "secrets_or_credentials",
-  "infra_or_deploy",
-  "ci_workflow_modification",
-  "dependency_major_upgrade",
-  "database_migration",
-  "dangerous_command",
-  "production_config_edit",
 ]);
 
 const HIGH_RISK_TAG_SET = new Set(HIGH_RISK_RULES.map((rule) => rule.tag));

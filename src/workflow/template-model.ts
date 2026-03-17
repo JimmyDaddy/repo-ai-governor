@@ -1,4 +1,5 @@
 import { validateSchemaDocument } from "../config/schema/validator.js";
+import { STANDARD_WORKFLOW_STAGE_SEQUENCE } from "../constants/workflow-template.js";
 import { cloneValue } from "../utils/common.js";
 
 export type LocalizedText = {
@@ -99,16 +100,7 @@ export type WorkflowConfig = {
 };
 
 export const STANDARD_WORKFLOW_TEMPLATE_ID = "standard";
-
-export const STANDARD_WORKFLOW_STAGE_SEQUENCE = Object.freeze([
-  "plan",
-  "breakdown",
-  "implement",
-  "self-check",
-  "review",
-  "review-verify",
-  "task-sync",
-]);
+export { STANDARD_WORKFLOW_STAGE_SEQUENCE };
 
 function createLocalizedText(zhCN: string, enUS: string): LocalizedText {
   return {
