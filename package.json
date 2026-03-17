@@ -29,6 +29,7 @@
     "check:imports": "node ./scripts/governance/check-esm-import-specifiers.js",
     "check:code-standards": "node ./scripts/governance/check-code-standards.js --standards code_standards.md",
     "check": "npm run check:code-standards",
+    "smoke:automation": "bash ./scripts/ci/run-automation-smoke.sh",
     "release": "release-it",
     "release:dry-run": "release-it --dry-run",
     "release:check": "node ./scripts/release/check-release-ready.js",

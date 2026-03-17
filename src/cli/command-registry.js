@@ -338,6 +338,18 @@ export const commandDefinitions = [
         valueName: "stage-id",
         description: "恢复时强制从指定阶段重试（仅 assisted，需配合 --resume-from）",
         type: "string"
+      },
+      {
+        long: "--explain-process",
+        key: "explainProcess",
+        description: "输出当前生效流程（默认/自定义）及编排快照，不执行阶段派发",
+        type: "boolean"
+      },
+      {
+        long: "--validate-process",
+        key: "validateProcess",
+        description: "仅执行流程编译与校验，不触发阶段执行与审计落盘",
+        type: "boolean"
       }
     ]
   },

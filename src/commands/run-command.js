@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
+import YAML from "yaml";
 import { loadResolvedConfig } from "../config/load-config.js";
 import { ConfigError, InputError } from "../cli/runtime/errors.js";
 import { EXIT_CODES } from "../cli/runtime/exit-codes.js";
@@ -326,6 +327,219 @@ function safeParseJsonFile(filePath, locale, errorCode) {
       }
     );
   }
+}
+
+function resolveProcessSourceFromConfigFile(configFilePath) {
+  if (!configFilePath || !fs.existsSync(configFilePath)) {
+    return "default";
+  }
+
+  try {
+    const rawDocument = YAML.parse(fs.readFileSync(configFilePath, "utf8"));
+    const automationConfig = rawDocument?.automation;
+
+    if (!isPlainObject(automationConfig) || !isPlainObject(automationConfig.process)) {
+      return "default";
+    }
+
+    const processConfig = automationConfig.process;
+
+    if (
+      Array.isArray(processConfig.stageDefinitions) &&
+      processConfig.stageDefinitions.length > 0
+    ) {
+      return "customized";
+    }
+
+    if (isPlainObject(processConfig.draftReviewLoop)) {
+      const draftLoop = processConfig.draftReviewLoop;
+      const defaultSequence = [...DEFAULT_REVIEW_LOOPS["draft-review-loop"].routeSequence];
+      const configuredSequence = Array.isArray(draftLoop.routeSequence)
+        ? draftLoop.routeSequence.map((item) => String(item).trim()).filter(Boolean)
+        : [];
+
+      if (draftLoop.enabled === false) {
+        return "customized";
+      }
+
+      if (
+        configuredSequence.length > 0 &&
+        JSON.stringify(configuredSequence) !== JSON.stringify(defaultSequence)
+      ) {
+        return "customized";
+      }
+
+      if (
+        typeof draftLoop.maxReviewCycles === "number" &&
+        draftLoop.maxReviewCycles !== DEFAULT_REVIEW_LOOPS["draft-review-loop"].maxReviewCycles
+      ) {
+        return "customized";
+      }
+
+      if (
+        typeof draftLoop.completionPolicy === "string" &&
+        draftLoop.completionPolicy !== DEFAULT_REVIEW_LOOPS["draft-review-loop"].completionPolicy
+      ) {
+        return "customized";
+      }
+    }
+
+    if (isPlainObject(processConfig.solutionReviewLoop)) {
+      const solutionLoop = processConfig.solutionReviewLoop;
+      const defaultSequence = [...DEFAULT_REVIEW_LOOPS["technical-solution-loop"].routeSequence];
+      const configuredSequence = Array.isArray(solutionLoop.routeSequence)
+        ? solutionLoop.routeSequence.map((item) => String(item).trim()).filter(Boolean)
+        : [];
+
+      if (solutionLoop.enabled === false) {
+        return "customized";
+      }
+
+      if (
+        configuredSequence.length > 0 &&
+        JSON.stringify(configuredSequence) !== JSON.stringify(defaultSequence)
+      ) {
+        return "customized";
+      }
+
+      if (
+        typeof solutionLoop.maxReviewCycles === "number" &&
+        solutionLoop.maxReviewCycles !==
+          DEFAULT_REVIEW_LOOPS["technical-solution-loop"].maxReviewCycles
+      ) {
+        return "customized";
+      }
+
+      if (
+        typeof solutionLoop.completionPolicy === "string" &&
+        solutionLoop.completionPolicy !==
+          DEFAULT_REVIEW_LOOPS["technical-solution-loop"].completionPolicy
+      ) {
+        return "customized";
+      }
+    }
+
+    if (isPlainObject(processConfig.taskLoop)) {
+      const taskLoop = processConfig.taskLoop;
+
+      if (
+        typeof taskLoop.stageId === "string" &&
+        taskLoop.stageId.trim() &&
+        taskLoop.stageId !== DEFAULT_TASK_LOOP.stageId
+      ) {
+        return "customized";
+      }
+
+      if (
+        typeof taskLoop.implementationRouteKey === "string" &&
+        taskLoop.implementationRouteKey.trim() &&
+        taskLoop.implementationRouteKey !== DEFAULT_TASK_LOOP.implementationRouteKey
+      ) {
+        return "customized";
+      }
+
+      if (
+        typeof taskLoop.codeReviewRouteKey === "string" &&
+        taskLoop.codeReviewRouteKey.trim() &&
+        taskLoop.codeReviewRouteKey !== DEFAULT_TASK_LOOP.codeReviewRouteKey
+      ) {
+        return "customized";
+      }
+
+      if (
+        typeof taskLoop.maxReviewCycles === "number" &&
+        taskLoop.maxReviewCycles !== DEFAULT_TASK_LOOP.maxReviewCycles
+      ) {
+        return "customized";
+      }
+    }
+
+    return "default";
+  } catch {
+    return "default";
+  }
+}
+
+function buildCompiledProcessSnapshot(processModel, routingPlan, workflowTemplate) {
+  return {
+    stages: processModel.stages.map((stage) => ({
+      id: stage.id,
+      kind: stage.kind,
+      routeKey: stage.routeKey,
+      requiredSurface: stage.requiredSurface
+    })),
+    reviewLoops: processModel.reviewLoops.map((loopConfig) => ({
+      stageId: loopConfig.stageId,
+      routeSequence: loopConfig.routeSequence,
+      maxReviewCycles: loopConfig.maxReviewCycles,
+      completionPolicy: loopConfig.completionPolicy
+    })),
+    taskLoop: cloneValue(processModel.taskLoop),
+    routeDefinitions: processModel.routeDefinitions.map((route) => ({
+      routeKey: route.routeKey,
+      stageId: route.stageId,
+      label: route.label,
+      requiredSurface: route.requiredSurface
+    })),
+    routing: {
+      profile: routingPlan.profileId,
+      defaultSurface: routingPlan.defaultSurface,
+      routes: routingPlan.routes.map((route) => ({
+        routeKey: route.routeKey,
+        stageId: route.stageId,
+        label: route.label,
+        requestedSurface: route.requestedSurface,
+        resolvedSurface: route.resolvedSurface,
+        decision: route.decision,
+        source: route.source
+      }))
+    },
+    workflow: {
+      id: workflowTemplate.id,
+      stageOrder: workflowTemplate.stages.map((stage) => stage.id)
+    }
+  };
+}
+
+function buildProcessExplainPayload(runState, processModel, routingPlan, workflowTemplate, options = {}) {
+  const locale = runState.locale;
+  const summaryStatus = options.status ?? "pass";
+  const summaryWarnings = options.warnings ?? 0;
+  const summaryErrors = options.errors ?? 0;
+  const summaryPassed = summaryStatus === "pass" || summaryStatus === "warn" ? 1 : 0;
+  const summaryExitCode = summaryErrors > 0 ? EXIT_CODES.inputError : EXIT_CODES.success;
+
+  return {
+    command: "run",
+    status: summaryStatus,
+    locale,
+    cwd: runState.cwd,
+    configFile: runState.resolvedConfig.paths.configFile,
+    currentProject: runState.resolvedConfig.config.execution.currentProject,
+    currentSprint: runState.resolvedConfig.config.execution.currentSprint,
+    mode: runState.mode,
+    dryRun: runState.dryRun,
+    explainProcess: runState.explainProcess,
+    validateProcess: runState.validateProcess,
+    process: {
+      source: processModel.source,
+      snapshot: buildCompiledProcessSnapshot(processModel, routingPlan, workflowTemplate)
+    },
+    summary: {
+      status: summaryStatus,
+      errors: summaryErrors,
+      warnings: summaryWarnings,
+      passed: summaryPassed,
+      exitCode: summaryExitCode
+    },
+    notes: [
+      t(
+        locale,
+        "本次仅执行流程编译/解释，不会触发阶段派发与审计落盘。",
+        "This run only compiles/explains process metadata and does not dispatch stages or write audit artifacts."
+      )
+    ]
+  };
 }
 
 function detectHighRiskSignals(content) {
@@ -1638,6 +1852,7 @@ function resolveProcessModel(runState) {
   }
 
   return {
+    source: runState.processSource,
     stages,
     reviewLoops,
     taskLoop: {
@@ -2950,6 +3165,7 @@ function buildRunPayload(runState, processModel, routingPlan, workflowResult, su
     currentProject: runState.resolvedConfig.config.execution.currentProject,
     currentSprint: runState.resolvedConfig.config.execution.currentSprint,
     process: {
+      source: processModel.source,
       stages: processModel.stages.map((stage) => ({
         id: stage.id,
         kind: stage.kind,
@@ -2965,7 +3181,16 @@ function buildRunPayload(runState, processModel, routingPlan, workflowResult, su
       taskLoop: {
         ...cloneValue(processModel.taskLoop),
         completionStatuses: runState.taskCompletionStatuses
-      }
+      },
+      snapshot: buildCompiledProcessSnapshot(
+        processModel,
+        {
+          profileId: routingPlan.profileId,
+          defaultSurface: routingPlan.defaultSurface,
+          routes: preflightDetails.decisions ?? routingPlan.routes
+        },
+        runState.workflowTemplate
+      )
     },
     routing: {
       profile: routingPlan.profileId,
@@ -3050,6 +3275,7 @@ function writeRunSummary(logger, payload, format) {
         `- ${t(locale, "状态", "Status")}: ${payload.status}`,
         `- ${t(locale, "执行编号", "Execution ID")}: \`${payload.executionId}\``,
         `- ${t(locale, "模式", "Mode")}: \`${payload.mode}\``,
+        `- ${t(locale, "流程来源", "Process source")}: \`${payload.process?.source ?? "default"}\``,
         `- ${t(locale, "项目", "Project")}: \`${payload.currentProject}\``,
         `- Sprint: \`${payload.currentSprint}\``,
         `- ${t(locale, "预检状态", "Preflight status")}: \`${payload.preflight.status}\``,
@@ -3071,6 +3297,7 @@ function writeRunSummary(logger, payload, format) {
 
   logger.keyValue(t(locale, "模式", "Mode"), payload.mode);
   logger.keyValue(t(locale, "执行编号", "Execution ID"), payload.executionId);
+  logger.keyValue(t(locale, "流程来源", "Process source"), payload.process?.source ?? "default");
   logger.keyValue(t(locale, "项目", "Project"), payload.currentProject);
   logger.keyValue("Sprint", payload.currentSprint);
   logger.keyValue(t(locale, "路由档", "Routing profile"), payload.routing.profile);
@@ -3111,6 +3338,69 @@ function writeRunSummary(logger, payload, format) {
   }
 }
 
+function writeProcessExplainSummary(logger, payload, format) {
+  const locale = normalizeLocale(payload.locale);
+
+  if (format === "json") {
+    logger.raw(JSON.stringify(payload, null, 2), { ignoreQuiet: true });
+    return;
+  }
+
+  if (format === "markdown") {
+    logger.raw(
+      [
+        "# run process",
+        "",
+        `- ${t(locale, "状态", "Status")}: ${payload.status}`,
+        `- ${t(locale, "模式", "Mode")}: \`${payload.mode}\``,
+        `- ${t(locale, "流程来源", "Process source")}: \`${payload.process.source}\``,
+        `- ${t(locale, "解释模式", "Explain mode")}: \`${payload.explainProcess}\``,
+        `- ${t(locale, "校验模式", "Validate mode")}: \`${payload.validateProcess}\``,
+        `- ${t(locale, "路由档", "Routing profile")}: \`${payload.process.snapshot.routing.profile ?? "-"}\``,
+        `- ${t(locale, "默认入口", "Default surface")}: \`${payload.process.snapshot.routing.defaultSurface ?? "-"}\``,
+        "",
+        `## ${t(locale, "阶段顺序", "Stage order")}`,
+        "",
+        payload.process.snapshot.workflow.stageOrder
+          .map((stageId, index) => `${index + 1}. \`${stageId}\``)
+          .join("\n"),
+        "",
+        `## ${t(locale, "任务循环", "Task loop")}`,
+        "",
+        `- stageId: \`${payload.process.snapshot.taskLoop.stageId ?? "-"}\``,
+        `- implementationRouteKey: \`${payload.process.snapshot.taskLoop.implementationRouteKey ?? "-"}\``,
+        `- codeReviewRouteKey: \`${payload.process.snapshot.taskLoop.codeReviewRouteKey ?? "-"}\``,
+        `- maxReviewCycles: \`${payload.process.snapshot.taskLoop.maxReviewCycles ?? "-"}\``
+      ].join("\n"),
+      { ignoreQuiet: true }
+    );
+    return;
+  }
+
+  logger.success(
+    payload.validateProcess
+      ? t(locale, "流程配置校验通过", "Process configuration validation passed")
+      : t(locale, "流程解释已生成", "Process explanation generated")
+  );
+  logger.keyValue(t(locale, "流程来源", "Process source"), payload.process.source);
+  logger.keyValue(
+    t(locale, "阶段数量", "Stage count"),
+    String(payload.process.snapshot.stages.length)
+  );
+  logger.keyValue(
+    t(locale, "Review loops", "Review loops"),
+    String(payload.process.snapshot.reviewLoops.length)
+  );
+  logger.keyValue(
+    t(locale, "Task loop stage", "Task loop stage"),
+    payload.process.snapshot.taskLoop.stageId ?? "-"
+  );
+  logger.keyValue(
+    t(locale, "路由档", "Routing profile"),
+    payload.process.snapshot.routing.profile ?? "-"
+  );
+}
+
 function buildRunState(commandContext) {
   const cwd = path.resolve(commandContext.globalOptions.cwd ?? process.cwd());
   const resolvedConfig = loadResolvedConfig({
@@ -3125,6 +3415,8 @@ function buildRunState(commandContext) {
     commandContext.globalOptions.locale ?? resolvedConfig.config.standards.locales.default
   );
   const mode = commandContext.commandOptions.mode ?? resolvedConfig.config.automation.mode ?? "assisted";
+  const explainProcess = commandContext.commandOptions.explainProcess === true;
+  const validateProcess = commandContext.commandOptions.validateProcess === true;
 
   if (!RUN_MODES.has(mode)) {
     throw new InputError(t(locale, `不支持的执行模式：${mode}`, `Unsupported run mode: ${mode}`), {
@@ -3183,6 +3475,7 @@ function buildRunState(commandContext) {
   const executionId = createRunExecutionId(executionStartedAtDate);
   const auditEnabled = resolvedConfig.config.automation.audit?.enabled !== false;
   const auditPaths = buildRunAuditPaths(cwd, resolvedConfig, executionId);
+  const processSource = resolveProcessSourceFromConfigFile(resolvedConfig.paths.configFile);
 
   if (resumeFromPath && !fs.existsSync(resumeFromPath)) {
     throw new InputError(
@@ -3216,6 +3509,25 @@ function buildRunState(commandContext) {
     );
   }
 
+  if ((explainProcess || validateProcess) && (resumeFromPath || resumeStageOverride)) {
+    throw new InputError(
+      t(
+        locale,
+        "--explain-process/--validate-process 不能与恢复参数同时使用。",
+        "--explain-process/--validate-process cannot be used with resume options."
+      ),
+      {
+        code: "cli.run_process_only_mode_conflict",
+        details: {
+          explainProcess,
+          validateProcess,
+          resumeFromPath,
+          resumeStageOverride
+        }
+      }
+    );
+  }
+
   return {
     cwd,
     locale,
@@ -3241,6 +3553,9 @@ function buildRunState(commandContext) {
     executionDurationMs: null,
     auditEnabled,
     auditPaths,
+    processSource,
+    explainProcess,
+    validateProcess,
     resumeFromPath,
     resumeStageOverride,
     resumePlan: null,
@@ -3269,6 +3584,16 @@ export async function executeRunCommand(commandContext, logger) {
   runState.routeOverrides = parseRouteOverrides(runState.rawRouteOverrides, processModel, runState.locale);
   const routingPlan = buildRoutingPlan(runState, processModel);
   const workflowTemplate = buildRunWorkflowTemplate(processModel);
+  runState.workflowTemplate = workflowTemplate;
+
+  if (runState.explainProcess || runState.validateProcess) {
+    const payload = buildProcessExplainPayload(runState, processModel, routingPlan, workflowTemplate, {
+      status: "pass"
+    });
+    writeProcessExplainSummary(logger, payload, commandContext.format);
+    return EXIT_CODES.success;
+  }
+
   runState.resumePlan = resolveResumePlan(runState, workflowTemplate);
   const workflowResult = await executeWorkflow({
     template: workflowTemplate,

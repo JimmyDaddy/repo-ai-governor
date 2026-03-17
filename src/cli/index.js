@@ -68,6 +68,7 @@ function createProgramHelpText() {
     "  repo-ai-governor skills list --surface codex --format json",
     "  repo-ai-governor doctor --project mvp --sprint sprint-001 --strict",
     "  repo-ai-governor run --mode assisted --routing-profile multi-ai-dev-review",
+    "  repo-ai-governor run --mode assisted --validate-process --format json",
     "  repo-ai-governor review --path src/cli --base main --head HEAD",
     "  repo-ai-governor help review-verify"
   ].join("\n");

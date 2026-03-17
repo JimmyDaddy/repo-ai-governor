@@ -15,6 +15,7 @@
 - [automation-controller-model.md](./automation-controller-model.md): 自动化控制器模型、状态机与 preflight 契约。
 - [multi-ai-handoff-orchestration-solution.md](./multi-ai-handoff-orchestration-solution.md): 多 AI 角色自动分工与交接触发方案。
 - [default-and-custom-orchestration-solution.md](./default-and-custom-orchestration-solution.md): 默认流程与用户自编排双轨方案。
+- [multi-ai-automation-smoke.md](./multi-ai-automation-smoke.md): 多入口自动化 smoke gate 与人工确认点说明。
 - [tasks/checklist.md](./tasks/checklist.md): 当前 sprint 的任务执行清单。
 - [tasks/tasks.csv](./tasks/tasks.csv): 当前 sprint 的执行台账。
 - [tasks/TK-951.md](./tasks/TK-951.md): 自动化控制器模型任务卡。

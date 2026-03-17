@@ -16,6 +16,9 @@
   - 执行记录：review_delta=按评审意见补充 import 代码规范与可执行校验：更新 `code_standards.md` 新增 `CS-005`，新增 `scripts/governance/check-esm-import-specifiers.js` 并接入 `npm run check:imports`，同时在 README 中补充“如何新增代码规范”的步骤说明;verify=`npm run check:imports`、`npm run check:code-standards`、`npm run check`、`node --test` 均通过
 - [x] **TK-954** 实现自动化执行审计日志与恢复检查点（负责人：Platform｜优先级：P1｜截止：2026-03-24｜状态：done）
   - 执行记录：plan=在 run 命令补齐执行审计落盘阶段级 checkpoint 与 assisted 恢复入口，保持与既有 report 模型兼容;result=已在 `src/commands/run-command.js` 增加唯一 executionId/审计落盘（`automation.audit.outputDir`+`latest-run.json`）与 `checkpoints/auditTrail/recovery` 输出，并新增 `--resume-from`/`--resume-stage` 与 checkpoint restore 机制，同时更新 `command-registry` 与 `governor.schema` 默认审计配置;verify=`node --test test/commands/run-command.test.js`（新增审计落盘与恢复用例）与 `npm run check` 通过，`node --test` 全量仅剩既有 release getting-started 安装用例失败（与本改动无关）
-- [ ] **TK-955** 构建多 AI 自动化验收脚本与 CI smoke gate（负责人：QA/Release｜优先级：P1｜截止：2026-03-25｜状态：todo）
-- [ ] **TK-956** 输出编排解释结果（默认/自定义）（负责人：Core Runtime｜优先级：P1｜截止：2026-03-26｜状态：todo）
-- [ ] **TK-957** 增加流程配置校验与解释命令入口（负责人：DX/Runtime｜优先级：P1｜截止：2026-03-27｜状态：todo）
+- [x] **TK-955** 构建多 AI 自动化验收脚本与 CI smoke gate（负责人：QA/Release｜优先级：P1｜截止：2026-03-25｜状态：done）
+  - 执行记录：plan=补齐三入口与多 AI 分工场景的自动化 smoke 验收脚本并接入 CI workflow gate，同时输出人工确认点说明文档;result=已新增 `scripts/acceptance/run-automation-v1-smoke.js` + `run-automation-v1-smoke.sh` 与三入口 wrapper 脚本，新增 `scripts/ci/run-automation-smoke.sh` 与 `.github/workflows/automation-smoke.yml`，并补充 `docs/automation-v1/sprint-001/multi-ai-automation-smoke.md`;verify=`node --test test/acceptance/automation-v1-smoke.test.js test/ci/automation-smoke-workflow.test.js` 通过
+- [x] **TK-956** 输出编排解释结果（默认/自定义）（负责人：Core Runtime｜优先级：P1｜截止：2026-03-26｜状态：done）
+  - 执行记录：plan=在 run 输出增强流程来源与编排快照，覆盖默认流程与自定义流程并保证字段与实际执行一致;result=已在 `src/commands/run-command.js` 增加 `process.source` 与 `process.snapshot`（stages/reviewLoops/taskLoop/routeDefinitions/workflow stageOrder），并将来源判定升级为“相对默认流程是否存在有效差异”;verify=`node --test test/commands/run-command.test.js` 通过
+- [x] **TK-957** 增加流程配置校验与解释命令入口（负责人：DX/Runtime｜优先级：P1｜截止：2026-03-27｜状态：done）
+  - 执行记录：plan=为 run 增加 explain/validate 双入口，实现“先校验再执行”，并保证校验模式无副作用;result=已新增 `--explain-process` 与 `--validate-process` 选项（`src/cli/command-registry.js`），实现 process-only 输出和无派发/无审计落盘短路逻辑，新增互斥校验（与 resume 参数冲突），并更新 `docs/quick-start.md`;verify=`node --test test/commands/run-command.test.js` 与 `npm run check` 通过

@@ -185,6 +185,8 @@ test("run aligns with plan-task flow and routes ai roles before review/task loop
 
   assert.equal(result.exitCode, EXIT_CODES.success);
   assert.equal(payload.status, "pass");
+  assert.equal(payload.process.source, "default");
+  assert.ok(Array.isArray(payload.process.snapshot.workflow.stageOrder));
   assert.equal(payload.preflight.status, "passed");
   assert.equal(payload.workflow.status, "passed");
   assert.equal(routingByStage.get("requirements-draft")?.resolvedSurface, "codex");
@@ -627,6 +629,153 @@ test("run proceeds after explicit high-risk approval", async () => {
   assert.ok(payload.policy.requiredApprovalTags.includes("dangerous_command"));
   assert.ok(payload.policy.approvedRiskTags.includes("dangerous_command"));
   assert.equal(payload.workflow.status, "passed");
+});
+
+test("run marks process source as customized when automation.process overrides are configured", async () => {
+  const cwd = createTempRepo();
+  await bootstrapRepo(cwd);
+  createSurfaceWorkspaceBindings(cwd);
+  writeFile(path.join(cwd, "request.md"), "# Requirement\n\nCustomized process.\n");
+  writeGovernorConfig(cwd, (config) => {
+    config.automation.process.taskLoop.maxReviewCycles = 5;
+    return config;
+  });
+
+  const binDir = createFakeSurfaceBinaries(cwd, {
+    codex: true,
+    claude: true,
+    gh: true
+  });
+
+  const result = await runWithPrependedPath(
+    binDir,
+    () =>
+      runCommand([
+        "run",
+        "--cwd",
+        cwd,
+        "--project",
+        "demo",
+        "--sprint",
+        "sprint-001",
+        "--mode",
+        "assisted",
+        "--input",
+        "request.md",
+        "--dry-run",
+        "--format",
+        "json"
+      ]),
+    {
+      appendOriginal: false
+    }
+  );
+  const payload = JSON.parse(result.stdout);
+
+  assert.equal(result.exitCode, EXIT_CODES.success);
+  assert.equal(payload.process.source, "customized");
+  assert.equal(payload.process.snapshot.taskLoop.maxReviewCycles, 5);
+});
+
+test("run explain-process outputs compiled process snapshot without execution side effects", async () => {
+  const cwd = createTempRepo();
+  await bootstrapRepo(cwd);
+
+  const result = await runCommand([
+    "run",
+    "--cwd",
+    cwd,
+    "--project",
+    "demo",
+    "--sprint",
+    "sprint-001",
+    "--mode",
+    "assisted",
+    "--explain-process",
+    "--format",
+    "json"
+  ]);
+  const payload = JSON.parse(result.stdout);
+
+  assert.equal(result.exitCode, EXIT_CODES.success);
+  assert.equal(payload.status, "pass");
+  assert.equal(payload.explainProcess, true);
+  assert.equal(payload.validateProcess, false);
+  assert.equal(payload.process.source, "default");
+  assert.ok(Array.isArray(payload.process.snapshot.stages));
+  assert.ok(Array.isArray(payload.process.snapshot.routeDefinitions));
+  assert.equal(
+    fs.existsSync(path.join(cwd, ".repo-ai-governor", "reports", "runs")),
+    false
+  );
+});
+
+test("run validate-process succeeds without dispatch or audit writes", async () => {
+  const cwd = createTempRepo();
+  await bootstrapRepo(cwd);
+
+  const result = await runCommand([
+    "run",
+    "--cwd",
+    cwd,
+    "--project",
+    "demo",
+    "--sprint",
+    "sprint-001",
+    "--mode",
+    "assisted",
+    "--validate-process",
+    "--format",
+    "json"
+  ]);
+  const payload = JSON.parse(result.stdout);
+
+  assert.equal(result.exitCode, EXIT_CODES.success);
+  assert.equal(payload.status, "pass");
+  assert.equal(payload.validateProcess, true);
+  assert.equal(payload.explainProcess, false);
+  assert.equal(
+    fs.existsSync(path.join(cwd, ".repo-ai-governor", "reports", "runs")),
+    false
+  );
+});
+
+test("run validate-process fails with actionable errors when process configuration is invalid", async () => {
+  const cwd = createTempRepo();
+  await bootstrapRepo(cwd);
+  writeGovernorConfig(cwd, (config) => {
+    config.automation.process.stageDefinitions = [
+      {
+        id: "duplicate-stage",
+        kind: "ai",
+        routeKey: "duplicate-stage"
+      },
+      {
+        id: "duplicate-stage",
+        kind: "ai",
+        routeKey: "duplicate-stage-2"
+      }
+    ];
+    return config;
+  });
+
+  const result = await runCommand([
+    "run",
+    "--cwd",
+    cwd,
+    "--project",
+    "demo",
+    "--sprint",
+    "sprint-001",
+    "--mode",
+    "assisted",
+    "--validate-process",
+    "--format",
+    "json"
+  ]);
+
+  assert.equal(result.exitCode, EXIT_CODES.inputError);
+  assert.match(result.stderr, /duplicate-stage/i);
 });
 
 test("run writes unique audit records with stage checkpoints into report artifacts", async () => {

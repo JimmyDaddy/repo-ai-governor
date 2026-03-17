@@ -108,7 +108,7 @@ $CLI check \
   --format json
 ```
 
-## 7. Run A Review
+## 7. Preview Automation Run
 
 可先预览一次自动化编排（单入口示例）：
 
@@ -121,6 +121,26 @@ $CLI run \
   --input "$TMP_DIR/request.md" \
   --routing-profile single-codex \
   --dry-run \
+  --format json
+```
+
+也可以先做“只解释/只校验”：
+
+```bash
+$CLI run \
+  --cwd "$TMP_DIR" \
+  --project demo \
+  --sprint sprint-001 \
+  --mode assisted \
+  --explain-process \
+  --format json
+
+$CLI run \
+  --cwd "$TMP_DIR" \
+  --project demo \
+  --sprint sprint-001 \
+  --mode assisted \
+  --validate-process \
   --format json
 ```
 
@@ -168,6 +188,25 @@ $CLI report \
 
 1. npm 包名是 `@cjhdev/repo-ai-governor`
 2. CLI 命令名仍然是 `repo-ai-governor`
+
+## 10. Run Multi-AI Smoke Gate
+
+```bash
+$CLI run \
+  --cwd "$TMP_DIR" \
+  --project demo \
+  --sprint sprint-001 \
+  --mode assisted \
+  --routing-profile multi-ai-dev-review \
+  --input "$TMP_DIR/request.md" \
+  --dry-run \
+  --format json
+```
+
+说明：
+
+1. 查看输出中的 `routing.routes`，确认 routeKey 到 surface 的映射符合预期。
+2. 本仓库维护者可额外执行 `bash scripts/ci/run-automation-smoke.sh` 进行全量 smoke gate（包含三入口与多 AI 分工场景）。
 
 ## Next
 

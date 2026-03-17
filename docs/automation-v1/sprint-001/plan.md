@@ -42,7 +42,7 @@
 2. Wave B：安全与审计（done）
    - `TK-953` 实现权限分级与高风险人工确认门禁
    - `TK-954` 实现自动化执行审计日志与恢复检查点
-3. Wave C：验收与自编排可用性（todo）
+3. Wave C：验收与自编排可用性（done）
    - `TK-955` 构建多 AI 自动化验收脚本与 CI smoke gate
    - `TK-956` 输出编排解释结果（默认/自定义来源、已生效 loop 与路由）
    - `TK-957` 增加流程配置校验与解释命令入口
@@ -80,6 +80,7 @@
 - `docs/automation-v1/sprint-001/automation-controller-model.md`
 - `docs/automation-v1/sprint-001/multi-ai-handoff-orchestration-solution.md`
 - `docs/automation-v1/sprint-001/default-and-custom-orchestration-solution.md`
+- `docs/automation-v1/sprint-001/multi-ai-automation-smoke.md`
 - `docs/automation-v1/sprint-001/tasks/checklist.md`
 - `docs/automation-v1/sprint-001/tasks/tasks.csv`
 - `docs/automation-v1/sprint-001/tasks/TK-951.md`
