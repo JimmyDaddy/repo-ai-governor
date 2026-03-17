@@ -1,4 +1,19 @@
 {
   "scopes": ["src", "test"],
-  "allowList": []
+  "allowList": [],
+  "pathAllowList": [],
+  "outOfScopeAllowList": [
+    {
+      "path": "bin",
+      "reason": "CLI runtime bootstrap entry is intentionally JavaScript for direct Node execution."
+    },
+    {
+      "path": "scripts",
+      "reason": "Build/release/governance tooling currently executes as JavaScript CLI scripts."
+    },
+    {
+      "path": "skills/official/governor-plan-runner/scripts",
+      "reason": "Official packaged skill keeps runtime helper script in JavaScript."
+    }
+  ]
 }

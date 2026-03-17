@@ -9,7 +9,7 @@ This file defines repository-level coding standards and the executable gate comm
 - [CS-003] Any TODO/FIXME/HACK marker must be resolved or explicitly recorded as known risk.
 - [CS-004] Delivery records must include verification evidence for implemented tasks.
 - [CS-005] In this native Node.js ESM repository, all relative import/export specifiers must use explicit file extensions (for example `./foo.js`).
-- [CS-006] `src/**` and `test/**` must stay TypeScript-first; newly added `.js` files require an explicit TS-only whitelist entry.
+- [CS-006] `src/**` and `test/**` must stay TypeScript-first; newly added `.js` files require an explicit TS-only whitelist entry with reason (`pathAllowList[{path, reason}]`). Any new `.js` outside `src/test` must match `outOfScopeAllowList` with explicit reason.
 - [CS-007] Non-relative import/export specifiers must not end with `.js/.mjs/.cjs` (for example forbid `pkg/subpath.js`); prefer package export entries.
 - [CS-008] Dynamic dependency loading via `import()` or `require()` is forbidden by default. Exceptions are allowed only with explicit benefit and must be annotated nearby as `// dynamic-import-allowed: reason`.
 - [CS-009] Finite-set business values must be centrally managed as enums/constants under `src/constants`. One-off local checks may keep literals only when annotated nearby as `// literal-set-allowed: reason`.
