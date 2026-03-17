@@ -1,29 +1,12 @@
+import type { BuildClaudeCodeAdapterBundleOptions } from "../types/aliases/adapter-bundle.type.js";
+import type {
+  AdapterBaseBundle,
+  ClaudeCodeAdapterBundle,
+} from "../types/interfaces/adapter-bundle.interface.js";
 import { ADAPTER_PRESETS } from "./adapter-model.js";
-import {
-  type AdapterBaseBundle,
-  type BuildBaseAdapterBundleOptions,
-  buildBaseAdapterBundle,
-  ensureTrailingNewline,
-} from "./bundle-shared.js";
+import { buildBaseAdapterBundle, ensureTrailingNewline } from "./bundle-shared.js";
 
-type BuildClaudeCodeAdapterBundleOptions = Omit<
-  BuildBaseAdapterBundleOptions,
-  "adapterPreset" | "includeEntryFiles"
->;
-
-export type ClaudeCodeAdapterBundle = AdapterBaseBundle & {
-  files: {
-    systemPrompt: {
-      path: string;
-      content: string;
-    };
-    taskPrompt: {
-      path: string;
-      content: string;
-    };
-  };
-  prompt: string;
-};
+export type { ClaudeCodeAdapterBundle };
 
 function renderWorkflowLines(bundle: AdapterBaseBundle): string[] {
   return bundle.workflow.selectedStages.map((stageId) => `- ${stageId}`);

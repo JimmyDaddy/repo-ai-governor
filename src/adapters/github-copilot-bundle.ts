@@ -1,29 +1,12 @@
+import type { BuildGitHubCopilotAdapterBundleOptions } from "../types/aliases/adapter-bundle.type.js";
+import type {
+  AdapterBaseBundle,
+  GitHubCopilotAdapterBundle,
+} from "../types/interfaces/adapter-bundle.interface.js";
 import { ADAPTER_PRESETS } from "./adapter-model.js";
-import {
-  type AdapterBaseBundle,
-  type BuildBaseAdapterBundleOptions,
-  buildBaseAdapterBundle,
-  ensureTrailingNewline,
-} from "./bundle-shared.js";
+import { buildBaseAdapterBundle, ensureTrailingNewline } from "./bundle-shared.js";
 
-type BuildGitHubCopilotAdapterBundleOptions = Omit<
-  BuildBaseAdapterBundleOptions,
-  "adapterPreset" | "includeRepositoryReferences"
->;
-
-export type GitHubCopilotAdapterBundle = AdapterBaseBundle & {
-  files: {
-    ideInstructions: {
-      path: string;
-      content: string;
-    };
-    cliPrompt: {
-      path: string;
-      content: string;
-    };
-  };
-  prompt: string;
-};
+export type { GitHubCopilotAdapterBundle };
 
 function renderWorkflowLines(bundle: AdapterBaseBundle): string[] {
   return bundle.workflow.selectedStages.map((stageId) => `- ${stageId}`);

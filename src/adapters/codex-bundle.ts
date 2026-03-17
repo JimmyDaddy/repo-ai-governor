@@ -1,19 +1,12 @@
+import type { BuildCodexAdapterBundleOptions } from "../types/aliases/adapter-bundle.type.js";
+import type {
+  AdapterBaseBundle,
+  CodexAdapterBundle,
+} from "../types/interfaces/adapter-bundle.interface.js";
 import { ADAPTER_PRESETS } from "./adapter-model.js";
-import {
-  type AdapterBaseBundle,
-  type BuildBaseAdapterBundleOptions,
-  buildBaseAdapterBundle,
-  ensureTrailingNewline,
-} from "./bundle-shared.js";
+import { buildBaseAdapterBundle, ensureTrailingNewline } from "./bundle-shared.js";
 
-type BuildCodexAdapterBundleOptions = Omit<
-  BuildBaseAdapterBundleOptions,
-  "adapterPreset" | "includeEntryFiles"
->;
-
-export type CodexAdapterBundle = AdapterBaseBundle & {
-  prompt: string;
-};
+export type { CodexAdapterBundle };
 
 function createCodexPrompt(bundle: AdapterBaseBundle): string {
   const standardsLines = bundle.standards.rules.map((rule) => `- ${rule.instruction ?? ""}`);

@@ -9,6 +9,16 @@ import {
   resolveStandardsPackage,
 } from "../standards/official-base-package.js";
 import type { AiRuleView } from "../standards/package-model.js";
+import type { GenericRecord, ResolvedConfigState } from "../types/aliases/adapter-bundle.type.js";
+import type {
+  AdapterBaseBundle,
+  AdapterRuntimeConfig,
+  ArtifactPaths,
+  BuildBaseAdapterBundleOptions,
+  OptionalFileState,
+  SlotSummary,
+  StandardsSectionItem,
+} from "../types/interfaces/adapter-bundle.interface.js";
 import {
   cloneValue as cloneValueShared,
   toRelativePath as toRelativePathValue,
@@ -18,156 +28,15 @@ import {
   STANDARD_WORKFLOW_STAGE_SEQUENCE,
   resolveWorkflowTemplate,
 } from "../workflow/template-model.js";
-import type { AdapterDefinition } from "./adapter-model.js";
 
-type GenericRecord = Record<string, unknown>;
-
-type AdapterRuntimeConfig = {
-  execution: {
-    currentProject: string;
-    currentSprint: string;
-  };
-  artifacts: {
-    baseDir: string;
-    files: {
-      plan: string;
-    };
-    directories: {
-      tasks: string;
-      codeReview: string;
-    };
-    taskFiles: {
-      checklist: string;
-      csv: string;
-    };
-  };
-  workflow: GenericRecord;
-  standards: {
-    locales: {
-      default: string;
-    };
-  };
-  project: {
-    language: string | null;
-    framework: string | null;
-  };
-  agentEntry: {
-    target: string;
-    contextFile: string;
-  };
-  slots: {
-    enabled?: string[];
-    disabled?: string[];
-    conflictPolicy?: "error" | "merge" | "override" | "replace";
-  };
-};
-
-type ResolvedConfigState = ReturnType<typeof loadResolvedConfig>;
-
-type OptionalFileState = {
-  exists: boolean;
-  content: string | null;
-  excerpt: string | null;
-};
-
-type ArtifactPaths = {
-  sprintRoot: string;
-  tasksRoot: string;
-  codeReviewRoot: string;
-  planFile: string;
-  checklistFile: string;
-  taskCsvFile: string;
-};
-
-type StandardsSectionItem = {
-  order: number;
-  title: string | null;
-  instruction: string | null;
-  verification: string | null;
-};
-
-export type SlotSummary = {
-  active: Array<{
-    id: string;
-    source: string;
-    slotType: string;
-    priority: number;
-    promptKey: string | null;
-    docSection: string | null;
-    checks: GenericRecord;
-  }>;
-  blocked: unknown[];
-  suppressed: unknown[];
-  injections: {
-    aiPromptKeys: string[];
-    humanDocSections: string[];
-  };
-  checks: {
-    before: string[];
-    after: string[];
-  };
-};
-
-export type AdapterBaseBundle = {
-  adapter: {
-    id: string;
-    products: string[];
-    entrypoints: string[];
-    inputSources: string[];
-    promptSections: string[];
-  };
-  runtime: {
-    project: string;
-    sprint: string;
-    command: string;
-    stageId: string;
-    language: string | null;
-    framework: string | null;
-    locale: string;
-  };
-  workflow: {
-    template: string;
-    stageSequence: readonly string[];
-    selectedStages: string[];
-  };
-  standards: {
-    preset: string | null;
-    consumer: string;
-    rules: StandardsSectionItem[];
-  };
-  slots: SlotSummary;
-  artifacts: {
-    sprintRoot: string;
-    planFile: string;
-    checklistFile: string;
-    taskCsvFile: string;
-    codeReviewRoot: string;
-  };
-  entry?: {
-    agentEntry: { path: string } & OptionalFileState;
-    currentContext: { path: string } & OptionalFileState;
-  };
-  references?: {
-    agentEntryPath: string;
-    currentContextPath: string;
-  };
-};
-
-export type BuildBaseAdapterBundleOptions = {
-  cwd?: string;
-  resolvedConfig?: ResolvedConfigState;
-  configPath?: string;
-  project?: string;
-  sprint?: string;
-  locale?: string;
-  command?: string;
-  stageId?: string;
-  tags?: string[];
-  paths?: string[];
-  adapterPreset: AdapterDefinition;
-  consumer?: string;
-  includeEntryFiles?: boolean;
-  includeRepositoryReferences?: boolean;
+export type {
+  AdapterBaseBundle,
+  AdapterRuntimeConfig,
+  ArtifactPaths,
+  BuildBaseAdapterBundleOptions,
+  OptionalFileState,
+  SlotSummary,
+  StandardsSectionItem,
 };
 
 export function toRelativePath(cwd: string, targetPath: string): string {

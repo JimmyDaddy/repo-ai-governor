@@ -1,26 +1,6 @@
 {
   "pathAllowList": [
     {
-      "path": "src/adapters/adapter-model.ts",
-      "reason": "legacy declarations pending migration into src/types"
-    },
-    {
-      "path": "src/adapters/bundle-shared.ts",
-      "reason": "legacy declarations pending migration into src/types"
-    },
-    {
-      "path": "src/adapters/claude-code-bundle.ts",
-      "reason": "legacy declarations pending migration into src/types"
-    },
-    {
-      "path": "src/adapters/codex-bundle.ts",
-      "reason": "legacy declarations pending migration into src/types"
-    },
-    {
-      "path": "src/adapters/github-copilot-bundle.ts",
-      "reason": "legacy declarations pending migration into src/types"
-    },
-    {
       "path": "src/cli/command-registry.ts",
       "reason": "legacy declarations pending migration into src/types"
     },

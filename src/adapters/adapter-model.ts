@@ -2,71 +2,19 @@ import { validateSchemaDocument } from "../config/schema/validator.js";
 import {
   ADAPTER_INPUT_SOURCES,
   ADAPTER_OUTPUT_ARTIFACTS,
-  type AdapterInputSourceEnum,
-  type AdapterOutputArtifactEnum,
   MAINSTREAM_ADAPTER_IDS,
-  type MainstreamAdapterIdEnum,
 } from "../constants/adapter-model.js";
+import type {
+  AdapterInputSource,
+  AdapterOutputArtifact,
+  AdapterPresetMap,
+  MainstreamAdapterId,
+} from "../types/aliases/adapter.type.js";
+import type { AdapterDefinition, LocalizedText } from "../types/interfaces/adapter.interface.js";
 
 export { ADAPTER_INPUT_SOURCES, ADAPTER_OUTPUT_ARTIFACTS, MAINSTREAM_ADAPTER_IDS };
-
-export type AdapterInputSource = `${AdapterInputSourceEnum}`;
-
-export type AdapterOutputArtifact = `${AdapterOutputArtifactEnum}`;
-
-export type MainstreamAdapterId = `${MainstreamAdapterIdEnum}`;
-
-export type LocalizedText = {
-  "zh-CN": string;
-  "en-US": string;
-};
-
-export type AdapterDefinition = {
-  id: string;
-  version: "1";
-  type: "ide" | "cli" | "ide-or-cli" | "agent" | "ci";
-  enabled?: boolean;
-  meta: {
-    name?: LocalizedText;
-    provider?: string;
-    description?: LocalizedText;
-  };
-  targets: {
-    products: string[];
-    entrypoints: Array<"ide" | "cli" | "agent" | "ci">;
-    protocols: Array<"file" | "template" | "prompt" | "command" | "agent-entry">;
-  };
-  capabilities: {
-    promptInjection: boolean;
-    structuredOutput: boolean;
-    toolCalling: boolean;
-    fileSystemAccess: boolean;
-    terminalAccess: boolean;
-    patchEditing: boolean;
-    approvalControl: boolean;
-    [key: string]: boolean;
-  };
-  contract: {
-    input: {
-      sources: AdapterInputSource[];
-      requiredViews: Array<"ai" | "human">;
-      supportedFormats: Array<"markdown" | "json" | "yaml" | "text">;
-    };
-    output: {
-      artifactKinds: AdapterOutputArtifact[];
-      supportedFormats: Array<"markdown" | "json" | "yaml" | "text">;
-      supportsReviewLifecycle: boolean;
-    };
-  };
-  injection: {
-    mode: "file" | "template" | "file-and-template" | "direct-prompt";
-    sources: Array<"standards" | "workflow" | "slots" | "agent-entry" | "artifacts">;
-    promptSections: Array<"workflow" | "standards" | "slots" | "agent-entry" | "artifacts">;
-    templateVariables: string[];
-  };
-};
-
-export type AdapterPresetMap = Record<MainstreamAdapterId, Readonly<AdapterDefinition>>;
+export type { AdapterDefinition, LocalizedText };
+export type { AdapterInputSource, AdapterOutputArtifact, AdapterPresetMap, MainstreamAdapterId };
 
 function createLocalizedText(zhCN: string, enUS: string): LocalizedText {
   return {

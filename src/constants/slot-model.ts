@@ -67,3 +67,14 @@ export enum ScriptExtensionSecretPolicyEnum {
 export const SCRIPT_EXTENSION_SECRET_POLICIES = Object.freeze(
   Object.values(ScriptExtensionSecretPolicyEnum),
 ) as readonly `${ScriptExtensionSecretPolicyEnum}`[];
+
+export enum SlotConflictPolicyEnum {
+  Error = "error",
+  Override = "override",
+  Merge = "merge",
+  Replace = "replace",
+}
+
+export const SLOT_CONFLICT_POLICIES = Object.freeze(
+  Object.values(SlotConflictPolicyEnum),
+) as readonly `${SlotConflictPolicyEnum}`[];
