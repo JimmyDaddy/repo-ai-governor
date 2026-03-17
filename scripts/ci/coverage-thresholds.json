@@ -1,0 +1,70 @@
+{
+  "meta": {
+    "baselineDate": "2026-03-18",
+    "baselineSource": "coverage/coverage-summary.json",
+    "strategy": "global floor + core module floor"
+  },
+  "overall": {
+    "statements": 77,
+    "branches": 59,
+    "functions": 89,
+    "lines": 77
+  },
+  "scopes": [
+    {
+      "id": "commands",
+      "label": "Core command pipeline",
+      "include": ["src/commands/"],
+      "thresholds": {
+        "statements": 76,
+        "branches": 56,
+        "functions": 91,
+        "lines": 76
+      }
+    },
+    {
+      "id": "config",
+      "label": "Config loading and schema",
+      "include": ["src/config/"],
+      "thresholds": {
+        "statements": 86,
+        "branches": 70,
+        "functions": 92,
+        "lines": 86
+      }
+    },
+    {
+      "id": "workflow",
+      "label": "Workflow orchestration",
+      "include": ["src/workflow/"],
+      "thresholds": {
+        "statements": 88,
+        "branches": 75,
+        "functions": 98,
+        "lines": 88
+      }
+    },
+    {
+      "id": "reporting",
+      "label": "Reporting output",
+      "include": ["src/reporting/"],
+      "thresholds": {
+        "statements": 89,
+        "branches": 70,
+        "functions": 92,
+        "lines": 89
+      }
+    },
+    {
+      "id": "slots",
+      "label": "Slot runtime/model",
+      "include": ["src/slots/"],
+      "thresholds": {
+        "statements": 79,
+        "branches": 67,
+        "functions": 87,
+        "lines": 79
+      }
+    }
+  ]
+}

@@ -18,8 +18,8 @@
   - 执行记录：plan=复验 TK-3003 验收并确认“无新增随机失败”条件是否满足；result=复验命令 `npm run test:stability -- --runs 3` 出现 `runFailures=1`、`flakyFiles=1`，定位到 `test/release/getting-started-acceptance.test.ts`（run-03 失败），当前不满足结项条件;verify=`npm run test:stability -- --runs 3 && npm run check`
   - 执行记录：plan=消除发布链路测试并发波动并完成结项复验；result=新增 `test/release/release-test-lock.ts` 跨进程互斥锁并应用到 `getting-started-acceptance` 与 `release-distribution`，修复后连续两轮 `npm run test:stability -- --runs 3` 均通过（`runFailures=0`、`flakyFiles=0`），TK-3003 标记 completed;verify=`npm run test:stability -- --runs 3 && npm run test:stability -- --runs 3 && npm run check`
 
-- [ ] **TK-3004** 建立覆盖率基线并引入阈值门禁（负责人：QA｜优先级：P1｜截止：2026-04-11｜状态：todo）
-  - 执行记录：plan=定义核心模块覆盖率基线与最低阈值并接入门禁，避免回归时静默下滑；result=待执行;verify=待执行
+- [x] **TK-3004** 建立覆盖率基线并引入阈值门禁（负责人：QA｜优先级：P1｜截止：2026-04-11｜状态：completed）
+  - 执行记录：plan=定义核心模块覆盖率基线与最低阈值并接入门禁，避免回归时静默下滑；result=已新增 `coverage-baseline.md`、`scripts/ci/coverage-thresholds.json`、`scripts/ci/check-coverage-thresholds.js`，并将 `ci:quality` 接入 `check:coverage` 覆盖率阈值门禁;verify=`npm run check:coverage-thresholds && npm run check:coverage && npm run ci:quality`
 
 - [ ] **TK-3005** 收口发布与运行时 JS 白名单边界（负责人：Release｜优先级：P0｜截止：2026-04-12｜状态：todo）
   - 执行记录：plan=整理发布链路必要 JS 文件清单并补充用途说明，防止新增无归属 JS 残留；result=待执行;verify=待执行
