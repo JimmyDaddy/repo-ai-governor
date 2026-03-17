@@ -1,6 +1,6 @@
 # Release Ops Sprint 001
 
-- Status: active
+- Status: done
 - Date: 2026-03-16
 - Project: `release-ops`
 - Sprint: `sprint-001`
@@ -22,3 +22,8 @@
 
 1. 本 sprint 的目标是把当前“发布候选”状态推进到“具备真实 publish CI”的状态。
 2. 重点是让 `release-it`、GitHub Release 和 npm publish 形成可验证闭环，同时保留现有 `release:ga-check` 门禁。
+
+## Closure
+
+1. 当前 sprint 已完成并收口，任务状态与台账已同步到 `tasks/checklist.md` 和 `tasks/tasks.csv`。
+2. 后续进入 `automation-v1 / sprint-001` 新主线。

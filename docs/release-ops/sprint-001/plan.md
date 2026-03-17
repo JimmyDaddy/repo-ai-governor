@@ -1,6 +1,6 @@
 # Release Ops Sprint 001 Plan
 
-- Status: active
+- Status: done
 - Date: 2026-03-16
 - Project: `release-ops`
 - Sprint: `sprint-001`
@@ -40,3 +40,8 @@
 
 1. `TK-901` 集成 `release-it + publish CI`
 2. `TK-902` 修复 npm 安装后 `init` 首次上手可用性
+
+## Closure
+
+1. `TK-901`、`TK-902` 已完成并完成复核，相关记录已沉淀至 `code-review/`。
+2. 本 sprint 的交付目标已达到，`release-ops` 第一阶段正式收口。

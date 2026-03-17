@@ -1,6 +1,6 @@
 # Release Ops
 
-- Status: active
+- Status: done
 - Project: `release-ops`
 
 ## Scope
@@ -9,4 +9,9 @@
 
 ## Sprints
 
-1. [sprint-001](./sprint-001/index.md): 集成 `release-it` 与 publish CI。
+1. [sprint-001](./sprint-001/index.md): 集成 `release-it` 与 publish CI（done）。
+
+## Closure
+
+1. `release-ops / sprint-001` 已完成 `TK-901` 与 `TK-902`，并通过对应 CR 复核。
+2. 本项目第一阶段目标已收口，后续发布运维需求将按新 sprint 重新立项。
