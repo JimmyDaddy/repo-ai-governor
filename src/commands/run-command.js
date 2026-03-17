@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import { loadResolvedConfig } from "../config/load-config.js";
 import { ConfigError, InputError } from "../cli/runtime/errors.js";
 import { EXIT_CODES } from "../cli/runtime/exit-codes.js";
@@ -295,9 +296,36 @@ const DEFAULT_APPROVAL_RISK_TAGS = Object.freeze([
 ]);
 
 const HIGH_RISK_TAG_SET = new Set(HIGH_RISK_RULES.map((rule) => rule.tag));
+const RUN_AUDIT_KIND = "run-audit-record";
+const RUN_AUDIT_SCHEMA_VERSION = "1";
 
 function t(locale, zhCN, enUS) {
   return translateLocale(locale, zhCN, enUS);
+}
+
+function createRunExecutionId(date = new Date()) {
+  const timestamp = date.toISOString().replace(/[-:.]/g, "").replace("T", "-").replace("Z", "");
+  const token = randomUUID().replace(/-/g, "").slice(0, 8);
+  return `run-${timestamp}-${token}`;
+}
+
+function safeParseJsonFile(filePath, locale, errorCode) {
+  const rawContent = fs.readFileSync(filePath, "utf8");
+
+  try {
+    return JSON.parse(rawContent);
+  } catch (error) {
+    throw new InputError(
+      t(locale, `JSON 解析失败：${filePath}`, `Failed to parse JSON: ${filePath}`),
+      {
+        code: errorCode,
+        details: {
+          filePath,
+          cause: error instanceof Error ? error.message : String(error)
+        }
+      }
+    );
+  }
 }
 
 function detectHighRiskSignals(content) {
@@ -874,6 +902,321 @@ function buildRunArtifactPaths(cwd, resolvedConfig, locale) {
     planFile: path.resolve(sprintRoot, resolvedConfig.config.artifacts.files.plan),
     checklistFile: path.resolve(tasksRoot, resolvedConfig.config.artifacts.taskFiles.checklist),
     taskCsvFile: path.resolve(tasksRoot, resolvedConfig.config.artifacts.taskFiles.csv)
+  };
+}
+
+function buildRunAuditPaths(cwd, resolvedConfig, executionId) {
+  const auditConfig = resolvedConfig.config.automation?.audit ?? {};
+  const outputDir = path.resolve(
+    cwd,
+    auditConfig.outputDir ?? ".repo-ai-governor/reports/runs"
+  );
+  const latestFileName = String(auditConfig.latestFileName ?? "latest-run.json").trim() || "latest-run.json";
+
+  return {
+    outputDir,
+    recordFile: path.resolve(outputDir, `${executionId}.json`),
+    latestFile: path.resolve(outputDir, latestFileName)
+  };
+}
+
+function normalizeCheckpointWarnings(warnings) {
+  if (!Array.isArray(warnings)) {
+    return [];
+  }
+
+  return warnings.map((warning, index) => ({
+    id: warning?.id ?? `warning-${index + 1}`,
+    severity: warning?.severity ?? "warning",
+    message: warning?.message ?? "",
+    target: warning?.target ?? null,
+    suggestion: warning?.suggestion ?? null
+  }));
+}
+
+function normalizeCheckpointRecord(value, index = 0) {
+  const stageId = String(value?.id ?? "").trim();
+
+  if (!stageId) {
+    return null;
+  }
+
+  return {
+    sequence: Number(value?.sequence) > 0 ? Number(value.sequence) : index + 1,
+    id: stageId,
+    status: String(value?.status ?? "unknown"),
+    summary: value?.summary ?? null,
+    startedAt: value?.startedAt ?? null,
+    finishedAt: value?.finishedAt ?? null,
+    durationMs: Number.isFinite(value?.durationMs) ? value.durationMs : 0,
+    blockedBy: Array.isArray(value?.blockedBy) ? value.blockedBy.map(String) : [],
+    warnings: normalizeCheckpointWarnings(value?.warnings),
+    error: value?.error
+      ? {
+          code: value.error.code ?? null,
+          message: value.error.message ?? String(value.error)
+        }
+      : null,
+    outputs: isPlainObject(value?.outputs) ? cloneValue(value.outputs) : {},
+    details: isPlainObject(value?.details) ? cloneValue(value.details) : null
+  };
+}
+
+function resolveCheckpointRecordsFromPayload(payload) {
+  if (Array.isArray(payload?.checkpoints?.stages)) {
+    return payload.checkpoints.stages
+      .map((checkpoint, index) => normalizeCheckpointRecord(checkpoint, index))
+      .filter(Boolean);
+  }
+
+  if (Array.isArray(payload?.workflow?.stages)) {
+    return payload.workflow.stages
+      .map((stage, index) => normalizeCheckpointRecord(stage, index))
+      .filter(Boolean);
+  }
+
+  return [];
+}
+
+function resolveResumePlan(runState, workflowTemplate) {
+  if (!runState.resumeFromPath) {
+    return null;
+  }
+
+  if (runState.mode !== "assisted") {
+    throw new InputError(
+      t(
+        runState.locale,
+        "--resume-from 仅支持 assisted 模式。",
+        "--resume-from is only supported in assisted mode."
+      ),
+      {
+        code: "cli.run_resume_mode_not_supported",
+        details: {
+          mode: runState.mode
+        }
+      }
+    );
+  }
+
+  const resumePayload = safeParseJsonFile(
+    runState.resumeFromPath,
+    runState.locale,
+    "cli.run_resume_source_parse_failed"
+  );
+  const checkpointRecords = resolveCheckpointRecordsFromPayload(resumePayload);
+
+  if (checkpointRecords.length === 0) {
+    throw new InputError(
+      t(
+        runState.locale,
+        "恢复来源缺少 checkpoint 数据。",
+        "Resume source does not contain checkpoint data."
+      ),
+      {
+        code: "cli.run_resume_source_missing_checkpoints",
+        details: {
+          source: toRelativePath(runState.cwd, runState.resumeFromPath)
+        }
+      }
+    );
+  }
+
+  const stageOrder = workflowTemplate.stages.map((stage) => stage.id);
+  const checkpointByStage = new Map();
+
+  for (const checkpoint of checkpointRecords) {
+    if (!stageOrder.includes(checkpoint.id)) {
+      continue;
+    }
+
+    checkpointByStage.set(checkpoint.id, checkpoint);
+  }
+
+  let resumeStageId = runState.resumeStageOverride
+    ? String(runState.resumeStageOverride).trim()
+    : String(resumePayload?.recovery?.nextStageId ?? "").trim() || null;
+
+  if (!resumeStageId) {
+    resumeStageId =
+      stageOrder.find((stageId) => checkpointByStage.get(stageId)?.status !== "passed") ?? null;
+  }
+
+  if (resumeStageId && !stageOrder.includes(resumeStageId)) {
+    throw new InputError(
+      t(
+        runState.locale,
+        `恢复阶段不存在：${resumeStageId}`,
+        `Resume stage does not exist: ${resumeStageId}`
+      ),
+      {
+        code: "cli.run_resume_stage_invalid",
+        details: {
+          resumeStageId,
+          stageOrder
+        }
+      }
+    );
+  }
+
+  const restoreStageIds = new Set();
+  const resumeStageIndex = resumeStageId ? stageOrder.indexOf(resumeStageId) : stageOrder.length;
+
+  for (let index = 0; index < resumeStageIndex; index += 1) {
+    const stageId = stageOrder[index];
+    const checkpoint = checkpointByStage.get(stageId);
+
+    if (checkpoint?.status === "passed") {
+      restoreStageIds.add(stageId);
+    }
+  }
+
+  return {
+    sourceFile: runState.resumeFromPath,
+    sourceExecutionId:
+      typeof resumePayload?.executionId === "string" && resumePayload.executionId.trim()
+        ? resumePayload.executionId.trim()
+        : null,
+    resumeStageId,
+    restoreStageIds,
+    checkpointByStage
+  };
+}
+
+function buildStageCheckpoints(workflowResult) {
+  return workflowResult.stages.map((stage, index) => ({
+    sequence: index + 1,
+    id: stage.id,
+    status: stage.status ?? "unknown",
+    summary: stage.summary ?? null,
+    startedAt: stage.startedAt ?? null,
+    finishedAt: stage.finishedAt ?? null,
+    durationMs: Number.isFinite(stage.durationMs) ? stage.durationMs : 0,
+    blockedBy: stage.blockedBy ?? [],
+    warnings: normalizeCheckpointWarnings(stage.warnings),
+    error: stage.error
+      ? {
+          code: stage.error.code ?? null,
+          message: stage.error.message ?? null
+        }
+      : null,
+    outputs: isPlainObject(stage.outputs) ? cloneValue(stage.outputs) : {},
+    details: isPlainObject(stage.details) ? cloneValue(stage.details) : null
+  }));
+}
+
+function buildRunKeyActions(workflowResult) {
+  const actions = [];
+
+  for (const stage of workflowResult.stages) {
+    if (stage.details?.dispatch) {
+      actions.push({
+        type: "dispatch",
+        stageId: stage.id,
+        routeKey: stage.details.dispatch.routeKey ?? null,
+        surface: stage.details.dispatch.resolvedSurface ?? null,
+        mode: stage.details.dispatch.mode ?? null,
+        taskId: stage.details.dispatch.taskId ?? null,
+        cycle: stage.details.dispatch.cycle ?? null
+      });
+    }
+
+    if (Array.isArray(stage.details?.loop?.cycles)) {
+      for (const cycle of stage.details.loop.cycles) {
+        if (Array.isArray(cycle.steps)) {
+          for (const step of cycle.steps) {
+            actions.push({
+              type: "loop-step",
+              stageId: stage.id,
+              routeKey: step?.routeKey ?? null,
+              surface: step?.resolvedSurface ?? null,
+              cycle: cycle.cycle ?? null
+            });
+          }
+        }
+
+        if (cycle.implementation || cycle.codeReview) {
+          actions.push({
+            type: "task-cycle",
+            stageId: stage.id,
+            taskId: cycle.implementation?.taskId ?? cycle.codeReview?.taskId ?? null,
+            cycle: cycle.cycle ?? null,
+            implementationSurface: cycle.implementation?.resolvedSurface ?? null,
+            codeReviewSurface: cycle.codeReview?.resolvedSurface ?? null
+          });
+        }
+      }
+    }
+  }
+
+  return actions;
+}
+
+function resolveRecoveryNextStageId(payload) {
+  const failedStage = payload.workflow.stages.find((stage) => stage.status === "failed");
+
+  if (failedStage) {
+    return failedStage.id;
+  }
+
+  const blockedStage = payload.workflow.stages.find((stage) => stage.status === "blocked");
+  return blockedStage?.id ?? null;
+}
+
+function buildRunRecoveryMetadata(runState, payload, auditRecordRef) {
+  const nextStageId = resolveRecoveryNextStageId(payload);
+  const resumeEnabled = runState.mode === "assisted" && Boolean(nextStageId) && Boolean(auditRecordRef);
+  const recommendedCommand = resumeEnabled
+    ? [
+        "repo-ai-governor run",
+        `--mode assisted`,
+        `--project ${payload.currentProject}`,
+        `--sprint ${payload.currentSprint}`,
+        `--resume-from ${auditRecordRef}`
+      ].join(" ")
+    : null;
+  const handoffRequired = runState.mode === "assisted" && payload.status === "fail";
+  const handoffReason =
+    payload.workflow.failure?.message ??
+    (nextStageId
+      ? t(
+          runState.locale,
+          `执行在阶段 ${nextStageId} 未收敛，需要人工接管处理后恢复。`,
+          `Execution did not converge at stage ${nextStageId}; requires human handoff before resuming.`
+        )
+      : null);
+
+  return {
+    resumed: Boolean(runState.resumePlan),
+    resumeSource: runState.resumePlan
+      ? toRelativePath(runState.cwd, runState.resumePlan.sourceFile)
+      : null,
+    sourceExecutionId: runState.resumePlan?.sourceExecutionId ?? null,
+    resumeStageId: runState.resumePlan?.resumeStageId ?? null,
+    restoredStages: runState.resumePlan ? [...runState.resumePlan.restoreStageIds] : [],
+    nextStageId,
+    resumeAvailable: resumeEnabled,
+    recommendedCommand,
+    handoff: {
+      required: handoffRequired,
+      reason: handoffReason
+    }
+  };
+}
+
+function writeRunAuditRecord(runState, payload) {
+  if (!runState.auditEnabled) {
+    return null;
+  }
+
+  fs.mkdirSync(runState.auditPaths.outputDir, { recursive: true });
+  const content = `${JSON.stringify(payload, null, 2)}\n`;
+  fs.writeFileSync(runState.auditPaths.recordFile, content, "utf8");
+  fs.writeFileSync(runState.auditPaths.latestFile, content, "utf8");
+
+  return {
+    recordFile: toRelativePath(runState.cwd, runState.auditPaths.recordFile),
+    latestFile: toRelativePath(runState.cwd, runState.auditPaths.latestFile)
   };
 }
 
@@ -1713,6 +2056,49 @@ function createRunHandlers(runState, processModel, routingPlan) {
     return decision;
   }
 
+  function tryRestoreStageFromCheckpoint(stageId) {
+    const resumePlan = runState.resumePlan;
+
+    if (!resumePlan || !resumePlan.restoreStageIds.has(stageId)) {
+      return null;
+    }
+
+    const checkpoint = resumePlan.checkpointByStage.get(stageId);
+
+    if (!checkpoint || checkpoint.status !== "passed") {
+      return null;
+    }
+
+    return {
+      status: "passed",
+      summary: t(
+        runState.locale,
+        `阶段 ${stageId} 已从 checkpoint 恢复。`,
+        `Stage ${stageId} restored from checkpoint.`
+      ),
+      details: {
+        ...(checkpoint.details ?? {}),
+        checkpointRestore: {
+          stageId,
+          sourceFile: toRelativePath(runState.cwd, resumePlan.sourceFile),
+          sourceExecutionId: resumePlan.sourceExecutionId,
+          restoredAt: new Date().toISOString()
+        }
+      },
+      outputs: isPlainObject(checkpoint.outputs) ? cloneValue(checkpoint.outputs) : {}
+    };
+  }
+
+  function runStageWithCheckpointRecovery(stageId, handler, stageContext) {
+    const restored = tryRestoreStageFromCheckpoint(stageId);
+
+    if (restored) {
+      return restored;
+    }
+
+    return handler(stageContext);
+  }
+
   function handlePreflightStage() {
     if (!runState.preflightEnabled) {
       const skippedPreflight = {
@@ -2394,8 +2780,10 @@ function createRunHandlers(runState, processModel, routingPlan) {
   }
 
   const handlers = {
-    preflight: handlePreflightStage,
-    "policy-gate": handlePolicyGateStage
+    preflight: (stageContext) =>
+      runStageWithCheckpointRecovery("preflight", () => handlePreflightStage(), stageContext),
+    "policy-gate": (stageContext) =>
+      runStageWithCheckpointRecovery("policy-gate", () => handlePolicyGateStage(), stageContext)
   };
   const reviewLoopByStageId = new Map(
     processModel.reviewLoops.map((loopConfig) => [loopConfig.stageId, loopConfig])
@@ -2403,41 +2791,55 @@ function createRunHandlers(runState, processModel, routingPlan) {
 
   for (const stage of processModel.stages) {
     if (stage.kind === "system" && stage.id === "requirements-input") {
-      handlers[stage.id] = handleRequirementsInputStage;
+      handlers[stage.id] = (stageContext) =>
+        runStageWithCheckpointRecovery(stage.id, () => handleRequirementsInputStage(), stageContext);
       continue;
     }
 
     if (stage.kind === "loop" && stage.id === processModel.taskLoop.stageId) {
-      handlers[stage.id] = handleTaskLoopStage;
+      handlers[stage.id] = (stageContext) =>
+        runStageWithCheckpointRecovery(stage.id, handleTaskLoopStage, stageContext);
       continue;
     }
 
     if (stage.kind === "loop" && reviewLoopByStageId.has(stage.id)) {
-      handlers[stage.id] = () => handleReviewLoopStage(reviewLoopByStageId.get(stage.id));
+      handlers[stage.id] = (stageContext) =>
+        runStageWithCheckpointRecovery(
+          stage.id,
+          () => handleReviewLoopStage(reviewLoopByStageId.get(stage.id)),
+          stageContext
+        );
       continue;
     }
 
     if (stage.id === "task-breakdown") {
-      handlers[stage.id] = handleTaskBreakdownStage;
+      handlers[stage.id] = (stageContext) =>
+        runStageWithCheckpointRecovery(stage.id, handleTaskBreakdownStage, stageContext);
       continue;
     }
 
     if (stage.kind === "ai") {
-      handlers[stage.id] = () => handleAiStage(stage);
+      handlers[stage.id] = (stageContext) =>
+        runStageWithCheckpointRecovery(stage.id, () => handleAiStage(stage), stageContext);
       continue;
     }
 
-    handlers[stage.id] = () => ({
-      status: "passed",
-      summary: t(
-        runState.locale,
-        `阶段 ${stage.id} 已跳过（无专用处理逻辑）。`,
-        `Stage ${stage.id} skipped because no specialized handler is defined.`
-      ),
-      details: {
-        stageId: stage.id
-      }
-    });
+    handlers[stage.id] = (stageContext) =>
+      runStageWithCheckpointRecovery(
+        stage.id,
+        () => ({
+          status: "passed",
+          summary: t(
+            runState.locale,
+            `阶段 ${stage.id} 已跳过（无专用处理逻辑）。`,
+            `Stage ${stage.id} skipped because no specialized handler is defined.`
+          ),
+          details: {
+            stageId: stage.id
+          }
+        }),
+        stageContext
+      );
   }
 
   return handlers;
@@ -2514,10 +2916,32 @@ function buildRunPayload(runState, processModel, routingPlan, workflowResult, su
   const taskLoopStage = processModel.taskLoop.stageId
     ? workflowResult.stages.find((stage) => stage.id === processModel.taskLoop.stageId)
     : null;
+  const stageCheckpoints = buildStageCheckpoints(workflowResult);
+  const keyActions = buildRunKeyActions(workflowResult);
+  const failureReason =
+    workflowResult.failure?.stageResult?.summary ??
+    workflowResult.stages.find((stage) => stage.status === "failed" || stage.status === "blocked")?.summary ??
+    null;
+  const auditRecordRef = runState.auditEnabled
+    ? toRelativePath(runState.cwd, runState.auditPaths.recordFile)
+    : null;
+  const latestAuditRef = runState.auditEnabled
+    ? toRelativePath(runState.cwd, runState.auditPaths.latestFile)
+    : null;
 
   return {
+    kind: RUN_AUDIT_KIND,
+    schemaVersion: RUN_AUDIT_SCHEMA_VERSION,
     command: "run",
     status: summary.status,
+    generatedAt: runState.executionFinishedAt,
+    executionId: runState.executionId,
+    execution: {
+      id: runState.executionId,
+      startedAt: runState.executionStartedAt,
+      finishedAt: runState.executionFinishedAt,
+      durationMs: runState.executionDurationMs
+    },
     mode: runState.mode,
     dryRun: runState.dryRun,
     locale: runState.locale,
@@ -2588,6 +3012,24 @@ function buildRunPayload(runState, processModel, routingPlan, workflowResult, su
           }
         : null
     },
+    checkpoints: {
+      stages: stageCheckpoints
+    },
+    auditTrail: {
+      policyDecision: policyDetails.decision ?? "unknown",
+      stageStatuses: stageCheckpoints.map((checkpoint) => ({
+        id: checkpoint.id,
+        status: checkpoint.status
+      })),
+      keyActions,
+      failureReason
+    },
+    audit: {
+      enabled: runState.auditEnabled,
+      recordFile: auditRecordRef,
+      latestFile: latestAuditRef
+    },
+    reportFile: auditRecordRef,
     summary
   };
 }
@@ -2606,10 +3048,12 @@ function writeRunSummary(logger, payload, format) {
         "# run",
         "",
         `- ${t(locale, "状态", "Status")}: ${payload.status}`,
+        `- ${t(locale, "执行编号", "Execution ID")}: \`${payload.executionId}\``,
         `- ${t(locale, "模式", "Mode")}: \`${payload.mode}\``,
         `- ${t(locale, "项目", "Project")}: \`${payload.currentProject}\``,
         `- Sprint: \`${payload.currentSprint}\``,
         `- ${t(locale, "预检状态", "Preflight status")}: \`${payload.preflight.status}\``,
+        `- ${t(locale, "审计记录", "Audit record")}: \`${payload.audit?.recordFile ?? "-"}\``,
         `- ${t(locale, "流程摘要", "Workflow summary")}: \`${JSON.stringify(payload.workflow.summary)}\``
       ].join("\n"),
       { ignoreQuiet: true }
@@ -2626,6 +3070,7 @@ function writeRunSummary(logger, payload, format) {
   }
 
   logger.keyValue(t(locale, "模式", "Mode"), payload.mode);
+  logger.keyValue(t(locale, "执行编号", "Execution ID"), payload.executionId);
   logger.keyValue(t(locale, "项目", "Project"), payload.currentProject);
   logger.keyValue("Sprint", payload.currentSprint);
   logger.keyValue(t(locale, "路由档", "Routing profile"), payload.routing.profile);
@@ -2633,6 +3078,7 @@ function writeRunSummary(logger, payload, format) {
   logger.keyValue(t(locale, "预检状态", "Preflight status"), payload.preflight.status);
   logger.keyValue(t(locale, "权限层级", "Permission tier"), payload.policy.permissionTier);
   logger.keyValue(t(locale, "门禁决策", "Policy decision"), payload.policy.decision);
+  logger.keyValue(t(locale, "审计记录", "Audit record"), payload.audit?.recordFile ?? "-");
   logger.keyValue(t(locale, "流程摘要", "Workflow summary"), JSON.stringify(payload.workflow.summary));
 
   if (payload.taskLoop) {
@@ -2727,6 +3173,48 @@ function buildRunState(commandContext) {
     parseRiskTagList(resolvedConfig.config.automation.gates?.requireApprovalFor ?? [])
   );
   const approvedRiskTags = new Set(parseRiskTagList(commandContext.commandOptions.approveRisk));
+  const resumeFromPath = commandContext.commandOptions.resumeFrom
+    ? path.resolve(cwd, commandContext.commandOptions.resumeFrom)
+    : null;
+  const resumeStageOverride = commandContext.commandOptions.resumeStage
+    ? String(commandContext.commandOptions.resumeStage).trim()
+    : null;
+  const executionStartedAtDate = new Date();
+  const executionId = createRunExecutionId(executionStartedAtDate);
+  const auditEnabled = resolvedConfig.config.automation.audit?.enabled !== false;
+  const auditPaths = buildRunAuditPaths(cwd, resolvedConfig, executionId);
+
+  if (resumeFromPath && !fs.existsSync(resumeFromPath)) {
+    throw new InputError(
+      t(
+        locale,
+        `未找到恢复来源文件：${resumeFromPath}`,
+        `Resume source file not found: ${resumeFromPath}`
+      ),
+      {
+        code: "cli.run_resume_source_missing",
+        details: {
+          resumeFrom: resumeFromPath
+        }
+      }
+    );
+  }
+
+  if (resumeStageOverride && !resumeFromPath) {
+    throw new InputError(
+      t(
+        locale,
+        "--resume-stage 需要与 --resume-from 一起使用。",
+        "--resume-stage requires --resume-from."
+      ),
+      {
+        code: "cli.run_resume_stage_without_source",
+        details: {
+          resumeStage: resumeStageOverride
+        }
+      }
+    );
+  }
 
   return {
     cwd,
@@ -2747,6 +3235,15 @@ function buildRunState(commandContext) {
     maxReviewCyclesOverride: commandContext.commandOptions.maxReviewCycles
       ? Number(commandContext.commandOptions.maxReviewCycles)
       : null,
+    executionId,
+    executionStartedAt: executionStartedAtDate.toISOString(),
+    executionFinishedAt: null,
+    executionDurationMs: null,
+    auditEnabled,
+    auditPaths,
+    resumeFromPath,
+    resumeStageOverride,
+    resumePlan: null,
     inputRef,
     policyInputRef,
     policyInputContent: readTextFileIfExists(policyInputRef),
@@ -2772,6 +3269,7 @@ export async function executeRunCommand(commandContext, logger) {
   runState.routeOverrides = parseRouteOverrides(runState.rawRouteOverrides, processModel, runState.locale);
   const routingPlan = buildRoutingPlan(runState, processModel);
   const workflowTemplate = buildRunWorkflowTemplate(processModel);
+  runState.resumePlan = resolveResumePlan(runState, workflowTemplate);
   const workflowResult = await executeWorkflow({
     template: workflowTemplate,
     handlers: createRunHandlers(runState, processModel, routingPlan),
@@ -2786,10 +3284,29 @@ export async function executeRunCommand(commandContext, logger) {
       framework: runState.resolvedConfig.config.project.framework
     }
   });
+  const finishedAt = new Date();
+  runState.executionFinishedAt = finishedAt.toISOString();
+  runState.executionDurationMs =
+    finishedAt.getTime() - new Date(runState.executionStartedAt).getTime();
   const preflightStage = workflowResult.stages.find((stage) => stage.id === "preflight");
   const preflightStatus = preflightStage?.details?.status ?? "unknown";
   const summary = buildRunSummary(workflowResult, preflightStatus);
   const payload = buildRunPayload(runState, processModel, routingPlan, workflowResult, summary);
+  payload.recovery = buildRunRecoveryMetadata(
+    runState,
+    payload,
+    payload.audit?.recordFile ?? null
+  );
+  const auditWriteResult = writeRunAuditRecord(runState, payload);
+
+  if (auditWriteResult) {
+    payload.audit = {
+      ...payload.audit,
+      ...auditWriteResult
+    };
+    payload.reportFile = auditWriteResult.recordFile;
+    payload.recovery = buildRunRecoveryMetadata(runState, payload, auditWriteResult.recordFile);
+  }
 
   writeRunSummary(logger, payload, commandContext.format);
   return summary.exitCode;

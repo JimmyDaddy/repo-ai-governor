@@ -130,7 +130,9 @@
         "audit": {
           "enabled": true,
           "logPrompts": false,
-          "logCommands": true
+          "logCommands": true,
+          "outputDir": ".repo-ai-governor/reports/runs",
+          "latestFileName": "latest-run.json"
         }
       }
     },
@@ -744,7 +746,22 @@
         "logCommands": {
           "type": "boolean",
           "default": true
+        },
+        "outputDir": {
+          "$ref": "./shared.schema.json#/$defs/relativePath",
+          "default": ".repo-ai-governor/reports/runs"
+        },
+        "latestFileName": {
+          "$ref": "./shared.schema.json#/$defs/nonEmptyString",
+          "default": "latest-run.json"
         }
+      },
+      "default": {
+        "enabled": true,
+        "logPrompts": false,
+        "logCommands": true,
+        "outputDir": ".repo-ai-governor/reports/runs",
+        "latestFileName": "latest-run.json"
       }
     },
     "automationConfig": {
@@ -851,7 +868,9 @@
           "default": {
             "enabled": true,
             "logPrompts": false,
-            "logCommands": true
+            "logCommands": true,
+            "outputDir": ".repo-ai-governor/reports/runs",
+            "latestFileName": "latest-run.json"
           }
         }
       }

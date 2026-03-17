@@ -31,6 +31,10 @@ function createBufferedStream() {
   };
 }
 
+function readJson(filePath) {
+  return JSON.parse(fs.readFileSync(filePath, "utf8"));
+}
+
 async function runCommand(argv) {
   const stdout = createBufferedStream();
   const stderr = createBufferedStream();
@@ -623,4 +627,168 @@ test("run proceeds after explicit high-risk approval", async () => {
   assert.ok(payload.policy.requiredApprovalTags.includes("dangerous_command"));
   assert.ok(payload.policy.approvedRiskTags.includes("dangerous_command"));
   assert.equal(payload.workflow.status, "passed");
+});
+
+test("run writes unique audit records with stage checkpoints into report artifacts", async () => {
+  const cwd = createTempRepo();
+  await bootstrapRepo(cwd);
+  createSurfaceWorkspaceBindings(cwd);
+  writeFile(path.join(cwd, "request.md"), "# Requirement\n\nAudit trail.\n");
+  const binDir = createFakeSurfaceBinaries(cwd, {
+    codex: true,
+    claude: true,
+    gh: true
+  });
+
+  const firstRun = await runWithPrependedPath(
+    binDir,
+    () =>
+      runCommand([
+        "run",
+        "--cwd",
+        cwd,
+        "--project",
+        "demo",
+        "--sprint",
+        "sprint-001",
+        "--mode",
+        "assisted",
+        "--input",
+        "request.md",
+        "--dry-run",
+        "--format",
+        "json"
+      ]),
+    {
+      appendOriginal: false
+    }
+  );
+  const firstPayload = JSON.parse(firstRun.stdout);
+  const firstAuditFile = path.resolve(cwd, firstPayload.audit.recordFile);
+  const firstLatestFile = path.resolve(cwd, firstPayload.audit.latestFile);
+  const firstRecord = readJson(firstAuditFile);
+
+  assert.equal(firstRun.exitCode, EXIT_CODES.success);
+  assert.equal(firstPayload.kind, "run-audit-record");
+  assert.ok(fs.existsSync(firstAuditFile));
+  assert.ok(fs.existsSync(firstLatestFile));
+  assert.equal(firstRecord.executionId, firstPayload.executionId);
+  assert.ok(Array.isArray(firstRecord.checkpoints?.stages));
+  assert.ok(firstRecord.checkpoints.stages.some((stage) => stage.id === "preflight"));
+  assert.ok(firstRecord.checkpoints.stages.some((stage) => stage.id === "policy-gate"));
+  assert.equal(firstRecord.auditTrail?.policyDecision, firstPayload.policy.decision);
+
+  const secondRun = await runWithPrependedPath(
+    binDir,
+    () =>
+      runCommand([
+        "run",
+        "--cwd",
+        cwd,
+        "--project",
+        "demo",
+        "--sprint",
+        "sprint-001",
+        "--mode",
+        "assisted",
+        "--input",
+        "request.md",
+        "--dry-run",
+        "--format",
+        "json"
+      ]),
+    {
+      appendOriginal: false
+    }
+  );
+  const secondPayload = JSON.parse(secondRun.stdout);
+
+  assert.equal(secondRun.exitCode, EXIT_CODES.success);
+  assert.notEqual(secondPayload.audit.recordFile, firstPayload.audit.recordFile);
+  assert.ok(fs.existsSync(path.resolve(cwd, secondPayload.audit.recordFile)));
+});
+
+test("run can resume from checkpoint records in assisted mode", async () => {
+  const cwd = createTempRepo();
+  await bootstrapRepo(cwd);
+  createSurfaceWorkspaceBindings(cwd);
+  writeFile(path.join(cwd, "request.md"), "# Requirement\n\nPlease execute rm -rf /tmp/cache.\n");
+  const binDir = createFakeSurfaceBinaries(cwd, {
+    codex: true,
+    claude: true,
+    gh: true
+  });
+
+  const blockedRun = await runWithPrependedPath(
+    binDir,
+    () =>
+      runCommand([
+        "run",
+        "--cwd",
+        cwd,
+        "--project",
+        "demo",
+        "--sprint",
+        "sprint-001",
+        "--mode",
+        "assisted",
+        "--input",
+        "request.md",
+        "--dry-run",
+        "--format",
+        "json"
+      ]),
+    {
+      appendOriginal: false
+    }
+  );
+  const blockedPayload = JSON.parse(blockedRun.stdout);
+
+  assert.equal(blockedRun.exitCode, EXIT_CODES.businessCheckFailed);
+  assert.equal(blockedPayload.policy.decision, "pause_for_approval");
+  assert.equal(blockedPayload.recovery.nextStageId, "policy-gate");
+  assert.ok(blockedPayload.recovery.resumeAvailable);
+
+  const resumedRun = await runWithPrependedPath(
+    binDir,
+    () =>
+      runCommand([
+        "run",
+        "--cwd",
+        cwd,
+        "--project",
+        "demo",
+        "--sprint",
+        "sprint-001",
+        "--mode",
+        "assisted",
+        "--resume-from",
+        blockedPayload.audit.recordFile,
+        "--input",
+        "request.md",
+        "--approve-risk",
+        "dangerous_command",
+        "--dry-run",
+        "--format",
+        "json"
+      ]),
+    {
+      appendOriginal: false
+    }
+  );
+  const resumedPayload = JSON.parse(resumedRun.stdout);
+  const restoredPreflightCheckpoint = resumedPayload.checkpoints.stages.find(
+    (stage) => stage.id === "preflight"
+  );
+
+  assert.equal(resumedRun.exitCode, EXIT_CODES.success);
+  assert.equal(resumedPayload.status, "pass");
+  assert.equal(resumedPayload.recovery.resumed, true);
+  assert.equal(resumedPayload.recovery.resumeSource, blockedPayload.audit.recordFile);
+  assert.equal(resumedPayload.recovery.resumeStageId, "policy-gate");
+  assert.ok(resumedPayload.recovery.restoredStages.includes("preflight"));
+  assert.equal(
+    restoredPreflightCheckpoint?.details?.checkpointRestore?.sourceFile,
+    blockedPayload.audit.recordFile
+  );
 });

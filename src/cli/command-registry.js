@@ -324,6 +324,20 @@ export const commandDefinitions = [
         description: "显式确认高风险标签，可重复传入（如 dangerous_command）",
         type: "string",
         multiple: true
+      },
+      {
+        long: "--resume-from",
+        key: "resumeFrom",
+        valueName: "path",
+        description: "基于指定审计/检查点文件恢复执行（仅 assisted）",
+        type: "string"
+      },
+      {
+        long: "--resume-stage",
+        key: "resumeStage",
+        valueName: "stage-id",
+        description: "恢复时强制从指定阶段重试（仅 assisted，需配合 --resume-from）",
+        type: "string"
       }
     ]
   },
