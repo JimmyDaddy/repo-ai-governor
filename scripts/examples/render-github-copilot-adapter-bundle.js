@@ -1,10 +1,7 @@
 #!/usr/bin/env node
 
 import path from "node:path";
-import {
-  buildGitHubCopilotAdapterBundle,
-  renderGitHubCopilotAdapterBundle
-} from "../../src/adapters/github-copilot-bundle.js";
+import { importDistModule } from "./load-dist-module.js";
 
 function parseArguments(argv) {
   const options = {
@@ -73,5 +70,7 @@ function parseArguments(argv) {
 }
 
 const options = parseArguments(process.argv.slice(2));
+const { buildGitHubCopilotAdapterBundle, renderGitHubCopilotAdapterBundle } =
+  await importDistModule("src/adapters/github-copilot-bundle.js");
 const bundle = buildGitHubCopilotAdapterBundle(options);
 process.stdout.write(renderGitHubCopilotAdapterBundle(bundle, options.format));

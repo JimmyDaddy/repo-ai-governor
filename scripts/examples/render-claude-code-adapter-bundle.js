@@ -1,10 +1,7 @@
 #!/usr/bin/env node
 
 import path from "node:path";
-import {
-  buildClaudeCodeAdapterBundle,
-  renderClaudeCodeAdapterBundle
-} from "../../src/adapters/claude-code-bundle.js";
+import { importDistModule } from "./load-dist-module.js";
 
 function parseArguments(argv) {
   const options = {
@@ -73,5 +70,8 @@ function parseArguments(argv) {
 }
 
 const options = parseArguments(process.argv.slice(2));
+const { buildClaudeCodeAdapterBundle, renderClaudeCodeAdapterBundle } = await importDistModule(
+  "src/adapters/claude-code-bundle.js"
+);
 const bundle = buildClaudeCodeAdapterBundle(options);
 process.stdout.write(renderClaudeCodeAdapterBundle(bundle, options.format));

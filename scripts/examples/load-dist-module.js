@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
@@ -7,11 +5,8 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const packageDir = path.resolve(__dirname, "..");
-const isDistBin = path.basename(packageDir) === "dist";
-const distCliEntryPath = isDistBin
-  ? path.resolve(packageDir, "src", "cli", "index.js")
-  : path.resolve(packageDir, "dist", "src", "cli", "index.js");
+const ROOT_DIR = path.resolve(__dirname, "..", "..");
+let didAttemptBuild = false;
 
 function findNpmCommand() {
   if (process.env.npm_execpath && fs.existsSync(process.env.npm_execpath)) {
@@ -25,18 +20,15 @@ function findNpmCommand() {
   return ["npm", []];
 }
 
-function runBuildIfNeeded() {
-  if (fs.existsSync(distCliEntryPath)) {
+function runBuildOnce() {
+  if (didAttemptBuild) {
     return;
   }
 
-  if (isDistBin) {
-    return;
-  }
-
+  didAttemptBuild = true;
   const [command, prefixArguments] = findNpmCommand();
   execFileSync(command, [...prefixArguments, "run", "build"], {
-    cwd: packageDir,
+    cwd: ROOT_DIR,
     stdio: "inherit",
     env: {
       ...process.env,
@@ -45,14 +37,16 @@ function runBuildIfNeeded() {
   });
 }
 
-runBuildIfNeeded();
+export async function importDistModule(relativeModulePath) {
+  const distModulePath = path.resolve(ROOT_DIR, "dist", relativeModulePath);
 
-if (!fs.existsSync(distCliEntryPath)) {
-  process.stderr.write(`Unable to resolve CLI entrypoint: ${distCliEntryPath}\n`);
-  process.exit(1);
+  if (!fs.existsSync(distModulePath)) {
+    runBuildOnce();
+  }
+
+  if (!fs.existsSync(distModulePath)) {
+    throw new Error(`Unable to resolve dist module: ${distModulePath}`);
+  }
+
+  return import(pathToFileURL(distModulePath).href);
 }
-
-const { runCli } = await import(pathToFileURL(distCliEntryPath).href);
-
-const exitCode = await runCli(process.argv.slice(2));
-process.exitCode = exitCode;
