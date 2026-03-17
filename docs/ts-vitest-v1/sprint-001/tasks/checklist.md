@@ -1,7 +1,8 @@
 # TS Vitest V1 Sprint 001 Checklist
 
-- [ ] **TK-1001** 建立 TypeScript 工程与构建基线（负责人：Core｜优先级：P0｜截止：2026-03-22｜状态：todo）
-  - 执行记录：plan=新增 tsconfig 分层配置与 typecheck/build scripts，建立 `src -> dist` 可运行链路;result=待执行;verify=待执行
+- [x] **TK-1001** 建立 TypeScript 工程与构建基线（负责人：Core｜优先级：P0｜截止：2026-03-22｜状态：done）
+  - 执行记录：plan=新增 TypeScript 分层配置与构建脚本，打通 `src/bin -> dist` 执行链路并保持现有 CLI 行为稳定;result=已新增 `tsconfig.json`、`tsconfig.build.json`、`tsconfig.test.json`，安装 `typescript/@types-node`，新增 `typecheck/build/start:dist` 脚本，并通过 `scripts/build/copy-runtime-assets.js` 在 build 后复制 schema/skills/package 运行时资产;verify=`npm run typecheck && npm run build && npm run start:dist -- --help && npm run check`
+  - 执行记录：review_delta=已完成 `TK-1001` 自检复核，CR 结果落盘为 `code-review/verified_review_tk-1001-establish-typescript-baseline.md`;verify=`npx biome format --write package.json tsconfig.json tsconfig.build.json tsconfig.test.json scripts/build/copy-runtime-assets.js`
 
 - [ ] **TK-1002** 接入 Vitest 并迁移测试运行基线（负责人：QA｜优先级：P0｜截止：2026-03-23｜状态：todo）
   - 执行记录：plan=引入 vitest 与 coverage 配置，切换 `npm test` 到 `vitest run` 并迁移测试入口;result=待执行;verify=待执行
