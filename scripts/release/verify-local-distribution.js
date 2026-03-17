@@ -57,12 +57,13 @@ function resolveInstalledPackagePath(installDir, packageName) {
 
 function main() {
   const options = parseArguments(process.argv.slice(2));
+  const installDir = createTempDir("repo-ai-governor-install-");
+
   runNpm(["run", "build"], ROOT_DIR);
-  const packOutput = runNpm(["pack", "--json"], ROOT_DIR);
+  const packOutput = runNpm(["pack", "--json", "--pack-destination", installDir], ROOT_DIR);
   const packEntries = JSON.parse(packOutput);
   const latestPack = Array.isArray(packEntries) ? packEntries.at(-1) : packEntries;
-  const tarballPath = path.join(ROOT_DIR, latestPack.filename);
-  const installDir = createTempDir("repo-ai-governor-install-");
+  const tarballPath = path.join(installDir, latestPack.filename);
 
   fs.writeFileSync(
     path.join(installDir, "package.json"),

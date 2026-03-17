@@ -22,6 +22,7 @@
     "help": "node ./bin/repo-ai-governor.js --help",
     "test": "vitest run",
     "check:imports": "node ./scripts/governance/check-esm-import-specifiers.js",
+    "check:ts-only": "node ./scripts/governance/check-ts-only-residue.js",
     "check:code-standards": "node ./scripts/governance/check-code-standards.js --standards code_standards.md",
     "check": "npm run build && npm run check:code-standards",
     "ci:quality": "npm run typecheck && npm run test && npm run check",

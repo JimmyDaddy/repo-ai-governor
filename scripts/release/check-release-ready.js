@@ -79,6 +79,7 @@ function main() {
       : packageJson.repository?.url ?? null;
   const requiredChecks = [
     "npm run ci:quality",
+    "npm run check:ts-only",
     "npm run release:check",
     "npm run release:verify-local"
   ];
