@@ -1,6 +1,6 @@
 # TS Vitest V1 Sprint 001
 
-- Status: in-progress
+- Status: done
 - Date: 2026-03-17
 - Project: `ts-vitest-v1`
 - Sprint: `sprint-001`
@@ -26,4 +26,4 @@
 ## Notes
 
 1. 本 sprint 聚焦“可运行、可验证、可复制”的迁移底座。
-2. 全量迁移收口将在后续 sprint 推进。
+2. 全量迁移收口已在 `sprint-002` 接续推进。

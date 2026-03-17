@@ -49,7 +49,7 @@
 
 ## Iteration Plan
 
-### Sprint 001: Baseline And Pilot Migration (in progress)
+### Sprint 001: Baseline And Pilot Migration (done)
 
 目标：
 
@@ -66,8 +66,9 @@
 4. `TK-1004` 对齐 CI/Gate 与发布入口的 TS/Vitest 约束。
 5. `TK-1005` 接入 Biome formatter 与格式化命令基线。
 6. `TK-1006` 参考 `camera_point` 启用 Biome linter 规则与 lint 命令。
+7. `TK-1007` 清理试点双轨 JS 残留并收敛 TS-only 入口。
 
-### Sprint 002: Full Source Migration
+### Sprint 002: Full Source Migration (in progress)
 
 目标：
 
@@ -75,6 +76,15 @@
 2. 清理迁移期间的临时兼容层。
 3. 完成主要路径的类型完善与错误处理统一。
 4. 将 Biome 规则稳定纳入日常开发流程。
+
+任务：
+
+1. `TK-2001` 清理试点模块临时类型豁免并收敛强类型。
+2. `TK-2002` 迁移 `workflow/slots/standards/config` 到 TypeScript。
+3. `TK-2003` 迁移 `adapters/skills` 与 examples 脚本到 TypeScript。
+4. `TK-2004` 迁移 `cli/runtime/commands` 到 TypeScript。
+5. `TK-2005` 迁移测试层到 `.test.ts` 并保持 Vitest 稳定。
+6. `TK-2006` 增加 TS-only 审计门禁并收口发布约束。
 
 ### Sprint 003: Hardening And Closure
 
