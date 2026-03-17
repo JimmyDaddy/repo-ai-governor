@@ -10,8 +10,10 @@
   - 执行记录：plan=分批迁移 workflow/slots/standards/config 到 `.ts` 并清理同路径 `.js`；优先保证 typecheck 与核心链路测试稳定;result=已完成 `src/workflow/*`、`src/slots/*`、`src/standards/*`、`src/config/{errors,repository-layout,load-config}` 的 TypeScript 迁移并删除旧 `.js`，核心域类型与执行模型已补齐;verify=`npm run typecheck && npm run test -- test/workflow/template-model.test.js test/workflow/governance-engine.test.js test/slots/slot-model.test.js test/slots/runtime.test.js test/standards/package-model.test.js test/standards/official-base-package.test.js test/config/repository-layout.test.js test/config/load-config.test.js && npm run check`
   - 执行记录：review_delta=已完成 `TK-2002` 自检复核，CR 结果落盘为 `code-review/verified_review_tk-2002-migrate-core-workflow-slots-standards-config-to-ts.md`;verify=`rg --files src/workflow src/slots src/standards src/config | sort`
 
-- [ ] **TK-2003** 迁移 `adapters/skills` 与 examples 脚本到 TypeScript（负责人：Core｜优先级：P1｜截止：2026-03-31｜状态：todo）
+- [x] **TK-2003** 迁移 `adapters/skills` 与 examples 脚本到 TypeScript（负责人：Core｜优先级：P1｜截止：2026-03-31｜状态：done）
   - 执行记录：plan=迁移 adapter/skills 模块及示例渲染脚本，确保多适配器输出一致;result=待执行;verify=待执行
+  - 执行记录：plan=完成 `src/adapters/*` 与 `src/skills/*` 向 `.ts` 迁移并删除同路径 `.js`，同时保持 examples 渲染脚本输出行为稳定;result=已完成 `src/adapters/{adapter-model,bundle-shared,codex-bundle,github-copilot-bundle,claude-code-bundle}.ts` 与 `src/skills/{catalog,package-layout,runtime,semver}.ts` 类型化改造并删除对应 `.js`，`scripts/examples/*.js` 继续作为 Node 入口加载 dist 产物;verify=`npm run typecheck && npm run test -- test/adapters/adapter-model.test.js test/adapters/codex-bundle.test.js test/adapters/github-copilot-bundle.test.js test/adapters/claude-code-bundle.test.js test/adapters/adapter-skill-wiring.test.js test/skills/package-layout.test.js test/skills/official-skill-assets.test.js test/skills/workspace-delivery-finisher.test.js test/ci/ci-scripts.test.js && npm run check`
+  - 执行记录：review_delta=已完成 `TK-2003` 自检复核，CR 结果落盘为 `code-review/verified_review_tk-2003-migrate-adapters-skills-examples-to-ts.md`;verify=`rg --files src/adapters src/skills | sort`
 
 - [ ] **TK-2004** 迁移 `cli/runtime/commands` 到 TypeScript（负责人：Core｜优先级：P0｜截止：2026-04-01｜状态：todo）
   - 执行记录：plan=迁移 CLI 主链路并补齐命令上下文与错误模型类型，保持现有命令协议稳定;result=待执行;verify=待执行

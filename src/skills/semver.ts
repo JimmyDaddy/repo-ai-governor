@@ -1,4 +1,6 @@
-function parseVersion(value) {
+type ParsedVersion = [major: number, minor: number, patch: number];
+
+function parseVersion(value: unknown): ParsedVersion | null {
   const match = String(value ?? "")
     .trim()
     .match(/^v?(\d+)\.(\d+)\.(\d+)(?:-[0-9A-Za-z.-]+)?$/);
@@ -10,7 +12,7 @@ function parseVersion(value) {
   return [Number(match[1]), Number(match[2]), Number(match[3])];
 }
 
-function compareVersions(left, right) {
+function compareVersions(left: ParsedVersion, right: ParsedVersion): number {
   for (let index = 0; index < Math.max(left.length, right.length); index += 1) {
     const leftPart = left[index] ?? 0;
     const rightPart = right[index] ?? 0;
@@ -27,7 +29,7 @@ function compareVersions(left, right) {
   return 0;
 }
 
-export function doesVersionSatisfy(range, version) {
+export function doesVersionSatisfy(range: unknown, version: unknown): boolean {
   const targetVersion = parseVersion(version);
 
   if (!targetVersion) {
@@ -66,9 +68,7 @@ export function doesVersionSatisfy(range, version) {
       return comparison >= 0 && targetVersion[0] === baseline[0];
     case "~":
       return (
-        comparison >= 0 &&
-        targetVersion[0] === baseline[0] &&
-        targetVersion[1] === baseline[1]
+        comparison >= 0 && targetVersion[0] === baseline[0] && targetVersion[1] === baseline[1]
       );
     default:
       return false;

@@ -1,25 +1,52 @@
 import { ADAPTER_PRESETS } from "./adapter-model.js";
-import { buildBaseAdapterBundle, ensureTrailingNewline } from "./bundle-shared.js";
+import {
+  type AdapterBaseBundle,
+  type BuildBaseAdapterBundleOptions,
+  buildBaseAdapterBundle,
+  ensureTrailingNewline,
+} from "./bundle-shared.js";
 
-function renderWorkflowLines(bundle) {
+type BuildClaudeCodeAdapterBundleOptions = Omit<
+  BuildBaseAdapterBundleOptions,
+  "adapterPreset" | "includeEntryFiles"
+>;
+
+export type ClaudeCodeAdapterBundle = AdapterBaseBundle & {
+  files: {
+    systemPrompt: {
+      path: string;
+      content: string;
+    };
+    taskPrompt: {
+      path: string;
+      content: string;
+    };
+  };
+  prompt: string;
+};
+
+function renderWorkflowLines(bundle: AdapterBaseBundle): string[] {
   return bundle.workflow.selectedStages.map((stageId) => `- ${stageId}`);
 }
 
-function renderStandardsLines(bundle) {
-  return bundle.standards.rules.map((rule) => `- ${rule.instruction}`);
+function renderStandardsLines(bundle: AdapterBaseBundle): string[] {
+  return bundle.standards.rules.map((rule) => `- ${rule.instruction ?? ""}`);
 }
 
-function renderSlotLines(bundle) {
+function renderSlotLines(bundle: AdapterBaseBundle): string[] {
   if (bundle.slots.active.length === 0) {
     return ["- No active slots matched the current Claude Code context."];
   }
 
   return bundle.slots.active.map(
-    (slot) => `- ${slot.id}: slotType=${slot.slotType}, promptKey=${slot.promptKey ?? "none"}`
+    (slot) => `- ${slot.id}: slotType=${slot.slotType}, promptKey=${slot.promptKey ?? "none"}`,
   );
 }
 
-function renderEntryExcerpt(title, entryFile) {
+function renderEntryExcerpt(
+  title: string,
+  entryFile: { path: string; exists: boolean; excerpt: string | null },
+): string[] {
   if (!entryFile.exists || !entryFile.excerpt) {
     return [`## ${title}`, "", "- Not found in the target repository."];
   }
@@ -31,11 +58,11 @@ function renderEntryExcerpt(title, entryFile) {
     "",
     "```md",
     entryFile.excerpt.trimEnd(),
-    "```"
+    "```",
   ];
 }
 
-function createClaudeSystemPrompt(bundle) {
+function createClaudeSystemPrompt(bundle: AdapterBaseBundle): string {
   return ensureTrailingNewline(
     [
       "# Claude Code System Prompt",
@@ -51,8 +78,8 @@ function createClaudeSystemPrompt(bundle) {
       "",
       "## Read First",
       "",
-      `- Load \`${bundle.entry.agentEntry.path}\` as the repository entrypoint.`,
-      `- Load \`${bundle.entry.currentContext.path}\` as the mutable execution context.`,
+      `- Load \`${bundle.entry?.agentEntry.path ?? "AGENTS.md"}\` as the repository entrypoint.`,
+      `- Load \`${bundle.entry?.currentContext.path ?? ".repo-ai-governor/context/current-context.md"}\` as the mutable execution context.`,
       "",
       "## Workflow Expectations",
       "",
@@ -78,12 +105,12 @@ function createClaudeSystemPrompt(bundle) {
       "- Keep workflow order unless a human explicitly changes it.",
       "- Update checklist and tasks.csv for each execution record.",
       "- Use status-prefixed code review filenames and append verify results into the same review file.",
-      "- Prefer direct file edits and verifiable command outputs over speculative summaries."
-    ].join("\n")
+      "- Prefer direct file edits and verifiable command outputs over speculative summaries.",
+    ].join("\n"),
   );
 }
 
-function createClaudeTaskPrompt(bundle) {
+function createClaudeTaskPrompt(bundle: AdapterBaseBundle): string {
   return ensureTrailingNewline(
     [
       "# Claude Code Task Prompt",
@@ -101,12 +128,12 @@ function createClaudeTaskPrompt(bundle) {
       `- ${bundle.artifacts.planFile}`,
       `- ${bundle.artifacts.checklistFile}`,
       `- ${bundle.artifacts.taskCsvFile}`,
-      `- ${bundle.artifacts.codeReviewRoot}`
-    ].join("\n")
+      `- ${bundle.artifacts.codeReviewRoot}`,
+    ].join("\n"),
   );
 }
 
-function createMarkdownBundle(bundle) {
+function createMarkdownBundle(bundle: ClaudeCodeAdapterBundle): string {
   return ensureTrailingNewline(
     [
       "# Claude Code Governance Bundle",
@@ -130,9 +157,17 @@ function createMarkdownBundle(bundle) {
       "",
       ...renderSlotLines(bundle),
       "",
-      ...renderEntryExcerpt("AGENTS Entry Excerpt", bundle.entry.agentEntry),
+      ...renderEntryExcerpt("AGENTS Entry Excerpt", {
+        path: bundle.entry?.agentEntry.path ?? "AGENTS.md",
+        exists: bundle.entry?.agentEntry.exists ?? false,
+        excerpt: bundle.entry?.agentEntry.excerpt ?? null,
+      }),
       "",
-      ...renderEntryExcerpt("Current Context Excerpt", bundle.entry.currentContext),
+      ...renderEntryExcerpt("Current Context Excerpt", {
+        path: bundle.entry?.currentContext.path ?? ".repo-ai-governor/context/current-context.md",
+        exists: bundle.entry?.currentContext.exists ?? false,
+        excerpt: bundle.entry?.currentContext.excerpt ?? null,
+      }),
       "",
       "## Generated Files",
       "",
@@ -149,39 +184,43 @@ function createMarkdownBundle(bundle) {
       "",
       "```md",
       bundle.files.taskPrompt.content.trimEnd(),
-      "```"
-    ].join("\n")
+      "```",
+    ].join("\n"),
   );
 }
 
-export function buildClaudeCodeAdapterBundle(options = {}) {
+export function buildClaudeCodeAdapterBundle(
+  options: BuildClaudeCodeAdapterBundleOptions = {},
+): ClaudeCodeAdapterBundle {
   const { bundle } = buildBaseAdapterBundle({
     ...options,
     adapterPreset: ADAPTER_PRESETS["claude-code"],
-    includeEntryFiles: true
+    includeEntryFiles: true,
   });
 
-  const enrichedBundle = {
+  const enrichedBundle: ClaudeCodeAdapterBundle = {
     ...bundle,
     files: {
       systemPrompt: {
         path: ".repo-ai-governor/templates/claude-code-system.prompt.md",
-        content: createClaudeSystemPrompt(bundle)
+        content: createClaudeSystemPrompt(bundle),
       },
       taskPrompt: {
         path: ".repo-ai-governor/templates/claude-code-task.prompt.md",
-        content: createClaudeTaskPrompt(bundle)
-      }
-    }
+        content: createClaudeTaskPrompt(bundle),
+      },
+    },
+    prompt: "",
   };
 
-  return {
-    ...enrichedBundle,
-    prompt: createMarkdownBundle(enrichedBundle)
-  };
+  enrichedBundle.prompt = createMarkdownBundle(enrichedBundle);
+  return enrichedBundle;
 }
 
-export function renderClaudeCodeAdapterBundle(bundle, format = "markdown") {
+export function renderClaudeCodeAdapterBundle(
+  bundle: ClaudeCodeAdapterBundle,
+  format: "markdown" | "json" | "system-prompt" | "task-prompt" = "markdown",
+): string {
   if (format === "json") {
     return `${JSON.stringify(bundle, null, 2)}\n`;
   }

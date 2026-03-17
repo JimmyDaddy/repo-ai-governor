@@ -1,33 +1,57 @@
 import { ADAPTER_PRESETS } from "./adapter-model.js";
-import { buildBaseAdapterBundle, ensureTrailingNewline } from "./bundle-shared.js";
+import {
+  type AdapterBaseBundle,
+  type BuildBaseAdapterBundleOptions,
+  buildBaseAdapterBundle,
+  ensureTrailingNewline,
+} from "./bundle-shared.js";
 
-function renderWorkflowLines(bundle) {
+type BuildGitHubCopilotAdapterBundleOptions = Omit<
+  BuildBaseAdapterBundleOptions,
+  "adapterPreset" | "includeRepositoryReferences"
+>;
+
+export type GitHubCopilotAdapterBundle = AdapterBaseBundle & {
+  files: {
+    ideInstructions: {
+      path: string;
+      content: string;
+    };
+    cliPrompt: {
+      path: string;
+      content: string;
+    };
+  };
+  prompt: string;
+};
+
+function renderWorkflowLines(bundle: AdapterBaseBundle): string[] {
   return bundle.workflow.selectedStages.map((stageId) => `- ${stageId}`);
 }
 
-function renderStandardsLines(bundle) {
-  return bundle.standards.rules.map((rule) => `- ${rule.instruction}`);
+function renderStandardsLines(bundle: AdapterBaseBundle): string[] {
+  return bundle.standards.rules.map((rule) => `- ${rule.instruction ?? ""}`);
 }
 
-function renderSlotLines(bundle) {
+function renderSlotLines(bundle: AdapterBaseBundle): string[] {
   if (bundle.slots.active.length === 0) {
     return ["- No active slots matched the current GitHub Copilot context."];
   }
 
   return bundle.slots.active.map(
-    (slot) => `- ${slot.id}: slotType=${slot.slotType}, promptKey=${slot.promptKey ?? "none"}`
+    (slot) => `- ${slot.id}: slotType=${slot.slotType}, promptKey=${slot.promptKey ?? "none"}`,
   );
 }
 
-function createCopilotInstructions(bundle) {
+function createCopilotInstructions(bundle: AdapterBaseBundle): string {
   return ensureTrailingNewline(
     [
       "# GitHub Copilot Instructions",
       "",
       "## Read First",
       "",
-      `- Read \`${bundle.references.agentEntryPath}\` before acting.`,
-      `- Read \`${bundle.references.currentContextPath}\` before updating sprint artifacts.`,
+      `- Read \`${bundle.references?.agentEntryPath ?? "AGENTS.md"}\` before acting.`,
+      `- Read \`${bundle.references?.currentContextPath ?? ".repo-ai-governor/context/current-context.md"}\` before updating sprint artifacts.`,
       "",
       "## Current Task Context",
       "",
@@ -60,12 +84,12 @@ function createCopilotInstructions(bundle) {
       "",
       "- Keep checklist and tasks.csv in sync after each execution record.",
       "- Write code review files with status-prefixed names.",
-      "- Preserve workflow order unless a human explicitly redirects the task."
-    ].join("\n")
+      "- Preserve workflow order unless a human explicitly redirects the task.",
+    ].join("\n"),
   );
 }
 
-function createCopilotCliPrompt(bundle) {
+function createCopilotCliPrompt(bundle: AdapterBaseBundle): string {
   return ensureTrailingNewline(
     [
       "# GitHub Copilot CLI Prompt",
@@ -89,13 +113,13 @@ function createCopilotCliPrompt(bundle) {
       `- ${bundle.artifacts.codeReviewRoot}`,
       "",
       "Before editing, read these repository entry files:",
-      `- ${bundle.references.agentEntryPath}`,
-      `- ${bundle.references.currentContextPath}`
-    ].join("\n")
+      `- ${bundle.references?.agentEntryPath ?? "AGENTS.md"}`,
+      `- ${bundle.references?.currentContextPath ?? ".repo-ai-governor/context/current-context.md"}`,
+    ].join("\n"),
   );
 }
 
-function createMarkdownBundle(bundle) {
+function createMarkdownBundle(bundle: GitHubCopilotAdapterBundle): string {
   return ensureTrailingNewline(
     [
       "# GitHub Copilot Governance Bundle",
@@ -109,8 +133,8 @@ function createMarkdownBundle(bundle) {
       "",
       "## Recommended Files",
       "",
-      `- AGENTS: \`${bundle.references.agentEntryPath}\``,
-      `- Current Context: \`${bundle.references.currentContextPath}\``,
+      `- AGENTS: \`${bundle.references?.agentEntryPath ?? "AGENTS.md"}\``,
+      `- Current Context: \`${bundle.references?.currentContextPath ?? ".repo-ai-governor/context/current-context.md"}\``,
       `- IDE Instructions Output: \`${bundle.files.ideInstructions.path}\``,
       `- CLI Prompt Output: \`${bundle.files.cliPrompt.path}\``,
       "",
@@ -136,39 +160,43 @@ function createMarkdownBundle(bundle) {
       "",
       "```md",
       bundle.files.cliPrompt.content.trimEnd(),
-      "```"
-    ].join("\n")
+      "```",
+    ].join("\n"),
   );
 }
 
-export function buildGitHubCopilotAdapterBundle(options = {}) {
+export function buildGitHubCopilotAdapterBundle(
+  options: BuildGitHubCopilotAdapterBundleOptions = {},
+): GitHubCopilotAdapterBundle {
   const { bundle } = buildBaseAdapterBundle({
     ...options,
     adapterPreset: ADAPTER_PRESETS["github-copilot"],
-    includeRepositoryReferences: true
+    includeRepositoryReferences: true,
   });
 
-  const enrichedBundle = {
+  const enrichedBundle: GitHubCopilotAdapterBundle = {
     ...bundle,
     files: {
       ideInstructions: {
         path: ".github/copilot-instructions.md",
-        content: createCopilotInstructions(bundle)
+        content: createCopilotInstructions(bundle),
       },
       cliPrompt: {
         path: ".repo-ai-governor/templates/github-copilot-cli.prompt.md",
-        content: createCopilotCliPrompt(bundle)
-      }
-    }
+        content: createCopilotCliPrompt(bundle),
+      },
+    },
+    prompt: "",
   };
 
-  return {
-    ...enrichedBundle,
-    prompt: createMarkdownBundle(enrichedBundle)
-  };
+  enrichedBundle.prompt = createMarkdownBundle(enrichedBundle);
+  return enrichedBundle;
 }
 
-export function renderGitHubCopilotAdapterBundle(bundle, format = "markdown") {
+export function renderGitHubCopilotAdapterBundle(
+  bundle: GitHubCopilotAdapterBundle,
+  format: "markdown" | "json" | "copilot-instructions" | "copilot-cli-prompt" = "markdown",
+): string {
   if (format === "json") {
     return `${JSON.stringify(bundle, null, 2)}\n`;
   }

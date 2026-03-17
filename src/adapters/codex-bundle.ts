@@ -1,13 +1,28 @@
 import { ADAPTER_PRESETS } from "./adapter-model.js";
-import { buildBaseAdapterBundle, ensureTrailingNewline } from "./bundle-shared.js";
+import {
+  type AdapterBaseBundle,
+  type BuildBaseAdapterBundleOptions,
+  buildBaseAdapterBundle,
+  ensureTrailingNewline,
+} from "./bundle-shared.js";
 
-function createCodexPrompt(bundle) {
-  const standardsLines = bundle.standards.rules.map((rule) => `- ${rule.instruction}`);
+type BuildCodexAdapterBundleOptions = Omit<
+  BuildBaseAdapterBundleOptions,
+  "adapterPreset" | "includeEntryFiles"
+>;
+
+export type CodexAdapterBundle = AdapterBaseBundle & {
+  prompt: string;
+};
+
+function createCodexPrompt(bundle: AdapterBaseBundle): string {
+  const standardsLines = bundle.standards.rules.map((rule) => `- ${rule.instruction ?? ""}`);
   const slotLines =
     bundle.slots.active.length > 0
       ? bundle.slots.active.map((slot) => `- ${slot.id}: promptKey=${slot.promptKey ?? "none"}`)
       : ["- No active slots matched the current Codex bundle context."];
   const workflowLines = bundle.workflow.selectedStages.map((stageId) => `- ${stageId}`);
+  const entry = bundle.entry;
 
   return ensureTrailingNewline(
     [
@@ -22,8 +37,8 @@ function createCodexPrompt(bundle) {
       "",
       "## Entry Files",
       "",
-      `- AGENTS: \`${bundle.entry.agentEntry.path}\``,
-      `- Current Context: \`${bundle.entry.currentContext.path}\``,
+      `- AGENTS: \`${entry?.agentEntry.path ?? "AGENTS.md"}\``,
+      `- Current Context: \`${entry?.currentContext.path ?? ".repo-ai-governor/context/current-context.md"}\``,
       "",
       "## Workflow",
       "",
@@ -48,25 +63,30 @@ function createCodexPrompt(bundle) {
       `- Plan: \`${bundle.artifacts.planFile}\``,
       `- Checklist: \`${bundle.artifacts.checklistFile}\``,
       `- Tasks CSV: \`${bundle.artifacts.taskCsvFile}\``,
-      `- Code Review Dir: \`${bundle.artifacts.codeReviewRoot}\``
-    ].join("\n")
+      `- Code Review Dir: \`${bundle.artifacts.codeReviewRoot}\``,
+    ].join("\n"),
   );
 }
 
-export function buildCodexAdapterBundle(options = {}) {
+export function buildCodexAdapterBundle(
+  options: BuildCodexAdapterBundleOptions = {},
+): CodexAdapterBundle {
   const { bundle } = buildBaseAdapterBundle({
     ...options,
     adapterPreset: ADAPTER_PRESETS.codex,
-    includeEntryFiles: true
+    includeEntryFiles: true,
   });
 
   return {
     ...bundle,
-    prompt: createCodexPrompt(bundle)
+    prompt: createCodexPrompt(bundle),
   };
 }
 
-export function renderCodexAdapterBundle(bundle, format = "markdown") {
+export function renderCodexAdapterBundle(
+  bundle: CodexAdapterBundle,
+  format: "markdown" | "json" = "markdown",
+): string {
   if (format === "json") {
     return `${JSON.stringify(bundle, null, 2)}\n`;
   }

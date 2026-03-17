@@ -1,16 +1,39 @@
 import fs from "node:fs";
 import path from "node:path";
-import { DEFAULT_SKILL_INSTALL_TARGETS, SUPPORTED_SKILL_SURFACES } from "./package-layout.js";
+import {
+  DEFAULT_SKILL_INSTALL_TARGETS,
+  SUPPORTED_SKILL_SURFACES,
+  type SkillInstallMode,
+  type SkillSurface,
+} from "./package-layout.js";
 
-export const SUPPORTED_SKILL_SCOPES = Object.freeze(["repo", "user"]);
+export const SUPPORTED_SKILL_SCOPES = Object.freeze(["repo", "user"] as const);
 
-function expandTargetPattern(targetPattern, env) {
+export type SkillScope = (typeof SUPPORTED_SKILL_SCOPES)[number];
+
+export type ResolveSkillInstallTargetOptions = {
+  cwd?: string;
+  env?: NodeJS.ProcessEnv;
+  surface?: string;
+  scope?: string;
+  targetPath?: string;
+};
+
+export type ResolvedSkillInstallTarget = {
+  surface: SkillSurface;
+  scope: SkillScope;
+  mode: SkillInstallMode;
+  targetPath: string;
+  configuredPath: string;
+};
+
+function expandTargetPattern(targetPattern: string, env: NodeJS.ProcessEnv): string {
   return targetPattern.replace(/\$([A-Z_]+)/g, (_match, variableName) => {
     const value = env[variableName];
 
     if (!value) {
       throw new TypeError(
-        `Missing environment variable required for skill install target: ${variableName}`
+        `Missing environment variable required for skill install target: ${variableName}`,
       );
     }
 
@@ -18,23 +41,25 @@ function expandTargetPattern(targetPattern, env) {
   });
 }
 
-export function validateSkillSurface(surface) {
-  if (!SUPPORTED_SKILL_SURFACES.includes(surface)) {
+export function validateSkillSurface(surface: unknown): SkillSurface {
+  if (typeof surface !== "string" || !SUPPORTED_SKILL_SURFACES.includes(surface as SkillSurface)) {
     throw new TypeError(`Unsupported skill surface: ${surface}`);
   }
 
-  return surface;
+  return surface as SkillSurface;
 }
 
-export function validateSkillScope(scope = "repo") {
-  if (!SUPPORTED_SKILL_SCOPES.includes(scope)) {
+export function validateSkillScope(scope: unknown = "repo"): SkillScope {
+  if (typeof scope !== "string" || !SUPPORTED_SKILL_SCOPES.includes(scope as SkillScope)) {
     throw new TypeError(`Unsupported skill scope: ${scope}`);
   }
 
-  return scope;
+  return scope as SkillScope;
 }
 
-export function resolveSkillInstallTarget(options = {}) {
+export function resolveSkillInstallTarget(
+  options: ResolveSkillInstallTargetOptions = {},
+): ResolvedSkillInstallTarget {
   const cwd = path.resolve(options.cwd ?? process.cwd());
   const env = options.env ?? process.env;
   const surface = validateSkillSurface(options.surface);
@@ -47,7 +72,7 @@ export function resolveSkillInstallTarget(options = {}) {
       scope,
       mode: installTarget.mode,
       targetPath: path.resolve(cwd, options.targetPath),
-      configuredPath: options.targetPath
+      configuredPath: options.targetPath,
     };
   }
 
@@ -62,11 +87,11 @@ export function resolveSkillInstallTarget(options = {}) {
     scope,
     mode: installTarget.mode,
     targetPath,
-    configuredPath
+    configuredPath,
   };
 }
 
-export function listInstalledSkillRoots(targetPath) {
+export function listInstalledSkillRoots(targetPath: string): string[] {
   if (!fs.existsSync(targetPath) || !fs.statSync(targetPath).isDirectory()) {
     return [];
   }
