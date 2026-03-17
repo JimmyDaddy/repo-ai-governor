@@ -1,7 +1,7 @@
 # Automation V1 Sprint 001
 
-- Status: active
-- Date: 2026-03-16
+- Status: done
+- Date: 2026-03-17
 - Project: `automation-v1`
 - Sprint: `sprint-001`
 
@@ -26,9 +26,16 @@
 - [tasks/TK-956.md](./tasks/TK-956.md): 编排解释输出任务卡。
 - [tasks/TK-957.md](./tasks/TK-957.md): 流程配置校验与解释入口任务卡。
 - [code-review/README.md](./code-review/README.md): 当前 sprint 的 CR 目录说明。
+- [code-review/verified_review_tk-951-design-automation-controller-model.md](./code-review/verified_review_tk-951-design-automation-controller-model.md): `TK-951` 的已复核 CR 记录。
 - [code-review/verified_review_tk-952-implement-run-command.md](./code-review/verified_review_tk-952-implement-run-command.md): `TK-952` 的已复核 CR 记录。
+- [code-review/verified_review_tk-953-implement-permission-risk-gates.md](./code-review/verified_review_tk-953-implement-permission-risk-gates.md): `TK-953` 的已复核 CR 记录。
+- [code-review/verified_review_tk-954-implement-audit-and-recovery-checkpoints.md](./code-review/verified_review_tk-954-implement-audit-and-recovery-checkpoints.md): `TK-954` 的已复核 CR 记录。
+- [code-review/verified_review_tk-955-build-multi-ai-automation-smoke-gate.md](./code-review/verified_review_tk-955-build-multi-ai-automation-smoke-gate.md): `TK-955` 的已复核 CR 记录。
+- [code-review/verified_review_tk-956-expose-orchestration-process-summary.md](./code-review/verified_review_tk-956-expose-orchestration-process-summary.md): `TK-956` 的已复核 CR 记录。
+- [code-review/verified_review_tk-957-add-process-explain-validate-entrypoints.md](./code-review/verified_review_tk-957-add-process-explain-validate-entrypoints.md): `TK-957` 的已复核 CR 记录。
 
 ## Notes
 
 1. 该 sprint 以“安全可控”为第一优先级，不直接追求完全无人值守。
 2. 所有任务执行记录需同步追加到 `checklist.md` 与 `tasks.csv`。
+3. `TK-951` 至 `TK-957` 已全部完成，`automation-v1 / sprint-001` 正式收口。

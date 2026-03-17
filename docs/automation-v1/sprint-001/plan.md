@@ -1,6 +1,6 @@
 # Automation V1 Sprint 001 Plan
 
-- Status: active
+- Status: done
 - Date: 2026-03-17
 - Project: `automation-v1`
 - Sprint: `sprint-001`
@@ -71,6 +71,12 @@
 5. `run` 输出可解释当前流程来源（默认/自定义）和生效编排配置。
 6. sprint 的 checklist、CSV、任务卡和 CR 目录结构保持同步。
 
+## Closure
+
+1. `TK-951` 至 `TK-957` 已全部完成，任务状态与执行台账已同步。
+2. `npm run check` 与 `npm run smoke:automation` 均通过，`codex / claude-code / github-copilot / multi-ai-dev-review` 场景验收通过。
+3. 当前 stream 已收口并切换到 `idle`，后续如继续推进需新建 `automation-v1` 下一轮 sprint。
+
 ## Output Paths
 
 - `docs/automation-v1/index.md`
@@ -90,4 +96,11 @@
 - `docs/automation-v1/sprint-001/tasks/TK-955.md`
 - `docs/automation-v1/sprint-001/tasks/TK-956.md`
 - `docs/automation-v1/sprint-001/tasks/TK-957.md`
-- `docs/automation-v1/sprint-001/code-review/`
+- `docs/automation-v1/sprint-001/code-review/README.md`
+- `docs/automation-v1/sprint-001/code-review/verified_review_tk-951-design-automation-controller-model.md`
+- `docs/automation-v1/sprint-001/code-review/verified_review_tk-952-implement-run-command.md`
+- `docs/automation-v1/sprint-001/code-review/verified_review_tk-953-implement-permission-risk-gates.md`
+- `docs/automation-v1/sprint-001/code-review/verified_review_tk-954-implement-audit-and-recovery-checkpoints.md`
+- `docs/automation-v1/sprint-001/code-review/verified_review_tk-955-build-multi-ai-automation-smoke-gate.md`
+- `docs/automation-v1/sprint-001/code-review/verified_review_tk-956-expose-orchestration-process-summary.md`
+- `docs/automation-v1/sprint-001/code-review/verified_review_tk-957-add-process-explain-validate-entrypoints.md`
