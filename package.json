@@ -14,23 +14,24 @@
   },
   "homepage": "https://github.com/JimmyDaddy/repo-ai-governor",
   "bin": {
-    "repo-ai-governor": "./bin/repo-ai-governor.js"
+    "repo-ai-governor": "./dist/bin/repo-ai-governor.js"
   },
-  "files": ["bin", "src", "skills", "scripts/examples"],
+  "files": ["bin", "dist", "src", "skills", "scripts/examples"],
   "scripts": {
     "start": "node ./bin/repo-ai-governor.js",
     "help": "node ./bin/repo-ai-governor.js --help",
     "test": "vitest run",
     "check:imports": "node ./scripts/governance/check-esm-import-specifiers.js",
     "check:code-standards": "node ./scripts/governance/check-code-standards.js --standards code_standards.md",
-    "check": "npm run check:code-standards",
+    "check": "npm run build && npm run check:code-standards",
+    "ci:quality": "npm run typecheck && npm run test && npm run check",
     "smoke:automation": "bash ./scripts/ci/run-automation-smoke.sh",
     "release": "release-it",
     "release:dry-run": "release-it --dry-run",
     "release:check": "node ./scripts/release/check-release-ready.js",
     "release:notes": "node ./scripts/release/render-release-notes.js",
     "release:verify-local": "node ./scripts/release/verify-local-distribution.js",
-    "release:candidate": "npm run check && npm run release:check && npm run release:verify-local",
+    "release:candidate": "npm run ci:quality && npm run release:check && npm run release:verify-local",
     "release:ga-check": "npm run release:candidate",
     "release:pack": "npm pack --json",
     "format": "biome format --write .",

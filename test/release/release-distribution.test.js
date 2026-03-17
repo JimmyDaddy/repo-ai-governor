@@ -29,9 +29,11 @@ test("release readiness script validates package metadata and dry-run tarball co
   assert.equal(payload.releaseItConfigExists, true);
   assert.equal(payload.gettingStartedScriptExists, true);
   assert.ok(Array.isArray(payload.requiredChecks));
+  assert.ok(payload.requiredChecks.includes("npm run ci:quality"));
   assert.ok(payload.requiredChecks.includes("npm run release:verify-local"));
-  assert.ok(payload.bundledFiles.includes("bin/repo-ai-governor.js"));
-  assert.ok(payload.bundledFiles.some((entry) => entry.startsWith("src/")));
+  assert.equal(payload.binEntry, "./dist/bin/repo-ai-governor.js");
+  assert.ok(payload.bundledFiles.includes("dist/bin/repo-ai-governor.js"));
+  assert.ok(payload.bundledFiles.some((entry) => entry.startsWith("dist/src/")));
 });
 
 test("local distribution verification packs installs and executes the CLI", () => {
@@ -48,5 +50,7 @@ test("local distribution verification packs installs and executes the CLI", () =
   assert.equal(payload.status, "pass");
   assert.equal(payload.checks.help, true);
   assert.equal(payload.checks.version, true);
+  assert.equal(payload.checks.distEntrypoint, true);
+  assert.equal(payload.binEntry, "./dist/bin/repo-ai-governor.js");
   assert.match(payload.tarball, /\.tgz$/);
 });

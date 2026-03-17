@@ -70,6 +70,7 @@ cat > "$INSTALL_DIR/package.json" <<'EOF'
 }
 EOF
 
+"$NPM_BIN" run --prefix "$ROOT_DIR" build >/dev/null
 PACK_JSON="$("$NPM_BIN" pack --json --silent --prefix "$ROOT_DIR" "$ROOT_DIR")"
 TARBALL_FILENAME="$("$NODE_BIN" --input-type=module -e 'const payload = JSON.parse(process.argv[1]); const latest = Array.isArray(payload) ? payload.at(-1) : payload; process.stdout.write(latest.filename);' "$PACK_JSON")"
 TARBALL_PATH="$ROOT_DIR/$TARBALL_FILENAME"

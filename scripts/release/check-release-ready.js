@@ -72,12 +72,13 @@ function main() {
   const gettingStartedScriptExists = fs.existsSync(gettingStartedScriptPath);
   const publishAccess = packageJson.publishConfig?.access ?? null;
   const publishProvenance = packageJson.publishConfig?.provenance ?? null;
+  const binEntry = packageJson.bin?.["repo-ai-governor"] ?? null;
   const repositoryUrl =
     typeof packageJson.repository === "string"
       ? packageJson.repository
       : packageJson.repository?.url ?? null;
   const requiredChecks = [
-    "npm run check",
+    "npm run ci:quality",
     "npm run release:check",
     "npm run release:verify-local"
   ];
@@ -89,8 +90,14 @@ function main() {
   ];
 
   assertCondition(packageJson.private === false, "package.json must set private=false.", failures);
-  assertCondition(typeof packageJson.bin?.["repo-ai-governor"] === "string", "CLI bin entry is required.", failures);
+  assertCondition(typeof binEntry === "string", "CLI bin entry is required.", failures);
+  assertCondition(
+    binEntry === "./dist/bin/repo-ai-governor.js",
+    "CLI bin entry must target ./dist/bin/repo-ai-governor.js.",
+    failures
+  );
   assertCondition(Array.isArray(packageJson.files) && packageJson.files.length > 0, "package.json files whitelist is required.", failures);
+  assertCondition(typeof packageJson.scripts?.["ci:quality"] === "string", "ci:quality script is required.", failures);
   assertCondition(typeof packageJson.scripts?.release === "string", "release script is required.", failures);
   assertCondition(typeof packageJson.scripts?.["release:verify-local"] === "string", "release:verify-local script is required.", failures);
   assertCondition(typeof packageJson.scripts?.["release:candidate"] === "string", "release:candidate script is required.", failures);
@@ -109,8 +116,16 @@ function main() {
   assertCondition(releaseItConfigExists, ".release-it.json is required for GA release readiness.", failures);
   assertCondition(releaseNotesScriptExists, "scripts/release/render-release-notes.js is required for GA release readiness.", failures);
   assertCondition(gettingStartedScriptExists, "scripts/release/run-getting-started-check.sh is required for GA release readiness.", failures);
-  assertCondition(bundledFiles.includes("bin/repo-ai-governor.js"), "Packed tarball must include bin/repo-ai-governor.js.", failures);
-  assertCondition(bundledFiles.some((entry) => entry.startsWith("src/")), "Packed tarball must include src/ files.", failures);
+  assertCondition(
+    bundledFiles.includes("dist/bin/repo-ai-governor.js"),
+    "Packed tarball must include dist/bin/repo-ai-governor.js.",
+    failures
+  );
+  assertCondition(
+    bundledFiles.some((entry) => entry.startsWith("dist/src/")),
+    "Packed tarball must include dist/src/ files.",
+    failures
+  );
 
   const payload = {
     status: failures.length === 0 ? "pass" : "fail",
@@ -120,6 +135,7 @@ function main() {
     repositoryUrl,
     publishAccess,
     publishProvenance,
+    binEntry,
     changelogExists,
     changelogZhExists,
     readmeExists,
@@ -147,6 +163,7 @@ function main() {
         `repository=${payload.repositoryUrl}`,
         `publishAccess=${payload.publishAccess}`,
         `publishProvenance=${payload.publishProvenance}`,
+        `binEntry=${payload.binEntry}`,
         `changelog=${payload.changelogExists}`,
         `changelogZh=${payload.changelogZhExists}`,
         `readme=${payload.readmeExists}`,
