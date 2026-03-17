@@ -16,12 +16,7 @@
   "bin": {
     "repo-ai-governor": "./bin/repo-ai-governor.js"
   },
-  "files": [
-    "bin",
-    "src",
-    "skills",
-    "scripts/examples"
-  ],
+  "files": ["bin", "src", "skills", "scripts/examples"],
   "scripts": {
     "start": "node ./bin/repo-ai-governor.js",
     "help": "node ./bin/repo-ai-governor.js --help",
@@ -37,7 +32,10 @@
     "release:verify-local": "node ./scripts/release/verify-local-distribution.js",
     "release:candidate": "npm run check && npm run release:check && npm run release:verify-local",
     "release:ga-check": "npm run release:candidate",
-    "release:pack": "npm pack --json"
+    "release:pack": "npm pack --json",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "lint": "biome check ."
   },
   "engines": {
     "node": ">=18.0.0"
@@ -53,6 +51,7 @@
     "yaml": "^2.8.2"
   },
   "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
     "@release-it/conventional-changelog": "^9.0.4",
     "release-it": "^17.11.0"
   }
