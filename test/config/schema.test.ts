@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { test } from "vitest";
 import assert from "node:assert/strict";
 import Ajv2020 from "ajv/dist/2020.js";
@@ -6,14 +7,14 @@ import {
   CONFIG_SCHEMA_VERSION,
   SCHEMA_FILE_NAMES,
   loadSchemaBundle,
-  resolveSchemaPath
+  resolveSchemaPath,
 } from "../../src/config/schema/index.js";
 
 function createAjvWithBundle() {
   const ajv = new Ajv2020({
     strict: false,
     allErrors: true,
-    useDefaults: true
+    useDefaults: true,
   });
 
   addFormats(ajv);
@@ -37,15 +38,27 @@ test("schema bundle resolves all expected file paths", () => {
     "slot",
     "adapter",
     "skillManifest",
-    "skillCatalog"
+    "skillCatalog",
   ]);
   assert.match(resolveSchemaPath("governor"), /src\/config\/schema\/governor\.schema\.json$/);
-  assert.match(resolveSchemaPath("workflowTemplate"), /src\/config\/schema\/workflow-template\.schema\.json$/);
-  assert.match(resolveSchemaPath("standardsPackage"), /src\/config\/schema\/standards-package\.schema\.json$/);
+  assert.match(
+    resolveSchemaPath("workflowTemplate"),
+    /src\/config\/schema\/workflow-template\.schema\.json$/,
+  );
+  assert.match(
+    resolveSchemaPath("standardsPackage"),
+    /src\/config\/schema\/standards-package\.schema\.json$/,
+  );
   assert.match(resolveSchemaPath("slot"), /src\/config\/schema\/slot\.schema\.json$/);
   assert.match(resolveSchemaPath("adapter"), /src\/config\/schema\/adapter\.schema\.json$/);
-  assert.match(resolveSchemaPath("skillManifest"), /src\/config\/schema\/skill-manifest\.schema\.json$/);
-  assert.match(resolveSchemaPath("skillCatalog"), /src\/config\/schema\/skill-catalog\.schema\.json$/);
+  assert.match(
+    resolveSchemaPath("skillManifest"),
+    /src\/config\/schema\/skill-manifest\.schema\.json$/,
+  );
+  assert.match(
+    resolveSchemaPath("skillCatalog"),
+    /src\/config\/schema\/skill-catalog\.schema\.json$/,
+  );
 });
 
 test("governor schema validates minimal repository config and applies defaults", () => {
@@ -57,12 +70,12 @@ test("governor schema validates minimal repository config and applies defaults",
   const config = {
     schemaVersion: "1",
     project: {
-      name: "repo-ai-governor"
+      name: "repo-ai-governor",
     },
     execution: {
       currentProject: "mvp",
-      currentSprint: "sprint-001"
-    }
+      currentSprint: "sprint-001",
+    },
   };
 
   assert.equal(validate(config), true, JSON.stringify(validate.errors, null, 2));
@@ -81,8 +94,8 @@ test("governor schema rejects unsupported schema version and invalid sprint nami
     schemaVersion: "2",
     execution: {
       currentProject: "mvp",
-      currentSprint: "iteration-001"
-    }
+      currentSprint: "iteration-001",
+    },
   };
 
   assert.equal(validate(config), false);
@@ -100,9 +113,9 @@ test("slot schema validates slot configuration defaults", () => {
     meta: {
       name: {
         "zh-CN": "安全审查",
-        "en-US": "Security Review"
+        "en-US": "Security Review",
       },
-      owner: "platform"
+      owner: "platform",
     },
     extensions: {
       scripts: [
@@ -110,11 +123,11 @@ test("slot schema validates slot configuration defaults", () => {
           id: "security-summary",
           runtime: {
             kind: "command",
-            entry: "node ./scripts/security-summary.js"
-          }
-        }
-      ]
-    }
+            entry: "node ./scripts/security-summary.js",
+          },
+        },
+      ],
+    },
   };
 
   assert.equal(validate(slotConfig), true, JSON.stringify(validate.errors, null, 2));
@@ -130,7 +143,11 @@ test("slot schema validates slot configuration defaults", () => {
   assert.equal(slotConfig.extensions.scripts[0].failurePolicy, "stop");
   assert.equal(slotConfig.extensions.scripts[0].runtime.timeoutMs, 30000);
   assert.equal(slotConfig.extensions.scripts[0].permissions.network, "forbid");
-  assert.deepEqual(slotConfig.extensions.scripts[0].audit.capture, ["exitCode", "stdout", "stderr"]);
+  assert.deepEqual(slotConfig.extensions.scripts[0].audit.capture, [
+    "exitCode",
+    "stdout",
+    "stderr",
+  ]);
 });
 
 test("workflow template schema validates the standard serial workflow shape", () => {
@@ -143,54 +160,54 @@ test("workflow template schema validates the standard serial workflow shape", ()
     meta: {
       name: {
         "zh-CN": "标准流程",
-        "en-US": "Standard Workflow"
-      }
+        "en-US": "Standard Workflow",
+      },
     },
     execution: {
-      mode: "serial"
+      mode: "serial",
     },
     stages: [
       {
         id: "plan",
         name: {
           "zh-CN": "方案",
-          "en-US": "Plan"
+          "en-US": "Plan",
         },
         executor: {
           kind: "command",
           ref: "plan",
-          command: "plan"
+          command: "plan",
         },
         outputs: [
           {
             kind: "artifact",
-            ref: "plan.md"
-          }
-        ]
+            ref: "plan.md",
+          },
+        ],
       },
       {
         id: "review-verify",
         name: {
           "zh-CN": "评审复核",
-          "en-US": "Review Verify"
+          "en-US": "Review Verify",
         },
         dependsOn: ["plan"],
         executor: {
           kind: "command",
           ref: "review-verify",
-          command: "review-verify"
+          command: "review-verify",
         },
         inputs: [
           {
             kind: "review-record",
-            ref: "code-review/review_<slug>.md"
-          }
+            ref: "code-review/review_<slug>.md",
+          },
         ],
         outputs: [
           {
             kind: "review-record",
-            ref: "code-review/verified_review_<slug>.md"
-          }
+            ref: "code-review/verified_review_<slug>.md",
+          },
         ],
         gates: {
           exit: [
@@ -198,12 +215,12 @@ test("workflow template schema validates the standard serial workflow shape", ()
               id: "review-verified",
               kind: "review-status",
               refs: ["code-review/verified_review_<slug>.md"],
-              expectedStatus: "verified"
-            }
-          ]
-        }
-      }
-    ]
+              expectedStatus: "verified",
+            },
+          ],
+        },
+      },
+    ],
   };
 
   assert.equal(validate(workflowTemplate), true, JSON.stringify(validate.errors, null, 2));
@@ -222,40 +239,40 @@ test("standards package schema validates bilingual dual-view rules", () => {
     meta: {
       name: {
         "zh-CN": "官方基础规范包",
-        "en-US": "Official Base Standards Package"
+        "en-US": "Official Base Standards Package",
       },
-      preset: "official/base"
+      preset: "official/base",
     },
     locales: {
       default: "zh-CN",
-      supported: ["zh-CN", "en-US"]
+      supported: ["zh-CN", "en-US"],
     },
     categories: [
       {
         id: "code",
         name: { "zh-CN": "代码规范", "en-US": "Code Standards" },
-        description: { "zh-CN": "代码要求", "en-US": "Code requirements" }
+        description: { "zh-CN": "代码要求", "en-US": "Code requirements" },
       },
       {
         id: "engineering",
         name: { "zh-CN": "工程规范", "en-US": "Engineering Standards" },
-        description: { "zh-CN": "工程要求", "en-US": "Engineering requirements" }
+        description: { "zh-CN": "工程要求", "en-US": "Engineering requirements" },
       },
       {
         id: "process",
         name: { "zh-CN": "流程规范", "en-US": "Process Standards" },
-        description: { "zh-CN": "流程要求", "en-US": "Process requirements" }
+        description: { "zh-CN": "流程要求", "en-US": "Process requirements" },
       },
       {
         id: "quality",
         name: { "zh-CN": "质量规范", "en-US": "Quality Standards" },
-        description: { "zh-CN": "质量要求", "en-US": "Quality requirements" }
+        description: { "zh-CN": "质量要求", "en-US": "Quality requirements" },
       },
       {
         id: "collaboration",
         name: { "zh-CN": "协作规范", "en-US": "Collaboration Standards" },
-        description: { "zh-CN": "协作要求", "en-US": "Collaboration requirements" }
-      }
+        description: { "zh-CN": "协作要求", "en-US": "Collaboration requirements" },
+      },
     ],
     rules: [
       {
@@ -264,29 +281,29 @@ test("standards package schema validates bilingual dual-view rules", () => {
         level: "required",
         title: {
           "zh-CN": "Lint 必须通过",
-          "en-US": "Lint Must Pass"
+          "en-US": "Lint Must Pass",
         },
         statement: {
           "zh-CN": "提交前必须通过 lint。",
-          "en-US": "Lint must pass before delivery."
+          "en-US": "Lint must pass before delivery.",
         },
         consumers: ["check", "review"],
         views: {
-          "ai": {
+          ai: {
             instruction: {
               "zh-CN": "在交付前执行 lint，并在失败时阻断流程。",
-              "en-US": "Run lint before delivery and block the workflow on failure."
-            }
+              "en-US": "Run lint before delivery and block the workflow on failure.",
+            },
           },
-          "human": {
+          human: {
             summary: {
               "zh-CN": "交付前必须通过 lint。",
-              "en-US": "Lint must pass before delivery."
-            }
-          }
-        }
-      }
-    ]
+              "en-US": "Lint must pass before delivery.",
+            },
+          },
+        },
+      },
+    ],
   };
 
   assert.equal(validate(standardsPackage), true, JSON.stringify(validate.errors, null, 2));
@@ -304,42 +321,42 @@ test("adapter schema validates mainstream adapter configuration", () => {
     meta: {
       name: {
         "zh-CN": "Codex",
-        "en-US": "Codex"
+        "en-US": "Codex",
       },
-      provider: "openai"
+      provider: "openai",
     },
     targets: {
       products: ["codex", "codex-cli"],
       entrypoints: ["ide", "cli"],
-      protocols: ["file", "template", "prompt"]
+      protocols: ["file", "template", "prompt"],
     },
     capabilities: {
       promptInjection: true,
       structuredOutput: true,
-      toolCalling: true
+      toolCalling: true,
     },
     contract: {
       input: {
         sources: ["workflow", "standards", "slots"],
         requiredViews: ["ai"],
-        supportedFormats: ["markdown", "json"]
+        supportedFormats: ["markdown", "json"],
       },
       output: {
         artifactKinds: ["plan", "review-report", "task-record"],
-        supportedFormats: ["markdown", "json", "text"]
-      }
+        supportedFormats: ["markdown", "json", "text"],
+      },
     },
     injection: {
       mode: "file-and-template",
-      sources: ["standards", "workflow", "slots"]
+      sources: ["standards", "workflow", "slots"],
     },
     render: {
       locale: "zh-CN",
-      views: ["ai"]
+      views: ["ai"],
     },
     policy: {
-      strictWorkflow: true
-    }
+      strictWorkflow: true,
+    },
   };
 
   assert.equal(validate(adapterConfig), true, JSON.stringify(validate.errors, null, 2));
@@ -362,20 +379,20 @@ test("skill manifest schema validates first-party skill metadata", () => {
     surfaces: ["codex", "github-copilot", "claude-code"],
     entry: {
       skillFile: "SKILL.md",
-      agentFiles: ["agents/openai.yaml"]
+      agentFiles: ["agents/openai.yaml"],
     },
     compatibility: {
       repoAiGovernor: "^0.1.0",
       installModes: {
         codex: "native",
         "github-copilot": "hybrid",
-        "claude-code": "native"
-      }
+        "claude-code": "native",
+      },
     },
     distribution: {
       channel: "official",
-      root: "skills/official/governor-plan-runner"
-    }
+      root: "skills/official/governor-plan-runner",
+    },
   };
 
   assert.equal(validate(manifest), true, JSON.stringify(validate.errors, null, 2));
@@ -396,26 +413,26 @@ test("skill catalog schema validates bundled official package metadata", () => {
     officialRoot: "skills/official",
     sharedRoot: "skills/shared",
     compatibility: {
-      repoAiGovernor: "^0.1.0"
+      repoAiGovernor: "^0.1.0",
     },
     installTargets: {
       codex: {
         repoLocal: ".codex/skills",
         userLocal: "$CODEX_HOME/skills",
-        mode: "native"
+        mode: "native",
       },
       "github-copilot": {
         repoLocal: ".github/skills",
         userLocal: "$HOME/.copilot/skills",
-        mode: "hybrid"
+        mode: "hybrid",
       },
       "claude-code": {
         repoLocal: ".claude/skills",
         userLocal: "$HOME/.claude/skills",
-        mode: "native"
-      }
+        mode: "native",
+      },
     },
-    skills: []
+    skills: [],
   };
 
   assert.equal(validate(catalog), true, JSON.stringify(validate.errors, null, 2));

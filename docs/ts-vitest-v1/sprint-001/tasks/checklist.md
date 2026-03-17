@@ -9,8 +9,9 @@
   - 执行记录：plan=修复迁移后门禁兼容问题，保证 `npm run check` 可继续作为交付 gate;result=已更新 `code_standards.md` 验证命令参数为 `--maxWorkers=1 --maxConcurrency=1`，避免 Vitest 不识别 `--test-concurrency`;verify=`npm run check`
   - 执行记录：review_delta=已完成 `TK-1002` 自检复核，CR 结果落盘为 `code-review/verified_review_tk-1002-adopt-vitest-test-baseline.md`;verify=`npm run typecheck && npm run build`
 
-- [ ] **TK-1003** 迁移基础模块与对应单测（试点批次）（负责人：Core｜优先级：P1｜截止：2026-03-25｜状态：todo）
-  - 执行记录：plan=优先迁移 `utils/config/schema/reporting` 等低风险模块与相关测试，验证迁移模式可复制;result=待执行;verify=待执行
+- [x] **TK-1003** 迁移基础模块与对应单测（试点批次）（负责人：Core｜优先级：P1｜截止：2026-03-25｜状态：done）
+  - 执行记录：plan=试点迁移 `utils/config/schema/reporting` 到 TypeScript，并同步迁移对应单测到 `.test.ts`，验证导入与构建兼容策略;result=已新增 `src/utils/common.ts`、`src/config/schema/{index,validator}.ts`、`src/reporting/{report-model,report-source}.ts`，并将 `test/utils/common.test.ts`、`test/config/schema.test.ts`、`test/reporting/report-model.test.ts` 迁移到 TS；当前采用过渡双轨（保留运行时 `.js` 文件）避免 `src` 直跑链路回归;verify=`npm run typecheck && npm test && npm run check`
+  - 执行记录：review_delta=已完成 `TK-1003` 自检复核，CR 结果落盘为 `code-review/verified_review_tk-1003-pilot-typescript-module-migration.md`;verify=`npx biome format --write src/utils/common.ts src/config/schema/index.ts src/config/schema/validator.ts src/reporting/report-model.ts src/reporting/report-source.ts test/utils/common.test.ts test/config/schema.test.ts test/reporting/report-model.test.ts`
 
 - [ ] **TK-1004** 对齐 CI/Gate 与发布入口的 TS/Vitest 约束（负责人：Release｜优先级：P1｜截止：2026-03-26｜状态：todo）
   - 执行记录：plan=更新 CI/test/check 流程与发布入口，确保不依赖源码 JS 即可完成构建、测试与打包验收;result=待执行;verify=待执行

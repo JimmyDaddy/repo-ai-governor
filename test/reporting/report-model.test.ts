@@ -13,27 +13,27 @@ test("buildUnifiedReport normalizes check payloads into a shared report shape", 
       status: "passed",
       summary: {
         passed: 3,
-        failed: 0
+        failed: 0,
       },
       selectedStageIds: ["plan", "breakdown", "self-check"],
       stages: [
         {
           id: "plan",
           status: "passed",
-          summary: "Plan structure satisfies the current governance rules."
-        }
-      ]
+          summary: "Plan structure satisfies the current governance rules.",
+        },
+      ],
     },
     standards: {
       preset: "official/base",
       totalRules: 7,
-      matchedRuleIds: ["process-plan-must-state-scope"]
+      matchedRuleIds: ["process-plan-must-state-scope"],
     },
     summary: {
       status: "warn",
       exitCode: 0,
       errors: 0,
-      warnings: 1
+      warnings: 1,
     },
     checks: [
       {
@@ -43,10 +43,10 @@ test("buildUnifiedReport normalizes check payloads into a shared report shape", 
         status: "warn",
         message: "Plan is missing one optional section.",
         target: "docs/demo/sprint-001/plan.md",
-        suggestion: "Restore the missing section."
-      }
+        suggestion: "Restore the missing section.",
+      },
     ],
-    reportFile: ".repo-ai-governor/reports/latest.json"
+    reportFile: ".repo-ai-governor/reports/latest.json",
   };
 
   const report = buildUnifiedReport(payload, { generatedAt: "2026-03-14T00:00:00.000Z" });
@@ -68,13 +68,13 @@ test("buildUnifiedReport supports review-style payloads with findings", () => {
     standards: {
       preset: "official/base",
       totalRules: 7,
-      matchedRuleIds: ["quality-verification-before-delivery"]
+      matchedRuleIds: ["quality-verification-before-delivery"],
     },
     summary: {
       status: "pass",
       exitCode: 0,
       errors: 0,
-      warnings: 0
+      warnings: 0,
     },
     findings: [
       {
@@ -83,10 +83,10 @@ test("buildUnifiedReport supports review-style payloads with findings", () => {
         severity: "info",
         status: "pass",
         message: "Source file has a matching test file.",
-        target: "src/example.js -> test/example.test.js"
-      }
+        target: "src/example.js -> test/example.test.js",
+      },
     ],
-    reviewFile: "docs/demo/sprint-001/code-review/review_example.md"
+    reviewFile: "docs/demo/sprint-001/code-review/review_example.md",
   };
 
   const report = buildUnifiedReport(payload, { generatedAt: "2026-03-14T00:00:00.000Z" });
@@ -107,7 +107,7 @@ test("renderUnifiedReport outputs summary markdown and json variants", () => {
         status: "fail",
         exitCode: 1,
         errors: 1,
-        warnings: 0
+        warnings: 0,
       },
       findings: [
         {
@@ -116,11 +116,11 @@ test("renderUnifiedReport outputs summary markdown and json variants", () => {
           status: "fail",
           message: "Task records are not synchronized.",
           target: "docs/demo/sprint-001/tasks/checklist.md",
-          suggestion: "Sync checklist and tasks.csv before delivery."
-        }
-      ]
+          suggestion: "Sync checklist and tasks.csv before delivery.",
+        },
+      ],
     },
-    { generatedAt: "2026-03-14T00:00:00.000Z" }
+    { generatedAt: "2026-03-14T00:00:00.000Z" },
   );
 
   const summary = renderUnifiedReport(report, "summary");

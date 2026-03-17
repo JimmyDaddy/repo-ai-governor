@@ -1,6 +1,11 @@
 import { test } from "vitest";
 import assert from "node:assert/strict";
-import { cloneValue, normalizeLocale, toRelativePath, translateLocale } from "../../src/utils/common.js";
+import {
+  cloneValue,
+  normalizeLocale,
+  toRelativePath,
+  translateLocale,
+} from "../../src/utils/common.js";
 
 test("common utils normalize locale with configurable defaults", () => {
   assert.equal(normalizeLocale("zh-CN"), "zh-CN");
@@ -10,7 +15,7 @@ test("common utils normalize locale with configurable defaults", () => {
   assert.equal(translateLocale("unknown", "中文", "English"), "中文");
   assert.equal(
     translateLocale("unknown", "中文", "English", { defaultLocale: "en-US" }),
-    "English"
+    "English",
   );
 });
 
