@@ -70,6 +70,7 @@
 - `docs/automation-v1/execution-plan.md`
 - `docs/automation-v1/sprint-001/index.md`
 - `docs/automation-v1/sprint-001/plan.md`
+- `docs/automation-v1/sprint-001/automation-controller-model.md`
 - `docs/automation-v1/sprint-001/multi-ai-handoff-orchestration-solution.md`
 - `docs/automation-v1/sprint-001/tasks/checklist.md`
 - `docs/automation-v1/sprint-001/tasks/tasks.csv`
