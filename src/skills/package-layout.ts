@@ -1,23 +1,18 @@
 import path from "node:path";
+import {
+  SKILL_INSTALL_MODES,
+  SUPPORTED_SKILL_SURFACES,
+  type SkillInstallModeEnum,
+  type SkillSurfaceEnum,
+} from "../constants/skill-package-layout.js";
 
 export const SKILL_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 export const SKILL_SEMVER_RANGE_PATTERN = /^(?:\^|~|>=|<=|>|<)?\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/;
+export { SUPPORTED_SKILL_SURFACES, SKILL_INSTALL_MODES };
 
-export const SUPPORTED_SKILL_SURFACES = Object.freeze([
-  "codex",
-  "github-copilot",
-  "claude-code",
-] as const);
+export type SkillSurface = `${SkillSurfaceEnum}`;
 
-export type SkillSurface = (typeof SUPPORTED_SKILL_SURFACES)[number];
-
-export const SKILL_INSTALL_MODES = Object.freeze({
-  native: "native",
-  hybrid: "hybrid",
-  projection: "projection",
-} as const);
-
-export type SkillInstallMode = (typeof SKILL_INSTALL_MODES)[keyof typeof SKILL_INSTALL_MODES];
+export type SkillInstallMode = `${SkillInstallModeEnum}`;
 
 export type SkillInstallTarget = {
   repoLocal: string;

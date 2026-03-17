@@ -1,40 +1,40 @@
 import { ConfigurationValidationError } from "../config/errors.js";
 import { validateSchemaDocument } from "../config/schema/validator.js";
+import {
+  SCRIPT_EXTENSION_GIT_POLICIES,
+  SCRIPT_EXTENSION_HOOKS,
+  SCRIPT_EXTENSION_NETWORK_POLICIES,
+  SCRIPT_EXTENSION_RUNTIME_KINDS,
+  SCRIPT_EXTENSION_SECRET_POLICIES,
+  SLOT_SOURCES,
+  SLOT_TYPES,
+  type ScriptExtensionGitPolicyEnum,
+  type ScriptExtensionHookEnum,
+  type ScriptExtensionNetworkPolicyEnum,
+  type ScriptExtensionRuntimeKindEnum,
+  type ScriptExtensionSecretPolicyEnum,
+  type SlotSourceEnum,
+  type SlotTypeEnum,
+} from "../constants/slot-model.js";
 import { cloneValue } from "../utils/common.js";
 
-export const SLOT_SOURCES = Object.freeze(["project-local", "team-shared", "official"] as const);
+export {
+  SLOT_SOURCES,
+  SLOT_TYPES,
+  SCRIPT_EXTENSION_HOOKS,
+  SCRIPT_EXTENSION_RUNTIME_KINDS,
+  SCRIPT_EXTENSION_NETWORK_POLICIES,
+  SCRIPT_EXTENSION_GIT_POLICIES,
+  SCRIPT_EXTENSION_SECRET_POLICIES,
+};
 
-export type SlotSource = (typeof SLOT_SOURCES)[number];
-
-export const SLOT_TYPES = Object.freeze([
-  "architecture-constraint",
-  "security-compliance",
-  "domain-knowledge",
-  "test-strategy",
-  "release-approval",
-  "documentation-output",
-  "custom",
-] as const);
-
-export type SlotType = (typeof SLOT_TYPES)[number];
-
-export const SCRIPT_EXTENSION_HOOKS = Object.freeze(["before", "after"] as const);
-export type ScriptExtensionHook = (typeof SCRIPT_EXTENSION_HOOKS)[number];
-
-export const SCRIPT_EXTENSION_RUNTIME_KINDS = Object.freeze(["command", "node-module"] as const);
-export type ScriptExtensionRuntimeKind = (typeof SCRIPT_EXTENSION_RUNTIME_KINDS)[number];
-
-export const SCRIPT_EXTENSION_NETWORK_POLICIES = Object.freeze(["forbid", "allow"] as const);
-export type ScriptExtensionNetworkPolicy = (typeof SCRIPT_EXTENSION_NETWORK_POLICIES)[number];
-
-export const SCRIPT_EXTENSION_GIT_POLICIES = Object.freeze(["forbid", "read", "write"] as const);
-export type ScriptExtensionGitPolicy = (typeof SCRIPT_EXTENSION_GIT_POLICIES)[number];
-
-export const SCRIPT_EXTENSION_SECRET_POLICIES = Object.freeze([
-  "forbid",
-  "allow-inherited",
-] as const);
-export type ScriptExtensionSecretPolicy = (typeof SCRIPT_EXTENSION_SECRET_POLICIES)[number];
+export type SlotSource = `${SlotSourceEnum}`;
+export type SlotType = `${SlotTypeEnum}`;
+export type ScriptExtensionHook = `${ScriptExtensionHookEnum}`;
+export type ScriptExtensionRuntimeKind = `${ScriptExtensionRuntimeKindEnum}`;
+export type ScriptExtensionNetworkPolicy = `${ScriptExtensionNetworkPolicyEnum}`;
+export type ScriptExtensionGitPolicy = `${ScriptExtensionGitPolicyEnum}`;
+export type ScriptExtensionSecretPolicy = `${ScriptExtensionSecretPolicyEnum}`;
 
 export type LocalizedText = {
   "zh-CN": string;

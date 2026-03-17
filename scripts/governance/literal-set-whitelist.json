@@ -9,22 +9,6 @@
       "reason": "legacy finite literal set declarations pending migration to src/constants"
     },
     {
-      "path": "src/skills/package-layout.ts",
-      "reason": "legacy finite literal set declarations pending migration to src/constants"
-    },
-    {
-      "path": "src/skills/runtime.ts",
-      "reason": "legacy finite literal set declarations pending migration to src/constants"
-    },
-    {
-      "path": "src/slots/runtime.ts",
-      "reason": "legacy finite literal set declarations pending migration to src/constants"
-    },
-    {
-      "path": "src/slots/slot-model.ts",
-      "reason": "legacy finite literal set declarations pending migration to src/constants"
-    },
-    {
       "path": "src/standards/package-model.ts",
       "reason": "legacy finite literal set declarations pending migration to src/constants"
     },

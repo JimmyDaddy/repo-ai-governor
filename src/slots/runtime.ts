@@ -1,3 +1,4 @@
+import { SOURCE_PRIORITY } from "../constants/slot-runtime.js";
 import { cloneValue } from "../utils/common.js";
 import {
   type SlotChecks,
@@ -135,12 +136,6 @@ type NormalizedCriteria = {
   frameworks: string[];
   tags: string[];
 };
-
-const SOURCE_PRIORITY = Object.freeze({
-  "project-local": 3,
-  "team-shared": 2,
-  official: 1,
-} as const);
 
 const CONFLICT_POLICY_ALIAS = Object.freeze({
   replace: "override",

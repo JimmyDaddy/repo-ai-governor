@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { SUPPORTED_SKILL_SCOPES, type SkillScopeEnum } from "../constants/skill-runtime.js";
 import {
   DEFAULT_SKILL_INSTALL_TARGETS,
   SUPPORTED_SKILL_SURFACES,
@@ -7,9 +8,8 @@ import {
   type SkillSurface,
 } from "./package-layout.js";
 
-export const SUPPORTED_SKILL_SCOPES = Object.freeze(["repo", "user"] as const);
-
-export type SkillScope = (typeof SUPPORTED_SKILL_SCOPES)[number];
+export { SUPPORTED_SKILL_SCOPES };
+export type SkillScope = `${SkillScopeEnum}`;
 
 export type ResolveSkillInstallTargetOptions = {
   cwd?: string;
