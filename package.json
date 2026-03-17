@@ -20,7 +20,7 @@
   "scripts": {
     "start": "node ./bin/repo-ai-governor.js",
     "help": "node ./bin/repo-ai-governor.js --help",
-    "test": "node --test",
+    "test": "vitest run",
     "check:imports": "node ./scripts/governance/check-esm-import-specifiers.js",
     "check:code-standards": "node ./scripts/governance/check-code-standards.js --standards code_standards.md",
     "check": "npm run check:code-standards",
@@ -38,7 +38,9 @@
     "lint": "biome check .",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "build": "tsc -p tsconfig.build.json && node ./scripts/build/copy-runtime-assets.js",
-    "start:dist": "node ./dist/bin/repo-ai-governor.js"
+    "start:dist": "node ./dist/bin/repo-ai-governor.js",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -57,7 +59,9 @@
     "@biomejs/biome": "^1.9.4",
     "@release-it/conventional-changelog": "^9.0.4",
     "@types/node": "^25.5.0",
+    "@vitest/coverage-v8": "^4.1.0",
     "release-it": "^17.11.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.0"
   }
 }

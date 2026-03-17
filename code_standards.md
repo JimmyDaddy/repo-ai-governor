@@ -14,7 +14,7 @@ This file defines repository-level coding standards and the executable gate comm
 
 ```bash
 node ./scripts/governance/check-esm-import-specifiers.js
-npm run test -- --test-concurrency=1
+npm run test -- --maxWorkers=1 --maxConcurrency=1
 node ./bin/repo-ai-governor.js --help >/dev/null
 ```
 

@@ -4,8 +4,10 @@
   - 执行记录：plan=新增 TypeScript 分层配置与构建脚本，打通 `src/bin -> dist` 执行链路并保持现有 CLI 行为稳定;result=已新增 `tsconfig.json`、`tsconfig.build.json`、`tsconfig.test.json`，安装 `typescript/@types-node`，新增 `typecheck/build/start:dist` 脚本，并通过 `scripts/build/copy-runtime-assets.js` 在 build 后复制 schema/skills/package 运行时资产;verify=`npm run typecheck && npm run build && npm run start:dist -- --help && npm run check`
   - 执行记录：review_delta=已完成 `TK-1001` 自检复核，CR 结果落盘为 `code-review/verified_review_tk-1001-establish-typescript-baseline.md`;verify=`npx biome format --write package.json tsconfig.json tsconfig.build.json tsconfig.test.json scripts/build/copy-runtime-assets.js`
 
-- [ ] **TK-1002** 接入 Vitest 并迁移测试运行基线（负责人：QA｜优先级：P0｜截止：2026-03-23｜状态：todo）
-  - 执行记录：plan=引入 vitest 与 coverage 配置，切换 `npm test` 到 `vitest run` 并迁移测试入口;result=待执行;verify=待执行
+- [x] **TK-1002** 接入 Vitest 并迁移测试运行基线（负责人：QA｜优先级：P0｜截止：2026-03-23｜状态：done）
+  - 执行记录：plan=引入 Vitest 与覆盖率能力，完成测试运行入口切换并迁移 `node:test` 导入基线;result=已新增 `vitest.config.ts`，安装 `vitest/@vitest/coverage-v8`，将 `npm test` 切换为 `vitest run`，新增 `test:watch/test:coverage` 脚本，并批量将 `test/**/*.test.js` 中 `import test from \"node:test\"` 迁移为 `import { test } from \"vitest\"`;verify=`npm test && npm run test:coverage`
+  - 执行记录：plan=修复迁移后门禁兼容问题，保证 `npm run check` 可继续作为交付 gate;result=已更新 `code_standards.md` 验证命令参数为 `--maxWorkers=1 --maxConcurrency=1`，避免 Vitest 不识别 `--test-concurrency`;verify=`npm run check`
+  - 执行记录：review_delta=已完成 `TK-1002` 自检复核，CR 结果落盘为 `code-review/verified_review_tk-1002-adopt-vitest-test-baseline.md`;verify=`npm run typecheck && npm run build`
 
 - [ ] **TK-1003** 迁移基础模块与对应单测（试点批次）（负责人：Core｜优先级：P1｜截止：2026-03-25｜状态：todo）
   - 执行记录：plan=优先迁移 `utils/config/schema/reporting` 等低风险模块与相关测试，验证迁移模式可复制;result=待执行;verify=待执行

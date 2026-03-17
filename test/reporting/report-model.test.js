@@ -1,4 +1,4 @@
-import test from "node:test";
+import { test } from "vitest";
 import assert from "node:assert/strict";
 import { buildUnifiedReport, renderUnifiedReport } from "../../src/reporting/report-model.js";
 
