@@ -1,5 +1,14 @@
+export type ConfigurationErrorOptions = {
+  name?: string;
+  code?: string;
+  details?: unknown;
+};
+
 export class ConfigurationError extends Error {
-  constructor(message, options = {}) {
+  code: string;
+  details: unknown;
+
+  constructor(message: string, options: ConfigurationErrorOptions = {}) {
     super(message);
     this.name = options.name ?? this.constructor.name;
     this.code = options.code ?? "config.error";
@@ -8,31 +17,31 @@ export class ConfigurationError extends Error {
 }
 
 export class ConfigurationConflictError extends ConfigurationError {
-  constructor(message, options = {}) {
+  constructor(message: string, options: ConfigurationErrorOptions = {}) {
     super(message, {
       ...options,
       name: "ConfigurationConflictError",
-      code: options.code ?? "config.conflict"
+      code: options.code ?? "config.conflict",
     });
   }
 }
 
 export class ConfigurationValidationError extends ConfigurationError {
-  constructor(message, options = {}) {
+  constructor(message: string, options: ConfigurationErrorOptions = {}) {
     super(message, {
       ...options,
       name: "ConfigurationValidationError",
-      code: options.code ?? "config.validation_failed"
+      code: options.code ?? "config.validation_failed",
     });
   }
 }
 
 export class ConfigurationFileError extends ConfigurationError {
-  constructor(message, options = {}) {
+  constructor(message: string, options: ConfigurationErrorOptions = {}) {
     super(message, {
       ...options,
       name: "ConfigurationFileError",
-      code: options.code ?? "config.file_error"
+      code: options.code ?? "config.file_error",
     });
   }
 }

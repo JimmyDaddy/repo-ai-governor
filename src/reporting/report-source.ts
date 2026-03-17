@@ -1,19 +1,43 @@
-// @ts-nocheck
 import fs from "node:fs";
 import path from "node:path";
 import { InputError } from "../cli/runtime/errors.js";
-import { buildUnifiedReport } from "./report-model.js";
+import { buildUnifiedReport, type UnifiedReport } from "./report-model.js";
 import { normalizeLocale, translateLocale } from "../utils/common.js";
 
-function t(locale, zhCN, enUS) {
+type GenericRecord = Record<string, unknown>;
+
+type LoadedReportSource = {
+  sourceKind: "governance-report" | "command-payload" | "review-record";
+  report: UnifiedReport;
+};
+
+type ParsedFinding = {
+  id: string;
+  severity: string;
+  status: string;
+  message: string;
+  target: string | null;
+  ruleId: string | null;
+  suggestion: string | null;
+};
+
+function asRecord(value: unknown): GenericRecord {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+
+  return value as GenericRecord;
+}
+
+function t<T>(locale: string | null | undefined, zhCN: T, enUS: T): T {
   return translateLocale(locale, zhCN, enUS);
 }
 
-function stripBackticks(value) {
+function stripBackticks(value: string): string {
   return value.replace(/^`|`$/g, "");
 }
 
-function extractSectionBody(content, headings) {
+function extractSectionBody(content: string, headings: string | string[]): string {
   const headingList = Array.isArray(headings) ? headings : [headings];
 
   for (const heading of headingList) {
@@ -29,7 +53,7 @@ function extractSectionBody(content, headings) {
   return "";
 }
 
-function extractMetadataLine(content, labels) {
+function extractMetadataLine(content: string, labels: string | string[]): string | null {
   const labelList = Array.isArray(labels) ? labels : [labels];
 
   for (const label of labelList) {
@@ -45,11 +69,11 @@ function extractMetadataLine(content, labels) {
   return null;
 }
 
-function parseTargets(sectionBody) {
+function parseTargets(sectionBody: string): string[] {
   return Array.from(sectionBody.matchAll(/`([^`]+)`/g), (match) => match[1]);
 }
 
-function parseFindings(sectionBody) {
+function parseFindings(sectionBody: string): ParsedFinding[] {
   if (
     !sectionBody ||
     sectionBody === "1. No findings." ||
@@ -98,7 +122,16 @@ function parseFindings(sectionBody) {
     });
 }
 
-function parseSummary(content, findings) {
+function parseSummary(
+  content: string,
+  findings: ParsedFinding[],
+): {
+  status: string | null;
+  exitCode: number;
+  errors: number;
+  warnings: number;
+  passed: number;
+} {
   const resultLine = content.match(
     /(?:Review result|Verification result|评审结果|复核结果):\s+`([^`]+)`/,
   );
@@ -119,11 +152,11 @@ function parseSummary(content, findings) {
   };
 }
 
-function parseMatchedRuleIds(sectionBody) {
+function parseMatchedRuleIds(sectionBody: string): string[] {
   return Array.from(sectionBody.matchAll(/`([^`]+)`/g), (match) => match[1]);
 }
 
-function parseReviewMarkdownSource(sourcePath, sourceContent) {
+function parseReviewMarkdownSource(sourcePath: string, sourceContent: string): UnifiedReport {
   const locale = sourceContent.startsWith("# 评审 ") ? "zh-CN" : "en-US";
   const scopeBody = extractSectionBody(sourceContent, ["Scope", "评审范围", "复核范围"]);
   const targetsBody = extractSectionBody(sourceContent, ["Targets", "目标文件"]);
@@ -156,13 +189,16 @@ function parseReviewMarkdownSource(sourcePath, sourceContent) {
       targets: parseTargets(targetsBody),
     },
     {
-      generatedAt: extractMetadataLine(sourceContent, ["Date", "时间"]),
+      generatedAt: extractMetadataLine(sourceContent, ["Date", "时间"]) ?? undefined,
       locale,
     },
   );
 }
 
-export function loadReportSource(sourcePath, options = {}) {
+export function loadReportSource(
+  sourcePath: string,
+  options: { locale?: string } = {},
+): LoadedReportSource {
   const absoluteSourcePath = path.resolve(sourcePath);
   const locale = normalizeLocale(options.locale);
 
@@ -186,18 +222,19 @@ export function loadReportSource(sourcePath, options = {}) {
   const sourceContent = fs.readFileSync(absoluteSourcePath, "utf8");
 
   if (extension === ".json") {
-    const payload = JSON.parse(sourceContent);
+    const payload = JSON.parse(sourceContent) as unknown;
+    const payloadRecord = asRecord(payload);
 
-    if (payload.kind === "governance-report") {
+    if (payloadRecord.kind === "governance-report") {
       return {
         sourceKind: "governance-report",
-        report: payload,
+        report: payload as UnifiedReport,
       };
     }
 
     return {
       sourceKind: "command-payload",
-      report: buildUnifiedReport(payload),
+      report: buildUnifiedReport(payloadRecord),
     };
   }
 

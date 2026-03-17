@@ -4,18 +4,100 @@ import YAML from "yaml";
 import {
   ConfigurationConflictError,
   ConfigurationError,
-  ConfigurationFileError
+  ConfigurationFileError,
 } from "./errors.js";
 import { resolveRepositoryLayout } from "./repository-layout.js";
 import { buildDefaultGovernorConfig, validateSchemaDocument } from "./schema/validator.js";
 import { validateSlotDefinition } from "../slots/slot-model.js";
+import type { SlotDefinition } from "../slots/slot-model.js";
 import { cloneValue, isPlainObject } from "../utils/common.js";
 
 export const CONFIG_ENV_PREFIX = "REPO_AI_GOVERNOR__";
 
 const YAML_FILE_PATTERN = /\.ya?ml$/i;
 
-function toCamelCase(segment) {
+type GenericRecord = Record<string, unknown>;
+
+type GovernorConfig = GenericRecord & {
+  schemaVersion?: string;
+  slots: {
+    directory: string;
+    enabled?: string[];
+    disabled?: string[];
+    [key: string]: unknown;
+  };
+  adapters: {
+    directory: string;
+    enabled?: string[];
+    [key: string]: unknown;
+  };
+  execution: {
+    currentProject?: string;
+    currentSprint?: string;
+    [key: string]: unknown;
+  };
+  standards: {
+    preset?: string;
+    locales?: {
+      default?: string;
+      supported?: string[];
+    };
+    [key: string]: unknown;
+  };
+  project: {
+    language?: string;
+    framework?: string;
+    [key: string]: unknown;
+  };
+  reporting: {
+    formats?: string[];
+    [key: string]: unknown;
+  };
+};
+
+type MergeContext = {
+  path: string[];
+  baseLayer: string;
+  incomingLayer: string;
+};
+
+type LayerInput = {
+  name: string;
+  previousLayerName: string;
+  value: unknown;
+};
+
+type CliConfigOverrideOptions = {
+  project?: string;
+  sprint?: string;
+  locale?: string;
+  language?: string;
+  preset?: string;
+  adapter?: string | string[];
+};
+
+type LoadResolvedConfigOptions = {
+  cwd?: string;
+  configPath?: string;
+  requireConfigFile?: boolean;
+  environment?: NodeJS.ProcessEnv;
+  cliOverrides?: CliConfigOverrideOptions;
+  skipEnabledDefinitionCheck?: boolean;
+};
+
+type LoadedDefinition<TConfig = GenericRecord> = {
+  id: string;
+  filePath: string;
+  config: TConfig;
+};
+
+type LoadedDefinitionDirectory<TConfig = GenericRecord> = {
+  directoryPath: string;
+  files: string[];
+  definitions: Array<LoadedDefinition<TConfig>>;
+};
+
+function toCamelCase(segment: string): string {
   return String(segment)
     .trim()
     .toLowerCase()
@@ -25,8 +107,8 @@ function toCamelCase(segment) {
     .join("");
 }
 
-function setDeepValue(target, pathSegments, value) {
-  let cursor = target;
+function setDeepValue(target: GenericRecord, pathSegments: string[], value: unknown): void {
+  let cursor: GenericRecord = target;
 
   for (let index = 0; index < pathSegments.length; index += 1) {
     const segment = pathSegments[index];
@@ -41,11 +123,11 @@ function setDeepValue(target, pathSegments, value) {
       cursor[segment] = {};
     }
 
-    cursor = cursor[segment];
+    cursor = cursor[segment] as GenericRecord;
   }
 }
 
-function parseScalarValue(rawValue) {
+function parseScalarValue(rawValue: unknown): unknown {
   const value = String(rawValue).trim();
 
   if (value === "true") {
@@ -64,7 +146,10 @@ function parseScalarValue(rawValue) {
     return Number(value);
   }
 
-  if ((value.startsWith("[") && value.endsWith("]")) || (value.startsWith("{") && value.endsWith("}"))) {
+  if (
+    (value.startsWith("[") && value.endsWith("]")) ||
+    (value.startsWith("{") && value.endsWith("}"))
+  ) {
     try {
       return JSON.parse(value);
     } catch {
@@ -75,7 +160,7 @@ function parseScalarValue(rawValue) {
   return value;
 }
 
-function readYamlDocument(filePath) {
+function readYamlDocument(filePath: string): GenericRecord {
   try {
     const content = fs.readFileSync(filePath, "utf8");
     const parsed = YAML.parse(content);
@@ -83,8 +168,8 @@ function readYamlDocument(filePath) {
     if (!isPlainObject(parsed)) {
       throw new ConfigurationFileError(`YAML document must be an object: ${filePath}`, {
         details: {
-          filePath
-        }
+          filePath,
+        },
       });
     }
 
@@ -97,13 +182,13 @@ function readYamlDocument(filePath) {
     throw new ConfigurationFileError(`Failed to read YAML config: ${filePath}`, {
       details: {
         filePath,
-        cause: error instanceof Error ? error.message : String(error)
-      }
+        cause: error instanceof Error ? error.message : String(error),
+      },
     });
   }
 }
 
-function mergeLayer(baseValue, incomingValue, context) {
+function mergeLayer(baseValue: unknown, incomingValue: unknown, context: MergeContext): unknown {
   if (incomingValue === undefined) {
     return cloneValue(baseValue);
   }
@@ -117,7 +202,7 @@ function mergeLayer(baseValue, incomingValue, context) {
   }
 
   if (isPlainObject(baseValue) && isPlainObject(incomingValue)) {
-    const result = {};
+    const result: GenericRecord = {};
     const keys = new Set([...Object.keys(baseValue), ...Object.keys(incomingValue)]);
 
     for (const key of keys) {
@@ -135,30 +220,36 @@ function mergeLayer(baseValue, incomingValue, context) {
 
       result[key] = mergeLayer(baseValue[key], incomingValue[key], {
         ...context,
-        path: pathSegments
+        path: pathSegments,
       });
     }
 
     return result;
   }
 
-  if (isPlainObject(baseValue) !== isPlainObject(incomingValue) || Array.isArray(baseValue) !== Array.isArray(incomingValue)) {
-    throw new ConfigurationConflictError(`Configuration type conflict at ${context.path.join(".")}`, {
-      details: {
-        path: context.path,
-        baseLayer: context.baseLayer,
-        incomingLayer: context.incomingLayer,
-        baseType: Array.isArray(baseValue) ? "array" : typeof baseValue,
-        incomingType: Array.isArray(incomingValue) ? "array" : typeof incomingValue
-      }
-    });
+  if (
+    isPlainObject(baseValue) !== isPlainObject(incomingValue) ||
+    Array.isArray(baseValue) !== Array.isArray(incomingValue)
+  ) {
+    throw new ConfigurationConflictError(
+      `Configuration type conflict at ${context.path.join(".")}`,
+      {
+        details: {
+          path: context.path,
+          baseLayer: context.baseLayer,
+          incomingLayer: context.incomingLayer,
+          baseType: Array.isArray(baseValue) ? "array" : typeof baseValue,
+          incomingType: Array.isArray(incomingValue) ? "array" : typeof incomingValue,
+        },
+      },
+    );
   }
 
   return cloneValue(incomingValue);
 }
 
-function mergeConfigLayers(layers) {
-  return layers.reduce((current, layer) => {
+function mergeConfigLayers(layers: LayerInput[]): GenericRecord {
+  return layers.reduce((current: GenericRecord, layer) => {
     if (!layer.value || (isPlainObject(layer.value) && Object.keys(layer.value).length === 0)) {
       return current;
     }
@@ -166,12 +257,12 @@ function mergeConfigLayers(layers) {
     return mergeLayer(current, layer.value, {
       path: [],
       baseLayer: layer.previousLayerName,
-      incomingLayer: layer.name
-    });
+      incomingLayer: layer.name,
+    }) as GenericRecord;
   }, {});
 }
 
-function resolveConfigFilePath(cwd, configPath) {
+function resolveConfigFilePath(cwd: string, configPath?: string): string {
   if (configPath) {
     return path.resolve(cwd, configPath);
   }
@@ -180,7 +271,11 @@ function resolveConfigFilePath(cwd, configPath) {
   return layout.absolute.configFile;
 }
 
-function loadGovernorFile(cwd, configPath, options = {}) {
+function loadGovernorFile(
+  cwd: string,
+  configPath: string | undefined,
+  options: { requireConfigFile?: boolean } = {},
+): { filePath: string; exists: boolean; config: GenericRecord } {
   const filePath = resolveConfigFilePath(cwd, configPath);
   const exists = fs.existsSync(filePath);
 
@@ -188,31 +283,31 @@ function loadGovernorFile(cwd, configPath, options = {}) {
     if (options.requireConfigFile) {
       throw new ConfigurationFileError(`Main config file not found: ${filePath}`, {
         details: {
-          filePath
-        }
+          filePath,
+        },
       });
     }
 
     return {
       filePath,
       exists: false,
-      config: {}
+      config: {},
     };
   }
 
   const document = readYamlDocument(filePath);
   const config = validateSchemaDocument("governor", document, {
-    source: filePath
-  });
+    source: filePath,
+  }) as GenericRecord;
 
   return {
     filePath,
     exists: true,
-    config
+    config,
   };
 }
 
-function listYamlFiles(directoryPath) {
+function listYamlFiles(directoryPath: string): string[] {
   if (!fs.existsSync(directoryPath)) {
     return [];
   }
@@ -222,8 +317,8 @@ function listYamlFiles(directoryPath) {
   if (!stat.isDirectory()) {
     throw new ConfigurationFileError(`Config directory is not a directory: ${directoryPath}`, {
       details: {
-        directoryPath
-      }
+        directoryPath,
+      },
     });
   }
 
@@ -234,49 +329,55 @@ function listYamlFiles(directoryPath) {
     .map((entry) => path.join(directoryPath, entry));
 }
 
-function loadDefinitionDirectory(cwd, relativeDirectoryPath, schemaName, kind) {
+function loadDefinitionDirectory(
+  cwd: string,
+  relativeDirectoryPath: string,
+  schemaName: string,
+  kind: string,
+): LoadedDefinitionDirectory<GenericRecord | SlotDefinition> {
   const directoryPath = path.resolve(cwd, relativeDirectoryPath);
   const filePaths = listYamlFiles(directoryPath);
-  const definitions = [];
-  const seenIds = new Map();
+  const definitions: Array<LoadedDefinition<GenericRecord | SlotDefinition>> = [];
+  const seenIds = new Map<string, string>();
 
   for (const filePath of filePaths) {
     const document = readYamlDocument(filePath);
     const config =
       schemaName === "slot"
         ? validateSlotDefinition(document)
-        : validateSchemaDocument(schemaName, document, {
-            source: filePath
-          });
+        : (validateSchemaDocument(schemaName as never, document, {
+            source: filePath,
+          }) as GenericRecord);
+    const configWithId = config as GenericRecord & { id: string };
 
-    if (seenIds.has(config.id)) {
-      throw new ConfigurationConflictError(`Duplicate ${kind} id "${config.id}"`, {
+    if (seenIds.has(configWithId.id)) {
+      throw new ConfigurationConflictError(`Duplicate ${kind} id "${configWithId.id}"`, {
         details: {
           kind,
-          id: config.id,
+          id: configWithId.id,
           filePath,
-          previousFilePath: seenIds.get(config.id)
-        }
+          previousFilePath: seenIds.get(configWithId.id),
+        },
       });
     }
 
-    seenIds.set(config.id, filePath);
+    seenIds.set(configWithId.id, filePath);
     definitions.push({
-      id: config.id,
+      id: configWithId.id,
       filePath,
-      config
+      config,
     });
   }
 
   return {
     directoryPath,
     files: filePaths,
-    definitions
+    definitions,
   };
 }
 
-function buildEnvironmentOverride(environment = process.env) {
-  const override = {};
+function buildEnvironmentOverride(environment: NodeJS.ProcessEnv = process.env): GenericRecord {
+  const override: GenericRecord = {};
   const relevantEntries = Object.entries(environment)
     .filter(([key]) => key.startsWith(CONFIG_ENV_PREFIX))
     .sort(([left], [right]) => left.localeCompare(right));
@@ -298,8 +399,8 @@ function buildEnvironmentOverride(environment = process.env) {
   return override;
 }
 
-export function buildCliConfigOverride(cliOptions = {}) {
-  const override = {};
+export function buildCliConfigOverride(cliOptions: CliConfigOverrideOptions = {}): GenericRecord {
+  const override: GenericRecord = {};
 
   if (cliOptions.project) {
     setDeepValue(override, ["execution", "currentProject"], cliOptions.project);
@@ -329,8 +430,14 @@ export function buildCliConfigOverride(cliOptions = {}) {
   return override;
 }
 
-function ensureEnabledDefinitionsExist(config, definitions, sectionName) {
-  const enabledIds = config?.[sectionName]?.enabled ?? [];
+function ensureEnabledDefinitionsExist(
+  config: GenericRecord,
+  definitions: Array<{ id: string }>,
+  sectionName: string,
+): void {
+  const section = config?.[sectionName];
+  const enabledIds =
+    isPlainObject(section) && Array.isArray(section.enabled) ? section.enabled : [];
 
   if (!Array.isArray(enabledIds) || enabledIds.length === 0) {
     return;
@@ -340,22 +447,25 @@ function ensureEnabledDefinitionsExist(config, definitions, sectionName) {
 
   for (const id of enabledIds) {
     if (!knownIds.has(id)) {
-      throw new ConfigurationError(`Enabled ${sectionName.slice(0, -1)} definition is missing: ${id}`, {
-        code: "config.missing_enabled_definition",
-        details: {
-          sectionName,
-          id
-        }
-      });
+      throw new ConfigurationError(
+        `Enabled ${sectionName.slice(0, -1)} definition is missing: ${id}`,
+        {
+          code: "config.missing_enabled_definition",
+          details: {
+            sectionName,
+            id,
+          },
+        },
+      );
     }
   }
 }
 
-export function loadResolvedConfig(options = {}) {
+export function loadResolvedConfig(options: LoadResolvedConfigOptions = {}) {
   const cwd = path.resolve(options.cwd ?? process.cwd());
-  const defaultConfig = buildDefaultGovernorConfig();
+  const defaultConfig = buildDefaultGovernorConfig() as GovernorConfig;
   const governorFile = loadGovernorFile(cwd, options.configPath, {
-    requireConfigFile: options.requireConfigFile ?? false
+    requireConfigFile: options.requireConfigFile ?? false,
   });
   const environmentOverride = buildEnvironmentOverride(options.environment ?? process.env);
   const cliOverride = buildCliConfigOverride(options.cliOverrides ?? {});
@@ -365,40 +475,40 @@ export function loadResolvedConfig(options = {}) {
       {
         name: "defaults",
         previousLayerName: "defaults",
-        value: defaultConfig
+        value: defaultConfig,
       },
       {
         name: "repository",
         previousLayerName: "defaults",
-        value: governorFile.config
+        value: governorFile.config,
       },
       {
         name: "environment",
         previousLayerName: "repository",
-        value: environmentOverride
+        value: environmentOverride,
       },
       {
         name: "cli",
         previousLayerName: "environment",
-        value: cliOverride
-      }
+        value: cliOverride,
+      },
     ]),
     {
-      source: governorFile.filePath
-    }
-  );
+      source: governorFile.filePath,
+    },
+  ) as GovernorConfig;
 
   const loadedSlots = loadDefinitionDirectory(
     cwd,
     mergedForDiscovery.slots.directory,
     "slot",
-    "slot"
+    "slot",
   );
   const loadedAdapters = loadDefinitionDirectory(
     cwd,
     mergedForDiscovery.adapters.directory,
     "adapter",
-    "adapter"
+    "adapter",
   );
 
   const resolvedConfig = validateSchemaDocument(
@@ -407,28 +517,28 @@ export function loadResolvedConfig(options = {}) {
       {
         name: "defaults",
         previousLayerName: "defaults",
-        value: defaultConfig
+        value: defaultConfig,
       },
       {
         name: "repository",
         previousLayerName: "defaults",
-        value: governorFile.config
+        value: governorFile.config,
       },
       {
         name: "environment",
         previousLayerName: "repository",
-        value: environmentOverride
+        value: environmentOverride,
       },
       {
         name: "cli",
         previousLayerName: "environment",
-        value: cliOverride
-      }
+        value: cliOverride,
+      },
     ]),
     {
-      source: governorFile.filePath
-    }
-  );
+      source: governorFile.filePath,
+    },
+  ) as GovernorConfig;
 
   if (!options.skipEnabledDefinitionCheck) {
     ensureEnabledDefinitionsExist(resolvedConfig, loadedSlots.definitions, "slots");
@@ -443,33 +553,33 @@ export function loadResolvedConfig(options = {}) {
     layers: [
       {
         name: "defaults",
-        source: "built-in schema defaults"
+        source: "built-in schema defaults",
       },
       {
         name: "repository",
-        source: governorFile.exists ? governorFile.filePath : "not-found"
+        source: governorFile.exists ? governorFile.filePath : "not-found",
       },
       {
         name: "slots",
-        source: loadedSlots.directoryPath
+        source: loadedSlots.directoryPath,
       },
       {
         name: "adapters",
-        source: loadedAdapters.directoryPath
+        source: loadedAdapters.directoryPath,
       },
       {
         name: "environment",
-        source: CONFIG_ENV_PREFIX
+        source: CONFIG_ENV_PREFIX,
       },
       {
         name: "cli",
-        source: "cli overrides"
-      }
+        source: "cli overrides",
+      },
     ],
     paths: {
       configFile: governorFile.filePath,
       slotsDirectory: loadedSlots.directoryPath,
-      adaptersDirectory: loadedAdapters.directoryPath
-    }
+      adaptersDirectory: loadedAdapters.directoryPath,
+    },
   };
 }
