@@ -1,4 +1,5 @@
 import { validateSchemaDocument } from "../config/schema/validator.js";
+import { cloneValue } from "../utils/common.js";
 
 export const STANDARD_WORKFLOW_TEMPLATE_ID = "standard";
 
@@ -11,10 +12,6 @@ export const STANDARD_WORKFLOW_STAGE_SEQUENCE = Object.freeze([
   "review-verify",
   "task-sync"
 ]);
-
-function cloneValue(value) {
-  return structuredClone(value);
-}
 
 function createLocalizedText(zhCN, enUS) {
   return {

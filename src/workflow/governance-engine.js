@@ -1,5 +1,6 @@
 import { resolveWorkflowTemplate, validateWorkflowTemplate } from "./template-model.js";
 import { SlotConflictError, resolveApplicableSlots } from "../slots/runtime.js";
+import { cloneValue, isPlainObject } from "../utils/common.js";
 
 export const WORKFLOW_STAGE_RESULT_STATUS = Object.freeze({
   pending: "pending",
@@ -21,14 +22,6 @@ const FINAL_STAGE_STATUSES = new Set([
   WORKFLOW_STAGE_RESULT_STATUS.skipped,
   WORKFLOW_STAGE_RESULT_STATUS.blocked
 ]);
-
-function cloneValue(value) {
-  return structuredClone(value);
-}
-
-function isPlainObject(value) {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
 
 function ensureSerialTemplate(template) {
   if (template.execution.mode !== "serial") {

@@ -11,14 +11,17 @@ import {
   STANDARD_WORKFLOW_STAGE_SEQUENCE
 } from "../workflow/template-model.js";
 import { selectWorkflowStages } from "../workflow/governance-engine.js";
+import {
+  cloneValue as cloneValueShared,
+  toRelativePath as toRelativePathValue
+} from "../utils/common.js";
 
 export function toRelativePath(cwd, targetPath) {
-  const relativePath = path.relative(cwd, targetPath).split(path.sep).join("/");
-  return relativePath || ".";
+  return toRelativePathValue(cwd, targetPath);
 }
 
 export function cloneValue(value) {
-  return structuredClone(value);
+  return cloneValueShared(value);
 }
 
 export function ensureTrailingNewline(content) {

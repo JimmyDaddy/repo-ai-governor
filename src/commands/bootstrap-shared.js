@@ -2,10 +2,10 @@ import path from "node:path";
 import YAML from "yaml";
 import { normalizeProjectSlug } from "../config/repository-layout.js";
 import { renderInitDocument } from "./templates/init-documents.js";
+import { toRelativePath as toRelativePathValue } from "../utils/common.js";
 
 export function toRelativePath(cwd, absolutePath) {
-  const relativePath = path.relative(cwd, absolutePath).split(path.sep).join("/");
-  return relativePath || ".";
+  return toRelativePathValue(cwd, absolutePath);
 }
 
 export function ensureTrailingNewline(content) {

@@ -265,6 +265,95 @@ export const commandDefinitions = [
     ]
   },
   {
+    name: "run",
+    description: "执行自动化编排流程",
+    options: [
+      {
+        long: "--mode",
+        key: "mode",
+        valueName: "manual|assisted|autonomous",
+        description: "指定自动化执行模式",
+        type: "string"
+      },
+      {
+        long: "--routing-profile",
+        key: "routingProfile",
+        valueName: "name",
+        description: "指定阶段路由配置档，如 multi-ai-dev-review",
+        type: "string"
+      },
+      {
+        long: "--route",
+        key: "route",
+        valueName: "stage=surface",
+        description: "按阶段覆盖执行入口，可重复传入",
+        type: "string",
+        multiple: true
+      },
+      {
+        long: "--input",
+        key: "input",
+        valueName: "path",
+        description: "指定执行输入文件",
+        type: "string"
+      },
+      {
+        long: "--skip-preflight",
+        key: "skipPreflight",
+        description: "跳过 preflight 检查",
+        type: "boolean"
+      },
+      {
+        long: "--default-surface",
+        key: "defaultSurface",
+        valueName: "surface",
+        description: "覆盖默认执行入口",
+        type: "string"
+      },
+      {
+        long: "--max-review-cycles",
+        key: "maxReviewCycles",
+        valueName: "number",
+        description: "评审循环（草案/方案/任务）的最大轮次覆盖值",
+        type: "string"
+      },
+      {
+        long: "--approve-risk",
+        key: "approveRisk",
+        valueName: "tag",
+        description: "显式确认高风险标签，可重复传入（如 dangerous_command）",
+        type: "string",
+        multiple: true
+      },
+      {
+        long: "--resume-from",
+        key: "resumeFrom",
+        valueName: "path",
+        description: "基于指定审计/检查点文件恢复执行（仅 assisted）",
+        type: "string"
+      },
+      {
+        long: "--resume-stage",
+        key: "resumeStage",
+        valueName: "stage-id",
+        description: "恢复时强制从指定阶段重试（仅 assisted，需配合 --resume-from）",
+        type: "string"
+      },
+      {
+        long: "--explain-process",
+        key: "explainProcess",
+        description: "输出当前生效流程（默认/自定义）及编排快照，不执行阶段派发",
+        type: "boolean"
+      },
+      {
+        long: "--validate-process",
+        key: "validateProcess",
+        description: "仅执行流程编译与校验，不触发阶段执行与审计落盘",
+        type: "boolean"
+      }
+    ]
+  },
+  {
     name: "review",
     description: "按治理规则执行代码评审检查",
     options: [

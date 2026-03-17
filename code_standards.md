@@ -8,10 +8,12 @@ This file defines repository-level coding standards and the executable gate comm
 - [CS-002] Commit messages for delivered changes must follow Conventional Commits.
 - [CS-003] Any TODO/FIXME/HACK marker must be resolved or explicitly recorded as known risk.
 - [CS-004] Delivery records must include verification evidence for implemented tasks.
+- [CS-005] In this native Node.js ESM repository, all relative import/export specifiers must use explicit file extensions (for example `./foo.js`).
 
 ## Verification Commands
 
 ```bash
+node ./scripts/governance/check-esm-import-specifiers.js
 npm run test -- --test-concurrency=1
 node ./bin/repo-ai-governor.js --help >/dev/null
 ```

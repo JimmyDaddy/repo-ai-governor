@@ -13,22 +13,14 @@ import {
   validateSkillScope,
   validateSkillSurface
 } from "../skills/runtime.js";
+import { normalizeLocale, toRelativePath, translateLocale } from "../utils/common.js";
 
 const require = createRequire(import.meta.url);
 const packageJson = require("../../package.json");
 const SUPPORTED_SKILL_ACTIONS = Object.freeze(["install", "list", "doctor"]);
 
-function toRelativePath(cwd, targetPath) {
-  const relativePath = path.relative(cwd, targetPath).split(path.sep).join("/");
-  return relativePath || ".";
-}
-
-function normalizeLocale(locale) {
-  return locale === "en-US" ? "en-US" : "zh-CN";
-}
-
 function t(locale, zhCN, enUS) {
-  return normalizeLocale(locale) === "en-US" ? enUS : zhCN;
+  return translateLocale(locale, zhCN, enUS);
 }
 
 function ensureDirectory(directoryPath) {

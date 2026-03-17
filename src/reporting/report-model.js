@@ -1,9 +1,11 @@
+import { normalizeLocale as normalizeLocaleValue, translateLocale } from "../utils/common.js";
+
 function uniqueValues(values) {
   return Array.from(new Set(values.filter(Boolean)));
 }
 
 function normalizeLocale(locale) {
-  return locale === "zh-CN" ? "zh-CN" : "en-US";
+  return normalizeLocaleValue(locale, { defaultLocale: "en-US" });
 }
 
 function isEnglishLocale(locale) {
@@ -11,7 +13,7 @@ function isEnglishLocale(locale) {
 }
 
 function t(locale, zhCN, enUS) {
-  return isEnglishLocale(locale) ? enUS : zhCN;
+  return translateLocale(locale, zhCN, enUS, { defaultLocale: "en-US" });
 }
 
 function normalizeFinding(finding, index) {

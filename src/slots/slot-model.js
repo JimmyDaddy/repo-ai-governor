@@ -1,5 +1,6 @@
 import { ConfigurationValidationError } from "../config/errors.js";
 import { validateSchemaDocument } from "../config/schema/validator.js";
+import { cloneValue } from "../utils/common.js";
 
 export const SLOT_SOURCES = Object.freeze(["project-local", "team-shared", "official"]);
 export const SLOT_TYPES = Object.freeze([
@@ -16,10 +17,6 @@ export const SCRIPT_EXTENSION_RUNTIME_KINDS = Object.freeze(["command", "node-mo
 export const SCRIPT_EXTENSION_NETWORK_POLICIES = Object.freeze(["forbid", "allow"]);
 export const SCRIPT_EXTENSION_GIT_POLICIES = Object.freeze(["forbid", "read", "write"]);
 export const SCRIPT_EXTENSION_SECRET_POLICIES = Object.freeze(["forbid", "allow-inherited"]);
-
-function cloneValue(value) {
-  return structuredClone(value);
-}
 
 function createLocalizedText(zhCN, enUS) {
   return {

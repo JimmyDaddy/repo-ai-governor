@@ -6,10 +6,7 @@ import {
   STANDARDS_PACKAGE_PRESET,
   validateStandardsPackage
 } from "./package-model.js";
-
-function cloneValue(value) {
-  return structuredClone(value);
-}
+import { cloneValue } from "../utils/common.js";
 
 function createLocalizedText(zhCN, enUS) {
   return {

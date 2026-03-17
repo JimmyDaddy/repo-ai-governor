@@ -1,4 +1,5 @@
 import { validateSchemaDocument } from "../config/schema/validator.js";
+import { cloneValue } from "../utils/common.js";
 
 export const STANDARDS_PACKAGE_ID = "official-base";
 export const STANDARDS_PACKAGE_PRESET = "official/base";
@@ -24,10 +25,6 @@ function createLocalizedText(zhCN, enUS) {
     "zh-CN": zhCN,
     "en-US": enUS
   };
-}
-
-function cloneValue(value) {
-  return structuredClone(value);
 }
 
 function createCategory(id, zhCNName, enUSName, zhCNDescription, enUSDescription) {

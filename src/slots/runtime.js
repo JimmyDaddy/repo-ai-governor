@@ -1,4 +1,5 @@
 import { compareSlotsByPriority, validateSlotDefinition } from "./slot-model.js";
+import { cloneValue } from "../utils/common.js";
 
 const SOURCE_PRIORITY = Object.freeze({
   "project-local": 3,
@@ -9,10 +10,6 @@ const SOURCE_PRIORITY = Object.freeze({
 const CONFLICT_POLICY_ALIAS = Object.freeze({
   replace: "override"
 });
-
-function cloneValue(value) {
-  return structuredClone(value);
-}
 
 function toArray(value) {
   if (Array.isArray(value)) {

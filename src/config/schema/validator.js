@@ -2,10 +2,7 @@ import Ajv2020 from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
 import { loadSchemaBundle } from "./index.js";
 import { ConfigurationValidationError } from "../errors.js";
-
-function cloneValue(value) {
-  return structuredClone(value);
-}
+import { cloneValue } from "../../utils/common.js";
 
 function buildValidationMessage(schemaName, errors) {
   const summary = errors
