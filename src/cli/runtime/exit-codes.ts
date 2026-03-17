@@ -1,28 +1,13 @@
-export const EXIT_CODES = {
-  success: 0,
-  businessCheckFailed: 1,
-  configError: 2,
-  environmentError: 3,
-  inputError: 4,
-  internalError: 5,
-} as const;
+import { COMMANDER_ERROR_TO_EXIT_CODE, EXIT_CODES } from "../../constants/exit-codes.js";
+
+export { EXIT_CODES };
 
 export type ExitCode = (typeof EXIT_CODES)[keyof typeof EXIT_CODES];
 
 export function mapCommanderErrorToExitCode(errorCode: string): ExitCode {
-  switch (errorCode) {
-    case "commander.helpDisplayed":
-    case "commander.version":
-      return EXIT_CODES.success;
-    case "commander.unknownCommand":
-    case "commander.unknownOption":
-    case "commander.optionMissingArgument":
-    case "commander.missingMandatoryOptionValue":
-    case "commander.excessArguments":
-    case "commander.excessArgument":
-    case "commander.missingArgument":
-      return EXIT_CODES.inputError;
-    default:
-      return EXIT_CODES.internalError;
+  if (Object.prototype.hasOwnProperty.call(COMMANDER_ERROR_TO_EXIT_CODE, errorCode)) {
+    return COMMANDER_ERROR_TO_EXIT_CODE[errorCode as keyof typeof COMMANDER_ERROR_TO_EXIT_CODE];
   }
+
+  return EXIT_CODES.internalError;
 }

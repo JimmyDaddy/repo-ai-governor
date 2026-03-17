@@ -31,6 +31,7 @@
 
 - [ ] **TK-3007** 收敛 literal-set whitelist 存量并分批迁移（负责人：Release｜优先级：P0｜截止：2026-04-13｜状态：in-progress）
   - 执行记录：plan=将 `literal-set-whitelist.json` 的 13 个路径按模块拆分迁移批次并定义每批验证与回收标准；result=已完成任务拆分并生成 `LS-B1~LS-B4` 批次清单（见 `TK-3007.md`）;verify=`node ./scripts/governance/check-finite-literal-sets.js --format=json`
+  - 执行记录：plan=完成 LS-B1（CLI/配置基础集）迁移并回收对应 whitelist 条目，确保实现层不再保留有限字面量集合；result=已新增 `src/constants/exit-codes.ts`、`src/constants/ansi-theme.ts`、`src/constants/repository-layout.ts`、`src/constants/schema-files.ts`，并改造 4 个目标实现文件引用常量；`literal-set-whitelist.json` 已移除 LS-B1 4 条，剩余 9 条;verify=`npm run typecheck && node ./scripts/governance/check-finite-literal-sets.js --format=json && npm run test -- test/config/schema.test.ts test/config/repository-layout.test.ts test/governance/finite-literal-set-gate.test.ts && npm run check`
 
 - [ ] **TK-3008** 收敛 type-governance whitelist 存量并分批迁移（负责人：Core｜优先级：P0｜截止：2026-04-15｜状态：in-progress）
   - 执行记录：plan=将 `type-governance-whitelist.json` 的 43 个路径按模块拆分迁移批次并定义每批验证与回收标准；result=已完成任务拆分并生成 `TG-B1~TG-B8` 批次清单（见 `TK-3008.md`）;verify=`node ./scripts/governance/check-type-governance.js --format=json`

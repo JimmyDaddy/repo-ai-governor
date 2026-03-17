@@ -5,23 +5,7 @@
       "reason": "legacy finite literal set declarations pending migration to src/constants"
     },
     {
-      "path": "src/cli/runtime/exit-codes.ts",
-      "reason": "legacy finite literal set declarations pending migration to src/constants"
-    },
-    {
-      "path": "src/cli/ui/theme.ts",
-      "reason": "legacy finite literal set declarations pending migration to src/constants"
-    },
-    {
       "path": "src/commands/run-command.ts",
-      "reason": "legacy finite literal set declarations pending migration to src/constants"
-    },
-    {
-      "path": "src/config/repository-layout.ts",
-      "reason": "legacy finite literal set declarations pending migration to src/constants"
-    },
-    {
-      "path": "src/config/schema/index.ts",
       "reason": "legacy finite literal set declarations pending migration to src/constants"
     },
     {

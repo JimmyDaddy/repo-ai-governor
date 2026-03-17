@@ -1,18 +1,10 @@
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
+import { SCHEMA_FILE_NAMES } from "../../constants/schema-files.js";
 
 export const CONFIG_SCHEMA_VERSION = "1";
 
-export const SCHEMA_FILE_NAMES = Object.freeze({
-  shared: "shared.schema.json",
-  governor: "governor.schema.json",
-  workflowTemplate: "workflow-template.schema.json",
-  standardsPackage: "standards-package.schema.json",
-  slot: "slot.schema.json",
-  adapter: "adapter.schema.json",
-  skillManifest: "skill-manifest.schema.json",
-  skillCatalog: "skill-catalog.schema.json",
-});
+export { SCHEMA_FILE_NAMES };
 
 export type SchemaName = keyof typeof SCHEMA_FILE_NAMES;
 export type JsonSchemaDocument = Record<string, unknown> & { $id?: string };

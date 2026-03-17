@@ -1,15 +1,14 @@
 import path from "node:path";
+import {
+  DEFAULT_REPOSITORY_LAYOUT,
+  DEFAULT_TASK_CSV_COLUMNS,
+  REVIEW_STATUS_PREFIXES,
+} from "../constants/repository-layout.js";
 
 export const PROJECT_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 export const SPRINT_NAME_PATTERN = /^sprint-\d{3}$/;
 export const TASK_ID_PATTERN = /^TK-\d{3}$/;
 export const REVIEW_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-
-const REVIEW_STATUS_PREFIXES = Object.freeze({
-  pending: "review",
-  verified: "verified_review",
-  resolved: "resolved_review",
-} as const);
 
 export type ReviewStatus = keyof typeof REVIEW_STATUS_PREFIXES;
 
@@ -21,57 +20,7 @@ export type ResolveRepositoryLayoutOptions = {
   sprint?: string;
 };
 
-export const DEFAULT_TASK_CSV_COLUMNS = Object.freeze([
-  "execution_id",
-  "task_id",
-  "title",
-  "owner",
-  "priority",
-  "due_date",
-  "status",
-  "project",
-  "sprint",
-  "plan",
-  "result",
-  "verify",
-  "review_delta",
-  "recorded_at",
-]);
-
-export const DEFAULT_REPOSITORY_LAYOUT = Object.freeze({
-  configRoot: ".repo-ai-governor",
-  configFile: "governor.yaml",
-  configDirectories: Object.freeze({
-    context: "context",
-    slots: "slots",
-    adapters: "adapters",
-    reports: "reports",
-    templates: "templates",
-  }),
-  agentEntry: "AGENTS.md",
-  agentContext: ".repo-ai-governor/context/current-context.md",
-  artifacts: Object.freeze({
-    baseDir: "docs",
-    files: Object.freeze({
-      index: "index.md",
-      plan: "plan.md",
-    }),
-    directories: Object.freeze({
-      tasks: "tasks",
-      codeReview: "code-review",
-    }),
-    taskFiles: Object.freeze({
-      checklist: "checklist.md",
-      csv: "tasks.csv",
-      csvColumns: DEFAULT_TASK_CSV_COLUMNS,
-    }),
-    reviewFiles: Object.freeze({
-      pending: "review_<slug>.md",
-      verified: "verified_review_<slug>.md",
-      resolved: "resolved_review_<slug>.md",
-    }),
-  }),
-});
+export { DEFAULT_TASK_CSV_COLUMNS, DEFAULT_REPOSITORY_LAYOUT };
 
 function joinRelativePath(...segments: Array<string | undefined>): string {
   return segments.filter(Boolean).join("/");
