@@ -13,8 +13,10 @@
 - [x] **TK-3002** 将 Biome format/lint 接入默认 gate 与 CI 质量门禁（负责人：Core｜优先级：P0｜截止：2026-04-09｜状态：completed）
   - 执行记录：plan=收敛 Biome 现存诊断并将 `format:check/lint` 纳入稳定 gate 路径；result=已将 `npm run check` 升级为 `format:check -> lint -> build -> check:code-standards`，并批量执行 `biome check --write` 与 `biome check --fix --unsafe` 收敛历史诊断；对 `test/config/schema.test.ts` 增加 Biome override 以避免 `@ts-nocheck` 漂移导致 typecheck 回归；verify=`npm run format:check && npm run lint && npm run check && npm run ci:quality`
 
-- [ ] **TK-3003** 建立 Vitest 稳定性基线与慢测分层策略（负责人：QA｜优先级：P1｜截止：2026-04-10｜状态：todo）
-  - 执行记录：plan=识别高波动测试并建立并发/隔离与慢测执行策略，沉淀稳定性巡检脚本；result=待执行;verify=待执行
+- [x] **TK-3003** 建立 Vitest 稳定性基线与慢测分层策略（负责人：QA｜优先级：P1｜截止：2026-04-10｜状态：completed）
+  - 执行记录：plan=识别高波动测试并建立并发/隔离与慢测执行策略，沉淀稳定性巡检脚本；result=已新增 `scripts/ci/run-vitest-stability-baseline.js` 与 `npm run test:stability/test:slow`，完成 3 轮基线采集（`runFailures=0`、`flakyFiles=0`、`slowFiles=16`），并沉淀 `vitest-stability-baseline.md`;verify=`npm run test:stability -- --runs 3 && npm run check`
+  - 执行记录：plan=复验 TK-3003 验收并确认“无新增随机失败”条件是否满足；result=复验命令 `npm run test:stability -- --runs 3` 出现 `runFailures=1`、`flakyFiles=1`，定位到 `test/release/getting-started-acceptance.test.ts`（run-03 失败），当前不满足结项条件;verify=`npm run test:stability -- --runs 3 && npm run check`
+  - 执行记录：plan=消除发布链路测试并发波动并完成结项复验；result=新增 `test/release/release-test-lock.ts` 跨进程互斥锁并应用到 `getting-started-acceptance` 与 `release-distribution`，修复后连续两轮 `npm run test:stability -- --runs 3` 均通过（`runFailures=0`、`flakyFiles=0`），TK-3003 标记 completed;verify=`npm run test:stability -- --runs 3 && npm run test:stability -- --runs 3 && npm run check`
 
 - [ ] **TK-3004** 建立覆盖率基线并引入阈值门禁（负责人：QA｜优先级：P1｜截止：2026-04-11｜状态：todo）
   - 执行记录：plan=定义核心模块覆盖率基线与最低阈值并接入门禁，避免回归时静默下滑；result=待执行;verify=待执行

@@ -1,5 +1,7 @@
 node_modules/
 dist/
 coverage/
+.tmp/
+.repo-ai-governor/reports/
 *.tsbuildinfo
 *.tgz

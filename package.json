@@ -46,7 +46,9 @@
     "build": "tsc -p tsconfig.build.json && node ./scripts/build/copy-runtime-assets.js",
     "start:dist": "node ./dist/bin/repo-ai-governor.js",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:stability": "node ./scripts/ci/run-vitest-stability-baseline.js",
+    "test:slow": "vitest run --slowTestThreshold=1500 --reporter=verbose"
   },
   "engines": {
     "node": ">=18.0.0"
