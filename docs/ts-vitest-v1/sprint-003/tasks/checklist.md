@@ -21,8 +21,10 @@
 - [x] **TK-3004** 建立覆盖率基线并引入阈值门禁（负责人：QA｜优先级：P1｜截止：2026-04-11｜状态：completed）
   - 执行记录：plan=定义核心模块覆盖率基线与最低阈值并接入门禁，避免回归时静默下滑；result=已新增 `coverage-baseline.md`、`scripts/ci/coverage-thresholds.json`、`scripts/ci/check-coverage-thresholds.js`，并将 `ci:quality` 接入 `check:coverage` 覆盖率阈值门禁;verify=`npm run check:coverage-thresholds && npm run check:coverage && npm run ci:quality`
 
-- [ ] **TK-3005** 收口发布与运行时 JS 白名单边界（负责人：Release｜优先级：P0｜截止：2026-04-12｜状态：todo）
+- [x] **TK-3005** 收口发布与运行时 JS 白名单边界（负责人：Release｜优先级：P0｜截止：2026-04-12｜状态：completed）
   - 执行记录：plan=整理发布链路必要 JS 文件清单并补充用途说明，防止新增无归属 JS 残留；result=待执行;verify=待执行
+  - 执行记录：plan=建立发布包 JS 白名单配置与自动审计脚本，并接入发布前门禁以拦截未归属 JS；result=已新增 scripts/release/runtime-js-whitelist.json、scripts/release/check-runtime-js-whitelist.js，新增 check:runtime-js-whitelist 并接入 release:check，同时补充文档 release-runtime-js-whitelist.md 与回归测试;verify=`npm run test -- test/release/release-distribution.test.ts && npm run check:runtime-js-whitelist && npm run release:check`
+  - 执行记录：plan=补齐“新增无归属 JS 必须告警”负向验证并完成发布候选链路复验，满足 TK-3005 验收闭环；result=已新增未归属 JS 失败回归，验证 runtime JS whitelist 门禁可阻断无归属非 dist JS；`npm run release:candidate` 全链路通过，任务完成;verify=`npm run test -- test/release/release-distribution.test.ts && npm run check:runtime-js-whitelist && npm run release:candidate`
 
 - [ ] **TK-3006** 完成迁移收官文档与长期约束落盘（负责人：Core｜优先级：P1｜截止：2026-04-12｜状态：todo）
   - 执行记录：plan=更新 README/执行计划/开发约束文档，形成 TS/Vitest/Biome 的长期实践基线；result=待执行;verify=待执行

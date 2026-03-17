@@ -90,6 +90,7 @@ function main() {
   const requiredChecks = [
     "npm run ci:quality",
     "npm run check:ts-only",
+    "npm run check:runtime-js-whitelist",
     "npm run release:check",
     "npm run release:verify-local",
   ];

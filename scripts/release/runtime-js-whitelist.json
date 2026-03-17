@@ -1,0 +1,41 @@
+{
+  "distAllowList": [
+    {
+      "pathPrefix": "dist",
+      "owner": "Core",
+      "purpose": "TypeScript build output and runtime modules packaged for CLI execution."
+    }
+  ],
+  "pathAllowList": [
+    {
+      "path": "bin/repo-ai-governor.js",
+      "owner": "Core",
+      "purpose": "CLI bootstrap entry for Node execution before loading dist modules."
+    },
+    {
+      "path": "scripts/examples/load-dist-module.js",
+      "owner": "Core",
+      "purpose": "Published example script for loading the dist runtime module."
+    },
+    {
+      "path": "scripts/examples/render-claude-code-adapter-bundle.js",
+      "owner": "Core",
+      "purpose": "Published adapter example script for Claude Code bundle rendering."
+    },
+    {
+      "path": "scripts/examples/render-codex-adapter-bundle.js",
+      "owner": "Core",
+      "purpose": "Published adapter example script for Codex bundle rendering."
+    },
+    {
+      "path": "scripts/examples/render-github-copilot-adapter-bundle.js",
+      "owner": "Core",
+      "purpose": "Published adapter example script for GitHub Copilot bundle rendering."
+    },
+    {
+      "path": "skills/official/governor-plan-runner/scripts/create-request-draft.js",
+      "owner": "Release",
+      "purpose": "Official packaged skill runtime helper script used by governor-plan-runner."
+    }
+  ]
+}
