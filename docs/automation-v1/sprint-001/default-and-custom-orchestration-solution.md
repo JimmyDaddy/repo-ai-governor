@@ -123,10 +123,11 @@ automation:
 
 1. Sprint-001（当前）
    - 完成默认流程与配置覆盖能力（已落地）。
+   - 增加 `run --explain-process`，输出编排编译结果（markdown/json，已落地）。
+   - 增加流程配置合法性检查子命令（如 `run --validate-process --dry-run`，已落地）。
    - 补齐本技术方案文档（本次）。
-2. Sprint-002（建议）
-   - 增加 `run --explain-process`，输出编排编译结果（markdown/json）。
-   - 增加流程配置合法性检查子命令（如 `run --validate-process --dry-run`）。
+2. Sprint-002（后续演进方向）
+   - 基于 `run --explain-process` / `run --validate-process` 增强可视化展示与与质量门集成（可选）。
 
 ## Risks
 
