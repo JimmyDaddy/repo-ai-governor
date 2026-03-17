@@ -24,3 +24,7 @@
 - [x] **TK-1006** 参考 `camera_point` 启用 Biome linter 规则与 lint 命令（负责人：Core｜优先级：P0｜截止：2026-03-20｜状态：done）
   - 执行记录：plan=参考 `/Users/jimmydaddy/study/camera_point/biome.json` 对齐 Biome 规则，启用 `organizeImports` 与 `linter.rules`，并新增 lint 脚本;result=已将 `@biomejs/biome` 版本对齐到 `^1.9.4`，更新当前仓库 `biome.json` 为参考配置模型，并在 `package.json` 新增 `npm run lint`;verify=`npx biome --version && npx biome check biome.json package.json`
   - 执行记录：review_delta=已完成 `TK-1006` 自检复核，CR 结果落盘为 `code-review/verified_review_tk-1006-enable-biome-linter-camera-point-reference.md`;verify=`npm run lint -- --max-diagnostics=20` 可执行，当前因历史代码未完全收敛而存在诊断
+
+- [ ] **TK-1007** 清理试点双轨 JS 残留并收敛 TS-only 入口（负责人：Core｜优先级：P1｜截止：2026-03-28｜状态：in-progress）
+  - 执行记录：plan=创建 JS 残留收敛任务并先完成双轨清单盘点，确定迁移顺序与入口切换前置条件;result=已识别当前 `src` 双轨文件共 5 组：`src/utils/common`、`src/config/schema/index`、`src/config/schema/validator`、`src/reporting/report-model`、`src/reporting/report-source`，下一步将先收敛本地运行入口后再移除冗余 `.js`;verify=`for f in $(find src -name '*.ts' | sort); do b=\"${f%.ts}\"; [ -f \"$b.js\" ] && echo \"$b\"; done`
+  - 执行记录：plan=先执行入口收敛第一步，降低后续删除双轨 `.js` 的回归风险;result=已将 `bin/repo-ai-governor.js` 调整为优先加载 `dist/src/cli/index.js`，当 `dist` 不存在时自动回退 `src/cli/index.js`，兼顾发布入口与本地开发体验;verify=`npm run test -- test/ci/ci-scripts.test.js test/ci/quality-gate-workflow.test.js && npm run check`

@@ -1,6 +1,6 @@
 # TS Vitest V1 Sprint 001 Plan
 
-- Status: done
+- Status: in-progress
 - Date: 2026-03-17
 - Project: `ts-vitest-v1`
 - Sprint: `sprint-001`
@@ -17,6 +17,7 @@
 4. 参考 `camera_point` 启用 Biome linter 规则与 lint 命令。
 5. 完成首批基础模块与测试迁移（低风险高收益路径）。
 6. 对齐 CI / 质量门禁 / 发布入口的迁移约束。
+7. 收敛试点双轨 `.js/.ts` 残留并推进 TS-only 运行入口策略。
 
 ## Out Of Scope
 
@@ -32,6 +33,7 @@
 4. 已提供 `npm run lint` 的 Biome lint 能力。
 5. 首批迁移模块在类型检查和测试层面通过。
 6. 发布入口与 CI 不依赖源码 `.js` 才能工作。
+7. 试点双轨 JS 残留清单已收敛并具备可验证迁移路径。
 
 ## Verification Path
 
@@ -41,6 +43,7 @@
 4. `npm run format:check`
 5. `npm run lint`
 6. `npm run check`
+7. `npm run release:ga-check`
 
 ## Tasks
 
@@ -50,3 +53,4 @@
 4. `TK-1004` 对齐 CI/Gate 与发布入口的 TS/Vitest 约束
 5. `TK-1005` 接入 Biome formatter 与格式化命令基线
 6. `TK-1006` 参考 `camera_point` 启用 Biome linter 规则与 lint 命令
+7. `TK-1007` 清理试点双轨 JS 残留并收敛 TS-only 入口
