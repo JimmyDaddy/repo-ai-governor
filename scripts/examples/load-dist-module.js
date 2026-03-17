@@ -48,5 +48,6 @@ export async function importDistModule(relativeModulePath) {
     throw new Error(`Unable to resolve dist module: ${distModulePath}`);
   }
 
+  // dynamic-import-allowed: example loader resolves dist module path at runtime for adapter demos
   return import(pathToFileURL(distModulePath).href);
 }

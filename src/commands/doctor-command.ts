@@ -175,6 +175,7 @@ type ResolvedConfig = {
 };
 
 const require = createRequire(import.meta.url);
+// dynamic-import-allowed: read package engines/version from package metadata during doctor checks
 const packageJson = require("../../package.json") as PackageJsonLike;
 
 function t(locale: string | null | undefined, zhCN: string, enUS: string): string {

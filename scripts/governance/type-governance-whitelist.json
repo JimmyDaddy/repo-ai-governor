@@ -1,0 +1,176 @@
+{
+  "pathAllowList": [
+    {
+      "path": "src/adapters/adapter-model.ts",
+      "reason": "legacy declarations pending migration into src/types"
+    },
+    {
+      "path": "src/adapters/bundle-shared.ts",
+      "reason": "legacy declarations pending migration into src/types"
+    },
+    {
+      "path": "src/adapters/claude-code-bundle.ts",
+      "reason": "legacy declarations pending migration into src/types"
+    },
+    {
+      "path": "src/adapters/codex-bundle.ts",
+      "reason": "legacy declarations pending migration into src/types"
+    },
+    {
+      "path": "src/adapters/github-copilot-bundle.ts",
+      "reason": "legacy declarations pending migration into src/types"
+    },
+    {
+      "path": "src/cli/command-registry.ts",
+      "reason": "legacy declarations pending migration into src/types"
+    },
+    {
+      "path": "src/cli/index.ts",
+      "reason": "legacy declarations pending migration into src/types"
+    },
+    {
+      "path": "src/cli/runtime/context.ts",
+      "reason": "legacy declarations pending migration into src/types"
+    },
+    {
+      "path": "src/cli/runtime/errors.ts",
+      "reason": "legacy declarations pending migration into src/types"
+    },
+    {
+      "path": "src/cli/runtime/exit-codes.ts",
+      "reason": "legacy declarations pending migration into src/types"
+    },
+    {
+      "path": "src/cli/ui/logger.ts",
+      "reason": "legacy declarations pending migration into src/types"
+    },
+    {
+      "path": "src/cli/ui/theme.ts",
+      "reason": "legacy declarations pending migration into src/types"
+    },
+    {
+      "path": "src/commands/bootstrap-shared.ts",
+      "reason": "legacy declarations pending migration into src/types"
+    },
+    {
+      "path": "src/commands/check-command.ts",
+      "reason": "legacy declarations pending migration into src/types"
+    },
+    {
+      "path": "src/commands/doctor-command.ts",
+      "reason": "legacy declarations pending migration into src/types"
+    },
+    {
+      "path": "src/commands/init-command.ts",
+      "reason": "legacy declarations pending migration into src/types"
+    },
+    {
+      "path": "src/commands/plan-command.ts",
+      "reason": "legacy declarations pending migration into src/types"
+    },
+    {
+      "path": "src/commands/report-command.ts",
+      "reason": "legacy declarations pending migration into src/types"
+    },
+    {
+      "path": "src/commands/review-command.ts",
+      "reason": "legacy declarations pending migration into src/types"
+    },
+    {
+      "path": "src/commands/review-verify-command.ts",
+      "reason": "legacy declarations pending migration into src/types"
+    },
+    {
+      "path": "src/commands/run-command.ts",
+      "reason": "legacy declarations pending migration into src/types"
+    },
+    {
+      "path": "src/commands/skills-command.ts",
+      "reason": "legacy declarations pending migration into src/types"
+    },
+    {
+      "path": "src/commands/templates/init-documents.ts",
+      "reason": "legacy declarations pending migration into src/types"
+    },
+    {
+      "path": "src/commands/templates/plan-documents.ts",
+      "reason": "legacy declarations pending migration into src/types"
+    },
+    {
+      "path": "src/commands/upgrade-command.ts",
+      "reason": "legacy declarations pending migration into src/types"
+    },
+    {
+      "path": "src/config/errors.ts",
+      "reason": "legacy declarations pending migration into src/types"
+    },
+    {
+      "path": "src/config/load-config.ts",
+      "reason": "legacy declarations pending migration into src/types"
+    },
+    {
+      "path": "src/config/repository-layout.ts",
+      "reason": "legacy declarations pending migration into src/types"
+    },
+    {
+      "path": "src/config/schema/index.ts",
+      "reason": "legacy declarations pending migration into src/types"
+    },
+    {
+      "path": "src/config/schema/validator.ts",
+      "reason": "legacy declarations pending migration into src/types"
+    },
+    {
+      "path": "src/constants/skill-actions.ts",
+      "reason": "legacy declarations pending migration into src/types"
+    },
+    {
+      "path": "src/reporting/report-model.ts",
+      "reason": "legacy declarations pending migration into src/types"
+    },
+    {
+      "path": "src/reporting/report-source.ts",
+      "reason": "legacy declarations pending migration into src/types"
+    },
+    {
+      "path": "src/skills/catalog.ts",
+      "reason": "legacy declarations pending migration into src/types"
+    },
+    {
+      "path": "src/skills/package-layout.ts",
+      "reason": "legacy declarations pending migration into src/types"
+    },
+    {
+      "path": "src/skills/runtime.ts",
+      "reason": "legacy declarations pending migration into src/types"
+    },
+    {
+      "path": "src/skills/semver.ts",
+      "reason": "legacy declarations pending migration into src/types"
+    },
+    {
+      "path": "src/slots/runtime.ts",
+      "reason": "legacy declarations pending migration into src/types"
+    },
+    {
+      "path": "src/slots/slot-model.ts",
+      "reason": "legacy declarations pending migration into src/types"
+    },
+    {
+      "path": "src/standards/official-base-package.ts",
+      "reason": "legacy declarations pending migration into src/types"
+    },
+    {
+      "path": "src/standards/package-model.ts",
+      "reason": "legacy declarations pending migration into src/types"
+    },
+    {
+      "path": "src/workflow/governance-engine.ts",
+      "reason": "legacy declarations pending migration into src/types"
+    },
+    {
+      "path": "src/workflow/template-model.ts",
+      "reason": "legacy declarations pending migration into src/types"
+    }
+  ]
+}

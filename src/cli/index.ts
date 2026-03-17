@@ -55,6 +55,7 @@ type RepositoryLayoutState = ReturnType<typeof resolveRepositoryLayout>;
 type ResolvedConfigState = ReturnType<typeof loadResolvedConfig>;
 
 const require = createRequire(import.meta.url);
+// dynamic-import-allowed: load local package metadata consistently from source/dist runtime contexts
 const packageJson = require("../../package.json") as PackageJsonLike;
 
 function t(locale: string | null | undefined, zhCN: string, enUS: string): string {

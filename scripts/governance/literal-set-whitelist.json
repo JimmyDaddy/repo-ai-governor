@@ -1,0 +1,56 @@
+{
+  "pathAllowList": [
+    {
+      "path": "src/adapters/adapter-model.ts",
+      "reason": "legacy finite literal set declarations pending migration to src/constants"
+    },
+    {
+      "path": "src/cli/runtime/exit-codes.ts",
+      "reason": "legacy finite literal set declarations pending migration to src/constants"
+    },
+    {
+      "path": "src/cli/ui/theme.ts",
+      "reason": "legacy finite literal set declarations pending migration to src/constants"
+    },
+    {
+      "path": "src/commands/run-command.ts",
+      "reason": "legacy finite literal set declarations pending migration to src/constants"
+    },
+    {
+      "path": "src/config/repository-layout.ts",
+      "reason": "legacy finite literal set declarations pending migration to src/constants"
+    },
+    {
+      "path": "src/config/schema/index.ts",
+      "reason": "legacy finite literal set declarations pending migration to src/constants"
+    },
+    {
+      "path": "src/skills/package-layout.ts",
+      "reason": "legacy finite literal set declarations pending migration to src/constants"
+    },
+    {
+      "path": "src/skills/runtime.ts",
+      "reason": "legacy finite literal set declarations pending migration to src/constants"
+    },
+    {
+      "path": "src/slots/runtime.ts",
+      "reason": "legacy finite literal set declarations pending migration to src/constants"
+    },
+    {
+      "path": "src/slots/slot-model.ts",
+      "reason": "legacy finite literal set declarations pending migration to src/constants"
+    },
+    {
+      "path": "src/standards/package-model.ts",
+      "reason": "legacy finite literal set declarations pending migration to src/constants"
+    },
+    {
+      "path": "src/workflow/governance-engine.ts",
+      "reason": "legacy finite literal set declarations pending migration to src/constants"
+    },
+    {
+      "path": "src/workflow/template-model.ts",
+      "reason": "legacy finite literal set declarations pending migration to src/constants"
+    }
+  ]
+}

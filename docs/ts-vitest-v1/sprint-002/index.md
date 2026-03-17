@@ -1,6 +1,6 @@
 # TS Vitest V1 Sprint 002
 
-- Status: in-progress
+- Status: done
 - Date: 2026-03-17
 - Project: `ts-vitest-v1`
 - Sprint: `sprint-002`

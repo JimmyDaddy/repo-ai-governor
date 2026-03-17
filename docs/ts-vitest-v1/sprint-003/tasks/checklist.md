@@ -1,0 +1,29 @@
+# TS Vitest V1 Sprint 003 Checklist
+
+- [ ] **TK-3001** 收敛 TS-only 白名单并扩展关键目录审计边界（负责人：Release｜优先级：P0｜截止：2026-04-08｜状态：in-progress）
+  - 执行记录：plan=梳理现有 TS-only 审计范围并补充白名单字段说明，扩展到迁移后高风险目录；result=待执行;verify=待执行
+  - 执行记录：plan=补充导入规范约束并让 AI 入口显式读取 `code_standards.md`，将非相对 `.js` 导入纳入可执行门禁;result=已在 `scripts/governance/check-esm-import-specifiers.js` 增加“非相对 specifier 禁止 `.js/.mjs/.cjs`”校验，更新 `code_standards.md` 与 `AGENTS.md`，并新增 `test/governance/esm-import-specifier-gate.test.ts` 回归测试;verify=`npm run typecheck && npm run test -- test/governance/esm-import-specifier-gate.test.ts test/governance/code-standards-gate.test.ts`
+  - 执行记录：plan=新增“默认禁止动态 import()/require()”规范并提供注释例外机制，确保可执行门禁覆盖该规则;result=已新增 `scripts/governance/check-dynamic-import-usage.js` 并接入 `code_standards.md` 校验命令，规则要求例外必须带 `// dynamic-import-allowed: reason`；同时补充现有例外注释并新增 `test/governance/dynamic-import-usage-gate.test.ts`;verify=`npm run typecheck && npm run test -- test/governance/dynamic-import-usage-gate.test.ts test/governance/esm-import-specifier-gate.test.ts test/governance/code-standards-gate.test.ts && npm run check`
+  - 执行记录：plan=新增“有限集合业务值集中到 src/constants”规范并接入可执行门禁，允许一次性局部判断通过注释豁免;result=已新增 `scripts/governance/check-finite-literal-sets.js`、`scripts/governance/literal-set-whitelist.json` 与 `check:finite-literal-sets` 命令，`code_standards.md` 新增 `CS-009`；同时新增 `test/governance/finite-literal-set-gate.test.ts`，并完成首批常量收敛 `src/constants/skill-actions.ts`;verify=`npm run typecheck && npm run test -- test/governance/finite-literal-set-gate.test.ts test/governance/dynamic-import-usage-gate.test.ts test/governance/esm-import-specifier-gate.test.ts test/governance/code-standards-gate.test.ts && npm run check`
+  - 执行记录：plan=新增工具函数复用评估与类型语义治理规范并接入可执行门禁，要求新增工具函数复用结论落盘 execution_notes，新增 interface/type 声明分目录治理;result=已新增 `scripts/governance/check-utils-reuse-governance.js`、`scripts/governance/check-type-governance.js` 及对应 whitelist，`code_standards.md` 增补 `CS-010~CS-013`，并新增 `src/types/interfaces|aliases` 目录与 `index.ts` 聚合导出（示例迁移 `Locale/LocaleOptions`）;verify=`npm run typecheck && npm run test -- test/governance/utils-reuse-gate.test.ts test/governance/type-governance-gate.test.ts test/governance/finite-literal-set-gate.test.ts test/governance/dynamic-import-usage-gate.test.ts test/governance/esm-import-specifier-gate.test.ts test/governance/code-standards-gate.test.ts && npm run check`
+
+- [ ] **TK-3002** 将 Biome format/lint 接入默认 gate 与 CI 质量门禁（负责人：Core｜优先级：P0｜截止：2026-04-09｜状态：todo）
+  - 执行记录：plan=收敛 Biome 现存诊断并将 `format:check/lint` 纳入稳定 gate 路径；result=待执行;verify=待执行
+
+- [ ] **TK-3003** 建立 Vitest 稳定性基线与慢测分层策略（负责人：QA｜优先级：P1｜截止：2026-04-10｜状态：todo）
+  - 执行记录：plan=识别高波动测试并建立并发/隔离与慢测执行策略，沉淀稳定性巡检脚本；result=待执行;verify=待执行
+
+- [ ] **TK-3004** 建立覆盖率基线并引入阈值门禁（负责人：QA｜优先级：P1｜截止：2026-04-11｜状态：todo）
+  - 执行记录：plan=定义核心模块覆盖率基线与最低阈值并接入门禁，避免回归时静默下滑；result=待执行;verify=待执行
+
+- [ ] **TK-3005** 收口发布与运行时 JS 白名单边界（负责人：Release｜优先级：P0｜截止：2026-04-12｜状态：todo）
+  - 执行记录：plan=整理发布链路必要 JS 文件清单并补充用途说明，防止新增无归属 JS 残留；result=待执行;verify=待执行
+
+- [ ] **TK-3006** 完成迁移收官文档与长期约束落盘（负责人：Core｜优先级：P1｜截止：2026-04-12｜状态：todo）
+  - 执行记录：plan=更新 README/执行计划/开发约束文档，形成 TS/Vitest/Biome 的长期实践基线；result=待执行;verify=待执行
+
+- [ ] **TK-3007** 收敛 literal-set whitelist 存量并分批迁移（负责人：Release｜优先级：P0｜截止：2026-04-13｜状态：in-progress）
+  - 执行记录：plan=将 `literal-set-whitelist.json` 的 13 个路径按模块拆分迁移批次并定义每批验证与回收标准；result=已完成任务拆分并生成 `LS-B1~LS-B4` 批次清单（见 `TK-3007.md`）;verify=`node ./scripts/governance/check-finite-literal-sets.js --format=json`
+
+- [ ] **TK-3008** 收敛 type-governance whitelist 存量并分批迁移（负责人：Core｜优先级：P0｜截止：2026-04-15｜状态：in-progress）
+  - 执行记录：plan=将 `type-governance-whitelist.json` 的 43 个路径按模块拆分迁移批次并定义每批验证与回收标准；result=已完成任务拆分并生成 `TG-B1~TG-B8` 批次清单（见 `TK-3008.md`）;verify=`node ./scripts/governance/check-type-governance.js --format=json`

@@ -52,6 +52,7 @@ if (!fs.existsSync(distCliEntryPath)) {
   process.exit(1);
 }
 
+// dynamic-import-allowed: runtime entrypoint path is resolved dynamically for source/dist execution
 const { runCli } = await import(pathToFileURL(distCliEntryPath).href);
 
 const exitCode = await runCli(process.argv.slice(2));

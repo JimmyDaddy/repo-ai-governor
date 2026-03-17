@@ -19,6 +19,7 @@ import { renderInitDocument } from "./templates/init-documents.js";
 type AnyRecord = Record<string, any>;
 
 const require = createRequire(import.meta.url);
+// dynamic-import-allowed: read package name/version at runtime across ts/dist execution modes
 const packageJson = require("../../package.json") as AnyRecord;
 
 function t(locale: string | null | undefined, zhCN: string, enUS: string): string {

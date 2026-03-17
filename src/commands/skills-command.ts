@@ -7,6 +7,10 @@ import type { ExitCode } from "../cli/runtime/exit-codes.js";
 import { EXIT_CODES } from "../cli/runtime/exit-codes.js";
 import type { Logger } from "../cli/ui/logger.js";
 import {
+  SUPPORTED_SKILL_ACTIONS,
+  type SkillAction,
+} from "../constants/skill-actions.js";
+import {
   type OfficialSkillCatalogEntry,
   type OfficialSkillCatalogState,
   loadOfficialSkillCatalog,
@@ -30,13 +34,12 @@ import { doesVersionSatisfy } from "../skills/semver.js";
 import { normalizeLocale, toRelativePath, translateLocale } from "../utils/common.js";
 
 const require = createRequire(import.meta.url);
+// dynamic-import-allowed: read package version for skills compatibility reporting
 const packageJson = require("../../package.json") as {
   version: string;
 };
-const SUPPORTED_SKILL_ACTIONS = Object.freeze(["install", "list", "doctor"] as const);
 
 type ParsedOptions = Record<string, unknown>;
-type SkillAction = (typeof SUPPORTED_SKILL_ACTIONS)[number];
 type SkillManifest = ReturnType<typeof loadSkillManifest>;
 type FindingSeverity = "info" | "warning" | "error";
 type FindingStatus = "pass" | "warn" | "fail";

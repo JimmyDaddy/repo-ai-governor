@@ -68,7 +68,7 @@
 6. `TK-1006` 参考 `camera_point` 启用 Biome linter 规则与 lint 命令。
 7. `TK-1007` 清理试点双轨 JS 残留并收敛 TS-only 入口。
 
-### Sprint 002: Full Source Migration (in progress)
+### Sprint 002: Full Source Migration (done)
 
 目标：
 
@@ -93,6 +93,15 @@
 1. 完成 JS 残留审计，仅保留必要 JS 入口包装层。
 2. 提升测试覆盖与执行稳定性，明确回归基线。
 3. 收口迁移文档并形成长期约束（新增代码默认 TS + Vitest + Biome）。
+
+任务（草案）：
+
+1. `TK-3001` 收敛 TS-only 白名单并扩展关键目录审计边界。
+2. `TK-3002` 将 Biome format/lint 接入默认 gate 与 CI 质量门禁。
+3. `TK-3003` 建立 Vitest 稳定性基线与慢测分层策略。
+4. `TK-3004` 建立覆盖率基线并引入阈值门禁。
+5. `TK-3005` 收口发布与运行时 JS 白名单边界。
+6. `TK-3006` 完成迁移收官文档与长期约束落盘。
 
 ## Exit Criteria
 

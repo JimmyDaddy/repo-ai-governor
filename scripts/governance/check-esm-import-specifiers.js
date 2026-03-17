@@ -100,6 +100,18 @@ function isRelativeSpecifier(specifier) {
   return specifier.startsWith("./") || specifier.startsWith("../");
 }
 
+function isBareSpecifier(specifier) {
+  if (isRelativeSpecifier(specifier)) {
+    return false;
+  }
+
+  if (specifier.startsWith("/") || specifier.startsWith("node:")) {
+    return false;
+  }
+
+  return !/^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(specifier);
+}
+
 function validateRelativeSpecifier(specifier) {
   const cleanSpecifier = String(specifier).split("?")[0].split("#")[0];
 
@@ -127,6 +139,23 @@ function validateRelativeSpecifier(specifier) {
   };
 }
 
+function validateBareSpecifier(specifier) {
+  const cleanSpecifier = String(specifier).split("?")[0].split("#")[0];
+  const extension = extractExtension(cleanSpecifier);
+
+  if (!SOURCE_EXTENSIONS.has(extension)) {
+    return {
+      valid: true,
+      reason: null
+    };
+  }
+
+  return {
+    valid: false,
+    reason: "non-relative specifier must not end with .js/.mjs/.cjs"
+  };
+}
+
 function main() {
   const options = parseArguments(process.argv.slice(2));
   const cwd = options.cwd;
@@ -139,11 +168,26 @@ function main() {
     const specifiers = collectImportSpecifiers(content);
 
     for (const specifier of specifiers) {
-      if (!isRelativeSpecifier(specifier)) {
+      if (isRelativeSpecifier(specifier)) {
+        const validation = validateRelativeSpecifier(specifier);
+
+        if (validation.valid) {
+          continue;
+        }
+
+        failures.push({
+          file: toRelativePath(cwd, filePath),
+          specifier,
+          reason: validation.reason
+        });
         continue;
       }
 
-      const validation = validateRelativeSpecifier(specifier);
+      if (!isBareSpecifier(specifier)) {
+        continue;
+      }
+
+      const validation = validateBareSpecifier(specifier);
 
       if (validation.valid) {
         continue;

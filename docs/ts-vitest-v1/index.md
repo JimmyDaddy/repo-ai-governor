@@ -11,8 +11,9 @@
 ## Files
 
 - [execution-plan.md](./execution-plan.md): 项目级技术路线、迁移策略与多 sprint 迭代目标。
-- [sprint-002/index.md](./sprint-002/index.md): 当前 sprint 的执行入口与任务拆解。
-- [sprint-001/index.md](./sprint-001/index.md): 已完成 sprint 的执行记录。
+- [sprint-003/index.md](./sprint-003/index.md): 当前 sprint 的执行入口与任务拆解（硬化与收官草案）。
+- [sprint-002/index.md](./sprint-002/index.md): 已完成 sprint 的执行记录（全量迁移与 TS-only gate 收口）。
+- [sprint-001/index.md](./sprint-001/index.md): 已完成 sprint 的执行记录（基线与试点迁移）。
 
 ## Notes
 

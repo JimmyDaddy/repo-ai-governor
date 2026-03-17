@@ -4,14 +4,14 @@
 
 - Status: in-progress
 - Project: `ts-vitest-v1`
-- Sprint: `sprint-002`
-- Docs root: `docs/ts-vitest-v1/sprint-002`
-- Task records: `docs/ts-vitest-v1/sprint-002/tasks/checklist.md`, `docs/ts-vitest-v1/sprint-002/tasks/tasks.csv`
-- Code review records: `docs/ts-vitest-v1/sprint-002/code-review`
+- Sprint: `sprint-003`
+- Docs root: `docs/ts-vitest-v1/sprint-003`
+- Task records: `docs/ts-vitest-v1/sprint-003/tasks/checklist.md`, `docs/ts-vitest-v1/sprint-003/tasks/tasks.csv`
+- Code review records: `docs/ts-vitest-v1/sprint-003/code-review`
 
 ## Active Streams
 
-- `primary`: project=`ts-vitest-v1`, sprint=`sprint-002`, docs=`docs/ts-vitest-v1/sprint-002`, plan=`docs/ts-vitest-v1/sprint-002/plan.md`, tasks=`docs/ts-vitest-v1/sprint-002/tasks/TK-2001.md|docs/ts-vitest-v1/sprint-002/tasks/TK-2002.md|docs/ts-vitest-v1/sprint-002/tasks/TK-2003.md|docs/ts-vitest-v1/sprint-002/tasks/TK-2004.md|docs/ts-vitest-v1/sprint-002/tasks/TK-2005.md|docs/ts-vitest-v1/sprint-002/tasks/TK-2006.md`, checklist=`docs/ts-vitest-v1/sprint-002/tasks/checklist.md`, csv=`docs/ts-vitest-v1/sprint-002/tasks/tasks.csv`, review=`docs/ts-vitest-v1/sprint-002/code-review`, status=`in-progress`
+- `primary`: project=`ts-vitest-v1`, sprint=`sprint-003`, docs=`docs/ts-vitest-v1/sprint-003`, plan=`docs/ts-vitest-v1/sprint-003/plan.md`, tasks=`docs/ts-vitest-v1/sprint-003/tasks/TK-3001.md|docs/ts-vitest-v1/sprint-003/tasks/TK-3002.md|docs/ts-vitest-v1/sprint-003/tasks/TK-3003.md|docs/ts-vitest-v1/sprint-003/tasks/TK-3004.md|docs/ts-vitest-v1/sprint-003/tasks/TK-3005.md|docs/ts-vitest-v1/sprint-003/tasks/TK-3006.md|docs/ts-vitest-v1/sprint-003/tasks/TK-3007.md|docs/ts-vitest-v1/sprint-003/tasks/TK-3008.md`, checklist=`docs/ts-vitest-v1/sprint-003/tasks/checklist.md`, csv=`docs/ts-vitest-v1/sprint-003/tasks/tasks.csv`, review=`docs/ts-vitest-v1/sprint-003/code-review`, status=`in-progress`
 
 ## Update Rules
 
