@@ -11,15 +11,12 @@ import {
   formatDate,
   toRelativePath
 } from "./bootstrap-shared.js";
+import { normalizeLocale, translateLocale } from "../utils/common.js";
 
 const SUPPORTED_SCHEMA_VERSIONS = new Set(["1"]);
 
-function normalizeLocale(locale) {
-  return locale === "en-US" ? "en-US" : "zh-CN";
-}
-
 function t(locale, zhCN, enUS) {
-  return normalizeLocale(locale) === "en-US" ? enUS : zhCN;
+  return translateLocale(locale, zhCN, enUS);
 }
 
 function parseGovernorDocument(filePath, locale = "zh-CN") {

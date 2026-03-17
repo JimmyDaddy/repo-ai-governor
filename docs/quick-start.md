@@ -110,6 +110,22 @@ $CLI check \
 
 ## 7. Run A Review
 
+可先预览一次自动化编排（单入口示例）：
+
+```bash
+$CLI run \
+  --cwd "$TMP_DIR" \
+  --project demo \
+  --sprint sprint-001 \
+  --mode assisted \
+  --input "$TMP_DIR/request.md" \
+  --routing-profile single-codex \
+  --dry-run \
+  --format json
+```
+
+## 8. Run A Review
+
 Prepare a simple file first:
 
 ```bash
@@ -138,7 +154,7 @@ Expected:
 1. a `review_<slug>.md` file under `code-review/`
 2. findings for TODO markers or missing tests when applicable
 
-## 8. Render A Report
+## 9. Render A Report
 
 ```bash
 $CLI report \

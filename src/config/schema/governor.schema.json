@@ -73,6 +73,44 @@
       "$ref": "#/$defs/automationConfig",
       "default": {
         "mode": "assisted",
+        "defaultSurface": "codex",
+        "routingProfile": "multi-ai-dev-review",
+        "routing": {},
+        "profiles": {},
+        "preflight": {
+          "enabled": true,
+          "failOnMissingRequiredSurface": true
+        },
+        "surfaces": {},
+        "taskLoop": {
+          "maxReviewCycles": 3,
+          "completionStatuses": ["done", "resolved", "completed", "closed"]
+        },
+        "process": {
+          "stageDefinitions": [],
+          "draftReviewLoop": {
+            "enabled": true,
+            "routeSequence": ["draft-review", "draft-review-verify"],
+            "maxReviewCycles": 2,
+            "completionPolicy": "first-cycle"
+          },
+          "solutionReviewLoop": {
+            "enabled": true,
+            "routeSequence": [
+              "technical-solution",
+              "technical-solution-review",
+              "technical-solution-revise"
+            ],
+            "maxReviewCycles": 3,
+            "completionPolicy": "first-cycle"
+          },
+          "taskLoop": {
+            "stageId": "task-delivery-loop",
+            "implementationRouteKey": "task-implementation",
+            "codeReviewRouteKey": "task-code-review",
+            "maxReviewCycles": 3
+          }
+        },
         "permissions": {
           "allowRead": true,
           "allowEditCode": true,
@@ -438,6 +476,259 @@
         }
       }
     },
+    "automationSurfaceId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "automationStageRouting": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "./shared.schema.json#/$defs/stageId"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/automationSurfaceId"
+      },
+      "default": {}
+    },
+    "automationRoutingProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "defaultSurface": {
+          "$ref": "#/$defs/automationSurfaceId"
+        },
+        "routing": {
+          "$ref": "#/$defs/automationStageRouting",
+          "default": {}
+        }
+      },
+      "default": {
+        "routing": {}
+      }
+    },
+    "automationPreflight": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "failOnMissingRequiredSurface": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "default": {
+        "enabled": true,
+        "failOnMissingRequiredSurface": true
+      }
+    },
+    "automationSurfaceProbe": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["binary"],
+      "properties": {
+        "binary": {
+          "$ref": "./shared.schema.json#/$defs/nonEmptyString"
+        },
+        "binaryArgs": {
+          "$ref": "./shared.schema.json#/$defs/stringList",
+          "default": ["--version"]
+        },
+        "healthArgs": {
+          "$ref": "./shared.schema.json#/$defs/stringList",
+          "default": ["--help"]
+        },
+        "workspaceDir": {
+          "$ref": "./shared.schema.json#/$defs/relativePath"
+        }
+      }
+    },
+    "automationSurfaces": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "./shared.schema.json#/$defs/slug"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/automationSurfaceProbe"
+      },
+      "default": {}
+    },
+    "automationTaskLoop": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "maxReviewCycles": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50,
+          "default": 3
+        },
+        "completionStatuses": {
+          "$ref": "./shared.schema.json#/$defs/stringList",
+          "default": ["done", "resolved", "completed", "closed"]
+        }
+      },
+      "default": {
+        "maxReviewCycles": 3,
+        "completionStatuses": ["done", "resolved", "completed", "closed"]
+      }
+    },
+    "automationProcessStage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "$ref": "./shared.schema.json#/$defs/stageId"
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["system", "ai", "human", "loop"],
+          "default": "ai"
+        },
+        "requiredSurface": {
+          "type": "boolean"
+        },
+        "routeKey": {
+          "$ref": "./shared.schema.json#/$defs/nonEmptyString"
+        },
+        "name": {
+          "$ref": "./shared.schema.json#/$defs/localizedText"
+        }
+      }
+    },
+    "automationProcessTaskLoop": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "stageId": {
+          "$ref": "./shared.schema.json#/$defs/stageId",
+          "default": "task-delivery-loop"
+        },
+        "implementationRouteKey": {
+          "$ref": "./shared.schema.json#/$defs/nonEmptyString",
+          "default": "task-implementation"
+        },
+        "codeReviewRouteKey": {
+          "$ref": "./shared.schema.json#/$defs/nonEmptyString",
+          "default": "task-code-review"
+        },
+        "maxReviewCycles": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50,
+          "default": 3
+        }
+      },
+      "default": {
+        "stageId": "task-delivery-loop",
+        "implementationRouteKey": "task-implementation",
+        "codeReviewRouteKey": "task-code-review",
+        "maxReviewCycles": 3
+      }
+    },
+    "automationProcessReviewLoop": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "routeSequence": {
+          "$ref": "./shared.schema.json#/$defs/stringList",
+          "default": []
+        },
+        "maxReviewCycles": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50,
+          "default": 3
+        },
+        "completionPolicy": {
+          "type": "string",
+          "enum": ["first-cycle", "max-cycles"],
+          "default": "first-cycle"
+        }
+      },
+      "default": {
+        "enabled": true,
+        "routeSequence": [],
+        "maxReviewCycles": 3,
+        "completionPolicy": "first-cycle"
+      }
+    },
+    "automationProcess": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "stageDefinitions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/automationProcessStage"
+          },
+          "default": []
+        },
+        "draftReviewLoop": {
+          "$ref": "#/$defs/automationProcessReviewLoop",
+          "default": {
+            "enabled": true,
+            "routeSequence": ["draft-review", "draft-review-verify"],
+            "maxReviewCycles": 2,
+            "completionPolicy": "first-cycle"
+          }
+        },
+        "solutionReviewLoop": {
+          "$ref": "#/$defs/automationProcessReviewLoop",
+          "default": {
+            "enabled": true,
+            "routeSequence": [
+              "technical-solution",
+              "technical-solution-review",
+              "technical-solution-revise"
+            ],
+            "maxReviewCycles": 3,
+            "completionPolicy": "first-cycle"
+          }
+        },
+        "taskLoop": {
+          "$ref": "#/$defs/automationProcessTaskLoop",
+          "default": {
+            "stageId": "task-delivery-loop",
+            "implementationRouteKey": "task-implementation",
+            "codeReviewRouteKey": "task-code-review",
+            "maxReviewCycles": 3
+          }
+        }
+      },
+      "default": {
+        "stageDefinitions": [],
+        "draftReviewLoop": {
+          "enabled": true,
+          "routeSequence": ["draft-review", "draft-review-verify"],
+          "maxReviewCycles": 2,
+          "completionPolicy": "first-cycle"
+        },
+        "solutionReviewLoop": {
+          "enabled": true,
+          "routeSequence": [
+            "technical-solution",
+            "technical-solution-review",
+            "technical-solution-revise"
+          ],
+          "maxReviewCycles": 3,
+          "completionPolicy": "first-cycle"
+        },
+        "taskLoop": {
+          "stageId": "task-delivery-loop",
+          "implementationRouteKey": "task-implementation",
+          "codeReviewRouteKey": "task-code-review",
+          "maxReviewCycles": 3
+        }
+      }
+    },
     "automationAudit": {
       "type": "object",
       "additionalProperties": false,
@@ -464,6 +755,74 @@
           "type": "string",
           "enum": ["manual", "assisted", "autonomous"],
           "default": "assisted"
+        },
+        "defaultSurface": {
+          "$ref": "#/$defs/automationSurfaceId",
+          "default": "codex"
+        },
+        "routingProfile": {
+          "$ref": "./shared.schema.json#/$defs/nonEmptyString",
+          "default": "multi-ai-dev-review"
+        },
+        "routing": {
+          "$ref": "#/$defs/automationStageRouting",
+          "default": {}
+        },
+        "profiles": {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "./shared.schema.json#/$defs/slug"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/automationRoutingProfile"
+          },
+          "default": {}
+        },
+        "preflight": {
+          "$ref": "#/$defs/automationPreflight",
+          "default": {
+            "enabled": true,
+            "failOnMissingRequiredSurface": true
+          }
+        },
+        "surfaces": {
+          "$ref": "#/$defs/automationSurfaces",
+          "default": {}
+        },
+        "taskLoop": {
+          "$ref": "#/$defs/automationTaskLoop",
+          "default": {
+            "maxReviewCycles": 3,
+            "completionStatuses": ["done", "resolved", "completed", "closed"]
+          }
+        },
+        "process": {
+          "$ref": "#/$defs/automationProcess",
+          "default": {
+            "stageDefinitions": [],
+            "draftReviewLoop": {
+              "enabled": true,
+              "routeSequence": ["draft-review", "draft-review-verify"],
+              "maxReviewCycles": 2,
+              "completionPolicy": "first-cycle"
+            },
+            "solutionReviewLoop": {
+              "enabled": true,
+              "routeSequence": [
+                "technical-solution",
+                "technical-solution-review",
+                "technical-solution-revise"
+              ],
+              "maxReviewCycles": 3,
+              "completionPolicy": "first-cycle"
+            },
+            "taskLoop": {
+              "stageId": "task-delivery-loop",
+              "implementationRouteKey": "task-implementation",
+              "codeReviewRouteKey": "task-code-review",
+              "maxReviewCycles": 3
+            }
+          }
         },
         "permissions": {
           "$ref": "#/$defs/automationPermissions",

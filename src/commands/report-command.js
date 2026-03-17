@@ -4,18 +4,10 @@ import { loadResolvedConfig } from "../config/load-config.js";
 import { InputError } from "../cli/runtime/errors.js";
 import { loadReportSource } from "../reporting/report-source.js";
 import { renderUnifiedReport } from "../reporting/report-model.js";
-
-function toRelativePath(cwd, absolutePath) {
-  const relativePath = path.relative(cwd, absolutePath).split(path.sep).join("/");
-  return relativePath || ".";
-}
-
-function normalizeLocale(locale) {
-  return locale === "en-US" ? "en-US" : "zh-CN";
-}
+import { normalizeLocale, toRelativePath, translateLocale } from "../utils/common.js";
 
 function t(locale, zhCN, enUS) {
-  return normalizeLocale(locale) === "en-US" ? enUS : zhCN;
+  return translateLocale(locale, zhCN, enUS);
 }
 
 function buildReportRun(commandContext) {

@@ -8,6 +8,7 @@ import { normalizeProjectSlug } from "../config/repository-layout.js";
 import { ConfigError } from "../cli/runtime/errors.js";
 import { renderInitDocument } from "./templates/init-documents.js";
 import { loadOfficialSkillCatalog } from "../skills/catalog.js";
+import { normalizeLocale, toRelativePath, translateLocale } from "../utils/common.js";
 import {
   resolveSkillInstallTarget,
   validateSkillSurface,
@@ -17,17 +18,8 @@ import {
 const require = createRequire(import.meta.url);
 const packageJson = require("../../package.json");
 
-function toRelativePath(cwd, absolutePath) {
-  const relativePath = path.relative(cwd, absolutePath).split(path.sep).join("/");
-  return relativePath || ".";
-}
-
-function normalizeLocale(locale) {
-  return locale === "en-US" ? "en-US" : "zh-CN";
-}
-
 function t(locale, zhCN, enUS) {
-  return normalizeLocale(locale) === "en-US" ? enUS : zhCN;
+  return translateLocale(locale, zhCN, enUS);
 }
 
 function formatDate(date = new Date()) {

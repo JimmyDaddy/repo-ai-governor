@@ -26,6 +26,7 @@
     "start": "node ./bin/repo-ai-governor.js",
     "help": "node ./bin/repo-ai-governor.js --help",
     "test": "node --test",
+    "check:imports": "node ./scripts/governance/check-esm-import-specifiers.js",
     "check:code-standards": "node ./scripts/governance/check-code-standards.js --standards code_standards.md",
     "check": "npm run check:code-standards",
     "release": "release-it",

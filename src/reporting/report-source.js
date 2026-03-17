@@ -2,13 +2,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { InputError } from "../cli/runtime/errors.js";
 import { buildUnifiedReport } from "./report-model.js";
-
-function normalizeLocale(locale) {
-  return locale === "en-US" ? "en-US" : "zh-CN";
-}
+import { normalizeLocale, translateLocale } from "../utils/common.js";
 
 function t(locale, zhCN, enUS) {
-  return normalizeLocale(locale) === "en-US" ? enUS : zhCN;
+  return translateLocale(locale, zhCN, enUS);
 }
 
 function stripBackticks(value) {

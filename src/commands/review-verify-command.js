@@ -5,6 +5,7 @@ import { createReviewFileName } from "../config/repository-layout.js";
 import { ConfigError, InputError } from "../cli/runtime/errors.js";
 import { renderRulesForConsumer, resolveStandardsPackage } from "../standards/official-base-package.js";
 import { executeWorkflow } from "../workflow/governance-engine.js";
+import { normalizeLocale, translateLocale } from "../utils/common.js";
 import {
   analyzeTargets,
   buildArtifactPaths,
@@ -60,16 +61,12 @@ function formatDateTime(date = new Date()) {
   return date.toISOString();
 }
 
-function normalizeLocale(locale) {
-  return locale === "en-US" ? "en-US" : "zh-CN";
-}
-
 function isEnglishLocale(locale) {
   return normalizeLocale(locale) === "en-US";
 }
 
 function t(locale, zhCN, enUS) {
-  return isEnglishLocale(locale) ? enUS : zhCN;
+  return translateLocale(locale, zhCN, enUS);
 }
 
 function detectReviewStatus(fileName, locale = "zh-CN") {

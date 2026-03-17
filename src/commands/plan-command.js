@@ -16,18 +16,10 @@ import {
 } from "../standards/official-base-package.js";
 import { renderPlanDocument, resolvePlanTemplateLocale } from "./templates/plan-documents.js";
 import { executeWorkflow } from "../workflow/governance-engine.js";
-
-function toRelativePath(cwd, absolutePath) {
-  const relativePath = path.relative(cwd, absolutePath).split(path.sep).join("/");
-  return relativePath || ".";
-}
-
-function normalizeLocale(locale) {
-  return locale === "en-US" ? "en-US" : "zh-CN";
-}
+import { normalizeLocale, toRelativePath, translateLocale } from "../utils/common.js";
 
 function t(locale, zhCN, enUS) {
-  return normalizeLocale(locale) === "en-US" ? enUS : zhCN;
+  return translateLocale(locale, zhCN, enUS);
 }
 
 function formatDate(date = new Date()) {

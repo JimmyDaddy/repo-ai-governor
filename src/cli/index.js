@@ -5,6 +5,7 @@ import { executeSkillsCommand } from "../commands/skills-command.js";
 import { executeDoctorCommand } from "../commands/doctor-command.js";
 import { executePlanCommand } from "../commands/plan-command.js";
 import { executeCheckCommand } from "../commands/check-command.js";
+import { executeRunCommand } from "../commands/run-command.js";
 import { executeReviewCommand } from "../commands/review-command.js";
 import { executeReviewVerifyCommand } from "../commands/review-verify-command.js";
 import { executeReportCommand } from "../commands/report-command.js";
@@ -22,16 +23,13 @@ import { createCommandContext } from "./runtime/context.js";
 import { ConfigError, InputError, InternalExecutionError, isCliError } from "./runtime/errors.js";
 import { EXIT_CODES, mapCommanderErrorToExitCode } from "./runtime/exit-codes.js";
 import { createLogger } from "./ui/logger.js";
+import { normalizeLocale, translateLocale } from "../utils/common.js";
 
 const require = createRequire(import.meta.url);
 const packageJson = require("../../package.json");
 
-function normalizeLocale(locale) {
-  return locale === "en-US" ? "en-US" : "zh-CN";
-}
-
 function t(locale, zhCN, enUS) {
-  return normalizeLocale(locale) === "en-US" ? enUS : zhCN;
+  return translateLocale(locale, zhCN, enUS);
 }
 
 function collectValues(value, previousValues = []) {
@@ -69,6 +67,7 @@ function createProgramHelpText() {
     "  repo-ai-governor init --language typescript --adapter codex",
     "  repo-ai-governor skills list --surface codex --format json",
     "  repo-ai-governor doctor --project mvp --sprint sprint-001 --strict",
+    "  repo-ai-governor run --mode assisted --routing-profile multi-ai-dev-review",
     "  repo-ai-governor review --path src/cli --base main --head HEAD",
     "  repo-ai-governor help review-verify"
   ].join("\n");
@@ -326,6 +325,8 @@ function buildProgram(io) {
         exitCode = (await executePlanCommand(commandContext, commandLogger)) ?? EXIT_CODES.success;
       } else if (commandDefinition.name === "check") {
         exitCode = (await executeCheckCommand(commandContext, commandLogger)) ?? EXIT_CODES.success;
+      } else if (commandDefinition.name === "run") {
+        exitCode = (await executeRunCommand(commandContext, commandLogger)) ?? EXIT_CODES.success;
       } else if (commandDefinition.name === "review") {
         exitCode = (await executeReviewCommand(commandContext, commandLogger)) ?? EXIT_CODES.success;
       } else if (commandDefinition.name === "review-verify") {

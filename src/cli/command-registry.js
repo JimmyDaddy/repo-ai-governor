@@ -265,6 +265,69 @@ export const commandDefinitions = [
     ]
   },
   {
+    name: "run",
+    description: "执行自动化编排流程",
+    options: [
+      {
+        long: "--mode",
+        key: "mode",
+        valueName: "manual|assisted|autonomous",
+        description: "指定自动化执行模式",
+        type: "string"
+      },
+      {
+        long: "--routing-profile",
+        key: "routingProfile",
+        valueName: "name",
+        description: "指定阶段路由配置档，如 multi-ai-dev-review",
+        type: "string"
+      },
+      {
+        long: "--route",
+        key: "route",
+        valueName: "stage=surface",
+        description: "按阶段覆盖执行入口，可重复传入",
+        type: "string",
+        multiple: true
+      },
+      {
+        long: "--input",
+        key: "input",
+        valueName: "path",
+        description: "指定执行输入文件",
+        type: "string"
+      },
+      {
+        long: "--skip-preflight",
+        key: "skipPreflight",
+        description: "跳过 preflight 检查",
+        type: "boolean"
+      },
+      {
+        long: "--default-surface",
+        key: "defaultSurface",
+        valueName: "surface",
+        description: "覆盖默认执行入口",
+        type: "string"
+      },
+      {
+        long: "--max-review-cycles",
+        key: "maxReviewCycles",
+        valueName: "number",
+        description: "评审循环（草案/方案/任务）的最大轮次覆盖值",
+        type: "string"
+      },
+      {
+        long: "--approve-risk",
+        key: "approveRisk",
+        valueName: "tag",
+        description: "显式确认高风险标签，可重复传入（如 dangerous_command）",
+        type: "string",
+        multiple: true
+      }
+    ]
+  },
+  {
     name: "review",
     description: "按治理规则执行代码评审检查",
     options: [

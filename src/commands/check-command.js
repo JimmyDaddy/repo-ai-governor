@@ -12,6 +12,12 @@ import {
 import { buildSlotRuntime } from "../slots/runtime.js";
 import { executeWorkflow } from "../workflow/governance-engine.js";
 import { buildUnifiedReport, renderUnifiedReport } from "../reporting/report-model.js";
+import {
+  cloneValue,
+  normalizeLocale,
+  toRelativePath,
+  translateLocale
+} from "../utils/common.js";
 
 const CHECK_WORKFLOW_TEMPLATE = Object.freeze({
   id: "governance-check",
@@ -98,21 +104,8 @@ const PLAN_SECTION_PATTERNS = Object.freeze({
   verificationPath: [/^##\s+Verification Path\b/m, /^##\s+验证路径$/m]
 });
 
-function toRelativePath(cwd, absolutePath) {
-  const relativePath = path.relative(cwd, absolutePath).split(path.sep).join("/");
-  return relativePath || ".";
-}
-
-function normalizeLocale(locale) {
-  return locale === "en-US" ? "en-US" : "zh-CN";
-}
-
 function t(locale, zhCN, enUS) {
-  return normalizeLocale(locale) === "en-US" ? enUS : zhCN;
-}
-
-function cloneValue(value) {
-  return structuredClone(value);
+  return translateLocale(locale, zhCN, enUS);
 }
 
 function createFinding(options) {

@@ -15,6 +15,7 @@ import {
   resolveStandardsPackage
 } from "../standards/official-base-package.js";
 import { executeWorkflow } from "../workflow/governance-engine.js";
+import { normalizeLocale, toRelativePath as toRelativePathValue, translateLocale } from "../utils/common.js";
 
 const REVIEW_WORKFLOW_TEMPLATE = Object.freeze({
   id: "governance-review",
@@ -59,8 +60,7 @@ const SOURCE_FILE_EXTENSIONS = new Set([".js", ".mjs", ".cjs"]);
 const TODO_PATTERN = /\b(TODO|FIXME|HACK)\b/;
 
 export function toRelativePath(cwd, absolutePath) {
-  const relativePath = path.relative(cwd, absolutePath).split(path.sep).join("/");
-  return relativePath || ".";
+  return toRelativePathValue(cwd, absolutePath);
 }
 
 function ensureTrailingNewline(content) {
@@ -71,16 +71,12 @@ function formatDateTime(date = new Date()) {
   return date.toISOString();
 }
 
-function normalizeLocale(locale) {
-  return locale === "en-US" ? "en-US" : "zh-CN";
-}
-
 function isEnglishLocale(locale) {
   return normalizeLocale(locale) === "en-US";
 }
 
 function t(locale, zhCN, enUS) {
-  return isEnglishLocale(locale) ? enUS : zhCN;
+  return translateLocale(locale, zhCN, enUS);
 }
 
 function createFinding(options) {

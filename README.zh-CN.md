@@ -98,10 +98,11 @@ $CLI plan \
 3. `doctor`：校验环境、配置和目录结构。
 4. `plan`：根据需求生成计划与任务产物。
 5. `check`：执行治理检查。
-6. `review`：生成 code review 记录。
-7. `review-verify`：复核并推进 CR 状态流转。
-8. `report`：输出 summary/markdown/json 报告。
-9. `upgrade`：安全升级生成式配置与模板。
+6. `run`：执行带 preflight 和阶段路由的自动化编排。
+7. `review`：生成 code review 记录。
+8. `review-verify`：复核并推进 CR 状态流转。
+9. `report`：输出 summary/markdown/json 报告。
+10. `upgrade`：安全升级生成式配置与模板。
 
 ## 自定义规范与项目规则
 
@@ -125,6 +126,14 @@ slots:
 ```bash
 npm run check:code-standards
 ```
+
+新增代码规范的推荐步骤：
+
+1. 在 `code_standards.md` 的 `## Non-negotiable Rules` 增加带编号的规则（例如 `- [CS-005] ...`）。
+2. 在 `## Verification Commands` 增加可执行命令，确保这条规则可以被自动验证。
+3. 运行 `npm run check:code-standards` 本地验证，确认门禁可通过。
+
+示例（本仓库当前已启用）：对相对路径 import/export 强制要求显式扩展名（`./foo.js`）。
 
 当前仓库里 `npm run check` 已经接到了这个 standards 门禁。
 

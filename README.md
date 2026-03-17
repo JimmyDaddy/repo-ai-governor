@@ -98,10 +98,11 @@ After installation, ask your AI assistant to:
 3. `doctor`: validate environment, config, and layout.
 4. `plan`: generate plan and task artifacts from a requirement.
 5. `check`: run governance checks on sprint artifacts.
-6. `review`: generate code review records.
-7. `review-verify`: append re-check results and advance CR status.
-8. `report`: render governance output into summary/markdown/json.
-9. `upgrade`: upgrade generated config/templates safely.
+6. `run`: orchestrate multi-stage automation with preflight + stage routing.
+7. `review`: generate code review records.
+8. `review-verify`: append re-check results and advance CR status.
+9. `report`: render governance output into summary/markdown/json.
+10. `upgrade`: upgrade generated config/templates safely.
 
 ## Customize Standards And Project Rules
 
@@ -125,6 +126,14 @@ If your team already has a `code_standards.md`, you can turn it into an executab
 ```bash
 npm run check:code-standards
 ```
+
+Recommended flow for adding a new code standard:
+
+1. Add a numbered rule under `## Non-negotiable Rules` (for example `- [CS-005] ...`).
+2. Add one or more executable commands under `## Verification Commands` so the rule is machine-checkable.
+3. Run `npm run check:code-standards` locally and verify the gate passes.
+
+Example now enforced in this repository: relative import/export specifiers must use explicit extensions in native Node.js ESM (`./foo.js`).
 
 In this repository, `npm run check` is wired to that standards gate.
 

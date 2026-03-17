@@ -6,21 +6,13 @@ import { resolveRepositoryLayout } from "../config/repository-layout.js";
 import { ConfigurationError } from "../config/errors.js";
 import { EXIT_CODES } from "../cli/runtime/exit-codes.js";
 import { InputError } from "../cli/runtime/errors.js";
+import { normalizeLocale, toRelativePath, translateLocale } from "../utils/common.js";
 
 const require = createRequire(import.meta.url);
 const packageJson = require("../../package.json");
 
-function toRelativePath(cwd, targetPath) {
-  const relativePath = path.relative(cwd, targetPath).split(path.sep).join("/");
-  return relativePath || ".";
-}
-
-function normalizeLocale(locale) {
-  return locale === "en-US" ? "en-US" : "zh-CN";
-}
-
 function t(locale, zhCN, enUS) {
-  return normalizeLocale(locale) === "en-US" ? enUS : zhCN;
+  return translateLocale(locale, zhCN, enUS);
 }
 
 function resolveLocale(commandContext, resolvedConfig = null) {
