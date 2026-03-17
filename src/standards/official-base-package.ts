@@ -1,18 +1,18 @@
+import { cloneValue } from "../utils/common.js";
 import {
-  createStandardsRule,
-  OFFICIAL_BASE_PACKAGE_SKELETON,
-  renderRuleView,
   type LocalizedText,
+  OFFICIAL_BASE_PACKAGE_SKELETON,
   type RenderRuleViewOptions,
   type RenderedRuleView,
-  type StandardsConsumer,
   STANDARDS_CONSUMERS,
   STANDARDS_PACKAGE_PRESET,
+  type StandardsConsumer,
   type StandardsPackage,
   type StandardsRule,
+  createStandardsRule,
+  renderRuleView,
   validateStandardsPackage,
 } from "./package-model.js";
-import { cloneValue } from "../utils/common.js";
 
 export type StandardsConfig = {
   preset?: string;

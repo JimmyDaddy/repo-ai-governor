@@ -1,14 +1,14 @@
-import { test } from "vitest";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import { test } from "vitest";
 import { loadOfficialSkillCatalog } from "../../src/skills/catalog.js";
 
 const EXPECTED_SKILL_IDS = [
   "governor-context-loader",
   "governor-plan-runner",
   "governor-task-implementer",
-  "governor-delivery-finisher"
+  "governor-delivery-finisher",
 ];
 
 test("official skill catalog loads the first-party skill manifests", () => {

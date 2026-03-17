@@ -1,7 +1,7 @@
 import {
+  type Locale,
   normalizeLocale as normalizeLocaleValue,
   translateLocale,
-  type Locale,
 } from "../utils/common.js";
 
 type GenericRecord = Record<string, unknown>;
@@ -259,27 +259,25 @@ function renderSummary(report: UnifiedReport): string {
     ? JSON.stringify(report.workflow.summary)
     : "null";
 
-  return (
-    [
-      `status=${report.status}`,
-      `command=${report.command}`,
-      `project=${report.context.project ?? ""}`,
-      `sprint=${report.context.sprint ?? ""}`,
-      `findings=${report.findings.length}`,
-      `matched_rules=${report.standards.matchedRuleIds.join(",")}`,
-      `workflow=${workflowSummary}`,
-      ...report.findings.map((finding) => {
-        const parts = [finding.severity, finding.id, finding.message];
+  return `${[
+    `status=${report.status}`,
+    `command=${report.command}`,
+    `project=${report.context.project ?? ""}`,
+    `sprint=${report.context.sprint ?? ""}`,
+    `findings=${report.findings.length}`,
+    `matched_rules=${report.standards.matchedRuleIds.join(",")}`,
+    `workflow=${workflowSummary}`,
+    ...report.findings.map((finding) => {
+      const parts = [finding.severity, finding.id, finding.message];
 
-        if (finding.target) {
-          parts.push(finding.target);
-        }
+      if (finding.target) {
+        parts.push(finding.target);
+      }
 
-        return parts.join(":");
-      }),
-      ...report.nextActions.map((action, index) => `next_action_${index + 1}=${action}`),
-    ].join("\n") + "\n"
-  );
+      return parts.join(":");
+    }),
+    ...report.nextActions.map((action, index) => `next_action_${index + 1}=${action}`),
+  ].join("\n")}\n`;
 }
 
 function renderMarkdown(report: UnifiedReport): string {
@@ -325,28 +323,26 @@ function renderMarkdown(report: UnifiedReport): string {
     .map((action, index) => `${index + 1}. ${action}`)
     .join("\n");
 
-  return (
-    [
-      `${t(locale, "# 治理报告", "# Governance Report")}: ${report.command}`,
-      "",
-      `- ${t(locale, "状态", "Status")}: ${report.status}`,
-      `- ${t(locale, "项目", "Project")}: \`${report.context.project ?? ""}\``,
-      `- Sprint: \`${report.context.sprint ?? ""}\``,
-      `- ${t(locale, "生成时间", "Generated At")}: ${report.generatedAt}`,
-      "",
-      `## ${t(locale, "流程", "Workflow")}`,
-      "",
-      workflowSection,
-      "",
-      `## ${t(locale, "发现", "Findings")}`,
-      "",
-      findingsSection,
-      "",
-      `## ${t(locale, "后续动作", "Next Actions")}`,
-      "",
-      nextActionsSection,
-    ].join("\n") + "\n"
-  );
+  return `${[
+    `${t(locale, "# 治理报告", "# Governance Report")}: ${report.command}`,
+    "",
+    `- ${t(locale, "状态", "Status")}: ${report.status}`,
+    `- ${t(locale, "项目", "Project")}: \`${report.context.project ?? ""}\``,
+    `- Sprint: \`${report.context.sprint ?? ""}\``,
+    `- ${t(locale, "生成时间", "Generated At")}: ${report.generatedAt}`,
+    "",
+    `## ${t(locale, "流程", "Workflow")}`,
+    "",
+    workflowSection,
+    "",
+    `## ${t(locale, "发现", "Findings")}`,
+    "",
+    findingsSection,
+    "",
+    `## ${t(locale, "后续动作", "Next Actions")}`,
+    "",
+    nextActionsSection,
+  ].join("\n")}\n`;
 }
 
 export function renderUnifiedReport(

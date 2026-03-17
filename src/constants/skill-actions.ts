@@ -1,7 +1,7 @@
 export enum SkillActionEnum {
   Install = "install",
   List = "list",
-  Doctor = "doctor"
+  Doctor = "doctor",
 }
 
 export type SkillAction = `${SkillActionEnum}`;

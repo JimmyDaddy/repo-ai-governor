@@ -1,9 +1,9 @@
-import { test } from "vitest";
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { spawnSync } from "node:child_process";
+import { test } from "vitest";
 
 const ROOT_DIR = path.resolve(".");
 const SCRIPT_PATH = path.join(ROOT_DIR, "scripts", "governance", "check-dynamic-import-usage.js");
@@ -14,7 +14,7 @@ function createTempWorkspace() {
 
 function runDynamicImportGate(cwd: string) {
   return spawnSync(process.execPath, [SCRIPT_PATH, "--cwd", cwd, "--paths", "src"], {
-    encoding: "utf8"
+    encoding: "utf8",
   });
 }
 
@@ -23,8 +23,8 @@ test("dynamic import gate fails when import() is used without allow comment", ()
   fs.mkdirSync(path.join(workspace, "src"), { recursive: true });
   fs.writeFileSync(
     path.join(workspace, "src", "index.ts"),
-    ['export async function load(path: string) {', "  return import(path);", "}", ""].join("\n"),
-    "utf8"
+    ["export async function load(path: string) {", "  return import(path);", "}", ""].join("\n"),
+    "utf8",
   );
 
   try {
@@ -42,8 +42,8 @@ test("dynamic import gate fails when require() is used without allow comment", (
   fs.mkdirSync(path.join(workspace, "src"), { recursive: true });
   fs.writeFileSync(
     path.join(workspace, "src", "index.ts"),
-    ['export function loadPkg() {', '  return require("./pkg.json");', "}", ""].join("\n"),
-    "utf8"
+    ["export function loadPkg() {", '  return require("./pkg.json");', "}", ""].join("\n"),
+    "utf8",
   );
 
   try {
@@ -62,7 +62,7 @@ test("dynamic import gate passes when usage includes allow comment", () => {
   fs.writeFileSync(
     path.join(workspace, "src", "index.ts"),
     [
-      "import { createRequire } from \"node:module\";",
+      'import { createRequire } from "node:module";',
       "const require = createRequire(import.meta.url);",
       "// dynamic-import-allowed: load optional package metadata at runtime",
       'const pkg = require("./pkg.json");',
@@ -71,9 +71,9 @@ test("dynamic import gate passes when usage includes allow comment", () => {
       "  return import(path);",
       "}",
       "export { pkg };",
-      ""
+      "",
     ].join("\n"),
-    "utf8"
+    "utf8",
   );
 
   try {

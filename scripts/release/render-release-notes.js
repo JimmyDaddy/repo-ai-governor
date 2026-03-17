@@ -10,7 +10,7 @@ function parseArguments(argv) {
     format: "markdown",
     section: null,
     version: null,
-    out: null
+    out: null,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -72,13 +72,10 @@ function ensureTrailingNewline(value) {
 
 function main() {
   const options = parseArguments(process.argv.slice(2));
-  const packageJson = JSON.parse(
-    fs.readFileSync(path.join(ROOT_DIR, "package.json"), "utf8")
-  );
+  const packageJson = JSON.parse(fs.readFileSync(path.join(ROOT_DIR, "package.json"), "utf8"));
   const changelogPath = path.join(ROOT_DIR, "CHANGELOG.md");
   const changelog = fs.readFileSync(changelogPath, "utf8");
-  const targetSection =
-    options.section ?? (options.version ? options.version : "Unreleased");
+  const targetSection = options.section ?? (options.version ? options.version : "Unreleased");
   const resolvedVersion = options.version ?? packageJson.version;
   const notesBody = extractSection(changelog, targetSection);
 
@@ -89,7 +86,7 @@ function main() {
   }
 
   const renderedNotes = ensureTrailingNewline(
-    [`# Release ${resolvedVersion}`, "", notesBody].join("\n")
+    [`# Release ${resolvedVersion}`, "", notesBody].join("\n"),
   );
 
   if (options.out) {
@@ -106,11 +103,11 @@ function main() {
           version: resolvedVersion,
           targetSection,
           outputPath: options.out ?? null,
-          body: renderedNotes
+          body: renderedNotes,
         },
         null,
-        2
-      )}\n`
+        2,
+      )}\n`,
     );
     return;
   }

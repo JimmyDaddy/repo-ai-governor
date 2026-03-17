@@ -1,8 +1,8 @@
-import { test } from "vitest";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { test } from "vitest";
 import { runCli } from "../../src/cli/index.js";
 import { EXIT_CODES } from "../../src/cli/runtime/exit-codes.js";
 
@@ -26,7 +26,7 @@ function createBufferedStream() {
     },
     toString() {
       return chunks.join("");
-    }
+    },
   };
 }
 
@@ -38,7 +38,7 @@ async function runCommand(argv: any) {
   return {
     exitCode,
     stdout: stdout.toString(),
-    stderr: stderr.toString()
+    stderr: stderr.toString(),
   };
 }
 
@@ -54,7 +54,7 @@ async function bootstrapRepository(cwd: any) {
     "--adapter",
     "codex",
     "--format",
-    "json"
+    "json",
   ]);
 
   assert.equal(result.exitCode, EXIT_CODES.success);
@@ -64,13 +64,7 @@ test("doctor passes on a bootstrapped repository", async () => {
   const cwd = createTempRepo();
   await bootstrapRepository(cwd);
 
-  const result = await runCommand([
-    "doctor",
-    "--cwd",
-    cwd,
-    "--format",
-    "json"
-  ]);
+  const result = await runCommand(["doctor", "--cwd", cwd, "--format", "json"]);
   const payload = JSON.parse(result.stdout);
 
   assert.equal(result.exitCode, EXIT_CODES.success);
@@ -83,13 +77,7 @@ test("doctor passes on a bootstrapped repository", async () => {
 
 test("doctor fails when the main config file is missing", async () => {
   const cwd = createTempRepo();
-  const result = await runCommand([
-    "doctor",
-    "--cwd",
-    cwd,
-    "--format",
-    "json"
-  ]);
+  const result = await runCommand(["doctor", "--cwd", cwd, "--format", "json"]);
   const payload = JSON.parse(result.stdout);
   const configCheck = payload.checks.find((check: any) => check.id === "config.main-file");
 
@@ -109,32 +97,18 @@ test("doctor strict fails on missing artifact warnings and --fix recreates safe 
       'schemaVersion: "1"',
       "execution:",
       "  currentProject: mvp",
-      "  currentSprint: sprint-001"
-    ].join("\n")
+      "  currentSprint: sprint-001",
+    ].join("\n"),
   );
 
-  const strictResult = await runCommand([
-    "doctor",
-    "--cwd",
-    cwd,
-    "--strict",
-    "--format",
-    "json"
-  ]);
+  const strictResult = await runCommand(["doctor", "--cwd", cwd, "--strict", "--format", "json"]);
   const strictPayload = JSON.parse(strictResult.stdout);
 
   assert.equal(strictResult.exitCode, EXIT_CODES.businessCheckFailed);
   assert.equal(strictPayload.status, "warn");
   assert.ok(strictPayload.summary.warnings > 0);
 
-  const fixResult = await runCommand([
-    "doctor",
-    "--cwd",
-    cwd,
-    "--fix",
-    "--format",
-    "json"
-  ]);
+  const fixResult = await runCommand(["doctor", "--cwd", cwd, "--fix", "--format", "json"]);
   const fixPayload = JSON.parse(fixResult.stdout);
   const fixedChecks = fixPayload.checks.filter((check: any) => check.status === "fixed");
 

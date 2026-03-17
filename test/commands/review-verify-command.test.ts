@@ -1,8 +1,8 @@
-import { test } from "vitest";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { test } from "vitest";
 import { runCli } from "../../src/cli/index.js";
 import { EXIT_CODES } from "../../src/cli/runtime/exit-codes.js";
 
@@ -33,7 +33,7 @@ function createBufferedStream(): BufferedStream {
     },
     toString(): string {
       return chunks.join("");
-    }
+    },
   };
 }
 
@@ -45,7 +45,7 @@ async function runCommand(argv: string[]): Promise<CommandResult> {
   return {
     exitCode,
     stdout: stdout.toString(),
-    stderr: stderr.toString()
+    stderr: stderr.toString(),
   };
 }
 
@@ -61,7 +61,7 @@ async function bootstrapRepo(cwd: string): Promise<void> {
     "--adapter",
     "codex",
     "--format",
-    "json"
+    "json",
   ]);
 
   assert.equal(initResult.exitCode, EXIT_CODES.success);
@@ -77,7 +77,7 @@ async function bootstrapRepo(cwd: string): Promise<void> {
     "--title",
     "Implement governance review verify",
     "--format",
-    "json"
+    "json",
   ]);
 
   assert.equal(planResult.exitCode, EXIT_CODES.success);
@@ -88,7 +88,11 @@ test("review-verify appends verification results and renames pending review file
   await bootstrapRepo(cwd);
 
   fs.mkdirSync(path.join(cwd, "src"), { recursive: true });
-  fs.writeFileSync(path.join(cwd, "src", "example.js"), "export function example() {\n  // TODO: refine\n  return 1;\n}\n", "utf8");
+  fs.writeFileSync(
+    path.join(cwd, "src", "example.js"),
+    "export function example() {\n  // TODO: refine\n  return 1;\n}\n",
+    "utf8",
+  );
 
   const reviewResult = await runCommand([
     "review",
@@ -101,7 +105,7 @@ test("review-verify appends verification results and renames pending review file
     "--path",
     "src/example.js",
     "--format",
-    "json"
+    "json",
   ]);
   const reviewPayload = JSON.parse(reviewResult.stdout);
 
@@ -116,7 +120,7 @@ test("review-verify appends verification results and renames pending review file
     "--source",
     reviewPayload.reviewFile,
     "--format",
-    "json"
+    "json",
   ]);
   const verifyPayload = JSON.parse(verifyResult.stdout);
   const verifiedFilePath = path.join(cwd, verifyPayload.outputFile);
@@ -134,7 +138,11 @@ test("review-verify strict mode fails when warning findings remain", async () =>
   await bootstrapRepo(cwd);
 
   fs.mkdirSync(path.join(cwd, "src"), { recursive: true });
-  fs.writeFileSync(path.join(cwd, "src", "strict-example.js"), "export function example() {\n  // TODO: refine\n  return 1;\n}\n", "utf8");
+  fs.writeFileSync(
+    path.join(cwd, "src", "strict-example.js"),
+    "export function example() {\n  // TODO: refine\n  return 1;\n}\n",
+    "utf8",
+  );
 
   const reviewResult = await runCommand([
     "review",
@@ -147,7 +155,7 @@ test("review-verify strict mode fails when warning findings remain", async () =>
     "--path",
     "src/strict-example.js",
     "--format",
-    "json"
+    "json",
   ]);
   const reviewPayload = JSON.parse(reviewResult.stdout);
 
@@ -163,7 +171,7 @@ test("review-verify strict mode fails when warning findings remain", async () =>
     reviewPayload.reviewFile,
     "--strict",
     "--format",
-    "json"
+    "json",
   ]);
   const verifyPayload = JSON.parse(verifyResult.stdout);
 
@@ -177,7 +185,11 @@ test("review-verify can promote a verified review file to resolved after finding
   await bootstrapRepo(cwd);
 
   fs.mkdirSync(path.join(cwd, "src", "commands"), { recursive: true });
-  fs.writeFileSync(path.join(cwd, "src", "commands", "sample.js"), "export function sample() {\n  // TODO: remove\n  return 1;\n}\n", "utf8");
+  fs.writeFileSync(
+    path.join(cwd, "src", "commands", "sample.js"),
+    "export function sample() {\n  // TODO: remove\n  return 1;\n}\n",
+    "utf8",
+  );
 
   const reviewResult = await runCommand([
     "review",
@@ -190,7 +202,7 @@ test("review-verify can promote a verified review file to resolved after finding
     "--path",
     "src/commands/sample.js",
     "--format",
-    "json"
+    "json",
   ]);
   const reviewPayload = JSON.parse(reviewResult.stdout);
 
@@ -205,13 +217,21 @@ test("review-verify can promote a verified review file to resolved after finding
     "--source",
     reviewPayload.reviewFile,
     "--format",
-    "json"
+    "json",
   ]);
   const firstVerifyPayload = JSON.parse(firstVerifyResult.stdout);
 
   fs.mkdirSync(path.join(cwd, "test", "commands"), { recursive: true });
-  fs.writeFileSync(path.join(cwd, "src", "commands", "sample.js"), "export function sample() {\n  return 1;\n}\n", "utf8");
-  fs.writeFileSync(path.join(cwd, "test", "commands", "sample.test.js"), "export default true;\n", "utf8");
+  fs.writeFileSync(
+    path.join(cwd, "src", "commands", "sample.js"),
+    "export function sample() {\n  return 1;\n}\n",
+    "utf8",
+  );
+  fs.writeFileSync(
+    path.join(cwd, "test", "commands", "sample.test.js"),
+    "export default true;\n",
+    "utf8",
+  );
 
   const secondVerifyResult = await runCommand([
     "review-verify",
@@ -224,7 +244,7 @@ test("review-verify can promote a verified review file to resolved after finding
     "--source",
     firstVerifyPayload.outputFile,
     "--format",
-    "json"
+    "json",
   ]);
   const secondVerifyPayload = JSON.parse(secondVerifyResult.stdout);
   const resolvedFilePath = path.join(cwd, secondVerifyPayload.outputFile);

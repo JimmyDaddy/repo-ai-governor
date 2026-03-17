@@ -1,8 +1,8 @@
-import { test } from "vitest";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { test } from "vitest";
 import { runCli } from "../../src/cli/index.js";
 import { EXIT_CODES } from "../../src/cli/runtime/exit-codes.js";
 
@@ -21,7 +21,7 @@ function createBufferedStream() {
     },
     toString() {
       return chunks.join("");
-    }
+    },
   };
 }
 
@@ -33,7 +33,7 @@ async function runCommand(argv: any) {
   return {
     exitCode,
     stdout: stdout.toString(),
-    stderr: stderr.toString()
+    stderr: stderr.toString(),
   };
 }
 
@@ -53,9 +53,9 @@ function createMockCatalog(cwd: any) {
       "description: Load AGENTS.md and current context before other actions.",
       "---",
       "",
-      "# Governor Context Loader"
+      "# Governor Context Loader",
     ].join("\n"),
-    "utf8"
+    "utf8",
   );
   fs.writeFileSync(
     manifestPath,
@@ -72,30 +72,30 @@ function createMockCatalog(cwd: any) {
           agentFiles: [],
           scriptsDir: "scripts",
           templatesDir: "templates",
-          referencesDir: "references"
+          referencesDir: "references",
         },
         triggers: {
           keywords: ["load context"],
-          intents: ["read context"]
+          intents: ["read context"],
         },
         compatibility: {
           repoAiGovernor: "^0.1.0",
           installModes: {
             codex: "native",
             "github-copilot": "native",
-            "claude-code": "native"
-          }
+            "claude-code": "native",
+          },
         },
         distribution: {
           channel: "official",
-          root: `skills/official/${skillId}`
+          root: `skills/official/${skillId}`,
         },
-        surfaces: ["codex", "github-copilot", "claude-code"]
+        surfaces: ["codex", "github-copilot", "claude-code"],
       },
       null,
-      2
+      2,
     ),
-    "utf8"
+    "utf8",
   );
   fs.writeFileSync(
     catalogPath,
@@ -109,43 +109,43 @@ function createMockCatalog(cwd: any) {
         officialRoot: "skills/official",
         sharedRoot: "skills/shared",
         compatibility: {
-          repoAiGovernor: "^0.1.0"
+          repoAiGovernor: "^0.1.0",
         },
         installTargets: {
           codex: {
             repoLocal: ".codex/skills",
             userLocal: "$CODEX_HOME/skills",
-            mode: "native"
+            mode: "native",
           },
           "github-copilot": {
             repoLocal: ".github/skills",
             userLocal: "$HOME/.copilot/skills",
-            mode: "hybrid"
+            mode: "hybrid",
           },
           "claude-code": {
             repoLocal: ".claude/skills",
             userLocal: "$HOME/.claude/skills",
-            mode: "native"
-          }
+            mode: "native",
+          },
         },
         skills: [
           {
             id: skillId,
             manifestPath: `skills/official/${skillId}/skill.json`,
             surfaces: ["codex", "github-copilot", "claude-code"],
-            defaultInstallMode: "native"
-          }
-        ]
+            defaultInstallMode: "native",
+          },
+        ],
       },
       null,
-      2
+      2,
     ),
-    "utf8"
+    "utf8",
   );
 
   return {
     catalogPath,
-    skillId
+    skillId,
   };
 }
 
@@ -161,7 +161,7 @@ test("skills list reports available skills from catalog", async () => {
     "--catalog",
     catalogPath,
     "--format",
-    "json"
+    "json",
   ]);
   const payload = JSON.parse(result.stdout);
 
@@ -186,7 +186,7 @@ test("skills install copies official skills into repo-local target", async () =>
     "--surface",
     "codex",
     "--format",
-    "json"
+    "json",
   ]);
   const payload = JSON.parse(result.stdout);
   const installedSkillRoot = path.join(cwd, ".codex", "skills", skillId);
@@ -212,7 +212,7 @@ test("skills doctor passes for a valid installed skill", async () => {
     "--surface",
     "codex",
     "--format",
-    "json"
+    "json",
   ]);
 
   const result = await runCommand([
@@ -227,7 +227,7 @@ test("skills doctor passes for a valid installed skill", async () => {
     "--surface",
     "codex",
     "--format",
-    "json"
+    "json",
   ]);
   const payload = JSON.parse(result.stdout);
 
@@ -251,7 +251,7 @@ test("skills doctor fails when installed skill structure is broken", async () =>
     "--surface",
     "codex",
     "--format",
-    "json"
+    "json",
   ]);
 
   fs.rmSync(path.join(cwd, ".codex", "skills", skillId, "SKILL.md"));
@@ -266,7 +266,7 @@ test("skills doctor fails when installed skill structure is broken", async () =>
     "--surface",
     "codex",
     "--format",
-    "json"
+    "json",
   ]);
   const payload = JSON.parse(result.stdout);
 

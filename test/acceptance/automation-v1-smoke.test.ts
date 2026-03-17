@@ -1,9 +1,9 @@
-import { test } from "vitest";
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
+import { test } from "vitest";
 
 const ROOT_DIR = path.resolve(".");
 type AutomationSmokePayload = {
@@ -16,7 +16,7 @@ type AutomationSmokePayload = {
 
 test("automation smoke script validates codex/claude/copilot and multi-ai routing", () => {
   const workspace = fs.mkdtempSync(
-    path.join(os.tmpdir(), "repo-ai-governor-automation-smoke-test-")
+    path.join(os.tmpdir(), "repo-ai-governor-automation-smoke-test-"),
   );
   const output = execFileSync(
     "bash",
@@ -27,10 +27,10 @@ test("automation smoke script validates codex/claude/copilot and multi-ai routin
         ...process.env,
         REPO_AI_GOVERNOR_AUTOMATION_SMOKE_WORKSPACE: workspace,
         REPO_AI_GOVERNOR_AUTOMATION_SMOKE_FORMAT: "json",
-        REPO_AI_GOVERNOR_AUTOMATION_SMOKE_ENTRY: "all"
+        REPO_AI_GOVERNOR_AUTOMATION_SMOKE_ENTRY: "all",
       },
-      encoding: "utf8"
-    }
+      encoding: "utf8",
+    },
   );
   const payload = JSON.parse(output) as AutomationSmokePayload;
   const scenarioNames = payload.scenarios.map((scenario) => scenario.name);
@@ -40,7 +40,7 @@ test("automation smoke script validates codex/claude/copilot and multi-ai routin
     "codex",
     "claude-code",
     "github-copilot",
-    "multi-ai-dev-review"
+    "multi-ai-dev-review",
   ]);
   assert.ok(payload.scenarios.every((scenario) => scenario.status === "pass"));
 });

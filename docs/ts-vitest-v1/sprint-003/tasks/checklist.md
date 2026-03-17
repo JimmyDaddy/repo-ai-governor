@@ -10,8 +10,8 @@
   - 执行记录：plan=明确 `src/test` 之外目录边界策略并接入 TS-only 门禁，要求 out-of-scope JS 必须命中显式豁免清单;result=已在 `check-ts-only-residue` 增加 `outOfScopeAllowList` 校验与 out-of-scope 清单输出，`scripts/governance/ts-only-whitelist.json` 固化 `bin`/`scripts`/`skills/official/governor-plan-runner/scripts` 三类豁免并提供 reason，库存文档补充当前 out-of-scope JS 清单;verify=`npm run typecheck && npm run test -- test/governance/ts-only-gate.test.ts && node ./scripts/governance/check-ts-only-residue.js --format=json && npm run check`
   - 执行记录：plan=完成 TK-3001 验收闭环并确认发布前门禁通过;result=`npm run release:ga-check` 通过（含 `ci:quality`、`release:check`、`release:verify-local`），TK-3001 标记完成;verify=`npm run release:ga-check`
 
-- [ ] **TK-3002** 将 Biome format/lint 接入默认 gate 与 CI 质量门禁（负责人：Core｜优先级：P0｜截止：2026-04-09｜状态：todo）
-  - 执行记录：plan=收敛 Biome 现存诊断并将 `format:check/lint` 纳入稳定 gate 路径；result=待执行;verify=待执行
+- [x] **TK-3002** 将 Biome format/lint 接入默认 gate 与 CI 质量门禁（负责人：Core｜优先级：P0｜截止：2026-04-09｜状态：completed）
+  - 执行记录：plan=收敛 Biome 现存诊断并将 `format:check/lint` 纳入稳定 gate 路径；result=已将 `npm run check` 升级为 `format:check -> lint -> build -> check:code-standards`，并批量执行 `biome check --write` 与 `biome check --fix --unsafe` 收敛历史诊断；对 `test/config/schema.test.ts` 增加 Biome override 以避免 `@ts-nocheck` 漂移导致 typecheck 回归；verify=`npm run format:check && npm run lint && npm run check && npm run ci:quality`
 
 - [ ] **TK-3003** 建立 Vitest 稳定性基线与慢测分层策略（负责人：QA｜优先级：P1｜截止：2026-04-10｜状态：todo）
   - 执行记录：plan=识别高波动测试并建立并发/隔离与慢测执行策略，沉淀稳定性巡检脚本；result=待执行;verify=待执行

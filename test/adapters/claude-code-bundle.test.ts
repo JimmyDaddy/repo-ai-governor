@@ -1,16 +1,16 @@
-import { test } from "vitest";
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
+import { test } from "vitest";
 import YAML from "yaml";
-import { runCli } from "../../src/cli/index.js";
-import { EXIT_CODES } from "../../src/cli/runtime/exit-codes.js";
 import {
   buildClaudeCodeAdapterBundle,
-  renderClaudeCodeAdapterBundle
+  renderClaudeCodeAdapterBundle,
 } from "../../src/adapters/claude-code-bundle.js";
+import { runCli } from "../../src/cli/index.js";
+import { EXIT_CODES } from "../../src/cli/runtime/exit-codes.js";
 
 type BufferedStream = {
   isTTY: boolean;
@@ -33,7 +33,7 @@ function createBufferedStream(): BufferedStream {
     },
     toString() {
       return chunks.join("");
-    }
+    },
   };
 }
 
@@ -45,7 +45,7 @@ async function runCommand(argv: string[]) {
   return {
     exitCode,
     stdout: stdout.toString(),
-    stderr: stderr.toString()
+    stderr: stderr.toString(),
   };
 }
 
@@ -61,7 +61,7 @@ async function bootstrapRepo(cwd: string) {
     "--adapter",
     "claude-code",
     "--format",
-    "json"
+    "json",
   ]);
 
   assert.equal(initResult.exitCode, EXIT_CODES.success);
@@ -77,7 +77,7 @@ async function bootstrapRepo(cwd: string) {
     "--title",
     "Render Claude Code adapter bundle",
     "--format",
-    "json"
+    "json",
   ]);
 
   assert.equal(planResult.exitCode, EXIT_CODES.success);
@@ -104,8 +104,8 @@ test("Claude Code bundle renders system and task prompts for the current sprint"
       "  source: official",
       "  slotType: security-compliance",
       "  name:",
-      '    zh-CN: 安全复核插槽',
-      '    en-US: Security Review Slot',
+      "    zh-CN: 安全复核插槽",
+      "    en-US: Security Review Slot",
       "trigger:",
       "  match: all",
       "  when:",
@@ -118,9 +118,9 @@ test("Claude Code bundle renders system and task prompts for the current sprint"
       "  conflictPolicy: merge",
       "  inject:",
       "    ai:",
-      "      promptKey: security-review-focus"
+      "      promptKey: security-review-focus",
     ].join("\n"),
-    "utf8"
+    "utf8",
   );
 
   const bundle = buildClaudeCodeAdapterBundle({
@@ -128,7 +128,7 @@ test("Claude Code bundle renders system and task prompts for the current sprint"
     project: "demo",
     sprint: "sprint-001",
     command: "review",
-    stageId: "review"
+    stageId: "review",
   });
 
   assert.equal(bundle.adapter.id, "claude-code");
@@ -137,10 +137,19 @@ test("Claude Code bundle renders system and task prompts for the current sprint"
   assert.ok(entry);
   assert.equal(entry.agentEntry.path, "AGENTS.md");
   assert.equal(entry.currentContext.path, ".repo-ai-governor/context/current-context.md");
-  assert.equal(bundle.files.systemPrompt.path, ".repo-ai-governor/templates/claude-code-system.prompt.md");
-  assert.equal(bundle.files.taskPrompt.path, ".repo-ai-governor/templates/claude-code-task.prompt.md");
+  assert.equal(
+    bundle.files.systemPrompt.path,
+    ".repo-ai-governor/templates/claude-code-system.prompt.md",
+  );
+  assert.equal(
+    bundle.files.taskPrompt.path,
+    ".repo-ai-governor/templates/claude-code-task.prompt.md",
+  );
   assert.ok(entry.agentEntry.excerpt);
-  assert.deepEqual(bundle.slots.active.map((slot) => slot.id), ["security-slot"]);
+  assert.deepEqual(
+    bundle.slots.active.map((slot) => slot.id),
+    ["security-slot"],
+  );
 
   const systemPrompt = renderClaudeCodeAdapterBundle(bundle, "system-prompt");
   assert.match(systemPrompt, /# Claude Code System Prompt/);
@@ -175,12 +184,12 @@ test("Claude Code bundle rendering script prints the system prompt for a bootstr
       "--stage",
       "plan",
       "--format",
-      "system-prompt"
+      "system-prompt",
     ],
     {
       cwd: path.resolve("."),
-      encoding: "utf8"
-    }
+      encoding: "utf8",
+    },
   );
 
   assert.match(output, /# Claude Code System Prompt/);

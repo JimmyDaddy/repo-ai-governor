@@ -1,11 +1,11 @@
-import { test } from "vitest";
 import assert from "node:assert/strict";
+import { test } from "vitest";
 import {
-  listRulesForConsumer,
   OFFICIAL_BASE_PACKAGE_RULES,
   OFFICIAL_BASE_STANDARDS_PACKAGE,
+  listRulesForConsumer,
   renderRulesForConsumer,
-  resolveStandardsPackage
+  resolveStandardsPackage,
 } from "../../src/standards/official-base-package.js";
 import { STANDARDS_CATEGORIES } from "../../src/standards/package-model.js";
 
@@ -27,8 +27,8 @@ test("resolveStandardsPackage returns the official package and keeps locale over
     preset: "official/base",
     locales: {
       default: "en-US",
-      supported: ["zh-CN", "en-US"]
-    }
+      supported: ["zh-CN", "en-US"],
+    },
   });
 
   assert.equal(standardsPackage.locales.default, "en-US");
@@ -39,11 +39,11 @@ test("listRulesForConsumer and renderRulesForConsumer expose plan-facing standar
   const planRules = listRulesForConsumer(OFFICIAL_BASE_STANDARDS_PACKAGE, "plan");
   const humanRules = renderRulesForConsumer(OFFICIAL_BASE_STANDARDS_PACKAGE, "plan", {
     view: "human",
-    locale: "zh-CN"
+    locale: "zh-CN",
   });
   const aiRules = renderRulesForConsumer(OFFICIAL_BASE_STANDARDS_PACKAGE, "check", {
     view: "ai",
-    locale: "en-US"
+    locale: "en-US",
   });
 
   assert.ok(planRules.length >= 4);
@@ -54,6 +54,6 @@ test("listRulesForConsumer and renderRulesForConsumer expose plan-facing standar
 test("resolveStandardsPackage rejects unsupported presets", () => {
   assert.throws(
     () => resolveStandardsPackage({ preset: "custom/base" }),
-    /Unsupported standards preset/
+    /Unsupported standards preset/,
   );
 });

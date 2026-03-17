@@ -1,13 +1,13 @@
-import { test } from "vitest";
 import assert from "node:assert/strict";
+import { test } from "vitest";
+import { buildSlotRuntime } from "../../src/slots/runtime.js";
 import {
+  WORKFLOW_EXECUTION_STATUS,
+  WORKFLOW_STAGE_RESULT_STATUS,
   executeWorkflow,
   getWorkflowStageResult,
   selectWorkflowStages,
-  WORKFLOW_EXECUTION_STATUS,
-  WORKFLOW_STAGE_RESULT_STATUS
 } from "../../src/workflow/governance-engine.js";
-import { buildSlotRuntime } from "../../src/slots/runtime.js";
 import { STANDARD_WORKFLOW_TEMPLATE } from "../../src/workflow/template-model.js";
 
 type AnyRecord = Record<string, any>;
@@ -20,12 +20,12 @@ function createSlotDefinition(overrides: AnyRecord = {}): AnyRecord {
     meta: {
       name: overrides.meta?.name ?? {
         "zh-CN": "文档产出",
-        "en-US": "Documentation Output"
+        "en-US": "Documentation Output",
       },
       source: overrides.meta?.source ?? "official",
       slotType: overrides.meta?.slotType ?? "documentation-output",
       owner: overrides.meta?.owner ?? "platform",
-      tags: overrides.meta?.tags ?? []
+      tags: overrides.meta?.tags ?? [],
     },
     trigger: {
       match: overrides.trigger?.match ?? "all",
@@ -34,15 +34,15 @@ function createSlotDefinition(overrides: AnyRecord = {}): AnyRecord {
         commands: overrides.trigger?.when?.commands ?? ["plan"],
         paths: overrides.trigger?.when?.paths ?? [],
         events: overrides.trigger?.when?.events ?? [],
-        adapters: overrides.trigger?.when?.adapters ?? []
-      }
+        adapters: overrides.trigger?.when?.adapters ?? [],
+      },
     },
     scope: {
       languages: overrides.scope?.languages ?? [],
       frameworks: overrides.scope?.frameworks ?? [],
       projects: overrides.scope?.projects ?? [],
       files: overrides.scope?.files ?? [],
-      tags: overrides.scope?.tags ?? []
+      tags: overrides.scope?.tags ?? [],
     },
     behavior: {
       blockOnFailure: overrides.behavior?.blockOnFailure ?? false,
@@ -53,16 +53,16 @@ function createSlotDefinition(overrides: AnyRecord = {}): AnyRecord {
       supersedes: overrides.behavior?.supersedes ?? [],
       inject: {
         ai: overrides.behavior?.inject?.ai ?? {},
-        human: overrides.behavior?.inject?.human ?? {}
-      }
+        human: overrides.behavior?.inject?.human ?? {},
+      },
     },
     checks: {
       before: overrides.checks?.before ?? [],
-      after: overrides.checks?.after ?? []
+      after: overrides.checks?.after ?? [],
     },
     extensions: {
-      scripts: overrides.extensions?.scripts ?? []
-    }
+      scripts: overrides.extensions?.scripts ?? [],
+    },
   };
 }
 
@@ -71,7 +71,7 @@ test("selectWorkflowStages expands requested stages with dependencies in templat
     "plan",
     "breakdown",
     "implement",
-    "self-check"
+    "self-check",
   ]);
 });
 
@@ -90,9 +90,9 @@ test("executeWorkflow runs selected stages serially and merges stage outputs", a
             summary: "Plan generated.",
             outputs: {
               "plan.md": {
-                exists: true
-              }
-            }
+                exists: true,
+              },
+            },
           };
         }
 
@@ -102,12 +102,12 @@ test("executeWorkflow runs selected stages serially and merges stage outputs", a
           summary: "Breakdown generated.",
           outputs: {
             "tasks/checklist.md": {
-              exists: true
-            }
-          }
+              exists: true,
+            },
+          },
         };
-      }
-    }
+      },
+    },
   });
 
   assert.deepEqual(calls, ["plan", "breakdown"]);
@@ -116,11 +116,11 @@ test("executeWorkflow runs selected stages serially and merges stage outputs", a
   assert.equal(getWorkflowStageResult(result, "plan")?.status, WORKFLOW_STAGE_RESULT_STATUS.passed);
   assert.equal(
     getWorkflowStageResult(result, "breakdown")?.status,
-    WORKFLOW_STAGE_RESULT_STATUS.passed
+    WORKFLOW_STAGE_RESULT_STATUS.passed,
   );
   assert.equal(
     getWorkflowStageResult(result, "implement")?.status,
-    WORKFLOW_STAGE_RESULT_STATUS.skipped
+    WORKFLOW_STAGE_RESULT_STATUS.skipped,
   );
   assert.equal((result.artifacts["plan.md"] as AnyRecord | undefined)?.exists, true);
   assert.equal((result.artifacts["tasks/checklist.md"] as AnyRecord | undefined)?.exists, true);
@@ -137,36 +137,36 @@ test("executeWorkflow stops later selected stages after a stage failure", async 
           return {
             status: WORKFLOW_STAGE_RESULT_STATUS.passed,
             outputs: {
-              "plan.md": true
-            }
+              "plan.md": true,
+            },
           };
         }
 
         return {
           status: WORKFLOW_STAGE_RESULT_STATUS.passed,
           outputs: {
-            "tasks/checklist.md": true
-          }
+            "tasks/checklist.md": true,
+          },
         };
       },
       implement: () => {
         throw new Error("Implement stage failed");
       },
       check: () => ({
-        status: WORKFLOW_STAGE_RESULT_STATUS.passed
-      })
-    }
+        status: WORKFLOW_STAGE_RESULT_STATUS.passed,
+      }),
+    },
   });
 
   assert.equal(result.status, WORKFLOW_EXECUTION_STATUS.failed);
   assert.equal(result.failure?.stageId, "implement");
   assert.equal(
     getWorkflowStageResult(result, "implement")?.status,
-    WORKFLOW_STAGE_RESULT_STATUS.failed
+    WORKFLOW_STAGE_RESULT_STATUS.failed,
   );
   assert.equal(
     getWorkflowStageResult(result, "self-check")?.status,
-    WORKFLOW_STAGE_RESULT_STATUS.blocked
+    WORKFLOW_STAGE_RESULT_STATUS.blocked,
   );
   assert.deepEqual(getWorkflowStageResult(result, "self-check")?.blockedBy, ["implement"]);
 });
@@ -178,9 +178,9 @@ test("executeWorkflow can resolve the template from workflow config overrides", 
       stages: [
         {
           id: "implement",
-          required: false
-        }
-      ]
+          required: false,
+        },
+      ],
     },
     targetStages: ["implement"],
     handlers: {
@@ -189,46 +189,43 @@ test("executeWorkflow can resolve the template from workflow config overrides", 
           return {
             status: WORKFLOW_STAGE_RESULT_STATUS.passed,
             outputs: {
-              "plan.md": true
-            }
+              "plan.md": true,
+            },
           };
         }
 
         return {
           status: WORKFLOW_STAGE_RESULT_STATUS.passed,
           outputs: {
-            "tasks/checklist.md": true
-          }
+            "tasks/checklist.md": true,
+          },
         };
-      }
-    }
+      },
+    },
   });
 
   assert.equal(result.status, WORKFLOW_EXECUTION_STATUS.passed);
   assert.equal(
     getWorkflowStageResult(result, "implement")?.status,
-    WORKFLOW_STAGE_RESULT_STATUS.skipped
+    WORKFLOW_STAGE_RESULT_STATUS.skipped,
   );
-  assert.equal(
-    getWorkflowStageResult(result, "implement")?.skippedReason,
-    "handler-missing"
-  );
+  assert.equal(getWorkflowStageResult(result, "implement")?.skippedReason, "handler-missing");
 });
 
 test("executeWorkflow injects resolved slot context into stage handlers", async () => {
   const slotRuntime = buildSlotRuntime({
     config: {
       project: {
-        language: "typescript"
+        language: "typescript",
       },
       execution: {
-        currentProject: "mvp"
+        currentProject: "mvp",
       },
       slots: {
         enabled: ["documentation-output"],
         disabled: [],
-        conflictPolicy: "error"
-      }
+        conflictPolicy: "error",
+      },
     },
     slotDefinitions: [
       {
@@ -237,22 +234,22 @@ test("executeWorkflow injects resolved slot context into stage handlers", async 
           scope: {
             languages: ["typescript"],
             projects: ["mvp"],
-            tags: ["documentation"]
+            tags: ["documentation"],
           },
           behavior: {
             inject: {
               ai: {
-                promptKey: "documentation-output-checklist"
-              }
-            }
+                promptKey: "documentation-output-checklist",
+              },
+            },
           },
           checks: {
             before: ["明确输出文件"],
-            after: []
-          }
-        }) as any
-      }
-    ]
+            after: [],
+          },
+        }) as any,
+      },
+    ],
   });
 
   const result = await executeWorkflow({
@@ -263,28 +260,32 @@ test("executeWorkflow injects resolved slot context into stage handlers", async 
       command: "plan",
       currentProject: "mvp",
       language: "typescript",
-      tags: ["documentation"]
+      tags: ["documentation"],
     },
     handlers: {
       plan: ({ slots, slotResolution }: any) => ({
         status: WORKFLOW_STAGE_RESULT_STATUS.passed,
         outputs: {
-          slotIds: slots.map((slot: any) => slot.id)
+          slotIds: slots.map((slot: any) => slot.id),
         },
         details: {
-          activeSlotCount: slotResolution.activeSlots.length
-        }
-      })
-    }
+          activeSlotCount: slotResolution.activeSlots.length,
+        },
+      }),
+    },
   });
 
   assert.equal(result.status, WORKFLOW_EXECUTION_STATUS.passed);
-  assert.deepEqual(getWorkflowStageResult(result, "plan")?.outputs.slotIds, ["documentation-output"]);
+  assert.deepEqual(getWorkflowStageResult(result, "plan")?.outputs.slotIds, [
+    "documentation-output",
+  ]);
   assert.equal(
-    ((getWorkflowStageResult(result, "plan")?.details as AnyRecord | undefined)?.slots as
-      | AnyRecord
-      | undefined)?.activeSlots?.length,
-    1
+    (
+      (getWorkflowStageResult(result, "plan")?.details as AnyRecord | undefined)?.slots as
+        | AnyRecord
+        | undefined
+    )?.activeSlots?.length,
+    1,
   );
 });
 
@@ -294,8 +295,8 @@ test("executeWorkflow fails the stage when slot conflicts are detected", async (
       slots: {
         enabled: ["official-docs", "team-docs"],
         disabled: [],
-        conflictPolicy: "error"
-      }
+        conflictPolicy: "error",
+      },
     },
     slotDefinitions: [
       {
@@ -304,17 +305,17 @@ test("executeWorkflow fails the stage when slot conflicts are detected", async (
           meta: {
             name: {
               "zh-CN": "官方文档",
-              "en-US": "Official Docs"
+              "en-US": "Official Docs",
             },
             source: "official",
             slotType: "documentation-output",
             owner: "platform",
-            tags: []
+            tags: [],
           },
           behavior: {
-            conflictPolicy: "error"
-          }
-        }) as any
+            conflictPolicy: "error",
+          },
+        }) as any,
       },
       {
         config: createSlotDefinition({
@@ -322,19 +323,19 @@ test("executeWorkflow fails the stage when slot conflicts are detected", async (
           meta: {
             name: {
               "zh-CN": "团队文档",
-              "en-US": "Team Docs"
+              "en-US": "Team Docs",
             },
             source: "team-shared",
             slotType: "documentation-output",
             owner: "platform",
-            tags: []
+            tags: [],
           },
           behavior: {
-            conflictPolicy: "error"
-          }
-        }) as any
-      }
-    ]
+            conflictPolicy: "error",
+          },
+        }) as any,
+      },
+    ],
   });
 
   const result = await executeWorkflow({
@@ -342,13 +343,13 @@ test("executeWorkflow fails the stage when slot conflicts are detected", async (
     targetStages: ["plan"],
     slotRuntime,
     metadata: {
-      command: "plan"
+      command: "plan",
     },
     handlers: {
       plan: () => ({
-        status: WORKFLOW_STAGE_RESULT_STATUS.passed
-      })
-    }
+        status: WORKFLOW_STAGE_RESULT_STATUS.passed,
+      }),
+    },
   });
 
   assert.equal(result.status, WORKFLOW_EXECUTION_STATUS.failed);

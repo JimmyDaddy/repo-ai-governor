@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
+import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { spawnSync } from "node:child_process";
 
 const MAX_OUTPUT_LENGTH = 4000;
 
@@ -11,7 +11,7 @@ function parseArguments(argv) {
     cwd: process.cwd(),
     standards: "code_standards.md",
     format: "summary",
-    dryRun: false
+    dryRun: false,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -71,7 +71,7 @@ function parseRules(content) {
   while (match) {
     rules.push({
       id: match[1],
-      text: normalizeText(match[2])
+      text: normalizeText(match[2]),
     });
     match = rulePattern.exec(content);
   }
@@ -187,7 +187,7 @@ function runCommand(command, cwd) {
     cwd,
     shell: true,
     encoding: "utf8",
-    env: process.env
+    env: process.env,
   });
   const durationMs = Date.now() - startedAt;
 
@@ -197,7 +197,7 @@ function runCommand(command, cwd) {
     exitCode: typeof result.status === "number" ? result.status : 1,
     durationMs,
     stdout: truncateOutput(result.stdout),
-    stderr: truncateOutput(result.stderr)
+    stderr: truncateOutput(result.stderr),
   };
 }
 
@@ -208,15 +208,15 @@ function writeOutput(payload, format) {
   }
 
   process.stdout.write(
-    [
+    `${[
       "code-standards-check",
       `status=${payload.status}`,
       `standards=${payload.standardsPath}`,
       `rules=${payload.ruleCount}`,
       `commands=${payload.commandCount}`,
       `failedCommands=${payload.failedCommands}`,
-      `failures=${payload.failures.length}`
-    ].join("\n") + "\n"
+      `failures=${payload.failures.length}`,
+    ].join("\n")}\n`,
   );
 
   if (payload.failures.length > 0) {
@@ -228,15 +228,15 @@ function writeOutput(payload, format) {
 
     if (failedCommand) {
       process.stderr.write(
-        [
+        `${[
           "",
           `Failed command: ${failedCommand.command}`,
           `Exit code: ${failedCommand.exitCode}`,
           failedCommand.stdout ? `stdout:\n${failedCommand.stdout}` : "",
-          failedCommand.stderr ? `stderr:\n${failedCommand.stderr}` : ""
+          failedCommand.stderr ? `stderr:\n${failedCommand.stderr}` : "",
         ]
           .filter(Boolean)
-          .join("\n") + "\n"
+          .join("\n")}\n`,
       );
     }
   }
@@ -261,14 +261,14 @@ function main() {
     failedCommands: 0,
     rules: [],
     commands: [],
-    failures: []
+    failures: [],
   };
 
   if (!fs.existsSync(standardsFilePath)) {
     payload.status = "fail";
     payload.failures.push({
       code: "standards.file_missing",
-      message: `Code standards file not found: ${payload.standardsPath}`
+      message: `Code standards file not found: ${payload.standardsPath}`,
     });
     finalize(payload, options.format);
     return;
@@ -283,8 +283,7 @@ function main() {
     payload.status = "fail";
     payload.failures.push({
       code: "standards.rules_missing",
-      message:
-        "No rule entries found. Add bullet rules like: - [RULE-ID] rule description."
+      message: "No rule entries found. Add bullet rules like: - [RULE-ID] rule description.",
     });
     finalize(payload, options.format);
     return;
@@ -297,7 +296,7 @@ function main() {
     payload.failures.push({
       code: "standards.verification_section_missing",
       message:
-        'Verification section not found. Add a "## Verification Commands" (or "## 校验命令") section.'
+        'Verification section not found. Add a "## Verification Commands" (or "## 校验命令") section.',
     });
     finalize(payload, options.format);
     return;
@@ -311,7 +310,7 @@ function main() {
     payload.failures.push({
       code: "standards.verification_commands_missing",
       message:
-        "No verification commands found. Add a bash/sh code block under Verification Commands."
+        "No verification commands found. Add a bash/sh code block under Verification Commands.",
     });
     finalize(payload, options.format);
     return;
@@ -322,7 +321,7 @@ function main() {
       payload.status = "fail";
       payload.failures.push({
         code: "standards.recursive_gate_command",
-        message: `Recursive gate command is not allowed in code standards: ${command}`
+        message: `Recursive gate command is not allowed in code standards: ${command}`,
       });
       finalize(payload, options.format);
       return;
@@ -336,7 +335,7 @@ function main() {
       exitCode: 0,
       durationMs: 0,
       stdout: "",
-      stderr: ""
+      stderr: "",
     }));
     finalize(payload, options.format);
     return;
@@ -352,7 +351,7 @@ function main() {
       payload.failures.push({
         code: "standards.command_failed",
         message: `Verification command failed: ${command}`,
-        exitCode: result.exitCode
+        exitCode: result.exitCode,
       });
       break;
     }

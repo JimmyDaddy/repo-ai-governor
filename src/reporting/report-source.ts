@@ -1,8 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { InputError } from "../cli/runtime/errors.js";
-import { buildUnifiedReport, type UnifiedReport } from "./report-model.js";
 import { normalizeLocale, translateLocale } from "../utils/common.js";
+import { type UnifiedReport, buildUnifiedReport } from "./report-model.js";
 
 type GenericRecord = Record<string, unknown>;
 

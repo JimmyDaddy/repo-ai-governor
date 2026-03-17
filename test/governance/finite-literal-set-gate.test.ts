@@ -1,9 +1,9 @@
-import { test } from "vitest";
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { spawnSync } from "node:child_process";
+import { test } from "vitest";
 
 type AnyRecord = Record<string, any>;
 
@@ -16,7 +16,7 @@ function createTempWorkspace() {
 
 function runFiniteLiteralSetGate(cwd: string) {
   return spawnSync(process.execPath, [SCRIPT_PATH, "--cwd", cwd, "--format=json"], {
-    encoding: "utf8"
+    encoding: "utf8",
   });
 }
 
@@ -26,7 +26,7 @@ function writeWhitelist(workspace: string, payload: AnyRecord) {
   fs.writeFileSync(
     path.join(whitelistDirectory, "literal-set-whitelist.json"),
     JSON.stringify(payload, null, 2),
-    "utf8"
+    "utf8",
   );
 }
 
@@ -36,13 +36,13 @@ test("finite literal set gate fails when implementation layer declares inline fi
   fs.writeFileSync(
     path.join(workspace, "src", "feature.ts"),
     [
-      "const TASK_STATUSES = [\"todo\", \"done\"] as const;",
+      'const TASK_STATUSES = ["todo", "done"] as const;',
       "export function isDone(status: string) {",
       "  return TASK_STATUSES.includes(status as any);",
       "}",
-      ""
+      "",
     ].join("\n"),
-    "utf8"
+    "utf8",
   );
 
   try {
@@ -65,13 +65,13 @@ test("finite literal set gate allows one-off local literals with reason comment"
     path.join(workspace, "src", "feature.ts"),
     [
       "// literal-set-allowed: one-off local branch check",
-      "const TASK_STATUSES = [\"todo\", \"done\"] as const;",
+      'const TASK_STATUSES = ["todo", "done"] as const;',
       "export function isDone(status: string) {",
       "  return TASK_STATUSES.includes(status as any);",
       "}",
-      ""
+      "",
     ].join("\n"),
-    "utf8"
+    "utf8",
   );
 
   try {
@@ -90,8 +90,8 @@ test("finite literal set gate allows declarations under src/constants", () => {
   fs.mkdirSync(path.join(workspace, "src", "constants"), { recursive: true });
   fs.writeFileSync(
     path.join(workspace, "src", "constants", "workflow.ts"),
-    "export const STAGES = [\"plan\", \"implement\", \"review\"] as const;\n",
-    "utf8"
+    'export const STAGES = ["plan", "implement", "review"] as const;\n',
+    "utf8",
   );
 
   try {
@@ -110,16 +110,16 @@ test("finite literal set gate allows legacy paths listed in whitelist", () => {
   fs.mkdirSync(path.join(workspace, "src"), { recursive: true });
   fs.writeFileSync(
     path.join(workspace, "src", "legacy.ts"),
-    "const LEGACY_VALUES = [\"A\", \"B\"] as const;\n",
-    "utf8"
+    'const LEGACY_VALUES = ["A", "B"] as const;\n',
+    "utf8",
   );
   writeWhitelist(workspace, {
     pathAllowList: [
       {
         path: "src/legacy.ts",
-        reason: "legacy migration backlog"
-      }
-    ]
+        reason: "legacy migration backlog",
+      },
+    ],
   });
 
   try {

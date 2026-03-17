@@ -1,14 +1,21 @@
-import fs from "node:fs";
-import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
 import YAML from "yaml";
-import { loadResolvedConfig } from "../config/load-config.js";
 import { ConfigError, InputError } from "../cli/runtime/errors.js";
 import { EXIT_CODES } from "../cli/runtime/exit-codes.js";
+import { loadResolvedConfig } from "../config/load-config.js";
+import { buildSlotRuntime } from "../slots/runtime.js";
+import {
+  cloneValue,
+  isPlainObject,
+  normalizeLocale,
+  toRelativePath,
+  translateLocale,
+} from "../utils/common.js";
 import type { ExecuteWorkflowOptions } from "../workflow/governance-engine.js";
 import { executeWorkflow } from "../workflow/governance-engine.js";
-import { buildSlotRuntime } from "../slots/runtime.js";
 import {
   findPatternEvidence,
   normalizeRiskTag,
@@ -18,15 +25,8 @@ import {
   normalizeTaskStatus,
   parseRiskTagList,
   readTextFileIfExists,
-  toPositiveInteger
+  toPositiveInteger,
 } from "./automation-shared.js";
-import {
-  cloneValue,
-  isPlainObject,
-  normalizeLocale,
-  toRelativePath,
-  translateLocale
-} from "../utils/common.js";
 
 // biome-ignore lint/suspicious/noExplicitAny: transitional typing for large command migration
 type AnyRecord = Record<string, any>;
@@ -43,8 +43,8 @@ const DEFAULT_PROCESS_STAGES = Object.freeze([
     routeKey: null,
     name: {
       "zh-CN": "需求输入",
-      "en-US": "Requirements Input"
-    }
+      "en-US": "Requirements Input",
+    },
   },
   {
     id: "requirements-draft",
@@ -53,8 +53,8 @@ const DEFAULT_PROCESS_STAGES = Object.freeze([
     routeKey: "requirements-draft",
     name: {
       "zh-CN": "需求草拟",
-      "en-US": "Requirements Draft"
-    }
+      "en-US": "Requirements Draft",
+    },
   },
   {
     id: "draft-review-loop",
@@ -63,8 +63,8 @@ const DEFAULT_PROCESS_STAGES = Object.freeze([
     routeKey: null,
     name: {
       "zh-CN": "需求草案评审循环",
-      "en-US": "Requirement Draft Review Loop"
-    }
+      "en-US": "Requirement Draft Review Loop",
+    },
   },
   {
     id: "technical-solution-loop",
@@ -73,8 +73,8 @@ const DEFAULT_PROCESS_STAGES = Object.freeze([
     routeKey: null,
     name: {
       "zh-CN": "技术方案评审循环",
-      "en-US": "Technical Solution Review Loop"
-    }
+      "en-US": "Technical Solution Review Loop",
+    },
   },
   {
     id: "task-breakdown",
@@ -83,8 +83,8 @@ const DEFAULT_PROCESS_STAGES = Object.freeze([
     routeKey: "task-breakdown",
     name: {
       "zh-CN": "任务拆解",
-      "en-US": "Task Breakdown"
-    }
+      "en-US": "Task Breakdown",
+    },
   },
   {
     id: "task-delivery-loop",
@@ -93,16 +93,16 @@ const DEFAULT_PROCESS_STAGES = Object.freeze([
     routeKey: null,
     name: {
       "zh-CN": "任务开发评审循环",
-      "en-US": "Task Delivery Loop"
-    }
-  }
+      "en-US": "Task Delivery Loop",
+    },
+  },
 ]);
 
 const DEFAULT_TASK_LOOP = Object.freeze({
   stageId: "task-delivery-loop",
   implementationRouteKey: "task-implementation",
   codeReviewRouteKey: "task-code-review",
-  maxReviewCycles: 3
+  maxReviewCycles: 3,
 });
 
 const LOOP_COMPLETION_POLICIES = new Set(["first-cycle", "max-cycles"]);
@@ -112,18 +112,18 @@ const DEFAULT_REVIEW_LOOPS = Object.freeze({
     stageId: "draft-review-loop",
     routeSequence: Object.freeze(["draft-review", "draft-review-verify"]),
     maxReviewCycles: 2,
-    completionPolicy: "first-cycle"
+    completionPolicy: "first-cycle",
   }),
   "technical-solution-loop": Object.freeze({
     stageId: "technical-solution-loop",
     routeSequence: Object.freeze([
       "technical-solution",
       "technical-solution-review",
-      "technical-solution-revise"
+      "technical-solution-revise",
     ]),
     maxReviewCycles: 3,
-    completionPolicy: "first-cycle"
-  })
+    completionPolicy: "first-cycle",
+  }),
 });
 
 const BUILTIN_ROUTING_PROFILES = Object.freeze({
@@ -138,8 +138,8 @@ const BUILTIN_ROUTING_PROFILES = Object.freeze({
       "technical-solution-revise": "codex",
       "task-breakdown": "codex",
       "task-implementation": "codex",
-      "task-code-review": "codex"
-    })
+      "task-code-review": "codex",
+    }),
   }),
   "multi-ai-dev-review": Object.freeze({
     defaultSurface: "codex",
@@ -152,9 +152,9 @@ const BUILTIN_ROUTING_PROFILES = Object.freeze({
       "technical-solution-revise": "codex",
       "task-breakdown": "codex",
       "task-implementation": "codex",
-      "task-code-review": "github-copilot"
-    })
-  })
+      "task-code-review": "github-copilot",
+    }),
+  }),
 });
 
 const BUILTIN_SURFACE_PROBES = Object.freeze({
@@ -162,26 +162,26 @@ const BUILTIN_SURFACE_PROBES = Object.freeze({
     binary: "codex",
     binaryArgs: ["--version"],
     healthArgs: ["--version"],
-    workspaceDir: ".codex/skills"
+    workspaceDir: ".codex/skills",
   }),
   "claude-code": Object.freeze({
     binary: "claude",
     binaryArgs: ["--version"],
     healthArgs: ["--version"],
-    workspaceDir: ".claude/skills"
+    workspaceDir: ".claude/skills",
   }),
   "github-copilot": Object.freeze({
     binary: "gh",
     binaryArgs: ["--version"],
     healthArgs: ["copilot", "--help"],
-    workspaceDir: ".github/skills"
-  })
+    workspaceDir: ".github/skills",
+  }),
 });
 
 const REVIEW_STATUS_WEIGHT = Object.freeze({
   review: 1,
   verified_review: 2,
-  resolved_review: 3
+  resolved_review: 3,
 });
 
 const ROUTE_ACTION_RULES = Object.freeze({
@@ -193,22 +193,22 @@ const ROUTE_ACTION_RULES = Object.freeze({
   "technical-solution-revise": Object.freeze(["editCode"]),
   "task-breakdown": Object.freeze(["editDocs"]),
   "task-implementation": Object.freeze(["editCode"]),
-  "task-code-review": Object.freeze(["runChecks"])
+  "task-code-review": Object.freeze(["runChecks"]),
 });
 
 const ROUTE_ACTION_HINTS = Object.freeze([
   Object.freeze({
     pattern: /(implementation|revise|refactor|fix|code)/i,
-    action: "editCode"
+    action: "editCode",
   }),
   Object.freeze({
     pattern: /(review|verify|check|lint|test)/i,
-    action: "runChecks"
+    action: "runChecks",
   }),
   Object.freeze({
     pattern: /(requirements|draft|solution|breakdown|plan|doc)/i,
-    action: "editDocs"
-  })
+    action: "editDocs",
+  }),
 ]);
 
 const ACTION_PERMISSION_FIELD = Object.freeze({
@@ -218,7 +218,7 @@ const ACTION_PERMISSION_FIELD = Object.freeze({
   runChecks: "allowRunChecks",
   commit: "allowCommit",
   push: "allowPush",
-  pullRequest: "allowPullRequest"
+  pullRequest: "allowPullRequest",
 });
 
 const HIGH_RISK_PERMISSION_FIELD = Object.freeze({
@@ -226,7 +226,7 @@ const HIGH_RISK_PERMISSION_FIELD = Object.freeze({
   infra_or_deploy: "allowInfraEdit",
   ci_workflow_modification: "allowInfraEdit",
   dangerous_command: "allowDangerousCommands",
-  production_config_edit: "allowProductionConfigEdit"
+  production_config_edit: "allowProductionConfigEdit",
 });
 
 const HIGH_RISK_RULES = Object.freeze([
@@ -236,8 +236,8 @@ const HIGH_RISK_RULES = Object.freeze([
     patterns: Object.freeze([
       /(^|\s)\.env(\.|\/|\s|$)/i,
       /(secret|credential|api[-_ ]?key|token|password|private[-_ ]?key)/i,
-      /(密钥|密码|凭证|令牌|密文)/i
-    ])
+      /(密钥|密码|凭证|令牌|密文)/i,
+    ]),
   }),
   Object.freeze({
     tag: "infra_or_deploy",
@@ -245,49 +245,49 @@ const HIGH_RISK_RULES = Object.freeze([
     patterns: Object.freeze([
       /(dockerfile|docker-compose|compose\.ya?ml)/i,
       /(terraform|ansible|helm|k8s|kubernetes|pulumi)/i,
-      /(deploy|deployment|release[-_ ]pipeline)/i
-    ])
+      /(deploy|deployment|release[-_ ]pipeline)/i,
+    ]),
   }),
   Object.freeze({
     tag: "ci_workflow_modification",
     source: "file",
     patterns: Object.freeze([
       /(\.github\/workflows\/|\.gitlab-ci\.yml|jenkinsfile)/i,
-      /(workflow|pipeline|ci\/)/i
-    ])
+      /(workflow|pipeline|ci\/)/i,
+    ]),
   }),
   Object.freeze({
     tag: "dependency_major_upgrade",
     source: "change_type",
     patterns: Object.freeze([
       /(major[ -]?upgrade|upgrade to v?\d{2,})/i,
-      /(breaking[ -]?change|重大升级|主版本升级)/i
-    ])
+      /(breaking[ -]?change|重大升级|主版本升级)/i,
+    ]),
   }),
   Object.freeze({
     tag: "database_migration",
     source: "file",
     patterns: Object.freeze([
       /(migration|migrations|schema\.sql|prisma\/migrations)/i,
-      /(alter table|drop table|create index|数据库迁移|表结构变更)/i
-    ])
+      /(alter table|drop table|create index|数据库迁移|表结构变更)/i,
+    ]),
   }),
   Object.freeze({
     tag: "dangerous_command",
     source: "command",
     patterns: Object.freeze([
       /(rm\s+-rf|mkfs|dd\s+if=|shutdown|reboot|:\(\)\{\s*:\|:&\s*\};:)/i,
-      /(curl\s+[^|]+\|\s*(sh|bash)|sudo\s+rm\s+-rf)/i
-    ])
+      /(curl\s+[^|]+\|\s*(sh|bash)|sudo\s+rm\s+-rf)/i,
+    ]),
   }),
   Object.freeze({
     tag: "production_config_edit",
     source: "file",
     patterns: Object.freeze([
       /(production|prod\.|values-prod|live\/|prod\/)/i,
-      /(线上配置|生产配置|生产环境)/i
-    ])
-  })
+      /(线上配置|生产配置|生产环境)/i,
+    ]),
+  }),
 ]);
 
 const DEFAULT_APPROVAL_RISK_TAGS = Object.freeze([
@@ -297,7 +297,7 @@ const DEFAULT_APPROVAL_RISK_TAGS = Object.freeze([
   "dependency_major_upgrade",
   "database_migration",
   "dangerous_command",
-  "production_config_edit"
+  "production_config_edit",
 ]);
 
 const HIGH_RISK_TAG_SET = new Set(HIGH_RISK_RULES.map((rule) => rule.tag));
@@ -326,9 +326,9 @@ function safeParseJsonFile(filePath: any, locale: any, errorCode: any) {
         code: errorCode,
         details: {
           filePath,
-          cause: error instanceof Error ? error.message : String(error)
-        }
-      }
+          cause: error instanceof Error ? error.message : String(error),
+        },
+      },
     );
   }
 }
@@ -470,20 +470,20 @@ function buildCompiledProcessSnapshot(processModel: any, routingPlan: any, workf
       id: stage.id,
       kind: stage.kind,
       routeKey: stage.routeKey,
-      requiredSurface: stage.requiredSurface
+      requiredSurface: stage.requiredSurface,
     })),
     reviewLoops: processModel.reviewLoops.map((loopConfig: any) => ({
       stageId: loopConfig.stageId,
       routeSequence: loopConfig.routeSequence,
       maxReviewCycles: loopConfig.maxReviewCycles,
-      completionPolicy: loopConfig.completionPolicy
+      completionPolicy: loopConfig.completionPolicy,
     })),
     taskLoop: cloneValue(processModel.taskLoop),
     routeDefinitions: processModel.routeDefinitions.map((route: any) => ({
       routeKey: route.routeKey,
       stageId: route.stageId,
       label: route.label,
-      requiredSurface: route.requiredSurface
+      requiredSurface: route.requiredSurface,
     })),
     routing: {
       profile: routingPlan.profileId,
@@ -495,13 +495,13 @@ function buildCompiledProcessSnapshot(processModel: any, routingPlan: any, workf
         requestedSurface: route.requestedSurface,
         resolvedSurface: route.resolvedSurface,
         decision: route.decision,
-        source: route.source
-      }))
+        source: route.source,
+      })),
     },
     workflow: {
       id: workflowTemplate.id,
-      stageOrder: workflowTemplate.stages.map((stage: any) => stage.id)
-    }
+      stageOrder: workflowTemplate.stages.map((stage: any) => stage.id),
+    },
   };
 }
 
@@ -533,22 +533,22 @@ function buildProcessExplainPayload(
     validateProcess: runState.validateProcess,
     process: {
       source: processModel.source,
-      snapshot: buildCompiledProcessSnapshot(processModel, routingPlan, workflowTemplate)
+      snapshot: buildCompiledProcessSnapshot(processModel, routingPlan, workflowTemplate),
     },
     summary: {
       status: summaryStatus,
       errors: summaryErrors,
       warnings: summaryWarnings,
       passed: summaryPassed,
-      exitCode: summaryExitCode
+      exitCode: summaryExitCode,
     },
     notes: [
       t(
         locale,
         "本次仅执行流程编译/解释，不会触发阶段派发与审计落盘。",
-        "This run only compiles/explains process metadata and does not dispatch stages or write audit artifacts."
-      )
-    ]
+        "This run only compiles/explains process metadata and does not dispatch stages or write audit artifacts.",
+      ),
+    ],
   };
 }
 
@@ -574,13 +574,13 @@ function detectHighRiskSignals(content: any) {
     detections.push({
       tag: rule.tag,
       source: rule.source,
-      evidence
+      evidence,
     });
   }
 
   return {
     riskTags: detections.map((detection) => detection.tag),
-    detections
+    detections,
   };
 }
 
@@ -686,8 +686,8 @@ function evaluatePolicyGate(runState: any, routeDecisions: any) {
         message: t(
           runState.locale,
           `当前策略不允许执行动作 ${action}（${permissionField}=false）。`,
-          `Current policy disallows action ${action} (${permissionField}=false).`
-        )
+          `Current policy disallows action ${action} (${permissionField}=false).`,
+        ),
       });
     }
   }
@@ -717,31 +717,31 @@ function evaluatePolicyGate(runState: any, routeDecisions: any) {
         message: t(
           runState.locale,
           `收到未定义风险标签确认：${approvedTag}。`,
-          `Received approval for unknown risk tag: ${approvedTag}.`
+          `Received approval for unknown risk tag: ${approvedTag}.`,
         ),
         target: approvedTag,
         suggestion: t(
           runState.locale,
           "请确认风险标签是否拼写正确，或在策略中补充对应规则。",
-          "Confirm the risk tag spelling, or add a matching rule in policy config."
-        )
+          "Confirm the risk tag spelling, or add a matching rule in policy config.",
+        ),
       });
     }
   }
 
   const requiredApprovalList = [...requiredApprovalTags];
   const approvedRiskTags = requiredApprovalList.filter((tag) =>
-    runState.approvalPolicy.approvedTags.has(tag)
+    runState.approvalPolicy.approvedTags.has(tag),
   );
   const missingApprovals = requiredApprovalList.filter(
-    (tag) => !runState.approvalPolicy.approvedTags.has(tag)
+    (tag) => !runState.approvalPolicy.approvedTags.has(tag),
   );
   const requiresHumanApproval = missingApprovals.length > 0;
   let decision = "allow";
   let reason = t(
     runState.locale,
     "权限与风险门禁通过，可继续执行。",
-    "Permission and risk gates passed."
+    "Permission and risk gates passed.",
   );
 
   if (permissionViolations.length > 0) {
@@ -749,7 +749,7 @@ function evaluatePolicyGate(runState: any, routeDecisions: any) {
     reason = t(
       runState.locale,
       "权限门禁阻断：当前策略不允许本次执行所需动作。",
-      "Policy blocked: current permissions do not allow required actions."
+      "Policy blocked: current permissions do not allow required actions.",
     );
   } else if (requiresHumanApproval) {
     decision = runState.nonInteractive ? "block" : "pause_for_approval";
@@ -758,12 +758,12 @@ function evaluatePolicyGate(runState: any, routeDecisions: any) {
         ? t(
             runState.locale,
             `检测到高风险标签（${missingApprovals.join(", ")}），非交互模式下默认阻断。`,
-            `Detected high-risk tags (${missingApprovals.join(", ")}); non-interactive mode blocks by default.`
+            `Detected high-risk tags (${missingApprovals.join(", ")}); non-interactive mode blocks by default.`,
           )
         : t(
             runState.locale,
             `检测到高风险标签（${missingApprovals.join(", ")}），等待人工确认后继续。`,
-            `Detected high-risk tags (${missingApprovals.join(", ")}); awaiting approval before continuing.`
+            `Detected high-risk tags (${missingApprovals.join(", ")}); awaiting approval before continuing.`,
           );
   }
 
@@ -784,7 +784,7 @@ function evaluatePolicyGate(runState: any, routeDecisions: any) {
     approvedRiskTags,
     missingApprovals,
     requiresHumanApproval,
-    warnings
+    warnings,
   };
 }
 
@@ -831,7 +831,7 @@ function readCsvRows(filePath: any) {
   if (lines.length === 0) {
     return {
       header: [],
-      rows: []
+      rows: [],
     };
   }
 
@@ -849,7 +849,7 @@ function readCsvRows(filePath: any) {
 
   return {
     header,
-    rows
+    rows,
   };
 }
 
@@ -858,7 +858,7 @@ function createSurfaceSuggestion(surface: any, checkId: any, locale: any) {
     return t(
       locale,
       `请确保 ${surface} 对应 CLI 已安装并在 PATH 中可执行。`,
-      `Make sure the CLI for ${surface} is installed and available in PATH.`
+      `Make sure the CLI for ${surface} is installed and available in PATH.`,
     );
   }
 
@@ -866,7 +866,7 @@ function createSurfaceSuggestion(surface: any, checkId: any, locale: any) {
     return t(
       locale,
       `可执行 \`repo-ai-governor skills install --surface ${surface} --scope repo\` 初始化仓库接线目录。`,
-      `Run \`repo-ai-governor skills install --surface ${surface} --scope repo\` to bootstrap workspace binding.`
+      `Run \`repo-ai-governor skills install --surface ${surface} --scope repo\` to bootstrap workspace binding.`,
     );
   }
 
@@ -874,7 +874,7 @@ function createSurfaceSuggestion(surface: any, checkId: any, locale: any) {
     return t(
       locale,
       `请确认 ${surface} 的登录态和本地环境可用后重试。`,
-      `Verify local auth/session and environment for ${surface}, then retry.`
+      `Verify local auth/session and environment for ${surface}, then retry.`,
     );
   }
 
@@ -887,7 +887,7 @@ function runProbe(binary: any, args: any, cwd: any) {
       cwd,
       encoding: "utf8",
       timeout: 4000,
-      windowsHide: true
+      windowsHide: true,
     });
 
     if (result.error) {
@@ -895,7 +895,7 @@ function runProbe(binary: any, args: any, cwd: any) {
       return {
         ok: false,
         code: errorCode === "ENOENT" ? "probe.binary_missing" : "probe.spawn_error",
-        message: result.error.message
+        message: result.error.message,
       };
     }
 
@@ -903,20 +903,20 @@ function runProbe(binary: any, args: any, cwd: any) {
       return {
         ok: false,
         code: "probe.command_failed",
-        message: (result.stderr || result.stdout || "").trim() || `exit ${result.status}`
+        message: (result.stderr || result.stdout || "").trim() || `exit ${result.status}`,
       };
     }
 
     return {
       ok: true,
       code: "probe.ok",
-      message: (result.stdout || "").trim()
+      message: (result.stdout || "").trim(),
     };
   } catch (error) {
     return {
       ok: false,
       code: "probe.exception",
-      message: error instanceof Error ? error.message : String(error)
+      message: error instanceof Error ? error.message : String(error),
     };
   }
 }
@@ -929,7 +929,7 @@ function resolveSurfaceProbeDefinition(surface: any, runState: any) {
       binary: String(custom.binary ?? "").trim(),
       binaryArgs: Array.isArray(custom.binaryArgs) ? custom.binaryArgs.map(String) : ["--version"],
       healthArgs: Array.isArray(custom.healthArgs) ? custom.healthArgs.map(String) : ["--help"],
-      workspaceDir: custom.workspaceDir ? String(custom.workspaceDir) : null
+      workspaceDir: custom.workspaceDir ? String(custom.workspaceDir) : null,
     };
   }
 
@@ -948,13 +948,13 @@ function runSurfacePreflight(surface: any, runState: any) {
       message: t(
         runState.locale,
         `未配置 ${surface} 的 preflight 探针，按外部入口处理。`,
-        `No preflight probe configured for ${surface}; treating as external surface.`
+        `No preflight probe configured for ${surface}; treating as external surface.`,
       ),
       suggestion: t(
         runState.locale,
         "可在 governor.yaml 的 automation.surfaces 中为该入口补充 binary/health/workspace 配置。",
-        "Add binary/health/workspace probes under automation.surfaces in governor.yaml."
-      )
+        "Add binary/health/workspace probes under automation.surfaces in governor.yaml.",
+      ),
     });
     checks.push({
       id: "auth_check",
@@ -962,9 +962,9 @@ function runSurfacePreflight(surface: any, runState: any) {
       message: t(
         runState.locale,
         "该入口未配置认证探针，认证状态由调用方自行保证。",
-        "Auth probe is not configured; caller must ensure authentication."
+        "Auth probe is not configured; caller must ensure authentication.",
       ),
-      suggestion: null
+      suggestion: null,
     });
     checks.push({
       id: "workspace_binding_check",
@@ -972,9 +972,9 @@ function runSurfacePreflight(surface: any, runState: any) {
       message: t(
         runState.locale,
         "该入口未配置仓库接线目录检查。",
-        "Workspace binding check is not configured for this surface."
+        "Workspace binding check is not configured for this surface.",
       ),
-      suggestion: null
+      suggestion: null,
     });
     checks.push({
       id: "health_check",
@@ -982,16 +982,16 @@ function runSurfacePreflight(surface: any, runState: any) {
       message: t(
         runState.locale,
         "该入口未配置健康探针，按可用处理。",
-        "Health check is not configured for this surface; assuming availability."
+        "Health check is not configured for this surface; assuming availability.",
       ),
-      suggestion: null
+      suggestion: null,
     });
 
     return {
       surface,
       available,
       checks,
-      fallbackDecision: "none"
+      fallbackDecision: "none",
     };
   }
 
@@ -1003,7 +1003,9 @@ function runSurfacePreflight(surface: any, runState: any) {
       ? t(runState.locale, "入口二进制可用。", "Surface binary is available.")
       : t(runState.locale, "入口二进制不可用。", "Surface binary is unavailable."),
     detail: binaryProbe.message || null,
-    suggestion: binaryProbe.ok ? null : createSurfaceSuggestion(surface, "binary_check", runState.locale)
+    suggestion: binaryProbe.ok
+      ? null
+      : createSurfaceSuggestion(surface, "binary_check", runState.locale),
   });
 
   if (!binaryProbe.ok) {
@@ -1016,14 +1018,15 @@ function runSurfacePreflight(surface: any, runState: any) {
     message: t(
       runState.locale,
       "v1 仅做最小认证占位检查；严格认证探针在后续迭代补齐。",
-      "v1 keeps auth checks lightweight; strict auth probing lands in later iterations."
+      "v1 keeps auth checks lightweight; strict auth probing lands in later iterations.",
     ),
-    suggestion: null
+    suggestion: null,
   });
 
   if (probe.workspaceDir) {
     const workspaceDirPath = path.resolve(runState.cwd, probe.workspaceDir);
-    const workspaceReady = fs.existsSync(workspaceDirPath) && fs.statSync(workspaceDirPath).isDirectory();
+    const workspaceReady =
+      fs.existsSync(workspaceDirPath) && fs.statSync(workspaceDirPath).isDirectory();
 
     checks.push({
       id: "workspace_binding_check",
@@ -1034,7 +1037,7 @@ function runSurfacePreflight(surface: any, runState: any) {
       detail: toRelativePath(runState.cwd, workspaceDirPath),
       suggestion: workspaceReady
         ? null
-        : createSurfaceSuggestion(surface, "workspace_binding_check", runState.locale)
+        : createSurfaceSuggestion(surface, "workspace_binding_check", runState.locale),
     });
   } else {
     checks.push({
@@ -1043,9 +1046,9 @@ function runSurfacePreflight(surface: any, runState: any) {
       message: t(
         runState.locale,
         "该入口未配置 workspaceDir，已跳过目录绑定检查。",
-        "workspaceDir is not configured for this surface; binding check skipped."
+        "workspaceDir is not configured for this surface; binding check skipped.",
       ),
-      suggestion: null
+      suggestion: null,
     });
   }
 
@@ -1067,7 +1070,7 @@ function runSurfacePreflight(surface: any, runState: any) {
     healthDetail = t(
       runState.locale,
       "由于 binary_check 失败，健康探针被跳过。",
-      "Health probe skipped because binary_check failed."
+      "Health probe skipped because binary_check failed.",
     );
     healthSuggestion = createSurfaceSuggestion(surface, "binary_check", runState.locale);
   }
@@ -1075,18 +1078,19 @@ function runSurfacePreflight(surface: any, runState: any) {
   checks.push({
     id: "health_check",
     status: healthStatus,
-    message: healthStatus === "pass"
-      ? t(runState.locale, "健康探针通过。", "Health probe passed.")
-      : t(runState.locale, "健康探针失败。", "Health probe failed."),
+    message:
+      healthStatus === "pass"
+        ? t(runState.locale, "健康探针通过。", "Health probe passed.")
+        : t(runState.locale, "健康探针失败。", "Health probe failed."),
     detail: healthDetail,
-    suggestion: healthSuggestion
+    suggestion: healthSuggestion,
   });
 
   return {
     surface,
     available,
     checks,
-    fallbackDecision: "none"
+    fallbackDecision: "none",
   };
 }
 
@@ -1099,15 +1103,15 @@ function buildRunArtifactPaths(cwd: any, resolvedConfig: any, locale: any) {
       t(
         locale,
         "run 命令需要当前 project 与 sprint 上下文。",
-        "Run command requires current project and sprint context."
+        "Run command requires current project and sprint context.",
       ),
       {
         code: "cli.run_missing_context",
         details: {
           currentProject,
-          currentSprint
-        }
-      }
+          currentSprint,
+        },
+      },
     );
   }
 
@@ -1115,10 +1119,13 @@ function buildRunArtifactPaths(cwd: any, resolvedConfig: any, locale: any) {
     cwd,
     resolvedConfig.config.artifacts.baseDir,
     currentProject,
-    currentSprint
+    currentSprint,
   );
   const tasksRoot = path.resolve(sprintRoot, resolvedConfig.config.artifacts.directories.tasks);
-  const codeReviewRoot = path.resolve(sprintRoot, resolvedConfig.config.artifacts.directories.codeReview);
+  const codeReviewRoot = path.resolve(
+    sprintRoot,
+    resolvedConfig.config.artifacts.directories.codeReview,
+  );
 
   return {
     sprintRoot,
@@ -1126,22 +1133,20 @@ function buildRunArtifactPaths(cwd: any, resolvedConfig: any, locale: any) {
     codeReviewRoot,
     planFile: path.resolve(sprintRoot, resolvedConfig.config.artifacts.files.plan),
     checklistFile: path.resolve(tasksRoot, resolvedConfig.config.artifacts.taskFiles.checklist),
-    taskCsvFile: path.resolve(tasksRoot, resolvedConfig.config.artifacts.taskFiles.csv)
+    taskCsvFile: path.resolve(tasksRoot, resolvedConfig.config.artifacts.taskFiles.csv),
   };
 }
 
 function buildRunAuditPaths(cwd: any, resolvedConfig: any, executionId: any) {
   const auditConfig = resolvedConfig.config.automation?.audit ?? {};
-  const outputDir = path.resolve(
-    cwd,
-    auditConfig.outputDir ?? ".repo-ai-governor/reports/runs"
-  );
-  const latestFileName = String(auditConfig.latestFileName ?? "latest-run.json").trim() || "latest-run.json";
+  const outputDir = path.resolve(cwd, auditConfig.outputDir ?? ".repo-ai-governor/reports/runs");
+  const latestFileName =
+    String(auditConfig.latestFileName ?? "latest-run.json").trim() || "latest-run.json";
 
   return {
     outputDir,
     recordFile: path.resolve(outputDir, `${executionId}.json`),
-    latestFile: path.resolve(outputDir, latestFileName)
+    latestFile: path.resolve(outputDir, latestFileName),
   };
 }
 
@@ -1155,7 +1160,7 @@ function normalizeCheckpointWarnings(warnings: any) {
     severity: warning?.severity ?? "warning",
     message: warning?.message ?? "",
     target: warning?.target ?? null,
-    suggestion: warning?.suggestion ?? null
+    suggestion: warning?.suggestion ?? null,
   }));
 }
 
@@ -1179,11 +1184,11 @@ function normalizeCheckpointRecord(value: any, index = 0) {
     error: value?.error
       ? {
           code: value.error.code ?? null,
-          message: value.error.message ?? String(value.error)
+          message: value.error.message ?? String(value.error),
         }
       : null,
     outputs: isPlainObject(value?.outputs) ? cloneValue(value.outputs) : {},
-    details: isPlainObject(value?.details) ? cloneValue(value.details) : null
+    details: isPlainObject(value?.details) ? cloneValue(value.details) : null,
   };
 }
 
@@ -1213,21 +1218,21 @@ function resolveResumePlan(runState: any, workflowTemplate: any) {
       t(
         runState.locale,
         "--resume-from 仅支持 assisted 模式。",
-        "--resume-from is only supported in assisted mode."
+        "--resume-from is only supported in assisted mode.",
       ),
       {
         code: "cli.run_resume_mode_not_supported",
         details: {
-          mode: runState.mode
-        }
-      }
+          mode: runState.mode,
+        },
+      },
     );
   }
 
   const resumePayload = safeParseJsonFile(
     runState.resumeFromPath,
     runState.locale,
-    "cli.run_resume_source_parse_failed"
+    "cli.run_resume_source_parse_failed",
   );
   const checkpointRecords = resolveCheckpointRecordsFromPayload(resumePayload);
 
@@ -1236,14 +1241,14 @@ function resolveResumePlan(runState: any, workflowTemplate: any) {
       t(
         runState.locale,
         "恢复来源缺少 checkpoint 数据。",
-        "Resume source does not contain checkpoint data."
+        "Resume source does not contain checkpoint data.",
       ),
       {
         code: "cli.run_resume_source_missing_checkpoints",
         details: {
-          source: toRelativePath(runState.cwd, runState.resumeFromPath)
-        }
-      }
+          source: toRelativePath(runState.cwd, runState.resumeFromPath),
+        },
+      },
     );
   }
 
@@ -1264,7 +1269,8 @@ function resolveResumePlan(runState: any, workflowTemplate: any) {
 
   if (!resumeStageId) {
     resumeStageId =
-      stageOrder.find((stageId: any) => checkpointByStage.get(stageId)?.status !== "passed") ?? null;
+      stageOrder.find((stageId: any) => checkpointByStage.get(stageId)?.status !== "passed") ??
+      null;
   }
 
   if (resumeStageId && !stageOrder.includes(resumeStageId)) {
@@ -1272,15 +1278,15 @@ function resolveResumePlan(runState: any, workflowTemplate: any) {
       t(
         runState.locale,
         `恢复阶段不存在：${resumeStageId}`,
-        `Resume stage does not exist: ${resumeStageId}`
+        `Resume stage does not exist: ${resumeStageId}`,
       ),
       {
         code: "cli.run_resume_stage_invalid",
         details: {
           resumeStageId,
-          stageOrder
-        }
-      }
+          stageOrder,
+        },
+      },
     );
   }
 
@@ -1304,7 +1310,7 @@ function resolveResumePlan(runState: any, workflowTemplate: any) {
         : null,
     resumeStageId,
     restoreStageIds,
-    checkpointByStage
+    checkpointByStage,
   };
 }
 
@@ -1322,11 +1328,11 @@ function buildStageCheckpoints(workflowResult: any) {
     error: stage.error
       ? {
           code: stage.error.code ?? null,
-          message: stage.error.message ?? null
+          message: stage.error.message ?? null,
         }
       : null,
     outputs: isPlainObject(stage.outputs) ? cloneValue(stage.outputs) : {},
-    details: isPlainObject(stage.details) ? cloneValue(stage.details) : null
+    details: isPlainObject(stage.details) ? cloneValue(stage.details) : null,
   }));
 }
 
@@ -1342,7 +1348,7 @@ function buildRunKeyActions(workflowResult: any) {
         surface: stage.details.dispatch.resolvedSurface ?? null,
         mode: stage.details.dispatch.mode ?? null,
         taskId: stage.details.dispatch.taskId ?? null,
-        cycle: stage.details.dispatch.cycle ?? null
+        cycle: stage.details.dispatch.cycle ?? null,
       });
     }
 
@@ -1355,7 +1361,7 @@ function buildRunKeyActions(workflowResult: any) {
               stageId: stage.id,
               routeKey: step?.routeKey ?? null,
               surface: step?.resolvedSurface ?? null,
-              cycle: cycle.cycle ?? null
+              cycle: cycle.cycle ?? null,
             });
           }
         }
@@ -1367,7 +1373,7 @@ function buildRunKeyActions(workflowResult: any) {
             taskId: cycle.implementation?.taskId ?? cycle.codeReview?.taskId ?? null,
             cycle: cycle.cycle ?? null,
             implementationSurface: cycle.implementation?.resolvedSurface ?? null,
-            codeReviewSurface: cycle.codeReview?.resolvedSurface ?? null
+            codeReviewSurface: cycle.codeReview?.resolvedSurface ?? null,
           });
         }
       }
@@ -1390,14 +1396,15 @@ function resolveRecoveryNextStageId(payload: any) {
 
 function buildRunRecoveryMetadata(runState: any, payload: any, auditRecordRef: any) {
   const nextStageId = resolveRecoveryNextStageId(payload);
-  const resumeEnabled = runState.mode === "assisted" && Boolean(nextStageId) && Boolean(auditRecordRef);
+  const resumeEnabled =
+    runState.mode === "assisted" && Boolean(nextStageId) && Boolean(auditRecordRef);
   const recommendedCommand = resumeEnabled
     ? [
         "repo-ai-governor run",
-        `--mode assisted`,
+        "--mode assisted",
         `--project ${payload.currentProject}`,
         `--sprint ${payload.currentSprint}`,
-        `--resume-from ${auditRecordRef}`
+        `--resume-from ${auditRecordRef}`,
       ].join(" ")
     : null;
   const handoffRequired = runState.mode === "assisted" && payload.status === "fail";
@@ -1407,7 +1414,7 @@ function buildRunRecoveryMetadata(runState: any, payload: any, auditRecordRef: a
       ? t(
           runState.locale,
           `执行在阶段 ${nextStageId} 未收敛，需要人工接管处理后恢复。`,
-          `Execution did not converge at stage ${nextStageId}; requires human handoff before resuming.`
+          `Execution did not converge at stage ${nextStageId}; requires human handoff before resuming.`,
         )
       : null);
 
@@ -1424,8 +1431,8 @@ function buildRunRecoveryMetadata(runState: any, payload: any, auditRecordRef: a
     recommendedCommand,
     handoff: {
       required: handoffRequired,
-      reason: handoffReason
-    }
+      reason: handoffReason,
+    },
   };
 }
 
@@ -1441,7 +1448,7 @@ function writeRunAuditRecord(runState: any, payload: any) {
 
   return {
     recordFile: toRelativePath(runState.cwd, runState.auditPaths.recordFile),
-    latestFile: toRelativePath(runState.cwd, runState.auditPaths.latestFile)
+    latestFile: toRelativePath(runState.cwd, runState.auditPaths.latestFile),
   };
 }
 
@@ -1469,11 +1476,13 @@ function loadTaskLedger(artifactPaths: any) {
       priority: row.priority ?? "",
       dueDate: row.due_date ?? "",
       status: normalizeTaskStatus(row.status),
-      raw: row
+      raw: row,
     });
   }
 
-  return [...latestByTaskId.values()].sort((left, right) => left.taskId.localeCompare(right.taskId));
+  return [...latestByTaskId.values()].sort((left, right) =>
+    left.taskId.localeCompare(right.taskId),
+  );
 }
 
 function loadTaskCardIds(tasksRoot: any) {
@@ -1482,9 +1491,10 @@ function loadTaskCardIds(tasksRoot: any) {
   }
 
   return new Set(
-    fs.readdirSync(tasksRoot)
+    fs
+      .readdirSync(tasksRoot)
       .filter((entry) => /^TK-\d{3}\.md$/.test(entry))
-      .map((entry) => entry.replace(/\.md$/, ""))
+      .map((entry) => entry.replace(/\.md$/, "")),
   );
 }
 
@@ -1518,7 +1528,7 @@ function buildReviewStatusIndex(codeReviewRoot: any) {
       index.set(taskId, {
         status: prefix,
         weight,
-        fileName
+        fileName,
       });
     }
   }
@@ -1550,7 +1560,7 @@ function buildTaskBreakdownContext(runState: any) {
     ledger,
     taskCardIds,
     completed,
-    pending
+    pending,
   };
 }
 
@@ -1558,7 +1568,7 @@ function resolveTaskCompletion(task: any, reviewIndex: any, completionStatuses: 
   if (completionStatuses.has(task.status)) {
     return {
       complete: true,
-      source: "tasks.csv"
+      source: "tasks.csv",
     };
   }
 
@@ -1567,13 +1577,13 @@ function resolveTaskCompletion(task: any, reviewIndex: any, completionStatuses: 
   if (reviewStatus === "resolved_review") {
     return {
       complete: true,
-      source: "code-review"
+      source: "code-review",
     };
   }
 
   return {
     complete: false,
-    source: reviewStatus ? "code-review" : "none"
+    source: reviewStatus ? "code-review" : "none",
   };
 }
 
@@ -1595,7 +1605,7 @@ function resolveRoutingProfile(config: any, profileId: any, locale: any) {
   if (config.automation?.routing && Object.keys(config.automation.routing).length > 0) {
     return {
       defaultSurface: config.automation.defaultSurface,
-      routing: config.automation.routing
+      routing: config.automation.routing,
     };
   }
 
@@ -1610,9 +1620,9 @@ function resolveRoutingProfile(config: any, profileId: any, locale: any) {
       details: {
         profileId,
         builtinProfiles: Object.keys(BUILTIN_ROUTING_PROFILES),
-        customProfiles: Object.keys(config.automation?.profiles ?? {})
-      }
-    }
+        customProfiles: Object.keys(config.automation?.profiles ?? {}),
+      },
+    },
   );
 }
 
@@ -1627,16 +1637,16 @@ function resolveLoopCompletionPolicy(rawPolicy: any, locale: any, stageId: any) 
     t(
       locale,
       `review loop(${stageId}) completionPolicy 不支持：${completionPolicy}`,
-      `Unsupported completionPolicy for review loop(${stageId}): ${completionPolicy}`
+      `Unsupported completionPolicy for review loop(${stageId}): ${completionPolicy}`,
     ),
     {
       code: "cli.run_invalid_review_loop_policy",
       details: {
         stageId,
         completionPolicy,
-        supportedPolicies: [...LOOP_COMPLETION_POLICIES]
-      }
-    }
+        supportedPolicies: [...LOOP_COMPLETION_POLICIES],
+      },
+    },
   );
 }
 
@@ -1645,12 +1655,12 @@ function resolveReviewLoops(runState: any, processConfig: any, stages: any) {
   const loopConfigs = [
     {
       defaults: DEFAULT_REVIEW_LOOPS["draft-review-loop"],
-      config: processConfig.draftReviewLoop ?? {}
+      config: processConfig.draftReviewLoop ?? {},
     },
     {
       defaults: DEFAULT_REVIEW_LOOPS["technical-solution-loop"],
-      config: processConfig.solutionReviewLoop ?? {}
-    }
+      config: processConfig.solutionReviewLoop ?? {},
+    },
   ];
   const loops = [];
 
@@ -1669,15 +1679,15 @@ function resolveReviewLoops(runState: any, processConfig: any, stages: any) {
         t(
           runState.locale,
           `review loop(${defaults.stageId}) 至少需要两个 routeKey。`,
-          `Review loop(${defaults.stageId}) requires at least two route keys.`
+          `Review loop(${defaults.stageId}) requires at least two route keys.`,
         ),
         {
           code: "cli.run_invalid_review_loop_routes",
           details: {
             stageId: defaults.stageId,
-            routeSequence
-          }
-        }
+            routeSequence,
+          },
+        },
       );
     }
 
@@ -1686,13 +1696,13 @@ function resolveReviewLoops(runState: any, processConfig: any, stages: any) {
       routeSequence,
       maxReviewCycles: toPositiveInteger(
         runState.maxReviewCyclesOverride ?? config.maxReviewCycles ?? defaults.maxReviewCycles,
-        defaults.maxReviewCycles
+        defaults.maxReviewCycles,
       ),
       completionPolicy: resolveLoopCompletionPolicy(
         config.completionPolicy ?? defaults.completionPolicy,
         runState.locale,
-        defaults.stageId
-      )
+        defaults.stageId,
+      ),
     });
   }
 
@@ -1714,25 +1724,33 @@ function resolveProcessModel(runState: any) {
 
     if (!stageId) {
       throw new InputError(
-        t(runState.locale, "process.stageDefinitions 中存在空 stage id。", "process.stageDefinitions contains an empty stage id."),
+        t(
+          runState.locale,
+          "process.stageDefinitions 中存在空 stage id。",
+          "process.stageDefinitions contains an empty stage id.",
+        ),
         {
           code: "cli.run_invalid_process_stage",
           details: {
-            stage: definition
-          }
-        }
+            stage: definition,
+          },
+        },
       );
     }
 
     if (seenStageIds.has(stageId)) {
       throw new InputError(
-        t(runState.locale, `process.stageDefinitions 存在重复阶段：${stageId}`, `Duplicate stage in process.stageDefinitions: ${stageId}`),
+        t(
+          runState.locale,
+          `process.stageDefinitions 存在重复阶段：${stageId}`,
+          `Duplicate stage in process.stageDefinitions: ${stageId}`,
+        ),
         {
           code: "cli.run_duplicate_process_stage",
           details: {
-            stageId
-          }
-        }
+            stageId,
+          },
+        },
       );
     }
 
@@ -1755,31 +1773,35 @@ function resolveProcessModel(runState: any) {
           ? definition.name
           : {
               "zh-CN": stageId,
-              "en-US": stageId
-            }
+              "en-US": stageId,
+            },
     });
   }
 
   const reviewLoops = resolveReviewLoops(runState, processConfig, stages);
   const reviewLoopStageIds = new Set<string>(reviewLoops.map((loop: any) => String(loop.stageId)));
   const taskLoopConfig = processConfig.taskLoop ?? {};
-  const configuredTaskLoopStageId = String(taskLoopConfig.stageId ?? DEFAULT_TASK_LOOP.stageId).trim();
+  const configuredTaskLoopStageId = String(
+    taskLoopConfig.stageId ?? DEFAULT_TASK_LOOP.stageId,
+  ).trim();
   const maxReviewCycles = toPositiveInteger(
-    runState.maxReviewCyclesOverride ?? taskLoopConfig.maxReviewCycles ?? DEFAULT_TASK_LOOP.maxReviewCycles,
-    DEFAULT_TASK_LOOP.maxReviewCycles
+    runState.maxReviewCyclesOverride ??
+      taskLoopConfig.maxReviewCycles ??
+      DEFAULT_TASK_LOOP.maxReviewCycles,
+    DEFAULT_TASK_LOOP.maxReviewCycles,
   );
   const implementationRouteKey = String(
-    taskLoopConfig.implementationRouteKey ?? DEFAULT_TASK_LOOP.implementationRouteKey
+    taskLoopConfig.implementationRouteKey ?? DEFAULT_TASK_LOOP.implementationRouteKey,
   ).trim();
   const codeReviewRouteKey = String(
-    taskLoopConfig.codeReviewRouteKey ?? DEFAULT_TASK_LOOP.codeReviewRouteKey
+    taskLoopConfig.codeReviewRouteKey ?? DEFAULT_TASK_LOOP.codeReviewRouteKey,
   ).trim();
-  let loopStage = stages.find(
-    (stage) => stage.id === configuredTaskLoopStageId && stage.kind === "loop"
-  ) ?? null;
+  let loopStage =
+    stages.find((stage) => stage.id === configuredTaskLoopStageId && stage.kind === "loop") ?? null;
 
   if (!loopStage) {
-    loopStage = stages.find((stage) => stage.kind === "loop" && !reviewLoopStageIds.has(stage.id)) ?? null;
+    loopStage =
+      stages.find((stage) => stage.kind === "loop" && !reviewLoopStageIds.has(stage.id)) ?? null;
   }
 
   if (loopStage && reviewLoopStageIds.has(loopStage.id)) {
@@ -1787,15 +1809,15 @@ function resolveProcessModel(runState: any) {
       t(
         runState.locale,
         `taskLoop.stageId(${loopStage.id}) 与 review loop 冲突。`,
-        `taskLoop.stageId(${loopStage.id}) conflicts with a review loop stage.`
+        `taskLoop.stageId(${loopStage.id}) conflicts with a review loop stage.`,
       ),
       {
         code: "cli.run_conflicting_loop_stage",
         details: {
           taskLoopStageId: loopStage.id,
-          reviewLoopStageIds: [...reviewLoopStageIds]
-        }
-      }
+          reviewLoopStageIds: [...reviewLoopStageIds],
+        },
+      },
     );
   }
 
@@ -1810,7 +1832,7 @@ function resolveProcessModel(runState: any) {
       routeKey: stage.routeKey,
       stageId: stage.id,
       label: stage.id,
-      requiredSurface: stage.requiredSurface
+      requiredSurface: stage.requiredSurface,
     });
   }
 
@@ -1820,7 +1842,7 @@ function resolveProcessModel(runState: any) {
         routeKey,
         stageId: reviewLoop.stageId,
         label: `${reviewLoop.stageId}:step-${index + 1}`,
-        requiredSurface: true
+        requiredSurface: true,
       });
     }
   }
@@ -1830,13 +1852,13 @@ function resolveProcessModel(runState: any) {
       routeKey: implementationRouteKey,
       stageId: loopStage.id,
       label: `${loopStage.id}:implementation`,
-      requiredSurface: true
+      requiredSurface: true,
     });
     routeDefinitions.push({
       routeKey: codeReviewRouteKey,
       stageId: loopStage.id,
       label: `${loopStage.id}:code-review`,
-      requiredSurface: true
+      requiredSurface: true,
     });
   }
 
@@ -1848,14 +1870,14 @@ function resolveProcessModel(runState: any) {
         t(
           runState.locale,
           `routeKey 冲突：${route.routeKey}`,
-          `Duplicate routeKey detected: ${route.routeKey}`
+          `Duplicate routeKey detected: ${route.routeKey}`,
         ),
         {
           code: "cli.run_duplicate_route_key",
           details: {
-            routeKey: route.routeKey
-          }
-        }
+            routeKey: route.routeKey,
+          },
+        },
       );
     }
 
@@ -1870,15 +1892,19 @@ function resolveProcessModel(runState: any) {
       stageId: loopStage?.id ?? null,
       maxReviewCycles,
       implementationRouteKey,
-      codeReviewRouteKey
+      codeReviewRouteKey,
     },
     routeDefinitions,
-    routeKeySet
+    routeKeySet,
   };
 }
 
 function parseRouteOverrides(rawRouteValues: any, processModel: any, locale: any) {
-  const values = Array.isArray(rawRouteValues) ? rawRouteValues : rawRouteValues ? [rawRouteValues] : [];
+  const values = Array.isArray(rawRouteValues)
+    ? rawRouteValues
+    : rawRouteValues
+      ? [rawRouteValues]
+      : [];
   const routeOverrides = new Map();
 
   for (const rawValue of values) {
@@ -1892,14 +1918,14 @@ function parseRouteOverrides(rawRouteValues: any, processModel: any, locale: any
         t(
           locale,
           `--route 参数格式错误：${rawValue}，应为 routeKey=surface`,
-          `Invalid --route value: ${rawValue}. Expected routeKey=surface.`
+          `Invalid --route value: ${rawValue}. Expected routeKey=surface.`,
         ),
         {
           code: "cli.run_invalid_route",
           details: {
-            route: rawValue
-          }
-        }
+            route: rawValue,
+          },
+        },
       );
     }
 
@@ -1908,15 +1934,15 @@ function parseRouteOverrides(rawRouteValues: any, processModel: any, locale: any
         t(
           locale,
           `--route 指定了不支持的 routeKey：${routeKey}`,
-          `--route references an unsupported routeKey: ${routeKey}`
+          `--route references an unsupported routeKey: ${routeKey}`,
         ),
         {
           code: "cli.run_invalid_route_key",
           details: {
             routeKey,
-            supportedRouteKeys: [...processModel.routeKeySet]
-          }
-        }
+            supportedRouteKeys: [...processModel.routeKeySet],
+          },
+        },
       );
     }
 
@@ -1930,7 +1956,7 @@ function buildRoutingPlan(runState: any, processModel: any) {
   const profile = resolveRoutingProfile(
     runState.resolvedConfig.config,
     runState.routingProfile,
-    runState.locale
+    runState.locale,
   );
   const automationConfig = runState.resolvedConfig.config.automation ?? {};
   const defaultSurface = normalizeSurfaceId(
@@ -1938,7 +1964,7 @@ function buildRoutingPlan(runState: any, processModel: any) {
       profile.defaultSurface ??
       automationConfig.defaultSurface ??
       runState.resolvedConfig.config.adapters.enabled[0] ??
-      "codex"
+      "codex",
   );
   const routes = [];
 
@@ -1966,14 +1992,14 @@ function buildRoutingPlan(runState: any, processModel: any) {
       resolvedSurface: requestedSurface,
       source,
       decision: "primary",
-      message: null
+      message: null,
     });
   }
 
   return {
     profileId: runState.routingProfile,
     defaultSurface,
-    routes
+    routes,
   };
 }
 
@@ -2003,7 +2029,7 @@ function evaluateRoutingDecisions(routingPlan: any, reportsBySurface: any, runSt
       decision.message = t(
         runState.locale,
         `路由 ${route.routeKey} 目标入口 ${route.requestedSurface} 不可用，已回退到 ${routingPlan.defaultSurface}。`,
-        `Route ${route.routeKey} target ${route.requestedSurface} is unavailable; falling back to ${routingPlan.defaultSurface}.`
+        `Route ${route.routeKey} target ${route.requestedSurface} is unavailable; falling back to ${routingPlan.defaultSurface}.`,
       );
       warnings.push({
         id: `run.routing.fallback.${route.routeKey}`,
@@ -2014,8 +2040,8 @@ function evaluateRoutingDecisions(routingPlan: any, reportsBySurface: any, runSt
         suggestion: t(
           runState.locale,
           "建议修复目标入口，避免长时间依赖回退。",
-          "Fix the original target surface to avoid long-term fallback."
-        )
+          "Fix the original target surface to avoid long-term fallback.",
+        ),
       });
       decisions.push(decision);
       continue;
@@ -2029,7 +2055,7 @@ function evaluateRoutingDecisions(routingPlan: any, reportsBySurface: any, runSt
       decision.message = t(
         runState.locale,
         `路由 ${route.routeKey} 必须使用入口 ${route.requestedSurface}，当前入口不可用，已暂停等待人工确认。`,
-        `Route ${route.routeKey} requires ${route.requestedSurface}, which is unavailable; paused for human approval.`
+        `Route ${route.routeKey} requires ${route.requestedSurface}, which is unavailable; paused for human approval.`,
       );
       pausing.push({
         id: `run.preflight.pause.${route.routeKey}`,
@@ -2042,7 +2068,7 @@ function evaluateRoutingDecisions(routingPlan: any, reportsBySurface: any, runSt
         suggestion: requestedReport?.checks
           .filter((check: any) => check.status === "fail" && check.suggestion)
           .map((check: any) => check.suggestion)
-          .join(" ")
+          .join(" "),
       });
       decisions.push(decision);
       continue;
@@ -2052,7 +2078,7 @@ function evaluateRoutingDecisions(routingPlan: any, reportsBySurface: any, runSt
     decision.message = t(
       runState.locale,
       `路由 ${route.routeKey} 需要入口 ${route.requestedSurface}，但 preflight 不可用。`,
-      `Route ${route.routeKey} requires ${route.requestedSurface}, but preflight marked it unavailable.`
+      `Route ${route.routeKey} requires ${route.requestedSurface}, but preflight marked it unavailable.`,
     );
     blocking.push({
       id: `run.preflight.blocked.${route.routeKey}`,
@@ -2065,7 +2091,7 @@ function evaluateRoutingDecisions(routingPlan: any, reportsBySurface: any, runSt
       suggestion: requestedReport?.checks
         .filter((check: any) => check.status === "fail" && check.suggestion)
         .map((check: any) => check.suggestion)
-        .join(" ")
+        .join(" "),
     });
     decisions.push(decision);
   }
@@ -2074,12 +2100,15 @@ function evaluateRoutingDecisions(routingPlan: any, reportsBySurface: any, runSt
     decisions,
     warnings,
     pausing,
-    blocking
+    blocking,
   };
 }
 
 function executePreflight(runState: any, routingPlan: any) {
-  const surfaces = new Set([routingPlan.defaultSurface, ...routingPlan.routes.map((route: any) => route.requestedSurface)]);
+  const surfaces = new Set([
+    routingPlan.defaultSurface,
+    ...routingPlan.routes.map((route: any) => route.requestedSurface),
+  ]);
   const reports = [...surfaces].map((surface) => runSurfacePreflight(surface, runState));
   const reportsBySurface = new Map(reports.map((report) => [report.surface, report]));
   const routingDecision = evaluateRoutingDecisions(routingPlan, reportsBySurface, runState);
@@ -2087,7 +2116,8 @@ function executePreflight(runState: any, routingPlan: any) {
   for (const report of reports) {
     if (
       routingDecision.decisions.some(
-        (decision) => decision.requestedSurface === report.surface && decision.decision === "fallback"
+        (decision) =>
+          decision.requestedSurface === report.surface && decision.decision === "fallback",
       )
     ) {
       report.fallbackDecision = "fallback-to-default";
@@ -2106,7 +2136,7 @@ function executePreflight(runState: any, routingPlan: any) {
     decisions: routingDecision.decisions,
     warnings: routingDecision.warnings,
     pausing: routingDecision.pausing,
-    blocking: routingDecision.blocking
+    blocking: routingDecision.blocking,
   };
 }
 
@@ -2118,41 +2148,41 @@ function buildRunWorkflowTemplate(processModel: any) {
     meta: {
       name: {
         "zh-CN": "自动化编排执行",
-        "en-US": "Automation Orchestration Run"
+        "en-US": "Automation Orchestration Run",
       },
       description: {
         "zh-CN": "基于 plan/task 产物执行受控自动化编排。",
-        "en-US": "Runs controlled automation orchestration against plan/task artifacts."
-      }
+        "en-US": "Runs controlled automation orchestration against plan/task artifacts.",
+      },
     },
     execution: {
       mode: "serial",
       allowSkipStages: false,
-      stopOnFailure: true
+      stopOnFailure: true,
     },
     stages: [
       {
         id: "preflight",
         name: {
           "zh-CN": "入口预检",
-          "en-US": "Surface Preflight"
+          "en-US": "Surface Preflight",
         },
         executor: {
           kind: "internal",
-          ref: "run-preflight"
-        }
+          ref: "run-preflight",
+        },
       },
       {
         id: "policy-gate",
         name: {
           "zh-CN": "权限与风险门禁",
-          "en-US": "Permission And Risk Gate"
+          "en-US": "Permission And Risk Gate",
         },
         dependsOn: ["preflight"],
         executor: {
           kind: "internal",
-          ref: "run-policy-gate"
-        }
+          ref: "run-policy-gate",
+        },
       },
       ...processModel.stages.map((stage: any, index: any) => ({
         id: stage.id,
@@ -2160,10 +2190,10 @@ function buildRunWorkflowTemplate(processModel: any) {
         dependsOn: index === 0 ? ["policy-gate"] : [processModel.stages[index - 1].id],
         executor: {
           kind: "internal",
-          ref: `run-${stage.id}`
-        }
-      }))
-    ]
+          ref: `run-${stage.id}`,
+        },
+      })),
+    ],
   };
 }
 
@@ -2178,14 +2208,14 @@ function createDispatchResult(runState: any, routeDecision: any, options: AnyRec
           stageId: routeDecision.stageId,
           status: "pause_for_approval",
           requestedSurface: routeDecision.requestedSurface,
-          resolvedSurface: null
-        }
+          resolvedSurface: null,
+        },
       },
       blockedBy: [`approval:${routeDecision.routeKey}`],
       error: {
         code: "run.route_approval_required",
-        message: routeDecision.message
-      }
+        message: routeDecision.message,
+      },
     };
   }
 
@@ -2199,13 +2229,13 @@ function createDispatchResult(runState: any, routeDecision: any, options: AnyRec
           stageId: routeDecision.stageId,
           status: "blocked",
           requestedSurface: routeDecision.requestedSurface,
-          resolvedSurface: null
-        }
+          resolvedSurface: null,
+        },
       },
       error: {
         code: "run.route_blocked",
-        message: routeDecision.message
-      }
+        message: routeDecision.message,
+      },
     };
   }
 
@@ -2222,8 +2252,8 @@ function createDispatchResult(runState: any, routeDecision: any, options: AnyRec
       suggestion: t(
         runState.locale,
         "建议恢复原始入口，减少路由回退。",
-        "Restore the original surface to reduce routing fallback."
-      )
+        "Restore the original surface to reduce routing fallback.",
+      ),
     });
   }
 
@@ -2234,20 +2264,20 @@ function createDispatchResult(runState: any, routeDecision: any, options: AnyRec
         ? t(
             runState.locale,
             `预览路由 ${routeDecision.routeKey} -> ${routeDecision.resolvedSurface}`,
-            `Preview route ${routeDecision.routeKey} -> ${routeDecision.resolvedSurface}`
+            `Preview route ${routeDecision.routeKey} -> ${routeDecision.resolvedSurface}`,
           )
         : t(
             runState.locale,
             `已派发路由 ${routeDecision.routeKey} -> ${routeDecision.resolvedSurface}`,
-            `Dispatched route ${routeDecision.routeKey} -> ${routeDecision.resolvedSurface}`
+            `Dispatched route ${routeDecision.routeKey} -> ${routeDecision.resolvedSurface}`,
           ),
     details: {
       dispatch: {
         ...cloneValue(routeDecision),
         mode: dispatchMode,
         taskId: options.taskId ?? null,
-        cycle: options.cycle ?? null
-      }
+        cycle: options.cycle ?? null,
+      },
     },
     warnings,
     outputs: {
@@ -2255,27 +2285,33 @@ function createDispatchResult(runState: any, routeDecision: any, options: AnyRec
         mode: dispatchMode,
         surface: routeDecision.resolvedSurface,
         taskId: options.taskId ?? null,
-        cycle: options.cycle ?? null
-      }
-    }
+        cycle: options.cycle ?? null,
+      },
+    },
   };
 }
 
 function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
-  const routeDecisionMap = new Map(routingPlan.routes.map((route: any) => [route.routeKey, cloneValue(route)]));
+  const routeDecisionMap = new Map(
+    routingPlan.routes.map((route: any) => [route.routeKey, cloneValue(route)]),
+  );
 
   function getRouteDecision(routeKey: any) {
     const decision = routeDecisionMap.get(routeKey);
 
     if (!decision) {
       throw new InputError(
-        t(runState.locale, `run 找不到路由键：${routeKey}`, `Run could not resolve routeKey: ${routeKey}`),
+        t(
+          runState.locale,
+          `run 找不到路由键：${routeKey}`,
+          `Run could not resolve routeKey: ${routeKey}`,
+        ),
         {
           code: "cli.run_missing_route_key",
           details: {
-            routeKey
-          }
-        }
+            routeKey,
+          },
+        },
       );
     }
 
@@ -2300,7 +2336,7 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
       summary: t(
         runState.locale,
         `阶段 ${stageId} 已从 checkpoint 恢复。`,
-        `Stage ${stageId} restored from checkpoint.`
+        `Stage ${stageId} restored from checkpoint.`,
       ),
       details: {
         ...(checkpoint.details ?? {}),
@@ -2308,10 +2344,10 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
           stageId,
           sourceFile: toRelativePath(runState.cwd, resumePlan.sourceFile),
           sourceExecutionId: resumePlan.sourceExecutionId,
-          restoredAt: new Date().toISOString()
-        }
+          restoredAt: new Date().toISOString(),
+        },
       },
-      outputs: isPlainObject(checkpoint.outputs) ? cloneValue(checkpoint.outputs) : {}
+      outputs: isPlainObject(checkpoint.outputs) ? cloneValue(checkpoint.outputs) : {},
     };
   }
 
@@ -2334,7 +2370,7 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
         decisions: routingPlan.routes.map((route: any) => ({
           ...cloneValue(route),
           resolvedSurface: route.requestedSurface,
-          decision: "assumed"
+          decision: "assumed",
         })),
         warnings: [
           {
@@ -2344,18 +2380,18 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
             message: t(
               runState.locale,
               "当前执行跳过 preflight，后续路由可用性由运行时自行承担。",
-              "Preflight is skipped for this run; route availability is assumed."
+              "Preflight is skipped for this run; route availability is assumed.",
             ),
             target: "preflight",
             suggestion: t(
               runState.locale,
               "建议在 assisted/autonomous 模式下保持 preflight 开启。",
-              "Keep preflight enabled in assisted/autonomous modes."
-            )
-          }
+              "Keep preflight enabled in assisted/autonomous modes.",
+            ),
+          },
         ],
         pausing: [],
-        blocking: []
+        blocking: [],
       };
 
       for (const decision of skippedPreflight.decisions) {
@@ -2366,7 +2402,7 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
         status: "passed",
         summary: t(runState.locale, "preflight 已跳过。", "Preflight was skipped."),
         details: skippedPreflight,
-        warnings: skippedPreflight.warnings
+        warnings: skippedPreflight.warnings,
       };
     }
 
@@ -2382,7 +2418,7 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
         summary: t(
           runState.locale,
           "preflight 失败：存在必需入口不可用的路由。",
-          "Preflight failed because one or more required routes are unavailable."
+          "Preflight failed because one or more required routes are unavailable.",
         ),
         details: preflight,
         warnings: preflight.warnings,
@@ -2391,9 +2427,9 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
           message: t(
             runState.locale,
             "请按 preflight 提示修复入口可用性后重试。",
-            "Follow preflight guidance to restore route availability, then retry."
-          )
-        }
+            "Follow preflight guidance to restore route availability, then retry.",
+          ),
+        },
       };
     }
 
@@ -2403,7 +2439,7 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
         summary: t(
           runState.locale,
           "preflight 暂停：required-surface 不可用，等待人工确认。",
-          "Preflight paused: required surfaces are unavailable and waiting for human approval."
+          "Preflight paused: required surfaces are unavailable and waiting for human approval.",
         ),
         details: preflight,
         warnings: preflight.warnings,
@@ -2413,9 +2449,9 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
           message: t(
             runState.locale,
             "请先修复必需入口可用性，或调整路由策略后重试。",
-            "Restore required surface availability or adjust routing policy, then retry."
-          )
-        }
+            "Restore required surface availability or adjust routing policy, then retry.",
+          ),
+        },
       };
     }
 
@@ -2423,7 +2459,7 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
       status: "passed",
       summary: t(runState.locale, "preflight 通过。", "Preflight passed."),
       details: preflight,
-      warnings: preflight.warnings
+      warnings: preflight.warnings,
     };
   }
 
@@ -2436,13 +2472,13 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
         status: "failed",
         summary: policy.reason,
         details: {
-          policy
+          policy,
         },
         warnings: policy.warnings,
         error: {
           code: "run.policy_blocked",
-          message: policy.reason
-        }
+          message: policy.reason,
+        },
       };
     }
 
@@ -2451,7 +2487,7 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
         status: "blocked",
         summary: policy.reason,
         details: {
-          policy
+          policy,
         },
         warnings: [
           ...policy.warnings,
@@ -2462,21 +2498,21 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
             message: t(
               runState.locale,
               `请人工确认高风险标签：${policy.missingApprovals.join(", ")}`,
-              `Human approval required for high-risk tags: ${policy.missingApprovals.join(", ")}`
+              `Human approval required for high-risk tags: ${policy.missingApprovals.join(", ")}`,
             ),
             target: "policy-gate",
             suggestion: t(
               runState.locale,
               "确认后可使用 `--approve-risk <tag>` 重试 run。",
-              "After approval, rerun with `--approve-risk <tag>`."
-            )
-          }
+              "After approval, rerun with `--approve-risk <tag>`.",
+            ),
+          },
         ],
         blockedBy: policy.missingApprovals.map((tag) => `approval:${tag}`),
         error: {
           code: "run.policy_approval_required",
-          message: policy.reason
-        }
+          message: policy.reason,
+        },
       };
     }
 
@@ -2484,7 +2520,7 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
       status: "passed",
       summary: policy.reason,
       details: {
-        policy
+        policy,
       },
       warnings: policy.warnings,
       outputs: {
@@ -2492,9 +2528,9 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
           decision: policy.decision,
           riskTags: policy.riskTags,
           requiredApprovalTags: policy.requiredApprovalTags,
-          approvedRiskTags: policy.approvedRiskTags
-        }
-      }
+          approvedRiskTags: policy.approvedRiskTags,
+        },
+      },
     };
   }
 
@@ -2504,14 +2540,14 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
         status: "passed",
         summary: t(runState.locale, "已读取用户输入需求。", "User requirement input is loaded."),
         details: {
-          input: toRelativePath(runState.cwd, runState.inputRef)
+          input: toRelativePath(runState.cwd, runState.inputRef),
         },
         outputs: {
           "requirements-input": {
             source: "cli-input",
-            path: toRelativePath(runState.cwd, runState.inputRef)
-          }
-        }
+            path: toRelativePath(runState.cwd, runState.inputRef),
+          },
+        },
       };
     }
 
@@ -2522,7 +2558,7 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
         summary: t(
           runState.locale,
           "未显式提供 --input，已回退使用 sprint 现有 plan.md。",
-          "No --input provided; falling back to existing sprint plan.md."
+          "No --input provided; falling back to existing sprint plan.md.",
         ),
         warnings: [
           {
@@ -2532,25 +2568,25 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
             message: t(
               runState.locale,
               "需求输入阶段回退到已存在 plan.md，建议在新任务启动时显式传入 --input。",
-              "Requirements input fell back to existing plan.md; pass --input explicitly for new requests."
+              "Requirements input fell back to existing plan.md; pass --input explicitly for new requests.",
             ),
             target: fallbackPath,
             suggestion: t(
               runState.locale,
               "可使用 `repo-ai-governor run --input <requirement-file>` 传入需求。",
-              "Use `repo-ai-governor run --input <requirement-file>` to provide requirement input."
-            )
-          }
+              "Use `repo-ai-governor run --input <requirement-file>` to provide requirement input.",
+            ),
+          },
         ],
         details: {
-          input: fallbackPath
+          input: fallbackPath,
         },
         outputs: {
           "requirements-input": {
             source: "plan-fallback",
-            path: fallbackPath
-          }
-        }
+            path: fallbackPath,
+          },
+        },
       };
     }
 
@@ -2559,16 +2595,16 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
       summary: t(
         runState.locale,
         "需求输入阶段失败：未提供 --input 且未找到 sprint plan.md。",
-        "Requirements input failed: no --input provided and sprint plan.md is missing."
+        "Requirements input failed: no --input provided and sprint plan.md is missing.",
       ),
       error: {
         code: "run.requirements_input_missing",
         message: t(
           runState.locale,
           "请提供 `--input`，或先执行 plan 生成基础产物后再运行 run。",
-          "Provide `--input`, or run plan first to generate baseline artifacts before running run."
-        )
-      }
+          "Provide `--input`, or run plan first to generate baseline artifacts before running run.",
+        ),
+      },
     };
   }
 
@@ -2579,12 +2615,16 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
         summary: t(
           runState.locale,
           `阶段 ${stage.id} 缺少 routeKey 配置。`,
-          `Stage ${stage.id} is missing routeKey configuration.`
+          `Stage ${stage.id} is missing routeKey configuration.`,
         ),
         error: {
           code: "run.stage_missing_route_key",
-          message: t(runState.locale, "请在 automation.process.stageDefinitions 中补齐 routeKey。", "Provide routeKey in automation.process.stageDefinitions.")
-        }
+          message: t(
+            runState.locale,
+            "请在 automation.process.stageDefinitions 中补齐 routeKey。",
+            "Provide routeKey in automation.process.stageDefinitions.",
+          ),
+        },
       };
     }
 
@@ -2595,20 +2635,20 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
     if (runState.dryRun) {
       return {
         complete: true,
-        source: "dry-run"
+        source: "dry-run",
       };
     }
 
     if (loopConfig.completionPolicy === "max-cycles") {
       return {
         complete: cycle >= loopConfig.maxReviewCycles,
-        source: "max-cycles"
+        source: "max-cycles",
       };
     }
 
     return {
       complete: true,
-      source: "first-cycle"
+      source: "first-cycle",
     };
   }
 
@@ -2623,7 +2663,7 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
 
       for (const routeKey of loopConfig.routeSequence) {
         const dispatch = createDispatchResult(runState, getRouteDecision(routeKey), {
-          cycle
+          cycle,
         });
 
         if (dispatch.status !== "passed") {
@@ -2640,7 +2680,7 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
         cycle,
         steps: stepDispatches,
         warnings: cycleWarnings,
-        completion
+        completion,
       });
 
       if (completion.complete) {
@@ -2656,7 +2696,7 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
         summary: t(
           runState.locale,
           `${loopConfig.stageId} 未在最大循环轮次内完成。`,
-          `${loopConfig.stageId} did not complete within max review cycles.`
+          `${loopConfig.stageId} did not complete within max review cycles.`,
         ),
         details: {
           loop: {
@@ -2664,17 +2704,17 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
             completionPolicy: loopConfig.completionPolicy,
             resolved,
             resolvedBy,
-            cycles
-          }
+            cycles,
+          },
         },
         error: {
           code: "run.review_loop_unresolved",
           message: t(
             runState.locale,
             "请调整评审策略或补齐人工复核信号后重试。",
-            "Adjust review strategy or provide verification signal before retrying."
-          )
-        }
+            "Adjust review strategy or provide verification signal before retrying.",
+          ),
+        },
       };
     }
 
@@ -2683,7 +2723,7 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
       summary: t(
         runState.locale,
         `${loopConfig.stageId} 完成，执行轮次 ${cycles.length}。`,
-        `${loopConfig.stageId} completed in ${cycles.length} cycle(s).`
+        `${loopConfig.stageId} completed in ${cycles.length} cycle(s).`,
       ),
       details: {
         loop: {
@@ -2691,16 +2731,16 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
           completionPolicy: loopConfig.completionPolicy,
           resolved,
           resolvedBy,
-          cycles
-        }
+          cycles,
+        },
       },
       outputs: {
         [`${loopConfig.stageId}-result`]: {
           resolved,
           resolvedBy,
-          cycleCount: cycles.length
-        }
-      }
+          cycleCount: cycles.length,
+        },
+      },
     };
   }
 
@@ -2710,9 +2750,13 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
       ? createDispatchResult(runState, getRouteDecision(stage.routeKey))
       : {
           status: "passed",
-          summary: t(runState.locale, "任务拆解阶段无需派发入口。", "Task breakdown does not require surface dispatch."),
+          summary: t(
+            runState.locale,
+            "任务拆解阶段无需派发入口。",
+            "Task breakdown does not require surface dispatch.",
+          ),
           warnings: [],
-          details: {}
+          details: {},
         };
 
     if (dispatchResult.status !== "passed") {
@@ -2728,19 +2772,19 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
         summary: t(
           runState.locale,
           "任务拆解阶段失败：未找到 tasks.csv。",
-          "Task breakdown failed: tasks.csv is missing."
+          "Task breakdown failed: tasks.csv is missing.",
         ),
         details: {
-          dispatch: dispatchResult.details?.dispatch ?? null
+          dispatch: dispatchResult.details?.dispatch ?? null,
         },
         error: {
           code: "run.task_breakdown_missing_tasks_csv",
           message: t(
             runState.locale,
             "请先执行 `repo-ai-governor plan` 生成 tasks/checklist/tasks.csv/TK-xxx.md 产物。",
-            "Run `repo-ai-governor plan` first to generate tasks/checklist/tasks.csv/TK-xxx.md artifacts."
-          )
-        }
+            "Run `repo-ai-governor plan` first to generate tasks/checklist/tasks.csv/TK-xxx.md artifacts.",
+          ),
+        },
       };
     }
 
@@ -2751,7 +2795,11 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
         severity: "warning",
         message: t(runState.locale, "未找到 checklist.md。", "checklist.md is missing."),
         target: toRelativePath(runState.cwd, runState.artifactPaths.checklistFile),
-        suggestion: t(runState.locale, "建议补齐 checklist 以保持任务记录一致。", "Add checklist to keep task records consistent.")
+        suggestion: t(
+          runState.locale,
+          "建议补齐 checklist 以保持任务记录一致。",
+          "Add checklist to keep task records consistent.",
+        ),
       });
     }
 
@@ -2761,15 +2809,19 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
         summary: t(
           runState.locale,
           "任务拆解阶段失败：tasks.csv 中没有可执行任务。",
-          "Task breakdown failed: tasks.csv does not contain executable tasks."
+          "Task breakdown failed: tasks.csv does not contain executable tasks.",
         ),
         details: {
-          dispatch: dispatchResult.details?.dispatch ?? null
+          dispatch: dispatchResult.details?.dispatch ?? null,
         },
         error: {
           code: "run.task_breakdown_empty_ledger",
-          message: t(runState.locale, "请先通过 plan 生成并确认任务拆解。", "Generate and confirm task breakdown through plan first.")
-        }
+          message: t(
+            runState.locale,
+            "请先通过 plan 生成并确认任务拆解。",
+            "Generate and confirm task breakdown through plan first.",
+          ),
+        },
       };
     }
 
@@ -2778,14 +2830,14 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
       pending: breakdown.pending.map((task) => ({
         taskId: task.taskId,
         title: task.title,
-        status: task.status
+        status: task.status,
       })),
       completed: breakdown.completed.map((task) => ({
         taskId: task.taskId,
         title: task.title,
-        status: task.status
+        status: task.status,
       })),
-      allTaskIds: breakdown.ledger.map((task) => task.taskId)
+      allTaskIds: breakdown.ledger.map((task) => task.taskId),
     };
 
     for (const task of breakdown.ledger) {
@@ -2797,10 +2849,14 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
           message: t(
             runState.locale,
             `任务 ${task.taskId} 在 tasks.csv 中存在，但未找到对应任务卡文件。`,
-            `Task ${task.taskId} exists in tasks.csv but no matching task card file was found.`
+            `Task ${task.taskId} exists in tasks.csv but no matching task card file was found.`,
           ),
           target: toRelativePath(runState.cwd, runState.artifactPaths.tasksRoot),
-          suggestion: t(runState.locale, "建议补齐对应 TK-xxx.md 文件。", "Create the matching TK-xxx.md task file.")
+          suggestion: t(
+            runState.locale,
+            "建议补齐对应 TK-xxx.md 文件。",
+            "Create the matching TK-xxx.md task file.",
+          ),
         });
       }
     }
@@ -2810,16 +2866,16 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
       summary: t(
         runState.locale,
         `任务拆解读取完成：总任务 ${taskQueue.total}，待执行 ${taskQueue.pending.length}。`,
-        `Task breakdown loaded: ${taskQueue.total} total task(s), ${taskQueue.pending.length} pending.`
+        `Task breakdown loaded: ${taskQueue.total} total task(s), ${taskQueue.pending.length} pending.`,
       ),
       details: {
         dispatch: dispatchResult.details?.dispatch ?? null,
-        queue: taskQueue
+        queue: taskQueue,
       },
       warnings,
       outputs: {
-        "task-queue": taskQueue
-      }
+        "task-queue": taskQueue,
+      },
     };
   }
 
@@ -2833,15 +2889,15 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
         summary: t(
           runState.locale,
           "任务开发评审循环跳过：当前没有待执行任务。",
-          "Task delivery loop skipped because there are no pending tasks."
+          "Task delivery loop skipped because there are no pending tasks.",
         ),
         details: {
           loop: {
             maxReviewCycles: processModel.taskLoop.maxReviewCycles,
             processedTasks: 0,
-            unresolvedTasks: []
-          }
-        }
+            unresolvedTasks: [],
+          },
+        },
       };
     }
 
@@ -2855,7 +2911,7 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
       const taskSnapshot = {
         taskId,
         title: pendingTask.title ?? "",
-        status: normalizeTaskStatus(pendingTask.status)
+        status: normalizeTaskStatus(pendingTask.status),
       };
       const cycles = [];
       let resolved = false;
@@ -2866,11 +2922,11 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
         const codeReviewRoute = getRouteDecision(processModel.taskLoop.codeReviewRouteKey);
         const implementationDispatch = createDispatchResult(runState, implementationRoute, {
           taskId,
-          cycle
+          cycle,
         });
         const codeReviewDispatch = createDispatchResult(runState, codeReviewRoute, {
           taskId,
-          cycle
+          cycle,
         });
 
         if (implementationDispatch.status !== "passed") {
@@ -2883,18 +2939,18 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
 
         const cycleWarnings = [
           ...(implementationDispatch.warnings ?? []),
-          ...(codeReviewDispatch.warnings ?? [])
+          ...(codeReviewDispatch.warnings ?? []),
         ];
 
         let completion = {
           complete: false,
-          source: "none"
+          source: "none",
         };
 
         if (runState.dryRun) {
           completion = {
             complete: true,
-            source: "dry-run"
+            source: "dry-run",
           };
         } else {
           completion = resolveTaskCompletion(taskSnapshot, reviewIndex, completionStatuses);
@@ -2905,7 +2961,7 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
           implementation: implementationDispatch.details?.dispatch ?? null,
           codeReview: codeReviewDispatch.details?.dispatch ?? null,
           warnings: cycleWarnings,
-          completion
+          completion,
         });
 
         if (completion.complete) {
@@ -2921,7 +2977,7 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
         initialStatus: taskSnapshot.status,
         resolved,
         resolvedBy,
-        cycles
+        cycles,
       };
 
       taskResults.push(taskResult);
@@ -2941,14 +2997,14 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
         message: t(
           runState.locale,
           `以下任务在最大循环轮次内仍未收敛：${unresolvedTasks.join(", ")}`,
-          `The following tasks did not converge within max review cycles: ${unresolvedTasks.join(", ")}`
+          `The following tasks did not converge within max review cycles: ${unresolvedTasks.join(", ")}`,
         ),
         target: toRelativePath(runState.cwd, runState.artifactPaths.taskCsvFile),
         suggestion: t(
           runState.locale,
           "请更新任务状态或补齐 resolved_review 文件后重试 run。",
-          "Update task status or add resolved_review files, then rerun."
-        )
+          "Update task status or add resolved_review files, then rerun.",
+        ),
       });
     }
 
@@ -2958,7 +3014,7 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
         summary: t(
           runState.locale,
           `任务开发评审循环失败：${unresolvedTasks.length} 个任务未在限制轮次内完成。`,
-          `Task delivery loop failed: ${unresolvedTasks.length} task(s) did not complete within the cycle limit.`
+          `Task delivery loop failed: ${unresolvedTasks.length} task(s) did not complete within the cycle limit.`,
         ),
         warnings,
         details: {
@@ -2966,17 +3022,17 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
             maxReviewCycles: processModel.taskLoop.maxReviewCycles,
             processedTasks: taskResults.length,
             unresolvedTasks,
-            taskResults
-          }
+            taskResults,
+          },
         },
         error: {
           code: "run.task_loop_unresolved",
           message: t(
             runState.locale,
             "请按 review 结论继续修复并更新任务台账后再重试。",
-            "Apply review fixes and update task records before retrying."
-          )
-        }
+            "Apply review fixes and update task records before retrying.",
+          ),
+        },
       };
     }
 
@@ -2985,7 +3041,7 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
       summary: t(
         runState.locale,
         `任务开发评审循环完成：处理 ${taskResults.length} 个任务。`,
-        `Task delivery loop completed for ${taskResults.length} task(s).`
+        `Task delivery loop completed for ${taskResults.length} task(s).`,
       ),
       warnings,
       details: {
@@ -2993,15 +3049,15 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
           maxReviewCycles: processModel.taskLoop.maxReviewCycles,
           processedTasks: taskResults.length,
           unresolvedTasks,
-          taskResults
-        }
+          taskResults,
+        },
       },
       outputs: {
         "task-loop-result": {
           processedTasks: taskResults.length,
-          unresolvedTasks
-        }
-      }
+          unresolvedTasks,
+        },
+      },
     };
   }
 
@@ -3009,16 +3065,20 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
     preflight: (stageContext: any) =>
       runStageWithCheckpointRecovery("preflight", () => handlePreflightStage(), stageContext),
     "policy-gate": (stageContext: any) =>
-      runStageWithCheckpointRecovery("policy-gate", () => handlePolicyGateStage(), stageContext)
+      runStageWithCheckpointRecovery("policy-gate", () => handlePolicyGateStage(), stageContext),
   };
   const reviewLoopByStageId = new Map(
-    processModel.reviewLoops.map((loopConfig: any) => [loopConfig.stageId, loopConfig])
+    processModel.reviewLoops.map((loopConfig: any) => [loopConfig.stageId, loopConfig]),
   );
 
   for (const stage of processModel.stages) {
     if (stage.kind === "system" && stage.id === "requirements-input") {
       handlers[stage.id] = (stageContext: any) =>
-        runStageWithCheckpointRecovery(stage.id, () => handleRequirementsInputStage(), stageContext);
+        runStageWithCheckpointRecovery(
+          stage.id,
+          () => handleRequirementsInputStage(),
+          stageContext,
+        );
       continue;
     }
 
@@ -3033,7 +3093,7 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
         runStageWithCheckpointRecovery(
           stage.id,
           () => handleReviewLoopStage(reviewLoopByStageId.get(stage.id)),
-          stageContext
+          stageContext,
         );
       continue;
     }
@@ -3058,13 +3118,13 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
           summary: t(
             runState.locale,
             `阶段 ${stage.id} 已跳过（无专用处理逻辑）。`,
-            `Stage ${stage.id} skipped because no specialized handler is defined.`
+            `Stage ${stage.id} skipped because no specialized handler is defined.`,
           ),
           details: {
-            stageId: stage.id
-          }
+            stageId: stage.id,
+          },
         }),
-        stageContext
+        stageContext,
       );
   }
 
@@ -3077,8 +3137,12 @@ function flattenWorkflowWarnings(workflowResult: any) {
 
 function buildRunSummary(workflowResult: any, preflightStatus: any) {
   const stageWarnings = flattenWorkflowWarnings(workflowResult);
-  const failedStageCount = workflowResult.stages.filter((stageResult: any) => stageResult.status === "failed").length;
-  const blockedStageCount = workflowResult.stages.filter((stageResult: any) => stageResult.status === "blocked").length;
+  const failedStageCount = workflowResult.stages.filter(
+    (stageResult: any) => stageResult.status === "failed",
+  ).length;
+  const blockedStageCount = workflowResult.stages.filter(
+    (stageResult: any) => stageResult.status === "blocked",
+  ).length;
   const errors = failedStageCount + blockedStageCount;
   const warnings = stageWarnings.length;
   const status = errors > 0 ? "fail" : warnings > 0 ? "warn" : "pass";
@@ -3093,8 +3157,9 @@ function buildRunSummary(workflowResult: any, preflightStatus: any) {
     status,
     errors,
     warnings,
-    passed: workflowResult.stages.filter((stageResult: any) => stageResult.status === "passed").length,
-    exitCode
+    passed: workflowResult.stages.filter((stageResult: any) => stageResult.status === "passed")
+      .length,
+    exitCode,
   };
 }
 
@@ -3106,11 +3171,17 @@ function renderWorkflowStage(stageResult: any) {
     dispatch: stageResult.details?.dispatch ?? null,
     loop: stageResult.details?.loop ?? null,
     blockedBy: stageResult.blockedBy ?? [],
-    warnings: stageResult.warnings ?? []
+    warnings: stageResult.warnings ?? [],
   };
 }
 
-function buildRunPayload(runState: any, processModel: any, routingPlan: any, workflowResult: any, summary: any) {
+function buildRunPayload(
+  runState: any,
+  processModel: any,
+  routingPlan: any,
+  workflowResult: any,
+  summary: any,
+) {
   const preflightStage = workflowResult.stages.find((stage: any) => stage.id === "preflight");
   const preflightDetails = preflightStage?.details ?? {
     enabled: false,
@@ -3119,26 +3190,29 @@ function buildRunPayload(runState: any, processModel: any, routingPlan: any, wor
     decisions: [],
     warnings: [],
     pausing: [],
-    blocking: []
+    blocking: [],
   };
   const policyStage = workflowResult.stages.find((stage: any) => stage.id === "policy-gate");
-  const policyDetails = policyStage?.details?.policy ?? runState.policyGateResult ?? {
-    decision: "unknown",
-    reason: null,
-    permissionTier: resolvePermissionTier(runState.permissions),
-    nonInteractive: runState.nonInteractive,
-    inputRef: runState.policyInputRef ? toRelativePath(runState.cwd, runState.policyInputRef) : null,
-    requiredActions: [],
-    permissions: cloneValue(runState.permissions),
-    permissionViolations: [],
-    riskTags: [],
-    riskDetections: [],
-    requiredApprovalTags: [],
-    approvedRiskTags: [],
-    missingApprovals: [],
-    requiresHumanApproval: false,
-    warnings: []
-  };
+  const policyDetails = policyStage?.details?.policy ??
+    runState.policyGateResult ?? {
+      decision: "unknown",
+      reason: null,
+      permissionTier: resolvePermissionTier(runState.permissions),
+      nonInteractive: runState.nonInteractive,
+      inputRef: runState.policyInputRef
+        ? toRelativePath(runState.cwd, runState.policyInputRef)
+        : null,
+      requiredActions: [],
+      permissions: cloneValue(runState.permissions),
+      permissionViolations: [],
+      riskTags: [],
+      riskDetections: [],
+      requiredApprovalTags: [],
+      approvedRiskTags: [],
+      missingApprovals: [],
+      requiresHumanApproval: false,
+      warnings: [],
+    };
   const taskLoopStage = processModel.taskLoop.stageId
     ? workflowResult.stages.find((stage: any) => stage.id === processModel.taskLoop.stageId)
     : null;
@@ -3146,7 +3220,9 @@ function buildRunPayload(runState: any, processModel: any, routingPlan: any, wor
   const keyActions = buildRunKeyActions(workflowResult);
   const failureReason =
     workflowResult.failure?.stageResult?.summary ??
-    workflowResult.stages.find((stage: any) => stage.status === "failed" || stage.status === "blocked")?.summary ??
+    workflowResult.stages.find(
+      (stage: any) => stage.status === "failed" || stage.status === "blocked",
+    )?.summary ??
     null;
   const auditRecordRef = runState.auditEnabled
     ? toRelativePath(runState.cwd, runState.auditPaths.recordFile)
@@ -3166,7 +3242,7 @@ function buildRunPayload(runState: any, processModel: any, routingPlan: any, wor
       id: runState.executionId,
       startedAt: runState.executionStartedAt,
       finishedAt: runState.executionFinishedAt,
-      durationMs: runState.executionDurationMs
+      durationMs: runState.executionDurationMs,
     },
     mode: runState.mode,
     dryRun: runState.dryRun,
@@ -3181,32 +3257,32 @@ function buildRunPayload(runState: any, processModel: any, routingPlan: any, wor
         id: stage.id,
         kind: stage.kind,
         routeKey: stage.routeKey,
-        requiredSurface: stage.requiredSurface
+        requiredSurface: stage.requiredSurface,
       })),
       reviewLoops: processModel.reviewLoops.map((loopConfig: any) => ({
         stageId: loopConfig.stageId,
         routeSequence: loopConfig.routeSequence,
         maxReviewCycles: loopConfig.maxReviewCycles,
-        completionPolicy: loopConfig.completionPolicy
+        completionPolicy: loopConfig.completionPolicy,
       })),
       taskLoop: {
         ...cloneValue(processModel.taskLoop),
-        completionStatuses: runState.taskCompletionStatuses
+        completionStatuses: runState.taskCompletionStatuses,
       },
       snapshot: buildCompiledProcessSnapshot(
         processModel,
         {
           profileId: routingPlan.profileId,
           defaultSurface: routingPlan.defaultSurface,
-          routes: preflightDetails.decisions ?? routingPlan.routes
+          routes: preflightDetails.decisions ?? routingPlan.routes,
         },
-        runState.workflowTemplate
-      )
+        runState.workflowTemplate,
+      ),
     },
     routing: {
       profile: routingPlan.profileId,
       defaultSurface: routingPlan.defaultSurface,
-      routes: preflightDetails.decisions ?? []
+      routes: preflightDetails.decisions ?? [],
     },
     preflight: {
       enabled: preflightDetails.enabled ?? false,
@@ -3214,7 +3290,7 @@ function buildRunPayload(runState: any, processModel: any, routingPlan: any, wor
       reports: preflightDetails.reports ?? [],
       pausing: preflightDetails.pausing ?? [],
       blocking: preflightDetails.blocking ?? [],
-      warnings: preflightDetails.warnings ?? []
+      warnings: preflightDetails.warnings ?? [],
     },
     policy: {
       stageStatus: policyStage?.status ?? "skipped",
@@ -3232,7 +3308,7 @@ function buildRunPayload(runState: any, processModel: any, routingPlan: any, wor
       approvedRiskTags: policyDetails.approvedRiskTags ?? [],
       missingApprovals: policyDetails.missingApprovals ?? [],
       requiresHumanApproval: policyDetails.requiresHumanApproval ?? false,
-      warnings: policyDetails.warnings ?? []
+      warnings: policyDetails.warnings ?? [],
     },
     taskLoop: taskLoopStage?.details?.loop ?? null,
     workflow: {
@@ -3244,29 +3320,29 @@ function buildRunPayload(runState: any, processModel: any, routingPlan: any, wor
         ? {
             stageId: workflowResult.failure.stageId,
             message: workflowResult.failure.stageResult?.summary ?? null,
-            code: workflowResult.failure.stageResult?.error?.code ?? null
+            code: workflowResult.failure.stageResult?.error?.code ?? null,
           }
-        : null
+        : null,
     },
     checkpoints: {
-      stages: stageCheckpoints
+      stages: stageCheckpoints,
     },
     auditTrail: {
       policyDecision: policyDetails.decision ?? "unknown",
       stageStatuses: stageCheckpoints.map((checkpoint: any) => ({
         id: checkpoint.id,
-        status: checkpoint.status
+        status: checkpoint.status,
       })),
       keyActions,
-      failureReason
+      failureReason,
     },
     audit: {
       enabled: runState.auditEnabled,
       recordFile: auditRecordRef,
-      latestFile: latestAuditRef
+      latestFile: latestAuditRef,
     },
     reportFile: auditRecordRef,
-    summary
+    summary,
   };
 }
 
@@ -3291,9 +3367,9 @@ function writeRunSummary(logger: any, payload: any, format: any) {
         `- Sprint: \`${payload.currentSprint}\``,
         `- ${t(locale, "预检状态", "Preflight status")}: \`${payload.preflight.status}\``,
         `- ${t(locale, "审计记录", "Audit record")}: \`${payload.audit?.recordFile ?? "-"}\``,
-        `- ${t(locale, "流程摘要", "Workflow summary")}: \`${JSON.stringify(payload.workflow.summary)}\``
+        `- ${t(locale, "流程摘要", "Workflow summary")}: \`${JSON.stringify(payload.workflow.summary)}\``,
       ].join("\n"),
-      { ignoreQuiet: true }
+      { ignoreQuiet: true },
     );
     return;
   }
@@ -3301,7 +3377,9 @@ function writeRunSummary(logger: any, payload: any, format: any) {
   if (payload.status === "pass") {
     logger.success(t(locale, "自动化编排执行通过", "Automation run passed"));
   } else if (payload.status === "warn") {
-    logger.warn(t(locale, "自动化编排执行完成（含告警）", "Automation run completed with warnings"));
+    logger.warn(
+      t(locale, "自动化编排执行完成（含告警）", "Automation run completed with warnings"),
+    );
   } else {
     logger.error(t(locale, "自动化编排执行失败", "Automation run failed"));
   }
@@ -3317,15 +3395,18 @@ function writeRunSummary(logger: any, payload: any, format: any) {
   logger.keyValue(t(locale, "权限层级", "Permission tier"), payload.policy.permissionTier);
   logger.keyValue(t(locale, "门禁决策", "Policy decision"), payload.policy.decision);
   logger.keyValue(t(locale, "审计记录", "Audit record"), payload.audit?.recordFile ?? "-");
-  logger.keyValue(t(locale, "流程摘要", "Workflow summary"), JSON.stringify(payload.workflow.summary));
+  logger.keyValue(
+    t(locale, "流程摘要", "Workflow summary"),
+    JSON.stringify(payload.workflow.summary),
+  );
 
   if (payload.taskLoop) {
     logger.keyValue(
       t(locale, "任务循环", "Task loop"),
       JSON.stringify({
         processedTasks: payload.taskLoop.processedTasks,
-        unresolvedTasks: payload.taskLoop.unresolvedTasks
-      })
+        unresolvedTasks: payload.taskLoop.unresolvedTasks,
+      }),
     );
   }
 
@@ -3381,9 +3462,9 @@ function writeProcessExplainSummary(logger: any, payload: any, format: any) {
         `- stageId: \`${payload.process.snapshot.taskLoop.stageId ?? "-"}\``,
         `- implementationRouteKey: \`${payload.process.snapshot.taskLoop.implementationRouteKey ?? "-"}\``,
         `- codeReviewRouteKey: \`${payload.process.snapshot.taskLoop.codeReviewRouteKey ?? "-"}\``,
-        `- maxReviewCycles: \`${payload.process.snapshot.taskLoop.maxReviewCycles ?? "-"}\``
+        `- maxReviewCycles: \`${payload.process.snapshot.taskLoop.maxReviewCycles ?? "-"}\``,
       ].join("\n"),
-      { ignoreQuiet: true }
+      { ignoreQuiet: true },
     );
     return;
   }
@@ -3391,24 +3472,24 @@ function writeProcessExplainSummary(logger: any, payload: any, format: any) {
   logger.success(
     payload.validateProcess
       ? t(locale, "流程配置校验通过", "Process configuration validation passed")
-      : t(locale, "流程解释已生成", "Process explanation generated")
+      : t(locale, "流程解释已生成", "Process explanation generated"),
   );
   logger.keyValue(t(locale, "流程来源", "Process source"), payload.process.source);
   logger.keyValue(
     t(locale, "阶段数量", "Stage count"),
-    String(payload.process.snapshot.stages.length)
+    String(payload.process.snapshot.stages.length),
   );
   logger.keyValue(
     t(locale, "Review loops", "Review loops"),
-    String(payload.process.snapshot.reviewLoops.length)
+    String(payload.process.snapshot.reviewLoops.length),
   );
   logger.keyValue(
     t(locale, "Task loop stage", "Task loop stage"),
-    payload.process.snapshot.taskLoop.stageId ?? "-"
+    payload.process.snapshot.taskLoop.stageId ?? "-",
   );
   logger.keyValue(
     t(locale, "路由档", "Routing profile"),
-    payload.process.snapshot.routing.profile ?? "-"
+    payload.process.snapshot.routing.profile ?? "-",
   );
 }
 
@@ -3419,11 +3500,13 @@ function buildRunState(commandContext: any): AnyRecord {
     configPath: commandContext.globalOptions.config,
     cliOverrides: {
       ...commandContext.globalOptions,
-      ...commandContext.commandOptions
-    }
+      ...commandContext.commandOptions,
+    },
   });
   const locale = normalizeLocale(
-    commandContext.globalOptions.locale ?? resolvedConfig.config.standards.locales?.default ?? "zh-CN"
+    commandContext.globalOptions.locale ??
+      resolvedConfig.config.standards.locales?.default ??
+      "zh-CN",
   );
   const automationConfig = (resolvedConfig.config.automation ?? {}) as AnyRecord;
   const mode = commandContext.commandOptions.mode ?? automationConfig.mode ?? "assisted";
@@ -3435,8 +3518,8 @@ function buildRunState(commandContext: any): AnyRecord {
       code: "cli.run_invalid_mode",
       details: {
         mode,
-        supportedModes: [...RUN_MODES]
-      }
+        supportedModes: [...RUN_MODES],
+      },
     });
   }
 
@@ -3457,24 +3540,22 @@ function buildRunState(commandContext: any): AnyRecord {
       {
         code: "cli.run_input_missing",
         details: {
-          inputRef
-        }
-      }
+          inputRef,
+        },
+      },
     );
   }
 
-  const taskCompletionStatuses = Array.isArray(
-    automationConfig.taskLoop?.completionStatuses
-  )
+  const taskCompletionStatuses = Array.isArray(automationConfig.taskLoop?.completionStatuses)
     ? automationConfig.taskLoop.completionStatuses.map(normalizeTaskStatus)
     : [...DEFAULT_TASK_COMPLETION_STATUSES];
   const policyInputRef =
     inputRef ?? (fs.existsSync(artifactPaths.planFile) ? artifactPaths.planFile : null);
   const automationPermissions = {
-    ...(automationConfig.permissions ?? {})
+    ...(automationConfig.permissions ?? {}),
   };
   const requiredApprovalTags = new Set(
-    parseRiskTagList(automationConfig.gates?.requireApprovalFor ?? [])
+    parseRiskTagList(automationConfig.gates?.requireApprovalFor ?? []),
   );
   const approvedRiskTags = new Set(parseRiskTagList(commandContext.commandOptions.approveRisk));
   const resumeFromPath = commandContext.commandOptions.resumeFrom
@@ -3494,14 +3575,14 @@ function buildRunState(commandContext: any): AnyRecord {
       t(
         locale,
         `未找到恢复来源文件：${resumeFromPath}`,
-        `Resume source file not found: ${resumeFromPath}`
+        `Resume source file not found: ${resumeFromPath}`,
       ),
       {
         code: "cli.run_resume_source_missing",
         details: {
-          resumeFrom: resumeFromPath
-        }
-      }
+          resumeFrom: resumeFromPath,
+        },
+      },
     );
   }
 
@@ -3510,14 +3591,14 @@ function buildRunState(commandContext: any): AnyRecord {
       t(
         locale,
         "--resume-stage 需要与 --resume-from 一起使用。",
-        "--resume-stage requires --resume-from."
+        "--resume-stage requires --resume-from.",
       ),
       {
         code: "cli.run_resume_stage_without_source",
         details: {
-          resumeStage: resumeStageOverride
-        }
-      }
+          resumeStage: resumeStageOverride,
+        },
+      },
     );
   }
 
@@ -3526,7 +3607,7 @@ function buildRunState(commandContext: any): AnyRecord {
       t(
         locale,
         "--explain-process/--validate-process 不能与恢复参数同时使用。",
-        "--explain-process/--validate-process cannot be used with resume options."
+        "--explain-process/--validate-process cannot be used with resume options.",
       ),
       {
         code: "cli.run_process_only_mode_conflict",
@@ -3534,9 +3615,9 @@ function buildRunState(commandContext: any): AnyRecord {
           explainProcess,
           validateProcess,
           resumeFromPath,
-          resumeStageOverride
-        }
-      }
+          resumeStageOverride,
+        },
+      },
     );
   }
 
@@ -3577,7 +3658,7 @@ function buildRunState(commandContext: any): AnyRecord {
     permissions: automationPermissions,
     approvalPolicy: {
       requiredTags: requiredApprovalTags,
-      approvedTags: approvedRiskTags
+      approvedTags: approvedRiskTags,
     },
     taskCompletionStatuses,
     surfaceDefinitions: automationConfig.surfaces ?? {},
@@ -3585,23 +3666,33 @@ function buildRunState(commandContext: any): AnyRecord {
     artifactPaths,
     slotRuntime: buildSlotRuntime({
       config: resolvedConfig.config,
-      slotDefinitions: resolvedConfig.slotDefinitions as any
-    })
+      slotDefinitions: resolvedConfig.slotDefinitions as any,
+    }),
   };
 }
 
 export async function executeRunCommand(commandContext: any, logger: any) {
   const runState: AnyRecord = buildRunState(commandContext);
   const processModel = resolveProcessModel(runState);
-  runState.routeOverrides = parseRouteOverrides(runState.rawRouteOverrides, processModel, runState.locale);
+  runState.routeOverrides = parseRouteOverrides(
+    runState.rawRouteOverrides,
+    processModel,
+    runState.locale,
+  );
   const routingPlan = buildRoutingPlan(runState, processModel);
   const workflowTemplate = buildRunWorkflowTemplate(processModel);
   runState.workflowTemplate = workflowTemplate;
 
   if (runState.explainProcess || runState.validateProcess) {
-    const payload = buildProcessExplainPayload(runState, processModel, routingPlan, workflowTemplate, {
-      status: "pass"
-    });
+    const payload = buildProcessExplainPayload(
+      runState,
+      processModel,
+      routingPlan,
+      workflowTemplate,
+      {
+        status: "pass",
+      },
+    );
     writeProcessExplainSummary(logger, payload, commandContext.format);
     return EXIT_CODES.success;
   }
@@ -3618,28 +3709,32 @@ export async function executeRunCommand(commandContext: any, logger: any) {
       currentProject: runState.resolvedConfig.config.execution.currentProject,
       currentSprint: runState.resolvedConfig.config.execution.currentSprint,
       language: runState.resolvedConfig.config.project.language,
-      framework: runState.resolvedConfig.config.project.framework
-    }
+      framework: runState.resolvedConfig.config.project.framework,
+    },
   })) as AnyRecord;
   const finishedAt = new Date();
   runState.executionFinishedAt = finishedAt.toISOString();
   runState.executionDurationMs =
     finishedAt.getTime() - new Date(runState.executionStartedAt).getTime();
-  const preflightStage = (workflowResult.stages as AnyRecord[]).find((stage) => stage.id === "preflight");
+  const preflightStage = (workflowResult.stages as AnyRecord[]).find(
+    (stage) => stage.id === "preflight",
+  );
   const preflightStatus = preflightStage?.details?.status ?? "unknown";
   const summary: AnyRecord = buildRunSummary(workflowResult, preflightStatus);
-  const payload: AnyRecord = buildRunPayload(runState, processModel, routingPlan, workflowResult, summary);
-  payload.recovery = buildRunRecoveryMetadata(
+  const payload: AnyRecord = buildRunPayload(
     runState,
-    payload,
-    payload.audit?.recordFile ?? null
+    processModel,
+    routingPlan,
+    workflowResult,
+    summary,
   );
+  payload.recovery = buildRunRecoveryMetadata(runState, payload, payload.audit?.recordFile ?? null);
   const auditWriteResult = writeRunAuditRecord(runState, payload);
 
   if (auditWriteResult) {
     payload.audit = {
       ...payload.audit,
-      ...auditWriteResult
+      ...auditWriteResult,
     };
     payload.reportFile = auditWriteResult.recordFile;
     payload.recovery = buildRunRecoveryMetadata(runState, payload, auditWriteResult.recordFile);

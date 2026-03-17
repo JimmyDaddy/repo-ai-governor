@@ -173,7 +173,14 @@
           "type": "array",
           "items": {
             "type": "string",
-            "enum": ["workflow", "standards", "slots", "agent-entry", "artifacts", "runtime-context"]
+            "enum": [
+              "workflow",
+              "standards",
+              "slots",
+              "agent-entry",
+              "artifacts",
+              "runtime-context"
+            ]
           },
           "uniqueItems": true,
           "default": []
@@ -206,7 +213,14 @@
           "type": "array",
           "items": {
             "type": "string",
-            "enum": ["plan", "check-report", "review-report", "task-record", "summary", "agent-entry"]
+            "enum": [
+              "plan",
+              "check-report",
+              "review-report",
+              "task-record",
+              "summary",
+              "agent-entry"
+            ]
           },
           "uniqueItems": true,
           "default": []

@@ -16,7 +16,7 @@ function parseArguments(argv) {
     paths: [...DEFAULT_SCAN_DIRECTORIES],
     constantsDir: DEFAULT_CONSTANTS_DIRECTORY,
     whitelistPath: DEFAULT_WHITELIST_PATH,
-    format: "summary"
+    format: "summary",
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -56,7 +56,6 @@ function parseArguments(argv) {
 
     if (token === "--format=json") {
       options.format = "json";
-      continue;
     }
   }
 
@@ -113,7 +112,7 @@ function loadWhitelist(cwd, whitelistPath) {
   if (!fs.existsSync(resolvedPath)) {
     return {
       configPath: normalizePath(path.relative(cwd, resolvedPath)),
-      pathAllowList: new Set()
+      pathAllowList: new Set(),
     };
   }
 
@@ -135,7 +134,7 @@ function loadWhitelist(cwd, whitelistPath) {
 
   return {
     configPath: normalizePath(path.relative(cwd, resolvedPath)),
-    pathAllowList: new Set(normalizedEntries)
+    pathAllowList: new Set(normalizedEntries),
   };
 }
 
@@ -185,7 +184,7 @@ function getLiteralSetSize(expression) {
     }
 
     const allLiteral = unwrappedExpression.elements.every((element) =>
-      isLiteralLike(unwrapExpression(element))
+      isLiteralLike(unwrapExpression(element)),
     );
     return allLiteral ? unwrappedExpression.elements.length : null;
   }
@@ -194,8 +193,7 @@ function getLiteralSetSize(expression) {
     const propertyInitializers = unwrappedExpression.properties
       .filter(
         (property) =>
-          ts.isPropertyAssignment(property) ||
-          ts.isShorthandPropertyAssignment(property)
+          ts.isPropertyAssignment(property) || ts.isShorthandPropertyAssignment(property),
       )
       .map((property) => {
         if (ts.isShorthandPropertyAssignment(property)) {
@@ -211,7 +209,7 @@ function getLiteralSetSize(expression) {
     }
 
     const allLiteral = propertyInitializers.every((initializer) =>
-      isLiteralLike(unwrapExpression(initializer))
+      isLiteralLike(unwrapExpression(initializer)),
     );
     return allLiteral ? propertyInitializers.length : null;
   }
@@ -251,7 +249,7 @@ function isConstVariableDeclaration(node) {
       ts.isVariableDeclarationList(variableDeclarationList) &&
       variableStatement &&
       ts.isVariableStatement(variableStatement) &&
-      (variableDeclarationList.flags & ts.NodeFlags.Const) !== 0
+      (variableDeclarationList.flags & ts.NodeFlags.Const) !== 0,
   );
 }
 
@@ -262,7 +260,7 @@ function analyzeFile(filePath, cwd) {
     sourceText,
     ts.ScriptTarget.ESNext,
     true,
-    getScriptKind(filePath)
+    getScriptKind(filePath),
   );
   const lines = sourceText.split(/\r?\n/);
   const findings = [];
@@ -282,7 +280,7 @@ function analyzeFile(filePath, cwd) {
             identifier: ts.isIdentifier(node.name) ? node.name.text : "(pattern)",
             size: literalSetSize,
             message:
-              "Finite literal set should be defined under src/constants or annotated with // literal-set-allowed: reason for one-off local checks."
+              "Finite literal set should be defined under src/constants or annotated with // literal-set-allowed: reason for one-off local checks.",
           });
         }
       }
@@ -297,12 +295,12 @@ function analyzeFile(filePath, cwd) {
 
 function writeSummary(payload) {
   process.stdout.write(
-    [
+    `${[
       "finite-literal-set-check",
       `status=${payload.status}`,
       `files=${payload.fileCount}`,
-      `findings=${payload.findings.length}`
-    ].join("\n") + "\n"
+      `findings=${payload.findings.length}`,
+    ].join("\n")}\n`,
   );
 }
 
@@ -339,7 +337,7 @@ function main() {
     constantsDir: normalizePath(options.constantsDir),
     whitelistPath: whitelist.configPath,
     fileCount: files.length,
-    findings
+    findings,
   };
 
   if (options.format === "json") {
@@ -351,7 +349,7 @@ function main() {
   if (findings.length > 0) {
     for (const finding of findings) {
       process.stderr.write(
-        `${finding.file}:${finding.line} [${finding.identifier}] ${finding.message}\n`
+        `${finding.file}:${finding.line} [${finding.identifier}] ${finding.message}\n`,
       );
     }
 

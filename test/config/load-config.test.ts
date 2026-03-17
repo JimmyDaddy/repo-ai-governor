@@ -1,14 +1,14 @@
-import { test } from "vitest";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { test } from "vitest";
+import { ConfigurationConflictError, ConfigurationError } from "../../src/config/errors.js";
 import {
   CONFIG_ENV_PREFIX,
   buildCliConfigOverride,
-  loadResolvedConfig
+  loadResolvedConfig,
 } from "../../src/config/load-config.js";
-import { ConfigurationConflictError, ConfigurationError } from "../../src/config/errors.js";
 
 function createTempRepo() {
   return fs.mkdtempSync(path.join(os.tmpdir(), "repo-ai-governor-config-"));
@@ -26,26 +26,26 @@ test("buildCliConfigOverride maps supported CLI options to config fields", () =>
     locale: "en-US",
     language: "typescript",
     preset: "official/base",
-    adapter: ["codex", "claude-code"]
+    adapter: ["codex", "claude-code"],
   });
 
   assert.deepEqual(override, {
     execution: {
       currentProject: "mvp",
-      currentSprint: "sprint-001"
+      currentSprint: "sprint-001",
     },
     standards: {
       locales: {
-        default: "en-US"
+        default: "en-US",
       },
-      preset: "official/base"
+      preset: "official/base",
     },
     project: {
-      language: "typescript"
+      language: "typescript",
     },
     adapters: {
-      enabled: ["codex", "claude-code"]
-    }
+      enabled: ["codex", "claude-code"],
+    },
   });
 });
 
@@ -67,8 +67,8 @@ test("loadResolvedConfig merges defaults repository env and cli overrides", () =
       "    - security-review",
       "adapters:",
       "  enabled:",
-      "    - codex"
-    ].join("\n")
+      "    - codex",
+    ].join("\n"),
   );
 
   writeFile(
@@ -80,32 +80,28 @@ test("loadResolvedConfig merges defaults repository env and cli overrides", () =
       "meta:",
       "  owner: platform",
       "  name:",
-      '    zh-CN: 安全审查',
-      '    en-US: Security Review'
-    ].join("\n")
+      "    zh-CN: 安全审查",
+      "    en-US: Security Review",
+    ].join("\n"),
   );
 
   writeFile(
     path.join(cwd, ".repo-ai-governor/adapters/codex.yaml"),
-    [
-      "id: codex",
-      'version: "1"',
-      "type: ide-or-cli"
-    ].join("\n")
+    ["id: codex", 'version: "1"', "type: ide-or-cli"].join("\n"),
   );
 
   const result = loadResolvedConfig({
     cwd,
     environment: {
       [`${CONFIG_ENV_PREFIX}PROJECT__FRAMEWORK`]: "react",
-      [`${CONFIG_ENV_PREFIX}REPORTING__FORMATS`]: '["json"]'
+      [`${CONFIG_ENV_PREFIX}REPORTING__FORMATS`]: '["json"]',
     },
     cliOverrides: {
       project: "mvp",
       sprint: "sprint-002",
       locale: "en-US",
-      adapter: ["codex"]
-    }
+      adapter: ["codex"],
+    },
   });
 
   assert.equal(result.config.project.name, "demo-repo");
@@ -119,7 +115,7 @@ test("loadResolvedConfig merges defaults repository env and cli overrides", () =
   assert.equal(result.adapterDefinitions[0].id, "codex");
   assert.deepEqual(
     result.layers.map((layer) => layer.name),
-    ["defaults", "repository", "slots", "adapters", "environment", "cli"]
+    ["defaults", "repository", "slots", "adapters", "environment", "cli"],
   );
 });
 
@@ -129,8 +125,8 @@ test("loadResolvedConfig works without repository config file by applying defaul
     cwd,
     cliOverrides: {
       project: "mvp",
-      sprint: "sprint-001"
-    }
+      sprint: "sprint-001",
+    },
   });
 
   assert.equal(result.config.schemaVersion, "1");
@@ -146,19 +142,11 @@ test("loadResolvedConfig rejects duplicate slot ids", () => {
 
   writeFile(
     path.join(cwd, ".repo-ai-governor/slots/security-review.yaml"),
-    [
-      "id: security-review",
-      'version: "1"',
-      "kind: governance-slot"
-    ].join("\n")
+    ["id: security-review", 'version: "1"', "kind: governance-slot"].join("\n"),
   );
   writeFile(
     path.join(cwd, ".repo-ai-governor/slots/security-review-copy.yaml"),
-    [
-      "id: security-review",
-      'version: "1"',
-      "kind: governance-slot"
-    ].join("\n")
+    ["id: security-review", 'version: "1"', "kind: governance-slot"].join("\n"),
   );
 
   assert.throws(() => loadResolvedConfig({ cwd }), ConfigurationConflictError);
@@ -169,12 +157,7 @@ test("loadResolvedConfig rejects enabled definitions that are missing on disk", 
 
   writeFile(
     path.join(cwd, ".repo-ai-governor/governor.yaml"),
-    [
-      'schemaVersion: "1"',
-      "adapters:",
-      "  enabled:",
-      "    - codex"
-    ].join("\n")
+    ['schemaVersion: "1"', "adapters:", "  enabled:", "    - codex"].join("\n"),
   );
 
   assert.throws(() => loadResolvedConfig({ cwd }), ConfigurationError);
@@ -198,8 +181,8 @@ test("loadResolvedConfig rejects duplicate script extension ids within a slot de
       "    - id: shared-hook",
       "      runtime:",
       "        kind: command",
-      "        entry: node ./scripts/docs-output-2.js"
-    ].join("\n")
+      "        entry: node ./scripts/docs-output-2.js",
+    ].join("\n"),
   );
 
   assert.throws(() => loadResolvedConfig({ cwd }), ConfigurationError);

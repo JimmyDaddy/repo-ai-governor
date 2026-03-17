@@ -1,10 +1,7 @@
-import { test } from "vitest";
 import assert from "node:assert/strict";
+import { test } from "vitest";
+import { ConfigurationValidationError } from "../../src/config/errors.js";
 import {
-  compareSlotsByPriority,
-  getSlotSource,
-  listSlotTriggerTargets,
-  listSlotScriptExtensions,
   OFFICIAL_SLOT_SKELETON,
   PROJECT_LOCAL_SLOT_SKELETON,
   SCRIPT_EXTENSION_GIT_POLICIES,
@@ -13,9 +10,12 @@ import {
   SCRIPT_EXTENSION_RUNTIME_KINDS,
   SCRIPT_EXTENSION_SECRET_POLICIES,
   SLOT_SOURCES,
-  SLOT_TYPES
+  SLOT_TYPES,
+  compareSlotsByPriority,
+  getSlotSource,
+  listSlotScriptExtensions,
+  listSlotTriggerTargets,
 } from "../../src/slots/slot-model.js";
-import { ConfigurationValidationError } from "../../src/config/errors.js";
 
 test("slot model exposes local and official slot skeletons", () => {
   assert.deepEqual(SLOT_SOURCES, ["project-local", "team-shared", "official"]);
@@ -32,20 +32,20 @@ test("slot model lists trigger targets across stages adapters and commands", () 
     meta: {
       name: {
         "zh-CN": "文档产出",
-        "en-US": "Documentation Output"
+        "en-US": "Documentation Output",
       },
       source: "official",
       slotType: "documentation-output",
-      owner: "platform"
+      owner: "platform",
     },
     trigger: {
       match: "all",
       when: {
         stages: ["plan"],
         adapters: ["codex"],
-        commands: ["plan"]
-      }
-    }
+        commands: ["plan"],
+      },
+    },
   });
 
   assert.deepEqual(targets.stages, ["plan"]);
@@ -59,16 +59,16 @@ test("slot model compares slots by priority and source can be queried", () => {
     id: "a-slot",
     behavior: {
       ...PROJECT_LOCAL_SLOT_SKELETON.behavior,
-      priority: 120
-    }
+      priority: 120,
+    },
   };
   const second = {
     ...structuredClone(OFFICIAL_SLOT_SKELETON),
     id: "b-slot",
     behavior: {
       ...OFFICIAL_SLOT_SKELETON.behavior,
-      priority: 80
-    }
+      priority: 80,
+    },
   };
 
   assert.equal(getSlotSource(second), "official");
@@ -89,11 +89,11 @@ test("slot model exposes declarative script extension descriptors", () => {
     meta: {
       name: {
         "zh-CN": "文档产出",
-        "en-US": "Documentation Output"
+        "en-US": "Documentation Output",
       },
       source: "project-local",
       slotType: "documentation-output",
-      owner: "platform"
+      owner: "platform",
     },
     extensions: {
       scripts: [
@@ -102,11 +102,11 @@ test("slot model exposes declarative script extension descriptors", () => {
           hook: "before",
           runtime: {
             kind: "command",
-            entry: "node ./scripts/render-summary.js"
-          }
-        }
-      ]
-    }
+            entry: "node ./scripts/render-summary.js",
+          },
+        },
+      ],
+    },
   });
 
   assert.equal(extensions[0].slotId, "docs-output");
@@ -128,19 +128,19 @@ test("slot model rejects duplicate script extension ids", () => {
               id: "render-summary",
               runtime: {
                 kind: "command",
-                entry: "node ./scripts/render-summary.js"
-              }
+                entry: "node ./scripts/render-summary.js",
+              },
             },
             {
               id: "render-summary",
               runtime: {
                 kind: "command",
-                entry: "node ./scripts/render-summary-2.js"
-              }
-            }
-          ]
-        }
+                entry: "node ./scripts/render-summary-2.js",
+              },
+            },
+          ],
+        },
       }),
-    ConfigurationValidationError
+    ConfigurationValidationError,
   );
 });

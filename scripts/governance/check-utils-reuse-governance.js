@@ -27,7 +27,7 @@ function parseArguments(argv) {
     utilsDir: DEFAULT_UTILS_DIR,
     whitelistPath: DEFAULT_WHITELIST_PATH,
     contextPath: DEFAULT_CONTEXT_PATH,
-    executionNotesPath: ""
+    executionNotesPath: "",
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -105,7 +105,7 @@ function loadWhitelist(cwd, whitelistPath) {
     return {
       configPath: normalizeRelativePath(path.relative(cwd, resolvedPath)),
       allowList: new Set(),
-      executionNotesPath: ""
+      executionNotesPath: "",
     };
   }
 
@@ -133,7 +133,7 @@ function loadWhitelist(cwd, whitelistPath) {
   return {
     configPath: normalizeRelativePath(path.relative(cwd, resolvedPath)),
     allowList: new Set(allowList),
-    executionNotesPath
+    executionNotesPath,
   };
 }
 
@@ -174,20 +174,22 @@ function collectExportedFunctionsFromFile(filePath, cwd) {
     sourceText,
     ts.ScriptTarget.ESNext,
     true,
-    getScriptKind(filePath)
+    getScriptKind(filePath),
   );
   const relativeFile = normalizeRelativePath(path.relative(cwd, filePath));
   const records = [];
 
   for (const statement of sourceFile.statements) {
     if (ts.isFunctionDeclaration(statement) && statement.name && hasExportModifier(statement)) {
-      const position = sourceFile.getLineAndCharacterOfPosition(statement.name.getStart(sourceFile));
+      const position = sourceFile.getLineAndCharacterOfPosition(
+        statement.name.getStart(sourceFile),
+      );
       const functionName = statement.name.text;
       records.push({
         file: relativeFile,
         name: functionName,
         line: position.line + 1,
-        signature: `${relativeFile}#${functionName}`
+        signature: `${relativeFile}#${functionName}`,
       });
       continue;
     }
@@ -203,14 +205,14 @@ function collectExportedFunctionsFromFile(filePath, cwd) {
         }
 
         const position = sourceFile.getLineAndCharacterOfPosition(
-          declaration.name.getStart(sourceFile)
+          declaration.name.getStart(sourceFile),
         );
         const functionName = declaration.name.text;
         records.push({
           file: relativeFile,
           name: functionName,
           line: position.line + 1,
-          signature: `${relativeFile}#${functionName}`
+          signature: `${relativeFile}#${functionName}`,
         });
       }
     }
@@ -234,14 +236,14 @@ function readExecutionNotes(cwd, executionNotesPath) {
 
 function writeSummary(payload) {
   process.stdout.write(
-    [
+    `${[
       "utils-reuse-check",
       `status=${payload.status}`,
       `utilsDir=${payload.utilsDir}`,
       `functions=${payload.functionCount}`,
       `newFunctions=${payload.newFunctionCount}`,
-      `findings=${payload.findings.length}`
-    ].join("\n") + "\n"
+      `findings=${payload.findings.length}`,
+    ].join("\n")}\n`,
   );
 }
 
@@ -286,7 +288,7 @@ function main() {
           file: entry.file,
           line: entry.line,
           name: functionName,
-          message: `Duplicate util function name "${functionName}" found. Reuse existing implementation instead of adding duplicates.`
+          message: `Duplicate util function name "${functionName}" found. Reuse existing implementation instead of adding duplicates.`,
         });
       }
     }
@@ -304,7 +306,7 @@ function main() {
         file: entry.file,
         line: entry.line,
         name: entry.name,
-        message: `Missing reuse evaluation record for "${entry.signature}" in execution notes (${executionNotesPath || "unresolved"}).`
+        message: `Missing reuse evaluation record for "${entry.signature}" in execution notes (${executionNotesPath || "unresolved"}).`,
       });
     }
 
@@ -318,7 +320,7 @@ function main() {
       newFunctionCount: newFunctions.length,
       functions,
       newFunctions,
-      findings
+      findings,
     };
 
     if (options.format === "json") {
@@ -329,7 +331,9 @@ function main() {
 
     if (findings.length > 0) {
       for (const finding of findings) {
-        process.stderr.write(`${finding.file}:${finding.line} [${finding.code}] ${finding.message}\n`);
+        process.stderr.write(
+          `${finding.file}:${finding.line} [${finding.code}] ${finding.message}\n`,
+        );
       }
       process.exitCode = 1;
     }

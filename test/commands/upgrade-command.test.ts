@@ -1,8 +1,8 @@
-import { test } from "vitest";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { test } from "vitest";
 import YAML from "yaml";
 import { runCli } from "../../src/cli/index.js";
 import { EXIT_CODES } from "../../src/cli/runtime/exit-codes.js";
@@ -22,7 +22,7 @@ function createBufferedStream() {
     },
     toString() {
       return chunks.join("");
-    }
+    },
   };
 }
 
@@ -34,7 +34,7 @@ async function runCommand(argv: any) {
   return {
     exitCode,
     stdout: stdout.toString(),
-    stderr: stderr.toString()
+    stderr: stderr.toString(),
   };
 }
 
@@ -50,7 +50,7 @@ async function bootstrapRepo(cwd: any) {
     "--adapter",
     "codex",
     "--format",
-    "json"
+    "json",
   ]);
 
   assert.equal(initResult.exitCode, EXIT_CODES.success);
@@ -72,7 +72,7 @@ test("upgrade preview renders planned operations without mutating files", async 
     "1",
     "--preview",
     "--format",
-    "json"
+    "json",
   ]);
   const payload = JSON.parse(result.stdout);
 
@@ -94,7 +94,7 @@ test("upgrade with backup rewrites generated files and stores backups", async ()
   fs.writeFileSync(agentsPath, "# stale\n", "utf8");
 
   const config = YAML.parse(fs.readFileSync(configPath, "utf8"));
-  delete config.reporting;
+  config.reporting = undefined;
   fs.writeFileSync(configPath, YAML.stringify(config), "utf8");
 
   const result = await runCommand([
@@ -105,7 +105,7 @@ test("upgrade with backup rewrites generated files and stores backups", async ()
     "1",
     "--backup",
     "--format",
-    "json"
+    "json",
   ]);
   const payload = JSON.parse(result.stdout);
   const backupAgents = path.join(cwd, payload.backupDir, "AGENTS.md");
@@ -118,7 +118,7 @@ test("upgrade with backup rewrites generated files and stores backups", async ()
   assert.equal(fs.readFileSync(backupAgents, "utf8"), "# stale\n");
   assert.match(
     fs.readFileSync(agentsPath, "utf8"),
-    /执行前先阅读 `.repo-ai-governor\/context\/current-context.md`/
+    /执行前先阅读 `.repo-ai-governor\/context\/current-context.md`/,
   );
   assert.equal(upgradedConfig.schemaVersion, "1");
   assert.equal(upgradedConfig.reporting.outputDir, ".repo-ai-governor/reports");
@@ -128,13 +128,7 @@ test("upgrade rejects unsupported target versions", async () => {
   const cwd = createTempRepo();
   await bootstrapRepo(cwd);
 
-  const result = await runCommand([
-    "upgrade",
-    "--cwd",
-    cwd,
-    "--to-version",
-    "2"
-  ]);
+  const result = await runCommand(["upgrade", "--cwd", cwd, "--to-version", "2"]);
 
   assert.equal(result.exitCode, EXIT_CODES.inputError);
   assert.match(result.stderr, /(Unsupported upgrade target version|不支持的升级目标版本)/);

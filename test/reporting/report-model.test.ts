@@ -1,5 +1,5 @@
-import { test } from "vitest";
 import assert from "node:assert/strict";
+import { test } from "vitest";
 import { buildUnifiedReport, renderUnifiedReport } from "../../src/reporting/report-model.js";
 
 test("buildUnifiedReport normalizes check payloads into a shared report shape", () => {

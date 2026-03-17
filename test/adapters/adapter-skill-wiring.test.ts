@@ -1,7 +1,7 @@
-import { test } from "vitest";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import { test } from "vitest";
 
 test("Codex adapter docs describe native skill installation plus bundle supplementation", () => {
   const exampleRoot = path.resolve("examples", "adapters", "codex");

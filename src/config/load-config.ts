@@ -1,6 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import YAML from "yaml";
+import { validateSlotDefinition } from "../slots/slot-model.js";
+import type { SlotDefinition } from "../slots/slot-model.js";
+import { cloneValue, isPlainObject } from "../utils/common.js";
 import {
   ConfigurationConflictError,
   ConfigurationError,
@@ -8,9 +11,6 @@ import {
 } from "./errors.js";
 import { resolveRepositoryLayout } from "./repository-layout.js";
 import { buildDefaultGovernorConfig, validateSchemaDocument } from "./schema/validator.js";
-import { validateSlotDefinition } from "../slots/slot-model.js";
-import type { SlotDefinition } from "../slots/slot-model.js";
-import { cloneValue, isPlainObject } from "../utils/common.js";
 
 export const CONFIG_ENV_PREFIX = "REPO_AI_GOVERNOR__";
 

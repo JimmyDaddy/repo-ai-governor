@@ -1,8 +1,8 @@
-import { test } from "vitest";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { test } from "vitest";
 import { runCli } from "../../src/cli/index.js";
 import { EXIT_CODES } from "../../src/cli/runtime/exit-codes.js";
 
@@ -26,7 +26,7 @@ function createBufferedStream() {
     },
     toString() {
       return chunks.join("");
-    }
+    },
   };
 }
 
@@ -38,7 +38,7 @@ async function runCommand(argv: any) {
   return {
     exitCode,
     stdout: stdout.toString(),
-    stderr: stderr.toString()
+    stderr: stderr.toString(),
   };
 }
 
@@ -54,7 +54,7 @@ async function bootstrapRepo(cwd: any) {
     "--adapter",
     "codex",
     "--format",
-    "json"
+    "json",
   ]);
 
   assert.equal(result.exitCode, EXIT_CODES.success);
@@ -77,7 +77,7 @@ test("plan dry-run renders generated sprint artifacts without writing task files
     "Implement planning workflow",
     "--format",
     "json",
-    "--dry-run"
+    "--dry-run",
   ]);
   const payload = JSON.parse(result.stdout);
   const plannedFiles = new Set(payload.files.map((entry: any) => entry.path));
@@ -104,8 +104,8 @@ test("plan writes plan checklist csv and task files for a bootstrapped sprint", 
       "# Request",
       "",
       "Implement a deterministic sprint planning flow for the repository.",
-      "It should generate plan.md, checklist.md, tasks.csv, and task cards."
-    ].join("\n")
+      "It should generate plan.md, checklist.md, tasks.csv, and task cards.",
+    ].join("\n"),
   );
 
   await bootstrapRepo(cwd);
@@ -127,22 +127,25 @@ test("plan writes plan checklist csv and task files for a bootstrapped sprint", 
     "--format",
     "json",
     "--out",
-    ".repo-ai-governor/reports/plan-summary.md"
+    ".repo-ai-governor/reports/plan-summary.md",
   ]);
   const payload = JSON.parse(result.stdout);
   const planContent = fs.readFileSync(path.join(cwd, "docs/demo/sprint-001/plan.md"), "utf8");
   const checklistContent = fs.readFileSync(
     path.join(cwd, "docs/demo/sprint-001/tasks/checklist.md"),
-    "utf8"
+    "utf8",
   );
-  const csvContent = fs.readFileSync(path.join(cwd, "docs/demo/sprint-001/tasks/tasks.csv"), "utf8");
+  const csvContent = fs.readFileSync(
+    path.join(cwd, "docs/demo/sprint-001/tasks/tasks.csv"),
+    "utf8",
+  );
   const taskFileContent = fs.readFileSync(
     path.join(cwd, "docs/demo/sprint-001/tasks/TK-002.md"),
-    "utf8"
+    "utf8",
   );
   const summaryContent = fs.readFileSync(
     path.join(cwd, ".repo-ai-governor/reports/plan-summary.md"),
-    "utf8"
+    "utf8",
   );
 
   assert.equal(result.exitCode, EXIT_CODES.success);
@@ -155,7 +158,10 @@ test("plan writes plan checklist csv and task files for a bootstrapped sprint", 
   assert.match(planContent, /Implement sprint planning flow/);
   assert.match(planContent, /Standards For This Plan/);
   assert.match(checklistContent, /\*\*TK-002\*\*/);
-  assert.match(csvContent, /^execution_id,task_id,title,owner,priority,due_date,status,project,sprint,plan,result,verify,review_delta,recorded_at/m);
+  assert.match(
+    csvContent,
+    /^execution_id,task_id,title,owner,priority,due_date,status,project,sprint,plan,result,verify,review_delta,recorded_at/m,
+  );
   assert.match(taskFileContent, /Relevant standards:/);
   assert.match(summaryContent, /"command": "plan"/);
   assert.equal(fs.existsSync(path.join(cwd, "docs/demo/sprint-001/tasks/TK-005.md")), true);

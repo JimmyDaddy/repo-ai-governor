@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
+import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { spawnSync } from "node:child_process";
 
 const ROOT_DIR = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..", "..");
 const CLI_PATH = path.resolve(ROOT_DIR, "bin", "repo-ai-governor.js");
@@ -18,7 +18,7 @@ const ROUTE_KEYS = Object.freeze([
   "technical-solution-revise",
   "task-breakdown",
   "task-implementation",
-  "task-code-review"
+  "task-code-review",
 ]);
 const MULTI_AI_EXPECTED_ROUTES = Object.freeze({
   "requirements-draft": "codex",
@@ -29,7 +29,7 @@ const MULTI_AI_EXPECTED_ROUTES = Object.freeze({
   "technical-solution-revise": "codex",
   "task-breakdown": "codex",
   "task-implementation": "codex",
-  "task-code-review": "github-copilot"
+  "task-code-review": "github-copilot",
 });
 
 function parseArguments(argv) {
@@ -39,7 +39,7 @@ function parseArguments(argv) {
     workspace: null,
     requestFile: path.resolve(ROOT_DIR, "scripts", "acceptance", "inputs", "automation-request.md"),
     project: DEFAULT_PROJECT,
-    sprint: DEFAULT_SPRINT
+    sprint: DEFAULT_SPRINT,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -66,7 +66,6 @@ function parseArguments(argv) {
     if (token === "--request") {
       options.requestFile = path.resolve(argv[index + 1] ?? options.requestFile);
       index += 1;
-      continue;
     }
   }
 
@@ -77,7 +76,7 @@ function runCli(args, options = {}) {
   const result = spawnSync(process.execPath, [CLI_PATH, ...args], {
     cwd: options.cwd ?? ROOT_DIR,
     encoding: "utf8",
-    env: options.env ?? process.env
+    env: options.env ?? process.env,
   });
 
   if (result.status !== 0) {
@@ -86,7 +85,7 @@ function runCli(args, options = {}) {
       command: args.join(" "),
       status: result.status ?? 1,
       stdout: result.stdout,
-      stderr: result.stderr
+      stderr: result.stderr,
     };
     throw error;
   }
@@ -118,11 +117,11 @@ function prepareFakeSurfaceEnvironment(workspace) {
 
   createExecutable(
     path.resolve(fakeBinDir, "codex"),
-    ["#!/bin/sh", 'echo "codex 0.0.1"', "exit 0", ""].join("\n")
+    ["#!/bin/sh", 'echo "codex 0.0.1"', "exit 0", ""].join("\n"),
   );
   createExecutable(
     path.resolve(fakeBinDir, "claude"),
-    ["#!/bin/sh", 'echo "claude 0.0.1"', "exit 0", ""].join("\n")
+    ["#!/bin/sh", 'echo "claude 0.0.1"', "exit 0", ""].join("\n"),
   );
   createExecutable(
     path.resolve(fakeBinDir, "gh"),
@@ -134,16 +133,16 @@ function prepareFakeSurfaceEnvironment(workspace) {
       "fi",
       'echo "gh 0.0.1"',
       "exit 0",
-      ""
-    ].join("\n")
+      "",
+    ].join("\n"),
   );
 
   return {
     fakeBinDir,
     env: {
       ...process.env,
-      PATH: `${fakeBinDir}${path.delimiter}${process.env.PATH ?? ""}`
-    }
+      PATH: `${fakeBinDir}${path.delimiter}${process.env.PATH ?? ""}`,
+    },
   };
 }
 
@@ -164,11 +163,11 @@ function bootstrapWorkspace(workspace, requestFile, project, sprint, env) {
       "--adapter",
       "github-copilot",
       "--format",
-      "json"
+      "json",
     ],
     {
-      env
-    }
+      env,
+    },
   );
 
   const requestTarget = path.resolve(workspace, "automation-request.md");
@@ -188,11 +187,11 @@ function bootstrapWorkspace(workspace, requestFile, project, sprint, env) {
       "--title",
       "Automation smoke flow",
       "--format",
-      "json"
+      "json",
     ],
     {
-      env
-    }
+      env,
+    },
   );
 
   return requestTarget;
@@ -206,7 +205,7 @@ function parseJsonOutput(content, label) {
     parsingError.details = {
       label,
       cause: error instanceof Error ? error.message : String(error),
-      content
+      content,
     };
     throw parsingError;
   }
@@ -214,7 +213,7 @@ function parseJsonOutput(content, label) {
 
 function routeMapFromPayload(payload) {
   return Object.fromEntries(
-    (payload.routing?.routes ?? []).map((route) => [route.routeKey, route.resolvedSurface])
+    (payload.routing?.routes ?? []).map((route) => [route.routeKey, route.resolvedSurface]),
   );
 }
 
@@ -224,7 +223,7 @@ function ensureScenarioPass(payload, scenarioName) {
     error.details = {
       scenarioName,
       status: payload.status,
-      summary: payload.summary
+      summary: payload.summary,
     };
     throw error;
   }
@@ -248,7 +247,7 @@ function runSingleSurfaceScenario(surface, workspace, requestPath, project, spri
     "--input",
     requestPath,
     "--default-surface",
-    surface
+    surface,
   ];
 
   for (const routeKey of ROUTE_KEYS) {
@@ -266,7 +265,7 @@ function runSingleSurfaceScenario(surface, workspace, requestPath, project, spri
         scenario: surface,
         routeKey,
         expected: surface,
-        actual: routeMap[routeKey]
+        actual: routeMap[routeKey],
       };
       throw error;
     }
@@ -276,7 +275,7 @@ function runSingleSurfaceScenario(surface, workspace, requestPath, project, spri
     name: surface,
     status: payload.status,
     executionId: payload.executionId,
-    routeMap
+    routeMap,
   };
 }
 
@@ -300,13 +299,13 @@ function runMultiAiScenario(workspace, requestPath, project, sprint, env) {
         "--format",
         "json",
         "--input",
-        requestPath
+        requestPath,
       ],
       {
-        env
-      }
+        env,
+      },
     ),
-    "multi-ai-dev-review"
+    "multi-ai-dev-review",
   );
   ensureScenarioPass(payload, "multi-ai-dev-review");
   const routeMap = routeMapFromPayload(payload);
@@ -318,7 +317,7 @@ function runMultiAiScenario(workspace, requestPath, project, sprint, env) {
         scenario: "multi-ai-dev-review",
         routeKey,
         expected: expectedSurface,
-        actual: routeMap[routeKey]
+        actual: routeMap[routeKey],
       };
       throw error;
     }
@@ -328,7 +327,7 @@ function runMultiAiScenario(workspace, requestPath, project, sprint, env) {
     name: "multi-ai-dev-review",
     status: payload.status,
     executionId: payload.executionId,
-    routeMap
+    routeMap,
   };
 }
 
@@ -342,7 +341,7 @@ function resolveScenarioEntries(entry) {
   }
 
   throw new Error(
-    `Unsupported --entry value: ${entry}. Use one of all|codex|claude-code|github-copilot|multi-ai-dev-review.`
+    `Unsupported --entry value: ${entry}. Use one of all|codex|claude-code|github-copilot|multi-ai-dev-review.`,
   );
 }
 
@@ -351,7 +350,7 @@ function renderSummary(payload) {
     "automation-smoke",
     `status=${payload.status}`,
     `workspace=${payload.workspace}`,
-    `scenarios=${payload.scenarios.length}`
+    `scenarios=${payload.scenarios.length}`,
   ];
 
   for (const scenario of payload.scenarios) {
@@ -370,7 +369,7 @@ function main() {
     options.requestFile,
     options.project,
     options.sprint,
-    env
+    env,
   );
   const scenarioEntries = resolveScenarioEntries(options.entry);
   const scenarios = [];
@@ -378,13 +377,20 @@ function main() {
   for (const scenario of scenarioEntries) {
     if (scenario === "multi-ai-dev-review") {
       scenarios.push(
-        runMultiAiScenario(workspace, requestPath, options.project, options.sprint, env)
+        runMultiAiScenario(workspace, requestPath, options.project, options.sprint, env),
       );
       continue;
     }
 
     scenarios.push(
-      runSingleSurfaceScenario(scenario, workspace, requestPath, options.project, options.sprint, env)
+      runSingleSurfaceScenario(
+        scenario,
+        workspace,
+        requestPath,
+        options.project,
+        options.sprint,
+        env,
+      ),
     );
   }
 
@@ -394,7 +400,7 @@ function main() {
     project: options.project,
     sprint: options.sprint,
     request: path.relative(workspace, requestPath).split(path.sep).join("/"),
-    scenarios
+    scenarios,
   };
 
   if (options.format === "json") {
@@ -411,7 +417,7 @@ try {
   const payload = {
     status: "fail",
     message: error instanceof Error ? error.message : String(error),
-    details: error?.details ?? null
+    details: error?.details ?? null,
   };
   process.stderr.write(`${JSON.stringify(payload, null, 2)}\n`);
   process.exitCode = 1;

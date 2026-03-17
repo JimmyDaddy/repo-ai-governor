@@ -2,22 +2,26 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import type { CommandContext } from "../cli/runtime/context.js";
+import { ConfigError, InputError } from "../cli/runtime/errors.js";
+import { EXIT_CODES } from "../cli/runtime/exit-codes.js";
 import type { Logger } from "../cli/ui/logger.js";
 import { loadResolvedConfig } from "../config/load-config.js";
 import {
+  DEFAULT_TASK_CSV_COLUMNS,
   createReviewFileName,
   createReviewSlug,
-  DEFAULT_TASK_CSV_COLUMNS
 } from "../config/repository-layout.js";
-import { ConfigError, InputError } from "../cli/runtime/errors.js";
-import { EXIT_CODES } from "../cli/runtime/exit-codes.js";
 import {
   renderRulesForConsumer,
-  resolveStandardsPackage
+  resolveStandardsPackage,
 } from "../standards/official-base-package.js";
+import {
+  normalizeLocale,
+  toRelativePath as toRelativePathValue,
+  translateLocale,
+} from "../utils/common.js";
 import type { ExecuteWorkflowOptions } from "../workflow/governance-engine.js";
 import { executeWorkflow } from "../workflow/governance-engine.js";
-import { normalizeLocale, toRelativePath as toRelativePathValue, translateLocale } from "../utils/common.js";
 
 // biome-ignore lint/suspicious/noExplicitAny: transitional typing for large command migration
 type AnyRecord = Record<string, any>;
@@ -136,38 +140,49 @@ const REVIEW_WORKFLOW_TEMPLATE = Object.freeze({
   meta: {
     name: {
       "zh-CN": "治理评审流程",
-      "en-US": "Governance Review Flow"
+      "en-US": "Governance Review Flow",
     },
     description: {
       "zh-CN": "用于按当前规范对改动范围生成最小 review 结论和 CR 记录。",
-      "en-US": "Generates a minimal governance review conclusion and CR record for the selected change scope."
-    }
+      "en-US":
+        "Generates a minimal governance review conclusion and CR record for the selected change scope.",
+    },
   },
   execution: {
     mode: "serial",
     allowSkipStages: false,
-    stopOnFailure: true
+    stopOnFailure: true,
   },
   stages: [
     {
       id: "review",
       name: {
         "zh-CN": "评审阶段",
-        "en-US": "Review Stage"
+        "en-US": "Review Stage",
       },
       description: {
         "zh-CN": "根据 review 规范对目标范围生成发现与结论。",
-        "en-US": "Produces findings and a conclusion against the review-facing governance standards."
+        "en-US":
+          "Produces findings and a conclusion against the review-facing governance standards.",
       },
       executor: {
         kind: "internal",
-        ref: "run-review"
-      }
-    }
-  ]
+        ref: "run-review",
+      },
+    },
+  ],
 });
 
-const TEXT_FILE_EXTENSIONS = new Set([".js", ".mjs", ".cjs", ".json", ".md", ".yaml", ".yml", ".txt"]);
+const TEXT_FILE_EXTENSIONS = new Set([
+  ".js",
+  ".mjs",
+  ".cjs",
+  ".json",
+  ".md",
+  ".yaml",
+  ".yml",
+  ".txt",
+]);
 const SOURCE_FILE_EXTENSIONS = new Set([".js", ".mjs", ".cjs"]);
 const TODO_PATTERN = /\b(TODO|FIXME|HACK)\b/;
 
@@ -204,13 +219,18 @@ function createFinding(options: AnyRecord): ReviewFinding {
     status: options.status ?? (options.severity === "error" ? "fail" : "pass"),
     message: options.message,
     target: options.target,
-    suggestion: options.suggestion ?? null
+    suggestion: options.suggestion ?? null,
   };
 }
 
-export function summarizeFindings(findings: ReviewFinding[], options: AnyRecord = {}): ReviewSummary {
+export function summarizeFindings(
+  findings: ReviewFinding[],
+  options: AnyRecord = {},
+): ReviewSummary {
   const errors = findings.filter((finding: ReviewFinding) => finding.severity === "error").length;
-  const warnings = findings.filter((finding: ReviewFinding) => finding.severity === "warning").length;
+  const warnings = findings.filter(
+    (finding: ReviewFinding) => finding.severity === "warning",
+  ).length;
   const failOnWarnings = options.failOnWarnings === true;
   const status = errors > 0 ? "fail" : warnings > 0 ? "warn" : "pass";
   const shouldFail = errors > 0 || (failOnWarnings && warnings > 0);
@@ -220,7 +240,7 @@ export function summarizeFindings(findings: ReviewFinding[], options: AnyRecord 
     exitCode: shouldFail ? EXIT_CODES.businessCheckFailed : EXIT_CODES.success,
     errors,
     warnings,
-    passed: findings.filter((finding: ReviewFinding) => finding.status === "pass").length
+    passed: findings.filter((finding: ReviewFinding) => finding.status === "pass").length,
   };
 }
 
@@ -251,16 +271,23 @@ export function collectPathTargets(cwd: string, targetPath: string, locale = "zh
   const absoluteTargetPath = path.resolve(cwd, targetPath);
 
   if (!fs.existsSync(absoluteTargetPath)) {
-    throw new InputError(t(locale, `未找到评审目标路径：${absoluteTargetPath}`, `Review target path not found: ${absoluteTargetPath}`), {
-      code: "cli.review_path_missing",
-      details: {
-        path: absoluteTargetPath
-      }
-    });
+    throw new InputError(
+      t(
+        locale,
+        `未找到评审目标路径：${absoluteTargetPath}`,
+        `Review target path not found: ${absoluteTargetPath}`,
+      ),
+      {
+        code: "cli.review_path_missing",
+        details: {
+          path: absoluteTargetPath,
+        },
+      },
+    );
   }
 
   return collectFilesRecursively(absoluteTargetPath).filter((filePath: string) =>
-    TEXT_FILE_EXTENSIONS.has(path.extname(filePath))
+    TEXT_FILE_EXTENSIONS.has(path.extname(filePath)),
   );
 }
 
@@ -268,7 +295,7 @@ function readGitDiffFiles(cwd: string, args: string[]): string[] {
   try {
     const output = execFileSync("git", ["-C", cwd, ...args], {
       encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"]
+      stdio: ["ignore", "pipe", "ignore"],
     }).trim();
 
     if (!output) {
@@ -295,8 +322,8 @@ function readGitStatusFiles(cwd: string): string[] {
       ["-C", cwd, "status", "--porcelain", "--untracked-files=all"],
       {
         encoding: "utf8",
-        stdio: ["ignore", "pipe", "ignore"]
-      }
+        stdio: ["ignore", "pipe", "ignore"],
+      },
     ).trim();
 
     if (!output) {
@@ -316,17 +343,21 @@ function readGitStatusFiles(cwd: string): string[] {
   }
 }
 
-export function collectGitTargets(cwd: string, base?: string | null, head?: string | null): string[] {
+export function collectGitTargets(
+  cwd: string,
+  base?: string | null,
+  head?: string | null,
+): string[] {
   if (base || head) {
     const safeBase = base ?? "HEAD";
     const safeHead = head ?? "HEAD";
-    return readGitDiffFiles(cwd, ["diff", "--name-only", safeBase, safeHead]).filter((filePath: string) =>
-      TEXT_FILE_EXTENSIONS.has(path.extname(filePath))
+    return readGitDiffFiles(cwd, ["diff", "--name-only", safeBase, safeHead]).filter(
+      (filePath: string) => TEXT_FILE_EXTENSIONS.has(path.extname(filePath)),
     );
   }
 
   return readGitStatusFiles(cwd).filter((filePath: string) =>
-    TEXT_FILE_EXTENSIONS.has(path.extname(filePath))
+    TEXT_FILE_EXTENSIONS.has(path.extname(filePath)),
   );
 }
 
@@ -340,9 +371,10 @@ function listTaskFileIds(tasksRoot: string): Set<string> {
   }
 
   return new Set(
-    fs.readdirSync(tasksRoot)
+    fs
+      .readdirSync(tasksRoot)
       .filter((entry) => /^TK-\d{3}\.md$/.test(entry))
-      .map((entry) => entry.replace(/\.md$/, ""))
+      .map((entry) => entry.replace(/\.md$/, "")),
   );
 }
 
@@ -360,33 +392,41 @@ function compareTaskIdSets(left: Set<string>, right: Set<string>): boolean {
   return true;
 }
 
-export function buildArtifactPaths(cwd: string, resolvedConfig: AnyRecord, locale = "zh-CN"): AnyRecord {
+export function buildArtifactPaths(
+  cwd: string,
+  resolvedConfig: AnyRecord,
+  locale = "zh-CN",
+): AnyRecord {
   const currentProject = resolvedConfig.config.execution.currentProject;
   const currentSprint = resolvedConfig.config.execution.currentSprint;
 
   if (!currentProject || !currentSprint) {
-    throw new ConfigError(t(locale, "review 命令需要当前 project 与 sprint。", "Review command requires a current project and sprint"), {
-      code: "cli.review_missing_context",
-      details: {
-        currentProject,
-        currentSprint
-      }
-    });
+    throw new ConfigError(
+      t(
+        locale,
+        "review 命令需要当前 project 与 sprint。",
+        "Review command requires a current project and sprint",
+      ),
+      {
+        code: "cli.review_missing_context",
+        details: {
+          currentProject,
+          currentSprint,
+        },
+      },
+    );
   }
 
   const sprintRoot = path.resolve(
     cwd,
     resolvedConfig.config.artifacts.baseDir,
     currentProject,
-    currentSprint
+    currentSprint,
   );
-  const tasksRoot = path.resolve(
-    sprintRoot,
-    resolvedConfig.config.artifacts.directories.tasks
-  );
+  const tasksRoot = path.resolve(sprintRoot, resolvedConfig.config.artifacts.directories.tasks);
   const codeReviewRoot = path.resolve(
     sprintRoot,
-    resolvedConfig.config.artifacts.directories.codeReview
+    resolvedConfig.config.artifacts.directories.codeReview,
   );
 
   return {
@@ -396,7 +436,7 @@ export function buildArtifactPaths(cwd: string, resolvedConfig: AnyRecord, local
     planFile: path.resolve(sprintRoot, resolvedConfig.config.artifacts.files.plan),
     checklistFile: path.resolve(tasksRoot, resolvedConfig.config.artifacts.taskFiles.checklist),
     taskCsvFile: path.resolve(tasksRoot, resolvedConfig.config.artifacts.taskFiles.csv),
-    csvColumns: resolvedConfig.config.artifacts.taskFiles.csvColumns ?? DEFAULT_TASK_CSV_COLUMNS
+    csvColumns: resolvedConfig.config.artifacts.taskFiles.csvColumns ?? DEFAULT_TASK_CSV_COLUMNS,
   };
 }
 
@@ -407,8 +447,8 @@ function buildReviewRun(commandContext: CommandContext): ReviewRunState {
     configPath: getStringOption(commandContext.globalOptions, "config"),
     cliOverrides: {
       ...commandContext.globalOptions,
-      ...commandContext.commandOptions
-    }
+      ...commandContext.commandOptions,
+    },
   });
   const locale = normalizeLocale(
     getStringOption(commandContext.globalOptions, "locale") ??
@@ -420,17 +460,16 @@ function buildReviewRun(commandContext: CommandContext): ReviewRunState {
   const pathOption = getStringOption(commandContext.commandOptions, "path");
   const baseOption = getStringOption(commandContext.commandOptions, "base");
   const headOption = getStringOption(commandContext.commandOptions, "head");
-  const targetFiles =
-    pathOption
-      ? collectPathTargets(cwd, pathOption, locale)
-      : collectGitTargets(cwd, baseOption, headOption);
+  const targetFiles = pathOption
+    ? collectPathTargets(cwd, pathOption, locale)
+    : collectGitTargets(cwd, baseOption, headOption);
 
   if (targetFiles.length === 0) {
     throw new InputError(
       t(
         locale,
         "review 命令未找到可评审文件。请使用 --path，或在存在变更的 git 工作区中执行。",
-        "Review command could not find any target files. Use --path or run inside a git working tree with changes."
+        "Review command could not find any target files. Use --path or run inside a git working tree with changes.",
       ),
       {
         code: "cli.review_no_targets",
@@ -438,9 +477,9 @@ function buildReviewRun(commandContext: CommandContext): ReviewRunState {
           cwd,
           path: pathOption ?? null,
           base: baseOption ?? null,
-          head: headOption ?? null
-        }
-      }
+          head: headOption ?? null,
+        },
+      },
     );
   }
 
@@ -455,7 +494,7 @@ function buildReviewRun(commandContext: CommandContext): ReviewRunState {
     head: headOption ?? null,
     strict: commandContext.commandOptions.strict === true,
     dryRun: commandContext.globalOptions.dryRun === true,
-    locale
+    locale,
   };
 }
 
@@ -465,11 +504,11 @@ export function collectReviewRuleViews(
 ): ReviewRuleView[] {
   return renderRulesForConsumer(standardsPackage, "review", {
     locale,
-    view: "human"
+    view: "human",
   }).map((rule) => ({
     id: rule.id,
     title: "title" in rule ? (rule.title ?? "") : "",
-    summary: "summary" in rule ? (rule.summary ?? "") : ""
+    summary: "summary" in rule ? (rule.summary ?? "") : "",
   }));
 }
 
@@ -484,7 +523,11 @@ function findMirroredTestFile(cwd: string, relativeTargetPath: string): string |
     return mirroredPath;
   }
 
-  const basenameTestPath = path.resolve(cwd, "test", `${path.basename(withoutExtension)}.test${extension}`);
+  const basenameTestPath = path.resolve(
+    cwd,
+    "test",
+    `${path.basename(withoutExtension)}.test${extension}`,
+  );
 
   if (fs.existsSync(basenameTestPath)) {
     return basenameTestPath;
@@ -501,17 +544,17 @@ function maybeAddTaskSyncFinding(
 ): void {
   const shouldCheckTaskSync = relativeTargets.some(
     (target) =>
-      target.startsWith(
-        toRelativePath(runState.cwd, runState.artifactPaths.tasksRoot)
-      ) ||
-      target === toRelativePath(runState.cwd, runState.artifactPaths.planFile)
+      target.startsWith(toRelativePath(runState.cwd, runState.artifactPaths.tasksRoot)) ||
+      target === toRelativePath(runState.cwd, runState.artifactPaths.planFile),
   );
 
   if (!shouldCheckTaskSync) {
     return;
   }
 
-  const checklistTaskIds = extractTaskIds(fs.readFileSync(runState.artifactPaths.checklistFile, "utf8"));
+  const checklistTaskIds = extractTaskIds(
+    fs.readFileSync(runState.artifactPaths.checklistFile, "utf8"),
+  );
   const csvTaskIds = extractTaskIds(fs.readFileSync(runState.artifactPaths.taskCsvFile, "utf8"));
   const fileTaskIds = listTaskFileIds(runState.artifactPaths.tasksRoot);
 
@@ -530,13 +573,13 @@ function maybeAddTaskSyncFinding(
         message: t(
           runState.locale,
           "当前评审范围内的 checklist、CSV 与任务卡保持同步。",
-          "Task checklist, CSV, and task cards stay synchronized for the reviewed scope."
+          "Task checklist, CSV, and task cards stay synchronized for the reviewed scope.",
         ),
         target: [
           toRelativePath(runState.cwd, runState.artifactPaths.checklistFile),
-          toRelativePath(runState.cwd, runState.artifactPaths.taskCsvFile)
-        ].join(", ")
-      })
+          toRelativePath(runState.cwd, runState.artifactPaths.taskCsvFile),
+        ].join(", "),
+      }),
     );
     return;
   }
@@ -550,25 +593,27 @@ function maybeAddTaskSyncFinding(
       message: t(
         runState.locale,
         "任务 checklist、CSV 与任务卡未保持同步。",
-        "Task checklist, CSV, and task cards are not synchronized."
+        "Task checklist, CSV, and task cards are not synchronized.",
       ),
       target: [
         toRelativePath(runState.cwd, runState.artifactPaths.checklistFile),
-        toRelativePath(runState.cwd, runState.artifactPaths.taskCsvFile)
+        toRelativePath(runState.cwd, runState.artifactPaths.taskCsvFile),
       ].join(", "),
       suggestion: t(
         runState.locale,
         "交付前请先同步 checklist、tasks.csv 与任务卡中的任务编号及执行记录。",
-        "Sync the task IDs and execution records across checklist, tasks.csv, and task files before delivery."
-      )
-    })
+        "Sync the task IDs and execution records across checklist, tasks.csv, and task files before delivery.",
+      ),
+    }),
   );
 }
 
 export function analyzeTargets(runState: ReviewRunState): ReviewAnalysis {
   const findings: ReviewFinding[] = [];
   const matchedRuleIds = new Set<string>();
-  const relativeTargets = runState.targetFiles.map((filePath: string) => toRelativePath(runState.cwd, filePath));
+  const relativeTargets = runState.targetFiles.map((filePath: string) =>
+    toRelativePath(runState.cwd, filePath),
+  );
 
   for (const [index, targetFile] of runState.targetFiles.entries()) {
     const relativeTarget = relativeTargets[index];
@@ -591,15 +636,15 @@ export function analyzeTargets(runState: ReviewRunState): ReviewAnalysis {
           message: t(
             runState.locale,
             "文件中存在 TODO/FIXME/HACK 标记，交付前应显式处理。",
-            "File contains TODO/FIXME/HACK markers that should be made explicit before delivery."
+            "File contains TODO/FIXME/HACK markers that should be made explicit before delivery.",
           ),
           target: relativeTarget,
           suggestion: t(
             runState.locale,
             "请处理该标记，或在任务记录/评审备注中显式记录剩余风险。",
-            "Resolve the marker or capture the remaining risk explicitly in the task record or review note."
-          )
-        })
+            "Resolve the marker or capture the remaining risk explicitly in the task record or review note.",
+          ),
+        }),
       );
     }
 
@@ -617,10 +662,10 @@ export function analyzeTargets(runState: ReviewRunState): ReviewAnalysis {
             message: t(
               runState.locale,
               "源文件已存在对应测试文件。",
-              "Source file has a matching test file."
+              "Source file has a matching test file.",
             ),
-            target: `${relativeTarget} -> ${toRelativePath(runState.cwd, mirroredTestFile)}`
-          })
+            target: `${relativeTarget} -> ${toRelativePath(runState.cwd, mirroredTestFile)}`,
+          }),
         );
       } else {
         findings.push(
@@ -632,15 +677,15 @@ export function analyzeTargets(runState: ReviewRunState): ReviewAnalysis {
             message: t(
               runState.locale,
               "源文件在 test/ 下未找到镜像测试文件。",
-              "Source file does not have a mirrored test file in test/."
+              "Source file does not have a mirrored test file in test/.",
             ),
             target: relativeTarget,
             suggestion: t(
               runState.locale,
               "请在 test/ 下补充镜像测试文件，或说明该改动为何有意不覆盖测试。",
-              "Add a mirrored test file under test/ or document why the change is intentionally untested."
-            )
-          })
+              "Add a mirrored test file under test/ or document why the change is intentionally untested.",
+            ),
+          }),
         );
       }
     }
@@ -651,7 +696,7 @@ export function analyzeTargets(runState: ReviewRunState): ReviewAnalysis {
   return {
     findings,
     matchedRuleIds: [...matchedRuleIds],
-    relativeTargets
+    relativeTargets,
   };
 }
 
@@ -663,23 +708,19 @@ function createPendingReviewLifecycle(reviewFileName: string): ReviewLifecycle {
   return {
     pending: pendingName,
     verified: verifiedName,
-    resolved: resolvedName
+    resolved: resolvedName,
   };
 }
 
 function buildReviewSlug(runState: ReviewRunState, relativeTargets: string[]): string {
-  const taskIdMatch = relativeTargets
-    .map((target) => target.match(/TK-\d{3}/i))
-    .find(Boolean);
+  const taskIdMatch = relativeTargets.map((target) => target.match(/TK-\d{3}/i)).find(Boolean);
 
   if (taskIdMatch) {
     return createReviewSlug(taskIdMatch[0], "review");
   }
 
   if (runState.pathOption) {
-    return createReviewSlug(
-      ...runState.pathOption.split(/[\\/]/).filter(Boolean).slice(-3)
-    );
+    return createReviewSlug(...runState.pathOption.split(/[\\/]/).filter(Boolean).slice(-3));
   }
 
   if (runState.base || runState.head) {
@@ -688,7 +729,7 @@ function buildReviewSlug(runState: ReviewRunState, relativeTargets: string[]): s
       runState.resolvedConfig.config.execution.currentSprint ?? "sprint",
       "diff",
       runState.base ?? "head",
-      runState.head ?? "head"
+      runState.head ?? "head",
     );
   }
 
@@ -702,7 +743,7 @@ function buildReviewSlug(runState: ReviewRunState, relativeTargets: string[]): s
   return createReviewSlug(
     runState.resolvedConfig.config.execution.currentProject ?? "project",
     runState.resolvedConfig.config.execution.currentSprint ?? "sprint",
-    "working-tree"
+    "working-tree",
   );
 }
 
@@ -717,7 +758,7 @@ function buildMarkdownOutput(payload: ReviewPayload): string {
           .map((finding: ReviewFinding, index: number) => {
             const lines = [
               `${index + 1}. [${finding.severity}] ${finding.message}`,
-              `${localized("目标", "Target")}: \`${finding.target}\``
+              `${localized("目标", "Target")}: \`${finding.target}\``,
             ];
 
             if (finding.ruleId) {
@@ -738,11 +779,13 @@ function buildMarkdownOutput(payload: ReviewPayload): string {
       : payload.standards.reviewRules
           .map(
             (rule: ReviewRuleView, index: number) =>
-              `${index + 1}. \`${rule.id}\` ${rule.title}\n${localized("摘要", "Summary")}: ${rule.summary}`
+              `${index + 1}. \`${rule.id}\` ${rule.title}\n${localized("摘要", "Summary")}: ${rule.summary}`,
           )
           .join("\n\n");
 
-  const targetSection = payload.targets.map((target: string, index: number) => `${index + 1}. \`${target}\``).join("\n");
+  const targetSection = payload.targets
+    .map((target: string, index: number) => `${index + 1}. \`${target}\``)
+    .join("\n");
 
   return ensureTrailingNewline(
     [
@@ -788,15 +831,15 @@ function buildMarkdownOutput(payload: ReviewPayload): string {
       "",
       localized(
         "1. 待复核。请将 review-verify 结果追加到本文件，并重命名为下一状态文件。",
-        "1. Pending verification. Append review-verify results to this file and rename it to the next review status."
+        "1. Pending verification. Append review-verify results to this file and rename it to the next review status.",
       ),
       "",
       `## ${localized("解决记录", "Resolution Log")}`,
       "",
-      localized("1. 尚未应用任何解决动作。", "1. No resolutions have been applied yet.")
+      localized("1. 尚未应用任何解决动作。", "1. No resolutions have been applied yet."),
     ]
       .filter(Boolean)
-      .join("\n")
+      .join("\n"),
   );
 }
 
@@ -843,8 +886,8 @@ function buildReviewPayload(
         id: stage.id,
         status: stage.status,
         summary: stage.summary,
-        blockedBy: stage.blockedBy
-      }))
+        blockedBy: stage.blockedBy,
+      })),
     },
     targets: analysis.relativeTargets,
     findings: analysis.findings,
@@ -853,22 +896,22 @@ function buildReviewPayload(
       preset: runState.standardsPackage.id,
       totalRules: runState.standardsPackage.rules.length,
       matchedRuleIds: analysis.matchedRuleIds,
-      reviewRules
+      reviewRules,
     },
     reviewLifecycle,
     reviewFile: reviewFilePath
       ? toRelativePath(runState.cwd, reviewFilePath)
       : toRelativePath(
           runState.cwd,
-          path.resolve(runState.artifactPaths.codeReviewRoot, reviewFileName)
-        )
+          path.resolve(runState.artifactPaths.codeReviewRoot, reviewFileName),
+        ),
   };
 }
 
 function writeReviewFile(runState: ReviewRunState, payload: ReviewPayload): string {
   const reviewFilePath = path.resolve(
     runState.artifactPaths.codeReviewRoot,
-    payload.reviewLifecycle.pending
+    payload.reviewLifecycle.pending,
   );
 
   fs.mkdirSync(path.dirname(reviewFilePath), { recursive: true });
@@ -876,7 +919,11 @@ function writeReviewFile(runState: ReviewRunState, payload: ReviewPayload): stri
   return reviewFilePath;
 }
 
-function writeReviewOutput(logger: Logger, commandContext: CommandContext, payload: ReviewPayload): void {
+function writeReviewOutput(
+  logger: Logger,
+  commandContext: CommandContext,
+  payload: ReviewPayload,
+): void {
   if (commandContext.format === "json") {
     logger.raw(JSON.stringify(payload, null, 2), { ignoreQuiet: true });
     return;
@@ -920,13 +967,13 @@ async function executeReviewWorkflow(runState: ReviewRunState): Promise<{
     template: REVIEW_WORKFLOW_TEMPLATE as unknown as ExecuteWorkflowOptions["template"],
     targetStages: ["review"],
     metadata: {
-      cwd: runState.cwd
+      cwd: runState.cwd,
     },
     handlers: {
       review() {
         const analysis = analyzeTargets(runState);
         const summary = summarizeFindings(analysis.findings, {
-          failOnWarnings: runState.strict
+          failOnWarnings: runState.strict,
         });
 
         return {
@@ -937,14 +984,14 @@ async function executeReviewWorkflow(runState: ReviewRunState): Promise<{
               : t(
                   runState.locale,
                   `评审完成，共有 ${analysis.findings.length} 条发现。`,
-                  `Review completed with ${analysis.findings.length} findings.`
+                  `Review completed with ${analysis.findings.length} findings.`,
                 ),
           outputs: {
             analysis,
-            summary
+            summary,
           },
           details: {
-            targets: analysis.relativeTargets
+            targets: analysis.relativeTargets,
           },
           warnings:
             summary.warnings > 0
@@ -952,26 +999,35 @@ async function executeReviewWorkflow(runState: ReviewRunState): Promise<{
                   t(
                     runState.locale,
                     `评审报告包含 ${summary.warnings} 条告警发现。`,
-                    `Review reported ${summary.warnings} warning findings.`
-                  )
+                    `Review reported ${summary.warnings} warning findings.`,
+                  ),
                 ]
-              : []
+              : [],
         };
-      }
-    }
+      },
+    },
   });
 
   const reviewStage = workflowResult.stages.find((stage) => stage.id === "review");
   return {
     workflowResult: workflowResult as unknown as ReviewWorkflowResult,
-    analysis: (reviewStage?.outputs.analysis as ReviewAnalysis | undefined) ?? { findings: [], matchedRuleIds: [], relativeTargets: [] },
-    summary: (reviewStage?.outputs.summary as ReviewSummary | undefined) ?? summarizeFindings([], {
-      failOnWarnings: runState.strict
-    })
+    analysis: (reviewStage?.outputs.analysis as ReviewAnalysis | undefined) ?? {
+      findings: [],
+      matchedRuleIds: [],
+      relativeTargets: [],
+    },
+    summary:
+      (reviewStage?.outputs.summary as ReviewSummary | undefined) ??
+      summarizeFindings([], {
+        failOnWarnings: runState.strict,
+      }),
   };
 }
 
-export async function executeReviewCommand(commandContext: CommandContext, logger: Logger): Promise<number> {
+export async function executeReviewCommand(
+  commandContext: CommandContext,
+  logger: Logger,
+): Promise<number> {
   const runState = buildReviewRun(commandContext);
   const { workflowResult, analysis, summary } = await executeReviewWorkflow(runState);
   let payload = buildReviewPayload(runState, workflowResult, analysis, summary, null);

@@ -1,16 +1,16 @@
-import { test } from "vitest";
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
+import { test } from "vitest";
 import YAML from "yaml";
-import { runCli } from "../../src/cli/index.js";
-import { EXIT_CODES } from "../../src/cli/runtime/exit-codes.js";
 import {
   buildGitHubCopilotAdapterBundle,
-  renderGitHubCopilotAdapterBundle
+  renderGitHubCopilotAdapterBundle,
 } from "../../src/adapters/github-copilot-bundle.js";
+import { runCli } from "../../src/cli/index.js";
+import { EXIT_CODES } from "../../src/cli/runtime/exit-codes.js";
 
 type BufferedStream = {
   isTTY: boolean;
@@ -33,7 +33,7 @@ function createBufferedStream(): BufferedStream {
     },
     toString() {
       return chunks.join("");
-    }
+    },
   };
 }
 
@@ -45,7 +45,7 @@ async function runCommand(argv: string[]) {
   return {
     exitCode,
     stdout: stdout.toString(),
-    stderr: stderr.toString()
+    stderr: stderr.toString(),
   };
 }
 
@@ -61,7 +61,7 @@ async function bootstrapRepo(cwd: string) {
     "--adapter",
     "github-copilot",
     "--format",
-    "json"
+    "json",
   ]);
 
   assert.equal(initResult.exitCode, EXIT_CODES.success);
@@ -77,7 +77,7 @@ async function bootstrapRepo(cwd: string) {
     "--title",
     "Render GitHub Copilot adapter bundle",
     "--format",
-    "json"
+    "json",
   ]);
 
   assert.equal(planResult.exitCode, EXIT_CODES.success);
@@ -104,8 +104,8 @@ test("GitHub Copilot bundle renders instructions and CLI prompt for the current 
       "  source: official",
       "  slotType: documentation-output",
       "  name:",
-      '    zh-CN: 文档插槽',
-      '    en-US: Documentation Slot',
+      "    zh-CN: 文档插槽",
+      "    en-US: Documentation Slot",
       "trigger:",
       "  match: all",
       "  when:",
@@ -118,9 +118,9 @@ test("GitHub Copilot bundle renders instructions and CLI prompt for the current 
       "  conflictPolicy: merge",
       "  inject:",
       "    ai:",
-      "      promptKey: documentation-output-checklist"
+      "      promptKey: documentation-output-checklist",
     ].join("\n"),
-    "utf8"
+    "utf8",
   );
 
   const bundle = buildGitHubCopilotAdapterBundle({
@@ -128,7 +128,7 @@ test("GitHub Copilot bundle renders instructions and CLI prompt for the current 
     project: "demo",
     sprint: "sprint-001",
     command: "plan",
-    stageId: "plan"
+    stageId: "plan",
   });
 
   assert.equal(bundle.adapter.id, "github-copilot");
@@ -138,9 +138,15 @@ test("GitHub Copilot bundle renders instructions and CLI prompt for the current 
   assert.equal(references.agentEntryPath, "AGENTS.md");
   assert.equal(references.currentContextPath, ".repo-ai-governor/context/current-context.md");
   assert.equal(bundle.files.ideInstructions.path, ".github/copilot-instructions.md");
-  assert.equal(bundle.files.cliPrompt.path, ".repo-ai-governor/templates/github-copilot-cli.prompt.md");
+  assert.equal(
+    bundle.files.cliPrompt.path,
+    ".repo-ai-governor/templates/github-copilot-cli.prompt.md",
+  );
   assert.ok(bundle.standards.rules.length > 0);
-  assert.deepEqual(bundle.slots.active.map((slot) => slot.id), ["docs-slot"]);
+  assert.deepEqual(
+    bundle.slots.active.map((slot) => slot.id),
+    ["docs-slot"],
+  );
 
   const instructions = renderGitHubCopilotAdapterBundle(bundle, "copilot-instructions");
   assert.match(instructions, /# GitHub Copilot Instructions/);
@@ -175,12 +181,12 @@ test("GitHub Copilot bundle rendering script prints instructions for a bootstrap
       "--stage",
       "plan",
       "--format",
-      "copilot-instructions"
+      "copilot-instructions",
     ],
     {
       cwd: path.resolve("."),
-      encoding: "utf8"
-    }
+      encoding: "utf8",
+    },
   );
 
   assert.match(output, /# GitHub Copilot Instructions/);

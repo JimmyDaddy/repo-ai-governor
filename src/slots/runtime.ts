@@ -1,14 +1,14 @@
+import { cloneValue } from "../utils/common.js";
 import {
-  compareSlotsByPriority,
   type SlotChecks,
   type SlotDefinition,
   type SlotInject,
   type SlotScriptExtension,
   type SlotSource,
   type SlotType,
+  compareSlotsByPriority,
   validateSlotDefinition,
 } from "./slot-model.js";
-import { cloneValue } from "../utils/common.js";
 
 type GenericRecord = Record<string, unknown>;
 
@@ -348,7 +348,7 @@ function evaluateScopeCriterion(
 }
 
 function normalizeCriteria(
-  criteria: SlotResolutionCriteria = {},
+  criteria: SlotResolutionCriteria,
   slotRuntime: SlotRuntime,
 ): NormalizedCriteria {
   return {

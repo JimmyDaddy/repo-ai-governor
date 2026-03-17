@@ -1,22 +1,22 @@
-import { test } from "vitest";
 import assert from "node:assert/strict";
+import { test } from "vitest";
 import {
-  DEFAULT_TASK_CSV_COLUMNS,
   DEFAULT_REPOSITORY_LAYOUT,
+  DEFAULT_TASK_CSV_COLUMNS,
   createReviewFileName,
   createReviewSlug,
   createTaskFileName,
   normalizeProjectSlug,
   normalizeSprintName,
   normalizeTaskId,
-  resolveRepositoryLayout
+  resolveRepositoryLayout,
 } from "../../src/config/repository-layout.js";
 
 test("resolveRepositoryLayout returns default config and sprint artifact paths", () => {
   const layout = resolveRepositoryLayout({
     cwd: "/workspace/repo-ai-governor",
     project: "mvp",
-    sprint: "sprint-001"
+    sprint: "sprint-001",
   });
 
   assert.equal(layout.relative.configRoot, ".repo-ai-governor");
@@ -36,15 +36,15 @@ test("resolveRepositoryLayout returns default config and sprint artifact paths",
   assert.deepEqual(layout.naming.taskCsvColumns, DEFAULT_TASK_CSV_COLUMNS);
   assert.equal(
     layout.absolute.configFile,
-    "/workspace/repo-ai-governor/.repo-ai-governor/governor.yaml"
+    "/workspace/repo-ai-governor/.repo-ai-governor/governor.yaml",
   );
   assert.equal(
     layout.absolute.currentContextFile,
-    "/workspace/repo-ai-governor/.repo-ai-governor/context/current-context.md"
+    "/workspace/repo-ai-governor/.repo-ai-governor/context/current-context.md",
   );
   assert.equal(
     layout.absolute.codeReviewDir,
-    "/workspace/repo-ai-governor/docs/mvp/sprint-001/code-review"
+    "/workspace/repo-ai-governor/docs/mvp/sprint-001/code-review",
   );
 });
 
@@ -56,7 +56,7 @@ test("naming helpers normalize project sprint task and review names", () => {
   assert.equal(createReviewSlug("TK-101", "Design Config Layout"), "tk-101-design-config-layout");
   assert.equal(
     createReviewFileName({ status: "verified", slug: "TK-101 Design Config Layout" }),
-    "verified_review_tk-101-design-config-layout.md"
+    "verified_review_tk-101-design-config-layout.md",
   );
 });
 
@@ -64,10 +64,13 @@ test("resolveRepositoryLayout exposes stable review filename conventions", () =>
   const layout = resolveRepositoryLayout();
 
   assert.deepEqual(layout.naming.reviewPatterns, DEFAULT_REPOSITORY_LAYOUT.artifacts.reviewFiles);
-  assert.deepEqual(layout.naming.taskCsvColumns, DEFAULT_REPOSITORY_LAYOUT.artifacts.taskFiles.csvColumns);
+  assert.deepEqual(
+    layout.naming.taskCsvColumns,
+    DEFAULT_REPOSITORY_LAYOUT.artifacts.taskFiles.csvColumns,
+  );
   assert.equal(layout.naming.reviewExamples.pending, "review_tk-101-design-config-layout.md");
   assert.equal(
     layout.naming.reviewExamples.resolved,
-    "resolved_review_tk-101-design-config-layout.md"
+    "resolved_review_tk-101-design-config-layout.md",
   );
 });

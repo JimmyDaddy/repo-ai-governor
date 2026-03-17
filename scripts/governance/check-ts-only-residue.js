@@ -1,17 +1,13 @@
 #!/usr/bin/env node
 
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
 
 const DEFAULT_SCOPES = Object.freeze(["src", "test"]);
 const DEFAULT_CONFIG_PATH = "scripts/governance/ts-only-whitelist.json";
 const DEFAULT_OUT_OF_SCOPE_ALLOW_LIST = Object.freeze([]);
-const REPOSITORY_SCAN_EXCLUDE_DIRECTORIES = new Set([
-  ".git",
-  "node_modules",
-  "coverage"
-]);
+const REPOSITORY_SCAN_EXCLUDE_DIRECTORIES = new Set([".git", "node_modules", "coverage"]);
 
 function toPosixPath(value) {
   return String(value).replace(/\\/g, "/");
@@ -170,7 +166,7 @@ function loadConfig(rootDirectory, configPath) {
     const reason = typeof entry.reason === "string" ? String(entry.reason).trim() : "";
     outOfScopeAllowListByPath.set(pathValue, {
       path: pathValue,
-      reason
+      reason,
     });
   }
 
@@ -183,7 +179,7 @@ function loadConfig(rootDirectory, configPath) {
     scopes: scopes.length > 0 ? scopes : [...DEFAULT_SCOPES],
     allowList: mergedPathAllowList.map((entry) => entry.path),
     pathAllowList: mergedPathAllowList,
-    outOfScopeAllowList: mergedOutOfScopeAllowList
+    outOfScopeAllowList: mergedOutOfScopeAllowList,
   };
 }
 
@@ -218,7 +214,7 @@ function collectRepositoryJavaScriptFiles(rootDirectory) {
       collected.push(normalizeRelativePath(path.relative(rootDirectory, filePath)));
     },
     {
-      excludedDirectories: REPOSITORY_SCAN_EXCLUDE_DIRECTORIES
+      excludedDirectories: REPOSITORY_SCAN_EXCLUDE_DIRECTORIES,
     },
   );
 
@@ -229,7 +225,7 @@ function collectTrackedJavaScriptFiles(rootDirectory) {
   try {
     const output = execFileSync("git", ["-C", rootDirectory, "ls-files", "*.js"], {
       encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"]
+      stdio: ["ignore", "pipe", "ignore"],
     });
     const files = String(output)
       .split(/\r?\n/)
@@ -239,12 +235,12 @@ function collectTrackedJavaScriptFiles(rootDirectory) {
 
     return {
       source: "git",
-      files
+      files,
     };
   } catch {
     return {
       source: "filesystem",
-      files: collectRepositoryJavaScriptFiles(rootDirectory)
+      files: collectRepositoryJavaScriptFiles(rootDirectory),
     };
   }
 }
@@ -312,7 +308,7 @@ function main() {
       repositoryJsSource: repositoryJs.source,
       outsideScopeAllowList: config.outOfScopeAllowList,
       outsideScopeJsFiles,
-      outsideScopeViolations
+      outsideScopeViolations,
     };
 
     if (options.format === "json") {

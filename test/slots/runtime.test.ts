@@ -1,14 +1,11 @@
-import { test } from "vitest";
 import assert from "node:assert/strict";
-import {
-  SLOT_SOURCES,
-  SLOT_TYPES
-} from "../../src/slots/slot-model.js";
+import { test } from "vitest";
 import {
   SlotConflictError,
   buildSlotRuntime,
-  resolveApplicableSlots
+  resolveApplicableSlots,
 } from "../../src/slots/runtime.js";
+import { SLOT_SOURCES, SLOT_TYPES } from "../../src/slots/slot-model.js";
 
 type AnyRecord = Record<string, any>;
 
@@ -20,12 +17,12 @@ function createSlotDefinition(overrides: AnyRecord = {}): AnyRecord {
     meta: {
       name: {
         "zh-CN": "测试插槽",
-        "en-US": "Test Slot"
+        "en-US": "Test Slot",
       },
       source: overrides.meta?.source ?? "project-local",
       slotType: overrides.meta?.slotType ?? "documentation-output",
       owner: overrides.meta?.owner ?? "platform",
-      tags: overrides.meta?.tags ?? []
+      tags: overrides.meta?.tags ?? [],
     },
     trigger: {
       match: overrides.trigger?.match ?? "any",
@@ -34,15 +31,15 @@ function createSlotDefinition(overrides: AnyRecord = {}): AnyRecord {
         stages: overrides.trigger?.when?.stages ?? ["plan"],
         events: overrides.trigger?.when?.events ?? [],
         adapters: overrides.trigger?.when?.adapters ?? [],
-        commands: overrides.trigger?.when?.commands ?? ["plan"]
-      }
+        commands: overrides.trigger?.when?.commands ?? ["plan"],
+      },
     },
     scope: {
       languages: overrides.scope?.languages ?? [],
       frameworks: overrides.scope?.frameworks ?? [],
       projects: overrides.scope?.projects ?? [],
       files: overrides.scope?.files ?? [],
-      tags: overrides.scope?.tags ?? []
+      tags: overrides.scope?.tags ?? [],
     },
     behavior: {
       blockOnFailure: overrides.behavior?.blockOnFailure ?? true,
@@ -53,16 +50,16 @@ function createSlotDefinition(overrides: AnyRecord = {}): AnyRecord {
       supersedes: overrides.behavior?.supersedes ?? [],
       inject: {
         ai: overrides.behavior?.inject?.ai ?? {},
-        human: overrides.behavior?.inject?.human ?? {}
-      }
+        human: overrides.behavior?.inject?.human ?? {},
+      },
     },
     checks: {
       before: overrides.checks?.before ?? [],
-      after: overrides.checks?.after ?? []
+      after: overrides.checks?.after ?? [],
     },
     extensions: {
-      scripts: overrides.extensions?.scripts ?? []
-    }
+      scripts: overrides.extensions?.scripts ?? [],
+    },
   };
 }
 
@@ -74,16 +71,16 @@ test("slot runtime matches enabled slots by stage command and tags", () => {
     config: {
       project: {
         language: "typescript",
-        framework: "node"
+        framework: "node",
       },
       execution: {
-        currentProject: "mvp"
+        currentProject: "mvp",
       },
       slots: {
         enabled: ["project-docs-slot"],
         disabled: [],
-        conflictPolicy: "error"
-      }
+        conflictPolicy: "error",
+      },
     },
     slotDefinitions: [
       {
@@ -91,26 +88,26 @@ test("slot runtime matches enabled slots by stage command and tags", () => {
           scope: {
             tags: ["documentation"],
             projects: ["mvp"],
-            languages: ["typescript"]
+            languages: ["typescript"],
           },
           behavior: {
             inject: {
               ai: {
-                promptKey: "documentation-output-checklist"
+                promptKey: "documentation-output-checklist",
               },
               human: {
-                docSection: "Documentation Outputs"
-              }
+                docSection: "Documentation Outputs",
+              },
             },
-            checks: undefined
+            checks: undefined,
           },
           checks: {
             before: ["明确输出文件"],
-            after: ["记录产物路径"]
-          }
-        }) as any
-      }
-    ]
+            after: ["记录产物路径"],
+          },
+        }) as any,
+      },
+    ],
   });
 
   const resolution = resolveApplicableSlots(slotRuntime, {
@@ -118,10 +115,13 @@ test("slot runtime matches enabled slots by stage command and tags", () => {
     commandId: "plan",
     project: "mvp",
     language: "typescript",
-    tags: ["documentation"]
+    tags: ["documentation"],
   });
 
-  assert.deepEqual(resolution.activeSlots.map((slot) => slot.id), ["project-docs-slot"]);
+  assert.deepEqual(
+    resolution.activeSlots.map((slot) => slot.id),
+    ["project-docs-slot"],
+  );
   assert.deepEqual(resolution.injections.aiPromptKeys, ["documentation-output-checklist"]);
   assert.deepEqual(resolution.checks.before, ["明确输出文件"]);
 });
@@ -132,8 +132,8 @@ test("slot runtime suppresses lower-priority conflicts when override policy is p
       slots: {
         enabled: ["official-security", "project-security"],
         disabled: [],
-        conflictPolicy: "error"
-      }
+        conflictPolicy: "error",
+      },
     },
     slotDefinitions: [
       {
@@ -141,48 +141,51 @@ test("slot runtime suppresses lower-priority conflicts when override policy is p
           id: "official-security",
           meta: {
             source: "official",
-            slotType: "security-compliance"
+            slotType: "security-compliance",
           },
           trigger: {
             when: {
               stages: ["review"],
-              commands: ["review"]
-            }
+              commands: ["review"],
+            },
           },
           behavior: {
             priority: 180,
-            conflictPolicy: "error"
-          }
-        }) as any
+            conflictPolicy: "error",
+          },
+        }) as any,
       },
       {
         config: createSlotDefinition({
           id: "project-security",
           meta: {
             source: "project-local",
-            slotType: "security-compliance"
+            slotType: "security-compliance",
           },
           trigger: {
             when: {
               stages: ["review"],
-              commands: ["review"]
-            }
+              commands: ["review"],
+            },
           },
           behavior: {
             priority: 240,
-            conflictPolicy: "override"
-          }
-        }) as any
-      }
-    ]
+            conflictPolicy: "override",
+          },
+        }) as any,
+      },
+    ],
   });
 
   const resolution = resolveApplicableSlots(slotRuntime, {
     stageId: "review",
-    commandId: "review"
+    commandId: "review",
   });
 
-  assert.deepEqual(resolution.activeSlots.map((slot) => slot.id), ["project-security"]);
+  assert.deepEqual(
+    resolution.activeSlots.map((slot) => slot.id),
+    ["project-security"],
+  );
   assert.equal(resolution.suppressedSlots[0]?.id, "official-security");
   assert.equal(resolution.suppressedSlots[0]?.reason, "conflict-override");
 });
@@ -193,33 +196,33 @@ test("slot runtime blocks slots whose dependencies are not active", () => {
       slots: {
         enabled: ["release-approval"],
         disabled: [],
-        conflictPolicy: "error"
-      }
+        conflictPolicy: "error",
+      },
     },
     slotDefinitions: [
       {
         config: createSlotDefinition({
           id: "release-approval",
           meta: {
-            slotType: "release-approval"
+            slotType: "release-approval",
           },
           trigger: {
             when: {
               stages: ["report"],
-              commands: ["report"]
-            }
+              commands: ["report"],
+            },
           },
           behavior: {
-            dependsOn: ["security-review"]
-          }
-        }) as any
-      }
-    ]
+            dependsOn: ["security-review"],
+          },
+        }) as any,
+      },
+    ],
   });
 
   const resolution = resolveApplicableSlots(slotRuntime, {
     stageId: "report",
-    commandId: "report"
+    commandId: "report",
   });
 
   assert.deepEqual(resolution.activeSlots, []);
@@ -233,8 +236,8 @@ test("slot runtime throws an explainable error when conflicting slots cannot be 
       slots: {
         enabled: ["official-docs", "team-docs"],
         disabled: [],
-        conflictPolicy: "error"
-      }
+        conflictPolicy: "error",
+      },
     },
     slotDefinitions: [
       {
@@ -242,38 +245,38 @@ test("slot runtime throws an explainable error when conflicting slots cannot be 
           id: "official-docs",
           meta: {
             source: "official",
-            slotType: "documentation-output"
-          }
-        }) as any
+            slotType: "documentation-output",
+          },
+        }) as any,
       },
       {
         config: createSlotDefinition({
           id: "team-docs",
           meta: {
             source: "team-shared",
-            slotType: "documentation-output"
+            slotType: "documentation-output",
           },
           behavior: {
             priority: 120,
-            conflictPolicy: "error"
-          }
-        }) as any
-      }
-    ]
+            conflictPolicy: "error",
+          },
+        }) as any,
+      },
+    ],
   });
 
   assert.throws(
     () =>
       resolveApplicableSlots(slotRuntime, {
         stageId: "plan",
-        commandId: "plan"
+        commandId: "plan",
       }),
     (error) => {
       assert.ok(error instanceof SlotConflictError);
       assert.equal(error.details.conflictKey, "slot-type:documentation-output");
       assert.deepEqual(error.details.slotIds, ["team-docs", "official-docs"]);
       return true;
-    }
+    },
   );
 });
 
@@ -281,26 +284,26 @@ test("slot runtime surfaces declarative script extensions for active slots witho
   const slotRuntime = buildSlotRuntime({
     config: {
       execution: {
-        currentProject: "mvp"
+        currentProject: "mvp",
       },
       slots: {
         enabled: ["docs-output"],
         disabled: [],
-        conflictPolicy: "error"
-      }
+        conflictPolicy: "error",
+      },
     },
     slotDefinitions: [
       {
         config: createSlotDefinition({
           id: "docs-output",
           scope: {
-            projects: ["mvp"]
+            projects: ["mvp"],
           },
           trigger: {
             when: {
               stages: ["report"],
-              commands: ["report"]
-            }
+              commands: ["report"],
+            },
           },
           extensions: {
             scripts: [
@@ -309,24 +312,27 @@ test("slot runtime surfaces declarative script extensions for active slots witho
                 hook: "after",
                 runtime: {
                   kind: "command",
-                  entry: "node ./scripts/render-doc-index.js"
-                }
-              }
-            ]
-          }
-        }) as any
-      }
-    ]
+                  entry: "node ./scripts/render-doc-index.js",
+                },
+              },
+            ],
+          },
+        }) as any,
+      },
+    ],
   });
 
   const resolution = resolveApplicableSlots(slotRuntime, {
     stageId: "report",
     commandId: "report",
-    project: "mvp"
+    project: "mvp",
   });
 
   assert.equal(resolution.extensions.scriptCount, 1);
   assert.equal(resolution.extensions.scripts[0].slotId, "docs-output");
-  assert.equal(resolution.extensions.scripts[0].runtime.entry, "node ./scripts/render-doc-index.js");
+  assert.equal(
+    resolution.extensions.scripts[0].runtime.entry,
+    "node ./scripts/render-doc-index.js",
+  );
   assert.equal(resolution.activeSlots[0].extensions.scripts[0].id, "render-doc-index");
 });

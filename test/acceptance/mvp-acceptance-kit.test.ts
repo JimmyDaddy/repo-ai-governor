@@ -1,9 +1,9 @@
-import { test } from "vitest";
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
+import { test } from "vitest";
 
 const ROOT_DIR = path.resolve(".");
 
@@ -14,15 +14,15 @@ test("mvp acceptance script bootstraps a workspace and produces end-to-end artif
     [path.join(ROOT_DIR, "scripts", "acceptance", "run-mvp-acceptance.sh"), workspace],
     {
       cwd: ROOT_DIR,
-      encoding: "utf8"
-    }
+      encoding: "utf8",
+    },
   ).trim();
 
   assert.equal(output, workspace);
   assert.equal(fs.existsSync(path.join(workspace, "acceptance-record.md")), true);
   assert.equal(
     fs.existsSync(path.join(workspace, ".repo-ai-governor", "reports", "acceptance-latest.md")),
-    true
+    true,
   );
 
   const codeReviewDir = path.join(workspace, "docs", "demo", "sprint-001", "code-review");

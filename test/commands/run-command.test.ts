@@ -1,8 +1,8 @@
-import { test } from "vitest";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { test } from "vitest";
 import YAML from "yaml";
 import { runCli } from "../../src/cli/index.js";
 import { EXIT_CODES } from "../../src/cli/runtime/exit-codes.js";
@@ -29,7 +29,7 @@ function createBufferedStream() {
     },
     toString() {
       return chunks.join("");
-    }
+    },
   };
 }
 
@@ -45,7 +45,7 @@ async function runCommand(argv: any) {
   return {
     exitCode,
     stdout: stdout.toString(),
-    stderr: stderr.toString()
+    stderr: stderr.toString(),
   };
 }
 
@@ -61,13 +61,13 @@ async function bootstrapRepo(cwd: any) {
     "--adapter",
     "codex",
     "--format",
-    "json"
+    "json",
   ]);
 
   assert.equal(result.exitCode, EXIT_CODES.success);
   writeFile(
     path.join(cwd, "docs", "demo", "sprint-001", "tasks", "TK-001.md"),
-    "# TK-001\n\n- Status: todo\n"
+    "# TK-001\n\n- Status: todo\n",
   );
 }
 
@@ -100,14 +100,14 @@ function createFakeSurfaceBinaries(cwd: any, options: AnyRecord = {}) {
   if (withCodex) {
     createExecutable(
       path.join(binDir, "codex"),
-      ["#!/bin/sh", 'echo "codex 0.0.1"', "exit 0", ""].join("\n")
+      ["#!/bin/sh", 'echo "codex 0.0.1"', "exit 0", ""].join("\n"),
     );
   }
 
   if (withClaude) {
     createExecutable(
       path.join(binDir, "claude"),
-      ["#!/bin/sh", 'echo "claude 0.0.1"', "exit 0", ""].join("\n")
+      ["#!/bin/sh", 'echo "claude 0.0.1"', "exit 0", ""].join("\n"),
     );
   }
 
@@ -122,8 +122,8 @@ function createFakeSurfaceBinaries(cwd: any, options: AnyRecord = {}) {
         "fi",
         'echo "gh 0.0.1"',
         "exit 0",
-        ""
-      ].join("\n")
+        "",
+      ].join("\n"),
     );
   }
 
@@ -133,9 +133,7 @@ function createFakeSurfaceBinaries(cwd: any, options: AnyRecord = {}) {
 async function runWithPrependedPath(prefix: any, callback: any, options: AnyRecord = {}) {
   const originalPath = process.env.PATH ?? "";
   const appendOriginal = options.appendOriginal ?? true;
-  process.env.PATH = appendOriginal
-    ? `${prefix}${path.delimiter}${originalPath}`
-    : prefix;
+  process.env.PATH = appendOriginal ? `${prefix}${path.delimiter}${originalPath}` : prefix;
 
   try {
     return await callback();
@@ -146,7 +144,10 @@ async function runWithPrependedPath(prefix: any, callback: any, options: AnyReco
 
 function indexRoutingDecisions(payload: AnyRecord): Map<string, AnyRecord> {
   return new Map<string, AnyRecord>(
-    (payload.routing?.routes ?? []).map((decision: AnyRecord) => [String(decision.routeKey), decision]),
+    (payload.routing?.routes ?? []).map((decision: AnyRecord) => [
+      String(decision.routeKey),
+      decision,
+    ]),
   );
 }
 
@@ -158,31 +159,31 @@ test("run aligns with plan-task flow and routes ai roles before review/task loop
   const binDir = createFakeSurfaceBinaries(cwd, {
     codex: true,
     claude: true,
-    gh: true
+    gh: true,
   });
 
   const result = await runWithPrependedPath(
     binDir,
     () =>
-    runCommand([
-      "run",
-      "--cwd",
-      cwd,
-      "--project",
-      "demo",
-      "--sprint",
-      "sprint-001",
-      "--mode",
-      "assisted",
-      "--input",
-      "request.md",
-      "--dry-run",
-      "--format",
-      "json"
-    ]),
+      runCommand([
+        "run",
+        "--cwd",
+        cwd,
+        "--project",
+        "demo",
+        "--sprint",
+        "sprint-001",
+        "--mode",
+        "assisted",
+        "--input",
+        "request.md",
+        "--dry-run",
+        "--format",
+        "json",
+      ]),
     {
-      appendOriginal: false
-    }
+      appendOriginal: false,
+    },
   );
   const payload = JSON.parse(result.stdout);
   const routingByStage = indexRoutingDecisions(payload);
@@ -213,36 +214,42 @@ test("run dry-run previews dispatch without side effects", async () => {
   const binDir = createFakeSurfaceBinaries(cwd, {
     codex: true,
     claude: true,
-    gh: true
+    gh: true,
   });
 
   const result = await runWithPrependedPath(
     binDir,
     () =>
-    runCommand([
-      "run",
-      "--cwd",
-      cwd,
-      "--project",
-      "demo",
-      "--sprint",
-      "sprint-001",
-      "--mode",
-      "assisted",
-      "--input",
-      "request.md",
-      "--dry-run",
-      "--format",
-      "json"
-    ]),
+      runCommand([
+        "run",
+        "--cwd",
+        cwd,
+        "--project",
+        "demo",
+        "--sprint",
+        "sprint-001",
+        "--mode",
+        "assisted",
+        "--input",
+        "request.md",
+        "--dry-run",
+        "--format",
+        "json",
+      ]),
     {
-      appendOriginal: false
-    }
+      appendOriginal: false,
+    },
   );
   const payload = JSON.parse(result.stdout);
-  const draftLoopStage = payload.workflow.stages.find((stage: any) => stage.id === "draft-review-loop");
-  const solutionLoopStage = payload.workflow.stages.find((stage: any) => stage.id === "technical-solution-loop");
-  const taskLoopStage = payload.workflow.stages.find((stage: any) => stage.id === "task-delivery-loop");
+  const draftLoopStage = payload.workflow.stages.find(
+    (stage: any) => stage.id === "draft-review-loop",
+  );
+  const solutionLoopStage = payload.workflow.stages.find(
+    (stage: any) => stage.id === "technical-solution-loop",
+  );
+  const taskLoopStage = payload.workflow.stages.find(
+    (stage: any) => stage.id === "task-delivery-loop",
+  );
 
   assert.equal(result.exitCode, EXIT_CODES.success);
   assert.equal(payload.dryRun, true);
@@ -262,31 +269,31 @@ test("run fails preflight when required surfaces are unavailable", async () => {
   const binDir = createFakeSurfaceBinaries(cwd, {
     codex: true,
     claude: false,
-    gh: true
+    gh: true,
   });
 
   const result = await runWithPrependedPath(
     binDir,
     () =>
-    runCommand([
-      "run",
-      "--cwd",
-      cwd,
-      "--project",
-      "demo",
-      "--sprint",
-      "sprint-001",
-      "--mode",
-      "assisted",
-      "--non-interactive",
-      "--input",
-      "request.md",
-      "--format",
-      "json"
-    ]),
+      runCommand([
+        "run",
+        "--cwd",
+        cwd,
+        "--project",
+        "demo",
+        "--sprint",
+        "sprint-001",
+        "--mode",
+        "assisted",
+        "--non-interactive",
+        "--input",
+        "request.md",
+        "--format",
+        "json",
+      ]),
     {
-      appendOriginal: false
-    }
+      appendOriginal: false,
+    },
   );
   const payload = JSON.parse(result.stdout);
 
@@ -297,8 +304,8 @@ test("run fails preflight when required surfaces are unavailable", async () => {
   assert.ok(
     payload.preflight.blocking.some(
       (issue: any) =>
-        issue.id.includes("draft-review") || issue.id.includes("technical-solution-review")
-    )
+        issue.id.includes("draft-review") || issue.id.includes("technical-solution-review"),
+    ),
   );
   assert.ok(payload.preflight.blocking.every((issue: any) => issue.strategy === "block"));
 });
@@ -311,7 +318,7 @@ test("run pauses preflight in interactive mode when required surfaces are unavai
   const binDir = createFakeSurfaceBinaries(cwd, {
     codex: true,
     claude: false,
-    gh: true
+    gh: true,
   });
 
   const result = await runWithPrependedPath(
@@ -330,11 +337,11 @@ test("run pauses preflight in interactive mode when required surfaces are unavai
         "--input",
         "request.md",
         "--format",
-        "json"
+        "json",
       ]),
     {
-      appendOriginal: false
-    }
+      appendOriginal: false,
+    },
   );
   const payload = JSON.parse(result.stdout);
   const routingByStage = indexRoutingDecisions(payload);
@@ -345,7 +352,9 @@ test("run pauses preflight in interactive mode when required surfaces are unavai
   assert.equal(payload.preflight.status, "blocked");
   assert.equal(preflightStage?.status, "blocked");
   assert.ok(payload.preflight.pausing.length > 0);
-  assert.ok(payload.preflight.pausing.every((issue: any) => issue.strategy === "pause_for_approval"));
+  assert.ok(
+    payload.preflight.pausing.every((issue: any) => issue.strategy === "pause_for_approval"),
+  );
   assert.equal(routingByStage.get("draft-review")?.decision, "pause_for_approval");
   assert.equal(payload.workflow.failure, null);
 });
@@ -358,35 +367,35 @@ test("run uses cli route overrides before routing profile defaults", async () =>
   const binDir = createFakeSurfaceBinaries(cwd, {
     codex: true,
     claude: false,
-    gh: true
+    gh: true,
   });
 
   const result = await runWithPrependedPath(
     binDir,
     () =>
-    runCommand([
-      "run",
-      "--cwd",
-      cwd,
-      "--project",
-      "demo",
-      "--sprint",
-      "sprint-001",
-      "--mode",
-      "assisted",
-      "--route",
-      "draft-review=codex",
-      "--route",
-      "technical-solution-review=codex",
-      "--input",
-      "request.md",
-      "--dry-run",
-      "--format",
-      "json"
-    ]),
+      runCommand([
+        "run",
+        "--cwd",
+        cwd,
+        "--project",
+        "demo",
+        "--sprint",
+        "sprint-001",
+        "--mode",
+        "assisted",
+        "--route",
+        "draft-review=codex",
+        "--route",
+        "technical-solution-review=codex",
+        "--input",
+        "request.md",
+        "--dry-run",
+        "--format",
+        "json",
+      ]),
     {
-      appendOriginal: false
-    }
+      appendOriginal: false,
+    },
   );
   const payload = JSON.parse(result.stdout);
   const routingByStage = indexRoutingDecisions(payload);
@@ -422,35 +431,35 @@ test("run supports configurable ai role routing and configurable surface probes"
           "technical-solution-revise": "dev-bot",
           "task-breakdown": "planner-bot",
           "task-implementation": "dev-bot",
-          "task-code-review": "reviewer-bot"
-        }
-      }
+          "task-code-review": "reviewer-bot",
+        },
+      },
     };
     config.automation.surfaces = {
       "writer-bot": {
         binary: "writerbot",
         binaryArgs: ["--version"],
         healthArgs: ["--version"],
-        workspaceDir: ".custom/writer"
+        workspaceDir: ".custom/writer",
       },
       "reviewer-bot": {
         binary: "reviewerbot",
         binaryArgs: ["--version"],
         healthArgs: ["--version"],
-        workspaceDir: ".custom/reviewer"
+        workspaceDir: ".custom/reviewer",
       },
       "planner-bot": {
         binary: "plannerbot",
         binaryArgs: ["--version"],
         healthArgs: ["--version"],
-        workspaceDir: ".custom/planner"
+        workspaceDir: ".custom/planner",
       },
       "dev-bot": {
         binary: "devbot",
         binaryArgs: ["--version"],
         healthArgs: ["--version"],
-        workspaceDir: ".custom/dev"
-      }
+        workspaceDir: ".custom/dev",
+      },
     };
     return config;
   });
@@ -479,11 +488,11 @@ test("run supports configurable ai role routing and configurable surface probes"
         "request.md",
         "--dry-run",
         "--format",
-        "json"
+        "json",
       ]),
     {
-      appendOriginal: false
-    }
+      appendOriginal: false,
+    },
   );
   const payload = JSON.parse(result.stdout);
   const routingByStage = indexRoutingDecisions(payload);
@@ -511,7 +520,7 @@ test("run blocks high-risk actions in non-interactive mode without approval", as
   const binDir = createFakeSurfaceBinaries(cwd, {
     codex: true,
     claude: true,
-    gh: true
+    gh: true,
   });
 
   const result = await runWithPrependedPath(
@@ -532,11 +541,11 @@ test("run blocks high-risk actions in non-interactive mode without approval", as
         "request.md",
         "--dry-run",
         "--format",
-        "json"
+        "json",
       ]),
     {
-      appendOriginal: false
-    }
+      appendOriginal: false,
+    },
   );
   const payload = JSON.parse(result.stdout);
 
@@ -555,7 +564,7 @@ test("run pauses high-risk actions in interactive mode until approval is provide
   const binDir = createFakeSurfaceBinaries(cwd, {
     codex: true,
     claude: true,
-    gh: true
+    gh: true,
   });
 
   const result = await runWithPrependedPath(
@@ -575,11 +584,11 @@ test("run pauses high-risk actions in interactive mode until approval is provide
         "request.md",
         "--dry-run",
         "--format",
-        "json"
+        "json",
       ]),
     {
-      appendOriginal: false
-    }
+      appendOriginal: false,
+    },
   );
   const payload = JSON.parse(result.stdout);
 
@@ -597,7 +606,7 @@ test("run proceeds after explicit high-risk approval", async () => {
   const binDir = createFakeSurfaceBinaries(cwd, {
     codex: true,
     claude: true,
-    gh: true
+    gh: true,
   });
 
   const result = await runWithPrependedPath(
@@ -619,11 +628,11 @@ test("run proceeds after explicit high-risk approval", async () => {
         "dangerous-command",
         "--dry-run",
         "--format",
-        "json"
+        "json",
       ]),
     {
-      appendOriginal: false
-    }
+      appendOriginal: false,
+    },
   );
   const payload = JSON.parse(result.stdout);
 
@@ -648,7 +657,7 @@ test("run marks process source as customized when automation.process overrides a
   const binDir = createFakeSurfaceBinaries(cwd, {
     codex: true,
     claude: true,
-    gh: true
+    gh: true,
   });
 
   const result = await runWithPrependedPath(
@@ -668,11 +677,11 @@ test("run marks process source as customized when automation.process overrides a
         "request.md",
         "--dry-run",
         "--format",
-        "json"
+        "json",
       ]),
     {
-      appendOriginal: false
-    }
+      appendOriginal: false,
+    },
   );
   const payload = JSON.parse(result.stdout);
 
@@ -697,7 +706,7 @@ test("run explain-process outputs compiled process snapshot without execution si
     "assisted",
     "--explain-process",
     "--format",
-    "json"
+    "json",
   ]);
   const payload = JSON.parse(result.stdout);
 
@@ -708,10 +717,7 @@ test("run explain-process outputs compiled process snapshot without execution si
   assert.equal(payload.process.source, "default");
   assert.ok(Array.isArray(payload.process.snapshot.stages));
   assert.ok(Array.isArray(payload.process.snapshot.routeDefinitions));
-  assert.equal(
-    fs.existsSync(path.join(cwd, ".repo-ai-governor", "reports", "runs")),
-    false
-  );
+  assert.equal(fs.existsSync(path.join(cwd, ".repo-ai-governor", "reports", "runs")), false);
 });
 
 test("run validate-process succeeds without dispatch or audit writes", async () => {
@@ -730,7 +736,7 @@ test("run validate-process succeeds without dispatch or audit writes", async () 
     "assisted",
     "--validate-process",
     "--format",
-    "json"
+    "json",
   ]);
   const payload = JSON.parse(result.stdout);
 
@@ -738,10 +744,7 @@ test("run validate-process succeeds without dispatch or audit writes", async () 
   assert.equal(payload.status, "pass");
   assert.equal(payload.validateProcess, true);
   assert.equal(payload.explainProcess, false);
-  assert.equal(
-    fs.existsSync(path.join(cwd, ".repo-ai-governor", "reports", "runs")),
-    false
-  );
+  assert.equal(fs.existsSync(path.join(cwd, ".repo-ai-governor", "reports", "runs")), false);
 });
 
 test("run validate-process fails with actionable errors when process configuration is invalid", async () => {
@@ -752,13 +755,13 @@ test("run validate-process fails with actionable errors when process configurati
       {
         id: "duplicate-stage",
         kind: "ai",
-        routeKey: "duplicate-stage"
+        routeKey: "duplicate-stage",
       },
       {
         id: "duplicate-stage",
         kind: "ai",
-        routeKey: "duplicate-stage-2"
-      }
+        routeKey: "duplicate-stage-2",
+      },
     ];
     return config;
   });
@@ -775,7 +778,7 @@ test("run validate-process fails with actionable errors when process configurati
     "assisted",
     "--validate-process",
     "--format",
-    "json"
+    "json",
   ]);
 
   assert.equal(result.exitCode, EXIT_CODES.inputError);
@@ -790,7 +793,7 @@ test("run writes unique audit records with stage checkpoints into report artifac
   const binDir = createFakeSurfaceBinaries(cwd, {
     codex: true,
     claude: true,
-    gh: true
+    gh: true,
   });
 
   const firstRun = await runWithPrependedPath(
@@ -810,11 +813,11 @@ test("run writes unique audit records with stage checkpoints into report artifac
         "request.md",
         "--dry-run",
         "--format",
-        "json"
+        "json",
       ]),
     {
-      appendOriginal: false
-    }
+      appendOriginal: false,
+    },
   );
   const firstPayload = JSON.parse(firstRun.stdout);
   const firstAuditFile = path.resolve(cwd, firstPayload.audit.recordFile);
@@ -848,11 +851,11 @@ test("run writes unique audit records with stage checkpoints into report artifac
         "request.md",
         "--dry-run",
         "--format",
-        "json"
+        "json",
       ]),
     {
-      appendOriginal: false
-    }
+      appendOriginal: false,
+    },
   );
   const secondPayload = JSON.parse(secondRun.stdout);
 
@@ -869,7 +872,7 @@ test("run can resume from checkpoint records in assisted mode", async () => {
   const binDir = createFakeSurfaceBinaries(cwd, {
     codex: true,
     claude: true,
-    gh: true
+    gh: true,
   });
 
   const blockedRun = await runWithPrependedPath(
@@ -889,11 +892,11 @@ test("run can resume from checkpoint records in assisted mode", async () => {
         "request.md",
         "--dry-run",
         "--format",
-        "json"
+        "json",
       ]),
     {
-      appendOriginal: false
-    }
+      appendOriginal: false,
+    },
   );
   const blockedPayload = JSON.parse(blockedRun.stdout);
 
@@ -923,15 +926,15 @@ test("run can resume from checkpoint records in assisted mode", async () => {
         "dangerous_command",
         "--dry-run",
         "--format",
-        "json"
+        "json",
       ]),
     {
-      appendOriginal: false
-    }
+      appendOriginal: false,
+    },
   );
   const resumedPayload = JSON.parse(resumedRun.stdout);
   const restoredPreflightCheckpoint = resumedPayload.checkpoints.stages.find(
-    (stage: any) => stage.id === "preflight"
+    (stage: any) => stage.id === "preflight",
   );
 
   assert.equal(resumedRun.exitCode, EXIT_CODES.success);
@@ -942,6 +945,6 @@ test("run can resume from checkpoint records in assisted mode", async () => {
   assert.ok(resumedPayload.recovery.restoredStages.includes("preflight"));
   assert.equal(
     restoredPreflightCheckpoint?.details?.checkpointRestore?.sourceFile,
-    blockedPayload.audit.recordFile
+    blockedPayload.audit.recordFile,
   );
 });

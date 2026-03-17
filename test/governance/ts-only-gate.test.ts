@@ -1,9 +1,9 @@
-import { test } from "vitest";
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
+import { test } from "vitest";
 
 type AnyRecord = Record<string, any>;
 
@@ -13,7 +13,7 @@ const DEFAULT_CONFIG = {
   scopes: ["src", "test"],
   allowList: [],
   pathAllowList: [],
-  outOfScopeAllowList: []
+  outOfScopeAllowList: [],
 };
 
 function createTempWorkspace() {
@@ -26,14 +26,14 @@ function writeWhitelistConfig(workspace: string, payload: AnyRecord = DEFAULT_CO
   fs.writeFileSync(
     path.join(configDirectory, "ts-only-whitelist.json"),
     JSON.stringify(payload, null, 2),
-    "utf8"
+    "utf8",
   );
 }
 
 function runTsOnlyGate(args: string[] = []): AnyRecord {
   const output = execFileSync(process.execPath, [SCRIPT_PATH, "--format=json", ...args], {
     cwd: ROOT_DIR,
-    encoding: "utf8"
+    encoding: "utf8",
   });
   return JSON.parse(output);
 }
@@ -48,7 +48,11 @@ test("TS-only gate passes for the repository src/test scopes", () => {
 test("TS-only gate reports violations for new JavaScript files in audited scopes", () => {
   const workspace = createTempWorkspace();
   fs.mkdirSync(path.join(workspace, "src"), { recursive: true });
-  fs.writeFileSync(path.join(workspace, "src", "legacy.js"), "export const legacy = true;\n", "utf8");
+  fs.writeFileSync(
+    path.join(workspace, "src", "legacy.js"),
+    "export const legacy = true;\n",
+    "utf8",
+  );
   writeWhitelistConfig(workspace);
 
   try {
@@ -68,10 +72,14 @@ test("TS-only gate reports violations for new JavaScript files in audited scopes
 test("TS-only gate allows files explicitly listed in the whitelist", () => {
   const workspace = createTempWorkspace();
   fs.mkdirSync(path.join(workspace, "src"), { recursive: true });
-  fs.writeFileSync(path.join(workspace, "src", "legacy.js"), "export const legacy = true;\n", "utf8");
+  fs.writeFileSync(
+    path.join(workspace, "src", "legacy.js"),
+    "export const legacy = true;\n",
+    "utf8",
+  );
   writeWhitelistConfig(workspace, {
     scopes: ["src", "test"],
-    allowList: ["src/legacy.js"]
+    allowList: ["src/legacy.js"],
   });
 
   try {
@@ -88,15 +96,19 @@ test("TS-only gate allows files explicitly listed in the whitelist", () => {
 test("TS-only gate supports structured pathAllowList entries with explicit reasons", () => {
   const workspace = createTempWorkspace();
   fs.mkdirSync(path.join(workspace, "src"), { recursive: true });
-  fs.writeFileSync(path.join(workspace, "src", "legacy.js"), "export const legacy = true;\n", "utf8");
+  fs.writeFileSync(
+    path.join(workspace, "src", "legacy.js"),
+    "export const legacy = true;\n",
+    "utf8",
+  );
   writeWhitelistConfig(workspace, {
     scopes: ["src", "test"],
     pathAllowList: [
       {
         path: "src/legacy.js",
-        reason: "runtime bootstrap entry that must stay JavaScript"
-      }
-    ]
+        reason: "runtime bootstrap entry that must stay JavaScript",
+      },
+    ],
   });
 
   try {
@@ -107,7 +119,10 @@ test("TS-only gate supports structured pathAllowList entries with explicit reaso
     assert.deepEqual(payload.allowList, ["src/legacy.js"]);
     assert.equal(payload.pathAllowList.length, 1);
     assert.equal(payload.pathAllowList[0].path, "src/legacy.js");
-    assert.equal(payload.pathAllowList[0].reason, "runtime bootstrap entry that must stay JavaScript");
+    assert.equal(
+      payload.pathAllowList[0].reason,
+      "runtime bootstrap entry that must stay JavaScript",
+    );
   } finally {
     fs.rmSync(workspace, { recursive: true, force: true });
   }
@@ -143,9 +158,9 @@ test("TS-only gate allows out-of-scope JavaScript files explicitly listed in out
     outOfScopeAllowList: [
       {
         path: "bin",
-        reason: "runtime bootstrap remains JavaScript"
-      }
-    ]
+        reason: "runtime bootstrap remains JavaScript",
+      },
+    ],
   });
 
   try {

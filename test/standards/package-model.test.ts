@@ -1,13 +1,13 @@
-import { test } from "vitest";
 import assert from "node:assert/strict";
+import { test } from "vitest";
 import {
+  OFFICIAL_BASE_PACKAGE_SKELETON,
+  STANDARDS_CATEGORIES,
   createStandardsRule,
   groupRulesByCategory,
   listStandardsCategoryIds,
-  OFFICIAL_BASE_PACKAGE_SKELETON,
   renderRuleView,
-  STANDARDS_CATEGORIES,
-  validateStandardsPackage
+  validateStandardsPackage,
 } from "../../src/standards/package-model.js";
 
 test("official standards package skeleton exposes all required categories", () => {
@@ -23,46 +23,49 @@ test("createStandardsRule and renderRuleView provide AI and human consumable sha
     level: "required",
     title: {
       "zh-CN": "提交信息必须规范",
-      "en-US": "Commit Messages Must Be Conventional"
+      "en-US": "Commit Messages Must Be Conventional",
     },
     statement: {
       "zh-CN": "提交信息应使用 Conventional Commit。",
-      "en-US": "Commit messages should use Conventional Commits."
+      "en-US": "Commit messages should use Conventional Commits.",
     },
     consumers: ["plan", "review"],
     automation: {
       blockOnViolation: true,
       severity: "error",
-      stages: ["review"]
+      stages: ["review"],
     },
     views: {
       ai: {
         instruction: {
           "zh-CN": "生成提交信息时使用 Conventional Commit 格式。",
-          "en-US": "Use Conventional Commit format when generating commit messages."
+          "en-US": "Use Conventional Commit format when generating commit messages.",
         },
         verification: {
           "zh-CN": "检查提交信息是否符合 type(scope): subject。",
-          "en-US": "Verify the commit message follows type(scope): subject."
-        }
+          "en-US": "Verify the commit message follows type(scope): subject.",
+        },
       },
       human: {
         summary: {
           "zh-CN": "提交信息必须遵循 Conventional Commit。",
-          "en-US": "Commit messages must follow Conventional Commits."
+          "en-US": "Commit messages must follow Conventional Commits.",
         },
         rationale: {
           "zh-CN": "这样便于发布与变更归类。",
-          "en-US": "This keeps releases and change logs consistent."
-        }
-      }
-    }
+          "en-US": "This keeps releases and change logs consistent.",
+        },
+      },
+    },
   });
 
   const aiView = renderRuleView(rule, { view: "ai", locale: "en-US" });
   const humanView = renderRuleView(rule, { view: "human", locale: "zh-CN" });
 
-  assert.equal((aiView as any).instruction, "Use Conventional Commit format when generating commit messages.");
+  assert.equal(
+    (aiView as any).instruction,
+    "Use Conventional Commit format when generating commit messages.",
+  );
   assert.equal((aiView as any).blockOnViolation, true);
   assert.equal((humanView as any).summary, "提交信息必须遵循 Conventional Commit。");
   assert.equal((humanView as any).rationale, "这样便于发布与变更归类。");
@@ -78,29 +81,29 @@ test("groupRulesByCategory groups rules under the modeled standards categories",
         level: "required",
         title: {
           "zh-CN": "任务记录必须回写",
-          "en-US": "Task Records Must Be Updated"
+          "en-US": "Task Records Must Be Updated",
         },
         statement: {
           "zh-CN": "完成实现后必须回写 checklist 和 CSV。",
-          "en-US": "Checklist and CSV must be updated after implementation."
+          "en-US": "Checklist and CSV must be updated after implementation.",
         },
         consumers: ["plan", "review-verify"],
         views: {
           ai: {
             instruction: {
               "zh-CN": "在完成复核后更新 checklist 和 tasks.csv。",
-              "en-US": "Update checklist and tasks.csv after verification."
-            }
+              "en-US": "Update checklist and tasks.csv after verification.",
+            },
           },
           human: {
             summary: {
               "zh-CN": "复核后必须更新任务记录。",
-              "en-US": "Task records must be updated after verification."
-            }
-          }
-        }
-      })
-    ]
+              "en-US": "Task records must be updated after verification.",
+            },
+          },
+        },
+      }),
+    ],
   });
 
   const grouped = groupRulesByCategory(standardsPackage);

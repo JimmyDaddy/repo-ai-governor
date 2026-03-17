@@ -1,9 +1,9 @@
-import { test } from "vitest";
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { spawnSync } from "node:child_process";
+import { test } from "vitest";
 
 const ROOT_DIR = path.resolve(".");
 const SCRIPT_PATH = path.join(ROOT_DIR, "scripts", "governance", "check-code-standards.js");
@@ -17,14 +17,10 @@ function createTempWorkspace() {
 }
 
 function runGate(options: RunGateOptions = {}) {
-  return spawnSync(
-    process.execPath,
-    [SCRIPT_PATH, "--format=json", ...(options.args ?? [])],
-    {
-      cwd: options.cwd ?? ROOT_DIR,
-      encoding: "utf8"
-    }
-  );
+  return spawnSync(process.execPath, [SCRIPT_PATH, "--format=json", ...(options.args ?? [])], {
+    cwd: options.cwd ?? ROOT_DIR,
+    encoding: "utf8",
+  });
 }
 
 test("code standards gate parses rules and executes verification commands", () => {
@@ -43,15 +39,15 @@ test("code standards gate parses rules and executes verification commands", () =
       "## Verification Commands",
       "",
       "```bash",
-      "node -e \"process.exit(0)\"",
-      "```"
+      'node -e "process.exit(0)"',
+      "```",
     ].join("\n"),
-    "utf8"
+    "utf8",
   );
 
   const result = runGate({
     cwd,
-    args: ["--standards", "code_standards.md"]
+    args: ["--standards", "code_standards.md"],
   });
   const payload = JSON.parse(result.stdout);
 
@@ -73,14 +69,14 @@ test("code standards gate fails when verification section is missing", () => {
       "",
       "## Non-negotiable Rules",
       "",
-      "- [CS-001] Example required rule."
+      "- [CS-001] Example required rule.",
     ].join("\n"),
-    "utf8"
+    "utf8",
   );
 
   const result = runGate({
     cwd,
-    args: ["--standards", "code_standards.md"]
+    args: ["--standards", "code_standards.md"],
   });
   const payload = JSON.parse(result.stdout);
 
@@ -106,14 +102,14 @@ test("code standards gate fails on recursive check command", () => {
       "",
       "```bash",
       "npm run check",
-      "```"
+      "```",
     ].join("\n"),
-    "utf8"
+    "utf8",
   );
 
   const result = runGate({
     cwd,
-    args: ["--standards", "code_standards.md"]
+    args: ["--standards", "code_standards.md"],
   });
   const payload = JSON.parse(result.stdout);
 

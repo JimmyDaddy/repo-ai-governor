@@ -1,5 +1,5 @@
-import { test } from "vitest";
 import assert from "node:assert/strict";
+import { test } from "vitest";
 import {
   ADAPTER_INPUT_SOURCES,
   ADAPTER_OUTPUT_ARTIFACTS,
@@ -7,7 +7,7 @@ import {
   MAINSTREAM_ADAPTER_IDS,
   getAdapterInputSources,
   listAdapterTargets,
-  supportsAdapterCapability
+  supportsAdapterCapability,
 } from "../../src/adapters/adapter-model.js";
 
 test("adapter model exposes mainstream presets and shared contracts", () => {

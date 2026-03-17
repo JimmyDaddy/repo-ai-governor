@@ -10,7 +10,7 @@ function parseArguments(argv) {
     stageId: "plan",
     format: "markdown",
     tags: [],
-    paths: []
+    paths: [],
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -62,7 +62,6 @@ function parseArguments(argv) {
     if (argument === "--path" && nextValue) {
       options.paths.push(nextValue);
       index += 1;
-      continue;
     }
   }
 

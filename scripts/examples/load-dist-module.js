@@ -32,8 +32,8 @@ function runBuildOnce() {
     stdio: "inherit",
     env: {
       ...process.env,
-      PATH: `/opt/homebrew/bin:${process.env.PATH ?? ""}`
-    }
+      PATH: `/opt/homebrew/bin:${process.env.PATH ?? ""}`,
+    },
   });
 }
 

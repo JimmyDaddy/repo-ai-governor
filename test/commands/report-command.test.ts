@@ -1,8 +1,8 @@
-import { test } from "vitest";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { test } from "vitest";
 import { runCli } from "../../src/cli/index.js";
 import { EXIT_CODES } from "../../src/cli/runtime/exit-codes.js";
 
@@ -21,7 +21,7 @@ function createBufferedStream() {
     },
     toString() {
       return chunks.join("");
-    }
+    },
   };
 }
 
@@ -33,7 +33,7 @@ async function runCommand(argv: any) {
   return {
     exitCode,
     stdout: stdout.toString(),
-    stderr: stderr.toString()
+    stderr: stderr.toString(),
   };
 }
 
@@ -49,7 +49,7 @@ async function bootstrapRepo(cwd: any) {
     "--adapter",
     "codex",
     "--format",
-    "json"
+    "json",
   ]);
 
   assert.equal(initResult.exitCode, EXIT_CODES.success);
@@ -65,7 +65,7 @@ async function bootstrapRepo(cwd: any) {
     "--title",
     "Implement governance report",
     "--format",
-    "json"
+    "json",
   ]);
 
   assert.equal(planResult.exitCode, EXIT_CODES.success);
@@ -86,7 +86,7 @@ test("report renders a check JSON payload into markdown and writes the default r
     "--locale",
     "en-US",
     "--format",
-    "json"
+    "json",
   ]);
 
   const sourceFile = path.join(cwd, "check-result.json");
@@ -99,7 +99,7 @@ test("report renders a check JSON payload into markdown and writes the default r
     "--source",
     "check-result.json",
     "--format",
-    "markdown"
+    "markdown",
   ]);
   const outputFilePath = path.join(cwd, ".repo-ai-governor/reports/latest.md");
 
@@ -114,7 +114,11 @@ test("report can consume a review markdown record and render unified json in dry
   await bootstrapRepo(cwd);
 
   fs.mkdirSync(path.join(cwd, "src"), { recursive: true });
-  fs.writeFileSync(path.join(cwd, "src", "example.js"), "export function example() {\n  // TODO: refine\n  return 1;\n}\n", "utf8");
+  fs.writeFileSync(
+    path.join(cwd, "src", "example.js"),
+    "export function example() {\n  // TODO: refine\n  return 1;\n}\n",
+    "utf8",
+  );
 
   const reviewResult = await runCommand([
     "review",
@@ -127,7 +131,7 @@ test("report can consume a review markdown record and render unified json in dry
     "--path",
     "src/example.js",
     "--format",
-    "json"
+    "json",
   ]);
   const reviewPayload = JSON.parse(reviewResult.stdout);
 
@@ -139,7 +143,7 @@ test("report can consume a review markdown record and render unified json in dry
     reviewPayload.reviewFile,
     "--format",
     "json",
-    "--dry-run"
+    "--dry-run",
   ]);
   const renderedReport = JSON.parse(reportResult.stdout);
 
@@ -155,7 +159,11 @@ test("report can consume a verified review markdown record and render summary ou
   await bootstrapRepo(cwd);
 
   fs.mkdirSync(path.join(cwd, "src"), { recursive: true });
-  fs.writeFileSync(path.join(cwd, "src", "example.js"), "export function example() {\n  // TODO: refine\n  return 1;\n}\n", "utf8");
+  fs.writeFileSync(
+    path.join(cwd, "src", "example.js"),
+    "export function example() {\n  // TODO: refine\n  return 1;\n}\n",
+    "utf8",
+  );
 
   const reviewResult = await runCommand([
     "review",
@@ -168,7 +176,7 @@ test("report can consume a verified review markdown record and render summary ou
     "--path",
     "src/example.js",
     "--format",
-    "json"
+    "json",
   ]);
   const reviewPayload = JSON.parse(reviewResult.stdout);
 
@@ -183,7 +191,7 @@ test("report can consume a verified review markdown record and render summary ou
     "--source",
     reviewPayload.reviewFile,
     "--format",
-    "json"
+    "json",
   ]);
   const verifyPayload = JSON.parse(verifyResult.stdout);
 
@@ -195,7 +203,7 @@ test("report can consume a verified review markdown record and render summary ou
     verifyPayload.outputFile,
     "--format",
     "summary",
-    "--dry-run"
+    "--dry-run",
   ]);
 
   assert.equal(reportResult.exitCode, EXIT_CODES.success);

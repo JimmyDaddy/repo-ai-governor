@@ -1,8 +1,8 @@
-import { test } from "vitest";
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
+import { test } from "vitest";
 
 const ROOT_DIR = path.resolve(".");
 
@@ -12,16 +12,16 @@ test("getting-started acceptance script installs the package and produces onboar
     [
       path.join(ROOT_DIR, "scripts", "release", "run-getting-started-check.sh"),
       "--format=json",
-      "--keep-artifacts"
+      "--keep-artifacts",
     ],
     {
       cwd: ROOT_DIR,
       encoding: "utf8",
       env: {
         ...process.env,
-        PATH: process.env.PATH ?? ""
-      }
-    }
+        PATH: process.env.PATH ?? "",
+      },
+    },
   );
   const payload = JSON.parse(output);
 

@@ -6,10 +6,7 @@ import { BusinessCheckError, InputError } from "../cli/runtime/errors.js";
 import type { ExitCode } from "../cli/runtime/exit-codes.js";
 import { EXIT_CODES } from "../cli/runtime/exit-codes.js";
 import type { Logger } from "../cli/ui/logger.js";
-import {
-  SUPPORTED_SKILL_ACTIONS,
-  type SkillAction,
-} from "../constants/skill-actions.js";
+import { SUPPORTED_SKILL_ACTIONS, type SkillAction } from "../constants/skill-actions.js";
 import {
   type OfficialSkillCatalogEntry,
   type OfficialSkillCatalogState,

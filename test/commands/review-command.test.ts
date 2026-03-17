@@ -1,9 +1,9 @@
-import { test } from "vitest";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { test } from "vitest";
 import { runCli } from "../../src/cli/index.js";
 import { EXIT_CODES } from "../../src/cli/runtime/exit-codes.js";
 
@@ -34,7 +34,7 @@ function createBufferedStream(): BufferedStream {
     },
     toString(): string {
       return chunks.join("");
-    }
+    },
   };
 }
 
@@ -46,7 +46,7 @@ async function runCommand(argv: string[]): Promise<CommandResult> {
   return {
     exitCode,
     stdout: stdout.toString(),
-    stderr: stderr.toString()
+    stderr: stderr.toString(),
   };
 }
 
@@ -62,7 +62,7 @@ async function bootstrapRepo(cwd: string): Promise<void> {
     "--adapter",
     "codex",
     "--format",
-    "json"
+    "json",
   ]);
 
   assert.equal(initResult.exitCode, EXIT_CODES.success);
@@ -78,7 +78,7 @@ async function bootstrapRepo(cwd: string): Promise<void> {
     "--title",
     "Implement governance review",
     "--format",
-    "json"
+    "json",
   ]);
 
   assert.equal(planResult.exitCode, EXIT_CODES.success);
@@ -87,7 +87,7 @@ async function bootstrapRepo(cwd: string): Promise<void> {
 function initializeGitRepo(cwd: string): void {
   const execOptions = {
     cwd,
-    stdio: "ignore" as const
+    stdio: "ignore" as const,
   };
 
   fs.writeFileSync(path.join(cwd, ".gitignore"), "node_modules/\n", "utf8");
@@ -103,7 +103,11 @@ test("review creates a pending CR file with warning findings for TODO markers an
   await bootstrapRepo(cwd);
 
   fs.mkdirSync(path.join(cwd, "src"), { recursive: true });
-  fs.writeFileSync(path.join(cwd, "src", "example.js"), "export function example() {\n  // TODO: refine\n  return 1;\n}\n", "utf8");
+  fs.writeFileSync(
+    path.join(cwd, "src", "example.js"),
+    "export function example() {\n  // TODO: refine\n  return 1;\n}\n",
+    "utf8",
+  );
 
   const result = await runCommand([
     "review",
@@ -116,7 +120,7 @@ test("review creates a pending CR file with warning findings for TODO markers an
     "--path",
     "src/example.js",
     "--format",
-    "json"
+    "json",
   ]);
   const payload = JSON.parse(result.stdout);
   const reviewFilePath = path.join(cwd, payload.reviewFile);
@@ -134,7 +138,11 @@ test("review strict mode fails the command when warning findings remain", async 
   await bootstrapRepo(cwd);
 
   fs.mkdirSync(path.join(cwd, "src"), { recursive: true });
-  fs.writeFileSync(path.join(cwd, "src", "strict-example.js"), "export function example() {\n  // TODO: refine\n  return 1;\n}\n", "utf8");
+  fs.writeFileSync(
+    path.join(cwd, "src", "strict-example.js"),
+    "export function example() {\n  // TODO: refine\n  return 1;\n}\n",
+    "utf8",
+  );
 
   const result = await runCommand([
     "review",
@@ -148,7 +156,7 @@ test("review strict mode fails the command when warning findings remain", async 
     "src/strict-example.js",
     "--strict",
     "--format",
-    "json"
+    "json",
   ]);
   const payload = JSON.parse(result.stdout);
 
@@ -162,7 +170,11 @@ test("review fails when sprint task records are out of sync", async () => {
   await bootstrapRepo(cwd);
 
   const checklistFile = path.join(cwd, "docs/demo/sprint-001/tasks/checklist.md");
-  fs.writeFileSync(checklistFile, "# Sprint 001 Checklist\n\n- [ ] **TK-999** Broken sync\n", "utf8");
+  fs.writeFileSync(
+    checklistFile,
+    "# Sprint 001 Checklist\n\n- [ ] **TK-999** Broken sync\n",
+    "utf8",
+  );
 
   const result = await runCommand([
     "review",
@@ -175,7 +187,7 @@ test("review fails when sprint task records are out of sync", async () => {
     "--path",
     "docs/demo/sprint-001/tasks",
     "--format",
-    "json"
+    "json",
   ]);
   const payload = JSON.parse(result.stdout);
 
@@ -190,8 +202,16 @@ test("review passes when a source file has a mirrored test and no warnings", asy
 
   fs.mkdirSync(path.join(cwd, "src", "commands"), { recursive: true });
   fs.mkdirSync(path.join(cwd, "test", "commands"), { recursive: true });
-  fs.writeFileSync(path.join(cwd, "src", "commands", "sample.js"), "export function sample() {\n  return 1;\n}\n", "utf8");
-  fs.writeFileSync(path.join(cwd, "test", "commands", "sample.test.js"), "export default true;\n", "utf8");
+  fs.writeFileSync(
+    path.join(cwd, "src", "commands", "sample.js"),
+    "export function sample() {\n  return 1;\n}\n",
+    "utf8",
+  );
+  fs.writeFileSync(
+    path.join(cwd, "test", "commands", "sample.test.js"),
+    "export default true;\n",
+    "utf8",
+  );
 
   const result = await runCommand([
     "review",
@@ -204,7 +224,7 @@ test("review passes when a source file has a mirrored test and no warnings", asy
     "--path",
     "src/commands/sample.js",
     "--format",
-    "json"
+    "json",
   ]);
   const payload = JSON.parse(result.stdout);
 
@@ -231,7 +251,7 @@ test("review can infer targets from git working tree changes", async () => {
     "--sprint",
     "sprint-001",
     "--format",
-    "json"
+    "json",
   ]);
   const payload = JSON.parse(result.stdout);
 

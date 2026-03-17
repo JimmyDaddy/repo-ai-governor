@@ -1,14 +1,14 @@
+import { SlotConflictError, resolveApplicableSlots } from "../slots/runtime.js";
+import { cloneValue, isPlainObject } from "../utils/common.js";
 import {
-  resolveWorkflowTemplate,
   type LocalizedText,
   type WorkflowConfig,
   type WorkflowExecutor,
   type WorkflowStage,
   type WorkflowTemplate,
+  resolveWorkflowTemplate,
   validateWorkflowTemplate,
 } from "./template-model.js";
-import { SlotConflictError, resolveApplicableSlots } from "../slots/runtime.js";
-import { cloneValue, isPlainObject } from "../utils/common.js";
 
 type GenericRecord = Record<string, unknown>;
 

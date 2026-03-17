@@ -12,7 +12,7 @@ function parseArguments(argv) {
   const options = {
     cwd: process.cwd(),
     paths: [...DEFAULT_SCAN_DIRECTORIES],
-    format: "summary"
+    format: "summary",
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -40,7 +40,6 @@ function parseArguments(argv) {
 
     if (token === "--format=json") {
       options.format = "json";
-      continue;
     }
   }
 
@@ -111,7 +110,7 @@ function analyzeFile(filePath, cwd) {
     sourceText,
     ts.ScriptTarget.ESNext,
     true,
-    getScriptKind(filePath)
+    getScriptKind(filePath),
   );
   const lines = sourceText.split(/\r?\n/);
   const findings = [];
@@ -136,7 +135,7 @@ function analyzeFile(filePath, cwd) {
             line: position.line + 1,
             type: usageType,
             message:
-              'Missing allow comment. Add `// dynamic-import-allowed: reason` near this dependency load.'
+              "Missing allow comment. Add `// dynamic-import-allowed: reason` near this dependency load.",
           });
         }
       }
@@ -151,12 +150,12 @@ function analyzeFile(filePath, cwd) {
 
 function writeSummary(payload) {
   process.stdout.write(
-    [
+    `${[
       "dynamic-import-usage-check",
       `status=${payload.status}`,
       `files=${payload.fileCount}`,
-      `findings=${payload.findings.length}`
-    ].join("\n") + "\n"
+      `findings=${payload.findings.length}`,
+    ].join("\n")}\n`,
   );
 }
 
@@ -175,7 +174,7 @@ function main() {
     cwd,
     paths: options.paths,
     fileCount: files.length,
-    findings
+    findings,
   };
 
   if (options.format === "json") {
@@ -187,7 +186,7 @@ function main() {
   if (findings.length > 0) {
     for (const finding of findings) {
       process.stderr.write(
-        `${finding.file}:${finding.line} [${finding.type}] ${finding.message}\n`
+        `${finding.file}:${finding.line} [${finding.type}] ${finding.message}\n`,
       );
     }
 

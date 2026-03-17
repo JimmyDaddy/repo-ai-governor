@@ -1,7 +1,7 @@
-import { test } from "vitest";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import { test } from "vitest";
 
 const skillDir = path.resolve(".codex/skills/workspace-delivery-finisher");
 const skillFile = path.join(skillDir, "SKILL.md");

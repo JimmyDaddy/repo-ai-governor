@@ -1,9 +1,9 @@
-import { test } from "vitest";
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { spawnSync } from "node:child_process";
+import { test } from "vitest";
 
 type AnyRecord = Record<string, any>;
 
@@ -17,8 +17,16 @@ function createTempWorkspace() {
 function writeRequiredTypeDirectories(workspace: string) {
   fs.mkdirSync(path.join(workspace, "src", "types", "interfaces"), { recursive: true });
   fs.mkdirSync(path.join(workspace, "src", "types", "aliases"), { recursive: true });
-  fs.writeFileSync(path.join(workspace, "src", "types", "interfaces", "index.ts"), "export {};\n", "utf8");
-  fs.writeFileSync(path.join(workspace, "src", "types", "aliases", "index.ts"), "export {};\n", "utf8");
+  fs.writeFileSync(
+    path.join(workspace, "src", "types", "interfaces", "index.ts"),
+    "export {};\n",
+    "utf8",
+  );
+  fs.writeFileSync(
+    path.join(workspace, "src", "types", "aliases", "index.ts"),
+    "export {};\n",
+    "utf8",
+  );
 }
 
 function writeWhitelist(workspace: string, payload: AnyRecord) {
@@ -27,13 +35,13 @@ function writeWhitelist(workspace: string, payload: AnyRecord) {
   fs.writeFileSync(
     path.join(directory, "type-governance-whitelist.json"),
     JSON.stringify(payload, null, 2),
-    "utf8"
+    "utf8",
   );
 }
 
 function runTypeGovernanceGate(cwd: string) {
   return spawnSync(process.execPath, [SCRIPT_PATH, "--cwd", cwd, "--format=json"], {
-    encoding: "utf8"
+    encoding: "utf8",
   });
 }
 
@@ -50,14 +58,8 @@ test("type governance gate fails for object-shape type alias without allow comme
   writeRequiredTypeDirectories(workspace);
   fs.writeFileSync(
     path.join(workspace, "src", "types", "aliases", "user.type.ts"),
-    [
-      "export type User = {",
-      "  id: string;",
-      "  name: string;",
-      "};",
-      ""
-    ].join("\n"),
-    "utf8"
+    ["export type User = {", "  id: string;", "  name: string;", "};", ""].join("\n"),
+    "utf8",
   );
 
   try {
@@ -68,7 +70,7 @@ test("type governance gate fails for object-shape type alias without allow comme
     assert.equal(payload.status, "fail");
     assert.equal(
       payload.findings.some((finding: AnyRecord) => finding.code === "type_shape_alias_forbidden"),
-      true
+      true,
     );
   } finally {
     fs.rmSync(workspace, { recursive: true, force: true });
@@ -86,9 +88,9 @@ test("type governance gate allows object-shape type alias with explicit allow co
       "  id: string;",
       "  enabled: boolean;",
       "};",
-      ""
+      "",
     ].join("\n"),
-    "utf8"
+    "utf8",
   );
 
   try {
@@ -107,13 +109,8 @@ test("type governance gate fails when declarations remain outside managed direct
   writeRequiredTypeDirectories(workspace);
   fs.writeFileSync(
     path.join(workspace, "src", "legacy.ts"),
-    [
-      "export interface LegacyRecord {",
-      "  id: string;",
-      "}",
-      ""
-    ].join("\n"),
-    "utf8"
+    ["export interface LegacyRecord {", "  id: string;", "}", ""].join("\n"),
+    "utf8",
   );
 
   try {
@@ -124,9 +121,9 @@ test("type governance gate fails when declarations remain outside managed direct
     assert.equal(payload.status, "fail");
     assert.equal(
       payload.findings.some(
-        (finding: AnyRecord) => finding.code === "type_declaration_outside_managed_dirs"
+        (finding: AnyRecord) => finding.code === "type_declaration_outside_managed_dirs",
       ),
-      true
+      true,
     );
   } finally {
     fs.rmSync(workspace, { recursive: true, force: true });
@@ -138,21 +135,16 @@ test("type governance gate allows legacy declaration paths through whitelist", (
   writeRequiredTypeDirectories(workspace);
   fs.writeFileSync(
     path.join(workspace, "src", "legacy.ts"),
-    [
-      "export interface LegacyRecord {",
-      "  id: string;",
-      "}",
-      ""
-    ].join("\n"),
-    "utf8"
+    ["export interface LegacyRecord {", "  id: string;", "}", ""].join("\n"),
+    "utf8",
   );
   writeWhitelist(workspace, {
     pathAllowList: [
       {
         path: "src/legacy.ts",
-        reason: "migration backlog"
-      }
-    ]
+        reason: "migration backlog",
+      },
+    ],
   });
 
   try {

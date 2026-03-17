@@ -29,7 +29,7 @@ function parseArguments(argv) {
     scanDir: DEFAULT_SCAN_DIR,
     interfacesDir: DEFAULT_INTERFACES_DIR,
     aliasesDir: DEFAULT_ALIASES_DIR,
-    whitelistPath: DEFAULT_WHITELIST_PATH
+    whitelistPath: DEFAULT_WHITELIST_PATH,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -82,7 +82,7 @@ function loadWhitelist(cwd, whitelistPath) {
   if (!fs.existsSync(resolvedPath)) {
     return {
       configPath: normalizeRelativePath(path.relative(cwd, resolvedPath)),
-      pathAllowList: new Set()
+      pathAllowList: new Set(),
     };
   }
 
@@ -104,7 +104,7 @@ function loadWhitelist(cwd, whitelistPath) {
 
   return {
     configPath: normalizeRelativePath(path.relative(cwd, resolvedPath)),
-    pathAllowList: new Set(normalizedEntries)
+    pathAllowList: new Set(normalizedEntries),
   };
 }
 
@@ -171,7 +171,7 @@ function analyzeFile(filePath, cwd) {
     sourceText,
     ts.ScriptTarget.ESNext,
     true,
-    getScriptKind(filePath)
+    getScriptKind(filePath),
   );
   const relativePath = normalizeRelativePath(path.relative(cwd, filePath));
   const lines = sourceText.split(/\r?\n/);
@@ -186,7 +186,7 @@ function analyzeFile(filePath, cwd) {
         name: node.name.text,
         line: position.line + 1,
         isObjectShape: ts.isTypeLiteralNode(unwrappedType),
-        hasAllowComment: hasAllowComment(lines, position.line)
+        hasAllowComment: hasAllowComment(lines, position.line),
       });
     }
 
@@ -194,7 +194,7 @@ function analyzeFile(filePath, cwd) {
       const position = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
       interfaces.push({
         name: node.name.text,
-        line: position.line + 1
+        line: position.line + 1,
       });
     }
 
@@ -206,19 +206,19 @@ function analyzeFile(filePath, cwd) {
   return {
     file: relativePath,
     typeAliases,
-    interfaces
+    interfaces,
   };
 }
 
 function writeSummary(payload) {
   process.stdout.write(
-    [
+    `${[
       "type-governance-check",
       `status=${payload.status}`,
       `scanDir=${payload.scanDir}`,
       `files=${payload.fileCount}`,
-      `findings=${payload.findings.length}`
-    ].join("\n") + "\n"
+      `findings=${payload.findings.length}`,
+    ].join("\n")}\n`,
   );
 }
 
@@ -236,10 +236,7 @@ function main() {
     const whitelist = loadWhitelist(cwd, options.whitelistPath);
     const findings = [];
 
-    const requiredFiles = [
-      `${interfacesDir}/index.ts`,
-      `${aliasesDir}/index.ts`
-    ];
+    const requiredFiles = [`${interfacesDir}/index.ts`, `${aliasesDir}/index.ts`];
 
     for (const requiredFile of requiredFiles) {
       if (!fs.existsSync(path.resolve(cwd, requiredFile))) {
@@ -247,7 +244,7 @@ function main() {
           code: "types_index_missing",
           file: requiredFile,
           line: 1,
-          message: `Required type export aggregator is missing: ${requiredFile}`
+          message: `Required type export aggregator is missing: ${requiredFile}`,
         });
       }
     }
@@ -269,7 +266,7 @@ function main() {
           code: "interface_file_name_invalid",
           file: analysis.file,
           line: 1,
-          message: `Interface files must end with .interface.ts: ${analysis.file}`
+          message: `Interface files must end with .interface.ts: ${analysis.file}`,
         });
       }
 
@@ -278,7 +275,7 @@ function main() {
           code: "alias_file_name_invalid",
           file: analysis.file,
           line: 1,
-          message: `Type alias files must end with .type.ts: ${analysis.file}`
+          message: `Type alias files must end with .type.ts: ${analysis.file}`,
         });
       }
 
@@ -288,7 +285,7 @@ function main() {
             code: "interface_dir_contains_type_alias",
             file: analysis.file,
             line: alias.line,
-            message: `Type alias "${alias.name}" should be placed in ${aliasesDir}.`
+            message: `Type alias "${alias.name}" should be placed in ${aliasesDir}.`,
           });
         }
       }
@@ -299,7 +296,7 @@ function main() {
             code: "alias_dir_contains_interface",
             file: analysis.file,
             line: declaration.line,
-            message: `Interface "${declaration.name}" should be placed in ${interfacesDir}.`
+            message: `Interface "${declaration.name}" should be placed in ${interfacesDir}.`,
           });
         }
       }
@@ -309,7 +306,7 @@ function main() {
           code: "type_declaration_outside_managed_dirs",
           file: analysis.file,
           line: 1,
-          message: `Move type/interface declarations into ${interfacesDir} or ${aliasesDir}.`
+          message: `Move type/interface declarations into ${interfacesDir} or ${aliasesDir}.`,
         });
       }
 
@@ -322,7 +319,7 @@ function main() {
           code: "type_shape_alias_forbidden",
           file: analysis.file,
           line: alias.line,
-          message: `Object structure contract "${alias.name}" must use interface. Add // type-shape-allowed: reason only for explicit exceptions.`
+          message: `Object structure contract "${alias.name}" must use interface. Add // type-shape-allowed: reason only for explicit exceptions.`,
         });
       }
     }
@@ -335,7 +332,7 @@ function main() {
       aliasesDir,
       whitelistPath: whitelist.configPath,
       fileCount: analyses.length,
-      findings
+      findings,
     };
 
     if (options.format === "json") {
@@ -346,7 +343,9 @@ function main() {
 
     if (findings.length > 0) {
       for (const finding of findings) {
-        process.stderr.write(`${finding.file}:${finding.line} [${finding.code}] ${finding.message}\n`);
+        process.stderr.write(
+          `${finding.file}:${finding.line} [${finding.code}] ${finding.message}\n`,
+        );
       }
       process.exitCode = 1;
     }

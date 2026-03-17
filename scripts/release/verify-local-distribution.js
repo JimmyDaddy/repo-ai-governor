@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
 
 const ROOT_DIR = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..", "..");
 const ROOT_PACKAGE_JSON_PATH = path.join(ROOT_DIR, "package.json");
@@ -29,15 +29,15 @@ function runNpm(argumentsList, cwd) {
     encoding: "utf8",
     env: {
       ...process.env,
-      PATH: `/opt/homebrew/bin:${process.env.PATH ?? ""}`
-    }
+      PATH: `/opt/homebrew/bin:${process.env.PATH ?? ""}`,
+    },
   });
 }
 
 function parseArguments(argv) {
   return {
     format: argv.includes("--format=json") ? "json" : "summary",
-    keepArtifacts: argv.includes("--keep-artifacts")
+    keepArtifacts: argv.includes("--keep-artifacts"),
   };
 }
 
@@ -71,12 +71,12 @@ function main() {
       {
         name: "repo-ai-governor-install-smoke",
         version: "1.0.0",
-        private: true
+        private: true,
       },
       null,
-      2
+      2,
     ),
-    "utf8"
+    "utf8",
   );
 
   runNpm(["install", tarballPath], installDir);
@@ -85,25 +85,23 @@ function main() {
   const installedPackageJson = JSON.parse(fs.readFileSync(installedPackageJsonPath, "utf8"));
   const resolvedBinEntry = installedPackageJson.bin?.["repo-ai-governor"] ?? null;
   const resolvedBinEntryPath =
-    typeof resolvedBinEntry === "string"
-      ? path.join(installedPackagePath, resolvedBinEntry)
-      : null;
+    typeof resolvedBinEntry === "string" ? path.join(installedPackagePath, resolvedBinEntry) : null;
 
   const helpOutput = execFileSync("npx", ["--no-install", "repo-ai-governor", "--help"], {
     cwd: installDir,
     encoding: "utf8",
     env: {
       ...process.env,
-      PATH: `/opt/homebrew/bin:${process.env.PATH ?? ""}`
-    }
+      PATH: `/opt/homebrew/bin:${process.env.PATH ?? ""}`,
+    },
   });
   const versionOutput = execFileSync("npx", ["--no-install", "repo-ai-governor", "--version"], {
     cwd: installDir,
     encoding: "utf8",
     env: {
       ...process.env,
-      PATH: `/opt/homebrew/bin:${process.env.PATH ?? ""}`
-    }
+      PATH: `/opt/homebrew/bin:${process.env.PATH ?? ""}`,
+    },
   });
 
   const checks = {
@@ -112,7 +110,7 @@ function main() {
     distEntrypoint:
       resolvedBinEntry === EXPECTED_BIN_ENTRY &&
       resolvedBinEntryPath !== null &&
-      fs.existsSync(resolvedBinEntryPath)
+      fs.existsSync(resolvedBinEntryPath),
   };
   const failedChecks = Object.entries(checks)
     .filter(([, passed]) => !passed)
@@ -126,7 +124,7 @@ function main() {
     binEntry: resolvedBinEntry,
     expectedBinEntry: EXPECTED_BIN_ENTRY,
     checks,
-    failedChecks
+    failedChecks,
   };
 
   if (!options.keepArtifacts) {
@@ -140,14 +138,14 @@ function main() {
   }
 
   process.stdout.write(
-    [
+    `${[
       "local-distribution-check",
       `status=${payload.status}`,
       `tarball=${payload.tarball}`,
       `help=${payload.checks.help}`,
       `version=${payload.checks.version}`,
-      `distEntrypoint=${payload.checks.distEntrypoint}`
-    ].join("\n") + "\n"
+      `distEntrypoint=${payload.checks.distEntrypoint}`,
+    ].join("\n")}\n`,
   );
 
   if (payload.status !== "pass") {

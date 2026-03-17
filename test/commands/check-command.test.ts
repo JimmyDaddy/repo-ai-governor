@@ -1,8 +1,8 @@
-import { test } from "vitest";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { test } from "vitest";
 import YAML from "yaml";
 import { runCli } from "../../src/cli/index.js";
 import { EXIT_CODES } from "../../src/cli/runtime/exit-codes.js";
@@ -27,7 +27,7 @@ function createBufferedStream() {
     },
     toString() {
       return chunks.join("");
-    }
+    },
   };
 }
 
@@ -39,7 +39,7 @@ async function runCommand(argv: any) {
   return {
     exitCode,
     stdout: stdout.toString(),
-    stderr: stderr.toString()
+    stderr: stderr.toString(),
   };
 }
 
@@ -55,7 +55,7 @@ async function bootstrapRepo(cwd: any) {
     "--adapter",
     "codex",
     "--format",
-    "json"
+    "json",
   ]);
 
   assert.equal(initResult.exitCode, EXIT_CODES.success);
@@ -71,7 +71,7 @@ async function bootstrapRepo(cwd: any) {
     "--title",
     "Implement governance checks",
     "--format",
-    "json"
+    "json",
   ]);
 
   assert.equal(planResult.exitCode, EXIT_CODES.success);
@@ -90,7 +90,7 @@ test("check passes on generated planning artifacts", async () => {
     "--sprint",
     "sprint-001",
     "--format",
-    "json"
+    "json",
   ]);
   const payload = JSON.parse(result.stdout);
 
@@ -125,15 +125,20 @@ test("check fails when the plan is missing required governance sections", async 
     "--sprint",
     "sprint-001",
     "--format",
-    "json"
+    "json",
   ]);
   const payload = JSON.parse(result.stdout);
-  const acceptanceFinding = payload.checks.find((check: any) => check.id === "check.plan.section.acceptance");
+  const acceptanceFinding = payload.checks.find(
+    (check: any) => check.id === "check.plan.section.acceptance",
+  );
 
   assert.equal(result.exitCode, EXIT_CODES.businessCheckFailed);
   assert.equal(payload.status, "fail");
   assert.equal(payload.workflow.stages.find((stage: any) => stage.id === "plan")?.status, "failed");
-  assert.equal(payload.workflow.stages.find((stage: any) => stage.id === "breakdown")?.status, "blocked");
+  assert.equal(
+    payload.workflow.stages.find((stage: any) => stage.id === "breakdown")?.status,
+    "blocked",
+  );
   assert.equal(acceptanceFinding?.status, "fail");
 });
 
@@ -152,7 +157,7 @@ test("check can write a report file and warns when changed-only falls back to fu
     "--changed-only",
     "--write-report",
     "--format",
-    "json"
+    "json",
   ]);
   const payload = JSON.parse(result.stdout);
   const reportFilePath = path.join(cwd, ".repo-ai-governor/reports/latest.json");
@@ -184,8 +189,8 @@ test("check exposes active slot runtime details when enabled slots match a stage
       "  source: project-local",
       "  slotType: documentation-output",
       "  name:",
-      '    zh-CN: 检查方案插槽',
-      '    en-US: Check Plan Slot',
+      "    zh-CN: 检查方案插槽",
+      "    en-US: Check Plan Slot",
       "trigger:",
       "  match: all",
       "  when:",
@@ -201,8 +206,8 @@ test("check exposes active slot runtime details when enabled slots match a stage
       "      promptKey: plan-check-checklist",
       "checks:",
       "  before:",
-      "    - 检查 plan 阶段是否命中自定义插槽"
-    ].join("\n")
+      "    - 检查 plan 阶段是否命中自定义插槽",
+    ].join("\n"),
   );
 
   const result = await runCommand([
@@ -214,12 +219,15 @@ test("check exposes active slot runtime details when enabled slots match a stage
     "--sprint",
     "sprint-001",
     "--format",
-    "json"
+    "json",
   ]);
   const payload = JSON.parse(result.stdout);
   const planStage = payload.workflow.stages.find((stage: any) => stage.id === "plan");
 
   assert.equal(result.exitCode, EXIT_CODES.success);
-  assert.deepEqual(planStage?.slots.active.map((slot: any) => slot.id), ["check-plan-slot"]);
+  assert.deepEqual(
+    planStage?.slots.active.map((slot: any) => slot.id),
+    ["check-plan-slot"],
+  );
   assert.deepEqual(planStage?.slots.injections.aiPromptKeys, ["plan-check-checklist"]);
 });

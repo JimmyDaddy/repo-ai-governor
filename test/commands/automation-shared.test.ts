@@ -1,24 +1,24 @@
-import { test } from "vitest";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { test } from "vitest";
 import {
   findPatternEvidence,
   normalizeRiskTag,
   normalizeStringList,
   parseRiskTagList,
   readTextFileIfExists,
-  toPositiveInteger
+  toPositiveInteger,
 } from "../../src/commands/automation-shared.js";
 
 test("automation shared helpers normalize and parse risk tags", () => {
   assert.equal(normalizeRiskTag("Dangerous-Command"), "dangerous_command");
   assert.deepEqual(normalizeStringList(["a", "a", " b "]), ["a", "b"]);
-  assert.deepEqual(
-    parseRiskTagList(["dangerous-command, infra_or_deploy", "dangerous_command"]),
-    ["dangerous_command", "infra_or_deploy"]
-  );
+  assert.deepEqual(parseRiskTagList(["dangerous-command, infra_or_deploy", "dangerous_command"]), [
+    "dangerous_command",
+    "infra_or_deploy",
+  ]);
 });
 
 test("automation shared helpers resolve number fallback and pattern evidence", () => {

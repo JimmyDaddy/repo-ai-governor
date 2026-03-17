@@ -1,10 +1,10 @@
-import Ajv2020Import from "ajv/dist/2020.js";
 import type { ErrorObject, ValidateFunction } from "ajv";
 import addFormatsImport from "ajv-formats";
+import Ajv2020Import from "ajv/dist/2020.js";
+import { cloneValue } from "../../utils/common.js";
+import { ConfigurationValidationError } from "../errors.js";
 import { loadSchemaBundle } from "./index.js";
 import type { JsonSchemaDocument, SchemaName } from "./index.js";
-import { ConfigurationValidationError } from "../errors.js";
-import { cloneValue } from "../../utils/common.js";
 
 type ValidationOptions = {
   clone?: boolean;

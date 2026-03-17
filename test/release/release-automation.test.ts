@@ -1,9 +1,9 @@
-import { test } from "vitest";
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
+import { test } from "vitest";
 
 const ROOT_DIR = path.resolve(".");
 
@@ -14,12 +14,12 @@ test("render-release-notes extracts a version section from CHANGELOG", () => {
       path.join(ROOT_DIR, "scripts", "release", "render-release-notes.js"),
       "--version",
       "0.1.0",
-      "--format=json"
+      "--format=json",
     ],
     {
       cwd: ROOT_DIR,
-      encoding: "utf8"
-    }
+      encoding: "utf8",
+    },
   );
   const payload = JSON.parse(output);
 
@@ -83,12 +83,12 @@ test("render-release-notes can write release notes to an output file", () => {
       "--version",
       "0.1.0",
       "--out",
-      outputPath
+      outputPath,
     ],
     {
       cwd: ROOT_DIR,
-      encoding: "utf8"
-    }
+      encoding: "utf8",
+    },
   );
 
   const content = fs.readFileSync(outputPath, "utf8");

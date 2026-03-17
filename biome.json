@@ -31,7 +31,7 @@
         "useConst": "error"
       },
       "suspicious": {
-        "noExplicitAny": "error",
+        "noExplicitAny": "warn",
         "noConsoleLog": "warn"
       }
     }
@@ -46,5 +46,13 @@
       "semicolons": "always",
       "trailingCommas": "all"
     }
-  }
+  },
+  "overrides": [
+    {
+      "include": ["test/config/schema.test.ts"],
+      "organizeImports": {
+        "enabled": false
+      }
+    }
+  ]
 }

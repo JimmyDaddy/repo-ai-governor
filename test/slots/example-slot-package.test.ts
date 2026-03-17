@@ -1,7 +1,7 @@
-import { test } from "vitest";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import { test } from "vitest";
 import YAML from "yaml";
 import { listSlotTriggerTargets, validateSlotDefinition } from "../../src/slots/slot-model.js";
 
@@ -23,12 +23,8 @@ test("official example slot package validates both sample slots", () => {
 });
 
 test("official example slot package exposes review and report trigger targets", () => {
-  const securityTargets = listSlotTriggerTargets(
-    readSlotExample("official-security-review.yaml")
-  );
-  const docsTargets = listSlotTriggerTargets(
-    readSlotExample("official-documentation-output.yaml")
-  );
+  const securityTargets = listSlotTriggerTargets(readSlotExample("official-security-review.yaml"));
+  const docsTargets = listSlotTriggerTargets(readSlotExample("official-documentation-output.yaml"));
 
   assert.deepEqual(securityTargets.commands, ["review", "review-verify"]);
   assert.deepEqual(docsTargets.stages, ["plan", "report"]);

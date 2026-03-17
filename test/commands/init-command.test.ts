@@ -1,8 +1,8 @@
-import { test } from "vitest";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { test } from "vitest";
 import YAML from "yaml";
 import { runCli } from "../../src/cli/index.js";
 import { EXIT_CODES } from "../../src/cli/runtime/exit-codes.js";
@@ -27,7 +27,7 @@ function createBufferedStream() {
     },
     toString() {
       return chunks.join("");
-    }
+    },
   };
 }
 
@@ -39,7 +39,7 @@ async function runCommand(argv: any) {
   return {
     exitCode,
     stdout: stdout.toString(),
-    stderr: stderr.toString()
+    stderr: stderr.toString(),
   };
 }
 
@@ -57,7 +57,7 @@ test("init dry-run renders planned bootstrap files without writing to disk", asy
     "codex",
     "--format",
     "json",
-    "--dry-run"
+    "--dry-run",
   ]);
   const payload = JSON.parse(result.stdout);
   const plannedFiles = new Set(payload.files.map((entry: any) => entry.path));
@@ -69,7 +69,10 @@ test("init dry-run renders planned bootstrap files without writing to disk", asy
   assert.deepEqual(payload.enabledAdapters, ["codex"]);
   assert.equal(fs.existsSync(path.join(cwd, ".repo-ai-governor/governor.yaml")), false);
   assert.equal(fs.existsSync(path.join(cwd, "AGENTS.md")), false);
-  assert.equal(fs.existsSync(path.join(cwd, ".repo-ai-governor/context/current-context.md")), false);
+  assert.equal(
+    fs.existsSync(path.join(cwd, ".repo-ai-governor/context/current-context.md")),
+    false,
+  );
   assert.equal(fs.existsSync(path.join(cwd, "docs/mvp/sprint-001/plan.md")), false);
   assert.ok(plannedFiles.has(".repo-ai-governor/governor.yaml"));
   assert.ok(plannedFiles.has("AGENTS.md"));
@@ -94,18 +97,18 @@ test("init creates config agents and sprint scaffolding for a new repository", a
     "--adapter",
     "codex",
     "--format",
-    "json"
+    "json",
   ]);
   const configFilePath = path.join(cwd, ".repo-ai-governor/governor.yaml");
   const configDocument = YAML.parse(fs.readFileSync(configFilePath, "utf8"));
   const agentsContent = fs.readFileSync(path.join(cwd, "AGENTS.md"), "utf8");
   const currentContextContent = fs.readFileSync(
     path.join(cwd, ".repo-ai-governor/context/current-context.md"),
-    "utf8"
+    "utf8",
   );
   const checklistContent = fs.readFileSync(
     path.join(cwd, "docs/mvp/sprint-001/tasks/checklist.md"),
-    "utf8"
+    "utf8",
   );
   const csvContent = fs.readFileSync(path.join(cwd, "docs/mvp/sprint-001/tasks/tasks.csv"), "utf8");
   const payload = JSON.parse(result.stdout);
@@ -126,7 +129,10 @@ test("init creates config agents and sprint scaffolding for a new repository", a
   assert.match(currentContextContent, /项目：`mvp`/);
   assert.match(currentContextContent, /Sprint：`sprint-001`/);
   assert.match(checklistContent, /\*\*TK-001\*\*/);
-  assert.match(csvContent, /^execution_id,task_id,title,owner,priority,due_date,status,project,sprint,plan,result,verify,review_delta,recorded_at/m);
+  assert.match(
+    csvContent,
+    /^execution_id,task_id,title,owner,priority,due_date,status,project,sprint,plan,result,verify,review_delta,recorded_at/m,
+  );
 });
 
 test("init refuses to overwrite existing bootstrap targets without force", async () => {
@@ -143,13 +149,13 @@ test("init refuses to overwrite existing bootstrap targets without force", async
     "--sprint",
     "sprint-001",
     "--adapter",
-    "codex"
+    "codex",
   ]);
 
   assert.equal(result.exitCode, EXIT_CODES.configError);
   assert.match(
     result.stderr,
-    /(Refusing to overwrite existing init targets without --force|检测到现有初始化目标文件；如需覆盖请显式传入 --force)/
+    /(Refusing to overwrite existing init targets without --force|检测到现有初始化目标文件；如需覆盖请显式传入 --force)/,
   );
 });
 
@@ -168,22 +174,25 @@ test("init can render locale-specific bootstrap templates", async () => {
     "--locale",
     "en-US",
     "--format",
-    "json"
+    "json",
   ]);
   const indexContent = fs.readFileSync(path.join(cwd, "docs/mvp/sprint-001/index.md"), "utf8");
   const planContent = fs.readFileSync(path.join(cwd, "docs/mvp/sprint-001/plan.md"), "utf8");
   const agentsContent = fs.readFileSync(path.join(cwd, "AGENTS.md"), "utf8");
   const currentContextContent = fs.readFileSync(
     path.join(cwd, ".repo-ai-governor/context/current-context.md"),
-    "utf8"
+    "utf8",
   );
   const checklistContent = fs.readFileSync(
     path.join(cwd, "docs/mvp/sprint-001/tasks/checklist.md"),
-    "utf8"
+    "utf8",
   );
 
   assert.equal(result.exitCode, EXIT_CODES.success);
-  assert.match(agentsContent, /Read `.repo-ai-governor\/context\/current-context.md` before acting/);
+  assert.match(
+    agentsContent,
+    /Read `.repo-ai-governor\/context\/current-context.md` before acting/,
+  );
   assert.match(currentContextContent, /# Workspace Current Context/);
   assert.match(indexContent, /This directory stores execution artifacts/);
   assert.match(planContent, /Bootstrap repository governance/);

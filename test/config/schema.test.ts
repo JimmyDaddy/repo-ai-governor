@@ -1,8 +1,8 @@
 // @ts-nocheck
-import { test } from "vitest";
 import assert from "node:assert/strict";
-import Ajv2020 from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
+import Ajv2020 from "ajv/dist/2020.js";
+import { test } from "vitest";
 import {
   CONFIG_SCHEMA_VERSION,
   SCHEMA_FILE_NAMES,

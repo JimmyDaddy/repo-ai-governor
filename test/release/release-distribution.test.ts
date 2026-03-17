@@ -1,7 +1,7 @@
-import { test } from "vitest";
 import assert from "node:assert/strict";
-import path from "node:path";
 import { execFileSync } from "node:child_process";
+import path from "node:path";
+import { test } from "vitest";
 
 const ROOT_DIR = path.resolve(".");
 
@@ -11,8 +11,8 @@ test("release readiness script validates package metadata and dry-run tarball co
     [path.join(ROOT_DIR, "scripts", "release", "check-release-ready.js"), "--format=json"],
     {
       cwd: ROOT_DIR,
-      encoding: "utf8"
-    }
+      encoding: "utf8",
+    },
   );
   const payload = JSON.parse(output);
 
@@ -43,8 +43,8 @@ test("local distribution verification packs installs and executes the CLI", () =
     [path.join(ROOT_DIR, "scripts", "release", "verify-local-distribution.js"), "--format=json"],
     {
       cwd: ROOT_DIR,
-      encoding: "utf8"
-    }
+      encoding: "utf8",
+    },
   );
   const payload = JSON.parse(output);
 

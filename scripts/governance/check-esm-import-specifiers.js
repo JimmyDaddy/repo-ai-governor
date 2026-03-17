@@ -5,18 +5,12 @@ import path from "node:path";
 
 const SOURCE_EXTENSIONS = new Set([".js", ".mjs", ".cjs"]);
 const DEFAULT_SCAN_DIRECTORIES = ["src", "test", "scripts", "bin"];
-const ALLOWED_RELATIVE_IMPORT_EXTENSIONS = new Set([
-  ".js",
-  ".mjs",
-  ".cjs",
-  ".json",
-  ".node"
-]);
+const ALLOWED_RELATIVE_IMPORT_EXTENSIONS = new Set([".js", ".mjs", ".cjs", ".json", ".node"]);
 
 function parseArguments(argv) {
   const options = {
     cwd: process.cwd(),
-    paths: [...DEFAULT_SCAN_DIRECTORIES]
+    paths: [...DEFAULT_SCAN_DIRECTORIES],
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -76,7 +70,7 @@ function collectImportSpecifiers(content) {
   const patterns = [
     /\bimport\s+(?:[\s\S]*?\s+from\s+)?["']([^"']+)["']/g,
     /\bexport\s+[\s\S]*?\s+from\s+["']([^"']+)["']/g,
-    /\bimport\s*\(\s*["']([^"']+)["']\s*\)/g
+    /\bimport\s*\(\s*["']([^"']+)["']\s*\)/g,
   ];
 
   for (const pattern of patterns) {
@@ -118,7 +112,7 @@ function validateRelativeSpecifier(specifier) {
   if (cleanSpecifier.endsWith("/")) {
     return {
       valid: false,
-      reason: "directory import is not allowed"
+      reason: "directory import is not allowed",
     };
   }
 
@@ -128,14 +122,14 @@ function validateRelativeSpecifier(specifier) {
     return {
       valid: false,
       reason: `relative specifier must include one of: ${[
-        ...ALLOWED_RELATIVE_IMPORT_EXTENSIONS
-      ].join(", ")}`
+        ...ALLOWED_RELATIVE_IMPORT_EXTENSIONS,
+      ].join(", ")}`,
     };
   }
 
   return {
     valid: true,
-    reason: null
+    reason: null,
   };
 }
 
@@ -146,13 +140,13 @@ function validateBareSpecifier(specifier) {
   if (!SOURCE_EXTENSIONS.has(extension)) {
     return {
       valid: true,
-      reason: null
+      reason: null,
     };
   }
 
   return {
     valid: false,
-    reason: "non-relative specifier must not end with .js/.mjs/.cjs"
+    reason: "non-relative specifier must not end with .js/.mjs/.cjs",
   };
 }
 
@@ -178,7 +172,7 @@ function main() {
         failures.push({
           file: toRelativePath(cwd, filePath),
           specifier,
-          reason: validation.reason
+          reason: validation.reason,
         });
         continue;
       }
@@ -196,20 +190,20 @@ function main() {
       failures.push({
         file: toRelativePath(cwd, filePath),
         specifier,
-        reason: validation.reason
+        reason: validation.reason,
       });
     }
   }
 
   if (failures.length > 0) {
     process.stdout.write("esm-import-specifier-check\n");
-    process.stdout.write(`status=fail\n`);
+    process.stdout.write("status=fail\n");
     process.stdout.write(`files=${files.length}\n`);
     process.stdout.write(`failures=${failures.length}\n`);
 
     for (const failure of failures) {
       process.stderr.write(
-        `${failure.file}: invalid import specifier "${failure.specifier}" (${failure.reason})\n`
+        `${failure.file}: invalid import specifier "${failure.specifier}" (${failure.reason})\n`,
       );
     }
 

@@ -1,16 +1,16 @@
-import { test } from "vitest";
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
+import { test } from "vitest";
 import YAML from "yaml";
-import { runCli } from "../../src/cli/index.js";
-import { EXIT_CODES } from "../../src/cli/runtime/exit-codes.js";
 import {
   buildCodexAdapterBundle,
-  renderCodexAdapterBundle
+  renderCodexAdapterBundle,
 } from "../../src/adapters/codex-bundle.js";
+import { runCli } from "../../src/cli/index.js";
+import { EXIT_CODES } from "../../src/cli/runtime/exit-codes.js";
 
 type BufferedStream = {
   isTTY: boolean;
@@ -33,7 +33,7 @@ function createBufferedStream(): BufferedStream {
     },
     toString() {
       return chunks.join("");
-    }
+    },
   };
 }
 
@@ -45,7 +45,7 @@ async function runCommand(argv: string[]) {
   return {
     exitCode,
     stdout: stdout.toString(),
-    stderr: stderr.toString()
+    stderr: stderr.toString(),
   };
 }
 
@@ -61,7 +61,7 @@ async function bootstrapRepo(cwd: string) {
     "--adapter",
     "codex",
     "--format",
-    "json"
+    "json",
   ]);
 
   assert.equal(initResult.exitCode, EXIT_CODES.success);
@@ -77,7 +77,7 @@ async function bootstrapRepo(cwd: string) {
     "--title",
     "Render Codex adapter bundle",
     "--format",
-    "json"
+    "json",
   ]);
 
   assert.equal(planResult.exitCode, EXIT_CODES.success);
@@ -104,8 +104,8 @@ test("Codex bundle renders workflow standards and entry files for the current sp
       "  source: official",
       "  slotType: documentation-output",
       "  name:",
-      '    zh-CN: 文档插槽',
-      '    en-US: Documentation Slot',
+      "    zh-CN: 文档插槽",
+      "    en-US: Documentation Slot",
       "trigger:",
       "  match: all",
       "  when:",
@@ -118,9 +118,9 @@ test("Codex bundle renders workflow standards and entry files for the current sp
       "  conflictPolicy: merge",
       "  inject:",
       "    ai:",
-      "      promptKey: documentation-output-checklist"
+      "      promptKey: documentation-output-checklist",
     ].join("\n"),
-    "utf8"
+    "utf8",
   );
 
   const bundle = buildCodexAdapterBundle({
@@ -128,7 +128,7 @@ test("Codex bundle renders workflow standards and entry files for the current sp
     project: "demo",
     sprint: "sprint-001",
     command: "plan",
-    stageId: "plan"
+    stageId: "plan",
   });
 
   assert.equal(bundle.adapter.id, "codex");
@@ -140,7 +140,10 @@ test("Codex bundle renders workflow standards and entry files for the current sp
   assert.equal(entry.currentContext.path, ".repo-ai-governor/context/current-context.md");
   assert.ok(bundle.workflow.selectedStages.includes("plan"));
   assert.ok(bundle.standards.rules.length > 0);
-  assert.deepEqual(bundle.slots.active.map((slot) => slot.id), ["docs-slot"]);
+  assert.deepEqual(
+    bundle.slots.active.map((slot) => slot.id),
+    ["docs-slot"],
+  );
 
   const markdown = renderCodexAdapterBundle(bundle, "markdown");
   assert.match(markdown, /# Codex Governance Bundle/);
@@ -167,12 +170,12 @@ test("Codex bundle rendering script prints markdown for a bootstrapped repositor
       "--command",
       "plan",
       "--stage",
-      "plan"
+      "plan",
     ],
     {
       cwd: path.resolve("."),
-      encoding: "utf8"
-    }
+      encoding: "utf8",
+    },
   );
 
   assert.match(output, /# Codex Governance Bundle/);

@@ -1,9 +1,9 @@
-import { test } from "vitest";
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
+import { test } from "vitest";
 import { runCli } from "../../src/cli/index.js";
 import { EXIT_CODES } from "../../src/cli/runtime/exit-codes.js";
 
@@ -30,7 +30,7 @@ function createBufferedStream(): BufferedStream {
     },
     toString() {
       return chunks.join("");
-    }
+    },
   };
 }
 
@@ -42,7 +42,7 @@ async function runCommand(argv: string[]) {
   return {
     exitCode,
     stdout: stdout.toString(),
-    stderr: stderr.toString()
+    stderr: stderr.toString(),
   };
 }
 
@@ -58,7 +58,7 @@ async function bootstrapRepo(cwd: string) {
     "--adapter",
     "codex",
     "--format",
-    "json"
+    "json",
   ]);
   assert.equal(initResult.exitCode, EXIT_CODES.success);
 
@@ -73,7 +73,7 @@ async function bootstrapRepo(cwd: string) {
     "--title",
     "Governance CI flow",
     "--format",
-    "json"
+    "json",
   ]);
   assert.equal(planResult.exitCode, EXIT_CODES.success);
 }
@@ -88,19 +88,13 @@ test("governance check CI script runs doctor, check, and report generation", asy
       ...process.env,
       REPO_AI_GOVERNOR_CWD: cwd,
       REPO_AI_GOVERNOR_PROJECT: "demo",
-      REPO_AI_GOVERNOR_SPRINT: "sprint-001"
+      REPO_AI_GOVERNOR_SPRINT: "sprint-001",
     },
-    encoding: "utf8"
+    encoding: "utf8",
   });
 
-  assert.equal(
-    fs.existsSync(path.join(cwd, ".repo-ai-governor", "reports", "latest.json")),
-    true
-  );
-  assert.equal(
-    fs.existsSync(path.join(cwd, ".repo-ai-governor", "reports", "latest.md")),
-    true
-  );
+  assert.equal(fs.existsSync(path.join(cwd, ".repo-ai-governor", "reports", "latest.json")), true);
+  assert.equal(fs.existsSync(path.join(cwd, ".repo-ai-governor", "reports", "latest.md")), true);
 });
 
 test("governance review CI script supports strict mode for warning findings", async () => {
@@ -111,7 +105,7 @@ test("governance review CI script supports strict mode for warning findings", as
   fs.writeFileSync(
     path.join(cwd, "src", "example.js"),
     "export function example() {\n  // TODO: refine\n  return 1;\n}\n",
-    "utf8"
+    "utf8",
   );
 
   let failed = false;
@@ -125,10 +119,10 @@ test("governance review CI script supports strict mode for warning findings", as
         REPO_AI_GOVERNOR_PROJECT: "demo",
         REPO_AI_GOVERNOR_SPRINT: "sprint-001",
         REPO_AI_GOVERNOR_REVIEW_PATH: "src/example.js",
-        REPO_AI_GOVERNOR_FAIL_ON_WARNING: "1"
+        REPO_AI_GOVERNOR_FAIL_ON_WARNING: "1",
       },
       encoding: "utf8",
-      stdio: ["ignore", "pipe", "pipe"]
+      stdio: ["ignore", "pipe", "pipe"],
     });
   } catch (error) {
     failed = true;
