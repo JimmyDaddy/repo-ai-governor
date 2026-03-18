@@ -36,6 +36,7 @@
 11. [M1 CLI 桥接回归基线](./milestone-01-m1-core-extraction/sprint-001/cli-bridge-regression-baseline.md)
 12. [M1 Core-Memory 抽离基线](./milestone-01-m1-core-extraction/sprint-002/core-memory-extraction-baseline.md)
 13. [M1 Core-Session 抽离基线](./milestone-01-m1-core-extraction/sprint-002/core-session-extraction-baseline.md)
+14. [M1 Memory-Store-Adapter 抽离基线](./milestone-01-m1-core-extraction/sprint-002/memory-store-adapter-extraction-baseline.md)
 
 ## Program View
 
