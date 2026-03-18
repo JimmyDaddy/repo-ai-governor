@@ -1,7 +1,7 @@
 # Repo AI Governor 可扩展架构图与仓库分层结构
 
 - Status: active
-- Date: 2026-03-18
+- Date: 2026-03-19
 - Role: implementation blueprint
 - Basis:
   - `docs/repo-ai-governor-overall-technical-solution.md`
@@ -72,6 +72,7 @@ flowchart TB
     Audit[Audit Recorder]
     Report[Report Builder]
     Replay[Replay/Explain]
+    CliPresenter[CLI Output Presenter]
   end
 
   subgraph Delivery[Delivery & Operations Layer]
@@ -110,7 +111,9 @@ flowchart TB
   Runtime --> Slots
   Runtime --> StandardsPack
   Runtime --> MemoryManager
-  Runtime --> Audit --> Report --> Replay
+  Runtime --> Audit --> Report --> Replay --> CliPresenter
+  CliPresenter --> CLI
+  CliPresenter --> CI
   Runtime --> Plan
   Runtime --> Checklist
   Runtime --> CSV
@@ -219,6 +222,8 @@ sequenceDiagram
    - 官方/团队/仓库规则分层覆盖，结构化配置统一渲染。
 13. `Artifact Registry & Dependency Resolver`
    - 关键产物生成后统一登记，任务执行前按依赖声明解析并注入上下文。
+14. `CLI Output Presenter`
+   - 统一输出 `pretty/plain/json` 模式渲染，负责终端美化、非交互降级和机器可读稳定性。
 
 ## 5. 目标仓库分层结构（Monorepo）
 
@@ -306,6 +311,9 @@ repo-ai-governor/
         test/
     reporting/
       src/
+        report-builder/
+        replay-explain/
+        cli-output-presenter/
       test/
     shared-types/
       src/
@@ -367,7 +375,7 @@ repo-ai-governor/
 10. `core-runtime` -> 可依赖 `core-process/core-policy/core-role-registry/core-memory/core-session/artifact-registry/notification-dispatcher/config/adapter-sdk/standards/slots/core-audit`。
 11. `adapters/*` -> 仅依赖 `adapter-sdk/shared-types/shared-utils`，不依赖 `apps/cli`。
 12. `standards/slots` -> 不依赖具体 adapter 实现，保持工具无关。
-13. `reporting` -> 只读核心执行结果，不反向控制 runtime。
+13. `reporting` -> 只读核心执行结果，不反向控制 runtime；其内 `cli-output-presenter` 仅负责展示，不承担流程决策。
 14. `shared-*` -> 不依赖业务域模块。
 
 ## 6.1 依赖方向自动化执行备忘（Pending Integration）
@@ -411,6 +419,7 @@ repo-ai-governor/
    - 将现有 codex/copilot/claude 适配拆到 `packages/adapters/*`。
 6. Step 6（入口瘦身）
    - `apps/cli` 只保留命令路由与参数编排，核心逻辑下沉 packages。
+   - CLI 输出渲染统一由 `packages/reporting/src/cli-output-presenter/` 承担，避免命令层分散实现。
 7. Step 7（契约测试）
    - 为 `adapter-sdk`、`memory-store-adapter`、`artifact-registry`、`notification-dispatcher`、`process DSL`、`policy decisions` 建立跨包契约测试。
    - 测试目录基线：`tests/contract/`（契约）、`tests/integration/`（跨包集成）、`tests/e2e/`（端到端链路）。

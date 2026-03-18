@@ -1,7 +1,7 @@
 # Repo AI Governor 工具级总技术方案
 
 - Status: active
-- Date: 2026-03-18
+- Date: 2026-03-19
 - Scope: whole product (tool-level)
 - Basis:
   - `docs/product-requirements-brief.md`
@@ -51,7 +51,7 @@
 ## 4.1 分层视图
 
 1. `CLI & API Entry Layer`
-   - 命令入口、参数解析、执行模式切换。
+   - 命令入口、参数解析、执行模式切换与输出模式编排。
 2. `Config & Schema Layer`
    - 配置加载、Schema 校验、版本兼容与 workspace 根目录解析。
 3. `Memory & Context Layer`
@@ -101,8 +101,10 @@
 3. `Notification Providers`
    - `email/webhook/chat-im/issue-system` 等通知渠道实现。
 4. `Report Builder / Replay`
-   - 执行报告构建、可解释输出与回放支持。
-5. `Artifact Index Store`
+   - 执行报告构建、可解释输出与回放支持，作为 CLI 输出渲染的数据来源。
+5. `CLI Output Presenter`
+   - 将执行结果渲染为 `pretty/plain/json` 三种输出模式，负责终端美化与非交互降级策略。
+6. `Artifact Index Store`
    - 存储产物注册索引（文件/CSV/数据库），支撑依赖查询与版本校验。
 
 ## 4.2.2 Process Compiler IR 契约（Draft v1）
@@ -136,6 +138,23 @@
    - 解析失败按策略触发 `block/escalate/warn`，并写入审计事件。
 5. 默认落盘
    - 建议索引路径：`<workspace_root>/context/artifact-registry/artifacts.csv`（或等价后端）。
+
+## 4.2.4 CLI Output Contract（Draft v1）
+
+1. 输出模式字段
+   - `output_mode`：`pretty/plain/json`，默认策略为 `TTY -> pretty`、`Non-TTY -> plain`。
+2. 控制参数
+   - 最小参数集合：`--output`, `--verbosity`, `--no-color`（或等价参数）。
+3. 模式语义
+   - `pretty`：可读性优先，允许颜色、分段、阶段进度、风险提示与摘要块。
+   - `plain`：纯文本稳定输出，不包含 ANSI 控制符。
+   - `json`：机器可读稳定 schema，供 CI 与外部系统解析。
+4. 错误输出契约
+   - 至少包含 `error_code`, `hint`, `next_action`，并保留人类可读描述文本。
+5. 兼容与回退
+   - 非交互场景必须自动降级为 `plain` 或按显式参数输出 `json`；不得输出不可解析噪声。
+6. 审计关联
+   - 输出摘要应可回链 `execution_id` 与 `execution_session_id`，便于日志审计与回放定位。
 
 ## 4.3 记忆与会话模型
 
@@ -407,6 +426,7 @@
 8. `cancellation_reason`, `timeout_indicator`, `timeout_scope`（可选，命中取消/超时时记录）
 9. `workspace_id`, `workspace_mode`, `workspace_root`（用于跨仓库追踪与审计定位）
 10. `artifact_id`, `artifact_version`, `producer_task_id`, `consumer_task_id`, `dependency_resolution_status`（可选，命中依赖产物注册/解析时记录）
+11. `output_mode`, `is_tty`, `output_locale`（可选，用于输出行为与体验问题回溯）
 
 ## 10. 质量与发布总线
 

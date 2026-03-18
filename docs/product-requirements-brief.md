@@ -2,7 +2,7 @@
 
 - 文档版本：brief-v1
 - 状态：active
-- 日期：2026-03-18
+- 日期：2026-03-19
 - 对齐来源：`docs/product-requirements.md`（完整版）
 - 实施总纲：`docs/repo-ai-governor-overall-technical-solution.md`
 - 工程蓝图：`docs/repo-ai-governor-architecture-and-repo-layering.md`
@@ -50,6 +50,9 @@
 8. Workspace 持久化策略：
    - 每个仓库绑定独立 workspace。
    - 默认 `tool_managed`（工具侧目录）；用户可配置 `repo_local`（仓库 `.repo-ai-governor`）。
+9. CLI 输出治理基线：
+   - 支持 `pretty/plain/json` 三种输出模式。
+   - 本地交互优先可读性，CI/集成优先稳定机器可读性。
 
 ## 5. 必须人工确认的高风险场景
 
@@ -81,6 +84,7 @@
 2. 多 Agent 编排、工具适配、人工闸口三条主线至少覆盖其一且可验证。
 3. 产物与记录路径符合 AGENTS 与上下文规则。
 4. 验证命令遵循 `code_standards.md`。
+5. CLI 输出模式与场景一致：本地可读、CI 可解析、日志可消费。
 
 ## 8. 同步规则（强制）
 
