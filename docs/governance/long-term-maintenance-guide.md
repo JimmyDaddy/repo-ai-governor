@@ -31,9 +31,10 @@ For command-level enforcement, always use `code_standards.md -> Verification Com
 
 ## Pending Gate Integration Memo
 
-1. Prepared script: `scripts/governance/check-monorepo-naming.js`.
-2. Planned scripts:
+1. Prepared scripts:
+   - `scripts/governance/check-monorepo-naming.js`
    - `scripts/governance/check-package-dependency-boundary.js`
+2. Planned script:
    - `scripts/governance/check-monorepo-versioning-policy.js`
 3. Planned wiring target: `code_standards.md -> Verification Commands`.
 4. Current decision: keep scripts as implementation-ready assets and defer activation to a dedicated follow-up window.

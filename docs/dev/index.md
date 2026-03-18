@@ -38,13 +38,15 @@
 13. [M1 Core-Session 抽离基线](./milestone-01-m1-core-extraction/sprint-002/core-session-extraction-baseline.md)
 14. [M1 Memory-Store-Adapter 抽离基线](./milestone-01-m1-core-extraction/sprint-002/memory-store-adapter-extraction-baseline.md)
 15. [M1 Notification-Dispatcher 抽离基线](./milestone-01-m1-core-extraction/sprint-002/notification-dispatcher-extraction-baseline.md)
+16. [M1 依赖方向自动检查（Warning）接入基线](./milestone-01-m1-core-extraction/sprint-002/dependency-direction-warning-gate-baseline.md)
+17. [M1 退出回归与 CR 收口报告](./milestone-01-m1-core-extraction/sprint-002/m1-exit-regression-and-cr-closure-report.md)
 
 ## Program View
 
 | Milestone | Priority | Phase | Steps | Sprints |
 |---|---|---|---|---|
 | M0 基线治理与重构起跑 | P0（已完成） | Phase A/B | Step 1 | 1 |
-| M1 核心包抽离 | P1（进行中） | Phase B | Step 2 | 2 |
+| M1 核心包抽离 | P1（已完成） | Phase B | Step 2 | 2 |
 | M2 Workspace + Memory + Session 稳定化 | P1（进行中） | Phase C | Step 3~5 | 2 |
 | M3 编排引擎与 HITL 闭环 | P1（进行中） | Phase D | Step 4~6 | 2 |
 | M4 适配器模块化与 CLI 瘦身 | P1（进行中） | Phase D | Step 5~6 | 2 |

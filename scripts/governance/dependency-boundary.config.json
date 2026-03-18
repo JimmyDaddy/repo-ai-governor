@@ -1,0 +1,94 @@
+{
+  "scanRoots": ["apps", "packages"],
+  "fileExtensions": [".ts", ".tsx", ".mts", ".cts", ".js", ".mjs", ".cjs"],
+  "excludeDirectories": [".git", "node_modules", "dist", "coverage"],
+  "denyRules": [
+    {
+      "id": "dep.packages_cannot_import_apps",
+      "severity": "blocking",
+      "fromPrefixes": ["packages"],
+      "toPrefixes": ["apps"],
+      "message": "Packages must not import application-layer modules.",
+      "suggestedFix": "Move shared logic into packages and keep apps as entry/router only."
+    },
+    {
+      "id": "dep.memory_providers_cannot_import_apps_or_adapters",
+      "severity": "blocking",
+      "fromPrefixes": ["packages/memory-providers"],
+      "toPrefixes": ["apps", "packages/adapters"],
+      "message": "memory-providers/* can only depend on memory-store-adapter/shared-*.",
+      "suggestedFix": "Route integrations through memory-store-adapter contracts."
+    },
+    {
+      "id": "dep.notification_providers_cannot_import_apps_or_adapters",
+      "severity": "blocking",
+      "fromPrefixes": ["packages/notification-providers"],
+      "toPrefixes": ["apps", "packages/adapters"],
+      "message": "notification-providers/* can only depend on notification-dispatcher/shared-*.",
+      "suggestedFix": "Route integrations through notification-dispatcher contracts."
+    },
+    {
+      "id": "dep.adapters_cannot_import_apps",
+      "severity": "blocking",
+      "fromPrefixes": ["packages/adapters"],
+      "toPrefixes": ["apps"],
+      "message": "adapters/* must not import apps/cli or other app-layer code.",
+      "suggestedFix": "Depend on adapter-sdk/shared-* only."
+    },
+    {
+      "id": "dep.memory_store_adapter_cannot_import_core_runtime",
+      "severity": "major",
+      "fromPrefixes": ["packages/memory-store-adapter"],
+      "toPrefixes": ["packages/core-runtime"],
+      "message": "memory-store-adapter must not depend on core-runtime.",
+      "suggestedFix": "Invert dependency through shared contract or callback interface."
+    },
+    {
+      "id": "dep.notification_dispatcher_cannot_import_core_runtime",
+      "severity": "major",
+      "fromPrefixes": ["packages/notification-dispatcher"],
+      "toPrefixes": ["packages/core-runtime"],
+      "message": "notification-dispatcher must not depend on core-runtime.",
+      "suggestedFix": "Depend on policy/audit/config/shared contracts only."
+    },
+    {
+      "id": "dep.core_memory_cannot_import_memory_providers",
+      "severity": "major",
+      "fromPrefixes": ["packages/core-memory"],
+      "toPrefixes": ["packages/memory-providers"],
+      "message": "core-memory must not depend on concrete memory providers.",
+      "suggestedFix": "Use memory-store-adapter interfaces instead."
+    },
+    {
+      "id": "dep.core_session_cannot_import_adapters",
+      "severity": "major",
+      "fromPrefixes": ["packages/core-session"],
+      "toPrefixes": ["packages/adapters"],
+      "message": "core-session must not depend on adapters/* implementations.",
+      "suggestedFix": "Pass adapter results through runtime/session contracts."
+    },
+    {
+      "id": "dep.shared_packages_cannot_depend_on_domain_packages",
+      "severity": "major",
+      "fromPrefixes": ["packages/shared-types", "packages/shared-utils"],
+      "toPrefixes": [
+        "packages/core-process",
+        "packages/core-policy",
+        "packages/core-role-registry",
+        "packages/core-runtime",
+        "packages/core-memory",
+        "packages/core-session",
+        "packages/core-audit",
+        "packages/memory-store-adapter",
+        "packages/notification-dispatcher",
+        "packages/memory-providers",
+        "packages/notification-providers",
+        "packages/adapters",
+        "apps"
+      ],
+      "message": "shared-* packages must remain domain-agnostic.",
+      "suggestedFix": "Move domain-specific logic to domain packages."
+    }
+  ],
+  "allowList": []
+}

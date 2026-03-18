@@ -100,9 +100,10 @@ node ./dist/bin/repo-ai-governor.js --help >/dev/null
 
 ## Pending Integration Memo
 
-1. Prepared script for future gate integration: `scripts/governance/check-monorepo-naming.js`.
-2. Planned scripts for follow-up integration:
+1. Prepared scripts for future gate integration:
+   - `scripts/governance/check-monorepo-naming.js`
    - `scripts/governance/check-package-dependency-boundary.js`
+2. Planned script for follow-up integration:
    - `scripts/governance/check-monorepo-versioning-policy.js`
 3. Planned command wiring (not active yet):
    - `node ./scripts/governance/check-monorepo-naming.js`

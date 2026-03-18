@@ -16,5 +16,11 @@
   - 执行记录：plan=定义 notification-dispatcher 抽离边界、通知契约与回退策略并形成统一输入;result=已新增 `notification-dispatcher-extraction-baseline.md`，明确职责边界|最小契约|回退策略|provider 扩展口径;verify=内容与总方案 7.4 通知渠道要求和架构 Step 2/4 约束一致
   - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-014`，并在 `TK-116`、`TK-311`、`TK-312` 建立 Depends On 与输入引用;verify=M1 退出回归与 M3 通知任务可直接消费该基线
   - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-114-notification-dispatcher-extraction-baseline.md`;verify=复核通过，无新增问题
-- [ ] **TK-115** 接入依赖方向自动检查（先 warning）（负责人：Architecture｜优先级：P1｜截止：2026-04-28｜状态：todo）
-- [ ] **TK-116** M1 退出回归与 CR 收口（负责人：QA｜优先级：P1｜截止：2026-04-28｜状态：todo）
+- [x] **TK-115** 接入依赖方向自动检查（先 warning）（负责人：Architecture｜优先级：P1｜截止：2026-04-28｜状态：done）
+  - 执行记录：plan=定义依赖方向自动检查 warning 接入契约、违规分级与升级路径并形成统一输入;result=已新增 `dependency-direction-warning-gate-baseline.md`，并落地 `check-package-dependency-boundary.js` + `dependency-boundary.config.json`;verify=输入输出模型|warning 语义|分级处置|M1->M5 升级路径与 M0 TK-002 及架构 Step 2/7 约束一致
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-015`，并在 `TK-116`、`TK-503` 建立 Depends On 与输入引用;verify=M1 退出回归与 M5 blocking 切换任务可直接消费该基线
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-115-dependency-direction-warning-gate-baseline.md`;verify=复核通过，无新增问题
+- [x] **TK-116** M1 退出回归与 CR 收口（负责人：QA｜优先级：P1｜截止：2026-04-28｜状态：done）
+  - 执行记录：plan=基于 TK-003/TK-005 与 M1 全任务产物执行退出回归并形成收口报告;result=已新增 `m1-exit-regression-and-cr-closure-report.md`，覆盖 checkpoint commands|golden command 可达性|CR 生命周期|风险快照|验收决策;verify=回归证据完整且与模板口径一致
+  - 执行记录：review_delta=已完成 `TK-111~TK-116` 台账一致性检查并确认 sprint 无待复核 CR;verify=任务卡|checklist|tasks.csv|code-review 状态一致
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-116-m1-exit-regression-and-cr-closure.md`;verify=复核通过，无新增问题

@@ -1,9 +1,9 @@
 # M1 核心包抽离
 
-- Status: executing
+- Status: completed
 - Date: 2026-03-19
 - Milestone: `M1`
-- Priority: P1（进行中）
+- Priority: P1（已完成）
 - Technical Phase: Phase B
 - Architecture Step: Step 2
 
