@@ -28,6 +28,7 @@
 6. `记忆分层治理`：永久记忆与执行记忆分层管理，避免上下文漂移。
 7. `共享会话优先`：多 Agent 在同一共享 session 中协作，保持方向一致。
 8. `工作区隔离优先`：每个目标仓库必须绑定独立 workspace，避免跨仓库状态污染。
+9. `事实链路闭环`：需求、方案、架构三层文档必须同源同步，并由工具门禁自动校验。
 
 ## 3. 系统边界
 
@@ -90,7 +91,9 @@
 9. `Memory Manager`
    - 统一管理永久记忆与执行记忆读写策略。
 10. `Artifact Registry & Dependency Resolver`
-    - 统一登记关键产物元数据，解析任务依赖产物并在执行前注入上下文。
+   - 统一登记关键产物元数据，解析任务依赖产物并在执行前注入上下文。
+11. `Spec Sync Guard`
+    - 校验“需求 -> 方案 -> 架构”三层文档与简版 PRD 的同步一致性，并输出可阻断结果。
 
 ## 4.2.1 基础设施组件（Adapter/Provider）
 
@@ -155,6 +158,25 @@
    - 非交互场景必须自动降级为 `plain` 或按显式参数输出 `json`；不得输出不可解析噪声。
 6. 审计关联
    - 输出摘要应可回链 `execution_id` 与 `execution_session_id`，便于日志审计与回放定位。
+
+## 4.2.5 Spec Sync Contract（Draft v1）
+
+1. 校验目标文件（最小）
+   - `docs/product-requirements.md`
+   - `docs/repo-ai-governor-overall-technical-solution.md`
+   - `docs/repo-ai-governor-architecture-and-repo-layering.md`
+   - `docs/product-requirements-brief.md`
+2. 校验规则（最小）
+   - 三层文档元数据日期必须一致（`YYYY-MM-DD`）。
+   - 若工作区检测到三层文档任一文件变更，则必须三者同变更。
+   - 若 PRD 变更，则简版 PRD 必须同变更。
+3. 输出模型
+   - 机器可读：`status`, `failures[]`, `changed_files[]`, `missing_sync_files[]`。
+   - 人类可读：失败原因摘要 + 补齐建议。
+4. 失败策略
+   - 默认 `block`；迁移窗口可配置 `warn`（后续阶段）。
+5. 接入点
+   - 通过治理脚本接入 `code_standards.md -> Verification Commands`，纳入统一门禁链路。
 
 ## 4.3 记忆与会话模型
 
@@ -427,6 +449,7 @@
 9. `workspace_id`, `workspace_mode`, `workspace_root`（用于跨仓库追踪与审计定位）
 10. `artifact_id`, `artifact_version`, `producer_task_id`, `consumer_task_id`, `dependency_resolution_status`（可选，命中依赖产物注册/解析时记录）
 11. `output_mode`, `is_tty`, `output_locale`（可选，用于输出行为与体验问题回溯）
+12. `spec_sync_status`, `spec_sync_failures`（可选，命中文档同步校验时记录）
 
 ## 10. 质量与发布总线
 
@@ -434,6 +457,7 @@
 2. 命令级验证以 `code_standards.md -> Verification Commands` 为准。
 3. 发布前需通过本地与 CI 双轨验证（质量门禁 + smoke gate）。
 4. 关键流程可接入“依赖产物完整性门禁”，在发布前阻断缺失/失效依赖产物。
+5. 文档事实链路门禁默认启用，阻断“单层文档变更未同步”的交付。
 
 ## 11. 实施路线图（总纲级）
 

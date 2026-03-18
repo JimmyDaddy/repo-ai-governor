@@ -6,7 +6,7 @@
 
 ## Source Hierarchy
 
-1. Normative rules: `code_standards.md` (`CS-001` to `CS-014`)
+1. Normative rules: `code_standards.md` (`CS-001` to `CS-015`)
 2. Operational baseline: this guide (`docs/governance/long-term-maintenance-guide.md`)
 3. Sprint execution records: `docs/<project>/<sprint>/`
 
@@ -25,6 +25,7 @@ This guide does not duplicate rule text from `code_standards.md`. It defines how
 2. ESM/TS boundary baseline: `CS-005` to `CS-008`
 3. Constant and type governance baseline: `CS-009` to `CS-013`
 4. Monorepo naming baseline: `CS-014`
+5. Triad docs synchronization baseline: `CS-015`
 
 For command-level enforcement, always use `code_standards.md -> Verification Commands` as the single source of truth.
 
@@ -67,6 +68,7 @@ Any non-empty entry must include task-level traceability in `tasks/checklist.md`
 2. Sprint-level execution changes must update `plan.md`, `tasks/checklist.md`, and `tasks/tasks.csv`.
 3. Closure work must include a written closure report in the sprint docs.
 4. Document date metadata must use `YYYY-MM-DD`; linked core docs should refresh dates in the same change window.
+5. Changes to any triad doc (`product-requirements` / `overall-technical-solution` / `architecture-and-repo-layering`) must be synchronized in the same change set; PRD changes must sync `product-requirements-brief.md`.
 
 ## Monthly Audit Checklist
 

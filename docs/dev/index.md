@@ -1,7 +1,7 @@
 # Dev Program Index
 
 - Status: active
-- Date: 2026-03-18
+- Date: 2026-03-19
 - Scope: 项目级总执行拆解（M0~M5）
 - Sprint Cadence: 2 weeks
 
@@ -34,6 +34,8 @@
 9. [M1 Core-Role-Registry 抽离基线](./milestone-01-m1-core-extraction/sprint-001/core-role-registry-extraction-baseline.md)
 10. [M1 Adapter-SDK 初版契约基线](./milestone-01-m1-core-extraction/sprint-001/adapter-sdk-initial-contract-baseline.md)
 11. [M1 CLI 桥接回归基线](./milestone-01-m1-core-extraction/sprint-001/cli-bridge-regression-baseline.md)
+12. [M1 Core-Memory 抽离基线](./milestone-01-m1-core-extraction/sprint-002/core-memory-extraction-baseline.md)
+13. [M1 Core-Session 抽离基线](./milestone-01-m1-core-extraction/sprint-002/core-session-extraction-baseline.md)
 
 ## Program View
 

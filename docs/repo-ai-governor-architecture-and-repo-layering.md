@@ -66,6 +66,7 @@ flowchart TB
   subgraph Ext[Standards & Slot Layer]
     Slots[Slot Engine]
     StandardsPack[Standards Pack]
+    SpecSyncGuard[Spec Sync Guard]
   end
 
   subgraph Observe[Audit & Reporting Layer]
@@ -110,6 +111,9 @@ flowchart TB
   Coord --> AdapterSDK --> Adapters
   Runtime --> Slots
   Runtime --> StandardsPack
+  CLI --> SpecSyncGuard
+  CI --> SpecSyncGuard
+  SpecSyncGuard --> Audit
   Runtime --> MemoryManager
   Runtime --> Audit --> Report --> Replay --> CliPresenter
   CliPresenter --> CLI
@@ -224,6 +228,8 @@ sequenceDiagram
    - 关键产物生成后统一登记，任务执行前按依赖声明解析并注入上下文。
 14. `CLI Output Presenter`
    - 统一输出 `pretty/plain/json` 模式渲染，负责终端美化、非交互降级和机器可读稳定性。
+15. `Spec Sync Guard`
+   - 对“需求->方案->架构”三层文档及简版 PRD 执行同步校验，输出可阻断的机器可读结果与本地可读建议。
 
 ## 5. 目标仓库分层结构（Monorepo）
 
@@ -292,6 +298,7 @@ repo-ai-governor/
       test/
     standards/
       src/
+        spec-sync-guard/
       test/
     slots/
       src/
@@ -377,6 +384,7 @@ repo-ai-governor/
 12. `standards/slots` -> 不依赖具体 adapter 实现，保持工具无关。
 13. `reporting` -> 只读核心执行结果，不反向控制 runtime；其内 `cli-output-presenter` 仅负责展示，不承担流程决策。
 14. `shared-*` -> 不依赖业务域模块。
+15. `spec-sync-guard` -> 仅依赖文档元数据与 git 变更检测，不依赖 runtime/adapter/provider 实现。
 
 ## 6.1 依赖方向自动化执行备忘（Pending Integration）
 
@@ -408,6 +416,7 @@ repo-ai-governor/
 
 1. Step 1（边界先行）
    - 在现有 `src/` 内按域建立子目录边界，补充 import lint 规则。
+   - 接入三层文档同步门禁（`check-docs-triad-sync`）作为事实链路前置校验。
 2. Step 2（核心抽离）
    - 先抽离 `core-process/core-policy/core-role-registry/core-memory/core-session/notification-dispatcher/adapter-sdk/memory-store-adapter` 到 `packages/`。
 3. Step 3（存储后端落地）

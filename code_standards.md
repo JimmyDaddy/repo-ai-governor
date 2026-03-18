@@ -18,6 +18,7 @@ This file defines repository-level coding standards and the executable gate comm
 - [CS-012] Object structure contracts must not be declared as `type Xxx = { ... }`. Exceptions require a nearby comment: `// type-shape-allowed: reason`.
 - [CS-013] `interface` and `type` declarations must be managed in separated directories for new code: `src/types/interfaces/*.interface.ts` and `src/types/aliases/*.type.ts`. Both directories must maintain `index.ts` for aggregated exports.
 - [CS-014] For monorepo refactor work, naming under `apps/**` and `packages/**` must follow `Monorepo Naming Convention` in this document.
+- [CS-015] Requirement -> Solution -> Architecture triad docs (`docs/product-requirements.md`, `docs/repo-ai-governor-overall-technical-solution.md`, `docs/repo-ai-governor-architecture-and-repo-layering.md`) must stay synchronized; any PRD change must also sync `docs/product-requirements-brief.md`.
 
 ## Monorepo Naming Convention (Refactor Baseline)
 
@@ -92,6 +93,7 @@ node ./scripts/governance/check-finite-literal-sets.js
 node ./scripts/governance/check-utils-reuse-governance.js
 node ./scripts/governance/check-type-governance.js
 node ./scripts/governance/check-ts-only-residue.js
+node ./scripts/governance/check-docs-triad-sync.js
 npm run test -- --maxWorkers=1 --maxConcurrency=1
 node ./dist/bin/repo-ai-governor.js --help >/dev/null
 ```

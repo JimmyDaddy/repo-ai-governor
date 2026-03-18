@@ -1,7 +1,7 @@
 # M1 核心包抽离 SPRINT-002
 
-- Status: planned
-- Date: 2026-03-18
+- Status: executing
+- Date: 2026-03-19
 - Milestone: `M1`
 - Sprint: `sprint-002`
 - Duration: 2026-04-15 ~ 2026-04-28 (2 weeks)

@@ -2,16 +2,16 @@
 
 ## Primary Stream
 
-- Status: completed
+- Status: in_progress
 - Project: `milestone-01-m1-core-extraction`
-- Sprint: `sprint-001`
+- Sprint: `sprint-002`
 - Docs root: `docs/dev/milestone-01-m1-core-extraction`
-- Task records: `docs/dev/milestone-01-m1-core-extraction/sprint-001/tasks/`
-- Code review records: `docs/dev/milestone-01-m1-core-extraction/sprint-001/code-review/`
+- Task records: `docs/dev/milestone-01-m1-core-extraction/sprint-002/tasks/`
+- Code review records: `docs/dev/milestone-01-m1-core-extraction/sprint-002/code-review/`
 
 ## Active Streams
 
-- `primary`: project=`milestone-01-m1-core-extraction`, sprint=`sprint-001`, docs=`docs/dev/milestone-01-m1-core-extraction`, plan=`docs/dev/milestone-01-m1-core-extraction/plan.md`, tasks=`docs/dev/milestone-01-m1-core-extraction/sprint-001/tasks/`, checklist=`docs/dev/milestone-01-m1-core-extraction/sprint-001/tasks/checklist.md`, csv=`docs/dev/milestone-01-m1-core-extraction/sprint-001/tasks/tasks.csv`, review=`docs/dev/milestone-01-m1-core-extraction/sprint-001/code-review/`, status=`completed`
+- `primary`: project=`milestone-01-m1-core-extraction`, sprint=`sprint-002`, docs=`docs/dev/milestone-01-m1-core-extraction`, plan=`docs/dev/milestone-01-m1-core-extraction/plan.md`, tasks=`docs/dev/milestone-01-m1-core-extraction/sprint-002/tasks/`, checklist=`docs/dev/milestone-01-m1-core-extraction/sprint-002/tasks/checklist.md`, csv=`docs/dev/milestone-01-m1-core-extraction/sprint-002/tasks/tasks.csv`, review=`docs/dev/milestone-01-m1-core-extraction/sprint-002/code-review/`, status=`in_progress`
 
 ## Update Rules
 

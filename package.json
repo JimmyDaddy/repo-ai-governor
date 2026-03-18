@@ -27,6 +27,7 @@
     "check:utils-reuse": "node ./scripts/governance/check-utils-reuse-governance.js",
     "check:type-governance": "node ./scripts/governance/check-type-governance.js",
     "check:ts-only": "node ./scripts/governance/check-ts-only-residue.js",
+    "check:docs-triad-sync": "node ./scripts/governance/check-docs-triad-sync.js",
     "check:code-standards": "node ./scripts/governance/check-code-standards.js --standards code_standards.md",
     "check:coverage-thresholds": "node ./scripts/ci/check-coverage-thresholds.js",
     "check:coverage": "npm run test:coverage && npm run check:coverage-thresholds",
