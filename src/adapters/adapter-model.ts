@@ -13,8 +13,6 @@ import type {
 import type { AdapterDefinition, LocalizedText } from "../types/interfaces/adapter.interface.js";
 
 export { ADAPTER_INPUT_SOURCES, ADAPTER_OUTPUT_ARTIFACTS, MAINSTREAM_ADAPTER_IDS };
-export type { AdapterDefinition, LocalizedText };
-export type { AdapterInputSource, AdapterOutputArtifact, AdapterPresetMap, MainstreamAdapterId };
 
 function createLocalizedText(zhCN: string, enUS: string): LocalizedText {
   return {

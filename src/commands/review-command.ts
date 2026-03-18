@@ -1,10 +1,8 @@
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import type { CommandContext } from "../cli/runtime/context.js";
 import { ConfigError, InputError } from "../cli/runtime/errors.js";
 import { EXIT_CODES } from "../cli/runtime/exit-codes.js";
-import type { Logger } from "../cli/ui/logger.js";
 import { loadResolvedConfig } from "../config/load-config.js";
 import {
   DEFAULT_TASK_CSV_COLUMNS,
@@ -15,6 +13,8 @@ import {
   renderRulesForConsumer,
   resolveStandardsPackage,
 } from "../standards/official-base-package.js";
+import type { CommandContext } from "../types/interfaces/cli-runtime.interface.js";
+import type { Logger } from "../types/interfaces/cli-ui.interface.js";
 import {
   normalizeLocale,
   toRelativePath as toRelativePathValue,

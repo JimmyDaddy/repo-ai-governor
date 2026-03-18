@@ -1,38 +1,12 @@
+import type {
+  KeyValueOptions,
+  Logger,
+  LoggerOptions,
+  RawOptions,
+  Theme,
+  WritableLike,
+} from "../../types/interfaces/cli-ui.interface.js";
 import { createTheme } from "./theme.js";
-import type { Theme } from "./theme.js";
-
-type WritableLike = {
-  isTTY?: boolean;
-  write: (chunk: string) => unknown;
-};
-
-type RawOptions = {
-  stderr?: boolean;
-  ignoreQuiet?: boolean;
-};
-
-type KeyValueOptions = {
-  stderr?: boolean;
-  force?: boolean;
-};
-
-type LoggerOptions = {
-  stdout?: WritableLike;
-  stderr?: WritableLike;
-  quiet?: boolean;
-  verbose?: boolean;
-  colorEnabled?: boolean;
-};
-
-export type Logger = {
-  raw: (message: string, rawOptions?: RawOptions) => void;
-  success: (message: string) => void;
-  info: (message: string) => void;
-  warn: (message: string) => void;
-  error: (message: string) => void;
-  debug: (message: string) => void;
-  keyValue: (label: string, value: string, keyValueOptions?: KeyValueOptions) => void;
-};
 
 function writeLine(stream: WritableLike, content = ""): void {
   stream.write(`${content}\n`);

@@ -2,9 +2,6 @@ import path from "node:path";
 import type { Locale } from "../types/aliases/locale.type.js";
 import type { LocaleOptions } from "../types/interfaces/locale-options.interface.js";
 
-export type { Locale } from "../types/aliases/locale.type.js";
-export type { LocaleOptions } from "../types/interfaces/locale-options.interface.js";
-
 export function normalizeLocale(
   locale: string | null | undefined,
   options: LocaleOptions = {},

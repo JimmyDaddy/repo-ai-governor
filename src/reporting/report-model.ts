@@ -1,8 +1,5 @@
-import {
-  type Locale,
-  normalizeLocale as normalizeLocaleValue,
-  translateLocale,
-} from "../utils/common.js";
+import type { Locale } from "../types/aliases/locale.type.js";
+import { normalizeLocale as normalizeLocaleValue, translateLocale } from "../utils/common.js";
 
 type GenericRecord = Record<string, unknown>;
 

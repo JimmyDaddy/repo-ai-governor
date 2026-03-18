@@ -1,10 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
 import YAML from "yaml";
-import type { CommandContext } from "../cli/runtime/context.js";
 import { ConfigError, InputError } from "../cli/runtime/errors.js";
-import type { Logger } from "../cli/ui/logger.js";
 import { loadResolvedConfig } from "../config/load-config.js";
+import type { CommandContext } from "../types/interfaces/cli-runtime.interface.js";
+import type { Logger } from "../types/interfaces/cli-ui.interface.js";
 import { normalizeLocale, translateLocale } from "../utils/common.js";
 import {
   applyConfigRootOverrides,

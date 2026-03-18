@@ -1,13 +1,13 @@
 import fs from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
-import type { CommandContext } from "../cli/runtime/context.js";
 import { InputError } from "../cli/runtime/errors.js";
 import { EXIT_CODES } from "../cli/runtime/exit-codes.js";
-import type { Logger } from "../cli/ui/logger.js";
 import { ConfigurationError } from "../config/errors.js";
 import { loadResolvedConfig } from "../config/load-config.js";
 import { resolveRepositoryLayout } from "../config/repository-layout.js";
+import type { CommandContext } from "../types/interfaces/cli-runtime.interface.js";
+import type { Logger } from "../types/interfaces/cli-ui.interface.js";
 import { normalizeLocale, toRelativePath, translateLocale } from "../utils/common.js";
 
 type ParsedOptions = Record<string, unknown>;

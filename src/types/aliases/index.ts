@@ -20,3 +20,4 @@ export type {
   BuildGitHubCopilotAdapterBundleOptions,
 } from "./adapter-bundle.type.js";
 export type { SlotConflictPolicy } from "./slot.type.js";
+export type { ParsedOptions, ExitCode, RepositoryLayoutState } from "./cli.type.js";

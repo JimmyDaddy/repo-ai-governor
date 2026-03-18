@@ -29,16 +29,6 @@ import {
   resolveWorkflowTemplate,
 } from "../workflow/template-model.js";
 
-export type {
-  AdapterBaseBundle,
-  AdapterRuntimeConfig,
-  ArtifactPaths,
-  BuildBaseAdapterBundleOptions,
-  OptionalFileState,
-  SlotSummary,
-  StandardsSectionItem,
-};
-
 export function toRelativePath(cwd: string, targetPath: string): string {
   return toRelativePathValue(cwd, targetPath);
 }

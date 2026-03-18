@@ -6,8 +6,6 @@ import type {
 import { ADAPTER_PRESETS } from "./adapter-model.js";
 import { buildBaseAdapterBundle, ensureTrailingNewline } from "./bundle-shared.js";
 
-export type { CodexAdapterBundle };
-
 function createCodexPrompt(bundle: AdapterBaseBundle): string {
   const standardsLines = bundle.standards.rules.map((rule) => `- ${rule.instruction ?? ""}`);
   const slotLines =

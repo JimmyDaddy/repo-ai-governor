@@ -6,8 +6,6 @@ import type {
 import { ADAPTER_PRESETS } from "./adapter-model.js";
 import { buildBaseAdapterBundle, ensureTrailingNewline } from "./bundle-shared.js";
 
-export type { ClaudeCodeAdapterBundle };
-
 function renderWorkflowLines(bundle: AdapterBaseBundle): string[] {
   return bundle.workflow.selectedStages.map((stageId) => `- ${stageId}`);
 }

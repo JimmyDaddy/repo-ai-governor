@@ -1,13 +1,5 @@
 import { ANSI } from "../../constants/ansi-theme.js";
-
-export type Theme = {
-  successLabel: (value: string) => string;
-  infoLabel: (value: string) => string;
-  warnLabel: (value: string) => string;
-  errorLabel: (value: string) => string;
-  debugLabel: (value: string) => string;
-  dim: (value: string) => string;
-};
+import type { Theme } from "../../types/interfaces/cli-ui.interface.js";
 
 function wrap(open: string, enabled: boolean, value: string): string {
   if (!enabled) {

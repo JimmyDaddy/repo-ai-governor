@@ -18,41 +18,25 @@ import {
   createTaskFileName,
   resolveRepositoryLayout,
 } from "../config/repository-layout.js";
-import { normalizeLocale, translateLocale } from "../utils/common.js";
-import { commandDefinitions, globalOptionDefinitions } from "./command-registry.js";
+import type {
+  ExitCode,
+  RepositoryLayoutState,
+  ResolvedConfigState,
+} from "../types/aliases/cli.type.js";
 import type {
   ArgumentDefinition,
   CommandDefinition,
   OptionDefinition,
-} from "./command-registry.js";
+} from "../types/interfaces/cli-command-registry.interface.js";
+import type { CliIo, CliProgram, PackageJsonLike } from "../types/interfaces/cli-main.interface.js";
+import type { CommandContext } from "../types/interfaces/cli-runtime.interface.js";
+import type { Logger } from "../types/interfaces/cli-ui.interface.js";
+import { normalizeLocale, translateLocale } from "../utils/common.js";
+import { commandDefinitions, globalOptionDefinitions } from "./command-registry.js";
 import { createCommandContext } from "./runtime/context.js";
-import type { CommandContext } from "./runtime/context.js";
 import { ConfigError, InputError, InternalExecutionError, isCliError } from "./runtime/errors.js";
 import { EXIT_CODES, mapCommanderErrorToExitCode } from "./runtime/exit-codes.js";
 import { createLogger } from "./ui/logger.js";
-import type { Logger } from "./ui/logger.js";
-
-type WritableLike = {
-  isTTY?: boolean;
-  write: (chunk: string) => unknown;
-};
-
-type CliIo = {
-  stdout?: WritableLike;
-  stderr?: WritableLike;
-};
-
-type CliProgram = Command & {
-  repoAiGovernorExitCode?: number;
-};
-
-type PackageJsonLike = {
-  description: string;
-  version: string;
-};
-
-type RepositoryLayoutState = ReturnType<typeof resolveRepositoryLayout>;
-type ResolvedConfigState = ReturnType<typeof loadResolvedConfig>;
 
 const require = createRequire(import.meta.url);
 // dynamic-import-allowed: load local package metadata consistently from source/dist runtime contexts

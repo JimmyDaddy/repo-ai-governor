@@ -1,11 +1,8 @@
 import fs from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
-import type { CommandContext } from "../cli/runtime/context.js";
 import { BusinessCheckError, InputError } from "../cli/runtime/errors.js";
-import type { ExitCode } from "../cli/runtime/exit-codes.js";
 import { EXIT_CODES } from "../cli/runtime/exit-codes.js";
-import type { Logger } from "../cli/ui/logger.js";
 import { SUPPORTED_SKILL_ACTIONS, type SkillAction } from "../constants/skill-actions.js";
 import {
   type OfficialSkillCatalogEntry,
@@ -28,6 +25,9 @@ import {
   validateSkillSurface,
 } from "../skills/runtime.js";
 import { doesVersionSatisfy } from "../skills/semver.js";
+import type { ExitCode } from "../types/aliases/cli.type.js";
+import type { CommandContext } from "../types/interfaces/cli-runtime.interface.js";
+import type { Logger } from "../types/interfaces/cli-ui.interface.js";
 import { normalizeLocale, toRelativePath, translateLocale } from "../utils/common.js";
 
 const require = createRequire(import.meta.url);

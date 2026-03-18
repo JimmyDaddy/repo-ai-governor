@@ -1,34 +1,6 @@
 {
   "pathAllowList": [
     {
-      "path": "src/cli/command-registry.ts",
-      "reason": "legacy declarations pending migration into src/types"
-    },
-    {
-      "path": "src/cli/index.ts",
-      "reason": "legacy declarations pending migration into src/types"
-    },
-    {
-      "path": "src/cli/runtime/context.ts",
-      "reason": "legacy declarations pending migration into src/types"
-    },
-    {
-      "path": "src/cli/runtime/errors.ts",
-      "reason": "legacy declarations pending migration into src/types"
-    },
-    {
-      "path": "src/cli/runtime/exit-codes.ts",
-      "reason": "legacy declarations pending migration into src/types"
-    },
-    {
-      "path": "src/cli/ui/logger.ts",
-      "reason": "legacy declarations pending migration into src/types"
-    },
-    {
-      "path": "src/cli/ui/theme.ts",
-      "reason": "legacy declarations pending migration into src/types"
-    },
-    {
       "path": "src/commands/bootstrap-shared.ts",
       "reason": "legacy declarations pending migration into src/types"
     },

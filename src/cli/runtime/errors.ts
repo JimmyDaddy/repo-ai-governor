@@ -1,11 +1,5 @@
+import type { CliErrorOptions } from "../../types/interfaces/cli-runtime.interface.js";
 import { EXIT_CODES } from "./exit-codes.js";
-
-type CliErrorOptions = {
-  name?: string;
-  code?: string;
-  exitCode?: number;
-  details?: unknown;
-};
 
 export class CliError extends Error {
   code: string;

@@ -6,8 +6,6 @@ import type {
 import { ADAPTER_PRESETS } from "./adapter-model.js";
 import { buildBaseAdapterBundle, ensureTrailingNewline } from "./bundle-shared.js";
 
-export type { GitHubCopilotAdapterBundle };
-
 function renderWorkflowLines(bundle: AdapterBaseBundle): string[] {
   return bundle.workflow.selectedStages.map((stageId) => `- ${stageId}`);
 }

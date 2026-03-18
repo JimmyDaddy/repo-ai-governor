@@ -1,17 +1,7 @@
+import type { ParsedOptions } from "../../types/aliases/cli.type.js";
+import type { CommandDefinition } from "../../types/interfaces/cli-command-registry.interface.js";
+import type { CommandContext } from "../../types/interfaces/cli-runtime.interface.js";
 import { globalOptionDefinitions } from "../command-registry.js";
-import type { CommandDefinition } from "../command-registry.js";
-
-type ParsedOptions = Record<string, unknown>;
-
-export type CommandContext = {
-  command: string;
-  globalOptions: ParsedOptions;
-  commandOptions: ParsedOptions;
-  positionals: string[];
-  format: string;
-  quiet: boolean;
-  verbose: boolean;
-};
 
 function compactOptions(options: ParsedOptions): ParsedOptions {
   return Object.fromEntries(

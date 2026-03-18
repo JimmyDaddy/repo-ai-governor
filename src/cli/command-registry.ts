@@ -1,23 +1,8 @@
-export type OptionDefinition = {
-  long: string;
-  key: string;
-  valueName?: string;
-  description: string;
-  type: "string" | "boolean";
-  multiple?: boolean;
-};
-
-export type ArgumentDefinition = {
-  name: string;
-  description: string;
-};
-
-export type CommandDefinition = {
-  name: string;
-  description: string;
-  arguments?: ArgumentDefinition[];
-  options: OptionDefinition[];
-};
+import type {
+  ArgumentDefinition,
+  CommandDefinition,
+  OptionDefinition,
+} from "../types/interfaces/cli-command-registry.interface.js";
 
 export const globalOptionDefinitions: OptionDefinition[] = [
   {
