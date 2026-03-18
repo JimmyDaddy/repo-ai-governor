@@ -137,6 +137,20 @@ npm run check:code-standards
 
 当前仓库里 `npm run check` 已经接到了这个 standards 门禁。
 
+## 当前仓库治理基线
+
+本仓库已进入 TS-first + Vitest + Biome 的长期治理基线：
+
+1. 源码与测试默认 TypeScript-first，任何保留 JS 必须经过 whitelist 治理并可追踪。
+2. `npm run check` 串行执行 format/lint/build/standards gate。
+3. `npm run ci:quality` 在默认 gate 之上增加 typecheck 与 coverage 校验。
+4. `npm run release:ga-check` 作为发布前质量链路的统一入口。
+
+迁移收官与长期维护细则见：
+
+1. `docs/ts-vitest-v1/sprint-003/migration-closure-report.md`
+2. `docs/governance/long-term-maintenance-guide.md`
+
 ## 参考文档
 
 1. [Quick Start](./docs/quick-start.md)

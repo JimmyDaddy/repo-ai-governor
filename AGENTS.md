@@ -15,7 +15,8 @@
 ## Standards Entry
 
 1. Before planning or execution, AI agents must read `code_standards.md`.
-2. All implementation and review outputs must follow `code_standards.md` non-negotiable rules and verification commands.
+2. Before planning or execution, AI agents must read `docs/governance/long-term-maintenance-guide.md`.
+3. All implementation and review outputs must follow `code_standards.md` non-negotiable rules and verification commands.
 
 ## Working Rules
 

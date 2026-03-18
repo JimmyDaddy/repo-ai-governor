@@ -1,6 +1,6 @@
 # TS Vitest V1 Sprint 003
 
-- Status: draft
+- Status: completed
 - Date: 2026-03-17
 - Project: `ts-vitest-v1`
 - Sprint: `sprint-003`
@@ -20,6 +20,9 @@
 - [tasks/TK-3004.md](./tasks/TK-3004.md): 覆盖率基线与阈值门禁。
 - [tasks/TK-3005.md](./tasks/TK-3005.md): 发布与运行时 JS 白名单收口。
 - [tasks/TK-3006.md](./tasks/TK-3006.md): 迁移收官文档与长期开发约束。
+- [migration-closure-report.md](./migration-closure-report.md): sprint-003 迁移收官报告与后续演进建议。
+- [long-term-maintenance-guide.md](./long-term-maintenance-guide.md): sprint-003 迁移交接说明（归档入口）。
+- [Repository Long-Term Maintenance Guide](../../governance/long-term-maintenance-guide.md): 仓库级长期维护与治理基线（agents 固定引用）。
 - [code-review/README.md](./code-review/README.md): 当前 sprint 的 CR 目录说明。
 
 ## Notes

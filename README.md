@@ -137,6 +137,20 @@ Example now enforced in this repository: relative import/export specifiers must 
 
 In this repository, `npm run check` is wired to that standards gate.
 
+## Governance Baseline In This Repository
+
+The repository now runs with a TS-first + Vitest + Biome baseline:
+
+1. Source and tests are TypeScript-first, with explicit whitelist governance for any allowed JS residue.
+2. `npm run check` enforces formatter + linter + build + standards gate in one path.
+3. `npm run ci:quality` adds typecheck and coverage checks on top of the default gate.
+4. `npm run release:ga-check` is the release-ready quality chain.
+
+For closure details and long-term operation rules, see:
+
+1. `docs/ts-vitest-v1/sprint-003/migration-closure-report.md`
+2. `docs/governance/long-term-maintenance-guide.md`
+
 ## Documentation
 
 1. [Quick Start](./docs/quick-start.md)

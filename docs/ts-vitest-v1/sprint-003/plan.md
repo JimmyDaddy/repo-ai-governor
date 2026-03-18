@@ -1,6 +1,6 @@
 # TS Vitest V1 Sprint 003 Plan
 
-- Status: draft
+- Status: completed
 - Date: 2026-03-17
 - Project: `ts-vitest-v1`
 - Sprint: `sprint-003`
@@ -55,3 +55,8 @@
 7. `TK-3007` 收敛 literal-set whitelist 存量并分批迁移
 8. `TK-3008` 收敛 type-governance whitelist 存量并分批迁移
 9. `TK-3009` 收敛 utils-reuse whitelist 存量并清零 legacy util 豁免
+
+## Completion Outputs
+
+1. `docs/ts-vitest-v1/sprint-003/migration-closure-report.md`
+2. `docs/governance/long-term-maintenance-guide.md`

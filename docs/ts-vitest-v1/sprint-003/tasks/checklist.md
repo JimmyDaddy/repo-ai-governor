@@ -26,8 +26,9 @@
   - 执行记录：plan=建立发布包 JS 白名单配置与自动审计脚本，并接入发布前门禁以拦截未归属 JS；result=已新增 scripts/release/runtime-js-whitelist.json、scripts/release/check-runtime-js-whitelist.js，新增 check:runtime-js-whitelist 并接入 release:check，同时补充文档 release-runtime-js-whitelist.md 与回归测试;verify=`npm run test -- test/release/release-distribution.test.ts && npm run check:runtime-js-whitelist && npm run release:check`
   - 执行记录：plan=补齐“新增无归属 JS 必须告警”负向验证并完成发布候选链路复验，满足 TK-3005 验收闭环；result=已新增未归属 JS 失败回归，验证 runtime JS whitelist 门禁可阻断无归属非 dist JS；`npm run release:candidate` 全链路通过，任务完成;verify=`npm run test -- test/release/release-distribution.test.ts && npm run check:runtime-js-whitelist && npm run release:candidate`
 
-- [ ] **TK-3006** 完成迁移收官文档与长期约束落盘（负责人：Core｜优先级：P1｜截止：2026-04-12｜状态：todo）
-  - 执行记录：plan=更新 README/执行计划/开发约束文档，形成 TS/Vitest/Biome 的长期实践基线；result=待执行;verify=待执行
+- [x] **TK-3006** 完成迁移收官文档与长期约束落盘（负责人：Core｜优先级：P1｜截止：2026-04-12｜状态：completed）
+  - 执行记录：plan=更新 README/执行计划/开发约束文档，形成 TS/Vitest/Biome 的长期实践基线；result=已新增 `migration-closure-report.md` 与 `long-term-maintenance-guide.md`，并更新 `README.md`/`README.zh-CN.md`、`sprint-003/plan.md`、`sprint-003/index.md`，完成 TK-3006 收官落盘;verify=`node ./scripts/governance/check-code-standards.js --standards code_standards.md && npm run check`
+  - 执行记录：plan=将长期维护指南提升到仓库级 `docs/governance` 并执行与 `code_standards` 去重，固定由 AGENTS 引用；result=已新增 `docs/governance/long-term-maintenance-guide.md` 作为唯一长期入口，`sprint-003/long-term-maintenance-guide.md` 调整为归档交接说明，并更新 `AGENTS.md` 与 `README.md`/`README.zh-CN.md`、`migration-closure-report.md`、`sprint-003/plan.md`、`sprint-003/index.md` 的引用路径;verify=`node ./scripts/governance/check-code-standards.js --standards code_standards.md && npm run check`
 
 - [x] **TK-3007** 收敛 literal-set whitelist 存量并分批迁移（负责人：Release｜优先级：P0｜截止：2026-04-13｜状态：completed）
   - 执行记录：plan=将 `literal-set-whitelist.json` 的 13 个路径按模块拆分迁移批次并定义每批验证与回收标准；result=已完成任务拆分并生成 `LS-B1~LS-B4` 批次清单（见 `TK-3007.md`）;verify=`node ./scripts/governance/check-finite-literal-sets.js --format=json`
