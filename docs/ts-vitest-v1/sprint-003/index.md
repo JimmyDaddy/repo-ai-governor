@@ -1,13 +1,13 @@
 # TS Vitest V1 Sprint 003
 
-- Status: in-progress
+- Status: done
 - Date: 2026-03-17
 - Project: `ts-vitest-v1`
 - Sprint: `sprint-003`
 
 ## Scope
 
-本迭代聚焦“硬化与收官”：在 sprint-002 全量迁移完成基础上，继续收敛 TS-only/JS 白名单边界，提升测试稳定性与覆盖率门禁，并补齐长期维护约束文档。
+本迭代聚焦“硬化与收官”：在 sprint-002 全量迁移完成基础上，完成 TS-only/JS 白名单边界收敛，提升测试稳定性与覆盖率门禁，并补齐长期维护约束文档。
 
 ## Files
 
@@ -31,6 +31,6 @@
 
 ## Notes
 
-1. `sprint-001` 与 `sprint-002` 已完成基线建设与全量迁移，`sprint-003` 进入质量硬化阶段。
+1. `sprint-001` 与 `sprint-002` 已完成基线建设与全量迁移，`sprint-003` 已完成质量硬化与收官。
 2. 默认策略保持不变：新增源码和测试优先 TypeScript，非必要不保留源码 JS。
 3. 所有门禁调整都应通过 `typecheck + test + check + release:ga-check` 回归验证。

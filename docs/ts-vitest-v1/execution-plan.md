@@ -1,6 +1,6 @@
 # TS Vitest V1 Execution Plan
 
-- Status: active
+- Status: done
 - Date: 2026-03-17
 - Basis:
   - [../../README.md](../../README.md)
@@ -86,7 +86,7 @@
 5. `TK-2005` 迁移测试层到 `.test.ts` 并保持 Vitest 稳定。
 6. `TK-2006` 增加 TS-only 审计门禁并收口发布约束。
 
-### Sprint 003: Hardening And Closure
+### Sprint 003: Hardening And Closure (done)
 
 目标：
 
@@ -94,7 +94,7 @@
 2. 提升测试覆盖与执行稳定性，明确回归基线。
 3. 收口迁移文档并形成长期约束（新增代码默认 TS + Vitest + Biome）。
 
-任务（草案）：
+任务：
 
 1. `TK-3001` 收敛 TS-only 白名单并扩展关键目录审计边界。
 2. `TK-3002` 将 Biome format/lint 接入默认 gate 与 CI 质量门禁。
@@ -102,6 +102,10 @@
 4. `TK-3004` 建立覆盖率基线并引入阈值门禁。
 5. `TK-3005` 收口发布与运行时 JS 白名单边界。
 6. `TK-3006` 完成迁移收官文档与长期约束落盘。
+7. `TK-3007` 收敛 literal-set whitelist 存量并分批迁移。
+8. `TK-3008` 收敛 type-governance whitelist 存量并分批迁移。
+9. `TK-3009` 收敛 utils-reuse whitelist 存量并清零 legacy util 豁免。
+10. `TK-3010` 收敛 command/runtime 显式 `any` 存量并分批类型化。
 
 ## Exit Criteria
 
