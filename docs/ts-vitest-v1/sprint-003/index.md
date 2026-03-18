@@ -1,6 +1,6 @@
 # TS Vitest V1 Sprint 003
 
-- Status: completed
+- Status: in-progress
 - Date: 2026-03-17
 - Project: `ts-vitest-v1`
 - Sprint: `sprint-003`
@@ -20,6 +20,10 @@
 - [tasks/TK-3004.md](./tasks/TK-3004.md): 覆盖率基线与阈值门禁。
 - [tasks/TK-3005.md](./tasks/TK-3005.md): 发布与运行时 JS 白名单收口。
 - [tasks/TK-3006.md](./tasks/TK-3006.md): 迁移收官文档与长期开发约束。
+- [tasks/TK-3007.md](./tasks/TK-3007.md): 收敛 literal-set whitelist 存量并分批迁移。
+- [tasks/TK-3008.md](./tasks/TK-3008.md): 收敛 type-governance whitelist 存量并分批迁移。
+- [tasks/TK-3009.md](./tasks/TK-3009.md): 收敛 utils-reuse whitelist 存量并清零 legacy util 豁免。
+- [tasks/TK-3010.md](./tasks/TK-3010.md): 收敛 command/runtime 显式 `any` 存量并分批类型化。
 - [migration-closure-report.md](./migration-closure-report.md): sprint-003 迁移收官报告与后续演进建议。
 - [long-term-maintenance-guide.md](./long-term-maintenance-guide.md): sprint-003 迁移交接说明（归档入口）。
 - [Repository Long-Term Maintenance Guide](../../governance/long-term-maintenance-guide.md): 仓库级长期维护与治理基线（agents 固定引用）。

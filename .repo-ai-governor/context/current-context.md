@@ -11,7 +11,7 @@
 
 ## Active Streams
 
-- `primary`: project=`ts-vitest-v1`, sprint=`sprint-003`, docs=`docs/ts-vitest-v1/sprint-003`, plan=`docs/ts-vitest-v1/sprint-003/plan.md`, tasks=`docs/ts-vitest-v1/sprint-003/tasks/TK-3001.md|docs/ts-vitest-v1/sprint-003/tasks/TK-3002.md|docs/ts-vitest-v1/sprint-003/tasks/TK-3003.md|docs/ts-vitest-v1/sprint-003/tasks/TK-3004.md|docs/ts-vitest-v1/sprint-003/tasks/TK-3005.md|docs/ts-vitest-v1/sprint-003/tasks/TK-3006.md|docs/ts-vitest-v1/sprint-003/tasks/TK-3007.md|docs/ts-vitest-v1/sprint-003/tasks/TK-3008.md|docs/ts-vitest-v1/sprint-003/tasks/TK-3009.md`, checklist=`docs/ts-vitest-v1/sprint-003/tasks/checklist.md`, csv=`docs/ts-vitest-v1/sprint-003/tasks/tasks.csv`, review=`docs/ts-vitest-v1/sprint-003/code-review`, status=`in-progress`
+- `primary`: project=`ts-vitest-v1`, sprint=`sprint-003`, docs=`docs/ts-vitest-v1/sprint-003`, plan=`docs/ts-vitest-v1/sprint-003/plan.md`, tasks=`docs/ts-vitest-v1/sprint-003/tasks/TK-3001.md|docs/ts-vitest-v1/sprint-003/tasks/TK-3002.md|docs/ts-vitest-v1/sprint-003/tasks/TK-3003.md|docs/ts-vitest-v1/sprint-003/tasks/TK-3004.md|docs/ts-vitest-v1/sprint-003/tasks/TK-3005.md|docs/ts-vitest-v1/sprint-003/tasks/TK-3006.md|docs/ts-vitest-v1/sprint-003/tasks/TK-3007.md|docs/ts-vitest-v1/sprint-003/tasks/TK-3008.md|docs/ts-vitest-v1/sprint-003/tasks/TK-3009.md|docs/ts-vitest-v1/sprint-003/tasks/TK-3010.md`, checklist=`docs/ts-vitest-v1/sprint-003/tasks/checklist.md`, csv=`docs/ts-vitest-v1/sprint-003/tasks/tasks.csv`, review=`docs/ts-vitest-v1/sprint-003/code-review`, status=`in-progress`
 
 ## Update Rules
 

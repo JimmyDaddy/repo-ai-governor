@@ -13,6 +13,7 @@ import {
   validateSkillSurface,
 } from "../skills/runtime.js";
 import type { AnyRecord } from "../types/aliases/command.type.js";
+import type { InitTemplateContext } from "../types/interfaces/command-bootstrap.interface.js";
 import { normalizeLocale, toRelativePath, translateLocale } from "../utils/common.js";
 import { renderInitDocument } from "./templates/init-documents.js";
 
@@ -330,7 +331,15 @@ function installBundledSkills(options: AnyRecord): AnyRecord {
   };
 }
 
-function buildInitTemplateContext(config: AnyRecord, options: AnyRecord = {}): AnyRecord {
+function buildInitTemplateContext(
+  config: AnyRecord,
+  options: {
+    dateStamp?: string;
+    configFilePath?: string;
+    agentEntryPath?: string;
+    contextFilePath?: string;
+  } = {},
+): InitTemplateContext {
   const currentProject = config.execution.currentProject;
   const currentSprint = config.execution.currentSprint;
 
@@ -447,8 +456,7 @@ function buildInitPlan(commandContext: AnyRecord): AnyRecord {
     configFilePath: toRelativePath(cwd, resolved.paths.configFile),
     agentEntryPath: toRelativePath(cwd, agentEntryPath),
     contextFilePath: toRelativePath(cwd, contextFilePath),
-    // biome-ignore lint/suspicious/noExplicitAny: template context shape is validated by renderInitDocument contract
-  }) as any;
+  });
 
   const directories = [
     path.dirname(resolved.paths.configFile),

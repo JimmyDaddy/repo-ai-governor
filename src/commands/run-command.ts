@@ -269,7 +269,7 @@ const HIGH_RISK_TAG_SET = new Set(HIGH_RISK_RULES.map((rule) => rule.tag));
 const RUN_AUDIT_KIND = "run-audit-record";
 const RUN_AUDIT_SCHEMA_VERSION = "1";
 
-function t(locale: any, zhCN: any, enUS: any) {
+function t(locale: string | null | undefined, zhCN: string, enUS: string) {
   return translateLocale(locale, zhCN, enUS);
 }
 
@@ -279,7 +279,11 @@ function createRunExecutionId(date = new Date()) {
   return `run-${timestamp}-${token}`;
 }
 
-function safeParseJsonFile(filePath: any, locale: any, errorCode: any) {
+function safeParseJsonFile(
+  filePath: string,
+  locale: string | null | undefined,
+  errorCode: string,
+): unknown {
   const rawContent = fs.readFileSync(filePath, "utf8");
 
   try {
@@ -298,7 +302,7 @@ function safeParseJsonFile(filePath: any, locale: any, errorCode: any) {
   }
 }
 
-function resolveProcessSourceFromConfigFile(configFilePath: any) {
+function resolveProcessSourceFromConfigFile(configFilePath: string | null | undefined) {
   if (!configFilePath || !fs.existsSync(configFilePath)) {
     return "default";
   }
@@ -429,22 +433,26 @@ function resolveProcessSourceFromConfigFile(configFilePath: any) {
   }
 }
 
-function buildCompiledProcessSnapshot(processModel: any, routingPlan: any, workflowTemplate: any) {
+function buildCompiledProcessSnapshot(
+  processModel: AnyRecord,
+  routingPlan: AnyRecord,
+  workflowTemplate: AnyRecord,
+) {
   return {
-    stages: processModel.stages.map((stage: any) => ({
+    stages: processModel.stages.map((stage: AnyRecord) => ({
       id: stage.id,
       kind: stage.kind,
       routeKey: stage.routeKey,
       requiredSurface: stage.requiredSurface,
     })),
-    reviewLoops: processModel.reviewLoops.map((loopConfig: any) => ({
+    reviewLoops: processModel.reviewLoops.map((loopConfig: AnyRecord) => ({
       stageId: loopConfig.stageId,
       routeSequence: loopConfig.routeSequence,
       maxReviewCycles: loopConfig.maxReviewCycles,
       completionPolicy: loopConfig.completionPolicy,
     })),
     taskLoop: cloneValue(processModel.taskLoop),
-    routeDefinitions: processModel.routeDefinitions.map((route: any) => ({
+    routeDefinitions: processModel.routeDefinitions.map((route: AnyRecord) => ({
       routeKey: route.routeKey,
       stageId: route.stageId,
       label: route.label,
@@ -453,7 +461,7 @@ function buildCompiledProcessSnapshot(processModel: any, routingPlan: any, workf
     routing: {
       profile: routingPlan.profileId,
       defaultSurface: routingPlan.defaultSurface,
-      routes: routingPlan.routes.map((route: any) => ({
+      routes: routingPlan.routes.map((route: AnyRecord) => ({
         routeKey: route.routeKey,
         stageId: route.stageId,
         label: route.label,
@@ -465,16 +473,16 @@ function buildCompiledProcessSnapshot(processModel: any, routingPlan: any, workf
     },
     workflow: {
       id: workflowTemplate.id,
-      stageOrder: workflowTemplate.stages.map((stage: any) => stage.id),
+      stageOrder: workflowTemplate.stages.map((stage: AnyRecord) => stage.id),
     },
   };
 }
 
 function buildProcessExplainPayload(
-  runState: any,
-  processModel: any,
-  routingPlan: any,
-  workflowTemplate: any,
+  runState: AnyRecord,
+  processModel: AnyRecord,
+  routingPlan: AnyRecord,
+  workflowTemplate: AnyRecord,
   options: AnyRecord = {},
 ) {
   const locale = runState.locale;
@@ -517,7 +525,7 @@ function buildProcessExplainPayload(
   };
 }
 
-function detectHighRiskSignals(content: any) {
+function detectHighRiskSignals(content: unknown) {
   const normalizedContent = String(content ?? "");
   const detections = [];
 
@@ -549,15 +557,16 @@ function detectHighRiskSignals(content: any) {
   };
 }
 
-function inferActionFromRouteKey(routeKey: any) {
-  const explicit = (ROUTE_ACTION_RULES as Record<string, readonly string[]>)[String(routeKey)];
+function inferActionFromRouteKey(routeKey: unknown) {
+  const normalizedRouteKey = String(routeKey ?? "");
+  const explicit = (ROUTE_ACTION_RULES as Record<string, readonly string[]>)[normalizedRouteKey];
 
   if (explicit) {
     return [...explicit];
   }
 
   for (const hint of ROUTE_ACTION_HINTS) {
-    if (hint.pattern.test(routeKey)) {
+    if (hint.pattern.test(normalizedRouteKey)) {
       return [hint.action];
     }
   }
@@ -565,7 +574,7 @@ function inferActionFromRouteKey(routeKey: any) {
   return [];
 }
 
-function inferIntentActionsFromInput(content: any) {
+function inferIntentActionsFromInput(content: unknown) {
   const normalizedContent = String(content ?? "");
   const actions = [];
 
@@ -588,7 +597,7 @@ function inferIntentActionsFromInput(content: any) {
   return actions;
 }
 
-function resolveRequiredActions(routeDecisions: any, policyInputContent: any) {
+function resolveRequiredActions(routeDecisions: AnyRecord[], policyInputContent: unknown) {
   const requiredActions = new Set(["read"]);
 
   for (const decision of routeDecisions) {
@@ -604,7 +613,7 @@ function resolveRequiredActions(routeDecisions: any, policyInputContent: any) {
   return [...requiredActions];
 }
 
-function resolvePermissionTier(permissions: any) {
+function resolvePermissionTier(permissions: AnyRecord) {
   const canEdit = permissions.allowEditCode === true || permissions.allowEditDocs === true;
 
   if (permissions.allowPush === true) {
@@ -626,7 +635,7 @@ function resolvePermissionTier(permissions: any) {
   return "read";
 }
 
-function evaluatePolicyGate(runState: any, routeDecisions: any) {
+function evaluatePolicyGate(runState: AnyRecord, routeDecisions: AnyRecord[]) {
   const permissions = runState.permissions;
   const permissionTier = resolvePermissionTier(permissions);
   const requiredActions = resolveRequiredActions(routeDecisions, runState.policyInputContent);
@@ -753,7 +762,7 @@ function evaluatePolicyGate(runState: any, routeDecisions: any) {
   };
 }
 
-function parseCsvLine(line: any) {
+function parseCsvLine(line: string) {
   const values = [];
   let current = "";
   let inQuotes = false;
@@ -786,7 +795,7 @@ function parseCsvLine(line: any) {
   return values;
 }
 
-function readCsvRows(filePath: any) {
+function readCsvRows(filePath: string) {
   const content = fs.readFileSync(filePath, "utf8");
   const lines = content
     .split(/\r?\n/)
@@ -818,7 +827,11 @@ function readCsvRows(filePath: any) {
   };
 }
 
-function createSurfaceSuggestion(surface: any, checkId: any, locale: any) {
+function createSurfaceSuggestion(
+  surface: string,
+  checkId: string,
+  locale: string | null | undefined,
+) {
   if (checkId === "binary_check") {
     return t(
       locale,
@@ -846,7 +859,7 @@ function createSurfaceSuggestion(surface: any, checkId: any, locale: any) {
   return t(locale, "请修复 preflight 报错后重试。", "Fix preflight issues and retry.");
 }
 
-function runProbe(binary: any, args: any, cwd: any) {
+function runProbe(binary: string, args: string[], cwd: string) {
   try {
     const result = spawnSync(binary, args, {
       cwd,
@@ -886,7 +899,7 @@ function runProbe(binary: any, args: any, cwd: any) {
   }
 }
 
-function resolveSurfaceProbeDefinition(surface: any, runState: any) {
+function resolveSurfaceProbeDefinition(surface: string, runState: AnyRecord) {
   const custom = runState.surfaceDefinitions[surface];
 
   if (custom && isPlainObject(custom)) {
@@ -901,7 +914,7 @@ function resolveSurfaceProbeDefinition(surface: any, runState: any) {
   return (BUILTIN_SURFACE_PROBES as Record<string, AnyRecord>)[surface] ?? null;
 }
 
-function runSurfacePreflight(surface: any, runState: any) {
+function runSurfacePreflight(surface: string, runState: AnyRecord) {
   const probe = resolveSurfaceProbeDefinition(surface, runState);
   const checks = [];
   let available = true;
@@ -1059,7 +1072,7 @@ function runSurfacePreflight(surface: any, runState: any) {
   };
 }
 
-function buildRunArtifactPaths(cwd: any, resolvedConfig: any, locale: any) {
+function buildRunArtifactPaths(cwd: string, resolvedConfig: AnyRecord, locale: string) {
   const currentProject = resolvedConfig.config.execution.currentProject;
   const currentSprint = resolvedConfig.config.execution.currentSprint;
 
@@ -1102,7 +1115,7 @@ function buildRunArtifactPaths(cwd: any, resolvedConfig: any, locale: any) {
   };
 }
 
-function buildRunAuditPaths(cwd: any, resolvedConfig: any, executionId: any) {
+function buildRunAuditPaths(cwd: string, resolvedConfig: AnyRecord, executionId: string) {
   const auditConfig = resolvedConfig.config.automation?.audit ?? {};
   const outputDir = path.resolve(cwd, auditConfig.outputDir ?? ".repo-ai-governor/reports/runs");
   const latestFileName =
@@ -1115,7 +1128,7 @@ function buildRunAuditPaths(cwd: any, resolvedConfig: any, executionId: any) {
   };
 }
 
-function normalizeCheckpointWarnings(warnings: any) {
+function normalizeCheckpointWarnings(warnings: unknown) {
   if (!Array.isArray(warnings)) {
     return [];
   }
@@ -1129,7 +1142,7 @@ function normalizeCheckpointWarnings(warnings: any) {
   }));
 }
 
-function normalizeCheckpointRecord(value: any, index = 0) {
+function normalizeCheckpointRecord(value: AnyRecord, index = 0) {
   const stageId = String(value?.id ?? "").trim();
 
   if (!stageId) {
@@ -1157,23 +1170,23 @@ function normalizeCheckpointRecord(value: any, index = 0) {
   };
 }
 
-function resolveCheckpointRecordsFromPayload(payload: any) {
+function resolveCheckpointRecordsFromPayload(payload: AnyRecord) {
   if (Array.isArray(payload?.checkpoints?.stages)) {
     return payload.checkpoints.stages
-      .map((checkpoint: any, index: any) => normalizeCheckpointRecord(checkpoint, index))
+      .map((checkpoint: AnyRecord, index: number) => normalizeCheckpointRecord(checkpoint, index))
       .filter(Boolean);
   }
 
   if (Array.isArray(payload?.workflow?.stages)) {
     return payload.workflow.stages
-      .map((stage: any, index: any) => normalizeCheckpointRecord(stage, index))
+      .map((stage: AnyRecord, index: number) => normalizeCheckpointRecord(stage, index))
       .filter(Boolean);
   }
 
   return [];
 }
 
-function resolveResumePlan(runState: any, workflowTemplate: any) {
+function resolveResumePlan(runState: AnyRecord, workflowTemplate: AnyRecord) {
   if (!runState.resumeFromPath) {
     return null;
   }
@@ -1198,7 +1211,7 @@ function resolveResumePlan(runState: any, workflowTemplate: any) {
     runState.resumeFromPath,
     runState.locale,
     "cli.run_resume_source_parse_failed",
-  );
+  ) as AnyRecord;
   const checkpointRecords = resolveCheckpointRecordsFromPayload(resumePayload);
 
   if (checkpointRecords.length === 0) {
@@ -1217,7 +1230,7 @@ function resolveResumePlan(runState: any, workflowTemplate: any) {
     );
   }
 
-  const stageOrder = workflowTemplate.stages.map((stage: any) => stage.id);
+  const stageOrder = workflowTemplate.stages.map((stage: AnyRecord) => stage.id);
   const checkpointByStage = new Map();
 
   for (const checkpoint of checkpointRecords) {
@@ -1234,7 +1247,7 @@ function resolveResumePlan(runState: any, workflowTemplate: any) {
 
   if (!resumeStageId) {
     resumeStageId =
-      stageOrder.find((stageId: any) => checkpointByStage.get(stageId)?.status !== "passed") ??
+      stageOrder.find((stageId: string) => checkpointByStage.get(stageId)?.status !== "passed") ??
       null;
   }
 
@@ -1279,8 +1292,8 @@ function resolveResumePlan(runState: any, workflowTemplate: any) {
   };
 }
 
-function buildStageCheckpoints(workflowResult: any) {
-  return workflowResult.stages.map((stage: any, index: any) => ({
+function buildStageCheckpoints(workflowResult: AnyRecord) {
+  return workflowResult.stages.map((stage: AnyRecord, index: number) => ({
     sequence: index + 1,
     id: stage.id,
     status: stage.status ?? "unknown",
@@ -1301,7 +1314,7 @@ function buildStageCheckpoints(workflowResult: any) {
   }));
 }
 
-function buildRunKeyActions(workflowResult: any) {
+function buildRunKeyActions(workflowResult: AnyRecord) {
   const actions = [];
 
   for (const stage of workflowResult.stages) {
@@ -1348,18 +1361,24 @@ function buildRunKeyActions(workflowResult: any) {
   return actions;
 }
 
-function resolveRecoveryNextStageId(payload: any) {
-  const failedStage = payload.workflow.stages.find((stage: any) => stage.status === "failed");
+function resolveRecoveryNextStageId(payload: AnyRecord) {
+  const failedStage = payload.workflow.stages.find((stage: AnyRecord) => stage.status === "failed");
 
   if (failedStage) {
     return failedStage.id;
   }
 
-  const blockedStage = payload.workflow.stages.find((stage: any) => stage.status === "blocked");
+  const blockedStage = payload.workflow.stages.find(
+    (stage: AnyRecord) => stage.status === "blocked",
+  );
   return blockedStage?.id ?? null;
 }
 
-function buildRunRecoveryMetadata(runState: any, payload: any, auditRecordRef: any) {
+function buildRunRecoveryMetadata(
+  runState: AnyRecord,
+  payload: AnyRecord,
+  auditRecordRef: string | null,
+) {
   const nextStageId = resolveRecoveryNextStageId(payload);
   const resumeEnabled =
     runState.mode === RunModeEnum.Assisted && Boolean(nextStageId) && Boolean(auditRecordRef);
@@ -1401,7 +1420,7 @@ function buildRunRecoveryMetadata(runState: any, payload: any, auditRecordRef: a
   };
 }
 
-function writeRunAuditRecord(runState: any, payload: any) {
+function writeRunAuditRecord(runState: AnyRecord, payload: AnyRecord) {
   if (!runState.auditEnabled) {
     return null;
   }
@@ -1417,7 +1436,7 @@ function writeRunAuditRecord(runState: any, payload: any) {
   };
 }
 
-function loadTaskLedger(artifactPaths: any) {
+function loadTaskLedger(artifactPaths: AnyRecord) {
   const { taskCsvFile } = artifactPaths;
 
   if (!fs.existsSync(taskCsvFile)) {
@@ -1450,7 +1469,7 @@ function loadTaskLedger(artifactPaths: any) {
   );
 }
 
-function loadTaskCardIds(tasksRoot: any) {
+function loadTaskCardIds(tasksRoot: string) {
   if (!fs.existsSync(tasksRoot)) {
     return new Set();
   }
@@ -1463,7 +1482,7 @@ function loadTaskCardIds(tasksRoot: any) {
   );
 }
 
-function buildReviewStatusIndex(codeReviewRoot: any) {
+function buildReviewStatusIndex(codeReviewRoot: string) {
   const index = new Map();
 
   if (!fs.existsSync(codeReviewRoot)) {
@@ -1501,7 +1520,7 @@ function buildReviewStatusIndex(codeReviewRoot: any) {
   return index;
 }
 
-function buildTaskBreakdownContext(runState: any) {
+function buildTaskBreakdownContext(runState: AnyRecord) {
   const checklistExists = fs.existsSync(runState.artifactPaths.checklistFile);
   const taskCsvExists = fs.existsSync(runState.artifactPaths.taskCsvFile);
   const ledger = loadTaskLedger(runState.artifactPaths);
@@ -1529,7 +1548,11 @@ function buildTaskBreakdownContext(runState: any) {
   };
 }
 
-function resolveTaskCompletion(task: any, reviewIndex: any, completionStatuses: any) {
+function resolveTaskCompletion(
+  task: AnyRecord,
+  reviewIndex: Map<string, AnyRecord>,
+  completionStatuses: Set<string>,
+) {
   if (completionStatuses.has(task.status)) {
     return {
       complete: true,
@@ -1552,7 +1575,11 @@ function resolveTaskCompletion(task: any, reviewIndex: any, completionStatuses: 
   };
 }
 
-function resolveRoutingProfile(config: any, profileId: any, locale: any) {
+function resolveRoutingProfile(
+  config: AnyRecord,
+  profileId: string | null | undefined,
+  locale: string | null | undefined,
+) {
   if (profileId) {
     const customProfile = config.automation?.profiles?.[profileId];
 
@@ -1591,7 +1618,11 @@ function resolveRoutingProfile(config: any, profileId: any, locale: any) {
   );
 }
 
-function resolveLoopCompletionPolicy(rawPolicy: any, locale: any, stageId: any) {
+function resolveLoopCompletionPolicy(
+  rawPolicy: unknown,
+  locale: string | null | undefined,
+  stageId: string,
+) {
   const completionPolicy = String(rawPolicy ?? "first-cycle").trim();
 
   if (LOOP_COMPLETION_POLICIES.has(completionPolicy)) {
@@ -1615,8 +1646,8 @@ function resolveLoopCompletionPolicy(rawPolicy: any, locale: any, stageId: any) 
   );
 }
 
-function resolveReviewLoops(runState: any, processConfig: any, stages: any) {
-  const stageIdSet = new Set<string>(stages.map((stage: any) => String(stage.id)));
+function resolveReviewLoops(runState: AnyRecord, processConfig: AnyRecord, stages: AnyRecord[]) {
+  const stageIdSet = new Set<string>(stages.map((stage: AnyRecord) => String(stage.id)));
   const loopConfigs = [
     {
       defaults: DEFAULT_REVIEW_LOOPS["draft-review-loop"],
@@ -1636,7 +1667,7 @@ function resolveReviewLoops(runState: any, processConfig: any, stages: any) {
 
     const routeSequence =
       Array.isArray(config.routeSequence) && config.routeSequence.length > 0
-        ? config.routeSequence.map((routeKey: any) => String(routeKey).trim()).filter(Boolean)
+        ? config.routeSequence.map((routeKey: unknown) => String(routeKey).trim()).filter(Boolean)
         : [...defaults.routeSequence];
 
     if (routeSequence.length < 2) {
@@ -1674,7 +1705,7 @@ function resolveReviewLoops(runState: any, processConfig: any, stages: any) {
   return loops;
 }
 
-function resolveProcessModel(runState: any) {
+function resolveProcessModel(runState: AnyRecord) {
   const automationConfig = runState.resolvedConfig.config.automation ?? {};
   const processConfig = automationConfig.process ?? {};
   const stageDefinitions =
@@ -1744,7 +1775,9 @@ function resolveProcessModel(runState: any) {
   }
 
   const reviewLoops = resolveReviewLoops(runState, processConfig, stages);
-  const reviewLoopStageIds = new Set<string>(reviewLoops.map((loop: any) => String(loop.stageId)));
+  const reviewLoopStageIds = new Set<string>(
+    reviewLoops.map((loop: AnyRecord) => String(loop.stageId)),
+  );
   const taskLoopConfig = processConfig.taskLoop ?? {};
   const configuredTaskLoopStageId = String(
     taskLoopConfig.stageId ?? DEFAULT_TASK_LOOP.stageId,
@@ -1864,7 +1897,11 @@ function resolveProcessModel(runState: any) {
   };
 }
 
-function parseRouteOverrides(rawRouteValues: any, processModel: any, locale: any) {
+function parseRouteOverrides(
+  rawRouteValues: unknown,
+  processModel: AnyRecord,
+  locale: string | null | undefined,
+) {
   const values = Array.isArray(rawRouteValues)
     ? rawRouteValues
     : rawRouteValues
@@ -1917,7 +1954,7 @@ function parseRouteOverrides(rawRouteValues: any, processModel: any, locale: any
   return routeOverrides;
 }
 
-function buildRoutingPlan(runState: any, processModel: any) {
+function buildRoutingPlan(runState: AnyRecord, processModel: AnyRecord) {
   const profile = resolveRoutingProfile(
     runState.resolvedConfig.config,
     runState.routingProfile,
@@ -1968,7 +2005,11 @@ function buildRoutingPlan(runState: any, processModel: any) {
   };
 }
 
-function evaluateRoutingDecisions(routingPlan: any, reportsBySurface: any, runState: any) {
+function evaluateRoutingDecisions(
+  routingPlan: AnyRecord,
+  reportsBySurface: Map<string, AnyRecord>,
+  runState: AnyRecord,
+) {
   const decisions = [];
   const blocking = [];
   const pausing = [];
@@ -2031,8 +2072,8 @@ function evaluateRoutingDecisions(routingPlan: any, reportsBySurface: any, runSt
         message: decision.message,
         target: route.requestedSurface,
         suggestion: requestedReport?.checks
-          .filter((check: any) => check.status === "fail" && check.suggestion)
-          .map((check: any) => check.suggestion)
+          .filter((check: AnyRecord) => check.status === "fail" && check.suggestion)
+          .map((check: AnyRecord) => check.suggestion)
           .join(" "),
       });
       decisions.push(decision);
@@ -2054,8 +2095,8 @@ function evaluateRoutingDecisions(routingPlan: any, reportsBySurface: any, runSt
       message: decision.message,
       target: route.requestedSurface,
       suggestion: requestedReport?.checks
-        .filter((check: any) => check.status === "fail" && check.suggestion)
-        .map((check: any) => check.suggestion)
+        .filter((check: AnyRecord) => check.status === "fail" && check.suggestion)
+        .map((check: AnyRecord) => check.suggestion)
         .join(" "),
     });
     decisions.push(decision);
@@ -2069,10 +2110,10 @@ function evaluateRoutingDecisions(routingPlan: any, reportsBySurface: any, runSt
   };
 }
 
-function executePreflight(runState: any, routingPlan: any) {
+function executePreflight(runState: AnyRecord, routingPlan: AnyRecord) {
   const surfaces = new Set([
     routingPlan.defaultSurface,
-    ...routingPlan.routes.map((route: any) => route.requestedSurface),
+    ...routingPlan.routes.map((route: AnyRecord) => route.requestedSurface),
   ]);
   const reports = [...surfaces].map((surface) => runSurfacePreflight(surface, runState));
   const reportsBySurface = new Map(reports.map((report) => [report.surface, report]));
@@ -2105,7 +2146,7 @@ function executePreflight(runState: any, routingPlan: any) {
   };
 }
 
-function buildRunWorkflowTemplate(processModel: any) {
+function buildRunWorkflowTemplate(processModel: AnyRecord) {
   return {
     id: "automation-run",
     version: "1",
@@ -2149,7 +2190,7 @@ function buildRunWorkflowTemplate(processModel: any) {
           ref: "run-policy-gate",
         },
       },
-      ...processModel.stages.map((stage: any, index: any) => ({
+      ...processModel.stages.map((stage: AnyRecord, index: number) => ({
         id: stage.id,
         name: stage.name,
         dependsOn: index === 0 ? ["policy-gate"] : [processModel.stages[index - 1].id],
@@ -2162,7 +2203,11 @@ function buildRunWorkflowTemplate(processModel: any) {
   };
 }
 
-function createDispatchResult(runState: any, routeDecision: any, options: AnyRecord = {}) {
+function createDispatchResult(
+  runState: AnyRecord,
+  routeDecision: AnyRecord,
+  options: AnyRecord = {},
+) {
   if (routeDecision.decision === "pause_for_approval") {
     return {
       status: "blocked",
@@ -2256,12 +2301,12 @@ function createDispatchResult(runState: any, routeDecision: any, options: AnyRec
   };
 }
 
-function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
-  const routeDecisionMap = new Map(
-    routingPlan.routes.map((route: any) => [route.routeKey, cloneValue(route)]),
+function createRunHandlers(runState: AnyRecord, processModel: AnyRecord, routingPlan: AnyRecord) {
+  const routeDecisionMap = new Map<string, AnyRecord>(
+    routingPlan.routes.map((route: AnyRecord) => [route.routeKey, cloneValue(route)]),
   );
 
-  function getRouteDecision(routeKey: any) {
+  function getRouteDecision(routeKey: string) {
     const decision = routeDecisionMap.get(routeKey);
 
     if (!decision) {
@@ -2283,7 +2328,7 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
     return decision;
   }
 
-  function tryRestoreStageFromCheckpoint(stageId: any) {
+  function tryRestoreStageFromCheckpoint(stageId: string) {
     const resumePlan = runState.resumePlan;
 
     if (!resumePlan || !resumePlan.restoreStageIds.has(stageId)) {
@@ -2316,7 +2361,11 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
     };
   }
 
-  function runStageWithCheckpointRecovery(stageId: any, handler: any, stageContext: any) {
+  function runStageWithCheckpointRecovery(
+    stageId: string,
+    handler: (stageContext: AnyRecord) => AnyRecord,
+    stageContext: AnyRecord,
+  ) {
     const restored = tryRestoreStageFromCheckpoint(stageId);
 
     if (restored) {
@@ -2332,7 +2381,7 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
         enabled: false,
         status: "skipped",
         reports: [],
-        decisions: routingPlan.routes.map((route: any) => ({
+        decisions: routingPlan.routes.map((route: AnyRecord) => ({
           ...cloneValue(route),
           resolvedSurface: route.requestedSurface,
           decision: "assumed",
@@ -2573,7 +2622,7 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
     };
   }
 
-  function handleAiStage(stage: any) {
+  function handleAiStage(stage: AnyRecord) {
     if (!stage.routeKey) {
       return {
         status: "failed",
@@ -2596,7 +2645,7 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
     return createDispatchResult(runState, getRouteDecision(stage.routeKey));
   }
 
-  function resolveReviewLoopCompletion(loopConfig: any, cycle: any) {
+  function resolveReviewLoopCompletion(loopConfig: AnyRecord, cycle: number) {
     if (runState.dryRun) {
       return {
         complete: true,
@@ -2617,7 +2666,7 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
     };
   }
 
-  function handleReviewLoopStage(loopConfig: any) {
+  function handleReviewLoopStage(loopConfig: AnyRecord) {
     const cycles = [];
     let resolved = false;
     let resolvedBy = null;
@@ -2709,8 +2758,10 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
     };
   }
 
-  function handleTaskBreakdownStage(stageContext: any) {
-    const stage = processModel.stages.find((candidate: any) => candidate.id === "task-breakdown");
+  function handleTaskBreakdownStage(stageContext: AnyRecord) {
+    const stage = processModel.stages.find(
+      (candidate: AnyRecord) => candidate.id === "task-breakdown",
+    );
     const dispatchResult: AnyRecord = stage?.routeKey
       ? createDispatchResult(runState, getRouteDecision(stage.routeKey))
       : {
@@ -2844,7 +2895,7 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
     };
   }
 
-  function handleTaskLoopStage(stageContext: any) {
+  function handleTaskLoopStage(stageContext: AnyRecord) {
     const queue = stageContext.artifacts["task-queue"] ?? buildTaskBreakdownContext(runState);
     const pendingTasks = Array.isArray(queue.pending) ? queue.pending : [];
 
@@ -2867,7 +2918,9 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
     }
 
     const reviewIndex = buildReviewStatusIndex(runState.artifactPaths.codeReviewRoot);
-    const completionStatuses = new Set(runState.taskCompletionStatuses.map(normalizeTaskStatus));
+    const completionStatuses = new Set<string>(
+      (runState.taskCompletionStatuses as string[]).map(normalizeTaskStatus),
+    );
     const taskResults = [];
     const unresolvedTasks = [];
 
@@ -3026,19 +3079,19 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
     };
   }
 
-  const handlers: Record<string, (stageContext: any) => AnyRecord> = {
-    preflight: (stageContext: any) =>
+  const handlers: Record<string, (stageContext: AnyRecord) => AnyRecord> = {
+    preflight: (stageContext: AnyRecord) =>
       runStageWithCheckpointRecovery("preflight", () => handlePreflightStage(), stageContext),
-    "policy-gate": (stageContext: any) =>
+    "policy-gate": (stageContext: AnyRecord) =>
       runStageWithCheckpointRecovery("policy-gate", () => handlePolicyGateStage(), stageContext),
   };
-  const reviewLoopByStageId = new Map(
-    processModel.reviewLoops.map((loopConfig: any) => [loopConfig.stageId, loopConfig]),
+  const reviewLoopByStageId = new Map<string, AnyRecord>(
+    processModel.reviewLoops.map((loopConfig: AnyRecord) => [loopConfig.stageId, loopConfig]),
   );
 
   for (const stage of processModel.stages) {
     if (stage.kind === "system" && stage.id === "requirements-input") {
-      handlers[stage.id] = (stageContext: any) =>
+      handlers[stage.id] = (stageContext: AnyRecord) =>
         runStageWithCheckpointRecovery(
           stage.id,
           () => handleRequirementsInputStage(),
@@ -3048,34 +3101,40 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
     }
 
     if (stage.kind === "loop" && stage.id === processModel.taskLoop.stageId) {
-      handlers[stage.id] = (stageContext: any) =>
+      handlers[stage.id] = (stageContext: AnyRecord) =>
         runStageWithCheckpointRecovery(stage.id, handleTaskLoopStage, stageContext);
       continue;
     }
 
     if (stage.kind === "loop" && reviewLoopByStageId.has(stage.id)) {
-      handlers[stage.id] = (stageContext: any) =>
+      const loopConfig = reviewLoopByStageId.get(stage.id);
+
+      if (!loopConfig) {
+        continue;
+      }
+
+      handlers[stage.id] = (stageContext: AnyRecord) =>
         runStageWithCheckpointRecovery(
           stage.id,
-          () => handleReviewLoopStage(reviewLoopByStageId.get(stage.id)),
+          () => handleReviewLoopStage(loopConfig),
           stageContext,
         );
       continue;
     }
 
     if (stage.id === "task-breakdown") {
-      handlers[stage.id] = (stageContext: any) =>
+      handlers[stage.id] = (stageContext: AnyRecord) =>
         runStageWithCheckpointRecovery(stage.id, handleTaskBreakdownStage, stageContext);
       continue;
     }
 
     if (stage.kind === "ai") {
-      handlers[stage.id] = (stageContext: any) =>
+      handlers[stage.id] = (stageContext: AnyRecord) =>
         runStageWithCheckpointRecovery(stage.id, () => handleAiStage(stage), stageContext);
       continue;
     }
 
-    handlers[stage.id] = (stageContext: any) =>
+    handlers[stage.id] = (stageContext: AnyRecord) =>
       runStageWithCheckpointRecovery(
         stage.id,
         () => ({
@@ -3096,17 +3155,17 @@ function createRunHandlers(runState: any, processModel: any, routingPlan: any) {
   return handlers;
 }
 
-function flattenWorkflowWarnings(workflowResult: any) {
-  return workflowResult.stages.flatMap((stageResult: any) => stageResult.warnings ?? []);
+function flattenWorkflowWarnings(workflowResult: AnyRecord) {
+  return workflowResult.stages.flatMap((stageResult: AnyRecord) => stageResult.warnings ?? []);
 }
 
-function buildRunSummary(workflowResult: any, preflightStatus: any) {
+function buildRunSummary(workflowResult: AnyRecord, preflightStatus: string) {
   const stageWarnings = flattenWorkflowWarnings(workflowResult);
   const failedStageCount = workflowResult.stages.filter(
-    (stageResult: any) => stageResult.status === "failed",
+    (stageResult: AnyRecord) => stageResult.status === "failed",
   ).length;
   const blockedStageCount = workflowResult.stages.filter(
-    (stageResult: any) => stageResult.status === "blocked",
+    (stageResult: AnyRecord) => stageResult.status === "blocked",
   ).length;
   const errors = failedStageCount + blockedStageCount;
   const warnings = stageWarnings.length;
@@ -3122,13 +3181,14 @@ function buildRunSummary(workflowResult: any, preflightStatus: any) {
     status,
     errors,
     warnings,
-    passed: workflowResult.stages.filter((stageResult: any) => stageResult.status === "passed")
-      .length,
+    passed: workflowResult.stages.filter(
+      (stageResult: AnyRecord) => stageResult.status === "passed",
+    ).length,
     exitCode,
   };
 }
 
-function renderWorkflowStage(stageResult: any) {
+function renderWorkflowStage(stageResult: AnyRecord) {
   return {
     id: stageResult.id,
     status: stageResult.status,
@@ -3141,13 +3201,13 @@ function renderWorkflowStage(stageResult: any) {
 }
 
 function buildRunPayload(
-  runState: any,
-  processModel: any,
-  routingPlan: any,
-  workflowResult: any,
-  summary: any,
+  runState: AnyRecord,
+  processModel: AnyRecord,
+  routingPlan: AnyRecord,
+  workflowResult: AnyRecord,
+  summary: AnyRecord,
 ) {
-  const preflightStage = workflowResult.stages.find((stage: any) => stage.id === "preflight");
+  const preflightStage = workflowResult.stages.find((stage: AnyRecord) => stage.id === "preflight");
   const preflightDetails = preflightStage?.details ?? {
     enabled: false,
     status: "unknown",
@@ -3157,7 +3217,7 @@ function buildRunPayload(
     pausing: [],
     blocking: [],
   };
-  const policyStage = workflowResult.stages.find((stage: any) => stage.id === "policy-gate");
+  const policyStage = workflowResult.stages.find((stage: AnyRecord) => stage.id === "policy-gate");
   const policyDetails = policyStage?.details?.policy ??
     runState.policyGateResult ?? {
       decision: "unknown",
@@ -3179,14 +3239,14 @@ function buildRunPayload(
       warnings: [],
     };
   const taskLoopStage = processModel.taskLoop.stageId
-    ? workflowResult.stages.find((stage: any) => stage.id === processModel.taskLoop.stageId)
+    ? workflowResult.stages.find((stage: AnyRecord) => stage.id === processModel.taskLoop.stageId)
     : null;
   const stageCheckpoints = buildStageCheckpoints(workflowResult);
   const keyActions = buildRunKeyActions(workflowResult);
   const failureReason =
     workflowResult.failure?.stageResult?.summary ??
     workflowResult.stages.find(
-      (stage: any) => stage.status === "failed" || stage.status === "blocked",
+      (stage: AnyRecord) => stage.status === "failed" || stage.status === "blocked",
     )?.summary ??
     null;
   const auditRecordRef = runState.auditEnabled
@@ -3218,13 +3278,13 @@ function buildRunPayload(
     currentSprint: runState.resolvedConfig.config.execution.currentSprint,
     process: {
       source: processModel.source,
-      stages: processModel.stages.map((stage: any) => ({
+      stages: processModel.stages.map((stage: AnyRecord) => ({
         id: stage.id,
         kind: stage.kind,
         routeKey: stage.routeKey,
         requiredSurface: stage.requiredSurface,
       })),
-      reviewLoops: processModel.reviewLoops.map((loopConfig: any) => ({
+      reviewLoops: processModel.reviewLoops.map((loopConfig: AnyRecord) => ({
         stageId: loopConfig.stageId,
         routeSequence: loopConfig.routeSequence,
         maxReviewCycles: loopConfig.maxReviewCycles,
@@ -3294,7 +3354,7 @@ function buildRunPayload(
     },
     auditTrail: {
       policyDecision: policyDetails.decision ?? "unknown",
-      stageStatuses: stageCheckpoints.map((checkpoint: any) => ({
+      stageStatuses: stageCheckpoints.map((checkpoint: AnyRecord) => ({
         id: checkpoint.id,
         status: checkpoint.status,
       })),
@@ -3311,7 +3371,7 @@ function buildRunPayload(
   };
 }
 
-function writeRunSummary(logger: any, payload: any, format: any) {
+function writeRunSummary(logger: AnyRecord, payload: AnyRecord, format: string) {
   const locale = normalizeLocale(payload.locale);
 
   if (format === "json") {
@@ -3395,7 +3455,7 @@ function writeRunSummary(logger: any, payload: any, format: any) {
   }
 }
 
-function writeProcessExplainSummary(logger: any, payload: any, format: any) {
+function writeProcessExplainSummary(logger: AnyRecord, payload: AnyRecord, format: string) {
   const locale = normalizeLocale(payload.locale);
 
   if (format === "json") {
@@ -3419,7 +3479,7 @@ function writeProcessExplainSummary(logger: any, payload: any, format: any) {
         `## ${t(locale, "阶段顺序", "Stage order")}`,
         "",
         payload.process.snapshot.workflow.stageOrder
-          .map((stageId: any, index: any) => `${index + 1}. \`${stageId}\``)
+          .map((stageId: string, index: number) => `${index + 1}. \`${stageId}\``)
           .join("\n"),
         "",
         `## ${t(locale, "任务循环", "Task loop")}`,
@@ -3458,7 +3518,7 @@ function writeProcessExplainSummary(logger: any, payload: any, format: any) {
   );
 }
 
-function buildRunState(commandContext: any): AnyRecord {
+function buildRunState(commandContext: AnyRecord): AnyRecord {
   const cwd = path.resolve(commandContext.globalOptions.cwd ?? process.cwd());
   const resolvedConfig = loadResolvedConfig({
     cwd,
@@ -3631,12 +3691,14 @@ function buildRunState(commandContext: any): AnyRecord {
     artifactPaths,
     slotRuntime: buildSlotRuntime({
       config: resolvedConfig.config,
-      slotDefinitions: resolvedConfig.slotDefinitions as any,
+      slotDefinitions: resolvedConfig.slotDefinitions as NonNullable<
+        Parameters<typeof buildSlotRuntime>[0]
+      >["slotDefinitions"],
     }),
   };
 }
 
-export async function executeRunCommand(commandContext: any, logger: any) {
+export async function executeRunCommand(commandContext: AnyRecord, logger: AnyRecord) {
   const runState: AnyRecord = buildRunState(commandContext);
   const processModel = resolveProcessModel(runState);
   runState.routeOverrides = parseRouteOverrides(

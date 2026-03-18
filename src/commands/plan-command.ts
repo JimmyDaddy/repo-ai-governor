@@ -17,6 +17,8 @@ import {
 import type { AnyRecord } from "../types/aliases/command.type.js";
 import type { CommandContext } from "../types/interfaces/cli-runtime.interface.js";
 import type { Logger } from "../types/interfaces/cli-ui.interface.js";
+import type { StandardsPackage } from "../types/interfaces/standards-package.interface.js";
+import type { PlanTemplateContext } from "../types/interfaces/template-document.interface.js";
 import { normalizeLocale, toRelativePath, translateLocale } from "../utils/common.js";
 import type { ExecuteWorkflowOptions } from "../workflow/governance-engine.js";
 import { executeWorkflow } from "../workflow/governance-engine.js";
@@ -24,6 +26,10 @@ import { renderPlanDocument, resolvePlanTemplateLocale } from "./templates/plan-
 
 function t(locale: string | null | undefined, zhCN: string, enUS: string): string {
   return translateLocale(locale, zhCN, enUS);
+}
+
+function renderPlanTemplate(documentId: string, context: AnyRecord): string {
+  return renderPlanDocument(documentId, context as unknown as PlanTemplateContext);
 }
 
 function formatDate(date: Date = new Date()): string {
@@ -133,18 +139,14 @@ function collectExistingTaskNumbers(paths: AnyRecord, prefix: string): number[] 
 function createLocalizedTaskBlueprints(
   locale: string,
   title: string,
-  standardsPackage: AnyRecord,
+  standardsPackage: StandardsPackage,
   startTaskNumber: number,
   dateStamp: string,
   taskPrefix: string,
 ): AnyRecord[] {
-  const planRuleIds = listRulesForConsumer(standardsPackage as any, "plan").map((rule) => rule.id);
-  const checkRuleIds = listRulesForConsumer(standardsPackage as any, "check").map(
-    (rule) => rule.id,
-  );
-  const reviewRuleIds = listRulesForConsumer(standardsPackage as any, "review").map(
-    (rule) => rule.id,
-  );
+  const planRuleIds = listRulesForConsumer(standardsPackage, "plan").map((rule) => rule.id);
+  const checkRuleIds = listRulesForConsumer(standardsPackage, "check").map((rule) => rule.id);
+  const reviewRuleIds = listRulesForConsumer(standardsPackage, "review").map((rule) => rule.id);
 
   const blueprints =
     locale === "en-US"
@@ -594,7 +596,7 @@ function writeSummaryOutput(
     format === "json"
       ? `${JSON.stringify(payload, null, 2)}\n`
       : ensureTrailingNewline(
-          renderPlanDocument("summary", {
+          renderPlanTemplate("summary", {
             locale: payload.locale,
             status: payload.status,
             dryRun: payload.dryRun,
@@ -606,7 +608,7 @@ function writeSummaryOutput(
             standardsPreset: payload.standards.preset,
             tasks: payload.tasks,
             files: payload.files,
-          } as any),
+          }),
         );
 
   fs.writeFileSync(filePath, content, "utf8");
@@ -618,7 +620,7 @@ function createWorkflowHandlers(runState: AnyRecord): AnyRecord {
     plan: ({ state, selectedStageIds }: AnyRecord) => {
       state.documents = state.documents ?? {};
       state.tasks = runState.planningTasks;
-      state.documents.plan = renderPlanDocument("sprintPlan", {
+      state.documents.plan = renderPlanTemplate("sprintPlan", {
         locale: runState.locale,
         currentProject: runState.artifactPaths.currentProject,
         currentSprint: runState.artifactPaths.currentSprint,
@@ -638,7 +640,7 @@ function createWorkflowHandlers(runState: AnyRecord): AnyRecord {
         acceptance: runState.acceptance,
         verificationPath: runState.verificationPath,
         tasks: runState.planningTasks,
-      } as any);
+      });
 
       return {
         summary:
@@ -655,29 +657,29 @@ function createWorkflowHandlers(runState: AnyRecord): AnyRecord {
     },
     breakdown: ({ state }: AnyRecord) => {
       state.documents = state.documents ?? {};
-      state.documents.checklist = renderPlanDocument("checklist", {
+      state.documents.checklist = renderPlanTemplate("checklist", {
         locale: runState.locale,
         currentSprint: runState.artifactPaths.currentSprint,
         tasks: runState.planningTasks,
-      } as any);
-      state.documents.tasksCsv = renderPlanDocument("tasksCsv", {
+      });
+      state.documents.tasksCsv = renderPlanTemplate("tasksCsv", {
         locale: runState.locale,
         dateStamp: runState.dateStamp,
         csvColumns: runState.artifactPaths.csvColumns,
         currentProject: runState.artifactPaths.currentProject,
         currentSprint: runState.artifactPaths.currentSprint,
         tasks: runState.planningTasks,
-      } as any);
+      });
       state.documents.taskFiles = Object.fromEntries(
         runState.planningTasks.map((task: AnyRecord) => [
           task.id,
-          renderPlanDocument("taskFile", {
+          renderPlanTemplate("taskFile", {
             locale: runState.locale,
             dateStamp: runState.dateStamp,
             currentProject: runState.artifactPaths.currentProject,
             currentSprint: runState.artifactPaths.currentSprint,
             task,
-          } as any),
+          }),
         ]),
       );
 
@@ -751,7 +753,7 @@ function writePlanSummary(logger: Logger, payload: AnyRecord, format: string): v
 
   if (format === "markdown") {
     logger.raw(
-      renderPlanDocument("summary", {
+      renderPlanTemplate("summary", {
         locale: payload.locale,
         status: payload.status,
         dryRun: payload.dryRun,
@@ -763,7 +765,7 @@ function writePlanSummary(logger: Logger, payload: AnyRecord, format: string): v
         standardsPreset: payload.standards.preset,
         tasks: payload.tasks,
         files: payload.files,
-      } as any),
+      }),
       { ignoreQuiet: true },
     );
     return;

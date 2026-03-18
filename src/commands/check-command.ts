@@ -4,6 +4,7 @@ import { ConfigError, InputError } from "../cli/runtime/errors.js";
 import { EXIT_CODES } from "../cli/runtime/exit-codes.js";
 import { loadResolvedConfig } from "../config/load-config.js";
 import { DEFAULT_TASK_CSV_COLUMNS } from "../config/repository-layout.js";
+import { ReportFormatEnum } from "../constants/report.js";
 import { buildUnifiedReport, renderUnifiedReport } from "../reporting/report-model.js";
 import { buildSlotRuntime } from "../slots/runtime.js";
 import {
@@ -12,12 +13,14 @@ import {
   resolveStandardsPackage,
 } from "../standards/official-base-package.js";
 import type { AnyRecord } from "../types/aliases/command.type.js";
+import type { ReportFormat } from "../types/aliases/report.type.js";
 import type { CommandContext } from "../types/interfaces/cli-runtime.interface.js";
 import type { Logger } from "../types/interfaces/cli-ui.interface.js";
 import type {
   CheckFinding,
   CheckFindingOptions,
 } from "../types/interfaces/command-check.interface.js";
+import type { StandardsPackage } from "../types/interfaces/standards-package.interface.js";
 import { cloneValue, normalizeLocale, toRelativePath, translateLocale } from "../utils/common.js";
 import type { ExecuteWorkflowOptions } from "../workflow/governance-engine.js";
 import { executeWorkflow } from "../workflow/governance-engine.js";
@@ -274,7 +277,9 @@ function buildCheckRun(commandContext: CommandContext): AnyRecord {
     standardsPackage,
     slotRuntime: buildSlotRuntime({
       config: resolvedConfig.config,
-      slotDefinitions: resolvedConfig.slotDefinitions as any,
+      slotDefinitions: resolvedConfig.slotDefinitions as NonNullable<
+        Parameters<typeof buildSlotRuntime>[0]
+      >["slotDefinitions"],
     }),
     artifactPaths,
     changedOnly: commandContext.commandOptions.changedOnly === true,
@@ -282,19 +287,23 @@ function buildCheckRun(commandContext: CommandContext): AnyRecord {
   };
 }
 
-function getStageRules(standardsPackage: AnyRecord, stageId: string, locale: string): AnyRecord[] {
+function getStageRules(
+  standardsPackage: StandardsPackage,
+  stageId: string,
+  locale: string,
+): AnyRecord[] {
   const ruleIds = new Set((STAGE_RULE_IDS as Record<string, string[]>)[stageId] ?? []);
-  const matchingRules = listRulesForConsumer(standardsPackage as any, "check").filter((rule) =>
+  const matchingRules = listRulesForConsumer(standardsPackage, "check").filter((rule) =>
     ruleIds.has(rule.id),
   );
 
   return matchingRules.map(
-    (rule) =>
+    (rule): AnyRecord =>
       renderRulesForConsumer(
         {
           ...standardsPackage,
           rules: [rule],
-        } as any,
+        },
         "check",
         {
           view: "human",
@@ -1010,7 +1019,11 @@ function writeCheckSummary(logger: Logger, payload: AnyRecord, format: string): 
 
 function buildReportContent(payload: AnyRecord, format: string): string {
   const report = buildUnifiedReport(payload);
-  return renderUnifiedReport(report, format as any);
+  const resolvedFormat: ReportFormat =
+    format === ReportFormatEnum.Json || format === ReportFormatEnum.Markdown
+      ? format
+      : ReportFormatEnum.Summary;
+  return renderUnifiedReport(report, resolvedFormat);
 }
 
 function writeReportFile(runState: AnyRecord, payload: AnyRecord, format: string): string {
@@ -1022,7 +1035,7 @@ function writeReportFile(runState: AnyRecord, payload: AnyRecord, format: string
   const reportFilePath = path.resolve(runState.cwd, outputDir, reportFileName);
 
   fs.mkdirSync(path.dirname(reportFilePath), { recursive: true });
-  fs.writeFileSync(reportFilePath, buildReportContent(payload, format as any), "utf8");
+  fs.writeFileSync(reportFilePath, buildReportContent(payload, format), "utf8");
   return reportFilePath;
 }
 
