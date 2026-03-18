@@ -42,10 +42,11 @@ $CLI init \
 
 初始化后至少应出现：
 
-1. `.repo-ai-governor/governor.yaml`
+1. 治理配置与执行上下文文件（自动生成）
 2. `AGENTS.md`
-3. `.repo-ai-governor/context/current-context.md`
-4. `docs/<project>/<sprint>/`
+3. `docs/<project>/<sprint>/`
+
+说明：workspace 数据由工具自动管理，通常不需要手动处理路径。
 
 ## 2. Install And Validate Skills By Surface
 
@@ -72,13 +73,13 @@ $CLI skills doctor  --cwd "$ROOT" --surface claude-code --strict --format json
 1. `AGENTS.md`
 2. `code_standards.md`
 3. `docs/governance/long-term-maintenance-guide.md`
-4. `.repo-ai-governor/context/current-context.md`
+4. `init` 生成的当前上下文文件（current-context）
 
 建议在团队内部固定一段启动语句：
 
 ```text
 请先读取 AGENTS.md、code_standards.md、docs/governance/long-term-maintenance-guide.md、
-.repo-ai-governor/context/current-context.md，然后按当前 sprint 的任务台账执行。
+当前上下文文件（current-context），然后按当前 sprint 的任务台账执行。
 ```
 
 ## 4. Standard Daily Flow
@@ -210,12 +211,14 @@ $CLI run \
 ### 5.5 Resume From Checkpoint
 
 ```bash
+AUDIT_PATH="<latest_audit_path_from_previous_run_output>"
+
 $CLI run \
   --cwd "$ROOT" \
   --project demo \
   --sprint sprint-001 \
   --mode assisted \
-  --resume-from .repo-ai-governor/audits/latest.json \
+  --resume-from "$AUDIT_PATH" \
   --resume-stage review \
   --format json
 ```

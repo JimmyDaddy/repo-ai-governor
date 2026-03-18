@@ -2,16 +2,16 @@
 
 ## Primary Stream
 
-- Status: completed
-- Project: `ts-vitest-v1`
-- Sprint: `sprint-003`
-- Docs root: `docs/ts-vitest-v1/sprint-003`
-- Task records: `docs/ts-vitest-v1/sprint-003/tasks/checklist.md`, `docs/ts-vitest-v1/sprint-003/tasks/tasks.csv`
-- Code review records: `docs/ts-vitest-v1/sprint-003/code-review`
+- Status: planning
+- Project: `refactor-mainline`
+- Sprint: `sprint-001`
+- Docs root: `docs/refactor-mainline`
+- Task records: `docs/refactor-mainline/sprint-001/tasks/`
+- Code review records: `docs/refactor-mainline/sprint-001/code-review/`
 
 ## Active Streams
 
-- `primary`: project=`ts-vitest-v1`, sprint=`sprint-003`, docs=`docs/ts-vitest-v1/sprint-003`, plan=`docs/ts-vitest-v1/sprint-003/plan.md`, tasks=`docs/ts-vitest-v1/sprint-003/tasks/TK-3001.md|docs/ts-vitest-v1/sprint-003/tasks/TK-3002.md|docs/ts-vitest-v1/sprint-003/tasks/TK-3003.md|docs/ts-vitest-v1/sprint-003/tasks/TK-3004.md|docs/ts-vitest-v1/sprint-003/tasks/TK-3005.md|docs/ts-vitest-v1/sprint-003/tasks/TK-3006.md|docs/ts-vitest-v1/sprint-003/tasks/TK-3007.md|docs/ts-vitest-v1/sprint-003/tasks/TK-3008.md|docs/ts-vitest-v1/sprint-003/tasks/TK-3009.md|docs/ts-vitest-v1/sprint-003/tasks/TK-3010.md`, checklist=`docs/ts-vitest-v1/sprint-003/tasks/checklist.md`, csv=`docs/ts-vitest-v1/sprint-003/tasks/tasks.csv`, review=`docs/ts-vitest-v1/sprint-003/code-review`, status=`completed`
+- `primary`: project=`refactor-mainline`, sprint=`sprint-001`, docs=`docs/refactor-mainline`, plan=`docs/refactor-mainline/execution-plan.md`, tasks=`docs/refactor-mainline/sprint-001/tasks/`, checklist=`docs/refactor-mainline/sprint-001/tasks/checklist.md`, csv=`docs/refactor-mainline/sprint-001/tasks/tasks.csv`, review=`docs/refactor-mainline/sprint-001/code-review/`, status=`planning`
 
 ## Update Rules
 

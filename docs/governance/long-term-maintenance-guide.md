@@ -6,7 +6,7 @@
 
 ## Source Hierarchy
 
-1. Normative rules: `code_standards.md` (`CS-001` to `CS-013`)
+1. Normative rules: `code_standards.md` (`CS-001` to `CS-014`)
 2. Operational baseline: this guide (`docs/governance/long-term-maintenance-guide.md`)
 3. Sprint execution records: `docs/<project>/<sprint>/`
 
@@ -24,8 +24,18 @@ This guide does not duplicate rule text from `code_standards.md`. It defines how
 1. Delivery quality baseline: `CS-001` to `CS-004`
 2. ESM/TS boundary baseline: `CS-005` to `CS-008`
 3. Constant and type governance baseline: `CS-009` to `CS-013`
+4. Monorepo naming baseline: `CS-014`
 
 For command-level enforcement, always use `code_standards.md -> Verification Commands` as the single source of truth.
+
+## Pending Gate Integration Memo
+
+1. Prepared script: `scripts/governance/check-monorepo-naming.js`.
+2. Planned scripts:
+   - `scripts/governance/check-package-dependency-boundary.js`
+   - `scripts/governance/check-monorepo-versioning-policy.js`
+3. Planned wiring target: `code_standards.md -> Verification Commands`.
+4. Current decision: keep scripts as implementation-ready assets and defer activation to a dedicated follow-up window.
 
 ## Daily and Release Cadence
 
@@ -56,6 +66,7 @@ Any non-empty entry must include task-level traceability in `tasks/checklist.md`
 1. Governance behavior changes must update both `README.md` and `README.zh-CN.md`.
 2. Sprint-level execution changes must update `plan.md`, `tasks/checklist.md`, and `tasks/tasks.csv`.
 3. Closure work must include a written closure report in the sprint docs.
+4. Document date metadata must use `YYYY-MM-DD`; linked core docs should refresh dates in the same change window.
 
 ## Monthly Audit Checklist
 

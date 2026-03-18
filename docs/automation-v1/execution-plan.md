@@ -1,11 +1,15 @@
 # Automation V1 Execution Plan
 
 - Status: active
-- Date: 2026-03-17
+- Date: 2026-03-18
 - Basis:
+  - [../repo-ai-governor-overall-technical-solution.md](../repo-ai-governor-overall-technical-solution.md)
+  - [../repo-ai-governor-architecture-and-repo-layering.md](../repo-ai-governor-architecture-and-repo-layering.md)
+  - [../product-requirements-brief.md](../product-requirements-brief.md)
   - [../product-requirements.md](../product-requirements.md)
   - [../post-mvp-project-recommendation.md](../post-mvp-project-recommendation.md)
   - [../mvp-execution-plan.md](../mvp-execution-plan.md)
+  - [./overall-adk-like-multi-agent-governance-solution.md](./overall-adk-like-multi-agent-governance-solution.md)
   - [./sprint-001/default-and-custom-orchestration-solution.md](./sprint-001/default-and-custom-orchestration-solution.md)
 
 ## Goal
@@ -23,13 +27,17 @@
 5. 使用默认流程快速启动，并通过配置自定义阶段与循环编排。
 6. 清晰知道当前执行采用“默认流程”还是“项目自定义流程”。
 
-## New Inputs (2026-03-17)
+## New Inputs (2026-03-18)
 
 本轮新增并已纳入计划的关键输入：
 
-1. 默认流程升级为：`需求输入 -> 需求草拟 -> 草案评审循环 -> 技术方案评审循环 -> 任务拆解 -> 任务执行评审循环`。
-2. 新增“默认模板 + 配置编排”技术方案文档，明确 `automation.process` 为流程自定义主入口。
-3. 新增流程循环配置能力：`draftReviewLoop`、`solutionReviewLoop`、`taskLoop.stageId`。
+1. PRD 入口切换为 `docs/product-requirements-brief.md`，完整 PRD 作为迭代对齐参考。
+2. 产品主线明确为“类 ADK 多 Agent 编排治理框架”，并要求“编排层统一、执行层开放”。
+3. 人机协同策略升级为 Policy 驱动：方案评审前置、复核失败升级、有权限 CR 强制闸口。
+4. 新增项目级总技术方案文档，作为所有 sprint 的统一架构基线。
+5. 新增工具级总技术方案文档 `docs/repo-ai-governor-overall-technical-solution.md` 作为全域实施方针。
+6. 新增工具级架构图与仓库分层蓝图文档，作为后续模块拆分和依赖治理基线。
+7. 原 `sprint-002` 台账目录已移除（2026-03-18），后续实施将直接基于工具级总纲与架构蓝图重建新 sprint 任务流。
 
 ## Process Strategy
 
@@ -132,7 +140,7 @@ automation:
 
 ## Iteration Plan
 
-### Sprint 001: Controlled Automation Baseline (in progress)
+### Sprint 001: Controlled Automation Baseline (done)
 
 目标：
 
@@ -154,13 +162,18 @@ automation:
    - `TK-956` 编排解释输出（默认/自定义来源、已编译 loop 配置）
    - `TK-957` 流程配置校验入口（`run --explain-process` / `run --validate-process`）
 
-### Sprint 002: Assisted Recovery And Reliability
+### Sprint 002: ADK-like Orchestration Blueprint (removed)
 
-目标：
+状态：
 
-1. 增强失败重试与恢复策略。
-2. 增加更细粒度门禁策略和可配置阈值。
-3. 扩展自动化场景覆盖。
+1. 该 sprint 目录于 2026-03-18 下线，原因是即将进行项目结构大重构。
+2. 已保留的关键成果已上收至工具级与项目级总文档，不再依赖该 sprint 目录。
+
+保留成果入口：
+
+1. `docs/repo-ai-governor-overall-technical-solution.md`
+2. `docs/repo-ai-governor-architecture-and-repo-layering.md`
+3. `docs/automation-v1/overall-adk-like-multi-agent-governance-solution.md`
 
 ### Sprint 003: Autonomous Expansion
 

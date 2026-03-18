@@ -1,0 +1,7 @@
+execution_id,task_id,title,owner,priority,due_date,status,project,sprint,plan,result,verify,review_delta,recorded_at
+TK-401-00,TK-401,Codex adapter 模块化,Adapter,P0,2026-07-07,todo,milestone-04-m4-adapter-cli-slimming,sprint-001,Codex adapter 模块化,pending,pending,,2026-03-18
+TK-402-00,TK-402,Copilot adapter 模块化,Adapter,P0,2026-07-07,todo,milestone-04-m4-adapter-cli-slimming,sprint-001,Copilot adapter 模块化,pending,pending,,2026-03-18
+TK-403-00,TK-403,Claude adapter 模块化,Adapter,P0,2026-07-07,todo,milestone-04-m4-adapter-cli-slimming,sprint-001,Claude adapter 模块化,pending,pending,,2026-03-18
+TK-404-00,TK-404,适配能力矩阵与降级策略,Adapter,P1,2026-07-07,todo,milestone-04-m4-adapter-cli-slimming,sprint-001,适配能力矩阵与降级策略,pending,pending,,2026-03-18
+TK-405-00,TK-405,adapter 契约测试补齐,QA,P1,2026-07-07,todo,milestone-04-m4-adapter-cli-slimming,sprint-001,adapter 契约测试补齐,pending,pending,,2026-03-18
+TK-406-00,TK-406,CLI 路由层设计冻结,CLI,P1,2026-07-07,todo,milestone-04-m4-adapter-cli-slimming,sprint-001,CLI 路由层设计冻结,pending,pending,,2026-03-18

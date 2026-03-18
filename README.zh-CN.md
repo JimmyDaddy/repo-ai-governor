@@ -79,12 +79,11 @@ $CLI check \
 
 会生成的核心产物：
 
-1. `.repo-ai-governor/governor.yaml`
+1. 治理配置与执行上下文文件（由工具自动管理）
 2. `AGENTS.md`
-3. `.repo-ai-governor/context/current-context.md`
-4. `docs/<project>/<sprint>/plan.md`
-5. `docs/<project>/<sprint>/tasks/*`
-6. `docs/<project>/<sprint>/code-review/*`
+3. `docs/<project>/<sprint>/plan.md`
+4. `docs/<project>/<sprint>/tasks/*`
+5. `docs/<project>/<sprint>/code-review/*`
 
 完整流程见：[Quick Start](./docs/quick-start.md)
 
@@ -104,7 +103,7 @@ npx @cjhdev/repo-ai-governor skills doctor --surface codex --strict --format jso
 
 安装后建议让 AI 助手先做两件事：
 
-1. 读取 `AGENTS.md` 与 `.repo-ai-governor/context/current-context.md`
+1. 读取 `AGENTS.md` 与 `init` 生成的当前上下文文件
 2. 按已安装 skill 执行（例如 `$governor-plan-runner`、`$governor-task-implementer`、`$governor-delivery-finisher`）
 
 ## 核心命令
@@ -157,7 +156,8 @@ npx @cjhdev/repo-ai-governor skills doctor --surface codex --strict --format jso
 2. `npm run check` 串行执行 format/lint/build/standards gate。
 3. `npm run ci:quality` 在默认 gate 之上增加 typecheck 与覆盖率阈值校验。
 4. `npm run release:ga-check` 作为发布前质量链路统一入口。
-5. `code_standards.md` 当前生效规则为 `CS-001` 到 `CS-013`。
+5. `code_standards.md` 当前生效规则为 `CS-001` 到 `CS-014`。
+6. Monorepo 命名门禁脚本已预置在 `scripts/governance/check-monorepo-naming.js`，当前轮次有意不接入 `Verification Commands`。
 
 迁移收官与长期维护细则见：
 
@@ -179,7 +179,7 @@ slots:
     - security-review
 ```
 
-项目自定义 slot 文件路径：`.repo-ai-governor/slots/*.yaml`。
+项目自定义 slot 文件由工具治理流程自动生成和管理。
 
 如果你的团队已经有 `code_standards.md`，可以在文档里加入 `## Verification Commands` 段落，把它变成可执行门禁：
 

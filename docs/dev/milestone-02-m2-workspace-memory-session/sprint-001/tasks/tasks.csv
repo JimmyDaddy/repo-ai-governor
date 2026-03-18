@@ -1,0 +1,7 @@
+execution_id,task_id,title,owner,priority,due_date,status,project,sprint,plan,result,verify,review_delta,recorded_at
+TK-201-00,TK-201,workspace schema: tool_managed/repo_local,Config,P0,2026-05-12,todo,milestone-02-m2-workspace-memory-session,sprint-001,workspace schema: tool_managed/repo_local,pending,pending,,2026-03-18
+TK-202-00,TK-202,workspace resolver + repo_fingerprint,Core Runtime,P0,2026-05-12,todo,milestone-02-m2-workspace-memory-session,sprint-001,workspace resolver + repo_fingerprint,pending,pending,,2026-03-18
+TK-203-00,TK-203,默认 tool_managed 路径与初始化,Core Runtime,P0,2026-05-12,todo,milestone-02-m2-workspace-memory-session,sprint-001,默认 tool_managed 路径与初始化,pending,pending,,2026-03-18
+TK-204-00,TK-204,repo_local 模式接入与兼容,Core Runtime,P0,2026-05-12,todo,milestone-02-m2-workspace-memory-session,sprint-001,repo_local 模式接入与兼容,pending,pending,,2026-03-18
+TK-205-00,TK-205,copy/verify/switch 迁移链路,Core Runtime,P1,2026-05-12,todo,milestone-02-m2-workspace-memory-session,sprint-001,copy/verify/switch 迁移链路,pending,pending,,2026-03-18
+TK-206-00,TK-206,回滚与失败错误模型,Core Runtime,P1,2026-05-12,todo,milestone-02-m2-workspace-memory-session,sprint-001,回滚与失败错误模型,pending,pending,,2026-03-18

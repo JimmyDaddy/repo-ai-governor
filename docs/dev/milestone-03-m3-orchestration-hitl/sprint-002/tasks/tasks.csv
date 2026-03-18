@@ -1,0 +1,7 @@
+execution_id,task_id,title,owner,priority,due_date,status,project,sprint,plan,result,verify,review_delta,recorded_at
+TK-311-00,TK-311,Notification provider: webhook 基线,Notification,P0,2026-06-23,todo,milestone-03-m3-orchestration-hitl,sprint-002,Notification provider: webhook 基线,pending,pending,,2026-03-18
+TK-312-00,TK-312,通知回退通道抽象（email/chat-im/issue-system）,Notification,P1,2026-06-23,todo,milestone-03-m3-orchestration-hitl,sprint-002,通知回退通道抽象（email/chat-im/issue-system）,pending,pending,,2026-03-18
+TK-313-00,TK-313,自定义角色注册与 role_profile_id 生命周期,Role Registry,P0,2026-06-23,todo,milestone-03-m3-orchestration-hitl,sprint-002,自定义角色注册与 role_profile_id 生命周期,pending,pending,,2026-03-18
+TK-314-00,TK-314,Agent 与 Skill 契约边界落地,Architecture,P1,2026-06-23,todo,milestone-03-m3-orchestration-hitl,sprint-002,Agent 与 Skill 契约边界落地,pending,pending,,2026-03-18
+TK-315-00,TK-315,多 Agent 共享 session 协作约束接入,Session,P1,2026-06-23,todo,milestone-03-m3-orchestration-hitl,sprint-002,多 Agent 共享 session 协作约束接入,pending,pending,,2026-03-18
+TK-316-00,TK-316,M3 端到端编排链路回归,QA,P1,2026-06-23,todo,milestone-03-m3-orchestration-hitl,sprint-002,M3 端到端编排链路回归,pending,pending,,2026-03-18

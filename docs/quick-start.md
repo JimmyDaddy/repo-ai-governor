@@ -36,15 +36,15 @@ $CLI init \
 
 Expected:
 
-1. `.repo-ai-governor/governor.yaml`
+1. governance config and execution context files are generated automatically
 2. `AGENTS.md`
-3. `.repo-ai-governor/context/current-context.md`
-4. `docs/demo/sprint-001/`
+3. `docs/demo/sprint-001/`
 
 Notes:
 
 1. 在 `npx` 场景下，`init` 会按默认策略处理依赖与官方 skills 安装。
 2. 如需跳过自动安装，可使用 `--skip-self-install` 或 `--skip-skill-install`。
+3. workspace 数据由工具自动管理，通常无需手动处理路径。
 
 ## 3. List / Install / Doctor Skills
 
@@ -211,9 +211,11 @@ Expected:
 ## 10. Render Final Report
 
 ```bash
+REPORT_PATH="<report_path_from_previous_command_output>"
+
 $CLI report \
   --cwd "$TMP_DIR" \
-  --source .repo-ai-governor/reports/latest.json \
+  --source "$REPORT_PATH" \
   --format markdown \
   --dry-run
 ```

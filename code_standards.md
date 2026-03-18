@@ -17,6 +17,71 @@ This file defines repository-level coding standards and the executable gate comm
 - [CS-011] Type semantics must be consistent: object structure contracts use `interface`; union/literal/mapped/conditional/composed utility types use `type`.
 - [CS-012] Object structure contracts must not be declared as `type Xxx = { ... }`. Exceptions require a nearby comment: `// type-shape-allowed: reason`.
 - [CS-013] `interface` and `type` declarations must be managed in separated directories for new code: `src/types/interfaces/*.interface.ts` and `src/types/aliases/*.type.ts`. Both directories must maintain `index.ts` for aggregated exports.
+- [CS-014] For monorepo refactor work, naming under `apps/**` and `packages/**` must follow `Monorepo Naming Convention` in this document.
+
+## Monorepo Naming Convention (Refactor Baseline)
+
+This section defines the approved naming baseline for the upcoming monorepo refactor.
+Automated gate enforcement for this baseline can be added in a follow-up iteration; this round records the standard only.
+
+### 1) Workspace And Package/App Directory Names
+
+- Use lowercase kebab-case for all app/package directories.
+- App directory format: `apps/<app-name>/` (for example `apps/cli/`).
+- Package directory format: `packages/<package-name>/` (for example `packages/core-runtime/`).
+- Provider group format: `packages/<provider-group>/<provider-name>/` (for example `packages/notification-providers/webhook/`).
+
+### 2) Source File Names
+
+- Use lowercase kebab-case for source files by default.
+- `index.ts` is allowed only as the public entry or barrel file of a directory.
+- Use role-oriented suffixes when meaningful:
+  - command modules: `*-command.ts`
+  - shared command helpers: `*-shared.ts`
+  - runtime modules: `*-runtime.ts`
+  - registries: `*-registry.ts`
+  - dispatchers: `*-dispatcher.ts`
+  - models: `*-model.ts`
+- Keep type/schema file suffixes consistent with existing standards:
+  - interfaces: `*.interface.ts`
+  - aliases: `*.type.ts`
+  - schemas: `*.schema.json`
+
+### 3) Test File Names
+
+- Unit tests: `*.test.ts`
+- Contract tests: `*.contract.test.ts`
+- Integration tests: `*.integration.test.ts`
+- End-to-end tests: `*.e2e.test.ts`
+
+### 4) Package/App Internal Layout Baseline
+
+- Recommended minimum layout:
+  - `src/`
+  - `test/`
+  - `README.md`
+- If package-level publishing is needed, add `package.json` with explicit exports.
+
+### 5) Migration Rule
+
+- Existing files are not required to be renamed in bulk immediately.
+- All newly created files/directories in `apps/**` and `packages/**` should follow this naming convention.
+- When touching legacy names during refactor, prefer migrating them to this convention in the same change when risk is manageable.
+
+## Monorepo Version And Dependency Boundary Baseline (Pending Enforcement)
+
+This section records the approved monorepo governance baseline for follow-up gate integration.
+
+### 1) Versioning Strategy
+
+- `core-*`, `adapter-sdk`, and `shared-*` should use a lockstep release strategy.
+- `adapters/*`, `memory-providers/*`, and `notification-providers/*` can use independent versioning.
+- Any major version change in `adapter-sdk` or storage/notification adapter contracts must trigger cross-package contract verification.
+
+### 2) Dependency Direction Strategy
+
+- Package dependency directions should follow `docs/repo-ai-governor-architecture-and-repo-layering.md -> 模块依赖方向约束`.
+- Cross-layer reverse dependencies should be treated as violations and tracked with explicit task-level remediation plans.
 
 ## Verification Commands
 
@@ -30,6 +95,18 @@ node ./scripts/governance/check-ts-only-residue.js
 npm run test -- --maxWorkers=1 --maxConcurrency=1
 node ./dist/bin/repo-ai-governor.js --help >/dev/null
 ```
+
+## Pending Integration Memo
+
+1. Prepared script for future gate integration: `scripts/governance/check-monorepo-naming.js`.
+2. Planned scripts for follow-up integration:
+   - `scripts/governance/check-package-dependency-boundary.js`
+   - `scripts/governance/check-monorepo-versioning-policy.js`
+3. Planned command wiring (not active yet):
+   - `node ./scripts/governance/check-monorepo-naming.js`
+   - `node ./scripts/governance/check-package-dependency-boundary.js`
+   - `node ./scripts/governance/check-monorepo-versioning-policy.js`
+4. Current status: keep scripts as implementation-ready assets, but do not add them to `Verification Commands` in this round.
 
 ## Notes
 
