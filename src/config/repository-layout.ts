@@ -5,21 +5,24 @@ import {
   REVIEW_STATUS_PREFIXES,
   ReviewStatusEnum,
 } from "../constants/repository-layout.js";
+import type { ReviewStatus } from "../types/aliases/repository-layout.type.js";
+import type {
+  RelativeLayout,
+  RepositoryLayoutResolution,
+  ResolveRepositoryLayoutOptions,
+} from "../types/interfaces/config-repository-layout.interface.js";
 
 export const PROJECT_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 export const SPRINT_NAME_PATTERN = /^sprint-\d{3}$/;
 export const TASK_ID_PATTERN = /^TK-\d{3}$/;
 export const REVIEW_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
-export type ReviewStatus = `${ReviewStatusEnum}`;
-
-type RelativeLayout = Record<string, string>;
-
-export type ResolveRepositoryLayoutOptions = {
-  cwd?: string;
-  project?: string;
-  sprint?: string;
-};
+export type { ReviewStatus } from "../types/aliases/repository-layout.type.js";
+export type {
+  RelativeLayout,
+  RepositoryLayoutResolution,
+  ResolveRepositoryLayoutOptions,
+} from "../types/interfaces/config-repository-layout.interface.js";
 
 export { DEFAULT_TASK_CSV_COLUMNS, DEFAULT_REPOSITORY_LAYOUT };
 
@@ -90,29 +93,9 @@ export function createReviewFileName(options?: { status?: ReviewStatus; slug?: s
   return `${prefix}_${slug}.md`;
 }
 
-export function resolveRepositoryLayout(options: ResolveRepositoryLayoutOptions = {}): {
-  cwd: string;
-  relative: RelativeLayout;
-  absolute: Record<string, string>;
-  naming: {
-    projectPattern: string;
-    sprintPattern: string;
-    sprintExample: string;
-    taskPattern: string;
-    taskExample: string;
-    taskCsvColumns: readonly string[];
-    reviewPatterns: {
-      pending: string;
-      verified: string;
-      resolved: string;
-    };
-    reviewExamples: {
-      pending: string;
-      verified: string;
-      resolved: string;
-    };
-  };
-} {
+export function resolveRepositoryLayout(
+  options: ResolveRepositoryLayoutOptions = {},
+): RepositoryLayoutResolution {
   const cwd = path.resolve(options.cwd ?? process.cwd());
   const configRoot = DEFAULT_REPOSITORY_LAYOUT.configRoot;
   const configDirectories = DEFAULT_REPOSITORY_LAYOUT.configDirectories;

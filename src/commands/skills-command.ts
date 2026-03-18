@@ -3,7 +3,7 @@ import { createRequire } from "node:module";
 import path from "node:path";
 import { BusinessCheckError, InputError } from "../cli/runtime/errors.js";
 import { EXIT_CODES } from "../cli/runtime/exit-codes.js";
-import { SUPPORTED_SKILL_ACTIONS, type SkillAction } from "../constants/skill-actions.js";
+import { SUPPORTED_SKILL_ACTIONS } from "../constants/skill-actions.js";
 import {
   type OfficialSkillCatalogEntry,
   type OfficialSkillCatalogState,
@@ -25,178 +25,31 @@ import {
   validateSkillSurface,
 } from "../skills/runtime.js";
 import { doesVersionSatisfy } from "../skills/semver.js";
-import type { ExitCode } from "../types/aliases/cli.type.js";
+import type { ExitCode, ParsedOptions } from "../types/aliases/cli.type.js";
+import type { SkillAction } from "../types/aliases/skill-action.type.js";
 import type { CommandContext } from "../types/interfaces/cli-runtime.interface.js";
 import type { Logger } from "../types/interfaces/cli-ui.interface.js";
+import type {
+  AvailableSkillItem,
+  InstallOperation,
+  InstallPayload,
+  InstalledSkill,
+  InstalledSkillItem,
+  ListPayload,
+  SkillDiscovery,
+  SkillFinding,
+  SkillFindingInput,
+  SkillState,
+  SkillsDoctorPayload,
+  SkillsRenderPayload,
+  SkillsSummary,
+} from "../types/interfaces/command-skills.interface.js";
 import { normalizeLocale, toRelativePath, translateLocale } from "../utils/common.js";
 
 const require = createRequire(import.meta.url);
 // dynamic-import-allowed: read package version for skills compatibility reporting
 const packageJson = require("../../package.json") as {
   version: string;
-};
-
-type ParsedOptions = Record<string, unknown>;
-type SkillManifest = ReturnType<typeof loadSkillManifest>;
-type FindingSeverity = "info" | "warning" | "error";
-type FindingStatus = "pass" | "warn" | "fail";
-type InstalledSkillStatus = "installed" | "external" | "invalid";
-type InstallOperationStatus = "installed" | "planned" | "skipped";
-
-type SkillFinding = {
-  id: string;
-  severity: FindingSeverity;
-  status: FindingStatus;
-  message: string;
-  target?: string;
-  suggestion?: string;
-};
-
-type SkillFindingInput = {
-  id: string;
-  severity: FindingSeverity;
-  status: FindingStatus;
-  message: string;
-  target?: string;
-  suggestion?: string;
-};
-
-type InstalledSkill = {
-  id: string;
-  skillRoot: string;
-  manifestPath: string;
-  skillFilePath: string;
-  status: InstalledSkillStatus;
-  issues: string[];
-  manifest: SkillManifest | null;
-};
-
-type SkillState = {
-  cwd: string;
-  locale: string;
-  action: SkillAction;
-  surface: SkillSurface | null;
-  scope: SkillScope;
-  strict: boolean;
-  dryRun: boolean;
-  force: boolean;
-  targetPath: string | undefined;
-  selectedSkillIds: string[];
-  catalogState: OfficialSkillCatalogState;
-};
-
-type SkillDiscovery = {
-  target: ResolvedSkillInstallTarget;
-  installedSkills: InstalledSkill[];
-};
-
-type SkillSummary = {
-  errors: number;
-  warnings: number;
-};
-
-type SkillsSummary = SkillSummary & {
-  surfaces: SkillSurface[];
-};
-
-type AvailableSkillItem = {
-  id: string;
-  displayName: string;
-  version: string;
-  surfaces: SkillSurface[];
-  defaultInstallMode: SkillInstallMode;
-};
-
-type InstalledSkillItem = {
-  id: string;
-  surface: SkillSurface;
-  scope: SkillScope;
-  status: InstalledSkillStatus;
-  path: string;
-  version: string | null;
-  displayName: string | null;
-  issues: string[];
-};
-
-type InstallOperation = {
-  id: string;
-  status: InstallOperationStatus;
-  path: string;
-  reason?: string;
-  mode?: SkillInstallMode;
-};
-
-type ListPayload = {
-  command: "skills";
-  action: "list";
-  locale: string;
-  status: "listed";
-  cwd: string;
-  scope: SkillScope;
-  surface: SkillSurface | null;
-  catalogFile: string;
-  summary: {
-    available: number;
-    installed: number;
-    surfaces: SkillSurface[];
-  };
-  availableSkills: AvailableSkillItem[];
-  installedSkills: InstalledSkillItem[];
-};
-
-type InstallPayload = {
-  command: "skills";
-  action: "install";
-  locale: string;
-  status: "planned" | "installed";
-  cwd: string;
-  scope: SkillScope;
-  surface: SkillSurface;
-  dryRun: boolean;
-  force: boolean;
-  catalogFile: string;
-  targetRoot: string;
-  summary: {
-    selected: number;
-    installed: number;
-    planned: number;
-    skipped: number;
-  };
-  operations: InstallOperation[];
-  warnings: string[];
-};
-
-type DoctorPayload = {
-  command: "skills";
-  action: "doctor";
-  locale: string;
-  status: "pass" | "warn" | "fail";
-  cwd: string;
-  scope: SkillScope;
-  surface: SkillSurface | null;
-  strict: boolean;
-  catalogFile: string;
-  findings: SkillFinding[];
-  summary: SkillsSummary;
-  exitCode: ExitCode;
-};
-
-type SkillsPayload = ListPayload | InstallPayload | DoctorPayload;
-
-type SkillsRenderPayload = {
-  action: SkillAction;
-  status: string;
-  locale: string;
-  surface?: SkillSurface | null;
-  scope?: SkillScope;
-  catalogFile?: string;
-  targetRoot?: string;
-  summary?: Record<string, unknown>;
-  availableSkills?: AvailableSkillItem[];
-  installedSkills?: InstalledSkillItem[];
-  operations?: InstallOperation[];
-  warnings?: string[];
-  findings?: SkillFinding[];
 };
 
 function t(locale: string | null | undefined, zhCN: string, enUS: string): string {
@@ -223,7 +76,7 @@ function ensureDirectory(directoryPath: string): void {
 }
 
 function readInstalledSkill(manifestPath: string): {
-  manifest: SkillManifest;
+  manifest: ReturnType<typeof loadSkillManifest>;
   skillRoot: string;
   skillFilePath: string;
 } {
@@ -819,7 +672,7 @@ function buildInstallPayload(state: SkillState): InstallPayload {
   };
 }
 
-function buildDoctorPayload(state: SkillState): DoctorPayload {
+function buildDoctorPayload(state: SkillState): SkillsDoctorPayload {
   const surfaces = state.surface ? [state.surface] : [...SUPPORTED_SKILL_SURFACES];
   const findings: SkillFinding[] = [resolveCatalogCompatibilityFinding(state)];
 

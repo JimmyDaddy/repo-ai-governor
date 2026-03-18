@@ -1,6 +1,6 @@
-type ParsedVersion = [major: number, minor: number, patch: number];
+import type { SemverParsedVersion } from "../types/aliases/skill.type.js";
 
-function parseVersion(value: unknown): ParsedVersion | null {
+function parseVersion(value: unknown): SemverParsedVersion | null {
   const match = String(value ?? "")
     .trim()
     .match(/^v?(\d+)\.(\d+)\.(\d+)(?:-[0-9A-Za-z.-]+)?$/);
@@ -12,7 +12,7 @@ function parseVersion(value: unknown): ParsedVersion | null {
   return [Number(match[1]), Number(match[2]), Number(match[3])];
 }
 
-function compareVersions(left: ParsedVersion, right: ParsedVersion): number {
+function compareVersions(left: SemverParsedVersion, right: SemverParsedVersion): number {
   for (let index = 0; index < Math.max(left.length, right.length); index += 1) {
     const leftPart = left[index] ?? 0;
     const rightPart = right[index] ?? 0;

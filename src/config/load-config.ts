@@ -3,6 +3,16 @@ import path from "node:path";
 import YAML from "yaml";
 import { validateSlotDefinition } from "../slots/slot-model.js";
 import type { SlotDefinition } from "../slots/slot-model.js";
+import type { GenericRecord } from "../types/aliases/index.js";
+import type {
+  CliConfigOverrideOptions,
+  GovernorConfig,
+  LayerInput,
+  LoadResolvedConfigOptions,
+  LoadedDefinition,
+  LoadedDefinitionDirectory,
+  MergeContext,
+} from "../types/interfaces/config-load-config.interface.js";
 import { cloneValue, isPlainObject } from "../utils/common.js";
 import {
   ConfigurationConflictError,
@@ -15,87 +25,6 @@ import { buildDefaultGovernorConfig, validateSchemaDocument } from "./schema/val
 export const CONFIG_ENV_PREFIX = "REPO_AI_GOVERNOR__";
 
 const YAML_FILE_PATTERN = /\.ya?ml$/i;
-
-type GenericRecord = Record<string, unknown>;
-
-type GovernorConfig = GenericRecord & {
-  schemaVersion?: string;
-  slots: {
-    directory: string;
-    enabled?: string[];
-    disabled?: string[];
-    [key: string]: unknown;
-  };
-  adapters: {
-    directory: string;
-    enabled?: string[];
-    [key: string]: unknown;
-  };
-  execution: {
-    currentProject?: string;
-    currentSprint?: string;
-    [key: string]: unknown;
-  };
-  standards: {
-    preset?: string;
-    locales?: {
-      default?: string;
-      supported?: string[];
-    };
-    [key: string]: unknown;
-  };
-  project: {
-    language?: string;
-    framework?: string;
-    [key: string]: unknown;
-  };
-  reporting: {
-    formats?: string[];
-    [key: string]: unknown;
-  };
-};
-
-type MergeContext = {
-  path: string[];
-  baseLayer: string;
-  incomingLayer: string;
-};
-
-type LayerInput = {
-  name: string;
-  previousLayerName: string;
-  value: unknown;
-};
-
-type CliConfigOverrideOptions = {
-  project?: string;
-  sprint?: string;
-  locale?: string;
-  language?: string;
-  preset?: string;
-  adapter?: string | string[];
-};
-
-type LoadResolvedConfigOptions = {
-  cwd?: string;
-  configPath?: string;
-  requireConfigFile?: boolean;
-  environment?: NodeJS.ProcessEnv;
-  cliOverrides?: CliConfigOverrideOptions;
-  skipEnabledDefinitionCheck?: boolean;
-};
-
-type LoadedDefinition<TConfig = GenericRecord> = {
-  id: string;
-  filePath: string;
-  config: TConfig;
-};
-
-type LoadedDefinitionDirectory<TConfig = GenericRecord> = {
-  directoryPath: string;
-  files: string[];
-  definitions: Array<LoadedDefinition<TConfig>>;
-};
 
 function toCamelCase(segment: string): string {
   return String(segment)

@@ -1,8 +1,6 @@
-export type ConfigurationErrorOptions = {
-  name?: string;
-  code?: string;
-  details?: unknown;
-};
+import type { ConfigurationErrorOptions } from "../types/interfaces/config-error.interface.js";
+
+export type { ConfigurationErrorOptions } from "../types/interfaces/config-error.interface.js";
 
 export class ConfigurationError extends Error {
   code: string;

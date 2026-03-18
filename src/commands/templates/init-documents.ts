@@ -1,26 +1,7 @@
-type TemplateLocale = "zh-CN" | "en-US";
-type InitTemplateContext = {
-  locale?: string;
-  contextFilePath: string;
-  currentProject: string;
-  currentSprint: string;
-  docsRoot: string;
-  dateStamp: string;
-  planFileName: string;
-  planRelativePath: string;
-  tasksDirectoryName: string;
-  checklistFileName: string;
-  checklistRelativePath: string;
-  taskCsvFileName: string;
-  taskCsvRelativePath: string;
-  codeReviewDirectoryName: string;
-  configFilePath: string;
-  agentEntryPath: string;
-  enabledAdaptersMarkdown: string;
-  csvColumns: string[];
-};
-type TemplateRenderer = (context: InitTemplateContext) => string;
-type TemplateMap = Record<string, TemplateRenderer>;
+import { LocaleEnum } from "../../constants/locale.js";
+import type { Locale } from "../../types/aliases/locale.type.js";
+import type { InitTemplateContext } from "../../types/interfaces/command-bootstrap.interface.js";
+import type { TemplateMap } from "../../types/interfaces/template-document.interface.js";
 
 function ensureTrailingNewline(content: string): string {
   return content.endsWith("\n") ? content : `${content}\n`;
@@ -46,7 +27,7 @@ function renderCsvRow(values: unknown[]): string {
     .join(",");
 }
 
-const ZH_CN_TEMPLATES: TemplateMap = {
+const ZH_CN_TEMPLATES: TemplateMap<InitTemplateContext> = {
   agents(context) {
     return [
       "# Repo AI Governor 工作区规则",
@@ -234,7 +215,7 @@ const ZH_CN_TEMPLATES: TemplateMap = {
   },
 };
 
-const EN_US_TEMPLATES: TemplateMap = {
+const EN_US_TEMPLATES: TemplateMap<InitTemplateContext> = {
   agents(context) {
     return [
       "# Repo AI Governor Workspace Rules",
@@ -422,13 +403,13 @@ const EN_US_TEMPLATES: TemplateMap = {
   },
 };
 
-const INIT_DOCUMENT_TEMPLATES: Record<TemplateLocale, TemplateMap> = {
-  "zh-CN": ZH_CN_TEMPLATES,
-  "en-US": EN_US_TEMPLATES,
+const INIT_DOCUMENT_TEMPLATES: Record<Locale, TemplateMap<InitTemplateContext>> = {
+  [LocaleEnum.ZhCN]: ZH_CN_TEMPLATES,
+  [LocaleEnum.EnUS]: EN_US_TEMPLATES,
 };
 
-export function resolveInitTemplateLocale(locale: unknown): TemplateLocale {
-  return locale === "zh-CN" || locale === "en-US" ? locale : "zh-CN";
+export function resolveInitTemplateLocale(locale: unknown): Locale {
+  return locale === LocaleEnum.ZhCN || locale === LocaleEnum.EnUS ? locale : LocaleEnum.ZhCN;
 }
 
 export function renderInitDocument(documentId: string, context: InitTemplateContext): string {

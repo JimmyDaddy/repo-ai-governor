@@ -1,120 +1,68 @@
 import { validateSchemaDocument } from "../config/schema/validator.js";
+import { LocaleEnum } from "../constants/locale.js";
 import {
+  STANDARDS_AUTOMATION_SEVERITIES,
   STANDARDS_CATEGORIES,
   STANDARDS_CONSUMERS,
+  STANDARDS_PACKAGE_KINDS,
+  STANDARDS_PACKAGE_SCHEMA_VERSIONS,
   STANDARDS_RULE_LEVELS,
-  type StandardsCategoryEnum,
-  type StandardsConsumerEnum,
-  type StandardsRuleLevelEnum,
+  STANDARDS_RULE_VIEWS,
+  StandardsAutomationSeverityEnum,
+  StandardsCategoryEnum,
+  StandardsPackageKindEnum,
+  StandardsPackageSchemaVersionEnum,
+  StandardsRuleViewEnum,
 } from "../constants/standards-package.js";
+import type {
+  RenderedRuleView,
+  StandardsCategoryId,
+  StandardsRuleLevel,
+} from "../types/aliases/standards.type.js";
+import type {
+  AiRuleView,
+  HumanRuleView,
+  LocalizedText,
+  RenderRuleViewOptions,
+  StandardsCategory,
+  StandardsPackage,
+  StandardsRule,
+} from "../types/interfaces/standards-package.interface.js";
 import { cloneValue } from "../utils/common.js";
-
-export type LocalizedText = {
-  "zh-CN": string;
-  "en-US": string;
-};
+export type {
+  StandardsCategoryId,
+  StandardsRuleLevel,
+  StandardsConsumer,
+  StandardsAutomationSeverity,
+  StandardsRuleView,
+  RenderedRuleView,
+} from "../types/aliases/standards.type.js";
+export type {
+  LocalizedText,
+  StandardsCategory,
+  StandardsAppliesTo,
+  StandardsAutomation,
+  StandardsAiView,
+  StandardsHumanView,
+  StandardsRuleViews,
+  StandardsRule,
+  StandardsPackage,
+  RenderRuleViewOptions,
+  AiRuleView,
+  HumanRuleView,
+} from "../types/interfaces/standards-package.interface.js";
 
 export const STANDARDS_PACKAGE_ID = "official-base";
 export const STANDARDS_PACKAGE_PRESET = "official/base";
-export { STANDARDS_CATEGORIES, STANDARDS_RULE_LEVELS, STANDARDS_CONSUMERS };
-
-export type StandardsCategoryId = `${StandardsCategoryEnum}`;
-
-export type StandardsRuleLevel = `${StandardsRuleLevelEnum}`;
-
-export type StandardsConsumer = `${StandardsConsumerEnum}`;
-
-export type StandardsCategory = {
-  id: StandardsCategoryId;
-  name: LocalizedText;
-  description: LocalizedText;
+export {
+  STANDARDS_CATEGORIES,
+  STANDARDS_RULE_LEVELS,
+  STANDARDS_CONSUMERS,
+  STANDARDS_AUTOMATION_SEVERITIES,
+  STANDARDS_RULE_VIEWS,
+  STANDARDS_PACKAGE_KINDS,
+  STANDARDS_PACKAGE_SCHEMA_VERSIONS,
 };
-
-export type StandardsAppliesTo = {
-  languages: string[];
-  frameworks: string[];
-  paths: string[];
-  tags: string[];
-};
-
-export type StandardsAutomation = {
-  blockOnViolation: boolean;
-  severity: "error" | "warn" | "info";
-  stages: string[];
-};
-
-export type StandardsAiView = {
-  instruction: LocalizedText;
-  verification?: LocalizedText;
-};
-
-export type StandardsHumanView = {
-  summary: LocalizedText;
-  rationale?: LocalizedText;
-  remediation?: LocalizedText;
-};
-
-export type StandardsRuleViews = {
-  ai: StandardsAiView;
-  human: StandardsHumanView;
-};
-
-export type StandardsRule = {
-  id: string;
-  category: StandardsCategoryId;
-  level: StandardsRuleLevel;
-  title: LocalizedText;
-  statement: LocalizedText;
-  appliesTo?: StandardsAppliesTo;
-  consumers: StandardsConsumer[];
-  automation?: StandardsAutomation;
-  views: StandardsRuleViews;
-};
-
-export type StandardsPackage = {
-  id: string;
-  version: "1";
-  kind: "standards-package";
-  meta: {
-    name: LocalizedText;
-    description?: LocalizedText;
-    preset?: string;
-  };
-  locales: {
-    default: string;
-    supported: string[];
-  };
-  categories: StandardsCategory[];
-  rules: StandardsRule[];
-};
-
-export type RenderRuleViewOptions = {
-  locale?: string;
-  view?: "ai" | "human";
-};
-
-export type AiRuleView = {
-  id: string;
-  category: StandardsCategoryId;
-  level: StandardsRuleLevel;
-  consumers: StandardsConsumer[];
-  instruction: string | null;
-  verification: string | null;
-  blockOnViolation: boolean;
-  severity: "error" | "warn" | "info";
-};
-
-export type HumanRuleView = {
-  id: string;
-  category: StandardsCategoryId;
-  level: StandardsRuleLevel;
-  title: string | null;
-  summary: string | null;
-  rationale: string | null;
-  remediation: string | null;
-};
-
-export type RenderedRuleView = AiRuleView | HumanRuleView;
 
 function createLocalizedText(zhCN: string, enUS: string): LocalizedText {
   return {
@@ -173,8 +121,8 @@ export function validateStandardsPackage(standardsPackage: unknown): StandardsPa
 export const OFFICIAL_BASE_PACKAGE_SKELETON = Object.freeze(
   validateStandardsPackage({
     id: STANDARDS_PACKAGE_ID,
-    version: "1",
-    kind: "standards-package",
+    version: StandardsPackageSchemaVersionEnum.V1,
+    kind: StandardsPackageKindEnum.StandardsPackage,
     meta: {
       name: createLocalizedText("官方基础规范包", "Official Base Standards Package"),
       description: createLocalizedText(
@@ -184,40 +132,40 @@ export const OFFICIAL_BASE_PACKAGE_SKELETON = Object.freeze(
       preset: STANDARDS_PACKAGE_PRESET,
     },
     locales: {
-      default: "zh-CN",
-      supported: ["zh-CN", "en-US"],
+      default: LocaleEnum.ZhCN,
+      supported: [LocaleEnum.ZhCN, LocaleEnum.EnUS],
     },
     categories: [
       createCategory(
-        "code",
+        StandardsCategoryEnum.Code,
         "代码规范",
         "Code Standards",
         "定义代码风格、目录、注释与测试要求。",
         "Defines code style, structure, comments, and testing expectations.",
       ),
       createCategory(
-        "engineering",
+        StandardsCategoryEnum.Engineering,
         "工程规范",
         "Engineering Standards",
         "定义提交、依赖、发布与 CI 约定。",
         "Defines commit, dependency, release, and CI conventions.",
       ),
       createCategory(
-        "process",
+        StandardsCategoryEnum.Process,
         "流程规范",
         "Process Standards",
         "定义方案、拆解、实现、自测与评审流程。",
         "Defines planning, breakdown, implementation, self-check, and review workflow expectations.",
       ),
       createCategory(
-        "quality",
+        StandardsCategoryEnum.Quality,
         "质量规范",
         "Quality Standards",
         "定义 lint、类型检查、测试、安全与回归要求。",
         "Defines lint, type check, test, security, and regression expectations.",
       ),
       createCategory(
-        "collaboration",
+        StandardsCategoryEnum.Collaboration,
         "协作规范",
         "Collaboration Standards",
         "定义沟通、风险提示、PR 描述与回滚信息。",
@@ -264,10 +212,10 @@ export function renderRuleView(
   rule: StandardsRule,
   options: RenderRuleViewOptions = {},
 ): RenderedRuleView {
-  const locale = options.locale ?? "zh-CN";
-  const view = options.view ?? "human";
+  const locale = options.locale ?? LocaleEnum.ZhCN;
+  const view = options.view ?? StandardsRuleViewEnum.Human;
 
-  if (view === "ai") {
+  if (view === StandardsRuleViewEnum.Ai) {
     const aiView = rule.views.ai;
 
     return {
@@ -278,11 +226,11 @@ export function renderRuleView(
       instruction: localizedValue(aiView.instruction, locale),
       verification: localizedValue(aiView.verification, locale),
       blockOnViolation: rule.automation?.blockOnViolation ?? false,
-      severity: rule.automation?.severity ?? "warn",
+      severity: rule.automation?.severity ?? StandardsAutomationSeverityEnum.Warn,
     };
   }
 
-  if (view !== "human") {
+  if (view !== StandardsRuleViewEnum.Human) {
     throw new TypeError(`Unsupported standards view: ${view}`);
   }
 

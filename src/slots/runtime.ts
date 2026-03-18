@@ -1,144 +1,56 @@
-import { SOURCE_PRIORITY } from "../constants/slot-runtime.js";
-import { cloneValue } from "../utils/common.js";
 import {
-  type SlotChecks,
-  type SlotDefinition,
-  type SlotInject,
-  type SlotScriptExtension,
-  type SlotSource,
-  type SlotType,
-  compareSlotsByPriority,
-  validateSlotDefinition,
-} from "./slot-model.js";
-
-type GenericRecord = Record<string, unknown>;
-
-type ConflictPolicy = "error" | "override" | "merge" | "replace";
-
-type SlotEntryInput =
-  | SlotDefinition
-  | {
-      config: SlotDefinition;
-      filePath?: string | null;
-    };
-
-type RuntimeSlotEntry = {
-  id: string;
-  filePath: string | null;
-  definition: SlotDefinition;
-};
-
-export type SerializableSlot = {
-  id: string;
-  filePath: string | null;
-  source: SlotSource;
-  slotType: SlotType;
-  owner: string | null;
-  priority: number;
-  blockOnFailure: boolean;
-  requiresApproval: boolean;
-  conflictPolicy: ConflictPolicy;
-  dependsOn: string[];
-  supersedes: string[];
-  inject: SlotInject;
-  checks: SlotChecks;
-  extensions: {
-    scripts: SlotScriptExtension[];
-  };
-};
-
-type CriterionMatchResult = {
-  configured: boolean;
-  matched: boolean;
-  expected: string[];
-  actual: string[];
-};
-
-type TriggerEvaluation = {
-  matched: boolean;
-  matchMode: "any" | "all";
-  checks: {
-    stages: CriterionMatchResult;
-    commands: CriterionMatchResult;
-    adapters: CriterionMatchResult;
-    events: CriterionMatchResult;
-    paths: CriterionMatchResult;
-  };
-};
-
-type ScopeEvaluation = {
-  matched: boolean;
-  checks: {
-    projects: CriterionMatchResult;
-    languages: CriterionMatchResult;
-    frameworks: CriterionMatchResult;
-    files: CriterionMatchResult;
-    tags: CriterionMatchResult;
-  };
-};
-
-type RuntimeMatchedEntry = RuntimeSlotEntry & {
-  trigger: TriggerEvaluation;
-  scope: ScopeEvaluation;
-};
-
-type ResolvedConflictDecision =
-  | {
-      type: "merge";
-      conflictKey: string;
-      slotIds: string[];
-    }
-  | {
-      type: "override";
-      conflictKey: string;
-      winner: string;
-      slotIds: string[];
-    };
-
-export type SlotRuntime = {
-  currentProject: string | null;
-  language: string | null;
-  framework: string | null;
-  defaultConflictPolicy: Exclude<ConflictPolicy, "replace">;
-  availableSlots: RuntimeSlotEntry[];
-  enabledSlots: RuntimeSlotEntry[];
-};
-
-export type SlotResolutionCriteria = {
-  stageId?: string;
-  stageIds?: string[];
-  commandId?: string;
-  commandIds?: string[];
-  adapterId?: string;
-  adapterIds?: string[];
-  eventId?: string;
-  eventIds?: string[];
-  path?: string | string[];
-  paths?: string | string[];
-  changedPaths?: string | string[];
-  project?: string;
-  projects?: string[];
-  language?: string;
-  languages?: string[];
-  framework?: string;
-  frameworks?: string[];
-  tags?: string[];
-};
-
-type NormalizedCriteria = {
-  stageIds: string[];
-  commandIds: string[];
-  adapterIds: string[];
-  eventIds: string[];
-  paths: string[];
-  projects: string[];
-  languages: string[];
-  frameworks: string[];
-  tags: string[];
-};
+  SlotConflictPolicyEnum,
+  SlotTriggerMatchModeEnum,
+  SlotTypeEnum,
+} from "../constants/slot-model.js";
+import {
+  SOURCE_PRIORITY,
+  SlotBlockedReasonEnum,
+  SlotConflictDecisionTypeEnum,
+  SlotConflictResolutionPolicyEnum,
+  SlotSkippedReasonEnum,
+  SlotSuppressedReasonEnum,
+} from "../constants/slot-runtime.js";
+import type { GenericRecord } from "../types/aliases/adapter-bundle.type.js";
+import type {
+  DefaultConflictPolicy,
+  ResolvedConflictDecision,
+  SlotEntryInput,
+} from "../types/aliases/slot-runtime.type.js";
+import type { SlotDefinition } from "../types/interfaces/slot-model.interface.js";
+import type {
+  BuildSlotRuntimeOptions,
+  CriterionMatchResult,
+  NormalizedCriteria,
+  ResolveApplicableSlotsResult,
+  RuntimeMatchedEntry,
+  RuntimeSlotEntry,
+  ScopeEvaluation,
+  SerializableSlot,
+  SlotBlockedByMissingDependency,
+  SlotChecksSummary,
+  SlotConflictGroup,
+  SlotConflictResolutionPolicy,
+  SlotConflictResolutionResult,
+  SlotExtensionSummary,
+  SlotInjectionSummary,
+  SlotResolutionCriteria,
+  SlotRuntime,
+  SlotSkippedByCriteria,
+  SlotSuppressedByConflictOverride,
+  SlotSuppressedBySupersede,
+  TriggerEvaluation,
+} from "../types/interfaces/slot-runtime.interface.js";
+import { cloneValue } from "../utils/common.js";
+import { compareSlotsByPriority, validateSlotDefinition } from "./slot-model.js";
+export type {
+  SlotRuntime,
+  SlotResolutionCriteria,
+  SerializableSlot,
+} from "../types/interfaces/slot-runtime.interface.js";
 
 const CONFLICT_POLICY_ALIAS = Object.freeze({
-  replace: "override",
+  [SlotConflictPolicyEnum.Replace]: SlotConflictPolicyEnum.Override,
 } as const);
 
 function toArray(value: string | string[] | null | undefined): string[] {
@@ -221,18 +133,18 @@ function matchExactList(expectedValues: string[], actualValues: string[]): boole
   return expectedValues.some((expectedValue) => actualValues.includes(expectedValue));
 }
 
-function normalizeConflictPolicy(policy: unknown): Exclude<ConflictPolicy, "replace"> {
-  const normalized = String(policy ?? "error")
+function normalizeConflictPolicy(policy: unknown): DefaultConflictPolicy {
+  const normalized = String(policy ?? SlotConflictPolicyEnum.Error)
     .trim()
     .toLowerCase();
   const resolved =
     CONFLICT_POLICY_ALIAS[normalized as keyof typeof CONFLICT_POLICY_ALIAS] ?? normalized;
 
-  if (resolved === "override" || resolved === "merge") {
+  if (resolved === SlotConflictPolicyEnum.Override || resolved === SlotConflictPolicyEnum.Merge) {
     return resolved;
   }
 
-  return "error";
+  return SlotConflictPolicyEnum.Error;
 }
 
 function compareRuntimeSlotEntries(
@@ -393,7 +305,7 @@ function evaluateTrigger(
   const matched =
     configuredChecks.length === 0
       ? true
-      : trigger.match === "all"
+      : trigger.match === SlotTriggerMatchModeEnum.All
         ? configuredChecks.every((check) => check.matched)
         : configuredChecks.some((check) => check.matched);
 
@@ -440,10 +352,7 @@ function toSerializableSlot(entry: RuntimeSlotEntry): SerializableSlot {
   };
 }
 
-function collectInjectionSummary(activeEntries: RuntimeSlotEntry[]): {
-  aiPromptKeys: string[];
-  humanDocSections: string[];
-} {
+function collectInjectionSummary(activeEntries: RuntimeSlotEntry[]): SlotInjectionSummary {
   return {
     aiPromptKeys: uniqueValues(
       activeEntries.map((entry) => entry.definition.behavior.inject.ai?.promptKey),
@@ -454,26 +363,14 @@ function collectInjectionSummary(activeEntries: RuntimeSlotEntry[]): {
   };
 }
 
-function collectChecksSummary(activeEntries: RuntimeSlotEntry[]): {
-  before: string[];
-  after: string[];
-} {
+function collectChecksSummary(activeEntries: RuntimeSlotEntry[]): SlotChecksSummary {
   return {
     before: uniqueValues(activeEntries.flatMap((entry) => entry.definition.checks.before)),
     after: uniqueValues(activeEntries.flatMap((entry) => entry.definition.checks.after)),
   };
 }
 
-function collectExtensionSummary(activeEntries: RuntimeSlotEntry[]): {
-  scriptCount: number;
-  scripts: Array<
-    {
-      slotId: string;
-      slotSource: SlotSource;
-      slotType: SlotType;
-    } & SlotScriptExtension
-  >;
-} {
+function collectExtensionSummary(activeEntries: RuntimeSlotEntry[]): SlotExtensionSummary {
   const scripts = activeEntries.flatMap((entry) =>
     (entry.definition.extensions?.scripts ?? []).map((scriptExtension) => ({
       slotId: entry.id,
@@ -518,18 +415,10 @@ function suppressEntry(
   });
 }
 
-function applySupersedes(activeEntries: Map<string, RuntimeSlotEntry>): Array<
-  SerializableSlot & {
-    reason: "superseded";
-    bySlotId: string;
-  }
-> {
-  const suppressedEntries: Array<
-    SerializableSlot & {
-      reason: "superseded";
-      bySlotId: string;
-    }
-  > = [];
+function applySupersedes(
+  activeEntries: Map<string, RuntimeSlotEntry>,
+): SlotSuppressedBySupersede[] {
+  const suppressedEntries: SlotSuppressedBySupersede[] = [];
 
   for (const entry of [...activeEntries.values()].sort(compareRuntimeSlotEntries)) {
     for (const supersededId of entry.definition.behavior.supersedes) {
@@ -540,7 +429,7 @@ function applySupersedes(activeEntries: Map<string, RuntimeSlotEntry>): Array<
       }
 
       suppressEntry(activeEntries, suppressedEntries, supersededEntry, {
-        reason: "superseded",
+        reason: SlotSuppressedReasonEnum.Superseded,
         bySlotId: entry.id,
       });
     }
@@ -549,10 +438,7 @@ function applySupersedes(activeEntries: Map<string, RuntimeSlotEntry>): Array<
   return suppressedEntries;
 }
 
-function listConflictGroups(activeEntries: Map<string, RuntimeSlotEntry>): Array<{
-  key: string;
-  entries: RuntimeSlotEntry[];
-}> {
+function listConflictGroups(activeEntries: Map<string, RuntimeSlotEntry>): SlotConflictGroup[] {
   const groupMap = new Map<string, RuntimeSlotEntry[]>();
 
   function addToGroup(key: string | null, entry: RuntimeSlotEntry): void {
@@ -568,7 +454,7 @@ function listConflictGroups(activeEntries: Map<string, RuntimeSlotEntry>): Array
   }
 
   for (const entry of activeEntries.values()) {
-    if (entry.definition.meta.slotType !== "custom") {
+    if (entry.definition.meta.slotType !== SlotTypeEnum.Custom) {
       addToGroup(`slot-type:${entry.definition.meta.slotType}`, entry);
     }
 
@@ -607,77 +493,60 @@ export class SlotConflictError extends Error {
 }
 
 function resolveConflictPolicy(
-  group: {
-    key: string;
-    entries: RuntimeSlotEntry[];
-  },
-  defaultPolicy: Exclude<ConflictPolicy, "replace">,
-): {
-  policy: "override" | "merge" | "error";
-  winner: RuntimeSlotEntry | null;
-} {
+  group: SlotConflictGroup,
+  defaultPolicy: DefaultConflictPolicy,
+): SlotConflictResolutionPolicy {
   const overrideEntries = group.entries.filter(
-    (entry) => normalizeConflictPolicy(entry.definition.behavior.conflictPolicy) === "override",
+    (entry) =>
+      normalizeConflictPolicy(entry.definition.behavior.conflictPolicy) ===
+      SlotConflictPolicyEnum.Override,
   );
 
   if (overrideEntries.length > 0) {
     return {
-      policy: "override",
+      policy: SlotConflictResolutionPolicyEnum.Override,
       winner: overrideEntries.sort(compareRuntimeSlotEntries)[0],
     };
   }
 
   if (
     group.entries.every(
-      (entry) => normalizeConflictPolicy(entry.definition.behavior.conflictPolicy) === "merge",
+      (entry) =>
+        normalizeConflictPolicy(entry.definition.behavior.conflictPolicy) ===
+        SlotConflictPolicyEnum.Merge,
     )
   ) {
     return {
-      policy: "merge",
+      policy: SlotConflictResolutionPolicyEnum.Merge,
       winner: null,
     };
   }
 
-  if (defaultPolicy === "override") {
+  if (defaultPolicy === SlotConflictPolicyEnum.Override) {
     return {
-      policy: "override",
+      policy: SlotConflictResolutionPolicyEnum.Override,
       winner: group.entries[0],
     };
   }
 
-  if (defaultPolicy === "merge") {
+  if (defaultPolicy === SlotConflictPolicyEnum.Merge) {
     return {
-      policy: "merge",
+      policy: SlotConflictResolutionPolicyEnum.Merge,
       winner: null,
     };
   }
 
   return {
-    policy: "error",
+    policy: SlotConflictResolutionPolicyEnum.Error,
     winner: null,
   };
 }
 
 function resolveConflicts(
   activeEntries: Map<string, RuntimeSlotEntry>,
-  defaultPolicy: Exclude<ConflictPolicy, "replace">,
-): {
-  suppressedEntries: Array<
-    SerializableSlot & {
-      reason: "conflict-override";
-      bySlotId: string;
-      conflictKey: string;
-    }
-  >;
-  decisions: ResolvedConflictDecision[];
-} {
-  const suppressedEntries: Array<
-    SerializableSlot & {
-      reason: "conflict-override";
-      bySlotId: string;
-      conflictKey: string;
-    }
-  > = [];
+  defaultPolicy: DefaultConflictPolicy,
+): SlotConflictResolutionResult {
+  const suppressedEntries: SlotSuppressedByConflictOverride[] = [];
   const decisions: ResolvedConflictDecision[] = [];
 
   for (const group of listConflictGroups(activeEntries)) {
@@ -695,30 +564,30 @@ function resolveConflicts(
       defaultPolicy,
     );
 
-    if (resolution.policy === "merge") {
+    if (resolution.policy === SlotConflictResolutionPolicyEnum.Merge) {
       decisions.push({
-        type: "merge",
+        type: SlotConflictDecisionTypeEnum.Merge,
         conflictKey: group.key,
         slotIds: entries.map((entry) => entry.id),
       });
       continue;
     }
 
-    if (resolution.policy === "override" && resolution.winner) {
+    if (resolution.policy === SlotConflictResolutionPolicyEnum.Override && resolution.winner) {
       for (const entry of entries) {
         if (entry.id === resolution.winner.id || !activeEntries.has(entry.id)) {
           continue;
         }
 
         suppressEntry(activeEntries, suppressedEntries, entry, {
-          reason: "conflict-override",
+          reason: SlotSuppressedReasonEnum.ConflictOverride,
           bySlotId: resolution.winner.id,
           conflictKey: group.key,
         });
       }
 
       decisions.push({
-        type: "override",
+        type: SlotConflictDecisionTypeEnum.Override,
         conflictKey: group.key,
         winner: resolution.winner.id,
         slotIds: entries.map((entry) => entry.id),
@@ -739,18 +608,10 @@ function resolveConflicts(
   };
 }
 
-function applyDependencies(activeEntries: Map<string, RuntimeSlotEntry>): Array<
-  SerializableSlot & {
-    reason: "missing-dependency";
-    missingDependencies: string[];
-  }
-> {
-  const blockedEntries: Array<
-    SerializableSlot & {
-      reason: "missing-dependency";
-      missingDependencies: string[];
-    }
-  > = [];
+function applyDependencies(
+  activeEntries: Map<string, RuntimeSlotEntry>,
+): Array<SlotBlockedByMissingDependency> {
+  const blockedEntries: SlotBlockedByMissingDependency[] = [];
   let mutated = true;
 
   while (mutated) {
@@ -768,7 +629,7 @@ function applyDependencies(activeEntries: Map<string, RuntimeSlotEntry>): Array<
       activeEntries.delete(entry.id);
       blockedEntries.push({
         ...toSerializableSlot(entry),
-        reason: "missing-dependency",
+        reason: SlotBlockedReasonEnum.MissingDependency,
         missingDependencies,
       });
       mutated = true;
@@ -778,25 +639,7 @@ function applyDependencies(activeEntries: Map<string, RuntimeSlotEntry>): Array<
   return blockedEntries;
 }
 
-export function buildSlotRuntime(
-  options: {
-    config?: {
-      project?: {
-        language?: string;
-        framework?: string;
-      };
-      execution?: {
-        currentProject?: string;
-      };
-      slots?: {
-        enabled?: string[];
-        disabled?: string[];
-        conflictPolicy?: ConflictPolicy;
-      };
-    };
-    slotDefinitions?: SlotEntryInput[];
-  } = {},
-): SlotRuntime {
+export function buildSlotRuntime(options: BuildSlotRuntimeOptions = {}): SlotRuntime {
   const config = options.config ?? {};
   const availableSlots = (options.slotDefinitions ?? []).map(normalizeSlotEntry);
   const enabledIds = new Set(config.slots?.enabled ?? []);
@@ -809,7 +652,9 @@ export function buildSlotRuntime(
     currentProject: config.execution?.currentProject ?? null,
     language: config.project?.language ?? null,
     framework: config.project?.framework ?? null,
-    defaultConflictPolicy: normalizeConflictPolicy(config.slots?.conflictPolicy ?? "error"),
+    defaultConflictPolicy: normalizeConflictPolicy(
+      config.slots?.conflictPolicy ?? SlotConflictPolicyEnum.Error,
+    ),
     availableSlots,
     enabledSlots,
   };
@@ -818,67 +663,9 @@ export function buildSlotRuntime(
 export function resolveApplicableSlots(
   slotRuntime: SlotRuntime,
   criteria: SlotResolutionCriteria = {},
-): {
-  criteria: NormalizedCriteria;
-  summary: {
-    enabledCount: number;
-    matchedCount: number;
-    activeCount: number;
-    blockedCount: number;
-    suppressedCount: number;
-  };
-  matchedSlots: SerializableSlot[];
-  activeSlots: SerializableSlot[];
-  blockedSlots: Array<
-    SerializableSlot & {
-      reason: "missing-dependency";
-      missingDependencies: string[];
-    }
-  >;
-  suppressedSlots: Array<
-    SerializableSlot & {
-      reason: "superseded" | "conflict-override";
-      bySlotId: string;
-      conflictKey?: string;
-    }
-  >;
-  skippedSlots: Array<
-    SerializableSlot & {
-      reason: "trigger-miss" | "scope-miss";
-      trigger: TriggerEvaluation;
-      scope: ScopeEvaluation;
-    }
-  >;
-  conflicts: ResolvedConflictDecision[];
-  injections: {
-    aiPromptKeys: string[];
-    humanDocSections: string[];
-  };
-  checks: {
-    before: string[];
-    after: string[];
-  };
-  extensions: {
-    scriptCount: number;
-    scripts: Array<
-      {
-        slotId: string;
-        slotSource: SlotSource;
-        slotType: SlotType;
-      } & SlotScriptExtension
-    >;
-  };
-  requiresApproval: boolean;
-  blockOnFailure: boolean;
-} {
+): ResolveApplicableSlotsResult {
   const normalizedCriteria = normalizeCriteria(criteria, slotRuntime);
-  const skippedSlots: Array<
-    SerializableSlot & {
-      reason: "trigger-miss" | "scope-miss";
-      trigger: TriggerEvaluation;
-      scope: ScopeEvaluation;
-    }
-  > = [];
+  const skippedSlots: SlotSkippedByCriteria[] = [];
   const matchedEntries: RuntimeMatchedEntry[] = [];
 
   for (const entry of slotRuntime.enabledSlots ?? []) {
@@ -888,7 +675,9 @@ export function resolveApplicableSlots(
     if (!trigger.matched || !scope.matched) {
       skippedSlots.push({
         ...toSerializableSlot(entry),
-        reason: !trigger.matched ? "trigger-miss" : "scope-miss",
+        reason: trigger.matched
+          ? SlotSkippedReasonEnum.ScopeMiss
+          : SlotSkippedReasonEnum.TriggerMiss,
         trigger,
         scope,
       });

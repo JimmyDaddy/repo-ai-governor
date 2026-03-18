@@ -9,12 +9,26 @@ import {
   createReviewFileName,
   createReviewSlug,
 } from "../config/repository-layout.js";
+import { LocaleEnum } from "../constants/locale.js";
 import {
   renderRulesForConsumer,
   resolveStandardsPackage,
 } from "../standards/official-base-package.js";
+import type { AnyRecord } from "../types/aliases/index.js";
 import type { CommandContext } from "../types/interfaces/cli-runtime.interface.js";
 import type { Logger } from "../types/interfaces/cli-ui.interface.js";
+import type {
+  ReviewAnalysis,
+  ReviewArtifactPaths,
+  ReviewFinding,
+  ReviewLifecycle,
+  ReviewPayload,
+  ReviewRuleView,
+  ReviewRunState,
+  ReviewSummary,
+  ReviewWorkflowResult,
+  ReviewWorkflowStage,
+} from "../types/interfaces/command-review.interface.js";
 import {
   normalizeLocale,
   toRelativePath as toRelativePathValue,
@@ -22,116 +36,6 @@ import {
 } from "../utils/common.js";
 import type { ExecuteWorkflowOptions } from "../workflow/governance-engine.js";
 import { executeWorkflow } from "../workflow/governance-engine.js";
-
-// biome-ignore lint/suspicious/noExplicitAny: transitional typing for large command migration
-type AnyRecord = Record<string, any>;
-
-type ReviewFinding = {
-  id: string;
-  ruleId: string | null;
-  severity: "info" | "warning" | "error";
-  status: "pass" | "warn" | "fail";
-  message: string;
-  target: string;
-  suggestion: string | null;
-};
-
-type ReviewSummary = {
-  status: "pass" | "warn" | "fail";
-  exitCode: number;
-  errors: number;
-  warnings: number;
-  passed: number;
-};
-
-type ReviewAnalysis = {
-  findings: ReviewFinding[];
-  matchedRuleIds: string[];
-  relativeTargets: string[];
-};
-
-type ReviewWorkflowStage = {
-  id: string;
-  status: string;
-  summary: unknown;
-  blockedBy?: string[] | null;
-  outputs?: {
-    analysis?: ReviewAnalysis;
-    summary?: ReviewSummary;
-  };
-};
-
-type ReviewWorkflowResult = {
-  status: string;
-  selectedStageIds: string[];
-  summary: unknown;
-  stages: ReviewWorkflowStage[];
-};
-
-type ReviewLifecycle = {
-  pending: string;
-  verified: string;
-  resolved: string;
-};
-
-type ReviewRuleView = {
-  id: string;
-  title: string;
-  summary: string;
-};
-
-type ReviewRunState = {
-  cwd: string;
-  resolvedConfig: ReturnType<typeof loadResolvedConfig>;
-  standardsPackage: ReturnType<typeof resolveStandardsPackage>;
-  artifactPaths: ReturnType<typeof buildArtifactPaths>;
-  targetFiles: string[];
-  pathOption: string | null;
-  base: string | null;
-  head: string | null;
-  strict: boolean;
-  dryRun: boolean;
-  locale: string;
-};
-
-type ReviewPayload = {
-  command: "review";
-  status: ReviewSummary["status"];
-  dryRun: boolean;
-  cwd: string;
-  configFile: string;
-  currentProject?: string;
-  currentSprint?: string;
-  pathOption: string | null;
-  base: string | null;
-  head: string | null;
-  strict: boolean;
-  generatedAt: string;
-  locale: string;
-  slug: string;
-  workflow: {
-    status: string;
-    selectedStageIds: string[];
-    summary: unknown;
-    stages: Array<{
-      id: string;
-      status: string;
-      summary: unknown;
-      blockedBy?: string[] | null;
-    }>;
-  };
-  targets: string[];
-  findings: ReviewFinding[];
-  summary: ReviewSummary;
-  standards: {
-    preset: string;
-    totalRules: number;
-    matchedRuleIds: string[];
-    reviewRules: ReviewRuleView[];
-  };
-  reviewLifecycle: ReviewLifecycle;
-  reviewFile: string;
-};
 
 const REVIEW_WORKFLOW_TEMPLATE = Object.freeze({
   id: "governance-review",
@@ -395,8 +299,8 @@ function compareTaskIdSets(left: Set<string>, right: Set<string>): boolean {
 export function buildArtifactPaths(
   cwd: string,
   resolvedConfig: AnyRecord,
-  locale = "zh-CN",
-): AnyRecord {
+  locale: string = LocaleEnum.ZhCN,
+): ReviewArtifactPaths {
   const currentProject = resolvedConfig.config.execution.currentProject;
   const currentSprint = resolvedConfig.config.execution.currentSprint;
 
@@ -499,7 +403,7 @@ function buildReviewRun(commandContext: CommandContext): ReviewRunState {
 }
 
 export function collectReviewRuleViews(
-  standardsPackage: ReturnType<typeof resolveStandardsPackage>,
+  standardsPackage: ReviewRunState["standardsPackage"],
   locale: string,
 ): ReviewRuleView[] {
   return renderRulesForConsumer(standardsPackage, "review", {

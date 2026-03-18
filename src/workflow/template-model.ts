@@ -1,103 +1,55 @@
 import { validateSchemaDocument } from "../config/schema/validator.js";
-import { STANDARD_WORKFLOW_STAGE_SEQUENCE } from "../constants/workflow-template.js";
+import { CommandResultStatusEnum } from "../constants/command-model.js";
+import { ReviewStatusEnum } from "../constants/repository-layout.js";
+import {
+  STANDARD_WORKFLOW_STAGE_SEQUENCE,
+  StandardWorkflowStageEnum,
+  WorkflowBindingKindEnum,
+  WorkflowExecutionModeEnum,
+  WorkflowExecutorKindEnum,
+  WorkflowGateKindEnum,
+  WorkflowTemplateKindEnum,
+  WorkflowTemplateSchemaVersionEnum,
+} from "../constants/workflow-template.js";
+import type {
+  FailurePolicy,
+  WorkflowBindingKind,
+  WorkflowExecutionMode,
+  WorkflowExecutorKind,
+  WorkflowGateKind,
+} from "../types/aliases/workflow.type.js";
+import type {
+  LocalizedText,
+  WorkflowBinding,
+  WorkflowConfig,
+  WorkflowExecution,
+  WorkflowExecutor,
+  WorkflowGateCondition,
+  WorkflowGateSet,
+  WorkflowStage,
+  WorkflowStageOverride,
+  WorkflowTemplate,
+} from "../types/interfaces/workflow-template.interface.js";
 import { cloneValue } from "../utils/common.js";
-
-export type LocalizedText = {
-  "zh-CN": string;
-  "en-US": string;
-};
-
-export type FailurePolicy = "stop" | "continue" | "warn";
-
-export type WorkflowExecutorKind = "command" | "manual" | "internal";
-
-export type WorkflowBindingKind =
-  | "context"
-  | "config"
-  | "artifact"
-  | "workspace"
-  | "review-record"
-  | "check-result"
-  | "task-record";
-
-export type WorkflowGateKind =
-  | "artifacts-exist"
-  | "checks-pass"
-  | "review-status"
-  | "task-record-updated"
-  | "manual-approval";
-
-export type WorkflowExecutor = {
-  kind: WorkflowExecutorKind;
-  ref: string;
-  command?: string;
-  options?: Record<string, unknown>;
-};
-
-export type WorkflowBinding = {
-  kind: WorkflowBindingKind;
-  ref: string;
-  required?: boolean;
-  multiple?: boolean;
-};
-
-export type WorkflowGateCondition = {
-  id: string;
-  kind: WorkflowGateKind;
-  refs?: string[];
-  expectedStatus?: string;
-  message?: LocalizedText;
-};
-
-export type WorkflowGateSet = {
-  enter?: WorkflowGateCondition[];
-  exit?: WorkflowGateCondition[];
-};
-
-export type WorkflowStage = {
-  id: string;
-  name: LocalizedText;
-  description?: LocalizedText;
-  dependsOn?: string[];
-  executor: WorkflowExecutor;
-  inputs?: WorkflowBinding[];
-  outputs?: WorkflowBinding[];
-  gates?: WorkflowGateSet;
-  enabled?: boolean;
-  required?: boolean;
-  onFailure?: FailurePolicy;
-  requiresApproval?: boolean;
-};
-
-export type WorkflowExecution = {
-  mode: "serial";
-  allowSkipStages: boolean;
-  stopOnFailure: boolean;
-};
-
-export type WorkflowTemplate = {
-  id: string;
-  version: "1";
-  kind: "workflow-template";
-  meta: {
-    name: LocalizedText;
-    description?: LocalizedText;
-  };
-  execution: WorkflowExecution;
-  stages: WorkflowStage[];
-};
-
-export type WorkflowStageOverride = {
-  id: string;
-} & Partial<Omit<WorkflowStage, "id">>;
-
-export type WorkflowConfig = {
-  template?: string;
-  stages?: WorkflowStageOverride[];
-  allowSkipStages?: boolean;
-  stopOnFailure?: boolean;
-  requireHumanApprovalFor?: string[];
-};
+export type {
+  FailurePolicy,
+  WorkflowExecutorKind,
+  WorkflowBindingKind,
+  WorkflowGateKind,
+  WorkflowExecutionMode,
+} from "../types/aliases/workflow.type.js";
+export type {
+  LocalizedText,
+  WorkflowExecutor,
+  WorkflowBinding,
+  WorkflowGateCondition,
+  WorkflowGateSet,
+  WorkflowStage,
+  WorkflowExecution,
+  WorkflowTemplate,
+  WorkflowStageOverride,
+  WorkflowConfig,
+} from "../types/interfaces/workflow-template.interface.js";
 
 export const STANDARD_WORKFLOW_TEMPLATE_ID = "standard";
 export { STANDARD_WORKFLOW_STAGE_SEQUENCE };
@@ -135,8 +87,8 @@ export function validateWorkflowTemplate(template: WorkflowTemplate): WorkflowTe
 export const STANDARD_WORKFLOW_TEMPLATE: Readonly<WorkflowTemplate> = Object.freeze(
   validateWorkflowTemplate({
     id: STANDARD_WORKFLOW_TEMPLATE_ID,
-    version: "1",
-    kind: "workflow-template",
+    version: WorkflowTemplateSchemaVersionEnum.V1,
+    kind: WorkflowTemplateKindEnum.WorkflowTemplate,
     meta: {
       name: createLocalizedText("标准研发治理流程", "Standard Engineering Governance Flow"),
       description: createLocalizedText(
@@ -145,39 +97,39 @@ export const STANDARD_WORKFLOW_TEMPLATE: Readonly<WorkflowTemplate> = Object.fre
       ),
     },
     execution: {
-      mode: "serial",
+      mode: WorkflowExecutionModeEnum.Serial,
       allowSkipStages: false,
       stopOnFailure: true,
     },
     stages: [
       {
-        id: "plan",
+        id: StandardWorkflowStageEnum.Plan,
         name: createLocalizedText("方案", "Plan"),
         description: createLocalizedText(
           "生成 sprint 方案与范围边界。",
           "Generate the sprint plan and scope boundaries.",
         ),
         executor: {
-          kind: "command",
-          ref: "plan",
-          command: "plan",
+          kind: WorkflowExecutorKindEnum.Command,
+          ref: StandardWorkflowStageEnum.Plan,
+          command: StandardWorkflowStageEnum.Plan,
           options: {
             phase: "solution",
           },
         },
         inputs: [
           {
-            kind: "context",
+            kind: WorkflowBindingKindEnum.Context,
             ref: "project-context",
           },
           {
-            kind: "config",
+            kind: WorkflowBindingKindEnum.Config,
             ref: "governor.workflow",
           },
         ],
         outputs: [
           {
-            kind: "artifact",
+            kind: WorkflowBindingKindEnum.Artifact,
             ref: "plan.md",
           },
         ],
@@ -186,45 +138,45 @@ export const STANDARD_WORKFLOW_TEMPLATE: Readonly<WorkflowTemplate> = Object.fre
           exit: [
             {
               id: "plan-artifact-written",
-              kind: "artifacts-exist",
+              kind: WorkflowGateKindEnum.ArtifactsExist,
               refs: ["plan.md"],
             },
           ],
         },
       },
       {
-        id: "breakdown",
+        id: StandardWorkflowStageEnum.Breakdown,
         name: createLocalizedText("拆解", "Breakdown"),
         description: createLocalizedText(
           "把方案拆成任务卡、checklist 与 CSV 台账。",
           "Break the plan into task cards, checklist entries, and CSV records.",
         ),
-        dependsOn: ["plan"],
+        dependsOn: [StandardWorkflowStageEnum.Plan],
         executor: {
-          kind: "command",
-          ref: "plan",
-          command: "plan",
+          kind: WorkflowExecutorKindEnum.Command,
+          ref: StandardWorkflowStageEnum.Plan,
+          command: StandardWorkflowStageEnum.Plan,
           options: {
             phase: "breakdown",
           },
         },
         inputs: [
           {
-            kind: "artifact",
+            kind: WorkflowBindingKindEnum.Artifact,
             ref: "plan.md",
           },
         ],
         outputs: [
           {
-            kind: "artifact",
+            kind: WorkflowBindingKindEnum.Artifact,
             ref: "tasks/checklist.md",
           },
           {
-            kind: "artifact",
+            kind: WorkflowBindingKindEnum.Artifact,
             ref: "tasks/tasks.csv",
           },
           {
-            kind: "artifact",
+            kind: WorkflowBindingKindEnum.Artifact,
             ref: "tasks/TK-xxx.md",
             multiple: true,
           },
@@ -233,71 +185,71 @@ export const STANDARD_WORKFLOW_TEMPLATE: Readonly<WorkflowTemplate> = Object.fre
           enter: [
             {
               id: "plan-available",
-              kind: "artifacts-exist",
+              kind: WorkflowGateKindEnum.ArtifactsExist,
               refs: ["plan.md"],
             },
           ],
           exit: [
             {
               id: "task-records-written",
-              kind: "artifacts-exist",
+              kind: WorkflowGateKindEnum.ArtifactsExist,
               refs: ["tasks/checklist.md", "tasks/tasks.csv"],
             },
           ],
         },
       },
       {
-        id: "implement",
+        id: StandardWorkflowStageEnum.Implement,
         name: createLocalizedText("开发", "Implement"),
         description: createLocalizedText(
           "根据任务卡推进代码和文档实现。",
           "Implement code and documentation changes against the task cards.",
         ),
-        dependsOn: ["breakdown"],
+        dependsOn: [StandardWorkflowStageEnum.Breakdown],
         executor: {
-          kind: "manual",
-          ref: "implement",
+          kind: WorkflowExecutorKindEnum.Manual,
+          ref: StandardWorkflowStageEnum.Implement,
         },
         inputs: [
           {
-            kind: "artifact",
+            kind: WorkflowBindingKindEnum.Artifact,
             ref: "tasks/TK-xxx.md",
             multiple: true,
           },
           {
-            kind: "workspace",
+            kind: WorkflowBindingKindEnum.Workspace,
             ref: "repository-worktree",
           },
         ],
         outputs: [
           {
-            kind: "workspace",
+            kind: WorkflowBindingKindEnum.Workspace,
             ref: "repository-worktree",
           },
         ],
       },
       {
-        id: "self-check",
+        id: StandardWorkflowStageEnum.SelfCheck,
         name: createLocalizedText("自测", "Self Check"),
         description: createLocalizedText(
           "运行门禁、自测或 CI 等本地校验。",
           "Run local gates, self-checks, or CI-like validations.",
         ),
-        dependsOn: ["implement"],
+        dependsOn: [StandardWorkflowStageEnum.Implement],
         executor: {
-          kind: "command",
+          kind: WorkflowExecutorKindEnum.Command,
           ref: "check",
           command: "check",
         },
         inputs: [
           {
-            kind: "workspace",
+            kind: WorkflowBindingKindEnum.Workspace,
             ref: "repository-worktree",
           },
         ],
         outputs: [
           {
-            kind: "check-result",
+            kind: WorkflowBindingKindEnum.CheckResult,
             ref: "quality-gate-result",
           },
         ],
@@ -306,65 +258,65 @@ export const STANDARD_WORKFLOW_TEMPLATE: Readonly<WorkflowTemplate> = Object.fre
           exit: [
             {
               id: "checks-pass",
-              kind: "checks-pass",
+              kind: WorkflowGateKindEnum.ChecksPass,
               refs: ["quality-gate-result"],
-              expectedStatus: "passed",
+              expectedStatus: CommandResultStatusEnum.Pass,
             },
           ],
         },
       },
       {
-        id: "review",
+        id: StandardWorkflowStageEnum.Review,
         name: createLocalizedText("评审", "Review"),
         description: createLocalizedText(
           "生成带状态前缀的 code review 报告。",
           "Generate a status-prefixed code review report.",
         ),
-        dependsOn: ["self-check"],
+        dependsOn: [StandardWorkflowStageEnum.SelfCheck],
         executor: {
-          kind: "command",
-          ref: "review",
-          command: "review",
+          kind: WorkflowExecutorKindEnum.Command,
+          ref: StandardWorkflowStageEnum.Review,
+          command: StandardWorkflowStageEnum.Review,
         },
         inputs: [
           {
-            kind: "workspace",
+            kind: WorkflowBindingKindEnum.Workspace,
             ref: "repository-worktree",
           },
           {
-            kind: "check-result",
+            kind: WorkflowBindingKindEnum.CheckResult,
             ref: "quality-gate-result",
           },
         ],
         outputs: [
           {
-            kind: "review-record",
+            kind: WorkflowBindingKindEnum.ReviewRecord,
             ref: "code-review/review_<slug>.md",
           },
         ],
       },
       {
-        id: "review-verify",
+        id: StandardWorkflowStageEnum.ReviewVerify,
         name: createLocalizedText("评审复核", "Review Verify"),
         description: createLocalizedText(
           "把复核结果追加到同一份 CR 文件并推进状态。",
           "Append verification results into the same review file and advance its status.",
         ),
-        dependsOn: ["review"],
+        dependsOn: [StandardWorkflowStageEnum.Review],
         executor: {
-          kind: "command",
-          ref: "review-verify",
-          command: "review-verify",
+          kind: WorkflowExecutorKindEnum.Command,
+          ref: StandardWorkflowStageEnum.ReviewVerify,
+          command: StandardWorkflowStageEnum.ReviewVerify,
         },
         inputs: [
           {
-            kind: "review-record",
+            kind: WorkflowBindingKindEnum.ReviewRecord,
             ref: "code-review/review_<slug>.md",
           },
         ],
         outputs: [
           {
-            kind: "review-record",
+            kind: WorkflowBindingKindEnum.ReviewRecord,
             ref: "code-review/verified_review_<slug>.md",
           },
         ],
@@ -373,46 +325,46 @@ export const STANDARD_WORKFLOW_TEMPLATE: Readonly<WorkflowTemplate> = Object.fre
           exit: [
             {
               id: "review-verified",
-              kind: "review-status",
+              kind: WorkflowGateKindEnum.ReviewStatus,
               refs: ["code-review/verified_review_<slug>.md"],
-              expectedStatus: "verified",
+              expectedStatus: ReviewStatusEnum.Verified,
             },
           ],
         },
       },
       {
-        id: "task-sync",
+        id: StandardWorkflowStageEnum.TaskSync,
         name: createLocalizedText("任务记录回写", "Task Record Sync"),
         description: createLocalizedText(
           "把执行与复核结果回写到 checklist 和 tasks.csv。",
           "Write execution and verification results back to checklist and tasks.csv.",
         ),
-        dependsOn: ["review-verify"],
+        dependsOn: [StandardWorkflowStageEnum.ReviewVerify],
         executor: {
-          kind: "internal",
+          kind: WorkflowExecutorKindEnum.Internal,
           ref: "task-record-sync",
         },
         inputs: [
           {
-            kind: "review-record",
+            kind: WorkflowBindingKindEnum.ReviewRecord,
             ref: "code-review/verified_review_<slug>.md",
           },
           {
-            kind: "artifact",
+            kind: WorkflowBindingKindEnum.Artifact,
             ref: "tasks/checklist.md",
           },
           {
-            kind: "artifact",
+            kind: WorkflowBindingKindEnum.Artifact,
             ref: "tasks/tasks.csv",
           },
         ],
         outputs: [
           {
-            kind: "task-record",
+            kind: WorkflowBindingKindEnum.TaskRecord,
             ref: "tasks/checklist.md",
           },
           {
-            kind: "task-record",
+            kind: WorkflowBindingKindEnum.TaskRecord,
             ref: "tasks/tasks.csv",
           },
         ],
@@ -421,7 +373,7 @@ export const STANDARD_WORKFLOW_TEMPLATE: Readonly<WorkflowTemplate> = Object.fre
           exit: [
             {
               id: "task-records-updated",
-              kind: "task-record-updated",
+              kind: WorkflowGateKindEnum.TaskRecordUpdated,
               refs: ["tasks/checklist.md", "tasks/tasks.csv"],
               expectedStatus: "updated",
             },

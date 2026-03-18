@@ -1,31 +1,19 @@
 import fs from "node:fs";
 import path from "node:path";
-import { SUPPORTED_SKILL_SCOPES, type SkillScopeEnum } from "../constants/skill-runtime.js";
-import {
-  DEFAULT_SKILL_INSTALL_TARGETS,
-  SUPPORTED_SKILL_SURFACES,
-  type SkillInstallMode,
-  type SkillSurface,
-} from "./package-layout.js";
+import { SUPPORTED_SKILL_SCOPES, SkillScopeEnum } from "../constants/skill-runtime.js";
+import type { SkillScope, SkillSurface } from "../types/aliases/skill.type.js";
+import type {
+  ResolveSkillInstallTargetOptions,
+  ResolvedSkillInstallTarget,
+} from "../types/interfaces/skill-runtime.interface.js";
+import { DEFAULT_SKILL_INSTALL_TARGETS, SUPPORTED_SKILL_SURFACES } from "./package-layout.js";
 
 export { SUPPORTED_SKILL_SCOPES };
-export type SkillScope = `${SkillScopeEnum}`;
-
-export type ResolveSkillInstallTargetOptions = {
-  cwd?: string;
-  env?: NodeJS.ProcessEnv;
-  surface?: string;
-  scope?: string;
-  targetPath?: string;
-};
-
-export type ResolvedSkillInstallTarget = {
-  surface: SkillSurface;
-  scope: SkillScope;
-  mode: SkillInstallMode;
-  targetPath: string;
-  configuredPath: string;
-};
+export type { SkillScope } from "../types/aliases/skill.type.js";
+export type {
+  ResolveSkillInstallTargetOptions,
+  ResolvedSkillInstallTarget,
+} from "../types/interfaces/skill-runtime.interface.js";
 
 function expandTargetPattern(targetPattern: string, env: NodeJS.ProcessEnv): string {
   return targetPattern.replace(/\$([A-Z_]+)/g, (_match, variableName) => {
@@ -49,7 +37,7 @@ export function validateSkillSurface(surface: unknown): SkillSurface {
   return surface as SkillSurface;
 }
 
-export function validateSkillScope(scope: unknown = "repo"): SkillScope {
+export function validateSkillScope(scope: unknown = SkillScopeEnum.Repo): SkillScope {
   if (typeof scope !== "string" || !SUPPORTED_SKILL_SCOPES.includes(scope as SkillScope)) {
     throw new TypeError(`Unsupported skill scope: ${scope}`);
   }
@@ -63,7 +51,7 @@ export function resolveSkillInstallTarget(
   const cwd = path.resolve(options.cwd ?? process.cwd());
   const env = options.env ?? process.env;
   const surface = validateSkillSurface(options.surface);
-  const scope = validateSkillScope(options.scope ?? "repo");
+  const scope = validateSkillScope(options.scope ?? SkillScopeEnum.Repo);
   const installTarget = DEFAULT_SKILL_INSTALL_TARGETS[surface];
 
   if (options.targetPath) {
@@ -76,9 +64,10 @@ export function resolveSkillInstallTarget(
     };
   }
 
-  const configuredPath = scope === "repo" ? installTarget.repoLocal : installTarget.userLocal;
+  const configuredPath =
+    scope === SkillScopeEnum.Repo ? installTarget.repoLocal : installTarget.userLocal;
   const targetPath =
-    scope === "repo"
+    scope === SkillScopeEnum.Repo
       ? path.resolve(cwd, configuredPath)
       : path.resolve(expandTargetPattern(configuredPath, env));
 

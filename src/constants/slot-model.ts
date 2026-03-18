@@ -78,3 +78,47 @@ export enum SlotConflictPolicyEnum {
 export const SLOT_CONFLICT_POLICIES = Object.freeze(
   Object.values(SlotConflictPolicyEnum),
 ) as readonly `${SlotConflictPolicyEnum}`[];
+
+export enum SlotTriggerMatchModeEnum {
+  Any = "any",
+  All = "all",
+}
+
+export const SLOT_TRIGGER_MATCH_MODES = Object.freeze(
+  Object.values(SlotTriggerMatchModeEnum),
+) as readonly `${SlotTriggerMatchModeEnum}`[];
+
+export enum ScriptExtensionFailurePolicyEnum {
+  Stop = "stop",
+  Continue = "continue",
+  Warn = "warn",
+}
+
+export const SCRIPT_EXTENSION_FAILURE_POLICIES = Object.freeze(
+  Object.values(ScriptExtensionFailurePolicyEnum),
+) as readonly `${ScriptExtensionFailurePolicyEnum}`[];
+
+export enum SlotScriptIsolationModeEnum {
+  Process = "process",
+  ExternalRunner = "external-runner",
+}
+
+export const SLOT_SCRIPT_ISOLATION_MODES = Object.freeze(
+  Object.values(SlotScriptIsolationModeEnum),
+) as readonly `${SlotScriptIsolationModeEnum}`[];
+
+export enum SlotDocumentKindEnum {
+  GovernanceSlot = "governance-slot",
+}
+
+export const SLOT_DOCUMENT_KINDS = Object.freeze(
+  Object.values(SlotDocumentKindEnum),
+) as readonly `${SlotDocumentKindEnum}`[];
+
+export enum SlotDocumentSchemaVersionEnum {
+  V1 = "1",
+}
+
+export const SLOT_DOCUMENT_SCHEMA_VERSIONS = Object.freeze(
+  Object.values(SlotDocumentSchemaVersionEnum),
+) as readonly `${SlotDocumentSchemaVersionEnum}`[];

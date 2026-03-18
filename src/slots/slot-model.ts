@@ -1,22 +1,65 @@
 import { ConfigurationValidationError } from "../config/errors.js";
 import { validateSchemaDocument } from "../config/schema/validator.js";
 import {
+  SCRIPT_EXTENSION_FAILURE_POLICIES,
   SCRIPT_EXTENSION_GIT_POLICIES,
   SCRIPT_EXTENSION_HOOKS,
   SCRIPT_EXTENSION_NETWORK_POLICIES,
   SCRIPT_EXTENSION_RUNTIME_KINDS,
   SCRIPT_EXTENSION_SECRET_POLICIES,
+  SLOT_CONFLICT_POLICIES,
+  SLOT_DOCUMENT_KINDS,
+  SLOT_DOCUMENT_SCHEMA_VERSIONS,
+  SLOT_SCRIPT_ISOLATION_MODES,
   SLOT_SOURCES,
+  SLOT_TRIGGER_MATCH_MODES,
   SLOT_TYPES,
-  type ScriptExtensionGitPolicyEnum,
-  type ScriptExtensionHookEnum,
-  type ScriptExtensionNetworkPolicyEnum,
-  type ScriptExtensionRuntimeKindEnum,
-  type ScriptExtensionSecretPolicyEnum,
-  type SlotSourceEnum,
-  type SlotTypeEnum,
+  SlotConflictPolicyEnum,
+  SlotDocumentKindEnum,
+  SlotDocumentSchemaVersionEnum,
+  SlotSourceEnum,
+  SlotTriggerMatchModeEnum,
+  SlotTypeEnum,
 } from "../constants/slot-model.js";
+import { StandardWorkflowStageEnum } from "../constants/workflow-template.js";
+import type { SlotSource } from "../types/aliases/slot.type.js";
+import type {
+  LocalizedText,
+  SlotDefinition,
+  SlotScriptExtensionDescriptor,
+  SlotTriggerWhen,
+} from "../types/interfaces/slot-model.interface.js";
 import { cloneValue } from "../utils/common.js";
+export type {
+  SlotSource,
+  SlotType,
+  ScriptExtensionHook,
+  ScriptExtensionRuntimeKind,
+  ScriptExtensionNetworkPolicy,
+  ScriptExtensionGitPolicy,
+  ScriptExtensionSecretPolicy,
+  SlotConflictPolicy,
+  SlotTriggerMatchMode,
+  SlotScriptFailurePolicy,
+  SlotScriptIsolationMode,
+} from "../types/aliases/slot.type.js";
+export type {
+  LocalizedText,
+  SlotTriggerWhen,
+  SlotTrigger,
+  SlotScope,
+  SlotInject,
+  SlotBehavior,
+  SlotChecks,
+  SlotScriptRuntime,
+  SlotScriptPermissions,
+  SlotScriptAudit,
+  SlotScriptIsolation,
+  SlotScriptExtension,
+  SlotExtensions,
+  SlotDefinition,
+  SlotScriptExtensionDescriptor,
+} from "../types/interfaces/slot-model.interface.js";
 
 export {
   SLOT_SOURCES,
@@ -26,138 +69,12 @@ export {
   SCRIPT_EXTENSION_NETWORK_POLICIES,
   SCRIPT_EXTENSION_GIT_POLICIES,
   SCRIPT_EXTENSION_SECRET_POLICIES,
-};
-
-export type SlotSource = `${SlotSourceEnum}`;
-export type SlotType = `${SlotTypeEnum}`;
-export type ScriptExtensionHook = `${ScriptExtensionHookEnum}`;
-export type ScriptExtensionRuntimeKind = `${ScriptExtensionRuntimeKindEnum}`;
-export type ScriptExtensionNetworkPolicy = `${ScriptExtensionNetworkPolicyEnum}`;
-export type ScriptExtensionGitPolicy = `${ScriptExtensionGitPolicyEnum}`;
-export type ScriptExtensionSecretPolicy = `${ScriptExtensionSecretPolicyEnum}`;
-
-export type LocalizedText = {
-  "zh-CN": string;
-  "en-US": string;
-};
-
-export type SlotTriggerWhen = {
-  paths: string[];
-  stages: string[];
-  events: string[];
-  adapters: string[];
-  commands: string[];
-};
-
-export type SlotTrigger = {
-  match: "any" | "all";
-  when: SlotTriggerWhen;
-};
-
-export type SlotScope = {
-  languages: string[];
-  frameworks: string[];
-  projects: string[];
-  files: string[];
-  tags: string[];
-};
-
-export type SlotInject = {
-  ai?: {
-    promptKey?: string;
-  };
-  human?: {
-    docSection?: string;
-  };
-};
-
-export type SlotBehavior = {
-  blockOnFailure: boolean;
-  priority: number;
-  requiresApproval: boolean;
-  conflictPolicy: "error" | "override" | "merge" | "replace";
-  dependsOn: string[];
-  supersedes: string[];
-  inject: SlotInject;
-};
-
-export type SlotChecks = {
-  before: string[];
-  after: string[];
-};
-
-export type SlotScriptRuntime = {
-  kind: ScriptExtensionRuntimeKind;
-  entry: string;
-  args: string[];
-  cwd?: string;
-  timeoutMs?: number;
-};
-
-export type SlotScriptPermissions = {
-  filesystem: {
-    read: string[];
-    write: string[];
-  };
-  network: ScriptExtensionNetworkPolicy;
-  git: ScriptExtensionGitPolicy;
-  secrets: ScriptExtensionSecretPolicy;
-};
-
-export type SlotScriptAudit = {
-  logKey?: string;
-  capture: string[];
-  redact: string[];
-};
-
-export type SlotScriptIsolation = {
-  mode: "process" | "external-runner";
-};
-
-export type SlotScriptExtension = {
-  id: string;
-  description?: LocalizedText;
-  hook: ScriptExtensionHook;
-  failurePolicy: "stop" | "continue" | "warn";
-  runtime: SlotScriptRuntime;
-  permissions: SlotScriptPermissions;
-  audit: SlotScriptAudit;
-  isolation: SlotScriptIsolation;
-};
-
-export type SlotExtensions = {
-  scripts: SlotScriptExtension[];
-};
-
-export type SlotDefinition = {
-  id: string;
-  version: "1";
-  kind: "governance-slot";
-  meta: {
-    name?: LocalizedText;
-    source: SlotSource;
-    slotType: SlotType;
-    owner?: string;
-    description?: LocalizedText;
-    tags: string[];
-  };
-  trigger: SlotTrigger;
-  scope: SlotScope;
-  behavior: SlotBehavior;
-  checks: SlotChecks;
-  extensions: SlotExtensions;
-};
-
-export type SlotScriptExtensionDescriptor = {
-  slotId: string;
-  slotSource: SlotSource;
-  id: string;
-  hook: ScriptExtensionHook;
-  failurePolicy: "stop" | "continue" | "warn";
-  runtime: SlotScriptRuntime;
-  permissions: SlotScriptPermissions;
-  audit: SlotScriptAudit;
-  isolation: SlotScriptIsolation;
+  SLOT_CONFLICT_POLICIES,
+  SLOT_DOCUMENT_KINDS,
+  SLOT_DOCUMENT_SCHEMA_VERSIONS,
+  SLOT_TRIGGER_MATCH_MODES,
+  SCRIPT_EXTENSION_FAILURE_POLICIES,
+  SLOT_SCRIPT_ISOLATION_MODES,
 };
 
 function createLocalizedText(zhCN: string, enUS: string): LocalizedText {
@@ -198,12 +115,12 @@ export function validateSlotDefinition(slotDefinition: unknown): SlotDefinition 
 export const PROJECT_LOCAL_SLOT_SKELETON = Object.freeze(
   validateSlotDefinition({
     id: "project-slot",
-    version: "1",
-    kind: "governance-slot",
+    version: SlotDocumentSchemaVersionEnum.V1,
+    kind: SlotDocumentKindEnum.GovernanceSlot,
     meta: {
       name: createLocalizedText("项目本地插槽", "Project Local Slot"),
-      source: "project-local",
-      slotType: "custom",
+      source: SlotSourceEnum.ProjectLocal,
+      slotType: SlotTypeEnum.Custom,
       owner: "project",
       tags: [],
     },
@@ -213,25 +130,25 @@ export const PROJECT_LOCAL_SLOT_SKELETON = Object.freeze(
 export const OFFICIAL_SLOT_SKELETON = Object.freeze(
   validateSlotDefinition({
     id: "official-slot",
-    version: "1",
-    kind: "governance-slot",
+    version: SlotDocumentSchemaVersionEnum.V1,
+    kind: SlotDocumentKindEnum.GovernanceSlot,
     meta: {
       name: createLocalizedText("官方插槽", "Official Slot"),
-      source: "official",
-      slotType: "security-compliance",
+      source: SlotSourceEnum.Official,
+      slotType: SlotTypeEnum.SecurityCompliance,
       owner: "repo-ai-governor",
       tags: ["official"],
     },
     trigger: {
-      match: "any",
+      match: SlotTriggerMatchModeEnum.Any,
       when: {
-        stages: ["review"],
+        stages: [StandardWorkflowStageEnum.Review],
       },
     },
     behavior: {
       blockOnFailure: true,
       priority: 100,
-      conflictPolicy: "error",
+      conflictPolicy: SlotConflictPolicyEnum.Error,
     },
   }),
 );

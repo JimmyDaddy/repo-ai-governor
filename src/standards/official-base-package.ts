@@ -1,26 +1,23 @@
+import { LocaleEnum } from "../constants/locale.js";
+import { StandardsRuleViewEnum } from "../constants/standards-package.js";
+import type { RenderedRuleView, StandardsConsumer } from "../types/aliases/standards.type.js";
+import type { StandardsConfig } from "../types/interfaces/standards-official-base.interface.js";
+import type {
+  LocalizedText,
+  RenderRuleViewOptions,
+  StandardsPackage,
+  StandardsRule,
+} from "../types/interfaces/standards-package.interface.js";
 import { cloneValue } from "../utils/common.js";
 import {
-  type LocalizedText,
   OFFICIAL_BASE_PACKAGE_SKELETON,
-  type RenderRuleViewOptions,
-  type RenderedRuleView,
   STANDARDS_CONSUMERS,
   STANDARDS_PACKAGE_PRESET,
-  type StandardsConsumer,
-  type StandardsPackage,
-  type StandardsRule,
   createStandardsRule,
   renderRuleView,
   validateStandardsPackage,
 } from "./package-model.js";
-
-export type StandardsConfig = {
-  preset?: string;
-  locales?: {
-    default?: string;
-    supported?: string[];
-  };
-};
+export type { StandardsConfig } from "../types/interfaces/standards-official-base.interface.js";
 
 function createLocalizedText(zhCN: string, enUS: string): LocalizedText {
   return {
@@ -402,10 +399,12 @@ export function renderRulesForConsumer(
   consumer: StandardsConsumer,
   options: RenderRuleViewOptions = {},
 ): RenderedRuleView[] {
+  const locale = options.locale ?? standardsPackage.locales.default ?? LocaleEnum.ZhCN;
+
   return listRulesForConsumer(standardsPackage, consumer).map((rule) =>
     renderRuleView(rule, {
-      view: options.view ?? "human",
-      locale: options.locale ?? standardsPackage.locales.default,
+      view: options.view ?? StandardsRuleViewEnum.Human,
+      locale,
     }),
   );
 }

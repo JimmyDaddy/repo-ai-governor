@@ -1,74 +1,31 @@
+import {
+  ReportDocumentKindEnum,
+  ReportFormatEnum,
+  ReportSchemaVersionEnum,
+} from "../constants/report.js";
+import type { GenericRecord } from "../types/aliases/index.js";
 import type { Locale } from "../types/aliases/locale.type.js";
+import type { ReportFormat } from "../types/aliases/report.type.js";
+import type {
+  BuildUnifiedReportOptions,
+  NormalizedFinding,
+  NormalizedStandards,
+  NormalizedWorkflow,
+  ReportArtifacts,
+  UnifiedReport,
+} from "../types/interfaces/report-model.interface.js";
 import { normalizeLocale as normalizeLocaleValue, translateLocale } from "../utils/common.js";
 
-type GenericRecord = Record<string, unknown>;
-
-export type ReportFormat = "summary" | "markdown" | "json";
-
-export type NormalizedFinding = {
-  id: string;
-  ruleId: string | null;
-  severity: string;
-  status: string;
-  message: string;
-  target: string | null;
-  suggestion: string | null;
-  stageId: string | null;
-};
-
-export type NormalizedWorkflowStage = {
-  id: string;
-  status: string | null;
-  summary: unknown;
-  blockedBy: string[];
-  matchedRules: string[];
-};
-
-export type NormalizedWorkflow = {
-  status: string | null;
-  selectedStageIds: string[];
-  summary: unknown;
-  stages: NormalizedWorkflowStage[];
-};
-
-export type NormalizedStandards = {
-  preset: string | null;
-  totalRules: number;
-  matchedRuleIds: string[];
-};
-
-export type ReportArtifacts = {
-  reportFile: string | null;
-  reviewFile: string | null;
-  sourceFile: string | null;
-  outputFile: string | null;
-};
-
-export type UnifiedReport = {
-  schemaVersion: "1";
-  kind: "governance-report";
-  command: string | null;
-  status: string | null;
-  generatedAt: string;
-  context: {
-    cwd: string | null;
-    configFile: string | null;
-    project: string | null;
-    sprint: string | null;
-    locale: Locale;
-  };
-  summary: unknown;
-  workflow: NormalizedWorkflow | null;
-  standards: NormalizedStandards;
-  findings: NormalizedFinding[];
-  artifacts: ReportArtifacts;
-  nextActions: string[];
-};
-
-export type BuildUnifiedReportOptions = {
-  locale?: string;
-  generatedAt?: string;
-};
+export type { ReportFormat } from "../types/aliases/report.type.js";
+export type {
+  BuildUnifiedReportOptions,
+  NormalizedFinding,
+  NormalizedWorkflowStage,
+  NormalizedWorkflow,
+  NormalizedStandards,
+  ReportArtifacts,
+  UnifiedReport,
+} from "../types/interfaces/report-model.interface.js";
 
 function asRecord(value: unknown): GenericRecord {
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
@@ -230,8 +187,8 @@ export function buildUnifiedReport(
   const locale = normalizeLocale(options.locale ?? asString(payload.locale));
 
   return {
-    schemaVersion: "1",
-    kind: "governance-report",
+    schemaVersion: ReportSchemaVersionEnum.V1,
+    kind: ReportDocumentKindEnum.GovernanceReport,
     command: asString(payload.command),
     status: asString(payload.status) ?? asString(asRecord(payload.summary).status),
     generatedAt: options.generatedAt ?? asString(payload.generatedAt) ?? new Date().toISOString(),
@@ -344,13 +301,13 @@ function renderMarkdown(report: UnifiedReport): string {
 
 export function renderUnifiedReport(
   report: UnifiedReport,
-  format: ReportFormat = "summary",
+  format: ReportFormat = ReportFormatEnum.Summary,
 ): string {
-  if (format === "json") {
+  if (format === ReportFormatEnum.Json) {
     return `${JSON.stringify(report, null, 2)}\n`;
   }
 
-  if (format === "markdown") {
+  if (format === ReportFormatEnum.Markdown) {
     return renderMarkdown(report);
   }
 

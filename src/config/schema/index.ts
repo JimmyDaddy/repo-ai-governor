@@ -1,13 +1,12 @@
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import { SCHEMA_FILE_NAMES } from "../../constants/schema-files.js";
+import type { JsonSchemaDocument, SchemaName } from "../../types/aliases/schema.type.js";
 
 export const CONFIG_SCHEMA_VERSION = "1";
 
 export { SCHEMA_FILE_NAMES };
-
-export type SchemaName = keyof typeof SCHEMA_FILE_NAMES;
-export type JsonSchemaDocument = Record<string, unknown> & { $id?: string };
+export type { SchemaName, JsonSchemaDocument } from "../../types/aliases/schema.type.js";
 
 const schemaDirectoryUrl = new URL("./", import.meta.url);
 

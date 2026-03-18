@@ -1,3 +1,11 @@
+export enum RunModeEnum {
+  Manual = "manual",
+  Assisted = "assisted",
+  Autonomous = "autonomous",
+}
+
+export const RUN_MODES = Object.freeze(Object.values(RunModeEnum)) as readonly `${RunModeEnum}`[];
+
 export const DEFAULT_TASK_COMPLETION_STATUSES = Object.freeze([
   "done",
   "resolved",

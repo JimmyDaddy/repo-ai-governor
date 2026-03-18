@@ -2,147 +2,49 @@ import {
   WORKFLOW_EXECUTION_STATUS,
   WORKFLOW_STAGE_RESULT_STATUS,
 } from "../constants/workflow-status.js";
+import { WorkflowExecutionModeEnum } from "../constants/workflow-template.js";
 import { SlotConflictError, resolveApplicableSlots } from "../slots/runtime.js";
+import type { GenericRecord } from "../types/aliases/adapter-bundle.type.js";
+import type {
+  WorkflowExecutionStatus,
+  WorkflowStageHandler,
+  WorkflowStageResultStatus,
+} from "../types/aliases/workflow.type.js";
+import type {
+  CreateSkippedStageOptions,
+  ExecuteWorkflowOptions,
+  NormalizedHandlerResult,
+  RuntimeState,
+  WorkflowExecutionResult,
+  WorkflowStageContext,
+  WorkflowStageError,
+  WorkflowStageHandlerResult,
+  WorkflowStageResult,
+} from "../types/interfaces/workflow-engine.interface.js";
+import type {
+  WorkflowConfig,
+  WorkflowStage,
+  WorkflowTemplate,
+} from "../types/interfaces/workflow-template.interface.js";
 import { cloneValue, isPlainObject } from "../utils/common.js";
-import {
-  type LocalizedText,
-  type WorkflowConfig,
-  type WorkflowExecutor,
-  type WorkflowStage,
-  type WorkflowTemplate,
-  resolveWorkflowTemplate,
-  validateWorkflowTemplate,
-} from "./template-model.js";
-
-type GenericRecord = Record<string, unknown>;
-
-type RuntimeState = {
-  artifacts: GenericRecord;
-  values: GenericRecord;
-};
+import { resolveWorkflowTemplate, validateWorkflowTemplate } from "./template-model.js";
 export { WORKFLOW_STAGE_RESULT_STATUS, WORKFLOW_EXECUTION_STATUS };
-
-export type WorkflowStageResultStatus =
-  (typeof WORKFLOW_STAGE_RESULT_STATUS)[keyof typeof WORKFLOW_STAGE_RESULT_STATUS];
-
-export type WorkflowExecutionStatus =
-  (typeof WORKFLOW_EXECUTION_STATUS)[keyof typeof WORKFLOW_EXECUTION_STATUS];
-
-export type WorkflowStageError = {
-  message: string;
-  code: string | null;
-};
-
-export type WorkflowStageResult = {
-  id: string;
-  name: LocalizedText;
-  executor: WorkflowExecutor | null;
-  status: WorkflowStageResultStatus;
-  startedAt: string | null;
-  finishedAt: string | null;
-  durationMs: number;
-  dependsOn: string[];
-  dependencyStatuses: Record<string, WorkflowStageResultStatus>;
-  summary: unknown;
-  details: unknown;
-  outputs: GenericRecord;
-  gates: unknown[];
-  warnings: unknown[];
-  blockedBy: string[];
-  skippedReason: string | null;
-  error: WorkflowStageError | null;
-};
-
-export type WorkflowStageContext = {
-  template: WorkflowTemplate;
-  stage: WorkflowStage;
-  stageIndex: number;
-  selectedStageIds: string[];
-  dependencyResults: WorkflowStageResult[];
-  previousResults: WorkflowStageResult[];
-  state: GenericRecord;
-  runtime: RuntimeState;
-  artifacts: GenericRecord;
-  metadata: GenericRecord;
-  slots: unknown[];
-  slotResolution: unknown;
-};
-
-export type WorkflowStageHandlerResult = {
-  status?: WorkflowStageResultStatus;
-  summary?: unknown;
-  details?: unknown;
-  outputs?: GenericRecord;
-  gates?: unknown[];
-  warnings?: unknown[];
-  blockedBy?: string[];
-  skippedReason?: string | null;
-  error?: {
-    message?: string;
-    code?: string | null;
-  } | null;
-};
-
-export type WorkflowStageHandler = (
-  context: WorkflowStageContext,
-) => WorkflowStageHandlerResult | Promise<WorkflowStageHandlerResult> | void | Promise<void>;
-
-export type ExecuteWorkflowOptions = {
-  template?: WorkflowTemplate;
-  workflowConfig?: WorkflowConfig;
-  targetStages?: string | string[];
-  initialArtifacts?: GenericRecord;
-  initialState?: GenericRecord;
-  metadata?: GenericRecord;
-  handlers?: Record<string, WorkflowStageHandler | undefined>;
-  slotRuntime?: unknown;
-};
-
-export type WorkflowExecutionResult = {
-  workflowId: string;
-  status: WorkflowExecutionStatus;
-  startedAt: string;
-  finishedAt: string;
-  durationMs: number;
-  selectedStageIds: string[];
-  stages: WorkflowStageResult[];
-  summary: {
-    passed: number;
-    failed: number;
-    blocked: number;
-    skipped: number;
-    selected: number;
-  };
-  failure: {
-    stageId: string;
-    stageResult: WorkflowStageResult | null;
-  } | null;
-  artifacts: GenericRecord;
-  state: GenericRecord;
-  metadata: GenericRecord;
-};
-
-type NormalizedHandlerResult = {
-  status: WorkflowStageResultStatus;
-  summary: unknown;
-  details: unknown;
-  outputs: GenericRecord;
-  gates: unknown[];
-  warnings: unknown[];
-  blockedBy: string[];
-  skippedReason: string | null;
-  error: WorkflowStageError | null;
-};
-
-type CreateSkippedStageOptions = {
-  status?: WorkflowStageResultStatus;
-  dependencyStatuses?: Record<string, WorkflowStageResultStatus>;
-  summary?: unknown;
-  details?: unknown;
-  blockedBy?: string[];
-  skippedReason?: string | null;
-  error?: WorkflowStageError | null;
-};
+export type {
+  WorkflowStageResultStatus,
+  WorkflowExecutionStatus,
+  WorkflowStageHandler,
+} from "../types/aliases/workflow.type.js";
+export type {
+  RuntimeState,
+  WorkflowStageError,
+  WorkflowStageResult,
+  WorkflowStageContext,
+  WorkflowStageHandlerResult,
+  ExecuteWorkflowOptions,
+  WorkflowExecutionResult,
+  NormalizedHandlerResult,
+  CreateSkippedStageOptions,
+} from "../types/interfaces/workflow-engine.interface.js";
 
 const FINAL_STAGE_STATUSES = new Set<WorkflowStageResultStatus>([
   WORKFLOW_STAGE_RESULT_STATUS.passed,
@@ -152,7 +54,7 @@ const FINAL_STAGE_STATUSES = new Set<WorkflowStageResultStatus>([
 ]);
 
 function ensureSerialTemplate(template: WorkflowTemplate): WorkflowTemplate {
-  if (template.execution.mode !== "serial") {
+  if (template.execution.mode !== WorkflowExecutionModeEnum.Serial) {
     throw new TypeError(`Unsupported workflow execution mode: ${template.execution.mode}`);
   }
 

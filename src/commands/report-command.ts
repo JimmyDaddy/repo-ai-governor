@@ -2,36 +2,16 @@ import fs from "node:fs";
 import path from "node:path";
 import { InputError } from "../cli/runtime/errors.js";
 import { loadResolvedConfig } from "../config/load-config.js";
+import { ReportCommandStatusEnum } from "../constants/command-model.js";
+import { REPORT_FORMATS, ReportFormatEnum } from "../constants/report.js";
 import { renderUnifiedReport } from "../reporting/report-model.js";
-import type { ReportFormat, UnifiedReport } from "../reporting/report-model.js";
+import type { ReportFormat } from "../reporting/report-model.js";
 import { loadReportSource } from "../reporting/report-source.js";
+import type { GenericRecord } from "../types/aliases/index.js";
 import type { CommandContext } from "../types/interfaces/cli-runtime.interface.js";
 import type { Logger } from "../types/interfaces/cli-ui.interface.js";
+import type { ReportPayload, ReportRun } from "../types/interfaces/command-report.interface.js";
 import { normalizeLocale, toRelativePath, translateLocale } from "../utils/common.js";
-
-type ReportRun = {
-  cwd: string;
-  sourceFilePath: string;
-  sourceKind: "governance-report" | "command-payload" | "review-record";
-  report: UnifiedReport;
-  locale: string;
-  format: ReportFormat;
-  dryRun: boolean;
-  outputFilePath: string;
-};
-
-type ReportPayload = {
-  command: "report";
-  status: "rendered";
-  locale: string;
-  sourceFile: string;
-  sourceKind: "governance-report" | "command-payload" | "review-record";
-  format: ReportFormat;
-  dryRun: boolean;
-  outputFile: string | null;
-};
-
-type GenericRecord = Record<string, unknown>;
 
 function t(locale: string | null | undefined, zhCN: string, enUS: string): string {
   return translateLocale(locale, zhCN, enUS);
@@ -55,11 +35,11 @@ function getStringOption(options: Record<string, unknown>, key: string): string 
 }
 
 function toReportFormat(value: string): ReportFormat {
-  if (value === "json" || value === "markdown" || value === "summary") {
-    return value;
+  if (REPORT_FORMATS.includes(value as ReportFormat)) {
+    return value as ReportFormat;
   }
 
-  return "summary";
+  return ReportFormatEnum.Summary;
 }
 
 function buildReportRun(commandContext: CommandContext): ReportRun {
@@ -172,7 +152,7 @@ export async function executeReportCommand(
 
   const payload: ReportPayload = {
     command: "report",
-    status: "rendered",
+    status: ReportCommandStatusEnum.Rendered,
     locale: runState.locale,
     sourceFile: toRelativePath(runState.cwd, runState.sourceFilePath),
     sourceKind: runState.sourceKind,

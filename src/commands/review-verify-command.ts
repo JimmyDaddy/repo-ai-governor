@@ -3,12 +3,26 @@ import path from "node:path";
 import { ConfigError, InputError } from "../cli/runtime/errors.js";
 import { loadResolvedConfig } from "../config/load-config.js";
 import { createReviewFileName } from "../config/repository-layout.js";
+import { CommandResultStatusEnum } from "../constants/command-model.js";
+import { ReviewStatusEnum } from "../constants/repository-layout.js";
 import {
   renderRulesForConsumer,
   resolveStandardsPackage,
 } from "../standards/official-base-package.js";
+import type { ReviewStatus } from "../types/aliases/repository-layout.type.js";
 import type { CommandContext } from "../types/interfaces/cli-runtime.interface.js";
 import type { Logger } from "../types/interfaces/cli-ui.interface.js";
+import type {
+  ReviewVerifyPayload,
+  ReviewVerifyRule,
+  ReviewVerifyRunState,
+  ReviewVerifyWorkflowResult,
+} from "../types/interfaces/command-review-verify.interface.js";
+import type {
+  ReviewAnalysis,
+  ReviewSummary,
+  ReviewWorkflowStage,
+} from "../types/interfaces/command-review.interface.js";
 import { normalizeLocale, translateLocale } from "../utils/common.js";
 import type { ExecuteWorkflowOptions } from "../workflow/governance-engine.js";
 import { executeWorkflow } from "../workflow/governance-engine.js";
@@ -20,119 +34,6 @@ import {
   summarizeFindings,
   toRelativePath,
 } from "./review-command.js";
-
-type ReviewStatus = "pending" | "verified" | "resolved";
-type ReviewSummaryStatus = "pass" | "warn" | "fail";
-
-type ReviewFinding = {
-  severity: string;
-  message: string;
-  target: string;
-  ruleId?: string;
-  suggestion?: string;
-};
-
-type ReviewAnalysis = {
-  findings: ReviewFinding[];
-  matchedRuleIds: string[];
-  relativeTargets: string[];
-};
-
-type ReviewSummary = {
-  status: ReviewSummaryStatus;
-  exitCode: number;
-  errors: number;
-  warnings: number;
-};
-
-type ReviewVerifyWorkflowStage = {
-  id: string;
-  status: string;
-  summary: unknown;
-  blockedBy?: string[] | null;
-  outputs?: {
-    analysis?: ReviewAnalysis;
-    summary?: ReviewSummary;
-  };
-};
-
-type ReviewVerifyWorkflowResult = {
-  status: string;
-  selectedStageIds: string[];
-  summary: unknown;
-  stages: ReviewVerifyWorkflowStage[];
-};
-
-type ReviewRule = {
-  id: string;
-  title: string;
-  summary: string;
-};
-
-type ReviewVerifyPayload = {
-  command: "review-verify";
-  status: ReviewSummaryStatus;
-  dryRun: boolean;
-  cwd: string;
-  configFile: string;
-  currentProject?: string;
-  currentSprint?: string;
-  generatedAt: string;
-  locale: string;
-  sourceFile: string;
-  reviewStatusBefore: ReviewStatus;
-  reviewStatusAfter: ReviewStatus;
-  strict: boolean;
-  slug: string;
-  pathOption: string | null;
-  base: string | null;
-  head: string | null;
-  workflow: {
-    status: string;
-    selectedStageIds: string[];
-    summary: unknown;
-    stages: Array<{
-      id: string;
-      status: string;
-      summary: unknown;
-      blockedBy?: string[] | null;
-    }>;
-  };
-  targets: string[];
-  findings: ReviewFinding[];
-  summary: ReviewSummary;
-  standards: {
-    preset: string;
-    totalRules: number;
-    matchedRuleIds: string[];
-    reviewVerifyRules: ReviewRule[];
-  };
-  reviewLifecycle: Record<ReviewStatus, string>;
-  verifyEntries: string[];
-  resolutionEntries: string[];
-  outputFile: string;
-};
-
-type ReviewVerifyRunState = {
-  cwd: string;
-  resolvedConfig: ReturnType<typeof loadResolvedConfig>;
-  standardsPackage: ReturnType<typeof resolveStandardsPackage>;
-  artifactPaths: ReturnType<typeof buildArtifactPaths>;
-  sourceFilePath: string;
-  sourceFileName: string;
-  sourceStatus: ReviewStatus;
-  sourceContent: string;
-  slug: string;
-  targetFiles: string[];
-  pathOption: string | null;
-  base: string | null;
-  head: string | null;
-  strict: boolean;
-  dryRun: boolean;
-  locale: string;
-  previousVerifyEntries: string[];
-  previousResolutionEntries: string[];
-};
 
 function getStringOption(options: Record<string, unknown>, key: string): string | undefined {
   const value = options[key];
@@ -196,15 +97,15 @@ function t(locale: string | null | undefined, zhCN: string, enUS: string): strin
 
 function detectReviewStatus(fileName: string, locale = "zh-CN"): ReviewStatus {
   if (fileName.startsWith("review_")) {
-    return "pending";
+    return ReviewStatusEnum.Pending;
   }
 
   if (fileName.startsWith("verified_review_")) {
-    return "verified";
+    return ReviewStatusEnum.Verified;
   }
 
   if (fileName.startsWith("resolved_review_")) {
-    return "resolved";
+    return ReviewStatusEnum.Resolved;
   }
 
   throw new InputError(
@@ -275,13 +176,13 @@ function formatNumberedList(items: string[], locale: string): string {
   return items.map((item: string, index: number) => `${index + 1}. ${item}`).join("\n");
 }
 
-function renderFindingsList(findings: ReviewFinding[], locale: string): string {
+function renderFindingsList(findings: ReviewAnalysis["findings"], locale: string): string {
   if (findings.length === 0) {
     return t(locale, "1. 无剩余评审发现。", "1. No remaining review findings.");
   }
 
   return findings
-    .map((finding: ReviewFinding, index: number) => {
+    .map((finding: ReviewAnalysis["findings"][number], index: number) => {
       const lines = [
         `${index + 1}. [${finding.severity}] ${finding.message}`,
         `${t(locale, "目标", "Target")}: \`${finding.target}\``,
@@ -300,10 +201,7 @@ function renderFindingsList(findings: ReviewFinding[], locale: string): string {
     .join("\n\n");
 }
 
-function renderStandardsList(
-  standards: Array<{ id: string; title: string; summary: string }>,
-  locale: string,
-): string {
+function renderStandardsList(standards: ReviewVerifyRule[], locale: string): string {
   if (standards.length === 0) {
     return t(
       locale,
@@ -314,7 +212,7 @@ function renderStandardsList(
 
   return standards
     .map(
-      (rule: { id: string; title: string; summary: string }, index: number) =>
+      (rule: ReviewVerifyRule, index: number) =>
         `${index + 1}. \`${rule.id}\` ${rule.title}\n${t(locale, "摘要", "Summary")}: ${rule.summary}`,
     )
     .join("\n\n");
@@ -322,25 +220,28 @@ function renderStandardsList(
 
 function buildLifecycle(slug: string): Record<ReviewStatus, string> {
   return {
-    pending: createReviewFileName({ status: "pending", slug }),
-    verified: createReviewFileName({ status: "verified", slug }),
-    resolved: createReviewFileName({ status: "resolved", slug }),
+    pending: createReviewFileName({ status: ReviewStatusEnum.Pending, slug }),
+    verified: createReviewFileName({ status: ReviewStatusEnum.Verified, slug }),
+    resolved: createReviewFileName({ status: ReviewStatusEnum.Resolved, slug }),
   };
 }
 
 function determineNextStatus(
   sourceStatus: ReviewStatus,
-  summaryStatus: ReviewSummaryStatus,
+  summaryStatus: ReviewSummary["status"],
 ): ReviewStatus {
-  if (sourceStatus === "pending") {
-    return "verified";
+  if (sourceStatus === ReviewStatusEnum.Pending) {
+    return ReviewStatusEnum.Verified;
   }
 
-  if (sourceStatus === "verified" && summaryStatus === "pass") {
-    return "resolved";
+  if (
+    sourceStatus === ReviewStatusEnum.Verified &&
+    summaryStatus === CommandResultStatusEnum.Pass
+  ) {
+    return ReviewStatusEnum.Resolved;
   }
 
-  return "verified";
+  return ReviewStatusEnum.Verified;
 }
 
 function buildVerifyEntries(
@@ -375,13 +276,13 @@ function buildVerifyEntries(
         runState.locale,
         `剩余发现：${analysis.findings
           .map(
-            (finding: ReviewFinding) =>
+            (finding: ReviewAnalysis["findings"][number]) =>
               `[${finding.severity}] ${finding.message} (${finding.target})`,
           )
           .join("；")}`,
         `Remaining findings: ${analysis.findings
           .map(
-            (finding: ReviewFinding) =>
+            (finding: ReviewAnalysis["findings"][number]) =>
               `[${finding.severity}] ${finding.message} (${finding.target})`,
           )
           .join("; ")}`,
@@ -399,7 +300,7 @@ function buildResolutionEntries(
 ): string[] {
   const entries = [...runState.previousResolutionEntries];
 
-  if (nextStatus === "resolved") {
+  if (nextStatus === ReviewStatusEnum.Resolved) {
     entries.push(
       t(
         runState.locale,
@@ -414,7 +315,7 @@ function buildResolutionEntries(
     return entries;
   }
 
-  if (summary.status === "pass") {
+  if (summary.status === CommandResultStatusEnum.Pass) {
     return [
       t(
         runState.locale,
@@ -537,7 +438,7 @@ function buildReviewVerifyRun(commandContext: CommandContext): ReviewVerifyRunSt
   const sourceFileName = path.basename(sourceFilePath);
   const sourceStatus = detectReviewStatus(sourceFileName, requestedLocale);
 
-  if (sourceStatus === "resolved") {
+  if (sourceStatus === ReviewStatusEnum.Resolved) {
     throw new InputError(
       t(
         requestedLocale,
@@ -651,7 +552,7 @@ async function executeReviewVerifyWorkflow(runState: ReviewVerifyRunState): Prom
         return {
           status: summary.exitCode === 0 ? "passed" : "failed",
           summary:
-            summary.status === "pass"
+            summary.status === CommandResultStatusEnum.Pass
               ? t(
                   runState.locale,
                   "复核完成，无剩余评审发现。",
@@ -742,7 +643,7 @@ function buildReviewVerifyPayload(
       status: workflowResult.status,
       selectedStageIds: workflowResult.selectedStageIds,
       summary: workflowResult.summary,
-      stages: workflowResult.stages.map((stage: ReviewVerifyWorkflowStage) => ({
+      stages: workflowResult.stages.map((stage: ReviewWorkflowStage) => ({
         id: stage.id,
         status: stage.status,
         summary: stage.summary,

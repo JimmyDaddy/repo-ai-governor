@@ -13,8 +13,11 @@ import {
   DEFAULT_TASK_LOOP,
   HIGH_RISK_PERMISSION_FIELD,
   REVIEW_STATUS_WEIGHT,
+  RUN_MODES,
+  RunModeEnum,
 } from "../constants/run-command.js";
 import { buildSlotRuntime } from "../slots/runtime.js";
+import type { AnyRecord } from "../types/aliases/command.type.js";
 import {
   cloneValue,
   isPlainObject,
@@ -36,10 +39,7 @@ import {
   toPositiveInteger,
 } from "./automation-shared.js";
 
-// biome-ignore lint/suspicious/noExplicitAny: transitional typing for large command migration
-type AnyRecord = Record<string, any>;
-
-const RUN_MODES = new Set(["manual", "assisted", "autonomous"]);
+const RUN_MODE_SET = new Set(RUN_MODES);
 
 const DEFAULT_PROCESS_STAGES = Object.freeze([
   {
@@ -1178,7 +1178,7 @@ function resolveResumePlan(runState: any, workflowTemplate: any) {
     return null;
   }
 
-  if (runState.mode !== "assisted") {
+  if (runState.mode !== RunModeEnum.Assisted) {
     throw new InputError(
       t(
         runState.locale,
@@ -1362,7 +1362,7 @@ function resolveRecoveryNextStageId(payload: any) {
 function buildRunRecoveryMetadata(runState: any, payload: any, auditRecordRef: any) {
   const nextStageId = resolveRecoveryNextStageId(payload);
   const resumeEnabled =
-    runState.mode === "assisted" && Boolean(nextStageId) && Boolean(auditRecordRef);
+    runState.mode === RunModeEnum.Assisted && Boolean(nextStageId) && Boolean(auditRecordRef);
   const recommendedCommand = resumeEnabled
     ? [
         "repo-ai-governor run",
@@ -1372,7 +1372,7 @@ function buildRunRecoveryMetadata(runState: any, payload: any, auditRecordRef: a
         `--resume-from ${auditRecordRef}`,
       ].join(" ")
     : null;
-  const handoffRequired = runState.mode === "assisted" && payload.status === "fail";
+  const handoffRequired = runState.mode === RunModeEnum.Assisted && payload.status === "fail";
   const handoffReason =
     payload.workflow.failure?.message ??
     (nextStageId
@@ -3474,11 +3474,11 @@ function buildRunState(commandContext: any): AnyRecord {
       "zh-CN",
   );
   const automationConfig = (resolvedConfig.config.automation ?? {}) as AnyRecord;
-  const mode = commandContext.commandOptions.mode ?? automationConfig.mode ?? "assisted";
+  const mode = commandContext.commandOptions.mode ?? automationConfig.mode ?? RunModeEnum.Assisted;
   const explainProcess = commandContext.commandOptions.explainProcess === true;
   const validateProcess = commandContext.commandOptions.validateProcess === true;
 
-  if (!RUN_MODES.has(mode)) {
+  if (!RUN_MODE_SET.has(mode)) {
     throw new InputError(t(locale, `不支持的执行模式：${mode}`, `Unsupported run mode: ${mode}`), {
       code: "cli.run_invalid_mode",
       details: {

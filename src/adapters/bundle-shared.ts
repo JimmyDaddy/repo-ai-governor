@@ -126,7 +126,7 @@ export function renderSlotSummary(
       priority: slot.priority,
       promptKey: slot.inject.ai?.promptKey ?? null,
       docSection: slot.inject.human?.docSection ?? null,
-      checks: cloneValue(slot.checks) as GenericRecord,
+      checks: cloneValue(slot.checks) as unknown as GenericRecord,
     })),
     blocked: cloneValue(slotResolution.blockedSlots),
     suppressed: cloneValue(slotResolution.suppressedSlots),

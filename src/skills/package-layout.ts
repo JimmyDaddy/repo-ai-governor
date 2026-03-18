@@ -1,79 +1,52 @@
 import path from "node:path";
 import {
   SKILL_INSTALL_MODES,
+  SKILL_OPTIONAL_DIRECTORY_KEYS,
   SUPPORTED_SKILL_SURFACES,
-  type SkillInstallModeEnum,
-  type SkillSurfaceEnum,
+  SkillSurfaceEnum,
 } from "../constants/skill-package-layout.js";
+import type {
+  SkillInstallTargets,
+  SkillOptionalDirectoryPathKey,
+} from "../types/aliases/skill.type.js";
+import type {
+  ResolveSkillPackageLayoutOptions,
+  ResolvedSkillPackageLayout,
+  SkillAbsoluteLayout,
+  SkillRelativeLayout,
+} from "../types/interfaces/skill-package-layout.interface.js";
 
 export const SKILL_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 export const SKILL_SEMVER_RANGE_PATTERN = /^(?:\^|~|>=|<=|>|<)?\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/;
 export { SUPPORTED_SKILL_SURFACES, SKILL_INSTALL_MODES };
-
-export type SkillSurface = `${SkillSurfaceEnum}`;
-
-export type SkillInstallMode = `${SkillInstallModeEnum}`;
-
-export type SkillInstallTarget = {
-  repoLocal: string;
-  userLocal: string;
-  mode: SkillInstallMode;
-};
-
-export type SkillInstallTargets = Readonly<Record<SkillSurface, Readonly<SkillInstallTarget>>>;
+export type {
+  SkillSurface,
+  SkillInstallMode,
+  SkillInstallTargets,
+} from "../types/aliases/skill.type.js";
+export type {
+  SkillInstallTarget,
+  ResolveSkillPackageLayoutOptions,
+  ResolvedSkillPackageLayout,
+} from "../types/interfaces/skill-package-layout.interface.js";
 
 export const DEFAULT_SKILL_INSTALL_TARGETS: SkillInstallTargets = Object.freeze({
-  codex: Object.freeze({
+  [SkillSurfaceEnum.Codex]: Object.freeze({
     repoLocal: ".codex/skills",
     userLocal: "$CODEX_HOME/skills",
     mode: SKILL_INSTALL_MODES.native,
   }),
-  "github-copilot": Object.freeze({
+  [SkillSurfaceEnum.GitHubCopilot]: Object.freeze({
     repoLocal: ".github/skills",
     userLocal: "$HOME/.copilot/skills",
     mode: SKILL_INSTALL_MODES.hybrid,
   }),
-  "claude-code": Object.freeze({
+  [SkillSurfaceEnum.ClaudeCode]: Object.freeze({
     repoLocal: ".claude/skills",
     userLocal: "$HOME/.claude/skills",
     mode: SKILL_INSTALL_MODES.native,
   }),
 });
-
-type OptionalDirectoryKey = "agents" | "scripts" | "templates" | "references";
-type OptionalDirectoryPathKey = `${OptionalDirectoryKey}Dir`;
-
-type RequiredRelativeLayout = {
-  bundledRoot: string;
-  officialRoot: string;
-  sharedRoot: string;
-  catalogFile: string;
-};
-
-type SkillRelativeLayout = RequiredRelativeLayout &
-  Partial<
-    {
-      skillRoot: string;
-      skillFile: string;
-      manifestFile: string;
-    } & Record<OptionalDirectoryPathKey, string>
-  >;
-
-type SkillAbsoluteLayout = {
-  [K in keyof SkillRelativeLayout]: string;
-};
-
-export type ResolveSkillPackageLayoutOptions = {
-  cwd?: string;
-  skillId?: string;
-};
-
-export type ResolvedSkillPackageLayout = {
-  cwd: string;
-  relative: SkillRelativeLayout;
-  absolute: SkillAbsoluteLayout;
-  installTargets: SkillInstallTargets;
-};
 
 export const DEFAULT_SKILL_PACKAGE_LAYOUT = Object.freeze({
   bundledRoot: "skills",
@@ -151,18 +124,16 @@ export function resolveSkillPackageLayout(
       DEFAULT_SKILL_PACKAGE_LAYOUT.requiredFiles.manifest,
     );
 
-    for (const key of Object.keys(
-      DEFAULT_SKILL_PACKAGE_LAYOUT.optionalDirectories,
-    ) as OptionalDirectoryKey[]) {
+    for (const key of SKILL_OPTIONAL_DIRECTORY_KEYS) {
       const directory = DEFAULT_SKILL_PACKAGE_LAYOUT.optionalDirectories[key];
-      const relativeKey = `${key}Dir` as OptionalDirectoryPathKey;
+      const relativeKey = `${key}Dir` as SkillOptionalDirectoryPathKey;
       relative[relativeKey] = joinRelativePath(skillRoot, directory);
     }
   }
 
   const absolute = Object.fromEntries(
     Object.entries(relative).map(([key, relativePath]) => [key, toAbsolutePath(cwd, relativePath)]),
-  ) as SkillAbsoluteLayout;
+  ) as unknown as SkillAbsoluteLayout;
 
   return {
     cwd,

@@ -1,53 +1,11 @@
-type TemplateLocale = "zh-CN" | "en-US";
-type PlanRuleView = {
-  level: string;
-  summary: string;
-  rationale?: string | null;
-};
-
-type PlanTask = {
-  id: string;
-  title: string;
-  owner: string;
-  priority: string;
-  dueDate: string;
-  status: string;
-  planSummary: string;
-  dependsOn: string[];
-  goal: string;
-  deliverables: string[];
-  acceptance: string[];
-  ruleIds: string[];
-};
-
-type PlanTemplateContext = {
-  locale?: string;
-  currentProject: string;
-  currentSprint: string;
-  dateStamp: string;
-  title: string;
-  goal: string;
-  requirementSummary: string;
-  inScope: string[];
-  outOfScope: string[];
-  workflowStages: string[];
-  planRules: PlanRuleView[];
-  strategy: string[];
-  risks: string[];
-  acceptance: string[];
-  verificationPath: string[];
-  tasks: PlanTask[];
-  csvColumns: string[];
-  task: PlanTask;
-  status: string;
-  dryRun: boolean;
-  workflowStatus: string;
-  standardsPreset: string;
-  files: unknown;
-};
-
-type TemplateRenderer = (context: PlanTemplateContext) => string;
-type TemplateMap = Record<string, TemplateRenderer>;
+import { LocaleEnum } from "../../constants/locale.js";
+import type { Locale } from "../../types/aliases/locale.type.js";
+import type {
+  PlanRuleView,
+  PlanTask,
+  PlanTemplateContext,
+  TemplateMap,
+} from "../../types/interfaces/template-document.interface.js";
 
 function ensureTrailingNewline(content: string): string {
   return content.endsWith("\n") ? content : `${content}\n`;
@@ -80,7 +38,7 @@ function renderRuleList(
   return rules.map((rule, index) => formatter(rule, index)).join("\n");
 }
 
-const ZH_CN_TEMPLATES: TemplateMap = {
+const ZH_CN_TEMPLATES: TemplateMap<PlanTemplateContext> = {
   sprintPlan(context) {
     return [
       `# ${context.currentProject.toUpperCase()} ${context.currentSprint} 计划`,
@@ -226,7 +184,7 @@ const ZH_CN_TEMPLATES: TemplateMap = {
   },
 };
 
-const EN_US_TEMPLATES: TemplateMap = {
+const EN_US_TEMPLATES: TemplateMap<PlanTemplateContext> = {
   sprintPlan(context) {
     return [
       `# ${context.currentProject.toUpperCase()} ${context.currentSprint} Plan`,
@@ -372,13 +330,13 @@ const EN_US_TEMPLATES: TemplateMap = {
   },
 };
 
-const PLAN_DOCUMENT_TEMPLATES: Record<TemplateLocale, TemplateMap> = {
-  "zh-CN": ZH_CN_TEMPLATES,
-  "en-US": EN_US_TEMPLATES,
+const PLAN_DOCUMENT_TEMPLATES: Record<Locale, TemplateMap<PlanTemplateContext>> = {
+  [LocaleEnum.ZhCN]: ZH_CN_TEMPLATES,
+  [LocaleEnum.EnUS]: EN_US_TEMPLATES,
 };
 
-export function resolvePlanTemplateLocale(locale: unknown): TemplateLocale {
-  return locale === "zh-CN" || locale === "en-US" ? locale : "zh-CN";
+export function resolvePlanTemplateLocale(locale: unknown): Locale {
+  return locale === LocaleEnum.ZhCN || locale === LocaleEnum.EnUS ? locale : LocaleEnum.ZhCN;
 }
 
 export function renderPlanDocument(documentId: string, context: PlanTemplateContext): string {

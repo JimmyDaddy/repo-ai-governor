@@ -1,25 +1,14 @@
 import fs from "node:fs";
 import path from "node:path";
 import { InputError } from "../cli/runtime/errors.js";
+import { ReportSourceKindEnum } from "../constants/report.js";
+import type { GenericRecord } from "../types/aliases/index.js";
+import type {
+  LoadedReportSource,
+  ParsedFinding,
+} from "../types/interfaces/report-source.interface.js";
 import { normalizeLocale, translateLocale } from "../utils/common.js";
 import { type UnifiedReport, buildUnifiedReport } from "./report-model.js";
-
-type GenericRecord = Record<string, unknown>;
-
-type LoadedReportSource = {
-  sourceKind: "governance-report" | "command-payload" | "review-record";
-  report: UnifiedReport;
-};
-
-type ParsedFinding = {
-  id: string;
-  severity: string;
-  status: string;
-  message: string;
-  target: string | null;
-  ruleId: string | null;
-  suggestion: string | null;
-};
 
 function asRecord(value: unknown): GenericRecord {
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
@@ -225,15 +214,15 @@ export function loadReportSource(
     const payload = JSON.parse(sourceContent) as unknown;
     const payloadRecord = asRecord(payload);
 
-    if (payloadRecord.kind === "governance-report") {
+    if (payloadRecord.kind === ReportSourceKindEnum.GovernanceReport) {
       return {
-        sourceKind: "governance-report",
+        sourceKind: ReportSourceKindEnum.GovernanceReport,
         report: payload as UnifiedReport,
       };
     }
 
     return {
-      sourceKind: "command-payload",
+      sourceKind: ReportSourceKindEnum.CommandPayload,
       report: buildUnifiedReport(payloadRecord),
     };
   }
@@ -243,7 +232,7 @@ export function loadReportSource(
     (sourceContent.startsWith("# Review ") || sourceContent.startsWith("# 评审 "))
   ) {
     return {
-      sourceKind: "review-record",
+      sourceKind: ReportSourceKindEnum.ReviewRecord,
       report: parseReviewMarkdownSource(absoluteSourcePath, sourceContent),
     };
   }

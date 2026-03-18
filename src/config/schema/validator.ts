@@ -1,25 +1,15 @@
 import type { ErrorObject, ValidateFunction } from "ajv";
 import addFormatsImport from "ajv-formats";
 import Ajv2020Import from "ajv/dist/2020.js";
+import type { JsonSchemaDocument, SchemaName } from "../../types/aliases/schema.type.js";
+import type {
+  AjvLike,
+  SchemaRegistry,
+  ValidationOptions,
+} from "../../types/interfaces/schema-validator.interface.js";
 import { cloneValue } from "../../utils/common.js";
 import { ConfigurationValidationError } from "../errors.js";
 import { loadSchemaBundle } from "./index.js";
-import type { JsonSchemaDocument, SchemaName } from "./index.js";
-
-type ValidationOptions = {
-  clone?: boolean;
-  source?: string;
-};
-
-type AjvLike = {
-  addSchema: (schema: unknown) => void;
-  getSchema: <T>(schemaId: string) => ValidateFunction<T> | undefined;
-};
-
-type SchemaRegistry = {
-  ajv: AjvLike;
-  bundle: Record<SchemaName, JsonSchemaDocument>;
-};
 
 function buildValidationMessage(schemaName: SchemaName, errors: readonly ErrorObject[]): string {
   const summary = errors

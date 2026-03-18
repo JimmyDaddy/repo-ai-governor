@@ -3,81 +3,16 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { ConfigError } from "../cli/runtime/errors.js";
 import { validateSchemaDocument } from "../config/schema/validator.js";
-import type { SkillInstallMode, SkillSurface } from "./package-layout.js";
-
-type SkillManifestEntry = {
-  skillFile: "SKILL.md";
-  agentFiles: string[];
-  scriptsDir: string;
-  templatesDir: string;
-  referencesDir: string;
-};
-
-type SkillManifest = {
-  schemaVersion: "1";
-  id: string;
-  version: string;
-  kind: "governor-skill";
-  displayName: string;
-  description: string;
-  surfaces: SkillSurface[];
-  entry: SkillManifestEntry;
-  triggers: {
-    keywords: string[];
-    intents: string[];
-  };
-  compatibility: {
-    repoAiGovernor: string;
-    installModes: Partial<Record<SkillSurface, SkillInstallMode>>;
-  };
-  distribution: {
-    channel: "official" | "project-local" | "team-shared";
-    root: string;
-  };
-};
-
-type SkillCatalogInstallTarget = {
-  repoLocal: string;
-  userLocal: string;
-  mode: SkillInstallMode;
-};
-
-type SkillCatalogEntry = {
-  id: string;
-  manifestPath: string;
-  surfaces: SkillSurface[];
-  defaultInstallMode: SkillInstallMode;
-};
-
-type SkillCatalog = {
-  schemaVersion: "1";
-  id: "repo-ai-governor-official";
-  version: string;
-  kind: "skill-catalog";
-  packageRoot: "skills";
-  officialRoot: "skills/official";
-  sharedRoot: "skills/shared";
-  compatibility: {
-    repoAiGovernor: string;
-  };
-  installTargets: Record<SkillSurface, SkillCatalogInstallTarget>;
-  skills: SkillCatalogEntry[];
-};
-
-export type OfficialSkillCatalogEntry = SkillCatalogEntry & {
-  manifest: SkillManifest;
-  manifestPath: string;
-  skillRoot: string;
-  skillFilePath: string;
-};
-
-export type OfficialSkillCatalogState = {
-  cwd: string;
-  catalogPath: string;
-  packageRoot: string;
-  catalog: SkillCatalog;
-  skills: OfficialSkillCatalogEntry[];
-};
+import type {
+  OfficialSkillCatalogEntry,
+  OfficialSkillCatalogState,
+  SkillCatalog,
+  SkillManifest,
+} from "../types/interfaces/skill-catalog.interface.js";
+export type {
+  OfficialSkillCatalogEntry,
+  OfficialSkillCatalogState,
+} from "../types/interfaces/skill-catalog.interface.js";
 
 function toCauseMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
