@@ -2,8 +2,26 @@
 
 - [x] **TK-001** 建立 docs/dev 总控索引与里程碑骨架（负责人：Architecture｜优先级：P0｜截止：2026-03-31｜状态：done）
   - 执行记录：plan=生成 docs/dev 总执行拆解结构；result=已创建 6 个里程碑、11 个 sprint 与标准任务台账文件；verify=结构校验通过（milestones=6, sprints=11, tasks=66, missing=0）
-- [ ] **TK-002** 固化边界规则与依赖方向检查策略（负责人：Architecture｜优先级：P0｜截止：2026-03-31｜状态：todo）
-- [ ] **TK-003** 建立核心命令 golden 回归清单（负责人：QA｜优先级：P0｜截止：2026-03-31｜状态：todo）
-- [ ] **TK-004** 建立契约测试目录基线与命名规范（负责人：QA｜优先级：P1｜截止：2026-03-31｜状态：todo）
-- [ ] **TK-005** 建立风险台账与里程碑验收模板（负责人：PM｜优先级：P1｜截止：2026-03-31｜状态：todo）
-- [ ] **TK-006** M0 退出评审（可运行基线 + 规则可检查）（负责人：Architecture｜优先级：P0｜截止：2026-03-31｜状态：todo）
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-001-dev-program-bootstrap.md`;verify=复核通过，无新增问题
+- [x] **TK-002** 固化边界规则与依赖方向检查策略（负责人：Architecture｜优先级：P0｜截止：2026-03-31｜状态：done）
+  - 执行记录：plan=输出 Step 1 边界规则与依赖方向检查策略文档，并定义 warning->blocking 门禁节奏;result=已新增 `boundary-and-dependency-check-strategy.md`，明确规则来源、分层边界、违规分级、任务衔接（TK-115/TK-503）;verify=文档内容与 PRD/总技术方案/架构蓝图关键术语一致
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-002-boundary-dependency-strategy.md`;verify=复核通过，无新增问题
+  - 执行记录：review_delta=已将该策略文档登记到 `docs/dev/index.md` 与 `docs/dev/execution-plan.md`，并在 `TK-115`/`TK-503` 建立 Depends On 与输入引用;verify=后续任务可直接检索并回链此文档
+  - 执行记录：review_delta=已新增 `docs/dev/dependency-artifact-registry.md` 并登记 DA-001;verify=后续产物可按统一注册流程被下游任务感知
+  - 执行记录：review_delta=已将机制反哺到 PRD/总技术方案/架构蓝图并新增 `TK-217`、`TK-307`、`TK-507`;verify=产物机制已进入工具实施主线并形成后续执行任务
+- [x] **TK-003** 建立核心命令 golden 回归清单（负责人：QA｜优先级：P0｜截止：2026-03-31｜状态：done）
+  - 执行记录：plan=建立核心命令 golden 回归清单并形成统一断言口径;result=已新增 `golden-command-regression-checklist.md`，覆盖 init/doctor/plan/check/run/review/review-verify/report 场景;verify=断言口径可映射到 checklist/CSV/CR 三类产物检查
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-002`，并在 `TK-006`/`TK-116` 建立 Depends On 与输入引用;verify=产物可被后续任务直接感知与消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-003-golden-command-regression-checklist.md`;verify=复核通过，无新增问题
+- [x] **TK-004** 建立契约测试目录基线与命名规范（负责人：QA｜优先级：P1｜截止：2026-03-31｜状态：done）
+  - 执行记录：plan=建立契约测试目录与命名基线并定义后续任务衔接;result=已新增 `contract-test-directory-and-naming-baseline.md`，明确 tests/contract|integration|e2e 目录职责与命名规则;verify=内容与 `code_standards.md` 命名规则和架构 Step 7 测试目录口径一致
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-003`，并在 `TK-006`、`TK-501`、`TK-502` 建立 Depends On 与输入引用;verify=产物可被里程碑退出评审与后续硬化任务直接消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-004-contract-test-baseline-and-naming.md`;verify=复核通过，无新增问题
+- [x] **TK-005** 建立风险台账与里程碑验收模板（负责人：PM｜优先级：P1｜截止：2026-03-31｜状态：done）
+  - 执行记录：plan=建立风险台账与里程碑验收统一模板并覆盖退出评审场景;result=已新增 `risk-register-and-milestone-acceptance-template.md`，固化风险分级规则|验收入口条件|证据包模板|命令检查清单;verify=模板与 `code_standards.md` 验证命令集合及 M0 退出目标一致
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-004`，并在 `TK-006`、`TK-116`、`TK-216`、`TK-316`、`TK-416`、`TK-516` 建立 Depends On 与输入引用;verify=后续里程碑退出任务可直接消费同一验收模板
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-005-risk-register-and-milestone-acceptance-template.md`;verify=复核通过，无新增问题
+- [x] **TK-006** M0 退出评审（可运行基线 + 规则可检查）（负责人：Architecture｜优先级：P0｜截止：2026-03-31｜状态：done）
+  - 执行记录：plan=基于 TK-003/004/005 依赖产物完成 M0 退出评审并形成 go/no-go 结论;result=已新增 `m0-exit-review-report.md`，完成 Entry Criteria/Checkpoint Commands/审计回链全量记录;verify=退出评审证据可直接回链到 checklist|tasks.csv|CR
+  - 执行记录：review_delta=已执行 `code_standards.md` 规定的 8 条验证命令且全部通过;verify=治理脚本 6/6 + 测试 + CLI help 均 exit_code=0
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-006-m0-exit-review.md`;verify=复核通过，M0 验收结论=go

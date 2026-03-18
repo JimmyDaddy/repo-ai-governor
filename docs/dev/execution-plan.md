@@ -5,7 +5,7 @@
 - Program: `docs/dev`
 - Total Milestones: 6
 - Total Sprints: 11
-- Total Tasks: 66
+- Total Tasks: 69
 
 ## Objectives
 
@@ -19,10 +19,10 @@
 |---|---|---|---|
 | M0 | 基线治理与重构起跑 | 1 | TK-001~TK-006 |
 | M1 | 核心包抽离 | 2 | TK-101~TK-116 |
-| M2 | Workspace + Memory + Session 稳定化 | 2 | TK-201~TK-216 |
+| M2 | Workspace + Memory + Session 稳定化 | 2 | TK-201~TK-217 |
 | M3 | 编排引擎与 HITL 闭环 | 2 | TK-301~TK-316 |
 | M4 | 适配器模块化与 CLI 瘦身 | 2 | TK-401~TK-416 |
-| M5 | 质量硬化与发布就绪 | 2 | TK-501~TK-516 |
+| M5 | 质量硬化与发布就绪 | 2 | TK-501~TK-517 |
 
 ## Governance Checks
 
@@ -30,3 +30,5 @@
 2. 每个任务卡必须记录 Priority、Phase、Step。
 3. CR 状态流转固定：`review` -> `verified_review` -> `resolved_review`。
 4. 每个里程碑至少执行一次 `code_standards.md` 验证命令集合。
+5. 边界治理事实源固定引用：`docs/dev/milestone-00-m0-baseline-governance/sprint-001/boundary-and-dependency-check-strategy.md`。
+6. 任何跨任务依赖产物都必须登记到：`docs/dev/dependency-artifact-registry.md`。

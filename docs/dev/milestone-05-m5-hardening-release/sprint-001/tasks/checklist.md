@@ -6,3 +6,4 @@
 - [ ] **TK-504** lockstep/independent 版本策略门禁（负责人：Release｜优先级：P1｜截止：2026-08-04｜状态：todo）
 - [ ] **TK-505** canary -> rc -> ga 发布流程固化（负责人：Release｜优先级：P1｜截止：2026-08-04｜状态：todo）
 - [ ] **TK-506** 审计回放报告链路（负责人：Reporting｜优先级：P1｜截止：2026-08-04｜状态：todo）
+- [ ] **TK-507** 依赖产物完整性切换为 blocking gate（负责人：Architecture｜优先级：P0｜截止：2026-08-04｜状态：todo）

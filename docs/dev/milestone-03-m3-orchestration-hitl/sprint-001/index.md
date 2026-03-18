@@ -18,6 +18,7 @@
 4. [tasks/TK-304.md](./tasks/TK-304.md): HITL 决策模型（confirm/escalate/reject）
 5. [tasks/TK-305.md](./tasks/TK-305.md): 人工决策回灌链路
 6. [tasks/TK-306.md](./tasks/TK-306.md): 超时/取消/并发冲突恢复
+7. [tasks/TK-307.md](./tasks/TK-307.md): 依赖产物自动注册与上下文注入运行时接入
 
 ## Files
 

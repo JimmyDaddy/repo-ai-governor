@@ -2,16 +2,16 @@
 
 ## Primary Stream
 
-- Status: planning
-- Project: `refactor-mainline`
+- Status: completed
+- Project: `milestone-00-m0-baseline-governance`
 - Sprint: `sprint-001`
-- Docs root: `docs/refactor-mainline`
-- Task records: `docs/refactor-mainline/sprint-001/tasks/`
-- Code review records: `docs/refactor-mainline/sprint-001/code-review/`
+- Docs root: `docs/dev/milestone-00-m0-baseline-governance`
+- Task records: `docs/dev/milestone-00-m0-baseline-governance/sprint-001/tasks/`
+- Code review records: `docs/dev/milestone-00-m0-baseline-governance/sprint-001/code-review/`
 
 ## Active Streams
 
-- `primary`: project=`refactor-mainline`, sprint=`sprint-001`, docs=`docs/refactor-mainline`, plan=`docs/refactor-mainline/execution-plan.md`, tasks=`docs/refactor-mainline/sprint-001/tasks/`, checklist=`docs/refactor-mainline/sprint-001/tasks/checklist.md`, csv=`docs/refactor-mainline/sprint-001/tasks/tasks.csv`, review=`docs/refactor-mainline/sprint-001/code-review/`, status=`planning`
+- `primary`: project=`milestone-00-m0-baseline-governance`, sprint=`sprint-001`, docs=`docs/dev/milestone-00-m0-baseline-governance`, plan=`docs/dev/milestone-00-m0-baseline-governance/plan.md`, tasks=`docs/dev/milestone-00-m0-baseline-governance/sprint-001/tasks/`, checklist=`docs/dev/milestone-00-m0-baseline-governance/sprint-001/tasks/checklist.md`, csv=`docs/dev/milestone-00-m0-baseline-governance/sprint-001/tasks/tasks.csv`, review=`docs/dev/milestone-00-m0-baseline-governance/sprint-001/code-review/`, status=`completed`
 
 ## Update Rules
 

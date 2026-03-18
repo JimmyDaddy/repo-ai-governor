@@ -19,9 +19,10 @@
 4. `TK-214` session 快照与回放
 5. `TK-215` 审计字段补齐（workspace/session/memory）
 6. `TK-216` M2 退出测试与文档收口
+7. `TK-217` Artifact Registry 基座与依赖解析契约
 
 ## Exit Criteria
 
-1. 6 个任务均在 checklist 与 CSV 台账登记。
+1. 7 个任务均在 checklist 与 CSV 台账登记。
 2. 所有任务卡具备 Traceability 字段（PRD Priority/Phase/Step）。
 3. code-review 目录已具备标准状态流转模板。

@@ -394,6 +394,9 @@ AI 先完成方案与实现，再进入评审 Agent 与复核 Agent 的循环；
 4. 输出任务耗时、模型调用次数、人工介入点等指标。
 5. 支持将结果写入本地文档、终端摘要或 CI 日志。
 6. 支持将任务拆解结果写入项目/sprint 目录，并沉淀 checklist 与 CSV 台账。
+7. 支持“依赖产物注册与追踪”：
+   - 关键产物生成后自动登记（产物 ID、来源任务、版本、路径、状态）。
+   - 产物与下游任务建立可检索依赖关系，并可输出依赖图。
 
 ### 8.10 配置与版本治理
 
@@ -419,6 +422,19 @@ AI 先完成方案与实现，再进入评审 Agent 与复核 Agent 的循环；
    - 升级失败时支持一键回滚到升级前的配置快照与规范包版本。
 4. 版本固定策略
    - 支持 pin 规范包主版本，按 minor/patch 自动跟随或手动升级。
+
+### 8.10.2 依赖产物注册与消费机制
+
+1. 依赖声明
+   - 任务可声明 `depends_on_artifacts`，标识执行前必需产物集合。
+2. 自动注册
+   - 关键阶段产物生成后自动写入 Artifact Registry，并记录 `producer_task` 与 `artifact_version`。
+3. 执行前解析
+   - 任务启动前自动解析依赖产物，注入执行上下文。
+4. 缺失处理
+   - 依赖产物缺失、版本不兼容或状态非 active 时，按策略触发 `block` 或 `HITL`。
+5. 审计要求
+   - 产物注册、依赖解析、缺失处置必须写入审计事件并可回放。
 
 ## 9. 用户故事
 
@@ -457,6 +473,7 @@ AI 先完成方案与实现，再进入评审 Agent 与复核 Agent 的循环；
 8. 编程语言模板扩展
 9. 更细粒度权限和门禁
 10. workspace 生命周期管理（创建、切换、迁移、归档）
+11. 依赖产物注册与解析运行时（Artifact Registry + Dependency Resolver）
 
 ### P2（平台化能力，规划中）
 
@@ -519,6 +536,11 @@ AI 先完成方案与实现，再进入评审 Agent 与复核 Agent 的循环；
    - `tool_managed_root`（可选，默认工具侧路径）
    - `repo_local_root`（默认 `.repo-ai-governor`）
    - `migration_policy`（copy/verify/switch/rollback）
+8. `artifact dependency config`
+   - `registry_enabled`
+   - `auto_register_patterns`
+   - `dependency_resolution_policy`（block/escalate/warn）
+   - `artifact_version_policy`（strict/compatible/latest）
 
 ## 13. 非功能需求
 

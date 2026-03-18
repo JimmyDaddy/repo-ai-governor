@@ -89,6 +89,8 @@
    - 记录策略命中、人工介入、阶段结果与通知回执。
 9. `Memory Manager`
    - 统一管理永久记忆与执行记忆读写策略。
+10. `Artifact Registry & Dependency Resolver`
+    - 统一登记关键产物元数据，解析任务依赖产物并在执行前注入上下文。
 
 ## 4.2.1 基础设施组件（Adapter/Provider）
 
@@ -100,6 +102,8 @@
    - `email/webhook/chat-im/issue-system` 等通知渠道实现。
 4. `Report Builder / Replay`
    - 执行报告构建、可解释输出与回放支持。
+5. `Artifact Index Store`
+   - 存储产物注册索引（文件/CSV/数据库），支撑依赖查询与版本校验。
 
 ## 4.2.2 Process Compiler IR 契约（Draft v1）
 
@@ -118,6 +122,20 @@
 5. 持久化与兼容
    - 编译结果快照建议落盘到 `<workspace_root>/context/compiled-ir/<execution_id>.json`。
    - `ir_version` 主版本不兼容时必须阻断执行并提示迁移。
+
+## 4.2.3 Artifact Registry / Dependency Resolver 契约（Draft v1）
+
+1. 注册字段（最小）
+   - `artifact_id`, `artifact_type`, `artifact_path`, `artifact_version`, `artifact_status`。
+   - `producer_task_id`, `producer_execution_id`, `registered_at`。
+2. 依赖解析字段（最小）
+   - `consumer_task_id`, `depends_on_artifacts[]`, `resolution_policy`, `resolution_result`。
+3. 版本策略
+   - 支持 `strict/compatible/latest` 三种解析策略，默认 `compatible`。
+4. 失败策略
+   - 解析失败按策略触发 `block/escalate/warn`，并写入审计事件。
+5. 默认落盘
+   - 建议索引路径：`<workspace_root>/context/artifact-registry/artifacts.csv`（或等价后端）。
 
 ## 4.3 记忆与会话模型
 
@@ -373,6 +391,7 @@
 3. `tasks/tasks.csv`
 4. `tasks/TK-xxx.md`
 5. `code-review/review_*.md -> verified_*.md -> resolved_*.md`
+6. `dependency-artifact-registry`（可选文件形态，例如 `dependency-artifact-registry.md/csv`）
 
 ## 9.3 审计事件最小字段
 
@@ -387,19 +406,21 @@
 7. `token_budget`, `token_used`, `cost_budget`, `cost_used`, `max_execution_time_seconds`, `execution_time_seconds`（可选，命中预算治理时记录）
 8. `cancellation_reason`, `timeout_indicator`, `timeout_scope`（可选，命中取消/超时时记录）
 9. `workspace_id`, `workspace_mode`, `workspace_root`（用于跨仓库追踪与审计定位）
+10. `artifact_id`, `artifact_version`, `producer_task_id`, `consumer_task_id`, `dependency_resolution_status`（可选，命中依赖产物注册/解析时记录）
 
 ## 10. 质量与发布总线
 
 1. 日常开发遵循 `code_standards.md` 与 `docs/governance/long-term-maintenance-guide.md`。
 2. 命令级验证以 `code_standards.md -> Verification Commands` 为准。
 3. 发布前需通过本地与 CI 双轨验证（质量门禁 + smoke gate）。
+4. 关键流程可接入“依赖产物完整性门禁”，在发布前阻断缺失/失效依赖产物。
 
 ## 11. 实施路线图（总纲级）
 
 1. Phase A: DSL + Compiler（流程表达与编译校验）
 2. Phase B: Policy Gate + HITL（策略触发、升级、回灌）
-3. Phase C: Adapter Hub（多工具统一协议与降级）
-4. Phase D: Audit + Replay（可追踪、可解释、可回放）
+3. Phase C: Adapter Hub + Artifact Registry Foundation（多工具统一协议与产物注册基座）
+4. Phase D: Audit + Replay + Dependency Resolver Runtime（可追踪、可解释、可回放、可依赖注入）
 5. Phase E: Hardening（稳定性、性能、契约测试、发布治理）
 
 ## 11.1 Phase-Priority-Migration 对照矩阵

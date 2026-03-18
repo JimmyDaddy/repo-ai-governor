@@ -217,6 +217,8 @@ sequenceDiagram
    - 新增项目规则通过声明式 slot 注入，不改核心流程引擎。
 12. `Standards Pack`
    - 官方/团队/仓库规则分层覆盖，结构化配置统一渲染。
+13. `Artifact Registry & Dependency Resolver`
+   - 关键产物生成后统一登记，任务执行前按依赖声明解析并注入上下文。
 
 ## 5. 目标仓库分层结构（Monorepo）
 
@@ -243,6 +245,9 @@ repo-ai-governor/
       src/
       test/
     core-session/
+      src/
+      test/
+    artifact-registry/
       src/
       test/
     memory-store-adapter/
@@ -358,11 +363,12 @@ repo-ai-governor/
 6. `notification-providers/*` -> 仅依赖 `notification-dispatcher/shared-*`，不得依赖 `core-runtime` 与 `adapters/*`。
 7. `core-memory` -> 可依赖 `config/shared-types/memory-store-adapter`，不依赖具体 provider 实现。
 8. `core-session` -> 可依赖 `core-memory/shared-types`，不依赖具体 `adapters/*`。
-9. `core-runtime` -> 可依赖 `core-process/core-policy/core-role-registry/core-memory/core-session/notification-dispatcher/config/adapter-sdk/standards/slots/core-audit`。
-10. `adapters/*` -> 仅依赖 `adapter-sdk/shared-types/shared-utils`，不依赖 `apps/cli`。
-11. `standards/slots` -> 不依赖具体 adapter 实现，保持工具无关。
-12. `reporting` -> 只读核心执行结果，不反向控制 runtime。
-13. `shared-*` -> 不依赖业务域模块。
+9. `artifact-registry` -> 可依赖 `shared-types/config/core-audit`，不得依赖 `apps/cli` 与具体 `adapters/*`。
+10. `core-runtime` -> 可依赖 `core-process/core-policy/core-role-registry/core-memory/core-session/artifact-registry/notification-dispatcher/config/adapter-sdk/standards/slots/core-audit`。
+11. `adapters/*` -> 仅依赖 `adapter-sdk/shared-types/shared-utils`，不依赖 `apps/cli`。
+12. `standards/slots` -> 不依赖具体 adapter 实现，保持工具无关。
+13. `reporting` -> 只读核心执行结果，不反向控制 runtime。
+14. `shared-*` -> 不依赖业务域模块。
 
 ## 6.1 依赖方向自动化执行备忘（Pending Integration）
 
@@ -398,6 +404,7 @@ repo-ai-governor/
    - 先抽离 `core-process/core-policy/core-role-registry/core-memory/core-session/notification-dispatcher/adapter-sdk/memory-store-adapter` 到 `packages/`。
 3. Step 3（存储后端落地）
    - 先实现 `memory-providers/fs-csv`，并预留 `sqlite/postgres` provider 骨架。
+   - 同步落地 `artifact-registry` 的文件/CSV 基线存储。
 4. Step 4（通知后端落地）
    - 实现 `notification-providers/webhook` 基线，并按风险级别配置 `email/chat-im/issue-system` 回退渠道。
 5. Step 5（适配器模块化）
@@ -405,7 +412,7 @@ repo-ai-governor/
 6. Step 6（入口瘦身）
    - `apps/cli` 只保留命令路由与参数编排，核心逻辑下沉 packages。
 7. Step 7（契约测试）
-   - 为 `adapter-sdk`、`memory-store-adapter`、`notification-dispatcher`、`process DSL`、`policy decisions` 建立跨包契约测试。
+   - 为 `adapter-sdk`、`memory-store-adapter`、`artifact-registry`、`notification-dispatcher`、`process DSL`、`policy decisions` 建立跨包契约测试。
    - 测试目录基线：`tests/contract/`（契约）、`tests/integration/`（跨包集成）、`tests/e2e/`（端到端链路）。
 
 ## 7.1 Priority-Phase-Migration 对照（同步总纲）

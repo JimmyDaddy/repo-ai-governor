@@ -19,9 +19,10 @@
 4. `TK-304` HITL 决策模型（confirm/escalate/reject）
 5. `TK-305` 人工决策回灌链路
 6. `TK-306` 超时/取消/并发冲突恢复
+7. `TK-307` 依赖产物自动注册与上下文注入运行时接入
 
 ## Exit Criteria
 
-1. 6 个任务均在 checklist 与 CSV 台账登记。
+1. 7 个任务均在 checklist 与 CSV 台账登记。
 2. 所有任务卡具备 Traceability 字段（PRD Priority/Phase/Step）。
 3. code-review 目录已具备标准状态流转模板。

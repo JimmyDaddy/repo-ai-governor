@@ -19,9 +19,10 @@
 4. `TK-504` lockstep/independent 版本策略门禁
 5. `TK-505` canary -> rc -> ga 发布流程固化
 6. `TK-506` 审计回放报告链路
+7. `TK-507` 依赖产物完整性切换为 blocking gate
 
 ## Exit Criteria
 
-1. 6 个任务均在 checklist 与 CSV 台账登记。
+1. 7 个任务均在 checklist 与 CSV 台账登记。
 2. 所有任务卡具备 Traceability 字段（PRD Priority/Phase/Step）。
 3. code-review 目录已具备标准状态流转模板。

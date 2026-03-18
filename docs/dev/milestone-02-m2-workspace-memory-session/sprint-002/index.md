@@ -18,6 +18,7 @@
 4. [tasks/TK-214.md](./tasks/TK-214.md): session 快照与回放
 5. [tasks/TK-215.md](./tasks/TK-215.md): 审计字段补齐（workspace/session/memory）
 6. [tasks/TK-216.md](./tasks/TK-216.md): M2 退出测试与文档收口
+7. [tasks/TK-217.md](./tasks/TK-217.md): Artifact Registry 基座与依赖解析契约
 
 ## Files
 

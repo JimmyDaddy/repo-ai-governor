@@ -1,9 +1,9 @@
 # M0 Plan
 
-- Status: planned
-- Date: 2026-03-18
+- Status: completed
+- Date: 2026-03-19
 - Milestone: `M0`
-- Priority: P0（已完成校准）
+- Priority: P0（已完成）
 - Phase: Phase A/B
 - Step: Step 1
 

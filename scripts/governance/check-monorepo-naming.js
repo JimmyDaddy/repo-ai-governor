@@ -9,8 +9,7 @@ const KEBAB_CASE_SEGMENT_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const TYPESCRIPT_FILE_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*\.ts$/;
 const TYPESCRIPT_DECLARATION_FILE_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*\.d\.ts$/;
 const TYPESCRIPT_CONFIG_FILE_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*\.config\.ts$/;
-const TEST_FILE_PATTERN =
-  /^[a-z0-9]+(?:-[a-z0-9]+)*(?:\.(?:contract|integration|e2e))?\.test\.ts$/;
+const TEST_FILE_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*(?:\.(?:contract|integration|e2e))?\.test\.ts$/;
 const MARKDOWN_FILE_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*\.md$/;
 const ALLOWED_SPECIAL_FILE_NAMES = new Set([
   "index.ts",

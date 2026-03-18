@@ -1,7 +1,7 @@
 # M0 基线治理与重构起跑 SPRINT-001
 
-- Status: planned
-- Date: 2026-03-18
+- Status: completed
+- Date: 2026-03-19
 - Milestone: `M0`
 - Sprint: `sprint-001`
 - Duration: 2026-03-18 ~ 2026-03-31 (2 weeks)
@@ -25,3 +25,8 @@
 2. [tasks/checklist.md](./tasks/checklist.md)
 3. [tasks/tasks.csv](./tasks/tasks.csv)
 4. [code-review/README.md](./code-review/README.md)
+5. [boundary-and-dependency-check-strategy.md](./boundary-and-dependency-check-strategy.md)
+6. [golden-command-regression-checklist.md](./golden-command-regression-checklist.md)
+7. [contract-test-directory-and-naming-baseline.md](./contract-test-directory-and-naming-baseline.md)
+8. [risk-register-and-milestone-acceptance-template.md](./risk-register-and-milestone-acceptance-template.md)
+9. [m0-exit-review-report.md](./m0-exit-review-report.md)

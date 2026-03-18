@@ -1,7 +1,7 @@
 # M0 基线治理与重构起跑
 
-- Status: planned
-- Date: 2026-03-18
+- Status: completed
+- Date: 2026-03-19
 - Milestone: `M0`
 - Priority: P0（已完成校准）
 - Technical Phase: Phase A/B

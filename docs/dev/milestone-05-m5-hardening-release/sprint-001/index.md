@@ -18,6 +18,7 @@
 4. [tasks/TK-504.md](./tasks/TK-504.md): lockstep/independent 版本策略门禁
 5. [tasks/TK-505.md](./tasks/TK-505.md): canary -> rc -> ga 发布流程固化
 6. [tasks/TK-506.md](./tasks/TK-506.md): 审计回放报告链路
+7. [tasks/TK-507.md](./tasks/TK-507.md): 依赖产物完整性切换为 blocking gate
 
 ## Files
 
