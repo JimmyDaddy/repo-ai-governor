@@ -12,6 +12,9 @@
   - 执行记录：plan=定义 memory-store-adapter 抽离边界、Provider 契约与装配基线并形成统一输入;result=已新增 `memory-store-adapter-extraction-baseline.md`，明确职责边界|最小契约|能力矩阵|后端扩展路径;verify=内容与总方案 4.3 存储后端抽象和架构 Step 2/3 约束一致
   - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-013`，并在 `TK-116`、`TK-211`、`TK-212` 建立 Depends On 与输入引用;verify=M1 退出回归与 M2 memory 接入任务可直接消费该基线
   - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-113-memory-store-adapter-extraction-baseline.md`;verify=复核通过，无新增问题
-- [ ] **TK-114** 抽离 notification-dispatcher（负责人：Notification｜优先级：P0｜截止：2026-04-28｜状态：todo）
+- [x] **TK-114** 抽离 notification-dispatcher（负责人：Notification｜优先级：P0｜截止：2026-04-28｜状态：done）
+  - 执行记录：plan=定义 notification-dispatcher 抽离边界、通知契约与回退策略并形成统一输入;result=已新增 `notification-dispatcher-extraction-baseline.md`，明确职责边界|最小契约|回退策略|provider 扩展口径;verify=内容与总方案 7.4 通知渠道要求和架构 Step 2/4 约束一致
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-014`，并在 `TK-116`、`TK-311`、`TK-312` 建立 Depends On 与输入引用;verify=M1 退出回归与 M3 通知任务可直接消费该基线
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-114-notification-dispatcher-extraction-baseline.md`;verify=复核通过，无新增问题
 - [ ] **TK-115** 接入依赖方向自动检查（先 warning）（负责人：Architecture｜优先级：P1｜截止：2026-04-28｜状态：todo）
 - [ ] **TK-116** M1 退出回归与 CR 收口（负责人：QA｜优先级：P1｜截止：2026-04-28｜状态：todo）

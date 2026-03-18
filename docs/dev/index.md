@@ -37,6 +37,7 @@
 12. [M1 Core-Memory 抽离基线](./milestone-01-m1-core-extraction/sprint-002/core-memory-extraction-baseline.md)
 13. [M1 Core-Session 抽离基线](./milestone-01-m1-core-extraction/sprint-002/core-session-extraction-baseline.md)
 14. [M1 Memory-Store-Adapter 抽离基线](./milestone-01-m1-core-extraction/sprint-002/memory-store-adapter-extraction-baseline.md)
+15. [M1 Notification-Dispatcher 抽离基线](./milestone-01-m1-core-extraction/sprint-002/notification-dispatcher-extraction-baseline.md)
 
 ## Program View
 

@@ -34,6 +34,7 @@
 | DA-011 | `docs/dev/milestone-01-m1-core-extraction/sprint-002/core-memory-extraction-baseline.md` | `TK-111` | `TK-112`, `TK-113`, `TK-116`, `TK-211` | 2026-03-19 | 2026-03-19 | active |
 | DA-012 | `docs/dev/milestone-01-m1-core-extraction/sprint-002/core-session-extraction-baseline.md` | `TK-112` | `TK-113`, `TK-116`, `TK-213`, `TK-214` | 2026-03-19 | 2026-03-19 | active |
 | DA-013 | `docs/dev/milestone-01-m1-core-extraction/sprint-002/memory-store-adapter-extraction-baseline.md` | `TK-113` | `TK-116`, `TK-211`, `TK-212` | 2026-03-19 | 2026-03-19 | active |
+| DA-014 | `docs/dev/milestone-01-m1-core-extraction/sprint-002/notification-dispatcher-extraction-baseline.md` | `TK-114` | `TK-116`, `TK-311`, `TK-312` | 2026-03-19 | 2026-03-19 | active |
 
 ## Notes
 
