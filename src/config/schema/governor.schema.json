@@ -121,6 +121,7 @@
           "allowPullRequest": true,
           "allowSecretsEdit": false,
           "allowInfraEdit": false,
+          "allowCiWorkflowEdit": false,
           "allowProductionConfigEdit": false,
           "allowDangerousCommands": false
         },
@@ -455,6 +456,10 @@
           "default": false
         },
         "allowInfraEdit": {
+          "type": "boolean",
+          "default": false
+        },
+        "allowCiWorkflowEdit": {
           "type": "boolean",
           "default": false
         },
@@ -853,6 +858,7 @@
             "allowPullRequest": true,
             "allowSecretsEdit": false,
             "allowInfraEdit": false,
+            "allowCiWorkflowEdit": false,
             "allowProductionConfigEdit": false,
             "allowDangerousCommands": false
           }

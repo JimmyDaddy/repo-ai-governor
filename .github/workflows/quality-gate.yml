@@ -26,4 +26,4 @@ jobs:
         run: npm ci
 
       - name: Run repository quality gate
-        run: npm run check
+        run: npm run ci:quality

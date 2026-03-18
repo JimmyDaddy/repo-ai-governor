@@ -12,6 +12,12 @@
 2. `AGENTS.md` is the repository-level AI execution entrypoint for IDEs and agents.
 3. When rules in docs and `AGENTS.md` diverge, update `AGENTS.md` to match the structured docs.
 
+## Standards Entry
+
+1. Before planning or execution, AI agents must read `code_standards.md`.
+2. Before planning or execution, AI agents must read `docs/governance/long-term-maintenance-guide.md`.
+3. All implementation and review outputs must follow `code_standards.md` non-negotiable rules and verification commands.
+
 ## Working Rules
 
 1. New planning or execution work should follow the active stream paths declared in `.repo-ai-governor/context/current-context.md`.
