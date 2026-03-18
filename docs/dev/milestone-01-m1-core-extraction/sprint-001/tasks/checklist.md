@@ -8,7 +8,19 @@
   - 执行记录：plan=定义 core-process 抽离边界、目录结构和桥接回归口径并形成统一输入;result=已新增 `core-process-extraction-baseline.md`，明确职责边界|依赖方向|迁移步骤|验收口径;verify=内容与架构 Step 2 和依赖方向约束一致
   - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-006`，并在 `TK-106`、`TK-116` 建立 Depends On 与输入引用;verify=CLI 桥接任务与 M1 退出回归任务可直接消费该基线
   - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-102-core-process-extraction-baseline.md`;verify=复核通过，无新增问题
-- [ ] **TK-103** 抽离 core-policy（负责人：Core Runtime｜优先级：P0｜截止：2026-04-14｜状态：todo）
-- [ ] **TK-104** 抽离 core-role-registry（负责人：Core Runtime｜优先级：P0｜截止：2026-04-14｜状态：todo）
-- [ ] **TK-105** 建立 adapter-sdk 初版契约（负责人：Adapter｜优先级：P0｜截止：2026-04-14｜状态：todo）
-- [ ] **TK-106** CLI 与新核心包桥接回归（负责人：CLI｜优先级：P1｜截止：2026-04-14｜状态：todo）
+- [x] **TK-103** 抽离 core-policy（负责人：Core Runtime｜优先级：P0｜截止：2026-04-14｜状态：done）
+  - 执行记录：plan=定义 core-policy 抽离边界、最小决策契约与迁移步骤并形成统一输入;result=已新增 `core-policy-extraction-baseline.md`，明确职责边界|决策契约|依赖方向|回归口径;verify=内容与架构 Step 2 和治理约束一致
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-007`，并在 `TK-106`、`TK-116` 建立 Depends On 与输入引用;verify=桥接回归与 M1 退出任务可直接消费该基线
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-103-core-policy-extraction-baseline.md`;verify=复核通过，无新增问题
+- [x] **TK-104** 抽离 core-role-registry（负责人：Core Runtime｜优先级：P0｜截止：2026-04-14｜状态：done）
+  - 执行记录：plan=定义 core-role-registry 抽离边界、角色契约与迁移步骤并形成统一输入;result=已新增 `core-role-registry-extraction-baseline.md`，明确职责边界|角色模型|依赖方向|回归口径;verify=内容与架构 Step 2 和治理约束一致
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-008`，并在 `TK-106`、`TK-116` 建立 Depends On 与输入引用;verify=桥接回归与 M1 退出任务可直接消费该基线
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-104-core-role-registry-extraction-baseline.md`;verify=复核通过，无新增问题
+- [x] **TK-105** 建立 adapter-sdk 初版契约（负责人：Adapter｜优先级：P0｜截止：2026-04-14｜状态：done）
+  - 执行记录：plan=定义 adapter-sdk 初版统一契约与能力矩阵并形成后续适配实现输入;result=已新增 `adapter-sdk-initial-contract-baseline.md`，明确接口契约|能力模型|错误语义|降级规则;verify=内容与总技术方案 8.1 适配器统一接口口径一致
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-009`，并在 `TK-106`、`TK-116`、`TK-405` 建立 Depends On 与输入引用;verify=桥接回归|M1 退出|M4 契约测试可直接消费该基线
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-105-adapter-sdk-initial-contract-baseline.md`;verify=复核通过，无新增问题
+- [x] **TK-106** CLI 与新核心包桥接回归（负责人：CLI｜优先级：P1｜截止：2026-04-14｜状态：done）
+  - 执行记录：plan=固化 CLI 到新核心包桥接回归基线并形成统一断言矩阵;result=已新增 `cli-bridge-regression-baseline.md`，明确桥接调用边界|回归断言|降级回退|验证步骤;verify=口径对齐 M0 golden 清单与 M1 核心抽离输入
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-010`，并在 `TK-116`、`TK-416` 建立 Depends On 与输入引用;verify=M1 退出与 M4 兼容报告可直接消费该基线
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-106-cli-bridge-regression-baseline.md`;verify=复核通过，无新增问题

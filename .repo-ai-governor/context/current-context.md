@@ -2,7 +2,7 @@
 
 ## Primary Stream
 
-- Status: executing
+- Status: completed
 - Project: `milestone-01-m1-core-extraction`
 - Sprint: `sprint-001`
 - Docs root: `docs/dev/milestone-01-m1-core-extraction`
@@ -11,7 +11,7 @@
 
 ## Active Streams
 
-- `primary`: project=`milestone-01-m1-core-extraction`, sprint=`sprint-001`, docs=`docs/dev/milestone-01-m1-core-extraction`, plan=`docs/dev/milestone-01-m1-core-extraction/plan.md`, tasks=`docs/dev/milestone-01-m1-core-extraction/sprint-001/tasks/`, checklist=`docs/dev/milestone-01-m1-core-extraction/sprint-001/tasks/checklist.md`, csv=`docs/dev/milestone-01-m1-core-extraction/sprint-001/tasks/tasks.csv`, review=`docs/dev/milestone-01-m1-core-extraction/sprint-001/code-review/`, status=`executing`
+- `primary`: project=`milestone-01-m1-core-extraction`, sprint=`sprint-001`, docs=`docs/dev/milestone-01-m1-core-extraction`, plan=`docs/dev/milestone-01-m1-core-extraction/plan.md`, tasks=`docs/dev/milestone-01-m1-core-extraction/sprint-001/tasks/`, checklist=`docs/dev/milestone-01-m1-core-extraction/sprint-001/tasks/checklist.md`, csv=`docs/dev/milestone-01-m1-core-extraction/sprint-001/tasks/tasks.csv`, review=`docs/dev/milestone-01-m1-core-extraction/sprint-001/code-review/`, status=`completed`
 
 ## Update Rules
 

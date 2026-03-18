@@ -30,6 +30,10 @@
 5. [M0 风险台账与里程碑验收模板](./milestone-00-m0-baseline-governance/sprint-001/risk-register-and-milestone-acceptance-template.md)
 6. [M1 Monorepo Workspace 骨架与构建入口基线](./milestone-01-m1-core-extraction/sprint-001/monorepo-workspace-skeleton-and-build-entry-baseline.md)
 7. [M1 Core-Process 抽离基线](./milestone-01-m1-core-extraction/sprint-001/core-process-extraction-baseline.md)
+8. [M1 Core-Policy 抽离基线](./milestone-01-m1-core-extraction/sprint-001/core-policy-extraction-baseline.md)
+9. [M1 Core-Role-Registry 抽离基线](./milestone-01-m1-core-extraction/sprint-001/core-role-registry-extraction-baseline.md)
+10. [M1 Adapter-SDK 初版契约基线](./milestone-01-m1-core-extraction/sprint-001/adapter-sdk-initial-contract-baseline.md)
+11. [M1 CLI 桥接回归基线](./milestone-01-m1-core-extraction/sprint-001/cli-bridge-regression-baseline.md)
 
 ## Program View
 

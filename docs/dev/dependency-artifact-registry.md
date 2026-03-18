@@ -27,6 +27,10 @@
 | DA-004 | `docs/dev/milestone-00-m0-baseline-governance/sprint-001/risk-register-and-milestone-acceptance-template.md` | `TK-005` | `TK-006`, `TK-116`, `TK-216`, `TK-316`, `TK-416`, `TK-516` | 2026-03-18 | 2026-03-18 | active |
 | DA-005 | `docs/dev/milestone-01-m1-core-extraction/sprint-001/monorepo-workspace-skeleton-and-build-entry-baseline.md` | `TK-101` | `TK-102`, `TK-103`, `TK-104`, `TK-105`, `TK-106` | 2026-03-19 | 2026-03-19 | active |
 | DA-006 | `docs/dev/milestone-01-m1-core-extraction/sprint-001/core-process-extraction-baseline.md` | `TK-102` | `TK-106`, `TK-116` | 2026-03-19 | 2026-03-19 | active |
+| DA-007 | `docs/dev/milestone-01-m1-core-extraction/sprint-001/core-policy-extraction-baseline.md` | `TK-103` | `TK-106`, `TK-116` | 2026-03-19 | 2026-03-19 | active |
+| DA-008 | `docs/dev/milestone-01-m1-core-extraction/sprint-001/core-role-registry-extraction-baseline.md` | `TK-104` | `TK-106`, `TK-116` | 2026-03-19 | 2026-03-19 | active |
+| DA-009 | `docs/dev/milestone-01-m1-core-extraction/sprint-001/adapter-sdk-initial-contract-baseline.md` | `TK-105` | `TK-106`, `TK-116`, `TK-405` | 2026-03-19 | 2026-03-19 | active |
+| DA-010 | `docs/dev/milestone-01-m1-core-extraction/sprint-001/cli-bridge-regression-baseline.md` | `TK-106` | `TK-116`, `TK-416` | 2026-03-19 | 2026-03-19 | active |
 
 ## Notes
 

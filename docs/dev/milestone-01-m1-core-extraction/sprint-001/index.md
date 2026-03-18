@@ -1,6 +1,6 @@
 # M1 核心包抽离 SPRINT-001
 
-- Status: executing
+- Status: completed
 - Date: 2026-03-19
 - Milestone: `M1`
 - Sprint: `sprint-001`
@@ -27,3 +27,7 @@
 4. [code-review/README.md](./code-review/README.md)
 5. [monorepo-workspace-skeleton-and-build-entry-baseline.md](./monorepo-workspace-skeleton-and-build-entry-baseline.md)
 6. [core-process-extraction-baseline.md](./core-process-extraction-baseline.md)
+7. [core-policy-extraction-baseline.md](./core-policy-extraction-baseline.md)
+8. [core-role-registry-extraction-baseline.md](./core-role-registry-extraction-baseline.md)
+9. [adapter-sdk-initial-contract-baseline.md](./adapter-sdk-initial-contract-baseline.md)
+10. [cli-bridge-regression-baseline.md](./cli-bridge-regression-baseline.md)
