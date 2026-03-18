@@ -1,16 +1,17 @@
 # Quick Start
 
-- Date: 2026-03-14
-- Audience: first-time users
+- Date: 2026-03-18
+- Audience: first-time users and CI/automation integrators
 
 ## Goal
 
-在一个全新目录中，用最短路径跑通 `Repo AI Governor` 的最小体验，并为当前 AI 工具安装官方 skills。
+在一个全新目录中，跑通 `Repo AI Governor` 的可执行治理闭环：
+`init -> doctor -> plan -> check -> run -> review -> review-verify -> report`。
 
 ## Prerequisites
 
 1. Node.js `>=18`
-2. 可用的 `npm`、`pnpm` 或 `npx`
+2. 可用的 `npm` 与 `npx`
 
 ## 1. Create A Workspace
 
@@ -28,6 +29,8 @@ $CLI init \
   --project demo \
   --sprint sprint-001 \
   --adapter codex \
+  --language typescript \
+  --locale en-US \
   --format json
 ```
 
@@ -38,21 +41,32 @@ Expected:
 3. `.repo-ai-governor/context/current-context.md`
 4. `docs/demo/sprint-001/`
 
-## 3. Install Official Skills
+Notes:
+
+1. 在 `npx` 场景下，`init` 会按默认策略处理依赖与官方 skills 安装。
+2. 如需跳过自动安装，可使用 `--skip-self-install` 或 `--skip-skill-install`。
+
+## 3. List / Install / Doctor Skills
 
 ```bash
+$CLI skills list \
+  --cwd "$TMP_DIR" \
+  --surface codex \
+  --format json
+
 $CLI skills install \
   --cwd "$TMP_DIR" \
   --surface codex \
   --format json
+
+$CLI skills doctor \
+  --cwd "$TMP_DIR" \
+  --surface codex \
+  --strict \
+  --format json
 ```
 
-Expected:
-
-1. `status: "installed"` 或 `status: "planned"`
-2. `.codex/skills/` 下出现官方治理 skill
-
-如果你不是用 `Codex`，可以改成：
+如果你不是用 `Codex`，把 `--surface` 改成：
 
 1. `github-copilot`
 2. `claude-code`
@@ -73,7 +87,7 @@ Expected:
 1. `status: "pass"`
 2. no config/layout errors
 
-## 5. Generate A Plan
+## 5. Generate Plan And Task Ledger
 
 ```bash
 cat > "$TMP_DIR/request.md" <<'EOF'
@@ -96,7 +110,7 @@ Expected:
 1. `docs/demo/sprint-001/plan.md`
 2. `docs/demo/sprint-001/tasks/checklist.md`
 3. `docs/demo/sprint-001/tasks/tasks.csv`
-4. at least one `TK-xxx.md`
+4. 至少一个 `TK-xxx.md`
 
 ## 6. Run Governance Check
 
@@ -105,26 +119,13 @@ $CLI check \
   --cwd "$TMP_DIR" \
   --project demo \
   --sprint sprint-001 \
+  --write-report \
   --format json
 ```
 
-## 7. Preview Automation Run
+## 7. Preview Orchestration (`run`)
 
-可先预览一次自动化编排（单入口示例）：
-
-```bash
-$CLI run \
-  --cwd "$TMP_DIR" \
-  --project demo \
-  --sprint sprint-001 \
-  --mode assisted \
-  --input "$TMP_DIR/request.md" \
-  --routing-profile single-codex \
-  --dry-run \
-  --format json
-```
-
-也可以先做“只解释/只校验”：
+先看流程编译结果：
 
 ```bash
 $CLI run \
@@ -134,7 +135,11 @@ $CLI run \
   --mode assisted \
   --explain-process \
   --format json
+```
 
+只做流程校验，不执行阶段派发：
+
+```bash
 $CLI run \
   --cwd "$TMP_DIR" \
   --project demo \
@@ -144,52 +149,7 @@ $CLI run \
   --format json
 ```
 
-## 8. Run A Review
-
-Prepare a simple file first:
-
-```bash
-mkdir -p "$TMP_DIR/src"
-cat > "$TMP_DIR/src/demo.js" <<'EOF'
-export function demo() {
-  // TODO: refine
-  return 1;
-}
-EOF
-```
-
-Then run review:
-
-```bash
-$CLI review \
-  --cwd "$TMP_DIR" \
-  --project demo \
-  --sprint sprint-001 \
-  --path src/demo.js \
-  --format json
-```
-
-Expected:
-
-1. a `review_<slug>.md` file under `code-review/`
-2. findings for TODO markers or missing tests when applicable
-
-## 9. Render A Report
-
-```bash
-$CLI report \
-  --cwd "$TMP_DIR" \
-  --source docs/demo/sprint-001/code-review/review_src-demo-js.md \
-  --format json \
-  --dry-run
-```
-
-说明：
-
-1. npm 包名是 `@cjhdev/repo-ai-governor`
-2. CLI 命令名仍然是 `repo-ai-governor`
-
-## 10. Run Multi-AI Smoke Gate
+做一次 dry-run 路由预览：
 
 ```bash
 $CLI run \
@@ -197,23 +157,76 @@ $CLI run \
   --project demo \
   --sprint sprint-001 \
   --mode assisted \
-  --routing-profile multi-ai-dev-review \
+  --routing-profile single-codex \
   --input "$TMP_DIR/request.md" \
   --dry-run \
   --format json
 ```
 
-说明：
+## 8. Run Review
 
-1. 查看输出中的 `routing.routes`，确认 routeKey 到 surface 的映射符合预期。
-2. 本仓库维护者可额外执行 `bash scripts/ci/run-automation-smoke.sh` 进行全量 smoke gate（包含三入口与多 AI 分工场景）。
+先准备一个最小示例文件：
+
+```bash
+mkdir -p "$TMP_DIR/src"
+cat > "$TMP_DIR/src/demo.ts" <<'EOF'
+export function demo(): number {
+  return 1;
+}
+EOF
+```
+
+执行 review：
+
+```bash
+$CLI review \
+  --cwd "$TMP_DIR" \
+  --project demo \
+  --sprint sprint-001 \
+  --path src/demo.ts \
+  --format json
+```
+
+Expected:
+
+1. `docs/demo/sprint-001/code-review/` 下生成 `review_<slug>.md`
+
+## 9. Verify Review And Advance Status
+
+```bash
+REVIEW_FILE="$(ls "$TMP_DIR"/docs/demo/sprint-001/code-review/review_*.md | head -n 1)"
+
+$CLI review-verify \
+  --cwd "$TMP_DIR" \
+  --project demo \
+  --sprint sprint-001 \
+  --source "$REVIEW_FILE" \
+  --format json
+```
+
+Expected:
+
+1. `review_<slug>.md` 追加复核记录并重命名为 `verified_review_<slug>.md`
+
+## 10. Render Final Report
+
+```bash
+$CLI report \
+  --cwd "$TMP_DIR" \
+  --source .repo-ai-governor/reports/latest.json \
+  --format markdown \
+  --dry-run
+```
+
+## Notes
+
+1. npm 包名是 `@cjhdev/repo-ai-governor`，CLI 命令名是 `repo-ai-governor`。
+2. `run` 命令支持 `--resume-from` 与 `--resume-stage`，用于 assisted 模式从检查点恢复。
 
 ## Next
 
 1. [Getting Started Example](./getting-started-example.md)
-2. [MVP Acceptance Kit](../examples/mvp-acceptance/README.md)
-3. [GA Release Flow](./release-ga/sprint-001/ga-release-flow.md)
-4. 安装完官方 skills 后，可让 AI 直接触发：
-   - `$governor-plan-runner`
-   - `$governor-task-implementer`
-   - `$governor-delivery-finisher`
+2. [AI Repository Setup Guide](./ai-repo-setup.md)
+3. [MVP Acceptance Kit](../examples/mvp-acceptance/README.md)
+4. [GA Release Flow](./release-ga/sprint-001/ga-release-flow.md)
+5. [Repository Long-Term Maintenance Guide](./governance/long-term-maintenance-guide.md)
