@@ -2,16 +2,16 @@
 
 ## Primary Stream
 
-- Status: completed
-- Project: `milestone-00-m0-baseline-governance`
+- Status: executing
+- Project: `milestone-01-m1-core-extraction`
 - Sprint: `sprint-001`
-- Docs root: `docs/dev/milestone-00-m0-baseline-governance`
-- Task records: `docs/dev/milestone-00-m0-baseline-governance/sprint-001/tasks/`
-- Code review records: `docs/dev/milestone-00-m0-baseline-governance/sprint-001/code-review/`
+- Docs root: `docs/dev/milestone-01-m1-core-extraction`
+- Task records: `docs/dev/milestone-01-m1-core-extraction/sprint-001/tasks/`
+- Code review records: `docs/dev/milestone-01-m1-core-extraction/sprint-001/code-review/`
 
 ## Active Streams
 
-- `primary`: project=`milestone-00-m0-baseline-governance`, sprint=`sprint-001`, docs=`docs/dev/milestone-00-m0-baseline-governance`, plan=`docs/dev/milestone-00-m0-baseline-governance/plan.md`, tasks=`docs/dev/milestone-00-m0-baseline-governance/sprint-001/tasks/`, checklist=`docs/dev/milestone-00-m0-baseline-governance/sprint-001/tasks/checklist.md`, csv=`docs/dev/milestone-00-m0-baseline-governance/sprint-001/tasks/tasks.csv`, review=`docs/dev/milestone-00-m0-baseline-governance/sprint-001/code-review/`, status=`completed`
+- `primary`: project=`milestone-01-m1-core-extraction`, sprint=`sprint-001`, docs=`docs/dev/milestone-01-m1-core-extraction`, plan=`docs/dev/milestone-01-m1-core-extraction/plan.md`, tasks=`docs/dev/milestone-01-m1-core-extraction/sprint-001/tasks/`, checklist=`docs/dev/milestone-01-m1-core-extraction/sprint-001/tasks/checklist.md`, csv=`docs/dev/milestone-01-m1-core-extraction/sprint-001/tasks/tasks.csv`, review=`docs/dev/milestone-01-m1-core-extraction/sprint-001/code-review/`, status=`executing`
 
 ## Update Rules
 

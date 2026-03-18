@@ -1,7 +1,13 @@
 # M1 核心包抽离 SPRINT-001 Checklist
 
-- [ ] **TK-101** monorepo workspace 骨架与构建入口（负责人：Architecture｜优先级：P0｜截止：2026-04-14｜状态：todo）
-- [ ] **TK-102** 抽离 core-process（负责人：Core Runtime｜优先级：P0｜截止：2026-04-14｜状态：todo）
+- [x] **TK-101** monorepo workspace 骨架与构建入口（负责人：Architecture｜优先级：P0｜截止：2026-04-14｜状态：done）
+  - 执行记录：plan=固化 monorepo workspace 骨架与构建入口基线并作为 M1 抽离统一输入;result=已新增 `monorepo-workspace-skeleton-and-build-entry-baseline.md`，明确目录结构|命名规则|构建入口|依赖方向约束;verify=口径与 `code_standards.md` 的 CS-014 及架构 Step 2 一致
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-005`，并在 `TK-102`、`TK-103`、`TK-104`、`TK-105`、`TK-106` 建立 Depends On 与输入引用;verify=后续抽离任务可直接消费同一基线
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-101-monorepo-workspace-skeleton-and-build-entry.md`;verify=复核通过，无新增问题
+- [x] **TK-102** 抽离 core-process（负责人：Core Runtime｜优先级：P0｜截止：2026-04-14｜状态：done）
+  - 执行记录：plan=定义 core-process 抽离边界、目录结构和桥接回归口径并形成统一输入;result=已新增 `core-process-extraction-baseline.md`，明确职责边界|依赖方向|迁移步骤|验收口径;verify=内容与架构 Step 2 和依赖方向约束一致
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-006`，并在 `TK-106`、`TK-116` 建立 Depends On 与输入引用;verify=CLI 桥接任务与 M1 退出回归任务可直接消费该基线
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-102-core-process-extraction-baseline.md`;verify=复核通过，无新增问题
 - [ ] **TK-103** 抽离 core-policy（负责人：Core Runtime｜优先级：P0｜截止：2026-04-14｜状态：todo）
 - [ ] **TK-104** 抽离 core-role-registry（负责人：Core Runtime｜优先级：P0｜截止：2026-04-14｜状态：todo）
 - [ ] **TK-105** 建立 adapter-sdk 初版契约（负责人：Adapter｜优先级：P0｜截止：2026-04-14｜状态：todo）

@@ -1,7 +1,7 @@
 # M1 核心包抽离 SPRINT-001
 
-- Status: planned
-- Date: 2026-03-18
+- Status: executing
+- Date: 2026-03-19
 - Milestone: `M1`
 - Sprint: `sprint-001`
 - Duration: 2026-04-01 ~ 2026-04-14 (2 weeks)
@@ -25,3 +25,5 @@
 2. [tasks/checklist.md](./tasks/checklist.md)
 3. [tasks/tasks.csv](./tasks/tasks.csv)
 4. [code-review/README.md](./code-review/README.md)
+5. [monorepo-workspace-skeleton-and-build-entry-baseline.md](./monorepo-workspace-skeleton-and-build-entry-baseline.md)
+6. [core-process-extraction-baseline.md](./core-process-extraction-baseline.md)

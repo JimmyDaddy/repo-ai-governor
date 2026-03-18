@@ -25,6 +25,8 @@
 | DA-002 | `docs/dev/milestone-00-m0-baseline-governance/sprint-001/golden-command-regression-checklist.md` | `TK-003` | `TK-006`, `TK-116` | 2026-03-18 | 2026-03-18 | active |
 | DA-003 | `docs/dev/milestone-00-m0-baseline-governance/sprint-001/contract-test-directory-and-naming-baseline.md` | `TK-004` | `TK-006`, `TK-501`, `TK-502` | 2026-03-18 | 2026-03-18 | active |
 | DA-004 | `docs/dev/milestone-00-m0-baseline-governance/sprint-001/risk-register-and-milestone-acceptance-template.md` | `TK-005` | `TK-006`, `TK-116`, `TK-216`, `TK-316`, `TK-416`, `TK-516` | 2026-03-18 | 2026-03-18 | active |
+| DA-005 | `docs/dev/milestone-01-m1-core-extraction/sprint-001/monorepo-workspace-skeleton-and-build-entry-baseline.md` | `TK-101` | `TK-102`, `TK-103`, `TK-104`, `TK-105`, `TK-106` | 2026-03-19 | 2026-03-19 | active |
+| DA-006 | `docs/dev/milestone-01-m1-core-extraction/sprint-001/core-process-extraction-baseline.md` | `TK-102` | `TK-106`, `TK-116` | 2026-03-19 | 2026-03-19 | active |
 
 ## Notes
 

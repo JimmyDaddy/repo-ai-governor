@@ -28,6 +28,8 @@
 3. [M0 核心命令 Golden 回归清单](./milestone-00-m0-baseline-governance/sprint-001/golden-command-regression-checklist.md)
 4. [M0 契约测试目录与命名基线](./milestone-00-m0-baseline-governance/sprint-001/contract-test-directory-and-naming-baseline.md)
 5. [M0 风险台账与里程碑验收模板](./milestone-00-m0-baseline-governance/sprint-001/risk-register-and-milestone-acceptance-template.md)
+6. [M1 Monorepo Workspace 骨架与构建入口基线](./milestone-01-m1-core-extraction/sprint-001/monorepo-workspace-skeleton-and-build-entry-baseline.md)
+7. [M1 Core-Process 抽离基线](./milestone-01-m1-core-extraction/sprint-001/core-process-extraction-baseline.md)
 
 ## Program View
 

@@ -1,7 +1,7 @@
 # M1 核心包抽离 SPRINT-001 Plan
 
-- Status: planned
-- Date: 2026-03-18
+- Status: executing
+- Date: 2026-03-19
 - Milestone: `M1`
 - Sprint: `sprint-001`
 - Start: 2026-04-01
