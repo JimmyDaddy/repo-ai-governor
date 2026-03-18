@@ -21,3 +21,17 @@ export type {
 } from "./adapter-bundle.type.js";
 export type { SlotConflictPolicy } from "./slot.type.js";
 export type { ParsedOptions, ExitCode, RepositoryLayoutState } from "./cli.type.js";
+export type {
+  AnyRecord,
+  VersionParts,
+  FindingSeverity,
+  FindingStatus,
+  CommandResultStatus,
+  FindingKind,
+  UpgradeStatus,
+  CommandName,
+  DoctorCommandName,
+  UpgradeCommandName,
+  CommandFileAction,
+  UpdateFileAction,
+} from "./command.type.js";

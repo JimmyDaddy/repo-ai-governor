@@ -1,103 +1,17 @@
 import path from "node:path";
 import YAML from "yaml";
 import { normalizeProjectSlug } from "../config/repository-layout.js";
+import type { GenericRecord } from "../types/index.js";
+import type {
+  BuildGeneratedWorkspaceFilesOptions,
+  BuildGeneratedWorkspaceFilesResult,
+  GeneratedWorkspaceFile,
+  InitTemplateContext,
+  SprintArtifacts,
+  WorkspaceConfig,
+} from "../types/interfaces/command-bootstrap.interface.js";
 import { toRelativePath as toRelativePathValue } from "../utils/common.js";
 import { renderInitDocument } from "./templates/init-documents.js";
-
-type GenericRecord = Record<string, unknown>;
-
-type WorkspaceConfig = {
-  project: {
-    name?: string;
-    [key: string]: unknown;
-  };
-  execution: {
-    currentProject?: string;
-    currentSprint?: string;
-    [key: string]: unknown;
-  };
-  artifacts: {
-    baseDir: string;
-    files: {
-      index: string;
-      plan: string;
-    };
-    directories: {
-      tasks: string;
-      codeReview: string;
-    };
-    taskFiles: {
-      checklist: string;
-      csv: string;
-      csvColumns: string[];
-    };
-  };
-  standards: {
-    locales: {
-      default: string;
-    };
-  };
-  adapters: {
-    enabled: string[];
-    directory: string;
-  };
-  slots: {
-    directory: string;
-  };
-  reporting: {
-    outputDir: string;
-  };
-  agentEntry: {
-    target: string;
-    contextFile: string;
-  };
-  [key: string]: unknown;
-};
-
-type InitTemplateContext = {
-  locale: string;
-  currentProject: string;
-  currentSprint: string;
-  dateStamp: string;
-  docsRoot: string;
-  planFileName: string;
-  planRelativePath: string;
-  tasksDirectoryName: string;
-  checklistFileName: string;
-  checklistRelativePath: string;
-  taskCsvFileName: string;
-  taskCsvRelativePath: string;
-  codeReviewDirectoryName: string;
-  configFilePath: string;
-  agentEntryPath: string;
-  contextFilePath: string;
-  enabledAdaptersMarkdown: string;
-  csvColumns: string[];
-};
-
-type SprintArtifacts = {
-  projectRoot: string;
-  sprintRoot: string;
-  tasksRoot: string;
-  codeReviewRoot: string;
-  indexFile: string;
-  planFile: string;
-  checklistFile: string;
-  taskCsvFile: string;
-};
-
-type GeneratedWorkspaceFile = {
-  path: string;
-  content: string;
-  action: "update";
-};
-
-type BuildGeneratedWorkspaceFilesOptions = {
-  cwd?: string;
-  config: WorkspaceConfig;
-  configFilePath: string;
-  dateStamp?: string;
-};
 
 export function toRelativePath(cwd: string, absolutePath: string): string {
   return toRelativePathValue(cwd, absolutePath);
@@ -236,13 +150,9 @@ export function applyConfigRootOverrides(
   return config;
 }
 
-export function buildGeneratedWorkspaceFiles(options: BuildGeneratedWorkspaceFilesOptions): {
-  sprintArtifacts: SprintArtifacts;
-  agentEntryPath: string;
-  contextFilePath: string;
-  filesByKey: Record<string, GeneratedWorkspaceFile>;
-  adapterFiles: Record<string, GeneratedWorkspaceFile>;
-} {
+export function buildGeneratedWorkspaceFiles(
+  options: BuildGeneratedWorkspaceFilesOptions,
+): BuildGeneratedWorkspaceFilesResult {
   const cwd = path.resolve(options.cwd ?? process.cwd());
   const config = options.config;
   const configFilePath = options.configFilePath;

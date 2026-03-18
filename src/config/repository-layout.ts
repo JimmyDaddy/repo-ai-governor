@@ -3,6 +3,7 @@ import {
   DEFAULT_REPOSITORY_LAYOUT,
   DEFAULT_TASK_CSV_COLUMNS,
   REVIEW_STATUS_PREFIXES,
+  ReviewStatusEnum,
 } from "../constants/repository-layout.js";
 
 export const PROJECT_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -10,7 +11,7 @@ export const SPRINT_NAME_PATTERN = /^sprint-\d{3}$/;
 export const TASK_ID_PATTERN = /^TK-\d{3}$/;
 export const REVIEW_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
-export type ReviewStatus = keyof typeof REVIEW_STATUS_PREFIXES;
+export type ReviewStatus = `${ReviewStatusEnum}`;
 
 type RelativeLayout = Record<string, string>;
 
@@ -78,7 +79,7 @@ export function createTaskFileName(taskId: string): string {
 }
 
 export function createReviewFileName(options?: { status?: ReviewStatus; slug?: string }): string {
-  const status = options?.status ?? "pending";
+  const status = options?.status ?? ReviewStatusEnum.Pending;
   const prefix = REVIEW_STATUS_PREFIXES[status];
 
   if (!prefix) {
@@ -169,9 +170,18 @@ export function resolveRepositoryLayout(options: ResolveRepositoryLayoutOptions 
       taskCsvColumns: DEFAULT_TASK_CSV_COLUMNS,
       reviewPatterns: artifacts.reviewFiles,
       reviewExamples: {
-        pending: createReviewFileName({ status: "pending", slug: reviewExampleSlug }),
-        verified: createReviewFileName({ status: "verified", slug: reviewExampleSlug }),
-        resolved: createReviewFileName({ status: "resolved", slug: reviewExampleSlug }),
+        pending: createReviewFileName({
+          status: ReviewStatusEnum.Pending,
+          slug: reviewExampleSlug,
+        }),
+        verified: createReviewFileName({
+          status: ReviewStatusEnum.Verified,
+          slug: reviewExampleSlug,
+        }),
+        resolved: createReviewFileName({
+          status: ReviewStatusEnum.Resolved,
+          slug: reviewExampleSlug,
+        }),
       },
     },
   };

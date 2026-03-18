@@ -6,173 +6,28 @@ import { EXIT_CODES } from "../cli/runtime/exit-codes.js";
 import { ConfigurationError } from "../config/errors.js";
 import { loadResolvedConfig } from "../config/load-config.js";
 import { resolveRepositoryLayout } from "../config/repository-layout.js";
+import type { ParsedOptions } from "../types/aliases/cli.type.js";
+import type {
+  FindingKind,
+  FindingSeverity,
+  FindingStatus,
+  VersionParts,
+} from "../types/aliases/command.type.js";
 import type { CommandContext } from "../types/interfaces/cli-runtime.interface.js";
 import type { Logger } from "../types/interfaces/cli-ui.interface.js";
+import type {
+  DoctorArtifactPaths as ArtifactPaths,
+  DoctorDirectoryCheck as DirectoryCheck,
+  DoctorPayload,
+  DoctorSummary,
+  DoctorFileCheck as FileCheck,
+  DoctorFinding as Finding,
+  DoctorFindingDraft as FindingDraft,
+  DoctorPackageJsonLike as PackageJsonLike,
+  DoctorPathFindingOptions as PathFindingOptions,
+  DoctorResolvedConfig as ResolvedConfig,
+} from "../types/interfaces/command-doctor.interface.js";
 import { normalizeLocale, toRelativePath, translateLocale } from "../utils/common.js";
-
-type ParsedOptions = Record<string, unknown>;
-type VersionParts = [number, number, number];
-type FindingSeverity = "info" | "warning" | "error";
-type FindingStatus = "pass" | "warn" | "fail" | "fixed";
-type FindingKind = "directory" | "file";
-
-type Finding = {
-  id: string;
-  category: string;
-  severity: FindingSeverity;
-  status: FindingStatus;
-  message: string;
-  target: string;
-  suggestion?: string;
-  fixable: boolean;
-  fixed: boolean;
-  kind?: FindingKind;
-  absoluteTarget?: string;
-};
-
-type FindingDraft = {
-  id: string;
-  category: string;
-  severity: FindingSeverity;
-  status?: FindingStatus;
-  message: string;
-  target: string;
-  suggestion?: string;
-  fixable?: boolean;
-  fixed?: boolean;
-};
-
-type PathFindingOptions = {
-  locale: string;
-  cwd: string;
-  id: string;
-  category: string;
-  severity: FindingSeverity;
-  kind: FindingKind;
-  path: string;
-  missingMessage: string;
-  presentMessage: string;
-  suggestion?: string;
-  fixable?: boolean;
-};
-
-type DoctorSummary = {
-  status: "pass" | "warn" | "fail";
-  exitCode: number;
-  errors: number;
-  warnings: number;
-  fixesApplied: number;
-  passed: number;
-  fixed: number;
-};
-
-type DoctorPayload = {
-  command: "doctor";
-  status: "pass" | "warn" | "fail";
-  locale: string;
-  strict: boolean;
-  fix: boolean;
-  cwd: string;
-  configFile: string;
-  currentProject?: string;
-  currentSprint?: string;
-  summary: DoctorSummary;
-  checks: Array<{
-    id: string;
-    category: string;
-    severity: FindingSeverity;
-    status: FindingStatus;
-    message: string;
-    target: string;
-    suggestion?: string;
-    fixed: boolean;
-  }>;
-};
-
-type DoctorPayloadOptions = Omit<DoctorPayload, "command">;
-
-type ArtifactPaths = {
-  configRoot: string;
-  contextDir: string;
-  contextFilePath: string;
-  slotsDir: string;
-  adaptersDir: string;
-  reportsDir: string;
-  templatesDir: string;
-  agentEntryPath: string;
-  sprintRoot?: string;
-  tasksRoot?: string;
-  codeReviewRoot?: string;
-  indexFile?: string;
-  planFile?: string;
-  checklistFile?: string;
-  taskCsvFile?: string;
-};
-
-type DirectoryCheck = {
-  id: string;
-  path: string;
-  presentMessage: string;
-  missingMessage: string;
-};
-
-type FileCheck = {
-  id: string;
-  path: string;
-  severity?: FindingSeverity;
-  presentMessage: string;
-  missingMessage: string;
-  suggestion?: string;
-};
-
-type PackageJsonLike = {
-  engines?: {
-    node?: string;
-  };
-};
-
-type ResolvedConfigData = {
-  standards?: {
-    locales?: {
-      default?: string;
-    };
-  };
-  execution: {
-    currentProject?: string;
-    currentSprint?: string;
-  };
-  reporting: {
-    outputDir: string;
-  };
-  agentEntry: {
-    target: string;
-    contextFile: string;
-  };
-  artifacts: {
-    baseDir: string;
-    directories: {
-      tasks: string;
-      codeReview: string;
-    };
-    files: {
-      index: string;
-      plan: string;
-    };
-    taskFiles: {
-      checklist: string;
-      csv: string;
-    };
-  };
-};
-
-type ResolvedConfig = {
-  paths: {
-    configFile: string;
-    slotsDirectory: string;
-    adaptersDirectory: string;
-  };
-  config: ResolvedConfigData;
-};
 
 const require = createRequire(import.meta.url);
 // dynamic-import-allowed: read package engines/version from package metadata during doctor checks
@@ -375,7 +230,7 @@ function createPathFinding(options: PathFindingOptions): Finding {
   });
 }
 
-function buildDoctorPayload(options: DoctorPayloadOptions): DoctorPayload {
+function buildDoctorPayload(options: Omit<DoctorPayload, "command">): DoctorPayload {
   return {
     command: "doctor",
     status: options.status,

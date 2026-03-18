@@ -11,25 +11,16 @@ import {
   renderRulesForConsumer,
   resolveStandardsPackage,
 } from "../standards/official-base-package.js";
+import type { AnyRecord } from "../types/aliases/command.type.js";
 import type { CommandContext } from "../types/interfaces/cli-runtime.interface.js";
 import type { Logger } from "../types/interfaces/cli-ui.interface.js";
+import type {
+  CheckFinding,
+  CheckFindingOptions,
+} from "../types/interfaces/command-check.interface.js";
 import { cloneValue, normalizeLocale, toRelativePath, translateLocale } from "../utils/common.js";
 import type { ExecuteWorkflowOptions } from "../workflow/governance-engine.js";
 import { executeWorkflow } from "../workflow/governance-engine.js";
-
-// biome-ignore lint/suspicious/noExplicitAny: transitional typing for large command migration
-type AnyRecord = Record<string, any>;
-
-type CheckFinding = {
-  id: string;
-  stageId: string;
-  ruleId: string | null;
-  severity: "info" | "warning" | "error";
-  status: "pass" | "warn" | "fail";
-  message: string;
-  target: string;
-  suggestion: string | null;
-};
 
 const CHECK_WORKFLOW_TEMPLATE = Object.freeze({
   id: "governance-check",
@@ -122,7 +113,7 @@ function t(locale: string | null | undefined, zhCN: string, enUS: string): strin
   return translateLocale(locale, zhCN, enUS);
 }
 
-function createFinding(options: AnyRecord): CheckFinding {
+function createFinding(options: CheckFindingOptions): CheckFinding {
   return {
     id: options.id,
     stageId: options.stageId,

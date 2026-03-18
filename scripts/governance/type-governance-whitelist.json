@@ -1,26 +1,6 @@
 {
   "pathAllowList": [
     {
-      "path": "src/commands/bootstrap-shared.ts",
-      "reason": "legacy declarations pending migration into src/types"
-    },
-    {
-      "path": "src/commands/check-command.ts",
-      "reason": "legacy declarations pending migration into src/types"
-    },
-    {
-      "path": "src/commands/doctor-command.ts",
-      "reason": "legacy declarations pending migration into src/types"
-    },
-    {
-      "path": "src/commands/init-command.ts",
-      "reason": "legacy declarations pending migration into src/types"
-    },
-    {
-      "path": "src/commands/plan-command.ts",
-      "reason": "legacy declarations pending migration into src/types"
-    },
-    {
       "path": "src/commands/report-command.ts",
       "reason": "legacy declarations pending migration into src/types"
     },
@@ -46,10 +26,6 @@
     },
     {
       "path": "src/commands/templates/plan-documents.ts",
-      "reason": "legacy declarations pending migration into src/types"
-    },
-    {
-      "path": "src/commands/upgrade-command.ts",
       "reason": "legacy declarations pending migration into src/types"
     },
     {

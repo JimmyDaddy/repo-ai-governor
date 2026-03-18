@@ -14,15 +14,13 @@ import {
   renderRulesForConsumer,
   resolveStandardsPackage,
 } from "../standards/official-base-package.js";
+import type { AnyRecord } from "../types/aliases/command.type.js";
 import type { CommandContext } from "../types/interfaces/cli-runtime.interface.js";
 import type { Logger } from "../types/interfaces/cli-ui.interface.js";
 import { normalizeLocale, toRelativePath, translateLocale } from "../utils/common.js";
 import type { ExecuteWorkflowOptions } from "../workflow/governance-engine.js";
 import { executeWorkflow } from "../workflow/governance-engine.js";
 import { renderPlanDocument, resolvePlanTemplateLocale } from "./templates/plan-documents.js";
-
-// biome-ignore lint/suspicious/noExplicitAny: transitional typing for large command migration
-type AnyRecord = Record<string, any>;
 
 function t(locale: string | null | undefined, zhCN: string, enUS: string): string {
   return translateLocale(locale, zhCN, enUS);

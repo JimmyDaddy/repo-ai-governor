@@ -1,4 +1,5 @@
 import path from "node:path";
+import { LocaleEnum } from "../constants/locale.js";
 import type { Locale } from "../types/aliases/locale.type.js";
 import type { LocaleOptions } from "../types/interfaces/locale-options.interface.js";
 
@@ -6,9 +7,10 @@ export function normalizeLocale(
   locale: string | null | undefined,
   options: LocaleOptions = {},
 ): Locale {
-  const defaultLocale = options.defaultLocale === "en-US" ? "en-US" : "zh-CN";
+  const defaultLocale =
+    options.defaultLocale === LocaleEnum.EnUS ? LocaleEnum.EnUS : LocaleEnum.ZhCN;
 
-  if (locale === "zh-CN" || locale === "en-US") {
+  if (locale === LocaleEnum.ZhCN || locale === LocaleEnum.EnUS) {
     return locale;
   }
 
@@ -21,7 +23,7 @@ export function translateLocale<T>(
   enUS: T,
   options: LocaleOptions = {},
 ): T {
-  return normalizeLocale(locale, options) === "en-US" ? enUS : zhCN;
+  return normalizeLocale(locale, options) === LocaleEnum.EnUS ? enUS : zhCN;
 }
 
 export function toRelativePath(cwd: string, targetPath: string): string {

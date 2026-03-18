@@ -3,8 +3,16 @@ import path from "node:path";
 import YAML from "yaml";
 import { ConfigError, InputError } from "../cli/runtime/errors.js";
 import { loadResolvedConfig } from "../config/load-config.js";
+import type { ParsedOptions } from "../types/aliases/cli.type.js";
 import type { CommandContext } from "../types/interfaces/cli-runtime.interface.js";
 import type { Logger } from "../types/interfaces/cli-ui.interface.js";
+import type { BuildGeneratedWorkspaceFilesResult } from "../types/interfaces/command-bootstrap.interface.js";
+import type {
+  GovernorDocument,
+  UpgradeFile,
+  UpgradePayload,
+  UpgradePlan,
+} from "../types/interfaces/command-upgrade.interface.js";
 import { normalizeLocale, translateLocale } from "../utils/common.js";
 import {
   applyConfigRootOverrides,
@@ -15,51 +23,6 @@ import {
 } from "./bootstrap-shared.js";
 
 const SUPPORTED_SCHEMA_VERSIONS = new Set(["1"]);
-
-type GenericRecord = Record<string, unknown>;
-type ParsedOptions = Record<string, unknown>;
-type UpgradeStatus = "planned" | "upgraded";
-
-type GovernorDocument = GenericRecord & {
-  schemaVersion?: string;
-};
-
-type UpgradeFile = {
-  path: string;
-  content: string;
-  action: "update";
-};
-
-type UpgradePlan = {
-  cwd: string;
-  locale: string;
-  currentVersion: string;
-  targetVersion: string;
-  preview: boolean;
-  backup: boolean;
-  backupDir: string | null;
-  resolvedConfig: ReturnType<typeof loadResolvedConfig>;
-  upgradeFiles: UpgradeFile[];
-  warnings: string[];
-};
-
-type UpgradePayload = {
-  command: "upgrade";
-  status: UpgradeStatus;
-  locale: string;
-  cwd: string;
-  currentVersion: string;
-  targetVersion: string;
-  preview: boolean;
-  backup: boolean;
-  backupDir: string | null;
-  warnings: string[];
-  operations: Array<{
-    action: "update";
-    path: string;
-  }>;
-  backups: string[];
-};
 
 function t(locale: string | null | undefined, zhCN: string, enUS: string): string {
   return translateLocale(locale, zhCN, enUS);
@@ -110,9 +73,7 @@ function buildBackupDirectory(cwd: string, timestamp: string): string {
   return path.resolve(cwd, ".repo-ai-governor", "backups", `upgrade-${timestamp}`);
 }
 
-function listUpgradeFiles(
-  workspaceFiles: ReturnType<typeof buildGeneratedWorkspaceFiles>,
-): UpgradeFile[] {
+function listUpgradeFiles(workspaceFiles: BuildGeneratedWorkspaceFilesResult): UpgradeFile[] {
   return [
     workspaceFiles.filesByKey.config,
     workspaceFiles.filesByKey.agentEntry,
@@ -175,7 +136,7 @@ function buildUpgradePlan(commandContext: CommandContext): UpgradePlan {
   const dateStamp = formatDate();
   const upgradedConfig = applyConfigRootOverrides(
     applyInitDefaults(
-      structuredClone(resolvedConfig.config) as Parameters<typeof applyInitDefaults>[0],
+      structuredClone(resolvedConfig.config) as unknown as Parameters<typeof applyInitDefaults>[0],
       cwd,
     ),
     cwd,

@@ -12,11 +12,9 @@ import {
   validateSkillScope,
   validateSkillSurface,
 } from "../skills/runtime.js";
+import type { AnyRecord } from "../types/aliases/command.type.js";
 import { normalizeLocale, toRelativePath, translateLocale } from "../utils/common.js";
 import { renderInitDocument } from "./templates/init-documents.js";
-
-// biome-ignore lint/suspicious/noExplicitAny: transitional typing for legacy init-command migration
-type AnyRecord = Record<string, any>;
 
 const require = createRequire(import.meta.url);
 // dynamic-import-allowed: read package name/version at runtime across ts/dist execution modes
