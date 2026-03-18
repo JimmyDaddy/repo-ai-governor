@@ -16,7 +16,7 @@
   "bin": {
     "repo-ai-governor": "./dist/bin/repo-ai-governor.js"
   },
-  "files": ["bin", "dist", "src", "skills", "scripts/examples"],
+  "files": ["bin", "dist", "skills", "scripts/examples"],
   "scripts": {
     "start": "node ./bin/repo-ai-governor.js",
     "help": "node ./bin/repo-ai-governor.js --help",
