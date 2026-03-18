@@ -4,8 +4,9 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-const ROOT_DIR = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..", "..");
+const ROOT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const ROOT_PACKAGE_JSON_PATH = path.join(ROOT_DIR, "package.json");
 const ROOT_PACKAGE_JSON = JSON.parse(fs.readFileSync(ROOT_PACKAGE_JSON_PATH, "utf8"));
 const EXPECTED_BIN_ENTRY = "./dist/bin/repo-ai-governor.js";

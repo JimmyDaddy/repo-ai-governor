@@ -179,6 +179,7 @@ automation:
     allowPullRequest: true
     allowSecretsEdit: false
     allowInfraEdit: false
+    allowCiWorkflowEdit: false
     allowDangerousCommands: false
 ci:
   enabled: true
@@ -702,6 +703,7 @@ automation:
     allowPullRequest: true
     allowSecretsEdit: false
     allowInfraEdit: false
+    allowCiWorkflowEdit: false
     allowProductionConfigEdit: false
     allowDangerousCommands: false
 ```

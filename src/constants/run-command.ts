@@ -39,7 +39,7 @@ export const ACTION_PERMISSION_FIELD = Object.freeze({
 export const HIGH_RISK_PERMISSION_FIELD = Object.freeze({
   secrets_or_credentials: "allowSecretsEdit",
   infra_or_deploy: "allowInfraEdit",
-  ci_workflow_modification: "allowInfraEdit",
+  ci_workflow_modification: "allowCiWorkflowEdit",
   dangerous_command: "allowDangerousCommands",
   production_config_edit: "allowProductionConfigEdit",
 });

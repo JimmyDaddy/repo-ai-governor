@@ -4,8 +4,9 @@ import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-const ROOT_DIR = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..", "..");
+const ROOT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const CLI_PATH = path.resolve(ROOT_DIR, "bin", "repo-ai-governor.js");
 const DEFAULT_PROJECT = "automation-smoke";
 const DEFAULT_SPRINT = "sprint-001";

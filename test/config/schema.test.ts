@@ -81,6 +81,7 @@ test("governor schema validates minimal repository config and applies defaults",
   assert.equal(validate(config), true, JSON.stringify(validate.errors, null, 2));
   assert.equal(config.workflow.template, "standard");
   assert.equal(config.automation.mode, "assisted");
+  assert.equal(config.automation.permissions.allowCiWorkflowEdit, false);
   assert.equal(config.reporting.outputDir, ".repo-ai-governor/reports");
   assert.equal(config.artifacts.reviewFiles.pending, "review_<slug>.md");
   assert.equal(config.agentEntry.contextFile, ".repo-ai-governor/context/current-context.md");
