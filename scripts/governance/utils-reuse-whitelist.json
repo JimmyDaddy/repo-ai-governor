@@ -1,25 +1,4 @@
 {
   "executionNotesPath": "docs/ts-vitest-v1/sprint-003/execution_notes.md",
-  "allowList": [
-    {
-      "signature": "src/utils/common.ts#cloneValue",
-      "reason": "legacy util baseline"
-    },
-    {
-      "signature": "src/utils/common.ts#isPlainObject",
-      "reason": "legacy util baseline"
-    },
-    {
-      "signature": "src/utils/common.ts#normalizeLocale",
-      "reason": "legacy util baseline"
-    },
-    {
-      "signature": "src/utils/common.ts#toRelativePath",
-      "reason": "legacy util baseline"
-    },
-    {
-      "signature": "src/utils/common.ts#translateLocale",
-      "reason": "legacy util baseline"
-    }
-  ]
+  "allowList": []
 }

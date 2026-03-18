@@ -54,3 +54,4 @@
 6. `TK-3006` 完成迁移收官文档与长期约束落盘
 7. `TK-3007` 收敛 literal-set whitelist 存量并分批迁移
 8. `TK-3008` 收敛 type-governance whitelist 存量并分批迁移
+9. `TK-3009` 收敛 utils-reuse whitelist 存量并清零 legacy util 豁免
