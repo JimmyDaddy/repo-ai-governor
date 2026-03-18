@@ -12,6 +12,18 @@
 2. `AGENTS.md` is the repository-level AI execution entrypoint for IDEs and agents.
 3. When rules in docs and `AGENTS.md` diverge, update `AGENTS.md` to match the structured docs.
 
+## Product Entry
+
+1. Before planning or execution, AI agents must read `docs/repo-ai-governor-overall-technical-solution.md`.
+2. `docs/repo-ai-governor-overall-technical-solution.md` is the tool-level architecture and implementation north star.
+3. For architecture boundaries and repository layering, AI agents must read `docs/repo-ai-governor-architecture-and-repo-layering.md`.
+4. Before planning or execution, AI agents must read `docs/product-requirements-brief.md`.
+5. `docs/product-requirements-brief.md` is the default execution objective to prevent scope drift during implementation.
+6. `docs/product-requirements.md` is the full product reference for iteration planning, capability alignment, and major scope decisions.
+7. Any update to `docs/product-requirements.md` must include a synchronized update to `docs/product-requirements-brief.md` in the same change set.
+8. Feature implementation must prioritize the product goal: govern AI development workflows in repositories that adopt this tool.
+9. This repository's own governance workflow is used as a self-hosting validation path, not the primary product target.
+
 ## Standards Entry
 
 1. Before planning or execution, AI agents must read `code_standards.md`.

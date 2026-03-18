@@ -1,0 +1,8 @@
+execution_id,task_id,title,owner,priority,due_date,status,project,sprint,plan,result,verify,review_delta,recorded_at
+TK-501-00,TK-501,tests/contract 全量覆盖关键契约,QA,P0,2026-08-04,todo,milestone-05-m5-hardening-release,sprint-001,tests/contract 全量覆盖关键契约,pending,pending,,2026-03-18
+TK-502-00,TK-502,tests/integration 与 tests/e2e 主链路,QA,P0,2026-08-04,todo,milestone-05-m5-hardening-release,sprint-001,tests/integration 与 tests/e2e 主链路,pending,pending,,2026-03-18
+TK-503-00,TK-503,依赖边界检查切换为 blocking gate,Architecture,P0,2026-08-04,todo,milestone-05-m5-hardening-release,sprint-001,依赖边界检查切换为 blocking gate,pending,pending,,2026-03-18
+TK-504-00,TK-504,lockstep/independent 版本策略门禁,Release,P1,2026-08-04,todo,milestone-05-m5-hardening-release,sprint-001,lockstep/independent 版本策略门禁,pending,pending,,2026-03-18
+TK-505-00,TK-505,canary -> rc -> ga 发布流程固化,Release,P1,2026-08-04,todo,milestone-05-m5-hardening-release,sprint-001,canary -> rc -> ga 发布流程固化,pending,pending,,2026-03-18
+TK-506-00,TK-506,审计回放报告链路,Reporting,P1,2026-08-04,todo,milestone-05-m5-hardening-release,sprint-001,审计回放报告链路,pending,pending,,2026-03-18
+TK-507-00,TK-507,依赖产物完整性切换为 blocking gate,Architecture,P0,2026-08-04,todo,milestone-05-m5-hardening-release,sprint-001,依赖产物完整性切换为 blocking gate,pending,pending,,2026-03-18

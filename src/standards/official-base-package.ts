@@ -212,6 +212,51 @@ export const OFFICIAL_BASE_PACKAGE_RULES = Object.freeze([
     },
   }),
   createRule({
+    id: "process-triad-docs-must-sync",
+    category: "process",
+    level: "required",
+    title: createLocalizedText(
+      "需求、方案、架构三层文档必须同步",
+      "Requirement, Solution, and Architecture Docs Must Stay in Sync",
+    ),
+    statement: createLocalizedText(
+      "当需求、技术方案、架构任一文档发生语义变更时，必须在同一变更集中同步其余文档；PRD 变更时必须同步简版 PRD。",
+      "When any requirement, technical solution, or architecture document changes semantically, the other documents must be synchronized in the same change set; PRD changes must also sync the brief PRD.",
+    ),
+    consumers: ["plan", "check", "review"],
+    automation: {
+      blockOnViolation: true,
+      severity: "error",
+      stages: ["plan", "check", "review"],
+    },
+    views: {
+      ai: {
+        instruction: createLocalizedText(
+          "涉及需求范围、实现策略或架构边界的更新时，同步更新 PRD、总技术方案、架构文档以及简版 PRD，不允许只改一层。",
+          "When updating scope, implementation strategy, or architecture boundaries, synchronize PRD, overall technical solution, architecture doc, and brief PRD together. Do not update only one layer.",
+        ),
+        verification: createLocalizedText(
+          "检查本次变更是否同时覆盖三层文档，并在 PRD 变更时同步简版 PRD。",
+          "Verify the change set updates all triad docs together, and syncs the brief PRD when PRD is changed.",
+        ),
+      },
+      human: {
+        summary: createLocalizedText(
+          "三层文档必须同源同步，避免需求与实现偏移。",
+          "Triad docs must be synchronized from a single source of truth to avoid requirement drift.",
+        ),
+        rationale: createLocalizedText(
+          "如果文档链路不同步，AI 和团队会基于不同事实源执行，造成返工和质量风险。",
+          "If the document chain is out of sync, AI and collaborators execute on conflicting facts, causing rework and quality risk.",
+        ),
+        remediation: createLocalizedText(
+          "检测到单层变更时，补齐其余两层文档和简版 PRD，再继续推进实现。",
+          "When a single-layer change is detected, update the other two layers and the brief PRD before continuing implementation.",
+        ),
+      },
+    },
+  }),
+  createRule({
     id: "quality-verification-before-delivery",
     category: "quality",
     level: "required",

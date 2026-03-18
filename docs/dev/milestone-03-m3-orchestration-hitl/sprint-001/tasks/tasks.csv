@@ -1,0 +1,8 @@
+execution_id,task_id,title,owner,priority,due_date,status,project,sprint,plan,result,verify,review_delta,recorded_at
+TK-301-00,TK-301,DSL/IR: Sequential/Parallel/Loop/Condition,Core Process,P0,2026-06-09,todo,milestone-03-m3-orchestration-hitl,sprint-001,DSL/IR: Sequential/Parallel/Loop/Condition,pending,pending,,2026-03-18
+TK-302-00,TK-302,Process Compiler 校验与产物,Core Process,P0,2026-06-09,todo,milestone-03-m3-orchestration-hitl,sprint-001,Process Compiler 校验与产物,pending,pending,,2026-03-18
+TK-303-00,TK-303,Policy Gate 规则与阈值,Policy,P0,2026-06-09,todo,milestone-03-m3-orchestration-hitl,sprint-001,Policy Gate 规则与阈值,pending,pending,,2026-03-18
+TK-304-00,TK-304,HITL 决策模型（confirm/escalate/reject）,Policy,P0,2026-06-09,todo,milestone-03-m3-orchestration-hitl,sprint-001,HITL 决策模型（confirm/escalate/reject）,pending,pending,,2026-03-18
+TK-305-00,TK-305,人工决策回灌链路,Workflow,P1,2026-06-09,todo,milestone-03-m3-orchestration-hitl,sprint-001,人工决策回灌链路,pending,pending,,2026-03-18
+TK-306-00,TK-306,超时/取消/并发冲突恢复,Core Runtime,P1,2026-06-09,todo,milestone-03-m3-orchestration-hitl,sprint-001,超时/取消/并发冲突恢复,pending,pending,,2026-03-18
+TK-307-00,TK-307,依赖产物自动注册与上下文注入运行时接入,Core Runtime,P0,2026-06-09,todo,milestone-03-m3-orchestration-hitl,sprint-001,依赖产物自动注册与上下文注入运行时接入,pending,pending,,2026-03-18

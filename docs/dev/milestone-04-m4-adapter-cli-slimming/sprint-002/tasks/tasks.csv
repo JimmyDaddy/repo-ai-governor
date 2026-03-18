@@ -1,0 +1,7 @@
+execution_id,task_id,title,owner,priority,due_date,status,project,sprint,plan,result,verify,review_delta,recorded_at
+TK-411-00,TK-411,run/check/review/review-verify 核心逻辑下沉 packages,Core Runtime,P0,2026-07-21,todo,milestone-04-m4-adapter-cli-slimming,sprint-002,run/check/review/review-verify 核心逻辑下沉 packages,pending,pending,,2026-03-18
+TK-412-00,TK-412,apps/cli 仅保留参数编排与路由,CLI,P0,2026-07-21,todo,milestone-04-m4-adapter-cli-slimming,sprint-002,apps/cli 仅保留参数编排与路由,pending,pending,,2026-03-18
+TK-413-00,TK-413,Slot 安全执行模型接入,Standards,P1,2026-07-21,todo,milestone-04-m4-adapter-cli-slimming,sprint-002,Slot 安全执行模型接入,pending,pending,,2026-03-18
+TK-414-00,TK-414,权限/风险门禁在入口层收口,Policy,P1,2026-07-21,todo,milestone-04-m4-adapter-cli-slimming,sprint-002,权限/风险门禁在入口层收口,pending,pending,,2026-03-18
+TK-415-00,TK-415,性能基线与瓶颈报告,QA,P1,2026-07-21,todo,milestone-04-m4-adapter-cli-slimming,sprint-002,性能基线与瓶颈报告,pending,pending,,2026-03-18
+TK-416-00,TK-416,M4 兼容性回归报告,QA,P1,2026-07-21,todo,milestone-04-m4-adapter-cli-slimming,sprint-002,M4 兼容性回归报告,pending,pending,,2026-03-18

@@ -1,0 +1,8 @@
+execution_id,task_id,title,owner,priority,due_date,status,project,sprint,plan,result,verify,review_delta,recorded_at
+TK-211-00,TK-211,normative_knowledge_sources 接入,Memory,P0,2026-05-26,todo,milestone-02-m2-workspace-memory-session,sprint-002,normative_knowledge_sources 接入,pending,pending,,2026-03-18
+TK-212-00,TK-212,operational state source 接入,Memory,P0,2026-05-26,todo,milestone-02-m2-workspace-memory-session,sprint-002,operational state source 接入,pending,pending,,2026-03-18
+TK-213-00,TK-213,共享 execution_session_id 事件总线,Session,P0,2026-05-26,todo,milestone-02-m2-workspace-memory-session,sprint-002,共享 execution_session_id 事件总线,pending,pending,,2026-03-18
+TK-214-00,TK-214,session 快照与回放,Session,P1,2026-05-26,todo,milestone-02-m2-workspace-memory-session,sprint-002,session 快照与回放,pending,pending,,2026-03-18
+TK-215-00,TK-215,审计字段补齐（workspace/session/memory）,Audit,P1,2026-05-26,todo,milestone-02-m2-workspace-memory-session,sprint-002,审计字段补齐（workspace/session/memory）,pending,pending,,2026-03-18
+TK-216-00,TK-216,M2 退出测试与文档收口,QA,P1,2026-05-26,todo,milestone-02-m2-workspace-memory-session,sprint-002,M2 退出测试与文档收口,pending,pending,,2026-03-18
+TK-217-00,TK-217,Artifact Registry 基座与依赖解析契约,Core Runtime,P0,2026-05-26,todo,milestone-02-m2-workspace-memory-session,sprint-002,Artifact Registry 基座与依赖解析契约,pending,pending,,2026-03-18

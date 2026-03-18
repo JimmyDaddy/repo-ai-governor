@@ -47,6 +47,10 @@ test("listRulesForConsumer and renderRulesForConsumer expose plan-facing standar
   });
 
   assert.ok(planRules.length >= 4);
+  assert.equal(
+    planRules.some((rule) => rule.id === "process-triad-docs-must-sync"),
+    true,
+  );
   assert.ok(humanRules.some((rule: any) => rule.summary?.includes("方案")));
   assert.ok(aiRules.some((rule: any) => rule.instruction?.includes("record")));
 });

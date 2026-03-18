@@ -3,15 +3,15 @@
 ## Primary Stream
 
 - Status: completed
-- Project: `ts-vitest-v1`
-- Sprint: `sprint-003`
-- Docs root: `docs/ts-vitest-v1/sprint-003`
-- Task records: `docs/ts-vitest-v1/sprint-003/tasks/checklist.md`, `docs/ts-vitest-v1/sprint-003/tasks/tasks.csv`
-- Code review records: `docs/ts-vitest-v1/sprint-003/code-review`
+- Project: `milestone-01-m1-core-extraction`
+- Sprint: `sprint-002`
+- Docs root: `docs/dev/milestone-01-m1-core-extraction`
+- Task records: `docs/dev/milestone-01-m1-core-extraction/sprint-002/tasks/`
+- Code review records: `docs/dev/milestone-01-m1-core-extraction/sprint-002/code-review/`
 
 ## Active Streams
 
-- `primary`: project=`ts-vitest-v1`, sprint=`sprint-003`, docs=`docs/ts-vitest-v1/sprint-003`, plan=`docs/ts-vitest-v1/sprint-003/plan.md`, tasks=`docs/ts-vitest-v1/sprint-003/tasks/TK-3001.md|docs/ts-vitest-v1/sprint-003/tasks/TK-3002.md|docs/ts-vitest-v1/sprint-003/tasks/TK-3003.md|docs/ts-vitest-v1/sprint-003/tasks/TK-3004.md|docs/ts-vitest-v1/sprint-003/tasks/TK-3005.md|docs/ts-vitest-v1/sprint-003/tasks/TK-3006.md|docs/ts-vitest-v1/sprint-003/tasks/TK-3007.md|docs/ts-vitest-v1/sprint-003/tasks/TK-3008.md|docs/ts-vitest-v1/sprint-003/tasks/TK-3009.md|docs/ts-vitest-v1/sprint-003/tasks/TK-3010.md`, checklist=`docs/ts-vitest-v1/sprint-003/tasks/checklist.md`, csv=`docs/ts-vitest-v1/sprint-003/tasks/tasks.csv`, review=`docs/ts-vitest-v1/sprint-003/code-review`, status=`completed`
+- `primary`: project=`milestone-01-m1-core-extraction`, sprint=`sprint-002`, docs=`docs/dev/milestone-01-m1-core-extraction`, plan=`docs/dev/milestone-01-m1-core-extraction/plan.md`, tasks=`docs/dev/milestone-01-m1-core-extraction/sprint-002/tasks/`, checklist=`docs/dev/milestone-01-m1-core-extraction/sprint-002/tasks/checklist.md`, csv=`docs/dev/milestone-01-m1-core-extraction/sprint-002/tasks/tasks.csv`, review=`docs/dev/milestone-01-m1-core-extraction/sprint-002/code-review/`, status=`completed`
 
 ## Update Rules
 
