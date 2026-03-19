@@ -46,6 +46,10 @@
 21. [M2 Repo-Local 模式接入与兼容基线](./milestone-02-m2-workspace-memory-session/sprint-001/repo-local-mode-integration-and-compatibility-baseline.md)
 22. [M2 Workspace 迁移链路（Copy/Verify/Switch）基线](./milestone-02-m2-workspace-memory-session/sprint-001/workspace-migration-copy-verify-switch-baseline.md)
 23. [M2 Workspace 回滚与失败错误模型基线](./milestone-02-m2-workspace-memory-session/sprint-001/workspace-rollback-and-failure-error-model-baseline.md)
+24. [M2 Normative Knowledge Sources 接入基线](./milestone-02-m2-workspace-memory-session/sprint-002/normative-knowledge-sources-integration-baseline.md)
+25. [M2 Operational State Source 接入基线](./milestone-02-m2-workspace-memory-session/sprint-002/operational-state-source-integration-baseline.md)
+26. [M2 共享 execution_session_id 事件总线基线](./milestone-02-m2-workspace-memory-session/sprint-002/shared-execution-session-id-event-bus-baseline.md)
+27. [M2 Session 快照与回放基线](./milestone-02-m2-workspace-memory-session/sprint-002/session-snapshot-and-replay-baseline.md)
 
 ## Program View
 

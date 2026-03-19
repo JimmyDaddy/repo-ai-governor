@@ -1,9 +1,21 @@
 # M2 Workspace + Memory + Session 稳定化 SPRINT-002 Checklist
 
-- [ ] **TK-211** normative_knowledge_sources 接入（负责人：Memory｜优先级：P0｜截止：2026-05-26｜状态：todo）
-- [ ] **TK-212** operational state source 接入（负责人：Memory｜优先级：P0｜截止：2026-05-26｜状态：todo）
-- [ ] **TK-213** 共享 execution_session_id 事件总线（负责人：Session｜优先级：P0｜截止：2026-05-26｜状态：todo）
-- [ ] **TK-214** session 快照与回放（负责人：Session｜优先级：P1｜截止：2026-05-26｜状态：todo）
+- [x] **TK-211** normative_knowledge_sources 接入（负责人：Memory｜优先级：P0｜截止：2026-05-26｜状态：done）
+  - 执行记录：plan=定义 normative_knowledge_sources 目录索引与规范资产契约并形成统一输入;result=已新增 `normative-knowledge-sources-integration-baseline.md` 且固定资产类型状态与审计字段;verify=内容与总方案 4.3 规范记忆模型和架构 Memory 层语义一致
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-023` 并在 `TK-212` `TK-215` `TK-216` `TK-217` 建立依赖回链;verify=产物可被后续任务直接检索消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-211-normative-knowledge-sources-integration-baseline.md`;verify=复核通过 无新增问题
+- [x] **TK-212** operational state source 接入（负责人：Memory｜优先级：P0｜截止：2026-05-26｜状态：done）
+  - 执行记录：plan=定义 operational state source 索引模型状态语义与存储边界并形成统一输入;result=已新增 `operational-state-source-integration-baseline.md` 且固定状态分类时间字段与归档语义;verify=内容与总方案 4.3 执行记忆模型和 workspace 双模式一致
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-024` 并在 `TK-213` `TK-215` `TK-216` `TK-217` 建立依赖回链;verify=执行态资产产物可被后续任务直接检索消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-212-operational-state-source-integration-baseline.md`;verify=复核通过 无新增问题
+- [x] **TK-213** 共享 execution_session_id 事件总线（负责人：Session｜优先级：P0｜截止：2026-05-26｜状态：done）
+  - 执行记录：plan=定义共享 execution_session_id 事件总线包络顺序幂等与发布消费边界并形成统一输入;result=已新增 `shared-execution-session-id-event-bus-baseline.md` 且固定主题字段与失败恢复语义;verify=内容与总方案共享 session 和架构 Notification/Session 边界一致
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-025` 并在 `TK-214` `TK-215` `TK-315` `TK-316` 建立依赖回链;verify=事件总线产物可被 M2/M3 后续任务直接检索消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-213-shared-execution-session-id-event-bus-baseline.md`;verify=复核通过 无新增问题
+- [x] **TK-214** session 快照与回放（负责人：Session｜优先级：P1｜截止：2026-05-26｜状态：done）
+  - 执行记录：plan=定义 session 快照触发策略回放模式与错误降级契约并形成统一输入;result=已新增 `session-snapshot-and-replay-baseline.md` 且固定 snapshot/replay 字段模型;verify=内容与总方案 session 快照回放和审计可追溯要求一致
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-026` 并在 `TK-215` `TK-216` `TK-315` `TK-316` 建立依赖回链;verify=快照回放产物可被 M2/M3 后续任务直接检索消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-214-session-snapshot-and-replay-baseline.md`;verify=复核通过 无新增问题
 - [ ] **TK-215** 审计字段补齐（workspace/session/memory）（负责人：Audit｜优先级：P1｜截止：2026-05-26｜状态：todo）
 - [ ] **TK-216** M2 退出测试与文档收口（负责人：QA｜优先级：P1｜截止：2026-05-26｜状态：todo）
 - [ ] **TK-217** Artifact Registry 基座与依赖解析契约（负责人：Core Runtime｜优先级：P0｜截止：2026-05-26｜状态：todo）

@@ -1,7 +1,7 @@
 # M2 Workspace + Memory + Session 稳定化 SPRINT-002
 
-- Status: planned
-- Date: 2026-03-18
+- Status: executing
+- Date: 2026-03-19
 - Milestone: `M2`
 - Sprint: `sprint-002`
 - Duration: 2026-05-13 ~ 2026-05-26 (2 weeks)
@@ -26,3 +26,7 @@
 2. [tasks/checklist.md](./tasks/checklist.md)
 3. [tasks/tasks.csv](./tasks/tasks.csv)
 4. [code-review/README.md](./code-review/README.md)
+5. [normative-knowledge-sources-integration-baseline.md](./normative-knowledge-sources-integration-baseline.md)
+6. [operational-state-source-integration-baseline.md](./operational-state-source-integration-baseline.md)
+7. [shared-execution-session-id-event-bus-baseline.md](./shared-execution-session-id-event-bus-baseline.md)
+8. [session-snapshot-and-replay-baseline.md](./session-snapshot-and-replay-baseline.md)

@@ -43,6 +43,10 @@
 | DA-020 | `docs/dev/milestone-02-m2-workspace-memory-session/sprint-001/repo-local-mode-integration-and-compatibility-baseline.md` | `TK-204` | `TK-205`, `TK-206`, `TK-216` | 2026-03-19 | 2026-03-19 | active |
 | DA-021 | `docs/dev/milestone-02-m2-workspace-memory-session/sprint-001/workspace-migration-copy-verify-switch-baseline.md` | `TK-205` | `TK-206`, `TK-216` | 2026-03-19 | 2026-03-19 | active |
 | DA-022 | `docs/dev/milestone-02-m2-workspace-memory-session/sprint-001/workspace-rollback-and-failure-error-model-baseline.md` | `TK-206` | `TK-216`, `TK-306` | 2026-03-19 | 2026-03-19 | active |
+| DA-023 | `docs/dev/milestone-02-m2-workspace-memory-session/sprint-002/normative-knowledge-sources-integration-baseline.md` | `TK-211` | `TK-212`, `TK-215`, `TK-216`, `TK-217` | 2026-03-19 | 2026-03-19 | active |
+| DA-024 | `docs/dev/milestone-02-m2-workspace-memory-session/sprint-002/operational-state-source-integration-baseline.md` | `TK-212` | `TK-213`, `TK-215`, `TK-216`, `TK-217` | 2026-03-19 | 2026-03-19 | active |
+| DA-025 | `docs/dev/milestone-02-m2-workspace-memory-session/sprint-002/shared-execution-session-id-event-bus-baseline.md` | `TK-213` | `TK-214`, `TK-215`, `TK-315`, `TK-316` | 2026-03-19 | 2026-03-19 | active |
+| DA-026 | `docs/dev/milestone-02-m2-workspace-memory-session/sprint-002/session-snapshot-and-replay-baseline.md` | `TK-214` | `TK-215`, `TK-216`, `TK-315`, `TK-316` | 2026-03-19 | 2026-03-19 | active |
 
 ## Notes
 
