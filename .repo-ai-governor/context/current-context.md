@@ -4,14 +4,14 @@
 
 - Status: active
 - Project: `project-001-foundation`
-- Sprint: `sprint-001-foundation-bootstrap`
+- Sprint: `sprint-002-workspace-and-upgrade`
 - Docs root: `.repo-ai-governor/context/dev/project-001-foundation`
-- Task records: `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/`
-- Code review records: `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/code-review/`
+- Task records: `.repo-ai-governor/context/dev/project-001-foundation/sprint-002-workspace-and-upgrade/tasks/`
+- Code review records: `.repo-ai-governor/context/dev/project-001-foundation/sprint-002-workspace-and-upgrade/code-review/`
 
 ## Active Streams
 
-- `primary`: project=`project-001-foundation`, sprint=`sprint-001-foundation-bootstrap`, docs=`.repo-ai-governor/context/dev/project-001-foundation`, plan=`.repo-ai-governor/context/dev/project-001-foundation/plan.md`, tasks=`.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/`, checklist=`.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/code-review/`, status=`active`
+- `primary`: project=`project-001-foundation`, sprint=`sprint-002-workspace-and-upgrade`, docs=`.repo-ai-governor/context/dev/project-001-foundation`, plan=`.repo-ai-governor/context/dev/project-001-foundation/plan.md`, tasks=`.repo-ai-governor/context/dev/project-001-foundation/sprint-002-workspace-and-upgrade/tasks/`, checklist=`.repo-ai-governor/context/dev/project-001-foundation/sprint-002-workspace-and-upgrade/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-001-foundation/sprint-002-workspace-and-upgrade/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-001-foundation/sprint-002-workspace-and-upgrade/code-review/`, status=`active`
 
 ## Update Rules
 

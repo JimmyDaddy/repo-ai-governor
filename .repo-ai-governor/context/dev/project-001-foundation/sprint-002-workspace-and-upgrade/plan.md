@@ -1,7 +1,7 @@
 # sprint-002-workspace-and-upgrade 计划
 
-- Status: planned
-- Date: 2026-03-19
+- Status: active
+- Date: 2026-03-20
 - Project: `project-001-foundation`
 
 ## 1. Sprint Goal
