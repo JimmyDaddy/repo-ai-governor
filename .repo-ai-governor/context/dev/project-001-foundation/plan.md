@@ -62,7 +62,7 @@
 | TK-008 | sprint-001 | sprint-001 出口验收基线 | acceptance baseline | TK-004,TK-005,TK-006,TK-007 | completed |
 | TK-009 | sprint-002 | Workspace Resolver 双模式基线 | baseline/contract | TK-008 | completed |
 | TK-010 | sprint-002 | workspace 迁移链路基线 | baseline/constraints | TK-009 | completed |
-| TK-011 | sprint-002 | upgrade schema diff 与建议基线 | baseline/policy | TK-010 | planned |
+| TK-011 | sprint-002 | upgrade schema diff 与建议基线 | baseline/policy | TK-010 | completed |
 | TK-012 | sprint-002 | sprint-002 出口验收与回滚基线 | acceptance baseline | TK-009,TK-010,TK-011 | planned |
 
 ## 5. 依赖产物登记策略

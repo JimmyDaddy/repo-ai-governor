@@ -7,6 +7,7 @@ export {
   ErrorOutputEnvironment,
   ErrorScenario,
   I18N_RUNTIME_ENGINE,
+  WorkspaceMigrationPolicy,
   WorkspaceMode,
 } from "./constants/index.js";
 export {

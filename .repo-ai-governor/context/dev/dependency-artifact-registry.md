@@ -40,6 +40,8 @@
 | DA-013 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-008-sprint-002-input-constraints-checklist.md` | `TK-008` | `TK-009`, `TK-010`, `TK-011`, `TK-012` | 2026-03-20 | 2026-03-20 | active |
 | DA-014 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-002-workspace-and-upgrade/tasks/TK-009-workspace-resolver-dual-mode-baseline.md` | `TK-009` | `TK-010`, `TK-011`, `TK-012` | 2026-03-20 | 2026-03-20 | active |
 | DA-015 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-002-workspace-and-upgrade/tasks/TK-010-workspace-migration-chain-baseline.md` | `TK-010` | `TK-011`, `TK-012` | 2026-03-20 | 2026-03-20 | active |
+| DA-016 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-002-workspace-and-upgrade/tasks/TK-011-upgrade-schema-diff-baseline.md` | `TK-011` | `TK-012` | 2026-03-20 | 2026-03-20 | active |
+| DA-017 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-002-workspace-and-upgrade/tasks/TK-011-upgrade-human-confirmation-policy-baseline.md` | `TK-011` | `TK-012` | 2026-03-20 | 2026-03-20 | active |
 
 ## Archive Registry Table
 

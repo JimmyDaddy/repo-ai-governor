@@ -6,4 +6,5 @@ export {
   DEFAULT_I18N_SUPPORTED_LOCALES,
   I18N_RUNTIME_ENGINE,
 } from "./i18n.constant.js";
+export { WorkspaceMigrationPolicy } from "./workspace-migration-policy.constant.js";
 export { WorkspaceMode } from "./workspace-mode.constant.js";

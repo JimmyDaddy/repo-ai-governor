@@ -1,11 +1,17 @@
-import { I18N_RUNTIME_ENGINE, WorkspaceMode } from "../../shared/src/constants/index.js";
+import {
+  I18N_RUNTIME_ENGINE,
+  WorkspaceMigrationPolicy,
+  WorkspaceMode,
+} from "../../shared/src/constants/index.js";
 import { ConfigError, GovernorErrorCode } from "../../shared/src/errors/index.js";
+import { GovernorSchemaVersion, SUPPORTED_GOVERNOR_SCHEMA_VERSIONS } from "./constants/index.js";
 import type { GovernorConfig } from "./types/interfaces/governor-config.interface.js";
 import type { GovernorProfile } from "./types/interfaces/governor-profile.interface.js";
 import type { I18nConfig } from "./types/interfaces/i18n-config.interface.js";
 import type { WorkspaceConfig } from "./types/interfaces/workspace-config.interface.js";
 
 const WORKSPACE_MODE_VALUES = new Set<string>(Object.values(WorkspaceMode));
+const WORKSPACE_MIGRATION_POLICY_VALUES = new Set<string>(Object.values(WorkspaceMigrationPolicy));
 
 /**
  * Validates governor config payloads against the shared baseline contract.
@@ -23,15 +29,16 @@ export class SchemaValidator {
   public validateOrThrow(candidate: unknown): GovernorConfig {
     const root = this.expectRecord(candidate, "/");
 
-    const schemaVersion = this.expectString(root.schemaVersion, "/schemaVersion");
+    const schemaVersion = this.resolveSchemaVersion(root.schemaVersion, "/schemaVersion");
     const workspace = this.validateWorkspace(
       root.workspace,
       "/workspace",
       false,
+      schemaVersion,
     ) as WorkspaceConfig;
     const i18n = this.validateI18n(root.i18n, "/i18n", false) as I18nConfig;
     const activeProfile = this.expectOptionalString(root.activeProfile, "/activeProfile");
-    const profiles = this.validateProfiles(root.profiles, "/profiles");
+    const profiles = this.validateProfiles(root.profiles, "/profiles", schemaVersion);
 
     this.assertNoUnknownKeys(
       root,
@@ -57,6 +64,7 @@ export class SchemaValidator {
   private validateProfiles(
     candidate: unknown,
     pointer: string,
+    schemaVersion: GovernorSchemaVersion,
   ): Record<string, GovernorProfile> | undefined {
     if (candidate === undefined) {
       return undefined;
@@ -77,6 +85,7 @@ export class SchemaValidator {
                 profile.workspace,
                 `${profilePointer}/workspace`,
                 true,
+                schemaVersion,
               ),
             }
           : {}),
@@ -102,11 +111,12 @@ export class SchemaValidator {
     candidate: unknown,
     pointer: string,
     isPartial: boolean,
+    schemaVersion: GovernorSchemaVersion,
   ): WorkspaceConfig | Partial<WorkspaceConfig> {
     const workspace = this.expectRecord(candidate, pointer);
     this.assertNoUnknownKeys(
       workspace,
-      new Set(["mode", "toolManagedRoot", "repoLocalRoot"]),
+      new Set(["mode", "toolManagedRoot", "repoLocalRoot", "migrationPolicy"]),
       pointer,
     );
 
@@ -124,12 +134,50 @@ export class SchemaValidator {
       workspace.repoLocalRoot,
       `${pointer}/repoLocalRoot`,
     );
+    const migrationPolicy = this.expectOptionalString(
+      workspace.migrationPolicy,
+      `${pointer}/migrationPolicy`,
+    );
+    const resolvedMigrationPolicy = this.resolveWorkspaceMigrationPolicy(migrationPolicy, pointer);
+
+    if (!isPartial && schemaVersion === GovernorSchemaVersion.V1_1 && !resolvedMigrationPolicy) {
+      this.throwConfigSchemaValidationError(
+        `${pointer}/migrationPolicy is required for schemaVersion ${schemaVersion}.`,
+        pointer,
+      );
+    }
 
     return {
       ...(resolvedMode ? { mode: resolvedMode } : {}),
       ...(toolManagedRoot ? { toolManagedRoot } : {}),
       ...(repoLocalRoot ? { repoLocalRoot } : {}),
+      ...(resolvedMigrationPolicy ? { migrationPolicy: resolvedMigrationPolicy } : {}),
     };
+  }
+
+  /**
+   * Resolves and validates schema version against supported baseline set.
+   * @param schemaVersionCandidate Raw schema version value.
+   * @param pointer Error pointer path.
+   * @returns Supported schema version enum.
+   */
+  private resolveSchemaVersion(
+    schemaVersionCandidate: unknown,
+    pointer: string,
+  ): GovernorSchemaVersion {
+    const schemaVersion = this.expectString(schemaVersionCandidate, pointer);
+    if (SUPPORTED_GOVERNOR_SCHEMA_VERSIONS.has(schemaVersion)) {
+      return schemaVersion as GovernorSchemaVersion;
+    }
+
+    throw new ConfigError(
+      GovernorErrorCode.CONFIG_SCHEMA_VERSION_UNSUPPORTED,
+      `${pointer} must be one of: ${Array.from(SUPPORTED_GOVERNOR_SCHEMA_VERSIONS).join(", ")}.`,
+      {
+        pointer,
+        schemaVersion,
+      },
+    );
   }
 
   /**
@@ -154,6 +202,32 @@ export class SchemaValidator {
     }
 
     return mode as WorkspaceMode;
+  }
+
+  /**
+   * Converts optional migration policy to enum and throws on unsupported values.
+   * @param migrationPolicy Optional raw migration policy value.
+   * @param pointer Error pointer path.
+   * @returns Workspace migration policy enum when provided; otherwise undefined.
+   */
+  private resolveWorkspaceMigrationPolicy(
+    migrationPolicy: string | undefined,
+    pointer: string,
+  ): WorkspaceMigrationPolicy | undefined {
+    if (migrationPolicy === undefined) {
+      return undefined;
+    }
+
+    if (!WORKSPACE_MIGRATION_POLICY_VALUES.has(migrationPolicy)) {
+      this.throwConfigSchemaValidationError(
+        `${pointer}/migrationPolicy must be one of: ${Array.from(
+          WORKSPACE_MIGRATION_POLICY_VALUES,
+        ).join(", ")}.`,
+        pointer,
+      );
+    }
+
+    return migrationPolicy as WorkspaceMigrationPolicy;
   }
 
   /**
