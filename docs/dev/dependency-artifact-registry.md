@@ -63,6 +63,12 @@
 | DA-040 | `docs/dev/milestone-03-m3-orchestration-hitl/sprint-002/agent-skill-contract-boundary-baseline.md` | `TK-314` | `TK-315`, `TK-316`, `TK-405` | 2026-03-19 | 2026-03-19 | active |
 | DA-041 | `docs/dev/milestone-03-m3-orchestration-hitl/sprint-002/multi-agent-shared-session-collaboration-constraints-baseline.md` | `TK-315` | `TK-316`, `TK-416`, `TK-506` | 2026-03-19 | 2026-03-19 | active |
 | DA-042 | `docs/dev/milestone-03-m3-orchestration-hitl/sprint-002/m3-end-to-end-orchestration-regression-baseline.md` | `TK-316` | `TK-416`, `TK-516` | 2026-03-19 | 2026-03-19 | active |
+| DA-043 | `docs/dev/milestone-04-m4-adapter-cli-slimming/sprint-001/codex-adapter-modularization-baseline.md` | `TK-401` | `TK-404`, `TK-405`, `TK-406` | 2026-03-19 | 2026-03-19 | active |
+| DA-044 | `docs/dev/milestone-04-m4-adapter-cli-slimming/sprint-001/copilot-adapter-modularization-baseline.md` | `TK-402` | `TK-404`, `TK-405`, `TK-406` | 2026-03-19 | 2026-03-19 | active |
+| DA-045 | `docs/dev/milestone-04-m4-adapter-cli-slimming/sprint-001/claude-adapter-modularization-baseline.md` | `TK-403` | `TK-404`, `TK-405`, `TK-406` | 2026-03-19 | 2026-03-19 | active |
+| DA-046 | `docs/dev/milestone-04-m4-adapter-cli-slimming/sprint-001/adapter-capability-matrix-and-degradation-strategy-baseline.md` | `TK-404` | `TK-405`, `TK-406`, `TK-416` | 2026-03-19 | 2026-03-19 | active |
+| DA-047 | `docs/dev/milestone-04-m4-adapter-cli-slimming/sprint-001/adapter-contract-test-completion-baseline.md` | `TK-405` | `TK-416`, `TK-501` | 2026-03-19 | 2026-03-19 | active |
+| DA-048 | `docs/dev/milestone-04-m4-adapter-cli-slimming/sprint-001/cli-routing-layer-design-freeze-baseline.md` | `TK-406` | `TK-411`, `TK-412`, `TK-416` | 2026-03-19 | 2026-03-19 | active |
 
 ## Notes
 

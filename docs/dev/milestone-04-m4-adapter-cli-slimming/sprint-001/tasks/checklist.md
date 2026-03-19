@@ -1,8 +1,27 @@
 # M4 适配器模块化与 CLI 瘦身 SPRINT-001 Checklist
 
-- [ ] **TK-401** Codex adapter 模块化（负责人：Adapter｜优先级：P0｜截止：2026-07-07｜状态：todo）
-- [ ] **TK-402** Copilot adapter 模块化（负责人：Adapter｜优先级：P0｜截止：2026-07-07｜状态：todo）
-- [ ] **TK-403** Claude adapter 模块化（负责人：Adapter｜优先级：P0｜截止：2026-07-07｜状态：todo）
-- [ ] **TK-404** 适配能力矩阵与降级策略（负责人：Adapter｜优先级：P1｜截止：2026-07-07｜状态：todo）
-- [ ] **TK-405** adapter 契约测试补齐（负责人：QA｜优先级：P1｜截止：2026-07-07｜状态：todo）
-- [ ] **TK-406** CLI 路由层设计冻结（负责人：CLI｜优先级：P1｜截止：2026-07-07｜状态：todo）
+- [x] **TK-401** Codex adapter 模块化（负责人：Adapter｜优先级：P0｜截止：2026-07-07｜状态：done）
+  - 执行记录：plan=切换到 M4/sprint-001 并启动 Codex adapter 模块化任务;result=已完成上下文切换并对齐 TK-401 依赖输入（TK-105/TK-314）;verify=primary stream 与 sprint 状态已同步为 executing
+  - 执行记录：plan=固化 Codex adapter 模块边界与 adapter-sdk 接口实现契约;result=已新增 `codex-adapter-modularization-baseline.md` 并定义能力声明|错误映射|降级语义;verify=与总方案 §8.1/§8.2 和架构依赖方向约束一致
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-043`，并在 `TK-404` `TK-405` `TK-406` 建立 Depends On/Input References;verify=Codex adapter 基线可被下游任务直接消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-401-codex-adapter-modularization-baseline.md`;verify=复核通过 无新增问题
+- [x] **TK-402** Copilot adapter 模块化（负责人：Adapter｜优先级：P0｜截止：2026-07-07｜状态：done）
+  - 执行记录：plan=固化 Copilot adapter 模块边界与 adapter-sdk 接口实现契约;result=已新增 `copilot-adapter-modularization-baseline.md` 并定义能力声明|错误映射|降级语义;verify=与总方案 §8.1/§8.2 和架构依赖方向约束一致
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-044`，并在 `TK-404` `TK-405` `TK-406` 建立 Depends On/Input References;verify=Copilot adapter 基线可被下游任务直接消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-402-copilot-adapter-modularization-baseline.md`;verify=复核通过 无新增问题
+- [x] **TK-403** Claude adapter 模块化（负责人：Adapter｜优先级：P0｜截止：2026-07-07｜状态：done）
+  - 执行记录：plan=固化 Claude adapter 模块边界与 adapter-sdk 接口实现契约;result=已新增 `claude-adapter-modularization-baseline.md` 并定义能力声明|错误映射|降级语义;verify=与总方案 §8.1/§8.2 和架构依赖方向约束一致
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-045`，并在 `TK-404` `TK-405` `TK-406` 建立 Depends On/Input References;verify=Claude adapter 基线可被下游任务直接消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-403-claude-adapter-modularization-baseline.md`;verify=复核通过 无新增问题
+- [x] **TK-404** 适配能力矩阵与降级策略（负责人：Adapter｜优先级：P1｜截止：2026-07-07｜状态：done）
+  - 执行记录：plan=汇总 Codex/Copilot/Claude 三类能力声明并定义 routeKey 降级策略;result=已新增 `adapter-capability-matrix-and-degradation-strategy-baseline.md` 并固定决策语义;verify=与总方案 §6.3/§8.2 一致
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-046`，并在 `TK-405` `TK-406` `TK-416` 建立 Depends On/Input References;verify=能力矩阵与降级策略可被下游任务直接消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-404-adapter-capability-matrix-and-degradation-strategy-baseline.md`;verify=复核通过 无新增问题
+- [x] **TK-405** adapter 契约测试补齐（负责人：QA｜优先级：P1｜截止：2026-07-07｜状态：done）
+  - 执行记录：plan=定义 adapter-sdk 与三工具 adapter 的契约测试覆盖模型和结果输出契约;result=已新增 `adapter-contract-test-completion-baseline.md` 并固定覆盖维度;verify=与架构 Step7 契约测试目标一致
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-047`，并在 `TK-416` `TK-501` 建立 Depends On/Input References;verify=契约测试基线可被兼容回归与 M5 合同测试消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-405-adapter-contract-test-completion-baseline.md`;verify=复核通过 无新增问题
+- [x] **TK-406** CLI 路由层设计冻结（负责人：CLI｜优先级：P1｜截止：2026-07-07｜状态：done）
+  - 执行记录：plan=冻结 CLI 入口层职责边界并定义命令路由到包层映射;result=已新增 `cli-routing-layer-design-freeze-baseline.md` 并固定 entry/package 分层语义;verify=与架构 Step6 入口瘦身约束一致
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-048`，并在 `TK-411` `TK-412` `TK-416` 建立 Depends On/Input References;verify=路由冻结基线可被 sprint-002 任务直接消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-406-cli-routing-layer-design-freeze-baseline.md`;verify=复核通过 无新增问题

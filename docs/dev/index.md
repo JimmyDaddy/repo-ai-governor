@@ -66,6 +66,12 @@
 41. [M3 Agent 与 Skill 契约边界基线](./milestone-03-m3-orchestration-hitl/sprint-002/agent-skill-contract-boundary-baseline.md)
 42. [M3 多 Agent 共享 Session 协作约束基线](./milestone-03-m3-orchestration-hitl/sprint-002/multi-agent-shared-session-collaboration-constraints-baseline.md)
 43. [M3 端到端编排链路回归基线](./milestone-03-m3-orchestration-hitl/sprint-002/m3-end-to-end-orchestration-regression-baseline.md)
+44. [M4 Codex Adapter 模块化基线](./milestone-04-m4-adapter-cli-slimming/sprint-001/codex-adapter-modularization-baseline.md)
+45. [M4 Copilot Adapter 模块化基线](./milestone-04-m4-adapter-cli-slimming/sprint-001/copilot-adapter-modularization-baseline.md)
+46. [M4 Claude Adapter 模块化基线](./milestone-04-m4-adapter-cli-slimming/sprint-001/claude-adapter-modularization-baseline.md)
+47. [M4 适配能力矩阵与降级策略基线](./milestone-04-m4-adapter-cli-slimming/sprint-001/adapter-capability-matrix-and-degradation-strategy-baseline.md)
+48. [M4 Adapter 契约测试补齐基线](./milestone-04-m4-adapter-cli-slimming/sprint-001/adapter-contract-test-completion-baseline.md)
+49. [M4 CLI 路由层设计冻结基线](./milestone-04-m4-adapter-cli-slimming/sprint-001/cli-routing-layer-design-freeze-baseline.md)
 
 ## Program View
 

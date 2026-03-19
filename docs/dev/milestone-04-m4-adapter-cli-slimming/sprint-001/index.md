@@ -1,7 +1,7 @@
 # M4 适配器模块化与 CLI 瘦身 SPRINT-001
 
-- Status: planned
-- Date: 2026-03-18
+- Status: completed
+- Date: 2026-03-19
 - Milestone: `M4`
 - Sprint: `sprint-001`
 - Duration: 2026-06-24 ~ 2026-07-07 (2 weeks)
@@ -25,3 +25,9 @@
 2. [tasks/checklist.md](./tasks/checklist.md)
 3. [tasks/tasks.csv](./tasks/tasks.csv)
 4. [code-review/README.md](./code-review/README.md)
+5. [codex-adapter-modularization-baseline.md](./codex-adapter-modularization-baseline.md)
+6. [copilot-adapter-modularization-baseline.md](./copilot-adapter-modularization-baseline.md)
+7. [claude-adapter-modularization-baseline.md](./claude-adapter-modularization-baseline.md)
+8. [adapter-capability-matrix-and-degradation-strategy-baseline.md](./adapter-capability-matrix-and-degradation-strategy-baseline.md)
+9. [adapter-contract-test-completion-baseline.md](./adapter-contract-test-completion-baseline.md)
+10. [cli-routing-layer-design-freeze-baseline.md](./cli-routing-layer-design-freeze-baseline.md)

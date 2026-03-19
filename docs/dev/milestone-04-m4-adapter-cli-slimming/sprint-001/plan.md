@@ -1,7 +1,7 @@
 # M4 适配器模块化与 CLI 瘦身 SPRINT-001 Plan
 
-- Status: planned
-- Date: 2026-03-18
+- Status: completed
+- Date: 2026-03-19
 - Milestone: `M4`
 - Sprint: `sprint-001`
 - Start: 2026-06-24
