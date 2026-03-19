@@ -1,0 +1,81 @@
+{
+  "name": "@cjhdev/repo-ai-governor",
+  "version": "0.1.5",
+  "private": false,
+  "description": "Repository-local AI governance CLI.",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JimmyDaddy/repo-ai-governor.git"
+  },
+  "bugs": {
+    "url": "https://github.com/JimmyDaddy/repo-ai-governor/issues"
+  },
+  "homepage": "https://github.com/JimmyDaddy/repo-ai-governor",
+  "bin": {
+    "repo-ai-governor": "./dist/bin/repo-ai-governor.js"
+  },
+  "files": ["bin", "dist", "skills", "scripts/examples"],
+  "scripts": {
+    "start": "node ./bin/repo-ai-governor.js",
+    "help": "node ./bin/repo-ai-governor.js --help",
+    "test": "vitest run",
+    "check:imports": "node ./scripts/governance/check-esm-import-specifiers.js",
+    "check:dynamic-imports": "node ./scripts/governance/check-dynamic-import-usage.js",
+    "check:finite-literal-sets": "node ./scripts/governance/check-finite-literal-sets.js",
+    "check:utils-reuse": "node ./scripts/governance/check-utils-reuse-governance.js",
+    "check:type-governance": "node ./scripts/governance/check-type-governance.js",
+    "check:ts-only": "node ./scripts/governance/check-ts-only-residue.js",
+    "check:docs-triad-sync": "node ./scripts/governance/check-docs-triad-sync.js",
+    "check:jsdoc-governance": "node ./scripts/governance/check-jsdoc-governance.js",
+    "check:oop-structure": "node ./scripts/governance/check-oop-structure.js",
+    "check:code-standards": "node ./scripts/governance/check-code-standards.js --standards .repo-ai-governor/normative_knowledge_sources/governance/code_standards.md",
+    "check:coverage-thresholds": "node ./scripts/ci/check-coverage-thresholds.js",
+    "check:coverage": "npm run test:coverage && npm run check:coverage-thresholds",
+    "check:runtime-js-whitelist": "node ./scripts/release/check-runtime-js-whitelist.js",
+    "check": "npm run format:check && npm run lint && npm run build && npm run check:code-standards",
+    "ci:quality": "npm run typecheck && npm run check && npm run check:coverage",
+    "smoke:automation": "bash ./scripts/ci/run-automation-smoke.sh",
+    "release": "release-it",
+    "release:dry-run": "release-it --dry-run",
+    "release:check": "node ./scripts/release/check-release-ready.js && npm run check:runtime-js-whitelist",
+    "release:notes": "node ./scripts/release/render-release-notes.js",
+    "release:verify-local": "node ./scripts/release/verify-local-distribution.js",
+    "release:candidate": "npm run ci:quality && npm run release:check && npm run release:verify-local",
+    "release:ga-check": "npm run release:candidate",
+    "release:pack": "npm pack --json",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "lint": "biome check .",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "build": "tsc -p tsconfig.build.json && node ./scripts/build/copy-runtime-assets.js",
+    "start:dist": "node ./dist/bin/repo-ai-governor.js",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:stability": "node ./scripts/ci/run-vitest-stability-baseline.js",
+    "test:slow": "vitest run --slowTestThreshold=1500 --reporter=verbose"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "dependencies": {
+    "ajv": "^8.18.0",
+    "ajv-formats": "^3.0.1",
+    "commander": "^13.1.0",
+    "yaml": "^2.8.2"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@release-it/conventional-changelog": "^9.0.4",
+    "@types/node": "^25.5.0",
+    "@vitest/coverage-v8": "^4.1.0",
+    "release-it": "^17.11.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.0"
+  }
+}

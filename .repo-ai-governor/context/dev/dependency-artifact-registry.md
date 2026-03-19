@@ -1,0 +1,35 @@
+# Dependency Artifact Registry
+
+- Status: active
+- Date: 2026-03-19
+- Scope: `.repo-ai-governor/context/dev/**`
+
+## Purpose
+
+统一登记“会被后续任务依赖的产物”，确保产物创建后可被后续任务立即检索、回链与消费。
+
+## Registration Rules
+
+1. 仅登记“规范/基线/约束”类产物（例如 strategy、baseline、contract、constraint、policy、acceptance checklist 等）。
+2. 编排类过程文档默认不登记（例如 `plan.md`、`tasks/checklist.md`、`tasks/tasks.csv`、`current-context.md`、普通进度记录）。
+3. 任何被 2 个及以上后续任务依赖的合格产物，必须在本表登记。
+4. 产物登记后，必须同步：
+   - `.repo-ai-governor/context/dev/index.md` 的可检索入口；
+   - 相关任务卡的 `Depends On` 与 `Input References`；
+   - 触发任务的 `tasks/checklist.md` 与 `tasks/tasks.csv` 执行记录。
+5. 若依赖任务新增或变更，需在同一变更窗口更新本表。
+6. 在任务 ID 尚未分配阶段，`dependent_tasks` 允许临时为 `TBD`，并在任务拆解落盘时回填为任务 ID 列表。
+
+## Registry Table
+
+| artifact_id | artifact_path | producer_task | dependent_tasks | first_registered_at | last_updated_at | status |
+|---|---|---|---|---|---|---|
+| DA-002 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-002-artifact-registry-baseline.md` | `TK-002` | `TBD` | 2026-03-19 | 2026-03-19 | active |
+| DA-003 | `.repo-ai-governor/context/dev/project-001-foundation/foundation-delivery-baseline-and-constraints.md` | `TK-003` | `TK-004`, `TK-005`, `TK-006`, `TK-007`, `TK-008`, `TK-009`, `TK-010`, `TK-011`, `TK-012` | 2026-03-19 | 2026-03-19 | active |
+
+## Notes
+
+1. `dependent_tasks` 字段使用任务 ID 列表，按时间先后排序。
+2. 如产物废弃或被替代，新增记录并将旧记录标记为 `deprecated`，避免静默删除造成链路中断。
+3. 后续任务消费产物时，优先引用 `artifact_id + artifact_path` 双键，避免仅凭文件名检索。
+4. 若产物不满足“规范/基线/约束”属性，即使被引用也不登记为 DA。
