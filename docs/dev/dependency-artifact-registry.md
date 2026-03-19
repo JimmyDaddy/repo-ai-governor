@@ -75,6 +75,13 @@
 | DA-052 | `docs/dev/milestone-04-m4-adapter-cli-slimming/sprint-002/entry-layer-permission-risk-gate-convergence-baseline.md` | `TK-414` | `TK-416`, `TK-503`, `TK-512` | 2026-03-19 | 2026-03-19 | active |
 | DA-053 | `docs/dev/milestone-04-m4-adapter-cli-slimming/sprint-002/performance-baseline-and-bottleneck-report.md` | `TK-415` | `TK-416`, `TK-511`, `TK-514` | 2026-03-19 | 2026-03-19 | active |
 | DA-054 | `docs/dev/milestone-04-m4-adapter-cli-slimming/sprint-002/m4-compatibility-regression-baseline.md` | `TK-416` | `TK-511`, `TK-514`, `TK-516` | 2026-03-19 | 2026-03-19 | active |
+| DA-055 | `docs/dev/milestone-05-m5-hardening-release/sprint-001/contract-test-full-coverage-baseline.md` | `TK-501` | `TK-511`, `TK-513`, `TK-516` | 2026-03-19 | 2026-03-19 | active |
+| DA-056 | `docs/dev/milestone-05-m5-hardening-release/sprint-001/integration-e2e-mainline-baseline.md` | `TK-502` | `TK-511`, `TK-513`, `TK-516` | 2026-03-19 | 2026-03-19 | active |
+| DA-057 | `docs/dev/milestone-05-m5-hardening-release/sprint-001/dependency-boundary-blocking-gate-baseline.md` | `TK-503` | `TK-511`, `TK-513`, `TK-515` | 2026-03-19 | 2026-03-19 | active |
+| DA-058 | `docs/dev/milestone-05-m5-hardening-release/sprint-001/lockstep-independent-version-policy-gate-baseline.md` | `TK-504` | `TK-513`, `TK-516` | 2026-03-19 | 2026-03-19 | active |
+| DA-059 | `docs/dev/milestone-05-m5-hardening-release/sprint-001/canary-rc-ga-release-flow-hardening-baseline.md` | `TK-505` | `TK-512`, `TK-513`, `TK-516` | 2026-03-19 | 2026-03-19 | active |
+| DA-060 | `docs/dev/milestone-05-m5-hardening-release/sprint-001/audit-replay-reporting-pipeline-baseline.md` | `TK-506` | `TK-514`, `TK-515`, `TK-516` | 2026-03-19 | 2026-03-19 | active |
+| DA-061 | `docs/dev/milestone-05-m5-hardening-release/sprint-001/dependency-artifact-integrity-blocking-gate-baseline.md` | `TK-507` | `TK-511`, `TK-513`, `TK-515` | 2026-03-19 | 2026-03-19 | active |
 
 ## Notes
 

@@ -78,6 +78,13 @@
 53. [M4 入口层权限风险门禁收口基线](./milestone-04-m4-adapter-cli-slimming/sprint-002/entry-layer-permission-risk-gate-convergence-baseline.md)
 54. [M4 性能基线与瓶颈报告](./milestone-04-m4-adapter-cli-slimming/sprint-002/performance-baseline-and-bottleneck-report.md)
 55. [M4 兼容性回归基线](./milestone-04-m4-adapter-cli-slimming/sprint-002/m4-compatibility-regression-baseline.md)
+56. [M5 契约全覆盖基线](./milestone-05-m5-hardening-release/sprint-001/contract-test-full-coverage-baseline.md)
+57. [M5 Integration/E2E 主链路基线](./milestone-05-m5-hardening-release/sprint-001/integration-e2e-mainline-baseline.md)
+58. [M5 依赖边界 Blocking Gate 基线](./milestone-05-m5-hardening-release/sprint-001/dependency-boundary-blocking-gate-baseline.md)
+59. [M5 版本策略门禁基线](./milestone-05-m5-hardening-release/sprint-001/lockstep-independent-version-policy-gate-baseline.md)
+60. [M5 分级发布流程固化基线](./milestone-05-m5-hardening-release/sprint-001/canary-rc-ga-release-flow-hardening-baseline.md)
+61. [M5 审计回放报告链路基线](./milestone-05-m5-hardening-release/sprint-001/audit-replay-reporting-pipeline-baseline.md)
+62. [M5 依赖产物完整性 Blocking Gate 基线](./milestone-05-m5-hardening-release/sprint-001/dependency-artifact-integrity-blocking-gate-baseline.md)
 
 ## Program View
 

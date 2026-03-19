@@ -1,7 +1,7 @@
 # M5 质量硬化与发布就绪
 
-- Status: planned
-- Date: 2026-03-18
+- Status: executing
+- Date: 2026-03-19
 - Milestone: `M5`
 - Priority: P1->P2 过渡
 - Technical Phase: Phase E

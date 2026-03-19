@@ -1,7 +1,7 @@
 # M5 质量硬化与发布就绪 SPRINT-001
 
-- Status: planned
-- Date: 2026-03-18
+- Status: completed
+- Date: 2026-03-19
 - Milestone: `M5`
 - Sprint: `sprint-001`
 - Duration: 2026-07-22 ~ 2026-08-04 (2 weeks)
@@ -26,3 +26,10 @@
 2. [tasks/checklist.md](./tasks/checklist.md)
 3. [tasks/tasks.csv](./tasks/tasks.csv)
 4. [code-review/README.md](./code-review/README.md)
+5. [contract-test-full-coverage-baseline.md](./contract-test-full-coverage-baseline.md)
+6. [integration-e2e-mainline-baseline.md](./integration-e2e-mainline-baseline.md)
+7. [dependency-boundary-blocking-gate-baseline.md](./dependency-boundary-blocking-gate-baseline.md)
+8. [lockstep-independent-version-policy-gate-baseline.md](./lockstep-independent-version-policy-gate-baseline.md)
+9. [canary-rc-ga-release-flow-hardening-baseline.md](./canary-rc-ga-release-flow-hardening-baseline.md)
+10. [audit-replay-reporting-pipeline-baseline.md](./audit-replay-reporting-pipeline-baseline.md)
+11. [dependency-artifact-integrity-blocking-gate-baseline.md](./dependency-artifact-integrity-blocking-gate-baseline.md)

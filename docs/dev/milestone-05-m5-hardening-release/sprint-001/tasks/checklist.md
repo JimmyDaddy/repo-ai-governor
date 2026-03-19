@@ -1,9 +1,30 @@
 # M5 质量硬化与发布就绪 SPRINT-001 Checklist
 
-- [ ] **TK-501** tests/contract 全量覆盖关键契约（负责人：QA｜优先级：P0｜截止：2026-08-04｜状态：todo）
-- [ ] **TK-502** tests/integration 与 tests/e2e 主链路（负责人：QA｜优先级：P0｜截止：2026-08-04｜状态：todo）
-- [ ] **TK-503** 依赖边界检查切换为 blocking gate（负责人：Architecture｜优先级：P0｜截止：2026-08-04｜状态：todo）
-- [ ] **TK-504** lockstep/independent 版本策略门禁（负责人：Release｜优先级：P1｜截止：2026-08-04｜状态：todo）
-- [ ] **TK-505** canary -> rc -> ga 发布流程固化（负责人：Release｜优先级：P1｜截止：2026-08-04｜状态：todo）
-- [ ] **TK-506** 审计回放报告链路（负责人：Reporting｜优先级：P1｜截止：2026-08-04｜状态：todo）
-- [ ] **TK-507** 依赖产物完整性切换为 blocking gate（负责人：Architecture｜优先级：P0｜截止：2026-08-04｜状态：todo）
+- [x] **TK-501** tests/contract 全量覆盖关键契约（负责人：QA｜优先级：P0｜截止：2026-08-04｜状态：done）
+  - 执行记录：plan=定义 M5 关键契约全覆盖范围和断言门槛;result=已新增 `contract-test-full-coverage-baseline.md` 并固定覆盖域与结果模型;verify=契约门槛与证据口径可执行
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-055`，并在 `TK-511` `TK-513` `TK-516` 建立 Depends On/Input References;verify=契约基线可被质量和发布任务直接消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-501-contract-test-full-coverage-baseline.md`;verify=复核通过 无新增问题
+- [x] **TK-502** tests/integration 与 tests/e2e 主链路（负责人：QA｜优先级：P0｜截止：2026-08-04｜状态：done）
+  - 执行记录：plan=定义 integration/e2e 主链路场景矩阵与结果模型;result=已新增 `integration-e2e-mainline-baseline.md` 并固定主链路覆盖范围;verify=覆盖命令入口到执行回写全链路
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-056`，并在 `TK-511` `TK-513` `TK-516` 建立 Depends On/Input References;verify=主链路基线可被稳定性与发布任务消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-502-integration-e2e-mainline-baseline.md`;verify=复核通过 无新增问题
+- [x] **TK-503** 依赖边界检查切换为 blocking gate（负责人：Architecture｜优先级：P0｜截止：2026-08-04｜状态：done）
+  - 执行记录：plan=将依赖边界检查从 warning 切换为 blocking 并定义违规报告口径;result=已新增 `dependency-boundary-blocking-gate-baseline.md` 并固定阻断策略;verify=阻断语义与审计输出可执行
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-057`，并在 `TK-511` `TK-513` `TK-515` 建立 Depends On/Input References;verify=边界门禁可被质量与治理任务消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-503-dependency-boundary-blocking-gate-baseline.md`;verify=复核通过 无新增问题
+- [x] **TK-504** lockstep/independent 版本策略门禁（负责人：Release｜优先级：P1｜截止：2026-08-04｜状态：done）
+  - 执行记录：plan=定义 lockstep/independent 包组版本门禁规则;result=已新增 `lockstep-independent-version-policy-gate-baseline.md` 并固定漂移判定;verify=版本门禁与 monorepo 策略一致
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-058`，并在 `TK-513` `TK-516` 建立 Depends On/Input References;verify=版本门禁可被发布验收与最终评审消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-504-version-policy-gate-baseline.md`;verify=复核通过 无新增问题
+- [x] **TK-505** canary -> rc -> ga 发布流程固化（负责人：Release｜优先级：P1｜截止：2026-08-04｜状态：done）
+  - 执行记录：plan=固化分级发布阶段与升级回滚决策语义;result=已新增 `canary-rc-ga-release-flow-hardening-baseline.md` 并定义准入条件;verify=发布流程与门禁策略可组合执行
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-059`，并在 `TK-512` `TK-513` `TK-516` 建立 Depends On/Input References;verify=发布流程基线可被迁移和评审任务消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-505-canary-rc-ga-release-flow-baseline.md`;verify=复核通过 无新增问题
+- [x] **TK-506** 审计回放报告链路（负责人：Reporting｜优先级：P1｜截止：2026-08-04｜状态：done）
+  - 执行记录：plan=定义审计回放链路与报告双视图模型;result=已新增 `audit-replay-reporting-pipeline-baseline.md` 并固定证据类型;verify=回放链路可追溯且可审阅
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-060`，并在 `TK-514` `TK-515` `TK-516` 建立 Depends On/Input References;verify=审计回放基线可被报告治理与评审任务消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-506-audit-replay-reporting-pipeline-baseline.md`;verify=复核通过 无新增问题
+- [x] **TK-507** 依赖产物完整性切换为 blocking gate（负责人：Architecture｜优先级：P0｜截止：2026-08-04｜状态：done）
+  - 执行记录：plan=定义依赖产物完整性检查维度并切换为 blocking gate;result=已新增 `dependency-artifact-integrity-blocking-gate-baseline.md` 并固定问题分类;verify=完整性问题可阻断并给出修复建议
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-061`，并在 `TK-511` `TK-513` `TK-515` 建立 Depends On/Input References;verify=完整性门禁可与边界和版本门禁组合
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-507-dependency-artifact-integrity-blocking-gate-baseline.md`;verify=复核通过 无新增问题
