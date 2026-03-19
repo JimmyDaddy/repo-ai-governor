@@ -1,7 +1,7 @@
 # M5 质量硬化与发布就绪 SPRINT-002 Plan
 
-- Status: planned
-- Date: 2026-03-18
+- Status: completed
+- Date: 2026-03-19
 - Milestone: `M5`
 - Sprint: `sprint-002`
 - Start: 2026-08-05

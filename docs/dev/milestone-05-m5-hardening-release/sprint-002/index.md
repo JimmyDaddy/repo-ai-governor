@@ -1,7 +1,7 @@
 # M5 质量硬化与发布就绪 SPRINT-002
 
-- Status: planned
-- Date: 2026-03-18
+- Status: completed
+- Date: 2026-03-19
 - Milestone: `M5`
 - Sprint: `sprint-002`
 - Duration: 2026-08-05 ~ 2026-08-18 (2 weeks)
@@ -25,3 +25,9 @@
 2. [tasks/checklist.md](./tasks/checklist.md)
 3. [tasks/tasks.csv](./tasks/tasks.csv)
 4. [code-review/README.md](./code-review/README.md)
+5. [quality-gate-stability-target-baseline.md](./quality-gate-stability-target-baseline.md)
+6. [upgrade-migration-and-rollback-manual-baseline.md](./upgrade-migration-and-rollback-manual-baseline.md)
+7. [release-acceptance-checklist-automation-baseline.md](./release-acceptance-checklist-automation-baseline.md)
+8. [observability-and-reporting-baseline-closure.md](./observability-and-reporting-baseline-closure.md)
+9. [data-privacy-and-retention-policy-acceptance-baseline.md](./data-privacy-and-retention-policy-acceptance-baseline.md)
+10. [ga-readiness-final-review-package-baseline.md](./ga-readiness-final-review-package-baseline.md)

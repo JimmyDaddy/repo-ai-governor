@@ -82,6 +82,12 @@
 | DA-059 | `docs/dev/milestone-05-m5-hardening-release/sprint-001/canary-rc-ga-release-flow-hardening-baseline.md` | `TK-505` | `TK-512`, `TK-513`, `TK-516` | 2026-03-19 | 2026-03-19 | active |
 | DA-060 | `docs/dev/milestone-05-m5-hardening-release/sprint-001/audit-replay-reporting-pipeline-baseline.md` | `TK-506` | `TK-514`, `TK-515`, `TK-516` | 2026-03-19 | 2026-03-19 | active |
 | DA-061 | `docs/dev/milestone-05-m5-hardening-release/sprint-001/dependency-artifact-integrity-blocking-gate-baseline.md` | `TK-507` | `TK-511`, `TK-513`, `TK-515` | 2026-03-19 | 2026-03-19 | active |
+| DA-062 | `docs/dev/milestone-05-m5-hardening-release/sprint-002/quality-gate-stability-target-baseline.md` | `TK-511` | `TK-513`, `TK-516` | 2026-03-19 | 2026-03-19 | active |
+| DA-063 | `docs/dev/milestone-05-m5-hardening-release/sprint-002/upgrade-migration-and-rollback-manual-baseline.md` | `TK-512` | `TK-513`, `TK-516` | 2026-03-19 | 2026-03-19 | active |
+| DA-064 | `docs/dev/milestone-05-m5-hardening-release/sprint-002/release-acceptance-checklist-automation-baseline.md` | `TK-513` | `TK-516` | 2026-03-19 | 2026-03-19 | active |
+| DA-065 | `docs/dev/milestone-05-m5-hardening-release/sprint-002/observability-and-reporting-baseline-closure.md` | `TK-514` | `TK-516` | 2026-03-19 | 2026-03-19 | active |
+| DA-066 | `docs/dev/milestone-05-m5-hardening-release/sprint-002/data-privacy-and-retention-policy-acceptance-baseline.md` | `TK-515` | `TK-516` | 2026-03-19 | 2026-03-19 | active |
+| DA-067 | `docs/dev/milestone-05-m5-hardening-release/sprint-002/ga-readiness-final-review-package-baseline.md` | `TK-516` | `-` | 2026-03-19 | 2026-03-19 | active |
 
 ## Notes
 

@@ -85,6 +85,12 @@
 60. [M5 分级发布流程固化基线](./milestone-05-m5-hardening-release/sprint-001/canary-rc-ga-release-flow-hardening-baseline.md)
 61. [M5 审计回放报告链路基线](./milestone-05-m5-hardening-release/sprint-001/audit-replay-reporting-pipeline-baseline.md)
 62. [M5 依赖产物完整性 Blocking Gate 基线](./milestone-05-m5-hardening-release/sprint-001/dependency-artifact-integrity-blocking-gate-baseline.md)
+63. [M5 质量门禁稳定性达标基线](./milestone-05-m5-hardening-release/sprint-002/quality-gate-stability-target-baseline.md)
+64. [M5 升级迁移指南与回滚手册基线](./milestone-05-m5-hardening-release/sprint-002/upgrade-migration-and-rollback-manual-baseline.md)
+65. [M5 发布验收 checklist 自动化基线](./milestone-05-m5-hardening-release/sprint-002/release-acceptance-checklist-automation-baseline.md)
+66. [M5 可观测与报告基线收口](./milestone-05-m5-hardening-release/sprint-002/observability-and-reporting-baseline-closure.md)
+67. [M5 数据隐私与保留策略验收基线](./milestone-05-m5-hardening-release/sprint-002/data-privacy-and-retention-policy-acceptance-baseline.md)
+68. [M5 GA Readiness 最终评审包基线](./milestone-05-m5-hardening-release/sprint-002/ga-readiness-final-review-package-baseline.md)
 
 ## Program View
 
@@ -95,7 +101,7 @@
 | M2 Workspace + Memory + Session 稳定化 | P1（已完成） | Phase C | Step 3~5 | 2 |
 | M3 编排引擎与 HITL 闭环 | P1（已完成） | Phase D | Step 4~6 | 2 |
 | M4 适配器模块化与 CLI 瘦身 | P1（已完成） | Phase D | Step 5~6 | 2 |
-| M5 质量硬化与发布就绪 | P1->P2 过渡 | Phase E | Step 7 | 2 |
+| M5 质量硬化与发布就绪 | P1->P2（已完成） | Phase E | Step 7 | 2 |
 
 ## Validation Targets
 

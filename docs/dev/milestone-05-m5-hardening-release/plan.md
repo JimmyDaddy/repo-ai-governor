@@ -1,9 +1,9 @@
 # M5 Plan
 
-- Status: executing
+- Status: completed
 - Date: 2026-03-19
 - Milestone: `M5`
-- Priority: P1->P2 过渡
+- Priority: P1->P2（已完成）
 - Phase: Phase E
 - Step: Step 7
 

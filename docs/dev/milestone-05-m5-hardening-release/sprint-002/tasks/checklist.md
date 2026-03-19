@@ -1,8 +1,26 @@
 # M5 质量硬化与发布就绪 SPRINT-002 Checklist
 
-- [ ] **TK-511** 质量门禁稳定性达标（负责人：QA｜优先级：P0｜截止：2026-08-18｜状态：todo）
-- [ ] **TK-512** 升级迁移指南与回滚手册（负责人：Release｜优先级：P1｜截止：2026-08-18｜状态：todo）
-- [ ] **TK-513** 发布验收 checklist 自动化（负责人：Release｜优先级：P1｜截止：2026-08-18｜状态：todo）
-- [ ] **TK-514** 可观测与报告基线收口（负责人：Reporting｜优先级：P1｜截止：2026-08-18｜状态：todo）
-- [ ] **TK-515** 数据隐私与保留策略验收（负责人：Governance｜优先级：P1｜截止：2026-08-18｜状态：todo）
-- [ ] **TK-516** GA readiness 最终评审包（负责人：PM｜优先级：P0｜截止：2026-08-18｜状态：todo）
+- [x] **TK-511** 质量门禁稳定性达标（负责人：QA｜优先级：P0｜截止：2026-08-18｜状态：done）
+  - 执行记录：plan=定义质量门禁稳定性指标阈值与趋势语义;result=已新增 `quality-gate-stability-target-baseline.md` 并固定稳定性达标口径;verify=质量门禁达标模型可执行
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-062`，并在 `TK-513` `TK-516` 建立 Depends On/Input References;verify=稳定性基线可被发布验收与最终评审消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-511-quality-gate-stability-target-baseline.md`;verify=复核通过 无新增问题
+- [x] **TK-512** 升级迁移指南与回滚手册（负责人：Release｜优先级：P1｜截止：2026-08-18｜状态：done）
+  - 执行记录：plan=定义升级迁移与回滚手册阶段和触发策略;result=已新增 `upgrade-migration-and-rollback-manual-baseline.md` 并固定回滚最小链路;verify=迁移回滚手册可直接用于发布演练
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-063`，并在 `TK-513` `TK-516` 建立 Depends On/Input References;verify=迁移回滚基线可被验收与评审任务消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-512-upgrade-migration-and-rollback-manual-baseline.md`;verify=复核通过 无新增问题
+- [x] **TK-513** 发布验收 checklist 自动化（负责人：Release｜优先级：P1｜截止：2026-08-18｜状态：done）
+  - 执行记录：plan=定义发布验收清单自动化输入域和阻断规则;result=已新增 `release-acceptance-checklist-automation-baseline.md` 并固定生成语义;verify=自动化清单可直接用于发布准入
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-064`，并在 `TK-516` 建立 Depends On/Input References;verify=验收自动化基线可被最终评审直接消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-513-release-acceptance-checklist-automation-baseline.md`;verify=复核通过 无新增问题
+- [x] **TK-514** 可观测与报告基线收口（负责人：Reporting｜优先级：P1｜截止：2026-08-18｜状态：done）
+  - 执行记录：plan=收口可观测指标字典和报告发布口径;result=已新增 `observability-and-reporting-baseline-closure.md` 并固定指标域;verify=报告口径统一可追踪
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-065`，并在 `TK-516` 建立 Depends On/Input References;verify=报告收口基线可被最终评审直接消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-514-observability-and-reporting-baseline-closure.md`;verify=复核通过 无新增问题
+- [x] **TK-515** 数据隐私与保留策略验收（负责人：Governance｜优先级：P1｜截止：2026-08-18｜状态：done）
+  - 执行记录：plan=定义数据分类与保留策略验收规则;result=已新增 `data-privacy-and-retention-policy-acceptance-baseline.md` 并固定策略动作;verify=隐私与保留规则可执行可阻断
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-066`，并在 `TK-516` 建立 Depends On/Input References;verify=数据治理基线可作为 GA 评审必选项
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-515-data-privacy-and-retention-policy-acceptance-baseline.md`;verify=复核通过 无新增问题
+- [x] **TK-516** GA readiness 最终评审包（负责人：PM｜优先级：P0｜截止：2026-08-18｜状态：done）
+  - 执行记录：plan=定义 GA 最终评审包结构决策模型与准入规则;result=已新增 `ga-readiness-final-review-package-baseline.md` 并固定评审语义;verify=评审包可作为项目 GA 结项依据
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-067`;verify=GA 最终评审包产物已完成并收口
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-516-ga-readiness-final-review-package-baseline.md`;verify=复核通过 无新增问题

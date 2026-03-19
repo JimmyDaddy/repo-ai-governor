@@ -4,14 +4,14 @@
 
 - Status: completed
 - Project: `milestone-05-m5-hardening-release`
-- Sprint: `sprint-001`
+- Sprint: `sprint-002`
 - Docs root: `docs/dev/milestone-05-m5-hardening-release`
-- Task records: `docs/dev/milestone-05-m5-hardening-release/sprint-001/tasks/`
-- Code review records: `docs/dev/milestone-05-m5-hardening-release/sprint-001/code-review/`
+- Task records: `docs/dev/milestone-05-m5-hardening-release/sprint-002/tasks/`
+- Code review records: `docs/dev/milestone-05-m5-hardening-release/sprint-002/code-review/`
 
 ## Active Streams
 
-- `primary`: project=`milestone-05-m5-hardening-release`, sprint=`sprint-001`, docs=`docs/dev/milestone-05-m5-hardening-release`, plan=`docs/dev/milestone-05-m5-hardening-release/plan.md`, tasks=`docs/dev/milestone-05-m5-hardening-release/sprint-001/tasks/`, checklist=`docs/dev/milestone-05-m5-hardening-release/sprint-001/tasks/checklist.md`, csv=`docs/dev/milestone-05-m5-hardening-release/sprint-001/tasks/tasks.csv`, review=`docs/dev/milestone-05-m5-hardening-release/sprint-001/code-review/`, status=`completed`
+- `primary`: project=`milestone-05-m5-hardening-release`, sprint=`sprint-002`, docs=`docs/dev/milestone-05-m5-hardening-release`, plan=`docs/dev/milestone-05-m5-hardening-release/plan.md`, tasks=`docs/dev/milestone-05-m5-hardening-release/sprint-002/tasks/`, checklist=`docs/dev/milestone-05-m5-hardening-release/sprint-002/tasks/checklist.md`, csv=`docs/dev/milestone-05-m5-hardening-release/sprint-002/tasks/tasks.csv`, review=`docs/dev/milestone-05-m5-hardening-release/sprint-002/code-review/`, status=`completed`
 
 ## Update Rules
 
