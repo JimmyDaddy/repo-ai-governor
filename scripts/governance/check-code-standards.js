@@ -3,14 +3,19 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
+import { gateFail, gatePass } from "./gate-output.js";
+
+const GATE_NAME = "code-standards";
 const REQUIRED_MARKERS = [
   "## Non-negotiable Rules",
   "[CS-001]",
   "[CS-009]",
   "[CS-022]",
+  "[CS-023]",
   "## Verification Commands",
   "node ./scripts/governance/check-finite-literal-sets.js",
   "node ./scripts/governance/check-package-dependency-boundary.js --mode warn",
+  "node ./scripts/governance/check-artifact-registry-lifecycle.js",
 ];
 
 /**
@@ -36,15 +41,23 @@ function resolveStandardsPath(argv) {
   return resolve(process.cwd(), nextValue);
 }
 
-const standardsPath = resolveStandardsPath(process.argv.slice(2));
+try {
+  const standardsPath = resolveStandardsPath(process.argv.slice(2));
 
-if (!existsSync(standardsPath)) {
-  throw new Error(`Standards file not found: ${standardsPath}`);
-}
+  if (!existsSync(standardsPath)) {
+    throw new Error(`Standards file not found: ${standardsPath}`);
+  }
 
-const standardsContent = readFileSync(standardsPath, "utf8");
-const missingMarkers = REQUIRED_MARKERS.filter((marker) => !standardsContent.includes(marker));
+  const standardsContent = readFileSync(standardsPath, "utf8");
+  const missingMarkers = REQUIRED_MARKERS.filter((marker) => !standardsContent.includes(marker));
 
-if (missingMarkers.length > 0) {
-  throw new Error(`Standards document is missing required markers: ${missingMarkers.join(", ")}`);
+  if (missingMarkers.length > 0) {
+    throw new Error(`Standards document is missing required markers: ${missingMarkers.join(", ")}`);
+  }
+
+  gatePass(GATE_NAME, `Standards markers are complete (${REQUIRED_MARKERS.length} checks).`);
+} catch (error) {
+  const errorMessage = error instanceof Error ? error.message : String(error);
+  gateFail(GATE_NAME, errorMessage);
+  process.exit(1);
 }

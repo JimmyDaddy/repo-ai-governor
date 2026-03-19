@@ -2,7 +2,7 @@
 
 - 文档版本：brief-v1
 - 状态：active
-- 日期：2026-03-19
+- 日期：2026-03-20
 - 对齐来源：`.repo-ai-governor/normative_knowledge_sources/product-requirements.md`（完整版）
 - 实施总纲：`.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-overall-technical-solution.md`
 - 工程蓝图：`.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-architecture-and-repo-layering.md`
@@ -65,6 +65,10 @@
 12. Standards Pack 边界：
    - 同一结构化规范资产需统一生成 human/AI/AGENTS 三类视图。
    - 架构上至少区分 `pack registry`、`rule renderer`、`agents projector`。
+13. 依赖产物生命周期基线：
+   - Artifact Registry 必须支持 `active/frozen/deprecated/archived/retired` 生命周期。
+   - 主注册表与归档注册表分层治理，避免上下文无限增长。
+   - 非 `active/frozen` 产物默认不进入自动依赖注入链路。
 
 ## 5. 必须人工确认的高风险场景
 

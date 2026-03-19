@@ -6,7 +6,7 @@
 
 ## Source Hierarchy
 
-1. Normative rules: `.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md` (`CS-001` to `CS-022`)
+1. Normative rules: `.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md` (`CS-001` to `CS-023`)
 2. Operational baseline: this guide (`.repo-ai-governor/normative_knowledge_sources/governance/long-term-maintenance-guide.md`)
 3. Sprint execution records: `.repo-ai-governor/docs/dev/<project>/<sprint>/`
 
@@ -29,6 +29,7 @@ This guide does not duplicate rule text from `.repo-ai-governor/normative_knowle
 6. Code readability and architecture style baseline: `CS-016` to `CS-020`
 7. Task ledger synchronization baseline: `CS-021`
 8. Standardized error usage baseline: `CS-022`
+9. Artifact registry lifecycle baseline: `CS-023`
 
 For command-level enforcement, always use `.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md -> Verification Commands` as the single source of truth.
 
@@ -47,7 +48,8 @@ For command-level enforcement, always use `.repo-ai-governor/normative_knowledge
 1. Development baseline:
    - `pnpm run typecheck`
    - `pnpm run test -- <target>`
-   - `pnpm run check`
+   - `pnpm run check`（默认低噪音，适合 AI 执行与常规快速验证）
+   - `pnpm run check -- --verbose`（人工排障，全量日志）
 2. Release baseline:
    - `pnpm run ci:quality`
    - `pnpm run release:ga-check`
@@ -74,7 +76,7 @@ Any non-empty entry must include task-level traceability in `tasks/checklist.md`
 
 ## Documentation Sync Rules
 
-1. Governance behavior changes must update both `README.md` and `README.zh-CN.md`.
+1. 仅当变更影响工具用户可见能力时，才同步更新 `README.md` 与 `README.zh-CN.md`；门禁与维护类内部治理细节应记录在治理文档与任务台账中。
 2. Sprint-level execution changes must update `plan.md`, `tasks/checklist.md`, and `tasks/tasks.csv`.
 3. Closure work must include a written closure report in the sprint docs.
 4. Document date metadata must use `YYYY-MM-DD`; linked core docs should refresh dates in the same change window.
@@ -82,10 +84,11 @@ Any non-empty entry must include task-level traceability in `tasks/checklist.md`
 
 ## Monthly Audit Checklist
 
-1. Re-run `pnpm run check` and `pnpm run release:ga-check`.
+1. Re-run `pnpm run check -- --verbose` and `pnpm run release:ga-check`.
 2. Confirm whitelist files match expected baseline (empty or explicitly justified).
 3. Re-check stability/coverage baselines if test topology changed.
 4. Review `execution_notes.md` for util reuse records and unresolved debt.
+5. Run `node ./scripts/governance/compact-artifact-registry.js --dry-run` and clear stale artifact lifecycle backlog.
 
 ## Ownership
 

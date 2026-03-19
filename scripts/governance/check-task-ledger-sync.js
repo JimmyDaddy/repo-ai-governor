@@ -3,6 +3,9 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 
+import { gateFail, gateInfo, gatePass } from "./gate-output.js";
+
+const GATE_NAME = "task-ledger-sync";
 const CURRENT_CONTEXT_PATH = ".repo-ai-governor/context/current-context.md";
 const TASK_CARD_FILE_PATTERN = /^TK-\d{3}.*\.md$/;
 const REQUIRED_TASK_METADATA_KEYS = ["Status", "Date", "Owner", "Priority", "Project", "Sprint"];
@@ -668,16 +671,16 @@ try {
   }
 
   if (issues.length > 0) {
-    console.error(`[check-task-ledger-sync] Found ${issues.length} ledger drift issue(s):`);
+    gateFail(GATE_NAME, `Found ${issues.length} ledger drift issue(s).`);
     for (const issue of issues) {
-      console.error(`- ${issue}`);
+      gateInfo(GATE_NAME, `- ${issue}`);
     }
     process.exit(1);
   }
 
-  console.info("[check-task-ledger-sync] Task cards, checklist, and tasks.csv are synchronized.");
+  gatePass(GATE_NAME, "Task cards, checklist, and tasks.csv are synchronized.");
 } catch (error) {
   const errorMessage = error instanceof Error ? error.message : String(error);
-  console.error(`[check-task-ledger-sync] ${errorMessage}`);
+  gateFail(GATE_NAME, errorMessage);
   process.exit(1);
 }

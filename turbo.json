@@ -1,0 +1,61 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    "//#gate:format": {
+      "cache": false,
+      "outputs": []
+    },
+    "//#gate:lint": {
+      "cache": false,
+      "dependsOn": ["//#gate:format"],
+      "outputs": []
+    },
+    "//#gate:build": {
+      "cache": false,
+      "dependsOn": ["//#gate:lint"],
+      "outputs": []
+    },
+    "//#gate:code-standards": {
+      "cache": false,
+      "dependsOn": ["//#gate:build"],
+      "outputs": []
+    },
+    "//#gate:finite-literal-sets": {
+      "cache": false,
+      "dependsOn": ["//#gate:build"],
+      "outputs": []
+    },
+    "//#gate:dependency-boundary": {
+      "cache": false,
+      "dependsOn": ["//#gate:build"],
+      "outputs": []
+    },
+    "//#gate:standardized-errors": {
+      "cache": false,
+      "dependsOn": ["//#gate:build"],
+      "outputs": []
+    },
+    "//#gate:artifact-lifecycle": {
+      "cache": false,
+      "dependsOn": ["//#gate:build"],
+      "outputs": []
+    },
+    "//#gate:task-ledger-sync": {
+      "cache": false,
+      "dependsOn": ["//#gate:build"],
+      "outputs": []
+    },
+    "//#gate:check": {
+      "cache": false,
+      "dependsOn": [
+        "//#gate:code-standards",
+        "//#gate:finite-literal-sets",
+        "//#gate:dependency-boundary",
+        "//#gate:standardized-errors",
+        "//#gate:artifact-lifecycle",
+        "//#gate:task-ledger-sync"
+      ],
+      "outputs": []
+    }
+  }
+}

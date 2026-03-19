@@ -3,6 +3,9 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, relative, resolve } from "node:path";
 
+import { gateFail, gateInfo, gatePass, gateWarn } from "./gate-output.js";
+
+const GATE_NAME = "dependency-boundary";
 const DEFAULT_MODE = "warn";
 const DEFAULT_FORMAT = "text";
 const DEFAULT_WHITELIST_PATH = "scripts/governance/dependency-boundary-whitelist.json";
@@ -558,12 +561,13 @@ function isAllowlisted(violation, whitelist) {
  * }} result Check result payload.
  */
 function printTextResult(result) {
-  console.info(
-    `[check-package-dependency-boundary] mode=${result.mode} scanned_packages=${result.scannedPackages} scanned_imports=${result.scannedImports} violations=${result.violations.length} allowlisted=${result.allowlistedViolations}`,
+  gateInfo(
+    GATE_NAME,
+    `mode=${result.mode} scanned_packages=${result.scannedPackages} scanned_imports=${result.scannedImports} violations=${result.violations.length} allowlisted=${result.allowlistedViolations}`,
   );
 
   if (result.violations.length === 0) {
-    console.info("[check-package-dependency-boundary] No dependency boundary violations found.");
+    gatePass(GATE_NAME, "No dependency boundary violations found.");
     return;
   }
 
@@ -571,14 +575,16 @@ function printTextResult(result) {
     const relativeFilePath = normalizePathSeparators(
       relative(process.cwd(), violation.sourceFilePath),
     );
-    console.warn(
+    gateWarn(
+      GATE_NAME,
       `- ${relativeFilePath}:${violation.lineNumber} ${violation.sourcePackageId} -> ${violation.targetPackageId} rule=${violation.ruleId} specifier="${violation.specifier}" reason="${violation.reason}"`,
     );
   }
 
   if (result.mode === "warn") {
-    console.warn(
-      "[check-package-dependency-boundary] Warning mode is active: violations are reported but do not fail this gate.",
+    gateWarn(
+      GATE_NAME,
+      "Warning mode is active: violations are reported but do not fail this gate.",
     );
   }
 }
@@ -670,5 +676,6 @@ if (options.format === "json") {
 }
 
 if (options.mode === "block" && violations.length > 0) {
+  gateFail(GATE_NAME, "Blocking mode detected dependency boundary violations.");
   process.exit(1);
 }

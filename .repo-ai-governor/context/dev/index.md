@@ -1,7 +1,7 @@
 # Dev Context Index
 
 - Status: active
-- Date: 2026-03-19
+- Date: 2026-03-20
 - Scope: `.repo-ai-governor/context/dev/**`
 
 ## 1. Core Navigation
@@ -14,8 +14,8 @@
 
 1. Human-readable registry: `.repo-ai-governor/context/dev/dependency-artifact-registry.md`
 2. Machine-readable registry: `.repo-ai-governor/context/artifact-registry/artifacts.csv`
-3. Active dependency artifacts:
-   - `DA-002` `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-002-artifact-registry-baseline.md`
+3. Archive registry: `.repo-ai-governor/context/artifact-registry/archive/artifacts.archive.csv`
+4. Active dependency artifacts:
    - `DA-003` `.repo-ai-governor/context/dev/project-001-foundation/foundation-delivery-baseline-and-constraints.md`
    - `DA-004` `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-004-monorepo-boundary-and-ci-baseline.md`
    - `DA-005` `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-005-config-contract-baseline.md`
@@ -25,6 +25,8 @@
    - `DA-009` `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-006-command-smoke-checklist.md`
    - `DA-010` `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-007-dependency-boundary-warning-gate-baseline.md`
    - `DA-011` `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-007-dependency-boundary-whitelist-and-regression-policy.md`
+   - `DA-012` `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-008-sprint-001-exit-acceptance-baseline.md`
+   - `DA-013` `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-008-sprint-002-input-constraints-checklist.md`
 
 ## 3. Consumption Rule
 

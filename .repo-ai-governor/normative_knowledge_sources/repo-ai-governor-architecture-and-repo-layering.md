@@ -1,7 +1,7 @@
 # Repo AI Governor 可扩展架构图与仓库分层结构
 
 - Status: active
-- Date: 2026-03-19
+- Date: 2026-03-20
 - Role: implementation blueprint
 - Basis:
   - `.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-overall-technical-solution.md`
@@ -238,6 +238,7 @@ sequenceDiagram
    - 官方/团队/仓库规则分层覆盖，内部至少区分 `pack registry`、`rule renderer`、`agents projector`、`policy rule compiler` 四类职责边界。
 14. `Artifact Registry & Dependency Resolver`
    - 关键产物生成后统一登记，任务执行前按依赖声明解析并注入上下文。
+   - 生命周期采用 `active/frozen/deprecated/archived/retired`，主注册表与归档注册表分层存储，避免执行上下文膨胀。
 15. `CLI Output Presenter`
    - 统一输出 `pretty/plain/json` 模式渲染，负责终端美化、非交互降级和机器可读稳定性。
 16. `Spec Sync Guard`

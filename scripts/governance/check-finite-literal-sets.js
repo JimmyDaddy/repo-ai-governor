@@ -3,6 +3,9 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 
+import { gateFail, gateInfo, gatePass } from "./gate-output.js";
+
+const GATE_NAME = "finite-literal-sets";
 const TARGET_DIRECTORIES = ["apps", "packages", "bin", "test"];
 const TARGET_FILE_PATTERN = /\.(ts|tsx|js|mjs|cjs)$/;
 const LITERAL_SET_ALLOW_MARKER = "literal-set-allowed:";
@@ -97,15 +100,14 @@ for (const targetDirectory of TARGET_DIRECTORIES) {
 }
 
 if (allViolations.length > 0) {
-  console.error(
-    `[check-finite-literal-sets] Found ${allViolations.length} finite literal-set type violation(s):`,
-  );
+  gateFail(GATE_NAME, `Found ${allViolations.length} finite literal-set type violation(s).`);
   for (const violation of allViolations) {
-    console.error(
+    gateInfo(
+      GATE_NAME,
       `- ${violation.filePath}:${violation.lineNumber} type "${violation.typeName}" should be enum/constant-managed. source="${violation.sourceLine}"`,
     );
   }
   process.exit(1);
 }
 
-console.info("[check-finite-literal-sets] Finite literal sets are centrally managed.");
+gatePass(GATE_NAME, "Finite literal sets are centrally managed.");

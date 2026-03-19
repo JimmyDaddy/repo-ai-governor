@@ -1,7 +1,7 @@
 # Repo AI Governor 工具级总技术方案
 
 - Status: active
-- Date: 2026-03-19
+- Date: 2026-03-20
 - Scope: whole product (tool-level)
 - Basis:
   - `.repo-ai-governor/normative_knowledge_sources/product-requirements-brief.md`
@@ -139,6 +139,7 @@
 1. 注册字段（最小）
    - `artifact_id`, `artifact_type`, `artifact_path`, `artifact_version`, `artifact_status`。
    - `producer_task_id`, `producer_execution_id`, `registered_at`。
+   - 生命周期状态至少支持：`active/frozen/deprecated/archived/retired`。
 2. 依赖解析字段（最小）
    - `consumer_task_id`, `depends_on_artifacts[]`, `resolution_policy`, `resolution_result`。
 3. 版本策略
@@ -147,6 +148,11 @@
    - 解析失败按策略触发 `block/escalate/warn`，并写入审计事件。
 5. 默认落盘
    - 建议索引路径：`<workspace_root>/context/artifact-registry/artifacts.csv`（或等价后端）。
+   - 建议归档路径：`<workspace_root>/context/artifact-registry/archive/artifacts.archive.csv`（或等价后端）。
+6. 生命周期退出策略（最小）
+   - 主注册表仅保留 `active/frozen/deprecated`。
+   - `deprecated` 超过宽限期后迁移到归档注册表并标记 `archived`。
+   - `archived/retired` 默认不进入依赖注入上下文。
 
 ## 4.2.4 CLI Output Contract（Draft v1）
 
@@ -494,6 +500,7 @@
 4. `tasks/TK-xxx.md`
 5. `code-review/review_*.md -> verified_*.md -> resolved_*.md`
 6. `dependency-artifact-registry`（可选文件形态，例如 `dependency-artifact-registry.md/csv`）
+7. `context/artifact-registry/archive/artifacts.archive.csv`（归档产物索引）
 
 ## 9.3 审计事件最小字段
 
@@ -519,12 +526,13 @@
 2. 命令级验证以 `.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md -> Verification Commands` 为准。
 3. 发布前需通过本地与 CI 双轨验证（质量门禁 + smoke gate）。
 4. 关键流程可接入“依赖产物完整性门禁”，在发布前阻断缺失/失效依赖产物。
-5. 文档事实链路门禁默认启用，阻断“单层文档变更未同步”的交付。
-6. 项目测试框架基线统一为 `Vitest`，用于承接单测、集成测试、契约测试与 E2E 测试执行；命令入口可通过 `npm/pnpm` 脚本封装，但底层 runner 保持一致。
-7. 项目开发语言基线统一为 `TypeScript`；`apps/*` 与 `packages/*` 的业务实现默认采用 TypeScript，构建产物按发布需求输出为可运行的 Node.js 目标格式。
-8. 多语言基线统一采用 i18n 方案（至少 `zh-CN/en`），并要求本地化文案与机器可读字段解耦，避免 CI 消费受 locale 影响。
+5. Artifact Registry 生命周期门禁应纳入日常质量总线，阻断“主注册表膨胀”与“过期状态未迁移”。
+6. 文档事实链路门禁默认启用，阻断“单层文档变更未同步”的交付。
+7. 项目测试框架基线统一为 `Vitest`，用于承接单测、集成测试、契约测试与 E2E 测试执行；命令入口可通过 `npm/pnpm` 脚本封装，但底层 runner 保持一致。
+8. 项目开发语言基线统一为 `TypeScript`；`apps/*` 与 `packages/*` 的业务实现默认采用 TypeScript，构建产物按发布需求输出为可运行的 Node.js 目标格式。
+9. 多语言基线统一采用 i18n 方案（至少 `zh-CN/en`），并要求本地化文案与机器可读字段解耦，避免 CI 消费受 locale 影响。
    - 当前仓库默认 i18n runtime 基线为 `i18next`（实现位于 `packages/shared/src/i18n/`）。
-9. 代码格式化与 lint 基线统一采用 `Biome`，本地可执行自动修复，CI 使用无副作用校验模式并纳入统一质量门禁。
+10. 代码格式化与 lint 基线统一采用 `Biome`，本地可执行自动修复，CI 使用无副作用校验模式并纳入统一质量门禁。
 
 ## 11. 实施路线图（总纲级）
 

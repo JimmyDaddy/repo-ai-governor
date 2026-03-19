@@ -3,6 +3,9 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 
+import { gateFail, gateInfo, gatePass } from "./gate-output.js";
+
+const GATE_NAME = "standardized-errors";
 const TARGET_DIRECTORIES = ["apps", "packages", "bin", "test"];
 const TARGET_FILE_PATTERN = /\.(ts|tsx|js|mjs|cjs)$/;
 const BASE_ERROR_IMPLEMENTATION_ALLOWLIST = [
@@ -112,15 +115,14 @@ for (const targetDirectory of TARGET_DIRECTORIES) {
 }
 
 if (allViolations.length > 0) {
-  console.error(
-    `[check-standardized-error-usage] Found ${allViolations.length} standardized-error violation(s):`,
-  );
+  gateFail(GATE_NAME, `Found ${allViolations.length} standardized-error violation(s).`);
   for (const violation of allViolations) {
-    console.error(
+    gateInfo(
+      GATE_NAME,
       `- ${violation.filePath}:${violation.lineNumber} ${violation.reason} source="${violation.sourceLine}"`,
     );
   }
   process.exit(1);
 }
 
-console.info("[check-standardized-error-usage] Native Error usage is standardized.");
+gatePass(GATE_NAME, "Native Error usage is standardized.");

@@ -1,8 +1,9 @@
 # Dependency Artifact Registry
 
 - Status: active
-- Date: 2026-03-19
+- Date: 2026-03-20
 - Scope: `.repo-ai-governor/context/dev/**`
+- Lifecycle Governance: `.repo-ai-governor/normative_knowledge_sources/governance/artifact-registry-lifecycle-governance.md`
 
 ## Purpose
 
@@ -19,12 +20,13 @@
    - 触发任务的 `tasks/checklist.md` 与 `tasks/tasks.csv` 执行记录。
 5. 若依赖任务新增或变更，需在同一变更窗口更新本表。
 6. 在任务 ID 尚未分配阶段，`dependent_tasks` 允许临时为 `TBD`，并在任务拆解落盘时回填为任务 ID 列表。
+7. `artifact_status` 必须遵循生命周期：`active/frozen/deprecated/archived/retired`。
+8. 主注册表仅保留 `active/frozen/deprecated`；`archived/retired` 必须迁移到归档注册表。
 
 ## Registry Table
 
 | artifact_id | artifact_path | producer_task | dependent_tasks | first_registered_at | last_updated_at | status |
 |---|---|---|---|---|---|---|
-| DA-002 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-002-artifact-registry-baseline.md` | `TK-002` | `TBD` | 2026-03-19 | 2026-03-19 | active |
 | DA-003 | `.repo-ai-governor/context/dev/project-001-foundation/foundation-delivery-baseline-and-constraints.md` | `TK-003` | `TK-004`, `TK-005`, `TK-006`, `TK-007`, `TK-008`, `TK-009`, `TK-010`, `TK-011`, `TK-012` | 2026-03-19 | 2026-03-19 | active |
 | DA-004 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-004-monorepo-boundary-and-ci-baseline.md` | `TK-004` | `TK-005`, `TK-006`, `TK-007`, `TK-008` | 2026-03-19 | 2026-03-19 | active |
 | DA-005 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-005-config-contract-baseline.md` | `TK-005` | `TK-006`, `TK-009`, `TK-011` | 2026-03-19 | 2026-03-19 | active |
@@ -34,10 +36,18 @@
 | DA-009 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-006-command-smoke-checklist.md` | `TK-006` | `TK-008`, `TK-012` | 2026-03-19 | 2026-03-19 | active |
 | DA-010 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-007-dependency-boundary-warning-gate-baseline.md` | `TK-007` | `TK-008`, `TK-009`, `TK-012` | 2026-03-19 | 2026-03-19 | active |
 | DA-011 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-007-dependency-boundary-whitelist-and-regression-policy.md` | `TK-007` | `TK-008`, `TK-012` | 2026-03-19 | 2026-03-19 | active |
+| DA-012 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-008-sprint-001-exit-acceptance-baseline.md` | `TK-008` | `TK-009`, `TK-010`, `TK-011`, `TK-012` | 2026-03-20 | 2026-03-20 | active |
+| DA-013 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-008-sprint-002-input-constraints-checklist.md` | `TK-008` | `TK-009`, `TK-010`, `TK-011`, `TK-012` | 2026-03-20 | 2026-03-20 | active |
+
+## Archive Registry Table
+
+| artifact_id | artifact_path | producer_task | dependent_tasks | first_registered_at | last_updated_at | status |
+|---|---|---|---|---|---|---|
+| DA-002 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-002-artifact-registry-baseline.md` | `TK-002` | *(none)* | 2026-03-19 | 2026-03-20 | archived |
 
 ## Notes
 
 1. `dependent_tasks` 字段使用任务 ID 列表，按时间先后排序。
-2. 如产物废弃或被替代，新增记录并将旧记录标记为 `deprecated`，避免静默删除造成链路中断。
+2. 如产物废弃或被替代，先转 `deprecated`，再迁移到 archive 并标记 `archived/retired`，避免静默删除造成链路中断。
 3. 后续任务消费产物时，优先引用 `artifact_id + artifact_path` 双键，避免仅凭文件名检索。
 4. 若产物不满足“规范/基线/约束”属性，即使被引用也不登记为 DA。

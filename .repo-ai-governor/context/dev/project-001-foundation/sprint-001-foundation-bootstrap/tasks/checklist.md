@@ -17,4 +17,9 @@
   - 2026-03-19: 完成 `apps/cli` 八个命令骨架与 `packages/shared` i18next runtime 基线，新增 smoke 测试并通过 `pnpm run test` 与 `pnpm run check`；登记 `DA-007/DA-008/DA-009`。
 - [x] TK-007 依赖边界 warning gate 基线
   - 2026-03-19: 新增 `check-package-dependency-boundary` warning gate 与空白名单基线，接入 `pnpm run check` 并形成 `DA-010/DA-011`；`pnpm run check` 通过，当前违规计数为 0。
-- [ ] TK-008 sprint-001 出口验收基线
+- [x] TK-008 sprint-001 出口验收基线
+  - 2026-03-20: 完成 sprint-001 出口验收并沉淀 `DA-012/DA-013`，将输入约束回链到 `TK-009~TK-012`；`pnpm run check` 通过。
+  - 2026-03-20: 新增 Artifact Registry 生命周期退出机制（主/归档拆分 + 生命周期门禁 + 压缩脚本），并将 `DA-002` 迁移归档以缩短活跃上下文。
+  - 2026-03-20: 引入 `turbo` 编排 `gate:*` 门禁任务并统一治理脚本输出风格，`pnpm run check` 通过且输出可读性提升。
+  - 2026-03-20: 收敛为 `check` 单入口 + `--verbose` 参数，并通过 `run-gate-check` 将 Turbo `//:gate:*` 前缀美化为 `[turbo:gate:*]`。
+  - 2026-03-20: 同步修正维护规则边界：门禁维护知识不进入 README，仅保留在治理文档与任务台账。

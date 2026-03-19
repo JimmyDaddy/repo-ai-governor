@@ -2,7 +2,7 @@
 
 - 文档版本：v0.3
 - 状态：执行中（MVP 已完成，P1 深化中）
-- 日期：2026-03-19
+- 日期：2026-03-20
 - 暂定产品名：Repo AI Governor
 
 ## 0. v0.3 更新说明
@@ -466,6 +466,10 @@ AI 先完成方案与实现，再进入评审 Agent 与复核 Agent 的循环；
    - 依赖产物缺失、版本不兼容或状态非 active 时，按策略触发 `block` 或 `HITL`。
 5. 审计要求
    - 产物注册、依赖解析、缺失处置必须写入审计事件并可回放。
+6. 生命周期退出机制
+   - `artifact_status` 至少支持 `active/frozen/deprecated/archived/retired`，并具备可执行状态迁移规则。
+   - 主注册表仅保留可消费或短期过渡产物（`active/frozen/deprecated`），历史产物迁移到归档注册表。
+   - 依赖解析命中 `deprecated/archived/retired` 时，默认不自动注入上下文，按策略触发 `warn/block/HITL`。
 
 ### 8.10.3 三层文档同步机制（需求 -> 方案 -> 架构）
 

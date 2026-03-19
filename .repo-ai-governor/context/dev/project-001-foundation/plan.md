@@ -59,7 +59,7 @@
 | TK-005 | sprint-001 | Config 包基线实现方案 | baseline/contract | TK-003 | completed |
 | TK-006 | sprint-001 | CLI 命令骨架与 smoke 基线 | baseline/constraints | TK-005 | completed |
 | TK-007 | sprint-001 | 依赖边界 warning gate 基线 | baseline/policy | TK-004 | completed |
-| TK-008 | sprint-001 | sprint-001 出口验收基线 | acceptance baseline | TK-004,TK-005,TK-006,TK-007 | planned |
+| TK-008 | sprint-001 | sprint-001 出口验收基线 | acceptance baseline | TK-004,TK-005,TK-006,TK-007 | completed |
 | TK-009 | sprint-002 | Workspace Resolver 双模式基线 | baseline/contract | TK-008 | planned |
 | TK-010 | sprint-002 | workspace 迁移链路基线 | baseline/constraints | TK-009 | planned |
 | TK-011 | sprint-002 | upgrade schema diff 与建议基线 | baseline/policy | TK-010 | planned |
