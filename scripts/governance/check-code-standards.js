@@ -10,6 +10,7 @@ const REQUIRED_MARKERS = [
   "[CS-022]",
   "## Verification Commands",
   "node ./scripts/governance/check-finite-literal-sets.js",
+  "node ./scripts/governance/check-package-dependency-boundary.js --mode warn",
 ];
 
 /**

@@ -36,11 +36,11 @@ For command-level enforcement, always use `.repo-ai-governor/normative_knowledge
 
 1. Prepared scripts:
    - `scripts/governance/check-monorepo-naming.js`
-   - `scripts/governance/check-package-dependency-boundary.js`
+   - `scripts/governance/check-package-dependency-boundary.js`（warning 模式已接入，blocking 待切换）
 2. Planned script:
    - `scripts/governance/check-monorepo-versioning-policy.js`
 3. Planned wiring target: `.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md -> Verification Commands`.
-4. Current decision: keep scripts as implementation-ready assets and defer activation to a dedicated follow-up window.
+4. Current decision: 依赖边界检查保持 warning 模式运行并持续清零；稳定后切换 blocking。其余脚本维持 implementation-ready，待专门窗口激活。
 
 ## Daily and Release Cadence
 

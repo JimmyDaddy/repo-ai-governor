@@ -32,6 +32,8 @@
 | DA-007 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-006-cli-skeleton-baseline.md` | `TK-006` | `TK-008`, `TK-009` | 2026-03-19 | 2026-03-19 | active |
 | DA-008 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-006-shared-i18n-runtime-baseline.md` | `TK-006` | `TK-008`, `TK-009`, `TK-011` | 2026-03-19 | 2026-03-19 | active |
 | DA-009 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-006-command-smoke-checklist.md` | `TK-006` | `TK-008`, `TK-012` | 2026-03-19 | 2026-03-19 | active |
+| DA-010 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-007-dependency-boundary-warning-gate-baseline.md` | `TK-007` | `TK-008`, `TK-009`, `TK-012` | 2026-03-19 | 2026-03-19 | active |
+| DA-011 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-007-dependency-boundary-whitelist-and-regression-policy.md` | `TK-007` | `TK-008`, `TK-012` | 2026-03-19 | 2026-03-19 | active |
 
 ## Notes
 

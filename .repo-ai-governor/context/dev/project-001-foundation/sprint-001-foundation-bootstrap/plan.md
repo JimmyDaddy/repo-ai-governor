@@ -14,7 +14,7 @@
 2. TK-004 Monorepo 边界与 CI 骨架
 3. TK-005 Config 包基线实现方案
 4. TK-006 CLI 命令骨架 + shared i18n runtime + smoke 基线（completed）
-5. TK-007 依赖边界 warning gate 基线
+5. TK-007 依赖边界 warning gate 基线（completed）
 6. TK-008 sprint-001 出口验收基线
 
 ## 3. Exit Criteria

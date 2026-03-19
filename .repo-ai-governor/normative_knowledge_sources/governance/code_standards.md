@@ -103,6 +103,7 @@ node ./scripts/governance/check-ts-only-residue.js
 node ./scripts/governance/check-docs-triad-sync.js
 node ./scripts/governance/check-jsdoc-governance.js
 node ./scripts/governance/check-oop-structure.js
+node ./scripts/governance/check-package-dependency-boundary.js --mode warn
 node ./scripts/governance/check-task-ledger-sync.js
 node ./scripts/governance/check-standardized-error-usage.js
 pnpm run test -- --maxWorkers=1 --maxConcurrency=1
@@ -113,14 +114,12 @@ node ./dist/bin/repo-ai-governor.js --help >/dev/null
 
 1. Prepared scripts for future gate integration:
    - `scripts/governance/check-monorepo-naming.js`
-   - `scripts/governance/check-package-dependency-boundary.js`
 2. Planned script for follow-up integration:
    - `scripts/governance/check-monorepo-versioning-policy.js`
 3. Planned command wiring (not active yet):
    - `node ./scripts/governance/check-monorepo-naming.js`
-   - `node ./scripts/governance/check-package-dependency-boundary.js`
    - `node ./scripts/governance/check-monorepo-versioning-policy.js`
-4. Current status: keep scripts as implementation-ready assets, but do not add them to `Verification Commands` in this round.
+4. Current status: `check-package-dependency-boundary` 已以 warning 模式接入；其 blocking 模式切换在后续窗口执行。其余脚本保持 implementation-ready，暂不接入 `Verification Commands`。
 
 ## Notes
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { Locale } from "../packages/shared/src/constants/i18n.constant.js";
 import { I18nRuntime } from "../packages/shared/src/index.js";
 
 describe("I18nRuntime smoke", () => {
@@ -9,14 +10,14 @@ describe("I18nRuntime smoke", () => {
     const resolvedLocale = await runtime.initialize(
       {
         runtimeEngine: "i18next",
-        defaultLocale: "zh-CN",
-        fallbackLocale: "en-US",
-        supportedLocales: ["zh-CN", "en-US"],
+        defaultLocale: Locale.ZH_CN,
+        fallbackLocale: Locale.EN_US,
+        supportedLocales: [Locale.ZH_CN, Locale.EN_US],
       },
       "zh-TW",
     );
 
-    expect(resolvedLocale).toBe("zh-CN");
+    expect(resolvedLocale).toBe(Locale.ZH_CN);
     expect(runtime.t("cli.commands.init.description")).toContain("初始化");
   });
 });

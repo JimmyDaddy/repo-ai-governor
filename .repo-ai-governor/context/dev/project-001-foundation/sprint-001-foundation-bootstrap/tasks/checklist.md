@@ -15,5 +15,6 @@
   - 2026-03-19: 确认 i18n 选型为 `i18next`，并同步到需求/方案/架构文档；新仓库策略调整为 `fix-forward`（不单独建设 i18n 回滚链路）。
 - [x] TK-006 CLI 命令骨架与 smoke 基线
   - 2026-03-19: 完成 `apps/cli` 八个命令骨架与 `packages/shared` i18next runtime 基线，新增 smoke 测试并通过 `pnpm run test` 与 `pnpm run check`；登记 `DA-007/DA-008/DA-009`。
-- [ ] TK-007 依赖边界 warning gate 基线
+- [x] TK-007 依赖边界 warning gate 基线
+  - 2026-03-19: 新增 `check-package-dependency-boundary` warning gate 与空白名单基线，接入 `pnpm run check` 并形成 `DA-010/DA-011`；`pnpm run check` 通过，当前违规计数为 0。
 - [ ] TK-008 sprint-001 出口验收基线
