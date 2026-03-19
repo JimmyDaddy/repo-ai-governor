@@ -53,6 +53,13 @@
 28. [M2 审计字段补齐基线](./milestone-02-m2-workspace-memory-session/sprint-002/audit-field-completion-workspace-session-memory-baseline.md)
 29. [M2 退出测试与文档收口报告](./milestone-02-m2-workspace-memory-session/sprint-002/m2-exit-test-and-documentation-closure-report.md)
 30. [M2 Artifact Registry 与 Dependency Resolver 契约基线](./milestone-02-m2-workspace-memory-session/sprint-002/artifact-registry-foundation-and-dependency-resolver-contract-baseline.md)
+31. [M3 DSL/IR 四节点契约基线](./milestone-03-m3-orchestration-hitl/sprint-001/dsl-ir-sequential-parallel-loop-condition-baseline.md)
+32. [M3 Process Compiler 校验与产物基线](./milestone-03-m3-orchestration-hitl/sprint-001/process-compiler-validation-and-artifact-baseline.md)
+33. [M3 Policy Gate 规则与阈值基线](./milestone-03-m3-orchestration-hitl/sprint-001/policy-gate-rules-and-threshold-baseline.md)
+34. [M3 HITL 决策模型基线](./milestone-03-m3-orchestration-hitl/sprint-001/hitl-decision-model-confirm-escalate-reject-baseline.md)
+35. [M3 人工决策回灌链路基线](./milestone-03-m3-orchestration-hitl/sprint-001/human-decision-feedback-loop-baseline.md)
+36. [M3 超时取消并发冲突恢复基线](./milestone-03-m3-orchestration-hitl/sprint-001/timeout-cancel-concurrency-conflict-recovery-baseline.md)
+37. [M3 依赖产物自动注册与上下文注入运行时基线](./milestone-03-m3-orchestration-hitl/sprint-001/dependency-artifact-auto-registration-and-context-injection-runtime-baseline.md)
 
 ## Program View
 

@@ -1,7 +1,7 @@
 # M3 编排引擎与 HITL 闭环 SPRINT-001
 
-- Status: planned
-- Date: 2026-03-18
+- Status: completed
+- Date: 2026-03-19
 - Milestone: `M3`
 - Sprint: `sprint-001`
 - Duration: 2026-05-27 ~ 2026-06-09 (2 weeks)
@@ -26,3 +26,10 @@
 2. [tasks/checklist.md](./tasks/checklist.md)
 3. [tasks/tasks.csv](./tasks/tasks.csv)
 4. [code-review/README.md](./code-review/README.md)
+5. [dsl-ir-sequential-parallel-loop-condition-baseline.md](./dsl-ir-sequential-parallel-loop-condition-baseline.md)
+6. [process-compiler-validation-and-artifact-baseline.md](./process-compiler-validation-and-artifact-baseline.md)
+7. [policy-gate-rules-and-threshold-baseline.md](./policy-gate-rules-and-threshold-baseline.md)
+8. [hitl-decision-model-confirm-escalate-reject-baseline.md](./hitl-decision-model-confirm-escalate-reject-baseline.md)
+9. [human-decision-feedback-loop-baseline.md](./human-decision-feedback-loop-baseline.md)
+10. [timeout-cancel-concurrency-conflict-recovery-baseline.md](./timeout-cancel-concurrency-conflict-recovery-baseline.md)
+11. [dependency-artifact-auto-registration-and-context-injection-runtime-baseline.md](./dependency-artifact-auto-registration-and-context-injection-runtime-baseline.md)

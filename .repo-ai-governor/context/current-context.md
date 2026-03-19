@@ -3,15 +3,15 @@
 ## Primary Stream
 
 - Status: completed
-- Project: `milestone-02-m2-workspace-memory-session`
-- Sprint: `sprint-002`
-- Docs root: `docs/dev/milestone-02-m2-workspace-memory-session`
-- Task records: `docs/dev/milestone-02-m2-workspace-memory-session/sprint-002/tasks/`
-- Code review records: `docs/dev/milestone-02-m2-workspace-memory-session/sprint-002/code-review/`
+- Project: `milestone-03-m3-orchestration-hitl`
+- Sprint: `sprint-001`
+- Docs root: `docs/dev/milestone-03-m3-orchestration-hitl`
+- Task records: `docs/dev/milestone-03-m3-orchestration-hitl/sprint-001/tasks/`
+- Code review records: `docs/dev/milestone-03-m3-orchestration-hitl/sprint-001/code-review/`
 
 ## Active Streams
 
-- `primary`: project=`milestone-02-m2-workspace-memory-session`, sprint=`sprint-002`, docs=`docs/dev/milestone-02-m2-workspace-memory-session`, plan=`docs/dev/milestone-02-m2-workspace-memory-session/plan.md`, tasks=`docs/dev/milestone-02-m2-workspace-memory-session/sprint-002/tasks/`, checklist=`docs/dev/milestone-02-m2-workspace-memory-session/sprint-002/tasks/checklist.md`, csv=`docs/dev/milestone-02-m2-workspace-memory-session/sprint-002/tasks/tasks.csv`, review=`docs/dev/milestone-02-m2-workspace-memory-session/sprint-002/code-review/`, status=`completed`
+- `primary`: project=`milestone-03-m3-orchestration-hitl`, sprint=`sprint-001`, docs=`docs/dev/milestone-03-m3-orchestration-hitl`, plan=`docs/dev/milestone-03-m3-orchestration-hitl/plan.md`, tasks=`docs/dev/milestone-03-m3-orchestration-hitl/sprint-001/tasks/`, checklist=`docs/dev/milestone-03-m3-orchestration-hitl/sprint-001/tasks/checklist.md`, csv=`docs/dev/milestone-03-m3-orchestration-hitl/sprint-001/tasks/tasks.csv`, review=`docs/dev/milestone-03-m3-orchestration-hitl/sprint-001/code-review/`, status=`completed`
 
 ## Update Rules
 

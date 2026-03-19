@@ -1,9 +1,31 @@
 # M3 编排引擎与 HITL 闭环 SPRINT-001 Checklist
 
-- [ ] **TK-301** DSL/IR: Sequential/Parallel/Loop/Condition（负责人：Core Process｜优先级：P0｜截止：2026-06-09｜状态：todo）
-- [ ] **TK-302** Process Compiler 校验与产物（负责人：Core Process｜优先级：P0｜截止：2026-06-09｜状态：todo）
-- [ ] **TK-303** Policy Gate 规则与阈值（负责人：Policy｜优先级：P0｜截止：2026-06-09｜状态：todo）
-- [ ] **TK-304** HITL 决策模型（confirm/escalate/reject）（负责人：Policy｜优先级：P0｜截止：2026-06-09｜状态：todo）
-- [ ] **TK-305** 人工决策回灌链路（负责人：Workflow｜优先级：P1｜截止：2026-06-09｜状态：todo）
-- [ ] **TK-306** 超时/取消/并发冲突恢复（负责人：Core Runtime｜优先级：P1｜截止：2026-06-09｜状态：todo）
-- [ ] **TK-307** 依赖产物自动注册与上下文注入运行时接入（负责人：Core Runtime｜优先级：P0｜截止：2026-06-09｜状态：todo）
+- [x] **TK-301** DSL/IR: Sequential/Parallel/Loop/Condition（负责人：Core Process｜优先级：P0｜截止：2026-06-09｜状态：done）
+  - 执行记录：plan=切换到 M3/sprint-001 并启动 DSL/IR 契约收敛任务;result=已完成上下文与 sprint 状态切换并进入 TK-301 设计阶段;verify=primary stream 已指向 M3/sprint-001 且任务状态一致
+  - 执行记录：plan=定义 Sequential/Parallel/Loop/Condition 四节点 DSL 与 IR 映射契约并形成统一输入;result=已新增 `dsl-ir-sequential-parallel-loop-condition-baseline.md` 并固定节点语义|校验规则|编译阻断口径;verify=内容与总方案 4.2.2 IR 契约和架构 Step 4 约束一致
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-030`，并在 `TK-302` `TK-303` `TK-304` 建立 Depends On/Input References;verify=DSL/IR 产物可被后续任务直接检索消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-301-dsl-ir-sequential-parallel-loop-condition-baseline.md`;verify=复核通过 无新增问题
+- [x] **TK-302** Process Compiler 校验与产物（负责人：Core Process｜优先级：P0｜截止：2026-06-09｜状态：done）
+  - 执行记录：plan=在 TK-301 DSL/IR 契约基础上收敛 compiler 输入输出模型与阶段化校验流程;result=已新增 `process-compiler-validation-and-artifact-baseline.md` 并固定 compile issue 分级|阻断语义|产物落盘约束;verify=内容与总方案 4.2.2 编译错误契约一致
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-031`，并在 `TK-303` `TK-304` `TK-307` 建立 Depends On/Input References;verify=compiler 产物可被后续任务直接检索消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-302-process-compiler-validation-and-artifact-baseline.md`;verify=复核通过 无新增问题
+- [x] **TK-303** Policy Gate 规则与阈值（负责人：Policy｜优先级：P0｜截止：2026-06-09｜状态：done）
+  - 执行记录：plan=在 TK-301/TK-302 契约基础上固定策略规则模型与风险阈值路由语义;result=已新增 `policy-gate-rules-and-threshold-baseline.md` 并定义 allow/confirm/block/escalate 决策映射;verify=阈值与编译/HITL/审计联动规则可执行
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-032`，并在 `TK-304` `TK-305` `TK-306` 建立 Depends On/Input References;verify=Policy Gate 基线可被后续任务直接消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-303-policy-gate-rules-and-threshold-baseline.md`;verify=复核通过 无新增问题
+- [x] **TK-304** HITL 决策模型（confirm/escalate/reject）（负责人：Policy｜优先级：P0｜截止：2026-06-09｜状态：done）
+  - 执行记录：plan=定义 HITL 决策状态机与超时动作契约并与策略闸口联动;result=已新增 `hitl-decision-model-confirm-escalate-reject-baseline.md` 并固定 pending/applied/expired/cancelled 流转;verify=人工介入路径与超时回退策略一致
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-033`，并在 `TK-305` `TK-306` `TK-311` 建立 Depends On/Input References;verify=HITL 基线可被回灌与通知任务消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-304-hitl-decision-model-confirm-escalate-reject-baseline.md`;verify=复核通过 无新增问题
+- [x] **TK-305** 人工决策回灌链路（负责人：Workflow｜优先级：P1｜截止：2026-06-09｜状态：done）
+  - 执行记录：plan=定义人工决策回灌目标与写回结果语义并补齐失败补偿口径;result=已新增 `human-decision-feedback-loop-baseline.md` 并固定 session/memory/runtime/audit 回写路径;verify=回灌失败可追溯且具备补偿链路
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-034`，并在 `TK-306` `TK-316` 建立 Depends On/Input References;verify=回灌基线可被恢复与 E2E 任务消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-305-human-decision-feedback-loop-baseline.md`;verify=复核通过 无新增问题
+- [x] **TK-306** 超时/取消/并发冲突恢复（负责人：Core Runtime｜优先级：P1｜截止：2026-06-09｜状态：done）
+  - 执行记录：plan=定义中断分类恢复动作与审计快照约束并对齐 M2 错误模型;result=已新增 `timeout-cancel-concurrency-conflict-recovery-baseline.md` 并固定 timeout/cancelled/concurrency_conflict 处理矩阵;verify=恢复策略与 session 快照及审计字段保持一致
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-035`，并在 `TK-316` `TK-416` 建立 Depends On/Input References;verify=恢复基线可被 E2E 与兼容性回归消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-306-timeout-cancel-concurrency-conflict-recovery-baseline.md`;verify=复核通过 无新增问题
+- [x] **TK-307** 依赖产物自动注册与上下文注入运行时接入（负责人：Core Runtime｜优先级：P0｜截止：2026-06-09｜状态：done）
+  - 执行记录：plan=将产物自动注册与依赖注入契约接入运行时并定义失败阻断语义;result=已新增 `dependency-artifact-auto-registration-and-context-injection-runtime-baseline.md` 并固定 auto registration/context injection 流程;verify=依赖缺失可触发 block/escalate 并回写审计字段
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-036`，并在 `TK-316` `TK-501` `TK-503` 建立 Depends On/Input References;verify=运行时接入基线可被 E2E 与质量门禁任务消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-307-dependency-artifact-auto-registration-and-context-injection-runtime-baseline.md`;verify=复核通过 无新增问题

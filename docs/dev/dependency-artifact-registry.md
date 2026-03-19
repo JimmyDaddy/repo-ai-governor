@@ -50,6 +50,13 @@
 | DA-027 | `docs/dev/milestone-02-m2-workspace-memory-session/sprint-002/audit-field-completion-workspace-session-memory-baseline.md` | `TK-215` | `TK-216`, `TK-506`, `TK-516` | 2026-03-19 | 2026-03-19 | active |
 | DA-028 | `docs/dev/milestone-02-m2-workspace-memory-session/sprint-002/m2-exit-test-and-documentation-closure-report.md` | `TK-216` | `TK-316`, `TK-416`, `TK-516` | 2026-03-19 | 2026-03-19 | active |
 | DA-029 | `docs/dev/milestone-02-m2-workspace-memory-session/sprint-002/artifact-registry-foundation-and-dependency-resolver-contract-baseline.md` | `TK-217` | `TK-307`, `TK-316`, `TK-501` | 2026-03-19 | 2026-03-19 | active |
+| DA-030 | `docs/dev/milestone-03-m3-orchestration-hitl/sprint-001/dsl-ir-sequential-parallel-loop-condition-baseline.md` | `TK-301` | `TK-302`, `TK-303`, `TK-304` | 2026-03-19 | 2026-03-19 | active |
+| DA-031 | `docs/dev/milestone-03-m3-orchestration-hitl/sprint-001/process-compiler-validation-and-artifact-baseline.md` | `TK-302` | `TK-303`, `TK-304`, `TK-307` | 2026-03-19 | 2026-03-19 | active |
+| DA-032 | `docs/dev/milestone-03-m3-orchestration-hitl/sprint-001/policy-gate-rules-and-threshold-baseline.md` | `TK-303` | `TK-304`, `TK-305`, `TK-306` | 2026-03-19 | 2026-03-19 | active |
+| DA-033 | `docs/dev/milestone-03-m3-orchestration-hitl/sprint-001/hitl-decision-model-confirm-escalate-reject-baseline.md` | `TK-304` | `TK-305`, `TK-306`, `TK-311` | 2026-03-19 | 2026-03-19 | active |
+| DA-034 | `docs/dev/milestone-03-m3-orchestration-hitl/sprint-001/human-decision-feedback-loop-baseline.md` | `TK-305` | `TK-306`, `TK-316` | 2026-03-19 | 2026-03-19 | active |
+| DA-035 | `docs/dev/milestone-03-m3-orchestration-hitl/sprint-001/timeout-cancel-concurrency-conflict-recovery-baseline.md` | `TK-306` | `TK-316`, `TK-416` | 2026-03-19 | 2026-03-19 | active |
+| DA-036 | `docs/dev/milestone-03-m3-orchestration-hitl/sprint-001/dependency-artifact-auto-registration-and-context-injection-runtime-baseline.md` | `TK-307` | `TK-316`, `TK-501`, `TK-503` | 2026-03-19 | 2026-03-19 | active |
 
 ## Notes
 

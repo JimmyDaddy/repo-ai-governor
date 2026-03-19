@@ -1,7 +1,7 @@
 # M3 编排引擎与 HITL 闭环 SPRINT-001 Plan
 
-- Status: planned
-- Date: 2026-03-18
+- Status: completed
+- Date: 2026-03-19
 - Milestone: `M3`
 - Sprint: `sprint-001`
 - Start: 2026-05-27
