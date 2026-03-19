@@ -42,6 +42,7 @@ describe("CLI skeleton smoke", () => {
     expect(exitCode).toBe(0);
     expect(stderrBuffer.join("")).toBe("");
     expect(stdoutBuffer.join("")).toContain("Command 'init' skeleton executed");
+    expect(stdoutBuffer.join("")).toContain("workspaceMode=");
   });
 
   it("shows help with all Stage-1 commands", async () => {

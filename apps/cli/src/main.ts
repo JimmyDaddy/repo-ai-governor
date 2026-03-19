@@ -3,7 +3,12 @@ import { resolve } from "node:path";
 
 import { Command, CommanderError } from "commander";
 
-import { ConfigLoader, ProfileResolver } from "../../../packages/config/src/index.js";
+import {
+  ConfigLoader,
+  ProfileResolver,
+  type ResolvedWorkspace,
+  WorkspaceResolver,
+} from "../../../packages/config/src/index.js";
 import {
   DEFAULT_I18N_RUNTIME_CONFIG,
   I18nRuntime,
@@ -73,6 +78,10 @@ export async function runCli(
             locale: resolvedLocale,
             profile: profileLabel,
             source: runtimeContext.configSource,
+            workspaceMode: runtimeContext.workspace.mode,
+            workspaceRoot: runtimeContext.workspace.workspaceRoot,
+            workspaceId: runtimeContext.workspace.workspaceId,
+            workspaceModeSource: runtimeContext.workspace.modeSource,
           })}\n`,
         );
       });
@@ -135,24 +144,41 @@ function resolveRuntimeContext(
   i18n: I18nRuntimeConfig;
   profileId: string | null;
   configSource: "default" | "file";
+  workspace: ResolvedWorkspace;
 } {
-  const configPath = resolve(currentWorkingDirectory, ".repo-ai-governor/governor.yaml");
-  if (!existsSync(configPath)) {
+  const configLoader = new ConfigLoader();
+  const profileResolver = new ProfileResolver();
+  const workspaceResolver = new WorkspaceResolver();
+  const defaultWorkspace = workspaceResolver.resolve({ currentWorkingDirectory });
+  const repoLocalConfigPath = resolve(currentWorkingDirectory, ".repo-ai-governor/governor.yaml");
+  const configPathCandidates = Array.from(
+    new Set([repoLocalConfigPath, defaultWorkspace.configPath]),
+  );
+
+  for (const configPath of configPathCandidates) {
+    if (!existsSync(configPath)) {
+      continue;
+    }
+
+    const loadedConfig = configLoader.loadFromFile(configPath);
+    const resolvedConfig = profileResolver.resolve(loadedConfig, requestedProfileId);
+    const resolvedWorkspace = workspaceResolver.resolve({
+      currentWorkingDirectory,
+      config: resolvedConfig.config,
+    });
+
     return {
-      i18n: DEFAULT_I18N_CONFIG,
-      profileId: null,
-      configSource: "default",
+      i18n: resolvedConfig.config.i18n,
+      profileId: resolvedConfig.profileId,
+      configSource: "file",
+      workspace: resolvedWorkspace,
     };
   }
 
-  const configLoader = new ConfigLoader();
-  const profileResolver = new ProfileResolver();
-  const loadedConfig = configLoader.loadFromFile(configPath);
-  const resolvedConfig = profileResolver.resolve(loadedConfig, requestedProfileId);
-
   return {
-    i18n: resolvedConfig.config.i18n,
-    profileId: resolvedConfig.profileId,
-    configSource: "file",
+    i18n: DEFAULT_I18N_CONFIG,
+    profileId: null,
+    configSource: "default",
+    workspace: defaultWorkspace,
   };
 }

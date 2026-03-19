@@ -10,8 +10,8 @@
 
 ## 2. In-Scope Tasks
 
-1. TK-009 Workspace Resolver 双模式基线
-2. TK-010 workspace 迁移链路基线（copy/verify/switch/rollback）
+1. TK-009 Workspace Resolver 双模式基线（completed）
+2. TK-010 workspace 迁移链路基线（copy/verify/switch/rollback）（completed）
 3. TK-011 upgrade schema diff 与迁移建议基线
 4. TK-012 sprint-002 出口验收与回滚基线
 

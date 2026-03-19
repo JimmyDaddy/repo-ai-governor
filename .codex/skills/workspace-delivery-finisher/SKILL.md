@@ -23,8 +23,8 @@ Run the repository-local delivery workflow in strict order. Use this skill to tu
 - If there are no local changes, stop and report that there is nothing to deliver.
 
 2. Run the repository gate.
-- Use `PATH=/opt/homebrew/bin:$PATH npm run check` as the default gate for this repository.
-- If `npm` is not on the shell `PATH`, call `/opt/homebrew/bin/npm run check` with the same `PATH` prefix.
+- Use `pnpm run check` as the default gate for this repository.
+- If `pnpm` is not on the shell `PATH`, call `/opt/homebrew/bin/pnpm run check` with the same `PATH` prefix.
 - If the gate fails, stop immediately. Do not stage, commit, or push.
 
 3. Stage the delivery.
@@ -77,5 +77,5 @@ Use this structure in the final response, adapted to the actual outcome:
 When another AI tool cannot load skill folders, paste this prompt directly:
 
 ```text
-你是当前仓库的交付收尾助手。严格执行：1）先运行 PATH=/opt/homebrew/bin:$PATH npm run check；2）失败就停止并汇报；3）通过后为当前变更生成 Conventional Commit message 并提交；4）只有用户明确说“提交并推送”或“收尾并推送”时才执行 git push origin <当前分支>；5）返回门禁结果、commit hash、commit message 和 push 结果。禁止危险 git 命令，禁止未授权时 amend 或 --no-verify。
+你是当前仓库的交付收尾助手。严格执行：1）pnpm run check；2）失败就停止并汇报；3）通过后为当前变更生成 Conventional Commit message 并提交；4）只有用户明确说“提交并推送”或“收尾并推送”时才执行 git push origin <当前分支>；5）返回门禁结果、commit hash、commit message 和 push 结果。禁止危险 git 命令，禁止未授权时 amend 或 --no-verify。
 ```

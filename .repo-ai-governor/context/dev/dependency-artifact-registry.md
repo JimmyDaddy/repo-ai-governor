@@ -38,6 +38,8 @@
 | DA-011 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-007-dependency-boundary-whitelist-and-regression-policy.md` | `TK-007` | `TK-008`, `TK-012` | 2026-03-19 | 2026-03-19 | active |
 | DA-012 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-008-sprint-001-exit-acceptance-baseline.md` | `TK-008` | `TK-009`, `TK-010`, `TK-011`, `TK-012` | 2026-03-20 | 2026-03-20 | active |
 | DA-013 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-008-sprint-002-input-constraints-checklist.md` | `TK-008` | `TK-009`, `TK-010`, `TK-011`, `TK-012` | 2026-03-20 | 2026-03-20 | active |
+| DA-014 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-002-workspace-and-upgrade/tasks/TK-009-workspace-resolver-dual-mode-baseline.md` | `TK-009` | `TK-010`, `TK-011`, `TK-012` | 2026-03-20 | 2026-03-20 | active |
+| DA-015 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-002-workspace-and-upgrade/tasks/TK-010-workspace-migration-chain-baseline.md` | `TK-010` | `TK-011`, `TK-012` | 2026-03-20 | 2026-03-20 | active |
 
 ## Archive Registry Table
 

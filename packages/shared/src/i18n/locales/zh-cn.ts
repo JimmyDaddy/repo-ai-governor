@@ -20,7 +20,7 @@ export const ZH_CN_TRANSLATIONS = {
     skeleton: {
       noProfile: "未设置",
       executed:
-        "命令 '{{command}}' skeleton 已执行。locale={{locale}}，profile={{profile}}，configSource={{source}}。",
+        "命令 '{{command}}' skeleton 已执行。locale={{locale}}，profile={{profile}}，configSource={{source}}，workspaceMode={{workspaceMode}}，workspaceModeSource={{workspaceModeSource}}，workspaceId={{workspaceId}}，workspaceRoot={{workspaceRoot}}。",
     },
     errors: {
       unexpected: "CLI 执行失败 [{{code}}]：{{message}}",
