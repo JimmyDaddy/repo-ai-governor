@@ -4,14 +4,14 @@
 
 - Status: completed
 - Project: `milestone-04-m4-adapter-cli-slimming`
-- Sprint: `sprint-001`
+- Sprint: `sprint-002`
 - Docs root: `docs/dev/milestone-04-m4-adapter-cli-slimming`
-- Task records: `docs/dev/milestone-04-m4-adapter-cli-slimming/sprint-001/tasks/`
-- Code review records: `docs/dev/milestone-04-m4-adapter-cli-slimming/sprint-001/code-review/`
+- Task records: `docs/dev/milestone-04-m4-adapter-cli-slimming/sprint-002/tasks/`
+- Code review records: `docs/dev/milestone-04-m4-adapter-cli-slimming/sprint-002/code-review/`
 
 ## Active Streams
 
-- `primary`: project=`milestone-04-m4-adapter-cli-slimming`, sprint=`sprint-001`, docs=`docs/dev/milestone-04-m4-adapter-cli-slimming`, plan=`docs/dev/milestone-04-m4-adapter-cli-slimming/plan.md`, tasks=`docs/dev/milestone-04-m4-adapter-cli-slimming/sprint-001/tasks/`, checklist=`docs/dev/milestone-04-m4-adapter-cli-slimming/sprint-001/tasks/checklist.md`, csv=`docs/dev/milestone-04-m4-adapter-cli-slimming/sprint-001/tasks/tasks.csv`, review=`docs/dev/milestone-04-m4-adapter-cli-slimming/sprint-001/code-review/`, status=`completed`
+- `primary`: project=`milestone-04-m4-adapter-cli-slimming`, sprint=`sprint-002`, docs=`docs/dev/milestone-04-m4-adapter-cli-slimming`, plan=`docs/dev/milestone-04-m4-adapter-cli-slimming/plan.md`, tasks=`docs/dev/milestone-04-m4-adapter-cli-slimming/sprint-002/tasks/`, checklist=`docs/dev/milestone-04-m4-adapter-cli-slimming/sprint-002/tasks/checklist.md`, csv=`docs/dev/milestone-04-m4-adapter-cli-slimming/sprint-002/tasks/tasks.csv`, review=`docs/dev/milestone-04-m4-adapter-cli-slimming/sprint-002/code-review/`, status=`completed`
 
 ## Update Rules
 

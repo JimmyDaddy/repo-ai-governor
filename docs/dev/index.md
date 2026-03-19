@@ -72,6 +72,12 @@
 47. [M4 适配能力矩阵与降级策略基线](./milestone-04-m4-adapter-cli-slimming/sprint-001/adapter-capability-matrix-and-degradation-strategy-baseline.md)
 48. [M4 Adapter 契约测试补齐基线](./milestone-04-m4-adapter-cli-slimming/sprint-001/adapter-contract-test-completion-baseline.md)
 49. [M4 CLI 路由层设计冻结基线](./milestone-04-m4-adapter-cli-slimming/sprint-001/cli-routing-layer-design-freeze-baseline.md)
+50. [M4 命令核心逻辑下沉基线](./milestone-04-m4-adapter-cli-slimming/sprint-002/run-check-review-review-verify-core-logic-package-downlift-baseline.md)
+51. [M4 CLI 薄入口路由基线](./milestone-04-m4-adapter-cli-slimming/sprint-002/apps-cli-thin-routing-only-baseline.md)
+52. [M4 Slot 安全执行模型基线](./milestone-04-m4-adapter-cli-slimming/sprint-002/slot-secure-execution-model-integration-baseline.md)
+53. [M4 入口层权限风险门禁收口基线](./milestone-04-m4-adapter-cli-slimming/sprint-002/entry-layer-permission-risk-gate-convergence-baseline.md)
+54. [M4 性能基线与瓶颈报告](./milestone-04-m4-adapter-cli-slimming/sprint-002/performance-baseline-and-bottleneck-report.md)
+55. [M4 兼容性回归基线](./milestone-04-m4-adapter-cli-slimming/sprint-002/m4-compatibility-regression-baseline.md)
 
 ## Program View
 
@@ -81,7 +87,7 @@
 | M1 核心包抽离 | P1（已完成） | Phase B | Step 2 | 2 |
 | M2 Workspace + Memory + Session 稳定化 | P1（已完成） | Phase C | Step 3~5 | 2 |
 | M3 编排引擎与 HITL 闭环 | P1（已完成） | Phase D | Step 4~6 | 2 |
-| M4 适配器模块化与 CLI 瘦身 | P1（进行中） | Phase D | Step 5~6 | 2 |
+| M4 适配器模块化与 CLI 瘦身 | P1（已完成） | Phase D | Step 5~6 | 2 |
 | M5 质量硬化与发布就绪 | P1->P2 过渡 | Phase E | Step 7 | 2 |
 
 ## Validation Targets

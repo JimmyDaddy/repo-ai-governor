@@ -69,6 +69,12 @@
 | DA-046 | `docs/dev/milestone-04-m4-adapter-cli-slimming/sprint-001/adapter-capability-matrix-and-degradation-strategy-baseline.md` | `TK-404` | `TK-405`, `TK-406`, `TK-416` | 2026-03-19 | 2026-03-19 | active |
 | DA-047 | `docs/dev/milestone-04-m4-adapter-cli-slimming/sprint-001/adapter-contract-test-completion-baseline.md` | `TK-405` | `TK-416`, `TK-501` | 2026-03-19 | 2026-03-19 | active |
 | DA-048 | `docs/dev/milestone-04-m4-adapter-cli-slimming/sprint-001/cli-routing-layer-design-freeze-baseline.md` | `TK-406` | `TK-411`, `TK-412`, `TK-416` | 2026-03-19 | 2026-03-19 | active |
+| DA-049 | `docs/dev/milestone-04-m4-adapter-cli-slimming/sprint-002/run-check-review-review-verify-core-logic-package-downlift-baseline.md` | `TK-411` | `TK-412`, `TK-414`, `TK-416`, `TK-502` | 2026-03-19 | 2026-03-19 | active |
+| DA-050 | `docs/dev/milestone-04-m4-adapter-cli-slimming/sprint-002/apps-cli-thin-routing-only-baseline.md` | `TK-412` | `TK-414`, `TK-416`, `TK-502` | 2026-03-19 | 2026-03-19 | active |
+| DA-051 | `docs/dev/milestone-04-m4-adapter-cli-slimming/sprint-002/slot-secure-execution-model-integration-baseline.md` | `TK-413` | `TK-414`, `TK-416`, `TK-502` | 2026-03-19 | 2026-03-19 | active |
+| DA-052 | `docs/dev/milestone-04-m4-adapter-cli-slimming/sprint-002/entry-layer-permission-risk-gate-convergence-baseline.md` | `TK-414` | `TK-416`, `TK-503`, `TK-512` | 2026-03-19 | 2026-03-19 | active |
+| DA-053 | `docs/dev/milestone-04-m4-adapter-cli-slimming/sprint-002/performance-baseline-and-bottleneck-report.md` | `TK-415` | `TK-416`, `TK-511`, `TK-514` | 2026-03-19 | 2026-03-19 | active |
+| DA-054 | `docs/dev/milestone-04-m4-adapter-cli-slimming/sprint-002/m4-compatibility-regression-baseline.md` | `TK-416` | `TK-511`, `TK-514`, `TK-516` | 2026-03-19 | 2026-03-19 | active |
 
 ## Notes
 

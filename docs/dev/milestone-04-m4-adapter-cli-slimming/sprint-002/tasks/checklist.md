@@ -1,8 +1,26 @@
 # M4 适配器模块化与 CLI 瘦身 SPRINT-002 Checklist
 
-- [ ] **TK-411** run/check/review/review-verify 核心逻辑下沉 packages（负责人：Core Runtime｜优先级：P0｜截止：2026-07-21｜状态：todo）
-- [ ] **TK-412** apps/cli 仅保留参数编排与路由（负责人：CLI｜优先级：P0｜截止：2026-07-21｜状态：todo）
-- [ ] **TK-413** Slot 安全执行模型接入（负责人：Standards｜优先级：P1｜截止：2026-07-21｜状态：todo）
-- [ ] **TK-414** 权限/风险门禁在入口层收口（负责人：Policy｜优先级：P1｜截止：2026-07-21｜状态：todo）
-- [ ] **TK-415** 性能基线与瓶颈报告（负责人：QA｜优先级：P1｜截止：2026-07-21｜状态：todo）
-- [ ] **TK-416** M4 兼容性回归报告（负责人：QA｜优先级：P1｜截止：2026-07-21｜状态：todo）
+- [x] **TK-411** run/check/review/review-verify 核心逻辑下沉 packages（负责人：Core Runtime｜优先级：P0｜截止：2026-07-21｜状态：done）
+  - 执行记录：plan=定义 run/check/review/review-verify 命令核心逻辑下沉边界与统一结果契约;result=已新增 `run-check-review-review-verify-core-logic-package-downlift-baseline.md` 并固定调用链路与输出字段;verify=与架构 Step6 CLI 瘦身目标一致
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-049`，并在 `TK-412` `TK-414` `TK-416` `TK-502` 建立 Depends On/Input References;verify=核心逻辑下沉基线可被下游任务直接消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-411-core-logic-package-downlift-baseline.md`;verify=复核通过 无新增问题
+- [x] **TK-412** apps/cli 仅保留参数编排与路由（负责人：CLI｜优先级：P0｜截止：2026-07-21｜状态：done）
+  - 执行记录：plan=定义 CLI 薄入口职责与路由契约;result=已新增 `apps-cli-thin-routing-only-baseline.md` 并固定保留职责与禁止职责;verify=与 TK-411 下沉边界一致且可执行
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-050`，并在 `TK-414` `TK-416` `TK-502` 建立 Depends On/Input References;verify=CLI 薄入口基线可被门禁与回归任务消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-412-apps-cli-thin-routing-only-baseline.md`;verify=复核通过 无新增问题
+- [x] **TK-413** Slot 安全执行模型接入（负责人：Standards｜优先级：P1｜截止：2026-07-21｜状态：done）
+  - 执行记录：plan=定义 slot 执行安全模型与审计字段;result=已新增 `slot-secure-execution-model-integration-baseline.md` 并固定安全决策与拦截点;verify=满足安全治理与可审计要求
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-051`，并在 `TK-414` `TK-416` `TK-502` 建立 Depends On/Input References;verify=slot 安全模型可被入口门禁与回归任务直接消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-413-slot-secure-execution-model-integration-baseline.md`;verify=复核通过 无新增问题
+- [x] **TK-414** 权限/风险门禁在入口层收口（负责人：Policy｜优先级：P1｜截止：2026-07-21｜状态：done）
+  - 执行记录：plan=定义入口层权限与风险门禁统一收口模型;result=已新增 `entry-layer-permission-risk-gate-convergence-baseline.md` 并固定门禁时序和失败分类;verify=与 Policy Gate/HITL 链路一致
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-052`，并在 `TK-416` `TK-503` `TK-512` 建立 Depends On/Input References;verify=门禁收口基线可被 M4 回归与 M5 门禁任务消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-414-entry-layer-permission-risk-gate-convergence-baseline.md`;verify=复核通过 无新增问题
+- [x] **TK-415** 性能基线与瓶颈报告（负责人：QA｜优先级：P1｜截止：2026-07-21｜状态：done）
+  - 执行记录：plan=定义 M4 命令链路性能场景与瓶颈分类;result=已新增 `performance-baseline-and-bottleneck-report.md` 并固定预算阈值与指标模型;verify=可作为门禁与可观测输入
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-053`，并在 `TK-416` `TK-511` `TK-514` 建立 Depends On/Input References;verify=性能基线可被回归与报告任务复用
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-415-performance-baseline-and-bottleneck-report.md`;verify=复核通过 无新增问题
+- [x] **TK-416** M4 兼容性回归报告（负责人：QA｜优先级：P1｜截止：2026-07-21｜状态：done）
+  - 执行记录：plan=定义 M4 兼容回归维度场景与证据模型;result=已新增 `m4-compatibility-regression-baseline.md` 并覆盖命令适配器门禁安全性能五类兼容面;verify=兼容回归范围覆盖 M4 核心能力
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-054`，并在 `TK-511` `TK-514` `TK-516` 建立 Depends On/Input References;verify=M4 兼容回归基线可被 M5 稳定性和 GA 评审直接消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-416-m4-compatibility-regression-baseline.md`;verify=复核通过 无新增问题

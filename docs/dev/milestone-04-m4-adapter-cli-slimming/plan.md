@@ -1,9 +1,9 @@
 # M4 Plan
 
-- Status: executing
+- Status: completed
 - Date: 2026-03-19
 - Milestone: `M4`
-- Priority: P1（进行中）
+- Priority: P1（已完成）
 - Phase: Phase D
 - Step: Step 5~6
 

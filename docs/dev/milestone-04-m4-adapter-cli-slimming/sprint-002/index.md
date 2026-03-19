@@ -1,7 +1,7 @@
 # M4 适配器模块化与 CLI 瘦身 SPRINT-002
 
-- Status: planned
-- Date: 2026-03-18
+- Status: completed
+- Date: 2026-03-19
 - Milestone: `M4`
 - Sprint: `sprint-002`
 - Duration: 2026-07-08 ~ 2026-07-21 (2 weeks)
@@ -25,3 +25,9 @@
 2. [tasks/checklist.md](./tasks/checklist.md)
 3. [tasks/tasks.csv](./tasks/tasks.csv)
 4. [code-review/README.md](./code-review/README.md)
+5. [run-check-review-review-verify-core-logic-package-downlift-baseline.md](./run-check-review-review-verify-core-logic-package-downlift-baseline.md)
+6. [apps-cli-thin-routing-only-baseline.md](./apps-cli-thin-routing-only-baseline.md)
+7. [slot-secure-execution-model-integration-baseline.md](./slot-secure-execution-model-integration-baseline.md)
+8. [entry-layer-permission-risk-gate-convergence-baseline.md](./entry-layer-permission-risk-gate-convergence-baseline.md)
+9. [performance-baseline-and-bottleneck-report.md](./performance-baseline-and-bottleneck-report.md)
+10. [m4-compatibility-regression-baseline.md](./m4-compatibility-regression-baseline.md)
