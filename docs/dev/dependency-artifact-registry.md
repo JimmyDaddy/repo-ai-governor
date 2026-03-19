@@ -47,6 +47,9 @@
 | DA-024 | `docs/dev/milestone-02-m2-workspace-memory-session/sprint-002/operational-state-source-integration-baseline.md` | `TK-212` | `TK-213`, `TK-215`, `TK-216`, `TK-217` | 2026-03-19 | 2026-03-19 | active |
 | DA-025 | `docs/dev/milestone-02-m2-workspace-memory-session/sprint-002/shared-execution-session-id-event-bus-baseline.md` | `TK-213` | `TK-214`, `TK-215`, `TK-315`, `TK-316` | 2026-03-19 | 2026-03-19 | active |
 | DA-026 | `docs/dev/milestone-02-m2-workspace-memory-session/sprint-002/session-snapshot-and-replay-baseline.md` | `TK-214` | `TK-215`, `TK-216`, `TK-315`, `TK-316` | 2026-03-19 | 2026-03-19 | active |
+| DA-027 | `docs/dev/milestone-02-m2-workspace-memory-session/sprint-002/audit-field-completion-workspace-session-memory-baseline.md` | `TK-215` | `TK-216`, `TK-506`, `TK-516` | 2026-03-19 | 2026-03-19 | active |
+| DA-028 | `docs/dev/milestone-02-m2-workspace-memory-session/sprint-002/m2-exit-test-and-documentation-closure-report.md` | `TK-216` | `TK-316`, `TK-416`, `TK-516` | 2026-03-19 | 2026-03-19 | active |
+| DA-029 | `docs/dev/milestone-02-m2-workspace-memory-session/sprint-002/artifact-registry-foundation-and-dependency-resolver-contract-baseline.md` | `TK-217` | `TK-307`, `TK-316`, `TK-501` | 2026-03-19 | 2026-03-19 | active |
 
 ## Notes
 

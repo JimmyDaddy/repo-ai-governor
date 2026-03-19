@@ -50,6 +50,9 @@
 25. [M2 Operational State Source 接入基线](./milestone-02-m2-workspace-memory-session/sprint-002/operational-state-source-integration-baseline.md)
 26. [M2 共享 execution_session_id 事件总线基线](./milestone-02-m2-workspace-memory-session/sprint-002/shared-execution-session-id-event-bus-baseline.md)
 27. [M2 Session 快照与回放基线](./milestone-02-m2-workspace-memory-session/sprint-002/session-snapshot-and-replay-baseline.md)
+28. [M2 审计字段补齐基线](./milestone-02-m2-workspace-memory-session/sprint-002/audit-field-completion-workspace-session-memory-baseline.md)
+29. [M2 退出测试与文档收口报告](./milestone-02-m2-workspace-memory-session/sprint-002/m2-exit-test-and-documentation-closure-report.md)
+30. [M2 Artifact Registry 与 Dependency Resolver 契约基线](./milestone-02-m2-workspace-memory-session/sprint-002/artifact-registry-foundation-and-dependency-resolver-contract-baseline.md)
 
 ## Program View
 
@@ -57,7 +60,7 @@
 |---|---|---|---|---|
 | M0 基线治理与重构起跑 | P0（已完成） | Phase A/B | Step 1 | 1 |
 | M1 核心包抽离 | P1（已完成） | Phase B | Step 2 | 2 |
-| M2 Workspace + Memory + Session 稳定化 | P1（进行中） | Phase C | Step 3~5 | 2 |
+| M2 Workspace + Memory + Session 稳定化 | P1（已完成） | Phase C | Step 3~5 | 2 |
 | M3 编排引擎与 HITL 闭环 | P1（进行中） | Phase D | Step 4~6 | 2 |
 | M4 适配器模块化与 CLI 瘦身 | P1（进行中） | Phase D | Step 5~6 | 2 |
 | M5 质量硬化与发布就绪 | P1->P2 过渡 | Phase E | Step 7 | 2 |

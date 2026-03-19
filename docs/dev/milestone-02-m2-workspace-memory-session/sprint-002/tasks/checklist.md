@@ -16,6 +16,15 @@
   - 执行记录：plan=定义 session 快照触发策略回放模式与错误降级契约并形成统一输入;result=已新增 `session-snapshot-and-replay-baseline.md` 且固定 snapshot/replay 字段模型;verify=内容与总方案 session 快照回放和审计可追溯要求一致
   - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-026` 并在 `TK-215` `TK-216` `TK-315` `TK-316` 建立依赖回链;verify=快照回放产物可被 M2/M3 后续任务直接检索消费
   - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-214-session-snapshot-and-replay-baseline.md`;verify=复核通过 无新增问题
-- [ ] **TK-215** 审计字段补齐（workspace/session/memory）（负责人：Audit｜优先级：P1｜截止：2026-05-26｜状态：todo）
-- [ ] **TK-216** M2 退出测试与文档收口（负责人：QA｜优先级：P1｜截止：2026-05-26｜状态：todo）
-- [ ] **TK-217** Artifact Registry 基座与依赖解析契约（负责人：Core Runtime｜优先级：P0｜截止：2026-05-26｜状态：todo）
+- [x] **TK-215** 审计字段补齐（workspace/session/memory）（负责人：Audit｜优先级：P1｜截止：2026-05-26｜状态：done）
+  - 执行记录：plan=汇总 workspace/session/memory 审计字段并统一命名语义;result=已新增 `audit-field-completion-workspace-session-memory-baseline.md` 并固化三域字段矩阵与脱敏保留策略;verify=内容与总方案 9.3 审计最小字段口径一致
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-027` 并在 `TK-216` `TK-506` `TK-516` 建立依赖回链;verify=审计基线产物可被后续任务直接检索消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-215-audit-field-completion-workspace-session-memory-baseline.md`;verify=复核通过 无新增问题
+- [x] **TK-216** M2 退出测试与文档收口（负责人：QA｜优先级：P1｜截止：2026-05-26｜状态：done）
+  - 执行记录：plan=基于 TK-201~TK-217 产物建立 M2 退出测试矩阵与文档收口报告;result=已新增 `m2-exit-test-and-documentation-closure-report.md` 并完成收口矩阵|风险快照|验收决策;verify=内容与 M2 全任务台账和 CR 状态一致
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-028` 并在 `TK-316` `TK-416` `TK-516` 建立依赖回链;verify=退出报告可被后续里程碑验收任务直接消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-216-m2-exit-test-and-documentation-closure-report.md`;verify=复核通过 无新增问题
+- [x] **TK-217** Artifact Registry 基座与依赖解析契约（负责人：Core Runtime｜优先级：P0｜截止：2026-05-26｜状态：done）
+  - 执行记录：plan=收敛 Artifact Registry 与 Dependency Resolver 最小运行时契约并明确存储扩展边界;result=已新增 `artifact-registry-foundation-and-dependency-resolver-contract-baseline.md` 并固定注册解析字段与策略语义;verify=内容与总方案 4.2.3 和架构依赖方向约束一致
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-029` 并在 `TK-307` `TK-316` `TK-501` 建立依赖回链;verify=注册解析契约产物可被 M3/M5 任务直接消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-217-artifact-registry-foundation-and-dependency-resolver-contract-baseline.md`;verify=复核通过 无新增问题

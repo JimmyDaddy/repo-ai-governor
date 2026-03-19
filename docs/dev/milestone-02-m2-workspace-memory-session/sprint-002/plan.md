@@ -1,6 +1,6 @@
 # M2 Workspace + Memory + Session 稳定化 SPRINT-002 Plan
 
-- Status: executing
+- Status: completed
 - Date: 2026-03-19
 - Milestone: `M2`
 - Sprint: `sprint-002`

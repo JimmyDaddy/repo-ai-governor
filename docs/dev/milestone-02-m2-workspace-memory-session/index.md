@@ -1,9 +1,9 @@
 # M2 Workspace + Memory + Session 稳定化
 
-- Status: executing
+- Status: completed
 - Date: 2026-03-19
 - Milestone: `M2`
-- Priority: P1（进行中）
+- Priority: P1（已完成）
 - Technical Phase: Phase C
 - Architecture Step: Step 3~5
 

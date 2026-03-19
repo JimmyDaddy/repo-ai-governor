@@ -2,7 +2,7 @@
 
 ## Primary Stream
 
-- Status: in_progress
+- Status: completed
 - Project: `milestone-02-m2-workspace-memory-session`
 - Sprint: `sprint-002`
 - Docs root: `docs/dev/milestone-02-m2-workspace-memory-session`
@@ -11,7 +11,7 @@
 
 ## Active Streams
 
-- `primary`: project=`milestone-02-m2-workspace-memory-session`, sprint=`sprint-002`, docs=`docs/dev/milestone-02-m2-workspace-memory-session`, plan=`docs/dev/milestone-02-m2-workspace-memory-session/plan.md`, tasks=`docs/dev/milestone-02-m2-workspace-memory-session/sprint-002/tasks/`, checklist=`docs/dev/milestone-02-m2-workspace-memory-session/sprint-002/tasks/checklist.md`, csv=`docs/dev/milestone-02-m2-workspace-memory-session/sprint-002/tasks/tasks.csv`, review=`docs/dev/milestone-02-m2-workspace-memory-session/sprint-002/code-review/`, status=`in_progress`
+- `primary`: project=`milestone-02-m2-workspace-memory-session`, sprint=`sprint-002`, docs=`docs/dev/milestone-02-m2-workspace-memory-session`, plan=`docs/dev/milestone-02-m2-workspace-memory-session/plan.md`, tasks=`docs/dev/milestone-02-m2-workspace-memory-session/sprint-002/tasks/`, checklist=`docs/dev/milestone-02-m2-workspace-memory-session/sprint-002/tasks/checklist.md`, csv=`docs/dev/milestone-02-m2-workspace-memory-session/sprint-002/tasks/tasks.csv`, review=`docs/dev/milestone-02-m2-workspace-memory-session/sprint-002/code-review/`, status=`completed`
 
 ## Update Rules
 

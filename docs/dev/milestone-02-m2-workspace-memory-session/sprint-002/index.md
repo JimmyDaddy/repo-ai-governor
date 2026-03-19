@@ -1,6 +1,6 @@
 # M2 Workspace + Memory + Session 稳定化 SPRINT-002
 
-- Status: executing
+- Status: completed
 - Date: 2026-03-19
 - Milestone: `M2`
 - Sprint: `sprint-002`
@@ -30,3 +30,6 @@
 6. [operational-state-source-integration-baseline.md](./operational-state-source-integration-baseline.md)
 7. [shared-execution-session-id-event-bus-baseline.md](./shared-execution-session-id-event-bus-baseline.md)
 8. [session-snapshot-and-replay-baseline.md](./session-snapshot-and-replay-baseline.md)
+9. [audit-field-completion-workspace-session-memory-baseline.md](./audit-field-completion-workspace-session-memory-baseline.md)
+10. [m2-exit-test-and-documentation-closure-report.md](./m2-exit-test-and-documentation-closure-report.md)
+11. [artifact-registry-foundation-and-dependency-resolver-contract-baseline.md](./artifact-registry-foundation-and-dependency-resolver-contract-baseline.md)
