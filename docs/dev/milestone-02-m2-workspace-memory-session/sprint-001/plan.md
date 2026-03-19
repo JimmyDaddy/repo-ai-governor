@@ -1,7 +1,7 @@
 # M2 Workspace + Memory + Session 稳定化 SPRINT-001 Plan
 
-- Status: planned
-- Date: 2026-03-18
+- Status: executing
+- Date: 2026-03-19
 - Milestone: `M2`
 - Sprint: `sprint-001`
 - Start: 2026-04-29

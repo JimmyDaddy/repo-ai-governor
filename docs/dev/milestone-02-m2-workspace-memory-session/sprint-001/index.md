@@ -1,7 +1,7 @@
 # M2 Workspace + Memory + Session 稳定化 SPRINT-001
 
-- Status: planned
-- Date: 2026-03-18
+- Status: executing
+- Date: 2026-03-19
 - Milestone: `M2`
 - Sprint: `sprint-001`
 - Duration: 2026-04-29 ~ 2026-05-12 (2 weeks)
@@ -25,3 +25,9 @@
 2. [tasks/checklist.md](./tasks/checklist.md)
 3. [tasks/tasks.csv](./tasks/tasks.csv)
 4. [code-review/README.md](./code-review/README.md)
+5. [workspace-schema-tool-managed-repo-local-baseline.md](./workspace-schema-tool-managed-repo-local-baseline.md)
+6. [workspace-resolver-and-repo-fingerprint-baseline.md](./workspace-resolver-and-repo-fingerprint-baseline.md)
+7. [tool-managed-default-path-and-initialization-baseline.md](./tool-managed-default-path-and-initialization-baseline.md)
+8. [repo-local-mode-integration-and-compatibility-baseline.md](./repo-local-mode-integration-and-compatibility-baseline.md)
+9. [workspace-migration-copy-verify-switch-baseline.md](./workspace-migration-copy-verify-switch-baseline.md)
+10. [workspace-rollback-and-failure-error-model-baseline.md](./workspace-rollback-and-failure-error-model-baseline.md)

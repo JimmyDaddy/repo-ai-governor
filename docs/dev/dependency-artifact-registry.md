@@ -37,6 +37,12 @@
 | DA-014 | `docs/dev/milestone-01-m1-core-extraction/sprint-002/notification-dispatcher-extraction-baseline.md` | `TK-114` | `TK-116`, `TK-311`, `TK-312` | 2026-03-19 | 2026-03-19 | active |
 | DA-015 | `docs/dev/milestone-01-m1-core-extraction/sprint-002/dependency-direction-warning-gate-baseline.md` | `TK-115` | `TK-116`, `TK-503` | 2026-03-19 | 2026-03-19 | active |
 | DA-016 | `docs/dev/milestone-01-m1-core-extraction/sprint-002/m1-exit-regression-and-cr-closure-report.md` | `TK-116` | `TK-216`, `TK-416`, `TK-516` | 2026-03-19 | 2026-03-19 | active |
+| DA-017 | `docs/dev/milestone-02-m2-workspace-memory-session/sprint-001/workspace-schema-tool-managed-repo-local-baseline.md` | `TK-201` | `TK-202`, `TK-203`, `TK-204`, `TK-205`, `TK-206`, `TK-216` | 2026-03-19 | 2026-03-19 | active |
+| DA-018 | `docs/dev/milestone-02-m2-workspace-memory-session/sprint-001/workspace-resolver-and-repo-fingerprint-baseline.md` | `TK-202` | `TK-203`, `TK-204`, `TK-205`, `TK-216` | 2026-03-19 | 2026-03-19 | active |
+| DA-019 | `docs/dev/milestone-02-m2-workspace-memory-session/sprint-001/tool-managed-default-path-and-initialization-baseline.md` | `TK-203` | `TK-204`, `TK-205`, `TK-206`, `TK-216` | 2026-03-19 | 2026-03-19 | active |
+| DA-020 | `docs/dev/milestone-02-m2-workspace-memory-session/sprint-001/repo-local-mode-integration-and-compatibility-baseline.md` | `TK-204` | `TK-205`, `TK-206`, `TK-216` | 2026-03-19 | 2026-03-19 | active |
+| DA-021 | `docs/dev/milestone-02-m2-workspace-memory-session/sprint-001/workspace-migration-copy-verify-switch-baseline.md` | `TK-205` | `TK-206`, `TK-216` | 2026-03-19 | 2026-03-19 | active |
+| DA-022 | `docs/dev/milestone-02-m2-workspace-memory-session/sprint-001/workspace-rollback-and-failure-error-model-baseline.md` | `TK-206` | `TK-216`, `TK-306` | 2026-03-19 | 2026-03-19 | active |
 
 ## Notes
 

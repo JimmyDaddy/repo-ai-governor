@@ -40,6 +40,12 @@
 15. [M1 Notification-Dispatcher 抽离基线](./milestone-01-m1-core-extraction/sprint-002/notification-dispatcher-extraction-baseline.md)
 16. [M1 依赖方向自动检查（Warning）接入基线](./milestone-01-m1-core-extraction/sprint-002/dependency-direction-warning-gate-baseline.md)
 17. [M1 退出回归与 CR 收口报告](./milestone-01-m1-core-extraction/sprint-002/m1-exit-regression-and-cr-closure-report.md)
+18. [M2 Workspace Schema 双模式基线](./milestone-02-m2-workspace-memory-session/sprint-001/workspace-schema-tool-managed-repo-local-baseline.md)
+19. [M2 Workspace Resolver 与 Repo Fingerprint 基线](./milestone-02-m2-workspace-memory-session/sprint-001/workspace-resolver-and-repo-fingerprint-baseline.md)
+20. [M2 Tool-Managed 默认路径与初始化基线](./milestone-02-m2-workspace-memory-session/sprint-001/tool-managed-default-path-and-initialization-baseline.md)
+21. [M2 Repo-Local 模式接入与兼容基线](./milestone-02-m2-workspace-memory-session/sprint-001/repo-local-mode-integration-and-compatibility-baseline.md)
+22. [M2 Workspace 迁移链路（Copy/Verify/Switch）基线](./milestone-02-m2-workspace-memory-session/sprint-001/workspace-migration-copy-verify-switch-baseline.md)
+23. [M2 Workspace 回滚与失败错误模型基线](./milestone-02-m2-workspace-memory-session/sprint-001/workspace-rollback-and-failure-error-model-baseline.md)
 
 ## Program View
 

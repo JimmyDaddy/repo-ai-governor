@@ -1,8 +1,27 @@
 # M2 Workspace + Memory + Session 稳定化 SPRINT-001 Checklist
 
-- [ ] **TK-201** workspace schema: tool_managed/repo_local（负责人：Config｜优先级：P0｜截止：2026-05-12｜状态：todo）
-- [ ] **TK-202** workspace resolver + repo_fingerprint（负责人：Core Runtime｜优先级：P0｜截止：2026-05-12｜状态：todo）
-- [ ] **TK-203** 默认 tool_managed 路径与初始化（负责人：Core Runtime｜优先级：P0｜截止：2026-05-12｜状态：todo）
-- [ ] **TK-204** repo_local 模式接入与兼容（负责人：Core Runtime｜优先级：P0｜截止：2026-05-12｜状态：todo）
-- [ ] **TK-205** copy/verify/switch 迁移链路（负责人：Core Runtime｜优先级：P1｜截止：2026-05-12｜状态：todo）
-- [ ] **TK-206** 回滚与失败错误模型（负责人：Core Runtime｜优先级：P1｜截止：2026-05-12｜状态：todo）
+- [x] **TK-201** workspace schema: tool_managed/repo_local（负责人：Config｜优先级：P0｜截止：2026-05-12｜状态：done）
+  - 执行记录：plan=切换 M2 执行上下文并启动 sprint 入口任务 TK-201;result=已完成上下文与里程碑状态切换，进入 schema 设计阶段;verify=当前 primary stream 指向 M2/sprint-001 且任务状态一致
+  - 执行记录：plan=定义 workspace 双模式 schema、解析优先级与迁移回滚契约并形成统一输入;result=已新增 `workspace-schema-tool-managed-repo-local-baseline.md`，固定 config/resolver 输出模型、目录布局、错误码与迁移语义;verify=内容与 PRD 8.2/12、总方案 4.3/4.4、架构 2/3/4 节约束一致
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-017`，并在 `TK-202`、`TK-203`、`TK-204`、`TK-205`、`TK-206`、`TK-216` 建立 Depends On 与输入引用;verify=workspace schema 产物可被当前 sprint 与 M2 退出任务直接消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-201-workspace-schema-tool-managed-repo-local-baseline.md`;verify=复核通过，无新增问题
+- [x] **TK-202** workspace resolver + repo_fingerprint（负责人：Core Runtime｜优先级：P0｜截止：2026-05-12｜状态：done）
+  - 执行记录：plan=定义 workspace resolver 输入输出契约、优先级解析与 repo_fingerprint 计算基线;result=已新增 `workspace-resolver-and-repo-fingerprint-baseline.md`，固定归一化规则|冲突语义|最小校验与审计字段;verify=内容与总方案 4.4 和架构 Workspace Resolver 约束一致
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-018`，并在 `TK-203`、`TK-204`、`TK-205`、`TK-216` 建立 Depends On 与输入引用;verify=resolver 产物可被当前 sprint 与 M2 退出任务直接消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-202-workspace-resolver-and-repo-fingerprint-baseline.md`;verify=复核通过，无新增问题
+- [x] **TK-203** 默认 tool_managed 路径与初始化（负责人：Core Runtime｜优先级：P0｜截止：2026-05-12｜状态：done）
+  - 执行记录：plan=定义默认 tool_managed 路径解析、首次初始化流程与最小种子资产契约;result=已新增 `tool-managed-default-path-and-initialization-baseline.md`，固定目录结构|幂等并发|校验恢复|初始化审计字段;verify=内容与 PRD workspace 默认模式、总方案 4.4 与架构 workspace root 布局约束一致
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-019`，并在 `TK-204`、`TK-205`、`TK-206`、`TK-216` 建立 Depends On 与输入引用;verify=tool_managed 初始化产物可被当前 sprint 与 M2 退出任务直接消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-203-tool-managed-default-path-and-initialization-baseline.md`;verify=复核通过，无新增问题
+- [x] **TK-204** repo_local 模式接入与兼容（负责人：Core Runtime｜优先级：P0｜截止：2026-05-12｜状态：done）
+  - 执行记录：plan=定义 repo_local 模式接入、兼容探测与保守写入策略并形成统一输入;result=已新增 `repo-local-mode-integration-and-compatibility-baseline.md`，固定激活规则|目录语义|显式模式失败语义|兼容补齐与审计字段;verify=内容与 PRD 双模式要求、总方案 4.4 与架构 workspace 布局约束一致
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-020`，并在 `TK-205`、`TK-206`、`TK-216` 建立 Depends On 与输入引用;verify=repo_local 兼容产物可被当前 sprint 迁移任务与 M2 退出任务直接消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-204-repo-local-mode-integration-and-compatibility-baseline.md`;verify=复核通过，无新增问题
+- [x] **TK-205** copy/verify/switch 迁移链路（负责人：Core Runtime｜优先级：P1｜截止：2026-05-12｜状态：done）
+  - 执行记录：plan=定义 copy/verify/switch 迁移状态机、阶段契约与回滚入口并形成统一输入;result=已新增 `workspace-migration-copy-verify-switch-baseline.md`，固定迁移事务状态机|校验矩阵|切换语义|回滚触发与审计字段;verify=内容与总方案 4.4 三阶段迁移与高风险迁移人工闸口约束一致
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-021`，并在 `TK-206`、`TK-216` 建立 Depends On 与输入引用;verify=迁移链路产物可被失败模型与 M2 退出任务直接消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-205-workspace-migration-copy-verify-switch-baseline.md`;verify=复核通过，无新增问题
+- [x] **TK-206** 回滚与失败错误模型（负责人：Core Runtime｜优先级：P1｜截止：2026-05-12｜状态：done）
+  - 执行记录：plan=定义 workspace 失败分类、回滚决策矩阵与统一错误契约并形成统一输入;result=已新增 `workspace-rollback-and-failure-error-model-baseline.md`，固定 error class 分层|rollback 策略|审计通知字段|与 M3 恢复模型衔接约束;verify=内容与总方案 5.3/5.4/5.5 与 TK-205 迁移语义一致
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-022`，并在 `TK-216`、`TK-306` 建立 Depends On 与输入引用;verify=错误模型产物可被 M2 退出任务与 M3 恢复任务直接消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-206-workspace-rollback-and-failure-error-model-baseline.md`;verify=复核通过，无新增问题
