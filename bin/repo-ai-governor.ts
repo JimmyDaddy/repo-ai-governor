@@ -1,40 +1,20 @@
 #!/usr/bin/env node
 
-const HELP_TEXT = [
-  "repo-ai-governor",
-  "",
-  "Usage:",
-  "  repo-ai-governor --help",
-  "",
-  "Status:",
-  "  CLI bootstrap is initialized. Functional subcommands are added by sprint tasks.",
-].join("\n");
+import { runCli } from "../apps/cli/src/main.js";
+import { standardizeError } from "../packages/shared/src/index.js";
 
 /**
- * Prints CLI help text to stdout.
- * @returns Process exit code for help execution.
+ * Boots the CLI runtime from the executable entrypoint.
+ * @returns Resolves once CLI exit code has been assigned to the process.
  */
-function printHelp(): number {
-  process.stdout.write(`${HELP_TEXT}\n`);
-  return 0;
+async function bootstrapCli(): Promise<void> {
+  process.exitCode = await runCli(process.argv);
 }
 
-/**
- * Runs the minimal CLI bootstrap.
- * @param argv Raw process argument vector from Node runtime.
- * @returns Process exit code after handling supported flags.
- */
-function run(argv: string[]): number {
-  const args = argv.slice(2);
-  const isHelpRequested = args.length === 0 || args.includes("--help") || args.includes("-h");
-
-  if (isHelpRequested) {
-    return printHelp();
-  }
-
-  process.stderr.write(`Unsupported arguments: ${args.join(" ")}\n`);
-  process.stderr.write("Run `repo-ai-governor --help` for usage.\n");
-  return 1;
-}
-
-process.exitCode = run(process.argv);
+void bootstrapCli().catch((error: unknown) => {
+  const standardizedError = standardizeError(error);
+  process.stderr.write(
+    `CLI bootstrap failed [${standardizedError.code}]: ${standardizedError.message}\n`,
+  );
+  process.exitCode = 1;
+});

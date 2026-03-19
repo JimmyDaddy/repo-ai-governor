@@ -20,8 +20,9 @@
 2. WS-02 配置与入口
    - `packages/config`（Loader/Schema/Profile）。
    - `apps/cli` 命令骨架与 smoke 基线。
+   - 前置 `packages/shared/src/i18n` 的 `i18next` runtime 基线，作为 CLI 文案渲染依赖。
 3. WS-03 工程基础设施
-   - TypeScript/Biome/i18n 工程基线。
+   - TypeScript/Biome/i18n 工程基线（i18n runtime 基线优先级前置到 TK-006 实施窗口）。
    - 依赖边界检查 warning 模式接入。
 4. WS-04 Workspace 与升级
    - `tool_managed/repo_local` 解析与切换。
@@ -36,8 +37,9 @@
 - 任务包：`TK-004` ~ `TK-008`。
 - Exit Criteria:
   1. `apps/cli` 与 `packages/config` 基线可运行。
-  2. `integrations/ci` 可触发基础门禁。
-  3. 依赖边界检查以 warning 模式可稳定执行。
+  2. `packages/shared/src/i18n` 的 `i18next` runtime 基线已落地并可被 CLI 调用。
+  3. `integrations/ci` 可触发基础门禁。
+  4. 依赖边界检查以 warning 模式可稳定执行。
 
 ## 3.2 sprint-002-workspace-and-upgrade
 
@@ -53,9 +55,9 @@
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 |---|---|---|---|---|---|
 | TK-003 | sprint-001 | 项目细化与基线约束文档 | baseline/constraints | TK-001,TK-002 | completed |
-| TK-004 | sprint-001 | Monorepo 边界与 CI 骨架 | baseline/constraints | TK-003 | planned |
-| TK-005 | sprint-001 | Config 包基线实现方案 | baseline/contract | TK-003 | planned |
-| TK-006 | sprint-001 | CLI 命令骨架与 smoke 基线 | baseline/constraints | TK-005 | planned |
+| TK-004 | sprint-001 | Monorepo 边界与 CI 骨架 | baseline/constraints | TK-003 | completed |
+| TK-005 | sprint-001 | Config 包基线实现方案 | baseline/contract | TK-003 | completed |
+| TK-006 | sprint-001 | CLI 命令骨架与 smoke 基线 | baseline/constraints | TK-005 | completed |
 | TK-007 | sprint-001 | 依赖边界 warning gate 基线 | baseline/policy | TK-004 | planned |
 | TK-008 | sprint-001 | sprint-001 出口验收基线 | acceptance baseline | TK-004,TK-005,TK-006,TK-007 | planned |
 | TK-009 | sprint-002 | Workspace Resolver 双模式基线 | baseline/contract | TK-008 | planned |

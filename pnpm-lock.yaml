@@ -17,6 +17,9 @@ importers:
       commander:
         specifier: ^13.1.0
         version: 13.1.0
+      i18next:
+        specifier: ^25.6.0
+        version: 25.8.19(typescript@5.9.3)
       yaml:
         specifier: ^2.8.2
         version: 2.8.2
@@ -43,6 +46,12 @@ importers:
         specifier: ^4.1.0
         version: 4.1.0(@types/node@25.5.0)(vite@8.0.1(@types/node@25.5.0)(yaml@2.8.2))
 
+  apps/cli: {}
+
+  packages/config: {}
+
+  packages/shared: {}
+
 packages:
 
   '@babel/code-frame@7.29.0':
@@ -61,6 +70,10 @@ packages:
     resolution: {integrity: sha512-4GgRzy/+fsBa72/RZVJmGKPmZu9Byn8o4MoLpmNe1m8ZfYnz5emHLQz3U4gLud6Zwl0RZIcgiLD7Uq7ySFuDLA==}
     engines: {node: '>=6.0.0'}
     hasBin: true
+
+  '@babel/runtime@7.29.2':
+    resolution: {integrity: sha512-JiDShH45zKHWyGe4ZNVRrCjBz8Nh9TMmZG1kh4QTK8hCBTWBi8Da+i7s1fJw7/lYpM4ccepSNfqzZ/QvABBi5g==}
+    engines: {node: '>=6.9.0'}
 
   '@babel/types@7.29.0':
     resolution: {integrity: sha512-LwdZHpScM4Qz8Xw2iKSzS+cfglZzJGvofQICy7W7v4caru4EaAmyUuO6BGrbyQ2mYV11W0U8j5mBhd14dd3B0A==}
@@ -945,6 +958,14 @@ packages:
   human-signals@5.0.0:
     resolution: {integrity: sha512-AXcZb6vzzrFAUE61HnN4mpLqd/cSIwNQjtNWR0euPm6y0iqx3G4gOXaIDdtdDwZmhwe82LA6+zinmW4UBWVePQ==}
     engines: {node: '>=16.17.0'}
+
+  i18next@25.8.19:
+    resolution: {integrity: sha512-Szzho7sXdv9Do6TvZIyYu+H+94xCrh60cq01DKcYH/gDjpcHimrQApUEQycxw37U7guwbTEJ07CWScGGbgs96w==}
+    peerDependencies:
+      typescript: ^5
+    peerDependenciesMeta:
+      typescript:
+        optional: true
 
   iconv-lite@0.4.24:
     resolution: {integrity: sha512-v3MXnZAcvnywkTUEZomIActle7RXXeedOR31wwl7VlyoXO4Qi9arvSenNQWne1TcRwhCL1HwLI21bEqdpj8/rA==}
@@ -1886,6 +1907,8 @@ snapshots:
     dependencies:
       '@babel/types': 7.29.0
 
+  '@babel/runtime@7.29.2': {}
+
   '@babel/types@7.29.0':
     dependencies:
       '@babel/helper-string-parser': 7.27.1
@@ -2732,6 +2755,12 @@ snapshots:
   human-signals@2.1.0: {}
 
   human-signals@5.0.0: {}
+
+  i18next@25.8.19(typescript@5.9.3):
+    dependencies:
+      '@babel/runtime': 7.29.2
+    optionalDependencies:
+      typescript: 5.9.3
 
   iconv-lite@0.4.24:
     dependencies:

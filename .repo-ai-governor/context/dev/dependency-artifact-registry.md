@@ -27,6 +27,11 @@
 | DA-002 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-002-artifact-registry-baseline.md` | `TK-002` | `TBD` | 2026-03-19 | 2026-03-19 | active |
 | DA-003 | `.repo-ai-governor/context/dev/project-001-foundation/foundation-delivery-baseline-and-constraints.md` | `TK-003` | `TK-004`, `TK-005`, `TK-006`, `TK-007`, `TK-008`, `TK-009`, `TK-010`, `TK-011`, `TK-012` | 2026-03-19 | 2026-03-19 | active |
 | DA-004 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-004-monorepo-boundary-and-ci-baseline.md` | `TK-004` | `TK-005`, `TK-006`, `TK-007`, `TK-008` | 2026-03-19 | 2026-03-19 | active |
+| DA-005 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-005-config-contract-baseline.md` | `TK-005` | `TK-006`, `TK-009`, `TK-011` | 2026-03-19 | 2026-03-19 | active |
+| DA-006 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-005-i18n-community-solution-comparison-and-repo-decision.md` | `TK-005` | `TK-006`, `TK-009`, `TK-011` | 2026-03-19 | 2026-03-19 | active |
+| DA-007 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-006-cli-skeleton-baseline.md` | `TK-006` | `TK-008`, `TK-009` | 2026-03-19 | 2026-03-19 | active |
+| DA-008 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-006-shared-i18n-runtime-baseline.md` | `TK-006` | `TK-008`, `TK-009`, `TK-011` | 2026-03-19 | 2026-03-19 | active |
+| DA-009 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-006-command-smoke-checklist.md` | `TK-006` | `TK-008`, `TK-012` | 2026-03-19 | 2026-03-19 | active |
 
 ## Notes
 

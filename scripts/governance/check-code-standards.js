@@ -6,8 +6,10 @@ import { resolve } from "node:path";
 const REQUIRED_MARKERS = [
   "## Non-negotiable Rules",
   "[CS-001]",
-  "[CS-020]",
+  "[CS-009]",
+  "[CS-022]",
   "## Verification Commands",
+  "node ./scripts/governance/check-finite-literal-sets.js",
 ];
 
 /**

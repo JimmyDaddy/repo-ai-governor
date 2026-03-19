@@ -61,6 +61,7 @@
 11. Shared 与 i18n 基线：
    - 共享类型、通用工具与 i18n 基础能力统一收敛到 `packages/shared`。
    - Adapter/Runtime/Reporting 文案能力优先复用 shared 层，不在领域模块重复实现。
+   - 当前仓库 i18n runtime 选型固定为 `i18next`，优先在 Stage 1 / Phase A 落地 shared 层基线实现。
 12. Standards Pack 边界：
    - 同一结构化规范资产需统一生成 human/AI/AGENTS 三类视图。
    - 架构上至少区分 `pack registry`、`rule renderer`、`agents projector`。

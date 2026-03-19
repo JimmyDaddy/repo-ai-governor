@@ -6,7 +6,7 @@
 
 ## Source Hierarchy
 
-1. Normative rules: `.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md` (`CS-001` to `CS-020`)
+1. Normative rules: `.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md` (`CS-001` to `CS-022`)
 2. Operational baseline: this guide (`.repo-ai-governor/normative_knowledge_sources/governance/long-term-maintenance-guide.md`)
 3. Sprint execution records: `.repo-ai-governor/docs/dev/<project>/<sprint>/`
 
@@ -27,6 +27,8 @@ This guide does not duplicate rule text from `.repo-ai-governor/normative_knowle
 4. Monorepo naming baseline: `CS-014`
 5. Triad docs synchronization baseline: `CS-015`
 6. Code readability and architecture style baseline: `CS-016` to `CS-020`
+7. Task ledger synchronization baseline: `CS-021`
+8. Standardized error usage baseline: `CS-022`
 
 For command-level enforcement, always use `.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md -> Verification Commands` as the single source of truth.
 
@@ -43,12 +45,12 @@ For command-level enforcement, always use `.repo-ai-governor/normative_knowledge
 ## Daily and Release Cadence
 
 1. Development baseline:
-   - `npm run typecheck`
-   - `npm run test -- <target>`
-   - `npm run check`
+   - `pnpm run typecheck`
+   - `pnpm run test -- <target>`
+   - `pnpm run check`
 2. Release baseline:
-   - `npm run ci:quality`
-   - `npm run release:ga-check`
+   - `pnpm run ci:quality`
+   - `pnpm run release:ga-check`
 
 ## Whitelist Governance Policy
 
@@ -80,7 +82,7 @@ Any non-empty entry must include task-level traceability in `tasks/checklist.md`
 
 ## Monthly Audit Checklist
 
-1. Re-run `npm run check` and `npm run release:ga-check`.
+1. Re-run `pnpm run check` and `pnpm run release:ga-check`.
 2. Confirm whitelist files match expected baseline (empty or explicitly justified).
 3. Re-check stability/coverage baselines if test topology changed.
 4. Review `execution_notes.md` for util reuse records and unresolved debt.

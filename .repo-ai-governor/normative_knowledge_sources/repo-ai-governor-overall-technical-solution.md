@@ -217,6 +217,11 @@
 6. 验证与门禁
    - 新增 locale 资源时，必须通过键集一致性检查（key parity）与 fallback 可用性检查。
    - i18n 检查结果纳入质量门禁与审计事件，确保可回放定位。
+7. 选型与阶段决策（Decision 2026-03-19）
+   - 社区方案选型固定为 `i18next`，作为当前仓库 i18n runtime 基线实现。
+   - 实现包落位固定为 `packages/shared/src/i18n/`，由 shared 对外暴露统一 API，业务域禁止重复实现 i18n runtime。
+   - 阶段落位采用“双阶段分工”：Stage 1 / Phase A 落地 runtime 与 `zh-CN/en` 资源基线；Stage 6 / Phase D 落地 key parity 与 fallback 门禁及审计联动。
+   - 由于当前为新仓库起步阶段，i18n 引入采用 `fix-forward` 策略，不额外引入双运行时回滚链路。
 
 ## 4.3 记忆与会话模型
 
@@ -518,6 +523,7 @@
 6. 项目测试框架基线统一为 `Vitest`，用于承接单测、集成测试、契约测试与 E2E 测试执行；命令入口可通过 `npm/pnpm` 脚本封装，但底层 runner 保持一致。
 7. 项目开发语言基线统一为 `TypeScript`；`apps/*` 与 `packages/*` 的业务实现默认采用 TypeScript，构建产物按发布需求输出为可运行的 Node.js 目标格式。
 8. 多语言基线统一采用 i18n 方案（至少 `zh-CN/en`），并要求本地化文案与机器可读字段解耦，避免 CI 消费受 locale 影响。
+   - 当前仓库默认 i18n runtime 基线为 `i18next`（实现位于 `packages/shared/src/i18n/`）。
 9. 代码格式化与 lint 基线统一采用 `Biome`，本地可执行自动修复，CI 使用无副作用校验模式并纳入统一质量门禁。
 
 ## 11. 实施路线图（总纲级）

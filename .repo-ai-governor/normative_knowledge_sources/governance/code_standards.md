@@ -12,7 +12,7 @@ This file defines repository-level coding standards and the executable gate comm
 - [CS-006] `src/**` and `test/**` must stay TypeScript-first; newly added `.js` files require an explicit TS-only whitelist entry with reason (`pathAllowList[{path, reason}]`). Any new `.js` outside `src/test` must match `outOfScopeAllowList` with explicit reason.
 - [CS-007] Non-relative import/export specifiers must not end with `.js/.mjs/.cjs` (for example forbid `pkg/subpath.js`); prefer package export entries.
 - [CS-008] Dynamic dependency loading via `import()` or `require()` is forbidden by default. Exceptions are allowed only with explicit benefit and must be annotated nearby as `// dynamic-import-allowed: reason`.
-- [CS-009] Finite-set business values must be centrally managed as enums/constants under `src/constants`. One-off local checks may keep literals only when annotated nearby as `// literal-set-allowed: reason`.
+- [CS-009] Finite-set business values must be centrally managed as enums/constants under `src/constants` (or package-level `packages/*/src/constants`). Inline finite string-literal union aliases for closed sets are forbidden by default. One-off local checks may keep literals only when annotated nearby as `// literal-set-allowed: reason`.
 - [CS-010] Before adding any new utility function, contributors must evaluate whether `src/utils/` already has a reusable implementation. Confirmed new utility functions must record reuse evaluation in `execution_notes` with signature format `src/utils/<file>#<functionName>`.
 - [CS-011] Type semantics must be consistent: object structure contracts use `interface`; union/literal/mapped/conditional/composed utility types use `type`.
 - [CS-012] Object structure contracts must not be declared as `type Xxx = { ... }`. Exceptions require a nearby comment: `// type-shape-allowed: reason`.
@@ -24,6 +24,8 @@ This file defines repository-level coding standards and the executable gate comm
 - [CS-018] In domain modules (`src/runtime|workflow|policy|adapters` and `packages/core-*|adapter-*|adapters/*`), avoid multiple class declarations in a single file. Inheritable base classes and each derived implementation should be split into separate files/directories by default. Exceptions require a nearby marker comment: `// class-collocation-allowed: reason`.
 - [CS-019] General naming convention: variables/functions use `camelCase`; types/interfaces/type aliases/classes/enums use `PascalCase`; constants use `UPPER_SNAKE_CASE`.
 - [CS-020] Comments (including inline comments and JSDoc prose) must explain "why" rather than repeating "what the code does". Redundant restatement comments should be avoided.
+- [CS-021] For each active stream, canonical task cards, `tasks/checklist.md`, and canonical rows in `tasks/tasks.csv` must stay synchronized for `title/status/owner/priority/project/sprint/plan/recorded_at`; any drift blocks delivery.
+- [CS-022] In `apps/**`, `packages/**`, `bin/**`, and `test/**`, do not use native `Error` directly (`new Error`, `extends Error`, `instanceof Error`). Use the standardized error model from `packages/shared/src/errors/` (`BaseError`, `ConfigError`, `I18nError`, `RuntimeError`, `GovernorErrorCode`, `standardizeError`) for throw and output paths. The only allowed `extends Error` location is the abstract base implementation in `packages/shared/src/errors/governor-error.ts`.
 
 ## Monorepo Naming Convention (Refactor Baseline)
 
@@ -101,7 +103,9 @@ node ./scripts/governance/check-ts-only-residue.js
 node ./scripts/governance/check-docs-triad-sync.js
 node ./scripts/governance/check-jsdoc-governance.js
 node ./scripts/governance/check-oop-structure.js
-npm run test -- --maxWorkers=1 --maxConcurrency=1
+node ./scripts/governance/check-task-ledger-sync.js
+node ./scripts/governance/check-standardized-error-usage.js
+pnpm run test -- --maxWorkers=1 --maxConcurrency=1
 node ./dist/bin/repo-ai-governor.js --help >/dev/null
 ```
 
@@ -120,5 +124,5 @@ node ./dist/bin/repo-ai-governor.js --help >/dev/null
 
 ## Notes
 
-1. Do not use `npm run check` in verification commands to avoid recursive gate execution.
+1. Do not use `pnpm run check` in verification commands to avoid recursive gate execution.
 2. Prefer deterministic commands that can run in CI.

@@ -569,6 +569,7 @@ AI 先完成方案与实现，再进入评审 Agent 与复核 Agent 的循环；
    - 报告、指标、执行摘要、CLI 展示输出、CI 输出
 8. Shared Layer
    - 共享类型、通用工具、i18n 资源与本地化文本构建能力
+   - 当前仓库 i18n runtime 基线实现采用 `i18next`，统一收敛到 `packages/shared/src/i18n/`
 
 ## 12. 建议的配置模型
 
@@ -597,6 +598,7 @@ AI 先完成方案与实现，再进入评审 Agent 与复核 Agent 的循环；
    - 自动执行策略、权限级别、门禁规则
 8. `i18n config`
    - 默认语言、术语映射、输出语言
+   - `runtime_engine`（默认 `i18next`）
 9. `workspace config`
    - `mode`（`tool_managed`/`repo_local`）
    - `tool_managed_root`（工作区容器根，governor 根目录位于 `<tool_managed_root>/<repo_fingerprint>/.repo-ai-governor`）

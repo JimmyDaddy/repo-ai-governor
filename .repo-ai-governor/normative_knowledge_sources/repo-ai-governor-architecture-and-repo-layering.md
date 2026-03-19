@@ -444,6 +444,9 @@ ai-governor/
 6. 语言资源建议统一放置于 `packages/shared/src/i18n/locales/`，并维护 `zh-CN/en` 键集一致性（key parity）校验。
 7. `reporting/cli-output-presenter` 的 `pretty/plain` 输出可本地化，但 `json` 输出的机器字段不得因 locale 变化而漂移。
 8. `standards/rule-renderer` 与 `standards/agents-projector` 必须基于同一语义键资产按 locale 渲染，避免 human/ai/agents 多视图语义分叉。
+9. 当前仓库 i18n runtime 选型固定为 `i18next`，并通过 `packages/shared/src/i18n/` 统一封装初始化、locale 解析与翻译函数入口。
+10. 实施阶段采用“双阶段分工”：Stage 1 / Phase A 实现 i18n runtime 基线；Stage 6 / Phase D 接入 key parity 与 fallback 门禁。
+11. 在新仓库起步阶段，i18n 引入采用 `fix-forward`，不额外维护双运行时回滚路径。
 
 ## 7. 从当前仓库的渐进迁移路径
 
