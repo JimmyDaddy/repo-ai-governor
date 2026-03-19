@@ -1,8 +1,26 @@
 # M3 编排引擎与 HITL 闭环 SPRINT-002 Checklist
 
-- [ ] **TK-311** Notification provider: webhook 基线（负责人：Notification｜优先级：P0｜截止：2026-06-23｜状态：todo）
-- [ ] **TK-312** 通知回退通道抽象（email/chat-im/issue-system）（负责人：Notification｜优先级：P1｜截止：2026-06-23｜状态：todo）
-- [ ] **TK-313** 自定义角色注册与 role_profile_id 生命周期（负责人：Role Registry｜优先级：P0｜截止：2026-06-23｜状态：todo）
-- [ ] **TK-314** Agent 与 Skill 契约边界落地（负责人：Architecture｜优先级：P1｜截止：2026-06-23｜状态：todo）
-- [ ] **TK-315** 多 Agent 共享 session 协作约束接入（负责人：Session｜优先级：P1｜截止：2026-06-23｜状态：todo）
-- [ ] **TK-316** M3 端到端编排链路回归（负责人：QA｜优先级：P1｜截止：2026-06-23｜状态：todo）
+- [x] **TK-311** Notification provider: webhook 基线（负责人：Notification｜优先级：P0｜截止：2026-06-23｜状态：done）
+  - 执行记录：plan=定义 webhook provider 通知契约与最小载荷字段;result=已新增 `notification-provider-webhook-baseline.md` 并固定发送状态与错误模型;verify=与总方案 §7.4 通知触发与审计字段要求一致
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-037`，并在 `TK-312` `TK-316` `TK-416` 建立 Depends On/Input References;verify=webhook 基线可被回退与回归任务直接消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-311-notification-provider-webhook-baseline.md`;verify=复核通过 无新增问题
+- [x] **TK-312** 通知回退通道抽象（email/chat-im/issue-system）（负责人：Notification｜优先级：P1｜截止：2026-06-23｜状态：done）
+  - 执行记录：plan=在 webhook 基线之上定义多通道回退抽象与风险路由;result=已新增 `notification-fallback-channel-abstraction-baseline.md` 并固定 fallback 策略;verify=回退链路与升级语义可执行
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-038`，并在 `TK-316` `TK-416` 建立 Depends On/Input References;verify=回退抽象可被 E2E 与兼容性回归消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-312-notification-fallback-channel-abstraction-baseline.md`;verify=复核通过 无新增问题
+- [x] **TK-313** 自定义角色注册与 role_profile_id 生命周期（负责人：Role Registry｜优先级：P0｜截止：2026-06-23｜状态：done）
+  - 执行记录：plan=定义用户自定义角色注册模型与 role_profile 生命周期;result=已新增 `custom-role-registration-and-role-profile-lifecycle-baseline.md` 并固定状态流转;verify=角色模型与权限上限约束一致
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-039`，并在 `TK-314` `TK-315` `TK-316` 建立 Depends On/Input References;verify=角色生命周期基线可被边界与协作任务消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-313-custom-role-registration-and-role-profile-lifecycle-baseline.md`;verify=复核通过 无新增问题
+- [x] **TK-314** Agent 与 Skill 契约边界落地（负责人：Architecture｜优先级：P1｜截止：2026-06-23｜状态：done）
+  - 执行记录：plan=固化 Agent 与 Skill 职责边界和审计字段契约;result=已新增 `agent-skill-contract-boundary-baseline.md` 并明确调度关系;verify=与总方案 §8.4 边界定义一致
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-040`，并在 `TK-315` `TK-316` `TK-405` 建立 Depends On/Input References;verify=边界基线可被协作与契约测试任务消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-314-agent-skill-contract-boundary-baseline.md`;verify=复核通过 无新增问题
+- [x] **TK-315** 多 Agent 共享 session 协作约束接入（负责人：Session｜优先级：P1｜截止：2026-06-23｜状态：done）
+  - 执行记录：plan=定义共享 execution_session_id 协作不变量与冲突处理;result=已新增 `multi-agent-shared-session-collaboration-constraints-baseline.md` 并固定冲突策略;verify=session 协作语义可执行且可审计
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-041`，并在 `TK-316` `TK-416` `TK-506` 建立 Depends On/Input References;verify=协作约束可被回归与回放任务消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-315-multi-agent-shared-session-collaboration-constraints-baseline.md`;verify=复核通过 无新增问题
+- [x] **TK-316** M3 端到端编排链路回归（负责人：QA｜优先级：P1｜截止：2026-06-23｜状态：done）
+  - 执行记录：plan=定义 M3 端到端回归场景矩阵与证据契约;result=已新增 `m3-end-to-end-orchestration-regression-baseline.md` 并覆盖策略通知角色与session路径;verify=回归范围覆盖 M3 核心能力
+  - 执行记录：review_delta=已在 `docs/dev/dependency-artifact-registry.md` 登记 `DA-042`，并在 `TK-416` `TK-516` 建立 Depends On/Input References;verify=E2E 基线可被下游里程碑消费
+  - 执行记录：review_delta=已完成 CR 复核并流转为 `verified_review_tk-316-m3-end-to-end-orchestration-regression-baseline.md`;verify=复核通过 无新增问题

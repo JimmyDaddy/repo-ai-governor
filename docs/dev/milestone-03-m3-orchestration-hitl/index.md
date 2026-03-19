@@ -1,9 +1,9 @@
 # M3 编排引擎与 HITL 闭环
 
-- Status: executing
+- Status: completed
 - Date: 2026-03-19
 - Milestone: `M3`
-- Priority: P1（进行中）
+- Priority: P1（已完成）
 - Technical Phase: Phase D
 - Architecture Step: Step 4~6
 

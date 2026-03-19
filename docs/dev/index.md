@@ -60,6 +60,12 @@
 35. [M3 人工决策回灌链路基线](./milestone-03-m3-orchestration-hitl/sprint-001/human-decision-feedback-loop-baseline.md)
 36. [M3 超时取消并发冲突恢复基线](./milestone-03-m3-orchestration-hitl/sprint-001/timeout-cancel-concurrency-conflict-recovery-baseline.md)
 37. [M3 依赖产物自动注册与上下文注入运行时基线](./milestone-03-m3-orchestration-hitl/sprint-001/dependency-artifact-auto-registration-and-context-injection-runtime-baseline.md)
+38. [M3 Webhook 通知 Provider 基线](./milestone-03-m3-orchestration-hitl/sprint-002/notification-provider-webhook-baseline.md)
+39. [M3 通知回退通道抽象基线](./milestone-03-m3-orchestration-hitl/sprint-002/notification-fallback-channel-abstraction-baseline.md)
+40. [M3 自定义角色注册与生命周期基线](./milestone-03-m3-orchestration-hitl/sprint-002/custom-role-registration-and-role-profile-lifecycle-baseline.md)
+41. [M3 Agent 与 Skill 契约边界基线](./milestone-03-m3-orchestration-hitl/sprint-002/agent-skill-contract-boundary-baseline.md)
+42. [M3 多 Agent 共享 Session 协作约束基线](./milestone-03-m3-orchestration-hitl/sprint-002/multi-agent-shared-session-collaboration-constraints-baseline.md)
+43. [M3 端到端编排链路回归基线](./milestone-03-m3-orchestration-hitl/sprint-002/m3-end-to-end-orchestration-regression-baseline.md)
 
 ## Program View
 
@@ -68,7 +74,7 @@
 | M0 基线治理与重构起跑 | P0（已完成） | Phase A/B | Step 1 | 1 |
 | M1 核心包抽离 | P1（已完成） | Phase B | Step 2 | 2 |
 | M2 Workspace + Memory + Session 稳定化 | P1（已完成） | Phase C | Step 3~5 | 2 |
-| M3 编排引擎与 HITL 闭环 | P1（进行中） | Phase D | Step 4~6 | 2 |
+| M3 编排引擎与 HITL 闭环 | P1（已完成） | Phase D | Step 4~6 | 2 |
 | M4 适配器模块化与 CLI 瘦身 | P1（进行中） | Phase D | Step 5~6 | 2 |
 | M5 质量硬化与发布就绪 | P1->P2 过渡 | Phase E | Step 7 | 2 |
 

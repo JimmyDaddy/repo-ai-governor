@@ -57,6 +57,12 @@
 | DA-034 | `docs/dev/milestone-03-m3-orchestration-hitl/sprint-001/human-decision-feedback-loop-baseline.md` | `TK-305` | `TK-306`, `TK-316` | 2026-03-19 | 2026-03-19 | active |
 | DA-035 | `docs/dev/milestone-03-m3-orchestration-hitl/sprint-001/timeout-cancel-concurrency-conflict-recovery-baseline.md` | `TK-306` | `TK-316`, `TK-416` | 2026-03-19 | 2026-03-19 | active |
 | DA-036 | `docs/dev/milestone-03-m3-orchestration-hitl/sprint-001/dependency-artifact-auto-registration-and-context-injection-runtime-baseline.md` | `TK-307` | `TK-316`, `TK-501`, `TK-503` | 2026-03-19 | 2026-03-19 | active |
+| DA-037 | `docs/dev/milestone-03-m3-orchestration-hitl/sprint-002/notification-provider-webhook-baseline.md` | `TK-311` | `TK-312`, `TK-316`, `TK-416` | 2026-03-19 | 2026-03-19 | active |
+| DA-038 | `docs/dev/milestone-03-m3-orchestration-hitl/sprint-002/notification-fallback-channel-abstraction-baseline.md` | `TK-312` | `TK-316`, `TK-416` | 2026-03-19 | 2026-03-19 | active |
+| DA-039 | `docs/dev/milestone-03-m3-orchestration-hitl/sprint-002/custom-role-registration-and-role-profile-lifecycle-baseline.md` | `TK-313` | `TK-314`, `TK-315`, `TK-316` | 2026-03-19 | 2026-03-19 | active |
+| DA-040 | `docs/dev/milestone-03-m3-orchestration-hitl/sprint-002/agent-skill-contract-boundary-baseline.md` | `TK-314` | `TK-315`, `TK-316`, `TK-405` | 2026-03-19 | 2026-03-19 | active |
+| DA-041 | `docs/dev/milestone-03-m3-orchestration-hitl/sprint-002/multi-agent-shared-session-collaboration-constraints-baseline.md` | `TK-315` | `TK-316`, `TK-416`, `TK-506` | 2026-03-19 | 2026-03-19 | active |
+| DA-042 | `docs/dev/milestone-03-m3-orchestration-hitl/sprint-002/m3-end-to-end-orchestration-regression-baseline.md` | `TK-316` | `TK-416`, `TK-516` | 2026-03-19 | 2026-03-19 | active |
 
 ## Notes
 

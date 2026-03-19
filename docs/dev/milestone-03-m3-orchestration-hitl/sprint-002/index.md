@@ -1,7 +1,7 @@
 # M3 编排引擎与 HITL 闭环 SPRINT-002
 
-- Status: planned
-- Date: 2026-03-18
+- Status: completed
+- Date: 2026-03-19
 - Milestone: `M3`
 - Sprint: `sprint-002`
 - Duration: 2026-06-10 ~ 2026-06-23 (2 weeks)
@@ -25,3 +25,9 @@
 2. [tasks/checklist.md](./tasks/checklist.md)
 3. [tasks/tasks.csv](./tasks/tasks.csv)
 4. [code-review/README.md](./code-review/README.md)
+5. [notification-provider-webhook-baseline.md](./notification-provider-webhook-baseline.md)
+6. [notification-fallback-channel-abstraction-baseline.md](./notification-fallback-channel-abstraction-baseline.md)
+7. [custom-role-registration-and-role-profile-lifecycle-baseline.md](./custom-role-registration-and-role-profile-lifecycle-baseline.md)
+8. [agent-skill-contract-boundary-baseline.md](./agent-skill-contract-boundary-baseline.md)
+9. [multi-agent-shared-session-collaboration-constraints-baseline.md](./multi-agent-shared-session-collaboration-constraints-baseline.md)
+10. [m3-end-to-end-orchestration-regression-baseline.md](./m3-end-to-end-orchestration-regression-baseline.md)
