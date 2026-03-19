@@ -7,6 +7,6 @@
     "rootDir": ".",
     "sourceMap": true
   },
-  "include": ["src/**/*", "apps/**/*", "packages/**/*", "bin/**/*"],
+  "include": ["apps/**/*", "packages/**/*", "bin/**/*"],
   "exclude": ["node_modules", "dist", "test/**/*", "scripts/**/*", "**/*.test.*"]
 }

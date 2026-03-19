@@ -17,6 +17,7 @@
 3. Active dependency artifacts:
    - `DA-002` `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-002-artifact-registry-baseline.md`
    - `DA-003` `.repo-ai-governor/context/dev/project-001-foundation/foundation-delivery-baseline-and-constraints.md`
+   - `DA-004` `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-004-monorepo-boundary-and-ci-baseline.md`
 
 ## 3. Consumption Rule
 

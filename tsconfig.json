@@ -15,14 +15,6 @@
     "forceConsistentCasingInFileNames": true,
     "verbatimModuleSyntax": true
   },
-  "include": [
-    "src/**/*",
-    "apps/**/*",
-    "packages/**/*",
-    "bin/**/*",
-    "scripts/**/*",
-    "test/**/*",
-    "types/**/*"
-  ],
+  "include": ["apps/**/*", "packages/**/*", "bin/**/*", "scripts/**/*", "test/**/*", "types/**/*"],
   "exclude": ["node_modules", "dist"]
 }
