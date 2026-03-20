@@ -4,7 +4,7 @@ import { parse } from "yaml";
 
 import { ConfigError, GovernorErrorCode } from "../../shared/src/errors/index.js";
 import { SchemaValidator } from "./schema-validator.js";
-import type { GovernorConfig } from "./types/interfaces/governor-config.interface.js";
+import type { GovernorConfig } from "./types/interfaces/index.js";
 
 /**
  * Loads governor config from disk and enforces schema validation before use.

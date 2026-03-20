@@ -32,7 +32,7 @@
 ## 3.1 sprint-001-process-runtime-and-memory-baseline
 
 - Sprint Goal: 完成 Stage 2 的最小治理闭环（编排、运行时、记忆会话）。
-- 任务包：`TK-013` ~ `TK-016`。
+- 任务包：`TK-013` ~ `TK-016`，`TK-021`。
 - Exit Criteria:
   1. Compiler IR v1 契约可落盘并可被 Runtime 消费。
   2. Runtime 支持四类控制流节点并具备中断/超时基础语义。
@@ -57,6 +57,7 @@
 | TK-014 | sprint-001 | Runtime 控制流执行基线 | baseline/constraints | TK-013 | in_progress |
 | TK-015 | sprint-001 | Memory/Session/Store 基线 | baseline/contract | TK-013,TK-014 | planned |
 | TK-016 | sprint-001 | sprint-001 出口验收基线 | acceptance baseline | TK-013,TK-014,TK-015 | planned |
+| TK-021 | sprint-001 | CS-013 类型声明收敛 | governance/baseline | TK-014 | completed |
 | TK-017 | sprint-002 | Change Risk Evaluator 基线 | baseline/policy | TK-016 | planned |
 | TK-018 | sprint-002 | Policy Gate Engine 基线 | baseline/policy | TK-017 | planned |
 | TK-019 | sprint-002 | HITL 与 Notification Dispatcher 基线 | baseline/constraints | TK-017,TK-018 | planned |

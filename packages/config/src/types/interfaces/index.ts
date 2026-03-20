@@ -1,17 +1,22 @@
-export type { GovernorConfig } from "./governor-config.interface.js";
-export type { GovernorProfile } from "./governor-profile.interface.js";
-export type { I18nConfig } from "./i18n-config.interface.js";
-export type { ResolvedConfig } from "./resolved-config.interface.js";
-export type { ResolvedWorkspace } from "./resolved-workspace.interface.js";
-export type { UpgradeConfirmationItem } from "./upgrade-confirmation-item.interface.js";
-export type { UpgradeMigrationSuggestion } from "./upgrade-migration-suggestion.interface.js";
-export type { UpgradeSchemaDiffItem } from "./upgrade-schema-diff-item.interface.js";
-export type { UpgradeSchemaDiffOptions } from "./upgrade-schema-diff-options.interface.js";
-export type { UpgradeSchemaDiffResult } from "./upgrade-schema-diff-result.interface.js";
-export type { WorkspaceConfig } from "./workspace-config.interface.js";
-export type { WorkspaceMigrationExecutionResult } from "./workspace-migration-execution-result.interface.js";
-export type { WorkspaceMigrationOptions } from "./workspace-migration-options.interface.js";
-export type { WorkspaceMigrationPlan } from "./workspace-migration-plan.interface.js";
-export type { WorkspaceMigrationStepResult } from "./workspace-migration-step-result.interface.js";
-export type { WorkspaceResolverOptions } from "./workspace-resolver-options.interface.js";
-export type { WorkspaceRuntimeOverrides } from "./workspace-runtime-overrides.interface.js";
+export type {
+  GovernorConfig,
+  GovernorProfile,
+  I18nConfig,
+  ResolvedConfig,
+  WorkspaceConfig,
+  WorkspaceRuntimeOverrides,
+} from "./governor.interface.js";
+export type {
+  UpgradeConfirmationItem,
+  UpgradeMigrationSuggestion,
+  UpgradeSchemaDiffItem,
+  UpgradeSchemaDiffOptions,
+  UpgradeSchemaDiffResult,
+} from "./upgrade.interface.js";
+export type {
+  WorkspaceMigrationExecutionResult,
+  WorkspaceMigrationOptions,
+  WorkspaceMigrationPlan,
+  WorkspaceMigrationStepResult,
+} from "./workspace-migration.interface.js";
+export type { ResolvedWorkspace, WorkspaceResolverOptions } from "./workspace.interface.js";

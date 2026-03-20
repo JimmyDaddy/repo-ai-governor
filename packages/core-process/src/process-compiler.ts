@@ -10,19 +10,21 @@ import {
   ProcessCompilerSeverity,
   ProcessNodeType,
 } from "./constants/index.js";
-import type { ProcessCompiledIrSnapshot } from "./types/interfaces/process-compiled-ir-snapshot.interface.js";
-import type { ProcessCompiledIr } from "./types/interfaces/process-compiled-ir.interface.js";
-import type { ProcessCompilerIssueSnapshot } from "./types/interfaces/process-compiler-issue-snapshot.interface.js";
-import type { ProcessCompilerIssue } from "./types/interfaces/process-compiler-issue.interface.js";
-import type { ProcessDslDefinition } from "./types/interfaces/process-dsl-definition.interface.js";
-import type { ProcessDslEdge } from "./types/interfaces/process-dsl-edge.interface.js";
-import type { ProcessDslNode } from "./types/interfaces/process-dsl-node.interface.js";
-import type { ProcessIrEdgeSnapshot } from "./types/interfaces/process-ir-edge-snapshot.interface.js";
-import type { ProcessIrEdge } from "./types/interfaces/process-ir-edge.interface.js";
-import type { ProcessIrNodeLimitsSnapshot } from "./types/interfaces/process-ir-node-limits-snapshot.interface.js";
-import type { ProcessIrNodeLimits } from "./types/interfaces/process-ir-node-limits.interface.js";
-import type { ProcessIrNodeSnapshot } from "./types/interfaces/process-ir-node-snapshot.interface.js";
-import type { ProcessIrNode } from "./types/interfaces/process-ir-node.interface.js";
+import type {
+  ProcessCompiledIr,
+  ProcessCompiledIrSnapshot,
+  ProcessCompilerIssue,
+  ProcessCompilerIssueSnapshot,
+  ProcessDslDefinition,
+  ProcessDslEdge,
+  ProcessDslNode,
+  ProcessIrEdge,
+  ProcessIrEdgeSnapshot,
+  ProcessIrNode,
+  ProcessIrNodeLimits,
+  ProcessIrNodeLimitsSnapshot,
+  ProcessIrNodeSnapshot,
+} from "./types/index.js";
 
 const PROCESS_NODE_TYPE_VALUES = new Set<string>(Object.values(ProcessNodeType));
 

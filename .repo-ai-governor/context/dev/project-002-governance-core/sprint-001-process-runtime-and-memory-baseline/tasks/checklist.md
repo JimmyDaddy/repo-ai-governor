@@ -9,3 +9,6 @@
   - 2026-03-20: 已完成 TK-014 CR 复核并将报告推进为 `verified_review_tk-014-runtime-control-flow-engine-baseline.md`，复核结论“部分认可”，确认无阻断项，并通过 `pnpm run typecheck`、`pnpm run test -- process-runtime-engine.smoke.test.ts`、`pnpm run check`。
 - [ ] TK-015 Memory/Session/Store 基线
 - [ ] TK-016 sprint-001 出口验收基线
+- [x] TK-021 CS-013 类型声明收敛
+  - 2026-03-20: 任务启动，状态切换为 `in_progress`，开始全仓扫描 `types/interfaces` 与 `types/aliases` 的碎片化声明并按领域/上下文合并。
+  - 2026-03-20: 完成收敛交付，`core-process/config/core-runtime` 已按领域合并类型声明并保持导出入口兼容，通过 `pnpm run typecheck` 与 `pnpm run check`。

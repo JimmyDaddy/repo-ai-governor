@@ -10,13 +10,15 @@ import {
   UpgradeSchemaDiffType,
 } from "./constants/index.js";
 import { SchemaValidator } from "./schema-validator.js";
-import type { GovernorConfig } from "./types/interfaces/governor-config.interface.js";
-import type { GovernorProfile } from "./types/interfaces/governor-profile.interface.js";
-import type { UpgradeConfirmationItem } from "./types/interfaces/upgrade-confirmation-item.interface.js";
-import type { UpgradeMigrationSuggestion } from "./types/interfaces/upgrade-migration-suggestion.interface.js";
-import type { UpgradeSchemaDiffItem } from "./types/interfaces/upgrade-schema-diff-item.interface.js";
-import type { UpgradeSchemaDiffOptions } from "./types/interfaces/upgrade-schema-diff-options.interface.js";
-import type { UpgradeSchemaDiffResult } from "./types/interfaces/upgrade-schema-diff-result.interface.js";
+import type {
+  GovernorConfig,
+  GovernorProfile,
+  UpgradeConfirmationItem,
+  UpgradeMigrationSuggestion,
+  UpgradeSchemaDiffItem,
+  UpgradeSchemaDiffOptions,
+  UpgradeSchemaDiffResult,
+} from "./types/interfaces/index.js";
 
 const SUPPORTED_FORWARD_UPGRADE_PATHS = new Set<string>([
   `${GovernorSchemaVersion.V1_0}->${GovernorSchemaVersion.V1_1}`,

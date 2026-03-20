@@ -1,7 +1,5 @@
 import { ConfigError, GovernorErrorCode } from "../../shared/src/errors/index.js";
-import type { GovernorConfig } from "./types/interfaces/governor-config.interface.js";
-import type { GovernorProfile } from "./types/interfaces/governor-profile.interface.js";
-import type { ResolvedConfig } from "./types/interfaces/resolved-config.interface.js";
+import type { GovernorConfig, GovernorProfile, ResolvedConfig } from "./types/interfaces/index.js";
 
 /**
  * Resolves active profile overrides into a single effective config object.

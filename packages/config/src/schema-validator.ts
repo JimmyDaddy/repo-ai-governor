@@ -5,10 +5,12 @@ import {
 } from "../../shared/src/constants/index.js";
 import { ConfigError, GovernorErrorCode } from "../../shared/src/errors/index.js";
 import { GovernorSchemaVersion, SUPPORTED_GOVERNOR_SCHEMA_VERSIONS } from "./constants/index.js";
-import type { GovernorConfig } from "./types/interfaces/governor-config.interface.js";
-import type { GovernorProfile } from "./types/interfaces/governor-profile.interface.js";
-import type { I18nConfig } from "./types/interfaces/i18n-config.interface.js";
-import type { WorkspaceConfig } from "./types/interfaces/workspace-config.interface.js";
+import type {
+  GovernorConfig,
+  GovernorProfile,
+  I18nConfig,
+  WorkspaceConfig,
+} from "./types/interfaces/index.js";
 
 const WORKSPACE_MODE_VALUES = new Set<string>(Object.values(WorkspaceMode));
 const WORKSPACE_MIGRATION_POLICY_VALUES = new Set<string>(Object.values(WorkspaceMigrationPolicy));

@@ -15,10 +15,12 @@ import {
   WorkspaceMigrationStep,
   WorkspaceMigrationStepStatus,
 } from "./constants/index.js";
-import type { WorkspaceMigrationExecutionResult } from "./types/interfaces/workspace-migration-execution-result.interface.js";
-import type { WorkspaceMigrationOptions } from "./types/interfaces/workspace-migration-options.interface.js";
-import type { WorkspaceMigrationPlan } from "./types/interfaces/workspace-migration-plan.interface.js";
-import type { WorkspaceMigrationStepResult } from "./types/interfaces/workspace-migration-step-result.interface.js";
+import type {
+  WorkspaceMigrationExecutionResult,
+  WorkspaceMigrationOptions,
+  WorkspaceMigrationPlan,
+  WorkspaceMigrationStepResult,
+} from "./types/interfaces/index.js";
 import { WorkspaceResolver } from "./workspace-resolver.js";
 
 /**

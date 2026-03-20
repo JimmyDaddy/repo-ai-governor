@@ -13,3 +13,14 @@ export interface ProcessCompilerIssue {
   location: string;
   suggestion: string;
 }
+
+/**
+ * Defines snake_case compiler issue payload persisted in IR snapshot.
+ */
+export interface ProcessCompilerIssueSnapshot {
+  error_code: ProcessCompilerIssueCode;
+  severity: ProcessCompilerSeverity;
+  message: string;
+  location: string;
+  suggestion: string;
+}

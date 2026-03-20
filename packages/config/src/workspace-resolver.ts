@@ -10,8 +10,7 @@ import {
   TOOL_MANAGED_WORKSPACES_ROOT_SEGMENTS,
   WorkspaceModeSource,
 } from "./constants/index.js";
-import type { ResolvedWorkspace } from "./types/interfaces/resolved-workspace.interface.js";
-import type { WorkspaceResolverOptions } from "./types/interfaces/workspace-resolver-options.interface.js";
+import type { ResolvedWorkspace, WorkspaceResolverOptions } from "./types/interfaces/index.js";
 
 /**
  * Resolves effective workspace mode, root, and config path using deterministic precedence.
