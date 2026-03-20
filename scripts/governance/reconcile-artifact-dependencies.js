@@ -9,8 +9,7 @@ const GATE_NAME = "artifact-reconcile";
 const MAIN_REGISTRY_PATH = ".repo-ai-governor/context/artifact-registry/artifacts.csv";
 const TASK_LEDGER_ROOT = ".repo-ai-governor/context/dev";
 const TASK_CARD_ROOT = ".repo-ai-governor/context/dev";
-const DEPENDS_ON_SECTION_HEADING_PATTERN =
-  /^##\s*(?:\d+(?:\.\d+)*\.?\s*)?Depends On\s*$/u;
+const DEPENDS_ON_SECTION_HEADING_PATTERN = /^##\s*(?:\d+(?:\.\d+)*\.?\s*)?Depends On\s*$/u;
 const REQUIRED_REGISTRY_HEADERS = [
   "artifact_id",
   "artifact_type",

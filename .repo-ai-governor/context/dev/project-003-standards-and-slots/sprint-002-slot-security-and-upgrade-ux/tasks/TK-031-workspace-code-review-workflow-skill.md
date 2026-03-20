@@ -9,7 +9,7 @@
 
 ## 1. 任务目标
 
-建立仓库本地 `workspace-code-review-workflow` skill：读取当前上下文，面向当前工作区变更执行 code review，并将 CR 生成、复核、修复产物统一落入当前 sprint 的 `code-review/` 目录。
+建立仓库本地 `workspace-code-review-workflow` skill：读取当前上下文，面向当前工作区变更执行 code review，并将 CR 生成、复核、修复产物统一落入当前 sprint 的 `review/` 目录。
 
 ## 2. Depends On
 
@@ -33,7 +33,7 @@
 ## 5. 实施摘要
 
 1. 使用 `init_skill.py` 在仓库 `.codex/skills` 下初始化 `workspace-code-review-workflow` skeleton。
-2. 将 skill 定制为 repo-local 工作流：始终读取 `.repo-ai-governor/context/current-context.md`，并将 `review_/verified_review_/resolved_review_` 生命周期文件写入当前 sprint `code-review/`。
+2. 将 skill 定制为 repo-local 工作流：始终读取 `.repo-ai-governor/context/current-context.md`，并将 `review_/verified_review_/resolved_review_` 生命周期文件写入当前 sprint `review/`。
 3. 为四类触发语句补齐明确动作映射：生成 CR、复核 CR、复核并修复、按已复核 CR 修复。
 4. 在 `AGENTS.md` 与当前 sprint 台账中登记该本地 skill，确保后续执行入口与记录路径一致。
 
@@ -46,7 +46,7 @@
 5. `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-002-slot-security-and-upgrade-ux/plan.md`
 6. `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-002-slot-security-and-upgrade-ux/tasks/checklist.md`
 7. `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-002-slot-security-and-upgrade-ux/tasks/tasks.csv`
-8. `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-002-slot-security-and-upgrade-ux/code-review/verified_review_tk-031-workspace-code-review-workflow-skill.md`
+8. `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-002-slot-security-and-upgrade-ux/review/verified_review_tk-031-workspace-code-review-workflow-skill.md`
 9. `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-002-slot-security-and-upgrade-ux/tasks/TK-031-workspace-code-review-workflow-skill.md`
 
 ## 7. 验证
@@ -57,6 +57,6 @@
 
 ## 8. 执行记录
 
-1. 2026-03-20：任务启动，状态切换为 `in_progress`，开始创建 repo-local code review workflow skill 并对齐当前 sprint `code-review/` 路径。
+1. 2026-03-20：任务启动，状态切换为 `in_progress`，开始创建 repo-local code review workflow skill 并对齐当前 sprint `review/` 路径。
 2. 2026-03-20：完成 skill 内容定制、`AGENTS.md` 本地技能映射与 sprint 台账同步。
 3. 2026-03-20：在临时 venv 中安装 `PyYAML` 后完成 skill 结构校验，并通过 task ledger / sprint status 同步检查，任务状态切换为 `completed`。

@@ -85,7 +85,7 @@ flowchart TB
     Plan[plan.md]
     Checklist[tasks/checklist.md]
     CSV[tasks/tasks.csv]
-    CR[code-review lifecycle]
+    CR[review lifecycle]
   end
 
   CLI --> Loader

@@ -1,13 +1,13 @@
 ---
 name: workspace-code-review-workflow
-description: Repository-local code review workflow for this workspace. Use when the user says "帮我 cr 代码", "帮我cr代码" ,"code review", "复核 code review 报告", "复核 cr 报告", "复核 code review 报告并修复", "复核 cr 报告并修复", "执行 cr 修复", or otherwise wants to review the current working tree, recheck the current sprint's pending CR report, or fix accepted findings from a verified sprint CR report. The skill always reads `.repo-ai-governor/context/current-context.md` and writes review artifacts to the active sprint `code-review/` directory instead of `docs/review`.
+description: Repository-local code review workflow for this workspace. Use when the user says "帮我 cr 代码", "帮我cr代码" ,"code review", "复核 code review 报告", "复核 cr 报告", "复核 code review 报告并修复", "复核 cr 报告并修复", "执行 cr 修复", or otherwise wants to review the current working tree, recheck the current sprint's pending CR report, or fix accepted findings from a verified sprint CR report. The skill always reads `.repo-ai-governor/context/current-context.md` and writes review artifacts to the active sprint `review/` directory instead of `docs/review`.
 ---
 
 # Workspace Code Review Workflow
 
 ## Overview
 
-Read `.repo-ai-governor/context/current-context.md` before doing anything else. Resolve the active stream `review` path from that file and treat it as the only output location for review artifacts; if the user says `code-view`, interpret it as the same current sprint `code-review/` directory.
+Read `.repo-ai-governor/context/current-context.md` before doing anything else. Resolve the active stream `review` path from that file and treat it as the only output location for review artifacts; if the user says `code-view`, interpret it as the same current sprint `review/` directory.
 
 Prefer this repository-local skill over the generic `code-review-workflow` skill whenever the request targets the current workspace or the current sprint CR lifecycle.
 
@@ -15,7 +15,7 @@ Prefer this repository-local skill over the generic `code-review-workflow` skill
 
 1. `帮我cr代码` / `帮我 cr 代码` / `code review`
 - Review only the files currently modified in the working tree.
-- Create a new `code_review_<slug>.md` in the active sprint `code-review/` directory.
+- Create a new `code_review_<slug>.md` in the active sprint `review/` directory.
 
 2. `复核 code review 报告` / `复核 cr 报告`
 - Find the active sprint report that is still pending verification (`code_review_*.md`).
@@ -58,7 +58,7 @@ Prefer this repository-local skill over the generic `code-review-workflow` skill
 - data consistency, rollback, and failure recovery
 - missing or weak tests
 
-4. Write `code_review_<slug>.md` with this structure:
+4. Write `review_<slug>.md` with this structure:
 
 ```md
 # Code Review: <title>
@@ -94,7 +94,7 @@ Prefer this repository-local skill over the generic `code-review-workflow` skill
 
 1. Locate the report.
 - Prefer the report path specified by the user.
-- Otherwise select the most recently updated `code_review_*.md` in the active sprint `code-review/` directory.
+- Otherwise select the most recently updated `code_review_*.md` in the active sprint `review/` directory.
 
 2. Re-read the current code and relevant docs for every finding.
 
@@ -144,7 +144,7 @@ Prefer this repository-local skill over the generic `code-review-workflow` skill
 ## Guardrails
 
 1. Never skip `current-context.md`; it is the source of truth for the active sprint review path.
-2. Never create or update CR files outside the active sprint `code-review/` directory.
+2. Never create or update CR files outside the active sprint `review/` directory.
 3. Never mark a report as `resolved` while blocked or skipped actionable items remain.
 4. Never claim a command passed unless it actually ran successfully.
 5. Keep findings evidence-driven, severity-ordered, and tied to concrete file references.

@@ -46,7 +46,7 @@
 1. `packages/standards/**`
 2. `test/standards-pack.smoke.test.ts`
 3. `packages/shared/src/errors/error-code.constant.ts`
-4. `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-001-standards-pack-and-spec-sync/code-review/verified_review_tk-024-standards-pack-registry-and-rule-renderer-baseline.md`
+4. `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-001-standards-pack-and-spec-sync/review/verified_review_tk-024-standards-pack-registry-and-rule-renderer-baseline.md`
 5. `DA-032` `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-001-standards-pack-and-spec-sync/tasks/TK-024-standards-pack-registry-and-rule-renderer-baseline.md`
 
 ## 8. 执行记录

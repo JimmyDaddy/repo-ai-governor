@@ -63,7 +63,7 @@
 5. `packages/shared/src/errors/error-code.constant.ts`
 6. `test/memory-session-store.smoke.test.ts`
 7. `DA-022` `.repo-ai-governor/context/dev/project-002-governance-core/sprint-001-process-runtime-and-memory-baseline/tasks/TK-015-memory-session-store-baseline.md`
-8. `.repo-ai-governor/context/dev/project-002-governance-core/sprint-001-process-runtime-and-memory-baseline/code-review/verified_review_tk-015-memory-session-store-baseline.md`
+8. `.repo-ai-governor/context/dev/project-002-governance-core/sprint-001-process-runtime-and-memory-baseline/review/verified_review_tk-015-memory-session-store-baseline.md`
 
 ## 7. 验证
 

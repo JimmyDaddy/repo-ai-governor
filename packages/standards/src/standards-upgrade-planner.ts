@@ -182,8 +182,7 @@ export class StandardsUpgradePlanner {
               packId,
               level: StandardsUpgradeConflictLevel.ADVISORY,
               changeType: StandardsUpgradeChangeType.VERSION_CHANGED,
-              message:
-                `Pack "${packId}" exact-version pin requires manual confirmation for any version change.`,
+              message: `Pack "${packId}" exact-version pin requires manual confirmation for any version change.`,
               fromVersion: currentPack.packVersion,
               toVersion: targetPack.packVersion,
               recommendedAction: StandardsUpgradeRequiredAction.CONFIRM,

@@ -267,7 +267,7 @@ AI 先完成方案与实现，再进入评审 Agent 与复核 Agent 的循环；
    - 方案文档
    - 任务 checklist，采用单列表结构；每个任务条目至少包含任务编号、标题、负责人、优先级、截止日期、状态，并在条目下持续追加执行记录
    - CSV 任务记录，采用追加式执行台账；每条执行记录单独一行，至少包含 `execution_id`、`task_id`、`title`、`owner`、`priority`、`due_date`、`status`、`project`、`sprint`、`plan`、`result`、`verify`、`review_delta`、`recorded_at`
-   - 单独 `code-review/` 目录中的 CR 文件，命名采用 `review_<slug>.md`
+   - 单独 `review/` 目录中的 CR 文件，命名采用 `review_<slug>.md`
    - 复核结果直接追加到同一个 CR 文件中，并在状态流转时重命名为 `verified_review_<slug>.md`、`resolved_review_<slug>.md`
 
 ### 8.5.1 多 Agent 协议与运行时

@@ -89,6 +89,7 @@
    - `tasks/checklist.md`
    - `tasks/tasks.csv`
    - `tasks/TK-xxx.md`
+   - `review/`（当前 sprint 的评审产物目录）
 3. Code review 文件生命周期：
    - `review_<slug>.md`
    - `verified_review_<slug>.md`

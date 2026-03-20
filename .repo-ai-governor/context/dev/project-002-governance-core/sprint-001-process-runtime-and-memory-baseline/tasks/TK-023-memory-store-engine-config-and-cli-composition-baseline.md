@@ -53,7 +53,7 @@
 5. `apps/cli/src/main.ts`
 6. `test/memory-store-config-and-cli-composition.smoke.test.ts`
 7. `DA-024` `.repo-ai-governor/context/dev/project-002-governance-core/sprint-001-process-runtime-and-memory-baseline/tasks/TK-023-memory-store-engine-config-and-cli-composition-baseline.md`
-8. `.repo-ai-governor/context/dev/project-002-governance-core/sprint-001-process-runtime-and-memory-baseline/code-review/verified_review_tk-023-memory-store-engine-config-and-cli-composition-baseline.md`
+8. `.repo-ai-governor/context/dev/project-002-governance-core/sprint-001-process-runtime-and-memory-baseline/review/verified_review_tk-023-memory-store-engine-config-and-cli-composition-baseline.md`
 
 ## 7. 验证
 

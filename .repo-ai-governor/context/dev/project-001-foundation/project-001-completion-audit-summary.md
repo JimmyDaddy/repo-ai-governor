@@ -41,8 +41,8 @@
 5. `.repo-ai-governor/context/dev/project-001-foundation/sprint-002-workspace-and-upgrade/plan.md`
 6. `.repo-ai-governor/context/dev/project-001-foundation/sprint-002-workspace-and-upgrade/tasks/checklist.md`
 7. `.repo-ai-governor/context/dev/project-001-foundation/sprint-002-workspace-and-upgrade/tasks/tasks.csv`
-8. `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/code-review/`
-9. `.repo-ai-governor/context/dev/project-001-foundation/sprint-002-workspace-and-upgrade/code-review/`
+8. `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/review/`
+9. `.repo-ai-governor/context/dev/project-001-foundation/sprint-002-workspace-and-upgrade/review/`
 10. `.repo-ai-governor/context/artifact-registry/artifacts.csv`
 11. `.repo-ai-governor/context/artifact-registry/archive/artifacts.archive.csv`
 

@@ -46,7 +46,7 @@
 8. `packages/standards/README.md`
 9. `packages/shared/src/errors/error-code.constant.ts`
 10. `test/standards-upgrade-ux.smoke.test.ts`
-11. `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-002-slot-security-and-upgrade-ux/code-review/verified_review_tk-028-standards-upgrade-ux-and-version-pin-baseline.md`
+11. `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-002-slot-security-and-upgrade-ux/review/verified_review_tk-028-standards-upgrade-ux-and-version-pin-baseline.md`
 12. `DA-038` `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-002-slot-security-and-upgrade-ux/tasks/TK-028-standards-upgrade-ux-and-version-pin-baseline.md`
 
 ## 7. 验证

@@ -67,7 +67,7 @@
    - `tasks/checklist.md`（单列表 + 条目下执行记录）
    - `tasks/tasks.csv`（追加式执行台账）
    - `tasks/TK-xxx.md`
-   - `code-review/review_*.md -> verified_*.md -> resolved_*.md`
+   - `review/review_*.md -> verified_*.md -> resolved_*.md`
 
 ## 4.4 Stage 3: 策略与 HITL
 

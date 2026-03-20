@@ -34,7 +34,7 @@
 
 1. 新的规划或执行工作应遵循 `.repo-ai-governor/context/current-context.md` 中声明的活跃执行流路径。
 2. 主执行流的任务分解必须更新上下文文件中声明的执行流专属 `plan.md`、`tasks/checklist.md`、`tasks/tasks.csv` 和 `tasks/TK-xxx.md` 路径。
-3. 代码评审输出必须写入上下文文件中声明的执行流专属 `code-review/` 目录，并使用有意义的状态前缀文件名。
+3. 代码评审输出必须写入上下文文件中声明的执行流专属 `review/` 目录，并使用有意义的状态前缀文件名。
 4. 默认 CR 生命周期：
    - `review_<slug>.md`：评审已生成，待验证
    - `verified_review_<slug>.md`：验证已完成

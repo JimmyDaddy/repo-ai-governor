@@ -82,7 +82,7 @@
 29. `packages/core-process/src/types/index.ts`
 30. `packages/core-process/src/index.ts`
 31. `packages/core-process/README.md`
-32. `.repo-ai-governor/context/dev/project-002-governance-core/sprint-001-process-runtime-and-memory-baseline/code-review/resolved_review_tk-013-process-dsl-and-compiler-ir-v1-baseline.md`
+32. `.repo-ai-governor/context/dev/project-002-governance-core/sprint-001-process-runtime-and-memory-baseline/review/resolved_review_tk-013-process-dsl-and-compiler-ir-v1-baseline.md`
 
 ## 7. 验证
 

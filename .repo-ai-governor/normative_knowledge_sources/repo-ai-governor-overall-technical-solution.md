@@ -498,7 +498,7 @@
 2. `tasks/checklist.md`
 3. `tasks/tasks.csv`
 4. `tasks/TK-xxx.md`
-5. `code-review/review_*.md -> verified_*.md -> resolved_*.md`
+5. `review/review_*.md -> verified_*.md -> resolved_*.md`
 6. `dependency-artifact-registry`（可选文件形态，例如 `dependency-artifact-registry.md/csv`）
 7. `context/artifact-registry/archive/artifacts.archive.csv`（归档产物索引）
 

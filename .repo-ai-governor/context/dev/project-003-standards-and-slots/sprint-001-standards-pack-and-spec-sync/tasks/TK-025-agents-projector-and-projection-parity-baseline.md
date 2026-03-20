@@ -25,7 +25,7 @@
 1. `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-001-standards-pack-and-spec-sync/tasks/TK-024-standards-pack-registry-and-rule-renderer-baseline.md` (`DA-032`)
 2. `.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-overall-technical-solution.md`（`§4.2.6`）
 3. `.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-architecture-and-repo-layering.md`（`§4`）
-4. `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-001-standards-pack-and-spec-sync/code-review/verified_review_tk-024-standards-pack-registry-rule-renderer-batch.md`（`§2.3` 与 `2026-03-20 复核结论`）
+4. `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-001-standards-pack-and-spec-sync/review/verified_review_tk-024-standards-pack-registry-rule-renderer-batch.md`（`§2.3` 与 `2026-03-20 复核结论`）
 
 ## 5. 实施要点
 
@@ -56,5 +56,5 @@
 5. `packages/standards/src/standards-pack-registry.ts`
 6. `packages/standards/src/types/interfaces/standards.interface.ts`
 7. `test/standards-projection-parity.smoke.test.ts`
-8. `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-001-standards-pack-and-spec-sync/code-review/verified_review_tk-025-agents-projector-and-projection-parity-baseline.md`
+8. `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-001-standards-pack-and-spec-sync/review/verified_review_tk-025-agents-projector-and-projection-parity-baseline.md`
 9. `DA-033` `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-001-standards-pack-and-spec-sync/tasks/TK-025-agents-projector-and-projection-parity-baseline.md`

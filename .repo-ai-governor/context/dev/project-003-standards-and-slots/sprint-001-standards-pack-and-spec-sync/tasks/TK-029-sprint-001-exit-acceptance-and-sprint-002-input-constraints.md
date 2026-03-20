@@ -74,4 +74,4 @@
 3. `.repo-ai-governor/context/artifact-registry/artifacts.csv`
 4. `.repo-ai-governor/context/dev/dependency-artifact-registry.md`
 5. `.repo-ai-governor/context/dev/index.md`
-6. `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-001-standards-pack-and-spec-sync/code-review/verified_review_tk-029-sprint-001-exit-acceptance-and-sprint-002-input-constraints.md`
+6. `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-001-standards-pack-and-spec-sync/review/verified_review_tk-029-sprint-001-exit-acceptance-and-sprint-002-input-constraints.md`

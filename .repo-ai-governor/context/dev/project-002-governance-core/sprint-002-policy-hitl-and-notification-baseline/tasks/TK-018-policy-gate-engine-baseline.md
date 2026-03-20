@@ -53,7 +53,7 @@
 1. `packages/core-policy/**`
 2. `test/policy-gate-engine.smoke.test.ts`
 3. `packages/shared/src/errors/error-code.constant.ts`
-4. `.repo-ai-governor/context/dev/project-002-governance-core/sprint-002-policy-hitl-and-notification-baseline/code-review/verified_review_tk-018-policy-gate-engine-baseline.md`
+4. `.repo-ai-governor/context/dev/project-002-governance-core/sprint-002-policy-hitl-and-notification-baseline/review/verified_review_tk-018-policy-gate-engine-baseline.md`
 5. `DA-028` `.repo-ai-governor/context/dev/project-002-governance-core/sprint-002-policy-hitl-and-notification-baseline/tasks/TK-018-policy-gate-engine-baseline.md`
 
 ## 7. 验证

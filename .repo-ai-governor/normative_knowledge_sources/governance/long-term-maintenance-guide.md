@@ -91,7 +91,7 @@ Any non-empty entry must include task-level traceability in `tasks/checklist.md`
    - 完成结论（completed / blocked）
    - 审计范围（project + sprint）
    - 任务完成统计（基于 `tasks.csv` 最新记录）
-   - 关键证据路径（plan/checklist/tasks.csv/code-review/artifact-registry）
+   - 关键证据路径（plan/checklist/tasks.csv/review/artifact-registry）
    - 遗留风险与后续输入建议（如有）
 3. 项目 `plan.md` 必须新增或更新“里程碑记录”入口，显式回链到该审计摘要文档。
 4. 若项目后续重新打开（`completed -> active`），再次收尾时必须新增一条新的里程碑记录，禁止覆盖历史审计结论。

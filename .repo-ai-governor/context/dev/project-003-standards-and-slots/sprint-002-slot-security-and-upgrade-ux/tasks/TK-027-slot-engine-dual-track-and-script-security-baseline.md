@@ -52,7 +52,7 @@
 11. `packages/slots/src/index.ts`
 12. `test/slot-engine-security.smoke.test.ts`
 13. `packages/shared/src/errors/error-code.constant.ts`
-14. `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-002-slot-security-and-upgrade-ux/code-review/verified_review_tk-027-slot-engine-dual-track-and-script-security-baseline.md`
+14. `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-002-slot-security-and-upgrade-ux/review/verified_review_tk-027-slot-engine-dual-track-and-script-security-baseline.md`
 15. `DA-037` `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-002-slot-security-and-upgrade-ux/tasks/TK-027-slot-engine-dual-track-and-script-security-baseline.md`
 
 ## 7. 验证

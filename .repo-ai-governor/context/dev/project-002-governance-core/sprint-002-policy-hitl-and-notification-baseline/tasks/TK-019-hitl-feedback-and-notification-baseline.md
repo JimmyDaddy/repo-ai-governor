@@ -58,7 +58,7 @@
 2. `test/notification-dispatcher.smoke.test.ts`
 3. `packages/shared/src/errors/error-code.constant.ts`
 4. `scripts/governance/check-package-dependency-boundary.js`
-5. `.repo-ai-governor/context/dev/project-002-governance-core/sprint-002-policy-hitl-and-notification-baseline/code-review/verified_review_tk-019-hitl-notification-dispatcher-baseline.md`
+5. `.repo-ai-governor/context/dev/project-002-governance-core/sprint-002-policy-hitl-and-notification-baseline/review/verified_review_tk-019-hitl-notification-dispatcher-baseline.md`
 6. `DA-029` `.repo-ai-governor/context/dev/project-002-governance-core/sprint-002-policy-hitl-and-notification-baseline/tasks/TK-019-hitl-feedback-and-notification-baseline.md`
 
 ## 7. 验证

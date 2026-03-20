@@ -61,7 +61,7 @@
 4. `.repo-ai-governor/context/artifact-registry/artifacts.csv`
 5. `.repo-ai-governor/context/dev/dependency-artifact-registry.md`
 6. `.repo-ai-governor/context/dev/index.md`
-7. `.repo-ai-governor/context/dev/project-002-governance-core/sprint-001-process-runtime-and-memory-baseline/code-review/verified_review_tk-016-sprint-001-governance-core-exit-acceptance-baseline.md`
+7. `.repo-ai-governor/context/dev/project-002-governance-core/sprint-001-process-runtime-and-memory-baseline/review/verified_review_tk-016-sprint-001-governance-core-exit-acceptance-baseline.md`
 
 ## 7. 验证
 

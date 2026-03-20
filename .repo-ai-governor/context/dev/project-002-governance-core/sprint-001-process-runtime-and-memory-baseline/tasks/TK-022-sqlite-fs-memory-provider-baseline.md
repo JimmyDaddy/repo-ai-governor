@@ -42,7 +42,7 @@
 1. `packages/memory-providers/sqlite-fs/**`
 2. `test/memory-sqlite-fs-provider.smoke.test.ts`
 3. `DA-023` `.repo-ai-governor/context/dev/project-002-governance-core/sprint-001-process-runtime-and-memory-baseline/tasks/TK-022-sqlite-fs-memory-provider-baseline.md`
-4. `.repo-ai-governor/context/dev/project-002-governance-core/sprint-001-process-runtime-and-memory-baseline/code-review/verified_review_tk-022-sqlite-fs-memory-provider-baseline.md`
+4. `.repo-ai-governor/context/dev/project-002-governance-core/sprint-001-process-runtime-and-memory-baseline/review/verified_review_tk-022-sqlite-fs-memory-provider-baseline.md`
 
 ## 7. 验证
 

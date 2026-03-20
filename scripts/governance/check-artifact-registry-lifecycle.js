@@ -43,8 +43,7 @@ const ALL_LIFECYCLE_STATUSES = new Set(["active", "frozen", "deprecated", "archi
 const MAIN_REGISTRY_ALLOWED_STATUSES = new Set(["active", "frozen", "deprecated"]);
 const ARCHIVE_REGISTRY_ALLOWED_STATUSES = new Set(["archived", "retired"]);
 const ACTIVE_REGISTRY_STATUSES = new Set(["active", "frozen"]);
-const DEPENDS_ON_SECTION_HEADING_PATTERN =
-  /^##\s*(?:\d+(?:\.\d+)*\.?\s*)?Depends On\s*$/u;
+const DEPENDS_ON_SECTION_HEADING_PATTERN = /^##\s*(?:\d+(?:\.\d+)*\.?\s*)?Depends On\s*$/u;
 const CLOSED_TASK_STATUSES = new Set([
   "completed",
   "done",

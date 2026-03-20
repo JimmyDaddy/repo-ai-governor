@@ -54,5 +54,5 @@
 2. `test/docs-triad-sync-gate.smoke.test.ts`
 3. `package.json`
 4. `turbo.json`
-5. `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-001-standards-pack-and-spec-sync/code-review/verified_review_tk-026-spec-sync-guard-gate-integration-baseline.md`
+5. `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-001-standards-pack-and-spec-sync/review/verified_review_tk-026-spec-sync-guard-gate-integration-baseline.md`
 6. `DA-034` `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-001-standards-pack-and-spec-sync/tasks/TK-026-spec-sync-guard-gate-integration-baseline.md`
