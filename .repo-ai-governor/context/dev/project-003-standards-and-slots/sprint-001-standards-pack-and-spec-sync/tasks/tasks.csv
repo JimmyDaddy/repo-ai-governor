@@ -1,0 +1,5 @@
+execution_id,task_id,title,owner,priority,due_date,status,project,sprint,plan,result,verify,review_delta,recorded_at
+exec-20260320-065,TK-024,Standards Pack Registry 与 Rule Renderer 基线,TBD,P0,2026-03-27,planned,project-003-standards-and-slots,sprint-001-standards-pack-and-spec-sync,建立 pack registry 与 rule renderer 基线并提供同源语义渲染入口,待执行,待验证,待执行,2026-03-20
+exec-20260320-066,TK-025,Agents Projector 与 Projection Parity 基线,TBD,P0,2026-03-27,planned,project-003-standards-and-slots,sprint-001-standards-pack-and-spec-sync,建立 agents projector 与投影一致性校验基线并回链 source pack 元数据,待执行,待验证,待执行,2026-03-20
+exec-20260320-067,TK-026,Spec Sync Guard 门禁接线基线,TBD,P0,2026-03-28,planned,project-003-standards-and-slots,sprint-001-standards-pack-and-spec-sync,将 triad 与 brief 同步校验纳入门禁链路并稳定输出失败结构,待执行,待验证,待执行,2026-03-20
+exec-20260320-068,TK-029,sprint-001 出口验收与 sprint-002 输入约束,TBD,P0,2026-03-29,planned,project-003-standards-and-slots,sprint-001-standards-pack-and-spec-sync,形成 sprint-001 验收基线与 sprint-002 输入约束清单并同步依赖产物索引,待执行,待验证,待执行,2026-03-20
