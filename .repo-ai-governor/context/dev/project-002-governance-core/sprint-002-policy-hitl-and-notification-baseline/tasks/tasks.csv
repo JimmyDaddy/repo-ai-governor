@@ -1,0 +1,5 @@
+execution_id,task_id,title,owner,priority,due_date,status,project,sprint,plan,result,verify,review_delta,recorded_at
+exec-20260320-035,TK-017,Change Risk Evaluator 基线,TBD,P0,2026-03-27,planned,project-002-governance-core,sprint-002-policy-hitl-and-notification-baseline,建立统一风险事实输入输出契约并形成风险分级基线,待执行,待验证,待执行,2026-03-20
+exec-20260320-036,TK-018,Policy Gate Engine 基线,TBD,P0,2026-03-27,planned,project-002-governance-core,sprint-002-policy-hitl-and-notification-baseline,建立 allow confirm block escalate 决策引擎并接线策略输入,待执行,待验证,待执行,2026-03-20
+exec-20260320-037,TK-019,HITL 与 Notification Dispatcher 基线,TBD,P0,2026-03-28,planned,project-002-governance-core,sprint-002-policy-hitl-and-notification-baseline,建立人工回灌字段与通知分发主备回退基线,待执行,待验证,待执行,2026-03-20
+exec-20260320-038,TK-020,sprint-002 出口验收与回滚基线,TBD,P0,2026-03-28,planned,project-002-governance-core,sprint-002-policy-hitl-and-notification-baseline,形成 project-002 统一验收与 project-003 输入约束清单,待执行,待验证,待执行,2026-03-20
