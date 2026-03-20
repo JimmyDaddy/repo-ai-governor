@@ -7,5 +7,9 @@
   - 2026-03-20: 任务启动，状态切换为 `in_progress`，开始实现 `core-policy` 策略规则引擎与 HITL 回灌契约。
   - 2026-03-20: 完成交付，新增 `packages/core-policy` 与 `policy-gate-engine` smoke 覆盖，并通过 `pnpm run typecheck`、`pnpm run test -- policy-gate-engine.smoke.test.ts`、`pnpm run check`。
   - 2026-03-20: 复核 `review_tk-017-tk-018-policy-risk-batch.md` 并完成修复：补齐 `riskLevel` 校验、HITL 错误码精度、`REVISE` 路径覆盖与架构依赖约束声明。
-- [ ] TK-019 HITL 与 Notification Dispatcher 基线
-- [ ] TK-020 sprint-002 出口验收与回滚基线
+- [x] TK-019 HITL 与 Notification Dispatcher 基线
+  - 2026-03-20: 任务启动，状态切换为 `in_progress`，开始实现 `notification-dispatcher` 主备通道与失败升级基线。
+  - 2026-03-20: 完成交付，新增 `packages/notification-dispatcher` 与 `notification-dispatcher` smoke 覆盖，并通过 `pnpm run typecheck`、`pnpm run test -- notification-dispatcher.smoke.test.ts`、`pnpm run check`。
+- [x] TK-020 sprint-002 出口验收与回滚基线
+  - 2026-03-20: 任务启动，状态切换为 `in_progress`，开始汇总 sprint-002 出口验收证据与 project-003 输入约束。
+  - 2026-03-20: 完成交付，新增 `DA-030/DA-031` 并完成 artifact registry 回链清理，验证通过 `node ./scripts/governance/reconcile-artifact-dependencies.js` 与 `pnpm run check`。

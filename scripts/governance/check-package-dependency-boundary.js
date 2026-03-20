@@ -16,6 +16,10 @@ const STATIC_IMPORT_PATTERN =
 const DYNAMIC_IMPORT_PATTERN = /\bimport\(\s*["']([^"']+)["']\s*\)/g;
 const SUPPORTED_MODES = new Set(["warn", "block"]);
 const SUPPORTED_FORMATS = new Set(["text", "json"]);
+const NOTIFICATION_DISPATCHER_ALLOWED_CORE_PACKAGE_IDS = new Set([
+  "packages/core-policy",
+  "packages/core-audit",
+]);
 
 /**
  * Resolves CLI options for mode, format, and whitelist path.
@@ -444,6 +448,32 @@ function evaluateBoundary(sourcePackage, targetPackage) {
       allowed: false,
       ruleId: "memory-provider-restricted",
       reason: "memory providers must not depend on app/adapter or unrelated core modules.",
+    };
+  }
+
+  if (sourcePackage.layer === "notification-dispatcher") {
+    const isAllowedNotificationDispatcherCoreDependency =
+      targetPackage.layer === "core" &&
+      NOTIFICATION_DISPATCHER_ALLOWED_CORE_PACKAGE_IDS.has(targetPackage.id);
+
+    if (
+      targetPackage.layer === "notification-dispatcher" ||
+      isAllowedNotificationDispatcherCoreDependency ||
+      targetPackage.layer === "config" ||
+      targetPackage.layer === "shared"
+    ) {
+      return {
+        allowed: true,
+        ruleId: "notification-dispatcher-allowed",
+        reason: "notification-dispatcher may depend on core-policy/core-audit/config/shared.",
+      };
+    }
+
+    return {
+      allowed: false,
+      ruleId: "notification-dispatcher-restricted",
+      reason:
+        "notification-dispatcher should not depend on apps/adapters/provider implementations.",
     };
   }
 
