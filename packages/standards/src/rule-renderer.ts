@@ -11,6 +11,7 @@ import type {
   RuleRendererRenderInput,
   RuleRendererRenderResult,
 } from "./types/index.js";
+import { readRequiredString } from "./utils/index.js";
 
 interface NormalizedRuleRendererOptions {
   registry: RuleRendererOptions["registry"];
@@ -48,7 +49,11 @@ export class RuleRenderer {
     const target = this.readRenderTarget(input.target, "input.target");
     const requestedLocale =
       input.locale === undefined ? this.resolvedOptions.defaultLocale : input.locale;
-    const baseLocale = this.readRequiredString(requestedLocale, "input.locale");
+    const baseLocale = readRequiredString(
+      requestedLocale,
+      "input.locale",
+      GovernorErrorCode.RULE_RENDER_INVALID,
+    );
     const resolvedRules = this.resolvedOptions.registry.resolveRules({
       scope: input.scope,
     });
@@ -89,13 +94,15 @@ export class RuleRenderer {
       );
     }
 
-    const defaultLocale = this.readRequiredString(
+    const defaultLocale = readRequiredString(
       options.defaultLocale ?? DEFAULT_STANDARDS_RENDER_LOCALE,
       "options.defaultLocale",
+      GovernorErrorCode.RULE_RENDER_INVALID,
     );
-    const fallbackLocale = this.readRequiredString(
+    const fallbackLocale = readRequiredString(
       options.fallbackLocale ?? DEFAULT_STANDARDS_FALLBACK_LOCALE,
       "options.fallbackLocale",
+      GovernorErrorCode.RULE_RENDER_INVALID,
     );
 
     return {
@@ -257,8 +264,16 @@ export class RuleRenderer {
     // rule templates only need deterministic placeholder replacement and should
     // avoid pulling heavy formatting runtime into stage-4 baseline.
     for (const [key, value] of Object.entries(interpolation)) {
-      const normalizedKey = this.readRequiredString(key, "interpolation.key");
-      const normalizedValue = this.readRequiredString(value, `interpolation.${key}`);
+      const normalizedKey = readRequiredString(
+        key,
+        "interpolation.key",
+        GovernorErrorCode.RULE_RENDER_INVALID,
+      );
+      const normalizedValue = readRequiredString(
+        value,
+        `interpolation.${key}`,
+        GovernorErrorCode.RULE_RENDER_INVALID,
+      );
       const tokenPattern = new RegExp(
         `\\{\\{\\s*${this.escapeRegExp(normalizedKey)}\\s*\\}\\}`,
         "g",
@@ -285,7 +300,11 @@ export class RuleRenderer {
    * @returns Normalized target value.
    */
   private readRenderTarget(value: unknown, fieldName: string): RuleRendererRenderInput["target"] {
-    const normalizedValue = this.readRequiredString(value, fieldName);
+    const normalizedValue = readRequiredString(
+      value,
+      fieldName,
+      GovernorErrorCode.RULE_RENDER_INVALID,
+    );
     if (!STANDARDS_RENDER_TARGET_VALUES.has(normalizedValue)) {
       throw new RuntimeError(
         GovernorErrorCode.RULE_RENDER_INVALID,
@@ -316,30 +335,5 @@ export class RuleRenderer {
     }
 
     return normalizedLocale.split("-")[0];
-  }
-
-  /**
-   * Validates one required string field.
-   * @param value Raw value.
-   * @param fieldName Field name for diagnostics.
-   * @returns Trimmed string.
-   */
-  private readRequiredString(value: unknown, fieldName: string): string {
-    if (typeof value !== "string") {
-      throw new RuntimeError(
-        GovernorErrorCode.RULE_RENDER_INVALID,
-        `Field "${fieldName}" must be a string.`,
-      );
-    }
-
-    const normalizedValue = value.trim();
-    if (!normalizedValue) {
-      throw new RuntimeError(
-        GovernorErrorCode.RULE_RENDER_INVALID,
-        `Field "${fieldName}" cannot be empty.`,
-      );
-    }
-
-    return normalizedValue;
   }
 }

@@ -16,6 +16,7 @@ import type {
   StandardsRuleDefinition,
   StandardsRuleResolveOptions,
 } from "./types/index.js";
+import { readRequiredString } from "./utils/index.js";
 
 /**
  * Stores and resolves standards packs with deterministic precedence.
@@ -57,7 +58,11 @@ export class StandardsPackRegistry {
    * @returns Pack payload when found.
    */
   public getPack(packId: string): StandardsPack | undefined {
-    const normalizedPackId = this.readRequiredString(packId, "packId");
+    const normalizedPackId = readRequiredString(
+      packId,
+      "packId",
+      GovernorErrorCode.STANDARDS_PACK_INVALID,
+    );
     return this.packById.get(normalizedPackId);
   }
 
@@ -152,8 +157,16 @@ export class StandardsPackRegistry {
       );
     }
 
-    const normalizedPackId = this.readRequiredString(pack.packId, "pack.packId");
-    const normalizedPackVersion = this.readRequiredString(pack.packVersion, "pack.packVersion");
+    const normalizedPackId = readRequiredString(
+      pack.packId,
+      "pack.packId",
+      GovernorErrorCode.STANDARDS_PACK_INVALID,
+    );
+    const normalizedPackVersion = readRequiredString(
+      pack.packVersion,
+      "pack.packVersion",
+      GovernorErrorCode.STANDARDS_PACK_INVALID,
+    );
     const normalizedPackSource = this.readEnumValue(
       pack.packSource,
       "pack.packSource",
@@ -217,8 +230,16 @@ export class StandardsPackRegistry {
       );
     }
 
-    const ruleId = this.readRequiredString(definition.ruleId, `${fieldName}.ruleId`);
-    const semanticKey = this.readRequiredString(definition.semanticKey, `${fieldName}.semanticKey`);
+    const ruleId = readRequiredString(
+      definition.ruleId,
+      `${fieldName}.ruleId`,
+      GovernorErrorCode.STANDARDS_PACK_INVALID,
+    );
+    const semanticKey = readRequiredString(
+      definition.semanticKey,
+      `${fieldName}.semanticKey`,
+      GovernorErrorCode.STANDARDS_PACK_INVALID,
+    );
     const severity = this.readEnumValue(
       definition.severity,
       `${fieldName}.severity`,
@@ -241,7 +262,11 @@ export class StandardsPackRegistry {
 
     const normalizedLocalizedTemplates: StandardsRuleDefinition["localizedTemplates"] = {};
     for (const [locale, targetTemplateMap] of Object.entries(definition.localizedTemplates)) {
-      const normalizedLocale = this.readRequiredString(locale, `${fieldName}.localizedTemplates`);
+      const normalizedLocale = readRequiredString(
+        locale,
+        `${fieldName}.localizedTemplates`,
+        GovernorErrorCode.STANDARDS_PACK_INVALID,
+      );
       if (!targetTemplateMap || typeof targetTemplateMap !== "object") {
         throw new RuntimeError(
           GovernorErrorCode.STANDARDS_PACK_INVALID,
@@ -256,9 +281,10 @@ export class StandardsPackRegistry {
           `${fieldName}.localizedTemplates.${locale}`,
           STANDARDS_RENDER_TARGET_VALUES,
         );
-        normalizedTargetTemplateMap[normalizedTarget] = this.readRequiredString(
+        normalizedTargetTemplateMap[normalizedTarget] = readRequiredString(
           template,
           `${fieldName}.localizedTemplates.${locale}.${target}`,
+          GovernorErrorCode.STANDARDS_PACK_INVALID,
         );
       }
 
@@ -310,36 +336,19 @@ export class StandardsPackRegistry {
 
     const normalizedMetadata: Record<string, string> = {};
     for (const [key, value] of Object.entries(metadata)) {
-      const normalizedKey = this.readRequiredString(key, "metadata.key");
-      normalizedMetadata[normalizedKey] = this.readRequiredString(value, `metadata.${key}`);
+      const normalizedKey = readRequiredString(
+        key,
+        "metadata.key",
+        GovernorErrorCode.STANDARDS_PACK_INVALID,
+      );
+      normalizedMetadata[normalizedKey] = readRequiredString(
+        value,
+        `metadata.${key}`,
+        GovernorErrorCode.STANDARDS_PACK_INVALID,
+      );
     }
 
     return normalizedMetadata;
-  }
-
-  /**
-   * Validates one required string.
-   * @param value Raw value.
-   * @param fieldName Field name for diagnostics.
-   * @returns Trimmed string.
-   */
-  private readRequiredString(value: unknown, fieldName: string): string {
-    if (typeof value !== "string") {
-      throw new RuntimeError(
-        GovernorErrorCode.STANDARDS_PACK_INVALID,
-        `Field "${fieldName}" must be a string.`,
-      );
-    }
-
-    const normalizedValue = value.trim();
-    if (!normalizedValue) {
-      throw new RuntimeError(
-        GovernorErrorCode.STANDARDS_PACK_INVALID,
-        `Field "${fieldName}" cannot be empty.`,
-      );
-    }
-
-    return normalizedValue;
   }
 
   /**
@@ -350,7 +359,11 @@ export class StandardsPackRegistry {
    * @returns Normalized enum string.
    */
   private readEnumValue(value: unknown, fieldName: string, enumValues: Set<string>): string {
-    const normalizedValue = this.readRequiredString(value, fieldName);
+    const normalizedValue = readRequiredString(
+      value,
+      fieldName,
+      GovernorErrorCode.STANDARDS_PACK_INVALID,
+    );
     if (!enumValues.has(normalizedValue)) {
       throw new RuntimeError(
         GovernorErrorCode.STANDARDS_PACK_INVALID,

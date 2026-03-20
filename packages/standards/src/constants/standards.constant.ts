@@ -50,6 +50,18 @@ export enum StandardsRuleSeverity {
  */
 export const DEFAULT_STANDARDS_RENDER_LOCALE = DEFAULT_I18N_LOCALE;
 export const DEFAULT_STANDARDS_FALLBACK_LOCALE = DEFAULT_I18N_FALLBACK_LOCALE;
+export const DEFAULT_AGENTS_PROJECTION_TARGET = "AGENTS.md";
+
+/**
+ * Defines metadata keys rendered in AGENTS projection header.
+ */
+export enum AgentsProjectionMetadataKey {
+  PROJECTION_TARGET = "projection_target",
+  PROJECTED_AT = "projected_at",
+  LOCALE = "locale",
+  SOURCE_PACK_REFS = "source_pack_refs",
+  PROJECTION_PARITY = "projection_parity",
+}
 
 /**
  * Defines runtime enum value sets for payload validation.
