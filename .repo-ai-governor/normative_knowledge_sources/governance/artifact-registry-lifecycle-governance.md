@@ -43,9 +43,15 @@
    - `node ./scripts/governance/reconcile-artifact-dependencies.js`
    - `node ./scripts/governance/compact-artifact-registry.js`
    - `pnpm run artifacts:compact -- --dry-run`（统一 dry-run 编排）
-3. 默认策略：
+3. `reconcile-artifact-dependencies` 语义：
+   - 自动从 `.repo-ai-governor/context/dev/**/tasks/TK-*.md` 的 `## 2. Depends On` 段落解析 `DA-*` 依赖。
+   - 仅保留未关闭任务（`planned/in_progress/...`）作为 `dependent_tasks`，关闭任务依赖自动清退。
+   - 对未落盘的未来产物引用（例如 `DA-035` 尚未注册）输出提示，不直接写入主注册表。
+4. 默认策略：
    - 先通过 warning/计划窗口完成历史清理，再将生命周期规则纳入 blocking gate。
-4. 推荐执行顺序：
+   - 默认闲置阈值：`inactive_days=7`（`active/frozen` 且无依赖连续 7 天后转 `deprecated`）。
+   - 默认宽限阈值：`deprecation_days=14`（`deprecated` 连续 14 天后迁移 `archive`）。
+5. 推荐执行顺序：
    - 先执行依赖清理（移除已关闭或缺失任务引用），再执行 compact 状态迁移。
 
 ## 6. Audit Requirements

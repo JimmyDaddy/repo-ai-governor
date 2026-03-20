@@ -1,0 +1,4 @@
+interface:
+  display_name: "Workspace Code Review"
+  short_description: "审查当前工作区变更并管理 sprint CR 生命周期"
+  default_prompt: "使用 $workspace-code-review-workflow 读取当前上下文，对工作区变更执行 code review，或复核/修复当前 sprint 的 CR 报告。"

@@ -67,14 +67,3 @@
 8. 将执行记录追加到 `tasks/checklist.md` 和 `tasks/tasks.csv`。
 9. project 收尾时生成 `project-xxx-completion-audit-summary.md`。
 10. 在项目 `plan.md` 的“里程碑记录”中登记该审计摘要入口并保留历史记录。
-
-## 本地技能
-
-1. `workspace-delivery-finisher`
-   - 路径：`.codex/skills/workspace-delivery-finisher/SKILL.md`
-   - 当用户说 `收尾`、`提交并推送`、`收尾并推送` 时使用
-   - 触发映射：
-     - `收尾`：运行仓库门禁，生成 Conventional Commit 消息，仅创建本地提交
-     - `提交并推送`：运行相同的收尾流程，然后推送到当前远程分支
-     - `收尾并推送`：同 `提交并推送`
-   - 此本地技能覆盖本仓库的通用 `delivery-finisher` 行为

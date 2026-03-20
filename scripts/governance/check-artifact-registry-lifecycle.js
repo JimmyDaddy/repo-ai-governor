@@ -10,6 +10,7 @@ const MAIN_REGISTRY_PATH = ".repo-ai-governor/context/artifact-registry/artifact
 const ARCHIVE_REGISTRY_PATH =
   ".repo-ai-governor/context/artifact-registry/archive/artifacts.archive.csv";
 const TASK_LEDGER_ROOT = ".repo-ai-governor/context/dev";
+const TASK_CARD_ROOT = ".repo-ai-governor/context/dev";
 const REQUIRED_HEADERS = [
   "artifact_id",
   "artifact_type",
@@ -41,6 +42,9 @@ const REQUIRED_TASK_HEADERS = [
 const ALL_LIFECYCLE_STATUSES = new Set(["active", "frozen", "deprecated", "archived", "retired"]);
 const MAIN_REGISTRY_ALLOWED_STATUSES = new Set(["active", "frozen", "deprecated"]);
 const ARCHIVE_REGISTRY_ALLOWED_STATUSES = new Set(["archived", "retired"]);
+const ACTIVE_REGISTRY_STATUSES = new Set(["active", "frozen"]);
+const DEPENDS_ON_SECTION_HEADING_PATTERN =
+  /^##\s*(?:\d+(?:\.\d+)*\.?\s*)?Depends On\s*$/u;
 const CLOSED_TASK_STATUSES = new Set([
   "completed",
   "done",
@@ -52,7 +56,7 @@ const CLOSED_TASK_STATUSES = new Set([
   "archived",
 ]);
 const MAX_DEPRECATED_DAYS = 14;
-const MAX_UNREFERENCED_ACTIVE_DAYS = 30;
+const MAX_UNREFERENCED_ACTIVE_DAYS = 7;
 
 /**
  * Parses one CSV line with quote support.
@@ -178,6 +182,96 @@ function listTaskCsvFiles(rootDirectory) {
 }
 
 /**
+ * Lists all task card files (`tasks/TK-*.md`) under one root.
+ * @param {string} rootDirectory Absolute root directory.
+ * @returns {string[]}
+ */
+function listTaskCardFiles(rootDirectory) {
+  if (!existsSync(rootDirectory)) {
+    return [];
+  }
+
+  /** @type {string[]} */
+  const filePaths = [];
+
+  /**
+   * Walks one directory recursively.
+   * @param {string} directoryPath Absolute directory path.
+   */
+  function walk(directoryPath) {
+    const entries = readdirSync(directoryPath, { withFileTypes: true });
+    for (const entry of entries) {
+      const absolutePath = resolve(directoryPath, entry.name);
+      if (entry.isDirectory()) {
+        walk(absolutePath);
+        continue;
+      }
+
+      if (entry.isFile() && /^TK-\d+.*\.md$/u.test(entry.name)) {
+        filePaths.push(absolutePath);
+      }
+    }
+  }
+
+  walk(rootDirectory);
+  return filePaths;
+}
+
+/**
+ * Extracts task id from task card filename.
+ * @param {string} taskCardPath Absolute task card path.
+ * @returns {string | null}
+ */
+function readTaskIdFromCardPath(taskCardPath) {
+  const matched = basename(taskCardPath).match(/^(TK-\d+)/u);
+  return matched ? matched[1] : null;
+}
+
+/**
+ * Extracts task status from task card front-matter lines.
+ * @param {string} content Task card markdown content.
+ * @returns {string | null}
+ */
+function readTaskStatusFromCard(content) {
+  const matched = content.match(/^-\s*Status:\s*([a-z_\-]+)/imu);
+  return matched ? matched[1].trim().toLowerCase() : null;
+}
+
+/**
+ * Extracts artifact ids declared in `Depends On` section.
+ * Why: heading numbering can drift (for example `2`, `2.1`, `10.2.1`) and should not break parsing.
+ * @param {string} content Task card markdown content.
+ * @returns {string[]}
+ */
+function extractDependsOnArtifactIds(content) {
+  const lines = content.split(/\r?\n/u);
+  let dependsOnStartIndex = -1;
+
+  for (let index = 0; index < lines.length; index += 1) {
+    if (DEPENDS_ON_SECTION_HEADING_PATTERN.test(lines[index].trim())) {
+      dependsOnStartIndex = index + 1;
+      break;
+    }
+  }
+
+  if (dependsOnStartIndex === -1) {
+    return [];
+  }
+
+  const sectionLines = [];
+  for (let index = dependsOnStartIndex; index < lines.length; index += 1) {
+    if (/^##\s+/u.test(lines[index].trim())) {
+      break;
+    }
+    sectionLines.push(lines[index]);
+  }
+
+  const sectionContent = sectionLines.join("\n");
+  const artifactMatches = sectionContent.match(/DA-\d+/gu) ?? [];
+  return Array.from(new Set(artifactMatches)).sort((left, right) => left.localeCompare(right));
+}
+
+/**
  * Converts YYYY-MM-DD to sortable numeric weight.
  * @param {string} rawValue Date string.
  * @returns {number}
@@ -223,6 +317,61 @@ function collectLatestTaskStatuses(taskCsvPaths) {
   return new Map(
     Array.from(latestStatusByTaskId.entries()).map(([taskId, value]) => [taskId, value.status]),
   );
+}
+
+/**
+ * Builds artifact -> open dependent task ids map from task cards.
+ * @param {string[]} taskCardPaths Task card markdown paths.
+ * @param {Map<string, string>} latestTaskStatuses Latest task statuses from ledgers.
+ * @returns {Map<string, Set<string>>}
+ */
+function buildExpectedArtifactDependencyIndex(taskCardPaths, latestTaskStatuses) {
+  /** @type {Map<string, Set<string>>} */
+  const dependencyByArtifactId = new Map();
+
+  for (const taskCardPath of taskCardPaths) {
+    const taskId = readTaskIdFromCardPath(taskCardPath);
+    if (!taskId) {
+      continue;
+    }
+
+    const content = readFileSync(taskCardPath, "utf8");
+    const fromLedger = latestTaskStatuses.get(taskId);
+    const fromCard = readTaskStatusFromCard(content);
+    const taskStatus = fromLedger ?? fromCard;
+    if (!taskStatus || CLOSED_TASK_STATUSES.has(taskStatus)) {
+      continue;
+    }
+
+    const dependedArtifactIds = extractDependsOnArtifactIds(content);
+    for (const artifactId of dependedArtifactIds) {
+      const consumerTaskIds = dependencyByArtifactId.get(artifactId) ?? new Set();
+      consumerTaskIds.add(taskId);
+      dependencyByArtifactId.set(artifactId, consumerTaskIds);
+    }
+  }
+
+  return dependencyByArtifactId;
+}
+
+/**
+ * Checks whether two string arrays contain same values with same order.
+ * @param {string[]} leftValues Left array.
+ * @param {string[]} rightValues Right array.
+ * @returns {boolean}
+ */
+function isSameStringArray(leftValues, rightValues) {
+  if (leftValues.length !== rightValues.length) {
+    return false;
+  }
+
+  for (let index = 0; index < leftValues.length; index += 1) {
+    if (leftValues[index] !== rightValues[index]) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 /**
@@ -292,8 +441,14 @@ function formatIssue(scope, rowNumber, message) {
 const mainRegistryPath = resolve(process.cwd(), MAIN_REGISTRY_PATH);
 const archiveRegistryPath = resolve(process.cwd(), ARCHIVE_REGISTRY_PATH);
 const taskLedgerRoot = resolve(process.cwd(), TASK_LEDGER_ROOT);
+const taskCardRoot = resolve(process.cwd(), TASK_CARD_ROOT);
 const taskCsvPaths = listTaskCsvFiles(taskLedgerRoot);
 const latestTaskStatuses = collectLatestTaskStatuses(taskCsvPaths);
+const taskCardPaths = listTaskCardFiles(taskCardRoot);
+const expectedDependencyByArtifactId = buildExpectedArtifactDependencyIndex(
+  taskCardPaths,
+  latestTaskStatuses,
+);
 const todayDate = new Date();
 const issues = [];
 
@@ -306,6 +461,12 @@ try {
     const artifactId = row.artifact_id;
     const artifactStatus = row.artifact_status;
     const dependentTasks = parseDependentTasks(row.dependent_tasks);
+    const actualDependentTaskIds = Array.from(new Set(dependentTasks.values)).sort((left, right) =>
+      left.localeCompare(right),
+    );
+    const expectedDependentTaskIds = Array.from(
+      expectedDependencyByArtifactId.get(artifactId) ?? [],
+    ).sort((left, right) => left.localeCompare(right));
     const lastUpdatedDate = parseDate(row.last_updated_at);
 
     for (const dependentTaskId of dependentTasks.values) {
@@ -330,6 +491,33 @@ try {
           ),
         );
       }
+    }
+
+    if (ACTIVE_REGISTRY_STATUSES.has(artifactStatus)) {
+      if (!isSameStringArray(actualDependentTaskIds, expectedDependentTaskIds)) {
+        issues.push(
+          formatIssue(
+            "main",
+            row.__rowNumber,
+            `dependent_tasks drift detected. expected="${expectedDependentTaskIds.join("|")}" actual="${actualDependentTaskIds.join("|")}". run reconcile-artifact-dependencies`,
+          ),
+        );
+      }
+    }
+
+    if (
+      (artifactStatus === "deprecated" ||
+        artifactStatus === "archived" ||
+        artifactStatus === "retired") &&
+      expectedDependentTaskIds.length > 0
+    ) {
+      issues.push(
+        formatIssue(
+          "main",
+          row.__rowNumber,
+          `non-consumable artifact status "${artifactStatus}" is still referenced by open tasks "${expectedDependentTaskIds.join("|")}"`,
+        ),
+      );
     }
 
     if (seenArtifactIds.has(artifactId)) {
@@ -427,6 +615,9 @@ try {
     const artifactId = row.artifact_id;
     const artifactStatus = row.artifact_status;
     const dependentTasks = parseDependentTasks(row.dependent_tasks);
+    const expectedDependentTaskIds = Array.from(
+      expectedDependencyByArtifactId.get(artifactId) ?? [],
+    ).sort((left, right) => left.localeCompare(right));
     const lastUpdatedDate = parseDate(row.last_updated_at);
 
     if (seenArtifactIds.has(artifactId)) {
@@ -468,6 +659,16 @@ try {
           "archive",
           row.__rowNumber,
           "archived/retired artifact must not keep dependent_tasks references",
+        ),
+      );
+    }
+
+    if (expectedDependentTaskIds.length > 0) {
+      issues.push(
+        formatIssue(
+          "archive",
+          row.__rowNumber,
+          `archive artifact is still referenced by open tasks "${expectedDependentTaskIds.join("|")}"`,
         ),
       );
     }

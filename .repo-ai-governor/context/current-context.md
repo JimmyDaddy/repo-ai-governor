@@ -4,14 +4,14 @@
 
 - Status: active
 - Project: `project-003-standards-and-slots`
-- Sprint: `sprint-001-standards-pack-and-spec-sync`
+- Sprint: `sprint-002-slot-security-and-upgrade-ux`
 - Docs root: `.repo-ai-governor/context/dev/project-003-standards-and-slots`
-- Task records: `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-001-standards-pack-and-spec-sync/tasks/`
-- Code review records: `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-001-standards-pack-and-spec-sync/code-review/`
+- Task records: `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-002-slot-security-and-upgrade-ux/tasks/`
+- Code review records: `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-002-slot-security-and-upgrade-ux/code-review/`
 
 ## Active Streams
 
-- `primary`: project=`project-003-standards-and-slots`, sprint=`sprint-001-standards-pack-and-spec-sync`, docs=`.repo-ai-governor/context/dev/project-003-standards-and-slots`, plan=`.repo-ai-governor/context/dev/project-003-standards-and-slots/plan.md`, tasks=`.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-001-standards-pack-and-spec-sync/tasks/`, checklist=`.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-001-standards-pack-and-spec-sync/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-001-standards-pack-and-spec-sync/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-001-standards-pack-and-spec-sync/code-review/`, status=`active`
+- `primary`: project=`project-003-standards-and-slots`, sprint=`sprint-002-slot-security-and-upgrade-ux`, docs=`.repo-ai-governor/context/dev/project-003-standards-and-slots`, plan=`.repo-ai-governor/context/dev/project-003-standards-and-slots/plan.md`, tasks=`.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-002-slot-security-and-upgrade-ux/tasks/`, checklist=`.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-002-slot-security-and-upgrade-ux/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-002-slot-security-and-upgrade-ux/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-002-slot-security-and-upgrade-ux/code-review/`, status=`active`
 
 ## Update Rules
 

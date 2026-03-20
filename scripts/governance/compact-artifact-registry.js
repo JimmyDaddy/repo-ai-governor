@@ -224,7 +224,7 @@ const archivePath = resolve(
   process.cwd(),
   readFlagValue(argv, "--archive") ?? ARCHIVE_REGISTRY_PATH,
 );
-const inactiveDays = Number(readFlagValue(argv, "--inactive-days") ?? "30");
+const inactiveDays = Number(readFlagValue(argv, "--inactive-days") ?? "7");
 const deprecationDays = Number(readFlagValue(argv, "--deprecation-days") ?? "14");
 const dryRun = argv.includes("--dry-run");
 const today = parseDate(readFlagValue(argv, "--today") ?? formatDate(new Date())) ?? new Date();

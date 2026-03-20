@@ -20,6 +20,11 @@
       "dependsOn": ["//#gate:build"],
       "outputs": []
     },
+    "//#gate:docs-triad-sync": {
+      "cache": false,
+      "dependsOn": ["//#gate:build"],
+      "outputs": []
+    },
     "//#gate:finite-literal-sets": {
       "cache": false,
       "dependsOn": ["//#gate:build"],
@@ -54,6 +59,7 @@
       "cache": false,
       "dependsOn": [
         "//#gate:code-standards",
+        "//#gate:docs-triad-sync",
         "//#gate:finite-literal-sets",
         "//#gate:dependency-boundary",
         "//#gate:standardized-errors",

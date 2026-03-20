@@ -1,18 +1,30 @@
 export {
   AgentsProjectionMetadataKey,
   DEFAULT_AGENTS_PROJECTION_TARGET,
+  DEFAULT_STANDARDS_ALLOW_MINOR_AUTO_UPGRADE,
+  DEFAULT_STANDARDS_ALLOW_PATCH_AUTO_UPGRADE,
   DEFAULT_STANDARDS_FALLBACK_LOCALE,
   DEFAULT_STANDARDS_RENDER_LOCALE,
+  DEFAULT_STANDARDS_VERSION_PIN_MODE,
   StandardsPackScope,
   StandardsPackSource,
   StandardsPackStatus,
   StandardsRenderTarget,
   StandardsRuleSeverity,
+  StandardsUpgradeChangeType,
+  StandardsUpgradeConflictLevel,
+  StandardsUpgradeRequiredAction,
+  StandardsUpgradeRollbackStrategy,
+  StandardsVersionPinMode,
   STANDARDS_PACK_SCOPE_VALUES,
   STANDARDS_PACK_SOURCE_VALUES,
   STANDARDS_PACK_STATUS_VALUES,
   STANDARDS_RENDER_TARGET_VALUES,
   STANDARDS_RULE_SEVERITY_VALUES,
+  STANDARDS_UPGRADE_CHANGE_TYPE_VALUES,
+  STANDARDS_UPGRADE_CONFLICT_LEVEL_VALUES,
+  STANDARDS_UPGRADE_REQUIRED_ACTION_VALUES,
+  STANDARDS_VERSION_PIN_MODE_VALUES,
 } from "./constants/index.js";
 export { AgentsProjector } from "./agents-projector.js";
 export {
@@ -20,6 +32,7 @@ export {
   DefaultAgentsProjectionNowProvider,
 } from "./providers/index.js";
 export { RuleRenderer } from "./rule-renderer.js";
+export { StandardsUpgradePlanner } from "./standards-upgrade-planner.js";
 export { StandardsPackRegistry } from "./standards-pack-registry.js";
 export type {
   AgentsProjectionNowProviderContract,
@@ -38,6 +51,15 @@ export type {
   StandardsPackListOptions,
   StandardsPackRegistryOptions,
   StandardsPackRegistryReader,
+  StandardsUpgradeAutoFixSuggestion,
+  StandardsUpgradeConflict,
+  StandardsUpgradePackState,
+  StandardsUpgradePinDecision,
+  StandardsUpgradePlanInput,
+  StandardsUpgradePlannerOptions,
+  StandardsUpgradePlanResult,
+  StandardsUpgradeRollbackPlan,
+  StandardsVersionPinPolicy,
   StandardsRenderInterpolation,
   StandardsRuleRendererReader,
   StandardsRuleDefinition,

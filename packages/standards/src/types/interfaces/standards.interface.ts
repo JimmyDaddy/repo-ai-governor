@@ -4,6 +4,11 @@ import type {
   StandardsPackStatus,
   StandardsRenderTarget,
   StandardsRuleSeverity,
+  StandardsUpgradeChangeType,
+  StandardsUpgradeConflictLevel,
+  StandardsUpgradeRequiredAction,
+  StandardsUpgradeRollbackStrategy,
+  StandardsVersionPinMode,
 } from "../../constants/index.js";
 import type {
   StandardsRenderInterpolation,
@@ -206,4 +211,98 @@ export interface AgentsProjectorProjectResult {
   parity: StandardsProjectionParityResult;
   renderedRules: RenderedStandardsRule[];
   projectedContent: string;
+}
+
+/**
+ * Defines one pack descriptor used by standards-upgrade planning.
+ */
+export interface StandardsUpgradePackState {
+  packId: string;
+  packVersion: string;
+  packSource: StandardsPackSource;
+  scope: StandardsPackScope;
+}
+
+/**
+ * Defines version pin policy applied during standards upgrades.
+ */
+export interface StandardsVersionPinPolicy {
+  mode: StandardsVersionPinMode;
+  allowMinorAutoUpgrade: boolean;
+  allowPatchAutoUpgrade: boolean;
+}
+
+/**
+ * Defines options used to initialize standards-upgrade planner.
+ */
+export interface StandardsUpgradePlannerOptions {
+  defaultPinPolicy?: StandardsVersionPinPolicy;
+}
+
+/**
+ * Defines one standards-upgrade plan input payload.
+ */
+export interface StandardsUpgradePlanInput {
+  currentPacks: StandardsUpgradePackState[];
+  targetPacks: StandardsUpgradePackState[];
+  pinPolicy?: StandardsVersionPinPolicy;
+  rollbackRef?: string;
+}
+
+/**
+ * Defines one conflict row emitted by standards-upgrade planner.
+ */
+export interface StandardsUpgradeConflict {
+  conflictId: string;
+  packId: string;
+  level: StandardsUpgradeConflictLevel;
+  changeType: StandardsUpgradeChangeType;
+  message: string;
+  fromVersion?: string;
+  toVersion?: string;
+  recommendedAction: StandardsUpgradeRequiredAction;
+}
+
+/**
+ * Defines one auto-fix suggestion row for upgrade UX rendering.
+ */
+export interface StandardsUpgradeAutoFixSuggestion {
+  suggestionId: string;
+  packId: string;
+  description: string;
+  suggestedTargetVersion: string;
+}
+
+/**
+ * Defines one pin decision row produced per target pack.
+ */
+export interface StandardsUpgradePinDecision {
+  packId: string;
+  fromVersion?: string;
+  toVersion: string;
+  policyMode: StandardsVersionPinMode;
+  isPinned: boolean;
+  pinnedMajor: number;
+}
+
+/**
+ * Defines one rollback plan payload used by upgrade UX.
+ */
+export interface StandardsUpgradeRollbackPlan {
+  strategy: StandardsUpgradeRollbackStrategy;
+  rollbackRef: string;
+  rollbackSteps: string[];
+}
+
+/**
+ * Defines final standards-upgrade plan output.
+ */
+export interface StandardsUpgradePlanResult {
+  requiredAction: StandardsUpgradeRequiredAction;
+  blockingConflicts: StandardsUpgradeConflict[];
+  autoFixableConflicts: StandardsUpgradeConflict[];
+  advisoryConflicts: StandardsUpgradeConflict[];
+  autoFixSuggestions: StandardsUpgradeAutoFixSuggestion[];
+  pinDecisions: StandardsUpgradePinDecision[];
+  rollbackPlan: StandardsUpgradeRollbackPlan;
 }

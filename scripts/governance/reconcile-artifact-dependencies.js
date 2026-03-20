@@ -8,6 +8,9 @@ import { gateInfo, gatePass } from "./gate-output.js";
 const GATE_NAME = "artifact-reconcile";
 const MAIN_REGISTRY_PATH = ".repo-ai-governor/context/artifact-registry/artifacts.csv";
 const TASK_LEDGER_ROOT = ".repo-ai-governor/context/dev";
+const TASK_CARD_ROOT = ".repo-ai-governor/context/dev";
+const DEPENDS_ON_SECTION_HEADING_PATTERN =
+  /^##\s*(?:\d+(?:\.\d+)*\.?\s*)?Depends On\s*$/u;
 const REQUIRED_REGISTRY_HEADERS = [
   "artifact_id",
   "artifact_type",
@@ -46,6 +49,7 @@ const CLOSED_TASK_STATUSES = new Set([
   "retired",
   "archived",
 ]);
+const ACTIVE_REGISTRY_STATUSES = new Set(["active", "frozen"]);
 
 /**
  * Parses one CSV line with quote support.
@@ -219,6 +223,42 @@ function listTaskCsvFiles(rootDirectory) {
 }
 
 /**
+ * Lists all task card files (`tasks/TK-*.md`) under one root.
+ * @param {string} rootDirectory Absolute root directory.
+ * @returns {string[]}
+ */
+function listTaskCardFiles(rootDirectory) {
+  if (!existsSync(rootDirectory)) {
+    return [];
+  }
+
+  /** @type {string[]} */
+  const filePaths = [];
+
+  /**
+   * Walks one directory recursively.
+   * @param {string} directoryPath Absolute directory path.
+   */
+  function walk(directoryPath) {
+    const entries = readdirSync(directoryPath, { withFileTypes: true });
+    for (const entry of entries) {
+      const absolutePath = resolve(directoryPath, entry.name);
+      if (entry.isDirectory()) {
+        walk(absolutePath);
+        continue;
+      }
+
+      if (entry.isFile() && /^TK-\d+.*\.md$/u.test(entry.name)) {
+        filePaths.push(absolutePath);
+      }
+    }
+  }
+
+  walk(rootDirectory);
+  return filePaths;
+}
+
+/**
  * Parses one YYYY-MM-DD date string.
  * @param {string} value Raw date value.
  * @returns {number}
@@ -246,6 +286,60 @@ function formatDate(value) {
   const month = String(value.getMonth() + 1).padStart(2, "0");
   const day = String(value.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+/**
+ * Extracts task id from task card filename.
+ * @param {string} taskCardPath Absolute task card path.
+ * @returns {string | null}
+ */
+function readTaskIdFromCardPath(taskCardPath) {
+  const matched = basename(taskCardPath).match(/^(TK-\d+)/u);
+  return matched ? matched[1] : null;
+}
+
+/**
+ * Extracts task status from task card front-matter lines.
+ * @param {string} content Task card markdown content.
+ * @returns {string | null}
+ */
+function readTaskStatusFromCard(content) {
+  const matched = content.match(/^-\s*Status:\s*([a-z_\-]+)/imu);
+  return matched ? matched[1].trim().toLowerCase() : null;
+}
+
+/**
+ * Extracts artifact ids declared in `Depends On` section.
+ * Why: heading numbering can drift (for example `2`, `2.1`, `10.2.1`) and should not break parsing.
+ * @param {string} content Task card markdown content.
+ * @returns {string[]}
+ */
+function extractDependsOnArtifactIds(content) {
+  const lines = content.split(/\r?\n/u);
+  let dependsOnStartIndex = -1;
+
+  for (let index = 0; index < lines.length; index += 1) {
+    if (DEPENDS_ON_SECTION_HEADING_PATTERN.test(lines[index].trim())) {
+      dependsOnStartIndex = index + 1;
+      break;
+    }
+  }
+
+  if (dependsOnStartIndex === -1) {
+    return [];
+  }
+
+  const sectionLines = [];
+  for (let index = dependsOnStartIndex; index < lines.length; index += 1) {
+    if (/^##\s+/u.test(lines[index].trim())) {
+      break;
+    }
+    sectionLines.push(lines[index]);
+  }
+
+  const sectionContent = sectionLines.join("\n");
+  const artifactMatches = sectionContent.match(/DA-\d+/gu) ?? [];
+  return Array.from(new Set(artifactMatches)).sort((left, right) => left.localeCompare(right));
 }
 
 /**
@@ -287,24 +381,90 @@ function buildLatestTaskStatusIndex(taskCsvPaths) {
   );
 }
 
+/**
+ * Builds artifact -> open dependent task ids map from task cards.
+ * Why: `dependent_tasks` should be derived from canonical task cards instead of manual edits.
+ * @param {string[]} taskCardPaths Task card markdown paths.
+ * @param {Map<string, { status: string; source: string }>} latestTaskStatuses Latest task statuses.
+ * @returns {{dependencyByArtifactId: Map<string, Set<string>>, openTaskCards: number, fallbackStatusCards: number}}
+ */
+function buildArtifactDependencyIndexFromTaskCards(taskCardPaths, latestTaskStatuses) {
+  /** @type {Map<string, Set<string>>} */
+  const dependencyByArtifactId = new Map();
+  let openTaskCards = 0;
+  let fallbackStatusCards = 0;
+
+  for (const taskCardPath of taskCardPaths) {
+    const taskId = readTaskIdFromCardPath(taskCardPath);
+    if (!taskId) {
+      continue;
+    }
+
+    const content = readFileSync(taskCardPath, "utf8");
+    const fromLedger = latestTaskStatuses.get(taskId)?.status;
+    const fromCard = readTaskStatusFromCard(content);
+    const taskStatus = fromLedger ?? fromCard;
+
+    if (!taskStatus) {
+      continue;
+    }
+
+    if (!fromLedger && fromCard) {
+      fallbackStatusCards += 1;
+    }
+
+    if (CLOSED_TASK_STATUSES.has(taskStatus)) {
+      continue;
+    }
+
+    const dependedArtifactIds = extractDependsOnArtifactIds(content);
+    if (dependedArtifactIds.length === 0) {
+      continue;
+    }
+
+    openTaskCards += 1;
+
+    for (const artifactId of dependedArtifactIds) {
+      const consumerTaskIds = dependencyByArtifactId.get(artifactId) ?? new Set();
+      consumerTaskIds.add(taskId);
+      dependencyByArtifactId.set(artifactId, consumerTaskIds);
+    }
+  }
+
+  return {
+    dependencyByArtifactId,
+    openTaskCards,
+    fallbackStatusCards,
+  };
+}
+
 const argv = process.argv.slice(2);
 const dryRun = argv.includes("--dry-run");
 const mainRegistryPath = resolve(process.cwd(), MAIN_REGISTRY_PATH);
 const taskLedgerRoot = resolve(process.cwd(), TASK_LEDGER_ROOT);
+const taskCardRoot = resolve(process.cwd(), TASK_CARD_ROOT);
 const today = formatDate(new Date());
 
 const { headers, rows } = readCsv(mainRegistryPath, REQUIRED_REGISTRY_HEADERS);
 const taskCsvPaths = listTaskCsvFiles(taskLedgerRoot);
 const latestTaskStatuses = buildLatestTaskStatusIndex(taskCsvPaths);
+const taskCardPaths = listTaskCardFiles(taskCardRoot);
+const { dependencyByArtifactId, openTaskCards, fallbackStatusCards } =
+  buildArtifactDependencyIndexFromTaskCards(taskCardPaths, latestTaskStatuses);
+
+const registryArtifactIds = new Set(rows.map((row) => row.artifact_id));
+const unresolvedArtifactIds = Array.from(dependencyByArtifactId.keys())
+  .filter((artifactId) => !registryArtifactIds.has(artifactId))
+  .sort((left, right) => left.localeCompare(right));
 
 let updatedRowCount = 0;
-let removedClosedDependencyCount = 0;
-let removedMissingDependencyCount = 0;
-let clearedTbdPlaceholderCount = 0;
 let correctedDateInversionCount = 0;
+let activeArtifactWithDependentsCount = 0;
+let activeArtifactWithoutDependentsCount = 0;
+let totalResolvedDependencyLinks = 0;
 
 for (const row of rows) {
-  const parsedDependentTasks = parseDependentTasks(row.dependent_tasks ?? "");
+  const currentDependentTasks = parseDependentTasks(row.dependent_tasks ?? "");
   let changed = false;
 
   if (parseDateWeight(row.last_updated_at ?? "") < parseDateWeight(row.registered_at ?? "")) {
@@ -313,37 +473,31 @@ for (const row of rows) {
     changed = true;
   }
 
-  if (parsedDependentTasks.hasTbdPlaceholder) {
-    row.dependent_tasks = "";
-    clearedTbdPlaceholderCount += 1;
+  const artifactStatus = row.artifact_status;
+  const expectedDependentTasks = ACTIVE_REGISTRY_STATUSES.has(artifactStatus)
+    ? Array.from(dependencyByArtifactId.get(row.artifact_id) ?? []).sort((left, right) =>
+        left.localeCompare(right),
+      )
+    : [];
+
+  if (ACTIVE_REGISTRY_STATUSES.has(artifactStatus)) {
+    if (expectedDependentTasks.length > 0) {
+      activeArtifactWithDependentsCount += 1;
+      totalResolvedDependencyLinks += expectedDependentTasks.length;
+    } else {
+      activeArtifactWithoutDependentsCount += 1;
+    }
+  }
+
+  const nextDependentTasks = expectedDependentTasks.join("|");
+  if (nextDependentTasks !== currentDependentTasks.values.join("|")) {
+    row.dependent_tasks = nextDependentTasks;
     changed = true;
   }
 
-  if (parsedDependentTasks.values.length > 0) {
-    const retainedTaskIds = [];
-
-    for (const taskId of parsedDependentTasks.values) {
-      const latestTask = latestTaskStatuses.get(taskId);
-      if (!latestTask) {
-        removedMissingDependencyCount += 1;
-        changed = true;
-        continue;
-      }
-
-      if (CLOSED_TASK_STATUSES.has(latestTask.status)) {
-        removedClosedDependencyCount += 1;
-        changed = true;
-        continue;
-      }
-
-      retainedTaskIds.push(taskId);
-    }
-
-    const nextDependentTasks = retainedTaskIds.join("|");
-    if (nextDependentTasks !== (row.dependent_tasks ?? "")) {
-      row.dependent_tasks = nextDependentTasks;
-      changed = true;
-    }
+  if (!nextDependentTasks && currentDependentTasks.hasTbdPlaceholder) {
+    row.dependent_tasks = "";
+    changed = true;
   }
 
   if (changed) {
@@ -360,12 +514,23 @@ const summary = {
   dryRun,
   taskCsvFiles: taskCsvPaths.length,
   indexedTasks: latestTaskStatuses.size,
+  taskCardFiles: taskCardPaths.length,
+  openTaskCards,
+  fallbackStatusCards,
   updatedRows: updatedRowCount,
-  removedClosedDependencyCount,
-  removedMissingDependencyCount,
-  clearedTbdPlaceholderCount,
   correctedDateInversionCount,
+  activeArtifactWithDependentsCount,
+  activeArtifactWithoutDependentsCount,
+  totalResolvedDependencyLinks,
+  unresolvedArtifactDependencyRefs: unresolvedArtifactIds.length,
 };
+
+if (unresolvedArtifactIds.length > 0) {
+  gateInfo(
+    GATE_NAME,
+    `unresolved artifact refs in open task cards=${unresolvedArtifactIds.join(",")}`,
+  );
+}
 
 if (dryRun) {
   gateInfo(GATE_NAME, `dry-run summary=${JSON.stringify(summary)}`);

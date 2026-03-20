@@ -47,6 +47,7 @@
     "gate:lint": "biome check .",
     "gate:build": "tsc -p tsconfig.build.json && node ./scripts/build/copy-runtime-assets.js",
     "gate:code-standards": "node ./scripts/governance/check-code-standards.js --standards .repo-ai-governor/normative_knowledge_sources/governance/code_standards.md",
+    "gate:docs-triad-sync": "node ./scripts/governance/check-docs-triad-sync.js",
     "gate:finite-literal-sets": "node ./scripts/governance/check-finite-literal-sets.js",
     "gate:dependency-boundary": "node ./scripts/governance/check-package-dependency-boundary.js --mode warn",
     "gate:standardized-errors": "node ./scripts/governance/check-standardized-error-usage.js",

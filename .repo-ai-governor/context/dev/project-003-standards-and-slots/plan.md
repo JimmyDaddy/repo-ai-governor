@@ -40,7 +40,7 @@
 ## 3.2 sprint-002-slot-security-and-upgrade-ux
 
 - Sprint Goal: 完成 Slot 双轨安全基线与升级 UX 闭环。
-- 任务包：`TK-027`、`TK-028`、`TK-030`。
+- 任务包：`TK-027`、`TK-028`、`TK-030`、`TK-031`。
 - Exit Criteria:
   1. 声明式 slot 与脚本 slot 可在统一策略下执行。
   2. 脚本 slot 安全六项全部可验证。
@@ -53,11 +53,12 @@
 |---|---|---|---|---|---|
 | TK-024 | sprint-001 | Standards Pack Registry 与 Rule Renderer 基线 | baseline/contract | TK-020,DA-030,DA-031 | completed |
 | TK-025 | sprint-001 | Agents Projector 与 Projection Parity 基线 | baseline/constraints | TK-024 | completed |
-| TK-026 | sprint-001 | Spec Sync Guard 门禁接线基线 | baseline/policy | TK-024,TK-025 | planned |
-| TK-029 | sprint-001 | sprint-001 出口验收与 sprint-002 输入约束 | acceptance baseline | TK-024,TK-025,TK-026 | planned |
-| TK-027 | sprint-002 | Slot Engine 双轨与脚本安全六项基线 | baseline/security | TK-029 | planned |
-| TK-028 | sprint-002 | Standards 升级 UX 与版本 pin 策略基线 | baseline/upgrade | TK-027 | planned |
+| TK-026 | sprint-001 | Spec Sync Guard 门禁接线基线 | baseline/policy | TK-024,TK-025 | completed |
+| TK-029 | sprint-001 | sprint-001 出口验收与 sprint-002 输入约束 | acceptance baseline | TK-024,TK-025,TK-026 | completed |
+| TK-027 | sprint-002 | Slot Engine 双轨与脚本安全六项基线 | baseline/security | TK-029 | completed |
+| TK-028 | sprint-002 | Standards 升级 UX 与版本 pin 策略基线 | baseline/upgrade | TK-027 | completed |
 | TK-030 | sprint-002 | project-003 出口验收与 project-004 输入约束 | acceptance baseline | TK-027,TK-028 | planned |
+| TK-031 | sprint-002 | 仓库本地 Code Review Workflow Skill | governance/self-host validation | TK-028 | completed |
 
 ## 5. 依赖产物策略
 
