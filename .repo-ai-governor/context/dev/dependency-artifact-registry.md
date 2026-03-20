@@ -19,7 +19,7 @@
    - 相关任务卡的 `Depends On` 与 `Input References`；
    - 触发任务的 `tasks/checklist.md` 与 `tasks/tasks.csv` 执行记录。
 5. 若依赖任务新增或变更，需在同一变更窗口更新本表。
-6. 在任务 ID 尚未分配阶段，`dependent_tasks` 允许临时为 `TBD`，并在任务拆解落盘时回填为任务 ID 列表。
+6. `dependent_tasks` 不允许使用 `TBD` 占位；未分配依赖任务时保持为空并在任务落盘后显式回填。
 7. `artifact_status` 必须遵循生命周期：`active/frozen/deprecated/archived/retired`。
 8. 主注册表仅保留 `active/frozen/deprecated`；`archived/retired` 必须迁移到归档注册表。
 
@@ -27,16 +27,18 @@
 
 | artifact_id | artifact_path | producer_task | dependent_tasks | first_registered_at | last_updated_at | status |
 |---|---|---|---|---|---|---|
-| DA-003 | `.repo-ai-governor/context/dev/project-001-foundation/foundation-delivery-baseline-and-constraints.md` | `TK-003` | `TK-012` | 2026-03-19 | 2026-03-19 | active |
-| DA-009 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-006-command-smoke-checklist.md` | `TK-006` | `TK-012` | 2026-03-19 | 2026-03-19 | active |
-| DA-010 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-007-dependency-boundary-warning-gate-baseline.md` | `TK-007` | `TK-012` | 2026-03-19 | 2026-03-19 | active |
-| DA-011 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-007-dependency-boundary-whitelist-and-regression-policy.md` | `TK-007` | `TK-012` | 2026-03-19 | 2026-03-19 | active |
-| DA-012 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-008-sprint-001-exit-acceptance-baseline.md` | `TK-008` | `TK-012` | 2026-03-20 | 2026-03-20 | active |
-| DA-013 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-008-sprint-002-input-constraints-checklist.md` | `TK-008` | `TK-012` | 2026-03-20 | 2026-03-20 | active |
-| DA-014 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-002-workspace-and-upgrade/tasks/TK-009-workspace-resolver-dual-mode-baseline.md` | `TK-009` | `TK-012` | 2026-03-20 | 2026-03-20 | active |
-| DA-015 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-002-workspace-and-upgrade/tasks/TK-010-workspace-migration-chain-baseline.md` | `TK-010` | `TK-012` | 2026-03-20 | 2026-03-20 | active |
-| DA-016 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-002-workspace-and-upgrade/tasks/TK-011-upgrade-schema-diff-baseline.md` | `TK-011` | `TK-012` | 2026-03-20 | 2026-03-20 | active |
-| DA-017 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-002-workspace-and-upgrade/tasks/TK-011-upgrade-human-confirmation-policy-baseline.md` | `TK-011` | `TK-012` | 2026-03-20 | 2026-03-20 | active |
+| DA-003 | `.repo-ai-governor/context/dev/project-001-foundation/foundation-delivery-baseline-and-constraints.md` | `TK-003` | *(none)* | 2026-03-19 | 2026-03-20 | active |
+| DA-009 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-006-command-smoke-checklist.md` | `TK-006` | *(none)* | 2026-03-19 | 2026-03-20 | active |
+| DA-010 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-007-dependency-boundary-warning-gate-baseline.md` | `TK-007` | *(none)* | 2026-03-19 | 2026-03-20 | active |
+| DA-011 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-007-dependency-boundary-whitelist-and-regression-policy.md` | `TK-007` | *(none)* | 2026-03-19 | 2026-03-20 | active |
+| DA-012 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-008-sprint-001-exit-acceptance-baseline.md` | `TK-008` | *(none)* | 2026-03-20 | 2026-03-20 | active |
+| DA-013 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-008-sprint-002-input-constraints-checklist.md` | `TK-008` | *(none)* | 2026-03-20 | 2026-03-20 | active |
+| DA-014 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-002-workspace-and-upgrade/tasks/TK-009-workspace-resolver-dual-mode-baseline.md` | `TK-009` | *(none)* | 2026-03-20 | 2026-03-20 | active |
+| DA-015 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-002-workspace-and-upgrade/tasks/TK-010-workspace-migration-chain-baseline.md` | `TK-010` | *(none)* | 2026-03-20 | 2026-03-20 | active |
+| DA-016 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-002-workspace-and-upgrade/tasks/TK-011-upgrade-schema-diff-baseline.md` | `TK-011` | *(none)* | 2026-03-20 | 2026-03-20 | active |
+| DA-017 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-002-workspace-and-upgrade/tasks/TK-011-upgrade-human-confirmation-policy-baseline.md` | `TK-011` | *(none)* | 2026-03-20 | 2026-03-20 | active |
+| DA-018 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-002-workspace-and-upgrade/tasks/TK-012-sprint-002-exit-acceptance-and-rollback-baseline.md` | `TK-012` | *(none)* | 2026-03-20 | 2026-03-20 | active |
+| DA-019 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-002-workspace-and-upgrade/tasks/TK-012-stage-2-input-readiness-checklist.md` | `TK-012` | *(none)* | 2026-03-20 | 2026-03-20 | active |
 
 ## Archive Registry Table
 
