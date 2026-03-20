@@ -1,5 +1,3 @@
-import { describe, expect, it } from "vitest";
-
 import { runCli } from "../apps/cli/src/main.js";
 
 /**

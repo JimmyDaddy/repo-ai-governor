@@ -1,5 +1,3 @@
-import { describe, expect, it } from "vitest";
-
 import { Locale } from "../packages/shared/src/constants/i18n.constant.js";
 import { I18nRuntime } from "../packages/shared/src/index.js";
 

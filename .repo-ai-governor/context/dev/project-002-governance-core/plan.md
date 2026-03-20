@@ -53,7 +53,7 @@
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 |---|---|---|---|---|---|
-| TK-013 | sprint-001 | Process DSL 与 Compiler IR v1 基线 | baseline/contract | TK-012 | planned |
+| TK-013 | sprint-001 | Process DSL 与 Compiler IR v1 基线 | baseline/contract | TK-012 | completed |
 | TK-014 | sprint-001 | Runtime 控制流执行基线 | baseline/constraints | TK-013 | planned |
 | TK-015 | sprint-001 | Memory/Session/Store 基线 | baseline/contract | TK-013,TK-014 | planned |
 | TK-016 | sprint-001 | sprint-001 出口验收基线 | acceptance baseline | TK-013,TK-014,TK-015 | planned |

@@ -1,7 +1,5 @@
 import { join, resolve } from "node:path";
 
-import { describe, expect, it } from "vitest";
-
 import {
   type GovernorConfig,
   WorkspaceMode,
