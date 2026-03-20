@@ -12,4 +12,7 @@
   - 2026-03-20: 任务启动，状态切换为 `in_progress`，开始创建 repo-local code review workflow skill，并将 CR 产物路由到当前 sprint `review/` 目录。
   - 2026-03-20: 完成 `.codex/skills/workspace-code-review-workflow`、`AGENTS.md` 本地技能入口映射与当前 sprint 台账同步。
   - 2026-03-20: 在临时 venv 中安装 `PyYAML` 后执行 `quick_validate.py`，并通过 `check-task-ledger-sync` 与 `check-sprint-plan-status-sync`，任务状态切换为 `completed`。
-- [ ] TK-030 project-003 出口验收与 project-004 输入约束
+- [x] TK-030 project-003 出口验收与 project-004 输入约束
+  - 2026-03-21: 任务启动，状态切换为 `in_progress`，开始汇总 `TK-027/TK-028` 验收证据并生成 `project-004` 输入约束清单。
+  - 2026-03-21: 完成 `DA-039` 与 `DA-040` 产出、review 归档与索引回链，并补齐 `project-003` 完成态审计摘要。
+  - 2026-03-21: 通过 `reconcile-artifact-dependencies`、`check-task-ledger-sync`、`check-sprint-plan-status-sync`、`check-artifact-registry-lifecycle` 与 `pnpm run check`，任务状态切换为 `completed`。

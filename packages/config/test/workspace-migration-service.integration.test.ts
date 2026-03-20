@@ -8,7 +8,7 @@ import {
   WorkspaceMigrationStep,
   WorkspaceMigrationStepStatus,
   WorkspaceMode,
-} from "../packages/config/src/index.js";
+} from "../src/index.js";
 
 const TEMP_DIRECTORIES: string[] = [];
 

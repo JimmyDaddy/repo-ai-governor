@@ -1,7 +1,7 @@
 # project-003-standards-and-slots 计划
 
-- Status: active
-- Date: 2026-03-20
+- Status: completed
+- Date: 2026-03-21
 - Stage Mapping: Stage 4
 - Phase Mapping: Phase B/C
 
@@ -57,7 +57,7 @@
 | TK-029 | sprint-001 | sprint-001 出口验收与 sprint-002 输入约束 | acceptance baseline | TK-024,TK-025,TK-026 | completed |
 | TK-027 | sprint-002 | Slot Engine 双轨与脚本安全六项基线 | baseline/security | TK-029 | completed |
 | TK-028 | sprint-002 | Standards 升级 UX 与版本 pin 策略基线 | baseline/upgrade | TK-027 | completed |
-| TK-030 | sprint-002 | project-003 出口验收与 project-004 输入约束 | acceptance baseline | TK-027,TK-028 | planned |
+| TK-030 | sprint-002 | project-003 出口验收与 project-004 输入约束 | acceptance baseline | TK-027,TK-028 | completed |
 | TK-031 | sprint-002 | 仓库本地 Code Review Workflow Skill | governance/self-host validation | TK-028 | completed |
 
 ## 5. 依赖产物策略
@@ -73,3 +73,7 @@
 3. Spec Sync Guard 可对 triad + brief 漂移执行阻断，并提供机器可读失败明细。
 4. Slot 脚本默认最小权限，安全六项与审计字段全部可验证。
 5. 升级冲突清单、失败回滚、版本 pin 三项能力可稳定复现并通过门禁。
+
+## 7. 里程碑记录
+
+1. 2026-03-21：project-003 完成态审计摘要：`.repo-ai-governor/context/dev/project-003-standards-and-slots/project-003-completion-audit-summary.md`。

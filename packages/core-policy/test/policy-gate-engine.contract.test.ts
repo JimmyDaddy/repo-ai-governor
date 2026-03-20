@@ -3,18 +3,14 @@ import {
   ChangeRiskLevel,
   ChangeRiskReasonCode,
   ChangeRiskRequiredAction,
-} from "../packages/core-change-risk/src/index.js";
+} from "../../core-change-risk/src/index.js";
+import { GovernanceReviewerRole, GovernorErrorCode, RuntimeError } from "../../shared/src/index.js";
 import {
   PolicyDecisionSource,
   PolicyGateEngine,
   PolicyGateRuleId,
   PolicyHitlDecision,
-} from "../packages/core-policy/src/index.js";
-import {
-  GovernanceReviewerRole,
-  GovernorErrorCode,
-  RuntimeError,
-} from "../packages/shared/src/index.js";
+} from "../src/index.js";
 
 /**
  * Creates baseline risk evaluation payload for policy smoke tests.

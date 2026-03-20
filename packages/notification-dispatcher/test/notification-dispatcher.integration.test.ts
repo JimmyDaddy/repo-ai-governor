@@ -1,19 +1,16 @@
-import {
-  ChangeRiskLevel,
-  ChangeRiskRequiredAction,
-} from "../packages/core-change-risk/src/index.js";
+import { ChangeRiskLevel, ChangeRiskRequiredAction } from "../../core-change-risk/src/index.js";
 import {
   PolicyDecisionSource,
   type PolicyGateEvaluationResult,
-} from "../packages/core-policy/src/index.js";
+} from "../../core-policy/src/index.js";
+import { GovernorErrorCode, RuntimeError } from "../../shared/src/index.js";
 import {
   NotificationChannel,
   NotificationDispatchStatus,
   NotificationDispatcher,
   type NotificationProvider,
   type NotificationProviderReceipt,
-} from "../packages/notification-dispatcher/src/index.js";
-import { GovernorErrorCode, RuntimeError } from "../packages/shared/src/index.js";
+} from "../src/index.js";
 
 interface ProviderOutcome {
   delivered?: boolean;

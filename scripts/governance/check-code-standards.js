@@ -12,10 +12,13 @@ const REQUIRED_MARKERS = [
   "[CS-009]",
   "[CS-022]",
   "[CS-023]",
+  "[CS-024]",
   "## Verification Commands",
   "node ./scripts/governance/check-finite-literal-sets.js",
   "node ./scripts/governance/check-package-dependency-boundary.js --mode warn",
   "node ./scripts/governance/check-artifact-registry-lifecycle.js",
+  "pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1",
+  "pnpm run test:integration -- --maxWorkers=1 --maxConcurrency=1",
 ];
 
 /**

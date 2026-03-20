@@ -1,7 +1,7 @@
 # sprint-002-slot-security-and-upgrade-ux 计划
 
-- Status: active
-- Date: 2026-03-20
+- Status: completed
+- Date: 2026-03-21
 - Project: `project-003-standards-and-slots`
 
 ## 1. Sprint Goal
@@ -12,7 +12,7 @@
 
 1. TK-027 Slot Engine 双轨与脚本安全六项基线（completed）
 2. TK-028 Standards 升级 UX 与版本 pin 策略基线（completed）
-3. TK-030 project-003 出口验收与 project-004 输入约束（planned）
+3. TK-030 project-003 出口验收与 project-004 输入约束（completed）
 4. TK-031 仓库本地 Code Review Workflow Skill（completed）
 
 ## 3. Entry Criteria

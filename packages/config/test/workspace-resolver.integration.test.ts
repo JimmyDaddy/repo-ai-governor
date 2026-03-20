@@ -5,7 +5,7 @@ import {
   WorkspaceMode,
   WorkspaceModeSource,
   WorkspaceResolver,
-} from "../packages/config/src/index.js";
+} from "../src/index.js";
 
 /**
  * Creates a minimal config fixture for workspace resolver tests.

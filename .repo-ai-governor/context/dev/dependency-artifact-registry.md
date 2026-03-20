@@ -54,10 +54,12 @@
 | DA-032 | `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-001-standards-pack-and-spec-sync/tasks/TK-024-standards-pack-registry-and-rule-renderer-baseline.md` | `TK-024` | *(none)* | 2026-03-20 | 2026-03-20 | active |
 | DA-033 | `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-001-standards-pack-and-spec-sync/tasks/TK-025-agents-projector-and-projection-parity-baseline.md` | `TK-025` | *(none)* | 2026-03-20 | 2026-03-20 | active |
 | DA-034 | `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-001-standards-pack-and-spec-sync/tasks/TK-026-spec-sync-guard-gate-integration-baseline.md` | `TK-026` | *(none)* | 2026-03-20 | 2026-03-20 | active |
-| DA-035 | `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-001-standards-pack-and-spec-sync/tasks/TK-029-sprint-001-exit-acceptance-and-sprint-002-input-constraints.md` | `TK-029` | `TK-027` | 2026-03-20 | 2026-03-20 | active |
-| DA-036 | `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-001-standards-pack-and-spec-sync/tasks/TK-029-sprint-002-slot-upgrade-input-constraints-checklist.md` | `TK-029` | `TK-027` | 2026-03-20 | 2026-03-20 | active |
-| DA-037 | `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-002-slot-security-and-upgrade-ux/tasks/TK-027-slot-engine-dual-track-and-script-security-baseline.md` | `TK-027` | `TK-030` | 2026-03-20 | 2026-03-20 | active |
-| DA-038 | `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-002-slot-security-and-upgrade-ux/tasks/TK-028-standards-upgrade-ux-and-version-pin-baseline.md` | `TK-028` | `TK-030` | 2026-03-20 | 2026-03-20 | active |
+| DA-035 | `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-001-standards-pack-and-spec-sync/tasks/TK-029-sprint-001-exit-acceptance-and-sprint-002-input-constraints.md` | `TK-029` | *(none)* | 2026-03-20 | 2026-03-21 | active |
+| DA-036 | `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-001-standards-pack-and-spec-sync/tasks/TK-029-sprint-002-slot-upgrade-input-constraints-checklist.md` | `TK-029` | *(none)* | 2026-03-20 | 2026-03-21 | active |
+| DA-037 | `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-002-slot-security-and-upgrade-ux/tasks/TK-027-slot-engine-dual-track-and-script-security-baseline.md` | `TK-027` | *(none)* | 2026-03-20 | 2026-03-21 | active |
+| DA-038 | `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-002-slot-security-and-upgrade-ux/tasks/TK-028-standards-upgrade-ux-and-version-pin-baseline.md` | `TK-028` | *(none)* | 2026-03-20 | 2026-03-21 | active |
+| DA-039 | `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-002-slot-security-and-upgrade-ux/tasks/TK-030-project-003-exit-acceptance-and-project-004-input-constraints.md` | `TK-030` | *(none)* | 2026-03-21 | 2026-03-21 | active |
+| DA-040 | `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-002-slot-security-and-upgrade-ux/tasks/TK-030-project-004-input-constraints-checklist.md` | `TK-030` | *(none)* | 2026-03-21 | 2026-03-21 | active |
 
 ## Archive Registry Table
 

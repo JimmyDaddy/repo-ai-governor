@@ -1,4 +1,4 @@
-import { GovernorErrorCode, RuntimeError } from "../packages/shared/src/index.js";
+import { GovernorErrorCode, RuntimeError } from "../../shared/src/index.js";
 import {
   AgentsProjectionMetadataKey,
   AgentsProjectionNowProvider,
@@ -10,13 +10,13 @@ import {
   StandardsPackStatus,
   StandardsRenderTarget,
   StandardsRuleSeverity,
-} from "../packages/standards/src/index.js";
+} from "../src/index.js";
 import type {
   RuleRendererRenderInput,
   RuleRendererRenderResult,
   StandardsPack,
   StandardsRuleRendererReader,
-} from "../packages/standards/src/index.js";
+} from "../src/index.js";
 
 class FixedAgentsProjectionNowProvider extends AgentsProjectionNowProvider {
   public override now(): Date {

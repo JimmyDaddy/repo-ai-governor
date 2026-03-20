@@ -2,14 +2,14 @@ import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
+import { GovernorErrorCode, standardizeError } from "../../shared/src/index.js";
 import {
   PROCESS_IR_VERSION,
   ProcessCompiler,
   ProcessCompilerIssueCode,
   type ProcessDslDefinition,
   ProcessNodeType,
-} from "../packages/core-process/src/index.js";
-import { GovernorErrorCode, standardizeError } from "../packages/shared/src/index.js";
+} from "../src/index.js";
 
 /**
  * Creates a valid process DSL fixture for compiler smoke tests.

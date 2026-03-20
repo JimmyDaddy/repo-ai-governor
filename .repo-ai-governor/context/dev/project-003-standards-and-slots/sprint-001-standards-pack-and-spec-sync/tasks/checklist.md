@@ -16,3 +16,4 @@
   - 2026-03-20: 任务启动，状态切换为 `in_progress`，开始汇总 sprint-001 验收证据并生成 sprint-002 slot/upgrade 输入约束清单。
   - 2026-03-20: 完成 `DA-035` 与 `DA-036` 产出、依赖产物登记与索引回链，并新增 `verified_review_tk-029-sprint-001-exit-acceptance-and-sprint-002-input-constraints.md`。
   - 2026-03-20: 通过 `node ./scripts/governance/reconcile-artifact-dependencies.js` 与 `pnpm run check`，任务状态切换为 `completed`。
+  - 2026-03-21: 补齐 `TK-028` 对 `DA-035/DA-036` 的显式回链，并同步更新 `DA-036` 任务输入映射说明，收敛跨 sprint 消费链路台账一致性。

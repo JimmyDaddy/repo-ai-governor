@@ -2,14 +2,14 @@ import {
   ProcessCompiler,
   type ProcessDslDefinition,
   ProcessNodeType,
-} from "../packages/core-process/src/index.js";
+} from "../../core-process/src/index.js";
 import {
   ProcessRuntimeEngine,
   RuntimeExecutionStatus,
   RuntimeNowProvider,
   RuntimeStageStatus,
   RuntimeTimeoutScope,
-} from "../packages/core-runtime/src/index.js";
+} from "../src/index.js";
 
 /**
  * Creates a process DSL fixture that covers all control-flow node types.

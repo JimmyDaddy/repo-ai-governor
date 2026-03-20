@@ -1,14 +1,10 @@
+import { GovernanceReviewerRole, GovernorErrorCode, RuntimeError } from "../../shared/src/index.js";
 import {
   ChangeRiskEvaluator,
   ChangeRiskFileCategory,
   ChangeRiskLevel,
   ChangeRiskRequiredAction,
-} from "../packages/core-change-risk/src/index.js";
-import {
-  GovernanceReviewerRole,
-  GovernorErrorCode,
-  RuntimeError,
-} from "../packages/shared/src/index.js";
+} from "../src/index.js";
 
 describe("ChangeRiskEvaluator smoke", () => {
   it("returns low risk allow decision for baseline code change", () => {

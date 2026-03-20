@@ -1,4 +1,4 @@
-import { GovernorErrorCode, RuntimeError } from "../packages/shared/src/index.js";
+import { GovernorErrorCode, RuntimeError } from "../../shared/src/index.js";
 import {
   RuleRenderer,
   StandardsPackRegistry,
@@ -7,8 +7,8 @@ import {
   StandardsPackStatus,
   StandardsRenderTarget,
   StandardsRuleSeverity,
-} from "../packages/standards/src/index.js";
-import type { StandardsPack } from "../packages/standards/src/index.js";
+} from "../src/index.js";
+import type { StandardsPack } from "../src/index.js";
 
 function createStandardsPackFixture(overrides: Partial<StandardsPack> = {}): StandardsPack {
   const baseFixture: StandardsPack = {

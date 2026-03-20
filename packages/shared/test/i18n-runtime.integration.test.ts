@@ -1,5 +1,5 @@
-import { Locale } from "../packages/shared/src/constants/i18n.constant.js";
-import { I18nRuntime } from "../packages/shared/src/index.js";
+import { Locale } from "../src/constants/i18n.constant.js";
+import { I18nRuntime } from "../src/index.js";
 
 describe("I18nRuntime smoke", () => {
   it("resolves locale by language fallback and renders localized message", async () => {

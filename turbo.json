@@ -55,6 +55,16 @@
       "dependsOn": ["//#gate:build"],
       "outputs": []
     },
+    "//#gate:test:packages": {
+      "cache": false,
+      "dependsOn": ["//#gate:build"],
+      "outputs": []
+    },
+    "//#gate:test:integration": {
+      "cache": false,
+      "dependsOn": ["//#gate:test:packages"],
+      "outputs": []
+    },
     "//#gate:check": {
       "cache": false,
       "dependsOn": [
@@ -65,7 +75,9 @@
         "//#gate:standardized-errors",
         "//#gate:artifact-lifecycle",
         "//#gate:task-ledger-sync",
-        "//#gate:sprint-plan-status-sync"
+        "//#gate:sprint-plan-status-sync",
+        "//#gate:test:packages",
+        "//#gate:test:integration"
       ],
       "outputs": []
     }

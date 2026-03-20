@@ -1,7 +1,7 @@
-import { runCli } from "../apps/cli/src/main.js";
+import { runCli } from "../src/main.js";
 
 /**
- * Creates in-memory IO adapters for CLI smoke tests.
+ * Creates in-memory IO adapters for CLI integration tests.
  * @returns Buffers and io adapters used by the CLI runtime.
  */
 function createBufferedIo(): {
@@ -31,7 +31,7 @@ function createBufferedIo(): {
   };
 }
 
-describe("CLI skeleton smoke", () => {
+describe("CLI skeleton integration", () => {
   it("prints command skeleton output for init", async () => {
     const { stdoutBuffer, stderrBuffer, io } = createBufferedIo();
 

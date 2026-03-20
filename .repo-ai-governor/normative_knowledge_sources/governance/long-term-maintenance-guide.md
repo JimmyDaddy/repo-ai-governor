@@ -30,6 +30,7 @@ This guide does not duplicate rule text from `.repo-ai-governor/normative_knowle
 7. Task and sprint ledger synchronization baseline: `CS-021`
 8. Standardized error usage baseline: `CS-022`
 9. Artifact registry lifecycle baseline: `CS-023`
+10. Layered test topology baseline: `CS-024`
 
 For command-level enforcement, always use `.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md -> Verification Commands` as the single source of truth.
 
@@ -47,7 +48,8 @@ For command-level enforcement, always use `.repo-ai-governor/normative_knowledge
 
 1. Development baseline:
    - `pnpm run typecheck`
-   - `pnpm run test -- <target>`
+   - `pnpm run test:packages -- <target>`
+   - `pnpm run test:integration -- <target>`
    - `pnpm run check`（默认低噪音，适合 AI 执行与常规快速验证）
    - `pnpm run check -- --verbose`（人工排障，全量日志）
 2. Release baseline:

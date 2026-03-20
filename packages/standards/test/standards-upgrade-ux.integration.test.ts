@@ -1,4 +1,4 @@
-import { GovernorErrorCode, RuntimeError } from "../packages/shared/src/index.js";
+import { GovernorErrorCode, RuntimeError } from "../../shared/src/index.js";
 import {
   StandardsPackScope,
   StandardsPackSource,
@@ -6,8 +6,8 @@ import {
   StandardsUpgradeRequiredAction,
   StandardsUpgradeRollbackStrategy,
   StandardsVersionPinMode,
-} from "../packages/standards/src/index.js";
-import type { StandardsUpgradePackState } from "../packages/standards/src/index.js";
+} from "../src/index.js";
+import type { StandardsUpgradePackState } from "../src/index.js";
 
 /**
  * Creates one upgrade pack-state fixture.

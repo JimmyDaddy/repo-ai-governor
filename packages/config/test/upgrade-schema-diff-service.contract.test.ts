@@ -1,4 +1,9 @@
 import {
+  GovernorErrorCode,
+  WorkspaceMigrationPolicy,
+  standardizeError,
+} from "../../shared/src/index.js";
+import {
   type GovernorConfig,
   GovernorSchemaVersion,
   UpgradeConfirmationDecision,
@@ -6,12 +11,7 @@ import {
   UpgradeSchemaDiffService,
   UpgradeSchemaDiffType,
   WorkspaceMode,
-} from "../packages/config/src/index.js";
-import {
-  GovernorErrorCode,
-  WorkspaceMigrationPolicy,
-  standardizeError,
-} from "../packages/shared/src/index.js";
+} from "../src/index.js";
 
 /**
  * Creates a minimal config fixture for schema-upgrade smoke tests.

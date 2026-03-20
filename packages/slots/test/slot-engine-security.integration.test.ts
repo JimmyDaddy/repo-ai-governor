@@ -1,4 +1,4 @@
-import { GovernorErrorCode, RuntimeError } from "../packages/shared/src/index.js";
+import { GovernorErrorCode, RuntimeError } from "../../shared/src/index.js";
 import {
   SlotConflictStrategy,
   SlotEngine,
@@ -8,13 +8,13 @@ import {
   SlotSecurityCheckId,
   SlotSource,
   SlotTrack,
-} from "../packages/slots/src/index.js";
+} from "../src/index.js";
 import type {
   DeclarativeSlotDefinition,
   ScriptSlotDefinition,
   SlotExecutionPlan,
   SlotResolutionContext,
-} from "../packages/slots/src/index.js";
+} from "../src/index.js";
 
 /**
  * Creates one declarative slot fixture for slot-engine smoke tests.

@@ -15,6 +15,8 @@
 
 1. `TK-027`
 2. `DA-037`
+3. `DA-035`
+4. `DA-036`
 
 ## 3. 预期产物
 
@@ -23,9 +25,11 @@
 ## 4. Input References
 
 1. `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-002-slot-security-and-upgrade-ux/tasks/TK-027-slot-engine-dual-track-and-script-security-baseline.md` (`DA-037`)
-2. `.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-overall-technical-solution.md`（`§8.5`）
-3. `.repo-ai-governor/normative_knowledge_sources/product-requirements.md`（`§8.4`）
-4. `.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md`（`CS-009`、`CS-013`、`CS-016`、`CS-022`）
+2. `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-001-standards-pack-and-spec-sync/tasks/TK-029-sprint-001-exit-acceptance-and-sprint-002-input-constraints.md` (`DA-035`)
+3. `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-001-standards-pack-and-spec-sync/tasks/TK-029-sprint-002-slot-upgrade-input-constraints-checklist.md` (`DA-036`)
+4. `.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-overall-technical-solution.md`（`§8.5`）
+5. `.repo-ai-governor/normative_knowledge_sources/product-requirements.md`（`§8.4`）
+6. `.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md`（`CS-009`、`CS-013`、`CS-016`、`CS-022`）
 
 ## 5. 实施摘要
 
@@ -60,3 +64,4 @@
 1. 2026-03-20：任务启动，状态切换为 `in_progress`，开始实现 standards 升级冲突分级、回滚语义与版本 pin 策略基线。
 2. 2026-03-20：完成 `StandardsUpgradePlanner` 与升级 UX smoke 覆盖，补齐升级错误码、常量枚举与类型契约回链。
 3. 2026-03-20：完成门禁复核，状态切换为 `completed`。
+4. 2026-03-21：补齐与 `TK-029` 输入约束的显式回链，新增 `DA-035/DA-036` 到 `Depends On` 与 `Input References`，收敛任务消费链路。
