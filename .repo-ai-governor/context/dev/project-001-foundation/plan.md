@@ -77,3 +77,8 @@
 2. `tool_managed` 默认可用，`repo_local` 可切换并可回滚。
 3. CI 可稳定执行基础门禁并定位失败原因。
 4. Stage 0-1 关键基线产物可通过 artifact registry 检索与消费。
+
+## 7. 里程碑记录
+
+1. `2026-03-20` 完成态审计摘要：
+   - `.repo-ai-governor/context/dev/project-001-foundation/project-001-completion-audit-summary.md`

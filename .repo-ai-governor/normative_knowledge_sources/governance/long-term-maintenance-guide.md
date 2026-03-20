@@ -27,7 +27,7 @@ This guide does not duplicate rule text from `.repo-ai-governor/normative_knowle
 4. Monorepo naming baseline: `CS-014`
 5. Triad docs synchronization baseline: `CS-015`
 6. Code readability and architecture style baseline: `CS-016` to `CS-020`
-7. Task ledger synchronization baseline: `CS-021`
+7. Task and sprint ledger synchronization baseline: `CS-021`
 8. Standardized error usage baseline: `CS-022`
 9. Artifact registry lifecycle baseline: `CS-023`
 
@@ -81,6 +81,20 @@ Any non-empty entry must include task-level traceability in `tasks/checklist.md`
 3. Closure work must include a written closure report in the sprint docs.
 4. Document date metadata must use `YYYY-MM-DD`; linked core docs should refresh dates in the same change window.
 5. Changes to any triad doc under `.repo-ai-governor/normative_knowledge_sources/` (`product-requirements` / `overall-technical-solution` / `architecture-and-repo-layering`) must be synchronized in the same change set; PRD changes must sync `product-requirements-brief.md`.
+
+## Project Closure Milestone Protocol
+
+1. 每个 `project-xxx` 在状态切换为 `completed` 前，必须产出项目级完成态审计摘要文档：
+   - 推荐命名：`project-xxx-completion-audit-summary.md`
+   - 推荐路径：`.repo-ai-governor/context/dev/<project-xxx>/`
+2. 审计摘要至少包含：
+   - 完成结论（completed / blocked）
+   - 审计范围（project + sprint）
+   - 任务完成统计（基于 `tasks.csv` 最新记录）
+   - 关键证据路径（plan/checklist/tasks.csv/code-review/artifact-registry）
+   - 遗留风险与后续输入建议（如有）
+3. 项目 `plan.md` 必须新增或更新“里程碑记录”入口，显式回链到该审计摘要文档。
+4. 若项目后续重新打开（`completed -> active`），再次收尾时必须新增一条新的里程碑记录，禁止覆盖历史审计结论。
 
 ## Monthly Audit Checklist
 

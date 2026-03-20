@@ -45,6 +45,11 @@
       "dependsOn": ["//#gate:build"],
       "outputs": []
     },
+    "//#gate:sprint-plan-status-sync": {
+      "cache": false,
+      "dependsOn": ["//#gate:build"],
+      "outputs": []
+    },
     "//#gate:check": {
       "cache": false,
       "dependsOn": [
@@ -53,7 +58,8 @@
         "//#gate:dependency-boundary",
         "//#gate:standardized-errors",
         "//#gate:artifact-lifecycle",
-        "//#gate:task-ledger-sync"
+        "//#gate:task-ledger-sync",
+        "//#gate:sprint-plan-status-sync"
       ],
       "outputs": []
     }

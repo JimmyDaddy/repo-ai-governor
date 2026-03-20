@@ -41,6 +41,7 @@
    - `resolved_review_<slug>.md`：已接受的发现已解决
 5. 评审复查必须将结果追加到同一 CR 文件中，然后将文件重命名为下一状态。
 6. 迭代执行进度必须维护在主执行流的检查清单中，每个任务条目应追加执行记录。
+7. 每个 `project-xxx` 在收尾为 `completed` 前，必须产出项目级完成态审计摘要（推荐命名 `project-xxx-completion-audit-summary.md`），并在项目 `plan.md` 中新增“里程碑记录”入口回链该文档。
 
 ## 命名规则
 
@@ -64,6 +65,8 @@
 6. 将验证结果追加到同一 CR 文件中，并将其重命名为 `verified_review_<slug>.md`。
 7. 已接受的问题修复后，将其重命名为 `resolved_review_<slug>.md`。
 8. 将执行记录追加到 `tasks/checklist.md` 和 `tasks/tasks.csv`。
+9. project 收尾时生成 `project-xxx-completion-audit-summary.md`。
+10. 在项目 `plan.md` 的“里程碑记录”中登记该审计摘要入口并保留历史记录。
 
 ## 本地技能
 

@@ -31,3 +31,4 @@
 
 1. 2026-03-20：任务启动，状态切换为 `in_progress`。开始扫描 `apps/**` 与 `packages/**` 下 `types/interfaces`、`types/aliases` 的可合并点，按“领域/上下文”收敛并保持 `index.ts` 出口稳定。
 2. 2026-03-20：完成全仓 CS-013 收敛。`packages/core-process` 将 14 个 interface 文件收敛为 4 个领域文件（`process-dsl`、`process-ir`、`process-ir-snapshot`、`process-compiler-issue`）；`packages/config` 将 17 个 interface 文件收敛为 4 个领域文件（`governor`、`workspace`、`workspace-migration`、`upgrade`）；`packages/core-runtime` 将 9 个 interface 文件收敛为 3 个领域文件，并将 2 个 type 文件收敛为 1 个。所有导出统一经 `types/interfaces/index.ts` 与 `types/aliases/index.ts` 聚合，验证通过 `pnpm run typecheck` 与 `pnpm run check`。
+3. 2026-03-20：补齐 CR 生命周期记录，新增 `verified_review_tk-021-cs-013-type-interface-convergence.md`，并通过 `pnpm run check` 复核。

@@ -1,6 +1,6 @@
 # sprint-001-process-runtime-and-memory-baseline 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-03-20
 - Project: `project-002-governance-core`
 

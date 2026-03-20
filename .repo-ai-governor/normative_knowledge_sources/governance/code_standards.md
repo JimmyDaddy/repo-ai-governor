@@ -24,7 +24,7 @@ This file defines repository-level coding standards and the executable gate comm
 - [CS-018] In domain modules (`src/runtime|workflow|policy|adapters` and `packages/core-*|adapter-*|adapters/*`), avoid multiple class declarations in a single file. Inheritable base classes and each derived implementation should be split into separate files/directories by default. Exceptions require a nearby marker comment: `// class-collocation-allowed: reason`.
 - [CS-019] General naming convention: variables/functions use `camelCase`; types/interfaces/type aliases/classes/enums use `PascalCase`; constants use `UPPER_SNAKE_CASE`.
 - [CS-020] Comments (including inline comments and JSDoc prose) must explain "why" rather than repeating "what the code does". Redundant restatement comments should be avoided.
-- [CS-021] For each active stream, canonical task cards, `tasks/checklist.md`, and canonical rows in `tasks/tasks.csv` must stay synchronized for `title/status/owner/priority/project/sprint/plan/recorded_at`; any drift blocks delivery.
+- [CS-021] Task and sprint ledgers must stay synchronized: for each active stream, canonical task cards, `tasks/checklist.md`, and canonical rows in `tasks/tasks.csv` must stay synchronized for `title/status/owner/priority/project/sprint/plan/recorded_at`; and for all sprint directories under `.repo-ai-governor/context/dev/**`, sprint `plan.md` status must align with latest `tasks/tasks.csv` aggregate status (`planned/active/completed`). Any drift blocks delivery.
 - [CS-022] In `apps/**`, `packages/**`, `bin/**`, and `test/**`, do not use native `Error` directly (`new Error`, `extends Error`, `instanceof Error`). Use the standardized error model from `packages/shared/src/errors/` (`BaseError`, `ConfigError`, `I18nError`, `RuntimeError`, `GovernorErrorCode`, `standardizeError`) for throw and output paths. The only allowed `extends Error` location is the abstract base implementation in `packages/shared/src/errors/governor-error.ts`.
 - [CS-023] Artifact Registry must enforce lifecycle exit governance: `artifact_status` only uses `active/frozen/deprecated/archived/retired`; main registry (`.repo-ai-governor/context/artifact-registry/artifacts.csv`) only keeps `active/frozen/deprecated`; archive registry (`.repo-ai-governor/context/artifact-registry/archive/artifacts.archive.csv`) only keeps `archived/retired`; stale `deprecated` entries beyond grace window must be archived.
 
@@ -106,6 +106,7 @@ node ./scripts/governance/check-jsdoc-governance.js
 node ./scripts/governance/check-oop-structure.js
 node ./scripts/governance/check-package-dependency-boundary.js --mode warn
 node ./scripts/governance/check-task-ledger-sync.js
+node ./scripts/governance/check-sprint-plan-status-sync.js
 node ./scripts/governance/check-standardized-error-usage.js
 node ./scripts/governance/check-artifact-registry-lifecycle.js
 pnpm run test -- --maxWorkers=1 --maxConcurrency=1

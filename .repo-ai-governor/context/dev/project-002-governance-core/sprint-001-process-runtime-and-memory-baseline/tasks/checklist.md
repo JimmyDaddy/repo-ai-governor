@@ -23,3 +23,4 @@
 - [x] TK-021 CS-013 类型声明收敛
   - 2026-03-20: 任务启动，状态切换为 `in_progress`，开始全仓扫描 `types/interfaces` 与 `types/aliases` 的碎片化声明并按领域/上下文合并。
   - 2026-03-20: 完成收敛交付，`core-process/config/core-runtime` 已按领域合并类型声明并保持导出入口兼容，通过 `pnpm run typecheck` 与 `pnpm run check`。
+  - 2026-03-20: 补齐 CR 生命周期，新增 `verified_review_tk-021-cs-013-type-interface-convergence.md` 并通过 `pnpm run check`。
