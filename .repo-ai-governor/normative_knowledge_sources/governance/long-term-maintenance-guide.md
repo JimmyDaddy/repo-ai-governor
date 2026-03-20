@@ -88,7 +88,7 @@ Any non-empty entry must include task-level traceability in `tasks/checklist.md`
 2. Confirm whitelist files match expected baseline (empty or explicitly justified).
 3. Re-check stability/coverage baselines if test topology changed.
 4. Review `execution_notes.md` for util reuse records and unresolved debt.
-5. Run `node ./scripts/governance/compact-artifact-registry.js --dry-run` and clear stale artifact lifecycle backlog.
+5. Run `node ./scripts/governance/reconcile-artifact-dependencies.js --dry-run` then `node ./scripts/governance/compact-artifact-registry.js --dry-run`, and clear stale artifact lifecycle backlog.
 
 ## Ownership
 

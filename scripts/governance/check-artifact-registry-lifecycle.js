@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { basename, resolve } from "node:path";
 
 import { gateFail, gateInfo, gatePass } from "./gate-output.js";
 
@@ -9,6 +9,7 @@ const GATE_NAME = "artifact-lifecycle";
 const MAIN_REGISTRY_PATH = ".repo-ai-governor/context/artifact-registry/artifacts.csv";
 const ARCHIVE_REGISTRY_PATH =
   ".repo-ai-governor/context/artifact-registry/archive/artifacts.archive.csv";
+const TASK_LEDGER_ROOT = ".repo-ai-governor/context/dev";
 const REQUIRED_HEADERS = [
   "artifact_id",
   "artifact_type",
@@ -21,9 +22,35 @@ const REQUIRED_HEADERS = [
   "last_updated_at",
   "dependent_tasks",
 ];
+const REQUIRED_TASK_HEADERS = [
+  "execution_id",
+  "task_id",
+  "title",
+  "owner",
+  "priority",
+  "due_date",
+  "status",
+  "project",
+  "sprint",
+  "plan",
+  "result",
+  "verify",
+  "review_delta",
+  "recorded_at",
+];
 const ALL_LIFECYCLE_STATUSES = new Set(["active", "frozen", "deprecated", "archived", "retired"]);
 const MAIN_REGISTRY_ALLOWED_STATUSES = new Set(["active", "frozen", "deprecated"]);
 const ARCHIVE_REGISTRY_ALLOWED_STATUSES = new Set(["archived", "retired"]);
+const CLOSED_TASK_STATUSES = new Set([
+  "completed",
+  "done",
+  "closed",
+  "cancelled",
+  "canceled",
+  "resolved",
+  "retired",
+  "archived",
+]);
 const MAX_DEPRECATED_DAYS = 14;
 const MAX_UNREFERENCED_ACTIVE_DAYS = 30;
 
@@ -68,9 +95,10 @@ function parseCsvLine(line) {
 /**
  * Parses one artifact registry CSV file.
  * @param {string} filePath Absolute file path.
+ * @param {string[]} requiredHeaders Required CSV headers.
  * @returns {Array<Record<string, string> & {__rowNumber: number}>}
  */
-function parseRegistry(filePath) {
+function parseRegistry(filePath, requiredHeaders = REQUIRED_HEADERS) {
   if (!existsSync(filePath)) {
     throw new Error(`Registry file not found: ${filePath}`);
   }
@@ -86,7 +114,7 @@ function parseRegistry(filePath) {
   }
 
   const headerCells = parseCsvLine(lines[0]).map((cell) => cell.trim());
-  for (const requiredHeader of REQUIRED_HEADERS) {
+  for (const requiredHeader of requiredHeaders) {
     if (!headerCells.includes(requiredHeader)) {
       throw new Error(`Registry file missing required column "${requiredHeader}": ${filePath}`);
     }
@@ -111,6 +139,90 @@ function parseRegistry(filePath) {
     }
     return row;
   });
+}
+
+/**
+ * Lists all task ledger files (`tasks/tasks.csv`) under one root.
+ * @param {string} rootDirectory Absolute root directory.
+ * @returns {string[]}
+ */
+function listTaskCsvFiles(rootDirectory) {
+  if (!existsSync(rootDirectory)) {
+    return [];
+  }
+
+  /** @type {string[]} */
+  const filePaths = [];
+
+  /**
+   * Walks one directory recursively.
+   * @param {string} directoryPath Absolute directory path.
+   */
+  function walk(directoryPath) {
+    const entries = readdirSync(directoryPath, { withFileTypes: true });
+    for (const entry of entries) {
+      const absolutePath = resolve(directoryPath, entry.name);
+      if (entry.isDirectory()) {
+        walk(absolutePath);
+        continue;
+      }
+
+      if (entry.isFile() && entry.name === "tasks.csv" && basename(directoryPath) === "tasks") {
+        filePaths.push(absolutePath);
+      }
+    }
+  }
+
+  walk(rootDirectory);
+  return filePaths;
+}
+
+/**
+ * Converts YYYY-MM-DD to sortable numeric weight.
+ * @param {string} rawValue Date string.
+ * @returns {number}
+ */
+function parseDateWeight(rawValue) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(rawValue)) {
+    return 0;
+  }
+
+  const parsedDate = Date.parse(`${rawValue}T00:00:00Z`);
+  if (Number.isNaN(parsedDate)) {
+    return 0;
+  }
+
+  return parsedDate;
+}
+
+/**
+ * Reads latest status for each task id from all task ledger files.
+ * @param {string[]} taskCsvPaths Task CSV paths.
+ * @returns {Map<string, string>}
+ */
+function collectLatestTaskStatuses(taskCsvPaths) {
+  /** @type {Map<string, {status: string; score: number}>} */
+  const latestStatusByTaskId = new Map();
+  let sequence = 0;
+
+  for (const taskCsvPath of taskCsvPaths) {
+    const taskRows = parseRegistry(taskCsvPath, REQUIRED_TASK_HEADERS);
+
+    for (const row of taskRows) {
+      sequence += 1;
+      const taskId = row.task_id;
+      const status = row.status.toLowerCase();
+      const score = parseDateWeight(row.recorded_at) * 1_000_000 + sequence;
+      const current = latestStatusByTaskId.get(taskId);
+      if (!current || score >= current.score) {
+        latestStatusByTaskId.set(taskId, { status, score });
+      }
+    }
+  }
+
+  return new Map(
+    Array.from(latestStatusByTaskId.entries()).map(([taskId, value]) => [taskId, value.status]),
+  );
 }
 
 /**
@@ -179,6 +291,9 @@ function formatIssue(scope, rowNumber, message) {
 
 const mainRegistryPath = resolve(process.cwd(), MAIN_REGISTRY_PATH);
 const archiveRegistryPath = resolve(process.cwd(), ARCHIVE_REGISTRY_PATH);
+const taskLedgerRoot = resolve(process.cwd(), TASK_LEDGER_ROOT);
+const taskCsvPaths = listTaskCsvFiles(taskLedgerRoot);
+const latestTaskStatuses = collectLatestTaskStatuses(taskCsvPaths);
 const todayDate = new Date();
 const issues = [];
 
@@ -192,6 +307,30 @@ try {
     const artifactStatus = row.artifact_status;
     const dependentTasks = parseDependentTasks(row.dependent_tasks);
     const lastUpdatedDate = parseDate(row.last_updated_at);
+
+    for (const dependentTaskId of dependentTasks.values) {
+      const dependentTaskStatus = latestTaskStatuses.get(dependentTaskId);
+      if (!dependentTaskStatus) {
+        issues.push(
+          formatIssue(
+            "main",
+            row.__rowNumber,
+            `dependent_tasks contains unknown task_id "${dependentTaskId}"`,
+          ),
+        );
+        continue;
+      }
+
+      if (CLOSED_TASK_STATUSES.has(dependentTaskStatus)) {
+        issues.push(
+          formatIssue(
+            "main",
+            row.__rowNumber,
+            `dependent_tasks contains closed task "${dependentTaskId}" with status "${dependentTaskStatus}", remove stale dependency`,
+          ),
+        );
+      }
+    }
 
     if (seenArtifactIds.has(artifactId)) {
       issues.push(

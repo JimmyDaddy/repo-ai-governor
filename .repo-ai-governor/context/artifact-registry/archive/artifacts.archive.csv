@@ -1,2 +1,7 @@
 artifact_id,artifact_type,artifact_path,artifact_version,artifact_status,producer_task_id,producer_execution_id,registered_at,last_updated_at,dependent_tasks
 DA-002,baseline_doc,.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-002-artifact-registry-baseline.md,v1,archived,TK-002,exec-20260319-002,2026-03-19,2026-03-20,
+DA-004,monorepo_ci_baseline,.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-004-monorepo-boundary-and-ci-baseline.md,v1,archived,TK-004,exec-20260319-009,2026-03-19,2026-03-20,
+DA-005,config_contract_baseline,.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-005-config-contract-baseline.md,v1,archived,TK-005,exec-20260319-010,2026-03-19,2026-03-20,
+DA-006,i18n_decision_baseline,.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-005-i18n-community-solution-comparison-and-repo-decision.md,v1,archived,TK-005,exec-20260319-013,2026-03-19,2026-03-20,
+DA-007,cli_skeleton_baseline,.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-006-cli-skeleton-baseline.md,v1,archived,TK-006,exec-20260319-014,2026-03-19,2026-03-20,
+DA-008,shared_i18n_runtime_baseline,.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-006-shared-i18n-runtime-baseline.md,v1,archived,TK-006,exec-20260319-014,2026-03-19,2026-03-20,

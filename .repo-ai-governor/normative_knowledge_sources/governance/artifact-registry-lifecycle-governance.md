@@ -40,9 +40,13 @@
 1. Gate:
    - `node ./scripts/governance/check-artifact-registry-lifecycle.js`
 2. 运维命令：
+   - `node ./scripts/governance/reconcile-artifact-dependencies.js`
    - `node ./scripts/governance/compact-artifact-registry.js`
+   - `pnpm run artifacts:compact -- --dry-run`（统一 dry-run 编排）
 3. 默认策略：
    - 先通过 warning/计划窗口完成历史清理，再将生命周期规则纳入 blocking gate。
+4. 推荐执行顺序：
+   - 先执行依赖清理（移除已关闭或缺失任务引用），再执行 compact 状态迁移。
 
 ## 6. Audit Requirements
 

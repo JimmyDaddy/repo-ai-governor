@@ -27,19 +27,14 @@
 
 | artifact_id | artifact_path | producer_task | dependent_tasks | first_registered_at | last_updated_at | status |
 |---|---|---|---|---|---|---|
-| DA-003 | `.repo-ai-governor/context/dev/project-001-foundation/foundation-delivery-baseline-and-constraints.md` | `TK-003` | `TK-004`, `TK-005`, `TK-006`, `TK-007`, `TK-008`, `TK-009`, `TK-010`, `TK-011`, `TK-012` | 2026-03-19 | 2026-03-19 | active |
-| DA-004 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-004-monorepo-boundary-and-ci-baseline.md` | `TK-004` | `TK-005`, `TK-006`, `TK-007`, `TK-008` | 2026-03-19 | 2026-03-19 | active |
-| DA-005 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-005-config-contract-baseline.md` | `TK-005` | `TK-006`, `TK-009`, `TK-011` | 2026-03-19 | 2026-03-19 | active |
-| DA-006 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-005-i18n-community-solution-comparison-and-repo-decision.md` | `TK-005` | `TK-006`, `TK-009`, `TK-011` | 2026-03-19 | 2026-03-19 | active |
-| DA-007 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-006-cli-skeleton-baseline.md` | `TK-006` | `TK-008`, `TK-009` | 2026-03-19 | 2026-03-19 | active |
-| DA-008 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-006-shared-i18n-runtime-baseline.md` | `TK-006` | `TK-008`, `TK-009`, `TK-011` | 2026-03-19 | 2026-03-19 | active |
-| DA-009 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-006-command-smoke-checklist.md` | `TK-006` | `TK-008`, `TK-012` | 2026-03-19 | 2026-03-19 | active |
-| DA-010 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-007-dependency-boundary-warning-gate-baseline.md` | `TK-007` | `TK-008`, `TK-009`, `TK-012` | 2026-03-19 | 2026-03-19 | active |
-| DA-011 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-007-dependency-boundary-whitelist-and-regression-policy.md` | `TK-007` | `TK-008`, `TK-012` | 2026-03-19 | 2026-03-19 | active |
-| DA-012 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-008-sprint-001-exit-acceptance-baseline.md` | `TK-008` | `TK-009`, `TK-010`, `TK-011`, `TK-012` | 2026-03-20 | 2026-03-20 | active |
-| DA-013 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-008-sprint-002-input-constraints-checklist.md` | `TK-008` | `TK-009`, `TK-010`, `TK-011`, `TK-012` | 2026-03-20 | 2026-03-20 | active |
-| DA-014 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-002-workspace-and-upgrade/tasks/TK-009-workspace-resolver-dual-mode-baseline.md` | `TK-009` | `TK-010`, `TK-011`, `TK-012` | 2026-03-20 | 2026-03-20 | active |
-| DA-015 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-002-workspace-and-upgrade/tasks/TK-010-workspace-migration-chain-baseline.md` | `TK-010` | `TK-011`, `TK-012` | 2026-03-20 | 2026-03-20 | active |
+| DA-003 | `.repo-ai-governor/context/dev/project-001-foundation/foundation-delivery-baseline-and-constraints.md` | `TK-003` | `TK-012` | 2026-03-19 | 2026-03-19 | active |
+| DA-009 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-006-command-smoke-checklist.md` | `TK-006` | `TK-012` | 2026-03-19 | 2026-03-19 | active |
+| DA-010 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-007-dependency-boundary-warning-gate-baseline.md` | `TK-007` | `TK-012` | 2026-03-19 | 2026-03-19 | active |
+| DA-011 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-007-dependency-boundary-whitelist-and-regression-policy.md` | `TK-007` | `TK-012` | 2026-03-19 | 2026-03-19 | active |
+| DA-012 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-008-sprint-001-exit-acceptance-baseline.md` | `TK-008` | `TK-012` | 2026-03-20 | 2026-03-20 | active |
+| DA-013 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-008-sprint-002-input-constraints-checklist.md` | `TK-008` | `TK-012` | 2026-03-20 | 2026-03-20 | active |
+| DA-014 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-002-workspace-and-upgrade/tasks/TK-009-workspace-resolver-dual-mode-baseline.md` | `TK-009` | `TK-012` | 2026-03-20 | 2026-03-20 | active |
+| DA-015 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-002-workspace-and-upgrade/tasks/TK-010-workspace-migration-chain-baseline.md` | `TK-010` | `TK-012` | 2026-03-20 | 2026-03-20 | active |
 | DA-016 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-002-workspace-and-upgrade/tasks/TK-011-upgrade-schema-diff-baseline.md` | `TK-011` | `TK-012` | 2026-03-20 | 2026-03-20 | active |
 | DA-017 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-002-workspace-and-upgrade/tasks/TK-011-upgrade-human-confirmation-policy-baseline.md` | `TK-011` | `TK-012` | 2026-03-20 | 2026-03-20 | active |
 
@@ -48,6 +43,11 @@
 | artifact_id | artifact_path | producer_task | dependent_tasks | first_registered_at | last_updated_at | status |
 |---|---|---|---|---|---|---|
 | DA-002 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-002-artifact-registry-baseline.md` | `TK-002` | *(none)* | 2026-03-19 | 2026-03-20 | archived |
+| DA-004 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-004-monorepo-boundary-and-ci-baseline.md` | `TK-004` | *(none)* | 2026-03-19 | 2026-03-20 | archived |
+| DA-005 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-005-config-contract-baseline.md` | `TK-005` | *(none)* | 2026-03-19 | 2026-03-20 | archived |
+| DA-006 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-005-i18n-community-solution-comparison-and-repo-decision.md` | `TK-005` | *(none)* | 2026-03-19 | 2026-03-20 | archived |
+| DA-007 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-006-cli-skeleton-baseline.md` | `TK-006` | *(none)* | 2026-03-19 | 2026-03-20 | archived |
+| DA-008 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-006-shared-i18n-runtime-baseline.md` | `TK-006` | *(none)* | 2026-03-19 | 2026-03-20 | archived |
 
 ## Notes
 
@@ -55,3 +55,4 @@
 2. 如产物废弃或被替代，先转 `deprecated`，再迁移到 archive 并标记 `archived/retired`，避免静默删除造成链路中断。
 3. 后续任务消费产物时，优先引用 `artifact_id + artifact_path` 双键，避免仅凭文件名检索。
 4. 若产物不满足“规范/基线/约束”属性，即使被引用也不登记为 DA。
+5. 关闭状态任务（如 `completed`）不得继续保留在 `dependent_tasks`；可通过 `node ./scripts/governance/reconcile-artifact-dependencies.js` 清理。
