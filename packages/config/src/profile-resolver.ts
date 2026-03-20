@@ -47,6 +47,13 @@ export class ProfileResolver {
    * @returns New config object with deterministic override precedence.
    */
   private mergeProfile(baseConfig: GovernorConfig, profile: GovernorProfile): GovernorConfig {
+    const mergedMemory = profile.memory
+      ? {
+          ...(baseConfig.memory ?? {}),
+          ...profile.memory,
+        }
+      : baseConfig.memory;
+
     return {
       ...baseConfig,
       workspace: {
@@ -57,6 +64,7 @@ export class ProfileResolver {
         ...baseConfig.i18n,
         ...(profile.i18n ?? {}),
       },
+      ...(mergedMemory ? { memory: mergedMemory as GovernorConfig["memory"] } : {}),
     };
   }
 }

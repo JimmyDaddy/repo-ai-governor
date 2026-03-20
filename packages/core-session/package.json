@@ -1,0 +1,6 @@
+{
+  "name": "@repo-ai-governor/core-session",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module"
+}

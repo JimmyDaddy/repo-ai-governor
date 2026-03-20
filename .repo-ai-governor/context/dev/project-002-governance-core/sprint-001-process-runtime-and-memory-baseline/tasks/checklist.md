@@ -7,8 +7,16 @@
   - 2026-03-20: 任务启动，状态切换为 `in_progress`，开始实现 `core-runtime` 控制流引擎基线与中断语义。
   - 2026-03-20: 已处理 review 评论，完成运行时常量数字风格收敛（去除 `_` 分隔符）与时钟 provider 类化扩展（`RuntimeNowProvider` + `DefaultRuntimeNowProvider`），并通过 `pnpm run typecheck`、`pnpm run test -- process-runtime-engine.smoke.test.ts`、`pnpm run check`。
   - 2026-03-20: 已完成 TK-014 CR 复核并将报告推进为 `verified_review_tk-014-runtime-control-flow-engine-baseline.md`，复核结论“部分认可”，确认无阻断项，并通过 `pnpm run typecheck`、`pnpm run test -- process-runtime-engine.smoke.test.ts`、`pnpm run check`。
-- [ ] TK-015 Memory/Session/Store 基线
+- [x] TK-015 Memory/Session/Store 基线
+  - 2026-03-20: 任务启动，状态切换为 `in_progress`，开始设计 `core-memory/core-session/memory-store-adapter/memory-providers-fs-csv` 基线契约与目录骨架。
+  - 2026-03-20: 完成交付，新增 `core-memory/core-session/memory-store-adapter/memory-providers/fs-csv` 四层基线实现与 smoke 测试，并通过 `pnpm run typecheck`、`pnpm run test -- memory-session-store.smoke.test.ts`、`pnpm run check`。
 - [ ] TK-016 sprint-001 出口验收基线
+- [x] TK-022 sqlite+fs Memory Provider 基线
+  - 2026-03-20: 任务启动，状态切换为 `in_progress`，开始新增 `packages/memory-providers/sqlite-fs` 并对齐 `memory-store-adapter` 契约与跨层 smoke 基线。
+  - 2026-03-20: 完成交付，新增 `packages/memory-providers/sqlite-fs` 与 `memory-sqlite-fs-provider` smoke 覆盖，并通过 `pnpm run typecheck`、`pnpm run test -- memory-sqlite-fs-provider.smoke.test.ts`、`pnpm run check`。
+- [x] TK-023 Memory Store Engine 配置与 CLI 组装接入
+  - 2026-03-20: 任务启动，状态切换为 `in_progress`，开始在 config schema/profile merge 与 CLI composition root 中接入 `fs_csv/sqlite_fs` provider 选择逻辑。
+  - 2026-03-20: 完成交付，新增 memory config 契约与 CLI provider 组装逻辑，并通过 `pnpm run typecheck`、`pnpm run test -- memory-store-config-and-cli-composition.smoke.test.ts`、`pnpm run test -- cli-skeleton.smoke.test.ts`、`pnpm run check`。
 - [x] TK-021 CS-013 类型声明收敛
   - 2026-03-20: 任务启动，状态切换为 `in_progress`，开始全仓扫描 `types/interfaces` 与 `types/aliases` 的碎片化声明并按领域/上下文合并。
   - 2026-03-20: 完成收敛交付，`core-process/config/core-runtime` 已按领域合并类型声明并保持导出入口兼容，通过 `pnpm run typecheck` 与 `pnpm run check`。

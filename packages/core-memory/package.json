@@ -1,0 +1,6 @@
+{
+  "name": "@repo-ai-governor/core-memory",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module"
+}

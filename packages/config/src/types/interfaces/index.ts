@@ -2,6 +2,7 @@ export type {
   GovernorConfig,
   GovernorProfile,
   I18nConfig,
+  MemoryConfig,
   ResolvedConfig,
   WorkspaceConfig,
   WorkspaceRuntimeOverrides,

@@ -1,5 +1,6 @@
 import {
   I18N_RUNTIME_ENGINE,
+  MemoryStoreEngine,
   WorkspaceMigrationPolicy,
   WorkspaceMode,
 } from "../../shared/src/constants/index.js";
@@ -9,11 +10,13 @@ import type {
   GovernorConfig,
   GovernorProfile,
   I18nConfig,
+  MemoryConfig,
   WorkspaceConfig,
 } from "./types/interfaces/index.js";
 
 const WORKSPACE_MODE_VALUES = new Set<string>(Object.values(WorkspaceMode));
 const WORKSPACE_MIGRATION_POLICY_VALUES = new Set<string>(Object.values(WorkspaceMigrationPolicy));
+const MEMORY_STORE_ENGINE_VALUES = new Set<string>(Object.values(MemoryStoreEngine));
 
 /**
  * Validates governor config payloads against the shared baseline contract.
@@ -39,12 +42,15 @@ export class SchemaValidator {
       schemaVersion,
     ) as WorkspaceConfig;
     const i18n = this.validateI18n(root.i18n, "/i18n", false) as I18nConfig;
+    const memory = this.validateMemory(root.memory, "/memory", false) as
+      | Partial<MemoryConfig>
+      | undefined;
     const activeProfile = this.expectOptionalString(root.activeProfile, "/activeProfile");
     const profiles = this.validateProfiles(root.profiles, "/profiles", schemaVersion);
 
     this.assertNoUnknownKeys(
       root,
-      new Set(["schemaVersion", "workspace", "i18n", "activeProfile", "profiles"]),
+      new Set(["schemaVersion", "workspace", "i18n", "memory", "activeProfile", "profiles"]),
       "/",
     );
 
@@ -52,6 +58,7 @@ export class SchemaValidator {
       schemaVersion,
       workspace,
       i18n,
+      ...(memory ? { memory } : {}),
       ...(activeProfile ? { activeProfile } : {}),
       ...(profiles ? { profiles } : {}),
     };
@@ -78,7 +85,7 @@ export class SchemaValidator {
     for (const [profileId, profileValue] of Object.entries(profileRecord)) {
       const profilePointer = `${pointer}/${profileId}`;
       const profile = this.expectRecord(profileValue, profilePointer);
-      this.assertNoUnknownKeys(profile, new Set(["workspace", "i18n"]), profilePointer);
+      this.assertNoUnknownKeys(profile, new Set(["workspace", "i18n", "memory"]), profilePointer);
 
       profiles[profileId] = {
         ...(profile.workspace !== undefined
@@ -94,6 +101,11 @@ export class SchemaValidator {
         ...(profile.i18n !== undefined
           ? {
               i18n: this.validateI18n(profile.i18n, `${profilePointer}/i18n`, true),
+            }
+          : {}),
+        ...(profile.memory !== undefined
+          ? {
+              memory: this.validateMemory(profile.memory, `${profilePointer}/memory`, true),
             }
           : {}),
       };
@@ -298,6 +310,45 @@ export class SchemaValidator {
       ...(defaultLocale ? { defaultLocale } : {}),
       ...(fallbackLocale ? { fallbackLocale } : {}),
       ...(supportedLocales ? { supportedLocales } : {}),
+    };
+  }
+
+  /**
+   * Validates memory-store shape and engine constraints.
+   * @param candidate Raw memory object or profile override.
+   * @param pointer Error pointer path.
+   * @param isPartial Whether required fields can be omitted for profile overrides.
+   * @returns Typed memory config object when provided.
+   */
+  private validateMemory(
+    candidate: unknown,
+    pointer: string,
+    isPartial: boolean,
+  ): MemoryConfig | Partial<MemoryConfig> | undefined {
+    if (candidate === undefined) {
+      return undefined;
+    }
+
+    const memory = this.expectRecord(candidate, pointer);
+    this.assertNoUnknownKeys(memory, new Set(["storeEngine", "storeRoot"]), pointer);
+
+    const storeEngine = this.expectOptionalString(memory.storeEngine, `${pointer}/storeEngine`);
+    const storeRoot = this.expectOptionalString(memory.storeRoot, `${pointer}/storeRoot`);
+
+    if (!isPartial && !storeEngine) {
+      this.throwConfigSchemaValidationError(`${pointer}/storeEngine is required.`, pointer);
+    }
+
+    if (storeEngine && !MEMORY_STORE_ENGINE_VALUES.has(storeEngine)) {
+      this.throwConfigSchemaValidationError(
+        `${pointer}/storeEngine must be one of: ${Array.from(MEMORY_STORE_ENGINE_VALUES).join(", ")}.`,
+        pointer,
+      );
+    }
+
+    return {
+      ...(storeEngine ? { storeEngine: storeEngine as MemoryStoreEngine } : {}),
+      ...(storeRoot ? { storeRoot } : {}),
     };
   }
 

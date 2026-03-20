@@ -1,18 +1,24 @@
 import { existsSync } from "node:fs";
-import { resolve } from "node:path";
+import { isAbsolute, resolve } from "node:path";
 
 import { Command, CommanderError } from "commander";
 
 import {
   ConfigLoader,
+  type MemoryConfig,
   ProfileResolver,
   type ResolvedWorkspace,
   WorkspaceResolver,
 } from "../../../packages/config/src/index.js";
+import { FsCsvMemoryStoreProvider } from "../../../packages/memory-providers/fs-csv/src/index.js";
+import { SqliteFsMemoryStoreProvider } from "../../../packages/memory-providers/sqlite-fs/src/index.js";
 import {
   DEFAULT_I18N_RUNTIME_CONFIG,
+  DEFAULT_MEMORY_RUNTIME_CONFIG,
   I18nRuntime,
   type I18nRuntimeConfig,
+  type MemoryRuntimeConfig,
+  MemoryStoreEngine,
   standardizeError,
 } from "../../../packages/shared/src/index.js";
 import { CLI_SKELETON_COMMAND_DEFINITIONS } from "./constants/cli-command.constant.js";
@@ -20,6 +26,9 @@ import { CLI_SKELETON_COMMAND_DEFINITIONS } from "./constants/cli-command.consta
 const DEFAULT_I18N_CONFIG: I18nRuntimeConfig = {
   ...DEFAULT_I18N_RUNTIME_CONFIG,
   supportedLocales: [...DEFAULT_I18N_RUNTIME_CONFIG.supportedLocales],
+};
+const DEFAULT_MEMORY_CONFIG: MemoryRuntimeConfig = {
+  ...DEFAULT_MEMORY_RUNTIME_CONFIG,
 };
 
 const DEFAULT_IO = {
@@ -50,6 +59,10 @@ export async function runCli(
   const requestedLocale = readOptionValue(rawArgs, "--locale");
   const requestedProfileId = readOptionValue(rawArgs, "--profile");
   const runtimeContext = resolveRuntimeContext(io.cwd(), requestedProfileId);
+  const memoryStoreComposition = composeMemoryStoreProvider(
+    runtimeContext.workspace.workspaceRoot,
+    runtimeContext.memory,
+  );
 
   const i18nRuntime = new I18nRuntime();
   const resolvedLocale = await i18nRuntime.initialize(runtimeContext.i18n, requestedLocale);
@@ -82,6 +95,9 @@ export async function runCli(
             workspaceRoot: runtimeContext.workspace.workspaceRoot,
             workspaceId: runtimeContext.workspace.workspaceId,
             workspaceModeSource: runtimeContext.workspace.modeSource,
+            memoryStoreEngine: runtimeContext.memory.storeEngine,
+            memoryStoreRoot: memoryStoreComposition.memoryStoreRoot,
+            memoryStoreProvider: memoryStoreComposition.providerName,
           })}\n`,
         );
       });
@@ -142,6 +158,7 @@ function resolveRuntimeContext(
   requestedProfileId?: string,
 ): {
   i18n: I18nRuntimeConfig;
+  memory: MemoryRuntimeConfig;
   profileId: string | null;
   configSource: "default" | "file";
   workspace: ResolvedWorkspace;
@@ -169,6 +186,7 @@ function resolveRuntimeContext(
 
     return {
       i18n: resolvedConfig.config.i18n,
+      memory: resolveMemoryRuntimeConfig(resolvedConfig.config.memory),
       profileId: resolvedConfig.profileId,
       configSource: "file",
       workspace: resolvedWorkspace,
@@ -177,8 +195,66 @@ function resolveRuntimeContext(
 
   return {
     i18n: DEFAULT_I18N_CONFIG,
+    memory: DEFAULT_MEMORY_CONFIG,
     profileId: null,
     configSource: "default",
     workspace: defaultWorkspace,
   };
+}
+
+/**
+ * Resolves memory runtime config with shared defaults.
+ * @param memoryConfig Optional memory config from repository file and profile overrides.
+ * @returns Fully-resolved memory runtime config.
+ */
+function resolveMemoryRuntimeConfig(
+  memoryConfig: Partial<MemoryConfig> | undefined,
+): MemoryRuntimeConfig {
+  return {
+    ...DEFAULT_MEMORY_CONFIG,
+    ...(memoryConfig ?? {}),
+  };
+}
+
+/**
+ * Composes a concrete memory provider from runtime memory config.
+ * @param workspaceRoot Resolved workspace root.
+ * @param memoryConfig Memory runtime config.
+ * @returns Provider composition metadata for runtime diagnostics.
+ */
+function composeMemoryStoreProvider(
+  workspaceRoot: string,
+  memoryConfig: MemoryRuntimeConfig,
+): {
+  memoryStoreRoot: string;
+  providerName: string;
+} {
+  const memoryStoreRoot = resolveMemoryStoreRoot(workspaceRoot, memoryConfig.storeRoot);
+  const provider =
+    memoryConfig.storeEngine === MemoryStoreEngine.SQLITE_FS
+      ? new SqliteFsMemoryStoreProvider({
+          rootDirectory: memoryStoreRoot,
+        })
+      : new FsCsvMemoryStoreProvider({
+          rootDirectory: memoryStoreRoot,
+        });
+
+  return {
+    memoryStoreRoot,
+    providerName: provider.constructor.name,
+  };
+}
+
+/**
+ * Resolves store root to absolute path under workspace root when relative.
+ * @param workspaceRoot Resolved workspace root.
+ * @param storeRoot Configured memory store root.
+ * @returns Absolute memory store root path.
+ */
+function resolveMemoryStoreRoot(workspaceRoot: string, storeRoot: string): string {
+  if (isAbsolute(storeRoot)) {
+    return storeRoot;
+  }
+
+  return resolve(workspaceRoot, storeRoot);
 }

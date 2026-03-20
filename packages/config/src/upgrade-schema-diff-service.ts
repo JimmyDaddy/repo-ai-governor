@@ -281,6 +281,7 @@ export class UpgradeSchemaDiffService {
         ...sourceConfig.i18n,
         supportedLocales: [...sourceConfig.i18n.supportedLocales],
       },
+      ...(sourceConfig.memory ? { memory: { ...sourceConfig.memory } } : {}),
       ...(sourceConfig.profiles
         ? {
             profiles: Object.fromEntries(
@@ -312,6 +313,7 @@ export class UpgradeSchemaDiffService {
             },
           }
         : {}),
+      ...(profile.memory ? { memory: { ...profile.memory } } : {}),
     };
   }
 }

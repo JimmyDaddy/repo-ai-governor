@@ -20,7 +20,7 @@ export const EN_US_TRANSLATIONS = {
     skeleton: {
       noProfile: "none",
       executed:
-        "Command '{{command}}' skeleton executed. locale={{locale}}, profile={{profile}}, configSource={{source}}, workspaceMode={{workspaceMode}}, workspaceModeSource={{workspaceModeSource}}, workspaceId={{workspaceId}}, workspaceRoot={{workspaceRoot}}.",
+        "Command '{{command}}' skeleton executed. locale={{locale}}, profile={{profile}}, configSource={{source}}, workspaceMode={{workspaceMode}}, workspaceModeSource={{workspaceModeSource}}, workspaceId={{workspaceId}}, workspaceRoot={{workspaceRoot}}, memoryStoreEngine={{memoryStoreEngine}}, memoryStoreRoot={{memoryStoreRoot}}, memoryStoreProvider={{memoryStoreProvider}}.",
     },
     errors: {
       unexpected: "CLI execution failed [{{code}}]: {{message}}",
