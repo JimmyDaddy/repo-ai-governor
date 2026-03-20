@@ -1,6 +1,6 @@
 # sprint-002-policy-hitl-and-notification-baseline 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-03-20
 - Project: `project-002-governance-core`
 
@@ -10,8 +10,8 @@
 
 ## 2. In-Scope Tasks
 
-1. TK-017 Change Risk Evaluator 基线
-2. TK-018 Policy Gate Engine 基线
+1. TK-017 Change Risk Evaluator 基线（completed）
+2. TK-018 Policy Gate Engine 基线（completed）
 3. TK-019 HITL 与 Notification Dispatcher 基线
 4. TK-020 sprint-002 出口验收与回滚基线
 

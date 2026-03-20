@@ -44,8 +44,10 @@
 | DA-022 | `.repo-ai-governor/context/dev/project-002-governance-core/sprint-001-process-runtime-and-memory-baseline/tasks/TK-015-memory-session-store-baseline.md` | `TK-015` | *(none)* | 2026-03-20 | 2026-03-20 | active |
 | DA-023 | `.repo-ai-governor/context/dev/project-002-governance-core/sprint-001-process-runtime-and-memory-baseline/tasks/TK-022-sqlite-fs-memory-provider-baseline.md` | `TK-022` | *(none)* | 2026-03-20 | 2026-03-20 | active |
 | DA-024 | `.repo-ai-governor/context/dev/project-002-governance-core/sprint-001-process-runtime-and-memory-baseline/tasks/TK-023-memory-store-engine-config-and-cli-composition-baseline.md` | `TK-023` | *(none)* | 2026-03-20 | 2026-03-20 | active |
-| DA-025 | `.repo-ai-governor/context/dev/project-002-governance-core/sprint-001-process-runtime-and-memory-baseline/tasks/TK-016-sprint-001-governance-core-exit-acceptance-baseline.md` | `TK-016` | `TK-017` | 2026-03-20 | 2026-03-20 | active |
-| DA-026 | `.repo-ai-governor/context/dev/project-002-governance-core/sprint-001-process-runtime-and-memory-baseline/tasks/TK-016-sprint-002-input-constraints-checklist.md` | `TK-016` | `TK-017`, `TK-018` | 2026-03-20 | 2026-03-20 | active |
+| DA-025 | `.repo-ai-governor/context/dev/project-002-governance-core/sprint-001-process-runtime-and-memory-baseline/tasks/TK-016-sprint-001-governance-core-exit-acceptance-baseline.md` | `TK-016` | *(none)* | 2026-03-20 | 2026-03-20 | active |
+| DA-026 | `.repo-ai-governor/context/dev/project-002-governance-core/sprint-001-process-runtime-and-memory-baseline/tasks/TK-016-sprint-002-input-constraints-checklist.md` | `TK-016` | *(none)* | 2026-03-20 | 2026-03-20 | active |
+| DA-027 | `.repo-ai-governor/context/dev/project-002-governance-core/sprint-002-policy-hitl-and-notification-baseline/tasks/TK-017-change-risk-evaluator-baseline.md` | `TK-017` | `TK-019`, `TK-020` | 2026-03-20 | 2026-03-20 | active |
+| DA-028 | `.repo-ai-governor/context/dev/project-002-governance-core/sprint-002-policy-hitl-and-notification-baseline/tasks/TK-018-policy-gate-engine-baseline.md` | `TK-018` | `TK-019`, `TK-020` | 2026-03-20 | 2026-03-20 | active |
 
 ## Archive Registry Table
 

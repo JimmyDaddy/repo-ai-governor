@@ -10,6 +10,7 @@ export {
   DEFAULT_MEMORY_STORE_ROOT_SEGMENTS,
   ErrorOutputEnvironment,
   ErrorScenario,
+  GovernanceReviewerRole,
   I18N_RUNTIME_ENGINE,
   MemoryStoreEngine,
   WorkspaceMigrationPolicy,

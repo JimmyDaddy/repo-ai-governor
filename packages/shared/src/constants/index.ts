@@ -1,4 +1,5 @@
 export { ErrorOutputEnvironment, ErrorScenario } from "./error.constant.js";
+export { GovernanceReviewerRole } from "./governance-reviewer-role.constant.js";
 export {
   DEFAULT_I18N_FALLBACK_LOCALE,
   DEFAULT_I18N_LOCALE,

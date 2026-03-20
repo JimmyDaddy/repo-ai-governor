@@ -395,19 +395,20 @@ ai-governor/
 1. `apps/cli` -> 允许依赖 `packages/*`，不允许反向被核心依赖。
 2. `core-role-registry` -> 负责默认/自定义角色定义与校验，可依赖 `config/shared`。
 3. `core-change-risk` -> 负责统一风险事实归一化，可依赖 `config/shared/standards`，不依赖具体 `adapters/*`。
-4. `memory-store-adapter` -> 仅定义存储契约与 provider 装配，不依赖 `core-runtime`。
-5. `memory-providers/*` -> 仅依赖 `memory-store-adapter/shared`，不得依赖 `apps/cli` 与 `adapters/*`。
-6. `notification-dispatcher` -> 负责 HITL 通知策略执行与回退，可依赖 `core-policy/core-audit/config/shared`。
-7. `notification-providers/*` -> 仅依赖 `notification-dispatcher/shared`，不得依赖 `core-runtime` 与 `adapters/*`。
-8. `core-memory` -> 可依赖 `config/shared/memory-store-adapter`，不依赖具体 provider 实现。
-9. `core-session` -> 可依赖 `core-memory/shared`，不依赖具体 `adapters/*`。
-10. `artifact-registry` -> 可依赖 `shared/config/core-audit`，不得依赖 `apps/cli` 与具体 `adapters/*`。
-11. `core-runtime` -> 可依赖 `core-process/core-change-risk/core-policy/core-role-registry/core-memory/core-session/artifact-registry/notification-dispatcher/config/adapter-sdk/standards/slots/core-audit`。
-12. `adapters/*` -> 仅依赖 `adapter-sdk/shared`，不依赖 `apps/cli`。
-13. `standards/slots` -> 不依赖具体 adapter 实现，保持工具无关。
-14. `reporting` -> 只读核心执行结果，不反向控制 runtime；其内 `cli-output-presenter` 仅负责展示，不承担流程决策。
-15. `shared` -> 不依赖业务域模块，集中承接共享类型、通用工具与 i18n 基础能力。
-16. `spec-sync-guard` -> 仅依赖文档元数据与 git 变更检测，不依赖 runtime/adapter/provider 实现。
+4. `core-policy` -> 负责策略规则匹配与 `allow/confirm/block/escalate` 决策，可依赖 `core-change-risk/config/shared/standards`，不依赖具体 `adapters/*` 与 `core-runtime`。
+5. `memory-store-adapter` -> 仅定义存储契约与 provider 装配，不依赖 `core-runtime`。
+6. `memory-providers/*` -> 仅依赖 `memory-store-adapter/shared`，不得依赖 `apps/cli` 与 `adapters/*`。
+7. `notification-dispatcher` -> 负责 HITL 通知策略执行与回退，可依赖 `core-policy/core-audit/config/shared`。
+8. `notification-providers/*` -> 仅依赖 `notification-dispatcher/shared`，不得依赖 `core-runtime` 与 `adapters/*`。
+9. `core-memory` -> 可依赖 `config/shared/memory-store-adapter`，不依赖具体 provider 实现。
+10. `core-session` -> 可依赖 `core-memory/shared`，不依赖具体 `adapters/*`。
+11. `artifact-registry` -> 可依赖 `shared/config/core-audit`，不得依赖 `apps/cli` 与具体 `adapters/*`。
+12. `core-runtime` -> 可依赖 `core-process/core-change-risk/core-policy/core-role-registry/core-memory/core-session/artifact-registry/notification-dispatcher/config/adapter-sdk/standards/slots/core-audit`。
+13. `adapters/*` -> 仅依赖 `adapter-sdk/shared`，不依赖 `apps/cli`。
+14. `standards/slots` -> 不依赖具体 adapter 实现，保持工具无关。
+15. `reporting` -> 只读核心执行结果，不反向控制 runtime；其内 `cli-output-presenter` 仅负责展示，不承担流程决策。
+16. `shared` -> 不依赖业务域模块，集中承接共享类型、通用工具与 i18n 基础能力。
+17. `spec-sync-guard` -> 仅依赖文档元数据与 git 变更检测，不依赖 runtime/adapter/provider 实现。
 
 ## 6.1 依赖方向自动化执行备忘（Pending Integration）
 

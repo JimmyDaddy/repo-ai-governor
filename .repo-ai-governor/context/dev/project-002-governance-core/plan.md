@@ -60,8 +60,8 @@
 | TK-021 | sprint-001 | CS-013 类型声明收敛 | governance/baseline | TK-014 | completed |
 | TK-022 | sprint-001 | sqlite+fs Memory Provider 基线 | baseline/provider | TK-015 | completed |
 | TK-023 | sprint-001 | Memory Store Engine 配置与 CLI 组装接入 | baseline/integration | TK-022 | completed |
-| TK-017 | sprint-002 | Change Risk Evaluator 基线 | baseline/policy | TK-016 | planned |
-| TK-018 | sprint-002 | Policy Gate Engine 基线 | baseline/policy | TK-017 | planned |
+| TK-017 | sprint-002 | Change Risk Evaluator 基线 | baseline/policy | TK-016 | completed |
+| TK-018 | sprint-002 | Policy Gate Engine 基线 | baseline/policy | TK-017 | completed |
 | TK-019 | sprint-002 | HITL 与 Notification Dispatcher 基线 | baseline/constraints | TK-017,TK-018 | planned |
 | TK-020 | sprint-002 | sprint-002 出口验收与回滚基线 | acceptance baseline | TK-017,TK-018,TK-019 | planned |
 
