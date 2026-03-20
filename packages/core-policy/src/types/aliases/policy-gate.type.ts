@@ -1,7 +1,7 @@
 import type {
   ChangeRiskRequiredAction,
   ChangeRiskReviewerRole,
-} from "../../../../core-change-risk/src/index.js";
+} from "@repo-ai-governor/core-change-risk";
 import type { PolicyGateRuleId } from "../../constants/index.js";
 
 /**

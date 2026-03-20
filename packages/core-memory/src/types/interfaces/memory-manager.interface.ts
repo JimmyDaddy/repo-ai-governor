@@ -4,7 +4,7 @@ import type {
   MemoryRecord,
   MemorySnapshotOptions,
   MemorySnapshotRecord,
-} from "../../../../memory-store-adapter/src/index.js";
+} from "@repo-ai-governor/memory-store-adapter";
 
 /**
  * Defines memory read request payload.

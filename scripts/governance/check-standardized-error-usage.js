@@ -8,6 +8,7 @@ import { gateFail, gateInfo, gatePass } from "./gate-output.js";
 const GATE_NAME = "standardized-errors";
 const TARGET_DIRECTORIES = ["apps", "packages", "bin", "test"];
 const TARGET_FILE_PATTERN = /\.(ts|tsx|js|mjs|cjs)$/;
+const IGNORED_DIRECTORY_NAMES = new Set(["node_modules", "dist", "coverage", ".turbo"]);
 const BASE_ERROR_IMPLEMENTATION_ALLOWLIST = [
   /\/packages\/shared\/src\/errors\/governor-error\.ts$/,
 ];
@@ -41,6 +42,9 @@ function collectFiles(directoryPath) {
     const entryStat = statSync(entryPath);
 
     if (entryStat.isDirectory()) {
+      if (IGNORED_DIRECTORY_NAMES.has(entry)) {
+        continue;
+      }
       filePaths.push(...collectFiles(entryPath));
       continue;
     }

@@ -8,6 +8,7 @@ import { gateFail, gateInfo, gatePass } from "./gate-output.js";
 const GATE_NAME = "finite-literal-sets";
 const TARGET_DIRECTORIES = ["apps", "packages", "bin", "test"];
 const TARGET_FILE_PATTERN = /\.(ts|tsx|js|mjs|cjs)$/;
+const IGNORED_DIRECTORY_NAMES = new Set(["node_modules", "dist", "coverage", ".turbo"]);
 const LITERAL_SET_ALLOW_MARKER = "literal-set-allowed:";
 const FINITE_LITERAL_TYPE_PATTERN =
   /\btype\s+([A-Za-z][A-Za-z0-9_]*)\s*=\s*((?:"[^"]+"\s*\|\s*)+"[^"]+")\s*;/gm;
@@ -26,6 +27,9 @@ function collectFiles(directoryPath) {
     const entryStat = statSync(entryPath);
 
     if (entryStat.isDirectory()) {
+      if (IGNORED_DIRECTORY_NAMES.has(entry)) {
+        continue;
+      }
       filePaths.push(...collectFiles(entryPath));
       continue;
     }

@@ -1,4 +1,4 @@
-import type { StandardizedError } from "../../../../shared/src/errors/index.js";
+import type { StandardizedError } from "@repo-ai-governor/shared";
 import type {
   WorkspaceMigrationStep,
   WorkspaceMigrationStepStatus,

@@ -1,4 +1,4 @@
-import { GovernanceReviewerRole, GovernorErrorCode, RuntimeError } from "../../shared/src/index.js";
+import { GovernanceReviewerRole, GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
 import {
   ChangeRiskEvaluator,
   ChangeRiskFileCategory,

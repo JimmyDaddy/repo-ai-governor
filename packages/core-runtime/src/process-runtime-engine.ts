@@ -4,13 +4,13 @@ import {
   type ProcessIrEdge,
   type ProcessIrNode,
   ProcessNodeType,
-} from "../../core-process/src/index.js";
+} from "@repo-ai-governor/core-process";
 import {
   GovernorErrorCode,
   RuntimeError,
   type StandardizedError,
   standardizeError,
-} from "../../shared/src/index.js";
+} from "@repo-ai-governor/shared";
 import {
   DEFAULT_RUNTIME_FLOW_TIMEOUT_MS,
   DEFAULT_RUNTIME_MAX_TRANSITIONS,

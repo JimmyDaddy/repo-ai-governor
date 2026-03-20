@@ -1,4 +1,4 @@
-import { ConfigError, GovernorErrorCode } from "../../shared/src/errors/index.js";
+import { ConfigError, GovernorErrorCode } from "@repo-ai-governor/shared";
 import type { GovernorConfig, GovernorProfile, ResolvedConfig } from "./types/interfaces/index.js";
 
 /**

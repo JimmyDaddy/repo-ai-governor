@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 
 import { parse } from "yaml";
 
-import { ConfigError, GovernorErrorCode } from "../../shared/src/errors/index.js";
+import { ConfigError, GovernorErrorCode } from "@repo-ai-governor/shared";
 import { SchemaValidator } from "./schema-validator.js";
 import type { GovernorConfig } from "./types/interfaces/index.js";
 

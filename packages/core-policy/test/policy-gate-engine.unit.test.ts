@@ -3,7 +3,7 @@ import {
   ChangeRiskLevel,
   ChangeRiskReasonCode,
   ChangeRiskRequiredAction,
-} from "../../core-change-risk/src/index.js";
+} from "@repo-ai-governor/core-change-risk";
 import { PolicyDecisionSource, PolicyGateEngine, PolicyGateRuleId } from "../src/index.js";
 
 function createRiskEvaluationFixture(

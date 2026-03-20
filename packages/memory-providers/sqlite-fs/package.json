@@ -2,5 +2,15 @@
   "name": "@repo-ai-governor/memory-provider-sqlite-fs",
   "version": "0.1.0",
   "private": true,
-  "type": "module"
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./dist/src/index.js"
+    }
+  },
+  "dependencies": {
+    "@repo-ai-governor/memory-store-adapter": "workspace:*",
+    "@repo-ai-governor/shared": "workspace:*"
+  }
 }

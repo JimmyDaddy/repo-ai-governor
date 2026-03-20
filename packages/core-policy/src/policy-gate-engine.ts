@@ -1,5 +1,5 @@
-import { ChangeRiskLevel, ChangeRiskRequiredAction } from "../../core-change-risk/src/index.js";
-import { GovernanceReviewerRole, GovernorErrorCode, RuntimeError } from "../../shared/src/index.js";
+import { ChangeRiskLevel, ChangeRiskRequiredAction } from "@repo-ai-governor/core-change-risk";
+import { GovernanceReviewerRole, GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
 import {
   DEFAULT_REVIEW_VERIFY_FAILURE_ESCALATION_THRESHOLD,
   POLICY_GATE_OUTCOME_VALUES,

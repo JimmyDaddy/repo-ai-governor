@@ -1,5 +1,5 @@
-import { ChangeRiskLevel, ChangeRiskRequiredAction } from "../../core-change-risk/src/index.js";
-import { PolicyDecisionSource } from "../../core-policy/src/index.js";
+import { ChangeRiskLevel, ChangeRiskRequiredAction } from "@repo-ai-governor/core-change-risk";
+import { PolicyDecisionSource } from "@repo-ai-governor/core-policy";
 import {
   NotificationChannel,
   NotificationDispatchStatus,

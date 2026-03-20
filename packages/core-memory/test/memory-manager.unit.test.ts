@@ -1,7 +1,7 @@
 import {
   MemoryStoreAdapter,
   type MemoryStoreProvider,
-} from "../../memory-store-adapter/src/index.js";
+} from "@repo-ai-governor/memory-store-adapter";
 import { MemoryManager, MemoryScope } from "../src/index.js";
 
 function createInMemoryStoreProvider(): MemoryStoreProvider {

@@ -13,7 +13,7 @@ export { WorkspaceMigrationStep, WorkspaceMigrationStepStatus } from "./constant
 export { UpgradeSchemaDiffService } from "./upgrade-schema-diff-service.js";
 export { WorkspaceMigrationService } from "./workspace-migration-service.js";
 export { WorkspaceResolver } from "./workspace-resolver.js";
-export { WorkspaceMode } from "../../shared/src/constants/index.js";
+export { WorkspaceMode } from "@repo-ai-governor/shared";
 export type {
   GovernorConfig,
   GovernorProfile,

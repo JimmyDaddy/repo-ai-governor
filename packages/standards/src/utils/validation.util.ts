@@ -1,4 +1,4 @@
-import { type GovernorErrorCode, RuntimeError } from "../../../shared/src/index.js";
+import { type GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
 
 /**
  * Validates a required string field and returns a trimmed value.

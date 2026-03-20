@@ -2,9 +2,9 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
-import { runCli } from "../apps/cli/src/main.js";
-import { ProfileResolver, SchemaValidator, WorkspaceMode } from "../packages/config/src/index.js";
-import { MemoryStoreEngine } from "../packages/shared/src/index.js";
+import { runCli } from "@repo-ai-governor/cli";
+import { ProfileResolver, SchemaValidator, WorkspaceMode } from "@repo-ai-governor/config";
+import { MemoryStoreEngine } from "@repo-ai-governor/shared";
 
 /**
  * Creates one temporary repository root for config and CLI composition smoke tests.

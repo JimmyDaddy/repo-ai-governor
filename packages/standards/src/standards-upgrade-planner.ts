@@ -1,4 +1,4 @@
-import { GovernorErrorCode, RuntimeError } from "../../shared/src/index.js";
+import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
 import {
   DEFAULT_STANDARDS_ALLOW_MINOR_AUTO_UPGRADE,
   DEFAULT_STANDARDS_ALLOW_PATCH_AUTO_UPGRADE,

@@ -1,4 +1,4 @@
-import { GovernorErrorCode, RuntimeError } from "../../shared/src/index.js";
+import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
 import {
   DEFAULT_NOTIFICATION_POLICY_MATRIX,
   DEFAULT_NOTIFICATION_PRIMARY_MAX_ATTEMPTS,

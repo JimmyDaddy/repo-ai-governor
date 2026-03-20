@@ -3,8 +3,8 @@ import {
   ChangeRiskLevel,
   ChangeRiskReasonCode,
   ChangeRiskRequiredAction,
-} from "../../core-change-risk/src/index.js";
-import { GovernanceReviewerRole, GovernorErrorCode, RuntimeError } from "../../shared/src/index.js";
+} from "@repo-ai-governor/core-change-risk";
+import { GovernanceReviewerRole, GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
 import {
   PolicyDecisionSource,
   PolicyGateEngine,

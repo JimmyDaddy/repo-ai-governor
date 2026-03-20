@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 
-import { type MemoryManager, MemoryScope } from "../../core-memory/src/index.js";
-import { GovernorErrorCode, RuntimeError } from "../../shared/src/index.js";
+import { type MemoryManager, MemoryScope } from "@repo-ai-governor/core-memory";
+import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
 import { SessionStatus } from "./constants/index.js";
 import type {
   AppendSessionEventOptions,

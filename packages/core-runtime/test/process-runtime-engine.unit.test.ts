@@ -1,4 +1,4 @@
-import { ProcessCompiler, ProcessNodeType } from "../../core-process/src/index.js";
+import { ProcessCompiler, ProcessNodeType } from "@repo-ai-governor/core-process";
 import { ProcessRuntimeEngine, RuntimeExecutionStatus, RuntimeStageStatus } from "../src/index.js";
 
 describe("core-runtime unit", () => {

@@ -2,7 +2,7 @@ import {
   ProcessCompiler,
   type ProcessDslDefinition,
   ProcessNodeType,
-} from "../../core-process/src/index.js";
+} from "@repo-ai-governor/core-process";
 import {
   ProcessRuntimeEngine,
   RuntimeExecutionStatus,

@@ -1,5 +1,5 @@
-import type { ProcessNodeType } from "../../../../core-process/src/constants/index.js";
-import type { GovernorErrorCode } from "../../../../shared/src/errors/index.js";
+import type { ProcessNodeType } from "@repo-ai-governor/core-process";
+import type { GovernorErrorCode } from "@repo-ai-governor/shared";
 import type { RuntimeStageStatus } from "../../constants/runtime.constant.js";
 
 /**

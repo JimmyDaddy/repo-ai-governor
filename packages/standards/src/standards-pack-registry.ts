@@ -1,4 +1,4 @@
-import { GovernorErrorCode, RuntimeError } from "../../shared/src/index.js";
+import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
 import {
   STANDARDS_PACK_SCOPE_VALUES,
   STANDARDS_PACK_SOURCE_VALUES,

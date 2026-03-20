@@ -1,4 +1,4 @@
-import type { ProcessIrEdge } from "../../../../core-process/src/types/index.js";
+import type { ProcessIrEdge } from "@repo-ai-governor/core-process";
 import type { RuntimeNowProvider } from "../../providers/index.js";
 import type { RuntimeStageInputMap } from "../aliases/index.js";
 

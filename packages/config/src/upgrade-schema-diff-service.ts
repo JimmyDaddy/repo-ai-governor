@@ -1,4 +1,4 @@
-import { ConfigError, GovernorErrorCode } from "../../shared/src/errors/index.js";
+import { ConfigError, GovernorErrorCode } from "@repo-ai-governor/shared";
 import {
   DEFAULT_WORKSPACE_MIGRATION_POLICY,
   GOVERNOR_LATEST_SCHEMA_VERSION,

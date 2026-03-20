@@ -1,4 +1,4 @@
-import { GovernorErrorCode, type RuntimeError } from "../../shared/src/index.js";
+import { GovernorErrorCode, type RuntimeError } from "@repo-ai-governor/shared";
 import { type MemoryRecord, MemoryStoreAdapter, type MemoryStoreProvider } from "../src/index.js";
 
 function createStoreProvider(record: MemoryRecord): MemoryStoreProvider {

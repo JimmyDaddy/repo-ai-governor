@@ -1,8 +1,5 @@
-import type { WorkspaceMigrationPolicy } from "../../../../shared/src/constants/index.js";
-import type {
-  I18nRuntimeConfig,
-  MemoryRuntimeConfig,
-} from "../../../../shared/src/types/interfaces/index.js";
+import type { WorkspaceMigrationPolicy } from "@repo-ai-governor/shared";
+import type { I18nRuntimeConfig, MemoryRuntimeConfig } from "@repo-ai-governor/shared";
 import type { WorkspaceMode } from "../aliases/workspace-mode.type.js";
 
 /**

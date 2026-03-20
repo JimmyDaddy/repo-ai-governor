@@ -1,4 +1,4 @@
-import type { GovernorErrorCode } from "../../../../shared/src/errors/index.js";
+import type { GovernorErrorCode } from "@repo-ai-governor/shared";
 import type {
   RuntimeExecutionStatus,
   RuntimeTimeoutScope,

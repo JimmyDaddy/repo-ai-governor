@@ -3,7 +3,7 @@ import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, isAbsolute, resolve } from "node:path";
 
-import { WorkspaceMode } from "../../shared/src/constants/index.js";
+import { WorkspaceMode } from "@repo-ai-governor/shared";
 import {
   GOVERNOR_CONFIG_FILE_NAME,
   GOVERNOR_WORKSPACE_DIRECTORY_NAME,

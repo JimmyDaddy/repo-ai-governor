@@ -1,4 +1,4 @@
-import { DEFAULT_I18N_FALLBACK_LOCALE, DEFAULT_I18N_LOCALE } from "../../../shared/src/index.js";
+import { DEFAULT_I18N_FALLBACK_LOCALE, DEFAULT_I18N_LOCALE } from "@repo-ai-governor/shared";
 
 /**
  * Defines supported standards-pack source categories.

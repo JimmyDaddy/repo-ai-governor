@@ -1,4 +1,4 @@
-import { ChangeRiskRequiredAction } from "../../../core-change-risk/src/index.js";
+import { ChangeRiskRequiredAction } from "@repo-ai-governor/core-change-risk";
 
 /**
  * Defines supported human feedback decisions for HITL callbacks.

@@ -1,9 +1,9 @@
-import { ChangeRiskLevel, ChangeRiskRequiredAction } from "../../core-change-risk/src/index.js";
+import { ChangeRiskLevel, ChangeRiskRequiredAction } from "@repo-ai-governor/core-change-risk";
 import {
   PolicyDecisionSource,
   type PolicyGateEvaluationResult,
-} from "../../core-policy/src/index.js";
-import { GovernorErrorCode, RuntimeError } from "../../shared/src/index.js";
+} from "@repo-ai-governor/core-policy";
+import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
 import {
   NotificationChannel,
   NotificationDispatchStatus,

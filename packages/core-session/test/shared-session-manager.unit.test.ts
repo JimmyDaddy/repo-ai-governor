@@ -1,8 +1,8 @@
-import { MemoryManager } from "../../core-memory/src/index.js";
+import { MemoryManager } from "@repo-ai-governor/core-memory";
 import {
   MemoryStoreAdapter,
   type MemoryStoreProvider,
-} from "../../memory-store-adapter/src/index.js";
+} from "@repo-ai-governor/memory-store-adapter";
 import { SessionStatus, SharedSessionManager } from "../src/index.js";
 
 function createInMemoryStoreProvider(): MemoryStoreProvider {

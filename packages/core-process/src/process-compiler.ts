@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { GovernorErrorCode, RuntimeError } from "../../shared/src/errors/index.js";
+import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
 import {
   COMPILED_IR_ROOT_SEGMENTS,
   PROCESS_IR_SUPPORTED_MAJOR_VERSION,

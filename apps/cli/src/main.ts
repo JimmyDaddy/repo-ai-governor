@@ -9,9 +9,9 @@ import {
   ProfileResolver,
   type ResolvedWorkspace,
   WorkspaceResolver,
-} from "../../../packages/config/src/index.js";
-import { FsCsvMemoryStoreProvider } from "../../../packages/memory-providers/fs-csv/src/index.js";
-import { SqliteFsMemoryStoreProvider } from "../../../packages/memory-providers/sqlite-fs/src/index.js";
+} from "@repo-ai-governor/config";
+import { FsCsvMemoryStoreProvider } from "@repo-ai-governor/memory-provider-fs-csv";
+import { SqliteFsMemoryStoreProvider } from "@repo-ai-governor/memory-provider-sqlite-fs";
 import {
   DEFAULT_I18N_RUNTIME_CONFIG,
   DEFAULT_MEMORY_RUNTIME_CONFIG,
@@ -20,7 +20,7 @@ import {
   type MemoryRuntimeConfig,
   MemoryStoreEngine,
   standardizeError,
-} from "../../../packages/shared/src/index.js";
+} from "@repo-ai-governor/shared";
 import { CLI_SKELETON_COMMAND_DEFINITIONS } from "./constants/cli-command.constant.js";
 
 const DEFAULT_I18N_CONFIG: I18nRuntimeConfig = {

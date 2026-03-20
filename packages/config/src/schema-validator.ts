@@ -3,8 +3,8 @@ import {
   MemoryStoreEngine,
   WorkspaceMigrationPolicy,
   WorkspaceMode,
-} from "../../shared/src/constants/index.js";
-import { ConfigError, GovernorErrorCode } from "../../shared/src/errors/index.js";
+} from "@repo-ai-governor/shared";
+import { ConfigError, GovernorErrorCode } from "@repo-ai-governor/shared";
 import { GovernorSchemaVersion, SUPPORTED_GOVERNOR_SCHEMA_VERSIONS } from "./constants/index.js";
 import type {
   GovernorConfig,

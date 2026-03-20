@@ -10,8 +10,8 @@ import type {
   MemorySnapshotOptions,
   MemorySnapshotRecord,
   MemoryStoreProvider,
-} from "../../../memory-store-adapter/src/index.js";
-import { GovernorErrorCode, RuntimeError } from "../../../shared/src/index.js";
+} from "@repo-ai-governor/memory-store-adapter";
+import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
 import {
   FS_CSV_ARCHIVE_FILE_NAME,
   FS_CSV_ARCHIVE_HEADER,

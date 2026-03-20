@@ -1,4 +1,4 @@
-import { GovernorErrorCode, RuntimeError } from "../../shared/src/index.js";
+import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
 import {
   AgentsProjectionMetadataKey,
   AgentsProjectionNowProvider,

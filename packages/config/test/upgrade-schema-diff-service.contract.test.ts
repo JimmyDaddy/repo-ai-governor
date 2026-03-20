@@ -2,7 +2,7 @@ import {
   GovernorErrorCode,
   WorkspaceMigrationPolicy,
   standardizeError,
-} from "../../shared/src/index.js";
+} from "@repo-ai-governor/shared";
 import {
   type GovernorConfig,
   GovernorSchemaVersion,

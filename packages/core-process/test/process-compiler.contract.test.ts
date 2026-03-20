@@ -2,7 +2,7 @@ import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
-import { GovernorErrorCode, standardizeError } from "../../shared/src/index.js";
+import { GovernorErrorCode, standardizeError } from "@repo-ai-governor/shared";
 import {
   PROCESS_IR_VERSION,
   ProcessCompiler,

@@ -1,4 +1,4 @@
-import type { PolicyGateEvaluationResult } from "../../../../core-policy/src/index.js";
+import type { PolicyGateEvaluationResult } from "@repo-ai-governor/core-policy";
 import type {
   NotificationChannel,
   NotificationDispatchStatus,

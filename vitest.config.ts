@@ -1,6 +1,10 @@
 import { defineConfig } from "vitest/config";
+import { createVitestInternalAliases } from "./vitest.internal-alias.js";
 
 export default defineConfig({
+  resolve: {
+    alias: createVitestInternalAliases(),
+  },
   test: {
     globals: true,
     environment: "node",

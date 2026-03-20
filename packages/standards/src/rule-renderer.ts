@@ -1,4 +1,4 @@
-import { GovernorErrorCode, RuntimeError } from "../../shared/src/index.js";
+import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
 import {
   DEFAULT_STANDARDS_FALLBACK_LOCALE,
   DEFAULT_STANDARDS_RENDER_LOCALE,

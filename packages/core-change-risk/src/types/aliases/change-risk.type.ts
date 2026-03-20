@@ -1,4 +1,4 @@
-import type { GovernanceReviewerRole } from "../../../../shared/src/index.js";
+import type { GovernanceReviewerRole } from "@repo-ai-governor/shared";
 import type { ChangeRiskFileCategory, ChangeRiskRequiredAction } from "../../constants/index.js";
 
 /**

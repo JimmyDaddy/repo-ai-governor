@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-import { runCli } from "../apps/cli/src/main.js";
-import { standardizeError } from "../packages/shared/src/index.js";
+import { runCli } from "@repo-ai-governor/cli";
+import { standardizeError } from "@repo-ai-governor/shared";
 
 /**
  * Boots the CLI runtime from the executable entrypoint.

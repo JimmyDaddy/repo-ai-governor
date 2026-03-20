@@ -88,13 +88,6 @@
     "access": "public",
     "provenance": true
   },
-  "dependencies": {
-    "ajv": "^8.18.0",
-    "ajv-formats": "^3.0.1",
-    "commander": "^13.1.0",
-    "i18next": "^25.6.0",
-    "yaml": "^2.8.2"
-  },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "@release-it/conventional-changelog": "^9.0.4",

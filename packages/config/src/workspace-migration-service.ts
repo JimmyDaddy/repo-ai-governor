@@ -3,13 +3,13 @@ import { existsSync } from "node:fs";
 import { cp, mkdir, readFile, readdir, rename, rm } from "node:fs/promises";
 import { dirname, join, relative, resolve } from "node:path";
 
-import type { WorkspaceMode } from "../../shared/src/constants/index.js";
+import type { WorkspaceMode } from "@repo-ai-governor/shared";
 import {
   ConfigError,
   GovernorErrorCode,
   type StandardizedError,
   standardizeError,
-} from "../../shared/src/errors/index.js";
+} from "@repo-ai-governor/shared";
 import {
   WORKSPACE_MIGRATION_ROOT_SEGMENTS,
   WorkspaceMigrationStep,

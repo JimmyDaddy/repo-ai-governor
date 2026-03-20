@@ -2,5 +2,14 @@
   "name": "@repo-ai-governor/shared",
   "version": "0.1.0",
   "private": true,
-  "type": "module"
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./dist/src/index.js"
+    }
+  },
+  "dependencies": {
+    "i18next": "^25.6.0"
+  }
 }

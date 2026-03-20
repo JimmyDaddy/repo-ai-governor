@@ -10,8 +10,8 @@ import type {
   MemorySnapshotOptions,
   MemorySnapshotRecord,
   MemoryStoreProvider,
-} from "../../../memory-store-adapter/src/index.js";
-import { GovernorErrorCode, RuntimeError } from "../../../shared/src/index.js";
+} from "@repo-ai-governor/memory-store-adapter";
+import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
 import {
   SQLITE_FS_ARCHIVE_TABLE_NAME,
   SQLITE_FS_DATABASE_FILE_NAME,

@@ -1,4 +1,4 @@
-import type { MemoryStoreAdapter } from "../../memory-store-adapter/src/index.js";
+import type { MemoryStoreAdapter } from "@repo-ai-governor/memory-store-adapter";
 import { MemoryScope } from "./constants/index.js";
 import type {
   MemoryArchiveEntriesRequest,

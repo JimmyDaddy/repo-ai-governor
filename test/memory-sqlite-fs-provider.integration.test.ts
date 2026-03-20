@@ -3,11 +3,11 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { MemoryManager, MemoryScope } from "../packages/core-memory/src/index.js";
-import { SessionStatus, SharedSessionManager } from "../packages/core-session/src/index.js";
-import { SqliteFsMemoryStoreProvider } from "../packages/memory-providers/sqlite-fs/src/index.js";
-import { MemoryStoreAdapter } from "../packages/memory-store-adapter/src/index.js";
-import { GovernorErrorCode, standardizeError } from "../packages/shared/src/index.js";
+import { MemoryManager, MemoryScope } from "@repo-ai-governor/core-memory";
+import { SessionStatus, SharedSessionManager } from "@repo-ai-governor/core-session";
+import { SqliteFsMemoryStoreProvider } from "@repo-ai-governor/memory-provider-sqlite-fs";
+import { MemoryStoreAdapter } from "@repo-ai-governor/memory-store-adapter";
+import { GovernorErrorCode, standardizeError } from "@repo-ai-governor/shared";
 
 /**
  * Creates one temporary root directory for sqlite+fs smoke tests.

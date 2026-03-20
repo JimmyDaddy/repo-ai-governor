@@ -1,4 +1,4 @@
-import { WorkspaceMigrationPolicy } from "../../../shared/src/constants/index.js";
+import { WorkspaceMigrationPolicy } from "@repo-ai-governor/shared";
 
 export enum GovernorSchemaVersion {
   V1_0 = "1.0",
