@@ -1,6 +1,6 @@
 # project-002-governance-core 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-03-20
 - Stage Mapping: Stage 2-3
 - Phase Mapping: Phase A/B
@@ -77,3 +77,8 @@
 2. 高风险动作可触发人工确认，且决策可回放到审计链路。
 3. 关键产物与任务台账同步完整，无 `task card/checklist/tasks.csv` 漂移。
 4. `pnpm run check` 稳定通过，且生命周期门禁可阻断陈旧依赖回流。
+
+## 7. 里程碑记录
+
+1. `2026-03-20` 完成态审计摘要：
+   - `.repo-ai-governor/context/dev/project-002-governance-core/project-002-completion-audit-summary.md`
