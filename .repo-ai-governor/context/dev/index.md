@@ -40,6 +40,7 @@
    - `DA-029` `.repo-ai-governor/context/dev/project-002-governance-core/sprint-002-policy-hitl-and-notification-baseline/tasks/TK-019-hitl-feedback-and-notification-baseline.md`
    - `DA-030` `.repo-ai-governor/context/dev/project-002-governance-core/sprint-002-policy-hitl-and-notification-baseline/tasks/TK-020-sprint-002-governance-core-exit-acceptance-baseline.md`
    - `DA-031` `.repo-ai-governor/context/dev/project-002-governance-core/sprint-002-policy-hitl-and-notification-baseline/tasks/TK-020-project-003-input-constraints-checklist.md`
+   - `DA-032` `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-001-standards-pack-and-spec-sync/tasks/TK-024-standards-pack-registry-and-rule-renderer-baseline.md`
 
 ## 3. Consumption Rule
 

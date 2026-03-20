@@ -51,6 +51,7 @@
 | DA-029 | `.repo-ai-governor/context/dev/project-002-governance-core/sprint-002-policy-hitl-and-notification-baseline/tasks/TK-019-hitl-feedback-and-notification-baseline.md` | `TK-019` | *(none)* | 2026-03-20 | 2026-03-20 | active |
 | DA-030 | `.repo-ai-governor/context/dev/project-002-governance-core/sprint-002-policy-hitl-and-notification-baseline/tasks/TK-020-sprint-002-governance-core-exit-acceptance-baseline.md` | `TK-020` | *(none)* | 2026-03-20 | 2026-03-20 | active |
 | DA-031 | `.repo-ai-governor/context/dev/project-002-governance-core/sprint-002-policy-hitl-and-notification-baseline/tasks/TK-020-project-003-input-constraints-checklist.md` | `TK-020` | *(none)* | 2026-03-20 | 2026-03-20 | active |
+| DA-032 | `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-001-standards-pack-and-spec-sync/tasks/TK-024-standards-pack-registry-and-rule-renderer-baseline.md` | `TK-024` | *(none)* | 2026-03-20 | 2026-03-20 | active |
 
 ## Archive Registry Table
 

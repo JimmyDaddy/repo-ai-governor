@@ -51,7 +51,7 @@
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 |---|---|---|---|---|---|
-| TK-024 | sprint-001 | Standards Pack Registry 与 Rule Renderer 基线 | baseline/contract | TK-020,DA-030,DA-031 | planned |
+| TK-024 | sprint-001 | Standards Pack Registry 与 Rule Renderer 基线 | baseline/contract | TK-020,DA-030,DA-031 | completed |
 | TK-025 | sprint-001 | Agents Projector 与 Projection Parity 基线 | baseline/constraints | TK-024 | planned |
 | TK-026 | sprint-001 | Spec Sync Guard 门禁接线基线 | baseline/policy | TK-024,TK-025 | planned |
 | TK-029 | sprint-001 | sprint-001 出口验收与 sprint-002 输入约束 | acceptance baseline | TK-024,TK-025,TK-026 | planned |

@@ -1,8 +1,8 @@
 # TK-024 Standards Pack Registry 与 Rule Renderer 基线
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-20
-- Owner: TBD
+- Owner: AI-Agent
 - Priority: P0
 - Project: `project-003-standards-and-slots`
 - Sprint: `sprint-001-standards-pack-and-spec-sync`
@@ -40,3 +40,18 @@
 1. `pnpm run typecheck`
 2. `pnpm run test -- standards-pack.smoke.test.ts`
 3. `pnpm run check`
+
+## 7. 产出
+
+1. `packages/standards/**`
+2. `test/standards-pack.smoke.test.ts`
+3. `packages/shared/src/errors/error-code.constant.ts`
+4. `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-001-standards-pack-and-spec-sync/code-review/verified_review_tk-024-standards-pack-registry-and-rule-renderer-baseline.md`
+5. `DA-032` `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-001-standards-pack-and-spec-sync/tasks/TK-024-standards-pack-registry-and-rule-renderer-baseline.md`
+
+## 8. 执行记录
+
+1. 2026-03-20：任务启动，状态切换为 `in_progress`，开始实现 `packages/standards` 的 pack registry 与 rule renderer 基线契约。
+2. 2026-03-20：完成 `StandardsPackRegistry`、`RuleRenderer`、`constants/types` 与 smoke 覆盖，并补齐 standards 相关标准化错误码。
+3. 2026-03-20：完成 CR 与台账收敛，状态切换为 `completed`；验证通过 `pnpm run typecheck`、`pnpm run test -- standards-pack.smoke.test.ts`、`pnpm run check`。
+4. 2026-03-20：完成批次 CR 复核与修复，补齐注册阶段 render target 完整性校验、`semanticKey` 插值回退与排序死代码清理，并将复核结论追加到 `review_tk-024-standards-pack-registry-rule-renderer-batch.md`。
