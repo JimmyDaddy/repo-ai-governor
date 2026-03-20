@@ -16,11 +16,11 @@
 1. `TK-017`
 2. `TK-018`
 3. `TK-019`
-4. `DA-025`
-5. `DA-026`
-6. `DA-027`
+4. `DA-027`
+5. `DA-028`
+6. `DA-029`
 
 ## 3. 预期产物
 
-1. `DA-028` project-002 exit acceptance baseline 文档。
-2. `DA-029` project-003 输入约束清单。
+1. `DA-030` project-002 exit acceptance baseline 文档。
+2. `DA-031` project-003 输入约束清单。

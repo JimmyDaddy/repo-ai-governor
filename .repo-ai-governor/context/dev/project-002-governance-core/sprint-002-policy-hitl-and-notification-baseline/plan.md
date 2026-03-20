@@ -17,7 +17,7 @@
 
 ## 3. Entry Criteria
 
-1. sprint-001 验收基线（`DA-023`）与 sprint-002 输入约束清单（`DA-024`）可检索。
+1. sprint-001 验收基线（`DA-025`）与 sprint-002 输入约束清单（`DA-026`）可检索。
 2. Runtime 与 Memory/Session 基线可作为策略执行事实输入层。
 
 ## 4. Exit Criteria

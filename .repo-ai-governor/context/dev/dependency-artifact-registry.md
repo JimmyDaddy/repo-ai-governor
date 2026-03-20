@@ -39,7 +39,13 @@
 | DA-017 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-002-workspace-and-upgrade/tasks/TK-011-upgrade-human-confirmation-policy-baseline.md` | `TK-011` | *(none)* | 2026-03-20 | 2026-03-20 | active |
 | DA-018 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-002-workspace-and-upgrade/tasks/TK-012-sprint-002-exit-acceptance-and-rollback-baseline.md` | `TK-012` | *(none)* | 2026-03-20 | 2026-03-20 | active |
 | DA-019 | `.repo-ai-governor/context/dev/project-001-foundation/sprint-002-workspace-and-upgrade/tasks/TK-012-stage-2-input-readiness-checklist.md` | `TK-012` | *(none)* | 2026-03-20 | 2026-03-20 | active |
-| DA-020 | `.repo-ai-governor/context/dev/project-002-governance-core/sprint-001-process-runtime-and-memory-baseline/tasks/TK-013-process-dsl-and-compiler-ir-v1-baseline.md` | `TK-013` | `TK-014`, `TK-015`, `TK-016` | 2026-03-20 | 2026-03-20 | active |
+| DA-020 | `.repo-ai-governor/context/dev/project-002-governance-core/sprint-001-process-runtime-and-memory-baseline/tasks/TK-013-process-dsl-and-compiler-ir-v1-baseline.md` | `TK-013` | *(none)* | 2026-03-20 | 2026-03-20 | active |
+| DA-021 | `.repo-ai-governor/context/dev/project-002-governance-core/sprint-001-process-runtime-and-memory-baseline/tasks/TK-014-runtime-control-flow-engine-baseline.md` | `TK-014` | *(none)* | 2026-03-20 | 2026-03-20 | active |
+| DA-022 | `.repo-ai-governor/context/dev/project-002-governance-core/sprint-001-process-runtime-and-memory-baseline/tasks/TK-015-memory-session-store-baseline.md` | `TK-015` | *(none)* | 2026-03-20 | 2026-03-20 | active |
+| DA-023 | `.repo-ai-governor/context/dev/project-002-governance-core/sprint-001-process-runtime-and-memory-baseline/tasks/TK-022-sqlite-fs-memory-provider-baseline.md` | `TK-022` | *(none)* | 2026-03-20 | 2026-03-20 | active |
+| DA-024 | `.repo-ai-governor/context/dev/project-002-governance-core/sprint-001-process-runtime-and-memory-baseline/tasks/TK-023-memory-store-engine-config-and-cli-composition-baseline.md` | `TK-023` | *(none)* | 2026-03-20 | 2026-03-20 | active |
+| DA-025 | `.repo-ai-governor/context/dev/project-002-governance-core/sprint-001-process-runtime-and-memory-baseline/tasks/TK-016-sprint-001-governance-core-exit-acceptance-baseline.md` | `TK-016` | `TK-017` | 2026-03-20 | 2026-03-20 | active |
+| DA-026 | `.repo-ai-governor/context/dev/project-002-governance-core/sprint-001-process-runtime-and-memory-baseline/tasks/TK-016-sprint-002-input-constraints-checklist.md` | `TK-016` | `TK-017`, `TK-018` | 2026-03-20 | 2026-03-20 | active |
 
 ## Archive Registry Table
 

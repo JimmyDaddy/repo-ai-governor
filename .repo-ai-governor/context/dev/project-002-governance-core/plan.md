@@ -54,9 +54,9 @@
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 |---|---|---|---|---|---|
 | TK-013 | sprint-001 | Process DSL 与 Compiler IR v1 基线 | baseline/contract | TK-012 | completed |
-| TK-014 | sprint-001 | Runtime 控制流执行基线 | baseline/constraints | TK-013 | in_progress |
+| TK-014 | sprint-001 | Runtime 控制流执行基线 | baseline/constraints | TK-013 | completed |
 | TK-015 | sprint-001 | Memory/Session/Store 基线 | baseline/contract | TK-013,TK-014 | completed |
-| TK-016 | sprint-001 | sprint-001 出口验收基线 | acceptance baseline | TK-013,TK-014,TK-015 | planned |
+| TK-016 | sprint-001 | sprint-001 出口验收基线 | acceptance baseline | TK-013,TK-014,TK-015,TK-022,TK-023 | completed |
 | TK-021 | sprint-001 | CS-013 类型声明收敛 | governance/baseline | TK-014 | completed |
 | TK-022 | sprint-001 | sqlite+fs Memory Provider 基线 | baseline/provider | TK-015 | completed |
 | TK-023 | sprint-001 | Memory Store Engine 配置与 CLI 组装接入 | baseline/integration | TK-022 | completed |
@@ -68,7 +68,7 @@
 ## 5. 依赖产物策略
 
 1. project-002 规划入口默认消费 `DA-018`（sprint-002 验收基线）与 `DA-019`（Stage 2 输入就绪清单）。
-2. sprint-001 产物目标：`DA-020`~`DA-024`；sprint-002 产物目标：`DA-025`~`DA-029`。
+2. sprint-001 产物目标：`DA-020`~`DA-026`；sprint-002 产物目标：`DA-027`~`DA-031`。
 3. 任务执行时使用 `artifact_id + artifact_path` 双键回链，并同步 `tasks.csv/checklist/dependency-artifact-registry`。
 
 ## 6. DoD（project-002）

@@ -14,10 +14,10 @@
 ## 2. Depends On
 
 1. `TK-016`
-2. `DA-023`
-3. `DA-024`
+2. `DA-025`
+3. `DA-026`
 4. `DA-022`
 
 ## 3. 预期产物
 
-1. `DA-025` change risk evaluator baseline 文档。
+1. `DA-027` change risk evaluator baseline 文档。

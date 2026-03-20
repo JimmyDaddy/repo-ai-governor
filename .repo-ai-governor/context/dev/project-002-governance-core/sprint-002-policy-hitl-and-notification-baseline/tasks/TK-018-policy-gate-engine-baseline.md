@@ -14,9 +14,9 @@
 ## 2. Depends On
 
 1. `TK-017`
-2. `DA-025`
-3. `DA-024`
+2. `DA-027`
+3. `DA-026`
 
 ## 3. 预期产物
 
-1. `DA-026` policy gate engine baseline 文档。
+1. `DA-028` policy gate engine baseline 文档。

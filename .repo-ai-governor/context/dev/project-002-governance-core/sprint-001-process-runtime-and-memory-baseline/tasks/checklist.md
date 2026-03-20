@@ -3,14 +3,17 @@
 - [x] TK-013 Process DSL 与 Compiler IR v1 基线
   - 2026-03-20: 完成 `packages/core-process` 基线搭建，落地 Process DSL 与 Compiler IR v1 契约、IR 版本兼容校验与 `compiled-ir` 快照持久化，并通过 `pnpm run test`、`pnpm run build`、`pnpm run check`。
   - 2026-03-20: 完成 CR 复核修复，补齐快照 `snake_case` 持久化契约与 `nodeType` 显式校验，并通过 `pnpm run typecheck`、`pnpm run test`、`pnpm run check`。
-- [ ] TK-014 Runtime 控制流执行基线
+- [x] TK-014 Runtime 控制流执行基线
   - 2026-03-20: 任务启动，状态切换为 `in_progress`，开始实现 `core-runtime` 控制流引擎基线与中断语义。
   - 2026-03-20: 已处理 review 评论，完成运行时常量数字风格收敛（去除 `_` 分隔符）与时钟 provider 类化扩展（`RuntimeNowProvider` + `DefaultRuntimeNowProvider`），并通过 `pnpm run typecheck`、`pnpm run test -- process-runtime-engine.smoke.test.ts`、`pnpm run check`。
   - 2026-03-20: 已完成 TK-014 CR 复核并将报告推进为 `verified_review_tk-014-runtime-control-flow-engine-baseline.md`，复核结论“部分认可”，确认无阻断项，并通过 `pnpm run typecheck`、`pnpm run test -- process-runtime-engine.smoke.test.ts`、`pnpm run check`。
+  - 2026-03-20: 完成任务收敛并登记 `DA-021`，状态切换为 `completed`，并通过 `pnpm run check`。
 - [x] TK-015 Memory/Session/Store 基线
   - 2026-03-20: 任务启动，状态切换为 `in_progress`，开始设计 `core-memory/core-session/memory-store-adapter/memory-providers-fs-csv` 基线契约与目录骨架。
   - 2026-03-20: 完成交付，新增 `core-memory/core-session/memory-store-adapter/memory-providers/fs-csv` 四层基线实现与 smoke 测试，并通过 `pnpm run typecheck`、`pnpm run test -- memory-session-store.smoke.test.ts`、`pnpm run check`。
-- [ ] TK-016 sprint-001 出口验收基线
+- [x] TK-016 sprint-001 出口验收基线
+  - 2026-03-20: 任务启动，状态切换为 `in_progress`，开始构建 sprint-001 验收矩阵与 sprint-002 输入约束清单。
+  - 2026-03-20: 完成交付，新增 `DA-025` 与 `DA-026`，同步 artifact registry 与 sprint-002 依赖编号并通过 `node ./scripts/governance/reconcile-artifact-dependencies.js`、`pnpm run check`。
 - [x] TK-022 sqlite+fs Memory Provider 基线
   - 2026-03-20: 任务启动，状态切换为 `in_progress`，开始新增 `packages/memory-providers/sqlite-fs` 并对齐 `memory-store-adapter` 契约与跨层 smoke 基线。
   - 2026-03-20: 完成交付，新增 `packages/memory-providers/sqlite-fs` 与 `memory-sqlite-fs-provider` smoke 覆盖，并通过 `pnpm run typecheck`、`pnpm run test -- memory-sqlite-fs-provider.smoke.test.ts`、`pnpm run check`。

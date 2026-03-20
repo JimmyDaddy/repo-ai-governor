@@ -15,9 +15,9 @@
 
 1. `TK-017`
 2. `TK-018`
-3. `DA-025`
-4. `DA-026`
+3. `DA-027`
+4. `DA-028`
 
 ## 3. 预期产物
 
-1. `DA-027` hitl notification baseline 文档。
+1. `DA-029` hitl notification baseline 文档。
