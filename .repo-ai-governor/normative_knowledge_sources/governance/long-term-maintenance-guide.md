@@ -9,6 +9,7 @@
 1. Normative rules: `.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md` (`CS-001` to `CS-025`)
 2. Operational baseline: this guide (`.repo-ai-governor/normative_knowledge_sources/governance/long-term-maintenance-guide.md`)
 3. Sprint execution records: `.repo-ai-governor/docs/dev/<project>/<sprint>/`
+4. Release channel governance: `.repo-ai-governor/normative_knowledge_sources/governance/release-governance-spec.md`
 
 This guide does not duplicate rule text from `.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md`. It defines how to run and sustain those rules over time.
 
@@ -70,6 +71,7 @@ For command-level enforcement, always use `.repo-ai-governor/normative_knowledge
    - `pnpm run check`（默认低噪音，适合 AI 执行与常规快速验证）
    - `pnpm run check -- --verbose`（人工排障，全量日志）
 2. Release baseline:
+   - `pnpm run release:check`
    - `pnpm run ci:quality`
    - `pnpm run release:ga-check`
 

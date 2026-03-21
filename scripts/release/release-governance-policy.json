@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "release_governance_v1",
+  "updatedAt": "2026-03-22",
+  "versioningStrategy": {
+    "lockstep": ["core-*", "adapter-sdk", "shared"],
+    "independent": ["adapters/*", "memory-providers/*", "notification-providers/*"]
+  },
+  "channels": [
+    {
+      "name": "canary",
+      "requiredChecks": ["pnpm run release:check", "pnpm run test:contract"],
+      "promotionCriteria": ["core contract matrix stable", "no block-level release issues"]
+    },
+    {
+      "name": "rc",
+      "requiredChecks": ["pnpm run release:candidate"],
+      "promotionCriteria": ["ci quality baseline green", "local distribution verification passed"]
+    },
+    {
+      "name": "ga",
+      "requiredChecks": ["pnpm run release:ga-check"],
+      "promotionCriteria": ["release candidate checks green", "rollback playbook available"]
+    }
+  ],
+  "rollbackTriggers": [
+    "critical production regression detected",
+    "release gate violation after channel promotion",
+    "incompatible contract change in lockstep group"
+  ],
+  "minimumAuditEvidence": [
+    "release_check_report",
+    "distribution_verify_result",
+    "channel_promotion_record"
+  ]
+}

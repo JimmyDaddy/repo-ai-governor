@@ -53,10 +53,10 @@
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 |---|---|---|---|---|---|
-| TK-056 | sprint-001 | 跨包契约测试矩阵基线 | baseline/contract | DA-065,DA-066 | planned |
-| TK-057 | sprint-001 | 分层测试（contract/integration/e2e）稳定基线 | baseline/test | TK-056 | planned |
-| TK-058 | sprint-001 | 发布治理策略与 canary-rc-ga 通道基线 | baseline/release | TK-056,TK-057 | planned |
-| TK-059 | sprint-001 | sprint-001 出口验收与 sprint-002 输入约束 | acceptance baseline | TK-056,TK-057,TK-058 | planned |
+| TK-056 | sprint-001 | 跨包契约测试矩阵基线 | baseline/contract | DA-065,DA-066 | completed |
+| TK-057 | sprint-001 | 分层测试（contract/integration/e2e）稳定基线 | baseline/test | TK-056 | completed |
+| TK-058 | sprint-001 | 发布治理策略与 canary-rc-ga 通道基线 | baseline/release | TK-056,TK-057 | completed |
+| TK-059 | sprint-001 | sprint-001 出口验收与 sprint-002 输入约束 | acceptance baseline | TK-056,TK-057,TK-058 | completed |
 | TK-060 | sprint-002 | 受限网络与离线降级稳定性回归基线 | baseline/resilience | TK-059 | planned |
 | TK-061 | sprint-002 | 回滚演练与恢复流程基线 | baseline/release | TK-058,TK-060 | planned |
 | TK-062 | sprint-002 | GA 候选联合门禁（契约+稳定性+发布）基线 | baseline/gate | TK-060,TK-061 | planned |
@@ -79,3 +79,7 @@
 ## 7. 里程碑记录
 
 1. 2026-03-22：完成 project-006 拆解，建立 sprint-001/sprint-002 与 `TK-056`~`TK-063` 执行台账入口。
+2. 2026-03-22：完成 `TK-056` 并产出 `DA-067`（跨包契约测试矩阵基线），sprint-001 状态切换为 `active`。
+3. 2026-03-22：完成 `TK-057` 并产出 `DA-068`（contract/integration/e2e 分层测试稳定基线），Stage 7 分层测试入口接入 gate 链路。
+4. 2026-03-22：完成 `TK-058` 并产出 `DA-069`（发布治理与 canary/rc/ga 通道基线），release:check / release:ga-check / release:verify-local 链路闭环可回归。
+5. 2026-03-22：完成 `TK-059` 并产出 `DA-070/DA-071`，sprint-001 出口验收与 sprint-002 输入约束链路完成闭环。

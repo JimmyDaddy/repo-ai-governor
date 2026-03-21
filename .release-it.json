@@ -15,7 +15,7 @@
     "releaseName": "v${version}"
   },
   "hooks": {
-    "before:init": ["npm run release:ga-check"],
+    "before:init": ["pnpm run release:ga-check"],
     "after:release": [
       "echo \"GitHub Release v${version} created. publish-npm.yml will publish the package to npm.\""
     ]

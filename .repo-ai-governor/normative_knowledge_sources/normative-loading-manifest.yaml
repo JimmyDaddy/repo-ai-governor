@@ -1,5 +1,5 @@
 schema_version: 1
-generated_at: 2026-03-21
+generated_at: 2026-03-22
 status: active
 owner: repo-ai-governor
 
@@ -137,6 +137,18 @@ documents:
       - fast_release_gate_policy_update
     owner: governance
     last_reviewed_at: 2026-03-21
+
+  - doc_id: release_governance_spec
+    path: .repo-ai-governor/normative_knowledge_sources/governance/release-governance-spec.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - release_strategy_change
+      - release_channel_policy_change
+      - rollback_policy_update
+    owner: governance
+    last_reviewed_at: 2026-03-22
 
   - doc_id: cr_lifecycle_threshold_spec
     path: .repo-ai-governor/normative_knowledge_sources/governance/cr-lifecycle-threshold-spec.md

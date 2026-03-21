@@ -8,5 +8,13 @@
     "sourceMap": true
   },
   "include": ["apps/**/*", "packages/**/*", "bin/**/*"],
-  "exclude": ["node_modules", "dist", "test/**/*", "scripts/**/*", "**/*.test.*"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    "apps/**/dist",
+    "packages/**/dist",
+    "test/**/*",
+    "scripts/**/*",
+    "**/*.test.*"
+  ]
 }

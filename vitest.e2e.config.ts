@@ -8,9 +8,8 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "node",
-    include: ["test/**/*.test.{js,ts}"],
-    exclude: ["test/contract/**", "test/e2e/**"],
-    testTimeout: 60000,
-    hookTimeout: 60000,
+    include: ["test/e2e/**/*.e2e.test.{js,ts}"],
+    testTimeout: 120000,
+    hookTimeout: 120000,
   },
 });

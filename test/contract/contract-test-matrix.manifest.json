@@ -1,0 +1,69 @@
+{
+  "schemaVersion": "contract_matrix_v1",
+  "updatedAt": "2026-03-22",
+  "entries": [
+    {
+      "contractId": "adapter-sdk.route-runner",
+      "component": "adapter-sdk",
+      "testPath": "packages/adapter-sdk/test/agent-route-runner.smoke.test.ts",
+      "failurePolicy": "warn",
+      "rationale": "Route selection semantics are covered by smoke baseline until a dedicated contract suite lands."
+    },
+    {
+      "contractId": "memory-store-adapter.provider-composition",
+      "component": "memory-store-adapter",
+      "testPath": "packages/memory-store-adapter/test/memory-store-adapter.unit.test.ts",
+      "failurePolicy": "warn",
+      "rationale": "Adapter composition behavior is currently validated by unit baseline and will be promoted to contract in TK-057."
+    },
+    {
+      "contractId": "artifact-registry.dependency-resolution",
+      "component": "artifact-registry",
+      "testPath": "packages/artifact-registry/test/artifact-registry.unit.test.ts",
+      "failurePolicy": "warn",
+      "rationale": "Resolver semantics are validated by package unit baseline and tracked for contract hardening in TK-057."
+    },
+    {
+      "contractId": "notification-dispatcher.channel-delivery",
+      "component": "notification-dispatcher",
+      "testPath": "packages/notification-dispatcher/test/notification-dispatcher.integration.test.ts",
+      "failurePolicy": "block",
+      "rationale": "Dispatch semantics must stay stable because HITL escalation depends on deterministic channel routing."
+    },
+    {
+      "contractId": "process-dsl-ir.compiler",
+      "component": "process-dsl-ir",
+      "testPath": "packages/core-process/test/process-compiler.contract.test.ts",
+      "failurePolicy": "block",
+      "rationale": "IR compiler schema and validation behavior are hard compatibility boundaries for runtime execution."
+    },
+    {
+      "contractId": "risk-policy.change-risk",
+      "component": "risk-policy",
+      "testPath": "packages/core-change-risk/test/change-risk-evaluator.contract.test.ts",
+      "failurePolicy": "block",
+      "rationale": "Structured risk facts must keep backward-compatible fields for policy and audit chains."
+    },
+    {
+      "contractId": "risk-policy.policy-gate",
+      "component": "risk-policy",
+      "testPath": "packages/core-policy/test/policy-gate-engine.contract.test.ts",
+      "failurePolicy": "block",
+      "rationale": "Policy decisions drive block/confirm/escalate flow and require strict output compatibility."
+    },
+    {
+      "contractId": "standards-projection-parity.pack-contract",
+      "component": "standards-projection-parity",
+      "testPath": "packages/standards/test/standards-pack.contract.test.ts",
+      "failurePolicy": "block",
+      "rationale": "Pack contract defines canonical standards structure consumed by multiple render targets."
+    },
+    {
+      "contractId": "standards-projection-parity.render-integration",
+      "component": "standards-projection-parity",
+      "testPath": "packages/standards/test/standards-projection-parity.integration.test.ts",
+      "failurePolicy": "block",
+      "rationale": "Projection parity guards prevent human/ai/agents output drift from canonical standards assets."
+    }
+  ]
+}

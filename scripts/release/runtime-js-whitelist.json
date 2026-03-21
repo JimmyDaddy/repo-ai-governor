@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "runtime_js_whitelist_v1",
+  "allowedPathPatterns": [
+    "dist/bin/**/*.js",
+    "dist/bin/**/*.mjs",
+    "dist/bin/**/*.cjs",
+    "dist/apps/**/*.js",
+    "dist/apps/**/*.mjs",
+    "dist/apps/**/*.cjs",
+    "dist/packages/**/*.js",
+    "dist/packages/**/*.mjs",
+    "dist/packages/**/*.cjs"
+  ],
+  "requiredPaths": ["dist/bin/repo-ai-governor.js"]
+}

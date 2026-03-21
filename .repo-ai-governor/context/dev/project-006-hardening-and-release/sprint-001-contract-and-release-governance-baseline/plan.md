@@ -1,6 +1,6 @@
 # sprint-001-contract-and-release-governance-baseline 计划
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-22
 - Project: `project-006-hardening-and-release`
 
@@ -10,10 +10,10 @@
 
 ## 2. In-Scope Tasks
 
-1. TK-056 跨包契约测试矩阵基线（planned）
-2. TK-057 分层测试（contract/integration/e2e）稳定基线（planned）
-3. TK-058 发布治理策略与 canary-rc-ga 通道基线（planned）
-4. TK-059 sprint-001 出口验收与 sprint-002 输入约束（planned）
+1. TK-056 跨包契约测试矩阵基线（completed）
+2. TK-057 分层测试（contract/integration/e2e）稳定基线（completed）
+3. TK-058 发布治理策略与 canary-rc-ga 通道基线（completed）
+4. TK-059 sprint-001 出口验收与 sprint-002 输入约束（completed）
 
 ## 3. Entry Criteria
 

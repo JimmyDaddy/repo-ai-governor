@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "coverage_thresholds_v1",
+  "minimum": {
+    "lines": 5,
+    "statements": 5,
+    "functions": 5,
+    "branches": 5
+  }
+}

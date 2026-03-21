@@ -70,9 +70,19 @@
       "dependsOn": ["//#gate:build"],
       "outputs": []
     },
+    "//#gate:test:contract": {
+      "cache": false,
+      "dependsOn": ["//#gate:build"],
+      "outputs": []
+    },
     "//#gate:test:integration": {
       "cache": false,
-      "dependsOn": ["//#gate:test:packages"],
+      "dependsOn": ["//#gate:test:packages", "//#gate:test:contract"],
+      "outputs": []
+    },
+    "//#gate:test:e2e": {
+      "cache": false,
+      "dependsOn": ["//#gate:test:integration"],
       "outputs": []
     },
     "//#gate:check": {
@@ -88,8 +98,10 @@
         "//#gate:task-ledger-sync",
         "//#gate:sprint-plan-status-sync",
         "//#gate:i18n-parity-fallback",
+        "//#gate:test:contract",
         "//#gate:test:packages",
-        "//#gate:test:integration"
+        "//#gate:test:integration",
+        "//#gate:test:e2e"
       ],
       "outputs": []
     }
