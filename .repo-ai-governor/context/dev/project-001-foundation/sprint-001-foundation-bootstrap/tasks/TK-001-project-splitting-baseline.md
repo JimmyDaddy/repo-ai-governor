@@ -21,7 +21,7 @@
 ## 2.1 Depends On
 
 1. `.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-master-execution-plan.md`
-2. `.repo-ai-governor/normative_knowledge_sources/verified_review_master-execution-plan.md`
+2. `.repo-ai-governor/normative_knowledge_sources/archive/verified_review_master-execution-plan.md`
 
 ## 2.2 Input References
 

@@ -6,7 +6,7 @@
 
 ## Source Hierarchy
 
-1. Normative rules: `.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md` (`CS-001` to `CS-023`)
+1. Normative rules: `.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md` (`CS-001` to `CS-025`)
 2. Operational baseline: this guide (`.repo-ai-governor/normative_knowledge_sources/governance/long-term-maintenance-guide.md`)
 3. Sprint execution records: `.repo-ai-governor/docs/dev/<project>/<sprint>/`
 
@@ -31,6 +31,7 @@ This guide does not duplicate rule text from `.repo-ai-governor/normative_knowle
 8. Standardized error usage baseline: `CS-022`
 9. Artifact registry lifecycle baseline: `CS-023`
 10. Layered test topology baseline: `CS-024`
+11. Normative loading manifest baseline: `CS-025`
 
 For command-level enforcement, always use `.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md -> Verification Commands` as the single source of truth.
 
@@ -39,10 +40,26 @@ For command-level enforcement, always use `.repo-ai-governor/normative_knowledge
 1. Prepared scripts:
    - `scripts/governance/check-monorepo-naming.js`
    - `scripts/governance/check-package-dependency-boundary.js`（warning 模式已接入，blocking 待切换）
+   - `scripts/governance/check-normative-loading-manifest.js`（由 runner 调用，默认 blocking）
 2. Planned script:
    - `scripts/governance/check-monorepo-versioning-policy.js`
 3. Planned wiring target: `.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md -> Verification Commands`.
-4. Current decision: 依赖边界检查保持 warning 模式运行并持续清零；稳定后切换 blocking。其余脚本维持 implementation-ready，待专门窗口激活。
+4. Current decision: 依赖边界检查保持 warning 模式运行并持续清零；规范加载清单检查已切换默认 blocking，并通过 rollback switch 提供应急回退。其余脚本维持 implementation-ready，待专门窗口激活。
+
+## Normative Loading Gate Rollout Policy
+
+1. 切换到 `block` 的条件：
+   - manifest gate 在 `warn` 试运行窗口连续 2 个 sprint 为 0 issue；
+   - active 规范文档全部完成 manifest 登记；
+   - triad 文档状态保持 `active/frozen` 且一致。
+2. 默认执行入口：
+   - `node ./scripts/governance/run-normative-loading-manifest-gate.js`
+3. 回滚开关（应急）：
+   - 配置开关：`scripts/governance/normative-loading-gate.config.json -> rollbackSwitch.enabled=true`
+   - 环境开关：`NORMATIVE_LOADING_GATE_ROLLBACK=1`
+4. 强制模式覆盖（排障）：
+   - `NORMATIVE_LOADING_GATE_FORCE_MODE=warn` 或 `NORMATIVE_LOADING_GATE_FORCE_MODE=block`
+5. 回滚结束后，必须在同一变更窗口恢复默认 `block` 并补充原因记录。
 
 ## Daily and Release Cadence
 

@@ -65,6 +65,12 @@
 | DA-043 | `.repo-ai-governor/context/dev/project-004-agent-adapter-runtime/sprint-001-agent-protocol-and-adapter-sdk/tasks/TK-034-adapter-sdk-and-routekey-fallback-baseline.md` | `TK-034` | `TK-037`,`TK-038` | 2026-03-21 | 2026-03-21 | active |
 | DA-044 | `.repo-ai-governor/context/dev/project-004-agent-adapter-runtime/sprint-001-agent-protocol-and-adapter-sdk/tasks/TK-035-sprint-001-exit-acceptance-and-sprint-002-input-constraints.md` | `TK-035` | `TK-036` | 2026-03-21 | 2026-03-21 | active |
 | DA-045 | `.repo-ai-governor/context/dev/project-004-agent-adapter-runtime/sprint-001-agent-protocol-and-adapter-sdk/tasks/TK-035-sprint-002-adapters-and-restricted-network-input-constraints-checklist.md` | `TK-035` | `TK-036`,`TK-037`,`TK-038` | 2026-03-21 | 2026-03-21 | active |
+| DA-051 | `.repo-ai-governor/context/dev/project-008-workflow-optimization/sprint-001-execution-workflow-optimization/tasks/TK-040-fast-gate-and-release-gate-layering-baseline.md` | `TK-040` | *(none)* | 2026-03-21 | 2026-03-21 | active |
+| DA-052 | `.repo-ai-governor/context/dev/project-008-workflow-optimization/sprint-001-execution-workflow-optimization/tasks/TK-041-cr-lifecycle-threshold-template-baseline.md` | `TK-041` | *(none)* | 2026-03-21 | 2026-03-21 | active |
+| DA-053 | `.repo-ai-governor/context/dev/project-008-workflow-optimization/sprint-001-execution-workflow-optimization/tasks/TK-042-task-ledger-single-write-source-contract.md` | `TK-042` | *(none)* | 2026-03-21 | 2026-03-21 | active |
+| DA-054 | `.repo-ai-governor/context/dev/project-008-workflow-optimization/sprint-001-execution-workflow-optimization/tasks/TK-043-risk-facts-contract-and-hitl-sla-baseline.md` | `TK-043` | *(none)* | 2026-03-21 | 2026-03-21 | active |
+| DA-055 | `.repo-ai-governor/context/dev/project-008-workflow-optimization/sprint-001-execution-workflow-optimization/tasks/TK-044-decomposition-assistant-protocol-template.md` | `TK-044` | *(none)* | 2026-03-21 | 2026-03-21 | active |
+| DA-056 | `.repo-ai-governor/context/dev/project-008-workflow-optimization/sprint-001-execution-workflow-optimization/tasks/TK-045-sprint-001-exit-acceptance-and-rollout-input-constraints.md` | `TK-045` | *(none)* | 2026-03-21 | 2026-03-21 | active |
 
 ## Archive Registry Table
 

@@ -28,6 +28,7 @@ This file defines repository-level coding standards and the executable gate comm
 - [CS-022] In `apps/**`, `packages/**`, `bin/**`, and `test/**`, do not use native `Error` directly (`new Error`, `extends Error`, `instanceof Error`). Use the standardized error model from `packages/shared/src/errors/` (`BaseError`, `ConfigError`, `I18nError`, `RuntimeError`, `GovernorErrorCode`, `standardizeError`) for throw and output paths. The only allowed `extends Error` location is the abstract base implementation in `packages/shared/src/errors/governor-error.ts`.
 - [CS-023] Artifact Registry must enforce lifecycle exit governance: `artifact_status` only uses `active/frozen/deprecated/archived/retired`; main registry (`.repo-ai-governor/context/artifact-registry/artifacts.csv`) only keeps `active/frozen/deprecated`; archive registry (`.repo-ai-governor/context/artifact-registry/archive/artifacts.archive.csv`) only keeps `archived/retired`; stale `deprecated` entries beyond grace window must be archived.
 - [CS-024] Test topology must be layered: package-scoped tests belong under `apps/**/test` or `packages/**/test`, while cross-package smoke/integration tests stay under root `test/**`. CI and local verification should run `test:packages` and `test:integration` separately to preserve ownership boundaries and diagnosis clarity.
+- [CS-025] Normative loading manifest governance is required: active files under `.repo-ai-governor/normative_knowledge_sources/**` must be registered in `.repo-ai-governor/normative_knowledge_sources/normative-loading-manifest.yaml`; `default_load=true` is only allowed for `L0/L1`; triad docs must keep consistent `active/frozen` status; and gate default mode is `block` with controlled rollback switch.
 
 ## Monorepo Naming Convention (Refactor Baseline)
 
@@ -110,6 +111,7 @@ node ./scripts/governance/check-task-ledger-sync.js
 node ./scripts/governance/check-sprint-plan-status-sync.js
 node ./scripts/governance/check-standardized-error-usage.js
 node ./scripts/governance/check-artifact-registry-lifecycle.js
+node ./scripts/governance/run-normative-loading-manifest-gate.js
 pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1
 pnpm run test:integration -- --maxWorkers=1 --maxConcurrency=1
 node ./dist/bin/repo-ai-governor.js --help >/dev/null
@@ -124,7 +126,7 @@ node ./dist/bin/repo-ai-governor.js --help >/dev/null
 3. Planned command wiring (not active yet):
    - `node ./scripts/governance/check-monorepo-naming.js`
    - `node ./scripts/governance/check-monorepo-versioning-policy.js`
-4. Current status: `check-package-dependency-boundary` 已以 warning 模式接入；其 blocking 模式切换在后续窗口执行。其余脚本保持 implementation-ready，暂不接入 `Verification Commands`。
+4. Current status: `check-package-dependency-boundary` 以 warning 模式接入；`normative-loading-manifest` 已切换默认 blocking（通过 gate runner 执行），并提供 rollback switch（config/env）用于应急回退。
 
 ## Notes
 

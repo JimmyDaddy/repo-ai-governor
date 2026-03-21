@@ -1,0 +1,18 @@
+{
+  "defaultMode": "block",
+  "switchConditions": [
+    "Manifest check has zero issues in warn mode for at least 2 consecutive sprint windows.",
+    "All active normative docs are registered in manifest with tier/status/default_load.",
+    "Triad docs keep consistent active/frozen status."
+  ],
+  "rollbackSwitch": {
+    "enabled": false,
+    "mode": "warn",
+    "reason": "Set enabled=true for immediate fallback when gate blocks delivery unexpectedly.",
+    "owner": "governance"
+  },
+  "envOverrides": {
+    "forceMode": "NORMATIVE_LOADING_GATE_FORCE_MODE",
+    "rollback": "NORMATIVE_LOADING_GATE_ROLLBACK"
+  }
+}

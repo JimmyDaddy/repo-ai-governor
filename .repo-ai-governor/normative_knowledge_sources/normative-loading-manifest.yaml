@@ -1,0 +1,219 @@
+schema_version: 1
+generated_at: 2026-03-21
+status: active
+owner: repo-ai-governor
+
+default_policy:
+  baseline_tiers:
+    - L0
+  escalate_load_order:
+    - L1
+    - L2
+    - L3
+  allow_direct_l3_load: false
+
+external_required_inputs:
+  - doc_id: current_context
+    path: .repo-ai-governor/context/current-context.md
+    tier: L0
+    status: active
+    default_load: true
+    load_trigger:
+      - all_tasks
+    owner: workspace-runtime
+    last_reviewed_at: 2026-03-21
+    notes: operational state source outside normative_knowledge_sources
+
+documents:
+  - doc_id: normative_loading_manifest
+    path: .repo-ai-governor/normative_knowledge_sources/normative-loading-manifest.yaml
+    tier: L0
+    status: active
+    default_load: true
+    load_trigger:
+      - all_tasks
+    owner: governance
+    last_reviewed_at: 2026-03-21
+    notes: source of truth for normative loading policy
+
+  - doc_id: product_requirements_brief
+    path: .repo-ai-governor/normative_knowledge_sources/product-requirements-brief.md
+    tier: L0
+    status: active
+    default_load: true
+    load_trigger:
+      - all_tasks
+    owner: product
+    last_reviewed_at: 2026-03-20
+    notes: default execution target
+
+  - doc_id: code_standards
+    path: .repo-ai-governor/normative_knowledge_sources/governance/code_standards.md
+    tier: L0
+    status: active
+    default_load: true
+    load_trigger:
+      - all_tasks
+    owner: governance
+    last_reviewed_at: 2026-03-21
+    notes: no explicit metadata header; treated as active by governance baseline
+
+  - doc_id: long_term_maintenance_guide
+    path: .repo-ai-governor/normative_knowledge_sources/governance/long-term-maintenance-guide.md
+    tier: L0
+    status: active
+    default_load: true
+    load_trigger:
+      - all_tasks
+    owner: governance
+    last_reviewed_at: 2026-03-18
+
+  - doc_id: product_requirements_full
+    path: .repo-ai-governor/normative_knowledge_sources/product-requirements.md
+    tier: L1
+    status: active
+    default_load: false
+    load_trigger:
+      - scope_change
+      - major_priority_decision
+      - product_capability_alignment
+    owner: product
+    last_reviewed_at: 2026-03-20
+    notes: header status "执行中（MVP 已完成，P1 深化中）" mapped to active
+
+  - doc_id: overall_technical_solution
+    path: .repo-ai-governor/normative_knowledge_sources/repo-ai-governor-overall-technical-solution.md
+    tier: L1
+    status: active
+    default_load: false
+    load_trigger:
+      - architecture_change
+      - runtime_contract_change
+      - governance_engine_change
+    owner: architecture
+    last_reviewed_at: 2026-03-20
+
+  - doc_id: architecture_and_repo_layering
+    path: .repo-ai-governor/normative_knowledge_sources/repo-ai-governor-architecture-and-repo-layering.md
+    tier: L1
+    status: active
+    default_load: false
+    load_trigger:
+      - layering_boundary_change
+      - module_dependency_change
+      - monorepo_migration_decision
+    owner: architecture
+    last_reviewed_at: 2026-03-20
+
+  - doc_id: master_execution_plan
+    path: .repo-ai-governor/normative_knowledge_sources/repo-ai-governor-master-execution-plan.md
+    tier: L1
+    status: active
+    default_load: false
+    load_trigger:
+      - project_sprint_planning
+      - cross_stage_roadmap_update
+    owner: delivery
+    last_reviewed_at: 2026-03-19
+
+  - doc_id: artifact_registry_lifecycle_governance
+    path: .repo-ai-governor/normative_knowledge_sources/governance/artifact-registry-lifecycle-governance.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - artifact_registry_change
+      - lifecycle_gate_failure
+    owner: governance
+    last_reviewed_at: 2026-03-20
+
+  - doc_id: execution_gate_layering_spec
+    path: .repo-ai-governor/normative_knowledge_sources/governance/execution-gate-layering-spec.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - gate_strategy_change
+      - fast_release_gate_policy_update
+    owner: governance
+    last_reviewed_at: 2026-03-21
+
+  - doc_id: cr_lifecycle_threshold_spec
+    path: .repo-ai-governor/normative_knowledge_sources/governance/cr-lifecycle-threshold-spec.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - code_review_lifecycle_change
+      - review_state_transition_dispute
+    owner: governance
+    last_reviewed_at: 2026-03-21
+
+  - doc_id: task_ledger_single_write_source_contract
+    path: .repo-ai-governor/normative_knowledge_sources/governance/task-ledger-single-write-source-contract.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - ledger_sync_issue
+      - cs_021_drift
+      - task_recording_process_change
+    owner: governance
+    last_reviewed_at: 2026-03-21
+
+  - doc_id: risk_facts_and_hitl_sla_contract
+    path: .repo-ai-governor/normative_knowledge_sources/governance/risk-facts-and-hitl-sla-contract.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - high_risk_change
+      - hitl_policy_change
+      - risk_evaluator_change
+    owner: governance
+    last_reviewed_at: 2026-03-21
+
+  - doc_id: decomposition_protocol_template
+    path: .repo-ai-governor/normative_knowledge_sources/governance/decomposition-protocol-template.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - project_sprint_task_generation
+      - planning_template_update
+    owner: delivery
+    last_reviewed_at: 2026-03-21
+
+  - doc_id: workflow_optimization_execution_plan
+    path: .repo-ai-governor/normative_knowledge_sources/archive/repo-ai-governor-workflow-optimization-recommendations.md
+    tier: L3
+    status: archived
+    default_load: false
+    load_trigger:
+      - workflow_optimization_revisit
+      - governance_rollout_planning
+    owner: governance
+    last_reviewed_at: 2026-03-21
+    notes: archived after project-008 completion
+
+  - doc_id: normative_context_loading_optimization_plan
+    path: .repo-ai-governor/normative_knowledge_sources/normative-context-loading-optimization-plan.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - context_loading_policy_change
+      - manifest_governance_update
+    owner: governance
+    last_reviewed_at: 2026-03-21
+
+  - doc_id: verified_review_master_execution_plan
+    path: .repo-ai-governor/normative_knowledge_sources/archive/verified_review_master-execution-plan.md
+    tier: L3
+    status: archived
+    default_load: false
+    load_trigger:
+      - historical_traceback
+      - audit_backtracking
+    owner: governance
+    last_reviewed_at: 2026-03-19

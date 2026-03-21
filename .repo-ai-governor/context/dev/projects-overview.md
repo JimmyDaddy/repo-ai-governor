@@ -19,18 +19,20 @@
 | `project-005-observability-and-artifacts` | Stage 6 | Phase D | 审计回放、依赖产物运行时、CLI 输出契约、隐私治理 |
 | `project-006-hardening-and-release` | Stage 7 | Phase E | 契约测试、稳定性、发布治理与离线回归 |
 | `project-007-platformization` | Stage 8 | P2 扩展 | 插槽市场、可视化面板、组织级审计与策略分发 |
+| `project-008-workflow-optimization` | Cross-Stage | Process Optimization | 优化执行流程治理（门禁分层、台账同步、风险契约、拆解协议） |
 
 ## 2. 依赖顺序
 
 1. `project-001-foundation`
 2. `project-002-governance-core`
 3. `project-003-standards-and-slots`
-4. `project-004-agent-adapter-runtime`
-5. `project-005-observability-and-artifacts`
-6. `project-006-hardening-and-release`
-7. `project-007-platformization`
+4. `project-008-workflow-optimization`（流程优化优先治理轨）
+5. `project-004-agent-adapter-runtime`
+6. `project-005-observability-and-artifacts`
+7. `project-006-hardening-and-release`
+8. `project-007-platformization`
 
-说明：默认串行推进；仅允许在前置 DoD 达成后并行启动后续低耦合任务。
+说明：Stage 主链仍按 001-007 推进；`project-008` 作为跨阶段治理优化轨，可在不破坏主链 DoD 的前提下优先执行。
 
 ## 3. 交付原则
 
