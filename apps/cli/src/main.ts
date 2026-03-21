@@ -204,6 +204,10 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
     await program.parseAsync(argv, { from: "node" });
     return 0;
   } catch (error) {
+    if (isCommanderHelpDisplayed(error)) {
+      return 0;
+    }
+
     const { standardizedError, exitCode } = resolveCliFailure(error);
     const message = i18nRuntime
       ? i18nRuntime.t("cli.errors.unexpected", {
@@ -557,6 +561,19 @@ function resolveCliFailure(error: unknown): CliFailureResolution {
     standardizedError: standardizeError(error),
     exitCode: 1,
   };
+}
+
+/**
+ * Detects Commander help-display control flow emitted by `exitOverride`.
+ * @param error Unknown thrown value.
+ * @returns True when Commander intentionally interrupted parse after printing help.
+ */
+function isCommanderHelpDisplayed(error: unknown): boolean {
+  if (!(error instanceof CommanderError)) {
+    return false;
+  }
+
+  return error.code === "commander.helpDisplayed";
 }
 
 /**

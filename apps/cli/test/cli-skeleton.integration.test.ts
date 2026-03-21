@@ -45,11 +45,12 @@ describe("CLI skeleton integration", () => {
   });
 
   it("shows help with all Stage-1 commands", async () => {
-    const { stdoutBuffer, io } = createBufferedIo();
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo();
 
     const exitCode = await runCli(["node", "repo-ai-governor", "--help"], io);
 
     expect(exitCode).toBe(0);
+    expect(stderrBuffer.join("")).toBe("");
     expect(stdoutBuffer.join("")).toContain("review-verify");
     expect(stdoutBuffer.join("")).toContain("upgrade");
   });
