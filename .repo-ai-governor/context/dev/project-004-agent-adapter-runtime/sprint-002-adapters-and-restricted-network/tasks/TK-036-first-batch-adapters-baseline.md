@@ -1,8 +1,8 @@
 # TK-036 首批 Adapters（Codex Copilot Claude Code）基线
 
-- Status: planned
+- Status: in_progress
 - Date: 2026-03-21
-- Owner: TBD
+- Owner: AI-Agent
 - Priority: P0
 - Project: `project-004-agent-adapter-runtime`
 - Sprint: `sprint-002-adapters-and-restricted-network`
@@ -45,3 +45,6 @@
 ## 7. 执行记录
 
 1. 2026-03-21：任务创建，状态初始化为 `planned`。
+2. 2026-03-21：任务启动，状态切换为 `in_progress`，开始搭建 `codex/github-copilot/claude-code` 首批 adapter 基线与能力声明对齐路径。
+3. 2026-03-21：完成 `packages/adapters/{codex,github-copilot,claude-code}` 首批适配器骨架与 smoke 测试，验证 `pnpm run typecheck` 与 `pnpm run test:packages -- packages/adapters/codex/test/codex-agent-adapter.smoke.test.ts packages/adapters/github-copilot/test/github-copilot-agent-adapter.smoke.test.ts packages/adapters/claude-code/test/claude-code-agent-adapter.smoke.test.ts --maxWorkers=1 --maxConcurrency=1` 通过。
+4. 2026-03-21：新增跨包集成测试 `test/first-batch-adapters-route.integration.test.ts`，验证 `AgentRouteRunner + codex/github-copilot/claude-code` 路由与降级链路，`pnpm run test:integration -- test/first-batch-adapters-route.integration.test.ts --maxWorkers=1 --maxConcurrency=1` 通过。

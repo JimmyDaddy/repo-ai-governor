@@ -195,25 +195,54 @@ function readChecklistAggregateStatus(checklistPath) {
 
   const checklistContent = readFileSync(checklistPath, "utf8");
   const entries = [];
+  let currentEntry = null;
 
   for (const line of checklistContent.split(/\r?\n/u)) {
-    const matched = line.match(/^- \[(x| )\] (TK-\d{3}) /iu);
-    if (!matched) {
+    const taskLineMatch = line.match(/^- \[(x| )\] (TK-\d{3}) /iu);
+    if (taskLineMatch) {
+      currentEntry = {
+        checked: taskLineMatch[1].toLowerCase() === "x",
+        hasInProgressRecord: false,
+      };
+      entries.push(currentEntry);
       continue;
     }
 
-    entries.push(matched[1].toLowerCase() === "x");
+    if (!currentEntry) {
+      continue;
+    }
+
+    const isExecutionRecord = /^ {2}- /u.test(line);
+    if (!isExecutionRecord) {
+      continue;
+    }
+
+    if (
+      /`(?:in_progress|in-progress|active|running)`/iu.test(line) ||
+      /状态切换为[^\n]*(?:in_progress|in-progress|active|running)/iu.test(line) ||
+      /任务启动/u.test(line)
+    ) {
+      currentEntry.hasInProgressRecord = true;
+    }
   }
 
   if (entries.length === 0) {
     return null;
   }
 
-  if (entries.every(Boolean)) {
+  if (entries.every((entry) => entry.checked)) {
     return "completed";
   }
 
-  if (entries.every((checked) => !checked)) {
+  if (entries.some((entry) => entry.checked)) {
+    return "active";
+  }
+
+  if (entries.some((entry) => entry.hasInProgressRecord)) {
+    return "active";
+  }
+
+  if (entries.every((entry) => !entry.checked)) {
     return "planned";
   }
 

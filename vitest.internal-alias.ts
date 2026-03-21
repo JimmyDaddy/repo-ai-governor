@@ -6,6 +6,9 @@ const PROJECT_ROOT = fileURLToPath(new URL(".", import.meta.url));
 
 const INTERNAL_PACKAGE_ENTRY_ALIASES = [
   ["@repo-ai-governor/adapter-sdk", "packages/adapter-sdk/src/index.ts"],
+  ["@repo-ai-governor/adapter-claude-code", "packages/adapters/claude-code/src/index.ts"],
+  ["@repo-ai-governor/adapter-codex", "packages/adapters/codex/src/index.ts"],
+  ["@repo-ai-governor/adapter-github-copilot", "packages/adapters/github-copilot/src/index.ts"],
   ["@repo-ai-governor/cli", "apps/cli/src/main.ts"],
   ["@repo-ai-governor/config", "packages/config/src/index.ts"],
   ["@repo-ai-governor/core-change-risk", "packages/core-change-risk/src/index.ts"],

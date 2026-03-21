@@ -57,6 +57,24 @@ importers:
         specifier: workspace:*
         version: link:../shared
 
+  packages/adapters/claude-code:
+    dependencies:
+      '@repo-ai-governor/adapter-sdk':
+        specifier: workspace:*
+        version: link:../../adapter-sdk
+
+  packages/adapters/codex:
+    dependencies:
+      '@repo-ai-governor/adapter-sdk':
+        specifier: workspace:*
+        version: link:../../adapter-sdk
+
+  packages/adapters/github-copilot:
+    dependencies:
+      '@repo-ai-governor/adapter-sdk':
+        specifier: workspace:*
+        version: link:../../adapter-sdk
+
   packages/config:
     dependencies:
       '@repo-ai-governor/shared':
