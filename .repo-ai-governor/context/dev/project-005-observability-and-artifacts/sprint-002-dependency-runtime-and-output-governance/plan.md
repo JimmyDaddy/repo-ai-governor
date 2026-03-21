@@ -1,7 +1,7 @@
 # sprint-002-dependency-runtime-and-output-governance 计划
 
-- Status: active
-- Date: 2026-03-21
+- Status: completed
+- Date: 2026-03-22
 - Project: `project-005-observability-and-artifacts`
 
 ## 1. Sprint Goal
@@ -12,8 +12,8 @@
 
 1. TK-050 CLI 输出契约与 non-TTY 自动降级基线（completed）
 2. TK-051 i18n parity/fallback 门禁与 output_locale 回放定位基线（completed）
-3. TK-052 审计隐私治理（保留/脱敏/导出删除）基线（planned）
-4. TK-053 project-005 出口验收与 project-006 输入约束（planned）
+3. TK-052 审计隐私治理（保留/脱敏/导出删除）基线（completed）
+4. TK-053 project-005 出口验收与 project-006 输入约束（completed）
 5. TK-054 Artifact Registry 单一事实源与人类视图收敛（completed）
 6. TK-055 Artifact Registry triad canonical-source 同步（completed）
 

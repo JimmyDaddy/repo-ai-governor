@@ -6,9 +6,24 @@ import {
   GovernorErrorCode,
   RuntimeError,
 } from "@repo-ai-governor/shared";
-import { AuditRecordStatus } from "./constants/index.js";
+import {
+  AUDIT_NON_SENSITIVE_FIELD_NAME_EXCEPTIONS,
+  AUDIT_SENSITIVE_FIELD_NAME_MARKERS,
+  AUDIT_SENSITIVE_FIELD_SUFFIX_MARKERS,
+  AUDIT_SENSITIVE_TEXT_PATTERNS,
+  AuditRecordStatus,
+  DEFAULT_AUDIT_MASKED_VALUE,
+  DEFAULT_AUDIT_MASKING_ENABLED,
+  DEFAULT_AUDIT_RETENTION_DAYS,
+  MILLISECONDS_PER_DAY,
+} from "./constants/index.js";
 import type {
+  ApplyAuditRetentionOptions,
   AuditEventRecord,
+  AuditPrivacyGovernanceConfig,
+  AuditRetentionExecutionResult,
+  DeleteAuditRecordsOptions,
+  ExportAuditRecordsOptions,
   ListAuditRecordsOptions,
   PersistedAuditRecord,
   RecordAuditEventOptions,
@@ -19,6 +34,30 @@ const RFC3339_SECONDS_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d
 const DISPLAY_TIMESTAMP_PATTERN = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} UTC(?:\+|-)\d{2}:\d{2}$/u;
 const AUDIT_RECORD_STATUS_VALUES = new Set<string>(Object.values(AuditRecordStatus));
 const DEPENDENCY_RESOLUTION_STATUS_VALUES = ALL_DEPENDENCY_RESOLUTION_STATUSES;
+const AUDIT_SENSITIVE_FIELD_NAME_VALUES = new Set<string>(
+  AUDIT_SENSITIVE_FIELD_NAME_MARKERS.map((fieldName) => normalizeAuditFieldName(fieldName)),
+);
+const AUDIT_SENSITIVE_FIELD_SUFFIX_VALUES = new Set<string>(
+  AUDIT_SENSITIVE_FIELD_SUFFIX_MARKERS.map((fieldName) => normalizeAuditFieldName(fieldName)),
+);
+const AUDIT_NON_SENSITIVE_FIELD_NAME_EXCEPTION_VALUES = new Set<string>(
+  AUDIT_NON_SENSITIVE_FIELD_NAME_EXCEPTIONS.map((fieldName) => normalizeAuditFieldName(fieldName)),
+);
+
+interface PersistedAuditStorageRow {
+  storageKey: string;
+  updatedAt: string;
+  record: PersistedAuditRecord;
+}
+
+/**
+ * Normalizes one object field name for stable mask-rule matching.
+ * @param value Raw field name.
+ * @returns Lowercase alphanumeric field key.
+ */
+function normalizeAuditFieldName(value: string): string {
+  return value.replace(/[^a-z0-9]/giu, "").toLowerCase();
+}
 
 /**
  * Records and queries normalized audit events through the shared memory manager.
@@ -28,7 +67,19 @@ const DEPENDENCY_RESOLUTION_STATUS_VALUES = ALL_DEPENDENCY_RESOLUTION_STATUSES;
  * consume stable fields without rebuilding schema logic in every package.
  */
 export class AuditRecorder {
-  public constructor(private readonly memoryManager: MemoryManager) {}
+  private readonly privacyGovernanceConfig: AuditPrivacyGovernanceConfig;
+
+  public constructor(
+    private readonly memoryManager: MemoryManager,
+    privacyGovernanceConfig?: Partial<AuditPrivacyGovernanceConfig>,
+  ) {
+    this.privacyGovernanceConfig = {
+      retentionDays: privacyGovernanceConfig?.retentionDays ?? DEFAULT_AUDIT_RETENTION_DAYS,
+      maskingEnabled: privacyGovernanceConfig?.maskingEnabled ?? DEFAULT_AUDIT_MASKING_ENABLED,
+      maskedValue: privacyGovernanceConfig?.maskedValue ?? DEFAULT_AUDIT_MASKED_VALUE,
+    };
+    this.validatePrivacyGovernanceConfig(this.privacyGovernanceConfig);
+  }
 
   /**
    * Persists one normalized audit event into execution memory scope.
@@ -37,23 +88,26 @@ export class AuditRecorder {
    */
   public async recordEvent(options: RecordAuditEventOptions): Promise<PersistedAuditRecord> {
     const normalizedEvent = this.normalizeAuditEvent(options.event);
+    const maskedEvent = this.applySensitiveDataMasking(normalizedEvent);
     const recordId = options.recordId ?? randomUUID();
     const recordedAt = this.resolveRfc3339SecondsTimestamp(options.recordedAt, "recordedAt");
     const persistedRecord: PersistedAuditRecord = {
       recordId,
       recordedAt,
-      event: normalizedEvent,
+      event: maskedEvent,
     };
 
     await this.memoryManager.writeEntry({
       scope: MemoryScope.EXECUTION,
-      key: this.buildExecutionKey(normalizedEvent.executionId, normalizedEvent.stageId, recordId),
+      key: this.buildExecutionKey(maskedEvent.executionId, maskedEvent.stageId, recordId),
       payload: persistedRecord as unknown as Record<string, unknown>,
       tags: [
         AUDIT_RECORD_TAG,
-        `execution:${normalizedEvent.executionId}`,
-        `stage:${normalizedEvent.stageId}`,
-        `status:${normalizedEvent.status}`,
+        `execution:${maskedEvent.executionId}`,
+        `stage:${maskedEvent.stageId}`,
+        `status:${maskedEvent.status}`,
+        ...(maskedEvent.projectId ? [`project:${maskedEvent.projectId}`] : []),
+        ...(maskedEvent.sprintId ? [`sprint:${maskedEvent.sprintId}`] : []),
       ],
     });
 
@@ -82,6 +136,81 @@ export class AuditRecorder {
     return stageFilteredRecords.sort((left, right) =>
       this.compareByRecordedAtThenRecordId(left, right),
     );
+  }
+
+  /**
+   * Exports audit records by scoped filters for replay and compliance workflows.
+   * @param options Export filter options.
+   * @returns Matched persisted records sorted by timestamp and record id.
+   */
+  public async exportEvents(options: ExportAuditRecordsOptions): Promise<PersistedAuditRecord[]> {
+    const selectedRows = await this.selectAuditStorageRows(options);
+    return selectedRows.map((row) => row.record);
+  }
+
+  /**
+   * Deletes audit records by scoped filters through archive semantics.
+   * @param options Delete filter options.
+   * @returns Number of archived/deleted records.
+   */
+  public async deleteEvents(options: DeleteAuditRecordsOptions): Promise<number> {
+    const selectedRows = await this.selectAuditStorageRows(options);
+    if (selectedRows.length === 0) {
+      return 0;
+    }
+
+    return this.memoryManager.archiveEntries({
+      scope: MemoryScope.EXECUTION,
+      keys: selectedRows.map((row) => row.storageKey),
+    });
+  }
+
+  /**
+   * Applies retention policy to audit records and archives stale rows.
+   * @param options Retention execution options.
+   * @returns Retention execution summary.
+   */
+  public async applyRetentionPolicy(
+    options: ApplyAuditRetentionOptions = {},
+  ): Promise<AuditRetentionExecutionResult> {
+    const retentionDays = this.readPositiveInteger(
+      options.retentionDays ?? this.privacyGovernanceConfig.retentionDays,
+      "retentionDays",
+    );
+    const nowTimestamp = this.resolveRfc3339SecondsTimestamp(options.now, "now");
+    const archiveThreshold = this.toRfc3339SecondsTimestamp(
+      new Date(
+        this.toTimestampMilliseconds(nowTimestamp, "now") - retentionDays * MILLISECONDS_PER_DAY,
+      ),
+    );
+
+    const allRows = await this.loadAuditStorageRows({
+      skipInvalidRows: true,
+    });
+    const rowsToArchive = allRows.filter(
+      (row) =>
+        this.toTimestampMilliseconds(row.record.recordedAt, "recordedAt") <
+        this.toTimestampMilliseconds(archiveThreshold, "archiveThreshold"),
+    );
+
+    if (rowsToArchive.length === 0) {
+      return {
+        retentionDays,
+        archivedBefore: archiveThreshold,
+        archivedCount: 0,
+      };
+    }
+
+    const archivedCount = await this.memoryManager.archiveEntries({
+      scope: MemoryScope.EXECUTION,
+      keys: rowsToArchive.map((row) => row.storageKey),
+    });
+
+    return {
+      retentionDays,
+      archivedBefore: archiveThreshold,
+      archivedCount,
+    };
   }
 
   /**
@@ -125,6 +254,12 @@ export class AuditRecorder {
       workspaceId: this.readRequiredString(event.workspaceId, "workspaceId"),
       workspaceMode: this.readRequiredString(event.workspaceMode, "workspaceMode"),
       workspaceRoot: this.readRequiredString(event.workspaceRoot, "workspaceRoot"),
+      ...(this.readOptionalString(event.projectId, "projectId")
+        ? { projectId: this.readOptionalString(event.projectId, "projectId") }
+        : {}),
+      ...(this.readOptionalString(event.sprintId, "sprintId")
+        ? { sprintId: this.readOptionalString(event.sprintId, "sprintId") }
+        : {}),
       ...(this.readOptionalString(event.riskLevel, "riskLevel")
         ? { riskLevel: this.readOptionalString(event.riskLevel, "riskLevel") }
         : {}),
@@ -325,6 +460,234 @@ export class AuditRecorder {
   }
 
   /**
+   * Validates privacy-governance config at construction time.
+   * @param config Candidate governance config.
+   * @returns Void.
+   */
+  private validatePrivacyGovernanceConfig(config: AuditPrivacyGovernanceConfig): void {
+    this.readPositiveInteger(config.retentionDays, "retentionDays");
+    this.readRequiredString(config.maskedValue, "maskedValue");
+  }
+
+  /**
+   * Applies masking policy before persisting one audit event.
+   * @param event Normalized audit event.
+   * @returns Masked audit event payload.
+   */
+  private applySensitiveDataMasking(event: AuditEventRecord): AuditEventRecord {
+    if (!this.privacyGovernanceConfig.maskingEnabled) {
+      return event;
+    }
+
+    const maskedEventCandidate = this.maskSensitiveValue(event) as AuditEventRecord;
+    return this.normalizeAuditEvent(maskedEventCandidate);
+  }
+
+  /**
+   * Loads raw audit storage rows used by export/delete/retention operations.
+   * @returns Parsed storage rows with original memory keys.
+   */
+  private async loadAuditStorageRows(
+    options: {
+      executionId?: string;
+      skipInvalidRows?: boolean;
+    } = {},
+  ): Promise<PersistedAuditStorageRow[]> {
+    const rawRows = await this.memoryManager.queryEntries({
+      scope: MemoryScope.EXECUTION,
+      tag: AUDIT_RECORD_TAG,
+      ...(options.executionId
+        ? { keyPrefix: this.buildExecutionKeyPrefix(options.executionId) }
+        : {}),
+    });
+
+    const storageRows: PersistedAuditStorageRow[] = [];
+    for (const row of rawRows) {
+      try {
+        storageRows.push({
+          storageKey: row.key,
+          updatedAt: row.updatedAt,
+          record: this.parsePersistedAuditRecord(row.value),
+        });
+      } catch (error) {
+        if (!options.skipInvalidRows) {
+          throw error;
+        }
+      }
+    }
+
+    return storageRows;
+  }
+
+  /**
+   * Selects one stable sorted subset of audit rows using governance filters.
+   * @param options Filter options.
+   * @returns Filtered rows sorted by `recordedAt` then `recordId`.
+   */
+  private async selectAuditStorageRows(
+    options: ExportAuditRecordsOptions,
+  ): Promise<PersistedAuditStorageRow[]> {
+    const executionId = this.readOptionalString(options.executionId, "executionId");
+    const projectId = this.readOptionalString(options.projectId, "projectId");
+    const sprintId = this.readOptionalString(options.sprintId, "sprintId");
+    const fromRecordedAt = this.readOptionalRfc3339SecondsTimestamp(
+      options.fromRecordedAt,
+      "fromRecordedAt",
+    );
+    const toRecordedAt = this.readOptionalRfc3339SecondsTimestamp(
+      options.toRecordedAt,
+      "toRecordedAt",
+    );
+    const limit = this.readOptionalPositiveInteger(options.limit, "limit");
+
+    const loadedRows = await this.loadAuditStorageRows({
+      ...(executionId ? { executionId } : {}),
+      skipInvalidRows: true,
+    });
+    const filteredRows = loadedRows
+      .filter((row) => {
+        if (executionId && row.record.event.executionId !== executionId) {
+          return false;
+        }
+
+        if (projectId && row.record.event.projectId !== projectId) {
+          return false;
+        }
+
+        if (sprintId && row.record.event.sprintId !== sprintId) {
+          return false;
+        }
+
+        const recordedAtMilliseconds = this.toTimestampMilliseconds(
+          row.record.recordedAt,
+          "recordedAt",
+        );
+        if (
+          fromRecordedAt &&
+          recordedAtMilliseconds < this.toTimestampMilliseconds(fromRecordedAt, "fromRecordedAt")
+        ) {
+          return false;
+        }
+
+        if (
+          toRecordedAt &&
+          recordedAtMilliseconds > this.toTimestampMilliseconds(toRecordedAt, "toRecordedAt")
+        ) {
+          return false;
+        }
+
+        return true;
+      })
+      .sort((left, right) => this.compareByRecordedAtThenRecordId(left.record, right.record));
+
+    if (!limit) {
+      return filteredRows;
+    }
+
+    return filteredRows.slice(0, limit);
+  }
+
+  /**
+   * Masks one unknown candidate by field-name and text-pattern rules.
+   * @param candidate Candidate value.
+   * @param fieldName Current field name for object traversal.
+   * @returns Masked value.
+   */
+  private maskSensitiveValue(candidate: unknown, fieldName = ""): unknown {
+    if (candidate === undefined || candidate === null) {
+      return candidate;
+    }
+
+    if (this.isSensitiveFieldName(fieldName)) {
+      return this.privacyGovernanceConfig.maskedValue;
+    }
+
+    if (typeof candidate === "string") {
+      return this.maskSensitiveText(candidate);
+    }
+
+    if (Array.isArray(candidate)) {
+      return candidate.map((item) => this.maskSensitiveValue(item, fieldName));
+    }
+
+    if (typeof candidate === "object") {
+      const maskedRecord: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries(candidate)) {
+        maskedRecord[key] = this.maskSensitiveValue(value, key);
+      }
+
+      return maskedRecord;
+    }
+
+    return candidate;
+  }
+
+  /**
+   * Masks sensitive token-like fragments in free-form text fields.
+   * @param value Raw text value.
+   * @returns Masked text.
+   */
+  private maskSensitiveText(value: string): string {
+    let maskedText = value;
+    for (const pattern of AUDIT_SENSITIVE_TEXT_PATTERNS) {
+      maskedText = maskedText.replace(pattern, (...match) => {
+        const wholeMatch = typeof match[0] === "string" ? match[0] : "";
+        const prefix = typeof match[1] === "string" && match[1] !== wholeMatch ? match[1] : "";
+        return `${prefix}${this.privacyGovernanceConfig.maskedValue}`;
+      });
+    }
+
+    return maskedText;
+  }
+
+  /**
+   * Checks whether one object field name should be treated as sensitive.
+   * @param fieldName Candidate field name.
+   * @returns True when field should be masked by key rule.
+   */
+  private isSensitiveFieldName(fieldName: string): boolean {
+    const normalizedFieldName = normalizeAuditFieldName(fieldName);
+    if (!normalizedFieldName) {
+      return false;
+    }
+
+    if (AUDIT_NON_SENSITIVE_FIELD_NAME_EXCEPTION_VALUES.has(normalizedFieldName)) {
+      return false;
+    }
+
+    if (AUDIT_SENSITIVE_FIELD_NAME_VALUES.has(normalizedFieldName)) {
+      return true;
+    }
+
+    for (const sensitiveSuffix of AUDIT_SENSITIVE_FIELD_SUFFIX_VALUES) {
+      if (normalizedFieldName.endsWith(sensitiveSuffix)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Parses one RFC3339 seconds timestamp into epoch milliseconds.
+   * @param timestamp RFC3339 seconds timestamp.
+   * @param fieldName Field name for diagnostics.
+   * @returns Epoch milliseconds.
+   */
+  private toTimestampMilliseconds(timestamp: string, fieldName: string): number {
+    const parsed = Date.parse(timestamp);
+    if (!Number.isFinite(parsed)) {
+      throw new RuntimeError(
+        GovernorErrorCode.AUDIT_RECORD_INVALID,
+        `Audit event field "${fieldName}" must be a valid RFC3339 timestamp.`,
+        { fieldName, value: timestamp },
+      );
+    }
+
+    return parsed;
+  }
+
+  /**
    * Reads one required string field.
    * @param candidate Candidate value.
    * @param fieldName Field name for diagnostics.
@@ -508,6 +871,64 @@ export class AuditRecorder {
     }
 
     return this.readDisplayTimestamp(candidate, fieldName);
+  }
+
+  /**
+   * Reads one optional RFC3339 seconds timestamp.
+   * @param candidate Candidate value.
+   * @param fieldName Field name for diagnostics.
+   * @returns Parsed timestamp or undefined.
+   */
+  private readOptionalRfc3339SecondsTimestamp(
+    candidate: unknown,
+    fieldName: string,
+  ): string | undefined {
+    if (candidate === undefined) {
+      return undefined;
+    }
+
+    return this.resolveRfc3339SecondsTimestamp(candidate, fieldName);
+  }
+
+  /**
+   * Reads one optional positive integer field.
+   * @param candidate Candidate value.
+   * @param fieldName Field name for diagnostics.
+   * @returns Positive integer or undefined.
+   */
+  private readOptionalPositiveInteger(candidate: unknown, fieldName: string): number | undefined {
+    if (candidate === undefined) {
+      return undefined;
+    }
+
+    return this.readPositiveInteger(candidate, fieldName);
+  }
+
+  /**
+   * Reads one required positive integer field.
+   * @param candidate Candidate value.
+   * @param fieldName Field name for diagnostics.
+   * @returns Positive integer.
+   */
+  private readPositiveInteger(candidate: unknown, fieldName: string): number {
+    if (typeof candidate !== "number" || !Number.isInteger(candidate) || candidate <= 0) {
+      throw new RuntimeError(
+        GovernorErrorCode.AUDIT_RECORD_INVALID,
+        `Audit event field "${fieldName}" must be a positive integer.`,
+        { fieldName, value: candidate },
+      );
+    }
+
+    return candidate;
+  }
+
+  /**
+   * Normalizes Date objects to RFC3339 seconds precision.
+   * @param date Candidate date instance.
+   * @returns RFC3339 seconds timestamp.
+   */
+  private toRfc3339SecondsTimestamp(date: Date): string {
+    return date.toISOString().replace(/\.\d{3}Z$/u, "Z");
   }
 
   /**

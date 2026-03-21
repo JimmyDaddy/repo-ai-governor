@@ -8,7 +8,12 @@ export type {
   UpdateSessionContextOptions,
 } from "./shared-session.interface.js";
 export type {
+  ApplyAuditRetentionOptions,
   AuditEventRecord,
+  AuditPrivacyGovernanceConfig,
+  AuditRetentionExecutionResult,
+  DeleteAuditRecordsOptions,
+  ExportAuditRecordsOptions,
   ListAuditRecordsOptions,
   PersistedAuditRecord,
   RecordAuditEventOptions,

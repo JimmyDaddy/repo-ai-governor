@@ -1,6 +1,11 @@
 export type {
+  ApplyAuditRetentionOptions,
   AppendSessionEventOptions,
   AuditEventRecord,
+  AuditPrivacyGovernanceConfig,
+  AuditRetentionExecutionResult,
+  DeleteAuditRecordsOptions,
+  ExportAuditRecordsOptions,
   FinalizeSessionOptions,
   ListAuditRecordsOptions,
   ListSharedSessionsOptions,

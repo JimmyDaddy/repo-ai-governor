@@ -1,4 +1,4 @@
-import { MemoryManager } from "@repo-ai-governor/core-memory";
+import { MemoryManager, MemoryScope } from "@repo-ai-governor/core-memory";
 import {
   MemoryStoreAdapter,
   type MemoryStoreProvider,
@@ -75,8 +75,28 @@ function createInMemoryStoreProvider(): MemoryStoreProvider {
         snapshotPath: "/tmp/snapshot-audit-unit.json",
       };
     },
-    async archive() {
-      return 0;
+    async archive(options) {
+      let archivedCount = 0;
+
+      for (const [compoundKey, storedRecord] of Array.from(records.entries())) {
+        const delimiterIndex = compoundKey.indexOf(":");
+        const namespace = compoundKey.slice(0, delimiterIndex);
+        const key = compoundKey.slice(delimiterIndex + 1);
+        const matchesNamespace = !options?.namespace || namespace === options.namespace;
+        const matchesKeys =
+          !options?.keys || options.keys.length === 0 || options.keys.includes(key);
+        const matchesUpdatedBefore =
+          !options?.updatedBefore || storedRecord.updatedAt < options.updatedBefore;
+
+        if (!matchesNamespace || !matchesKeys || !matchesUpdatedBefore) {
+          continue;
+        }
+
+        records.delete(compoundKey);
+        archivedCount += 1;
+      }
+
+      return archivedCount;
     },
   };
 }
@@ -197,5 +217,188 @@ describe("audit-recorder unit", () => {
     ).rejects.toMatchObject({
       code: GovernorErrorCode.AUDIT_RECORD_INVALID,
     });
+  });
+
+  it("masks sensitive values before persisting audit payloads", async () => {
+    const memoryManager = new MemoryManager(new MemoryStoreAdapter(createInMemoryStoreProvider()));
+    const recorder = new AuditRecorder(memoryManager);
+
+    await recorder.recordEvent({
+      event: createAuditEventRecord({
+        error: "authorization=Bearer secret-token-value",
+        memoryDelta: {
+          apiKey: "sk-this-should-be-hidden",
+          nested: {
+            sessionToken: "token-value-001",
+          },
+        },
+      }),
+      recordId: "audit-record-mask-001",
+      recordedAt: "2026-03-21T10:00:07Z",
+    });
+
+    const records = await recorder.listEvents({
+      executionId: "exec-audit-001",
+    });
+
+    expect(records).toHaveLength(1);
+    expect(records[0]?.event.error).toContain("[REDACTED]");
+    expect(records[0]?.event.error).not.toContain("secret-token-value");
+    expect(records[0]?.event.memoryDelta).toMatchObject({
+      apiKey: "[REDACTED]",
+      nested: {
+        sessionToken: "[REDACTED]",
+      },
+    });
+  });
+
+  it("keeps token usage metrics numeric when masking is enabled", async () => {
+    const memoryManager = new MemoryManager(new MemoryStoreAdapter(createInMemoryStoreProvider()));
+    const recorder = new AuditRecorder(memoryManager);
+
+    await recorder.recordEvent({
+      event: createAuditEventRecord({
+        tokenBudget: 100,
+        tokenUsed: 60,
+        memoryDelta: {
+          sessionToken: "session-value-should-be-masked",
+        },
+      }),
+      recordId: "audit-record-token-metrics-001",
+      recordedAt: "2026-03-21T10:00:08Z",
+    });
+
+    const records = await recorder.listEvents({
+      executionId: "exec-audit-001",
+    });
+
+    expect(records).toHaveLength(1);
+    expect(records[0]?.event.tokenBudget).toBe(100);
+    expect(records[0]?.event.tokenUsed).toBe(60);
+    expect(records[0]?.event.memoryDelta).toMatchObject({
+      sessionToken: "[REDACTED]",
+    });
+  });
+
+  it("exports and deletes audit records by execution/project/sprint/date-range filters", async () => {
+    const memoryManager = new MemoryManager(new MemoryStoreAdapter(createInMemoryStoreProvider()));
+    const recorder = new AuditRecorder(memoryManager);
+
+    await recorder.recordEvent({
+      event: createAuditEventRecord({
+        executionId: "exec-export-001",
+        projectId: "project-alpha",
+        sprintId: "sprint-001",
+      }),
+      recordId: "audit-record-export-001",
+      recordedAt: "2026-03-21T10:00:01Z",
+    });
+    await recorder.recordEvent({
+      event: createAuditEventRecord({
+        executionId: "exec-export-002",
+        projectId: "project-alpha",
+        sprintId: "sprint-002",
+      }),
+      recordId: "audit-record-export-002",
+      recordedAt: "2026-03-21T10:00:02Z",
+    });
+    await recorder.recordEvent({
+      event: createAuditEventRecord({
+        executionId: "exec-export-003",
+        projectId: "project-beta",
+        sprintId: "sprint-001",
+      }),
+      recordId: "audit-record-export-003",
+      recordedAt: "2026-03-21T10:00:03Z",
+    });
+
+    const exported = await recorder.exportEvents({
+      projectId: "project-alpha",
+      fromRecordedAt: "2026-03-21T10:00:01Z",
+      toRecordedAt: "2026-03-21T10:00:02Z",
+    });
+    expect(exported.map((record) => record.recordId)).toEqual([
+      "audit-record-export-001",
+      "audit-record-export-002",
+    ]);
+
+    const deletedCount = await recorder.deleteEvents({
+      projectId: "project-alpha",
+      sprintId: "sprint-001",
+    });
+    expect(deletedCount).toBe(1);
+
+    const afterDeleteProjectAlpha = await recorder.exportEvents({
+      projectId: "project-alpha",
+    });
+    expect(afterDeleteProjectAlpha.map((record) => record.recordId)).toEqual([
+      "audit-record-export-002",
+    ]);
+  });
+
+  it("does not let malformed unrelated records block scoped export", async () => {
+    const memoryManager = new MemoryManager(new MemoryStoreAdapter(createInMemoryStoreProvider()));
+    const recorder = new AuditRecorder(memoryManager);
+
+    await recorder.recordEvent({
+      event: createAuditEventRecord({
+        executionId: "good-exec",
+      }),
+      recordId: "audit-record-good-001",
+      recordedAt: "2026-03-21T10:00:01Z",
+    });
+
+    await memoryManager.writeEntry({
+      scope: MemoryScope.EXECUTION,
+      key: "bad-exec:stage-bad-001:audit-record-bad-001",
+      payload: {
+        recordId: "audit-record-bad-001",
+        recordedAt: "2026-03-21T10:00:02Z",
+        event: "not-an-object" as unknown as Record<string, unknown>,
+      },
+      tags: ["audit-record", "execution:bad-exec", "stage:stage-bad-001", "status:succeeded"],
+    });
+
+    const exported = await recorder.exportEvents({
+      executionId: "good-exec",
+    });
+
+    expect(exported).toHaveLength(1);
+    expect(exported[0]?.recordId).toBe("audit-record-good-001");
+  });
+
+  it("applies default 90-day retention policy and archives stale records", async () => {
+    const memoryManager = new MemoryManager(new MemoryStoreAdapter(createInMemoryStoreProvider()));
+    const recorder = new AuditRecorder(memoryManager);
+
+    await recorder.recordEvent({
+      event: createAuditEventRecord({
+        executionId: "exec-retention-old",
+      }),
+      recordId: "audit-record-retention-old",
+      recordedAt: "2025-11-30T00:00:00Z",
+    });
+    await recorder.recordEvent({
+      event: createAuditEventRecord({
+        executionId: "exec-retention-recent",
+      }),
+      recordId: "audit-record-retention-recent",
+      recordedAt: "2026-03-21T00:00:00Z",
+    });
+
+    const retentionResult = await recorder.applyRetentionPolicy({
+      now: "2026-03-22T00:00:00Z",
+    });
+    expect(retentionResult.retentionDays).toBe(90);
+    expect(retentionResult.archivedCount).toBe(1);
+
+    const oldExecutionRecords = await recorder.exportEvents({
+      executionId: "exec-retention-old",
+    });
+    const recentExecutionRecords = await recorder.exportEvents({
+      executionId: "exec-retention-recent",
+    });
+    expect(oldExecutionRecords).toHaveLength(0);
+    expect(recentExecutionRecords).toHaveLength(1);
   });
 });

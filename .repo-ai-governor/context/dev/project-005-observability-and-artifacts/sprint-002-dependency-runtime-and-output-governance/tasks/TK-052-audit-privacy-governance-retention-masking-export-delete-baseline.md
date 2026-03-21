@@ -1,8 +1,8 @@
 # TK-052 审计隐私治理（保留/脱敏/导出删除）基线
 
-- Status: planned
-- Date: 2026-03-21
-- Owner: TBD
+- Status: completed
+- Date: 2026-03-22
+- Owner: AI-Agent
 - Priority: P0
 - Project: `project-005-observability-and-artifacts`
 - Sprint: `sprint-002-dependency-runtime-and-output-governance`
@@ -45,3 +45,20 @@
 ## 7. 执行记录
 
 1. 2026-03-21：任务创建，状态初始化为 `planned`。
+2. 2026-03-22：任务启动，状态切换为 `in_progress`，开始落地 retention/masking/export/delete 策略模型、运行时契约与测试基线。
+3. 2026-03-22：在 `core-session` 落地审计隐私治理契约，新增 `AuditPrivacyGovernanceConfig`、`exportEvents/deleteEvents/applyRetentionPolicy` API，并支持 `projectId/sprintId` 维度过滤。
+4. 2026-03-22：完成写入前敏感信息脱敏（字段名规则 + 文本模式规则）与默认 `90` 天保留策略实现，补齐 `audit-recorder.unit` 范围导出/删除/保留策略回归测试。
+5. 2026-03-22：完成 `pnpm run typecheck`、`pnpm exec vitest run packages/core-session/test/audit-recorder.unit.test.ts` 与 `pnpm run check` 验证，任务切换为 `completed`。
+
+## 8. 产出
+
+1. `DA-064` `.repo-ai-governor/context/dev/project-005-observability-and-artifacts/sprint-002-dependency-runtime-and-output-governance/tasks/TK-052-audit-privacy-governance-retention-masking-export-delete-baseline.md`
+2. `packages/core-session/src/audit-recorder.ts`
+3. `packages/core-session/src/constants/audit-privacy-governance.constant.ts`
+4. `packages/core-session/src/constants/index.ts`
+5. `packages/core-session/src/index.ts`
+6. `packages/core-session/src/types/interfaces/audit-recorder.interface.ts`
+7. `packages/core-session/src/types/interfaces/index.ts`
+8. `packages/core-session/src/types/index.ts`
+9. `packages/core-session/test/audit-recorder.unit.test.ts`
+10. `packages/core-session/README.md`

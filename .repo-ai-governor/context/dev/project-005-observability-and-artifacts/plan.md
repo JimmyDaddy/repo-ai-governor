@@ -1,7 +1,7 @@
 # project-005-observability-and-artifacts 计划
 
-- Status: active
-- Date: 2026-03-21
+- Status: completed
+- Date: 2026-03-22
 - Stage Mapping: Stage 6
 - Phase Mapping: Phase D
 
@@ -60,8 +60,8 @@
 | TK-049 | sprint-001 | sprint-001 出口验收与 sprint-002 输入约束 | acceptance baseline | TK-046,TK-047,TK-048 | completed |
 | TK-050 | sprint-002 | CLI 输出契约与 non-TTY 自动降级基线 | baseline/output | TK-049 | completed |
 | TK-051 | sprint-002 | i18n parity/fallback 门禁与 output_locale 回放定位基线 | baseline/governance | TK-049,TK-050 | completed |
-| TK-052 | sprint-002 | 审计隐私治理（保留/脱敏/导出删除）基线 | baseline/privacy | TK-049,TK-050 | planned |
-| TK-053 | sprint-002 | project-005 出口验收与 project-006 输入约束 | acceptance baseline | TK-050,TK-051,TK-052 | planned |
+| TK-052 | sprint-002 | 审计隐私治理（保留/脱敏/导出删除）基线 | baseline/privacy | TK-049,TK-050 | completed |
+| TK-053 | sprint-002 | project-005 出口验收与 project-006 输入约束 | acceptance baseline | TK-050,TK-051,TK-052 | completed |
 | TK-054 | sprint-002 | Artifact Registry 单一事实源与人类视图收敛 | maintenance/governance | TK-048,TK-049 | completed |
 | TK-055 | sprint-002 | Artifact Registry triad canonical-source 同步 | maintenance/docs | TK-054 | completed |
 
@@ -81,4 +81,5 @@
 ## 7. 里程碑记录
 
 1. 2026-03-21：`DA-060/DA-061` 已产出并完成 `sprint-001 -> sprint-002` 输入约束回链，`sprint-001` 状态切换为 `completed`。
-2. 待补充：project-005 完成态审计摘要（项目收尾时回填）。
+2. 2026-03-22：`DA-065/DA-066` 已产出并完成 `project-005 -> project-006` 输入约束回链，`sprint-002` 状态切换为 `completed`。
+3. 2026-03-22：完成态审计摘要已落盘：`.repo-ai-governor/context/dev/project-005-observability-and-artifacts/project-005-completion-audit-summary.md`。

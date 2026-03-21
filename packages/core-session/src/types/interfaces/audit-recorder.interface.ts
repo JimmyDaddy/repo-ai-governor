@@ -46,6 +46,8 @@ export interface AuditEventRecord {
   workspaceId: string;
   workspaceMode: string;
   workspaceRoot: string;
+  projectId?: string;
+  sprintId?: string;
   artifactId?: string;
   artifactVersion?: string;
   producerTaskId?: string;
@@ -56,6 +58,15 @@ export interface AuditEventRecord {
   outputLocale?: string;
   specSyncStatus?: string;
   specSyncFailures?: string[];
+}
+
+/**
+ * Defines privacy-governance defaults consumed by audit recorder runtime.
+ */
+export interface AuditPrivacyGovernanceConfig {
+  retentionDays: number;
+  maskingEnabled: boolean;
+  maskedValue: string;
 }
 
 /**
@@ -83,4 +94,38 @@ export interface ListAuditRecordsOptions {
   executionId: string;
   stageId?: string;
   limit?: number;
+}
+
+/**
+ * Defines one export request for privacy-governed audit records.
+ */
+export interface ExportAuditRecordsOptions {
+  executionId?: string;
+  projectId?: string;
+  sprintId?: string;
+  fromRecordedAt?: string;
+  toRecordedAt?: string;
+  limit?: number;
+}
+
+/**
+ * Defines one delete request for privacy-governed audit records.
+ */
+export type DeleteAuditRecordsOptions = ExportAuditRecordsOptions;
+
+/**
+ * Defines one retention execution request payload.
+ */
+export interface ApplyAuditRetentionOptions {
+  retentionDays?: number;
+  now?: string;
+}
+
+/**
+ * Defines one retention execution result payload.
+ */
+export interface AuditRetentionExecutionResult {
+  retentionDays: number;
+  archivedBefore: string;
+  archivedCount: number;
 }

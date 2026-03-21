@@ -7,8 +7,12 @@
 - [x] TK-051 i18n parity/fallback 门禁与 output_locale 回放定位基线
   - 2026-03-22：任务启动，状态切换为 `in_progress`，开始实现 i18n parity/fallback 门禁脚本并补齐 `output_locale` 回放定位能力。
   - 2026-03-22：完成 i18n parity/fallback 门禁脚本、gate 接线、`outputLocale` 回放过滤与测试补齐，并通过 `pnpm run typecheck`、定向 `test:packages`、`test:integration` 与 `pnpm run check`，状态切换为 `completed`。
-- [ ] TK-052 审计隐私治理（保留/脱敏/导出删除）基线
-- [ ] TK-053 project-005 出口验收与 project-006 输入约束
+- [x] TK-052 审计隐私治理（保留/脱敏/导出删除）基线
+  - 2026-03-22：任务启动，状态切换为 `in_progress`，开始实现审计日志 retention/masking/export/delete 基线能力与回归测试。
+  - 2026-03-22：完成 `core-session` 隐私治理策略模型、导出/删除/保留策略 API 与单元回归测试，并通过 `pnpm run typecheck`、`pnpm exec vitest run packages/core-session/test/audit-recorder.unit.test.ts`、`pnpm run check`，状态切换为 `completed`。
+- [x] TK-053 project-005 出口验收与 project-006 输入约束
+  - 2026-03-22：任务启动，状态切换为 `in_progress`，开始输出 `DA-065`（project-005 出口验收）与 `DA-066`（project-006 输入约束）。
+  - 2026-03-22：完成 `DA-065`/`DA-066`、project-005 完成态审计摘要与 project-006 输入约束回链，并通过 `reconcile-artifact-dependencies`、`check-task-ledger-sync`、`check-sprint-plan-status-sync`、`check-artifact-registry-lifecycle` 与 `pnpm run check`，状态切换为 `completed`。
 - [x] TK-054 Artifact Registry 单一事实源与人类视图收敛
   - 2026-03-21：任务创建，状态初始化为 `planned`，补充 sprint-002 中关于 artifact registry 收敛的独立维护任务。
   - 2026-03-21：任务启动，状态切换为 `in_progress`，开始将 `dependency-artifact-registry.md` 降级为 guide，并补充基于 CSV 的人类视图渲染入口。

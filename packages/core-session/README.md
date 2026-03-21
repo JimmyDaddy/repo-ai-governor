@@ -20,6 +20,9 @@
 2. `AuditRecorder`
    - `recordEvent(options)`
    - `listEvents(options)`
+   - `exportEvents(options)`
+   - `deleteEvents(options)`
+   - `applyRetentionPolicy(options?)`
 3. `SessionStatus`
    - `ACTIVE`
    - `COMPLETED`
@@ -38,3 +41,4 @@
 3. 会话 payload 损坏会抛出标准化错误，便于定位存储与回放问题。
 4. Audit 事件持久化在 `MemoryScope.EXECUTION` 下，`key=executionId:stageId:recordId`。
 5. Audit 最小字段遵循 Stage 6 baseline，时间字段要求 RFC3339 秒级与展示时间双字段并存。
+6. 隐私治理基线：默认保留周期 `90` 天，写入前执行敏感字段脱敏，并支持按 `execution_id/project/sprint/date range` 的导出与删除。
