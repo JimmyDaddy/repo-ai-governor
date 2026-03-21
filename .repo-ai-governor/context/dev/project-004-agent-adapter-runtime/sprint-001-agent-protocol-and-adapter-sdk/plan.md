@@ -1,6 +1,6 @@
 # sprint-001-agent-protocol-and-adapter-sdk 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-03-21
 - Project: `project-004-agent-adapter-runtime`
 
@@ -11,9 +11,9 @@
 ## 2. In-Scope Tasks
 
 1. TK-032 Role Registry 与 Role Profile 生命周期基线（completed）
-2. TK-033 Agent 协议与 Capability Matrix 基线（planned）
-3. TK-034 Adapter SDK 与 routeKey 主备路由基线（planned）
-4. TK-035 sprint-001 出口验收与 sprint-002 输入约束（planned）
+2. TK-033 Agent 协议与 Capability Matrix 基线（completed）
+3. TK-034 Adapter SDK 与 routeKey 主备路由基线（completed）
+4. TK-035 sprint-001 出口验收与 sprint-002 输入约束（completed）
 
 ## 3. Entry Criteria
 

@@ -56,9 +56,9 @@
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 |---|---|---|---|---|---|
 | TK-032 | sprint-001 | Role Registry 与 Role Profile 生命周期基线 | baseline/contract | DA-039,DA-040 | completed |
-| TK-033 | sprint-001 | Agent 协议与 Capability Matrix 基线 | baseline/contract | TK-032,DA-040 | planned |
-| TK-034 | sprint-001 | Adapter SDK 与 routeKey 主备路由基线 | baseline/integration | TK-032,TK-033 | planned |
-| TK-035 | sprint-001 | sprint-001 出口验收与 sprint-002 输入约束 | acceptance baseline | TK-032,TK-033,TK-034 | planned |
+| TK-033 | sprint-001 | Agent 协议与 Capability Matrix 基线 | baseline/contract | TK-032,DA-040 | completed |
+| TK-034 | sprint-001 | Adapter SDK 与 routeKey 主备路由基线 | baseline/integration | TK-032,TK-033 | completed |
+| TK-035 | sprint-001 | sprint-001 出口验收与 sprint-002 输入约束 | acceptance baseline | TK-032,TK-033,TK-034 | completed |
 | TK-036 | sprint-002 | 首批 Adapters（Codex Copilot Claude Code）基线 | baseline/adapter | TK-035 | planned |
 | TK-037 | sprint-002 | Restricted Network Mode 降级执行基线 | baseline/resilience | TK-034,TK-036 | planned |
 | TK-038 | sprint-002 | integrations/ide 骨架与多入口命令包装基线 | baseline/integration | TK-034,TK-036 | planned |

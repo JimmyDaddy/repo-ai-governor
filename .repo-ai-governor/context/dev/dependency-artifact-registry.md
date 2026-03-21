@@ -59,8 +59,12 @@
 | DA-037 | `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-002-slot-security-and-upgrade-ux/tasks/TK-027-slot-engine-dual-track-and-script-security-baseline.md` | `TK-027` | *(none)* | 2026-03-20 | 2026-03-21 | active |
 | DA-038 | `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-002-slot-security-and-upgrade-ux/tasks/TK-028-standards-upgrade-ux-and-version-pin-baseline.md` | `TK-028` | *(none)* | 2026-03-20 | 2026-03-21 | active |
 | DA-039 | `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-002-slot-security-and-upgrade-ux/tasks/TK-030-project-003-exit-acceptance-and-project-004-input-constraints.md` | `TK-030` | *(none)* | 2026-03-21 | 2026-03-21 | active |
-| DA-040 | `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-002-slot-security-and-upgrade-ux/tasks/TK-030-project-004-input-constraints-checklist.md` | `TK-030` | `TK-033` | 2026-03-21 | 2026-03-21 | active |
-| DA-041 | `.repo-ai-governor/context/dev/project-004-agent-adapter-runtime/sprint-001-agent-protocol-and-adapter-sdk/tasks/TK-032-role-registry-and-role-profile-lifecycle-baseline.md` | `TK-032` | `TK-033`,`TK-034`,`TK-035` | 2026-03-21 | 2026-03-21 | active |
+| DA-040 | `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-002-slot-security-and-upgrade-ux/tasks/TK-030-project-004-input-constraints-checklist.md` | `TK-030` | *(none)* | 2026-03-21 | 2026-03-21 | active |
+| DA-041 | `.repo-ai-governor/context/dev/project-004-agent-adapter-runtime/sprint-001-agent-protocol-and-adapter-sdk/tasks/TK-032-role-registry-and-role-profile-lifecycle-baseline.md` | `TK-032` | *(none)* | 2026-03-21 | 2026-03-21 | active |
+| DA-042 | `.repo-ai-governor/context/dev/project-004-agent-adapter-runtime/sprint-001-agent-protocol-and-adapter-sdk/tasks/TK-033-agent-protocol-and-capability-matrix-baseline.md` | `TK-033` | *(none)* | 2026-03-21 | 2026-03-21 | active |
+| DA-043 | `.repo-ai-governor/context/dev/project-004-agent-adapter-runtime/sprint-001-agent-protocol-and-adapter-sdk/tasks/TK-034-adapter-sdk-and-routekey-fallback-baseline.md` | `TK-034` | `TK-037`,`TK-038` | 2026-03-21 | 2026-03-21 | active |
+| DA-044 | `.repo-ai-governor/context/dev/project-004-agent-adapter-runtime/sprint-001-agent-protocol-and-adapter-sdk/tasks/TK-035-sprint-001-exit-acceptance-and-sprint-002-input-constraints.md` | `TK-035` | `TK-036` | 2026-03-21 | 2026-03-21 | active |
+| DA-045 | `.repo-ai-governor/context/dev/project-004-agent-adapter-runtime/sprint-001-agent-protocol-and-adapter-sdk/tasks/TK-035-sprint-002-adapters-and-restricted-network-input-constraints-checklist.md` | `TK-035` | `TK-036`,`TK-037`,`TK-038` | 2026-03-21 | 2026-03-21 | active |
 
 ## Archive Registry Table
 
