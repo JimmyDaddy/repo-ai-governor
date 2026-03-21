@@ -1,7 +1,7 @@
 # Repo AI Governor 工具级总技术方案
 
 - Status: active
-- Date: 2026-03-20
+- Date: 2026-03-21
 - Scope: whole product (tool-level)
 - Basis:
   - `.repo-ai-governor/normative_knowledge_sources/product-requirements-brief.md`
@@ -149,6 +149,7 @@
 5. 默认落盘
    - 建议索引路径：`<workspace_root>/context/artifact-registry/artifacts.csv`（或等价后端）。
    - 建议归档路径：`<workspace_root>/context/artifact-registry/archive/artifacts.archive.csv`（或等价后端）。
+   - 人类可读视图若存在，必须由 canonical registry 动态渲染，不得作为独立事实源手工维护。
 6. 生命周期退出策略（最小）
    - 主注册表仅保留 `active/frozen/deprecated`。
    - `deprecated` 超过宽限期后迁移到归档注册表并标记 `archived`。
@@ -499,8 +500,9 @@
 3. `tasks/tasks.csv`
 4. `tasks/TK-xxx.md`
 5. `review/review_*.md -> verified_*.md -> resolved_*.md`
-6. `dependency-artifact-registry`（可选文件形态，例如 `dependency-artifact-registry.md/csv`）
-7. `context/artifact-registry/archive/artifacts.archive.csv`（归档产物索引）
+6. `context/artifact-registry/artifacts.csv`（主注册表，canonical source）
+7. `context/artifact-registry/archive/artifacts.archive.csv`（归档产物索引，canonical source）
+8. Artifact Registry 人类可读视图（可选渲染产物或命令输出，但不承担独立状态维护）
 
 ## 9.3 审计事件最小字段
 

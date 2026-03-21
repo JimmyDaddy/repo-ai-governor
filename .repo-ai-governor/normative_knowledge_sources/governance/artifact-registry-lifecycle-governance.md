@@ -42,7 +42,9 @@
 2. 运维命令：
    - `node ./scripts/governance/reconcile-artifact-dependencies.js`
    - `node ./scripts/governance/compact-artifact-registry.js`
+   - `node ./scripts/governance/render-artifact-registry-view.js`
    - `pnpm run artifacts:compact -- --dry-run`（统一 dry-run 编排）
+   - `pnpm run artifacts:view`（渲染人类可读视图；不构成额外事实源）
 3. `reconcile-artifact-dependencies` 语义：
    - 自动从 `.repo-ai-governor/context/dev/**/tasks/TK-*.md` 的 `## 2. Depends On` 段落解析 `DA-*` 依赖。
    - 仅保留未关闭任务（`planned/in_progress/...`）作为 `dependent_tasks`，关闭任务依赖自动清退。

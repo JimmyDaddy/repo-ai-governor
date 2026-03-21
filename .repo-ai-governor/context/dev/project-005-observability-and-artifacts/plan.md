@@ -40,13 +40,15 @@
 
 ## 3.2 sprint-002-dependency-runtime-and-output-governance
 
-- Sprint Goal: 完成 Stage 6 后半段能力（输出契约、i18n 门禁、隐私治理）并形成 project-006 输入约束。
-- 任务包：`TK-050`、`TK-051`、`TK-052`、`TK-053`。
+- Sprint Goal: 完成 Stage 6 后半段能力（输出契约、i18n 门禁、隐私治理），并补齐 artifact registry 在执行态与产品级规范中的单一事实源收敛。
+- 任务包：`TK-050`、`TK-051`、`TK-052`、`TK-053`、`TK-054`、`TK-055`。
 - Exit Criteria:
   1. CLI 三模式输出契约与 non-TTY 自动降级稳定。
   2. i18n parity/fallback 门禁纳入输出回放定位。
   3. 审计隐私治理可配置并支持按范围导出/删除。
-  4. 形成 project-005 出口验收与 project-006 输入约束清单。
+  4. Artifact Registry 人类可读访问不再依赖手工维护的重复镜像。
+  5. Artifact Registry 的产品需求、方案与架构文档对 canonical source / rendered view 口径保持一致。
+  6. 形成 project-005 出口验收与 project-006 输入约束清单。
 
 ## 4. 任务拆解矩阵（WBS）
 
@@ -60,11 +62,13 @@
 | TK-051 | sprint-002 | i18n parity/fallback 门禁与 output_locale 回放定位基线 | baseline/governance | TK-049,TK-050 | planned |
 | TK-052 | sprint-002 | 审计隐私治理（保留/脱敏/导出删除）基线 | baseline/privacy | TK-049,TK-050 | planned |
 | TK-053 | sprint-002 | project-005 出口验收与 project-006 输入约束 | acceptance baseline | TK-050,TK-051,TK-052 | planned |
+| TK-054 | sprint-002 | Artifact Registry 单一事实源与人类视图收敛 | maintenance/governance | TK-048,TK-049 | completed |
+| TK-055 | sprint-002 | Artifact Registry triad canonical-source 同步 | maintenance/docs | TK-054 | completed |
 
 ## 5. 依赖产物策略
 
 1. project-005 启动入口默认消费 `DA-049`（project-004 出口验收基线）与 `DA-050`（project-005 输入约束清单）。
-2. sprint-001 产物目标：`DA-057`~`DA-061`；sprint-002 产物目标：`DA-062`~`DA-066`。
+2. sprint-001 产物目标：`DA-057`~`DA-061`；sprint-002 产物目标：`DA-062`~`DA-066`，并补齐 artifact registry 单一事实源收敛实现。
 3. 任务执行时统一使用 `artifact_id + artifact_path` 双键回链，并同步 `tasks.csv/checklist/dependency-artifact-registry`。
 
 ## 6. DoD（project-005）

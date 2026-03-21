@@ -44,6 +44,7 @@
     "check:normative-loading-manifest:block": "node ./scripts/governance/check-normative-loading-manifest.js --mode block",
     "artifacts:reconcile": "node ./scripts/governance/reconcile-artifact-dependencies.js",
     "artifacts:compact": "node ./scripts/governance/run-artifact-lifecycle-maintenance.js",
+    "artifacts:view": "node ./scripts/governance/render-artifact-registry-view.js",
     "check:code-standards": "node ./scripts/governance/check-code-standards.js --standards .repo-ai-governor/normative_knowledge_sources/governance/code_standards.md",
     "check:coverage-thresholds": "node ./scripts/ci/check-coverage-thresholds.js",
     "check:coverage": "pnpm run test:coverage && pnpm run check:coverage-thresholds",

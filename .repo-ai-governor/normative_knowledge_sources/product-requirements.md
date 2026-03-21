@@ -2,7 +2,7 @@
 
 - 文档版本：v0.3
 - 状态：执行中（MVP 已完成，P1 深化中）
-- 日期：2026-03-20
+- 日期：2026-03-21
 - 暂定产品名：Repo AI Governor
 
 ## 0. v0.3 更新说明
@@ -17,6 +17,7 @@
 8. 新增 CLI 输出体验基线：终端人类可读美化 + 机器可读稳定输出双模式并存。
 9. 新增“需求->方案->架构”三层文档同步机制，并要求工具内置可执行校验能力。
 10. 明确共享层收敛方向：统一采用 `packages/shared` 承接共享类型、通用工具与 i18n 基础能力。
+11. 明确 Artifact Registry 单一事实源：canonical registry 固定为 machine-readable main/archive registry，human-readable 入口统一由 canonical source 渲染，不再维护手工镜像台账。
 
 ## 1. 产品概述
 
@@ -470,6 +471,9 @@ AI 先完成方案与实现，再进入评审 Agent 与复核 Agent 的循环；
    - `artifact_status` 至少支持 `active/frozen/deprecated/archived/retired`，并具备可执行状态迁移规则。
    - 主注册表仅保留可消费或短期过渡产物（`active/frozen/deprecated`），历史产物迁移到归档注册表。
    - 依赖解析命中 `deprecated/archived/retired` 时，默认不自动注入上下文，按策略触发 `warn/block/HITL`。
+7. 单一事实源约束
+   - canonical registry 固定为 machine-readable main/archive registry，不得并行维护第二份手工 registry 台账作为事实源。
+   - human-readable artifact view 仅允许由 canonical registry 动态渲染或查询生成，不得承担独立状态维护职责。
 
 ### 8.10.3 三层文档同步机制（需求 -> 方案 -> 架构）
 

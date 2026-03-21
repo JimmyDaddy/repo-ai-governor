@@ -1,7 +1,7 @@
 # Repo AI Governor 可扩展架构图与仓库分层结构
 
 - Status: active
-- Date: 2026-03-20
+- Date: 2026-03-21
 - Role: implementation blueprint
 - Basis:
   - `.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-overall-technical-solution.md`
@@ -373,9 +373,13 @@ ai-governor/
   .repo-ai-governor/
     governor.yaml
     context/current-context.md
+    context/artifact-registry/
+      artifacts.csv
+      archive/artifacts.archive.csv
     normative_knowledge_sources/
-    artifacts/
 ```
+
+说明：若需要人类可读的 Artifact Registry 视图，应从 `context/artifact-registry/*.csv` 动态渲染，而不是在 workspace 中再维护手工镜像台账。
 
 ## 5.1 Monorepo 版本与发布策略（Baseline）
 

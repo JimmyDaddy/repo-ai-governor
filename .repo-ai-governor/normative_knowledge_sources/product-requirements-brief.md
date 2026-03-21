@@ -2,7 +2,7 @@
 
 - 文档版本：brief-v1
 - 状态：active
-- 日期：2026-03-20
+- 日期：2026-03-21
 - 对齐来源：`.repo-ai-governor/normative_knowledge_sources/product-requirements.md`（完整版）
 - 实施总纲：`.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-overall-technical-solution.md`
 - 工程蓝图：`.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-architecture-and-repo-layering.md`
@@ -69,6 +69,7 @@
    - Artifact Registry 必须支持 `active/frozen/deprecated/archived/retired` 生命周期。
    - 主注册表与归档注册表分层治理，避免上下文无限增长。
    - 非 `active/frozen` 产物默认不进入自动依赖注入链路。
+   - canonical source 固定为 machine-readable main/archive registry；human-readable view 只能从 canonical source 渲染，不再维护手工镜像台账。
 
 ## 5. 必须人工确认的高风险场景
 
