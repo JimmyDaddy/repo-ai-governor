@@ -11,4 +11,7 @@
 - [x] TK-038 integrations/ide 骨架与多入口命令包装基线
   - 2026-03-21: 任务启动，状态切换为 `in_progress`，开始落地 IDE 命令包装器、规范注入契约与 integrations/ide 骨架目录。
   - 2026-03-21: 完成 IDE wrapper 代码与集成骨架契约文档，`pnpm run typecheck`、定向 `test:packages` 与 `test:integration` 通过，任务状态切换为 `completed`。
-- [ ] TK-039 project-004 出口验收与 project-005 输入约束
+- [x] TK-039 project-004 出口验收与 project-005 输入约束
+  - 2026-03-21: 任务启动，状态切换为 `in_progress`，开始汇总 project-004 出口验收证据并沉淀 project-005 输入约束清单。
+  - 2026-03-21: 产出 `DA-049/DA-050`，完成 artifact registry、索引台账与 project-004 里程碑记录回填。
+  - 2026-03-21: 通过 `reconcile-artifact-dependencies`、台账一致性校验、生命周期校验与 `pnpm run check`，任务状态切换为 `completed`。

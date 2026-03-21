@@ -2,7 +2,7 @@
 
 ## Primary Stream
 
-- Status: in_progress
+- Status: completed
 - Project: `project-004-agent-adapter-runtime`
 - Sprint: `sprint-002-adapters-and-restricted-network`
 - Docs root: `.repo-ai-governor/context/dev/project-004-agent-adapter-runtime`
@@ -11,7 +11,7 @@
 
 ## Active Streams
 
-- `primary`: project=`project-004-agent-adapter-runtime`, sprint=`sprint-002-adapters-and-restricted-network`, docs=`.repo-ai-governor/context/dev/project-004-agent-adapter-runtime`, plan=`.repo-ai-governor/context/dev/project-004-agent-adapter-runtime/plan.md`, tasks=`.repo-ai-governor/context/dev/project-004-agent-adapter-runtime/sprint-002-adapters-and-restricted-network/tasks/`, checklist=`.repo-ai-governor/context/dev/project-004-agent-adapter-runtime/sprint-002-adapters-and-restricted-network/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-004-agent-adapter-runtime/sprint-002-adapters-and-restricted-network/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-004-agent-adapter-runtime/sprint-002-adapters-and-restricted-network/review/`, status=`in_progress`
+- `primary`: project=`project-004-agent-adapter-runtime`, sprint=`sprint-002-adapters-and-restricted-network`, docs=`.repo-ai-governor/context/dev/project-004-agent-adapter-runtime`, plan=`.repo-ai-governor/context/dev/project-004-agent-adapter-runtime/plan.md`, tasks=`.repo-ai-governor/context/dev/project-004-agent-adapter-runtime/sprint-002-adapters-and-restricted-network/tasks/`, checklist=`.repo-ai-governor/context/dev/project-004-agent-adapter-runtime/sprint-002-adapters-and-restricted-network/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-004-agent-adapter-runtime/sprint-002-adapters-and-restricted-network/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-004-agent-adapter-runtime/sprint-002-adapters-and-restricted-network/review/`, status=`completed`
 - `stream-project-008`: project=`project-008-workflow-optimization`, sprint=`sprint-001-execution-workflow-optimization`, docs=`.repo-ai-governor/context/dev/project-008-workflow-optimization`, plan=`.repo-ai-governor/context/dev/project-008-workflow-optimization/plan.md`, tasks=`.repo-ai-governor/context/dev/project-008-workflow-optimization/sprint-001-execution-workflow-optimization/tasks/`, checklist=`.repo-ai-governor/context/dev/project-008-workflow-optimization/sprint-001-execution-workflow-optimization/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-008-workflow-optimization/sprint-001-execution-workflow-optimization/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-008-workflow-optimization/sprint-001-execution-workflow-optimization/review/`, status=`completed`
 
 ## Update Rules

@@ -1,6 +1,6 @@
 # project-004-agent-adapter-runtime 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-03-21
 - Stage Mapping: Stage 5
 - Phase Mapping: Phase C
@@ -62,7 +62,7 @@
 | TK-036 | sprint-002 | 首批 Adapters（Codex Copilot Claude Code）基线 | baseline/adapter | TK-035 | completed |
 | TK-037 | sprint-002 | Restricted Network Mode 降级执行基线 | baseline/resilience | TK-034,TK-036 | completed |
 | TK-038 | sprint-002 | integrations/ide 骨架与多入口命令包装基线 | baseline/integration | TK-034,TK-036 | completed |
-| TK-039 | sprint-002 | project-004 出口验收与 project-005 输入约束 | acceptance baseline | TK-036,TK-037,TK-038 | planned |
+| TK-039 | sprint-002 | project-004 出口验收与 project-005 输入约束 | acceptance baseline | TK-036,TK-037,TK-038 | completed |
 
 ## 5. 依赖产物策略
 
@@ -80,4 +80,5 @@
 
 ## 7. 里程碑记录
 
-1. 待补充：project-004 完成态审计摘要（项目收尾时回填）。
+1. 2026-03-21：完成 `.repo-ai-governor/context/dev/project-004-agent-adapter-runtime/project-004-completion-audit-summary.md`，`project-004` 状态切换为 `completed`。
+2. 2026-03-21：`DA-049/DA-050` 已登记并对齐 `project-005` 启动输入基线。

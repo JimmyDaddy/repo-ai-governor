@@ -8,7 +8,7 @@
 
 1. `projects-overview`: `.repo-ai-governor/context/dev/projects-overview.md`
 2. `dependency-artifact-registry`: `.repo-ai-governor/context/dev/dependency-artifact-registry.md`
-3. `primary project plan`: `.repo-ai-governor/context/dev/project-008-workflow-optimization/plan.md`
+3. `primary project plan`: `.repo-ai-governor/context/dev/project-004-agent-adapter-runtime/plan.md`
 
 ## 2. Artifact Retrieval Entry
 
@@ -54,6 +54,11 @@
    - `DA-043` `.repo-ai-governor/context/dev/project-004-agent-adapter-runtime/sprint-001-agent-protocol-and-adapter-sdk/tasks/TK-034-adapter-sdk-and-routekey-fallback-baseline.md`
    - `DA-044` `.repo-ai-governor/context/dev/project-004-agent-adapter-runtime/sprint-001-agent-protocol-and-adapter-sdk/tasks/TK-035-sprint-001-exit-acceptance-and-sprint-002-input-constraints.md`
    - `DA-045` `.repo-ai-governor/context/dev/project-004-agent-adapter-runtime/sprint-001-agent-protocol-and-adapter-sdk/tasks/TK-035-sprint-002-adapters-and-restricted-network-input-constraints-checklist.md`
+   - `DA-046` `.repo-ai-governor/context/dev/project-004-agent-adapter-runtime/sprint-002-adapters-and-restricted-network/tasks/TK-036-first-batch-adapters-baseline.md`
+   - `DA-047` `.repo-ai-governor/context/dev/project-004-agent-adapter-runtime/sprint-002-adapters-and-restricted-network/tasks/TK-037-restricted-network-mode-baseline.md`
+   - `DA-048` `.repo-ai-governor/context/dev/project-004-agent-adapter-runtime/sprint-002-adapters-and-restricted-network/tasks/TK-038-ide-integration-skeleton-baseline.md`
+   - `DA-049` `.repo-ai-governor/context/dev/project-004-agent-adapter-runtime/sprint-002-adapters-and-restricted-network/tasks/TK-039-project-004-exit-acceptance-and-project-005-input-constraints.md`
+   - `DA-050` `.repo-ai-governor/context/dev/project-004-agent-adapter-runtime/sprint-002-adapters-and-restricted-network/tasks/TK-039-project-005-input-constraints-checklist.md`
    - `DA-051` `.repo-ai-governor/context/dev/project-008-workflow-optimization/sprint-001-execution-workflow-optimization/tasks/TK-040-fast-gate-and-release-gate-layering-baseline.md`
    - `DA-052` `.repo-ai-governor/context/dev/project-008-workflow-optimization/sprint-001-execution-workflow-optimization/tasks/TK-041-cr-lifecycle-threshold-template-baseline.md`
    - `DA-053` `.repo-ai-governor/context/dev/project-008-workflow-optimization/sprint-001-execution-workflow-optimization/tasks/TK-042-task-ledger-single-write-source-contract.md`

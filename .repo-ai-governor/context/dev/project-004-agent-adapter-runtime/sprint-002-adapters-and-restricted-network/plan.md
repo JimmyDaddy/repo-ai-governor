@@ -1,6 +1,6 @@
 # sprint-002-adapters-and-restricted-network 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-03-21
 - Project: `project-004-agent-adapter-runtime`
 
@@ -13,7 +13,7 @@
 1. TK-036 首批 Adapters（Codex Copilot Claude Code）基线（completed）
 2. TK-037 Restricted Network Mode 降级执行基线（completed）
 3. TK-038 integrations/ide 骨架与多入口命令包装基线（completed）
-4. TK-039 project-004 出口验收与 project-005 输入约束（planned）
+4. TK-039 project-004 出口验收与 project-005 输入约束（completed）
 
 ## 3. Entry Criteria
 
