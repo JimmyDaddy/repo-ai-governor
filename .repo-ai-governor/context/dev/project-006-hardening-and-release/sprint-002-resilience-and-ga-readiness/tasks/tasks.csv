@@ -1,0 +1,5 @@
+execution_id,task_id,title,owner,priority,due_date,status,project,sprint,plan,result,verify,review_delta,recorded_at
+exec-20260322-169,TK-060,受限网络与离线降级稳定性回归基线,TBD,P0,2026-05-09,planned,project-006-hardening-and-release,sprint-002-resilience-and-ga-readiness,建立 restricted-network offline-degrade 的稳定性回归套件并固化执行基线,待执行,待验证,待执行,2026-03-22
+exec-20260322-170,TK-061,回滚演练与恢复流程基线,TBD,P0,2026-05-10,planned,project-006-hardening-and-release,sprint-002-resilience-and-ga-readiness,建立 canary rc ga 失败场景下回滚演练与恢复流程基线并固化审计证据,待执行,待验证,待执行,2026-03-22
+exec-20260322-171,TK-062,GA 候选联合门禁（契约+稳定性+发布）基线,TBD,P0,2026-05-11,planned,project-006-hardening-and-release,sprint-002-resilience-and-ga-readiness,建立 ga-candidate 联合门禁以统一验证契约稳定性发布治理与回滚约束,待执行,待验证,待执行,2026-03-22
+exec-20260322-172,TK-063,project-006 出口验收与 project-007 输入约束,TBD,P0,2026-05-12,planned,project-006-hardening-and-release,sprint-002-resilience-and-ga-readiness,汇总 project-006 交付证据形成出口验收并沉淀 project-007 输入约束清单,待执行,待验证,待执行,2026-03-22

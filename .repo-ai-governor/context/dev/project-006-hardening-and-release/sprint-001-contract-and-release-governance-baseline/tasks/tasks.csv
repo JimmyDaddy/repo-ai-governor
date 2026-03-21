@@ -1,0 +1,5 @@
+execution_id,task_id,title,owner,priority,due_date,status,project,sprint,plan,result,verify,review_delta,recorded_at
+exec-20260322-165,TK-056,跨包契约测试矩阵基线,TBD,P0,2026-05-02,planned,project-006-hardening-and-release,sprint-001-contract-and-release-governance-baseline,建立 Stage 7 跨包契约测试矩阵并统一关键模块契约入口失败语义与回归边界,待执行,待验证,待执行,2026-03-22
+exec-20260322-166,TK-057,分层测试（contract/integration/e2e）稳定基线,TBD,P0,2026-05-03,planned,project-006-hardening-and-release,sprint-001-contract-and-release-governance-baseline,建立 tests contract integration e2e 分层职责与最小稳定样例覆盖并接入门禁,待执行,待验证,待执行,2026-03-22
+exec-20260322-167,TK-058,发布治理策略与 canary-rc-ga 通道基线,TBD,P0,2026-05-04,planned,project-006-hardening-and-release,sprint-001-contract-and-release-governance-baseline,固化 lockstep independent 发布策略与 canary rc ga 通道流程及门禁基线,待执行,待验证,待执行,2026-03-22
+exec-20260322-168,TK-059,sprint-001 出口验收与 sprint-002 输入约束,TBD,P0,2026-05-05,planned,project-006-hardening-and-release,sprint-001-contract-and-release-governance-baseline,汇总 sprint-001 交付证据形成出口验收并沉淀 sprint-002 输入约束清单,待执行,待验证,待执行,2026-03-22
