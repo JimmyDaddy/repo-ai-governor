@@ -10,6 +10,7 @@
       "@repo-ai-governor/adapter-claude-code": ["packages/adapters/claude-code/src/index.ts"],
       "@repo-ai-governor/adapter-codex": ["packages/adapters/codex/src/index.ts"],
       "@repo-ai-governor/adapter-github-copilot": ["packages/adapters/github-copilot/src/index.ts"],
+      "@repo-ai-governor/artifact-registry": ["packages/artifact-registry/src/index.ts"],
       "@repo-ai-governor/cli": ["apps/cli/src/main.ts"],
       "@repo-ai-governor/config": ["packages/config/src/index.ts"],
       "@repo-ai-governor/core-change-risk": ["packages/core-change-risk/src/index.ts"],
@@ -27,6 +28,7 @@
       "@repo-ai-governor/notification-dispatcher": [
         "packages/notification-dispatcher/src/index.ts"
       ],
+      "@repo-ai-governor/reporting": ["packages/reporting/src/index.ts"],
       "@repo-ai-governor/shared": ["packages/shared/src/index.ts"],
       "@repo-ai-governor/slots": ["packages/slots/src/index.ts"],
       "@repo-ai-governor/standards": ["packages/standards/src/index.ts"]

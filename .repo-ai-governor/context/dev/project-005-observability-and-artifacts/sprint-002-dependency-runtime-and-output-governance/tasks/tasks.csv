@@ -1,0 +1,5 @@
+execution_id,task_id,title,owner,priority,due_date,status,project,sprint,plan,result,verify,review_delta,recorded_at
+exec-20260321-138,TK-050,CLI 输出契约与 non-TTY 自动降级基线,TBD,P0,2026-04-24,planned,project-005-observability-and-artifacts,sprint-002-dependency-runtime-and-output-governance,落地 pretty plain json 输出契约与 non-TTY 自动降级并固化错误输出结构字段,待执行,待验证,待执行,2026-03-21
+exec-20260321-139,TK-051,i18n parity/fallback 门禁与 output_locale 回放定位基线,TBD,P0,2026-04-25,planned,project-005-observability-and-artifacts,sprint-002-dependency-runtime-and-output-governance,落地 i18n key parity 与 fallback 可用性门禁并纳入 output_locale 回放定位链路,待执行,待验证,待执行,2026-03-21
+exec-20260321-140,TK-052,审计隐私治理（保留/脱敏/导出删除）基线,TBD,P0,2026-04-26,planned,project-005-observability-and-artifacts,sprint-002-dependency-runtime-and-output-governance,落地审计日志 90 天保留策略可配置与敏感信息脱敏并支持按范围导出删除,待执行,待验证,待执行,2026-03-21
+exec-20260321-141,TK-053,project-005 出口验收与 project-006 输入约束,TBD,P0,2026-04-27,planned,project-005-observability-and-artifacts,sprint-002-dependency-runtime-and-output-governance,形成 project-005 出口验收基线并沉淀 project-006 输入约束清单,待执行,待验证,待执行,2026-03-21

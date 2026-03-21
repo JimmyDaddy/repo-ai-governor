@@ -1,4 +1,8 @@
 export { ErrorOutputEnvironment, ErrorScenario } from "./error.constant.js";
+export {
+  ALL_DEPENDENCY_RESOLUTION_STATUSES,
+  DependencyResolutionStatus,
+} from "./dependency-resolution-status.constant.js";
 export { GovernanceReviewerRole } from "./governance-reviewer-role.constant.js";
 export {
   DEFAULT_I18N_FALLBACK_LOCALE,

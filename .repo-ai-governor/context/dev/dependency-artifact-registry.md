@@ -76,6 +76,11 @@
 | DA-054 | `.repo-ai-governor/context/dev/project-008-workflow-optimization/sprint-001-execution-workflow-optimization/tasks/TK-043-risk-facts-contract-and-hitl-sla-baseline.md` | `TK-043` | *(none)* | 2026-03-21 | 2026-03-21 | active |
 | DA-055 | `.repo-ai-governor/context/dev/project-008-workflow-optimization/sprint-001-execution-workflow-optimization/tasks/TK-044-decomposition-assistant-protocol-template.md` | `TK-044` | *(none)* | 2026-03-21 | 2026-03-21 | active |
 | DA-056 | `.repo-ai-governor/context/dev/project-008-workflow-optimization/sprint-001-execution-workflow-optimization/tasks/TK-045-sprint-001-exit-acceptance-and-rollout-input-constraints.md` | `TK-045` | *(none)* | 2026-03-21 | 2026-03-21 | active |
+| DA-057 | `.repo-ai-governor/context/dev/project-005-observability-and-artifacts/sprint-001-audit-report-and-replay-baseline/tasks/TK-046-audit-recorder-event-model-and-minimum-fields-baseline.md` | `TK-046` | *(none)* | 2026-03-21 | 2026-03-21 | active |
+| DA-058 | `.repo-ai-governor/context/dev/project-005-observability-and-artifacts/sprint-001-audit-report-and-replay-baseline/tasks/TK-047-report-builder-and-replay-explain-baseline.md` | `TK-047` | *(none)* | 2026-03-21 | 2026-03-21 | active |
+| DA-059 | `.repo-ai-governor/context/dev/project-005-observability-and-artifacts/sprint-001-audit-report-and-replay-baseline/tasks/TK-048-artifact-registry-and-dependency-resolver-runtime-baseline.md` | `TK-048` | *(none)* | 2026-03-21 | 2026-03-21 | active |
+| DA-060 | `.repo-ai-governor/context/dev/project-005-observability-and-artifacts/sprint-001-audit-report-and-replay-baseline/tasks/TK-049-sprint-001-exit-acceptance-and-sprint-002-input-constraints.md` | `TK-049` | `TK-050` | 2026-03-21 | 2026-03-21 | active |
+| DA-061 | `.repo-ai-governor/context/dev/project-005-observability-and-artifacts/sprint-001-audit-report-and-replay-baseline/tasks/TK-049-sprint-002-dependency-runtime-and-output-governance-input-constraints-checklist.md` | `TK-049` | `TK-050|TK-051|TK-052` | 2026-03-21 | 2026-03-21 | active |
 
 ## Archive Registry Table
 

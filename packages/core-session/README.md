@@ -17,14 +17,24 @@
    - `updateContext(options)`
    - `finalizeSession(options)`
    - `listSessions(options?)`
-2. `SessionStatus`
+2. `AuditRecorder`
+   - `recordEvent(options)`
+   - `listEvents(options)`
+3. `SessionStatus`
    - `ACTIVE`
    - `COMPLETED`
    - `CANCELLED`
    - `FAILED`
+4. `AuditRecordStatus`
+   - `RUNNING`
+   - `SUCCEEDED`
+   - `FAILED`
+   - `CANCELLED`
 
 ## Notes
 
 1. Session 状态持久化在 `MemoryScope.SESSION` 下，`key=sessionId`。
 2. 已关闭会话禁止继续 append/update，避免审计链路回写漂移。
 3. 会话 payload 损坏会抛出标准化错误，便于定位存储与回放问题。
+4. Audit 事件持久化在 `MemoryScope.EXECUTION` 下，`key=executionId:stageId:recordId`。
+5. Audit 最小字段遵循 Stage 6 baseline，时间字段要求 RFC3339 秒级与展示时间双字段并存。

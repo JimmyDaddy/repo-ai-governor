@@ -8,7 +8,7 @@
 
 1. `projects-overview`: `.repo-ai-governor/context/dev/projects-overview.md`
 2. `dependency-artifact-registry`: `.repo-ai-governor/context/dev/dependency-artifact-registry.md`
-3. `primary project plan`: `.repo-ai-governor/context/dev/project-004-agent-adapter-runtime/plan.md`
+3. `primary project plan`: `.repo-ai-governor/context/dev/project-005-observability-and-artifacts/plan.md`
 
 ## 2. Artifact Retrieval Entry
 
@@ -65,6 +65,11 @@
    - `DA-054` `.repo-ai-governor/context/dev/project-008-workflow-optimization/sprint-001-execution-workflow-optimization/tasks/TK-043-risk-facts-contract-and-hitl-sla-baseline.md`
    - `DA-055` `.repo-ai-governor/context/dev/project-008-workflow-optimization/sprint-001-execution-workflow-optimization/tasks/TK-044-decomposition-assistant-protocol-template.md`
    - `DA-056` `.repo-ai-governor/context/dev/project-008-workflow-optimization/sprint-001-execution-workflow-optimization/tasks/TK-045-sprint-001-exit-acceptance-and-rollout-input-constraints.md`
+   - `DA-057` `.repo-ai-governor/context/dev/project-005-observability-and-artifacts/sprint-001-audit-report-and-replay-baseline/tasks/TK-046-audit-recorder-event-model-and-minimum-fields-baseline.md`
+   - `DA-058` `.repo-ai-governor/context/dev/project-005-observability-and-artifacts/sprint-001-audit-report-and-replay-baseline/tasks/TK-047-report-builder-and-replay-explain-baseline.md`
+   - `DA-059` `.repo-ai-governor/context/dev/project-005-observability-and-artifacts/sprint-001-audit-report-and-replay-baseline/tasks/TK-048-artifact-registry-and-dependency-resolver-runtime-baseline.md`
+   - `DA-060` `.repo-ai-governor/context/dev/project-005-observability-and-artifacts/sprint-001-audit-report-and-replay-baseline/tasks/TK-049-sprint-001-exit-acceptance-and-sprint-002-input-constraints.md`
+   - `DA-061` `.repo-ai-governor/context/dev/project-005-observability-and-artifacts/sprint-001-audit-report-and-replay-baseline/tasks/TK-049-sprint-002-dependency-runtime-and-output-governance-input-constraints-checklist.md`
 
 ## 3. Consumption Rule
 
