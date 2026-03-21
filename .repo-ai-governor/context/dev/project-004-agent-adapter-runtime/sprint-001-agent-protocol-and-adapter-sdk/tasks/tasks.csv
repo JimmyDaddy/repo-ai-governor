@@ -1,0 +1,5 @@
+execution_id,task_id,title,owner,priority,due_date,status,project,sprint,plan,result,verify,review_delta,recorded_at
+exec-20260321-093,TK-032,Role Registry 与 Role Profile 生命周期基线,TBD,P0,2026-04-08,planned,project-004-agent-adapter-runtime,sprint-001-agent-protocol-and-adapter-sdk,建立 Role Registry 基线并定义 role_profile 生命周期字段与约束,待执行,待验证,待执行,2026-03-21
+exec-20260321-094,TK-033,Agent 协议与 Capability Matrix 基线,TBD,P0,2026-04-08,planned,project-004-agent-adapter-runtime,sprint-001-agent-protocol-and-adapter-sdk,建立统一 Agent 协议与 capability matrix 契约并定义超时取消能力语义,待执行,待验证,待执行,2026-03-21
+exec-20260321-095,TK-034,Adapter SDK 与 routeKey 主备路由基线,TBD,P0,2026-04-09,planned,project-004-agent-adapter-runtime,sprint-001-agent-protocol-and-adapter-sdk,交付 Adapter SDK 基线并定义 routeKey 主备路由与降级回退策略,待执行,待验证,待执行,2026-03-21
+exec-20260321-096,TK-035,sprint-001 出口验收与 sprint-002 输入约束,TBD,P0,2026-04-09,planned,project-004-agent-adapter-runtime,sprint-001-agent-protocol-and-adapter-sdk,形成 sprint-001 验收基线并沉淀 sprint-002 输入约束清单,待执行,待验证,待执行,2026-03-21

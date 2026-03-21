@@ -1,0 +1,5 @@
+execution_id,task_id,title,owner,priority,due_date,status,project,sprint,plan,result,verify,review_delta,recorded_at
+exec-20260321-097,TK-036,首批 Adapters（Codex Copilot Claude Code）基线,TBD,P0,2026-04-12,planned,project-004-agent-adapter-runtime,sprint-002-adapters-and-restricted-network,交付 codex github-copilot claude-code 首批 adapters 基线并接入统一协议与策略,待执行,待验证,待执行,2026-03-21
+exec-20260321-098,TK-037,Restricted Network Mode 降级执行基线,TBD,P0,2026-04-12,planned,project-004-agent-adapter-runtime,sprint-002-adapters-and-restricted-network,建立外网受限场景降级语义并保障本地治理流程编排与台账写入可运行,待执行,待验证,待执行,2026-03-21
+exec-20260321-099,TK-038,integrations/ide 骨架与多入口命令包装基线,TBD,P1,2026-04-13,planned,project-004-agent-adapter-runtime,sprint-002-adapters-and-restricted-network,建立 integrations ide 骨架并统一多入口规范注入与命令包装约定,待执行,待验证,待执行,2026-03-21
+exec-20260321-100,TK-039,project-004 出口验收与 project-005 输入约束,TBD,P0,2026-04-13,planned,project-004-agent-adapter-runtime,sprint-002-adapters-and-restricted-network,形成 project-004 出口验收基线并沉淀 project-005 输入约束清单,待执行,待验证,待执行,2026-03-21

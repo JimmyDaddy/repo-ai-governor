@@ -3,15 +3,15 @@
 ## Primary Stream
 
 - Status: active
-- Project: `project-003-standards-and-slots`
-- Sprint: `sprint-002-slot-security-and-upgrade-ux`
-- Docs root: `.repo-ai-governor/context/dev/project-003-standards-and-slots`
-- Task records: `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-002-slot-security-and-upgrade-ux/tasks/`
-- Review records: `.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-002-slot-security-and-upgrade-ux/review/`
+- Project: `project-004-agent-adapter-runtime`
+- Sprint: `sprint-001-agent-protocol-and-adapter-sdk`
+- Docs root: `.repo-ai-governor/context/dev/project-004-agent-adapter-runtime`
+- Task records: `.repo-ai-governor/context/dev/project-004-agent-adapter-runtime/sprint-001-agent-protocol-and-adapter-sdk/tasks/`
+- Review records: `.repo-ai-governor/context/dev/project-004-agent-adapter-runtime/sprint-001-agent-protocol-and-adapter-sdk/review/`
 
 ## Active Streams
 
-- `primary`: project=`project-003-standards-and-slots`, sprint=`sprint-002-slot-security-and-upgrade-ux`, docs=`.repo-ai-governor/context/dev/project-003-standards-and-slots`, plan=`.repo-ai-governor/context/dev/project-003-standards-and-slots/plan.md`, tasks=`.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-002-slot-security-and-upgrade-ux/tasks/`, checklist=`.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-002-slot-security-and-upgrade-ux/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-002-slot-security-and-upgrade-ux/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-003-standards-and-slots/sprint-002-slot-security-and-upgrade-ux/review/`, status=`active`
+- `primary`: project=`project-004-agent-adapter-runtime`, sprint=`sprint-001-agent-protocol-and-adapter-sdk`, docs=`.repo-ai-governor/context/dev/project-004-agent-adapter-runtime`, plan=`.repo-ai-governor/context/dev/project-004-agent-adapter-runtime/plan.md`, tasks=`.repo-ai-governor/context/dev/project-004-agent-adapter-runtime/sprint-001-agent-protocol-and-adapter-sdk/tasks/`, checklist=`.repo-ai-governor/context/dev/project-004-agent-adapter-runtime/sprint-001-agent-protocol-and-adapter-sdk/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-004-agent-adapter-runtime/sprint-001-agent-protocol-and-adapter-sdk/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-004-agent-adapter-runtime/sprint-001-agent-protocol-and-adapter-sdk/review/`, status=`active`
 
 ## Update Rules
 
