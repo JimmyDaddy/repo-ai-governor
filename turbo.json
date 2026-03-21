@@ -60,6 +60,11 @@
       "dependsOn": ["//#gate:build"],
       "outputs": []
     },
+    "//#gate:i18n-parity-fallback": {
+      "cache": false,
+      "dependsOn": ["//#gate:build"],
+      "outputs": []
+    },
     "//#gate:test:packages": {
       "cache": false,
       "dependsOn": ["//#gate:build"],
@@ -82,6 +87,7 @@
         "//#gate:normative-loading-manifest",
         "//#gate:task-ledger-sync",
         "//#gate:sprint-plan-status-sync",
+        "//#gate:i18n-parity-fallback",
         "//#gate:test:packages",
         "//#gate:test:integration"
       ],

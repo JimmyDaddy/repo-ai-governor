@@ -45,6 +45,7 @@ function createExecutionReport(overrides: Partial<ExecutionReport> = {}): Execut
         policyOutcome: "confirm",
         riskLevel: "high",
         artifactId: "DA-057",
+        outputLocale: "en-US",
       }),
       createReplayPointer("record-003", "2026-03-21T12:00:03Z", {
         stageId: "stage-002",
@@ -76,6 +77,7 @@ describe("replay-explainer unit", () => {
     expect(explainResult.pointers[1]?.recordId).toBe("record-003");
     expect(explainResult.explainLines[0]).toContain("stage=stage-002");
     expect(explainResult.explainLines[0]).toContain("route=route.core.replay");
+    expect(explainResult.explainLines[0]).toContain("output_locale=en-US");
   });
 
   it("returns no-match explain line when filters resolve nothing", () => {
@@ -157,5 +159,31 @@ describe("replay-explainer unit", () => {
       "record-a",
       "record-b",
     ]);
+  });
+
+  it("filters replay explain by outputLocale for i18n issue localization", () => {
+    const explainer = new ReplayExplainer();
+    const snapshot = explainer.createSnapshot({
+      report: createExecutionReport({
+        replayPointers: [
+          createReplayPointer("record-001", "2026-03-21T12:00:01Z", {
+            outputLocale: "zh-CN",
+          }),
+          createReplayPointer("record-002", "2026-03-21T12:00:02Z", {
+            outputLocale: "en-US",
+          }),
+        ],
+      }),
+    });
+
+    const explainResult = explainer.explain({
+      snapshot,
+      outputLocale: "en-US",
+    });
+
+    expect(explainResult.query.outputLocale).toBe("en-US");
+    expect(explainResult.matchedCount).toBe(1);
+    expect(explainResult.pointers[0]?.recordId).toBe("record-002");
+    expect(explainResult.explainLines[0]).toContain("output_locale=en-US");
   });
 });

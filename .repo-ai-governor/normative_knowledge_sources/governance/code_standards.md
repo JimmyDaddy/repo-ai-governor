@@ -110,6 +110,7 @@ node ./scripts/governance/check-package-dependency-boundary.js --mode warn
 node ./scripts/governance/check-task-ledger-sync.js
 node ./scripts/governance/check-sprint-plan-status-sync.js
 node ./scripts/governance/check-standardized-error-usage.js
+node ./scripts/governance/check-i18n-parity-fallback.js
 node ./scripts/governance/check-artifact-registry-lifecycle.js
 node ./scripts/governance/run-normative-loading-manifest-gate.js
 pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1

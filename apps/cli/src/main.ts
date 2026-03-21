@@ -11,17 +11,33 @@ import {
   WorkspaceResolver,
 } from "@repo-ai-governor/config";
 import { FsCsvMemoryStoreProvider } from "@repo-ai-governor/memory-provider-fs-csv";
-import { SqliteFsMemoryStoreProvider } from "@repo-ai-governor/memory-provider-sqlite-fs";
 import {
   DEFAULT_I18N_RUNTIME_CONFIG,
   DEFAULT_MEMORY_RUNTIME_CONFIG,
+  ErrorOutputEnvironment,
+  GovernorErrorCode,
   I18nRuntime,
   type I18nRuntimeConfig,
   type MemoryRuntimeConfig,
   MemoryStoreEngine,
+  RuntimeError,
+  type StandardizedError,
   standardizeError,
 } from "@repo-ai-governor/shared";
+import { CliOutputPresenter } from "./cli-output-presenter.js";
 import { CLI_SKELETON_COMMAND_DEFINITIONS } from "./constants/cli-command.constant.js";
+import {
+  CLI_OPTIONS_REQUIRING_VALUE,
+  CLI_OUTPUT_MODE_VALUES,
+  CLI_OUTPUT_SCHEMA_VERSION,
+  CLI_VERBOSITY_VALUES,
+  CliNextAction,
+  CliOutputStatus,
+  type CliVerbosity,
+  DEFAULT_CLI_OUTPUT_MODE,
+  DEFAULT_CLI_VERBOSITY,
+  NON_TTY_FALLBACK_OUTPUT_MODE,
+} from "./constants/cli-output.constant.js";
 export { IdeCommandWrapper, standardizeIdeWrapperError } from "./ide-command-wrapper.js";
 export type {
   IdeCommandInvocationEnvelope,
@@ -29,6 +45,12 @@ export type {
   IdeCommandWrapperRequest,
   IdeStandardsInjectionPayload,
   IdeWrapperCommandName,
+} from "./types/index.js";
+import type {
+  CliCommandDiagnostics,
+  CliErrorOutputPayload,
+  CliResolvedOutputContext,
+  CliSuccessOutputPayload,
 } from "./types/index.js";
 
 const DEFAULT_I18N_CONFIG: I18nRuntimeConfig = {
@@ -39,7 +61,7 @@ const DEFAULT_MEMORY_CONFIG: MemoryRuntimeConfig = {
   ...DEFAULT_MEMORY_RUNTIME_CONFIG,
 };
 
-const DEFAULT_IO = {
+const DEFAULT_IO: CliIoAdapters = {
   stdout: (value: string): void => {
     process.stdout.write(value);
   },
@@ -47,130 +69,166 @@ const DEFAULT_IO = {
     process.stderr.write(value);
   },
   cwd: (): string => process.cwd(),
+  isStdoutTty: (): boolean => Boolean(process.stdout.isTTY),
 };
 
 /**
- * Runs the Stage-1 CLI skeleton runtime with shared i18n and config baseline.
+ * Defines IO adapters used by CLI runtime execution.
+ */
+interface CliIoAdapters {
+  stdout: (value: string) => void;
+  stderr: (value: string) => void;
+  cwd: () => string;
+  isStdoutTty?: () => boolean;
+}
+
+/**
+ * Defines one runtime context merged from defaults and repository configuration.
+ */
+interface ResolvedCliRuntimeContext {
+  i18n: I18nRuntimeConfig;
+  memory: MemoryRuntimeConfig;
+  profileId: string | null;
+  configSource: "default" | "file";
+  workspace: ResolvedWorkspace;
+}
+
+/**
+ * Defines resolved memory provider metadata rendered into command diagnostics.
+ */
+interface MemoryStoreComposition {
+  memoryStoreRoot: string;
+  providerName: string;
+}
+
+/**
+ * Defines parsed option state for robust CLI flag handling.
+ */
+interface ReadOptionResult {
+  isPresent: boolean;
+  value: string | undefined;
+}
+
+/**
+ * Defines normalized failure details shared by all runtime catch paths.
+ */
+interface CliFailureResolution {
+  standardizedError: StandardizedError;
+  exitCode: number;
+}
+
+/**
+ * Runs the Stage-6 CLI output-contract baseline with TTY-aware fallback semantics.
  * @param argv Raw process argv from Node runtime.
  * @param io Runtime I/O adapters for stdout/stderr/cwd.
  * @returns CLI exit code where `0` means command handled successfully.
  */
-export async function runCli(
-  argv: string[],
-  io: {
-    stdout: (value: string) => void;
-    stderr: (value: string) => void;
-    cwd: () => string;
-  } = DEFAULT_IO,
-): Promise<number> {
+export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Promise<number> {
   const rawArgs = argv.slice(2);
-  const requestedLocale = readOptionValue(rawArgs, "--locale");
-  const requestedProfileId = readOptionValue(rawArgs, "--profile");
-  const runtimeContext = resolveRuntimeContext(io.cwd(), requestedProfileId);
-  const memoryStoreComposition = composeMemoryStoreProvider(
-    runtimeContext.workspace.workspaceRoot,
-    runtimeContext.memory,
-  );
-
-  const i18nRuntime = new I18nRuntime();
-  const resolvedLocale = await i18nRuntime.initialize(runtimeContext.i18n, requestedLocale);
-  const profileLabel = runtimeContext.profileId ?? i18nRuntime.t("cli.skeleton.noProfile");
-
-  const program = new Command();
-  program.name("repo-ai-governor");
-  program.description(i18nRuntime.t("cli.app.description"));
-  program.option("--locale <locale>", i18nRuntime.t("cli.options.locale"));
-  program.option("--profile <profileId>", i18nRuntime.t("cli.options.profile"));
-  program.showHelpAfterError();
-  program.configureOutput({
-    writeOut: (value) => io.stdout(value),
-    writeErr: (value) => io.stderr(value),
+  const commandName = resolveRequestedCommandName(rawArgs);
+  const outputPresenter = new CliOutputPresenter({
+    stdout: io.stdout,
+    stderr: io.stderr,
   });
-  program.exitOverride();
 
-  for (const commandDefinition of CLI_SKELETON_COMMAND_DEFINITIONS) {
-    program
-      .command(commandDefinition.name)
-      .description(i18nRuntime.t(commandDefinition.descriptionKey))
-      .action(async () => {
-        io.stdout(
-          `${i18nRuntime.t("cli.skeleton.executed", {
-            command: commandDefinition.name,
+  let outputContext = resolveFallbackOutputContext(io);
+  let i18nRuntime: I18nRuntime | undefined;
+
+  try {
+    outputContext = resolveOutputModeContext(rawArgs, io);
+    outputContext = {
+      ...outputContext,
+      verbosity: resolveVerbosityOption(rawArgs),
+    };
+
+    const requestedLocale = readOptionValue(rawArgs, "--locale");
+    const requestedProfileId = readOptionValue(rawArgs, "--profile");
+    const runtimeContext = resolveRuntimeContext(io.cwd(), requestedProfileId);
+    const memoryStoreComposition = await composeMemoryStoreProvider(
+      runtimeContext.workspace.workspaceRoot,
+      runtimeContext.memory,
+    );
+
+    i18nRuntime = new I18nRuntime();
+    const runtimeI18n = i18nRuntime;
+    const resolvedLocale = await runtimeI18n.initialize(runtimeContext.i18n, requestedLocale);
+    const profileLabel = runtimeContext.profileId ?? runtimeI18n.t("cli.skeleton.noProfile");
+
+    const program = new Command();
+    program.name("repo-ai-governor");
+    program.description(runtimeI18n.t("cli.app.description"));
+    program.option("--locale <locale>", runtimeI18n.t("cli.options.locale"));
+    program.option("--profile <profileId>", runtimeI18n.t("cli.options.profile"));
+    program.option("--output <mode>", runtimeI18n.t("cli.options.output"));
+    program.option("--verbosity <level>", runtimeI18n.t("cli.options.verbosity"));
+    program.option("--no-color", runtimeI18n.t("cli.options.noColor"));
+    program.showHelpAfterError(false);
+    program.configureOutput({
+      writeOut: (value) => io.stdout(value),
+      writeErr: () => undefined,
+    });
+    program.exitOverride();
+
+    for (const commandDefinition of CLI_SKELETON_COMMAND_DEFINITIONS) {
+      program
+        .command(commandDefinition.name)
+        .description(runtimeI18n.t(commandDefinition.descriptionKey))
+        .action(async () => {
+          const diagnostics: CliCommandDiagnostics = {
+            configSource: runtimeContext.configSource,
             locale: resolvedLocale,
             profile: profileLabel,
-            source: runtimeContext.configSource,
             workspaceMode: runtimeContext.workspace.mode,
-            workspaceRoot: runtimeContext.workspace.workspaceRoot,
-            workspaceId: runtimeContext.workspace.workspaceId,
             workspaceModeSource: runtimeContext.workspace.modeSource,
+            workspaceId: runtimeContext.workspace.workspaceId,
+            workspaceRoot: runtimeContext.workspace.workspaceRoot,
             memoryStoreEngine: runtimeContext.memory.storeEngine,
             memoryStoreRoot: memoryStoreComposition.memoryStoreRoot,
             memoryStoreProvider: memoryStoreComposition.providerName,
-          })}\n`,
-        );
-      });
-  }
+          };
+          const message = runtimeI18n.t("cli.skeleton.executed", {
+            command: commandDefinition.name,
+          });
 
-  if (rawArgs.length === 0) {
-    program.outputHelp();
-    return 0;
-  }
+          outputPresenter.writeSuccess(
+            buildSuccessOutputPayload(commandDefinition.name, message, outputContext, diagnostics),
+          );
+        });
+    }
 
-  try {
+    if (rawArgs.length === 0) {
+      program.outputHelp();
+      return 0;
+    }
+
     await program.parseAsync(argv, { from: "node" });
     return 0;
   } catch (error) {
-    if (error instanceof CommanderError) {
-      return error.exitCode;
-    }
+    const { standardizedError, exitCode } = resolveCliFailure(error);
+    const message = i18nRuntime
+      ? i18nRuntime.t("cli.errors.unexpected", {
+          code: standardizedError.code,
+          message: standardizedError.message,
+        })
+      : `CLI execution failed [${standardizedError.code}]: ${standardizedError.message}`;
 
-    const standardizedError = standardizeError(error);
-    io.stderr(
-      `${i18nRuntime.t("cli.errors.unexpected", {
-        code: standardizedError.code,
-        message: standardizedError.message,
-      })}\n`,
+    outputPresenter.writeError(
+      buildErrorOutputPayload(commandName, message, standardizedError, outputContext),
     );
-    return 1;
+    return exitCode;
   }
-}
-
-/**
- * Resolves an option value from raw argv segments.
- * @param args CLI args excluding node and binary.
- * @param flag Long option flag (for example `--locale`).
- * @returns Option value when present; otherwise undefined.
- */
-function readOptionValue(args: string[], flag: string): string | undefined {
-  const exactFlagIndex = args.indexOf(flag);
-  if (exactFlagIndex >= 0) {
-    return args[exactFlagIndex + 1];
-  }
-
-  const pairArgument = args.find((item) => item.startsWith(`${flag}=`));
-  if (!pairArgument) {
-    return undefined;
-  }
-
-  return pairArgument.slice(flag.length + 1);
 }
 
 /**
  * Resolves runtime config from repository file when available, otherwise uses defaults.
  * @param currentWorkingDirectory Execution working directory.
  * @param requestedProfileId Optional requested profile id.
- * @returns Effective i18n context plus selected profile and source metadata.
+ * @returns Effective runtime context plus selected profile and source metadata.
  */
 function resolveRuntimeContext(
   currentWorkingDirectory: string,
   requestedProfileId?: string,
-): {
-  i18n: I18nRuntimeConfig;
-  memory: MemoryRuntimeConfig;
-  profileId: string | null;
-  configSource: "default" | "file";
-  workspace: ResolvedWorkspace;
-} {
+): ResolvedCliRuntimeContext {
   const configLoader = new ConfigLoader();
   const profileResolver = new ProfileResolver();
   const workspaceResolver = new WorkspaceResolver();
@@ -230,22 +288,29 @@ function resolveMemoryRuntimeConfig(
  * @param memoryConfig Memory runtime config.
  * @returns Provider composition metadata for runtime diagnostics.
  */
-function composeMemoryStoreProvider(
+async function composeMemoryStoreProvider(
   workspaceRoot: string,
   memoryConfig: MemoryRuntimeConfig,
-): {
-  memoryStoreRoot: string;
-  providerName: string;
-} {
+): Promise<MemoryStoreComposition> {
   const memoryStoreRoot = resolveMemoryStoreRoot(workspaceRoot, memoryConfig.storeRoot);
-  const provider =
-    memoryConfig.storeEngine === MemoryStoreEngine.SQLITE_FS
-      ? new SqliteFsMemoryStoreProvider({
-          rootDirectory: memoryStoreRoot,
-        })
-      : new FsCsvMemoryStoreProvider({
-          rootDirectory: memoryStoreRoot,
-        });
+  if (memoryConfig.storeEngine === MemoryStoreEngine.SQLITE_FS) {
+    // Why: lazy-loading avoids node:sqlite side effects when default fs-csv engine is used.
+    const { SqliteFsMemoryStoreProvider } = await import(
+      "@repo-ai-governor/memory-provider-sqlite-fs"
+    );
+    const provider = new SqliteFsMemoryStoreProvider({
+      rootDirectory: memoryStoreRoot,
+    });
+
+    return {
+      memoryStoreRoot,
+      providerName: provider.constructor.name,
+    };
+  }
+
+  const provider = new FsCsvMemoryStoreProvider({
+    rootDirectory: memoryStoreRoot,
+  });
 
   return {
     memoryStoreRoot,
@@ -265,4 +330,329 @@ function resolveMemoryStoreRoot(workspaceRoot: string, storeRoot: string): strin
   }
 
   return resolve(workspaceRoot, storeRoot);
+}
+
+/**
+ * Resolves fallback output context when option parsing has not completed yet.
+ * @param io Runtime IO adapters.
+ * @returns Safe fallback output context.
+ */
+function resolveFallbackOutputContext(io: CliIoAdapters): CliResolvedOutputContext {
+  const isTty = resolveIsStdoutTty(io);
+  const outputMode = isTty ? DEFAULT_CLI_OUTPUT_MODE : NON_TTY_FALLBACK_OUTPUT_MODE;
+
+  return {
+    outputMode,
+    verbosity: DEFAULT_CLI_VERBOSITY,
+    noColor: false,
+    isTty,
+    colorEnabled: outputMode === ErrorOutputEnvironment.PRETTY && isTty,
+    downgradedFrom: null,
+  };
+}
+
+/**
+ * Resolves output mode/no-color first so JSON error contract is preserved.
+ * @param args CLI args excluding node and binary.
+ * @param io Runtime IO adapters.
+ * @returns Output context with mode fallback and default verbosity.
+ */
+function resolveOutputModeContext(args: string[], io: CliIoAdapters): CliResolvedOutputContext {
+  const requestedOutputMode = resolveOutputModeOption(args);
+  const isTty = resolveIsStdoutTty(io);
+  const downgradedFrom =
+    requestedOutputMode === ErrorOutputEnvironment.PRETTY && !isTty
+      ? ErrorOutputEnvironment.PRETTY
+      : null;
+  const outputMode = downgradedFrom ? NON_TTY_FALLBACK_OUTPUT_MODE : requestedOutputMode;
+  const noColor = hasFlag(args, "--no-color");
+
+  return {
+    outputMode,
+    verbosity: DEFAULT_CLI_VERBOSITY,
+    noColor,
+    isTty,
+    colorEnabled: !noColor && outputMode === ErrorOutputEnvironment.PRETTY && isTty,
+    downgradedFrom,
+  };
+}
+
+/**
+ * Resolves `--output` option and validates allowed values.
+ * @param args CLI args excluding node and binary.
+ * @returns Validated output mode.
+ */
+function resolveOutputModeOption(args: string[]): ErrorOutputEnvironment {
+  const option = readOptionInput(args, "--output");
+  if (!option.isPresent) {
+    return DEFAULT_CLI_OUTPUT_MODE;
+  }
+
+  if (!option.value) {
+    throw new RuntimeError(
+      GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+      "Option --output requires one value: pretty|plain|json.",
+      { option: "--output" },
+    );
+  }
+
+  if (!CLI_OUTPUT_MODE_VALUES.has(option.value)) {
+    throw new RuntimeError(
+      GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+      `Option --output must be one of pretty|plain|json; received '${option.value}'.`,
+      { option: "--output", value: option.value },
+    );
+  }
+
+  return option.value as ErrorOutputEnvironment;
+}
+
+/**
+ * Resolves `--verbosity` option and validates allowed values.
+ * @param args CLI args excluding node and binary.
+ * @returns Validated verbosity value.
+ */
+function resolveVerbosityOption(args: string[]): CliVerbosity {
+  const option = readOptionInput(args, "--verbosity");
+  if (!option.isPresent) {
+    return DEFAULT_CLI_VERBOSITY;
+  }
+
+  if (!option.value) {
+    throw new RuntimeError(
+      GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+      "Option --verbosity requires one value: quiet|normal|verbose.",
+      { option: "--verbosity" },
+    );
+  }
+
+  if (!CLI_VERBOSITY_VALUES.has(option.value)) {
+    throw new RuntimeError(
+      GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+      `Option --verbosity must be one of quiet|normal|verbose; received '${option.value}'.`,
+      { option: "--verbosity", value: option.value },
+    );
+  }
+
+  return option.value as CliVerbosity;
+}
+
+/**
+ * Builds stable success payload for JSON and text renderers.
+ * @param command Executed command name.
+ * @param message Human-readable command summary.
+ * @param outputContext Resolved output runtime context.
+ * @param diagnostics Runtime diagnostics snapshot.
+ * @returns Stable success payload.
+ */
+function buildSuccessOutputPayload(
+  command: string,
+  message: string,
+  outputContext: CliResolvedOutputContext,
+  diagnostics: CliCommandDiagnostics,
+): CliSuccessOutputPayload {
+  return {
+    schema_version: CLI_OUTPUT_SCHEMA_VERSION,
+    status: CliOutputStatus.SUCCESS,
+    output_mode: outputContext.outputMode,
+    verbosity: outputContext.verbosity,
+    command,
+    message,
+    runtime: {
+      is_tty: outputContext.isTty,
+      color_enabled: outputContext.colorEnabled,
+      downgraded_from: outputContext.downgradedFrom,
+    },
+    diagnostics,
+  };
+}
+
+/**
+ * Builds stable error payload with structured hint/next_action fields.
+ * @param command Requested command name.
+ * @param message Human-readable error summary.
+ * @param standardizedError Standardized error object.
+ * @param outputContext Resolved output runtime context.
+ * @returns Stable error payload.
+ */
+function buildErrorOutputPayload(
+  command: string,
+  message: string,
+  standardizedError: StandardizedError,
+  outputContext: CliResolvedOutputContext,
+): CliErrorOutputPayload {
+  const guidance = resolveErrorGuidance(standardizedError.code);
+
+  return {
+    schema_version: CLI_OUTPUT_SCHEMA_VERSION,
+    status: CliOutputStatus.ERROR,
+    output_mode: outputContext.outputMode,
+    verbosity: outputContext.verbosity,
+    command,
+    message,
+    error_code: standardizedError.code,
+    hint: guidance.hint,
+    next_action: guidance.nextAction,
+    runtime: {
+      is_tty: outputContext.isTty,
+      color_enabled: outputContext.colorEnabled,
+      downgraded_from: outputContext.downgradedFrom,
+    },
+  };
+}
+
+/**
+ * Resolves hint and next action from standardized error code.
+ * @param code Standardized error code.
+ * @returns User/action guidance tuple.
+ */
+function resolveErrorGuidance(code: GovernorErrorCode): {
+  hint: string;
+  nextAction: CliNextAction;
+} {
+  if (code === GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID) {
+    return {
+      hint: "Command name or option values are invalid.",
+      nextAction: CliNextAction.CHECK_COMMAND_USAGE,
+    };
+  }
+
+  if (code.startsWith("CONFIG_")) {
+    return {
+      hint: "governor.yaml might be invalid or incompatible.",
+      nextAction: CliNextAction.INSPECT_GOVERNOR_CONFIG,
+    };
+  }
+
+  if (code.startsWith("I18N_")) {
+    return {
+      hint: "Locale setup is invalid or unsupported by current runtime.",
+      nextAction: CliNextAction.RETRY_WITH_VERBOSE,
+    };
+  }
+
+  return {
+    hint: "Unexpected runtime failure occurred.",
+    nextAction: CliNextAction.REPORT_ISSUE,
+  };
+}
+
+/**
+ * Resolves standardized error and exit code from any throw path.
+ * @param error Unknown thrown value.
+ * @returns Standardized failure resolution.
+ */
+function resolveCliFailure(error: unknown): CliFailureResolution {
+  if (error instanceof CommanderError) {
+    return {
+      standardizedError: {
+        code: GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+        message: error.message,
+      },
+      exitCode: error.exitCode,
+    };
+  }
+
+  return {
+    standardizedError: standardizeError(error),
+    exitCode: 1,
+  };
+}
+
+/**
+ * Resolves option value when present and syntactically valid.
+ * @param args CLI args excluding node and binary.
+ * @param flag Long option flag (for example `--locale`).
+ * @returns Option value when present; otherwise undefined.
+ */
+function readOptionValue(args: string[], flag: string): string | undefined {
+  return readOptionInput(args, flag).value;
+}
+
+/**
+ * Resolves option presence and value across `--flag value` and `--flag=value`.
+ * @param args CLI args excluding node and binary.
+ * @param flag Long option flag.
+ * @returns Parsed option presence and optional value.
+ */
+function readOptionInput(args: string[], flag: string): ReadOptionResult {
+  const exactFlagIndex = args.indexOf(flag);
+  if (exactFlagIndex >= 0) {
+    const candidateValue = args[exactFlagIndex + 1];
+    if (!candidateValue || candidateValue.startsWith("-")) {
+      return { isPresent: true, value: undefined };
+    }
+
+    return { isPresent: true, value: candidateValue };
+  }
+
+  const pairArgument = args.find((item) => item.startsWith(`${flag}=`));
+  if (!pairArgument) {
+    return { isPresent: false, value: undefined };
+  }
+
+  const value = pairArgument.slice(flag.length + 1);
+  return {
+    isPresent: true,
+    value: value.length > 0 ? value : undefined,
+  };
+}
+
+/**
+ * Checks whether one boolean flag appears in raw args.
+ * @param args CLI args excluding node and binary.
+ * @param flag Long option flag.
+ * @returns True when flag is present.
+ */
+function hasFlag(args: string[], flag: string): boolean {
+  return args.includes(flag);
+}
+
+/**
+ * Resolves requested command token from raw args for fallback error payloads.
+ * @param args CLI args excluding node and binary.
+ * @returns Requested command token, or `help` when no command token exists.
+ */
+function resolveRequestedCommandName(args: string[]): string {
+  for (let index = 0; index < args.length; index += 1) {
+    const token = args[index];
+    if (!token) {
+      continue;
+    }
+
+    if (token === "--") {
+      return args[index + 1] ?? "help";
+    }
+
+    if (token.startsWith("--")) {
+      if (!token.includes("=") && CLI_OPTIONS_REQUIRING_VALUE.has(token)) {
+        const nextToken = args[index + 1];
+        if (nextToken && !nextToken.startsWith("-")) {
+          index += 1;
+        }
+      }
+      continue;
+    }
+
+    if (token.startsWith("-")) {
+      continue;
+    }
+
+    return token;
+  }
+
+  return "help";
+}
+
+/**
+ * Resolves terminal TTY state from runtime adapters with safe defaults.
+ * @param io Runtime IO adapters.
+ * @returns Whether stdout is a TTY terminal.
+ */
+function resolveIsStdoutTty(io: CliIoAdapters): boolean {
+  if (!io.isStdoutTty) {
+    return false;
+  }
+
+  return io.isStdoutTty();
 }

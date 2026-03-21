@@ -1,8 +1,8 @@
 # TK-051 i18n parity/fallback 门禁与 output_locale 回放定位基线
 
-- Status: planned
-- Date: 2026-03-21
-- Owner: TBD
+- Status: completed
+- Date: 2026-03-22
+- Owner: AI-Agent
 - Priority: P0
 - Project: `project-005-observability-and-artifacts`
 - Sprint: `sprint-002-dependency-runtime-and-output-governance`
@@ -45,3 +45,20 @@
 ## 7. 执行记录
 
 1. 2026-03-21：任务创建，状态初始化为 `planned`。
+2. 2026-03-22：任务启动，状态切换为 `in_progress`，开始落地 i18n parity/fallback 门禁与 `output_locale` 回放定位链路。
+3. 2026-03-22：完成 `check-i18n-parity-fallback` 门禁脚本与 gate 接线，并补齐脚本集成测试覆盖。
+4. 2026-03-22：完成 replay explain `outputLocale` 过滤与 `output_locale` 输出增强，并补齐 reporting/core-session 单测。
+5. 2026-03-22：完成 `pnpm run typecheck`、`pnpm run test:packages -- packages/core-session/test/audit-recorder.unit.test.ts packages/reporting/test/report-builder.unit.test.ts packages/reporting/test/replay-explainer.unit.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm run test:integration -- test/i18n-parity-fallback-gate.integration.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm run check` 验证并切换任务为 `completed`。
+
+## 8. 产出
+
+1. `DA-063` `.repo-ai-governor/context/dev/project-005-observability-and-artifacts/sprint-002-dependency-runtime-and-output-governance/tasks/TK-051-i18n-parity-fallback-gate-and-output-locale-replay-baseline.md`
+2. `scripts/governance/check-i18n-parity-fallback.js`
+3. `test/i18n-parity-fallback-gate.integration.test.ts`
+4. `packages/reporting/src/replay-explainer.ts`
+5. `packages/reporting/src/types/interfaces/reporting.interface.ts`
+6. `packages/reporting/test/replay-explainer.unit.test.ts`
+7. `packages/reporting/test/report-builder.unit.test.ts`
+8. `packages/core-session/test/audit-recorder.unit.test.ts`
+9. `package.json`
+10. `turbo.json`

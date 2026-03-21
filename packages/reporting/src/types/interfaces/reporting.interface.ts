@@ -114,6 +114,7 @@ export interface ExplainReplayOptions {
   stageId?: string;
   routeKey?: string;
   recordId?: string;
+  outputLocale?: string;
   limit?: number;
 }
 
@@ -124,6 +125,7 @@ export interface ReplayExplainQuery {
   stageId?: string;
   routeKey?: string;
   recordId?: string;
+  outputLocale?: string;
   limit: number;
 }
 

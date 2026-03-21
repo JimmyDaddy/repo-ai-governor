@@ -111,13 +111,19 @@ describe("Memory store config and CLI composition smoke", () => {
     const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(repositoryRoot);
 
     try {
-      const exitCode = await runCli(["node", "repo-ai-governor", "--locale", "en-US", "init"], io);
+      const exitCode = await runCli(
+        ["node", "repo-ai-governor", "--locale", "en-US", "--output", "json", "init"],
+        io,
+      );
+      const payload = JSON.parse(stdoutBuffer.join(""));
 
       expect(exitCode).toBe(0);
       expect(stderrBuffer.join("")).toBe("");
-      expect(stdoutBuffer.join("")).toContain("memoryStoreEngine=sqlite_fs");
-      expect(stdoutBuffer.join("")).toContain("memoryStoreProvider=SqliteFsMemoryStoreProvider");
-      expect(stdoutBuffer.join("")).toContain("memoryStoreRoot=");
+      expect(payload.status).toBe("success");
+      expect(payload.output_mode).toBe("json");
+      expect(payload.diagnostics.memoryStoreEngine).toBe("sqlite_fs");
+      expect(payload.diagnostics.memoryStoreProvider).toBe("SqliteFsMemoryStoreProvider");
+      expect(payload.diagnostics.memoryStoreRoot).toContain("context/memory/sqlite");
     } finally {
       await rm(repositoryRoot, { recursive: true, force: true });
     }

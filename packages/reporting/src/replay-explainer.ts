@@ -99,6 +99,7 @@ export class ReplayExplainer {
     const stageId = this.readOptionalString(options.stageId, "stageId");
     const routeKey = this.readOptionalString(options.routeKey, "routeKey");
     const recordId = this.readOptionalString(options.recordId, "recordId");
+    const outputLocale = this.readOptionalString(options.outputLocale, "outputLocale");
     const limit = this.readOptionalLimit(options.limit, "limit");
 
     if (recordId && !snapshot.pointerByRecordId[recordId]) {
@@ -111,7 +112,14 @@ export class ReplayExplainer {
       );
     }
 
-    const matchedPointers = this.filterPointers(snapshot, stageId, routeKey, recordId, limit);
+    const matchedPointers = this.filterPointers(
+      snapshot,
+      stageId,
+      routeKey,
+      recordId,
+      outputLocale,
+      limit,
+    );
     const explainLines =
       matchedPointers.length > 0
         ? matchedPointers.map((pointer) => this.renderExplainLine(pointer))
@@ -123,6 +131,7 @@ export class ReplayExplainer {
         ...(stageId ? { stageId } : {}),
         ...(routeKey ? { routeKey } : {}),
         ...(recordId ? { recordId } : {}),
+        ...(outputLocale ? { outputLocale } : {}),
         limit,
       },
       matchedCount: matchedPointers.length,
@@ -137,6 +146,7 @@ export class ReplayExplainer {
    * @param stageId Optional stage id.
    * @param routeKey Optional route key.
    * @param recordId Optional record id.
+   * @param outputLocale Optional output locale.
    * @param limit Result-size ceiling.
    * @returns Matched pointer list.
    */
@@ -145,6 +155,7 @@ export class ReplayExplainer {
     stageId: string | undefined,
     routeKey: string | undefined,
     recordId: string | undefined,
+    outputLocale: string | undefined,
     limit: number,
   ): ReplayPointer[] {
     const allPointers = Object.values(snapshot.pointerByRecordId);
@@ -159,6 +170,10 @@ export class ReplayExplainer {
         }
 
         if (routeKey && pointer.routeKey !== routeKey) {
+          return false;
+        }
+
+        if (outputLocale && pointer.outputLocale !== outputLocale) {
           return false;
         }
 
@@ -204,6 +219,10 @@ export class ReplayExplainer {
 
     if (pointer.artifactId) {
       segments.push(`artifact=${pointer.artifactId}`);
+    }
+
+    if (pointer.outputLocale) {
+      segments.push(`output_locale=${pointer.outputLocale}`);
     }
 
     return segments.join(" ");
@@ -260,12 +279,42 @@ export class ReplayExplainer {
     }
 
     return {
-      ...pointer,
       recordId: this.readRequiredString(pointer.recordId, "pointer.recordId"),
       recordedAt: this.readRequiredString(pointer.recordedAt, "pointer.recordedAt"),
       stageId: this.readRequiredString(pointer.stageId, "pointer.stageId"),
       routeKey: this.readRequiredString(pointer.routeKey, "pointer.routeKey"),
+      status: pointer.status,
       policyOutcome: this.readRequiredString(pointer.policyOutcome, "pointer.policyOutcome"),
+      ...(this.readOptionalString(pointer.riskLevel, "pointer.riskLevel")
+        ? { riskLevel: this.readOptionalString(pointer.riskLevel, "pointer.riskLevel") }
+        : {}),
+      ...(this.readOptionalString(pointer.artifactId, "pointer.artifactId")
+        ? { artifactId: this.readOptionalString(pointer.artifactId, "pointer.artifactId") }
+        : {}),
+      ...(this.readOptionalString(
+        pointer.dependencyResolutionStatus,
+        "pointer.dependencyResolutionStatus",
+      )
+        ? {
+            dependencyResolutionStatus: this.readOptionalString(
+              pointer.dependencyResolutionStatus,
+              "pointer.dependencyResolutionStatus",
+            ) as ReplayPointer["dependencyResolutionStatus"],
+          }
+        : {}),
+      ...(this.readOptionalString(pointer.outputMode, "pointer.outputMode")
+        ? {
+            outputMode: this.readOptionalString(
+              pointer.outputMode,
+              "pointer.outputMode",
+            ) as ReplayPointer["outputMode"],
+          }
+        : {}),
+      ...(this.readOptionalString(pointer.outputLocale, "pointer.outputLocale")
+        ? {
+            outputLocale: this.readOptionalString(pointer.outputLocale, "pointer.outputLocale"),
+          }
+        : {}),
     };
   }
 

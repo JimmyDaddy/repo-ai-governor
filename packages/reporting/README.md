@@ -19,5 +19,5 @@
 ## Notes
 
 1. 报告输入默认消费 `core-session` 的 `AuditRecorder.listEvents` 契约，避免重复定义审计读取路径。
-2. 回放索引按 `recordId/stageId/routeKey` 三个维度建立，便于后续 CLI 与审计导出链路复用。
+2. 回放索引按 `recordId/stageId/routeKey` 三个维度建立，并可通过 `outputLocale` 过滤定位多语言输出问题。
 3. explain 输出保持纯文本稳定结构，后续可被 `pretty/plain/json` 输出契约按模式渲染。

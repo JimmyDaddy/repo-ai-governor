@@ -1,6 +1,6 @@
-# Code Review: TK-049 sprint-001 出口验收与 sprint-002 输入约束
+# verified_review_tk-049-sprint-001-exit-acceptance-and-sprint-002-input-constraints
 
-- Status: review_pending
+- Status: verified
 - Date: 2026-03-21
 - Reviewer: AI-Agent
 - Task: `TK-049`
@@ -43,3 +43,8 @@
 3. `node ./scripts/governance/check-sprint-plan-status-sync.js`（通过）
 4. `node ./scripts/governance/check-artifact-registry-lifecycle.js`（通过）
 5. `pnpm run check`（通过）
+
+## 5. Re-Verification
+
+1. 2026-03-22：复核确认 `TK-049` 的任务卡、checklist、tasks.csv、artifact registry 仍保持一致，`DA-060/DA-061` 可被 sprint-002 下游任务检索消费。
+2. 2026-03-22：补齐 CR 生命周期状态，文件由 `review_` 迁移为 `verified_review_`，消除“任务已完成但评审未闭环”的状态歧义。

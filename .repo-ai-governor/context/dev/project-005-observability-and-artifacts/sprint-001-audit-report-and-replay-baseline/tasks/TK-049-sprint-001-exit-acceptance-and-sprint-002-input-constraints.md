@@ -1,7 +1,7 @@
 # TK-049 sprint-001 出口验收与 sprint-002 输入约束
 
 - Status: completed
-- Date: 2026-03-21
+- Date: 2026-03-22
 - Owner: AI-Agent
 - Priority: P0
 - Project: `project-005-observability-and-artifacts`
@@ -71,6 +71,7 @@
 2. 2026-03-21：任务启动，状态切换为 `in_progress`，开始汇总 TK-046/TK-047/TK-048 验收证据并整理 sprint-002 输入约束草案。
 3. 2026-03-21：产出 `DA-061` 输入约束清单，并完成 `DA-060/DA-061` 在 artifact registry 与索引台账的登记。
 4. 2026-03-21：完成门禁复核与台账同步，任务状态切换为 `completed`。
+5. 2026-03-22：完成 CR 生命周期补齐，`review_tk-049-...` 复核后迁移为 `verified_review_tk-049-...`，关闭评审待验证状态。
 
 ## 9. 产出
 
@@ -79,4 +80,4 @@
 3. `.repo-ai-governor/context/artifact-registry/artifacts.csv`
 4. `.repo-ai-governor/context/dev/dependency-artifact-registry.md`
 5. `.repo-ai-governor/context/dev/index.md`
-6. `.repo-ai-governor/context/dev/project-005-observability-and-artifacts/sprint-001-audit-report-and-replay-baseline/review/review_tk-049-sprint-001-exit-acceptance-and-sprint-002-input-constraints.md`
+6. `.repo-ai-governor/context/dev/project-005-observability-and-artifacts/sprint-001-audit-report-and-replay-baseline/review/verified_review_tk-049-sprint-001-exit-acceptance-and-sprint-002-input-constraints.md`

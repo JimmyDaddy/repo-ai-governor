@@ -121,6 +121,7 @@ describe("audit-recorder unit", () => {
     await recorder.recordEvent({
       event: createAuditEventRecord({
         stageId: "stage-audit-002",
+        outputLocale: "en-US",
       }),
       recordId: "audit-record-002",
       recordedAt: "2026-03-21T10:00:06Z",
@@ -139,6 +140,7 @@ describe("audit-recorder unit", () => {
     expect(executionRecords[1]?.recordId).toBe("audit-record-002");
     expect(stageRecords).toHaveLength(1);
     expect(stageRecords[0]?.event.stageId).toBe("stage-audit-002");
+    expect(stageRecords[0]?.event.outputLocale).toBe("en-US");
   });
 
   it("rejects event payload when RFC3339 seconds timestamp is invalid", async () => {

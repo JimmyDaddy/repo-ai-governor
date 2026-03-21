@@ -6,6 +6,9 @@ export const ZH_CN_TRANSLATIONS = {
     options: {
       locale: "指定人类可读输出的语言。",
       profile: "执行命令前应用的配置 profile 标识。",
+      output: "指定输出模式：pretty|plain|json。",
+      verbosity: "指定输出详细级别：quiet|normal|verbose。",
+      noColor: "在 pretty 模式下禁用 ANSI 颜色。",
     },
     commands: {
       init: { description: "初始化治理工作区基线。" },
@@ -19,8 +22,7 @@ export const ZH_CN_TRANSLATIONS = {
     },
     skeleton: {
       noProfile: "未设置",
-      executed:
-        "命令 '{{command}}' skeleton 已执行。locale={{locale}}，profile={{profile}}，configSource={{source}}，workspaceMode={{workspaceMode}}，workspaceModeSource={{workspaceModeSource}}，workspaceId={{workspaceId}}，workspaceRoot={{workspaceRoot}}，memoryStoreEngine={{memoryStoreEngine}}，memoryStoreRoot={{memoryStoreRoot}}，memoryStoreProvider={{memoryStoreProvider}}。",
+      executed: "命令 '{{command}}' skeleton 已执行。",
     },
     errors: {
       unexpected: "CLI 执行失败 [{{code}}]：{{message}}",

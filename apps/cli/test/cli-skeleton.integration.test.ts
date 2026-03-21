@@ -40,7 +40,8 @@ describe("CLI skeleton integration", () => {
     expect(exitCode).toBe(0);
     expect(stderrBuffer.join("")).toBe("");
     expect(stdoutBuffer.join("")).toContain("Command 'init' skeleton executed");
-    expect(stdoutBuffer.join("")).toContain("workspaceMode=");
+    expect(stdoutBuffer.join("")).toContain("outputMode=plain");
+    expect(stdoutBuffer.join("")).toContain("verbosity=normal");
   });
 
   it("shows help with all Stage-1 commands", async () => {

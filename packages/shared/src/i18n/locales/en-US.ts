@@ -6,6 +6,9 @@ export const EN_US_TRANSLATIONS = {
     options: {
       locale: "Locale for human-readable output.",
       profile: "Config profile id applied before command execution.",
+      output: "Output mode: pretty|plain|json.",
+      verbosity: "Output verbosity: quiet|normal|verbose.",
+      noColor: "Disable ANSI color decorations in pretty mode.",
     },
     commands: {
       init: { description: "Initialize governor workspace baseline." },
@@ -19,8 +22,7 @@ export const EN_US_TRANSLATIONS = {
     },
     skeleton: {
       noProfile: "none",
-      executed:
-        "Command '{{command}}' skeleton executed. locale={{locale}}, profile={{profile}}, configSource={{source}}, workspaceMode={{workspaceMode}}, workspaceModeSource={{workspaceModeSource}}, workspaceId={{workspaceId}}, workspaceRoot={{workspaceRoot}}, memoryStoreEngine={{memoryStoreEngine}}, memoryStoreRoot={{memoryStoreRoot}}, memoryStoreProvider={{memoryStoreProvider}}.",
+      executed: "Command '{{command}}' skeleton executed.",
     },
     errors: {
       unexpected: "CLI execution failed [{{code}}]: {{message}}",

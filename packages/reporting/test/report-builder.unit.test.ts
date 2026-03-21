@@ -76,6 +76,7 @@ describe("report-builder unit", () => {
         requiredAction: "human-review",
         timeoutIndicator: true,
         artifactId: "DA-057",
+        outputLocale: "en-US",
       }),
       createPersistedRecord("record-003", "2026-03-21T10:00:15Z", {
         stageId: "stage-002",
@@ -103,6 +104,7 @@ describe("report-builder unit", () => {
     expect(report.failureSummary.timeoutRecordIds).toEqual(["record-002"]);
     expect(report.riskSummary.riskLevels).toEqual(["critical", "high", "low"]);
     expect(report.replayPointers[1]?.artifactId).toBe("DA-057");
+    expect(report.replayPointers[1]?.outputLocale).toBe("en-US");
     expect(report.records).toHaveLength(3);
   });
 

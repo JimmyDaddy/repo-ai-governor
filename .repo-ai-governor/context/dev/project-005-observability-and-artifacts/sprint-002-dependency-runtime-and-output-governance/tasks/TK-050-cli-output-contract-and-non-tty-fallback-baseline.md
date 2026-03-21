@@ -1,8 +1,8 @@
 # TK-050 CLI 输出契约与 non-TTY 自动降级基线
 
-- Status: planned
-- Date: 2026-03-21
-- Owner: TBD
+- Status: completed
+- Date: 2026-03-22
+- Owner: AI-Agent
 - Priority: P0
 - Project: `project-005-observability-and-artifacts`
 - Sprint: `sprint-002-dependency-runtime-and-output-governance`
@@ -43,3 +43,17 @@
 ## 7. 执行记录
 
 1. 2026-03-21：任务创建，状态初始化为 `planned`。
+2. 2026-03-22：任务启动，状态切换为 `in_progress`，开始落地 CLI `pretty/plain/json` 契约、`--output/--verbosity/--no-color` 与 non-TTY 自动降级。
+3. 2026-03-22：完成 `apps/cli` 输出契约实现（`CliOutputPresenter`、结构化 success/error payload、`CommanderError` 标准化输出）并补齐 `cli-output-contract.integration` 回归测试。
+4. 2026-03-22：完成 `pnpm run typecheck`、`pnpm run test:packages -- apps/cli/test/cli-skeleton.integration.test.ts apps/cli/test/cli-output-contract.integration.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm run check` 验证，任务切换为 `completed`。
+
+## 8. 产出
+
+1. `DA-062` `.repo-ai-governor/context/dev/project-005-observability-and-artifacts/sprint-002-dependency-runtime-and-output-governance/tasks/TK-050-cli-output-contract-and-non-tty-fallback-baseline.md`
+2. `apps/cli/src/main.ts`
+3. `apps/cli/src/cli-output-presenter.ts`
+4. `apps/cli/src/constants/cli-output.constant.ts`
+5. `apps/cli/src/types/interfaces/cli-output.interface.ts`
+6. `apps/cli/test/cli-output-contract.integration.test.ts`
+7. `packages/shared/src/i18n/locales/en-US.ts`
+8. `packages/shared/src/i18n/locales/zh-cn.ts`

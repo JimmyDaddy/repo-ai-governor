@@ -12,3 +12,4 @@
 - [x] TK-049 sprint-001 出口验收与 sprint-002 输入约束
   - 2026-03-21：任务启动，状态切换为 `in_progress`，开始汇总 TK-046/TK-047/TK-048 验收证据并整理 sprint-002 输入约束草案。
   - 2026-03-21：完成 `DA-060/DA-061` 产出与 artifact registry/index 回链同步，状态切换为 `completed`。
+  - 2026-03-22：完成 `review_tk-049` 复核并迁移为 `verified_review_tk-049`，补齐 CR 生命周期闭环。

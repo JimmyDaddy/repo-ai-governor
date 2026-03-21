@@ -1,7 +1,12 @@
 # checklist
 
-- [ ] TK-050 CLI 输出契约与 non-TTY 自动降级基线
-- [ ] TK-051 i18n parity/fallback 门禁与 output_locale 回放定位基线
+- [x] TK-050 CLI 输出契约与 non-TTY 自动降级基线
+  - 2026-03-21：任务创建，状态初始化为 `planned`。
+  - 2026-03-22：任务启动，状态切换为 `in_progress`，开始实现 `pretty/plain/json` 契约、`--output/--verbosity/--no-color` 与 non-TTY 自动降级。
+  - 2026-03-22：完成 `CliOutputPresenter`、结构化错误字段（`error_code/hint/next_action`）与 `apps/cli` 回归测试补齐，并通过 `pnpm run typecheck`、`pnpm run test:packages -- apps/cli/test/cli-skeleton.integration.test.ts apps/cli/test/cli-output-contract.integration.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm run check`，状态切换为 `completed`。
+- [x] TK-051 i18n parity/fallback 门禁与 output_locale 回放定位基线
+  - 2026-03-22：任务启动，状态切换为 `in_progress`，开始实现 i18n parity/fallback 门禁脚本并补齐 `output_locale` 回放定位能力。
+  - 2026-03-22：完成 i18n parity/fallback 门禁脚本、gate 接线、`outputLocale` 回放过滤与测试补齐，并通过 `pnpm run typecheck`、定向 `test:packages`、`test:integration` 与 `pnpm run check`，状态切换为 `completed`。
 - [ ] TK-052 审计隐私治理（保留/脱敏/导出删除）基线
 - [ ] TK-053 project-005 出口验收与 project-006 输入约束
 - [x] TK-054 Artifact Registry 单一事实源与人类视图收敛

@@ -36,9 +36,9 @@
 2. 主执行流的任务分解必须更新上下文文件中声明的执行流专属 `plan.md`、`tasks/checklist.md`、`tasks/tasks.csv` 和 `tasks/TK-xxx.md` 路径。
 3. 代码评审输出必须写入上下文文件中声明的执行流专属 `review/` 目录，并使用有意义的状态前缀文件名。
 4. 默认 CR 生命周期：
-   - `review_<slug>.md`：评审已生成，待验证
-   - `verified_review_<slug>.md`：验证已完成
-   - `resolved_review_<slug>.md`：已接受的发现已解决
+   - `code_review_<slug>.md`：评审已生成，待验证
+   - `verified_code_review_<slug>.md`：验证已完成
+   - `resolved_code_review_<slug>.md`：已接受的发现已解决
 5. 评审复查必须将结果追加到同一 CR 文件中，然后将文件重命名为下一状态。
 6. 迭代执行进度必须维护在主执行流的检查清单中，每个任务条目应追加执行记录。
 7. 每个 `project-xxx` 在收尾为 `completed` 前，必须产出项目级完成态审计摘要（推荐命名 `project-xxx-completion-audit-summary.md`），并在项目 `plan.md` 中新增“里程碑记录”入口回链该文档。
@@ -50,7 +50,7 @@
 3. 任务文件格式：`TK-xxx.md`
 4. CSV 任务登记文件：`tasks.csv`
 5. 检查清单文件：`checklist.md`
-6. CR 文件格式：`review_<slug>.md`、`verified_review_<slug>.md`、`resolved_review_<slug>.md`
+6. CR 文件格式：`code_review_<slug>.md`、`verified_code_review_<slug>.md`、`resolved_code_review_<slug>.md`
 7. `<slug>` 应包含任务 ID 或变更范围，例如 `tk-001-initialize-sprint-templates`
 8. `tasks/checklist.md` 使用扁平任务列表，并在每个任务下追加多条执行记录
 9. `tasks/tasks.csv` 每行存储一条执行记录，字段为 `execution_id,task_id,title,owner,priority,due_date,status,project,sprint,plan,result,verify,review_delta,recorded_at`
@@ -62,7 +62,7 @@
 3. 执行实现。
 4. 运行自检。
 5. 编写 `review_<slug>.md`。
-6. 将验证结果追加到同一 CR 文件中，并将其重命名为 `verified_review_<slug>.md`。
+6. 将验证结果追加到同一 review 文件中，并将其重命名为 `verified_review_<slug>.md`。
 7. 已接受的问题修复后，将其重命名为 `resolved_review_<slug>.md`。
 8. 将执行记录追加到 `tasks/checklist.md` 和 `tasks/tasks.csv`。
 9. project 收尾时生成 `project-xxx-completion-audit-summary.md`。

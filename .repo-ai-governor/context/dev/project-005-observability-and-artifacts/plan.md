@@ -58,8 +58,8 @@
 | TK-047 | sprint-001 | Report Builder 与 Replay/Explain 基线 | baseline/integration | TK-046 | completed |
 | TK-048 | sprint-001 | Artifact Registry + Dependency Resolver 运行时基线 | baseline/runtime | TK-046 | completed |
 | TK-049 | sprint-001 | sprint-001 出口验收与 sprint-002 输入约束 | acceptance baseline | TK-046,TK-047,TK-048 | completed |
-| TK-050 | sprint-002 | CLI 输出契约与 non-TTY 自动降级基线 | baseline/output | TK-049 | planned |
-| TK-051 | sprint-002 | i18n parity/fallback 门禁与 output_locale 回放定位基线 | baseline/governance | TK-049,TK-050 | planned |
+| TK-050 | sprint-002 | CLI 输出契约与 non-TTY 自动降级基线 | baseline/output | TK-049 | completed |
+| TK-051 | sprint-002 | i18n parity/fallback 门禁与 output_locale 回放定位基线 | baseline/governance | TK-049,TK-050 | completed |
 | TK-052 | sprint-002 | 审计隐私治理（保留/脱敏/导出删除）基线 | baseline/privacy | TK-049,TK-050 | planned |
 | TK-053 | sprint-002 | project-005 出口验收与 project-006 输入约束 | acceptance baseline | TK-050,TK-051,TK-052 | planned |
 | TK-054 | sprint-002 | Artifact Registry 单一事实源与人类视图收敛 | maintenance/governance | TK-048,TK-049 | completed |
