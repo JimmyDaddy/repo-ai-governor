@@ -1,8 +1,8 @@
 # TK-037 Restricted Network Mode 降级执行基线
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-21
-- Owner: TBD
+- Owner: AI-Agent
 - Priority: P0
 - Project: `project-004-agent-adapter-runtime`
 - Sprint: `sprint-002-adapters-and-restricted-network`
@@ -46,3 +46,5 @@
 ## 7. 执行记录
 
 1. 2026-03-21：任务创建，状态初始化为 `planned`。
+2. 2026-03-21：任务启动，状态切换为 `in_progress`，开始落地 restricted network 触发条件、降级审计字段与本地 fallback 执行路径。
+3. 2026-03-21：完成 `adapter-sdk` restricted network 降级语义实现与本地 fallback 链路接线，补齐 package smoke 与跨包 integration 验证，任务状态切换为 `completed`。

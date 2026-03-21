@@ -1,4 +1,5 @@
 export {
+  AGENT_LOCAL_FALLBACK_SURFACE,
   AgentAvailabilityStatus,
   AgentCancellationReason,
   AgentCancellationScope,
@@ -6,7 +7,9 @@ export {
   AgentCapabilityFallbackAction,
   AgentCapabilitySupportLevel,
   AgentConfirmationDecision,
+  AgentNetworkMode,
   AgentRouteSelectionSource,
+  AgentSurfaceNetworkRequirement,
   AgentSurfaceSkipReason,
   AgentStreamEventType,
 } from "./agent-protocol.constant.js";

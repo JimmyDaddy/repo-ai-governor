@@ -1,0 +1,34 @@
+{
+  "contractVersion": "v1",
+  "status": "active",
+  "supportedCommands": [
+    "init",
+    "doctor",
+    "check",
+    "run",
+    "review",
+    "review-verify",
+    "plan",
+    "upgrade"
+  ],
+  "defaultOutputMode": "json",
+  "defaultSurface": "generic_ide",
+  "argvPattern": [
+    "node",
+    "./dist/bin/repo-ai-governor.js",
+    "--locale",
+    "<locale>",
+    "--profile",
+    "<profileId>",
+    "<command>",
+    "...args"
+  ],
+  "environmentKeys": [
+    "REPO_AI_GOVERNOR_OUTPUT_MODE",
+    "REPO_AI_GOVERNOR_ENTRY_SURFACE",
+    "REPO_AI_GOVERNOR_STANDARDS_PROFILE_ID",
+    "REPO_AI_GOVERNOR_STANDARDS_SOURCES"
+  ],
+  "additionalEnvPolicy": "additionalEnv must not override environmentKeys",
+  "implementationEntry": "apps/cli/src/ide-command-wrapper.ts"
+}

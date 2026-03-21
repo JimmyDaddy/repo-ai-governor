@@ -1,22 +1,37 @@
-import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
+import { GovernorErrorCode, RuntimeError, standardizeError } from "@repo-ai-governor/shared";
 import { AgentCapabilityEvaluator } from "./agent-capability-evaluator.js";
 import { AgentProtocolErrorMapper } from "./agent-protocol-error-mapper.js";
 import { AgentRouteRegistry } from "./agent-route-registry.js";
 import {
+  AGENT_LOCAL_FALLBACK_SURFACE,
   AgentAvailabilityStatus,
   AgentCapabilityFallbackAction,
+  AgentNetworkMode,
   AgentRouteSelectionSource,
+  AgentSurfaceNetworkRequirement,
   AgentSurfaceSkipReason,
 } from "./constants/index.js";
+import { DefaultRestrictedNetworkFallbackHandler } from "./restricted-network-fallback-handler.js";
 import type {
   AgentCapabilityEvaluationResult,
+  AgentCapabilityEvaluatorContract,
   AgentProbeResult,
   AgentProtocolContract,
+  AgentProtocolErrorMapperContract,
+  AgentRestrictedNetworkFallbackContext,
+  AgentRestrictedNetworkFallbackHandlerContract,
   AgentRouteDispatchRequest,
   AgentRouteDispatchResult,
+  AgentRouteDispatchRuntimeContext,
+  AgentRouteResolvedPolicy,
   AgentRouteRunnerOptions,
   AgentSurfaceEvaluationRecord,
 } from "./types/index.js";
+
+const DEFAULT_RESTRICTED_REASON = "external-network-restricted";
+const SURFACE_NETWORK_REQUIREMENT_VALUES = new Set<string>(
+  Object.values(AgentSurfaceNetworkRequirement),
+);
 
 /**
  * Executes routeKey-based primary/fallback routing with capability-aware degrade decisions.
@@ -28,8 +43,12 @@ import type {
 export class AgentRouteRunner {
   private readonly routeRegistry: AgentRouteRegistry;
   private readonly protocolBySurface: Record<string, AgentProtocolContract>;
-  private readonly capabilityEvaluator;
-  private readonly errorMapper;
+  private readonly capabilityEvaluator: AgentCapabilityEvaluatorContract;
+  private readonly errorMapper: AgentProtocolErrorMapperContract;
+  private readonly surfaceNetworkRequirementBySurface: Partial<
+    Record<string, AgentSurfaceNetworkRequirement>
+  >;
+  private readonly restrictedNetworkFallbackHandler: AgentRestrictedNetworkFallbackHandlerContract;
 
   /**
    * Creates route runner with route policies and protocol map.
@@ -41,8 +60,11 @@ export class AgentRouteRunner {
       routePolicies: options.routePolicies,
     });
     this.protocolBySurface = options.protocolBySurface;
+    this.surfaceNetworkRequirementBySurface = options.surfaceNetworkRequirementBySurface ?? {};
     this.capabilityEvaluator = options.capabilityEvaluator ?? new AgentCapabilityEvaluator();
     this.errorMapper = options.errorMapper ?? new AgentProtocolErrorMapper();
+    this.restrictedNetworkFallbackHandler =
+      options.restrictedNetworkFallbackHandler ?? new DefaultRestrictedNetworkFallbackHandler();
   }
 
   /**
@@ -54,6 +76,10 @@ export class AgentRouteRunner {
     request: AgentRouteDispatchRequest,
   ): Promise<AgentRouteDispatchResult> {
     const routePolicy = this.routeRegistry.resolveRoute(request.routeKey);
+    const runtimeContext = request.runtimeContext ?? {};
+    const networkMode = runtimeContext.networkMode ?? AgentNetworkMode.STANDARD;
+    const restrictedNetworkTriggered = networkMode === AgentNetworkMode.RESTRICTED;
+    const restrictedReason = this.resolveRestrictedReason(runtimeContext);
     const capabilityRequirement =
       request.capabilityRequirementOverride ?? routePolicy.capabilityRequirement;
     const evaluatedSurfaces: AgentSurfaceEvaluationRecord[] = [];
@@ -64,11 +90,33 @@ export class AgentRouteRunner {
       const selectedBy =
         index === 0 ? AgentRouteSelectionSource.PRIMARY : AgentRouteSelectionSource.FALLBACK;
       const fallbackTriggered = selectedBy === AgentRouteSelectionSource.FALLBACK;
+      const networkRequirement = this.resolveSurfaceNetworkRequirement(surface);
+
+      if (
+        restrictedNetworkTriggered &&
+        networkRequirement === AgentSurfaceNetworkRequirement.EXTERNAL_NETWORK
+      ) {
+        requiredFallbackActionSet.add(AgentCapabilityFallbackAction.USE_FALLBACK_SURFACE);
+        evaluatedSurfaces.push({
+          surface,
+          probeSucceeded: false,
+          networkRequirement,
+          errorCode: GovernorErrorCode.ADAPTER_ROUTE_RESTRICTED_NETWORK_BLOCKED,
+          errorMessage: `Surface "${surface}" is blocked in restricted network mode.`,
+          fallbackTriggered,
+          unsupportedCapabilities: [],
+          degradedCapabilities: [],
+          requiredFallbackActions: [AgentCapabilityFallbackAction.USE_FALLBACK_SURFACE],
+          skippedReason: AgentSurfaceSkipReason.NETWORK_RESTRICTED,
+        });
+        continue;
+      }
 
       if (!protocol) {
         evaluatedSurfaces.push({
           surface,
           probeSucceeded: false,
+          networkRequirement,
           errorCode: GovernorErrorCode.ADAPTER_ROUTE_SURFACE_NOT_REGISTERED,
           errorMessage: `Route candidate surface "${surface}" is not registered in protocol map.`,
           fallbackTriggered,
@@ -95,6 +143,7 @@ export class AgentRouteRunner {
         evaluatedSurfaces.push({
           surface,
           probeSucceeded: false,
+          networkRequirement,
           errorCode: mappedProbeError.code,
           errorMessage: mappedProbeError.message,
           fallbackTriggered,
@@ -110,6 +159,7 @@ export class AgentRouteRunner {
         evaluatedSurfaces.push({
           surface,
           probeSucceeded: true,
+          networkRequirement,
           availabilityStatus: probeResult.availabilityStatus,
           fallbackTriggered,
           unsupportedCapabilities: [],
@@ -129,6 +179,7 @@ export class AgentRouteRunner {
       }
       const evaluationRecord = this.createEvaluationRecord({
         surface,
+        networkRequirement,
         availabilityStatus: probeResult.availabilityStatus,
         fallbackTriggered,
         capabilityEvaluation,
@@ -149,6 +200,7 @@ export class AgentRouteRunner {
           {
             routeKey: request.routeKey,
             surface,
+            networkMode,
             requiredFallbackActions: capabilityEvaluation.requiredFallbackActions,
             unsupportedCapabilities: capabilityEvaluation.unsupportedCapabilities,
             degradedCapabilities: capabilityEvaluation.degradedCapabilities,
@@ -170,6 +222,10 @@ export class AgentRouteRunner {
             : {}),
           auditRecord: {
             routeKey: request.routeKey,
+            networkMode,
+            restrictedNetworkTriggered,
+            ...(restrictedNetworkTriggered ? { restrictedReason } : {}),
+            localFallbackActivated: false,
             selectedSurface: surface,
             selectedBy,
             fallbackTriggered,
@@ -182,12 +238,95 @@ export class AgentRouteRunner {
       }
     }
 
+    const requiredFallbackActions = Array.from(requiredFallbackActionSet);
+    if (restrictedNetworkTriggered && this.isRestrictedNetworkFallbackEligible(evaluatedSurfaces)) {
+      if (runtimeContext.allowLocalFallback === false) {
+        throw new RuntimeError(
+          GovernorErrorCode.ADAPTER_ROUTE_RESTRICTED_NETWORK_BLOCKED,
+          `Restricted network mode blocked all candidate surfaces for route "${request.routeKey}".`,
+          {
+            routeKey: request.routeKey,
+            restrictedReason,
+            candidateSurfaces: routePolicy.candidateSurfaces,
+            evaluatedSurfaces,
+            requiredFallbackActions,
+          },
+        );
+      }
+
+      return this.dispatchByRestrictedFallback(
+        request,
+        routePolicy,
+        restrictedReason,
+        evaluatedSurfaces,
+        requiredFallbackActions,
+      );
+    }
+
     throw this.buildNoAvailableSurfaceError(
       request.routeKey,
       routePolicy.candidateSurfaces,
       evaluatedSurfaces,
-      Array.from(requiredFallbackActionSet),
+      requiredFallbackActions,
+      networkMode,
     );
+  }
+
+  /**
+   * Executes local fallback path when restricted network blocks all route surfaces.
+   * @param request Route dispatch request payload.
+   * @param routePolicy Resolved route policy.
+   * @param restrictedReason Restricted-network reason text.
+   * @param evaluatedSurfaces Surface evaluation records.
+   * @param requiredFallbackActions Aggregated fallback actions.
+   * @returns Route dispatch result with local fallback output.
+   */
+  private async dispatchByRestrictedFallback(
+    request: AgentRouteDispatchRequest,
+    routePolicy: AgentRouteResolvedPolicy,
+    restrictedReason: string,
+    evaluatedSurfaces: AgentSurfaceEvaluationRecord[],
+    requiredFallbackActions: AgentCapabilityFallbackAction[],
+  ): Promise<AgentRouteDispatchResult> {
+    const fallbackContext: AgentRestrictedNetworkFallbackContext = {
+      request,
+      routePolicy,
+      evaluatedSurfaces,
+      reason: restrictedReason,
+    };
+
+    try {
+      const invokeResult =
+        await this.restrictedNetworkFallbackHandler.invokeFallback(fallbackContext);
+      return {
+        selectedSurface: AGENT_LOCAL_FALLBACK_SURFACE,
+        invokeResult,
+        auditRecord: {
+          routeKey: request.routeKey,
+          networkMode: AgentNetworkMode.RESTRICTED,
+          restrictedNetworkTriggered: true,
+          restrictedReason,
+          localFallbackActivated: true,
+          selectedSurface: AGENT_LOCAL_FALLBACK_SURFACE,
+          selectedBy: AgentRouteSelectionSource.LOCAL_FALLBACK,
+          fallbackTriggered: true,
+          evaluatedSurfaces,
+          requiredFallbackActions,
+        },
+      };
+    } catch (error) {
+      const standardizedError = standardizeError(error);
+      throw new RuntimeError(
+        GovernorErrorCode.ADAPTER_ROUTE_RESTRICTED_NETWORK_FALLBACK_FAILED,
+        `Restricted network local fallback failed for route "${request.routeKey}".`,
+        {
+          routeKey: request.routeKey,
+          restrictedReason,
+          fallbackErrorCode: standardizedError.code,
+          fallbackErrorMessage: standardizedError.message,
+        },
+      );
+    }
   }
 
   /**
@@ -197,6 +336,7 @@ export class AgentRouteRunner {
    */
   private createEvaluationRecord(input: {
     surface: string;
+    networkRequirement: AgentSurfaceNetworkRequirement;
     availabilityStatus: AgentAvailabilityStatus;
     fallbackTriggered: boolean;
     capabilityEvaluation?: AgentCapabilityEvaluationResult;
@@ -207,6 +347,7 @@ export class AgentRouteRunner {
     return {
       surface: input.surface,
       probeSucceeded: true,
+      networkRequirement: input.networkRequirement,
       availabilityStatus: input.availabilityStatus,
       capabilitySatisfied: capabilityEvaluation ? capabilityEvaluation.isSatisfied : true,
       fallbackTriggered: input.fallbackTriggered,
@@ -229,6 +370,7 @@ export class AgentRouteRunner {
    * @param candidateSurfaces Candidate surface list.
    * @param evaluatedSurfaces Evaluated surface records.
    * @param requiredFallbackActions Aggregated fallback actions.
+   * @param networkMode Runtime network mode.
    * @returns Standardized runtime error.
    */
   private buildNoAvailableSurfaceError(
@@ -236,16 +378,61 @@ export class AgentRouteRunner {
     candidateSurfaces: string[],
     evaluatedSurfaces: AgentSurfaceEvaluationRecord[],
     requiredFallbackActions: AgentCapabilityFallbackAction[],
+    networkMode: AgentNetworkMode,
   ): RuntimeError {
     return new RuntimeError(
       GovernorErrorCode.ADAPTER_ROUTE_NO_AVAILABLE_SURFACE,
       `No available surface can satisfy route "${routeKey}".`,
       {
         routeKey,
+        networkMode,
         candidateSurfaces,
         requiredFallbackActions,
         evaluatedSurfaces,
       },
+    );
+  }
+
+  /**
+   * Resolves one surface network requirement with conservative default.
+   * @param surface Adapter surface id.
+   * @returns Surface network requirement enum.
+   */
+  private resolveSurfaceNetworkRequirement(surface: string): AgentSurfaceNetworkRequirement {
+    return (
+      this.surfaceNetworkRequirementBySurface[surface] ??
+      AgentSurfaceNetworkRequirement.EXTERNAL_NETWORK
+    );
+  }
+
+  /**
+   * Resolves restricted-network reason from runtime context with deterministic fallback.
+   * @param runtimeContext Runtime context from route request.
+   * @returns Restricted reason string for audit and fallback records.
+   */
+  private resolveRestrictedReason(runtimeContext: AgentRouteDispatchRuntimeContext): string {
+    const restrictedReason = runtimeContext.restrictedReason?.trim();
+    if (restrictedReason) {
+      return restrictedReason;
+    }
+    return DEFAULT_RESTRICTED_REASON;
+  }
+
+  /**
+   * Checks whether restricted-network fallback can be safely activated.
+   * @param evaluatedSurfaces Surface evaluation rows collected during dispatch.
+   * @returns True only when every candidate was skipped by network restriction.
+   */
+  private isRestrictedNetworkFallbackEligible(
+    evaluatedSurfaces: AgentSurfaceEvaluationRecord[],
+  ): boolean {
+    if (evaluatedSurfaces.length === 0) {
+      return false;
+    }
+
+    return evaluatedSurfaces.every(
+      (evaluationRecord) =>
+        evaluationRecord.skippedReason === AgentSurfaceSkipReason.NETWORK_RESTRICTED,
     );
   }
 
@@ -270,6 +457,45 @@ export class AgentRouteRunner {
       throw new RuntimeError(
         GovernorErrorCode.ADAPTER_ROUTE_CONFIG_INVALID,
         "Agent route runner options must include protocolBySurface map.",
+      );
+    }
+    if (
+      options.surfaceNetworkRequirementBySurface !== undefined &&
+      typeof options.surfaceNetworkRequirementBySurface !== "object"
+    ) {
+      throw new RuntimeError(
+        GovernorErrorCode.ADAPTER_ROUTE_CONFIG_INVALID,
+        "surfaceNetworkRequirementBySurface must be an object when provided.",
+      );
+    }
+    if (options.surfaceNetworkRequirementBySurface) {
+      for (const [surface, networkRequirement] of Object.entries(
+        options.surfaceNetworkRequirementBySurface,
+      )) {
+        if (
+          typeof networkRequirement !== "string" ||
+          !SURFACE_NETWORK_REQUIREMENT_VALUES.has(networkRequirement)
+        ) {
+          throw new RuntimeError(
+            GovernorErrorCode.ADAPTER_ROUTE_CONFIG_INVALID,
+            `surfaceNetworkRequirementBySurface["${surface}"] is invalid.`,
+            {
+              surface,
+              networkRequirement,
+              allowedValues: Array.from(SURFACE_NETWORK_REQUIREMENT_VALUES),
+            },
+          );
+        }
+      }
+    }
+    if (
+      options.restrictedNetworkFallbackHandler !== undefined &&
+      (typeof options.restrictedNetworkFallbackHandler !== "object" ||
+        typeof options.restrictedNetworkFallbackHandler.invokeFallback !== "function")
+    ) {
+      throw new RuntimeError(
+        GovernorErrorCode.ADAPTER_ROUTE_CONFIG_INVALID,
+        "restrictedNetworkFallbackHandler must expose invokeFallback(context).",
       );
     }
   }

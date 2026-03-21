@@ -22,6 +22,14 @@ import {
   standardizeError,
 } from "@repo-ai-governor/shared";
 import { CLI_SKELETON_COMMAND_DEFINITIONS } from "./constants/cli-command.constant.js";
+export { IdeCommandWrapper, standardizeIdeWrapperError } from "./ide-command-wrapper.js";
+export type {
+  IdeCommandInvocationEnvelope,
+  IdeCommandWrapperOptions,
+  IdeCommandWrapperRequest,
+  IdeStandardsInjectionPayload,
+  IdeWrapperCommandName,
+} from "./types/index.js";
 
 const DEFAULT_I18N_CONFIG: I18nRuntimeConfig = {
   ...DEFAULT_I18N_RUNTIME_CONFIG,

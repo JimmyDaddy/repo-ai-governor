@@ -1,5 +1,6 @@
 import { GovernorErrorCode, type RuntimeError } from "@repo-ai-governor/shared";
 import {
+  AGENT_LOCAL_FALLBACK_SURFACE,
   AgentAvailabilityStatus,
   type AgentCancelRequest,
   AgentCancellationReason,
@@ -11,12 +12,16 @@ import {
   AgentConfirmationDecision,
   type AgentConfirmationRequest,
   type AgentInvokeStageRequest,
+  AgentNetworkMode,
   type AgentProbeRequest,
   AgentProtocol,
+  type AgentRestrictedNetworkFallbackContext,
   AgentRouteRunner,
   AgentRouteSelectionSource,
   AgentStreamEventType,
   type AgentStreamEventsRequest,
+  AgentSurfaceNetworkRequirement,
+  AgentSurfaceSkipReason,
 } from "../src/index.js";
 
 interface FakeAgentProtocolOptions {
@@ -307,6 +312,182 @@ describe("adapter-route-runner smoke", () => {
     } catch (error) {
       expect((error as RuntimeError).code).toBe(
         GovernorErrorCode.ADAPTER_ROUTE_NO_AVAILABLE_SURFACE,
+      );
+    }
+  });
+
+  it("activates local fallback when restricted network blocks all external surfaces", async () => {
+    const routeRunner = new AgentRouteRunner({
+      routePolicies: [
+        {
+          routeKey: "codegen",
+          primarySurface: "codex",
+          fallbackSurfaces: ["claude"],
+        },
+      ],
+      protocolBySurface: {
+        codex: new FakeAgentProtocol({
+          surface: "codex",
+          availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+        }),
+        claude: new FakeAgentProtocol({
+          surface: "claude",
+          availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+        }),
+      },
+      surfaceNetworkRequirementBySurface: {
+        codex: AgentSurfaceNetworkRequirement.EXTERNAL_NETWORK,
+        claude: AgentSurfaceNetworkRequirement.EXTERNAL_NETWORK,
+      },
+    });
+
+    const result = await routeRunner.dispatchStage({
+      processId: "process-1",
+      executionId: "execution-1",
+      stageId: "stage-1",
+      routeKey: "codegen",
+      input: {
+        prompt: "implement feature",
+      },
+      runtimeContext: {
+        networkMode: AgentNetworkMode.RESTRICTED,
+        restrictedReason: "ci-network-policy",
+      },
+    });
+
+    expect(result.selectedSurface).toBe(AGENT_LOCAL_FALLBACK_SURFACE);
+    expect(result.auditRecord.selectedBy).toBe(AgentRouteSelectionSource.LOCAL_FALLBACK);
+    expect(result.auditRecord.networkMode).toBe(AgentNetworkMode.RESTRICTED);
+    expect(result.auditRecord.localFallbackActivated).toBe(true);
+    expect(result.auditRecord.restrictedReason).toBe("ci-network-policy");
+    expect(result.auditRecord.evaluatedSurfaces).toHaveLength(2);
+    for (const record of result.auditRecord.evaluatedSurfaces) {
+      expect(record.skippedReason).toBe(AgentSurfaceSkipReason.NETWORK_RESTRICTED);
+    }
+  });
+
+  it("throws restricted-network-blocked error when local fallback is disabled", async () => {
+    const routeRunner = new AgentRouteRunner({
+      routePolicies: [
+        {
+          routeKey: "codegen",
+          primarySurface: "codex",
+        },
+      ],
+      protocolBySurface: {
+        codex: new FakeAgentProtocol({
+          surface: "codex",
+          availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+        }),
+      },
+      surfaceNetworkRequirementBySurface: {
+        codex: AgentSurfaceNetworkRequirement.EXTERNAL_NETWORK,
+      },
+    });
+
+    try {
+      await routeRunner.dispatchStage({
+        processId: "process-1",
+        executionId: "execution-1",
+        stageId: "stage-1",
+        routeKey: "codegen",
+        input: {
+          prompt: "implement feature",
+        },
+        runtimeContext: {
+          networkMode: AgentNetworkMode.RESTRICTED,
+          allowLocalFallback: false,
+        },
+      });
+    } catch (error) {
+      expect((error as RuntimeError).code).toBe(
+        GovernorErrorCode.ADAPTER_ROUTE_RESTRICTED_NETWORK_BLOCKED,
+      );
+    }
+  });
+
+  it("does not trigger local fallback when restricted mode failure is not network-related", async () => {
+    const routeRunner = new AgentRouteRunner({
+      routePolicies: [
+        {
+          routeKey: "codegen",
+          primarySurface: "codex",
+        },
+      ],
+      protocolBySurface: {
+        codex: new FakeAgentProtocol({
+          surface: "codex",
+          availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+          throwOnProbe: true,
+        }),
+      },
+      surfaceNetworkRequirementBySurface: {
+        codex: AgentSurfaceNetworkRequirement.LOCAL_ONLY,
+      },
+    });
+
+    try {
+      await routeRunner.dispatchStage({
+        processId: "process-1",
+        executionId: "execution-1",
+        stageId: "stage-1",
+        routeKey: "codegen",
+        input: {
+          prompt: "implement feature",
+        },
+        runtimeContext: {
+          networkMode: AgentNetworkMode.RESTRICTED,
+        },
+      });
+    } catch (error) {
+      expect((error as RuntimeError).code).toBe(
+        GovernorErrorCode.ADAPTER_ROUTE_NO_AVAILABLE_SURFACE,
+      );
+    }
+  });
+
+  it("throws restricted-network-fallback-failed error when custom fallback handler fails", async () => {
+    const routeRunner = new AgentRouteRunner({
+      routePolicies: [
+        {
+          routeKey: "codegen",
+          primarySurface: "codex",
+        },
+      ],
+      protocolBySurface: {
+        codex: new FakeAgentProtocol({
+          surface: "codex",
+          availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+        }),
+      },
+      surfaceNetworkRequirementBySurface: {
+        codex: AgentSurfaceNetworkRequirement.EXTERNAL_NETWORK,
+      },
+      restrictedNetworkFallbackHandler: {
+        async invokeFallback(_context: AgentRestrictedNetworkFallbackContext) {
+          throw {
+            message: "local fallback failed",
+          };
+        },
+      },
+    });
+
+    try {
+      await routeRunner.dispatchStage({
+        processId: "process-1",
+        executionId: "execution-1",
+        stageId: "stage-1",
+        routeKey: "codegen",
+        input: {
+          prompt: "implement feature",
+        },
+        runtimeContext: {
+          networkMode: AgentNetworkMode.RESTRICTED,
+        },
+      });
+    } catch (error) {
+      expect((error as RuntimeError).code).toBe(
+        GovernorErrorCode.ADAPTER_ROUTE_RESTRICTED_NETWORK_FALLBACK_FAILED,
       );
     }
   });

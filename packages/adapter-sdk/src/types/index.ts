@@ -1,8 +1,11 @@
 export type {
   AgentCapabilityEvaluatorContract,
   AgentProtocolErrorMapperContract,
+  AgentRestrictedNetworkFallbackContext,
+  AgentRestrictedNetworkFallbackHandlerContract,
   AgentRouteDecisionAuditRecord,
   AgentRouteDispatchRequest,
+  AgentRouteDispatchRuntimeContext,
   AgentRouteDispatchResult,
   AgentRoutePolicy,
   AgentRouteRegistryContract,

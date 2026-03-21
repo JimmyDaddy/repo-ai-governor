@@ -1,4 +1,5 @@
 export {
+  AGENT_LOCAL_FALLBACK_SURFACE,
   AgentAvailabilityStatus,
   AgentCancellationReason,
   AgentCancellationScope,
@@ -6,11 +7,14 @@ export {
   AgentCapabilityFallbackAction,
   AgentCapabilitySupportLevel,
   AgentConfirmationDecision,
+  AgentNetworkMode,
   AgentRouteSelectionSource,
+  AgentSurfaceNetworkRequirement,
   AgentSurfaceSkipReason,
   AgentStreamEventType,
 } from "./constants/index.js";
 export { AgentCapabilityEvaluator } from "./agent-capability-evaluator.js";
+export { DefaultRestrictedNetworkFallbackHandler } from "./restricted-network-fallback-handler.js";
 export { AgentProtocolErrorMapper } from "./agent-protocol-error-mapper.js";
 export { AgentProtocol } from "./agent-protocol.abstract.js";
 export { AgentRouteRegistry } from "./agent-route-registry.js";
@@ -36,8 +40,11 @@ export type {
   AgentProbeResult,
   AgentProtocolContract,
   AgentProtocolIdentity,
+  AgentRestrictedNetworkFallbackContext,
+  AgentRestrictedNetworkFallbackHandlerContract,
   AgentRouteDecisionAuditRecord,
   AgentRouteDispatchRequest,
+  AgentRouteDispatchRuntimeContext,
   AgentRouteDispatchResult,
   AgentRoutePolicy,
   AgentRouteRegistryContract,

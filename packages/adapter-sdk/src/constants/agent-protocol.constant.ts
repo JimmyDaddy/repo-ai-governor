@@ -92,6 +92,7 @@ export enum AgentCapabilityFallbackAction {
 export enum AgentRouteSelectionSource {
   PRIMARY = "primary",
   FALLBACK = "fallback",
+  LOCAL_FALLBACK = "local_fallback",
 }
 
 /**
@@ -102,4 +103,26 @@ export enum AgentSurfaceSkipReason {
   PROBE_FAILED = "probe_failed",
   SURFACE_UNAVAILABLE = "surface_unavailable",
   CAPABILITY_UNSATISFIED = "capability_unsatisfied",
+  NETWORK_RESTRICTED = "network_restricted",
 }
+
+/**
+ * Defines runtime network modes consumed by route dispatch decisions.
+ */
+export enum AgentNetworkMode {
+  STANDARD = "standard",
+  RESTRICTED = "restricted",
+}
+
+/**
+ * Defines per-surface network requirement semantics for restricted mode decisions.
+ */
+export enum AgentSurfaceNetworkRequirement {
+  EXTERNAL_NETWORK = "external_network",
+  LOCAL_ONLY = "local_only",
+}
+
+/**
+ * Defines the synthetic surface id used by local restricted-network fallback execution.
+ */
+export const AGENT_LOCAL_FALLBACK_SURFACE = "local-governance-fallback";

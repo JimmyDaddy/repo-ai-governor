@@ -2,7 +2,9 @@ import type { RuntimeError } from "@repo-ai-governor/shared";
 import type {
   AgentAvailabilityStatus,
   AgentCapabilityFallbackAction,
+  AgentNetworkMode,
   AgentRouteSelectionSource,
+  AgentSurfaceNetworkRequirement,
   AgentSurfaceSkipReason,
 } from "../../constants/index.js";
 import type {
@@ -64,6 +66,16 @@ export interface AgentRouteRegistryContract {
  */
 export interface AgentRouteDispatchRequest extends AgentInvokeStageRequest {
   capabilityRequirementOverride?: AgentCapabilityRequirement;
+  runtimeContext?: AgentRouteDispatchRuntimeContext;
+}
+
+/**
+ * Defines runtime context flags that affect route dispatch behavior.
+ */
+export interface AgentRouteDispatchRuntimeContext {
+  networkMode?: AgentNetworkMode;
+  allowLocalFallback?: boolean;
+  restrictedReason?: string;
 }
 
 /**
@@ -72,6 +84,7 @@ export interface AgentRouteDispatchRequest extends AgentInvokeStageRequest {
 export interface AgentSurfaceEvaluationRecord {
   surface: string;
   probeSucceeded: boolean;
+  networkRequirement?: AgentSurfaceNetworkRequirement;
   availabilityStatus?: AgentAvailabilityStatus;
   errorCode?: string;
   errorMessage?: string;
@@ -88,6 +101,10 @@ export interface AgentSurfaceEvaluationRecord {
  */
 export interface AgentRouteDecisionAuditRecord {
   routeKey: string;
+  networkMode: AgentNetworkMode;
+  restrictedNetworkTriggered: boolean;
+  restrictedReason?: string;
+  localFallbackActivated: boolean;
   selectedSurface?: string;
   selectedBy?: AgentRouteSelectionSource;
   fallbackTriggered: boolean;
@@ -100,10 +117,32 @@ export interface AgentRouteDecisionAuditRecord {
  */
 export interface AgentRouteDispatchResult {
   selectedSurface: string;
-  selectedProbeResult: AgentProbeResult;
+  selectedProbeResult?: AgentProbeResult;
   invokeResult: AgentInvokeStageResult;
   capabilityEvaluation?: AgentCapabilityEvaluationResult;
   auditRecord: AgentRouteDecisionAuditRecord;
+}
+
+/**
+ * Defines fallback context used when restricted network mode blocks all surfaces.
+ */
+export interface AgentRestrictedNetworkFallbackContext {
+  request: AgentRouteDispatchRequest;
+  routePolicy: AgentRouteResolvedPolicy;
+  evaluatedSurfaces: AgentSurfaceEvaluationRecord[];
+  reason: string;
+}
+
+/**
+ * Defines local fallback handler contract for restricted-network dispatch.
+ */
+export interface AgentRestrictedNetworkFallbackHandlerContract {
+  /**
+   * Executes local fallback invocation when all route surfaces are blocked.
+   * @param context Restricted-network fallback context payload.
+   * @returns Fallback invoke result used as dispatch output.
+   */
+  invokeFallback(context: AgentRestrictedNetworkFallbackContext): Promise<AgentInvokeStageResult>;
 }
 
 /**
@@ -182,6 +221,8 @@ export interface AgentProtocolErrorMapperContract {
 export interface AgentRouteRunnerOptions {
   routePolicies: AgentRoutePolicy[];
   protocolBySurface: Record<string, AgentProtocolContract>;
+  surfaceNetworkRequirementBySurface?: Partial<Record<string, AgentSurfaceNetworkRequirement>>;
+  restrictedNetworkFallbackHandler?: AgentRestrictedNetworkFallbackHandlerContract;
   capabilityEvaluator?: AgentCapabilityEvaluatorContract;
   errorMapper?: AgentProtocolErrorMapperContract;
 }

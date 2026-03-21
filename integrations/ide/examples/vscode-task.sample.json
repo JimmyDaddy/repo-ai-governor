@@ -1,0 +1,19 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "repo-ai-governor: check",
+      "type": "shell",
+      "command": "node",
+      "args": ["./dist/bin/repo-ai-governor.js", "--locale", "en-US", "check"],
+      "options": {
+        "env": {
+          "REPO_AI_GOVERNOR_OUTPUT_MODE": "json",
+          "REPO_AI_GOVERNOR_ENTRY_SURFACE": "vscode",
+          "REPO_AI_GOVERNOR_STANDARDS_PROFILE_ID": "stage5-entry-baseline"
+        }
+      },
+      "problemMatcher": []
+    }
+  ]
+}

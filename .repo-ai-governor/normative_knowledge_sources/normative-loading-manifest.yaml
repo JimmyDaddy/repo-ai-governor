@@ -197,15 +197,16 @@ documents:
     notes: archived after project-008 completion
 
   - doc_id: normative_context_loading_optimization_plan
-    path: .repo-ai-governor/normative_knowledge_sources/normative-context-loading-optimization-plan.md
-    tier: L2
-    status: active
+    path: .repo-ai-governor/normative_knowledge_sources/archive/normative-context-loading-optimization-plan.md
+    tier: L3
+    status: archived
     default_load: false
     load_trigger:
-      - context_loading_policy_change
-      - manifest_governance_update
+      - historical_traceback
+      - normative_loading_policy_traceback
     owner: governance
     last_reviewed_at: 2026-03-21
+    notes: archived after normative loading manifest baseline and gate rollout became the active source of truth
 
   - doc_id: verified_review_master_execution_plan
     path: .repo-ai-governor/normative_knowledge_sources/archive/verified_review_master-execution-plan.md

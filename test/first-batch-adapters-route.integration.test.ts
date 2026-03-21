@@ -2,11 +2,15 @@ import { ClaudeCodeAgentAdapter } from "@repo-ai-governor/adapter-claude-code";
 import { CodexAgentAdapter } from "@repo-ai-governor/adapter-codex";
 import { GithubCopilotAgentAdapter } from "@repo-ai-governor/adapter-github-copilot";
 import {
+  AGENT_LOCAL_FALLBACK_SURFACE,
   AgentAvailabilityStatus,
   AgentCapability,
   AgentCapabilityFallbackAction,
+  AgentNetworkMode,
   AgentRouteRunner,
   AgentRouteSelectionSource,
+  AgentSurfaceNetworkRequirement,
+  AgentSurfaceSkipReason,
 } from "@repo-ai-governor/adapter-sdk";
 
 describe("first-batch adapters route integration", () => {
@@ -120,5 +124,48 @@ describe("first-batch adapters route integration", () => {
     expect(result.auditRecord.requiredFallbackActions).toContain(
       AgentCapabilityFallbackAction.USE_FALLBACK_SURFACE,
     );
+  });
+
+  it("uses local fallback when restricted network blocks external adapters", async () => {
+    const runner = new AgentRouteRunner({
+      routePolicies: [
+        {
+          routeKey: "restricted-review",
+          primarySurface: "codex",
+          fallbackSurfaces: ["github-copilot", "claude-code"],
+        },
+      ],
+      protocolBySurface: {
+        codex: new CodexAgentAdapter(),
+        "github-copilot": new GithubCopilotAgentAdapter(),
+        "claude-code": new ClaudeCodeAgentAdapter(),
+      },
+      surfaceNetworkRequirementBySurface: {
+        codex: AgentSurfaceNetworkRequirement.EXTERNAL_NETWORK,
+        "github-copilot": AgentSurfaceNetworkRequirement.EXTERNAL_NETWORK,
+        "claude-code": AgentSurfaceNetworkRequirement.EXTERNAL_NETWORK,
+      },
+    });
+
+    const result = await runner.dispatchStage({
+      processId: "process-1",
+      executionId: "execution-1",
+      stageId: "stage-restricted",
+      routeKey: "restricted-review",
+      input: {
+        prompt: "review plan under restricted network",
+      },
+      runtimeContext: {
+        networkMode: AgentNetworkMode.RESTRICTED,
+        restrictedReason: "offline-ci",
+      },
+    });
+
+    expect(result.selectedSurface).toBe(AGENT_LOCAL_FALLBACK_SURFACE);
+    expect(result.auditRecord.selectedBy).toBe(AgentRouteSelectionSource.LOCAL_FALLBACK);
+    expect(result.auditRecord.restrictedReason).toBe("offline-ci");
+    for (const evaluatedSurface of result.auditRecord.evaluatedSurfaces) {
+      expect(evaluatedSurface.skippedReason).toBe(AgentSurfaceSkipReason.NETWORK_RESTRICTED);
+    }
   });
 });

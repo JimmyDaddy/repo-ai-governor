@@ -1,9 +1,10 @@
 # Normative Context Loading Optimization Plan
 
-- Status: draft-for-review
+- Status: archived
 - Date: 2026-03-21
 - Scope: `.repo-ai-governor/normative_knowledge_sources/**`
 - Goal: 降低默认上下文长度，同时保持执行正确性与治理稳定性
+- Archive Reason: manifest baseline and gate rollout are in place; remaining follow-up work should be tracked as standalone governance tasks instead of keeping this plan as an active normative source
 
 ## 1. 背景与问题
 

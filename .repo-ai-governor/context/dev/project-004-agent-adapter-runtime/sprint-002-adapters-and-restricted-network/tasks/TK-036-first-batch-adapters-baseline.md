@@ -1,6 +1,6 @@
 # TK-036 首批 Adapters（Codex Copilot Claude Code）基线
 
-- Status: in_progress
+- Status: completed
 - Date: 2026-03-21
 - Owner: AI-Agent
 - Priority: P0
@@ -48,3 +48,4 @@
 2. 2026-03-21：任务启动，状态切换为 `in_progress`，开始搭建 `codex/github-copilot/claude-code` 首批 adapter 基线与能力声明对齐路径。
 3. 2026-03-21：完成 `packages/adapters/{codex,github-copilot,claude-code}` 首批适配器骨架与 smoke 测试，验证 `pnpm run typecheck` 与 `pnpm run test:packages -- packages/adapters/codex/test/codex-agent-adapter.smoke.test.ts packages/adapters/github-copilot/test/github-copilot-agent-adapter.smoke.test.ts packages/adapters/claude-code/test/claude-code-agent-adapter.smoke.test.ts --maxWorkers=1 --maxConcurrency=1` 通过。
 4. 2026-03-21：新增跨包集成测试 `test/first-batch-adapters-route.integration.test.ts`，验证 `AgentRouteRunner + codex/github-copilot/claude-code` 路由与降级链路，`pnpm run test:integration -- test/first-batch-adapters-route.integration.test.ts --maxWorkers=1 --maxConcurrency=1` 通过。
+5. 2026-03-21：完成复核问题修复并执行收尾交付（commit: `788aaef`），任务状态切换为 `completed`，`DA-046` 进入 artifact registry active 集。
