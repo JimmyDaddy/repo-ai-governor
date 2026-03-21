@@ -1,0 +1,52 @@
+{
+  "reportType": "rollback_rehearsal_v1",
+  "status": "passed",
+  "generatedAt": "2026-03-21T22:48:37.234Z",
+  "policySource": "scripts/release/release-governance-policy.json",
+  "scenarios": [
+    {
+      "scenarioId": "critical-production-regression",
+      "rollbackTrigger": "critical production regression detected",
+      "command": "pnpm run release:check",
+      "exitCode": 0,
+      "durationMs": 1463
+    },
+    {
+      "scenarioId": "post-promotion-gate-violation",
+      "rollbackTrigger": "release gate violation after channel promotion",
+      "command": "pnpm run release:verify-local",
+      "exitCode": 0,
+      "durationMs": 470
+    },
+    {
+      "scenarioId": "lockstep-contract-incompatibility",
+      "rollbackTrigger": "incompatible contract change in lockstep group",
+      "command": "pnpm run release:ga-check",
+      "exitCode": 0,
+      "durationMs": 10787
+    }
+  ],
+  "evidence": {
+    "release_check_report": {
+      "scenarioId": "critical-production-regression",
+      "rollbackTrigger": "critical production regression detected",
+      "command": "pnpm run release:check",
+      "exitCode": 0,
+      "durationMs": 1463
+    },
+    "distribution_verify_result": {
+      "scenarioId": "post-promotion-gate-violation",
+      "rollbackTrigger": "release gate violation after channel promotion",
+      "command": "pnpm run release:verify-local",
+      "exitCode": 0,
+      "durationMs": 470
+    },
+    "channel_promotion_record": {
+      "scenarioId": "lockstep-contract-incompatibility",
+      "rollbackTrigger": "incompatible contract change in lockstep group",
+      "command": "pnpm run release:ga-check",
+      "exitCode": 0,
+      "durationMs": 10787
+    }
+  }
+}

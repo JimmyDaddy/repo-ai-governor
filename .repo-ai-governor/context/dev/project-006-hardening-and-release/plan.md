@@ -1,6 +1,6 @@
 # project-006-hardening-and-release 计划
 
-- Status: in_progress
+- Status: completed
 - Date: 2026-03-22
 - Stage Mapping: Stage 7
 - Phase Mapping: Phase E
@@ -57,10 +57,10 @@
 | TK-057 | sprint-001 | 分层测试（contract/integration/e2e）稳定基线 | baseline/test | TK-056 | completed |
 | TK-058 | sprint-001 | 发布治理策略与 canary-rc-ga 通道基线 | baseline/release | TK-056,TK-057 | completed |
 | TK-059 | sprint-001 | sprint-001 出口验收与 sprint-002 输入约束 | acceptance baseline | TK-056,TK-057,TK-058 | completed |
-| TK-060 | sprint-002 | 受限网络与离线降级稳定性回归基线 | baseline/resilience | TK-059 | planned |
-| TK-061 | sprint-002 | 回滚演练与恢复流程基线 | baseline/release | TK-058,TK-060 | planned |
-| TK-062 | sprint-002 | GA 候选联合门禁（契约+稳定性+发布）基线 | baseline/gate | TK-060,TK-061 | planned |
-| TK-063 | sprint-002 | project-006 出口验收与 project-007 输入约束 | acceptance baseline | TK-060,TK-061,TK-062 | planned |
+| TK-060 | sprint-002 | 受限网络与离线降级稳定性回归基线 | baseline/resilience | TK-059 | completed |
+| TK-061 | sprint-002 | 回滚演练与恢复流程基线 | baseline/release | TK-058,TK-060 | completed |
+| TK-062 | sprint-002 | GA 候选联合门禁（契约+稳定性+发布）基线 | baseline/gate | TK-060,TK-061 | completed |
+| TK-063 | sprint-002 | project-006 出口验收与 project-007 输入约束 | acceptance baseline | TK-060,TK-061,TK-062 | completed |
 
 ## 5. 依赖产物策略
 
@@ -83,3 +83,10 @@
 3. 2026-03-22：完成 `TK-057` 并产出 `DA-068`（contract/integration/e2e 分层测试稳定基线），Stage 7 分层测试入口接入 gate 链路。
 4. 2026-03-22：完成 `TK-058` 并产出 `DA-069`（发布治理与 canary/rc/ga 通道基线），release:check / release:ga-check / release:verify-local 链路闭环可回归。
 5. 2026-03-22：完成 `TK-059` 并产出 `DA-070/DA-071`，sprint-001 出口验收与 sprint-002 输入约束链路完成闭环。
+6. 2026-03-22：切换主执行流到 `sprint-002-resilience-and-ga-readiness`，启动 `TK-060`（受限网络与离线降级稳定性回归基线）。
+7. 2026-03-22：完成 `TK-060` 并产出 `DA-072`，受限网络/离线降级回归入口 `test:resilience` 可执行并通过门禁验证。
+8. 2026-03-22：启动 `TK-061`（回滚演练与恢复流程基线），进入 sprint-002 第二阶段执行。
+9. 2026-03-22：完成 `TK-061` 并产出 `DA-073`，`release:rollback-rehearsal` 与结构化演练报告落盘。
+10. 2026-03-22：完成 `TK-062` 并产出 `DA-074`，`release:ga-candidate-unified-gate` 联合门禁基线可复跑。
+11. 2026-03-22：完成 `TK-063` 并产出 `DA-075/DA-076`，project-006 状态收敛为 `completed`。
+12. 2026-03-22：project-006 完成态审计摘要：`.repo-ai-governor/context/dev/project-006-hardening-and-release/project-006-hardening-and-release-completion-audit-summary.md`。

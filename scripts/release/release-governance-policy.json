@@ -31,5 +31,27 @@
     "release_check_report",
     "distribution_verify_result",
     "channel_promotion_record"
-  ]
+  ],
+  "rollbackRehearsal": {
+    "entryCommand": "pnpm run release:rollback-rehearsal",
+    "reportPath": ".repo-ai-governor/context/dev/project-006-hardening-and-release/sprint-002-resilience-and-ga-readiness/tasks/TK-061-rollback-rehearsal-report.json",
+    "scenarios": [
+      "critical-production-regression",
+      "post-promotion-gate-violation",
+      "lockstep-contract-incompatibility"
+    ]
+  },
+  "gaCandidateUnifiedGate": {
+    "entryCommand": "pnpm run release:ga-candidate-unified-gate",
+    "reportPath": ".repo-ai-governor/context/dev/project-006-hardening-and-release/sprint-002-resilience-and-ga-readiness/tasks/TK-062-ga-candidate-unified-gate-report.json",
+    "requiredCheckGroups": [
+      "contract-baseline",
+      "resilience-regression",
+      "integration-regression",
+      "e2e-regression",
+      "release-ga-check",
+      "rollback-rehearsal",
+      "governance-gate"
+    ]
+  }
 }

@@ -81,11 +81,39 @@ Promotion criteria:
 2. `distribution_verify_result`
 3. `channel_promotion_record`
 
+## 4.3 Rehearsal Execution Baseline
+
+1. Rehearsal entry command: `pnpm run release:rollback-rehearsal`.
+2. Rehearsal report path:
+   - `.repo-ai-governor/context/dev/project-006-hardening-and-release/sprint-002-resilience-and-ga-readiness/tasks/TK-061-rollback-rehearsal-report.json`
+3. Rehearsal scenarios:
+   - `critical-production-regression`
+   - `post-promotion-gate-violation`
+   - `lockstep-contract-incompatibility`
+4. Rehearsal pass condition:
+   - all three scenarios succeed and minimum audit evidence keys are present.
+
 ## 5. Runtime Distribution Validation
 
 1. `release:check` validates release governance spec, policy config, runtime JS whitelist, and release script wiring.
 2. `release:verify-local` validates local CLI help runtime and package tarball required files.
 3. `check:runtime-js-whitelist` validates runtime JS outputs under `dist/` stay inside allow-list scope.
+
+## 5.1 GA Candidate Unified Gate Baseline
+
+1. Unified gate entry command: `pnpm run release:ga-candidate-unified-gate`.
+2. Unified gate report path:
+   - `.repo-ai-governor/context/dev/project-006-hardening-and-release/sprint-002-resilience-and-ga-readiness/tasks/TK-062-ga-candidate-unified-gate-report.json`
+3. Unified gate check groups:
+   - `contract-baseline`
+   - `resilience-regression`
+   - `integration-regression`
+   - `e2e-regression`
+   - `release-ga-check`
+   - `rollback-rehearsal`
+   - `governance-gate`
+4. Unified gate semantics:
+   - any step failure blocks GA candidate promotion.
 
 ## 6. Update Protocol
 

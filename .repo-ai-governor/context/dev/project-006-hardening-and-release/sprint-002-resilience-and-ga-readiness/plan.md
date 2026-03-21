@@ -1,6 +1,6 @@
 # sprint-002-resilience-and-ga-readiness 计划
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-22
 - Project: `project-006-hardening-and-release`
 
@@ -10,10 +10,10 @@
 
 ## 2. In-Scope Tasks
 
-1. TK-060 受限网络与离线降级稳定性回归基线（planned）
-2. TK-061 回滚演练与恢复流程基线（planned）
-3. TK-062 GA 候选联合门禁（契约+稳定性+发布）基线（planned）
-4. TK-063 project-006 出口验收与 project-007 输入约束（planned）
+1. TK-060 受限网络与离线降级稳定性回归基线（completed）
+2. TK-061 回滚演练与恢复流程基线（completed）
+3. TK-062 GA 候选联合门禁（契约+稳定性+发布）基线（completed）
+4. TK-063 project-006 出口验收与 project-007 输入约束（completed）
 
 ## 3. Entry Criteria
 

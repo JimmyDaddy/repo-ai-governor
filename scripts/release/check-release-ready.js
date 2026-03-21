@@ -15,6 +15,8 @@ const REQUIRED_RELEASE_ASSETS = [
   "scripts/release/check-release-ready.js",
   "scripts/release/check-runtime-js-whitelist.js",
   "scripts/release/verify-local-distribution.js",
+  "scripts/release/run-rollback-rehearsal.js",
+  "scripts/release/check-ga-candidate-unified-gate.js",
   "scripts/release/render-release-notes.js",
   "scripts/release/release-governance-policy.json",
   "scripts/release/runtime-js-whitelist.json",
@@ -24,8 +26,10 @@ const REQUIRED_PACKAGE_SCRIPTS = [
   "release:check",
   "release:notes",
   "release:verify-local",
+  "release:rollback-rehearsal",
   "release:candidate",
   "release:ga-check",
+  "release:ga-candidate-unified-gate",
   "check:runtime-js-whitelist",
 ];
 const REQUIRED_CHANNEL_NAMES = ["canary", "rc", "ga"];

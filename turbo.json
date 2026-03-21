@@ -85,6 +85,11 @@
       "dependsOn": ["//#gate:test:integration"],
       "outputs": []
     },
+    "//#gate:test:resilience": {
+      "cache": false,
+      "dependsOn": ["//#gate:build"],
+      "outputs": []
+    },
     "//#gate:check": {
       "cache": false,
       "dependsOn": [
@@ -101,7 +106,8 @@
         "//#gate:test:contract",
         "//#gate:test:packages",
         "//#gate:test:integration",
-        "//#gate:test:e2e"
+        "//#gate:test:e2e",
+        "//#gate:test:resilience"
       ],
       "outputs": []
     }
