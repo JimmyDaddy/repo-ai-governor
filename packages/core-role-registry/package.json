@@ -1,5 +1,5 @@
 {
-  "name": "@repo-ai-governor/core-runtime",
+  "name": "@repo-ai-governor/core-role-registry",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -10,8 +10,6 @@
     }
   },
   "dependencies": {
-    "@repo-ai-governor/core-role-registry": "workspace:*",
-    "@repo-ai-governor/core-process": "workspace:*",
     "@repo-ai-governor/shared": "workspace:*"
   }
 }

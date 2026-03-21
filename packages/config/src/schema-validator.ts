@@ -1,6 +1,10 @@
 import {
   I18N_RUNTIME_ENGINE,
   MemoryStoreEngine,
+  ROLE_PROFILE_ID_PATTERN,
+  ROLE_PROFILE_VERSION_PATTERN,
+  RoleProfileStatus,
+  RoleSource,
   WorkspaceMigrationPolicy,
   WorkspaceMode,
 } from "@repo-ai-governor/shared";
@@ -11,12 +15,15 @@ import type {
   GovernorProfile,
   I18nConfig,
   MemoryConfig,
+  RoleProfileConfig,
   WorkspaceConfig,
 } from "./types/interfaces/index.js";
 
 const WORKSPACE_MODE_VALUES = new Set<string>(Object.values(WorkspaceMode));
 const WORKSPACE_MIGRATION_POLICY_VALUES = new Set<string>(Object.values(WorkspaceMigrationPolicy));
 const MEMORY_STORE_ENGINE_VALUES = new Set<string>(Object.values(MemoryStoreEngine));
+const ROLE_SOURCE_VALUES = new Set<string>(Object.values(RoleSource));
+const ROLE_PROFILE_STATUS_VALUES = new Set<string>(Object.values(RoleProfileStatus));
 
 /**
  * Validates governor config payloads against the shared baseline contract.
@@ -45,12 +52,21 @@ export class SchemaValidator {
     const memory = this.validateMemory(root.memory, "/memory", false) as
       | Partial<MemoryConfig>
       | undefined;
+    const roles = this.validateRoles(root.roles, "/roles");
     const activeProfile = this.expectOptionalString(root.activeProfile, "/activeProfile");
     const profiles = this.validateProfiles(root.profiles, "/profiles", schemaVersion);
 
     this.assertNoUnknownKeys(
       root,
-      new Set(["schemaVersion", "workspace", "i18n", "memory", "activeProfile", "profiles"]),
+      new Set([
+        "schemaVersion",
+        "workspace",
+        "i18n",
+        "memory",
+        "roles",
+        "activeProfile",
+        "profiles",
+      ]),
       "/",
     );
 
@@ -59,6 +75,7 @@ export class SchemaValidator {
       workspace,
       i18n,
       ...(memory ? { memory } : {}),
+      ...(roles ? { roles } : {}),
       ...(activeProfile ? { activeProfile } : {}),
       ...(profiles ? { profiles } : {}),
     };
@@ -310,6 +327,215 @@ export class SchemaValidator {
       ...(defaultLocale ? { defaultLocale } : {}),
       ...(fallbackLocale ? { fallbackLocale } : {}),
       ...(supportedLocales ? { supportedLocales } : {}),
+    };
+  }
+
+  /**
+   * Validates role profile list and lifecycle metadata from config.
+   * @param candidate Raw roles field from config.
+   * @param pointer Error pointer path.
+   * @returns Normalized role profile list when present.
+   */
+  private validateRoles(candidate: unknown, pointer: string): RoleProfileConfig[] | undefined {
+    if (candidate === undefined) {
+      return undefined;
+    }
+
+    if (!Array.isArray(candidate)) {
+      this.throwConfigSchemaValidationError(`${pointer} must be an array.`, pointer);
+    }
+
+    const roleProfileIds = new Set<string>();
+    const roles = candidate.map((item, index) => {
+      const rolePointer = `${pointer}/${index}`;
+      const roleRecord = this.expectRecord(item, rolePointer);
+      this.assertNoUnknownKeys(
+        roleRecord,
+        new Set([
+          "roleProfileId",
+          "roleProfileVersion",
+          "displayName",
+          "responsibilities",
+          "capabilities",
+          "permissionCeiling",
+          "roleSource",
+          "status",
+          "lifecycle",
+        ]),
+        rolePointer,
+      );
+
+      const roleProfileId = this.expectString(
+        roleRecord.roleProfileId,
+        `${rolePointer}/roleProfileId`,
+      );
+      if (!ROLE_PROFILE_ID_PATTERN.test(roleProfileId)) {
+        this.throwConfigSchemaValidationError(
+          `${rolePointer}/roleProfileId has unsupported format.`,
+          `${rolePointer}/roleProfileId`,
+        );
+      }
+      if (roleProfileIds.has(roleProfileId)) {
+        this.throwConfigSchemaValidationError(
+          `${rolePointer}/roleProfileId must be unique.`,
+          `${rolePointer}/roleProfileId`,
+        );
+      }
+      roleProfileIds.add(roleProfileId);
+
+      const roleProfileVersion = this.expectString(
+        roleRecord.roleProfileVersion,
+        `${rolePointer}/roleProfileVersion`,
+      );
+      if (!ROLE_PROFILE_VERSION_PATTERN.test(roleProfileVersion)) {
+        this.throwConfigSchemaValidationError(
+          `${rolePointer}/roleProfileVersion must use semantic version format (x.y.z).`,
+          `${rolePointer}/roleProfileVersion`,
+        );
+      }
+      const displayName = this.expectString(roleRecord.displayName, `${rolePointer}/displayName`);
+      const responsibilities = this.expectOptionalStringArray(
+        roleRecord.responsibilities,
+        `${rolePointer}/responsibilities`,
+      );
+      const capabilities = this.expectOptionalStringArray(
+        roleRecord.capabilities,
+        `${rolePointer}/capabilities`,
+      );
+      const permissionCeiling = this.expectOptionalStringArray(
+        roleRecord.permissionCeiling,
+        `${rolePointer}/permissionCeiling`,
+      );
+      const roleSource = this.expectString(roleRecord.roleSource, `${rolePointer}/roleSource`);
+      const status = this.expectString(roleRecord.status, `${rolePointer}/status`);
+
+      if (!responsibilities || responsibilities.length === 0) {
+        this.throwConfigSchemaValidationError(
+          `${rolePointer}/responsibilities must contain at least one value.`,
+          `${rolePointer}/responsibilities`,
+        );
+      }
+      if (!capabilities || capabilities.length === 0) {
+        this.throwConfigSchemaValidationError(
+          `${rolePointer}/capabilities must contain at least one value.`,
+          `${rolePointer}/capabilities`,
+        );
+      }
+      if (!permissionCeiling || permissionCeiling.length === 0) {
+        this.throwConfigSchemaValidationError(
+          `${rolePointer}/permissionCeiling must contain at least one value.`,
+          `${rolePointer}/permissionCeiling`,
+        );
+      }
+      if (!ROLE_SOURCE_VALUES.has(roleSource)) {
+        this.throwConfigSchemaValidationError(
+          `${rolePointer}/roleSource must be one of: ${Array.from(ROLE_SOURCE_VALUES).join(", ")}.`,
+          `${rolePointer}/roleSource`,
+        );
+      }
+      if (!ROLE_PROFILE_STATUS_VALUES.has(status)) {
+        this.throwConfigSchemaValidationError(
+          `${rolePointer}/status must be one of: ${Array.from(ROLE_PROFILE_STATUS_VALUES).join(", ")}.`,
+          `${rolePointer}/status`,
+        );
+      }
+
+      const lifecycle = this.validateRoleLifecycle(
+        roleRecord.lifecycle,
+        `${rolePointer}/lifecycle`,
+      );
+      if (lifecycle?.replacedBy && lifecycle.replacedBy === roleProfileId) {
+        this.throwConfigSchemaValidationError(
+          `${rolePointer}/lifecycle/replacedBy must not equal roleProfileId.`,
+          `${rolePointer}/lifecycle/replacedBy`,
+        );
+      }
+
+      return {
+        roleProfileId,
+        roleProfileVersion,
+        displayName,
+        responsibilities,
+        capabilities,
+        permissionCeiling,
+        roleSource: roleSource as RoleSource,
+        status: status as RoleProfileStatus,
+        ...(lifecycle ? { lifecycle } : {}),
+      };
+    });
+
+    roles.forEach((role, index) => {
+      const rolePointer = `${pointer}/${index}`;
+      const aliases = role.lifecycle?.aliases ?? [];
+      const replacedBy = role.lifecycle?.replacedBy;
+
+      if (aliases.includes(role.roleProfileId)) {
+        this.throwConfigSchemaValidationError(
+          `${rolePointer}/lifecycle/aliases must not include roleProfileId itself.`,
+          `${rolePointer}/lifecycle/aliases`,
+        );
+      }
+      if (replacedBy && !roleProfileIds.has(replacedBy)) {
+        this.throwConfigSchemaValidationError(
+          `${rolePointer}/lifecycle/replacedBy must reference an existing roleProfileId.`,
+          `${rolePointer}/lifecycle/replacedBy`,
+        );
+      }
+    });
+
+    return roles;
+  }
+
+  /**
+   * Validates optional role lifecycle payload.
+   * @param candidate Raw lifecycle field from role profile.
+   * @param pointer Error pointer path.
+   * @returns Normalized lifecycle record when present.
+   */
+  private validateRoleLifecycle(
+    candidate: unknown,
+    pointer: string,
+  ):
+    | {
+        aliases?: string[];
+        supersedes?: string[];
+        replacedBy?: string;
+        deprecatedAt?: string;
+        migrationNotes?: string;
+      }
+    | undefined {
+    if (candidate === undefined) {
+      return undefined;
+    }
+
+    const lifecycle = this.expectRecord(candidate, pointer);
+    this.assertNoUnknownKeys(
+      lifecycle,
+      new Set(["aliases", "supersedes", "replacedBy", "deprecatedAt", "migrationNotes"]),
+      pointer,
+    );
+
+    const aliases = this.expectOptionalStringArray(lifecycle.aliases, `${pointer}/aliases`);
+    const supersedes = this.expectOptionalStringArray(
+      lifecycle.supersedes,
+      `${pointer}/supersedes`,
+    );
+    const replacedBy = this.expectOptionalString(lifecycle.replacedBy, `${pointer}/replacedBy`);
+    const deprecatedAt = this.expectOptionalString(
+      lifecycle.deprecatedAt,
+      `${pointer}/deprecatedAt`,
+    );
+    const migrationNotes = this.expectOptionalString(
+      lifecycle.migrationNotes,
+      `${pointer}/migrationNotes`,
+    );
+
+    return {
+      ...(aliases ? { aliases } : {}),
+      ...(supersedes ? { supersedes } : {}),
+      ...(replacedBy ? { replacedBy } : {}),
+      ...(deprecatedAt ? { deprecatedAt } : {}),
+      ...(migrationNotes ? { migrationNotes } : {}),
     };
   }
 

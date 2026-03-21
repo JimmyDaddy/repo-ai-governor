@@ -1,4 +1,5 @@
 import type { ProcessIrEdge } from "@repo-ai-governor/core-process";
+import type { RoleRegistry } from "@repo-ai-governor/core-role-registry";
 import type { RuntimeNowProvider } from "../../providers/index.js";
 import type { RuntimeStageInputMap } from "../aliases/index.js";
 
@@ -62,6 +63,7 @@ export interface RuntimeExecuteOptions {
   stageTimeoutMs?: number;
   flowTimeoutMs?: number;
   maxTransitions?: number;
+  roleRegistry?: RoleRegistry;
   signal?: AbortSignal;
   stageInputs?: RuntimeStageInputMap;
   conditionResolver?: RuntimeConditionResolver;

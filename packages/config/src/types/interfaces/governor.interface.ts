@@ -1,5 +1,6 @@
 import type { WorkspaceMigrationPolicy } from "@repo-ai-governor/shared";
 import type { I18nRuntimeConfig, MemoryRuntimeConfig } from "@repo-ai-governor/shared";
+import type { RoleProfileStatus, RoleSource } from "@repo-ai-governor/shared";
 import type { WorkspaceMode } from "../aliases/workspace-mode.type.js";
 
 /**
@@ -41,6 +42,32 @@ export interface GovernorProfile {
 }
 
 /**
+ * Defines lifecycle metadata accepted by config-level role profile rows.
+ */
+export interface RoleProfileLifecycleConfig {
+  aliases?: string[];
+  supersedes?: string[];
+  replacedBy?: string;
+  deprecatedAt?: string;
+  migrationNotes?: string;
+}
+
+/**
+ * Defines one config-level role profile contract.
+ */
+export interface RoleProfileConfig {
+  roleProfileId: string;
+  roleProfileVersion: string;
+  displayName: string;
+  responsibilities: string[];
+  capabilities: string[];
+  permissionCeiling: string[];
+  roleSource: RoleSource;
+  status: RoleProfileStatus;
+  lifecycle?: RoleProfileLifecycleConfig;
+}
+
+/**
  * Defines top-level governor configuration contract.
  */
 export interface GovernorConfig {
@@ -48,6 +75,7 @@ export interface GovernorConfig {
   workspace: WorkspaceConfig;
   i18n: I18nConfig;
   memory?: Partial<MemoryConfig>;
+  roles?: RoleProfileConfig[];
   activeProfile?: string;
   profiles?: Record<string, GovernorProfile>;
 }

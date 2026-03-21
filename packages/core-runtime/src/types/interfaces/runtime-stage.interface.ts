@@ -1,5 +1,6 @@
 import type { ProcessNodeType } from "@repo-ai-governor/core-process";
 import type { GovernorErrorCode } from "@repo-ai-governor/shared";
+import type { RoleSource } from "@repo-ai-governor/shared";
 import type { RuntimeStageStatus } from "../../constants/runtime.constant.js";
 
 /**
@@ -11,6 +12,10 @@ export interface RuntimeStageContext {
   nodeId: string;
   stageId: string;
   nodeType: ProcessNodeType;
+  routeKey: string;
+  roleProfileId: string;
+  roleProfileVersion?: string;
+  roleSource?: RoleSource;
   attempt: number;
   elapsedFlowMs: number;
   input: Record<string, unknown>;

@@ -93,11 +93,20 @@ importers:
         specifier: workspace:*
         version: link:../shared
 
+  packages/core-role-registry:
+    dependencies:
+      '@repo-ai-governor/shared':
+        specifier: workspace:*
+        version: link:../shared
+
   packages/core-runtime:
     dependencies:
       '@repo-ai-governor/core-process':
         specifier: workspace:*
         version: link:../core-process
+      '@repo-ai-governor/core-role-registry':
+        specifier: workspace:*
+        version: link:../core-role-registry
       '@repo-ai-governor/shared':
         specifier: workspace:*
         version: link:../shared

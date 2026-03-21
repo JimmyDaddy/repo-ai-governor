@@ -11,6 +11,7 @@ const INTERNAL_PACKAGE_ENTRY_ALIASES = [
   ["@repo-ai-governor/core-memory", "packages/core-memory/src/index.ts"],
   ["@repo-ai-governor/core-policy", "packages/core-policy/src/index.ts"],
   ["@repo-ai-governor/core-process", "packages/core-process/src/index.ts"],
+  ["@repo-ai-governor/core-role-registry", "packages/core-role-registry/src/index.ts"],
   ["@repo-ai-governor/core-runtime", "packages/core-runtime/src/index.ts"],
   ["@repo-ai-governor/core-session", "packages/core-session/src/index.ts"],
   ["@repo-ai-governor/memory-provider-fs-csv", "packages/memory-providers/fs-csv/src/index.ts"],

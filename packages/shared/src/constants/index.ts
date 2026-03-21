@@ -16,3 +16,10 @@ export {
 } from "./memory-store.constant.js";
 export { WorkspaceMigrationPolicy } from "./workspace-migration-policy.constant.js";
 export { WorkspaceMode } from "./workspace-mode.constant.js";
+export {
+  DefaultRoleProfileId,
+  ROLE_PROFILE_ID_PATTERN,
+  ROLE_PROFILE_VERSION_PATTERN,
+  RoleProfileStatus,
+  RoleSource,
+} from "./role-profile.constant.js";

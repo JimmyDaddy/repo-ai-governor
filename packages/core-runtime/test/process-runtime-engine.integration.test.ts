@@ -3,6 +3,8 @@ import {
   type ProcessDslDefinition,
   ProcessNodeType,
 } from "@repo-ai-governor/core-process";
+import { RoleRegistry } from "@repo-ai-governor/core-role-registry";
+import { GovernorErrorCode, RoleSource } from "@repo-ai-governor/shared";
 import {
   ProcessRuntimeEngine,
   RuntimeExecutionStatus,
@@ -309,6 +311,84 @@ describe("ProcessRuntimeEngine smoke", () => {
 
     expect(result.status).toBe(RuntimeExecutionStatus.CANCELLED);
     expect(result.stageResults).toHaveLength(0);
+  });
+
+  it("fails with standardized error when role profile is missing from registry", async () => {
+    const compiler = new ProcessCompiler();
+    const engine = new ProcessRuntimeEngine(compiler);
+    const compiledIr = compiler.compile({
+      processId: "process-runtime-role-missing",
+      executionId: "exec-runtime-006",
+      entryNodeId: "node-role-missing",
+      nodes: [
+        {
+          nodeId: "node-role-missing",
+          stageId: "stage-role-missing",
+          nodeType: ProcessNodeType.SEQUENTIAL,
+          routeKey: "role-missing",
+          roleProfileId: "missing-role-profile",
+          inputSchemaRef: "schemas/input.json",
+          outputSchemaRef: "schemas/output.json",
+          retryPolicyRef: "policy/retry-default",
+          timeoutPolicyRef: "policy/timeout-default",
+          budgetPolicyRef: "policy/budget-default",
+        },
+      ],
+      edges: [],
+    });
+
+    const result = await engine.execute(compiledIr, async () => ({ ok: true }), {
+      roleRegistry: new RoleRegistry(),
+    });
+
+    expect(result.status).toBe(RuntimeExecutionStatus.FAILED);
+    expect(result.stageResults[0]?.errorCode).toBe(
+      GovernorErrorCode.ROLE_REGISTRY_PROFILE_NOT_FOUND,
+    );
+  });
+
+  it("injects resolved role metadata into stage context when role registry is enabled", async () => {
+    const compiler = new ProcessCompiler();
+    const engine = new ProcessRuntimeEngine(compiler);
+    const compiledIr = compiler.compile({
+      processId: "process-runtime-role-context",
+      executionId: "exec-runtime-007",
+      entryNodeId: "node-role-context",
+      nodes: [
+        {
+          nodeId: "node-role-context",
+          stageId: "stage-role-context",
+          nodeType: ProcessNodeType.SEQUENTIAL,
+          routeKey: "role-context",
+          roleProfileId: "planner-default",
+          inputSchemaRef: "schemas/input.json",
+          outputSchemaRef: "schemas/output.json",
+          retryPolicyRef: "policy/retry-default",
+          timeoutPolicyRef: "policy/timeout-default",
+          budgetPolicyRef: "policy/budget-default",
+        },
+      ],
+      edges: [],
+    });
+
+    let capturedRoleVersion: string | undefined;
+    let capturedRoleSource: RoleSource | undefined;
+
+    const result = await engine.execute(
+      compiledIr,
+      async ({ roleProfileVersion, roleSource }) => {
+        capturedRoleVersion = roleProfileVersion;
+        capturedRoleSource = roleSource;
+        return { ok: true };
+      },
+      {
+        roleRegistry: new RoleRegistry(),
+      },
+    );
+
+    expect(result.status).toBe(RuntimeExecutionStatus.SUCCEEDED);
+    expect(capturedRoleVersion).toBe("1.0.0");
+    expect(capturedRoleSource).toBe(RoleSource.DEFAULT);
   });
 
   it("supports custom runtime now provider extensions", async () => {

@@ -3,6 +3,8 @@ export type {
   GovernorProfile,
   I18nConfig,
   MemoryConfig,
+  RoleProfileConfig,
+  RoleProfileLifecycleConfig,
   ResolvedConfig,
   WorkspaceConfig,
   WorkspaceRuntimeOverrides,

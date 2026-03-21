@@ -72,8 +72,8 @@ describe("memory-store-adapter unit", () => {
         namespace: "execution",
         key: "task",
       }),
-    ).rejects.toMatchObject<Partial<RuntimeError>>({
+    ).rejects.toMatchObject({
       code: GovernorErrorCode.MEMORY_STORE_READ_FAILED,
-    });
+    } satisfies Partial<RuntimeError>);
   });
 });

@@ -35,6 +35,7 @@ interface ResolvedRuntimeConfig {
   stageTimeoutMs: number;
   flowTimeoutMs: number;
   maxTransitions: number;
+  roleRegistry?: RuntimeExecuteOptions["roleRegistry"];
   signal?: AbortSignal;
   stageInputs: RuntimeStageInputMap;
   conditionResolver?: RuntimeConditionResolver;
@@ -308,6 +309,7 @@ export class ProcessRuntimeEngine {
     const stageInput = runtimeConfig.stageInputs[node.nodeId] ?? {};
 
     try {
+      const resolvedRole = this.resolveRole(node, compiledIr, runtimeConfig.roleRegistry);
       const stageOutput = await this.runStageWithTimeout(
         stageHandler({
           processId: compiledIr.processId,
@@ -315,6 +317,14 @@ export class ProcessRuntimeEngine {
           nodeId: node.nodeId,
           stageId: node.stageId,
           nodeType: node.nodeType,
+          routeKey: node.routeKey,
+          roleProfileId: node.roleProfileId,
+          ...(resolvedRole
+            ? {
+                roleProfileVersion: resolvedRole.profile.roleProfileVersion,
+                roleSource: resolvedRole.profile.roleSource,
+              }
+            : {}),
           attempt,
           elapsedFlowMs: stageStartedAtMs - runtimeState.startedAtMs,
           input: stageInput,
@@ -556,6 +566,30 @@ export class ProcessRuntimeEngine {
   }
 
   /**
+   * Resolves role metadata for one node when runtime options provide role registry.
+   * @param node Runtime node payload.
+   * @param compiledIr Compiled IR payload.
+   * @param roleRegistry Optional role registry instance.
+   * @returns Resolved role payload when registry is available.
+   */
+  private resolveRole(
+    node: ProcessIrNode,
+    compiledIr: ProcessCompiledIr,
+    roleRegistry: RuntimeExecuteOptions["roleRegistry"],
+  ) {
+    if (!roleRegistry) {
+      return undefined;
+    }
+
+    return roleRegistry.resolveOrThrow(node.roleProfileId, {
+      processId: compiledIr.processId,
+      executionId: compiledIr.executionId,
+      stageId: node.stageId,
+      routeKey: node.routeKey,
+    });
+  }
+
+  /**
    * Resolves stage status from standardized error code.
    * @param standardizedError Standardized error payload.
    * @returns Stage status enum.
@@ -638,6 +672,7 @@ export class ProcessRuntimeEngine {
       stageTimeoutMs: options.stageTimeoutMs ?? DEFAULT_RUNTIME_STAGE_TIMEOUT_MS,
       flowTimeoutMs: options.flowTimeoutMs ?? DEFAULT_RUNTIME_FLOW_TIMEOUT_MS,
       maxTransitions: options.maxTransitions ?? DEFAULT_RUNTIME_MAX_TRANSITIONS,
+      roleRegistry: options.roleRegistry,
       signal: options.signal,
       stageInputs: options.stageInputs ?? {},
       conditionResolver: options.conditionResolver,

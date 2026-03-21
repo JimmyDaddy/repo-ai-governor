@@ -19,6 +19,8 @@ export type {
   GovernorProfile,
   I18nConfig,
   MemoryConfig,
+  RoleProfileConfig,
+  RoleProfileLifecycleConfig,
   ResolvedConfig,
   ResolvedWorkspace,
   UpgradeConfirmationItem,

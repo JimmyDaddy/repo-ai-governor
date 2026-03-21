@@ -58,7 +58,7 @@ Prefer this repository-local skill over the generic `code-review-workflow` skill
 - data consistency, rollback, and failure recovery
 - missing or weak tests
 
-4. Write `review_<slug>.md` with this structure:
+4. Write `code_review_<slug>.md` with this structure:
 
 ```md
 # Code Review: <title>
