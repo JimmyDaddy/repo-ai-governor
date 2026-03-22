@@ -39,7 +39,7 @@
    - 新建 `apps/cli/src/constants/cli-command.constant.ts`，集中管理有限命令集合。
    - `bin/repo-ai-governor.ts` 改为应用层入口转发，避免命令逻辑散落在 bin 层。
 2. 落地 shared i18n runtime：
-   - 新建 `packages/shared/src/i18n/i18n-runtime.ts` 与 `locales/zh-cn.ts`,`locales/en-US.ts`。
+   - 新建 `packages/shared/src/i18n/i18n-runtime.ts` 与 `locales/zh-cn.ts`,`locales/en-us.ts`。
    - 固化 `initialize/resolveLocale/t/formatMessage` 四个 API。
    - 关闭 i18next support notice，保证 CLI 输出稳定。
 3. 补齐最小 smoke 验证链路：
@@ -58,7 +58,7 @@
 8. `packages/shared/src/i18n/index.ts`
 9. `packages/shared/src/i18n/i18n-runtime.ts`
 10. `packages/shared/src/i18n/locales/zh-cn.ts`
-11. `packages/shared/src/i18n/locales/en-US.ts`
+11. `packages/shared/src/i18n/locales/en-us.ts`
 12. `test/cli-skeleton.smoke.test.ts`
 13. `test/i18n-runtime.smoke.test.ts`
 14. `DA-007` `.repo-ai-governor/context/dev/project-001-foundation/sprint-001-foundation-bootstrap/tasks/TK-006-cli-skeleton-baseline.md`

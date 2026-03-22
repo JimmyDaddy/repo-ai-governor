@@ -11,7 +11,7 @@ const I18N_CONSTANTS_PATH = "packages/shared/src/constants/i18n.constant.ts";
 const LOCALE_SOURCE_DEFINITIONS = [
   {
     locale: "en-US",
-    filePath: "packages/shared/src/i18n/locales/en-US.ts",
+    filePath: "packages/shared/src/i18n/locales/en-us.ts",
     exportName: "EN_US_TRANSLATIONS",
   },
   {

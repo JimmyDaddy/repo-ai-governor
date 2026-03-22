@@ -98,6 +98,6 @@
    - 验证：`pnpm exec vitest run apps/cli/test/cli-output-contract.integration.test.ts`、`node ./dist/bin/repo-ai-governor.js --output json --verbosity invalid init 2>&1`（通过）
    - 说明：先解析 `--output` 后解析其他全局选项，错误路径保持 JSON 契约。
 3. `2.3`：已完成
-   - 变更文件：`packages/shared/src/i18n/locales/en-US.ts`、`packages/shared/src/i18n/locales/zh-cn.ts`、`apps/cli/src/main.ts`、`apps/cli/test/cli-output-contract.integration.test.ts`、`apps/cli/test/cli-skeleton.integration.test.ts`
+   - 变更文件：`packages/shared/src/i18n/locales/en-us.ts`、`packages/shared/src/i18n/locales/zh-cn.ts`、`apps/cli/src/main.ts`、`apps/cli/test/cli-output-contract.integration.test.ts`、`apps/cli/test/cli-skeleton.integration.test.ts`
    - 验证：`pnpm exec vitest run apps/cli/test/cli-skeleton.integration.test.ts apps/cli/test/cli-output-contract.integration.test.ts`、`node ./dist/bin/repo-ai-governor.js --output plain --verbosity quiet --locale en-US init 2>&1`（通过）
    - 说明：摘要文案与诊断渲染职责分离，quiet 行为恢复低噪音目标。

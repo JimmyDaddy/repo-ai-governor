@@ -15,7 +15,7 @@
 2. `apps/cli/src/cli-output-presenter.ts` 已统一渲染三种输出模式并保证 plain/json 可解析输出。
 3. `apps/cli/src/constants/cli-output.constant.ts` 与 `apps/cli/src/types/interfaces/cli-output.interface.ts` 已沉淀稳定 schema 与有限枚举。
 4. `apps/cli/test/cli-output-contract.integration.test.ts` 已覆盖 json schema、non-TTY downgrade、`--no-color` 与结构化错误字段。
-5. `packages/shared/src/i18n/locales/en-US.ts` 与 `packages/shared/src/i18n/locales/zh-cn.ts` 已补齐输出参数文案键。
+5. `packages/shared/src/i18n/locales/en-us.ts` 与 `packages/shared/src/i18n/locales/zh-cn.ts` 已补齐输出参数文案键。
 
 ## 3. 验证命令
 

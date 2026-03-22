@@ -1,8 +1,8 @@
 # TK-077 本地安装模式（path/tgz/link）与 clean-room 验证
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-22
-- Owner: TBD
+- Owner: AI-Agent
 - Priority: P0
 - Project: `project-009-production-readiness`
 - Sprint: `sprint-001-local-adoption-and-install-readiness`
@@ -37,18 +37,23 @@
 
 ## 6. 验证
 
-1. `node ./scripts/governance/check-task-ledger-sync.js`
-2. `node ./scripts/governance/check-sprint-plan-status-sync.js`
-3. `pnpm run check`
+1. `pnpm run release:verify-cleanroom-local-install`
+2. `node ./scripts/governance/check-task-ledger-sync.js`
+3. `node ./scripts/governance/check-sprint-plan-status-sync.js`
+4. `pnpm run check`
 
 ## 7. 执行记录
 
 1. 2026-03-22：任务创建，状态初始化为 `planned`。
 2. 2026-03-22：根据 `TK-088` 将 clean-room 验证口径收紧为“两种模式 x 连续 3 次 x --help -> init -> doctor -> check”，任务状态保持 `planned`。
 3. 2026-03-22：根据 `TK-090` 补齐 workspace 切换/rollback 与只读接入预检验证，任务状态保持 `planned`。
+4. 2026-03-22：任务启动，状态切换为 `active`，新增 `scripts/release/verify-cleanroom-local-install.js` 并接线 `pnpm run release:verify-cleanroom-local-install`。
+5. 2026-03-22：完成 clean-room 实跑：`path` + `link` 各连续 3 次通过 `--help -> init -> doctor -> check`，并通过 `tool_managed -> repo_local -> rollback` 与只读 attach 预检，状态切换为 `completed`。
 
 ## 8. 产出
 
-1. `DA-089` `.repo-ai-governor/context/dev/project-009-production-readiness/sprint-001-local-adoption-and-install-readiness/tasks/TK-077-local-installation-modes-and-cleanroom-validation.md`
-2. `.repo-ai-governor/context/dev/project-009-production-readiness/sprint-001-local-adoption-and-install-readiness/tasks/checklist.md`
-3. `.repo-ai-governor/context/dev/project-009-production-readiness/sprint-001-local-adoption-and-install-readiness/tasks/tasks.csv`
+1. `DA-089` `.repo-ai-governor/context/dev/project-009-production-readiness/sprint-001-local-adoption-and-install-readiness/tasks/DA-089-local-installation-modes-and-cleanroom-validation.md`
+2. clean-room 报告 `.repo-ai-governor/context/dev/project-009-production-readiness/sprint-001-local-adoption-and-install-readiness/tasks/TK-077-cleanroom-validation-report.json`
+3. 验证脚本 `scripts/release/verify-cleanroom-local-install.js`
+4. `.repo-ai-governor/context/dev/project-009-production-readiness/sprint-001-local-adoption-and-install-readiness/tasks/checklist.md`
+5. `.repo-ai-governor/context/dev/project-009-production-readiness/sprint-001-local-adoption-and-install-readiness/tasks/tasks.csv`

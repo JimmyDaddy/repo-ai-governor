@@ -82,6 +82,7 @@
     "release:check": "pnpm run build && node ./scripts/release/check-release-ready.js && pnpm run check:runtime-js-whitelist",
     "release:notes": "node ./scripts/release/render-release-notes.js",
     "release:verify-local": "node ./scripts/release/verify-local-distribution.js",
+    "release:verify-cleanroom-local-install": "node ./scripts/release/verify-cleanroom-local-install.js",
     "release:rollback-rehearsal": "node ./scripts/release/run-rollback-rehearsal.js",
     "release:candidate": "pnpm run ci:quality && pnpm run release:check && pnpm run release:verify-local",
     "release:ga-check": "pnpm run release:candidate",

@@ -60,7 +60,7 @@
 5. `packages/config/src/types/interfaces/workspace-resolver-options.interface.ts`
 6. `packages/config/src/types/interfaces/resolved-workspace.interface.ts`
 7. `apps/cli/src/main.ts`
-8. `packages/shared/src/i18n/locales/en-US.ts`
+8. `packages/shared/src/i18n/locales/en-us.ts`
 9. `packages/shared/src/i18n/locales/zh-cn.ts`
 10. `test/workspace-resolver.smoke.test.ts`
 11. `test/cli-skeleton.smoke.test.ts`

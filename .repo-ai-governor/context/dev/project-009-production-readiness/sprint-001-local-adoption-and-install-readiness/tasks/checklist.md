@@ -8,8 +8,10 @@
   - 2026-03-22：任务创建，状态初始化为 `planned`。
   - 2026-03-22：任务启动，状态切换为 `active`，开始实现本地调试参数、分层诊断产物与 `review-verify` 链路归因字段。
   - 2026-03-22：完成 dry-run/trace/replay 与诊断产物收敛，补齐 review-verify ledger-backfill 归因链路并通过 typecheck/test/check，状态切换为 `completed`。
-- [ ] TK-077 本地安装模式（path/tgz/link）与 clean-room 验证
+- [x] TK-077 本地安装模式（path/tgz/link）与 clean-room 验证
   - 2026-03-22：任务创建，状态初始化为 `planned`。
+  - 2026-03-22：任务启动，状态切换为 `active`，新增 clean-room 验证脚本并固化本地安装模式口径。
+  - 2026-03-22：完成 `path + link` 各连续 3 次 clean-room 验证，补齐 workspace 切换/rollback 与只读 attach 预检并产出 `DA-089`，状态切换为 `completed`。
 - [ ] TK-078 examples 资产与 example smoke 门禁基线
   - 2026-03-22：任务创建，状态初始化为 `planned`。
   - 2026-03-22：根据 `TK-094` 统一为根级 `examples/` 口径，并补充外部消费契约/支持矩阵回链要求，状态保持 `planned`。

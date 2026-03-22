@@ -23,7 +23,7 @@
 7. `apps/cli/src/types/index.ts`
 8. `apps/cli/test/cli-governance-runtime.integration.test.ts`
 9. `apps/cli/README.md`
-10. `packages/shared/src/i18n/locales/en-US.ts`
+10. `packages/shared/src/i18n/locales/en-us.ts`
 11. `packages/shared/src/i18n/locales/zh-cn.ts`
 12. `.repo-ai-governor/context/dev/project-009-production-readiness/sprint-001-local-adoption-and-install-readiness/tasks/TK-076-local-debug-trace-replay-and-diagnostics-baseline.md`
 13. `.repo-ai-governor/context/dev/project-009-production-readiness/sprint-001-local-adoption-and-install-readiness/tasks/DA-088-local-debug-trace-replay-and-diagnostics-baseline.md`

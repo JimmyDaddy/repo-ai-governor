@@ -55,5 +55,5 @@
 4. `apps/cli/src/constants/cli-output.constant.ts`
 5. `apps/cli/src/types/interfaces/cli-output.interface.ts`
 6. `apps/cli/test/cli-output-contract.integration.test.ts`
-7. `packages/shared/src/i18n/locales/en-US.ts`
+7. `packages/shared/src/i18n/locales/en-us.ts`
 8. `packages/shared/src/i18n/locales/zh-cn.ts`
