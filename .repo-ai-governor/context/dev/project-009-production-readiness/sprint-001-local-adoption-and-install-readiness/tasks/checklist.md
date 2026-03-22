@@ -12,9 +12,12 @@
   - 2026-03-22：任务创建，状态初始化为 `planned`。
   - 2026-03-22：任务启动，状态切换为 `active`，新增 clean-room 验证脚本并固化本地安装模式口径。
   - 2026-03-22：完成 `path + link` 各连续 3 次 clean-room 验证，补齐 workspace 切换/rollback 与只读 attach 预检并产出 `DA-089`，状态切换为 `completed`。
-- [ ] TK-078 examples 资产与 example smoke 门禁基线
+- [x] TK-078 examples 资产与 example smoke 门禁基线
   - 2026-03-22：任务创建，状态初始化为 `planned`。
   - 2026-03-22：根据 `TK-094` 统一为根级 `examples/` 口径，并补充外部消费契约/支持矩阵回链要求，状态保持 `planned`。
+  - 2026-03-22：任务启动，状态切换为 `active`，建立根级 `examples/` 四类示例并落地 `example-smoke` 契约文件。
+  - 2026-03-22：完成 `scripts/examples/check-examples-smoke.js` 阻断脚本与 `package.json/turbo` 门禁接线，产出 `DA-090` 并通过验证，状态切换为 `completed`。
+  - 2026-03-22：完成 README-only 收敛到可执行资产，补齐 `scenario.json + fixtures + expected` 与 `doc/runtime` 双 smoke 门禁，状态保持 `completed`。
 - [ ] TK-079 用户接入文档与本地采用手册基线
   - 2026-03-22：任务创建，状态初始化为 `planned`。
 - [ ] TK-080 sprint-001 出口验收与 sprint-002 输入约束

@@ -1,0 +1,9 @@
+{
+  "expectedCommandOperations": {
+    "plan": "plan_snapshot",
+    "run": "governance_run",
+    "review": "review_queue",
+    "review-verify": "review_verify"
+  },
+  "notes": "This scenario must preserve review->review-verify->ledger backfill contract."
+}

@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "1.0",
+  "id": "hitl-escalation-flow",
+  "description": "Runtime baseline for confirm/escalate path rehearsal with review chain continuity.",
+  "commands": [
+    {
+      "id": "run",
+      "args": ["run", "--output", "json", "--dry-run", "--trace"],
+      "expect": {
+        "status": "success",
+        "command": "run",
+        "operation": "governance_run"
+      }
+    },
+    {
+      "id": "review",
+      "args": ["review", "--output", "json"],
+      "expect": {
+        "status": "success",
+        "command": "review",
+        "operation": "review_queue"
+      }
+    },
+    {
+      "id": "review-verify",
+      "args": ["review-verify", "--output", "json"],
+      "expect": {
+        "status": "success",
+        "command": "review-verify",
+        "operation": "review_verify",
+        "requiredArtifactIds": ["review_ledger_backfill"]
+      }
+    }
+  ]
+}

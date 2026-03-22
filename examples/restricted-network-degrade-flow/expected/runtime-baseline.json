@@ -1,0 +1,8 @@
+{
+  "expectedCommandOperations": {
+    "doctor": "env_doctor",
+    "run": "governance_run",
+    "check": "governance_check"
+  },
+  "notes": "Restricted-network scenario validates that local governance checks remain executable."
+}

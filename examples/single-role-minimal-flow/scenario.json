@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "1.0",
+  "id": "single-role-minimal-flow",
+  "description": "Stage 9A minimal command chain for local bootstrap validation.",
+  "commands": [
+    {
+      "id": "init",
+      "args": ["init", "--output", "json"],
+      "expect": {
+        "status": "success",
+        "command": "init",
+        "operation": "workspace_init",
+        "requiredArtifactIds": ["workspace_config", "init_manifest"]
+      }
+    },
+    {
+      "id": "doctor",
+      "args": ["doctor", "--output", "json"],
+      "expect": {
+        "status": "success",
+        "command": "doctor",
+        "operation": "env_doctor"
+      }
+    },
+    {
+      "id": "check",
+      "args": ["check", "--output", "json"],
+      "expect": {
+        "status": "success",
+        "command": "check",
+        "operation": "governance_check"
+      }
+    }
+  ]
+}

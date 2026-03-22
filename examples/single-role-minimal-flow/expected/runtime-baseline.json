@@ -1,0 +1,8 @@
+{
+  "expectedCommandOperations": {
+    "init": "workspace_init",
+    "doctor": "env_doctor",
+    "check": "governance_check"
+  },
+  "notes": "This baseline is consumed by doc-smoke for command-operation parity checks."
+}

@@ -1,0 +1,47 @@
+{
+  "schemaVersion": "1.0",
+  "id": "multi-role-collaboration-flow",
+  "description": "End-to-end collaboration chain including review and ledger backfill.",
+  "commands": [
+    {
+      "id": "plan",
+      "args": ["plan", "--output", "json"],
+      "expect": {
+        "status": "success",
+        "command": "plan",
+        "operation": "plan_snapshot",
+        "requiredArtifactIds": ["plan_snapshot"]
+      }
+    },
+    {
+      "id": "run",
+      "args": ["run", "--output", "json", "--dry-run", "--trace"],
+      "expect": {
+        "status": "success",
+        "command": "run",
+        "operation": "governance_run",
+        "requiredArtifactIds": ["compiled_ir_snapshot", "execution_report", "replay_explain"]
+      }
+    },
+    {
+      "id": "review",
+      "args": ["review", "--output", "json"],
+      "expect": {
+        "status": "success",
+        "command": "review",
+        "operation": "review_queue",
+        "requiredArtifactIds": ["review_request"]
+      }
+    },
+    {
+      "id": "review-verify",
+      "args": ["review-verify", "--output", "json"],
+      "expect": {
+        "status": "success",
+        "command": "review-verify",
+        "operation": "review_verify",
+        "requiredArtifactIds": ["review_verify_result", "review_ledger_backfill"]
+      }
+    }
+  ]
+}

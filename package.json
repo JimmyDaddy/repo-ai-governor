@@ -17,7 +17,7 @@
   "bin": {
     "repo-ai-governor": "./dist/bin/repo-ai-governor.js"
   },
-  "files": ["bin", "dist", "skills", "scripts/examples"],
+  "files": ["bin", "dist", "skills", "scripts/examples", "examples"],
   "scripts": {
     "start": "pnpm run build && node ./dist/bin/repo-ai-governor.js",
     "help": "pnpm run build && node ./dist/bin/repo-ai-governor.js --help",
@@ -44,6 +44,9 @@
     "check:standardized-errors": "node ./scripts/governance/check-standardized-error-usage.js",
     "check:i18n-parity-fallback": "node ./scripts/governance/check-i18n-parity-fallback.js",
     "check:artifact-lifecycle": "node ./scripts/governance/check-artifact-registry-lifecycle.js",
+    "check:examples-doc-smoke": "node ./scripts/examples/check-examples-smoke.js",
+    "check:examples-runtime-smoke": "node ./scripts/examples/check-examples-runtime.js",
+    "check:examples-smoke": "pnpm run check:examples-doc-smoke && pnpm run check:examples-runtime-smoke",
     "check:normative-loading-manifest": "node ./scripts/governance/run-normative-loading-manifest-gate.js",
     "check:normative-loading-manifest:warn": "node ./scripts/governance/check-normative-loading-manifest.js --mode warn",
     "check:normative-loading-manifest:block": "node ./scripts/governance/check-normative-loading-manifest.js --mode block",
@@ -63,6 +66,9 @@
     "gate:dependency-boundary": "node ./scripts/governance/check-package-dependency-boundary.js --mode warn",
     "gate:standardized-errors": "node ./scripts/governance/check-standardized-error-usage.js",
     "gate:artifact-lifecycle": "node ./scripts/governance/check-artifact-registry-lifecycle.js",
+    "gate:examples-doc-smoke": "pnpm run check:examples-doc-smoke",
+    "gate:examples-runtime-smoke": "pnpm run check:examples-runtime-smoke",
+    "gate:examples-smoke": "pnpm run check:examples-smoke",
     "gate:normative-loading-manifest": "node ./scripts/governance/run-normative-loading-manifest-gate.js",
     "gate:task-ledger-sync": "node ./scripts/governance/check-task-ledger-sync.js",
     "gate:sprint-plan-status-sync": "node ./scripts/governance/check-sprint-plan-status-sync.js",

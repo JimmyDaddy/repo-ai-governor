@@ -1,0 +1,34 @@
+{
+  "schemaVersion": "1.0",
+  "id": "restricted-network-degrade-flow",
+  "description": "Degrade-safe baseline for restricted-network diagnostics and local governance checks.",
+  "commands": [
+    {
+      "id": "doctor",
+      "args": ["doctor", "--output", "json"],
+      "expect": {
+        "status": "success",
+        "command": "doctor",
+        "operation": "env_doctor"
+      }
+    },
+    {
+      "id": "run",
+      "args": ["run", "--output", "json", "--dry-run", "--trace"],
+      "expect": {
+        "status": "success",
+        "command": "run",
+        "operation": "governance_run"
+      }
+    },
+    {
+      "id": "check",
+      "args": ["check", "--output", "json"],
+      "expect": {
+        "status": "success",
+        "command": "check",
+        "operation": "governance_check"
+      }
+    }
+  ]
+}

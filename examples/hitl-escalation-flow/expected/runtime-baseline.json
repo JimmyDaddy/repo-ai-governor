@@ -1,0 +1,8 @@
+{
+  "expectedCommandOperations": {
+    "run": "governance_run",
+    "review": "review_queue",
+    "review-verify": "review_verify"
+  },
+  "notes": "HITL semantic checks stay in README contract while runtime smoke validates execution continuity."
+}

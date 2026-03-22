@@ -12,6 +12,9 @@ const REQUIRED_PACKED_PATH_SUFFIXES = [
   "dist/bin/repo-ai-governor.js",
   "dist/apps/cli/src/main.js",
   "dist/packages/shared/src/index.js",
+  "examples/README.md",
+  "examples/single-role-minimal-flow/scenario.json",
+  "examples/single-role-minimal-flow/expected/runtime-baseline.json",
 ];
 
 /**
