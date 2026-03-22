@@ -54,7 +54,8 @@ describe("CLI output contract integration", () => {
     expect(payload.command).toBe("init");
     expect(payload.runtime.is_tty).toBe(false);
     expect(payload.runtime.downgraded_from).toBeNull();
-    expect(payload.message).toContain("Command 'init' skeleton executed");
+    expect(payload.message).toContain("Initialized workspace at");
+    expect(payload.command_result.operation).toBe("workspace_init");
   });
 
   it("downgrades pretty to plain in non-TTY environment", async () => {
@@ -150,7 +151,7 @@ describe("CLI output contract integration", () => {
 
     expect(exitCode).toBe(0);
     expect(stderrBuffer.join("")).toBe("");
-    expect(stdout).toContain("Command 'init' skeleton executed.");
+    expect(stdout).toContain("Initialized workspace at");
     expect(stdout).toContain("outputMode=plain");
     expect(stdout).not.toContain("workspaceRoot=");
     expect(stdout).not.toContain("memoryStoreRoot=");

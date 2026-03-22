@@ -1,5 +1,10 @@
 import type { ErrorOutputEnvironment, GovernorErrorCode } from "@repo-ai-governor/shared";
 import type {
+  CliDoctorAttachMode,
+  CliGovernanceCheckStatus,
+  CliRuntimeOperation,
+} from "../../constants/cli-governance-runtime.constant.js";
+import type {
   CliNextAction,
   CliOutputStatus,
   CliVerbosity,
@@ -34,6 +39,40 @@ export interface CliCommandDiagnostics {
 }
 
 /**
+ * Defines one command-level governance check row.
+ */
+export interface CliCommandResultCheck {
+  id: string;
+  status: CliGovernanceCheckStatus;
+  detail: string;
+}
+
+/**
+ * Defines one command-level artifact reference generated during execution.
+ */
+export interface CliCommandResultArtifact {
+  id: string;
+  path: string;
+}
+
+/**
+ * Defines one command execution summary payload shared by pretty/plain/json outputs.
+ */
+export interface CliCommandExecutionResultPayload {
+  operation: CliRuntimeOperation;
+  summary: string;
+  attach_mode?: CliDoctorAttachMode;
+  check_totals?: {
+    pass: number;
+    warn: number;
+    fail: number;
+  };
+  checks?: CliCommandResultCheck[];
+  artifacts?: CliCommandResultArtifact[];
+  details?: Record<string, boolean | number | string | null>;
+}
+
+/**
  * Defines one successful CLI output payload in stable machine-readable shape.
  */
 export interface CliSuccessOutputPayload {
@@ -49,6 +88,7 @@ export interface CliSuccessOutputPayload {
     downgraded_from: ErrorOutputEnvironment | null;
   };
   diagnostics: CliCommandDiagnostics;
+  command_result?: CliCommandExecutionResultPayload;
 }
 
 /**

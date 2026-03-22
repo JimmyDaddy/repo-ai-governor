@@ -1,5 +1,5 @@
 import { ErrorOutputEnvironment } from "@repo-ai-governor/shared";
-import { CLI_SKELETON_COMMAND_NAMES } from "./cli-command.constant.js";
+import { CLI_COMMAND_NAMES } from "./cli-command.constant.js";
 
 /**
  * Defines supported IDE entry surfaces for command-wrapper metadata.
@@ -24,7 +24,7 @@ export enum IdeWrapperEnvironmentKey {
 /**
  * Defines canonical command set allowed by IDE wrapper baseline.
  */
-export const IDE_WRAPPER_SUPPORTED_COMMANDS = [...CLI_SKELETON_COMMAND_NAMES] as const;
+export const IDE_WRAPPER_SUPPORTED_COMMANDS = [...CLI_COMMAND_NAMES] as const;
 
 /**
  * Defines default output mode for IDE-oriented command wrappers.

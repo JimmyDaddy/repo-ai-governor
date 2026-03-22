@@ -11,6 +11,7 @@ import {
   WorkspaceResolver,
 } from "@repo-ai-governor/config";
 import { FsCsvMemoryStoreProvider } from "@repo-ai-governor/memory-provider-fs-csv";
+import type { MemoryStoreProvider } from "@repo-ai-governor/memory-store-adapter";
 import {
   DEFAULT_I18N_RUNTIME_CONFIG,
   DEFAULT_MEMORY_RUNTIME_CONFIG,
@@ -24,8 +25,9 @@ import {
   type StandardizedError,
   standardizeError,
 } from "@repo-ai-governor/shared";
+import { CliGovernanceRuntime } from "./cli-governance-runtime.js";
 import { CliOutputPresenter } from "./cli-output-presenter.js";
-import { CLI_SKELETON_COMMAND_DEFINITIONS } from "./constants/cli-command.constant.js";
+import { CLI_COMMAND_DEFINITIONS } from "./constants/cli-command.constant.js";
 import {
   CLI_OPTIONS_REQUIRING_VALUE,
   CLI_OUTPUT_MODE_VALUES,
@@ -48,6 +50,7 @@ export type {
 } from "./types/index.js";
 import type {
   CliCommandDiagnostics,
+  CliCommandExecutionResultPayload,
   CliErrorOutputPayload,
   CliResolvedOutputContext,
   CliSuccessOutputPayload,
@@ -99,6 +102,7 @@ interface ResolvedCliRuntimeContext {
 interface MemoryStoreComposition {
   memoryStoreRoot: string;
   providerName: string;
+  provider: MemoryStoreProvider;
 }
 
 /**
@@ -133,6 +137,7 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
 
   let outputContext = resolveFallbackOutputContext(io);
   let i18nRuntime: I18nRuntime | undefined;
+  let memoryStoreComposition: MemoryStoreComposition | undefined;
 
   try {
     outputContext = resolveOutputModeContext(rawArgs, io);
@@ -144,15 +149,29 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
     const requestedLocale = readOptionValue(rawArgs, "--locale");
     const requestedProfileId = readOptionValue(rawArgs, "--profile");
     const runtimeContext = resolveRuntimeContext(io.cwd(), requestedProfileId);
-    const memoryStoreComposition = await composeMemoryStoreProvider(
+    memoryStoreComposition = await composeMemoryStoreProvider(
       runtimeContext.workspace.workspaceRoot,
       runtimeContext.memory,
     );
+    const activeMemoryStoreComposition = memoryStoreComposition;
 
     i18nRuntime = new I18nRuntime();
     const runtimeI18n = i18nRuntime;
     const resolvedLocale = await runtimeI18n.initialize(runtimeContext.i18n, requestedLocale);
     const profileLabel = runtimeContext.profileId ?? runtimeI18n.t("cli.skeleton.noProfile");
+    const governanceRuntime = new CliGovernanceRuntime({
+      currentWorkingDirectory: io.cwd(),
+      workspace: runtimeContext.workspace,
+      configSource: runtimeContext.configSource,
+      profileId: runtimeContext.profileId,
+      locale: resolvedLocale,
+      outputMode: outputContext.outputMode,
+      isTty: outputContext.isTty,
+      memoryConfig: runtimeContext.memory,
+      memoryStoreRoot: activeMemoryStoreComposition.memoryStoreRoot,
+      memoryStoreProviderName: activeMemoryStoreComposition.providerName,
+      memoryStoreProvider: activeMemoryStoreComposition.provider,
+    });
 
     const program = new Command();
     program.name("repo-ai-governor");
@@ -169,7 +188,7 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
     });
     program.exitOverride();
 
-    for (const commandDefinition of CLI_SKELETON_COMMAND_DEFINITIONS) {
+    for (const commandDefinition of CLI_COMMAND_DEFINITIONS) {
       program
         .command(commandDefinition.name)
         .description(runtimeI18n.t(commandDefinition.descriptionKey))
@@ -183,15 +202,19 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
             workspaceId: runtimeContext.workspace.workspaceId,
             workspaceRoot: runtimeContext.workspace.workspaceRoot,
             memoryStoreEngine: runtimeContext.memory.storeEngine,
-            memoryStoreRoot: memoryStoreComposition.memoryStoreRoot,
-            memoryStoreProvider: memoryStoreComposition.providerName,
+            memoryStoreRoot: activeMemoryStoreComposition.memoryStoreRoot,
+            memoryStoreProvider: activeMemoryStoreComposition.providerName,
           };
-          const message = runtimeI18n.t("cli.skeleton.executed", {
-            command: commandDefinition.name,
-          });
+          const executionResult = await governanceRuntime.execute(commandDefinition.name);
 
           outputPresenter.writeSuccess(
-            buildSuccessOutputPayload(commandDefinition.name, message, outputContext, diagnostics),
+            buildSuccessOutputPayload(
+              commandDefinition.name,
+              executionResult.message,
+              outputContext,
+              diagnostics,
+              executionResult.commandResult,
+            ),
           );
         });
     }
@@ -220,6 +243,8 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
       buildErrorOutputPayload(commandName, message, standardizedError, outputContext),
     );
     return exitCode;
+  } finally {
+    await memoryStoreComposition?.provider.dispose?.();
   }
 }
 
@@ -309,6 +334,7 @@ async function composeMemoryStoreProvider(
     return {
       memoryStoreRoot,
       providerName: provider.constructor.name,
+      provider,
     };
   }
 
@@ -319,6 +345,7 @@ async function composeMemoryStoreProvider(
   return {
     memoryStoreRoot,
     providerName: provider.constructor.name,
+    provider,
   };
 }
 
@@ -447,6 +474,7 @@ function resolveVerbosityOption(args: string[]): CliVerbosity {
  * @param message Human-readable command summary.
  * @param outputContext Resolved output runtime context.
  * @param diagnostics Runtime diagnostics snapshot.
+ * @param commandResult Optional command-level governance payload.
  * @returns Stable success payload.
  */
 function buildSuccessOutputPayload(
@@ -454,6 +482,7 @@ function buildSuccessOutputPayload(
   message: string,
   outputContext: CliResolvedOutputContext,
   diagnostics: CliCommandDiagnostics,
+  commandResult?: CliCommandExecutionResultPayload,
 ): CliSuccessOutputPayload {
   return {
     schema_version: CLI_OUTPUT_SCHEMA_VERSION,
@@ -468,6 +497,7 @@ function buildSuccessOutputPayload(
       downgraded_from: outputContext.downgradedFrom,
     },
     diagnostics,
+    ...(commandResult ? { command_result: commandResult } : {}),
   };
 }
 

@@ -1,14 +1,14 @@
 # Dev Context Index
 
 - Status: active
-- Date: 2026-03-21
+- Date: 2026-03-22
 - Scope: `.repo-ai-governor/context/dev/**`
 
 ## 1. Core Navigation
 
 1. `projects-overview`: `.repo-ai-governor/context/dev/projects-overview.md`
 2. `dependency-artifact-registry-guide`: `.repo-ai-governor/context/dev/dependency-artifact-registry.md`
-3. `primary project plan`: `.repo-ai-governor/context/dev/project-005-observability-and-artifacts/plan.md`
+3. `primary project plan`: `.repo-ai-governor/context/dev/project-009-production-readiness/plan.md`
 
 ## 2. Artifact Retrieval Entry
 

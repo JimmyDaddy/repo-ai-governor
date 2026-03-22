@@ -1,5 +1,8 @@
 export type { IdeWrapperCommandName } from "./aliases/index.js";
 export type {
+  CliCommandExecutionResultPayload,
+  CliCommandResultArtifact,
+  CliCommandResultCheck,
   CliCommandDiagnostics,
   CliErrorOutputPayload,
   CliResolvedOutputContext,

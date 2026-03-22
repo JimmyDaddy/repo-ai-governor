@@ -1,0 +1,50 @@
+# checklist
+
+- [x] TK-075 CLI 命令去 skeleton 化与最小治理链路
+  - 2026-03-22：任务创建，状态初始化为 `planned`。
+  - 2026-03-22：任务启动，状态切换为 `active`，开始收敛 CLI 命令去 skeleton 化与最小治理链路实现。
+  - 2026-03-22：完成 CLI 最小治理链路实现与 `pnpm run help` 运行时构建缺口修复，`pnpm run check` 通过，状态切换为 `completed`。
+- [ ] TK-076 本地调试（dry-run/trace/replay）与诊断输出基线
+  - 2026-03-22：任务创建，状态初始化为 `planned`。
+- [ ] TK-077 本地安装模式（path/tgz/link）与 clean-room 验证
+  - 2026-03-22：任务创建，状态初始化为 `planned`。
+- [ ] TK-078 examples 资产与 example smoke 门禁基线
+  - 2026-03-22：任务创建，状态初始化为 `planned`。
+  - 2026-03-22：根据 `TK-094` 统一为根级 `examples/` 口径，并补充外部消费契约/支持矩阵回链要求，状态保持 `planned`。
+- [ ] TK-079 用户接入文档与本地采用手册基线
+  - 2026-03-22：任务创建，状态初始化为 `planned`。
+- [ ] TK-080 sprint-001 出口验收与 sprint-002 输入约束
+  - 2026-03-22：任务创建，状态初始化为 `planned`。
+  - 2026-03-22：根据 `TK-094` 补齐根级 `examples/`、外部消费契约/支持矩阵、HITL 通知 rehearsal、受控 delivery rehearsal 与运营指标快照口径，状态保持 `planned`。
+- [x] TK-087 主执行计划 Stage 9 分阶段门槛与 GA 信号补强
+  - 2026-03-22：任务创建，状态初始化为 `planned`。
+  - 2026-03-22：任务启动，状态切换为 `active`，开始收敛 Stage 9A/9B 门槛、GA 量化信号与适配器/示例契约。
+  - 2026-03-22：完成主执行计划补强、project-009 台账同步与评审记录，并通过 `check-task-ledger-sync`、`check-sprint-plan-status-sync`、`run-normative-loading-manifest-gate`、`pnpm run check`，状态切换为 `completed`。
+- [x] TK-088 Stage 9A 任务卡与执行面主计划对齐
+  - 2026-03-22：任务创建，状态初始化为 `planned`。
+  - 2026-03-22：任务启动，状态切换为 `active`，开始将 Stage 9A 硬门槛、`DA-092` 交接语义与 clean-room/examples/docs 约束下钻到 `TK-075`~`TK-080`。
+  - 2026-03-22：完成 `TK-075`~`TK-080` 任务卡、project/sprint 计划与评审记录同步，并通过 `check-task-ledger-sync`、`check-sprint-plan-status-sync`、`pnpm run check`，状态切换为 `completed`。
+- [x] TK-089 主执行计划后续补充对齐与治理门禁补强
+  - 2026-03-22：任务创建，状态初始化为 `planned`。
+  - 2026-03-22：任务启动，状态切换为 `active`，开始将 Phase 对齐、只读接入/workspace 回滚、完整 `review-verify` 闭环与治理门禁补入主执行计划。
+  - 2026-03-22：完成主执行计划与 `project-009` 台账入口同步，并通过 `check-task-ledger-sync`、`check-sprint-plan-status-sync`、`check-code-review-status-sync`、`run-normative-loading-manifest-gate`，状态切换为 `completed`。
+- [x] TK-090 Stage 9A 任务卡二次下钻与出口验收口径补强
+  - 2026-03-22：任务创建，状态初始化为 `planned`。
+  - 2026-03-22：任务启动，状态切换为 `active`，开始将 `TK-089` 的新增口径继续下钻到 `TK-075`~`TK-080` 与 `DA-092` 交接语义。
+  - 2026-03-22：完成 `TK-075`~`TK-080`、project/sprint 台账与评审记录同步，并通过 `check-task-ledger-sync`、`check-sprint-plan-status-sync`、`check-code-review-status-sync`，状态切换为 `completed`。
+- [x] TK-091 TK-080 验收模板骨架与 DA-092 结构化入口固化
+  - 2026-03-22：任务创建，状态初始化为 `planned`。
+  - 2026-03-22：任务启动，状态切换为 `active`，开始将 `TK-080` 固化为可直接填写的 `DA-092` 模板入口。
+  - 2026-03-22：完成 `TK-080` 模板骨架、project/sprint 台账与评审记录同步，并通过 `check-task-ledger-sync`、`check-sprint-plan-status-sync`、`check-code-review-status-sync`，状态切换为 `completed`。
+- [x] TK-092 sprint-002 任务卡与 DA-092 handoff 约束对齐
+  - 2026-03-22：任务创建，状态初始化为 `planned`。
+  - 2026-03-22：任务启动，状态切换为 `active`，开始将 `DA-092` handoff 约束下钻到 `TK-081`~`TK-085` 与 sprint-002 计划入口。
+  - 2026-03-22：完成 sprint-002 任务卡、project/sprint 计划与评审记录同步，并通过 `check-task-ledger-sync`、`check-sprint-plan-status-sync`、`check-code-review-status-sync`，状态切换为 `completed`。
+- [x] TK-093 TK-086 项目出口验收模板与完成态审计入口固化
+  - 2026-03-22：任务创建，状态初始化为 `planned`。
+  - 2026-03-22：任务启动，状态切换为 `active`，开始将 `TK-086` 固化为可直接填写的 `DA-098` 项目出口验收模板入口。
+  - 2026-03-22：完成 `TK-086` 模板骨架、project/sprint 计划与评审记录同步，并通过 `check-task-ledger-sync`、`check-sprint-plan-status-sync`、`check-code-review-status-sync`，状态切换为 `completed`。
+- [x] TK-094 主执行计划 Stage 9 运营指标与外部消费契约补强
+  - 2026-03-22：任务创建，状态初始化为 `planned`。
+  - 2026-03-22：任务启动，状态切换为 `active`，开始补强 Stage 9 运营指标、外部消费契约/支持矩阵、通知 rehearsal 与 `examples/` 根目录口径。
+  - 2026-03-22：完成主执行计划、`project-009` 计划、`TK-078` / `TK-080` 与台账同步，并通过 `check-task-ledger-sync`、`check-sprint-plan-status-sync`、`check-code-review-status-sync`、`run-normative-loading-manifest-gate`、`pnpm run check`，状态切换为 `completed`。

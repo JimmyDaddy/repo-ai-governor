@@ -89,6 +89,23 @@ export class CliOutputPresenter {
       payload.runtime.color_enabled,
     );
     const lines = [title, `  message: ${payload.message}`, `  command: ${payload.command}`];
+    const commandResult = payload.command_result;
+
+    if (commandResult) {
+      lines.push(
+        `  operation: ${commandResult.operation}`,
+        `  operation_summary: ${commandResult.summary}`,
+      );
+
+      if (commandResult.attach_mode) {
+        lines.push(`  attach_mode: ${commandResult.attach_mode}`);
+      }
+      if (commandResult.check_totals) {
+        lines.push(
+          `  checks: pass=${commandResult.check_totals.pass} warn=${commandResult.check_totals.warn} fail=${commandResult.check_totals.fail}`,
+        );
+      }
+    }
 
     if (payload.verbosity !== CliVerbosity.QUIET) {
       lines.push(
@@ -110,6 +127,19 @@ export class CliOutputPresenter {
         `  memory_store_root: ${payload.diagnostics.memoryStoreRoot}`,
         `  memory_store_provider: ${payload.diagnostics.memoryStoreProvider}`,
       );
+
+      if (commandResult?.checks) {
+        const checkSummary = commandResult.checks
+          .map((check) => `${check.id}:${check.status}`)
+          .join(", ");
+        lines.push(`  check_summary: ${checkSummary}`);
+      }
+      if (commandResult?.artifacts) {
+        const artifactSummary = commandResult.artifacts
+          .map((artifact) => `${artifact.id}=${artifact.path}`)
+          .join(", ");
+        lines.push(`  artifacts: ${artifactSummary}`);
+      }
     }
 
     return lines.join("\n");
@@ -121,15 +151,17 @@ export class CliOutputPresenter {
    * @returns Plain text output.
    */
   private renderPlainSuccess(payload: CliSuccessOutputPayload): string {
+    const commandResult = payload.command_result;
+
     if (payload.verbosity === CliVerbosity.QUIET) {
-      return `${payload.message} outputMode=${payload.output_mode}`;
+      return `${payload.message} outputMode=${payload.output_mode}${commandResult ? ` operation=${commandResult.operation}` : ""}`;
     }
 
     if (payload.verbosity === CliVerbosity.VERBOSE) {
-      return `${payload.message} outputMode=${payload.output_mode} verbosity=${payload.verbosity} configSource=${payload.diagnostics.configSource} downgradedFrom=${payload.runtime.downgraded_from ?? "none"}`;
+      return `${payload.message} outputMode=${payload.output_mode} verbosity=${payload.verbosity} configSource=${payload.diagnostics.configSource} downgradedFrom=${payload.runtime.downgraded_from ?? "none"}${commandResult ? ` operation=${commandResult.operation}` : ""}`;
     }
 
-    return `${payload.message} outputMode=${payload.output_mode} verbosity=${payload.verbosity}`;
+    return `${payload.message} outputMode=${payload.output_mode} verbosity=${payload.verbosity}${commandResult ? ` operation=${commandResult.operation}` : ""}`;
   }
 
   /**

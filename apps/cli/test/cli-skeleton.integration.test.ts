@@ -31,15 +31,16 @@ function createBufferedIo(): {
   };
 }
 
-describe("CLI skeleton integration", () => {
-  it("prints command skeleton output for init", async () => {
+describe("CLI command integration", () => {
+  it("prints executable init output for workspace bootstrap", async () => {
     const { stdoutBuffer, stderrBuffer, io } = createBufferedIo();
 
     const exitCode = await runCli(["node", "repo-ai-governor", "--locale", "en-US", "init"], io);
 
     expect(exitCode).toBe(0);
     expect(stderrBuffer.join("")).toBe("");
-    expect(stdoutBuffer.join("")).toContain("Command 'init' skeleton executed");
+    expect(stdoutBuffer.join("")).toContain("Initialized workspace at");
+    expect(stdoutBuffer.join("")).toContain("operation=workspace_init");
     expect(stdoutBuffer.join("")).toContain("outputMode=plain");
     expect(stdoutBuffer.join("")).toContain("verbosity=normal");
   });

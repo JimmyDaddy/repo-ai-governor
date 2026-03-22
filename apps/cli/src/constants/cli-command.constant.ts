@@ -1,5 +1,5 @@
 /**
- * Defines finite command names exposed by the CLI skeleton baseline.
+ * Defines finite command names exposed by the CLI runtime baseline.
  */
 export enum CliCommandName {
   INIT = "init",
@@ -12,7 +12,7 @@ export enum CliCommandName {
   UPGRADE = "upgrade",
 }
 
-export const CLI_SKELETON_COMMAND_DEFINITIONS = [
+export const CLI_COMMAND_DEFINITIONS = [
   { name: CliCommandName.INIT, descriptionKey: "cli.commands.init.description" },
   { name: CliCommandName.DOCTOR, descriptionKey: "cli.commands.doctor.description" },
   { name: CliCommandName.CHECK, descriptionKey: "cli.commands.check.description" },
@@ -26,7 +26,7 @@ export const CLI_SKELETON_COMMAND_DEFINITIONS = [
 /**
  * Defines the shared command-name list consumed by CLI and IDE wrapper surfaces.
  */
-export const CLI_SKELETON_COMMAND_NAMES = [
+export const CLI_COMMAND_NAMES = [
   CliCommandName.INIT,
   CliCommandName.DOCTOR,
   CliCommandName.CHECK,
