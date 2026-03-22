@@ -1,6 +1,6 @@
 # project-007-platformization 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-03-22
 - Stage Mapping: Stage 8
 - Phase Mapping: P2 扩展阶段
@@ -45,8 +45,8 @@
 
 ## 3.2 sprint-002-org-governance-and-rollout-readiness
 
-- Sprint Goal: 落地平台化核心能力最小实现链路（市场供给、可视化联调、组织级分发与审计治理）并形成 project-007 出口验收。
-- 任务包：`TK-069`、`TK-070`、`TK-071`、`TK-072`、`TK-073`。
+- Sprint Goal: 落地平台化核心能力最小实现链路（市场供给、可视化联调、组织级分发与审计治理）并形成 project-007 出口验收，同时补齐仓库内 workspace code review 生命周期自动收口规则。
+- 任务包：`TK-069`、`TK-070`、`TK-071`、`TK-072`、`TK-073`、`TK-074`。
 - Exit Criteria:
   1. 插槽市场供给链具备受控发布、回滚与消费验证能力。
   2. 可视化面板 MVP 与 runtime 事件链路可联调并可审计。
@@ -63,11 +63,12 @@
 | TK-066 | sprint-001 | 可视化配置与执行面板契约基线 | baseline/console | TK-064,TK-065 | completed |
 | TK-067 | sprint-001 | 组织级策略分发与审计汇聚契约基线 | baseline/policy-audit | TK-064,DA-075 | completed |
 | TK-068 | sprint-001 | sprint-001 出口验收与 sprint-002 输入约束 | acceptance baseline | TK-065,TK-066,TK-067 | completed |
-| TK-069 | sprint-002 | 插槽市场供给链与权限治理落地 | implementation/marketplace | TK-068 | planned |
-| TK-070 | sprint-002 | 可视化面板 MVP 与流程编排联调 | implementation/console | TK-068,TK-069 | planned |
-| TK-071 | sprint-002 | 组织级策略包分发与版本治理落地 | implementation/policy | TK-068,TK-069 | planned |
-| TK-072 | sprint-002 | 跨租户审计视图与导出治理落地 | implementation/audit | TK-068,TK-071 | planned |
-| TK-073 | sprint-002 | project-007 出口验收与后续 rollout 输入约束 | acceptance baseline | TK-069,TK-070,TK-071,TK-072 | planned |
+| TK-069 | sprint-002 | 插槽市场供给链与权限治理落地 | implementation/marketplace | TK-068 | completed |
+| TK-070 | sprint-002 | 可视化面板 MVP 与流程编排联调 | implementation/console | TK-068,TK-069 | completed |
+| TK-071 | sprint-002 | 组织级策略包分发与版本治理落地 | implementation/policy | TK-068,TK-069 | completed |
+| TK-072 | sprint-002 | 跨租户审计视图与导出治理落地 | implementation/audit | TK-068,TK-071 | completed |
+| TK-073 | sprint-002 | project-007 出口验收与后续 rollout 输入约束 | acceptance baseline | TK-069,TK-070,TK-071,TK-072 | completed |
+| TK-074 | sprint-002 | workspace code review 无修复项直接 resolved 规则 | maintenance/review-workflow | TK-073 | completed |
 
 ## 5. 依赖产物策略
 
@@ -92,3 +93,10 @@
 5. 2026-03-22：完成 `TK-066` 并产出 `DA-079`，可视化配置与执行面板交互契约、权限模型与事件回链字段基线已固化。
 6. 2026-03-22：完成 `TK-067` 并产出 `DA-080`，组织级策略分发、灰度回滚触发、跨租户审计汇聚最小字段与 Stage 7 兼容约束基线已固化。
 7. 2026-03-22：完成 `TK-068` 并产出 `DA-081`，sprint-001 出口验收与 sprint-002 输入约束基线已固化，sprint-001 状态收敛为 `completed`。
+8. 2026-03-22：完成 `TK-069` 并产出 `DA-082`，插槽市场供给链与权限治理实现基线已固化。
+9. 2026-03-22：完成 `TK-070` 并产出 `DA-083`，可视化面板 MVP 与流程编排联调实现基线已固化。
+10. 2026-03-22：完成 `TK-071` 并产出 `DA-084`，组织级策略包分发与版本治理实现基线已固化。
+11. 2026-03-22：完成 `TK-072` 并产出 `DA-085`，跨租户审计视图与导出治理实现基线已固化。
+12. 2026-03-22：完成 `TK-073` 并产出 `DA-086`，project-007 出口验收与后续 rollout 输入约束已固化。
+13. 2026-03-22：新增项目完成态审计摘要入口：`.repo-ai-governor/context/dev/project-007-platformization/project-007-platformization-completion-audit-summary.md`。
+14. 2026-03-22：完成 `TK-074`，workspace code review 在无修复项时可直接输出 `resolved` 状态，避免 CR 生命周期空转。

@@ -1,12 +1,26 @@
 # checklist
 
-- [ ] TK-069 插槽市场供给链与权限治理落地
+- [x] TK-069 插槽市场供给链与权限治理落地
   - 2026-03-22：任务创建，状态初始化为 `planned`。
-- [ ] TK-070 可视化面板 MVP 与流程编排联调
+  - 2026-03-22：任务启动，状态切换为 `active`，开始收敛供给链执行路径、权限模型与回滚语义。
+  - 2026-03-22：完成 `DA-082`，固化 marketplace 供给链闭环与权限治理基线，并通过 `reconcile-artifact-dependencies`、`check-artifact-registry-lifecycle`、`check-task-ledger-sync`、`check-sprint-plan-status-sync`、`pnpm run check`，状态切换为 `completed`。
+- [x] TK-070 可视化面板 MVP 与流程编排联调
   - 2026-03-22：任务创建，状态初始化为 `planned`。
-- [ ] TK-071 组织级策略包分发与版本治理落地
+  - 2026-03-22：任务启动，状态切换为 `active`，开始收敛 console MVP 功能边界与编排联调契约。
+  - 2026-03-22：完成 `DA-083`，固化可视化面板与执行/策略/回放链路联调基线，并通过 `reconcile-artifact-dependencies`、`check-artifact-registry-lifecycle`、`check-task-ledger-sync`、`check-sprint-plan-status-sync`、`pnpm run check`，状态切换为 `completed`。
+- [x] TK-071 组织级策略包分发与版本治理落地
   - 2026-03-22：任务创建，状态初始化为 `planned`。
-- [ ] TK-072 跨租户审计视图与导出治理落地
+  - 2026-03-22：任务启动，状态切换为 `active`，开始收敛策略包分发路径、版本治理与回滚规则。
+  - 2026-03-22：完成 `DA-084`，固化组织级策略分发与版本治理实现基线，并通过 `reconcile-artifact-dependencies`、`check-artifact-registry-lifecycle`、`check-task-ledger-sync`、`check-sprint-plan-status-sync`、`pnpm run check`，状态切换为 `completed`。
+- [x] TK-072 跨租户审计视图与导出治理落地
   - 2026-03-22：任务创建，状态初始化为 `planned`。
-- [ ] TK-073 project-007 出口验收与后续 rollout 输入约束
+  - 2026-03-22：任务启动，状态切换为 `active`，开始收敛跨租户审计查询、导出与权限治理边界。
+  - 2026-03-22：完成 `DA-085`，固化跨租户审计视图与导出治理实现基线，并通过 `reconcile-artifact-dependencies`、`check-artifact-registry-lifecycle`、`check-task-ledger-sync`、`check-sprint-plan-status-sync`、`pnpm run check`，状态切换为 `completed`。
+- [x] TK-073 project-007 出口验收与后续 rollout 输入约束
   - 2026-03-22：任务创建，状态初始化为 `planned`。
+  - 2026-03-22：任务启动，状态切换为 `active`，开始汇总 `DA-082`~`DA-085` 证据并收敛 project-007 出口验收结论。
+  - 2026-03-22：完成 `DA-086`，沉淀 project-007 出口验收与 rollout 输入约束，并通过 `reconcile-artifact-dependencies`、`check-artifact-registry-lifecycle`、`check-task-ledger-sync`、`check-sprint-plan-status-sync`、`pnpm run check`，状态切换为 `completed`。
+- [x] TK-074 workspace code review 无修复项直接 resolved 规则
+  - 2026-03-22：任务创建，状态初始化为 `planned`。
+  - 2026-03-22：任务启动，状态切换为 `active`，开始收敛 workspace code review 在无修复项时的生命周期规则。
+  - 2026-03-22：完成 skill 规则更新与 sprint 台账同步，产出 `resolved_code_review_tk-074-workspace-code-review-no-findings-auto-resolve.md`，并通过 `check-task-ledger-sync`、`check-sprint-plan-status-sync`、`pnpm run check`，状态切换为 `completed`。

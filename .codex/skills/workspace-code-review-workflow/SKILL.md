@@ -15,7 +15,8 @@ Prefer this repository-local skill over the generic `code-review-workflow` skill
 
 1. `帮我cr代码` / `帮我 cr 代码` / `code review`
 - Review only the files currently modified in the working tree.
-- Create a new `code_review_<slug>.md` in the active sprint `review/` directory.
+- Create `code_review_<slug>.md` in the active sprint `review/` directory only when the review contains actionable findings.
+- If the review finds no actionable repair item, write `resolved_code_review_<slug>.md` directly.
 
 2. `复核 code review 报告` / `复核 cr 报告`
 - Find the active sprint report that is still pending verification (`code_review_*.md`).
@@ -58,7 +59,9 @@ Prefer this repository-local skill over the generic `code-review-workflow` skill
 - data consistency, rollback, and failure recovery
 - missing or weak tests
 
-4. Write `code_review_<slug>.md` with this structure:
+4. Write the report with this structure.
+- Use `code_review_<slug>.md` when findings still need verification or repair.
+- Use `resolved_code_review_<slug>.md` directly when no actionable finding exists.
 
 ```md
 # Code Review: <title>
@@ -88,7 +91,9 @@ Prefer this repository-local skill over the generic `code-review-workflow` skill
 1. `<command>`（通过/未执行/失败）
 ```
 
-5. If no issues are found, explicitly write `未发现阻断当前变更的问题。`
+5. If no actionable issue is found, explicitly write `未发现需要修复的点。`
+- Keep residual notes in `## 3. Notes` when useful, but do not leave the report in `review_pending`.
+- Skip the pending/verified transition and emit the report directly as `resolved_code_review_<slug>.md`.
 
 ## Workflow B: Recheck Pending Report
 
@@ -148,4 +153,5 @@ Prefer this repository-local skill over the generic `code-review-workflow` skill
 3. Never mark a report as `resolved` while blocked or skipped actionable items remain.
 4. Never claim a command passed unless it actually ran successfully.
 5. Keep findings evidence-driven, severity-ordered, and tied to concrete file references.
-6. Keep user-facing summaries short: findings first, then verification and follow-up actions.
+6. When a review has no actionable finding, prefer direct `resolved_code_review_*.md` output over an empty pending lifecycle.
+7. Keep user-facing summaries short: findings first, then verification and follow-up actions.
