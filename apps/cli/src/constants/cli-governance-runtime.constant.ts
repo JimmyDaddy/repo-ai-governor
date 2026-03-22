@@ -25,6 +25,7 @@ export enum CliRuntimeOperation {
   ENV_DOCTOR = "env_doctor",
   GOVERNANCE_CHECK = "governance_check",
   GOVERNANCE_RUN = "governance_run",
+  GOVERNANCE_RUN_REPLAY = "governance_run_replay",
   REVIEW_QUEUE = "review_queue",
   REVIEW_VERIFY = "review_verify",
   PLAN_SNAPSHOT = "plan_snapshot",
@@ -37,6 +38,33 @@ export enum CliRuntimeOperation {
 export enum CliReviewRequestStatus {
   QUEUED = "queued",
   VERIFIED = "verified",
+}
+
+/**
+ * Defines replay payload source types accepted by `run --replay`.
+ */
+export enum CliRunReplaySourceType {
+  EXECUTION_REPORT = "execution_report",
+  REPLAY_EXPLAIN = "replay_explain",
+}
+
+/**
+ * Defines root-cause categories used by local diagnostics artifacts.
+ */
+export enum CliDiagnosticRootCause {
+  NONE = "none",
+  POLICY_BLOCKED = "policy_blocked",
+  POLICY_HITL_REQUIRED = "policy_hitl_required",
+  ENVIRONMENT_PRECONDITION = "environment_precondition",
+  PERMISSION_CONFIRMATION = "permission_confirmation",
+  RUNTIME_FAILURE = "runtime_failure",
+}
+
+/**
+ * Defines review-verify ledger backfill lifecycle statuses.
+ */
+export enum CliReviewLedgerBackfillStatus {
+  PENDING = "pending",
 }
 
 /**
@@ -55,6 +83,21 @@ export const CLI_RUNTIME_OPERATION = CliRuntimeOperation;
 export const CLI_REVIEW_REQUEST_STATUS = CliReviewRequestStatus;
 
 /**
+ * Re-exports replay-source enum as a constant namespace for runtime callsites.
+ */
+export const CLI_RUN_REPLAY_SOURCE_TYPE = CliRunReplaySourceType;
+
+/**
+ * Re-exports diagnostics root-cause enum as a constant namespace for runtime callsites.
+ */
+export const CLI_DIAGNOSTIC_ROOT_CAUSE = CliDiagnosticRootCause;
+
+/**
+ * Re-exports review ledger-backfill status enum as a constant namespace for runtime callsites.
+ */
+export const CLI_REVIEW_LEDGER_BACKFILL_STATUS = CliReviewLedgerBackfillStatus;
+
+/**
  * Defines standard context directories initialized by `init`.
  */
 export const CLI_INIT_REQUIRED_DIRECTORY_SEGMENTS = [
@@ -62,6 +105,11 @@ export const CLI_INIT_REQUIRED_DIRECTORY_SEGMENTS = [
   ["context", "memory"],
   ["context", "compiled-ir"],
   ["context", "bootstrap"],
+  ["context", "diagnostics"],
+  ["context", "diagnostics", "trace"],
+  ["context", "diagnostics", "replay"],
+  ["context", "ledger-backfill"],
+  ["context", "ledger-backfill", "review-verify"],
   ["context", "review-queue"],
   ["context", "review-queue", "requests"],
   ["context", "review-queue", "results"],

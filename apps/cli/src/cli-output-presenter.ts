@@ -189,6 +189,15 @@ export class CliOutputPresenter {
         `  output_mode: ${payload.output_mode}`,
         `  downgraded_from: ${payload.runtime.downgraded_from ?? "none"}`,
       );
+      if (payload.error_details?.report_path) {
+        lines.push(`  report_path: ${payload.error_details.report_path}`);
+      }
+      if (payload.error_details?.replay_path) {
+        lines.push(`  replay_path: ${payload.error_details.replay_path}`);
+      }
+      if (payload.error_details?.pending_status) {
+        lines.push(`  pending_status: ${payload.error_details.pending_status}`);
+      }
     }
 
     return lines.join("\n");
@@ -200,7 +209,15 @@ export class CliOutputPresenter {
    * @returns Plain text output.
    */
   private renderPlainError(payload: CliErrorOutputPayload): string {
-    return `${payload.message} error_code=${payload.error_code} hint=${payload.hint} next_action=${payload.next_action}`;
+    const detailSegments = [
+      payload.error_details?.report_path ? `report_path=${payload.error_details.report_path}` : "",
+      payload.error_details?.replay_path ? `replay_path=${payload.error_details.replay_path}` : "",
+      payload.error_details?.pending_status
+        ? `pending_status=${payload.error_details.pending_status}`
+        : "",
+    ].filter((segment) => segment.length > 0);
+
+    return `${payload.message} error_code=${payload.error_code} hint=${payload.hint} next_action=${payload.next_action}${detailSegments.length > 0 ? ` ${detailSegments.join(" ")}` : ""}`;
   }
 
   /**

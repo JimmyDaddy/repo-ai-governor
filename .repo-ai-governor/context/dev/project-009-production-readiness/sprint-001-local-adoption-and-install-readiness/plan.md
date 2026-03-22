@@ -11,7 +11,7 @@
 ## 2. In-Scope Tasks
 
 1. TK-075 CLI 命令去 skeleton 化与最小治理链路（completed）
-2. TK-076 本地调试（dry-run/trace/replay）与诊断输出基线（planned）
+2. TK-076 本地调试（dry-run/trace/replay）与诊断输出基线（completed）
 3. TK-077 本地安装模式（path/tgz/link）与 clean-room 验证（planned）
 4. TK-078 examples 资产与 example smoke 门禁基线（planned）
 5. TK-079 用户接入文档与本地采用手册基线（planned）

@@ -6,6 +6,7 @@ export type {
   CliCommandDiagnostics,
   CliErrorOutputPayload,
   CliResolvedOutputContext,
+  CliRuntimeDebugOptions,
   CliSuccessOutputPayload,
   IdeCommandInvocationEnvelope,
   IdeCommandWrapperOptions,

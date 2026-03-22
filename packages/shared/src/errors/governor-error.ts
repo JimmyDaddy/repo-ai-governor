@@ -123,6 +123,7 @@ export function standardizeError(error: unknown): StandardizedError {
     return {
       code: error.code,
       message: error.message,
+      ...(error.details ? { details: error.details } : {}),
     };
   }
 

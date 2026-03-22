@@ -9,6 +9,9 @@ export const EN_US_TRANSLATIONS = {
       output: "Output mode: pretty|plain|json.",
       verbosity: "Output verbosity: quiet|normal|verbose.",
       noColor: "Disable ANSI color decorations in pretty mode.",
+      dryRun: "Execute run pipeline without external side-effect actions.",
+      trace: "Emit layered diagnostics trace artifact for local debugging.",
+      replay: "Replay diagnostics from report/replay artifact path.",
     },
     commands: {
       init: { description: "Initialize governor workspace baseline." },

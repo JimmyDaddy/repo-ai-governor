@@ -13,3 +13,4 @@ export type {
   CliResolvedOutputContext,
   CliSuccessOutputPayload,
 } from "./cli-output.interface.js";
+export type { CliRuntimeDebugOptions } from "./cli-runtime-debug.interface.js";

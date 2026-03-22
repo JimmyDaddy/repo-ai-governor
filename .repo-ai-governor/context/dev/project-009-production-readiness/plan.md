@@ -63,7 +63,7 @@
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 |---|---|---|---|---|---|
 | TK-075 | sprint-001 | CLI 命令去 skeleton 化与最小治理链路 | implementation/runtime | DA-086 | completed |
-| TK-076 | sprint-001 | 本地调试（dry-run/trace/replay）与诊断输出基线 | implementation/devex | TK-075 | planned |
+| TK-076 | sprint-001 | 本地调试（dry-run/trace/replay）与诊断输出基线 | implementation/devex | TK-075 | completed |
 | TK-077 | sprint-001 | 本地安装模式（path/tgz/link）与 clean-room 验证 | implementation/local-install | TK-075 | planned |
 | TK-078 | sprint-001 | examples 资产与 example smoke 门禁基线 | implementation/examples | TK-075,TK-077 | planned |
 | TK-079 | sprint-001 | 用户接入文档与本地采用手册基线 | implementation/docs | TK-075,TK-077,TK-078 | planned |
@@ -114,3 +114,4 @@
 8. 2026-03-22：完成 `TK-093`，`TK-086` 已升级为可直接填充的 `DA-098` 项目出口验收/运营反馈模板，并纳入 completion audit summary 入口要求。
 9. 2026-03-22：完成 `TK-094`，主执行计划与 `project-009` 执行入口已补齐运营指标快照、外部消费契约/支持矩阵、HITL 通知 rehearsal、受控 delivery rehearsal，并统一到根级 `examples/` 口径。
 10. 2026-03-22：完成 `TK-075`，CLI 关键命令已去 skeleton 化并打通最小治理链路，修复 `@repo-ai-governor/reporting` 构建镜像缺口后 `pnpm run help` 恢复可执行。
+11. 2026-03-22：完成 `TK-076`，CLI `run` 已支持 `--dry-run/--trace/--replay`，落地 `DA-088` 诊断基线并补齐 `review -> review-verify -> ledger-backfill` 归因链路。

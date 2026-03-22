@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 
@@ -18,19 +18,26 @@ import {
 } from "@repo-ai-governor/shared";
 import { CliGovernanceRuntime } from "../src/cli-governance-runtime.js";
 import { CliCommandName } from "../src/constants/cli-command.constant.js";
+import type { CliRuntimeDebugOptions } from "../src/types/index.js";
 
 interface RuntimeFixture {
   tempRoot: string;
+  workspace: ResolvedWorkspace;
   workspaceRoot: string;
+  memoryStoreRoot: string;
   runtime: CliGovernanceRuntime;
   provider: FsCsvMemoryStoreProvider;
+}
+
+interface RuntimeFixtureOptions {
+  runtimeDebugOptions?: CliRuntimeDebugOptions;
 }
 
 /**
  * Creates one isolated runtime fixture for command integration tests.
  * @returns Runtime fixture with workspace and provider handles.
  */
-async function createRuntimeFixture(): Promise<RuntimeFixture> {
+async function createRuntimeFixture(options: RuntimeFixtureOptions = {}): Promise<RuntimeFixture> {
   const tempRoot = await mkdtemp(resolve(tmpdir(), "cli-governance-runtime-"));
   const workspaceRoot = resolve(tempRoot, ".repo-ai-governor");
   const memoryStoreRoot = resolve(workspaceRoot, "context", "memory");
@@ -62,11 +69,14 @@ async function createRuntimeFixture(): Promise<RuntimeFixture> {
     memoryStoreRoot,
     memoryStoreProviderName: provider.constructor.name,
     memoryStoreProvider: provider,
+    runtimeDebugOptions: options.runtimeDebugOptions,
   });
 
   return {
     tempRoot,
+    workspace,
     workspaceRoot,
+    memoryStoreRoot,
     runtime,
     provider,
   };
@@ -79,8 +89,9 @@ async function createRuntimeFixture(): Promise<RuntimeFixture> {
  */
 async function withRuntimeFixture(
   runner: (fixture: RuntimeFixture) => Promise<void>,
+  options: RuntimeFixtureOptions = {},
 ): Promise<void> {
-  const fixture = await createRuntimeFixture();
+  const fixture = await createRuntimeFixture(options);
   try {
     await runner(fixture);
   } finally {
@@ -147,23 +158,147 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
     });
   });
 
-  it("keeps review-verify source pinned to queued review request artifacts", async () => {
+  it("drains queued review request after review-verify emits verify/backfill artifacts", async () => {
     await withRuntimeFixture(async (fixture) => {
       await fixture.runtime.execute(CliCommandName.REVIEW);
-      await fixture.runtime.execute(CliCommandName.REVIEW_VERIFY);
-      const secondVerifyResult = await fixture.runtime.execute(CliCommandName.REVIEW_VERIFY);
+      const firstVerifyResult = await fixture.runtime.execute(CliCommandName.REVIEW_VERIFY);
 
-      const verifyArtifactPath = secondVerifyResult.commandResult.artifacts?.[0]?.path;
+      const verifyArtifactPath = firstVerifyResult.commandResult.artifacts?.find(
+        (artifact) => artifact.id === "review_verify_result",
+      )?.path;
       expect(typeof verifyArtifactPath).toBe("string");
-      const verifyPayload = JSON.parse(
-        await readFile(String(verifyArtifactPath), "utf8"),
-      ) as Record<string, unknown>;
+      const verifyPayload = JSON.parse(await readFile(String(verifyArtifactPath), "utf8")) as {
+        verifyId?: string;
+        sourceRequestPath?: string;
+      };
+      expect(verifyPayload.sourceRequestPath).toMatch(/review-queue[\\/]+requests[\\/]+review-/u);
+      expect(verifyPayload.sourceRequestPath).not.toContain("review-verify-");
 
-      expect(String(verifyArtifactPath)).toMatch(/review-queue[\\/]+results[\\/]+review-verify-/u);
-      expect(String(verifyPayload.sourceRequestPath)).toMatch(
-        /review-queue[\\/]+requests[\\/]+review-/u,
+      const sourceRequestPath = String(verifyPayload.sourceRequestPath);
+      const sourceRequestPayload = JSON.parse(await readFile(sourceRequestPath, "utf8")) as {
+        status?: string;
+        consumedByVerifyId?: string;
+      };
+      expect(sourceRequestPayload.status).toBe("verified");
+      expect(sourceRequestPayload.consumedByVerifyId).toBe(verifyPayload.verifyId);
+
+      await expect(fixture.runtime.execute(CliCommandName.REVIEW_VERIFY)).rejects.toMatchObject({
+        code: GovernorErrorCode.UNKNOWN,
+      });
+
+      const backfillDirectoryPath = resolve(
+        fixture.workspaceRoot,
+        "context",
+        "ledger-backfill",
+        "review-verify",
       );
-      expect(String(verifyPayload.sourceRequestPath)).not.toContain("review-verify-");
+      const backfillFileNames = await readdir(backfillDirectoryPath);
+      expect(backfillFileNames.length).toBe(1);
+    });
+  });
+
+  it("emits layered diagnostics trace when dry-run/trace debug mode is enabled", async () => {
+    await withRuntimeFixture(
+      async (fixture) => {
+        const runtimeWithOverrides = fixture.runtime as unknown as {
+          collectGitChangedPaths: () => Promise<string[]>;
+        };
+        runtimeWithOverrides.collectGitChangedPaths = async () => [];
+
+        const executionResult = await fixture.runtime.execute(CliCommandName.RUN);
+        const diagnosticsTracePath = executionResult.commandResult.artifacts?.find(
+          (artifact) => artifact.id === "diagnostics_trace",
+        )?.path;
+        expect(typeof diagnosticsTracePath).toBe("string");
+
+        const diagnosticsTrace = JSON.parse(
+          await readFile(String(diagnosticsTracePath), "utf8"),
+        ) as Record<string, unknown>;
+        expect((diagnosticsTrace.mode as Record<string, unknown>).dryRun).toBe(true);
+        expect((diagnosticsTrace.mode as Record<string, unknown>).trace).toBe(true);
+        expect(Array.isArray(diagnosticsTrace.stageTimings)).toBe(true);
+        expect(
+          Array.isArray((diagnosticsTrace.errorContext as Record<string, unknown>).stageErrors),
+        ).toBe(true);
+      },
+      {
+        runtimeDebugOptions: {
+          dryRun: true,
+          trace: true,
+          replayPath: null,
+        },
+      },
+    );
+  });
+
+  it("supports replay diagnostics from execution report artifacts", async () => {
+    await withRuntimeFixture(async (fixture) => {
+      const runtimeWithOverrides = fixture.runtime as unknown as {
+        collectGitChangedPaths: () => Promise<string[]>;
+      };
+      runtimeWithOverrides.collectGitChangedPaths = async () => [];
+      const runResult = await fixture.runtime.execute(CliCommandName.RUN);
+      const reportPath = runResult.commandResult.artifacts?.find(
+        (artifact) => artifact.id === "execution_report",
+      )?.path;
+      expect(typeof reportPath).toBe("string");
+
+      const replayRuntime = new CliGovernanceRuntime({
+        currentWorkingDirectory: fixture.tempRoot,
+        workspace: fixture.workspace,
+        configSource: "default",
+        profileId: null,
+        locale: "en-US",
+        outputMode: ErrorOutputEnvironment.PLAIN,
+        isTty: false,
+        memoryConfig: {
+          ...DEFAULT_MEMORY_RUNTIME_CONFIG,
+          storeRoot: "context/memory",
+        },
+        memoryStoreRoot: fixture.memoryStoreRoot,
+        memoryStoreProviderName: fixture.provider.constructor.name,
+        memoryStoreProvider: fixture.provider,
+        runtimeDebugOptions: {
+          dryRun: false,
+          trace: true,
+          replayPath: String(reportPath),
+        },
+      });
+      const replayResult = await replayRuntime.execute(CliCommandName.RUN);
+
+      expect(replayResult.commandResult.operation).toBe("governance_run_replay");
+      expect(replayResult.commandResult.details?.replay_source_type).toBe("execution_report");
+      const replayDiagnosticsPath = replayResult.commandResult.artifacts?.find(
+        (artifact) => artifact.id === "replay_diagnostics",
+      )?.path;
+      expect(typeof replayDiagnosticsPath).toBe("string");
+    });
+  });
+
+  it("writes review-verify ledger backfill artifact with attribution metadata", async () => {
+    await withRuntimeFixture(async (fixture) => {
+      await fixture.runtime.execute(CliCommandName.REVIEW);
+      const verifyResult = await fixture.runtime.execute(CliCommandName.REVIEW_VERIFY);
+
+      const verifyArtifactPath = verifyResult.commandResult.artifacts?.find(
+        (artifact) => artifact.id === "review_verify_result",
+      )?.path;
+      const backfillArtifactPath = verifyResult.commandResult.artifacts?.find(
+        (artifact) => artifact.id === "review_ledger_backfill",
+      )?.path;
+      expect(typeof verifyArtifactPath).toBe("string");
+      expect(typeof backfillArtifactPath).toBe("string");
+
+      const verifyPayload = JSON.parse(await readFile(String(verifyArtifactPath), "utf8")) as {
+        ledgerBackfillPath?: string;
+      };
+      const backfillPayload = JSON.parse(await readFile(String(backfillArtifactPath), "utf8")) as {
+        status?: string;
+        attribution?: { chain?: string };
+      };
+      expect(verifyPayload.ledgerBackfillPath).toBe(backfillArtifactPath);
+      expect(backfillPayload.status).toBe("pending");
+      expect(backfillPayload.attribution?.chain).toBe("review->review-verify->ledger-backfill");
     });
   });
 });

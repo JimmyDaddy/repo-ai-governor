@@ -6,4 +6,5 @@ import type { GovernorErrorCode } from "../../errors/error-code.constant.js";
 export interface StandardizedError {
   code: GovernorErrorCode;
   message: string;
+  details?: Record<string, unknown>;
 }

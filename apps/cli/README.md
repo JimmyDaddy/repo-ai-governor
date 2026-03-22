@@ -2,7 +2,7 @@
 
 - Status: baseline
 - Date: 2026-03-22
-- Scope: `project-009-production-readiness / TK-075`
+- Scope: `project-009-production-readiness / TK-075,TK-076`
 
 ## Purpose
 
@@ -27,3 +27,5 @@
 4. 输出契约支持 `pretty/plain/json` 与 `--output/--verbosity/--no-color`。
 5. non-TTY 环境中，`pretty` 会自动降级到 `plain`；`json` 显式请求保持机器输出。
 6. 失败输出包含结构化字段：`error_code`、`hint`、`next_action`。
+7. `run` 支持 `--dry-run`、`--trace` 与 `--replay <path>`，并产出 `context/diagnostics/{trace,replay}` 诊断产物。
+8. `review-verify` 结果会同时生成 `context/ledger-backfill/review-verify/*.json`，用于后续台账回填与归因。

@@ -1,3 +1,8 @@
+import { execFileSync } from "node:child_process";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { resolve } from "node:path";
+
 import { runCli } from "../src/main.js";
 
 /**
@@ -5,7 +10,10 @@ import { runCli } from "../src/main.js";
  * @param isStdoutTty Whether runtime stdout should be treated as TTY.
  * @returns Buffers and IO adapters used by CLI runtime.
  */
-function createBufferedIo(isStdoutTty: boolean): {
+function createBufferedIo(
+  isStdoutTty: boolean,
+  currentWorkingDirectory: string = process.cwd(),
+): {
   stdoutBuffer: string[];
   stderrBuffer: string[];
   io: {
@@ -28,10 +36,29 @@ function createBufferedIo(isStdoutTty: boolean): {
       stderr: (value: string) => {
         stderrBuffer.push(value);
       },
-      cwd: () => process.cwd(),
+      cwd: () => currentWorkingDirectory,
       isStdoutTty: () => isStdoutTty,
     },
   };
+}
+
+/**
+ * Creates one temporary git repository with migration-like changed path for policy-gate testing.
+ * @returns Temporary repository absolute path.
+ */
+async function createPolicyGateFixtureRepo(): Promise<string> {
+  const temporaryRepositoryRoot = await mkdtemp(resolve(tmpdir(), "cli-output-policy-"));
+  execFileSync("git", ["init"], {
+    cwd: temporaryRepositoryRoot,
+    stdio: "ignore",
+  });
+  await mkdir(resolve(temporaryRepositoryRoot, "migrations"), { recursive: true });
+  await writeFile(
+    resolve(temporaryRepositoryRoot, "migrations", "001.sql"),
+    "-- migration\n",
+    "utf8",
+  );
+  return temporaryRepositoryRoot;
 }
 
 describe("CLI output contract integration", () => {
@@ -156,5 +183,42 @@ describe("CLI output contract integration", () => {
     expect(stdout).not.toContain("workspaceRoot=");
     expect(stdout).not.toContain("memoryStoreRoot=");
     expect(stdout).not.toContain("verbosity=");
+  });
+
+  it("maps replay-input failures to dedicated next action with structured replay_path", async () => {
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false);
+    const missingReplayPath = resolve(process.cwd(), `.tmp-missing-replay-${Date.now()}.json`);
+
+    const exitCode = await runCli(
+      ["node", "repo-ai-governor", "--output", "json", "run", "--replay", missingReplayPath],
+      io,
+    );
+    const payload = JSON.parse(stderrBuffer.join(""));
+
+    expect(exitCode).toBe(1);
+    expect(stdoutBuffer.join("")).toBe("");
+    expect(payload.error_code).toBe("REPORT_REPLAY_INPUT_INVALID");
+    expect(payload.next_action).toBe("check_replay_source");
+    expect(payload.error_details.replay_path).toBe(missingReplayPath);
+  });
+
+  it("maps policy-gated run failures to policy diagnostics next action", async () => {
+    const fixtureRepositoryRoot = await createPolicyGateFixtureRepo();
+    try {
+      const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, fixtureRepositoryRoot);
+      const exitCode = await runCli(["node", "repo-ai-governor", "--output", "json", "run"], io);
+      const payload = JSON.parse(stderrBuffer.join(""));
+
+      expect(exitCode).toBe(1);
+      expect(stdoutBuffer.join("")).toBe("");
+      expect(["POLICY_GATE_HITL_FEEDBACK_INVALID", "POLICY_GATE_EVALUATION_FAILED"]).toContain(
+        payload.error_code,
+      );
+      expect(payload.next_action).toBe("inspect_policy_diagnostics");
+      expect(typeof payload.error_details.report_path).toBe("string");
+      expect(typeof payload.error_details.replay_path).toBe("string");
+    } finally {
+      await rm(fixtureRepositoryRoot, { recursive: true, force: true });
+    }
   });
 });

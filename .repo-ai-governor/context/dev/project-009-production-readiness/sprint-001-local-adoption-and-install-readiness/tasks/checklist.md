@@ -4,8 +4,10 @@
   - 2026-03-22：任务创建，状态初始化为 `planned`。
   - 2026-03-22：任务启动，状态切换为 `active`，开始收敛 CLI 命令去 skeleton 化与最小治理链路实现。
   - 2026-03-22：完成 CLI 最小治理链路实现与 `pnpm run help` 运行时构建缺口修复，`pnpm run check` 通过，状态切换为 `completed`。
-- [ ] TK-076 本地调试（dry-run/trace/replay）与诊断输出基线
+- [x] TK-076 本地调试（dry-run/trace/replay）与诊断输出基线
   - 2026-03-22：任务创建，状态初始化为 `planned`。
+  - 2026-03-22：任务启动，状态切换为 `active`，开始实现本地调试参数、分层诊断产物与 `review-verify` 链路归因字段。
+  - 2026-03-22：完成 dry-run/trace/replay 与诊断产物收敛，补齐 review-verify ledger-backfill 归因链路并通过 typecheck/test/check，状态切换为 `completed`。
 - [ ] TK-077 本地安装模式（path/tgz/link）与 clean-room 验证
   - 2026-03-22：任务创建，状态初始化为 `planned`。
 - [ ] TK-078 examples 资产与 example smoke 门禁基线

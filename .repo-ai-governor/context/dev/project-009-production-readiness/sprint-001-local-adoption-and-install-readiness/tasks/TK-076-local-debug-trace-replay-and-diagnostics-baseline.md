@@ -1,8 +1,8 @@
 # TK-076 本地调试（dry-run/trace/replay）与诊断输出基线
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-22
-- Owner: TBD
+- Owner: AI-Agent
 - Priority: P0
 - Project: `project-009-production-readiness`
 - Sprint: `sprint-001-local-adoption-and-install-readiness`
@@ -46,9 +46,11 @@
 1. 2026-03-22：任务创建，状态初始化为 `planned`。
 2. 2026-03-22：根据 `TK-088` 补齐 Stage 9A 诊断字段与 Stage 9B 失败归因交接语义，任务状态保持 `planned`。
 3. 2026-03-22：根据 `TK-090` 补齐只读接入、workspace rollback 与 `review-verify` 链路的诊断归因字段，任务状态保持 `planned`。
+4. 2026-03-22：任务启动，状态切换为 `active`，开始实现 `run --dry-run/--trace/--replay` 能力、分层诊断产物与 `review -> review-verify -> ledger backfill` 归因字段。
+5. 2026-03-22：完成 dry-run/trace/replay 运行时能力、`DA-088` 文档、`review-verify` ledger backfill 归因链路与测试补齐；`pnpm run typecheck`、`pnpm vitest run --config vitest.packages.config.ts apps/cli/test --maxWorkers=1 --maxConcurrency=1`、`node ./scripts/governance/check-task-ledger-sync.js`、`node ./scripts/governance/check-sprint-plan-status-sync.js`、`pnpm run check` 通过，状态切换为 `completed`。
 
 ## 8. 产出
 
-1. `DA-088` `.repo-ai-governor/context/dev/project-009-production-readiness/sprint-001-local-adoption-and-install-readiness/tasks/TK-076-local-debug-trace-replay-and-diagnostics-baseline.md`
+1. `DA-088` `.repo-ai-governor/context/dev/project-009-production-readiness/sprint-001-local-adoption-and-install-readiness/tasks/DA-088-local-debug-trace-replay-and-diagnostics-baseline.md`
 2. `.repo-ai-governor/context/dev/project-009-production-readiness/sprint-001-local-adoption-and-install-readiness/tasks/checklist.md`
 3. `.repo-ai-governor/context/dev/project-009-production-readiness/sprint-001-local-adoption-and-install-readiness/tasks/tasks.csv`

@@ -104,6 +104,11 @@ export interface CliErrorOutputPayload {
   error_code: GovernorErrorCode;
   hint: string;
   next_action: CliNextAction;
+  error_details?: {
+    report_path?: string;
+    replay_path?: string;
+    pending_status?: string;
+  };
   runtime: {
     is_tty: boolean;
     color_enabled: boolean;

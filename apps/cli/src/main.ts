@@ -53,6 +53,7 @@ import type {
   CliCommandExecutionResultPayload,
   CliErrorOutputPayload,
   CliResolvedOutputContext,
+  CliRuntimeDebugOptions,
   CliSuccessOutputPayload,
 } from "./types/index.js";
 
@@ -148,6 +149,7 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
 
     const requestedLocale = readOptionValue(rawArgs, "--locale");
     const requestedProfileId = readOptionValue(rawArgs, "--profile");
+    const runtimeDebugOptions = resolveRuntimeDebugOptions(rawArgs, io.cwd());
     const runtimeContext = resolveRuntimeContext(io.cwd(), requestedProfileId);
     memoryStoreComposition = await composeMemoryStoreProvider(
       runtimeContext.workspace.workspaceRoot,
@@ -171,6 +173,7 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
       memoryStoreRoot: activeMemoryStoreComposition.memoryStoreRoot,
       memoryStoreProviderName: activeMemoryStoreComposition.providerName,
       memoryStoreProvider: activeMemoryStoreComposition.provider,
+      runtimeDebugOptions,
     });
 
     const program = new Command();
@@ -181,6 +184,9 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
     program.option("--output <mode>", runtimeI18n.t("cli.options.output"));
     program.option("--verbosity <level>", runtimeI18n.t("cli.options.verbosity"));
     program.option("--no-color", runtimeI18n.t("cli.options.noColor"));
+    program.option("--dry-run", runtimeI18n.t("cli.options.dryRun"));
+    program.option("--trace", runtimeI18n.t("cli.options.trace"));
+    program.option("--replay <path>", runtimeI18n.t("cli.options.replay"));
     program.showHelpAfterError(false);
     program.configureOutput({
       writeOut: (value) => io.stdout(value),
@@ -469,6 +475,51 @@ function resolveVerbosityOption(args: string[]): CliVerbosity {
 }
 
 /**
+ * Resolves local debug/replay flags for `run` execution path.
+ * @param args CLI args excluding node and binary.
+ * @param currentWorkingDirectory Runtime current working directory.
+ * @returns Normalized debug options.
+ */
+function resolveRuntimeDebugOptions(
+  args: string[],
+  currentWorkingDirectory: string,
+): CliRuntimeDebugOptions {
+  const replayOption = readOptionInput(args, "--replay");
+  if (replayOption.isPresent && !replayOption.value) {
+    throw new RuntimeError(
+      GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+      "Option --replay requires one path value.",
+      { option: "--replay" },
+    );
+  }
+
+  const replayPath =
+    replayOption.value && replayOption.value.trim().length > 0
+      ? resolveReplayPath(currentWorkingDirectory, replayOption.value.trim())
+      : null;
+
+  return {
+    dryRun: hasFlag(args, "--dry-run"),
+    trace: hasFlag(args, "--trace"),
+    replayPath,
+  };
+}
+
+/**
+ * Resolves replay source path to absolute path for deterministic diagnostics output.
+ * @param currentWorkingDirectory Runtime current working directory.
+ * @param replayPath Replay source path from CLI option.
+ * @returns Absolute replay source path.
+ */
+function resolveReplayPath(currentWorkingDirectory: string, replayPath: string): string {
+  if (isAbsolute(replayPath)) {
+    return replayPath;
+  }
+
+  return resolve(currentWorkingDirectory, replayPath);
+}
+
+/**
  * Builds stable success payload for JSON and text renderers.
  * @param command Executed command name.
  * @param message Human-readable command summary.
@@ -516,6 +567,7 @@ function buildErrorOutputPayload(
   outputContext: CliResolvedOutputContext,
 ): CliErrorOutputPayload {
   const guidance = resolveErrorGuidance(standardizedError.code);
+  const errorDetails = resolveCliErrorDetails(standardizedError.details);
 
   return {
     schema_version: CLI_OUTPUT_SCHEMA_VERSION,
@@ -527,6 +579,7 @@ function buildErrorOutputPayload(
     error_code: standardizedError.code,
     hint: guidance.hint,
     next_action: guidance.nextAction,
+    ...(errorDetails ? { error_details: errorDetails } : {}),
     runtime: {
       is_tty: outputContext.isTty,
       color_enabled: outputContext.colorEnabled,
@@ -565,10 +618,61 @@ function resolveErrorGuidance(code: GovernorErrorCode): {
     };
   }
 
+  if (
+    code === GovernorErrorCode.POLICY_GATE_EVALUATION_FAILED ||
+    code === GovernorErrorCode.POLICY_GATE_HITL_FEEDBACK_INVALID
+  ) {
+    return {
+      hint: "Policy gate did not allow this run; inspect report/replay diagnostics artifacts.",
+      nextAction: CliNextAction.INSPECT_POLICY_DIAGNOSTICS,
+    };
+  }
+
+  if (code === GovernorErrorCode.REPORT_REPLAY_INPUT_INVALID) {
+    return {
+      hint: "Replay source path or payload is invalid for diagnostics replay.",
+      nextAction: CliNextAction.CHECK_REPLAY_SOURCE,
+    };
+  }
+
   return {
     hint: "Unexpected runtime failure occurred.",
     nextAction: CliNextAction.REPORT_ISSUE,
   };
+}
+
+/**
+ * Selects stable CLI error details from standardized error diagnostics.
+ * @param details Optional standardized error details payload.
+ * @returns Whitelisted CLI error details, or null when no supported fields exist.
+ */
+function resolveCliErrorDetails(
+  details: Record<string, unknown> | undefined,
+): CliErrorOutputPayload["error_details"] | null {
+  if (!details) {
+    return null;
+  }
+
+  const normalizedDetails: CliErrorOutputPayload["error_details"] = {};
+  if (typeof details.reportPath === "string") {
+    normalizedDetails.report_path = details.reportPath;
+  }
+  if (typeof details.replayPath === "string") {
+    normalizedDetails.replay_path = details.replayPath;
+  }
+  if (typeof details.pendingStatus === "string") {
+    normalizedDetails.pending_status = details.pendingStatus;
+  }
+
+  if (
+    !normalizedDetails.report_path &&
+    !normalizedDetails.replay_path &&
+    !normalizedDetails.pending_status
+  ) {
+    return null;
+  }
+
+  return normalizedDetails;
 }
 
 /**

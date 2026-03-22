@@ -9,6 +9,9 @@ export const ZH_CN_TRANSLATIONS = {
       output: "指定输出模式：pretty|plain|json。",
       verbosity: "指定输出详细级别：quiet|normal|verbose。",
       noColor: "在 pretty 模式下禁用 ANSI 颜色。",
+      dryRun: "以本地调试模式执行 run 链路，不触发外部副作用动作。",
+      trace: "输出分层诊断 trace 产物，便于本地定位问题。",
+      replay: "从 report/replay 产物路径回放诊断结果。",
     },
     commands: {
       init: { description: "初始化治理工作区基线。" },

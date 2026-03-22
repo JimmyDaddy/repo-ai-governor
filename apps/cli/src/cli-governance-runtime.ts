@@ -11,13 +11,14 @@ import {
   UpgradeSchemaDiffService,
 } from "@repo-ai-governor/config";
 import {
+  type ChangeRiskEvaluationResult,
   ChangeRiskEvaluator,
   ChangeRiskFileCategory,
   type ChangeRiskFileCategoryValue,
   ChangeRiskRequiredAction,
 } from "@repo-ai-governor/core-change-risk";
 import { MemoryManager, MemoryScope } from "@repo-ai-governor/core-memory";
-import { PolicyGateEngine } from "@repo-ai-governor/core-policy";
+import { PolicyGateEngine, type PolicyGateEvaluationResult } from "@repo-ai-governor/core-policy";
 import {
   ProcessCompiler,
   type ProcessDslDefinition,
@@ -26,6 +27,7 @@ import {
 } from "@repo-ai-governor/core-process";
 import {
   ProcessRuntimeEngine,
+  type RuntimeExecutionResult,
   RuntimeExecutionStatus,
   RuntimeStageStatus,
   RuntimeTimeoutScope,
@@ -35,7 +37,12 @@ import {
   MemoryStoreAdapter,
   type MemoryStoreProvider,
 } from "@repo-ai-governor/memory-store-adapter";
-import { ReplayExplainer, ReportBuilder } from "@repo-ai-governor/reporting";
+import {
+  type ExecutionReport,
+  type ReplayExplainResult,
+  ReplayExplainer,
+  ReportBuilder,
+} from "@repo-ai-governor/reporting";
 import {
   ErrorOutputEnvironment,
   GovernorErrorCode,
@@ -47,17 +54,21 @@ import { CliCommandName } from "./constants/cli-command.constant.js";
 import {
   CLI_BASELINE_DOC_PATHS,
   CLI_CHANGE_RISK_FILE_CATEGORY_PATTERNS,
+  CLI_DIAGNOSTIC_ROOT_CAUSE,
   CLI_DOCTOR_ATTACH_MODE,
   CLI_INIT_REQUIRED_DIRECTORY_SEGMENTS,
   CLI_OPTIONAL_GOVERNANCE_SCRIPT_PATHS,
+  CLI_REVIEW_LEDGER_BACKFILL_STATUS,
   CLI_REVIEW_REQUEST_STATUS,
   CLI_RUNTIME_OPERATION,
+  CLI_RUN_REPLAY_SOURCE_TYPE,
   CliGovernanceCheckStatus,
 } from "./constants/cli-governance-runtime.constant.js";
 import type {
   CliCommandExecutionResultPayload,
   CliCommandResultArtifact,
   CliCommandResultCheck,
+  CliRuntimeDebugOptions,
 } from "./types/index.js";
 
 const execFileAsync = promisify(execFile);
@@ -74,6 +85,7 @@ interface CliGovernanceRuntimeOptions {
   memoryStoreRoot: string;
   memoryStoreProviderName: string;
   memoryStoreProvider: MemoryStoreProvider;
+  runtimeDebugOptions?: CliRuntimeDebugOptions;
 }
 
 interface CliGovernanceCommandResult {
@@ -102,6 +114,18 @@ interface CliReviewQueueDirectorySet {
   requestDirectoryPath: string;
   resultDirectoryPath: string;
   legacyQueueDirectoryPath: string;
+}
+
+interface CliNormalizedRuntimeDebugOptions {
+  dryRun: boolean;
+  trace: boolean;
+  replayPath: string | null;
+}
+
+interface CliReplayExplainResolution {
+  sourceType: string;
+  executionId: string;
+  explainResult: ReplayExplainResult;
 }
 
 /**
@@ -404,6 +428,11 @@ export class CliGovernanceRuntime {
    * @returns Runtime command result.
    */
   private async executeRunCommand(): Promise<CliGovernanceCommandResult> {
+    const runtimeDebugOptions = this.resolveRuntimeDebugOptions();
+    if (runtimeDebugOptions.replayPath) {
+      return this.executeRunReplayCommand(runtimeDebugOptions);
+    }
+
     const executionId = `cli-run-${Date.now()}`;
     const processCompiler = new ProcessCompiler();
     const processRuntimeEngine = new ProcessRuntimeEngine(processCompiler);
@@ -436,6 +465,8 @@ export class CliGovernanceRuntime {
       stageId: stageContext.stageId,
       routeKey: stageContext.routeKey,
       locale: this.options.locale,
+      dryRun: runtimeDebugOptions.dryRun,
+      traceEnabled: runtimeDebugOptions.trace,
     }));
 
     const changedPaths = await this.collectGitChangedPaths();
@@ -621,6 +652,35 @@ export class CliGovernanceRuntime {
         detail: `records=${executionReport.totalRecords} stage_summaries=${executionReport.stageSummaries.length}`,
       },
     ];
+    if (runtimeDebugOptions.dryRun || runtimeDebugOptions.trace) {
+      checks.push({
+        id: "debug_mode",
+        status: CliGovernanceCheckStatus.PASS,
+        detail: `dry_run=${runtimeDebugOptions.dryRun} trace=${runtimeDebugOptions.trace}`,
+      });
+    }
+
+    const diagnosticsTracePath =
+      runtimeDebugOptions.dryRun || runtimeDebugOptions.trace
+        ? await this.writeRunDiagnosticsTraceArtifact({
+            executionId,
+            executionSessionId,
+            runtimeResult,
+            policyResult,
+            riskEvaluation,
+            reportPath,
+            replayPath,
+            runtimeDebugOptions,
+          })
+        : null;
+
+    if (diagnosticsTracePath) {
+      artifacts.push({
+        id: "diagnostics_trace",
+        path: diagnosticsTracePath,
+      });
+    }
+
     const checkTotals = this.calculateCheckTotals(checks);
     this.throwForNonAllowPolicyOutcome({
       executionId,
@@ -631,7 +691,7 @@ export class CliGovernanceRuntime {
       checkTotals,
     });
 
-    const message = `Run completed with execution_id=${executionId} and policy_outcome=${policyResult.policyOutcome}.`;
+    const message = `Run completed with execution_id=${executionId} and policy_outcome=${policyResult.policyOutcome}${runtimeDebugOptions.dryRun ? " (dry_run=true)" : ""}.`;
     return {
       message,
       commandResult: {
@@ -645,6 +705,178 @@ export class CliGovernanceRuntime {
           runtime_status: runtimeResult.status,
           risk_level: riskEvaluation.riskLevel,
           replay_matched_count: replayExplainResult.matchedCount,
+          dry_run: runtimeDebugOptions.dryRun,
+          trace_enabled: runtimeDebugOptions.trace,
+          diagnostics_trace_path: diagnosticsTracePath,
+        },
+      },
+    };
+  }
+
+  /**
+   * Replays diagnostics from existing report/replay artifacts.
+   * @param runtimeDebugOptions Debug options resolved from CLI flags.
+   * @returns Runtime command result.
+   */
+  private async executeRunReplayCommand(
+    runtimeDebugOptions: CliNormalizedRuntimeDebugOptions,
+  ): Promise<CliGovernanceCommandResult> {
+    const replayPath = runtimeDebugOptions.replayPath;
+    if (!replayPath) {
+      throw new RuntimeError(
+        GovernorErrorCode.REPORT_REPLAY_INPUT_INVALID,
+        "Replay mode requires a replay source path.",
+      );
+    }
+
+    if (!existsSync(replayPath)) {
+      throw new RuntimeError(
+        GovernorErrorCode.REPORT_REPLAY_INPUT_INVALID,
+        `Replay source path not found: ${replayPath}.`,
+        {
+          replayPath,
+        },
+      );
+    }
+
+    const replayPayload = await this.safeReadJson(replayPath);
+    if (!replayPayload) {
+      throw new RuntimeError(
+        GovernorErrorCode.REPORT_REPLAY_INPUT_INVALID,
+        `Replay source payload is invalid JSON object: ${replayPath}.`,
+        {
+          replayPath,
+        },
+      );
+    }
+
+    const replayExplainer = new ReplayExplainer();
+    const replayResolution = this.resolveReplayExplainPayload({
+      replayPath,
+      replayPayload,
+      replayExplainer,
+    });
+    const diagnosticsId = `replay-diagnostics-${Date.now()}`;
+    const diagnosticsPath = resolve(
+      this.options.workspace.workspaceRoot,
+      "context",
+      "diagnostics",
+      "replay",
+      `${diagnosticsId}.json`,
+    );
+
+    await this.writeJsonArtifact(diagnosticsPath, {
+      diagnosticsId,
+      generatedAt: this.toRfc3339SecondsTimestamp(new Date()),
+      workspace: {
+        workspaceId: this.options.workspace.workspaceId,
+        workspaceRoot: this.options.workspace.workspaceRoot,
+        workspaceMode: this.options.workspace.mode,
+      },
+      replay: {
+        sourcePath: replayPath,
+        sourceType: replayResolution.sourceType,
+        executionId: replayResolution.executionId,
+      },
+      summary: {
+        matchedCount: replayResolution.explainResult.matchedCount,
+        outputLocale: this.options.locale,
+        nextActions: this.resolveDiagnosticNextActions({
+          rootCause: CLI_DIAGNOSTIC_ROOT_CAUSE.NONE,
+          policyOutcome: null,
+          runtimeStatus: null,
+        }),
+      },
+      explain: replayResolution.explainResult,
+    });
+
+    const artifacts: CliCommandResultArtifact[] = [
+      {
+        id: "replay_source",
+        path: replayPath,
+      },
+      {
+        id: "replay_diagnostics",
+        path: diagnosticsPath,
+      },
+    ];
+
+    if (runtimeDebugOptions.trace) {
+      const tracePath = resolve(
+        this.options.workspace.workspaceRoot,
+        "context",
+        "diagnostics",
+        "trace",
+        `${diagnosticsId}.trace.json`,
+      );
+      await this.writeJsonArtifact(tracePath, {
+        diagnosticsId,
+        generatedAt: this.toRfc3339SecondsTimestamp(new Date()),
+        mode: {
+          dryRun: runtimeDebugOptions.dryRun,
+          trace: runtimeDebugOptions.trace,
+          replay: true,
+        },
+        keyEvents: [
+          {
+            eventId: "replay_input_resolved",
+            status: "succeeded",
+            detail: `source_type=${replayResolution.sourceType}`,
+          },
+          {
+            eventId: "replay_explain_resolved",
+            status: "succeeded",
+            detail: `matched_count=${replayResolution.explainResult.matchedCount}`,
+          },
+        ],
+        nextActions: this.resolveDiagnosticNextActions({
+          rootCause: CLI_DIAGNOSTIC_ROOT_CAUSE.NONE,
+          policyOutcome: null,
+          runtimeStatus: null,
+        }),
+      });
+      artifacts.push({
+        id: "diagnostics_trace",
+        path: tracePath,
+      });
+    }
+
+    const checks: CliCommandResultCheck[] = [
+      {
+        id: "replay_source",
+        status: CliGovernanceCheckStatus.PASS,
+        detail: replayResolution.sourceType,
+      },
+      {
+        id: "replay_explain",
+        status: CliGovernanceCheckStatus.PASS,
+        detail: `matched=${replayResolution.explainResult.matchedCount}`,
+      },
+    ];
+
+    if (runtimeDebugOptions.trace) {
+      checks.push({
+        id: "debug_mode",
+        status: CliGovernanceCheckStatus.PASS,
+        detail: "trace=true replay=true",
+      });
+    }
+
+    const message = `Replay diagnostics completed from ${replayPath}.`;
+    return {
+      message,
+      commandResult: {
+        operation: CLI_RUNTIME_OPERATION.GOVERNANCE_RUN_REPLAY,
+        summary: message,
+        check_totals: this.calculateCheckTotals(checks),
+        checks,
+        artifacts,
+        details: {
+          replay_source_path: replayPath,
+          replay_source_type: replayResolution.sourceType,
+          replay_execution_id: replayResolution.executionId,
+          replay_matched_count: replayResolution.explainResult.matchedCount,
+          trace_enabled: runtimeDebugOptions.trace,
         },
       },
     };
@@ -658,6 +890,7 @@ export class CliGovernanceRuntime {
     const reviewQueueDirectories = this.resolveReviewQueueDirectories();
     const requestId = `review-${Date.now()}`;
     const requestPath = resolve(reviewQueueDirectories.requestDirectoryPath, `${requestId}.json`);
+    const correlationId = `review-chain-${requestId}`;
     await this.writeJsonArtifact(requestPath, {
       requestId,
       status: CLI_REVIEW_REQUEST_STATUS.QUEUED,
@@ -666,6 +899,11 @@ export class CliGovernanceRuntime {
       workspaceRoot: this.options.workspace.workspaceRoot,
       locale: this.options.locale,
       outputMode: this.options.outputMode,
+      diagnosticContext: {
+        correlationId,
+        queueStage: "review",
+        chain: "review->review-verify->ledger-backfill",
+      },
     });
 
     const message = `Review request queued at ${requestPath}.`;
@@ -727,16 +965,77 @@ export class CliGovernanceRuntime {
     const verifyId = `review-verify-${Date.now()}`;
     const verifyPath = resolve(reviewQueueDirectories.resultDirectoryPath, `${verifyId}.json`);
     const requestPayload = await this.safeReadJson(latestQueuedRequest.filePath);
+    const sourceRequestId =
+      typeof requestPayload?.requestId === "string"
+        ? requestPayload.requestId
+        : latestQueuedRequest.requestId;
+    const diagnosticContext =
+      requestPayload &&
+      typeof requestPayload.diagnosticContext === "object" &&
+      requestPayload.diagnosticContext
+        ? (requestPayload.diagnosticContext as Record<string, unknown>)
+        : null;
+    const correlationId =
+      diagnosticContext && typeof diagnosticContext.correlationId === "string"
+        ? diagnosticContext.correlationId
+        : `review-chain-${sourceRequestId}`;
+    const ledgerBackfillPath = resolve(
+      this.options.workspace.workspaceRoot,
+      "context",
+      "ledger-backfill",
+      "review-verify",
+      `${verifyId}.json`,
+    );
+    const verifiedAt = this.toRfc3339SecondsTimestamp(new Date());
+
+    await this.writeJsonArtifact(ledgerBackfillPath, {
+      ledgerBackfillId: `ledger-backfill-${verifyId}`,
+      status: CLI_REVIEW_LEDGER_BACKFILL_STATUS.PENDING,
+      createdAt: verifiedAt,
+      verifyId,
+      sourceRequestId,
+      sourceRequestPath: latestQueuedRequest.filePath,
+      workspaceId: this.options.workspace.workspaceId,
+      workspaceRoot: this.options.workspace.workspaceRoot,
+      attribution: {
+        correlationId,
+        chain: "review->review-verify->ledger-backfill",
+        chainStep: "ledger-backfill",
+      },
+      diagnostics: {
+        rootCause: CLI_DIAGNOSTIC_ROOT_CAUSE.NONE,
+        note: "Ready for tasks/checklist/csv backfill consumption.",
+      },
+    });
 
     await this.writeJsonArtifact(verifyPath, {
       verifyId,
       status: CLI_REVIEW_REQUEST_STATUS.VERIFIED,
-      verifiedAt: this.toRfc3339SecondsTimestamp(new Date()),
+      verifiedAt,
       sourceRequestPath: latestQueuedRequest.filePath,
-      sourceRequestId:
-        typeof requestPayload?.requestId === "string"
-          ? requestPayload.requestId
-          : latestQueuedRequest.requestId,
+      sourceRequestId,
+      ledgerBackfillPath,
+      diagnosticAttribution: {
+        correlationId,
+        chain: "review->review-verify->ledger-backfill",
+        chainStep: "review-verify",
+      },
+    });
+
+    await this.writeJsonArtifact(latestQueuedRequest.filePath, {
+      ...(requestPayload ?? {}),
+      requestId: sourceRequestId,
+      status: CLI_REVIEW_REQUEST_STATUS.VERIFIED,
+      verifiedAt,
+      consumedAt: verifiedAt,
+      consumedByVerifyId: verifyId,
+      ledgerBackfillPath,
+      diagnosticContext: {
+        ...(diagnosticContext ?? {}),
+        correlationId,
+        queueStage: "review-verify-consumed",
+        chain: "review->review-verify->ledger-backfill",
+      },
     });
 
     const message = `Review request verified from ${latestQueuedRequest.filePath}.`;
@@ -761,6 +1060,10 @@ export class CliGovernanceRuntime {
           {
             id: "review_verify_result",
             path: verifyPath,
+          },
+          {
+            id: "review_ledger_backfill",
+            path: ledgerBackfillPath,
           },
         ],
       },
@@ -1078,6 +1381,311 @@ export class CliGovernanceRuntime {
     } catch {
       return {};
     }
+  }
+
+  /**
+   * Resolves normalized runtime debug options with deterministic defaults.
+   * @returns Normalized debug options.
+   */
+  private resolveRuntimeDebugOptions(): CliNormalizedRuntimeDebugOptions {
+    return {
+      dryRun: this.options.runtimeDebugOptions?.dryRun === true,
+      trace: this.options.runtimeDebugOptions?.trace === true,
+      replayPath:
+        typeof this.options.runtimeDebugOptions?.replayPath === "string" &&
+        this.options.runtimeDebugOptions.replayPath.trim().length > 0
+          ? this.options.runtimeDebugOptions.replayPath.trim()
+          : null,
+    };
+  }
+
+  /**
+   * Writes one layered diagnostics trace artifact for `run` execution.
+   * @param options Run execution context.
+   * @returns Trace artifact path.
+   */
+  private async writeRunDiagnosticsTraceArtifact(options: {
+    executionId: string;
+    executionSessionId: string;
+    runtimeResult: RuntimeExecutionResult;
+    policyResult: PolicyGateEvaluationResult;
+    riskEvaluation: ChangeRiskEvaluationResult;
+    reportPath: string;
+    replayPath: string;
+    runtimeDebugOptions: CliNormalizedRuntimeDebugOptions;
+  }): Promise<string> {
+    const tracePath = resolve(
+      this.options.workspace.workspaceRoot,
+      "context",
+      "diagnostics",
+      "trace",
+      `${options.executionId}.trace.json`,
+    );
+    const rootCause = this.resolveRunDiagnosticRootCause({
+      policyOutcome: options.policyResult.policyOutcome,
+      runtimeStatus: options.runtimeResult.status,
+    });
+    const errorContext = options.runtimeResult.stageResults
+      .filter((stageResult) => Boolean(stageResult.errorMessage))
+      .map((stageResult) => ({
+        stageId: stageResult.stageId,
+        nodeId: stageResult.nodeId,
+        status: stageResult.status,
+        errorMessage: stageResult.errorMessage ?? null,
+      }));
+    const adapterInvocationSummary = options.runtimeResult.stageResults.map((stageResult) => {
+      const output =
+        stageResult.output && typeof stageResult.output === "object" ? stageResult.output : null;
+
+      return {
+        stageId: stageResult.stageId,
+        nodeId: stageResult.nodeId,
+        handledBy:
+          output && typeof output.handledBy === "string" ? output.handledBy : "unknown_handler",
+        routeKey: output && typeof output.routeKey === "string" ? output.routeKey : "unknown_route",
+      };
+    });
+
+    await this.writeJsonArtifact(tracePath, {
+      diagnosticsId: `trace-${options.executionId}`,
+      generatedAt: this.toRfc3339SecondsTimestamp(new Date()),
+      workspace: {
+        workspaceId: this.options.workspace.workspaceId,
+        workspaceRoot: this.options.workspace.workspaceRoot,
+        workspaceMode: this.options.workspace.mode,
+      },
+      mode: {
+        dryRun: options.runtimeDebugOptions.dryRun,
+        trace: options.runtimeDebugOptions.trace,
+        replay: false,
+      },
+      summary: {
+        executionId: options.executionId,
+        executionSessionId: options.executionSessionId,
+        runtimeStatus: options.runtimeResult.status,
+        policyOutcome: options.policyResult.policyOutcome,
+        riskLevel: options.riskEvaluation.riskLevel,
+        rootCause,
+      },
+      keyEvents: [
+        {
+          eventId: "compile",
+          status: "succeeded",
+          detail: "Compiled IR snapshot generated.",
+        },
+        ...options.runtimeResult.stageResults.map((stageResult) => ({
+          eventId: stageResult.stageId,
+          status: stageResult.status,
+          detail: `duration_ms=${stageResult.durationMs}`,
+        })),
+        {
+          eventId: "policy",
+          status:
+            options.policyResult.policyOutcome === ChangeRiskRequiredAction.ALLOW
+              ? "allow"
+              : "requires_attention",
+          detail: `matched_rules=${options.policyResult.matchedRuleIds.join("|") || "none"}`,
+        },
+        {
+          eventId: "report_replay_persisted",
+          status: "succeeded",
+          detail: `report=${options.reportPath} replay=${options.replayPath}`,
+        },
+      ],
+      stageTimings: options.runtimeResult.stageResults.map((stageResult) => ({
+        stageId: stageResult.stageId,
+        nodeId: stageResult.nodeId,
+        status: stageResult.status,
+        startedAt: stageResult.startedAt,
+        endedAt: stageResult.endedAt,
+        durationMs: stageResult.durationMs,
+      })),
+      policyDecision: {
+        outcome: options.policyResult.policyOutcome,
+        matchedRuleIds: options.policyResult.matchedRuleIds,
+        matchedPolicies: options.policyResult.matchedPolicies,
+        riskReasons: options.riskEvaluation.riskReasons.map((reason) => reason.code),
+      },
+      adapterInvocationSummary,
+      errorContext: {
+        stageErrors: errorContext,
+        interruption: options.runtimeResult.interruption ?? null,
+      },
+      nextActions: this.resolveDiagnosticNextActions({
+        rootCause,
+        policyOutcome: options.policyResult.policyOutcome,
+        runtimeStatus: options.runtimeResult.status,
+      }),
+    });
+
+    return tracePath;
+  }
+
+  /**
+   * Resolves diagnostics root-cause for run-command execution outputs.
+   * @param options Run-command result status context.
+   * @returns Root-cause category.
+   */
+  private resolveRunDiagnosticRootCause(options: {
+    policyOutcome: ChangeRiskRequiredAction;
+    runtimeStatus: RuntimeExecutionStatus;
+  }): string {
+    if (options.policyOutcome === ChangeRiskRequiredAction.BLOCK) {
+      return CLI_DIAGNOSTIC_ROOT_CAUSE.POLICY_BLOCKED;
+    }
+
+    if (
+      options.policyOutcome === ChangeRiskRequiredAction.CONFIRM ||
+      options.policyOutcome === ChangeRiskRequiredAction.ESCALATE
+    ) {
+      return CLI_DIAGNOSTIC_ROOT_CAUSE.POLICY_HITL_REQUIRED;
+    }
+
+    if (options.runtimeStatus !== RuntimeExecutionStatus.SUCCEEDED) {
+      return CLI_DIAGNOSTIC_ROOT_CAUSE.RUNTIME_FAILURE;
+    }
+
+    return CLI_DIAGNOSTIC_ROOT_CAUSE.NONE;
+  }
+
+  /**
+   * Resolves operator-facing next actions by diagnostics root-cause category.
+   * @param options Root-cause and execution-state context.
+   * @returns Ordered next-action list.
+   */
+  private resolveDiagnosticNextActions(options: {
+    rootCause: string;
+    policyOutcome: ChangeRiskRequiredAction | null;
+    runtimeStatus: RuntimeExecutionStatus | null;
+  }): string[] {
+    if (options.rootCause === CLI_DIAGNOSTIC_ROOT_CAUSE.POLICY_BLOCKED) {
+      return [
+        "Inspect matched policy rules and reduce high-risk changes before retrying run.",
+        "Re-run with --trace and review diagnostics trace for blocked rule evidence.",
+      ];
+    }
+
+    if (options.rootCause === CLI_DIAGNOSTIC_ROOT_CAUSE.POLICY_HITL_REQUIRED) {
+      return [
+        "Trigger review/review-verify flow and complete required human confirmation.",
+        "Use diagnostics trace to explain why policy outcome is not allow.",
+      ];
+    }
+
+    if (options.rootCause === CLI_DIAGNOSTIC_ROOT_CAUSE.RUNTIME_FAILURE) {
+      return [
+        "Inspect stage-level errorContext in diagnostics trace and fix runtime stage failures.",
+        "Replay diagnostics with --replay <report-or-replay-path> after fixes.",
+      ];
+    }
+
+    if (options.rootCause === CLI_DIAGNOSTIC_ROOT_CAUSE.ENVIRONMENT_PRECONDITION) {
+      return [
+        "Run doctor/check to verify local prerequisites before rerunning the command.",
+        "Compare workspace mode and memory provider diagnostics across environments.",
+      ];
+    }
+
+    if (options.rootCause === CLI_DIAGNOSTIC_ROOT_CAUSE.PERMISSION_CONFIRMATION) {
+      return [
+        "Complete the required permission/approval workflow before continuing execution.",
+        "Record confirmation evidence in review and ledger-backfill artifacts.",
+      ];
+    }
+
+    const summary = [
+      "Persist replay diagnostics for reproducibility and share with follow-up tasks.",
+      "Keep using --trace in local debugging to preserve stage/policy attribution.",
+    ];
+    if (options.policyOutcome && options.runtimeStatus) {
+      summary.push(
+        `Current state: policy_outcome=${options.policyOutcome}, runtime_status=${options.runtimeStatus}.`,
+      );
+    }
+    return summary;
+  }
+
+  /**
+   * Resolves replay explain result from one accepted replay source payload.
+   * @param options Replay source context.
+   * @returns Replay explain resolution payload.
+   */
+  private resolveReplayExplainPayload(options: {
+    replayPath: string;
+    replayPayload: unknown;
+    replayExplainer: ReplayExplainer;
+  }): CliReplayExplainResolution {
+    if (this.isExecutionReportPayload(options.replayPayload)) {
+      const snapshot = options.replayExplainer.createSnapshot({
+        report: options.replayPayload,
+      });
+      const explainResult = options.replayExplainer.explain({
+        snapshot,
+        limit: 10,
+      });
+
+      return {
+        sourceType: CLI_RUN_REPLAY_SOURCE_TYPE.EXECUTION_REPORT,
+        executionId: options.replayPayload.executionId,
+        explainResult,
+      };
+    }
+
+    if (this.isReplayExplainPayload(options.replayPayload)) {
+      return {
+        sourceType: CLI_RUN_REPLAY_SOURCE_TYPE.REPLAY_EXPLAIN,
+        executionId: options.replayPayload.executionId,
+        explainResult: options.replayPayload,
+      };
+    }
+
+    throw new RuntimeError(
+      GovernorErrorCode.REPORT_REPLAY_INPUT_INVALID,
+      `Replay source payload is unsupported: ${options.replayPath}.`,
+      {
+        replayPath: options.replayPath,
+      },
+    );
+  }
+
+  /**
+   * Determines whether one payload matches execution report shape.
+   * @param payload Replay source payload candidate.
+   * @returns True when payload can be treated as execution report.
+   */
+  private isExecutionReportPayload(payload: unknown): payload is ExecutionReport {
+    if (!payload || typeof payload !== "object") {
+      return false;
+    }
+
+    const candidate = payload as Record<string, unknown>;
+    return (
+      typeof candidate.executionId === "string" &&
+      Array.isArray(candidate.stageSummaries) &&
+      Array.isArray(candidate.replayPointers) &&
+      typeof candidate.generatedAt === "string"
+    );
+  }
+
+  /**
+   * Determines whether one payload matches replay-explain result shape.
+   * @param payload Replay source payload candidate.
+   * @returns True when payload can be treated as replay-explain result.
+   */
+  private isReplayExplainPayload(payload: unknown): payload is ReplayExplainResult {
+    if (!payload || typeof payload !== "object") {
+      return false;
+    }
+
+    const candidate = payload as Record<string, unknown>;
+    return (
+      typeof candidate.executionId === "string" &&
+      typeof candidate.matchedCount === "number" &&
+      Array.isArray(candidate.pointers) &&
+      Array.isArray(candidate.explainLines) &&
+      candidate.query !== null &&
+      typeof candidate.query === "object"
+    );
   }
 
   /**
