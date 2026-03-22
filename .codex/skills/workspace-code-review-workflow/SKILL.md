@@ -62,11 +62,15 @@ Prefer this repository-local skill over the generic `code-review-workflow` skill
 4. Write the report with this structure.
 - Use `code_review_<slug>.md` when findings still need verification or repair.
 - Use `resolved_code_review_<slug>.md` directly when no actionable finding exists.
+- Keep the file name and top-level `Status` field synchronized.
+  - `code_review_<slug>.md` => `Status: review_pending`
+  - `verified_code_review_<slug>.md` => `Status: verified`
+  - `resolved_code_review_<slug>.md` => `Status: resolved`
 
 ```md
 # Code Review: <title>
 
-- Status: review_pending
+- Status: <review_pending|verified|resolved>
 - Date: YYYY-MM-DD
 - Reviewer: AI-Agent
 - Task: `<task-id-or-n/a>`
@@ -93,7 +97,7 @@ Prefer this repository-local skill over the generic `code-review-workflow` skill
 
 5. If no actionable issue is found, explicitly write `未发现需要修复的点。`
 - Keep residual notes in `## 3. Notes` when useful, but do not leave the report in `review_pending`.
-- Skip the pending/verified transition and emit the report directly as `resolved_code_review_<slug>.md`.
+- Skip the pending/verified transition and emit the report directly as `resolved_code_review_<slug>.md` with `Status: resolved`.
 
 ## Workflow B: Recheck Pending Report
 
@@ -120,7 +124,7 @@ Prefer this repository-local skill over the generic `code-review-workflow` skill
 1. `<command>`（通过/失败/未执行）
 ```
 
-4. After appending the recheck section, rename `code_review_<slug>.md` to `verified_code_review_<slug>.md`.
+4. After appending the recheck section, rename `code_review_<slug>.md` to `verified_code_review_<slug>.md` and update the top-level `Status` to `verified`.
 
 ## Workflow C: Recheck And Fix
 
@@ -138,13 +142,13 @@ Prefer this repository-local skill over the generic `code-review-workflow` skill
    - 说明：<reason>
 ```
 
-5. Rename `verified_code_review_<slug>.md` to `resolved_code_review_<slug>.md` only when all actionable items are `已完成`.
+5. Rename `verified_code_review_<slug>.md` to `resolved_code_review_<slug>.md` only when all actionable items are `已完成`, and update the top-level `Status` to `resolved`.
 
 ## Workflow D: Fix From Verified Report
 
 1. Read the latest `## 复核结论` section first.
 2. Do not repair findings from an unverified report.
-3. Apply only accepted fixes, append `## 修复执行记录（YYYY-MM-DD）`, and rename to `resolved_code_review_<slug>.md` only if every actionable item is complete.
+3. Apply only accepted fixes, append `## 修复执行记录（YYYY-MM-DD）`, and rename to `resolved_code_review_<slug>.md` only if every actionable item is complete; update the top-level `Status` to `resolved` in the same edit.
 
 ## Guardrails
 
@@ -155,3 +159,4 @@ Prefer this repository-local skill over the generic `code-review-workflow` skill
 5. Keep findings evidence-driven, severity-ordered, and tied to concrete file references.
 6. When a review has no actionable finding, prefer direct `resolved_code_review_*.md` output over an empty pending lifecycle.
 7. Keep user-facing summaries short: findings first, then verification and follow-up actions.
+8. Never leave a CR file with mismatched filename/status pairs such as `resolved_code_review_*.md` + `Status: review_pending`.

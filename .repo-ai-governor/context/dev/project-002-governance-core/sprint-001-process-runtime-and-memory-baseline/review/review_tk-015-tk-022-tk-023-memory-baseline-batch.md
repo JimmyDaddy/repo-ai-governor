@@ -1,6 +1,6 @@
 # Code Review: TK-015 / TK-022 / TK-023 Memory 基线批量变更
 
-- Status: verified
+- Status: review_pending
 - Date: 2026-03-20
 - Reviewer: AI-Agent
 - Task: `TK-015`, `TK-022`, `TK-023`

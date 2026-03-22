@@ -1,6 +1,6 @@
 # Code Review: TK-017 + TK-018 批次交叉审查（Change Risk Evaluator + Policy Gate Engine）
 
-- Status: review generated and pending verify
+- Status: verified
 - Date: 2026-03-20
 - Reviewer: AI-Agent
 - Tasks: `TK-017`, `TK-018`

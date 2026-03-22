@@ -1,6 +1,6 @@
 # Code Review: TK-014 Runtime 控制流执行基线
 
-- Status: review generated and pending verify
+- Status: verified
 - Date: 2026-03-20
 - Reviewer: AI-Agent
 - Task: `TK-014`

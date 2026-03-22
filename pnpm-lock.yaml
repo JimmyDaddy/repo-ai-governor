@@ -38,12 +38,36 @@ importers:
       '@repo-ai-governor/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@repo-ai-governor/core-change-risk':
+        specifier: workspace:*
+        version: link:../../packages/core-change-risk
+      '@repo-ai-governor/core-memory':
+        specifier: workspace:*
+        version: link:../../packages/core-memory
+      '@repo-ai-governor/core-policy':
+        specifier: workspace:*
+        version: link:../../packages/core-policy
+      '@repo-ai-governor/core-process':
+        specifier: workspace:*
+        version: link:../../packages/core-process
+      '@repo-ai-governor/core-runtime':
+        specifier: workspace:*
+        version: link:../../packages/core-runtime
+      '@repo-ai-governor/core-session':
+        specifier: workspace:*
+        version: link:../../packages/core-session
       '@repo-ai-governor/memory-provider-fs-csv':
         specifier: workspace:*
         version: link:../../packages/memory-providers/fs-csv
       '@repo-ai-governor/memory-provider-sqlite-fs':
         specifier: workspace:*
         version: link:../../packages/memory-providers/sqlite-fs
+      '@repo-ai-governor/memory-store-adapter':
+        specifier: workspace:*
+        version: link:../../packages/memory-store-adapter
+      '@repo-ai-governor/reporting':
+        specifier: workspace:*
+        version: link:../../packages/reporting
       '@repo-ai-governor/shared':
         specifier: workspace:*
         version: link:../../packages/shared

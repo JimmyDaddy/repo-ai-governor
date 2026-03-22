@@ -1,6 +1,6 @@
 # Code Review: TK-013 暂存区代码实现
 
-- Status: review generated and pending verify
+- Status: review_pending
 - Date: 2026-03-20
 - Reviewer: AI-Agent
 - Task: `TK-013`

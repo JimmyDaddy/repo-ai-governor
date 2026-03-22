@@ -1,6 +1,6 @@
 # Code Review: working tree contract and release governance baseline
 
-- Status: review_pending
+- Status: resolved
 - Date: 2026-03-22
 - Reviewer: AI-Agent
 - Task: `n/a`

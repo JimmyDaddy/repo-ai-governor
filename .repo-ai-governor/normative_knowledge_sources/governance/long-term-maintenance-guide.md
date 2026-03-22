@@ -6,7 +6,7 @@
 
 ## Source Hierarchy
 
-1. Normative rules: `.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md` (`CS-001` to `CS-025`)
+1. Normative rules: `.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md` (`CS-001` to `CS-026`)
 2. Operational baseline: this guide (`.repo-ai-governor/normative_knowledge_sources/governance/long-term-maintenance-guide.md`)
 3. Sprint execution records: `.repo-ai-governor/docs/dev/<project>/<sprint>/`
 4. Release channel governance: `.repo-ai-governor/normative_knowledge_sources/governance/release-governance-spec.md`
@@ -33,6 +33,7 @@ This guide does not duplicate rule text from `.repo-ai-governor/normative_knowle
 9. Artifact registry lifecycle baseline: `CS-023`
 10. Layered test topology baseline: `CS-024`
 11. Normative loading manifest baseline: `CS-025`
+12. Code review lifecycle status synchronization baseline: `CS-026`
 
 For command-level enforcement, always use `.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md -> Verification Commands` as the single source of truth.
 

@@ -1,6 +1,6 @@
 # Code Review: TK-019 / TK-020 Notification Dispatcher 与出口验收批次交叉复核
 
-- Status: review generated and pending verify
+- Status: verified
 - Date: 2026-03-20
 - Reviewer: AI-Agent
 - Tasks: `TK-019`, `TK-020`

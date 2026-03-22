@@ -1,0 +1,7 @@
+execution_id,task_id,title,owner,priority,due_date,status,project,sprint,plan,result,verify,review_delta,recorded_at
+exec-20260322-228,TK-081,发布分发模型与运行时可解析打包收敛,TBD,P0,2026-06-16,planned,project-009-production-readiness,sprint-002-automation-observability-and-ga-rollout,收敛发布分发模型并确保运行时产物不依赖未发布 workspace 包名,待执行,待验证,待执行,2026-03-22
+exec-20260322-229,TK-082,多工具/多模型真实调用与无人值守自动链路,TBD,P0,2026-06-17,planned,project-009-production-readiness,sprint-002-automation-observability-and-ga-rollout,打通 codex copilot claude-code 真实调用并实现无人值守自动执行链路,待执行,待验证,待执行,2026-03-22
+exec-20260322-230,TK-083,角色级进度日志与人类友好交互展示,TBD,P0,2026-06-18,planned,project-009-production-readiness,sprint-002-automation-observability-and-ga-rollout,实现 role stage status 进度视图分层日志与关键交互提示并回链审计事实,待执行,待验证,待执行,2026-03-22
+exec-20260322-231,TK-084,黑盒 E2E 与门禁收紧基线,TBD,P0,2026-06-19,planned,project-009-production-readiness,sprint-002-automation-observability-and-ga-rollout,建立外部用户路径黑盒 E2E 并收紧 passWithNoTests 依赖避免假阳性,待执行,待验证,待执行,2026-03-22
+exec-20260322-232,TK-085,CI 与发布流水线生产化接线,TBD,P1,2026-06-20,planned,project-009-production-readiness,sprint-002-automation-observability-and-ga-rollout,将质量门禁与发布候选流程接入真实 workflows 并补齐失败回滚信号,待执行,待验证,待执行,2026-03-22
+exec-20260322-233,TK-086,project-009 出口验收与运营反馈闭环,TBD,P0,2026-06-21,planned,project-009-production-readiness,sprint-002-automation-observability-and-ga-rollout,汇总 project-009 交付证据形成出口验收并沉淀试点与30天运营反馈输入约束,待执行,待验证,待执行,2026-03-22

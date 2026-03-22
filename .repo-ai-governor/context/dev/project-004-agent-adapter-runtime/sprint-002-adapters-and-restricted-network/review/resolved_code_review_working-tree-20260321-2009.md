@@ -1,6 +1,6 @@
 # Code Review: Restricted Network Fallback 与 IDE Wrapper 基线变更
 
-- Status: review_pending
+- Status: resolved
 - Date: 2026-03-21
 - Reviewer: AI-Agent
 - Task: `n/a`

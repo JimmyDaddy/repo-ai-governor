@@ -29,6 +29,7 @@ This file defines repository-level coding standards and the executable gate comm
 - [CS-023] Artifact Registry must enforce lifecycle exit governance: `artifact_status` only uses `active/frozen/deprecated/archived/retired`; main registry (`.repo-ai-governor/context/artifact-registry/artifacts.csv`) only keeps `active/frozen/deprecated`; archive registry (`.repo-ai-governor/context/artifact-registry/archive/artifacts.archive.csv`) only keeps `archived/retired`; stale `deprecated` entries beyond grace window must be archived.
 - [CS-024] Test topology must be layered: package-scoped tests belong under `apps/**/test` or `packages/**/test`, while cross-package smoke/integration tests stay under root `test/**`. CI and local verification should run `test:packages` and `test:integration` separately to preserve ownership boundaries and diagnosis clarity.
 - [CS-025] Normative loading manifest governance is required: active files under `.repo-ai-governor/normative_knowledge_sources/**` must be registered in `.repo-ai-governor/normative_knowledge_sources/normative-loading-manifest.yaml`; `default_load=true` is only allowed for `L0/L1`; triad docs must keep consistent `active/frozen` status; and gate default mode is `block` with controlled rollback switch.
+- [CS-026] Code review lifecycle artifacts under `.repo-ai-governor/context/dev/**/review/` must keep filename state and top-level `Status` metadata synchronized. `code_review_*/review_*` require `Status: review_pending`; `verified_code_review_*/verified_review_*` require `Status: verified`; `resolved_code_review_*/resolved_review_*` require `Status: resolved`.
 
 ## Monorepo Naming Convention (Refactor Baseline)
 
@@ -109,6 +110,7 @@ node ./scripts/governance/check-oop-structure.js
 node ./scripts/governance/check-package-dependency-boundary.js --mode warn
 node ./scripts/governance/check-task-ledger-sync.js
 node ./scripts/governance/check-sprint-plan-status-sync.js
+node ./scripts/governance/check-code-review-status-sync.js
 node ./scripts/governance/check-standardized-error-usage.js
 node ./scripts/governance/check-i18n-parity-fallback.js
 node ./scripts/governance/check-artifact-registry-lifecycle.js

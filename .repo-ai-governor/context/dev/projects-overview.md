@@ -1,7 +1,7 @@
 # Repo AI Governor Project 拆解总览
 
 - Status: active
-- Date: 2026-03-21
+- Date: 2026-03-22
 - Basis:
   - `.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-master-execution-plan.md`
   - `.repo-ai-governor/normative_knowledge_sources/product-requirements.md`
@@ -20,6 +20,7 @@
 | `project-006-hardening-and-release` | Stage 7 | Phase E | 契约测试、稳定性、发布治理与离线回归 |
 | `project-007-platformization` | Stage 8 | P2 扩展 | 插槽市场、可视化面板、组织级审计与策略分发 |
 | `project-008-workflow-optimization` | Cross-Stage | Process Optimization | 优化执行流程治理（门禁分层、台账同步、风险契约、拆解协议） |
+| `project-009-production-readiness` | Stage 9 | Phase E 收口 + GA Readiness overlay | 命令去 skeleton 化、本地安装与调试、自动执行闭环、角色级观测、examples 与发布门禁生产化 |
 
 ## 2. 依赖顺序
 
@@ -31,8 +32,9 @@
 6. `project-005-observability-and-artifacts`
 7. `project-006-hardening-and-release`
 8. `project-007-platformization`
+9. `project-009-production-readiness`
 
-说明：Stage 主链仍按 001-007 推进；`project-008` 作为跨阶段治理优化轨，可在不破坏主链 DoD 的前提下优先执行。
+说明：Stage 主链按 001-007、009 推进；`project-008` 作为跨阶段治理优化轨，可在不破坏主链 DoD 的前提下优先执行。
 
 ## 3. 交付原则
 

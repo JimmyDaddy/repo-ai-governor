@@ -57,6 +57,10 @@ const DISTRIBUTION_MIRRORS = [
     packageDistDirectory: resolve(PROJECT_ROOT, "packages/notification-dispatcher/dist"),
   },
   {
+    compiledDirectory: resolve(PROJECT_ROOT, "dist/packages/reporting"),
+    packageDistDirectory: resolve(PROJECT_ROOT, "packages/reporting/dist"),
+  },
+  {
     compiledDirectory: resolve(PROJECT_ROOT, "dist/packages/shared"),
     packageDistDirectory: resolve(PROJECT_ROOT, "packages/shared/dist"),
   },
@@ -118,6 +122,10 @@ const WORKSPACE_PACKAGE_LINKS = [
   {
     packageName: "notification-dispatcher",
     packageRoot: resolve(PROJECT_ROOT, "packages/notification-dispatcher"),
+  },
+  {
+    packageName: "reporting",
+    packageRoot: resolve(PROJECT_ROOT, "packages/reporting"),
   },
   {
     packageName: "shared",
