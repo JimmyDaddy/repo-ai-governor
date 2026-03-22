@@ -1,0 +1,22 @@
+# checklist
+
+- [x] TK-064 平台控制面契约与租户工作区模型基线
+  - 2026-03-22：任务创建，状态初始化为 `planned`。
+  - 2026-03-22：任务启动，状态切换为 `active`，开始收敛组织/租户/工作区模型与控制面契约。
+  - 2026-03-22：完成 `DA-077`，输出控制面实体与状态机/API 契约、边界与迁移回滚约束，并通过 `check-task-ledger-sync`、`check-sprint-plan-status-sync`、`pnpm run check`，状态切换为 `completed`。
+- [x] TK-065 插槽市场注册索引与发布契约基线
+  - 2026-03-22：任务创建，状态初始化为 `planned`。
+  - 2026-03-22：任务启动，状态切换为 `active`，开始收敛 marketplace 注册索引字段、发布状态机与消费解析契约。
+  - 2026-03-22：完成 `DA-078`，固化注册索引/发布闸口/消费解析/审计字段基线，并通过 `reconcile-artifact-dependencies`、`check-artifact-registry-lifecycle`、`check-task-ledger-sync`、`check-sprint-plan-status-sync`、`pnpm run check`，状态切换为 `completed`。
+- [x] TK-066 可视化配置与执行面板契约基线
+  - 2026-03-22：任务创建，状态初始化为 `planned`。
+  - 2026-03-22：任务启动，状态切换为 `active`，开始收敛 console 交互 API、权限模型与高风险确认契约。
+  - 2026-03-22：完成 `DA-079`，固化 UI/console 交互契约、回链字段与降级语义，并通过 `reconcile-artifact-dependencies`、`check-artifact-registry-lifecycle`、`check-task-ledger-sync`、`check-sprint-plan-status-sync`、`pnpm run check`，状态切换为 `completed`。
+- [x] TK-067 组织级策略分发与审计汇聚契约基线
+  - 2026-03-22：任务创建，状态初始化为 `planned`。
+  - 2026-03-22：任务启动，状态切换为 `active`，开始收敛组织级策略分发、灰度回滚与审计汇聚契约。
+  - 2026-03-22：完成 `DA-080`，固化组织级策略分发/审计汇聚字段与 Stage 7 兼容约束，并通过 `reconcile-artifact-dependencies`、`check-artifact-registry-lifecycle`、`check-task-ledger-sync`、`check-sprint-plan-status-sync`、`pnpm run check`，状态切换为 `completed`。
+- [x] TK-068 sprint-001 出口验收与 sprint-002 输入约束
+  - 2026-03-22：任务创建，状态初始化为 `planned`。
+  - 2026-03-22：任务启动，状态切换为 `active`，开始汇总 `DA-078/DA-079/DA-080` 验收证据并收敛 sprint-002 输入约束。
+  - 2026-03-22：完成 `DA-081`，固化 sprint-001 出口验收结论与 sprint-002 输入约束，并通过 `reconcile-artifact-dependencies`、`check-artifact-registry-lifecycle`、`check-task-ledger-sync`、`check-sprint-plan-status-sync`、`pnpm run check`，状态切换为 `completed`。

@@ -1,0 +1,6 @@
+execution_id,task_id,title,owner,priority,due_date,status,project,sprint,plan,result,verify,review_delta,recorded_at
+exec-20260322-195,TK-069,插槽市场供给链与权限治理落地,TBD,P0,2026-06-02,planned,project-007-platformization,sprint-002-org-governance-and-rollout-readiness,实现 slot marketplace 供给链权限校验与发布消费闭环并确保回滚可用,待执行,待验证,待执行,2026-03-22
+exec-20260322-196,TK-070,可视化面板 MVP 与流程编排联调,TBD,P0,2026-06-03,planned,project-007-platformization,sprint-002-org-governance-and-rollout-readiness,实现可视化配置与执行面板 MVP 并与流程编排执行链路完成联调回链,待执行,待验证,待执行,2026-03-22
+exec-20260322-197,TK-071,组织级策略包分发与版本治理落地,TBD,P0,2026-06-04,planned,project-007-platformization,sprint-002-org-governance-and-rollout-readiness,实现组织级策略包分发灰度发布版本对齐与回滚治理能力,待执行,待验证,待执行,2026-03-22
+exec-20260322-198,TK-072,跨租户审计视图与导出治理落地,TBD,P1,2026-06-05,planned,project-007-platformization,sprint-002-org-governance-and-rollout-readiness,实现跨租户审计视图检索导出与权限隔离治理并保持回放可追溯,待执行,待验证,待执行,2026-03-22
+exec-20260322-199,TK-073,project-007 出口验收与后续 rollout 输入约束,TBD,P0,2026-06-06,planned,project-007-platformization,sprint-002-org-governance-and-rollout-readiness,汇总 project-007 交付证据形成出口验收并沉淀后续 rollout 输入约束与风险清单,待执行,待验证,待执行,2026-03-22
