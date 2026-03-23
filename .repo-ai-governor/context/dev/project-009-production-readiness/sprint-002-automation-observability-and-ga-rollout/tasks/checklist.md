@@ -9,10 +9,11 @@
   - 2026-03-22：任务创建，状态初始化为 `planned`。
   - 2026-03-23：任务启动，状态切换为 `in_progress`，开始收敛 `connect -> doctor --adapters -> verify --adapters` 主路径与无人值守执行链路。
   - 2026-03-23：任务完成，已落地 adapters/routing/tools 配置契约、`connect/doctor/verify` 主路径、`safe_local` 修复边界、`verify pass/warn/fail` 判定与可选 `--record-ledger --task-id` 回填策略，并通过指定门禁与回归验证。
-- [ ] TK-083 角色级进度日志与人类友好交互展示
+- [x] TK-083 角色级进度日志与人类友好交互展示
   - 2026-03-22：任务创建，状态初始化为 `planned`。
   - 2026-03-23：任务启动，状态切换为 `in_progress`，开始收敛角色级进度、关键日志与交互提示展示链路。
   - 2026-03-23：完成第一批实现，已在 CLI 命令输出中接入统一 `role/stage/status` 模型、分层日志与交互提示，并覆盖 `policy_waiting`、`human_confirmation`、`review-verify`、`ledger backfill` 关键状态。
+  - 2026-03-23：完成收敛修复并闭环，修复 `verify` 成功路径体验输出缺失问题，补齐 `DA-095`，并通过台账门禁、TypeScript、CLI 集成测试与全量 `pnpm run check`，任务状态切换为 `completed`。
 - [ ] TK-084 黑盒 E2E 与门禁收紧基线
   - 2026-03-22：任务创建，状态初始化为 `planned`。
 - [ ] TK-085 CI 与发布流水线生产化接线
