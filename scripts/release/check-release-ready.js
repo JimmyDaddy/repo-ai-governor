@@ -26,6 +26,8 @@ const REQUIRED_PACKAGE_SCRIPTS = [
   "release:check",
   "release:notes",
   "release:verify-local",
+  "release:verify-cleanroom-local-install",
+  "release:verify-cleanroom-local-install:tgz",
   "release:rollback-rehearsal",
   "release:candidate",
   "release:ga-check",

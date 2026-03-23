@@ -89,8 +89,9 @@
     "release:notes": "node ./scripts/release/render-release-notes.js",
     "release:verify-local": "node ./scripts/release/verify-local-distribution.js",
     "release:verify-cleanroom-local-install": "node ./scripts/release/verify-cleanroom-local-install.js",
+    "release:verify-cleanroom-local-install:tgz": "node ./scripts/release/verify-cleanroom-local-install.js --modes tgz --iterations 1 --output .tmp/release-cleanroom-tgz-validation-report.json",
     "release:rollback-rehearsal": "node ./scripts/release/run-rollback-rehearsal.js",
-    "release:candidate": "pnpm run ci:quality && pnpm run release:check && pnpm run release:verify-local",
+    "release:candidate": "pnpm run ci:quality && pnpm run release:check && pnpm run release:verify-local && pnpm run release:verify-cleanroom-local-install --output .tmp/release-cleanroom-validation-report.json && pnpm run release:verify-cleanroom-local-install:tgz",
     "release:ga-check": "pnpm run release:candidate",
     "release:ga-candidate-unified-gate": "node ./scripts/release/check-ga-candidate-unified-gate.js",
     "release:pack": "pnpm pack --json",
@@ -111,6 +112,11 @@
   "publishConfig": {
     "access": "public",
     "provenance": true
+  },
+  "dependencies": {
+    "commander": "^13.1.0",
+    "i18next": "^25.6.0",
+    "yaml": "^2.8.2"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",

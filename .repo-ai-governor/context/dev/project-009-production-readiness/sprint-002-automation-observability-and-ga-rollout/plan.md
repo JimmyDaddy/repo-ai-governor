@@ -1,6 +1,6 @@
 # sprint-002-automation-observability-and-ga-rollout 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-03-23
 - Project: `project-009-production-readiness`
 
@@ -10,7 +10,7 @@
 
 ## 2. In-Scope Tasks
 
-1. TK-081 发布分发模型与运行时可解析打包收敛（planned）
+1. TK-081 发布分发模型与运行时可解析打包收敛（completed）
 2. TK-082 多工具/多模型真实调用与无人值守自动链路（planned）
 3. TK-083 角色级进度日志与人类友好交互展示（planned）
 4. TK-084 黑盒 E2E 与门禁收紧基线（planned）

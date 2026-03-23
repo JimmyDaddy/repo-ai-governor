@@ -10,11 +10,10 @@ This playbook is for repository users who need to onboard, debug, and upgrade `r
 |---|---|---|
 | `path` | Fast local iteration | `pnpm add --save-exact <governor-repo>` |
 | `link` | Source-linked development | `pnpm add --save-exact link:<governor-repo>` |
-| `tgz` | Stage 9B follow-up (known limitation in Stage 9A) | `pnpm pack --json` + `pnpm add --save-exact <tarball>` |
+| `tgz` | Candidate/GA rehearsal and reproducible package install | `pnpm pack --json` + `pnpm add --save-exact <tarball>` |
 
 Operational baseline for Stage 9A clean-room: `path + link`.
-Known limitation baseline: `tgz` currently fails at `pnpm exec repo-ai-governor --help` with
-`ERR_MODULE_NOT_FOUND(@repo-ai-governor/cli)` in clean-room validation, so it is not a Stage 9A recommended path.
+Stage 9B+ baseline: add `tgz` validation in clean-room and release candidate verification to ensure packaged runtime remains resolvable.
 
 ## 3. Bootstrap And Read-only Precheck
 
@@ -154,7 +153,7 @@ pnpm run release:verify-cleanroom-local-install
 Notes:
 
 1. Stage 9A baseline enforces repeated path/link validation.
-2. `tgz` remains a Stage 9B hardening/fix-forward item until the runtime package resolution issue is closed.
+2. Stage 9B+ baseline includes `tgz` install smoke to verify packaged runtime dependency resolution.
 
 ## 9. Governance Gates For Adoption
 

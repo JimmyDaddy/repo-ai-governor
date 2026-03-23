@@ -10,11 +10,10 @@
 |---|---|---|
 | `path` | 本地快速迭代 | `pnpm add --save-exact <governor-repo>` |
 | `link` | 源码联调 | `pnpm add --save-exact link:<governor-repo>` |
-| `tgz` | Stage 9B 跟进项（Stage 9A 已知限制） | `pnpm pack --json` + `pnpm add --save-exact <tarball>` |
+| `tgz` | 候选发布/GA 演练与可复现安装 | `pnpm pack --json` + `pnpm add --save-exact <tarball>` |
 
 Stage 9A clean-room 基线以 `path + link` 为主。
-已知限制基线：`tgz` 在 clean-room 下执行 `pnpm exec repo-ai-governor --help` 仍可能报
-`ERR_MODULE_NOT_FOUND(@repo-ai-governor/cli)`，因此不作为 Stage 9A 推荐接入路径。
+Stage 9B+ 基线：将 `tgz` 纳入 clean-room 与候选发布验证，确保打包产物运行时依赖可解析。
 
 ## 3. 初始化与只读预检
 
@@ -154,7 +153,7 @@ pnpm run release:verify-cleanroom-local-install
 说明：
 
 1. Stage 9A 基线要求 path/link 多轮重复验证。
-2. 在 runtime 包解析缺口关闭前，`tgz` 仍属于 Stage 9B 强化/fix-forward 项。
+2. Stage 9B+ 基线已将 `tgz` 安装 smoke 纳入验证，用于持续确认打包运行时依赖解析。
 
 ## 9. 接入期治理门禁
 

@@ -11,6 +11,10 @@ const DIST_CLI_ENTRY_PATH = "dist/bin/repo-ai-governor.js";
 const REQUIRED_PACKED_PATH_SUFFIXES = [
   "dist/bin/repo-ai-governor.js",
   "dist/apps/cli/src/main.js",
+  "dist/node_modules/@repo-ai-governor/cli/package.json",
+  "dist/node_modules/@repo-ai-governor/cli/dist/src/main.js",
+  "dist/node_modules/@repo-ai-governor/config/package.json",
+  "dist/node_modules/@repo-ai-governor/config/dist/src/index.js",
   "dist/packages/shared/src/index.js",
   "examples/README.md",
   "examples/single-role-minimal-flow/scenario.json",

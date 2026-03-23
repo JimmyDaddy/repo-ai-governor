@@ -17,8 +17,7 @@ import { gateFail, gateInfo, gatePass } from "../governance/gate-output.js";
 
 const GATE_NAME = "release-verify-cleanroom-install";
 const PACKAGE_BINARY = "repo-ai-governor";
-const DEFAULT_REPORT_PATH =
-  ".repo-ai-governor/context/dev/project-009-production-readiness/sprint-001-local-adoption-and-install-readiness/tasks/TK-077-cleanroom-validation-report.json";
+const DEFAULT_REPORT_PATH = resolve(tmpdir(), "repo-ai-governor-cleanroom-validation-report.json");
 const DEFAULT_MODE_LIST = ["path", "link"];
 const SUPPORTED_MODE_SET = new Set(["path", "tgz", "link"]);
 const DEFAULT_ITERATIONS = 3;
