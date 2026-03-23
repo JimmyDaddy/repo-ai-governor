@@ -3,6 +3,7 @@ export type {
   AdapterRoleBindingConfig,
   AdapterRoleConfig,
   AdapterRoutingConfig,
+  AdapterToolLocalModelConfig,
   AdapterToolConfig,
   GovernorConfig,
   GovernorProfile,

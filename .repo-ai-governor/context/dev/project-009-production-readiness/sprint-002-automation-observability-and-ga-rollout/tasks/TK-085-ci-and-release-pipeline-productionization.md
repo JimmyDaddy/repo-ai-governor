@@ -1,8 +1,8 @@
 # TK-085 CI 与发布流水线生产化接线
 
-- Status: planned
-- Date: 2026-03-22
-- Owner: TBD
+- Status: completed
+- Date: 2026-03-23
+- Owner: AI-Agent
 - Priority: P1
 - Project: `project-009-production-readiness`
 - Sprint: `sprint-002-automation-observability-and-ga-rollout`
@@ -47,9 +47,16 @@
 
 1. 2026-03-22：任务创建，状态初始化为 `planned`。
 2. 2026-03-22：根据 `TK-092` 补齐 `DA-092` handoff、workflow 显式消费与 `release:ga-check` 覆盖要求，任务状态保持 `planned`。
+3. 2026-03-23：任务启动，状态切换为 `in_progress`，开始落地 `.github/workflows` 生产化接线、Stage9 handoff 显式校验与 release channel 失败回滚信号。
+4. 2026-03-23：任务完成，已落地 `quality-gate/release-governance` 真实 workflows、`check:stage9-handoff` 显式约束校验与 GA 失败回滚信号链路，补齐 `DA-097` 并通过台账同步门禁与全量 `pnpm run check`，状态切换为 `completed`。
 
 ## 8. 产出
 
-1. `DA-097` `.repo-ai-governor/context/dev/project-009-production-readiness/sprint-002-automation-observability-and-ga-rollout/tasks/TK-085-ci-and-release-pipeline-productionization.md`
-2. `.repo-ai-governor/context/dev/project-009-production-readiness/sprint-002-automation-observability-and-ga-rollout/tasks/checklist.md`
-3. `.repo-ai-governor/context/dev/project-009-production-readiness/sprint-002-automation-observability-and-ga-rollout/tasks/tasks.csv`
+1. `DA-097` `.repo-ai-governor/context/dev/project-009-production-readiness/sprint-002-automation-observability-and-ga-rollout/tasks/DA-097-ci-and-release-pipeline-productionization.md`
+2. `.github/workflows/quality-gate.yml`
+3. `.github/workflows/release-governance.yml`
+4. `integrations/ci/github-actions/quality-gate.yml`
+5. `integrations/ci/github-actions/release-governance.yml`
+6. `scripts/ci/check-stage9-handoff-constraints.js`
+7. `.repo-ai-governor/context/dev/project-009-production-readiness/sprint-002-automation-observability-and-ga-rollout/tasks/checklist.md`
+8. `.repo-ai-governor/context/dev/project-009-production-readiness/sprint-002-automation-observability-and-ga-rollout/tasks/tasks.csv`

@@ -39,6 +39,12 @@ const DISTRIBUTION_PACKAGES = [
     packageDistDirectory: resolve(PROJECT_ROOT, "packages/adapters/claude-code/dist"),
   },
   {
+    packageName: "adapter-local-model",
+    packageRoot: resolve(PROJECT_ROOT, "packages/adapters/local-model"),
+    compiledDirectory: resolve(PROJECT_ROOT, "dist/packages/adapters/local-model"),
+    packageDistDirectory: resolve(PROJECT_ROOT, "packages/adapters/local-model/dist"),
+  },
+  {
     packageName: "config",
     packageRoot: resolve(PROJECT_ROOT, "packages/config"),
     compiledDirectory: resolve(PROJECT_ROOT, "dist/packages/config"),

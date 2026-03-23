@@ -8,6 +8,7 @@ export const ZH_CN_TRANSLATIONS = {
       profile: "执行命令前应用的配置 profile 标识。",
       output: "指定输出模式：pretty|plain|json。",
       verbosity: "指定输出详细级别：quiet|normal|verbose。",
+      compact: "启用更紧凑的 pretty 输出，优先人类快速阅读。",
       noColor: "在 pretty 模式下禁用 ANSI 颜色。",
       adapters: "启用适配器诊断与路由校验范围。",
       fix: "仅执行 safe_local 自动修复（目录/模板配置/本地可写性）。",

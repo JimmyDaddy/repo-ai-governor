@@ -1,0 +1,153 @@
+name: release-governance
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_channel:
+        description: release channel to validate
+        type: choice
+        options:
+          - canary
+          - rc
+          - ga
+        default: rc
+      run_rollback_on_failure:
+        description: run rollback rehearsal when channel command fails (ga only)
+        type: boolean
+        default: true
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release-governance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    env:
+      STAGE9_HANDOFF_PATH: .repo-ai-governor/context/dev/project-009-production-readiness/sprint-001-local-adoption-and-install-readiness/tasks/TK-080-sprint-001-exit-acceptance-and-sprint-002-input-constraints.md
+      CI_RELEASE_REPORT_ROOT: .tmp/ci/release
+      GA_UNIFIED_GATE_REPORT: .tmp/ci/release/ga-candidate-unified-gate-report.json
+      ROLLBACK_REHEARSAL_REPORT: .tmp/ci/release/rollback-rehearsal-report.json
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate Stage9 handoff constraints (DA-092)
+        run: pnpm run check:stage9-handoff
+
+      - name: Resolve release channel
+        id: release_channel
+        shell: bash
+        run: |
+          channel="${{ github.event_name == 'push' && 'ga' || inputs.release_channel }}"
+          echo "channel=${channel}" >> "$GITHUB_OUTPUT"
+          echo "release_channel=${channel}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Run release channel command
+        id: run_channel
+        shell: bash
+        run: |
+          set +e
+          channel="${{ steps.release_channel.outputs.channel }}"
+          if [[ "$channel" == "canary" ]]; then
+            command='pnpm run release:check && pnpm run test:contract -- --maxWorkers=1 --maxConcurrency=1'
+          elif [[ "$channel" == "rc" ]]; then
+            command='pnpm run release:candidate'
+          else
+            command='pnpm run release:ga-candidate-unified-gate -- --output "${GA_UNIFIED_GATE_REPORT}"'
+          fi
+
+          echo "command=${command}" >> "$GITHUB_OUTPUT"
+          bash -lc "$command"
+          exit_code=$?
+          echo "exit_code=${exit_code}" >> "$GITHUB_OUTPUT"
+          echo "release_command=${command}" >> "$GITHUB_STEP_SUMMARY"
+          echo "release_exit_code=${exit_code}" >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+
+      - name: Run rollback rehearsal on GA failure
+        id: rollback_rehearsal
+        if: ${{ steps.release_channel.outputs.channel == 'ga' && steps.run_channel.outputs.exit_code != '0' && (github.event_name == 'push' || inputs.run_rollback_on_failure) }}
+        shell: bash
+        run: |
+          set +e
+          pnpm run release:rollback-rehearsal -- --output "${ROLLBACK_REHEARSAL_REPORT}"
+          exit_code=$?
+          echo "exit_code=${exit_code}" >> "$GITHUB_OUTPUT"
+          echo "rollback_exit_code=${exit_code}" >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+
+      - name: Build release governance summary artifact
+        if: ${{ always() }}
+        env:
+          RELEASE_CHANNEL: ${{ steps.release_channel.outputs.channel }}
+          RELEASE_COMMAND: ${{ steps.run_channel.outputs.command }}
+          RELEASE_EXIT_CODE: ${{ steps.run_channel.outputs.exit_code }}
+          ROLLBACK_EXIT_CODE: ${{ steps.rollback_rehearsal.outputs.exit_code }}
+        run: |
+          node -e '
+            const fs = require("node:fs");
+            const path = require("node:path");
+            const root = process.env.CI_RELEASE_REPORT_ROOT;
+            fs.mkdirSync(root, { recursive: true });
+            const payload = {
+              reportType: "release_governance_workflow_summary_v1",
+              generatedAt: new Date().toISOString(),
+              releaseChannel: process.env.RELEASE_CHANNEL ?? "unknown",
+              releaseCommand: process.env.RELEASE_COMMAND ?? "unknown",
+              releaseExitCode: Number(process.env.RELEASE_EXIT_CODE ?? "1"),
+              rollbackExitCode:
+                typeof process.env.ROLLBACK_EXIT_CODE === "string" &&
+                process.env.ROLLBACK_EXIT_CODE.length > 0
+                  ? Number(process.env.ROLLBACK_EXIT_CODE)
+                  : null,
+              reports: {
+                gaUnifiedGateReport: process.env.GA_UNIFIED_GATE_REPORT,
+                rollbackRehearsalReport: process.env.ROLLBACK_REHEARSAL_REPORT,
+              },
+            };
+            fs.writeFileSync(
+              path.join(root, "release-channel-summary.json"),
+              `${JSON.stringify(payload, null, 2)}\n`,
+              "utf8",
+            );
+          '
+
+      - name: Upload release governance reports
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-governance-reports-${{ github.run_id }}
+          path: .tmp/ci/release/*.json
+          if-no-files-found: warn
+
+      - name: Fail workflow on release/rollback failure signals
+        if: ${{ always() }}
+        env:
+          RELEASE_EXIT_CODE: ${{ steps.run_channel.outputs.exit_code }}
+          ROLLBACK_EXIT_CODE: ${{ steps.rollback_rehearsal.outputs.exit_code }}
+        run: |
+          if [[ "${RELEASE_EXIT_CODE}" != "0" ]]; then
+            echo "release channel command failed: ${RELEASE_EXIT_CODE}" >&2
+            exit 1
+          fi
+          if [[ -n "${ROLLBACK_EXIT_CODE}" && "${ROLLBACK_EXIT_CODE}" != "0" ]]; then
+            echo "rollback rehearsal failed: ${ROLLBACK_EXIT_CODE}" >&2
+            exit 1
+          fi

@@ -4,6 +4,7 @@ import {
   ConfigError,
   DefaultRoleProfileId,
   GovernorErrorCode,
+  LocalModelProvider,
   RoleProfileStatus,
   RoleSource,
 } from "@repo-ai-governor/shared";
@@ -96,6 +97,21 @@ function createConfigFixture(): GovernorConfig {
   };
 }
 
+function requireAdaptersFixture(config: GovernorConfig): NonNullable<GovernorConfig["adapters"]> {
+  const adapters = config.adapters;
+  if (adapters) {
+    return adapters;
+  }
+
+  throw new ConfigError(
+    GovernorErrorCode.CONFIG_SCHEMA_VALIDATION_FAILED,
+    "Test fixture must provide adapters config.",
+    {
+      pointer: "/adapters",
+    },
+  );
+}
+
 describe("config unit", () => {
   it("validates schema payload and resolves profile overrides", () => {
     const validator = new SchemaValidator();
@@ -159,6 +175,90 @@ describe("config unit", () => {
     expect(resolvedConfig.config.adapters?.routing).toBeUndefined();
     expect(resolvedConfig.config.adapters?.tools?.[0]?.toolId).toBe(AdapterSurface.GITHUB_COPILOT);
   });
+
+  it("accepts local-model adapter tool with local runtime config", () => {
+    const validator = new SchemaValidator();
+    const baseConfig = createConfigFixture();
+    const baseAdapters = requireAdaptersFixture(baseConfig);
+    const configWithLocalModel: GovernorConfig = {
+      ...baseConfig,
+      adapters: {
+        ...baseAdapters,
+        tools: [
+          ...(baseAdapters.tools ?? []),
+          {
+            toolId: AdapterSurface.OLLAMA,
+            enabled: true,
+            availability: AdapterAvailability.AVAILABLE,
+            localModel: {
+              provider: LocalModelProvider.OLLAMA,
+              endpoint: "http://127.0.0.1:11434",
+              model: "qwen2.5-coder:7b",
+              requestTimeoutMs: 120000,
+              maxRetries: 2,
+            },
+          },
+        ],
+      },
+    };
+
+    const validatedConfig = validator.validateOrThrow(configWithLocalModel);
+    const localModelTool = validatedConfig.adapters?.tools?.find(
+      (tool) => tool.toolId === AdapterSurface.OLLAMA,
+    );
+
+    expect(localModelTool?.localModel?.provider).toBe(LocalModelProvider.OLLAMA);
+    expect(localModelTool?.localModel?.model).toBe("qwen2.5-coder:7b");
+  });
+
+  it("rejects local-model tool without local runtime config", () => {
+    const validator = new SchemaValidator();
+    const baseConfig = createConfigFixture();
+    const baseAdapters = requireAdaptersFixture(baseConfig);
+    const invalidConfig: GovernorConfig = {
+      ...baseConfig,
+      adapters: {
+        ...baseAdapters,
+        tools: [
+          ...(baseAdapters.tools ?? []),
+          {
+            toolId: AdapterSurface.OLLAMA,
+            enabled: true,
+            availability: AdapterAvailability.AVAILABLE,
+          },
+        ],
+      },
+    };
+
+    expect(() => validator.validateOrThrow(invalidConfig)).toThrowError(ConfigError);
+  });
+
+  it("rejects local-model config when tool surface is non-local", () => {
+    const validator = new SchemaValidator();
+    const baseConfig = createConfigFixture();
+    const baseAdapters = requireAdaptersFixture(baseConfig);
+    const invalidConfig: GovernorConfig = {
+      ...baseConfig,
+      adapters: {
+        ...baseAdapters,
+        tools: [
+          {
+            toolId: AdapterSurface.CODEX,
+            enabled: true,
+            availability: AdapterAvailability.AVAILABLE,
+            localModel: {
+              provider: LocalModelProvider.OLLAMA,
+              endpoint: "http://127.0.0.1:11434",
+              model: "qwen2.5-coder:7b",
+            },
+          },
+        ],
+      },
+    };
+
+    expect(() => validator.validateOrThrow(invalidConfig)).toThrowError(ConfigError);
+  });
+
   it("uses default workspace mode when runtime/config override is absent", () => {
     const workspaceResolver = new WorkspaceResolver();
     const resolvedWorkspace = workspaceResolver.resolve({

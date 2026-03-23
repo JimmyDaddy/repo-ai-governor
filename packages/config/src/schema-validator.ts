@@ -2,6 +2,7 @@ import {
   AdapterAvailability,
   AdapterSurface,
   I18N_RUNTIME_ENGINE,
+  LocalModelProvider,
   MemoryStoreEngine,
   ROLE_PROFILE_ID_PATTERN,
   ROLE_PROFILE_VERSION_PATTERN,
@@ -16,6 +17,7 @@ import type {
   AdapterRoleBindingConfig,
   AdapterRoleConfig,
   AdapterToolConfig,
+  AdapterToolLocalModelConfig,
   AdaptersConfig,
   GovernorConfig,
   GovernorProfile,
@@ -32,6 +34,7 @@ const ROLE_SOURCE_VALUES = new Set<string>(Object.values(RoleSource));
 const ROLE_PROFILE_STATUS_VALUES = new Set<string>(Object.values(RoleProfileStatus));
 const ADAPTER_SURFACE_VALUES = new Set<string>(Object.values(AdapterSurface));
 const ADAPTER_AVAILABILITY_VALUES = new Set<string>(Object.values(AdapterAvailability));
+const LOCAL_MODEL_PROVIDER_VALUES = new Set<string>(Object.values(LocalModelProvider));
 
 /**
  * Validates governor config payloads against the shared baseline contract.
@@ -812,7 +815,7 @@ export class SchemaValidator {
       const toolRecord = this.expectRecord(entry, toolPointer);
       this.assertNoUnknownKeys(
         toolRecord,
-        new Set(["toolId", "enabled", "availability", "unavailableReasons"]),
+        new Set(["toolId", "enabled", "availability", "unavailableReasons", "localModel"]),
         toolPointer,
       );
 
@@ -834,14 +837,82 @@ export class SchemaValidator {
         toolRecord.unavailableReasons,
         `${toolPointer}/unavailableReasons`,
       );
+      if (toolId !== AdapterSurface.OLLAMA && toolRecord.localModel !== undefined) {
+        this.throwConfigSchemaValidationError(
+          `${toolPointer}/localModel is only supported when toolId="${AdapterSurface.OLLAMA}".`,
+          `${toolPointer}/localModel`,
+        );
+      }
+      const localModel = this.validateAdapterToolLocalModel(
+        toolRecord.localModel,
+        `${toolPointer}/localModel`,
+        toolId === AdapterSurface.OLLAMA,
+      );
 
       return {
         toolId,
         ...(enabled !== undefined ? { enabled } : {}),
         ...(availability ? { availability } : {}),
         ...(unavailableReasons ? { unavailableReasons } : {}),
+        ...(localModel ? { localModel } : {}),
       };
     });
+  }
+
+  /**
+   * Validates optional local-model runtime config for one adapter tool row.
+   * @param candidate Raw local-model object.
+   * @param pointer Error pointer path.
+   * @param required Whether local-model config is mandatory for this tool row.
+   * @returns Normalized local-model config when present.
+   */
+  private validateAdapterToolLocalModel(
+    candidate: unknown,
+    pointer: string,
+    required: boolean,
+  ): AdapterToolLocalModelConfig | undefined {
+    if (candidate === undefined) {
+      if (!required) {
+        return undefined;
+      }
+      this.throwConfigSchemaValidationError(
+        `${pointer} is required for local-model tool.`,
+        pointer,
+      );
+    }
+
+    const localModel = this.expectRecord(candidate, pointer);
+    this.assertNoUnknownKeys(
+      localModel,
+      new Set(["provider", "endpoint", "model", "requestTimeoutMs", "maxRetries"]),
+      pointer,
+    );
+
+    const provider = this.expectString(localModel.provider, `${pointer}/provider`);
+    if (!LOCAL_MODEL_PROVIDER_VALUES.has(provider)) {
+      this.throwConfigSchemaValidationError(
+        `${pointer}/provider must be one of: ${Array.from(LOCAL_MODEL_PROVIDER_VALUES).join(", ")}.`,
+        `${pointer}/provider`,
+      );
+    }
+    const endpoint = this.expectString(localModel.endpoint, `${pointer}/endpoint`);
+    const model = this.expectString(localModel.model, `${pointer}/model`);
+    const requestTimeoutMs = this.expectOptionalPositiveInteger(
+      localModel.requestTimeoutMs,
+      `${pointer}/requestTimeoutMs`,
+    );
+    const maxRetries = this.expectOptionalNonNegativeInteger(
+      localModel.maxRetries,
+      `${pointer}/maxRetries`,
+    );
+
+    return {
+      provider: provider as LocalModelProvider,
+      endpoint,
+      model,
+      ...(requestTimeoutMs !== undefined ? { requestTimeoutMs } : {}),
+      ...(maxRetries !== undefined ? { maxRetries } : {}),
+    };
   }
 
   /**
@@ -975,6 +1046,45 @@ export class SchemaValidator {
 
     if (typeof candidate !== "boolean") {
       this.throwConfigSchemaValidationError(`${pointer} must be a boolean.`, pointer);
+    }
+
+    return candidate;
+  }
+
+  /**
+   * Validates optional positive integer fields when present.
+   * @param candidate Value to validate.
+   * @param pointer Error pointer path.
+   * @returns Positive integer value when present; otherwise undefined.
+   */
+  private expectOptionalPositiveInteger(candidate: unknown, pointer: string): number | undefined {
+    if (candidate === undefined) {
+      return undefined;
+    }
+
+    if (typeof candidate !== "number" || !Number.isInteger(candidate) || candidate <= 0) {
+      this.throwConfigSchemaValidationError(`${pointer} must be a positive integer.`, pointer);
+    }
+
+    return candidate;
+  }
+
+  /**
+   * Validates optional non-negative integer fields when present.
+   * @param candidate Value to validate.
+   * @param pointer Error pointer path.
+   * @returns Non-negative integer value when present; otherwise undefined.
+   */
+  private expectOptionalNonNegativeInteger(
+    candidate: unknown,
+    pointer: string,
+  ): number | undefined {
+    if (candidate === undefined) {
+      return undefined;
+    }
+
+    if (typeof candidate !== "number" || !Number.isInteger(candidate) || candidate < 0) {
+      this.throwConfigSchemaValidationError(`${pointer} must be a non-negative integer.`, pointer);
     }
 
     return candidate;

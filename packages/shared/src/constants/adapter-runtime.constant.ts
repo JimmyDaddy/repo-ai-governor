@@ -9,6 +9,7 @@ export enum AdapterSurface {
   CODEX = "codex",
   GITHUB_COPILOT = "github-copilot",
   CLAUDE_CODE = "claude-code",
+  OLLAMA = "ollama",
 }
 
 /**

@@ -1,6 +1,6 @@
 # project-009-production-readiness 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-03-23
 - Stage Mapping: Stage 9
 - Phase Mapping: Phase E 收口 + GA Readiness overlay
@@ -82,12 +82,12 @@
 | TK-092 | sprint-001 | sprint-002 任务卡与 DA-092 handoff 约束对齐 | maintenance/planning | TK-091 | completed |
 | TK-093 | sprint-001 | TK-086 项目出口验收模板与完成态审计入口固化 | maintenance/planning | TK-092 | completed |
 | TK-094 | sprint-001 | 主执行计划 Stage 9 运营指标与外部消费契约补强 | maintenance/planning | TK-089,TK-090,TK-091,TK-093 | completed |
-| TK-081 | sprint-002 | 发布分发模型与运行时可解析打包收敛 | implementation/release | TK-080 | planned |
+| TK-081 | sprint-002 | 发布分发模型与运行时可解析打包收敛 | implementation/release | TK-080 | completed |
 | TK-082 | sprint-002 | 多工具/多模型真实调用与无人值守自动链路 | implementation/automation | TK-080,TK-081 | completed |
-| TK-083 | sprint-002 | 角色级进度日志与人类友好交互展示 | implementation/ux-observability | TK-080,TK-082 | in_progress |
-| TK-084 | sprint-002 | 黑盒 E2E 与门禁收紧基线 | implementation/gate | TK-081,TK-082,TK-083 | planned |
-| TK-085 | sprint-002 | CI 与发布流水线生产化接线 | implementation/ci-release | TK-081,TK-084 | planned |
-| TK-086 | sprint-002 | project-009 出口验收与运营反馈闭环 | acceptance baseline | TK-081,TK-082,TK-083,TK-084,TK-085 | planned |
+| TK-083 | sprint-002 | 角色级进度日志与人类友好交互展示 | implementation/ux-observability | TK-080,TK-082 | completed |
+| TK-084 | sprint-002 | 黑盒 E2E 与门禁收紧基线 | implementation/gate | TK-081,TK-082,TK-083 | completed |
+| TK-085 | sprint-002 | CI 与发布流水线生产化接线 | implementation/ci-release | TK-081,TK-084 | completed |
+| TK-086 | sprint-002 | project-009 出口验收与运营反馈闭环 | acceptance baseline | TK-081,TK-082,TK-083,TK-084,TK-085 | completed |
 
 ## 5. 依赖产物策略
 
@@ -131,3 +131,4 @@
 15. 2026-03-22：完成 `TK-079`，交付双语 README/CHANGELOG 与本地采用手册，产出 `DA-091` 并补齐 `review-verify -> ledger backfill` 用户可见链路说明。
 16. 2026-03-22：完成 `TK-080`，形成 `DA-092` 并给出 Stage 9A `accept` 结论，收敛 sprint-002（`TK-081`~`TK-086`）唯一输入约束与 blocker/fix-forward 清单。
 17. 2026-03-23：将 `.repo-ai-governor/draft/multi-ai-tools-fast-onboarding-technical-solution.md` 已采纳决策反哺到 project-009 技术方案入口，明确 `adapters/routing` 阶段 A 必需、`safe_local` 自动修复边界、`verify` 判定门槛与默认台账回写策略。
+18. 2026-03-23：完成 `TK-086`，project-009 验收结论为 `completed`，已产出 `.repo-ai-governor/context/dev/project-009-production-readiness/project-009-completion-audit-summary.md` 并完成里程碑回链。

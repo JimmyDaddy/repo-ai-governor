@@ -1,0 +1,21 @@
+# checklist
+
+- [x] TK-095 本地模型适配契约与配置扩展基线
+  - 2026-03-23：任务创建，状态初始化为 `planned`。
+  - 2026-03-23：依据全自动研发落地清单启动任务，状态切换为 `in_progress`，当前先收敛 surface 与配置/schema 契约基线。
+  - 2026-03-23：完成第一批代码落地并通过关键回归（`tsc`、`config/local-model/cli-runtime` 测试），继续保持 `in_progress` 收敛剩余产物。
+  - 2026-03-24：完成 `DA-099` 产物文档、artifact registry 登记与台账同步，并通过关键验证回归，任务状态更新为 `completed`。
+- [ ] TK-096 Ollama 类 adapter 与 route fallback 基线
+  - 2026-03-23：任务创建，状态初始化为 `planned`。
+- [ ] TK-097 本地模型诊断校验与受限网络演练基线
+  - 2026-03-23：任务创建，状态初始化为 `planned`。
+- [ ] TK-098 sprint-001 出口验收与 sprint-002 输入约束
+  - 2026-03-23：任务创建，状态初始化为 `planned`。
+- [x] TK-103 全自动研发 gap 清单与 draft 收敛
+  - 2026-03-24：任务创建并启动，目标是将“当前工具尚不能全自动研发”的分析正式化为 draft 级 gap checklist。
+  - 2026-03-24：已完成正式 gap 清单起草，覆盖真实调用、动态编排、review chain、HITL 回灌、delivery rehearsal 与稳定性门禁 6 类 gap。
+  - 2026-03-24：已同步 project/sprint 计划、task card、tasks.csv 与 resolved review，任务状态收尾为 `completed`。
+- [x] TK-104 主执行计划全自动研发 gap register 上收
+  - 2026-03-24：任务创建并启动，目标是将 draft 级 gap checklist 正式上收到 master execution plan。
+  - 2026-03-24：已完成 master plan 更新，补入 Stage 9 follow-up 状态矩阵、正式 gap register 与收敛顺序。
+  - 2026-03-24：已同步 task card、project/sprint 计划、tasks.csv 与 resolved review，任务状态收尾为 `completed`。

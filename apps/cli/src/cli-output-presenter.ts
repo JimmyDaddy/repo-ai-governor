@@ -1,7 +1,10 @@
 import { ErrorOutputEnvironment } from "@repo-ai-governor/shared";
+import { CliGovernanceCheckStatus } from "./constants/cli-governance-runtime.constant.js";
 import { CliVerbosity } from "./constants/cli-output.constant.js";
 import type {
+  CliCommandExecutionResultPayload,
   CliCommandExperiencePayload,
+  CliCommandResultCheck,
   CliErrorOutputPayload,
   CliRoleStageProgress,
   CliSuccessOutputPayload,
@@ -88,81 +91,149 @@ export class CliOutputPresenter {
    * @returns Pretty-formatted text.
    */
   private renderPrettySuccess(payload: CliSuccessOutputPayload): string {
+    const compactPretty = payload.runtime.compact && payload.verbosity !== CliVerbosity.VERBOSE;
+    const labels = this.resolvePrettyLabels(payload.diagnostics.locale);
     const title = this.decorateIfColorEnabled(
-      "repo-ai-governor: command succeeded",
+      labels.successTitle,
       ANSI_SUCCESS,
       payload.runtime.color_enabled,
     );
-    const lines = [title, `  message: ${payload.message}`, `  command: ${payload.command}`];
+    const lines = [
+      title,
+      "",
+      labels.summarySection,
+      `  - ${payload.message}`,
+      `  - ${labels.commandLabel}: ${payload.command}`,
+    ];
     const commandResult = payload.command_result;
 
     if (commandResult) {
-      lines.push(
-        `  operation: ${commandResult.operation}`,
-        `  operation_summary: ${commandResult.summary}`,
-      );
+      lines.push(`  - ${labels.operationLabel}: ${commandResult.operation}`);
 
       if (commandResult.attach_mode) {
-        lines.push(`  attach_mode: ${commandResult.attach_mode}`);
+        lines.push(`  - ${labels.attachModeLabel}: ${commandResult.attach_mode}`);
       }
+    }
+
+    if (commandResult?.check_totals || commandResult?.checks || commandResult?.experience) {
+      lines.push("", labels.healthSection);
       if (commandResult.check_totals) {
         lines.push(
-          `  checks: pass=${commandResult.check_totals.pass} warn=${commandResult.check_totals.warn} fail=${commandResult.check_totals.fail}`,
+          `  - ${labels.checksLabel}: ${commandResult.check_totals.pass} ${labels.passLabel} / ${commandResult.check_totals.warn} ${labels.warnLabel} / ${commandResult.check_totals.fail} ${labels.failLabel}`,
         );
       }
       if (commandResult.experience) {
-        lines.push(`  progress: ${this.resolveProgressSummary(commandResult.experience)}`);
-        if (commandResult.experience.layeredLogs.summary.length > 0) {
-          lines.push(`  log_summary: ${commandResult.experience.layeredLogs.summary.join(" | ")}`);
-        }
-        if (commandResult.experience.interactionPrompts.length > 0) {
-          const firstPrompt = commandResult.experience.interactionPrompts[0];
-          if (firstPrompt) {
-            lines.push(`  next_action: ${firstPrompt.title} -> ${firstPrompt.action}`);
+        lines.push(
+          `  - ${labels.progressLabel}: ${this.resolveProgressSummaryHuman(commandResult.experience, payload.diagnostics.locale)}`,
+        );
+      }
+      const attentionChecks = this.resolveAttentionChecks(commandResult);
+      if (attentionChecks.length > 0) {
+        if (compactPretty) {
+          const firstAttentionCheck = attentionChecks[0];
+          if (firstAttentionCheck) {
+            lines.push(
+              `  - ${labels.attentionLabel}: ${this.resolveReadableCheckLabel(firstAttentionCheck.id, payload.diagnostics.locale)}: ${this.resolveReadableCheckDetail(firstAttentionCheck, payload.diagnostics.locale)}`,
+            );
+          }
+          if (attentionChecks.length > 1) {
+            lines.push(
+              `  - ${labels.attentionLabel}: +${attentionChecks.length - 1} ${labels.moreHint}`,
+            );
+          }
+        } else {
+          lines.push(`  - ${labels.attentionLabel}:`);
+          for (const check of attentionChecks) {
+            lines.push(
+              `    - ${this.resolveReadableCheckLabel(check.id, payload.diagnostics.locale)}: ${this.resolveReadableCheckDetail(check, payload.diagnostics.locale)}`,
+            );
           }
         }
       }
     }
 
+    const nextActions = this.resolvePrettyNextActions(commandResult);
+    if (nextActions.length > 0) {
+      lines.push("", labels.nextStepsSection);
+      if (compactPretty) {
+        const firstAction = nextActions[0];
+        if (firstAction) {
+          lines.push(`  1. ${firstAction}`);
+        }
+        if (nextActions.length > 1) {
+          lines.push(`  2. +${nextActions.length - 1} ${labels.moreHint}`);
+        }
+      } else {
+        for (const [index, action] of nextActions.entries()) {
+          lines.push(`  ${index + 1}. ${action}`);
+        }
+      }
+    }
+
+    if (commandResult?.artifacts && commandResult.artifacts.length > 0) {
+      lines.push("", labels.artifactsSection);
+      if (compactPretty) {
+        lines.push(`  - ${commandResult.artifacts.length} ${labels.artifactsGeneratedLabel}`);
+        const primaryArtifact = commandResult.artifacts[0];
+        if (primaryArtifact) {
+          lines.push(
+            `  - ${labels.primaryLabel}: ${primaryArtifact.id} -> ${primaryArtifact.path}`,
+          );
+        }
+      } else {
+        for (const artifact of commandResult.artifacts) {
+          lines.push(`  - ${artifact.id}: ${artifact.path}`);
+        }
+      }
+    }
+
     if (payload.verbosity !== CliVerbosity.QUIET) {
-      lines.push(
-        `  locale: ${payload.diagnostics.locale}`,
-        `  profile: ${payload.diagnostics.profile}`,
-        `  output_mode: ${payload.output_mode}`,
-        `  downgraded_from: ${payload.runtime.downgraded_from ?? "none"}`,
-      );
+      lines.push("", labels.contextSection);
+      if (compactPretty) {
+        lines.push(
+          `  - ${labels.localeLabel}=${payload.diagnostics.locale} | ${labels.profileLabel}=${payload.diagnostics.profile} | ${labels.outputLabel}=${payload.output_mode}`,
+        );
+      } else {
+        lines.push(
+          `  - ${labels.localeLabel}: ${payload.diagnostics.locale}`,
+          `  - ${labels.profileLabel}: ${payload.diagnostics.profile}`,
+          `  - ${labels.outputModeLabel}: ${payload.output_mode}`,
+          `  - ${labels.downgradedFromLabel}: ${payload.runtime.downgraded_from ?? "none"}`,
+        );
+      }
     }
 
     if (payload.verbosity === CliVerbosity.VERBOSE) {
+      lines.push("", labels.debugSection);
       lines.push(
-        `  config_source: ${payload.diagnostics.configSource}`,
-        `  workspace_mode: ${payload.diagnostics.workspaceMode}`,
-        `  workspace_mode_source: ${payload.diagnostics.workspaceModeSource}`,
-        `  workspace_id: ${payload.diagnostics.workspaceId}`,
-        `  workspace_root: ${payload.diagnostics.workspaceRoot}`,
-        `  memory_store_engine: ${payload.diagnostics.memoryStoreEngine}`,
-        `  memory_store_root: ${payload.diagnostics.memoryStoreRoot}`,
-        `  memory_store_provider: ${payload.diagnostics.memoryStoreProvider}`,
+        `  - ${labels.configSourceLabel}: ${payload.diagnostics.configSource}`,
+        `  - ${labels.workspaceModeLabel}: ${payload.diagnostics.workspaceMode}`,
+        `  - ${labels.workspaceModeSourceLabel}: ${payload.diagnostics.workspaceModeSource}`,
+        `  - ${labels.workspaceIdLabel}: ${payload.diagnostics.workspaceId}`,
+        `  - ${labels.workspaceRootLabel}: ${payload.diagnostics.workspaceRoot}`,
+        `  - ${labels.memoryStoreEngineLabel}: ${payload.diagnostics.memoryStoreEngine}`,
+        `  - ${labels.memoryStoreRootLabel}: ${payload.diagnostics.memoryStoreRoot}`,
+        `  - ${labels.memoryStoreProviderLabel}: ${payload.diagnostics.memoryStoreProvider}`,
       );
 
       if (commandResult?.checks) {
         const checkSummary = commandResult.checks
           .map((check) => `${check.id}:${check.status}`)
           .join(", ");
-        lines.push(`  check_summary: ${checkSummary}`);
+        lines.push(`  - ${labels.checkSummaryLabel}: ${checkSummary}`);
       }
       if (commandResult?.artifacts) {
         const artifactSummary = commandResult.artifacts
           .map((artifact) => `${artifact.id}=${artifact.path}`)
           .join(", ");
-        lines.push(`  artifacts: ${artifactSummary}`);
+        lines.push(`  - ${labels.artifactSummaryLabel}: ${artifactSummary}`);
       }
       if (commandResult?.experience) {
         const roleProgressLines = commandResult.experience.roleProgress
           .map((entry) => this.formatRoleProgress(entry))
           .join("; ");
         if (roleProgressLines.length > 0) {
-          lines.push(`  role_progress: ${roleProgressLines}`);
+          lines.push(`  - ${labels.roleProgressLabel}: ${roleProgressLines}`);
         }
         if (commandResult.experience.interactionPrompts.length > 0) {
           const promptLines = commandResult.experience.interactionPrompts
@@ -171,11 +242,11 @@ export class CliOutputPresenter {
                 `${prompt.stage}:${prompt.category}:${prompt.blocking ? "blocking" : "non_blocking"}:${prompt.action}`,
             )
             .join("; ");
-          lines.push(`  interaction_prompts: ${promptLines}`);
+          lines.push(`  - ${labels.interactionPromptsLabel}: ${promptLines}`);
         }
         if (commandResult.experience.layeredLogs.detailed.length > 0) {
           lines.push(
-            `  log_detailed: ${commandResult.experience.layeredLogs.detailed.join(" | ")}`,
+            `  - ${labels.detailedLogsLabel}: ${commandResult.experience.layeredLogs.detailed.join(" | ")}`,
           );
         }
       }
@@ -308,6 +379,357 @@ export class CliOutputPresenter {
     }
 
     return `queued=${counts.queued} running=${counts.running} completed=${counts.completed} waiting=${counts.waiting} warning=${counts.warning} failed=${counts.failed}`;
+  }
+
+  /**
+   * Resolves human-friendly progress summary for pretty output mode.
+   * @param experience Command experience payload.
+   * @returns Human-readable progress summary.
+   */
+  private resolveProgressSummaryHuman(
+    experience: CliCommandExperiencePayload,
+    locale: string,
+  ): string {
+    const statusLabels = this.resolveProgressStatusLabels(locale);
+    const summary = this.resolveProgressSummary(experience);
+    return summary
+      .split(" ")
+      .map((segment) => {
+        const [key, value] = segment.split("=");
+        const localizedLabel = statusLabels[key as keyof typeof statusLabels] ?? key;
+        if (this.isZhCnLocale(locale)) {
+          return `${localizedLabel} ${value}`;
+        }
+        return `${value} ${localizedLabel}`;
+      })
+      .join(", ");
+  }
+
+  /**
+   * Resolves checks that need human attention in pretty output mode.
+   * @param commandResult Command result payload.
+   * @returns Warning/failure check rows.
+   */
+  private resolveAttentionChecks(
+    commandResult: CliCommandExecutionResultPayload,
+  ): CliCommandResultCheck[] {
+    const checks = commandResult.checks ?? [];
+    return checks.filter(
+      (check) =>
+        check.status === CliGovernanceCheckStatus.WARN ||
+        check.status === CliGovernanceCheckStatus.FAIL,
+    );
+  }
+
+  /**
+   * Resolves human-friendly labels for check identifiers.
+   * @param checkId Check id string.
+   * @returns Human-friendly check label.
+   */
+  private resolveReadableCheckLabel(checkId: string, locale: string): string {
+    const labels = this.resolvePrettyLabels(locale);
+    if (checkId === "adapter_verification") {
+      return labels.adapterVerificationLabel;
+    }
+
+    if (checkId.startsWith("adapter_tool_")) {
+      const toolId = checkId.slice("adapter_tool_".length);
+      return `${labels.adapterToolLabelPrefix} ${toolId}`;
+    }
+
+    return checkId.replaceAll("_", " ");
+  }
+
+  /**
+   * Resolves human-readable check detail text for pretty output.
+   * @param check One command result check row.
+   * @param locale Active output locale.
+   * @returns Human-readable check detail text.
+   */
+  private resolveReadableCheckDetail(check: CliCommandResultCheck, locale: string): string {
+    if (check.id === "adapter_verification") {
+      return this.humanizeAdapterVerificationDetail(check.detail, locale);
+    }
+
+    if (check.id.startsWith("adapter_tool_")) {
+      return this.humanizeAdapterToolDetail(check.detail, locale);
+    }
+
+    return check.detail;
+  }
+
+  /**
+   * Converts adapter verification key-value detail into readable text.
+   * @param detail Raw detail string.
+   * @param locale Active output locale.
+   * @returns Human-readable verification summary.
+   */
+  private humanizeAdapterVerificationDetail(detail: string, locale: string): string {
+    const detailMap = this.parseSpaceSeparatedKeyValueDetail(detail);
+    const requiredRoles = detailMap.required_roles;
+    const requiredFailures = detailMap.required_failures;
+    const degradedRoles = detailMap.degraded_roles;
+    const fallbackRoles = detailMap.fallback_roles;
+
+    if (!requiredRoles && !requiredFailures && !degradedRoles && !fallbackRoles) {
+      return detail;
+    }
+
+    if (this.isZhCnLocale(locale)) {
+      const parts = [
+        requiredRoles ? `必需角色 ${requiredRoles} 个` : null,
+        requiredFailures ? `失败 ${requiredFailures} 个` : null,
+        degradedRoles ? `降级 ${degradedRoles} 个` : null,
+        fallbackRoles ? `fallback ${fallbackRoles} 个` : null,
+      ].filter((part): part is string => Boolean(part));
+      return parts.join("，");
+    }
+
+    const parts = [
+      requiredRoles ? `required roles ${requiredRoles}` : null,
+      requiredFailures ? `failures ${requiredFailures}` : null,
+      degradedRoles ? `degraded ${degradedRoles}` : null,
+      fallbackRoles ? `fallback ${fallbackRoles}` : null,
+    ].filter((part): part is string => Boolean(part));
+    return parts.join(", ");
+  }
+
+  /**
+   * Converts adapter tool availability detail into readable text.
+   * @param detail Raw detail string.
+   * @param locale Active output locale.
+   * @returns Human-readable tool summary.
+   */
+  private humanizeAdapterToolDetail(detail: string, locale: string): string {
+    const availabilityPrefix = this.isZhCnLocale(locale) ? "可用性=" : "availability=";
+    const reasonsPrefix = this.isZhCnLocale(locale) ? "原因=" : "reasons=";
+
+    const availabilityMatch = detail.match(/(?:availability|可用性)=([^\s]+)/u);
+    const reasonsMatch = detail.match(/(?:reasons|原因)=(.*)$/u);
+    const availability = availabilityMatch?.[1] ?? null;
+    const reasons = reasonsMatch?.[1]?.trim() || null;
+    if (!availability && !reasons) {
+      return detail;
+    }
+
+    if (this.isZhCnLocale(locale)) {
+      return `${availabilityPrefix}${availability ?? "unknown"} ${reasonsPrefix}${reasons ?? "无"}`;
+    }
+    return `${availabilityPrefix}${availability ?? "unknown"} ${reasonsPrefix}${reasons ?? "none"}`;
+  }
+
+  /**
+   * Parses space-separated `key=value` detail strings into key-value records.
+   * @param detail Raw detail text.
+   * @returns Parsed key-value record.
+   */
+  private parseSpaceSeparatedKeyValueDetail(detail: string): Record<string, string> {
+    const parsedDetail: Record<string, string> = {};
+    const segments = detail.split(" ").filter((segment) => segment.includes("="));
+    for (const segment of segments) {
+      const separatorIndex = segment.indexOf("=");
+      if (separatorIndex <= 0) {
+        continue;
+      }
+      const key = segment.slice(0, separatorIndex).trim();
+      const value = segment.slice(separatorIndex + 1).trim();
+      if (!key || !value) {
+        continue;
+      }
+      parsedDetail[key] = value;
+    }
+    return parsedDetail;
+  }
+
+  /**
+   * Resolves ordered actionable next steps for pretty output.
+   * @param commandResult Optional command result payload.
+   * @returns Ordered next-action lines.
+   */
+  private resolvePrettyNextActions(
+    commandResult: CliCommandExecutionResultPayload | undefined,
+  ): string[] {
+    if (!commandResult?.experience) {
+      return [];
+    }
+
+    const actions: string[] = [];
+    for (const prompt of commandResult.experience.interactionPrompts) {
+      const actionLine = `${prompt.title}: ${prompt.action}`;
+      if (!actions.includes(actionLine)) {
+        actions.push(actionLine);
+      }
+    }
+    return actions;
+  }
+
+  /**
+   * Resolves localized status labels used by progress summaries.
+   * @param locale Active output locale.
+   * @returns Progress status -> label map.
+   */
+  private resolveProgressStatusLabels(locale: string): Record<string, string> {
+    if (this.isZhCnLocale(locale)) {
+      return {
+        queued: "待开始",
+        running: "进行中",
+        completed: "已完成",
+        waiting: "等待中",
+        warning: "告警",
+        failed: "失败",
+      };
+    }
+
+    return {
+      queued: "queued",
+      running: "running",
+      completed: "completed",
+      waiting: "waiting",
+      warning: "warning",
+      failed: "failed",
+    };
+  }
+
+  /**
+   * Resolves pretty-render section/label localization.
+   * @param locale Active output locale.
+   * @returns Localized label dictionary.
+   */
+  private resolvePrettyLabels(locale: string): {
+    successTitle: string;
+    summarySection: string;
+    commandLabel: string;
+    operationLabel: string;
+    attachModeLabel: string;
+    healthSection: string;
+    checksLabel: string;
+    passLabel: string;
+    warnLabel: string;
+    failLabel: string;
+    progressLabel: string;
+    attentionLabel: string;
+    nextStepsSection: string;
+    moreHint: string;
+    artifactsSection: string;
+    artifactsGeneratedLabel: string;
+    primaryLabel: string;
+    contextSection: string;
+    localeLabel: string;
+    profileLabel: string;
+    outputLabel: string;
+    outputModeLabel: string;
+    downgradedFromLabel: string;
+    debugSection: string;
+    configSourceLabel: string;
+    workspaceModeLabel: string;
+    workspaceModeSourceLabel: string;
+    workspaceIdLabel: string;
+    workspaceRootLabel: string;
+    memoryStoreEngineLabel: string;
+    memoryStoreRootLabel: string;
+    memoryStoreProviderLabel: string;
+    checkSummaryLabel: string;
+    artifactSummaryLabel: string;
+    roleProgressLabel: string;
+    interactionPromptsLabel: string;
+    detailedLogsLabel: string;
+    adapterVerificationLabel: string;
+    adapterToolLabelPrefix: string;
+  } {
+    if (this.isZhCnLocale(locale)) {
+      return {
+        successTitle: "repo-ai-governor：命令执行成功",
+        summarySection: "摘要",
+        commandLabel: "命令",
+        operationLabel: "操作",
+        attachModeLabel: "挂载模式",
+        healthSection: "健康状态",
+        checksLabel: "检查",
+        passLabel: "通过",
+        warnLabel: "告警",
+        failLabel: "失败",
+        progressLabel: "进度",
+        attentionLabel: "关注项",
+        nextStepsSection: "下一步",
+        moreHint: "条更多（去掉 --compact 查看完整内容）",
+        artifactsSection: "产物",
+        artifactsGeneratedLabel: "个产物已生成。",
+        primaryLabel: "主产物",
+        contextSection: "上下文",
+        localeLabel: "语言",
+        profileLabel: "配置档",
+        outputLabel: "输出",
+        outputModeLabel: "输出模式",
+        downgradedFromLabel: "降级来源",
+        debugSection: "调试",
+        configSourceLabel: "配置来源",
+        workspaceModeLabel: "工作区模式",
+        workspaceModeSourceLabel: "工作区模式来源",
+        workspaceIdLabel: "工作区 ID",
+        workspaceRootLabel: "工作区根路径",
+        memoryStoreEngineLabel: "记忆存储引擎",
+        memoryStoreRootLabel: "记忆存储根路径",
+        memoryStoreProviderLabel: "记忆存储 Provider",
+        checkSummaryLabel: "检查摘要",
+        artifactSummaryLabel: "产物摘要",
+        roleProgressLabel: "角色进度",
+        interactionPromptsLabel: "交互提示",
+        detailedLogsLabel: "详细日志",
+        adapterVerificationLabel: "Adapter 校验",
+        adapterToolLabelPrefix: "Adapter 工具",
+      };
+    }
+
+    return {
+      successTitle: "repo-ai-governor: command succeeded",
+      summarySection: "Summary",
+      commandLabel: "Command",
+      operationLabel: "Operation",
+      attachModeLabel: "Attach mode",
+      healthSection: "Health",
+      checksLabel: "Checks",
+      passLabel: "pass",
+      warnLabel: "warn",
+      failLabel: "fail",
+      progressLabel: "Progress",
+      attentionLabel: "Attention",
+      nextStepsSection: "Next Steps",
+      moreHint: "more (rerun without --compact to expand).",
+      artifactsSection: "Artifacts",
+      artifactsGeneratedLabel: "artifact(s) generated.",
+      primaryLabel: "Primary",
+      contextSection: "Context",
+      localeLabel: "Locale",
+      profileLabel: "Profile",
+      outputLabel: "Output",
+      outputModeLabel: "Output mode",
+      downgradedFromLabel: "Downgraded from",
+      debugSection: "Debug",
+      configSourceLabel: "Config source",
+      workspaceModeLabel: "Workspace mode",
+      workspaceModeSourceLabel: "Workspace mode source",
+      workspaceIdLabel: "Workspace ID",
+      workspaceRootLabel: "Workspace root",
+      memoryStoreEngineLabel: "Memory store engine",
+      memoryStoreRootLabel: "Memory store root",
+      memoryStoreProviderLabel: "Memory store provider",
+      checkSummaryLabel: "Check summary",
+      artifactSummaryLabel: "Artifact summary",
+      roleProgressLabel: "Role progress",
+      interactionPromptsLabel: "Interaction prompts",
+      detailedLogsLabel: "Detailed logs",
+      adapterVerificationLabel: "Adapter verification",
+      adapterToolLabelPrefix: "Adapter tool",
+    };
+  }
+
+  /**
+   * Checks whether one locale belongs to zh-CN family.
+   * @param locale Active output locale.
+   * @returns True when locale starts with `zh`.
+   */
+  private isZhCnLocale(locale: string): boolean {
+    return locale.trim().toLowerCase().startsWith("zh");
   }
 
   /**

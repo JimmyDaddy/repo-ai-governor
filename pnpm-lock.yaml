@@ -45,6 +45,21 @@ importers:
 
   apps/cli:
     dependencies:
+      '@repo-ai-governor/adapter-claude-code':
+        specifier: workspace:*
+        version: link:../../packages/adapters/claude-code
+      '@repo-ai-governor/adapter-codex':
+        specifier: workspace:*
+        version: link:../../packages/adapters/codex
+      '@repo-ai-governor/adapter-github-copilot':
+        specifier: workspace:*
+        version: link:../../packages/adapters/github-copilot
+      '@repo-ai-governor/adapter-local-model':
+        specifier: workspace:*
+        version: link:../../packages/adapters/local-model
+      '@repo-ai-governor/adapter-sdk':
+        specifier: workspace:*
+        version: link:../../packages/adapter-sdk
       '@repo-ai-governor/config':
         specifier: workspace:*
         version: link:../../packages/config
@@ -104,6 +119,12 @@ importers:
         version: link:../../adapter-sdk
 
   packages/adapters/github-copilot:
+    dependencies:
+      '@repo-ai-governor/adapter-sdk':
+        specifier: workspace:*
+        version: link:../../adapter-sdk
+
+  packages/adapters/local-model:
     dependencies:
       '@repo-ai-governor/adapter-sdk':
         specifier: workspace:*

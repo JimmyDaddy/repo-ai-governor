@@ -153,6 +153,37 @@ describe("CLI output contract integration", () => {
     expect(stdout).not.toContain("\u001b[");
   });
 
+  it("collapses pretty output detail blocks when --compact is enabled", async () => {
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(true);
+
+    const exitCode = await runCli(
+      [
+        "node",
+        "repo-ai-governor",
+        "--locale",
+        "en-US",
+        "--output",
+        "pretty",
+        "--compact",
+        "--no-color",
+        "init",
+      ],
+      io,
+    );
+
+    const stdout = stdoutBuffer.join("");
+
+    expect(exitCode).toBe(0);
+    expect(stderrBuffer.join("")).toBe("");
+    expect(stdout).toContain("Summary");
+    expect(stdout).toContain("Artifacts");
+    expect(stdout).toContain("artifact(s) generated.");
+    expect(stdout).toContain("Primary:");
+    expect(stdout).toContain("Context");
+    expect(stdout).toContain("Locale=en-US");
+    expect(stdout).not.toContain("Output mode:");
+  });
+
   it("outputs structured error fields in JSON mode for invalid command", async () => {
     const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false);
 

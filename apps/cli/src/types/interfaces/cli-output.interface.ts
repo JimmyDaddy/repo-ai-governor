@@ -22,6 +22,7 @@ import type {
 export interface CliResolvedOutputContext {
   outputMode: ErrorOutputEnvironment;
   verbosity: CliVerbosity;
+  compact: boolean;
   noColor: boolean;
   isTty: boolean;
   colorEnabled: boolean;
@@ -146,6 +147,7 @@ export interface CliSuccessOutputPayload {
   runtime: {
     is_tty: boolean;
     color_enabled: boolean;
+    compact: boolean;
     downgraded_from: ErrorOutputEnvironment | null;
   };
   diagnostics: CliCommandDiagnostics;
@@ -173,6 +175,7 @@ export interface CliErrorOutputPayload {
   runtime: {
     is_tty: boolean;
     color_enabled: boolean;
+    compact: boolean;
     downgraded_from: ErrorOutputEnvironment | null;
   };
 }

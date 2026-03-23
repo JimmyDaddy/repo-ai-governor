@@ -275,6 +275,7 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
     program.option("--profile <profileId>", runtimeI18n.t("cli.options.profile"));
     program.option("--output <mode>", runtimeI18n.t("cli.options.output"));
     program.option("--verbosity <level>", runtimeI18n.t("cli.options.verbosity"));
+    program.option("--compact", runtimeI18n.t("cli.options.compact"));
     program.option("--no-color", runtimeI18n.t("cli.options.noColor"));
     program.option("--adapters", runtimeI18n.t("cli.options.adapters"));
     program.option("--fix", runtimeI18n.t("cli.options.fix"));
@@ -535,6 +536,7 @@ function resolveFallbackOutputContext(io: CliIoAdapters): CliResolvedOutputConte
   return {
     outputMode,
     verbosity: DEFAULT_CLI_VERBOSITY,
+    compact: false,
     noColor: false,
     isTty,
     colorEnabled: outputMode === ErrorOutputEnvironment.PRETTY && isTty,
@@ -557,10 +559,12 @@ function resolveOutputModeContext(args: string[], io: CliIoAdapters): CliResolve
       : null;
   const outputMode = downgradedFrom ? NON_TTY_FALLBACK_OUTPUT_MODE : requestedOutputMode;
   const noColor = hasFlag(args, "--no-color");
+  const compact = hasFlag(args, "--compact");
 
   return {
     outputMode,
     verbosity: DEFAULT_CLI_VERBOSITY,
+    compact,
     noColor,
     isTty,
     colorEnabled: !noColor && outputMode === ErrorOutputEnvironment.PRETTY && isTty,
@@ -711,6 +715,7 @@ function buildSuccessOutputPayload(
     runtime: {
       is_tty: outputContext.isTty,
       color_enabled: outputContext.colorEnabled,
+      compact: outputContext.compact,
       downgraded_from: outputContext.downgradedFrom,
     },
     diagnostics,
@@ -749,6 +754,7 @@ function buildErrorOutputPayload(
     runtime: {
       is_tty: outputContext.isTty,
       color_enabled: outputContext.colorEnabled,
+      compact: outputContext.compact,
       downgraded_from: outputContext.downgradedFrom,
     },
   };

@@ -60,6 +60,11 @@
       "dependsOn": ["//#gate:build"],
       "outputs": []
     },
+    "//#gate:stage9-handoff": {
+      "cache": false,
+      "dependsOn": ["//#gate:build"],
+      "outputs": []
+    },
     "//#gate:task-ledger-sync": {
       "cache": false,
       "dependsOn": ["//#gate:build"],
@@ -117,6 +122,7 @@
         "//#gate:examples-smoke",
         "//#gate:examples-runtime-smoke",
         "//#gate:normative-loading-manifest",
+        "//#gate:stage9-handoff",
         "//#gate:task-ledger-sync",
         "//#gate:sprint-plan-status-sync",
         "//#gate:code-review-status-sync",

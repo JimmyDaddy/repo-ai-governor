@@ -14,9 +14,15 @@
   - 2026-03-23：任务启动，状态切换为 `in_progress`，开始收敛角色级进度、关键日志与交互提示展示链路。
   - 2026-03-23：完成第一批实现，已在 CLI 命令输出中接入统一 `role/stage/status` 模型、分层日志与交互提示，并覆盖 `policy_waiting`、`human_confirmation`、`review-verify`、`ledger backfill` 关键状态。
   - 2026-03-23：完成收敛修复并闭环，修复 `verify` 成功路径体验输出缺失问题，补齐 `DA-095`，并通过台账门禁、TypeScript、CLI 集成测试与全量 `pnpm run check`，任务状态切换为 `completed`。
-- [ ] TK-084 黑盒 E2E 与门禁收紧基线
+- [x] TK-084 黑盒 E2E 与门禁收紧基线
   - 2026-03-22：任务创建，状态初始化为 `planned`。
-- [ ] TK-085 CI 与发布流水线生产化接线
+  - 2026-03-23：任务启动，状态切换为 `in_progress`，开始收敛黑盒 E2E 双主路径与关键测试入口门禁收紧。
+  - 2026-03-23：任务完成，新增双黑盒主路径 E2E 并移除关键测试入口 `passWithNoTests` 依赖，补齐 `DA-096` 且通过指定回归与全量门禁，状态切换为 `completed`。
+- [x] TK-085 CI 与发布流水线生产化接线
   - 2026-03-22：任务创建，状态初始化为 `planned`。
-- [ ] TK-086 project-009 出口验收与运营反馈闭环
+  - 2026-03-23：任务启动，状态切换为 `in_progress`，开始落地 workflow 生产化接线、DA-092 显式消费与发布失败回滚信号。
+  - 2026-03-23：任务完成，已落地 quality-gate/release-governance 真实 workflow、Stage9 handoff 显式校验 gate 与 GA 失败回滚信号链路，补齐 `DA-097` 并通过全量门禁，状态切换为 `completed`。
+- [x] TK-086 project-009 出口验收与运营反馈闭环
   - 2026-03-22：任务创建，状态初始化为 `planned`。
+  - 2026-03-23：任务启动，状态切换为 `in_progress`，开始汇总 `DA-092`~`DA-097` 证据并回填 `DA-098` 验收与运营反馈字段。
+  - 2026-03-23：任务完成，已产出 project 完成态审计摘要并完成 project/sprint 计划回链、`DA-098` 登记与全量门禁验证，状态切换为 `completed`。

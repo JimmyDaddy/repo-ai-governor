@@ -1,5 +1,9 @@
 import type { WorkspaceMigrationPolicy } from "@repo-ai-governor/shared";
-import type { AdapterAvailability, AdapterSurface } from "@repo-ai-governor/shared";
+import type {
+  AdapterAvailability,
+  AdapterSurface,
+  LocalModelProvider,
+} from "@repo-ai-governor/shared";
 import type { I18nRuntimeConfig, MemoryRuntimeConfig } from "@repo-ai-governor/shared";
 import type { RoleProfileStatus, RoleSource } from "@repo-ai-governor/shared";
 import type { WorkspaceMode } from "../aliases/workspace-mode.type.js";
@@ -95,6 +99,17 @@ export interface AdapterRoutingConfig {
 }
 
 /**
+ * Defines local-model runtime config accepted by one adapter-tool row.
+ */
+export interface AdapterToolLocalModelConfig {
+  provider: LocalModelProvider;
+  endpoint: string;
+  model: string;
+  requestTimeoutMs?: number;
+  maxRetries?: number;
+}
+
+/**
  * Defines one adapter-tool row used by connect/doctor/verify runtime checks.
  */
 export interface AdapterToolConfig {
@@ -102,6 +117,7 @@ export interface AdapterToolConfig {
   enabled?: boolean;
   availability?: AdapterAvailability;
   unavailableReasons?: string[];
+  localModel?: AdapterToolLocalModelConfig;
 }
 
 /**

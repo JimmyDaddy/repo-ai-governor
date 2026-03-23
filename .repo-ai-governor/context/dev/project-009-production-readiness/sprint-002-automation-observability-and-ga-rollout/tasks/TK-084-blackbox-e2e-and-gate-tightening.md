@@ -1,8 +1,8 @@
 # TK-084 黑盒 E2E 与门禁收紧基线
 
-- Status: planned
-- Date: 2026-03-22
-- Owner: TBD
+- Status: completed
+- Date: 2026-03-23
+- Owner: AI-Agent
 - Priority: P0
 - Project: `project-009-production-readiness`
 - Sprint: `sprint-002-automation-observability-and-ga-rollout`
@@ -47,9 +47,12 @@
 
 1. 2026-03-22：任务创建，状态初始化为 `planned`。
 2. 2026-03-22：根据 `TK-092` 补齐 `DA-092` handoff、双黑盒主路径与持续 gate 前置要求，任务状态保持 `planned`。
+3. 2026-03-23：任务启动，状态切换为 `in_progress`，开始收敛黑盒 E2E 双主路径与 `passWithNoTests` 门禁收紧。
+4. 2026-03-23：任务完成，新增黑盒链路 `init->doctor->check` 与 `plan->run->review->review-verify->run --replay` E2E，移除 `test:packages/test:contract/test:e2e` 的 `--passWithNoTests`，补齐 `DA-096` 并通过 e2e/package/contract 回归、台账同步门禁与 `pnpm run check`，状态切换为 `completed`。
 
 ## 8. 产出
 
-1. `DA-096` `.repo-ai-governor/context/dev/project-009-production-readiness/sprint-002-automation-observability-and-ga-rollout/tasks/TK-084-blackbox-e2e-and-gate-tightening.md`
-2. `.repo-ai-governor/context/dev/project-009-production-readiness/sprint-002-automation-observability-and-ga-rollout/tasks/checklist.md`
-3. `.repo-ai-governor/context/dev/project-009-production-readiness/sprint-002-automation-observability-and-ga-rollout/tasks/tasks.csv`
+1. `DA-096` `.repo-ai-governor/context/dev/project-009-production-readiness/sprint-002-automation-observability-and-ga-rollout/tasks/DA-096-blackbox-e2e-and-gate-tightening-baseline.md`
+2. `.repo-ai-governor/context/dev/project-009-production-readiness/sprint-002-automation-observability-and-ga-rollout/tasks/TK-084-blackbox-e2e-and-gate-tightening.md`
+3. `.repo-ai-governor/context/dev/project-009-production-readiness/sprint-002-automation-observability-and-ga-rollout/tasks/checklist.md`
+4. `.repo-ai-governor/context/dev/project-009-production-readiness/sprint-002-automation-observability-and-ga-rollout/tasks/tasks.csv`

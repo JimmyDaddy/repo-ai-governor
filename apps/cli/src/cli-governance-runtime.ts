@@ -7,6 +7,7 @@ import { promisify } from "node:util";
 import { ClaudeCodeAgentAdapter } from "@repo-ai-governor/adapter-claude-code";
 import { CodexAgentAdapter } from "@repo-ai-governor/adapter-codex";
 import { GithubCopilotAgentAdapter } from "@repo-ai-governor/adapter-github-copilot";
+import { LocalModelAgentAdapter } from "@repo-ai-governor/adapter-local-model";
 import {
   AgentAvailabilityStatus,
   AgentCapability,
@@ -96,6 +97,18 @@ import type {
 } from "./types/index.js";
 
 const execFileAsync = promisify(execFile);
+const CLI_ADAPTER_LOCAL_PROBE_TIMEOUT_MS = 5000;
+const CLI_ADAPTER_LOCAL_PROBE_MAX_BUFFER_BYTES = 65536;
+const CLI_CLAUDE_CODE_COMMAND_CANDIDATES = [
+  {
+    command: "claude",
+    args: ["--version"],
+  },
+  {
+    command: "claude-code",
+    args: ["--version"],
+  },
+] as const;
 
 interface CliGovernanceRuntimeOptions {
   currentWorkingDirectory: string;
@@ -111,6 +124,15 @@ interface CliGovernanceRuntimeOptions {
   memoryStoreProvider: MemoryStoreProvider;
   adaptersConfig: AdaptersConfig;
   runtimeDebugOptions?: CliRuntimeDebugOptions;
+  adapterLocalProbeOverrides?: Partial<
+    Record<
+      AdapterSurface,
+      {
+        availabilityStatus: AgentAvailabilityStatus;
+        unavailableReasons: string[];
+      }
+    >
+  >;
 }
 
 interface CliGovernanceCommandResult {
@@ -184,6 +206,11 @@ interface CliAdapterVerificationResolution {
   nextActions: string[];
 }
 
+interface CliLocalAdapterProbeResolution {
+  availabilityStatus: AgentAvailabilityStatus;
+  unavailableReasons: string[];
+}
+
 interface CliReplayExplainResolution {
   sourceType: string;
   executionId: string;
@@ -212,6 +239,10 @@ export class CliGovernanceRuntime {
    * @returns Command result message and structured output payload.
    */
   public async execute(commandName: CliCommandName): Promise<CliGovernanceCommandResult> {
+    if (commandName !== CliCommandName.INIT) {
+      await this.ensureWorkspaceBootstrap();
+    }
+
     if (commandName === CliCommandName.INIT) {
       return this.executeInitCommand();
     }
@@ -344,6 +375,25 @@ export class CliGovernanceRuntime {
   }
 
   /**
+   * Ensures baseline workspace directories and config exist for non-init commands.
+   *
+   * Why this exists:
+   * global/local CLI usage should match user expectation that first command execution
+   * can self-bootstrap workspace state without requiring a separate explicit init step.
+   */
+  private async ensureWorkspaceBootstrap(): Promise<void> {
+    for (const segments of CLI_INIT_REQUIRED_DIRECTORY_SEGMENTS) {
+      const directoryPath = resolve(this.options.workspace.workspaceRoot, ...segments);
+      await mkdir(directoryPath, { recursive: true });
+    }
+
+    const configPath = this.options.workspace.configPath;
+    if (!existsSync(configPath)) {
+      await this.writeTextArtifact(configPath, this.buildDefaultConfigContent());
+    }
+  }
+
+  /**
    * Generates adapter-connect diagnostics and optional ledger-backfill artifact.
    * @returns Runtime command result.
    */
@@ -472,8 +522,11 @@ export class CliGovernanceRuntime {
       interactionPrompts.push({
         category: ExecutionInteractionCategory.NONE,
         stage: ExecutionProgressStage.LEDGER_BACKFILL,
-        title: "Consume ledger backfill",
-        action: "Resolve context/ledger-backfill/connect artifact into tasks/checklist/tasks.csv.",
+        title: this.localizeText("Consume ledger backfill", "处理台账回填产物"),
+        action: this.localizeText(
+          "Resolve context/ledger-backfill/connect artifact into tasks/checklist/tasks.csv.",
+          "将 context/ledger-backfill/connect 产物回填到 tasks/checklist/tasks.csv。",
+        ),
         blocking: false,
       });
     }
@@ -494,7 +547,10 @@ export class CliGovernanceRuntime {
         ],
       },
     });
-    const message = `Connect completed with adapter_status=${adapterVerification.overallStatus}; diagnostics=${diagnosticsArtifactPath}.`;
+    const message = this.localizeText(
+      `Connect completed with adapter_status=${adapterVerification.overallStatus}; diagnostics=${diagnosticsArtifactPath}.`,
+      `连接已完成，adapter_status=${adapterVerification.overallStatus}；诊断文件=${diagnosticsArtifactPath}。`,
+    );
     return {
       message,
       commandResult: {
@@ -2172,11 +2228,16 @@ export class CliGovernanceRuntime {
    */
   private resolveToolProbeCheckDetail(snapshot: CliAdapterToolProbeSnapshot): string {
     if (!snapshot.enabled) {
-      return "disabled_by_config";
+      return this.localizeText("disabled_by_config", "由配置禁用");
     }
 
-    const reasons = snapshot.unavailableReasons.length > 0 ? snapshot.unavailableReasons : ["none"];
-    return `availability=${snapshot.availabilityStatus} reasons=${reasons.join("|")}`;
+    const readableReasons =
+      snapshot.unavailableReasons.length > 0
+        ? this.humanizeToolUnavailableReasons(snapshot.unavailableReasons)
+        : ["none"];
+    const availabilityLabel = this.localizeText("availability", "可用性");
+    const reasonsLabel = this.localizeText("reasons", "原因");
+    return `${availabilityLabel}=${snapshot.availabilityStatus} ${reasonsLabel}=${readableReasons.join(" | ")}`;
   }
 
   /**
@@ -2198,6 +2259,73 @@ export class CliGovernanceRuntime {
         ? roleEvaluation.unavailableReasons.join("|")
         : "none";
     return `required=${roleEvaluation.required} selected=${roleEvaluation.selectedSurface ?? "none"} selected_by=${roleEvaluation.selectedBy} unsupported=${unsupported} degraded=${degraded} reasons=${unavailableReasons}`;
+  }
+
+  /**
+   * Converts machine-readable unavailable reasons into human-friendly diagnostics text.
+   * @param reasons Raw unavailable reasons.
+   * @returns Human-friendly reason lines.
+   */
+  private humanizeToolUnavailableReasons(reasons: string[]): string[] {
+    return reasons.map((reason) => this.humanizeToolUnavailableReason(reason));
+  }
+
+  /**
+   * Converts one unavailable reason code into human-friendly diagnostics text.
+   * @param reason Raw unavailable reason.
+   * @returns Human-friendly reason line.
+   */
+  private humanizeToolUnavailableReason(reason: string): string {
+    if (reason.startsWith("command_missing:")) {
+      const [, surface, command] = reason.split(":", 3);
+      return this.localizeText(
+        `missing command "${command}" for surface "${surface}"`,
+        `surface "${surface}" 缺少本地命令 "${command}"`,
+      );
+    }
+
+    if (reason.startsWith("command_probe_failed:")) {
+      const [, surface, command, ...detailParts] = reason.split(":");
+      const detail = detailParts.join(":");
+      return this.localizeText(
+        `command exists but check failed for surface "${surface}" via "${command}" (${detail})`,
+        `surface "${surface}" 命令 "${command}" 可执行但探测失败（${detail}）`,
+      );
+    }
+
+    if (reason.startsWith("probe_failed:")) {
+      const [, ...detailParts] = reason.split(":");
+      const detail = detailParts.join(":");
+      return this.localizeText(`adapter probe failed (${detail})`, `adapter 探测失败（${detail}）`);
+    }
+
+    if (reason.startsWith("disabled_by_config:")) {
+      const [, surface] = reason.split(":", 2);
+      return this.localizeText(
+        `disabled by config for surface "${surface}"`,
+        `surface "${surface}" 已被配置禁用`,
+      );
+    }
+
+    return reason;
+  }
+
+  /**
+   * Resolves locale-aware text from English/Chinese variants.
+   * @param english English fallback text.
+   * @param chinese Simplified-Chinese variant.
+   * @returns Locale-aware text.
+   */
+  private localizeText(english: string, chinese: string): string {
+    return this.isZhCnLocale() ? chinese : english;
+  }
+
+  /**
+   * Checks whether current runtime locale belongs to zh-CN family.
+   * @returns True when current locale starts with `zh`.
+   */
+  private isZhCnLocale(): boolean {
+    return this.options.locale.trim().toLowerCase().startsWith("zh");
   }
 
   /**
@@ -2397,7 +2525,7 @@ export class CliGovernanceRuntime {
     }
 
     const protocolBySurface: Record<string, AgentProtocolContract> = {};
-    const surfaces = Object.values(AdapterSurface) as AdapterSurface[];
+    const surfaces = this.resolveTrackedAdapterSurfaces(toolConfigBySurface);
     for (const surface of surfaces) {
       const toolConfig = toolConfigBySurface.get(surface);
       const enabled = toolConfig?.enabled ?? true;
@@ -2420,10 +2548,40 @@ export class CliGovernanceRuntime {
           ? new CodexAgentAdapter(adapterOptions)
           : surface === AdapterSurface.GITHUB_COPILOT
             ? new GithubCopilotAgentAdapter(adapterOptions)
-            : new ClaudeCodeAgentAdapter(adapterOptions);
+            : surface === AdapterSurface.CLAUDE_CODE
+              ? new ClaudeCodeAgentAdapter(adapterOptions)
+              : new LocalModelAgentAdapter(adapterOptions);
     }
 
     return protocolBySurface;
+  }
+
+  /**
+   * Resolves adapter surfaces that should be tracked by runtime diagnostics/routing.
+   * @param toolConfigBySurface Optional tool config lookup map.
+   * @returns Deduplicated surface list derived from routing/tool contracts.
+   */
+  private resolveTrackedAdapterSurfaces(
+    toolConfigBySurface?: Map<AdapterSurface, NonNullable<AdaptersConfig["tools"]>[number]>,
+  ): AdapterSurface[] {
+    const surfaceSet = new Set<AdapterSurface>();
+    if (toolConfigBySurface) {
+      for (const surface of toolConfigBySurface.keys()) {
+        surfaceSet.add(surface);
+      }
+    }
+    for (const roleBinding of Object.values(this.options.adaptersConfig.routing.roleBindings)) {
+      surfaceSet.add(roleBinding.primarySurface);
+      for (const fallbackSurface of roleBinding.fallbackSurfaces ?? []) {
+        surfaceSet.add(fallbackSurface);
+      }
+    }
+
+    if (surfaceSet.size > 0) {
+      return Array.from(surfaceSet.values());
+    }
+
+    return [AdapterSurface.CODEX, AdapterSurface.GITHUB_COPILOT, AdapterSurface.CLAUDE_CODE];
   }
 
   /**
@@ -2503,8 +2661,8 @@ export class CliGovernanceRuntime {
       stage: options.stage,
       title:
         options.verification.overallStatus === CliGovernanceCheckStatus.FAIL
-          ? "Adapter route blocked"
-          : "Adapter route attention",
+          ? this.localizeText("Adapter route blocked", "Adapter 路由已阻断")
+          : this.localizeText("Adapter route attention", "Adapter 路由需要关注"),
       action: nextAction,
       blocking: options.verification.overallStatus === CliGovernanceCheckStatus.FAIL,
     }));
@@ -2647,24 +2805,60 @@ export class CliGovernanceRuntime {
 
     const nextActions: string[] = [];
     if (requiredRoleCount === 0) {
-      nextActions.push("Define at least one adapters.roles item with required=true.");
+      nextActions.push(
+        this.localizeText(
+          "Define at least one adapters.roles item with required=true.",
+          "至少定义一个 adapters.roles 且 required=true 的角色。",
+        ),
+      );
     }
     if (requiredRoleFailedCount > 0) {
       nextActions.push(
-        "Check adapters.routing.roleBindings primary/fallback surfaces and ensure required roles have at least one available surface.",
+        this.localizeText(
+          "Check adapters.routing.roleBindings primary/fallback surfaces and ensure required roles have at least one available surface.",
+          "请检查 adapters.routing.roleBindings 的主备 surface，确保必需角色至少有一个可用 surface。",
+        ),
       );
     }
     const unavailableToolIds = toolSnapshots
       .filter((tool) => tool.availabilityStatus === AgentAvailabilityStatus.UNAVAILABLE)
       .map((tool) => tool.toolId);
-    if (unavailableToolIds.length > 0) {
+    const missingCommands = this.collectMissingCommandsFromToolSnapshots(toolSnapshots);
+    const failedProbeCommands = this.collectFailedProbeCommandsFromToolSnapshots(toolSnapshots);
+    if (
+      unavailableToolIds.length > 0 &&
+      missingCommands.length === 0 &&
+      failedProbeCommands.length === 0
+    ) {
       nextActions.push(
-        `Probe/login dependencies are unavailable for: ${unavailableToolIds.join(", ")}.`,
+        this.localizeText(
+          `Probe/login dependencies are unavailable for: ${unavailableToolIds.join(", ")}.`,
+          `以下工具的探测或登录依赖不可用：${unavailableToolIds.join(", ")}。`,
+        ),
+      );
+    }
+    if (missingCommands.length > 0) {
+      nextActions.push(
+        this.localizeText(
+          `Install missing local commands before connect/verify: ${missingCommands.join(", ")}.`,
+          `请先安装缺失的本地命令后再执行 connect/verify：${missingCommands.join(", ")}。`,
+        ),
+      );
+    }
+    if (failedProbeCommands.length > 0) {
+      nextActions.push(
+        this.localizeText(
+          `Some commands exist but probe failed (${failedProbeCommands.join(", ")}). Run them manually to verify login/extension status.`,
+          `部分命令可执行但探测失败（${failedProbeCommands.join(", ")}），请手动执行命令确认登录/扩展状态。`,
+        ),
       );
     }
     if (fallbackRoleCount > 0 || degradedRoleCount > 0) {
       nextActions.push(
-        "Primary surfaces are degraded or fallback is in use; review cost/latency/risk routing priorities before unattended execution.",
+        this.localizeText(
+          "Primary surfaces are degraded or fallback is in use; review cost/latency/risk routing priorities before unattended execution.",
+          "当前使用降级或 fallback 路由，建议在无人值守执行前复核成本/时延/风险优先级。",
+        ),
       );
     }
 
@@ -2695,7 +2889,7 @@ export class CliGovernanceRuntime {
     const protocolBySurface = this.createProtocolBySurface();
 
     const snapshots: CliAdapterToolProbeSnapshot[] = [];
-    const surfaces = Object.values(AdapterSurface) as AdapterSurface[];
+    const surfaces = this.resolveTrackedAdapterSurfaces(toolConfigBySurface);
     for (const surface of surfaces) {
       const toolConfig = toolConfigBySurface.get(surface);
       const enabled = toolConfig?.enabled ?? true;
@@ -2704,6 +2898,12 @@ export class CliGovernanceRuntime {
         : AdapterAvailability.UNAVAILABLE;
       const configuredUnavailableReasons = [...(toolConfig?.unavailableReasons ?? [])];
       const protocol = protocolBySurface[surface];
+      const localProbeResolution = enabled
+        ? await this.probeLocalAdapterAvailability(surface)
+        : {
+            availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+            unavailableReasons: [`disabled_by_config:${surface}`],
+          };
       try {
         const probeResult = await protocol.probe({
           routeKey: `cli.adapter.probe.${surface}`,
@@ -2713,10 +2913,14 @@ export class CliGovernanceRuntime {
           toolId: surface,
           enabled,
           configuredAvailability,
-          availabilityStatus: probeResult.availabilityStatus,
+          availabilityStatus: this.mergeAvailabilityStatus(
+            probeResult.availabilityStatus,
+            localProbeResolution.availabilityStatus,
+          ),
           unavailableReasons: [
             ...configuredUnavailableReasons,
             ...probeResult.unavailableReasons,
+            ...localProbeResolution.unavailableReasons,
           ].filter((reason, index, list) => list.indexOf(reason) === index),
           capabilitySupportByCapability: this.createCapabilitySupportMap(probeResult),
         });
@@ -2739,6 +2943,184 @@ export class CliGovernanceRuntime {
     }
 
     return snapshots;
+  }
+
+  /**
+   * Probes local machine readiness for one adapter surface.
+   * @param surface Adapter surface id.
+   * @returns Runtime availability and reasons from local probe.
+   */
+  private async probeLocalAdapterAvailability(
+    surface: AdapterSurface,
+  ): Promise<CliLocalAdapterProbeResolution> {
+    const overrideResolution = this.options.adapterLocalProbeOverrides?.[surface];
+    if (overrideResolution) {
+      return {
+        availabilityStatus: overrideResolution.availabilityStatus,
+        unavailableReasons: [...overrideResolution.unavailableReasons],
+      };
+    }
+
+    if (surface === AdapterSurface.CODEX) {
+      return this.probeSingleCommandAvailability(surface, "codex", ["--version"]);
+    }
+
+    if (surface === AdapterSurface.CLAUDE_CODE) {
+      const unavailableReasons: string[] = [];
+      for (const candidate of CLI_CLAUDE_CODE_COMMAND_CANDIDATES) {
+        const probeResult = await this.probeSingleCommandAvailability(
+          surface,
+          candidate.command,
+          candidate.args,
+        );
+        if (probeResult.availabilityStatus === AgentAvailabilityStatus.AVAILABLE) {
+          return probeResult;
+        }
+        unavailableReasons.push(...probeResult.unavailableReasons);
+      }
+      return {
+        availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+        unavailableReasons: unavailableReasons.filter(
+          (reason, index, list) => list.indexOf(reason) === index,
+        ),
+      };
+    }
+
+    if (surface === AdapterSurface.OLLAMA) {
+      return this.probeSingleCommandAvailability(surface, "ollama", ["--version"]);
+    }
+
+    const githubCliProbe = await this.probeSingleCommandAvailability(surface, "gh", ["--version"]);
+    if (githubCliProbe.availabilityStatus === AgentAvailabilityStatus.UNAVAILABLE) {
+      return githubCliProbe;
+    }
+
+    return this.probeSingleCommandAvailability(surface, "gh", ["copilot", "--help"]);
+  }
+
+  /**
+   * Executes one command probe and translates process result into availability status.
+   * @param surface Adapter surface that owns this probe.
+   * @param command Command name.
+   * @param args Command arguments.
+   * @returns Probe resolution for this command.
+   */
+  private async probeSingleCommandAvailability(
+    surface: AdapterSurface,
+    command: string,
+    args: readonly string[],
+  ): Promise<CliLocalAdapterProbeResolution> {
+    try {
+      await execFileAsync(command, [...args], {
+        timeout: CLI_ADAPTER_LOCAL_PROBE_TIMEOUT_MS,
+        maxBuffer: CLI_ADAPTER_LOCAL_PROBE_MAX_BUFFER_BYTES,
+      });
+      return {
+        availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+        unavailableReasons: [],
+      };
+    } catch (error) {
+      if (this.isMissingCommandFailure(error)) {
+        return {
+          availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+          unavailableReasons: [`command_missing:${surface}:${command}`],
+        };
+      }
+      return {
+        availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+        unavailableReasons: [
+          `command_probe_failed:${surface}:${command}:${this.formatExecFailureDetail(error)}`,
+        ],
+      };
+    }
+  }
+
+  /**
+   * Checks whether one command-probe failure indicates executable-not-found.
+   * @param error Unknown probe failure.
+   * @returns True when process failed because command is missing.
+   */
+  private isMissingCommandFailure(error: unknown): boolean {
+    if (!error || typeof error !== "object") {
+      return false;
+    }
+    const errorCode = (error as { code?: unknown }).code;
+    return errorCode === "ENOENT";
+  }
+
+  /**
+   * Merges adapter-protocol status with local command probe status.
+   * @param protocolStatus Availability resolved by adapter protocol probe.
+   * @param localStatus Availability resolved by local command probe.
+   * @returns Merged availability status.
+   */
+  private mergeAvailabilityStatus(
+    protocolStatus: AgentAvailabilityStatus,
+    localStatus: AgentAvailabilityStatus,
+  ): AgentAvailabilityStatus {
+    if (
+      protocolStatus === AgentAvailabilityStatus.UNAVAILABLE ||
+      localStatus === AgentAvailabilityStatus.UNAVAILABLE
+    ) {
+      return AgentAvailabilityStatus.UNAVAILABLE;
+    }
+    if (
+      protocolStatus === AgentAvailabilityStatus.DEGRADED ||
+      localStatus === AgentAvailabilityStatus.DEGRADED
+    ) {
+      return AgentAvailabilityStatus.DEGRADED;
+    }
+    return AgentAvailabilityStatus.AVAILABLE;
+  }
+
+  /**
+   * Collects missing command names from adapter tool snapshots.
+   * @param toolSnapshots Tool-level snapshots.
+   * @returns Unique command names that are missing locally.
+   */
+  private collectMissingCommandsFromToolSnapshots(
+    toolSnapshots: CliAdapterToolProbeSnapshot[],
+  ): string[] {
+    const commands: string[] = [];
+    for (const snapshot of toolSnapshots) {
+      for (const reason of snapshot.unavailableReasons) {
+        if (!reason.startsWith("command_missing:")) {
+          continue;
+        }
+        const [, , command] = reason.split(":", 3);
+        if (command && !commands.includes(command)) {
+          commands.push(command);
+        }
+      }
+    }
+    return commands;
+  }
+
+  /**
+   * Collects command probes that failed despite command presence.
+   * @param toolSnapshots Tool-level snapshots.
+   * @returns Unique `<surface>:<command>` command probe identifiers.
+   */
+  private collectFailedProbeCommandsFromToolSnapshots(
+    toolSnapshots: CliAdapterToolProbeSnapshot[],
+  ): string[] {
+    const failedCommands: string[] = [];
+    for (const snapshot of toolSnapshots) {
+      for (const reason of snapshot.unavailableReasons) {
+        if (!reason.startsWith("command_probe_failed:")) {
+          continue;
+        }
+        const [, surface, command] = reason.split(":", 4);
+        if (!surface || !command) {
+          continue;
+        }
+        const failedCommandId = `${surface}:${command}`;
+        if (!failedCommands.includes(failedCommandId)) {
+          failedCommands.push(failedCommandId);
+        }
+      }
+    }
+    return failedCommands;
   }
 
   /**

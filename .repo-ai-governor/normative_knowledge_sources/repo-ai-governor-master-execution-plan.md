@@ -1,7 +1,7 @@
 # Repo AI Governor 从零到完成态总执行计划
 
 - Status: active
-- Date: 2026-03-22
+- Date: 2026-03-24
 - Role: execution master plan
 - Basis:
   - `.repo-ai-governor/normative_knowledge_sources/product-requirements.md`
@@ -37,19 +37,21 @@
 | Stage 8: 平台化扩展 | P2 平台化阶段 | 组织级能力扩展 | 插槽市场、可视化配置/执行面板、组织级审计与策略分发 | 不破坏本地主线，可按模块独立演进 |
 | Stage 9: 投产就绪与落地运营 | Phase E 收口 + GA Readiness overlay | 让工具可被外部仓库真实安装、执行与运维 | 命令去 skeleton 化、无需发布的本地安装能力、发布产物可执行收敛、clean-room 安装验证、本地开发调试与诊断能力、AI 工具/模型全自动执行闭环、角色级进度日志与人类友好交互展示、用户文档与 examples、生产级 e2e 与 CI 发布流水线，并按 9A/9B 两段门槛推进 | 外部空环境安装后可执行 `init/doctor/check/run`；支持不经 npm 发布的本地安装与使用；关键命令不再返回 skeleton 占位输出；`release:ga-check` 覆盖 clean-room + 黑盒 e2e；本地调试可复现关键故障；多工具/多模型自动链路可稳定执行；人类可读地查看各角色执行进度/日志/交互状态；README/CHANGELOG 与 examples 可支撑接入 |
 
-## 3.1 当前基线状态与投产差距（2026-03-22）
+## 3.1 当前基线状态与投产差距（2026-03-24）
 
 1. Stage 0-8 对应基线项目（`project-001` 到 `project-007`）与跨阶段流程优化项目（`project-008`）已完成“基线能力”落地，核心架构、契约与治理门禁链路已具备。
-2. 现阶段主要差距不在“是否有模块”，而在“是否可被外部仓库直接消费并稳定运维”。
-3. 当前投产阻断集中在四类：
-   - CLI 关键命令仍以 skeleton 占位输出为主，未完全进入真实治理执行链路。
-   - 发布产物在 clean-room 安装场景下的可执行性验证不足（仅仓库内验证不足以代表外部可用）。
-   - 用户接入文档与示例不足，无法支撑团队快速上手和故障自助排查。
-   - 黑盒 E2E 与发布流水线对“真实用户路径”覆盖不足，GA 信号与真实可用性存在偏差。
-4. 因此在 Stage 8 之后新增 Stage 9，作为“从工程完成态到可投产态”的必经收敛阶段。
+2. `project-009` 已完成 Stage 9 基线投产收口，证明“本地接入、最小治理执行、clean-room 验证、自动化/观测门禁”已经形成可复跑基础。
+3. 当前剩余差距已经从“模块缺失”转为“全自动研发闭环尚未完全达标”，主要集中在六类：
+   - 适配器真实调用仍未完全落地，当前多工具执行面仍存在 baseline stub。
+   - `run` 仍以固定模板为主，尚未升级为任务驱动动态编排。
+   - `review -> review-verify -> ledger backfill` 仍以异步产物队列和下游消费为主，未内联到自动主链。
+   - HITL 的通知回执、人工决策回灌与恢复执行尚未形成稳定闭环。
+   - 受控 delivery rehearsal 尚未形成统一可回放的一体化链路。
+   - 黑盒 E2E、CI 与发布流水线对“真实无人值守路径”的覆盖仍不足。
+4. 因此在 `project-009` 完成后继续以 `project-010` 承接 Stage 9 follow-up backlog，优先收敛“真实调用 + 动态编排 + HITL 闭环 + 可运营稳定性”。
 5. `Stage 9` 是建立在 Stage 7/8 基线之上的投产收口 overlay，不单独新增 triad 正式技术 phase；在 triad 更新前统一按 `Phase E 收口 + GA Readiness overlay` 跟踪。
 
-## 3.2 当前阶段状态矩阵（2026-03-22）
+## 3.2 当前阶段状态矩阵（2026-03-24）
 
 | 阶段/主线 | 对应项目 | 状态 | 关键证据 | 后续关注 |
 |---|---|---|---|---|
@@ -61,7 +63,8 @@
 | Stage 7 | `project-006-hardening-and-release` | completed | `project-006-hardening-and-release-completion-audit-summary.md` | 需要与 clean-room/黑盒 GA 门禁继续收敛 |
 | Stage 8 | `project-007-platformization` | completed | `project-007-platformization-completion-audit-summary.md` | 作为 rollout 输入基线继续消费 |
 | Cross-stage Workflow Optimization | `project-008-workflow-optimization` | completed | `project-008-workflow-optimization-completion-audit-summary.md` | 将执行流降噪、台账自动化经验前移到 Stage 9 |
-| Stage 9 | `project-009-production-readiness` | active | `project-009-production-readiness/plan.md` | 收敛本地采用、自动执行、GA 门禁与试点运营反馈 |
+| Stage 9 Baseline Production Readiness | `project-009-production-readiness` | completed | `project-009-completion-audit-summary.md` | 作为 follow-up 输入基线继续消费，不再回退已收口能力 |
+| Stage 9 Follow-up Autonomous R&D Closure | `project-010-local-model-and-ide-expansion` | active | `project-010-local-model-and-ide-expansion/plan.md` | 收敛真实调用、动态编排、HITL 回灌、IDE/本地模型入口与可运营稳定性 |
 
 ## 4. 各阶段执行清单（可直接拆任务）
 
@@ -252,6 +255,27 @@
    - 建立“投产后 30 天”问题闭环：缺陷分级、SLO 指标、修复节奏与版本策略。
    - 形成运营指标快照：接入耗时、规范违规率、自动执行成功率、回滚率、人工介入率，并作为 GA readiness 与后续 triad 输入。
    - 将试点反馈回写 triad 文档与 master plan，形成下一轮产品迭代输入。
+
+## 4.10.3 Stage 9 全自动研发 Gap Register（2026-03-24）
+
+1. 本计划中的“全自动研发”不等于“所有变更默认零人工介入”；其正式定义是“在治理约束下尽可能无人值守推进，命中高风险或策略闸口时按规则暂停并可恢复执行”。
+2. 作为 Stage 9B 与后续 follow-up 的统一问题清单，当前必须继续收敛以下 6 类 gap：
+
+| gap_id | 差距项 | 当前信号 | 完成判据 | 建议落点 |
+|---|---|---|---|---|
+| G-01 | 真实适配器执行面未闭环 | `codex/github-copilot/claude-code/local-model` 仍以 baseline stub 为主，`invokeStage()` 尚未全面进入真实 provider 调用 | 至少 1 条远端 provider 路径和 1 条本地模型路径具备真实调用，并补齐凭据优先级、health/probe、timeout/retry、rate-limit/backoff、secret redaction、provider outage degrade path | `TK-096`、`TK-097` |
+| G-02 | `run` 仍是固定模板而非任务驱动编排 | 当前仍以 `prepare -> execute -> report` 三段模板为主，尚未从任务目标动态装配研发流程 | `run` 支持从任务目标/依赖产物/role-capability 约束生成或装配可执行 DAG，并可消费 policy route/fallback 约束 | `TK-098` + sprint-002 follow-up |
+| G-03 | Review 链路未内联到自动主链 | `review -> review-verify -> ledger backfill` 仍以 queued artifact 与下游消费为主 | review chain 可作为 `run` 的受控子链自动推进，并保持 artifact/audit 语义一致 | `TK-098` + sprint-002 follow-up |
+| G-04 | HITL 回执与决策回灌未闭环 | 命中 `confirm/escalate` 后仍主要停在人工等待，缺少统一回执回链与恢复执行 | 至少 1 主 1 备通知渠道接通，人工决策可回灌到 runtime/policy，并触发继续执行、终止或降级 | `TK-098` + sprint-002 follow-up |
+| G-05 | 受控 delivery rehearsal 尚未一体化 | `commit` / `PR draft` 仍未与自动主链形成统一回放、统一治理、统一审计的交付演练 | 至少 1 条受控 delivery rehearsal 覆盖 `commit` 或 `PR draft`，并明确人工接管边界 | sprint-002 follow-up / Stage 9B closure |
+| G-06 | 稳定性与黑盒门禁尚未覆盖真实无人值守路径 | 真实用户路径、provider outage、restricted network、retry exhaustion 等场景仍缺乏稳定黑盒验证 | 黑盒 E2E、CI、release gate 覆盖主路径与降级路径，并沉淀成功率/人工介入率/time-to-first-success 等运营指标 | `TK-097` + sprint-002 follow-up |
+
+3. 收敛顺序必须遵循：
+   - 先闭环 `G-01`，否则所有“自动执行”都只停留在协议演示层。
+   - 再闭环 `G-02/G-03`，把 `run` 升级为真正的任务驱动链路并内联 review chain。
+   - 然后闭环 `G-04`，把 HITL 从“人工中断点”升级为“可恢复执行点”。
+   - 最后用 `G-05/G-06` 做交付演练与可运营稳定性收口。
+4. `project-010` 是上述 gap register 的当前主承接项目；后续 task/sprint 拆解必须回链到本节，不得重新发明一套并行问题清单。
 
 ## 4.11 已识别但暂不纳入 project-009 出口门槛的 P1 follow-up backlog
 

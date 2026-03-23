@@ -1,6 +1,6 @@
 # sprint-002-automation-observability-and-ga-rollout 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-03-23
 - Project: `project-009-production-readiness`
 
@@ -13,9 +13,9 @@
 1. TK-081 发布分发模型与运行时可解析打包收敛（completed）
 2. TK-082 多工具/多模型真实调用与无人值守自动链路（completed）
 3. TK-083 角色级进度日志与人类友好交互展示（completed）
-4. TK-084 黑盒 E2E 与门禁收紧基线（planned）
-5. TK-085 CI 与发布流水线生产化接线（planned）
-6. TK-086 project-009 出口验收与运营反馈闭环（planned）
+4. TK-084 黑盒 E2E 与门禁收紧基线（completed）
+5. TK-085 CI 与发布流水线生产化接线（completed）
+6. TK-086 project-009 出口验收与运营反馈闭环（completed）
 
 ## 3. Entry Criteria
 

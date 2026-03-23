@@ -8,6 +8,7 @@ export const EN_US_TRANSLATIONS = {
       profile: "Config profile id applied before command execution.",
       output: "Output mode: pretty|plain|json.",
       verbosity: "Output verbosity: quiet|normal|verbose.",
+      compact: "Compact pretty output for human-first quick scanning.",
       noColor: "Disable ANSI color decorations in pretty mode.",
       adapters: "Enable adapter diagnostics and routing verification scope.",
       fix: "Apply safe_local fixes (directories/config templates/writable checks) only.",

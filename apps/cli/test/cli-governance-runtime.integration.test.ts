@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promis
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 
-import { AgentCapability } from "@repo-ai-governor/adapter-sdk";
+import { AgentAvailabilityStatus, AgentCapability } from "@repo-ai-governor/adapter-sdk";
 import {
   type AdaptersConfig,
   type ResolvedWorkspace,
@@ -39,6 +39,15 @@ interface RuntimeFixture {
 interface RuntimeFixtureOptions {
   runtimeDebugOptions?: CliRuntimeDebugOptions;
   adaptersConfig?: AdaptersConfig;
+  adapterLocalProbeOverrides?: Partial<
+    Record<
+      AdapterSurface,
+      {
+        availabilityStatus: AgentAvailabilityStatus;
+        unavailableReasons: string[];
+      }
+    >
+  >;
 }
 
 /**
@@ -104,6 +113,35 @@ function createAdaptersConfigFixture(): AdaptersConfig {
 }
 
 /**
+ * Creates deterministic local-probe override map for CLI adapter tests.
+ * @returns Surface availability map with all tools marked available.
+ */
+function createAdapterLocalProbeOverrides(): Partial<
+  Record<
+    AdapterSurface,
+    {
+      availabilityStatus: AgentAvailabilityStatus;
+      unavailableReasons: string[];
+    }
+  >
+> {
+  return {
+    [AdapterSurface.CODEX]: {
+      availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+      unavailableReasons: [],
+    },
+    [AdapterSurface.CLAUDE_CODE]: {
+      availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+      unavailableReasons: [],
+    },
+    [AdapterSurface.GITHUB_COPILOT]: {
+      availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+      unavailableReasons: [],
+    },
+  };
+}
+
+/**
  * Creates one isolated runtime fixture for command integration tests.
  * @returns Runtime fixture with workspace and provider handles.
  */
@@ -141,6 +179,8 @@ async function createRuntimeFixture(options: RuntimeFixtureOptions = {}): Promis
     memoryStoreProvider: provider,
     adaptersConfig: options.adaptersConfig ?? createAdaptersConfigFixture(),
     runtimeDebugOptions: options.runtimeDebugOptions,
+    adapterLocalProbeOverrides:
+      options.adapterLocalProbeOverrides ?? createAdapterLocalProbeOverrides(),
   });
 
   return {
@@ -443,6 +483,172 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
           adapters: true,
           recordLedger: true,
           taskId: "TK-082",
+        },
+      },
+    );
+  });
+
+  it("auto-bootstraps workspace config when connect runs before explicit init", async () => {
+    await withRuntimeFixture(
+      async (fixture) => {
+        await rm(fixture.workspace.configPath, { force: true });
+        await fixture.runtime.execute(CliCommandName.CONNECT);
+        const configContent = await readFile(fixture.workspace.configPath, "utf8");
+
+        expect(configContent).toContain('schemaVersion: "1.1"');
+        expect(configContent).toContain("workspace:");
+      },
+      {
+        runtimeDebugOptions: {
+          dryRun: false,
+          trace: false,
+          replayPath: null,
+          adapters: true,
+        },
+      },
+    );
+  });
+
+  it("marks runtime availability unavailable when local probe fails despite configured available", async () => {
+    await withRuntimeFixture(
+      async (fixture) => {
+        const connectResult = await fixture.runtime.execute(CliCommandName.CONNECT);
+        const diagnosticsArtifactPath = connectResult.commandResult.artifacts?.find(
+          (artifact) => artifact.id === "connect_diagnostics",
+        )?.path;
+        expect(typeof diagnosticsArtifactPath).toBe("string");
+
+        const diagnosticsPayload = JSON.parse(
+          await readFile(String(diagnosticsArtifactPath), "utf8"),
+        ) as {
+          verification?: {
+            tools?: Array<{
+              toolId?: string;
+              configuredAvailability?: string | null;
+              availabilityStatus?: string;
+              unavailableReasons?: string[];
+            }>;
+          };
+        };
+        const codexSnapshot = diagnosticsPayload.verification?.tools?.find(
+          (tool) => tool.toolId === AdapterSurface.CODEX,
+        );
+        expect(codexSnapshot?.configuredAvailability).toBe(AdapterAvailability.AVAILABLE);
+        expect(codexSnapshot?.availabilityStatus).toBe(AgentAvailabilityStatus.UNAVAILABLE);
+        expect(codexSnapshot?.unavailableReasons ?? []).toContain("command_missing:codex:codex");
+      },
+      {
+        runtimeDebugOptions: {
+          dryRun: false,
+          trace: false,
+          replayPath: null,
+          adapters: true,
+        },
+        adapterLocalProbeOverrides: {
+          [AdapterSurface.CODEX]: {
+            availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+            unavailableReasons: ["command_missing:codex:codex"],
+          },
+          [AdapterSurface.CLAUDE_CODE]: {
+            availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+            unavailableReasons: [],
+          },
+          [AdapterSurface.GITHUB_COPILOT]: {
+            availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+            unavailableReasons: [],
+          },
+        },
+      },
+    );
+  });
+
+  it("renders human-friendly unavailable reason details in doctor adapter checks", async () => {
+    await withRuntimeFixture(
+      async (fixture) => {
+        const doctorResult = await fixture.runtime.execute(CliCommandName.DOCTOR);
+        const codexCheck = doctorResult.commandResult.checks?.find(
+          (check) => check.id === "adapter_tool_codex",
+        );
+        const claudeCheck = doctorResult.commandResult.checks?.find(
+          (check) => check.id === "adapter_tool_claude-code",
+        );
+
+        expect(codexCheck?.detail).toContain('missing command "codex"');
+        expect(claudeCheck?.detail).toContain("command exists but check failed");
+      },
+      {
+        runtimeDebugOptions: {
+          dryRun: false,
+          trace: false,
+          replayPath: null,
+          adapters: true,
+        },
+        adapterLocalProbeOverrides: {
+          [AdapterSurface.CODEX]: {
+            availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+            unavailableReasons: ["command_missing:codex:codex"],
+          },
+          [AdapterSurface.CLAUDE_CODE]: {
+            availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+            unavailableReasons: [
+              "command_probe_failed:claude-code:claude:exit_code_1:login_required",
+            ],
+          },
+          [AdapterSurface.GITHUB_COPILOT]: {
+            availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+            unavailableReasons: [],
+          },
+        },
+      },
+    );
+  });
+
+  it("emits actionable next-actions for missing command and probe failures", async () => {
+    await withRuntimeFixture(
+      async (fixture) => {
+        const connectResult = await fixture.runtime.execute(CliCommandName.CONNECT);
+        const diagnosticsArtifactPath = connectResult.commandResult.artifacts?.find(
+          (artifact) => artifact.id === "connect_diagnostics",
+        )?.path;
+        expect(typeof diagnosticsArtifactPath).toBe("string");
+
+        const diagnosticsPayload = JSON.parse(
+          await readFile(String(diagnosticsArtifactPath), "utf8"),
+        ) as {
+          nextActions?: string[];
+        };
+        const nextActions = diagnosticsPayload.nextActions ?? [];
+        expect(
+          nextActions.some((action) =>
+            action.includes("Install missing local commands before connect/verify"),
+          ),
+        ).toBe(true);
+        expect(
+          nextActions.some((action) => action.includes("Some commands exist but probe failed")),
+        ).toBe(true);
+      },
+      {
+        runtimeDebugOptions: {
+          dryRun: false,
+          trace: false,
+          replayPath: null,
+          adapters: true,
+        },
+        adapterLocalProbeOverrides: {
+          [AdapterSurface.CODEX]: {
+            availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+            unavailableReasons: ["command_missing:codex:codex"],
+          },
+          [AdapterSurface.CLAUDE_CODE]: {
+            availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+            unavailableReasons: [
+              "command_probe_failed:claude-code:claude:exit_code_1:login_required",
+            ],
+          },
+          [AdapterSurface.GITHUB_COPILOT]: {
+            availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+            unavailableReasons: [],
+          },
         },
       },
     );
