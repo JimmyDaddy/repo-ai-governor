@@ -1,8 +1,8 @@
 # TK-079 用户接入文档与本地采用手册基线
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-22
-- Owner: TBD
+- Owner: AI-Agent
 - Priority: P1
 - Project: `project-009-production-readiness`
 - Sprint: `sprint-001-local-adoption-and-install-readiness`
@@ -40,16 +40,27 @@
 
 1. `node ./scripts/governance/check-task-ledger-sync.js`
 2. `node ./scripts/governance/check-sprint-plan-status-sync.js`
-3. `pnpm run check`
+3. `node ./scripts/governance/check-code-review-status-sync.js`
+4. `pnpm run check`
 
 ## 7. 执行记录
 
 1. 2026-03-22：任务创建，状态初始化为 `planned`。
 2. 2026-03-22：根据 `TK-088` 将文档目标收紧为独立接入、`doctor` 路径覆盖与 CLI 兼容迁移说明，任务状态保持 `planned`。
 3. 2026-03-22：根据 `TK-090` 补齐只读接入、workspace rollback 与完整 `review-verify` 闭环文档口径，任务状态保持 `planned`。
+4. 2026-03-22：任务启动，状态切换为 `active`，完成双语 README/CHANGELOG 与本地接入手册初稿收敛。
+5. 2026-03-22：完成 `DA-091` 与台账同步，补齐 review 记录并通过 `check-task-ledger-sync`、`check-sprint-plan-status-sync`、`check-code-review-status-sync`、`pnpm run check`，状态切换为 `completed`。
 
 ## 8. 产出
 
-1. `DA-091` `.repo-ai-governor/context/dev/project-009-production-readiness/sprint-001-local-adoption-and-install-readiness/tasks/TK-079-user-docs-and-local-adoption-playbook.md`
-2. `.repo-ai-governor/context/dev/project-009-production-readiness/sprint-001-local-adoption-and-install-readiness/tasks/checklist.md`
-3. `.repo-ai-governor/context/dev/project-009-production-readiness/sprint-001-local-adoption-and-install-readiness/tasks/tasks.csv`
+1. `DA-091` `.repo-ai-governor/context/dev/project-009-production-readiness/sprint-001-local-adoption-and-install-readiness/tasks/DA-091-user-docs-and-local-adoption-playbook-baseline.md`
+2. `README.md`
+3. `README.zh-CN.md`
+4. `CHANGELOG.md`
+5. `CHANGELOG.zh-CN.md`
+6. `docs/local-adoption-playbook.md`
+7. `docs/local-adoption-playbook.zh-CN.md`
+8. `.repo-ai-governor/context/dev/project-009-production-readiness/sprint-001-local-adoption-and-install-readiness/review/resolved_code_review_tk-079-user-docs-and-local-adoption-playbook-baseline.md`
+9. `.repo-ai-governor/context/dev/project-009-production-readiness/sprint-001-local-adoption-and-install-readiness/tasks/checklist.md`
+10. `.repo-ai-governor/context/dev/project-009-production-readiness/sprint-001-local-adoption-and-install-readiness/tasks/tasks.csv`
+11. `.repo-ai-governor/context/artifact-registry/artifacts.csv`

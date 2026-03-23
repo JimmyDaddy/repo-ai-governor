@@ -1,6 +1,6 @@
 # sprint-001-local-adoption-and-install-readiness 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-03-22
 - Project: `project-009-production-readiness`
 
@@ -14,8 +14,8 @@
 2. TK-076 本地调试（dry-run/trace/replay）与诊断输出基线（completed）
 3. TK-077 本地安装模式（path/tgz/link）与 clean-room 验证（completed）
 4. TK-078 examples 资产与 example smoke 门禁基线（completed）
-5. TK-079 用户接入文档与本地采用手册基线（planned）
-6. TK-080 sprint-001 出口验收与 sprint-002 输入约束（planned）
+5. TK-079 用户接入文档与本地采用手册基线（completed）
+6. TK-080 sprint-001 出口验收与 sprint-002 输入约束（completed）
 7. TK-087 主执行计划 Stage 9 分阶段门槛与 GA 信号补强（completed）
 8. TK-088 Stage 9A 任务卡与执行面主计划对齐（completed）
 9. TK-089 主执行计划后续补充对齐与治理门禁补强（completed）

@@ -1,7 +1,7 @@
 # project-009-production-readiness 计划
 
 - Status: active
-- Date: 2026-03-22
+- Date: 2026-03-23
 - Stage Mapping: Stage 9
 - Phase Mapping: Phase E 收口 + GA Readiness overlay
 
@@ -9,7 +9,7 @@
 
 1. 完成 CLI 关键命令去 skeleton 化，打通可执行最小治理闭环，并将 Stage 9A/9B 的阶段门槛与 GA 信号下钻到 sprint-001/sprint-002 执行面。
 2. 建立无需发布即可本地安装与调试使用的能力（path/tgz/link）。
-3. 建立多工具/多模型自动执行链路与角色级进度日志、交互可视化能力。
+3. 建立多工具/多模型自动执行链路与角色级进度日志、交互可视化能力，并固化 `connect -> doctor --adapters -> verify --adapters` 便捷接入主路径。
 4. 补齐 examples、用户文档、黑盒 E2E 与发布门禁，使 GA 信号与真实可用性一致。
 5. 通过真实试点输入沉淀投产后运营反馈闭环。
 
@@ -24,6 +24,8 @@
 3. WS-03 Agent Automation And Model Routing
    - `codex/github-copilot/claude-code` 真实调用收敛。
    - 多模型路由与无人值守自动执行闭环。
+   - 阶段 A 直接引入 `adapters/routing` 必需配置，支持“单工具多角色（如 codex 覆盖全流程）”。
+   - 固化 `doctor --fix` 的 `safe_local` 自动修复边界，以及 `verify --adapters` 的 `pass/warn/fail` 判定门槛。
 4. WS-04 Human-Friendly Execution UX
    - 角色级进度展示（role/stage/status）。
    - 分层日志、关键交互提示与 HITL 友好提示。
@@ -54,9 +56,13 @@
 - Exit Criteria:
   1. `DA-092` 已被 `TK-081`~`TK-085` 显式消费为唯一输入入口，且 blocker/fix-forward 约束未被绕过。
   2. 多工具/多模型自动执行链路在无人值守模式可稳定运行，并覆盖 `plan -> run -> review -> review-verify -> report -> ledger backfill` 与至少 1 条受控 delivery rehearsal。
-  3. 人类可实时查看角色进度、关键日志与交互状态，并可执行 HITL 决策；至少 1 主 1 备通知渠道的 `confirm/escalate` 演练已与 audit/replay 对齐。
-  4. 黑盒 E2E 与 CI/发布流水线收敛到真实可用性门禁，并持续复用 Stage 9A 的 clean-room / `examples/` / read-only attach / 外部消费契约矩阵 / 支持矩阵基线。
-  5. 形成 `DA-098`（project-009 出口验收与后续运营输入约束），沉淀试点与 30 天运营指标快照，并产出 `project-009-completion-audit-summary.md` 与 plan 里程碑回链。
+  3. `adapters/routing` 已在 sprint-002 中按必需配置落地，且支持“同一工具绑定多个角色”。
+  4. `doctor --adapters --fix` 仅执行 `safe_local` 自动修复；高风险项仅输出 `nextAction`，不做隐式改动。
+  5. `verify --adapters` 形成 `pass/warn/fail` 稳定判定：必需角色无可用工具或闭环能力缺口即 `fail`。
+  6. `connect` 默认仅写 diagnostics artifact；仅在显式参数下回写任务台账，避免高频噪音。
+  7. 人类可实时查看角色进度、关键日志与交互状态，并可执行 HITL 决策；至少 1 主 1 备通知渠道的 `confirm/escalate` 演练已与 audit/replay 对齐。
+  8. 黑盒 E2E 与 CI/发布流水线收敛到真实可用性门禁，并持续复用 Stage 9A 的 clean-room / `examples/` / read-only attach / 外部消费契约矩阵 / 支持矩阵基线。
+  9. 形成 `DA-098`（project-009 出口验收与后续运营输入约束），沉淀试点与 30 天运营指标快照，并产出 `project-009-completion-audit-summary.md` 与 plan 里程碑回链。
 
 ## 4. 任务拆解矩阵（WBS）
 
@@ -66,8 +72,8 @@
 | TK-076 | sprint-001 | 本地调试（dry-run/trace/replay）与诊断输出基线 | implementation/devex | TK-075 | completed |
 | TK-077 | sprint-001 | 本地安装模式（path/tgz/link）与 clean-room 验证 | implementation/local-install | TK-075 | completed |
 | TK-078 | sprint-001 | examples 资产与 example smoke 门禁基线 | implementation/examples | TK-075,TK-077 | completed |
-| TK-079 | sprint-001 | 用户接入文档与本地采用手册基线 | implementation/docs | TK-075,TK-077,TK-078 | planned |
-| TK-080 | sprint-001 | sprint-001 出口验收与 sprint-002 输入约束 | acceptance baseline | TK-075,TK-076,TK-077,TK-078,TK-079 | planned |
+| TK-079 | sprint-001 | 用户接入文档与本地采用手册基线 | implementation/docs | TK-075,TK-077,TK-078 | completed |
+| TK-080 | sprint-001 | sprint-001 出口验收与 sprint-002 输入约束 | acceptance baseline | TK-075,TK-076,TK-077,TK-078,TK-079 | completed |
 | TK-087 | sprint-001 | 主执行计划 Stage 9 分阶段门槛与 GA 信号补强 | maintenance/planning | DA-086 | completed |
 | TK-088 | sprint-001 | Stage 9A 任务卡与执行面主计划对齐 | maintenance/planning | TK-087 | completed |
 | TK-089 | sprint-001 | 主执行计划后续补充对齐与治理门禁补强 | maintenance/planning | TK-087,TK-088 | completed |
@@ -94,13 +100,17 @@
 1. 关键用户路径（只读接入、`init/doctor/check/run/review/review-verify`）具备真实执行语义并通过黑盒验证。
 2. 不经 npm 发布即可完成本地安装并稳定使用（至少覆盖 path/tgz/link 中两种方式，且选定两种通过 clean-room 连续 3 次 `--help -> init -> doctor -> check`，并至少完成 1 组 `tool_managed -> repo_local -> rollback` workspace 切换验证）。
 3. 多工具/多模型自动执行链路可在无人值守模式稳定运行，命中策略闸口时可正确暂停/接管。
-4. 角色级进度、关键日志与交互提示可被人类实时消费，并与审计回放事实一致。
-5. 根级 `examples/`、README、CHANGELOG 与本地采用手册可独立支撑接入、调试与升级。
-6. 任务卡、checklist、tasks.csv 三者字段同步满足 `CS-021`。
-7. 外部消费契约黑盒矩阵与最小支持矩阵已形成并回链到 clean-room / docs / release gate。
-8. 至少 1 主 1 备 HITL 通知渠道演练通过，且通知回执与人工决策回灌可在 audit/replay 中回链。
-9. 至少 1 条受控 delivery rehearsal 覆盖 `commit` 或 `PR draft`，并明确当前自动推送/发 PR 边界。
-10. 试点与 30 天运营闭环形成可统计的运营指标快照。
+4. `adapters/routing` 配置为必需并通过校验，且支持“单工具多角色”绑定。
+5. `doctor --adapters --fix` 自动修复严格限定在 `safe_local`，高风险动作仅输出建议步骤。
+6. `verify --adapters` 输出 `pass/warn/fail` 判定与角色绑定矩阵，且结果可回链到诊断产物。
+7. `connect` 默认仅写 diagnostics artifact，显式参数时才回写台账。
+8. 角色级进度、关键日志与交互提示可被人类实时消费，并与审计回放事实一致。
+9. 根级 `examples/`、README、CHANGELOG 与本地采用手册可独立支撑接入、调试与升级。
+10. 任务卡、checklist、tasks.csv 三者字段同步满足 `CS-021`。
+11. 外部消费契约黑盒矩阵与最小支持矩阵已形成并回链到 clean-room / docs / release gate。
+12. 至少 1 主 1 备 HITL 通知渠道演练通过，且通知回执与人工决策回灌可在 audit/replay 中回链。
+13. 至少 1 条受控 delivery rehearsal 覆盖 `commit` 或 `PR draft`，并明确当前自动推送/发 PR 边界。
+14. 试点与 30 天运营闭环形成可统计的运营指标快照。
 
 ## 7. 里程碑记录
 
@@ -118,3 +128,6 @@
 12. 2026-03-22：完成 `TK-077`，新增 clean-room 安装验证脚本并完成 `path + link` 各连续 3 次验证，补齐 `tool_managed -> repo_local -> rollback` 与只读 attach 预检，产出 `DA-089`。
 13. 2026-03-22：完成 `TK-078`，建立根级 `examples/` 四类场景与 `example-smoke` 阻断门禁，产出 `DA-090` 并将校验接入 `check` 与本地分发验证链路。
 14. 2026-03-22：完成 `TK-078` 二次收敛，将示例从 README-only 升级为 `scenario.json + fixtures + expected` 可执行资产，并新增 `examples-runtime-smoke` 行为级门禁。
+15. 2026-03-22：完成 `TK-079`，交付双语 README/CHANGELOG 与本地采用手册，产出 `DA-091` 并补齐 `review-verify -> ledger backfill` 用户可见链路说明。
+16. 2026-03-22：完成 `TK-080`，形成 `DA-092` 并给出 Stage 9A `accept` 结论，收敛 sprint-002（`TK-081`~`TK-086`）唯一输入约束与 blocker/fix-forward 清单。
+17. 2026-03-23：将 `.repo-ai-governor/draft/multi-ai-tools-fast-onboarding-technical-solution.md` 已采纳决策反哺到 project-009 技术方案入口，明确 `adapters/routing` 阶段 A 必需、`safe_local` 自动修复边界、`verify` 判定门槛与默认台账回写策略。

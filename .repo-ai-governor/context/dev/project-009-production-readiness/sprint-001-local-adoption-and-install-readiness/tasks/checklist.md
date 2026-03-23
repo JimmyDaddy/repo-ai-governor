@@ -18,11 +18,15 @@
   - 2026-03-22：任务启动，状态切换为 `active`，建立根级 `examples/` 四类示例并落地 `example-smoke` 契约文件。
   - 2026-03-22：完成 `scripts/examples/check-examples-smoke.js` 阻断脚本与 `package.json/turbo` 门禁接线，产出 `DA-090` 并通过验证，状态切换为 `completed`。
   - 2026-03-22：完成 README-only 收敛到可执行资产，补齐 `scenario.json + fixtures + expected` 与 `doc/runtime` 双 smoke 门禁，状态保持 `completed`。
-- [ ] TK-079 用户接入文档与本地采用手册基线
+- [x] TK-079 用户接入文档与本地采用手册基线
   - 2026-03-22：任务创建，状态初始化为 `planned`。
-- [ ] TK-080 sprint-001 出口验收与 sprint-002 输入约束
+  - 2026-03-22：任务启动，状态切换为 `active`，开始收敛双语接入文档、本地采用手册与迁移说明。
+  - 2026-03-22：完成 `DA-091` 与文档资产回链，补齐 review 与 artifact-registry 同步并通过 `check-task-ledger-sync`、`check-sprint-plan-status-sync`、`check-code-review-status-sync`、`pnpm run check`，状态切换为 `completed`。
+- [x] TK-080 sprint-001 出口验收与 sprint-002 输入约束
   - 2026-03-22：任务创建，状态初始化为 `planned`。
   - 2026-03-22：根据 `TK-094` 补齐根级 `examples/`、外部消费契约/支持矩阵、HITL 通知 rehearsal、受控 delivery rehearsal 与运营指标快照口径，状态保持 `planned`。
+  - 2026-03-22：任务启动，状态切换为 `active`，完成 `DA-087`~`DA-091` 证据汇总并回填 `DA-092` 验收模板。
+  - 2026-03-22：完成 Stage 9A `accept` 结论与 Stage 9B 输入约束收敛，补齐 review/artifact-registry 回写并通过 `check-task-ledger-sync`、`check-sprint-plan-status-sync`、`check-code-review-status-sync`、`run-normative-loading-manifest-gate`、`pnpm run check`，状态切换为 `completed`。
 - [x] TK-087 主执行计划 Stage 9 分阶段门槛与 GA 信号补强
   - 2026-03-22：任务创建，状态初始化为 `planned`。
   - 2026-03-22：任务启动，状态切换为 `active`，开始收敛 Stage 9A/9B 门槛、GA 量化信号与适配器/示例契约。
