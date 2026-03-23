@@ -3,7 +3,9 @@ import { isAbsolute, resolve } from "node:path";
 
 import { Command, CommanderError } from "commander";
 
+import { AgentCapability } from "@repo-ai-governor/adapter-sdk";
 import {
+  type AdaptersConfig,
   ConfigLoader,
   type MemoryConfig,
   ProfileResolver,
@@ -13,8 +15,11 @@ import {
 import { FsCsvMemoryStoreProvider } from "@repo-ai-governor/memory-provider-fs-csv";
 import type { MemoryStoreProvider } from "@repo-ai-governor/memory-store-adapter";
 import {
+  AdapterAvailability,
+  AdapterSurface,
   DEFAULT_I18N_RUNTIME_CONFIG,
   DEFAULT_MEMORY_RUNTIME_CONFIG,
+  DefaultRoleProfileId,
   ErrorOutputEnvironment,
   GovernorErrorCode,
   I18nRuntime,
@@ -64,6 +69,91 @@ const DEFAULT_I18N_CONFIG: I18nRuntimeConfig = {
 const DEFAULT_MEMORY_CONFIG: MemoryRuntimeConfig = {
   ...DEFAULT_MEMORY_RUNTIME_CONFIG,
 };
+const DEFAULT_ADAPTERS_CONFIG: AdaptersConfig = {
+  roles: [
+    {
+      roleId: "planner",
+      roleProfileId: DefaultRoleProfileId.PLANNER,
+      requiredCapabilities: [AgentCapability.STRUCTURED_OUTPUT],
+      required: true,
+    },
+    {
+      roleId: "architect",
+      roleProfileId: DefaultRoleProfileId.ARCHITECT,
+      requiredCapabilities: [AgentCapability.STRUCTURED_OUTPUT],
+      required: true,
+    },
+    {
+      roleId: "coder",
+      roleProfileId: DefaultRoleProfileId.CODER,
+      requiredCapabilities: [AgentCapability.TOOL_CALLING],
+      required: true,
+    },
+    {
+      roleId: "tester",
+      roleProfileId: DefaultRoleProfileId.TESTER,
+      requiredCapabilities: [AgentCapability.TOOL_CALLING],
+      required: true,
+    },
+    {
+      roleId: "reviewer",
+      roleProfileId: DefaultRoleProfileId.REVIEWER,
+      requiredCapabilities: [AgentCapability.STRUCTURED_OUTPUT],
+      required: true,
+    },
+    {
+      roleId: "verifier",
+      roleProfileId: DefaultRoleProfileId.VERIFIER,
+      requiredCapabilities: [AgentCapability.STRUCTURED_OUTPUT],
+      required: true,
+    },
+  ],
+  routing: {
+    roleBindings: {
+      planner: {
+        primarySurface: AdapterSurface.CODEX,
+        fallbackSurfaces: [AdapterSurface.CLAUDE_CODE, AdapterSurface.GITHUB_COPILOT],
+      },
+      architect: {
+        primarySurface: AdapterSurface.CODEX,
+        fallbackSurfaces: [AdapterSurface.CLAUDE_CODE, AdapterSurface.GITHUB_COPILOT],
+      },
+      coder: {
+        primarySurface: AdapterSurface.CODEX,
+        fallbackSurfaces: [AdapterSurface.GITHUB_COPILOT, AdapterSurface.CLAUDE_CODE],
+      },
+      tester: {
+        primarySurface: AdapterSurface.GITHUB_COPILOT,
+        fallbackSurfaces: [AdapterSurface.CODEX, AdapterSurface.CLAUDE_CODE],
+      },
+      reviewer: {
+        primarySurface: AdapterSurface.CLAUDE_CODE,
+        fallbackSurfaces: [AdapterSurface.CODEX, AdapterSurface.GITHUB_COPILOT],
+      },
+      verifier: {
+        primarySurface: AdapterSurface.CODEX,
+        fallbackSurfaces: [AdapterSurface.CLAUDE_CODE, AdapterSurface.GITHUB_COPILOT],
+      },
+    },
+  },
+  tools: [
+    {
+      toolId: AdapterSurface.CODEX,
+      enabled: true,
+      availability: AdapterAvailability.AVAILABLE,
+    },
+    {
+      toolId: AdapterSurface.GITHUB_COPILOT,
+      enabled: true,
+      availability: AdapterAvailability.AVAILABLE,
+    },
+    {
+      toolId: AdapterSurface.CLAUDE_CODE,
+      enabled: true,
+      availability: AdapterAvailability.AVAILABLE,
+    },
+  ],
+};
 
 const DEFAULT_IO: CliIoAdapters = {
   stdout: (value: string): void => {
@@ -92,6 +182,7 @@ interface CliIoAdapters {
 interface ResolvedCliRuntimeContext {
   i18n: I18nRuntimeConfig;
   memory: MemoryRuntimeConfig;
+  adapters: AdaptersConfig;
   profileId: string | null;
   configSource: "default" | "file";
   workspace: ResolvedWorkspace;
@@ -173,6 +264,7 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
       memoryStoreRoot: activeMemoryStoreComposition.memoryStoreRoot,
       memoryStoreProviderName: activeMemoryStoreComposition.providerName,
       memoryStoreProvider: activeMemoryStoreComposition.provider,
+      adaptersConfig: runtimeContext.adapters,
       runtimeDebugOptions,
     });
 
@@ -184,6 +276,10 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
     program.option("--output <mode>", runtimeI18n.t("cli.options.output"));
     program.option("--verbosity <level>", runtimeI18n.t("cli.options.verbosity"));
     program.option("--no-color", runtimeI18n.t("cli.options.noColor"));
+    program.option("--adapters", runtimeI18n.t("cli.options.adapters"));
+    program.option("--fix", runtimeI18n.t("cli.options.fix"));
+    program.option("--record-ledger", runtimeI18n.t("cli.options.recordLedger"));
+    program.option("--task-id <taskId>", runtimeI18n.t("cli.options.taskId"));
     program.option("--dry-run", runtimeI18n.t("cli.options.dryRun"));
     program.option("--trace", runtimeI18n.t("cli.options.trace"));
     program.option("--replay <path>", runtimeI18n.t("cli.options.replay"));
@@ -288,6 +384,7 @@ function resolveRuntimeContext(
     return {
       i18n: resolvedConfig.config.i18n,
       memory: resolveMemoryRuntimeConfig(resolvedConfig.config.memory),
+      adapters: resolveAdaptersRuntimeConfig(resolvedConfig.config.adapters),
       profileId: resolvedConfig.profileId,
       configSource: "file",
       workspace: resolvedWorkspace,
@@ -297,6 +394,7 @@ function resolveRuntimeContext(
   return {
     i18n: DEFAULT_I18N_CONFIG,
     memory: DEFAULT_MEMORY_CONFIG,
+    adapters: resolveAdaptersRuntimeConfig(undefined),
     profileId: null,
     configSource: "default",
     workspace: defaultWorkspace,
@@ -314,6 +412,49 @@ function resolveMemoryRuntimeConfig(
   return {
     ...DEFAULT_MEMORY_CONFIG,
     ...(memoryConfig ?? {}),
+  };
+}
+
+/**
+ * Resolves adapters runtime config with default role/routing/tool baseline.
+ * @param adaptersConfig Optional adapters config from repository file and profile overrides.
+ * @returns Fully-resolved adapters runtime config.
+ */
+function resolveAdaptersRuntimeConfig(adaptersConfig: AdaptersConfig | undefined): AdaptersConfig {
+  const sourceConfig = adaptersConfig ?? DEFAULT_ADAPTERS_CONFIG;
+
+  return {
+    roles: sourceConfig.roles.map((role) => ({
+      ...role,
+      requiredCapabilities: [...role.requiredCapabilities],
+    })),
+    routing: {
+      roleBindings: Object.fromEntries(
+        Object.entries(sourceConfig.routing.roleBindings).map(([roleId, binding]) => [
+          roleId,
+          {
+            ...binding,
+            ...(binding.fallbackSurfaces
+              ? {
+                  fallbackSurfaces: [...binding.fallbackSurfaces],
+                }
+              : {}),
+          },
+        ]),
+      ),
+    },
+    ...(sourceConfig.tools
+      ? {
+          tools: sourceConfig.tools.map((tool) => ({
+            ...tool,
+            ...(tool.unavailableReasons
+              ? {
+                  unavailableReasons: [...tool.unavailableReasons],
+                }
+              : {}),
+          })),
+        }
+      : {}),
   };
 }
 
@@ -497,11 +638,23 @@ function resolveRuntimeDebugOptions(
     replayOption.value && replayOption.value.trim().length > 0
       ? resolveReplayPath(currentWorkingDirectory, replayOption.value.trim())
       : null;
+  const taskIdOption = readOptionInput(args, "--task-id");
+  if (taskIdOption.isPresent && !taskIdOption.value) {
+    throw new RuntimeError(
+      GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+      "Option --task-id requires one value.",
+      { option: "--task-id" },
+    );
+  }
 
   return {
     dryRun: hasFlag(args, "--dry-run"),
     trace: hasFlag(args, "--trace"),
     replayPath,
+    adapters: hasFlag(args, "--adapters"),
+    fix: hasFlag(args, "--fix"),
+    recordLedger: hasFlag(args, "--record-ledger"),
+    taskId: taskIdOption.value?.trim() || null,
   };
 }
 
@@ -615,6 +768,13 @@ function resolveErrorGuidance(code: GovernorErrorCode): {
     return {
       hint: "Locale setup is invalid or unsupported by current runtime.",
       nextAction: CliNextAction.RETRY_WITH_VERBOSE,
+    };
+  }
+
+  if (code.startsWith("ADAPTER_")) {
+    return {
+      hint: "Adapter routing or capability verification failed.",
+      nextAction: CliNextAction.INSPECT_GOVERNOR_CONFIG,
     };
   }
 

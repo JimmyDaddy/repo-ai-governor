@@ -15,6 +15,30 @@ const DISTRIBUTION_PACKAGES = [
     packageDistDirectory: resolve(PROJECT_ROOT, "apps/cli/dist"),
   },
   {
+    packageName: "adapter-sdk",
+    packageRoot: resolve(PROJECT_ROOT, "packages/adapter-sdk"),
+    compiledDirectory: resolve(PROJECT_ROOT, "dist/packages/adapter-sdk"),
+    packageDistDirectory: resolve(PROJECT_ROOT, "packages/adapter-sdk/dist"),
+  },
+  {
+    packageName: "adapter-codex",
+    packageRoot: resolve(PROJECT_ROOT, "packages/adapters/codex"),
+    compiledDirectory: resolve(PROJECT_ROOT, "dist/packages/adapters/codex"),
+    packageDistDirectory: resolve(PROJECT_ROOT, "packages/adapters/codex/dist"),
+  },
+  {
+    packageName: "adapter-github-copilot",
+    packageRoot: resolve(PROJECT_ROOT, "packages/adapters/github-copilot"),
+    compiledDirectory: resolve(PROJECT_ROOT, "dist/packages/adapters/github-copilot"),
+    packageDistDirectory: resolve(PROJECT_ROOT, "packages/adapters/github-copilot/dist"),
+  },
+  {
+    packageName: "adapter-claude-code",
+    packageRoot: resolve(PROJECT_ROOT, "packages/adapters/claude-code"),
+    compiledDirectory: resolve(PROJECT_ROOT, "dist/packages/adapters/claude-code"),
+    packageDistDirectory: resolve(PROJECT_ROOT, "packages/adapters/claude-code/dist"),
+  },
+  {
     packageName: "config",
     packageRoot: resolve(PROJECT_ROOT, "packages/config"),
     compiledDirectory: resolve(PROJECT_ROOT, "dist/packages/config"),

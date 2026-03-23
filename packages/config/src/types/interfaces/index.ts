@@ -1,4 +1,9 @@
 export type {
+  AdaptersConfig,
+  AdapterRoleBindingConfig,
+  AdapterRoleConfig,
+  AdapterRoutingConfig,
+  AdapterToolConfig,
   GovernorConfig,
   GovernorProfile,
   I18nConfig,

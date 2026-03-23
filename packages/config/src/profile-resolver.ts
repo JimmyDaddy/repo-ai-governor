@@ -53,6 +53,7 @@ export class ProfileResolver {
           ...profile.memory,
         }
       : baseConfig.memory;
+    const mergedAdapters = this.mergeAdapters(baseConfig.adapters, profile.adapters);
 
     return {
       ...baseConfig,
@@ -65,6 +66,76 @@ export class ProfileResolver {
         ...(profile.i18n ?? {}),
       },
       ...(mergedMemory ? { memory: mergedMemory as GovernorConfig["memory"] } : {}),
+      ...(mergedAdapters ? { adapters: mergedAdapters as GovernorConfig["adapters"] } : {}),
+    };
+  }
+
+  /**
+   * Merges optional adapters profile overrides onto base adapters config.
+   * @param baseAdapters Base adapters config.
+   * @param profileAdapters Profile-level adapters override config.
+   * @returns Merged adapters config when base or profile defines adapters.
+   */
+  private mergeAdapters(
+    baseAdapters: GovernorConfig["adapters"],
+    profileAdapters: GovernorProfile["adapters"],
+  ): GovernorConfig["adapters"] {
+    if (!baseAdapters && !profileAdapters) {
+      return undefined;
+    }
+
+    const baseToolsById = new Map((baseAdapters?.tools ?? []).map((tool) => [tool.toolId, tool]));
+    for (const overrideTool of profileAdapters?.tools ?? []) {
+      baseToolsById.set(overrideTool.toolId, {
+        ...(baseToolsById.get(overrideTool.toolId) ?? {}),
+        ...overrideTool,
+        ...(overrideTool.unavailableReasons
+          ? {
+              unavailableReasons: [...overrideTool.unavailableReasons],
+            }
+          : {}),
+      });
+    }
+
+    return {
+      ...(baseAdapters ?? {}),
+      ...(profileAdapters ?? {}),
+      roles: (profileAdapters?.roles ?? baseAdapters?.roles ?? []).map((role) => ({
+        ...role,
+        requiredCapabilities: [...role.requiredCapabilities],
+      })),
+      routing: {
+        roleBindings: {
+          ...(baseAdapters?.routing.roleBindings ?? {}),
+          ...Object.fromEntries(
+            Object.entries(profileAdapters?.routing?.roleBindings ?? {}).map(
+              ([roleId, binding]) => [
+                roleId,
+                {
+                  ...binding,
+                  ...(binding.fallbackSurfaces
+                    ? {
+                        fallbackSurfaces: [...binding.fallbackSurfaces],
+                      }
+                    : {}),
+                },
+              ],
+            ),
+          ),
+        },
+      },
+      ...(baseToolsById.size > 0
+        ? {
+            tools: Array.from(baseToolsById.values()).map((tool) => ({
+              ...tool,
+              ...(tool.unavailableReasons
+                ? {
+                    unavailableReasons: [...tool.unavailableReasons],
+                  }
+                : {}),
+            })),
+          }
+        : {}),
     };
   }
 }

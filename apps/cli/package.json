@@ -10,6 +10,10 @@
     }
   },
   "dependencies": {
+    "@repo-ai-governor/adapter-claude-code": "workspace:*",
+    "@repo-ai-governor/adapter-codex": "workspace:*",
+    "@repo-ai-governor/adapter-github-copilot": "workspace:*",
+    "@repo-ai-governor/adapter-sdk": "workspace:*",
     "@repo-ai-governor/config": "workspace:*",
     "@repo-ai-governor/core-change-risk": "workspace:*",
     "@repo-ai-governor/core-memory": "workspace:*",

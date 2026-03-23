@@ -15,6 +15,11 @@ export { WorkspaceMigrationService } from "./workspace-migration-service.js";
 export { WorkspaceResolver } from "./workspace-resolver.js";
 export { WorkspaceMode } from "@repo-ai-governor/shared";
 export type {
+  AdaptersConfig,
+  AdapterRoleBindingConfig,
+  AdapterRoleConfig,
+  AdapterRoutingConfig,
+  AdapterToolConfig,
   GovernorConfig,
   GovernorProfile,
   I18nConfig,

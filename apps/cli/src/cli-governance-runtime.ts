@@ -4,7 +4,17 @@ import { access, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { promisify } from "node:util";
 
+import { ClaudeCodeAgentAdapter } from "@repo-ai-governor/adapter-claude-code";
+import { CodexAgentAdapter } from "@repo-ai-governor/adapter-codex";
+import { GithubCopilotAgentAdapter } from "@repo-ai-governor/adapter-github-copilot";
 import {
+  AgentAvailabilityStatus,
+  AgentCapability,
+  AgentCapabilitySupportLevel,
+  type AgentProbeResult,
+} from "@repo-ai-governor/adapter-sdk";
+import {
+  type AdaptersConfig,
   ConfigLoader,
   GovernorSchemaVersion,
   type ResolvedWorkspace,
@@ -44,6 +54,8 @@ import {
   ReportBuilder,
 } from "@repo-ai-governor/reporting";
 import {
+  AdapterAvailability,
+  AdapterSurface,
   ErrorOutputEnvironment,
   GovernorErrorCode,
   type MemoryRuntimeConfig,
@@ -85,6 +97,7 @@ interface CliGovernanceRuntimeOptions {
   memoryStoreRoot: string;
   memoryStoreProviderName: string;
   memoryStoreProvider: MemoryStoreProvider;
+  adaptersConfig: AdaptersConfig;
   runtimeDebugOptions?: CliRuntimeDebugOptions;
 }
 
@@ -120,6 +133,43 @@ interface CliNormalizedRuntimeDebugOptions {
   dryRun: boolean;
   trace: boolean;
   replayPath: string | null;
+  adapters: boolean;
+  fix: boolean;
+  recordLedger: boolean;
+  taskId: string | null;
+}
+
+interface CliAdapterToolProbeSnapshot {
+  toolId: AdapterSurface;
+  enabled: boolean;
+  configuredAvailability: AdapterAvailability | null;
+  availabilityStatus: AgentAvailabilityStatus;
+  unavailableReasons: string[];
+  capabilitySupportByCapability: Map<string, AgentCapabilitySupportLevel>;
+}
+
+interface CliAdapterRoleEvaluation {
+  roleId: string;
+  roleProfileId: string;
+  required: boolean;
+  primarySurface: AdapterSurface;
+  selectedSurface: AdapterSurface | null;
+  selectedBy: "primary" | "fallback" | "none";
+  unsupportedCapabilities: string[];
+  degradedCapabilities: string[];
+  unavailableReasons: string[];
+  status: CliGovernanceCheckStatus;
+}
+
+interface CliAdapterVerificationResolution {
+  overallStatus: CliGovernanceCheckStatus;
+  tools: CliAdapterToolProbeSnapshot[];
+  roleEvaluations: CliAdapterRoleEvaluation[];
+  requiredRoleCount: number;
+  requiredRoleFailedCount: number;
+  degradedRoleCount: number;
+  fallbackRoleCount: number;
+  nextActions: string[];
 }
 
 interface CliReplayExplainResolution {
@@ -132,7 +182,7 @@ interface CliReplayExplainResolution {
  * Implements Stage-9 CLI command semantics with a minimal governance execution chain.
  *
  * Why this exists:
- * command runtime behavior must be centralized so `init/doctor/check/run/review/review-verify/plan/upgrade`
+ * command runtime behavior must be centralized so `init/connect/doctor/check/run/review/review-verify/verify/plan/upgrade`
  * stay deterministic across CLI entrypoints and output modes.
  */
 export class CliGovernanceRuntime {
@@ -146,6 +196,10 @@ export class CliGovernanceRuntime {
   public async execute(commandName: CliCommandName): Promise<CliGovernanceCommandResult> {
     if (commandName === CliCommandName.INIT) {
       return this.executeInitCommand();
+    }
+
+    if (commandName === CliCommandName.CONNECT) {
+      return this.executeConnectCommand();
     }
 
     if (commandName === CliCommandName.DOCTOR) {
@@ -166,6 +220,10 @@ export class CliGovernanceRuntime {
 
     if (commandName === CliCommandName.REVIEW_VERIFY) {
       return this.executeReviewVerifyCommand();
+    }
+
+    if (commandName === CliCommandName.VERIFY) {
+      return this.executeVerifyCommand();
     }
 
     if (commandName === CliCommandName.PLAN) {
@@ -268,13 +326,143 @@ export class CliGovernanceRuntime {
   }
 
   /**
+   * Generates adapter-connect diagnostics and optional ledger-backfill artifact.
+   * @returns Runtime command result.
+   */
+  private async executeConnectCommand(): Promise<CliGovernanceCommandResult> {
+    const runtimeDebugOptions = this.resolveRuntimeDebugOptions();
+    if (runtimeDebugOptions.recordLedger && !runtimeDebugOptions.taskId) {
+      throw new RuntimeError(
+        GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+        "connect --record-ledger requires --task-id <id>.",
+        {
+          command: CliCommandName.CONNECT,
+          option: "--task-id",
+        },
+      );
+    }
+
+    const adapterVerification = await this.resolveAdapterVerification();
+    const connectId = `connect-${Date.now()}`;
+    const diagnosticsArtifactPath = resolve(
+      this.options.workspace.workspaceRoot,
+      "context",
+      "diagnostics",
+      "connect",
+      `${connectId}.json`,
+    );
+
+    await this.writeJsonArtifact(diagnosticsArtifactPath, {
+      connectId,
+      generatedAt: this.toRfc3339SecondsTimestamp(new Date()),
+      workspace: {
+        workspaceId: this.options.workspace.workspaceId,
+        workspaceRoot: this.options.workspace.workspaceRoot,
+        workspaceMode: this.options.workspace.mode,
+      },
+      adapters: this.options.adaptersConfig,
+      verification: this.createAdapterVerificationArtifactPayload(adapterVerification),
+      nextActions: adapterVerification.nextActions,
+      behavior: {
+        recordLedger: runtimeDebugOptions.recordLedger,
+        taskId: runtimeDebugOptions.taskId,
+      },
+    });
+
+    const checks: CliCommandResultCheck[] = [
+      {
+        id: "adapter_verification",
+        status: adapterVerification.overallStatus,
+        detail: `required_roles=${adapterVerification.requiredRoleCount} required_failures=${adapterVerification.requiredRoleFailedCount} degraded_roles=${adapterVerification.degradedRoleCount} fallback_roles=${adapterVerification.fallbackRoleCount}`,
+      },
+      {
+        id: "diagnostics_artifact",
+        status: CliGovernanceCheckStatus.PASS,
+        detail: diagnosticsArtifactPath,
+      },
+    ];
+    const artifacts: CliCommandResultArtifact[] = [
+      {
+        id: "connect_diagnostics",
+        path: diagnosticsArtifactPath,
+      },
+    ];
+
+    if (runtimeDebugOptions.recordLedger && runtimeDebugOptions.taskId) {
+      const ledgerBackfillPath = resolve(
+        this.options.workspace.workspaceRoot,
+        "context",
+        "ledger-backfill",
+        "connect",
+        `${connectId}.json`,
+      );
+      await this.writeJsonArtifact(ledgerBackfillPath, {
+        ledgerBackfillId: `ledger-backfill-${connectId}`,
+        status: CLI_REVIEW_LEDGER_BACKFILL_STATUS.PENDING,
+        createdAt: this.toRfc3339SecondsTimestamp(new Date()),
+        taskId: runtimeDebugOptions.taskId,
+        connectId,
+        diagnosticsArtifactPath,
+        attribution: {
+          chain: "connect->doctor->verify",
+          chainStep: "connect",
+        },
+      });
+      checks.push({
+        id: "ledger_backfill",
+        status: CliGovernanceCheckStatus.PASS,
+        detail: `task_id=${runtimeDebugOptions.taskId}`,
+      });
+      artifacts.push({
+        id: "connect_ledger_backfill",
+        path: ledgerBackfillPath,
+      });
+    } else if (runtimeDebugOptions.taskId) {
+      checks.push({
+        id: "ledger_backfill",
+        status: CliGovernanceCheckStatus.WARN,
+        detail: "--task-id ignored because --record-ledger is not set",
+      });
+    }
+
+    const message = `Connect completed with adapter_status=${adapterVerification.overallStatus}; diagnostics=${diagnosticsArtifactPath}.`;
+    return {
+      message,
+      commandResult: {
+        operation: CLI_RUNTIME_OPERATION.ADAPTER_CONNECT,
+        summary: message,
+        check_totals: this.calculateCheckTotals(checks),
+        checks,
+        artifacts,
+        details: {
+          adapter_status: adapterVerification.overallStatus,
+          required_roles: adapterVerification.requiredRoleCount,
+          required_role_failures: adapterVerification.requiredRoleFailedCount,
+          diagnostics_path: diagnosticsArtifactPath,
+          record_ledger: runtimeDebugOptions.recordLedger,
+          task_id: runtimeDebugOptions.taskId,
+        },
+      },
+    };
+  }
+
+  /**
    * Probes environment health with read-only-safe diagnostics.
    * @returns Runtime command result.
    */
   private async executeDoctorCommand(): Promise<CliGovernanceCommandResult> {
+    const runtimeDebugOptions = this.resolveRuntimeDebugOptions();
     const checks: CliCommandResultCheck[] = [];
+    const artifacts: CliCommandResultArtifact[] = [];
+    const nextActions: string[] = [];
+    let safeLocalFixCount = 0;
 
-    const workspaceRootExists = existsSync(this.options.workspace.workspaceRoot);
+    let workspaceRootExists = existsSync(this.options.workspace.workspaceRoot);
+    if (!workspaceRootExists && runtimeDebugOptions.fix) {
+      await mkdir(this.options.workspace.workspaceRoot, { recursive: true });
+      workspaceRootExists = true;
+      safeLocalFixCount += 1;
+    }
     checks.push({
       id: "workspace_root_exists",
       status: workspaceRootExists ? CliGovernanceCheckStatus.PASS : CliGovernanceCheckStatus.FAIL,
@@ -293,7 +481,15 @@ export class CliGovernanceRuntime {
       ? CLI_DOCTOR_ATTACH_MODE.READ_WRITE
       : CLI_DOCTOR_ATTACH_MODE.READ_ONLY;
 
-    const configExists = existsSync(this.options.workspace.configPath);
+    let configExists = existsSync(this.options.workspace.configPath);
+    if (!configExists && runtimeDebugOptions.fix) {
+      await this.writeTextArtifact(
+        this.options.workspace.configPath,
+        this.buildDefaultConfigContent(),
+      );
+      configExists = true;
+      safeLocalFixCount += 1;
+    }
     checks.push({
       id: "workspace_config_exists",
       status: configExists ? CliGovernanceCheckStatus.PASS : CliGovernanceCheckStatus.WARN,
@@ -314,7 +510,12 @@ export class CliGovernanceRuntime {
           : `missing=${missingDocCount}/${docs.length}`,
     });
 
-    const memoryRootExists = existsSync(this.options.memoryStoreRoot);
+    let memoryRootExists = existsSync(this.options.memoryStoreRoot);
+    if (!memoryRootExists && runtimeDebugOptions.fix) {
+      await mkdir(this.options.memoryStoreRoot, { recursive: true });
+      memoryRootExists = true;
+      safeLocalFixCount += 1;
+    }
     checks.push({
       id: "memory_store_root",
       status: memoryRootExists ? CliGovernanceCheckStatus.PASS : CliGovernanceCheckStatus.WARN,
@@ -322,6 +523,72 @@ export class CliGovernanceRuntime {
         ? this.options.memoryStoreRoot
         : `missing=${this.options.memoryStoreRoot}`,
     });
+
+    let adapterStatus: CliGovernanceCheckStatus | null = null;
+    if (runtimeDebugOptions.adapters) {
+      const adapterVerification = await this.resolveAdapterVerification();
+      adapterStatus = adapterVerification.overallStatus;
+      checks.push({
+        id: "adapter_verification",
+        status: adapterStatus,
+        detail: `required_roles=${adapterVerification.requiredRoleCount} required_failures=${adapterVerification.requiredRoleFailedCount} degraded_roles=${adapterVerification.degradedRoleCount} fallback_roles=${adapterVerification.fallbackRoleCount}`,
+      });
+      for (const toolSnapshot of adapterVerification.tools) {
+        checks.push({
+          id: `adapter_tool_${toolSnapshot.toolId}`,
+          status: this.resolveToolProbeCheckStatus(toolSnapshot),
+          detail: this.resolveToolProbeCheckDetail(toolSnapshot),
+        });
+      }
+      if (adapterVerification.nextActions.length > 0) {
+        nextActions.push(...adapterVerification.nextActions);
+      }
+
+      const diagnosticsArtifactPath = resolve(
+        this.options.workspace.workspaceRoot,
+        "context",
+        "diagnostics",
+        "doctor",
+        `doctor-${Date.now()}.json`,
+      );
+      await this.writeJsonArtifact(diagnosticsArtifactPath, {
+        generatedAt: this.toRfc3339SecondsTimestamp(new Date()),
+        workspace: {
+          workspaceId: this.options.workspace.workspaceId,
+          workspaceRoot: this.options.workspace.workspaceRoot,
+          workspaceMode: this.options.workspace.mode,
+        },
+        attachMode,
+        options: {
+          adapters: runtimeDebugOptions.adapters,
+          fix: runtimeDebugOptions.fix,
+        },
+        checks,
+        verification: this.createAdapterVerificationArtifactPayload(adapterVerification),
+        nextActions,
+      });
+      artifacts.push({
+        id: "doctor_diagnostics",
+        path: diagnosticsArtifactPath,
+      });
+    }
+
+    if (runtimeDebugOptions.fix) {
+      checks.push({
+        id: "safe_local_fix",
+        status:
+          safeLocalFixCount > 0 ? CliGovernanceCheckStatus.PASS : CliGovernanceCheckStatus.WARN,
+        detail:
+          safeLocalFixCount > 0 ? `applied=${safeLocalFixCount}` : "no_safe_local_changes_applied",
+      });
+    }
+    if (nextActions.length > 0) {
+      checks.push({
+        id: "next_action_hint",
+        status: CliGovernanceCheckStatus.WARN,
+        detail: nextActions[0] ?? "review adapter diagnostics for next action",
+      });
+    }
 
     const message = `Doctor completed with attach_mode=${attachMode}.`;
     return {
@@ -332,10 +599,14 @@ export class CliGovernanceRuntime {
         attach_mode: attachMode,
         check_totals: this.calculateCheckTotals(checks),
         checks,
+        ...(artifacts.length > 0 ? { artifacts } : {}),
         details: {
           config_source: this.options.configSource,
           profile: this.options.profileId ?? "none",
           memory_store_provider: this.options.memoryStoreProviderName,
+          adapters_enabled: runtimeDebugOptions.adapters,
+          safe_local_fix_applied: safeLocalFixCount,
+          adapter_status: adapterStatus,
         },
       },
     };
@@ -1071,6 +1342,99 @@ export class CliGovernanceRuntime {
   }
 
   /**
+   * Verifies adapter routing matrix and emits pass/warn/fail diagnostics.
+   * @returns Runtime command result.
+   */
+  private async executeVerifyCommand(): Promise<CliGovernanceCommandResult> {
+    const runtimeDebugOptions = this.resolveRuntimeDebugOptions();
+    const adapterVerification = await this.resolveAdapterVerification();
+    const checks: CliCommandResultCheck[] = [];
+
+    if (!runtimeDebugOptions.adapters) {
+      checks.push({
+        id: "adapters_flag",
+        status: CliGovernanceCheckStatus.WARN,
+        detail: "--adapters not set; verify still executed with adapters baseline by default",
+      });
+    }
+    checks.push({
+      id: "adapter_verification",
+      status: adapterVerification.overallStatus,
+      detail: `required_roles=${adapterVerification.requiredRoleCount} required_failures=${adapterVerification.requiredRoleFailedCount} degraded_roles=${adapterVerification.degradedRoleCount} fallback_roles=${adapterVerification.fallbackRoleCount}`,
+    });
+    for (const roleEvaluation of adapterVerification.roleEvaluations) {
+      checks.push({
+        id: `role_${roleEvaluation.roleId}`,
+        status: roleEvaluation.status,
+        detail: this.resolveRoleEvaluationDetail(roleEvaluation),
+      });
+    }
+
+    const diagnosticsArtifactPath = resolve(
+      this.options.workspace.workspaceRoot,
+      "context",
+      "diagnostics",
+      "verify",
+      `verify-${Date.now()}.json`,
+    );
+    await this.writeJsonArtifact(diagnosticsArtifactPath, {
+      generatedAt: this.toRfc3339SecondsTimestamp(new Date()),
+      workspace: {
+        workspaceId: this.options.workspace.workspaceId,
+        workspaceRoot: this.options.workspace.workspaceRoot,
+        workspaceMode: this.options.workspace.mode,
+      },
+      adapters: this.options.adaptersConfig,
+      verification: this.createAdapterVerificationArtifactPayload(adapterVerification),
+      nextActions: adapterVerification.nextActions,
+    });
+
+    const artifacts: CliCommandResultArtifact[] = [
+      {
+        id: "verify_diagnostics",
+        path: diagnosticsArtifactPath,
+      },
+    ];
+    const checkTotals = this.calculateCheckTotals(checks);
+    const message = `Verify completed with adapters_status=${adapterVerification.overallStatus}.`;
+
+    if (adapterVerification.overallStatus === CliGovernanceCheckStatus.FAIL) {
+      throw new RuntimeError(
+        GovernorErrorCode.ADAPTER_ROUTE_NO_AVAILABLE_SURFACE,
+        `verify failed because required adapter roles are unavailable or capability gaps exist. diagnostics=${diagnosticsArtifactPath}`,
+        {
+          reportPath: diagnosticsArtifactPath,
+          adapterStatus: adapterVerification.overallStatus,
+          requiredRoleCount: adapterVerification.requiredRoleCount,
+          requiredRoleFailedCount: adapterVerification.requiredRoleFailedCount,
+          degradedRoleCount: adapterVerification.degradedRoleCount,
+          fallbackRoleCount: adapterVerification.fallbackRoleCount,
+          checkTotals,
+        },
+      );
+    }
+
+    return {
+      message,
+      commandResult: {
+        operation: CLI_RUNTIME_OPERATION.ADAPTER_VERIFY,
+        summary: message,
+        check_totals: checkTotals,
+        checks,
+        artifacts,
+        details: {
+          adapters_status: adapterVerification.overallStatus,
+          required_roles: adapterVerification.requiredRoleCount,
+          required_role_failures: adapterVerification.requiredRoleFailedCount,
+          degraded_roles: adapterVerification.degradedRoleCount,
+          fallback_roles: adapterVerification.fallbackRoleCount,
+          diagnostics_path: diagnosticsArtifactPath,
+        },
+      },
+    };
+  }
+
+  /**
    * Writes one plan snapshot artifact that captures current command contract context.
    * @returns Runtime command result.
    */
@@ -1217,6 +1581,80 @@ export class CliGovernanceRuntime {
       "memory:",
       `  storeEngine: ${this.options.memoryConfig.storeEngine}`,
       `  storeRoot: ${this.options.memoryConfig.storeRoot}`,
+      "adapters:",
+      "  roles:",
+      "    - roleId: planner",
+      "      roleProfileId: planner-default",
+      "      requiredCapabilities:",
+      `        - ${AgentCapability.STRUCTURED_OUTPUT}`,
+      "      required: true",
+      "    - roleId: architect",
+      "      roleProfileId: architect-default",
+      "      requiredCapabilities:",
+      `        - ${AgentCapability.STRUCTURED_OUTPUT}`,
+      "      required: true",
+      "    - roleId: coder",
+      "      roleProfileId: coder-default",
+      "      requiredCapabilities:",
+      `        - ${AgentCapability.TOOL_CALLING}`,
+      "      required: true",
+      "    - roleId: tester",
+      "      roleProfileId: tester-default",
+      "      requiredCapabilities:",
+      `        - ${AgentCapability.TOOL_CALLING}`,
+      "      required: true",
+      "    - roleId: reviewer",
+      "      roleProfileId: reviewer-default",
+      "      requiredCapabilities:",
+      `        - ${AgentCapability.STRUCTURED_OUTPUT}`,
+      "      required: true",
+      "    - roleId: verifier",
+      "      roleProfileId: verifier-default",
+      "      requiredCapabilities:",
+      `        - ${AgentCapability.STRUCTURED_OUTPUT}`,
+      "      required: true",
+      "  routing:",
+      "    roleBindings:",
+      "      planner:",
+      `        primarySurface: ${AdapterSurface.CODEX}`,
+      "        fallbackSurfaces:",
+      `          - ${AdapterSurface.CLAUDE_CODE}`,
+      `          - ${AdapterSurface.GITHUB_COPILOT}`,
+      "      architect:",
+      `        primarySurface: ${AdapterSurface.CODEX}`,
+      "        fallbackSurfaces:",
+      `          - ${AdapterSurface.CLAUDE_CODE}`,
+      `          - ${AdapterSurface.GITHUB_COPILOT}`,
+      "      coder:",
+      `        primarySurface: ${AdapterSurface.CODEX}`,
+      "        fallbackSurfaces:",
+      `          - ${AdapterSurface.GITHUB_COPILOT}`,
+      `          - ${AdapterSurface.CLAUDE_CODE}`,
+      "      tester:",
+      `        primarySurface: ${AdapterSurface.GITHUB_COPILOT}`,
+      "        fallbackSurfaces:",
+      `          - ${AdapterSurface.CODEX}`,
+      `          - ${AdapterSurface.CLAUDE_CODE}`,
+      "      reviewer:",
+      `        primarySurface: ${AdapterSurface.CLAUDE_CODE}`,
+      "        fallbackSurfaces:",
+      `          - ${AdapterSurface.CODEX}`,
+      `          - ${AdapterSurface.GITHUB_COPILOT}`,
+      "      verifier:",
+      `        primarySurface: ${AdapterSurface.CODEX}`,
+      "        fallbackSurfaces:",
+      `          - ${AdapterSurface.CLAUDE_CODE}`,
+      `          - ${AdapterSurface.GITHUB_COPILOT}`,
+      "  tools:",
+      `    - toolId: ${AdapterSurface.CODEX}`,
+      "      enabled: true",
+      `      availability: ${AdapterAvailability.AVAILABLE}`,
+      `    - toolId: ${AdapterSurface.GITHUB_COPILOT}`,
+      "      enabled: true",
+      `      availability: ${AdapterAvailability.AVAILABLE}`,
+      `    - toolId: ${AdapterSurface.CLAUDE_CODE}`,
+      "      enabled: true",
+      `      availability: ${AdapterAvailability.AVAILABLE}`,
       "",
     ].join("\n");
   }
@@ -1396,7 +1834,393 @@ export class CliGovernanceRuntime {
         this.options.runtimeDebugOptions.replayPath.trim().length > 0
           ? this.options.runtimeDebugOptions.replayPath.trim()
           : null,
+      adapters: this.options.runtimeDebugOptions?.adapters === true,
+      fix: this.options.runtimeDebugOptions?.fix === true,
+      recordLedger: this.options.runtimeDebugOptions?.recordLedger === true,
+      taskId:
+        typeof this.options.runtimeDebugOptions?.taskId === "string" &&
+        this.options.runtimeDebugOptions.taskId.trim().length > 0
+          ? this.options.runtimeDebugOptions.taskId.trim()
+          : null,
     };
+  }
+
+  /**
+   * Resolves adapter tool-level check status from probe snapshot.
+   * @param snapshot Adapter tool probe snapshot.
+   * @returns Check status used by doctor output.
+   */
+  private resolveToolProbeCheckStatus(
+    snapshot: CliAdapterToolProbeSnapshot,
+  ): CliGovernanceCheckStatus {
+    if (!snapshot.enabled) {
+      return CliGovernanceCheckStatus.WARN;
+    }
+    if (snapshot.availabilityStatus === AgentAvailabilityStatus.UNAVAILABLE) {
+      return CliGovernanceCheckStatus.WARN;
+    }
+    if (snapshot.availabilityStatus === AgentAvailabilityStatus.DEGRADED) {
+      return CliGovernanceCheckStatus.WARN;
+    }
+    return CliGovernanceCheckStatus.PASS;
+  }
+
+  /**
+   * Resolves adapter tool-level check detail text from probe snapshot.
+   * @param snapshot Adapter tool probe snapshot.
+   * @returns Human-readable detail text.
+   */
+  private resolveToolProbeCheckDetail(snapshot: CliAdapterToolProbeSnapshot): string {
+    if (!snapshot.enabled) {
+      return "disabled_by_config";
+    }
+
+    const reasons = snapshot.unavailableReasons.length > 0 ? snapshot.unavailableReasons : ["none"];
+    return `availability=${snapshot.availabilityStatus} reasons=${reasons.join("|")}`;
+  }
+
+  /**
+   * Resolves role-level check detail text from adapter role evaluation.
+   * @param roleEvaluation One role evaluation row.
+   * @returns Human-readable detail text.
+   */
+  private resolveRoleEvaluationDetail(roleEvaluation: CliAdapterRoleEvaluation): string {
+    const unsupported =
+      roleEvaluation.unsupportedCapabilities.length > 0
+        ? roleEvaluation.unsupportedCapabilities.join("|")
+        : "none";
+    const degraded =
+      roleEvaluation.degradedCapabilities.length > 0
+        ? roleEvaluation.degradedCapabilities.join("|")
+        : "none";
+    const unavailableReasons =
+      roleEvaluation.unavailableReasons.length > 0
+        ? roleEvaluation.unavailableReasons.join("|")
+        : "none";
+    return `required=${roleEvaluation.required} selected=${roleEvaluation.selectedSurface ?? "none"} selected_by=${roleEvaluation.selectedBy} unsupported=${unsupported} degraded=${degraded} reasons=${unavailableReasons}`;
+  }
+
+  /**
+   * Converts adapter verification resolution into JSON-serializable payload.
+   * @param verification Adapter verification resolution.
+   * @returns Artifact payload.
+   */
+  private createAdapterVerificationArtifactPayload(
+    verification: CliAdapterVerificationResolution,
+  ): Record<string, unknown> {
+    return {
+      overallStatus: verification.overallStatus,
+      requiredRoleCount: verification.requiredRoleCount,
+      requiredRoleFailedCount: verification.requiredRoleFailedCount,
+      degradedRoleCount: verification.degradedRoleCount,
+      fallbackRoleCount: verification.fallbackRoleCount,
+      tools: verification.tools.map((tool) => ({
+        toolId: tool.toolId,
+        enabled: tool.enabled,
+        configuredAvailability: tool.configuredAvailability,
+        availabilityStatus: tool.availabilityStatus,
+        unavailableReasons: tool.unavailableReasons,
+        capabilitySupportByCapability: Object.fromEntries(
+          tool.capabilitySupportByCapability.entries(),
+        ),
+      })),
+      roles: verification.roleEvaluations.map((role) => ({
+        roleId: role.roleId,
+        roleProfileId: role.roleProfileId,
+        required: role.required,
+        primarySurface: role.primarySurface,
+        selectedSurface: role.selectedSurface,
+        selectedBy: role.selectedBy,
+        unsupportedCapabilities: role.unsupportedCapabilities,
+        degradedCapabilities: role.degradedCapabilities,
+        unavailableReasons: role.unavailableReasons,
+        status: role.status,
+      })),
+    };
+  }
+
+  /**
+   * Resolves adapters/routing verification summary used by connect/doctor/verify commands.
+   * @returns Adapter verification resolution.
+   */
+  private async resolveAdapterVerification(): Promise<CliAdapterVerificationResolution> {
+    const toolSnapshots = await this.collectAdapterToolSnapshots();
+    const toolSnapshotBySurface = new Map<AdapterSurface, CliAdapterToolProbeSnapshot>(
+      toolSnapshots.map((snapshot) => [snapshot.toolId, snapshot]),
+    );
+    const routingByRole = this.options.adaptersConfig.routing.roleBindings;
+    const fallbackPrimarySurface =
+      this.options.adaptersConfig.tools?.[0]?.toolId ?? AdapterSurface.CODEX;
+    const roleEvaluations = this.options.adaptersConfig.roles.map<CliAdapterRoleEvaluation>(
+      (role) => {
+        const roleBinding = routingByRole[role.roleId];
+        if (!roleBinding) {
+          return {
+            roleId: role.roleId,
+            roleProfileId: role.roleProfileId,
+            required: role.required,
+            primarySurface: fallbackPrimarySurface,
+            selectedSurface: null,
+            selectedBy: "none",
+            unsupportedCapabilities: [],
+            degradedCapabilities: [],
+            unavailableReasons: [`missing_role_binding:${role.roleId}`],
+            status: role.required ? CliGovernanceCheckStatus.FAIL : CliGovernanceCheckStatus.WARN,
+          };
+        }
+
+        const candidateSurfaces = [
+          roleBinding.primarySurface,
+          ...(roleBinding.fallbackSurfaces ?? []),
+        ].filter((surface, index, list) => list.indexOf(surface) === index);
+        const unavailableReasons: string[] = [];
+
+        for (const candidateSurface of candidateSurfaces) {
+          const toolSnapshot = toolSnapshotBySurface.get(candidateSurface);
+          if (!toolSnapshot) {
+            unavailableReasons.push(`missing_tool_snapshot:${candidateSurface}`);
+            continue;
+          }
+          if (!toolSnapshot.enabled) {
+            unavailableReasons.push(`tool_disabled:${candidateSurface}`);
+            continue;
+          }
+          if (toolSnapshot.availabilityStatus === AgentAvailabilityStatus.UNAVAILABLE) {
+            unavailableReasons.push(
+              `surface_unavailable:${candidateSurface}:${toolSnapshot.unavailableReasons.join("|") || "unavailable"}`,
+            );
+            continue;
+          }
+
+          const unsupportedCapabilities: string[] = [];
+          const degradedCapabilities: string[] = [];
+          for (const requiredCapability of role.requiredCapabilities) {
+            const supportLevel =
+              toolSnapshot.capabilitySupportByCapability.get(requiredCapability) ??
+              AgentCapabilitySupportLevel.UNSUPPORTED;
+            if (supportLevel === AgentCapabilitySupportLevel.UNSUPPORTED) {
+              unsupportedCapabilities.push(requiredCapability);
+              continue;
+            }
+            if (supportLevel === AgentCapabilitySupportLevel.DEGRADED) {
+              degradedCapabilities.push(requiredCapability);
+            }
+          }
+          if (unsupportedCapabilities.length > 0) {
+            unavailableReasons.push(
+              `capability_gap:${candidateSurface}:${unsupportedCapabilities.join("|")}`,
+            );
+            continue;
+          }
+
+          const selectedBy =
+            candidateSurface === roleBinding.primarySurface ? "primary" : ("fallback" as const);
+          const degraded =
+            toolSnapshot.availabilityStatus === AgentAvailabilityStatus.DEGRADED ||
+            degradedCapabilities.length > 0;
+          return {
+            roleId: role.roleId,
+            roleProfileId: role.roleProfileId,
+            required: role.required,
+            primarySurface: roleBinding.primarySurface,
+            selectedSurface: candidateSurface,
+            selectedBy,
+            unsupportedCapabilities: [],
+            degradedCapabilities,
+            unavailableReasons,
+            status:
+              selectedBy === "fallback" || degraded
+                ? CliGovernanceCheckStatus.WARN
+                : CliGovernanceCheckStatus.PASS,
+          };
+        }
+
+        return {
+          roleId: role.roleId,
+          roleProfileId: role.roleProfileId,
+          required: role.required,
+          primarySurface: roleBinding.primarySurface,
+          selectedSurface: null,
+          selectedBy: "none",
+          unsupportedCapabilities: [],
+          degradedCapabilities: [],
+          unavailableReasons:
+            unavailableReasons.length > 0
+              ? unavailableReasons
+              : [`surface_unavailable:${roleBinding.primarySurface}`],
+          status: role.required ? CliGovernanceCheckStatus.FAIL : CliGovernanceCheckStatus.WARN,
+        };
+      },
+    );
+
+    const requiredRoleCount = roleEvaluations.filter((role) => role.required).length;
+    const requiredRoleFailedCount = roleEvaluations.filter(
+      (role) => role.required && role.status === CliGovernanceCheckStatus.FAIL,
+    ).length;
+    const degradedRoleCount = roleEvaluations.filter(
+      (role) => role.status === CliGovernanceCheckStatus.WARN,
+    ).length;
+    const fallbackRoleCount = roleEvaluations.filter(
+      (role) => role.selectedBy === "fallback",
+    ).length;
+    const hasToolLevelWarning = toolSnapshots.some(
+      (tool) => this.resolveToolProbeCheckStatus(tool) === CliGovernanceCheckStatus.WARN,
+    );
+
+    let overallStatus = CliGovernanceCheckStatus.PASS;
+    if (requiredRoleCount === 0 || requiredRoleFailedCount > 0) {
+      overallStatus = CliGovernanceCheckStatus.FAIL;
+    } else if (degradedRoleCount > 0 || hasToolLevelWarning) {
+      overallStatus = CliGovernanceCheckStatus.WARN;
+    }
+
+    const nextActions: string[] = [];
+    if (requiredRoleCount === 0) {
+      nextActions.push("Define at least one adapters.roles item with required=true.");
+    }
+    if (requiredRoleFailedCount > 0) {
+      nextActions.push(
+        "Check adapters.routing.roleBindings primary/fallback surfaces and ensure required roles have at least one available surface.",
+      );
+    }
+    const unavailableToolIds = toolSnapshots
+      .filter((tool) => tool.availabilityStatus === AgentAvailabilityStatus.UNAVAILABLE)
+      .map((tool) => tool.toolId);
+    if (unavailableToolIds.length > 0) {
+      nextActions.push(
+        `Probe/login dependencies are unavailable for: ${unavailableToolIds.join(", ")}.`,
+      );
+    }
+    if (fallbackRoleCount > 0 || degradedRoleCount > 0) {
+      nextActions.push(
+        "Primary surfaces are degraded or fallback is in use; review cost/latency/risk routing priorities before unattended execution.",
+      );
+    }
+
+    return {
+      overallStatus,
+      tools: toolSnapshots,
+      roleEvaluations,
+      requiredRoleCount,
+      requiredRoleFailedCount,
+      degradedRoleCount,
+      fallbackRoleCount,
+      nextActions,
+    };
+  }
+
+  /**
+   * Probes all built-in adapter tools and resolves tool-level availability snapshots.
+   * @returns Tool-level probe snapshots.
+   */
+  private async collectAdapterToolSnapshots(): Promise<CliAdapterToolProbeSnapshot[]> {
+    const toolConfigBySurface = new Map<
+      AdapterSurface,
+      NonNullable<AdaptersConfig["tools"]>[number]
+    >();
+    for (const toolConfig of this.options.adaptersConfig.tools ?? []) {
+      toolConfigBySurface.set(toolConfig.toolId, toolConfig);
+    }
+
+    const snapshots: CliAdapterToolProbeSnapshot[] = [];
+    const surfaces = Object.values(AdapterSurface) as AdapterSurface[];
+    for (const surface of surfaces) {
+      const toolConfig = toolConfigBySurface.get(surface);
+      const enabled = toolConfig?.enabled ?? true;
+      const configuredAvailability = toolConfig?.availability ?? null;
+      const configuredUnavailableReasons = [...(toolConfig?.unavailableReasons ?? [])];
+      if (!enabled) {
+        snapshots.push({
+          toolId: surface,
+          enabled,
+          configuredAvailability,
+          availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+          unavailableReasons: [
+            ...configuredUnavailableReasons,
+            `disabled_by_config:${surface}`,
+          ].filter((reason, index, list) => list.indexOf(reason) === index),
+          capabilitySupportByCapability: new Map(),
+        });
+        continue;
+      }
+
+      const availabilityStatus = this.resolveAdapterAvailabilityStatus(configuredAvailability);
+      const adapterOptions = {
+        availabilityStatus,
+        unavailableReasons: configuredUnavailableReasons,
+      };
+      const adapter =
+        surface === AdapterSurface.CODEX
+          ? new CodexAgentAdapter(adapterOptions)
+          : surface === AdapterSurface.GITHUB_COPILOT
+            ? new GithubCopilotAgentAdapter(adapterOptions)
+            : new ClaudeCodeAgentAdapter(adapterOptions);
+      try {
+        const probeResult = await adapter.probe({
+          routeKey: `cli.adapter.probe.${surface}`,
+          requiredCapabilities: [],
+        });
+        snapshots.push({
+          toolId: surface,
+          enabled,
+          configuredAvailability,
+          availabilityStatus: probeResult.availabilityStatus,
+          unavailableReasons: [
+            ...configuredUnavailableReasons,
+            ...probeResult.unavailableReasons,
+          ].filter((reason, index, list) => list.indexOf(reason) === index),
+          capabilitySupportByCapability: this.createCapabilitySupportMap(probeResult),
+        });
+      } catch (error) {
+        const standardizedError = this.formatExecFailureDetail(error);
+        snapshots.push({
+          toolId: surface,
+          enabled,
+          configuredAvailability,
+          availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+          unavailableReasons: [
+            ...configuredUnavailableReasons,
+            `probe_failed:${standardizedError}`,
+          ].filter((reason, index, list) => list.indexOf(reason) === index),
+          capabilitySupportByCapability: new Map(),
+        });
+      }
+    }
+
+    return snapshots;
+  }
+
+  /**
+   * Converts optional config availability override into adapter-sdk availability enum.
+   * @param availability Optional config-level availability override.
+   * @returns Adapter availability status used by adapter constructor options.
+   */
+  private resolveAdapterAvailabilityStatus(
+    availability: AdapterAvailability | null,
+  ): AgentAvailabilityStatus {
+    if (availability === AdapterAvailability.DEGRADED) {
+      return AgentAvailabilityStatus.DEGRADED;
+    }
+    if (availability === AdapterAvailability.UNAVAILABLE) {
+      return AgentAvailabilityStatus.UNAVAILABLE;
+    }
+    return AgentAvailabilityStatus.AVAILABLE;
+  }
+
+  /**
+   * Creates capability support lookup map from one probe result.
+   * @param probeResult Adapter probe result.
+   * @returns Capability -> support level lookup.
+   */
+  private createCapabilitySupportMap(
+    probeResult: AgentProbeResult,
+  ): Map<string, AgentCapabilitySupportLevel> {
+    return new Map(
+      probeResult.capabilityMatrix.capabilityStates.map((capabilityState) => [
+        capabilityState.capability,
+        capabilityState.supportLevel,
+      ]),
+    );
   }
 
   /**

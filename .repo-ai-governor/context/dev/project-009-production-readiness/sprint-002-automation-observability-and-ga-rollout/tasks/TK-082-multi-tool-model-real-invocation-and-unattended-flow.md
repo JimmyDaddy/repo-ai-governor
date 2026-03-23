@@ -1,8 +1,8 @@
 # TK-082 多工具/多模型真实调用与无人值守自动链路
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-23
-- Owner: TBD
+- Owner: AI-Agent
 - Priority: P0
 - Project: `project-009-production-readiness`
 - Sprint: `sprint-002-automation-observability-and-ga-rollout`
@@ -54,9 +54,12 @@
 1. 2026-03-22：任务创建，状态初始化为 `planned`。
 2. 2026-03-22：根据 `TK-092` 补齐 `DA-092` handoff、完整 `review-verify -> ledger backfill` 闭环与风险分级约束，任务状态保持 `planned`。
 3. 2026-03-23：已将多工具便捷接入草案中的采纳结论反哺本任务卡，新增 `adapters/routing` 必需配置、`safe_local` 自动修复边界、`verify` 判定门槛与默认台账回写策略约束，状态保持 `planned`。
+4. 2026-03-23：任务启动，状态切换为 `in_progress`，开始收敛 `connect -> doctor --adapters -> verify --adapters` 主路径与无人值守执行链路。
+5. 2026-03-23：完成 `connect/doctor/verify` 适配器主路径实现，落地 `adapters/routing/tools` 配置契约、`safe_local` 修复边界、`verify pass/warn/fail` 判定与可选 `--record-ledger --task-id` 回填策略，状态切换为 `completed`。
+6. 2026-03-23：完成门禁与回归验证（`check`、`test:packages`、`test:integration`），并补齐 `copy-runtime-assets` 运行时适配器依赖镜像，避免 dist clean-room 缺包。
 
 ## 8. 产出
 
-1. `DA-094` `.repo-ai-governor/context/dev/project-009-production-readiness/sprint-002-automation-observability-and-ga-rollout/tasks/TK-082-multi-tool-model-real-invocation-and-unattended-flow.md`
+1. `DA-094` `.repo-ai-governor/context/dev/project-009-production-readiness/sprint-002-automation-observability-and-ga-rollout/tasks/DA-094-multi-tool-model-real-invocation-and-unattended-flow.md`
 2. `.repo-ai-governor/context/dev/project-009-production-readiness/sprint-002-automation-observability-and-ga-rollout/tasks/checklist.md`
 3. `.repo-ai-governor/context/dev/project-009-production-readiness/sprint-002-automation-observability-and-ga-rollout/tasks/tasks.csv`

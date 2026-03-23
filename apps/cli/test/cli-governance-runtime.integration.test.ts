@@ -2,7 +2,9 @@ import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promis
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 
+import { AgentCapability } from "@repo-ai-governor/adapter-sdk";
 import {
+  type AdaptersConfig,
   type ResolvedWorkspace,
   WorkspaceMode,
   WorkspaceModeSource,
@@ -12,7 +14,10 @@ import { AuditRecorder } from "@repo-ai-governor/core-session";
 import { FsCsvMemoryStoreProvider } from "@repo-ai-governor/memory-provider-fs-csv";
 import { MemoryStoreAdapter } from "@repo-ai-governor/memory-store-adapter";
 import {
+  AdapterAvailability,
+  AdapterSurface,
   DEFAULT_MEMORY_RUNTIME_CONFIG,
+  DefaultRoleProfileId,
   ErrorOutputEnvironment,
   GovernorErrorCode,
 } from "@repo-ai-governor/shared";
@@ -31,6 +36,69 @@ interface RuntimeFixture {
 
 interface RuntimeFixtureOptions {
   runtimeDebugOptions?: CliRuntimeDebugOptions;
+  adaptersConfig?: AdaptersConfig;
+}
+
+/**
+ * Creates adapters config fixture used by CLI runtime tests.
+ * @returns Minimal adapters/routing/tool config payload.
+ */
+function createAdaptersConfigFixture(): AdaptersConfig {
+  return {
+    roles: [
+      {
+        roleId: "planner",
+        roleProfileId: DefaultRoleProfileId.PLANNER,
+        requiredCapabilities: [AgentCapability.STRUCTURED_OUTPUT],
+        required: true,
+      },
+      {
+        roleId: "coder",
+        roleProfileId: DefaultRoleProfileId.CODER,
+        requiredCapabilities: [AgentCapability.TOOL_CALLING],
+        required: true,
+      },
+      {
+        roleId: "reviewer",
+        roleProfileId: DefaultRoleProfileId.REVIEWER,
+        requiredCapabilities: [AgentCapability.STRUCTURED_OUTPUT],
+        required: true,
+      },
+    ],
+    routing: {
+      roleBindings: {
+        planner: {
+          primarySurface: AdapterSurface.CODEX,
+          fallbackSurfaces: [AdapterSurface.CLAUDE_CODE],
+        },
+        coder: {
+          primarySurface: AdapterSurface.CODEX,
+          fallbackSurfaces: [AdapterSurface.GITHUB_COPILOT],
+        },
+        reviewer: {
+          primarySurface: AdapterSurface.CLAUDE_CODE,
+          fallbackSurfaces: [AdapterSurface.CODEX],
+        },
+      },
+    },
+    tools: [
+      {
+        toolId: AdapterSurface.CODEX,
+        enabled: true,
+        availability: AdapterAvailability.AVAILABLE,
+      },
+      {
+        toolId: AdapterSurface.GITHUB_COPILOT,
+        enabled: true,
+        availability: AdapterAvailability.AVAILABLE,
+      },
+      {
+        toolId: AdapterSurface.CLAUDE_CODE,
+        enabled: true,
+        availability: AdapterAvailability.AVAILABLE,
+      },
+    ],
+  };
 }
 
 /**
@@ -69,6 +137,7 @@ async function createRuntimeFixture(options: RuntimeFixtureOptions = {}): Promis
     memoryStoreRoot,
     memoryStoreProviderName: provider.constructor.name,
     memoryStoreProvider: provider,
+    adaptersConfig: options.adaptersConfig ?? createAdaptersConfigFixture(),
     runtimeDebugOptions: options.runtimeDebugOptions,
   });
 
@@ -258,6 +327,7 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
         memoryStoreRoot: fixture.memoryStoreRoot,
         memoryStoreProviderName: fixture.provider.constructor.name,
         memoryStoreProvider: fixture.provider,
+        adaptersConfig: createAdaptersConfigFixture(),
         runtimeDebugOptions: {
           dryRun: false,
           trace: true,
@@ -300,5 +370,103 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
       expect(backfillPayload.status).toBe("pending");
       expect(backfillPayload.attribution?.chain).toBe("review->review-verify->ledger-backfill");
     });
+  });
+
+  it("writes connect diagnostics and optional ledger-backfill artifacts", async () => {
+    await withRuntimeFixture(
+      async (fixture) => {
+        const connectResult = await fixture.runtime.execute(CliCommandName.CONNECT);
+
+        expect(connectResult.commandResult.operation).toBe("adapter_connect");
+        const diagnosticsArtifactPath = connectResult.commandResult.artifacts?.find(
+          (artifact) => artifact.id === "connect_diagnostics",
+        )?.path;
+        const ledgerArtifactPath = connectResult.commandResult.artifacts?.find(
+          (artifact) => artifact.id === "connect_ledger_backfill",
+        )?.path;
+        expect(typeof diagnosticsArtifactPath).toBe("string");
+        expect(typeof ledgerArtifactPath).toBe("string");
+        const ledgerPayload = JSON.parse(await readFile(String(ledgerArtifactPath), "utf8")) as {
+          taskId?: string;
+          attribution?: { chainStep?: string };
+        };
+        expect(ledgerPayload.taskId).toBe("TK-082");
+        expect(ledgerPayload.attribution?.chainStep).toBe("connect");
+      },
+      {
+        runtimeDebugOptions: {
+          dryRun: false,
+          trace: false,
+          replayPath: null,
+          adapters: true,
+          recordLedger: true,
+          taskId: "TK-082",
+        },
+      },
+    );
+  });
+
+  it("fails verify when required role routing has no available tool", async () => {
+    const failingAdaptersConfig: AdaptersConfig = {
+      roles: [
+        {
+          roleId: "coder",
+          roleProfileId: DefaultRoleProfileId.CODER,
+          requiredCapabilities: [AgentCapability.TOOL_CALLING],
+          required: true,
+        },
+      ],
+      routing: {
+        roleBindings: {
+          coder: {
+            primarySurface: AdapterSurface.CODEX,
+          },
+        },
+      },
+      tools: [
+        {
+          toolId: AdapterSurface.CODEX,
+          enabled: true,
+          availability: AdapterAvailability.UNAVAILABLE,
+          unavailableReasons: ["login_required"],
+        },
+      ],
+    };
+
+    await withRuntimeFixture(
+      async (fixture) => {
+        await expect(fixture.runtime.execute(CliCommandName.VERIFY)).rejects.toMatchObject({
+          code: GovernorErrorCode.ADAPTER_ROUTE_NO_AVAILABLE_SURFACE,
+        });
+      },
+      {
+        runtimeDebugOptions: {
+          dryRun: false,
+          trace: false,
+          replayPath: null,
+          adapters: true,
+        },
+        adaptersConfig: failingAdaptersConfig,
+      },
+    );
+  });
+
+  it("returns adapter_verify operation when verify passes", async () => {
+    await withRuntimeFixture(
+      async (fixture) => {
+        const verifyResult = await fixture.runtime.execute(CliCommandName.VERIFY);
+
+        expect(verifyResult.commandResult.operation).toBe("adapter_verify");
+        expect(verifyResult.commandResult.details?.adapters_status).toBe("pass");
+      },
+      {
+        runtimeDebugOptions: {
+          dryRun: false,
+          trace: false,
+          replayPath: null,
+          adapters: true,
+        },
+      },
+    );
   });
 });

@@ -1,5 +1,8 @@
 import {
+  AdapterAvailability,
+  AdapterSurface,
   ConfigError,
+  DefaultRoleProfileId,
   GovernorErrorCode,
   RoleProfileStatus,
   RoleSource,
@@ -37,10 +40,56 @@ function createConfigFixture(): GovernorConfig {
         status: RoleProfileStatus.ACTIVE,
       },
     ],
+    adapters: {
+      roles: [
+        {
+          roleId: "planner",
+          roleProfileId: DefaultRoleProfileId.PLANNER,
+          requiredCapabilities: ["structured_output"],
+          required: true,
+        },
+        {
+          roleId: "coder",
+          roleProfileId: DefaultRoleProfileId.CODER,
+          requiredCapabilities: ["tool_calling"],
+          required: true,
+        },
+      ],
+      routing: {
+        roleBindings: {
+          planner: {
+            primarySurface: AdapterSurface.CODEX,
+            fallbackSurfaces: [AdapterSurface.CLAUDE_CODE],
+          },
+          coder: {
+            primarySurface: AdapterSurface.CODEX,
+            fallbackSurfaces: [AdapterSurface.GITHUB_COPILOT],
+          },
+        },
+      },
+      tools: [
+        {
+          toolId: AdapterSurface.CODEX,
+          enabled: true,
+          availability: AdapterAvailability.AVAILABLE,
+        },
+      ],
+    },
     profiles: {
       ci: {
         workspace: {
           mode: WorkspaceMode.TOOL_MANAGED,
+        },
+      },
+      copilot: {
+        adapters: {
+          tools: [
+            {
+              toolId: AdapterSurface.GITHUB_COPILOT,
+              enabled: true,
+              availability: AdapterAvailability.DEGRADED,
+            },
+          ],
         },
       },
     },
@@ -58,6 +107,27 @@ describe("config unit", () => {
     expect(resolvedConfig.profileId).toBe("ci");
     expect(resolvedConfig.config.workspace.mode).toBe(WorkspaceMode.TOOL_MANAGED);
     expect(resolvedConfig.config.roles?.[0]?.roleProfileId).toBe("reviewer-custom");
+  });
+
+  it("merges adapters profile overrides into base adapters config", () => {
+    const validator = new SchemaValidator();
+    const profileResolver = new ProfileResolver();
+
+    const validatedConfig = validator.validateOrThrow(createConfigFixture());
+    const resolvedConfig = profileResolver.resolve(validatedConfig, "copilot");
+
+    expect(resolvedConfig.profileId).toBe("copilot");
+    expect(resolvedConfig.config.adapters?.roles).toHaveLength(2);
+    expect(
+      resolvedConfig.config.adapters?.tools?.some((tool) => tool.toolId === AdapterSurface.CODEX),
+    ).toBe(true);
+    expect(
+      resolvedConfig.config.adapters?.tools?.some(
+        (tool) =>
+          tool.toolId === AdapterSurface.GITHUB_COPILOT &&
+          tool.availability === AdapterAvailability.DEGRADED,
+      ),
+    ).toBe(true);
   });
 
   it("uses default workspace mode when runtime/config override is absent", () => {

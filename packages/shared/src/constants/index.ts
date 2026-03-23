@@ -1,4 +1,5 @@
 export { ErrorOutputEnvironment, ErrorScenario } from "./error.constant.js";
+export { AdapterAvailability, AdapterSurface } from "./adapter-runtime.constant.js";
 export {
   ALL_DEPENDENCY_RESOLUTION_STATUSES,
   DependencyResolutionStatus,

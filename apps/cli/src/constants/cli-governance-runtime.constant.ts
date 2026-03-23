@@ -22,7 +22,9 @@ export enum CliDoctorAttachMode {
  */
 export enum CliRuntimeOperation {
   WORKSPACE_INIT = "workspace_init",
+  ADAPTER_CONNECT = "adapter_connect",
   ENV_DOCTOR = "env_doctor",
+  ADAPTER_VERIFY = "adapter_verify",
   GOVERNANCE_CHECK = "governance_check",
   GOVERNANCE_RUN = "governance_run",
   GOVERNANCE_RUN_REPLAY = "governance_run_replay",
@@ -106,9 +108,13 @@ export const CLI_INIT_REQUIRED_DIRECTORY_SEGMENTS = [
   ["context", "compiled-ir"],
   ["context", "bootstrap"],
   ["context", "diagnostics"],
+  ["context", "diagnostics", "connect"],
+  ["context", "diagnostics", "doctor"],
+  ["context", "diagnostics", "verify"],
   ["context", "diagnostics", "trace"],
   ["context", "diagnostics", "replay"],
   ["context", "ledger-backfill"],
+  ["context", "ledger-backfill", "connect"],
   ["context", "ledger-backfill", "review-verify"],
   ["context", "review-queue"],
   ["context", "review-queue", "requests"],

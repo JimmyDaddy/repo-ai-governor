@@ -83,8 +83,8 @@
 | TK-093 | sprint-001 | TK-086 项目出口验收模板与完成态审计入口固化 | maintenance/planning | TK-092 | completed |
 | TK-094 | sprint-001 | 主执行计划 Stage 9 运营指标与外部消费契约补强 | maintenance/planning | TK-089,TK-090,TK-091,TK-093 | completed |
 | TK-081 | sprint-002 | 发布分发模型与运行时可解析打包收敛 | implementation/release | TK-080 | planned |
-| TK-082 | sprint-002 | 多工具/多模型真实调用与无人值守自动链路 | implementation/automation | TK-080,TK-081 | planned |
-| TK-083 | sprint-002 | 角色级进度日志与人类友好交互展示 | implementation/ux-observability | TK-080,TK-082 | planned |
+| TK-082 | sprint-002 | 多工具/多模型真实调用与无人值守自动链路 | implementation/automation | TK-080,TK-081 | completed |
+| TK-083 | sprint-002 | 角色级进度日志与人类友好交互展示 | implementation/ux-observability | TK-080,TK-082 | in_progress |
 | TK-084 | sprint-002 | 黑盒 E2E 与门禁收紧基线 | implementation/gate | TK-081,TK-082,TK-083 | planned |
 | TK-085 | sprint-002 | CI 与发布流水线生产化接线 | implementation/ci-release | TK-081,TK-084 | planned |
 | TK-086 | sprint-002 | project-009 出口验收与运营反馈闭环 | acceptance baseline | TK-081,TK-082,TK-083,TK-084,TK-085 | planned |

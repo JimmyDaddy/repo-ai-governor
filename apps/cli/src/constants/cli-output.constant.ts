@@ -87,4 +87,5 @@ export const CLI_OPTIONS_REQUIRING_VALUE = new Set<string>([
   "--output",
   "--verbosity",
   "--replay",
+  "--task-id",
 ]);

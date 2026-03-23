@@ -1,4 +1,6 @@
 import {
+  AdapterAvailability,
+  AdapterSurface,
   I18N_RUNTIME_ENGINE,
   MemoryStoreEngine,
   ROLE_PROFILE_ID_PATTERN,
@@ -11,6 +13,10 @@ import {
 import { ConfigError, GovernorErrorCode } from "@repo-ai-governor/shared";
 import { GovernorSchemaVersion, SUPPORTED_GOVERNOR_SCHEMA_VERSIONS } from "./constants/index.js";
 import type {
+  AdapterRoleBindingConfig,
+  AdapterRoleConfig,
+  AdapterToolConfig,
+  AdaptersConfig,
   GovernorConfig,
   GovernorProfile,
   I18nConfig,
@@ -24,6 +30,8 @@ const WORKSPACE_MIGRATION_POLICY_VALUES = new Set<string>(Object.values(Workspac
 const MEMORY_STORE_ENGINE_VALUES = new Set<string>(Object.values(MemoryStoreEngine));
 const ROLE_SOURCE_VALUES = new Set<string>(Object.values(RoleSource));
 const ROLE_PROFILE_STATUS_VALUES = new Set<string>(Object.values(RoleProfileStatus));
+const ADAPTER_SURFACE_VALUES = new Set<string>(Object.values(AdapterSurface));
+const ADAPTER_AVAILABILITY_VALUES = new Set<string>(Object.values(AdapterAvailability));
 
 /**
  * Validates governor config payloads against the shared baseline contract.
@@ -53,6 +61,9 @@ export class SchemaValidator {
       | Partial<MemoryConfig>
       | undefined;
     const roles = this.validateRoles(root.roles, "/roles");
+    const adapters = this.validateAdapters(root.adapters, "/adapters", false) as
+      | AdaptersConfig
+      | undefined;
     const activeProfile = this.expectOptionalString(root.activeProfile, "/activeProfile");
     const profiles = this.validateProfiles(root.profiles, "/profiles", schemaVersion);
 
@@ -64,6 +75,7 @@ export class SchemaValidator {
         "i18n",
         "memory",
         "roles",
+        "adapters",
         "activeProfile",
         "profiles",
       ]),
@@ -76,6 +88,7 @@ export class SchemaValidator {
       i18n,
       ...(memory ? { memory } : {}),
       ...(roles ? { roles } : {}),
+      ...(adapters ? { adapters } : {}),
       ...(activeProfile ? { activeProfile } : {}),
       ...(profiles ? { profiles } : {}),
     };
@@ -102,7 +115,11 @@ export class SchemaValidator {
     for (const [profileId, profileValue] of Object.entries(profileRecord)) {
       const profilePointer = `${pointer}/${profileId}`;
       const profile = this.expectRecord(profileValue, profilePointer);
-      this.assertNoUnknownKeys(profile, new Set(["workspace", "i18n", "memory"]), profilePointer);
+      this.assertNoUnknownKeys(
+        profile,
+        new Set(["workspace", "i18n", "memory", "adapters"]),
+        profilePointer,
+      );
 
       profiles[profileId] = {
         ...(profile.workspace !== undefined
@@ -123,6 +140,11 @@ export class SchemaValidator {
         ...(profile.memory !== undefined
           ? {
               memory: this.validateMemory(profile.memory, `${profilePointer}/memory`, true),
+            }
+          : {}),
+        ...(profile.adapters !== undefined
+          ? {
+              adapters: this.validateAdapters(profile.adapters, `${profilePointer}/adapters`, true),
             }
           : {}),
       };
@@ -540,6 +562,329 @@ export class SchemaValidator {
   }
 
   /**
+   * Validates adapter/runtime routing config shape.
+   * @param candidate Raw adapters field.
+   * @param pointer Error pointer path.
+   * @param isPartial Whether required fields can be omitted for profile overrides.
+   * @returns Normalized adapters config when present.
+   */
+  private validateAdapters(
+    candidate: unknown,
+    pointer: string,
+    isPartial: boolean,
+  ): AdaptersConfig | Partial<AdaptersConfig> | undefined {
+    if (candidate === undefined) {
+      return undefined;
+    }
+
+    const adapters = this.expectRecord(candidate, pointer);
+    this.assertNoUnknownKeys(adapters, new Set(["roles", "routing", "tools"]), pointer);
+
+    const roles = this.validateAdapterRoles(adapters.roles, `${pointer}/roles`, isPartial);
+    const routing = this.validateAdapterRouting(
+      adapters.routing,
+      `${pointer}/routing`,
+      roles ?? [],
+      isPartial,
+    );
+    const tools = this.validateAdapterTools(adapters.tools, `${pointer}/tools`);
+
+    return {
+      ...(roles ? { roles } : {}),
+      ...(routing ? { routing } : {}),
+      ...(tools ? { tools } : {}),
+    };
+  }
+
+  /**
+   * Validates adapter role rows.
+   * @param candidate Raw role rows.
+   * @param pointer Error pointer path.
+   * @param isPartial Whether required fields can be omitted for profile overrides.
+   * @returns Normalized role rows when present.
+   */
+  private validateAdapterRoles(
+    candidate: unknown,
+    pointer: string,
+    isPartial: boolean,
+  ): AdapterRoleConfig[] | undefined {
+    if (candidate === undefined) {
+      if (isPartial) {
+        return undefined;
+      }
+      this.throwConfigSchemaValidationError(`${pointer} is required.`, pointer);
+    }
+
+    if (!Array.isArray(candidate)) {
+      this.throwConfigSchemaValidationError(`${pointer} must be an array.`, pointer);
+    }
+
+    const roleIdSet = new Set<string>();
+    const roles = candidate.map((entry, index) => {
+      const rolePointer = `${pointer}/${index}`;
+      const roleRecord = this.expectRecord(entry, rolePointer);
+      this.assertNoUnknownKeys(
+        roleRecord,
+        new Set(["roleId", "roleProfileId", "requiredCapabilities", "required"]),
+        rolePointer,
+      );
+
+      const roleId = this.expectString(roleRecord.roleId, `${rolePointer}/roleId`);
+      if (!ROLE_PROFILE_ID_PATTERN.test(roleId)) {
+        this.throwConfigSchemaValidationError(
+          `${rolePointer}/roleId has unsupported format.`,
+          `${rolePointer}/roleId`,
+        );
+      }
+      if (roleIdSet.has(roleId)) {
+        this.throwConfigSchemaValidationError(
+          `${rolePointer}/roleId must be unique.`,
+          `${rolePointer}/roleId`,
+        );
+      }
+      roleIdSet.add(roleId);
+
+      const roleProfileId = this.expectString(
+        roleRecord.roleProfileId,
+        `${rolePointer}/roleProfileId`,
+      );
+      if (!ROLE_PROFILE_ID_PATTERN.test(roleProfileId)) {
+        this.throwConfigSchemaValidationError(
+          `${rolePointer}/roleProfileId has unsupported format.`,
+          `${rolePointer}/roleProfileId`,
+        );
+      }
+
+      const requiredCapabilities = this.expectOptionalStringArray(
+        roleRecord.requiredCapabilities,
+        `${rolePointer}/requiredCapabilities`,
+      );
+      if (!requiredCapabilities || requiredCapabilities.length === 0) {
+        this.throwConfigSchemaValidationError(
+          `${rolePointer}/requiredCapabilities must contain at least one value.`,
+          `${rolePointer}/requiredCapabilities`,
+        );
+      }
+
+      const required = this.expectOptionalBoolean(roleRecord.required, `${rolePointer}/required`);
+
+      return {
+        roleId,
+        roleProfileId,
+        requiredCapabilities,
+        required: required ?? true,
+      };
+    });
+
+    if (!isPartial && roles.length === 0) {
+      this.throwConfigSchemaValidationError(`${pointer} must contain at least one role.`, pointer);
+    }
+
+    return roles;
+  }
+
+  /**
+   * Validates adapter role-binding routing map.
+   * @param candidate Raw routing object.
+   * @param pointer Error pointer path.
+   * @param roles Normalized role rows.
+   * @param isPartial Whether required fields can be omitted for profile overrides.
+   * @returns Normalized routing config when present.
+   */
+  private validateAdapterRouting(
+    candidate: unknown,
+    pointer: string,
+    roles: AdapterRoleConfig[],
+    isPartial: boolean,
+  ): { roleBindings: Record<string, AdapterRoleBindingConfig> } | undefined {
+    if (candidate === undefined) {
+      if (isPartial) {
+        return undefined;
+      }
+      this.throwConfigSchemaValidationError(`${pointer} is required.`, pointer);
+    }
+
+    const routing = this.expectRecord(candidate, pointer);
+    this.assertNoUnknownKeys(routing, new Set(["roleBindings"]), pointer);
+    const roleBindingsRecord = this.expectRecord(routing.roleBindings, `${pointer}/roleBindings`);
+
+    const roleBindings: Record<string, AdapterRoleBindingConfig> = {};
+    for (const [roleId, value] of Object.entries(roleBindingsRecord)) {
+      const roleBindingPointer = `${pointer}/roleBindings/${roleId}`;
+      if (!ROLE_PROFILE_ID_PATTERN.test(roleId)) {
+        this.throwConfigSchemaValidationError(
+          `${roleBindingPointer} role key has unsupported format.`,
+          roleBindingPointer,
+        );
+      }
+      const roleBinding = this.expectRecord(value, roleBindingPointer);
+      this.assertNoUnknownKeys(
+        roleBinding,
+        new Set(["primarySurface", "fallbackSurfaces"]),
+        roleBindingPointer,
+      );
+
+      const primarySurface = this.resolveAdapterSurface(
+        roleBinding.primarySurface,
+        `${roleBindingPointer}/primarySurface`,
+      );
+      const fallbackSurfacesRaw = this.expectOptionalStringArray(
+        roleBinding.fallbackSurfaces,
+        `${roleBindingPointer}/fallbackSurfaces`,
+      );
+      const fallbackSurfaces = (fallbackSurfacesRaw ?? [])
+        .map((surface, index) =>
+          this.resolveAdapterSurface(
+            surface,
+            `${roleBindingPointer}/fallbackSurfaces/${String(index)}`,
+          ),
+        )
+        .filter((surface) => surface !== primarySurface);
+      const fallbackSurfaceSet = new Set<AdapterSurface>();
+      const dedupedFallbackSurfaces: AdapterSurface[] = [];
+      for (const fallbackSurface of fallbackSurfaces) {
+        if (fallbackSurfaceSet.has(fallbackSurface)) {
+          continue;
+        }
+        fallbackSurfaceSet.add(fallbackSurface);
+        dedupedFallbackSurfaces.push(fallbackSurface);
+      }
+
+      roleBindings[roleId] = {
+        primarySurface,
+        ...(dedupedFallbackSurfaces.length > 0
+          ? {
+              fallbackSurfaces: dedupedFallbackSurfaces,
+            }
+          : {}),
+      };
+    }
+
+    const roleIdSet = new Set(roles.map((role) => role.roleId));
+    const enforceRoleBindingCoverage = !isPartial || roleIdSet.size > 0;
+    if (enforceRoleBindingCoverage) {
+      for (const roleId of roleIdSet) {
+        if (roleBindings[roleId]) {
+          continue;
+        }
+        this.throwConfigSchemaValidationError(
+          `${pointer}/roleBindings is missing binding for role "${roleId}".`,
+          `${pointer}/roleBindings`,
+        );
+      }
+      for (const roleId of Object.keys(roleBindings)) {
+        if (roleIdSet.has(roleId)) {
+          continue;
+        }
+        this.throwConfigSchemaValidationError(
+          `${pointer}/roleBindings/${roleId} must reference an existing adapters.roles roleId.`,
+          `${pointer}/roleBindings/${roleId}`,
+        );
+      }
+    }
+
+    return {
+      roleBindings,
+    };
+  }
+
+  /**
+   * Validates optional adapter-tool rows.
+   * @param candidate Raw tool rows.
+   * @param pointer Error pointer path.
+   * @returns Normalized tool rows when present.
+   */
+  private validateAdapterTools(
+    candidate: unknown,
+    pointer: string,
+  ): AdapterToolConfig[] | undefined {
+    if (candidate === undefined) {
+      return undefined;
+    }
+
+    if (!Array.isArray(candidate)) {
+      this.throwConfigSchemaValidationError(`${pointer} must be an array.`, pointer);
+    }
+
+    const toolIdSet = new Set<AdapterSurface>();
+    return candidate.map((entry, index) => {
+      const toolPointer = `${pointer}/${index}`;
+      const toolRecord = this.expectRecord(entry, toolPointer);
+      this.assertNoUnknownKeys(
+        toolRecord,
+        new Set(["toolId", "enabled", "availability", "unavailableReasons"]),
+        toolPointer,
+      );
+
+      const toolId = this.resolveAdapterSurface(toolRecord.toolId, `${toolPointer}/toolId`);
+      if (toolIdSet.has(toolId)) {
+        this.throwConfigSchemaValidationError(
+          `${toolPointer}/toolId must be unique.`,
+          `${toolPointer}/toolId`,
+        );
+      }
+      toolIdSet.add(toolId);
+
+      const enabled = this.expectOptionalBoolean(toolRecord.enabled, `${toolPointer}/enabled`);
+      const availability = this.resolveAdapterAvailability(
+        toolRecord.availability,
+        `${toolPointer}/availability`,
+      );
+      const unavailableReasons = this.expectOptionalStringArray(
+        toolRecord.unavailableReasons,
+        `${toolPointer}/unavailableReasons`,
+      );
+
+      return {
+        toolId,
+        ...(enabled !== undefined ? { enabled } : {}),
+        ...(availability ? { availability } : {}),
+        ...(unavailableReasons ? { unavailableReasons } : {}),
+      };
+    });
+  }
+
+  /**
+   * Resolves adapter-surface enum from unknown input.
+   * @param candidate Raw value.
+   * @param pointer Error pointer path.
+   * @returns Adapter surface enum value.
+   */
+  private resolveAdapterSurface(candidate: unknown, pointer: string): AdapterSurface {
+    const value = this.expectString(candidate, pointer);
+    if (!ADAPTER_SURFACE_VALUES.has(value)) {
+      this.throwConfigSchemaValidationError(
+        `${pointer} must be one of: ${Array.from(ADAPTER_SURFACE_VALUES).join(", ")}.`,
+        pointer,
+      );
+    }
+    return value as AdapterSurface;
+  }
+
+  /**
+   * Resolves optional adapter-availability enum from unknown input.
+   * @param candidate Raw value.
+   * @param pointer Error pointer path.
+   * @returns Adapter availability enum value when provided.
+   */
+  private resolveAdapterAvailability(
+    candidate: unknown,
+    pointer: string,
+  ): AdapterAvailability | undefined {
+    const value = this.expectOptionalString(candidate, pointer);
+    if (!value) {
+      return undefined;
+    }
+    if (!ADAPTER_AVAILABILITY_VALUES.has(value)) {
+      this.throwConfigSchemaValidationError(
+        `${pointer} must be one of: ${Array.from(ADAPTER_AVAILABILITY_VALUES).join(", ")}.`,
+        pointer,
+      );
+    }
+    return value as AdapterAvailability;
+  }
+
+  /**
    * Validates memory-store shape and engine constraints.
    * @param candidate Raw memory object or profile override.
    * @param pointer Error pointer path.
@@ -615,6 +960,24 @@ export class SchemaValidator {
       return undefined;
     }
     return this.expectString(candidate, pointer);
+  }
+
+  /**
+   * Validates optional boolean fields when present.
+   * @param candidate Value to validate.
+   * @param pointer Error pointer path.
+   * @returns Boolean value when present; otherwise undefined.
+   */
+  private expectOptionalBoolean(candidate: unknown, pointer: string): boolean | undefined {
+    if (candidate === undefined) {
+      return undefined;
+    }
+
+    if (typeof candidate !== "boolean") {
+      this.throwConfigSchemaValidationError(`${pointer} must be a boolean.`, pointer);
+    }
+
+    return candidate;
   }
 
   /**

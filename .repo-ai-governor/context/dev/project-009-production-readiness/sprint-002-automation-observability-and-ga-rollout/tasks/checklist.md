@@ -5,10 +5,13 @@
   - 2026-03-23：任务启动，状态切换为 `in_progress`，开始收敛发布分发模型、运行时依赖解析与 clean-room/release 候选门禁接线。
   - 2026-03-23：任务完成，已收敛 dist 运行时可解析打包、release candidate clean-room 接线与文档同步，并通过治理与发布校验。
   - 2026-03-23：完成 CR 复核与修复，修复 clean-room 默认报告路径写回历史产物问题，复核报告已收敛到 `resolved`。
-- [ ] TK-082 多工具/多模型真实调用与无人值守自动链路
+- [x] TK-082 多工具/多模型真实调用与无人值守自动链路
   - 2026-03-22：任务创建，状态初始化为 `planned`。
+  - 2026-03-23：任务启动，状态切换为 `in_progress`，开始收敛 `connect -> doctor --adapters -> verify --adapters` 主路径与无人值守执行链路。
+  - 2026-03-23：任务完成，已落地 adapters/routing/tools 配置契约、`connect/doctor/verify` 主路径、`safe_local` 修复边界、`verify pass/warn/fail` 判定与可选 `--record-ledger --task-id` 回填策略，并通过指定门禁与回归验证。
 - [ ] TK-083 角色级进度日志与人类友好交互展示
   - 2026-03-22：任务创建，状态初始化为 `planned`。
+  - 2026-03-23：任务启动，状态切换为 `in_progress`，开始收敛角色级进度、关键日志与交互提示展示链路。
 - [ ] TK-084 黑盒 E2E 与门禁收紧基线
   - 2026-03-22：任务创建，状态初始化为 `planned`。
 - [ ] TK-085 CI 与发布流水线生产化接线
