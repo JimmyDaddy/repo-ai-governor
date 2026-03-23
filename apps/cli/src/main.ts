@@ -420,39 +420,52 @@ function resolveMemoryRuntimeConfig(
  * @param adaptersConfig Optional adapters config from repository file and profile overrides.
  * @returns Fully-resolved adapters runtime config.
  */
-function resolveAdaptersRuntimeConfig(adaptersConfig: AdaptersConfig | undefined): AdaptersConfig {
-  const sourceConfig = adaptersConfig ?? DEFAULT_ADAPTERS_CONFIG;
+function resolveAdaptersRuntimeConfig(
+  adaptersConfig: Partial<AdaptersConfig> | undefined,
+): AdaptersConfig {
+  const roles = (adaptersConfig?.roles ?? DEFAULT_ADAPTERS_CONFIG.roles).map((role) => ({
+    ...role,
+    requiredCapabilities: [...role.requiredCapabilities],
+  }));
+  const roleBindings = Object.fromEntries(
+    Object.entries({
+      ...DEFAULT_ADAPTERS_CONFIG.routing.roleBindings,
+      ...(adaptersConfig?.routing?.roleBindings ?? {}),
+    }).map(([roleId, binding]) => [
+      roleId,
+      {
+        ...binding,
+        ...(binding.fallbackSurfaces
+          ? {
+              fallbackSurfaces: [...binding.fallbackSurfaces],
+            }
+          : {}),
+      },
+    ]),
+  );
+  const toolsById = new Map(
+    (DEFAULT_ADAPTERS_CONFIG.tools ?? []).map((tool) => [tool.toolId, { ...tool }]),
+  );
+  for (const tool of adaptersConfig?.tools ?? []) {
+    toolsById.set(tool.toolId, {
+      ...(toolsById.get(tool.toolId) ?? {}),
+      ...tool,
+      ...(tool.unavailableReasons
+        ? {
+            unavailableReasons: [...tool.unavailableReasons],
+          }
+        : {}),
+    });
+  }
 
   return {
-    roles: sourceConfig.roles.map((role) => ({
-      ...role,
-      requiredCapabilities: [...role.requiredCapabilities],
-    })),
+    roles,
     routing: {
-      roleBindings: Object.fromEntries(
-        Object.entries(sourceConfig.routing.roleBindings).map(([roleId, binding]) => [
-          roleId,
-          {
-            ...binding,
-            ...(binding.fallbackSurfaces
-              ? {
-                  fallbackSurfaces: [...binding.fallbackSurfaces],
-                }
-              : {}),
-          },
-        ]),
-      ),
+      roleBindings,
     },
-    ...(sourceConfig.tools
+    ...(toolsById.size > 0
       ? {
-          tools: sourceConfig.tools.map((tool) => ({
-            ...tool,
-            ...(tool.unavailableReasons
-              ? {
-                  unavailableReasons: [...tool.unavailableReasons],
-                }
-              : {}),
-          })),
+          tools: Array.from(toolsById.values()),
         }
       : {}),
   };

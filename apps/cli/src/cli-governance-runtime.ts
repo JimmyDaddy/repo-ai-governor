@@ -12,6 +12,8 @@ import {
   AgentCapability,
   AgentCapabilitySupportLevel,
   type AgentProbeResult,
+  type AgentProtocolContract,
+  AgentRouteRunner,
 } from "@repo-ai-governor/adapter-sdk";
 import {
   type AdaptersConfig,
@@ -39,6 +41,7 @@ import {
   ProcessRuntimeEngine,
   type RuntimeExecutionResult,
   RuntimeExecutionStatus,
+  type RuntimeStageContext,
   RuntimeStageStatus,
   RuntimeTimeoutScope,
 } from "@repo-ai-governor/core-runtime";
@@ -56,7 +59,12 @@ import {
 import {
   AdapterAvailability,
   AdapterSurface,
+  DefaultRoleProfileId,
+  EXECUTION_PROGRESS_STATUS_LABELS,
   ErrorOutputEnvironment,
+  ExecutionInteractionCategory,
+  ExecutionProgressStage,
+  ExecutionProgressStatus,
   GovernorErrorCode,
   type MemoryRuntimeConfig,
   RuntimeError,
@@ -78,8 +86,12 @@ import {
 } from "./constants/cli-governance-runtime.constant.js";
 import type {
   CliCommandExecutionResultPayload,
+  CliCommandExperiencePayload,
   CliCommandResultArtifact,
   CliCommandResultCheck,
+  CliInteractionPrompt,
+  CliLayeredLogs,
+  CliRoleStageProgress,
   CliRuntimeDebugOptions,
 } from "./types/index.js";
 
@@ -176,6 +188,12 @@ interface CliReplayExplainResolution {
   sourceType: string;
   executionId: string;
   explainResult: ReplayExplainResult;
+}
+
+interface CliBuildExperienceOptions {
+  roleProgress: CliRoleStageProgress[];
+  layeredLogs: CliLayeredLogs;
+  interactionPrompts?: CliInteractionPrompt[];
 }
 
 /**
@@ -425,6 +443,57 @@ export class CliGovernanceRuntime {
       });
     }
 
+    const roleProgress = this.createAdapterRoleProgressRows({
+      verification: adapterVerification,
+      stage: ExecutionProgressStage.CONNECT,
+      diagnosticsPath: diagnosticsArtifactPath,
+      executionId: connectId,
+    });
+    if (runtimeDebugOptions.recordLedger && runtimeDebugOptions.taskId) {
+      roleProgress.push({
+        roleId: "ledger-backfill",
+        stage: ExecutionProgressStage.LEDGER_BACKFILL,
+        status: ExecutionProgressStatus.WAITING,
+        category: ExecutionInteractionCategory.NONE,
+        summary: "Ledger backfill artifact is ready for task-record consumption.",
+        detail: `task_id=${runtimeDebugOptions.taskId}`,
+        backlink: {
+          executionId: connectId,
+          stageId: ExecutionProgressStage.LEDGER_BACKFILL,
+          artifactPath: diagnosticsArtifactPath,
+        },
+      });
+    }
+    const interactionPrompts = this.createAdapterInteractionPrompts({
+      verification: adapterVerification,
+      stage: ExecutionProgressStage.CONNECT,
+    });
+    if (runtimeDebugOptions.recordLedger && runtimeDebugOptions.taskId) {
+      interactionPrompts.push({
+        category: ExecutionInteractionCategory.NONE,
+        stage: ExecutionProgressStage.LEDGER_BACKFILL,
+        title: "Consume ledger backfill",
+        action: "Resolve context/ledger-backfill/connect artifact into tasks/checklist/tasks.csv.",
+        blocking: false,
+      });
+    }
+    const experience = this.buildExperiencePayload({
+      roleProgress,
+      interactionPrompts,
+      layeredLogs: {
+        summary: [
+          `connect_id=${connectId}`,
+          `adapter_status=${adapterVerification.overallStatus}`,
+          `required_failures=${adapterVerification.requiredRoleFailedCount}`,
+        ],
+        detailed: [
+          `diagnostics_path=${diagnosticsArtifactPath}`,
+          `fallback_roles=${adapterVerification.fallbackRoleCount}`,
+          `degraded_roles=${adapterVerification.degradedRoleCount}`,
+          `record_ledger=${runtimeDebugOptions.recordLedger}`,
+        ],
+      },
+    });
     const message = `Connect completed with adapter_status=${adapterVerification.overallStatus}; diagnostics=${diagnosticsArtifactPath}.`;
     return {
       message,
@@ -434,6 +503,7 @@ export class CliGovernanceRuntime {
         check_totals: this.calculateCheckTotals(checks),
         checks,
         artifacts,
+        experience,
         details: {
           adapter_status: adapterVerification.overallStatus,
           required_roles: adapterVerification.requiredRoleCount,
@@ -525,8 +595,10 @@ export class CliGovernanceRuntime {
     });
 
     let adapterStatus: CliGovernanceCheckStatus | null = null;
+    let adapterVerificationSnapshot: CliAdapterVerificationResolution | null = null;
     if (runtimeDebugOptions.adapters) {
       const adapterVerification = await this.resolveAdapterVerification();
+      adapterVerificationSnapshot = adapterVerification;
       adapterStatus = adapterVerification.overallStatus;
       checks.push({
         id: "adapter_verification",
@@ -590,6 +662,74 @@ export class CliGovernanceRuntime {
       });
     }
 
+    const doctorStatus =
+      !workspaceRootExists || !configExists
+        ? ExecutionProgressStatus.FAILED
+        : workspaceWritable && memoryRootExists
+          ? ExecutionProgressStatus.COMPLETED
+          : ExecutionProgressStatus.WARNING;
+    const roleProgress: CliRoleStageProgress[] = [
+      {
+        roleId: "workspace",
+        stage: ExecutionProgressStage.DOCTOR,
+        status: doctorStatus,
+        category:
+          doctorStatus === ExecutionProgressStatus.FAILED
+            ? ExecutionInteractionCategory.ENVIRONMENT_PRECONDITION
+            : ExecutionInteractionCategory.NONE,
+        summary: `Attach mode resolved as ${attachMode}.`,
+        detail: `workspace_root_exists=${workspaceRootExists} writable=${workspaceWritable} config_exists=${configExists} memory_root_exists=${memoryRootExists}`,
+        backlink: {
+          stageId: ExecutionProgressStage.DOCTOR,
+          executionId: `doctor-${Date.now()}`,
+        },
+      },
+    ];
+    if (adapterVerificationSnapshot) {
+      roleProgress.push(
+        ...this.createAdapterRoleProgressRows({
+          verification: adapterVerificationSnapshot,
+          stage: ExecutionProgressStage.VERIFY,
+          diagnosticsPath:
+            artifacts.find((artifact) => artifact.id === "doctor_diagnostics")?.path ?? "n/a",
+          executionId: `doctor-${Date.now()}`,
+        }),
+      );
+    }
+    const interactionPrompts: CliInteractionPrompt[] = [];
+    if (attachMode === CLI_DOCTOR_ATTACH_MODE.READ_ONLY) {
+      interactionPrompts.push({
+        category: ExecutionInteractionCategory.PERMISSION_CONFIRMATION,
+        stage: ExecutionProgressStage.DOCTOR,
+        title: "Workspace is read-only",
+        action: "Switch to writable attach mode if you need to create/update governance artifacts.",
+        blocking: false,
+      });
+    }
+    if (adapterVerificationSnapshot) {
+      interactionPrompts.push(
+        ...this.createAdapterInteractionPrompts({
+          verification: adapterVerificationSnapshot,
+          stage: ExecutionProgressStage.VERIFY,
+        }),
+      );
+    }
+    const experience = this.buildExperiencePayload({
+      roleProgress,
+      interactionPrompts,
+      layeredLogs: {
+        summary: [
+          `attach_mode=${attachMode}`,
+          `adapter_probe=${runtimeDebugOptions.adapters}`,
+          `safe_local_fix_applied=${safeLocalFixCount}`,
+        ],
+        detailed: [
+          `workspace_root=${this.options.workspace.workspaceRoot}`,
+          `memory_root=${this.options.memoryStoreRoot}`,
+          `next_actions=${nextActions.length}`,
+        ],
+      },
+    });
     const message = `Doctor completed with attach_mode=${attachMode}.`;
     return {
       message,
@@ -600,6 +740,7 @@ export class CliGovernanceRuntime {
         check_totals: this.calculateCheckTotals(checks),
         checks,
         ...(artifacts.length > 0 ? { artifacts } : {}),
+        experience,
         details: {
           config_source: this.options.configSource,
           profile: this.options.profileId ?? "none",
@@ -730,14 +871,13 @@ export class CliGovernanceRuntime {
     const nodeById = new Map<string, ProcessIrNode>(
       compiledIr.nodes.map((node) => [node.nodeId, node] as const),
     );
+    const routeRunner = this.createRunRouteRunner(compiledIr.nodes);
     const runtimeResult = await processRuntimeEngine.execute(compiledIr, async (stageContext) => ({
-      handledBy: "cli-governance-runtime",
-      nodeId: stageContext.nodeId,
-      stageId: stageContext.stageId,
-      routeKey: stageContext.routeKey,
-      locale: this.options.locale,
-      dryRun: runtimeDebugOptions.dryRun,
-      traceEnabled: runtimeDebugOptions.trace,
+      ...(await this.dispatchRunStageWithAdapterRoute(
+        routeRunner,
+        stageContext,
+        runtimeDebugOptions,
+      )),
     }));
 
     const changedPaths = await this.collectGitChangedPaths();
@@ -953,6 +1093,14 @@ export class CliGovernanceRuntime {
     }
 
     const checkTotals = this.calculateCheckTotals(checks);
+    const experience = this.createRunCommandExperience({
+      executionId,
+      runtimeResult,
+      policyResult,
+      reportPath,
+      replayPath,
+      diagnosticsTracePath,
+    });
     this.throwForNonAllowPolicyOutcome({
       executionId,
       policyOutcome: policyResult.policyOutcome,
@@ -971,6 +1119,7 @@ export class CliGovernanceRuntime {
         check_totals: checkTotals,
         checks,
         artifacts,
+        experience,
         details: {
           execution_id: executionId,
           runtime_status: runtimeResult.status,
@@ -1133,6 +1282,42 @@ export class CliGovernanceRuntime {
       });
     }
 
+    const experience = this.buildExperiencePayload({
+      roleProgress: [
+        {
+          roleId: "replay",
+          stage: ExecutionProgressStage.REPLAY,
+          status: ExecutionProgressStatus.COMPLETED,
+          category: ExecutionInteractionCategory.NONE,
+          summary: "Replay diagnostics resolved from source payload.",
+          detail: `source_type=${replayResolution.sourceType}`,
+          backlink: {
+            executionId: replayResolution.executionId,
+            stageId: ExecutionProgressStage.REPLAY,
+            replayPath,
+            artifactPath: diagnosticsPath,
+          },
+        },
+      ],
+      interactionPrompts: this.resolveDiagnosticNextActions({
+        rootCause: CLI_DIAGNOSTIC_ROOT_CAUSE.NONE,
+        policyOutcome: null,
+        runtimeStatus: null,
+      }).map((nextAction) => ({
+        category: ExecutionInteractionCategory.NONE,
+        stage: ExecutionProgressStage.REPLAY,
+        title: "Next action",
+        action: nextAction,
+        blocking: false,
+      })),
+      layeredLogs: {
+        summary: [
+          `source_type=${replayResolution.sourceType}`,
+          `matched_count=${replayResolution.explainResult.matchedCount}`,
+        ],
+        detailed: [`source_path=${replayPath}`, `diagnostics_path=${diagnosticsPath}`],
+      },
+    });
     const message = `Replay diagnostics completed from ${replayPath}.`;
     return {
       message,
@@ -1142,6 +1327,7 @@ export class CliGovernanceRuntime {
         check_totals: this.calculateCheckTotals(checks),
         checks,
         artifacts,
+        experience,
         details: {
           replay_source_path: replayPath,
           replay_source_type: replayResolution.sourceType,
@@ -1178,6 +1364,47 @@ export class CliGovernanceRuntime {
     });
 
     const message = `Review request queued at ${requestPath}.`;
+    const experience = this.buildExperiencePayload({
+      roleProgress: [
+        {
+          roleId: "reviewer",
+          stage: ExecutionProgressStage.REVIEW,
+          status: ExecutionProgressStatus.COMPLETED,
+          category: ExecutionInteractionCategory.NONE,
+          summary: "Review request artifact queued.",
+          detail: `request_id=${requestId}`,
+          backlink: {
+            stageId: ExecutionProgressStage.REVIEW,
+            artifactPath: requestPath,
+          },
+        },
+        {
+          roleId: "verifier",
+          stage: ExecutionProgressStage.REVIEW_VERIFY,
+          status: ExecutionProgressStatus.QUEUED,
+          category: ExecutionInteractionCategory.POLICY_WAITING,
+          summary: "Awaiting review-verify consumption.",
+          detail: `chain=${correlationId}`,
+          backlink: {
+            stageId: ExecutionProgressStage.REVIEW_VERIFY,
+            artifactPath: requestPath,
+          },
+        },
+      ],
+      interactionPrompts: [
+        {
+          category: ExecutionInteractionCategory.POLICY_WAITING,
+          stage: ExecutionProgressStage.REVIEW_VERIFY,
+          title: "Run review-verify",
+          action: "Execute `repo-ai-governor review-verify` to consume queued review request.",
+          blocking: true,
+        },
+      ],
+      layeredLogs: {
+        summary: [`review_request=${requestId}`, "chain=review->review-verify->ledger-backfill"],
+        detailed: [`request_path=${requestPath}`, `correlation_id=${correlationId}`],
+      },
+    });
     return {
       message,
       commandResult: {
@@ -1201,6 +1428,7 @@ export class CliGovernanceRuntime {
             path: requestPath,
           },
         ],
+        experience,
       },
     };
   }
@@ -1310,6 +1538,52 @@ export class CliGovernanceRuntime {
     });
 
     const message = `Review request verified from ${latestQueuedRequest.filePath}.`;
+    const experience = this.buildExperiencePayload({
+      roleProgress: [
+        {
+          roleId: "verifier",
+          stage: ExecutionProgressStage.REVIEW_VERIFY,
+          status: ExecutionProgressStatus.COMPLETED,
+          category: ExecutionInteractionCategory.NONE,
+          summary: "Review verification artifact persisted.",
+          detail: `verify_id=${verifyId}`,
+          backlink: {
+            stageId: ExecutionProgressStage.REVIEW_VERIFY,
+            artifactPath: verifyPath,
+          },
+        },
+        {
+          roleId: "ledger-backfill",
+          stage: ExecutionProgressStage.LEDGER_BACKFILL,
+          status: ExecutionProgressStatus.WAITING,
+          category: ExecutionInteractionCategory.POLICY_WAITING,
+          summary: "Ledger backfill pending downstream task ledger consumption.",
+          detail: `source_request_id=${sourceRequestId}`,
+          backlink: {
+            stageId: ExecutionProgressStage.LEDGER_BACKFILL,
+            artifactPath: ledgerBackfillPath,
+          },
+        },
+      ],
+      interactionPrompts: [
+        {
+          category: ExecutionInteractionCategory.POLICY_WAITING,
+          stage: ExecutionProgressStage.LEDGER_BACKFILL,
+          title: "Consume ledger-backfill artifact",
+          action:
+            "Apply ledger-backfill payload into tasks/checklist/tasks.csv to close review chain.",
+          blocking: true,
+        },
+      ],
+      layeredLogs: {
+        summary: [`verify_id=${verifyId}`, "chain=review->review-verify->ledger-backfill"],
+        detailed: [
+          `verify_path=${verifyPath}`,
+          `ledger_backfill_path=${ledgerBackfillPath}`,
+          `source_request_path=${latestQueuedRequest.filePath}`,
+        ],
+      },
+    });
     return {
       message,
       commandResult: {
@@ -1337,6 +1611,125 @@ export class CliGovernanceRuntime {
             path: ledgerBackfillPath,
           },
         ],
+        experience,
+      },
+    };
+  }
+
+  /**
+   * Verifies adapter routing matrix and emits pass/warn/fail diagnostics.
+   * @returns Runtime command result.
+   */
+  private async executeVerifyCommand(): Promise<CliGovernanceCommandResult> {
+    const runtimeDebugOptions = this.resolveRuntimeDebugOptions();
+    const adapterVerification = await this.resolveAdapterVerification();
+    const checks: CliCommandResultCheck[] = [];
+
+    if (!runtimeDebugOptions.adapters) {
+      checks.push({
+        id: "adapters_flag",
+        status: CliGovernanceCheckStatus.WARN,
+        detail: "--adapters not set; verify still executed with adapters baseline by default",
+      });
+    }
+    checks.push({
+      id: "adapter_verification",
+      status: adapterVerification.overallStatus,
+      detail: `required_roles=${adapterVerification.requiredRoleCount} required_failures=${adapterVerification.requiredRoleFailedCount} degraded_roles=${adapterVerification.degradedRoleCount} fallback_roles=${adapterVerification.fallbackRoleCount}`,
+    });
+    for (const roleEvaluation of adapterVerification.roleEvaluations) {
+      checks.push({
+        id: `role_${roleEvaluation.roleId}`,
+        status: roleEvaluation.status,
+        detail: this.resolveRoleEvaluationDetail(roleEvaluation),
+      });
+    }
+
+    const diagnosticsArtifactPath = resolve(
+      this.options.workspace.workspaceRoot,
+      "context",
+      "diagnostics",
+      "verify",
+      `verify-${Date.now()}.json`,
+    );
+    await this.writeJsonArtifact(diagnosticsArtifactPath, {
+      generatedAt: this.toRfc3339SecondsTimestamp(new Date()),
+      workspace: {
+        workspaceId: this.options.workspace.workspaceId,
+        workspaceRoot: this.options.workspace.workspaceRoot,
+        workspaceMode: this.options.workspace.mode,
+      },
+      adapters: this.options.adaptersConfig,
+      verification: this.createAdapterVerificationArtifactPayload(adapterVerification),
+      nextActions: adapterVerification.nextActions,
+    });
+
+    const artifacts: CliCommandResultArtifact[] = [
+      {
+        id: "verify_diagnostics",
+        path: diagnosticsArtifactPath,
+      },
+    ];
+    const checkTotals = this.calculateCheckTotals(checks);
+    const experience = this.buildExperiencePayload({
+      roleProgress: this.createAdapterRoleProgressRows({
+        verification: adapterVerification,
+        stage: ExecutionProgressStage.VERIFY,
+        diagnosticsPath: diagnosticsArtifactPath,
+        executionId: `verify-${Date.now()}`,
+      }),
+      interactionPrompts: this.createAdapterInteractionPrompts({
+        verification: adapterVerification,
+        stage: ExecutionProgressStage.VERIFY,
+      }),
+      layeredLogs: {
+        summary: [
+          `adapter_status=${adapterVerification.overallStatus}`,
+          `required_roles=${adapterVerification.requiredRoleCount}`,
+          `required_failures=${adapterVerification.requiredRoleFailedCount}`,
+        ],
+        detailed: [
+          `fallback_roles=${adapterVerification.fallbackRoleCount}`,
+          `degraded_roles=${adapterVerification.degradedRoleCount}`,
+          `diagnostics_path=${diagnosticsArtifactPath}`,
+        ],
+      },
+    });
+    const message = `Verify completed with adapters_status=${adapterVerification.overallStatus}.`;
+
+    if (adapterVerification.overallStatus === CliGovernanceCheckStatus.FAIL) {
+      throw new RuntimeError(
+        GovernorErrorCode.ADAPTER_ROUTE_NO_AVAILABLE_SURFACE,
+        `verify failed because required adapter roles are unavailable or capability gaps exist. diagnostics=${diagnosticsArtifactPath}`,
+        {
+          reportPath: diagnosticsArtifactPath,
+          adapterStatus: adapterVerification.overallStatus,
+          requiredRoleCount: adapterVerification.requiredRoleCount,
+          requiredRoleFailedCount: adapterVerification.requiredRoleFailedCount,
+          degradedRoleCount: adapterVerification.degradedRoleCount,
+          fallbackRoleCount: adapterVerification.fallbackRoleCount,
+          checkTotals,
+        },
+      );
+    }
+
+    return {
+      message,
+      commandResult: {
+        operation: CLI_RUNTIME_OPERATION.ADAPTER_VERIFY,
+        summary: message,
+        check_totals: checkTotals,
+        checks,
+        artifacts,
+        experience,
+        details: {
+          adapters_status: adapterVerification.overallStatus,
+          required_roles: adapterVerification.requiredRoleCount,
+          required_role_failures: adapterVerification.requiredRoleFailedCount,
+          degraded_roles: adapterVerification.degradedRoleCount,
+          fallback_roles: adapterVerification.fallbackRoleCount,
+          diagnostics_path: diagnosticsArtifactPath,
+        },
       },
     };
   }
@@ -1940,6 +2333,277 @@ export class CliGovernanceRuntime {
   }
 
   /**
+   * Creates route runner for run-command stage dispatch using adapters/routing config.
+   * @param nodes Runtime process nodes.
+   * @returns Route runner instance bound to configured surfaces and role bindings.
+   */
+  private createRunRouteRunner(nodes: ProcessIrNode[]): AgentRouteRunner {
+    const routeNodeByRouteKey = new Map<string, ProcessIrNode>();
+    for (const node of nodes) {
+      if (!routeNodeByRouteKey.has(node.routeKey)) {
+        routeNodeByRouteKey.set(node.routeKey, node);
+      }
+    }
+
+    const routePolicies = Array.from(routeNodeByRouteKey.values()).map((node) => {
+      const roleConfig = this.resolveRunRoleConfig(node);
+      const roleId = roleConfig?.roleId ?? this.resolveFallbackRunRoleId(node);
+      const roleBinding = this.options.adaptersConfig.routing.roleBindings[roleId];
+      if (!roleBinding) {
+        throw new RuntimeError(
+          GovernorErrorCode.ADAPTER_ROUTE_NO_AVAILABLE_SURFACE,
+          `run route "${node.routeKey}" is missing adapters.routing.roleBindings entry for role "${roleId}".`,
+          {
+            routeKey: node.routeKey,
+            stageId: node.stageId,
+            roleId,
+            roleProfileId: node.roleProfileId,
+          },
+        );
+      }
+
+      return {
+        routeKey: node.routeKey,
+        primarySurface: roleBinding.primarySurface,
+        ...(roleBinding.fallbackSurfaces
+          ? {
+              fallbackSurfaces: [...roleBinding.fallbackSurfaces],
+            }
+          : {}),
+        ...(roleConfig && roleConfig.requiredCapabilities.length > 0
+          ? {
+              capabilityRequirement: {
+                requiredCapabilities: roleConfig.requiredCapabilities as AgentCapability[],
+              },
+            }
+          : {}),
+      };
+    });
+
+    return new AgentRouteRunner({
+      routePolicies,
+      protocolBySurface: this.createProtocolBySurface(),
+    });
+  }
+
+  /**
+   * Dispatches one run-command stage through adapter route runner.
+   * @param routeRunner Route runner bound to adapters/routing config.
+   * @param stageContext Runtime stage context.
+   * @param runtimeDebugOptions Runtime debug options.
+   * @returns Adapter-backed stage output payload.
+   */
+  private async dispatchRunStageWithAdapterRoute(
+    routeRunner: AgentRouteRunner,
+    stageContext: RuntimeStageContext,
+    runtimeDebugOptions: CliNormalizedRuntimeDebugOptions,
+  ): Promise<Record<string, unknown>> {
+    const dispatchResult = await routeRunner.dispatchStage({
+      processId: stageContext.processId,
+      executionId: stageContext.executionId,
+      stageId: stageContext.stageId,
+      routeKey: stageContext.routeKey,
+      input: {
+        ...stageContext.input,
+        locale: this.options.locale,
+        dryRun: runtimeDebugOptions.dryRun,
+        traceEnabled: runtimeDebugOptions.trace,
+        roleProfileId: stageContext.roleProfileId,
+        nodeId: stageContext.nodeId,
+      },
+    });
+
+    return {
+      handledBy: "adapter-route-runner",
+      nodeId: stageContext.nodeId,
+      stageId: stageContext.stageId,
+      routeKey: stageContext.routeKey,
+      roleProfileId: stageContext.roleProfileId,
+      adapterSurface: dispatchResult.selectedSurface,
+      selectedBy: dispatchResult.auditRecord.selectedBy ?? "unknown",
+      fallbackTriggered: dispatchResult.auditRecord.fallbackTriggered,
+      evaluatedSurfaceCount: dispatchResult.auditRecord.evaluatedSurfaces.length,
+      ...dispatchResult.invokeResult.output,
+    };
+  }
+
+  /**
+   * Resolves one role config row used by run-command node routing.
+   * @param node Run-command process node.
+   * @returns Matching role config when found.
+   */
+  private resolveRunRoleConfig(
+    node: Pick<ProcessIrNode, "routeKey" | "roleProfileId" | "stageId">,
+  ): AdaptersConfig["roles"][number] | undefined {
+    const byProfileId = this.options.adaptersConfig.roles.find(
+      (role) => role.roleProfileId === node.roleProfileId,
+    );
+    if (byProfileId) {
+      return byProfileId;
+    }
+
+    const fallbackRoleId = this.resolveFallbackRunRoleId(node);
+    return this.options.adaptersConfig.roles.find((role) => role.roleId === fallbackRoleId);
+  }
+
+  /**
+   * Resolves fallback role id from run-command node metadata.
+   * @param node Run-command process node.
+   * @returns Role id candidate used by route-binding lookup.
+   */
+  private resolveFallbackRunRoleId(
+    node: Pick<ProcessIrNode, "routeKey" | "roleProfileId" | "stageId">,
+  ): string {
+    const normalizedProfileRoleId = node.roleProfileId.endsWith("-default")
+      ? node.roleProfileId.slice(0, Math.max(0, node.roleProfileId.length - "-default".length))
+      : node.roleProfileId.includes(".")
+        ? (node.roleProfileId.split(".").pop() ?? node.roleProfileId)
+        : node.roleProfileId;
+    if (this.options.adaptersConfig.routing.roleBindings[normalizedProfileRoleId]) {
+      return normalizedProfileRoleId;
+    }
+
+    if (node.routeKey === "route.prepare" || node.stageId === "stage-prepare") {
+      return "planner";
+    }
+    if (node.routeKey === "route.execute" || node.stageId === "stage-execute") {
+      return "coder";
+    }
+    if (node.routeKey === "route.report" || node.stageId === "stage-report") {
+      return "reviewer";
+    }
+
+    return normalizedProfileRoleId;
+  }
+
+  /**
+   * Creates protocol map for all built-in adapter surfaces using tool config overrides.
+   * @returns Surface -> protocol instance map.
+   */
+  private createProtocolBySurface(): Record<string, AgentProtocolContract> {
+    const toolConfigBySurface = new Map<
+      AdapterSurface,
+      NonNullable<AdaptersConfig["tools"]>[number]
+    >();
+    for (const toolConfig of this.options.adaptersConfig.tools ?? []) {
+      toolConfigBySurface.set(toolConfig.toolId, toolConfig);
+    }
+
+    const protocolBySurface: Record<string, AgentProtocolContract> = {};
+    const surfaces = Object.values(AdapterSurface) as AdapterSurface[];
+    for (const surface of surfaces) {
+      const toolConfig = toolConfigBySurface.get(surface);
+      const enabled = toolConfig?.enabled ?? true;
+      const configuredAvailability = enabled
+        ? (toolConfig?.availability ?? null)
+        : AdapterAvailability.UNAVAILABLE;
+      const unavailableReasons = [...(toolConfig?.unavailableReasons ?? [])];
+      if (!enabled) {
+        unavailableReasons.push(`disabled_by_config:${surface}`);
+      }
+      const availabilityStatus = enabled
+        ? this.resolveAdapterAvailabilityStatus(configuredAvailability)
+        : AgentAvailabilityStatus.UNAVAILABLE;
+      const adapterOptions = {
+        availabilityStatus,
+        unavailableReasons,
+      };
+      protocolBySurface[surface] =
+        surface === AdapterSurface.CODEX
+          ? new CodexAgentAdapter(adapterOptions)
+          : surface === AdapterSurface.GITHUB_COPILOT
+            ? new GithubCopilotAgentAdapter(adapterOptions)
+            : new ClaudeCodeAgentAdapter(adapterOptions);
+    }
+
+    return protocolBySurface;
+  }
+
+  /**
+   * Builds one human-friendly experience payload from progress/log/prompt primitives.
+   * @param options Experience payload source blocks.
+   * @returns Stable command experience object.
+   */
+  private buildExperiencePayload(options: CliBuildExperienceOptions): CliCommandExperiencePayload {
+    return {
+      statusDictionary: { ...EXECUTION_PROGRESS_STATUS_LABELS },
+      roleProgress: options.roleProgress,
+      layeredLogs: options.layeredLogs,
+      interactionPrompts: options.interactionPrompts ?? [],
+    };
+  }
+
+  /**
+   * Maps command check status to normalized progress status.
+   * @param status Command check status.
+   * @returns Progress status consumed by output experience payload.
+   */
+  private resolveProgressStatusFromCheck(
+    status: CliGovernanceCheckStatus,
+  ): ExecutionProgressStatus {
+    if (status === CliGovernanceCheckStatus.PASS) {
+      return ExecutionProgressStatus.COMPLETED;
+    }
+    if (status === CliGovernanceCheckStatus.WARN) {
+      return ExecutionProgressStatus.WARNING;
+    }
+    return ExecutionProgressStatus.FAILED;
+  }
+
+  /**
+   * Converts adapter role evaluations into role/stage progress rows.
+   * @param options Stage context and adapter verification snapshot.
+   * @returns Role progress rows for command experience output.
+   */
+  private createAdapterRoleProgressRows(options: {
+    verification: CliAdapterVerificationResolution;
+    stage: ExecutionProgressStage;
+    diagnosticsPath: string;
+    executionId: string;
+  }): CliRoleStageProgress[] {
+    return options.verification.roleEvaluations.map((roleEvaluation) => ({
+      roleId: roleEvaluation.roleId,
+      stage: options.stage,
+      status: this.resolveProgressStatusFromCheck(roleEvaluation.status),
+      category:
+        roleEvaluation.status === CliGovernanceCheckStatus.FAIL
+          ? ExecutionInteractionCategory.RUNTIME_FAILURE
+          : ExecutionInteractionCategory.NONE,
+      summary: `Role ${roleEvaluation.roleId} routed via ${roleEvaluation.selectedSurface ?? "none"} (${roleEvaluation.selectedBy}).`,
+      detail: this.resolveRoleEvaluationDetail(roleEvaluation),
+      backlink: {
+        executionId: options.executionId,
+        stageId: options.stage,
+        artifactPath: options.diagnosticsPath,
+      },
+    }));
+  }
+
+  /**
+   * Builds adapter follow-up prompts from verification diagnostics.
+   * @param options Adapter verification context.
+   * @returns Ordered interaction prompts.
+   */
+  private createAdapterInteractionPrompts(options: {
+    verification: CliAdapterVerificationResolution;
+    stage: ExecutionProgressStage;
+  }): CliInteractionPrompt[] {
+    return options.verification.nextActions.map((nextAction) => ({
+      category:
+        options.verification.overallStatus === CliGovernanceCheckStatus.FAIL
+          ? ExecutionInteractionCategory.RUNTIME_FAILURE
+          : ExecutionInteractionCategory.ENVIRONMENT_PRECONDITION,
+      stage: options.stage,
+      title:
+        options.verification.overallStatus === CliGovernanceCheckStatus.FAIL
+          ? "Adapter route blocked"
+          : "Adapter route attention",
+      action: nextAction,
+      blocking: options.verification.overallStatus === CliGovernanceCheckStatus.FAIL,
+    }));
+  }
+
+  /**
    * Resolves adapters/routing verification summary used by connect/doctor/verify commands.
    * @returns Adapter verification resolution.
    */
@@ -2121,42 +2785,20 @@ export class CliGovernanceRuntime {
     for (const toolConfig of this.options.adaptersConfig.tools ?? []) {
       toolConfigBySurface.set(toolConfig.toolId, toolConfig);
     }
+    const protocolBySurface = this.createProtocolBySurface();
 
     const snapshots: CliAdapterToolProbeSnapshot[] = [];
     const surfaces = Object.values(AdapterSurface) as AdapterSurface[];
     for (const surface of surfaces) {
       const toolConfig = toolConfigBySurface.get(surface);
       const enabled = toolConfig?.enabled ?? true;
-      const configuredAvailability = toolConfig?.availability ?? null;
+      const configuredAvailability = enabled
+        ? (toolConfig?.availability ?? null)
+        : AdapterAvailability.UNAVAILABLE;
       const configuredUnavailableReasons = [...(toolConfig?.unavailableReasons ?? [])];
-      if (!enabled) {
-        snapshots.push({
-          toolId: surface,
-          enabled,
-          configuredAvailability,
-          availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
-          unavailableReasons: [
-            ...configuredUnavailableReasons,
-            `disabled_by_config:${surface}`,
-          ].filter((reason, index, list) => list.indexOf(reason) === index),
-          capabilitySupportByCapability: new Map(),
-        });
-        continue;
-      }
-
-      const availabilityStatus = this.resolveAdapterAvailabilityStatus(configuredAvailability);
-      const adapterOptions = {
-        availabilityStatus,
-        unavailableReasons: configuredUnavailableReasons,
-      };
-      const adapter =
-        surface === AdapterSurface.CODEX
-          ? new CodexAgentAdapter(adapterOptions)
-          : surface === AdapterSurface.GITHUB_COPILOT
-            ? new GithubCopilotAgentAdapter(adapterOptions)
-            : new ClaudeCodeAgentAdapter(adapterOptions);
+      const protocol = protocolBySurface[surface];
       try {
-        const probeResult = await adapter.probe({
+        const probeResult = await protocol.probe({
           routeKey: `cli.adapter.probe.${surface}`,
           requiredCapabilities: [],
         });
@@ -2173,6 +2815,7 @@ export class CliGovernanceRuntime {
         });
       } catch (error) {
         const standardizedError = this.formatExecFailureDetail(error);
+        const disabledReasons = enabled ? [] : [`disabled_by_config:${surface}`];
         snapshots.push({
           toolId: surface,
           enabled,
@@ -2180,6 +2823,7 @@ export class CliGovernanceRuntime {
           availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
           unavailableReasons: [
             ...configuredUnavailableReasons,
+            ...disabledReasons,
             `probe_failed:${standardizedError}`,
           ].filter((reason, index, list) => list.indexOf(reason) === index),
           capabilitySupportByCapability: new Map(),
@@ -2343,6 +2987,205 @@ export class CliGovernanceRuntime {
     });
 
     return tracePath;
+  }
+
+  /**
+   * Builds run-command human-friendly experience payload from runtime/policy/report facts.
+   * @param options Run command result context.
+   * @returns Command experience payload.
+   */
+  private createRunCommandExperience(options: {
+    executionId: string;
+    runtimeResult: RuntimeExecutionResult;
+    policyResult: PolicyGateEvaluationResult;
+    reportPath: string;
+    replayPath: string;
+    diagnosticsTracePath: string | null;
+  }): CliCommandExperiencePayload {
+    const rootCause = this.resolveRunDiagnosticRootCause({
+      policyOutcome: options.policyResult.policyOutcome,
+      runtimeStatus: options.runtimeResult.status,
+    });
+    const interactionCategory = this.resolveInteractionCategoryFromRootCause(rootCause);
+    const roleProgress: CliRoleStageProgress[] = [
+      {
+        roleId: "compiler",
+        stage: ExecutionProgressStage.RUN_COMPILE,
+        status: ExecutionProgressStatus.COMPLETED,
+        category: ExecutionInteractionCategory.NONE,
+        summary: "Process IR compile completed.",
+        detail: `execution_id=${options.executionId}`,
+        backlink: {
+          executionId: options.executionId,
+          stageId: ExecutionProgressStage.RUN_COMPILE,
+        },
+      },
+      ...options.runtimeResult.stageResults.map((stageResult) => ({
+        roleId: stageResult.stageId,
+        stage: ExecutionProgressStage.RUN_RUNTIME,
+        status: this.resolveRuntimeStageProgressStatus(stageResult.status),
+        category:
+          this.resolveRuntimeStageProgressStatus(stageResult.status) ===
+          ExecutionProgressStatus.FAILED
+            ? ExecutionInteractionCategory.RUNTIME_FAILURE
+            : ExecutionInteractionCategory.NONE,
+        summary: `Stage ${stageResult.stageId} finished with ${stageResult.status}.`,
+        detail: `duration_ms=${stageResult.durationMs}`,
+        backlink: {
+          executionId: options.executionId,
+          stageId: stageResult.stageId,
+        },
+      })),
+      {
+        roleId: "policy-gate",
+        stage: ExecutionProgressStage.POLICY_WAITING,
+        status: this.resolvePolicyProgressStatus(options.policyResult.policyOutcome),
+        category: interactionCategory,
+        summary: `Policy outcome resolved as ${options.policyResult.policyOutcome}.`,
+        detail: `matched_rules=${options.policyResult.matchedRuleIds.join("|") || "none"}`,
+        backlink: {
+          executionId: options.executionId,
+          stageId: "stage-policy-gate",
+          reportPath: options.reportPath,
+          replayPath: options.replayPath,
+        },
+      },
+      {
+        roleId: "reporting",
+        stage: ExecutionProgressStage.REPORT,
+        status: ExecutionProgressStatus.COMPLETED,
+        category: ExecutionInteractionCategory.NONE,
+        summary: "Execution report artifact persisted.",
+        detail: options.reportPath,
+        backlink: {
+          executionId: options.executionId,
+          stageId: ExecutionProgressStage.REPORT,
+          reportPath: options.reportPath,
+        },
+      },
+      {
+        roleId: "replay",
+        stage: ExecutionProgressStage.REPLAY,
+        status: ExecutionProgressStatus.COMPLETED,
+        category: ExecutionInteractionCategory.NONE,
+        summary: "Replay explain artifact persisted.",
+        detail: options.replayPath,
+        backlink: {
+          executionId: options.executionId,
+          stageId: ExecutionProgressStage.REPLAY,
+          replayPath: options.replayPath,
+        },
+      },
+    ];
+
+    if (
+      options.policyResult.policyOutcome === ChangeRiskRequiredAction.CONFIRM ||
+      options.policyResult.policyOutcome === ChangeRiskRequiredAction.ESCALATE
+    ) {
+      roleProgress.push({
+        roleId: "human-reviewer",
+        stage: ExecutionProgressStage.HUMAN_CONFIRMATION,
+        status: ExecutionProgressStatus.WAITING,
+        category: ExecutionInteractionCategory.HUMAN_CONFIRMATION,
+        summary: "Awaiting human confirmation before unattended chain can continue.",
+        detail: "Run review/review-verify and provide explicit confirmation decision.",
+        backlink: {
+          executionId: options.executionId,
+          stageId: ExecutionProgressStage.HUMAN_CONFIRMATION,
+          reportPath: options.reportPath,
+          replayPath: options.replayPath,
+        },
+      });
+    }
+
+    const nextActions = this.resolveDiagnosticNextActions({
+      rootCause,
+      policyOutcome: options.policyResult.policyOutcome,
+      runtimeStatus: options.runtimeResult.status,
+    });
+    const interactionPrompts: CliInteractionPrompt[] = nextActions.map((nextAction) => ({
+      category: interactionCategory,
+      stage:
+        interactionCategory === ExecutionInteractionCategory.HUMAN_CONFIRMATION
+          ? ExecutionProgressStage.HUMAN_CONFIRMATION
+          : ExecutionProgressStage.POLICY_WAITING,
+      title: "Next action",
+      action: nextAction,
+      blocking:
+        interactionCategory === ExecutionInteractionCategory.POLICY_WAITING ||
+        interactionCategory === ExecutionInteractionCategory.HUMAN_CONFIRMATION ||
+        interactionCategory === ExecutionInteractionCategory.RUNTIME_FAILURE,
+    }));
+
+    return this.buildExperiencePayload({
+      roleProgress,
+      interactionPrompts,
+      layeredLogs: {
+        summary: [
+          `runtime_status=${options.runtimeResult.status}`,
+          `policy_outcome=${options.policyResult.policyOutcome}`,
+          `root_cause=${rootCause}`,
+        ],
+        detailed: [
+          `report_path=${options.reportPath}`,
+          `replay_path=${options.replayPath}`,
+          `diagnostics_trace_path=${options.diagnosticsTracePath ?? "none"}`,
+        ],
+      },
+    });
+  }
+
+  /**
+   * Resolves runtime stage status into one progress status value.
+   * @param status Runtime stage status.
+   * @returns Normalized progress status.
+   */
+  private resolveRuntimeStageProgressStatus(status: RuntimeStageStatus): ExecutionProgressStatus {
+    if (status === RuntimeStageStatus.SUCCEEDED) {
+      return ExecutionProgressStatus.COMPLETED;
+    }
+    return ExecutionProgressStatus.FAILED;
+  }
+
+  /**
+   * Resolves policy outcome into progress status for policy-waiting stage.
+   * @param policyOutcome Policy gate outcome.
+   * @returns Normalized progress status.
+   */
+  private resolvePolicyProgressStatus(
+    policyOutcome: ChangeRiskRequiredAction,
+  ): ExecutionProgressStatus {
+    if (policyOutcome === ChangeRiskRequiredAction.ALLOW) {
+      return ExecutionProgressStatus.COMPLETED;
+    }
+    if (policyOutcome === ChangeRiskRequiredAction.BLOCK) {
+      return ExecutionProgressStatus.FAILED;
+    }
+    return ExecutionProgressStatus.WAITING;
+  }
+
+  /**
+   * Resolves interaction category from diagnostic root-cause.
+   * @param rootCause Root-cause value.
+   * @returns Normalized interaction category.
+   */
+  private resolveInteractionCategoryFromRootCause(rootCause: string): ExecutionInteractionCategory {
+    if (rootCause === CLI_DIAGNOSTIC_ROOT_CAUSE.POLICY_HITL_REQUIRED) {
+      return ExecutionInteractionCategory.HUMAN_CONFIRMATION;
+    }
+    if (rootCause === CLI_DIAGNOSTIC_ROOT_CAUSE.POLICY_BLOCKED) {
+      return ExecutionInteractionCategory.POLICY_WAITING;
+    }
+    if (rootCause === CLI_DIAGNOSTIC_ROOT_CAUSE.ENVIRONMENT_PRECONDITION) {
+      return ExecutionInteractionCategory.ENVIRONMENT_PRECONDITION;
+    }
+    if (rootCause === CLI_DIAGNOSTIC_ROOT_CAUSE.PERMISSION_CONFIRMATION) {
+      return ExecutionInteractionCategory.PERMISSION_CONFIRMATION;
+    }
+    if (rootCause === CLI_DIAGNOSTIC_ROOT_CAUSE.RUNTIME_FAILURE) {
+      return ExecutionInteractionCategory.RUNTIME_FAILURE;
+    }
+    return ExecutionInteractionCategory.NONE;
   }
 
   /**
@@ -2579,6 +3422,7 @@ export class CliGovernanceRuntime {
           reportPath: options.reportPath,
           replayPath: options.replayPath,
           checkTotals: options.checkTotals,
+          pendingStatus: ExecutionProgressStage.POLICY_WAITING,
         },
       );
     }
@@ -2593,7 +3437,7 @@ export class CliGovernanceRuntime {
         reportPath: options.reportPath,
         replayPath: options.replayPath,
         checkTotals: options.checkTotals,
-        pendingStatus: "hitl_required",
+        pendingStatus: ExecutionProgressStage.HUMAN_CONFIRMATION,
       },
     );
   }
@@ -2665,7 +3509,7 @@ export class CliGovernanceRuntime {
           stageId: "stage-prepare",
           nodeType: ProcessNodeType.SEQUENTIAL,
           routeKey: "route.prepare",
-          roleProfileId: "role.default.planner",
+          roleProfileId: DefaultRoleProfileId.PLANNER,
           inputSchemaRef: "schemas/prepare-input.json",
           outputSchemaRef: "schemas/prepare-output.json",
           retryPolicyRef: "policy/retry-default",
@@ -2677,7 +3521,7 @@ export class CliGovernanceRuntime {
           stageId: "stage-execute",
           nodeType: ProcessNodeType.SEQUENTIAL,
           routeKey: "route.execute",
-          roleProfileId: "role.default.coder",
+          roleProfileId: DefaultRoleProfileId.CODER,
           inputSchemaRef: "schemas/execute-input.json",
           outputSchemaRef: "schemas/execute-output.json",
           retryPolicyRef: "policy/retry-default",
@@ -2689,7 +3533,7 @@ export class CliGovernanceRuntime {
           stageId: "stage-report",
           nodeType: ProcessNodeType.SEQUENTIAL,
           routeKey: "route.report",
-          roleProfileId: "role.default.reviewer",
+          roleProfileId: DefaultRoleProfileId.REVIEWER,
           inputSchemaRef: "schemas/report-input.json",
           outputSchemaRef: "schemas/report-output.json",
           retryPolicyRef: "policy/retry-default",

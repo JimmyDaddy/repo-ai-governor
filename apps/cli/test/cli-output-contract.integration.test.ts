@@ -61,6 +61,42 @@ async function createPolicyGateFixtureRepo(): Promise<string> {
   return temporaryRepositoryRoot;
 }
 
+/**
+ * Creates one temporary repo with profile-level adapters tool override and no base adapters block.
+ * @returns Temporary repository absolute path.
+ */
+async function createProfileOnlyAdaptersFixtureRepo(): Promise<string> {
+  const temporaryRepositoryRoot = await mkdtemp(resolve(tmpdir(), "cli-output-profile-adapters-"));
+  const workspaceRoot = resolve(temporaryRepositoryRoot, ".repo-ai-governor");
+  await mkdir(workspaceRoot, { recursive: true });
+  await writeFile(
+    resolve(workspaceRoot, "governor.yaml"),
+    [
+      'schemaVersion: "1.1"',
+      "workspace:",
+      "  mode: repo_local",
+      "  migrationPolicy: copy_verify_switch_rollback",
+      "i18n:",
+      "  runtimeEngine: i18next",
+      "  defaultLocale: zh-CN",
+      "  fallbackLocale: en-US",
+      "  supportedLocales:",
+      "    - zh-CN",
+      "    - en-US",
+      "profiles:",
+      "  tool-only:",
+      "    adapters:",
+      "      tools:",
+      "        - toolId: github-copilot",
+      "          enabled: true",
+      "          availability: degraded",
+      "",
+    ].join("\n"),
+    "utf8",
+  );
+  return temporaryRepositoryRoot;
+}
+
 describe("CLI output contract integration", () => {
   it("renders stable JSON schema in --output json mode", async () => {
     const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false);
@@ -217,6 +253,35 @@ describe("CLI output contract integration", () => {
       expect(payload.next_action).toBe("inspect_policy_diagnostics");
       expect(typeof payload.error_details.report_path).toBe("string");
       expect(typeof payload.error_details.replay_path).toBe("string");
+    } finally {
+      await rm(fixtureRepositoryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps default adapter baseline when profile only overrides tools", async () => {
+    const fixtureRepositoryRoot = await createProfileOnlyAdaptersFixtureRepo();
+    try {
+      const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, fixtureRepositoryRoot);
+      const exitCode = await runCli(
+        [
+          "node",
+          "repo-ai-governor",
+          "--output",
+          "json",
+          "--profile",
+          "tool-only",
+          "verify",
+          "--adapters",
+        ],
+        io,
+      );
+      const payload = JSON.parse(stdoutBuffer.join(""));
+
+      expect(exitCode).toBe(0);
+      expect(stderrBuffer.join("")).toBe("");
+      expect(payload.status).toBe("success");
+      expect(payload.command_result.operation).toBe("adapter_verify");
+      expect(payload.command_result.details.required_roles).toBeGreaterThan(0);
     } finally {
       await rm(fixtureRepositoryRoot, { recursive: true, force: true });
     }

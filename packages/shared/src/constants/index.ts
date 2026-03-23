@@ -1,6 +1,12 @@
 export { ErrorOutputEnvironment, ErrorScenario } from "./error.constant.js";
 export { AdapterAvailability, AdapterSurface } from "./adapter-runtime.constant.js";
 export {
+  EXECUTION_PROGRESS_STATUS_LABELS,
+  ExecutionInteractionCategory,
+  ExecutionProgressStage,
+  ExecutionProgressStatus,
+} from "./execution-progress.constant.js";
+export {
   ALL_DEPENDENCY_RESOLUTION_STATUSES,
   DependencyResolutionStatus,
 } from "./dependency-resolution-status.constant.js";

@@ -48,6 +48,7 @@
 1. 2026-03-22：任务创建，状态初始化为 `planned`。
 2. 2026-03-22：根据 `TK-092` 补齐 `DA-092` handoff 语义、完整闭环状态字典与失败归因展示要求，任务状态保持 `planned`。
 3. 2026-03-23：任务启动，状态切换为 `in_progress`，开始收敛角色级进度模型、分层日志与人类友好交互提示。
+4. 2026-03-23：完成第一批实现：新增 `ExecutionProgressStage/Status` 与交互分类常量，CLI 输出契约新增 `experience`（角色进度/分层日志/交互提示），`connect/doctor/verify/run/replay/review/review-verify` 已接入统一进度模型并补齐 `policy_waiting`、`human_confirmation`、`review_verify`、`ledger_backfill` 关键状态，且通过 TypeScript、CLI 集成测试与全量 `pnpm run check`。
 
 ## 8. 产出
 

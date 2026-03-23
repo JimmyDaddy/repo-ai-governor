@@ -1,6 +1,11 @@
 import { ErrorOutputEnvironment } from "@repo-ai-governor/shared";
 import { CliVerbosity } from "./constants/cli-output.constant.js";
-import type { CliErrorOutputPayload, CliSuccessOutputPayload } from "./types/interfaces/index.js";
+import type {
+  CliCommandExperiencePayload,
+  CliErrorOutputPayload,
+  CliRoleStageProgress,
+  CliSuccessOutputPayload,
+} from "./types/interfaces/index.js";
 
 const ANSI_RESET = "\u001b[0m";
 const ANSI_SUCCESS = "\u001b[1;32m";
@@ -105,6 +110,18 @@ export class CliOutputPresenter {
           `  checks: pass=${commandResult.check_totals.pass} warn=${commandResult.check_totals.warn} fail=${commandResult.check_totals.fail}`,
         );
       }
+      if (commandResult.experience) {
+        lines.push(`  progress: ${this.resolveProgressSummary(commandResult.experience)}`);
+        if (commandResult.experience.layeredLogs.summary.length > 0) {
+          lines.push(`  log_summary: ${commandResult.experience.layeredLogs.summary.join(" | ")}`);
+        }
+        if (commandResult.experience.interactionPrompts.length > 0) {
+          const firstPrompt = commandResult.experience.interactionPrompts[0];
+          if (firstPrompt) {
+            lines.push(`  next_action: ${firstPrompt.title} -> ${firstPrompt.action}`);
+          }
+        }
+      }
     }
 
     if (payload.verbosity !== CliVerbosity.QUIET) {
@@ -140,6 +157,28 @@ export class CliOutputPresenter {
           .join(", ");
         lines.push(`  artifacts: ${artifactSummary}`);
       }
+      if (commandResult?.experience) {
+        const roleProgressLines = commandResult.experience.roleProgress
+          .map((entry) => this.formatRoleProgress(entry))
+          .join("; ");
+        if (roleProgressLines.length > 0) {
+          lines.push(`  role_progress: ${roleProgressLines}`);
+        }
+        if (commandResult.experience.interactionPrompts.length > 0) {
+          const promptLines = commandResult.experience.interactionPrompts
+            .map(
+              (prompt) =>
+                `${prompt.stage}:${prompt.category}:${prompt.blocking ? "blocking" : "non_blocking"}:${prompt.action}`,
+            )
+            .join("; ");
+          lines.push(`  interaction_prompts: ${promptLines}`);
+        }
+        if (commandResult.experience.layeredLogs.detailed.length > 0) {
+          lines.push(
+            `  log_detailed: ${commandResult.experience.layeredLogs.detailed.join(" | ")}`,
+          );
+        }
+      }
     }
 
     return lines.join("\n");
@@ -152,16 +191,19 @@ export class CliOutputPresenter {
    */
   private renderPlainSuccess(payload: CliSuccessOutputPayload): string {
     const commandResult = payload.command_result;
+    const progressSuffix = commandResult?.experience
+      ? ` progress=${this.resolveProgressSummary(commandResult.experience)}`
+      : "";
 
     if (payload.verbosity === CliVerbosity.QUIET) {
-      return `${payload.message} outputMode=${payload.output_mode}${commandResult ? ` operation=${commandResult.operation}` : ""}`;
+      return `${payload.message} outputMode=${payload.output_mode}${commandResult ? ` operation=${commandResult.operation}` : ""}${progressSuffix}`;
     }
 
     if (payload.verbosity === CliVerbosity.VERBOSE) {
-      return `${payload.message} outputMode=${payload.output_mode} verbosity=${payload.verbosity} configSource=${payload.diagnostics.configSource} downgradedFrom=${payload.runtime.downgraded_from ?? "none"}${commandResult ? ` operation=${commandResult.operation}` : ""}`;
+      return `${payload.message} outputMode=${payload.output_mode} verbosity=${payload.verbosity} configSource=${payload.diagnostics.configSource} downgradedFrom=${payload.runtime.downgraded_from ?? "none"}${commandResult ? ` operation=${commandResult.operation}` : ""}${progressSuffix}`;
     }
 
-    return `${payload.message} outputMode=${payload.output_mode} verbosity=${payload.verbosity}${commandResult ? ` operation=${commandResult.operation}` : ""}`;
+    return `${payload.message} outputMode=${payload.output_mode} verbosity=${payload.verbosity}${commandResult ? ` operation=${commandResult.operation}` : ""}${progressSuffix}`;
   }
 
   /**
@@ -242,5 +284,42 @@ export class CliOutputPresenter {
    */
   private ensureTrailingNewLine(value: string): string {
     return value.endsWith("\n") ? value : `${value}\n`;
+  }
+
+  /**
+   * Formats role-level progress summary counts for concise output.
+   * @param experience Command experience payload.
+   * @returns One-line progress summary.
+   */
+  private resolveProgressSummary(experience: CliCommandExperiencePayload): string {
+    const counts = {
+      queued: 0,
+      running: 0,
+      completed: 0,
+      waiting: 0,
+      warning: 0,
+      failed: 0,
+    };
+
+    for (const row of experience.roleProgress) {
+      if (row.status in counts) {
+        counts[row.status as keyof typeof counts] += 1;
+      }
+    }
+
+    return `queued=${counts.queued} running=${counts.running} completed=${counts.completed} waiting=${counts.waiting} warning=${counts.warning} failed=${counts.failed}`;
+  }
+
+  /**
+   * Formats one role progress row into stable `key=value` segments.
+   * @param entry Role progress row.
+   * @returns One formatted row string.
+   */
+  private formatRoleProgress(entry: CliRoleStageProgress): string {
+    const backlink =
+      entry.backlink && (entry.backlink.stageId || entry.backlink.executionId)
+        ? `execution=${entry.backlink.executionId ?? "n/a"},stage=${entry.backlink.stageId ?? "n/a"}`
+        : "execution=n/a,stage=n/a";
+    return `role=${entry.roleId},stage=${entry.stage},status=${entry.status},category=${entry.category},${backlink}`;
   }
 }

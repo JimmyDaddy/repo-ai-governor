@@ -1,5 +1,10 @@
 import { ConfigError, GovernorErrorCode } from "@repo-ai-governor/shared";
-import type { GovernorConfig, GovernorProfile, ResolvedConfig } from "./types/interfaces/index.js";
+import type {
+  AdaptersConfig,
+  GovernorConfig,
+  GovernorProfile,
+  ResolvedConfig,
+} from "./types/interfaces/index.js";
 
 /**
  * Resolves active profile overrides into a single effective config object.
@@ -79,7 +84,7 @@ export class ProfileResolver {
   private mergeAdapters(
     baseAdapters: GovernorConfig["adapters"],
     profileAdapters: GovernorProfile["adapters"],
-  ): GovernorConfig["adapters"] {
+  ): Partial<AdaptersConfig> | undefined {
     if (!baseAdapters && !profileAdapters) {
       return undefined;
     }
@@ -97,33 +102,44 @@ export class ProfileResolver {
       });
     }
 
+    const hasProfileRoles = profileAdapters?.roles !== undefined;
+    const hasProfileRouting = profileAdapters?.routing !== undefined;
+    const mergedRoles = (profileAdapters?.roles ?? baseAdapters?.roles)?.map((role) => ({
+      ...role,
+      requiredCapabilities: [...role.requiredCapabilities],
+    }));
+    const mergedRoleBindings = {
+      ...(baseAdapters?.routing?.roleBindings ?? {}),
+      ...Object.fromEntries(
+        Object.entries(profileAdapters?.routing?.roleBindings ?? {}).map(([roleId, binding]) => [
+          roleId,
+          {
+            ...binding,
+            ...(binding.fallbackSurfaces
+              ? {
+                  fallbackSurfaces: [...binding.fallbackSurfaces],
+                }
+              : {}),
+          },
+        ]),
+      ),
+    };
+
     return {
       ...(baseAdapters ?? {}),
       ...(profileAdapters ?? {}),
-      roles: (profileAdapters?.roles ?? baseAdapters?.roles ?? []).map((role) => ({
-        ...role,
-        requiredCapabilities: [...role.requiredCapabilities],
-      })),
-      routing: {
-        roleBindings: {
-          ...(baseAdapters?.routing.roleBindings ?? {}),
-          ...Object.fromEntries(
-            Object.entries(profileAdapters?.routing?.roleBindings ?? {}).map(
-              ([roleId, binding]) => [
-                roleId,
-                {
-                  ...binding,
-                  ...(binding.fallbackSurfaces
-                    ? {
-                        fallbackSurfaces: [...binding.fallbackSurfaces],
-                      }
-                    : {}),
-                },
-              ],
-            ),
-          ),
-        },
-      },
+      ...(mergedRoles || hasProfileRoles
+        ? {
+            roles: mergedRoles ?? [],
+          }
+        : {}),
+      ...(Object.keys(mergedRoleBindings).length > 0 || hasProfileRouting
+        ? {
+            routing: {
+              roleBindings: mergedRoleBindings,
+            },
+          }
+        : {}),
       ...(baseToolsById.size > 0
         ? {
             tools: Array.from(baseToolsById.values()).map((tool) => ({

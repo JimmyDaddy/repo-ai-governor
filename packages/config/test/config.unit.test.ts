@@ -130,6 +130,35 @@ describe("config unit", () => {
     ).toBe(true);
   });
 
+  it("keeps adapters override partial when base adapters are absent", () => {
+    const validator = new SchemaValidator();
+    const profileResolver = new ProfileResolver();
+    const configWithoutBaseAdapters: GovernorConfig = {
+      ...createConfigFixture(),
+      adapters: undefined,
+      profiles: {
+        toolOnly: {
+          adapters: {
+            tools: [
+              {
+                toolId: AdapterSurface.GITHUB_COPILOT,
+                enabled: true,
+                availability: AdapterAvailability.DEGRADED,
+              },
+            ],
+          },
+        },
+      },
+    };
+
+    const validatedConfig = validator.validateOrThrow(configWithoutBaseAdapters);
+    const resolvedConfig = profileResolver.resolve(validatedConfig, "toolOnly");
+
+    expect(resolvedConfig.profileId).toBe("toolOnly");
+    expect(resolvedConfig.config.adapters?.roles).toBeUndefined();
+    expect(resolvedConfig.config.adapters?.routing).toBeUndefined();
+    expect(resolvedConfig.config.adapters?.tools?.[0]?.toolId).toBe(AdapterSurface.GITHUB_COPILOT);
+  });
   it("uses default workspace mode when runtime/config override is absent", () => {
     const workspaceResolver = new WorkspaceResolver();
     const resolvedWorkspace = workspaceResolver.resolve({

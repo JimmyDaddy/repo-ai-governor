@@ -12,6 +12,7 @@
 - [ ] TK-083 角色级进度日志与人类友好交互展示
   - 2026-03-22：任务创建，状态初始化为 `planned`。
   - 2026-03-23：任务启动，状态切换为 `in_progress`，开始收敛角色级进度、关键日志与交互提示展示链路。
+  - 2026-03-23：完成第一批实现，已在 CLI 命令输出中接入统一 `role/stage/status` 模型、分层日志与交互提示，并覆盖 `policy_waiting`、`human_confirmation`、`review-verify`、`ledger backfill` 关键状态。
 - [ ] TK-084 黑盒 E2E 与门禁收紧基线
   - 2026-03-22：任务创建，状态初始化为 `planned`。
 - [ ] TK-085 CI 与发布流水线生产化接线

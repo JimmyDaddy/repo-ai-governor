@@ -1,4 +1,10 @@
-import type { ErrorOutputEnvironment, GovernorErrorCode } from "@repo-ai-governor/shared";
+import type {
+  ErrorOutputEnvironment,
+  ExecutionInteractionCategory,
+  ExecutionProgressStage,
+  ExecutionProgressStatus,
+  GovernorErrorCode,
+} from "@repo-ai-governor/shared";
 import type {
   CliDoctorAttachMode,
   CliGovernanceCheckStatus,
@@ -56,6 +62,60 @@ export interface CliCommandResultArtifact {
 }
 
 /**
+ * Defines one progress-to-audit/replay backlink entry.
+ */
+export interface CliProgressBacklink {
+  executionId?: string;
+  stageId?: string;
+  routeKey?: string;
+  reportPath?: string;
+  replayPath?: string;
+  artifactPath?: string;
+}
+
+/**
+ * Defines one role/stage progress row shown in command outputs.
+ */
+export interface CliRoleStageProgress {
+  roleId: string;
+  stage: ExecutionProgressStage;
+  status: ExecutionProgressStatus;
+  category: ExecutionInteractionCategory;
+  summary: string;
+  detail?: string;
+  backlink?: CliProgressBacklink;
+}
+
+/**
+ * Defines one human-facing interaction prompt.
+ */
+export interface CliInteractionPrompt {
+  category: ExecutionInteractionCategory;
+  stage: ExecutionProgressStage;
+  title: string;
+  action: string;
+  blocking: boolean;
+}
+
+/**
+ * Defines one layered log payload used by summary and verbose renderers.
+ */
+export interface CliLayeredLogs {
+  summary: string[];
+  detailed: string[];
+}
+
+/**
+ * Defines one human-friendly command experience block.
+ */
+export interface CliCommandExperiencePayload {
+  statusDictionary: Record<ExecutionProgressStatus, string>;
+  roleProgress: CliRoleStageProgress[];
+  layeredLogs: CliLayeredLogs;
+  interactionPrompts: CliInteractionPrompt[];
+}
+
+/**
  * Defines one command execution summary payload shared by pretty/plain/json outputs.
  */
 export interface CliCommandExecutionResultPayload {
@@ -69,6 +129,7 @@ export interface CliCommandExecutionResultPayload {
   };
   checks?: CliCommandResultCheck[];
   artifacts?: CliCommandResultArtifact[];
+  experience?: CliCommandExperiencePayload;
   details?: Record<string, boolean | number | string | null>;
 }
 

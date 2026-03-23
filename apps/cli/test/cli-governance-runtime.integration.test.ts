@@ -19,6 +19,8 @@ import {
   DEFAULT_MEMORY_RUNTIME_CONFIG,
   DefaultRoleProfileId,
   ErrorOutputEnvironment,
+  ExecutionProgressStage,
+  ExecutionProgressStatus,
   GovernorErrorCode,
 } from "@repo-ai-governor/shared";
 import { CliGovernanceRuntime } from "../src/cli-governance-runtime.js";
@@ -180,6 +182,9 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
 
       await expect(fixture.runtime.execute(CliCommandName.RUN)).rejects.toMatchObject({
         code: GovernorErrorCode.POLICY_GATE_HITL_FEEDBACK_INVALID,
+        details: {
+          pendingStatus: ExecutionProgressStage.HUMAN_CONFIRMATION,
+        },
       });
     });
   });
@@ -224,6 +229,22 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
         expect(auditRecord.event.projectId).toBe("project-target-runtime");
         expect(auditRecord.event.sprintId).toBe("sprint-900-policy");
       }
+      const stageRecords = auditRecords.filter(
+        (auditRecord) => auditRecord.event.stageId !== "stage-policy-gate",
+      );
+      expect(
+        stageRecords.some((auditRecord) => {
+          const memoryDelta = (auditRecord.event.memoryDelta ?? {}) as Record<string, unknown>;
+          const output =
+            memoryDelta.output && typeof memoryDelta.output === "object"
+              ? (memoryDelta.output as Record<string, unknown>)
+              : null;
+          return (
+            output?.handledBy === "adapter-route-runner" &&
+            typeof output.adapterSurface === "string"
+          );
+        }),
+      ).toBe(true);
     });
   });
 
@@ -250,6 +271,22 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
       };
       expect(sourceRequestPayload.status).toBe("verified");
       expect(sourceRequestPayload.consumedByVerifyId).toBe(verifyPayload.verifyId);
+      const experience = firstVerifyResult.commandResult.experience;
+      expect(experience).toBeDefined();
+      expect(
+        experience?.roleProgress.some(
+          (row) =>
+            row.stage === ExecutionProgressStage.REVIEW_VERIFY &&
+            row.status === ExecutionProgressStatus.COMPLETED,
+        ),
+      ).toBe(true);
+      expect(
+        experience?.roleProgress.some(
+          (row) =>
+            row.stage === ExecutionProgressStage.LEDGER_BACKFILL &&
+            row.status === ExecutionProgressStatus.WAITING,
+        ),
+      ).toBe(true);
 
       await expect(fixture.runtime.execute(CliCommandName.REVIEW_VERIFY)).rejects.toMatchObject({
         code: GovernorErrorCode.UNKNOWN,
@@ -392,6 +429,11 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
         };
         expect(ledgerPayload.taskId).toBe("TK-082");
         expect(ledgerPayload.attribution?.chainStep).toBe("connect");
+        expect(
+          connectResult.commandResult.experience?.roleProgress.some(
+            (row) => row.stage === ExecutionProgressStage.CONNECT,
+          ),
+        ).toBe(true);
       },
       {
         runtimeDebugOptions: {
@@ -458,6 +500,13 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
 
         expect(verifyResult.commandResult.operation).toBe("adapter_verify");
         expect(verifyResult.commandResult.details?.adapters_status).toBe("pass");
+        expect(
+          verifyResult.commandResult.experience?.roleProgress.some(
+            (row) =>
+              row.stage === ExecutionProgressStage.VERIFY &&
+              row.status === ExecutionProgressStatus.COMPLETED,
+          ),
+        ).toBe(true);
       },
       {
         runtimeDebugOptions: {
