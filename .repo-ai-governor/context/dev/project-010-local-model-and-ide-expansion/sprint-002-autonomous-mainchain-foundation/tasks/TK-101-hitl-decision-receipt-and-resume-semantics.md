@@ -1,6 +1,6 @@
 # TK-101 HITL 决策回执与恢复执行语义
 
-- Status: in_progress
+- Status: completed
 - Date: 2026-03-24
 - Owner: AI-Agent
 - Priority: P0
@@ -51,9 +51,11 @@
 1. 2026-03-24：任务创建，状态初始化为 `planned`。
 2. 2026-03-24：任务启动，开始收敛通知回执、decision receipt 最小字段与 `resume/terminate/degrade` 运行时语义。
 3. 2026-03-24：复核 follow-up CR 后，已补齐真实 CLI `--hitl-*` 参数入口、dry-run 下的 HITL 无副作用语义，以及 `taskId + approve` 对 inline review 子链的真实恢复执行。
+4. 2026-03-24：已补齐 `reject -> terminate` 与 `revise -> degrade` 的集成回归，并完成 `DA-105`、formal resolved review、artifact registry 与 sprint 台账同步；任务状态更新为 `completed`。
 
 ## 8. 产出
 
 1. `DA-105` `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-002-autonomous-mainchain-foundation/tasks/DA-105-hitl-decision-receipt-and-resume-semantics.md`
-2. `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-002-autonomous-mainchain-foundation/tasks/checklist.md`
-3. `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-002-autonomous-mainchain-foundation/tasks/tasks.csv`
+2. `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-002-autonomous-mainchain-foundation/review/resolved_code_review_tk-101-hitl-decision-receipt-and-resume-semantics.md`
+3. `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-002-autonomous-mainchain-foundation/tasks/checklist.md`
+4. `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-002-autonomous-mainchain-foundation/tasks/tasks.csv`

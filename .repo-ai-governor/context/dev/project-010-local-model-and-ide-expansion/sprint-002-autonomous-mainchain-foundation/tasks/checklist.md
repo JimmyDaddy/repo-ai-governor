@@ -12,9 +12,10 @@
   - 2026-03-24：已完成 `DA-104`、inline review chain 外显契约（artifacts/details/experience progress）与 resolved review，并通过总门禁回归，任务状态更新为 `completed`。
   - 2026-03-24：复核 follow-up CR 后，已补上 inline review 子链在 `dry-run` 与 policy non-allow 分支上的 side-effect gate，并新增“无副作用”回归测试，任务状态维持 `completed`。
   - 2026-03-24：follow-up CR 已收尾为 `resolved`；两条 P1 finding 全部完成修复，并通过 `pnpm run check` 复验。
-- [ ] TK-101 HITL 决策回执与恢复执行语义
+- [x] TK-101 HITL 决策回执与恢复执行语义
   - 2026-03-24：任务创建，状态初始化为 `planned`。
   - 2026-03-24：任务启动，开始收敛通知回执、decision receipt 最小字段与 `resume/terminate/degrade` 运行时语义。
   - 2026-03-24：复核 follow-up CR 后，已补齐真实 CLI `--hitl-*` 参数入口、dry-run 下的 HITL 无副作用语义，以及 `taskId + approve` 对 inline review 子链的恢复执行。
+  - 2026-03-24：已补齐 `reject -> terminate` 与 `revise -> degrade` 回归，完成 `DA-105`、formal resolved review 与 artifact registry 同步；当前任务状态更新为 `completed`。
 - [ ] TK-102 sprint-002 出口验收与 sprint-003 输入约束
   - 2026-03-24：任务创建，状态初始化为 `planned`。

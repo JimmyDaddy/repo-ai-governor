@@ -613,6 +613,124 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
     );
   });
 
+  it("terminates task-driven run when a reject HITL decision receipt is supplied", async () => {
+    await withRuntimeFixture(
+      async (fixture) => {
+        await writeTaskCardFixture(fixture.workspaceRoot, "TK-099");
+        const runtimeWithOverrides = fixture.runtime as unknown as {
+          collectGitChangedPaths: () => Promise<string[]>;
+        };
+        runtimeWithOverrides.collectGitChangedPaths = async () => ["migrations/001.sql"];
+
+        const runtimeError = await fixture.runtime
+          .execute(CliCommandName.RUN)
+          .then(() => null)
+          .catch((error: RuntimeError) => error);
+
+        expect(runtimeError).toMatchObject({
+          code: GovernorErrorCode.POLICY_GATE_EVALUATION_FAILED,
+          details: {
+            hitlResumeAction: "terminate",
+          },
+        });
+
+        const decisionReceiptPath = runtimeError?.details?.hitlDecisionReceiptPath;
+        expect(typeof decisionReceiptPath).toBe("string");
+
+        const decisionReceiptPayload = JSON.parse(
+          await readFile(String(decisionReceiptPath), "utf8"),
+        ) as {
+          decision?: string;
+          resumeAction?: string;
+          finalPolicyOutcome?: string;
+        };
+        expect(decisionReceiptPayload.decision).toBe("reject");
+        expect(decisionReceiptPayload.resumeAction).toBe("terminate");
+        expect(decisionReceiptPayload.finalPolicyOutcome).toBe("block");
+
+        const requestFiles = await readdir(
+          resolve(fixture.workspaceRoot, "context", "review-queue", "requests"),
+        ).catch(() => []);
+        const resultFiles = await readdir(
+          resolve(fixture.workspaceRoot, "context", "review-queue", "results"),
+        ).catch(() => []);
+        expect(requestFiles).toHaveLength(0);
+        expect(resultFiles).toHaveLength(0);
+      },
+      {
+        runtimeDebugOptions: {
+          dryRun: false,
+          trace: false,
+          replayPath: null,
+          taskId: "TK-099",
+          hitlDecision: "reject",
+          hitlDecisionReason: "Maintainer rejected unattended continuation.",
+          hitlDecidedBy: "maintainer@example.com",
+        },
+      },
+    );
+  });
+
+  it("keeps run in HITL follow-up when a revise decision degrades execution", async () => {
+    await withRuntimeFixture(
+      async (fixture) => {
+        await writeTaskCardFixture(fixture.workspaceRoot, "TK-099");
+        const runtimeWithOverrides = fixture.runtime as unknown as {
+          collectGitChangedPaths: () => Promise<string[]>;
+        };
+        runtimeWithOverrides.collectGitChangedPaths = async () => ["migrations/001.sql"];
+
+        const runtimeError = await fixture.runtime
+          .execute(CliCommandName.RUN)
+          .then(() => null)
+          .catch((error: RuntimeError) => error);
+
+        expect(runtimeError).toMatchObject({
+          code: GovernorErrorCode.POLICY_GATE_HITL_FEEDBACK_INVALID,
+          details: {
+            pendingStatus: ExecutionProgressStage.HUMAN_CONFIRMATION,
+            hitlResumeAction: "degrade",
+          },
+        });
+
+        const decisionReceiptPath = runtimeError?.details?.hitlDecisionReceiptPath;
+        expect(typeof decisionReceiptPath).toBe("string");
+
+        const decisionReceiptPayload = JSON.parse(
+          await readFile(String(decisionReceiptPath), "utf8"),
+        ) as {
+          decision?: string;
+          resumeAction?: string;
+          finalPolicyOutcome?: string;
+        };
+        expect(decisionReceiptPayload.decision).toBe("revise");
+        expect(decisionReceiptPayload.resumeAction).toBe("degrade");
+        expect(decisionReceiptPayload.finalPolicyOutcome).toBe("escalate");
+
+        const requestFiles = await readdir(
+          resolve(fixture.workspaceRoot, "context", "review-queue", "requests"),
+        ).catch(() => []);
+        const resultFiles = await readdir(
+          resolve(fixture.workspaceRoot, "context", "review-queue", "results"),
+        ).catch(() => []);
+        expect(requestFiles).toHaveLength(0);
+        expect(resultFiles).toHaveLength(0);
+      },
+      {
+        runtimeDebugOptions: {
+          dryRun: false,
+          trace: false,
+          replayPath: null,
+          taskId: "TK-099",
+          hitlDecision: "revise",
+          hitlDecisionReason: "Maintainer requested a guarded manual follow-up.",
+          hitlResumeAction: "degrade",
+          hitlDecidedBy: "maintainer@example.com",
+        },
+      },
+    );
+  });
+
   it("reads project/sprint audit tags from workspace current-context", async () => {
     await withRuntimeFixture(async (fixture) => {
       const currentContextPath = resolve(fixture.workspaceRoot, "context", "current-context.md");
