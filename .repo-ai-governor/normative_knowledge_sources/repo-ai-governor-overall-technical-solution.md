@@ -1,7 +1,7 @@
 # Repo AI Governor 工具级总技术方案
 
 - Status: active
-- Date: 2026-03-21
+- Date: 2026-03-24
 - Scope: whole product (tool-level)
 - Basis:
   - `.repo-ai-governor/normative_knowledge_sources/product-requirements-brief.md`
@@ -48,6 +48,22 @@
 1. 组织级云端控制平面（非当前主线）。
 2. 全量可视化编排平台（后续阶段考虑）。
 3. 替代现有 CI/CD 或代码托管平台。
+
+## 3.3 Stage 9 投产与自治收口 Overlay（2026-03-24）
+
+1. `Stage 9` 是对 Stage 0-8 的投产与自治收口 overlay，不新增独立架构层，也不改变产品仍以“目标仓库本地治理工具”为主的边界。
+2. 当前技术收口重点固定为 6 类：
+   - `真实 provider 调用与适配器运维契约`：至少覆盖 1 条远端 provider 路径和 1 条本地模型路径，并补齐凭据、health、timeout/retry、限流、脱敏与 degrade path 契约。
+   - `任务驱动动态编排`：`run` 需按任务目标、依赖产物、角色能力与策略结果装配可执行 DAG，而不是停留在固定模板。
+   - `review 子链内联`：`review -> review-verify -> ledger backfill` 应可作为自动主链中的受控子链推进，而不是仅依赖外部排队消费。
+   - `HITL 决策回灌`：`confirm/escalate` 返回的人工决策必须作为可审计事件重新注入运行时，支持 `resume/terminate/degrade`。
+   - `受控交付演练`：`commit` / `PR draft` 只能在策略允许下作为 Delivery & Operations Layer 的受控扩展运行，并纳入 audit/replay。
+   - `黑盒与 GA 指标`：provider outage、restricted network、retry exhaustion 等主/降级路径都需要黑盒覆盖，并沉淀成功率、人工介入率等运营信号。
+3. 因此 Stage 9 follow-up 的实现落点应优先锚定：
+   - `Governance Core Layer`
+   - `Notification & Escalation Layer`
+   - `Agent Runtime & Adapter Layer`
+   - `Delivery & Operations Layer`
 
 ## 4. 总体架构
 
@@ -331,6 +347,16 @@
    - `allOf`：全部成功才通过。
    - `anyOf`：任一成功即通过。
    - `majority`：多数成功通过，失败分支进入补偿或重试。
+
+## 5.6 Stage 9 自动主链收口要求
+
+1. `run` 主链必须支持从任务目标、依赖产物、角色能力和策略结果生成可执行 DAG；固定模板只作为 fallback baseline，不应继续代表目标形态。
+2. `review` 子链应支持 `inline/externalized` 双形态：
+   - `inline`：作为自动主链子链执行，直接推进 `review -> review-verify -> ledger backfill`。
+   - `externalized`：允许保留 queued artifact 形式对外消费，但必须产出与 inline 语义一致的 audit facts 与 ledger contract。
+3. HITL 决策回灌的最小回执字段建议至少包含：`decision_id`, `decision`, `constraints`, `resume_action`, `decided_by`, `decided_at`；运行时必须可依据该回执执行 `resume/terminate/degrade`。
+4. 受控交付演练至少支持 `commit` 或 `PR draft` 一种路径，并要求在高风险策略命中时停在人工闸口，同时将交付事件写入 audit/replay。
+5. 黑盒与 GA 指标至少应沉淀：`time_to_first_success`, `unattended_success_rate`, `human_intervention_rate`, `fallback_rate`, `delivery_rehearsal_pass_rate`。
 
 ## 6. 多 Agent 运行时模型
 

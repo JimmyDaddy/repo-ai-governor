@@ -11,6 +11,7 @@
   - 2026-03-23：任务创建，状态初始化为 `planned`。
 - [ ] TK-098 sprint-001 出口验收与 sprint-002 输入约束
   - 2026-03-23：任务创建，状态初始化为 `planned`。
+  - 2026-03-24：根据新版 Stage 9 收敛顺序，任务输出已改为冻结 `sprint-002-autonomous-mainchain-foundation` 的输入约束，原 IDE-first 顺序顺延到 sprint-003。
 - [x] TK-103 全自动研发 gap 清单与 draft 收敛
   - 2026-03-24：任务创建并启动，目标是将“当前工具尚不能全自动研发”的分析正式化为 draft 级 gap checklist。
   - 2026-03-24：已完成正式 gap 清单起草，覆盖真实调用、动态编排、review chain、HITL 回灌、delivery rehearsal 与稳定性门禁 6 类 gap。
@@ -19,3 +20,15 @@
   - 2026-03-24：任务创建并启动，目标是将 draft 级 gap checklist 正式上收到 master execution plan。
   - 2026-03-24：已完成 master plan 更新，补入 Stage 9 follow-up 状态矩阵、正式 gap register 与收敛顺序。
   - 2026-03-24：已同步 task card、project/sprint 计划、tasks.csv 与 resolved review，任务状态收尾为 `completed`。
+- [x] TK-105 主执行计划结构重梳与执行导航重构
+  - 2026-03-24：任务创建并启动，目标是将 master plan 从“阶段信息堆叠”重构为“执行导航文档”。
+  - 2026-03-24：已完成 master plan 重写，重排为“当前执行摘要 -> 路线图 -> Stage 9 主线 -> project 映射 -> 模板 -> 完成态”结构。
+  - 2026-03-24：已同步 task card、project/sprint 计划、tasks.csv 与 resolved review，任务状态收尾为 `completed`。
+- [x] TK-106 triad 文档 Stage 9 overlay 补强同步
+  - 2026-03-24：任务创建并启动，目标是将新版 master plan 中 Stage 9 follow-up 的技术/架构含义回锚到 triad。
+  - 2026-03-24：已完成总技术方案与架构蓝图补强，并对 PRD/brief 做最小同步以满足 triad 门禁。
+  - 2026-03-24：已同步 task card、project/sprint 计划、tasks.csv 与 resolved review，任务状态收尾为 `completed`。
+- [x] TK-113 project-010 Stage 9 执行重排与 sprint rebaseline
+  - 2026-03-24：任务创建并启动，目标是将 `project-010` 从 IDE-first 重排为 mainchain-first，并重新落 sprint-002/sprint-003 骨架。
+  - 2026-03-24：已完成 project plan、master plan、sprint-001 约束与 sprint-002/sprint-003 目录/任务包重排。
+  - 2026-03-24：已同步 task card、checklist、tasks.csv 与 resolved review，任务状态收尾为 `completed`。

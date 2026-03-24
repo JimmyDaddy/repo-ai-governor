@@ -1,7 +1,7 @@
 # Repo AI Governor 可扩展架构图与仓库分层结构
 
 - Status: active
-- Date: 2026-03-21
+- Date: 2026-03-24
 - Role: implementation blueprint
 - Basis:
   - `.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-overall-technical-solution.md`
@@ -85,7 +85,9 @@ flowchart TB
     Plan[plan.md]
     Checklist[tasks/checklist.md]
     CSV[tasks/tasks.csv]
-    CR[review lifecycle]
+    ReviewChain["review -> review-verify"]
+    LedgerBackfill[ledger backfill]
+    DeliveryRehearsal["commit / PR draft rehearsal"]
   end
 
   CLI --> Loader
@@ -128,7 +130,9 @@ flowchart TB
   Runtime --> Plan
   Runtime --> Checklist
   Runtime --> CSV
-  Runtime --> CR
+  Runtime --> ReviewChain
+  Runtime --> LedgerBackfill
+  Runtime --> DeliveryRehearsal
 ```
 
 ## 3. 执行时序图（含 HITL 升级与通知分发）
@@ -188,6 +192,15 @@ sequenceDiagram
       N-->>G: notification result
       G->>H: request approval
       H-->>G: approve/reject/revise
+      G->>L: append HITL decision receipt
+      alt approve
+        G->>S: resume stage with approved constraints
+      else revise
+        G->>S: persist revised constraints
+        G->>G: reroute execute/review subchain
+      else reject
+        G-->>U: stop with decision reason
+      end
     else block
       G-->>U: stop with reason
     end
@@ -201,12 +214,30 @@ sequenceDiagram
     K->>T: persist delta
     G->>S: update session context
     G->>L: append event + artifacts
+    opt review subchain enabled
+      G->>A: invoke review / review-verify subchain
+      A-->>G: review result + verify result
+      G->>L: append review chain + ledger backfill
+    end
+  end
+  opt delivery rehearsal enabled
+    G->>P: evaluate delivery policy
+    P-->>G: allow/confirm/block/escalate
+    G->>A: invoke commit / PR draft rehearsal
+    A-->>G: delivery result
+    G->>L: append delivery rehearsal event
   end
   G->>S: finalize session snapshot
   G-->>U: summary + report + ledger links
 ```
 
-说明：错误分类、重试/熔断、取消/超时、并发聚合的执行契约以 `.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-overall-technical-solution.md` 的 `§5.3` 到 `§5.5` 为准。
+说明：错误分类、重试/熔断、取消/超时、并发聚合与 Stage 9 自动主链收口契约，以 `.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-overall-technical-solution.md` 的 `§5.3` 到 `§5.6` 为准。
+
+## 3.1 Stage 9 Follow-Up 架构补充
+
+1. `run` 主链的目标形态是任务驱动 DAG，并可内联 `review -> review-verify -> ledger backfill` 受控子链。
+2. `confirm/escalate` 返回的人工决策不是一次性终态，而是可回灌的恢复事件；runtime 必须支持 `resume/terminate/degrade`。
+3. `commit/PR draft` rehearsal 属于 Delivery & Operations Layer 的受控扩展，必须与 audit/replay 保持同链回放。
 
 ## 4. 关键扩展点
 
@@ -229,7 +260,7 @@ sequenceDiagram
 9. `Policy Engine`
    - 人工闸口策略通过规则表配置，不把审批逻辑硬编码在命令里。
 10. `Notification Dispatcher`
-   - 在 HITL 触发/升级场景统一分发通知，支持重试、退避与失败回退，并输出通知回执到审计事件。
+   - 在 HITL 触发/升级场景统一分发通知，支持重试、退避与失败回退，并输出通知回执到审计事件，作为 runtime `resume/terminate/degrade` 的输入之一。
 11. `Notification Providers`
    - 支持 `email/webhook/chat-im/issue-system` 等渠道可插拔接入。
 12. `Slot Engine`
@@ -243,6 +274,8 @@ sequenceDiagram
    - 统一输出 `pretty/plain/json` 模式渲染，负责终端美化、非交互降级和机器可读稳定性。
 16. `Spec Sync Guard`
    - 对“需求->方案->架构”三层文档及简版 PRD 执行同步校验，输出可阻断的机器可读结果与本地可读建议。
+17. `Controlled Delivery Rehearsal`
+   - 在策略允许下执行 `commit` / `PR draft` 等受控交付演练，并与 audit/replay、人工接管边界保持同链可回放。
 
 ## 5. 目标仓库分层结构（Monorepo）
 

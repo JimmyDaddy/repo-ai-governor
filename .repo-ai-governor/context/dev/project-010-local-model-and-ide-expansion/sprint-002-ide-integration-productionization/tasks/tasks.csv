@@ -1,5 +1,0 @@
-execution_id,task_id,title,owner,priority,due_date,status,project,sprint,plan,result,verify,review_delta,recorded_at
-exec-20260323-319,TK-099,多 IDE surface registry 与 wrapper 契约强化,TBD,P1,2026-03-30,planned,project-010-local-model-and-ide-expansion,sprint-002-ide-integration-productionization,强化 IDE 多入口 surface registry 与 command wrapper 契约一致性并补齐注入边界校验,待执行,待验证,待执行,2026-03-23
-exec-20260323-320,TK-100,VS Code/JetBrains 官方模板与 smoke 门禁,TBD,P1,2026-03-31,planned,project-010-local-model-and-ide-expansion,sprint-002-ide-integration-productionization,落地 VS Code 与 JetBrains 官方接入模板并建立入口 smoke 门禁,待执行,待验证,待执行,2026-03-23
-exec-20260323-321,TK-101,Cursor/Claude Code 接入模板与文档一致性,TBD,P1,2026-04-01,planned,project-010-local-model-and-ide-expansion,sprint-002-ide-integration-productionization,落地 Cursor Claude Code 模板并确保 docs examples contracts 一致回链,待执行,待验证,待执行,2026-03-23
-exec-20260323-322,TK-102,project-010 出口验收与后续 rollout 输入约束,TBD,P0,2026-04-02,planned,project-010-local-model-and-ide-expansion,sprint-002-ide-integration-productionization,汇总 project-010 交付证据形成出口验收并沉淀后续 rollout 输入约束,待执行,待验证,待执行,2026-03-23

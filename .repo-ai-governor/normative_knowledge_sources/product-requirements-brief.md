@@ -2,7 +2,7 @@
 
 - 文档版本：brief-v1
 - 状态：active
-- 日期：2026-03-21
+- 日期：2026-03-24
 - 对齐来源：`.repo-ai-governor/normative_knowledge_sources/product-requirements.md`（完整版）
 - 实施总纲：`.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-overall-technical-solution.md`
 - 工程蓝图：`.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-architecture-and-repo-layering.md`
@@ -70,6 +70,9 @@
    - 主注册表与归档注册表分层治理，避免上下文无限增长。
    - 非 `active/frozen` 产物默认不进入自动依赖注入链路。
    - canonical source 固定为 machine-readable main/archive registry；human-readable view 只能从 canonical source 渲染，不再维护手工镜像台账。
+14. Stage 9 收口边界：
+   - 当前收口重点是 `真实 provider 调用 -> 任务驱动编排 -> HITL 决策回灌 -> 受控交付演练 -> 黑盒稳定性/GA 指标`。
+   - 这属于工具级执行 overlay，不将产品边界扩张为组织级云端控制平面或全量可视化平台。
 
 ## 5. 必须人工确认的高风险场景
 

@@ -2,7 +2,7 @@
 
 - 文档版本：v0.3
 - 状态：执行中（MVP 已完成，P1 深化中）
-- 日期：2026-03-21
+- 日期：2026-03-24
 - 暂定产品名：Repo AI Governor
 
 ## 0. v0.3 更新说明
@@ -18,6 +18,7 @@
 9. 新增“需求->方案->架构”三层文档同步机制，并要求工具内置可执行校验能力。
 10. 明确共享层收敛方向：统一采用 `packages/shared` 承接共享类型、通用工具与 i18n 基础能力。
 11. 明确 Artifact Registry 单一事实源：canonical registry 固定为 machine-readable main/archive registry，human-readable 入口统一由 canonical source 渲染，不再维护手工镜像台账。
+12. 明确当前 Stage 9 follow-up 属于工具级投产与自治收口 overlay：重点收敛真实调用、任务驱动编排、HITL 决策回灌、受控交付演练与黑盒稳定性，不改变产品仍以目标仓库本地治理为主的边界。
 
 ## 1. 产品概述
 
