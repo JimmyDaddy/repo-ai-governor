@@ -14,7 +14,9 @@ import {
   AgentCapabilitySupportLevel,
   type AgentProbeResult,
   type AgentProtocolContract,
+  type AgentRestrictedNetworkFallbackContext,
   AgentRouteRunner,
+  AgentSurfaceNetworkRequirement,
 } from "@repo-ai-governor/adapter-sdk";
 import {
   type AdaptersConfig,
@@ -67,6 +69,7 @@ import {
   ExecutionProgressStage,
   ExecutionProgressStatus,
   GovernorErrorCode,
+  LocalModelProvider,
   type MemoryRuntimeConfig,
   RuntimeError,
   WorkspaceMigrationPolicy,
@@ -133,6 +136,7 @@ interface CliGovernanceRuntimeOptions {
       }
     >
   >;
+  commandProbeExecutor?: (command: string, args: readonly string[]) => Promise<void>;
 }
 
 interface CliGovernanceCommandResult {
@@ -2299,6 +2303,34 @@ export class CliGovernanceRuntime {
       return this.localizeText(`adapter probe failed (${detail})`, `adapter 探测失败（${detail}）`);
     }
 
+    if (reason.startsWith("local_model_model_missing:")) {
+      const [, surface, ...modelParts] = reason.split(":");
+      const model = modelParts.join(":");
+      return this.localizeText(
+        `local-model surface "${surface}" is missing configured model "${model}"`,
+        `本地模型 surface "${surface}" 缺少已配置模型 "${model}"`,
+      );
+    }
+
+    if (reason.startsWith("local_model_endpoint_unreachable:")) {
+      const [, surface, encodedEndpoint, errorCode, ...messageParts] = reason.split(":");
+      const endpoint = decodeURIComponent(encodedEndpoint ?? "");
+      const message = messageParts.join(":");
+      return this.localizeText(
+        `local-model surface "${surface}" cannot reach endpoint "${endpoint}" (${errorCode}: ${message})`,
+        `本地模型 surface "${surface}" 无法访问 endpoint "${endpoint}"（${errorCode}: ${message}）`,
+      );
+    }
+
+    if (reason.startsWith("local_model_probe_invalid_response:")) {
+      const [, surface, encodedEndpoint] = reason.split(":");
+      const endpoint = decodeURIComponent(encodedEndpoint ?? "");
+      return this.localizeText(
+        `local-model surface "${surface}" returned invalid probe payload from "${endpoint}"`,
+        `本地模型 surface "${surface}" 从 "${endpoint}" 返回了无效探测结果`,
+      );
+    }
+
     if (reason.startsWith("disabled_by_config:")) {
       const [, surface] = reason.split(":", 2);
       return this.localizeText(
@@ -2373,6 +2405,8 @@ export class CliGovernanceRuntime {
    * @returns Route runner instance bound to configured surfaces and role bindings.
    */
   private createRunRouteRunner(nodes: ProcessIrNode[]): AgentRouteRunner {
+    const toolConfigBySurface = this.createToolConfigBySurfaceMap();
+    const protocolBySurface = this.createProtocolBySurface(toolConfigBySurface);
     const routeNodeByRouteKey = new Map<string, ProcessIrNode>();
     for (const node of nodes) {
       if (!routeNodeByRouteKey.has(node.routeKey)) {
@@ -2397,12 +2431,16 @@ export class CliGovernanceRuntime {
         );
       }
 
+      const candidateSurfaces = this.resolveRoleBindingCandidateSurfaces(
+        roleBinding,
+        toolConfigBySurface,
+      );
       return {
         routeKey: node.routeKey,
-        primarySurface: roleBinding.primarySurface,
-        ...(roleBinding.fallbackSurfaces
+        primarySurface: candidateSurfaces[0] ?? roleBinding.primarySurface,
+        ...(candidateSurfaces.slice(1).length > 0
           ? {
-              fallbackSurfaces: [...roleBinding.fallbackSurfaces],
+              fallbackSurfaces: candidateSurfaces.slice(1),
             }
           : {}),
         ...(roleConfig && roleConfig.requiredCapabilities.length > 0
@@ -2417,7 +2455,13 @@ export class CliGovernanceRuntime {
 
     return new AgentRouteRunner({
       routePolicies,
-      protocolBySurface: this.createProtocolBySurface(),
+      protocolBySurface,
+      surfaceNetworkRequirementBySurface:
+        this.createSurfaceNetworkRequirementMap(toolConfigBySurface),
+      restrictedNetworkFallbackHandler: this.createRestrictedNetworkFallbackHandler(
+        toolConfigBySurface,
+        protocolBySurface,
+      ),
     });
   }
 
@@ -2515,15 +2559,12 @@ export class CliGovernanceRuntime {
    * Creates protocol map for all built-in adapter surfaces using tool config overrides.
    * @returns Surface -> protocol instance map.
    */
-  private createProtocolBySurface(): Record<string, AgentProtocolContract> {
-    const toolConfigBySurface = new Map<
+  private createProtocolBySurface(
+    toolConfigBySurface: Map<
       AdapterSurface,
       NonNullable<AdaptersConfig["tools"]>[number]
-    >();
-    for (const toolConfig of this.options.adaptersConfig.tools ?? []) {
-      toolConfigBySurface.set(toolConfig.toolId, toolConfig);
-    }
-
+    > = this.createToolConfigBySurfaceMap(),
+  ): Record<string, AgentProtocolContract> {
     const protocolBySurface: Record<string, AgentProtocolContract> = {};
     const surfaces = this.resolveTrackedAdapterSurfaces(toolConfigBySurface);
     for (const surface of surfaces) {
@@ -2550,10 +2591,119 @@ export class CliGovernanceRuntime {
             ? new GithubCopilotAgentAdapter(adapterOptions)
             : surface === AdapterSurface.CLAUDE_CODE
               ? new ClaudeCodeAgentAdapter(adapterOptions)
-              : new LocalModelAgentAdapter(adapterOptions);
+              : new LocalModelAgentAdapter({
+                  ...adapterOptions,
+                  ...(toolConfig?.localModel
+                    ? {
+                        localModel: toolConfig.localModel,
+                      }
+                    : {}),
+                });
     }
 
     return protocolBySurface;
+  }
+
+  /**
+   * Builds one reusable tool-config lookup map from adapters config.
+   * @returns Surface -> tool config lookup.
+   */
+  private createToolConfigBySurfaceMap(): Map<
+    AdapterSurface,
+    NonNullable<AdaptersConfig["tools"]>[number]
+  > {
+    const toolConfigBySurface = new Map<
+      AdapterSurface,
+      NonNullable<AdaptersConfig["tools"]>[number]
+    >();
+    for (const toolConfig of this.options.adaptersConfig.tools ?? []) {
+      toolConfigBySurface.set(toolConfig.toolId, toolConfig);
+    }
+    return toolConfigBySurface;
+  }
+
+  /**
+   * Resolves candidate surfaces for one role binding with local-model fallback appended.
+   * @param roleBinding Role binding from adapters routing config.
+   * @param toolConfigBySurface Tool config lookup map.
+   * @returns Ordered candidate surfaces shared by runtime and diagnostics.
+   */
+  private resolveRoleBindingCandidateSurfaces(
+    roleBinding: AdaptersConfig["routing"]["roleBindings"][string],
+    toolConfigBySurface: Map<AdapterSurface, NonNullable<AdaptersConfig["tools"]>[number]>,
+  ): AdapterSurface[] {
+    const candidateSurfaces = [
+      roleBinding.primarySurface,
+      ...(roleBinding.fallbackSurfaces ?? []),
+    ].filter((surface, index, list) => list.indexOf(surface) === index);
+    const localModelFallbackSurface = this.resolveLocalModelFallbackSurface(toolConfigBySurface);
+    if (localModelFallbackSurface && !candidateSurfaces.includes(localModelFallbackSurface)) {
+      candidateSurfaces.push(localModelFallbackSurface);
+    }
+    return candidateSurfaces;
+  }
+
+  /**
+   * Resolves whether local-model surface should participate as automatic fallback.
+   * @param toolConfigBySurface Tool config lookup map.
+   * @returns Local-model surface when enabled, otherwise `null`.
+   */
+  private resolveLocalModelFallbackSurface(
+    toolConfigBySurface: Map<AdapterSurface, NonNullable<AdaptersConfig["tools"]>[number]>,
+  ): AdapterSurface | null {
+    const localModelToolConfig = toolConfigBySurface.get(AdapterSurface.OLLAMA);
+    if (!localModelToolConfig || localModelToolConfig.enabled === false) {
+      return null;
+    }
+    return AdapterSurface.OLLAMA;
+  }
+
+  /**
+   * Creates one network-requirement map for route runner restricted-mode decisions.
+   * @param toolConfigBySurface Tool config lookup map.
+   * @returns Surface -> network requirement map.
+   */
+  private createSurfaceNetworkRequirementMap(
+    toolConfigBySurface: Map<AdapterSurface, NonNullable<AdaptersConfig["tools"]>[number]>,
+  ): Partial<Record<string, AgentSurfaceNetworkRequirement>> {
+    const requirementBySurface: Partial<Record<string, AgentSurfaceNetworkRequirement>> = {};
+    for (const surface of this.resolveTrackedAdapterSurfaces(toolConfigBySurface)) {
+      requirementBySurface[surface] =
+        surface === AdapterSurface.OLLAMA
+          ? AgentSurfaceNetworkRequirement.LOCAL_ONLY
+          : AgentSurfaceNetworkRequirement.EXTERNAL_NETWORK;
+    }
+    return requirementBySurface;
+  }
+
+  /**
+   * Creates restricted-network fallback handler backed by the local-model adapter.
+   * @param toolConfigBySurface Tool config lookup map.
+   * @param protocolBySurface Protocol map already built for route runner.
+   * @returns Restricted-network fallback handler when local-model tool is enabled.
+   */
+  private createRestrictedNetworkFallbackHandler(
+    toolConfigBySurface: Map<AdapterSurface, NonNullable<AdaptersConfig["tools"]>[number]>,
+    protocolBySurface: Record<string, AgentProtocolContract>,
+  ):
+    | {
+        invokeFallback(
+          context: AgentRestrictedNetworkFallbackContext,
+        ): ReturnType<AgentProtocolContract["invokeStage"]>;
+      }
+    | undefined {
+    const localModelFallbackSurface = this.resolveLocalModelFallbackSurface(toolConfigBySurface);
+    if (!localModelFallbackSurface) {
+      return undefined;
+    }
+    const localModelProtocol = protocolBySurface[localModelFallbackSurface];
+    if (!localModelProtocol) {
+      return undefined;
+    }
+    return {
+      invokeFallback: (context: AgentRestrictedNetworkFallbackContext) =>
+        localModelProtocol.invokeStage(context.request),
+    };
   }
 
   /**
@@ -2673,7 +2823,8 @@ export class CliGovernanceRuntime {
    * @returns Adapter verification resolution.
    */
   private async resolveAdapterVerification(): Promise<CliAdapterVerificationResolution> {
-    const toolSnapshots = await this.collectAdapterToolSnapshots();
+    const toolConfigBySurface = this.createToolConfigBySurfaceMap();
+    const toolSnapshots = await this.collectAdapterToolSnapshotsBySurface(toolConfigBySurface);
     const toolSnapshotBySurface = new Map<AdapterSurface, CliAdapterToolProbeSnapshot>(
       toolSnapshots.map((snapshot) => [snapshot.toolId, snapshot]),
     );
@@ -2698,10 +2849,10 @@ export class CliGovernanceRuntime {
           };
         }
 
-        const candidateSurfaces = [
-          roleBinding.primarySurface,
-          ...(roleBinding.fallbackSurfaces ?? []),
-        ].filter((surface, index, list) => list.indexOf(surface) === index);
+        const candidateSurfaces = this.resolveRoleBindingCandidateSurfaces(
+          roleBinding,
+          toolConfigBySurface,
+        );
         const unavailableReasons: string[] = [];
 
         for (const candidateSurface of candidateSurfaces) {
@@ -2853,6 +3004,31 @@ export class CliGovernanceRuntime {
         ),
       );
     }
+    const missingLocalModels = this.collectToolReasonPayloads(
+      toolSnapshots,
+      "local_model_model_missing:",
+    );
+    if (missingLocalModels.length > 0) {
+      nextActions.push(
+        this.localizeText(
+          `Pull or configure the missing local models before unattended execution: ${missingLocalModels.join(", ")}.`,
+          `请先拉取或修正以下缺失的本地模型，再进行无人值守执行：${missingLocalModels.join(", ")}。`,
+        ),
+      );
+    }
+    if (
+      this.collectToolReasonPayloads(toolSnapshots, "local_model_endpoint_unreachable:").length >
+        0 ||
+      this.collectToolReasonPayloads(toolSnapshots, "local_model_probe_invalid_response:").length >
+        0
+    ) {
+      nextActions.push(
+        this.localizeText(
+          "Check local-model endpoint reachability and Ollama health before relying on fallback routing.",
+          "请先确认本地模型 endpoint 可达且 Ollama 服务健康，再依赖 fallback 路由。",
+        ),
+      );
+    }
     if (fallbackRoleCount > 0 || degradedRoleCount > 0) {
       nextActions.push(
         this.localizeText(
@@ -2879,14 +3055,18 @@ export class CliGovernanceRuntime {
    * @returns Tool-level probe snapshots.
    */
   private async collectAdapterToolSnapshots(): Promise<CliAdapterToolProbeSnapshot[]> {
-    const toolConfigBySurface = new Map<
-      AdapterSurface,
-      NonNullable<AdaptersConfig["tools"]>[number]
-    >();
-    for (const toolConfig of this.options.adaptersConfig.tools ?? []) {
-      toolConfigBySurface.set(toolConfig.toolId, toolConfig);
-    }
-    const protocolBySurface = this.createProtocolBySurface();
+    return this.collectAdapterToolSnapshotsBySurface(this.createToolConfigBySurfaceMap());
+  }
+
+  /**
+   * Probes all tracked adapter tools using one shared tool-config lookup map.
+   * @param toolConfigBySurface Surface -> tool config lookup map.
+   * @returns Tool-level probe snapshots.
+   */
+  private async collectAdapterToolSnapshotsBySurface(
+    toolConfigBySurface: Map<AdapterSurface, NonNullable<AdaptersConfig["tools"]>[number]>,
+  ): Promise<CliAdapterToolProbeSnapshot[]> {
+    const protocolBySurface = this.createProtocolBySurface(toolConfigBySurface);
 
     const snapshots: CliAdapterToolProbeSnapshot[] = [];
     const surfaces = this.resolveTrackedAdapterSurfaces(toolConfigBySurface);
@@ -2899,7 +3079,7 @@ export class CliGovernanceRuntime {
       const configuredUnavailableReasons = [...(toolConfig?.unavailableReasons ?? [])];
       const protocol = protocolBySurface[surface];
       const localProbeResolution = enabled
-        ? await this.probeLocalAdapterAvailability(surface)
+        ? await this.probeLocalAdapterAvailability(surface, toolConfig)
         : {
             availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
             unavailableReasons: [`disabled_by_config:${surface}`],
@@ -2952,6 +3132,7 @@ export class CliGovernanceRuntime {
    */
   private async probeLocalAdapterAvailability(
     surface: AdapterSurface,
+    toolConfig?: NonNullable<AdaptersConfig["tools"]>[number],
   ): Promise<CliLocalAdapterProbeResolution> {
     const overrideResolution = this.options.adapterLocalProbeOverrides?.[surface];
     if (overrideResolution) {
@@ -2987,6 +3168,12 @@ export class CliGovernanceRuntime {
     }
 
     if (surface === AdapterSurface.OLLAMA) {
+      if (this.shouldTrustEndpointBackedLocalModelProbe(toolConfig)) {
+        return {
+          availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+          unavailableReasons: [],
+        };
+      }
       return this.probeSingleCommandAvailability(surface, "ollama", ["--version"]);
     }
 
@@ -3011,10 +3198,14 @@ export class CliGovernanceRuntime {
     args: readonly string[],
   ): Promise<CliLocalAdapterProbeResolution> {
     try {
-      await execFileAsync(command, [...args], {
-        timeout: CLI_ADAPTER_LOCAL_PROBE_TIMEOUT_MS,
-        maxBuffer: CLI_ADAPTER_LOCAL_PROBE_MAX_BUFFER_BYTES,
-      });
+      if (this.options.commandProbeExecutor) {
+        await this.options.commandProbeExecutor(command, args);
+      } else {
+        await execFileAsync(command, [...args], {
+          timeout: CLI_ADAPTER_LOCAL_PROBE_TIMEOUT_MS,
+          maxBuffer: CLI_ADAPTER_LOCAL_PROBE_MAX_BUFFER_BYTES,
+        });
+      }
       return {
         availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
         unavailableReasons: [],
@@ -3033,6 +3224,25 @@ export class CliGovernanceRuntime {
         ],
       };
     }
+  }
+
+  /**
+   * Resolves whether an Ollama-like tool row should trust endpoint health over local binary presence.
+   * @param toolConfig Optional adapter tool config row.
+   * @returns `true` when endpoint-backed local-model config is present.
+   */
+  private shouldTrustEndpointBackedLocalModelProbe(
+    toolConfig?: NonNullable<AdaptersConfig["tools"]>[number],
+  ): boolean {
+    const localModel = toolConfig?.localModel;
+    return (
+      toolConfig?.toolId === AdapterSurface.OLLAMA &&
+      localModel?.provider === LocalModelProvider.OLLAMA &&
+      typeof localModel.endpoint === "string" &&
+      localModel.endpoint.trim().length > 0 &&
+      typeof localModel.model === "string" &&
+      localModel.model.trim().length > 0
+    );
   }
 
   /**
@@ -3121,6 +3331,31 @@ export class CliGovernanceRuntime {
       }
     }
     return failedCommands;
+  }
+
+  /**
+   * Collects payload suffixes for one unavailable-reason prefix across tool snapshots.
+   * @param toolSnapshots Tool-level probe snapshots.
+   * @param prefix Machine-readable reason prefix.
+   * @returns Unique payload suffixes preserving original order.
+   */
+  private collectToolReasonPayloads(
+    toolSnapshots: CliAdapterToolProbeSnapshot[],
+    prefix: string,
+  ): string[] {
+    const payloads: string[] = [];
+    for (const snapshot of toolSnapshots) {
+      for (const reason of snapshot.unavailableReasons) {
+        if (!reason.startsWith(prefix)) {
+          continue;
+        }
+        const payload = reason.slice(prefix.length);
+        if (!payloads.includes(payload)) {
+          payloads.push(payload);
+        }
+      }
+    }
+    return payloads;
   }
 
   /**

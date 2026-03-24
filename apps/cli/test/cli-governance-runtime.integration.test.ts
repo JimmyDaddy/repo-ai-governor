@@ -22,6 +22,8 @@ import {
   ExecutionProgressStage,
   ExecutionProgressStatus,
   GovernorErrorCode,
+  LocalModelProvider,
+  RuntimeError,
 } from "@repo-ai-governor/shared";
 import { CliGovernanceRuntime } from "../src/cli-governance-runtime.js";
 import { CliCommandName } from "../src/constants/cli-command.constant.js";
@@ -48,6 +50,7 @@ interface RuntimeFixtureOptions {
       }
     >
   >;
+  commandProbeExecutor?: (command: string, args: readonly string[]) => Promise<void>;
 }
 
 /**
@@ -138,7 +141,51 @@ function createAdapterLocalProbeOverrides(): Partial<
       availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
       unavailableReasons: [],
     },
+    [AdapterSurface.OLLAMA]: {
+      availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+      unavailableReasons: [],
+    },
   };
+}
+
+/**
+ * Creates adapters config where remote tools are unavailable and Ollama acts as local fallback.
+ * @returns Adapters config with one enabled local-model tool row.
+ */
+function createLocalFallbackAdaptersConfig(): AdaptersConfig {
+  const adaptersConfig = createAdaptersConfigFixture();
+  adaptersConfig.tools = [
+    {
+      toolId: AdapterSurface.CODEX,
+      enabled: true,
+      availability: AdapterAvailability.UNAVAILABLE,
+      unavailableReasons: ["login_required"],
+    },
+    {
+      toolId: AdapterSurface.GITHUB_COPILOT,
+      enabled: true,
+      availability: AdapterAvailability.UNAVAILABLE,
+      unavailableReasons: ["login_required"],
+    },
+    {
+      toolId: AdapterSurface.CLAUDE_CODE,
+      enabled: true,
+      availability: AdapterAvailability.UNAVAILABLE,
+      unavailableReasons: ["login_required"],
+    },
+    {
+      toolId: AdapterSurface.OLLAMA,
+      enabled: true,
+      availability: AdapterAvailability.AVAILABLE,
+      localModel: {
+        provider: LocalModelProvider.OLLAMA,
+        endpoint: "http://127.0.0.1:11434",
+        model: "qwen2.5-coder:7b",
+        maxRetries: 0,
+      },
+    },
+  ];
+  return adaptersConfig;
 }
 
 /**
@@ -181,6 +228,7 @@ async function createRuntimeFixture(options: RuntimeFixtureOptions = {}): Promis
     runtimeDebugOptions: options.runtimeDebugOptions,
     adapterLocalProbeOverrides:
       options.adapterLocalProbeOverrides ?? createAdapterLocalProbeOverrides(),
+    commandProbeExecutor: options.commandProbeExecutor,
   });
 
   return {
@@ -212,6 +260,11 @@ async function withRuntimeFixture(
 }
 
 describe("CliGovernanceRuntime policy/review safeguards", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
   it("fails run when policy outcome requires HITL confirmation", async () => {
     await withRuntimeFixture(async (fixture) => {
       const runtimeWithOverrides = fixture.runtime as unknown as {
@@ -286,6 +339,62 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
         }),
       ).toBe(true);
     });
+  });
+
+  it("blocks run when only ollama fallback remains but required capabilities are unsupported", async () => {
+    const fetchMock = vi.fn(async (input: string | URL | Request) => {
+      if (String(input).includes("/api/tags")) {
+        return new Response(
+          JSON.stringify({
+            models: [
+              {
+                name: "qwen2.5-coder:7b",
+              },
+            ],
+          }),
+          {
+            status: 200,
+            headers: {
+              "content-type": "application/json",
+            },
+          },
+        );
+      }
+
+      return new Response(
+        JSON.stringify({
+          response: "local fallback completed",
+          done: true,
+        }),
+        {
+          status: 200,
+          headers: {
+            "content-type": "application/json",
+          },
+        },
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await withRuntimeFixture(
+      async (fixture) => {
+        const runtimeWithOverrides = fixture.runtime as unknown as {
+          collectGitChangedPaths: () => Promise<string[]>;
+        };
+        runtimeWithOverrides.collectGitChangedPaths = async () => [];
+        const runResult = await fixture.runtime.execute(CliCommandName.RUN);
+
+        expect(runResult.commandResult.details?.runtime_status).toBe("failed");
+        expect(
+          runResult.commandResult.checks?.some(
+            (check) => check.id === "runtime" && check.detail.includes("status=failed"),
+          ),
+        ).toBe(true);
+      },
+      {
+        adaptersConfig: createLocalFallbackAdaptersConfig(),
+      },
+    );
   });
 
   it("drains queued review request after review-verify emits verify/backfill artifacts", async () => {
@@ -720,6 +829,145 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
           trace: false,
           replayPath: null,
           adapters: true,
+        },
+      },
+    );
+  });
+
+  it("fails verify when only local-model fallback is available for unsupported required roles", async () => {
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            models: [
+              {
+                name: "qwen2.5-coder:7b",
+              },
+            ],
+          }),
+          {
+            status: 200,
+            headers: {
+              "content-type": "application/json",
+            },
+          },
+        ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await withRuntimeFixture(
+      async (fixture) => {
+        await expect(fixture.runtime.execute(CliCommandName.VERIFY)).rejects.toMatchObject({
+          code: GovernorErrorCode.ADAPTER_ROUTE_NO_AVAILABLE_SURFACE,
+        });
+      },
+      {
+        adaptersConfig: createLocalFallbackAdaptersConfig(),
+        runtimeDebugOptions: {
+          dryRun: false,
+          trace: false,
+          replayPath: null,
+          adapters: true,
+        },
+        adapterLocalProbeOverrides: {
+          [AdapterSurface.CODEX]: {
+            availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+            unavailableReasons: [],
+          },
+          [AdapterSurface.CLAUDE_CODE]: {
+            availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+            unavailableReasons: [],
+          },
+          [AdapterSurface.GITHUB_COPILOT]: {
+            availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+            unavailableReasons: [],
+          },
+        },
+        commandProbeExecutor: async () => undefined,
+      },
+    );
+  });
+
+  it("keeps endpoint-backed ollama probe available when local binary is missing", async () => {
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            models: [
+              {
+                name: "qwen2.5-coder:7b",
+              },
+            ],
+          }),
+          {
+            status: 200,
+            headers: {
+              "content-type": "application/json",
+            },
+          },
+        ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await withRuntimeFixture(
+      async (fixture) => {
+        const connectResult = await fixture.runtime.execute(CliCommandName.CONNECT);
+        const diagnosticsArtifactPath = connectResult.commandResult.artifacts?.find(
+          (artifact) => artifact.id === "connect_diagnostics",
+        )?.path;
+        expect(typeof diagnosticsArtifactPath).toBe("string");
+
+        const diagnosticsPayload = JSON.parse(
+          await readFile(String(diagnosticsArtifactPath), "utf8"),
+        ) as {
+          verification?: {
+            tools?: Array<{
+              toolId?: string;
+              availabilityStatus?: string;
+              unavailableReasons?: string[];
+            }>;
+          };
+        };
+        const ollamaSnapshot = diagnosticsPayload.verification?.tools?.find(
+          (tool) => tool.toolId === AdapterSurface.OLLAMA,
+        );
+
+        expect(ollamaSnapshot?.availabilityStatus).toBe(AgentAvailabilityStatus.AVAILABLE);
+        expect(ollamaSnapshot?.unavailableReasons ?? []).not.toContain(
+          "command_missing:ollama:ollama",
+        );
+      },
+      {
+        adaptersConfig: createLocalFallbackAdaptersConfig(),
+        runtimeDebugOptions: {
+          dryRun: false,
+          trace: false,
+          replayPath: null,
+          adapters: true,
+        },
+        adapterLocalProbeOverrides: {
+          [AdapterSurface.CODEX]: {
+            availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+            unavailableReasons: [],
+          },
+          [AdapterSurface.CLAUDE_CODE]: {
+            availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+            unavailableReasons: [],
+          },
+          [AdapterSurface.GITHUB_COPILOT]: {
+            availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+            unavailableReasons: [],
+          },
+        },
+        commandProbeExecutor: async (command) => {
+          if (command === "ollama") {
+            const error = new RuntimeError(
+              GovernorErrorCode.EXECUTION_FAILED,
+              "spawn ollama ENOENT",
+            ) as NodeJS.ErrnoException;
+            error.code = "ENOENT";
+            throw error;
+          }
         },
       },
     );

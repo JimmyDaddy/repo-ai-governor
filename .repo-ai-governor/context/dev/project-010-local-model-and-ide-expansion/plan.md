@@ -86,7 +86,7 @@
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 |---|---|---|---|---|---|
 | TK-095 | sprint-001 | 本地模型适配契约与配置扩展基线 | baseline/contract | DA-098 | completed |
-| TK-096 | sprint-001 | Ollama 类 adapter 与 route fallback 基线 | implementation/adapter | TK-095 | planned |
+| TK-096 | sprint-001 | Ollama 类 adapter 与 route fallback 基线 | implementation/adapter | TK-095 | completed |
 | TK-097 | sprint-001 | 本地模型诊断校验与受限网络演练基线 | implementation/gate | TK-095,TK-096 | planned |
 | TK-098 | sprint-001 | sprint-001 出口验收与 sprint-002 输入约束 | acceptance baseline | TK-095,TK-096,TK-097 | planned |
 | TK-099 | sprint-002 | 任务驱动 DAG 与 `run` 主链装配 | implementation/runtime | TK-098 | planned |
@@ -130,3 +130,4 @@
 6. 2026-03-24：新增 `TK-105`，重构 master execution plan 的组织方式，使其收敛为面向当前执行的导航文档。
 7. 2026-03-24：新增 `TK-106`，将 Stage 9 follow-up 的技术/架构含义回锚到 triad，补齐总技术方案、架构蓝图及 PRD/brief 的最小同步。
 8. 2026-03-24：新增 `TK-113`，将 `project-010` 从 IDE-first 重排为 mainchain-first：新建 `sprint-002-autonomous-mainchain-foundation`，并将原 `sprint-002` 顺延为 `sprint-003-delivery-ide-and-ga-hardening`。
+9. 2026-03-24：完成 `TK-096`，将本地模型路径从契约基线升级为真实 Ollama 类 `probe/invoke` 与自动 fallback candidate，为 `TK-097` 的 deep probe 和受限网络演练提供唯一实现输入。

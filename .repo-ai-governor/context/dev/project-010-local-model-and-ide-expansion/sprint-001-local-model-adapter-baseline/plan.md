@@ -11,7 +11,7 @@
 ## 2. In-Scope Tasks
 
 1. TK-095 本地模型适配契约与配置扩展基线（completed）
-2. TK-096 Ollama 类 adapter 与 route fallback 基线（planned）
+2. TK-096 Ollama 类 adapter 与 route fallback 基线（completed）
 3. TK-097 本地模型诊断校验与受限网络演练基线（planned）
 4. TK-098 sprint-001 出口验收与 sprint-002 输入约束（planned）
 5. TK-103 全自动研发 gap 清单与 draft 收敛（completed）
@@ -23,7 +23,7 @@
 ## 2.1 当前执行焦点
 
 1. `TK-095`：已完成本地模型 surface 契约与 `governor.yaml` 配置/schema 扩展，并产出 `DA-099` 作为 `TK-096/TK-097` 唯一输入基线。
-2. `TK-096`：下一步接入真实调用与 route fallback，不引入契约重复定义。
+2. `TK-096`：已完成真实调用与 route fallback，当前产出 `DA-100` 作为 `TK-097/TK-098` 的唯一实现输入之一。
 3. `TK-097`：基于 `TK-095/TK-096` 验证 deep probe 与 restricted network 演练，产出可复跑门禁证据。
 4. `TK-103`：已完成 draft gap checklist，为 `TK-096/TK-097/TK-098` 提供统一问题清单与闭环顺序。
 5. `TK-104`：将 draft 级 gap checklist 正式上收到 master plan，确保 Stage 9 follow-up 与 project-010 的问题清单保持同源。

@@ -1,8 +1,8 @@
 # TK-096 Ollama 类 adapter 与 route fallback 基线
 
-- Status: planned
-- Date: 2026-03-23
-- Owner: TBD
+- Status: completed
+- Date: 2026-03-24
+- Owner: AI-Agent
 - Priority: P0
 - Project: `project-010-local-model-and-ide-expansion`
 - Sprint: `sprint-001-local-model-adapter-baseline`
@@ -45,6 +45,10 @@
 ## 7. 执行记录
 
 1. 2026-03-23：任务创建，状态初始化为 `planned`。
+2. 2026-03-24：任务启动，状态切换为 `in_progress`；当前按 `DA-099` 既有契约接入真实 Ollama 类 probe/invoke，并将 restricted fallback 从占位输出升级为真实本地模型调用路径。
+3. 2026-03-24：已完成真实 Ollama 类 `probe/invoke`、retry/timeout 基线、CLI 自动追加 `ollama` fallback candidate、restricted fallback handler 本地模型接线，以及本地模型故障语义的人类可读诊断文案。
+4. 2026-03-24：补齐 `DA-100`、artifact registry、resolved review 与任务台账同步，并通过 `tsc`、`packages/adapters`、CLI 集成与总门禁回归，任务收尾为 `completed`。
+5. 2026-03-24：根据 follow-up CR 修正本地模型 capability matrix 与 endpoint-first probe 语义，避免将 `tool_calling` / `structured_output` / `confirmation_gate` 误报为已支持，并补齐确定性回归测试后保持 `completed`。
 
 ## 8. 产出
 

@@ -5,8 +5,11 @@
   - 2026-03-23：依据全自动研发落地清单启动任务，状态切换为 `in_progress`，当前先收敛 surface 与配置/schema 契约基线。
   - 2026-03-23：完成第一批代码落地并通过关键回归（`tsc`、`config/local-model/cli-runtime` 测试），继续保持 `in_progress` 收敛剩余产物。
   - 2026-03-24：完成 `DA-099` 产物文档、artifact registry 登记与台账同步，并通过关键验证回归，任务状态更新为 `completed`。
-- [ ] TK-096 Ollama 类 adapter 与 route fallback 基线
+- [x] TK-096 Ollama 类 adapter 与 route fallback 基线
   - 2026-03-23：任务创建，状态初始化为 `planned`。
+  - 2026-03-24：任务启动，状态切换为 `in_progress`；开始收敛真实 Ollama 类 probe/invoke 与 restricted fallback 真正落到本地模型适配器。
+  - 2026-03-24：已完成真实 Ollama 类 `probe/invoke`、自动 `ollama` fallback candidate、本地模型故障诊断语义与 README 更新，并通过 `tsc`、`packages/adapters`、CLI 集成和总门禁回归，任务状态更新为 `completed`。
+  - 2026-03-24：复核 follow-up CR 后，已修正 capability matrix 过度声明与 endpoint-healthy 仍要求本地 `ollama` 命令的问题，并补齐确定性回归测试，任务状态维持 `completed`。
 - [ ] TK-097 本地模型诊断校验与受限网络演练基线
   - 2026-03-23：任务创建，状态初始化为 `planned`。
 - [ ] TK-098 sprint-001 出口验收与 sprint-002 输入约束
