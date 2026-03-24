@@ -3,7 +3,7 @@ import { createInstance, type i18n } from "i18next";
 import { I18N_RUNTIME_ENGINE, Locale } from "../constants/i18n.constant.js";
 import { GovernorErrorCode, I18nError } from "../errors/index.js";
 import type { I18nRuntimeConfig } from "../types/interfaces/index.js";
-import { EN_US_TRANSLATIONS } from "./locales/en-us.js";
+import { EN_US_TRANSLATIONS } from "./locales/en-US.js";
 import { ZH_CN_TRANSLATIONS } from "./locales/zh-cn.js";
 
 const I18N_RESOURCES = {
