@@ -1,6 +1,6 @@
 # TK-126 启动基线与规范加载分层对齐
 
-- Status: active
+- Status: completed
 - Date: 2026-03-24
 - Owner: AI-Agent
 - Priority: P0
@@ -45,6 +45,8 @@
 
 1. 2026-03-24：任务创建，状态初始化为 `planned`。
 2. 2026-03-24：任务启动，状态切换为 `active`，作为 sprint-001 首个执行任务。
+3. 2026-03-24：完成 `AGENTS.md` 与 `long-term-maintenance-guide.md` 的启动基线收敛，统一为 manifest 驱动的 `L0 默认加载 + L1 按需补载`。
+4. 2026-03-24：产出 `DA-124`，记录默认启动集合、补载触发边界与后续 rollout 约束。
 
 ## 8. 产出
 

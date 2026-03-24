@@ -14,21 +14,27 @@
 
 ## 产品入口
 
-1. 在规划或执行之前，AI 代理必须阅读 `.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-overall-technical-solution.md`。
-2. `.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-overall-technical-solution.md` 是工具级架构和实现的北极星文档。
-3. 关于架构边界和仓库分层，AI 代理必须阅读 `.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-architecture-and-repo-layering.md`。
-4. 在规划或执行之前，AI 代理必须阅读 `.repo-ai-governor/normative_knowledge_sources/product-requirements-brief.md`。
-5. `.repo-ai-governor/normative_knowledge_sources/product-requirements-brief.md` 是默认执行目标，用于防止实现过程中的范围偏移。
-6. `.repo-ai-governor/normative_knowledge_sources/product-requirements.md` 是完整的产品参考文档，用于迭代规划、能力对齐和重大范围决策。
-7. 对 `.repo-ai-governor/normative_knowledge_sources/product-requirements.md` 的任何更新，必须在同一变更集中同步更新 `.repo-ai-governor/normative_knowledge_sources/product-requirements-brief.md`。
-8. 功能实现必须优先服务产品目标：治理采用本工具的仓库中的 AI 开发工作流。
-9. 本仓库自身的治理工作流用作自托管验证路径，而非主要产品目标。
+1. 在规划或执行之前，AI 代理必须阅读 `.repo-ai-governor/normative_knowledge_sources/normative-loading-manifest.yaml`，并将其视为规范加载分层与触发条件的唯一事实来源。
+2. 默认启动只读取 manifest 中 `L0 + default_load=true` 的文档与 `external_required_inputs`；当前默认集合包括：
+   - `.repo-ai-governor/context/current-context.md`
+   - `.repo-ai-governor/normative_knowledge_sources/normative-loading-manifest.yaml`
+   - `.repo-ai-governor/normative_knowledge_sources/product-requirements-brief.md`
+   - `.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md`
+   - `.repo-ai-governor/normative_knowledge_sources/governance/long-term-maintenance-guide.md`
+3. 仅当任务命中 manifest 中的 `load_trigger` 时，才补载 `L1/L2` 文档，避免默认上下文持续膨胀。
+4. `.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-overall-technical-solution.md` 是工具级架构与运行时契约的北极星文档，仅在 `architecture_change`、`runtime_contract_change`、`governance_engine_change` 等场景下补载。
+5. `.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-architecture-and-repo-layering.md` 用于架构边界和仓库分层，仅在 `layering_boundary_change`、`module_dependency_change`、`monorepo_migration_decision` 等场景下补载。
+6. `.repo-ai-governor/normative_knowledge_sources/product-requirements-brief.md` 是默认执行目标，用于防止实现过程中的范围偏移。
+7. `.repo-ai-governor/normative_knowledge_sources/product-requirements.md` 是完整的产品参考文档，仅在 `scope_change`、`major_priority_decision`、`product_capability_alignment` 等场景下补载。
+8. 对 `.repo-ai-governor/normative_knowledge_sources/product-requirements.md` 的任何更新，必须在同一变更集中同步更新 `.repo-ai-governor/normative_knowledge_sources/product-requirements-brief.md`。
+9. 功能实现必须优先服务产品目标：治理采用本工具的仓库中的 AI 开发工作流。
+10. 本仓库自身的治理工作流用作自托管验证路径，而非主要产品目标。
 
 ## 标准入口
 
-1. 在规划或执行之前，AI 代理必须阅读 `.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md`。
-2. 在规划或执行之前，AI 代理必须阅读 `.repo-ai-governor/normative_knowledge_sources/governance/long-term-maintenance-guide.md`。
-3. 所有实现和评审输出必须遵循 `.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md` 中的不可协商规则和验证命令。
+1. `.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md` 与 `.repo-ai-governor/normative_knowledge_sources/governance/long-term-maintenance-guide.md` 属于默认 `L0` 启动集合。
+2. 所有实现和评审输出必须遵循 `.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md` 中的不可协商规则和验证命令。
+3. 若 manifest 与本文件的加载说明出现分歧，以 manifest 为准并在同一变更窗口更新本文件。
 
 ## 工作规则
 

@@ -15,10 +15,20 @@ This guide does not duplicate rule text from `.repo-ai-governor/normative_knowle
 
 ## Agent Startup Baseline
 
-1. Read `AGENTS.md`
-2. Read `.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md`
-3. Read this guide
-4. Read `.repo-ai-governor/context/current-context.md`
+1. Read `AGENTS.md`.
+2. Read `.repo-ai-governor/normative_knowledge_sources/normative-loading-manifest.yaml`.
+3. Read `.repo-ai-governor/context/current-context.md`.
+4. Read every manifest entry that satisfies `tier=L0` and `default_load=true`, excluding files already read in steps 2-3.
+5. Only when the task matches manifest `load_trigger`, escalate to `L1/L2`; do not default-load `L1/L2/L3`.
+
+Current default startup baseline therefore resolves to:
+
+1. `AGENTS.md`
+2. `.repo-ai-governor/normative_knowledge_sources/normative-loading-manifest.yaml`
+3. `.repo-ai-governor/context/current-context.md`
+4. `.repo-ai-governor/normative_knowledge_sources/product-requirements-brief.md`
+5. `.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md`
+6. `.repo-ai-governor/normative_knowledge_sources/governance/long-term-maintenance-guide.md`
 
 ## Rule Set Mapping
 

@@ -61,7 +61,7 @@
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 |---|---|---|---|---|---|
-| TK-126 | sprint-001 | 启动基线与规范加载分层对齐 | implementation/governance | `.repo-ai-governor/draft/task-execution-context-growth-analysis.md` | active |
+| TK-126 | sprint-001 | 启动基线与规范加载分层对齐 | implementation/governance | `.repo-ai-governor/draft/task-execution-context-growth-analysis.md` | completed |
 | TK-127 | sprint-001 | `current-context` 活跃流瘦身与历史索引分层 | implementation/context | TK-126 | planned |
 | TK-128 | sprint-001 | `TK` 单写源与任务模板输入收紧 | implementation/governance | TK-126,TK-127 | planned |
 | TK-129 | sprint-001 | sprint-001 出口验收与 rollout 输入约束 | acceptance baseline | TK-126,TK-127,TK-128 | planned |
@@ -87,3 +87,4 @@
 ## 7. 里程碑记录
 
 1. 2026-03-24：创建 `project-012`，将“任务执行上下文增长分析”正式转化为独立优化主线，并切换为当前 primary stream。
+2. 2026-03-24：完成 `TK-126` 第一轮收口，将 `AGENTS` 与 maintenance guide 的默认启动语义对齐到 manifest 驱动的 `L0 默认加载 + L1 按需补载` 基线。
