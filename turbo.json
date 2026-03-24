@@ -115,6 +115,11 @@
       "dependsOn": ["//#gate:build"],
       "outputs": []
     },
+    "//#gate:stage9-blackbox-ga": {
+      "cache": false,
+      "dependsOn": ["//#gate:test:e2e", "//#gate:test:resilience"],
+      "outputs": []
+    },
     "//#gate:check": {
       "cache": false,
       "dependsOn": [
@@ -137,7 +142,8 @@
         "//#gate:test:packages",
         "//#gate:test:integration",
         "//#gate:test:e2e",
-        "//#gate:test:resilience"
+        "//#gate:test:resilience",
+        "//#gate:stage9-blackbox-ga"
       ],
       "outputs": []
     }

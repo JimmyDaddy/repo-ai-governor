@@ -1,49 +1,57 @@
 {
   "reportType": "ga_candidate_unified_gate_v1",
   "status": "passed",
-  "generatedAt": "2026-03-21T22:48:42.068Z",
+  "generatedAt": "2026-03-24T12:42:15.915Z",
   "steps": [
     {
       "stepId": "contract-baseline",
       "command": "pnpm run test:contract -- --maxWorkers=1 --maxConcurrency=1",
       "exitCode": 0,
-      "durationMs": 546
+      "durationMs": 670
     },
     {
       "stepId": "resilience-regression",
       "command": "pnpm run test:resilience",
       "exitCode": 0,
-      "durationMs": 1752
+      "durationMs": 3441
     },
     {
       "stepId": "integration-regression",
       "command": "pnpm run test:integration -- --maxWorkers=1 --maxConcurrency=1",
       "exitCode": 0,
-      "durationMs": 596
+      "durationMs": 989
     },
     {
       "stepId": "e2e-regression",
       "command": "pnpm run test:e2e -- --maxWorkers=1 --maxConcurrency=1",
       "exitCode": 0,
-      "durationMs": 440
+      "durationMs": 1516
     },
     {
       "stepId": "release-ga-check",
       "command": "pnpm run release:ga-check",
       "exitCode": 0,
-      "durationMs": 10722
+      "durationMs": 53643
     },
     {
       "stepId": "rollback-rehearsal",
       "command": "pnpm run release:rollback-rehearsal",
       "exitCode": 0,
-      "durationMs": 12886
+      "durationMs": 60154
     },
     {
       "stepId": "governance-gate",
       "command": "pnpm run check",
       "exitCode": 0,
-      "durationMs": 4827
+      "durationMs": 11370
+    }
+  ],
+  "supportingReports": [
+    {
+      "reportId": "stage9_blackbox_ga",
+      "path": ".repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-003-delivery-ide-and-ga-hardening/tasks/TK-108-stage9-blackbox-ga-report.json",
+      "reportType": "stage9_blackbox_ga_baseline_v1",
+      "status": "passed"
     }
   ]
 }

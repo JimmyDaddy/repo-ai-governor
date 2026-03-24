@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { spawnSync } from "node:child_process";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
 import { gateFail, gateInfo, gatePass } from "../governance/gate-output.js";
@@ -68,6 +68,78 @@ function readReleasePolicyConfig() {
 }
 
 /**
+ * Resolves one external audit evidence source from policy config.
+ * @param {unknown} auditEvidenceSources Raw policy audit-evidence mapping.
+ * @param {string} evidenceKey Evidence identifier.
+ * @returns {Record<string, unknown> | null}
+ */
+function resolveAuditEvidenceSource(auditEvidenceSources, evidenceKey) {
+  if (
+    !auditEvidenceSources ||
+    typeof auditEvidenceSources !== "object" ||
+    Array.isArray(auditEvidenceSources)
+  ) {
+    return null;
+  }
+
+  const source = auditEvidenceSources[evidenceKey];
+  if (!source || typeof source !== "object" || Array.isArray(source)) {
+    return null;
+  }
+
+  return source;
+}
+
+/**
+ * Reads one external report-file evidence source and validates required status.
+ * @param {string} evidenceKey Evidence identifier.
+ * @param {Record<string, unknown>} sourceConfig Source config entry.
+ * @returns {Record<string, unknown>}
+ */
+function readReportFileEvidence(evidenceKey, sourceConfig) {
+  if (sourceConfig.sourceType !== "report_file") {
+    throw new Error(
+      `external audit evidence "${evidenceKey}" uses unsupported sourceType "${String(sourceConfig.sourceType)}".`,
+    );
+  }
+
+  const reportPath =
+    typeof sourceConfig.reportPath === "string" ? sourceConfig.reportPath.trim() : "";
+  if (reportPath.length === 0) {
+    throw new Error(`external audit evidence "${evidenceKey}" must define non-empty reportPath.`);
+  }
+
+  const absoluteReportPath = resolve(process.cwd(), reportPath);
+  if (!existsSync(absoluteReportPath)) {
+    throw new Error(`external audit evidence "${evidenceKey}" report is missing: ${reportPath}`);
+  }
+
+  const rawReport = readFileSync(absoluteReportPath, "utf8");
+  const parsedReport = JSON.parse(rawReport);
+  if (!parsedReport || typeof parsedReport !== "object") {
+    throw new Error(`external audit evidence "${evidenceKey}" must resolve to a JSON object.`);
+  }
+
+  const actualStatus =
+    typeof parsedReport.status === "string" ? parsedReport.status.trim() : "unknown";
+  const requiredStatus =
+    typeof sourceConfig.requiredStatus === "string" ? sourceConfig.requiredStatus.trim() : "";
+  if (requiredStatus.length > 0 && actualStatus !== requiredStatus) {
+    throw new Error(
+      `external audit evidence "${evidenceKey}" expected status "${requiredStatus}" but received "${actualStatus}".`,
+    );
+  }
+
+  return {
+    sourceType: "report_file",
+    reportPath,
+    reportType:
+      typeof parsedReport.reportType === "string" ? parsedReport.reportType.trim() : undefined,
+    status: actualStatus,
+  };
+}
+
+/**
  * Runs one command and throws when exit code is non-zero.
  * @param {string[]} command Command tuple.
  * @param {string} scenarioId Scenario id for diagnostics.
@@ -116,6 +188,7 @@ try {
   reportPath = resolveReportPath();
   const policyConfig = readReleasePolicyConfig();
   const minimumAuditEvidence = policyConfig.minimumAuditEvidence;
+  const auditEvidenceSources = policyConfig.auditEvidenceSources;
 
   if (!Array.isArray(minimumAuditEvidence) || minimumAuditEvidence.length === 0) {
     throw new Error("release-governance-policy.minimumAuditEvidence must be a non-empty array.");
@@ -155,8 +228,17 @@ try {
       }
 
       if (!(evidenceKey in evidenceByKey)) {
+        const externalEvidenceSource = resolveAuditEvidenceSource(
+          auditEvidenceSources,
+          evidenceKey,
+        );
+        if (externalEvidenceSource) {
+          evidenceByKey[evidenceKey] = readReportFileEvidence(evidenceKey, externalEvidenceSource);
+          continue;
+        }
+
         throw new Error(
-          `rollback rehearsal evidence is missing "${evidenceKey}". update scenario mapping first.`,
+          `rollback rehearsal evidence is missing "${evidenceKey}". update scenario mapping or auditEvidenceSources first.`,
         );
       }
     }

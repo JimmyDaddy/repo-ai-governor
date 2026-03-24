@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { runUnattendedDeliveryScenario } from "../../scripts/ci/stage9-blackbox-ga-lib.js";
 
 interface CliSuccessPayload {
   status?: string;
@@ -182,5 +183,21 @@ describe("CLI blackbox governance flow e2e", () => {
     });
     expect(replayPayload.status).toBe("success");
     expect(replayPayload.command_result?.operation).toBe("governance_run_replay");
+  });
+
+  it("covers Stage 9 task-driven delivery path with replay-linked rehearsal artifacts", async () => {
+    const scenarioSummary = await runUnattendedDeliveryScenario({
+      cliEntryPath,
+    });
+
+    expect(scenarioSummary.status).toBe("passed");
+    expect(scenarioSummary.runtimeStatus).toBe("succeeded");
+    expect(scenarioSummary.assemblyMode).toBe("task_driven");
+    expect(scenarioSummary.deliveryRehearsalEnabled).toBe(true);
+    expect(scenarioSummary.deliveryRehearsalStatus).toBe("applied");
+    expect(scenarioSummary.inlineReviewChainStatus).toBe("applied");
+    expect(typeof scenarioSummary.reportPath).toBe("string");
+    expect(typeof scenarioSummary.replayPath).toBe("string");
+    expect(typeof scenarioSummary.deliveryRehearsalPath).toBe("string");
   });
 });

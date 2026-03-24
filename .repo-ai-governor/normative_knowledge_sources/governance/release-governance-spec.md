@@ -1,8 +1,8 @@
 # Release Governance Spec
 
 - Status: active
-- Date: 2026-03-22
-- Scope: stage-7 release governance baseline
+- Date: 2026-03-24
+- Scope: stage-7 release governance baseline + stage-9 GA evidence overlay
 - Owner: `project-006-hardening-and-release / TK-058`
 
 ## 1. Purpose
@@ -66,6 +66,7 @@ Promotion criteria:
 
 1. RC checks are green in the same release window.
 2. Rollback playbook and audit evidence are available.
+3. Stage 9 blackbox GA baseline report is available and remains `passed` in the same GA candidate window.
 
 ## 4. Rollback And Audit Evidence
 
@@ -80,6 +81,12 @@ Promotion criteria:
 1. `release_check_report`
 2. `distribution_verify_result`
 3. `channel_promotion_record`
+4. `stage9_blackbox_ga_report`
+
+`stage9_blackbox_ga_report` is sourced from:
+
+1. `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-003-delivery-ide-and-ga-hardening/tasks/TK-108-stage9-blackbox-ga-report.json`
+2. The report must keep `status=passed` whenever `release:rollback-rehearsal` or `release:ga-candidate-unified-gate` consumes it as supporting GA evidence.
 
 ## 4.3 Rehearsal Execution Baseline
 
@@ -92,6 +99,7 @@ Promotion criteria:
    - `lockstep-contract-incompatibility`
 4. Rehearsal pass condition:
    - all three scenarios succeed and minimum audit evidence keys are present.
+5. External audit evidence keys declared in `scripts/release/release-governance-policy.json -> auditEvidenceSources` must remain readable and satisfy their required status before the rehearsal can pass.
 
 ## 5. Runtime Distribution Validation
 
@@ -114,6 +122,9 @@ Promotion criteria:
    - `governance-gate`
 4. Unified gate semantics:
    - any step failure blocks GA candidate promotion.
+5. Supporting report baseline:
+   - `stage9_blackbox_ga_report` must be resolved from `scripts/release/release-governance-policy.json -> auditEvidenceSources`
+   - the report must exist and keep `status=passed`, otherwise unified gate fails
 
 ## 6. Update Protocol
 

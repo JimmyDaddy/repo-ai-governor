@@ -1,7 +1,7 @@
 {
   "reportType": "rollback_rehearsal_v1",
   "status": "passed",
-  "generatedAt": "2026-03-21T22:48:37.234Z",
+  "generatedAt": "2026-03-24T12:42:04.535Z",
   "policySource": "scripts/release/release-governance-policy.json",
   "scenarios": [
     {
@@ -9,21 +9,21 @@
       "rollbackTrigger": "critical production regression detected",
       "command": "pnpm run release:check",
       "exitCode": 0,
-      "durationMs": 1463
+      "durationMs": 2269
     },
     {
       "scenarioId": "post-promotion-gate-violation",
       "rollbackTrigger": "release gate violation after channel promotion",
       "command": "pnpm run release:verify-local",
       "exitCode": 0,
-      "durationMs": 470
+      "durationMs": 792
     },
     {
       "scenarioId": "lockstep-contract-incompatibility",
       "rollbackTrigger": "incompatible contract change in lockstep group",
       "command": "pnpm run release:ga-check",
       "exitCode": 0,
-      "durationMs": 10787
+      "durationMs": 56885
     }
   ],
   "evidence": {
@@ -32,21 +32,27 @@
       "rollbackTrigger": "critical production regression detected",
       "command": "pnpm run release:check",
       "exitCode": 0,
-      "durationMs": 1463
+      "durationMs": 2269
     },
     "distribution_verify_result": {
       "scenarioId": "post-promotion-gate-violation",
       "rollbackTrigger": "release gate violation after channel promotion",
       "command": "pnpm run release:verify-local",
       "exitCode": 0,
-      "durationMs": 470
+      "durationMs": 792
     },
     "channel_promotion_record": {
       "scenarioId": "lockstep-contract-incompatibility",
       "rollbackTrigger": "incompatible contract change in lockstep group",
       "command": "pnpm run release:ga-check",
       "exitCode": 0,
-      "durationMs": 10787
+      "durationMs": 56885
+    },
+    "stage9_blackbox_ga_report": {
+      "sourceType": "report_file",
+      "reportPath": ".repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-003-delivery-ide-and-ga-hardening/tasks/TK-108-stage9-blackbox-ga-report.json",
+      "reportType": "stage9_blackbox_ga_baseline_v1",
+      "status": "passed"
     }
   }
 }

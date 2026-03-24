@@ -14,6 +14,8 @@ const RELEASE_IT_CONFIG_PATH = ".release-it.json";
 const REQUIRED_RELEASE_ASSETS = [
   "scripts/release/check-release-ready.js",
   "scripts/release/check-runtime-js-whitelist.js",
+  "scripts/ci/run-stage9-blackbox-ga-baseline.js",
+  "scripts/ci/stage9-blackbox-ga-lib.js",
   "scripts/release/verify-local-distribution.js",
   "scripts/release/run-rollback-rehearsal.js",
   "scripts/release/check-ga-candidate-unified-gate.js",
@@ -32,6 +34,7 @@ const REQUIRED_PACKAGE_SCRIPTS = [
   "release:candidate",
   "release:ga-check",
   "release:ga-candidate-unified-gate",
+  "test:stage9-blackbox-ga",
   "check:runtime-js-whitelist",
 ];
 const REQUIRED_CHANNEL_NAMES = ["canary", "rc", "ga"];
@@ -77,6 +80,53 @@ function readRequiredStringArray(rawObject, fieldName) {
   }
 
   return values;
+}
+
+/**
+ * Validates optional audit-evidence source mappings.
+ * @param {unknown} policyConfig Parsed policy config.
+ */
+function validateAuditEvidenceSources(policyConfig) {
+  if (!policyConfig || typeof policyConfig !== "object") {
+    throw new Error("Release policy config must be a JSON object.");
+  }
+
+  const auditEvidenceSources = policyConfig.auditEvidenceSources;
+  if (typeof auditEvidenceSources === "undefined") {
+    return;
+  }
+
+  if (
+    !auditEvidenceSources ||
+    typeof auditEvidenceSources !== "object" ||
+    Array.isArray(auditEvidenceSources)
+  ) {
+    throw new Error('Release policy config field "auditEvidenceSources" must be an object.');
+  }
+
+  for (const [evidenceKey, sourceConfig] of Object.entries(auditEvidenceSources)) {
+    if (!sourceConfig || typeof sourceConfig !== "object" || Array.isArray(sourceConfig)) {
+      throw new Error(`auditEvidenceSources.${evidenceKey} must be an object.`);
+    }
+
+    if (sourceConfig.sourceType !== "report_file") {
+      throw new Error(`auditEvidenceSources.${evidenceKey}.sourceType must be "report_file".`);
+    }
+
+    if (
+      typeof sourceConfig.reportPath !== "string" ||
+      sourceConfig.reportPath.trim().length === 0
+    ) {
+      throw new Error(`auditEvidenceSources.${evidenceKey}.reportPath must be non-empty.`);
+    }
+
+    if (
+      typeof sourceConfig.requiredStatus !== "string" ||
+      sourceConfig.requiredStatus.trim().length === 0
+    ) {
+      throw new Error(`auditEvidenceSources.${evidenceKey}.requiredStatus must be non-empty.`);
+    }
+  }
 }
 
 /**
@@ -126,6 +176,7 @@ function validateReleasePolicyConfig(policyConfig) {
 
   readRequiredStringArray(policyConfig, "rollbackTriggers");
   readRequiredStringArray(policyConfig, "minimumAuditEvidence");
+  validateAuditEvidenceSources(policyConfig);
 
   gateInfo(
     GATE_NAME,
