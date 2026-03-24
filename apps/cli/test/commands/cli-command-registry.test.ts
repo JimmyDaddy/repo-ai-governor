@@ -5,6 +5,8 @@ import { CliConnectCommand } from "../../src/commands/connect-command.js";
 import { CliDoctorCommand } from "../../src/commands/doctor-command.js";
 import { CliInitCommand } from "../../src/commands/init-command.js";
 import { CliPlanCommand } from "../../src/commands/plan-command.js";
+import { CliReviewCommand } from "../../src/commands/review-command.js";
+import { CliReviewVerifyCommand } from "../../src/commands/review-verify-command.js";
 import { CliUpgradeCommand } from "../../src/commands/upgrade-command.js";
 import { CliVerifyCommand } from "../../src/commands/verify-command.js";
 import { CliCommandName } from "../../src/constants/cli-command.constant.js";
@@ -18,6 +20,8 @@ describe("Cli command registry", () => {
       new CliCheckCommand(),
       new CliVerifyCommand(),
       new CliPlanCommand(),
+      new CliReviewCommand(),
+      new CliReviewVerifyCommand(),
       new CliUpgradeCommand(),
     ] as const;
     const registry = new CliCommandRegistry(executors);

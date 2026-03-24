@@ -57,6 +57,8 @@ import { CliConnectCommand } from "./commands/connect-command.js";
 import { CliDoctorCommand } from "./commands/doctor-command.js";
 import { CliInitCommand } from "./commands/init-command.js";
 import { CliPlanCommand } from "./commands/plan-command.js";
+import { CliReviewCommand } from "./commands/review-command.js";
+import { CliReviewVerifyCommand } from "./commands/review-verify-command.js";
 import { CliUpgradeCommand } from "./commands/upgrade-command.js";
 import { CliVerifyCommand } from "./commands/verify-command.js";
 import { CliCommandName } from "./constants/cli-command.constant.js";
@@ -155,6 +157,8 @@ export class CliGovernanceRuntime {
       new CliCheckCommand(),
       new CliVerifyCommand(),
       new CliPlanCommand(),
+      new CliReviewCommand(),
+      new CliReviewVerifyCommand(),
       new CliUpgradeCommand(),
     ]);
   }
@@ -176,14 +180,6 @@ export class CliGovernanceRuntime {
 
     if (commandName === CliCommandName.RUN) {
       return this.executeRunCommand();
-    }
-
-    if (commandName === CliCommandName.REVIEW) {
-      return this.executeReviewCommand();
-    }
-
-    if (commandName === CliCommandName.REVIEW_VERIFY) {
-      return this.executeReviewVerifyCommand();
     }
 
     throw new RuntimeError(
@@ -223,6 +219,7 @@ export class CliGovernanceRuntime {
       options: this.options,
       artifactWriter: this.artifactWriter,
       adapterDiagnosticsRuntime: this.adapterDiagnosticsRuntime,
+      reviewQueueRuntime: this.reviewQueueRuntime,
       commandExperienceBuilder: this.commandExperienceBuilder,
       calculateCheckTotals: (checks: CliCommandResultCheck[]) => this.calculateCheckTotals(checks),
       buildDefaultConfigContent: () => this.buildDefaultConfigContent(),
@@ -655,283 +652,6 @@ export class CliGovernanceRuntime {
           replay_matched_count: replayResolution.explainResult.matchedCount,
           trace_enabled: runtimeDebugOptions.trace,
         },
-      },
-    };
-  }
-
-  /**
-   * Creates one review-request artifact for downstream review flows.
-   * @returns Runtime command result.
-   */
-  private async executeReviewCommand(): Promise<CliGovernanceCommandResult> {
-    const reviewQueueDirectories = this.reviewQueueRuntime.resolveReviewQueueDirectories();
-    const requestId = `review-${Date.now()}`;
-    const requestPath = resolve(reviewQueueDirectories.requestDirectoryPath, `${requestId}.json`);
-    const correlationId = `review-chain-${requestId}`;
-    await this.artifactWriter.writeJsonArtifact(requestPath, {
-      requestId,
-      status: CLI_REVIEW_REQUEST_STATUS.QUEUED,
-      createdAt: this.toRfc3339SecondsTimestamp(new Date()),
-      workspaceId: this.options.workspace.workspaceId,
-      workspaceRoot: this.options.workspace.workspaceRoot,
-      locale: this.options.locale,
-      outputMode: this.options.outputMode,
-      diagnosticContext: {
-        correlationId,
-        queueStage: "review",
-        chain: "review->review-verify->ledger-backfill",
-      },
-    });
-
-    const message = `Review request queued at ${requestPath}.`;
-    const experience = this.commandExperienceBuilder.buildExperiencePayload({
-      roleProgress: [
-        {
-          roleId: "reviewer",
-          stage: ExecutionProgressStage.REVIEW,
-          status: ExecutionProgressStatus.COMPLETED,
-          category: ExecutionInteractionCategory.NONE,
-          summary: "Review request artifact queued.",
-          detail: `request_id=${requestId}`,
-          backlink: {
-            stageId: ExecutionProgressStage.REVIEW,
-            artifactPath: requestPath,
-          },
-        },
-        {
-          roleId: "verifier",
-          stage: ExecutionProgressStage.REVIEW_VERIFY,
-          status: ExecutionProgressStatus.QUEUED,
-          category: ExecutionInteractionCategory.POLICY_WAITING,
-          summary: "Awaiting review-verify consumption.",
-          detail: `chain=${correlationId}`,
-          backlink: {
-            stageId: ExecutionProgressStage.REVIEW_VERIFY,
-            artifactPath: requestPath,
-          },
-        },
-      ],
-      interactionPrompts: [
-        {
-          category: ExecutionInteractionCategory.POLICY_WAITING,
-          stage: ExecutionProgressStage.REVIEW_VERIFY,
-          title: "Run review-verify",
-          action: "Execute `repo-ai-governor review-verify` to consume queued review request.",
-          blocking: true,
-        },
-      ],
-      layeredLogs: {
-        summary: [`review_request=${requestId}`, "chain=review->review-verify->ledger-backfill"],
-        detailed: [`request_path=${requestPath}`, `correlation_id=${correlationId}`],
-      },
-    });
-    return {
-      message,
-      commandResult: {
-        operation: CLI_RUNTIME_OPERATION.REVIEW_QUEUE,
-        summary: message,
-        check_totals: {
-          pass: 1,
-          warn: 0,
-          fail: 0,
-        },
-        checks: [
-          {
-            id: "review_request",
-            status: CliGovernanceCheckStatus.PASS,
-            detail: requestId,
-          },
-        ],
-        artifacts: [
-          {
-            id: "review_request",
-            path: requestPath,
-          },
-        ],
-        experience,
-      },
-    };
-  }
-
-  /**
-   * Verifies the latest queued review request and writes verification artifact.
-   * @returns Runtime command result.
-   */
-  private async executeReviewVerifyCommand(): Promise<CliGovernanceCommandResult> {
-    const reviewQueueDirectories = this.reviewQueueRuntime.resolveReviewQueueDirectories();
-    await mkdir(reviewQueueDirectories.requestDirectoryPath, { recursive: true });
-    await mkdir(reviewQueueDirectories.resultDirectoryPath, { recursive: true });
-
-    const queuedRequestArtifacts =
-      await this.reviewQueueRuntime.collectQueuedReviewRequestArtifacts(reviewQueueDirectories);
-
-    if (queuedRequestArtifacts.length === 0) {
-      throw new RuntimeError(
-        GovernorErrorCode.UNKNOWN,
-        "review-verify requires at least one queued review request artifact.",
-      );
-    }
-
-    const latestQueuedRequest =
-      queuedRequestArtifacts[queuedRequestArtifacts.length - 1] ?? queuedRequestArtifacts[0];
-    if (!latestQueuedRequest) {
-      throw new RuntimeError(
-        GovernorErrorCode.UNKNOWN,
-        "review-verify failed to resolve queued request artifact.",
-      );
-    }
-
-    const verifyId = `review-verify-${Date.now()}`;
-    const verifyPath = resolve(reviewQueueDirectories.resultDirectoryPath, `${verifyId}.json`);
-    const requestPayload = await this.artifactWriter.safeReadJson(latestQueuedRequest.filePath);
-    const sourceRequestId =
-      typeof requestPayload?.requestId === "string"
-        ? requestPayload.requestId
-        : latestQueuedRequest.requestId;
-    const diagnosticContext =
-      requestPayload &&
-      typeof requestPayload.diagnosticContext === "object" &&
-      requestPayload.diagnosticContext
-        ? (requestPayload.diagnosticContext as Record<string, unknown>)
-        : null;
-    const correlationId =
-      diagnosticContext && typeof diagnosticContext.correlationId === "string"
-        ? diagnosticContext.correlationId
-        : `review-chain-${sourceRequestId}`;
-    const ledgerBackfillPath = resolve(
-      this.options.workspace.workspaceRoot,
-      "context",
-      "ledger-backfill",
-      "review-verify",
-      `${verifyId}.json`,
-    );
-    const verifiedAt = this.toRfc3339SecondsTimestamp(new Date());
-
-    await this.artifactWriter.writeJsonArtifact(ledgerBackfillPath, {
-      ledgerBackfillId: `ledger-backfill-${verifyId}`,
-      status: CLI_REVIEW_LEDGER_BACKFILL_STATUS.PENDING,
-      createdAt: verifiedAt,
-      verifyId,
-      sourceRequestId,
-      sourceRequestPath: latestQueuedRequest.filePath,
-      workspaceId: this.options.workspace.workspaceId,
-      workspaceRoot: this.options.workspace.workspaceRoot,
-      attribution: {
-        correlationId,
-        chain: "review->review-verify->ledger-backfill",
-        chainStep: "ledger-backfill",
-      },
-      diagnostics: {
-        rootCause: CLI_DIAGNOSTIC_ROOT_CAUSE.NONE,
-        note: "Ready for tasks/checklist/csv backfill consumption.",
-      },
-    });
-
-    await this.artifactWriter.writeJsonArtifact(verifyPath, {
-      verifyId,
-      status: CLI_REVIEW_REQUEST_STATUS.VERIFIED,
-      verifiedAt,
-      sourceRequestPath: latestQueuedRequest.filePath,
-      sourceRequestId,
-      ledgerBackfillPath,
-      diagnosticAttribution: {
-        correlationId,
-        chain: "review->review-verify->ledger-backfill",
-        chainStep: "review-verify",
-      },
-    });
-
-    await this.artifactWriter.writeJsonArtifact(latestQueuedRequest.filePath, {
-      ...(requestPayload ?? {}),
-      requestId: sourceRequestId,
-      status: CLI_REVIEW_REQUEST_STATUS.VERIFIED,
-      verifiedAt,
-      consumedAt: verifiedAt,
-      consumedByVerifyId: verifyId,
-      ledgerBackfillPath,
-      diagnosticContext: {
-        ...(diagnosticContext ?? {}),
-        correlationId,
-        queueStage: "review-verify-consumed",
-        chain: "review->review-verify->ledger-backfill",
-      },
-    });
-
-    const message = `Review request verified from ${latestQueuedRequest.filePath}.`;
-    const experience = this.commandExperienceBuilder.buildExperiencePayload({
-      roleProgress: [
-        {
-          roleId: "verifier",
-          stage: ExecutionProgressStage.REVIEW_VERIFY,
-          status: ExecutionProgressStatus.COMPLETED,
-          category: ExecutionInteractionCategory.NONE,
-          summary: "Review verification artifact persisted.",
-          detail: `verify_id=${verifyId}`,
-          backlink: {
-            stageId: ExecutionProgressStage.REVIEW_VERIFY,
-            artifactPath: verifyPath,
-          },
-        },
-        {
-          roleId: "ledger-backfill",
-          stage: ExecutionProgressStage.LEDGER_BACKFILL,
-          status: ExecutionProgressStatus.WAITING,
-          category: ExecutionInteractionCategory.POLICY_WAITING,
-          summary: "Ledger backfill pending downstream task ledger consumption.",
-          detail: `source_request_id=${sourceRequestId}`,
-          backlink: {
-            stageId: ExecutionProgressStage.LEDGER_BACKFILL,
-            artifactPath: ledgerBackfillPath,
-          },
-        },
-      ],
-      interactionPrompts: [
-        {
-          category: ExecutionInteractionCategory.POLICY_WAITING,
-          stage: ExecutionProgressStage.LEDGER_BACKFILL,
-          title: "Consume ledger-backfill artifact",
-          action:
-            "Apply ledger-backfill payload into tasks/checklist/tasks.csv to close review chain.",
-          blocking: true,
-        },
-      ],
-      layeredLogs: {
-        summary: [`verify_id=${verifyId}`, "chain=review->review-verify->ledger-backfill"],
-        detailed: [
-          `verify_path=${verifyPath}`,
-          `ledger_backfill_path=${ledgerBackfillPath}`,
-          `source_request_path=${latestQueuedRequest.filePath}`,
-        ],
-      },
-    });
-    return {
-      message,
-      commandResult: {
-        operation: CLI_RUNTIME_OPERATION.REVIEW_VERIFY,
-        summary: message,
-        check_totals: {
-          pass: 1,
-          warn: 0,
-          fail: 0,
-        },
-        checks: [
-          {
-            id: "review_verify",
-            status: CliGovernanceCheckStatus.PASS,
-            detail: latestQueuedRequest.fileName,
-          },
-        ],
-        artifacts: [
-          {
-            id: "review_verify_result",
-            path: verifyPath,
-          },
-          {
-            id: "review_ledger_backfill",
-            path: ledgerBackfillPath,
-          },
-        ],
-        experience,
       },
     };
   }
