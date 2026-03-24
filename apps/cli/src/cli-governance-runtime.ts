@@ -9,13 +9,7 @@ import { CodexAgentAdapter } from "@repo-ai-governor/adapter-codex";
 import { GithubCopilotAgentAdapter } from "@repo-ai-governor/adapter-github-copilot";
 import { LocalModelAgentAdapter } from "@repo-ai-governor/adapter-local-model";
 import { AgentCapability, AgentNetworkMode, AgentRouteRunner } from "@repo-ai-governor/adapter-sdk";
-import {
-  type AdaptersConfig,
-  ConfigLoader,
-  GovernorSchemaVersion,
-  type ResolvedWorkspace,
-  UpgradeSchemaDiffService,
-} from "@repo-ai-governor/config";
+import type { AdaptersConfig, ResolvedWorkspace } from "@repo-ai-governor/config";
 import {
   ChangeRiskEvaluator,
   ChangeRiskFileCategory,
@@ -57,6 +51,14 @@ import {
   RuntimeError,
   WorkspaceMigrationPolicy,
 } from "@repo-ai-governor/shared";
+import { CliCheckCommand } from "./commands/check-command.js";
+import { CliCommandRegistry } from "./commands/cli-command-registry.js";
+import { CliConnectCommand } from "./commands/connect-command.js";
+import { CliDoctorCommand } from "./commands/doctor-command.js";
+import { CliInitCommand } from "./commands/init-command.js";
+import { CliPlanCommand } from "./commands/plan-command.js";
+import { CliUpgradeCommand } from "./commands/upgrade-command.js";
+import { CliVerifyCommand } from "./commands/verify-command.js";
 import { CliCommandName } from "./constants/cli-command.constant.js";
 import {
   CLI_ADAPTER_FAILURE_ATTRIBUTION,
@@ -65,7 +67,6 @@ import {
   CLI_DIAGNOSTIC_ROOT_CAUSE,
   CLI_DOCTOR_ATTACH_MODE,
   CLI_INIT_REQUIRED_DIRECTORY_SEGMENTS,
-  CLI_OPTIONAL_GOVERNANCE_SCRIPT_PATHS,
   CLI_REVIEW_LEDGER_BACKFILL_STATUS,
   CLI_REVIEW_REQUEST_STATUS,
   CLI_RUNTIME_OPERATION,
@@ -81,62 +82,24 @@ import { CliCommandExperienceBuilder } from "./runtime/presentation/command-expe
 import { CliReplayExplainBuilder } from "./runtime/presentation/replay-explain-builder.js";
 import type {
   CliAdapterVerificationResolution,
+  CliCheckTotals,
   CliCommandExecutionResultPayload,
   CliCommandResultArtifact,
   CliCommandResultCheck,
+  CliGovernanceCommandResult,
+  CliGovernanceRuntimeOptions,
   CliInteractionPrompt,
   CliLocalAdapterProbeOverride,
+  CliNormalizedRuntimeDebugOptions,
   CliRoleStageProgress,
   CliRuntimeDebugOptions,
 } from "./types/index.js";
 
 const execFileAsync = promisify(execFile);
 
-interface CliGovernanceRuntimeOptions {
-  currentWorkingDirectory: string;
-  workspace: ResolvedWorkspace;
-  configSource: "default" | "file";
-  profileId: string | null;
-  locale: string;
-  outputMode: ErrorOutputEnvironment;
-  isTty: boolean;
-  memoryConfig: MemoryRuntimeConfig;
-  memoryStoreRoot: string;
-  memoryStoreProviderName: string;
-  memoryStoreProvider: MemoryStoreProvider;
-  adaptersConfig: AdaptersConfig;
-  runtimeDebugOptions?: CliRuntimeDebugOptions;
-  adapterLocalProbeOverrides?: Partial<Record<AdapterSurface, CliLocalAdapterProbeOverride>>;
-  commandProbeExecutor?: (command: string, args: readonly string[]) => Promise<void>;
-}
-
-interface CliGovernanceCommandResult {
-  message: string;
-  commandResult: CliCommandExecutionResultPayload;
-}
-
-interface CliCheckTotals {
-  pass: number;
-  warn: number;
-  fail: number;
-}
-
 interface CliExecutionStreamMetadata {
   projectId?: string;
   sprintId?: string;
-}
-
-interface CliNormalizedRuntimeDebugOptions {
-  dryRun: boolean;
-  trace: boolean;
-  replayPath: string | null;
-  adapters: boolean;
-  fix: boolean;
-  recordLedger: boolean;
-  taskId: string | null;
-  restrictedNetwork: boolean;
-  restrictedReason: string | null;
-  allowLocalFallback: boolean;
 }
 
 /**
@@ -147,6 +110,7 @@ interface CliNormalizedRuntimeDebugOptions {
  * stay deterministic across CLI entrypoints and output modes.
  */
 export class CliGovernanceRuntime {
+  private readonly commandRegistry: CliCommandRegistry;
   private readonly localModelProbeRuntime: CliLocalModelProbeRuntime;
   private readonly adapterRoutingRuntime: CliAdapterRoutingRuntime;
   private readonly adapterVerificationRuntime: CliAdapterVerificationRuntime;
@@ -184,6 +148,15 @@ export class CliGovernanceRuntime {
     );
     this.commandExperienceBuilder = new CliCommandExperienceBuilder();
     this.replayExplainBuilder = new CliReplayExplainBuilder();
+    this.commandRegistry = new CliCommandRegistry([
+      new CliInitCommand(),
+      new CliConnectCommand(),
+      new CliDoctorCommand(),
+      new CliCheckCommand(),
+      new CliVerifyCommand(),
+      new CliPlanCommand(),
+      new CliUpgradeCommand(),
+    ]);
   }
 
   /**
@@ -196,20 +169,9 @@ export class CliGovernanceRuntime {
       await this.ensureWorkspaceBootstrap();
     }
 
-    if (commandName === CliCommandName.INIT) {
-      return this.executeInitCommand();
-    }
-
-    if (commandName === CliCommandName.CONNECT) {
-      return this.executeConnectCommand();
-    }
-
-    if (commandName === CliCommandName.DOCTOR) {
-      return this.executeDoctorCommand();
-    }
-
-    if (commandName === CliCommandName.CHECK) {
-      return this.executeCheckCommand();
+    const extractedCommandExecutor = this.commandRegistry.resolve(commandName);
+    if (extractedCommandExecutor) {
+      return extractedCommandExecutor.execute(this.createCommandExecutorContext());
     }
 
     if (commandName === CliCommandName.RUN) {
@@ -224,18 +186,6 @@ export class CliGovernanceRuntime {
       return this.executeReviewVerifyCommand();
     }
 
-    if (commandName === CliCommandName.VERIFY) {
-      return this.executeVerifyCommand();
-    }
-
-    if (commandName === CliCommandName.PLAN) {
-      return this.executePlanCommand();
-    }
-
-    if (commandName === CliCommandName.UPGRADE) {
-      return this.executeUpgradeCommand();
-    }
-
     throw new RuntimeError(
       GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
       `Unsupported CLI command "${commandName}".`,
@@ -243,88 +193,6 @@ export class CliGovernanceRuntime {
         commandName,
       },
     );
-  }
-
-  /**
-   * Bootstraps workspace directories and baseline config.
-   * @returns Runtime command result.
-   */
-  private async executeInitCommand(): Promise<CliGovernanceCommandResult> {
-    const checks: CliCommandResultCheck[] = [];
-    const artifacts: CliCommandResultArtifact[] = [];
-    const ensuredDirectoryPaths: string[] = [];
-    const createdDirectoryPaths: string[] = [];
-
-    for (const segments of CLI_INIT_REQUIRED_DIRECTORY_SEGMENTS) {
-      const directoryPath = resolve(this.options.workspace.workspaceRoot, ...segments);
-      const directoryExisted = existsSync(directoryPath);
-      await mkdir(directoryPath, { recursive: true });
-      ensuredDirectoryPaths.push(directoryPath);
-      if (!directoryExisted) {
-        createdDirectoryPaths.push(directoryPath);
-      }
-    }
-
-    checks.push({
-      id: "workspace_directories",
-      status: CliGovernanceCheckStatus.PASS,
-      detail: `ensured=${ensuredDirectoryPaths.length} created=${createdDirectoryPaths.length}`,
-    });
-
-    const configPath = this.options.workspace.configPath;
-    const configCreated = !existsSync(configPath);
-    if (configCreated) {
-      await this.artifactWriter.writeTextArtifact(configPath, this.buildDefaultConfigContent());
-    }
-
-    checks.push({
-      id: "workspace_config",
-      status: CliGovernanceCheckStatus.PASS,
-      detail: configCreated ? `created=${configPath}` : `reused=${configPath}`,
-    });
-    artifacts.push({
-      id: "workspace_config",
-      path: configPath,
-    });
-
-    const initManifestPath = resolve(
-      this.options.workspace.workspaceRoot,
-      "context",
-      "bootstrap",
-      "init-manifest.json",
-    );
-    await this.artifactWriter.writeJsonArtifact(initManifestPath, {
-      initializedAt: this.toRfc3339SecondsTimestamp(new Date()),
-      workspaceId: this.options.workspace.workspaceId,
-      workspaceRoot: this.options.workspace.workspaceRoot,
-      workspaceMode: this.options.workspace.mode,
-      configPath,
-      configSource: this.options.configSource,
-      profileId: this.options.profileId,
-      locale: this.options.locale,
-      memoryStoreEngine: this.options.memoryConfig.storeEngine,
-      memoryStoreRoot: this.options.memoryStoreRoot,
-    });
-    artifacts.push({
-      id: "init_manifest",
-      path: initManifestPath,
-    });
-
-    const message = `Initialized workspace at ${this.options.workspace.workspaceRoot}; config ${configCreated ? "created" : "reused"}.`;
-    return {
-      message,
-      commandResult: {
-        operation: CLI_RUNTIME_OPERATION.WORKSPACE_INIT,
-        summary: message,
-        check_totals: this.calculateCheckTotals(checks),
-        checks,
-        artifacts,
-        details: {
-          workspace_mode: this.options.workspace.mode,
-          workspace_mode_source: this.options.workspace.modeSource,
-        },
-      },
-    };
   }
 
   /**
@@ -347,516 +215,29 @@ export class CliGovernanceRuntime {
   }
 
   /**
-   * Generates adapter-connect diagnostics and optional ledger-backfill artifact.
-   * @returns Runtime command result.
+   * Creates one stable context object for extracted command executors.
+   * @returns Command executor context.
    */
-  private async executeConnectCommand(): Promise<CliGovernanceCommandResult> {
-    const runtimeDebugOptions = this.resolveRuntimeDebugOptions();
-    if (runtimeDebugOptions.recordLedger && !runtimeDebugOptions.taskId) {
-      throw new RuntimeError(
-        GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
-        "connect --record-ledger requires --task-id <id>.",
-        {
-          command: CliCommandName.CONNECT,
-          option: "--task-id",
-        },
-      );
-    }
-
-    const adapterVerification = await this.resolveAdapterVerification();
-    const connectId = `connect-${Date.now()}`;
-    const diagnosticsArtifactPath = resolve(
-      this.options.workspace.workspaceRoot,
-      "context",
-      "diagnostics",
-      "connect",
-      `${connectId}.json`,
-    );
-
-    await this.artifactWriter.writeJsonArtifact(diagnosticsArtifactPath, {
-      connectId,
-      generatedAt: this.toRfc3339SecondsTimestamp(new Date()),
-      workspace: {
-        workspaceId: this.options.workspace.workspaceId,
-        workspaceRoot: this.options.workspace.workspaceRoot,
-        workspaceMode: this.options.workspace.mode,
-      },
-      adapters: this.options.adaptersConfig,
-      verification:
-        this.adapterDiagnosticsRuntime.createAdapterVerificationArtifactPayload(
-          adapterVerification,
-        ),
-      nextActions: adapterVerification.nextActions,
-      behavior: {
-        recordLedger: runtimeDebugOptions.recordLedger,
-        taskId: runtimeDebugOptions.taskId,
-      },
-    });
-
-    const checks: CliCommandResultCheck[] = [
-      {
-        id: "adapter_verification",
-        status: adapterVerification.overallStatus,
-        detail: `required_roles=${adapterVerification.requiredRoleCount} required_failures=${adapterVerification.requiredRoleFailedCount} degraded_roles=${adapterVerification.degradedRoleCount} fallback_roles=${adapterVerification.fallbackRoleCount}`,
-      },
-      {
-        id: "diagnostics_artifact",
-        status: CliGovernanceCheckStatus.PASS,
-        detail: diagnosticsArtifactPath,
-      },
-    ];
-    const artifacts: CliCommandResultArtifact[] = [
-      {
-        id: "connect_diagnostics",
-        path: diagnosticsArtifactPath,
-      },
-    ];
-
-    if (runtimeDebugOptions.recordLedger && runtimeDebugOptions.taskId) {
-      const ledgerBackfillPath = resolve(
-        this.options.workspace.workspaceRoot,
-        "context",
-        "ledger-backfill",
-        "connect",
-        `${connectId}.json`,
-      );
-      await this.artifactWriter.writeJsonArtifact(ledgerBackfillPath, {
-        ledgerBackfillId: `ledger-backfill-${connectId}`,
-        status: CLI_REVIEW_LEDGER_BACKFILL_STATUS.PENDING,
-        createdAt: this.toRfc3339SecondsTimestamp(new Date()),
-        taskId: runtimeDebugOptions.taskId,
-        connectId,
-        diagnosticsArtifactPath,
-        attribution: {
-          chain: "connect->doctor->verify",
-          chainStep: "connect",
-        },
-      });
-      checks.push({
-        id: "ledger_backfill",
-        status: CliGovernanceCheckStatus.PASS,
-        detail: `task_id=${runtimeDebugOptions.taskId}`,
-      });
-      artifacts.push({
-        id: "connect_ledger_backfill",
-        path: ledgerBackfillPath,
-      });
-    } else if (runtimeDebugOptions.taskId) {
-      checks.push({
-        id: "ledger_backfill",
-        status: CliGovernanceCheckStatus.WARN,
-        detail: "--task-id ignored because --record-ledger is not set",
-      });
-    }
-
-    const roleProgress = this.adapterDiagnosticsRuntime.createAdapterRoleProgressRows({
-      verification: adapterVerification,
-      stage: ExecutionProgressStage.CONNECT,
-      diagnosticsPath: diagnosticsArtifactPath,
-      executionId: connectId,
-    });
-    if (runtimeDebugOptions.recordLedger && runtimeDebugOptions.taskId) {
-      roleProgress.push({
-        roleId: "ledger-backfill",
-        stage: ExecutionProgressStage.LEDGER_BACKFILL,
-        status: ExecutionProgressStatus.WAITING,
-        category: ExecutionInteractionCategory.NONE,
-        summary: "Ledger backfill artifact is ready for task-record consumption.",
-        detail: `task_id=${runtimeDebugOptions.taskId}`,
-        backlink: {
-          executionId: connectId,
-          stageId: ExecutionProgressStage.LEDGER_BACKFILL,
-          artifactPath: diagnosticsArtifactPath,
-        },
-      });
-    }
-    const interactionPrompts = this.adapterDiagnosticsRuntime.createAdapterInteractionPrompts({
-      verification: adapterVerification,
-      stage: ExecutionProgressStage.CONNECT,
-    });
-    if (runtimeDebugOptions.recordLedger && runtimeDebugOptions.taskId) {
-      interactionPrompts.push({
-        category: ExecutionInteractionCategory.NONE,
-        stage: ExecutionProgressStage.LEDGER_BACKFILL,
-        title: this.localizeText("Consume ledger backfill", "处理台账回填产物"),
-        action: this.localizeText(
-          "Resolve context/ledger-backfill/connect artifact into tasks/checklist/tasks.csv.",
-          "将 context/ledger-backfill/connect 产物回填到 tasks/checklist/tasks.csv。",
-        ),
-        blocking: false,
-      });
-    }
-    const experience = this.commandExperienceBuilder.buildExperiencePayload({
-      roleProgress,
-      interactionPrompts,
-      layeredLogs: {
-        summary: [
-          `connect_id=${connectId}`,
-          `adapter_status=${adapterVerification.overallStatus}`,
-          `required_failures=${adapterVerification.requiredRoleFailedCount}`,
-        ],
-        detailed: [
-          `diagnostics_path=${diagnosticsArtifactPath}`,
-          `fallback_roles=${adapterVerification.fallbackRoleCount}`,
-          `degraded_roles=${adapterVerification.degradedRoleCount}`,
-          `record_ledger=${runtimeDebugOptions.recordLedger}`,
-        ],
-      },
-    });
-    const message = this.localizeText(
-      `Connect completed with adapter_status=${adapterVerification.overallStatus}; diagnostics=${diagnosticsArtifactPath}.`,
-      `连接已完成，adapter_status=${adapterVerification.overallStatus}；诊断文件=${diagnosticsArtifactPath}。`,
-    );
+  private createCommandExecutorContext() {
     return {
-      message,
-      commandResult: {
-        operation: CLI_RUNTIME_OPERATION.ADAPTER_CONNECT,
-        summary: message,
-        check_totals: this.calculateCheckTotals(checks),
-        checks,
-        artifacts,
-        experience,
-        details: {
-          adapter_status: adapterVerification.overallStatus,
-          required_roles: adapterVerification.requiredRoleCount,
-          required_role_failures: adapterVerification.requiredRoleFailedCount,
-          diagnostics_path: diagnosticsArtifactPath,
-          record_ledger: runtimeDebugOptions.recordLedger,
-          task_id: runtimeDebugOptions.taskId,
-        },
-      },
-    };
-  }
-
-  /**
-   * Probes environment health with read-only-safe diagnostics.
-   * @returns Runtime command result.
-   */
-  private async executeDoctorCommand(): Promise<CliGovernanceCommandResult> {
-    const runtimeDebugOptions = this.resolveRuntimeDebugOptions();
-    const checks: CliCommandResultCheck[] = [];
-    const artifacts: CliCommandResultArtifact[] = [];
-    const nextActions: string[] = [];
-    let safeLocalFixCount = 0;
-
-    let workspaceRootExists = existsSync(this.options.workspace.workspaceRoot);
-    if (!workspaceRootExists && runtimeDebugOptions.fix) {
-      await mkdir(this.options.workspace.workspaceRoot, { recursive: true });
-      workspaceRootExists = true;
-      safeLocalFixCount += 1;
-    }
-    checks.push({
-      id: "workspace_root_exists",
-      status: workspaceRootExists ? CliGovernanceCheckStatus.PASS : CliGovernanceCheckStatus.FAIL,
-      detail: workspaceRootExists
-        ? this.options.workspace.workspaceRoot
-        : `missing=${this.options.workspace.workspaceRoot}`,
-    });
-
-    const workspaceWritable = await this.canWritePath(this.options.workspace.workspaceRoot);
-    checks.push({
-      id: "workspace_write_access",
-      status: workspaceWritable ? CliGovernanceCheckStatus.PASS : CliGovernanceCheckStatus.WARN,
-      detail: workspaceWritable ? "writeable" : "read_only_attach_mode_enabled",
-    });
-    const attachMode = workspaceWritable
-      ? CLI_DOCTOR_ATTACH_MODE.READ_WRITE
-      : CLI_DOCTOR_ATTACH_MODE.READ_ONLY;
-
-    let configExists = existsSync(this.options.workspace.configPath);
-    if (!configExists && runtimeDebugOptions.fix) {
-      await this.artifactWriter.writeTextArtifact(
-        this.options.workspace.configPath,
-        this.buildDefaultConfigContent(),
-      );
-      configExists = true;
-      safeLocalFixCount += 1;
-    }
-    checks.push({
-      id: "workspace_config_exists",
-      status: configExists ? CliGovernanceCheckStatus.PASS : CliGovernanceCheckStatus.WARN,
-      detail: configExists ? this.options.workspace.configPath : "missing; run `init` first",
-    });
-
-    const docs = CLI_BASELINE_DOC_PATHS.map((relativePath) => ({
-      relativePath,
-      exists: existsSync(resolve(this.options.currentWorkingDirectory, relativePath)),
-    }));
-    const missingDocCount = docs.filter((item) => !item.exists).length;
-    checks.push({
-      id: "baseline_docs",
-      status: missingDocCount === 0 ? CliGovernanceCheckStatus.PASS : CliGovernanceCheckStatus.WARN,
-      detail:
-        missingDocCount === 0
-          ? `all_found=${docs.length}`
-          : `missing=${missingDocCount}/${docs.length}`,
-    });
-
-    let memoryRootExists = existsSync(this.options.memoryStoreRoot);
-    if (!memoryRootExists && runtimeDebugOptions.fix) {
-      await mkdir(this.options.memoryStoreRoot, { recursive: true });
-      memoryRootExists = true;
-      safeLocalFixCount += 1;
-    }
-    checks.push({
-      id: "memory_store_root",
-      status: memoryRootExists ? CliGovernanceCheckStatus.PASS : CliGovernanceCheckStatus.WARN,
-      detail: memoryRootExists
-        ? this.options.memoryStoreRoot
-        : `missing=${this.options.memoryStoreRoot}`,
-    });
-
-    let adapterStatus: CliGovernanceCheckStatus | null = null;
-    let adapterVerificationSnapshot: CliAdapterVerificationResolution | null = null;
-    const doctorDiagnosticsArtifactPath = resolve(
-      this.options.workspace.workspaceRoot,
-      "context",
-      "diagnostics",
-      "doctor",
-      `doctor-${Date.now()}.json`,
-    );
-    if (runtimeDebugOptions.adapters) {
-      const adapterVerification = await this.resolveAdapterVerification();
-      adapterVerificationSnapshot = adapterVerification;
-      adapterStatus = adapterVerification.overallStatus;
-      checks.push({
-        id: "adapter_verification",
-        status: adapterStatus,
-        detail: `required_roles=${adapterVerification.requiredRoleCount} required_failures=${adapterVerification.requiredRoleFailedCount} degraded_roles=${adapterVerification.degradedRoleCount} fallback_roles=${adapterVerification.fallbackRoleCount}`,
-      });
-      for (const toolSnapshot of adapterVerification.tools) {
-        checks.push({
-          id: `adapter_tool_${toolSnapshot.toolId}`,
-          status: this.adapterDiagnosticsRuntime.resolveToolProbeCheckStatus(toolSnapshot),
-          detail: this.adapterDiagnosticsRuntime.resolveToolProbeCheckDetail(toolSnapshot),
-        });
-      }
-      if (adapterVerification.nextActions.length > 0) {
-        nextActions.push(...adapterVerification.nextActions);
-      }
-    }
-
-    if (runtimeDebugOptions.fix) {
-      checks.push({
-        id: "safe_local_fix",
-        status:
-          safeLocalFixCount > 0 ? CliGovernanceCheckStatus.PASS : CliGovernanceCheckStatus.WARN,
-        detail:
-          safeLocalFixCount > 0 ? `applied=${safeLocalFixCount}` : "no_safe_local_changes_applied",
-      });
-      nextActions.push(
-        this.localizeText(
-          "safe_local fix only creates writable workspace/config/memory baseline paths; it never installs commands, logs in adapters, or pulls local models.",
-          "safe_local 仅会创建可写的 workspace/config/memory 基线路径；不会安装命令、处理 adapter 登录态，也不会拉取本地模型。",
-        ),
-      );
-    }
-    if (nextActions.length > 0) {
-      checks.push({
-        id: "next_action_hint",
-        status: CliGovernanceCheckStatus.WARN,
-        detail: nextActions[0] ?? "review adapter diagnostics for next action",
-      });
-    }
-    await this.artifactWriter.writeJsonArtifact(doctorDiagnosticsArtifactPath, {
-      generatedAt: this.toRfc3339SecondsTimestamp(new Date()),
-      workspace: {
-        workspaceId: this.options.workspace.workspaceId,
-        workspaceRoot: this.options.workspace.workspaceRoot,
-        workspaceMode: this.options.workspace.mode,
-      },
-      attachMode,
-      options: {
-        adapters: runtimeDebugOptions.adapters,
-        fix: runtimeDebugOptions.fix,
-      },
-      safeLocalBoundary: this.adapterDiagnosticsRuntime.createSafeLocalBoundaryArtifactPayload(
-        runtimeDebugOptions.fix,
-      ),
-      checks,
-      ...(adapterVerificationSnapshot
-        ? {
-            verification: this.adapterDiagnosticsRuntime.createAdapterVerificationArtifactPayload(
-              adapterVerificationSnapshot,
-            ),
-          }
-        : {}),
-      nextActions,
-    });
-    artifacts.push({
-      id: "doctor_diagnostics",
-      path: doctorDiagnosticsArtifactPath,
-    });
-
-    const doctorStatus =
-      !workspaceRootExists || !configExists
-        ? ExecutionProgressStatus.FAILED
-        : workspaceWritable && memoryRootExists
-          ? ExecutionProgressStatus.COMPLETED
-          : ExecutionProgressStatus.WARNING;
-    const roleProgress: CliRoleStageProgress[] = [
-      {
-        roleId: "workspace",
-        stage: ExecutionProgressStage.DOCTOR,
-        status: doctorStatus,
-        category:
-          doctorStatus === ExecutionProgressStatus.FAILED
-            ? ExecutionInteractionCategory.ENVIRONMENT_PRECONDITION
-            : ExecutionInteractionCategory.NONE,
-        summary: `Attach mode resolved as ${attachMode}.`,
-        detail: `workspace_root_exists=${workspaceRootExists} writable=${workspaceWritable} config_exists=${configExists} memory_root_exists=${memoryRootExists}`,
-        backlink: {
-          stageId: ExecutionProgressStage.DOCTOR,
-          executionId: `doctor-${Date.now()}`,
-        },
-      },
-    ];
-    if (adapterVerificationSnapshot) {
-      roleProgress.push(
-        ...this.adapterDiagnosticsRuntime.createAdapterRoleProgressRows({
-          verification: adapterVerificationSnapshot,
-          stage: ExecutionProgressStage.VERIFY,
-          diagnosticsPath: doctorDiagnosticsArtifactPath,
-          executionId: `doctor-${Date.now()}`,
-        }),
-      );
-    }
-    const interactionPrompts: CliInteractionPrompt[] = [];
-    if (attachMode === CLI_DOCTOR_ATTACH_MODE.READ_ONLY) {
-      interactionPrompts.push({
-        category: ExecutionInteractionCategory.PERMISSION_CONFIRMATION,
-        stage: ExecutionProgressStage.DOCTOR,
-        title: "Workspace is read-only",
-        action: "Switch to writable attach mode if you need to create/update governance artifacts.",
-        blocking: false,
-      });
-    }
-    if (adapterVerificationSnapshot) {
-      interactionPrompts.push(
-        ...this.adapterDiagnosticsRuntime.createAdapterInteractionPrompts({
-          verification: adapterVerificationSnapshot,
-          stage: ExecutionProgressStage.VERIFY,
-        }),
-      );
-    }
-    const experience = this.commandExperienceBuilder.buildExperiencePayload({
-      roleProgress,
-      interactionPrompts,
-      layeredLogs: {
-        summary: [
-          `attach_mode=${attachMode}`,
-          `adapter_probe=${runtimeDebugOptions.adapters}`,
-          `safe_local_fix_applied=${safeLocalFixCount}`,
-        ],
-        detailed: [
-          `workspace_root=${this.options.workspace.workspaceRoot}`,
-          `memory_root=${this.options.memoryStoreRoot}`,
-          `next_actions=${nextActions.length}`,
-        ],
-      },
-    });
-    const message = `Doctor completed with attach_mode=${attachMode}.`;
-    return {
-      message,
-      commandResult: {
-        operation: CLI_RUNTIME_OPERATION.ENV_DOCTOR,
-        summary: message,
-        attach_mode: attachMode,
-        check_totals: this.calculateCheckTotals(checks),
-        checks,
-        ...(artifacts.length > 0 ? { artifacts } : {}),
-        experience,
-        details: {
-          config_source: this.options.configSource,
-          profile: this.options.profileId ?? "none",
-          memory_store_provider: this.options.memoryStoreProviderName,
-          adapters_enabled: runtimeDebugOptions.adapters,
-          safe_local_fix_applied: safeLocalFixCount,
-          adapter_status: adapterStatus,
-        },
-      },
-    };
-  }
-
-  /**
-   * Executes optional governance checks when scripts exist in current repository.
-   * @returns Runtime command result.
-   */
-  private async executeCheckCommand(): Promise<CliGovernanceCommandResult> {
-    const checks: CliCommandResultCheck[] = [];
-    const failedChecks: string[] = [];
-
-    checks.push({
-      id: "config_source",
-      status:
-        this.options.configSource === "file"
-          ? CliGovernanceCheckStatus.PASS
-          : CliGovernanceCheckStatus.WARN,
-      detail:
-        this.options.configSource === "file"
-          ? "repository config loaded"
-          : "default config in use; run `init` for explicit config",
-    });
-
-    for (const scriptPath of CLI_OPTIONAL_GOVERNANCE_SCRIPT_PATHS) {
-      const absoluteScriptPath = resolve(this.options.currentWorkingDirectory, scriptPath);
-      const checkId = scriptPath.replace("scripts/governance/", "").replace(".js", "");
-
-      if (!existsSync(absoluteScriptPath)) {
-        checks.push({
-          id: checkId,
-          status: CliGovernanceCheckStatus.WARN,
-          detail: "script_not_found",
-        });
-        continue;
-      }
-
-      try {
-        const result = await execFileAsync(process.execPath, [absoluteScriptPath], {
+      options: this.options,
+      artifactWriter: this.artifactWriter,
+      adapterDiagnosticsRuntime: this.adapterDiagnosticsRuntime,
+      commandExperienceBuilder: this.commandExperienceBuilder,
+      calculateCheckTotals: (checks: CliCommandResultCheck[]) => this.calculateCheckTotals(checks),
+      buildDefaultConfigContent: () => this.buildDefaultConfigContent(),
+      toRfc3339SecondsTimestamp: (value: Date) => this.toRfc3339SecondsTimestamp(value),
+      formatExecFailureDetail: (error: unknown) => this.formatExecFailureDetail(error),
+      resolveRuntimeDebugOptions: () => this.resolveRuntimeDebugOptions(),
+      resolveAdapterVerification: async () => this.resolveAdapterVerification(),
+      canWritePath: async (filePath: string) => this.canWritePath(filePath),
+      localizeText: (english: string, chinese: string) => this.localizeText(english, chinese),
+      runNodeScript: async (scriptPath: string) =>
+        execFileAsync(process.execPath, [scriptPath], {
           cwd: this.options.currentWorkingDirectory,
           maxBuffer: 5 * 1024 * 1024,
           encoding: "utf8",
-        });
-        const summary = [result.stdout.trim(), result.stderr.trim()]
-          .filter((value) => value.length > 0)
-          .join(" | ");
-        checks.push({
-          id: checkId,
-          status: CliGovernanceCheckStatus.PASS,
-          detail: summary.length > 0 ? summary : "passed",
-        });
-      } catch (error) {
-        const detail = this.formatExecFailureDetail(error);
-        failedChecks.push(checkId);
-        checks.push({
-          id: checkId,
-          status: CliGovernanceCheckStatus.FAIL,
-          detail,
-        });
-      }
-    }
-
-    const totals = this.calculateCheckTotals(checks);
-    if (totals.fail > 0) {
-      throw new RuntimeError(
-        GovernorErrorCode.UNKNOWN,
-        `Governance checks failed: ${failedChecks.join(", ")}.`,
-        {
-          failedChecks,
-          totals,
-        },
-      );
-    }
-
-    const message = `Governance checks completed: pass=${totals.pass} warn=${totals.warn} fail=${totals.fail}.`;
-    return {
-      message,
-      commandResult: {
-        operation: CLI_RUNTIME_OPERATION.GOVERNANCE_CHECK,
-        summary: message,
-        check_totals: totals,
-        checks,
-      },
+        }),
     };
   }
 
@@ -1551,254 +932,6 @@ export class CliGovernanceRuntime {
           },
         ],
         experience,
-      },
-    };
-  }
-
-  /**
-   * Verifies adapter routing matrix and emits pass/warn/fail diagnostics.
-   * @returns Runtime command result.
-   */
-  private async executeVerifyCommand(): Promise<CliGovernanceCommandResult> {
-    const runtimeDebugOptions = this.resolveRuntimeDebugOptions();
-    const adapterVerification = await this.resolveAdapterVerification();
-    const checks: CliCommandResultCheck[] = [];
-
-    if (!runtimeDebugOptions.adapters) {
-      checks.push({
-        id: "adapters_flag",
-        status: CliGovernanceCheckStatus.WARN,
-        detail: "--adapters not set; verify still executed with adapters baseline by default",
-      });
-    }
-    checks.push({
-      id: "adapter_verification",
-      status: adapterVerification.overallStatus,
-      detail: `required_roles=${adapterVerification.requiredRoleCount} required_failures=${adapterVerification.requiredRoleFailedCount} degraded_roles=${adapterVerification.degradedRoleCount} fallback_roles=${adapterVerification.fallbackRoleCount}`,
-    });
-    for (const roleEvaluation of adapterVerification.roleEvaluations) {
-      checks.push({
-        id: `role_${roleEvaluation.roleId}`,
-        status: roleEvaluation.status,
-        detail: this.adapterDiagnosticsRuntime.resolveRoleEvaluationDetail(roleEvaluation),
-      });
-    }
-
-    const diagnosticsArtifactPath = resolve(
-      this.options.workspace.workspaceRoot,
-      "context",
-      "diagnostics",
-      "verify",
-      `verify-${Date.now()}.json`,
-    );
-    await this.artifactWriter.writeJsonArtifact(diagnosticsArtifactPath, {
-      generatedAt: this.toRfc3339SecondsTimestamp(new Date()),
-      workspace: {
-        workspaceId: this.options.workspace.workspaceId,
-        workspaceRoot: this.options.workspace.workspaceRoot,
-        workspaceMode: this.options.workspace.mode,
-      },
-      adapters: this.options.adaptersConfig,
-      verification:
-        this.adapterDiagnosticsRuntime.createAdapterVerificationArtifactPayload(
-          adapterVerification,
-        ),
-      nextActions: adapterVerification.nextActions,
-    });
-
-    const artifacts: CliCommandResultArtifact[] = [
-      {
-        id: "verify_diagnostics",
-        path: diagnosticsArtifactPath,
-      },
-    ];
-    const checkTotals = this.calculateCheckTotals(checks);
-    const experience = this.commandExperienceBuilder.buildExperiencePayload({
-      roleProgress: this.adapterDiagnosticsRuntime.createAdapterRoleProgressRows({
-        verification: adapterVerification,
-        stage: ExecutionProgressStage.VERIFY,
-        diagnosticsPath: diagnosticsArtifactPath,
-        executionId: `verify-${Date.now()}`,
-      }),
-      interactionPrompts: this.adapterDiagnosticsRuntime.createAdapterInteractionPrompts({
-        verification: adapterVerification,
-        stage: ExecutionProgressStage.VERIFY,
-      }),
-      layeredLogs: {
-        summary: [
-          `adapter_status=${adapterVerification.overallStatus}`,
-          `required_roles=${adapterVerification.requiredRoleCount}`,
-          `required_failures=${adapterVerification.requiredRoleFailedCount}`,
-        ],
-        detailed: [
-          `fallback_roles=${adapterVerification.fallbackRoleCount}`,
-          `degraded_roles=${adapterVerification.degradedRoleCount}`,
-          `diagnostics_path=${diagnosticsArtifactPath}`,
-        ],
-      },
-    });
-    const message = `Verify completed with adapters_status=${adapterVerification.overallStatus}.`;
-
-    if (adapterVerification.overallStatus === CliGovernanceCheckStatus.FAIL) {
-      throw new RuntimeError(
-        GovernorErrorCode.ADAPTER_ROUTE_NO_AVAILABLE_SURFACE,
-        `verify failed because required adapter roles are unavailable or capability gaps exist. diagnostics=${diagnosticsArtifactPath}`,
-        {
-          reportPath: diagnosticsArtifactPath,
-          adapterStatus: adapterVerification.overallStatus,
-          requiredRoleCount: adapterVerification.requiredRoleCount,
-          requiredRoleFailedCount: adapterVerification.requiredRoleFailedCount,
-          degradedRoleCount: adapterVerification.degradedRoleCount,
-          fallbackRoleCount: adapterVerification.fallbackRoleCount,
-          checkTotals,
-        },
-      );
-    }
-
-    return {
-      message,
-      commandResult: {
-        operation: CLI_RUNTIME_OPERATION.ADAPTER_VERIFY,
-        summary: message,
-        check_totals: checkTotals,
-        checks,
-        artifacts,
-        experience,
-        details: {
-          adapters_status: adapterVerification.overallStatus,
-          required_roles: adapterVerification.requiredRoleCount,
-          required_role_failures: adapterVerification.requiredRoleFailedCount,
-          degraded_roles: adapterVerification.degradedRoleCount,
-          fallback_roles: adapterVerification.fallbackRoleCount,
-          diagnostics_path: diagnosticsArtifactPath,
-        },
-      },
-    };
-  }
-
-  /**
-   * Writes one plan snapshot artifact that captures current command contract context.
-   * @returns Runtime command result.
-   */
-  private async executePlanCommand(): Promise<CliGovernanceCommandResult> {
-    const planId = `plan-${Date.now()}`;
-    const planPath = resolve(
-      this.options.workspace.workspaceRoot,
-      "context",
-      "plan",
-      `${planId}.json`,
-    );
-    await this.artifactWriter.writeJsonArtifact(planPath, {
-      planId,
-      generatedAt: this.toRfc3339SecondsTimestamp(new Date()),
-      workspace: {
-        workspaceId: this.options.workspace.workspaceId,
-        workspaceRoot: this.options.workspace.workspaceRoot,
-        workspaceMode: this.options.workspace.mode,
-      },
-      commandContract: {
-        stage9aHardExit: ["init", "doctor", "check"],
-        minimalRuntimeChain: ["compiler", "runtime", "policy", "audit", "report"],
-      },
-      profileId: this.options.profileId,
-      locale: this.options.locale,
-      outputMode: this.options.outputMode,
-    });
-
-    const message = `Plan snapshot written to ${planPath}.`;
-    return {
-      message,
-      commandResult: {
-        operation: CLI_RUNTIME_OPERATION.PLAN_SNAPSHOT,
-        summary: message,
-        check_totals: {
-          pass: 1,
-          warn: 0,
-          fail: 0,
-        },
-        checks: [
-          {
-            id: "plan_snapshot",
-            status: CliGovernanceCheckStatus.PASS,
-            detail: planId,
-          },
-        ],
-        artifacts: [
-          {
-            id: "plan_snapshot",
-            path: planPath,
-          },
-        ],
-      },
-    };
-  }
-
-  /**
-   * Analyzes schema-upgrade impact for existing config and writes upgrade diff artifact.
-   * @returns Runtime command result.
-   */
-  private async executeUpgradeCommand(): Promise<CliGovernanceCommandResult> {
-    if (!existsSync(this.options.workspace.configPath)) {
-      throw new RuntimeError(
-        GovernorErrorCode.CONFIG_FILE_READ_FAILED,
-        `upgrade requires config file at ${this.options.workspace.configPath}; run \`init\` first.`,
-        {
-          configPath: this.options.workspace.configPath,
-        },
-      );
-    }
-
-    const configLoader = new ConfigLoader();
-    const upgradeSchemaDiffService = new UpgradeSchemaDiffService();
-    const sourceConfig = configLoader.loadFromFile(this.options.workspace.configPath);
-    const upgradeDiffResult = upgradeSchemaDiffService.analyze({
-      sourceConfig,
-      targetVersion: GovernorSchemaVersion.V1_1,
-    });
-    const reportPath = resolve(
-      this.options.workspace.workspaceRoot,
-      "context",
-      "upgrade",
-      `upgrade-diff-${Date.now()}.json`,
-    );
-    await this.artifactWriter.writeJsonArtifact(reportPath, upgradeDiffResult);
-
-    const warningCount =
-      upgradeDiffResult.confirmationDecision === "allow"
-        ? 0
-        : upgradeDiffResult.confirmationItems.length;
-    const message = `Upgrade analysis completed with decision=${upgradeDiffResult.confirmationDecision}.`;
-    return {
-      message,
-      commandResult: {
-        operation: CLI_RUNTIME_OPERATION.SCHEMA_UPGRADE_ANALYZE,
-        summary: message,
-        check_totals: {
-          pass: 1,
-          warn: warningCount,
-          fail: 0,
-        },
-        checks: [
-          {
-            id: "upgrade_schema_diff",
-            status:
-              upgradeDiffResult.confirmationDecision === "allow"
-                ? CliGovernanceCheckStatus.PASS
-                : CliGovernanceCheckStatus.WARN,
-            detail: `diffs=${upgradeDiffResult.diffs.length} suggestions=${upgradeDiffResult.suggestions.length}`,
-          },
-        ],
-        artifacts: [
-          {
-            id: "upgrade_diff_report",
-            path: reportPath,
-          },
-        ],
-        details: {
-          source_version: upgradeDiffResult.sourceVersion,
-          target_version: upgradeDiffResult.targetVersion,
-          confirmation_decision: upgradeDiffResult.confirmationDecision,
-        },
       },
     };
   }

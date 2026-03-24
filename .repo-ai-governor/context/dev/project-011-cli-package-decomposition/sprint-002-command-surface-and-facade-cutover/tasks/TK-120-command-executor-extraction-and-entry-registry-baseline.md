@@ -1,8 +1,8 @@
 # TK-120 通用命令执行器抽离与 entry registry 基线
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-24
-- Owner: TBD
+- Owner: AI-Agent
 - Priority: P0
 - Project: `project-011-cli-package-decomposition`
 - Sprint: `sprint-002-command-surface-and-facade-cutover`
@@ -41,6 +41,9 @@
 ## 7. 执行记录
 
 1. 2026-03-24：任务创建，状态初始化为 `planned`。
+2. 2026-03-24：切换为 `in_progress`，开始建立 `commands/*`、统一 command context 与 entry registry 基线。
+3. 2026-03-24：完成 `init/connect/doctor/check/verify/plan/upgrade` command executor 抽离、registry 接线、CLI regression 回归，并输出 `DA-118` / resolved review。
+4. 2026-03-24：根据 follow-up CR 补齐 registry duplicate guard 与 facade dispatch smoke coverage，并将复核结果收尾为 resolved。
 
 ## 8. 产出
 

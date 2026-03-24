@@ -81,7 +81,7 @@
 | TK-117 | sprint-001 | route fallback 与 diagnostics artifact builder 抽离 | implementation/runtime | TK-116,DA-113 | completed |
 | TK-118 | sprint-001 | sprint-001 出口验收与 sprint-002 输入约束 | acceptance baseline | TK-116,TK-117 | completed |
 | TK-119 | sprint-002 | artifact/report/presentation 模块抽离 | implementation/runtime | TK-118 | completed |
-| TK-120 | sprint-002 | 通用命令执行器抽离与 entry registry 基线 | implementation/command | TK-119 | planned |
+| TK-120 | sprint-002 | 通用命令执行器抽离与 entry registry 基线 | implementation/command | TK-119 | completed |
 | TK-121 | sprint-002 | run/review 命令执行器抽离与 thin facade cutover | implementation/command | TK-119,TK-120 | planned |
 | TK-122 | sprint-002 | sprint-002 出口验收与 sprint-003 输入约束 | acceptance baseline | TK-119,TK-120,TK-121 | planned |
 | TK-123 | sprint-003 | shared 与 package-local 边界收敛及 exports 清理 | implementation/hardening | TK-122 | planned |

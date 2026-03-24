@@ -639,6 +639,20 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
     );
   });
 
+  it("dispatches extracted init/check/plan/upgrade commands through the facade registry", async () => {
+    await withRuntimeFixture(async (fixture) => {
+      const initResult = await fixture.runtime.execute(CliCommandName.INIT);
+      const checkResult = await fixture.runtime.execute(CliCommandName.CHECK);
+      const planResult = await fixture.runtime.execute(CliCommandName.PLAN);
+      const upgradeResult = await fixture.runtime.execute(CliCommandName.UPGRADE);
+
+      expect(initResult.commandResult.operation).toBe("workspace_init");
+      expect(checkResult.commandResult.operation).toBe("governance_check");
+      expect(planResult.commandResult.operation).toBe("plan_snapshot");
+      expect(upgradeResult.commandResult.operation).toBe("schema_upgrade_analyze");
+    });
+  });
+
   it("auto-bootstraps workspace config when connect runs before explicit init", async () => {
     await withRuntimeFixture(
       async (fixture) => {

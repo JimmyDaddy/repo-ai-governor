@@ -20,6 +20,14 @@ export type {
 } from "./cli-output.interface.js";
 export type { CliRuntimeDebugOptions } from "./cli-runtime-debug.interface.js";
 export type {
+  CliArtifactWriter,
+  CliCheckTotals,
+  CliCommandExecutorContext,
+  CliGovernanceCommandResult,
+  CliGovernanceRuntimeOptions,
+  CliNormalizedRuntimeDebugOptions,
+} from "./cli-governance-runtime.interface.js";
+export type {
   CliAdapterRoleEvaluation,
   CliAdapterToolProbeSnapshot,
   CliAdapterVerificationResolution,
