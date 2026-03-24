@@ -1,8 +1,8 @@
 # TK-101 HITL 决策回执与恢复执行语义
 
-- Status: planned
+- Status: in_progress
 - Date: 2026-03-24
-- Owner: TBD
+- Owner: AI-Agent
 - Priority: P0
 - Project: `project-010-local-model-and-ide-expansion`
 - Sprint: `sprint-002-autonomous-mainchain-foundation`
@@ -49,6 +49,8 @@
 ## 7. 执行记录
 
 1. 2026-03-24：任务创建，状态初始化为 `planned`。
+2. 2026-03-24：任务启动，开始收敛通知回执、decision receipt 最小字段与 `resume/terminate/degrade` 运行时语义。
+3. 2026-03-24：复核 follow-up CR 后，已补齐真实 CLI `--hitl-*` 参数入口、dry-run 下的 HITL 无副作用语义，以及 `taskId + approve` 对 inline review 子链的真实恢复执行。
 
 ## 8. 产出
 

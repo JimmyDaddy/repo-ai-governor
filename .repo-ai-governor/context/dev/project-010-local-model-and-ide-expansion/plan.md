@@ -98,7 +98,7 @@
 | TK-098 | sprint-001 | sprint-001 出口验收与 sprint-002 输入约束 | acceptance baseline | TK-095,TK-096,TK-097 | completed |
 | TK-099 | sprint-002 | 任务驱动 DAG 与 `run` 主链装配 | implementation/runtime | TK-098,TK-118 | in_progress |
 | TK-100 | sprint-002 | review 子链内联与 ledger backfill 收口 | implementation/runtime | TK-099 | completed |
-| TK-101 | sprint-002 | HITL 决策回执与恢复执行语义 | implementation/runtime | TK-099,TK-100 | planned |
+| TK-101 | sprint-002 | HITL 决策回执与恢复执行语义 | implementation/runtime | TK-099,TK-100 | in_progress |
 | TK-102 | sprint-002 | sprint-002 出口验收与 sprint-003 输入约束 | acceptance baseline | TK-099,TK-100,TK-101 | planned |
 | TK-103 | sprint-001 | 全自动研发 gap 清单与 draft 收敛 | analysis/draft | DA-098,TK-095 | completed |
 | TK-104 | sprint-001 | 主执行计划全自动研发 gap register 上收 | analysis/master-plan | TK-103,DA-098 | completed |
@@ -147,3 +147,4 @@
 15. 2026-03-24：`project-012` 完成收口并正式回链 `DA-124/DA-125/DA-126/DA-127 + completion audit summary`，后续 `project-010` 默认遵循更轻量的 startup/context/task-input 约束继续推进。
 16. 2026-03-24：启动 `TK-100` 的 review routing 收口切片，新增 `Worktree Review Target` 单值 override 规则与 stale-target gate，避免 completed stream 的 CR 默认落到后续 active sprint。
 17. 2026-03-24：完成 `TK-100`，将 inline review chain 正式接入 task-driven `run`，统一 review/request/result/backfill artifacts、CLI details/experience progress，并产出 `DA-104` 作为 `TK-101/TK-102` 的输入证据。
+18. 2026-03-24：启动 `TK-101`，开始收敛通知回执、decision receipt 最小字段与 `resume/terminate/degrade` 运行时语义。

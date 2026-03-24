@@ -12,4 +12,9 @@ export interface CliRuntimeDebugOptions {
   restrictedNetwork?: boolean;
   restrictedReason?: string | null;
   allowLocalFallback?: boolean;
+  hitlDecision?: string | null;
+  hitlDecisionReason?: string | null;
+  hitlResumeAction?: string | null;
+  hitlDecidedBy?: string | null;
+  hitlConstraints?: string[];
 }

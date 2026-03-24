@@ -88,4 +88,9 @@ export const CLI_OPTIONS_REQUIRING_VALUE = new Set<string>([
   "--verbosity",
   "--replay",
   "--task-id",
+  "--hitl-decision",
+  "--hitl-decision-reason",
+  "--hitl-resume-action",
+  "--hitl-decided-by",
+  "--hitl-constraints",
 ]);

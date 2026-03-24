@@ -287,6 +287,26 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
     program.option("--restricted-network", runtimeI18n.t("cli.options.restrictedNetwork"));
     program.option("--restricted-reason <reason>", runtimeI18n.t("cli.options.restrictedReason"));
     program.option("--no-local-fallback", runtimeI18n.t("cli.options.noLocalFallback"));
+    program.option(
+      "--hitl-decision <decision>",
+      "HITL decision receipt (`approve`, `reject`, or `revise`).",
+    );
+    program.option(
+      "--hitl-decision-reason <reason>",
+      "Human-readable reason attached to the HITL decision receipt.",
+    );
+    program.option(
+      "--hitl-resume-action <action>",
+      "Resume action applied after HITL decision (`resume`, `terminate`, or `degrade`).",
+    );
+    program.option(
+      "--hitl-decided-by <actor>",
+      "Actor identifier recorded in the HITL decision receipt.",
+    );
+    program.option(
+      "--hitl-constraints <constraints>",
+      "Comma-separated constraints attached to the HITL decision receipt.",
+    );
     program.showHelpAfterError(false);
     program.configureOutput({
       writeOut: (value) => io.stdout(value),
@@ -645,6 +665,16 @@ function resolveRuntimeDebugOptions(
   args: string[],
   currentWorkingDirectory: string,
 ): CliRuntimeDebugOptions {
+  const readRequiredOption = (flag: string, errorMessage: string): string | null => {
+    const option = readOptionInput(args, flag);
+    if (option.isPresent && !option.value) {
+      throw new RuntimeError(GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID, errorMessage, {
+        option: flag,
+      });
+    }
+
+    return option.value?.trim() || null;
+  };
   const replayOption = readOptionInput(args, "--replay");
   if (replayOption.isPresent && !replayOption.value) {
     throw new RuntimeError(
@@ -675,6 +705,67 @@ function resolveRuntimeDebugOptions(
     );
   }
 
+  const hitlDecision = readRequiredOption(
+    "--hitl-decision",
+    "Option --hitl-decision requires one value.",
+  );
+  const hitlDecisionReason = readRequiredOption(
+    "--hitl-decision-reason",
+    "Option --hitl-decision-reason requires one value.",
+  );
+  const hitlResumeAction = readRequiredOption(
+    "--hitl-resume-action",
+    "Option --hitl-resume-action requires one value.",
+  );
+  const hitlDecidedBy = readRequiredOption(
+    "--hitl-decided-by",
+    "Option --hitl-decided-by requires one value.",
+  );
+  const hitlConstraintsInput = readRequiredOption(
+    "--hitl-constraints",
+    "Option --hitl-constraints requires one value.",
+  );
+  const hitlConstraints =
+    hitlConstraintsInput
+      ?.split(",")
+      .map((constraint) => constraint.trim())
+      .filter(Boolean) ?? [];
+
+  if (hitlDecision && !["approve", "reject", "revise"].includes(hitlDecision)) {
+    throw new RuntimeError(
+      GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+      "Option --hitl-decision must be one of: approve, reject, revise.",
+      {
+        option: "--hitl-decision",
+        value: hitlDecision,
+      },
+    );
+  }
+
+  if (hitlResumeAction && !["resume", "terminate", "degrade"].includes(hitlResumeAction)) {
+    throw new RuntimeError(
+      GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+      "Option --hitl-resume-action must be one of: resume, terminate, degrade.",
+      {
+        option: "--hitl-resume-action",
+        value: hitlResumeAction,
+      },
+    );
+  }
+
+  if (
+    !hitlDecision &&
+    (hitlDecisionReason || hitlResumeAction || hitlDecidedBy || hitlConstraints.length > 0)
+  ) {
+    throw new RuntimeError(
+      GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+      "HITL receipt companion options require --hitl-decision.",
+      {
+        option: "--hitl-decision",
+      },
+    );
+  }
+
   return {
     dryRun: hasFlag(args, "--dry-run"),
     trace: hasFlag(args, "--trace"),
@@ -686,6 +777,11 @@ function resolveRuntimeDebugOptions(
     restrictedNetwork: hasFlag(args, "--restricted-network"),
     restrictedReason: restrictedReasonOption.value?.trim() || null,
     allowLocalFallback: !hasFlag(args, "--no-local-fallback"),
+    hitlDecision,
+    hitlDecisionReason,
+    hitlResumeAction,
+    hitlDecidedBy,
+    hitlConstraints,
   };
 }
 

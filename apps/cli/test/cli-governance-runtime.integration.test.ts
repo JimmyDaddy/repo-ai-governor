@@ -372,6 +372,77 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
     });
   });
 
+  it("writes HITL notification artifact when policy outcome requires confirmation", async () => {
+    await withRuntimeFixture(async (fixture) => {
+      const runtimeWithOverrides = fixture.runtime as unknown as {
+        collectGitChangedPaths: () => Promise<string[]>;
+      };
+      runtimeWithOverrides.collectGitChangedPaths = async () => ["migrations/001.sql"];
+
+      await expect(fixture.runtime.execute(CliCommandName.RUN)).rejects.toMatchObject({
+        code: GovernorErrorCode.POLICY_GATE_HITL_FEEDBACK_INVALID,
+        details: {
+          pendingStatus: ExecutionProgressStage.HUMAN_CONFIRMATION,
+        },
+      });
+
+      const notificationDirectoryPath = resolve(
+        fixture.workspaceRoot,
+        "context",
+        "hitl",
+        "notifications",
+      );
+      const notificationFileNames = await readdir(notificationDirectoryPath);
+      expect(notificationFileNames).toHaveLength(1);
+
+      const notificationPayload = JSON.parse(
+        await readFile(resolve(notificationDirectoryPath, notificationFileNames[0] ?? ""), "utf8"),
+      ) as {
+        channel?: string;
+        payload?: {
+          policyOutcome?: string;
+        };
+      };
+      expect(notificationPayload.channel).toBe("webhook");
+      expect(notificationPayload.payload?.policyOutcome).toBe("escalate");
+    });
+  });
+
+  it("does not persist HITL notification artifacts during dry-run high-risk execution", async () => {
+    await withRuntimeFixture(
+      async (fixture) => {
+        const runtimeWithOverrides = fixture.runtime as unknown as {
+          collectGitChangedPaths: () => Promise<string[]>;
+        };
+        runtimeWithOverrides.collectGitChangedPaths = async () => ["migrations/001.sql"];
+
+        await expect(fixture.runtime.execute(CliCommandName.RUN)).rejects.toMatchObject({
+          code: GovernorErrorCode.POLICY_GATE_HITL_FEEDBACK_INVALID,
+          details: {
+            pendingStatus: ExecutionProgressStage.HUMAN_CONFIRMATION,
+          },
+        });
+
+        const notificationFiles = await readdir(
+          resolve(fixture.workspaceRoot, "context", "hitl", "notifications"),
+        ).catch(() => []);
+        const decisionFiles = await readdir(
+          resolve(fixture.workspaceRoot, "context", "hitl", "decisions"),
+        ).catch(() => []);
+
+        expect(notificationFiles).toHaveLength(0);
+        expect(decisionFiles).toHaveLength(0);
+      },
+      {
+        runtimeDebugOptions: {
+          dryRun: true,
+          trace: false,
+          replayPath: null,
+        },
+      },
+    );
+  });
+
   it("does not persist inline review side effects when task-driven run requires HITL confirmation", async () => {
     await withRuntimeFixture(
       async (fixture) => {
@@ -461,6 +532,82 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
           replayPath: null,
           adapters: true,
           taskId: "TK-099",
+        },
+      },
+    );
+  });
+
+  it("resumes task-driven review subchain when an approve HITL decision receipt is supplied", async () => {
+    await withRuntimeFixture(
+      async (fixture) => {
+        await writeTaskCardFixture(fixture.workspaceRoot, "TK-099");
+        const runtimeWithOverrides = fixture.runtime as unknown as {
+          collectGitChangedPaths: () => Promise<string[]>;
+        };
+        runtimeWithOverrides.collectGitChangedPaths = async () => ["migrations/001.sql"];
+
+        const runResult = await fixture.runtime.execute(CliCommandName.RUN);
+        expect(runResult.commandResult.details?.original_policy_outcome).toBe("escalate");
+        expect(runResult.commandResult.details?.effective_policy_outcome).toBe("allow");
+        expect(runResult.commandResult.details?.task_id).toBe("TK-099");
+        expect(runResult.commandResult.details?.hitl_decision).toBe("approve");
+        expect(runResult.commandResult.details?.hitl_resume_action).toBe("resume");
+        expect(runResult.commandResult.details?.inline_review_chain_enabled).toBe(true);
+        expect(runResult.commandResult.details?.inline_review_chain_status).toBe("applied");
+        expect(
+          runResult.commandResult.checks?.find((check) => check.id === "hitl")?.detail,
+        ).toContain("decision=approve");
+        expect(
+          runResult.commandResult.checks?.find((check) => check.id === "review_chain")?.detail,
+        ).toContain("status=applied");
+        expect(
+          runResult.commandResult.artifacts?.some(
+            (artifact) => artifact.id === "hitl_notification",
+          ),
+        ).toBe(true);
+        expect(
+          runResult.commandResult.artifacts?.some(
+            (artifact) => artifact.id === "hitl_decision_receipt",
+          ),
+        ).toBe(true);
+
+        const decisionReceiptPath = runResult.commandResult.artifacts?.find(
+          (artifact) => artifact.id === "hitl_decision_receipt",
+        )?.path;
+        expect(typeof decisionReceiptPath).toBe("string");
+
+        const decisionReceiptPayload = JSON.parse(
+          await readFile(String(decisionReceiptPath), "utf8"),
+        ) as {
+          decision?: string;
+          resumeAction?: string;
+          finalPolicyOutcome?: string;
+          decidedBy?: string;
+        };
+        expect(decisionReceiptPayload.decision).toBe("approve");
+        expect(decisionReceiptPayload.resumeAction).toBe("resume");
+        expect(decisionReceiptPayload.finalPolicyOutcome).toBe("allow");
+        expect(decisionReceiptPayload.decidedBy).toBe("maintainer@example.com");
+        expect(
+          runResult.commandResult.artifacts?.some(
+            (artifact) => artifact.id === "inline_review_request",
+          ),
+        ).toBe(true);
+        expect(
+          runResult.commandResult.artifacts?.some(
+            (artifact) => artifact.id === "inline_review_verify_result",
+          ),
+        ).toBe(true);
+      },
+      {
+        runtimeDebugOptions: {
+          dryRun: false,
+          trace: false,
+          replayPath: null,
+          taskId: "TK-099",
+          hitlDecision: "approve",
+          hitlDecisionReason: "Maintainer approved unattended continuation.",
+          hitlDecidedBy: "maintainer@example.com",
         },
       },
     );

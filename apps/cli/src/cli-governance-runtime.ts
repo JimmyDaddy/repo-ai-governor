@@ -73,6 +73,7 @@ import {
 } from "./constants/cli-governance-runtime.constant.js";
 import {
   CLI_TASK_DRIVEN_RUN_NODE_DEFINITIONS,
+  CliHitlResumeAction,
   CliInlineReviewChainSkipReason,
   CliInlineReviewChainStatus,
 } from "./constants/cli-task-driven-run.constant.js";
@@ -81,6 +82,7 @@ import { CliAdapterRoutingRuntime } from "./runtime/adapter-routing-runtime.js";
 import { CliAdapterVerificationRuntime } from "./runtime/adapter-verification-runtime.js";
 import { CliReviewQueueRuntime } from "./runtime/artifacts/review-queue-runtime.js";
 import { CliRuntimeArtifactWriter } from "./runtime/artifacts/runtime-artifact-writer.js";
+import { CliHitlRuntime } from "./runtime/hitl-runtime.js";
 import { CliLocalModelProbeRuntime } from "./runtime/local-model-probe-runtime.js";
 import { CliCommandExperienceBuilder } from "./runtime/presentation/command-experience-builder.js";
 import { CliReplayExplainBuilder } from "./runtime/presentation/replay-explain-builder.js";
@@ -124,6 +126,7 @@ export class CliGovernanceRuntime {
   private readonly adapterDiagnosticsRuntime: CliAdapterDiagnosticsRuntime;
   private readonly artifactWriter: CliRuntimeArtifactWriter;
   private readonly reviewQueueRuntime: CliReviewQueueRuntime;
+  private readonly hitlRuntime: CliHitlRuntime;
   private readonly commandExperienceBuilder: CliCommandExperienceBuilder;
   private readonly replayExplainBuilder: CliReplayExplainBuilder;
   private readonly taskDrivenRunRuntime: CliTaskDrivenRunRuntime;
@@ -157,6 +160,12 @@ export class CliGovernanceRuntime {
       this.options.workspace.workspaceRoot,
       (filePath) => this.artifactWriter.safeReadJson(filePath),
     );
+    this.hitlRuntime = new CliHitlRuntime({
+      workspace: this.options.workspace,
+      artifactWriter: this.artifactWriter,
+      toRfc3339SecondsTimestamp: (value: Date) => this.toRfc3339SecondsTimestamp(value),
+      toDisplayTimestamp: (value: string) => this.toDisplayTimestamp(value),
+    });
     this.commandExperienceBuilder = new CliCommandExperienceBuilder();
     this.replayExplainBuilder = new CliReplayExplainBuilder();
     this.taskDrivenRunRuntime = new CliTaskDrivenRunRuntime(
@@ -291,6 +300,16 @@ export class CliGovernanceRuntime {
       this.options.workspace.workspaceRoot,
       compiledIr,
     );
+    const changedPaths = await this.collectGitChangedPaths();
+    const { riskEvaluation, policyResult } = this.evaluateRunRiskAndPolicy(
+      changedPaths,
+      executionId,
+    );
+    const hitlPreview = this.hitlRuntime.previewRunHitl({
+      policyResult,
+      runtimeDebugOptions,
+    });
+    const effectivePolicyOutcome = hitlPreview.effectivePolicyOutcome;
     const nodeById = new Map<string, ProcessIrNode>(
       compiledIr.nodes.map((node) => [node.nodeId, node] as const),
     );
@@ -301,7 +320,10 @@ export class CliGovernanceRuntime {
       compiledIr,
       async (stageContext) =>
         this.isInlineReviewSubchainStage(stageContext.stageId)
-          ? this.dispatchInlineReviewSubchainStage(stageContext, runtimeDebugOptions)
+          ? this.dispatchInlineReviewSubchainStage(stageContext, runtimeDebugOptions, {
+              effectivePolicyOutcome,
+              riskLevel: riskEvaluation.riskLevel,
+            })
           : {
               ...(await this.dispatchRunStageWithAdapterRoute(
                 routeRunner,
@@ -312,12 +334,6 @@ export class CliGovernanceRuntime {
       {
         stageInputs: runAssembly.stageInputs as RuntimeStageInputMap,
       },
-    );
-
-    const changedPaths = await this.collectGitChangedPaths();
-    const { riskEvaluation, policyResult } = this.evaluateRunRiskAndPolicy(
-      changedPaths,
-      executionId,
     );
 
     const auditRecorder = new AuditRecorder(this.memoryManager);
@@ -337,7 +353,7 @@ export class CliGovernanceRuntime {
           agentRole: "governor_runtime",
           roleProfileId: node?.roleProfileId ?? "role.default.runtime",
           roleSource: "default",
-          policyOutcome: policyResult.policyOutcome,
+          policyOutcome: effectivePolicyOutcome,
           status: this.resolveAuditRecordStatus(stageResult.status),
           startedAt: stageResult.startedAt,
           endedAt: stageResult.endedAt,
@@ -412,6 +428,22 @@ export class CliGovernanceRuntime {
       },
     });
 
+    const hitlResolution = await this.hitlRuntime.processRunHitl({
+      executionId,
+      executionSessionId,
+      policyResult,
+      runtimeDebugOptions,
+      preview: hitlPreview,
+      auditRecorder,
+      outputMode: this.resolveAuditOutputMode(this.options.outputMode),
+      outputLocale: this.options.locale,
+      isTty: this.options.isTty,
+      consumerTaskId: runAssembly.taskContext?.taskId,
+      projectId: streamMetadata.projectId,
+      sprintId: streamMetadata.sprintId,
+    });
+    const resolvedPolicyOutcome = hitlResolution.effectivePolicyOutcome;
+
     const reportBuilder = new ReportBuilder(auditRecorder);
     const executionReport = await reportBuilder.buildExecutionReport({
       executionId,
@@ -460,6 +492,18 @@ export class CliGovernanceRuntime {
         path: inlineReviewChainSummary.ledgerBackfillPath,
       });
     }
+    if (hitlResolution.notificationArtifactPath) {
+      artifacts.push({
+        id: "hitl_notification",
+        path: hitlResolution.notificationArtifactPath,
+      });
+    }
+    if (hitlResolution.decisionReceiptPath) {
+      artifacts.push({
+        id: "hitl_decision_receipt",
+        path: hitlResolution.decisionReceiptPath,
+      });
+    }
     const checks: CliCommandResultCheck[] = [
       this.createRunAssemblyCheck(runAssembly, runtimeDebugOptions.taskId),
       {
@@ -477,8 +521,8 @@ export class CliGovernanceRuntime {
       },
       {
         id: "policy",
-        status: this.resolvePolicyCheckStatus(policyResult.policyOutcome),
-        detail: `outcome=${policyResult.policyOutcome} matched_rules=${policyResult.matchedRuleIds.length}`,
+        status: this.resolvePolicyCheckStatus(resolvedPolicyOutcome),
+        detail: `outcome=${resolvedPolicyOutcome} matched_rules=${policyResult.matchedRuleIds.length}`,
       },
       {
         id: "report",
@@ -486,6 +530,18 @@ export class CliGovernanceRuntime {
         detail: `records=${executionReport.totalRecords} stage_summaries=${executionReport.stageSummaries.length}`,
       },
     ];
+    if (hitlResolution.required) {
+      checks.push({
+        id: "hitl",
+        status:
+          resolvedPolicyOutcome === ChangeRiskRequiredAction.ALLOW
+            ? CliGovernanceCheckStatus.PASS
+            : hitlResolution.awaitingDecision
+              ? CliGovernanceCheckStatus.WARN
+              : CliGovernanceCheckStatus.FAIL,
+        detail: `notification=${hitlResolution.notificationResult?.dispatchStatus ?? "none"} decision=${hitlResolution.decision ?? "pending"} resume_action=${hitlResolution.resumeAction ?? "none"} effective_outcome=${resolvedPolicyOutcome}`,
+      });
+    }
     if (inlineReviewChainSummary.enabled) {
       checks.push({
         id: "review_chain",
@@ -518,15 +574,15 @@ export class CliGovernanceRuntime {
             replayPath,
             runtimeDebugOptions,
             rootCause: this.commandExperienceBuilder.resolveRunDiagnosticRootCause({
-              policyOutcome: policyResult.policyOutcome,
+              policyOutcome: resolvedPolicyOutcome,
               runtimeStatus: runtimeResult.status,
             }),
             nextActions: this.commandExperienceBuilder.resolveDiagnosticNextActions({
               rootCause: this.commandExperienceBuilder.resolveRunDiagnosticRootCause({
-                policyOutcome: policyResult.policyOutcome,
+                policyOutcome: resolvedPolicyOutcome,
                 runtimeStatus: runtimeResult.status,
               }),
-              policyOutcome: policyResult.policyOutcome,
+              policyOutcome: resolvedPolicyOutcome,
               runtimeStatus: runtimeResult.status,
             }),
           })
@@ -543,7 +599,10 @@ export class CliGovernanceRuntime {
     const experience = this.commandExperienceBuilder.createRunCommandExperience({
       executionId,
       runtimeResult,
-      policyResult,
+      policyResult: {
+        ...policyResult,
+        policyOutcome: resolvedPolicyOutcome,
+      },
       reportPath,
       replayPath,
       diagnosticsTracePath,
@@ -551,14 +610,19 @@ export class CliGovernanceRuntime {
     });
     this.throwForNonAllowPolicyOutcome({
       executionId,
-      policyOutcome: policyResult.policyOutcome,
+      policyOutcome: resolvedPolicyOutcome,
       matchedRuleIds: policyResult.matchedRuleIds,
       reportPath,
       replayPath,
       checkTotals,
+      hitlNotificationPath: hitlResolution.notificationArtifactPath,
+      hitlDecisionReceiptPath: hitlResolution.decisionReceiptPath,
+      hitlResumeAction: hitlResolution.resumeAction,
+      awaitingDecision: hitlResolution.awaitingDecision,
+      terminalDecision: hitlResolution.terminalDecision,
     });
 
-    const message = `Run completed with execution_id=${executionId} and policy_outcome=${policyResult.policyOutcome}${runtimeDebugOptions.dryRun ? " (dry_run=true)" : ""}.`;
+    const message = `Run completed with execution_id=${executionId} and policy_outcome=${resolvedPolicyOutcome}${runtimeDebugOptions.dryRun ? " (dry_run=true)" : ""}.`;
     return {
       message,
       commandResult: {
@@ -572,6 +636,8 @@ export class CliGovernanceRuntime {
           execution_id: executionId,
           runtime_status: runtimeResult.status,
           risk_level: riskEvaluation.riskLevel,
+          original_policy_outcome: policyResult.policyOutcome,
+          effective_policy_outcome: resolvedPolicyOutcome,
           replay_matched_count: replayExplainResult.matchedCount,
           assembly_mode: runAssembly.assemblyMode,
           assembly_reason: runAssembly.assemblyReason,
@@ -586,6 +652,12 @@ export class CliGovernanceRuntime {
           inline_review_request_path: inlineReviewChainSummary.reviewRequestPath,
           inline_review_verify_path: inlineReviewChainSummary.reviewVerifyPath,
           inline_review_ledger_backfill_path: inlineReviewChainSummary.ledgerBackfillPath,
+          hitl_required: hitlResolution.required,
+          hitl_notification_path: hitlResolution.notificationArtifactPath,
+          hitl_notification_status: hitlResolution.notificationResult?.dispatchStatus ?? null,
+          hitl_decision_receipt_path: hitlResolution.decisionReceiptPath,
+          hitl_decision: hitlResolution.decision,
+          hitl_resume_action: hitlResolution.resumeAction,
           dry_run: runtimeDebugOptions.dryRun,
           trace_enabled: runtimeDebugOptions.trace,
           diagnostics_trace_path: diagnosticsTracePath,
@@ -884,6 +956,33 @@ export class CliGovernanceRuntime {
           ? this.options.runtimeDebugOptions.restrictedReason.trim()
           : null,
       allowLocalFallback: this.options.runtimeDebugOptions?.allowLocalFallback !== false,
+      hitlDecision:
+        typeof this.options.runtimeDebugOptions?.hitlDecision === "string" &&
+        this.options.runtimeDebugOptions.hitlDecision.trim().length > 0
+          ? this.options.runtimeDebugOptions.hitlDecision.trim()
+          : null,
+      hitlDecisionReason:
+        typeof this.options.runtimeDebugOptions?.hitlDecisionReason === "string" &&
+        this.options.runtimeDebugOptions.hitlDecisionReason.trim().length > 0
+          ? this.options.runtimeDebugOptions.hitlDecisionReason.trim()
+          : null,
+      hitlResumeAction:
+        this.options.runtimeDebugOptions?.hitlResumeAction === CliHitlResumeAction.RESUME ||
+        this.options.runtimeDebugOptions?.hitlResumeAction === CliHitlResumeAction.TERMINATE ||
+        this.options.runtimeDebugOptions?.hitlResumeAction === CliHitlResumeAction.DEGRADE
+          ? this.options.runtimeDebugOptions.hitlResumeAction
+          : null,
+      hitlDecidedBy:
+        typeof this.options.runtimeDebugOptions?.hitlDecidedBy === "string" &&
+        this.options.runtimeDebugOptions.hitlDecidedBy.trim().length > 0
+          ? this.options.runtimeDebugOptions.hitlDecidedBy.trim()
+          : null,
+      hitlConstraints: Array.isArray(this.options.runtimeDebugOptions?.hitlConstraints)
+        ? this.options.runtimeDebugOptions.hitlConstraints.filter(
+            (constraint): constraint is string =>
+              typeof constraint === "string" && constraint.trim().length > 0,
+          )
+        : [],
     };
   }
 
@@ -1058,6 +1157,10 @@ export class CliGovernanceRuntime {
   private async dispatchInlineReviewSubchainStage(
     stageContext: RuntimeStageContext,
     runtimeDebugOptions: CliNormalizedRuntimeDebugOptions,
+    hitlPolicyContext: {
+      effectivePolicyOutcome: ChangeRiskRequiredAction;
+      riskLevel: string | null;
+    },
   ): Promise<Record<string, unknown>> {
     const taskId =
       typeof stageContext.input.taskId === "string" && stageContext.input.taskId.trim().length > 0
@@ -1068,8 +1171,10 @@ export class CliGovernanceRuntime {
       taskId,
       recordLedger: Boolean(taskId),
     };
-    const inlineReviewExecutionGuard =
-      await this.resolveInlineReviewExecutionGuard(inlineRuntimeDebugOptions);
+    const inlineReviewExecutionGuard = await this.resolveInlineReviewExecutionGuard(
+      inlineRuntimeDebugOptions,
+      hitlPolicyContext,
+    );
     if (!inlineReviewExecutionGuard.allowExecution) {
       return {
         handledBy: "inline-review-subchain",
@@ -1126,6 +1231,10 @@ export class CliGovernanceRuntime {
    */
   private async resolveInlineReviewExecutionGuard(
     runtimeDebugOptions: CliNormalizedRuntimeDebugOptions,
+    resolvedPolicyContext?: {
+      effectivePolicyOutcome: ChangeRiskRequiredAction;
+      riskLevel: string | null;
+    },
   ): Promise<{
     allowExecution: boolean;
     status: CliInlineReviewChainStatus;
@@ -1143,24 +1252,25 @@ export class CliGovernanceRuntime {
       };
     }
 
-    const changedPaths = await this.collectGitChangedPaths();
-    const { riskEvaluation, policyResult } = this.evaluateRunRiskAndPolicy(changedPaths);
-    if (policyResult.policyOutcome === ChangeRiskRequiredAction.ALLOW) {
+    const effectivePolicyOutcome =
+      resolvedPolicyContext?.effectivePolicyOutcome ??
+      this.evaluateRunRiskAndPolicy(await this.collectGitChangedPaths()).policyResult.policyOutcome;
+    if (effectivePolicyOutcome === ChangeRiskRequiredAction.ALLOW) {
       return {
         allowExecution: true,
         status: CliInlineReviewChainStatus.APPLIED,
         skipReason: null,
-        policyOutcome: policyResult.policyOutcome,
-        riskLevel: riskEvaluation.riskLevel,
+        policyOutcome: effectivePolicyOutcome,
+        riskLevel: resolvedPolicyContext?.riskLevel ?? null,
       };
     }
 
     return {
       allowExecution: false,
       status: CliInlineReviewChainStatus.DEFERRED,
-      skipReason: this.resolveInlineReviewSkipReason(policyResult.policyOutcome),
-      policyOutcome: policyResult.policyOutcome,
-      riskLevel: riskEvaluation.riskLevel,
+      skipReason: this.resolveInlineReviewSkipReason(effectivePolicyOutcome),
+      policyOutcome: effectivePolicyOutcome,
+      riskLevel: resolvedPolicyContext?.riskLevel ?? null,
     };
   }
 
@@ -1485,6 +1595,11 @@ export class CliGovernanceRuntime {
     reportPath: string;
     replayPath: string;
     checkTotals: CliCheckTotals;
+    hitlNotificationPath?: string | null;
+    hitlDecisionReceiptPath?: string | null;
+    hitlResumeAction?: CliHitlResumeAction | null;
+    awaitingDecision?: boolean;
+    terminalDecision?: boolean;
   }): void {
     if (options.policyOutcome === ChangeRiskRequiredAction.ALLOW) {
       return;
@@ -1493,7 +1608,9 @@ export class CliGovernanceRuntime {
     if (options.policyOutcome === ChangeRiskRequiredAction.BLOCK) {
       throw new RuntimeError(
         GovernorErrorCode.POLICY_GATE_EVALUATION_FAILED,
-        `Run blocked by policy gate for execution_id=${options.executionId}.`,
+        options.terminalDecision
+          ? `Run terminated by HITL decision for execution_id=${options.executionId}.`
+          : `Run blocked by policy gate for execution_id=${options.executionId}.`,
         {
           executionId: options.executionId,
           policyOutcome: options.policyOutcome,
@@ -1501,14 +1618,25 @@ export class CliGovernanceRuntime {
           reportPath: options.reportPath,
           replayPath: options.replayPath,
           checkTotals: options.checkTotals,
-          pendingStatus: ExecutionProgressStage.POLICY_WAITING,
+          ...(options.awaitingDecision
+            ? { pendingStatus: ExecutionProgressStage.POLICY_WAITING }
+            : {}),
+          ...(options.hitlNotificationPath
+            ? { hitlNotificationPath: options.hitlNotificationPath }
+            : {}),
+          ...(options.hitlDecisionReceiptPath
+            ? { hitlDecisionReceiptPath: options.hitlDecisionReceiptPath }
+            : {}),
+          ...(options.hitlResumeAction ? { hitlResumeAction: options.hitlResumeAction } : {}),
         },
       );
     }
 
     throw new RuntimeError(
       GovernorErrorCode.POLICY_GATE_HITL_FEEDBACK_INVALID,
-      `Run requires HITL confirmation before completion for execution_id=${options.executionId} (policy_outcome=${options.policyOutcome}).`,
+      options.hitlDecisionReceiptPath
+        ? `Run requires further HITL follow-up after decision receipt for execution_id=${options.executionId} (policy_outcome=${options.policyOutcome}).`
+        : `Run requires HITL confirmation before completion for execution_id=${options.executionId} (policy_outcome=${options.policyOutcome}).`,
       {
         executionId: options.executionId,
         policyOutcome: options.policyOutcome,
@@ -1517,6 +1645,13 @@ export class CliGovernanceRuntime {
         replayPath: options.replayPath,
         checkTotals: options.checkTotals,
         pendingStatus: ExecutionProgressStage.HUMAN_CONFIRMATION,
+        ...(options.hitlNotificationPath
+          ? { hitlNotificationPath: options.hitlNotificationPath }
+          : {}),
+        ...(options.hitlDecisionReceiptPath
+          ? { hitlDecisionReceiptPath: options.hitlDecisionReceiptPath }
+          : {}),
+        ...(options.hitlResumeAction ? { hitlResumeAction: options.hitlResumeAction } : {}),
       },
     );
   }

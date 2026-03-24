@@ -39,6 +39,15 @@ export enum CliInlineReviewChainSkipReason {
 }
 
 /**
+ * Defines stable runtime actions applied after a HITL decision receipt is consumed.
+ */
+export enum CliHitlResumeAction {
+  RESUME = "resume",
+  TERMINATE = "terminate",
+  DEGRADE = "degrade",
+}
+
+/**
  * Defines stable node/stage/route identifiers used by task-driven run assembly.
  */
 export const CLI_TASK_DRIVEN_RUN_NODE_DEFINITIONS = {

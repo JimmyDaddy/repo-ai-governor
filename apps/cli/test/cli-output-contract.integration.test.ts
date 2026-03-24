@@ -289,6 +289,57 @@ describe("CLI output contract integration", () => {
     }
   });
 
+  it("parses HITL decision receipt flags from CLI argv and resumes run", async () => {
+    const fixtureRepositoryRoot = await createPolicyGateFixtureRepo();
+    try {
+      const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, fixtureRepositoryRoot);
+      const exitCode = await runCli(
+        [
+          "node",
+          "repo-ai-governor",
+          "--output",
+          "json",
+          "run",
+          "--hitl-decision",
+          "approve",
+          "--hitl-decision-reason",
+          "Maintainer approved unattended continuation.",
+          "--hitl-decided-by",
+          "maintainer@example.com",
+        ],
+        io,
+      );
+      const payload = JSON.parse(stdoutBuffer.join(""));
+
+      expect(exitCode).toBe(0);
+      expect(stderrBuffer.join("")).toBe("");
+      expect(payload.status).toBe("success");
+      expect(payload.command_result.operation).toBe("governance_run");
+      expect(payload.command_result.details.original_policy_outcome).toBe("escalate");
+      expect(payload.command_result.details.effective_policy_outcome).toBe("allow");
+      expect(payload.command_result.details.hitl_decision).toBe("approve");
+      expect(payload.command_result.details.hitl_resume_action).toBe("resume");
+      expect(typeof payload.command_result.details.hitl_decision_receipt_path).toBe("string");
+    } finally {
+      await rm(fixtureRepositoryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects unsupported HITL decision option values", async () => {
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false);
+
+    const exitCode = await runCli(
+      ["node", "repo-ai-governor", "--output", "json", "run", "--hitl-decision", "invalid"],
+      io,
+    );
+    const payload = JSON.parse(stderrBuffer.join(""));
+
+    expect(exitCode).toBe(1);
+    expect(stdoutBuffer.join("")).toBe("");
+    expect(payload.error_code).toBe("ENTRYPOINT_COMMAND_WRAPPER_INVALID");
+    expect(payload.command).toBe("run");
+  });
+
   it("keeps default adapter baseline when profile only overrides tools", async () => {
     const fixtureRepositoryRoot = await createProfileOnlyAdaptersFixtureRepo();
     try {

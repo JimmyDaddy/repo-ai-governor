@@ -2,6 +2,7 @@ import type { AdaptersConfig, ResolvedWorkspace } from "@repo-ai-governor/config
 import type { MemoryStoreProvider } from "@repo-ai-governor/memory-store-adapter";
 import type { AdapterSurface } from "@repo-ai-governor/shared";
 import type { ErrorOutputEnvironment, MemoryRuntimeConfig } from "@repo-ai-governor/shared";
+import type { CliHitlResumeAction } from "../../constants/cli-task-driven-run.constant.js";
 import type { CliAdapterDiagnosticsRuntime } from "../../runtime/adapter-diagnostics-runtime.js";
 import type { CliReviewQueueRuntime } from "../../runtime/artifacts/review-queue-runtime.js";
 import type { CliCommandExperienceBuilder } from "../../runtime/presentation/command-experience-builder.js";
@@ -65,6 +66,11 @@ export interface CliNormalizedRuntimeDebugOptions {
   restrictedNetwork: boolean;
   restrictedReason: string | null;
   allowLocalFallback: boolean;
+  hitlDecision: string | null;
+  hitlDecisionReason: string | null;
+  hitlResumeAction: CliHitlResumeAction | null;
+  hitlDecidedBy: string | null;
+  hitlConstraints: string[];
 }
 
 /**

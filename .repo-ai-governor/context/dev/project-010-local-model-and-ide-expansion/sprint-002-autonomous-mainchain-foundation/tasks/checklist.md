@@ -13,5 +13,7 @@
   - 2026-03-24：follow-up CR 已收尾为 `resolved`；两条 P1 finding 全部完成修复，并通过 `pnpm run check` 复验。
 - [ ] TK-101 HITL 决策回执与恢复执行语义
   - 2026-03-24：任务创建，状态初始化为 `planned`。
+  - 2026-03-24：任务启动，开始收敛通知回执、decision receipt 最小字段与 `resume/terminate/degrade` 运行时语义。
+  - 2026-03-24：复核 follow-up CR 后，已补齐真实 CLI `--hitl-*` 参数入口、dry-run 下的 HITL 无副作用语义，以及 `taskId + approve` 对 inline review 子链的恢复执行。
 - [ ] TK-102 sprint-002 出口验收与 sprint-003 输入约束
   - 2026-03-24：任务创建，状态初始化为 `planned`。
