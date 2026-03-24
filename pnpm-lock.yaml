@@ -90,6 +90,9 @@ importers:
       '@repo-ai-governor/memory-store-adapter':
         specifier: workspace:*
         version: link:../../packages/memory-store-adapter
+      '@repo-ai-governor/notification-dispatcher':
+        specifier: workspace:*
+        version: link:../../packages/notification-dispatcher
       '@repo-ai-governor/reporting':
         specifier: workspace:*
         version: link:../../packages/reporting
@@ -129,6 +132,9 @@ importers:
       '@repo-ai-governor/adapter-sdk':
         specifier: workspace:*
         version: link:../../adapter-sdk
+      '@repo-ai-governor/shared':
+        specifier: workspace:*
+        version: link:../../shared
 
   packages/artifact-registry:
     dependencies:
