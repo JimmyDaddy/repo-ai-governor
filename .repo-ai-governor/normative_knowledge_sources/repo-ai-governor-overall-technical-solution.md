@@ -261,7 +261,7 @@
 4. 默认知识源与状态源映射
    - 规范知识源（Normative Knowledge Sources）：统一归档在 `<workspace_root>/normative_knowledge_sources/`。
    - 规范知识源目录内资产建议覆盖：产品约束、代码规范、架构约束、治理策略等（可用文件副本或索引清单方式纳管）。
-   - 执行状态源（Operational State Sources）：当前执行状态`<workspace_root>/context/current-context.md` 与任务台账产物(位于 `<workspace_root>/context/dev` 下)。
+   - 执行状态源（Operational State Sources）：当前执行状态`<workspace_root>/context/current-context.md` 与任务台账产物(位于 `<workspace_root>/context/dev` 下)。`current-context.md` 默认承载 active stream 路径，并可在极少数 completed-stream CR 收口场景下声明单值 `Worktree Review Target`，仅覆盖默认 CR 输出目录，不改写 active task ledger 归属。
 5. 存储后端抽象（Memory Store Providers）
    - 基线后端：本地文件系统（Markdown/JSON）与 CSV 台账。
    - 可扩展后端：本地数据库（如 SQLite）与线上数据库（如 PostgreSQL / 托管数据库）。
@@ -526,6 +526,7 @@
 3. `tasks/tasks.csv`
 4. `tasks/TK-xxx.md`
 5. `review/review_*.md -> verified_*.md -> resolved_*.md`
+   - 默认 review 输出目录跟随 active primary stream；若 `current-context.md` 声明单值 `Worktree Review Target`，则在该 override 存活期间优先写入其 `review/` 目录，直到最后一个 open CR 生命周期文件收口。
 6. `context/artifact-registry/artifacts.csv`（主注册表，canonical source）
 7. `context/artifact-registry/archive/artifacts.archive.csv`（归档产物索引，canonical source）
 8. Artifact Registry 人类可读视图（可选渲染产物或命令输出，但不承担独立状态维护）

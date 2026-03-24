@@ -37,6 +37,11 @@
 5. `sprint-xxx/tasks/TK-xxx-*.md`
 6. `sprint-xxx/review/.gitkeep`
 
+plan 约束：
+
+1. `project/sprint plan` 只承载 scope、里程碑、任务包概览与退出条件。
+2. task-level status 以 `TK/checklist/tasks.csv` 的最新 canonical 记录为准，不再在 plan 中重复维护逐任务状态矩阵。
+
 ## 4. Task Card Minimum Template
 
 1. 元数据：`Status/Date/Owner/Priority/Project/Sprint`
@@ -46,15 +51,17 @@
 5. `## 4. Required Inputs`
 6. `## 5. Traceback References`
 7. `## 6. 实施计划`
-8. `## 7. 验证`
-9. `## 8. 执行记录`
-10. `## 9. 产出`
+8. `## 7. Development Verification`
+9. `## 8. Delivery Verification`
+10. `## 9. 执行记录`
+11. `## 10. 产出`
 
 兼容说明：
 
 1. 既有任务卡允许继续使用 `## 4. Input References`。
 2. 新任务默认采用 `Required Inputs + Traceback References`，把执行必需输入与追溯输入分开。
 3. `Required Inputs` 建议控制在 `3-5` 条；超出时优先把历史规划、handoff、completion audit 移到 `Traceback References`。
+4. `Development Verification` 默认写 Fast Gate 级验证；`Delivery Verification` 默认写 Release Gate 或切换为 `completed` 时必须补齐的交付验证。
 
 ## 5. Ledger Rules
 
@@ -62,6 +69,7 @@
 2. `checklist.md` 保留勾选状态并在任务下追加执行轨迹摘要，不复制任务卡的长段计划与输入清单。
 3. `tasks.csv` 只保留机器审计必需字段，不承载完整 tracebacks。
 4. `TK` 状态、checklist 勾选、csv 最新 canonical 行必须一致。
+5. 推荐使用 `node ./scripts/governance/sync-task-ledger.js --task-id <TK-xxx>` 来回写派生台账，而不是手工分别编辑 checklist 和 CSV。
 
 ## 6. Exit Checklist
 

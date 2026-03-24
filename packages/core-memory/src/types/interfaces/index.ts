@@ -2,6 +2,7 @@ export type {
   MemoryArchiveEntriesRequest,
   MemoryArchivePayload,
   MemoryLayeredSnapshot,
+  MemoryLayeredSnapshotRequest,
   MemoryQueryEntriesRequest,
   MemoryQueryPayload,
   MemoryReadEntryRequest,

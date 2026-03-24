@@ -108,6 +108,13 @@ export class AuditRecorder {
         `status:${maskedEvent.status}`,
         ...(maskedEvent.projectId ? [`project:${maskedEvent.projectId}`] : []),
         ...(maskedEvent.sprintId ? [`sprint:${maskedEvent.sprintId}`] : []),
+        ...(maskedEvent.producerTaskId
+          ? [`task:${maskedEvent.producerTaskId}`, `producer_task:${maskedEvent.producerTaskId}`]
+          : []),
+        ...(maskedEvent.consumerTaskId
+          ? [`task:${maskedEvent.consumerTaskId}`, `consumer_task:${maskedEvent.consumerTaskId}`]
+          : []),
+        ...(maskedEvent.artifactId ? [`artifact:${maskedEvent.artifactId}`] : []),
       ],
     });
 

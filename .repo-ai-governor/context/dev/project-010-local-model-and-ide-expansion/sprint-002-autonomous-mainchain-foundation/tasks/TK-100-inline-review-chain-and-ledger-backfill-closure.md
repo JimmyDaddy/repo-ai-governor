@@ -1,8 +1,8 @@
 # TK-100 review 子链内联与 ledger backfill 收口
 
-- Status: planned
+- Status: in_progress
 - Date: 2026-03-24
-- Owner: TBD
+- Owner: AI-Agent
 - Priority: P0
 - Project: `project-010-local-model-and-ide-expansion`
 - Sprint: `sprint-002-autonomous-mainchain-foundation`
@@ -47,6 +47,7 @@
 ## 7. 执行记录
 
 1. 2026-03-24：任务创建，状态初始化为 `planned`。
+2. 2026-03-24：任务启动，先收敛 review 默认输出路径的 completed-stream 偏移问题；引入单值 `Worktree Review Target` override、自动退出规则与 stale-target gate，确保 worktree 仍归属于已 completed stream 时 CR 不会误写到后续 active sprint。
 
 ## 8. 产出
 

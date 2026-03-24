@@ -88,12 +88,13 @@
 1. 任务执行必须跟随 `<workspace_root>/context/current-context.md` 的 active stream 路径。
    - 未配置时，`<workspace_root>=<tool_managed_workspace>/.repo-ai-governor`。
    - 配置 `workspace.mode=repo_local` 时，`<workspace_root>=<repo>/.repo-ai-governor`。
+   - 若当前 worktree 的待收口 CR 仍归属于某个已 `completed` 的 stream，可在 `current-context.md` 中登记单值 `Worktree Review Target` 作为默认 CR 输出 override；任务台账路径仍以 active stream 为准。
 2. 任务分解与记录必须同步到：
    - `plan.md`
    - `tasks/checklist.md`
    - `tasks/tasks.csv`
    - `tasks/TK-xxx.md`
-   - `review/`（当前 sprint 的评审产物目录）
+   - `review/`（当前 sprint 的评审产物目录；若存在 `Worktree Review Target`，默认 CR 输出目录优先取其 `review/`）
 3. Code review 文件生命周期：
    - `review_<slug>.md`
    - `verified_review_<slug>.md`

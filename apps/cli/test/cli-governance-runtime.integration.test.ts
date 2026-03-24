@@ -648,6 +648,62 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
     });
   });
 
+  it("auto-applies task ledger backfill when review chain runs with --record-ledger and --task-id", async () => {
+    await withRuntimeFixture(
+      async (fixture) => {
+        await writeTaskCardFixture(fixture.workspaceRoot, "TK-130");
+        await fixture.runtime.execute(CliCommandName.REVIEW);
+        const verifyResult = await fixture.runtime.execute(CliCommandName.REVIEW_VERIFY);
+
+        const backfillArtifactPath = verifyResult.commandResult.artifacts?.find(
+          (artifact) => artifact.id === "review_ledger_backfill",
+        )?.path;
+        expect(typeof backfillArtifactPath).toBe("string");
+
+        const backfillPayload = JSON.parse(
+          await readFile(String(backfillArtifactPath), "utf8"),
+        ) as {
+          status?: string;
+          taskId?: string;
+        };
+        expect(backfillPayload.status).toBe("applied");
+        expect(backfillPayload.taskId).toBe("TK-130");
+        expect(
+          verifyResult.commandResult.experience?.roleProgress.some(
+            (row) =>
+              row.stage === ExecutionProgressStage.LEDGER_BACKFILL &&
+              row.status === ExecutionProgressStatus.COMPLETED,
+          ),
+        ).toBe(true);
+
+        const tasksCsvPath = resolve(
+          fixture.workspaceRoot,
+          "context/dev/project-010-local-model-and-ide-expansion/sprint-002-autonomous-mainchain-foundation/tasks/tasks.csv",
+        );
+        const checklistPath = resolve(
+          fixture.workspaceRoot,
+          "context/dev/project-010-local-model-and-ide-expansion/sprint-002-autonomous-mainchain-foundation/tasks/checklist.md",
+        );
+        const tasksCsvContent = await readFile(tasksCsvPath, "utf8");
+        const checklistContent = await readFile(checklistPath, "utf8");
+
+        expect(tasksCsvContent).toContain("TK-130");
+        expect(tasksCsvContent).toContain("review-verify review-verify-");
+        expect(tasksCsvContent).toContain("managed ledger backfill applied from review-verify-");
+        expect(checklistContent).toContain("自动消费 review-verify 产物并完成 ledger backfill");
+      },
+      {
+        runtimeDebugOptions: {
+          dryRun: false,
+          trace: false,
+          replayPath: null,
+          recordLedger: true,
+          taskId: "TK-130",
+        },
+      },
+    );
+  });
+
   it("writes connect diagnostics and optional ledger-backfill artifacts", async () => {
     await withRuntimeFixture(
       async (fixture) => {

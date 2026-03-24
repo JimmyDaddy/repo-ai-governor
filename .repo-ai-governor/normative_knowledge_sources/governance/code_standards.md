@@ -31,6 +31,7 @@ This file defines repository-level coding standards and the executable gate comm
 - [CS-025] Normative loading manifest governance is required: active files under `.repo-ai-governor/normative_knowledge_sources/**` must be registered in `.repo-ai-governor/normative_knowledge_sources/normative-loading-manifest.yaml`; `default_load=true` is only allowed for `L0/L1`; triad docs must keep consistent `active/frozen` status; and gate default mode is `block` with controlled rollback switch.
 - [CS-026] Code review lifecycle artifacts under `.repo-ai-governor/context/dev/**/review/` must keep filename state and top-level `Status` metadata synchronized. `code_review_*/review_*` require `Status: review_pending`; `verified_code_review_*/verified_review_*` require `Status: verified`; `resolved_code_review_*/resolved_review_*` require `Status: resolved`.
 - [CS-027] Prevent cross-layer God objects. In `apps/**` and `packages/**`, new or substantially modified domain/runtime modules must align to one primary bounded context and at most two adjacent architecture layers from `.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-overall-technical-solution.md -> 4.1 分层视图`. A single file/class must not simultaneously own three or more responsibility families among `command entry/dispatch`, `workflow/runtime orchestration`, `adapter probing/routing`, `policy/risk decisioning`, `artifact/report persistence`, and `presentation shaping`. Legacy files above `1200` LOC must not absorb new unrelated responsibilities; changes to such files should prefer extraction-first refactors. Temporary exceptions require a nearby marker comment `// god-object-exception: TK-xxx reason` and a task-linked decomposition plan in the active sprint ledger before delivery.
+- [CS-028] `.repo-ai-governor/context/current-context.md` may declare at most one `Worktree Review Target` override for default CR routing. When present, it must point to a `completed` stream review directory that still contains open lifecycle artifacts (`code_review_*` / `verified_code_review_*`); once only `resolved` artifacts or no lifecycle files remain, the override must be removed before delivery.
 
 ## Monorepo Naming Convention (Refactor Baseline)
 
@@ -112,6 +113,7 @@ node ./scripts/governance/check-package-dependency-boundary.js --mode warn
 node ./scripts/governance/check-task-ledger-sync.js
 node ./scripts/governance/check-sprint-plan-status-sync.js
 node ./scripts/governance/check-code-review-status-sync.js
+node ./scripts/governance/check-worktree-review-target.js
 node ./scripts/governance/check-standardized-error-usage.js
 node ./scripts/governance/check-i18n-parity-fallback.js
 node ./scripts/governance/check-artifact-registry-lifecycle.js

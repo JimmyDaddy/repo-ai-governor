@@ -49,11 +49,18 @@
 3. `Traceback References` 只放追溯、审计、handoff 或历史规划类输入，不进入默认执行入口。
 4. 既有任务卡保留 `Input References` 兼容；迁移过程中以运行时与人工执行双兼容为准。
 
+## 3.3 Sync Mechanism Boundary
+
+1. `scripts/governance/sync-task-ledger.js` 是推荐的派生台账同步器，用于从 canonical `TK` 回写 `checklist.md` 与 `tasks.csv` 的最小必需字段。
+2. project/sprint plan 只保留任务包概览、目标与里程碑，不再重复维护 task-level status 矩阵。
+3. 若任务需要在不改动 canonical `TK` 状态的前提下回填 review/verify 审计字段，允许同步器为 `tasks.csv` 追加新的 canonical 行，并在 checklist 追加执行摘要。
+
 ## 4. Sync Triggers
 
 1. 任务创建：同步创建 checklist 条目与 planned 行。
 2. 状态变更：追加新 execution 行（`in_progress/completed`）。
 3. 任务完成：写入验证证据、review 变更、结果摘要。
+4. review/verify 子链若命中 managed ledger backfill，可通过同步器自动回填 checklist/tasks.csv，而不再要求手工消费 pending artifact。
 
 ## 5. Conflict Resolution
 
@@ -63,6 +70,7 @@
 ## 6. Drift Governance
 
 1. 每次状态切换后至少运行：
+   - `node ./scripts/governance/sync-task-ledger.js --task-id <TK-xxx>`（推荐，在 task-aware 执行流中）
    - `node ./scripts/governance/check-task-ledger-sync.js`
    - `node ./scripts/governance/check-sprint-plan-status-sync.js`
 2. 漂移修复遵循“先修复主源，再修复衍生台账”。

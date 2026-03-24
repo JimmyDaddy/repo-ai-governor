@@ -80,6 +80,11 @@
       "dependsOn": ["//#gate:build"],
       "outputs": []
     },
+    "//#gate:worktree-review-target": {
+      "cache": false,
+      "dependsOn": ["//#gate:build"],
+      "outputs": []
+    },
     "//#gate:i18n-parity-fallback": {
       "cache": false,
       "dependsOn": ["//#gate:build"],
@@ -126,6 +131,7 @@
         "//#gate:task-ledger-sync",
         "//#gate:sprint-plan-status-sync",
         "//#gate:code-review-status-sync",
+        "//#gate:worktree-review-target",
         "//#gate:i18n-parity-fallback",
         "//#gate:test:contract",
         "//#gate:test:packages",

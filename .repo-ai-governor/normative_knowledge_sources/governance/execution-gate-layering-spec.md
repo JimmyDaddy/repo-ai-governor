@@ -58,13 +58,19 @@ pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1
 | 发布候选构建 | 可选 | 必须 |
 | 高风险变更 | 可选 | 必须 + HITL |
 
-## 4. Misuse Guardrails
+## 4. Task Template Mapping
+
+1. 任务卡中的 `Development Verification` 对应 Fast Gate，服务于开发中阶段的快反馈。
+2. 任务卡中的 `Delivery Verification` 对应 Release Gate，服务于任务切换为 `completed`、进入交付窗口或高风险变更场景。
+3. 若任务卡仍使用旧版 `## 验证` 单段结构，迁移时应优先将日常自检命令下沉到 `Development Verification`，把完整交付门禁上移到 `Delivery Verification`。
+
+## 5. Misuse Guardrails
 
 1. Fast Gate 仅用于快反馈，不得替代 Release Gate。
 2. 任何 `completed` 记录都必须有可回放验证证据。
 3. 对门禁分层的变更必须在台账中记录回滚策略。
 
-## 5. Rollback
+## 6. Rollback
 
 1. 若发现分层导致质量漏检，立即临时切回“全链路 Release Gate”。
 2. 回滚后 1 个工作日内补充根因与修复计划。

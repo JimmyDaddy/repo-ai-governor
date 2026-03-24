@@ -1,13 +1,13 @@
 ---
 name: workspace-code-review-workflow
-description: Repository-local code review workflow for this workspace. Use when the user says "帮我 cr 代码", "帮我cr代码" ,"code review", "复核 code review 报告", "复核 cr 报告", "复核 code review 报告并修复", "复核 cr 报告并修复", "执行 cr 修复", or otherwise wants to review the current working tree, recheck the current sprint's pending CR report, or fix accepted findings from a verified sprint CR report. The skill always reads `.repo-ai-governor/context/current-context.md` and writes review artifacts to the active sprint `review/` directory instead of `docs/review`.
+description: Repository-local code review workflow for this workspace. Use when the user says "帮我 cr 代码", "帮我cr代码" ,"code review", "复核 code review 报告", "复核 cr 报告", "复核 code review 报告并修复", "复核 cr 报告并修复", "执行 cr 修复", or otherwise wants to review the current working tree, recheck the current sprint's pending CR report, or fix accepted findings from a verified sprint CR report. The skill always reads `.repo-ai-governor/context/current-context.md` and writes review artifacts to the resolved review target directory (`explicit path -> Worktree Review Target -> active primary stream`) instead of `docs/review`.
 ---
 
 # Workspace Code Review Workflow
 
 ## Overview
 
-Read `.repo-ai-governor/context/current-context.md` before doing anything else. Resolve the active stream `review` path from that file and treat it as the only output location for review artifacts; if the user says `code-view`, interpret it as the same current sprint `review/` directory.
+Read `.repo-ai-governor/context/current-context.md` before doing anything else. Resolve the review output path in this order: user-specified report path -> `Worktree Review Target` `review/` path -> active primary stream `review/` path. Treat the resolved directory as the only output location for review artifacts; if the user says `code-view`, interpret it as the same resolved `review/` directory.
 
 Prefer this repository-local skill over the generic `code-review-workflow` skill whenever the request targets the current workspace or the current sprint CR lifecycle.
 
@@ -15,11 +15,11 @@ Prefer this repository-local skill over the generic `code-review-workflow` skill
 
 1. `帮我cr代码` / `帮我 cr 代码` / `code review`
 - Review only the files currently modified in the working tree.
-- Create `code_review_<slug>.md` in the active sprint `review/` directory only when the review contains actionable findings.
+- Create `code_review_<slug>.md` in the resolved `review/` directory only when the review contains actionable findings.
 - If the review finds no actionable repair item, write `resolved_code_review_<slug>.md` directly.
 
 2. `复核 code review 报告` / `复核 cr 报告`
-- Find the active sprint report that is still pending verification (`code_review_*.md`).
+- Find the resolved review target directory report that is still pending verification (`code_review_*.md`).
 - Append a `## 复核结论（YYYY-MM-DD）` section.
 - Rename the file to `verified_code_review_<slug>.md`.
 
@@ -30,7 +30,7 @@ Prefer this repository-local skill over the generic `code-review-workflow` skill
 - Rename the file to `resolved_code_review_<slug>.md` only when every actionable item is completed and no blocker or skipped item remains.
 
 4. `执行 cr 修复`
-- Work only from active sprint `verified_code_review_*.md` files that are not already `resolved_`.
+- Work only from resolved review target directory `verified_code_review_*.md` files that are not already `resolved_`.
 - Prefer the report path specified by the user; otherwise choose the most recently updated unresolved verified report.
 - Fix only accepted and actionable findings, then append repair results in place.
 
@@ -40,7 +40,7 @@ Prefer this repository-local skill over the generic `code-review-workflow` skill
 2. Read `.repo-ai-governor/context/current-context.md`.
 3. Read the repository normative docs required by `AGENTS.md` before judging correctness.
 4. Use `git status --short` and `git diff` to determine the current review scope.
-5. Use the active stream `review` path from current-context; never write CR output to `docs/review`.
+5. Use the resolved review target path from current-context; never write CR output to `docs/review`.
 
 ## Workflow A: Create Review Report
 
@@ -48,18 +48,24 @@ Prefer this repository-local skill over the generic `code-review-workflow` skill
 - Use `git status --short`, `git diff --name-only --diff-filter=ACMR`, and `git diff --cached --name-only --diff-filter=ACMR`.
 - Include modified tracked files, staged files, and newly added files that are part of the current working tree change.
 
-2. Build the report slug.
+2. Resolve the review output directory.
+- Prefer the report path explicitly provided by the user.
+- Otherwise, if `current-context.md` declares one `Worktree Review Target`, use its `Review records` path.
+- Otherwise, use the active primary stream `review/` path.
+- Treat `Worktree Review Target` as single-valued; if the worktree contains multiple completed-stream CR tails, do not guess. Require an explicit path or close one target before switching.
+
+3. Build the report slug.
 - Prefer an explicit task id when the user gives one.
 - Otherwise use a change-scope slug such as `working-tree-YYYYMMDD-HHMM`.
 
-3. Review with a risk-first lens.
+4. Review with a risk-first lens.
 - correctness and regression risk
 - security, auth, and permission boundaries
 - contract and documentation drift
 - data consistency, rollback, and failure recovery
 - missing or weak tests
 
-4. Write the report with this structure.
+5. Write the report with this structure.
 - Use `code_review_<slug>.md` when findings still need verification or repair.
 - Use `resolved_code_review_<slug>.md` directly when no actionable finding exists.
 - Keep the file name and top-level `Status` field synchronized.
@@ -95,7 +101,7 @@ Prefer this repository-local skill over the generic `code-review-workflow` skill
 1. `<command>`（通过/未执行/失败）
 ```
 
-5. If no actionable issue is found, explicitly write `未发现需要修复的点。`
+6. If no actionable issue is found, explicitly write `未发现需要修复的点。`
 - Keep residual notes in `## 3. Notes` when useful, but do not leave the report in `review_pending`.
 - Skip the pending/verified transition and emit the report directly as `resolved_code_review_<slug>.md` with `Status: resolved`.
 
@@ -103,7 +109,7 @@ Prefer this repository-local skill over the generic `code-review-workflow` skill
 
 1. Locate the report.
 - Prefer the report path specified by the user.
-- Otherwise select the most recently updated `code_review_*.md` in the active sprint `review/` directory.
+- Otherwise select the most recently updated `code_review_*.md` in the resolved review target directory.
 
 2. Re-read the current code and relevant docs for every finding.
 
@@ -143,6 +149,7 @@ Prefer this repository-local skill over the generic `code-review-workflow` skill
 ```
 
 5. Rename `verified_code_review_<slug>.md` to `resolved_code_review_<slug>.md` only when all actionable items are `已完成`, and update the top-level `Status` to `resolved`.
+6. If the resolved directory came from `Worktree Review Target`, and no `code_review_*` / `verified_code_review_*` file remains after this rename, remove `Worktree Review Target` from `current-context.md` in the same change window.
 
 ## Workflow D: Fix From Verified Report
 
@@ -152,11 +159,12 @@ Prefer this repository-local skill over the generic `code-review-workflow` skill
 
 ## Guardrails
 
-1. Never skip `current-context.md`; it is the source of truth for the active sprint review path.
-2. Never create or update CR files outside the active sprint `review/` directory.
+1. Never skip `current-context.md`; it is the source of truth for resolved review target routing.
+2. Never create or update CR files outside the resolved `review/` directory.
 3. Never mark a report as `resolved` while blocked or skipped actionable items remain.
 4. Never claim a command passed unless it actually ran successfully.
 5. Keep findings evidence-driven, severity-ordered, and tied to concrete file references.
 6. When a review has no actionable finding, prefer direct `resolved_code_review_*.md` output over an empty pending lifecycle.
 7. Keep user-facing summaries short: findings first, then verification and follow-up actions.
 8. Never leave a CR file with mismatched filename/status pairs such as `resolved_code_review_*.md` + `Status: review_pending`.
+9. `Worktree Review Target` is optional and singular; use it only for completed streams with open CR tails, and clear it immediately after the last open review artifact is closed.

@@ -202,7 +202,12 @@ export class SharedSessionManager {
       scope: MemoryScope.SESSION,
       key: session.sessionId,
       payload: session as unknown as Record<string, unknown>,
-      tags: [SESSION_TAG, `status:${session.status}`],
+      tags: [
+        SESSION_TAG,
+        `status:${session.status}`,
+        ...(session.executionId ? [`execution:${session.executionId}`] : []),
+        ...(session.processId ? [`process:${session.processId}`] : []),
+      ],
     });
   }
 

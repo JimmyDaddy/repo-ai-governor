@@ -1,3 +1,4 @@
+import type { MemoryLayeredSnapshotRequest } from "@repo-ai-governor/core-memory";
 import type { ProcessDslDefinition } from "@repo-ai-governor/core-process";
 import type { RuntimeStageInputMap } from "@repo-ai-governor/core-runtime";
 import type {
@@ -45,6 +46,12 @@ export interface CliTaskDrivenRunAssembly {
   processDefinition: ProcessDslDefinition;
   stageInputs: RuntimeStageInputMap;
   taskContext: CliTaskCardContext | null;
+  memorySelection: MemoryLayeredSnapshotRequest | null;
+  memorySnapshotSummary: {
+    normativeEntryCount: number;
+    executionEntryCount: number;
+    sessionEntryCount: number;
+  } | null;
   executionRoleProfileId: string;
   verificationRoleProfileId: string | null;
 }

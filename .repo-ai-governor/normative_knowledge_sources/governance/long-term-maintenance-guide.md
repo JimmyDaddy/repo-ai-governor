@@ -116,6 +116,15 @@ Any non-empty entry must include task-level traceability in `tasks/checklist.md`
 4. Document date metadata must use `YYYY-MM-DD`; linked core docs should refresh dates in the same change window.
 5. Changes to any triad doc under `.repo-ai-governor/normative_knowledge_sources/` (`product-requirements` / `overall-technical-solution` / `architecture-and-repo-layering`) must be synchronized in the same change set; PRD changes must sync `product-requirements-brief.md`.
 
+## Worktree Review Target Override Protocol
+
+1. `Worktree Review Target` 是可选单值 override，默认不存在；只有“当前 worktree 的待收口 CR 仍归属于某个已 `completed` 的 stream”时才登记。
+2. 任务台账、plan、checklist、tasks.csv 仍跟随 active stream；只有默认 CR 输出路径会优先解析到 `Worktree Review Target`。
+3. 默认路由顺序固定为：用户显式指定的 report 路径 -> `Worktree Review Target` -> active primary stream `review/`。
+4. 登记 override 时，必须同时记录 `Project`、`Sprint`、`Review records`、`Stream State=completed`、`Reason`、`Clear when`。
+5. 一个 worktree 同一时刻最多只能保留一个 `Worktree Review Target`；其余 completed stream 若仍需 CR，必须显式指定 report 路径，或在前一个 target 收口后再切换。
+6. 当目标 `review/` 目录下已不存在 `code_review_*` / `verified_code_review_*` 生命周期文件时，必须自动清除 `Worktree Review Target`；阻塞性 gate 应视残留 override 为失败。
+
 ## Project Closure Milestone Protocol
 
 1. 每个 `project-xxx` 在状态切换为 `completed` 前，必须产出项目级完成态审计摘要文档：

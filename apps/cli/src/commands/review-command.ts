@@ -21,10 +21,17 @@ export class CliReviewCommand implements CliCommandExecutor {
   public readonly commandName = CliCommandName.REVIEW;
 
   public async execute(context: CliCommandExecutorContext) {
+    const runtimeDebugOptions = context.resolveRuntimeDebugOptions();
     const reviewQueueDirectories = context.reviewQueueRuntime.resolveReviewQueueDirectories();
     const requestId = `review-${Date.now()}`;
     const requestPath = resolve(reviewQueueDirectories.requestDirectoryPath, `${requestId}.json`);
     const correlationId = `review-chain-${requestId}`;
+    const taskId = runtimeDebugOptions.taskId;
+    const managedLedgerBackfill =
+      runtimeDebugOptions.recordLedger === true && typeof taskId === "string";
+    const reviewVerifyAction = managedLedgerBackfill
+      ? `Execute \`repo-ai-governor review-verify --record-ledger --task-id ${taskId}\` to continue managed review chain.`
+      : "Execute `repo-ai-governor review-verify` to consume queued review request.";
     await context.artifactWriter.writeJsonArtifact(requestPath, {
       requestId,
       status: CLI_REVIEW_REQUEST_STATUS.QUEUED,
@@ -33,10 +40,14 @@ export class CliReviewCommand implements CliCommandExecutor {
       workspaceRoot: context.options.workspace.workspaceRoot,
       locale: context.options.locale,
       outputMode: context.options.outputMode,
+      ...(taskId ? { taskId } : {}),
+      recordLedger: managedLedgerBackfill,
       diagnosticContext: {
         correlationId,
         queueStage: "review",
         chain: "review->review-verify->ledger-backfill",
+        ...(taskId ? { taskId } : {}),
+        reviewChainMode: managedLedgerBackfill ? "managed_task_chain" : "queued_external_chain",
       },
     });
 
@@ -61,7 +72,7 @@ export class CliReviewCommand implements CliCommandExecutor {
           status: ExecutionProgressStatus.QUEUED,
           category: ExecutionInteractionCategory.POLICY_WAITING,
           summary: "Awaiting review-verify consumption.",
-          detail: `chain=${correlationId}`,
+          detail: taskId ? `chain=${correlationId} task_id=${taskId}` : `chain=${correlationId}`,
           backlink: {
             stageId: ExecutionProgressStage.REVIEW_VERIFY,
             artifactPath: requestPath,
@@ -73,13 +84,21 @@ export class CliReviewCommand implements CliCommandExecutor {
           category: ExecutionInteractionCategory.POLICY_WAITING,
           stage: ExecutionProgressStage.REVIEW_VERIFY,
           title: "Run review-verify",
-          action: "Execute `repo-ai-governor review-verify` to consume queued review request.",
+          action: reviewVerifyAction,
           blocking: true,
         },
       ],
       layeredLogs: {
-        summary: [`review_request=${requestId}`, "chain=review->review-verify->ledger-backfill"],
-        detailed: [`request_path=${requestPath}`, `correlation_id=${correlationId}`],
+        summary: [
+          `review_request=${requestId}`,
+          "chain=review->review-verify->ledger-backfill",
+          `managed_ledger_backfill=${managedLedgerBackfill}`,
+        ],
+        detailed: [
+          `request_path=${requestPath}`,
+          `correlation_id=${correlationId}`,
+          ...(taskId ? [`task_id=${taskId}`] : []),
+        ],
       },
     });
     return {

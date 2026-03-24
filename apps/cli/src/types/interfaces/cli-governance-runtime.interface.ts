@@ -94,7 +94,10 @@ export interface CliCommandExecutorContext {
   resolveAdapterVerification(): Promise<CliAdapterVerificationResolution>;
   canWritePath(filePath: string): Promise<boolean>;
   localizeText(english: string, chinese: string): string;
-  runNodeScript(scriptPath: string): Promise<{
+  runNodeScript(
+    scriptPath: string,
+    args?: string[],
+  ): Promise<{
     stdout: string;
     stderr: string;
   }>;

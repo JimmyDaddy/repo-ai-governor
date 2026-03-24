@@ -4,6 +4,11 @@ import { resolve } from "node:path";
 
 import { AgentCapability } from "@repo-ai-governor/adapter-sdk";
 import type { AdaptersConfig } from "@repo-ai-governor/config";
+import { MemoryManager, MemoryScope } from "@repo-ai-governor/core-memory";
+import {
+  MemoryStoreAdapter,
+  type MemoryStoreProvider,
+} from "@repo-ai-governor/memory-store-adapter";
 import {
   AdapterAvailability,
   AdapterSurface,
@@ -73,6 +78,76 @@ function createAdaptersConfigFixture(): AdaptersConfig {
         availability: AdapterAvailability.AVAILABLE,
       },
     ],
+  };
+}
+
+function createInMemoryStoreProvider(): MemoryStoreProvider {
+  const records = new Map<
+    string,
+    { value: Record<string, unknown>; tags: string[]; updatedAt: string }
+  >();
+
+  return {
+    async read(namespace, key) {
+      const record = records.get(`${namespace}:${key}`);
+      if (!record) {
+        return undefined;
+      }
+
+      return {
+        namespace,
+        key,
+        value: record.value,
+        tags: record.tags,
+        updatedAt: record.updatedAt,
+      };
+    },
+    async write(record) {
+      records.set(`${record.namespace}:${record.key}`, {
+        value: record.value,
+        tags: record.tags,
+        updatedAt: record.updatedAt,
+      });
+    },
+    async query(request) {
+      return Array.from(records.entries())
+        .map(([compoundKey, record]) => {
+          const delimiterIndex = compoundKey.indexOf(":");
+          return {
+            namespace: compoundKey.slice(0, delimiterIndex),
+            key: compoundKey.slice(delimiterIndex + 1),
+            value: record.value,
+            tags: record.tags,
+            updatedAt: record.updatedAt,
+          };
+        })
+        .filter((record) => {
+          if (request.namespace && record.namespace !== request.namespace) {
+            return false;
+          }
+
+          if (request.keyPrefix && !record.key.startsWith(request.keyPrefix)) {
+            return false;
+          }
+
+          if (request.tag && !record.tags.includes(request.tag)) {
+            return false;
+          }
+
+          return true;
+        });
+    },
+    async snapshot() {
+      return {
+        snapshotId: "snapshot-task-driven-runtime-unit",
+        createdAt: "2026-03-24T00:00:00Z",
+        recordCount: records.size,
+        snapshotPath: "/tmp/snapshot-task-driven-runtime-unit.json",
+      };
+    },
+    async archive() {
+      return 0;
+    },
   };
 }
 
@@ -252,6 +327,95 @@ describe("CliTaskDrivenRunRuntime", () => {
       expect(assembly.assemblyMode).toBe(CliTaskDrivenRunAssemblyMode.TASK_DRIVEN);
       expect(assembly.taskContext?.inputReferences).toHaveLength(2);
       expect(assembly.taskContext?.tracebackReferences).toEqual([]);
+    } finally {
+      await rm(workspaceRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("injects selective memory snapshot metadata when task context and active stream are available", async () => {
+    const workspaceRoot = await mkdtemp(resolve(tmpdir(), "repo-ai-governor-tk099-memory-"));
+    const taskCardPath = resolve(
+      workspaceRoot,
+      "context/dev/project-010/sprint-002/tasks/TK-299-selective-memory-injection.md",
+    );
+    await mkdir(resolve(taskCardPath, ".."), { recursive: true });
+    await writeFile(
+      taskCardPath,
+      `# TK-299 selective memory 注入
+
+- Status: in_progress
+- Date: 2026-03-24
+- Owner: AI-Agent
+- Priority: P1
+- Project: \`project-010-local-model-and-ide-expansion\`
+- Sprint: \`sprint-002-autonomous-mainchain-foundation\`
+
+## 1. 任务目标
+
+验证 task-driven runtime 只注入命中的 memory snapshot。
+
+## 2. Depends On
+
+1. \`TK-298\`
+
+## 4. Required Inputs
+
+1. \`DA-121\` \`.repo-ai-governor/context/dev/project-011/tasks/DA-121.md\`
+`,
+      "utf8",
+    );
+
+    try {
+      const memoryManager = new MemoryManager(
+        new MemoryStoreAdapter(createInMemoryStoreProvider()),
+      );
+      await memoryManager.writeEntry({
+        scope: MemoryScope.EXECUTION,
+        key: "historic:stage-report:record-1",
+        payload: { artifactId: "DA-121" },
+        tags: [
+          "audit-record",
+          "project:project-010-local-model-and-ide-expansion",
+          "sprint:sprint-002-autonomous-mainchain-foundation",
+          "task:TK-299",
+          "artifact:DA-121",
+        ],
+      });
+
+      const runtime = new CliTaskDrivenRunRuntime(workspaceRoot, memoryManager);
+      const assembly = await runtime.buildRunAssembly({
+        executionId: "cli-run-004",
+        taskId: "TK-299",
+        adaptersConfig: createAdaptersConfigFixture(),
+        streamMetadata: {
+          projectId: "project-010-local-model-and-ide-expansion",
+          sprintId: "sprint-002-autonomous-mainchain-foundation",
+        },
+      });
+
+      expect(assembly.memorySelection).toEqual(
+        expect.objectContaining({
+          executionId: "cli-run-004",
+          taskId: "TK-299",
+          projectId: "project-010-local-model-and-ide-expansion",
+          sprintId: "sprint-002-autonomous-mainchain-foundation",
+          artifactIds: ["DA-121"],
+        }),
+      );
+      expect(assembly.memorySnapshotSummary).toEqual({
+        normativeEntryCount: 0,
+        executionEntryCount: 1,
+        sessionEntryCount: 0,
+      });
+      expect(assembly.stageInputs["node-task-execute"]?.memorySnapshot).toEqual(
+        expect.objectContaining({
+          executionEntries: [
+            expect.objectContaining({
+              key: "historic:stage-report:record-1",
+            }),
+          ],
+        }),
+      );
     } finally {
       await rm(workspaceRoot, { recursive: true, force: true });
     }

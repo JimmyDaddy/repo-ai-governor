@@ -112,6 +112,7 @@ interface CliExecutionStreamMetadata {
  */
 export class CliGovernanceRuntime {
   private readonly commandRegistry: CliCommandRegistry;
+  private readonly memoryManager: MemoryManager;
   private readonly localModelProbeRuntime: CliLocalModelProbeRuntime;
   private readonly adapterRoutingRuntime: CliAdapterRoutingRuntime;
   private readonly adapterVerificationRuntime: CliAdapterVerificationRuntime;
@@ -123,6 +124,9 @@ export class CliGovernanceRuntime {
   private readonly taskDrivenRunRuntime: CliTaskDrivenRunRuntime;
 
   public constructor(private readonly options: CliGovernanceRuntimeOptions) {
+    this.memoryManager = new MemoryManager(
+      new MemoryStoreAdapter(this.options.memoryStoreProvider),
+    );
     this.localModelProbeRuntime = new CliLocalModelProbeRuntime(
       this.options.adapterLocalProbeOverrides,
       this.options.commandProbeExecutor,
@@ -150,7 +154,10 @@ export class CliGovernanceRuntime {
     );
     this.commandExperienceBuilder = new CliCommandExperienceBuilder();
     this.replayExplainBuilder = new CliReplayExplainBuilder();
-    this.taskDrivenRunRuntime = new CliTaskDrivenRunRuntime(this.options.workspace.workspaceRoot);
+    this.taskDrivenRunRuntime = new CliTaskDrivenRunRuntime(
+      this.options.workspace.workspaceRoot,
+      this.memoryManager,
+    );
     this.commandRegistry = new CliCommandRegistry([
       new CliInitCommand(),
       new CliConnectCommand(),
@@ -228,8 +235,8 @@ export class CliGovernanceRuntime {
       resolveAdapterVerification: async () => this.resolveAdapterVerification(),
       canWritePath: async (filePath: string) => this.canWritePath(filePath),
       localizeText: (english: string, chinese: string) => this.localizeText(english, chinese),
-      runNodeScript: async (scriptPath: string) =>
-        execFileAsync(process.execPath, [scriptPath], {
+      runNodeScript: async (scriptPath: string, args: string[] = []) =>
+        execFileAsync(process.execPath, [scriptPath, ...args], {
           cwd: this.options.currentWorkingDirectory,
           maxBuffer: 5 * 1024 * 1024,
           encoding: "utf8",
@@ -252,10 +259,12 @@ export class CliGovernanceRuntime {
     const processRuntimeEngine = new ProcessRuntimeEngine(processCompiler);
     const changeRiskEvaluator = new ChangeRiskEvaluator();
     const policyGateEngine = new PolicyGateEngine();
+    const streamMetadata = await this.resolveExecutionStreamMetadata();
     const runAssembly = await this.taskDrivenRunRuntime.buildRunAssembly({
       executionId,
       taskId: runtimeDebugOptions.taskId,
       adaptersConfig: this.options.adaptersConfig,
+      streamMetadata,
     });
     const processDefinition = runAssembly.processDefinition;
     const compiledIr = processCompiler.compile(processDefinition);
@@ -320,12 +329,8 @@ export class CliGovernanceRuntime {
       },
     });
 
-    const memoryManager = new MemoryManager(
-      new MemoryStoreAdapter(this.options.memoryStoreProvider),
-    );
-    const auditRecorder = new AuditRecorder(memoryManager);
+    const auditRecorder = new AuditRecorder(this.memoryManager);
     const executionSessionId = `session-${executionId}`;
-    const streamMetadata = await this.resolveExecutionStreamMetadata();
 
     for (const stageResult of runtimeResult.stageResults) {
       const node = nodeById.get(stageResult.nodeId);
@@ -356,6 +361,9 @@ export class CliGovernanceRuntime {
           workspaceId: this.options.workspace.workspaceId,
           workspaceMode: this.options.workspace.mode,
           workspaceRoot: this.options.workspace.workspaceRoot,
+          ...(runAssembly.taskContext?.taskId
+            ? { consumerTaskId: runAssembly.taskContext.taskId }
+            : {}),
           ...streamMetadata,
           riskLevel: riskEvaluation.riskLevel,
           riskReasons: riskEvaluation.riskReasons.map((reason) => reason.code),
@@ -399,6 +407,9 @@ export class CliGovernanceRuntime {
         workspaceId: this.options.workspace.workspaceId,
         workspaceMode: this.options.workspace.mode,
         workspaceRoot: this.options.workspace.workspaceRoot,
+        ...(runAssembly.taskContext?.taskId
+          ? { consumerTaskId: runAssembly.taskContext.taskId }
+          : {}),
         ...streamMetadata,
         riskLevel: riskEvaluation.riskLevel,
         riskReasons: riskEvaluation.riskReasons.map((reason) => reason.code),
@@ -1226,7 +1237,7 @@ export class CliGovernanceRuntime {
         runAssembly.assemblyMode === "task_id_fallback"
           ? CliGovernanceCheckStatus.WARN
           : CliGovernanceCheckStatus.PASS,
-      detail: `mode=${runAssembly.assemblyMode} reason=${runAssembly.assemblyReason} task_id=${taskIdLabel} nodes=${runAssembly.processDefinition.nodes.length} input_references=${runAssembly.taskContext?.inputReferences.length ?? 0} input_artifacts=${runAssembly.taskContext?.inputArtifacts.length ?? 0}`,
+      detail: `mode=${runAssembly.assemblyMode} reason=${runAssembly.assemblyReason} task_id=${taskIdLabel} nodes=${runAssembly.processDefinition.nodes.length} input_references=${runAssembly.taskContext?.inputReferences.length ?? 0} input_artifacts=${runAssembly.taskContext?.inputArtifacts.length ?? 0} memory_execution=${runAssembly.memorySnapshotSummary?.executionEntryCount ?? 0} memory_session=${runAssembly.memorySnapshotSummary?.sessionEntryCount ?? 0}`,
     };
   }
 

@@ -414,6 +414,8 @@ ai-governor/
 
 说明：若需要人类可读的 Artifact Registry 视图，应从 `context/artifact-registry/*.csv` 动态渲染，而不是在 workspace 中再维护手工镜像台账。
 
+`context/current-context.md` 除 primary/active stream 元数据外，还可在极少数已完成 stream 的 CR 收口场景下声明单值 `Worktree Review Target`；该 override 只负责默认 `review/` 路由，不改变 active task ledger 的 project/sprint 归属。
+
 ## 5.1 Monorepo 版本与发布策略（Baseline）
 
 1. 版本策略

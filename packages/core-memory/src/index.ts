@@ -3,6 +3,7 @@ export { MemoryManager } from "./memory-manager.js";
 export type {
   MemoryArchiveEntriesRequest,
   MemoryLayeredSnapshot,
+  MemoryLayeredSnapshotRequest,
   MemoryQueryEntriesRequest,
   MemoryReadEntryRequest,
   MemorySnapshotMetadata,

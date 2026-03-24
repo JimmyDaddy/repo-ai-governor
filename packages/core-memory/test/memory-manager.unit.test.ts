@@ -33,7 +33,7 @@ function createInMemoryStoreProvider(): MemoryStoreProvider {
       });
     },
     async query(request) {
-      return Array.from(records.entries())
+      const matchedRecords = Array.from(records.entries())
         .map(([compoundKey, record]) => {
           const delimiterIndex = compoundKey.indexOf(":");
           return {
@@ -49,8 +49,22 @@ function createInMemoryStoreProvider(): MemoryStoreProvider {
             return false;
           }
 
+          if (request.keyPrefix && !record.key.startsWith(request.keyPrefix)) {
+            return false;
+          }
+
+          if (request.tag && !record.tags.includes(request.tag)) {
+            return false;
+          }
+
           return true;
         });
+
+      if (typeof request.limit === "number") {
+        return matchedRecords.slice(0, request.limit);
+      }
+
+      return matchedRecords;
     },
     async snapshot() {
       return {
@@ -87,5 +101,59 @@ describe("core-memory unit", () => {
     expect(layeredSnapshot.normativeEntries).toHaveLength(1);
     expect(layeredSnapshot.executionEntries).toHaveLength(1);
     expect(layeredSnapshot.sessionEntries).toHaveLength(0);
+  });
+
+  it("supports selective layered snapshot queries by execution task and artifact selectors", async () => {
+    const memoryManager = new MemoryManager(new MemoryStoreAdapter(createInMemoryStoreProvider()));
+
+    await memoryManager.writeEntry({
+      scope: MemoryScope.NORMATIVE,
+      key: "baseline/prd",
+      payload: { version: "brief-v1" },
+      tags: ["normative"],
+    });
+    await memoryManager.writeEntry({
+      scope: MemoryScope.EXECUTION,
+      key: "exec-001:stage-prepare:record-1",
+      payload: { executionId: "exec-001" },
+      tags: ["audit-record", "execution:exec-001", "project:project-010", "task:TK-099"],
+    });
+    await memoryManager.writeEntry({
+      scope: MemoryScope.EXECUTION,
+      key: "historic:stage-report:record-1",
+      payload: { artifactId: "DA-121" },
+      tags: ["audit-record", "project:project-010", "artifact:DA-121", "task:TK-099"],
+    });
+    await memoryManager.writeEntry({
+      scope: MemoryScope.EXECUTION,
+      key: "historic:stage-report:record-2",
+      payload: { artifactId: "DA-404" },
+      tags: ["audit-record", "project:project-999", "artifact:DA-404", "task:TK-404"],
+    });
+    await memoryManager.writeEntry({
+      scope: MemoryScope.SESSION,
+      key: "session-001",
+      payload: { executionId: "exec-001", status: "active" },
+      tags: ["session", "execution:exec-001", "status:active"],
+    });
+
+    const layeredSnapshot = await memoryManager.loadLayeredSnapshot({
+      executionId: "exec-001",
+      projectId: "project-010",
+      taskId: "TK-099",
+      artifactIds: ["DA-121"],
+      limitPerQuery: 10,
+    });
+
+    expect(layeredSnapshot.normativeEntries).toHaveLength(1);
+    expect(layeredSnapshot.executionEntries).toHaveLength(2);
+    expect(layeredSnapshot.executionEntries.map((entry) => entry.key)).toEqual(
+      expect.arrayContaining(["exec-001:stage-prepare:record-1", "historic:stage-report:record-1"]),
+    );
+    expect(layeredSnapshot.executionEntries.map((entry) => entry.key)).not.toContain(
+      "historic:stage-report:record-2",
+    );
+    expect(layeredSnapshot.sessionEntries).toHaveLength(1);
+    expect(layeredSnapshot.sessionEntries[0]?.key).toBe("session-001");
   });
 });

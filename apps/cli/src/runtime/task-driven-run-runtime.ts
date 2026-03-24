@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 
 import { AgentCapability } from "@repo-ai-governor/adapter-sdk";
 import type { AdaptersConfig } from "@repo-ai-governor/config";
+import type { MemoryLayeredSnapshotRequest, MemoryManager } from "@repo-ai-governor/core-memory";
 import { type ProcessDslNode, ProcessNodeType } from "@repo-ai-governor/core-process";
 import type { ProcessDslDefinition } from "@repo-ai-governor/core-process";
 import type { RuntimeStageInputMap } from "@repo-ai-governor/core-runtime";
@@ -32,7 +33,10 @@ const PROCESS_POLICY_BUDGET_REF = "policy/budget-default";
  * dynamic DAG-shaping rules for task goal, dependency artifacts, and role selection.
  */
 export class CliTaskDrivenRunRuntime {
-  public constructor(private readonly workspaceRoot: string) {}
+  public constructor(
+    private readonly workspaceRoot: string,
+    private readonly memoryManager?: MemoryManager,
+  ) {}
 
   /**
    * Builds one run assembly payload from optional task context.
@@ -43,6 +47,10 @@ export class CliTaskDrivenRunRuntime {
     executionId: string;
     taskId: string | null;
     adaptersConfig: AdaptersConfig;
+    streamMetadata?: {
+      projectId?: string;
+      sprintId?: string;
+    };
   }): Promise<CliTaskDrivenRunAssembly> {
     if (!options.taskId) {
       return this.createBaselineAssembly(
@@ -59,7 +67,12 @@ export class CliTaskDrivenRunRuntime {
       );
     }
 
-    return this.createTaskDrivenAssembly(options.executionId, taskContext, options.adaptersConfig);
+    return this.createTaskDrivenAssembly(
+      options.executionId,
+      taskContext,
+      options.adaptersConfig,
+      options.streamMetadata,
+    );
   }
 
   /**
@@ -323,6 +336,8 @@ export class CliTaskDrivenRunRuntime {
         },
       },
       taskContext: null,
+      memorySelection: null,
+      memorySnapshotSummary: null,
       executionRoleProfileId: DefaultRoleProfileId.CODER,
       verificationRoleProfileId: null,
     };
@@ -335,11 +350,15 @@ export class CliTaskDrivenRunRuntime {
    * @param adaptersConfig Active adapters config.
    * @returns Task-driven run assembly.
    */
-  private createTaskDrivenAssembly(
+  private async createTaskDrivenAssembly(
     executionId: string,
     taskContext: CliTaskCardContext,
     adaptersConfig: AdaptersConfig,
-  ): CliTaskDrivenRunAssembly {
+    streamMetadata?: {
+      projectId?: string;
+      sprintId?: string;
+    },
+  ): Promise<CliTaskDrivenRunAssembly> {
     const prepareRoleProfileId = this.resolveAvailableRoleProfileId(
       adaptersConfig,
       DefaultRoleProfileId.PLANNER,
@@ -358,6 +377,18 @@ export class CliTaskDrivenRunRuntime {
     );
     const includeArtifactContextStage = taskContext.inputArtifacts.length > 0;
     const includeVerificationStage = Boolean(verificationRoleProfileId);
+    const memorySelection = this.resolveMemorySelection(executionId, taskContext, streamMetadata);
+    const memorySnapshot =
+      memorySelection && this.memoryManager
+        ? await this.memoryManager.loadLayeredSnapshot(memorySelection)
+        : null;
+    const memorySnapshotSummary = memorySnapshot
+      ? {
+          normativeEntryCount: memorySnapshot.normativeEntries.length,
+          executionEntryCount: memorySnapshot.executionEntries.length,
+          sessionEntryCount: memorySnapshot.sessionEntries.length,
+        }
+      : null;
 
     const nodes: ProcessDslNode[] = [];
     const stageInputs: RuntimeStageInputMap = {};
@@ -370,6 +401,8 @@ export class CliTaskDrivenRunRuntime {
       inputReferences: taskContext.inputReferences,
       inputArtifacts: taskContext.inputArtifacts,
       tracebackReferences: taskContext.tracebackReferences,
+      ...(memorySelection ? { memorySelection } : {}),
+      ...(memorySnapshot ? { memorySnapshot } : {}),
     };
 
     const prepareNode = this.createNode(
@@ -472,12 +505,46 @@ export class CliTaskDrivenRunRuntime {
           executionRoleProfileId,
           verificationRoleProfileId,
           taskContext: commonTaskContextPayload,
+          ...(memorySelection ? { memorySelection } : {}),
+          ...(memorySnapshotSummary ? { memorySnapshotSummary } : {}),
         },
       },
       stageInputs,
       taskContext,
+      memorySelection,
+      memorySnapshotSummary,
       executionRoleProfileId,
       verificationRoleProfileId,
+    };
+  }
+
+  /**
+   * Resolves one selective memory selector from task id, active stream, and dependency artifacts.
+   * @param executionId Runtime execution id.
+   * @param taskContext Parsed task-card context.
+   * @param streamMetadata Active stream metadata from current-context.
+   * @returns Selective layered-snapshot request.
+   */
+  private resolveMemorySelection(
+    executionId: string,
+    taskContext: CliTaskCardContext,
+    streamMetadata?: {
+      projectId?: string;
+      sprintId?: string;
+    },
+  ): MemoryLayeredSnapshotRequest | null {
+    if (!this.memoryManager) {
+      return null;
+    }
+
+    return {
+      includeNormativeBaseline: true,
+      executionId,
+      taskId: taskContext.taskId,
+      projectId: streamMetadata?.projectId,
+      sprintId: streamMetadata?.sprintId,
+      artifactIds: taskContext.inputArtifacts.map((inputArtifact) => inputArtifact.artifactId),
+      limitPerQuery: 20,
     };
   }
 

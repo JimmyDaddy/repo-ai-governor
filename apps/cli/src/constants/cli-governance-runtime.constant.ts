@@ -59,6 +59,7 @@ export enum CliRuntimeOperation {
 export enum CliReviewRequestStatus {
   QUEUED = "queued",
   VERIFIED = "verified",
+  FAILED = "failed",
 }
 
 /**
@@ -86,6 +87,8 @@ export enum CliDiagnosticRootCause {
  */
 export enum CliReviewLedgerBackfillStatus {
   PENDING = "pending",
+  APPLIED = "applied",
+  FAILED = "failed",
 }
 
 /**

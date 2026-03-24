@@ -36,6 +36,22 @@ export interface MemoryQueryEntriesRequest {
 }
 
 /**
+ * Defines one selective layered snapshot request used by runtime/session composition.
+ */
+export interface MemoryLayeredSnapshotRequest {
+  includeNormativeBaseline?: boolean;
+  normativeKeyPrefixes?: string[];
+  normativeTags?: string[];
+  executionId?: string;
+  projectId?: string;
+  sprintId?: string;
+  taskId?: string;
+  artifactIds?: string[];
+  sessionId?: string;
+  limitPerQuery?: number;
+}
+
+/**
  * Defines memory archive request payload.
  */
 export interface MemoryArchiveEntriesRequest {
