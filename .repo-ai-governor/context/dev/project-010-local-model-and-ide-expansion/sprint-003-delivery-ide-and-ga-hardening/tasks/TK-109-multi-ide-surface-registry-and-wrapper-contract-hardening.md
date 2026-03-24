@@ -1,8 +1,8 @@
 # TK-109 多 IDE surface registry 与 wrapper 契约强化
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-24
-- Owner: TBD
+- Owner: AI-Agent
 - Priority: P1
 - Project: `project-010-local-model-and-ide-expansion`
 - Sprint: `sprint-003-delivery-ide-and-ga-hardening`
@@ -45,9 +45,12 @@
 ## 7. 执行记录
 
 1. 2026-03-24：任务创建，状态初始化为 `planned`。
+2. 2026-03-24：任务启动，已确认当前缺口集中在 `apps/cli/src/ide-command-wrapper.ts` 与 `integrations/ide/contracts/*`；下一步将建立统一 surface registry、显式降级语义与跨入口 contract tests。
+3. 2026-03-24：已完成 multi-surface registry runtime、wrapper `nextAction` 对齐、contract v2 同步与 contract tests，生成 `DA-109` 与 resolved review；当前任务状态更新为 `completed`。
 
 ## 8. 产出
 
 1. `DA-109` `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-003-delivery-ide-and-ga-hardening/tasks/DA-109-multi-ide-surface-registry-and-wrapper-contract-hardening.md`
 2. `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-003-delivery-ide-and-ga-hardening/tasks/checklist.md`
 3. `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-003-delivery-ide-and-ga-hardening/tasks/tasks.csv`
+4. `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-003-delivery-ide-and-ga-hardening/review/resolved_code_review_tk-109-multi-ide-surface-registry-and-wrapper-contract-hardening.md`

@@ -1,0 +1,29 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration name="repo-ai-governor: init" type="ShConfigurationType">
+    <option name="SCRIPT_TEXT" value="node ./dist/bin/repo-ai-governor.js --output json --locale en-US init" />
+    <envs>
+      <env name="REPO_AI_GOVERNOR_OUTPUT_MODE" value="json" />
+      <env name="REPO_AI_GOVERNOR_ENTRY_SURFACE" value="jetbrains" />
+      <env name="REPO_AI_GOVERNOR_STANDARDS_PROFILE_ID" value="stage5-entry-baseline" />
+      <env name="REPO_AI_GOVERNOR_STANDARDS_SOURCES" value="product_requirements_brief,overall_technical_solution,architecture_and_repo_layering,code_standards,long_term_maintenance_guide,agents_projection" />
+    </envs>
+  </configuration>
+  <configuration name="repo-ai-governor: doctor" type="ShConfigurationType">
+    <option name="SCRIPT_TEXT" value="node ./dist/bin/repo-ai-governor.js --output json --locale en-US doctor" />
+    <envs>
+      <env name="REPO_AI_GOVERNOR_OUTPUT_MODE" value="json" />
+      <env name="REPO_AI_GOVERNOR_ENTRY_SURFACE" value="jetbrains" />
+      <env name="REPO_AI_GOVERNOR_STANDARDS_PROFILE_ID" value="stage5-entry-baseline" />
+      <env name="REPO_AI_GOVERNOR_STANDARDS_SOURCES" value="product_requirements_brief,overall_technical_solution,architecture_and_repo_layering,code_standards,long_term_maintenance_guide,agents_projection" />
+    </envs>
+  </configuration>
+  <configuration name="repo-ai-governor: check" type="ShConfigurationType">
+    <option name="SCRIPT_TEXT" value="node ./dist/bin/repo-ai-governor.js --output json --locale en-US check" />
+    <envs>
+      <env name="REPO_AI_GOVERNOR_OUTPUT_MODE" value="json" />
+      <env name="REPO_AI_GOVERNOR_ENTRY_SURFACE" value="jetbrains" />
+      <env name="REPO_AI_GOVERNOR_STANDARDS_PROFILE_ID" value="stage5-entry-baseline" />
+      <env name="REPO_AI_GOVERNOR_STANDARDS_SOURCES" value="product_requirements_brief,overall_technical_solution,architecture_and_repo_layering,code_standards,long_term_maintenance_guide,agents_projection" />
+    </envs>
+  </configuration>
+</component>

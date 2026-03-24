@@ -19,6 +19,11 @@ const REQUIRED_PACKED_PATH_SUFFIXES = [
   "examples/README.md",
   "examples/single-role-minimal-flow/scenario.json",
   "examples/single-role-minimal-flow/expected/runtime-baseline.json",
+  "integrations/ide/README.md",
+  "integrations/ide/examples/vscode-task.sample.json",
+  "integrations/ide/examples/jetbrains-run-configuration.sample.xml",
+  "integrations/ide/examples/cursor-task.sample.json",
+  "integrations/ide/examples/claude-code-commands.sample.json",
 ];
 
 /**

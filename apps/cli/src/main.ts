@@ -45,12 +45,38 @@ import {
   DEFAULT_CLI_VERBOSITY,
   NON_TTY_FALLBACK_OUTPUT_MODE,
 } from "./constants/cli-output.constant.js";
+import {
+  IDE_WRAPPER_DEFAULT_STANDARDS_PROFILE_ID,
+  type IdeEntrySurface,
+  IdeWrapperEnvironmentKey,
+} from "./constants/ide-command-wrapper.constant.js";
+import type { IdeStandardsSourceId } from "./constants/ide-standards-source.constant.js";
+import { IdeStandardsSourceRuntime } from "./runtime/ide-standards-source-runtime.js";
+import { IdeSurfaceRegistryRuntime } from "./runtime/ide-surface-registry-runtime.js";
+export {
+  IDE_SURFACE_REGISTRY,
+  IDE_WRAPPER_DEFAULT_OUTPUT_MODE,
+  IDE_WRAPPER_RESERVED_ENVIRONMENT_KEYS,
+  IDE_WRAPPER_DEFAULT_STANDARDS_SOURCE_IDS,
+  IDE_WRAPPER_SELF_HOSTED_STANDARDS_SOURCE_REGISTRY,
+  IDE_WRAPPER_SUPPORTED_COMMANDS,
+  IDE_WRAPPER_SUPPORTED_SURFACES,
+  IdeEntrySurface,
+  IdeStandardsSourceId,
+  IdeStandardsSourceKind,
+  IdeSurfaceCapability,
+  IdeSurfaceDegradeMode,
+  IdeWrapperEnvironmentKey,
+} from "./constants/ide-command-wrapper.constant.js";
 export { IdeCommandWrapper, standardizeIdeWrapperError } from "./ide-command-wrapper.js";
 export type {
   IdeCommandInvocationEnvelope,
+  IdeResolvedStandardsSource,
+  IdeSurfaceContract,
   IdeCommandWrapperOptions,
   IdeCommandWrapperRequest,
   IdeStandardsInjectionPayload,
+  IdeStandardsSourceDescriptor,
   IdeWrapperCommandName,
 } from "./types/index.js";
 import type {
@@ -164,6 +190,7 @@ const DEFAULT_IO: CliIoAdapters = {
   },
   cwd: (): string => process.cwd(),
   isStdoutTty: (): boolean => Boolean(process.stdout.isTTY),
+  env: (): NodeJS.ProcessEnv => process.env,
 };
 
 /**
@@ -174,6 +201,7 @@ interface CliIoAdapters {
   stderr: (value: string) => void;
   cwd: () => string;
   isStdoutTty?: () => boolean;
+  env?: () => NodeJS.ProcessEnv;
 }
 
 /**
@@ -214,6 +242,15 @@ interface CliFailureResolution {
 }
 
 /**
+ * Defines validated IDE wrapper environment overlay consumed by the real CLI entrypoint.
+ */
+interface ResolvedIdeWrapperEnvironment {
+  entrySurface: IdeEntrySurface | null;
+  standardsProfileId: string | null;
+  standardsSourceIds: IdeStandardsSourceId[];
+}
+
+/**
  * Runs the Stage-6 CLI output-contract baseline with TTY-aware fallback semantics.
  * @param argv Raw process argv from Node runtime.
  * @param io Runtime I/O adapters for stdout/stderr/cwd.
@@ -240,6 +277,7 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
 
     const requestedLocale = readOptionValue(rawArgs, "--locale");
     const requestedProfileId = readOptionValue(rawArgs, "--profile");
+    const ideWrapperEnvironment = resolveIdeWrapperEnvironment(io.env?.() ?? process.env);
     const runtimeDebugOptions = resolveRuntimeDebugOptions(rawArgs, io.cwd());
     const runtimeContext = resolveRuntimeContext(io.cwd(), requestedProfileId);
     memoryStoreComposition = await composeMemoryStoreProvider(
@@ -330,6 +368,21 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
             memoryStoreEngine: runtimeContext.memory.storeEngine,
             memoryStoreRoot: activeMemoryStoreComposition.memoryStoreRoot,
             memoryStoreProvider: activeMemoryStoreComposition.providerName,
+            ...(ideWrapperEnvironment.entrySurface
+              ? {
+                  entrySurface: ideWrapperEnvironment.entrySurface,
+                }
+              : {}),
+            ...(ideWrapperEnvironment.standardsProfileId
+              ? {
+                  standardsProfileId: ideWrapperEnvironment.standardsProfileId,
+                }
+              : {}),
+            ...(ideWrapperEnvironment.standardsSourceIds.length > 0
+              ? {
+                  standardsSourceIds: [...ideWrapperEnvironment.standardsSourceIds],
+                }
+              : {}),
           };
           const executionResult = await governanceRuntime.execute(commandDefinition.name);
 
@@ -423,6 +476,102 @@ function resolveRuntimeContext(
     configSource: "default",
     workspace: defaultWorkspace,
   };
+}
+
+/**
+ * Resolves and validates IDE wrapper env injected by official IDE templates.
+ * @param environment Process-level environment map.
+ * @returns Validated IDE wrapper overlay snapshot for diagnostics and fail-fast validation.
+ */
+function resolveIdeWrapperEnvironment(
+  environment: NodeJS.ProcessEnv,
+): ResolvedIdeWrapperEnvironment {
+  const ideSurfaceRegistryRuntime = new IdeSurfaceRegistryRuntime();
+  const ideStandardsSourceRuntime = new IdeStandardsSourceRuntime();
+  const entrySurfaceValue = normalizeWrapperEnvironmentValue(
+    environment[IdeWrapperEnvironmentKey.ENTRY_SURFACE],
+    IdeWrapperEnvironmentKey.ENTRY_SURFACE,
+  );
+  const standardsProfileIdValue = normalizeWrapperEnvironmentValue(
+    environment[IdeWrapperEnvironmentKey.STANDARDS_PROFILE_ID],
+    IdeWrapperEnvironmentKey.STANDARDS_PROFILE_ID,
+  );
+  const standardsSourcesValue = normalizeWrapperEnvironmentValue(
+    environment[IdeWrapperEnvironmentKey.STANDARDS_SOURCES],
+    IdeWrapperEnvironmentKey.STANDARDS_SOURCES,
+  );
+
+  const entrySurface = entrySurfaceValue
+    ? ideSurfaceRegistryRuntime.resolveSurfaceContract(entrySurfaceValue as IdeEntrySurface)
+        .surfaceId
+    : null;
+  const standardsProfileId =
+    standardsProfileIdValue ??
+    (standardsSourcesValue ? IDE_WRAPPER_DEFAULT_STANDARDS_PROFILE_ID : null);
+  const standardsSourceIds = standardsSourcesValue
+    ? parseIdeStandardsSourceIds(standardsSourcesValue, ideStandardsSourceRuntime)
+    : [];
+
+  return {
+    entrySurface,
+    standardsProfileId,
+    standardsSourceIds,
+  };
+}
+
+/**
+ * Normalizes one IDE wrapper environment value and rejects blank strings.
+ * @param rawValue Raw environment value.
+ * @param environmentKey Environment variable key.
+ * @returns Trimmed value or null when omitted.
+ */
+function normalizeWrapperEnvironmentValue(
+  rawValue: string | undefined,
+  environmentKey: IdeWrapperEnvironmentKey,
+): string | null {
+  if (rawValue === undefined) {
+    return null;
+  }
+
+  const normalizedValue = rawValue.trim();
+  if (normalizedValue.length === 0) {
+    throw new RuntimeError(
+      GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+      `Environment variable ${environmentKey} must not be empty.`,
+      {
+        environmentKey,
+      },
+    );
+  }
+
+  return normalizedValue;
+}
+
+/**
+ * Parses IDE standards source IDs from comma-separated env input and validates them.
+ * @param standardsSourcesValue Comma-separated source IDs.
+ * @param ideStandardsSourceRuntime Standards source validation runtime.
+ * @returns Ordered validated source IDs.
+ */
+function parseIdeStandardsSourceIds(
+  standardsSourcesValue: string,
+  ideStandardsSourceRuntime: IdeStandardsSourceRuntime,
+): IdeStandardsSourceId[] {
+  const sourceTokens = standardsSourcesValue.split(",").map((sourceId) => sourceId.trim());
+  if (sourceTokens.some((sourceId) => sourceId.length === 0)) {
+    throw new RuntimeError(
+      GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+      `Environment variable ${IdeWrapperEnvironmentKey.STANDARDS_SOURCES} must be a comma-separated list of non-empty source IDs.`,
+      {
+        environmentKey: IdeWrapperEnvironmentKey.STANDARDS_SOURCES,
+        value: standardsSourcesValue,
+      },
+    );
+  }
+
+  const sourceIds = sourceTokens as IdeStandardsSourceId[];
+  ideStandardsSourceRuntime.resolveSources(sourceIds);
+  return [...sourceIds];
 }
 
 /**

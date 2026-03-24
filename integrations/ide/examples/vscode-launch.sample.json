@@ -1,0 +1,20 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "repo-ai-governor: check",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/dist/bin/repo-ai-governor.js",
+      "args": ["--output", "json", "--locale", "en-US", "check"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "env": {
+        "REPO_AI_GOVERNOR_OUTPUT_MODE": "json",
+        "REPO_AI_GOVERNOR_ENTRY_SURFACE": "vscode",
+        "REPO_AI_GOVERNOR_STANDARDS_PROFILE_ID": "stage5-entry-baseline",
+        "REPO_AI_GOVERNOR_STANDARDS_SOURCES": "product_requirements_brief,overall_technical_solution,architecture_and_repo_layering,code_standards,long_term_maintenance_guide,agents_projection"
+      }
+    }
+  ]
+}

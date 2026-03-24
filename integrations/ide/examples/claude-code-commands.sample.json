@@ -1,0 +1,53 @@
+{
+  "surface": "claude_code",
+  "commands": [
+    {
+      "label": "repo-ai-governor:init",
+      "command": "node",
+      "args": ["./dist/bin/repo-ai-governor.js", "--output", "json", "--locale", "en-US", "init"],
+      "env": {
+        "REPO_AI_GOVERNOR_OUTPUT_MODE": "json",
+        "REPO_AI_GOVERNOR_ENTRY_SURFACE": "claude_code",
+        "REPO_AI_GOVERNOR_STANDARDS_PROFILE_ID": "stage5-entry-baseline",
+        "REPO_AI_GOVERNOR_STANDARDS_SOURCES": "product_requirements_brief,overall_technical_solution,architecture_and_repo_layering,code_standards,long_term_maintenance_guide,agents_projection"
+      },
+      "nextActionOnFailure": "Retry with the Claude Code wrapper template or omit surface to fall back to the generic IDE contract."
+    },
+    {
+      "label": "repo-ai-governor:doctor",
+      "command": "node",
+      "args": ["./dist/bin/repo-ai-governor.js", "--output", "json", "--locale", "en-US", "doctor"],
+      "env": {
+        "REPO_AI_GOVERNOR_OUTPUT_MODE": "json",
+        "REPO_AI_GOVERNOR_ENTRY_SURFACE": "claude_code",
+        "REPO_AI_GOVERNOR_STANDARDS_PROFILE_ID": "stage5-entry-baseline",
+        "REPO_AI_GOVERNOR_STANDARDS_SOURCES": "product_requirements_brief,overall_technical_solution,architecture_and_repo_layering,code_standards,long_term_maintenance_guide,agents_projection"
+      },
+      "nextActionOnFailure": "Retry with the Claude Code wrapper template or omit surface to fall back to the generic IDE contract."
+    },
+    {
+      "label": "repo-ai-governor:check",
+      "command": "node",
+      "args": ["./dist/bin/repo-ai-governor.js", "--output", "json", "--locale", "en-US", "check"],
+      "env": {
+        "REPO_AI_GOVERNOR_OUTPUT_MODE": "json",
+        "REPO_AI_GOVERNOR_ENTRY_SURFACE": "claude_code",
+        "REPO_AI_GOVERNOR_STANDARDS_PROFILE_ID": "stage5-entry-baseline",
+        "REPO_AI_GOVERNOR_STANDARDS_SOURCES": "product_requirements_brief,overall_technical_solution,architecture_and_repo_layering,code_standards,long_term_maintenance_guide,agents_projection"
+      },
+      "nextActionOnFailure": "Retry with the Claude Code wrapper template or omit surface to fall back to the generic IDE contract."
+    }
+  ],
+  "commonErrors": [
+    {
+      "errorCode": "ENTRYPOINT_COMMAND_WRAPPER_INVALID",
+      "symptom": "Unsupported command, unsupported surface, or reserved environment override.",
+      "nextAction": "Retry with the Claude Code wrapper template or omit surface to fall back to the generic IDE contract."
+    },
+    {
+      "errorCode": "CONFIG_SCHEMA_VALIDATION_FAILED",
+      "symptom": "governor.yaml is missing required repo-local baseline fields.",
+      "nextAction": "Add the repo-local governor.yaml baseline before invoking Claude Code commands."
+    }
+  ]
+}

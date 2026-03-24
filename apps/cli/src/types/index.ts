@@ -29,7 +29,10 @@ export type {
   CliRuntimeDebugOptions,
   CliSuccessOutputPayload,
   IdeCommandInvocationEnvelope,
+  IdeResolvedStandardsSource,
+  IdeSurfaceContract,
   IdeCommandWrapperOptions,
   IdeCommandWrapperRequest,
   IdeStandardsInjectionPayload,
+  IdeStandardsSourceDescriptor,
 } from "./interfaces/index.js";

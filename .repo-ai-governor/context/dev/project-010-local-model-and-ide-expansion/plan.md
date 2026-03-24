@@ -1,6 +1,6 @@
 # project-010-local-model-and-ide-expansion 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-03-24
 - Stage Mapping: Stage 9 follow-up backlog realization
 - Phase Mapping: Phase E follow-up + Adoption Integration
@@ -106,10 +106,11 @@
 | TK-106 | sprint-001 | triad 文档 Stage 9 overlay 补强同步 | analysis/triad-sync | TK-105 | completed |
 | TK-107 | sprint-003 | 受控 delivery rehearsal 与 audit/replay 集成 | implementation/delivery | TK-102 | completed |
 | TK-108 | sprint-003 | 黑盒 E2E、CI/release gate 与 GA 指标收口 | implementation/gate | TK-102,TK-107 | completed |
-| TK-109 | sprint-003 | 多 IDE surface registry 与 wrapper 契约强化 | baseline/contract | TK-102 | planned |
-| TK-110 | sprint-003 | VS Code/JetBrains 官方模板与 smoke 门禁 | implementation/ide-template | TK-109 | planned |
-| TK-111 | sprint-003 | Cursor/Claude Code 接入模板与文档一致性 | implementation/ide-template | TK-109,TK-110 | planned |
-| TK-112 | sprint-003 | project-010 出口验收与后续 rollout 输入约束 | acceptance baseline | TK-107,TK-108,TK-110,TK-111 | planned |
+| TK-109 | sprint-003 | 多 IDE surface registry 与 wrapper 契约强化 | baseline/contract | TK-102 | completed |
+| TK-110 | sprint-003 | VS Code/JetBrains 官方模板与 smoke 门禁 | implementation/ide-template | TK-109 | completed |
+| TK-111 | sprint-003 | Cursor/Claude Code 接入模板与文档一致性 | implementation/ide-template | TK-109,TK-110 | completed |
+| TK-112 | sprint-003 | project-010 出口验收与后续 rollout 输入约束 | acceptance baseline | TK-107,TK-108,TK-110,TK-111,TK-135 | completed |
+| TK-135 | sprint-003 | standards injection source ID 与 resolver 收口 | baseline/contract | TK-109,TK-110,TK-111 | completed |
 | TK-113 | sprint-001 | project-010 Stage 9 执行重排与 sprint rebaseline | analysis/planning | TK-106 | completed |
 | TK-114 | sprint-001 | cli-governance-runtime 拆分方案与 anti-God-object 规范基线 | analysis/governance | TK-113 | completed |
 
@@ -156,3 +157,9 @@
 24. 2026-03-24：启动 `TK-108`，以 `DA-107` 为唯一 delivery 输入基线，开始收敛 blackbox/release/GA 指标与 gate 场景矩阵。
 25. 2026-03-24：完成 `TK-108`，形成 `DA-108` 与 `TK-108-stage9-blackbox-ga-report.json`，并将 `gate:stage9-blackbox-ga`、release unified gate supporting report、GA 指标快照一并纳入正式门禁链路。
 26. 2026-03-24：完成 `TK-108` working-tree follow-up CR 修复，补齐 `release-governance-policy.json -> auditEvidenceSources`、`run-rollback-rehearsal.js` 外部证据校验、unified gate 的 passed-status 检查，并同步 `release-governance-spec.md`，消除 Stage 9 GA 证据在 release 链中的漂移与稳定失败路径。
+27. 2026-03-24：完成 `TK-109`，将 IDE wrapper 收敛为多入口 surface registry + contract v2 基线，并通过 public export、cross-surface contract tests 与 `DA-109` 固化为 `TK-110/TK-111` 的唯一入口契约输入。
+28. 2026-03-24：完成 `TK-110`，新增 VS Code/JetBrains 官方模板、`check:ide-entry-smoke`、integration coverage 与本地分发校验，正式将 IDE 官方入口从文档样例升级为可执行可发布资产。
+29. 2026-03-24：完成 `TK-111`，补齐 Cursor/Claude Code 官方模板、`check:ide-docs-parity`、四入口 smoke gate 与本地分发校验，正式将多 IDE 官方模板收敛为 contracts/examples/docs 同步演进的统一交付面。
+30. 2026-03-24：启动 `TK-135`，开始将 standards injection baseline 从“当前仓库硬编码路径”收敛为“稳定 source IDs + self-hosted resolver registry”，避免 product contract 继续耦合 self-host layout。
+31. 2026-03-24：完成 `TK-135`，将 standards injection 契约从仓库内路径列表升级为 stable source IDs + self-hosted resolver registry，并同步 official templates、smoke/parity gate 与 contract tests，明确 self-hosted layout 只属于 resolver 层而非产品默认契约。
+32. 2026-03-24：完成 `TK-112`，形成 `DA-112` 与 `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/project-010-local-model-and-ide-expansion-completion-audit-summary.md`，正式确认 project-010 出口验收通过并冻结后续 rollout 输入约束。

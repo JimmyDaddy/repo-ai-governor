@@ -9,7 +9,7 @@
       "options": {
         "env": {
           "REPO_AI_GOVERNOR_OUTPUT_MODE": "json",
-          "REPO_AI_GOVERNOR_ENTRY_SURFACE": "vscode",
+          "REPO_AI_GOVERNOR_ENTRY_SURFACE": "cursor",
           "REPO_AI_GOVERNOR_STANDARDS_PROFILE_ID": "stage5-entry-baseline",
           "REPO_AI_GOVERNOR_STANDARDS_SOURCES": "product_requirements_brief,overall_technical_solution,architecture_and_repo_layering,code_standards,long_term_maintenance_guide,agents_projection"
         }
@@ -24,7 +24,7 @@
       "options": {
         "env": {
           "REPO_AI_GOVERNOR_OUTPUT_MODE": "json",
-          "REPO_AI_GOVERNOR_ENTRY_SURFACE": "vscode",
+          "REPO_AI_GOVERNOR_ENTRY_SURFACE": "cursor",
           "REPO_AI_GOVERNOR_STANDARDS_PROFILE_ID": "stage5-entry-baseline",
           "REPO_AI_GOVERNOR_STANDARDS_SOURCES": "product_requirements_brief,overall_technical_solution,architecture_and_repo_layering,code_standards,long_term_maintenance_guide,agents_projection"
         }
@@ -39,7 +39,7 @@
       "options": {
         "env": {
           "REPO_AI_GOVERNOR_OUTPUT_MODE": "json",
-          "REPO_AI_GOVERNOR_ENTRY_SURFACE": "vscode",
+          "REPO_AI_GOVERNOR_ENTRY_SURFACE": "cursor",
           "REPO_AI_GOVERNOR_STANDARDS_PROFILE_ID": "stage5-entry-baseline",
           "REPO_AI_GOVERNOR_STANDARDS_SOURCES": "product_requirements_brief,overall_technical_solution,architecture_and_repo_layering,code_standards,long_term_maintenance_guide,agents_projection"
         }

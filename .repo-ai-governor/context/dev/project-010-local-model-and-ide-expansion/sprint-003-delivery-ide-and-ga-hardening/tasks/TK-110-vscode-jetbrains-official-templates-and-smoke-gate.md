@@ -1,8 +1,8 @@
 # TK-110 VS Code/JetBrains 官方模板与 smoke 门禁
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-24
-- Owner: TBD
+- Owner: AI-Agent
 - Priority: P1
 - Project: `project-010-local-model-and-ide-expansion`
 - Sprint: `sprint-003-delivery-ide-and-ga-hardening`
@@ -45,9 +45,13 @@
 ## 7. 执行记录
 
 1. 2026-03-24：任务创建，状态初始化为 `planned`。
+2. 2026-03-24：任务启动，已确认当前仅有单一 `vscode-task.sample.json`，尚缺 JetBrains 官方模板、统一 IDE smoke gate 与 `init -> doctor -> check` 的入口回归；下一步将补齐双入口模板并接入 gate。
+3. 2026-03-24：已完成 VS Code/JetBrains 官方模板、`check:ide-entry-smoke`、integration coverage 与本地分发校验，生成 `DA-110` 与 resolved review；当前任务状态更新为 `completed`。
+4. 2026-03-24：复核并修复 follow-up CR，已将 VS Code/JetBrains 官方模板 env 真正接入 `runCli()` 入口校验与 diagnostics 输出，`test/ide-entry-smoke.integration.test.ts` 也改为以模板 env 执行实际链路。
 
 ## 8. 产出
 
 1. `DA-110` `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-003-delivery-ide-and-ga-hardening/tasks/DA-110-vscode-jetbrains-official-templates-and-smoke-gate.md`
 2. `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-003-delivery-ide-and-ga-hardening/tasks/checklist.md`
 3. `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-003-delivery-ide-and-ga-hardening/tasks/tasks.csv`
+4. `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-003-delivery-ide-and-ga-hardening/review/resolved_code_review_tk-110-vscode-jetbrains-official-templates-and-smoke-gate.md`

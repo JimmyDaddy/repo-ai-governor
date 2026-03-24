@@ -8,24 +8,27 @@ import {
 import {
   IDE_WRAPPER_DEFAULT_OUTPUT_MODE,
   IDE_WRAPPER_DEFAULT_STANDARDS_PROFILE_ID,
-  IDE_WRAPPER_DEFAULT_STANDARDS_SOURCES,
+  IDE_WRAPPER_RESERVED_ENVIRONMENT_KEYS,
   IDE_WRAPPER_SUPPORTED_COMMANDS,
-  IdeEntrySurface,
+  IDE_WRAPPER_SUPPORTED_SURFACES,
   IdeWrapperEnvironmentKey,
 } from "./constants/ide-command-wrapper.constant.js";
+import type { IdeStandardsSourceId } from "./constants/ide-standards-source.constant.js";
+import { IdeStandardsSourceRuntime } from "./runtime/ide-standards-source-runtime.js";
+import { IdeSurfaceRegistryRuntime } from "./runtime/ide-surface-registry-runtime.js";
 import type {
   IdeCommandInvocationEnvelope,
   IdeCommandWrapperOptions,
   IdeCommandWrapperRequest,
   IdeStandardsInjectionPayload,
+  IdeSurfaceContract,
   IdeWrapperCommandName,
 } from "./types/index.js";
 
 const DEFAULT_NODE_EXECUTABLE = "node";
 const DEFAULT_BINARY_ENTRYPOINT = "./dist/bin/repo-ai-governor.js";
 const ERROR_OUTPUT_MODE_VALUES = new Set<string>(Object.values(ErrorOutputEnvironment));
-const IDE_ENTRY_SURFACE_VALUES = new Set<string>(Object.values(IdeEntrySurface));
-const RESERVED_WRAPPER_ENV_KEYS = new Set<string>(Object.values(IdeWrapperEnvironmentKey));
+const RESERVED_WRAPPER_ENV_KEYS = new Set<string>(IDE_WRAPPER_RESERVED_ENVIRONMENT_KEYS);
 
 /**
  * Wraps CLI commands into one deterministic IDE/agent invocation envelope.
@@ -38,7 +41,9 @@ export class IdeCommandWrapper {
   private readonly nodeExecutable: string;
   private readonly binaryEntrypoint: string;
   private readonly supportedCommandSet: ReadonlySet<IdeWrapperCommandName>;
-  private readonly standardsSources: readonly string[];
+  private readonly standardsSourceIds: readonly IdeStandardsSourceId[];
+  private readonly ideSurfaceRegistryRuntime: IdeSurfaceRegistryRuntime;
+  private readonly ideStandardsSourceRuntime: IdeStandardsSourceRuntime;
 
   /**
    * Creates IDE command wrapper with optional command and standards overrides.
@@ -51,7 +56,10 @@ export class IdeCommandWrapper {
     this.supportedCommandSet = new Set(
       options.supportedCommands ?? IDE_WRAPPER_SUPPORTED_COMMANDS,
     ) as ReadonlySet<IdeWrapperCommandName>;
-    this.standardsSources = options.standardsSources ?? IDE_WRAPPER_DEFAULT_STANDARDS_SOURCES;
+    this.ideSurfaceRegistryRuntime = new IdeSurfaceRegistryRuntime(options.surfaceRegistry);
+    this.ideStandardsSourceRuntime = new IdeStandardsSourceRuntime(options.standardsSourceRegistry);
+    this.standardsSourceIds =
+      options.standardsSourceIds ?? this.ideStandardsSourceRuntime.resolveDefaultSourceIds();
   }
 
   /**
@@ -64,10 +72,10 @@ export class IdeCommandWrapper {
     const args = this.normalizeArgs(request.args);
     const locale = this.normalizeOptionalText(request.locale);
     const profileId = this.normalizeOptionalText(request.profileId);
-    const outputMode = this.normalizeOutputMode(request.outputMode);
-    const surface = this.normalizeSurface(request.surface);
+    const surfaceContract = this.ideSurfaceRegistryRuntime.resolveSurfaceContract(request.surface);
+    const outputMode = this.normalizeOutputMode(request.outputMode, surfaceContract);
     const standards = this.buildStandardsInjection(request.standardsProfileId);
-    const customEnv = this.normalizeAdditionalEnv(request.additionalEnv);
+    const customEnv = this.normalizeAdditionalEnv(request.additionalEnv, surfaceContract);
 
     const argv = [this.nodeExecutable, this.binaryEntrypoint];
     if (locale) {
@@ -81,9 +89,9 @@ export class IdeCommandWrapper {
     const env: Record<string, string> = {
       ...customEnv,
       [IdeWrapperEnvironmentKey.OUTPUT_MODE]: outputMode,
-      [IdeWrapperEnvironmentKey.ENTRY_SURFACE]: surface,
+      [IdeWrapperEnvironmentKey.ENTRY_SURFACE]: surfaceContract.surfaceId,
       [IdeWrapperEnvironmentKey.STANDARDS_PROFILE_ID]: standards.profileId,
-      [IdeWrapperEnvironmentKey.STANDARDS_SOURCES]: standards.sources.join(","),
+      [IdeWrapperEnvironmentKey.STANDARDS_SOURCES]: standards.sourceIds.join(","),
     };
 
     return {
@@ -91,9 +99,11 @@ export class IdeCommandWrapper {
       env,
       metadata: {
         command,
-        surface,
+        surface: surfaceContract.surfaceId,
         outputMode,
         standards,
+        surfaceContract,
+        nextAction: surfaceContract.nextAction,
       },
     };
   }
@@ -106,10 +116,12 @@ export class IdeCommandWrapper {
   public buildStandardsInjection(standardsProfileId?: string): IdeStandardsInjectionPayload {
     const profileId =
       this.normalizeOptionalText(standardsProfileId) ?? IDE_WRAPPER_DEFAULT_STANDARDS_PROFILE_ID;
+    const sourceIds = [...this.standardsSourceIds];
 
     return {
       profileId,
-      sources: [...this.standardsSources],
+      sourceIds,
+      resolvedSources: this.ideStandardsSourceRuntime.resolveSources(sourceIds),
     };
   }
 
@@ -144,9 +156,10 @@ export class IdeCommandWrapper {
    */
   private normalizeOutputMode(
     outputMode: ErrorOutputEnvironment | undefined,
+    surfaceContract: IdeSurfaceContract,
   ): ErrorOutputEnvironment {
     if (outputMode === undefined) {
-      return IDE_WRAPPER_DEFAULT_OUTPUT_MODE;
+      return surfaceContract.defaultOutputMode ?? IDE_WRAPPER_DEFAULT_OUTPUT_MODE;
     }
 
     if (!ERROR_OUTPUT_MODE_VALUES.has(outputMode)) {
@@ -161,30 +174,6 @@ export class IdeCommandWrapper {
     }
 
     return outputMode;
-  }
-
-  /**
-   * Normalizes IDE entry surface values with deterministic default.
-   * @param surface Optional surface from request payload.
-   * @returns Normalized IDE entry surface.
-   */
-  private normalizeSurface(surface: IdeEntrySurface | undefined): IdeEntrySurface {
-    if (surface === undefined) {
-      return IdeEntrySurface.GENERIC_IDE;
-    }
-
-    if (!IDE_ENTRY_SURFACE_VALUES.has(surface)) {
-      throw new RuntimeError(
-        GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
-        `Unsupported IDE entry surface "${surface}".`,
-        {
-          surface,
-          supportedSurfaces: Array.from(IDE_ENTRY_SURFACE_VALUES),
-        },
-      );
-    }
-
-    return surface;
   }
 
   /**
@@ -212,7 +201,10 @@ export class IdeCommandWrapper {
    * @param additionalEnv Optional env payload from wrapper request.
    * @returns Normalized custom env map.
    */
-  private normalizeAdditionalEnv(additionalEnv?: Record<string, string>): Record<string, string> {
+  private normalizeAdditionalEnv(
+    additionalEnv: Record<string, string> | undefined,
+    surfaceContract: IdeSurfaceContract,
+  ): Record<string, string> {
     if (additionalEnv === undefined) {
       return {};
     }
@@ -225,13 +217,16 @@ export class IdeCommandWrapper {
     }
 
     const normalizedEnv: Record<string, string> = {};
+    const reservedEnvironmentKeys = new Set<string>(surfaceContract.reservedEnvironmentKeys);
     for (const [envKey, envValue] of Object.entries(additionalEnv)) {
-      if (RESERVED_WRAPPER_ENV_KEYS.has(envKey)) {
+      if (reservedEnvironmentKeys.has(envKey) || RESERVED_WRAPPER_ENV_KEYS.has(envKey)) {
         throw new RuntimeError(
           GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
           `IDE wrapper additionalEnv must not override reserved key "${envKey}".`,
           {
             envKey,
+            surface: surfaceContract.surfaceId,
+            nextAction: surfaceContract.nextAction,
           },
         );
       }
@@ -273,5 +268,48 @@ export class IdeCommandWrapper {
  * @returns Standardized error for caller-facing output.
  */
 export function standardizeIdeWrapperError(error: unknown): StandardizedError {
-  return standardizeError(error);
+  const standardizedError = standardizeError(error);
+  const nextAction = resolveIdeWrapperNextAction(error);
+  if (!nextAction) {
+    return standardizedError;
+  }
+
+  return {
+    ...standardizedError,
+    details: {
+      ...(standardizedError.details ?? {}),
+      nextAction,
+    },
+  };
+}
+
+/**
+ * Resolves one caller-facing next action for wrapper failures.
+ * @param error Unknown wrapper failure.
+ * @returns Next action text when available.
+ */
+function resolveIdeWrapperNextAction(error: unknown): string | undefined {
+  if (!(error instanceof RuntimeError)) {
+    return undefined;
+  }
+
+  const nextAction =
+    typeof error.details?.nextAction === "string" ? error.details.nextAction.trim() : "";
+  if (nextAction.length > 0) {
+    return nextAction;
+  }
+
+  if (Array.isArray(error.details?.supportedCommands)) {
+    return "Retry with one of the supported wrapper commands declared by the IDE contract.";
+  }
+
+  if (Array.isArray(error.details?.supportedSurfaces)) {
+    return `Retry with one of ${IDE_WRAPPER_SUPPORTED_SURFACES.join(", ")} or omit surface to use generic_ide.`;
+  }
+
+  if (typeof error.details?.envKey === "string") {
+    return "Remove the reserved IDE wrapper environment override and let the wrapper populate baseline keys.";
+  }
+
+  return "Inspect integrations/ide/contracts/command-wrapper.contract.json and retry with the baseline wrapper contract.";
 }

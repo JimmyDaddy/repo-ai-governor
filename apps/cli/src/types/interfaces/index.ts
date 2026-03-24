@@ -1,8 +1,11 @@
 export type {
   IdeCommandInvocationEnvelope,
+  IdeResolvedStandardsSource,
+  IdeSurfaceContract,
   IdeCommandWrapperOptions,
   IdeCommandWrapperRequest,
   IdeStandardsInjectionPayload,
+  IdeStandardsSourceDescriptor,
 } from "./ide-command-wrapper.interface.js";
 export type {
   CliCommandExperiencePayload,

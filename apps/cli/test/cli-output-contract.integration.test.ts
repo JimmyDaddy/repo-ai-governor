@@ -13,6 +13,7 @@ import { runCli } from "../src/main.js";
 function createBufferedIo(
   isStdoutTty: boolean,
   currentWorkingDirectory: string = process.cwd(),
+  environment: NodeJS.ProcessEnv = process.env,
 ): {
   stdoutBuffer: string[];
   stderrBuffer: string[];
@@ -21,6 +22,7 @@ function createBufferedIo(
     stderr: (value: string) => void;
     cwd: () => string;
     isStdoutTty: () => boolean;
+    env: () => NodeJS.ProcessEnv;
   };
 } {
   const stdoutBuffer: string[] = [];
@@ -38,6 +40,7 @@ function createBufferedIo(
       },
       cwd: () => currentWorkingDirectory,
       isStdoutTty: () => isStdoutTty,
+      env: () => environment,
     },
   };
 }
@@ -221,6 +224,59 @@ describe("CLI output contract integration", () => {
     expect(payload.output_mode).toBe("json");
     expect(payload.error_code).toBe("ENTRYPOINT_COMMAND_WRAPPER_INVALID");
     expect(payload.command).toBe("init");
+  });
+
+  it("fails fast when official IDE wrapper env carries invalid surface or source IDs", async () => {
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, process.cwd(), {
+      ...process.env,
+      REPO_AI_GOVERNOR_ENTRY_SURFACE: "not_a_surface",
+      REPO_AI_GOVERNOR_STANDARDS_PROFILE_ID: "broken-profile",
+      REPO_AI_GOVERNOR_STANDARDS_SOURCES: "totally_invalid",
+    });
+
+    const exitCode = await runCli(
+      ["node", "repo-ai-governor", "--locale", "en-US", "--output", "json", "doctor"],
+      io,
+    );
+
+    const payload = JSON.parse(stderrBuffer.join(""));
+
+    expect(exitCode).toBe(1);
+    expect(stdoutBuffer.join("")).toBe("");
+    expect(payload.status).toBe("error");
+    expect(payload.error_code).toBe("ENTRYPOINT_COMMAND_WRAPPER_INVALID");
+    expect(payload.command).toBe("doctor");
+  });
+
+  it("surfaces validated IDE wrapper env in JSON diagnostics", async () => {
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, process.cwd(), {
+      ...process.env,
+      REPO_AI_GOVERNOR_ENTRY_SURFACE: "vscode",
+      REPO_AI_GOVERNOR_STANDARDS_PROFILE_ID: "stage5-entry-baseline",
+      REPO_AI_GOVERNOR_STANDARDS_SOURCES:
+        "product_requirements_brief,overall_technical_solution,architecture_and_repo_layering,code_standards,long_term_maintenance_guide,agents_projection",
+    });
+
+    const exitCode = await runCli(
+      ["node", "repo-ai-governor", "--locale", "en-US", "--output", "json", "doctor"],
+      io,
+    );
+
+    const payload = JSON.parse(stdoutBuffer.join(""));
+
+    expect(exitCode).toBe(0);
+    expect(stderrBuffer.join("")).toBe("");
+    expect(payload.status).toBe("success");
+    expect(payload.diagnostics.entrySurface).toBe("vscode");
+    expect(payload.diagnostics.standardsProfileId).toBe("stage5-entry-baseline");
+    expect(payload.diagnostics.standardsSourceIds).toEqual([
+      "product_requirements_brief",
+      "overall_technical_solution",
+      "architecture_and_repo_layering",
+      "code_standards",
+      "long_term_maintenance_guide",
+      "agents_projection",
+    ]);
   });
 
   it("reduces diagnostics noise in quiet mode", async () => {

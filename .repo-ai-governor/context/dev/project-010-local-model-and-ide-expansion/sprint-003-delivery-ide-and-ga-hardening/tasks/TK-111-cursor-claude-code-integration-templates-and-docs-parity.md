@@ -1,8 +1,8 @@
 # TK-111 Cursor/Claude Code 接入模板与文档一致性
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-24
-- Owner: TBD
+- Owner: AI-Agent
 - Priority: P1
 - Project: `project-010-local-model-and-ide-expansion`
 - Sprint: `sprint-003-delivery-ide-and-ga-hardening`
@@ -46,6 +46,9 @@
 ## 7. 执行记录
 
 1. 2026-03-24：任务创建，状态初始化为 `planned`。
+2. 2026-03-24：任务启动，已确认当前 `cursor/claude_code` 只存在于 contract surface registry 中，examples/docs 尚未落官方模板，也缺少 contracts/examples/docs 的专门 parity gate；下一步将补齐双入口模板与一致性检查。
+3. 2026-03-24：已完成 Cursor/Claude Code 官方模板、`check:ide-docs-parity`、四入口 `check:ide-entry-smoke` 扩展、integration coverage 与本地分发校验，并生成 `DA-111` 与 resolved review；当前任务状态更新为 `completed`。
+4. 2026-03-24：复核并修复 follow-up CR，已让 Cursor/Claude Code 官方模板的 env baseline 经由 `test/ide-entry-smoke.integration.test.ts` 真实注入 `runCli()`，不再只是静态模板解析或 surface 字符串断言。
 
 ## 8. 产出
 

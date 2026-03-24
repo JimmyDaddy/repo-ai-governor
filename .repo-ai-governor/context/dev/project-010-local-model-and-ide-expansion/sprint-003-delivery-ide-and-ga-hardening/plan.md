@@ -1,6 +1,6 @@
 # sprint-003-delivery-ide-and-ga-hardening 计划
 
-- Status: in_progress
+- Status: completed
 - Date: 2026-03-24
 - Project: `project-010-local-model-and-ide-expansion`
 
@@ -12,10 +12,11 @@
 
 1. TK-107 受控 delivery rehearsal 与 audit/replay 集成（completed）
 2. TK-108 黑盒 E2E、CI/release gate 与 GA 指标收口（completed）
-3. TK-109 多 IDE surface registry 与 wrapper 契约强化（planned）
-4. TK-110 VS Code/JetBrains 官方模板与 smoke 门禁（planned）
-5. TK-111 Cursor/Claude Code 接入模板与文档一致性（planned）
-6. TK-112 project-010 出口验收与后续 rollout 输入约束（planned）
+3. TK-109 多 IDE surface registry 与 wrapper 契约强化（completed）
+4. TK-110 VS Code/JetBrains 官方模板与 smoke 门禁（completed）
+5. TK-111 Cursor/Claude Code 接入模板与文档一致性（completed）
+6. TK-135 standards injection source ID 与 resolver 收口（completed）
+7. TK-112 project-010 出口验收与后续 rollout 输入约束（completed）
 
 ## 3. Entry Criteria
 

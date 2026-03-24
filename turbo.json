@@ -55,6 +55,16 @@
       "dependsOn": ["//#gate:build"],
       "outputs": []
     },
+    "//#gate:ide-entry-smoke": {
+      "cache": false,
+      "dependsOn": ["//#gate:build"],
+      "outputs": []
+    },
+    "//#gate:ide-docs-parity": {
+      "cache": false,
+      "dependsOn": ["//#gate:build"],
+      "outputs": []
+    },
     "//#gate:normative-loading-manifest": {
       "cache": false,
       "dependsOn": ["//#gate:build"],
@@ -131,6 +141,8 @@
         "//#gate:artifact-lifecycle",
         "//#gate:examples-smoke",
         "//#gate:examples-runtime-smoke",
+        "//#gate:ide-entry-smoke",
+        "//#gate:ide-docs-parity",
         "//#gate:normative-loading-manifest",
         "//#gate:stage9-handoff",
         "//#gate:task-ledger-sync",

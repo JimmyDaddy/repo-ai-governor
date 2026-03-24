@@ -1,5 +1,5 @@
 {
-  "contractVersion": "v1",
+  "contractVersion": "v2",
   "status": "active",
   "supportedCommands": [
     "init",
@@ -13,6 +13,7 @@
   ],
   "defaultOutputMode": "json",
   "defaultSurface": "generic_ide",
+  "supportedSurfaces": ["generic_ide", "vscode", "jetbrains", "cursor", "claude_code", "web_ide"],
   "argvPattern": [
     "node",
     "./dist/bin/repo-ai-governor.js",
@@ -30,5 +31,126 @@
     "REPO_AI_GOVERNOR_STANDARDS_SOURCES"
   ],
   "additionalEnvPolicy": "additionalEnv must not override environmentKeys",
+  "surfaceRegistry": [
+    {
+      "surfaceId": "generic_ide",
+      "displayName": "Generic IDE",
+      "capabilities": [
+        "command_wrapper",
+        "standards_injection",
+        "environment_overlay",
+        "next_action_hints"
+      ],
+      "defaultOutputMode": "json",
+      "degradeMode": "preserve_baseline",
+      "reservedEnvironmentKeys": [
+        "REPO_AI_GOVERNOR_OUTPUT_MODE",
+        "REPO_AI_GOVERNOR_ENTRY_SURFACE",
+        "REPO_AI_GOVERNOR_STANDARDS_PROFILE_ID",
+        "REPO_AI_GOVERNOR_STANDARDS_SOURCES"
+      ],
+      "nextAction": "Retry with the baseline IDE wrapper contract or inspect integrations/ide/contracts/command-wrapper.contract.json."
+    },
+    {
+      "surfaceId": "vscode",
+      "displayName": "VS Code",
+      "capabilities": [
+        "command_wrapper",
+        "standards_injection",
+        "environment_overlay",
+        "next_action_hints"
+      ],
+      "defaultOutputMode": "json",
+      "degradeMode": "fallback_to_generic_ide",
+      "degradeTargetSurface": "generic_ide",
+      "reservedEnvironmentKeys": [
+        "REPO_AI_GOVERNOR_OUTPUT_MODE",
+        "REPO_AI_GOVERNOR_ENTRY_SURFACE",
+        "REPO_AI_GOVERNOR_STANDARDS_PROFILE_ID",
+        "REPO_AI_GOVERNOR_STANDARDS_SOURCES"
+      ],
+      "nextAction": "Retry with VS Code task/env wiring or omit surface to fall back to the generic IDE contract."
+    },
+    {
+      "surfaceId": "jetbrains",
+      "displayName": "JetBrains",
+      "capabilities": [
+        "command_wrapper",
+        "standards_injection",
+        "environment_overlay",
+        "next_action_hints"
+      ],
+      "defaultOutputMode": "json",
+      "degradeMode": "fallback_to_generic_ide",
+      "degradeTargetSurface": "generic_ide",
+      "reservedEnvironmentKeys": [
+        "REPO_AI_GOVERNOR_OUTPUT_MODE",
+        "REPO_AI_GOVERNOR_ENTRY_SURFACE",
+        "REPO_AI_GOVERNOR_STANDARDS_PROFILE_ID",
+        "REPO_AI_GOVERNOR_STANDARDS_SOURCES"
+      ],
+      "nextAction": "Retry with the JetBrains external tool template or omit surface to fall back to the generic IDE contract."
+    },
+    {
+      "surfaceId": "cursor",
+      "displayName": "Cursor",
+      "capabilities": [
+        "command_wrapper",
+        "standards_injection",
+        "environment_overlay",
+        "next_action_hints"
+      ],
+      "defaultOutputMode": "json",
+      "degradeMode": "fallback_to_generic_ide",
+      "degradeTargetSurface": "generic_ide",
+      "reservedEnvironmentKeys": [
+        "REPO_AI_GOVERNOR_OUTPUT_MODE",
+        "REPO_AI_GOVERNOR_ENTRY_SURFACE",
+        "REPO_AI_GOVERNOR_STANDARDS_PROFILE_ID",
+        "REPO_AI_GOVERNOR_STANDARDS_SOURCES"
+      ],
+      "nextAction": "Retry with the Cursor wrapper template or omit surface to fall back to the generic IDE contract."
+    },
+    {
+      "surfaceId": "claude_code",
+      "displayName": "Claude Code",
+      "capabilities": [
+        "command_wrapper",
+        "standards_injection",
+        "environment_overlay",
+        "next_action_hints"
+      ],
+      "defaultOutputMode": "json",
+      "degradeMode": "fallback_to_generic_ide",
+      "degradeTargetSurface": "generic_ide",
+      "reservedEnvironmentKeys": [
+        "REPO_AI_GOVERNOR_OUTPUT_MODE",
+        "REPO_AI_GOVERNOR_ENTRY_SURFACE",
+        "REPO_AI_GOVERNOR_STANDARDS_PROFILE_ID",
+        "REPO_AI_GOVERNOR_STANDARDS_SOURCES"
+      ],
+      "nextAction": "Retry with the Claude Code wrapper template or omit surface to fall back to the generic IDE contract."
+    },
+    {
+      "surfaceId": "web_ide",
+      "displayName": "Web IDE",
+      "capabilities": [
+        "command_wrapper",
+        "standards_injection",
+        "environment_overlay",
+        "next_action_hints"
+      ],
+      "defaultOutputMode": "json",
+      "degradeMode": "fallback_to_generic_ide",
+      "degradeTargetSurface": "generic_ide",
+      "reservedEnvironmentKeys": [
+        "REPO_AI_GOVERNOR_OUTPUT_MODE",
+        "REPO_AI_GOVERNOR_ENTRY_SURFACE",
+        "REPO_AI_GOVERNOR_STANDARDS_PROFILE_ID",
+        "REPO_AI_GOVERNOR_STANDARDS_SOURCES"
+      ],
+      "nextAction": "Retry with the web IDE bridge or omit surface to fall back to the generic IDE contract."
+    }
+  ],
   "implementationEntry": "apps/cli/src/ide-command-wrapper.ts"
 }

@@ -1,8 +1,8 @@
 # TK-112 project-010 出口验收与后续 rollout 输入约束
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-24
-- Owner: TBD
+- Owner: AI-Agent
 - Priority: P0
 - Project: `project-010-local-model-and-ide-expansion`
 - Sprint: `sprint-003-delivery-ide-and-ga-hardening`
@@ -17,6 +17,7 @@
 2. `TK-108`
 3. `TK-110`
 4. `TK-111`
+5. `TK-135`
 
 ## 3. 预期产物
 
@@ -50,10 +51,13 @@
 ## 7. 执行记录
 
 1. 2026-03-24：任务创建，状态初始化为 `planned`。
+2. 2026-03-24：任务启动，已确认 `TK-107`、`TK-108`、`TK-110`、`TK-111`、`TK-135` 均已形成正式产物与 resolved review；当前开始汇总 `DA-099`~`DA-112`、完成 project 级 accept/block 判断并沉淀 rollout 约束。
+3. 2026-03-24：已完成 `DA-112`、project completion audit summary、project/sprint plan 状态切换与台账同步；当前任务状态更新为 `completed`。
 
 ## 8. 产出
 
 1. `DA-112` `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-003-delivery-ide-and-ga-hardening/tasks/DA-112-project-010-exit-acceptance-and-rollout-input-constraints.md`
 2. `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-003-delivery-ide-and-ga-hardening/tasks/checklist.md`
 3. `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-003-delivery-ide-and-ga-hardening/tasks/tasks.csv`
-4. `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/project-010-completion-audit-summary.md`（收尾时产出）
+4. `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/project-010-local-model-and-ide-expansion-completion-audit-summary.md`
+5. `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-003-delivery-ide-and-ga-hardening/review/resolved_code_review_tk-112-project-010-exit-acceptance-and-rollout-input-constraints.md`

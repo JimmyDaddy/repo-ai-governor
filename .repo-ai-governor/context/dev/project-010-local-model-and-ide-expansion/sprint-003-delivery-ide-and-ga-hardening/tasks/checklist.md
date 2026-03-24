@@ -9,11 +9,25 @@
   - 2026-03-24：任务启动，已将 `DA-107` 固化为 blackbox/release/GA 的唯一 delivery 输入基线。
   - 2026-03-24：已完成 Stage 9 blackbox scenario matrix、GA metrics report、`gate:stage9-blackbox-ga` 接线、release unified gate supporting report 回链与 `DA-108` / resolved review；当前任务状态更新为 `completed`。
   - 2026-03-24：复核并修复 `code_review_tk-108-working-tree-follow-up-20260324-2029.md`；已补齐 `rollback rehearsal` 的 Stage 9 外部证据映射、unified gate 的 passed-status 校验和 `release-governance-spec.md` 同步，follow-up CR 已收尾为 `resolved`。
-- [ ] TK-109 多 IDE surface registry 与 wrapper 契约强化
+- [x] TK-109 多 IDE surface registry 与 wrapper 契约强化
   - 2026-03-24：任务创建，状态初始化为 `planned`。
-- [ ] TK-110 VS Code/JetBrains 官方模板与 smoke 门禁
+  - 2026-03-24：任务启动，已定位现有 baseline 只有单一 `surface` 字段、缺少 Cursor/Claude Code registry、降级语义与统一 nextAction；当前开始收敛多入口统一 contract。
+  - 2026-03-24：已完成 multi-surface registry runtime、wrapper 错误 `nextAction`、contract v2 和跨入口 contract tests，并生成 `DA-109` 与 resolved review；当前任务状态更新为 `completed`。
+- [x] TK-110 VS Code/JetBrains 官方模板与 smoke 门禁
   - 2026-03-24：任务创建，状态初始化为 `planned`。
-- [ ] TK-111 Cursor/Claude Code 接入模板与文档一致性
+  - 2026-03-24：任务启动，已确认当前缺口集中在 JetBrains 官方模板缺失、VS Code 示例过于简化，以及 IDE 入口尚未接入独立 smoke gate；当前开始收敛双入口模板与 gate。
+  - 2026-03-24：已完成 VS Code/JetBrains 官方模板、`check:ide-entry-smoke`、integration coverage 与本地分发校验，并生成 `DA-110` 与 resolved review；当前任务状态更新为 `completed`。
+  - 2026-03-24：复核并修复 `code_review_tk-110-tk-111-tk-135-working-tree-follow-up-20260324-2329.md`；已将官方模板 env 接入真实 `runCli()` 入口校验与 diagnostics 回写，并让 IDE smoke integration 以模板 env 执行最小链路。
+- [x] TK-111 Cursor/Claude Code 接入模板与文档一致性
   - 2026-03-24：任务创建，状态初始化为 `planned`。
-- [ ] TK-112 project-010 出口验收与后续 rollout 输入约束
+  - 2026-03-24：任务启动，已确认当前 gap 集中在 Cursor/Claude Code 官方模板缺失、examples README 未覆盖两类入口，以及缺少 contracts/examples/docs parity gate；当前开始补齐双入口模板与文档一致性检查。
+  - 2026-03-24：已完成 Cursor/Claude Code 官方模板、`check:ide-docs-parity`、四入口 smoke gate 扩展、integration coverage 与本地分发校验，并生成 `DA-111` 与 resolved review；当前任务状态更新为 `completed`。
+  - 2026-03-24：复核并修复 `code_review_tk-110-tk-111-tk-135-working-tree-follow-up-20260324-2329.md`；已补齐 Cursor/Claude Code 模板 env 的真实 CLI 执行覆盖，避免四入口 smoke 仅停留在静态 contract 层。
+- [x] TK-135 standards injection source ID 与 resolver 收口
+  - 2026-03-24：任务创建并启动，已确认当前 standards injection baseline 仍将本仓库 `.repo-ai-governor/normative_knowledge_sources/...` 作为默认注入值；当前开始改为稳定 source IDs + self-hosted resolver registry。
+  - 2026-03-24：已完成 source IDs + self-hosted resolver registry 收口，并同步 IDE wrapper metadata/env、official templates、smoke/parity gate、contract tests 与 `DA-135` / resolved review；当前任务状态更新为 `completed`。
+  - 2026-03-24：复核并修复 `code_review_tk-110-tk-111-tk-135-working-tree-follow-up-20260324-2329.md`；已让真实 CLI 入口 fail-fast 校验 `REPO_AI_GOVERNOR_ENTRY_SURFACE / REPO_AI_GOVERNOR_STANDARDS_PROFILE_ID / REPO_AI_GOVERNOR_STANDARDS_SOURCES`，并将合法 source ID baseline 显式回写到 JSON diagnostics。
+- [x] TK-112 project-010 出口验收与后续 rollout 输入约束
   - 2026-03-24：任务创建，状态初始化为 `planned`。
+  - 2026-03-24：任务启动，已确认 `TK-107`、`TK-108`、`TK-110`、`TK-111`、`TK-135` 均已完成；当前开始汇总 `DA-099`~`DA-112`、输出 project 级 accept 结论与 rollout 输入约束。
+  - 2026-03-24：已完成 `DA-112`、project completion audit summary、project/sprint plan 状态切换与 resolved review；当前任务状态更新为 `completed`。

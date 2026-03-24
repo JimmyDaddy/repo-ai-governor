@@ -1,13 +1,56 @@
 import type { ErrorOutputEnvironment } from "@repo-ai-governor/shared";
-import type { IdeEntrySurface } from "../../constants/ide-command-wrapper.constant.js";
+import type {
+  IdeEntrySurface,
+  IdeSurfaceCapability,
+  IdeSurfaceDegradeMode,
+  IdeWrapperEnvironmentKey,
+} from "../../constants/ide-command-wrapper.constant.js";
+import type {
+  IdeStandardsSourceId,
+  IdeStandardsSourceKind,
+} from "../../constants/ide-standards-source.constant.js";
 import type { IdeWrapperCommandName } from "../aliases/ide-command-wrapper.type.js";
+
+/**
+ * Defines one self-hosted standards source descriptor bound to a stable source ID.
+ */
+export interface IdeStandardsSourceDescriptor {
+  sourceId: IdeStandardsSourceId;
+  sourceKind: IdeStandardsSourceKind;
+  defaultSelfHostedPath: string;
+  description: string;
+}
+
+/**
+ * Defines one resolved standards source emitted by wrapper metadata.
+ */
+export interface IdeResolvedStandardsSource {
+  sourceId: IdeStandardsSourceId;
+  sourceKind: IdeStandardsSourceKind;
+  resolvedPath: string;
+}
 
 /**
  * Defines one standards injection payload shared across entry surfaces.
  */
 export interface IdeStandardsInjectionPayload {
   profileId: string;
-  sources: string[];
+  sourceIds: IdeStandardsSourceId[];
+  resolvedSources: IdeResolvedStandardsSource[];
+}
+
+/**
+ * Defines one surface contract shared across IDE/agent wrapper entries.
+ */
+export interface IdeSurfaceContract {
+  surfaceId: IdeEntrySurface;
+  displayName: string;
+  capabilities: IdeSurfaceCapability[];
+  defaultOutputMode: ErrorOutputEnvironment;
+  degradeMode: IdeSurfaceDegradeMode;
+  degradeTargetSurface?: IdeEntrySurface;
+  reservedEnvironmentKeys: IdeWrapperEnvironmentKey[];
+  nextAction: string;
 }
 
 /**
@@ -35,6 +78,8 @@ export interface IdeCommandInvocationEnvelope {
     surface: IdeEntrySurface;
     outputMode: ErrorOutputEnvironment;
     standards: IdeStandardsInjectionPayload;
+    surfaceContract: IdeSurfaceContract;
+    nextAction: string;
   };
 }
 
@@ -46,5 +91,7 @@ export interface IdeCommandWrapperOptions {
   binaryEntrypoint?: string;
   binaryName?: string;
   supportedCommands?: readonly IdeWrapperCommandName[];
-  standardsSources?: readonly string[];
+  standardsSourceIds?: readonly IdeStandardsSourceId[];
+  standardsSourceRegistry?: readonly IdeStandardsSourceDescriptor[];
+  surfaceRegistry?: readonly IdeSurfaceContract[];
 }
