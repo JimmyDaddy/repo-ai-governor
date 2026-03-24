@@ -11,7 +11,7 @@
 ## 2. In-Scope Tasks
 
 1. TK-115 project-011 启动与 CLI package decomposition 依赖重排（completed）
-2. TK-116 adapter verification 与 local probe 模块抽离（planned）
+2. TK-116 adapter verification 与 local probe 模块抽离（completed）
 3. TK-117 route fallback 与 diagnostics artifact builder 抽离（planned）
 4. TK-118 sprint-001 出口验收与 sprint-002 输入约束（planned）
 

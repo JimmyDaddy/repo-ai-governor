@@ -19,3 +19,10 @@ export type {
   CliSuccessOutputPayload,
 } from "./cli-output.interface.js";
 export type { CliRuntimeDebugOptions } from "./cli-runtime-debug.interface.js";
+export type {
+  CliAdapterRoleEvaluation,
+  CliAdapterToolProbeSnapshot,
+  CliAdapterVerificationResolution,
+  CliLocalAdapterProbeOverride,
+  CliLocalAdapterProbeResolution,
+} from "./cli-adapter-verification.interface.js";

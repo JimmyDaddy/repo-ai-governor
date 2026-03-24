@@ -1,8 +1,8 @@
 # TK-116 adapter verification 与 local probe 模块抽离
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-24
-- Owner: TBD
+- Owner: AI-Agent
 - Priority: P0
 - Project: `project-011-cli-package-decomposition`
 - Sprint: `sprint-001-runtime-support-extraction-foundation`
@@ -45,6 +45,9 @@
 ## 7. 执行记录
 
 1. 2026-03-24：任务创建，状态初始化为 `planned`。
+2. 2026-03-24：进入 `in_progress`，开始按 decomposition draft 抽离 adapter verification 与 local probe package-local runtime。
+3. 2026-03-24：完成 `CliLocalModelProbeRuntime`、`CliAdapterVerificationRuntime`、类型目录迁移与 package/integration 回归，任务收尾为 `completed`。
+4. 2026-03-24：根据 diff review comment，将 `CliAdapterRoleEvaluation.selectedBy` 从字面量联合收敛为 enum，避免有限集合语义继续散落。
 
 ## 8. 产出
 

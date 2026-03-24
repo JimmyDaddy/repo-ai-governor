@@ -20,6 +20,15 @@ export enum CliAdapterFailureAttribution {
 }
 
 /**
+ * Defines deterministic route-selection sources used by adapter verification.
+ */
+export enum CliAdapterRoleSelectionSource {
+  PRIMARY = "primary",
+  FALLBACK = "fallback",
+  NONE = "none",
+}
+
+/**
  * Defines workspace attach modes surfaced by `doctor` diagnostics.
  */
 export enum CliDoctorAttachMode {
@@ -93,6 +102,11 @@ export const CLI_RUNTIME_OPERATION = CliRuntimeOperation;
  * Re-exports adapter-failure attribution enum as a constant namespace for runtime callsites.
  */
 export const CLI_ADAPTER_FAILURE_ATTRIBUTION = CliAdapterFailureAttribution;
+
+/**
+ * Re-exports route-selection-source enum as a constant namespace for runtime callsites.
+ */
+export const CLI_ADAPTER_ROLE_SELECTION_SOURCE = CliAdapterRoleSelectionSource;
 
 /**
  * Re-exports review-request enum as a constant namespace for runtime callsites.
