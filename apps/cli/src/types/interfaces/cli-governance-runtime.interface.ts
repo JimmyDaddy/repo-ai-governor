@@ -1,3 +1,4 @@
+import type { CodexExecRunner } from "@repo-ai-governor/adapter-codex";
 import type { AdaptersConfig, ResolvedWorkspace } from "@repo-ai-governor/config";
 import type { MemoryStoreProvider } from "@repo-ai-governor/memory-store-adapter";
 import type { AdapterSurface } from "@repo-ai-governor/shared";
@@ -33,6 +34,7 @@ export interface CliGovernanceRuntimeOptions {
   runtimeDebugOptions?: CliRuntimeDebugOptions;
   adapterLocalProbeOverrides?: Partial<Record<AdapterSurface, CliLocalAdapterProbeOverride>>;
   commandProbeExecutor?: (command: string, args: readonly string[]) => Promise<void>;
+  codexExecRunner?: CodexExecRunner;
 }
 
 /**

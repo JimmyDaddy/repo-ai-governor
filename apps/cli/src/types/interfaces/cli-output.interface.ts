@@ -46,6 +46,7 @@ export interface CliCommandDiagnostics {
   entrySurface?: string;
   standardsProfileId?: string;
   standardsSourceIds?: string[];
+  codexExecFixture?: string | null;
 }
 
 /**

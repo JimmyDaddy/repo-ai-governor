@@ -1,3 +1,5 @@
+import { spawn } from "node:child_process";
+
 import {
   AgentAvailabilityStatus,
   type AgentCancelRequest,
@@ -16,14 +18,28 @@ import {
   AgentStreamEventType,
   type AgentStreamEventsRequest,
 } from "@repo-ai-governor/adapter-sdk";
+import { GovernorErrorCode, RuntimeError, standardizeError } from "@repo-ai-governor/shared";
+import { CodexAgentAdapterExecutionMode } from "./constants/codex-agent-adapter.constant.js";
+import type {
+  CodexAgentAdapterOptions,
+  CodexExecRunner,
+  CodexExecRunnerRequest,
+  CodexExecRunnerResult,
+} from "./types/interfaces/codex-agent-adapter.interface.js";
 
 const CODEX_DEFAULT_AGENT_ID = "codex-default-agent";
 const CODEX_DEFAULT_ROLE = "coder";
 const CODEX_DEFAULT_ROLE_PROFILE_ID = "coder-default";
 const CODEX_DEFAULT_ROLE_SOURCE = "default";
 const CODEX_SURFACE = "codex";
+const CODEX_COMMAND = "codex";
+const CODEX_DEFAULT_TIMEOUT_MS = 30000;
+const CODEX_DEFAULT_PROBE_CACHE_TTL_MS = 30000;
+const CODEX_EXEC_ARGS = ["exec", "--skip-git-repo-check", "--json", "-"] as const;
+const CODEX_HEALTH_CHECK_PROMPT = "Respond with exactly OK.";
+const CODEX_HEALTH_CHECK_EXPECTED_RESPONSE = "OK";
 
-const CODEX_CAPABILITY_SUPPORT: Record<AgentCapability, AgentCapabilitySupportLevel> = {
+const CODEX_BASELINE_CAPABILITY_SUPPORT: Record<AgentCapability, AgentCapabilitySupportLevel> = {
   [AgentCapability.TOOL_CALLING]: AgentCapabilitySupportLevel.SUPPORTED,
   [AgentCapability.STRUCTURED_OUTPUT]: AgentCapabilitySupportLevel.SUPPORTED,
   [AgentCapability.PARALLEL_TASK]: AgentCapabilitySupportLevel.SUPPORTED,
@@ -36,16 +52,63 @@ const CODEX_CAPABILITY_SUPPORT: Record<AgentCapability, AgentCapabilitySupportLe
   [AgentCapability.CONTEXT_WINDOW]: AgentCapabilitySupportLevel.SUPPORTED,
 };
 
-/**
- * Defines Codex adapter constructor options.
- */
-export interface CodexAgentAdapterOptions {
-  agentId?: string;
-  role?: string;
-  roleProfileId?: string;
-  roleSource?: string;
-  availabilityStatus?: AgentAvailabilityStatus;
-  unavailableReasons?: string[];
+const CODEX_REAL_CAPABILITY_SUPPORT: Record<AgentCapability, AgentCapabilitySupportLevel> = {
+  [AgentCapability.TOOL_CALLING]: AgentCapabilitySupportLevel.SUPPORTED,
+  [AgentCapability.STRUCTURED_OUTPUT]: AgentCapabilitySupportLevel.SUPPORTED,
+  [AgentCapability.PARALLEL_TASK]: AgentCapabilitySupportLevel.DEGRADED,
+  [AgentCapability.STREAMING]: AgentCapabilitySupportLevel.DEGRADED,
+  [AgentCapability.CONFIRMATION_GATE]: AgentCapabilitySupportLevel.UNSUPPORTED,
+  [AgentCapability.CANCELLATION]: AgentCapabilitySupportLevel.UNSUPPORTED,
+  [AgentCapability.AGENT_TIMEOUT]: AgentCapabilitySupportLevel.SUPPORTED,
+  [AgentCapability.STAGE_TIMEOUT_SIGNAL]: AgentCapabilitySupportLevel.SUPPORTED,
+  [AgentCapability.FLOW_TIMEOUT_SIGNAL]: AgentCapabilitySupportLevel.SUPPORTED,
+  [AgentCapability.CONTEXT_WINDOW]: AgentCapabilitySupportLevel.SUPPORTED,
+};
+
+interface CodexCliJsonEvent {
+  type?: string;
+  thread_id?: string;
+  usage?: {
+    input_tokens?: number;
+    output_tokens?: number;
+    total_tokens?: number;
+  };
+  item?: {
+    type?: string;
+    text?: string;
+  };
+}
+
+interface CodexCliParsedOutput {
+  responseText: string;
+  threadId: string | null;
+  usage?: AgentInvokeStageResult["usage"];
+  warnings: string[];
+}
+
+interface CodexProbeResolution {
+  availabilityStatus: AgentAvailabilityStatus;
+  unavailableReasons: string[];
+}
+
+interface CodexProbeCacheEntry {
+  expiresAt: number;
+  resolution: CodexProbeResolution;
+}
+
+interface ResolvedCodexAgentAdapterOptions {
+  agentId: string;
+  role: string;
+  roleProfileId: string;
+  roleSource: string;
+  availabilityStatus: AgentAvailabilityStatus;
+  unavailableReasons: string[];
+  executionMode: CodexAgentAdapterExecutionMode;
+  command: string;
+  currentWorkingDirectory: string;
+  environment?: NodeJS.ProcessEnv;
+  requestTimeoutMs: number;
+  probeCacheTtlMs: number;
 }
 
 /**
@@ -56,7 +119,9 @@ export interface CodexAgentAdapterOptions {
  * routed by shared contract and capability matrix without surface-specific branches.
  */
 export class CodexAgentAdapter extends AgentProtocol {
-  private readonly options: Required<CodexAgentAdapterOptions>;
+  private readonly options: ResolvedCodexAgentAdapterOptions;
+  private readonly execRunner: CodexExecRunner;
+  private probeCache: CodexProbeCacheEntry | null = null;
 
   /**
    * Creates Codex adapter with optional identity and availability overrides.
@@ -71,6 +136,28 @@ export class CodexAgentAdapter extends AgentProtocol {
       roleSource: options.roleSource ?? CODEX_DEFAULT_ROLE_SOURCE,
       availabilityStatus: options.availabilityStatus ?? AgentAvailabilityStatus.AVAILABLE,
       unavailableReasons: options.unavailableReasons ?? [],
+      executionMode: options.executionMode ?? CodexAgentAdapterExecutionMode.BASELINE,
+      command: options.command ?? CODEX_COMMAND,
+      currentWorkingDirectory: options.currentWorkingDirectory ?? process.cwd(),
+      environment: options.environment,
+      requestTimeoutMs: options.requestTimeoutMs ?? CODEX_DEFAULT_TIMEOUT_MS,
+      probeCacheTtlMs: options.probeCacheTtlMs ?? CODEX_DEFAULT_PROBE_CACHE_TTL_MS,
+    };
+    this.execRunner =
+      options.execRunner ??
+      ((request) => {
+        return this.executeCodexCli(request);
+      });
+  }
+
+  /**
+   * Resolves execution environment with explicit adapter overrides taking precedence.
+   * @returns Environment payload for Codex CLI process launch.
+   */
+  private resolveEnvironment(): NodeJS.ProcessEnv {
+    return {
+      ...process.env,
+      ...(this.options.environment ?? {}),
     };
   }
 
@@ -80,6 +167,7 @@ export class CodexAgentAdapter extends AgentProtocol {
    * @returns Probe result payload.
    */
   public override async probe(_request: AgentProbeRequest): Promise<AgentProbeResult> {
+    const runtimeProbe = await this.resolveProbeResolution();
     return {
       identity: {
         agentId: this.options.agentId,
@@ -88,9 +176,15 @@ export class CodexAgentAdapter extends AgentProtocol {
         roleProfileId: this.options.roleProfileId,
         roleSource: this.options.roleSource,
       },
-      availabilityStatus: this.options.availabilityStatus,
+      availabilityStatus: this.mergeAvailabilityStatus(
+        this.options.availabilityStatus,
+        runtimeProbe.availabilityStatus,
+      ),
       capabilityMatrix: this.createCapabilityMatrix(),
-      unavailableReasons: this.options.unavailableReasons,
+      unavailableReasons: [
+        ...this.options.unavailableReasons,
+        ...runtimeProbe.unavailableReasons,
+      ].filter((reason, index, list) => list.indexOf(reason) === index),
     };
   }
 
@@ -102,14 +196,38 @@ export class CodexAgentAdapter extends AgentProtocol {
   public override async invokeStage(
     request: AgentInvokeStageRequest,
   ): Promise<AgentInvokeStageResult> {
+    if (this.options.executionMode === CodexAgentAdapterExecutionMode.BASELINE) {
+      return {
+        output: {
+          adapterSurface: CODEX_SURFACE,
+          routeKey: request.routeKey,
+          stageId: request.stageId,
+          echoedInput: request.input,
+        },
+        elapsedMs: 1,
+      };
+    }
+
+    const prompt = this.renderInvokePrompt(request);
+    const executionResult = await this.runCodexOperation({
+      prompt,
+      timeoutMs: request.agentInvocationTimeoutMs ?? this.options.requestTimeoutMs,
+      signal: request.signal,
+      operation: "invoke",
+    });
+    const parsedOutput = this.parseCodexCliOutput(executionResult, "invoke");
     return {
       output: {
         adapterSurface: CODEX_SURFACE,
         routeKey: request.routeKey,
         stageId: request.stageId,
+        responseText: parsedOutput.responseText,
+        threadId: parsedOutput.threadId,
+        warnings: parsedOutput.warnings,
         echoedInput: request.input,
       },
-      elapsedMs: 1,
+      ...(parsedOutput.usage ? { usage: parsedOutput.usage } : {}),
+      elapsedMs: executionResult.elapsedMs,
     };
   }
 
@@ -157,6 +275,14 @@ export class CodexAgentAdapter extends AgentProtocol {
   public override async requestConfirmation(
     _request: AgentConfirmationRequest,
   ): Promise<AgentConfirmationResult> {
+    if (this.options.executionMode === CodexAgentAdapterExecutionMode.CLI_EXEC) {
+      return {
+        decision: AgentConfirmationDecision.REVISE,
+        reason: "codex-cli-confirmation-gate-unsupported",
+        constraints: ["escalate_to_human_gate"],
+        decidedAt: new Date().toISOString(),
+      };
+    }
     return {
       decision: AgentConfirmationDecision.APPROVE,
       reason: "codex-adapter-baseline-approved",
@@ -171,6 +297,14 @@ export class CodexAgentAdapter extends AgentProtocol {
    * @returns Cancellation acknowledgement payload.
    */
   public override async cancel(request: AgentCancelRequest): Promise<AgentCancelResult> {
+    if (this.options.executionMode === CodexAgentAdapterExecutionMode.CLI_EXEC) {
+      return {
+        acknowledged: false,
+        scope: request.scope,
+        reason: request.reason,
+        cancelledAt: new Date().toISOString(),
+      };
+    }
     return {
       acknowledged: true,
       scope: request.scope,
@@ -184,9 +318,15 @@ export class CodexAgentAdapter extends AgentProtocol {
    * @returns Capability matrix payload.
    */
   private createCapabilityMatrix(): AgentProbeResult["capabilityMatrix"] {
+    const capabilitySupport =
+      this.options.executionMode === CodexAgentAdapterExecutionMode.CLI_EXEC
+        ? CODEX_REAL_CAPABILITY_SUPPORT
+        : CODEX_BASELINE_CAPABILITY_SUPPORT;
+    const supportsCancellation =
+      this.options.executionMode !== CodexAgentAdapterExecutionMode.CLI_EXEC;
     const capabilityStates = Object.values(AgentCapability).map((capability) => ({
       capability,
-      supportLevel: CODEX_CAPABILITY_SUPPORT[capability],
+      supportLevel: capabilitySupport[capability],
     }));
 
     return {
@@ -199,9 +339,9 @@ export class CodexAgentAdapter extends AgentProtocol {
         maxTimeoutMs: 120000,
       },
       cancellation: {
-        supportsCancel: true,
-        supportsReasonPropagation: true,
-        supportsAbortSignal: true,
+        supportsCancel: supportsCancellation,
+        supportsReasonPropagation: supportsCancellation,
+        supportsAbortSignal: supportsCancellation,
       },
       contextWindow: {
         maxInputTokens: 128000,
@@ -209,5 +349,408 @@ export class CodexAgentAdapter extends AgentProtocol {
         supportsAutoTruncation: true,
       },
     };
+  }
+
+  /**
+   * Resolves probe result for the current execution mode with short-lived caching.
+   * @returns Probe availability resolution.
+   */
+  private async resolveProbeResolution(): Promise<CodexProbeResolution> {
+    if (this.options.executionMode === CodexAgentAdapterExecutionMode.BASELINE) {
+      return {
+        availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+        unavailableReasons: [],
+      };
+    }
+
+    if (this.options.availabilityStatus === AgentAvailabilityStatus.UNAVAILABLE) {
+      return {
+        availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+        unavailableReasons: [],
+      };
+    }
+
+    const now = Date.now();
+    if (this.probeCache && this.probeCache.expiresAt > now) {
+      return this.probeCache.resolution;
+    }
+
+    const resolution = await this.executeHealthProbe();
+    this.probeCache = {
+      expiresAt: now + this.options.probeCacheTtlMs,
+      resolution,
+    };
+    return resolution;
+  }
+
+  /**
+   * Executes one real Codex health probe using non-interactive CLI mode.
+   * @returns Probe availability resolution.
+   */
+  private async executeHealthProbe(): Promise<CodexProbeResolution> {
+    try {
+      const executionResult = await this.runCodexOperation({
+        prompt: CODEX_HEALTH_CHECK_PROMPT,
+        timeoutMs: this.options.requestTimeoutMs,
+        operation: "probe",
+      });
+      const parsedOutput = this.parseCodexCliOutput(executionResult, "probe");
+      if (parsedOutput.responseText.trim() !== CODEX_HEALTH_CHECK_EXPECTED_RESPONSE) {
+        return {
+          availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+          unavailableReasons: [
+            `health_check_invalid_response:${CODEX_SURFACE}:${this.sanitizeReasonSegment(parsedOutput.responseText)}`,
+          ],
+        };
+      }
+
+      return {
+        availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+        unavailableReasons: [],
+      };
+    } catch (error) {
+      return {
+        availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+        unavailableReasons: this.resolveProbeFailureReasons(error),
+      };
+    }
+  }
+
+  /**
+   * Runs one Codex CLI operation and maps launch/process failures into protocol errors.
+   * @param request Operation request payload.
+   * @returns Raw CLI execution result.
+   */
+  private async runCodexOperation(
+    request: Pick<CodexExecRunnerRequest, "prompt" | "timeoutMs" | "signal" | "operation">,
+  ): Promise<CodexExecRunnerResult> {
+    try {
+      return await this.execRunner({
+        command: this.options.command,
+        cwd: this.options.currentWorkingDirectory,
+        env: this.resolveEnvironment(),
+        prompt: request.prompt,
+        timeoutMs: request.timeoutMs,
+        signal: request.signal,
+        operation: request.operation,
+      });
+    } catch (error) {
+      if (
+        error instanceof RuntimeError &&
+        (error.code === GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED ||
+          error.code === GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED)
+      ) {
+        throw error;
+      }
+
+      const standardizedError = standardizeError(error);
+      throw new RuntimeError(
+        request.operation === "probe"
+          ? GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED
+          : GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
+        `Codex ${request.operation} failed: ${standardizedError.message}`,
+        {
+          surface: CODEX_SURFACE,
+          operation: request.operation,
+        },
+      );
+    }
+  }
+
+  /**
+   * Parses stdout/stderr emitted by `codex exec --json`.
+   * @param executionResult Raw CLI execution result.
+   * @param operation Current operation label.
+   * @returns Normalized Codex output payload.
+   */
+  private parseCodexCliOutput(
+    executionResult: CodexExecRunnerResult,
+    operation: "probe" | "invoke",
+  ): CodexCliParsedOutput {
+    const jsonEvents: CodexCliJsonEvent[] = executionResult.stdout
+      .split(/\r?\n/u)
+      .map((line) => line.trim())
+      .filter((line) => line.startsWith("{"))
+      .map((line) => JSON.parse(line) as CodexCliJsonEvent);
+
+    const completedMessage = jsonEvents
+      .filter((event) => event.type === "item.completed" && event.item?.type === "agent_message")
+      .map((event) => event.item?.text ?? "")
+      .filter((text) => text.trim().length > 0)
+      .at(-1);
+
+    if (!completedMessage) {
+      throw new RuntimeError(
+        operation === "probe"
+          ? GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED
+          : GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
+        `Codex ${operation} returned no completed agent_message event.`,
+        {
+          surface: CODEX_SURFACE,
+          operation,
+          stdout: executionResult.stdout,
+          stderr: executionResult.stderr,
+        },
+      );
+    }
+
+    const turnCompletedEvent = jsonEvents.find((event) => event.type === "turn.completed");
+    const threadStartedEvent = jsonEvents.find((event) => event.type === "thread.started");
+    const usage = turnCompletedEvent?.usage
+      ? {
+          inputTokens: turnCompletedEvent.usage.input_tokens,
+          outputTokens: turnCompletedEvent.usage.output_tokens,
+          totalTokens:
+            turnCompletedEvent.usage.total_tokens ??
+            [turnCompletedEvent.usage.input_tokens, turnCompletedEvent.usage.output_tokens]
+              .filter((value): value is number => typeof value === "number")
+              .reduce((sum, value) => sum + value, 0),
+        }
+      : undefined;
+
+    return {
+      responseText: completedMessage,
+      threadId: threadStartedEvent?.thread_id ?? null,
+      ...(usage ? { usage } : {}),
+      warnings: executionResult.stderr
+        .split(/\r?\n/u)
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0),
+    };
+  }
+
+  /**
+   * Converts one stage invocation request into a Codex prompt payload.
+   * @param request Stage invocation request payload.
+   * @returns Rendered prompt string.
+   */
+  private renderInvokePrompt(request: AgentInvokeStageRequest): string {
+    const renderedInput = JSON.stringify(request.input, null, 2);
+    return [
+      "You are executing one Repo AI Governor stage through Codex CLI.",
+      `Route Key: ${request.routeKey}`,
+      `Stage ID: ${request.stageId}`,
+      "Treat the following JSON payload as the canonical stage input.",
+      renderedInput,
+    ].join("\n\n");
+  }
+
+  /**
+   * Maps one probe failure into unavailable reason codes consumed by CLI diagnostics.
+   * @param error Unknown probe failure.
+   * @returns Stable unavailable-reason list.
+   */
+  private resolveProbeFailureReasons(error: unknown): string[] {
+    const standardizedError = standardizeError(error);
+    const detail = this.collectErrorDetail(error, standardizedError.message).toLowerCase();
+
+    if (this.isMissingCommandFailure(error, detail)) {
+      return [`command_missing:${CODEX_SURFACE}:${this.options.command}`];
+    }
+
+    if (this.isCredentialFailure(detail)) {
+      return [`credential_missing:${CODEX_SURFACE}`];
+    }
+
+    if (this.isTimeoutFailure(detail)) {
+      return [`health_check_timeout:${CODEX_SURFACE}`];
+    }
+
+    return [
+      `health_check_failed:${CODEX_SURFACE}:${this.sanitizeReasonSegment(standardizedError.message)}`,
+    ];
+  }
+
+  /**
+   * Builds one detail string by combining standard message and runtime metadata.
+   * @param error Unknown error object.
+   * @param fallbackMessage Standardized fallback message.
+   * @returns Concatenated detail string.
+   */
+  private collectErrorDetail(error: unknown, fallbackMessage: string): string {
+    if (!error || typeof error !== "object") {
+      return fallbackMessage;
+    }
+    const metadata = (error as { metadata?: Record<string, unknown> }).metadata;
+    const stderr = typeof metadata?.stderr === "string" ? metadata.stderr : "";
+    const stdout = typeof metadata?.stdout === "string" ? metadata.stdout : "";
+    return [fallbackMessage, stderr, stdout].filter((value) => value.length > 0).join(" ");
+  }
+
+  /**
+   * Checks whether one failure was caused by a missing Codex executable.
+   * @param error Unknown error object.
+   * @param detail Lower-cased detail string.
+   * @returns True when the failure indicates executable-not-found.
+   */
+  private isMissingCommandFailure(error: unknown, detail: string): boolean {
+    if (detail.includes("enoent")) {
+      return true;
+    }
+    if (!error || typeof error !== "object") {
+      return false;
+    }
+    return (error as { code?: unknown }).code === "ENOENT";
+  }
+
+  /**
+   * Checks whether one failure looks like an authentication/login problem.
+   * @param detail Lower-cased detail string.
+   * @returns True when the failure likely indicates missing credentials.
+   */
+  private isCredentialFailure(detail: string): boolean {
+    return /(auth|login|credential|api key|not logged in|unauthorized|forbidden)/u.test(detail);
+  }
+
+  /**
+   * Checks whether one failure was caused by timeout/abort semantics.
+   * @param detail Lower-cased detail string.
+   * @returns True when the failure indicates a timeout.
+   */
+  private isTimeoutFailure(detail: string): boolean {
+    return /(timed out|timeout|aborterror|aborted)/u.test(detail);
+  }
+
+  /**
+   * Normalizes one text value for use inside unavailable reason payloads.
+   * @param value Raw text payload.
+   * @returns Sanitized single-line string.
+   */
+  private sanitizeReasonSegment(value: string): string {
+    return value.replace(/\s+/gu, " ").trim();
+  }
+
+  /**
+   * Merges configured availability and runtime probe availability.
+   * @param configuredStatus Status resolved from static config.
+   * @param runtimeStatus Status resolved by Codex runtime probe.
+   * @returns Merged availability status.
+   */
+  private mergeAvailabilityStatus(
+    configuredStatus: AgentAvailabilityStatus,
+    runtimeStatus: AgentAvailabilityStatus,
+  ): AgentAvailabilityStatus {
+    if (
+      configuredStatus === AgentAvailabilityStatus.UNAVAILABLE ||
+      runtimeStatus === AgentAvailabilityStatus.UNAVAILABLE
+    ) {
+      return AgentAvailabilityStatus.UNAVAILABLE;
+    }
+    if (
+      configuredStatus === AgentAvailabilityStatus.DEGRADED ||
+      runtimeStatus === AgentAvailabilityStatus.DEGRADED
+    ) {
+      return AgentAvailabilityStatus.DEGRADED;
+    }
+    return AgentAvailabilityStatus.AVAILABLE;
+  }
+
+  /**
+   * Executes one non-interactive `codex exec --json` request.
+   * @param request Execution request payload.
+   * @returns Captured process result.
+   */
+  private async executeCodexCli(request: CodexExecRunnerRequest): Promise<CodexExecRunnerResult> {
+    return new Promise<CodexExecRunnerResult>((resolve, reject) => {
+      const startedAt = Date.now();
+      const child = spawn(request.command, [...CODEX_EXEC_ARGS], {
+        cwd: request.cwd,
+        env: request.env,
+        stdio: ["pipe", "pipe", "pipe"],
+        signal: request.signal,
+      });
+
+      let stdout = "";
+      let stderr = "";
+      let settled = false;
+      let timedOut = false;
+
+      const timeoutHandle = setTimeout(() => {
+        timedOut = true;
+        child.kill("SIGTERM");
+      }, request.timeoutMs);
+
+      const finishReject = (error: unknown) => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        clearTimeout(timeoutHandle);
+        reject(error);
+      };
+
+      child.on("error", (error) => {
+        finishReject(error);
+      });
+
+      child.stdout.setEncoding("utf8");
+      child.stdout.on("data", (chunk: string) => {
+        stdout += chunk;
+      });
+
+      child.stderr.setEncoding("utf8");
+      child.stderr.on("data", (chunk: string) => {
+        stderr += chunk;
+      });
+
+      child.on("close", (exitCode, signal) => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        clearTimeout(timeoutHandle);
+
+        if (timedOut) {
+          reject(
+            new RuntimeError(
+              request.operation === "probe"
+                ? GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED
+                : GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
+              `Codex ${request.operation} timed out after ${request.timeoutMs}ms.`,
+              {
+                surface: CODEX_SURFACE,
+                operation: request.operation,
+                timeoutMs: request.timeoutMs,
+                stdout,
+                stderr,
+                exitCode,
+                signal,
+              },
+            ),
+          );
+          return;
+        }
+
+        if (exitCode !== 0) {
+          reject(
+            new RuntimeError(
+              request.operation === "probe"
+                ? GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED
+                : GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
+              `Codex ${request.operation} exited with code ${exitCode ?? "null"}.`,
+              {
+                surface: CODEX_SURFACE,
+                operation: request.operation,
+                stdout,
+                stderr,
+                exitCode,
+                signal,
+              },
+            ),
+          );
+          return;
+        }
+
+        resolve({
+          stdout,
+          stderr,
+          exitCode,
+          signal,
+          elapsedMs: Date.now() - startedAt,
+        });
+      });
+
+      child.stdin.end(request.prompt);
+    });
   }
 }

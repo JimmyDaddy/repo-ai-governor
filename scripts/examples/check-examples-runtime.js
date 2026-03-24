@@ -10,6 +10,9 @@ import { gateFail, gateInfo, gatePass } from "../governance/gate-output.js";
 const GATE_NAME = "examples-runtime-smoke";
 const CONTRACT_RELATIVE_PATH = "examples/example-smoke.contract.json";
 const CLI_ENTRY_RELATIVE_PATH = "dist/bin/repo-ai-governor.js";
+const CODEX_EXEC_FIXTURE_ENABLE_ENV_KEY = "REPO_AI_GOVERNOR_ENABLE_TEST_FIXTURES";
+const CODEX_EXEC_FIXTURE_ENV_KEY = "REPO_AI_GOVERNOR_CODEX_EXEC_FIXTURE";
+const CODEX_EXEC_FIXTURE_SUCCESS = "success";
 
 /**
  * Reads UTF-8 text content from one repository-relative path.
@@ -231,6 +234,11 @@ function executeStep(cliEntryAbsolutePath, workspacePath, scenarioId, step) {
   const result = spawnSync(process.execPath, [cliEntryAbsolutePath, ...step.args], {
     cwd: workspacePath,
     encoding: "utf8",
+    env: {
+      ...process.env,
+      [CODEX_EXEC_FIXTURE_ENABLE_ENV_KEY]: "1",
+      [CODEX_EXEC_FIXTURE_ENV_KEY]: CODEX_EXEC_FIXTURE_SUCCESS,
+    },
     stdio: ["ignore", "pipe", "pipe"],
   });
 

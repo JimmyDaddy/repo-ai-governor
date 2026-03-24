@@ -45,12 +45,14 @@ import {
   DEFAULT_CLI_VERBOSITY,
   NON_TTY_FALLBACK_OUTPUT_MODE,
 } from "./constants/cli-output.constant.js";
+import { CliCodexExecFixtureEnvironmentKey } from "./constants/codex-exec-fixture.constant.js";
 import {
   IDE_WRAPPER_DEFAULT_STANDARDS_PROFILE_ID,
   type IdeEntrySurface,
   IdeWrapperEnvironmentKey,
 } from "./constants/ide-command-wrapper.constant.js";
 import type { IdeStandardsSourceId } from "./constants/ide-standards-source.constant.js";
+import { CliCodexExecFixtureRuntime } from "./runtime/codex-exec-fixture-runtime.js";
 import { IdeStandardsSourceRuntime } from "./runtime/ide-standards-source-runtime.js";
 import { IdeSurfaceRegistryRuntime } from "./runtime/ide-surface-registry-runtime.js";
 export {
@@ -259,6 +261,7 @@ interface ResolvedIdeWrapperEnvironment {
 export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Promise<number> {
   const rawArgs = argv.slice(2);
   const commandName = resolveRequestedCommandName(rawArgs);
+  const environment = io.env?.() ?? process.env;
   const outputPresenter = new CliOutputPresenter({
     stdout: io.stdout,
     stderr: io.stderr,
@@ -277,7 +280,9 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
 
     const requestedLocale = readOptionValue(rawArgs, "--locale");
     const requestedProfileId = readOptionValue(rawArgs, "--profile");
-    const ideWrapperEnvironment = resolveIdeWrapperEnvironment(io.env?.() ?? process.env);
+    const ideWrapperEnvironment = resolveIdeWrapperEnvironment(environment);
+    const codexExecFixtureRuntime = new CliCodexExecFixtureRuntime();
+    const codexExecRunner = codexExecFixtureRuntime.resolveExecRunner(environment);
     const runtimeDebugOptions = resolveRuntimeDebugOptions(rawArgs, io.cwd());
     const runtimeContext = resolveRuntimeContext(io.cwd(), requestedProfileId);
     memoryStoreComposition = await composeMemoryStoreProvider(
@@ -304,6 +309,11 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
       memoryStoreProvider: activeMemoryStoreComposition.provider,
       adaptersConfig: runtimeContext.adapters,
       runtimeDebugOptions,
+      ...(codexExecRunner
+        ? {
+            codexExecRunner,
+          }
+        : {}),
     });
 
     const program = new Command();
@@ -381,6 +391,12 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
             ...(ideWrapperEnvironment.standardsSourceIds.length > 0
               ? {
                   standardsSourceIds: [...ideWrapperEnvironment.standardsSourceIds],
+                }
+              : {}),
+            ...(environment[CliCodexExecFixtureEnvironmentKey.EXEC_FIXTURE]
+              ? {
+                  codexExecFixture:
+                    environment[CliCodexExecFixtureEnvironmentKey.EXEC_FIXTURE] ?? null,
                 }
               : {}),
           };

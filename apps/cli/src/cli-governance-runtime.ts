@@ -145,7 +145,9 @@ export class CliGovernanceRuntime {
       this.options.commandProbeExecutor,
       (error) => this.formatExecFailureDetail(error),
     );
-    this.adapterRoutingRuntime = new CliAdapterRoutingRuntime(this.options.adaptersConfig);
+    this.adapterRoutingRuntime = new CliAdapterRoutingRuntime(this.options.adaptersConfig, {
+      codexExecRunner: this.options.codexExecRunner,
+    });
     this.adapterVerificationRuntime = new CliAdapterVerificationRuntime(
       this.options.adaptersConfig,
       (english, chinese) => this.localizeText(english, chinese),

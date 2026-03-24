@@ -8,6 +8,9 @@ import { pathToFileURL } from "node:url";
 const FIXTURE_PROJECT_ID = "project-stage9-blackbox";
 const FIXTURE_SPRINT_ID = "sprint-001-unattended-ga";
 const DEFAULT_LOCAL_MODEL = "qwen2.5-coder:7b";
+const CODEX_EXEC_FIXTURE_ENABLE_ENV_KEY = "REPO_AI_GOVERNOR_ENABLE_TEST_FIXTURES";
+const CODEX_EXEC_FIXTURE_ENV_KEY = "REPO_AI_GOVERNOR_CODEX_EXEC_FIXTURE";
+const CODEX_EXEC_FIXTURE_SUCCESS = "success";
 
 /**
  * Resolves a runnable CLI dist entry for blackbox validation.
@@ -77,6 +80,8 @@ export function createBlackboxScenario(prefix) {
       XDG_CONFIG_HOME: resolve(homePath, ".config"),
       XDG_CACHE_HOME: resolve(homePath, ".cache"),
       XDG_DATA_HOME: resolve(homePath, ".local", "share"),
+      [CODEX_EXEC_FIXTURE_ENABLE_ENV_KEY]: "1",
+      [CODEX_EXEC_FIXTURE_ENV_KEY]: CODEX_EXEC_FIXTURE_SUCCESS,
     },
   };
 }
@@ -372,6 +377,7 @@ export async function executeCliJsonCommandInProcess(options) {
     },
     cwd: () => options.scenario.repositoryPath,
     isStdoutTty: () => false,
+    env: () => options.scenario.runtimeEnv,
   });
   const durationMs = Date.now() - startedAt;
   const expectedExitCode = options.expectExitCode ?? 0;

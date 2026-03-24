@@ -2,6 +2,7 @@ import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promis
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 
+import type { CodexExecRunner } from "@repo-ai-governor/adapter-codex";
 import {
   AGENT_LOCAL_FALLBACK_SURFACE,
   AgentAvailabilityStatus,
@@ -55,6 +56,41 @@ interface RuntimeFixtureOptions {
     >
   >;
   commandProbeExecutor?: (command: string, args: readonly string[]) => Promise<void>;
+  codexExecRunner?: CodexExecRunner;
+}
+
+function createCodexExecRunnerFixture(): CodexExecRunner {
+  return async ({ prompt, operation }) => {
+    const responseText =
+      operation === "probe" || prompt.includes("Respond with exactly OK.")
+        ? "OK"
+        : "simulated codex response";
+    return {
+      stdout: [
+        '{"type":"thread.started","thread_id":"thread-1"}',
+        `{"type":"item.completed","item":{"id":"item-1","type":"agent_message","text":"${responseText}"}}`,
+        '{"type":"turn.completed","usage":{"input_tokens":21,"output_tokens":13}}',
+      ].join("\n"),
+      stderr: "",
+      exitCode: 0,
+      signal: null,
+      elapsedMs: 9,
+    };
+  };
+}
+
+function createCodexCredentialFailureRunner(): CodexExecRunner {
+  return async () => {
+    throw new RuntimeError(
+      GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED,
+      "Codex probe failed: login required",
+      {
+        surface: AdapterSurface.CODEX,
+        operation: "probe",
+        stderr: "Not logged in. Run `codex login` first.",
+      },
+    );
+  };
 }
 
 /**
@@ -271,6 +307,7 @@ async function createRuntimeFixture(options: RuntimeFixtureOptions = {}): Promis
     adapterLocalProbeOverrides:
       options.adapterLocalProbeOverrides ?? createAdapterLocalProbeOverrides(),
     commandProbeExecutor: options.commandProbeExecutor,
+    codexExecRunner: options.codexExecRunner ?? createCodexExecRunnerFixture(),
   });
 
   return {
@@ -1008,6 +1045,8 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
         memoryStoreProviderName: fixture.provider.constructor.name,
         memoryStoreProvider: fixture.provider,
         adaptersConfig: createAdaptersConfigFixture(),
+        adapterLocalProbeOverrides: createAdapterLocalProbeOverrides(),
+        codexExecRunner: createCodexExecRunnerFixture(),
         runtimeDebugOptions: {
           dryRun: false,
           trace: true,
@@ -1506,6 +1545,57 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
             unavailableReasons: [],
           },
         },
+      },
+    );
+  });
+
+  it("surfaces codex credential failures as diagnostics and next actions", async () => {
+    await withRuntimeFixture(
+      async (fixture) => {
+        const connectResult = await fixture.runtime.execute(CliCommandName.CONNECT);
+        const diagnosticsArtifactPath = connectResult.commandResult.artifacts?.find(
+          (artifact) => artifact.id === "connect_diagnostics",
+        )?.path;
+        expect(typeof diagnosticsArtifactPath).toBe("string");
+
+        const diagnosticsPayload = JSON.parse(
+          await readFile(String(diagnosticsArtifactPath), "utf8"),
+        ) as {
+          verification?: {
+            tools?: Array<{
+              toolId?: string;
+              availabilityStatus?: string;
+              unavailableReasons?: string[];
+            }>;
+            nextActions?: string[];
+          };
+        };
+        const codexSnapshot = diagnosticsPayload.verification?.tools?.find(
+          (tool) => tool.toolId === AdapterSurface.CODEX,
+        );
+
+        expect(codexSnapshot?.availabilityStatus).toBe(AgentAvailabilityStatus.UNAVAILABLE);
+        expect(codexSnapshot?.unavailableReasons ?? []).toContain("credential_missing:codex");
+        expect(
+          diagnosticsPayload.verification?.nextActions?.some((action) =>
+            action.includes("Authenticate or refresh login"),
+          ),
+        ).toBe(true);
+
+        const doctorResult = await fixture.runtime.execute(CliCommandName.DOCTOR);
+        const codexCheck = doctorResult.commandResult.checks?.find(
+          (check) => check.id === "adapter_tool_codex",
+        );
+        expect(codexCheck?.detail).toContain("missing required credentials or login state");
+      },
+      {
+        runtimeDebugOptions: {
+          dryRun: false,
+          trace: false,
+          replayPath: null,
+          adapters: true,
+        },
+        codexExecRunner: createCodexCredentialFailureRunner(),
       },
     );
   });

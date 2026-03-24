@@ -1,5 +1,9 @@
 import { ClaudeCodeAgentAdapter } from "@repo-ai-governor/adapter-claude-code";
-import { CodexAgentAdapter } from "@repo-ai-governor/adapter-codex";
+import {
+  CodexAgentAdapter,
+  CodexAgentAdapterExecutionMode,
+  type CodexExecRunner,
+} from "@repo-ai-governor/adapter-codex";
 import { GithubCopilotAgentAdapter } from "@repo-ai-governor/adapter-github-copilot";
 import { LocalModelAgentAdapter } from "@repo-ai-governor/adapter-local-model";
 import {
@@ -21,7 +25,12 @@ import {
  * Owns CLI-local adapter surface resolution, protocol construction, and restricted fallback wiring.
  */
 export class CliAdapterRoutingRuntime {
-  public constructor(private readonly adaptersConfig: AdaptersConfig) {}
+  public constructor(
+    private readonly adaptersConfig: AdaptersConfig,
+    private readonly options: {
+      codexExecRunner?: CodexExecRunner;
+    } = {},
+  ) {}
 
   /**
    * Creates protocol map for all tracked adapter surfaces using tool config overrides.
@@ -55,7 +64,15 @@ export class CliAdapterRoutingRuntime {
       };
       protocolBySurface[surface] =
         surface === AdapterSurface.CODEX
-          ? new CodexAgentAdapter(adapterOptions)
+          ? new CodexAgentAdapter({
+              ...adapterOptions,
+              executionMode: CodexAgentAdapterExecutionMode.CLI_EXEC,
+              ...(this.options.codexExecRunner
+                ? {
+                    execRunner: this.options.codexExecRunner,
+                  }
+                : {}),
+            })
           : surface === AdapterSurface.GITHUB_COPILOT
             ? new GithubCopilotAgentAdapter(adapterOptions)
             : surface === AdapterSurface.CLAUDE_CODE

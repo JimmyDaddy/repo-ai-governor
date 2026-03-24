@@ -100,6 +100,7 @@ export class CliAdapterDiagnosticsRuntime {
       degradedRoleCount: verification.degradedRoleCount,
       fallbackRoleCount: verification.fallbackRoleCount,
       failureAttributionSummary: this.createFailureAttributionSummary(verification),
+      nextActions: [...verification.nextActions],
       tools: verification.tools.map((tool) => ({
         toolId: tool.toolId,
         enabled: tool.enabled,
@@ -267,6 +268,40 @@ export class CliAdapterDiagnosticsRuntime {
       const [, ...detailParts] = reason.split(":");
       const detail = detailParts.join(":");
       return this.localizeText(`adapter probe failed (${detail})`, `adapter 探测失败（${detail}）`);
+    }
+
+    if (reason.startsWith("credential_missing:")) {
+      const [, surface] = reason.split(":", 2);
+      return this.localizeText(
+        `surface "${surface}" is missing required credentials or login state`,
+        `surface "${surface}" 缺少所需凭据或登录状态`,
+      );
+    }
+
+    if (reason.startsWith("health_check_timeout:")) {
+      const [, surface] = reason.split(":", 2);
+      return this.localizeText(
+        `surface "${surface}" health check timed out`,
+        `surface "${surface}" 的健康检查超时`,
+      );
+    }
+
+    if (reason.startsWith("health_check_invalid_response:")) {
+      const [, surface, ...detailParts] = reason.split(":");
+      const detail = detailParts.join(":");
+      return this.localizeText(
+        `surface "${surface}" returned an invalid health-check response (${detail})`,
+        `surface "${surface}" 返回了无效的健康检查响应（${detail}）`,
+      );
+    }
+
+    if (reason.startsWith("health_check_failed:")) {
+      const [, surface, ...detailParts] = reason.split(":");
+      const detail = detailParts.join(":");
+      return this.localizeText(
+        `surface "${surface}" health check failed (${detail})`,
+        `surface "${surface}" 的健康检查失败（${detail}）`,
+      );
     }
 
     if (reason.startsWith("local_model_model_missing:")) {

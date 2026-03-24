@@ -200,10 +200,18 @@ export class CliAdapterVerificationRuntime {
       .map((tool) => tool.toolId);
     const missingCommands = this.collectMissingCommandsFromToolSnapshots(toolSnapshots);
     const failedProbeCommands = this.collectFailedProbeCommandsFromToolSnapshots(toolSnapshots);
+    const missingCredentials = this.collectToolReasonPayloads(toolSnapshots, "credential_missing:");
+    const failedHealthChecks = [
+      ...this.collectToolReasonPayloads(toolSnapshots, "health_check_timeout:"),
+      ...this.collectToolReasonPayloads(toolSnapshots, "health_check_invalid_response:"),
+      ...this.collectToolReasonPayloads(toolSnapshots, "health_check_failed:"),
+    ].filter((payload, index, list) => list.indexOf(payload) === index);
     if (
       unavailableToolIds.length > 0 &&
       missingCommands.length === 0 &&
-      failedProbeCommands.length === 0
+      failedProbeCommands.length === 0 &&
+      missingCredentials.length === 0 &&
+      failedHealthChecks.length === 0
     ) {
       nextActions.push(
         this.localizeText(
@@ -225,6 +233,22 @@ export class CliAdapterVerificationRuntime {
         this.localizeText(
           `Some commands exist but probe failed (${failedProbeCommands.join(", ")}). Run them manually to verify login/extension status.`,
           `部分命令可执行但探测失败（${failedProbeCommands.join(", ")}），请手动执行命令确认登录/扩展状态。`,
+        ),
+      );
+    }
+    if (missingCredentials.length > 0) {
+      nextActions.push(
+        this.localizeText(
+          `Authenticate or refresh login for remote adapters before connect/verify: ${missingCredentials.join(", ")}.`,
+          `请先为以下远端 adapter 完成认证或刷新登录状态，再执行 connect/verify：${missingCredentials.join(", ")}。`,
+        ),
+      );
+    }
+    if (failedHealthChecks.length > 0) {
+      nextActions.push(
+        this.localizeText(
+          `Investigate remote adapter health checks before unattended execution: ${failedHealthChecks.join(", ")}.`,
+          `请先排查以下远端 adapter 的健康检查结果，再进行无人值守执行：${failedHealthChecks.join(", ")}。`,
         ),
       );
     }
@@ -528,6 +552,10 @@ export class CliAdapterVerificationRuntime {
         reason.startsWith("command_missing:") ||
         reason.startsWith("command_probe_failed:") ||
         reason.startsWith("probe_failed:") ||
+        reason.startsWith("credential_missing:") ||
+        reason.startsWith("health_check_timeout:") ||
+        reason.startsWith("health_check_invalid_response:") ||
+        reason.startsWith("health_check_failed:") ||
         reason.startsWith("local_model_endpoint_unreachable:") ||
         reason.startsWith("local_model_probe_invalid_response:")
       ) {

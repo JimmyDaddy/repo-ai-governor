@@ -4,6 +4,10 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { runUnattendedDeliveryScenario } from "../../scripts/ci/stage9-blackbox-ga-lib.js";
 
+const CODEX_EXEC_FIXTURE_ENABLE_ENV_KEY = "REPO_AI_GOVERNOR_ENABLE_TEST_FIXTURES";
+const CODEX_EXEC_FIXTURE_ENV_KEY = "REPO_AI_GOVERNOR_CODEX_EXEC_FIXTURE";
+const CODEX_EXEC_FIXTURE_SUCCESS = "success";
+
 interface CliSuccessPayload {
   status?: string;
   command_result?: {
@@ -75,6 +79,8 @@ function createBlackboxScenario(prefix: string): BlackboxScenario {
       XDG_CONFIG_HOME: resolve(homePath, ".config"),
       XDG_CACHE_HOME: resolve(homePath, ".cache"),
       XDG_DATA_HOME: resolve(homePath, ".local", "share"),
+      [CODEX_EXEC_FIXTURE_ENABLE_ENV_KEY]: "1",
+      [CODEX_EXEC_FIXTURE_ENV_KEY]: CODEX_EXEC_FIXTURE_SUCCESS,
     },
   };
 }

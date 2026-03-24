@@ -3,6 +3,10 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 
+import {
+  CliCodexExecFixtureEnvironmentKey,
+  CliCodexExecFixtureMode,
+} from "../src/constants/codex-exec-fixture.constant.js";
 import { runCli } from "../src/main.js";
 
 /**
@@ -13,7 +17,11 @@ import { runCli } from "../src/main.js";
 function createBufferedIo(
   isStdoutTty: boolean,
   currentWorkingDirectory: string = process.cwd(),
-  environment: NodeJS.ProcessEnv = process.env,
+  environment: NodeJS.ProcessEnv = {
+    ...process.env,
+    [CliCodexExecFixtureEnvironmentKey.ENABLE_FIXTURES]: "1",
+    [CliCodexExecFixtureEnvironmentKey.EXEC_FIXTURE]: CliCodexExecFixtureMode.SUCCESS,
+  },
 ): {
   stdoutBuffer: string[];
   stderrBuffer: string[];
@@ -122,6 +130,24 @@ describe("CLI output contract integration", () => {
     expect(payload.runtime.downgraded_from).toBeNull();
     expect(payload.message).toContain("Initialized workspace at");
     expect(payload.command_result.operation).toBe("workspace_init");
+  });
+
+  it("surfaces configured codex exec fixture mode in JSON diagnostics", async () => {
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, process.cwd(), {
+      ...process.env,
+      [CliCodexExecFixtureEnvironmentKey.ENABLE_FIXTURES]: "1",
+      [CliCodexExecFixtureEnvironmentKey.EXEC_FIXTURE]: CliCodexExecFixtureMode.SUCCESS,
+    });
+
+    const exitCode = await runCli(
+      ["node", "repo-ai-governor", "--locale", "en-US", "--output", "json", "init"],
+      io,
+    );
+    const payload = JSON.parse(stdoutBuffer.join(""));
+
+    expect(exitCode).toBe(0);
+    expect(stderrBuffer.join("")).toBe("");
+    expect(payload.diagnostics.codexExecFixture).toBe(CliCodexExecFixtureMode.SUCCESS);
   });
 
   it("downgrades pretty to plain in non-TTY environment", async () => {
