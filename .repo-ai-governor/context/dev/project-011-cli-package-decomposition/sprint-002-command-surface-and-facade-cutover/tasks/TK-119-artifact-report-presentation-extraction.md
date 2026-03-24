@@ -1,8 +1,8 @@
 # TK-119 artifact/report/presentation 模块抽离
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-24
-- Owner: TBD
+- Owner: AI-Agent
 - Priority: P0
 - Project: `project-011-cli-package-decomposition`
 - Sprint: `sprint-002-command-surface-and-facade-cutover`
@@ -41,6 +41,8 @@
 ## 7. 执行记录
 
 1. 2026-03-24：任务创建，状态初始化为 `planned`。
+2. 2026-03-24：切换为 `in_progress`，开始梳理 `CliGovernanceRuntime` 中剩余的 artifact/report/presentation 责任并实施第一轮抽离。
+3. 2026-03-24：完成 `runtime-artifact-writer`、`review-queue-runtime`、`command-experience-builder`、`replay-explain-builder` 抽离，补齐 package/integration 回归、`DA-117` 与 resolved review。
 
 ## 8. 产出
 

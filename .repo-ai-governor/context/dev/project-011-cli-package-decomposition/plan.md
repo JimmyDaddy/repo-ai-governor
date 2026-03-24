@@ -80,7 +80,7 @@
 | TK-116 | sprint-001 | adapter verification 与 local probe 模块抽离 | implementation/runtime | DA-113 | completed |
 | TK-117 | sprint-001 | route fallback 与 diagnostics artifact builder 抽离 | implementation/runtime | TK-116,DA-113 | completed |
 | TK-118 | sprint-001 | sprint-001 出口验收与 sprint-002 输入约束 | acceptance baseline | TK-116,TK-117 | completed |
-| TK-119 | sprint-002 | artifact/report/presentation 模块抽离 | implementation/runtime | TK-118 | planned |
+| TK-119 | sprint-002 | artifact/report/presentation 模块抽离 | implementation/runtime | TK-118 | completed |
 | TK-120 | sprint-002 | 通用命令执行器抽离与 entry registry 基线 | implementation/command | TK-119 | planned |
 | TK-121 | sprint-002 | run/review 命令执行器抽离与 thin facade cutover | implementation/command | TK-119,TK-120 | planned |
 | TK-122 | sprint-002 | sprint-002 出口验收与 sprint-003 输入约束 | acceptance baseline | TK-119,TK-120,TK-121 | planned |
@@ -107,3 +107,4 @@
 
 1. 2026-03-24：创建 `project-011`，将 CLI package decomposition 从 `project-010` 中独立为单独的工程支撑主线，并切换为当前 primary stream。
 2. 2026-03-24：完成 sprint-001 runtime support extraction，形成 `DA-115/DA-116` 并为 sprint-002 冻结 handoff 约束。
+3. 2026-03-24：切换到 sprint-002 `TK-119`，开始 artifact/report/presentation 模块抽离与 facade 收口第一轮实施。
