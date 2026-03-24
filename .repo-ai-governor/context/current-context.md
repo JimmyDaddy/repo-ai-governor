@@ -3,15 +3,15 @@
 ## Primary Stream
 
 - Status: active
-- Project: `project-010-local-model-and-ide-expansion`
-- Sprint: `sprint-003-delivery-ide-and-ga-hardening`
-- Docs root: `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion`
-- Task records: `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-003-delivery-ide-and-ga-hardening/tasks/`
-- Review records: `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-003-delivery-ide-and-ga-hardening/review/`
+- Project: `project-013-remote-provider-and-adapter-ops`
+- Sprint: `sprint-001-remote-provider-real-invocation-baseline`
+- Docs root: `.repo-ai-governor/context/dev/project-013-remote-provider-and-adapter-ops`
+- Task records: `.repo-ai-governor/context/dev/project-013-remote-provider-and-adapter-ops/sprint-001-remote-provider-real-invocation-baseline/tasks/`
+- Review records: `.repo-ai-governor/context/dev/project-013-remote-provider-and-adapter-ops/sprint-001-remote-provider-real-invocation-baseline/review/`
 
 ## Active Streams
 
-- `primary`: project=`project-010-local-model-and-ide-expansion`, sprint=`sprint-003-delivery-ide-and-ga-hardening`, docs=`.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion`, plan=`.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/plan.md`, tasks=`.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-003-delivery-ide-and-ga-hardening/tasks/`, checklist=`.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-003-delivery-ide-and-ga-hardening/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-003-delivery-ide-and-ga-hardening/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-003-delivery-ide-and-ga-hardening/review/`, status=`active`
+- `primary`: project=`project-013-remote-provider-and-adapter-ops`, sprint=`sprint-001-remote-provider-real-invocation-baseline`, docs=`.repo-ai-governor/context/dev/project-013-remote-provider-and-adapter-ops`, plan=`.repo-ai-governor/context/dev/project-013-remote-provider-and-adapter-ops/plan.md`, tasks=`.repo-ai-governor/context/dev/project-013-remote-provider-and-adapter-ops/sprint-001-remote-provider-real-invocation-baseline/tasks/`, checklist=`.repo-ai-governor/context/dev/project-013-remote-provider-and-adapter-ops/sprint-001-remote-provider-real-invocation-baseline/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-013-remote-provider-and-adapter-ops/sprint-001-remote-provider-real-invocation-baseline/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-013-remote-provider-and-adapter-ops/sprint-001-remote-provider-real-invocation-baseline/review/`, status=`active`
 
 ## Completed Stream History
 

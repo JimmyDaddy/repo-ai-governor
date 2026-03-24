@@ -1,7 +1,7 @@
 # Repo AI Governor 从零到完成态总执行计划
 
 - Status: active
-- Date: 2026-03-24
+- Date: 2026-03-25
 - Role: execution master plan
 - Basis:
   - `.repo-ai-governor/normative_knowledge_sources/product-requirements.md`
@@ -36,22 +36,22 @@
 4. 在 triad 尚未引入新的正式 phase 前，所有投产类收口工作统一跟踪为：
    - `Phase E 收口 + GA Readiness overlay`
 
-## 3. 当前执行摘要（2026-03-24）
+## 3. 当前执行摘要（2026-03-25）
 
 ## 3.1 一句话结论
 
-1. Stage 0-8 的基线能力已经完成，`project-009` 完成了投产基线收口；当前主线不再是“把模块补齐”，而是由 `project-010` 承接“全自动研发闭环仍未打通”的业务收敛，`project-011` 已完成 CLI package decomposition 的工程支撑重构并形成正式 handoff。
+1. Stage 0-8 的基线能力已经完成，`project-009` 完成了投产基线收口，`project-010` 完成了自动主链、HITL、delivery、GA 和多 IDE 官方入口的 follow-up 收口；当前主线收敛为 `project-013` 承接“远端 provider 真实调用与 adapter 运维契约仍未闭环”的最后 Stage 9 阻断。
 
 ## 3.2 当前真实状态
 
 1. 已完成的部分：
    - 核心架构、流程编排、策略门禁、审计回放、Artifact Registry、发布治理、平台化骨架已经具备。
    - 本地接入、clean-room 安装验证、最小治理执行、adapter 探测与外部消费契约基线已经具备。
+   - `run` 已升级为任务驱动 DAG，`review -> review-verify -> ledger backfill`、HITL `resume/terminate/degrade`、delivery rehearsal、Stage 9 GA blackbox 和多 IDE 官方入口都已形成完成态证据。
 2. 当前未完成的部分：
-   - 多工具真实调用还未全面进入 provider 执行面。
-   - `run` 还没有升级成任务驱动的动态编排器。
-   - review 链路、HITL 回执回灌、delivery rehearsal 还没有形成统一自动主链。
-   - 黑盒 E2E 与 GA 运营指标还未覆盖“真实无人值守路径”。
+   - Codex / GitHub Copilot / Claude Code 仍停留在 baseline adapter stub，远端 provider 真实调用还未进入正式执行面。
+   - adapter 运维契约尚未全面落地到远端 provider：凭据优先级、health/deep probe、timeout/retry、限流/退避、脱敏和 degrade path 仍需统一收口。
+   - 因此“多工具/多模型在统一流程下真实无人值守运行”这条最终产品信号还不能算 fully closed。
 
 ## 3.3 当前主执行流
 
@@ -59,15 +59,17 @@
 |---|---|---|---|
 | 已完成基线 | `project-001` ~ `project-008` | completed | 提供架构、运行时、治理、审计、发布与平台化基线 |
 | 投产基线完成态 | `project-009-production-readiness` | completed | 证明工具已具备本地可采用、可诊断、可 clean-room 验证的外部可用基础 |
-| 当前业务闭环主线 | `project-010-local-model-and-ide-expansion` | active | 继续收敛真实调用、动态编排、HITL/Delivery 闭环、受限网络与 IDE 入口 |
-| 当前工程支撑主线 | `project-011-cli-package-decomposition` | completed | 已完成 CLI package God object 拆解与正式 handoff，给 `project-010` 的 sprint-002/003 提供稳定工程边界 |
+| 已完成 Stage 9 主链收口 | `project-010-local-model-and-ide-expansion` | completed | 已完成本地模型、自动主链、HITL、delivery、GA 与 IDE official surface 收口 |
+| 当前业务闭环主线 | `project-013-remote-provider-and-adapter-ops` | active | 继续收敛 Codex / GitHub Copilot / Claude Code 远端 provider 实调用与 adapter 运维契约 |
+| 当前工程支撑主线 | `project-011-cli-package-decomposition` | completed | 已完成 CLI package God object 拆解与正式 handoff，为后续 provider 执行面改造提供稳定工程边界 |
+| 当前治理支撑主线 | `project-012-execution-context-optimization` | completed | 已完成 startup/context/task-ledger/review-chain 优化并形成正式 handoff |
 
 ## 3.4 当前推荐执行顺序
 
-1. `project-010` sprint-001 与 `project-011` 已完成正式 handoff，当前优先进入 `project-010` sprint-002。
-2. 先完成 `TK-099`，把 `run` 从固定模板升级为任务驱动 DAG。
-3. 再完成 `TK-100` / `TK-101`，把 review 子链与 HITL 决策回灌收进统一自动主链。
-4. 最后用 `TK-102` 冻结 sprint-003 输入约束，再进入 delivery rehearsal、试点运营与 GA 收口。
+1. 已将 `project-010` 从默认 active execution surface 中归档，后续只作为 completed handoff 消费。
+2. 当前优先启动 `project-013` sprint-001，先完成 Codex 远端 provider 真实调用与凭据/health 运维契约。
+3. 再完成 GitHub Copilot 与 Claude Code 远端 provider 真实调用，并同步 capability truthfulness、fallback/degrade 和 route-runner truthfulness。
+4. 最后用 sprint-001 出口验收冻结远端 provider 执行面基线，再决定是否进入剩余 P1 尾项或 P2 平台化能力。
 
 ## 4. 路线图总览
 
@@ -157,7 +159,7 @@
 
 | gap_id | 差距项 | 当前信号 | 完成判据 | 当前承接 |
 |---|---|---|---|---|
-| G-01 | 真实适配器执行面未闭环 | 多工具 adapter 仍存在 baseline stub，真实 provider 调用未全面落地 | 至少 1 条远端 provider 路径和 1 条本地模型路径具备真实调用，并补齐凭据、health、timeout/retry、限流、脱敏、degrade path 契约 | `TK-096`、`TK-097` |
+| G-01 | 真实适配器执行面未闭环 | Codex / GitHub Copilot / Claude Code 仍存在 baseline stub，本地模型已具备实调用但远端 provider 尚未落地 | 至少 1 条远端 provider 路径和 1 条本地模型路径具备真实调用，并补齐凭据、health、timeout/retry、限流、脱敏、degrade path 契约 | `project-013 / sprint-001` |
 | G-02 | `run` 仍是固定模板 | 当前仍主要是 `prepare -> execute -> report` 三段模板 | `run` 能按任务目标、依赖产物、角色能力动态装配可执行 DAG | `TK-098` 已完成；sprint-002 |
 | G-03 | Review 链路未内联到自动主链 | `review -> review-verify -> ledger backfill` 仍以 queued artifact 与下游消费为主 | review chain 可作为自动主链受控子链推进，并与审计事实保持一致 | `TK-098` 已完成；sprint-002 |
 | G-04 | HITL 回执与决策回灌未闭环 | 命中 `confirm/escalate` 后仍主要停在人工等待 | 至少 1 主 1 备通知渠道接通，人工决策可回灌并触发继续执行/终止/降级 | `TK-098` 已完成；sprint-002 |
@@ -176,25 +178,31 @@
 
 ## 6.5 Stage 9 当前执行队列
 
-1. sprint-001（completed）：
+1. 已完成 Stage 9 follow-up：
    - `TK-096`：真实调用与 route fallback
    - `TK-097`：deep probe、restricted network、稳定性门禁
    - `TK-098`：sprint-001 出口验收与 sprint-002 输入约束
+   - `TK-099`：任务驱动 DAG 与 `run` 主链装配
+   - `TK-100`：`review -> review-verify -> ledger backfill` 内联收口
+   - `TK-101`：HITL 决策回执与 `resume/terminate/degrade`
+   - `TK-102`：sprint-002 出口验收与 sprint-003 输入约束
+   - `TK-107`：受控 delivery rehearsal 与 audit/replay 接线
+   - `TK-108`：黑盒/CI/release/GA 指标收口
+   - `TK-109` ~ `TK-111`：多 IDE 官方入口 productionization
+   - `TK-112`：project-010 出口验收与 rollout 输入约束
+   - `TK-135`：standards injection source ID 与 resolver 收口
 2. parallel enabling track（completed）：
    - `project-011 / TK-115`：project 拆分与依赖重排
    - `project-011 / TK-116`：adapter verification 与 local probe 抽离
    - `project-011 / TK-117`：route fallback 与 diagnostics builder 抽离
    - `project-011 / TK-118`：sprint-001 出口验收与 sprint-002 输入约束
-3. sprint-002（current）：
-   - `TK-099`：任务驱动 DAG 与 `run` 主链装配
-   - `TK-100`：`review -> review-verify -> ledger backfill` 内联收口
-   - `TK-101`：HITL 决策回执与 `resume/terminate/degrade`
-   - `TK-102`：sprint-002 出口验收与 sprint-003 输入约束
-4. sprint-003：
-   - `TK-107`：受控 delivery rehearsal 与 audit/replay 接线
-   - `TK-108`：黑盒/CI/release/GA 指标收口
-   - `TK-109` ~ `TK-111`：多 IDE 官方入口 productionization
-   - `TK-112`：project-010 出口验收与 rollout 输入约束
+3. 当前执行队列（project-013 / sprint-001）：
+   - `TK-136`：project-013 启动与远端 provider 收口重排
+   - `TK-137`：Codex 远端 provider 真实调用与凭据/health 契约
+   - `TK-138`：GitHub Copilot 远端 provider 真实调用与 capability truthfulness 收口
+   - `TK-139`：Claude Code 远端 provider 真实调用与 fallback/degrade 收口
+   - `TK-140`：跨 provider adapter 运维契约与 route-runner truthfulness hardening
+   - `TK-141`：sprint-001 出口验收与后续 rollout 输入约束
 
 ## 7. 并行治理主线
 
@@ -232,8 +240,10 @@
 | `project-007-platformization` | Stage 8 | completed | P2 平台化骨架 |
 | `project-008-workflow-optimization` | Cross-stage | completed | 执行流降噪、台账自动化、工作流优化 |
 | `project-009-production-readiness` | Stage 9 baseline | completed | 投产基线、clean-room、外部采用、production gate baseline |
-| `project-010-local-model-and-ide-expansion` | Stage 9 follow-up | active | 真实调用、受限网络、本地模型、IDE、自治闭环继续收口 |
+| `project-010-local-model-and-ide-expansion` | Stage 9 follow-up | completed | 已完成本地模型、自动主链、HITL、delivery、GA 与 IDE official surface 收口 |
 | `project-011-cli-package-decomposition` | Stage 9 enabling refactor | completed | 已完成 CLI package God object 拆解，并为 `project-010` 主链升级提供正式 handoff 边界 |
+| `project-012-execution-context-optimization` | Cross-stage follow-up | completed | 已完成 startup/context/task-ledger/review-chain 与 selective memory 注入的治理收口 |
+| `project-013-remote-provider-and-adapter-ops` | Stage 9 remaining closure | active | 继续收敛远端 provider 真实调用、adapter 运维契约与统一路由 truthfulness |
 
 ## 9. Sprint 与 Task 最小模板
 

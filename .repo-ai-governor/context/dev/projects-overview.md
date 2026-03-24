@@ -1,7 +1,7 @@
 # Repo AI Governor Project 拆解总览
 
 - Status: active
-- Date: 2026-03-24
+- Date: 2026-03-25
 - Basis:
   - `.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-master-execution-plan.md`
   - `.repo-ai-governor/normative_knowledge_sources/product-requirements.md`
@@ -24,6 +24,7 @@
 | `project-010-local-model-and-ide-expansion` | Stage 9 follow-up backlog | P1 扩展（本地模型 + IDE 入口） | 落地本地模型适配路径与多 IDE 生产化接入模板，收敛后续 rollout 输入约束 |
 | `project-011-cli-package-decomposition` | Stage 9 enabling refactor | CLI 架构分解 | 已完成 `apps/cli` 的 bounded-context 拆分与 package hardening，为 project-010 主链与后续 rollout 提供正式工程边界 |
 | `project-012-execution-context-optimization` | Cross-Stage follow-up | Context Efficiency / Governance Simplification | 收敛启动加载、active stream 上下文、TK 单写源与任务模板输入分层，降低单任务默认上下文成本 |
+| `project-013-remote-provider-and-adapter-ops` | Stage 9 remaining closure | Phase E follow-up + Adapter Operations Hardening | 收敛 Codex / GitHub Copilot / Claude Code 远端 provider 真实调用、adapter 运维契约与统一路由 truthfulness，补齐 Stage 9 剩余真实执行面 |
 
 ## 2. 依赖顺序
 
@@ -39,8 +40,9 @@
 10. `project-010-local-model-and-ide-expansion`
 11. `project-011-cli-package-decomposition`
 12. `project-012-execution-context-optimization`
+13. `project-013-remote-provider-and-adapter-ops`
 
-说明：Stage 主链按 001-007、009、010 推进；`project-008` 作为跨阶段治理优化轨可优先执行；`project-011` 作为 `project-010` 的工程支撑分解轨，为 CLI package 重构提供独立执行流；`project-012` 作为 `project-008` 的上下文效率 follow-up，负责收敛当前仓库的启动加载与台账上下文成本。
+说明：Stage 主链按 001-007、009、010、013 推进；`project-008` 作为跨阶段治理优化轨可优先执行；`project-011` 作为 `project-010` 的工程支撑分解轨，为 CLI package 重构提供独立执行流；`project-012` 作为 `project-008` 的上下文效率 follow-up，负责收敛当前仓库的启动加载与台账上下文成本；`project-013` 作为 `project-010` 关闭后的剩余 Stage 9 真正阻断项收口主线，专门处理远端 provider 实调用与 adapter operations 契约。
 
 ## 3. 交付原则
 
