@@ -47,6 +47,7 @@
 
 - Sprint Goal: 建立 project-011 的依赖约束和基线产物，并完成 CLI runtime 支撑层第一批抽离，为 `project-010` sprint-002 冻结输入边界。
 - 任务包：`TK-115`、`TK-116`、`TK-117`、`TK-118`。
+- 执行结果：已完成 `DA-113`~`DA-116`，并以 `accept` 结论结束 sprint-001。
 - Exit Criteria:
   1. `DA-113`~`DA-116` 可检索，并完成 artifact registry / 台账同步。
   2. `adapter verification/local probe` 与 `route/fallback/diagnostics builder` 的拆分边界明确，后续主链开发不再默认回填到 `cli-governance-runtime.ts`。
@@ -76,9 +77,9 @@
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 |---|---|---|---|---|---|
 | TK-115 | sprint-001 | project-011 启动与 CLI package decomposition 依赖重排 | analysis/baseline | TK-114 | completed |
-| TK-116 | sprint-001 | adapter verification 与 local probe 模块抽离 | implementation/runtime | DA-113 | planned |
-| TK-117 | sprint-001 | route fallback 与 diagnostics artifact builder 抽离 | implementation/runtime | TK-116,DA-113 | planned |
-| TK-118 | sprint-001 | sprint-001 出口验收与 sprint-002 输入约束 | acceptance baseline | TK-116,TK-117 | planned |
+| TK-116 | sprint-001 | adapter verification 与 local probe 模块抽离 | implementation/runtime | DA-113 | completed |
+| TK-117 | sprint-001 | route fallback 与 diagnostics artifact builder 抽离 | implementation/runtime | TK-116,DA-113 | completed |
+| TK-118 | sprint-001 | sprint-001 出口验收与 sprint-002 输入约束 | acceptance baseline | TK-116,TK-117 | completed |
 | TK-119 | sprint-002 | artifact/report/presentation 模块抽离 | implementation/runtime | TK-118 | planned |
 | TK-120 | sprint-002 | 通用命令执行器抽离与 entry registry 基线 | implementation/command | TK-119 | planned |
 | TK-121 | sprint-002 | run/review 命令执行器抽离与 thin facade cutover | implementation/command | TK-119,TK-120 | planned |
@@ -105,3 +106,4 @@
 ## 7. 里程碑记录
 
 1. 2026-03-24：创建 `project-011`，将 CLI package decomposition 从 `project-010` 中独立为单独的工程支撑主线，并切换为当前 primary stream。
+2. 2026-03-24：完成 sprint-001 runtime support extraction，形成 `DA-115/DA-116` 并为 sprint-002 冻结 handoff 约束。

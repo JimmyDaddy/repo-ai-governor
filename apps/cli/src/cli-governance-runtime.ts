@@ -8,16 +8,7 @@ import { ClaudeCodeAgentAdapter } from "@repo-ai-governor/adapter-claude-code";
 import { CodexAgentAdapter } from "@repo-ai-governor/adapter-codex";
 import { GithubCopilotAgentAdapter } from "@repo-ai-governor/adapter-github-copilot";
 import { LocalModelAgentAdapter } from "@repo-ai-governor/adapter-local-model";
-import {
-  AgentAvailabilityStatus,
-  AgentCapability,
-  AgentCapabilityEvaluator,
-  AgentNetworkMode,
-  type AgentProtocolContract,
-  type AgentRestrictedNetworkFallbackContext,
-  AgentRouteRunner,
-  AgentSurfaceNetworkRequirement,
-} from "@repo-ai-governor/adapter-sdk";
+import { AgentCapability, AgentNetworkMode, AgentRouteRunner } from "@repo-ai-governor/adapter-sdk";
 import {
   type AdaptersConfig,
   ConfigLoader,
@@ -88,11 +79,11 @@ import {
   CLI_RUN_REPLAY_SOURCE_TYPE,
   CliGovernanceCheckStatus,
 } from "./constants/cli-governance-runtime.constant.js";
+import { CliAdapterDiagnosticsRuntime } from "./runtime/adapter-diagnostics-runtime.js";
+import { CliAdapterRoutingRuntime } from "./runtime/adapter-routing-runtime.js";
 import { CliAdapterVerificationRuntime } from "./runtime/adapter-verification-runtime.js";
 import { CliLocalModelProbeRuntime } from "./runtime/local-model-probe-runtime.js";
 import type {
-  CliAdapterRoleEvaluation,
-  CliAdapterToolProbeSnapshot,
   CliAdapterVerificationResolution,
   CliCommandExecutionResultPayload,
   CliCommandExperiencePayload,
@@ -187,7 +178,9 @@ interface CliBuildExperienceOptions {
  */
 export class CliGovernanceRuntime {
   private readonly localModelProbeRuntime: CliLocalModelProbeRuntime;
+  private readonly adapterRoutingRuntime: CliAdapterRoutingRuntime;
   private readonly adapterVerificationRuntime: CliAdapterVerificationRuntime;
+  private readonly adapterDiagnosticsRuntime: CliAdapterDiagnosticsRuntime;
 
   public constructor(private readonly options: CliGovernanceRuntimeOptions) {
     this.localModelProbeRuntime = new CliLocalModelProbeRuntime(
@@ -195,20 +188,18 @@ export class CliGovernanceRuntime {
       this.options.commandProbeExecutor,
       (error) => this.formatExecFailureDetail(error),
     );
+    this.adapterRoutingRuntime = new CliAdapterRoutingRuntime(this.options.adaptersConfig);
     this.adapterVerificationRuntime = new CliAdapterVerificationRuntime(
       this.options.adaptersConfig,
       (english, chinese) => this.localizeText(english, chinese),
       (error) => this.formatExecFailureDetail(error),
-      () => this.createToolConfigBySurfaceMap(),
-      (toolConfigBySurface) => this.createProtocolBySurface(toolConfigBySurface),
-      (roleBinding, toolConfigBySurface, includeLocalModelFallbackCandidate = true) =>
-        this.resolveRoleBindingCandidateSurfaces(
-          roleBinding,
-          toolConfigBySurface,
-          includeLocalModelFallbackCandidate,
-        ),
-      (toolConfigBySurface) => this.resolveTrackedAdapterSurfaces(toolConfigBySurface),
+      this.adapterRoutingRuntime,
       this.localModelProbeRuntime,
+    );
+    this.adapterDiagnosticsRuntime = new CliAdapterDiagnosticsRuntime(
+      (english, chinese) => this.localizeText(english, chinese),
+      (verification) =>
+        this.adapterVerificationRuntime.createFailureAttributionSummary(verification),
     );
   }
 
@@ -408,7 +399,10 @@ export class CliGovernanceRuntime {
         workspaceMode: this.options.workspace.mode,
       },
       adapters: this.options.adaptersConfig,
-      verification: this.createAdapterVerificationArtifactPayload(adapterVerification),
+      verification:
+        this.adapterDiagnosticsRuntime.createAdapterVerificationArtifactPayload(
+          adapterVerification,
+        ),
       nextActions: adapterVerification.nextActions,
       behavior: {
         recordLedger: runtimeDebugOptions.recordLedger,
@@ -472,7 +466,7 @@ export class CliGovernanceRuntime {
       });
     }
 
-    const roleProgress = this.createAdapterRoleProgressRows({
+    const roleProgress = this.adapterDiagnosticsRuntime.createAdapterRoleProgressRows({
       verification: adapterVerification,
       stage: ExecutionProgressStage.CONNECT,
       diagnosticsPath: diagnosticsArtifactPath,
@@ -493,7 +487,7 @@ export class CliGovernanceRuntime {
         },
       });
     }
-    const interactionPrompts = this.createAdapterInteractionPrompts({
+    const interactionPrompts = this.adapterDiagnosticsRuntime.createAdapterInteractionPrompts({
       verification: adapterVerification,
       stage: ExecutionProgressStage.CONNECT,
     });
@@ -650,8 +644,8 @@ export class CliGovernanceRuntime {
       for (const toolSnapshot of adapterVerification.tools) {
         checks.push({
           id: `adapter_tool_${toolSnapshot.toolId}`,
-          status: this.resolveToolProbeCheckStatus(toolSnapshot),
-          detail: this.resolveToolProbeCheckDetail(toolSnapshot),
+          status: this.adapterDiagnosticsRuntime.resolveToolProbeCheckStatus(toolSnapshot),
+          detail: this.adapterDiagnosticsRuntime.resolveToolProbeCheckDetail(toolSnapshot),
         });
       }
       if (adapterVerification.nextActions.length > 0) {
@@ -693,11 +687,13 @@ export class CliGovernanceRuntime {
         adapters: runtimeDebugOptions.adapters,
         fix: runtimeDebugOptions.fix,
       },
-      safeLocalBoundary: this.createSafeLocalBoundaryArtifactPayload(runtimeDebugOptions.fix),
+      safeLocalBoundary: this.adapterDiagnosticsRuntime.createSafeLocalBoundaryArtifactPayload(
+        runtimeDebugOptions.fix,
+      ),
       checks,
       ...(adapterVerificationSnapshot
         ? {
-            verification: this.createAdapterVerificationArtifactPayload(
+            verification: this.adapterDiagnosticsRuntime.createAdapterVerificationArtifactPayload(
               adapterVerificationSnapshot,
             ),
           }
@@ -734,7 +730,7 @@ export class CliGovernanceRuntime {
     ];
     if (adapterVerificationSnapshot) {
       roleProgress.push(
-        ...this.createAdapterRoleProgressRows({
+        ...this.adapterDiagnosticsRuntime.createAdapterRoleProgressRows({
           verification: adapterVerificationSnapshot,
           stage: ExecutionProgressStage.VERIFY,
           diagnosticsPath: doctorDiagnosticsArtifactPath,
@@ -754,7 +750,7 @@ export class CliGovernanceRuntime {
     }
     if (adapterVerificationSnapshot) {
       interactionPrompts.push(
-        ...this.createAdapterInteractionPrompts({
+        ...this.adapterDiagnosticsRuntime.createAdapterInteractionPrompts({
           verification: adapterVerificationSnapshot,
           stage: ExecutionProgressStage.VERIFY,
         }),
@@ -1689,7 +1685,7 @@ export class CliGovernanceRuntime {
       checks.push({
         id: `role_${roleEvaluation.roleId}`,
         status: roleEvaluation.status,
-        detail: this.resolveRoleEvaluationDetail(roleEvaluation),
+        detail: this.adapterDiagnosticsRuntime.resolveRoleEvaluationDetail(roleEvaluation),
       });
     }
 
@@ -1708,7 +1704,10 @@ export class CliGovernanceRuntime {
         workspaceMode: this.options.workspace.mode,
       },
       adapters: this.options.adaptersConfig,
-      verification: this.createAdapterVerificationArtifactPayload(adapterVerification),
+      verification:
+        this.adapterDiagnosticsRuntime.createAdapterVerificationArtifactPayload(
+          adapterVerification,
+        ),
       nextActions: adapterVerification.nextActions,
     });
 
@@ -1720,13 +1719,13 @@ export class CliGovernanceRuntime {
     ];
     const checkTotals = this.calculateCheckTotals(checks);
     const experience = this.buildExperiencePayload({
-      roleProgress: this.createAdapterRoleProgressRows({
+      roleProgress: this.adapterDiagnosticsRuntime.createAdapterRoleProgressRows({
         verification: adapterVerification,
         stage: ExecutionProgressStage.VERIFY,
         diagnosticsPath: diagnosticsArtifactPath,
         executionId: `verify-${Date.now()}`,
       }),
-      interactionPrompts: this.createAdapterInteractionPrompts({
+      interactionPrompts: this.adapterDiagnosticsRuntime.createAdapterInteractionPrompts({
         verification: adapterVerification,
         stage: ExecutionProgressStage.VERIFY,
       }),
@@ -2201,180 +2200,6 @@ export class CliGovernanceRuntime {
   }
 
   /**
-   * Resolves adapter tool-level check status from probe snapshot.
-   * @param snapshot Adapter tool probe snapshot.
-   * @returns Check status used by doctor output.
-   */
-  private resolveToolProbeCheckStatus(
-    snapshot: CliAdapterToolProbeSnapshot,
-  ): CliGovernanceCheckStatus {
-    if (!snapshot.enabled) {
-      return CliGovernanceCheckStatus.WARN;
-    }
-    if (snapshot.availabilityStatus === AgentAvailabilityStatus.UNAVAILABLE) {
-      return CliGovernanceCheckStatus.WARN;
-    }
-    if (snapshot.availabilityStatus === AgentAvailabilityStatus.DEGRADED) {
-      return CliGovernanceCheckStatus.WARN;
-    }
-    return CliGovernanceCheckStatus.PASS;
-  }
-
-  /**
-   * Resolves adapter tool-level check detail text from probe snapshot.
-   * @param snapshot Adapter tool probe snapshot.
-   * @returns Human-readable detail text.
-   */
-  private resolveToolProbeCheckDetail(snapshot: CliAdapterToolProbeSnapshot): string {
-    if (!snapshot.enabled) {
-      return this.localizeText("disabled_by_config", "由配置禁用");
-    }
-
-    const readableReasons =
-      snapshot.unavailableReasons.length > 0
-        ? this.humanizeToolUnavailableReasons(snapshot.unavailableReasons)
-        : ["none"];
-    const attributionLabel = this.localizeText("attribution", "归因");
-    const availabilityLabel = this.localizeText("availability", "可用性");
-    const reasonsLabel = this.localizeText("reasons", "原因");
-    return `${availabilityLabel}=${snapshot.availabilityStatus} ${attributionLabel}=${snapshot.failureAttributions.join("|") || "none"} ${reasonsLabel}=${readableReasons.join(" | ")}`;
-  }
-
-  /**
-   * Resolves role-level check detail text from adapter role evaluation.
-   * @param roleEvaluation One role evaluation row.
-   * @returns Human-readable detail text.
-   */
-  private resolveRoleEvaluationDetail(roleEvaluation: CliAdapterRoleEvaluation): string {
-    const unsupported =
-      roleEvaluation.unsupportedCapabilities.length > 0
-        ? roleEvaluation.unsupportedCapabilities.join("|")
-        : "none";
-    const degraded =
-      roleEvaluation.degradedCapabilities.length > 0
-        ? roleEvaluation.degradedCapabilities.join("|")
-        : "none";
-    const unavailableReasons =
-      roleEvaluation.unavailableReasons.length > 0
-        ? roleEvaluation.unavailableReasons.join("|")
-        : "none";
-    const failureAttributions =
-      roleEvaluation.failureAttributions.length > 0
-        ? roleEvaluation.failureAttributions.join("|")
-        : "none";
-    return `required=${roleEvaluation.required} selected=${roleEvaluation.selectedSurface ?? "none"} selected_by=${roleEvaluation.selectedBy} unsupported=${unsupported} degraded=${degraded} attribution=${failureAttributions} reasons=${unavailableReasons}`;
-  }
-
-  /**
-   * Converts machine-readable unavailable reasons into human-friendly diagnostics text.
-   * @param reasons Raw unavailable reasons.
-   * @returns Human-friendly reason lines.
-   */
-  private humanizeToolUnavailableReasons(reasons: string[]): string[] {
-    return reasons.map((reason) => this.humanizeToolUnavailableReason(reason));
-  }
-
-  /**
-   * Converts one unavailable reason code into human-friendly diagnostics text.
-   * @param reason Raw unavailable reason.
-   * @returns Human-friendly reason line.
-   */
-  private humanizeToolUnavailableReason(reason: string): string {
-    if (reason.startsWith("command_missing:")) {
-      const [, surface, command] = reason.split(":", 3);
-      return this.localizeText(
-        `missing command "${command}" for surface "${surface}"`,
-        `surface "${surface}" 缺少本地命令 "${command}"`,
-      );
-    }
-
-    if (reason.startsWith("command_probe_failed:")) {
-      const [, surface, command, ...detailParts] = reason.split(":");
-      const detail = detailParts.join(":");
-      return this.localizeText(
-        `command exists but check failed for surface "${surface}" via "${command}" (${detail})`,
-        `surface "${surface}" 命令 "${command}" 可执行但探测失败（${detail}）`,
-      );
-    }
-
-    if (reason.startsWith("probe_failed:")) {
-      const [, ...detailParts] = reason.split(":");
-      const detail = detailParts.join(":");
-      return this.localizeText(`adapter probe failed (${detail})`, `adapter 探测失败（${detail}）`);
-    }
-
-    if (reason.startsWith("local_model_model_missing:")) {
-      const [, surface, ...modelParts] = reason.split(":");
-      const model = modelParts.join(":");
-      return this.localizeText(
-        `local-model surface "${surface}" is missing configured model "${model}"`,
-        `本地模型 surface "${surface}" 缺少已配置模型 "${model}"`,
-      );
-    }
-
-    if (reason.startsWith("local_model_config_missing:")) {
-      const [, surface, missingKeys] = reason.split(":", 3);
-      return this.localizeText(
-        `local-model surface "${surface}" is missing config fields "${missingKeys}"`,
-        `本地模型 surface "${surface}" 缺少配置字段 "${missingKeys}"`,
-      );
-    }
-
-    if (reason.startsWith("local_model_endpoint_unreachable:")) {
-      const [, surface, encodedEndpoint, errorCode, ...messageParts] = reason.split(":");
-      const endpoint = decodeURIComponent(encodedEndpoint ?? "");
-      const message = messageParts.join(":");
-      return this.localizeText(
-        `local-model surface "${surface}" cannot reach endpoint "${endpoint}" (${errorCode}: ${message})`,
-        `本地模型 surface "${surface}" 无法访问 endpoint "${endpoint}"（${errorCode}: ${message}）`,
-      );
-    }
-
-    if (reason.startsWith("local_model_probe_invalid_response:")) {
-      const [, surface, encodedEndpoint] = reason.split(":");
-      const endpoint = decodeURIComponent(encodedEndpoint ?? "");
-      return this.localizeText(
-        `local-model surface "${surface}" returned invalid probe payload from "${endpoint}"`,
-        `本地模型 surface "${surface}" 从 "${endpoint}" 返回了无效探测结果`,
-      );
-    }
-
-    if (reason.startsWith("disabled_by_config:")) {
-      const [, surface] = reason.split(":", 2);
-      return this.localizeText(
-        `disabled by config for surface "${surface}"`,
-        `surface "${surface}" 已被配置禁用`,
-      );
-    }
-
-    return reason;
-  }
-
-  /**
-   * Defines explicit safe_local doctor-fix boundary for operator-facing diagnostics.
-   * @param fixEnabled Whether `--fix` is enabled in the current doctor invocation.
-   * @returns JSON-serializable safe_local boundary payload.
-   */
-  private createSafeLocalBoundaryArtifactPayload(fixEnabled: boolean): Record<string, unknown> {
-    return {
-      mode: "safe_local_only",
-      fixEnabled,
-      allowedWrites: [
-        "workspace_root_directory",
-        "workspace_config_template",
-        "memory_store_root_directory",
-      ],
-      blockedMutations: [
-        "adapter_credentials",
-        "adapter_login_state",
-        "local_model_endpoint",
-        "local_model_model_pull",
-        "remote_provider_installation",
-      ],
-    };
-  }
-
-  /**
    * Resolves locale-aware text from English/Chinese variants.
    * @param english English fallback text.
    * @param chinese Simplified-Chinese variant.
@@ -2393,48 +2218,6 @@ export class CliGovernanceRuntime {
   }
 
   /**
-   * Converts adapter verification resolution into JSON-serializable payload.
-   * @param verification Adapter verification resolution.
-   * @returns Artifact payload.
-   */
-  private createAdapterVerificationArtifactPayload(
-    verification: CliAdapterVerificationResolution,
-  ): Record<string, unknown> {
-    return {
-      overallStatus: verification.overallStatus,
-      requiredRoleCount: verification.requiredRoleCount,
-      requiredRoleFailedCount: verification.requiredRoleFailedCount,
-      degradedRoleCount: verification.degradedRoleCount,
-      fallbackRoleCount: verification.fallbackRoleCount,
-      failureAttributionSummary: this.createFailureAttributionSummary(verification),
-      tools: verification.tools.map((tool) => ({
-        toolId: tool.toolId,
-        enabled: tool.enabled,
-        configuredAvailability: tool.configuredAvailability,
-        availabilityStatus: tool.availabilityStatus,
-        unavailableReasons: tool.unavailableReasons,
-        failureAttributions: tool.failureAttributions,
-        capabilitySupportByCapability: Object.fromEntries(
-          tool.capabilitySupportByCapability.entries(),
-        ),
-      })),
-      roles: verification.roleEvaluations.map((role) => ({
-        roleId: role.roleId,
-        roleProfileId: role.roleProfileId,
-        required: role.required,
-        primarySurface: role.primarySurface,
-        selectedSurface: role.selectedSurface,
-        selectedBy: role.selectedBy,
-        unsupportedCapabilities: role.unsupportedCapabilities,
-        degradedCapabilities: role.degradedCapabilities,
-        unavailableReasons: role.unavailableReasons,
-        failureAttributions: role.failureAttributions,
-        status: role.status,
-      })),
-    };
-  }
-
-  /**
    * Creates route runner for run-command stage dispatch using adapters/routing config.
    * @param nodes Runtime process nodes.
    * @returns Route runner instance bound to configured surfaces and role bindings.
@@ -2447,8 +2230,9 @@ export class CliGovernanceRuntime {
       includeLocalModelFallbackCandidate: true,
     },
   ): AgentRouteRunner {
-    const toolConfigBySurface = this.createToolConfigBySurfaceMap();
-    const protocolBySurface = this.createProtocolBySurface(toolConfigBySurface);
+    const toolConfigBySurface = this.adapterRoutingRuntime.createToolConfigBySurfaceMap();
+    const protocolBySurface =
+      this.adapterRoutingRuntime.createProtocolBySurface(toolConfigBySurface);
     const routeNodeByRouteKey = new Map<string, ProcessIrNode>();
     for (const node of nodes) {
       if (!routeNodeByRouteKey.has(node.routeKey)) {
@@ -2473,7 +2257,7 @@ export class CliGovernanceRuntime {
         );
       }
 
-      const candidateSurfaces = this.resolveRoleBindingCandidateSurfaces(
+      const candidateSurfaces = this.adapterRoutingRuntime.resolveRoleBindingCandidateSurfaces(
         roleBinding,
         toolConfigBySurface,
         options.includeLocalModelFallbackCandidate,
@@ -2500,11 +2284,12 @@ export class CliGovernanceRuntime {
       routePolicies,
       protocolBySurface,
       surfaceNetworkRequirementBySurface:
-        this.createSurfaceNetworkRequirementMap(toolConfigBySurface),
-      restrictedNetworkFallbackHandler: this.createRestrictedNetworkFallbackHandler(
-        toolConfigBySurface,
-        protocolBySurface,
-      ),
+        this.adapterRoutingRuntime.createSurfaceNetworkRequirementMap(toolConfigBySurface),
+      restrictedNetworkFallbackHandler:
+        this.adapterRoutingRuntime.createRestrictedNetworkFallbackHandler(
+          toolConfigBySurface,
+          protocolBySurface,
+        ),
     });
   }
 
@@ -2614,236 +2399,6 @@ export class CliGovernanceRuntime {
   }
 
   /**
-   * Creates protocol map for all built-in adapter surfaces using tool config overrides.
-   * @returns Surface -> protocol instance map.
-   */
-  private createProtocolBySurface(
-    toolConfigBySurface: Map<
-      AdapterSurface,
-      NonNullable<AdaptersConfig["tools"]>[number]
-    > = this.createToolConfigBySurfaceMap(),
-  ): Record<string, AgentProtocolContract> {
-    const protocolBySurface: Record<string, AgentProtocolContract> = {};
-    const surfaces = this.resolveTrackedAdapterSurfaces(toolConfigBySurface);
-    for (const surface of surfaces) {
-      const toolConfig = toolConfigBySurface.get(surface);
-      const enabled = toolConfig?.enabled ?? true;
-      const configuredAvailability = enabled
-        ? (toolConfig?.availability ?? null)
-        : AdapterAvailability.UNAVAILABLE;
-      const unavailableReasons = [...(toolConfig?.unavailableReasons ?? [])];
-      if (!enabled) {
-        unavailableReasons.push(`disabled_by_config:${surface}`);
-      }
-      const availabilityStatus = enabled
-        ? this.resolveAdapterAvailabilityStatus(configuredAvailability)
-        : AgentAvailabilityStatus.UNAVAILABLE;
-      const adapterOptions = {
-        availabilityStatus,
-        unavailableReasons,
-      };
-      protocolBySurface[surface] =
-        surface === AdapterSurface.CODEX
-          ? new CodexAgentAdapter(adapterOptions)
-          : surface === AdapterSurface.GITHUB_COPILOT
-            ? new GithubCopilotAgentAdapter(adapterOptions)
-            : surface === AdapterSurface.CLAUDE_CODE
-              ? new ClaudeCodeAgentAdapter(adapterOptions)
-              : new LocalModelAgentAdapter({
-                  ...adapterOptions,
-                  ...(toolConfig?.localModel
-                    ? {
-                        localModel: toolConfig.localModel,
-                      }
-                    : {}),
-                });
-    }
-
-    return protocolBySurface;
-  }
-
-  /**
-   * Builds one reusable tool-config lookup map from adapters config.
-   * @returns Surface -> tool config lookup.
-   */
-  private createToolConfigBySurfaceMap(): Map<
-    AdapterSurface,
-    NonNullable<AdaptersConfig["tools"]>[number]
-  > {
-    const toolConfigBySurface = new Map<
-      AdapterSurface,
-      NonNullable<AdaptersConfig["tools"]>[number]
-    >();
-    for (const toolConfig of this.options.adaptersConfig.tools ?? []) {
-      toolConfigBySurface.set(toolConfig.toolId, toolConfig);
-    }
-    return toolConfigBySurface;
-  }
-
-  /**
-   * Resolves candidate surfaces for one role binding with local-model fallback appended.
-   * @param roleBinding Role binding from adapters routing config.
-   * @param toolConfigBySurface Tool config lookup map.
-   * @returns Ordered candidate surfaces shared by runtime and diagnostics.
-   */
-  private resolveRoleBindingCandidateSurfaces(
-    roleBinding: AdaptersConfig["routing"]["roleBindings"][string],
-    toolConfigBySurface: Map<AdapterSurface, NonNullable<AdaptersConfig["tools"]>[number]>,
-    includeLocalModelFallbackCandidate = true,
-  ): AdapterSurface[] {
-    const candidateSurfaces = [
-      roleBinding.primarySurface,
-      ...(roleBinding.fallbackSurfaces ?? []),
-    ].filter((surface, index, list) => list.indexOf(surface) === index);
-    const localModelFallbackSurface = includeLocalModelFallbackCandidate
-      ? this.resolveLocalModelFallbackSurface(toolConfigBySurface)
-      : null;
-    if (localModelFallbackSurface && !candidateSurfaces.includes(localModelFallbackSurface)) {
-      candidateSurfaces.push(localModelFallbackSurface);
-    }
-    return candidateSurfaces;
-  }
-
-  /**
-   * Resolves whether local-model surface should participate as automatic fallback.
-   * @param toolConfigBySurface Tool config lookup map.
-   * @returns Local-model surface when enabled, otherwise `null`.
-   */
-  private resolveLocalModelFallbackSurface(
-    toolConfigBySurface: Map<AdapterSurface, NonNullable<AdaptersConfig["tools"]>[number]>,
-  ): AdapterSurface | null {
-    const localModelToolConfig = toolConfigBySurface.get(AdapterSurface.OLLAMA);
-    if (!localModelToolConfig || localModelToolConfig.enabled === false) {
-      return null;
-    }
-    return AdapterSurface.OLLAMA;
-  }
-
-  /**
-   * Creates one network-requirement map for route runner restricted-mode decisions.
-   * @param toolConfigBySurface Tool config lookup map.
-   * @returns Surface -> network requirement map.
-   */
-  private createSurfaceNetworkRequirementMap(
-    toolConfigBySurface: Map<AdapterSurface, NonNullable<AdaptersConfig["tools"]>[number]>,
-  ): Partial<Record<string, AgentSurfaceNetworkRequirement>> {
-    const requirementBySurface: Partial<Record<string, AgentSurfaceNetworkRequirement>> = {};
-    for (const surface of this.resolveTrackedAdapterSurfaces(toolConfigBySurface)) {
-      requirementBySurface[surface] =
-        surface === AdapterSurface.OLLAMA
-          ? AgentSurfaceNetworkRequirement.LOCAL_ONLY
-          : AgentSurfaceNetworkRequirement.EXTERNAL_NETWORK;
-    }
-    return requirementBySurface;
-  }
-
-  /**
-   * Creates restricted-network fallback handler backed by the local-model adapter.
-   * @param toolConfigBySurface Tool config lookup map.
-   * @param protocolBySurface Protocol map already built for route runner.
-   * @returns Restricted-network fallback handler when local-model tool is enabled.
-   */
-  private createRestrictedNetworkFallbackHandler(
-    toolConfigBySurface: Map<AdapterSurface, NonNullable<AdaptersConfig["tools"]>[number]>,
-    protocolBySurface: Record<string, AgentProtocolContract>,
-  ):
-    | {
-        invokeFallback(
-          context: AgentRestrictedNetworkFallbackContext,
-        ): ReturnType<AgentProtocolContract["invokeStage"]>;
-      }
-    | undefined {
-    const localModelFallbackSurface = this.resolveLocalModelFallbackSurface(toolConfigBySurface);
-    if (!localModelFallbackSurface) {
-      return undefined;
-    }
-    const localModelProtocol = protocolBySurface[localModelFallbackSurface];
-    if (!localModelProtocol) {
-      return undefined;
-    }
-    const capabilityEvaluator = new AgentCapabilityEvaluator();
-    return {
-      invokeFallback: async (context: AgentRestrictedNetworkFallbackContext) => {
-        const capabilityRequirement =
-          context.request.capabilityRequirementOverride ??
-          context.routePolicy.capabilityRequirement;
-        const probeResult = await localModelProtocol.probe({
-          routeKey: context.request.routeKey,
-          ...(capabilityRequirement
-            ? {
-                requiredCapabilities: capabilityRequirement.requiredCapabilities,
-              }
-            : {}),
-        });
-
-        if (probeResult.availabilityStatus === AgentAvailabilityStatus.UNAVAILABLE) {
-          throw new RuntimeError(
-            GovernorErrorCode.ADAPTER_ROUTE_NO_AVAILABLE_SURFACE,
-            `Restricted network local fallback surface "${localModelFallbackSurface}" is unavailable for route "${context.request.routeKey}".`,
-            {
-              routeKey: context.request.routeKey,
-              restrictedReason: context.reason,
-              fallbackSurface: localModelFallbackSurface,
-              unavailableReasons: probeResult.unavailableReasons,
-            },
-          );
-        }
-
-        if (capabilityRequirement) {
-          const capabilityEvaluation = capabilityEvaluator.evaluate(
-            probeResult.capabilityMatrix,
-            capabilityRequirement,
-          );
-          if (!capabilityEvaluation.isSatisfied) {
-            throw new RuntimeError(
-              GovernorErrorCode.ADAPTER_ROUTE_CAPABILITY_UNSATISFIED,
-              `Restricted network local fallback surface "${localModelFallbackSurface}" does not satisfy route "${context.request.routeKey}" capability requirement.`,
-              {
-                routeKey: context.request.routeKey,
-                restrictedReason: context.reason,
-                fallbackSurface: localModelFallbackSurface,
-                unsupportedCapabilities: capabilityEvaluation.unsupportedCapabilities,
-                degradedCapabilities: capabilityEvaluation.degradedCapabilities,
-                requiredFallbackActions: capabilityEvaluation.requiredFallbackActions,
-              },
-            );
-          }
-        }
-
-        return localModelProtocol.invokeStage(context.request);
-      },
-    };
-  }
-
-  /**
-   * Resolves adapter surfaces that should be tracked by runtime diagnostics/routing.
-   * @param toolConfigBySurface Optional tool config lookup map.
-   * @returns Deduplicated surface list derived from routing/tool contracts.
-   */
-  private resolveTrackedAdapterSurfaces(
-    toolConfigBySurface?: Map<AdapterSurface, NonNullable<AdaptersConfig["tools"]>[number]>,
-  ): AdapterSurface[] {
-    const surfaceSet = new Set<AdapterSurface>();
-    if (toolConfigBySurface) {
-      for (const surface of toolConfigBySurface.keys()) {
-        surfaceSet.add(surface);
-      }
-    }
-    for (const roleBinding of Object.values(this.options.adaptersConfig.routing.roleBindings)) {
-      surfaceSet.add(roleBinding.primarySurface);
-      for (const fallbackSurface of roleBinding.fallbackSurfaces ?? []) {
-        surfaceSet.add(fallbackSurface);
-      }
-    }
-
-    if (surfaceSet.size > 0) {
-      return Array.from(surfaceSet.values());
-    }
-
-    return [AdapterSurface.CODEX, AdapterSurface.GITHUB_COPILOT, AdapterSurface.CLAUDE_CODE];
-  }
-
-  /**
    * Builds one human-friendly experience payload from progress/log/prompt primitives.
    * @param options Experience payload source blocks.
    * @returns Stable command experience object.
@@ -2855,76 +2410,6 @@ export class CliGovernanceRuntime {
       layeredLogs: options.layeredLogs,
       interactionPrompts: options.interactionPrompts ?? [],
     };
-  }
-
-  /**
-   * Maps command check status to normalized progress status.
-   * @param status Command check status.
-   * @returns Progress status consumed by output experience payload.
-   */
-  private resolveProgressStatusFromCheck(
-    status: CliGovernanceCheckStatus,
-  ): ExecutionProgressStatus {
-    if (status === CliGovernanceCheckStatus.PASS) {
-      return ExecutionProgressStatus.COMPLETED;
-    }
-    if (status === CliGovernanceCheckStatus.WARN) {
-      return ExecutionProgressStatus.WARNING;
-    }
-    return ExecutionProgressStatus.FAILED;
-  }
-
-  /**
-   * Converts adapter role evaluations into role/stage progress rows.
-   * @param options Stage context and adapter verification snapshot.
-   * @returns Role progress rows for command experience output.
-   */
-  private createAdapterRoleProgressRows(options: {
-    verification: CliAdapterVerificationResolution;
-    stage: ExecutionProgressStage;
-    diagnosticsPath: string;
-    executionId: string;
-  }): CliRoleStageProgress[] {
-    return options.verification.roleEvaluations.map((roleEvaluation) => ({
-      roleId: roleEvaluation.roleId,
-      stage: options.stage,
-      status: this.resolveProgressStatusFromCheck(roleEvaluation.status),
-      category:
-        roleEvaluation.status === CliGovernanceCheckStatus.FAIL
-          ? ExecutionInteractionCategory.RUNTIME_FAILURE
-          : ExecutionInteractionCategory.NONE,
-      summary: `Role ${roleEvaluation.roleId} routed via ${roleEvaluation.selectedSurface ?? "none"} (${roleEvaluation.selectedBy}).`,
-      detail: this.resolveRoleEvaluationDetail(roleEvaluation),
-      backlink: {
-        executionId: options.executionId,
-        stageId: options.stage,
-        artifactPath: options.diagnosticsPath,
-      },
-    }));
-  }
-
-  /**
-   * Builds adapter follow-up prompts from verification diagnostics.
-   * @param options Adapter verification context.
-   * @returns Ordered interaction prompts.
-   */
-  private createAdapterInteractionPrompts(options: {
-    verification: CliAdapterVerificationResolution;
-    stage: ExecutionProgressStage;
-  }): CliInteractionPrompt[] {
-    return options.verification.nextActions.map((nextAction) => ({
-      category:
-        options.verification.overallStatus === CliGovernanceCheckStatus.FAIL
-          ? ExecutionInteractionCategory.RUNTIME_FAILURE
-          : ExecutionInteractionCategory.ENVIRONMENT_PRECONDITION,
-      stage: options.stage,
-      title:
-        options.verification.overallStatus === CliGovernanceCheckStatus.FAIL
-          ? this.localizeText("Adapter route blocked", "Adapter 路由已阻断")
-          : this.localizeText("Adapter route attention", "Adapter 路由需要关注"),
-      action: nextAction,
-      blocking: options.verification.overallStatus === CliGovernanceCheckStatus.FAIL,
-    }));
   }
 
   /**
@@ -2944,23 +2429,6 @@ export class CliGovernanceRuntime {
     verification: CliAdapterVerificationResolution,
   ): Record<string, number> {
     return this.adapterVerificationRuntime.createFailureAttributionSummary(verification);
-  }
-
-  /**
-   * Converts optional config availability override into adapter-sdk availability enum.
-   * @param availability Optional config-level availability override.
-   * @returns Adapter availability status used by adapter constructor options.
-   */
-  private resolveAdapterAvailabilityStatus(
-    availability: AdapterAvailability | null,
-  ): AgentAvailabilityStatus {
-    if (availability === AdapterAvailability.DEGRADED) {
-      return AgentAvailabilityStatus.DEGRADED;
-    }
-    if (availability === AdapterAvailability.UNAVAILABLE) {
-      return AgentAvailabilityStatus.UNAVAILABLE;
-    }
-    return AgentAvailabilityStatus.AVAILABLE;
   }
 
   /**

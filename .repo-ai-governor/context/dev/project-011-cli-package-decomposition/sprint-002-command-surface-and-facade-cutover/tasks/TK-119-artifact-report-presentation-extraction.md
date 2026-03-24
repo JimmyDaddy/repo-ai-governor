@@ -22,7 +22,7 @@
 ## 4. Input References
 
 1. `.repo-ai-governor/draft/cli-governance-runtime-decomposition-plan.md`
-2. `.repo-ai-governor/context/dev/project-011-cli-package-decomposition/sprint-001-runtime-support-extraction-foundation/tasks/TK-118-sprint-001-exit-acceptance-and-sprint-002-input-constraints.md`
+2. `.repo-ai-governor/context/dev/project-011-cli-package-decomposition/sprint-001-runtime-support-extraction-foundation/tasks/DA-116-sprint-001-exit-acceptance-and-sprint-002-input-constraints.md`
 3. `apps/cli/src/cli-governance-runtime.ts`
 
 ## 5. 实施计划

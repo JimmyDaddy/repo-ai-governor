@@ -1,8 +1,8 @@
 # TK-117 route fallback 与 diagnostics artifact builder 抽离
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-24
-- Owner: TBD
+- Owner: AI-Agent
 - Priority: P0
 - Project: `project-011-cli-package-decomposition`
 - Sprint: `sprint-001-runtime-support-extraction-foundation`
@@ -45,9 +45,12 @@
 ## 7. 执行记录
 
 1. 2026-03-24：任务创建，状态初始化为 `planned`。
+2. 2026-03-24：进入 `in_progress`，开始抽离 route selection / restricted fallback / diagnostics artifact payload builder。
+3. 2026-03-24：已完成 `CliAdapterRoutingRuntime`、`CliAdapterDiagnosticsRuntime`、verification/runtime test 补齐、`DA-115` 产物与 resolved review，任务状态切换为 `completed`。
 
 ## 8. 产出
 
 1. `DA-115` `.repo-ai-governor/context/dev/project-011-cli-package-decomposition/sprint-001-runtime-support-extraction-foundation/tasks/DA-115-route-fallback-and-diagnostics-artifact-builder-extraction.md`
 2. `.repo-ai-governor/context/dev/project-011-cli-package-decomposition/sprint-001-runtime-support-extraction-foundation/tasks/checklist.md`
 3. `.repo-ai-governor/context/dev/project-011-cli-package-decomposition/sprint-001-runtime-support-extraction-foundation/tasks/tasks.csv`
+4. `.repo-ai-governor/context/dev/project-011-cli-package-decomposition/sprint-001-runtime-support-extraction-foundation/review/resolved_code_review_tk-117-route-fallback-and-diagnostics-artifact-builder-extraction.md`

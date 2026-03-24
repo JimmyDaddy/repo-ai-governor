@@ -2,7 +2,6 @@ import {
   AgentAvailabilityStatus,
   AgentCapabilitySupportLevel,
   type AgentProbeResult,
-  type AgentProtocolContract,
 } from "@repo-ai-governor/adapter-sdk";
 import type { AdaptersConfig } from "@repo-ai-governor/config";
 import { AdapterAvailability, AdapterSurface } from "@repo-ai-governor/shared";
@@ -15,6 +14,7 @@ import type {
   CliAdapterToolProbeSnapshot,
   CliAdapterVerificationResolution,
 } from "../types/index.js";
+import type { CliAdapterRoutingRuntime } from "./adapter-routing-runtime.js";
 import type { CliLocalModelProbeRuntime } from "./local-model-probe-runtime.js";
 
 /**
@@ -25,21 +25,7 @@ export class CliAdapterVerificationRuntime {
     private readonly adaptersConfig: AdaptersConfig,
     private readonly localizeText: (english: string, chinese: string) => string,
     private readonly formatExecFailureDetail: (error: unknown) => string,
-    private readonly createToolConfigBySurfaceMap: () => Map<
-      AdapterSurface,
-      NonNullable<AdaptersConfig["tools"]>[number]
-    >,
-    private readonly createProtocolBySurface: (
-      toolConfigBySurface: Map<AdapterSurface, NonNullable<AdaptersConfig["tools"]>[number]>,
-    ) => Record<string, AgentProtocolContract>,
-    private readonly resolveRoleBindingCandidateSurfaces: (
-      roleBinding: AdaptersConfig["routing"]["roleBindings"][string],
-      toolConfigBySurface: Map<AdapterSurface, NonNullable<AdaptersConfig["tools"]>[number]>,
-      includeLocalModelFallbackCandidate?: boolean,
-    ) => AdapterSurface[],
-    private readonly resolveTrackedAdapterSurfaces: (
-      toolConfigBySurface: Map<AdapterSurface, NonNullable<AdaptersConfig["tools"]>[number]>,
-    ) => AdapterSurface[],
+    private readonly adapterRoutingRuntime: CliAdapterRoutingRuntime,
     private readonly localModelProbeRuntime: CliLocalModelProbeRuntime,
   ) {}
 
@@ -48,7 +34,7 @@ export class CliAdapterVerificationRuntime {
    * @returns Adapter verification resolution.
    */
   public async resolveAdapterVerification(): Promise<CliAdapterVerificationResolution> {
-    const toolConfigBySurface = this.createToolConfigBySurfaceMap();
+    const toolConfigBySurface = this.adapterRoutingRuntime.createToolConfigBySurfaceMap();
     const toolSnapshots = await this.collectAdapterToolSnapshotsBySurface(toolConfigBySurface);
     const toolSnapshotBySurface = new Map<AdapterSurface, CliAdapterToolProbeSnapshot>(
       toolSnapshots.map((snapshot) => [snapshot.toolId, snapshot]),
@@ -78,7 +64,7 @@ export class CliAdapterVerificationRuntime {
         };
       }
 
-      const candidateSurfaces = this.resolveRoleBindingCandidateSurfaces(
+      const candidateSurfaces = this.adapterRoutingRuntime.resolveRoleBindingCandidateSurfaces(
         roleBinding,
         toolConfigBySurface,
       );
@@ -326,10 +312,11 @@ export class CliAdapterVerificationRuntime {
   private async collectAdapterToolSnapshotsBySurface(
     toolConfigBySurface: Map<AdapterSurface, NonNullable<AdaptersConfig["tools"]>[number]>,
   ): Promise<CliAdapterToolProbeSnapshot[]> {
-    const protocolBySurface = this.createProtocolBySurface(toolConfigBySurface);
+    const protocolBySurface =
+      this.adapterRoutingRuntime.createProtocolBySurface(toolConfigBySurface);
 
     const snapshots: CliAdapterToolProbeSnapshot[] = [];
-    const surfaces = this.resolveTrackedAdapterSurfaces(toolConfigBySurface);
+    const surfaces = this.adapterRoutingRuntime.resolveTrackedAdapterSurfaces(toolConfigBySurface);
     for (const surface of surfaces) {
       const toolConfig = toolConfigBySurface.get(surface);
       const enabled = toolConfig?.enabled ?? true;

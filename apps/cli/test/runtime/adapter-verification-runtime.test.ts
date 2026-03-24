@@ -15,6 +15,7 @@ import {
   standardizeError,
 } from "@repo-ai-governor/shared";
 import { CliGovernanceCheckStatus } from "../../src/constants/cli-governance-runtime.constant.js";
+import { CliAdapterRoutingRuntime } from "../../src/runtime/adapter-routing-runtime.js";
 import { CliAdapterVerificationRuntime } from "../../src/runtime/adapter-verification-runtime.js";
 import { CliLocalModelProbeRuntime } from "../../src/runtime/local-model-probe-runtime.js";
 
@@ -123,6 +124,25 @@ describe("Cli adapter verification runtime", () => {
       async () => undefined,
       (error) => standardizeError(error).message,
     );
+    const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
+      adaptersConfig,
+    ) as CliAdapterRoutingRuntime & {
+      createToolConfigBySurfaceMap: () => typeof toolConfigBySurface;
+      createProtocolBySurface: () => Record<string, AgentProtocolContract>;
+      resolveRoleBindingCandidateSurfaces: (
+        roleBinding: AdaptersConfig["routing"]["roleBindings"][string],
+      ) => AdapterSurface[];
+      resolveTrackedAdapterSurfaces: (
+        trackedToolConfigBySurface?: typeof toolConfigBySurface,
+      ) => AdapterSurface[];
+    };
+    adapterRoutingRuntime.createToolConfigBySurfaceMap = () => toolConfigBySurface;
+    adapterRoutingRuntime.createProtocolBySurface = () => protocolBySurface;
+    adapterRoutingRuntime.resolveRoleBindingCandidateSurfaces = (roleBinding) => [
+      roleBinding.primarySurface,
+    ];
+    adapterRoutingRuntime.resolveTrackedAdapterSurfaces = (trackedToolConfigBySurface) =>
+      Array.from((trackedToolConfigBySurface ?? new Map()).keys());
     const protocolBySurface: Record<string, AgentProtocolContract> = {
       [AdapterSurface.OLLAMA]: {
         probe: async () =>
@@ -156,10 +176,7 @@ describe("Cli adapter verification runtime", () => {
       adaptersConfig,
       (english) => english,
       (error) => standardizeError(error).message,
-      () => toolConfigBySurface,
-      () => protocolBySurface,
-      (roleBinding) => [roleBinding.primarySurface],
-      (trackedToolConfigBySurface) => Array.from(trackedToolConfigBySurface.keys()),
+      adapterRoutingRuntime,
       localProbeRuntime,
     );
 
