@@ -39,6 +39,35 @@ export enum CliInlineReviewChainSkipReason {
 }
 
 /**
+ * Defines stable lifecycle states for controlled delivery rehearsal handling inside task-driven `run`.
+ */
+export enum CliDeliveryRehearsalStatus {
+  DISABLED = "disabled",
+  DRY_RUN = "dry_run",
+  DEFERRED = "deferred",
+  FAILED = "failed",
+  APPLIED = "applied",
+}
+
+/**
+ * Defines stable reasons explaining why delivery rehearsal execution was skipped.
+ */
+export enum CliDeliveryRehearsalSkipReason {
+  DRY_RUN = "dry_run",
+  POLICY_CONFIRM = "policy_confirm",
+  POLICY_ESCALATE = "policy_escalate",
+  POLICY_BLOCK = "policy_block",
+}
+
+/**
+ * Defines the finite controlled delivery rehearsal action set.
+ */
+export enum CliDeliveryRehearsalAction {
+  COMMIT = "commit",
+  PR_DRAFT = "pr_draft",
+}
+
+/**
  * Defines stable runtime actions applied after a HITL decision receipt is consumed.
  */
 export enum CliHitlResumeAction {
@@ -81,6 +110,11 @@ export const CLI_TASK_DRIVEN_RUN_NODE_DEFINITIONS = {
     stageId: "stage-task-review-verify",
     routeKey: "route.task.review-verify",
   },
+  DELIVERY_REHEARSAL: {
+    nodeId: "node-delivery-rehearsal",
+    stageId: "stage-delivery-rehearsal",
+    routeKey: "route.task.delivery-rehearsal",
+  },
   REPORT: {
     nodeId: "node-task-report",
     stageId: "stage-task-report",
@@ -95,4 +129,6 @@ export const CLI_TASK_DRIVEN_RUN_KEYWORDS = {
   TESTER: ["test", "testing", "smoke", "regression", "测试", "回归"],
   VERIFIER: ["verify", "verification", "diagnostic", "validate", "验收", "验证", "校验", "诊断"],
   REVIEWER: ["review", "reviewer", "评审", "复核"],
+  DELIVERY: ["delivery", "rehearsal", "commit", "交付", "演练", "提交", "发布"],
+  PR_DRAFT: ["pr draft", "pull request", "pull-request", "merge request", "草稿pr", "草稿 pr"],
 } as const;

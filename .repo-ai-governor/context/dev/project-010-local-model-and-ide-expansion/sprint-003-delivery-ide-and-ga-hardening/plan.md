@@ -1,6 +1,6 @@
 # sprint-003-delivery-ide-and-ga-hardening 计划
 
-- Status: planned
+- Status: in_progress
 - Date: 2026-03-24
 - Project: `project-010-local-model-and-ide-expansion`
 
@@ -10,8 +10,8 @@
 
 ## 2. In-Scope Tasks
 
-1. TK-107 受控 delivery rehearsal 与 audit/replay 集成（planned）
-2. TK-108 黑盒 E2E、CI/release gate 与 GA 指标收口（planned）
+1. TK-107 受控 delivery rehearsal 与 audit/replay 集成（completed）
+2. TK-108 黑盒 E2E、CI/release gate 与 GA 指标收口（in_progress）
 3. TK-109 多 IDE surface registry 与 wrapper 契约强化（planned）
 4. TK-110 VS Code/JetBrains 官方模板与 smoke 门禁（planned）
 5. TK-111 Cursor/Claude Code 接入模板与文档一致性（planned）

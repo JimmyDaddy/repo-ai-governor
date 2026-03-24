@@ -1,9 +1,12 @@
 # checklist
 
-- [ ] TK-107 受控 delivery rehearsal 与 audit/replay 集成
+- [x] TK-107 受控 delivery rehearsal 与 audit/replay 集成
   - 2026-03-24：任务创建，状态初始化为 `planned`。
+  - 2026-03-24：任务启动，已完成首轮执行面勘察；当前仓库尚无现成的 delivery rehearsal runtime，需要基于现有 policy gate、audit recorder 与 replay/report builder 链路新增受控 delivery 实现。
+  - 2026-03-24：已完成受控 `delivery_rehearsal` stage、artifact linkage、report/replay pointer 回链与 dry-run/allow 回归，并生成 `DA-107` 与 resolved review；当前任务状态更新为 `completed`。
 - [ ] TK-108 黑盒 E2E、CI/release gate 与 GA 指标收口
   - 2026-03-24：任务创建，状态初始化为 `planned`。
+  - 2026-03-24：任务启动，已将 `DA-107` 固化为 blackbox/release/GA 的唯一 delivery 输入基线。
 - [ ] TK-109 多 IDE surface registry 与 wrapper 契约强化
   - 2026-03-24：任务创建，状态初始化为 `planned`。
 - [ ] TK-110 VS Code/JetBrains 官方模板与 smoke 门禁

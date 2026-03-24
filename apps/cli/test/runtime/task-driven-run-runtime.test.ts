@@ -336,6 +336,60 @@ describe("CliTaskDrivenRunRuntime", () => {
     }
   });
 
+  it("adds controlled delivery rehearsal stage for delivery-oriented task cards", async () => {
+    const workspaceRoot = await mkdtemp(resolve(tmpdir(), "repo-ai-governor-tk107-"));
+    const taskCardPath = resolve(
+      workspaceRoot,
+      "context/dev/project-010/sprint-003/tasks/TK-107-controlled-delivery-rehearsal-and-audit-replay-integration.md",
+    );
+    await mkdir(resolve(taskCardPath, ".."), { recursive: true });
+    await writeFile(
+      taskCardPath,
+      `# TK-107 受控 delivery rehearsal 与 audit/replay 集成
+
+- Status: in_progress
+- Date: 2026-03-24
+- Owner: AI-Agent
+- Priority: P0
+- Project: \`project-010-local-model-and-ide-expansion\`
+- Sprint: \`sprint-003-delivery-ide-and-ga-hardening\`
+
+## 1. 任务目标
+
+将 \`commit\` 或 \`PR draft\` rehearsal 纳入策略门禁、审计回放与人工接管边界。
+
+## 2. Depends On
+
+1. \`TK-102\`
+
+## 4. Input References
+
+1. \`.repo-ai-governor/context/dev/project-010/sprint-002/tasks/DA-106-sprint-002-exit-acceptance-and-sprint-003-input-constraints.md\`
+`,
+      "utf8",
+    );
+
+    try {
+      const runtime = new CliTaskDrivenRunRuntime(workspaceRoot);
+      const assembly = await runtime.buildRunAssembly({
+        executionId: "cli-run-004",
+        taskId: "TK-107",
+        adaptersConfig: createAdaptersConfigFixture(),
+      });
+
+      expect(assembly.assemblyMode).toBe(CliTaskDrivenRunAssemblyMode.TASK_DRIVEN);
+      expect(
+        assembly.processDefinition.nodes.map((node: { stageId?: string }) => node.stageId),
+      ).toContain("stage-delivery-rehearsal");
+      expect(assembly.stageInputs["node-delivery-rehearsal"]?.deliveryRehearsalAction).toBe(
+        "pr_draft",
+      );
+      expect(assembly.stageInputs["node-delivery-rehearsal"]?.managedDeliveryRehearsal).toBe(true);
+    } finally {
+      await rm(workspaceRoot, { recursive: true, force: true });
+    }
+  });
+
   it("injects selective memory snapshot metadata when task context and active stream are available", async () => {
     const workspaceRoot = await mkdtemp(resolve(tmpdir(), "repo-ai-governor-tk099-memory-"));
     const taskCardPath = resolve(

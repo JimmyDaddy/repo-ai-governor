@@ -3,7 +3,10 @@ import { ProcessNodeType } from "@repo-ai-governor/core-process";
 import { RuntimeExecutionStatus, RuntimeStageStatus } from "@repo-ai-governor/core-runtime";
 import type { RuntimeExecutionResult } from "@repo-ai-governor/core-runtime";
 import { ExecutionProgressStage } from "@repo-ai-governor/shared";
-import { CliInlineReviewChainStatus } from "../../src/constants/cli-task-driven-run.constant.js";
+import {
+  CliDeliveryRehearsalStatus,
+  CliInlineReviewChainStatus,
+} from "../../src/constants/cli-task-driven-run.constant.js";
 import { CliCommandExperienceBuilder } from "../../src/runtime/presentation/command-experience-builder.js";
 
 function createRuntimeResultFixture(): RuntimeExecutionResult {
@@ -63,6 +66,14 @@ describe("Cli command experience builder", () => {
         reviewStageStatus: null,
         reviewVerifyStageStatus: null,
       },
+      deliveryRehearsal: {
+        enabled: false,
+        status: CliDeliveryRehearsalStatus.DISABLED,
+        skipReason: null,
+        rehearsalAction: null,
+        rehearsalPath: null,
+        stageStatus: null,
+      },
     });
 
     expect(
@@ -98,5 +109,69 @@ describe("Cli command experience builder", () => {
 
     expect(experience.roleProgress[0]?.backlink?.artifactPath).toBe("/tmp/replay-diagnostics.json");
     expect(experience.interactionPrompts.every((prompt) => prompt.blocking === false)).toBe(true);
+  });
+
+  it("surfaces controlled delivery rehearsal progress and layered logs", () => {
+    const builder = new CliCommandExperienceBuilder();
+    const experience = builder.createRunCommandExperience({
+      executionId: "exec-456",
+      runtimeResult: {
+        ...createRuntimeResultFixture(),
+        stageResults: [
+          ...createRuntimeResultFixture().stageResults,
+          {
+            nodeId: "node-delivery-rehearsal",
+            stageId: "stage-delivery-rehearsal",
+            nodeType: ProcessNodeType.SEQUENTIAL,
+            status: RuntimeStageStatus.SUCCEEDED,
+            attempt: 1,
+            startedAt: "2026-03-24T12:00:05Z",
+            endedAt: "2026-03-24T12:00:06Z",
+            durationMs: 1000,
+            output: {
+              deliveryRehearsalStatus: "applied",
+              deliveryRehearsalAction: "commit",
+              deliveryRehearsalPath: "/tmp/exec-456.commit.json",
+            },
+          },
+        ],
+      },
+      policyResult: {
+        policyOutcome: ChangeRiskRequiredAction.ALLOW,
+        matchedRuleIds: [],
+      },
+      reportPath: "/tmp/exec-456.report.json",
+      replayPath: "/tmp/exec-456.replay.json",
+      diagnosticsTracePath: null,
+      reviewChain: {
+        enabled: false,
+        status: CliInlineReviewChainStatus.DISABLED,
+        skipReason: null,
+        reviewRequestPath: null,
+        reviewVerifyPath: null,
+        ledgerBackfillPath: null,
+        reviewStageStatus: null,
+        reviewVerifyStageStatus: null,
+      },
+      deliveryRehearsal: {
+        enabled: true,
+        status: CliDeliveryRehearsalStatus.APPLIED,
+        skipReason: null,
+        rehearsalAction: "commit",
+        rehearsalPath: "/tmp/exec-456.commit.json",
+        stageStatus: RuntimeStageStatus.SUCCEEDED,
+      },
+    });
+
+    expect(
+      experience.roleProgress.some(
+        (row) =>
+          row.stage === ExecutionProgressStage.DELIVERY_REHEARSAL && row.status === "completed",
+      ),
+    ).toBe(true);
+    expect(experience.layeredLogs.summary).toContain("delivery_rehearsal=applied");
+    expect(experience.layeredLogs.detailed).toContain(
+      "delivery_rehearsal_path=/tmp/exec-456.commit.json",
+    );
   });
 });

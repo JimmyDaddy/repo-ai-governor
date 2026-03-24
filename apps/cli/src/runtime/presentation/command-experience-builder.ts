@@ -10,6 +10,8 @@ import {
 import { CLI_DIAGNOSTIC_ROOT_CAUSE } from "../../constants/cli-governance-runtime.constant.js";
 import {
   CLI_TASK_DRIVEN_RUN_NODE_DEFINITIONS,
+  CliDeliveryRehearsalSkipReason,
+  CliDeliveryRehearsalStatus,
   CliInlineReviewChainSkipReason,
   CliInlineReviewChainStatus,
 } from "../../constants/cli-task-driven-run.constant.js";
@@ -148,6 +150,14 @@ export class CliCommandExperienceBuilder {
       ledgerBackfillPath: string | null;
       reviewStageStatus: RuntimeStageStatus | null;
       reviewVerifyStageStatus: RuntimeStageStatus | null;
+    };
+    deliveryRehearsal: {
+      enabled: boolean;
+      status: CliDeliveryRehearsalStatus;
+      skipReason: CliDeliveryRehearsalSkipReason | null;
+      rehearsalAction: string | null;
+      rehearsalPath: string | null;
+      stageStatus: RuntimeStageStatus | null;
     };
   }): CliCommandExperiencePayload {
     const rootCause = this.resolveRunDiagnosticRootCause({
@@ -289,6 +299,59 @@ export class CliCommandExperienceBuilder {
           return roleProgress;
         }
 
+        if (
+          stageResult.stageId === CLI_TASK_DRIVEN_RUN_NODE_DEFINITIONS.DELIVERY_REHEARSAL.stageId
+        ) {
+          const deliveryRehearsalStatus = this.readStageOutputString(
+            stageResult.output,
+            "deliveryRehearsalStatus",
+          );
+          const deliveryRehearsalPath = this.readStageOutputString(
+            stageResult.output,
+            "deliveryRehearsalPath",
+          );
+          const deliveryRehearsalAction = this.readStageOutputString(
+            stageResult.output,
+            "deliveryRehearsalAction",
+          );
+          const deliveryRehearsalSkipReason = this.readStageOutputString(
+            stageResult.output,
+            "deliveryRehearsalSkipReason",
+          );
+
+          return [
+            {
+              roleId: "delivery-ops",
+              stage: ExecutionProgressStage.DELIVERY_REHEARSAL,
+              status: this.resolveDeliveryRehearsalProgressStatus(
+                deliveryRehearsalStatus,
+                progressStatus,
+              ),
+              category: this.resolveDeliveryRehearsalInteractionCategory(
+                deliveryRehearsalSkipReason,
+              ),
+              summary:
+                deliveryRehearsalStatus === CliDeliveryRehearsalStatus.DEFERRED
+                  ? "Controlled delivery rehearsal deferred until policy outcome becomes allow."
+                  : deliveryRehearsalStatus === CliDeliveryRehearsalStatus.DRY_RUN
+                    ? "Controlled delivery rehearsal skipped in dry-run mode."
+                    : progressStatus === ExecutionProgressStatus.COMPLETED
+                      ? "Controlled delivery rehearsal artifact persisted."
+                      : "Controlled delivery rehearsal failed.",
+              detail:
+                deliveryRehearsalPath ??
+                deliveryRehearsalSkipReason ??
+                deliveryRehearsalAction ??
+                `duration_ms=${stageResult.durationMs}`,
+              backlink: {
+                executionId: options.executionId,
+                stageId: stageResult.stageId,
+                artifactPath: deliveryRehearsalPath ?? undefined,
+              },
+            },
+          ];
+        }
+
         return [
           {
             roleId: stageResult.stageId,
@@ -398,6 +461,8 @@ export class CliCommandExperienceBuilder {
           `root_cause=${rootCause}`,
           `inline_review_chain=${options.reviewChain.status}`,
           `inline_review_skip_reason=${options.reviewChain.skipReason ?? "none"}`,
+          `delivery_rehearsal=${options.deliveryRehearsal.status}`,
+          `delivery_rehearsal_action=${options.deliveryRehearsal.rehearsalAction ?? "none"}`,
         ],
         detailed: [
           `report_path=${options.reportPath}`,
@@ -406,6 +471,7 @@ export class CliCommandExperienceBuilder {
           `inline_review_request_path=${options.reviewChain.reviewRequestPath ?? "none"}`,
           `inline_review_verify_path=${options.reviewChain.reviewVerifyPath ?? "none"}`,
           `inline_review_ledger_backfill_path=${options.reviewChain.ledgerBackfillPath ?? "none"}`,
+          `delivery_rehearsal_path=${options.deliveryRehearsal.rehearsalPath ?? "none"}`,
         ],
       },
     });
@@ -460,6 +526,45 @@ export class CliCommandExperienceBuilder {
       return ExecutionInteractionCategory.HUMAN_CONFIRMATION;
     }
     if (reviewChainSkipReason === CliInlineReviewChainSkipReason.POLICY_BLOCK) {
+      return ExecutionInteractionCategory.POLICY_WAITING;
+    }
+    return ExecutionInteractionCategory.NONE;
+  }
+
+  /**
+   * Resolves progress status for delivery rehearsal stages when execution is skipped or deferred.
+   * @param deliveryRehearsalStatus Delivery rehearsal status emitted by runtime stage output.
+   * @param fallbackStatus Runtime-derived fallback status.
+   * @returns Progress status suitable for CLI experience rendering.
+   */
+  private resolveDeliveryRehearsalProgressStatus(
+    deliveryRehearsalStatus: string | null,
+    fallbackStatus: ExecutionProgressStatus,
+  ): ExecutionProgressStatus {
+    if (deliveryRehearsalStatus === CliDeliveryRehearsalStatus.DRY_RUN) {
+      return ExecutionProgressStatus.WARNING;
+    }
+    if (deliveryRehearsalStatus === CliDeliveryRehearsalStatus.DEFERRED) {
+      return ExecutionProgressStatus.WAITING;
+    }
+    return fallbackStatus;
+  }
+
+  /**
+   * Resolves interaction category for delivery rehearsal skip reasons.
+   * @param deliveryRehearsalSkipReason Stable skip reason emitted by runtime stage output.
+   * @returns Interaction category for CLI prompts/progress.
+   */
+  private resolveDeliveryRehearsalInteractionCategory(
+    deliveryRehearsalSkipReason: string | null,
+  ): ExecutionInteractionCategory {
+    if (
+      deliveryRehearsalSkipReason === CliDeliveryRehearsalSkipReason.POLICY_CONFIRM ||
+      deliveryRehearsalSkipReason === CliDeliveryRehearsalSkipReason.POLICY_ESCALATE
+    ) {
+      return ExecutionInteractionCategory.HUMAN_CONFIRMATION;
+    }
+    if (deliveryRehearsalSkipReason === CliDeliveryRehearsalSkipReason.POLICY_BLOCK) {
       return ExecutionInteractionCategory.POLICY_WAITING;
     }
     return ExecutionInteractionCategory.NONE;

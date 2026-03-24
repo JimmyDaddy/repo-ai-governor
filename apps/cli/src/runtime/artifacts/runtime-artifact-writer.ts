@@ -6,6 +6,7 @@ import type { ChangeRiskEvaluationResult } from "@repo-ai-governor/core-change-r
 import type { PolicyGateEvaluationResult } from "@repo-ai-governor/core-policy";
 import type { RuntimeExecutionResult } from "@repo-ai-governor/core-runtime";
 import type { ExecutionReport, ReplayExplainResult } from "@repo-ai-governor/reporting";
+import type { CliDeliveryRehearsalAction } from "../../constants/cli-task-driven-run.constant.js";
 import type { CliReplayExplainResolution } from "../presentation/replay-explain-builder.js";
 
 /**
@@ -90,6 +91,27 @@ export class CliRuntimeArtifactWriter {
       reportPath,
       replayPath,
     };
+  }
+
+  /**
+   * Persists one controlled delivery rehearsal artifact for audit/replay consumption.
+   * @param options Delivery rehearsal payload context.
+   * @returns Written artifact path.
+   */
+  public async writeDeliveryRehearsalArtifact(options: {
+    executionId: string;
+    rehearsalAction: CliDeliveryRehearsalAction;
+    payload: Record<string, unknown>;
+  }): Promise<string> {
+    const rehearsalPath = resolve(
+      this.workspace.workspaceRoot,
+      "context",
+      "delivery",
+      "rehearsal",
+      `${options.executionId}.${options.rehearsalAction}.json`,
+    );
+    await this.writeJsonArtifact(rehearsalPath, options.payload);
+    return rehearsalPath;
   }
 
   /**

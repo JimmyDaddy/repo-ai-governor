@@ -11,6 +11,7 @@ import { DefaultRoleProfileId } from "@repo-ai-governor/shared";
 import {
   CLI_TASK_DRIVEN_RUN_KEYWORDS,
   CLI_TASK_DRIVEN_RUN_NODE_DEFINITIONS,
+  CliDeliveryRehearsalAction,
   CliTaskDrivenRunAssemblyMode,
   CliTaskDrivenRunAssemblyReason,
 } from "../constants/cli-task-driven-run.constant.js";
@@ -396,6 +397,7 @@ export class CliTaskDrivenRunRuntime {
       taskContext.inputReferences.length > 0 ||
       taskContext.dependsOnTaskIds.length > 0 ||
       includeVerificationStage;
+    const deliveryRehearsalAction = this.resolveDeliveryRehearsalAction(taskContext);
     const memorySelection = this.resolveMemorySelection(executionId, taskContext, streamMetadata);
     const memorySnapshot =
       memorySelection && this.memoryManager
@@ -531,6 +533,28 @@ export class CliTaskDrivenRunRuntime {
         ...commonTaskContextPayload,
       };
       previousNodeId = reviewVerifyNodeId;
+    }
+
+    if (deliveryRehearsalAction) {
+      const deliveryRehearsalNode = this.createNode(
+        CLI_TASK_DRIVEN_RUN_NODE_DEFINITIONS.DELIVERY_REHEARSAL,
+        reportRoleProfileId,
+      );
+      nodes.push(deliveryRehearsalNode);
+      const deliveryRehearsalNodeId =
+        deliveryRehearsalNode.nodeId ??
+        CLI_TASK_DRIVEN_RUN_NODE_DEFINITIONS.DELIVERY_REHEARSAL.nodeId;
+      edges.push({
+        fromNodeId: previousNodeId,
+        toNodeId: deliveryRehearsalNodeId,
+      });
+      stageInputs[deliveryRehearsalNodeId] = {
+        phase: "delivery_rehearsal",
+        deliveryRehearsalAction,
+        managedDeliveryRehearsal: true,
+        ...commonTaskContextPayload,
+      };
+      previousNodeId = deliveryRehearsalNodeId;
     }
 
     const reportNode = this.createNode(
@@ -672,6 +696,28 @@ export class CliTaskDrivenRunRuntime {
     }
 
     return null;
+  }
+
+  /**
+   * Resolves optional delivery rehearsal action from task title/goal keywords.
+   * @param taskContext Parsed task-card context.
+   * @returns Delivery rehearsal action or null when task intent is unrelated.
+   */
+  private resolveDeliveryRehearsalAction(
+    taskContext: CliTaskCardContext,
+  ): CliDeliveryRehearsalAction | null {
+    const normalizedText = `${taskContext.title} ${taskContext.goal}`.toLowerCase();
+    const requiresDeliveryRehearsal =
+      this.matchesAnyKeyword(normalizedText, CLI_TASK_DRIVEN_RUN_KEYWORDS.DELIVERY) ||
+      this.matchesAnyKeyword(normalizedText, CLI_TASK_DRIVEN_RUN_KEYWORDS.PR_DRAFT);
+
+    if (!requiresDeliveryRehearsal) {
+      return null;
+    }
+
+    return this.matchesAnyKeyword(normalizedText, CLI_TASK_DRIVEN_RUN_KEYWORDS.PR_DRAFT)
+      ? CliDeliveryRehearsalAction.PR_DRAFT
+      : CliDeliveryRehearsalAction.COMMIT;
   }
 
   /**

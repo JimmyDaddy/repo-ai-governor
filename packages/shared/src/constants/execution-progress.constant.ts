@@ -11,6 +11,7 @@ export enum ExecutionProgressStage {
   VERIFY = "verify",
   RUN_COMPILE = "run_compile",
   RUN_RUNTIME = "run_runtime",
+  DELIVERY_REHEARSAL = "delivery_rehearsal",
   REPORT = "report",
   REPLAY = "replay",
   REVIEW = "review",

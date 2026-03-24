@@ -73,6 +73,9 @@ import {
 } from "./constants/cli-governance-runtime.constant.js";
 import {
   CLI_TASK_DRIVEN_RUN_NODE_DEFINITIONS,
+  CliDeliveryRehearsalAction,
+  CliDeliveryRehearsalSkipReason,
+  CliDeliveryRehearsalStatus,
   CliHitlResumeAction,
   CliInlineReviewChainSkipReason,
   CliInlineReviewChainStatus,
@@ -82,6 +85,7 @@ import { CliAdapterRoutingRuntime } from "./runtime/adapter-routing-runtime.js";
 import { CliAdapterVerificationRuntime } from "./runtime/adapter-verification-runtime.js";
 import { CliReviewQueueRuntime } from "./runtime/artifacts/review-queue-runtime.js";
 import { CliRuntimeArtifactWriter } from "./runtime/artifacts/runtime-artifact-writer.js";
+import { CliDeliveryRehearsalRuntime } from "./runtime/delivery-rehearsal-runtime.js";
 import { CliHitlRuntime } from "./runtime/hitl-runtime.js";
 import { CliLocalModelProbeRuntime } from "./runtime/local-model-probe-runtime.js";
 import { CliCommandExperienceBuilder } from "./runtime/presentation/command-experience-builder.js";
@@ -126,6 +130,7 @@ export class CliGovernanceRuntime {
   private readonly adapterDiagnosticsRuntime: CliAdapterDiagnosticsRuntime;
   private readonly artifactWriter: CliRuntimeArtifactWriter;
   private readonly reviewQueueRuntime: CliReviewQueueRuntime;
+  private readonly deliveryRehearsalRuntime: CliDeliveryRehearsalRuntime;
   private readonly hitlRuntime: CliHitlRuntime;
   private readonly commandExperienceBuilder: CliCommandExperienceBuilder;
   private readonly replayExplainBuilder: CliReplayExplainBuilder;
@@ -160,6 +165,11 @@ export class CliGovernanceRuntime {
       this.options.workspace.workspaceRoot,
       (filePath) => this.artifactWriter.safeReadJson(filePath),
     );
+    this.deliveryRehearsalRuntime = new CliDeliveryRehearsalRuntime({
+      workspace: this.options.workspace,
+      artifactWriter: this.artifactWriter,
+      toRfc3339SecondsTimestamp: (value: Date) => this.toRfc3339SecondsTimestamp(value),
+    });
     this.hitlRuntime = new CliHitlRuntime({
       workspace: this.options.workspace,
       artifactWriter: this.artifactWriter,
@@ -324,13 +334,24 @@ export class CliGovernanceRuntime {
               effectivePolicyOutcome,
               riskLevel: riskEvaluation.riskLevel,
             })
-          : {
-              ...(await this.dispatchRunStageWithAdapterRoute(
-                routeRunner,
+          : this.isDeliveryRehearsalStage(stageContext.stageId)
+            ? this.dispatchDeliveryRehearsalStage(
+                executionId,
                 stageContext,
                 runtimeDebugOptions,
-              )),
-            },
+                {
+                  effectivePolicyOutcome,
+                  riskLevel: riskEvaluation.riskLevel,
+                },
+                streamMetadata,
+              )
+            : {
+                ...(await this.dispatchRunStageWithAdapterRoute(
+                  routeRunner,
+                  stageContext,
+                  runtimeDebugOptions,
+                )),
+              },
       {
         stageInputs: runAssembly.stageInputs as RuntimeStageInputMap,
       },
@@ -342,6 +363,8 @@ export class CliGovernanceRuntime {
     for (const stageResult of runtimeResult.stageResults) {
       const node = nodeById.get(stageResult.nodeId);
       const recordedAt = stageResult.endedAt;
+      const stageOutput = this.resolveStageOutputRecord(stageResult.output);
+      const stageArtifactId = this.readStageOutputString(stageOutput, "artifactId");
       await auditRecorder.recordEvent({
         recordId: `${executionId}-${stageResult.nodeId}-${stageResult.attempt}`,
         recordedAt,
@@ -383,6 +406,7 @@ export class CliGovernanceRuntime {
           ...(stageResult.status === RuntimeStageStatus.TIMEOUT
             ? { timeoutScope: RuntimeTimeoutScope.STAGE }
             : {}),
+          ...(stageArtifactId ? { artifactId: stageArtifactId } : {}),
           ...(stageResult.errorMessage ? { error: stageResult.errorMessage } : {}),
         },
       });
@@ -459,6 +483,7 @@ export class CliGovernanceRuntime {
       replayExplainResult,
     });
     const inlineReviewChainSummary = this.resolveInlineReviewChainSummary(runtimeResult);
+    const deliveryRehearsalSummary = this.resolveDeliveryRehearsalSummary(runtimeResult);
 
     const artifacts: CliCommandResultArtifact[] = [
       {
@@ -490,6 +515,12 @@ export class CliGovernanceRuntime {
       artifacts.push({
         id: "inline_review_ledger_backfill",
         path: inlineReviewChainSummary.ledgerBackfillPath,
+      });
+    }
+    if (deliveryRehearsalSummary.rehearsalPath) {
+      artifacts.push({
+        id: "delivery_rehearsal",
+        path: deliveryRehearsalSummary.rehearsalPath,
       });
     }
     if (hitlResolution.notificationArtifactPath) {
@@ -554,6 +585,18 @@ export class CliGovernanceRuntime {
         detail: `status=${inlineReviewChainSummary.status} skip_reason=${inlineReviewChainSummary.skipReason ?? "none"} request=${inlineReviewChainSummary.reviewRequestPath ? "present" : "missing"} verify=${inlineReviewChainSummary.reviewVerifyPath ? "present" : "missing"} ledger_backfill=${inlineReviewChainSummary.ledgerBackfillPath ? "present" : "missing"}`,
       });
     }
+    if (deliveryRehearsalSummary.enabled) {
+      checks.push({
+        id: "delivery_rehearsal",
+        status:
+          deliveryRehearsalSummary.status === CliDeliveryRehearsalStatus.APPLIED
+            ? CliGovernanceCheckStatus.PASS
+            : deliveryRehearsalSummary.status === CliDeliveryRehearsalStatus.FAILED
+              ? CliGovernanceCheckStatus.FAIL
+              : CliGovernanceCheckStatus.WARN,
+        detail: `status=${deliveryRehearsalSummary.status} action=${deliveryRehearsalSummary.rehearsalAction ?? "none"} skip_reason=${deliveryRehearsalSummary.skipReason ?? "none"} artifact=${deliveryRehearsalSummary.rehearsalPath ? "present" : "missing"}`,
+      });
+    }
     if (runtimeDebugOptions.dryRun || runtimeDebugOptions.trace) {
       checks.push({
         id: "debug_mode",
@@ -607,6 +650,7 @@ export class CliGovernanceRuntime {
       replayPath,
       diagnosticsTracePath,
       reviewChain: inlineReviewChainSummary,
+      deliveryRehearsal: deliveryRehearsalSummary,
     });
     this.throwForNonAllowPolicyOutcome({
       executionId,
@@ -652,6 +696,11 @@ export class CliGovernanceRuntime {
           inline_review_request_path: inlineReviewChainSummary.reviewRequestPath,
           inline_review_verify_path: inlineReviewChainSummary.reviewVerifyPath,
           inline_review_ledger_backfill_path: inlineReviewChainSummary.ledgerBackfillPath,
+          delivery_rehearsal_enabled: deliveryRehearsalSummary.enabled,
+          delivery_rehearsal_status: deliveryRehearsalSummary.status,
+          delivery_rehearsal_skip_reason: deliveryRehearsalSummary.skipReason,
+          delivery_rehearsal_action: deliveryRehearsalSummary.rehearsalAction,
+          delivery_rehearsal_path: deliveryRehearsalSummary.rehearsalPath,
           hitl_required: hitlResolution.required,
           hitl_notification_path: hitlResolution.notificationArtifactPath,
           hitl_notification_status: hitlResolution.notificationResult?.dispatchStatus ?? null,
@@ -1149,6 +1198,15 @@ export class CliGovernanceRuntime {
   }
 
   /**
+   * Checks whether one task-driven stage is handled by the internal controlled delivery rehearsal runtime.
+   * @param stageId Runtime stage id.
+   * @returns True when the stage should bypass adapter dispatch.
+   */
+  private isDeliveryRehearsalStage(stageId: string): boolean {
+    return stageId === CLI_TASK_DRIVEN_RUN_NODE_DEFINITIONS.DELIVERY_REHEARSAL.stageId;
+  }
+
+  /**
    * Executes managed review subchain stages inline inside `run`.
    * @param stageContext Runtime stage context.
    * @param runtimeDebugOptions Normalized runtime debug options.
@@ -1222,6 +1280,56 @@ export class CliGovernanceRuntime {
       reviewVerifyPath: verifyArtifactPath,
       ledgerBackfillPath,
     };
+  }
+
+  /**
+   * Executes controlled delivery rehearsal inline so delivery planning stays on the same audit/replay chain.
+   * @param executionId Current run execution id.
+   * @param stageContext Runtime stage context.
+   * @param runtimeDebugOptions Normalized runtime debug options.
+   * @param resolvedPolicyContext Effective policy outcome for current run.
+   * @param streamMetadata Active stream metadata used for artifact tagging.
+   * @returns Structured stage output for audit/report consumption.
+   */
+  private async dispatchDeliveryRehearsalStage(
+    executionId: string,
+    stageContext: RuntimeStageContext,
+    runtimeDebugOptions: CliNormalizedRuntimeDebugOptions,
+    resolvedPolicyContext: {
+      effectivePolicyOutcome: ChangeRiskRequiredAction;
+      riskLevel: string | null;
+    },
+    streamMetadata?: CliExecutionStreamMetadata,
+  ): Promise<Record<string, unknown>> {
+    const rehearsalActionValue =
+      typeof stageContext.input.deliveryRehearsalAction === "string"
+        ? stageContext.input.deliveryRehearsalAction
+        : CliDeliveryRehearsalAction.COMMIT;
+    const rehearsalAction =
+      rehearsalActionValue === CliDeliveryRehearsalAction.PR_DRAFT
+        ? CliDeliveryRehearsalAction.PR_DRAFT
+        : CliDeliveryRehearsalAction.COMMIT;
+    const taskId =
+      typeof stageContext.input.taskId === "string" && stageContext.input.taskId.trim().length > 0
+        ? stageContext.input.taskId.trim()
+        : runtimeDebugOptions.taskId;
+    const taskTitle =
+      typeof stageContext.input.taskTitle === "string" && stageContext.input.taskTitle.length > 0
+        ? stageContext.input.taskTitle
+        : null;
+
+    return this.deliveryRehearsalRuntime.executeDeliveryRehearsal({
+      executionId,
+      stageId: stageContext.stageId,
+      taskId,
+      taskTitle,
+      rehearsalAction,
+      runtimeDebugOptions,
+      policyOutcome: resolvedPolicyContext.effectivePolicyOutcome,
+      riskLevel: resolvedPolicyContext.riskLevel,
+      projectId: streamMetadata?.projectId,
+      sprintId: streamMetadata?.sprintId,
+    });
   }
 
   /**
@@ -1367,6 +1475,87 @@ export class CliGovernanceRuntime {
       ledgerBackfillPath,
       reviewStageStatus,
       reviewVerifyStageStatus,
+    };
+  }
+
+  /**
+   * Resolves one normalized delivery rehearsal summary from runtime stage outputs.
+   * @param runtimeResult Runtime execution result for current `run`.
+   * @returns Delivery rehearsal status and artifact paths for CLI output shaping.
+   */
+  private resolveDeliveryRehearsalSummary(runtimeResult: RuntimeExecutionResult): {
+    enabled: boolean;
+    status: CliDeliveryRehearsalStatus;
+    skipReason: CliDeliveryRehearsalSkipReason | null;
+    rehearsalAction: CliDeliveryRehearsalAction | null;
+    rehearsalPath: string | null;
+    stageStatus: RuntimeStageStatus | null;
+  } {
+    const deliveryRehearsalStageResult =
+      runtimeResult.stageResults.find(
+        (stageResult) =>
+          stageResult.stageId === CLI_TASK_DRIVEN_RUN_NODE_DEFINITIONS.DELIVERY_REHEARSAL.stageId,
+      ) ?? null;
+    const enabled = deliveryRehearsalStageResult !== null;
+    const deliveryOutput = this.resolveStageOutputRecord(deliveryRehearsalStageResult?.output);
+    const rehearsalPath = this.readStageOutputString(deliveryOutput, "deliveryRehearsalPath");
+    const rehearsalActionValue = this.readStageOutputString(
+      deliveryOutput,
+      "deliveryRehearsalAction",
+    );
+    const rehearsalAction =
+      rehearsalActionValue === CliDeliveryRehearsalAction.PR_DRAFT
+        ? CliDeliveryRehearsalAction.PR_DRAFT
+        : rehearsalActionValue === CliDeliveryRehearsalAction.COMMIT
+          ? CliDeliveryRehearsalAction.COMMIT
+          : null;
+    const stageStatus = deliveryRehearsalStageResult?.status ?? null;
+
+    if (!enabled) {
+      return {
+        enabled: false,
+        status: CliDeliveryRehearsalStatus.DISABLED,
+        skipReason: null,
+        rehearsalAction,
+        rehearsalPath,
+        stageStatus,
+      };
+    }
+
+    const statusValue = this.readStageOutputString(deliveryOutput, "deliveryRehearsalStatus");
+    const skipReasonValue = this.readStageOutputString(
+      deliveryOutput,
+      "deliveryRehearsalSkipReason",
+    );
+    const skipReason =
+      skipReasonValue === CliDeliveryRehearsalSkipReason.DRY_RUN
+        ? CliDeliveryRehearsalSkipReason.DRY_RUN
+        : skipReasonValue === CliDeliveryRehearsalSkipReason.POLICY_CONFIRM
+          ? CliDeliveryRehearsalSkipReason.POLICY_CONFIRM
+          : skipReasonValue === CliDeliveryRehearsalSkipReason.POLICY_ESCALATE
+            ? CliDeliveryRehearsalSkipReason.POLICY_ESCALATE
+            : skipReasonValue === CliDeliveryRehearsalSkipReason.POLICY_BLOCK
+              ? CliDeliveryRehearsalSkipReason.POLICY_BLOCK
+              : null;
+    const failed =
+      stageStatus === RuntimeStageStatus.FAILED || stageStatus === RuntimeStageStatus.TIMEOUT;
+    const status = failed
+      ? CliDeliveryRehearsalStatus.FAILED
+      : statusValue === CliDeliveryRehearsalStatus.DRY_RUN
+        ? CliDeliveryRehearsalStatus.DRY_RUN
+        : statusValue === CliDeliveryRehearsalStatus.DEFERRED
+          ? CliDeliveryRehearsalStatus.DEFERRED
+          : rehearsalPath
+            ? CliDeliveryRehearsalStatus.APPLIED
+            : CliDeliveryRehearsalStatus.DEFERRED;
+
+    return {
+      enabled: true,
+      status,
+      skipReason,
+      rehearsalAction,
+      rehearsalPath,
+      stageStatus,
     };
   }
 

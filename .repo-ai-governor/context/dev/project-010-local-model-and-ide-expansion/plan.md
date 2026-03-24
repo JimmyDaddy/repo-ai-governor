@@ -99,13 +99,13 @@
 | TK-099 | sprint-002 | 任务驱动 DAG 与 `run` 主链装配 | implementation/runtime | TK-098,TK-118 | completed |
 | TK-100 | sprint-002 | review 子链内联与 ledger backfill 收口 | implementation/runtime | TK-099 | completed |
 | TK-101 | sprint-002 | HITL 决策回执与恢复执行语义 | implementation/runtime | TK-099,TK-100 | completed |
-| TK-102 | sprint-002 | sprint-002 出口验收与 sprint-003 输入约束 | acceptance baseline | TK-099,TK-100,TK-101 | planned |
+| TK-102 | sprint-002 | sprint-002 出口验收与 sprint-003 输入约束 | acceptance baseline | TK-099,TK-100,TK-101 | completed |
 | TK-103 | sprint-001 | 全自动研发 gap 清单与 draft 收敛 | analysis/draft | DA-098,TK-095 | completed |
 | TK-104 | sprint-001 | 主执行计划全自动研发 gap register 上收 | analysis/master-plan | TK-103,DA-098 | completed |
 | TK-105 | sprint-001 | 主执行计划结构重梳与执行导航重构 | analysis/master-plan | TK-104 | completed |
 | TK-106 | sprint-001 | triad 文档 Stage 9 overlay 补强同步 | analysis/triad-sync | TK-105 | completed |
-| TK-107 | sprint-003 | 受控 delivery rehearsal 与 audit/replay 集成 | implementation/delivery | TK-102 | planned |
-| TK-108 | sprint-003 | 黑盒 E2E、CI/release gate 与 GA 指标收口 | implementation/gate | TK-102,TK-107 | planned |
+| TK-107 | sprint-003 | 受控 delivery rehearsal 与 audit/replay 集成 | implementation/delivery | TK-102 | completed |
+| TK-108 | sprint-003 | 黑盒 E2E、CI/release gate 与 GA 指标收口 | implementation/gate | TK-102,TK-107 | in_progress |
 | TK-109 | sprint-003 | 多 IDE surface registry 与 wrapper 契约强化 | baseline/contract | TK-102 | planned |
 | TK-110 | sprint-003 | VS Code/JetBrains 官方模板与 smoke 门禁 | implementation/ide-template | TK-109 | planned |
 | TK-111 | sprint-003 | Cursor/Claude Code 接入模板与文档一致性 | implementation/ide-template | TK-109,TK-110 | planned |
@@ -150,3 +150,7 @@
 18. 2026-03-24：启动 `TK-101`，开始收敛通知回执、decision receipt 最小字段与 `resume/terminate/degrade` 运行时语义。
 19. 2026-03-24：完成 `TK-099`，补齐 `DA-103`、formal resolved review 与 artifact registry 同步；当前 task-driven `run` 已正式收口为 `project-010 / sprint-002` 的上游输入基线。
 20. 2026-03-24：完成 `TK-101`，补齐 `DA-105`、formal resolved review 与 `reject -> terminate`、`revise -> degrade` 回归验证；当前 HITL 决策回执与恢复执行语义已形成 `TK-102` 的正式输入。
+21. 2026-03-24：完成 `TK-102`，正式确认 sprint-002 出口验收通过并冻结 sprint-003 输入约束；主执行流切换到 `sprint-003-delivery-ide-and-ga-hardening`。
+22. 2026-03-24：启动 `TK-107`，开始收敛 delivery rehearsal 的最小执行契约；当前已确认仓库中尚无现成的 rehearsal runtime，需要基于现有 policy/audit/replay 链路新建受控实现面。
+23. 2026-03-24：完成 `TK-107`，受控 `delivery_rehearsal` stage 已纳入 task-driven `run`，并通过 rehearsal artifact、audit event `artifactId`、execution report replay pointer 与 CLI experience 完成同链回放。
+24. 2026-03-24：启动 `TK-108`，以 `DA-107` 为唯一 delivery 输入基线，开始收敛 blackbox/release/GA 指标与 gate 场景矩阵。

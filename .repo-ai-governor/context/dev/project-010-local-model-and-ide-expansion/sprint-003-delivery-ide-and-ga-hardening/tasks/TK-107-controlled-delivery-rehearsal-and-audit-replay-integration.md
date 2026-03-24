@@ -1,8 +1,8 @@
 # TK-107 受控 delivery rehearsal 与 audit/replay 集成
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-24
-- Owner: TBD
+- Owner: AI-Agent
 - Priority: P0
 - Project: `project-010-local-model-and-ide-expansion`
 - Sprint: `sprint-003-delivery-ide-and-ga-hardening`
@@ -47,9 +47,12 @@
 ## 7. 执行记录
 
 1. 2026-03-24：任务创建，状态初始化为 `planned`。
+2. 2026-03-24：任务启动，已完成首轮执行面勘察；当前仓库尚无现成的 delivery rehearsal runtime，需要基于现有 policy gate、audit recorder 与 replay/report builder 链路新增受控 delivery 实现。
+3. 2026-03-24：已完成受控 `delivery_rehearsal` stage、audit/replay artifact linkage、dry-run/allow 回归、`DA-107` 与 resolved review；任务状态更新为 `completed`。
 
 ## 8. 产出
 
 1. `DA-107` `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-003-delivery-ide-and-ga-hardening/tasks/DA-107-controlled-delivery-rehearsal-and-audit-replay-integration.md`
-2. `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-003-delivery-ide-and-ga-hardening/tasks/checklist.md`
-3. `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-003-delivery-ide-and-ga-hardening/tasks/tasks.csv`
+2. `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-003-delivery-ide-and-ga-hardening/review/resolved_code_review_tk-107-controlled-delivery-rehearsal-and-audit-replay-integration.md`
+3. `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-003-delivery-ide-and-ga-hardening/tasks/checklist.md`
+4. `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-003-delivery-ide-and-ga-hardening/tasks/tasks.csv`

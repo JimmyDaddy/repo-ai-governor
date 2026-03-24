@@ -1,8 +1,8 @@
 # TK-102 sprint-002 出口验收与 sprint-003 输入约束
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-24
-- Owner: TBD
+- Owner: AI-Agent
 - Priority: P0
 - Project: `project-010-local-model-and-ide-expansion`
 - Sprint: `sprint-002-autonomous-mainchain-foundation`
@@ -47,9 +47,12 @@
 ## 7. 执行记录
 
 1. 2026-03-24：任务创建，状态初始化为 `planned`。
+2. 2026-03-24：任务启动，已生成 `DA-106` 滚动验收草案，并先冻结 `DA-103`~`DA-105` 与 sprint-003 delivery/blackbox/IDE 的输入约束。
+3. 2026-03-24：已完成 `DA-106` 最终结论、formal resolved review、sprint-002 / sprint-003 计划同步与 active stream 切换；任务状态更新为 `completed`。
 
 ## 8. 产出
 
 1. `DA-106` `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-002-autonomous-mainchain-foundation/tasks/DA-106-sprint-002-exit-acceptance-and-sprint-003-input-constraints.md`
-2. `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-002-autonomous-mainchain-foundation/tasks/checklist.md`
-3. `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-002-autonomous-mainchain-foundation/tasks/tasks.csv`
+2. `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-002-autonomous-mainchain-foundation/review/resolved_code_review_tk-102-sprint-002-exit-acceptance-and-sprint-003-input-constraints.md`
+3. `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-002-autonomous-mainchain-foundation/tasks/checklist.md`
+4. `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-002-autonomous-mainchain-foundation/tasks/tasks.csv`

@@ -17,5 +17,7 @@
   - 2026-03-24：任务启动，开始收敛通知回执、decision receipt 最小字段与 `resume/terminate/degrade` 运行时语义。
   - 2026-03-24：复核 follow-up CR 后，已补齐真实 CLI `--hitl-*` 参数入口、dry-run 下的 HITL 无副作用语义，以及 `taskId + approve` 对 inline review 子链的恢复执行。
   - 2026-03-24：已补齐 `reject -> terminate` 与 `revise -> degrade` 回归，完成 `DA-105`、formal resolved review 与 artifact registry 同步；当前任务状态更新为 `completed`。
-- [ ] TK-102 sprint-002 出口验收与 sprint-003 输入约束
+- [x] TK-102 sprint-002 出口验收与 sprint-003 输入约束
   - 2026-03-24：任务创建，状态初始化为 `planned`。
+  - 2026-03-24：任务启动，已生成 `DA-106` 滚动验收草案，并先冻结 `DA-103`~`DA-105` 与 sprint-003 delivery/blackbox/IDE 的输入约束。
+  - 2026-03-24：已完成 `DA-106` 最终结论、formal resolved review、sprint-002 / sprint-003 计划同步与 active stream 切换；当前任务状态更新为 `completed`。

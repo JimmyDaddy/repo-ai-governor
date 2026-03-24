@@ -1,8 +1,8 @@
 # TK-108 黑盒 E2E、CI/release gate 与 GA 指标收口
 
-- Status: planned
+- Status: in_progress
 - Date: 2026-03-24
-- Owner: TBD
+- Owner: AI-Agent
 - Priority: P0
 - Project: `project-010-local-model-and-ide-expansion`
 - Sprint: `sprint-003-delivery-ide-and-ga-hardening`
@@ -48,6 +48,7 @@
 ## 7. 执行记录
 
 1. 2026-03-24：任务创建，状态初始化为 `planned`。
+2. 2026-03-24：任务启动，已将 `DA-107` 固化为 delivery rehearsal 输入基线；下一步聚焦 blackbox/CI/release/GA 指标的场景矩阵与 gate 接线。
 
 ## 8. 产出
 

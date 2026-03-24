@@ -349,6 +349,51 @@ async function writeTaskCardFixture(workspaceRoot: string, taskId: string): Prom
   return taskCardPath;
 }
 
+/**
+ * Writes one canonical delivery task card fixture used by controlled delivery rehearsal integration tests.
+ * @param workspaceRoot Workspace root under temporary fixture.
+ * @param taskId Task id used by runtime debug options.
+ * @returns Absolute task-card path.
+ */
+async function writeDeliveryTaskCardFixture(
+  workspaceRoot: string,
+  taskId: string,
+): Promise<string> {
+  const taskCardPath = resolve(
+    workspaceRoot,
+    "context/dev/project-010-local-model-and-ide-expansion/sprint-003-delivery-ide-and-ga-hardening/tasks",
+    `${taskId}-controlled-delivery-rehearsal-and-audit-replay-integration.md`,
+  );
+  await mkdir(resolve(taskCardPath, ".."), { recursive: true });
+  await writeFile(
+    taskCardPath,
+    `# ${taskId} 受控 delivery rehearsal 与 audit/replay 集成
+
+- Status: in_progress
+- Date: 2026-03-24
+- Owner: AI-Agent
+- Priority: P0
+- Project: \`project-010-local-model-and-ide-expansion\`
+- Sprint: \`sprint-003-delivery-ide-and-ga-hardening\`
+
+## 1. 任务目标
+
+将 \`commit\` 或 \`PR draft\` rehearsal 纳入策略门禁、审计回放与人工接管边界。
+
+## 2. Depends On
+
+1. \`TK-102\`
+
+## 4. Input References
+
+1. \`.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-002-autonomous-mainchain-foundation/tasks/DA-106-sprint-002-exit-acceptance-and-sprint-003-input-constraints.md\`
+`,
+    "utf8",
+  );
+
+  return taskCardPath;
+}
+
 describe("CliGovernanceRuntime policy/review safeguards", () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -1231,6 +1276,120 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
           replayPath: null,
           adapters: true,
           taskId: "TK-099",
+        },
+      },
+    );
+  });
+
+  it("persists controlled delivery rehearsal artifacts and exposes replay-linked audit pointers", async () => {
+    await withRuntimeFixture(
+      async (fixture) => {
+        await writeDeliveryTaskCardFixture(fixture.workspaceRoot, "TK-107");
+        const runtimeWithOverrides = fixture.runtime as unknown as {
+          collectGitChangedPaths: () => Promise<string[]>;
+        };
+        runtimeWithOverrides.collectGitChangedPaths = async () => [];
+
+        const runResult = await fixture.runtime.execute(CliCommandName.RUN);
+
+        expect(runResult.commandResult.details?.task_id).toBe("TK-107");
+        expect(runResult.commandResult.details?.delivery_rehearsal_enabled).toBe(true);
+        expect(runResult.commandResult.details?.delivery_rehearsal_status).toBe("applied");
+        expect(runResult.commandResult.details?.delivery_rehearsal_action).toBe("pr_draft");
+        expect(typeof runResult.commandResult.details?.delivery_rehearsal_path).toBe("string");
+        expect(
+          runResult.commandResult.checks?.find((check) => check.id === "delivery_rehearsal")
+            ?.detail,
+        ).toContain("status=applied");
+        expect(
+          runResult.commandResult.artifacts?.some(
+            (artifact) => artifact.id === "delivery_rehearsal",
+          ),
+        ).toBe(true);
+        expect(
+          runResult.commandResult.experience?.roleProgress.some(
+            (row) =>
+              row.stage === ExecutionProgressStage.DELIVERY_REHEARSAL &&
+              row.status === ExecutionProgressStatus.COMPLETED,
+          ),
+        ).toBe(true);
+
+        const deliveryRehearsalPath = String(
+          runResult.commandResult.details?.delivery_rehearsal_path,
+        );
+        const deliveryRehearsalPayload = JSON.parse(
+          await readFile(deliveryRehearsalPath, "utf8"),
+        ) as {
+          rehearsalAction?: string;
+          mode?: string;
+          auditReplay?: { artifactId?: string; stageId?: string };
+        };
+        expect(deliveryRehearsalPayload.rehearsalAction).toBe("pr_draft");
+        expect(deliveryRehearsalPayload.mode).toBe("rehearsal_only");
+        expect(deliveryRehearsalPayload.auditReplay?.artifactId).toBe("delivery_rehearsal");
+        expect(deliveryRehearsalPayload.auditReplay?.stageId).toBe("stage-delivery-rehearsal");
+
+        const reportPath = String(
+          runResult.commandResult.artifacts?.find((artifact) => artifact.id === "execution_report")
+            ?.path,
+        );
+        const executionReport = JSON.parse(await readFile(reportPath, "utf8")) as {
+          replayPointers?: Array<{ stageId?: string; artifactId?: string }>;
+        };
+        expect(
+          executionReport.replayPointers?.some(
+            (pointer) =>
+              pointer.stageId === "stage-delivery-rehearsal" &&
+              pointer.artifactId === "delivery_rehearsal",
+          ),
+        ).toBe(true);
+      },
+      {
+        runtimeDebugOptions: {
+          dryRun: false,
+          trace: false,
+          replayPath: null,
+          adapters: true,
+          taskId: "TK-107",
+        },
+      },
+    );
+  });
+
+  it("skips delivery rehearsal side effects during task-driven dry-run execution", async () => {
+    await withRuntimeFixture(
+      async (fixture) => {
+        await writeDeliveryTaskCardFixture(fixture.workspaceRoot, "TK-107");
+        const runtimeWithOverrides = fixture.runtime as unknown as {
+          collectGitChangedPaths: () => Promise<string[]>;
+        };
+        runtimeWithOverrides.collectGitChangedPaths = async () => [];
+
+        const runResult = await fixture.runtime.execute(CliCommandName.RUN);
+
+        expect(runResult.commandResult.details?.delivery_rehearsal_enabled).toBe(true);
+        expect(runResult.commandResult.details?.delivery_rehearsal_status).toBe("dry_run");
+        expect(runResult.commandResult.details?.delivery_rehearsal_path).toBeNull();
+        expect(
+          runResult.commandResult.artifacts?.some(
+            (artifact) => artifact.id === "delivery_rehearsal",
+          ),
+        ).toBe(false);
+        expect(
+          runResult.commandResult.experience?.roleProgress.some(
+            (row) =>
+              row.stage === ExecutionProgressStage.DELIVERY_REHEARSAL &&
+              row.status === ExecutionProgressStatus.WARNING,
+          ),
+        ).toBe(true);
+      },
+      {
+        runtimeDebugOptions: {
+          dryRun: true,
+          trace: false,
+          replayPath: null,
+          adapters: true,
+          taskId: "TK-107",
         },
       },
     );
