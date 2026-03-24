@@ -3,6 +3,7 @@ import { ProcessNodeType } from "@repo-ai-governor/core-process";
 import { RuntimeExecutionStatus, RuntimeStageStatus } from "@repo-ai-governor/core-runtime";
 import type { RuntimeExecutionResult } from "@repo-ai-governor/core-runtime";
 import { ExecutionProgressStage } from "@repo-ai-governor/shared";
+import { CliInlineReviewChainStatus } from "../../src/constants/cli-task-driven-run.constant.js";
 import { CliCommandExperienceBuilder } from "../../src/runtime/presentation/command-experience-builder.js";
 
 function createRuntimeResultFixture(): RuntimeExecutionResult {
@@ -52,6 +53,16 @@ describe("Cli command experience builder", () => {
       reportPath: "/tmp/exec-123.report.json",
       replayPath: "/tmp/exec-123.replay.json",
       diagnosticsTracePath: "/tmp/exec-123.trace.json",
+      reviewChain: {
+        enabled: false,
+        status: CliInlineReviewChainStatus.DISABLED,
+        skipReason: null,
+        reviewRequestPath: null,
+        reviewVerifyPath: null,
+        ledgerBackfillPath: null,
+        reviewStageStatus: null,
+        reviewVerifyStageStatus: null,
+      },
     });
 
     expect(

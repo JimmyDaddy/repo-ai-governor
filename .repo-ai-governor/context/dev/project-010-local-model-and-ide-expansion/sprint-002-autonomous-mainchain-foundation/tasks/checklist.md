@@ -4,9 +4,13 @@
   - 2026-03-24：任务创建，状态初始化为 `planned`。
   - 2026-03-24：任务启动，状态切换为 `in_progress`；开始收敛 task-driven run assembly 的最小输入模型、CLI builder 边界与首批回归断言。
   - 2026-03-24：复核 follow-up CR 后，已修正 heading-number drift 下的 section 解析，并保留非 `DA-*` 的 formal handoff input references；follow-up CR 收尾为 `resolved`。
-- [ ] TK-100 review 子链内联与 ledger backfill 收口
+- [x] TK-100 review 子链内联与 ledger backfill 收口
   - 2026-03-24：任务创建，状态初始化为 `planned`。
   - 2026-03-24：任务启动，先实现 completed-stream CR 收口场景的 `Worktree Review Target` 路由与 stale-target gate，避免默认评审产物误写入后续 active sprint。
+  - 2026-03-24：已将 `review / review-verify` 接入 task-driven `run` 的内联子链装配，并通过 `pnpm -s tsc -p tsconfig.json --noEmit`、`pnpm -s vitest run apps/cli/test/runtime/task-driven-run-runtime.test.ts apps/cli/test/cli-governance-runtime.integration.test.ts --maxWorkers=1 --maxConcurrency=1` 与 `pnpm run test:packages -- @repo-ai-governor/cli --maxWorkers=1 --maxConcurrency=1` 验证当前接线。
+  - 2026-03-24：已完成 `DA-104`、inline review chain 外显契约（artifacts/details/experience progress）与 resolved review，并通过总门禁回归，任务状态更新为 `completed`。
+  - 2026-03-24：复核 follow-up CR 后，已补上 inline review 子链在 `dry-run` 与 policy non-allow 分支上的 side-effect gate，并新增“无副作用”回归测试，任务状态维持 `completed`。
+  - 2026-03-24：follow-up CR 已收尾为 `resolved`；两条 P1 finding 全部完成修复，并通过 `pnpm run check` 复验。
 - [ ] TK-101 HITL 决策回执与恢复执行语义
   - 2026-03-24：任务创建，状态初始化为 `planned`。
 - [ ] TK-102 sprint-002 出口验收与 sprint-003 输入约束

@@ -17,6 +17,28 @@ export enum CliTaskDrivenRunAssemblyReason {
 }
 
 /**
+ * Defines stable lifecycle states for inline review-chain handling inside task-driven `run`.
+ */
+export enum CliInlineReviewChainStatus {
+  DISABLED = "disabled",
+  DRY_RUN = "dry_run",
+  DEFERRED = "deferred",
+  FAILED = "failed",
+  APPLIED = "applied",
+  PARTIAL = "partial",
+}
+
+/**
+ * Defines stable reasons explaining why inline review-chain execution was skipped.
+ */
+export enum CliInlineReviewChainSkipReason {
+  DRY_RUN = "dry_run",
+  POLICY_CONFIRM = "policy_confirm",
+  POLICY_ESCALATE = "policy_escalate",
+  POLICY_BLOCK = "policy_block",
+}
+
+/**
  * Defines stable node/stage/route identifiers used by task-driven run assembly.
  */
 export const CLI_TASK_DRIVEN_RUN_NODE_DEFINITIONS = {
@@ -39,6 +61,16 @@ export const CLI_TASK_DRIVEN_RUN_NODE_DEFINITIONS = {
     nodeId: "node-task-verify",
     stageId: "stage-task-verify",
     routeKey: "route.task.verify",
+  },
+  REVIEW: {
+    nodeId: "node-task-review",
+    stageId: "stage-task-review",
+    routeKey: "route.task.review",
+  },
+  REVIEW_VERIFY: {
+    nodeId: "node-task-review-verify",
+    stageId: "stage-task-review-verify",
+    routeKey: "route.task.review-verify",
   },
   REPORT: {
     nodeId: "node-task-report",

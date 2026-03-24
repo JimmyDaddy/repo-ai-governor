@@ -71,6 +71,11 @@ import {
   CLI_RUNTIME_OPERATION,
   CliGovernanceCheckStatus,
 } from "./constants/cli-governance-runtime.constant.js";
+import {
+  CLI_TASK_DRIVEN_RUN_NODE_DEFINITIONS,
+  CliInlineReviewChainSkipReason,
+  CliInlineReviewChainStatus,
+} from "./constants/cli-task-driven-run.constant.js";
 import { CliAdapterDiagnosticsRuntime } from "./runtime/adapter-diagnostics-runtime.js";
 import { CliAdapterRoutingRuntime } from "./runtime/adapter-routing-runtime.js";
 import { CliAdapterVerificationRuntime } from "./runtime/adapter-verification-runtime.js";
@@ -217,9 +222,12 @@ export class CliGovernanceRuntime {
 
   /**
    * Creates one stable context object for extracted command executors.
+   * @param runtimeDebugOptionsOverride Optional normalized debug-option override for nested flows.
    * @returns Command executor context.
    */
-  private createCommandExecutorContext() {
+  private createCommandExecutorContext(
+    runtimeDebugOptionsOverride?: CliNormalizedRuntimeDebugOptions,
+  ) {
     return {
       options: this.options,
       artifactWriter: this.artifactWriter,
@@ -231,7 +239,8 @@ export class CliGovernanceRuntime {
       buildDefaultConfigContent: () => this.buildDefaultConfigContent(),
       toRfc3339SecondsTimestamp: (value: Date) => this.toRfc3339SecondsTimestamp(value),
       formatExecFailureDetail: (error: unknown) => this.formatExecFailureDetail(error),
-      resolveRuntimeDebugOptions: () => this.resolveRuntimeDebugOptions(),
+      resolveRuntimeDebugOptions: () =>
+        runtimeDebugOptionsOverride ?? this.resolveRuntimeDebugOptions(),
       resolveAdapterVerification: async () => this.resolveAdapterVerification(),
       canWritePath: async (filePath: string) => this.canWritePath(filePath),
       localizeText: (english: string, chinese: string) => this.localizeText(english, chinese),
@@ -257,8 +266,6 @@ export class CliGovernanceRuntime {
     const executionId = `cli-run-${Date.now()}`;
     const processCompiler = new ProcessCompiler();
     const processRuntimeEngine = new ProcessRuntimeEngine(processCompiler);
-    const changeRiskEvaluator = new ChangeRiskEvaluator();
-    const policyGateEngine = new PolicyGateEngine();
     const streamMetadata = await this.resolveExecutionStreamMetadata();
     const runAssembly = await this.taskDrivenRunRuntime.buildRunAssembly({
       executionId,
@@ -292,42 +299,26 @@ export class CliGovernanceRuntime {
     });
     const runtimeResult = await processRuntimeEngine.execute(
       compiledIr,
-      async (stageContext) => ({
-        ...(await this.dispatchRunStageWithAdapterRoute(
-          routeRunner,
-          stageContext,
-          runtimeDebugOptions,
-        )),
-      }),
+      async (stageContext) =>
+        this.isInlineReviewSubchainStage(stageContext.stageId)
+          ? this.dispatchInlineReviewSubchainStage(stageContext, runtimeDebugOptions)
+          : {
+              ...(await this.dispatchRunStageWithAdapterRoute(
+                routeRunner,
+                stageContext,
+                runtimeDebugOptions,
+              )),
+            },
       {
         stageInputs: runAssembly.stageInputs as RuntimeStageInputMap,
       },
     );
 
     const changedPaths = await this.collectGitChangedPaths();
-    const fileCategories = this.resolveRiskFileCategories(changedPaths);
-    const riskEvaluation = changeRiskEvaluator.evaluate({
+    const { riskEvaluation, policyResult } = this.evaluateRunRiskAndPolicy(
       changedPaths,
-      fileCategories,
-      requestedPermissions: [],
-      commandClass: "code_edit",
-      lockfileDelta: changedPaths.some((path) => path.endsWith("pnpm-lock.yaml")),
-      migrationDetected: changedPaths.some(
-        (path) => path.includes("migration") || path.includes("migrations"),
-      ),
-      ciWorkflowChanged: changedPaths.some((path) => path.includes(".github/workflows/")),
-      releaseScriptChanged: changedPaths.some((path) => path.includes("scripts/release")),
-    });
-    const policyResult = policyGateEngine.evaluate({
-      riskEvaluation,
-      context: {
-        executionId,
-        stageId: "stage-policy-gate",
-        routeKey: "policy.gate.cli.run",
-        proposalApproved: true,
-        reviewVerifyConsecutiveFailures: 0,
-      },
-    });
+      executionId,
+    );
 
     const auditRecorder = new AuditRecorder(this.memoryManager);
     const executionSessionId = `session-${executionId}`;
@@ -435,6 +426,7 @@ export class CliGovernanceRuntime {
       executionReport,
       replayExplainResult,
     });
+    const inlineReviewChainSummary = this.resolveInlineReviewChainSummary(runtimeResult);
 
     const artifacts: CliCommandResultArtifact[] = [
       {
@@ -450,6 +442,24 @@ export class CliGovernanceRuntime {
         path: replayPath,
       },
     ];
+    if (inlineReviewChainSummary.reviewRequestPath) {
+      artifacts.push({
+        id: "inline_review_request",
+        path: inlineReviewChainSummary.reviewRequestPath,
+      });
+    }
+    if (inlineReviewChainSummary.reviewVerifyPath) {
+      artifacts.push({
+        id: "inline_review_verify_result",
+        path: inlineReviewChainSummary.reviewVerifyPath,
+      });
+    }
+    if (inlineReviewChainSummary.ledgerBackfillPath) {
+      artifacts.push({
+        id: "inline_review_ledger_backfill",
+        path: inlineReviewChainSummary.ledgerBackfillPath,
+      });
+    }
     const checks: CliCommandResultCheck[] = [
       this.createRunAssemblyCheck(runAssembly, runtimeDebugOptions.taskId),
       {
@@ -476,6 +486,18 @@ export class CliGovernanceRuntime {
         detail: `records=${executionReport.totalRecords} stage_summaries=${executionReport.stageSummaries.length}`,
       },
     ];
+    if (inlineReviewChainSummary.enabled) {
+      checks.push({
+        id: "review_chain",
+        status:
+          inlineReviewChainSummary.status === CliInlineReviewChainStatus.APPLIED
+            ? CliGovernanceCheckStatus.PASS
+            : inlineReviewChainSummary.status === CliInlineReviewChainStatus.FAILED
+              ? CliGovernanceCheckStatus.FAIL
+              : CliGovernanceCheckStatus.WARN,
+        detail: `status=${inlineReviewChainSummary.status} skip_reason=${inlineReviewChainSummary.skipReason ?? "none"} request=${inlineReviewChainSummary.reviewRequestPath ? "present" : "missing"} verify=${inlineReviewChainSummary.reviewVerifyPath ? "present" : "missing"} ledger_backfill=${inlineReviewChainSummary.ledgerBackfillPath ? "present" : "missing"}`,
+      });
+    }
     if (runtimeDebugOptions.dryRun || runtimeDebugOptions.trace) {
       checks.push({
         id: "debug_mode",
@@ -525,6 +547,7 @@ export class CliGovernanceRuntime {
       reportPath,
       replayPath,
       diagnosticsTracePath,
+      reviewChain: inlineReviewChainSummary,
     });
     this.throwForNonAllowPolicyOutcome({
       executionId,
@@ -557,6 +580,12 @@ export class CliGovernanceRuntime {
           input_reference_count: runAssembly.taskContext?.inputReferences.length ?? 0,
           input_artifact_count: runAssembly.taskContext?.inputArtifacts.length ?? 0,
           dependency_task_count: runAssembly.taskContext?.dependsOnTaskIds.length ?? 0,
+          inline_review_chain_enabled: inlineReviewChainSummary.enabled,
+          inline_review_chain_status: inlineReviewChainSummary.status,
+          inline_review_chain_skip_reason: inlineReviewChainSummary.skipReason,
+          inline_review_request_path: inlineReviewChainSummary.reviewRequestPath,
+          inline_review_verify_path: inlineReviewChainSummary.reviewVerifyPath,
+          inline_review_ledger_backfill_path: inlineReviewChainSummary.ledgerBackfillPath,
           dry_run: runtimeDebugOptions.dryRun,
           trace_enabled: runtimeDebugOptions.trace,
           diagnostics_trace_path: diagnosticsTracePath,
@@ -1009,6 +1038,301 @@ export class CliGovernanceRuntime {
   }
 
   /**
+   * Checks whether one task-driven stage is handled by the internal managed review subchain.
+   * @param stageId Runtime stage id.
+   * @returns True when the stage should bypass adapter dispatch.
+   */
+  private isInlineReviewSubchainStage(stageId: string): boolean {
+    return (
+      stageId === CLI_TASK_DRIVEN_RUN_NODE_DEFINITIONS.REVIEW.stageId ||
+      stageId === CLI_TASK_DRIVEN_RUN_NODE_DEFINITIONS.REVIEW_VERIFY.stageId
+    );
+  }
+
+  /**
+   * Executes managed review subchain stages inline inside `run`.
+   * @param stageContext Runtime stage context.
+   * @param runtimeDebugOptions Normalized runtime debug options.
+   * @returns Structured stage output for audit/report consumption.
+   */
+  private async dispatchInlineReviewSubchainStage(
+    stageContext: RuntimeStageContext,
+    runtimeDebugOptions: CliNormalizedRuntimeDebugOptions,
+  ): Promise<Record<string, unknown>> {
+    const taskId =
+      typeof stageContext.input.taskId === "string" && stageContext.input.taskId.trim().length > 0
+        ? stageContext.input.taskId.trim()
+        : runtimeDebugOptions.taskId;
+    const inlineRuntimeDebugOptions: CliNormalizedRuntimeDebugOptions = {
+      ...runtimeDebugOptions,
+      taskId,
+      recordLedger: Boolean(taskId),
+    };
+    const inlineReviewExecutionGuard =
+      await this.resolveInlineReviewExecutionGuard(inlineRuntimeDebugOptions);
+    if (!inlineReviewExecutionGuard.allowExecution) {
+      return {
+        handledBy: "inline-review-subchain",
+        stageId: stageContext.stageId,
+        taskId,
+        managedLedgerBackfill: false,
+        reviewChainStatus: inlineReviewExecutionGuard.status,
+        reviewChainSkipReason: inlineReviewExecutionGuard.skipReason,
+        policyOutcome: inlineReviewExecutionGuard.policyOutcome,
+        riskLevel: inlineReviewExecutionGuard.riskLevel,
+      };
+    }
+    const commandContext = this.createCommandExecutorContext(inlineRuntimeDebugOptions);
+
+    if (stageContext.stageId === CLI_TASK_DRIVEN_RUN_NODE_DEFINITIONS.REVIEW.stageId) {
+      const commandResult = await new CliReviewCommand().execute(commandContext);
+      const reviewRequestPath =
+        commandResult.commandResult.artifacts?.find((artifact) => artifact.id === "review_request")
+          ?.path ?? null;
+      return {
+        handledBy: "inline-review-subchain",
+        stageId: stageContext.stageId,
+        taskId,
+        managedLedgerBackfill: inlineRuntimeDebugOptions.recordLedger,
+        reviewChainStatus: CliInlineReviewChainStatus.APPLIED,
+        reviewRequestPath,
+      };
+    }
+
+    const commandResult = await new CliReviewVerifyCommand().execute(commandContext);
+    const verifyArtifactPath =
+      commandResult.commandResult.artifacts?.find(
+        (artifact) => artifact.id === "review_verify_result",
+      )?.path ?? null;
+    const ledgerBackfillPath =
+      commandResult.commandResult.artifacts?.find(
+        (artifact) => artifact.id === "review_ledger_backfill",
+      )?.path ?? null;
+    return {
+      handledBy: "inline-review-subchain",
+      stageId: stageContext.stageId,
+      taskId,
+      managedLedgerBackfill: inlineRuntimeDebugOptions.recordLedger,
+      reviewChainStatus: CliInlineReviewChainStatus.APPLIED,
+      reviewVerifyPath: verifyArtifactPath,
+      ledgerBackfillPath,
+    };
+  }
+
+  /**
+   * Resolves whether inline review-chain execution is allowed to produce side effects.
+   * @param runtimeDebugOptions Normalized runtime debug options for current `run`.
+   * @returns Guard decision for the inline review subchain.
+   */
+  private async resolveInlineReviewExecutionGuard(
+    runtimeDebugOptions: CliNormalizedRuntimeDebugOptions,
+  ): Promise<{
+    allowExecution: boolean;
+    status: CliInlineReviewChainStatus;
+    skipReason: CliInlineReviewChainSkipReason | null;
+    policyOutcome: ChangeRiskRequiredAction | null;
+    riskLevel: string | null;
+  }> {
+    if (runtimeDebugOptions.dryRun) {
+      return {
+        allowExecution: false,
+        status: CliInlineReviewChainStatus.DRY_RUN,
+        skipReason: CliInlineReviewChainSkipReason.DRY_RUN,
+        policyOutcome: null,
+        riskLevel: null,
+      };
+    }
+
+    const changedPaths = await this.collectGitChangedPaths();
+    const { riskEvaluation, policyResult } = this.evaluateRunRiskAndPolicy(changedPaths);
+    if (policyResult.policyOutcome === ChangeRiskRequiredAction.ALLOW) {
+      return {
+        allowExecution: true,
+        status: CliInlineReviewChainStatus.APPLIED,
+        skipReason: null,
+        policyOutcome: policyResult.policyOutcome,
+        riskLevel: riskEvaluation.riskLevel,
+      };
+    }
+
+    return {
+      allowExecution: false,
+      status: CliInlineReviewChainStatus.DEFERRED,
+      skipReason: this.resolveInlineReviewSkipReason(policyResult.policyOutcome),
+      policyOutcome: policyResult.policyOutcome,
+      riskLevel: riskEvaluation.riskLevel,
+    };
+  }
+
+  /**
+   * Maps policy outcomes to stable inline review-chain skip reasons.
+   * @param policyOutcome Policy outcome evaluated at inline review boundary.
+   * @returns Stable skip reason enum.
+   */
+  private resolveInlineReviewSkipReason(
+    policyOutcome: ChangeRiskRequiredAction,
+  ): CliInlineReviewChainSkipReason {
+    if (policyOutcome === ChangeRiskRequiredAction.BLOCK) {
+      return CliInlineReviewChainSkipReason.POLICY_BLOCK;
+    }
+    if (policyOutcome === ChangeRiskRequiredAction.ESCALATE) {
+      return CliInlineReviewChainSkipReason.POLICY_ESCALATE;
+    }
+    return CliInlineReviewChainSkipReason.POLICY_CONFIRM;
+  }
+
+  /**
+   * Resolves one normalized inline review-chain summary from runtime stage outputs.
+   * @param runtimeResult Runtime execution result for current `run`.
+   * @returns Inline review-chain status and artifact paths for CLI output shaping.
+   */
+  private resolveInlineReviewChainSummary(runtimeResult: RuntimeExecutionResult): {
+    enabled: boolean;
+    status: CliInlineReviewChainStatus;
+    skipReason: CliInlineReviewChainSkipReason | null;
+    reviewRequestPath: string | null;
+    reviewVerifyPath: string | null;
+    ledgerBackfillPath: string | null;
+    reviewStageStatus: RuntimeStageStatus | null;
+    reviewVerifyStageStatus: RuntimeStageStatus | null;
+  } {
+    const reviewStageResult =
+      runtimeResult.stageResults.find(
+        (stageResult) =>
+          stageResult.stageId === CLI_TASK_DRIVEN_RUN_NODE_DEFINITIONS.REVIEW.stageId,
+      ) ?? null;
+    const reviewVerifyStageResult =
+      runtimeResult.stageResults.find(
+        (stageResult) =>
+          stageResult.stageId === CLI_TASK_DRIVEN_RUN_NODE_DEFINITIONS.REVIEW_VERIFY.stageId,
+      ) ?? null;
+    const reviewOutput = this.resolveStageOutputRecord(reviewStageResult?.output);
+    const reviewVerifyOutput = this.resolveStageOutputRecord(reviewVerifyStageResult?.output);
+    const reviewRequestPath = this.readStageOutputString(reviewOutput, "reviewRequestPath");
+    const reviewVerifyPath = this.readStageOutputString(reviewVerifyOutput, "reviewVerifyPath");
+    const ledgerBackfillPath = this.readStageOutputString(reviewVerifyOutput, "ledgerBackfillPath");
+    const enabled = reviewStageResult !== null || reviewVerifyStageResult !== null;
+
+    if (!enabled) {
+      return {
+        enabled: false,
+        status: CliInlineReviewChainStatus.DISABLED,
+        skipReason: null,
+        reviewRequestPath,
+        reviewVerifyPath,
+        ledgerBackfillPath,
+        reviewStageStatus: null,
+        reviewVerifyStageStatus: null,
+      };
+    }
+
+    const reviewStageStatus = reviewStageResult?.status ?? null;
+    const reviewVerifyStageStatus = reviewVerifyStageResult?.status ?? null;
+    const reviewChainStatus = this.resolveInlineReviewChainStatus(reviewOutput, reviewVerifyOutput);
+    const reviewChainSkipReason = this.resolveInlineReviewChainSkipReason(
+      reviewOutput,
+      reviewVerifyOutput,
+    );
+    const failed =
+      reviewStageStatus === RuntimeStageStatus.FAILED ||
+      reviewStageStatus === RuntimeStageStatus.TIMEOUT ||
+      reviewVerifyStageStatus === RuntimeStageStatus.FAILED ||
+      reviewVerifyStageStatus === RuntimeStageStatus.TIMEOUT;
+    const applied =
+      reviewStageStatus === RuntimeStageStatus.SUCCEEDED &&
+      reviewVerifyStageStatus === RuntimeStageStatus.SUCCEEDED &&
+      reviewRequestPath !== null &&
+      reviewVerifyPath !== null &&
+      ledgerBackfillPath !== null;
+
+    return {
+      enabled: true,
+      status: failed
+        ? CliInlineReviewChainStatus.FAILED
+        : (reviewChainStatus ??
+          (applied ? CliInlineReviewChainStatus.APPLIED : CliInlineReviewChainStatus.PARTIAL)),
+      skipReason: reviewChainSkipReason,
+      reviewRequestPath,
+      reviewVerifyPath,
+      ledgerBackfillPath,
+      reviewStageStatus,
+      reviewVerifyStageStatus,
+    };
+  }
+
+  /**
+   * Resolves stable inline review-chain status from stage outputs.
+   * @param reviewOutput Review-stage output payload.
+   * @param reviewVerifyOutput Review-verify-stage output payload.
+   * @returns Stable status when explicitly emitted.
+   */
+  private resolveInlineReviewChainStatus(
+    reviewOutput: Record<string, unknown> | null,
+    reviewVerifyOutput: Record<string, unknown> | null,
+  ): CliInlineReviewChainStatus | null {
+    const statusValue =
+      this.readStageOutputString(reviewVerifyOutput, "reviewChainStatus") ??
+      this.readStageOutputString(reviewOutput, "reviewChainStatus");
+    if (!statusValue) {
+      return null;
+    }
+
+    return Object.values(CliInlineReviewChainStatus).includes(
+      statusValue as CliInlineReviewChainStatus,
+    )
+      ? (statusValue as CliInlineReviewChainStatus)
+      : null;
+  }
+
+  /**
+   * Resolves stable inline review-chain skip reason from stage outputs.
+   * @param reviewOutput Review-stage output payload.
+   * @param reviewVerifyOutput Review-verify-stage output payload.
+   * @returns Stable skip reason when explicitly emitted.
+   */
+  private resolveInlineReviewChainSkipReason(
+    reviewOutput: Record<string, unknown> | null,
+    reviewVerifyOutput: Record<string, unknown> | null,
+  ): CliInlineReviewChainSkipReason | null {
+    const skipReasonValue =
+      this.readStageOutputString(reviewVerifyOutput, "reviewChainSkipReason") ??
+      this.readStageOutputString(reviewOutput, "reviewChainSkipReason");
+    if (!skipReasonValue) {
+      return null;
+    }
+
+    return Object.values(CliInlineReviewChainSkipReason).includes(
+      skipReasonValue as CliInlineReviewChainSkipReason,
+    )
+      ? (skipReasonValue as CliInlineReviewChainSkipReason)
+      : null;
+  }
+
+  /**
+   * Normalizes one stage output payload into a plain record shape.
+   * @param output Raw runtime stage output.
+   * @returns Output as record when possible.
+   */
+  private resolveStageOutputRecord(output: unknown): Record<string, unknown> | null {
+    return output && typeof output === "object" ? (output as Record<string, unknown>) : null;
+  }
+
+  /**
+   * Reads one string field from normalized stage output.
+   * @param output Stage output record.
+   * @param fieldName Field name to read.
+   * @returns Trimmed string or null.
+   */
+  private readStageOutputString(
+    output: Record<string, unknown> | null,
+    fieldName: string,
+  ): string | null {
+    return output && typeof output[fieldName] === "string" && output[fieldName].trim().length > 0
+      ? output[fieldName].trim()
+      : null;
+  }
+
+  /**
    * Resolves one role config row used by run-command node routing.
    * @param node Run-command process node.
    * @returns Matching role config when found.
@@ -1101,6 +1425,51 @@ export class CliGovernanceRuntime {
     }
 
     return AuditRecordStatus.RUNNING;
+  }
+
+  /**
+   * Evaluates current worktree risk and policy facts for `run` lifecycle gates.
+   * @param changedPaths Changed paths observed from current worktree snapshot.
+   * @param executionId Execution id used in policy evaluation context.
+   * @returns Risk evaluation and policy result tuple.
+   */
+  private evaluateRunRiskAndPolicy(
+    changedPaths: string[],
+    executionId = "cli-run-policy-evaluation",
+  ): {
+    riskEvaluation: ReturnType<ChangeRiskEvaluator["evaluate"]>;
+    policyResult: ReturnType<PolicyGateEngine["evaluate"]>;
+  } {
+    const changeRiskEvaluator = new ChangeRiskEvaluator();
+    const policyGateEngine = new PolicyGateEngine();
+    const fileCategories = this.resolveRiskFileCategories(changedPaths);
+    const riskEvaluation = changeRiskEvaluator.evaluate({
+      changedPaths,
+      fileCategories,
+      requestedPermissions: [],
+      commandClass: "code_edit",
+      lockfileDelta: changedPaths.some((path) => path.endsWith("pnpm-lock.yaml")),
+      migrationDetected: changedPaths.some(
+        (path) => path.includes("migration") || path.includes("migrations"),
+      ),
+      ciWorkflowChanged: changedPaths.some((path) => path.includes(".github/workflows/")),
+      releaseScriptChanged: changedPaths.some((path) => path.includes("scripts/release")),
+    });
+    const policyResult = policyGateEngine.evaluate({
+      riskEvaluation,
+      context: {
+        executionId,
+        stageId: "stage-policy-gate",
+        routeKey: "policy.gate.cli.run",
+        proposalApproved: true,
+        reviewVerifyConsecutiveFailures: 0,
+      },
+    });
+
+    return {
+      riskEvaluation,
+      policyResult,
+    };
   }
 
   /**

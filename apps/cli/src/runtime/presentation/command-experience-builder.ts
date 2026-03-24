@@ -8,6 +8,11 @@ import {
   ExecutionProgressStatus,
 } from "@repo-ai-governor/shared";
 import { CLI_DIAGNOSTIC_ROOT_CAUSE } from "../../constants/cli-governance-runtime.constant.js";
+import {
+  CLI_TASK_DRIVEN_RUN_NODE_DEFINITIONS,
+  CliInlineReviewChainSkipReason,
+  CliInlineReviewChainStatus,
+} from "../../constants/cli-task-driven-run.constant.js";
 import type {
   CliCommandExperiencePayload,
   CliInteractionPrompt,
@@ -134,6 +139,16 @@ export class CliCommandExperienceBuilder {
     reportPath: string;
     replayPath: string;
     diagnosticsTracePath: string | null;
+    reviewChain: {
+      enabled: boolean;
+      status: CliInlineReviewChainStatus;
+      skipReason: CliInlineReviewChainSkipReason | null;
+      reviewRequestPath: string | null;
+      reviewVerifyPath: string | null;
+      ledgerBackfillPath: string | null;
+      reviewStageStatus: RuntimeStageStatus | null;
+      reviewVerifyStageStatus: RuntimeStageStatus | null;
+    };
   }): CliCommandExperiencePayload {
     const rootCause = this.resolveRunDiagnosticRootCause({
       policyOutcome: options.policyResult.policyOutcome,
@@ -153,22 +168,145 @@ export class CliCommandExperienceBuilder {
           stageId: ExecutionProgressStage.RUN_COMPILE,
         },
       },
-      ...options.runtimeResult.stageResults.map((stageResult) => ({
-        roleId: stageResult.stageId,
-        stage: ExecutionProgressStage.RUN_RUNTIME,
-        status: this.resolveRuntimeStageProgressStatus(stageResult.status),
-        category:
-          this.resolveRuntimeStageProgressStatus(stageResult.status) ===
-          ExecutionProgressStatus.FAILED
-            ? ExecutionInteractionCategory.RUNTIME_FAILURE
-            : ExecutionInteractionCategory.NONE,
-        summary: `Stage ${stageResult.stageId} finished with ${stageResult.status}.`,
-        detail: `duration_ms=${stageResult.durationMs}`,
-        backlink: {
-          executionId: options.executionId,
-          stageId: stageResult.stageId,
-        },
-      })),
+      ...options.runtimeResult.stageResults.flatMap((stageResult) => {
+        const progressStatus = this.resolveRuntimeStageProgressStatus(stageResult.status);
+        const reviewRequestPath = this.readStageOutputString(
+          stageResult.output,
+          "reviewRequestPath",
+        );
+        const reviewVerifyPath = this.readStageOutputString(stageResult.output, "reviewVerifyPath");
+        const ledgerBackfillPath = this.readStageOutputString(
+          stageResult.output,
+          "ledgerBackfillPath",
+        );
+        const reviewChainStatus = this.readStageOutputString(
+          stageResult.output,
+          "reviewChainStatus",
+        );
+        const reviewChainSkipReason = this.readStageOutputString(
+          stageResult.output,
+          "reviewChainSkipReason",
+        );
+
+        if (stageResult.stageId === CLI_TASK_DRIVEN_RUN_NODE_DEFINITIONS.REVIEW.stageId) {
+          const reviewProgressStatus = this.resolveInlineReviewProgressStatus(
+            reviewChainStatus,
+            progressStatus,
+          );
+          const reviewCategory = this.resolveInlineReviewInteractionCategory(reviewChainSkipReason);
+          return [
+            {
+              roleId: "reviewer",
+              stage: ExecutionProgressStage.REVIEW,
+              status: reviewProgressStatus,
+              category:
+                reviewProgressStatus === ExecutionProgressStatus.FAILED
+                  ? ExecutionInteractionCategory.RUNTIME_FAILURE
+                  : reviewCategory,
+              summary:
+                reviewChainStatus === CliInlineReviewChainStatus.DEFERRED
+                  ? "Inline review request deferred until policy outcome becomes allow."
+                  : reviewChainStatus === CliInlineReviewChainStatus.DRY_RUN
+                    ? "Inline review request skipped in dry-run mode."
+                    : reviewProgressStatus === ExecutionProgressStatus.COMPLETED
+                      ? "Inline review request persisted."
+                      : "Inline review request failed.",
+              detail:
+                reviewRequestPath ??
+                reviewChainSkipReason ??
+                `duration_ms=${stageResult.durationMs}`,
+              backlink: {
+                executionId: options.executionId,
+                stageId: stageResult.stageId,
+                artifactPath: reviewRequestPath ?? undefined,
+              },
+            },
+          ];
+        }
+
+        if (stageResult.stageId === CLI_TASK_DRIVEN_RUN_NODE_DEFINITIONS.REVIEW_VERIFY.stageId) {
+          const verifyProgressStatus = this.resolveInlineReviewProgressStatus(
+            reviewChainStatus,
+            progressStatus,
+          );
+          const verifyCategory = this.resolveInlineReviewInteractionCategory(reviewChainSkipReason);
+          const roleProgress: CliRoleStageProgress[] = [
+            {
+              roleId: "verifier",
+              stage: ExecutionProgressStage.REVIEW_VERIFY,
+              status: verifyProgressStatus,
+              category:
+                verifyProgressStatus === ExecutionProgressStatus.FAILED
+                  ? ExecutionInteractionCategory.RUNTIME_FAILURE
+                  : verifyCategory,
+              summary:
+                reviewChainStatus === CliInlineReviewChainStatus.DEFERRED
+                  ? "Inline review verification deferred until policy approval."
+                  : reviewChainStatus === CliInlineReviewChainStatus.DRY_RUN
+                    ? "Inline review verification skipped in dry-run mode."
+                    : verifyProgressStatus === ExecutionProgressStatus.COMPLETED
+                      ? "Inline review verification persisted."
+                      : "Inline review verification failed.",
+              detail:
+                reviewVerifyPath ??
+                reviewChainSkipReason ??
+                `duration_ms=${stageResult.durationMs}`,
+              backlink: {
+                executionId: options.executionId,
+                stageId: stageResult.stageId,
+                artifactPath: reviewVerifyPath ?? undefined,
+              },
+            },
+          ];
+
+          if (ledgerBackfillPath || reviewChainStatus === CliInlineReviewChainStatus.DRY_RUN) {
+            roleProgress.push({
+              roleId: "ledger-backfill",
+              stage: ExecutionProgressStage.LEDGER_BACKFILL,
+              status:
+                reviewChainStatus === CliInlineReviewChainStatus.DRY_RUN
+                  ? ExecutionProgressStatus.WARNING
+                  : verifyProgressStatus,
+              category:
+                verifyProgressStatus === ExecutionProgressStatus.FAILED
+                  ? ExecutionInteractionCategory.RUNTIME_FAILURE
+                  : verifyCategory,
+              summary:
+                reviewChainStatus === CliInlineReviewChainStatus.DRY_RUN
+                  ? "Managed ledger backfill skipped in dry-run mode."
+                  : verifyProgressStatus === ExecutionProgressStatus.COMPLETED
+                    ? "Managed ledger backfill applied."
+                    : "Managed ledger backfill failed.",
+              detail: ledgerBackfillPath ?? reviewChainSkipReason ?? "dry_run",
+              backlink: {
+                executionId: options.executionId,
+                stageId: ExecutionProgressStage.LEDGER_BACKFILL,
+                artifactPath: ledgerBackfillPath ?? undefined,
+              },
+            });
+          }
+
+          return roleProgress;
+        }
+
+        return [
+          {
+            roleId: stageResult.stageId,
+            stage: ExecutionProgressStage.RUN_RUNTIME,
+            status: progressStatus,
+            category:
+              progressStatus === ExecutionProgressStatus.FAILED
+                ? ExecutionInteractionCategory.RUNTIME_FAILURE
+                : ExecutionInteractionCategory.NONE,
+            summary: `Stage ${stageResult.stageId} finished with ${stageResult.status}.`,
+            detail: `duration_ms=${stageResult.durationMs}`,
+            backlink: {
+              executionId: options.executionId,
+              stageId: stageResult.stageId,
+            },
+          },
+        ];
+      }),
       {
         roleId: "policy-gate",
         stage: ExecutionProgressStage.POLICY_WAITING,
@@ -258,14 +396,73 @@ export class CliCommandExperienceBuilder {
           `runtime_status=${options.runtimeResult.status}`,
           `policy_outcome=${options.policyResult.policyOutcome}`,
           `root_cause=${rootCause}`,
+          `inline_review_chain=${options.reviewChain.status}`,
+          `inline_review_skip_reason=${options.reviewChain.skipReason ?? "none"}`,
         ],
         detailed: [
           `report_path=${options.reportPath}`,
           `replay_path=${options.replayPath}`,
           `diagnostics_trace_path=${options.diagnosticsTracePath ?? "none"}`,
+          `inline_review_request_path=${options.reviewChain.reviewRequestPath ?? "none"}`,
+          `inline_review_verify_path=${options.reviewChain.reviewVerifyPath ?? "none"}`,
+          `inline_review_ledger_backfill_path=${options.reviewChain.ledgerBackfillPath ?? "none"}`,
         ],
       },
     });
+  }
+
+  /**
+   * Reads one string field from runtime stage output payload.
+   * @param output Raw stage output.
+   * @param fieldName Expected field name.
+   * @returns Trimmed string or null.
+   */
+  private readStageOutputString(output: unknown, fieldName: string): string | null {
+    return output &&
+      typeof output === "object" &&
+      typeof (output as Record<string, unknown>)[fieldName] === "string" &&
+      ((output as Record<string, unknown>)[fieldName] as string).trim().length > 0
+      ? ((output as Record<string, unknown>)[fieldName] as string).trim()
+      : null;
+  }
+
+  /**
+   * Resolves progress status for inline review-chain stages when execution is skipped or deferred.
+   * @param reviewChainStatus Inline review-chain status emitted by runtime stage output.
+   * @param fallbackStatus Runtime-derived fallback status.
+   * @returns Progress status suitable for CLI experience rendering.
+   */
+  private resolveInlineReviewProgressStatus(
+    reviewChainStatus: string | null,
+    fallbackStatus: ExecutionProgressStatus,
+  ): ExecutionProgressStatus {
+    if (reviewChainStatus === CliInlineReviewChainStatus.DRY_RUN) {
+      return ExecutionProgressStatus.WARNING;
+    }
+    if (reviewChainStatus === CliInlineReviewChainStatus.DEFERRED) {
+      return ExecutionProgressStatus.WAITING;
+    }
+    return fallbackStatus;
+  }
+
+  /**
+   * Resolves interaction category for inline review-chain skip reasons.
+   * @param reviewChainSkipReason Stable skip reason emitted by runtime stage output.
+   * @returns Interaction category for CLI prompts/progress.
+   */
+  private resolveInlineReviewInteractionCategory(
+    reviewChainSkipReason: string | null,
+  ): ExecutionInteractionCategory {
+    if (
+      reviewChainSkipReason === CliInlineReviewChainSkipReason.POLICY_CONFIRM ||
+      reviewChainSkipReason === CliInlineReviewChainSkipReason.POLICY_ESCALATE
+    ) {
+      return ExecutionInteractionCategory.HUMAN_CONFIRMATION;
+    }
+    if (reviewChainSkipReason === CliInlineReviewChainSkipReason.POLICY_BLOCK) {
+      return ExecutionInteractionCategory.POLICY_WAITING;
+    }
+    return ExecutionInteractionCategory.NONE;
   }
 
   /**

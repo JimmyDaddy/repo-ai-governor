@@ -372,6 +372,100 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
     });
   });
 
+  it("does not persist inline review side effects when task-driven run requires HITL confirmation", async () => {
+    await withRuntimeFixture(
+      async (fixture) => {
+        await writeTaskCardFixture(fixture.workspaceRoot, "TK-099");
+        const runtimeWithOverrides = fixture.runtime as unknown as {
+          collectGitChangedPaths: () => Promise<string[]>;
+        };
+        runtimeWithOverrides.collectGitChangedPaths = async () => ["migrations/001.sql"];
+
+        await expect(fixture.runtime.execute(CliCommandName.RUN)).rejects.toMatchObject({
+          code: GovernorErrorCode.POLICY_GATE_HITL_FEEDBACK_INVALID,
+          details: {
+            pendingStatus: ExecutionProgressStage.HUMAN_CONFIRMATION,
+          },
+        });
+
+        const requestFiles = await readdir(
+          resolve(fixture.workspaceRoot, "context", "review-queue", "requests"),
+        ).catch(() => []);
+        const resultFiles = await readdir(
+          resolve(fixture.workspaceRoot, "context", "review-queue", "results"),
+        ).catch(() => []);
+        const ledgerFiles = await readdir(
+          resolve(fixture.workspaceRoot, "context", "ledger-backfill", "review-verify"),
+        ).catch(() => []);
+
+        expect(requestFiles).toHaveLength(0);
+        expect(resultFiles).toHaveLength(0);
+        expect(ledgerFiles).toHaveLength(0);
+      },
+      {
+        runtimeDebugOptions: {
+          dryRun: false,
+          trace: false,
+          replayPath: null,
+          adapters: true,
+          taskId: "TK-099",
+        },
+      },
+    );
+  });
+
+  it("skips inline review side effects during task-driven dry-run execution", async () => {
+    await withRuntimeFixture(
+      async (fixture) => {
+        await writeTaskCardFixture(fixture.workspaceRoot, "TK-099");
+        const runtimeWithOverrides = fixture.runtime as unknown as {
+          collectGitChangedPaths: () => Promise<string[]>;
+        };
+        runtimeWithOverrides.collectGitChangedPaths = async () => [];
+
+        const runResult = await fixture.runtime.execute(CliCommandName.RUN);
+        expect(runResult.commandResult.details?.inline_review_chain_status).toBe("dry_run");
+        expect(runResult.commandResult.details?.inline_review_chain_skip_reason).toBe("dry_run");
+        expect(runResult.commandResult.details?.inline_review_request_path).toBeNull();
+        expect(runResult.commandResult.details?.inline_review_verify_path).toBeNull();
+        expect(runResult.commandResult.details?.inline_review_ledger_backfill_path).toBeNull();
+        expect(
+          runResult.commandResult.checks?.find((check) => check.id === "review_chain")?.detail,
+        ).toContain("status=dry_run");
+        expect(
+          runResult.commandResult.experience?.roleProgress.some(
+            (row) =>
+              row.stage === ExecutionProgressStage.REVIEW &&
+              row.status === ExecutionProgressStatus.WARNING,
+          ),
+        ).toBe(true);
+
+        const requestFiles = await readdir(
+          resolve(fixture.workspaceRoot, "context", "review-queue", "requests"),
+        ).catch(() => []);
+        const resultFiles = await readdir(
+          resolve(fixture.workspaceRoot, "context", "review-queue", "results"),
+        ).catch(() => []);
+        const ledgerFiles = await readdir(
+          resolve(fixture.workspaceRoot, "context", "ledger-backfill", "review-verify"),
+        ).catch(() => []);
+
+        expect(requestFiles).toHaveLength(0);
+        expect(resultFiles).toHaveLength(0);
+        expect(ledgerFiles).toHaveLength(0);
+      },
+      {
+        runtimeDebugOptions: {
+          dryRun: true,
+          trace: false,
+          replayPath: null,
+          adapters: true,
+          taskId: "TK-099",
+        },
+      },
+    );
+  });
+
   it("reads project/sprint audit tags from workspace current-context", async () => {
     await withRuntimeFixture(async (fixture) => {
       const currentContextPath = resolve(fixture.workspaceRoot, "context", "current-context.md");
@@ -777,15 +871,93 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
         expect(runResult.commandResult.operation).toBe("governance_run");
         expect(runResult.commandResult.details?.assembly_mode).toBe("task_driven");
         expect(runResult.commandResult.details?.task_id).toBe("TK-099");
-        expect(runResult.commandResult.details?.assembly_node_count).toBe(4);
+        expect(runResult.commandResult.details?.assembly_node_count).toBe(6);
         expect(runResult.commandResult.details?.input_reference_count).toBe(3);
         expect(runResult.commandResult.details?.input_artifact_count).toBe(2);
+        expect(runResult.commandResult.details?.inline_review_chain_enabled).toBe(true);
+        expect(runResult.commandResult.details?.inline_review_chain_status).toBe("applied");
+        expect(typeof runResult.commandResult.details?.inline_review_request_path).toBe("string");
+        expect(typeof runResult.commandResult.details?.inline_review_verify_path).toBe("string");
+        expect(typeof runResult.commandResult.details?.inline_review_ledger_backfill_path).toBe(
+          "string",
+        );
         expect(
           runResult.commandResult.checks?.find((check) => check.id === "assembly")?.detail,
         ).toContain("mode=task_driven");
         expect(
           runResult.commandResult.checks?.find((check) => check.id === "assembly")?.detail,
         ).toContain("input_references=3");
+        expect(
+          runResult.commandResult.checks?.find((check) => check.id === "review_chain")?.detail,
+        ).toContain("status=applied");
+        expect(
+          runResult.commandResult.artifacts?.some(
+            (artifact) => artifact.id === "inline_review_request",
+          ),
+        ).toBe(true);
+        expect(
+          runResult.commandResult.artifacts?.some(
+            (artifact) => artifact.id === "inline_review_verify_result",
+          ),
+        ).toBe(true);
+        expect(
+          runResult.commandResult.artifacts?.some(
+            (artifact) => artifact.id === "inline_review_ledger_backfill",
+          ),
+        ).toBe(true);
+        expect(
+          runResult.commandResult.experience?.roleProgress.some(
+            (row) =>
+              row.stage === ExecutionProgressStage.REVIEW &&
+              row.status === ExecutionProgressStatus.COMPLETED,
+          ),
+        ).toBe(true);
+        expect(
+          runResult.commandResult.experience?.roleProgress.some(
+            (row) =>
+              row.stage === ExecutionProgressStage.REVIEW_VERIFY &&
+              row.status === ExecutionProgressStatus.COMPLETED,
+          ),
+        ).toBe(true);
+        expect(
+          runResult.commandResult.experience?.roleProgress.some(
+            (row) =>
+              row.stage === ExecutionProgressStage.LEDGER_BACKFILL &&
+              row.status === ExecutionProgressStatus.COMPLETED,
+          ),
+        ).toBe(true);
+
+        const reviewQueueRequestDirectoryPath = resolve(
+          fixture.workspaceRoot,
+          "context",
+          "review-queue",
+          "requests",
+        );
+        const reviewQueueResultDirectoryPath = resolve(
+          fixture.workspaceRoot,
+          "context",
+          "review-queue",
+          "results",
+        );
+        const reviewQueueRequestFileNames = await readdir(reviewQueueRequestDirectoryPath);
+        const reviewQueueResultFileNames = await readdir(reviewQueueResultDirectoryPath);
+        expect(reviewQueueRequestFileNames.some((fileName) => fileName.startsWith("review-"))).toBe(
+          true,
+        );
+        expect(
+          reviewQueueResultFileNames.some((fileName) => fileName.startsWith("review-verify-")),
+        ).toBe(true);
+
+        const sourceRequestPath = resolve(
+          reviewQueueRequestDirectoryPath,
+          reviewQueueRequestFileNames[0] ?? "",
+        );
+        const sourceRequestPayload = JSON.parse(await readFile(sourceRequestPath, "utf8")) as {
+          status?: string;
+          ledgerBackfillStatus?: string;
+        };
+        expect(sourceRequestPayload.status).toBe("verified");
+        expect(sourceRequestPayload.ledgerBackfillStatus).toBe("applied");
       },
       {
         runtimeDebugOptions: {

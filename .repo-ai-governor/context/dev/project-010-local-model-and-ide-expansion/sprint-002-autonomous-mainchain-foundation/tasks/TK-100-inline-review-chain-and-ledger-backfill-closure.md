@@ -1,6 +1,6 @@
 # TK-100 review 子链内联与 ledger backfill 收口
 
-- Status: in_progress
+- Status: completed
 - Date: 2026-03-24
 - Owner: AI-Agent
 - Priority: P0
@@ -48,6 +48,10 @@
 
 1. 2026-03-24：任务创建，状态初始化为 `planned`。
 2. 2026-03-24：任务启动，先收敛 review 默认输出路径的 completed-stream 偏移问题；引入单值 `Worktree Review Target` override、自动退出规则与 stale-target gate，确保 worktree 仍归属于已 completed stream 时 CR 不会误写到后续 active sprint。
+3. 2026-03-24：将 `review / review-verify` 以内联子链节点形式接入 task-driven `run`，使 `stage-task-review` 与 `stage-task-review-verify` 通过受控 command context 执行并保留 managed ledger backfill 语义；核心验证已通过 `tsc --noEmit`、定向 vitest 和 `@repo-ai-governor/cli` 包级测试。
+4. 2026-03-24：已完成 `DA-104`、resolved review、artifact registry 与 sprint 台账同步；`run` 结果现显式暴露 inline review chain artifacts/details/progress，任务状态更新为 `completed`。
+5. 2026-03-24：根据 follow-up CR 修正 inline review 子链的 side-effect gate；当前 `dry-run` 与 policy non-allow 路径仅输出 `dry_run/deferred` 诊断状态，不再真实写入 review queue、ledger backfill 或任务台账。
+6. 2026-03-24：follow-up CR 已收尾为 `resolved`；两条 P1 finding 均已修复并通过 `pnpm run check` 复验。
 
 ## 8. 产出
 

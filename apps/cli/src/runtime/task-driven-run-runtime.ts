@@ -375,8 +375,27 @@ export class CliTaskDrivenRunRuntime {
       taskContext,
       adaptersConfig,
     );
+    const reviewRoleProfileId = this.resolveAvailableRoleProfileId(
+      adaptersConfig,
+      DefaultRoleProfileId.REVIEWER,
+      DefaultRoleProfileId.VERIFIER,
+      DefaultRoleProfileId.PLANNER,
+      DefaultRoleProfileId.CODER,
+    );
+    const reviewVerifyRoleProfileId =
+      verificationRoleProfileId ??
+      this.resolveAvailableRoleProfileId(
+        adaptersConfig,
+        DefaultRoleProfileId.VERIFIER,
+        DefaultRoleProfileId.REVIEWER,
+        DefaultRoleProfileId.TESTER,
+      );
     const includeArtifactContextStage = taskContext.inputArtifacts.length > 0;
     const includeVerificationStage = Boolean(verificationRoleProfileId);
+    const includeInlineReviewChain =
+      taskContext.inputReferences.length > 0 ||
+      taskContext.dependsOnTaskIds.length > 0 ||
+      includeVerificationStage;
     const memorySelection = this.resolveMemorySelection(executionId, taskContext, streamMetadata);
     const memorySnapshot =
       memorySelection && this.memoryManager
@@ -471,6 +490,47 @@ export class CliTaskDrivenRunRuntime {
         ...commonTaskContextPayload,
       };
       previousNodeId = verifyNodeId;
+    }
+
+    if (includeInlineReviewChain) {
+      const reviewNode = this.createNode(
+        CLI_TASK_DRIVEN_RUN_NODE_DEFINITIONS.REVIEW,
+        reviewRoleProfileId,
+      );
+      nodes.push(reviewNode);
+      const reviewNodeId = reviewNode.nodeId ?? CLI_TASK_DRIVEN_RUN_NODE_DEFINITIONS.REVIEW.nodeId;
+      edges.push({
+        fromNodeId: previousNodeId,
+        toNodeId: reviewNodeId,
+      });
+      stageInputs[reviewNodeId] = {
+        phase: "review",
+        managedReviewChain: true,
+        reviewRoleProfileId,
+        reviewVerifyRoleProfileId,
+        ...commonTaskContextPayload,
+      };
+      previousNodeId = reviewNodeId;
+
+      const reviewVerifyNode = this.createNode(
+        CLI_TASK_DRIVEN_RUN_NODE_DEFINITIONS.REVIEW_VERIFY,
+        reviewVerifyRoleProfileId,
+      );
+      nodes.push(reviewVerifyNode);
+      const reviewVerifyNodeId =
+        reviewVerifyNode.nodeId ?? CLI_TASK_DRIVEN_RUN_NODE_DEFINITIONS.REVIEW_VERIFY.nodeId;
+      edges.push({
+        fromNodeId: previousNodeId,
+        toNodeId: reviewVerifyNodeId,
+      });
+      stageInputs[reviewVerifyNodeId] = {
+        phase: "review_verify",
+        managedReviewChain: true,
+        reviewRoleProfileId,
+        reviewVerifyRoleProfileId,
+        ...commonTaskContextPayload,
+      };
+      previousNodeId = reviewVerifyNodeId;
     }
 
     const reportNode = this.createNode(

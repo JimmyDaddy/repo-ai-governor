@@ -234,6 +234,8 @@ describe("CliTaskDrivenRunRuntime", () => {
         "stage-artifact-context",
         "stage-task-execute",
         "stage-task-verify",
+        "stage-task-review",
+        "stage-task-review-verify",
         "stage-task-report",
       ]);
       expect(assembly.processDefinition.globals?.taskContext).toEqual(
@@ -258,6 +260,8 @@ describe("CliTaskDrivenRunRuntime", () => {
       expect(assembly.stageInputs["node-task-verify"]?.verificationRoleProfileId).toBe(
         DefaultRoleProfileId.VERIFIER,
       );
+      expect(assembly.stageInputs["node-task-review"]?.managedReviewChain).toBe(true);
+      expect(assembly.stageInputs["node-task-review-verify"]?.managedReviewChain).toBe(true);
     } finally {
       await rm(workspaceRoot, { recursive: true, force: true });
     }
