@@ -1,6 +1,6 @@
 # TK-099 任务驱动 DAG 与 `run` 主链装配
 
-- Status: in_progress
+- Status: completed
 - Date: 2026-03-24
 - Owner: AI-Agent
 - Priority: P0
@@ -55,9 +55,11 @@
 1. 2026-03-24：任务创建，状态初始化为 `planned`。
 2. 2026-03-24：任务启动，状态切换为 `in_progress`；当前先收敛 `taskId -> task context -> process DSL/stageInputs` 的第一批 task-driven run assembly 骨架。
 3. 2026-03-24：复核 follow-up CR 后，已将 task card section 解析改为语义匹配，并把非 `DA-*` 的 formal handoff input references 一并注入 task context / stage inputs；follow-up CR 收尾为 `resolved`。
+4. 2026-03-24：已完成 `DA-103`、formal resolved review、artifact registry 与 sprint 台账同步；`run` 当前已稳定支持 task-driven DAG 装配、baseline fallback 与 selective memory 注入，任务状态更新为 `completed`。
 
 ## 8. 产出
 
 1. `DA-103` `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-002-autonomous-mainchain-foundation/tasks/DA-103-task-driven-dag-and-run-mainchain-assembly.md`
-2. `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-002-autonomous-mainchain-foundation/tasks/checklist.md`
-3. `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-002-autonomous-mainchain-foundation/tasks/tasks.csv`
+2. `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-002-autonomous-mainchain-foundation/review/resolved_code_review_tk-099-task-driven-dag-and-run-mainchain-assembly.md`
+3. `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-002-autonomous-mainchain-foundation/tasks/checklist.md`
+4. `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-002-autonomous-mainchain-foundation/tasks/tasks.csv`
