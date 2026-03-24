@@ -13,7 +13,7 @@
 1. TK-119 artifact/report/presentation 模块抽离（completed）
 2. TK-120 通用命令执行器抽离与 entry registry 基线（completed）
 3. TK-121 run/review 命令执行器抽离与 thin facade cutover（in_progress）
-4. TK-122 sprint-002 出口验收与 sprint-003 输入约束（planned）
+4. TK-122 sprint-002 出口验收与 sprint-003 输入约束（in_progress）
 
 ## 3. Entry Criteria
 

@@ -14,3 +14,4 @@
   - 2026-03-24：切换为 `in_progress`，开始抽离 `review/review-verify` 命令链并为后续 `run/replay` cutover 预留 command context。
 - [ ] TK-122 sprint-002 出口验收与 sprint-003 输入约束
   - 2026-03-24：任务创建，状态初始化为 `planned`。
+  - 2026-03-24：切换为 `in_progress`，开始汇总 sprint-002 证据并起草 sprint-003 输入约束。
