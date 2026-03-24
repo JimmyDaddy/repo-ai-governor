@@ -10,6 +10,16 @@ export enum CliGovernanceCheckStatus {
 }
 
 /**
+ * Defines finite attribution categories for adapter diagnostic failures.
+ */
+export enum CliAdapterFailureAttribution {
+  ENVIRONMENT_PRECONDITION = "environment_precondition",
+  CONFIGURATION_MISSING = "configuration_missing",
+  MODEL_UNAVAILABLE = "model_unavailable",
+  CAPABILITY_GAP = "capability_gap",
+}
+
+/**
  * Defines workspace attach modes surfaced by `doctor` diagnostics.
  */
 export enum CliDoctorAttachMode {
@@ -78,6 +88,11 @@ export const CLI_DOCTOR_ATTACH_MODE = CliDoctorAttachMode;
  * Re-exports operation enum as a constant namespace for runtime callsites.
  */
 export const CLI_RUNTIME_OPERATION = CliRuntimeOperation;
+
+/**
+ * Re-exports adapter-failure attribution enum as a constant namespace for runtime callsites.
+ */
+export const CLI_ADAPTER_FAILURE_ATTRIBUTION = CliAdapterFailureAttribution;
 
 /**
  * Re-exports review-request enum as a constant namespace for runtime callsites.

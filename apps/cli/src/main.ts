@@ -284,6 +284,9 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
     program.option("--dry-run", runtimeI18n.t("cli.options.dryRun"));
     program.option("--trace", runtimeI18n.t("cli.options.trace"));
     program.option("--replay <path>", runtimeI18n.t("cli.options.replay"));
+    program.option("--restricted-network", runtimeI18n.t("cli.options.restrictedNetwork"));
+    program.option("--restricted-reason <reason>", runtimeI18n.t("cli.options.restrictedReason"));
+    program.option("--no-local-fallback", runtimeI18n.t("cli.options.noLocalFallback"));
     program.showHelpAfterError(false);
     program.configureOutput({
       writeOut: (value) => io.stdout(value),
@@ -663,6 +666,14 @@ function resolveRuntimeDebugOptions(
       { option: "--task-id" },
     );
   }
+  const restrictedReasonOption = readOptionInput(args, "--restricted-reason");
+  if (restrictedReasonOption.isPresent && !restrictedReasonOption.value) {
+    throw new RuntimeError(
+      GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+      "Option --restricted-reason requires one value.",
+      { option: "--restricted-reason" },
+    );
+  }
 
   return {
     dryRun: hasFlag(args, "--dry-run"),
@@ -672,6 +683,9 @@ function resolveRuntimeDebugOptions(
     fix: hasFlag(args, "--fix"),
     recordLedger: hasFlag(args, "--record-ledger"),
     taskId: taskIdOption.value?.trim() || null,
+    restrictedNetwork: hasFlag(args, "--restricted-network"),
+    restrictedReason: restrictedReasonOption.value?.trim() || null,
+    allowLocalFallback: !hasFlag(args, "--no-local-fallback"),
   };
 }
 

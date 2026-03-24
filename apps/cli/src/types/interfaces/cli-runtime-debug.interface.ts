@@ -9,4 +9,7 @@ export interface CliRuntimeDebugOptions {
   fix?: boolean;
   recordLedger?: boolean;
   taskId?: string | null;
+  restrictedNetwork?: boolean;
+  restrictedReason?: string | null;
+  allowLocalFallback?: boolean;
 }

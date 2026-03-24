@@ -17,6 +17,12 @@ export const EN_US_TRANSLATIONS = {
       dryRun: "Execute run pipeline without external side-effect actions.",
       trace: "Emit layered diagnostics trace artifact for local debugging.",
       replay: "Replay diagnostics from report/replay artifact path.",
+      restrictedNetwork:
+        "Simulate restricted-network mode so external adapter surfaces are blocked during run.",
+      restrictedReason:
+        "Explicit restricted-network reason recorded in diagnostics and audit artifacts.",
+      noLocalFallback:
+        "Disable local fallback during restricted-network rehearsal to validate blocking semantics.",
     },
     commands: {
       init: { description: "Initialize governor workspace baseline." },

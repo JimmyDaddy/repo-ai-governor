@@ -12,7 +12,7 @@
 
 1. TK-095 本地模型适配契约与配置扩展基线（completed）
 2. TK-096 Ollama 类 adapter 与 route fallback 基线（completed）
-3. TK-097 本地模型诊断校验与受限网络演练基线（planned）
+3. TK-097 本地模型诊断校验与受限网络演练基线（completed）
 4. TK-098 sprint-001 出口验收与 sprint-002 输入约束（planned）
 5. TK-103 全自动研发 gap 清单与 draft 收敛（completed）
 6. TK-104 主执行计划全自动研发 gap register 上收（completed）
@@ -24,7 +24,7 @@
 
 1. `TK-095`：已完成本地模型 surface 契约与 `governor.yaml` 配置/schema 扩展，并产出 `DA-099` 作为 `TK-096/TK-097` 唯一输入基线。
 2. `TK-096`：已完成真实调用与 route fallback，当前产出 `DA-100` 作为 `TK-097/TK-098` 的唯一实现输入之一。
-3. `TK-097`：基于 `TK-095/TK-096` 验证 deep probe 与 restricted network 演练，产出可复跑门禁证据。
+3. `TK-097`：已完成 deep probe、failure attribution、safe_local boundary 与 restricted network 演练，产出 `DA-101` 与可复跑门禁证据。
 4. `TK-103`：已完成 draft gap checklist，为 `TK-096/TK-097/TK-098` 提供统一问题清单与闭环顺序。
 5. `TK-104`：将 draft 级 gap checklist 正式上收到 master plan，确保 Stage 9 follow-up 与 project-010 的问题清单保持同源。
 6. `TK-105`：已完成 master plan 结构重梳，后续 task 拆解应优先遵循新的“当前执行摘要 -> Stage 9 主线 -> project 映射”阅读路径。

@@ -38,6 +38,22 @@ const SCENARIOS = [
     ],
   },
   {
+    scenarioId: "cli-restricted-network-rehearsal",
+    purpose:
+      "Verify CLI run diagnostics capture restricted-network local fallback takeover semantics.",
+    command: [
+      "pnpm",
+      "run",
+      "test:integration",
+      "--",
+      "apps/cli/test/cli-governance-runtime.integration.test.ts",
+      "--testNamePattern",
+      "restricted-network local fallback rehearsal",
+      "--maxWorkers=1",
+      "--maxConcurrency=1",
+    ],
+  },
+  {
     scenarioId: "task-ledger-sync",
     purpose:
       "Verify task ledger synchronization gate remains green after degraded-mode regression runs.",

@@ -1,8 +1,8 @@
 # TK-097 本地模型诊断校验与受限网络演练基线
 
-- Status: planned
-- Date: 2026-03-23
-- Owner: TBD
+- Status: completed
+- Date: 2026-03-24
+- Owner: AI-Agent
 - Priority: P0
 - Project: `project-010-local-model-and-ide-expansion`
 - Sprint: `sprint-001-local-model-adapter-baseline`
@@ -48,6 +48,9 @@
 ## 7. 执行记录
 
 1. 2026-03-23：任务创建，状态初始化为 `planned`。
+2. 2026-03-24：任务启动，状态切换为 `in_progress`；当前按 `TK-096/DA-100` 作为唯一实现输入，优先补齐本地模型失败归因、safe_local 边界说明与 restricted network CLI 演练链路。
+3. 2026-03-24：完成本地模型失败归因、`doctor` safe_local 边界产物一致性、restricted-network CLI rehearsal 与 resilience regression 场景接线，并生成 `DA-101` 与 resolved review；任务状态更新为 `completed`。
+4. 2026-03-24：复核 follow-up CR 后，已修正 restricted fallback 绕过 capability gate 与 `doctor --fix` 无 adapters 不落 diagnostics 的问题，并将 follow-up CR 收尾为 `resolved`。
 
 ## 8. 产出
 

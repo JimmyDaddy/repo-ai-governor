@@ -11,7 +11,9 @@ import { LocalModelAgentAdapter } from "@repo-ai-governor/adapter-local-model";
 import {
   AgentAvailabilityStatus,
   AgentCapability,
+  AgentCapabilityEvaluator,
   AgentCapabilitySupportLevel,
+  AgentNetworkMode,
   type AgentProbeResult,
   type AgentProtocolContract,
   type AgentRestrictedNetworkFallbackContext,
@@ -76,6 +78,7 @@ import {
 } from "@repo-ai-governor/shared";
 import { CliCommandName } from "./constants/cli-command.constant.js";
 import {
+  CLI_ADAPTER_FAILURE_ATTRIBUTION,
   CLI_BASELINE_DOC_PATHS,
   CLI_CHANGE_RISK_FILE_CATEGORY_PATTERNS,
   CLI_DIAGNOSTIC_ROOT_CAUSE,
@@ -175,6 +178,9 @@ interface CliNormalizedRuntimeDebugOptions {
   fix: boolean;
   recordLedger: boolean;
   taskId: string | null;
+  restrictedNetwork: boolean;
+  restrictedReason: string | null;
+  allowLocalFallback: boolean;
 }
 
 interface CliAdapterToolProbeSnapshot {
@@ -184,6 +190,7 @@ interface CliAdapterToolProbeSnapshot {
   availabilityStatus: AgentAvailabilityStatus;
   unavailableReasons: string[];
   capabilitySupportByCapability: Map<string, AgentCapabilitySupportLevel>;
+  failureAttributions: string[];
 }
 
 interface CliAdapterRoleEvaluation {
@@ -196,6 +203,7 @@ interface CliAdapterRoleEvaluation {
   unsupportedCapabilities: string[];
   degradedCapabilities: string[];
   unavailableReasons: string[];
+  failureAttributions: string[];
   status: CliGovernanceCheckStatus;
 }
 
@@ -656,6 +664,13 @@ export class CliGovernanceRuntime {
 
     let adapterStatus: CliGovernanceCheckStatus | null = null;
     let adapterVerificationSnapshot: CliAdapterVerificationResolution | null = null;
+    const doctorDiagnosticsArtifactPath = resolve(
+      this.options.workspace.workspaceRoot,
+      "context",
+      "diagnostics",
+      "doctor",
+      `doctor-${Date.now()}.json`,
+    );
     if (runtimeDebugOptions.adapters) {
       const adapterVerification = await this.resolveAdapterVerification();
       adapterVerificationSnapshot = adapterVerification;
@@ -675,34 +690,6 @@ export class CliGovernanceRuntime {
       if (adapterVerification.nextActions.length > 0) {
         nextActions.push(...adapterVerification.nextActions);
       }
-
-      const diagnosticsArtifactPath = resolve(
-        this.options.workspace.workspaceRoot,
-        "context",
-        "diagnostics",
-        "doctor",
-        `doctor-${Date.now()}.json`,
-      );
-      await this.writeJsonArtifact(diagnosticsArtifactPath, {
-        generatedAt: this.toRfc3339SecondsTimestamp(new Date()),
-        workspace: {
-          workspaceId: this.options.workspace.workspaceId,
-          workspaceRoot: this.options.workspace.workspaceRoot,
-          workspaceMode: this.options.workspace.mode,
-        },
-        attachMode,
-        options: {
-          adapters: runtimeDebugOptions.adapters,
-          fix: runtimeDebugOptions.fix,
-        },
-        checks,
-        verification: this.createAdapterVerificationArtifactPayload(adapterVerification),
-        nextActions,
-      });
-      artifacts.push({
-        id: "doctor_diagnostics",
-        path: diagnosticsArtifactPath,
-      });
     }
 
     if (runtimeDebugOptions.fix) {
@@ -713,6 +700,12 @@ export class CliGovernanceRuntime {
         detail:
           safeLocalFixCount > 0 ? `applied=${safeLocalFixCount}` : "no_safe_local_changes_applied",
       });
+      nextActions.push(
+        this.localizeText(
+          "safe_local fix only creates writable workspace/config/memory baseline paths; it never installs commands, logs in adapters, or pulls local models.",
+          "safe_local 仅会创建可写的 workspace/config/memory 基线路径；不会安装命令、处理 adapter 登录态，也不会拉取本地模型。",
+        ),
+      );
     }
     if (nextActions.length > 0) {
       checks.push({
@@ -721,6 +714,33 @@ export class CliGovernanceRuntime {
         detail: nextActions[0] ?? "review adapter diagnostics for next action",
       });
     }
+    await this.writeJsonArtifact(doctorDiagnosticsArtifactPath, {
+      generatedAt: this.toRfc3339SecondsTimestamp(new Date()),
+      workspace: {
+        workspaceId: this.options.workspace.workspaceId,
+        workspaceRoot: this.options.workspace.workspaceRoot,
+        workspaceMode: this.options.workspace.mode,
+      },
+      attachMode,
+      options: {
+        adapters: runtimeDebugOptions.adapters,
+        fix: runtimeDebugOptions.fix,
+      },
+      safeLocalBoundary: this.createSafeLocalBoundaryArtifactPayload(runtimeDebugOptions.fix),
+      checks,
+      ...(adapterVerificationSnapshot
+        ? {
+            verification: this.createAdapterVerificationArtifactPayload(
+              adapterVerificationSnapshot,
+            ),
+          }
+        : {}),
+      nextActions,
+    });
+    artifacts.push({
+      id: "doctor_diagnostics",
+      path: doctorDiagnosticsArtifactPath,
+    });
 
     const doctorStatus =
       !workspaceRootExists || !configExists
@@ -750,8 +770,7 @@ export class CliGovernanceRuntime {
         ...this.createAdapterRoleProgressRows({
           verification: adapterVerificationSnapshot,
           stage: ExecutionProgressStage.VERIFY,
-          diagnosticsPath:
-            artifacts.find((artifact) => artifact.id === "doctor_diagnostics")?.path ?? "n/a",
+          diagnosticsPath: doctorDiagnosticsArtifactPath,
           executionId: `doctor-${Date.now()}`,
         }),
       );
@@ -931,7 +950,9 @@ export class CliGovernanceRuntime {
     const nodeById = new Map<string, ProcessIrNode>(
       compiledIr.nodes.map((node) => [node.nodeId, node] as const),
     );
-    const routeRunner = this.createRunRouteRunner(compiledIr.nodes);
+    const routeRunner = this.createRunRouteRunner(compiledIr.nodes, {
+      includeLocalModelFallbackCandidate: !runtimeDebugOptions.restrictedNetwork,
+    });
     const runtimeResult = await processRuntimeEngine.execute(compiledIr, async (stageContext) => ({
       ...(await this.dispatchRunStageWithAdapterRoute(
         routeRunner,
@@ -2202,6 +2223,13 @@ export class CliGovernanceRuntime {
         this.options.runtimeDebugOptions.taskId.trim().length > 0
           ? this.options.runtimeDebugOptions.taskId.trim()
           : null,
+      restrictedNetwork: this.options.runtimeDebugOptions?.restrictedNetwork === true,
+      restrictedReason:
+        typeof this.options.runtimeDebugOptions?.restrictedReason === "string" &&
+        this.options.runtimeDebugOptions.restrictedReason.trim().length > 0
+          ? this.options.runtimeDebugOptions.restrictedReason.trim()
+          : null,
+      allowLocalFallback: this.options.runtimeDebugOptions?.allowLocalFallback !== false,
     };
   }
 
@@ -2239,9 +2267,10 @@ export class CliGovernanceRuntime {
       snapshot.unavailableReasons.length > 0
         ? this.humanizeToolUnavailableReasons(snapshot.unavailableReasons)
         : ["none"];
+    const attributionLabel = this.localizeText("attribution", "归因");
     const availabilityLabel = this.localizeText("availability", "可用性");
     const reasonsLabel = this.localizeText("reasons", "原因");
-    return `${availabilityLabel}=${snapshot.availabilityStatus} ${reasonsLabel}=${readableReasons.join(" | ")}`;
+    return `${availabilityLabel}=${snapshot.availabilityStatus} ${attributionLabel}=${snapshot.failureAttributions.join("|") || "none"} ${reasonsLabel}=${readableReasons.join(" | ")}`;
   }
 
   /**
@@ -2262,7 +2291,11 @@ export class CliGovernanceRuntime {
       roleEvaluation.unavailableReasons.length > 0
         ? roleEvaluation.unavailableReasons.join("|")
         : "none";
-    return `required=${roleEvaluation.required} selected=${roleEvaluation.selectedSurface ?? "none"} selected_by=${roleEvaluation.selectedBy} unsupported=${unsupported} degraded=${degraded} reasons=${unavailableReasons}`;
+    const failureAttributions =
+      roleEvaluation.failureAttributions.length > 0
+        ? roleEvaluation.failureAttributions.join("|")
+        : "none";
+    return `required=${roleEvaluation.required} selected=${roleEvaluation.selectedSurface ?? "none"} selected_by=${roleEvaluation.selectedBy} unsupported=${unsupported} degraded=${degraded} attribution=${failureAttributions} reasons=${unavailableReasons}`;
   }
 
   /**
@@ -2312,6 +2345,14 @@ export class CliGovernanceRuntime {
       );
     }
 
+    if (reason.startsWith("local_model_config_missing:")) {
+      const [, surface, missingKeys] = reason.split(":", 3);
+      return this.localizeText(
+        `local-model surface "${surface}" is missing config fields "${missingKeys}"`,
+        `本地模型 surface "${surface}" 缺少配置字段 "${missingKeys}"`,
+      );
+    }
+
     if (reason.startsWith("local_model_endpoint_unreachable:")) {
       const [, surface, encodedEndpoint, errorCode, ...messageParts] = reason.split(":");
       const endpoint = decodeURIComponent(encodedEndpoint ?? "");
@@ -2340,6 +2381,30 @@ export class CliGovernanceRuntime {
     }
 
     return reason;
+  }
+
+  /**
+   * Defines explicit safe_local doctor-fix boundary for operator-facing diagnostics.
+   * @param fixEnabled Whether `--fix` is enabled in the current doctor invocation.
+   * @returns JSON-serializable safe_local boundary payload.
+   */
+  private createSafeLocalBoundaryArtifactPayload(fixEnabled: boolean): Record<string, unknown> {
+    return {
+      mode: "safe_local_only",
+      fixEnabled,
+      allowedWrites: [
+        "workspace_root_directory",
+        "workspace_config_template",
+        "memory_store_root_directory",
+      ],
+      blockedMutations: [
+        "adapter_credentials",
+        "adapter_login_state",
+        "local_model_endpoint",
+        "local_model_model_pull",
+        "remote_provider_installation",
+      ],
+    };
   }
 
   /**
@@ -2374,12 +2439,14 @@ export class CliGovernanceRuntime {
       requiredRoleFailedCount: verification.requiredRoleFailedCount,
       degradedRoleCount: verification.degradedRoleCount,
       fallbackRoleCount: verification.fallbackRoleCount,
+      failureAttributionSummary: this.createFailureAttributionSummary(verification),
       tools: verification.tools.map((tool) => ({
         toolId: tool.toolId,
         enabled: tool.enabled,
         configuredAvailability: tool.configuredAvailability,
         availabilityStatus: tool.availabilityStatus,
         unavailableReasons: tool.unavailableReasons,
+        failureAttributions: tool.failureAttributions,
         capabilitySupportByCapability: Object.fromEntries(
           tool.capabilitySupportByCapability.entries(),
         ),
@@ -2394,6 +2461,7 @@ export class CliGovernanceRuntime {
         unsupportedCapabilities: role.unsupportedCapabilities,
         degradedCapabilities: role.degradedCapabilities,
         unavailableReasons: role.unavailableReasons,
+        failureAttributions: role.failureAttributions,
         status: role.status,
       })),
     };
@@ -2404,7 +2472,14 @@ export class CliGovernanceRuntime {
    * @param nodes Runtime process nodes.
    * @returns Route runner instance bound to configured surfaces and role bindings.
    */
-  private createRunRouteRunner(nodes: ProcessIrNode[]): AgentRouteRunner {
+  private createRunRouteRunner(
+    nodes: ProcessIrNode[],
+    options: {
+      includeLocalModelFallbackCandidate: boolean;
+    } = {
+      includeLocalModelFallbackCandidate: true,
+    },
+  ): AgentRouteRunner {
     const toolConfigBySurface = this.createToolConfigBySurfaceMap();
     const protocolBySurface = this.createProtocolBySurface(toolConfigBySurface);
     const routeNodeByRouteKey = new Map<string, ProcessIrNode>();
@@ -2434,6 +2509,7 @@ export class CliGovernanceRuntime {
       const candidateSurfaces = this.resolveRoleBindingCandidateSurfaces(
         roleBinding,
         toolConfigBySurface,
+        options.includeLocalModelFallbackCandidate,
       );
       return {
         routeKey: node.routeKey,
@@ -2490,6 +2566,17 @@ export class CliGovernanceRuntime {
         roleProfileId: stageContext.roleProfileId,
         nodeId: stageContext.nodeId,
       },
+      runtimeContext: {
+        networkMode: runtimeDebugOptions.restrictedNetwork
+          ? AgentNetworkMode.RESTRICTED
+          : AgentNetworkMode.STANDARD,
+        allowLocalFallback: runtimeDebugOptions.allowLocalFallback,
+        ...(runtimeDebugOptions.restrictedReason
+          ? {
+              restrictedReason: runtimeDebugOptions.restrictedReason,
+            }
+          : {}),
+      },
     });
 
     return {
@@ -2498,9 +2585,13 @@ export class CliGovernanceRuntime {
       stageId: stageContext.stageId,
       routeKey: stageContext.routeKey,
       roleProfileId: stageContext.roleProfileId,
-      adapterSurface: dispatchResult.selectedSurface,
+      selectedSurface: dispatchResult.selectedSurface,
       selectedBy: dispatchResult.auditRecord.selectedBy ?? "unknown",
       fallbackTriggered: dispatchResult.auditRecord.fallbackTriggered,
+      localFallbackActivated: dispatchResult.auditRecord.localFallbackActivated,
+      restrictedNetworkTriggered: dispatchResult.auditRecord.restrictedNetworkTriggered,
+      networkMode: dispatchResult.auditRecord.networkMode,
+      restrictedReason: dispatchResult.auditRecord.restrictedReason ?? null,
       evaluatedSurfaceCount: dispatchResult.auditRecord.evaluatedSurfaces.length,
       ...dispatchResult.invokeResult.output,
     };
@@ -2631,12 +2722,15 @@ export class CliGovernanceRuntime {
   private resolveRoleBindingCandidateSurfaces(
     roleBinding: AdaptersConfig["routing"]["roleBindings"][string],
     toolConfigBySurface: Map<AdapterSurface, NonNullable<AdaptersConfig["tools"]>[number]>,
+    includeLocalModelFallbackCandidate = true,
   ): AdapterSurface[] {
     const candidateSurfaces = [
       roleBinding.primarySurface,
       ...(roleBinding.fallbackSurfaces ?? []),
     ].filter((surface, index, list) => list.indexOf(surface) === index);
-    const localModelFallbackSurface = this.resolveLocalModelFallbackSurface(toolConfigBySurface);
+    const localModelFallbackSurface = includeLocalModelFallbackCandidate
+      ? this.resolveLocalModelFallbackSurface(toolConfigBySurface)
+      : null;
     if (localModelFallbackSurface && !candidateSurfaces.includes(localModelFallbackSurface)) {
       candidateSurfaces.push(localModelFallbackSurface);
     }
@@ -2700,9 +2794,57 @@ export class CliGovernanceRuntime {
     if (!localModelProtocol) {
       return undefined;
     }
+    const capabilityEvaluator = new AgentCapabilityEvaluator();
     return {
-      invokeFallback: (context: AgentRestrictedNetworkFallbackContext) =>
-        localModelProtocol.invokeStage(context.request),
+      invokeFallback: async (context: AgentRestrictedNetworkFallbackContext) => {
+        const capabilityRequirement =
+          context.request.capabilityRequirementOverride ??
+          context.routePolicy.capabilityRequirement;
+        const probeResult = await localModelProtocol.probe({
+          routeKey: context.request.routeKey,
+          ...(capabilityRequirement
+            ? {
+                requiredCapabilities: capabilityRequirement.requiredCapabilities,
+              }
+            : {}),
+        });
+
+        if (probeResult.availabilityStatus === AgentAvailabilityStatus.UNAVAILABLE) {
+          throw new RuntimeError(
+            GovernorErrorCode.ADAPTER_ROUTE_NO_AVAILABLE_SURFACE,
+            `Restricted network local fallback surface "${localModelFallbackSurface}" is unavailable for route "${context.request.routeKey}".`,
+            {
+              routeKey: context.request.routeKey,
+              restrictedReason: context.reason,
+              fallbackSurface: localModelFallbackSurface,
+              unavailableReasons: probeResult.unavailableReasons,
+            },
+          );
+        }
+
+        if (capabilityRequirement) {
+          const capabilityEvaluation = capabilityEvaluator.evaluate(
+            probeResult.capabilityMatrix,
+            capabilityRequirement,
+          );
+          if (!capabilityEvaluation.isSatisfied) {
+            throw new RuntimeError(
+              GovernorErrorCode.ADAPTER_ROUTE_CAPABILITY_UNSATISFIED,
+              `Restricted network local fallback surface "${localModelFallbackSurface}" does not satisfy route "${context.request.routeKey}" capability requirement.`,
+              {
+                routeKey: context.request.routeKey,
+                restrictedReason: context.reason,
+                fallbackSurface: localModelFallbackSurface,
+                unsupportedCapabilities: capabilityEvaluation.unsupportedCapabilities,
+                degradedCapabilities: capabilityEvaluation.degradedCapabilities,
+                requiredFallbackActions: capabilityEvaluation.requiredFallbackActions,
+              },
+            );
+          }
+        }
+
+        return localModelProtocol.invokeStage(context.request);
+      },
     };
   }
 
@@ -2835,6 +2977,7 @@ export class CliGovernanceRuntime {
       (role) => {
         const roleBinding = routingByRole[role.roleId];
         if (!roleBinding) {
+          const unavailableReasons = [`missing_role_binding:${role.roleId}`];
           return {
             roleId: role.roleId,
             roleProfileId: role.roleProfileId,
@@ -2844,7 +2987,10 @@ export class CliGovernanceRuntime {
             selectedBy: "none",
             unsupportedCapabilities: [],
             degradedCapabilities: [],
-            unavailableReasons: [`missing_role_binding:${role.roleId}`],
+            unavailableReasons,
+            failureAttributions: this.resolveFailureAttributions({
+              unavailableReasons,
+            }),
             status: role.required ? CliGovernanceCheckStatus.FAIL : CliGovernanceCheckStatus.WARN,
           };
         }
@@ -2908,6 +3054,10 @@ export class CliGovernanceRuntime {
             unsupportedCapabilities: [],
             degradedCapabilities,
             unavailableReasons,
+            failureAttributions: this.resolveFailureAttributions({
+              unavailableReasons,
+              degradedCapabilities,
+            }),
             status:
               selectedBy === "fallback" || degraded
                 ? CliGovernanceCheckStatus.WARN
@@ -2928,6 +3078,12 @@ export class CliGovernanceRuntime {
             unavailableReasons.length > 0
               ? unavailableReasons
               : [`surface_unavailable:${roleBinding.primarySurface}`],
+          failureAttributions: this.resolveFailureAttributions({
+            unavailableReasons:
+              unavailableReasons.length > 0
+                ? unavailableReasons
+                : [`surface_unavailable:${roleBinding.primarySurface}`],
+          }),
           status: role.required ? CliGovernanceCheckStatus.FAIL : CliGovernanceCheckStatus.WARN,
         };
       },
@@ -3016,6 +3172,18 @@ export class CliGovernanceRuntime {
         ),
       );
     }
+    const missingLocalModelConfigs = this.collectToolReasonPayloads(
+      toolSnapshots,
+      "local_model_config_missing:",
+    );
+    if (missingLocalModelConfigs.length > 0) {
+      nextActions.push(
+        this.localizeText(
+          `Provide adapters.tools[].localModel { provider, endpoint, model } for: ${missingLocalModelConfigs.join(", ")}.`,
+          `请为以下工具补齐 adapters.tools[].localModel 的 provider、endpoint、model 配置：${missingLocalModelConfigs.join(", ")}。`,
+        ),
+      );
+    }
     if (
       this.collectToolReasonPayloads(toolSnapshots, "local_model_endpoint_unreachable:").length >
         0 ||
@@ -3078,8 +3246,19 @@ export class CliGovernanceRuntime {
         : AdapterAvailability.UNAVAILABLE;
       const configuredUnavailableReasons = [...(toolConfig?.unavailableReasons ?? [])];
       const protocol = protocolBySurface[surface];
+      const localModelConfigResolution = enabled
+        ? this.resolveLocalModelConfigurationResolution(surface, toolConfig)
+        : {
+            availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+            unavailableReasons: [`disabled_by_config:${surface}`],
+          };
       const localProbeResolution = enabled
-        ? await this.probeLocalAdapterAvailability(surface, toolConfig)
+        ? localModelConfigResolution.availabilityStatus === AgentAvailabilityStatus.UNAVAILABLE
+          ? localModelConfigResolution
+          : await this.mergeLocalProbeResolutions(
+              localModelConfigResolution,
+              this.probeLocalAdapterAvailability(surface, toolConfig),
+            )
         : {
             availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
             unavailableReasons: [`disabled_by_config:${surface}`],
@@ -3103,21 +3282,32 @@ export class CliGovernanceRuntime {
             ...localProbeResolution.unavailableReasons,
           ].filter((reason, index, list) => list.indexOf(reason) === index),
           capabilitySupportByCapability: this.createCapabilitySupportMap(probeResult),
+          failureAttributions: this.resolveFailureAttributions({
+            unavailableReasons: [
+              ...configuredUnavailableReasons,
+              ...probeResult.unavailableReasons,
+              ...localProbeResolution.unavailableReasons,
+            ].filter((reason, index, list) => list.indexOf(reason) === index),
+          }),
         });
       } catch (error) {
         const standardizedError = this.formatExecFailureDetail(error);
         const disabledReasons = enabled ? [] : [`disabled_by_config:${surface}`];
+        const unavailableReasons = [
+          ...configuredUnavailableReasons,
+          ...disabledReasons,
+          `probe_failed:${standardizedError}`,
+        ].filter((reason, index, list) => list.indexOf(reason) === index);
         snapshots.push({
           toolId: surface,
           enabled,
           configuredAvailability,
           availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
-          unavailableReasons: [
-            ...configuredUnavailableReasons,
-            ...disabledReasons,
-            `probe_failed:${standardizedError}`,
-          ].filter((reason, index, list) => list.indexOf(reason) === index),
+          unavailableReasons,
           capabilitySupportByCapability: new Map(),
+          failureAttributions: this.resolveFailureAttributions({
+            unavailableReasons,
+          }),
         });
       }
     }
@@ -3359,6 +3549,169 @@ export class CliGovernanceRuntime {
   }
 
   /**
+   * Validates runtime local-model config presence for one tracked adapter surface.
+   * @param surface Adapter surface under inspection.
+   * @param toolConfig Optional tool config row.
+   * @returns Availability-style resolution for config completeness checks.
+   */
+  private resolveLocalModelConfigurationResolution(
+    surface: AdapterSurface,
+    toolConfig?: NonNullable<AdaptersConfig["tools"]>[number],
+  ): CliLocalAdapterProbeResolution {
+    if (surface !== AdapterSurface.OLLAMA) {
+      return {
+        availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+        unavailableReasons: [],
+      };
+    }
+
+    const missingKeys: string[] = [];
+    const localModel = toolConfig?.localModel;
+    if (!localModel) {
+      missingKeys.push("provider", "endpoint", "model");
+    } else {
+      if (typeof localModel.provider !== "string" || localModel.provider.trim().length === 0) {
+        missingKeys.push("provider");
+      }
+      if (typeof localModel.endpoint !== "string" || localModel.endpoint.trim().length === 0) {
+        missingKeys.push("endpoint");
+      }
+      if (typeof localModel.model !== "string" || localModel.model.trim().length === 0) {
+        missingKeys.push("model");
+      }
+    }
+
+    if (missingKeys.length === 0) {
+      return {
+        availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+        unavailableReasons: [],
+      };
+    }
+
+    return {
+      availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+      unavailableReasons: [
+        `local_model_config_missing:${surface}:${missingKeys.filter((key, index, list) => list.indexOf(key) === index).join("|")}`,
+      ],
+    };
+  }
+
+  /**
+   * Merges pre-flight config validation with async local probe execution.
+   * @param baseResolution Synchronous resolution from config checks.
+   * @param probePromise Async runtime probe promise.
+   * @returns Merged local-probe availability.
+   */
+  private async mergeLocalProbeResolutions(
+    baseResolution: CliLocalAdapterProbeResolution,
+    probePromise: Promise<CliLocalAdapterProbeResolution>,
+  ): Promise<CliLocalAdapterProbeResolution> {
+    const probeResolution = await probePromise;
+    return {
+      availabilityStatus: this.mergeAvailabilityStatus(
+        baseResolution.availabilityStatus,
+        probeResolution.availabilityStatus,
+      ),
+      unavailableReasons: [
+        ...baseResolution.unavailableReasons,
+        ...probeResolution.unavailableReasons,
+      ].filter((reason, index, list) => list.indexOf(reason) === index),
+    };
+  }
+
+  /**
+   * Resolves deterministic failure-attribution buckets from reasons and capability gaps.
+   * @param options Unavailable reasons plus optional capability gaps.
+   * @returns Ordered attribution categories without duplicates.
+   */
+  private resolveFailureAttributions(options: {
+    unavailableReasons: string[];
+    unsupportedCapabilities?: string[];
+    degradedCapabilities?: string[];
+  }): string[] {
+    const attributions: string[] = [];
+
+    const pushAttribution = (attribution: string): void => {
+      if (!attributions.includes(attribution)) {
+        attributions.push(attribution);
+      }
+    };
+
+    if (
+      (options.unsupportedCapabilities?.length ?? 0) > 0 ||
+      (options.degradedCapabilities?.length ?? 0) > 0
+    ) {
+      pushAttribution(CLI_ADAPTER_FAILURE_ATTRIBUTION.CAPABILITY_GAP);
+    }
+
+    for (const reason of options.unavailableReasons) {
+      if (
+        reason.startsWith("local_model_config_missing:") ||
+        reason.startsWith("missing_role_binding:") ||
+        reason.startsWith("disabled_by_config:") ||
+        reason.startsWith("tool_disabled:")
+      ) {
+        pushAttribution(CLI_ADAPTER_FAILURE_ATTRIBUTION.CONFIGURATION_MISSING);
+        continue;
+      }
+
+      if (reason.startsWith("local_model_model_missing:")) {
+        pushAttribution(CLI_ADAPTER_FAILURE_ATTRIBUTION.MODEL_UNAVAILABLE);
+        continue;
+      }
+
+      if (reason.startsWith("capability_gap:")) {
+        pushAttribution(CLI_ADAPTER_FAILURE_ATTRIBUTION.CAPABILITY_GAP);
+        continue;
+      }
+
+      if (reason.startsWith("surface_unavailable:")) {
+        if (reason.includes("local_model_config_missing:")) {
+          pushAttribution(CLI_ADAPTER_FAILURE_ATTRIBUTION.CONFIGURATION_MISSING);
+        }
+        if (reason.includes("local_model_model_missing:")) {
+          pushAttribution(CLI_ADAPTER_FAILURE_ATTRIBUTION.MODEL_UNAVAILABLE);
+        }
+        if (reason.includes("capability_gap:")) {
+          pushAttribution(CLI_ADAPTER_FAILURE_ATTRIBUTION.CAPABILITY_GAP);
+        }
+        pushAttribution(CLI_ADAPTER_FAILURE_ATTRIBUTION.ENVIRONMENT_PRECONDITION);
+        continue;
+      }
+
+      if (
+        reason.startsWith("command_missing:") ||
+        reason.startsWith("command_probe_failed:") ||
+        reason.startsWith("probe_failed:") ||
+        reason.startsWith("local_model_endpoint_unreachable:") ||
+        reason.startsWith("local_model_probe_invalid_response:")
+      ) {
+        pushAttribution(CLI_ADAPTER_FAILURE_ATTRIBUTION.ENVIRONMENT_PRECONDITION);
+      }
+    }
+
+    return attributions;
+  }
+
+  /**
+   * Aggregates tool/role attribution counts for diagnostics artifacts.
+   * @param verification Adapter verification snapshot.
+   * @returns Summary object keyed by attribution id.
+   */
+  private createFailureAttributionSummary(
+    verification: CliAdapterVerificationResolution,
+  ): Record<string, number> {
+    const summary = new Map<string, number>();
+    for (const attribution of [
+      ...verification.tools.flatMap((tool) => tool.failureAttributions),
+      ...verification.roleEvaluations.flatMap((role) => role.failureAttributions),
+    ]) {
+      summary.set(attribution, (summary.get(attribution) ?? 0) + 1);
+    }
+    return Object.fromEntries(summary.entries());
+  }
+
+  /**
    * Converts optional config availability override into adapter-sdk availability enum.
    * @param availability Optional config-level availability override.
    * @returns Adapter availability status used by adapter constructor options.
@@ -3435,6 +3788,20 @@ export class CliGovernanceRuntime {
         handledBy:
           output && typeof output.handledBy === "string" ? output.handledBy : "unknown_handler",
         routeKey: output && typeof output.routeKey === "string" ? output.routeKey : "unknown_route",
+        selectedSurface:
+          output && typeof output.selectedSurface === "string"
+            ? output.selectedSurface
+            : "unknown_surface",
+        adapterSurface:
+          output && typeof output.adapterSurface === "string"
+            ? output.adapterSurface
+            : "unknown_surface",
+        localFallbackActivated:
+          output && typeof output.localFallbackActivated === "boolean"
+            ? output.localFallbackActivated
+            : false,
+        restrictedReason:
+          output && typeof output.restrictedReason === "string" ? output.restrictedReason : null,
       };
     });
 

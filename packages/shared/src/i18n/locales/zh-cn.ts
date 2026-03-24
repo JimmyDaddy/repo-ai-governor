@@ -17,6 +17,9 @@ export const ZH_CN_TRANSLATIONS = {
       dryRun: "以本地调试模式执行 run 链路，不触发外部副作用动作。",
       trace: "输出分层诊断 trace 产物，便于本地定位问题。",
       replay: "从 report/replay 产物路径回放诊断结果。",
+      restrictedNetwork: "模拟受限网络模式，在 run 演练中阻断外部 adapter surface。",
+      restrictedReason: "为受限网络演练显式记录原因，并写入诊断与审计产物。",
+      noLocalFallback: "在受限网络演练中禁用本地 fallback，用于验证阻断语义。",
     },
     commands: {
       init: { description: "初始化治理工作区基线。" },

@@ -2,7 +2,11 @@ import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promis
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 
-import { AgentAvailabilityStatus, AgentCapability } from "@repo-ai-governor/adapter-sdk";
+import {
+  AGENT_LOCAL_FALLBACK_SURFACE,
+  AgentAvailabilityStatus,
+  AgentCapability,
+} from "@repo-ai-governor/adapter-sdk";
 import {
   type AdaptersConfig,
   type ResolvedWorkspace,
@@ -185,6 +189,44 @@ function createLocalFallbackAdaptersConfig(): AdaptersConfig {
       },
     },
   ];
+  return adaptersConfig;
+}
+
+/**
+ * Creates adapters config where remote surfaces stay primary-capable and Ollama is available
+ * only as restricted-network fallback.
+ * @returns Adapters config for restricted-network rehearsal.
+ */
+function createRestrictedNetworkRehearsalAdaptersConfig(): AdaptersConfig {
+  const adaptersConfig = createAdaptersConfigFixture();
+  adaptersConfig.tools = [
+    ...(adaptersConfig.tools ?? []),
+    {
+      toolId: AdapterSurface.OLLAMA,
+      enabled: true,
+      availability: AdapterAvailability.AVAILABLE,
+      localModel: {
+        provider: LocalModelProvider.OLLAMA,
+        endpoint: "http://127.0.0.1:11434",
+        model: "qwen2.5-coder:7b",
+        maxRetries: 0,
+      },
+    },
+  ];
+  return adaptersConfig;
+}
+
+/**
+ * Creates one restricted-network rehearsal config where the local-model surface satisfies
+ * the route capability requirement, allowing positive takeover verification.
+ * @returns Adapters config for positive restricted-network local-fallback rehearsal.
+ */
+function createRestrictedNetworkCapabilityCompatibleAdaptersConfig(): AdaptersConfig {
+  const adaptersConfig = createRestrictedNetworkRehearsalAdaptersConfig();
+  adaptersConfig.roles = adaptersConfig.roles.map((role) => ({
+    ...role,
+    requiredCapabilities: [AgentCapability.CONTEXT_WINDOW],
+  }));
   return adaptersConfig;
 }
 
@@ -712,6 +754,110 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
     );
   });
 
+  it("persists safe_local boundary and final next-actions in doctor diagnostics when fix is enabled", async () => {
+    await withRuntimeFixture(
+      async (fixture) => {
+        const doctorResult = await fixture.runtime.execute(CliCommandName.DOCTOR);
+        const diagnosticsArtifactPath = doctorResult.commandResult.artifacts?.find(
+          (artifact) => artifact.id === "doctor_diagnostics",
+        )?.path;
+        expect(typeof diagnosticsArtifactPath).toBe("string");
+
+        const diagnosticsPayload = JSON.parse(
+          await readFile(String(diagnosticsArtifactPath), "utf8"),
+        ) as {
+          safeLocalBoundary?: {
+            mode?: string;
+            fixEnabled?: boolean;
+            blockedMutations?: string[];
+          };
+          checks?: Array<{
+            id?: string;
+          }>;
+          nextActions?: string[];
+        };
+
+        expect(diagnosticsPayload.safeLocalBoundary?.mode).toBe("safe_local_only");
+        expect(diagnosticsPayload.safeLocalBoundary?.fixEnabled).toBe(true);
+        expect(diagnosticsPayload.safeLocalBoundary?.blockedMutations ?? []).toContain(
+          "local_model_model_pull",
+        );
+        expect(
+          (diagnosticsPayload.checks ?? []).some((check) => check.id === "safe_local_fix"),
+        ).toBe(true);
+        expect(
+          (diagnosticsPayload.nextActions ?? []).some((action) =>
+            action.includes(
+              "safe_local fix only creates writable workspace/config/memory baseline paths",
+            ),
+          ),
+        ).toBe(true);
+      },
+      {
+        runtimeDebugOptions: {
+          dryRun: false,
+          trace: false,
+          replayPath: null,
+          adapters: true,
+          fix: true,
+        },
+      },
+    );
+  });
+
+  it("writes doctor diagnostics even when fix runs without adapters", async () => {
+    await withRuntimeFixture(
+      async (fixture) => {
+        const doctorResult = await fixture.runtime.execute(CliCommandName.DOCTOR);
+        const diagnosticsArtifactPath = doctorResult.commandResult.artifacts?.find(
+          (artifact) => artifact.id === "doctor_diagnostics",
+        )?.path;
+        expect(typeof diagnosticsArtifactPath).toBe("string");
+
+        const diagnosticsPayload = JSON.parse(
+          await readFile(String(diagnosticsArtifactPath), "utf8"),
+        ) as {
+          options?: {
+            adapters?: boolean;
+            fix?: boolean;
+          };
+          safeLocalBoundary?: {
+            mode?: string;
+          };
+          checks?: Array<{
+            id?: string;
+          }>;
+          nextActions?: string[];
+          verification?: unknown;
+        };
+
+        expect(diagnosticsPayload.options?.adapters).toBe(false);
+        expect(diagnosticsPayload.options?.fix).toBe(true);
+        expect(diagnosticsPayload.safeLocalBoundary?.mode).toBe("safe_local_only");
+        expect(
+          (diagnosticsPayload.checks ?? []).some((check) => check.id === "safe_local_fix"),
+        ).toBe(true);
+        expect(diagnosticsPayload.verification).toBeUndefined();
+        expect(
+          (diagnosticsPayload.nextActions ?? []).some((action) =>
+            action.includes(
+              "safe_local fix only creates writable workspace/config/memory baseline paths",
+            ),
+          ),
+        ).toBe(true);
+      },
+      {
+        runtimeDebugOptions: {
+          dryRun: false,
+          trace: false,
+          replayPath: null,
+          adapters: false,
+          fix: true,
+        },
+      },
+    );
+  });
+
   it("emits actionable next-actions for missing command and probe failures", async () => {
     await withRuntimeFixture(
       async (fixture) => {
@@ -962,12 +1108,215 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
         commandProbeExecutor: async (command) => {
           if (command === "ollama") {
             const error = new RuntimeError(
-              GovernorErrorCode.EXECUTION_FAILED,
+              GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED,
               "spawn ollama ENOENT",
             ) as NodeJS.ErrnoException;
             error.code = "ENOENT";
             throw error;
           }
+        },
+      },
+    );
+  });
+
+  it("reports configuration_missing attribution for incomplete local-model config", async () => {
+    const adaptersConfig = createRestrictedNetworkRehearsalAdaptersConfig();
+    const ollamaTool = adaptersConfig.tools?.find((tool) => tool.toolId === AdapterSurface.OLLAMA);
+    if (ollamaTool) {
+      ollamaTool.localModel = undefined;
+    }
+
+    await withRuntimeFixture(
+      async (fixture) => {
+        const connectResult = await fixture.runtime.execute(CliCommandName.CONNECT);
+        const diagnosticsArtifactPath = connectResult.commandResult.artifacts?.find(
+          (artifact) => artifact.id === "connect_diagnostics",
+        )?.path;
+        expect(typeof diagnosticsArtifactPath).toBe("string");
+
+        const diagnosticsPayload = JSON.parse(
+          await readFile(String(diagnosticsArtifactPath), "utf8"),
+        ) as {
+          nextActions?: string[];
+          verification?: {
+            failureAttributionSummary?: Record<string, number>;
+            tools?: Array<{
+              toolId?: string;
+              unavailableReasons?: string[];
+              failureAttributions?: string[];
+            }>;
+          };
+        };
+        const ollamaSnapshot = diagnosticsPayload.verification?.tools?.find(
+          (tool) => tool.toolId === AdapterSurface.OLLAMA,
+        );
+
+        expect(ollamaSnapshot?.unavailableReasons ?? []).toContain(
+          "local_model_config_missing:ollama:provider|endpoint|model",
+        );
+        expect(ollamaSnapshot?.failureAttributions ?? []).toContain("configuration_missing");
+        expect(
+          diagnosticsPayload.verification?.failureAttributionSummary?.configuration_missing ?? 0,
+        ).toBeGreaterThan(0);
+        expect(
+          (diagnosticsPayload.nextActions ?? []).some((action) =>
+            action.includes("Provide adapters.tools[].localModel"),
+          ),
+        ).toBe(true);
+      },
+      {
+        adaptersConfig,
+        runtimeDebugOptions: {
+          dryRun: false,
+          trace: false,
+          replayPath: null,
+          adapters: true,
+        },
+      },
+    );
+  });
+
+  it("keeps restricted-network local fallback gated by required capabilities", async () => {
+    const fetchMock = vi.fn(async (input: string | URL | Request) => {
+      if (String(input).includes("/api/tags")) {
+        return new Response(
+          JSON.stringify({
+            models: [
+              {
+                name: "qwen2.5-coder:7b",
+              },
+            ],
+          }),
+          {
+            status: 200,
+            headers: {
+              "content-type": "application/json",
+            },
+          },
+        );
+      }
+
+      return new Response(
+        JSON.stringify({
+          response: "restricted-network local fallback completed",
+          done: true,
+        }),
+        {
+          status: 200,
+          headers: {
+            "content-type": "application/json",
+          },
+        },
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await withRuntimeFixture(
+      async (fixture) => {
+        const runtimeWithOverrides = fixture.runtime as unknown as {
+          collectGitChangedPaths: () => Promise<string[]>;
+        };
+        runtimeWithOverrides.collectGitChangedPaths = async () => [];
+
+        const runResult = await fixture.runtime.execute(CliCommandName.RUN);
+        expect(runResult.commandResult.details?.runtime_status).toBe("failed");
+        expect(
+          runResult.commandResult.checks?.some(
+            (check) => check.id === "runtime" && check.detail.includes("status=failed"),
+          ),
+        ).toBe(true);
+      },
+      {
+        adaptersConfig: createRestrictedNetworkRehearsalAdaptersConfig(),
+        runtimeDebugOptions: {
+          dryRun: false,
+          trace: true,
+          replayPath: null,
+          restrictedNetwork: true,
+          restrictedReason: "ci_restricted_rehearsal",
+          allowLocalFallback: true,
+        },
+      },
+    );
+  });
+
+  it("supports restricted-network local fallback rehearsal during run when capability-compatible", async () => {
+    const fetchMock = vi.fn(async (input: string | URL | Request) => {
+      if (String(input).includes("/api/tags")) {
+        return new Response(
+          JSON.stringify({
+            models: [
+              {
+                name: "qwen2.5-coder:7b",
+              },
+            ],
+          }),
+          {
+            status: 200,
+            headers: {
+              "content-type": "application/json",
+            },
+          },
+        );
+      }
+
+      return new Response(
+        JSON.stringify({
+          response: "restricted-network local fallback completed",
+          done: true,
+        }),
+        {
+          status: 200,
+          headers: {
+            "content-type": "application/json",
+          },
+        },
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await withRuntimeFixture(
+      async (fixture) => {
+        const runtimeWithOverrides = fixture.runtime as unknown as {
+          collectGitChangedPaths: () => Promise<string[]>;
+        };
+        runtimeWithOverrides.collectGitChangedPaths = async () => [];
+
+        const runResult = await fixture.runtime.execute(CliCommandName.RUN);
+        const diagnosticsTracePath = runResult.commandResult.artifacts?.find(
+          (artifact) => artifact.id === "diagnostics_trace",
+        )?.path;
+        expect(runResult.commandResult.details?.runtime_status).toBe("succeeded");
+        expect(typeof diagnosticsTracePath).toBe("string");
+
+        const tracePayload = JSON.parse(await readFile(String(diagnosticsTracePath), "utf8")) as {
+          adapterInvocationSummary?: Array<{
+            selectedSurface?: string;
+            adapterSurface?: string;
+            localFallbackActivated?: boolean;
+            restrictedReason?: string | null;
+          }>;
+        };
+
+        expect(
+          (tracePayload.adapterInvocationSummary ?? []).some(
+            (stage) =>
+              stage.selectedSurface === AGENT_LOCAL_FALLBACK_SURFACE &&
+              stage.adapterSurface === AdapterSurface.OLLAMA &&
+              stage.localFallbackActivated === true &&
+              stage.restrictedReason === "ci_restricted_rehearsal",
+          ),
+        ).toBe(true);
+      },
+      {
+        adaptersConfig: createRestrictedNetworkCapabilityCompatibleAdaptersConfig(),
+        runtimeDebugOptions: {
+          dryRun: false,
+          trace: true,
+          replayPath: null,
+          restrictedNetwork: true,
+          restrictedReason: "ci_restricted_rehearsal",
+          allowLocalFallback: true,
         },
       },
     );
