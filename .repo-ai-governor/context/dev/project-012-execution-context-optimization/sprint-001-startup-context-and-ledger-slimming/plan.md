@@ -1,6 +1,6 @@
 # sprint-001-startup-context-and-ledger-slimming 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-03-24
 - Project: `project-012-execution-context-optimization`
 
@@ -11,9 +11,9 @@
 ## 2. In-Scope Tasks
 
 1. TK-126 启动基线与规范加载分层对齐（completed）
-2. TK-127 `current-context` 活跃流瘦身与历史索引分层（planned）
-3. TK-128 `TK` 单写源与任务模板输入收紧（planned）
-4. TK-129 sprint-001 出口验收与 rollout 输入约束（planned）
+2. TK-127 `current-context` 活跃流瘦身与历史索引分层（completed）
+3. TK-128 `TK` 单写源与任务模板输入收紧（completed）
+4. TK-129 sprint-001 出口验收与 rollout 输入约束（completed）
 
 ## 3. Entry Criteria
 

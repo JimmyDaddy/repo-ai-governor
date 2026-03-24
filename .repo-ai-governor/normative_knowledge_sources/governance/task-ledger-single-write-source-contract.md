@@ -1,7 +1,7 @@
 # Task Ledger Single Write Source Contract
 
 - Status: active
-- Date: 2026-03-21
+- Date: 2026-03-24
 - Scope: execution ledger governance (`TK/checklist/tasks.csv`)
 - Owner: `project-008-workflow-optimization / TK-042`
 
@@ -16,6 +16,7 @@
 2. 衍生台账：
    - `tasks/checklist.md`：任务状态可视化与执行轨迹摘要。
    - `tasks/tasks.csv`：机器可读执行记录与审计证据。
+3. `project-xxx/plan.md` 与 `sprint-xxx/plan.md` 仅承载范围、里程碑和任务包概览；它们不是 task-level status 的主写入源。
 
 ## 3. Minimum Canonical Fields
 
@@ -34,6 +35,19 @@
 `tasks.csv` 需与主源对齐字段：
 
 1. `task_id/title/status/owner/priority/project/sprint/recorded_at/plan`
+
+## 3.1 Derived Ledger Responsibilities
+
+1. `tasks/checklist.md` 只保留任务可视状态与少量执行轨迹摘要，不重复长段 `plan`、输入清单或 tracebacks。
+2. `tasks/tasks.csv` 只保留机器审计与状态演进必需字段，不复制完整依赖包、历史 handoff 或长篇追溯说明。
+3. `project/sprint plan` 可以展示任务包 overview，但不得覆盖 `TK` 的 canonical status 与 goal。
+
+## 3.2 Task Card Input Boundary
+
+1. 新任务默认使用 `Required Inputs` 与 `Traceback References` 分层，而不是单一 `Input References`。
+2. `Required Inputs` 只放执行必需输入，建议控制在 `3-5` 条。
+3. `Traceback References` 只放追溯、审计、handoff 或历史规划类输入，不进入默认执行入口。
+4. 既有任务卡保留 `Input References` 兼容；迁移过程中以运行时与人工执行双兼容为准。
 
 ## 4. Sync Triggers
 

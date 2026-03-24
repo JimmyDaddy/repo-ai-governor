@@ -77,7 +77,7 @@ function createAdaptersConfigFixture(): AdaptersConfig {
 }
 
 describe("CliTaskDrivenRunRuntime", () => {
-  it("builds task-driven assembly from semantic task-card sections and preserves full input references", async () => {
+  it("builds task-driven assembly from semantic task-card sections and preserves required input references", async () => {
     const workspaceRoot = await mkdtemp(resolve(tmpdir(), "repo-ai-governor-tk099-"));
     const taskCardPath = resolve(
       workspaceRoot,
@@ -103,11 +103,15 @@ describe("CliTaskDrivenRunRuntime", () => {
 
 1. \`TK-098\`
 
-## 2.2 Input References
+## 2.2 Required Inputs
 
 1. \`.repo-ai-governor/context/dev/project-011/tasks/DA-121-shared-and-package-local-boundary-hardening-and-exports-cleanup.md\`
 2. \`.repo-ai-governor/context/dev/project-011/tasks/DA-122-cli-package-regression-smoke-and-test-topology-hardening.md\`
 3. \`.repo-ai-governor/context/dev/project-011/project-011-cli-package-decomposition-completion-audit-summary.md\`
+
+## 2.3 Traceback References
+
+1. \`.repo-ai-governor/context/dev/project-010/project-010-rollout-notes.md\`
 `,
       "utf8",
     );
@@ -125,6 +129,12 @@ describe("CliTaskDrivenRunRuntime", () => {
       expect(assembly.taskContext?.dependsOnTaskIds).toEqual(["TK-098"]);
       expect(assembly.taskContext?.inputReferences).toHaveLength(3);
       expect(assembly.taskContext?.inputArtifacts).toHaveLength(2);
+      expect(assembly.taskContext?.tracebackReferences).toHaveLength(1);
+      expect(assembly.taskContext?.tracebackReferences).toEqual([
+        expect.objectContaining({
+          referencePath: ".repo-ai-governor/context/dev/project-010/project-010-rollout-notes.md",
+        }),
+      ]);
       expect(assembly.taskContext?.inputReferences).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
@@ -159,6 +169,12 @@ describe("CliTaskDrivenRunRuntime", () => {
                 ".repo-ai-governor/context/dev/project-011/project-011-cli-package-decomposition-completion-audit-summary.md",
             }),
           ]),
+          tracebackReferences: expect.arrayContaining([
+            expect.objectContaining({
+              referencePath:
+                ".repo-ai-governor/context/dev/project-010/project-010-rollout-notes.md",
+            }),
+          ]),
         }),
       );
       expect(assembly.stageInputs["node-task-execute"]?.executionRoleProfileId).toBe(
@@ -186,6 +202,56 @@ describe("CliTaskDrivenRunRuntime", () => {
       expect(assembly.assemblyMode).toBe(CliTaskDrivenRunAssemblyMode.TASK_ID_FALLBACK);
       expect(assembly.processDefinition.nodes).toHaveLength(3);
       expect(assembly.taskContext).toBeNull();
+    } finally {
+      await rm(workspaceRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("falls back to legacy Input References when Required Inputs is absent", async () => {
+    const workspaceRoot = await mkdtemp(resolve(tmpdir(), "repo-ai-governor-tk099-legacy-"));
+    const taskCardPath = resolve(
+      workspaceRoot,
+      "context/dev/project-010/sprint-002/tasks/TK-199-legacy-input-reference-shape.md",
+    );
+    await mkdir(resolve(taskCardPath, ".."), { recursive: true });
+    await writeFile(
+      taskCardPath,
+      `# TK-199 兼容旧版输入引用
+
+- Status: in_progress
+- Date: 2026-03-24
+- Owner: AI-Agent
+- Priority: P1
+- Project: \`project-010-local-model-and-ide-expansion\`
+- Sprint: \`sprint-002-autonomous-mainchain-foundation\`
+
+## 1. 任务目标
+
+验证旧版 \`Input References\` 仍可被 task-driven runtime 解析。
+
+## 2. Depends On
+
+1. \`TK-198\`
+
+## 4. Input References
+
+1. \`.repo-ai-governor/context/dev/project-011/tasks/DA-121-shared-and-package-local-boundary-hardening-and-exports-cleanup.md\`
+2. \`.repo-ai-governor/context/dev/project-011/project-011-cli-package-decomposition-completion-audit-summary.md\`
+`,
+      "utf8",
+    );
+
+    try {
+      const runtime = new CliTaskDrivenRunRuntime(workspaceRoot);
+      const assembly = await runtime.buildRunAssembly({
+        executionId: "cli-run-003",
+        taskId: "TK-199",
+        adaptersConfig: createAdaptersConfigFixture(),
+      });
+
+      expect(assembly.assemblyMode).toBe(CliTaskDrivenRunAssemblyMode.TASK_DRIVEN);
+      expect(assembly.taskContext?.inputReferences).toHaveLength(2);
+      expect(assembly.taskContext?.tracebackReferences).toEqual([]);
     } finally {
       await rm(workspaceRoot, { recursive: true, force: true });
     }

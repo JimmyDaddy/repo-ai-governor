@@ -26,11 +26,16 @@ const REQUIRED_CSV_HEADERS = [
   "recorded_at",
 ];
 const PLACEHOLDER_VALUES = new Set(["待执行", "待验证"]);
+const ACTIVE_STREAM_STATUSES = new Set(["active", "in_progress", "running"]);
 
 /**
- * Resolves the active stream document roots from current context.
- * Why: ledger drift often happens when people edit one stream while writing another stream's CSV.
- * @returns {Array<{streamKey: string, tasksDirPath: string, checklistPath: string, csvPath: string}>}
+ * Resolves the active stream document roots from the `## Active Streams` section in current context.
+ * Why: ledger drift often happens when people edit one stream while writing another stream's CSV,
+ * and completed streams should already be moved into the history index.
+ * @returns {{
+ *   streamDefinitions: Array<{streamKey: string, tasksDirPath: string, checklistPath: string, csvPath: string}>,
+ *   invalidStreamEntries: string[]
+ * }}
  */
 function resolveActiveStreams() {
   const contextPath = resolve(process.cwd(), CURRENT_CONTEXT_PATH);
@@ -40,9 +45,15 @@ function resolveActiveStreams() {
   }
 
   const contextContent = readFileSync(contextPath, "utf8");
+  const activeStreamsSection = extractMarkdownSection(contextContent, "Active Streams");
   const streamDefinitions = [];
+  const invalidStreamEntries = [];
 
-  for (const line of contextContent.split(/\r?\n/)) {
+  if (!activeStreamsSection.trim()) {
+    throw new Error("`## Active Streams` section not found in current-context.");
+  }
+
+  for (const line of activeStreamsSection.split(/\r?\n/)) {
     const streamMatch = line.match(/^- `([^`]+)`: (.+)$/);
     if (!streamMatch) {
       continue;
@@ -53,6 +64,12 @@ function resolveActiveStreams() {
     const tasksDirPath = extractBacktickField(descriptor, "tasks");
     const checklistPath = extractBacktickField(descriptor, "checklist");
     const csvPath = extractBacktickField(descriptor, "csv");
+    const normalizedStatus = normalizeStreamStatus(extractBacktickField(descriptor, "status"));
+
+    if (!ACTIVE_STREAM_STATUSES.has(normalizedStatus)) {
+      invalidStreamEntries.push(`${streamKey} (status=${normalizedStatus || "missing"})`);
+      continue;
+    }
 
     if (!tasksDirPath || !checklistPath || !csvPath) {
       continue;
@@ -68,11 +85,63 @@ function resolveActiveStreams() {
 
   if (streamDefinitions.length === 0) {
     throw new Error(
-      "No active stream entry with `tasks/checklist/csv` paths was found in current-context.",
+      "No active stream entry with `tasks/checklist/csv` paths was found under `## Active Streams` in current-context.",
     );
   }
 
-  return streamDefinitions;
+  return { streamDefinitions, invalidStreamEntries };
+}
+
+/**
+ * Extracts one markdown section body by semantic heading label.
+ * @param {string} content Full markdown content.
+ * @param {string} headingText Target heading label.
+ * @returns {string}
+ */
+function extractMarkdownSection(content, headingText) {
+  const normalizedHeadingText = normalizeSectionHeading(headingText);
+  const headingPattern = /^##\s+([^\n]+)$/gmu;
+  const headingMatches = Array.from(content.matchAll(headingPattern));
+
+  for (let index = 0; index < headingMatches.length; index += 1) {
+    const currentHeadingMatch = headingMatches[index];
+    const rawHeadingText = currentHeadingMatch[1]?.trim() ?? "";
+    const currentHeadingIndex = currentHeadingMatch.index;
+    if (typeof currentHeadingIndex !== "number") {
+      continue;
+    }
+
+    if (normalizeSectionHeading(rawHeadingText) !== normalizedHeadingText) {
+      continue;
+    }
+
+    const sectionStart = currentHeadingIndex + currentHeadingMatch[0].length;
+    const sectionEnd = headingMatches[index + 1]?.index ?? content.length;
+    return content.slice(sectionStart, sectionEnd).trim();
+  }
+
+  return "";
+}
+
+/**
+ * Normalizes one section heading so numbering drift does not break parsing.
+ * @param {string} headingText Raw heading text.
+ * @returns {string}
+ */
+function normalizeSectionHeading(headingText) {
+  return headingText
+    .replace(/^\d+(?:\.\d+)*\.?\s*/u, "")
+    .trim()
+    .toLowerCase();
+}
+
+/**
+ * Normalizes one stream status from current-context.
+ * @param {string | null} status Raw status value.
+ * @returns {string}
+ */
+function normalizeStreamStatus(status) {
+  return (status ?? "").trim().toLowerCase().replace(/\s+/gu, "_").replace(/-/gu, "_");
 }
 
 /**
@@ -657,8 +726,10 @@ function buildBigrams(value) {
 }
 
 try {
-  const streamDefinitions = resolveActiveStreams();
-  const issues = [];
+  const { streamDefinitions, invalidStreamEntries } = resolveActiveStreams();
+  const issues = invalidStreamEntries.map(
+    (entry) => `current-context Active Streams contains non-active entry: ${entry}`,
+  );
 
   for (const streamDefinition of streamDefinitions) {
     const taskCards = parseCanonicalTaskCards(streamDefinition.tasksDirPath);

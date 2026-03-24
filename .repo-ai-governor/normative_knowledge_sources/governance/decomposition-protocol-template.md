@@ -43,16 +43,25 @@
 2. `## 1. 任务目标`
 3. `## 2. Depends On`
 4. `## 3. 预期产物`
-5. `## 4. Input References`
-6. `## 5. 实施计划`
-7. `## 6. 验证计划`
-8. `## 7. 执行记录`
+5. `## 4. Required Inputs`
+6. `## 5. Traceback References`
+7. `## 6. 实施计划`
+8. `## 7. 验证`
+9. `## 8. 执行记录`
+10. `## 9. 产出`
+
+兼容说明：
+
+1. 既有任务卡允许继续使用 `## 4. Input References`。
+2. 新任务默认采用 `Required Inputs + Traceback References`，把执行必需输入与追溯输入分开。
+3. `Required Inputs` 建议控制在 `3-5` 条；超出时优先把历史规划、handoff、completion audit 移到 `Traceback References`。
 
 ## 5. Ledger Rules
 
 1. `tasks.csv` 使用追加行记录状态演进，不覆盖历史行。
-2. `checklist.md` 保留勾选状态并在任务下追加执行轨迹。
-3. `TK` 状态、checklist 勾选、csv 最新 canonical 行必须一致。
+2. `checklist.md` 保留勾选状态并在任务下追加执行轨迹摘要，不复制任务卡的长段计划与输入清单。
+3. `tasks.csv` 只保留机器审计必需字段，不承载完整 tracebacks。
+4. `TK` 状态、checklist 勾选、csv 最新 canonical 行必须一致。
 
 ## 6. Exit Checklist
 

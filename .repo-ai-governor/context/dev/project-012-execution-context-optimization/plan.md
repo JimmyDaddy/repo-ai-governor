@@ -1,6 +1,6 @@
 # project-012-execution-context-optimization 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-03-24
 - Stage Mapping: Cross-Stage workflow optimization follow-up
 - Phase Mapping: Context Efficiency / Governance Simplification
@@ -62,9 +62,9 @@
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 |---|---|---|---|---|---|
 | TK-126 | sprint-001 | 启动基线与规范加载分层对齐 | implementation/governance | `.repo-ai-governor/draft/task-execution-context-growth-analysis.md` | completed |
-| TK-127 | sprint-001 | `current-context` 活跃流瘦身与历史索引分层 | implementation/context | TK-126 | planned |
-| TK-128 | sprint-001 | `TK` 单写源与任务模板输入收紧 | implementation/governance | TK-126,TK-127 | planned |
-| TK-129 | sprint-001 | sprint-001 出口验收与 rollout 输入约束 | acceptance baseline | TK-126,TK-127,TK-128 | planned |
+| TK-127 | sprint-001 | `current-context` 活跃流瘦身与历史索引分层 | implementation/context | TK-126 | completed |
+| TK-128 | sprint-001 | `TK` 单写源与任务模板输入收紧 | implementation/governance | TK-126,TK-127 | completed |
+| TK-129 | sprint-001 | sprint-001 出口验收与 rollout 输入约束 | acceptance baseline | TK-126,TK-127,TK-128 | completed |
 
 ## 5. 依赖产物策略
 
@@ -88,3 +88,7 @@
 
 1. 2026-03-24：创建 `project-012`，将“任务执行上下文增长分析”正式转化为独立优化主线，并切换为当前 primary stream。
 2. 2026-03-24：完成 `TK-126` 第一轮收口，将 `AGENTS` 与 maintenance guide 的默认启动语义对齐到 manifest 驱动的 `L0 默认加载 + L1 按需补载` 基线。
+3. 2026-03-24：完成 `TK-127`，将 `current-context` 收敛为 primary 与 active parallel streams 默认入口，并把 completed streams 迁移到独立 history index。
+4. 2026-03-24：完成 `TK-128`，明确 `TK` canonical source 边界，收紧任务卡为 `Required Inputs + Traceback References`，并让 CLI runtime 保持新旧双兼容。
+5. 2026-03-24：完成 `TK-129`，产出 `DA-127`，冻结 sprint-001 出口验收与后续 rollout 输入约束。
+6. 2026-03-24：project-012 完成态审计摘要：`.repo-ai-governor/context/dev/project-012-execution-context-optimization/project-012-execution-context-optimization-completion-audit-summary.md`。

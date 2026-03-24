@@ -31,6 +31,7 @@
 1. `project-011-cli-package-decomposition` 是 `project-010` 的工程支撑主线，用于承接 CLI package 的 bounded-context 拆分与 thin facade 重构。
 2. `project-011` 已完成正式 handoff；`project-010` sprint-002 及之后的 CLI 主链改动，应优先消费 `DA-121`、`DA-122`、`DA-123` 与 `project-011-cli-package-decomposition-completion-audit-summary.md`，不再默认继续扩写 `apps/cli/src/cli-governance-runtime.ts`。
 3. 若确需暂时在 legacy 文件上落地例外，必须遵循 `CS-027` 的例外登记规则，并在对应 task 中明确回收计划。
+4. `project-012-execution-context-optimization` 已完成正式 handoff；`project-010` 后续任务默认遵循 `DA-124`~`DA-127` 与 `project-012-execution-context-optimization-completion-audit-summary.md` 所冻结的 startup baseline、active stream 边界与任务卡输入分层约束。
 
 ## 2.1 全自动研发落地优先级（P0/P1）
 
@@ -143,3 +144,4 @@
 12. 2026-03-24：创建 `project-011-cli-package-decomposition` 作为工程支撑主线，并将 `project-010` sprint-002 的 CLI 结构重构前置依赖切换为 `TK-118/DA-116`。
 13. 2026-03-24：`project-011` 完成收口并正式回链 `DA-121/DA-122/DA-123 + completion audit summary`，后续 `project-010` CLI 主链工作统一以该 handoff 为工程边界输入。
 14. 2026-03-24：完成 `TK-098` 并产出 `DA-102`，正式确认 sprint-001 出口验收通过，同时冻结 sprint-002 的自动主链优先输入约束。
+15. 2026-03-24：`project-012` 完成收口并正式回链 `DA-124/DA-125/DA-126/DA-127 + completion audit summary`，后续 `project-010` 默认遵循更轻量的 startup/context/task-input 约束继续推进。

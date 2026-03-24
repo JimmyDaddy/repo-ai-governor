@@ -33,6 +33,7 @@ export interface CliTaskCardContext {
   dependsOnTaskIds: string[];
   inputReferences: CliTaskInputReference[];
   inputArtifacts: CliTaskInputArtifactReference[];
+  tracebackReferences: CliTaskInputReference[];
 }
 
 /**

@@ -333,11 +333,15 @@ async function writeTaskCardFixture(workspaceRoot: string, taskId: string): Prom
 
 1. \`TK-098\`
 
-## 2.2 Input References
+## 2.2 Required Inputs
 
 1. \`.repo-ai-governor/context/dev/project-011-cli-package-decomposition/sprint-003-package-hardening-and-rollout-alignment/tasks/DA-121-shared-and-package-local-boundary-hardening-and-exports-cleanup.md\`
 2. \`.repo-ai-governor/context/dev/project-011-cli-package-decomposition/sprint-003-package-hardening-and-rollout-alignment/tasks/DA-122-cli-package-regression-smoke-and-test-topology-hardening.md\`
 3. \`.repo-ai-governor/context/dev/project-011-cli-package-decomposition/project-011-cli-package-decomposition-completion-audit-summary.md\`
+
+## 2.3 Traceback References
+
+1. \`.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/plan.md\`
 `,
     "utf8",
   );

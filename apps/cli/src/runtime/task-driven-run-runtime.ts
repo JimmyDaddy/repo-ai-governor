@@ -77,10 +77,18 @@ export class CliTaskDrivenRunRuntime {
     const title = this.readTaskTitle(content, taskId);
     const goal = this.extractSection(content, "任务目标");
     const dependsOnTaskIds = this.extractTaskIds(this.extractSection(content, "Depends On"));
-    const inputReferences = this.extractInputReferences(
+    const requiredInputReferences = this.extractInputReferences(
+      this.extractSection(content, "Required Inputs"),
+    );
+    const legacyInputReferences = this.extractInputReferences(
       this.extractSection(content, "Input References"),
     );
+    const inputReferences =
+      requiredInputReferences.length > 0 ? requiredInputReferences : legacyInputReferences;
     const inputArtifacts = this.extractInputArtifacts(inputReferences);
+    const tracebackReferences = this.extractInputReferences(
+      this.extractSection(content, "Traceback References"),
+    );
 
     return {
       taskId,
@@ -90,6 +98,7 @@ export class CliTaskDrivenRunRuntime {
       dependsOnTaskIds,
       inputReferences,
       inputArtifacts,
+      tracebackReferences,
     };
   }
 
@@ -360,6 +369,7 @@ export class CliTaskDrivenRunRuntime {
       dependsOnTaskIds: taskContext.dependsOnTaskIds,
       inputReferences: taskContext.inputReferences,
       inputArtifacts: taskContext.inputArtifacts,
+      tracebackReferences: taskContext.tracebackReferences,
     };
 
     const prepareNode = this.createNode(
