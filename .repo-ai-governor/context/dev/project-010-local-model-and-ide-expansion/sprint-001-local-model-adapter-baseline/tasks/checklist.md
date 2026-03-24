@@ -15,9 +15,10 @@
   - 2026-03-24：任务启动，状态切换为 `in_progress`；开始收敛 doctor/verify 本地模型失败归因、safe_local 边界提示和 restricted network CLI 演练脚本。
   - 2026-03-24：已完成 failure attribution、doctor safe_local artifact 一致性、restricted-network local fallback rehearsal 与 resilience regression 场景接线，并生成 `DA-101` 与 resolved review，任务状态更新为 `completed`。
   - 2026-03-24：复核 follow-up CR 后，已补上 restricted fallback 的 probe/capability gate，并将 `doctor_diagnostics` 提升为无 adapters 也会落盘的统一产物；follow-up CR 收尾为 `resolved`。
-- [ ] TK-098 sprint-001 出口验收与 sprint-002 输入约束
+- [x] TK-098 sprint-001 出口验收与 sprint-002 输入约束
   - 2026-03-23：任务创建，状态初始化为 `planned`。
   - 2026-03-24：根据新版 Stage 9 收敛顺序，任务输出已改为冻结 `sprint-002-autonomous-mainchain-foundation` 的输入约束，原 IDE-first 顺序顺延到 sprint-003。
+  - 2026-03-24：已完成 `DA-102`、sprint-001 出口验收结论、sprint-002 输入约束冻结与 project/sprint/artifact registry 回写，任务状态更新为 `completed`。
 - [x] TK-103 全自动研发 gap 清单与 draft 收敛
   - 2026-03-24：任务创建并启动，目标是将“当前工具尚不能全自动研发”的分析正式化为 draft 级 gap checklist。
   - 2026-03-24：已完成正式 gap 清单起草，覆盖真实调用、动态编排、review chain、HITL 回灌、delivery rehearsal 与稳定性门禁 6 类 gap。

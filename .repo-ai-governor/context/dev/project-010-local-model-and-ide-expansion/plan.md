@@ -94,7 +94,7 @@
 | TK-095 | sprint-001 | 本地模型适配契约与配置扩展基线 | baseline/contract | DA-098 | completed |
 | TK-096 | sprint-001 | Ollama 类 adapter 与 route fallback 基线 | implementation/adapter | TK-095 | completed |
 | TK-097 | sprint-001 | 本地模型诊断校验与受限网络演练基线 | implementation/gate | TK-095,TK-096 | completed |
-| TK-098 | sprint-001 | sprint-001 出口验收与 sprint-002 输入约束 | acceptance baseline | TK-095,TK-096,TK-097 | planned |
+| TK-098 | sprint-001 | sprint-001 出口验收与 sprint-002 输入约束 | acceptance baseline | TK-095,TK-096,TK-097 | completed |
 | TK-099 | sprint-002 | 任务驱动 DAG 与 `run` 主链装配 | implementation/runtime | TK-098,TK-118 | planned |
 | TK-100 | sprint-002 | review 子链内联与 ledger backfill 收口 | implementation/runtime | TK-099 | planned |
 | TK-101 | sprint-002 | HITL 决策回执与恢复执行语义 | implementation/runtime | TK-099,TK-100 | planned |
@@ -142,3 +142,4 @@
 11. 2026-03-24：新增并完成 `TK-114`，将 `cli-governance-runtime.ts` 的拆分方案沉淀到 draft，并在 `code_standards.md` / `long-term-maintenance-guide.md` 正式建立 anti-God-object 治理基线。
 12. 2026-03-24：创建 `project-011-cli-package-decomposition` 作为工程支撑主线，并将 `project-010` sprint-002 的 CLI 结构重构前置依赖切换为 `TK-118/DA-116`。
 13. 2026-03-24：`project-011` 完成收口并正式回链 `DA-121/DA-122/DA-123 + completion audit summary`，后续 `project-010` CLI 主链工作统一以该 handoff 为工程边界输入。
+14. 2026-03-24：完成 `TK-098` 并产出 `DA-102`，正式确认 sprint-001 出口验收通过，同时冻结 sprint-002 的自动主链优先输入约束。

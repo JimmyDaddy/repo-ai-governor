@@ -1,6 +1,6 @@
 # sprint-001-local-model-adapter-baseline 计划
 
-- Status: in_progress
+- Status: completed
 - Date: 2026-03-24
 - Project: `project-010-local-model-and-ide-expansion`
 
@@ -13,7 +13,7 @@
 1. TK-095 本地模型适配契约与配置扩展基线（completed）
 2. TK-096 Ollama 类 adapter 与 route fallback 基线（completed）
 3. TK-097 本地模型诊断校验与受限网络演练基线（completed）
-4. TK-098 sprint-001 出口验收与 sprint-002 输入约束（planned）
+4. TK-098 sprint-001 出口验收与 sprint-002 输入约束（completed）
 5. TK-103 全自动研发 gap 清单与 draft 收敛（completed）
 6. TK-104 主执行计划全自动研发 gap register 上收（completed）
 7. TK-105 主执行计划结构重梳与执行导航重构（completed）
@@ -30,7 +30,7 @@
 5. `TK-104`：将 draft 级 gap checklist 正式上收到 master plan，确保 Stage 9 follow-up 与 project-010 的问题清单保持同源。
 6. `TK-105`：已完成 master plan 结构重梳，后续 task 拆解应优先遵循新的“当前执行摘要 -> Stage 9 主线 -> project 映射”阅读路径。
 7. `TK-106`：已完成 triad 补强同步，将 Stage 9 follow-up 的技术收口重点明确回锚到总技术方案与架构蓝图，并保持 PRD/brief 同步门禁通过。
-8. `TK-098`：当前应产出 `sprint-002-autonomous-mainchain-foundation` 的输入约束，而不是继续沿用 IDE-first 顺序。
+8. `TK-098`：已完成 `DA-102`，并正式冻结 `sprint-002-autonomous-mainchain-foundation` 的输入约束；IDE official surfaces、delivery rehearsal 与 GA 指标继续顺延到 sprint-003。
 9. `TK-113`：已完成 `project-010` 执行重排，将原 `sprint-002` 顺延为 `sprint-003`，并为自动主链收口创建新的 `sprint-002` 骨架。
 10. `TK-114`：已完成 `cli-governance-runtime.ts` 拆分方案 draft 与 anti-God-object 规范基线，为后续 runtime 重构建立唯一分析输入与治理约束。
 

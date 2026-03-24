@@ -1,8 +1,8 @@
 # TK-098 sprint-001 出口验收与 sprint-002 输入约束
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-24
-- Owner: TBD
+- Owner: AI-Agent
 - Priority: P0
 - Project: `project-010-local-model-and-ide-expansion`
 - Sprint: `sprint-001-local-model-adapter-baseline`
@@ -50,9 +50,10 @@
 
 1. 2026-03-23：任务创建，状态初始化为 `planned`。
 2. 2026-03-24：根据新版 master plan 与 triad 锚点，任务目标收敛为“冻结自动主链优先的 sprint-002 输入约束”，不再沿用 IDE-first 顺序。
+3. 2026-03-24：已完成 `DA-102`、sprint-001 出口验收结论与 sprint-002 输入约束冻结，并同步 project/sprint 计划、artifact registry 与 resolved review，任务状态更新为 `completed`。
 
 ## 8. 产出
 
-1. `DA-102` `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-001-local-model-adapter-baseline/tasks/TK-098-sprint-001-exit-acceptance-and-sprint-002-input-constraints.md`
+1. `DA-102` `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-001-local-model-adapter-baseline/tasks/DA-102-sprint-001-exit-acceptance-and-sprint-002-input-constraints.md`
 2. `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-001-local-model-adapter-baseline/tasks/checklist.md`
 3. `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-001-local-model-adapter-baseline/tasks/tasks.csv`

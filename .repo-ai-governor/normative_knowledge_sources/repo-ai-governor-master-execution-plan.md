@@ -40,7 +40,7 @@
 
 ## 3.1 一句话结论
 
-1. Stage 0-8 的基线能力已经完成，`project-009` 完成了投产基线收口；当前主线不再是“把模块补齐”，而是由 `project-010` 承接“全自动研发闭环仍未打通”的业务收敛，并由 `project-011` 承接 CLI package decomposition 的工程支撑重构。
+1. Stage 0-8 的基线能力已经完成，`project-009` 完成了投产基线收口；当前主线不再是“把模块补齐”，而是由 `project-010` 承接“全自动研发闭环仍未打通”的业务收敛，`project-011` 已完成 CLI package decomposition 的工程支撑重构并形成正式 handoff。
 
 ## 3.2 当前真实状态
 
@@ -60,14 +60,14 @@
 | 已完成基线 | `project-001` ~ `project-008` | completed | 提供架构、运行时、治理、审计、发布与平台化基线 |
 | 投产基线完成态 | `project-009-production-readiness` | completed | 证明工具已具备本地可采用、可诊断、可 clean-room 验证的外部可用基础 |
 | 当前业务闭环主线 | `project-010-local-model-and-ide-expansion` | active | 继续收敛真实调用、动态编排、HITL/Delivery 闭环、受限网络与 IDE 入口 |
-| 当前工程支撑主线 | `project-011-cli-package-decomposition` | active | 拆解 CLI package God object，给 `project-010` 的 sprint-002/003 提供稳定工程边界 |
+| 当前工程支撑主线 | `project-011-cli-package-decomposition` | completed | 已完成 CLI package God object 拆解与正式 handoff，给 `project-010` 的 sprint-002/003 提供稳定工程边界 |
 
 ## 3.4 当前推荐执行顺序
 
-1. 先完成 `project-010` sprint-001 的出口验收与 `DA-102`。
-2. 并行启动 `project-011`，先把 CLI runtime 支撑层从 God object 中抽离，避免主链升级继续加重单点文件。
-3. 再把 `project-010` 的 `run -> review -> review-verify -> ledger backfill` 升级成任务驱动自动主链。
-4. 最后做 delivery rehearsal、试点运营与 GA 收口。
+1. `project-010` sprint-001 与 `project-011` 已完成正式 handoff，当前优先进入 `project-010` sprint-002。
+2. 先完成 `TK-099`，把 `run` 从固定模板升级为任务驱动 DAG。
+3. 再完成 `TK-100` / `TK-101`，把 review 子链与 HITL 决策回灌收进统一自动主链。
+4. 最后用 `TK-102` 冻结 sprint-003 输入约束，再进入 delivery rehearsal、试点运营与 GA 收口。
 
 ## 4. 路线图总览
 
@@ -158,9 +158,9 @@
 | gap_id | 差距项 | 当前信号 | 完成判据 | 当前承接 |
 |---|---|---|---|---|
 | G-01 | 真实适配器执行面未闭环 | 多工具 adapter 仍存在 baseline stub，真实 provider 调用未全面落地 | 至少 1 条远端 provider 路径和 1 条本地模型路径具备真实调用，并补齐凭据、health、timeout/retry、限流、脱敏、degrade path 契约 | `TK-096`、`TK-097` |
-| G-02 | `run` 仍是固定模板 | 当前仍主要是 `prepare -> execute -> report` 三段模板 | `run` 能按任务目标、依赖产物、角色能力动态装配可执行 DAG | `TK-098` + sprint-002 |
-| G-03 | Review 链路未内联到自动主链 | `review -> review-verify -> ledger backfill` 仍以 queued artifact 与下游消费为主 | review chain 可作为自动主链受控子链推进，并与审计事实保持一致 | `TK-098` + sprint-002 |
-| G-04 | HITL 回执与决策回灌未闭环 | 命中 `confirm/escalate` 后仍主要停在人工等待 | 至少 1 主 1 备通知渠道接通，人工决策可回灌并触发继续执行/终止/降级 | `TK-098` + sprint-002 |
+| G-02 | `run` 仍是固定模板 | 当前仍主要是 `prepare -> execute -> report` 三段模板 | `run` 能按任务目标、依赖产物、角色能力动态装配可执行 DAG | `TK-098` 已完成；sprint-002 |
+| G-03 | Review 链路未内联到自动主链 | `review -> review-verify -> ledger backfill` 仍以 queued artifact 与下游消费为主 | review chain 可作为自动主链受控子链推进，并与审计事实保持一致 | `TK-098` 已完成；sprint-002 |
+| G-04 | HITL 回执与决策回灌未闭环 | 命中 `confirm/escalate` 后仍主要停在人工等待 | 至少 1 主 1 备通知渠道接通，人工决策可回灌并触发继续执行/终止/降级 | `TK-098` 已完成；sprint-002 |
 | G-05 | 受控 delivery rehearsal 未一体化 | `commit` / `PR draft` 仍未与自动主链形成统一回放与审计 | 至少 1 条受控 delivery rehearsal 覆盖 `commit` 或 `PR draft`，并记录人工接管边界 | sprint-002 / Stage 9 closure |
 | G-06 | 稳定性与黑盒门禁未覆盖真实无人值守路径 | provider outage、restricted network、retry exhaustion 等场景仍缺稳定黑盒验证 | 黑盒 E2E、CI、release gate 覆盖主路径与降级路径，并沉淀成功率/人工介入率等运营指标 | `TK-097` + sprint-002 |
 
@@ -176,16 +176,16 @@
 
 ## 6.5 Stage 9 当前执行队列
 
-1. sprint-001：
+1. sprint-001（completed）：
    - `TK-096`：真实调用与 route fallback
    - `TK-097`：deep probe、restricted network、稳定性门禁
    - `TK-098`：sprint-001 出口验收与 sprint-002 输入约束
-2. parallel enabling track：
+2. parallel enabling track（completed）：
    - `project-011 / TK-115`：project 拆分与依赖重排
    - `project-011 / TK-116`：adapter verification 与 local probe 抽离
    - `project-011 / TK-117`：route fallback 与 diagnostics builder 抽离
    - `project-011 / TK-118`：sprint-001 出口验收与 sprint-002 输入约束
-3. sprint-002：
+3. sprint-002（current）：
    - `TK-099`：任务驱动 DAG 与 `run` 主链装配
    - `TK-100`：`review -> review-verify -> ledger backfill` 内联收口
    - `TK-101`：HITL 决策回执与 `resume/terminate/degrade`
@@ -233,7 +233,7 @@
 | `project-008-workflow-optimization` | Cross-stage | completed | 执行流降噪、台账自动化、工作流优化 |
 | `project-009-production-readiness` | Stage 9 baseline | completed | 投产基线、clean-room、外部采用、production gate baseline |
 | `project-010-local-model-and-ide-expansion` | Stage 9 follow-up | active | 真实调用、受限网络、本地模型、IDE、自治闭环继续收口 |
-| `project-011-cli-package-decomposition` | Stage 9 enabling refactor | active | 拆解 CLI package God object，为 `project-010` 主链升级提供稳定工程边界 |
+| `project-011-cli-package-decomposition` | Stage 9 enabling refactor | completed | 已完成 CLI package God object 拆解，并为 `project-010` 主链升级提供正式 handoff 边界 |
 
 ## 9. Sprint 与 Task 最小模板
 
