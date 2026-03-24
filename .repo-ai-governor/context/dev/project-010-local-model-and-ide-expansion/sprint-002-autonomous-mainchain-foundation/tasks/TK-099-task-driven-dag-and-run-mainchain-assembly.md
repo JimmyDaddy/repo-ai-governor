@@ -1,8 +1,8 @@
 # TK-099 任务驱动 DAG 与 `run` 主链装配
 
-- Status: planned
+- Status: in_progress
 - Date: 2026-03-24
-- Owner: TBD
+- Owner: AI-Agent
 - Priority: P0
 - Project: `project-010-local-model-and-ide-expansion`
 - Sprint: `sprint-002-autonomous-mainchain-foundation`
@@ -53,6 +53,8 @@
 ## 7. 执行记录
 
 1. 2026-03-24：任务创建，状态初始化为 `planned`。
+2. 2026-03-24：任务启动，状态切换为 `in_progress`；当前先收敛 `taskId -> task context -> process DSL/stageInputs` 的第一批 task-driven run assembly 骨架。
+3. 2026-03-24：复核 follow-up CR 后，已将 task card section 解析改为语义匹配，并把非 `DA-*` 的 formal handoff input references 一并注入 task context / stage inputs；follow-up CR 收尾为 `resolved`。
 
 ## 8. 产出
 

@@ -301,6 +301,50 @@ async function withRuntimeFixture(
   }
 }
 
+/**
+ * Writes one canonical task card fixture used by task-driven run assembly integration tests.
+ * @param workspaceRoot Workspace root under temporary fixture.
+ * @param taskId Task id used by runtime debug options.
+ * @returns Absolute task-card path.
+ */
+async function writeTaskCardFixture(workspaceRoot: string, taskId: string): Promise<string> {
+  const taskCardPath = resolve(
+    workspaceRoot,
+    "context/dev/project-010-local-model-and-ide-expansion/sprint-002-autonomous-mainchain-foundation/tasks",
+    `${taskId}-task-driven-dag-and-run-mainchain-assembly.md`,
+  );
+  await mkdir(resolve(taskCardPath, ".."), { recursive: true });
+  await writeFile(
+    taskCardPath,
+    `# ${taskId} 任务驱动 DAG 与 \`run\` 主链装配
+
+- Status: in_progress
+- Date: 2026-03-24
+- Owner: AI-Agent
+- Priority: P0
+- Project: \`project-010-local-model-and-ide-expansion\`
+- Sprint: \`sprint-002-autonomous-mainchain-foundation\`
+
+## 1. 任务目标
+
+完成任务驱动 DAG 装配、实现和回归验证。
+
+## 2.1 Depends On
+
+1. \`TK-098\`
+
+## 2.2 Input References
+
+1. \`.repo-ai-governor/context/dev/project-011-cli-package-decomposition/sprint-003-package-hardening-and-rollout-alignment/tasks/DA-121-shared-and-package-local-boundary-hardening-and-exports-cleanup.md\`
+2. \`.repo-ai-governor/context/dev/project-011-cli-package-decomposition/sprint-003-package-hardening-and-rollout-alignment/tasks/DA-122-cli-package-regression-smoke-and-test-topology-hardening.md\`
+3. \`.repo-ai-governor/context/dev/project-011-cli-package-decomposition/project-011-cli-package-decomposition-completion-audit-summary.md\`
+`,
+    "utf8",
+  );
+
+  return taskCardPath;
+}
+
 describe("CliGovernanceRuntime policy/review safeguards", () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -657,6 +701,42 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
       expect(upgradeResult.commandResult.operation).toBe("schema_upgrade_analyze");
       expect(runResult.commandResult.operation).toBe("governance_run");
     });
+  });
+
+  it("assembles task-driven run flow when --task-id points to a canonical task card", async () => {
+    await withRuntimeFixture(
+      async (fixture) => {
+        await writeTaskCardFixture(fixture.workspaceRoot, "TK-099");
+        const runtimeWithOverrides = fixture.runtime as unknown as {
+          collectGitChangedPaths: () => Promise<string[]>;
+        };
+        runtimeWithOverrides.collectGitChangedPaths = async () => [];
+
+        const runResult = await fixture.runtime.execute(CliCommandName.RUN);
+
+        expect(runResult.commandResult.operation).toBe("governance_run");
+        expect(runResult.commandResult.details?.assembly_mode).toBe("task_driven");
+        expect(runResult.commandResult.details?.task_id).toBe("TK-099");
+        expect(runResult.commandResult.details?.assembly_node_count).toBe(4);
+        expect(runResult.commandResult.details?.input_reference_count).toBe(3);
+        expect(runResult.commandResult.details?.input_artifact_count).toBe(2);
+        expect(
+          runResult.commandResult.checks?.find((check) => check.id === "assembly")?.detail,
+        ).toContain("mode=task_driven");
+        expect(
+          runResult.commandResult.checks?.find((check) => check.id === "assembly")?.detail,
+        ).toContain("input_references=3");
+      },
+      {
+        runtimeDebugOptions: {
+          dryRun: false,
+          trace: false,
+          replayPath: null,
+          adapters: true,
+          taskId: "TK-099",
+        },
+      },
+    );
   });
 
   it("auto-bootstraps workspace config when connect runs before explicit init", async () => {

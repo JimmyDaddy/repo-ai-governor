@@ -18,17 +18,13 @@ import {
 } from "@repo-ai-governor/core-change-risk";
 import { MemoryManager, MemoryScope } from "@repo-ai-governor/core-memory";
 import { PolicyGateEngine } from "@repo-ai-governor/core-policy";
-import {
-  ProcessCompiler,
-  type ProcessDslDefinition,
-  type ProcessIrNode,
-  ProcessNodeType,
-} from "@repo-ai-governor/core-process";
+import { ProcessCompiler, type ProcessIrNode } from "@repo-ai-governor/core-process";
 import {
   ProcessRuntimeEngine,
   type RuntimeExecutionResult,
   RuntimeExecutionStatus,
   type RuntimeStageContext,
+  type RuntimeStageInputMap,
   RuntimeStageStatus,
   RuntimeTimeoutScope,
 } from "@repo-ai-governor/core-runtime";
@@ -83,6 +79,7 @@ import { CliRuntimeArtifactWriter } from "./runtime/artifacts/runtime-artifact-w
 import { CliLocalModelProbeRuntime } from "./runtime/local-model-probe-runtime.js";
 import { CliCommandExperienceBuilder } from "./runtime/presentation/command-experience-builder.js";
 import { CliReplayExplainBuilder } from "./runtime/presentation/replay-explain-builder.js";
+import { CliTaskDrivenRunRuntime } from "./runtime/task-driven-run-runtime.js";
 import type {
   CliAdapterVerificationResolution,
   CliCheckTotals,
@@ -96,6 +93,7 @@ import type {
   CliNormalizedRuntimeDebugOptions,
   CliRoleStageProgress,
   CliRuntimeDebugOptions,
+  CliTaskDrivenRunAssembly,
 } from "./types/index.js";
 
 const execFileAsync = promisify(execFile);
@@ -122,6 +120,7 @@ export class CliGovernanceRuntime {
   private readonly reviewQueueRuntime: CliReviewQueueRuntime;
   private readonly commandExperienceBuilder: CliCommandExperienceBuilder;
   private readonly replayExplainBuilder: CliReplayExplainBuilder;
+  private readonly taskDrivenRunRuntime: CliTaskDrivenRunRuntime;
 
   public constructor(private readonly options: CliGovernanceRuntimeOptions) {
     this.localModelProbeRuntime = new CliLocalModelProbeRuntime(
@@ -151,6 +150,7 @@ export class CliGovernanceRuntime {
     );
     this.commandExperienceBuilder = new CliCommandExperienceBuilder();
     this.replayExplainBuilder = new CliReplayExplainBuilder();
+    this.taskDrivenRunRuntime = new CliTaskDrivenRunRuntime(this.options.workspace.workspaceRoot);
     this.commandRegistry = new CliCommandRegistry([
       new CliInitCommand(),
       new CliConnectCommand(),
@@ -252,7 +252,12 @@ export class CliGovernanceRuntime {
     const processRuntimeEngine = new ProcessRuntimeEngine(processCompiler);
     const changeRiskEvaluator = new ChangeRiskEvaluator();
     const policyGateEngine = new PolicyGateEngine();
-    const processDefinition = this.createCliRunProcessDefinition(executionId);
+    const runAssembly = await this.taskDrivenRunRuntime.buildRunAssembly({
+      executionId,
+      taskId: runtimeDebugOptions.taskId,
+      adaptersConfig: this.options.adaptersConfig,
+    });
+    const processDefinition = runAssembly.processDefinition;
     const compiledIr = processCompiler.compile(processDefinition);
 
     if (compiledIr.compileErrors.length > 0) {
@@ -276,13 +281,19 @@ export class CliGovernanceRuntime {
     const routeRunner = this.createRunRouteRunner(compiledIr.nodes, {
       includeLocalModelFallbackCandidate: !runtimeDebugOptions.restrictedNetwork,
     });
-    const runtimeResult = await processRuntimeEngine.execute(compiledIr, async (stageContext) => ({
-      ...(await this.dispatchRunStageWithAdapterRoute(
-        routeRunner,
-        stageContext,
-        runtimeDebugOptions,
-      )),
-    }));
+    const runtimeResult = await processRuntimeEngine.execute(
+      compiledIr,
+      async (stageContext) => ({
+        ...(await this.dispatchRunStageWithAdapterRoute(
+          routeRunner,
+          stageContext,
+          runtimeDebugOptions,
+        )),
+      }),
+      {
+        stageInputs: runAssembly.stageInputs as RuntimeStageInputMap,
+      },
+    );
 
     const changedPaths = await this.collectGitChangedPaths();
     const fileCategories = this.resolveRiskFileCategories(changedPaths);
@@ -429,6 +440,7 @@ export class CliGovernanceRuntime {
       },
     ];
     const checks: CliCommandResultCheck[] = [
+      this.createRunAssemblyCheck(runAssembly, runtimeDebugOptions.taskId),
       {
         id: "compile",
         status: CliGovernanceCheckStatus.PASS,
@@ -527,6 +539,13 @@ export class CliGovernanceRuntime {
           runtime_status: runtimeResult.status,
           risk_level: riskEvaluation.riskLevel,
           replay_matched_count: replayExplainResult.matchedCount,
+          assembly_mode: runAssembly.assemblyMode,
+          assembly_reason: runAssembly.assemblyReason,
+          task_id: runAssembly.taskContext?.taskId ?? runtimeDebugOptions.taskId,
+          assembly_node_count: runAssembly.processDefinition.nodes.length,
+          input_reference_count: runAssembly.taskContext?.inputReferences.length ?? 0,
+          input_artifact_count: runAssembly.taskContext?.inputArtifacts.length ?? 0,
+          dependency_task_count: runAssembly.taskContext?.dependsOnTaskIds.length ?? 0,
           dry_run: runtimeDebugOptions.dryRun,
           trace_enabled: runtimeDebugOptions.trace,
           diagnostics_trace_path: diagnosticsTracePath,
@@ -1174,67 +1193,6 @@ export class CliGovernanceRuntime {
   }
 
   /**
-   * Creates process definition used by run-command minimal governance chain.
-   * @param executionId Execution id.
-   * @returns Process definition.
-   */
-  private createCliRunProcessDefinition(executionId: string): ProcessDslDefinition {
-    return {
-      processId: "cli-minimal-governance-run",
-      executionId,
-      entryNodeId: "node-prepare",
-      nodes: [
-        {
-          nodeId: "node-prepare",
-          stageId: "stage-prepare",
-          nodeType: ProcessNodeType.SEQUENTIAL,
-          routeKey: "route.prepare",
-          roleProfileId: DefaultRoleProfileId.PLANNER,
-          inputSchemaRef: "schemas/prepare-input.json",
-          outputSchemaRef: "schemas/prepare-output.json",
-          retryPolicyRef: "policy/retry-default",
-          timeoutPolicyRef: "policy/timeout-default",
-          budgetPolicyRef: "policy/budget-default",
-        },
-        {
-          nodeId: "node-execute",
-          stageId: "stage-execute",
-          nodeType: ProcessNodeType.SEQUENTIAL,
-          routeKey: "route.execute",
-          roleProfileId: DefaultRoleProfileId.CODER,
-          inputSchemaRef: "schemas/execute-input.json",
-          outputSchemaRef: "schemas/execute-output.json",
-          retryPolicyRef: "policy/retry-default",
-          timeoutPolicyRef: "policy/timeout-default",
-          budgetPolicyRef: "policy/budget-default",
-        },
-        {
-          nodeId: "node-report",
-          stageId: "stage-report",
-          nodeType: ProcessNodeType.SEQUENTIAL,
-          routeKey: "route.report",
-          roleProfileId: DefaultRoleProfileId.REVIEWER,
-          inputSchemaRef: "schemas/report-input.json",
-          outputSchemaRef: "schemas/report-output.json",
-          retryPolicyRef: "policy/retry-default",
-          timeoutPolicyRef: "policy/timeout-default",
-          budgetPolicyRef: "policy/budget-default",
-        },
-      ],
-      edges: [
-        {
-          fromNodeId: "node-prepare",
-          toNodeId: "node-execute",
-        },
-        {
-          fromNodeId: "node-execute",
-          toNodeId: "node-report",
-        },
-      ],
-    };
-  }
-
-  /**
    * Converts runtime stage status to audit-record status.
    * @param runtimeStatus Runtime stage status.
    * @returns Audit record status.
@@ -1249,6 +1207,27 @@ export class CliGovernanceRuntime {
     }
 
     return AuditRecordStatus.FAILED;
+  }
+
+  /**
+   * Creates one assembly-status check row for task-driven run planning.
+   * @param runAssembly Resolved run assembly payload.
+   * @param requestedTaskId Raw task id requested by CLI flags.
+   * @returns One check row rendered in run-command output.
+   */
+  private createRunAssemblyCheck(
+    runAssembly: CliTaskDrivenRunAssembly,
+    requestedTaskId: string | null,
+  ): CliCommandResultCheck {
+    const taskIdLabel = runAssembly.taskContext?.taskId ?? requestedTaskId ?? "none";
+    return {
+      id: "assembly",
+      status:
+        runAssembly.assemblyMode === "task_id_fallback"
+          ? CliGovernanceCheckStatus.WARN
+          : CliGovernanceCheckStatus.PASS,
+      detail: `mode=${runAssembly.assemblyMode} reason=${runAssembly.assemblyReason} task_id=${taskIdLabel} nodes=${runAssembly.processDefinition.nodes.length} input_references=${runAssembly.taskContext?.inputReferences.length ?? 0} input_artifacts=${runAssembly.taskContext?.inputArtifacts.length ?? 0}`,
+    };
   }
 
   /**

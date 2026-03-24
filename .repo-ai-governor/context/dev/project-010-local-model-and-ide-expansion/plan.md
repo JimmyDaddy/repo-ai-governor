@@ -95,7 +95,7 @@
 | TK-096 | sprint-001 | Ollama 类 adapter 与 route fallback 基线 | implementation/adapter | TK-095 | completed |
 | TK-097 | sprint-001 | 本地模型诊断校验与受限网络演练基线 | implementation/gate | TK-095,TK-096 | completed |
 | TK-098 | sprint-001 | sprint-001 出口验收与 sprint-002 输入约束 | acceptance baseline | TK-095,TK-096,TK-097 | completed |
-| TK-099 | sprint-002 | 任务驱动 DAG 与 `run` 主链装配 | implementation/runtime | TK-098,TK-118 | planned |
+| TK-099 | sprint-002 | 任务驱动 DAG 与 `run` 主链装配 | implementation/runtime | TK-098,TK-118 | in_progress |
 | TK-100 | sprint-002 | review 子链内联与 ledger backfill 收口 | implementation/runtime | TK-099 | planned |
 | TK-101 | sprint-002 | HITL 决策回执与恢复执行语义 | implementation/runtime | TK-099,TK-100 | planned |
 | TK-102 | sprint-002 | sprint-002 出口验收与 sprint-003 输入约束 | acceptance baseline | TK-099,TK-100,TK-101 | planned |

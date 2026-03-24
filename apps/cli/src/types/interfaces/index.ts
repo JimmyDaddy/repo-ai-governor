@@ -34,3 +34,9 @@ export type {
   CliLocalAdapterProbeOverride,
   CliLocalAdapterProbeResolution,
 } from "./cli-adapter-verification.interface.js";
+export type {
+  CliTaskCardContext,
+  CliTaskDrivenRunAssembly,
+  CliTaskInputArtifactReference,
+  CliTaskInputReference,
+} from "./cli-task-driven-run.interface.js";
