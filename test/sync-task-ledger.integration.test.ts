@@ -2,9 +2,11 @@ import { execFile } from "node:child_process";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
+const REPOSITORY_ROOT_PATH = resolve(fileURLToPath(new URL("..", import.meta.url)));
 
 describe("sync-task-ledger.js", () => {
   it("refreshes checklist execution notes from canonical task cards while preserving extra runtime notes", async () => {
@@ -61,7 +63,7 @@ describe("sync-task-ledger.js", () => {
         process.execPath,
         ["./scripts/governance/sync-task-ledger.js", "--tasks-dir", tasksDirPath],
         {
-          cwd: "/Users/jimmydaddy/study/ai-governor",
+          cwd: REPOSITORY_ROOT_PATH,
         },
       );
 
@@ -77,7 +79,7 @@ describe("sync-task-ledger.js", () => {
           "2026-03-24：运行时附加备注。",
         ],
         {
-          cwd: "/Users/jimmydaddy/study/ai-governor",
+          cwd: REPOSITORY_ROOT_PATH,
         },
       );
 
