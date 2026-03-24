@@ -85,6 +85,7 @@ export interface CliCommandExecutorContext {
   adapterDiagnosticsRuntime: CliAdapterDiagnosticsRuntime;
   reviewQueueRuntime: CliReviewQueueRuntime;
   commandExperienceBuilder: CliCommandExperienceBuilder;
+  executeRunCommand(): Promise<CliGovernanceCommandResult>;
   calculateCheckTotals(checks: CliCommandResultCheck[]): CliCheckTotals;
   buildDefaultConfigContent(): string;
   toRfc3339SecondsTimestamp(value: Date): string;

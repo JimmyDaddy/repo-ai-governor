@@ -1,6 +1,6 @@
 # TK-122 sprint-002 出口验收与 sprint-003 输入约束
 
-- Status: in_progress
+- Status: completed
 - Date: 2026-03-24
 - Owner: AI-Agent
 - Priority: P0
@@ -45,6 +45,7 @@
 
 1. 2026-03-24：任务创建，状态初始化为 `planned`。
 2. 2026-03-24：切换为 `in_progress`，开始汇总 `DA-117/DA-118` 与 `TK-121` 在途证据，并起草 sprint-003 输入约束。
+3. 2026-03-24：`DA-119` 已补齐，`DA-120` 已转为最终 `accept` 结论并冻结 sprint-003 输入约束，任务状态更新为 `completed`。
 
 ## 8. 产出
 

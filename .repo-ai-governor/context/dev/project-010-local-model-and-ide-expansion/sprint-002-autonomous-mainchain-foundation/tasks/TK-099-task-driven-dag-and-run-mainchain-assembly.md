@@ -28,13 +28,16 @@
 4. `.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-master-execution-plan.md`
 5. `.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-overall-technical-solution.md`
 6. `.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-architecture-and-repo-layering.md`
-7. `.repo-ai-governor/context/dev/project-011-cli-package-decomposition/sprint-001-runtime-support-extraction-foundation/tasks/DA-113-cli-package-decomposition-baseline-and-dependency-contract.md`
+7. `.repo-ai-governor/context/dev/project-011-cli-package-decomposition/sprint-003-package-hardening-and-rollout-alignment/tasks/DA-121-shared-and-package-local-boundary-hardening-and-exports-cleanup.md`
+8. `.repo-ai-governor/context/dev/project-011-cli-package-decomposition/sprint-003-package-hardening-and-rollout-alignment/tasks/DA-122-cli-package-regression-smoke-and-test-topology-hardening.md`
+9. `.repo-ai-governor/context/dev/project-011-cli-package-decomposition/sprint-003-package-hardening-and-rollout-alignment/tasks/DA-123-project-011-exit-acceptance-and-project-010-rollout-input-constraints.md`
+10. `.repo-ai-governor/context/dev/project-011-cli-package-decomposition/project-011-cli-package-decomposition-completion-audit-summary.md`
 
 ## 5. 实施计划
 
 1. 定义任务目标、依赖产物、角色能力进入 DAG 装配的最小输入模型。
 2. 将 `run` 从固定模板升级为可编译/可解释的任务驱动流程装配逻辑。
-3. 新增主链装配逻辑时优先落到 `project-011` 已定义的 CLI decomposition 边界，避免继续扩张 `apps/cli/src/cli-governance-runtime.ts`。
+3. 新增主链装配逻辑时优先落到 `project-011` 已定义并已完成验收的 CLI decomposition 边界，避免继续扩张 `apps/cli/src/cli-governance-runtime.ts`。
 4. 保留 fallback baseline，但明确其只作为降级路径，不再代表目标形态。
 5. 补齐 runtime/contract/integration 测试并回写 `DA-103`。
 6. 同步台账与 artifact registry。

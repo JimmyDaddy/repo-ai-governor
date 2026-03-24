@@ -7,12 +7,13 @@ import { CliInitCommand } from "../../src/commands/init-command.js";
 import { CliPlanCommand } from "../../src/commands/plan-command.js";
 import { CliReviewCommand } from "../../src/commands/review-command.js";
 import { CliReviewVerifyCommand } from "../../src/commands/review-verify-command.js";
+import { CliRunCommand } from "../../src/commands/run-command.js";
 import { CliUpgradeCommand } from "../../src/commands/upgrade-command.js";
 import { CliVerifyCommand } from "../../src/commands/verify-command.js";
 import { CliCommandName } from "../../src/constants/cli-command.constant.js";
 
 describe("Cli command registry", () => {
-  it("registers every extracted non-run command name", () => {
+  it("registers every extracted command name", () => {
     const executors = [
       new CliInitCommand(),
       new CliConnectCommand(),
@@ -20,6 +21,7 @@ describe("Cli command registry", () => {
       new CliCheckCommand(),
       new CliVerifyCommand(),
       new CliPlanCommand(),
+      new CliRunCommand(),
       new CliReviewCommand(),
       new CliReviewVerifyCommand(),
       new CliUpgradeCommand(),
@@ -29,7 +31,6 @@ describe("Cli command registry", () => {
     for (const executor of executors) {
       expect(registry.resolve(executor.commandName)).toBe(executor);
     }
-    expect(registry.resolve(CliCommandName.RUN)).toBeNull();
   });
 
   it("rejects duplicate command executor registrations", () => {

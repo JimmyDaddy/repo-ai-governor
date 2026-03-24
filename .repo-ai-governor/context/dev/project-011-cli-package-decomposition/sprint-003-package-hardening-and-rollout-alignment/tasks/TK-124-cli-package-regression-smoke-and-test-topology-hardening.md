@@ -1,8 +1,8 @@
 # TK-124 cli package 回归、smoke 与 test topology 加固
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-24
-- Owner: TBD
+- Owner: AI-Agent
 - Priority: P1
 - Project: `project-011-cli-package-decomposition`
 - Sprint: `sprint-003-package-hardening-and-rollout-alignment`
@@ -30,6 +30,7 @@
 1. 复核 package-scoped tests、integration tests 与 smoke coverage 的归属。
 2. 为拆分后的模块补齐 package-level tests 与关键 smoke。
 3. 回写 `DA-122`，并确保 `CS-024` 拓扑基线可通过。
+4. 优先固定现有 topology 与 public entry smoke 证据，再按缺口决定是否新增测试。
 
 ## 6. 验证
 
@@ -42,6 +43,8 @@
 ## 7. 执行记录
 
 1. 2026-03-24：任务创建，状态初始化为 `planned`。
+2. 2026-03-24：切换为 `in_progress`，已建立 CLI package test topology 基线并执行第一轮 package/integration smoke 验证。
+3. 2026-03-24：已确认高复杂度 `run/review/review-verify/replay` 路径在 package-scoped integration 中已有稳定覆盖，`DA-122` 更新为最终基线，任务状态更新为 `completed`。
 
 ## 8. 产出
 

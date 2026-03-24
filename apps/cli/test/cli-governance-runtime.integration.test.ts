@@ -639,17 +639,23 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
     );
   });
 
-  it("dispatches extracted init/check/plan/upgrade commands through the facade registry", async () => {
+  it("dispatches extracted init/check/plan/upgrade/run commands through the facade registry", async () => {
     await withRuntimeFixture(async (fixture) => {
       const initResult = await fixture.runtime.execute(CliCommandName.INIT);
       const checkResult = await fixture.runtime.execute(CliCommandName.CHECK);
       const planResult = await fixture.runtime.execute(CliCommandName.PLAN);
       const upgradeResult = await fixture.runtime.execute(CliCommandName.UPGRADE);
+      const runtimeWithOverrides = fixture.runtime as unknown as {
+        collectGitChangedPaths: () => Promise<string[]>;
+      };
+      runtimeWithOverrides.collectGitChangedPaths = async () => [];
+      const runResult = await fixture.runtime.execute(CliCommandName.RUN);
 
       expect(initResult.commandResult.operation).toBe("workspace_init");
       expect(checkResult.commandResult.operation).toBe("governance_check");
       expect(planResult.commandResult.operation).toBe("plan_snapshot");
       expect(upgradeResult.commandResult.operation).toBe("schema_upgrade_analyze");
+      expect(runResult.commandResult.operation).toBe("governance_run");
     });
   });
 

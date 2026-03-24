@@ -1,6 +1,6 @@
 # TK-121 run/review 命令执行器抽离与 thin facade cutover
 
-- Status: in_progress
+- Status: completed
 - Date: 2026-03-24
 - Owner: AI-Agent
 - Priority: P0
@@ -44,6 +44,7 @@
 
 1. 2026-03-24：任务创建，状态初始化为 `planned`。
 2. 2026-03-24：切换为 `in_progress`，先从 `review/review-verify` 命令链抽离开始，逐步将 `CliGovernanceRuntime` 收敛为 thin facade。
+3. 2026-03-24：新增 `CliRunCommand` 并将 `RUN` 接入 registry dispatch，完成 `DA-119` 与 thin facade cutover 收口，任务状态更新为 `completed`。
 
 ## 8. 产出
 

@@ -1,6 +1,6 @@
 # sprint-002-command-surface-and-facade-cutover 计划
 
-- Status: in_progress
+- Status: completed
 - Date: 2026-03-24
 - Project: `project-011-cli-package-decomposition`
 
@@ -12,8 +12,8 @@
 
 1. TK-119 artifact/report/presentation 模块抽离（completed）
 2. TK-120 通用命令执行器抽离与 entry registry 基线（completed）
-3. TK-121 run/review 命令执行器抽离与 thin facade cutover（in_progress）
-4. TK-122 sprint-002 出口验收与 sprint-003 输入约束（in_progress）
+3. TK-121 run/review 命令执行器抽离与 thin facade cutover（completed）
+4. TK-122 sprint-002 出口验收与 sprint-003 输入约束（completed）
 
 ## 3. Entry Criteria
 
@@ -25,3 +25,9 @@
 1. artifact/report/presentation 逻辑不再直接附着于 `CliGovernanceRuntime`。
 2. 顶层命令执行逻辑已迁出到 `commands/*` 或等价边界。
 3. `DA-117`~`DA-120` 可检索，并通过 sprint-002 出口验收。
+
+## 5. 执行结果
+
+1. `DA-117`、`DA-118`、`DA-119`、`DA-120` 已全部可检索。
+2. `CliGovernanceRuntime.execute()` 已收敛为统一 registry dispatch，不再保留 `RUN` 命令特殊分支。
+3. sprint-003 已以正式 handoff 方式消费 sprint-002 的最终输入约束。

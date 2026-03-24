@@ -59,6 +59,7 @@ import { CliInitCommand } from "./commands/init-command.js";
 import { CliPlanCommand } from "./commands/plan-command.js";
 import { CliReviewCommand } from "./commands/review-command.js";
 import { CliReviewVerifyCommand } from "./commands/review-verify-command.js";
+import { CliRunCommand } from "./commands/run-command.js";
 import { CliUpgradeCommand } from "./commands/upgrade-command.js";
 import { CliVerifyCommand } from "./commands/verify-command.js";
 import { CliCommandName } from "./constants/cli-command.constant.js";
@@ -157,6 +158,7 @@ export class CliGovernanceRuntime {
       new CliCheckCommand(),
       new CliVerifyCommand(),
       new CliPlanCommand(),
+      new CliRunCommand(),
       new CliReviewCommand(),
       new CliReviewVerifyCommand(),
       new CliUpgradeCommand(),
@@ -176,10 +178,6 @@ export class CliGovernanceRuntime {
     const extractedCommandExecutor = this.commandRegistry.resolve(commandName);
     if (extractedCommandExecutor) {
       return extractedCommandExecutor.execute(this.createCommandExecutorContext());
-    }
-
-    if (commandName === CliCommandName.RUN) {
-      return this.executeRunCommand();
     }
 
     throw new RuntimeError(
@@ -221,6 +219,7 @@ export class CliGovernanceRuntime {
       adapterDiagnosticsRuntime: this.adapterDiagnosticsRuntime,
       reviewQueueRuntime: this.reviewQueueRuntime,
       commandExperienceBuilder: this.commandExperienceBuilder,
+      executeRunCommand: async () => this.executeRunCommand(),
       calculateCheckTotals: (checks: CliCommandResultCheck[]) => this.calculateCheckTotals(checks),
       buildDefaultConfigContent: () => this.buildDefaultConfigContent(),
       toRfc3339SecondsTimestamp: (value: Date) => this.toRfc3339SecondsTimestamp(value),

@@ -22,7 +22,7 @@
 | `project-008-workflow-optimization` | Cross-Stage | Process Optimization | 优化执行流程治理（门禁分层、台账同步、风险契约、拆解协议） |
 | `project-009-production-readiness` | Stage 9 | Phase E 收口 + GA Readiness overlay | 命令去 skeleton 化、本地安装与调试、自动执行闭环、角色级观测、examples 与发布门禁生产化 |
 | `project-010-local-model-and-ide-expansion` | Stage 9 follow-up backlog | P1 扩展（本地模型 + IDE 入口） | 落地本地模型适配路径与多 IDE 生产化接入模板，收敛后续 rollout 输入约束 |
-| `project-011-cli-package-decomposition` | Stage 9 enabling refactor | CLI 架构分解 | 将 `apps/cli` 从 God object 演化路径中抽离出来，为 project-010 主链与后续 rollout 提供稳定工程边界 |
+| `project-011-cli-package-decomposition` | Stage 9 enabling refactor | CLI 架构分解 | 已完成 `apps/cli` 的 bounded-context 拆分与 package hardening，为 project-010 主链与后续 rollout 提供正式工程边界 |
 
 ## 2. 依赖顺序
 

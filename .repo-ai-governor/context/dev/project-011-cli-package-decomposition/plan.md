@@ -1,6 +1,6 @@
 # project-011-cli-package-decomposition 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-03-24
 - Stage Mapping: Stage 9 enabling refactor + CLI architecture cleanup
 - Phase Mapping: Phase E follow-up + CLI package decomposition
@@ -67,6 +67,7 @@
 
 - Sprint Goal: 完成 shared/package-local 边界、exports/tests/smoke 加固，并将 CLI package decomposition 的结论回灌给 `project-010`。
 - 任务包：`TK-123`、`TK-124`、`TK-125`。
+- 启动约束：允许基于 `DA-120` 冻结稿并行启动 `TK-123` 的边界审计与 exports 基线收敛，但最终收口仍需消费 `TK-122` 的最终 `accept` 结论。
 - Exit Criteria:
   1. shared 与 package-local 的归属规则在代码和文档上都已稳定。
   2. 拆分后的 CLI package 具备分层测试、smoke 与 regression 证据。
@@ -82,11 +83,11 @@
 | TK-118 | sprint-001 | sprint-001 出口验收与 sprint-002 输入约束 | acceptance baseline | TK-116,TK-117 | completed |
 | TK-119 | sprint-002 | artifact/report/presentation 模块抽离 | implementation/runtime | TK-118 | completed |
 | TK-120 | sprint-002 | 通用命令执行器抽离与 entry registry 基线 | implementation/command | TK-119 | completed |
-| TK-121 | sprint-002 | run/review 命令执行器抽离与 thin facade cutover | implementation/command | TK-119,TK-120 | in_progress |
-| TK-122 | sprint-002 | sprint-002 出口验收与 sprint-003 输入约束 | acceptance baseline | TK-119,TK-120,TK-121 | in_progress |
-| TK-123 | sprint-003 | shared 与 package-local 边界收敛及 exports 清理 | implementation/hardening | TK-122 | planned |
-| TK-124 | sprint-003 | cli package 回归、smoke 与 test topology 加固 | implementation/hardening | TK-122,TK-123 | planned |
-| TK-125 | sprint-003 | project-011 出口验收与 project-010 rollout 输入约束 | acceptance baseline | TK-123,TK-124 | planned |
+| TK-121 | sprint-002 | run/review 命令执行器抽离与 thin facade cutover | implementation/command | TK-119,TK-120 | completed |
+| TK-122 | sprint-002 | sprint-002 出口验收与 sprint-003 输入约束 | acceptance baseline | TK-119,TK-120,TK-121 | completed |
+| TK-123 | sprint-003 | shared 与 package-local 边界收敛及 exports 清理 | implementation/hardening | TK-122 | completed |
+| TK-124 | sprint-003 | cli package 回归、smoke 与 test topology 加固 | implementation/hardening | TK-122,TK-123 | completed |
+| TK-125 | sprint-003 | project-011 出口验收与 project-010 rollout 输入约束 | acceptance baseline | TK-123,TK-124 | completed |
 
 ## 5. 依赖产物策略
 
@@ -108,3 +109,6 @@
 1. 2026-03-24：创建 `project-011`，将 CLI package decomposition 从 `project-010` 中独立为单独的工程支撑主线，并切换为当前 primary stream。
 2. 2026-03-24：完成 sprint-001 runtime support extraction，形成 `DA-115/DA-116` 并为 sprint-002 冻结 handoff 约束。
 3. 2026-03-24：切换到 sprint-002 `TK-119`，开始 artifact/report/presentation 模块抽离与 facade 收口第一轮实施。
+4. 2026-03-24：切换到 sprint-003 `TK-123`，基于 `DA-120` 冻结稿启动 shared/package-local 边界审计与 exports 基线收敛。
+5. 2026-03-24：并行启动 `TK-124/TK-125`，先固定 CLI package test topology 与 project-011 滚动验收草案，再等待 sprint-003 最终证据收口。
+6. 2026-03-24：完成 `TK-121`~`TK-125` 全部收口，产出 `DA-119`~`DA-123` 与 `project-011-cli-package-decomposition-completion-audit-summary.md`，`project-011` 状态切换为 `completed`。

@@ -8,7 +8,7 @@
 
 1. `projects-overview`: `.repo-ai-governor/context/dev/projects-overview.md`
 2. `dependency-artifact-registry-guide`: `.repo-ai-governor/context/dev/dependency-artifact-registry.md`
-3. `primary project plan`: `.repo-ai-governor/context/dev/project-011-cli-package-decomposition/plan.md`
+3. `primary project plan`: `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/plan.md`
 
 ## 2. Artifact Retrieval Entry
 
