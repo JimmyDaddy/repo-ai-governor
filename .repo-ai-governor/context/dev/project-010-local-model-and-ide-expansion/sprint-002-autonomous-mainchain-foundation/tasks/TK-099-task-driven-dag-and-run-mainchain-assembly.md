@@ -14,6 +14,7 @@
 ## 2. Depends On
 
 1. `TK-098`
+2. `TK-118`
 
 ## 3. 预期产物
 
@@ -27,14 +28,16 @@
 4. `.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-master-execution-plan.md`
 5. `.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-overall-technical-solution.md`
 6. `.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-architecture-and-repo-layering.md`
+7. `.repo-ai-governor/context/dev/project-011-cli-package-decomposition/sprint-001-runtime-support-extraction-foundation/tasks/DA-113-cli-package-decomposition-baseline-and-dependency-contract.md`
 
 ## 5. 实施计划
 
 1. 定义任务目标、依赖产物、角色能力进入 DAG 装配的最小输入模型。
 2. 将 `run` 从固定模板升级为可编译/可解释的任务驱动流程装配逻辑。
-3. 保留 fallback baseline，但明确其只作为降级路径，不再代表目标形态。
-4. 补齐 runtime/contract/integration 测试并回写 `DA-103`。
-5. 同步台账与 artifact registry。
+3. 新增主链装配逻辑时优先落到 `project-011` 已定义的 CLI decomposition 边界，避免继续扩张 `apps/cli/src/cli-governance-runtime.ts`。
+4. 保留 fallback baseline，但明确其只作为降级路径，不再代表目标形态。
+5. 补齐 runtime/contract/integration 测试并回写 `DA-103`。
+6. 同步台账与 artifact registry。
 
 ## 6. 验证
 

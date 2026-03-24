@@ -18,8 +18,9 @@
 ## 3. Entry Criteria
 
 1. `DA-102`（sprint-001 出口验收与 sprint-002 输入约束）可检索。
-2. 本地模型路径、route fallback、restricted network 诊断基线保持可复跑。
-3. 当前 CLI/runtime 的 `execution_id/report/ledger` 链路可作为自动主链升级输入，不重做 Stage 0-8 已完成模块。
+2. `TK-118` / `DA-116`（project-011 sprint-001 出口验收与 sprint-002 输入约束）可检索，CLI decomposition 基线已建立。
+3. 本地模型路径、route fallback、restricted network 诊断基线保持可复跑。
+4. 当前 CLI/runtime 的 `execution_id/report/ledger` 链路可作为自动主链升级输入，不重做 Stage 0-8 已完成模块。
 
 ## 4. Exit Criteria
 

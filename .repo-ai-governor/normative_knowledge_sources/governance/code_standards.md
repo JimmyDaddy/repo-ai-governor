@@ -30,6 +30,7 @@ This file defines repository-level coding standards and the executable gate comm
 - [CS-024] Test topology must be layered: package-scoped tests belong under `apps/**/test` or `packages/**/test`, while cross-package smoke/integration tests stay under root `test/**`. CI and local verification should run `test:packages` and `test:integration` separately to preserve ownership boundaries and diagnosis clarity.
 - [CS-025] Normative loading manifest governance is required: active files under `.repo-ai-governor/normative_knowledge_sources/**` must be registered in `.repo-ai-governor/normative_knowledge_sources/normative-loading-manifest.yaml`; `default_load=true` is only allowed for `L0/L1`; triad docs must keep consistent `active/frozen` status; and gate default mode is `block` with controlled rollback switch.
 - [CS-026] Code review lifecycle artifacts under `.repo-ai-governor/context/dev/**/review/` must keep filename state and top-level `Status` metadata synchronized. `code_review_*/review_*` require `Status: review_pending`; `verified_code_review_*/verified_review_*` require `Status: verified`; `resolved_code_review_*/resolved_review_*` require `Status: resolved`.
+- [CS-027] Prevent cross-layer God objects. In `apps/**` and `packages/**`, new or substantially modified domain/runtime modules must align to one primary bounded context and at most two adjacent architecture layers from `.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-overall-technical-solution.md -> 4.1 分层视图`. A single file/class must not simultaneously own three or more responsibility families among `command entry/dispatch`, `workflow/runtime orchestration`, `adapter probing/routing`, `policy/risk decisioning`, `artifact/report persistence`, and `presentation shaping`. Legacy files above `1200` LOC must not absorb new unrelated responsibilities; changes to such files should prefer extraction-first refactors. Temporary exceptions require a nearby marker comment `// god-object-exception: TK-xxx reason` and a task-linked decomposition plan in the active sprint ledger before delivery.
 
 ## Monorepo Naming Convention (Refactor Baseline)
 
@@ -128,9 +129,11 @@ node ./dist/bin/repo-ai-governor.js --help >/dev/null
    - `scripts/governance/check-monorepo-naming.js`
 2. Planned script for follow-up integration:
    - `scripts/governance/check-monorepo-versioning-policy.js`
+   - `scripts/governance/check-god-object-boundary.js`
 3. Planned command wiring (not active yet):
    - `node ./scripts/governance/check-monorepo-naming.js`
    - `node ./scripts/governance/check-monorepo-versioning-policy.js`
+   - `node ./scripts/governance/check-god-object-boundary.js`
 4. Current status: `check-package-dependency-boundary` 以 warning 模式接入；`normative-loading-manifest` 已切换默认 blocking（通过 gate runner 执行），并提供 rollback switch（config/env）用于应急回退。
 
 ## Notes

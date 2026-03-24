@@ -1,0 +1,5 @@
+execution_id,task_id,title,owner,priority,due_date,status,project,sprint,plan,result,verify,review_delta,recorded_at
+exec-20260324-346,TK-119,artifact/report/presentation 模块抽离,TBD,P0,2026-03-28,planned,project-011-cli-package-decomposition,sprint-002-command-surface-and-facade-cutover,将 diagnostics report replay experience shaping 等逻辑从 CliGovernanceRuntime 中抽离为可测试模块,待执行,待验证,待执行,2026-03-24
+exec-20260324-347,TK-120,通用命令执行器抽离与 entry registry 基线,TBD,P0,2026-03-29,planned,project-011-cli-package-decomposition,sprint-002-command-surface-and-facade-cutover,将 init connect doctor check verify plan upgrade 等命令逻辑迁出并建立 commands entry registry 基线,待执行,待验证,待执行,2026-03-24
+exec-20260324-348,TK-121,run/review 命令执行器抽离与 thin facade cutover,TBD,P0,2026-03-30,planned,project-011-cli-package-decomposition,sprint-002-command-surface-and-facade-cutover,完成高复杂度命令执行器迁移并将 CliGovernanceRuntime 收敛为薄 facade,待执行,待验证,待执行,2026-03-24
+exec-20260324-349,TK-122,sprint-002 出口验收与 sprint-003 输入约束,TBD,P0,2026-03-31,planned,project-011-cli-package-decomposition,sprint-002-command-surface-and-facade-cutover,汇总 sprint-002 的收敛证据并冻结 sprint-003 的 package hardening rollout 输入约束,待执行,待验证,待执行,2026-03-24

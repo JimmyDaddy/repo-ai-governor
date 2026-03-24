@@ -40,7 +40,7 @@
 
 ## 3.1 一句话结论
 
-1. Stage 0-8 的基线能力已经完成，`project-009` 完成了投产基线收口；当前主线不再是“把模块补齐”，而是由 `project-010` 承接“全自动研发闭环仍未打通”的 follow-up 收敛。
+1. Stage 0-8 的基线能力已经完成，`project-009` 完成了投产基线收口；当前主线不再是“把模块补齐”，而是由 `project-010` 承接“全自动研发闭环仍未打通”的业务收敛，并由 `project-011` 承接 CLI package decomposition 的工程支撑重构。
 
 ## 3.2 当前真实状态
 
@@ -59,14 +59,15 @@
 |---|---|---|---|
 | 已完成基线 | `project-001` ~ `project-008` | completed | 提供架构、运行时、治理、审计、发布与平台化基线 |
 | 投产基线完成态 | `project-009-production-readiness` | completed | 证明工具已具备本地可采用、可诊断、可 clean-room 验证的外部可用基础 |
-| 当前主动收敛主线 | `project-010-local-model-and-ide-expansion` | active | 继续收敛真实调用、动态编排、HITL/Delivery 闭环、受限网络与 IDE 入口 |
+| 当前业务闭环主线 | `project-010-local-model-and-ide-expansion` | active | 继续收敛真实调用、动态编排、HITL/Delivery 闭环、受限网络与 IDE 入口 |
+| 当前工程支撑主线 | `project-011-cli-package-decomposition` | active | 拆解 CLI package God object，给 `project-010` 的 sprint-002/003 提供稳定工程边界 |
 
 ## 3.4 当前推荐执行顺序
 
-1. 先收敛真实调用与 route fallback。
-2. 再补强 deep probe、restricted network 与稳定性门禁。
-3. 再把 `run -> review -> review-verify -> ledger backfill` 升级成任务驱动自动主链。
-4. 最后再做 delivery rehearsal、试点运营与 GA 收口。
+1. 先完成 `project-010` sprint-001 的出口验收与 `DA-102`。
+2. 并行启动 `project-011`，先把 CLI runtime 支撑层从 God object 中抽离，避免主链升级继续加重单点文件。
+3. 再把 `project-010` 的 `run -> review -> review-verify -> ledger backfill` 升级成任务驱动自动主链。
+4. 最后做 delivery rehearsal、试点运营与 GA 收口。
 
 ## 4. 路线图总览
 
@@ -179,12 +180,17 @@
    - `TK-096`：真实调用与 route fallback
    - `TK-097`：deep probe、restricted network、稳定性门禁
    - `TK-098`：sprint-001 出口验收与 sprint-002 输入约束
-2. sprint-002：
+2. parallel enabling track：
+   - `project-011 / TK-115`：project 拆分与依赖重排
+   - `project-011 / TK-116`：adapter verification 与 local probe 抽离
+   - `project-011 / TK-117`：route fallback 与 diagnostics builder 抽离
+   - `project-011 / TK-118`：sprint-001 出口验收与 sprint-002 输入约束
+3. sprint-002：
    - `TK-099`：任务驱动 DAG 与 `run` 主链装配
    - `TK-100`：`review -> review-verify -> ledger backfill` 内联收口
    - `TK-101`：HITL 决策回执与 `resume/terminate/degrade`
    - `TK-102`：sprint-002 出口验收与 sprint-003 输入约束
-3. sprint-003：
+4. sprint-003：
    - `TK-107`：受控 delivery rehearsal 与 audit/replay 接线
    - `TK-108`：黑盒/CI/release/GA 指标收口
    - `TK-109` ~ `TK-111`：多 IDE 官方入口 productionization
@@ -227,6 +233,7 @@
 | `project-008-workflow-optimization` | Cross-stage | completed | 执行流降噪、台账自动化、工作流优化 |
 | `project-009-production-readiness` | Stage 9 baseline | completed | 投产基线、clean-room、外部采用、production gate baseline |
 | `project-010-local-model-and-ide-expansion` | Stage 9 follow-up | active | 真实调用、受限网络、本地模型、IDE、自治闭环继续收口 |
+| `project-011-cli-package-decomposition` | Stage 9 enabling refactor | active | 拆解 CLI package God object，为 `project-010` 主链升级提供稳定工程边界 |
 
 ## 9. Sprint 与 Task 最小模板
 

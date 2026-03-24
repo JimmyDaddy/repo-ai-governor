@@ -38,3 +38,7 @@
   - 2026-03-24：任务创建并启动，目标是将 `project-010` 从 IDE-first 重排为 mainchain-first，并重新落 sprint-002/sprint-003 骨架。
   - 2026-03-24：已完成 project plan、master plan、sprint-001 约束与 sprint-002/sprint-003 目录/任务包重排。
   - 2026-03-24：已同步 task card、checklist、tasks.csv 与 resolved review，任务状态收尾为 `completed`。
+- [x] TK-114 cli-governance-runtime 拆分方案与 anti-God-object 规范基线
+  - 2026-03-24：任务创建并启动，目标是将 `cli-governance-runtime.ts` 的拆分方案和 anti-God-object 治理规则正式化。
+  - 2026-03-24：已完成 `.repo-ai-governor/draft/cli-governance-runtime-decomposition-plan.md`、`CS-027` 规则补充、维护指南映射同步与 resolved review，任务状态收尾为 `completed`。
+  - 2026-03-24：已根据 diff comment 修正 Phase 5 表述，明确通用辅助函数需先区分 shared 复用能力与 CLI package-local 能力，避免 draft 暗示单向上提。

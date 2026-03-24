@@ -1,7 +1,7 @@
 # Repo AI Governor Project 拆解总览
 
 - Status: active
-- Date: 2026-03-23
+- Date: 2026-03-24
 - Basis:
   - `.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-master-execution-plan.md`
   - `.repo-ai-governor/normative_knowledge_sources/product-requirements.md`
@@ -22,6 +22,7 @@
 | `project-008-workflow-optimization` | Cross-Stage | Process Optimization | 优化执行流程治理（门禁分层、台账同步、风险契约、拆解协议） |
 | `project-009-production-readiness` | Stage 9 | Phase E 收口 + GA Readiness overlay | 命令去 skeleton 化、本地安装与调试、自动执行闭环、角色级观测、examples 与发布门禁生产化 |
 | `project-010-local-model-and-ide-expansion` | Stage 9 follow-up backlog | P1 扩展（本地模型 + IDE 入口） | 落地本地模型适配路径与多 IDE 生产化接入模板，收敛后续 rollout 输入约束 |
+| `project-011-cli-package-decomposition` | Stage 9 enabling refactor | CLI 架构分解 | 将 `apps/cli` 从 God object 演化路径中抽离出来，为 project-010 主链与后续 rollout 提供稳定工程边界 |
 
 ## 2. 依赖顺序
 
@@ -35,8 +36,9 @@
 8. `project-007-platformization`
 9. `project-009-production-readiness`
 10. `project-010-local-model-and-ide-expansion`
+11. `project-011-cli-package-decomposition`
 
-说明：Stage 主链按 001-007、009 推进；`project-008` 作为跨阶段治理优化轨，可在不破坏主链 DoD 的前提下优先执行。
+说明：Stage 主链按 001-007、009、010 推进；`project-008` 作为跨阶段治理优化轨可优先执行；`project-011` 作为 `project-010` 的工程支撑分解轨，为 CLI package 重构提供独立执行流。
 
 ## 3. 交付原则
 

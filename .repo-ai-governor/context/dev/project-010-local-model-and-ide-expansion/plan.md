@@ -26,6 +26,12 @@
 6. WS-06 Exit Acceptance And Rollout Input
    - project 级验收与后续输入约束交接。
 
+## 2.2 支撑依赖
+
+1. `project-011-cli-package-decomposition` 是 `project-010` 的工程支撑主线，用于承接 CLI package 的 bounded-context 拆分与 thin facade 重构。
+2. `project-010` sprint-002 及之后的 CLI 主链改动，应优先消费 `project-011` 的 `DA-*` 产物，不再默认继续扩写 `apps/cli/src/cli-governance-runtime.ts`。
+3. 若确需暂时在 legacy 文件上落地例外，必须遵循 `CS-027` 的例外登记规则，并在对应 task 中明确回收计划。
+
 ## 2.1 全自动研发落地优先级（P0/P1）
 
 1. P0-1 适配器真实调用收敛（`TK-096`）
@@ -54,7 +60,7 @@
 ## 3.1 sprint-001-local-model-adapter-baseline
 
 - Sprint Goal: 落地本地模型适配与受限网络回退的最小可执行基线，形成 sprint-002 输入约束。
-- 任务包：`TK-095`、`TK-096`、`TK-097`、`TK-098`、`TK-103`、`TK-104`、`TK-105`、`TK-106`、`TK-113`。
+- 任务包：`TK-095`、`TK-096`、`TK-097`、`TK-098`、`TK-103`、`TK-104`、`TK-105`、`TK-106`、`TK-113`、`TK-114`。
 - Exit Criteria:
   1. 本地模型 adapter 契约与配置扩展完成，并通过 schema/类型/契约校验。
   2. 远端不可达场景可自动降级到本地模型路径，且失败语义可审计回链。
@@ -63,7 +69,7 @@
 
 ## 3.2 sprint-002-autonomous-mainchain-foundation
 
-- Sprint Goal: 将 Stage 9 自动主链从固定模板升级为任务驱动受控链路，形成 sprint-003 的明确输入约束。
+- Sprint Goal: 在 `project-011` 提供的 CLI decomposition 边界上，将 Stage 9 自动主链从固定模板升级为任务驱动受控链路，形成 sprint-003 的明确输入约束。
 - 任务包：`TK-099`、`TK-100`、`TK-101`、`TK-102`。
 - Exit Criteria:
   1. `run` 可按任务目标、依赖产物、角色能力装配可执行 DAG。
@@ -89,7 +95,7 @@
 | TK-096 | sprint-001 | Ollama 类 adapter 与 route fallback 基线 | implementation/adapter | TK-095 | completed |
 | TK-097 | sprint-001 | 本地模型诊断校验与受限网络演练基线 | implementation/gate | TK-095,TK-096 | completed |
 | TK-098 | sprint-001 | sprint-001 出口验收与 sprint-002 输入约束 | acceptance baseline | TK-095,TK-096,TK-097 | planned |
-| TK-099 | sprint-002 | 任务驱动 DAG 与 `run` 主链装配 | implementation/runtime | TK-098 | planned |
+| TK-099 | sprint-002 | 任务驱动 DAG 与 `run` 主链装配 | implementation/runtime | TK-098,TK-118 | planned |
 | TK-100 | sprint-002 | review 子链内联与 ledger backfill 收口 | implementation/runtime | TK-099 | planned |
 | TK-101 | sprint-002 | HITL 决策回执与恢复执行语义 | implementation/runtime | TK-099,TK-100 | planned |
 | TK-102 | sprint-002 | sprint-002 出口验收与 sprint-003 输入约束 | acceptance baseline | TK-099,TK-100,TK-101 | planned |
@@ -104,6 +110,7 @@
 | TK-111 | sprint-003 | Cursor/Claude Code 接入模板与文档一致性 | implementation/ide-template | TK-109,TK-110 | planned |
 | TK-112 | sprint-003 | project-010 出口验收与后续 rollout 输入约束 | acceptance baseline | TK-107,TK-108,TK-110,TK-111 | planned |
 | TK-113 | sprint-001 | project-010 Stage 9 执行重排与 sprint rebaseline | analysis/planning | TK-106 | completed |
+| TK-114 | sprint-001 | cli-governance-runtime 拆分方案与 anti-God-object 规范基线 | analysis/governance | TK-113 | completed |
 
 ## 5. 依赖产物策略
 
@@ -132,3 +139,5 @@
 8. 2026-03-24：新增 `TK-113`，将 `project-010` 从 IDE-first 重排为 mainchain-first：新建 `sprint-002-autonomous-mainchain-foundation`，并将原 `sprint-002` 顺延为 `sprint-003-delivery-ide-and-ga-hardening`。
 9. 2026-03-24：完成 `TK-096`，将本地模型路径从契约基线升级为真实 Ollama 类 `probe/invoke` 与自动 fallback candidate，为 `TK-097` 的 deep probe 和受限网络演练提供唯一实现输入。
 10. 2026-03-24：完成 `TK-097`，将本地模型失败归因、`doctor` safe_local 边界、restricted-network CLI rehearsal 与 resilience regression 场景收口为 `DA-101`，为 `TK-098` 出口验收提供唯一门禁证据。
+11. 2026-03-24：新增并完成 `TK-114`，将 `cli-governance-runtime.ts` 的拆分方案沉淀到 draft，并在 `code_standards.md` / `long-term-maintenance-guide.md` 正式建立 anti-God-object 治理基线。
+12. 2026-03-24：创建 `project-011-cli-package-decomposition` 作为工程支撑主线，并将 `project-010` sprint-002 的 CLI 结构重构前置依赖切换为 `TK-118/DA-116`。

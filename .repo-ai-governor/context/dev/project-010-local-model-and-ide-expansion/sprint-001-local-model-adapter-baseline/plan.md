@@ -19,6 +19,7 @@
 7. TK-105 主执行计划结构重梳与执行导航重构（completed）
 8. TK-106 triad 文档 Stage 9 overlay 补强同步（completed）
 9. TK-113 project-010 Stage 9 执行重排与 sprint rebaseline（completed）
+10. TK-114 cli-governance-runtime 拆分方案与 anti-God-object 规范基线（completed）
 
 ## 2.1 当前执行焦点
 
@@ -31,6 +32,7 @@
 7. `TK-106`：已完成 triad 补强同步，将 Stage 9 follow-up 的技术收口重点明确回锚到总技术方案与架构蓝图，并保持 PRD/brief 同步门禁通过。
 8. `TK-098`：当前应产出 `sprint-002-autonomous-mainchain-foundation` 的输入约束，而不是继续沿用 IDE-first 顺序。
 9. `TK-113`：已完成 `project-010` 执行重排，将原 `sprint-002` 顺延为 `sprint-003`，并为自动主链收口创建新的 `sprint-002` 骨架。
+10. `TK-114`：已完成 `cli-governance-runtime.ts` 拆分方案 draft 与 anti-God-object 规范基线，为后续 runtime 重构建立唯一分析输入与治理约束。
 
 ## 3. Entry Criteria
 

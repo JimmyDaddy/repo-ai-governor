@@ -1,0 +1,4 @@
+execution_id,task_id,title,owner,priority,due_date,status,project,sprint,plan,result,verify,review_delta,recorded_at
+exec-20260324-350,TK-123,shared 与 package-local 边界收敛及 exports 清理,TBD,P1,2026-04-01,planned,project-011-cli-package-decomposition,sprint-003-package-hardening-and-rollout-alignment,收敛 shared 与 package-local 归属规则并完成 CLI package exports 清理,待执行,待验证,待执行,2026-03-24
+exec-20260324-351,TK-124,cli package 回归、smoke 与 test topology 加固,TBD,P1,2026-04-02,planned,project-011-cli-package-decomposition,sprint-003-package-hardening-and-rollout-alignment,为拆分后的 CLI package 建立稳定的 package integration smoke 与 topology 证据,待执行,待验证,待执行,2026-03-24
+exec-20260324-352,TK-125,project-011 出口验收与 project-010 rollout 输入约束,TBD,P0,2026-04-03,planned,project-011-cli-package-decomposition,sprint-003-package-hardening-and-rollout-alignment,汇总 project-011 交付证据完成出口验收并将正式输入约束回灌给 project-010,待执行,待验证,待执行,2026-03-24
