@@ -6,6 +6,7 @@ import {
   type AgentCancelResult,
   AgentCapability,
   AgentCapabilitySupportLevel,
+  AgentCliExecOperation,
   AgentConfirmationDecision,
   type AgentConfirmationRequest,
   type AgentConfirmationResult,
@@ -213,9 +214,9 @@ export class CodexAgentAdapter extends AgentProtocol {
       prompt,
       timeoutMs: request.agentInvocationTimeoutMs ?? this.options.requestTimeoutMs,
       signal: request.signal,
-      operation: "invoke",
+      operation: AgentCliExecOperation.INVOKE,
     });
-    const parsedOutput = this.parseCodexCliOutput(executionResult, "invoke");
+    const parsedOutput = this.parseCodexCliOutput(executionResult, AgentCliExecOperation.INVOKE);
     return {
       output: {
         adapterSurface: CODEX_SURFACE,
@@ -392,9 +393,9 @@ export class CodexAgentAdapter extends AgentProtocol {
       const executionResult = await this.runCodexOperation({
         prompt: CODEX_HEALTH_CHECK_PROMPT,
         timeoutMs: this.options.requestTimeoutMs,
-        operation: "probe",
+        operation: AgentCliExecOperation.PROBE,
       });
-      const parsedOutput = this.parseCodexCliOutput(executionResult, "probe");
+      const parsedOutput = this.parseCodexCliOutput(executionResult, AgentCliExecOperation.PROBE);
       if (parsedOutput.responseText.trim() !== CODEX_HEALTH_CHECK_EXPECTED_RESPONSE) {
         return {
           availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
@@ -445,7 +446,7 @@ export class CodexAgentAdapter extends AgentProtocol {
 
       const standardizedError = standardizeError(error);
       throw new RuntimeError(
-        request.operation === "probe"
+        request.operation === AgentCliExecOperation.PROBE
           ? GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED
           : GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
         `Codex ${request.operation} failed: ${standardizedError.message}`,
@@ -465,7 +466,7 @@ export class CodexAgentAdapter extends AgentProtocol {
    */
   private parseCodexCliOutput(
     executionResult: CodexExecRunnerResult,
-    operation: "probe" | "invoke",
+    operation: AgentCliExecOperation,
   ): CodexCliParsedOutput {
     const jsonEvents: CodexCliJsonEvent[] = executionResult.stdout
       .split(/\r?\n/u)
@@ -481,7 +482,7 @@ export class CodexAgentAdapter extends AgentProtocol {
 
     if (!completedMessage) {
       throw new RuntimeError(
-        operation === "probe"
+        operation === AgentCliExecOperation.PROBE
           ? GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED
           : GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
         `Codex ${operation} returned no completed agent_message event.`,
@@ -703,7 +704,7 @@ export class CodexAgentAdapter extends AgentProtocol {
         if (timedOut) {
           reject(
             new RuntimeError(
-              request.operation === "probe"
+              request.operation === AgentCliExecOperation.PROBE
                 ? GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED
                 : GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
               `Codex ${request.operation} timed out after ${request.timeoutMs}ms.`,
@@ -724,7 +725,7 @@ export class CodexAgentAdapter extends AgentProtocol {
         if (exitCode !== 0) {
           reject(
             new RuntimeError(
-              request.operation === "probe"
+              request.operation === AgentCliExecOperation.PROBE
                 ? GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED
                 : GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
               `Codex ${request.operation} exited with code ${exitCode ?? "null"}.`,

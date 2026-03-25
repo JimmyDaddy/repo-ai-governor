@@ -1,41 +1,17 @@
-import type { AgentAvailabilityStatus } from "@repo-ai-governor/adapter-sdk";
-import type { CodexAgentAdapterExecutionMode } from "../../constants/codex-agent-adapter.constant.js";
+import type {
+  AgentCliAdapterOptions,
+  AgentCliExecRunner,
+  AgentCliExecRunnerRequest,
+  AgentCliExecRunnerResult,
+} from "@repo-ai-governor/adapter-sdk";
 
-export interface CodexExecRunnerRequest {
-  command: string;
-  cwd: string;
-  env: NodeJS.ProcessEnv;
-  prompt: string;
-  timeoutMs: number;
-  signal?: AbortSignal;
-  operation: "probe" | "invoke";
-}
+export type CodexExecRunnerRequest = AgentCliExecRunnerRequest;
 
-export interface CodexExecRunnerResult {
-  stdout: string;
-  stderr: string;
-  exitCode: number | null;
-  signal: NodeJS.Signals | null;
-  elapsedMs: number;
-}
+export type CodexExecRunnerResult = AgentCliExecRunnerResult;
 
-export type CodexExecRunner = (request: CodexExecRunnerRequest) => Promise<CodexExecRunnerResult>;
+export type CodexExecRunner = AgentCliExecRunner<CodexExecRunnerRequest>;
 
 /**
  * Defines Codex adapter constructor options.
  */
-export interface CodexAgentAdapterOptions {
-  agentId?: string;
-  role?: string;
-  roleProfileId?: string;
-  roleSource?: string;
-  availabilityStatus?: AgentAvailabilityStatus;
-  unavailableReasons?: string[];
-  executionMode?: CodexAgentAdapterExecutionMode;
-  command?: string;
-  currentWorkingDirectory?: string;
-  environment?: NodeJS.ProcessEnv;
-  requestTimeoutMs?: number;
-  probeCacheTtlMs?: number;
-  execRunner?: CodexExecRunner;
-}
+export interface CodexAgentAdapterOptions extends AgentCliAdapterOptions<CodexExecRunner> {}

@@ -13,3 +13,4 @@ export {
   AgentSurfaceSkipReason,
   AgentStreamEventType,
 } from "./agent-protocol.constant.js";
+export { AgentCliExecOperation, AgentCliExecutionMode } from "./agent-cli-exec.constant.js";

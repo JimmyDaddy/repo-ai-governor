@@ -4,7 +4,11 @@ import {
   CodexAgentAdapterExecutionMode,
   type CodexExecRunner,
 } from "@repo-ai-governor/adapter-codex";
-import { GithubCopilotAgentAdapter } from "@repo-ai-governor/adapter-github-copilot";
+import {
+  GithubCopilotAgentAdapter,
+  GithubCopilotAgentAdapterExecutionMode,
+  type GithubCopilotExecRunner,
+} from "@repo-ai-governor/adapter-github-copilot";
 import { LocalModelAgentAdapter } from "@repo-ai-governor/adapter-local-model";
 import {
   AgentAvailabilityStatus,
@@ -29,6 +33,7 @@ export class CliAdapterRoutingRuntime {
     private readonly adaptersConfig: AdaptersConfig,
     private readonly options: {
       codexExecRunner?: CodexExecRunner;
+      githubCopilotExecRunner?: GithubCopilotExecRunner;
     } = {},
   ) {}
 
@@ -74,7 +79,15 @@ export class CliAdapterRoutingRuntime {
                 : {}),
             })
           : surface === AdapterSurface.GITHUB_COPILOT
-            ? new GithubCopilotAgentAdapter(adapterOptions)
+            ? new GithubCopilotAgentAdapter({
+                ...adapterOptions,
+                executionMode: GithubCopilotAgentAdapterExecutionMode.CLI_EXEC,
+                ...(this.options.githubCopilotExecRunner
+                  ? {
+                      execRunner: this.options.githubCopilotExecRunner,
+                    }
+                  : {}),
+              })
             : surface === AdapterSurface.CLAUDE_CODE
               ? new ClaudeCodeAgentAdapter(adapterOptions)
               : new LocalModelAgentAdapter({

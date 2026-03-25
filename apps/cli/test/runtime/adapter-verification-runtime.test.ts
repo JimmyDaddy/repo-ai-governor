@@ -62,6 +62,48 @@ function createProbeResult(
 }
 
 describe("Cli adapter verification runtime", () => {
+  it("prefers direct copilot CLI version probe before gh wrapper fallback", async () => {
+    const commandProbeExecutor = vi.fn(async () => undefined);
+    const runtime = new CliLocalModelProbeRuntime(
+      undefined,
+      commandProbeExecutor,
+      (error) => standardizeError(error).message,
+    );
+
+    const resolution = await runtime.probeLocalAdapterAvailability(AdapterSurface.GITHUB_COPILOT, {
+      toolId: AdapterSurface.GITHUB_COPILOT,
+      enabled: true,
+      availability: AdapterAvailability.AVAILABLE,
+    });
+
+    expect(resolution.availabilityStatus).toBe(AgentAvailabilityStatus.AVAILABLE);
+    expect(commandProbeExecutor).toHaveBeenCalledTimes(1);
+    expect(commandProbeExecutor).toHaveBeenNthCalledWith(1, "copilot", ["--version"]);
+  });
+
+  it("falls back to gh copilot wrapper when direct copilot binary is missing", async () => {
+    const commandProbeExecutor = vi.fn(async (command: string) => {
+      if (command === "copilot") {
+        throw new RuntimeError(GovernorErrorCode.UNKNOWN, "spawn copilot ENOENT");
+      }
+    });
+    const runtime = new CliLocalModelProbeRuntime(
+      undefined,
+      commandProbeExecutor,
+      (error) => standardizeError(error).message,
+    );
+
+    const resolution = await runtime.probeLocalAdapterAvailability(AdapterSurface.GITHUB_COPILOT, {
+      toolId: AdapterSurface.GITHUB_COPILOT,
+      enabled: true,
+      availability: AdapterAvailability.AVAILABLE,
+    });
+
+    expect(resolution.availabilityStatus).toBe(AgentAvailabilityStatus.AVAILABLE);
+    expect(commandProbeExecutor).toHaveBeenNthCalledWith(1, "copilot", ["--version"]);
+    expect(commandProbeExecutor).toHaveBeenNthCalledWith(2, "gh", ["copilot", "--", "--version"]);
+  });
+
   it("trusts endpoint-backed ollama config before local command probing", async () => {
     const commandProbeExecutor = vi.fn(async () => {
       throw new RuntimeError(GovernorErrorCode.UNKNOWN, "probe should not execute");

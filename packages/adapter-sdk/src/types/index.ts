@@ -15,6 +15,10 @@ export type {
   AgentSurfaceEvaluationRecord,
 } from "./interfaces/index.js";
 export type {
+  AgentCliAdapterOptions,
+  AgentCliExecRunner,
+  AgentCliExecRunnerRequest,
+  AgentCliExecRunnerResult,
   AgentCancelRequest,
   AgentCancelResult,
   AgentCancellationCapability,

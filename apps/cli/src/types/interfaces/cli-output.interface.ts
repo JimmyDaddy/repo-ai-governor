@@ -47,6 +47,7 @@ export interface CliCommandDiagnostics {
   standardsProfileId?: string;
   standardsSourceIds?: string[];
   codexExecFixture?: string | null;
+  githubCopilotExecFixture?: string | null;
 }
 
 /**

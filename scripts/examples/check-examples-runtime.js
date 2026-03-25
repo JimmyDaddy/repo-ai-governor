@@ -13,6 +13,8 @@ const CLI_ENTRY_RELATIVE_PATH = "dist/bin/repo-ai-governor.js";
 const CODEX_EXEC_FIXTURE_ENABLE_ENV_KEY = "REPO_AI_GOVERNOR_ENABLE_TEST_FIXTURES";
 const CODEX_EXEC_FIXTURE_ENV_KEY = "REPO_AI_GOVERNOR_CODEX_EXEC_FIXTURE";
 const CODEX_EXEC_FIXTURE_SUCCESS = "success";
+const GITHUB_COPILOT_EXEC_FIXTURE_ENV_KEY = "REPO_AI_GOVERNOR_GITHUB_COPILOT_EXEC_FIXTURE";
+const GITHUB_COPILOT_EXEC_FIXTURE_SUCCESS = "success";
 
 /**
  * Reads UTF-8 text content from one repository-relative path.
@@ -238,6 +240,7 @@ function executeStep(cliEntryAbsolutePath, workspacePath, scenarioId, step) {
       ...process.env,
       [CODEX_EXEC_FIXTURE_ENABLE_ENV_KEY]: "1",
       [CODEX_EXEC_FIXTURE_ENV_KEY]: CODEX_EXEC_FIXTURE_SUCCESS,
+      [GITHUB_COPILOT_EXEC_FIXTURE_ENV_KEY]: GITHUB_COPILOT_EXEC_FIXTURE_SUCCESS,
     },
     stdio: ["ignore", "pipe", "pipe"],
   });

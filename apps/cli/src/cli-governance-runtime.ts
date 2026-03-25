@@ -147,6 +147,7 @@ export class CliGovernanceRuntime {
     );
     this.adapterRoutingRuntime = new CliAdapterRoutingRuntime(this.options.adaptersConfig, {
       codexExecRunner: this.options.codexExecRunner,
+      githubCopilotExecRunner: this.options.githubCopilotExecRunner,
     });
     this.adapterVerificationRuntime = new CliAdapterVerificationRuntime(
       this.options.adaptersConfig,

@@ -46,6 +46,7 @@ import {
   NON_TTY_FALLBACK_OUTPUT_MODE,
 } from "./constants/cli-output.constant.js";
 import { CliCodexExecFixtureEnvironmentKey } from "./constants/codex-exec-fixture.constant.js";
+import { CliGithubCopilotExecFixtureEnvironmentKey } from "./constants/github-copilot-exec-fixture.constant.js";
 import {
   IDE_WRAPPER_DEFAULT_STANDARDS_PROFILE_ID,
   type IdeEntrySurface,
@@ -53,6 +54,7 @@ import {
 } from "./constants/ide-command-wrapper.constant.js";
 import type { IdeStandardsSourceId } from "./constants/ide-standards-source.constant.js";
 import { CliCodexExecFixtureRuntime } from "./runtime/codex-exec-fixture-runtime.js";
+import { CliGithubCopilotExecFixtureRuntime } from "./runtime/github-copilot-exec-fixture-runtime.js";
 import { IdeStandardsSourceRuntime } from "./runtime/ide-standards-source-runtime.js";
 import { IdeSurfaceRegistryRuntime } from "./runtime/ide-surface-registry-runtime.js";
 export {
@@ -283,6 +285,8 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
     const ideWrapperEnvironment = resolveIdeWrapperEnvironment(environment);
     const codexExecFixtureRuntime = new CliCodexExecFixtureRuntime();
     const codexExecRunner = codexExecFixtureRuntime.resolveExecRunner(environment);
+    const githubCopilotExecFixtureRuntime = new CliGithubCopilotExecFixtureRuntime();
+    const githubCopilotExecRunner = githubCopilotExecFixtureRuntime.resolveExecRunner(environment);
     const runtimeDebugOptions = resolveRuntimeDebugOptions(rawArgs, io.cwd());
     const runtimeContext = resolveRuntimeContext(io.cwd(), requestedProfileId);
     memoryStoreComposition = await composeMemoryStoreProvider(
@@ -312,6 +316,11 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
       ...(codexExecRunner
         ? {
             codexExecRunner,
+          }
+        : {}),
+      ...(githubCopilotExecRunner
+        ? {
+            githubCopilotExecRunner,
           }
         : {}),
     });
@@ -397,6 +406,12 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
               ? {
                   codexExecFixture:
                     environment[CliCodexExecFixtureEnvironmentKey.EXEC_FIXTURE] ?? null,
+                }
+              : {}),
+            ...(environment[CliGithubCopilotExecFixtureEnvironmentKey.EXEC_FIXTURE]
+              ? {
+                  githubCopilotExecFixture:
+                    environment[CliGithubCopilotExecFixtureEnvironmentKey.EXEC_FIXTURE] ?? null,
                 }
               : {}),
           };

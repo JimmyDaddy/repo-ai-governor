@@ -10,8 +10,12 @@
   - 2026-03-25：已完成第一轮实现，落下 `codex exec --json` real mode、真实健康探测与 CLI runtime fake-runner 注入，并按 review comment 拆出公开 constants/types。
   - 2026-03-25：已完成收口，补齐 `DA-137`、resolved review，并消除 `examples-runtime-smoke` / blackbox e2e / full gate 中的真实 Codex 调用泄漏。
   - 2026-03-25：已完成 follow-up CR 修复，fixture override 现要求显式 test gate 开关，`CLI_EXEC` cancellation matrix 已收紧并通过回归验证。
-- [ ] TK-138 GitHub Copilot 远端 provider 真实调用与 capability truthfulness 收口
+- [x] TK-138 GitHub Copilot 远端 provider 真实调用与 capability truthfulness 收口
   - 2026-03-25：任务创建，状态初始化为 `planned`。
+  - 2026-03-25：任务启动，已确认 GitHub Copilot 当前官方 direct CLI 入口为 `copilot`，并保留 `gh copilot --` 兼容回退；当前开始收敛真实 `probe/invoke`、capability truthfulness 与 gate fixture 注入。
+  - 2026-03-25：已完成真实 `probe/invoke`、`copilot` 直连优先与 `gh copilot --` 回退、capability truthfulness、fixture fail-closed 与 gate 稳定性收口；`DA-138` 和 resolved review 已补齐。
+  - 2026-03-25：已完成 follow-up review comment 修复：共享 `CLI_EXEC` / `probe|invoke` 闭合集合与 CLI exec 基础契约现已上提到 `adapter-sdk`，`codex/github-copilot` 仅保留 provider 特化扩展。
+  - 2026-03-25：已完成 pending CR `2.1` 修复：GitHub Copilot adapter 现会对进程 `exitCode` 与 JSON `result.exitCode` 非零统一 fail-closed，并补齐 smoke 回归。
 - [ ] TK-139 Claude Code 远端 provider 真实调用与 fallback/degrade 收口
   - 2026-03-25：任务创建，状态初始化为 `planned`。
 - [ ] TK-140 跨 provider adapter 运维契约与 route-runner truthfulness hardening

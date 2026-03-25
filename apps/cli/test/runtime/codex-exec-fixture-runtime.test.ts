@@ -1,3 +1,4 @@
+import { AgentCliExecOperation } from "@repo-ai-governor/adapter-sdk";
 import { GovernorErrorCode, type RuntimeError } from "@repo-ai-governor/shared";
 import {
   CliCodexExecFixtureEnvironmentKey,
@@ -21,7 +22,7 @@ describe("Cli codex exec fixture runtime", () => {
       env: process.env,
       prompt: "probe",
       timeoutMs: 1000,
-      operation: "probe",
+      operation: AgentCliExecOperation.PROBE,
     });
 
     expect(result?.exitCode).toBe(0);

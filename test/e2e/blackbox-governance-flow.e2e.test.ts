@@ -7,6 +7,8 @@ import { runUnattendedDeliveryScenario } from "../../scripts/ci/stage9-blackbox-
 const CODEX_EXEC_FIXTURE_ENABLE_ENV_KEY = "REPO_AI_GOVERNOR_ENABLE_TEST_FIXTURES";
 const CODEX_EXEC_FIXTURE_ENV_KEY = "REPO_AI_GOVERNOR_CODEX_EXEC_FIXTURE";
 const CODEX_EXEC_FIXTURE_SUCCESS = "success";
+const GITHUB_COPILOT_EXEC_FIXTURE_ENV_KEY = "REPO_AI_GOVERNOR_GITHUB_COPILOT_EXEC_FIXTURE";
+const GITHUB_COPILOT_EXEC_FIXTURE_SUCCESS = "success";
 
 interface CliSuccessPayload {
   status?: string;
@@ -81,6 +83,7 @@ function createBlackboxScenario(prefix: string): BlackboxScenario {
       XDG_DATA_HOME: resolve(homePath, ".local", "share"),
       [CODEX_EXEC_FIXTURE_ENABLE_ENV_KEY]: "1",
       [CODEX_EXEC_FIXTURE_ENV_KEY]: CODEX_EXEC_FIXTURE_SUCCESS,
+      [GITHUB_COPILOT_EXEC_FIXTURE_ENV_KEY]: GITHUB_COPILOT_EXEC_FIXTURE_SUCCESS,
     },
   };
 }

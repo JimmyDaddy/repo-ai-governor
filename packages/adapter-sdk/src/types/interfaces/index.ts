@@ -38,3 +38,9 @@ export type {
   AgentTimeoutCapability,
   AgentTokenUsage,
 } from "./agent-protocol.interface.js";
+export type {
+  AgentCliAdapterOptions,
+  AgentCliExecRunner,
+  AgentCliExecRunnerRequest,
+  AgentCliExecRunnerResult,
+} from "./agent-cli-exec.interface.js";

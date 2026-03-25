@@ -1,4 +1,5 @@
 import type { CodexExecRunner } from "@repo-ai-governor/adapter-codex";
+import { AgentCliExecOperation } from "@repo-ai-governor/adapter-sdk";
 import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
 import {
   CliCodexExecFixtureEnvironmentKey,
@@ -50,7 +51,7 @@ export class CliCodexExecFixtureRuntime {
     if (configuredMode === CliCodexExecFixtureMode.CREDENTIAL_MISSING) {
       return async (request) => {
         throw new RuntimeError(
-          request.operation === "probe"
+          request.operation === AgentCliExecOperation.PROBE
             ? GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED
             : GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
           "Codex fixture simulated credential failure.",

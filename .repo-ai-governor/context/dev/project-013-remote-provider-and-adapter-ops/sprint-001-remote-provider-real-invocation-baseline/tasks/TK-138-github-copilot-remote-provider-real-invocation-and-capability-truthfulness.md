@@ -1,6 +1,6 @@
 # TK-138 GitHub Copilot 远端 provider 真实调用与 capability truthfulness 收口
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-25
 - Owner: AI-Agent
 - Priority: P0
@@ -42,3 +42,7 @@
 ## 7. 执行记录
 
 1. 2026-03-25：任务创建，状态初始化为 `planned`。
+2. 2026-03-25：任务启动，已确认 GitHub Copilot 当前官方 direct CLI 入口为 `copilot`，并保留 `gh copilot --` 兼容回退；开始收敛真实 `probe/invoke`、capability truthfulness 与 gate fixture 注入。
+3. 2026-03-25：已完成真实 `probe/invoke`、`copilot` 直连优先与 `gh copilot --` 回退、capability truthfulness、fixture fail-closed 与 gate 稳定性收口；`DA-138` 与 resolved review 已补齐。
+4. 2026-03-25：已完成 follow-up review comment 修复：将 `CLI_EXEC` / `probe|invoke` 闭合集合与 CLI exec 基础契约上提到 `adapter-sdk`，并让 `codex/github-copilot` 只保留 provider 特化扩展。
+5. 2026-03-25：已完成 pending CR `2.1` 修复：GitHub Copilot adapter 现会对进程 `exitCode` 与 JSON `result.exitCode` 非零统一 fail-closed，并补齐 smoke 回归。

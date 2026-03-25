@@ -7,6 +7,10 @@ import {
   CliCodexExecFixtureEnvironmentKey,
   CliCodexExecFixtureMode,
 } from "../src/constants/codex-exec-fixture.constant.js";
+import {
+  CliGithubCopilotExecFixtureEnvironmentKey,
+  CliGithubCopilotExecFixtureMode,
+} from "../src/constants/github-copilot-exec-fixture.constant.js";
 import { runCli } from "../src/main.js";
 
 /**
@@ -21,6 +25,8 @@ function createBufferedIo(
     ...process.env,
     [CliCodexExecFixtureEnvironmentKey.ENABLE_FIXTURES]: "1",
     [CliCodexExecFixtureEnvironmentKey.EXEC_FIXTURE]: CliCodexExecFixtureMode.SUCCESS,
+    [CliGithubCopilotExecFixtureEnvironmentKey.EXEC_FIXTURE]:
+      CliGithubCopilotExecFixtureMode.SUCCESS,
   },
 ): {
   stdoutBuffer: string[];
@@ -148,6 +154,27 @@ describe("CLI output contract integration", () => {
     expect(exitCode).toBe(0);
     expect(stderrBuffer.join("")).toBe("");
     expect(payload.diagnostics.codexExecFixture).toBe(CliCodexExecFixtureMode.SUCCESS);
+  });
+
+  it("surfaces configured github copilot exec fixture mode in JSON diagnostics", async () => {
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, process.cwd(), {
+      ...process.env,
+      [CliGithubCopilotExecFixtureEnvironmentKey.ENABLE_FIXTURES]: "1",
+      [CliGithubCopilotExecFixtureEnvironmentKey.EXEC_FIXTURE]:
+        CliGithubCopilotExecFixtureMode.SUCCESS,
+    });
+
+    const exitCode = await runCli(
+      ["node", "repo-ai-governor", "--locale", "en-US", "--output", "json", "init"],
+      io,
+    );
+    const payload = JSON.parse(stdoutBuffer.join(""));
+
+    expect(exitCode).toBe(0);
+    expect(stderrBuffer.join("")).toBe("");
+    expect(payload.diagnostics.githubCopilotExecFixture).toBe(
+      CliGithubCopilotExecFixtureMode.SUCCESS,
+    );
   });
 
   it("downgrades pretty to plain in non-TTY environment", async () => {

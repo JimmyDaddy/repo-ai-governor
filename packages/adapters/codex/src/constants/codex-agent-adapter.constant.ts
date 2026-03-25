@@ -1,4 +1,1 @@
-export enum CodexAgentAdapterExecutionMode {
-  BASELINE = "baseline",
-  CLI_EXEC = "cli_exec",
-}
+export { AgentCliExecutionMode as CodexAgentAdapterExecutionMode } from "@repo-ai-governor/adapter-sdk";

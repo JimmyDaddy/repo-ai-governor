@@ -3,10 +3,12 @@ import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 
 import type { CodexExecRunner } from "@repo-ai-governor/adapter-codex";
+import type { GithubCopilotExecRunner } from "@repo-ai-governor/adapter-github-copilot";
 import {
   AGENT_LOCAL_FALLBACK_SURFACE,
   AgentAvailabilityStatus,
   AgentCapability,
+  AgentCliExecOperation,
 } from "@repo-ai-governor/adapter-sdk";
 import {
   type AdaptersConfig,
@@ -57,12 +59,13 @@ interface RuntimeFixtureOptions {
   >;
   commandProbeExecutor?: (command: string, args: readonly string[]) => Promise<void>;
   codexExecRunner?: CodexExecRunner;
+  githubCopilotExecRunner?: GithubCopilotExecRunner;
 }
 
 function createCodexExecRunnerFixture(): CodexExecRunner {
   return async ({ prompt, operation }) => {
     const responseText =
-      operation === "probe" || prompt.includes("Respond with exactly OK.")
+      operation === AgentCliExecOperation.PROBE || prompt.includes("Respond with exactly OK.")
         ? "OK"
         : "simulated codex response";
     return {
@@ -86,8 +89,41 @@ function createCodexCredentialFailureRunner(): CodexExecRunner {
       "Codex probe failed: login required",
       {
         surface: AdapterSurface.CODEX,
-        operation: "probe",
+        operation: AgentCliExecOperation.PROBE,
         stderr: "Not logged in. Run `codex login` first.",
+      },
+    );
+  };
+}
+
+function createGithubCopilotExecRunnerFixture(): GithubCopilotExecRunner {
+  return async ({ prompt, operation }) => ({
+    stdout:
+      operation === AgentCliExecOperation.PROBE || prompt.includes("Respond with exactly OK.")
+        ? [
+            '{"type":"assistant.message","data":{"content":"OK"}}',
+            '{"type":"result","exitCode":0}',
+          ].join("\n")
+        : [
+            '{"type":"assistant.message","data":{"content":"simulated github copilot response"}}',
+            '{"type":"result","exitCode":0}',
+          ].join("\n"),
+    stderr: "",
+    exitCode: 0,
+    signal: null,
+    elapsedMs: 8,
+  });
+}
+
+function createGithubCopilotCredentialFailureRunner(): GithubCopilotExecRunner {
+  return async () => {
+    throw new RuntimeError(
+      GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED,
+      "GitHub Copilot probe failed: login required",
+      {
+        surface: AdapterSurface.GITHUB_COPILOT,
+        operation: AgentCliExecOperation.PROBE,
+        stderr: "Authentication required. Run `gh auth login` or `gh copilot -- login` first.",
       },
     );
   };
@@ -308,6 +344,8 @@ async function createRuntimeFixture(options: RuntimeFixtureOptions = {}): Promis
       options.adapterLocalProbeOverrides ?? createAdapterLocalProbeOverrides(),
     commandProbeExecutor: options.commandProbeExecutor,
     codexExecRunner: options.codexExecRunner ?? createCodexExecRunnerFixture(),
+    githubCopilotExecRunner:
+      options.githubCopilotExecRunner ?? createGithubCopilotExecRunnerFixture(),
   });
 
   return {
@@ -1596,6 +1634,59 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
           adapters: true,
         },
         codexExecRunner: createCodexCredentialFailureRunner(),
+      },
+    );
+  });
+
+  it("surfaces github copilot credential failures as diagnostics and next actions", async () => {
+    await withRuntimeFixture(
+      async (fixture) => {
+        const connectResult = await fixture.runtime.execute(CliCommandName.CONNECT);
+        const diagnosticsArtifactPath = connectResult.commandResult.artifacts?.find(
+          (artifact) => artifact.id === "connect_diagnostics",
+        )?.path;
+        expect(typeof diagnosticsArtifactPath).toBe("string");
+
+        const diagnosticsPayload = JSON.parse(
+          await readFile(String(diagnosticsArtifactPath), "utf8"),
+        ) as {
+          verification?: {
+            tools?: Array<{
+              toolId?: string;
+              availabilityStatus?: string;
+              unavailableReasons?: string[];
+            }>;
+            nextActions?: string[];
+          };
+        };
+        const githubCopilotSnapshot = diagnosticsPayload.verification?.tools?.find(
+          (tool) => tool.toolId === AdapterSurface.GITHUB_COPILOT,
+        );
+
+        expect(githubCopilotSnapshot?.availabilityStatus).toBe(AgentAvailabilityStatus.UNAVAILABLE);
+        expect(githubCopilotSnapshot?.unavailableReasons ?? []).toContain(
+          "credential_missing:github-copilot",
+        );
+        expect(
+          diagnosticsPayload.verification?.nextActions?.some((action) =>
+            action.includes("Authenticate or refresh login"),
+          ),
+        ).toBe(true);
+
+        const doctorResult = await fixture.runtime.execute(CliCommandName.DOCTOR);
+        const githubCopilotCheck = doctorResult.commandResult.checks?.find(
+          (check) => check.id === "adapter_tool_github-copilot",
+        );
+        expect(githubCopilotCheck?.detail).toContain("missing required credentials or login state");
+      },
+      {
+        runtimeDebugOptions: {
+          dryRun: false,
+          trace: false,
+          replayPath: null,
+          adapters: true,
+        },
+        githubCopilotExecRunner: createGithubCopilotCredentialFailureRunner(),
       },
     );
   });

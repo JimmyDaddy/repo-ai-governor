@@ -22,6 +22,16 @@ const CLI_CLAUDE_CODE_COMMAND_CANDIDATES = [
     args: ["--version"],
   },
 ] as const;
+const CLI_GITHUB_COPILOT_COMMAND_CANDIDATES = [
+  {
+    command: "copilot",
+    args: ["--version"],
+  },
+  {
+    command: "gh",
+    args: ["copilot", "--", "--version"],
+  },
+] as const;
 
 /**
  * Encapsulates local command and endpoint readiness checks for adapter surfaces.
@@ -90,12 +100,25 @@ export class CliLocalModelProbeRuntime {
       return this.probeSingleCommandAvailability(surface, "ollama", ["--version"]);
     }
 
-    const githubCliProbe = await this.probeSingleCommandAvailability(surface, "gh", ["--version"]);
-    if (githubCliProbe.availabilityStatus === AgentAvailabilityStatus.UNAVAILABLE) {
-      return githubCliProbe;
+    const unavailableReasons: string[] = [];
+    for (const candidate of CLI_GITHUB_COPILOT_COMMAND_CANDIDATES) {
+      const probeResult = await this.probeSingleCommandAvailability(
+        surface,
+        candidate.command,
+        candidate.args,
+      );
+      if (probeResult.availabilityStatus === AgentAvailabilityStatus.AVAILABLE) {
+        return probeResult;
+      }
+      unavailableReasons.push(...probeResult.unavailableReasons);
     }
 
-    return this.probeSingleCommandAvailability(surface, "gh", ["copilot", "--help"]);
+    return {
+      availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+      unavailableReasons: unavailableReasons.filter(
+        (reason, index, list) => list.indexOf(reason) === index,
+      ),
+    };
   }
 
   /**

@@ -1,6 +1,8 @@
 export {
   AGENT_LOCAL_FALLBACK_SURFACE,
   AgentAvailabilityStatus,
+  AgentCliExecOperation,
+  AgentCliExecutionMode,
   AgentCancellationReason,
   AgentCancellationScope,
   AgentCapability,
@@ -20,6 +22,10 @@ export { AgentProtocol } from "./agent-protocol.abstract.js";
 export { AgentRouteRegistry } from "./agent-route-registry.js";
 export { AgentRouteRunner } from "./agent-route-runner.js";
 export type {
+  AgentCliAdapterOptions,
+  AgentCliExecRunner,
+  AgentCliExecRunnerRequest,
+  AgentCliExecRunnerResult,
   AgentCapabilityEvaluatorContract,
   AgentCancelRequest,
   AgentCancelResult,
