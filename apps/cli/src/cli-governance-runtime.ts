@@ -17,7 +17,6 @@ import {
   ChangeRiskRequiredAction,
 } from "@repo-ai-governor/core-change-risk";
 import { MemoryManager, MemoryScope } from "@repo-ai-governor/core-memory";
-import type { LocalOrchestrationServiceShell as LocalOrchestrationServiceShellType } from "@repo-ai-governor/core-orchestration-service";
 import { PolicyGateEngine } from "@repo-ai-governor/core-policy";
 import { ProcessCompiler, type ProcessIrNode } from "@repo-ai-governor/core-process";
 import {
@@ -100,6 +99,7 @@ import { CliRuntimeArtifactWriter } from "./runtime/artifacts/runtime-artifact-w
 import { CliDeliveryRehearsalRuntime } from "./runtime/delivery-rehearsal-runtime.js";
 import { CliHitlRuntime } from "./runtime/hitl-runtime.js";
 import { CliLocalModelProbeRuntime } from "./runtime/local-model-probe-runtime.js";
+import { CliOrchestrationServiceRuntime } from "./runtime/orchestration-service-runtime.js";
 import { CliCommandExperienceBuilder } from "./runtime/presentation/command-experience-builder.js";
 import { CliReplayExplainBuilder } from "./runtime/presentation/replay-explain-builder.js";
 import { CliTaskDrivenRunRuntime } from "./runtime/task-driven-run-runtime.js";
@@ -109,6 +109,7 @@ import type {
   CliCommandExecutionResultPayload,
   CliCommandResultArtifact,
   CliCommandResultCheck,
+  CliExecutionStreamMetadata,
   CliGovernanceCommandResult,
   CliGovernanceRuntimeOptions,
   CliInteractionPrompt,
@@ -120,11 +121,6 @@ import type {
 } from "./types/index.js";
 
 const execFileAsync = promisify(execFile);
-
-interface CliExecutionStreamMetadata {
-  projectId?: string;
-  sprintId?: string;
-}
 
 interface CliLangGraphCheckpointState {
   checkpointPath: string | null;
@@ -150,6 +146,7 @@ export class CliGovernanceRuntime {
   private readonly adapterDiagnosticsRuntime: CliAdapterDiagnosticsRuntime;
   private readonly artifactWriter: CliRuntimeArtifactWriter;
   private readonly reviewQueueRuntime: CliReviewQueueRuntime;
+  private readonly orchestrationServiceRuntime: CliOrchestrationServiceRuntime;
   private readonly deliveryRehearsalRuntime: CliDeliveryRehearsalRuntime;
   private readonly hitlRuntime: CliHitlRuntime;
   private readonly commandExperienceBuilder: CliCommandExperienceBuilder;
@@ -188,6 +185,10 @@ export class CliGovernanceRuntime {
     this.reviewQueueRuntime = new CliReviewQueueRuntime(
       this.options.workspace.workspaceRoot,
       (filePath) => this.artifactWriter.safeReadJson(filePath),
+    );
+    this.orchestrationServiceRuntime = new CliOrchestrationServiceRuntime(
+      this.options.workspace.workspaceRoot,
+      this.options.orchestrationServiceRuntimeDependencies,
     );
     this.deliveryRehearsalRuntime = new CliDeliveryRehearsalRuntime({
       workspace: this.options.workspace,
@@ -276,6 +277,7 @@ export class CliGovernanceRuntime {
       artifactWriter: this.artifactWriter,
       adapterDiagnosticsRuntime: this.adapterDiagnosticsRuntime,
       reviewQueueRuntime: this.reviewQueueRuntime,
+      orchestrationServiceRuntime: this.orchestrationServiceRuntime,
       commandExperienceBuilder: this.commandExperienceBuilder,
       executeRunCommand: async () => this.executeRunCommand(),
       calculateCheckTotals: (checks: CliCommandResultCheck[]) => this.calculateCheckTotals(checks),
@@ -284,6 +286,7 @@ export class CliGovernanceRuntime {
       formatExecFailureDetail: (error: unknown) => this.formatExecFailureDetail(error),
       resolveRuntimeDebugOptions: () =>
         runtimeDebugOptionsOverride ?? this.resolveRuntimeDebugOptions(),
+      resolveExecutionStreamMetadata: async () => this.resolveExecutionStreamMetadata(),
       resolveAdapterVerification: async () => this.resolveAdapterVerification(),
       canWritePath: async (filePath: string) => this.canWritePath(filePath),
       localizeText: (english: string, chinese: string) => this.localizeText(english, chinese),
@@ -324,15 +327,7 @@ export class CliGovernanceRuntime {
     });
     const processDefinition = runAssembly.processDefinition;
     const compiledIr = processCompiler.compile(processDefinition);
-    // dynamic-import-allowed: sqlite-backed orchestration service must load only on run execution
-    // so non-runtime commands such as `--help` do not trigger node:sqlite warnings.
-    const { LocalOrchestrationServiceShell } = await import(
-      "@repo-ai-governor/core-orchestration-service"
-    );
-    const orchestrationService: LocalOrchestrationServiceShellType =
-      new LocalOrchestrationServiceShell({
-        workspaceRoot: this.options.workspace.workspaceRoot,
-      });
+    const orchestrationService = this.orchestrationServiceRuntime;
 
     if (compiledIr.compileErrors.length > 0) {
       throw new RuntimeError(
@@ -543,6 +538,31 @@ export class CliGovernanceRuntime {
         status: OrchestrationExecutionStatus.HITL_REQUIRED,
         message: `HITL decision is required with outcome=${resolvedPolicyOutcome}.`,
       });
+      if (
+        hitlResolution.decision &&
+        hitlResolution.resumeAction &&
+        hitlResolution.decisionReceiptPath &&
+        !runtimeDebugOptions.dryRun
+      ) {
+        await orchestrationService.submitHitlDecision({
+          executionId,
+          executionSessionId,
+          decision: hitlResolution.decision,
+          resumeAction: hitlResolution.resumeAction,
+          actor: runtimeDebugOptions.hitlDecidedBy ?? "cli-runtime",
+          ...(runtimeDebugOptions.hitlDecisionReason
+            ? { reason: runtimeDebugOptions.hitlDecisionReason }
+            : {}),
+          ...(runtimeDebugOptions.hitlConstraints.length > 0
+            ? {
+                constraints: {
+                  values: [...runtimeDebugOptions.hitlConstraints],
+                },
+              }
+            : {}),
+          decisionReceiptArtifactPath: hitlResolution.decisionReceiptPath,
+        });
+      }
     }
 
     const reportBuilder = new ReportBuilder(auditRecorder);
@@ -859,6 +879,10 @@ export class CliGovernanceRuntime {
           langgraph_pending_interrupt_kind: langGraphCheckpointState.pendingInterruptKind,
           orchestration_event_stream_token: orchestrationExecution.eventStreamToken,
           orchestration_status: orchestrationSummary?.status ?? null,
+          orchestration_service_host_kind: orchestrationSummary?.serviceHostKind ?? null,
+          orchestration_service_transport_kind: orchestrationSummary?.serviceTransportKind ?? null,
+          orchestration_latest_event_sequence: orchestrationSummary?.latestEventSequence ?? null,
+          orchestration_next_cursor: orchestrationSummary?.nextCursor ?? null,
           dry_run: runtimeDebugOptions.dryRun,
           trace_enabled: runtimeDebugOptions.trace,
           diagnostics_trace_path: diagnosticsTracePath,
@@ -868,7 +892,7 @@ export class CliGovernanceRuntime {
   }
 
   private async captureLangGraphCheckpointState(options: {
-    orchestrationService: LocalOrchestrationServiceShellType;
+    orchestrationService: CliOrchestrationServiceRuntime;
     compiledIr: ReturnType<ProcessCompiler["compile"]>;
     runtimeExecution: Awaited<ReturnType<ProcessRuntimeFacade["execute"]>>;
     runtimeResult: RuntimeExecutionResult;
@@ -935,12 +959,28 @@ export class CliGovernanceRuntime {
     const serviceExecution = await options.orchestrationService.getExecution(
       options.compiledIr.executionId,
     );
+    const recoveryResult =
+      serviceExecution &&
+      [
+        OrchestrationExecutionStatus.COMPLETED,
+        OrchestrationExecutionStatus.FAILED,
+        OrchestrationExecutionStatus.CANCELLED,
+      ].includes(serviceExecution.status)
+        ? null
+        : await options.orchestrationService.recoverExecution({
+            executionId: options.compiledIr.executionId,
+          });
 
     return {
       checkpointPath: serviceExecution?.checkpointPath ?? null,
       checkpointSource: serviceExecution?.checkpointSource ?? null,
-      recoveryState: recoveredExecution ? "recovered" : "not_requested",
-      recoveredNextNodeIds: recoveredExecution?.nextNodeIds ?? [],
+      recoveryState:
+        recoveryResult?.recovered || recoveredExecution ? "recovered" : "not_requested",
+      recoveredNextNodeIds:
+        recoveryResult?.nextNodeIds ??
+        serviceExecution?.recoveredNextNodeIds ??
+        recoveredExecution?.nextNodeIds ??
+        [],
       pendingInterruptKind: recoveredExecution?.pendingInterrupt?.kind ?? null,
     };
   }

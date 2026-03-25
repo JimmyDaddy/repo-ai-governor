@@ -21,6 +21,7 @@ import { MemoryManager } from "@repo-ai-governor/core-memory";
 import { AuditRecorder } from "@repo-ai-governor/core-session";
 import { FsCsvMemoryStoreProvider } from "@repo-ai-governor/memory-provider-fs-csv";
 import { MemoryStoreAdapter } from "@repo-ai-governor/memory-store-adapter";
+import { OrchestrationServiceEventType } from "@repo-ai-governor/orchestration-service-client";
 import {
   AdapterAvailability,
   AdapterSurface,
@@ -35,7 +36,10 @@ import {
 } from "@repo-ai-governor/shared";
 import { CliGovernanceRuntime } from "../src/cli-governance-runtime.js";
 import { CliCommandName } from "../src/constants/cli-command.constant.js";
-import type { CliRuntimeDebugOptions } from "../src/types/index.js";
+import type {
+  CliOrchestrationServiceRuntimeDependencies,
+  CliRuntimeDebugOptions,
+} from "../src/types/index.js";
 
 interface RuntimeFixture {
   tempRoot: string;
@@ -62,6 +66,7 @@ interface RuntimeFixtureOptions {
   claudeCodeExecRunner?: ClaudeCodeExecRunner;
   codexExecRunner?: CodexExecRunner;
   githubCopilotExecRunner?: GithubCopilotExecRunner;
+  orchestrationServiceRuntimeDependencies?: CliOrchestrationServiceRuntimeDependencies;
 }
 
 function createCodexExecRunnerFixture(): CodexExecRunner {
@@ -376,6 +381,7 @@ async function createRuntimeFixture(options: RuntimeFixtureOptions = {}): Promis
     codexExecRunner: options.codexExecRunner ?? createCodexExecRunnerFixture(),
     githubCopilotExecRunner:
       options.githubCopilotExecRunner ?? createGithubCopilotExecRunnerFixture(),
+    orchestrationServiceRuntimeDependencies: options.orchestrationServiceRuntimeDependencies,
   });
 
   return {
@@ -754,6 +760,14 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
           "string",
         );
         expect(runResult.commandResult.details?.orchestration_status).toBe("completed");
+        expect(runResult.commandResult.details?.orchestration_service_host_kind).toBe("embedded");
+        expect(runResult.commandResult.details?.orchestration_service_transport_kind).toBe(
+          "in_process",
+        );
+        expect(
+          runResult.commandResult.details?.orchestration_latest_event_sequence,
+        ).toBeGreaterThan(0);
+        expect(typeof runResult.commandResult.details?.orchestration_next_cursor).toBe("string");
 
         const decisionReceiptPayload = JSON.parse(
           await readFile(String(decisionReceiptPath), "utf8"),
@@ -786,6 +800,107 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
           taskId: "TK-099",
           hitlDecision: "approve",
           hitlDecisionReason: "Maintainer approved unattended continuation.",
+          hitlDecidedBy: "maintainer@example.com",
+        },
+      },
+    );
+  });
+
+  it("keeps service-backed run summary and event stream aligned with CLI output contract", async () => {
+    await withRuntimeFixture(
+      async (fixture) => {
+        await writeTaskCardFixture(fixture.workspaceRoot, "TK-099");
+        const runtimeWithOverrides = fixture.runtime as unknown as {
+          collectGitChangedPaths: () => Promise<string[]>;
+          orchestrationServiceRuntime: {
+            getExecution(executionId: string): Promise<Record<string, unknown> | undefined>;
+            listExecutions(request?: Record<string, unknown>): Promise<{
+              executions: Array<Record<string, unknown>>;
+            }>;
+            subscribeExecution(request: Record<string, unknown>): Promise<{
+              latestEventSequence: number;
+              nextCursor: string;
+              events: Array<{ type: string; artifactId?: string }>;
+            }>;
+          };
+        };
+        runtimeWithOverrides.collectGitChangedPaths = async () => ["migrations/001.sql"];
+
+        const runResult = await fixture.runtime.execute(CliCommandName.RUN);
+        const executionId = String(runResult.commandResult.details?.execution_id);
+        const eventStreamToken = String(
+          runResult.commandResult.details?.orchestration_event_stream_token,
+        );
+        const summary =
+          await runtimeWithOverrides.orchestrationServiceRuntime.getExecution(executionId);
+        const listed = await runtimeWithOverrides.orchestrationServiceRuntime.listExecutions({
+          filter: {
+            workspaceId: fixture.workspace.workspaceId,
+          },
+        });
+        const subscription =
+          await runtimeWithOverrides.orchestrationServiceRuntime.subscribeExecution({
+            eventStreamToken,
+          });
+
+        expect(summary?.status).toBe(runResult.commandResult.details?.orchestration_status);
+        expect(summary?.serviceHostKind).toBe(
+          runResult.commandResult.details?.orchestration_service_host_kind,
+        );
+        expect(summary?.serviceTransportKind).toBe(
+          runResult.commandResult.details?.orchestration_service_transport_kind,
+        );
+        expect(summary?.latestEventSequence).toBe(
+          runResult.commandResult.details?.orchestration_latest_event_sequence,
+        );
+        expect(summary?.nextCursor).toBe(
+          runResult.commandResult.details?.orchestration_next_cursor,
+        );
+        expect(summary?.checkpointPath).toBe(
+          runResult.commandResult.details?.langgraph_checkpoint_path,
+        );
+        expect(summary?.checkpointSource).toBe(
+          runResult.commandResult.details?.langgraph_checkpoint_source,
+        );
+        const recoveredNextNodeIds =
+          typeof runResult.commandResult.details?.langgraph_recovery_next_node_ids === "string"
+            ? runResult.commandResult.details.langgraph_recovery_next_node_ids.split("|")
+            : [];
+        expect(summary?.recoveredNextNodeIds).toEqual(recoveredNextNodeIds);
+        expect(listed.executions.some((execution) => execution.executionId === executionId)).toBe(
+          true,
+        );
+        expect(subscription.latestEventSequence).toBe(
+          runResult.commandResult.details?.orchestration_latest_event_sequence,
+        );
+        expect(subscription.nextCursor).toBe(
+          runResult.commandResult.details?.orchestration_next_cursor,
+        );
+        expect(
+          subscription.events.some(
+            (event) => event.type === OrchestrationServiceEventType.HITL_REQUIRED,
+          ),
+        ).toBe(true);
+        expect(
+          subscription.events.some(
+            (event) =>
+              event.type === OrchestrationServiceEventType.ARTIFACT_READY &&
+              event.artifactId === "langgraph_checkpoint",
+          ),
+        ).toBe(true);
+        expect(subscription.events.at(-1)?.type).toBe(
+          OrchestrationServiceEventType.EXECUTION_COMPLETED,
+        );
+      },
+      {
+        runtimeDebugOptions: {
+          dryRun: false,
+          trace: false,
+          replayPath: null,
+          taskId: "TK-099",
+          hitlDecision: "approve",
+          hitlDecisionReason: "Maintainer approved unattended continuation.",
+          hitlResumeAction: "resume",
           hitlDecidedBy: "maintainer@example.com",
         },
       },
@@ -1027,8 +1142,21 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
 
   it("drains queued review request after review-verify emits verify/backfill artifacts", async () => {
     await withRuntimeFixture(async (fixture) => {
-      await fixture.runtime.execute(CliCommandName.REVIEW);
+      const reviewResult = await fixture.runtime.execute(CliCommandName.REVIEW);
+      expect(reviewResult.commandResult.details?.orchestration_execution_id).toMatch(/^review-/u);
+      expect(reviewResult.commandResult.details?.orchestration_status).toBe("completed");
+      expect(typeof reviewResult.commandResult.details?.orchestration_event_stream_token).toBe(
+        "string",
+      );
+
       const firstVerifyResult = await fixture.runtime.execute(CliCommandName.REVIEW_VERIFY);
+      expect(firstVerifyResult.commandResult.details?.orchestration_execution_id).toMatch(
+        /^review-verify-/u,
+      );
+      expect(firstVerifyResult.commandResult.details?.orchestration_status).toBe("completed");
+      expect(typeof firstVerifyResult.commandResult.details?.orchestration_event_stream_token).toBe(
+        "string",
+      );
 
       const verifyArtifactPath = firstVerifyResult.commandResult.artifacts?.find(
         (artifact) => artifact.id === "review_verify_result",
@@ -1077,6 +1205,76 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
       );
       const backfillFileNames = await readdir(backfillDirectoryPath);
       expect(backfillFileNames.length).toBe(1);
+    });
+  });
+
+  it("keeps review and review-verify service-backed summaries aligned with command artifacts", async () => {
+    await withRuntimeFixture(async (fixture) => {
+      const runtimeWithOrchestration = fixture.runtime as unknown as {
+        orchestrationServiceRuntime: {
+          getExecution(executionId: string): Promise<Record<string, unknown> | undefined>;
+          subscribeExecution(request: Record<string, unknown>): Promise<{
+            events: Array<{ type: string; artifactId?: string; artifactPath?: string }>;
+          }>;
+        };
+      };
+
+      const reviewResult = await fixture.runtime.execute(CliCommandName.REVIEW);
+      const reviewRequestPath = reviewResult.commandResult.artifacts?.find(
+        (artifact) => artifact.id === "review_request",
+      )?.path;
+      const reviewSummary = await runtimeWithOrchestration.orchestrationServiceRuntime.getExecution(
+        String(reviewResult.commandResult.details?.orchestration_execution_id),
+      );
+      const reviewSubscription =
+        await runtimeWithOrchestration.orchestrationServiceRuntime.subscribeExecution({
+          eventStreamToken: reviewResult.commandResult.details?.orchestration_event_stream_token,
+        });
+
+      expect(reviewResult.commandResult.details?.orchestration_service_host_kind).toBe("embedded");
+      expect(reviewResult.commandResult.details?.orchestration_service_transport_kind).toBe(
+        "in_process",
+      );
+      expect(reviewSummary?.latestArtifactId).toBe("review_request");
+      expect(reviewSummary?.latestArtifactPath).toBe(reviewRequestPath);
+      expect(
+        reviewSubscription.events.some(
+          (event) =>
+            event.type === OrchestrationServiceEventType.ARTIFACT_READY &&
+            event.artifactId === "review_request" &&
+            event.artifactPath === reviewRequestPath,
+        ),
+      ).toBe(true);
+
+      const verifyResult = await fixture.runtime.execute(CliCommandName.REVIEW_VERIFY);
+      const ledgerBackfillPath = verifyResult.commandResult.artifacts?.find(
+        (artifact) => artifact.id === "review_ledger_backfill",
+      )?.path;
+      const verifySummary = await runtimeWithOrchestration.orchestrationServiceRuntime.getExecution(
+        String(verifyResult.commandResult.details?.orchestration_execution_id),
+      );
+      const verifySubscription =
+        await runtimeWithOrchestration.orchestrationServiceRuntime.subscribeExecution({
+          eventStreamToken: verifyResult.commandResult.details?.orchestration_event_stream_token,
+        });
+
+      expect(verifyResult.commandResult.details?.orchestration_service_host_kind).toBe("embedded");
+      expect(verifyResult.commandResult.details?.orchestration_service_transport_kind).toBe(
+        "in_process",
+      );
+      expect(verifySummary?.latestArtifactId).toBe("review_ledger_backfill");
+      expect(verifySummary?.latestArtifactPath).toBe(ledgerBackfillPath);
+      expect(
+        verifySubscription.events.some(
+          (event) =>
+            event.type === OrchestrationServiceEventType.ARTIFACT_READY &&
+            event.artifactId === "review_ledger_backfill" &&
+            event.artifactPath === ledgerBackfillPath,
+        ),
+      ).toBe(true);
+      expect(verifySubscription.events.at(-1)?.type).toBe(
+        OrchestrationServiceEventType.EXECUTION_COMPLETED,
+      );
     });
   });
 
@@ -1165,6 +1363,10 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
     await withRuntimeFixture(async (fixture) => {
       await fixture.runtime.execute(CliCommandName.REVIEW);
       const verifyResult = await fixture.runtime.execute(CliCommandName.REVIEW_VERIFY);
+      expect(verifyResult.commandResult.details?.orchestration_status).toBe("completed");
+      expect(
+        verifyResult.commandResult.details?.orchestration_latest_event_sequence,
+      ).toBeGreaterThan(0);
 
       const verifyArtifactPath = verifyResult.commandResult.artifacts?.find(
         (artifact) => artifact.id === "review_verify_result",

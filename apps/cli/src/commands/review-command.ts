@@ -1,6 +1,12 @@
 import { resolve } from "node:path";
 
 import {
+  OrchestrationClientSurface,
+  OrchestrationExecutionKind,
+  OrchestrationExecutionStatus,
+  OrchestrationServiceEventType,
+} from "@repo-ai-governor/orchestration-service-client";
+import {
   ExecutionInteractionCategory,
   ExecutionProgressStage,
   ExecutionProgressStatus,
@@ -27,11 +33,30 @@ export class CliReviewCommand implements CliCommandExecutor {
     const requestPath = resolve(reviewQueueDirectories.requestDirectoryPath, `${requestId}.json`);
     const correlationId = `review-chain-${requestId}`;
     const taskId = runtimeDebugOptions.taskId;
+    const executionSessionId = `session-${requestId}`;
     const managedLedgerBackfill =
       runtimeDebugOptions.recordLedger === true && typeof taskId === "string";
     const reviewVerifyAction = managedLedgerBackfill
       ? `Execute \`repo-ai-governor review-verify --record-ledger --task-id ${taskId}\` to continue managed review chain.`
       : "Execute `repo-ai-governor review-verify` to consume queued review request.";
+    const streamMetadata = await context.resolveExecutionStreamMetadata();
+    const orchestrationExecution = await context.orchestrationServiceRuntime.startExecution(
+      {
+        workspaceId: context.options.workspace.workspaceId,
+        workspaceRoot: context.options.workspace.workspaceRoot,
+        executionKind: OrchestrationExecutionKind.REVIEW,
+        clientSurface: OrchestrationClientSurface.CLI,
+        locale: context.options.locale,
+        outputMode: context.options.outputMode,
+        ...(taskId ? { taskId } : {}),
+        ...streamMetadata,
+      },
+      {
+        executionId: requestId,
+        executionSessionId,
+        processId: "review-queue",
+      },
+    );
     await context.artifactWriter.writeJsonArtifact(requestPath, {
       requestId,
       status: CLI_REVIEW_REQUEST_STATUS.QUEUED,
@@ -49,7 +74,26 @@ export class CliReviewCommand implements CliCommandExecutor {
         ...(taskId ? { taskId } : {}),
         reviewChainMode: managedLedgerBackfill ? "managed_task_chain" : "queued_external_chain",
       },
+      orchestrationExecutionId: orchestrationExecution.executionId,
+      orchestrationEventStreamToken: orchestrationExecution.eventStreamToken,
     });
+    await context.orchestrationServiceRuntime.publishEvent({
+      executionId: requestId,
+      type: OrchestrationServiceEventType.ARTIFACT_READY,
+      status: OrchestrationExecutionStatus.RUNNING,
+      artifactId: "review_request",
+      artifactPath: requestPath,
+      message: `Queued review request artifact at ${requestPath}.`,
+    });
+    await context.orchestrationServiceRuntime.publishEvent({
+      executionId: requestId,
+      type: OrchestrationServiceEventType.EXECUTION_COMPLETED,
+      status: OrchestrationExecutionStatus.COMPLETED,
+      message: `Review queue request ${requestId} completed.`,
+    });
+    const orchestrationSummary = await context.orchestrationServiceRuntime.getExecution(
+      orchestrationExecution.executionId,
+    );
 
     const message = `Review request queued at ${requestPath}.`;
     const experience = context.commandExperienceBuilder.buildExperiencePayload({
@@ -125,6 +169,21 @@ export class CliReviewCommand implements CliCommandExecutor {
           },
         ],
         experience,
+        details: {
+          orchestration_execution_id: orchestrationExecution.executionId,
+          orchestration_event_stream_token: orchestrationExecution.eventStreamToken,
+          orchestration_status:
+            orchestrationSummary?.status ?? OrchestrationExecutionStatus.COMPLETED,
+          orchestration_service_host_kind:
+            orchestrationSummary?.serviceHostKind ?? orchestrationExecution.serviceHostKind,
+          orchestration_service_transport_kind:
+            orchestrationSummary?.serviceTransportKind ??
+            orchestrationExecution.serviceTransportKind,
+          orchestration_latest_event_sequence:
+            orchestrationSummary?.latestEventSequence ?? orchestrationExecution.latestEventSequence,
+          orchestration_next_cursor:
+            orchestrationSummary?.nextCursor ?? orchestrationExecution.nextCursor,
+        },
       },
     };
   }

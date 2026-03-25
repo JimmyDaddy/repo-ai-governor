@@ -26,6 +26,8 @@
 | `project-012-execution-context-optimization` | Cross-Stage follow-up | Context Efficiency / Governance Simplification | 收敛启动加载、active stream 上下文、TK 单写源与任务模板输入分层，降低单任务默认上下文成本 |
 | `project-013-remote-provider-and-adapter-ops` | Stage 9 remaining closure | Phase E follow-up + Adapter Operations Hardening | 收敛 Codex / GitHub Copilot / Claude Code 远端 provider 真实调用、adapter 运维契约与统一路由 truthfulness，补齐 Stage 9 剩余真实执行面 |
 | `project-014-langgraph-orchestration-runtime-adoption` | Post-Stage-9 runtime modernization | Runtime Modernization / CLI + Desktop Convergence | 采用 LangGraph 作为编排运行时方向，收敛 dual-runtime 迁移与 shared local orchestration service，为 CLI 与未来 desktop 共用执行面铺路 |
+| `project-015-memory-provider-pluginization` | Post-Stage-9 runtime packaging modularization | Runtime Modularity / Optional Plugin Resolution | 将 memory providers 从 CLI 全量内置依赖改造为 built-in registry + optional plugin 模式，收敛配置、分发与安全治理边界 |
+| `project-016-langgraph-runtime-productization` | Post-Stage-9 runtime modernization follow-up | Runtime Productization / Vendor Adapter + Service Host | 将当前 LangGraph adoption shell 收敛为真实的 vendor-backed graph runtime，并完成 `sidecar + ipc` service host 与 desktop execution follow-up |
 
 ## 2. 依赖顺序
 
@@ -43,8 +45,10 @@
 12. `project-012-execution-context-optimization`
 13. `project-013-remote-provider-and-adapter-ops`
 14. `project-014-langgraph-orchestration-runtime-adoption`
+15. `project-015-memory-provider-pluginization`
+16. `project-016-langgraph-runtime-productization`
 
-说明：Stage 主链按 001-007、009、010、013 推进；`project-008` 作为跨阶段治理优化轨可优先执行；`project-011` 作为 `project-010` 的工程支撑分解轨，为 CLI package 重构提供独立执行流；`project-012` 作为 `project-008` 的上下文效率 follow-up，负责收敛当前仓库的启动加载与台账上下文成本；`project-013` 已完成 Stage 9 最后业务阻断项收口；`project-014` 承接 post-Stage-9 的运行时现代化主线，目标是将编排内核升级到 `LangGraph + shared local orchestration service`。
+说明：Stage 主链按 001-007、009、010、013 推进；`project-008` 作为跨阶段治理优化轨可优先执行；`project-011` 作为 `project-010` 的工程支撑分解轨，为 CLI package 重构提供独立执行流；`project-012` 作为 `project-008` 的上下文效率 follow-up，负责收敛当前仓库的启动加载与台账上下文成本；`project-013` 已完成 Stage 9 最后业务阻断项收口；`project-014` 承接 post-Stage-9 的运行时现代化主线，但只完成了第一阶段 adoption/service-backed execution 收口；`project-015` 是当前 active follow-up track，负责 memory provider pluginization；`project-016` 是已拆解但未激活的 planned follow-up track，负责 LangGraph full productization、vendor adapter truthfulness 与 `sidecar + ipc` host。
 
 ## 3. 交付原则
 

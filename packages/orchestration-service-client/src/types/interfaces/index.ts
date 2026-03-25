@@ -1,8 +1,13 @@
 export type {
+  OrchestrationListExecutionsRequest,
+  OrchestrationListExecutionsResponse,
+  OrchestrationListExecutionsFilter,
+  OrchestrationRecoverExecutionRequest,
   OrchestrationExecutionSummary,
   OrchestrationRecoverExecutionResponse,
   OrchestrationServiceClient,
   OrchestrationServiceEvent,
+  OrchestrationSubscribeExecutionRequest,
   OrchestrationStartExecutionRequest,
   OrchestrationStartExecutionResponse,
   OrchestrationSubscribeExecutionResponse,

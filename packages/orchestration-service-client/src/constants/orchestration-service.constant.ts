@@ -3,6 +3,8 @@
  */
 export enum OrchestrationExecutionKind {
   RUN = "run",
+  REVIEW = "review",
+  REVIEW_VERIFY = "review_verify",
 }
 
 /**
@@ -11,6 +13,24 @@ export enum OrchestrationExecutionKind {
 export enum OrchestrationClientSurface {
   CLI = "cli",
   DESKTOP = "desktop",
+}
+
+/**
+ * Defines transport-neutral service host shapes for future desktop or daemon rollout.
+ */
+export enum OrchestrationServiceHostKind {
+  EMBEDDED = "embedded",
+  SIDECAR = "sidecar",
+  DAEMON = "daemon",
+}
+
+/**
+ * Defines transport kinds without binding the client contract to one concrete channel.
+ */
+export enum OrchestrationServiceTransportKind {
+  IN_PROCESS = "in_process",
+  IPC = "ipc",
+  HTTP = "http",
 }
 
 /**

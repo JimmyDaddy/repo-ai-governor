@@ -5,14 +5,19 @@ import type {
 import type {
   OrchestrationExecutionStatus,
   OrchestrationServiceEventType,
+  OrchestrationServiceHostKind,
+  OrchestrationServiceTransportKind,
 } from "@repo-ai-governor/orchestration-service-client";
 
 export interface LocalOrchestrationServiceShellDependencies {
   checkpointer?: LangGraphCheckpointer;
   nowProvider?: () => Date;
   eventStreamTokenProvider?: (executionId: string) => string;
+  eventIdProvider?: (executionId: string, sequence: number) => string;
   executionIdProvider?: () => string;
   executionSessionIdProvider?: (executionId: string) => string;
+  serviceHostKind?: OrchestrationServiceHostKind;
+  serviceTransportKind?: OrchestrationServiceTransportKind;
 }
 
 export interface LocalOrchestrationServiceStartExecutionRuntimeContext {
@@ -28,6 +33,7 @@ export interface LocalOrchestrationServicePublishEventRequest {
   message: string;
   stageId?: string;
   artifactId?: string;
+  artifactPath?: string;
 }
 
 export interface LocalOrchestrationServiceSaveCheckpointRequest

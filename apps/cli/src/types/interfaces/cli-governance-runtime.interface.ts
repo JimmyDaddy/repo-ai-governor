@@ -8,9 +8,11 @@ import type { ErrorOutputEnvironment, MemoryRuntimeConfig } from "@repo-ai-gover
 import type { CliHitlResumeAction } from "../../constants/cli-task-driven-run.constant.js";
 import type { CliAdapterDiagnosticsRuntime } from "../../runtime/adapter-diagnostics-runtime.js";
 import type { CliReviewQueueRuntime } from "../../runtime/artifacts/review-queue-runtime.js";
+import type { CliOrchestrationServiceRuntime } from "../../runtime/orchestration-service-runtime.js";
 import type { CliCommandExperienceBuilder } from "../../runtime/presentation/command-experience-builder.js";
 import type { CliLocalAdapterProbeOverride } from "./cli-adapter-verification.interface.js";
 import type { CliAdapterVerificationResolution } from "./cli-adapter-verification.interface.js";
+import type { CliOrchestrationServiceRuntimeDependencies } from "./cli-orchestration-service-runtime.interface.js";
 import type {
   CliCommandExecutionResultPayload,
   CliCommandResultCheck,
@@ -39,6 +41,7 @@ export interface CliGovernanceRuntimeOptions {
   claudeCodeExecRunner?: ClaudeCodeExecRunner;
   codexExecRunner?: CodexExecRunner;
   githubCopilotExecRunner?: GithubCopilotExecRunner;
+  orchestrationServiceRuntimeDependencies?: CliOrchestrationServiceRuntimeDependencies;
 }
 
 /**
@@ -56,6 +59,14 @@ export interface CliCheckTotals {
   pass: number;
   warn: number;
   fail: number;
+}
+
+/**
+ * Defines optional project/sprint metadata resolved from workspace current-context.
+ */
+export interface CliExecutionStreamMetadata {
+  projectId?: string;
+  sprintId?: string;
 }
 
 /**
@@ -96,6 +107,7 @@ export interface CliCommandExecutorContext {
   artifactWriter: CliArtifactWriter;
   adapterDiagnosticsRuntime: CliAdapterDiagnosticsRuntime;
   reviewQueueRuntime: CliReviewQueueRuntime;
+  orchestrationServiceRuntime: CliOrchestrationServiceRuntime;
   commandExperienceBuilder: CliCommandExperienceBuilder;
   executeRunCommand(): Promise<CliGovernanceCommandResult>;
   calculateCheckTotals(checks: CliCommandResultCheck[]): CliCheckTotals;
@@ -103,6 +115,7 @@ export interface CliCommandExecutorContext {
   toRfc3339SecondsTimestamp(value: Date): string;
   formatExecFailureDetail(error: unknown): string;
   resolveRuntimeDebugOptions(): CliNormalizedRuntimeDebugOptions;
+  resolveExecutionStreamMetadata(): Promise<CliExecutionStreamMetadata>;
   resolveAdapterVerification(): Promise<CliAdapterVerificationResolution>;
   canWritePath(filePath: string): Promise<boolean>;
   localizeText(english: string, chinese: string): string;

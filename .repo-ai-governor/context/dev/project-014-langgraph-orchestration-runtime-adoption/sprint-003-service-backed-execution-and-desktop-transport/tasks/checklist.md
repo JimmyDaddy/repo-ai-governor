@@ -1,0 +1,29 @@
+# checklist
+
+- [x] TK-153 shared local orchestration service execution API 与 runtime owner 收敛
+  - 2026-03-25：任务创建，状态初始化为 `planned`。
+  - 2026-03-25：状态切换为 `in_progress`，开始收敛 `orchestration-service-client` 的 execution summary/filter DTO 与 `LocalOrchestrationServiceShell` 的 execution owner API。
+  - 2026-03-25：已完成 `listExecutions()`、service-owned summary clone、recovery capability / latest event / current stage 字段收口，补齐 unit test 与 `DA-153`。
+- [x] TK-154 orchestration-service-client transport-neutral streaming 与 desktop-ready DTO hardening
+  - 2026-03-25：任务创建，状态初始化为 `planned`。
+  - 2026-03-25：状态切换为 `in_progress`，开始收敛 transport-neutral `subscribeExecution` request、desktop-ready host/transport seam 与 stream cursor/event sequence contract。
+  - 2026-03-25：已完成 `orchestration-service-client` DTO/event contract、`LocalOrchestrationServiceShell` 的 cursor/sequence owner 语义、增量订阅回归与 `DA-154`；review 直接收口为 resolved。
+- [x] TK-155 service-backed HITL、recovery 与 execution list contract 收口
+  - 2026-03-25：任务创建，状态初始化为 `planned`。
+  - 2026-03-25：状态切换为 `in_progress`，开始收敛 `listExecutions`、`submitHitlDecision`、`recoverExecution` 的正式 request/response 与 fail-closed 语义。
+  - 2026-03-25：已完成 execution list response、HITL/recovery service-owned DTO、artifact backlink 字段与 fail-closed 回归，产出 `DA-155`；review 直接收口为 resolved。
+- [x] TK-156 CLI `run/review/HITL/recovery` 到 orchestration-service-client 的 cutover
+  - 2026-03-25：任务创建，状态初始化为 `planned`。
+  - 2026-03-25：状态切换为 `in_progress`，开始将 CLI 的 `run/review/review-verify` 收敛到 package-local orchestration service runtime，并清理对 `LocalOrchestrationServiceShell` 的直接依赖。
+  - 2026-03-25：已完成 `review/review-verify` 的 service-backed execution 接线、`run` 的 HITL/recovery client cutover、review/HITL orchestration details 输出，以及相关 integration/unit 回归；产出 `DA-156` 并将 review 直接收口为 resolved。
+  - 2026-03-25：已完成 CLI service-client cutover，run/review/review-verify 均接入 orchestration service runtime，补齐 HITL/recovery/client seam 与 DA-156。
+- [x] TK-157 LangGraph service-backed parity 扩围与 daemon/desktop-ready transport spike
+  - 2026-03-25：任务创建，状态初始化为 `planned`。
+  - 2026-03-25：状态切换为 `in_progress`，开始冻结 service-backed parity compare 面、daemon/desktop-ready transport spike 选项与 `TK-156` 依赖阻断边界。
+  - 2026-03-25：已产出 `DA-157` 滚动草案；当前比较面和 transport seam 已冻结，但最终 parity 结论仍阻塞于 `TK-156` 的 CLI service-client cutover。
+  - 2026-03-25：已完成 provider seam、sidecar/ipc 与 daemon/http host descriptor smoke、service-backed parity integration，以及 `DA-157`/resolved review 收口。
+- [x] TK-158 sprint-003 出口验收与 project-014 完成态判定
+  - 2026-03-25：任务创建，状态初始化为 `planned`。
+  - 2026-03-25：状态切换为 `in_progress`，开始生成 sprint-003 滚动验收草案并冻结当前 project-014 完成态判定前提。
+  - 2026-03-25：已产出 `DA-158` 滚动草案；当前 exit criteria 1/2 已有证据，exit criteria 3/4 仍阻塞于 `TK-156` 与 `TK-157`。
+  - 2026-03-25：已完成 `DA-158`、project completion audit、sprint/project/master plan 同步，并确认 `project-014` 达到完成态。

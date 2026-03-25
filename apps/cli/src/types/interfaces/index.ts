@@ -24,12 +24,17 @@ export type {
 export type { CliRuntimeDebugOptions } from "./cli-runtime-debug.interface.js";
 export type {
   CliArtifactWriter,
+  CliExecutionStreamMetadata,
   CliCheckTotals,
   CliCommandExecutorContext,
   CliGovernanceCommandResult,
   CliGovernanceRuntimeOptions,
   CliNormalizedRuntimeDebugOptions,
 } from "./cli-governance-runtime.interface.js";
+export type {
+  CliOrchestrationServiceOwner,
+  CliOrchestrationServiceRuntimeDependencies,
+} from "./cli-orchestration-service-runtime.interface.js";
 export type {
   CliAdapterRoleEvaluation,
   CliAdapterToolProbeSnapshot,

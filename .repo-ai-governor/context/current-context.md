@@ -3,15 +3,19 @@
 ## Primary Stream
 
 - Status: active
-- Project: `project-014-langgraph-orchestration-runtime-adoption`
-- Sprint: `sprint-002-langgraph-phase0-spike-and-service-shell`
-- Docs root: `.repo-ai-governor/context/dev/project-014-langgraph-orchestration-runtime-adoption`
-- Task records: `.repo-ai-governor/context/dev/project-014-langgraph-orchestration-runtime-adoption/sprint-002-langgraph-phase0-spike-and-service-shell/tasks/`
-- Review records: `.repo-ai-governor/context/dev/project-014-langgraph-orchestration-runtime-adoption/sprint-002-langgraph-phase0-spike-and-service-shell/review/`
+- Project: `project-015-memory-provider-pluginization`
+- Sprint: `sprint-001-registry-and-plugin-resolution-baseline`
+- Docs root: `.repo-ai-governor/context/dev/project-015-memory-provider-pluginization`
+- Task records: `.repo-ai-governor/context/dev/project-015-memory-provider-pluginization/sprint-001-registry-and-plugin-resolution-baseline/tasks/`
+- Review records: `.repo-ai-governor/context/dev/project-015-memory-provider-pluginization/sprint-001-registry-and-plugin-resolution-baseline/review/`
 
 ## Active Streams
 
-- `primary`: project=`project-014-langgraph-orchestration-runtime-adoption`, sprint=`sprint-002-langgraph-phase0-spike-and-service-shell`, docs=`.repo-ai-governor/context/dev/project-014-langgraph-orchestration-runtime-adoption`, plan=`.repo-ai-governor/context/dev/project-014-langgraph-orchestration-runtime-adoption/plan.md`, tasks=`.repo-ai-governor/context/dev/project-014-langgraph-orchestration-runtime-adoption/sprint-002-langgraph-phase0-spike-and-service-shell/tasks/`, checklist=`.repo-ai-governor/context/dev/project-014-langgraph-orchestration-runtime-adoption/sprint-002-langgraph-phase0-spike-and-service-shell/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-014-langgraph-orchestration-runtime-adoption/sprint-002-langgraph-phase0-spike-and-service-shell/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-014-langgraph-orchestration-runtime-adoption/sprint-002-langgraph-phase0-spike-and-service-shell/review/`, status=`active`
+- `primary`: project=`project-015-memory-provider-pluginization`, sprint=`sprint-001-registry-and-plugin-resolution-baseline`, docs=`.repo-ai-governor/context/dev/project-015-memory-provider-pluginization`, plan=`.repo-ai-governor/context/dev/project-015-memory-provider-pluginization/plan.md`, tasks=`.repo-ai-governor/context/dev/project-015-memory-provider-pluginization/sprint-001-registry-and-plugin-resolution-baseline/tasks/`, checklist=`.repo-ai-governor/context/dev/project-015-memory-provider-pluginization/sprint-001-registry-and-plugin-resolution-baseline/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-015-memory-provider-pluginization/sprint-001-registry-and-plugin-resolution-baseline/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-015-memory-provider-pluginization/sprint-001-registry-and-plugin-resolution-baseline/review/`, status=`active`
+
+## Planned Follow-Up Streams
+
+- `follow-up-001`: project=`project-016-langgraph-runtime-productization`, sprint=`sprint-001-vendor-adapter-and-sidecar-baseline`, docs=`.repo-ai-governor/context/dev/project-016-langgraph-runtime-productization`, plan=`.repo-ai-governor/context/dev/project-016-langgraph-runtime-productization/plan.md`, tasks=`.repo-ai-governor/context/dev/project-016-langgraph-runtime-productization/sprint-001-vendor-adapter-and-sidecar-baseline/tasks/`, checklist=`.repo-ai-governor/context/dev/project-016-langgraph-runtime-productization/sprint-001-vendor-adapter-and-sidecar-baseline/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-016-langgraph-runtime-productization/sprint-001-vendor-adapter-and-sidecar-baseline/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-016-langgraph-runtime-productization/sprint-001-vendor-adapter-and-sidecar-baseline/review/`, status=`planned`
 
 ## Completed Stream History
 
