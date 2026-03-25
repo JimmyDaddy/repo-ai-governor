@@ -1,6 +1,6 @@
 # project-013-remote-provider-and-adapter-ops 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-03-25
 - Stage Mapping: Stage 9 remaining closure + remote provider execution hardening
 - Phase Mapping: Phase E follow-up + Adapter Operations Hardening
@@ -57,8 +57,8 @@
 | TK-137 | sprint-001 | Codex 远端 provider 真实调用与凭据/health 契约 | implementation/adapter | TK-136,DA-136 | completed |
 | TK-138 | sprint-001 | GitHub Copilot 远端 provider 真实调用与 capability truthfulness 收口 | implementation/adapter | TK-136,DA-136 | completed |
 | TK-139 | sprint-001 | Claude Code 远端 provider 真实调用与 fallback/degrade 收口 | implementation/adapter | TK-136,DA-136 | completed |
-| TK-140 | sprint-001 | 跨 provider adapter 运维契约与 route-runner truthfulness hardening | implementation/runtime | TK-137,TK-138,TK-139 | planned |
-| TK-141 | sprint-001 | sprint-001 出口验收与后续 rollout 输入约束 | acceptance baseline | TK-137,TK-138,TK-139,TK-140 | planned |
+| TK-140 | sprint-001 | 跨 provider adapter 运维契约与 route-runner truthfulness hardening | implementation/runtime | TK-137,TK-138,TK-139 | completed |
+| TK-141 | sprint-001 | sprint-001 出口验收与后续 rollout 输入约束 | acceptance baseline | TK-137,TK-138,TK-139,TK-140 | completed |
 
 ## 5. 依赖产物策略
 
@@ -84,3 +84,4 @@
 ## 7. 里程碑记录
 
 1. 2026-03-25：创建 `project-013`，将 Stage 9 剩余阻断项正式收敛为“远端 provider 真实调用 + adapter operations”独立执行流，并把 `project-010 / sprint-003` 迁入 completed history。
+2. 2026-03-25：完成 `DA-136`~`DA-141` 产物链，形成 `project-013-remote-provider-and-adapter-ops-completion-audit-summary.md` 作为项目完成态审计摘要。

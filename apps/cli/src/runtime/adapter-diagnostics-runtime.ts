@@ -298,6 +298,18 @@ export class CliAdapterDiagnosticsRuntime {
     if (reason.startsWith("health_check_failed:")) {
       const [, surface, ...detailParts] = reason.split(":");
       const detail = detailParts.join(":");
+      if (detail === "rate_limited") {
+        return this.localizeText(
+          `surface "${surface}" health check is currently rate limited`,
+          `surface "${surface}" 的健康检查当前触发了限流`,
+        );
+      }
+      if (detail === "quota_exhausted") {
+        return this.localizeText(
+          `surface "${surface}" health check is blocked by exhausted quota`,
+          `surface "${surface}" 的健康检查因额度耗尽而被阻断`,
+        );
+      }
       return this.localizeText(
         `surface "${surface}" health check failed (${detail})`,
         `surface "${surface}" 的健康检查失败（${detail}）`,

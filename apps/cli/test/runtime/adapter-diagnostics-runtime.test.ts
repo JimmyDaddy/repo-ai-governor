@@ -111,4 +111,37 @@ describe("Cli adapter diagnostics runtime", () => {
     expect(prompts[0]?.blocking).toBe(false);
     expect(prompts[0]?.title).toBe("Adapter route attention");
   });
+
+  it("humanizes rate-limited and quota-exhausted remote health-check failures", () => {
+    const runtime = new CliAdapterDiagnosticsRuntime(
+      (english) => english,
+      () => ({
+        environment_precondition: 1,
+      }),
+    );
+
+    const rateLimitedDetail = runtime.resolveToolProbeCheckDetail({
+      toolId: AdapterSurface.CODEX,
+      enabled: true,
+      configuredAvailability: AdapterAvailability.AVAILABLE,
+      availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+      unavailableReasons: ["health_check_failed:codex:rate_limited"],
+      failureAttributions: ["environment_precondition"],
+      capabilitySupportByCapability: new Map(),
+    });
+    const quotaExhaustedDetail = runtime.resolveToolProbeCheckDetail({
+      toolId: AdapterSurface.GITHUB_COPILOT,
+      enabled: true,
+      configuredAvailability: AdapterAvailability.AVAILABLE,
+      availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+      unavailableReasons: ["health_check_failed:github-copilot:quota_exhausted"],
+      failureAttributions: ["environment_precondition"],
+      capabilitySupportByCapability: new Map(),
+    });
+
+    expect(rateLimitedDetail).toContain('surface "codex" health check is currently rate limited');
+    expect(quotaExhaustedDetail).toContain(
+      'surface "github-copilot" health check is blocked by exhausted quota',
+    );
+  });
 });

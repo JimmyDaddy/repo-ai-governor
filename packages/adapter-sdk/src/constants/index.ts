@@ -13,4 +13,9 @@ export {
   AgentSurfaceSkipReason,
   AgentStreamEventType,
 } from "./agent-protocol.constant.js";
-export { AgentCliExecOperation, AgentCliExecutionMode } from "./agent-cli-exec.constant.js";
+export {
+  AgentCliExecOperation,
+  AgentCliExecutionMode,
+  DEFAULT_AGENT_CLI_EXEC_MAX_RETRY_ATTEMPTS,
+  DEFAULT_AGENT_CLI_EXEC_RETRY_BACKOFF_MS,
+} from "./agent-cli-exec.constant.js";

@@ -198,6 +198,41 @@ describe("github-copilot-agent-adapter smoke", () => {
     expect(probeResult.unavailableReasons).toContain("credential_missing:github-copilot");
   });
 
+  it("retries transient cli_exec probe failures before surfacing availability", async () => {
+    const execRunner = vi
+      .fn<GithubCopilotExecRunner>()
+      .mockRejectedValueOnce(
+        new RuntimeError(
+          GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED,
+          "GitHub Copilot probe failed: rate limited",
+          {
+            stderr: "429 rate limit exceeded",
+          },
+        ),
+      )
+      .mockResolvedValueOnce({
+        stdout: [
+          '{"type":"assistant.message","data":{"content":"OK"}}',
+          '{"type":"result","exitCode":0}',
+        ].join("\n"),
+        stderr: "",
+        exitCode: 0,
+        signal: null,
+        elapsedMs: 4,
+      });
+    const adapter = new GithubCopilotAgentAdapter({
+      executionMode: GithubCopilotAgentAdapterExecutionMode.CLI_EXEC,
+      execRunner,
+    });
+
+    const probeResult = await adapter.probe({
+      routeKey: "codegen",
+    });
+
+    expect(probeResult.availabilityStatus).toBe("available");
+    expect(execRunner).toHaveBeenCalledTimes(2);
+  });
+
   it("falls back from direct copilot command to gh wrapper when direct binary is missing", async () => {
     const execRunner = vi.fn<GithubCopilotExecRunner>(async (request) => {
       if (request.command === "copilot") {

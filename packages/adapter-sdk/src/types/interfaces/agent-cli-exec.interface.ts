@@ -51,5 +51,7 @@ export interface AgentCliAdapterOptions<TExecRunner = AgentCliExecRunner> {
   environment?: NodeJS.ProcessEnv;
   requestTimeoutMs?: number;
   probeCacheTtlMs?: number;
+  maxRetryAttempts?: number;
+  retryBackoffMs?: number;
   execRunner?: TExecRunner;
 }

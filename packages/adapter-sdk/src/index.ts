@@ -1,6 +1,8 @@
 export {
   AGENT_LOCAL_FALLBACK_SURFACE,
   AgentAvailabilityStatus,
+  DEFAULT_AGENT_CLI_EXEC_MAX_RETRY_ATTEMPTS,
+  DEFAULT_AGENT_CLI_EXEC_RETRY_BACKOFF_MS,
   AgentCliExecOperation,
   AgentCliExecutionMode,
   AgentCancellationReason,
@@ -16,6 +18,7 @@ export {
   AgentStreamEventType,
 } from "./constants/index.js";
 export { AgentCapabilityEvaluator } from "./agent-capability-evaluator.js";
+export { AgentCliExecOperationsRuntime } from "./agent-cli-exec-operations-runtime.js";
 export { DefaultRestrictedNetworkFallbackHandler } from "./restricted-network-fallback-handler.js";
 export { AgentProtocolErrorMapper } from "./agent-protocol-error-mapper.js";
 export { AgentProtocol } from "./agent-protocol.abstract.js";

@@ -22,7 +22,12 @@
   - 2026-03-25：已完成真实 `CLI_EXEC` 路径、`claude -> claude-code` 回退、route truthfulness 与 gate fixture 注入收口；`DA-139`、task review 与 adapters working-tree follow-up review 已补齐。
   - 2026-03-25：已完成 pending CR 修复：`STRUCTURED_OUTPUT` truthfulness 已降为 `DEGRADED`，default reviewer route 已切回 Codex 主选，并补齐 fail-closed route/smoke 回归。
   - 2026-03-25：已完成第二轮 pending CR 复核；确认当前 working tree 已包含对应修复并通过定向验证，本轮无新增代码补丁。
-- [ ] TK-140 跨 provider adapter 运维契约与 route-runner truthfulness hardening
+- [x] TK-140 跨 provider adapter 运维契约与 route-runner truthfulness hardening
   - 2026-03-25：任务创建，状态初始化为 `planned`。
-- [ ] TK-141 sprint-001 出口验收与后续 rollout 输入约束
+  - 2026-03-25：任务启动，开始把 Codex / GitHub Copilot / Claude Code 已落下的真实 CLI exec 基线收敛为共享运维契约，优先统一 retry/backoff、detail 抽取、脱敏和 diagnostics truthfulness。
+  - 2026-03-25：已完成共享 `AgentCliExecOperationsRuntime`、统一 retry/backoff defaults、跨 provider redaction/detail 收口，以及 CLI diagnostics 对 rate-limit / quota 的统一 truthfulness；`DA-140` 和 resolved review 已补齐。
+  - 2026-03-25：已完成 follow-up CR 修复：共享 retry runtime 现显式消费 caller `signal + timeoutMs`，已 abort 请求不再重试，并按单一总 timeout budget 计算每次重试的剩余时间。
+- [x] TK-141 sprint-001 出口验收与后续 rollout 输入约束
   - 2026-03-25：任务创建，状态初始化为 `planned`。
+  - 2026-03-25：任务启动，开始汇总 `DA-136`~`DA-140` 的远端 provider 真实调用、共享运维契约与 route-runner truthfulness 证据，并准备 sprint-001 `accept/block` 结论。
+  - 2026-03-25：已完成 `DA-141`、resolved review 与 project-013 completion audit summary；本轮出口结论为 `accept`，并已冻结后续 rollout 输入约束。

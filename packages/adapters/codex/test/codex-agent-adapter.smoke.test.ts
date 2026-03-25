@@ -6,6 +6,7 @@ import {
   AgentStreamEventType,
   type AgentStreamEventsRequest,
 } from "@repo-ai-governor/adapter-sdk";
+import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
 import {
   CodexAgentAdapter,
   CodexAgentAdapterExecutionMode,
@@ -123,6 +124,42 @@ describe("codex-agent-adapter smoke", () => {
 
     expect(confirmationResult.decision).toBe(AgentConfirmationDecision.REVISE);
     expect(cancelResult.acknowledged).toBe(false);
+  });
+
+  it("retries transient cli_exec probe failures before surfacing availability", async () => {
+    const execRunner = vi
+      .fn<CodexExecRunner>()
+      .mockRejectedValueOnce(
+        new RuntimeError(
+          GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED,
+          "Codex probe failed: rate limited",
+          {
+            stderr: "429 rate limit exceeded",
+          },
+        ),
+      )
+      .mockResolvedValueOnce({
+        stdout: [
+          '{"type":"thread.started","thread_id":"thread-1"}',
+          '{"type":"item.completed","item":{"id":"item-1","type":"agent_message","text":"OK"}}',
+          '{"type":"turn.completed","usage":{"input_tokens":3,"output_tokens":1}}',
+        ].join("\n"),
+        stderr: "",
+        exitCode: 0,
+        signal: null,
+        elapsedMs: 4,
+      });
+    const adapter = new CodexAgentAdapter({
+      executionMode: CodexAgentAdapterExecutionMode.CLI_EXEC,
+      execRunner,
+    });
+
+    const probeResult = await adapter.probe({
+      routeKey: "codegen",
+    });
+
+    expect(probeResult.availabilityStatus).toBe("available");
+    expect(execRunner).toHaveBeenCalledTimes(2);
   });
 
   it("streams status and completed events", async () => {

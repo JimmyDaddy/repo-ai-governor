@@ -1,6 +1,6 @@
 # TK-140 跨 provider adapter 运维契约与 route-runner truthfulness hardening
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-25
 - Owner: AI-Agent
 - Priority: P0
@@ -47,3 +47,6 @@
 ## 7. 执行记录
 
 1. 2026-03-25：任务创建，状态初始化为 `planned`。
+2. 2026-03-25：任务启动，开始把 Codex / GitHub Copilot / Claude Code 已落下的真实 CLI exec 基线收敛为共享运维契约，优先统一 retry/backoff、detail 抽取、脱敏和 diagnostics truthfulness。
+3. 2026-03-25：已完成共享 `AgentCliExecOperationsRuntime`、统一 retry/backoff defaults、跨 provider redaction/detail 收口，以及 CLI diagnostics 对 rate-limit / quota 的统一 truthfulness；`DA-140` 和 resolved review 已补齐。
+4. 2026-03-25：已完成 follow-up CR 修复：共享 retry runtime 现显式消费 caller `signal + timeoutMs`，已 abort 请求不再重试，并按单一总 timeout budget 计算每次重试的剩余时间。

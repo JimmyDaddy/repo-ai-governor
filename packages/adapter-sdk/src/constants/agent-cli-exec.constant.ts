@@ -13,3 +13,13 @@ export enum AgentCliExecOperation {
   PROBE = "probe",
   INVOKE = "invoke",
 }
+
+/**
+ * Defines default retry attempts for CLI-backed remote adapter operations.
+ */
+export const DEFAULT_AGENT_CLI_EXEC_MAX_RETRY_ATTEMPTS = 2;
+
+/**
+ * Defines default linear retry backoff for CLI-backed remote adapter operations.
+ */
+export const DEFAULT_AGENT_CLI_EXEC_RETRY_BACKOFF_MS = 250;

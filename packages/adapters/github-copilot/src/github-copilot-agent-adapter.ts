@@ -7,6 +7,7 @@ import {
   AgentCapability,
   AgentCapabilitySupportLevel,
   AgentCliExecOperation,
+  AgentCliExecOperationsRuntime,
   AgentConfirmationDecision,
   type AgentConfirmationRequest,
   type AgentConfirmationResult,
@@ -18,6 +19,8 @@ import {
   type AgentStreamEvent,
   AgentStreamEventType,
   type AgentStreamEventsRequest,
+  DEFAULT_AGENT_CLI_EXEC_MAX_RETRY_ATTEMPTS,
+  DEFAULT_AGENT_CLI_EXEC_RETRY_BACKOFF_MS,
 } from "@repo-ai-governor/adapter-sdk";
 import { GovernorErrorCode, RuntimeError, standardizeError } from "@repo-ai-governor/shared";
 import { GithubCopilotAgentAdapterExecutionMode } from "./constants/github-copilot-agent-adapter.constant.js";
@@ -112,6 +115,8 @@ interface ResolvedGithubCopilotAgentAdapterOptions {
   environment?: NodeJS.ProcessEnv;
   requestTimeoutMs: number;
   probeCacheTtlMs: number;
+  maxRetryAttempts: number;
+  retryBackoffMs: number;
 }
 
 /**
@@ -120,6 +125,7 @@ interface ResolvedGithubCopilotAgentAdapterOptions {
 export class GithubCopilotAgentAdapter extends AgentProtocol {
   private readonly options: ResolvedGithubCopilotAgentAdapterOptions;
   private readonly execRunner: GithubCopilotExecRunner;
+  private readonly cliExecOperationsRuntime: AgentCliExecOperationsRuntime;
   private probeCache: GithubCopilotProbeCacheEntry | null = null;
 
   /**
@@ -141,7 +147,14 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
       environment: options.environment,
       requestTimeoutMs: options.requestTimeoutMs ?? GITHUB_COPILOT_DEFAULT_TIMEOUT_MS,
       probeCacheTtlMs: options.probeCacheTtlMs ?? GITHUB_COPILOT_DEFAULT_PROBE_CACHE_TTL_MS,
+      maxRetryAttempts: options.maxRetryAttempts ?? DEFAULT_AGENT_CLI_EXEC_MAX_RETRY_ATTEMPTS,
+      retryBackoffMs: options.retryBackoffMs ?? DEFAULT_AGENT_CLI_EXEC_RETRY_BACKOFF_MS,
     };
+    this.cliExecOperationsRuntime = new AgentCliExecOperationsRuntime(
+      GITHUB_COPILOT_SURFACE,
+      this.options.maxRetryAttempts,
+      this.options.retryBackoffMs,
+    );
     this.execRunner =
       options.execRunner ??
       ((request) => {
@@ -403,7 +416,7 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
         return {
           availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
           unavailableReasons: [
-            `health_check_invalid_response:${GITHUB_COPILOT_SURFACE}:${this.sanitizeReasonSegment(parsedOutput.responseText)}`,
+            `health_check_invalid_response:${GITHUB_COPILOT_SURFACE}:${this.cliExecOperationsRuntime.sanitizeReasonSegment(parsedOutput.responseText)}`,
           ],
         };
       }
@@ -429,31 +442,39 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
     request: Pick<GithubCopilotExecRunnerRequest, "prompt" | "timeoutMs" | "signal" | "operation">,
   ): Promise<GithubCopilotExecRunnerResult> {
     try {
-      let lastError: unknown;
-      for (const commandSpec of this.resolveCommandCandidates()) {
-        try {
-          return await this.execRunner({
-            command: commandSpec.command,
-            commandArgumentsPrefix: [...commandSpec.commandArgumentsPrefix],
-            cwd: this.options.currentWorkingDirectory,
-            env: this.resolveEnvironment(),
-            prompt: request.prompt,
-            timeoutMs: request.timeoutMs,
-            signal: request.signal,
-            operation: request.operation,
-          });
-        } catch (error) {
-          lastError = error;
-          const detail = this.collectErrorDetail(
-            error,
-            standardizeError(error).message,
-          ).toLowerCase();
-          if (!this.isMissingCommandFailure(error, detail)) {
-            throw error;
+      return await this.cliExecOperationsRuntime.executeWithRetry(
+        request.operation,
+        async (remainingTimeoutMs) => {
+          let lastError: unknown;
+          for (const commandSpec of this.resolveCommandCandidates()) {
+            try {
+              return await this.execRunner({
+                command: commandSpec.command,
+                commandArgumentsPrefix: [...commandSpec.commandArgumentsPrefix],
+                cwd: this.options.currentWorkingDirectory,
+                env: this.resolveEnvironment(),
+                prompt: request.prompt,
+                timeoutMs: remainingTimeoutMs ?? request.timeoutMs,
+                signal: request.signal,
+                operation: request.operation,
+              });
+            } catch (error) {
+              lastError = error;
+              const detail = this.cliExecOperationsRuntime
+                .collectErrorDetail(error, standardizeError(error).message)
+                .toLowerCase();
+              if (!this.isMissingCommandFailure(error, detail)) {
+                throw error;
+              }
+            }
           }
-        }
-      }
-      throw lastError;
+          throw lastError;
+        },
+        {
+          signal: request.signal,
+          timeoutMs: request.timeoutMs,
+        },
+      );
     } catch (error) {
       if (
         error instanceof RuntimeError &&
@@ -542,14 +563,14 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
           ? GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED
           : GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
         `GitHub Copilot ${operation} failed: ${sessionErrorEvent.data?.message ?? "unknown session error"}`,
-        {
+        this.cliExecOperationsRuntime.createRedactedProcessDetails({
           surface: GITHUB_COPILOT_SURFACE,
           operation,
           stdout: executionResult.stdout,
           stderr: executionResult.stderr,
           statusCode: sessionErrorEvent.data?.statusCode,
           errorType: sessionErrorEvent.data?.errorType,
-        },
+        }),
       );
     }
 
@@ -561,13 +582,13 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
           ? GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED
           : GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
         `GitHub Copilot ${operation} exited with code ${resultExitCode}.`,
-        {
+        this.cliExecOperationsRuntime.createRedactedProcessDetails({
           surface: GITHUB_COPILOT_SURFACE,
           operation,
           stdout: executionResult.stdout,
           stderr: executionResult.stderr,
           exitCode: resultExitCode,
-        },
+        }),
       );
     }
 
@@ -584,12 +605,12 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
           ? GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED
           : GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
         `GitHub Copilot ${operation} returned no assistant response.`,
-        {
+        this.cliExecOperationsRuntime.createRedactedProcessDetails({
           surface: GITHUB_COPILOT_SURFACE,
           operation,
           stdout: executionResult.stdout,
           stderr: executionResult.stderr,
-        },
+        }),
       );
     }
 
@@ -637,7 +658,9 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
    */
   private resolveProbeFailureReasons(error: unknown): string[] {
     const standardizedError = standardizeError(error);
-    const detail = this.collectErrorDetail(error, standardizedError.message).toLowerCase();
+    const detail = this.cliExecOperationsRuntime
+      .collectErrorDetail(error, standardizedError.message)
+      .toLowerCase();
 
     if (this.isMissingCommandFailure(error, detail)) {
       return [`command_missing:${GITHUB_COPILOT_SURFACE}:${this.options.command}`];
@@ -656,24 +679,8 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
     }
 
     return [
-      `health_check_failed:${GITHUB_COPILOT_SURFACE}:${this.sanitizeReasonSegment(standardizedError.message)}`,
+      `health_check_failed:${GITHUB_COPILOT_SURFACE}:${this.cliExecOperationsRuntime.sanitizeReasonSegment(standardizedError.message)}`,
     ];
-  }
-
-  /**
-   * Builds one detail string by combining standard message and runtime metadata.
-   * @param error Unknown error object.
-   * @param fallbackMessage Standardized fallback message.
-   * @returns Concatenated detail string.
-   */
-  private collectErrorDetail(error: unknown, fallbackMessage: string): string {
-    if (!error || typeof error !== "object") {
-      return fallbackMessage;
-    }
-    const metadata = (error as { metadata?: Record<string, unknown> }).metadata;
-    const stderr = typeof metadata?.stderr === "string" ? metadata.stderr : "";
-    const stdout = typeof metadata?.stdout === "string" ? metadata.stdout : "";
-    return [fallbackMessage, stderr, stdout].filter((value) => value.length > 0).join(" ");
   }
 
   /**
@@ -717,15 +724,6 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
    */
   private isQuotaFailure(detail: string): boolean {
     return /(quota|402|payment required|no quota)/u.test(detail);
-  }
-
-  /**
-   * Normalizes one text value for use inside unavailable reason payloads.
-   * @param value Raw text payload.
-   * @returns Sanitized single-line string.
-   */
-  private sanitizeReasonSegment(value: string): string {
-    return value.replace(/\s+/gu, " ").trim();
   }
 
   /**
@@ -813,13 +811,13 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
               ? GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED
               : GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
             `GitHub Copilot ${request.operation} timed out after ${request.timeoutMs}ms.`,
-            {
+            this.cliExecOperationsRuntime.createRedactedProcessDetails({
               surface: GITHUB_COPILOT_SURFACE,
               operation: request.operation,
               timeoutMs: request.timeoutMs,
               stdout,
               stderr,
-            },
+            }),
           ),
           true,
         );
@@ -840,13 +838,13 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
               ? GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED
               : GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
             `GitHub Copilot ${request.operation} process launch failed: ${standardizeError(error).message}`,
-            {
+            this.cliExecOperationsRuntime.createRedactedProcessDetails({
               surface: GITHUB_COPILOT_SURFACE,
               operation: request.operation,
               command: request.command,
               stdout,
               stderr,
-            },
+            }),
           ),
           true,
         );

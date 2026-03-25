@@ -1,6 +1,6 @@
 # sprint-001-remote-provider-real-invocation-baseline 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-03-25
 - Project: `project-013-remote-provider-and-adapter-ops`
 

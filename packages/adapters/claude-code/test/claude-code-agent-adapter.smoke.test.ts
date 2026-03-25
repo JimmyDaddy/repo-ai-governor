@@ -167,6 +167,38 @@ describe("claude-code-agent-adapter smoke", () => {
     expect(probeResult.unavailableReasons).toContain("credential_missing:claude-code");
   });
 
+  it("retries transient cli_exec probe failures before surfacing availability", async () => {
+    const execRunner = vi
+      .fn<ClaudeCodeExecRunner>()
+      .mockRejectedValueOnce(
+        new RuntimeError(
+          GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED,
+          "Claude Code probe failed: rate limited",
+          {
+            stderr: "429 rate limit exceeded",
+          },
+        ),
+      )
+      .mockResolvedValueOnce({
+        stdout: "OK\n",
+        stderr: "",
+        exitCode: 0,
+        signal: null,
+        elapsedMs: 4,
+      });
+    const adapter = new ClaudeCodeAgentAdapter({
+      executionMode: ClaudeCodeAgentAdapterExecutionMode.CLI_EXEC,
+      execRunner,
+    });
+
+    const probeResult = await adapter.probe({
+      routeKey: "codegen",
+    });
+
+    expect(probeResult.availabilityStatus).toBe("available");
+    expect(execRunner).toHaveBeenCalledTimes(2);
+  });
+
   it("treats non-zero process exit as protocol failure even when stdout is present", async () => {
     const adapter = new ClaudeCodeAgentAdapter({
       executionMode: ClaudeCodeAgentAdapterExecutionMode.CLI_EXEC,
