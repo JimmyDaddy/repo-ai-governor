@@ -20,9 +20,12 @@ export { ProcessRuntimeEngine } from "./process-runtime-engine.js";
 export { ProcessRuntimeParityHarness } from "./process-runtime-parity-harness.js";
 export type {
   ProcessRuntimeBackendAvailability,
+  ProcessRuntimeBackendExecuteRequest,
   ProcessRuntimeBackendSelection,
   ProcessRuntimeBackendSelectorOptions,
+  ProcessRuntimeExecutedExecution,
   ProcessRuntimeFacadeDependencies,
+  ProcessRuntimeFacadeExecuteOptions,
   ProcessRuntimeFacadePrepareOptions,
   ProcessRuntimeLifecycleEvent,
   ProcessRuntimeParityCompareOptions,

@@ -21,6 +21,7 @@ import { PolicyGateEngine } from "@repo-ai-governor/core-policy";
 import { ProcessCompiler, type ProcessIrNode } from "@repo-ai-governor/core-process";
 import {
   ProcessRuntimeEngine,
+  ProcessRuntimeFacade,
   type RuntimeExecutionResult,
   RuntimeExecutionStatus,
   type RuntimeStageContext,
@@ -28,6 +29,11 @@ import {
   RuntimeStageStatus,
   RuntimeTimeoutScope,
 } from "@repo-ai-governor/core-runtime";
+import {
+  CompiledIrGraphAdapter,
+  LangGraphFileCheckpointer,
+  LangGraphRuntimeBackend,
+} from "@repo-ai-governor/core-runtime-langgraph";
 import { AuditOutputMode, AuditRecordStatus, AuditRecorder } from "@repo-ai-governor/core-session";
 import {
   MemoryStoreAdapter,
@@ -112,6 +118,14 @@ const execFileAsync = promisify(execFile);
 interface CliExecutionStreamMetadata {
   projectId?: string;
   sprintId?: string;
+}
+
+interface CliLangGraphCheckpointState {
+  checkpointPath: string | null;
+  checkpointSource: string | null;
+  recoveryState: "not_requested" | "recovered";
+  recoveredNextNodeIds: string[];
+  pendingInterruptKind: string | null;
 }
 
 /**
@@ -287,8 +301,14 @@ export class CliGovernanceRuntime {
     }
 
     const executionId = `cli-run-${Date.now()}`;
+    const executionSessionId = `session-${executionId}`;
     const processCompiler = new ProcessCompiler();
     const processRuntimeEngine = new ProcessRuntimeEngine(processCompiler);
+    const langGraphRuntimeBackend = new LangGraphRuntimeBackend();
+    const processRuntimeFacade = new ProcessRuntimeFacade({
+      legacyRuntimeEngine: processRuntimeEngine,
+      langgraphRuntimeBackend: langGraphRuntimeBackend,
+    });
     const streamMetadata = await this.resolveExecutionStreamMetadata();
     const runAssembly = await this.taskDrivenRunRuntime.buildRunAssembly({
       executionId,
@@ -330,7 +350,7 @@ export class CliGovernanceRuntime {
     const routeRunner = this.createRunRouteRunner(compiledIr.nodes, {
       includeLocalModelFallbackCandidate: !runtimeDebugOptions.restrictedNetwork,
     });
-    const runtimeResult = await processRuntimeEngine.execute(
+    const runtimeExecution = await processRuntimeFacade.execute(
       compiledIr,
       async (stageContext) =>
         this.isInlineReviewSubchainStage(stageContext.stageId)
@@ -360,9 +380,9 @@ export class CliGovernanceRuntime {
         stageInputs: runAssembly.stageInputs as RuntimeStageInputMap,
       },
     );
+    const runtimeResult = runtimeExecution.runtimeResult;
 
     const auditRecorder = new AuditRecorder(this.memoryManager);
-    const executionSessionId = `session-${executionId}`;
 
     for (const stageResult of runtimeResult.stageResults) {
       const node = nodeById.get(stageResult.nodeId);
@@ -539,8 +559,29 @@ export class CliGovernanceRuntime {
         path: hitlResolution.decisionReceiptPath,
       });
     }
+    const langGraphCheckpointState = await this.captureLangGraphCheckpointState({
+      compiledIr,
+      runtimeExecution,
+      runtimeResult,
+      executionSessionId,
+      taskId: runAssembly.taskContext?.taskId ?? runtimeDebugOptions.taskId ?? undefined,
+      artifactReferenceIds: artifacts.map((artifact) => artifact.id),
+      hitlResolution,
+      policyResult,
+    });
+    if (langGraphCheckpointState.checkpointPath) {
+      artifacts.push({
+        id: "langgraph_checkpoint",
+        path: langGraphCheckpointState.checkpointPath,
+      });
+    }
     const checks: CliCommandResultCheck[] = [
       this.createRunAssemblyCheck(runAssembly, runtimeDebugOptions.taskId),
+      {
+        id: "runtime_backend",
+        status: CliGovernanceCheckStatus.PASS,
+        detail: `primary=${runtimeExecution.selection.primaryBackend} comparison=${runtimeExecution.selection.comparisonBackend ?? "none"} parity_mode=${runtimeExecution.selection.parityMode}`,
+      },
       {
         id: "compile",
         status: CliGovernanceCheckStatus.PASS,
@@ -565,6 +606,13 @@ export class CliGovernanceRuntime {
         detail: `records=${executionReport.totalRecords} stage_summaries=${executionReport.stageSummaries.length}`,
       },
     ];
+    if (langGraphCheckpointState.checkpointPath) {
+      checks.push({
+        id: "recovery",
+        status: CliGovernanceCheckStatus.PASS,
+        detail: `source=${langGraphCheckpointState.checkpointSource ?? "unknown"} state=${langGraphCheckpointState.recoveryState} next_nodes=${langGraphCheckpointState.recoveredNextNodeIds.join("|") || "none"} pending_interrupt=${langGraphCheckpointState.pendingInterruptKind ?? "none"}`,
+      });
+    }
     if (hitlResolution.required) {
       checks.push({
         id: "hitl",
@@ -668,6 +716,9 @@ export class CliGovernanceRuntime {
       hitlResumeAction: hitlResolution.resumeAction,
       awaitingDecision: hitlResolution.awaitingDecision,
       terminalDecision: hitlResolution.terminalDecision,
+      runtimeBackend: runtimeExecution.selection.primaryBackend,
+      runtimeCheckpointPath: langGraphCheckpointState.checkpointPath,
+      runtimeRecoveryState: langGraphCheckpointState.recoveryState,
     });
 
     const message = `Run completed with execution_id=${executionId} and policy_outcome=${resolvedPolicyOutcome}${runtimeDebugOptions.dryRun ? " (dry_run=true)" : ""}.`;
@@ -683,6 +734,10 @@ export class CliGovernanceRuntime {
         details: {
           execution_id: executionId,
           runtime_status: runtimeResult.status,
+          runtime_backend: runtimeExecution.selection.primaryBackend,
+          runtime_comparison_backend: runtimeExecution.selection.comparisonBackend ?? null,
+          runtime_parity_mode: runtimeExecution.selection.parityMode,
+          runtime_selection_reason: runtimeExecution.selection.reason,
           risk_level: riskEvaluation.riskLevel,
           original_policy_outcome: policyResult.policyOutcome,
           effective_policy_outcome: resolvedPolicyOutcome,
@@ -711,11 +766,98 @@ export class CliGovernanceRuntime {
           hitl_decision_receipt_path: hitlResolution.decisionReceiptPath,
           hitl_decision: hitlResolution.decision,
           hitl_resume_action: hitlResolution.resumeAction,
+          langgraph_checkpoint_path: langGraphCheckpointState.checkpointPath,
+          langgraph_checkpoint_source: langGraphCheckpointState.checkpointSource,
+          langgraph_recovery_state: langGraphCheckpointState.recoveryState,
+          langgraph_recovery_next_node_ids:
+            langGraphCheckpointState.recoveredNextNodeIds.join("|") || null,
+          langgraph_pending_interrupt_kind: langGraphCheckpointState.pendingInterruptKind,
           dry_run: runtimeDebugOptions.dryRun,
           trace_enabled: runtimeDebugOptions.trace,
           diagnostics_trace_path: diagnosticsTracePath,
         },
       },
+    };
+  }
+
+  private async captureLangGraphCheckpointState(options: {
+    compiledIr: ReturnType<ProcessCompiler["compile"]>;
+    runtimeExecution: Awaited<ReturnType<ProcessRuntimeFacade["execute"]>>;
+    runtimeResult: RuntimeExecutionResult;
+    executionSessionId: string;
+    taskId?: string;
+    artifactReferenceIds: string[];
+    hitlResolution: Awaited<ReturnType<CliHitlRuntime["processRunHitl"]>>;
+    policyResult: ReturnType<PolicyGateEngine["evaluate"]>;
+  }): Promise<CliLangGraphCheckpointState> {
+    if (options.runtimeExecution.selection.primaryBackend !== "langgraph") {
+      return {
+        checkpointPath: null,
+        checkpointSource: null,
+        recoveryState: "not_requested",
+        recoveredNextNodeIds: [],
+        pendingInterruptKind: null,
+      };
+    }
+
+    const graphPlan = new CompiledIrGraphAdapter().adapt(options.compiledIr);
+    const pendingInterrupt = options.hitlResolution.awaitingDecision
+      ? {
+          kind: "hitl" as const,
+          recordedAt: this.toRfc3339SecondsTimestamp(new Date()),
+          reason: options.policyResult.reason,
+          payload: {
+            decision: options.hitlResolution.decision,
+            resumeAction: options.hitlResolution.resumeAction,
+            notificationArtifactPath: options.hitlResolution.notificationArtifactPath,
+            decisionReceiptPath: options.hitlResolution.decisionReceiptPath,
+          },
+        }
+      : undefined;
+    const reducedState = {
+      "execution.cursor":
+        options.runtimeResult.visitedNodeIds.at(-1) ?? options.runtimeExecution.primary.entryNodeId,
+      "execution.visited_nodes": options.runtimeResult.visitedNodeIds,
+      "execution.stage_results": options.runtimeResult.stageResults.map((stageResult) => ({
+        nodeId: stageResult.nodeId,
+        stageId: stageResult.stageId,
+        status: stageResult.status,
+        attempt: stageResult.attempt,
+      })),
+      ...(pendingInterrupt ? { "execution.pending_interrupt": pendingInterrupt } : {}),
+    };
+    const activeNodeIds =
+      pendingInterrupt && options.runtimeResult.visitedNodeIds.length > 0
+        ? [
+            options.runtimeResult.visitedNodeIds.at(-1) ??
+              options.runtimeExecution.primary.entryNodeId,
+          ]
+        : [];
+    const checkpointer = new LangGraphFileCheckpointer({
+      rootDirectory: this.options.workspace.workspaceRoot,
+    });
+    const checkpointEnvelope = await checkpointer.save({
+      plan: graphPlan,
+      executionSessionId: options.executionSessionId,
+      activeNodeIds,
+      visitedNodeIds: options.runtimeResult.visitedNodeIds,
+      reducedState,
+      artifactReferenceIds: options.artifactReferenceIds,
+      ...(options.taskId ? { taskReferenceId: options.taskId } : {}),
+      ...(pendingInterrupt ? { pendingInterrupt } : {}),
+    });
+    const recoveredExecution = await checkpointer.recover(
+      options.compiledIr.executionId,
+      options.executionSessionId,
+      options.compiledIr.processId,
+    );
+
+    return {
+      checkpointPath: checkpointEnvelope.checkpointPath,
+      checkpointSource: checkpointEnvelope.checkpointSource,
+      recoveryState: recoveredExecution ? "recovered" : "not_requested",
+      recoveredNextNodeIds: recoveredExecution?.nextNodeIds ?? [],
+      pendingInterruptKind: recoveredExecution?.pendingInterrupt?.kind ?? null,
     };
   }
 
@@ -1793,6 +1935,9 @@ export class CliGovernanceRuntime {
     hitlResumeAction?: CliHitlResumeAction | null;
     awaitingDecision?: boolean;
     terminalDecision?: boolean;
+    runtimeBackend?: string;
+    runtimeCheckpointPath?: string | null;
+    runtimeRecoveryState?: string;
   }): void {
     if (options.policyOutcome === ChangeRiskRequiredAction.ALLOW) {
       return;
@@ -1821,6 +1966,13 @@ export class CliGovernanceRuntime {
             ? { hitlDecisionReceiptPath: options.hitlDecisionReceiptPath }
             : {}),
           ...(options.hitlResumeAction ? { hitlResumeAction: options.hitlResumeAction } : {}),
+          ...(options.runtimeBackend ? { runtimeBackend: options.runtimeBackend } : {}),
+          ...(options.runtimeCheckpointPath
+            ? { runtimeCheckpointPath: options.runtimeCheckpointPath }
+            : {}),
+          ...(options.runtimeRecoveryState
+            ? { runtimeRecoveryState: options.runtimeRecoveryState }
+            : {}),
         },
       );
     }
@@ -1845,6 +1997,13 @@ export class CliGovernanceRuntime {
           ? { hitlDecisionReceiptPath: options.hitlDecisionReceiptPath }
           : {}),
         ...(options.hitlResumeAction ? { hitlResumeAction: options.hitlResumeAction } : {}),
+        ...(options.runtimeBackend ? { runtimeBackend: options.runtimeBackend } : {}),
+        ...(options.runtimeCheckpointPath
+          ? { runtimeCheckpointPath: options.runtimeCheckpointPath }
+          : {}),
+        ...(options.runtimeRecoveryState
+          ? { runtimeRecoveryState: options.runtimeRecoveryState }
+          : {}),
       },
     );
   }

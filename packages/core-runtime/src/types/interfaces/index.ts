@@ -1,8 +1,11 @@
 export type {
+  ProcessRuntimeBackendExecuteRequest,
   ProcessRuntimeBackendAvailability,
   ProcessRuntimeBackendSelection,
   ProcessRuntimeBackendSelectorOptions,
+  ProcessRuntimeExecutedExecution,
   ProcessRuntimeFacadeDependencies,
+  ProcessRuntimeFacadeExecuteOptions,
   ProcessRuntimeFacadePrepareOptions,
   ProcessRuntimeLifecycleEvent,
   ProcessRuntimeParityCompareOptions,

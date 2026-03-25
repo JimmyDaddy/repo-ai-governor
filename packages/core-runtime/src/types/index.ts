@@ -4,9 +4,12 @@ export type {
 } from "./aliases/index.js";
 export type {
   ProcessRuntimeBackendAvailability,
+  ProcessRuntimeBackendExecuteRequest,
   ProcessRuntimeBackendSelection,
   ProcessRuntimeBackendSelectorOptions,
+  ProcessRuntimeExecutedExecution,
   ProcessRuntimeFacadeDependencies,
+  ProcessRuntimeFacadeExecuteOptions,
   ProcessRuntimeFacadePrepareOptions,
   ProcessRuntimeLifecycleEvent,
   ProcessRuntimeParityCompareOptions,

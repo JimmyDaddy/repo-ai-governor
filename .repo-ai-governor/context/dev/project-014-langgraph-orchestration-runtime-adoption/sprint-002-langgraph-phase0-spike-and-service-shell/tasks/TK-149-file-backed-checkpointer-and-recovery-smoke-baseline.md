@@ -1,6 +1,6 @@
 # TK-149 file-backed checkpointer 与 recovery smoke 基线
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-25
 - Owner: AI-Agent
 - Priority: P0
@@ -56,6 +56,8 @@
 ## 9. 执行记录
 
 1. 2026-03-25：任务创建，状态初始化为 `planned`。
+2. 2026-03-25：开始执行，实现 file-backed checkpointer、checkpoint persistence contract 与 recovery smoke。
+3. 2026-03-25：已完成 `LangGraphFileCheckpointer`、checkpoint error code、recovery smoke 单测与 `DA-149`。
 
 ## 10. 产出
 

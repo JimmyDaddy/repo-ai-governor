@@ -81,6 +81,12 @@ const DISTRIBUTION_PACKAGES = [
     packageDistDirectory: resolve(PROJECT_ROOT, "packages/core-runtime/dist"),
   },
   {
+    packageName: "core-runtime-langgraph",
+    packageRoot: resolve(PROJECT_ROOT, "packages/core-runtime-langgraph"),
+    compiledDirectory: resolve(PROJECT_ROOT, "dist/packages/core-runtime-langgraph"),
+    packageDistDirectory: resolve(PROJECT_ROOT, "packages/core-runtime-langgraph/dist"),
+  },
+  {
     packageName: "core-session",
     packageRoot: resolve(PROJECT_ROOT, "packages/core-session"),
     compiledDirectory: resolve(PROJECT_ROOT, "dist/packages/core-session"),

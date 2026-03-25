@@ -1,6 +1,6 @@
 # TK-151 `sqlite-fs` checkpointer 与 shared local orchestration service shell 收敛
 
-- Status: planned
+- Status: in_progress
 - Date: 2026-03-25
 - Owner: AI-Agent
 - Priority: P0
@@ -60,6 +60,7 @@
 ## 9. 执行记录
 
 1. 2026-03-25：任务创建，状态初始化为 `planned`。
+2. 2026-03-25：状态切换为 `in_progress`，开始将 checkpoint 收敛到 `sqlite-fs` 并探索 shared local orchestration service 的最小 service shell。
 
 ## 10. 产出
 

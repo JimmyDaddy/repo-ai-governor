@@ -6,6 +6,9 @@ import type {
   ProcessRuntimeParitySeverity,
 } from "../../constants/runtime.constant.js";
 import type { ProcessRuntimeEngine } from "../../process-runtime-engine.js";
+import type { RuntimeStageHandler } from "../aliases/runtime-stage.type.js";
+import type { RuntimeExecuteOptions } from "./runtime-control.interface.js";
+import type { RuntimeExecutionResult } from "./runtime-execution.interface.js";
 
 export interface ProcessRuntimeLifecycleEvent {
   type: string;
@@ -65,6 +68,20 @@ export interface ProcessRuntimePreparedExecution {
   selection: ProcessRuntimeBackendSelection;
   primary: ProcessRuntimePreparedExecutionProfile;
   comparison?: ProcessRuntimePreparedExecutionProfile;
+}
+
+export interface ProcessRuntimeFacadeExecuteOptions
+  extends ProcessRuntimeFacadePrepareOptions,
+    RuntimeExecuteOptions {}
+
+export interface ProcessRuntimeExecutedExecution extends ProcessRuntimePreparedExecution {
+  runtimeResult: RuntimeExecutionResult;
+}
+
+export interface ProcessRuntimeBackendExecuteRequest {
+  compiledIrExecutionId: string;
+  stageHandler: RuntimeStageHandler;
+  executeOptions: RuntimeExecuteOptions;
 }
 
 export interface ProcessRuntimeParityPreparedProfileSnapshot {

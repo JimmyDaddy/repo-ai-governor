@@ -8,11 +8,14 @@ import type {
   ProcessRuntimeBackendKind,
   ProcessRuntimeBackendSelection,
   ProcessRuntimeBackendSelectorOptions,
+  ProcessRuntimeExecutedExecution,
   ProcessRuntimeFacadeDependencies,
+  ProcessRuntimeFacadeExecuteOptions,
   ProcessRuntimeFacadePrepareOptions,
   ProcessRuntimeLifecycleEvent,
   ProcessRuntimePreparedExecution,
   ProcessRuntimePreparedExecutionProfile,
+  RuntimeStageHandler,
 } from "./types/index.js";
 
 const DEFAULT_PROCESS_RUNTIME_BACKEND: ProcessRuntimeBackendKind = "langgraph";
@@ -92,6 +95,25 @@ export class ProcessRuntimeFacade {
     };
   }
 
+  public async execute(
+    compiledIr: ProcessCompiledIr,
+    stageHandler: RuntimeStageHandler,
+    options: ProcessRuntimeFacadeExecuteOptions = {},
+  ): Promise<ProcessRuntimeExecutedExecution> {
+    const preparedExecution = this.prepare(compiledIr, options);
+    const runtimeResult = await this.executeSelectedBackend(
+      preparedExecution.selection.primaryBackend,
+      compiledIr,
+      stageHandler,
+      options,
+    );
+
+    return {
+      ...preparedExecution,
+      runtimeResult,
+    };
+  }
+
   private resolveAvailability(): ProcessRuntimeBackendAvailability {
     return {
       legacy: Boolean(this.legacyRuntimeEngine),
@@ -153,6 +175,21 @@ export class ProcessRuntimeFacade {
     }
 
     return this.prepareLegacyProfile(compiledIr);
+  }
+
+  private async executeSelectedBackend(
+    backend: ProcessRuntimeBackendKind,
+    compiledIr: ProcessCompiledIr,
+    stageHandler: RuntimeStageHandler,
+    options: ProcessRuntimeFacadeExecuteOptions,
+  ) {
+    if (backend === "langgraph") {
+      // Phase 0 keeps deterministic stage dispatch in the shared runtime engine while
+      // facade selection, prepared profiles, and checkpoint/recovery ownership move to LangGraph.
+      return this.legacyRuntimeEngine.execute(compiledIr, stageHandler, options);
+    }
+
+    return this.legacyRuntimeEngine.execute(compiledIr, stageHandler, options);
   }
 
   private prepareLangGraphProfile(

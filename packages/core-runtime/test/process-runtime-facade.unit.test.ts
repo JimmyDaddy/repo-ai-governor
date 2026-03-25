@@ -70,6 +70,27 @@ describe("ProcessRuntimeFacade", () => {
     expect(preparedExecution.comparison?.supportedInterruptKinds).toEqual(["timeout", "cancelled"]);
   });
 
+  it("executes the minimal mainchain through the facade while keeping langgraph selected", async () => {
+    const facade = new ProcessRuntimeFacade({
+      langgraphRuntimeBackend: new LangGraphRuntimeBackend(),
+      nowProvider: () => new Date("2026-03-25T08:00:00Z"),
+    });
+
+    const executedExecution = await facade.execute(
+      createCompiledIr(),
+      async (stageContext) => ({
+        stageId: stageContext.stageId,
+      }),
+      {
+        enableParityHarness: true,
+      },
+    );
+
+    expect(executedExecution.selection.primaryBackend).toBe("langgraph");
+    expect(executedExecution.runtimeResult.status).toBe(RuntimeExecutionStatus.SUCCEEDED);
+    expect(executedExecution.runtimeResult.visitedNodeIds).toEqual(["node-entry", "node-review"]);
+  });
+
   it("fails closed when selected backend is unavailable", () => {
     const facade = new ProcessRuntimeFacade();
     let error: ReturnType<typeof standardizeError> | undefined;

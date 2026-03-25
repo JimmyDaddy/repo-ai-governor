@@ -570,6 +570,8 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
           code: GovernorErrorCode.POLICY_GATE_HITL_FEEDBACK_INVALID,
           details: {
             pendingStatus: ExecutionProgressStage.HUMAN_CONFIRMATION,
+            runtimeBackend: "langgraph",
+            runtimeRecoveryState: "recovered",
           },
         });
 
@@ -700,10 +702,23 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
         expect(runResult.commandResult.details?.original_policy_outcome).toBe("escalate");
         expect(runResult.commandResult.details?.effective_policy_outcome).toBe("allow");
         expect(runResult.commandResult.details?.task_id).toBe("TK-099");
+        expect(runResult.commandResult.details?.runtime_backend).toBe("langgraph");
+        expect(runResult.commandResult.details?.runtime_comparison_backend).toBeNull();
+        expect(runResult.commandResult.details?.runtime_parity_mode).toBe("disabled");
         expect(runResult.commandResult.details?.hitl_decision).toBe("approve");
         expect(runResult.commandResult.details?.hitl_resume_action).toBe("resume");
+        expect(runResult.commandResult.details?.langgraph_recovery_state).toBe("recovered");
         expect(runResult.commandResult.details?.inline_review_chain_enabled).toBe(true);
         expect(runResult.commandResult.details?.inline_review_chain_status).toBe("applied");
+        expect(
+          runResult.commandResult.checks?.find((check) => check.id === "runtime_backend")?.detail,
+        ).toContain("primary=langgraph");
+        expect(
+          runResult.commandResult.checks?.find((check) => check.id === "runtime_backend")?.detail,
+        ).toContain("comparison=none");
+        expect(
+          runResult.commandResult.checks?.find((check) => check.id === "recovery")?.detail,
+        ).toContain("state=recovered");
         expect(
           runResult.commandResult.checks?.find((check) => check.id === "hitl")?.detail,
         ).toContain("decision=approve");
@@ -720,11 +735,17 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
             (artifact) => artifact.id === "hitl_decision_receipt",
           ),
         ).toBe(true);
+        expect(
+          runResult.commandResult.artifacts?.some(
+            (artifact) => artifact.id === "langgraph_checkpoint",
+          ),
+        ).toBe(true);
 
         const decisionReceiptPath = runResult.commandResult.artifacts?.find(
           (artifact) => artifact.id === "hitl_decision_receipt",
         )?.path;
         expect(typeof decisionReceiptPath).toBe("string");
+        expect(typeof runResult.commandResult.details?.langgraph_checkpoint_path).toBe("string");
 
         const decisionReceiptPayload = JSON.parse(
           await readFile(String(decisionReceiptPath), "utf8"),

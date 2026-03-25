@@ -1,6 +1,6 @@
 # TK-150 LangGraph `run/review/HITL` 最小主链接线
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-25
 - Owner: AI-Agent
 - Priority: P0
@@ -62,6 +62,8 @@
 ## 9. 执行记录
 
 1. 2026-03-25：任务创建，状态初始化为 `planned`。
+2. 2026-03-25：状态切换为 `in_progress`，开始将 `task-driven run` 主链接到 facade/langgraph backend，并接通 checkpoint/recovery 最小路径。
+3. 2026-03-25：已完成 facade 主链接线、LangGraph file-backed checkpoint/recovery 接线、CLI 输出面收口与 `DA-150`。
 
 ## 10. 产出
 

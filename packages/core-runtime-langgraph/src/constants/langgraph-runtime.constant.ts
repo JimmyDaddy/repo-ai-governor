@@ -25,6 +25,10 @@ export const LANGGRAPH_RUNTIME_INTERRUPT_KINDS = ["hitl", "timeout", "cancelled"
 
 export type LangGraphRuntimeInterruptKind = (typeof LANGGRAPH_RUNTIME_INTERRUPT_KINDS)[number];
 
+export const LANGGRAPH_CHECKPOINT_SOURCES = ["file-backed"] as const;
+
+export type LangGraphCheckpointSource = (typeof LANGGRAPH_CHECKPOINT_SOURCES)[number];
+
 export const LANGGRAPH_RUNTIME_EXECUTION_STATUSES = [
   "pending",
   "succeeded",
@@ -68,3 +72,7 @@ export const LANGGRAPH_CHECKPOINTER_STATE_KEYS = [
 ] as const;
 
 export type LangGraphCheckpointerStateKey = (typeof LANGGRAPH_CHECKPOINTER_STATE_KEYS)[number];
+
+export const LANGGRAPH_FILE_CHECKPOINTER_DIRECTORY_NAME = "langgraph-checkpoints";
+
+export const LANGGRAPH_FILE_CHECKPOINTER_FILE_NAME = "checkpoint.json";

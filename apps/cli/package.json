@@ -21,6 +21,7 @@
     "@repo-ai-governor/core-policy": "workspace:*",
     "@repo-ai-governor/core-process": "workspace:*",
     "@repo-ai-governor/core-runtime": "workspace:*",
+    "@repo-ai-governor/core-runtime-langgraph": "workspace:*",
     "@repo-ai-governor/core-session": "workspace:*",
     "@repo-ai-governor/memory-provider-fs-csv": "workspace:*",
     "@repo-ai-governor/memory-provider-sqlite-fs": "workspace:*",
