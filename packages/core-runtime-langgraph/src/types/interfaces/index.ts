@@ -4,11 +4,13 @@ export type {
   LangGraphCompiledGraphPlan,
 } from "./langgraph-compiled-graph-plan.interface.js";
 export type {
+  LangGraphCheckpointer,
   LangGraphCheckpointEnvelope,
   LangGraphCheckpointPendingInterrupt,
   LangGraphFileCheckpointerOptions,
   LangGraphRecoveredExecution,
   LangGraphSaveCheckpointOptions,
+  LangGraphSqliteFsCheckpointerOptions,
 } from "./langgraph-checkpointer.interface.js";
 export type {
   LangGraphPreparedExecution,

@@ -40,7 +40,7 @@
 
 ## 3.1 一句话结论
 
-1. Stage 0-9 的业务闭环能力已经完成，`project-013` 也已补齐远端 provider 真实调用与 adapter 运维契约；当前主线切换为 `project-014`，负责把编排内核收敛到 `LangGraph + shared local orchestration service`，为 CLI 与未来桌面端共用执行面铺路。
+1. Stage 0-9 的业务闭环能力已经完成，`project-013` 也已补齐远端 provider 真实调用与 adapter 运维契约；当前主线是 `project-014`，且 sprint-002 已完成 LangGraph Phase 0 backend、checkpoint/recovery 与 shared local orchestration service shell 的第一轮正式实现，下一步进入 sprint-003 的 service-backed execution 扩围。
 
 ## 3.2 当前真实状态
 
@@ -50,9 +50,9 @@
    - `run` 已升级为任务驱动 DAG，`review -> review-verify -> ledger backfill`、HITL `resume/terminate/degrade`、delivery rehearsal、Stage 9 GA blackbox 和多 IDE 官方入口都已形成完成态证据。
    - `project-013` 已完成 Codex / GitHub Copilot / Claude Code 的远端 provider 真实调用、adapter 运维契约与 route-runner truthfulness 收口，Stage 9 最后业务阻断已关闭。
 2. 当前未完成的部分：
-   - 编排运行时仍主要依赖自研执行内核，尚未完成 `LangGraph` backend、LangGraph cutover parity 验证 与本地 orchestration service 的正式落地。
-   - CLI 与未来桌面端虽然边界已明确，但还没有共用同一执行 API / checkpoint / HITL resume service。
-   - 因此“图执行内核成熟度 + 多执行表面共用一套 runtime/service”这条工程演进主线仍未关闭。
+   - `LangGraph` Phase 0 backend、最小主链、checkpoint/recovery 与 in-process shared local orchestration service shell 已经落地，但还没有完成 service-backed execution 扩围与进程外形态收敛。
+   - CLI 与未来桌面端的共用执行面已经有统一 contract 和 in-process shell，但还没有形成独立 transport / daemon-ready / desktop-ready 的正式执行 API。
+   - 因此“graph-first runtime 完成 cutover + 多执行表面共用稳定 service contract”这条工程演进主线仍未关闭。
 
 ## 3.3 当前主执行流
 
@@ -70,8 +70,8 @@
 
 1. 已将 `project-013` 视为 completed handoff，后续只消费其远端 provider 执行面与 adapter ops 产物。
 2. `project-014 / sprint-001` 已完成 adoption baseline、runtime/service boundary 与 cutover 输入约束冻结。
-3. `project-014 / sprint-002` 已完成拆解，当前优先执行 `core-runtime-langgraph` backend、parity harness、checkpoint/recovery 与 service shell 的第一轮实装。
-4. 随后继续收敛 shared local orchestration service，为未来桌面端只做 presenter/client 的形态铺路。
+3. `project-014 / sprint-002` 已通过 `DA-152` 完成出口验收，第一轮 LangGraph backend、checkpoint/recovery 与 service shell 实装已收口。
+4. 下一步拆解并启动 `project-014 / sprint-003`，继续扩大 shared local orchestration service 的 service-backed execution、transport 与 desktop-ready contract。
 
 ## 4. 路线图总览
 
@@ -168,7 +168,7 @@
 | G-04 | HITL 回执与决策回灌未闭环 | 命中 `confirm/escalate` 后仍主要停在人工等待 | 至少 1 主 1 备通知渠道接通，人工决策可回灌并触发继续执行/终止/降级 | `TK-098` 已完成；sprint-002 |
 | G-05 | 受控 delivery rehearsal 未一体化 | `commit` / `PR draft` 仍未与自动主链形成统一回放与审计 | 至少 1 条受控 delivery rehearsal 覆盖 `commit` 或 `PR draft`，并记录人工接管边界 | sprint-002 / Stage 9 closure |
 | G-06 | 稳定性与黑盒门禁未覆盖真实无人值守路径 | provider outage、restricted network、retry exhaustion 等场景仍缺稳定黑盒验证 | 黑盒 E2E、CI、release gate 覆盖主路径与降级路径，并沉淀成功率/人工介入率等运营指标 | `TK-097` + sprint-002 |
-| G-07 | 编排运行时尚未收敛到 graph-first shared runtime | `run/review/HITL` 已可用，但 runtime backend 仍未形成 `LangGraph + local orchestration service` 正式实现 | `LangGraph` backend、短期 cutover parity 验证、local orchestration service 与 CLI/desktop 共享执行 API 形成正式基线 | `project-014 / sprint-001` |
+| G-07 | 编排运行时尚未收敛到 graph-first shared runtime | LangGraph Phase 0 backend、checkpoint/recovery 与 in-process service shell 已落地，但 service-backed execution 与 desktop-ready API 仍未完成 | `LangGraph` backend、短期 cutover parity 验证、local orchestration service 与 CLI/desktop 共享执行 API 形成正式基线 | `project-014 / sprint-002` completed, sprint-003 next |
 
 ## 6.4 Stage 9 收敛顺序
 
@@ -215,13 +215,16 @@
    - `TK-144`：shared local orchestration service（CLI + desktop）契约基线
    - `TK-145`：LangGraph Phase 0 spike、cutover parity 验证与 rollout 迁移计划
    - `TK-146`：sprint-001 出口验收与 sprint-002 输入约束
-5. 当前执行队列（project-014 / sprint-002）：
+5. 已完成的 Phase 0 实装队列（project-014 / sprint-002）：
    - `TK-147`：core-runtime-langgraph backend skeleton 与 compiled IR graph adapter 基线
    - `TK-148`：Process Runtime facade backend selector 与 cutover parity harness 基线
    - `TK-149`：file-backed checkpointer 与 recovery smoke 基线
    - `TK-150`：LangGraph `run/review/HITL` 最小主链接线
    - `TK-151`：`sqlite-fs` checkpointer 与 shared local orchestration service shell 收敛
    - `TK-152`：sprint-002 出口验收与 sprint-003 输入约束
+6. 下一步执行队列：
+   - 拆解并启动 `project-014 / sprint-003`
+   - 扩大 service-backed execution、desktop-ready transport 与 cutover 扩围验证
 
 ## 7. 并行治理主线
 

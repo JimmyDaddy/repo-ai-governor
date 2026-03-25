@@ -18,8 +18,13 @@
   - 2026-03-25：任务创建，状态初始化为 `planned`。
   - 2026-03-25：状态切换为 `in_progress`，开始将 CLI `run -> review -> review-verify -> HITL -> recovery` 主链接入 facade/langgraph backend。
   - 2026-03-25：已完成 facade 主链接线、LangGraph checkpoint/recovery 接线、CLI 正式输出面收口与 `DA-150`。
-- [ ] TK-151 `sqlite-fs` checkpointer 与 shared local orchestration service shell 收敛
+- [x] TK-151 `sqlite-fs` checkpointer 与 shared local orchestration service shell 收敛
   - 2026-03-25：任务创建，状态初始化为 `planned`。
   - 2026-03-25：状态切换为 `in_progress`，开始将 checkpoint 收敛到 `sqlite-fs` 并探索 shared local orchestration service 的最小 service shell。
-- [ ] TK-152 sprint-002 出口验收与 sprint-003 输入约束
+  - 2026-03-25：已完成 `LangGraphSqliteFsCheckpointer`、`orchestration-service-client`、`LocalOrchestrationServiceShell`、CLI service-shell 接线与 `DA-151`。
+  - 2026-03-25：已完成 `dist` 重建、`cli --help` warning 清理与总 gate 复验，确认 `TK-151` 可交付。
+  - 2026-03-25：已完成 working tree CR 复核修复，收口 service start DTO identity ownership、HITL decision receipt path/persistence，以及 sqlite-fs interrupt kind fail-closed 校验。
+- [x] TK-152 sprint-002 出口验收与 sprint-003 输入约束
   - 2026-03-25：任务创建，状态初始化为 `planned`。
+  - 2026-03-25：状态切换为 `in_progress`，开始汇总 `DA-147` ~ `DA-151`、sprint-002 exit criteria 与 sprint-003 输入约束。
+  - 2026-03-25：已完成 `DA-152`、sprint/project/master plan 同步、artifact registry 回链与 sprint-002 出口验收收口。

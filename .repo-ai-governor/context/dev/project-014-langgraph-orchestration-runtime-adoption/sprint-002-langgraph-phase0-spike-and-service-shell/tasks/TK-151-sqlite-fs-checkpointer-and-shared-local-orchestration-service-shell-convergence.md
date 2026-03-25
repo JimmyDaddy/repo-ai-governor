@@ -1,6 +1,6 @@
 # TK-151 `sqlite-fs` checkpointer 与 shared local orchestration service shell 收敛
 
-- Status: in_progress
+- Status: completed
 - Date: 2026-03-25
 - Owner: AI-Agent
 - Priority: P0
@@ -61,6 +61,9 @@
 
 1. 2026-03-25：任务创建，状态初始化为 `planned`。
 2. 2026-03-25：状态切换为 `in_progress`，开始将 checkpoint 收敛到 `sqlite-fs` 并探索 shared local orchestration service 的最小 service shell。
+3. 2026-03-25：已完成 `LangGraphSqliteFsCheckpointer`、`orchestration-service-client`、`LocalOrchestrationServiceShell`、CLI service-shell 接线与 `DA-151`。
+4. 2026-03-25：已完成 `dist` 重建、`cli --help` `node:sqlite` warning 清理与总 gate 复验，确认 `TK-151` 进入可交付完成态。
+5. 2026-03-25：已完成 `TK-151` working tree CR 复核修复，收口 service start DTO identity ownership、HITL decision receipt path/persistence，以及 sqlite-fs interrupt kind fail-closed 校验。
 
 ## 10. 产出
 

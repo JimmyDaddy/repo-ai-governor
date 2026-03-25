@@ -9,6 +9,8 @@ export {
   LANGGRAPH_RUNTIME_EXECUTION_STATUSES,
   LANGGRAPH_RUNTIME_EVENT_TYPES,
   LANGGRAPH_RUNTIME_INTERRUPT_KINDS,
+  LANGGRAPH_SQLITE_FS_CHECKPOINTER_DATABASE_FILE_NAME,
+  LANGGRAPH_SQLITE_FS_CHECKPOINTER_TABLE_NAME,
   LANGGRAPH_RUNTIME_TERMINAL_STATUSES,
 } from "./constants/index.js";
 export type {
@@ -26,6 +28,7 @@ export { CompiledIrGraphAdapter } from "./compiled-ir-graph-adapter.js";
 export { LangGraphFileCheckpointer } from "./file-backed-checkpointer.js";
 export { LangGraphRuntimeBackend } from "./langgraph-runtime-backend.js";
 export type {
+  LangGraphCheckpointer,
   LangGraphCheckpointEnvelope,
   LangGraphCheckpointPendingInterrupt,
   LangGraphCompiledGraphEdge,
@@ -36,4 +39,5 @@ export type {
   LangGraphRecoveredExecution,
   LangGraphSaveCheckpointOptions,
   LangGraphRuntimeLifecycleEvent,
+  LangGraphSqliteFsCheckpointerOptions,
 } from "./types/index.js";

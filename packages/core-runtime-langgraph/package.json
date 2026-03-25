@@ -7,6 +7,10 @@
     ".": {
       "types": "./src/index.ts",
       "default": "./dist/src/index.js"
+    },
+    "./sqlite-fs-checkpointer": {
+      "types": "./src/sqlite-fs-checkpointer.ts",
+      "default": "./dist/src/sqlite-fs-checkpointer.js"
     }
   },
   "dependencies": {

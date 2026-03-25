@@ -1,6 +1,6 @@
 # TK-152 sprint-002 出口验收与 sprint-003 输入约束
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-25
 - Owner: AI-Agent
 - Priority: P0
@@ -64,6 +64,8 @@
 ## 9. 执行记录
 
 1. 2026-03-25：任务创建，状态初始化为 `planned`。
+2. 2026-03-25：状态切换为 `in_progress`，开始汇总 `DA-147` ~ `DA-151`、sprint-002 exit criteria 与 sprint-003 输入约束。
+3. 2026-03-25：已完成 `DA-152`、sprint/project/master plan 同步、artifact registry 回链与 sprint-002 出口验收收口。
 
 ## 10. 产出
 

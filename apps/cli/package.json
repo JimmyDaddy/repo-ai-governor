@@ -18,6 +18,7 @@
     "@repo-ai-governor/config": "workspace:*",
     "@repo-ai-governor/core-change-risk": "workspace:*",
     "@repo-ai-governor/core-memory": "workspace:*",
+    "@repo-ai-governor/core-orchestration-service": "workspace:*",
     "@repo-ai-governor/core-policy": "workspace:*",
     "@repo-ai-governor/core-process": "workspace:*",
     "@repo-ai-governor/core-runtime": "workspace:*",
@@ -27,6 +28,7 @@
     "@repo-ai-governor/memory-provider-sqlite-fs": "workspace:*",
     "@repo-ai-governor/memory-store-adapter": "workspace:*",
     "@repo-ai-governor/notification-dispatcher": "workspace:*",
+    "@repo-ai-governor/orchestration-service-client": "workspace:*",
     "@repo-ai-governor/reporting": "workspace:*",
     "@repo-ai-governor/shared": "workspace:*",
     "commander": "^13.1.0"

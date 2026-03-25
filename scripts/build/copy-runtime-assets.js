@@ -63,6 +63,12 @@ const DISTRIBUTION_PACKAGES = [
     packageDistDirectory: resolve(PROJECT_ROOT, "packages/core-memory/dist"),
   },
   {
+    packageName: "core-orchestration-service",
+    packageRoot: resolve(PROJECT_ROOT, "packages/core-orchestration-service"),
+    compiledDirectory: resolve(PROJECT_ROOT, "dist/packages/core-orchestration-service"),
+    packageDistDirectory: resolve(PROJECT_ROOT, "packages/core-orchestration-service/dist"),
+  },
+  {
     packageName: "core-policy",
     packageRoot: resolve(PROJECT_ROOT, "packages/core-policy"),
     compiledDirectory: resolve(PROJECT_ROOT, "dist/packages/core-policy"),
@@ -115,6 +121,12 @@ const DISTRIBUTION_PACKAGES = [
     packageRoot: resolve(PROJECT_ROOT, "packages/notification-dispatcher"),
     compiledDirectory: resolve(PROJECT_ROOT, "dist/packages/notification-dispatcher"),
     packageDistDirectory: resolve(PROJECT_ROOT, "packages/notification-dispatcher/dist"),
+  },
+  {
+    packageName: "orchestration-service-client",
+    packageRoot: resolve(PROJECT_ROOT, "packages/orchestration-service-client"),
+    compiledDirectory: resolve(PROJECT_ROOT, "dist/packages/orchestration-service-client"),
+    packageDistDirectory: resolve(PROJECT_ROOT, "packages/orchestration-service-client/dist"),
   },
   {
     packageName: "reporting",

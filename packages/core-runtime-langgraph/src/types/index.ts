@@ -1,4 +1,5 @@
 export type {
+  LangGraphCheckpointer,
   LangGraphCheckpointEnvelope,
   LangGraphCheckpointPendingInterrupt,
   LangGraphCompiledGraphEdge,
@@ -9,4 +10,5 @@ export type {
   LangGraphRecoveredExecution,
   LangGraphSaveCheckpointOptions,
   LangGraphRuntimeLifecycleEvent,
+  LangGraphSqliteFsCheckpointerOptions,
 } from "./interfaces/index.js";

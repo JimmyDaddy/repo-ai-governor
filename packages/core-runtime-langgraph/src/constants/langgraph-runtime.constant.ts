@@ -25,7 +25,7 @@ export const LANGGRAPH_RUNTIME_INTERRUPT_KINDS = ["hitl", "timeout", "cancelled"
 
 export type LangGraphRuntimeInterruptKind = (typeof LANGGRAPH_RUNTIME_INTERRUPT_KINDS)[number];
 
-export const LANGGRAPH_CHECKPOINT_SOURCES = ["file-backed"] as const;
+export const LANGGRAPH_CHECKPOINT_SOURCES = ["file-backed", "sqlite-fs"] as const;
 
 export type LangGraphCheckpointSource = (typeof LANGGRAPH_CHECKPOINT_SOURCES)[number];
 
@@ -76,3 +76,7 @@ export type LangGraphCheckpointerStateKey = (typeof LANGGRAPH_CHECKPOINTER_STATE
 export const LANGGRAPH_FILE_CHECKPOINTER_DIRECTORY_NAME = "langgraph-checkpoints";
 
 export const LANGGRAPH_FILE_CHECKPOINTER_FILE_NAME = "checkpoint.json";
+
+export const LANGGRAPH_SQLITE_FS_CHECKPOINTER_DATABASE_FILE_NAME = "langgraph-checkpoints.sqlite";
+
+export const LANGGRAPH_SQLITE_FS_CHECKPOINTER_TABLE_NAME = "langgraph_checkpoints";

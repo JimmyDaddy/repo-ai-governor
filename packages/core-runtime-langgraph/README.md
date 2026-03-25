@@ -6,6 +6,6 @@
 
 1. `compiled IR -> graph plan` 适配
 2. 可实例化的 runtime backend skeleton
-3. file-backed checkpointer 与最小 recovery smoke 基线
+3. `file-backed` / `sqlite-fs` checkpointer 与最小 recovery smoke 基线
 
 本包不持有 policy、audit、ledger、artifact registry 或 task ledger 的 canonical source 写入责任。

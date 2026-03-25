@@ -17,6 +17,7 @@ import {
   ChangeRiskRequiredAction,
 } from "@repo-ai-governor/core-change-risk";
 import { MemoryManager, MemoryScope } from "@repo-ai-governor/core-memory";
+import type { LocalOrchestrationServiceShell as LocalOrchestrationServiceShellType } from "@repo-ai-governor/core-orchestration-service";
 import { PolicyGateEngine } from "@repo-ai-governor/core-policy";
 import { ProcessCompiler, type ProcessIrNode } from "@repo-ai-governor/core-process";
 import {
@@ -31,7 +32,6 @@ import {
 } from "@repo-ai-governor/core-runtime";
 import {
   CompiledIrGraphAdapter,
-  LangGraphFileCheckpointer,
   LangGraphRuntimeBackend,
 } from "@repo-ai-governor/core-runtime-langgraph";
 import { AuditOutputMode, AuditRecordStatus, AuditRecorder } from "@repo-ai-governor/core-session";
@@ -39,6 +39,12 @@ import {
   MemoryStoreAdapter,
   type MemoryStoreProvider,
 } from "@repo-ai-governor/memory-store-adapter";
+import {
+  OrchestrationClientSurface,
+  OrchestrationExecutionKind,
+  OrchestrationExecutionStatus,
+  OrchestrationServiceEventType,
+} from "@repo-ai-governor/orchestration-service-client";
 import { ReportBuilder } from "@repo-ai-governor/reporting";
 import {
   AdapterAvailability,
@@ -318,6 +324,15 @@ export class CliGovernanceRuntime {
     });
     const processDefinition = runAssembly.processDefinition;
     const compiledIr = processCompiler.compile(processDefinition);
+    // dynamic-import-allowed: sqlite-backed orchestration service must load only on run execution
+    // so non-runtime commands such as `--help` do not trigger node:sqlite warnings.
+    const { LocalOrchestrationServiceShell } = await import(
+      "@repo-ai-governor/core-orchestration-service"
+    );
+    const orchestrationService: LocalOrchestrationServiceShellType =
+      new LocalOrchestrationServiceShell({
+        workspaceRoot: this.options.workspace.workspaceRoot,
+      });
 
     if (compiledIr.compileErrors.length > 0) {
       throw new RuntimeError(
@@ -329,6 +344,28 @@ export class CliGovernanceRuntime {
         },
       );
     }
+
+    const orchestrationExecution = await orchestrationService.startExecution(
+      {
+        workspaceId: this.options.workspace.workspaceId,
+        workspaceRoot: this.options.workspace.workspaceRoot,
+        executionKind: OrchestrationExecutionKind.RUN,
+        clientSurface: OrchestrationClientSurface.CLI,
+        locale: this.options.locale,
+        outputMode: this.options.outputMode,
+        ...(runAssembly.taskContext?.taskId
+          ? { taskId: runAssembly.taskContext.taskId }
+          : runtimeDebugOptions.taskId
+            ? { taskId: runtimeDebugOptions.taskId }
+            : {}),
+        ...streamMetadata,
+      },
+      {
+        executionId,
+        executionSessionId,
+        processId: compiledIr.processId,
+      },
+    );
 
     const compiledIrSnapshotPath = processCompiler.persistCompiledIrSnapshot(
       this.options.workspace.workspaceRoot,
@@ -389,6 +426,14 @@ export class CliGovernanceRuntime {
       const recordedAt = stageResult.endedAt;
       const stageOutput = this.resolveStageOutputRecord(stageResult.output);
       const stageArtifactId = this.readStageOutputString(stageOutput, "artifactId");
+      await orchestrationService.publishEvent({
+        executionId,
+        type: OrchestrationServiceEventType.STAGE_COMPLETED,
+        status: this.resolveOrchestrationStageStatus(stageResult.status),
+        stageId: stageResult.stageId,
+        ...(stageArtifactId ? { artifactId: stageArtifactId } : {}),
+        message: `Stage "${stageResult.stageId}" completed with status=${stageResult.status}.`,
+      });
       await auditRecorder.recordEvent({
         recordId: `${executionId}-${stageResult.nodeId}-${stageResult.attempt}`,
         recordedAt,
@@ -491,6 +536,14 @@ export class CliGovernanceRuntime {
       sprintId: streamMetadata.sprintId,
     });
     const resolvedPolicyOutcome = hitlResolution.effectivePolicyOutcome;
+    if (hitlResolution.required) {
+      await orchestrationService.publishEvent({
+        executionId,
+        type: OrchestrationServiceEventType.HITL_REQUIRED,
+        status: OrchestrationExecutionStatus.HITL_REQUIRED,
+        message: `HITL decision is required with outcome=${resolvedPolicyOutcome}.`,
+      });
+    }
 
     const reportBuilder = new ReportBuilder(auditRecorder);
     const executionReport = await reportBuilder.buildExecutionReport({
@@ -560,6 +613,7 @@ export class CliGovernanceRuntime {
       });
     }
     const langGraphCheckpointState = await this.captureLangGraphCheckpointState({
+      orchestrationService,
       compiledIr,
       runtimeExecution,
       runtimeResult,
@@ -573,6 +627,17 @@ export class CliGovernanceRuntime {
       artifacts.push({
         id: "langgraph_checkpoint",
         path: langGraphCheckpointState.checkpointPath,
+      });
+    }
+    for (const artifact of artifacts) {
+      await orchestrationService.publishEvent({
+        executionId,
+        type: OrchestrationServiceEventType.ARTIFACT_READY,
+        status: hitlResolution.awaitingDecision
+          ? OrchestrationExecutionStatus.HITL_REQUIRED
+          : this.resolveOrchestrationExecutionStatus(runtimeResult.status),
+        artifactId: artifact.id,
+        message: `Artifact "${artifact.id}" is ready.`,
       });
     }
     const checks: CliCommandResultCheck[] = [
@@ -704,6 +769,16 @@ export class CliGovernanceRuntime {
       reviewChain: inlineReviewChainSummary,
       deliveryRehearsal: deliveryRehearsalSummary,
     });
+    if (resolvedPolicyOutcome !== ChangeRiskRequiredAction.ALLOW) {
+      await orchestrationService.publishEvent({
+        executionId,
+        type: OrchestrationServiceEventType.EXECUTION_INTERRUPTED,
+        status: hitlResolution.awaitingDecision
+          ? OrchestrationExecutionStatus.HITL_REQUIRED
+          : OrchestrationExecutionStatus.INTERRUPTED,
+        message: `Execution paused by policy outcome=${resolvedPolicyOutcome}.`,
+      });
+    }
     this.throwForNonAllowPolicyOutcome({
       executionId,
       policyOutcome: resolvedPolicyOutcome,
@@ -720,6 +795,16 @@ export class CliGovernanceRuntime {
       runtimeCheckpointPath: langGraphCheckpointState.checkpointPath,
       runtimeRecoveryState: langGraphCheckpointState.recoveryState,
     });
+    await orchestrationService.publishEvent({
+      executionId,
+      type:
+        runtimeResult.status === RuntimeExecutionStatus.SUCCEEDED
+          ? OrchestrationServiceEventType.EXECUTION_COMPLETED
+          : OrchestrationServiceEventType.EXECUTION_FAILED,
+      status: this.resolveOrchestrationExecutionStatus(runtimeResult.status),
+      message: `Execution completed with runtime_status=${runtimeResult.status}.`,
+    });
+    const orchestrationSummary = await orchestrationService.getExecution(executionId);
 
     const message = `Run completed with execution_id=${executionId} and policy_outcome=${resolvedPolicyOutcome}${runtimeDebugOptions.dryRun ? " (dry_run=true)" : ""}.`;
     return {
@@ -772,6 +857,8 @@ export class CliGovernanceRuntime {
           langgraph_recovery_next_node_ids:
             langGraphCheckpointState.recoveredNextNodeIds.join("|") || null,
           langgraph_pending_interrupt_kind: langGraphCheckpointState.pendingInterruptKind,
+          orchestration_event_stream_token: orchestrationExecution.eventStreamToken,
+          orchestration_status: orchestrationSummary?.status ?? null,
           dry_run: runtimeDebugOptions.dryRun,
           trace_enabled: runtimeDebugOptions.trace,
           diagnostics_trace_path: diagnosticsTracePath,
@@ -781,6 +868,7 @@ export class CliGovernanceRuntime {
   }
 
   private async captureLangGraphCheckpointState(options: {
+    orchestrationService: LocalOrchestrationServiceShellType;
     compiledIr: ReturnType<ProcessCompiler["compile"]>;
     runtimeExecution: Awaited<ReturnType<ProcessRuntimeFacade["execute"]>>;
     runtimeResult: RuntimeExecutionResult;
@@ -833,10 +921,8 @@ export class CliGovernanceRuntime {
               options.runtimeExecution.primary.entryNodeId,
           ]
         : [];
-    const checkpointer = new LangGraphFileCheckpointer({
-      rootDirectory: this.options.workspace.workspaceRoot,
-    });
-    const checkpointEnvelope = await checkpointer.save({
+    const recoveredExecution = await options.orchestrationService.saveCheckpoint({
+      executionId: options.compiledIr.executionId,
       plan: graphPlan,
       executionSessionId: options.executionSessionId,
       activeNodeIds,
@@ -846,19 +932,47 @@ export class CliGovernanceRuntime {
       ...(options.taskId ? { taskReferenceId: options.taskId } : {}),
       ...(pendingInterrupt ? { pendingInterrupt } : {}),
     });
-    const recoveredExecution = await checkpointer.recover(
+    const serviceExecution = await options.orchestrationService.getExecution(
       options.compiledIr.executionId,
-      options.executionSessionId,
-      options.compiledIr.processId,
     );
 
     return {
-      checkpointPath: checkpointEnvelope.checkpointPath,
-      checkpointSource: checkpointEnvelope.checkpointSource,
+      checkpointPath: serviceExecution?.checkpointPath ?? null,
+      checkpointSource: serviceExecution?.checkpointSource ?? null,
       recoveryState: recoveredExecution ? "recovered" : "not_requested",
       recoveredNextNodeIds: recoveredExecution?.nextNodeIds ?? [],
       pendingInterruptKind: recoveredExecution?.pendingInterrupt?.kind ?? null,
     };
+  }
+
+  private resolveOrchestrationStageStatus(
+    status: RuntimeStageStatus,
+  ): OrchestrationExecutionStatus {
+    switch (status) {
+      case RuntimeStageStatus.SUCCEEDED:
+        return OrchestrationExecutionStatus.RUNNING;
+      case RuntimeStageStatus.CANCELLED:
+        return OrchestrationExecutionStatus.CANCELLED;
+      case RuntimeStageStatus.TIMEOUT:
+        return OrchestrationExecutionStatus.INTERRUPTED;
+      default:
+        return OrchestrationExecutionStatus.FAILED;
+    }
+  }
+
+  private resolveOrchestrationExecutionStatus(
+    status: RuntimeExecutionStatus,
+  ): OrchestrationExecutionStatus {
+    switch (status) {
+      case RuntimeExecutionStatus.SUCCEEDED:
+        return OrchestrationExecutionStatus.COMPLETED;
+      case RuntimeExecutionStatus.CANCELLED:
+        return OrchestrationExecutionStatus.CANCELLED;
+      case RuntimeExecutionStatus.TIMEOUT:
+        return OrchestrationExecutionStatus.INTERRUPTED;
+      default:
+        return OrchestrationExecutionStatus.FAILED;
+    }
   }
 
   /**

@@ -16,6 +16,12 @@ export interface LangGraphFileCheckpointerOptions {
   rootDirectory: string;
 }
 
+export interface LangGraphSqliteFsCheckpointerOptions {
+  rootDirectory: string;
+  databaseFileName?: string;
+  tableName?: string;
+}
+
 export interface LangGraphSaveCheckpointOptions {
   plan: LangGraphCompiledGraphPlan;
   executionSessionId: string;
@@ -56,4 +62,18 @@ export interface LangGraphRecoveredExecution {
   visitedNodeIds: string[];
   pendingInterrupt?: LangGraphCheckpointPendingInterrupt;
   recoveredAt: string;
+}
+
+export interface LangGraphCheckpointer {
+  save(options: LangGraphSaveCheckpointOptions): Promise<LangGraphCheckpointEnvelope>;
+  read(
+    executionId: string,
+    executionSessionId: string,
+    expectedProcessId: string,
+  ): Promise<LangGraphCheckpointEnvelope | undefined>;
+  recover(
+    executionId: string,
+    executionSessionId: string,
+    expectedProcessId: string,
+  ): Promise<LangGraphRecoveredExecution | undefined>;
 }

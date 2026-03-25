@@ -707,6 +707,7 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
         expect(runResult.commandResult.details?.runtime_parity_mode).toBe("disabled");
         expect(runResult.commandResult.details?.hitl_decision).toBe("approve");
         expect(runResult.commandResult.details?.hitl_resume_action).toBe("resume");
+        expect(runResult.commandResult.details?.langgraph_checkpoint_source).toBe("sqlite-fs");
         expect(runResult.commandResult.details?.langgraph_recovery_state).toBe("recovered");
         expect(runResult.commandResult.details?.inline_review_chain_enabled).toBe(true);
         expect(runResult.commandResult.details?.inline_review_chain_status).toBe("applied");
@@ -746,6 +747,13 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
         )?.path;
         expect(typeof decisionReceiptPath).toBe("string");
         expect(typeof runResult.commandResult.details?.langgraph_checkpoint_path).toBe("string");
+        expect(runResult.commandResult.details?.langgraph_checkpoint_path).toContain(
+          "langgraph-checkpoints.sqlite#",
+        );
+        expect(typeof runResult.commandResult.details?.orchestration_event_stream_token).toBe(
+          "string",
+        );
+        expect(runResult.commandResult.details?.orchestration_status).toBe("completed");
 
         const decisionReceiptPayload = JSON.parse(
           await readFile(String(decisionReceiptPath), "utf8"),

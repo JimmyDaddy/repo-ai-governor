@@ -1,6 +1,6 @@
 # sprint-002-langgraph-phase0-spike-and-service-shell 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-03-25
 - Project: `project-014-langgraph-orchestration-runtime-adoption`
 

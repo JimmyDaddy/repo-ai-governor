@@ -14,11 +14,19 @@ const INTERNAL_PACKAGE_ENTRY_ALIASES = [
   ["@repo-ai-governor/config", "packages/config/src/index.ts"],
   ["@repo-ai-governor/core-change-risk", "packages/core-change-risk/src/index.ts"],
   ["@repo-ai-governor/core-memory", "packages/core-memory/src/index.ts"],
+  [
+    "@repo-ai-governor/core-orchestration-service",
+    "packages/core-orchestration-service/src/index.ts",
+  ],
   ["@repo-ai-governor/core-policy", "packages/core-policy/src/index.ts"],
   ["@repo-ai-governor/core-process", "packages/core-process/src/index.ts"],
   ["@repo-ai-governor/core-role-registry", "packages/core-role-registry/src/index.ts"],
   ["@repo-ai-governor/core-runtime", "packages/core-runtime/src/index.ts"],
   ["@repo-ai-governor/core-runtime-langgraph", "packages/core-runtime-langgraph/src/index.ts"],
+  [
+    "@repo-ai-governor/core-runtime-langgraph/sqlite-fs-checkpointer",
+    "packages/core-runtime-langgraph/src/sqlite-fs-checkpointer.ts",
+  ],
   ["@repo-ai-governor/core-session", "packages/core-session/src/index.ts"],
   ["@repo-ai-governor/memory-provider-fs-csv", "packages/memory-providers/fs-csv/src/index.ts"],
   [
@@ -27,6 +35,10 @@ const INTERNAL_PACKAGE_ENTRY_ALIASES = [
   ],
   ["@repo-ai-governor/memory-store-adapter", "packages/memory-store-adapter/src/index.ts"],
   ["@repo-ai-governor/notification-dispatcher", "packages/notification-dispatcher/src/index.ts"],
+  [
+    "@repo-ai-governor/orchestration-service-client",
+    "packages/orchestration-service-client/src/index.ts",
+  ],
   ["@repo-ai-governor/reporting", "packages/reporting/src/index.ts"],
   ["@repo-ai-governor/shared", "packages/shared/src/index.ts"],
   ["@repo-ai-governor/slots", "packages/slots/src/index.ts"],

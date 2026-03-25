@@ -57,8 +57,8 @@
 | TK-148 | sprint-002 | Process Runtime facade backend selector 与 cutover parity harness 基线 | implementation/runtime | TK-147,DA-143,DA-145,DA-146 | completed |
 | TK-149 | sprint-002 | file-backed checkpointer 与 recovery smoke 基线 | implementation/recovery | TK-147,DA-143,DA-145,DA-146 | completed |
 | TK-150 | sprint-002 | LangGraph `run/review/HITL` 最小主链接线 | implementation/mainchain | TK-147,TK-148,TK-149,DA-144,DA-145,DA-146 | completed |
-| TK-151 | sprint-002 | `sqlite-fs` checkpointer 与 shared local orchestration service shell 收敛 | implementation/service | TK-148,TK-149,TK-150,DA-144,DA-145,DA-146 | in_progress |
-| TK-152 | sprint-002 | sprint-002 出口验收与 sprint-003 输入约束 | acceptance/baseline | TK-147,TK-148,TK-149,TK-150,TK-151 | planned |
+| TK-151 | sprint-002 | `sqlite-fs` checkpointer 与 shared local orchestration service shell 收敛 | implementation/service | TK-148,TK-149,TK-150,DA-144,DA-145,DA-146 | completed |
+| TK-152 | sprint-002 | sprint-002 出口验收与 sprint-003 输入约束 | acceptance/baseline | TK-147,TK-148,TK-149,TK-150,TK-151 | completed |
 
 ## 5. 依赖产物策略
 
@@ -85,3 +85,4 @@
 1. 2026-03-25：创建 `project-014`，将 `LangGraph` 采用决策正式收敛为 post-Stage-9 runtime modernization 主线，并切换为新的 active primary stream。
 2. 2026-03-25：`sprint-001-runtime-adoption-and-migration-baseline` 通过 `DA-146` 完成出口验收，正式冻结 sprint-002 的 LangGraph backend、shared local orchestration service 与 checkpoint/recovery 输入约束。
 3. 2026-03-25：完成 `sprint-002-langgraph-phase0-spike-and-service-shell` 拆解，并将 active primary stream 切换到 runtime/service 实装主线。
+4. 2026-03-25：`sprint-002-langgraph-phase0-spike-and-service-shell` 通过 `DA-152` 完成出口验收，正式冻结 sprint-003 的 service-backed execution、desktop-ready contract 与 cutover 扩围输入约束。
