@@ -1,7 +1,7 @@
 # Repo AI Governor 可扩展架构图与仓库分层结构
 
 - Status: active
-- Date: 2026-03-24
+- Date: 2026-03-25
 - Role: implementation blueprint
 - Basis:
   - `.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-overall-technical-solution.md`
@@ -21,8 +21,10 @@
 flowchart TB
   subgraph Entry[CLI & API Entry Layer]
     CLI[CLI Commands]
+    Desktop[Desktop Client]
     IDE[IDE/Agent Surfaces]
     CI[CI/CD Invoker]
+    Orchestrator[Local Orchestration Service]
   end
 
   subgraph Config[Config & Schema Layer]
@@ -46,7 +48,8 @@ flowchart TB
 
   subgraph Core[Governance Core Layer]
     Compiler[Process Compiler]
-    Runtime[Process Runtime]
+    Runtime[Process Runtime (Facade)]
+    GraphRuntime[LangGraph Runtime Adapter]
     RiskEval[Change Risk Evaluator]
     Policy[Policy Gate Engine]
     RoleRegistry[Role Registry]
@@ -90,9 +93,11 @@ flowchart TB
     DeliveryRehearsal["commit / PR draft rehearsal"]
   end
 
-  CLI --> Loader
-  IDE --> Loader
-  CI --> Loader
+  CLI --> Orchestrator
+  Desktop --> Orchestrator
+  IDE --> Orchestrator
+  CI --> Orchestrator
+  Orchestrator --> Loader
   Loader --> Schema --> Resolver --> WorkspaceResolver
   Resolver --> MemoryManager
   Resolver --> RoleRegistry
@@ -110,7 +115,7 @@ flowchart TB
   StoreAdapter --> WorkspaceRoot
   WorkspaceRoot --> RepoLocalWorkspace
   WorkspaceRoot --> ToolManagedWorkspace
-  Compiler --> Runtime
+  Compiler --> Runtime --> GraphRuntime
   Runtime --> RiskEval --> Policy
   Policy --> NotifyDispatcher --> Escalation --> NotifyProviders
   NotifyDispatcher --> Audit
@@ -239,6 +244,13 @@ sequenceDiagram
 2. `confirm/escalate` 返回的人工决策不是一次性终态，而是可回灌的恢复事件；runtime 必须支持 `resume/terminate/degrade`。
 3. `commit/PR draft` rehearsal 属于 Delivery & Operations Layer 的受控扩展，必须与 audit/replay 保持同链回放。
 
+## 3.2 LangGraph Runtime 与本地编排服务补充（Decision 2026-03-25）
+
+1. `Process Runtime` 的默认演进方向是 `LangGraph Runtime Adapter`，但它通过 `Process Runtime (Facade)` 接入，不直接替代 `DSL/IR/policy/audit/ledger` 领域契约。
+2. `CLI` 与未来 `Desktop Client` 都通过 `Local Orchestration Service` 调用运行时；`Desktop Client` 只负责状态展示、日志流与 HITL 交互，不直接持有 runtime 主状态。
+3. `LangGraph state/checkpointer` 只作为执行恢复介质，不作为新的 canonical source；最终状态仍需回写到 workspace 下的 `current-context/tasks/review/artifacts/audit`。
+4. 运行时 side effects 必须通过外部领域服务节点完成，特别是 `review chain`、`ledger backfill`、`notification dispatch` 与 `delivery rehearsal`。
+
 ## 4. 关键扩展点
 
 1. `Adapter SDK`
@@ -276,6 +288,10 @@ sequenceDiagram
    - 对“需求->方案->架构”三层文档及简版 PRD 执行同步校验，输出可阻断的机器可读结果与本地可读建议。
 17. `Controlled Delivery Rehearsal`
    - 在策略允许下执行 `commit` / `PR draft` 等受控交付演练，并与 audit/replay、人工接管边界保持同链可回放。
+18. `Process Runtime Backend Adapter`
+   - 将 `DSL/IR` 映射到具体 graph runtime；当前默认目标是 `LangGraph`，但对上层暴露稳定的 runtime facade。
+19. `Local Orchestration Service`
+   - 为 `CLI` 与未来桌面端提供统一执行入口，负责 runtime backend、checkpoint、streaming 状态与 HITL resume 接口编排。
 
 ## 5. 目标仓库分层结构（Monorepo）
 
@@ -448,6 +464,8 @@ ai-governor/
 15. `reporting` -> 只读核心执行结果，不反向控制 runtime；其内 `cli-output-presenter` 仅负责展示，不承担流程决策。
 16. `shared` -> 不依赖业务域模块，集中承接共享类型、通用工具与 i18n 基础能力。
 17. `spec-sync-guard` -> 仅依赖文档元数据与 git 变更检测，不依赖 runtime/adapter/provider 实现。
+18. `core-runtime-langgraph` -> 可依赖 `core-process/core-change-risk/core-policy/core-memory/core-session/artifact-registry/notification-dispatcher/shared`，不得依赖 `apps/cli` 或未来桌面 UI。
+19. `apps/desktop` 或等价桌面端入口 -> 只依赖 service client/reporting/shared，不直接依赖 `core-runtime*` 与具体 adapter/provider 实现。
 
 ## 6.1 依赖方向自动化执行备忘（Pending Integration）
 
@@ -509,6 +527,9 @@ ai-governor/
 7. Step 7（契约测试）
    - 为 `adapter-sdk`、`memory-store-adapter`、`artifact-registry`、`notification-dispatcher`、`process DSL`、`risk evaluator`、`policy decisions`、`standards projection parity` 建立跨包契约测试。
    - 测试目录基线：`tests/contract/`（契约）、`tests/integration/`（跨包集成）、`tests/e2e/`（端到端链路）。
+8. Step 8（Runtime Modernization）
+   - 新增 `core-runtime-langgraph`（或等价 runtime backend adapter）并以 dual-runtime 方式接入 `apps/cli`。
+   - 将运行时逐步收敛到 shared local orchestration service，为未来桌面端复用同一执行 API 做准备。
 
 ## 7.1 Priority-Phase-Migration 对照（同步总纲）
 
@@ -517,7 +538,7 @@ ai-governor/
 | PRD Priority | Delivery Focus | Technical Phases | Architecture Migration Steps |
 |---|---|---|---|
 | P0（已完成） | 可安装、可初始化、最小治理闭环 | Phase A（最小可用）+ Phase B（最小门禁） | Step 1（边界先行） |
-| P1（进行中） | 多 Agent 编排、策略化 HITL、多工具适配 | Phase B + Phase C + Phase D | Step 2 ~ Step 6 |
+| P1（进行中） | 多 Agent 编排、策略化 HITL、多工具适配 | Phase B + Phase C + Phase D + Phase E Follow-Up | Step 2 ~ Step 8 |
 | P2（规划中） | 平台化能力、组织级可观测与治理强化 | Phase E + 平台扩展阶段 | Step 7 + 平台扩展步骤 |
 
 ## 8. 目录治理建议

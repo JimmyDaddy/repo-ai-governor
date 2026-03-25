@@ -3,15 +3,15 @@
 ## Primary Stream
 
 - Status: active
-- Project: `project-013-remote-provider-and-adapter-ops`
-- Sprint: `sprint-001-remote-provider-real-invocation-baseline`
-- Docs root: `.repo-ai-governor/context/dev/project-013-remote-provider-and-adapter-ops`
-- Task records: `.repo-ai-governor/context/dev/project-013-remote-provider-and-adapter-ops/sprint-001-remote-provider-real-invocation-baseline/tasks/`
-- Review records: `.repo-ai-governor/context/dev/project-013-remote-provider-and-adapter-ops/sprint-001-remote-provider-real-invocation-baseline/review/`
+- Project: `project-014-langgraph-orchestration-runtime-adoption`
+- Sprint: `sprint-001-runtime-adoption-and-migration-baseline`
+- Docs root: `.repo-ai-governor/context/dev/project-014-langgraph-orchestration-runtime-adoption`
+- Task records: `.repo-ai-governor/context/dev/project-014-langgraph-orchestration-runtime-adoption/sprint-001-runtime-adoption-and-migration-baseline/tasks/`
+- Review records: `.repo-ai-governor/context/dev/project-014-langgraph-orchestration-runtime-adoption/sprint-001-runtime-adoption-and-migration-baseline/review/`
 
 ## Active Streams
 
-- `primary`: project=`project-013-remote-provider-and-adapter-ops`, sprint=`sprint-001-remote-provider-real-invocation-baseline`, docs=`.repo-ai-governor/context/dev/project-013-remote-provider-and-adapter-ops`, plan=`.repo-ai-governor/context/dev/project-013-remote-provider-and-adapter-ops/plan.md`, tasks=`.repo-ai-governor/context/dev/project-013-remote-provider-and-adapter-ops/sprint-001-remote-provider-real-invocation-baseline/tasks/`, checklist=`.repo-ai-governor/context/dev/project-013-remote-provider-and-adapter-ops/sprint-001-remote-provider-real-invocation-baseline/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-013-remote-provider-and-adapter-ops/sprint-001-remote-provider-real-invocation-baseline/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-013-remote-provider-and-adapter-ops/sprint-001-remote-provider-real-invocation-baseline/review/`, status=`active`
+- `primary`: project=`project-014-langgraph-orchestration-runtime-adoption`, sprint=`sprint-001-runtime-adoption-and-migration-baseline`, docs=`.repo-ai-governor/context/dev/project-014-langgraph-orchestration-runtime-adoption`, plan=`.repo-ai-governor/context/dev/project-014-langgraph-orchestration-runtime-adoption/plan.md`, tasks=`.repo-ai-governor/context/dev/project-014-langgraph-orchestration-runtime-adoption/sprint-001-runtime-adoption-and-migration-baseline/tasks/`, checklist=`.repo-ai-governor/context/dev/project-014-langgraph-orchestration-runtime-adoption/sprint-001-runtime-adoption-and-migration-baseline/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-014-langgraph-orchestration-runtime-adoption/sprint-001-runtime-adoption-and-migration-baseline/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-014-langgraph-orchestration-runtime-adoption/sprint-001-runtime-adoption-and-migration-baseline/review/`, status=`active`
 
 ## Completed Stream History
 

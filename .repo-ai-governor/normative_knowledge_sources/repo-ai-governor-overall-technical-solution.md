@@ -1,7 +1,7 @@
 # Repo AI Governor 工具级总技术方案
 
 - Status: active
-- Date: 2026-03-24
+- Date: 2026-03-25
 - Scope: whole product (tool-level)
 - Basis:
   - `.repo-ai-governor/normative_knowledge_sources/product-requirements-brief.md`
@@ -31,6 +31,7 @@
 9. `事实链路闭环`：需求、方案、架构三层文档必须同源同步，并由工具门禁自动校验。
 10. `共享能力单层收敛`：共享类型、通用工具与 i18n 基础能力统一收敛到 `packages/shared`，避免跨域重复实现。
 11. `TypeScript 优先实现`：项目应用与核心包默认使用 TypeScript 开发，统一类型系统与契约表达，降低跨模块协作歧义。
+12. `运行时内核可替换，治理事实源稳定`：可替换 orchestration backend，但 `current-context/tasks/review/artifacts/audit` 继续由 workspace canonical source 与领域服务掌控。
 
 ## 3. 系统边界
 
@@ -70,13 +71,13 @@
 ## 4.1 分层视图
 
 1. `CLI & API Entry Layer`
-   - 命令入口、参数解析、执行模式切换与输出模式编排。
+   - 命令入口、参数解析、执行模式切换与输出模式编排；CLI 与未来桌面端通过同一套本地 orchestration service 接入。
 2. `Config & Schema Layer`
    - 配置加载、Schema 校验、版本兼容与 workspace 根目录解析。
 3. `Memory & Context Layer`
    - 永久记忆、执行记忆、共享 session 上下文总线。
 4. `Governance Core Layer`
-   - 编排引擎、策略引擎、状态管理、执行控制。
+   - 编排引擎、策略引擎、状态管理、执行控制；默认演进方向包含 `LangGraph` runtime backend adapter。
 5. `Notification & Escalation Layer`
    - HITL 通知分发、升级策略与渠道回退。
 6. `Agent Runtime & Adapter Layer`
@@ -96,6 +97,7 @@
    - 将 DSL 编译为可执行状态机（DAG）。
 2. `Process Runtime`
    - 执行 `Sequential/Parallel/Loop/Condition` 节点。
+   - 默认演进方向为 `LangGraph-backed graph runtime`，但 `DSL -> IR -> policy -> audit -> ledger` 仍由本产品域服务负责。
 3. `Change Risk Evaluator`
    - 将变更事实归一化为结构化风险结果，供策略引擎与 HITL 复用。
 4. `Policy Gate Engine`
@@ -245,6 +247,31 @@
    - 实现包落位固定为 `packages/shared/src/i18n/`，由 shared 对外暴露统一 API，业务域禁止重复实现 i18n runtime。
    - 阶段落位采用“双阶段分工”：Stage 1 / Phase A 落地 runtime 与 `zh-CN/en` 资源基线；Stage 6 / Phase D 落地 key parity 与 fallback 门禁及审计联动。
    - 由于当前为新仓库起步阶段，i18n 引入采用 `fix-forward` 策略，不额外引入双运行时回滚链路。
+
+## 4.2.8 LangGraph Runtime Backend Decision（Decision 2026-03-25）
+
+1. 决策
+   - 采用 `LangGraph` 作为 `Process Runtime` 的默认演进方向，用于承接 graph execution、checkpointing、interrupt/resume 与 per-node execution state。
+2. 保留自研的 canonical 领域边界
+   - `Process Compiler`
+   - `Change Risk Evaluator`
+   - `Policy Gate Engine`
+   - `Audit Recorder`
+   - `Artifact Registry & Dependency Resolver`
+   - `tasks/checklist/tasks.csv/review/current-context` 等 workspace canonical sources
+3. 运行时边界
+   - `LangGraph` 只负责“图怎么跑”。
+   - `DSL/IR`、risk facts、policy outcome、artifact registration、ledger backfill 继续由本产品服务层生成与回写。
+4. CLI 与桌面端接入策略
+   - `CLI` 先采用 dual-runtime 方式验证：`legacy runtime` 与 `langgraph runtime` 并存。
+   - 中期目标收敛为 shared local orchestration service，由 `CLI` 与未来 `desktop client` 共用。
+   - 桌面 UI 只做 presenter / HITL client，不直接拥有 runtime 主状态。
+5. 持久化与恢复策略
+   - `LangGraph state/checkpointer` 仅视为执行态缓存与恢复介质，不升格为产品级事实源。
+   - POC 阶段可使用 file-backed checkpointer；正式阶段优先对接 `sqlite-fs` 或等价本地持久化实现。
+6. 工程约束
+   - 不将业务逻辑直接写死在 `LangGraph` 节点中，避免 runtime vendor lock-in。
+   - 副作用节点必须显式满足幂等与 replay 约束，特别是 `review artifact`、`verify`、`ledger backfill`、`notification dispatch` 与 `delivery rehearsal`。
 
 ## 4.3 记忆与会话模型
 
@@ -570,6 +597,7 @@
 3. Phase C: Adapter Hub + Artifact Registry Foundation（多工具统一协议与产物注册基座）
 4. Phase D: Audit + Replay + Dependency Resolver Runtime（可追踪、可解释、可回放、可依赖注入）
 5. Phase E: Hardening（稳定性、性能、契约测试、发布治理）
+6. Phase E Follow-Up: Runtime Modernization（LangGraph backend、dual-run migration、shared local orchestration service）
 
 ## 11.1 Phase-Priority-Migration 对照矩阵
 
@@ -578,7 +606,7 @@
 | PRD Priority | Delivery Focus | Technical Phases | Architecture Migration Steps |
 |---|---|---|---|
 | P0（已完成） | 可安装、可初始化、最小治理闭环 | Phase A（最小可用）+ Phase B（最小门禁） | Step 1（边界先行） |
-| P1（进行中） | 多 Agent 编排、策略化 HITL、多工具适配 | Phase B + Phase C + Phase D | Step 2 ~ Step 6 |
+| P1（进行中） | 多 Agent 编排、策略化 HITL、多工具适配 | Phase B + Phase C + Phase D + Phase E Follow-Up | Step 2 ~ Step 8 |
 | P2（规划中） | 平台化能力、组织级可观测与治理强化 | Phase E + 平台扩展阶段 | Step 7 + 平台扩展步骤 |
 
 矩阵使用规则：

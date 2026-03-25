@@ -2,7 +2,7 @@
 
 - 文档版本：v0.3
 - 状态：执行中（MVP 已完成，P1 深化中）
-- 日期：2026-03-24
+- 日期：2026-03-25
 - 暂定产品名：Repo AI Governor
 
 ## 0. v0.3 更新说明
@@ -19,6 +19,7 @@
 10. 明确共享层收敛方向：统一采用 `packages/shared` 承接共享类型、通用工具与 i18n 基础能力。
 11. 明确 Artifact Registry 单一事实源：canonical registry 固定为 machine-readable main/archive registry，human-readable 入口统一由 canonical source 渲染，不再维护手工镜像台账。
 12. 明确当前 Stage 9 follow-up 属于工具级投产与自治收口 overlay：重点收敛真实调用、任务驱动编排、HITL 决策回灌、受控交付演练与黑盒稳定性，不改变产品仍以目标仓库本地治理为主的边界。
+13. 明确编排运行时演进方向：采用 graph-first orchestration backend，CLI 与未来桌面端共用本地 orchestration service，且 `workspace` 下治理产物继续作为 canonical source。
 
 ## 1. 产品概述
 
@@ -265,7 +266,9 @@ AI 先完成方案与实现，再进入评审 Agent 与复核 Agent 的循环；
 8. 支持“确定性编排 + 智能执行”双层模型：
    - 编排层按预定义流程运行，保证可预测
    - 执行层允许具体 Agent 使用模型能力完成子任务
-9. 任务拆解结果应支持按“当前执行项目 + 当前 sprint”生成目录化产物，至少包含：
+9. 编排运行时必须允许 `DSL/IR`、策略门禁、审计台账与底层执行后端解耦，避免 runtime backend 反向成为新的产品级事实源。
+10. CLI 与未来桌面端应复用同一套本地 orchestration runtime/service；桌面 UI 只承担展示与人工决策交互，不直接拥有运行时主状态。
+11. 任务拆解结果应支持按“当前执行项目 + 当前 sprint”生成目录化产物，至少包含：
    - 方案文档
    - 任务 checklist，采用单列表结构；每个任务条目至少包含任务编号、标题、负责人、优先级、截止日期、状态，并在条目下持续追加执行记录
    - CSV 任务记录，采用追加式执行台账；每条执行记录单独一行，至少包含 `execution_id`、`task_id`、`title`、`owner`、`priority`、`due_date`、`status`、`project`、`sprint`、`plan`、`result`、`verify`、`review_delta`、`recorded_at`

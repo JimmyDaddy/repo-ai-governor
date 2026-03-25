@@ -40,7 +40,7 @@
 
 ## 3.1 一句话结论
 
-1. Stage 0-8 的基线能力已经完成，`project-009` 完成了投产基线收口，`project-010` 完成了自动主链、HITL、delivery、GA 和多 IDE 官方入口的 follow-up 收口；当前主线收敛为 `project-013` 承接“远端 provider 真实调用与 adapter 运维契约仍未闭环”的最后 Stage 9 阻断。
+1. Stage 0-9 的业务闭环能力已经完成，`project-013` 也已补齐远端 provider 真实调用与 adapter 运维契约；当前主线切换为 `project-014`，负责把编排内核收敛到 `LangGraph + shared local orchestration service`，为 CLI 与未来桌面端共用执行面铺路。
 
 ## 3.2 当前真实状态
 
@@ -48,10 +48,11 @@
    - 核心架构、流程编排、策略门禁、审计回放、Artifact Registry、发布治理、平台化骨架已经具备。
    - 本地接入、clean-room 安装验证、最小治理执行、adapter 探测与外部消费契约基线已经具备。
    - `run` 已升级为任务驱动 DAG，`review -> review-verify -> ledger backfill`、HITL `resume/terminate/degrade`、delivery rehearsal、Stage 9 GA blackbox 和多 IDE 官方入口都已形成完成态证据。
+   - `project-013` 已完成 Codex / GitHub Copilot / Claude Code 的远端 provider 真实调用、adapter 运维契约与 route-runner truthfulness 收口，Stage 9 最后业务阻断已关闭。
 2. 当前未完成的部分：
-   - Codex / GitHub Copilot / Claude Code 仍停留在 baseline adapter stub，远端 provider 真实调用还未进入正式执行面。
-   - adapter 运维契约尚未全面落地到远端 provider：凭据优先级、health/deep probe、timeout/retry、限流/退避、脱敏和 degrade path 仍需统一收口。
-   - 因此“多工具/多模型在统一流程下真实无人值守运行”这条最终产品信号还不能算 fully closed。
+   - 编排运行时仍主要依赖自研执行内核，尚未完成 `LangGraph` backend、dual-runtime parity 与本地 orchestration service 的正式落地。
+   - CLI 与未来桌面端虽然边界已明确，但还没有共用同一执行 API / checkpoint / HITL resume service。
+   - 因此“图执行内核成熟度 + 多执行表面共用一套 runtime/service”这条工程演进主线仍未关闭。
 
 ## 3.3 当前主执行流
 
@@ -60,16 +61,17 @@
 | 已完成基线 | `project-001` ~ `project-008` | completed | 提供架构、运行时、治理、审计、发布与平台化基线 |
 | 投产基线完成态 | `project-009-production-readiness` | completed | 证明工具已具备本地可采用、可诊断、可 clean-room 验证的外部可用基础 |
 | 已完成 Stage 9 主链收口 | `project-010-local-model-and-ide-expansion` | completed | 已完成本地模型、自动主链、HITL、delivery、GA 与 IDE official surface 收口 |
-| 当前业务闭环主线 | `project-013-remote-provider-and-adapter-ops` | active | 继续收敛 Codex / GitHub Copilot / Claude Code 远端 provider 实调用与 adapter 运维契约 |
 | 当前工程支撑主线 | `project-011-cli-package-decomposition` | completed | 已完成 CLI package God object 拆解与正式 handoff，为后续 provider 执行面改造提供稳定工程边界 |
 | 当前治理支撑主线 | `project-012-execution-context-optimization` | completed | 已完成 startup/context/task-ledger/review-chain 优化并形成正式 handoff |
+| 已完成 Stage 9 最后业务阻断收口 | `project-013-remote-provider-and-adapter-ops` | completed | 已完成远端 provider 真实调用、adapter 运维契约与统一路由 truthfulness 收口 |
+| 当前架构演进主线 | `project-014-langgraph-orchestration-runtime-adoption` | active | 采用 LangGraph 作为编排运行时方向，并收敛 shared local orchestration service 以同时服务 CLI 与未来桌面端 |
 
 ## 3.4 当前推荐执行顺序
 
-1. 已将 `project-010` 从默认 active execution surface 中归档，后续只作为 completed handoff 消费。
-2. 当前优先启动 `project-013` sprint-001，先完成 Codex 远端 provider 真实调用与凭据/health 运维契约。
-3. 再完成 GitHub Copilot 与 Claude Code 远端 provider 真实调用，并同步 capability truthfulness、fallback/degrade 和 route-runner truthfulness。
-4. 最后用 sprint-001 出口验收冻结远端 provider 执行面基线，再决定是否进入剩余 P1 尾项或 P2 平台化能力。
+1. 已将 `project-013` 视为 completed handoff，后续只消费其远端 provider 执行面与 adapter ops 产物。
+2. 当前优先启动 `project-014` sprint-001，先冻结 `LangGraph` 采用边界、triad/master plan 同步结果与迁移基线。
+3. 再以 `project-014` 后续 sprint 跑通 `dual-runtime parity`、`task-driven run/review/HITL` 的 `LangGraph` spike。
+4. 最后收敛 shared local orchestration service，为未来桌面端只做 presenter/client 的形态铺路。
 
 ## 4. 路线图总览
 
@@ -84,7 +86,8 @@
 | Stage 6 | Phase D + Milestone 5 | completed | Audit/Report/Replay、Artifact Registry、CLI contract | 可观测、可解释、可恢复 |
 | Stage 7 | Phase E + Migration Step 7 | completed | 契约测试、集成/E2E、发布治理 | 核心质量与回滚基线稳定 |
 | Stage 8 | P2 平台化阶段 | completed baseline | 平台化扩展骨架 | 不破坏本地主线，可按模块独立演进 |
-| Stage 9 | Phase E 收口 + GA Readiness overlay | active follow-up | 投产基线 + 自治闭环收口 | 外部可采用、可运维、可受控无人值守推进 |
+| Stage 9 | Phase E 收口 + GA Readiness overlay | completed | 投产基线 + 自治闭环收口 | 外部可采用、可运维、可受控无人值守推进 |
+| Post-Stage-9 | Phase E Follow-Up Runtime Modernization | active | LangGraph backend + local orchestration service | CLI 与未来 desktop 共用 runtime/service，且 dual-runtime parity 成立 |
 
 ## 5. 阶段资产与完成态
 
@@ -159,12 +162,13 @@
 
 | gap_id | 差距项 | 当前信号 | 完成判据 | 当前承接 |
 |---|---|---|---|---|
-| G-01 | 真实适配器执行面未闭环 | Codex / GitHub Copilot / Claude Code 仍存在 baseline stub，本地模型已具备实调用但远端 provider 尚未落地 | 至少 1 条远端 provider 路径和 1 条本地模型路径具备真实调用，并补齐凭据、health、timeout/retry、限流、脱敏、degrade path 契约 | `project-013 / sprint-001` |
+| G-01 | 真实适配器执行面未闭环 | 已由 `project-013 / sprint-001` 收口，Codex / GitHub Copilot / Claude Code 均已具备真实 provider 执行面 | 至少 1 条远端 provider 路径和 1 条本地模型路径具备真实调用，并补齐凭据、health、timeout/retry、限流、脱敏、degrade path 契约 | completed by `project-013 / sprint-001` |
 | G-02 | `run` 仍是固定模板 | 当前仍主要是 `prepare -> execute -> report` 三段模板 | `run` 能按任务目标、依赖产物、角色能力动态装配可执行 DAG | `TK-098` 已完成；sprint-002 |
 | G-03 | Review 链路未内联到自动主链 | `review -> review-verify -> ledger backfill` 仍以 queued artifact 与下游消费为主 | review chain 可作为自动主链受控子链推进，并与审计事实保持一致 | `TK-098` 已完成；sprint-002 |
 | G-04 | HITL 回执与决策回灌未闭环 | 命中 `confirm/escalate` 后仍主要停在人工等待 | 至少 1 主 1 备通知渠道接通，人工决策可回灌并触发继续执行/终止/降级 | `TK-098` 已完成；sprint-002 |
 | G-05 | 受控 delivery rehearsal 未一体化 | `commit` / `PR draft` 仍未与自动主链形成统一回放与审计 | 至少 1 条受控 delivery rehearsal 覆盖 `commit` 或 `PR draft`，并记录人工接管边界 | sprint-002 / Stage 9 closure |
 | G-06 | 稳定性与黑盒门禁未覆盖真实无人值守路径 | provider outage、restricted network、retry exhaustion 等场景仍缺稳定黑盒验证 | 黑盒 E2E、CI、release gate 覆盖主路径与降级路径，并沉淀成功率/人工介入率等运营指标 | `TK-097` + sprint-002 |
+| G-07 | 编排运行时尚未收敛到 graph-first shared runtime | `run/review/HITL` 已可用，但 runtime backend 仍未形成 `LangGraph + local orchestration service` 正式实现 | `LangGraph` backend、dual-runtime parity、local orchestration service 与 CLI/desktop 共享执行 API 形成正式基线 | `project-014 / sprint-001` |
 
 ## 6.4 Stage 9 收敛顺序
 
@@ -175,6 +179,8 @@
 3. 再闭环 `G-04`。
    - 把 HITL 从“人工中断点”升级为“可恢复执行点”。
 4. 最后用 `G-05/G-06` 做交付演练与可运营稳定性收口。
+5. 在 Stage 9 业务闭环完成后，继续收敛 `G-07`。
+   - 把编排内核升级为 graph-first runtime，并把 CLI/desktop 执行面统一到 shared local orchestration service。
 
 ## 6.5 Stage 9 当前执行队列
 
@@ -196,13 +202,19 @@
    - `project-011 / TK-116`：adapter verification 与 local probe 抽离
    - `project-011 / TK-117`：route fallback 与 diagnostics builder 抽离
    - `project-011 / TK-118`：sprint-001 出口验收与 sprint-002 输入约束
-3. 当前执行队列（project-013 / sprint-001）：
+3. 已完成 Stage 9 最后业务阻断收口（project-013 / sprint-001）：
    - `TK-136`：project-013 启动与远端 provider 收口重排
    - `TK-137`：Codex 远端 provider 真实调用与凭据/health 契约
    - `TK-138`：GitHub Copilot 远端 provider 真实调用与 capability truthfulness 收口
    - `TK-139`：Claude Code 远端 provider 真实调用与 fallback/degrade 收口
    - `TK-140`：跨 provider adapter 运维契约与 route-runner truthfulness hardening
    - `TK-141`：sprint-001 出口验收与后续 rollout 输入约束
+4. 当前执行队列（project-014 / sprint-001）：
+   - `TK-142`：LangGraph 采用决策并入 triad/master plan 与 project-014 启动
+   - `TK-143`：Process Runtime -> LangGraph adapter 边界与 state contract 基线
+   - `TK-144`：shared local orchestration service（CLI + desktop）契约基线
+   - `TK-145`：LangGraph Phase 0 spike、dual-runtime parity 与 rollout 迁移计划
+   - `TK-146`：sprint-001 出口验收与 sprint-002 输入约束
 
 ## 7. 并行治理主线
 
@@ -243,7 +255,8 @@
 | `project-010-local-model-and-ide-expansion` | Stage 9 follow-up | completed | 已完成本地模型、自动主链、HITL、delivery、GA 与 IDE official surface 收口 |
 | `project-011-cli-package-decomposition` | Stage 9 enabling refactor | completed | 已完成 CLI package God object 拆解，并为 `project-010` 主链升级提供正式 handoff 边界 |
 | `project-012-execution-context-optimization` | Cross-stage follow-up | completed | 已完成 startup/context/task-ledger/review-chain 与 selective memory 注入的治理收口 |
-| `project-013-remote-provider-and-adapter-ops` | Stage 9 remaining closure | active | 继续收敛远端 provider 真实调用、adapter 运维契约与统一路由 truthfulness |
+| `project-013-remote-provider-and-adapter-ops` | Stage 9 remaining closure | completed | 已完成远端 provider 真实调用、adapter 运维契约与统一路由 truthfulness 收口 |
+| `project-014-langgraph-orchestration-runtime-adoption` | Post-Stage-9 runtime modernization | active | 采用 LangGraph 作为编排运行时方向，收敛 dual-runtime 迁移与 shared local orchestration service，统一 CLI 与未来 desktop 的执行面 |
 
 ## 9. Sprint 与 Task 最小模板
 
