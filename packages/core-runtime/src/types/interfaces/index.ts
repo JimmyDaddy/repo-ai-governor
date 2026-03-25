@@ -1,4 +1,21 @@
 export type {
+  ProcessRuntimeBackendAvailability,
+  ProcessRuntimeBackendSelection,
+  ProcessRuntimeBackendSelectorOptions,
+  ProcessRuntimeFacadeDependencies,
+  ProcessRuntimeFacadePrepareOptions,
+  ProcessRuntimeLifecycleEvent,
+  ProcessRuntimeParityCompareOptions,
+  ProcessRuntimeParityDiff,
+  ProcessRuntimeParityDimension,
+  ProcessRuntimeParityExecutionSnapshot,
+  ProcessRuntimeParityPreparedProfileSnapshot,
+  ProcessRuntimeParityReport,
+  ProcessRuntimeParitySnapshot,
+  ProcessRuntimePreparedExecution,
+  ProcessRuntimePreparedExecutionProfile,
+} from "./runtime-facade.interface.js";
+export type {
   RuntimeConditionContext,
   RuntimeConditionResolver,
   RuntimeExecuteOptions,

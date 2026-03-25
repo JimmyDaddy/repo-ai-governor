@@ -54,7 +54,7 @@
 | TK-145 | sprint-001 | LangGraph Phase 0 spike、cutover parity 验证与 rollout 迁移计划 | spike/plan | TK-143,TK-144,DA-143,DA-144 | completed |
 | TK-146 | sprint-001 | sprint-001 出口验收与 sprint-002 输入约束 | acceptance/baseline | TK-143,TK-144,TK-145,DA-143,DA-144,DA-145 | completed |
 | TK-147 | sprint-002 | core-runtime-langgraph backend skeleton 与 compiled IR graph adapter 基线 | implementation/runtime | DA-143,DA-145,DA-146 | completed |
-| TK-148 | sprint-002 | Process Runtime facade backend selector 与 cutover parity harness 基线 | implementation/runtime | TK-147,DA-143,DA-145,DA-146 | planned |
+| TK-148 | sprint-002 | Process Runtime facade backend selector 与 cutover parity harness 基线 | implementation/runtime | TK-147,DA-143,DA-145,DA-146 | completed |
 | TK-149 | sprint-002 | file-backed checkpointer 与 recovery smoke 基线 | implementation/recovery | TK-147,DA-143,DA-145,DA-146 | planned |
 | TK-150 | sprint-002 | LangGraph `run/review/HITL` 最小主链接线 | implementation/mainchain | TK-147,TK-148,TK-149,DA-144,DA-145,DA-146 | planned |
 | TK-151 | sprint-002 | `sqlite-fs` checkpointer 与 shared local orchestration service shell 收敛 | implementation/service | TK-148,TK-149,TK-150,DA-144,DA-145,DA-146 | planned |

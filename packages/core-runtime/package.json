@@ -12,6 +12,7 @@
   "dependencies": {
     "@repo-ai-governor/core-role-registry": "workspace:*",
     "@repo-ai-governor/core-process": "workspace:*",
+    "@repo-ai-governor/core-runtime-langgraph": "workspace:*",
     "@repo-ai-governor/shared": "workspace:*"
   }
 }

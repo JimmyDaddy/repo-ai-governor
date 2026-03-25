@@ -1,6 +1,6 @@
 # TK-148 Process Runtime facade backend selector 与 cutover parity harness 基线
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-25
 - Owner: AI-Agent
 - Priority: P0
@@ -56,6 +56,8 @@
 ## 9. 执行记录
 
 1. 2026-03-25：任务创建，状态初始化为 `planned`。
+2. 2026-03-25：开始执行，实现 `core-runtime` facade selector、LangGraph 默认 backend 路由与短生命周期 parity harness 公共契约。
+3. 2026-03-25：已完成 `ProcessRuntimeFacade`、`ProcessRuntimeParityHarness`、workspace alias 补齐与单测，产出 `DA-148`。
 
 ## 10. 产出
 

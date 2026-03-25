@@ -27,6 +27,27 @@ export enum RuntimeTimeoutScope {
 }
 
 /**
+ * Defines runtime facade backend kinds.
+ */
+export const PROCESS_RUNTIME_BACKEND_KINDS = ["legacy", "langgraph"] as const;
+
+export type ProcessRuntimeBackendKind = (typeof PROCESS_RUNTIME_BACKEND_KINDS)[number];
+
+/**
+ * Defines parity harness execution modes.
+ */
+export const PROCESS_RUNTIME_PARITY_MODES = ["disabled", "comparison"] as const;
+
+export type ProcessRuntimeParityMode = (typeof PROCESS_RUNTIME_PARITY_MODES)[number];
+
+/**
+ * Defines parity diff severities.
+ */
+export const PROCESS_RUNTIME_PARITY_SEVERITIES = ["blocking", "advisory"] as const;
+
+export type ProcessRuntimeParitySeverity = (typeof PROCESS_RUNTIME_PARITY_SEVERITIES)[number];
+
+/**
  * Defines default flow timeout milliseconds when options do not provide one.
  */
 export const DEFAULT_RUNTIME_FLOW_TIMEOUT_MS = 300000;
