@@ -9,7 +9,7 @@
 
 1. 将已经确认采用的 `LangGraph` 方向正式并入 triad 与 master execution plan。
 2. 在不破坏现有 `DSL -> IR -> policy -> audit -> ledger` 领域边界的前提下，冻结 `Process Runtime -> LangGraph` 的适配边界与迁移约束。
-3. 收敛 `CLI + future desktop` 共用一套 `shared local orchestration service` 的执行面，为后续 dual-runtime parity、checkpoint 和 HITL resume 统一实现铺路。
+3. 收敛 `CLI + future desktop` 共用一套 `shared local orchestration service` 的执行面，为后续 LangGraph cutover 验证、checkpoint 和 HITL resume 统一实现铺路。
 
 ## 2. 工作流分解（Workstreams）
 
@@ -19,8 +19,8 @@
    - 定义 `Process Runtime Facade -> LangGraph Runtime Adapter` 的职责边界、state contract 与 canonical source 约束。
 3. WS-03 Shared Local Orchestration Service
    - 定义 `CLI` 与未来 `desktop client` 共用同一 orchestration service 的接口、状态与 ownership 边界。
-4. WS-04 Dual-Run Migration And Spike
-   - 规划 `legacy runtime / langgraph runtime` 并存、parity 验收、checkpoint 策略与 rollout 路径。
+4. WS-04 Cutover Validation And Spike
+   - 规划 `LangGraph` cutover、短期 parity 验证 harness、checkpoint 策略与 rollout 路径；`legacy runtime` 仅作为迁移验证基线，不作为长期并存架构。
 
 ## 3. Sprint 细化
 
@@ -32,17 +32,33 @@
   1. triad、brief 与 master execution plan 已正式登记 `LangGraph` 采用决策，且当前主执行流切换到 `project-014`。
   2. `Process Runtime -> LangGraph` 的边界、state contract、canonical source 约束和 side-effect idempotency 基线已冻结。
   3. `CLI + future desktop` 共用 `shared local orchestration service` 的接口边界、状态所有权与 rollout 约束已明确。
-  4. Phase 0 spike、dual-runtime parity、checkpointer 路径与 sprint-002 输入约束已形成正式产物。
+  4. Phase 0 spike、LangGraph cutover parity 验证口径、checkpointer 路径与 sprint-002 输入约束已形成正式产物。
+
+## 3.2 sprint-002-langgraph-phase0-spike-and-service-shell
+
+- Sprint Goal: 落地 `LangGraph` Phase 0 最小闭环，实现 graph backend、短期 parity harness、checkpoint/recovery 与 shared local orchestration service shell 的第一轮正式接线。
+- 任务包：`TK-147`、`TK-148`、`TK-149`、`TK-150`、`TK-151`、`TK-152`。
+- Exit Criteria:
+  1. `core-runtime-langgraph` backend skeleton 已能消费 `compiled IR` 并输出标准化 execution events / interrupt / terminal status。
+  2. facade backend selector、短生命周期 parity harness 与 file-backed recovery smoke 已形成正式基线。
+  3. `run -> review -> review-verify -> HITL -> recovery` 的 LangGraph 最小主链已完成第一轮正式接线，并保持 canonical source 回写不漂移。
+  4. `sqlite-fs` checkpointer 与 `shared local orchestration service` shell 已形成可继续扩展的正式 baseline，并沉淀 `DA-147` ~ `DA-152`。
 
 ## 4. 任务拆解矩阵（WBS）
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 |---|---|---|---|---|---|
 | TK-142 | sprint-001 | LangGraph 采用决策并入 triad/master plan 与 project-014 启动 | baseline/analysis | draft + project-013 completion | completed |
-| TK-143 | sprint-001 | Process Runtime -> LangGraph adapter 边界与 state contract 基线 | architecture/contract | TK-142,DA-142 | planned |
-| TK-144 | sprint-001 | shared local orchestration service（CLI + desktop）契约基线 | architecture/service | TK-142,DA-142 | planned |
-| TK-145 | sprint-001 | LangGraph Phase 0 spike、dual-runtime parity 与 rollout 迁移计划 | spike/plan | TK-143,TK-144 | planned |
-| TK-146 | sprint-001 | sprint-001 出口验收与 sprint-002 输入约束 | acceptance/baseline | TK-143,TK-144,TK-145 | planned |
+| TK-143 | sprint-001 | Process Runtime -> LangGraph adapter 边界与 state contract 基线 | architecture/contract | TK-142,DA-142 | completed |
+| TK-144 | sprint-001 | shared local orchestration service（CLI + desktop）契约基线 | architecture/service | TK-142,DA-142,DA-143 | completed |
+| TK-145 | sprint-001 | LangGraph Phase 0 spike、cutover parity 验证与 rollout 迁移计划 | spike/plan | TK-143,TK-144,DA-143,DA-144 | completed |
+| TK-146 | sprint-001 | sprint-001 出口验收与 sprint-002 输入约束 | acceptance/baseline | TK-143,TK-144,TK-145,DA-143,DA-144,DA-145 | completed |
+| TK-147 | sprint-002 | core-runtime-langgraph backend skeleton 与 compiled IR graph adapter 基线 | implementation/runtime | DA-143,DA-145,DA-146 | completed |
+| TK-148 | sprint-002 | Process Runtime facade backend selector 与 cutover parity harness 基线 | implementation/runtime | TK-147,DA-143,DA-145,DA-146 | planned |
+| TK-149 | sprint-002 | file-backed checkpointer 与 recovery smoke 基线 | implementation/recovery | TK-147,DA-143,DA-145,DA-146 | planned |
+| TK-150 | sprint-002 | LangGraph `run/review/HITL` 最小主链接线 | implementation/mainchain | TK-147,TK-148,TK-149,DA-144,DA-145,DA-146 | planned |
+| TK-151 | sprint-002 | `sqlite-fs` checkpointer 与 shared local orchestration service shell 收敛 | implementation/service | TK-148,TK-149,TK-150,DA-144,DA-145,DA-146 | planned |
+| TK-152 | sprint-002 | sprint-002 出口验收与 sprint-003 输入约束 | acceptance/baseline | TK-147,TK-148,TK-149,TK-150,TK-151 | planned |
 
 ## 5. 依赖产物策略
 
@@ -51,17 +67,21 @@
    - `project-013-remote-provider-and-adapter-ops-completion-audit-summary.md`
    - `DA-136` ~ `DA-141`
 2. sprint-001 产物目标：`DA-142` ~ `DA-146`。
-3. `LangGraph` 方向的基线/约束类产物进入 artifact registry；过程性草稿、review 讨论与临时实验记录不登记。
+3. sprint-002 产物目标：`DA-147` ~ `DA-152`。
+4. sprint-002 默认正式输入消费：`DA-143`、`DA-144`、`DA-145`、`DA-146`。
+5. `LangGraph` 方向的基线/约束类产物进入 artifact registry；过程性草稿、review 讨论与临时实验记录不登记。
    - `.repo-ai-governor/draft/langgraph-orchestration-technical-solution.md` 只保留为 traceback/background，不再作为后续任务的 formal required input。
-4. 所有后续实现仍需遵守 `project-011` 的 CLI bounded-context 边界与 `project-012` 的 execution-context / task-ledger / review-chain 治理基线。
+6. 所有后续实现仍需遵守 `project-011` 的 CLI bounded-context 边界与 `project-012` 的 execution-context / task-ledger / review-chain 治理基线。
 
 ## 6. DoD（project-014）
 
 1. `LangGraph` 已从 draft 方案升级为 triad 与 master plan 中的正式 runtime adoption 决策。
 2. `LangGraph` 与现有 `DSL/IR/policy/audit/ledger` 的边界明确，且不引入新的 canonical source。
 3. `CLI` 与未来 `desktop` 共用 `shared local orchestration service` 的目标形态、接口边界与 rollout 路径明确。
-4. dual-runtime parity、checkpointer 策略、Phase 0 spike 验收和后续 sprint 输入约束具备正式基线文档。
+4. LangGraph cutover parity 验证口径、checkpointer 策略、Phase 0 spike 验收和后续 sprint 输入约束具备正式基线文档。
 
 ## 7. 里程碑记录
 
 1. 2026-03-25：创建 `project-014`，将 `LangGraph` 采用决策正式收敛为 post-Stage-9 runtime modernization 主线，并切换为新的 active primary stream。
+2. 2026-03-25：`sprint-001-runtime-adoption-and-migration-baseline` 通过 `DA-146` 完成出口验收，正式冻结 sprint-002 的 LangGraph backend、shared local orchestration service 与 checkpoint/recovery 输入约束。
+3. 2026-03-25：完成 `sprint-002-langgraph-phase0-spike-and-service-shell` 拆解，并将 active primary stream 切换到 runtime/service 实装主线。

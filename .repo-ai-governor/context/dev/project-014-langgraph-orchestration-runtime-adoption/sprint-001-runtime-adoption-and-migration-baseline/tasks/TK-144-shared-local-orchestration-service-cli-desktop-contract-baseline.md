@@ -1,6 +1,6 @@
 # TK-144 shared local orchestration service（CLI + desktop）契约基线
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-25
 - Owner: AI-Agent
 - Priority: P0
@@ -15,6 +15,8 @@
 
 1. `TK-142`
 2. `DA-142`
+3. `TK-143`
+4. `DA-143`
 
 ## 3. 预期产物
 
@@ -23,9 +25,10 @@
 ## 4. Required Inputs
 
 1. `.repo-ai-governor/context/dev/project-014-langgraph-orchestration-runtime-adoption/sprint-001-runtime-adoption-and-migration-baseline/tasks/DA-142-langgraph-runtime-adoption-and-migration-baseline.md`
-2. `.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-overall-technical-solution.md`
-3. `.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-architecture-and-repo-layering.md`
-4. `.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-master-execution-plan.md`
+2. `.repo-ai-governor/context/dev/project-014-langgraph-orchestration-runtime-adoption/sprint-001-runtime-adoption-and-migration-baseline/tasks/DA-143-process-runtime-to-langgraph-adapter-boundary-and-state-contract-baseline.md`
+3. `.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-overall-technical-solution.md`
+4. `.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-architecture-and-repo-layering.md`
+5. `.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-master-execution-plan.md`
 
 ## 5. Traceback References
 
@@ -53,6 +56,7 @@
 ## 9. 执行记录
 
 1. 2026-03-25：任务创建，状态初始化为 `planned`。
+2. 2026-03-25：完成 `DA-144`，已冻结 service owner、CLI/desktop client、execution/streaming/HITL/recovery API、部署形态与单一 runtime owner 约束。
 
 ## 10. 产出
 

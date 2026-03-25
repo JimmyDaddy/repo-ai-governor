@@ -1,6 +1,6 @@
 # sprint-001-runtime-adoption-and-migration-baseline 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-03-25
 - Project: `project-014-langgraph-orchestration-runtime-adoption`
 
@@ -13,7 +13,7 @@
 1. `TK-142` LangGraph 采用决策并入 triad/master plan 与 project-014 启动
 2. `TK-143` Process Runtime -> LangGraph adapter 边界与 state contract 基线
 3. `TK-144` shared local orchestration service（CLI + desktop）契约基线
-4. `TK-145` LangGraph Phase 0 spike、dual-runtime parity 与 rollout 迁移计划
+4. `TK-145` LangGraph Phase 0 spike、cutover parity 验证与 rollout 迁移计划
 5. `TK-146` sprint-001 出口验收与 sprint-002 输入约束
 
 ## 3. Entry Criteria
@@ -27,7 +27,7 @@
 1. triad/brief/master plan/current-context/projects overview/dev index 已完成 `LangGraph` runtime adoption 决策同步。
 2. `Process Runtime -> LangGraph` 边界、state contract 与 canonical source 约束具备正式基线。
 3. `shared local orchestration service` 的 CLI/desktop 共用接口与 ownership 约束具备正式基线。
-4. Phase 0 spike、dual-runtime parity、checkpointer 路径与 sprint-002 输入约束具备正式文档与任务拆解入口。
+4. Phase 0 spike、LangGraph cutover parity 验证口径、checkpointer 路径与 sprint-002 输入约束具备正式文档与任务拆解入口。
 
 ## 5. Risks
 

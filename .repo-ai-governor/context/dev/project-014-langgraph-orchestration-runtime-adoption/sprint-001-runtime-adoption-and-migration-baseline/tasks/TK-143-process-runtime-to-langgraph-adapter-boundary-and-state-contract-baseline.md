@@ -1,6 +1,6 @@
 # TK-143 Process Runtime -> LangGraph adapter 边界与 state contract 基线
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-25
 - Owner: AI-Agent
 - Priority: P0
@@ -53,6 +53,7 @@
 ## 9. 执行记录
 
 1. 2026-03-25：任务创建，状态初始化为 `planned`。
+2. 2026-03-25：完成 `DA-143`，已冻结 facade / LangGraph adapter / checkpointer / external side-effect services 的职责边界，并固化 `execution_id / execution_session_id / task / stream / artifact` 的状态映射。
 
 ## 10. 产出
 

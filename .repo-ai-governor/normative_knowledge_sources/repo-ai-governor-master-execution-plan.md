@@ -50,7 +50,7 @@
    - `run` 已升级为任务驱动 DAG，`review -> review-verify -> ledger backfill`、HITL `resume/terminate/degrade`、delivery rehearsal、Stage 9 GA blackbox 和多 IDE 官方入口都已形成完成态证据。
    - `project-013` 已完成 Codex / GitHub Copilot / Claude Code 的远端 provider 真实调用、adapter 运维契约与 route-runner truthfulness 收口，Stage 9 最后业务阻断已关闭。
 2. 当前未完成的部分：
-   - 编排运行时仍主要依赖自研执行内核，尚未完成 `LangGraph` backend、dual-runtime parity 与本地 orchestration service 的正式落地。
+   - 编排运行时仍主要依赖自研执行内核，尚未完成 `LangGraph` backend、LangGraph cutover parity 验证 与本地 orchestration service 的正式落地。
    - CLI 与未来桌面端虽然边界已明确，但还没有共用同一执行 API / checkpoint / HITL resume service。
    - 因此“图执行内核成熟度 + 多执行表面共用一套 runtime/service”这条工程演进主线仍未关闭。
 
@@ -69,9 +69,9 @@
 ## 3.4 当前推荐执行顺序
 
 1. 已将 `project-013` 视为 completed handoff，后续只消费其远端 provider 执行面与 adapter ops 产物。
-2. 当前优先启动 `project-014` sprint-001，先冻结 `LangGraph` 采用边界、triad/master plan 同步结果与迁移基线。
-3. 再以 `project-014` 后续 sprint 跑通 `dual-runtime parity`、`task-driven run/review/HITL` 的 `LangGraph` spike。
-4. 最后收敛 shared local orchestration service，为未来桌面端只做 presenter/client 的形态铺路。
+2. `project-014 / sprint-001` 已完成 adoption baseline、runtime/service boundary 与 cutover 输入约束冻结。
+3. `project-014 / sprint-002` 已完成拆解，当前优先执行 `core-runtime-langgraph` backend、parity harness、checkpoint/recovery 与 service shell 的第一轮实装。
+4. 随后继续收敛 shared local orchestration service，为未来桌面端只做 presenter/client 的形态铺路。
 
 ## 4. 路线图总览
 
@@ -87,7 +87,7 @@
 | Stage 7 | Phase E + Migration Step 7 | completed | 契约测试、集成/E2E、发布治理 | 核心质量与回滚基线稳定 |
 | Stage 8 | P2 平台化阶段 | completed baseline | 平台化扩展骨架 | 不破坏本地主线，可按模块独立演进 |
 | Stage 9 | Phase E 收口 + GA Readiness overlay | completed | 投产基线 + 自治闭环收口 | 外部可采用、可运维、可受控无人值守推进 |
-| Post-Stage-9 | Phase E Follow-Up Runtime Modernization | active | LangGraph backend + local orchestration service | CLI 与未来 desktop 共用 runtime/service，且 dual-runtime parity 成立 |
+| Post-Stage-9 | Phase E Follow-Up Runtime Modernization | active | LangGraph backend + local orchestration service | CLI 与未来 desktop 共用 runtime/service，且 LangGraph cutover parity 验证成立 |
 
 ## 5. 阶段资产与完成态
 
@@ -168,7 +168,7 @@
 | G-04 | HITL 回执与决策回灌未闭环 | 命中 `confirm/escalate` 后仍主要停在人工等待 | 至少 1 主 1 备通知渠道接通，人工决策可回灌并触发继续执行/终止/降级 | `TK-098` 已完成；sprint-002 |
 | G-05 | 受控 delivery rehearsal 未一体化 | `commit` / `PR draft` 仍未与自动主链形成统一回放与审计 | 至少 1 条受控 delivery rehearsal 覆盖 `commit` 或 `PR draft`，并记录人工接管边界 | sprint-002 / Stage 9 closure |
 | G-06 | 稳定性与黑盒门禁未覆盖真实无人值守路径 | provider outage、restricted network、retry exhaustion 等场景仍缺稳定黑盒验证 | 黑盒 E2E、CI、release gate 覆盖主路径与降级路径，并沉淀成功率/人工介入率等运营指标 | `TK-097` + sprint-002 |
-| G-07 | 编排运行时尚未收敛到 graph-first shared runtime | `run/review/HITL` 已可用，但 runtime backend 仍未形成 `LangGraph + local orchestration service` 正式实现 | `LangGraph` backend、dual-runtime parity、local orchestration service 与 CLI/desktop 共享执行 API 形成正式基线 | `project-014 / sprint-001` |
+| G-07 | 编排运行时尚未收敛到 graph-first shared runtime | `run/review/HITL` 已可用，但 runtime backend 仍未形成 `LangGraph + local orchestration service` 正式实现 | `LangGraph` backend、短期 cutover parity 验证、local orchestration service 与 CLI/desktop 共享执行 API 形成正式基线 | `project-014 / sprint-001` |
 
 ## 6.4 Stage 9 收敛顺序
 
@@ -209,12 +209,19 @@
    - `TK-139`：Claude Code 远端 provider 真实调用与 fallback/degrade 收口
    - `TK-140`：跨 provider adapter 运维契约与 route-runner truthfulness hardening
    - `TK-141`：sprint-001 出口验收与后续 rollout 输入约束
-4. 当前执行队列（project-014 / sprint-001）：
+4. 已完成的 adoption baseline 队列（project-014 / sprint-001）：
    - `TK-142`：LangGraph 采用决策并入 triad/master plan 与 project-014 启动
    - `TK-143`：Process Runtime -> LangGraph adapter 边界与 state contract 基线
    - `TK-144`：shared local orchestration service（CLI + desktop）契约基线
-   - `TK-145`：LangGraph Phase 0 spike、dual-runtime parity 与 rollout 迁移计划
+   - `TK-145`：LangGraph Phase 0 spike、cutover parity 验证与 rollout 迁移计划
    - `TK-146`：sprint-001 出口验收与 sprint-002 输入约束
+5. 当前执行队列（project-014 / sprint-002）：
+   - `TK-147`：core-runtime-langgraph backend skeleton 与 compiled IR graph adapter 基线
+   - `TK-148`：Process Runtime facade backend selector 与 cutover parity harness 基线
+   - `TK-149`：file-backed checkpointer 与 recovery smoke 基线
+   - `TK-150`：LangGraph `run/review/HITL` 最小主链接线
+   - `TK-151`：`sqlite-fs` checkpointer 与 shared local orchestration service shell 收敛
+   - `TK-152`：sprint-002 出口验收与 sprint-003 输入约束
 
 ## 7. 并行治理主线
 
@@ -256,7 +263,7 @@
 | `project-011-cli-package-decomposition` | Stage 9 enabling refactor | completed | 已完成 CLI package God object 拆解，并为 `project-010` 主链升级提供正式 handoff 边界 |
 | `project-012-execution-context-optimization` | Cross-stage follow-up | completed | 已完成 startup/context/task-ledger/review-chain 与 selective memory 注入的治理收口 |
 | `project-013-remote-provider-and-adapter-ops` | Stage 9 remaining closure | completed | 已完成远端 provider 真实调用、adapter 运维契约与统一路由 truthfulness 收口 |
-| `project-014-langgraph-orchestration-runtime-adoption` | Post-Stage-9 runtime modernization | active | 采用 LangGraph 作为编排运行时方向，收敛 dual-runtime 迁移与 shared local orchestration service，统一 CLI 与未来 desktop 的执行面 |
+| `project-014-langgraph-orchestration-runtime-adoption` | Post-Stage-9 runtime modernization | active | 采用 LangGraph 作为编排运行时方向，收敛 LangGraph cutover 验证与 shared local orchestration service，统一 CLI 与未来 desktop 的执行面 |
 
 ## 9. Sprint 与 Task 最小模板
 
