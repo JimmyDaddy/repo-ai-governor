@@ -56,7 +56,7 @@
 | TK-136 | sprint-001 | project-013 启动与远端 provider 收口重排 | analysis/baseline | project-010 completion | completed |
 | TK-137 | sprint-001 | Codex 远端 provider 真实调用与凭据/health 契约 | implementation/adapter | TK-136,DA-136 | completed |
 | TK-138 | sprint-001 | GitHub Copilot 远端 provider 真实调用与 capability truthfulness 收口 | implementation/adapter | TK-136,DA-136 | completed |
-| TK-139 | sprint-001 | Claude Code 远端 provider 真实调用与 fallback/degrade 收口 | implementation/adapter | TK-136,DA-136 | planned |
+| TK-139 | sprint-001 | Claude Code 远端 provider 真实调用与 fallback/degrade 收口 | implementation/adapter | TK-136,DA-136 | completed |
 | TK-140 | sprint-001 | 跨 provider adapter 运维契约与 route-runner truthfulness hardening | implementation/runtime | TK-137,TK-138,TK-139 | planned |
 | TK-141 | sprint-001 | sprint-001 出口验收与后续 rollout 输入约束 | acceptance baseline | TK-137,TK-138,TK-139,TK-140 | planned |
 

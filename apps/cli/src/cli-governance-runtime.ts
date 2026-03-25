@@ -146,6 +146,7 @@ export class CliGovernanceRuntime {
       (error) => this.formatExecFailureDetail(error),
     );
     this.adapterRoutingRuntime = new CliAdapterRoutingRuntime(this.options.adaptersConfig, {
+      claudeCodeExecRunner: this.options.claudeCodeExecRunner,
       codexExecRunner: this.options.codexExecRunner,
       githubCopilotExecRunner: this.options.githubCopilotExecRunner,
     });

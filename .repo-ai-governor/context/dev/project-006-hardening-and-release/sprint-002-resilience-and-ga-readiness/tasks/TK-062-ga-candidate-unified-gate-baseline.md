@@ -50,7 +50,8 @@
 3. 失败阻断语义
    - 任一分组失败立即返回非零退出码，阻断 GA 候选推进。
 4. 审计回放模板
-   - 报告文件：`.repo-ai-governor/context/dev/project-006-hardening-and-release/sprint-002-resilience-and-ga-readiness/tasks/TK-062-ga-candidate-unified-gate-report.json`
+   - 报告文件：`.tmp/ci/release/ga-candidate-unified-gate-report.json`
+   - 该报告为运行态产物，不进入任务台账版本管理。
    - 报告字段：`stepId`、`command`、`exitCode`、`durationMs`、`generatedAt`。
 
 ## 7. 验证
@@ -68,7 +69,7 @@
 ## 9. 产出
 
 1. `DA-074` `.repo-ai-governor/context/dev/project-006-hardening-and-release/sprint-002-resilience-and-ga-readiness/tasks/TK-062-ga-candidate-unified-gate-baseline.md`
-2. `.repo-ai-governor/context/dev/project-006-hardening-and-release/sprint-002-resilience-and-ga-readiness/tasks/TK-062-ga-candidate-unified-gate-report.json`
+2. `.tmp/ci/release/ga-candidate-unified-gate-report.json`
 3. `scripts/release/check-ga-candidate-unified-gate.js`
 4. `scripts/release/release-governance-policy.json`
 5. `.repo-ai-governor/normative_knowledge_sources/governance/release-governance-spec.md`

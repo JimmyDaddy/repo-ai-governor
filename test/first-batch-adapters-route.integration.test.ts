@@ -1,17 +1,77 @@
-import { ClaudeCodeAgentAdapter } from "@repo-ai-governor/adapter-claude-code";
-import { CodexAgentAdapter } from "@repo-ai-governor/adapter-codex";
-import { GithubCopilotAgentAdapter } from "@repo-ai-governor/adapter-github-copilot";
+import {
+  ClaudeCodeAgentAdapter,
+  ClaudeCodeAgentAdapterExecutionMode,
+  type ClaudeCodeExecRunner,
+} from "@repo-ai-governor/adapter-claude-code";
+import {
+  CodexAgentAdapter,
+  CodexAgentAdapterExecutionMode,
+  type CodexExecRunner,
+} from "@repo-ai-governor/adapter-codex";
+import {
+  GithubCopilotAgentAdapter,
+  GithubCopilotAgentAdapterExecutionMode,
+  type GithubCopilotExecRunner,
+} from "@repo-ai-governor/adapter-github-copilot";
 import {
   AGENT_LOCAL_FALLBACK_SURFACE,
   AgentAvailabilityStatus,
   AgentCapability,
   AgentCapabilityFallbackAction,
+  AgentCliExecOperation,
   AgentNetworkMode,
   AgentRouteRunner,
   AgentRouteSelectionSource,
   AgentSurfaceNetworkRequirement,
   AgentSurfaceSkipReason,
 } from "@repo-ai-governor/adapter-sdk";
+import { GovernorErrorCode } from "@repo-ai-governor/shared";
+
+function createCodexExecRunnerFixture(): CodexExecRunner {
+  return async ({ prompt, operation }) => ({
+    stdout: [
+      '{"type":"thread.started","thread_id":"thread-1"}',
+      `{"type":"item.completed","item":{"id":"item-1","type":"agent_message","text":"${operation === AgentCliExecOperation.PROBE || prompt.includes("Respond with exactly OK.") ? "OK" : "simulated codex response"}"}}`,
+      '{"type":"turn.completed","usage":{"input_tokens":13,"output_tokens":8}}',
+    ].join("\n"),
+    stderr: "",
+    exitCode: 0,
+    signal: null,
+    elapsedMs: 8,
+  });
+}
+
+function createGithubCopilotExecRunnerFixture(): GithubCopilotExecRunner {
+  return async ({ prompt, operation }) => ({
+    stdout:
+      operation === AgentCliExecOperation.PROBE || prompt.includes("Respond with exactly OK.")
+        ? [
+            '{"type":"assistant.message","data":{"content":"OK"}}',
+            '{"type":"result","exitCode":0}',
+          ].join("\n")
+        : [
+            '{"type":"assistant.message","data":{"content":"simulated github copilot response"}}',
+            '{"type":"result","exitCode":0}',
+          ].join("\n"),
+    stderr: "",
+    exitCode: 0,
+    signal: null,
+    elapsedMs: 8,
+  });
+}
+
+function createClaudeCodeExecRunnerFixture(): ClaudeCodeExecRunner {
+  return async ({ prompt, operation }) => ({
+    stdout:
+      operation === AgentCliExecOperation.PROBE || prompt.includes("Respond with exactly OK.")
+        ? "OK\n"
+        : "simulated claude code response\n",
+    stderr: "",
+    exitCode: 0,
+    signal: null,
+    elapsedMs: 8,
+  });
+}
 
 describe("first-batch adapters route integration", () => {
   it("selects Codex as primary surface when available", async () => {
@@ -27,9 +87,18 @@ describe("first-batch adapters route integration", () => {
         },
       ],
       protocolBySurface: {
-        codex: new CodexAgentAdapter(),
-        "github-copilot": new GithubCopilotAgentAdapter(),
-        "claude-code": new ClaudeCodeAgentAdapter(),
+        codex: new CodexAgentAdapter({
+          executionMode: CodexAgentAdapterExecutionMode.CLI_EXEC,
+          execRunner: createCodexExecRunnerFixture(),
+        }),
+        "github-copilot": new GithubCopilotAgentAdapter({
+          executionMode: GithubCopilotAgentAdapterExecutionMode.CLI_EXEC,
+          execRunner: createGithubCopilotExecRunnerFixture(),
+        }),
+        "claude-code": new ClaudeCodeAgentAdapter({
+          executionMode: ClaudeCodeAgentAdapterExecutionMode.CLI_EXEC,
+          execRunner: createClaudeCodeExecRunnerFixture(),
+        }),
       },
     });
 
@@ -60,9 +129,17 @@ describe("first-batch adapters route integration", () => {
         codex: new CodexAgentAdapter({
           availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
           unavailableReasons: ["surface unavailable"],
+          executionMode: CodexAgentAdapterExecutionMode.CLI_EXEC,
+          execRunner: createCodexExecRunnerFixture(),
         }),
-        "github-copilot": new GithubCopilotAgentAdapter(),
-        "claude-code": new ClaudeCodeAgentAdapter(),
+        "github-copilot": new GithubCopilotAgentAdapter({
+          executionMode: GithubCopilotAgentAdapterExecutionMode.CLI_EXEC,
+          execRunner: createGithubCopilotExecRunnerFixture(),
+        }),
+        "claude-code": new ClaudeCodeAgentAdapter({
+          executionMode: ClaudeCodeAgentAdapterExecutionMode.CLI_EXEC,
+          execRunner: createClaudeCodeExecRunnerFixture(),
+        }),
       },
     });
 
@@ -80,7 +157,7 @@ describe("first-batch adapters route integration", () => {
     expect(result.auditRecord.selectedBy).toBe(AgentRouteSelectionSource.FALLBACK);
   });
 
-  it("falls through degraded Copilot capability and selects Claude Code", async () => {
+  it("fails closed when all structured-output fallbacks are degraded", async () => {
     const runner = new AgentRouteRunner({
       routePolicies: [
         {
@@ -103,27 +180,38 @@ describe("first-batch adapters route integration", () => {
         codex: new CodexAgentAdapter({
           availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
           unavailableReasons: ["surface unavailable"],
+          executionMode: CodexAgentAdapterExecutionMode.CLI_EXEC,
+          execRunner: createCodexExecRunnerFixture(),
         }),
-        "github-copilot": new GithubCopilotAgentAdapter(),
-        "claude-code": new ClaudeCodeAgentAdapter(),
+        "github-copilot": new GithubCopilotAgentAdapter({
+          executionMode: GithubCopilotAgentAdapterExecutionMode.CLI_EXEC,
+          execRunner: createGithubCopilotExecRunnerFixture(),
+        }),
+        "claude-code": new ClaudeCodeAgentAdapter({
+          executionMode: ClaudeCodeAgentAdapterExecutionMode.CLI_EXEC,
+          execRunner: createClaudeCodeExecRunnerFixture(),
+        }),
       },
     });
 
-    const result = await runner.dispatchStage({
-      processId: "process-1",
-      executionId: "execution-1",
-      stageId: "stage-1",
-      routeKey: "spec-review",
-      input: {
-        prompt: "review plan with structured output",
-      },
+    await expect(
+      runner.dispatchStage({
+        processId: "process-1",
+        executionId: "execution-1",
+        stageId: "stage-1",
+        routeKey: "spec-review",
+        input: {
+          prompt: "review plan with structured output",
+        },
+      }),
+    ).rejects.toMatchObject({
+      code: GovernorErrorCode.ADAPTER_ROUTE_NO_AVAILABLE_SURFACE,
+      details: expect.objectContaining({
+        requiredFallbackActions: expect.arrayContaining([
+          AgentCapabilityFallbackAction.USE_FALLBACK_SURFACE,
+        ]),
+      }),
     });
-
-    expect(result.selectedSurface).toBe("claude-code");
-    expect(result.auditRecord.selectedBy).toBe(AgentRouteSelectionSource.FALLBACK);
-    expect(result.auditRecord.requiredFallbackActions).toContain(
-      AgentCapabilityFallbackAction.USE_FALLBACK_SURFACE,
-    );
   });
 
   it("uses local fallback when restricted network blocks external adapters", async () => {
@@ -136,9 +224,18 @@ describe("first-batch adapters route integration", () => {
         },
       ],
       protocolBySurface: {
-        codex: new CodexAgentAdapter(),
-        "github-copilot": new GithubCopilotAgentAdapter(),
-        "claude-code": new ClaudeCodeAgentAdapter(),
+        codex: new CodexAgentAdapter({
+          executionMode: CodexAgentAdapterExecutionMode.CLI_EXEC,
+          execRunner: createCodexExecRunnerFixture(),
+        }),
+        "github-copilot": new GithubCopilotAgentAdapter({
+          executionMode: GithubCopilotAgentAdapterExecutionMode.CLI_EXEC,
+          execRunner: createGithubCopilotExecRunnerFixture(),
+        }),
+        "claude-code": new ClaudeCodeAgentAdapter({
+          executionMode: ClaudeCodeAgentAdapterExecutionMode.CLI_EXEC,
+          execRunner: createClaudeCodeExecRunnerFixture(),
+        }),
       },
       surfaceNetworkRequirementBySurface: {
         codex: AgentSurfaceNetworkRequirement.EXTERNAL_NETWORK,

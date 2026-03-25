@@ -47,7 +47,8 @@
    - 关键发布门禁：`release:check`、`release:verify-local`、`release:ga-check`。
    - 治理总线门禁：`pnpm run check`。
 4. 审计回放证据落盘
-   - 演练报告：`.repo-ai-governor/context/dev/project-006-hardening-and-release/sprint-002-resilience-and-ga-readiness/tasks/TK-061-rollback-rehearsal-report.json`
+   - 演练报告：`.tmp/ci/release/rollback-rehearsal-report.json`
+   - 该报告为运行态产物，不进入任务台账版本管理。
    - 结构化报告至少包含：`scenarioId`、`rollbackTrigger`、`command`、`exitCode`、`durationMs`、`generatedAt`。
 
 ## 7. 验证
@@ -66,7 +67,7 @@
 ## 9. 产出
 
 1. `DA-073` `.repo-ai-governor/context/dev/project-006-hardening-and-release/sprint-002-resilience-and-ga-readiness/tasks/TK-061-rollback-rehearsal-and-recovery-playbook-baseline.md`
-2. `.repo-ai-governor/context/dev/project-006-hardening-and-release/sprint-002-resilience-and-ga-readiness/tasks/TK-061-rollback-rehearsal-report.json`
+2. `.tmp/ci/release/rollback-rehearsal-report.json`
 3. `scripts/release/run-rollback-rehearsal.js`
 4. `scripts/release/release-governance-policy.json`
 5. `.repo-ai-governor/normative_knowledge_sources/governance/release-governance-spec.md`

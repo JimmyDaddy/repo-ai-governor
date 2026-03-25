@@ -155,7 +155,7 @@
 22. 2026-03-24：启动 `TK-107`，开始收敛 delivery rehearsal 的最小执行契约；当前已确认仓库中尚无现成的 rehearsal runtime，需要基于现有 policy/audit/replay 链路新建受控实现面。
 23. 2026-03-24：完成 `TK-107`，受控 `delivery_rehearsal` stage 已纳入 task-driven `run`，并通过 rehearsal artifact、audit event `artifactId`、execution report replay pointer 与 CLI experience 完成同链回放。
 24. 2026-03-24：启动 `TK-108`，以 `DA-107` 为唯一 delivery 输入基线，开始收敛 blackbox/release/GA 指标与 gate 场景矩阵。
-25. 2026-03-24：完成 `TK-108`，形成 `DA-108` 与 `TK-108-stage9-blackbox-ga-report.json`，并将 `gate:stage9-blackbox-ga`、release unified gate supporting report、GA 指标快照一并纳入正式门禁链路。
+25. 2026-03-24：完成 `TK-108`，形成 `DA-108` 与 Stage 9 blackbox GA supporting report 生成链路（默认 `.tmp/ci/stage9-blackbox-ga/stage9-blackbox-ga-report.json`），并将 `gate:stage9-blackbox-ga`、release unified gate supporting report、GA 指标快照一并纳入正式门禁链路。
 26. 2026-03-24：完成 `TK-108` working-tree follow-up CR 修复，补齐 `release-governance-policy.json -> auditEvidenceSources`、`run-rollback-rehearsal.js` 外部证据校验、unified gate 的 passed-status 检查，并同步 `release-governance-spec.md`，消除 Stage 9 GA 证据在 release 链中的漂移与稳定失败路径。
 27. 2026-03-24：完成 `TK-109`，将 IDE wrapper 收敛为多入口 surface registry + contract v2 基线，并通过 public export、cross-surface contract tests 与 `DA-109` 固化为 `TK-110/TK-111` 的唯一入口契约输入。
 28. 2026-03-24：完成 `TK-110`，新增 VS Code/JetBrains 官方模板、`check:ide-entry-smoke`、integration coverage 与本地分发校验，正式将 IDE 官方入口从文档样例升级为可执行可发布资产。

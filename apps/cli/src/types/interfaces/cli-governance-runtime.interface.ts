@@ -1,3 +1,4 @@
+import type { ClaudeCodeExecRunner } from "@repo-ai-governor/adapter-claude-code";
 import type { CodexExecRunner } from "@repo-ai-governor/adapter-codex";
 import type { GithubCopilotExecRunner } from "@repo-ai-governor/adapter-github-copilot";
 import type { AdaptersConfig, ResolvedWorkspace } from "@repo-ai-governor/config";
@@ -35,6 +36,7 @@ export interface CliGovernanceRuntimeOptions {
   runtimeDebugOptions?: CliRuntimeDebugOptions;
   adapterLocalProbeOverrides?: Partial<Record<AdapterSurface, CliLocalAdapterProbeOverride>>;
   commandProbeExecutor?: (command: string, args: readonly string[]) => Promise<void>;
+  claudeCodeExecRunner?: ClaudeCodeExecRunner;
   codexExecRunner?: CodexExecRunner;
   githubCopilotExecRunner?: GithubCopilotExecRunner;
 }

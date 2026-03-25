@@ -1,6 +1,6 @@
 # TK-139 Claude Code 远端 provider 真实调用与 fallback/degrade 收口
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-25
 - Owner: AI-Agent
 - Priority: P0
@@ -42,3 +42,7 @@
 ## 7. 执行记录
 
 1. 2026-03-25：任务创建，状态初始化为 `planned`。
+2. 2026-03-25：任务启动，开始核对 Claude Code 本地 CLI 入口、baseline adapter truthfulness 缺口，以及与 route-runner / restricted-network fallback 的协作边界。
+3. 2026-03-25：已完成真实 `CLI_EXEC` 路径、`claude -> claude-code` 回退、route/fallback truthfulness 与 fixture gate 注入；`DA-139`、task review 与 adapters working-tree follow-up review 已同步收口。
+4. 2026-03-25：已完成 follow-up CR 修复；`STRUCTURED_OUTPUT` truthfulness 已降为 `DEGRADED`，默认 reviewer route 已切回 Codex 主选，并补齐 fail-closed 回归。
+5. 2026-03-25：已完成第二轮 pending CR 复核；确认当前 working tree 已覆盖 `STRUCTURED_OUTPUT` truthfulness 与 route fail-closed 修复，无需新增代码补丁。

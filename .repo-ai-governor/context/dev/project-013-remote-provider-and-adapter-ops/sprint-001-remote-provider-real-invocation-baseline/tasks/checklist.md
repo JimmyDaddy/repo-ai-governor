@@ -16,8 +16,12 @@
   - 2026-03-25：已完成真实 `probe/invoke`、`copilot` 直连优先与 `gh copilot --` 回退、capability truthfulness、fixture fail-closed 与 gate 稳定性收口；`DA-138` 和 resolved review 已补齐。
   - 2026-03-25：已完成 follow-up review comment 修复：共享 `CLI_EXEC` / `probe|invoke` 闭合集合与 CLI exec 基础契约现已上提到 `adapter-sdk`，`codex/github-copilot` 仅保留 provider 特化扩展。
   - 2026-03-25：已完成 pending CR `2.1` 修复：GitHub Copilot adapter 现会对进程 `exitCode` 与 JSON `result.exitCode` 非零统一 fail-closed，并补齐 smoke 回归。
-- [ ] TK-139 Claude Code 远端 provider 真实调用与 fallback/degrade 收口
+- [x] TK-139 Claude Code 远端 provider 真实调用与 fallback/degrade 收口
   - 2026-03-25：任务创建，状态初始化为 `planned`。
+  - 2026-03-25：任务启动，开始核对 Claude Code 本地 CLI 入口、baseline adapter truthfulness 缺口，以及与 route-runner / restricted-network fallback 的协作边界。
+  - 2026-03-25：已完成真实 `CLI_EXEC` 路径、`claude -> claude-code` 回退、route truthfulness 与 gate fixture 注入收口；`DA-139`、task review 与 adapters working-tree follow-up review 已补齐。
+  - 2026-03-25：已完成 pending CR 修复：`STRUCTURED_OUTPUT` truthfulness 已降为 `DEGRADED`，default reviewer route 已切回 Codex 主选，并补齐 fail-closed route/smoke 回归。
+  - 2026-03-25：已完成第二轮 pending CR 复核；确认当前 working tree 已包含对应修复并通过定向验证，本轮无新增代码补丁。
 - [ ] TK-140 跨 provider adapter 运维契约与 route-runner truthfulness hardening
   - 2026-03-25：任务创建，状态初始化为 `planned`。
 - [ ] TK-141 sprint-001 出口验收与后续 rollout 输入约束

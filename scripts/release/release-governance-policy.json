@@ -1,6 +1,6 @@
 {
   "schemaVersion": "release_governance_v1",
-  "updatedAt": "2026-03-24",
+  "updatedAt": "2026-03-25",
   "versioningStrategy": {
     "lockstep": ["core-*", "adapter-sdk", "shared"],
     "independent": ["adapters/*", "memory-providers/*", "notification-providers/*"]
@@ -40,13 +40,13 @@
   "auditEvidenceSources": {
     "stage9_blackbox_ga_report": {
       "sourceType": "report_file",
-      "reportPath": ".repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-003-delivery-ide-and-ga-hardening/tasks/TK-108-stage9-blackbox-ga-report.json",
+      "reportPath": ".tmp/ci/stage9-blackbox-ga/stage9-blackbox-ga-report.json",
       "requiredStatus": "passed"
     }
   },
   "rollbackRehearsal": {
     "entryCommand": "pnpm run release:rollback-rehearsal",
-    "reportPath": ".repo-ai-governor/context/dev/project-006-hardening-and-release/sprint-002-resilience-and-ga-readiness/tasks/TK-061-rollback-rehearsal-report.json",
+    "reportPath": ".tmp/ci/release/rollback-rehearsal-report.json",
     "scenarios": [
       "critical-production-regression",
       "post-promotion-gate-violation",
@@ -55,7 +55,7 @@
   },
   "gaCandidateUnifiedGate": {
     "entryCommand": "pnpm run release:ga-candidate-unified-gate",
-    "reportPath": ".repo-ai-governor/context/dev/project-006-hardening-and-release/sprint-002-resilience-and-ga-readiness/tasks/TK-062-ga-candidate-unified-gate-report.json",
+    "reportPath": ".tmp/ci/release/ga-candidate-unified-gate-report.json",
     "requiredCheckGroups": [
       "contract-baseline",
       "resilience-regression",

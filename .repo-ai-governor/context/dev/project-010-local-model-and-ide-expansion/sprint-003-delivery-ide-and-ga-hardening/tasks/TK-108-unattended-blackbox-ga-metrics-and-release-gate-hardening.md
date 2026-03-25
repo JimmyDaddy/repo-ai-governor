@@ -61,4 +61,4 @@
 1. `DA-108` `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-003-delivery-ide-and-ga-hardening/tasks/DA-108-unattended-blackbox-ga-metrics-and-release-gate-hardening.md`
 2. `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-003-delivery-ide-and-ga-hardening/tasks/checklist.md`
 3. `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-003-delivery-ide-and-ga-hardening/tasks/tasks.csv`
-4. `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-003-delivery-ide-and-ga-hardening/tasks/TK-108-stage9-blackbox-ga-report.json`
+4. 运行时 supporting report：`.tmp/ci/stage9-blackbox-ga/stage9-blackbox-ga-report.json`

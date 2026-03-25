@@ -7,8 +7,7 @@ import { dirname, resolve } from "node:path";
 import { gateFail, gateInfo, gatePass } from "../governance/gate-output.js";
 
 const GATE_NAME = "ga-candidate-unified-gate";
-const DEFAULT_REPORT_PATH =
-  ".repo-ai-governor/context/dev/project-006-hardening-and-release/sprint-002-resilience-and-ga-readiness/tasks/TK-062-ga-candidate-unified-gate-report.json";
+const DEFAULT_REPORT_PATH = ".tmp/ci/release/ga-candidate-unified-gate-report.json";
 const RELEASE_POLICY_CONFIG_PATH = "scripts/release/release-governance-policy.json";
 
 const UNIFIED_GATE_STEPS = [

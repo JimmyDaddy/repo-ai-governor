@@ -2,6 +2,7 @@ import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promis
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 
+import type { ClaudeCodeExecRunner } from "@repo-ai-governor/adapter-claude-code";
 import type { CodexExecRunner } from "@repo-ai-governor/adapter-codex";
 import type { GithubCopilotExecRunner } from "@repo-ai-governor/adapter-github-copilot";
 import {
@@ -58,6 +59,7 @@ interface RuntimeFixtureOptions {
     >
   >;
   commandProbeExecutor?: (command: string, args: readonly string[]) => Promise<void>;
+  claudeCodeExecRunner?: ClaudeCodeExecRunner;
   codexExecRunner?: CodexExecRunner;
   githubCopilotExecRunner?: GithubCopilotExecRunner;
 }
@@ -91,6 +93,33 @@ function createCodexCredentialFailureRunner(): CodexExecRunner {
         surface: AdapterSurface.CODEX,
         operation: AgentCliExecOperation.PROBE,
         stderr: "Not logged in. Run `codex login` first.",
+      },
+    );
+  };
+}
+
+function createClaudeCodeExecRunnerFixture(): ClaudeCodeExecRunner {
+  return async ({ prompt, operation }) => ({
+    stdout:
+      operation === AgentCliExecOperation.PROBE || prompt.includes("Respond with exactly OK.")
+        ? "OK\n"
+        : "simulated claude code response\n",
+    stderr: "",
+    exitCode: 0,
+    signal: null,
+    elapsedMs: 8,
+  });
+}
+
+function createClaudeCodeCredentialFailureRunner(): ClaudeCodeExecRunner {
+  return async () => {
+    throw new RuntimeError(
+      GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED,
+      "Claude Code probe failed: login required",
+      {
+        surface: AdapterSurface.CLAUDE_CODE,
+        operation: AgentCliExecOperation.PROBE,
+        stderr: "Authentication required. Run `claude auth login` first.",
       },
     );
   };
@@ -166,8 +195,8 @@ function createAdaptersConfigFixture(): AdaptersConfig {
           fallbackSurfaces: [AdapterSurface.GITHUB_COPILOT],
         },
         reviewer: {
-          primarySurface: AdapterSurface.CLAUDE_CODE,
-          fallbackSurfaces: [AdapterSurface.CODEX],
+          primarySurface: AdapterSurface.CODEX,
+          fallbackSurfaces: [AdapterSurface.CLAUDE_CODE],
         },
       },
     },
@@ -343,6 +372,7 @@ async function createRuntimeFixture(options: RuntimeFixtureOptions = {}): Promis
     adapterLocalProbeOverrides:
       options.adapterLocalProbeOverrides ?? createAdapterLocalProbeOverrides(),
     commandProbeExecutor: options.commandProbeExecutor,
+    claudeCodeExecRunner: options.claudeCodeExecRunner ?? createClaudeCodeExecRunnerFixture(),
     codexExecRunner: options.codexExecRunner ?? createCodexExecRunnerFixture(),
     githubCopilotExecRunner:
       options.githubCopilotExecRunner ?? createGithubCopilotExecRunnerFixture(),
@@ -1687,6 +1717,59 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
           adapters: true,
         },
         githubCopilotExecRunner: createGithubCopilotCredentialFailureRunner(),
+      },
+    );
+  });
+
+  it("surfaces claude code credential failures as diagnostics and next actions", async () => {
+    await withRuntimeFixture(
+      async (fixture) => {
+        const connectResult = await fixture.runtime.execute(CliCommandName.CONNECT);
+        const diagnosticsArtifactPath = connectResult.commandResult.artifacts?.find(
+          (artifact) => artifact.id === "connect_diagnostics",
+        )?.path;
+        expect(typeof diagnosticsArtifactPath).toBe("string");
+
+        const diagnosticsPayload = JSON.parse(
+          await readFile(String(diagnosticsArtifactPath), "utf8"),
+        ) as {
+          verification?: {
+            tools?: Array<{
+              toolId?: string;
+              availabilityStatus?: string;
+              unavailableReasons?: string[];
+            }>;
+            nextActions?: string[];
+          };
+        };
+        const claudeCodeSnapshot = diagnosticsPayload.verification?.tools?.find(
+          (tool) => tool.toolId === AdapterSurface.CLAUDE_CODE,
+        );
+
+        expect(claudeCodeSnapshot?.availabilityStatus).toBe(AgentAvailabilityStatus.UNAVAILABLE);
+        expect(claudeCodeSnapshot?.unavailableReasons ?? []).toContain(
+          "credential_missing:claude-code",
+        );
+        expect(
+          diagnosticsPayload.verification?.nextActions?.some((action) =>
+            action.includes("Authenticate or refresh login"),
+          ),
+        ).toBe(true);
+
+        const doctorResult = await fixture.runtime.execute(CliCommandName.DOCTOR);
+        const claudeCodeCheck = doctorResult.commandResult.checks?.find(
+          (check) => check.id === "adapter_tool_claude-code",
+        );
+        expect(claudeCodeCheck?.detail).toContain("missing required credentials or login state");
+      },
+      {
+        runtimeDebugOptions: {
+          dryRun: false,
+          trace: false,
+          replayPath: null,
+          adapters: true,
+        },
+        claudeCodeExecRunner: createClaudeCodeCredentialFailureRunner(),
       },
     );
   });

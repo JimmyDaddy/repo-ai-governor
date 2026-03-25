@@ -53,6 +53,7 @@ import {
   IdeWrapperEnvironmentKey,
 } from "./constants/ide-command-wrapper.constant.js";
 import type { IdeStandardsSourceId } from "./constants/ide-standards-source.constant.js";
+import { CliClaudeCodeExecFixtureRuntime } from "./runtime/claude-code-exec-fixture-runtime.js";
 import { CliCodexExecFixtureRuntime } from "./runtime/codex-exec-fixture-runtime.js";
 import { CliGithubCopilotExecFixtureRuntime } from "./runtime/github-copilot-exec-fixture-runtime.js";
 import { IdeStandardsSourceRuntime } from "./runtime/ide-standards-source-runtime.js";
@@ -157,8 +158,8 @@ const DEFAULT_ADAPTERS_CONFIG: AdaptersConfig = {
         fallbackSurfaces: [AdapterSurface.CODEX, AdapterSurface.CLAUDE_CODE],
       },
       reviewer: {
-        primarySurface: AdapterSurface.CLAUDE_CODE,
-        fallbackSurfaces: [AdapterSurface.CODEX, AdapterSurface.GITHUB_COPILOT],
+        primarySurface: AdapterSurface.CODEX,
+        fallbackSurfaces: [AdapterSurface.CLAUDE_CODE, AdapterSurface.GITHUB_COPILOT],
       },
       verifier: {
         primarySurface: AdapterSurface.CODEX,
@@ -285,6 +286,8 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
     const ideWrapperEnvironment = resolveIdeWrapperEnvironment(environment);
     const codexExecFixtureRuntime = new CliCodexExecFixtureRuntime();
     const codexExecRunner = codexExecFixtureRuntime.resolveExecRunner(environment);
+    const claudeCodeExecFixtureRuntime = new CliClaudeCodeExecFixtureRuntime();
+    const claudeCodeExecRunner = claudeCodeExecFixtureRuntime.resolveExecRunner(environment);
     const githubCopilotExecFixtureRuntime = new CliGithubCopilotExecFixtureRuntime();
     const githubCopilotExecRunner = githubCopilotExecFixtureRuntime.resolveExecRunner(environment);
     const runtimeDebugOptions = resolveRuntimeDebugOptions(rawArgs, io.cwd());
@@ -316,6 +319,11 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
       ...(codexExecRunner
         ? {
             codexExecRunner,
+          }
+        : {}),
+      ...(claudeCodeExecRunner
+        ? {
+            claudeCodeExecRunner,
           }
         : {}),
       ...(githubCopilotExecRunner

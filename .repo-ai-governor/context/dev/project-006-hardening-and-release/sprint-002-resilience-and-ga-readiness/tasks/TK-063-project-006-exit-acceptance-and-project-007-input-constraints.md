@@ -45,10 +45,10 @@
    - 验证证据：`DA-072`、`pnpm run test:resilience`
 2. 回滚演练与恢复流程
    - 验收结果：通过
-   - 验证证据：`DA-073`、`pnpm run release:rollback-rehearsal`、`TK-061-rollback-rehearsal-report.json`
+   - 验证证据：`DA-073`、`pnpm run release:rollback-rehearsal`、当前运行窗口生成的 `.tmp/ci/release/rollback-rehearsal-report.json`
 3. GA 候选联合门禁
    - 验收结果：通过
-   - 验证证据：`DA-074`、`pnpm run release:ga-candidate-unified-gate`、`TK-062-ga-candidate-unified-gate-report.json`
+   - 验证证据：`DA-074`、`pnpm run release:ga-candidate-unified-gate`、当前运行窗口生成的 `.tmp/ci/release/ga-candidate-unified-gate-report.json`
 4. 台账一致性与产物生命周期治理
    - 验收结果：通过
    - 验证证据：`node ./scripts/governance/reconcile-artifact-dependencies.js`、`node ./scripts/governance/check-task-ledger-sync.js`、`node ./scripts/governance/check-sprint-plan-status-sync.js`、`node ./scripts/governance/check-artifact-registry-lifecycle.js`

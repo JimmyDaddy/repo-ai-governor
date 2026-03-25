@@ -15,7 +15,7 @@
 
 1. 新增 `scripts/ci/stage9-blackbox-ga-lib.js`，统一封装 Stage 9 黑盒场景夹具、repo-local task fixture、HITL resume 路径和本地模型 mock server。
 2. 新增 `scripts/ci/run-stage9-blackbox-ga-baseline.js` 与 `pnpm run test:stage9-blackbox-ga`：
-   - 生成 `.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-003-delivery-ide-and-ga-hardening/tasks/TK-108-stage9-blackbox-ga-report.json`
+   - 生成 `.tmp/ci/stage9-blackbox-ga/stage9-blackbox-ga-report.json`
    - 以阻断语义校验 Stage 9 场景矩阵
    - 输出统一 GA 指标快照
 3. 将 Stage 9 baseline gate 接入 `check`：
@@ -44,7 +44,7 @@
 
 ## 4. GA 指标快照
 
-指标来源：`TK-108-stage9-blackbox-ga-report.json`
+指标来源：`pnpm run test:stage9-blackbox-ga` 在当前运行窗口生成的 `.tmp/ci/stage9-blackbox-ga/stage9-blackbox-ga-report.json`
 
 1. `time_to_first_success_ms`: `96`
 2. `unattended_success_rate`: `0.6667`
@@ -67,7 +67,7 @@
 ## 6. 关键产物
 
 1. `DA-108` 本文档
-2. `TK-108-stage9-blackbox-ga-report.json`
+2. 运行时 Stage 9 blackbox GA supporting report：`.tmp/ci/stage9-blackbox-ga/stage9-blackbox-ga-report.json`
 3. `resolved_code_review_tk-108-unattended-blackbox-ga-metrics-and-release-gate-hardening.md`
 
 ## 7. 验证证据

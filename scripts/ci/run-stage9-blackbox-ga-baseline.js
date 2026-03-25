@@ -10,8 +10,7 @@ import {
 } from "./stage9-blackbox-ga-lib.js";
 
 const GATE_NAME = "stage9-blackbox-ga";
-const DEFAULT_REPORT_PATH =
-  ".repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-003-delivery-ide-and-ga-hardening/tasks/TK-108-stage9-blackbox-ga-report.json";
+const DEFAULT_REPORT_PATH = ".tmp/ci/stage9-blackbox-ga/stage9-blackbox-ga-report.json";
 
 /**
  * Resolves optional report output path from CLI args.

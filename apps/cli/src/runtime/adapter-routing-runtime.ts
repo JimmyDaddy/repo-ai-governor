@@ -1,4 +1,8 @@
-import { ClaudeCodeAgentAdapter } from "@repo-ai-governor/adapter-claude-code";
+import {
+  ClaudeCodeAgentAdapter,
+  ClaudeCodeAgentAdapterExecutionMode,
+  type ClaudeCodeExecRunner,
+} from "@repo-ai-governor/adapter-claude-code";
 import {
   CodexAgentAdapter,
   CodexAgentAdapterExecutionMode,
@@ -32,6 +36,7 @@ export class CliAdapterRoutingRuntime {
   public constructor(
     private readonly adaptersConfig: AdaptersConfig,
     private readonly options: {
+      claudeCodeExecRunner?: ClaudeCodeExecRunner;
       codexExecRunner?: CodexExecRunner;
       githubCopilotExecRunner?: GithubCopilotExecRunner;
     } = {},
@@ -89,7 +94,15 @@ export class CliAdapterRoutingRuntime {
                   : {}),
               })
             : surface === AdapterSurface.CLAUDE_CODE
-              ? new ClaudeCodeAgentAdapter(adapterOptions)
+              ? new ClaudeCodeAgentAdapter({
+                  ...adapterOptions,
+                  executionMode: ClaudeCodeAgentAdapterExecutionMode.CLI_EXEC,
+                  ...(this.options.claudeCodeExecRunner
+                    ? {
+                        execRunner: this.options.claudeCodeExecRunner,
+                      }
+                    : {}),
+                })
               : new LocalModelAgentAdapter({
                   ...adapterOptions,
                   ...(toolConfig?.localModel

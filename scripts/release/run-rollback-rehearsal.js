@@ -8,8 +8,7 @@ import { gateFail, gateInfo, gatePass } from "../governance/gate-output.js";
 
 const GATE_NAME = "release-rollback-rehearsal";
 const RELEASE_POLICY_CONFIG_PATH = "scripts/release/release-governance-policy.json";
-const DEFAULT_REPORT_PATH =
-  ".repo-ai-governor/context/dev/project-006-hardening-and-release/sprint-002-resilience-and-ga-readiness/tasks/TK-061-rollback-rehearsal-report.json";
+const DEFAULT_REPORT_PATH = ".tmp/ci/release/rollback-rehearsal-report.json";
 
 const REHEARSAL_SCENARIOS = [
   {

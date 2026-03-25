@@ -50,7 +50,7 @@
 ## 4. 后续 rollout 输入约束（冻结）
 
 1. release / GA baseline
-   - 后续 rollout 必须继续消费 `DA-108` 与 `TK-108-stage9-blackbox-ga-report.json`，不得绕开 `gate:stage9-blackbox-ga`、`release:ga-check` 或 unified gate supporting report。
+   - 后续 rollout 必须继续消费 `DA-108` 与当前运行窗口生成的 Stage 9 blackbox GA supporting report（默认 `.tmp/ci/stage9-blackbox-ga/stage9-blackbox-ga-report.json`），不得绕开 `gate:stage9-blackbox-ga`、`release:ga-check` 或 unified gate supporting report。
 2. runtime / mainchain baseline
    - 新的自动主链增强必须建立在 `DA-103`、`DA-104`、`DA-105` 已冻结的 task-driven / inline-review / HITL 语义之上，不得回退到固定模板或外部排队 review 消费模式。
 3. CLI engineering boundary
