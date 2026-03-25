@@ -1,6 +1,6 @@
 # @repo-ai-governor/core-orchestration-service
 
-`core-orchestration-service` 提供本地 orchestration service 的最小 in-process shell。
+`core-orchestration-service` 提供本地 orchestration service 的 execution owner 实现，包括 embedded shell 与 `sidecar + ipc` baseline。
 
 当前阶段职责：
 
@@ -10,5 +10,6 @@
 4. 暴露 `start/get/list/stream/submitHitlDecision/recover` 级 execution owner API 基线
 5. 统一生成 transport-neutral streaming cursor、event sequence 与 desktop-ready host/transport seam
 6. 将 HITL receipt、checkpoint backlink 与 recovery 响应收敛为 service-owned DTO
+7. 提供 Node IPC sidecar host/client 基线与 health/lifecycle probe
 
 本包不直接承载 policy、audit、review queue 或 artifact registry 的 canonical source 写入。

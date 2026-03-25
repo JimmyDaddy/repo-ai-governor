@@ -1,6 +1,7 @@
 import type {
   LocalOrchestrationServicePublishEventRequest,
   LocalOrchestrationServiceSaveCheckpointRequest,
+  LocalOrchestrationServiceSidecarClient,
   LocalOrchestrationServiceStartExecutionRuntimeContext,
 } from "@repo-ai-governor/core-orchestration-service";
 import type { LangGraphRecoveredExecution } from "@repo-ai-governor/core-runtime-langgraph";
@@ -10,6 +11,7 @@ import type {
   OrchestrationListExecutionsResponse,
   OrchestrationRecoverExecutionRequest,
   OrchestrationRecoverExecutionResponse,
+  OrchestrationServiceHealthResponse,
   OrchestrationStartExecutionRequest,
   OrchestrationStartExecutionResponse,
   OrchestrationSubmitHitlDecisionRequest,
@@ -17,6 +19,7 @@ import type {
   OrchestrationSubscribeExecutionRequest,
   OrchestrationSubscribeExecutionResponse,
 } from "@repo-ai-governor/orchestration-service-client";
+import { CliOrchestrationServiceRuntimeMode } from "../constants/orchestration-service-runtime.constant.js";
 import type {
   CliOrchestrationServiceOwner,
   CliOrchestrationServiceRuntimeDependencies,
@@ -44,6 +47,11 @@ export class CliOrchestrationServiceRuntime {
   ): Promise<OrchestrationStartExecutionResponse> {
     const service = await this.resolveServiceOwner();
     return service.startExecution(request, runtimeContext);
+  }
+
+  public async getHealth(): Promise<OrchestrationServiceHealthResponse> {
+    const service = await this.resolveServiceOwner();
+    return service.getHealth();
   }
 
   public async getExecution(
@@ -93,11 +101,29 @@ export class CliOrchestrationServiceRuntime {
     return service.saveCheckpoint(request);
   }
 
+  public async dispose(): Promise<void> {
+    if (!this.serviceOwnerPromise) {
+      return;
+    }
+
+    const service = await this.serviceOwnerPromise.catch(() => undefined);
+    this.serviceOwnerPromise = null;
+    await service?.dispose?.();
+  }
+
   private async resolveServiceOwner(): Promise<CliOrchestrationServiceOwner> {
     if (!this.serviceOwnerPromise) {
       this.serviceOwnerPromise = (async () => {
         if (this.dependencies.serviceOwnerProvider) {
           return this.dependencies.serviceOwnerProvider(this.workspaceRoot);
+        }
+        if (this.dependencies.runtimeMode === CliOrchestrationServiceRuntimeMode.SIDECAR_IPC) {
+          const { LocalOrchestrationServiceSidecarClient } = await import(
+            "@repo-ai-governor/core-orchestration-service"
+          );
+          return new LocalOrchestrationServiceSidecarClient(this.workspaceRoot, {
+            ...this.dependencies.sidecarClientDependencies,
+          }) as CliOrchestrationServiceOwner;
         }
         const { LocalOrchestrationServiceShell } = await import(
           "@repo-ai-governor/core-orchestration-service"

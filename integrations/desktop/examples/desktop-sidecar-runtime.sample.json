@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "1.0",
+  "surface": "desktop",
+  "runtimeMode": "sidecar_ipc",
+  "executionKind": "run",
+  "expectedServiceHostKind": "sidecar",
+  "expectedServiceTransportKind": "ipc",
+  "expectedLifecycleStatus": "ready",
+  "requiredOperations": [
+    "getHealth",
+    "startExecution",
+    "publishEvent",
+    "listExecutions",
+    "subscribeExecution",
+    "dispose"
+  ]
+}

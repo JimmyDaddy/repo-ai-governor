@@ -1,6 +1,7 @@
 import type {
   LocalOrchestrationServicePublishEventRequest,
   LocalOrchestrationServiceSaveCheckpointRequest,
+  LocalOrchestrationServiceSidecarClientDependencies,
   LocalOrchestrationServiceStartExecutionRuntimeContext,
 } from "@repo-ai-governor/core-orchestration-service";
 import type { LangGraphRecoveredExecution } from "@repo-ai-governor/core-runtime-langgraph";
@@ -9,6 +10,7 @@ import type {
   OrchestrationStartExecutionRequest,
   OrchestrationStartExecutionResponse,
 } from "@repo-ai-governor/orchestration-service-client";
+import type { CliOrchestrationServiceRuntimeMode } from "../../constants/orchestration-service-runtime.constant.js";
 
 /**
  * Defines the minimal owner-side orchestration service surface required by CLI runtime.
@@ -22,11 +24,14 @@ export interface CliOrchestrationServiceOwner extends OrchestrationServiceClient
   saveCheckpoint(
     request: LocalOrchestrationServiceSaveCheckpointRequest,
   ): Promise<LangGraphRecoveredExecution | undefined>;
+  dispose?(): Promise<void>;
 }
 
 /**
  * Defines runtime dependencies that choose the concrete local orchestration service owner.
  */
 export interface CliOrchestrationServiceRuntimeDependencies {
+  runtimeMode?: CliOrchestrationServiceRuntimeMode;
   serviceOwnerProvider?: (workspaceRoot: string) => Promise<CliOrchestrationServiceOwner>;
+  sidecarClientDependencies?: LocalOrchestrationServiceSidecarClientDependencies;
 }

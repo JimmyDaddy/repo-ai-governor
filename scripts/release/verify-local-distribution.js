@@ -17,15 +17,22 @@ const REQUIRED_PACKED_PATH_SUFFIXES = [
   "dist/node_modules/@repo-ai-governor/config/dist/src/index.js",
   "dist/node_modules/@repo-ai-governor/core-orchestration-service/package.json",
   "dist/node_modules/@repo-ai-governor/core-orchestration-service/dist/src/index.js",
+  "dist/node_modules/@repo-ai-governor/core-orchestration-service/dist/src/local-orchestration-service-sidecar-client.js",
+  "dist/node_modules/@repo-ai-governor/core-orchestration-service/dist/src/local-orchestration-service-sidecar-host.js",
+  "dist/node_modules/@repo-ai-governor/core-orchestration-service/dist/src/local-orchestration-service-sidecar-entry.js",
   "dist/node_modules/@repo-ai-governor/core-runtime-langgraph/package.json",
   "dist/node_modules/@repo-ai-governor/core-runtime-langgraph/dist/src/index.js",
   "dist/node_modules/@repo-ai-governor/orchestration-service-client/package.json",
   "dist/node_modules/@repo-ai-governor/orchestration-service-client/dist/src/index.js",
+  "dist/node_modules/@repo-ai-governor/cli/dist/src/runtime/orchestration-service-runtime.js",
   "dist/packages/shared/src/index.js",
   "examples/README.md",
   "examples/single-role-minimal-flow/scenario.json",
   "examples/single-role-minimal-flow/expected/runtime-baseline.json",
   "integrations/ide/README.md",
+  "integrations/desktop/README.md",
+  "integrations/desktop/examples/README.md",
+  "integrations/desktop/examples/desktop-sidecar-runtime.sample.json",
   "integrations/ide/examples/vscode-task.sample.json",
   "integrations/ide/examples/jetbrains-run-configuration.sample.xml",
   "integrations/ide/examples/cursor-task.sample.json",
@@ -182,6 +189,12 @@ try {
 
   runCommand("node", [DIST_CLI_ENTRY_PATH, "--help"], "CLI help smoke check");
   gateInfo(GATE_NAME, "CLI help smoke check passed.");
+  runCommand(
+    "node",
+    ["./scripts/examples/check-desktop-entry-smoke.js"],
+    "Desktop entry smoke check",
+  );
+  gateInfo(GATE_NAME, "Desktop entry smoke check passed.");
 
   const packResult = runCommand("pnpm", ["pack", "--json"], "pnpm pack --json");
   const parsedPackJson = parsePackOutputJson(packResult.stdout ?? "");

@@ -6,6 +6,7 @@ export type {
   OrchestrationExecutionSummary,
   OrchestrationRecoverExecutionResponse,
   OrchestrationServiceClient,
+  OrchestrationServiceHealthResponse,
   OrchestrationServiceEvent,
   OrchestrationSubscribeExecutionRequest,
   OrchestrationStartExecutionRequest,

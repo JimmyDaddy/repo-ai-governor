@@ -18,7 +18,9 @@ import {
   type OrchestrationServiceClient,
   type OrchestrationServiceEvent,
   OrchestrationServiceEventType,
+  type OrchestrationServiceHealthResponse,
   OrchestrationServiceHostKind,
+  OrchestrationServiceLifecycleStatus,
   OrchestrationServiceTransportKind,
   type OrchestrationStartExecutionRequest,
   type OrchestrationStartExecutionResponse,
@@ -59,6 +61,10 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
   private readonly executionSessionIdProvider: (executionId: string) => string;
   private readonly serviceHostKind: OrchestrationServiceHostKind;
   private readonly serviceTransportKind: OrchestrationServiceTransportKind;
+  private readonly lifecycleStatusProvider: () => OrchestrationServiceLifecycleStatus;
+  private readonly protocolVersion: string;
+  private readonly pidProvider: () => number | undefined;
+  private readonly startedAt: string;
   private executionRecordsLoadedPromise: Promise<void> | null = null;
 
   public constructor(
@@ -83,11 +89,30 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
     this.serviceHostKind = dependencies.serviceHostKind ?? OrchestrationServiceHostKind.EMBEDDED;
     this.serviceTransportKind =
       dependencies.serviceTransportKind ?? OrchestrationServiceTransportKind.IN_PROCESS;
+    this.lifecycleStatusProvider =
+      dependencies.lifecycleStatusProvider ?? (() => OrchestrationServiceLifecycleStatus.READY);
+    this.protocolVersion = dependencies.protocolVersion ?? "1";
+    this.pidProvider = dependencies.pidProvider ?? (() => process.pid);
+    this.startedAt = this.toTimestamp();
     this.checkpointer =
       dependencies.checkpointer ??
       new LangGraphSqliteFsCheckpointer({
         rootDirectory: dependencies.workspaceRoot,
       });
+  }
+
+  public async getHealth(): Promise<OrchestrationServiceHealthResponse> {
+    await this.ensureExecutionRecordsLoaded();
+    return {
+      serviceHostKind: this.serviceHostKind,
+      serviceTransportKind: this.serviceTransportKind,
+      lifecycleStatus: this.lifecycleStatusProvider(),
+      checkpointCapable: true,
+      workspaceRoot: this.dependencies.workspaceRoot,
+      startedAt: this.startedAt,
+      protocolVersion: this.protocolVersion,
+      ...(this.pidProvider() ? { pid: this.pidProvider() } : {}),
+    };
   }
 
   public async startExecution(

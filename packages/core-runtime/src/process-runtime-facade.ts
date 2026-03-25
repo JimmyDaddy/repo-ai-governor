@@ -1,7 +1,15 @@
 import { type ProcessCompiledIr, ProcessCompiler } from "@repo-ai-governor/core-process";
-import type { LangGraphRuntimeBackend } from "@repo-ai-governor/core-runtime-langgraph";
+import type {
+  LangGraphRuntimeBackend,
+  LangGraphRuntimeExecutionResult,
+  LangGraphRuntimeStageContext,
+} from "@repo-ai-governor/core-runtime-langgraph";
 import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
-import { RuntimeExecutionStatus } from "./constants/index.js";
+import {
+  RuntimeExecutionStatus,
+  RuntimeStageStatus,
+  RuntimeTimeoutScope,
+} from "./constants/index.js";
 import { ProcessRuntimeEngine } from "./process-runtime-engine.js";
 import type {
   ProcessRuntimeBackendAvailability,
@@ -15,6 +23,9 @@ import type {
   ProcessRuntimeLifecycleEvent,
   ProcessRuntimePreparedExecution,
   ProcessRuntimePreparedExecutionProfile,
+  RuntimeConditionResolver,
+  RuntimeExecutionResult,
+  RuntimeLoopController,
   RuntimeStageHandler,
 } from "./types/index.js";
 
@@ -182,14 +193,184 @@ export class ProcessRuntimeFacade {
     compiledIr: ProcessCompiledIr,
     stageHandler: RuntimeStageHandler,
     options: ProcessRuntimeFacadeExecuteOptions,
-  ) {
+  ): Promise<RuntimeExecutionResult> {
     if (backend === "langgraph") {
-      // Phase 0 keeps deterministic stage dispatch in the shared runtime engine while
-      // facade selection, prepared profiles, and checkpoint/recovery ownership move to LangGraph.
-      return this.legacyRuntimeEngine.execute(compiledIr, stageHandler, options);
+      return this.executeLangGraphBackend(compiledIr, stageHandler, options);
     }
 
     return this.legacyRuntimeEngine.execute(compiledIr, stageHandler, options);
+  }
+
+  private async executeLangGraphBackend(
+    compiledIr: ProcessCompiledIr,
+    stageHandler: RuntimeStageHandler,
+    options: ProcessRuntimeFacadeExecuteOptions,
+  ): Promise<RuntimeExecutionResult> {
+    if (!this.langgraphRuntimeBackend) {
+      throw new RuntimeError(
+        GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+        'Selected runtime backend "langgraph" is not available in the current facade.',
+        {
+          backend: "langgraph",
+        },
+      );
+    }
+
+    const langGraphExecuteOptions: Parameters<LangGraphRuntimeBackend["execute"]>[2] = {};
+    if (options.stageTimeoutMs !== undefined) {
+      langGraphExecuteOptions.stageTimeoutMs = options.stageTimeoutMs;
+    }
+    if (options.flowTimeoutMs !== undefined) {
+      langGraphExecuteOptions.flowTimeoutMs = options.flowTimeoutMs;
+    }
+    if (options.maxTransitions !== undefined) {
+      langGraphExecuteOptions.maxTransitions = options.maxTransitions;
+    }
+    if (options.signal) {
+      langGraphExecuteOptions.signal = options.signal;
+    }
+    if (options.stageInputs) {
+      langGraphExecuteOptions.stageInputs = options.stageInputs;
+    }
+    if (options.conditionResolver) {
+      const conditionResolver: RuntimeConditionResolver = options.conditionResolver;
+      langGraphExecuteOptions.conditionResolver = {
+        resolveConditionKey: (context) =>
+          conditionResolver.resolveConditionKey({
+            processId: context.processId,
+            executionId: context.executionId,
+            nodeId: context.nodeId,
+            stageId: context.stageId,
+            outgoingEdges: context.outgoingEdges.map((edge) => ({
+              fromNodeId: edge.fromNodeId,
+              toNodeId: edge.toNodeId,
+              ...(edge.conditionKey ? { conditionKey: edge.conditionKey } : {}),
+            })),
+            stageOutput: context.stageOutput,
+          }),
+      };
+    }
+    if (options.loopController) {
+      const loopController: RuntimeLoopController = options.loopController;
+      langGraphExecuteOptions.loopController = {
+        shouldContinue: (context) => loopController.shouldContinue(context),
+      };
+    }
+    if (options.nowProvider) {
+      const nowProvider = options.nowProvider;
+      langGraphExecuteOptions.nowProvider = () => nowProvider.now();
+    }
+
+    const runtimeResult = await this.langgraphRuntimeBackend.execute(
+      compiledIr,
+      async (context) => {
+        const enrichedContext = this.enrichLangGraphStageContext(context, compiledIr, options);
+        return stageHandler(enrichedContext);
+      },
+      langGraphExecuteOptions,
+    );
+
+    return this.mapLangGraphExecutionResult(runtimeResult);
+  }
+
+  private enrichLangGraphStageContext(
+    context: LangGraphRuntimeStageContext,
+    compiledIr: ProcessCompiledIr,
+    options: ProcessRuntimeFacadeExecuteOptions,
+  ) {
+    if (!options.roleRegistry) {
+      return context;
+    }
+
+    const resolvedRole = options.roleRegistry.resolveOrThrow(context.roleProfileId, {
+      processId: compiledIr.processId,
+      executionId: compiledIr.executionId,
+      stageId: context.stageId,
+      routeKey: context.routeKey,
+    });
+
+    return {
+      ...context,
+      roleProfileVersion: resolvedRole.profile.roleProfileVersion,
+      roleSource: resolvedRole.profile.roleSource,
+    };
+  }
+
+  private mapLangGraphExecutionResult(
+    runtimeResult: LangGraphRuntimeExecutionResult,
+  ): RuntimeExecutionResult {
+    return {
+      processId: runtimeResult.processId,
+      executionId: runtimeResult.executionId,
+      status: this.mapLangGraphExecutionStatus(runtimeResult.status),
+      startedAt: runtimeResult.startedAt,
+      endedAt: runtimeResult.endedAt,
+      durationMs: runtimeResult.durationMs,
+      visitedNodeIds: [...runtimeResult.visitedNodeIds],
+      stageResults: runtimeResult.stageResults.map((stageResult) => ({
+        nodeId: stageResult.nodeId,
+        stageId: stageResult.stageId,
+        nodeType: stageResult.nodeType,
+        status: this.mapLangGraphStageStatus(stageResult.status),
+        attempt: stageResult.attempt,
+        startedAt: stageResult.startedAt,
+        endedAt: stageResult.endedAt,
+        durationMs: stageResult.durationMs,
+        ...(stageResult.output ? { output: stageResult.output } : {}),
+        ...(stageResult.errorCode ? { errorCode: stageResult.errorCode } : {}),
+        ...(stageResult.errorMessage ? { errorMessage: stageResult.errorMessage } : {}),
+      })),
+      ...(runtimeResult.interruption
+        ? {
+            interruption: {
+              reason:
+                runtimeResult.interruption.reason === "timeout"
+                  ? RuntimeExecutionStatus.TIMEOUT
+                  : RuntimeExecutionStatus.CANCELLED,
+              errorCode: runtimeResult.interruption.errorCode,
+              message: runtimeResult.interruption.message,
+              ...(runtimeResult.interruption.timeoutScope
+                ? {
+                    timeoutScope:
+                      runtimeResult.interruption.timeoutScope === "flow"
+                        ? RuntimeTimeoutScope.FLOW
+                        : RuntimeTimeoutScope.STAGE,
+                  }
+                : {}),
+            },
+          }
+        : {}),
+    };
+  }
+
+  private mapLangGraphExecutionStatus(
+    status: LangGraphRuntimeExecutionResult["status"],
+  ): RuntimeExecutionStatus {
+    switch (status) {
+      case "succeeded":
+        return RuntimeExecutionStatus.SUCCEEDED;
+      case "failed":
+        return RuntimeExecutionStatus.FAILED;
+      case "timeout":
+        return RuntimeExecutionStatus.TIMEOUT;
+      case "cancelled":
+        return RuntimeExecutionStatus.CANCELLED;
+    }
+  }
+
+  private mapLangGraphStageStatus(
+    status: LangGraphRuntimeExecutionResult["stageResults"][number]["status"],
+  ): RuntimeStageStatus {
+    switch (status) {
+      case "succeeded":
+        return RuntimeStageStatus.SUCCEEDED;
+      case "failed":
+        return RuntimeStageStatus.FAILED;
+      case "timeout":
+        return RuntimeStageStatus.TIMEOUT;
+      case "cancelled":
+        return RuntimeStageStatus.CANCELLED;
+    }
   }
 
   private prepareLangGraphProfile(

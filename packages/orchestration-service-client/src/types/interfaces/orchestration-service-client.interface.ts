@@ -4,8 +4,20 @@ import type {
   OrchestrationExecutionStatus,
   OrchestrationServiceEventType,
   OrchestrationServiceHostKind,
+  OrchestrationServiceLifecycleStatus,
   OrchestrationServiceTransportKind,
 } from "../../constants/index.js";
+
+export interface OrchestrationServiceHealthResponse {
+  serviceHostKind: OrchestrationServiceHostKind;
+  serviceTransportKind: OrchestrationServiceTransportKind;
+  lifecycleStatus: OrchestrationServiceLifecycleStatus;
+  checkpointCapable: boolean;
+  workspaceRoot: string;
+  startedAt: string;
+  protocolVersion: string;
+  pid?: number;
+}
 
 export interface OrchestrationStartExecutionRequest {
   workspaceId: string;
@@ -156,6 +168,7 @@ export interface OrchestrationRecoverExecutionResponse {
 }
 
 export interface OrchestrationServiceClient {
+  getHealth(): Promise<OrchestrationServiceHealthResponse>;
   startExecution(
     request: OrchestrationStartExecutionRequest,
   ): Promise<OrchestrationStartExecutionResponse>;

@@ -15,7 +15,7 @@
 
 ## Planned Follow-Up Streams
 
-- `follow-up-001`: project=`project-016-langgraph-runtime-productization`, sprint=`sprint-001-vendor-adapter-and-sidecar-baseline`, docs=`.repo-ai-governor/context/dev/project-016-langgraph-runtime-productization`, plan=`.repo-ai-governor/context/dev/project-016-langgraph-runtime-productization/plan.md`, tasks=`.repo-ai-governor/context/dev/project-016-langgraph-runtime-productization/sprint-001-vendor-adapter-and-sidecar-baseline/tasks/`, checklist=`.repo-ai-governor/context/dev/project-016-langgraph-runtime-productization/sprint-001-vendor-adapter-and-sidecar-baseline/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-016-langgraph-runtime-productization/sprint-001-vendor-adapter-and-sidecar-baseline/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-016-langgraph-runtime-productization/sprint-001-vendor-adapter-and-sidecar-baseline/review/`, status=`planned`
+1. 当前无 planned follow-up stream。
 
 ## Completed Stream History
 

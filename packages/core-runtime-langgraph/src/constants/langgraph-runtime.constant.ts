@@ -29,11 +29,30 @@ export const LANGGRAPH_CHECKPOINT_SOURCES = ["file-backed", "sqlite-fs"] as cons
 
 export type LangGraphCheckpointSource = (typeof LANGGRAPH_CHECKPOINT_SOURCES)[number];
 
+export const LANGGRAPH_COMMUNITY_VENDOR_RUNTIME_KINDS = ["langchain_langgraph_js"] as const;
+
+export type LangGraphCommunityVendorRuntimeKind =
+  (typeof LANGGRAPH_COMMUNITY_VENDOR_RUNTIME_KINDS)[number];
+
+export const LANGGRAPH_COMMUNITY_VENDOR_BINDING_STATUSES = [
+  "available",
+  "module_missing",
+  "export_missing",
+  "load_failed",
+] as const;
+
+export type LangGraphCommunityVendorBindingStatus =
+  (typeof LANGGRAPH_COMMUNITY_VENDOR_BINDING_STATUSES)[number];
+
+export const LANGGRAPH_COMMUNITY_VENDOR_DEFAULT_PACKAGE_NAME = "@langchain/langgraph";
+
+export const LANGGRAPH_COMMUNITY_VENDOR_REQUIRED_EXPORTS = ["StateGraph", "START", "END"] as const;
+
 export const LANGGRAPH_RUNTIME_EXECUTION_STATUSES = [
   "pending",
   "succeeded",
   "failed",
-  "interrupted",
+  "timeout",
   "cancelled",
 ] as const;
 
@@ -42,11 +61,24 @@ export type LangGraphRuntimeExecutionStatus = (typeof LANGGRAPH_RUNTIME_EXECUTIO
 export const LANGGRAPH_RUNTIME_TERMINAL_STATUSES = [
   "succeeded",
   "failed",
-  "interrupted",
+  "timeout",
   "cancelled",
 ] as const;
 
 export type LangGraphRuntimeTerminalStatus = (typeof LANGGRAPH_RUNTIME_TERMINAL_STATUSES)[number];
+
+export const LANGGRAPH_RUNTIME_STAGE_STATUSES = [
+  "succeeded",
+  "failed",
+  "timeout",
+  "cancelled",
+] as const;
+
+export type LangGraphRuntimeStageStatus = (typeof LANGGRAPH_RUNTIME_STAGE_STATUSES)[number];
+
+export const LANGGRAPH_RUNTIME_EXECUTION_MODES = ["prepare_only", "graph_first_dispatch"] as const;
+
+export type LangGraphRuntimeExecutionMode = (typeof LANGGRAPH_RUNTIME_EXECUTION_MODES)[number];
 
 export const LANGGRAPH_REDUCED_STATE_KEYS = [
   "execution.cursor",

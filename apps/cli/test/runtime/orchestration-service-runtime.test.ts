@@ -11,6 +11,7 @@ import {
   OrchestrationServiceHostKind,
   OrchestrationServiceTransportKind,
 } from "@repo-ai-governor/orchestration-service-client";
+import { CliOrchestrationServiceRuntimeMode } from "../../src/constants/orchestration-service-runtime.constant.js";
 import { CliOrchestrationServiceRuntime } from "../../src/runtime/orchestration-service-runtime.js";
 
 describe("CliOrchestrationServiceRuntime", () => {
@@ -105,4 +106,39 @@ describe("CliOrchestrationServiceRuntime", () => {
       }
     },
   );
+
+  it("can resolve the default sidecar IPC owner without a custom provider", async () => {
+    const tempRoot = await mkdtemp(resolve(tmpdir(), "cli-orchestration-runtime-sidecar-"));
+    const workspaceRoot = resolve(tempRoot, ".repo-ai-governor");
+
+    try {
+      const runtime = new CliOrchestrationServiceRuntime(workspaceRoot, {
+        runtimeMode: CliOrchestrationServiceRuntimeMode.SIDECAR_IPC,
+      });
+
+      const health = await runtime.getHealth();
+      const started = await runtime.startExecution(
+        {
+          workspaceId: "workspace-sidecar",
+          workspaceRoot,
+          executionKind: OrchestrationExecutionKind.RUN,
+          clientSurface: OrchestrationClientSurface.CLI,
+        },
+        {
+          processId: "process-sidecar-runtime",
+          executionId: "execution-sidecar-runtime",
+          executionSessionId: "session-sidecar-runtime",
+        },
+      );
+
+      expect(health.serviceHostKind).toBe(OrchestrationServiceHostKind.SIDECAR);
+      expect(health.serviceTransportKind).toBe(OrchestrationServiceTransportKind.IPC);
+      expect(started.serviceHostKind).toBe(OrchestrationServiceHostKind.SIDECAR);
+      expect(started.serviceTransportKind).toBe(OrchestrationServiceTransportKind.IPC);
+
+      await runtime.dispose();
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
 });

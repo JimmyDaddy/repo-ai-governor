@@ -9,6 +9,7 @@
 3. HITL decision submit 的 service-owned response 基线
 4. recovery request/response 与 checkpoint backlink 基线
 5. transport-neutral streaming cursor、event sequence 与 desktop-ready payload 字段
-6. service host / transport seam 基线（不绑定单一 IPC/HTTP 实现）
+6. service host / transport seam 基线（当前产品化推荐候选为 `sidecar + ipc`）
 7. execution summary、stream token 与 runtime owner 边界基线
 8. execution status 与 event type 的稳定枚举
+9. service health / lifecycle probe 基线

@@ -34,6 +34,16 @@ export enum OrchestrationServiceTransportKind {
 }
 
 /**
+ * Defines service lifecycle states exposed by orchestration health probes.
+ */
+export enum OrchestrationServiceLifecycleStatus {
+  STARTING = "starting",
+  READY = "ready",
+  STOPPING = "stopping",
+  STOPPED = "stopped",
+}
+
+/**
  * Defines persisted execution statuses exposed by the local orchestration service.
  */
 export enum OrchestrationExecutionStatus {

@@ -268,7 +268,7 @@
    - 桌面 UI 只做 presenter / HITL client，不直接拥有 runtime 主状态。
 5. 持久化与恢复策略
    - `LangGraph state/checkpointer` 仅视为执行态缓存与恢复介质，不升格为产品级事实源。
-   - POC 阶段可使用 file-backed checkpointer；正式阶段优先对接 `sqlite-fs` 或等价本地持久化实现。
+   - 当前已采用 file-backed checkpointer 完成基线实装（project-014 / sprint-002）；sqlite-fs checkpointer 已在 project-014 / sprint-002 完成基线接入，为后续生产级扩展保留对接口。
 6. 工程约束
    - 不将业务逻辑直接写死在 `LangGraph` 节点中，避免 runtime vendor lock-in。
    - 副作用节点必须显式满足幂等与 replay 约束，特别是 `review artifact`、`verify`、`ledger backfill`、`notification dispatch` 与 `delivery rehearsal`。
@@ -467,9 +467,13 @@
 
 ## 7.4 人工回灌字段
 
-1. `decision`（approve/reject/revise）
-2. `reason`
-3. `constraints`（可选）
+1. `decision_id`（唯一决策标识，便于审计回链）
+2. `decision`（approve/reject/revise）
+3. `reason`（决策说明）
+4. `constraints`（可选，附加约束条件）
+5. `resume_action`（对应运行时动作：resume/terminate/degrade）
+6. `decided_by`（决策人标识）
+7. `decided_at`（RFC3339 秒级时间戳）
 
 ## 7.5 人工介入通知渠道
 

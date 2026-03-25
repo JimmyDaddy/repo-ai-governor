@@ -1,6 +1,6 @@
 # project-016-langgraph-runtime-productization 计划
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-26
 - Stage Mapping: Post-Stage-9 runtime modernization follow-up
 - Phase Mapping: Runtime Productization / Vendor Adapter + Service Host
@@ -26,12 +26,12 @@
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 |---|---|---|---|---|---|
-| TK-161 | sprint-001 | project-016 启动与 LangGraph runtime productization 重排 | bootstrap/plan | DA-160 | planned |
-| TK-162 | sprint-001 | 社区 LangGraph vendor adapter 与 package truthfulness 基线 | architecture/runtime | TK-161,DA-160 | planned |
-| TK-163 | sprint-001 | graph-first execution semantics 与 selector/cutover hardening | implementation/runtime | TK-161,TK-162,DA-143,DA-145,DA-148,DA-160 | planned |
-| TK-164 | sprint-001 | `sidecar + ipc` orchestration host 与 transport 基线 | implementation/service-host | TK-161,TK-162,DA-144,DA-151,DA-157,DA-160 | planned |
-| TK-165 | sprint-001 | desktop execution surface 与 service ops/release baseline | implementation/desktop-ops | TK-163,TK-164,DA-157,DA-160 | planned |
-| TK-166 | sprint-001 | sprint-001 出口验收与后续 rollout 输入约束 | acceptance/baseline | TK-162,TK-163,TK-164,TK-165,DA-160 | planned |
+| TK-161 | sprint-001 | project-016 启动与 LangGraph runtime productization 重排 | bootstrap/plan | DA-160 | completed |
+| TK-162 | sprint-001 | 社区 LangGraph vendor adapter 与 package truthfulness 基线 | architecture/runtime | TK-161,DA-160,DA-161 | completed |
+| TK-163 | sprint-001 | graph-first execution semantics 与 selector/cutover hardening | implementation/runtime | TK-161,TK-162,DA-143,DA-145,DA-148,DA-160,DA-162 | completed |
+| TK-164 | sprint-001 | `sidecar + ipc` orchestration host 与 transport 基线 | implementation/service-host | TK-161,TK-162,DA-144,DA-151,DA-157,DA-160,DA-162,DA-163 | completed |
+| TK-165 | sprint-001 | desktop execution surface 与 service ops/release baseline | implementation/desktop-ops | TK-163,TK-164,DA-157,DA-160,DA-162,DA-163,DA-164 | completed |
+| TK-166 | sprint-001 | sprint-001 出口验收与后续 rollout 输入约束 | acceptance/baseline | TK-162,TK-163,TK-164,TK-165,DA-160,DA-162,DA-163,DA-164,DA-165 | completed |
 
 ## 4. 依赖产物策略
 
@@ -54,3 +54,5 @@
 ## 6. 里程碑记录
 
 1. 2026-03-26：创建 planned `project-016`，承接 `project-014` 未完成的 LangGraph full productization 残余项。
+2. 2026-03-26：通过 `TK-161 / DA-161` 将 `project-016` 提升为 active primary stream，并冻结 sprint-001 的 bootstrap 输入边界。
+3. 2026-03-26：通过 `TK-166 / DA-166` 完成 sprint-001 出口验收，并生成 [project-016 完成态审计摘要](/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-016-langgraph-runtime-productization/project-016-langgraph-runtime-productization-completion-audit-summary.md)。

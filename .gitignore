@@ -6,3 +6,4 @@ coverage/
 .repo-ai-governor/reports/
 *.tsbuildinfo
 *.tgz
+.claude/settings.local.json

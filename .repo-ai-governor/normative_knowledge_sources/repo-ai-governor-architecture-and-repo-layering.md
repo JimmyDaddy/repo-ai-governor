@@ -301,6 +301,10 @@ ai-governor/
     cli/
       src/
       test/
+  integrations/
+    ci/
+    desktop/
+    ide/
   packages/
     core-process/
       src/
@@ -315,6 +319,15 @@ ai-governor/
       src/
       test/
     core-runtime/
+      src/
+      test/
+    core-runtime-langgraph/
+      src/
+      test/
+    core-orchestration-service/
+      src/
+      test/
+    orchestration-service-client/
       src/
       test/
     core-memory/
@@ -340,22 +353,6 @@ ai-governor/
         src/
         test/
     notification-dispatcher/
-      src/
-      test/
-    notification-providers/
-      email/
-        src/
-        test/
-      webhook/
-        src/
-        test/
-      chat-im/
-        src/
-        test/
-      issue-system/
-        src/
-        test/
-    core-audit/
       src/
       test/
     config/
@@ -397,16 +394,14 @@ ai-governor/
         types/
         utils/
       test/
-  integrations/
-    ci/
-    ide/
   scripts/
     governance/
     release/
     ci/
+    examples/
   .repo-ai-governor/docs/
   examples/
-  tests/
+  test/
     contract/
     integration/
     e2e/
@@ -482,8 +477,8 @@ ai-governor/
 ## 6.2 Package Public API Surface 约束
 
 1. 可见性分层
-   - `public`: `adapter-sdk`, `memory-store-adapter`, `notification-dispatcher`, `reporting`, `shared`。
-   - `internal`: `core-*`, `slots`, `standards`, `core-session`, `core-memory`, `core-runtime` 等实现域包。
+   - `public`: `adapter-sdk`, `memory-store-adapter`, `notification-dispatcher`, `orchestration-service-client`, `reporting`, `shared`。
+   - `internal`: `core-*`, `slots`, `standards`, `core-session`, `core-memory`, `core-runtime`, `core-runtime-langgraph`, `core-orchestration-service` 等实现域包。
 2. 导出约束
    - `public` 包必须通过 `package.json -> exports` 显式声明稳定入口，不允许深层路径隐式导出。
    - `internal` 包默认不对外暴露 programmatic API，只允许 workspace 内部依赖。

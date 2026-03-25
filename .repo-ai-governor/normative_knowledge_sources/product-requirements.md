@@ -553,7 +553,7 @@ AI 先完成方案与实现，再进入评审 Agent 与复核 Agent 的循环；
 | PRD Priority | Delivery Focus | 对应技术阶段（Phase） | 对应架构迁移步骤（Step） |
 |---|---|---|---|
 | P0（已完成） | 可安装、可初始化、最小治理闭环 | Phase A（最小可用）+ Phase B（最小门禁） | Step 1（边界先行） |
-| P1（进行中） | 多 Agent 编排、策略化 HITL、多工具适配 | Phase B + Phase C + Phase D | Step 2 ~ Step 6 |
+| P1（进行中） | 多 Agent 编排、策略化 HITL、多工具适配 | Phase B + Phase C + Phase D + Phase E Follow-Up | Step 2 ~ Step 8 |
 | P2（规划中） | 平台化能力、组织级可观测与治理强化 | Phase E + 平台扩展阶段 | Step 7 + 平台扩展步骤 |
 
 使用规则：

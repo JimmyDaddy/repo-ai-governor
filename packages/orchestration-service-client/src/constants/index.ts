@@ -2,6 +2,7 @@ export {
   OrchestrationClientSurface,
   OrchestrationExecutionKind,
   OrchestrationExecutionStatus,
+  OrchestrationServiceLifecycleStatus,
   OrchestrationServiceHostKind,
   OrchestrationServiceEventType,
   OrchestrationServiceTransportKind,

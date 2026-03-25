@@ -17,6 +17,7 @@ const REQUIRED_RELEASE_ASSETS = [
   "scripts/ci/run-stage9-blackbox-ga-baseline.js",
   "scripts/ci/stage9-blackbox-ga-lib.js",
   "scripts/release/verify-local-distribution.js",
+  "scripts/examples/check-desktop-entry-smoke.js",
   "scripts/release/run-rollback-rehearsal.js",
   "scripts/release/check-ga-candidate-unified-gate.js",
   "scripts/release/render-release-notes.js",
@@ -28,6 +29,7 @@ const REQUIRED_PACKAGE_SCRIPTS = [
   "release:check",
   "release:notes",
   "release:verify-local",
+  "check:desktop-entry-smoke",
   "release:verify-cleanroom-local-install",
   "release:verify-cleanroom-local-install:tgz",
   "release:rollback-rehearsal",
@@ -35,6 +37,7 @@ const REQUIRED_PACKAGE_SCRIPTS = [
   "release:ga-check",
   "release:ga-candidate-unified-gate",
   "test:stage9-blackbox-ga",
+  "gate:desktop-entry-smoke",
   "check:runtime-js-whitelist",
 ];
 const REQUIRED_CHANNEL_NAMES = ["canary", "rc", "ga"];

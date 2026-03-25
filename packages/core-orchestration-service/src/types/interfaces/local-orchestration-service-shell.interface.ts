@@ -6,6 +6,7 @@ import type {
   OrchestrationExecutionStatus,
   OrchestrationServiceEventType,
   OrchestrationServiceHostKind,
+  OrchestrationServiceLifecycleStatus,
   OrchestrationServiceTransportKind,
 } from "@repo-ai-governor/orchestration-service-client";
 
@@ -18,6 +19,9 @@ export interface LocalOrchestrationServiceShellDependencies {
   executionSessionIdProvider?: (executionId: string) => string;
   serviceHostKind?: OrchestrationServiceHostKind;
   serviceTransportKind?: OrchestrationServiceTransportKind;
+  lifecycleStatusProvider?: () => OrchestrationServiceLifecycleStatus;
+  protocolVersion?: string;
+  pidProvider?: () => number | undefined;
 }
 
 export interface LocalOrchestrationServiceStartExecutionRuntimeContext {

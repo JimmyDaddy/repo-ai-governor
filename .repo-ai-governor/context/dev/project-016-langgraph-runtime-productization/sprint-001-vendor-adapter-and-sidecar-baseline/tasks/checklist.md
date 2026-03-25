@@ -1,14 +1,27 @@
 # checklist
 
-- [ ] TK-161 project-016 启动与 LangGraph runtime productization 重排
+- [x] TK-161 project-016 启动与 LangGraph runtime productization 重排
   - 2026-03-26：任务创建，状态初始化为 `planned`。
-- [ ] TK-162 社区 LangGraph vendor adapter 与 package truthfulness 基线
+  - 2026-03-26：切换 `project-016` 为 active primary stream，保留 `project-015` 为 secondary active stream。
+  - 2026-03-26：补齐 `DA-161`、resolved review、artifact registry 与 master plan 同步，任务收口为 `completed`。
+- [x] TK-162 社区 LangGraph vendor adapter 与 package truthfulness 基线
   - 2026-03-26：任务创建，状态初始化为 `planned`。
-- [ ] TK-163 graph-first execution semantics 与 selector/cutover hardening
+  - 2026-03-26：新增 `LangGraphCommunityVendorBinding`、optional peer dependency 与 README truthfulness 说明。
+  - 2026-03-26：补齐 `DA-162`、resolved review、artifact registry 与任务收口同步，任务收口为 `completed`。
+  - 2026-03-26：根据 registry 当前稳定线，将 `@langchain/langgraph` optional peer range 从 `^0.4.0` 上调到 `^1.0.0`，并同步 README / `DA-162` 口径。
+- [x] TK-163 graph-first execution semantics 与 selector/cutover hardening
   - 2026-03-26：任务创建，状态初始化为 `planned`。
-- [ ] TK-164 `sidecar + ipc` orchestration host 与 transport 基线
+  - 2026-03-26：将 `LangGraphRuntimeBackend` 从 prepare-only shell 扩展为 graph-first dispatch baseline，并让 `ProcessRuntimeFacade` 在 `langgraph` primary path 下真实调用该 backend。
+  - 2026-03-26：补齐 facade/runtime 单测、`DA-163`、resolved review 与 artifact registry，同步任务收口为 `completed`。
+- [x] TK-164 `sidecar + ipc` orchestration host 与 transport 基线
   - 2026-03-26：任务创建，状态初始化为 `planned`。
-- [ ] TK-165 desktop execution surface 与 service ops/release baseline
+  - 2026-03-26：新增 `orchestration-service-client` health/lifecycle contract、Node IPC sidecar host/client、source-workspace loader 与 CLI `sidecar_ipc` runtime mode。
+  - 2026-03-26：补齐 sidecar integration/CLI runtime 回归、`DA-164`、resolved review 与 artifact registry，同步任务收口为 `completed`。
+- [x] TK-165 desktop execution surface 与 service ops/release baseline
   - 2026-03-26：任务创建，状态初始化为 `planned`。
-- [ ] TK-166 sprint-001 出口验收与后续 rollout 输入约束
+  - 2026-03-26：新增 desktop integration assets、desktop sidecar smoke、release verify local 校验与 packaged sidecar/runtime 资产要求。
+  - 2026-03-26：补齐 desktop integration 回归、`DA-165`、resolved review 与 artifact registry，同步任务收口为 `completed`。
+- [x] TK-166 sprint-001 出口验收与后续 rollout 输入约束
   - 2026-03-26：任务创建，状态初始化为 `planned`。
+  - 2026-03-26：汇总 `DA-161` ~ `DA-165` 的正式证据链，新增 `DA-166` 与 project-016 完成态审计摘要。
+  - 2026-03-26：同步 `current-context`、completed history、master plan、projects overview 与 project/sprint plan，任务收口为 `completed`。

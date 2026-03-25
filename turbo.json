@@ -60,6 +60,11 @@
       "dependsOn": ["//#gate:build"],
       "outputs": []
     },
+    "//#gate:desktop-entry-smoke": {
+      "cache": false,
+      "dependsOn": ["//#gate:build"],
+      "outputs": []
+    },
     "//#gate:ide-docs-parity": {
       "cache": false,
       "dependsOn": ["//#gate:build"],
@@ -142,6 +147,7 @@
         "//#gate:examples-smoke",
         "//#gate:examples-runtime-smoke",
         "//#gate:ide-entry-smoke",
+        "//#gate:desktop-entry-smoke",
         "//#gate:ide-docs-parity",
         "//#gate:normative-loading-manifest",
         "//#gate:stage9-handoff",

@@ -10,6 +10,7 @@ import {
   OrchestrationExecutionStatus,
   OrchestrationServiceEventType,
   OrchestrationServiceHostKind,
+  OrchestrationServiceLifecycleStatus,
   OrchestrationServiceTransportKind,
 } from "@repo-ai-governor/orchestration-service-client";
 import { GovernorError, GovernorErrorCode, standardizeError } from "@repo-ai-governor/shared";
@@ -68,6 +69,7 @@ describe("core-orchestration-service local shell", () => {
     });
 
     try {
+      const health = await orchestrationService.getHealth();
       const plan = createGraphPlan();
       const started = await orchestrationService.startExecution(
         {
@@ -120,6 +122,11 @@ describe("core-orchestration-service local shell", () => {
         executionId: plan.executionId,
       });
 
+      expect(health.lifecycleStatus).toBe(OrchestrationServiceLifecycleStatus.READY);
+      expect(health.serviceHostKind).toBe(OrchestrationServiceHostKind.EMBEDDED);
+      expect(health.serviceTransportKind).toBe(OrchestrationServiceTransportKind.IN_PROCESS);
+      expect(health.checkpointCapable).toBe(true);
+      expect(health.protocolVersion).toBe("1");
       expect(started.status).toBe(OrchestrationExecutionStatus.RUNNING);
       expect(started.serviceHostKind).toBe(OrchestrationServiceHostKind.EMBEDDED);
       expect(started.serviceTransportKind).toBe(OrchestrationServiceTransportKind.IN_PROCESS);

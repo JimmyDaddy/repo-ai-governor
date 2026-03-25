@@ -40,7 +40,7 @@
 
 ## 3.1 一句话结论
 
-1. Stage 0-9 的业务闭环能力已经完成，`project-013` 也已补齐远端 provider 真实调用与 adapter 运维契约；`project-014` 已完成 LangGraph runtime modernization 的第一阶段，但尚未完成 vendor-backed engine 与 service host productization，相关残余 gap 已转入 planned `project-016`，当前 active stream 为 `project-015`。
+1. Stage 0-9 的业务闭环能力已经完成，`project-013` 已补齐远端 provider 真实调用与 adapter 运维契约；`project-014` 已完成 LangGraph runtime modernization 第一阶段；`project-016` 也已完成 LangGraph runtime productization baseline，当前 primary active stream 已回到 `project-015`。
 
 ## 3.2 当前真实状态
 
@@ -52,12 +52,9 @@
    - `LangGraph` Phase 0 backend、最小主链、checkpoint/recovery、service-backed execution 与 desktop-ready contract 已完成第一阶段收口。
    - `run/review/review-verify/HITL/recovery` 已通过 orchestration service client 进入统一 service-backed path，并形成 CLI / service summary / event stream 三层 parity 证据。
 2. 当前未完成的部分：
-   - `core-runtime-langgraph` 仍是 LangGraph-oriented backend shell，并未接入真实社区 LangGraph runtime vendor 依赖。
-   - `LangGraphRuntimeBackend` 仍以 skeleton / prepare-first 语义为主，尚未形成完整 graph-first orchestration engine。
-   - `sidecar + ipc` 尚未进入正式产品化实现，只完成了 transport-neutral seam 与 smoke 级证据。
-   - `daemon + http` 仍是 follow-up option，不进入当前承诺。
-   - desktop execution surface 仍停留在 contract / transport seam，未形成正式产品化入口。
-   - 因此后续工作分成两条：`project-015` 负责 runtime packaging / pluginization，planned `project-016` 负责 LangGraph full productization follow-up。
+   - 当前主线未完成项已经收敛到 runtime packaging / pluginization；`project-015` 是唯一 active primary stream。
+   - `daemon + http` 仍保留为可选 follow-up option，但不属于当前 active 承诺。
+   - 若后续需要继续扩围更深的 vendor-specific execution 或长期 daemon host，应新开 follow-up stream，而不是回退已完成的 `project-016` baseline。
 
 ## 3.3 当前主执行流
 
@@ -70,8 +67,8 @@
 | 当前治理支撑主线 | `project-012-execution-context-optimization` | completed | 已完成 startup/context/task-ledger/review-chain 优化并形成正式 handoff |
 | 已完成 Stage 9 最后业务阻断收口 | `project-013-remote-provider-and-adapter-ops` | completed | 已完成远端 provider 真实调用、adapter 运维契约与统一路由 truthfulness 收口 |
 | 已完成 runtime modernization 第一阶段 | `project-014-langgraph-orchestration-runtime-adoption` | completed | 已完成 LangGraph adoption、shared local orchestration service、service-backed execution 与 desktop-ready contract 的第一阶段收口 |
-| 当前 packaging/modularity follow-up 主线 | `project-015-memory-provider-pluginization` | active | 正在启动 memory provider built-in registry + optional plugin 方向的基线拆解与 bootstrap |
-| 已拆解的 runtime productization follow-up | `project-016-langgraph-runtime-productization` | planned | 用于承接社区 LangGraph vendor adoption、graph-first engine truthfulness 与 `sidecar + ipc` service host 产品化 |
+| 当前 packaging/modularity 主线 | `project-015-memory-provider-pluginization` | active | 继续承接 memory provider built-in registry + optional plugin 的基线拆解与 bootstrap |
+| 已完成 runtime productization baseline | `project-016-langgraph-runtime-productization` | completed | 已完成 LangGraph runtime truthfulness、graph-first execution、`sidecar + ipc` host 与 desktop execution/service-ops baseline 收口 |
 
 ## 3.4 当前推荐执行顺序
 
@@ -79,8 +76,8 @@
 2. `project-014 / sprint-001` 已完成 adoption baseline、runtime/service boundary 与 cutover 输入约束冻结。
 3. `project-014 / sprint-002` 已通过 `DA-152` 完成出口验收，第一轮 LangGraph backend、checkpoint/recovery 与 service shell 实装已收口。
 4. `project-014 / sprint-003` 已通过 `DA-158` 完成出口验收，project-014 已形成 completion audit。
-5. 当前 active stream 已切换到 `project-015`，后续 runtime packaging / pluginization 工作默认在该 project 下继续推进。
-6. `project-016` 已被拆解为 planned follow-up，等 `project-015` 稳定后用于承接 LangGraph full productization 残余项。
+5. `project-016` 已通过 `DA-166` 完成 sprint-001 出口验收，并形成 project completion audit。
+6. 当前 primary active stream 已切回 `project-015`，继续承接 runtime packaging / pluginization。
 
 ## 4. 路线图总览
 
@@ -96,7 +93,7 @@
 | Stage 7 | Phase E + Migration Step 7 | completed | 契约测试、集成/E2E、发布治理 | 核心质量与回滚基线稳定 |
 | Stage 8 | P2 平台化阶段 | completed baseline | 平台化扩展骨架 | 不破坏本地主线，可按模块独立演进 |
 | Stage 9 | Phase E 收口 + GA Readiness overlay | completed | 投产基线 + 自治闭环收口 | 外部可采用、可运维、可受控无人值守推进 |
-| Post-Stage-9 | Phase E Follow-Up Runtime Modernization | completed first-phase | LangGraph backend + local orchestration service | 第一阶段已完成 CLI 与未来 desktop 共用 runtime/service 基线，后续仅保留 packaging / sidecar follow-up |
+| Post-Stage-9 | Phase E Follow-Up Runtime Modernization | completed first-phase | LangGraph backend + local orchestration service | 第一阶段已完成 CLI 与未来 desktop 共用 runtime/service 基线；sidecar + IPC host 已由 project-016 收口，后续仅保留 packaging / pluginization（project-015） |
 
 ## 5. 阶段资产与完成态
 
@@ -177,7 +174,7 @@
 | G-04 | HITL 回执与决策回灌未闭环 | 命中 `confirm/escalate` 后仍主要停在人工等待 | 至少 1 主 1 备通知渠道接通，人工决策可回灌并触发继续执行/终止/降级 | `TK-098` 已完成；sprint-002 |
 | G-05 | 受控 delivery rehearsal 未一体化 | `commit` / `PR draft` 仍未与自动主链形成统一回放与审计 | 至少 1 条受控 delivery rehearsal 覆盖 `commit` 或 `PR draft`，并记录人工接管边界 | sprint-002 / Stage 9 closure |
 | G-06 | 稳定性与黑盒门禁未覆盖真实无人值守路径 | provider outage、restricted network、retry exhaustion 等场景仍缺稳定黑盒验证 | 黑盒 E2E、CI、release gate 覆盖主路径与降级路径，并沉淀成功率/人工介入率等运营指标 | `TK-097` + sprint-002 |
-| G-07 | 编排运行时尚未收敛到 graph-first shared runtime | LangGraph Phase 0 backend、checkpoint/recovery 与 in-process service shell 已落地，但 service-backed execution 与 desktop-ready API 仍未完成 | `LangGraph` backend、短期 cutover parity 验证、local orchestration service 与 CLI/desktop 共享执行 API 形成正式基线 | `project-014 / sprint-002` completed, sprint-003 next |
+| G-07 | 编排运行时尚未收敛到 graph-first shared runtime | LangGraph backend、checkpoint/recovery、service-backed execution、desktop-ready API 与 sidecar + IPC host 均已落地 | `LangGraph` backend、短期 cutover parity 验证、local orchestration service 与 CLI/desktop 共享执行 API 形成正式基线 | completed by `project-014 + project-016` |
 
 ## 6.4 Stage 9 收敛顺序
 
@@ -238,6 +235,13 @@
    - `TK-156`：CLI `run/review/HITL/recovery` 到 orchestration-service-client 的 cutover
    - `TK-157`：LangGraph service-backed parity 扩围与 daemon/desktop-ready transport spike
    - `TK-158`：sprint-003 出口验收与 project-014 完成态判定
+7. 已完成的 productization 收口队列（project-016 / sprint-001）：
+   - `TK-161`：project-016 启动与 LangGraph runtime productization 重排
+   - `TK-162`：社区 LangGraph vendor adapter 与 package truthfulness 基线
+   - `TK-163`：graph-first execution semantics 与 selector/cutover hardening
+   - `TK-164`：`sidecar + ipc` orchestration host 与 transport 基线
+   - `TK-165`：desktop execution surface 与 service ops/release baseline
+   - `TK-166`：sprint-001 出口验收与 project-016 完成态判定
 
 ## 7. 并行治理主线
 
@@ -281,7 +285,7 @@
 | `project-013-remote-provider-and-adapter-ops` | Stage 9 remaining closure | completed | 已完成远端 provider 真实调用、adapter 运维契约与统一路由 truthfulness 收口 |
 | `project-014-langgraph-orchestration-runtime-adoption` | Post-Stage-9 runtime modernization | completed | 已完成 LangGraph cutover 第一阶段、shared local orchestration service 与 desktop-ready contract 基线，统一 CLI 与未来 desktop 的执行面 |
 | `project-015-memory-provider-pluginization` | Post-Stage-9 runtime packaging modularization | active | 正在推进 memory provider built-in registry + optional plugin 方向的 packaging/modularity 基线 |
-| `project-016-langgraph-runtime-productization` | Post-Stage-9 runtime modernization follow-up | planned | 承接社区 LangGraph vendor adoption、graph-first engine truthfulness、`sidecar + ipc` service host 与 desktop execution productization |
+| `project-016-langgraph-runtime-productization` | Post-Stage-9 runtime modernization follow-up | completed | 已完成 LangGraph runtime truthfulness、graph-first execution、`sidecar + ipc` service host 与 desktop execution/service-ops baseline |
 
 ## 9. Sprint 与 Task 最小模板
 

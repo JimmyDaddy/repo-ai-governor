@@ -1,6 +1,7 @@
 import { ProcessCompiler, ProcessNodeType } from "@repo-ai-governor/core-process";
 import { LangGraphRuntimeBackend } from "@repo-ai-governor/core-runtime-langgraph";
-import { GovernorErrorCode, standardizeError } from "@repo-ai-governor/shared";
+import { GovernorError, GovernorErrorCode, standardizeError } from "@repo-ai-governor/shared";
+import { vi } from "vitest";
 import {
   ProcessRuntimeFacade,
   ProcessRuntimeParityHarness,
@@ -71,8 +72,23 @@ describe("ProcessRuntimeFacade", () => {
   });
 
   it("executes the minimal mainchain through the facade while keeping langgraph selected", async () => {
+    const legacyRuntimeEngine = {
+      execute: vi.fn(async () => {
+        throw new GovernorError(
+          GovernorErrorCode.UNKNOWN,
+          "legacy runtime should not execute langgraph primary path",
+        );
+      }),
+    };
+    const langgraphRuntimeBackend = {
+      prepare: vi.fn((compiledIr) => new LangGraphRuntimeBackend().prepare(compiledIr)),
+      execute: vi.fn((compiledIr, stageHandler, options) =>
+        new LangGraphRuntimeBackend().execute(compiledIr, stageHandler, options),
+      ),
+    };
     const facade = new ProcessRuntimeFacade({
-      langgraphRuntimeBackend: new LangGraphRuntimeBackend(),
+      legacyRuntimeEngine: legacyRuntimeEngine as never,
+      langgraphRuntimeBackend: langgraphRuntimeBackend as never,
       nowProvider: () => new Date("2026-03-25T08:00:00Z"),
     });
 
@@ -89,6 +105,8 @@ describe("ProcessRuntimeFacade", () => {
     expect(executedExecution.selection.primaryBackend).toBe("langgraph");
     expect(executedExecution.runtimeResult.status).toBe(RuntimeExecutionStatus.SUCCEEDED);
     expect(executedExecution.runtimeResult.visitedNodeIds).toEqual(["node-entry", "node-review"]);
+    expect(langgraphRuntimeBackend.execute).toHaveBeenCalledTimes(1);
+    expect(legacyRuntimeEngine.execute).not.toHaveBeenCalled();
   });
 
   it("fails closed when selected backend is unavailable", () => {
@@ -218,7 +236,7 @@ describe("ProcessRuntimeParityHarness", () => {
           edgeCount: 1,
           initialNodeIds: ["node-entry"],
           supportedInterruptKinds: ["hitl", "timeout", "cancelled"],
-          supportedTerminalStatuses: ["succeeded", "failed", "interrupted", "cancelled"],
+          supportedTerminalStatuses: ["succeeded", "failed", "timeout", "cancelled"],
         },
       },
     });

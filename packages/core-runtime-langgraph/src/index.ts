@@ -26,8 +26,17 @@ export type {
 } from "./constants/index.js";
 export { CompiledIrGraphAdapter } from "./compiled-ir-graph-adapter.js";
 export { LangGraphFileCheckpointer } from "./file-backed-checkpointer.js";
+export { LangGraphCommunityVendorBinding } from "./langgraph-community-vendor-binding.js";
 export { LangGraphRuntimeBackend } from "./langgraph-runtime-backend.js";
 export type {
+  LangGraphCommunityVendorBindingOptions,
+  LangGraphCommunityVendorBindingResolution,
+  LangGraphCommunityVendorModuleLoader,
+  LangGraphRuntimeConditionContext,
+  LangGraphRuntimeConditionResolver,
+  LangGraphRuntimeExecuteOptions,
+  LangGraphRuntimeExecutionInterruption,
+  LangGraphRuntimeExecutionResult,
   LangGraphCheckpointer,
   LangGraphCheckpointEnvelope,
   LangGraphCheckpointPendingInterrupt,
@@ -37,7 +46,12 @@ export type {
   LangGraphFileCheckpointerOptions,
   LangGraphPreparedExecution,
   LangGraphRecoveredExecution,
+  LangGraphRuntimeLoopContext,
+  LangGraphRuntimeLoopController,
   LangGraphSaveCheckpointOptions,
   LangGraphRuntimeLifecycleEvent,
+  LangGraphRuntimeStageContext,
+  LangGraphRuntimeStageHandler,
+  LangGraphRuntimeStageResult,
   LangGraphSqliteFsCheckpointerOptions,
 } from "./types/index.js";
