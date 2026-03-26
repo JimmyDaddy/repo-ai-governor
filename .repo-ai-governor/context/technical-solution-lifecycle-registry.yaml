@@ -1,0 +1,117 @@
+schema_version: 1
+generated_at: 2026-03-26
+status: active
+owner: architecture
+
+allowed_statuses:
+  - draft
+  - review_pending
+  - approved
+  - active
+  - superseded
+  - archived
+
+solutions:
+  - solution_id: technical-solution.modular-loading-and-dependency-governance
+    title: Modular technical solution loading and dependency governance
+    status: active
+    owner: architecture
+    version: v1
+    scope: cross-cutting
+    draft_paths:
+      - .repo-ai-governor/draft/modular-technical-solution-loading-and-dependency-governance.md
+    review_paths:
+      - .repo-ai-governor/context/dev/project-017-technical-solution-modularization/sprint-001-module-registry-and-loading-contract-baseline/review/resolved_code_review_tk-180-technical-solution-module-registry-and-loading-contract-baseline.md
+    final_paths:
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/technical-solution-module-registry.yaml
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/governance-technical-solution-registry/module-overview.md
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/governance-technical-solution-registry/contracts/technical-solution-module-registry-contract.md
+    target_module_ids:
+      - governance.technical-solution-registry
+    north_star_refs:
+      - prd.docs-sync
+      - overall.technical-solution-modularity
+      - architecture.governance-boundary
+    approved_at: 2026-03-26
+    approved_by: AI-Agent
+    activated_at: 2026-03-26
+    supersedes: []
+
+  - solution_id: technical-solution.lifecycle-and-promotion-governance
+    title: Technical solution lifecycle and promotion governance
+    status: active
+    owner: architecture
+    version: v1
+    scope: governance
+    draft_paths: []
+    review_paths:
+      - .repo-ai-governor/context/dev/project-017-technical-solution-modularization/sprint-003-lifecycle-registry-and-promotion-governance/review/resolved_code_review_tk-190-lifecycle-registry-schema-and-seed-catalog-baseline.md
+    final_paths:
+      - .repo-ai-governor/context/technical-solution-lifecycle-registry.yaml
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/governance-technical-solution-registry/contracts/technical-solution-lifecycle-registry-contract.md
+    target_module_ids:
+      - governance.technical-solution-registry
+    north_star_refs:
+      - prd.docs-sync
+      - overall.technical-solution-modularity
+      - architecture.governance-boundary
+    approved_at: 2026-03-26
+    approved_by: AI-Agent
+    activated_at: 2026-03-26
+    supersedes: []
+
+  - solution_id: technical-solution.memory-provider-pluginization
+    title: Memory provider pluginization technical solution
+    status: draft
+    owner: runtime
+    version: v0
+    scope: runtime
+    draft_paths:
+      - .repo-ai-governor/draft/memory-provider-pluginization-technical-solution.md
+    review_paths: []
+    final_paths: []
+    target_module_ids:
+      - runtime.memory-provider-loading
+    north_star_refs:
+      - prd.multi-tool-adapters
+      - overall.adapter-provider
+      - architecture.runtime-boundary
+    supersedes: []
+
+  - solution_id: technical-solution.memory-module
+    title: Memory module technical solution
+    status: draft
+    owner: runtime
+    version: v0
+    scope: runtime
+    draft_paths:
+      - .repo-ai-governor/draft/memory-module-technical-solution.md
+      - .repo-ai-governor/draft/memory-module-community-practices-and-design-reference.md
+    review_paths: []
+    final_paths: []
+    target_module_ids:
+      - runtime.memory-provider-loading
+    north_star_refs:
+      - prd.multi-tool-adapters
+      - overall.adapter-provider
+      - architecture.runtime-boundary
+    supersedes: []
+
+  - solution_id: technical-solution.langgraph-orchestration-direction
+    title: LangGraph orchestration direction draft
+    status: archived
+    owner: runtime
+    version: v0
+    scope: runtime
+    draft_paths:
+      - .repo-ai-governor/draft/langgraph-orchestration-technical-solution.md
+    review_paths:
+      - .repo-ai-governor/context/dev/project-014-langgraph-orchestration-runtime-adoption/sprint-001-runtime-adoption-and-migration-baseline/review/resolved_code_review_working-tree-20260325-1314.md
+    final_paths: []
+    target_module_ids:
+      - runtime.orchestration
+    north_star_refs:
+      - prd.multi-agent-orchestration
+      - overall.graph-first-runtime
+      - architecture.runtime-boundary
+    supersedes: []

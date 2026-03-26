@@ -3,16 +3,15 @@
 ## Primary Stream
 
 - Status: active
-- Project: `project-015-memory-provider-pluginization`
-- Sprint: `sprint-004-shared-loader-and-service-reuse`
-- Docs root: `.repo-ai-governor/context/dev/project-015-memory-provider-pluginization`
-- Task records: `.repo-ai-governor/context/dev/project-015-memory-provider-pluginization/sprint-004-shared-loader-and-service-reuse/tasks/`
-- Review records: `.repo-ai-governor/context/dev/project-015-memory-provider-pluginization/sprint-004-shared-loader-and-service-reuse/review/`
-- Closeout Surface: `true`
+- Project: `project-017-technical-solution-modularization`
+- Sprint: `sprint-004-skillized-promotion-workflow`
+- Docs root: `.repo-ai-governor/context/dev/project-017-technical-solution-modularization`
+- Task records: `.repo-ai-governor/context/dev/project-017-technical-solution-modularization/sprint-004-skillized-promotion-workflow/tasks/`
+- Review records: `.repo-ai-governor/context/dev/project-017-technical-solution-modularization/sprint-004-skillized-promotion-workflow/review/`
 
 ## Active Streams
 
-- `primary`: project=`project-015-memory-provider-pluginization`, sprint=`sprint-004-shared-loader-and-service-reuse`, docs=`.repo-ai-governor/context/dev/project-015-memory-provider-pluginization`, plan=`.repo-ai-governor/context/dev/project-015-memory-provider-pluginization/plan.md`, tasks=`.repo-ai-governor/context/dev/project-015-memory-provider-pluginization/sprint-004-shared-loader-and-service-reuse/tasks/`, checklist=`.repo-ai-governor/context/dev/project-015-memory-provider-pluginization/sprint-004-shared-loader-and-service-reuse/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-015-memory-provider-pluginization/sprint-004-shared-loader-and-service-reuse/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-015-memory-provider-pluginization/sprint-004-shared-loader-and-service-reuse/review/`, status=`active`
+- `primary`: project=`project-017-technical-solution-modularization`, sprint=`sprint-004-skillized-promotion-workflow`, docs=`.repo-ai-governor/context/dev/project-017-technical-solution-modularization`, plan=`.repo-ai-governor/context/dev/project-017-technical-solution-modularization/plan.md`, tasks=`.repo-ai-governor/context/dev/project-017-technical-solution-modularization/sprint-004-skillized-promotion-workflow/tasks/`, checklist=`.repo-ai-governor/context/dev/project-017-technical-solution-modularization/sprint-004-skillized-promotion-workflow/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-017-technical-solution-modularization/sprint-004-skillized-promotion-workflow/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-017-technical-solution-modularization/sprint-004-skillized-promotion-workflow/review/`, status=`active`
 
 ## Planned Follow-Up Streams
 

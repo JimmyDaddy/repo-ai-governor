@@ -1,7 +1,7 @@
 # Repo AI Governor 可扩展架构图与仓库分层结构
 
 - Status: active
-- Date: 2026-03-25
+- Date: 2026-03-26
 - Role: implementation blueprint
 - Basis:
   - `.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-overall-technical-solution.md`
@@ -461,6 +461,7 @@ ai-governor/
 17. `spec-sync-guard` -> 仅依赖文档元数据与 git 变更检测，不依赖 runtime/adapter/provider 实现。
 18. `core-runtime-langgraph` -> 可依赖 `core-process/core-change-risk/core-policy/core-memory/core-session/artifact-registry/notification-dispatcher/shared`，不得依赖 `apps/cli` 或未来桌面 UI。
 19. `apps/desktop` 或等价桌面端入口 -> 只依赖 service client/reporting/shared，不直接依赖 `core-runtime*` 与具体 adapter/provider 实现。
+20. `technical-solutions/*` -> 模块方案文档必须通过 `technical-solution-module-registry.yaml` 声明 direct dependency，默认只展开 `module-overview + imported contracts`，禁止以 transitive full-doc recursion 代替边界设计。
 
 ## 6.1 依赖方向自动化执行备忘（Pending Integration）
 
@@ -541,9 +542,11 @@ ai-governor/
 1. 新增目录前先标注层级归属与依赖方向。
 2. 新增模块必须在文档中登记“扩展点类型”（core/adapter/role/memory-store/notification/slot/standards/reporting）。
 3. 每次迭代若触及架构边界，先更新本蓝图再改实现。
+4. 技术方案模块文档统一收敛在 `.repo-ai-governor/normative_knowledge_sources/technical-solutions/`，并由 `technical-solution-module-registry.yaml` 维护 `summary_doc / contracts / depends_on_modules` 的单一事实源。
 
 ## 9. 与总纲关系
 
 1. `.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-overall-technical-solution.md`：定义全工具方针与原则。
 2. 本文档：定义“如何落成目录与模块边界”的工程蓝图。
 3. sprint 文档：记录阶段性交付，不替代本蓝图。
+4. `technical-solutions/**`：承载 bounded context 级方案细节；总纲保持北极星角色，模块依赖由 registry 与 module graph gate 保证。

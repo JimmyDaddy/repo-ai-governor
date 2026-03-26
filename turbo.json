@@ -25,6 +25,16 @@
       "dependsOn": ["//#gate:build"],
       "outputs": []
     },
+    "//#gate:technical-solution-module-graph": {
+      "cache": false,
+      "dependsOn": ["//#gate:build"],
+      "outputs": []
+    },
+    "//#gate:technical-solution-lifecycle-registry": {
+      "cache": false,
+      "dependsOn": ["//#gate:build"],
+      "outputs": []
+    },
     "//#gate:finite-literal-sets": {
       "cache": false,
       "dependsOn": ["//#gate:build"],
@@ -140,6 +150,8 @@
       "dependsOn": [
         "//#gate:code-standards",
         "//#gate:docs-triad-sync",
+        "//#gate:technical-solution-module-graph",
+        "//#gate:technical-solution-lifecycle-registry",
         "//#gate:finite-literal-sets",
         "//#gate:dependency-boundary",
         "//#gate:standardized-errors",

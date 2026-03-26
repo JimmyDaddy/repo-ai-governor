@@ -1,0 +1,212 @@
+schema_version: 2
+generated_at: 2026-03-26
+status: active
+owner: architecture
+
+allowed_layers:
+  - governance-core
+  - runtime-core
+
+change_impact_classes:
+  - local_detail_change
+  - exported_contract_change
+  - module_registry_change
+  - north_star_change
+  - layer_boundary_change
+
+sync_target_tokens:
+  - summary_doc
+  - module_registry
+  - direct_consumers
+  - overall_technical_solution
+  - architecture_and_repo_layering
+  - product_requirements
+  - product_requirements_brief
+
+modules:
+  - module_id: governance.spec-sync
+    status: active
+    owner: architecture
+    layer: governance-core
+    summary_doc: .repo-ai-governor/normative_knowledge_sources/technical-solutions/governance-spec-sync/module-overview.md
+    detail_docs:
+      - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/governance-spec-sync/contracts/spec-sync-impact-classification-contract.md
+        kind: contract
+      - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/governance-spec-sync/adrs/spec-sync-escalation-and-module-impact-routing.md
+        kind: adr
+    north_star_refs:
+      - prd.docs-sync
+      - overall.spec-sync
+      - architecture.governance-boundary
+    exports_contracts:
+      - contract.spec-sync.impact-classification.v1
+    imports_contracts: []
+    depends_on_modules: []
+    load_triggers:
+      - spec_sync_change
+      - docs_contract_change
+      - technical_solution_module_change
+    change_impact_policy:
+      summary_doc_change:
+        classification: local_detail_change
+        requires_sync: []
+        recommends_sync: []
+      contract_doc_change:
+        classification: exported_contract_change
+        requires_sync:
+          - summary_doc
+        recommends_sync:
+          - module_registry
+          - overall_technical_solution
+      adr_doc_change:
+        classification: local_detail_change
+        requires_sync: []
+        recommends_sync:
+          - summary_doc
+      registry_change:
+        classification: module_registry_change
+        requires_sync: []
+        recommends_sync:
+          - overall_technical_solution
+
+  - module_id: governance.technical-solution-registry
+    status: active
+    owner: architecture
+    layer: governance-core
+    summary_doc: .repo-ai-governor/normative_knowledge_sources/technical-solutions/governance-technical-solution-registry/module-overview.md
+    detail_docs:
+      - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/governance-technical-solution-registry/contracts/technical-solution-module-registry-contract.md
+        kind: contract
+      - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/governance-technical-solution-registry/contracts/technical-solution-lifecycle-registry-contract.md
+        kind: contract
+    north_star_refs:
+      - prd.docs-sync
+      - overall.technical-solution-modularity
+      - architecture.governance-boundary
+    exports_contracts:
+      - contract.technical-solution.module-registry.v1
+      - contract.technical-solution.lifecycle-registry.v1
+    imports_contracts:
+      - contract.spec-sync.impact-classification.v1
+    depends_on_modules:
+      - governance.spec-sync
+    load_triggers:
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+      - module_dependency_change
+      - governance_engine_change
+    change_impact_policy:
+      summary_doc_change:
+        classification: local_detail_change
+        requires_sync: []
+        recommends_sync:
+          - module_registry
+      contract_doc_change:
+        classification: exported_contract_change
+        requires_sync:
+          - summary_doc
+        recommends_sync:
+          - module_registry
+          - overall_technical_solution
+          - architecture_and_repo_layering
+      registry_change:
+        classification: module_registry_change
+        requires_sync: []
+        recommends_sync:
+          - overall_technical_solution
+          - architecture_and_repo_layering
+
+  - module_id: runtime.memory-provider-loading
+    status: active
+    owner: runtime
+    layer: runtime-core
+    summary_doc: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-memory-provider-loading/module-overview.md
+    detail_docs:
+      - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-memory-provider-loading/contracts/memory-provider-loading-contract.md
+        kind: contract
+      - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-memory-provider-loading/adrs/shared-loader-host-surface-cutover.md
+        kind: adr
+    north_star_refs:
+      - prd.multi-tool-adapters
+      - overall.adapter-provider
+      - architecture.runtime-boundary
+    exports_contracts:
+      - contract.memory-provider.loading.v1
+    imports_contracts: []
+    depends_on_modules: []
+    load_triggers:
+      - runtime_contract_change
+      - adapter_change
+      - memory_provider_change
+    change_impact_policy:
+      summary_doc_change:
+        classification: local_detail_change
+        requires_sync: []
+        recommends_sync: []
+      contract_doc_change:
+        classification: exported_contract_change
+        requires_sync:
+          - summary_doc
+        recommends_sync:
+          - module_registry
+          - direct_consumers
+      adr_doc_change:
+        classification: local_detail_change
+        requires_sync: []
+        recommends_sync:
+          - summary_doc
+      registry_change:
+        classification: module_registry_change
+        requires_sync: []
+        recommends_sync:
+          - overall_technical_solution
+
+  - module_id: runtime.orchestration
+    status: active
+    owner: runtime
+    layer: runtime-core
+    summary_doc: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/module-overview.md
+    detail_docs:
+      - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/contracts/runtime-graph-execution-contract.md
+        kind: contract
+      - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/adrs/graph-first-runtime-and-service-backed-execution-cutover.md
+        kind: adr
+    north_star_refs:
+      - prd.multi-agent-orchestration
+      - overall.graph-first-runtime
+      - architecture.runtime-boundary
+    exports_contracts:
+      - contract.runtime.graph-execution.v1
+    imports_contracts:
+      - contract.memory-provider.loading.v1
+    depends_on_modules:
+      - runtime.memory-provider-loading
+    load_triggers:
+      - runtime_contract_change
+      - governance_engine_change
+      - module_dependency_change
+    change_impact_policy:
+      summary_doc_change:
+        classification: local_detail_change
+        requires_sync: []
+        recommends_sync: []
+      contract_doc_change:
+        classification: exported_contract_change
+        requires_sync:
+          - summary_doc
+        recommends_sync:
+          - module_registry
+          - direct_consumers
+          - overall_technical_solution
+          - architecture_and_repo_layering
+      adr_doc_change:
+        classification: local_detail_change
+        requires_sync: []
+        recommends_sync:
+          - summary_doc
+      registry_change:
+        classification: module_registry_change
+        requires_sync: []
+        recommends_sync:
+          - overall_technical_solution
+          - architecture_and_repo_layering

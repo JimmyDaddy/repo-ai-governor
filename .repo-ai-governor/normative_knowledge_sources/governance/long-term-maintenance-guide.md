@@ -6,7 +6,7 @@
 
 ## Source Hierarchy
 
-1. Normative rules: `.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md` (`CS-001` to `CS-027`)
+1. Normative rules: `.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md` (`CS-001` to `CS-030`)
 2. Operational baseline: this guide (`.repo-ai-governor/normative_knowledge_sources/governance/long-term-maintenance-guide.md`)
 3. Sprint execution records: `.repo-ai-governor/docs/dev/<project>/<sprint>/`
 4. Release channel governance: `.repo-ai-governor/normative_knowledge_sources/governance/release-governance-spec.md`
@@ -45,6 +45,9 @@ Current default startup baseline therefore resolves to:
 11. Normative loading manifest baseline: `CS-025`
 12. Code review lifecycle status synchronization baseline: `CS-026`
 13. Anti-God-object and cross-layer ownership baseline: `CS-027`
+14. Worktree review target override baseline: `CS-028`
+15. Technical solution module graph governance baseline: `CS-029`
+16. Technical solution lifecycle and promotion governance baseline: `CS-030`
 
 For command-level enforcement, always use `.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md -> Verification Commands` as the single source of truth.
 
@@ -54,11 +57,13 @@ For command-level enforcement, always use `.repo-ai-governor/normative_knowledge
    - `scripts/governance/check-monorepo-naming.js`
    - `scripts/governance/check-package-dependency-boundary.js`（warning 模式已接入，blocking 待切换）
    - `scripts/governance/check-normative-loading-manifest.js`（由 runner 调用，默认 blocking）
+   - `scripts/governance/check-technical-solution-module-graph.js`（默认 blocking）
+   - `scripts/governance/check-technical-solution-lifecycle-registry.js`（默认 blocking）
 2. Planned script:
    - `scripts/governance/check-monorepo-versioning-policy.js`
    - `scripts/governance/check-god-object-boundary.js`
 3. Planned wiring target: `.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md -> Verification Commands`.
-4. Current decision: 依赖边界检查保持 warning 模式运行并持续清零；规范加载清单检查已切换默认 blocking，并通过 rollback switch 提供应急回退。其余脚本维持 implementation-ready，待专门窗口激活。
+4. Current decision: 依赖边界检查保持 warning 模式运行并持续清零；规范加载清单检查、技术方案模块图检查与技术方案生命周期检查已切换默认 blocking。其余脚本维持 implementation-ready，待专门窗口激活。
 
 ## Normative Loading Gate Rollout Policy
 

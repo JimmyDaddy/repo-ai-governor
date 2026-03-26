@@ -2,7 +2,7 @@
 
 - 文档版本：v0.3
 - 状态：执行中（MVP 已完成，P1 深化中）
-- 日期：2026-03-25
+- 日期：2026-03-26
 - 暂定产品名：Repo AI Governor
 
 ## 0. v0.3 更新说明
@@ -20,6 +20,7 @@
 11. 明确 Artifact Registry 单一事实源：canonical registry 固定为 machine-readable main/archive registry，human-readable 入口统一由 canonical source 渲染，不再维护手工镜像台账。
 12. 明确当前 Stage 9 follow-up 属于工具级投产与自治收口 overlay：重点收敛真实调用、任务驱动编排、HITL 决策回灌、受控交付演练与黑盒稳定性，不改变产品仍以目标仓库本地治理为主的边界。
 13. 明确编排运行时演进方向：采用 graph-first orchestration backend，CLI 与未来桌面端共用本地 orchestration service，且 `workspace` 下治理产物继续作为 canonical source。
+14. 明确方案层模块化方向：总技术方案保持北极星索引，模块细节以下钻 `module registry + module overview + contract` 结构按需加载，并通过 impact classification 维持同步约束。
 
 ## 1. 产品概述
 
@@ -489,6 +490,8 @@ AI 先完成方案与实现，再进入评审 Agent 与复核 Agent 的循环；
 2. 同步规则
    - 三层文档任一层发生需求语义变更时，必须在同一变更集中同步其余两层。
    - `.repo-ai-governor/normative_knowledge_sources/product-requirements.md` 变更时，必须同步 `.repo-ai-governor/normative_knowledge_sources/product-requirements-brief.md`。
+   - 方案层允许拆分为“总技术方案北极星索引 + `technical-solution-module-registry` + module overview/contract 文档”，但 `north_star_change / layer_boundary_change` 仍必须升级到 triad 同步。
+   - module contract 变更需具备 impact classification 结果，至少同步 producer module overview，并显式给出 direct consumer / triad 的推荐或强制同步面。
 3. 工具内置机制
    - 提供可执行门禁检查（三层文档一致性检查 + brief 同步检查）。
    - 支持机器可读输出（CI 阻断）与人类可读输出（本地定位）。
@@ -835,6 +838,7 @@ CI 平台覆盖策略：
 2. 工具需内置可执行检查，避免仅靠人工约定。
 3. PRD 变更必须同步简版 PRD，确保 AI 执行入口不失真。
 4. 默认使用阻断策略，确保“文档事实源”先于实现推进。
+5. 模块方案拆分不能引入第二套事实源；模块依赖关系必须由结构化 registry 统一管理。
 
 ## 18. 一句话总结
 

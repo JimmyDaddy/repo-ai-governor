@@ -1,0 +1,22 @@
+# checklist
+
+- [x] TK-179 project-017 启动与技术方案模块化治理重排
+  - 2026-03-26：任务创建，状态初始化为 `planned`。
+  - 2026-03-26：状态切换为 `in_progress`，开始建立 `project-017` 的 bootstrap skeleton，并将 `project-015 / sprint-004` 从 active closeout surface 迁入 history。
+  - 2026-03-26：已完成 `DA-179`、resolved review 与治理同步文件更新，active stream 已切换到 `project-017 / sprint-001`。
+- [x] TK-180 technical solution module registry 与 loading contract baseline
+  - 2026-03-26：任务创建，状态初始化为 `planned`。
+  - 2026-03-26：状态切换为 `in_progress`，开始冻结 `technical-solution-module-registry.yaml`、module overview 与 contract-first loading 基线。
+  - 2026-03-26：已完成 registry schema、4 个模块 baseline 文档与 `technical-solution-module-registry.js` 解析辅助层，形成 `DA-180`。
+- [x] TK-181 总技术方案北极星瘦身与 module overview 抽取基线
+  - 2026-03-26：任务创建，状态初始化为 `planned`。
+  - 2026-03-26：状态切换为 `in_progress`，开始同步总纲瘦身边界、module overview 抽取规范与 triad/manifest 对齐。
+  - 2026-03-26：已完成总技术方案、架构分层、PRD/brief、manifest 与治理文档更新，形成 `DA-181`。
+- [x] TK-182 module graph gate 与 Spec Sync impact classification 基线
+  - 2026-03-26：任务创建，状态初始化为 `planned`。
+  - 2026-03-26：状态切换为 `in_progress`，开始实现 module graph gate、Spec Sync impact classification 与测试/接线。
+  - 2026-03-26：已完成 module graph gate、扩展 `check-docs-triad-sync.js`、补齐测试与 gate wiring，形成 `DA-182`。
+- [x] TK-183 sprint-001 出口验收与 sprint-002 模块迁移输入约束
+  - 2026-03-26：任务创建，状态初始化为 `planned`。
+  - 2026-03-26：状态切换为 `in_progress`，开始执行 sprint-001 验收、台账收口与 sprint-002 输入约束冻结。
+  - 2026-03-26：已完成 `DA-183`、resolved review、sprint/project plan 状态同步与 follow-up stream 约束登记。

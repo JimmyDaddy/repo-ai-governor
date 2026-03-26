@@ -36,11 +36,11 @@
 4. 在 triad 尚未引入新的正式 phase 前，所有投产类收口工作统一跟踪为：
    - `Phase E 收口 + GA Readiness overlay`
 
-## 3. 当前执行摘要（2026-03-25）
+## 3. 当前执行摘要（2026-03-26）
 
 ## 3.1 一句话结论
 
-1. Stage 0-9 的业务闭环能力已经完成，`project-013` 已补齐远端 provider 真实调用与 adapter 运维契约；`project-014` 已完成 LangGraph runtime modernization 第一阶段；`project-015` 已完成 memory provider pluginization 全量闭环；`project-016` 也已完成 LangGraph runtime productization baseline。当前默认执行面仍保留在 `project-015 / sprint-004` 这个 active closeout surface，待下一条主执行流显式激活后再迁入 history。
+1. Stage 0-9 的业务闭环能力已经完成，`project-013` 已补齐远端 provider 真实调用与 adapter 运维契约；`project-014` 已完成 LangGraph runtime modernization 第一阶段；`project-015` 已完成 memory provider pluginization 全量闭环；`project-016` 已完成 LangGraph runtime productization baseline；`project-017` 已完成 module registry、总纲瘦身、首批模块迁移、typed detail-doc gate cutover、`draft -> final` lifecycle registry / promotion gate 治理，并补齐 repo-local promotion skill，当前 worktree 仅临时保留 `sprint-004` 作为 closeout surface。
 
 ## 3.2 当前真实状态
 
@@ -52,9 +52,9 @@
    - `LangGraph` Phase 0 backend、最小主链、checkpoint/recovery、service-backed execution 与 desktop-ready contract 已完成第一阶段收口。
    - `run/review/review-verify/HITL/recovery` 已通过 orchestration service client 进入统一 service-backed path，并形成 CLI / service summary / event stream 三层 parity 证据。
 2. 当前未完成的部分：
-   - 当前主线未完成项不再停留在 `project-015`；该项目已完成 built-in registry、optional plugin 与 shared loader / service reuse 全量收口。
-   - `daemon + http` 仍保留为可选 follow-up option，但不属于当前 active 承诺。
-   - 若后续需要继续扩围更深的 vendor-specific execution 或长期 daemon host，应新开 follow-up stream，而不是回退已完成的 `project-016` baseline。
+   - 当前主线未完成项不再停留在 `project-015`、`project-016` 或 `project-017`；三者均已完成并进入完成态消费面。
+   - 技术方案模块化治理主线已具备 module registry、contract-first loading、module graph gate、Spec Sync impact gate、typed detail-doc cutover、lifecycle/promotion blocking gate 与 repo-local skillized promotion workflow。
+   - `daemon + http` 仍保留为可选 follow-up option，但不属于当前执行承诺。
 
 ## 3.3 当前主执行流
 
@@ -67,17 +67,17 @@
 | 当前治理支撑主线 | `project-012-execution-context-optimization` | completed | 已完成 startup/context/task-ledger/review-chain 优化并形成正式 handoff |
 | 已完成 Stage 9 最后业务阻断收口 | `project-013-remote-provider-and-adapter-ops` | completed | 已完成远端 provider 真实调用、adapter 运维契约与统一路由 truthfulness 收口 |
 | 已完成 runtime modernization 第一阶段 | `project-014-langgraph-orchestration-runtime-adoption` | completed | 已完成 LangGraph adoption、shared local orchestration service、service-backed execution 与 desktop-ready contract 的第一阶段收口 |
-| 已完成 packaging/modularity 主线 | `project-015-memory-provider-pluginization` | completed | 已完成 built-in registry、optional plugin、shared loader / service reuse 与 service-host packaging / clean-room / release gate 收口；当前仅保留 active closeout surface |
+| 已完成 packaging/modularity 主线 | `project-015-memory-provider-pluginization` | completed | 已完成 built-in registry、optional plugin、shared loader / service reuse 与 service-host packaging / clean-room / release gate 收口，并作为后续治理主线的完成态输入 |
 | 已完成 runtime productization baseline | `project-016-langgraph-runtime-productization` | completed | 已完成 LangGraph runtime truthfulness、graph-first execution、`sidecar + ipc` host 与 desktop execution/service-ops baseline 收口 |
+| 当前规范治理主线 | `project-017-technical-solution-modularization` | completed | 已完成总技术方案模块化、首批模块迁移、artifact handoff、typed detail-doc gate cutover、lifecycle/promotion 治理与 repo-local promotion skill；当前 worktree 仅临时保留 `sprint-004` 作为 closeout surface |
 
 ## 3.4 当前推荐执行顺序
 
-1. 已将 `project-013` 视为 completed handoff，后续只消费其远端 provider 执行面与 adapter ops 产物。
-2. `project-014 / sprint-001` 已完成 adoption baseline、runtime/service boundary 与 cutover 输入约束冻结。
-3. `project-014 / sprint-002` 已通过 `DA-152` 完成出口验收，第一轮 LangGraph backend、checkpoint/recovery 与 service shell 实装已收口。
-4. `project-014 / sprint-003` 已通过 `DA-158` 完成出口验收，project-014 已形成 completion audit。
-5. `project-016` 已通过 `DA-166` 完成 sprint-001 出口验收，并形成 project completion audit。
-6. `project-015 / sprint-004-shared-loader-and-service-reuse` 已完成出口验收并形成 completion audit；在下一条主执行流显式激活前，当前默认 active surface 仍保留在该 closeout stream。
+1. `project-017 / sprint-004-skillized-promotion-workflow` 已完成并被当前 worktree 临时保留为 closeout surface。
+2. 当前没有新的 normative modularization sprint 已拆解并激活；若后续继续扩张，只应按增量模块迁移、promotion 自动化，或 skill/runtime tooling reopen 新 sprint，而不是回退到总纲重设计。
+3. `project-015 / sprint-004-shared-loader-and-service-reuse` 已完成出口验收并迁入 completed history。
+4. `project-016` 已通过 `DA-166` 完成 sprint-001 出口验收，并形成 project completion audit。
+5. 已将 `project-013`、`project-014`、`project-015`、`project-016`、`project-017` 统一视为 completed handoff，只作为依赖产物消费面。
 
 ## 4. 路线图总览
 
@@ -284,8 +284,9 @@
 | `project-012-execution-context-optimization` | Cross-stage follow-up | completed | 已完成 startup/context/task-ledger/review-chain 与 selective memory 注入的治理收口 |
 | `project-013-remote-provider-and-adapter-ops` | Stage 9 remaining closure | completed | 已完成远端 provider 真实调用、adapter 运维契约与统一路由 truthfulness 收口 |
 | `project-014-langgraph-orchestration-runtime-adoption` | Post-Stage-9 runtime modernization | completed | 已完成 LangGraph cutover 第一阶段、shared local orchestration service 与 desktop-ready contract 基线，统一 CLI 与未来 desktop 的执行面 |
-| `project-015-memory-provider-pluginization` | Post-Stage-9 runtime packaging modularization | active | 已完成 bootstrap sprint，当前推进 memory provider built-in registry + loader foundation，并为 optional plugin 后续扩围冻结输入约束 |
+| `project-015-memory-provider-pluginization` | Post-Stage-9 runtime packaging modularization | completed | 已完成 built-in registry、optional plugin、shared loader / service reuse 与 service-host packaging / clean-room / release gate 收口 |
 | `project-016-langgraph-runtime-productization` | Post-Stage-9 runtime modernization follow-up | completed | 已完成 LangGraph runtime truthfulness、graph-first execution、`sidecar + ipc` service host 与 desktop execution/service-ops baseline |
+| `project-017-technical-solution-modularization` | Cross-stage normative modularization follow-up | completed | 已完成 module registry、首批模块迁移、artifact handoff、typed detail-doc gate cutover、lifecycle/promotion 治理与 repo-local promotion skill；后续仅保留增量扩张空间 |
 
 ## 9. Sprint 与 Task 最小模板
 

@@ -2,7 +2,7 @@
 
 - 文档版本：brief-v1
 - 状态：active
-- 日期：2026-03-25
+- 日期：2026-03-26
 - 对齐来源：`.repo-ai-governor/normative_knowledge_sources/product-requirements.md`（完整版）
 - 实施总纲：`.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-overall-technical-solution.md`
 - 工程蓝图：`.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-architecture-and-repo-layering.md`
@@ -59,6 +59,7 @@
 10. 三层文档同步基线：
    - 需求/方案/架构三层文档变更必须同步提交。
    - PRD 变更必须同步简版 PRD，且由工具门禁自动校验。
+   - 方案层允许拆分到 `technical-solutions/**`，但 `north_star / layer boundary / exported contract` 变化仍需通过 triad + impact gate 收口。
 11. Shared 与 i18n 基线：
    - 共享类型、通用工具与 i18n 基础能力统一收敛到 `packages/shared`。
    - Adapter/Runtime/Reporting 文案能力优先复用 shared 层，不在领域模块重复实现。
@@ -110,7 +111,7 @@
 3. 产物与记录路径符合 AGENTS 与上下文规则。
 4. 验证命令遵循 `.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md`。
 5. CLI 输出模式与场景一致：本地可读、CI 可解析、日志可消费。
-6. 三层文档同步门禁可通过：无“单层变更未同步”漂移。
+6. 三层文档同步门禁与 module impact / module graph gate 可通过：无“单层变更未同步”漂移。
 
 ## 8. 同步规则（强制）
 

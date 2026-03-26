@@ -1,0 +1,22 @@
+# checklist
+
+- [x] TK-189 sprint-003 激活与 project-017 reopen handoff
+  - 2026-03-26：任务创建，状态初始化为 `planned`。
+  - 2026-03-26：状态切换为 `in_progress`，开始切换 active stream 到 sprint-003，并将 sprint-002 closeout surface 迁入 completed history。
+  - 2026-03-26：已完成 sprint-003 skeleton、current-context 切换与 project-017 reopen handoff，形成 `DA-189`。
+- [x] TK-190 lifecycle registry schema 与 seed catalog baseline
+  - 2026-03-26：任务创建，状态初始化为 `planned`。
+  - 2026-03-26：状态切换为 `in_progress`，开始设计 lifecycle registry schema、状态机与初始 solution catalog。
+  - 2026-03-26：已完成 `technical-solution-lifecycle-registry.yaml` 与 seed catalog 基线，形成 `DA-190`。
+- [x] TK-191 lifecycle promotion gate 与 integration test wiring
+  - 2026-03-26：任务创建，状态初始化为 `planned`。
+  - 2026-03-26：状态切换为 `in_progress`，开始实现 lifecycle gate、package/turbo 接线与集成测试。
+  - 2026-03-26：已完成 lifecycle promotion gate、package/turbo 接线与集成测试，形成 `DA-191`。
+- [x] TK-192 lifecycle contract、manifest 与 module-registry cutover
+  - 2026-03-26：任务创建，状态初始化为 `planned`。
+  - 2026-03-26：状态切换为 `in_progress`，开始补齐 lifecycle contract、manifest external input 与 module-registry detail doc。
+  - 2026-03-26：已完成 lifecycle contract、manifest external input 与 module-registry cutover，形成 `DA-192`。
+- [x] TK-193 sprint-003 出口验收与 project-017 re-closeout
+  - 2026-03-26：任务创建，状态初始化为 `planned`。
+  - 2026-03-26：状态切换为 `in_progress`，开始 sprint-003 验收、artifact 登记与 project-017 再次收口。
+  - 2026-03-26：已完成 `DA-193`、resolved reviews、artifact registry 同步与新的 project completion audit，sprint-003 正式收口。

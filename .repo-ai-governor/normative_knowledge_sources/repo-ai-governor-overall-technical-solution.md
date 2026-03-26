@@ -1,7 +1,7 @@
 # Repo AI Governor 工具级总技术方案
 
 - Status: active
-- Date: 2026-03-25
+- Date: 2026-03-26
 - Scope: whole product (tool-level)
 - Basis:
   - `.repo-ai-governor/normative_knowledge_sources/product-requirements-brief.md`
@@ -197,12 +197,17 @@
    - `.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-overall-technical-solution.md`
    - `.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-architecture-and-repo-layering.md`
    - `.repo-ai-governor/normative_knowledge_sources/product-requirements-brief.md`
+   - `.repo-ai-governor/normative_knowledge_sources/technical-solutions/technical-solution-module-registry.yaml`
+   - 受影响的 `technical-solutions/**/module-overview.md`
+   - 受影响的 `technical-solutions/**/contracts/*.md`
 2. 校验规则（最小）
    - 三层文档元数据日期必须一致（`YYYY-MM-DD`）。
    - 若工作区检测到三层文档任一文件变更，则必须三者同变更。
    - 若 PRD 变更，则简版 PRD 必须同变更。
+   - module detail change 需先通过 impact classification 判定同步面；仅 `north_star_change / layer_boundary_change` 默认升级到 triad 全量同步。
+   - module contract change 至少要求同步 producer `module-overview`，并输出 direct consumer / triad 的推荐同步面。
 3. 输出模型
-   - 机器可读：`status`, `failures[]`, `changed_files[]`, `missing_sync_files[]`。
+   - 机器可读：`status`, `failures[]`, `changed_files[]`, `missing_sync_files[]`, `module_impacts[]`。
    - 人类可读：失败原因摘要 + 补齐建议。
 4. 失败策略
    - 默认 `block`；迁移窗口可配置 `warn`（后续阶段）。
@@ -549,6 +554,7 @@
 3. Standards Pack 事实源由结构化规范资产与 `governor.yaml.standards` 管理，统一生成 human/ai/agents 三类视图。
 4. 角色事实源由 `Role Registry` 与 `governor.yaml.roles` 统一管理，支持默认角色与用户自定义角色并存。
 5. workspace 事实源由 `governor.yaml.workspace` 管理，支持 `tool_managed/repo_local`。
+6. 技术方案模块事实源由 `technical-solution-module-registry.yaml` 与 `technical-solutions/**` 下的 `module-overview / contracts` 管理；总技术方案保留北极星索引，不重复承载模块深度细节。
 
 ## 9.2 执行产物
 
@@ -625,3 +631,5 @@
 4. PRD 主线更新时，优先同步本总纲，再同步简版与迭代文档。
 5. 架构图与仓库分层工程蓝图见 `.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-architecture-and-repo-layering.md`。
 6. 文档元数据日期格式统一使用 `YYYY-MM-DD`，并在跨文档联动更新时同步刷新日期字段。
+7. 默认执行将本总纲视为北极星索引；命中具体模块任务时，优先加载 `technical-solution-module-registry` 中对应的 `module-overview + imported contracts`。
+8. 只有命中 `north_star_change / layer_boundary_change / exported_contract_change` 等升级条件时，才扩张到 triad 全文同步面。

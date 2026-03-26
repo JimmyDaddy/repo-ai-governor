@@ -1,0 +1,4 @@
+interface:
+  display_name: "Tech Solution Promotion"
+  short_description: "Promote draft technical solutions into formal lifecycle-managed docs"
+  default_prompt: "Use $technical-solution-promotion to check promotion readiness, promote an approved draft into formal technical-solution docs, or supersede an existing active solution in this repository."

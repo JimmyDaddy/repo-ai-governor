@@ -32,6 +32,8 @@ This file defines repository-level coding standards and the executable gate comm
 - [CS-026] Code review lifecycle artifacts under `.repo-ai-governor/context/dev/**/review/` must keep filename state and top-level `Status` metadata synchronized. `code_review_*/review_*` require `Status: review_pending`; `verified_code_review_*/verified_review_*` require `Status: verified`; `resolved_code_review_*/resolved_review_*` require `Status: resolved`.
 - [CS-027] Prevent cross-layer God objects. In `apps/**` and `packages/**`, new or substantially modified domain/runtime modules must align to one primary bounded context and at most two adjacent architecture layers from `.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-overall-technical-solution.md -> 4.1 分层视图`. A single file/class must not simultaneously own three or more responsibility families among `command entry/dispatch`, `workflow/runtime orchestration`, `adapter probing/routing`, `policy/risk decisioning`, `artifact/report persistence`, and `presentation shaping`. Legacy files above `1200` LOC must not absorb new unrelated responsibilities; changes to such files should prefer extraction-first refactors. Temporary exceptions require a nearby marker comment `// god-object-exception: TK-xxx reason` and a task-linked decomposition plan in the active sprint ledger before delivery.
 - [CS-028] `.repo-ai-governor/context/current-context.md` may declare at most one `Worktree Review Target` override for default CR routing. When present, it must point to a `completed` stream review directory that still contains open lifecycle artifacts (`code_review_*` / `verified_code_review_*`); once only `resolved` artifacts or no lifecycle files remain, the override must be removed before delivery.
+- [CS-029] Technical solution module graph governance is required: `.repo-ai-governor/normative_knowledge_sources/technical-solutions/technical-solution-module-registry.yaml` is the single source for module ids, exported/imported contracts, direct dependencies, and loading budgets; active module docs under `.repo-ai-governor/normative_knowledge_sources/technical-solutions/**` must be registered in manifest; contract changes must keep producer module overview synchronized; and the module graph gate defaults to blocking mode.
+- [CS-030] Technical solution draft/final lifecycle governance is required: `.repo-ai-governor/context/technical-solution-lifecycle-registry.yaml` is the single source for draft/review/approved/active/superseded/archived state; `draft_paths` must stay under `.repo-ai-governor/draft/**` and must not enter manifest; `active/superseded` `final_paths` must be manifest-registered; and promotion changes must keep lifecycle registry, review evidence, task ledger, and module registry/manifest (when impacted) synchronized.
 
 ## Monorepo Naming Convention (Refactor Baseline)
 
@@ -107,6 +109,8 @@ node ./scripts/governance/check-utils-reuse-governance.js
 node ./scripts/governance/check-type-governance.js
 node ./scripts/governance/check-ts-only-residue.js
 node ./scripts/governance/check-docs-triad-sync.js
+node ./scripts/governance/check-technical-solution-module-graph.js
+node ./scripts/governance/check-technical-solution-lifecycle-registry.js
 node ./scripts/governance/check-jsdoc-governance.js
 node ./scripts/governance/check-oop-structure.js
 node ./scripts/governance/check-package-dependency-boundary.js --mode warn
@@ -136,7 +140,7 @@ node ./dist/bin/repo-ai-governor.js --help >/dev/null
    - `node ./scripts/governance/check-monorepo-naming.js`
    - `node ./scripts/governance/check-monorepo-versioning-policy.js`
    - `node ./scripts/governance/check-god-object-boundary.js`
-4. Current status: `check-package-dependency-boundary` 以 warning 模式接入；`normative-loading-manifest` 已切换默认 blocking（通过 gate runner 执行），并提供 rollback switch（config/env）用于应急回退。
+4. Current status: `check-package-dependency-boundary` 以 warning 模式接入；`normative-loading-manifest`、`technical-solution-module-graph` 与 `technical-solution-lifecycle-registry` 已切换默认 blocking；其余脚本维持 implementation-ready，待专门窗口激活。
 
 ## Notes
 

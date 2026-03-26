@@ -8,8 +8,8 @@
 
 1. `projects-overview`: `.repo-ai-governor/context/dev/projects-overview.md`
 2. `dependency-artifact-registry-guide`: `.repo-ai-governor/context/dev/dependency-artifact-registry.md`
-3. `primary project plan`: `.repo-ai-governor/context/dev/project-015-memory-provider-pluginization/plan.md`
-4. `latest completed project plan`: `.repo-ai-governor/context/dev/project-015-memory-provider-pluginization/plan.md`
+3. `primary project plan`: `.repo-ai-governor/context/dev/project-017-technical-solution-modularization/plan.md`
+4. `latest completed project plan`: `.repo-ai-governor/context/dev/project-017-technical-solution-modularization/plan.md`
 
 ## 2. Artifact Retrieval Entry
 

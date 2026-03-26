@@ -1,0 +1,22 @@
+# checklist
+
+- [x] TK-184 sprint-002 激活与 artifact registry handoff
+  - 2026-03-26：任务创建，状态初始化为 `planned`。
+  - 2026-03-26：状态切换为 `in_progress`，开始切换 active stream 到 sprint-002 并登记 `DA-180` ~ `DA-183`。
+  - 2026-03-26：已完成 sprint-002 skeleton、active stream 切换与 `DA-180` ~ `DA-183` artifact registry handoff，形成 `DA-184`。
+- [x] TK-185 governance.spec-sync 模块深迁移与 ADR 切口收敛
+  - 2026-03-26：任务创建，状态初始化为 `planned`。
+  - 2026-03-26：状态切换为 `in_progress`，开始深化 `governance.spec-sync` 的 overview/contract/adr 文档与 typed detail-doc 语义。
+  - 2026-03-26：已完成 `governance.spec-sync` rich docs 迁移与 ADR 切口收敛，形成 `DA-185`。
+- [x] TK-186 runtime.memory-provider-loading 模块深迁移与 host surface cutover 文档化
+  - 2026-03-26：任务创建，状态初始化为 `planned`。
+  - 2026-03-26：状态切换为 `in_progress`，开始深化 memory provider loading 模块文档并回收 host surface cutover 事实。
+  - 2026-03-26：已完成 `runtime.memory-provider-loading` 模块深迁移与 ADR 文档化，形成 `DA-186`。
+- [x] TK-187 runtime.orchestration 模块深迁移与 typed detail-doc gate cutover
+  - 2026-03-26：任务创建，状态初始化为 `planned`。
+  - 2026-03-26：状态切换为 `in_progress`，开始深化 `runtime.orchestration` 模块并改造 registry/gates/test 以区分 `contract` / `adr`。
+  - 2026-03-26：已完成 runtime.orchestration 模块深迁移、typed detail-doc cutover、测试与 manifest 同步，形成 `DA-187`。
+- [x] TK-188 sprint-002 出口验收与 project-017 后续输入约束
+  - 2026-03-26：任务创建，状态初始化为 `planned`。
+  - 2026-03-26：状态切换为 `in_progress`，开始 sprint-002 验收、project-017 审计与顶层执行面收口。
+  - 2026-03-26：已完成 `DA-188`、project completion audit、resolved review 与 project/sprint/master plan 同步。

@@ -1,5 +1,5 @@
 schema_version: 1
-generated_at: 2026-03-22
+generated_at: 2026-03-26
 status: active
 owner: repo-ai-governor
 
@@ -23,6 +23,19 @@ external_required_inputs:
     owner: workspace-runtime
     last_reviewed_at: 2026-03-21
     notes: operational state source outside normative_knowledge_sources
+
+  - doc_id: technical_solution_lifecycle_registry
+    path: .repo-ai-governor/context/technical-solution-lifecycle-registry.yaml
+    tier: L1
+    status: active
+    default_load: false
+    load_trigger:
+      - technical_solution_promotion_change
+      - technical_solution_module_change
+      - governance_engine_change
+    owner: architecture
+    last_reviewed_at: 2026-03-26
+    notes: lifecycle state source outside normative_knowledge_sources
 
 documents:
   - doc_id: normative_loading_manifest
@@ -104,6 +117,165 @@ documents:
       - monorepo_migration_decision
     owner: architecture
     last_reviewed_at: 2026-03-20
+
+  - doc_id: technical_solution_module_registry
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/technical-solution-module-registry.yaml
+    tier: L1
+    status: active
+    default_load: false
+    load_trigger:
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+      - module_dependency_change
+      - spec_sync_change
+    owner: architecture
+    last_reviewed_at: 2026-03-26
+
+  - doc_id: technical_solution_governance_spec_sync_overview
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/governance-spec-sync/module-overview.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - spec_sync_change
+      - docs_contract_change
+      - technical_solution_module_change
+    owner: architecture
+    last_reviewed_at: 2026-03-26
+
+  - doc_id: technical_solution_governance_spec_sync_contract
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/governance-spec-sync/contracts/spec-sync-impact-classification-contract.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - spec_sync_change
+      - docs_contract_change
+      - technical_solution_module_change
+    owner: architecture
+    last_reviewed_at: 2026-03-26
+
+  - doc_id: technical_solution_governance_spec_sync_adr
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/governance-spec-sync/adrs/spec-sync-escalation-and-module-impact-routing.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - spec_sync_change
+      - docs_contract_change
+      - technical_solution_module_change
+    owner: architecture
+    last_reviewed_at: 2026-03-26
+
+  - doc_id: technical_solution_registry_overview
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/governance-technical-solution-registry/module-overview.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+      - module_dependency_change
+      - governance_engine_change
+    owner: architecture
+    last_reviewed_at: 2026-03-26
+
+  - doc_id: technical_solution_registry_contract
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/governance-technical-solution-registry/contracts/technical-solution-module-registry-contract.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+      - module_dependency_change
+      - governance_engine_change
+    owner: architecture
+    last_reviewed_at: 2026-03-26
+
+  - doc_id: technical_solution_registry_lifecycle_contract
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/governance-technical-solution-registry/contracts/technical-solution-lifecycle-registry-contract.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - technical_solution_promotion_change
+      - technical_solution_module_change
+      - governance_engine_change
+    owner: architecture
+    last_reviewed_at: 2026-03-26
+
+  - doc_id: technical_solution_runtime_memory_provider_loading_overview
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-memory-provider-loading/module-overview.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - runtime_contract_change
+      - memory_provider_change
+      - adapter_change
+    owner: architecture
+    last_reviewed_at: 2026-03-26
+
+  - doc_id: technical_solution_runtime_memory_provider_loading_contract
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-memory-provider-loading/contracts/memory-provider-loading-contract.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - runtime_contract_change
+      - memory_provider_change
+      - adapter_change
+    owner: architecture
+    last_reviewed_at: 2026-03-26
+
+  - doc_id: technical_solution_runtime_memory_provider_loading_adr
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-memory-provider-loading/adrs/shared-loader-host-surface-cutover.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - runtime_contract_change
+      - memory_provider_change
+      - adapter_change
+    owner: architecture
+    last_reviewed_at: 2026-03-26
+
+  - doc_id: technical_solution_runtime_orchestration_overview
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/module-overview.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - runtime_contract_change
+      - governance_engine_change
+      - module_dependency_change
+    owner: architecture
+    last_reviewed_at: 2026-03-26
+
+  - doc_id: technical_solution_runtime_orchestration_contract
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/contracts/runtime-graph-execution-contract.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - runtime_contract_change
+      - governance_engine_change
+      - module_dependency_change
+    owner: architecture
+    last_reviewed_at: 2026-03-26
+
+  - doc_id: technical_solution_runtime_orchestration_adr
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/adrs/graph-first-runtime-and-service-backed-execution-cutover.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - runtime_contract_change
+      - governance_engine_change
+      - module_dependency_change
+    owner: architecture
+    last_reviewed_at: 2026-03-26
 
   - doc_id: master_execution_plan
     path: .repo-ai-governor/normative_knowledge_sources/repo-ai-governor-master-execution-plan.md
