@@ -3,19 +3,21 @@
 ## Primary Stream
 
 - Status: active
-- Project: `project-018-technical-solution-promotion-pilots`
-- Sprint: `sprint-004-langgraph-hard-dependency-truthfulness-cutover`
-- Docs root: `.repo-ai-governor/context/dev/project-018-technical-solution-promotion-pilots`
-- Task records: `.repo-ai-governor/context/dev/project-018-technical-solution-promotion-pilots/sprint-004-langgraph-hard-dependency-truthfulness-cutover/tasks/`
-- Review records: `.repo-ai-governor/context/dev/project-018-technical-solution-promotion-pilots/sprint-004-langgraph-hard-dependency-truthfulness-cutover/review/`
+- Project: `project-020-adoption-productization-and-upgrade-ux`
+- Sprint: `sprint-001-packaging-truthfulness-failure-baseline`
+- Docs root: `.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux`
+- Task records: `.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux/sprint-001-packaging-truthfulness-failure-baseline/tasks/`
+- Review records: `.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux/sprint-001-packaging-truthfulness-failure-baseline/review/`
 
 ## Active Streams
 
-- `primary`: project=`project-018-technical-solution-promotion-pilots`, sprint=`sprint-004-langgraph-hard-dependency-truthfulness-cutover`, docs=`.repo-ai-governor/context/dev/project-018-technical-solution-promotion-pilots`, plan=`.repo-ai-governor/context/dev/project-018-technical-solution-promotion-pilots/plan.md`, tasks=`.repo-ai-governor/context/dev/project-018-technical-solution-promotion-pilots/sprint-004-langgraph-hard-dependency-truthfulness-cutover/tasks/`, checklist=`.repo-ai-governor/context/dev/project-018-technical-solution-promotion-pilots/sprint-004-langgraph-hard-dependency-truthfulness-cutover/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-018-technical-solution-promotion-pilots/sprint-004-langgraph-hard-dependency-truthfulness-cutover/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-018-technical-solution-promotion-pilots/sprint-004-langgraph-hard-dependency-truthfulness-cutover/review/`, status=`active`
+- `primary`: project=`project-020-adoption-productization-and-upgrade-ux`, sprint=`sprint-001-packaging-truthfulness-failure-baseline`, docs=`.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux`, plan=`.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux/plan.md`, tasks=`.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux/sprint-001-packaging-truthfulness-failure-baseline/tasks/`, checklist=`.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux/sprint-001-packaging-truthfulness-failure-baseline/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux/sprint-001-packaging-truthfulness-failure-baseline/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux/sprint-001-packaging-truthfulness-failure-baseline/review/`, status=`active`
 
 ## Planned Follow-Up Streams
 
-1. 当前无已拆解但未激活的 follow-up stream。
+1. `project-020-adoption-productization-and-upgrade-ux / sprint-002-packaged-runtime-cutover-and-release-gate-block`：等待 `sprint-001-packaging-truthfulness-failure-baseline` 完成 install matrix、failure taxonomy 与 published surface inventory 后激活。
+2. `project-020-adoption-productization-and-upgrade-ux / sprint-003-upgrade-and-workspace-lifecycle-ux-baseline`：等待 packaged distribution truthfulness 与 release gate blocking 基线完成后激活。
+3. `project-020-adoption-productization-and-upgrade-ux / sprint-004-adopter-pilot-and-documentation-closure`：等待 upgrade/workspace CLI 用户路径与 rollback/dry-run contract 收敛后激活。
 
 ## Completed Stream History
 

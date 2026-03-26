@@ -29,7 +29,9 @@
 | `project-015-memory-provider-pluginization` | Post-Stage-9 runtime packaging modularization | Runtime Modularity / Optional Plugin Resolution | 已完成 built-in registry、optional plugin、shared loader / service reuse 与 service-host packaging / clean-room / release gate 收口 |
 | `project-016-langgraph-runtime-productization` | Post-Stage-9 runtime modernization follow-up | Runtime Productization / Vendor Adapter + Service Host | 已完成 LangGraph runtime truthfulness、graph-first execution、`sidecar + ipc` host 与 desktop execution/service-ops baseline 收口 |
 | `project-017-technical-solution-modularization` | Cross-stage normative modularization follow-up | Normative Loading / Module Graph / Spec Sync Hardening | 已完成总技术方案模块化、lifecycle/promotion 治理，并补齐 repo-local promotion skill |
-| `project-018-technical-solution-promotion-pilots` | Cross-stage normative consumption follow-up | Technical Solution Promotion / Consumption Proof | 已完成 `memory-provider-pluginization` 与 LangGraph promotion/backfill，并补齐 `core-runtime-langgraph` hard dependency truthfulness follow-up；同时为 `memory-module` 保留 prepare-promotion readiness/blocker baseline；当前 worktree 仅临时保留 `sprint-004` 作为 closeout surface |
+| `project-018-technical-solution-promotion-pilots` | Cross-stage normative consumption follow-up | Technical Solution Promotion / Consumption Proof | 已完成 `memory-provider-pluginization` 与 LangGraph promotion/backfill，并补齐 `core-runtime-langgraph` hard dependency truthfulness follow-up；同时为 `memory-module` 保留 prepare-promotion readiness/blocker baseline |
+| `project-019-product-gap-assessment` | Cross-stage product alignment follow-up | PRD Gap Assessment / Priority Recalibration | 盘点当前工具对 PRD 的真实覆盖面，形成“现状 vs 目标”差距评估 draft，并为下一阶段优先级重排提供输入 |
+| `project-020-adoption-productization-and-upgrade-ux` | Post-Stage-9 external adoption closure | Packaging Truthfulness / Upgrade UX / Adopter Pilot | 正式承接 `project-019` 的 priority-1/2 delivery planning，先解决打包分发真值，再收敛 upgrade/workspace adopter UX，并用真实目标仓库试点做闭环 |
 
 ## 2. 依赖顺序
 
@@ -51,8 +53,10 @@
 16. `project-016-langgraph-runtime-productization`
 17. `project-017-technical-solution-modularization`
 18. `project-018-technical-solution-promotion-pilots`
+19. `project-019-product-gap-assessment`
+20. `project-020-adoption-productization-and-upgrade-ux`
 
-说明：Stage 主链按 001-007、009、010、013 推进；`project-008` 作为跨阶段治理优化轨可优先执行；`project-011` 作为 `project-010` 的工程支撑分解轨，为 CLI package 重构提供独立执行流；`project-012` 作为 `project-008` 的上下文效率 follow-up，负责收敛当前仓库的启动加载与台账上下文成本；`project-013` 已完成 Stage 9 最后业务阻断项收口；`project-014` 承接 post-Stage-9 的运行时现代化主线，但只完成了第一阶段 adoption/service-backed execution 收口；`project-015`、`project-016`、`project-017` 与 `project-018` 均已完成并进入完成态消费面；当前 worktree 仅临时保留 `project-018 / sprint-004` 作为 closeout surface，等待下一条执行流显式激活。
+说明：Stage 主链按 001-007、009、010、013 推进；`project-008` 作为跨阶段治理优化轨可优先执行；`project-011` 作为 `project-010` 的工程支撑分解轨，为 CLI package 重构提供独立执行流；`project-012` 作为 `project-008` 的上下文效率 follow-up，负责收敛当前仓库的启动加载与台账上下文成本；`project-013` 已完成 Stage 9 最后业务阻断项收口；`project-014` 承接 post-Stage-9 的运行时现代化主线，但只完成了第一阶段 adoption/service-backed execution 收口；`project-015`、`project-016`、`project-017`、`project-018` 与 `project-019` 均已完成并进入完成态消费面；当前 active execution surface 已切到 `project-020 / sprint-001`，开始把 priority-1/2 planning 真正转成实现主线。
 
 ## 3. 交付原则
 
