@@ -1,5 +1,6 @@
 export {
   LANGGRAPH_CHECKPOINT_SOURCES,
+  LANGGRAPH_COMMUNITY_VENDOR_DEPENDENCY_MODES,
   LANGGRAPH_COMMUNITY_VENDOR_BINDING_STATUSES,
   LANGGRAPH_COMMUNITY_VENDOR_DEFAULT_PACKAGE_NAME,
   LANGGRAPH_COMMUNITY_VENDOR_REQUIRED_EXPORTS,
@@ -21,6 +22,7 @@ export {
 } from "./langgraph-runtime.constant.js";
 export type {
   LangGraphCheckpointSource,
+  LangGraphCommunityVendorDependencyMode,
   LangGraphCommunityVendorBindingStatus,
   LangGraphCommunityVendorRuntimeKind,
   LangGraphCheckpointerStateKey,

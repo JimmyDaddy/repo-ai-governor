@@ -27,6 +27,7 @@
 2. graph backend 不得升格为新的 canonical source。
 3. direct dependency 应通过稳定 contract 引入，而不是直接耦合实现包。
 4. `runtime_mode` 与 `host_surface` 必须在 embedded / service-backed / sidecar_ipc 三种路径下保持可比较语义。
+5. checkpoint / thread state 可以由 runtime host 持有用于恢复执行，但不得替代产品域的 audit / ledger facts 作为公共事实源。
 
 ## 4. Imported Contracts
 
@@ -37,3 +38,4 @@
 1. `v1` 允许 `graph_backend` 以 `langgraph` 为 primary path。
 2. `v1` 不要求暴露 vendor-specific internal state 作为公共 contract。
 3. `v1` 允许 orchestration host 在同一 contract 下切换 `embedded` 与 `sidecar_ipc` 承载方式。
+4. `v1` 不将 `daemon_http` 视为必需 host surface；跨 workspace daemon 仍属于后续可选扩展。

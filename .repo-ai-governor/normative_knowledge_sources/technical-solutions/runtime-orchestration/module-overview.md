@@ -45,8 +45,9 @@
 ## 8. Runtime Cutover Notes
 
 1. graph-first runtime 已是 primary execution path，parity harness 回到迁移比较工具角色。
-2. `sidecar + ipc` orchestration host 已形成正式 baseline，但不扩张为跨 workspace daemon。
-3. `runtime.memory-provider-loading` 仍通过 contract 引入，不允许 runtime 模块直接耦合 provider 实现包。
+2. `sidecar + ipc` orchestration host 已形成正式 baseline；`daemon + http` 仍只保留为可选 follow-up，不属于当前 contract baseline。
+3. vendor checkpoint / thread state 只作为 runtime owner 的恢复机制，不得升格为替代 `DSL / IR / policy / audit / ledger` 的 canonical source。
+4. `runtime.memory-provider-loading` 仍通过 contract 引入，不允许 runtime 模块直接耦合 provider 实现包。
 
 ## 9. Detail Docs
 

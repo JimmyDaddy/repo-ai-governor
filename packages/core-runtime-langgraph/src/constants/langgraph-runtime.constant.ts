@@ -34,6 +34,11 @@ export const LANGGRAPH_COMMUNITY_VENDOR_RUNTIME_KINDS = ["langchain_langgraph_js
 export type LangGraphCommunityVendorRuntimeKind =
   (typeof LANGGRAPH_COMMUNITY_VENDOR_RUNTIME_KINDS)[number];
 
+export const LANGGRAPH_COMMUNITY_VENDOR_DEPENDENCY_MODES = ["direct_dependency"] as const;
+
+export type LangGraphCommunityVendorDependencyMode =
+  (typeof LANGGRAPH_COMMUNITY_VENDOR_DEPENDENCY_MODES)[number];
+
 export const LANGGRAPH_COMMUNITY_VENDOR_BINDING_STATUSES = [
   "available",
   "module_missing",

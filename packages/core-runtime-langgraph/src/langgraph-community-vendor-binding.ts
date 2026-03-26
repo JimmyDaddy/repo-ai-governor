@@ -13,6 +13,7 @@ import type {
 
 const DEFAULT_RUNTIME_KIND: LangGraphCommunityVendorRuntimeKind = "langchain_langgraph_js";
 
+// dynamic-import-allowed: keep runtime-resolved vendor verification so broken distributions fail closed with explicit diagnostics.
 const defaultModuleLoader: LangGraphCommunityVendorModuleLoader = async (moduleSpecifier) =>
   import(moduleSpecifier);
 
@@ -69,8 +70,8 @@ export class LangGraphCommunityVendorBinding {
     return {
       runtimeKind: DEFAULT_RUNTIME_KIND,
       packageName: this.packageName,
+      dependencyMode: "direct_dependency",
       bindingStatus,
-      isOptionalPeerDependency: true,
       availableExports,
       missingRequiredExports,
       summary: this.createSummary(bindingStatus, missingRequiredExports),
@@ -83,10 +84,10 @@ export class LangGraphCommunityVendorBinding {
     missingRequiredExports: string[],
   ): string {
     if (bindingStatus === "available") {
-      return `Optional community vendor package "${this.packageName}" is available.`;
+      return `Bundled community vendor package "${this.packageName}" is available.`;
     }
     if (bindingStatus === "module_missing") {
-      return `Optional community vendor package "${this.packageName}" is not installed.`;
+      return `Bundled community vendor package "${this.packageName}" is unexpectedly unavailable in the current installation.`;
     }
     if (bindingStatus === "export_missing") {
       return `Community vendor package "${this.packageName}" is missing required exports: ${missingRequiredExports.join(", ")}.`;

@@ -2,7 +2,7 @@
   "name": "@repo-ai-governor/core-runtime-langgraph",
   "version": "0.1.0",
   "private": true,
-  "description": "LangGraph-oriented backend shell with optional community vendor binding seam.",
+  "description": "LangGraph-oriented graph-first backend with bundled community vendor contract verification.",
   "type": "module",
   "exports": {
     ".": {
@@ -15,15 +15,8 @@
     }
   },
   "dependencies": {
+    "@langchain/langgraph": "^1.0.0",
     "@repo-ai-governor/core-process": "workspace:*",
     "@repo-ai-governor/shared": "workspace:*"
-  },
-  "peerDependencies": {
-    "@langchain/langgraph": "^1.0.0"
-  },
-  "peerDependenciesMeta": {
-    "@langchain/langgraph": {
-      "optional": true
-    }
   }
 }

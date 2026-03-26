@@ -4,14 +4,14 @@
 
 - Status: active
 - Project: `project-018-technical-solution-promotion-pilots`
-- Sprint: `sprint-002-memory-module-promotion-readiness`
+- Sprint: `sprint-004-langgraph-hard-dependency-truthfulness-cutover`
 - Docs root: `.repo-ai-governor/context/dev/project-018-technical-solution-promotion-pilots`
-- Task records: `.repo-ai-governor/context/dev/project-018-technical-solution-promotion-pilots/sprint-002-memory-module-promotion-readiness/tasks/`
-- Review records: `.repo-ai-governor/context/dev/project-018-technical-solution-promotion-pilots/sprint-002-memory-module-promotion-readiness/review/`
+- Task records: `.repo-ai-governor/context/dev/project-018-technical-solution-promotion-pilots/sprint-004-langgraph-hard-dependency-truthfulness-cutover/tasks/`
+- Review records: `.repo-ai-governor/context/dev/project-018-technical-solution-promotion-pilots/sprint-004-langgraph-hard-dependency-truthfulness-cutover/review/`
 
 ## Active Streams
 
-- `primary`: project=`project-018-technical-solution-promotion-pilots`, sprint=`sprint-002-memory-module-promotion-readiness`, docs=`.repo-ai-governor/context/dev/project-018-technical-solution-promotion-pilots`, plan=`.repo-ai-governor/context/dev/project-018-technical-solution-promotion-pilots/plan.md`, tasks=`.repo-ai-governor/context/dev/project-018-technical-solution-promotion-pilots/sprint-002-memory-module-promotion-readiness/tasks/`, checklist=`.repo-ai-governor/context/dev/project-018-technical-solution-promotion-pilots/sprint-002-memory-module-promotion-readiness/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-018-technical-solution-promotion-pilots/sprint-002-memory-module-promotion-readiness/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-018-technical-solution-promotion-pilots/sprint-002-memory-module-promotion-readiness/review/`, status=`active`
+- `primary`: project=`project-018-technical-solution-promotion-pilots`, sprint=`sprint-004-langgraph-hard-dependency-truthfulness-cutover`, docs=`.repo-ai-governor/context/dev/project-018-technical-solution-promotion-pilots`, plan=`.repo-ai-governor/context/dev/project-018-technical-solution-promotion-pilots/plan.md`, tasks=`.repo-ai-governor/context/dev/project-018-technical-solution-promotion-pilots/sprint-004-langgraph-hard-dependency-truthfulness-cutover/tasks/`, checklist=`.repo-ai-governor/context/dev/project-018-technical-solution-promotion-pilots/sprint-004-langgraph-hard-dependency-truthfulness-cutover/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-018-technical-solution-promotion-pilots/sprint-004-langgraph-hard-dependency-truthfulness-cutover/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-018-technical-solution-promotion-pilots/sprint-004-langgraph-hard-dependency-truthfulness-cutover/review/`, status=`active`
 
 ## Planned Follow-Up Streams
 

@@ -2,7 +2,7 @@ import { GovernorError, GovernorErrorCode } from "@repo-ai-governor/shared";
 import { LangGraphCommunityVendorBinding } from "../src/index.js";
 
 describe("LangGraphCommunityVendorBinding", () => {
-  it("returns available when the optional vendor package exposes required exports", async () => {
+  it("returns available when the bundled vendor package exposes required exports", async () => {
     const binding = new LangGraphCommunityVendorBinding({
       moduleLoader: async () => ({
         StateGraph: class StateGraph {},
@@ -16,10 +16,10 @@ describe("LangGraphCommunityVendorBinding", () => {
     expect(resolution.bindingStatus).toBe("available");
     expect(resolution.missingRequiredExports).toEqual([]);
     expect(resolution.availableExports).toEqual(["END", "START", "StateGraph"]);
-    expect(resolution.isOptionalPeerDependency).toBe(true);
+    expect(resolution.dependencyMode).toBe("direct_dependency");
   });
 
-  it("returns module_missing when the optional vendor package is not installed", async () => {
+  it("returns module_missing when the bundled vendor package is unexpectedly unavailable", async () => {
     const binding = new LangGraphCommunityVendorBinding({
       moduleLoader: async () => {
         const error = new GovernorError(
@@ -38,6 +38,7 @@ describe("LangGraphCommunityVendorBinding", () => {
     expect(resolution.bindingStatus).toBe("module_missing");
     expect(resolution.failureReason).toBe("module_missing:@langchain/langgraph");
     expect(resolution.missingRequiredExports).toEqual(["StateGraph", "START", "END"]);
+    expect(resolution.summary).toContain("unexpectedly unavailable");
   });
 
   it("returns export_missing when the vendor package does not expose the required contract", async () => {

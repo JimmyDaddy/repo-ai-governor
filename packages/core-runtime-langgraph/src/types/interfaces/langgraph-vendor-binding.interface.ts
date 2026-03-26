@@ -1,5 +1,6 @@
 import type {
   LangGraphCommunityVendorBindingStatus,
+  LangGraphCommunityVendorDependencyMode,
   LangGraphCommunityVendorRuntimeKind,
 } from "../../constants/index.js";
 
@@ -14,8 +15,8 @@ export interface LangGraphCommunityVendorBindingOptions {
 export interface LangGraphCommunityVendorBindingResolution {
   runtimeKind: LangGraphCommunityVendorRuntimeKind;
   packageName: string;
+  dependencyMode: LangGraphCommunityVendorDependencyMode;
   bindingStatus: LangGraphCommunityVendorBindingStatus;
-  isOptionalPeerDependency: boolean;
   availableExports: string[];
   missingRequiredExports: string[];
   summary: string;
