@@ -17,7 +17,7 @@
 
 ## 2.1 sprint-001-packaging-truthfulness-failure-baseline
 
-- Status: active
+- Status: completed
 - Sprint Goal: 固化 `path/link/tgz` 安装矩阵、packaged runtime failure taxonomy 与 published surface inventory，为后续 packaged runtime 真正 cutover 提供 deterministic baseline。
 - Task Package: `TK-222`、`TK-223`、`TK-224`、`TK-225`。
 - Exit Criteria:
@@ -61,9 +61,9 @@
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 |---|---|---|---|---|---|
 | TK-222 | sprint-001 | project-020 激活与执行面切换 handoff | bootstrap/governance | DA-221,project-019 sprint-002 completion audit | completed |
-| TK-223 | sprint-001 | packaging/install matrix 与 failure-class baseline | package/baseline | TK-222,DA-216,DA-220 | planned |
-| TK-224 | sprint-001 | published surface inventory 与 packaged-runtime resolvability audit | package/runtime | TK-223,package.json,apps/cli/README.md | planned |
-| TK-225 | sprint-001 | sprint-001 出口验收与 sprint-002 packaged cutover 输入约束 | acceptance/baseline | TK-222,TK-223,TK-224,DA-222 | planned |
+| TK-223 | sprint-001 | packaging/install matrix 与 failure-class baseline | package/baseline | TK-222,DA-216,DA-220 | completed |
+| TK-224 | sprint-001 | published surface inventory 与 packaged-runtime resolvability audit | package/runtime | TK-223,DA-223,package.json,apps/cli/README.md | completed |
+| TK-225 | sprint-001 | sprint-001 出口验收与 sprint-002 packaged cutover 输入约束 | acceptance/baseline | TK-222,TK-223,TK-224,DA-222,DA-223,DA-224 | completed |
 
 ## 4. 依赖产物策略
 
@@ -96,3 +96,4 @@
 ## 6. 里程碑记录
 
 1. 2026-03-26：创建 `project-020-adoption-productization-and-upgrade-ux`，将 `project-019 / sprint-002` 从 active closeout surface 迁入 completed history，并激活 `sprint-001-packaging-truthfulness-failure-baseline`。
+2. 2026-03-26：完成 `sprint-001-packaging-truthfulness-failure-baseline`，形成 `DA-222`、`DA-223`、`DA-224`、`DA-225`，并将 sprint-002 的输入约束冻结为 docs/skills publish surface truthfulness、offline install truthfulness 与 blocking gate cutover。

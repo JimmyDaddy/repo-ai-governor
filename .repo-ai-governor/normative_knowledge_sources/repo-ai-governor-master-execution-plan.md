@@ -40,7 +40,7 @@
 
 ## 3.1 一句话结论
 
-1. Stage 0-9 的业务闭环能力已经完成，`project-013` 已补齐远端 provider 真实调用与 adapter 运维契约；`project-014` 已完成 LangGraph runtime modernization 第一阶段；`project-015` 已完成 memory provider pluginization 全量闭环；`project-016` 已完成 LangGraph runtime productization baseline；`project-017` 已完成 module registry、总纲瘦身、首批模块迁移、typed detail-doc gate cutover、`draft -> final` lifecycle registry / promotion gate 治理，并补齐 repo-local promotion skill；`project-018` 已完成 `memory-provider-pluginization` 与 LangGraph promotion/backfill，并补齐 `core-runtime-langgraph` hard dependency truthfulness follow-up，同时为 `memory-module` 形成 prepare-promotion readiness/blocker baseline；`project-019` 已完成当前工具“现状 vs PRD”差距评估 draft 与 priority-1/2 delivery planning；`project-020` 已正式激活 `sprint-001-packaging-truthfulness-failure-baseline`，开始把这两条最高优先级 gap 转成 adoption/productization 实施主线。
+1. Stage 0-9 的业务闭环能力已经完成，`project-013` 已补齐远端 provider 真实调用与 adapter 运维契约；`project-014` 已完成 LangGraph runtime modernization 第一阶段；`project-015` 已完成 memory provider pluginization 全量闭环；`project-016` 已完成 LangGraph runtime productization baseline；`project-017` 已完成 module registry、总纲瘦身、首批模块迁移、typed detail-doc gate cutover、`draft -> final` lifecycle registry / promotion gate 治理，并补齐 repo-local promotion skill；`project-018` 已完成 `memory-provider-pluginization` 与 LangGraph promotion/backfill，并补齐 `core-runtime-langgraph` hard dependency truthfulness follow-up，同时为 `memory-module` 形成 prepare-promotion readiness/blocker baseline；`project-019` 已完成当前工具“现状 vs PRD”差距评估 draft 与 priority-1/2 delivery planning；`project-020` 已完成 `sprint-001-packaging-truthfulness-failure-baseline`，确认 packaged runtime resolvability 当前通过，并将 sprint-002 输入约束冻结为 docs/skills/offline-install truthfulness 与 blocking gate cutover。
 
 ## 3.2 当前真实状态
 
@@ -74,12 +74,12 @@
 | 已完成规范治理主线 | `project-017-technical-solution-modularization` | completed | 已完成总技术方案模块化、首批模块迁移、artifact handoff、typed detail-doc gate cutover、lifecycle/promotion 治理与 repo-local promotion skill |
 | 已完成 promotion pilot 主线 | `project-018-technical-solution-promotion-pilots` | completed | 已完成 `memory-provider-pluginization` 与 LangGraph promotion/backfill，并补齐 `core-runtime-langgraph` hard dependency truthfulness follow-up，同时为 `memory-module` 形成 prepare-promotion readiness/blocker baseline |
 | 已完成产品差距评估与优先级规划主线 | `project-019-product-gap-assessment` | completed | 已形成当前工具“现状 vs PRD”差距评估 draft，并将最高优先级的两条 gap 收敛为 delivery planning |
-| 当前外部 adoption/productization 收口主线 | `project-020-adoption-productization-and-upgrade-ux` | active | 已激活 `sprint-001-packaging-truthfulness-failure-baseline`，优先攻击 packaged install truthfulness、published surface inventory 与 sprint-002 cutover 输入约束 |
+| 当前外部 adoption/productization 收口主线 | `project-020-adoption-productization-and-upgrade-ux` | active | 已完成 `sprint-001-packaging-truthfulness-failure-baseline`；当前 worktree 暂保留其 closeout surface，等待显式激活 sprint-002 packaged cutover 主线 |
 
 ## 3.4 当前推荐执行顺序
 
-1. `project-020 / sprint-001-packaging-truthfulness-failure-baseline` 已激活，当前优先固化 path/link/tgz clean-room 安装矩阵、failure taxonomy 与 published surface inventory。
-2. `project-020 / sprint-002-packaged-runtime-cutover-and-release-gate-block` 为已拆解但未激活的 follow-up sprint，将在 baseline 和 fault classes 收敛后切入真实修复与 blocking gate。
+1. `project-020 / sprint-001-packaging-truthfulness-failure-baseline` 已完成，当前 worktree 仅临时保留其作为 closeout surface。
+2. `project-020 / sprint-002-packaged-runtime-cutover-and-release-gate-block` 为当前推荐的下一条执行流，主目标不再是修 internal package resolution，而是修 docs/skills publish surface、support matrix truthfulness、offline install 口径与 blocking gate cutover。
 3. `project-020 / sprint-003-upgrade-and-workspace-lifecycle-ux-baseline` 为已拆解但未激活的 follow-up sprint，用于把已有 upgrade/workspace 服务层能力变成 adopter 可操作的 CLI 用户路径。
 4. `project-020 / sprint-004-adopter-pilot-and-documentation-closure` 为已拆解但未激活的 follow-up sprint，用真实目标仓库验证接入、升级、回滚与 support matrix。
 5. `project-019 / sprint-002-priority-1-and-2-delivery-planning` 已完成并迁入 completed history。
@@ -297,7 +297,7 @@
 | `project-017-technical-solution-modularization` | Cross-stage normative modularization follow-up | completed | 已完成 module registry、首批模块迁移、artifact handoff、typed detail-doc gate cutover、lifecycle/promotion 治理与 repo-local promotion skill；后续仅保留增量扩张空间 |
 | `project-018-technical-solution-promotion-pilots` | Cross-stage normative consumption follow-up | completed | 已完成 `memory-provider-pluginization` 与 LangGraph promotion/backfill，并补齐 `core-runtime-langgraph` hard dependency truthfulness follow-up；后续可按同一 cutover pattern 继续消费其他 draft |
 | `project-019-product-gap-assessment` | Cross-stage product alignment follow-up | completed | 已形成当前工具“现状 vs PRD”差距评估 draft，并将最高优先级两条 gap 收敛为 delivery planning |
-| `project-020-adoption-productization-and-upgrade-ux` | Post-Stage-9 external adoption closure | active | 正式承接 `project-019` 的 planning 产物，先收敛 packaged install truthfulness 与 release gate blocking，再推进 upgrade/workspace UX 与 adopter pilot |
+| `project-020-adoption-productization-and-upgrade-ux` | Post-Stage-9 external adoption closure | active | 已完成 sprint-001 baseline 与 sprint-002 输入约束冻结；下一步应显式激活 packaged cutover 主线，修 docs/skills/offline-install truthfulness 与 blocking release gate |
 
 ## 9. Sprint 与 Task 最小模板
 
