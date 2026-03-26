@@ -1,0 +1,989 @@
+import { existsSync } from "node:fs";
+import { readFile, rm } from "node:fs/promises";
+import { isAbsolute, resolve } from "node:path";
+
+import {
+  ConfigLoader,
+  type GovernorConfig,
+  type GovernorProfile,
+  type ResolvedWorkspace,
+  type WorkspaceConfig,
+  type WorkspaceMigrationPlan,
+  WorkspaceMigrationService,
+  WorkspaceMigrationStep,
+  WorkspaceMigrationStepStatus,
+  WorkspaceMode,
+  WorkspaceModeSource,
+} from "@repo-ai-governor/config";
+import {
+  ExecutionInteractionCategory,
+  ExecutionProgressStage,
+  ExecutionProgressStatus,
+  GovernorErrorCode,
+  RuntimeError,
+  standardizeError,
+} from "@repo-ai-governor/shared";
+import { stringify } from "yaml";
+import { CliCommandName } from "../constants/cli-command.constant.js";
+import {
+  CLI_RUNTIME_OPERATION,
+  CliGovernanceCheckStatus,
+} from "../constants/cli-governance-runtime.constant.js";
+import type {
+  CliCommandExecutorContext,
+  CliCommandResultArtifact,
+  CliCommandResultCheck,
+} from "../types/index.js";
+import type { CliCommandExecutor } from "./cli-command-executor.interface.js";
+
+enum CliWorkspaceAction {
+  DRY_RUN = "dry-run",
+  EXECUTE = "execute",
+  ROLLBACK = "rollback",
+}
+
+interface CliWorkspaceCommandDependencies {
+  configLoader?: Pick<ConfigLoader, "loadFromFile">;
+  workspaceMigrationService?: Pick<WorkspaceMigrationService, "plan" | "execute" | "rollback">;
+}
+
+interface WorkspaceCutoverPersistence {
+  repoLocalConfigPath: string;
+  repoLocalConfigSnapshot: string | null;
+}
+
+/**
+ * Owns adopter-facing workspace migration planning, execution, and rollback semantics.
+ */
+export class CliWorkspaceCommand implements CliCommandExecutor {
+  public readonly commandName = CliCommandName.WORKSPACE;
+
+  private readonly configLoader: Pick<ConfigLoader, "loadFromFile">;
+  private readonly workspaceMigrationService: Pick<
+    WorkspaceMigrationService,
+    "plan" | "execute" | "rollback"
+  >;
+
+  public constructor(dependencies: CliWorkspaceCommandDependencies = {}) {
+    this.configLoader = dependencies.configLoader ?? new ConfigLoader();
+    this.workspaceMigrationService =
+      dependencies.workspaceMigrationService ?? new WorkspaceMigrationService();
+  }
+
+  public async execute(context: CliCommandExecutorContext) {
+    const action = this.resolveAction(context);
+
+    if (action === CliWorkspaceAction.ROLLBACK) {
+      return this.executeRollback(context);
+    }
+
+    if (!existsSync(context.options.workspace.configPath)) {
+      throw new RuntimeError(
+        GovernorErrorCode.CONFIG_FILE_READ_FAILED,
+        `workspace requires config file at ${context.options.workspace.configPath}; run \`init\` first.`,
+        {
+          configPath: context.options.workspace.configPath,
+          command: CliCommandName.WORKSPACE,
+        },
+      );
+    }
+
+    const config = this.configLoader.loadFromFile(context.options.workspace.configPath);
+    const targetWorkspace = this.resolveTargetWorkspace(context, action);
+    const plan = this.workspaceMigrationService.plan({
+      currentWorkingDirectory: context.options.currentWorkingDirectory,
+      config,
+      targetWorkspace,
+    });
+    const cutoverPersistence = await this.captureCutoverPersistence(plan);
+    const planArtifactPath = resolve(
+      context.options.workspace.workspaceRoot,
+      "context",
+      "workspace",
+      `${plan.migrationId}.plan.json`,
+    );
+
+    await context.artifactWriter.writeJsonArtifact(
+      planArtifactPath,
+      this.createPlanArtifactPayload(
+        context,
+        action,
+        config,
+        targetWorkspace,
+        plan,
+        planArtifactPath,
+        cutoverPersistence,
+      ),
+    );
+
+    if (action === CliWorkspaceAction.DRY_RUN) {
+      return this.createDryRunResult(context, plan, planArtifactPath);
+    }
+
+    return this.executeMigration(
+      context,
+      config,
+      targetWorkspace,
+      plan,
+      planArtifactPath,
+      cutoverPersistence,
+    );
+  }
+
+  private resolveAction(context: CliCommandExecutorContext): CliWorkspaceAction {
+    const rawAction =
+      context.options.workspaceCommandOptions?.action?.trim() ?? CliWorkspaceAction.DRY_RUN;
+    if (
+      rawAction === CliWorkspaceAction.DRY_RUN ||
+      rawAction === CliWorkspaceAction.EXECUTE ||
+      rawAction === CliWorkspaceAction.ROLLBACK
+    ) {
+      return rawAction;
+    }
+
+    throw new RuntimeError(
+      GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+      "workspace requires --workspace-action dry-run|execute|rollback.",
+      {
+        command: CliCommandName.WORKSPACE,
+        action: rawAction,
+      },
+    );
+  }
+
+  private resolveTargetWorkspace(
+    context: CliCommandExecutorContext,
+    action: CliWorkspaceAction.DRY_RUN | CliWorkspaceAction.EXECUTE,
+  ): WorkspaceConfig {
+    const rawTargetMode = context.options.workspaceCommandOptions?.targetMode?.trim();
+    if (!rawTargetMode) {
+      throw new RuntimeError(
+        GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+        `workspace ${action} requires --workspace-mode <repo_local|tool_managed>.`,
+        {
+          command: CliCommandName.WORKSPACE,
+          action,
+        },
+      );
+    }
+
+    if (
+      rawTargetMode !== WorkspaceMode.REPO_LOCAL &&
+      rawTargetMode !== WorkspaceMode.TOOL_MANAGED
+    ) {
+      throw new RuntimeError(
+        GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+        `Unsupported workspace mode "${rawTargetMode}".`,
+        {
+          command: CliCommandName.WORKSPACE,
+          action,
+          targetMode: rawTargetMode,
+        },
+      );
+    }
+
+    const rawTargetRoot = context.options.workspaceCommandOptions?.targetRoot?.trim() ?? null;
+    const resolvedTargetRoot = rawTargetRoot
+      ? this.resolveAbsolutePath(context.options.currentWorkingDirectory, rawTargetRoot)
+      : null;
+    return {
+      mode: rawTargetMode,
+      ...(rawTargetMode === WorkspaceMode.REPO_LOCAL
+        ? {
+            ...(resolvedTargetRoot
+              ? {
+                  repoLocalRoot: resolvedTargetRoot,
+                }
+              : {}),
+          }
+        : {
+            ...(resolvedTargetRoot
+              ? {
+                  toolManagedRoot: resolvedTargetRoot,
+                }
+              : {}),
+          }),
+    };
+  }
+
+  private async executeMigration(
+    context: CliCommandExecutorContext,
+    config: GovernorConfig,
+    targetWorkspace: WorkspaceConfig,
+    plan: WorkspaceMigrationPlan,
+    planArtifactPath: string,
+    cutoverPersistence: WorkspaceCutoverPersistence,
+  ) {
+    const executionResult = await this.workspaceMigrationService.execute(plan);
+    const executionArtifactPath = resolve(
+      context.options.workspace.workspaceRoot,
+      "context",
+      "workspace",
+      `${plan.migrationId}.execution.json`,
+    );
+
+    if (!executionResult.success) {
+      const failureSummaryPath = resolve(
+        context.options.workspace.workspaceRoot,
+        "context",
+        "workspace",
+        `${plan.migrationId}.failure.json`,
+      );
+      const failedStep = executionResult.steps.find(
+        (step) => step.status === WorkspaceMigrationStepStatus.FAILED,
+      );
+      await context.artifactWriter.writeJsonArtifact(failureSummaryPath, {
+        generatedAt: context.toRfc3339SecondsTimestamp(new Date()),
+        migrationId: plan.migrationId,
+        planPath: planArtifactPath,
+        executionPath: executionArtifactPath,
+        failedStep: failedStep?.step ?? null,
+        rollbackStatus:
+          executionResult.steps.find((step) => step.step === "rollback")?.status ?? "unknown",
+        error: executionResult.error ?? null,
+        steps: executionResult.steps,
+      });
+
+      throw new RuntimeError(
+        executionResult.error?.code ?? GovernorErrorCode.WORKSPACE_MIGRATION_SWITCH_FAILED,
+        `Workspace migration failed; inspect ${failureSummaryPath}.`,
+        {
+          reportPath: failureSummaryPath,
+          migrationId: plan.migrationId,
+          planPath: planArtifactPath,
+          executionPath: executionArtifactPath,
+          failedStep: failedStep?.step ?? null,
+        },
+      );
+    }
+
+    try {
+      await this.persistCutoverConfig(context, config, targetWorkspace, plan);
+    } catch (error) {
+      const rollbackResult = await this.workspaceMigrationService.rollback(plan);
+      await this.restoreCutoverPersistence(context, cutoverPersistence);
+      const normalizedError = standardizeError(error);
+      const failureSummaryPath = resolve(
+        context.options.workspace.workspaceRoot,
+        "context",
+        "workspace",
+        `${plan.migrationId}.failure.json`,
+      );
+
+      await context.artifactWriter.writeJsonArtifact(executionArtifactPath, {
+        generatedAt: context.toRfc3339SecondsTimestamp(new Date()),
+        migrationId: plan.migrationId,
+        success: false,
+        planPath: planArtifactPath,
+        rollbackCommand: `repo-ai-governor workspace --workspace-action rollback --workspace-plan ${planArtifactPath}`,
+        execution: {
+          ...executionResult,
+          success: false,
+          steps: [
+            ...executionResult.steps,
+            {
+              step: WorkspaceMigrationStep.ROLLBACK,
+              status: rollbackResult.status,
+              message: rollbackResult.message,
+            },
+          ],
+          error: normalizedError,
+        },
+      });
+      await context.artifactWriter.writeJsonArtifact(failureSummaryPath, {
+        generatedAt: context.toRfc3339SecondsTimestamp(new Date()),
+        migrationId: plan.migrationId,
+        planPath: planArtifactPath,
+        executionPath: executionArtifactPath,
+        failedStep: "cutover_persistence",
+        rollbackStatus: rollbackResult.status,
+        error: normalizedError,
+        steps: executionResult.steps,
+      });
+
+      throw new RuntimeError(
+        GovernorErrorCode.WORKSPACE_MIGRATION_SWITCH_FAILED,
+        `Workspace migration failed while persisting cutover state; inspect ${failureSummaryPath}.`,
+        {
+          reportPath: failureSummaryPath,
+          migrationId: plan.migrationId,
+          planPath: planArtifactPath,
+          executionPath: executionArtifactPath,
+          failedStep: "cutover_persistence",
+        },
+      );
+    }
+
+    await context.artifactWriter.writeJsonArtifact(executionArtifactPath, {
+      generatedAt: context.toRfc3339SecondsTimestamp(new Date()),
+      migrationId: plan.migrationId,
+      success: executionResult.success,
+      planPath: planArtifactPath,
+      rollbackCommand: `repo-ai-governor workspace --workspace-action rollback --workspace-plan ${planArtifactPath}`,
+      execution: executionResult,
+    });
+
+    const checks: CliCommandResultCheck[] = [
+      {
+        id: "workspace_action",
+        status: CliGovernanceCheckStatus.PASS,
+        detail: `action=${CliWorkspaceAction.EXECUTE}`,
+      },
+      {
+        id: "workspace_target",
+        status: CliGovernanceCheckStatus.PASS,
+        detail: `mode=${plan.targetWorkspace.mode} root=${plan.targetWorkspace.workspaceRoot}`,
+      },
+      ...executionResult.steps.map((step) => ({
+        id: `workspace_step_${step.step}`,
+        status:
+          step.status === WorkspaceMigrationStepStatus.SUCCEEDED
+            ? CliGovernanceCheckStatus.PASS
+            : step.status === WorkspaceMigrationStepStatus.SKIPPED
+              ? CliGovernanceCheckStatus.WARN
+              : CliGovernanceCheckStatus.FAIL,
+        detail: step.message,
+      })),
+      {
+        id: "rollback_reference",
+        status: CliGovernanceCheckStatus.PASS,
+        detail: planArtifactPath,
+      },
+    ];
+    const artifacts: CliCommandResultArtifact[] = [
+      {
+        id: "workspace_migration_plan",
+        path: planArtifactPath,
+      },
+      {
+        id: "workspace_migration_execution",
+        path: executionArtifactPath,
+      },
+    ];
+    const message = context.localizeText(
+      `Workspace migration executed successfully; plan=${planArtifactPath}.`,
+      `工作区迁移执行成功；计划文件=${planArtifactPath}。`,
+    );
+
+    return {
+      message,
+      commandResult: {
+        operation: CLI_RUNTIME_OPERATION.WORKSPACE_MIGRATION_EXECUTE,
+        summary: message,
+        check_totals: context.calculateCheckTotals(checks),
+        checks,
+        artifacts,
+        experience: this.buildWorkspaceExperience(context, {
+          blocking: false,
+          summary: context.localizeText(
+            "Workspace migration execution completed.",
+            "工作区迁移执行已完成。",
+          ),
+          artifactPath: executionArtifactPath,
+          nextActions: [
+            context.localizeText(
+              `Keep ${planArtifactPath} so you can run an explicit rollback if the new workspace surface is not acceptable.`,
+              `请保留 ${planArtifactPath}，如果新的工作区面不符合预期，可显式执行 rollback。`,
+            ),
+            context.localizeText(
+              `Re-run doctor/check against ${plan.targetWorkspace.workspaceRoot} before adopting it as the default workspace surface.`,
+              `在将 ${plan.targetWorkspace.workspaceRoot} 作为默认工作区面之前，请重新执行 doctor/check。`,
+            ),
+          ],
+        }),
+        details: {
+          action: CliWorkspaceAction.EXECUTE,
+          migration_id: plan.migrationId,
+          source_workspace_mode: plan.sourceWorkspace.mode,
+          target_workspace_mode: plan.targetWorkspace.mode,
+          source_workspace_root: plan.sourceWorkspace.workspaceRoot,
+          target_workspace_root: plan.targetWorkspace.workspaceRoot,
+          plan_path: planArtifactPath,
+          execution_path: executionArtifactPath,
+          step_count: executionResult.steps.length,
+        },
+      },
+    };
+  }
+
+  private async executeRollback(context: CliCommandExecutorContext) {
+    const rawPlanPath = context.options.workspaceCommandOptions?.planPath?.trim();
+    if (!rawPlanPath) {
+      throw new RuntimeError(
+        GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+        `workspace ${CliWorkspaceAction.ROLLBACK} requires --workspace-plan <path>.`,
+        {
+          command: CliCommandName.WORKSPACE,
+          action: CliWorkspaceAction.ROLLBACK,
+        },
+      );
+    }
+
+    const planArtifactPath = this.resolveAbsolutePath(
+      context.options.currentWorkingDirectory,
+      rawPlanPath,
+    );
+    const planArtifactPayload = await context.artifactWriter.safeReadJson(planArtifactPath);
+    if (!planArtifactPayload) {
+      throw new RuntimeError(
+        GovernorErrorCode.CONFIG_FILE_READ_FAILED,
+        `Unable to read workspace migration plan artifact at ${planArtifactPath}.`,
+        {
+          command: CliCommandName.WORKSPACE,
+          action: CliWorkspaceAction.ROLLBACK,
+          planPath: planArtifactPath,
+        },
+      );
+    }
+
+    const plan = this.parseWorkspaceMigrationPlan(planArtifactPayload, planArtifactPath);
+    const cutoverPersistence = this.parseCutoverPersistence(planArtifactPayload, planArtifactPath);
+    const rollbackResult = await this.workspaceMigrationService.rollback(plan);
+    const rollbackArtifactPath = resolve(
+      plan.sourceWorkspace.workspaceRoot,
+      "context",
+      "workspace",
+      `${plan.migrationId}.rollback.json`,
+    );
+    let selectorRestoreError: RuntimeError | null = null;
+    try {
+      await this.restoreCutoverPersistence(context, cutoverPersistence);
+    } catch (error) {
+      selectorRestoreError = new RuntimeError(
+        GovernorErrorCode.WORKSPACE_MIGRATION_ROLLBACK_FAILED,
+        `Workspace rollback failed while restoring selector state from ${planArtifactPath}.`,
+        {
+          reportPath: rollbackArtifactPath,
+          command: CliCommandName.WORKSPACE,
+          action: CliWorkspaceAction.ROLLBACK,
+          planPath: planArtifactPath,
+        },
+        error,
+      );
+    }
+    await context.artifactWriter.writeJsonArtifact(rollbackArtifactPath, {
+      generatedAt: context.toRfc3339SecondsTimestamp(new Date()),
+      migrationId: plan.migrationId,
+      planPath: planArtifactPath,
+      rollback: rollbackResult,
+      selectorRestore:
+        selectorRestoreError === null
+          ? {
+              status: WorkspaceMigrationStepStatus.SUCCEEDED,
+            }
+          : {
+              status: WorkspaceMigrationStepStatus.FAILED,
+              error: standardizeError(selectorRestoreError),
+            },
+    });
+
+    if (
+      rollbackResult.status === WorkspaceMigrationStepStatus.FAILED ||
+      selectorRestoreError !== null
+    ) {
+      throw new RuntimeError(
+        GovernorErrorCode.WORKSPACE_MIGRATION_ROLLBACK_FAILED,
+        `Workspace rollback failed; inspect ${rollbackArtifactPath}.`,
+        {
+          reportPath: rollbackArtifactPath,
+          command: CliCommandName.WORKSPACE,
+          action: CliWorkspaceAction.ROLLBACK,
+          planPath: planArtifactPath,
+        },
+      );
+    }
+
+    const checks: CliCommandResultCheck[] = [
+      {
+        id: "workspace_action",
+        status: CliGovernanceCheckStatus.PASS,
+        detail: `action=${CliWorkspaceAction.ROLLBACK}`,
+      },
+      {
+        id: "workspace_target",
+        status: CliGovernanceCheckStatus.PASS,
+        detail: `mode=${plan.targetWorkspace.mode} root=${plan.targetWorkspace.workspaceRoot}`,
+      },
+      {
+        id: "workspace_step_rollback",
+        status: CliGovernanceCheckStatus.PASS,
+        detail: rollbackResult.message,
+      },
+    ];
+    const artifacts: CliCommandResultArtifact[] = [
+      {
+        id: "workspace_migration_plan",
+        path: planArtifactPath,
+      },
+      {
+        id: "workspace_migration_rollback",
+        path: rollbackArtifactPath,
+      },
+    ];
+    const message = context.localizeText(
+      `Workspace rollback completed; rollback=${rollbackArtifactPath}.`,
+      `工作区回滚已完成；回滚产物=${rollbackArtifactPath}。`,
+    );
+
+    return {
+      message,
+      commandResult: {
+        operation: CLI_RUNTIME_OPERATION.WORKSPACE_MIGRATION_ROLLBACK,
+        summary: message,
+        check_totals: context.calculateCheckTotals(checks),
+        checks,
+        artifacts,
+        experience: this.buildWorkspaceExperience(context, {
+          blocking: false,
+          summary: context.localizeText("Workspace rollback completed.", "工作区回滚已完成。"),
+          artifactPath: rollbackArtifactPath,
+          nextActions: [
+            context.localizeText(
+              `Verify that ${plan.targetWorkspace.workspaceRoot} is no longer the active target before rerunning workspace execute.`,
+              `请确认 ${plan.targetWorkspace.workspaceRoot} 不再作为活动目标后，再重新执行 workspace execute。`,
+            ),
+          ],
+        }),
+        details: {
+          action: CliWorkspaceAction.ROLLBACK,
+          migration_id: plan.migrationId,
+          plan_path: planArtifactPath,
+          rollback_path: rollbackArtifactPath,
+          target_workspace_root: plan.targetWorkspace.workspaceRoot,
+        },
+      },
+    };
+  }
+
+  private createDryRunResult(
+    context: CliCommandExecutorContext,
+    plan: WorkspaceMigrationPlan,
+    planArtifactPath: string,
+  ) {
+    const checks: CliCommandResultCheck[] = [
+      {
+        id: "workspace_action",
+        status: CliGovernanceCheckStatus.PASS,
+        detail: "action=dry_run",
+      },
+      {
+        id: "workspace_target",
+        status: CliGovernanceCheckStatus.PASS,
+        detail: `mode=${plan.targetWorkspace.mode} root=${plan.targetWorkspace.workspaceRoot}`,
+      },
+      {
+        id: "rollback_reference",
+        status: CliGovernanceCheckStatus.PASS,
+        detail: planArtifactPath,
+      },
+    ];
+    const message = context.localizeText(
+      `Workspace migration plan generated; plan=${planArtifactPath}.`,
+      `工作区迁移计划已生成；计划文件=${planArtifactPath}。`,
+    );
+
+    return {
+      message,
+      commandResult: {
+        operation: CLI_RUNTIME_OPERATION.WORKSPACE_MIGRATION_PLAN,
+        summary: message,
+        check_totals: context.calculateCheckTotals(checks),
+        checks,
+        artifacts: [
+          {
+            id: "workspace_migration_plan",
+            path: planArtifactPath,
+          },
+        ],
+        experience: this.buildWorkspaceExperience(context, {
+          blocking: false,
+          summary: context.localizeText(
+            "Workspace migration dry-run completed.",
+            "工作区迁移 dry-run 已完成。",
+          ),
+          artifactPath: planArtifactPath,
+          nextActions: [
+            context.localizeText(
+              `Inspect ${planArtifactPath} and confirm the target workspace root before executing the migration.`,
+              `先检查 ${planArtifactPath}，确认目标工作区根路径后再执行迁移。`,
+            ),
+            context.localizeText(
+              "Use --workspace-action execute with the same --workspace-mode/--workspace-root inputs when you are ready to cut over.",
+              "准备切换时，使用相同的 --workspace-mode/--workspace-root 参数执行 --workspace-action execute。",
+            ),
+          ],
+        }),
+        details: {
+          action: "dry_run",
+          migration_id: plan.migrationId,
+          source_workspace_mode: plan.sourceWorkspace.mode,
+          target_workspace_mode: plan.targetWorkspace.mode,
+          source_workspace_root: plan.sourceWorkspace.workspaceRoot,
+          target_workspace_root: plan.targetWorkspace.workspaceRoot,
+          plan_path: planArtifactPath,
+        },
+      },
+    };
+  }
+
+  private createPlanArtifactPayload(
+    context: CliCommandExecutorContext,
+    action: CliWorkspaceAction.DRY_RUN | CliWorkspaceAction.EXECUTE,
+    config: GovernorConfig,
+    targetWorkspace: WorkspaceConfig,
+    plan: WorkspaceMigrationPlan,
+    planArtifactPath: string,
+    cutoverPersistence: WorkspaceCutoverPersistence,
+  ) {
+    return {
+      generatedAt: context.toRfc3339SecondsTimestamp(new Date()),
+      action,
+      sourceConfigPath: context.options.workspace.configPath,
+      currentWorkspaceConfig: config.workspace,
+      requestedTargetWorkspace: targetWorkspace,
+      rollbackReference: {
+        planPath: planArtifactPath,
+        command: `repo-ai-governor workspace --workspace-action rollback --workspace-plan ${planArtifactPath}`,
+      },
+      cutoverPersistence,
+      plan,
+    };
+  }
+
+  private buildWorkspaceExperience(
+    context: CliCommandExecutorContext,
+    options: {
+      blocking: boolean;
+      summary: string;
+      artifactPath: string;
+      nextActions: string[];
+    },
+  ) {
+    return context.commandExperienceBuilder.buildExperiencePayload({
+      roleProgress: [
+        {
+          roleId: "workspace-migrator",
+          stage: ExecutionProgressStage.REPORT,
+          status: options.blocking
+            ? ExecutionProgressStatus.WARNING
+            : ExecutionProgressStatus.COMPLETED,
+          category: options.blocking
+            ? ExecutionInteractionCategory.HUMAN_CONFIRMATION
+            : ExecutionInteractionCategory.NONE,
+          summary: options.summary,
+          detail: options.artifactPath,
+          backlink: {
+            artifactPath: options.artifactPath,
+          },
+        },
+      ],
+      interactionPrompts: options.nextActions.map((action) => ({
+        category: ExecutionInteractionCategory.NONE,
+        stage: ExecutionProgressStage.REPORT,
+        title: context.localizeText("Next step", "下一步"),
+        action,
+        blocking: false,
+      })),
+      layeredLogs: {
+        summary: [options.summary],
+        detailed: [`artifact_path=${options.artifactPath}`],
+      },
+    });
+  }
+
+  private parseWorkspaceMigrationPlan(
+    payload: Record<string, unknown>,
+    planArtifactPath: string,
+  ): WorkspaceMigrationPlan {
+    const rawPlan = this.readRecord(payload.plan, "plan", planArtifactPath);
+    return {
+      migrationId: this.readString(rawPlan.migrationId, "plan.migrationId", planArtifactPath),
+      sourceWorkspace: this.parseResolvedWorkspace(
+        rawPlan.sourceWorkspace,
+        "plan.sourceWorkspace",
+        planArtifactPath,
+      ),
+      targetWorkspace: this.parseResolvedWorkspace(
+        rawPlan.targetWorkspace,
+        "plan.targetWorkspace",
+        planArtifactPath,
+      ),
+      stagingWorkspaceRoot: this.readString(
+        rawPlan.stagingWorkspaceRoot,
+        "plan.stagingWorkspaceRoot",
+        planArtifactPath,
+      ),
+      backupWorkspaceRoot: this.readString(
+        rawPlan.backupWorkspaceRoot,
+        "plan.backupWorkspaceRoot",
+        planArtifactPath,
+      ),
+      previousTargetBackupRoot: this.readString(
+        rawPlan.previousTargetBackupRoot,
+        "plan.previousTargetBackupRoot",
+        planArtifactPath,
+      ),
+    };
+  }
+
+  private parseCutoverPersistence(
+    payload: Record<string, unknown>,
+    planArtifactPath: string,
+  ): WorkspaceCutoverPersistence | null {
+    const rawPersistence = payload.cutoverPersistence;
+    if (rawPersistence === undefined) {
+      return null;
+    }
+
+    const record = this.readRecord(rawPersistence, "cutoverPersistence", planArtifactPath);
+    const repoLocalConfigPath = this.readString(
+      record.repoLocalConfigPath,
+      "cutoverPersistence.repoLocalConfigPath",
+      planArtifactPath,
+    );
+    const repoLocalConfigSnapshot =
+      record.repoLocalConfigSnapshot === null
+        ? null
+        : this.readString(
+            record.repoLocalConfigSnapshot,
+            "cutoverPersistence.repoLocalConfigSnapshot",
+            planArtifactPath,
+          );
+
+    return {
+      repoLocalConfigPath,
+      repoLocalConfigSnapshot,
+    };
+  }
+
+  private parseResolvedWorkspace(
+    value: unknown,
+    fieldPath: string,
+    planArtifactPath: string,
+  ): ResolvedWorkspace {
+    const record = this.readRecord(value, fieldPath, planArtifactPath);
+    const mode = this.readString(record.mode, `${fieldPath}.mode`, planArtifactPath);
+    const modeSource = this.readString(
+      record.modeSource,
+      `${fieldPath}.modeSource`,
+      planArtifactPath,
+    );
+    if (mode !== WorkspaceMode.REPO_LOCAL && mode !== WorkspaceMode.TOOL_MANAGED) {
+      throw new RuntimeError(
+        GovernorErrorCode.CONFIG_FILE_PARSE_FAILED,
+        `Invalid workspace mode "${mode}" in ${planArtifactPath}.`,
+        {
+          planPath: planArtifactPath,
+          field: `${fieldPath}.mode`,
+          mode,
+        },
+      );
+    }
+    if (
+      modeSource !== WorkspaceModeSource.RUNTIME &&
+      modeSource !== WorkspaceModeSource.CONFIG &&
+      modeSource !== WorkspaceModeSource.DEFAULT
+    ) {
+      throw new RuntimeError(
+        GovernorErrorCode.CONFIG_FILE_PARSE_FAILED,
+        `Invalid workspace modeSource "${modeSource}" in ${planArtifactPath}.`,
+        {
+          planPath: planArtifactPath,
+          field: `${fieldPath}.modeSource`,
+          modeSource,
+        },
+      );
+    }
+
+    return {
+      workspaceId: this.readString(
+        record.workspaceId,
+        `${fieldPath}.workspaceId`,
+        planArtifactPath,
+      ),
+      mode,
+      modeSource,
+      repositoryRoot: this.readString(
+        record.repositoryRoot,
+        `${fieldPath}.repositoryRoot`,
+        planArtifactPath,
+      ),
+      workspaceRoot: this.readString(
+        record.workspaceRoot,
+        `${fieldPath}.workspaceRoot`,
+        planArtifactPath,
+      ),
+      configPath: this.readString(record.configPath, `${fieldPath}.configPath`, planArtifactPath),
+    };
+  }
+
+  private readRecord(
+    value: unknown,
+    fieldPath: string,
+    planArtifactPath: string,
+  ): Record<string, unknown> {
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+      return value as Record<string, unknown>;
+    }
+
+    throw new RuntimeError(
+      GovernorErrorCode.CONFIG_FILE_PARSE_FAILED,
+      `Invalid workspace migration plan artifact at ${planArtifactPath}; ${fieldPath} must be an object.`,
+      {
+        planPath: planArtifactPath,
+        field: fieldPath,
+      },
+    );
+  }
+
+  private readString(value: unknown, fieldPath: string, planArtifactPath: string): string {
+    if (typeof value === "string" && value.length > 0) {
+      return value;
+    }
+
+    throw new RuntimeError(
+      GovernorErrorCode.CONFIG_FILE_PARSE_FAILED,
+      `Invalid workspace migration plan artifact at ${planArtifactPath}; ${fieldPath} must be a non-empty string.`,
+      {
+        planPath: planArtifactPath,
+        field: fieldPath,
+      },
+    );
+  }
+
+  private resolveAbsolutePath(currentWorkingDirectory: string, pathValue: string): string {
+    if (isAbsolute(pathValue)) {
+      return resolve(pathValue);
+    }
+
+    return resolve(currentWorkingDirectory, pathValue);
+  }
+
+  private async captureCutoverPersistence(
+    plan: WorkspaceMigrationPlan,
+  ): Promise<WorkspaceCutoverPersistence> {
+    const repoLocalConfigPath = resolve(
+      plan.sourceWorkspace.repositoryRoot,
+      ".repo-ai-governor",
+      "governor.yaml",
+    );
+    return {
+      repoLocalConfigPath,
+      repoLocalConfigSnapshot: existsSync(repoLocalConfigPath)
+        ? await readFile(repoLocalConfigPath, "utf8")
+        : null,
+    };
+  }
+
+  private async persistCutoverConfig(
+    context: CliCommandExecutorContext,
+    config: GovernorConfig,
+    targetWorkspace: WorkspaceConfig,
+    plan: WorkspaceMigrationPlan,
+  ): Promise<void> {
+    const persistedConfigContent = this.renderWorkspaceCutoverConfig(
+      config,
+      targetWorkspace,
+      context.options.profileId,
+    );
+    const repoLocalConfigPath = resolve(
+      plan.sourceWorkspace.repositoryRoot,
+      ".repo-ai-governor",
+      "governor.yaml",
+    );
+
+    await context.artifactWriter.writeTextArtifact(
+      plan.targetWorkspace.configPath,
+      persistedConfigContent,
+    );
+    if (repoLocalConfigPath !== plan.targetWorkspace.configPath) {
+      await context.artifactWriter.writeTextArtifact(repoLocalConfigPath, persistedConfigContent);
+    }
+  }
+
+  private async restoreCutoverPersistence(
+    context: CliCommandExecutorContext,
+    cutoverPersistence: WorkspaceCutoverPersistence | null,
+  ): Promise<void> {
+    if (!cutoverPersistence) {
+      return;
+    }
+
+    if (cutoverPersistence.repoLocalConfigSnapshot === null) {
+      await rm(cutoverPersistence.repoLocalConfigPath, { force: true });
+      return;
+    }
+
+    await context.artifactWriter.writeTextArtifact(
+      cutoverPersistence.repoLocalConfigPath,
+      cutoverPersistence.repoLocalConfigSnapshot,
+    );
+  }
+
+  private renderWorkspaceCutoverConfig(
+    config: GovernorConfig,
+    targetWorkspace: WorkspaceConfig,
+    selectedProfileId: string | null,
+  ): string {
+    const persistedWorkspace = this.buildWorkspaceShape(
+      targetWorkspace,
+      config.workspace.migrationPolicy,
+    );
+    const nextConfig: GovernorConfig = {
+      ...config,
+      workspace: persistedWorkspace,
+    };
+    const activeProfileId = selectedProfileId ?? null;
+    const selectedProfile = activeProfileId ? nextConfig.profiles?.[activeProfileId] : undefined;
+    if (activeProfileId && selectedProfile && nextConfig.profiles) {
+      nextConfig.profiles = {
+        ...nextConfig.profiles,
+        [activeProfileId]: {
+          ...selectedProfile,
+          workspace: this.buildProfileWorkspaceShape(
+            selectedProfile.workspace,
+            targetWorkspace,
+            persistedWorkspace.migrationPolicy,
+          ),
+        },
+      };
+    }
+
+    return `${stringify(nextConfig).trimEnd()}\n`;
+  }
+
+  private buildProfileWorkspaceShape(
+    currentWorkspace: GovernorProfile["workspace"],
+    targetWorkspace: WorkspaceConfig,
+    fallbackMigrationPolicy: WorkspaceConfig["migrationPolicy"],
+  ): GovernorProfile["workspace"] {
+    return this.buildWorkspaceShape(
+      targetWorkspace,
+      currentWorkspace?.migrationPolicy ?? fallbackMigrationPolicy,
+    );
+  }
+
+  private buildWorkspaceShape(
+    targetWorkspace: WorkspaceConfig,
+    migrationPolicy: WorkspaceConfig["migrationPolicy"],
+  ): WorkspaceConfig {
+    return {
+      mode: targetWorkspace.mode,
+      ...(targetWorkspace.mode === WorkspaceMode.TOOL_MANAGED && targetWorkspace.toolManagedRoot
+        ? {
+            toolManagedRoot: targetWorkspace.toolManagedRoot,
+          }
+        : {}),
+      ...(targetWorkspace.mode === WorkspaceMode.REPO_LOCAL && targetWorkspace.repoLocalRoot
+        ? {
+            repoLocalRoot: targetWorkspace.repoLocalRoot,
+          }
+        : {}),
+      ...(migrationPolicy
+        ? {
+            migrationPolicy,
+          }
+        : {}),
+    };
+  }
+}

@@ -39,6 +39,7 @@ import { CliCommandName } from "../src/constants/cli-command.constant.js";
 import type {
   CliOrchestrationServiceRuntimeDependencies,
   CliRuntimeDebugOptions,
+  CliWorkspaceCommandOptions,
 } from "../src/types/index.js";
 
 interface RuntimeFixture {
@@ -52,6 +53,7 @@ interface RuntimeFixture {
 
 interface RuntimeFixtureOptions {
   runtimeDebugOptions?: CliRuntimeDebugOptions;
+  workspaceCommandOptions?: CliWorkspaceCommandOptions;
   adaptersConfig?: AdaptersConfig;
   adapterLocalProbeOverrides?: Partial<
     Record<
@@ -373,6 +375,7 @@ async function createRuntimeFixture(options: RuntimeFixtureOptions = {}): Promis
     memoryStoreProviderName: provider.constructor.name,
     memoryStoreProvider: provider,
     adaptersConfig: options.adaptersConfig ?? createAdaptersConfigFixture(),
+    workspaceCommandOptions: options.workspaceCommandOptions,
     runtimeDebugOptions: options.runtimeDebugOptions,
     adapterLocalProbeOverrides:
       options.adapterLocalProbeOverrides ?? createAdapterLocalProbeOverrides(),
@@ -1485,12 +1488,29 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
     );
   });
 
-  it("dispatches extracted init/check/plan/upgrade/run commands through the facade registry", async () => {
+  it("dispatches extracted init/check/plan/upgrade/workspace/run commands through the facade registry", async () => {
     await withRuntimeFixture(async (fixture) => {
       const initResult = await fixture.runtime.execute(CliCommandName.INIT);
       const checkResult = await fixture.runtime.execute(CliCommandName.CHECK);
       const planResult = await fixture.runtime.execute(CliCommandName.PLAN);
       const upgradeResult = await fixture.runtime.execute(CliCommandName.UPGRADE);
+      const workspaceRuntime = fixture.runtime as unknown as {
+        options: {
+          workspaceCommandOptions?: CliWorkspaceCommandOptions;
+        };
+        execute: (commandName: CliCommandName) => Promise<{
+          commandResult: {
+            operation: string;
+          };
+        }>;
+      };
+      workspaceRuntime.options.workspaceCommandOptions = {
+        action: "dry-run",
+        targetMode: WorkspaceMode.TOOL_MANAGED,
+        targetRoot: resolve(fixture.tempRoot, "managed-root"),
+        planPath: null,
+      };
+      const workspaceResult = await workspaceRuntime.execute(CliCommandName.WORKSPACE);
       const runtimeWithOverrides = fixture.runtime as unknown as {
         collectGitChangedPaths: () => Promise<string[]>;
       };
@@ -1501,7 +1521,25 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
       expect(checkResult.commandResult.operation).toBe("governance_check");
       expect(planResult.commandResult.operation).toBe("plan_snapshot");
       expect(upgradeResult.commandResult.operation).toBe("schema_upgrade_analyze");
+      expect(workspaceResult.commandResult.operation).toBe("workspace_migration_plan");
       expect(runResult.commandResult.operation).toBe("governance_run");
+    });
+  });
+
+  it("writes upgrade adopter-facing artifacts including rollback snapshot and migrated config", async () => {
+    await withRuntimeFixture(async (fixture) => {
+      const upgradeResult = await fixture.runtime.execute(CliCommandName.UPGRADE);
+      const artifactIds =
+        upgradeResult.commandResult.artifacts?.map((artifact) => artifact.id).sort() ?? [];
+
+      expect(artifactIds).toEqual([
+        "upgrade_auto_migrated_config",
+        "upgrade_report",
+        "upgrade_rollback_snapshot",
+      ]);
+      expect(upgradeResult.commandResult.details?.rollback_snapshot_path).toBeTypeOf("string");
+      expect(upgradeResult.commandResult.details?.auto_migrated_config_path).toBeTypeOf("string");
+      expect(upgradeResult.commandResult.details?.confirmation_count).toBeTypeOf("number");
     });
   });
 

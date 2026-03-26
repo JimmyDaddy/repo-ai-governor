@@ -38,9 +38,9 @@
 
 ## 2.3 sprint-003-upgrade-and-workspace-lifecycle-ux-baseline
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 将 `UpgradeSchemaDiffService`、`WorkspaceMigrationService` 与相关 planner 能力切为正式 CLI 用户路径。
-- Task Package: 激活时拆分。
+- Task Package: `TK-230`、`TK-231`、`TK-232`、`TK-233`。
 - Exit Criteria:
   1. `upgrade` 至少具备 schema diff、migration suggestions、confirmation items 与 rollback reference。
   2. workspace migration 至少具备 dry-run、execute、rollback 与 failure summary。
@@ -68,6 +68,10 @@
 | TK-227 | sprint-002 | packaged docs truthfulness 与 root README/playbook cutover | docs/package | TK-226,DA-224,README.md,docs/local-adoption-playbook.md | completed |
 | TK-228 | sprint-002 | skill publish surface、offline install truthfulness 与 blocking gate expansion | package/gate | TK-227,DA-225,DA-227,package.json,scripts/release/verify-local-distribution.js | completed |
 | TK-229 | sprint-002 | sprint-002 出口验收与 sprint-003 upgrade/workspace 输入约束 | acceptance/baseline | TK-226,TK-227,TK-228,DA-226,DA-227,DA-228 | completed |
+| TK-230 | sprint-003 | sprint-003 激活与 sprint-002 closeout handoff | bootstrap/governance | DA-229,sprint-002 completion | completed |
+| TK-231 | sprint-003 | upgrade command user path 与 confirmation/rollback reference baseline | cli/upgrade | TK-230,DA-229,apps/cli/src/commands/upgrade-command.ts,packages/config/src/upgrade-schema-diff-service.ts | completed |
+| TK-232 | sprint-003 | workspace lifecycle CLI dry-run/execute/rollback/failure-summary baseline | cli/workspace | TK-231,packages/config/src/workspace-migration-service.ts | completed |
+| TK-233 | sprint-003 | sprint-003 出口验收与 sprint-004 adopter pilot 输入约束 | acceptance/baseline | TK-230,TK-231,TK-232,DA-230 | completed |
 
 ## 4. 依赖产物策略
 
@@ -103,3 +107,5 @@
 2. 2026-03-26：完成 `sprint-001-packaging-truthfulness-failure-baseline`，形成 `DA-222`、`DA-223`、`DA-224`、`DA-225`，并将 sprint-002 的输入约束冻结为 docs/skills publish surface truthfulness、offline install truthfulness 与 blocking gate cutover。
 3. 2026-03-26：激活 `sprint-002-packaged-runtime-cutover-and-release-gate-block`，将 `sprint-001` 迁入 completed history，并启动 `TK-227` 收敛 root README/playbook packaged docs truthfulness。
 4. 2026-03-26：完成 `sprint-002-packaged-runtime-cutover-and-release-gate-block`，形成 `DA-227`、`DA-228`、`DA-229`，确认 `.codex/skills/` 为 canonical publish path、`tgz` 为 online-only clean-room 路径，并将下一条推荐执行流切换到 `sprint-003-upgrade-and-workspace-lifecycle-ux-baseline`。
+5. 2026-03-26：激活 `sprint-003-upgrade-and-workspace-lifecycle-ux-baseline`，将 `sprint-002` 迁入 completed history，并启动 `TK-231` 收敛 upgrade 命令的 adopter CLI 用户路径。
+6. 2026-03-26：完成 `sprint-003-upgrade-and-workspace-lifecycle-ux-baseline`，形成 `DA-231`、`DA-232`、`DA-233`，将 `upgrade/workspace` 收敛为正式 adopter CLI 用户路径，并冻结 `sprint-004-adopter-pilot-and-documentation-closure` 输入约束。

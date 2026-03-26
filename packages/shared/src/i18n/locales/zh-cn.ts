@@ -20,6 +20,10 @@ export const ZH_CN_TRANSLATIONS = {
       restrictedNetwork: "模拟受限网络模式，在 run 演练中阻断外部 adapter surface。",
       restrictedReason: "为受限网络演练显式记录原因，并写入诊断与审计产物。",
       noLocalFallback: "在受限网络演练中禁用本地 fallback，用于验证阻断语义。",
+      workspaceAction: "指定 workspace 命令动作：dry-run|execute|rollback。",
+      workspaceMode: "指定 workspace 迁移目标模式：repo_local|tool_managed。",
+      workspaceRoot: "指定 workspace 迁移命令使用的目标根路径覆盖。",
+      workspacePlan: "指定 rollback 动作使用的 workspace migration plan 产物路径。",
     },
     commands: {
       init: { description: "初始化治理工作区基线。" },
@@ -32,6 +36,7 @@ export const ZH_CN_TRANSLATIONS = {
       verify: { description: "校验适配器路由 pass/warn/fail 基线。" },
       plan: { description: "生成或更新执行计划基线。" },
       upgrade: { description: "执行工作区与配置升级基线。" },
+      workspace: { description: "规划、执行或回滚工作区迁移基线。" },
     },
     skeleton: {
       noProfile: "未设置",

@@ -26,4 +26,4 @@
 
 1. `sprint-002` 不再回退到旧的 internal package resolution 假设；`DA-223` 与 `DA-224` 已证明那不是当前主阻断。
 2. 本轮主目标是“声明与发布物一致”，不是继续扩大实现面。
-3. 当前 worktree 仍临时保留 `sprint-002` 作为 active closeout surface；下一条推荐执行流应显式激活 `sprint-003-upgrade-and-workspace-lifecycle-ux-baseline`。
+3. `sprint-003-upgrade-and-workspace-lifecycle-ux-baseline` 已接管主执行流；本 sprint 仅保留为 completed evidence surface。

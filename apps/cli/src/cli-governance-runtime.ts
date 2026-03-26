@@ -69,6 +69,7 @@ import { CliReviewVerifyCommand } from "./commands/review-verify-command.js";
 import { CliRunCommand } from "./commands/run-command.js";
 import { CliUpgradeCommand } from "./commands/upgrade-command.js";
 import { CliVerifyCommand } from "./commands/verify-command.js";
+import { CliWorkspaceCommand } from "./commands/workspace-command.js";
 import { CliCommandName } from "./constants/cli-command.constant.js";
 import {
   CLI_ADAPTER_FAILURE_ATTRIBUTION,
@@ -134,7 +135,7 @@ interface CliLangGraphCheckpointState {
  * Implements Stage-9 CLI command semantics with a minimal governance execution chain.
  *
  * Why this exists:
- * command runtime behavior must be centralized so `init/connect/doctor/check/run/review/review-verify/verify/plan/upgrade`
+ * command runtime behavior must be centralized so `init/connect/doctor/check/run/review/review-verify/verify/plan/upgrade/workspace`
  * stay deterministic across CLI entrypoints and output modes.
  */
 export class CliGovernanceRuntime {
@@ -218,6 +219,7 @@ export class CliGovernanceRuntime {
       new CliReviewCommand(),
       new CliReviewVerifyCommand(),
       new CliUpgradeCommand(),
+      new CliWorkspaceCommand(),
     ]);
   }
 

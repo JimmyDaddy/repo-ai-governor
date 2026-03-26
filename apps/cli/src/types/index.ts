@@ -26,6 +26,7 @@ export type {
   CliTaskDrivenRunAssembly,
   CliTaskInputArtifactReference,
   CliTaskInputReference,
+  CliWorkspaceCommandOptions,
   CliLocalAdapterProbeOverride,
   CliLocalAdapterProbeResolution,
   CliNormalizedRuntimeDebugOptions,

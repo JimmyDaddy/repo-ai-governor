@@ -4,19 +4,18 @@
 
 - Status: active
 - Project: `project-020-adoption-productization-and-upgrade-ux`
-- Sprint: `sprint-002-packaged-runtime-cutover-and-release-gate-block`
+- Sprint: `sprint-003-upgrade-and-workspace-lifecycle-ux-baseline`
 - Docs root: `.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux`
-- Task records: `.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux/sprint-002-packaged-runtime-cutover-and-release-gate-block/tasks/`
-- Review records: `.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux/sprint-002-packaged-runtime-cutover-and-release-gate-block/review/`
+- Task records: `.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux/sprint-003-upgrade-and-workspace-lifecycle-ux-baseline/tasks/`
+- Review records: `.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux/sprint-003-upgrade-and-workspace-lifecycle-ux-baseline/review/`
 
 ## Active Streams
 
-- `primary`: project=`project-020-adoption-productization-and-upgrade-ux`, sprint=`sprint-002-packaged-runtime-cutover-and-release-gate-block`, docs=`.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux`, plan=`.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux/plan.md`, tasks=`.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux/sprint-002-packaged-runtime-cutover-and-release-gate-block/tasks/`, checklist=`.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux/sprint-002-packaged-runtime-cutover-and-release-gate-block/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux/sprint-002-packaged-runtime-cutover-and-release-gate-block/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux/sprint-002-packaged-runtime-cutover-and-release-gate-block/review/`, status=`active`
+- `primary`: project=`project-020-adoption-productization-and-upgrade-ux`, sprint=`sprint-003-upgrade-and-workspace-lifecycle-ux-baseline`, docs=`.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux`, plan=`.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux/plan.md`, tasks=`.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux/sprint-003-upgrade-and-workspace-lifecycle-ux-baseline/tasks/`, checklist=`.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux/sprint-003-upgrade-and-workspace-lifecycle-ux-baseline/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux/sprint-003-upgrade-and-workspace-lifecycle-ux-baseline/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux/sprint-003-upgrade-and-workspace-lifecycle-ux-baseline/review/`, status=`active`
 
 ## Planned Follow-Up Streams
 
-1. `project-020-adoption-productization-and-upgrade-ux / sprint-003-upgrade-and-workspace-lifecycle-ux-baseline`：`sprint-002` 输入约束已冻结，下一条推荐执行流应显式激活该 sprint。
-2. `project-020-adoption-productization-and-upgrade-ux / sprint-004-adopter-pilot-and-documentation-closure`：等待 upgrade/workspace CLI 用户路径与 rollback/dry-run contract 收敛后激活。
+1. `project-020-adoption-productization-and-upgrade-ux / sprint-004-adopter-pilot-and-documentation-closure`：等待显式选择 1 到 2 个 adopter pilot 仓库，并以 `DA-233` 冻结的输入约束为准后激活。
 
 ## Completed Stream History
 

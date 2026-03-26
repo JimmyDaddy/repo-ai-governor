@@ -92,6 +92,7 @@ import type {
   CliResolvedOutputContext,
   CliRuntimeDebugOptions,
   CliSuccessOutputPayload,
+  CliWorkspaceCommandOptions,
 } from "./types/index.js";
 
 const DEFAULT_I18N_CONFIG: I18nRuntimeConfig = {
@@ -285,6 +286,7 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
     const githubCopilotExecRunner = githubCopilotExecFixtureRuntime.resolveExecRunner(environment);
     const runtimeDebugOptions = resolveRuntimeDebugOptions(rawArgs, io.cwd());
     const runtimeContext = resolveRuntimeContext(io.cwd(), requestedProfileId);
+    const workspaceCommandOptions = resolveWorkspaceCommandOptions(rawArgs);
     memoryStoreComposition = await DEFAULT_MEMORY_PROVIDER_REGISTRY.loadProvider({
       workspaceRoot: runtimeContext.workspace.workspaceRoot,
       memoryConfig: runtimeContext.memory,
@@ -307,6 +309,7 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
       memoryStoreRoot: activeMemoryStoreComposition.memoryStoreRoot,
       memoryStoreProviderName: activeMemoryStoreComposition.providerName,
       memoryStoreProvider: activeMemoryStoreComposition.provider,
+      workspaceCommandOptions,
       orchestrationServiceRuntimeDependencies: {
         memoryConfig: runtimeContext.memory,
       },
@@ -348,6 +351,10 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
     program.option("--restricted-network", runtimeI18n.t("cli.options.restrictedNetwork"));
     program.option("--restricted-reason <reason>", runtimeI18n.t("cli.options.restrictedReason"));
     program.option("--no-local-fallback", runtimeI18n.t("cli.options.noLocalFallback"));
+    program.option("--workspace-action <action>", runtimeI18n.t("cli.options.workspaceAction"));
+    program.option("--workspace-mode <mode>", runtimeI18n.t("cli.options.workspaceMode"));
+    program.option("--workspace-root <path>", runtimeI18n.t("cli.options.workspaceRoot"));
+    program.option("--workspace-plan <path>", runtimeI18n.t("cli.options.workspacePlan"));
     program.option(
       "--hitl-decision <decision>",
       "HITL decision receipt (`approve`, `reject`, or `revise`).",
@@ -1165,6 +1172,20 @@ function readOptionInput(args: string[], flag: string): ReadOptionResult {
   return {
     isPresent: true,
     value: value.length > 0 ? value : undefined,
+  };
+}
+
+/**
+ * Resolves raw workspace-command option values from CLI args.
+ * @param args CLI args excluding node and binary.
+ * @returns Parsed workspace command options.
+ */
+function resolveWorkspaceCommandOptions(args: string[]): CliWorkspaceCommandOptions {
+  return {
+    action: readOptionValue(args, "--workspace-action") ?? null,
+    targetMode: readOptionValue(args, "--workspace-mode") ?? null,
+    targetRoot: readOptionValue(args, "--workspace-root") ?? null,
+    planPath: readOptionValue(args, "--workspace-plan") ?? null,
   };
 }
 

@@ -12,6 +12,7 @@ export enum CliCommandName {
   VERIFY = "verify",
   PLAN = "plan",
   UPGRADE = "upgrade",
+  WORKSPACE = "workspace",
 }
 
 export const CLI_COMMAND_DEFINITIONS = [
@@ -25,6 +26,7 @@ export const CLI_COMMAND_DEFINITIONS = [
   { name: CliCommandName.VERIFY, descriptionKey: "cli.commands.verify.description" },
   { name: CliCommandName.PLAN, descriptionKey: "cli.commands.plan.description" },
   { name: CliCommandName.UPGRADE, descriptionKey: "cli.commands.upgrade.description" },
+  { name: CliCommandName.WORKSPACE, descriptionKey: "cli.commands.workspace.description" },
 ] as const;
 
 /**
@@ -41,4 +43,5 @@ export const CLI_COMMAND_NAMES = [
   CliCommandName.VERIFY,
   CliCommandName.PLAN,
   CliCommandName.UPGRADE,
+  CliCommandName.WORKSPACE,
 ] as const;

@@ -56,5 +56,6 @@ describe("CLI command integration", () => {
     expect(stdoutBuffer.join("")).toContain("review-verify");
     expect(stdoutBuffer.join("")).toContain("verify");
     expect(stdoutBuffer.join("")).toContain("upgrade");
+    expect(stdoutBuffer.join("")).toContain("workspace");
   });
 });

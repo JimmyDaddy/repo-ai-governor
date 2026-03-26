@@ -23,6 +23,11 @@ export const EN_US_TRANSLATIONS = {
         "Explicit restricted-network reason recorded in diagnostics and audit artifacts.",
       noLocalFallback:
         "Disable local fallback during restricted-network rehearsal to validate blocking semantics.",
+      workspaceAction: "Workspace command action: dry-run|execute|rollback.",
+      workspaceMode:
+        "Workspace target mode for migration planning/execution: repo_local|tool_managed.",
+      workspaceRoot: "Workspace target root override used by the workspace migration command.",
+      workspacePlan: "Workspace migration plan artifact path used by the rollback action.",
     },
     commands: {
       init: { description: "Initialize governor workspace baseline." },
@@ -35,6 +40,7 @@ export const EN_US_TRANSLATIONS = {
       verify: { description: "Verify adapter routing pass/warn/fail baseline." },
       plan: { description: "Generate or update execution plan baseline." },
       upgrade: { description: "Run workspace/config upgrade baseline." },
+      workspace: { description: "Plan, execute, or roll back workspace migration baseline." },
     },
     skeleton: {
       noProfile: "none",

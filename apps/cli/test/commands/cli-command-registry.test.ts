@@ -10,6 +10,7 @@ import { CliReviewVerifyCommand } from "../../src/commands/review-verify-command
 import { CliRunCommand } from "../../src/commands/run-command.js";
 import { CliUpgradeCommand } from "../../src/commands/upgrade-command.js";
 import { CliVerifyCommand } from "../../src/commands/verify-command.js";
+import { CliWorkspaceCommand } from "../../src/commands/workspace-command.js";
 import { CliCommandName } from "../../src/constants/cli-command.constant.js";
 
 describe("Cli command registry", () => {
@@ -25,6 +26,7 @@ describe("Cli command registry", () => {
       new CliReviewCommand(),
       new CliReviewVerifyCommand(),
       new CliUpgradeCommand(),
+      new CliWorkspaceCommand(),
     ] as const;
     const registry = new CliCommandRegistry(executors);
 

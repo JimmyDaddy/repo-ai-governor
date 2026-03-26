@@ -22,6 +22,7 @@ export type {
   CliSuccessOutputPayload,
 } from "./cli-output.interface.js";
 export type { CliRuntimeDebugOptions } from "./cli-runtime-debug.interface.js";
+export type { CliWorkspaceCommandOptions } from "./cli-workspace-command.interface.js";
 export type {
   CliArtifactWriter,
   CliExecutionStreamMetadata,

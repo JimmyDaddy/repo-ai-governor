@@ -149,6 +149,37 @@ async function createBlockedMemoryProviderFixtureRepo(): Promise<string> {
   return temporaryRepositoryRoot;
 }
 
+/**
+ * Creates one temporary repo with explicit repo-local workspace config for workspace-command tests.
+ * @returns Temporary repository absolute path.
+ */
+async function createWorkspaceMigrationFixtureRepo(): Promise<string> {
+  const temporaryRepositoryRoot = await mkdtemp(resolve(tmpdir(), "cli-output-workspace-"));
+  const workspaceRoot = resolve(temporaryRepositoryRoot, ".repo-ai-governor");
+  await mkdir(resolve(workspaceRoot, "context", "memory"), { recursive: true });
+  await writeFile(
+    resolve(workspaceRoot, "governor.yaml"),
+    [
+      'schemaVersion: "1.1"',
+      "workspace:",
+      "  mode: repo_local",
+      "  migrationPolicy: copy_verify_switch_rollback",
+      "i18n:",
+      "  runtimeEngine: i18next",
+      "  defaultLocale: en-US",
+      "  fallbackLocale: en-US",
+      "  supportedLocales:",
+      "    - en-US",
+      "memory:",
+      "  storeEngine: fs_csv",
+      "  storeRoot: context/memory",
+      "",
+    ].join("\n"),
+    "utf8",
+  );
+  return temporaryRepositoryRoot;
+}
+
 describe("CLI output contract integration", () => {
   it("renders stable JSON schema in --output json mode", async () => {
     const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false);
@@ -242,6 +273,43 @@ describe("CLI output contract integration", () => {
     expect(stderrBuffer.join("")).toBe("");
     expect(stdout).toContain("repo-ai-governor: command succeeded");
     expect(stdout).not.toContain("\u001b[");
+  });
+
+  it("renders workspace migration dry-run output in stable JSON shape", async () => {
+    const temporaryRepositoryRoot = await createWorkspaceMigrationFixtureRepo();
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, temporaryRepositoryRoot);
+    const managedRoot = resolve(temporaryRepositoryRoot, "managed-root");
+
+    try {
+      const exitCode = await runCli(
+        [
+          "node",
+          "repo-ai-governor",
+          "--locale",
+          "en-US",
+          "--output",
+          "json",
+          "--workspace-action",
+          "dry-run",
+          "--workspace-mode",
+          "tool_managed",
+          "--workspace-root",
+          managedRoot,
+          "workspace",
+        ],
+        io,
+      );
+      const payload = JSON.parse(stdoutBuffer.join(""));
+
+      expect(exitCode).toBe(0);
+      expect(stderrBuffer.join("")).toBe("");
+      expect(payload.command).toBe("workspace");
+      expect(payload.command_result.operation).toBe("workspace_migration_plan");
+      expect(payload.command_result.details.action).toBe("dry_run");
+      expect(payload.command_result.details.target_workspace_mode).toBe("tool_managed");
+    } finally {
+      await rm(temporaryRepositoryRoot, { recursive: true, force: true });
+    }
   });
 
   it("collapses pretty output detail blocks when --compact is enabled", async () => {

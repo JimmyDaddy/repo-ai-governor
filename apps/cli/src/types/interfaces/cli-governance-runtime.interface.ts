@@ -18,6 +18,7 @@ import type {
   CliCommandResultCheck,
 } from "./cli-output.interface.js";
 import type { CliRuntimeDebugOptions } from "./cli-runtime-debug.interface.js";
+import type { CliWorkspaceCommandOptions } from "./cli-workspace-command.interface.js";
 
 /**
  * Defines CLI runtime constructor options shared by the facade and extracted command executors.
@@ -35,6 +36,7 @@ export interface CliGovernanceRuntimeOptions {
   memoryStoreProviderName: string;
   memoryStoreProvider: MemoryStoreProvider;
   adaptersConfig: AdaptersConfig;
+  workspaceCommandOptions?: CliWorkspaceCommandOptions;
   runtimeDebugOptions?: CliRuntimeDebugOptions;
   adapterLocalProbeOverrides?: Partial<Record<AdapterSurface, CliLocalAdapterProbeOverride>>;
   commandProbeExecutor?: (command: string, args: readonly string[]) => Promise<void>;

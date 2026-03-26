@@ -51,6 +51,9 @@ export enum CliRuntimeOperation {
   REVIEW_VERIFY = "review_verify",
   PLAN_SNAPSHOT = "plan_snapshot",
   SCHEMA_UPGRADE_ANALYZE = "schema_upgrade_analyze",
+  WORKSPACE_MIGRATION_PLAN = "workspace_migration_plan",
+  WORKSPACE_MIGRATION_EXECUTE = "workspace_migration_execute",
+  WORKSPACE_MIGRATION_ROLLBACK = "workspace_migration_rollback",
 }
 
 /**
@@ -155,6 +158,7 @@ export const CLI_INIT_REQUIRED_DIRECTORY_SEGMENTS = [
   ["context", "reports"],
   ["context", "replay"],
   ["context", "upgrade"],
+  ["context", "workspace"],
 ] as const;
 
 /**
