@@ -241,6 +241,18 @@ documents:
     owner: architecture
     last_reviewed_at: 2026-03-26
 
+  - doc_id: technical_solution_runtime_memory_provider_loading_plugin_policy_adr
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-memory-provider-loading/adrs/plugin-resolution-policy-and-distribution-truthfulness.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - runtime_contract_change
+      - memory_provider_change
+      - adapter_change
+    owner: architecture
+    last_reviewed_at: 2026-03-26
+
   - doc_id: technical_solution_runtime_orchestration_overview
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/module-overview.md
     tier: L2

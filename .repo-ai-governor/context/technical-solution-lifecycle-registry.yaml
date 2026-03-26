@@ -62,20 +62,34 @@ solutions:
 
   - solution_id: technical-solution.memory-provider-pluginization
     title: Memory provider pluginization technical solution
-    status: draft
+    status: active
     owner: runtime
-    version: v0
+    version: v1
     scope: runtime
     draft_paths:
       - .repo-ai-governor/draft/memory-provider-pluginization-technical-solution.md
-    review_paths: []
-    final_paths: []
+    review_paths:
+      - .repo-ai-governor/context/dev/project-015-memory-provider-pluginization/sprint-003-optional-plugin-mode-and-policy-hardening/review/resolved_code_review_tk-171-memory-provider-plugin-allowlist-and-registry-resolution-contract-baseline.md
+      - .repo-ai-governor/context/dev/project-015-memory-provider-pluginization/sprint-003-optional-plugin-mode-and-policy-hardening/review/resolved_code_review_tk-172-cli-memory-provider-plugin-loader-cutover-and-dual-input-compatibility.md
+      - .repo-ai-governor/context/dev/project-015-memory-provider-pluginization/sprint-003-optional-plugin-mode-and-policy-hardening/review/resolved_code_review_tk-173-plugin-enabled-distribution-cleanroom-examples-and-release-gate-expansion.md
+      - .repo-ai-governor/context/dev/project-015-memory-provider-pluginization/sprint-004-shared-loader-and-service-reuse/review/resolved_code_review_tk-175-memory-provider-shared-loader-contract-and-host-surface-baseline.md
+      - .repo-ai-governor/context/dev/project-015-memory-provider-pluginization/sprint-004-shared-loader-and-service-reuse/review/resolved_code_review_tk-176-cli-desktop-host-and-service-backed-runtime-loader-reuse-cutover.md
+      - .repo-ai-governor/context/dev/project-015-memory-provider-pluginization/sprint-004-shared-loader-and-service-reuse/review/resolved_code_review_tk-177-service-host-packaging-cleanroom-and-release-gate-expansion-for-memory-providers.md
+      - .repo-ai-governor/context/dev/project-018-technical-solution-promotion-pilots/sprint-001-memory-provider-pluginization-promotion-pilot/review/resolved_code_review_tk-200-memory-provider-technical-solution-lifecycle-module-registry-and-manifest-promotion-cutover.md
+    final_paths:
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-memory-provider-loading/module-overview.md
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-memory-provider-loading/contracts/memory-provider-loading-contract.md
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-memory-provider-loading/adrs/shared-loader-host-surface-cutover.md
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-memory-provider-loading/adrs/plugin-resolution-policy-and-distribution-truthfulness.md
     target_module_ids:
       - runtime.memory-provider-loading
     north_star_refs:
       - prd.multi-tool-adapters
       - overall.adapter-provider
       - architecture.runtime-boundary
+    approved_at: 2026-03-26
+    approved_by: AI-Agent
+    activated_at: 2026-03-26
     supersedes: []
 
   - solution_id: technical-solution.memory-module
