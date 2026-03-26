@@ -48,7 +48,7 @@
 15. `project-015-memory-provider-pluginization`
 16. `project-016-langgraph-runtime-productization`
 
-说明：Stage 主链按 001-007、009、010、013 推进；`project-008` 作为跨阶段治理优化轨可优先执行；`project-011` 作为 `project-010` 的工程支撑分解轨，为 CLI package 重构提供独立执行流；`project-012` 作为 `project-008` 的上下文效率 follow-up，负责收敛当前仓库的启动加载与台账上下文成本；`project-013` 已完成 Stage 9 最后业务阻断项收口；`project-014` 承接 post-Stage-9 的运行时现代化主线，但只完成了第一阶段 adoption/service-backed execution 收口；`project-016` 已完成 LangGraph runtime productization baseline 收口；当前 primary active track 已回到 `project-015`，继续承接 memory provider pluginization。
+说明：Stage 主链按 001-007、009、010、013 推进；`project-008` 作为跨阶段治理优化轨可优先执行；`project-011` 作为 `project-010` 的工程支撑分解轨，为 CLI package 重构提供独立执行流；`project-012` 作为 `project-008` 的上下文效率 follow-up，负责收敛当前仓库的启动加载与台账上下文成本；`project-013` 已完成 Stage 9 最后业务阻断项收口；`project-014` 承接 post-Stage-9 的运行时现代化主线，但只完成了第一阶段 adoption/service-backed execution 收口；`project-016` 已完成 LangGraph runtime productization baseline 收口；当前 primary active track 仍是 `project-015 / sprint-002`，而 `sprint-003-optional-plugin-mode-and-policy-hardening` 已完成任务拆解并登记为 planned follow-up。
 
 ## 3. 交付原则
 

@@ -972,10 +972,11 @@ export class SchemaValidator {
     }
 
     const memory = this.expectRecord(candidate, pointer);
-    this.assertNoUnknownKeys(memory, new Set(["storeEngine", "storeRoot"]), pointer);
+    this.assertNoUnknownKeys(memory, new Set(["storeEngine", "storeRoot", "provider"]), pointer);
 
     const storeEngine = this.expectOptionalString(memory.storeEngine, `${pointer}/storeEngine`);
     const storeRoot = this.expectOptionalString(memory.storeRoot, `${pointer}/storeRoot`);
+    const provider = this.validateMemoryProvider(memory.provider, `${pointer}/provider`);
 
     if (!isPartial && !storeEngine) {
       this.throwConfigSchemaValidationError(`${pointer}/storeEngine is required.`, pointer);
@@ -991,6 +992,40 @@ export class SchemaValidator {
     return {
       ...(storeEngine ? { storeEngine: storeEngine as MemoryStoreEngine } : {}),
       ...(storeRoot ? { storeRoot } : {}),
+      ...(provider ? { provider } : {}),
+    };
+  }
+
+  /**
+   * Validates optional memory-provider extension fields reserved for built-in/plugin resolution.
+   * @param candidate Raw provider object.
+   * @param pointer Error pointer path.
+   * @returns Provider extension payload when present.
+   */
+  private validateMemoryProvider(
+    candidate: unknown,
+    pointer: string,
+  ): MemoryConfig["provider"] | undefined {
+    if (candidate === undefined) {
+      return undefined;
+    }
+
+    const provider = this.expectRecord(candidate, pointer);
+    this.assertNoUnknownKeys(provider, new Set(["id", "module", "exportName", "options"]), pointer);
+
+    const id = this.expectOptionalString(provider.id, `${pointer}/id`);
+    const module = this.expectOptionalString(provider.module, `${pointer}/module`);
+    const exportName = this.expectOptionalString(provider.exportName, `${pointer}/exportName`);
+    const options =
+      provider.options === undefined
+        ? undefined
+        : this.expectRecord(provider.options, `${pointer}/options`);
+
+    return {
+      ...(id ? { id } : {}),
+      ...(module ? { module } : {}),
+      ...(exportName ? { exportName } : {}),
+      ...(options ? { options } : {}),
     };
   }
 

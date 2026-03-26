@@ -29,6 +29,7 @@ const INTERNAL_PACKAGE_ENTRY_ALIASES = [
   ],
   ["@repo-ai-governor/core-session", "packages/core-session/src/index.ts"],
   ["@repo-ai-governor/memory-provider-fs-csv", "packages/memory-providers/fs-csv/src/index.ts"],
+  ["@repo-ai-governor/memory-provider-registry", "packages/memory-provider-registry/src/index.ts"],
   [
     "@repo-ai-governor/memory-provider-sqlite-fs",
     "packages/memory-providers/sqlite-fs/src/index.ts",

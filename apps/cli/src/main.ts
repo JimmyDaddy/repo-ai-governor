@@ -12,8 +12,10 @@ import {
   type ResolvedWorkspace,
   WorkspaceResolver,
 } from "@repo-ai-governor/config";
-import { FsCsvMemoryStoreProvider } from "@repo-ai-governor/memory-provider-fs-csv";
-import type { MemoryStoreProvider } from "@repo-ai-governor/memory-store-adapter";
+import {
+  MemoryProviderRegistry,
+  type MemoryProviderRegistryLoadResult,
+} from "@repo-ai-governor/memory-provider-registry";
 import {
   AdapterAvailability,
   AdapterSurface,
@@ -25,7 +27,6 @@ import {
   I18nRuntime,
   type I18nRuntimeConfig,
   type MemoryRuntimeConfig,
-  MemoryStoreEngine,
   RuntimeError,
   type StandardizedError,
   standardizeError,
@@ -100,6 +101,7 @@ const DEFAULT_I18N_CONFIG: I18nRuntimeConfig = {
 const DEFAULT_MEMORY_CONFIG: MemoryRuntimeConfig = {
   ...DEFAULT_MEMORY_RUNTIME_CONFIG,
 };
+const DEFAULT_MEMORY_PROVIDER_REGISTRY = new MemoryProviderRegistry();
 const DEFAULT_ADAPTERS_CONFIG: AdaptersConfig = {
   roles: [
     {
@@ -222,15 +224,6 @@ interface ResolvedCliRuntimeContext {
 }
 
 /**
- * Defines resolved memory provider metadata rendered into command diagnostics.
- */
-interface MemoryStoreComposition {
-  memoryStoreRoot: string;
-  providerName: string;
-  provider: MemoryStoreProvider;
-}
-
-/**
  * Defines parsed option state for robust CLI flag handling.
  */
 interface ReadOptionResult {
@@ -272,7 +265,7 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
 
   let outputContext = resolveFallbackOutputContext(io);
   let i18nRuntime: I18nRuntime | undefined;
-  let memoryStoreComposition: MemoryStoreComposition | undefined;
+  let memoryStoreComposition: MemoryProviderRegistryLoadResult | undefined;
 
   try {
     outputContext = resolveOutputModeContext(rawArgs, io);
@@ -292,10 +285,10 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
     const githubCopilotExecRunner = githubCopilotExecFixtureRuntime.resolveExecRunner(environment);
     const runtimeDebugOptions = resolveRuntimeDebugOptions(rawArgs, io.cwd());
     const runtimeContext = resolveRuntimeContext(io.cwd(), requestedProfileId);
-    memoryStoreComposition = await composeMemoryStoreProvider(
-      runtimeContext.workspace.workspaceRoot,
-      runtimeContext.memory,
-    );
+    memoryStoreComposition = await DEFAULT_MEMORY_PROVIDER_REGISTRY.loadProvider({
+      workspaceRoot: runtimeContext.workspace.workspaceRoot,
+      memoryConfig: runtimeContext.memory,
+    });
     const activeMemoryStoreComposition = memoryStoreComposition;
 
     i18nRuntime = new I18nRuntime();
@@ -395,6 +388,8 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
             memoryStoreEngine: runtimeContext.memory.storeEngine,
             memoryStoreRoot: activeMemoryStoreComposition.memoryStoreRoot,
             memoryStoreProvider: activeMemoryStoreComposition.providerName,
+            memoryStoreProviderId: activeMemoryStoreComposition.descriptor.id,
+            memoryStoreDistributionMode: activeMemoryStoreComposition.descriptor.distributionMode,
             ...(ideWrapperEnvironment.entrySurface
               ? {
                   entrySurface: ideWrapperEnvironment.entrySurface,
@@ -681,58 +676,6 @@ function resolveAdaptersRuntimeConfig(
         }
       : {}),
   };
-}
-
-/**
- * Composes a concrete memory provider from runtime memory config.
- * @param workspaceRoot Resolved workspace root.
- * @param memoryConfig Memory runtime config.
- * @returns Provider composition metadata for runtime diagnostics.
- */
-async function composeMemoryStoreProvider(
-  workspaceRoot: string,
-  memoryConfig: MemoryRuntimeConfig,
-): Promise<MemoryStoreComposition> {
-  const memoryStoreRoot = resolveMemoryStoreRoot(workspaceRoot, memoryConfig.storeRoot);
-  if (memoryConfig.storeEngine === MemoryStoreEngine.SQLITE_FS) {
-    // Why: lazy-loading avoids node:sqlite side effects when default fs-csv engine is used.
-    const { SqliteFsMemoryStoreProvider } = await import(
-      "@repo-ai-governor/memory-provider-sqlite-fs"
-    );
-    const provider = new SqliteFsMemoryStoreProvider({
-      rootDirectory: memoryStoreRoot,
-    });
-
-    return {
-      memoryStoreRoot,
-      providerName: provider.constructor.name,
-      provider,
-    };
-  }
-
-  const provider = new FsCsvMemoryStoreProvider({
-    rootDirectory: memoryStoreRoot,
-  });
-
-  return {
-    memoryStoreRoot,
-    providerName: provider.constructor.name,
-    provider,
-  };
-}
-
-/**
- * Resolves store root to absolute path under workspace root when relative.
- * @param workspaceRoot Resolved workspace root.
- * @param storeRoot Configured memory store root.
- * @returns Absolute memory store root path.
- */
-function resolveMemoryStoreRoot(workspaceRoot: string, storeRoot: string): string {
-  if (isAbsolute(storeRoot)) {
-    return storeRoot;
-  }
-
-  return resolve(workspaceRoot, storeRoot);
 }
 
 /**

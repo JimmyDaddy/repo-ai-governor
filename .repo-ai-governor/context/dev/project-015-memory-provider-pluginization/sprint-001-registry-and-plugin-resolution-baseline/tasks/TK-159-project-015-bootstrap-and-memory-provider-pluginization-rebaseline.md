@@ -1,6 +1,6 @@
 # TK-159 project-015 启动与 memory provider pluginization 重排
 
-- Status: in_progress
+- Status: completed
 - Date: 2026-03-26
 - Owner: AI-Agent
 - Priority: P0
@@ -44,3 +44,4 @@
 
 1. 2026-03-26：任务创建，目标是将 completed 的 `project-014 / sprint-003` 从 active surface 移出，并建立 `project-015` 的 bootstrap 主执行流。
 2. 2026-03-26：状态切换为 `in_progress`，开始创建 `project-015` skeleton 并同步 `current-context` / history / master plan。
+3. 2026-03-26：已完成 `DA-159`、resolved review、`project-015 / sprint-001` 收口，以及 active stream 向 `sprint-002-built-in-registry-and-loader-foundation` 的切换。

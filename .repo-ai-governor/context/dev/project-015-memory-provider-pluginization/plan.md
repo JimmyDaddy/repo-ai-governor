@@ -15,25 +15,56 @@
 
 ## 2.1 sprint-001-registry-and-plugin-resolution-baseline
 
+- Status: completed
 - Sprint Goal: 建立 `project-015` 主执行流，完成 memory provider pluginization 的 bootstrap、边界重排与后续拆解输入冻结。
-- 任务包：`TK-159`、`TK-160`。
+- 任务包：`TK-159`、`TK-160`（completed）。
 - Exit Criteria:
   1. `current-context.md` 已从 completed 的 `project-014 / sprint-003` 切换到 `project-015 / sprint-001`。
   2. `project-015` 的 project/sprint/task skeleton 已建立并通过治理同步 gate。
   3. `TK-159` 已完成 project-015 bootstrap；`TK-160` 已补齐 LangGraph full productization 残余 gap register 和 `project-016` planned follow-up skeleton。
 
+## 2.2 sprint-002-built-in-registry-and-loader-foundation
+
+- Status: completed
+- Sprint Goal: 落下 memory provider built-in registry 与 loader 基线，把 CLI 当前的 provider 选择逻辑从入口文件中抽离，并冻结 release/distribution 的最小模块化边界。
+- 任务包：`TK-167`、`TK-168`、`TK-169`、`TK-170`。
+- Exit Criteria:
+  1. `memory provider registry + built-in descriptor` 已形成正式 package-local 或 package 级基线。
+  2. CLI 不再在入口层直接硬编码 `fs-csv/sqlite-fs` 选择逻辑，legacy `storeEngine` 的 parser/selection 兼容仍保持成立，但默认发行包对 `sqlite-fs` optional built-in runtime 必须显式 fail-closed。
+3. release/build/distribution 对 built-in provider 与 optional provider 的边界已冻结。
+
+## 2.3 sprint-003-optional-plugin-mode-and-policy-hardening
+
+- Status: planned
+- Sprint Goal: 在受控 allowlist / prefix / path / module policy 下打开 optional plugin mode，建立 plugin-enabled distribution 与 clean-room/examples/release gate 基线，并冻结 sprint-004 service reuse 输入约束。
+- 任务包：`TK-171`、`TK-172`、`TK-173`、`TK-174`。
+- Exit Criteria:
+  1. `provider.module / exportName / options` 的可控解析契约已形成正式基线。
+  2. optional plugin mode 不允许任意模块执行，allowlist / prefix / path policy 已收敛为正式门禁。
+  3. plugin-enabled distribution、clean-room、examples/runtime smoke 与 release gate 已与 default distribution 区分验证。
+  4. sprint-003 的验收与 sprint-004 service reuse 输入约束已形成正式基线。
+
 ## 3. 任务拆解矩阵（WBS）
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 |---|---|---|---|---|---|
-| TK-159 | sprint-001 | project-015 启动与 memory provider pluginization 重排 | bootstrap/plan | project-014 completion | in_progress |
+| TK-159 | sprint-001 | project-015 启动与 memory provider pluginization 重排 | bootstrap/plan | project-014 completion | completed |
 | TK-160 | sprint-001 | LangGraph runtime productization gap register 与 project-016 planned follow-up 拆解 | baseline/plan | project-014 completion,TK-159 | completed |
+| TK-167 | sprint-002 | memory provider registry package 与 built-in descriptor 契约基线 | implementation/runtime | TK-159,DA-159,.repo-ai-governor/draft/memory-provider-pluginization-technical-solution.md | completed |
+| TK-168 | sprint-002 | CLI memory provider loader cutover 与 legacy config 兼容 | implementation/cli | TK-167,DA-159,.repo-ai-governor/draft/memory-provider-pluginization-technical-solution.md | completed |
+| TK-169 | sprint-002 | distribution 与 release 对 optional built-in provider 的边界收口 | implementation/release | TK-167,TK-168,DA-159,.repo-ai-governor/draft/memory-provider-pluginization-technical-solution.md | completed |
+| TK-170 | sprint-002 | sprint-002 出口验收与 sprint-003 optional plugin 输入约束 | acceptance/baseline | TK-167,TK-168,TK-169,DA-159 | completed |
+| TK-171 | sprint-003 | memory provider plugin allowlist 与 registry resolution contract baseline | implementation/runtime | TK-170,DA-170,.repo-ai-governor/draft/memory-provider-pluginization-technical-solution.md | planned |
+| TK-172 | sprint-003 | CLI memory provider plugin loader cutover 与 dual-input compatibility | implementation/cli | TK-171,DA-170,DA-168,.repo-ai-governor/draft/memory-provider-pluginization-technical-solution.md | planned |
+| TK-173 | sprint-003 | plugin-enabled distribution、clean-room、examples 与 release gate expansion | implementation/release | TK-171,TK-172,DA-170,DA-169,.repo-ai-governor/draft/memory-provider-pluginization-technical-solution.md | planned |
+| TK-174 | sprint-003 | sprint-003 出口验收与 sprint-004 service reuse 输入约束 | acceptance/baseline | TK-171,TK-172,TK-173,DA-170 | planned |
 
 ## 4. 依赖产物策略
 
 1. `project-015` 启动默认消费：
    - `project-014-langgraph-orchestration-runtime-adoption-completion-audit-summary.md`
    - `.repo-ai-governor/draft/memory-provider-pluginization-technical-solution.md`
+   - `DA-159`
    - `DA-160`
 2. 后续 `DA-*` 仅在形成可复用基线、约束或正式方案后进入 artifact registry。
 
@@ -47,3 +78,9 @@
 
 1. 2026-03-26：创建 `project-015`，将 `project-014 / sprint-003` 从 active surface 迁入 completed history，并切换到 memory provider pluginization follow-up 主线。
 2. 2026-03-26：通过 `TK-160 / DA-160` 正式登记 “project-014 仅完成 first-phase” 的残余 gap，并拆解 planned `project-016-langgraph-runtime-productization` 作为后续收口项目。
+3. 2026-03-26：通过 `TK-159 / DA-159` 收口 bootstrap sprint，并切换到 `sprint-002-built-in-registry-and-loader-foundation`。
+4. 2026-03-26：通过 `TK-167 / DA-167` 建立 `@repo-ai-governor/memory-provider-registry` 与 built-in descriptor / loader 基线，并把 CLI 入口切到 registry loader。
+5. 2026-03-26：通过 `TK-168 / DA-168` 完成 CLI memory provider loader cutover，冻结 legacy `storeEngine` 与 `memory.provider.id` 的 parser/selection 兼容契约，并保留 `provider.module` 的 fail-closed 扩展位。
+6. 2026-03-26：通过 `TK-169 / DA-169` 收口 default distribution 与 optional built-in provider 的 release/build 边界，默认发行包不再包含 `sqlite-fs` 的运行时载荷。
+7. 2026-03-26：通过 `TK-170 / DA-170` 完成 sprint-002 出口验收，判定 built-in registry / loader foundation 达到 `accept`，并明确默认发行包对 `sqlite-fs` optional built-in provider 只保证 parser/selection compatibility 与 fail-closed truthfulness，而非运行时可用性。
+8. 2026-03-26：创建 `sprint-003-optional-plugin-mode-and-policy-hardening`，将 `project-015` 主执行流切换到受控 optional plugin mode 的正式拆解阶段，并新增 `TK-171`~`TK-174` 任务骨架。

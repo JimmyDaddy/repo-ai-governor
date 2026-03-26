@@ -81,7 +81,7 @@ describe("Memory store config and CLI composition smoke", () => {
     expect(resolvedConfig.config.memory?.storeRoot).toBe("context/memory/custom");
   });
 
-  it("loads memory store engine from governor.yaml and composes sqlite+fs provider", async () => {
+  it("loads the optional sqlite built-in provider in workspace composition when the package is present", async () => {
     const repositoryRoot = await createTemporaryRepositoryRoot();
     const configDirectory = resolve(repositoryRoot, ".repo-ai-governor");
     const configPath = resolve(configDirectory, "governor.yaml");
@@ -103,6 +103,8 @@ describe("Memory store config and CLI composition smoke", () => {
         "memory:",
         "  storeEngine: sqlite_fs",
         "  storeRoot: context/memory/sqlite",
+        "  provider:",
+        "    id: sqlite-fs",
         "",
       ].join("\n"),
       "utf8",
@@ -123,6 +125,8 @@ describe("Memory store config and CLI composition smoke", () => {
       expect(payload.output_mode).toBe("json");
       expect(payload.diagnostics.memoryStoreEngine).toBe("sqlite_fs");
       expect(payload.diagnostics.memoryStoreProvider).toBe("SqliteFsMemoryStoreProvider");
+      expect(payload.diagnostics.memoryStoreProviderId).toBe("sqlite-fs");
+      expect(payload.diagnostics.memoryStoreDistributionMode).toBe("optional");
       expect(payload.diagnostics.memoryStoreRoot).toContain("context/memory/sqlite");
     } finally {
       await rm(repositoryRoot, { recursive: true, force: true });

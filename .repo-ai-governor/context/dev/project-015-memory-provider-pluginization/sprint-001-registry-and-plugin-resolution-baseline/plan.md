@@ -1,6 +1,6 @@
 # sprint-001-registry-and-plugin-resolution-baseline 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-03-26
 - Project: `project-015-memory-provider-pluginization`
 
@@ -10,7 +10,7 @@
 
 ## 2. Task Package
 
-1. `TK-159` project-015 启动与 memory provider pluginization 重排（in_progress）
+1. `TK-159` project-015 启动与 memory provider pluginization 重排（completed）
 2. `TK-160` LangGraph runtime productization gap register 与 project-016 planned follow-up 拆解（completed）
 
 ## 3. Exit Criteria
@@ -19,9 +19,11 @@
 2. `project-015 / sprint-001` 的 plan、task card、checklist、tasks.csv 已具备最小可执行骨架。
 3. `DA-160` 已正式登记 project-014 残余 LangGraph gap，并生成 `project-016` planned follow-up skeleton。
 4. bootstrap / planning 任务已通过治理同步 gate。
+5. active stream 已切换到 `sprint-002-built-in-registry-and-loader-foundation`。
 
 ## 4. Execution Notes
 
 1. 本 sprint 当前只承接 bootstrap/重排，不提前承诺后续实现范围。
 2. memory provider 方向以后续 `.repo-ai-governor/draft/memory-provider-pluginization-technical-solution.md` 为输入继续推进。
 3. LangGraph full productization 残余项以后续 `project-016` planned follow-up track 推进，不再继续混入 `project-014 completed` 口径。
+4. 2026-03-26：`TK-159/TK-160` 均已收口，sprint-001 结束并移出 active execution surface。

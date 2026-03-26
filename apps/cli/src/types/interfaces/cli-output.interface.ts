@@ -43,6 +43,8 @@ export interface CliCommandDiagnostics {
   memoryStoreEngine: string;
   memoryStoreRoot: string;
   memoryStoreProvider: string;
+  memoryStoreProviderId?: string;
+  memoryStoreDistributionMode?: string;
   entrySurface?: string;
   standardsProfileId?: string;
   standardsSourceIds?: string[];

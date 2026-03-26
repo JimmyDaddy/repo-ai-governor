@@ -22,6 +22,8 @@ const REQUIRED_PACKED_PATH_SUFFIXES = [
   "dist/node_modules/@repo-ai-governor/core-orchestration-service/dist/src/local-orchestration-service-sidecar-entry.js",
   "dist/node_modules/@repo-ai-governor/core-runtime-langgraph/package.json",
   "dist/node_modules/@repo-ai-governor/core-runtime-langgraph/dist/src/index.js",
+  "dist/node_modules/@repo-ai-governor/memory-provider-registry/package.json",
+  "dist/node_modules/@repo-ai-governor/memory-provider-registry/dist/src/index.js",
   "dist/node_modules/@repo-ai-governor/orchestration-service-client/package.json",
   "dist/node_modules/@repo-ai-governor/orchestration-service-client/dist/src/index.js",
   "dist/node_modules/@repo-ai-governor/cli/dist/src/runtime/orchestration-service-runtime.js",
@@ -37,6 +39,10 @@ const REQUIRED_PACKED_PATH_SUFFIXES = [
   "integrations/ide/examples/jetbrains-run-configuration.sample.xml",
   "integrations/ide/examples/cursor-task.sample.json",
   "integrations/ide/examples/claude-code-commands.sample.json",
+];
+const FORBIDDEN_DEFAULT_PACKED_PATH_FRAGMENTS = [
+  "dist/packages/memory-providers/sqlite-fs/",
+  "dist/node_modules/@repo-ai-governor/memory-provider-sqlite-fs/",
 ];
 
 /**
@@ -181,6 +187,17 @@ function hasPackedPathSuffix(packedFilePaths, requiredSuffix) {
   });
 }
 
+/**
+ * Returns whether a packed file manifest still contains one forbidden fragment.
+ * @param {string[]} packedFilePaths Packed file path list.
+ * @param {string} forbiddenFragment Forbidden path fragment.
+ * @returns {boolean}
+ */
+function hasPackedPathFragment(packedFilePaths, forbiddenFragment) {
+  const normalizedFragment = normalizeFilePath(forbiddenFragment);
+  return packedFilePaths.some((candidatePath) => candidatePath.includes(normalizedFragment));
+}
+
 try {
   const absoluteCliEntryPath = resolve(process.cwd(), DIST_CLI_ENTRY_PATH);
   if (!existsSync(absoluteCliEntryPath)) {
@@ -204,6 +221,13 @@ try {
   for (const requiredSuffix of REQUIRED_PACKED_PATH_SUFFIXES) {
     if (!hasPackedPathSuffix(packedFilePaths, requiredSuffix)) {
       throw new Error(`Packed artifact is missing required path suffix: ${requiredSuffix}`);
+    }
+  }
+  for (const forbiddenFragment of FORBIDDEN_DEFAULT_PACKED_PATH_FRAGMENTS) {
+    if (hasPackedPathFragment(packedFilePaths, forbiddenFragment)) {
+      throw new Error(
+        `Packed artifact contains optional built-in provider payload in default distribution: ${forbiddenFragment}`,
+      );
     }
   }
 

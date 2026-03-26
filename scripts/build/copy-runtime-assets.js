@@ -103,18 +103,28 @@ const DISTRIBUTION_PACKAGES = [
     packageRoot: resolve(PROJECT_ROOT, "packages/memory-providers/fs-csv"),
     compiledDirectory: resolve(PROJECT_ROOT, "dist/packages/memory-providers/fs-csv"),
     packageDistDirectory: resolve(PROJECT_ROOT, "packages/memory-providers/fs-csv/dist"),
+    runtimeDistributionMode: "default",
   },
   {
     packageName: "memory-provider-sqlite-fs",
     packageRoot: resolve(PROJECT_ROOT, "packages/memory-providers/sqlite-fs"),
     compiledDirectory: resolve(PROJECT_ROOT, "dist/packages/memory-providers/sqlite-fs"),
     packageDistDirectory: resolve(PROJECT_ROOT, "packages/memory-providers/sqlite-fs/dist"),
+    runtimeDistributionMode: "optional",
+  },
+  {
+    packageName: "memory-provider-registry",
+    packageRoot: resolve(PROJECT_ROOT, "packages/memory-provider-registry"),
+    compiledDirectory: resolve(PROJECT_ROOT, "dist/packages/memory-provider-registry"),
+    packageDistDirectory: resolve(PROJECT_ROOT, "packages/memory-provider-registry/dist"),
+    runtimeDistributionMode: "default",
   },
   {
     packageName: "memory-store-adapter",
     packageRoot: resolve(PROJECT_ROOT, "packages/memory-store-adapter"),
     compiledDirectory: resolve(PROJECT_ROOT, "dist/packages/memory-store-adapter"),
     packageDistDirectory: resolve(PROJECT_ROOT, "packages/memory-store-adapter/dist"),
+    runtimeDistributionMode: "default",
   },
   {
     packageName: "notification-dispatcher",
@@ -180,6 +190,22 @@ function mirrorPackageDistributions() {
 }
 
 /**
+ * Removes optional-provider compiled payloads from the default top-level distribution.
+ *
+ * Why this exists:
+ * package-local build outputs may still exist for optional providers, while the default
+ * release payload should ship only the guaranteed built-in provider matrix.
+ */
+function pruneOptionalPackagesFromDefaultDistribution() {
+  for (const distributionPackage of DISTRIBUTION_PACKAGES) {
+    if (distributionPackage.runtimeDistributionMode !== "optional") {
+      continue;
+    }
+    rmSync(distributionPackage.compiledDirectory, { recursive: true, force: true });
+  }
+}
+
+/**
  * Creates self-contained runtime package snapshots under `dist/node_modules`.
  *
  * Why this exists:
@@ -191,6 +217,9 @@ function materializeWorkspacePackagesForDistributionRuntime() {
   mkdirSync(DIST_SCOPE_NODE_MODULES, { recursive: true });
 
   for (const distributionPackage of DISTRIBUTION_PACKAGES) {
+    if (distributionPackage.runtimeDistributionMode === "optional") {
+      continue;
+    }
     const packageJsonPath = resolve(distributionPackage.packageRoot, "package.json");
     assertBuildArtifact(packageJsonPath, "workspace package manifest");
     assertBuildArtifact(distributionPackage.compiledDirectory, "compiled package directory");
@@ -206,4 +235,5 @@ function materializeWorkspacePackagesForDistributionRuntime() {
 
 assertBuildArtifact(COMPILED_CLI_ENTRY_PATH, "CLI entry");
 mirrorPackageDistributions();
+pruneOptionalPackagesFromDefaultDistribution();
 materializeWorkspacePackagesForDistributionRuntime();

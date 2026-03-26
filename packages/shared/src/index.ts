@@ -40,4 +40,8 @@ export {
   standardizeError,
 } from "./errors/index.js";
 export type { StandardizedError } from "./errors/index.js";
-export type { I18nRuntimeConfig, MemoryRuntimeConfig } from "./types/index.js";
+export type {
+  I18nRuntimeConfig,
+  MemoryProviderRuntimeConfig,
+  MemoryRuntimeConfig,
+} from "./types/index.js";

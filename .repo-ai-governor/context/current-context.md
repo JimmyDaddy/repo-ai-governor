@@ -4,18 +4,18 @@
 
 - Status: active
 - Project: `project-015-memory-provider-pluginization`
-- Sprint: `sprint-001-registry-and-plugin-resolution-baseline`
+- Sprint: `sprint-002-built-in-registry-and-loader-foundation`
 - Docs root: `.repo-ai-governor/context/dev/project-015-memory-provider-pluginization`
-- Task records: `.repo-ai-governor/context/dev/project-015-memory-provider-pluginization/sprint-001-registry-and-plugin-resolution-baseline/tasks/`
-- Review records: `.repo-ai-governor/context/dev/project-015-memory-provider-pluginization/sprint-001-registry-and-plugin-resolution-baseline/review/`
+- Task records: `.repo-ai-governor/context/dev/project-015-memory-provider-pluginization/sprint-002-built-in-registry-and-loader-foundation/tasks/`
+- Review records: `.repo-ai-governor/context/dev/project-015-memory-provider-pluginization/sprint-002-built-in-registry-and-loader-foundation/review/`
 
 ## Active Streams
 
-- `primary`: project=`project-015-memory-provider-pluginization`, sprint=`sprint-001-registry-and-plugin-resolution-baseline`, docs=`.repo-ai-governor/context/dev/project-015-memory-provider-pluginization`, plan=`.repo-ai-governor/context/dev/project-015-memory-provider-pluginization/plan.md`, tasks=`.repo-ai-governor/context/dev/project-015-memory-provider-pluginization/sprint-001-registry-and-plugin-resolution-baseline/tasks/`, checklist=`.repo-ai-governor/context/dev/project-015-memory-provider-pluginization/sprint-001-registry-and-plugin-resolution-baseline/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-015-memory-provider-pluginization/sprint-001-registry-and-plugin-resolution-baseline/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-015-memory-provider-pluginization/sprint-001-registry-and-plugin-resolution-baseline/review/`, status=`active`
+- `primary`: project=`project-015-memory-provider-pluginization`, sprint=`sprint-002-built-in-registry-and-loader-foundation`, docs=`.repo-ai-governor/context/dev/project-015-memory-provider-pluginization`, plan=`.repo-ai-governor/context/dev/project-015-memory-provider-pluginization/plan.md`, tasks=`.repo-ai-governor/context/dev/project-015-memory-provider-pluginization/sprint-002-built-in-registry-and-loader-foundation/tasks/`, checklist=`.repo-ai-governor/context/dev/project-015-memory-provider-pluginization/sprint-002-built-in-registry-and-loader-foundation/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-015-memory-provider-pluginization/sprint-002-built-in-registry-and-loader-foundation/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-015-memory-provider-pluginization/sprint-002-built-in-registry-and-loader-foundation/review/`, status=`active`
 
 ## Planned Follow-Up Streams
 
-1. 当前无 planned follow-up stream。
+1. `planned-project-015-sprint-003`: project=`project-015-memory-provider-pluginization`, sprint=`sprint-003-optional-plugin-mode-and-policy-hardening`, docs=`.repo-ai-governor/context/dev/project-015-memory-provider-pluginization`, plan=`.repo-ai-governor/context/dev/project-015-memory-provider-pluginization/sprint-003-optional-plugin-mode-and-policy-hardening/plan.md`, tasks=`.repo-ai-governor/context/dev/project-015-memory-provider-pluginization/sprint-003-optional-plugin-mode-and-policy-hardening/tasks/`, checklist=`.repo-ai-governor/context/dev/project-015-memory-provider-pluginization/sprint-003-optional-plugin-mode-and-policy-hardening/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-015-memory-provider-pluginization/sprint-003-optional-plugin-mode-and-policy-hardening/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-015-memory-provider-pluginization/sprint-003-optional-plugin-mode-and-policy-hardening/review/`, status=`planned`
 
 ## Completed Stream History
 
