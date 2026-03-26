@@ -5,6 +5,10 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 const WORKSPACE_PACKAGE_DIRECTORY_BY_NAME: Record<string, string> = {
   "core-orchestration-service": "packages/core-orchestration-service",
   "core-runtime-langgraph": "packages/core-runtime-langgraph",
+  "memory-provider-fs-csv": "packages/memory-providers/fs-csv",
+  "memory-provider-registry": "packages/memory-provider-registry",
+  "memory-provider-sqlite-fs": "packages/memory-providers/sqlite-fs",
+  "memory-store-adapter": "packages/memory-store-adapter",
   "orchestration-service-client": "packages/orchestration-service-client",
   shared: "packages/shared",
 };

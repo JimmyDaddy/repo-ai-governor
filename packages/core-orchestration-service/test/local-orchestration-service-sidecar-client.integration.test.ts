@@ -5,6 +5,10 @@ import { join, resolve } from "node:path";
 import { ProcessCompiler, ProcessNodeType } from "@repo-ai-governor/core-process";
 import { CompiledIrGraphAdapter } from "@repo-ai-governor/core-runtime-langgraph";
 import {
+  MemoryProviderHostSurface,
+  MemoryProviderRuntimeMode,
+} from "@repo-ai-governor/memory-provider-registry";
+import {
   OrchestrationClientSurface,
   OrchestrationExecutionKind,
   OrchestrationExecutionStatus,
@@ -13,6 +17,7 @@ import {
   OrchestrationServiceLifecycleStatus,
   OrchestrationServiceTransportKind,
 } from "@repo-ai-governor/orchestration-service-client";
+import { MemoryStoreEngine } from "@repo-ai-governor/shared";
 import { LocalOrchestrationServiceSidecarClient } from "../src/index.js";
 
 function createGraphPlan() {
@@ -61,7 +66,16 @@ function createGraphPlan() {
 describe("LocalOrchestrationServiceSidecarClient", () => {
   it("runs a local sidecar host over Node IPC and preserves sidecar host descriptors", async () => {
     const temporaryRoot = await mkdtemp(join(tmpdir(), "local-orchestration-sidecar-"));
-    const client = new LocalOrchestrationServiceSidecarClient(temporaryRoot);
+    const client = new LocalOrchestrationServiceSidecarClient(temporaryRoot, {
+      memoryConfig: {
+        storeEngine: MemoryStoreEngine.SQLITE_FS,
+        storeRoot: "context/memory/sidecar-plugin",
+        provider: {
+          module: "@repo-ai-governor/memory-provider-sqlite-fs",
+          exportName: "createMemoryStoreProvider",
+        },
+      },
+    });
 
     try {
       const health = await client.getHealth();
@@ -120,14 +134,26 @@ describe("LocalOrchestrationServiceSidecarClient", () => {
       expect(health.lifecycleStatus).toBe(OrchestrationServiceLifecycleStatus.READY);
       expect(health.serviceHostKind).toBe(OrchestrationServiceHostKind.SIDECAR);
       expect(health.serviceTransportKind).toBe(OrchestrationServiceTransportKind.IPC);
+      expect(health.memoryProvider).toEqual(
+        expect.objectContaining({
+          memoryStoreProviderId: "@repo-ai-governor/memory-provider-sqlite-fs",
+          memoryStoreProviderModule: "@repo-ai-governor/memory-provider-sqlite-fs",
+          memoryStoreResolutionSource: "plugin_module",
+          memoryStoreHostSurface: MemoryProviderHostSurface.LOCAL_ORCHESTRATION_SERVICE,
+          memoryStoreRuntimeMode: MemoryProviderRuntimeMode.DAEMON,
+        }),
+      );
       expect(health.pid).toBeTypeOf("number");
       expect(started.serviceHostKind).toBe(OrchestrationServiceHostKind.SIDECAR);
       expect(started.serviceTransportKind).toBe(OrchestrationServiceTransportKind.IPC);
+      expect(started.memoryProvider).toEqual(health.memoryProvider);
       expect(recoveredExecution?.checkpointSource).toBe("sqlite-fs");
       expect(summary?.serviceHostKind).toBe(OrchestrationServiceHostKind.SIDECAR);
       expect(summary?.serviceTransportKind).toBe(OrchestrationServiceTransportKind.IPC);
+      expect(summary?.memoryProvider).toEqual(health.memoryProvider);
       expect(summary?.checkpointPath).toContain("langgraph-checkpoints.sqlite#");
       expect(listed.executions).toHaveLength(1);
+      expect(listed.executions[0]?.memoryProvider).toEqual(health.memoryProvider);
       expect(subscription.events.map((event) => event.type)).toEqual([
         OrchestrationServiceEventType.EXECUTION_STARTED,
         OrchestrationServiceEventType.STAGE_COMPLETED,

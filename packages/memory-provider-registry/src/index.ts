@@ -17,6 +17,7 @@ export {
 export { MemoryProviderRegistry } from "./memory-provider-registry.js";
 export type {
   MemoryProviderBuiltInDescriptor,
+  MemoryProviderCompositionSummary,
   MemoryProviderConstructor,
   MemoryProviderInstanceOptions,
   MemoryProviderModuleLoader,

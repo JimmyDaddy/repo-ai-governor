@@ -20,6 +20,7 @@ import type {
 } from "@repo-ai-governor/orchestration-service-client";
 import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
 import {
+  LOCAL_ORCHESTRATION_SERVICE_SIDECAR_MEMORY_CONFIG_ENV,
   LOCAL_ORCHESTRATION_SERVICE_SIDECAR_PROTOCOL_VERSION,
   LocalOrchestrationServiceSidecarOperation,
 } from "./constants/index.js";
@@ -226,11 +227,11 @@ export class LocalOrchestrationServiceSidecarClient {
               this.workspaceRoot,
               sidecarEntryPath,
               execArgv,
-              this.dependencies.env ?? process.env,
+              this.resolveSidecarEnvironment(),
             )
           : fork(sidecarEntryPath, ["--workspace-root", this.workspaceRoot], {
               execArgv,
-              env: this.dependencies.env ?? process.env,
+              env: this.resolveSidecarEnvironment(),
               stdio: ["ignore", "ignore", "pipe", "ipc"],
             });
         childProcess.stderr?.setEncoding("utf8");
@@ -344,6 +345,22 @@ export class LocalOrchestrationServiceSidecarClient {
     }
 
     return [];
+  }
+
+  /**
+   * Builds the sidecar environment, including optional serialized memory config.
+   * @returns Environment passed to the child sidecar process.
+   */
+  private resolveSidecarEnvironment(): NodeJS.ProcessEnv {
+    const resolvedEnvironment = {
+      ...(this.dependencies.env ?? process.env),
+    };
+    if (this.dependencies.memoryConfig) {
+      resolvedEnvironment[LOCAL_ORCHESTRATION_SERVICE_SIDECAR_MEMORY_CONFIG_ENV] = JSON.stringify(
+        this.dependencies.memoryConfig,
+      );
+    }
+    return resolvedEnvironment;
   }
 
   private isResponseEnvelope(

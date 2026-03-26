@@ -4,6 +4,10 @@ import { resolve } from "node:path";
 
 import { LocalOrchestrationServiceShell } from "@repo-ai-governor/core-orchestration-service";
 import {
+  MemoryProviderHostSurface,
+  MemoryProviderRuntimeMode,
+} from "@repo-ai-governor/memory-provider-registry";
+import {
   OrchestrationClientSurface,
   OrchestrationExecutionKind,
   OrchestrationExecutionStatus,
@@ -11,6 +15,7 @@ import {
   OrchestrationServiceHostKind,
   OrchestrationServiceTransportKind,
 } from "@repo-ai-governor/orchestration-service-client";
+import { MemoryStoreEngine } from "@repo-ai-governor/shared";
 import { CliOrchestrationServiceRuntimeMode } from "../../src/constants/orchestration-service-runtime.constant.js";
 import { CliOrchestrationServiceRuntime } from "../../src/runtime/orchestration-service-runtime.js";
 
@@ -32,14 +37,23 @@ describe("CliOrchestrationServiceRuntime", () => {
 
       try {
         const runtime = new CliOrchestrationServiceRuntime(workspaceRoot, {
+          memoryConfig: {
+            storeEngine: MemoryStoreEngine.FS_CSV,
+            storeRoot: "context/memory/runtime-test",
+          },
           serviceOwnerProvider: async (root) =>
             new LocalOrchestrationServiceShell({
               workspaceRoot: root,
+              memoryConfig: {
+                storeEngine: MemoryStoreEngine.FS_CSV,
+                storeRoot: "context/memory/runtime-test",
+              },
               serviceHostKind: hostKind,
               serviceTransportKind: transportKind,
             }),
         });
 
+        const health = await runtime.getHealth();
         const started = await runtime.startExecution(
           {
             workspaceId: "test-workspace",
@@ -86,13 +100,27 @@ describe("CliOrchestrationServiceRuntime", () => {
           executionId: started.executionId,
         });
 
+        expect(health.memoryProvider).toEqual(
+          expect.objectContaining({
+            memoryStoreProviderId: "fs-csv",
+            memoryStoreHostSurface: MemoryProviderHostSurface.LOCAL_ORCHESTRATION_SERVICE,
+            memoryStoreRuntimeMode:
+              hostKind === OrchestrationServiceHostKind.EMBEDDED &&
+              transportKind === OrchestrationServiceTransportKind.IN_PROCESS
+                ? MemoryProviderRuntimeMode.EMBEDDED
+                : MemoryProviderRuntimeMode.DAEMON,
+          }),
+        );
         expect(started.serviceHostKind).toBe(hostKind);
         expect(started.serviceTransportKind).toBe(transportKind);
+        expect(started.memoryProvider).toEqual(health.memoryProvider);
         expect(summary?.serviceHostKind).toBe(hostKind);
         expect(summary?.serviceTransportKind).toBe(transportKind);
+        expect(summary?.memoryProvider).toEqual(health.memoryProvider);
         expect(listed.executions).toHaveLength(1);
         expect(listed.executions[0]?.serviceHostKind).toBe(hostKind);
         expect(listed.executions[0]?.serviceTransportKind).toBe(transportKind);
+        expect(listed.executions[0]?.memoryProvider).toEqual(health.memoryProvider);
         expect(subscription.serviceHostKind).toBe(hostKind);
         expect(subscription.serviceTransportKind).toBe(transportKind);
         expect(subscription.latestEventSequence).toBeGreaterThan(0);
@@ -114,6 +142,14 @@ describe("CliOrchestrationServiceRuntime", () => {
     try {
       const runtime = new CliOrchestrationServiceRuntime(workspaceRoot, {
         runtimeMode: CliOrchestrationServiceRuntimeMode.SIDECAR_IPC,
+        memoryConfig: {
+          storeEngine: MemoryStoreEngine.SQLITE_FS,
+          storeRoot: "context/memory/sidecar-runtime",
+          provider: {
+            module: "@repo-ai-governor/memory-provider-sqlite-fs",
+            exportName: "createMemoryStoreProvider",
+          },
+        },
       });
 
       const health = await runtime.getHealth();
@@ -133,8 +169,17 @@ describe("CliOrchestrationServiceRuntime", () => {
 
       expect(health.serviceHostKind).toBe(OrchestrationServiceHostKind.SIDECAR);
       expect(health.serviceTransportKind).toBe(OrchestrationServiceTransportKind.IPC);
+      expect(health.memoryProvider).toEqual(
+        expect.objectContaining({
+          memoryStoreProviderId: "@repo-ai-governor/memory-provider-sqlite-fs",
+          memoryStoreProviderModule: "@repo-ai-governor/memory-provider-sqlite-fs",
+          memoryStoreHostSurface: MemoryProviderHostSurface.LOCAL_ORCHESTRATION_SERVICE,
+          memoryStoreRuntimeMode: MemoryProviderRuntimeMode.DAEMON,
+        }),
+      );
       expect(started.serviceHostKind).toBe(OrchestrationServiceHostKind.SIDECAR);
       expect(started.serviceTransportKind).toBe(OrchestrationServiceTransportKind.IPC);
+      expect(started.memoryProvider).toEqual(health.memoryProvider);
 
       await runtime.dispose();
     } finally {

@@ -127,6 +127,8 @@ describe("Memory store config and CLI composition smoke", () => {
       expect(payload.diagnostics.memoryStoreProvider).toBe("SqliteFsMemoryStoreProvider");
       expect(payload.diagnostics.memoryStoreProviderId).toBe("sqlite-fs");
       expect(payload.diagnostics.memoryStoreDistributionMode).toBe("optional");
+      expect(payload.diagnostics.memoryStoreHostSurface).toBe("cli");
+      expect(payload.diagnostics.memoryStoreRuntimeMode).toBe("embedded");
       expect(payload.diagnostics.memoryStoreRoot).toContain("context/memory/sqlite");
     } finally {
       await rm(repositoryRoot, { recursive: true, force: true });
@@ -187,6 +189,8 @@ describe("Memory store config and CLI composition smoke", () => {
       );
       expect(payload.diagnostics.memoryStoreDistributionMode).toBe("optional");
       expect(payload.diagnostics.memoryStoreResolutionSource).toBe("plugin_module");
+      expect(payload.diagnostics.memoryStoreHostSurface).toBe("cli");
+      expect(payload.diagnostics.memoryStoreRuntimeMode).toBe("embedded");
       expect(payload.diagnostics.memoryStoreRoot).toContain("context/memory/plugin-sqlite");
     } finally {
       await rm(repositoryRoot, { recursive: true, force: true });

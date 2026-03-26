@@ -24,6 +24,7 @@ const DEFAULT_ITERATIONS = 3;
 const DEFAULT_REQUIRED_CHAIN = ["--help", "init", "doctor", "check"];
 const DEFAULT_DISTRIBUTION_MODE = "default";
 const PLUGIN_ENABLED_DISTRIBUTION_MODE = "plugin-enabled";
+const PUBLISHED_PACKAGE_NAME = "@cjhdev/repo-ai-governor";
 const WORKSPACE_ROLLBACK_BASELINE_MODE = "path";
 const READ_ONLY_ATTACH_PRECHECK_MODE = "path";
 
@@ -270,6 +271,60 @@ function buildIsolatedRuntimeEnv(homePath) {
     USERPROFILE: homePath,
     XDG_CONFIG_HOME: xdgConfigHomePath,
     CI: "1",
+  };
+}
+
+/**
+ * Asserts one actual memory-provider summary against expected string fields.
+ * @param {unknown} actualMemoryProvider Actual summary payload.
+ * @param {Record<string, string>} expectedMemoryProvider Expected summary fields.
+ * @param {string} label Assertion label.
+ */
+function assertExpectedMemoryProvider(actualMemoryProvider, expectedMemoryProvider, label) {
+  if (
+    !actualMemoryProvider ||
+    typeof actualMemoryProvider !== "object" ||
+    Array.isArray(actualMemoryProvider)
+  ) {
+    throw new Error(`${label} did not provide a memoryProvider payload.`);
+  }
+
+  for (const [fieldName, expectedValue] of Object.entries(expectedMemoryProvider)) {
+    if (actualMemoryProvider[fieldName] !== expectedValue) {
+      throw new Error(
+        `${label} returned memoryProvider.${fieldName}="${String(actualMemoryProvider[fieldName])}", expected "${expectedValue}"`,
+      );
+    }
+  }
+}
+
+/**
+ * Resolves expected service-host memory-provider summary for one distribution mode.
+ * @param {"default" | "plugin-enabled"} distributionMode Selected distribution mode.
+ * @returns {Record<string, string>}
+ */
+function resolveExpectedServiceHostMemoryProvider(distributionMode) {
+  if (distributionMode === PLUGIN_ENABLED_DISTRIBUTION_MODE) {
+    return {
+      memoryStoreEngine: "sqlite_fs",
+      memoryStoreProvider: "@repo-ai-governor/memory-provider-sqlite-fs",
+      memoryStoreProviderId: "@repo-ai-governor/memory-provider-sqlite-fs",
+      memoryStoreProviderModule: "@repo-ai-governor/memory-provider-sqlite-fs",
+      memoryStoreDistributionMode: "optional",
+      memoryStoreResolutionSource: "plugin_module",
+      memoryStoreHostSurface: "local_orchestration_service",
+      memoryStoreRuntimeMode: "daemon",
+    };
+  }
+
+  return {
+    memoryStoreEngine: "fs_csv",
+    memoryStoreProvider: "FsCsvMemoryStoreProvider",
+    memoryStoreProviderId: "fs-csv",
+    memoryStoreDistributionMode: "default",
+    memoryStoreResolutionSource: "legacy_store_engine",
+    memoryStoreHostSurface: "local_orchestration_service",
+    memoryStoreRuntimeMode: "daemon",
   };
 }
 
@@ -821,6 +876,164 @@ function runPluginEnabledMemoryProviderScenario(options) {
 }
 
 /**
+ * Builds one clean-room script that validates service-host memory-provider reuse through the installed package.
+ * @param {"default" | "plugin-enabled"} distributionMode Selected distribution mode.
+ * @returns {string}
+ */
+function createServiceHostMemoryProviderCheckScript(distributionMode) {
+  const memoryConfigSource =
+    distributionMode === PLUGIN_ENABLED_DISTRIBUTION_MODE
+      ? `{
+  storeEngine: "sqlite_fs",
+  storeRoot: "context/memory/service-host-plugin",
+  provider: {
+    module: "@repo-ai-governor/memory-provider-sqlite-fs",
+    exportName: "createMemoryStoreProvider",
+  },
+}`
+      : `{
+  storeEngine: "fs_csv",
+  storeRoot: "context/memory/service-host-default",
+}`;
+
+  return [
+    'import { resolve } from "node:path";',
+    "import {",
+    "  LocalOrchestrationServiceSidecarClient,",
+    "  OrchestrationClientSurface,",
+    "  OrchestrationExecutionKind,",
+    `} from "${PUBLISHED_PACKAGE_NAME}/service-host";`,
+    "",
+    "const repositoryPath = process.cwd();",
+    "const workspaceRoot = resolve(repositoryPath, '.repo-ai-governor');",
+    `const memoryConfig = ${memoryConfigSource};`,
+    "const runtime = new LocalOrchestrationServiceSidecarClient(workspaceRoot, {",
+    "  memoryConfig,",
+    "});",
+    "",
+    "try {",
+    "  const health = await runtime.getHealth();",
+    "  const started = await runtime.startExecution(",
+    "    {",
+    '      workspaceId: "cleanroom-service-host",',
+    "      workspaceRoot,",
+    "      executionKind: OrchestrationExecutionKind.RUN,",
+    "      clientSurface: OrchestrationClientSurface.DESKTOP,",
+    "    },",
+    "    {",
+    '      processId: "cleanroom-service-host-process",',
+    `      executionId: "cleanroom-service-host-${distributionMode}",`,
+    `      executionSessionId: "cleanroom-service-host-session-${distributionMode}",`,
+    "    },",
+    "  );",
+    "  const summary = await runtime.getExecution(started.executionId);",
+    "  const listed = await runtime.listExecutions({",
+    "    filter: {",
+    '      workspaceId: "cleanroom-service-host",',
+    "    },",
+    "  });",
+    "  console.log(",
+    "    JSON.stringify({",
+    "      health,",
+    "      started,",
+    "      summary,",
+    "      listed,",
+    "    }),",
+    "  );",
+    "} finally {",
+    "  await runtime.dispose();",
+    "}",
+    "",
+  ].join("\n");
+}
+
+/**
+ * Runs one installed-package service-host memory-provider scenario.
+ * @param {{
+ *   mode: string;
+ *   workingRoot: string;
+ *   installAssets: {repositoryRoot: string; tarballPath: string | null};
+ *   distributionMode: "default" | "plugin-enabled";
+ * }} options Scenario options.
+ * @returns {Record<string, unknown>}
+ */
+function runServiceHostMemoryProviderScenario(options) {
+  const scenarioRoot = resolve(options.workingRoot, `service-host-memory-${options.mode}`);
+  const repositoryPath = resolve(scenarioRoot, "target-repo");
+  const homePath = resolve(scenarioRoot, "home");
+  const runtimeEnv = buildIsolatedRuntimeEnv(homePath);
+  initializeCleanroomRepository(repositoryPath, `cleanroom-service-host-${options.mode}`);
+  const install = installCleanroomPackage({
+    mode: options.mode,
+    repositoryPath,
+    runtimeEnv,
+    installAssets: options.installAssets,
+  });
+
+  const scriptPath = resolve(repositoryPath, "service-host-memory-check.mjs");
+  writeFileSync(
+    scriptPath,
+    createServiceHostMemoryProviderCheckScript(options.distributionMode),
+    "utf8",
+  );
+
+  const executionStep = runCommand("node", [scriptPath], {
+    cwd: repositoryPath,
+    env: runtimeEnv,
+    label: `service-host-memory(${options.mode}/${options.distributionMode})`,
+  });
+  const executionPayload = parseJsonOutput(
+    executionStep.stdout,
+    `service-host-memory(${options.mode}/${options.distributionMode})`,
+  );
+  const expectedMemoryProvider = resolveExpectedServiceHostMemoryProvider(options.distributionMode);
+
+  if (executionPayload.health?.serviceHostKind !== "sidecar") {
+    throw new Error(
+      `Expected service-host health host kind to be "sidecar". actual=${String(executionPayload.health?.serviceHostKind)}`,
+    );
+  }
+  if (executionPayload.health?.serviceTransportKind !== "ipc") {
+    throw new Error(
+      `Expected service-host health transport kind to be "ipc". actual=${String(executionPayload.health?.serviceTransportKind)}`,
+    );
+  }
+  assertExpectedMemoryProvider(
+    executionPayload.health?.memoryProvider,
+    expectedMemoryProvider,
+    "service-host health",
+  );
+  assertExpectedMemoryProvider(
+    executionPayload.started?.memoryProvider,
+    expectedMemoryProvider,
+    "service-host startExecution",
+  );
+  assertExpectedMemoryProvider(
+    executionPayload.summary?.memoryProvider,
+    expectedMemoryProvider,
+    "service-host getExecution",
+  );
+  assertExpectedMemoryProvider(
+    executionPayload.listed?.executions?.[0]?.memoryProvider,
+    expectedMemoryProvider,
+    "service-host listExecutions",
+  );
+
+  return {
+    mode: options.mode,
+    status: "passed",
+    distributionMode: options.distributionMode,
+    repositoryPath,
+    install,
+    serviceHostCheck: {
+      command: executionStep.command,
+      durationMs: executionStep.durationMs,
+      payload: executionPayload,
+    },
+  };
+}
+
+/**
  * Parses `pnpm pack --json` output payload.
  * @param {string} rawOutput Raw stdout from `pnpm pack --json`.
  * @returns {{filename: string}}
@@ -938,6 +1151,8 @@ let workspaceSwitchRollback = null;
 let readOnlyAttachPrecheck = null;
 /** @type {Array<Record<string, unknown>>} */
 let pluginEnabledMemoryProviderScenarios = [];
+/** @type {Array<Record<string, unknown>>} */
+let serviceHostMemoryProviderScenarios = [];
 
 try {
   for (const mode of options.modes) {
@@ -988,6 +1203,20 @@ try {
   });
   gateInfo(GATE_NAME, "read-only attach precheck passed.");
 
+  serviceHostMemoryProviderScenarios = options.modes.map((mode) => {
+    const scenario = runServiceHostMemoryProviderScenario({
+      mode,
+      workingRoot: createdTempRoot,
+      installAssets,
+      distributionMode: options.distributionMode,
+    });
+    gateInfo(
+      GATE_NAME,
+      `service-host memory provider scenario passed for mode=${mode} distribution_mode=${options.distributionMode}.`,
+    );
+    return scenario;
+  });
+
   if (options.distributionMode === PLUGIN_ENABLED_DISTRIBUTION_MODE) {
     pluginEnabledMemoryProviderScenarios = options.modes.map((mode) => {
       const scenario = runPluginEnabledMemoryProviderScenario({
@@ -1017,6 +1246,7 @@ const reportPayload = {
   modeResults,
   workspaceSwitchRollback,
   readOnlyAttachPrecheck,
+  serviceHostMemoryProviderScenarios,
   pluginEnabledMemoryProviderScenarios,
   stage9aHardExit: {
     requiredModeMinimum: 2,

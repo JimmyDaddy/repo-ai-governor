@@ -307,6 +307,9 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
       memoryStoreRoot: activeMemoryStoreComposition.memoryStoreRoot,
       memoryStoreProviderName: activeMemoryStoreComposition.providerName,
       memoryStoreProvider: activeMemoryStoreComposition.provider,
+      orchestrationServiceRuntimeDependencies: {
+        memoryConfig: runtimeContext.memory,
+      },
       adaptersConfig: runtimeContext.adapters,
       runtimeDebugOptions,
       ...(codexExecRunner
@@ -385,18 +388,7 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
             workspaceModeSource: runtimeContext.workspace.modeSource,
             workspaceId: runtimeContext.workspace.workspaceId,
             workspaceRoot: runtimeContext.workspace.workspaceRoot,
-            memoryStoreEngine: runtimeContext.memory.storeEngine,
-            memoryStoreRoot: activeMemoryStoreComposition.memoryStoreRoot,
-            memoryStoreProvider: activeMemoryStoreComposition.providerName,
-            memoryStoreProviderId: activeMemoryStoreComposition.descriptor.id,
-            ...(activeMemoryStoreComposition.descriptor.kind === "plugin"
-              ? {
-                  memoryStoreProviderModule:
-                    activeMemoryStoreComposition.descriptor.moduleSpecifier,
-                }
-              : {}),
-            memoryStoreDistributionMode: activeMemoryStoreComposition.descriptor.distributionMode,
-            memoryStoreResolutionSource: activeMemoryStoreComposition.resolutionSource,
+            ...activeMemoryStoreComposition.summary,
             ...(ideWrapperEnvironment.entrySurface
               ? {
                   entrySurface: ideWrapperEnvironment.entrySurface,

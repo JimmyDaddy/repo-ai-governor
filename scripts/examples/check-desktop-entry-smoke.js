@@ -8,6 +8,8 @@ import { pathToFileURL } from "node:url";
 import { gateFail, gateInfo, gatePass } from "../governance/gate-output.js";
 
 const GATE_NAME = "desktop-entry-smoke";
+const DEFAULT_DISTRIBUTION_MODE = "default";
+const PLUGIN_ENABLED_DISTRIBUTION_MODE = "plugin-enabled";
 const DESKTOP_README_PATH = "integrations/desktop/README.md";
 const DESKTOP_EXAMPLES_README_PATH = "integrations/desktop/examples/README.md";
 const DESKTOP_SAMPLE_PATH = "integrations/desktop/examples/desktop-sidecar-runtime.sample.json";
@@ -51,6 +53,52 @@ function assertNonEmptyString(value, fieldName) {
 }
 
 /**
+ * Parses CLI options for distribution-sensitive smoke coverage.
+ * @returns {{distributionMode: "default" | "plugin-enabled"}}
+ */
+function parseCliOptions() {
+  const rawArgs = process.argv.slice(2);
+  const distributionModeIndex = rawArgs.findIndex((arg) => arg === "--distribution-mode");
+  if (distributionModeIndex === -1) {
+    return {
+      distributionMode: DEFAULT_DISTRIBUTION_MODE,
+    };
+  }
+
+  const candidateMode = rawArgs[distributionModeIndex + 1]?.trim();
+  if (
+    candidateMode !== DEFAULT_DISTRIBUTION_MODE &&
+    candidateMode !== PLUGIN_ENABLED_DISTRIBUTION_MODE
+  ) {
+    throw new Error('Expected "--distribution-mode" to be "default" or "plugin-enabled".');
+  }
+
+  return {
+    distributionMode: candidateMode,
+  };
+}
+
+/**
+ * Normalizes expected memory-provider composition from the desktop sample.
+ * @param {unknown} expectedRaw Raw expected block.
+ * @param {string} fieldName Field name for diagnostics.
+ * @returns {Record<string, string>}
+ */
+function normalizeExpectedMemoryProvider(expectedRaw, fieldName) {
+  if (!expectedRaw || typeof expectedRaw !== "object" || Array.isArray(expectedRaw)) {
+    throw new Error(`Field "${fieldName}" must be an object.`);
+  }
+
+  const normalizedEntries = {};
+  for (const [key, value] of Object.entries(expectedRaw)) {
+    assertNonEmptyString(value, `${fieldName}.${key}`);
+    normalizedEntries[key] = value.trim();
+  }
+
+  return normalizedEntries;
+}
+
+/**
  * Normalizes desktop sample payload.
  * @param {unknown} sampleRaw Parsed sample JSON.
  * @returns {{
@@ -60,6 +108,8 @@ function assertNonEmptyString(value, fieldName) {
  *   expectedServiceHostKind: string;
  *   expectedServiceTransportKind: string;
  *   expectedLifecycleStatus: string;
+ *   defaultMemoryProvider: Record<string, string>;
+ *   pluginEnabledMemoryProvider: Record<string, string>;
  *   requiredOperations: string[];
  * }}
  */
@@ -86,6 +136,14 @@ function normalizeSample(sampleRaw) {
     expectedServiceHostKind: sampleRaw.expectedServiceHostKind.trim(),
     expectedServiceTransportKind: sampleRaw.expectedServiceTransportKind.trim(),
     expectedLifecycleStatus: sampleRaw.expectedLifecycleStatus.trim(),
+    defaultMemoryProvider: normalizeExpectedMemoryProvider(
+      sampleRaw.defaultMemoryProvider,
+      "defaultMemoryProvider",
+    ),
+    pluginEnabledMemoryProvider: normalizeExpectedMemoryProvider(
+      sampleRaw.pluginEnabledMemoryProvider,
+      "pluginEnabledMemoryProvider",
+    ),
     requiredOperations: sampleRaw.requiredOperations.map((entry, index) => {
       assertNonEmptyString(entry, `requiredOperations[${index}]`);
       return entry.trim();
@@ -104,7 +162,32 @@ async function importDistModule(relativePath) {
   return await import(pathToFileURL(absolutePath).href);
 }
 
+/**
+ * Asserts one actual memory-provider composition against expected string fields.
+ * @param {unknown} actualMemoryProvider Actual runtime composition.
+ * @param {Record<string, string>} expectedMemoryProvider Expected memory-provider fields.
+ * @param {string} label Assertion label.
+ */
+function assertExpectedMemoryProvider(actualMemoryProvider, expectedMemoryProvider, label) {
+  if (
+    !actualMemoryProvider ||
+    typeof actualMemoryProvider !== "object" ||
+    Array.isArray(actualMemoryProvider)
+  ) {
+    throw new Error(`${label} did not provide a memoryProvider payload.`);
+  }
+
+  for (const [fieldName, expectedValue] of Object.entries(expectedMemoryProvider)) {
+    if (actualMemoryProvider[fieldName] !== expectedValue) {
+      throw new Error(
+        `${label} returned memoryProvider.${fieldName}="${String(actualMemoryProvider[fieldName])}", expected "${expectedValue}"`,
+      );
+    }
+  }
+}
+
 try {
+  const options = parseCliOptions();
   ensureFileExists(DESKTOP_README_PATH);
   ensureFileExists(DESKTOP_EXAMPLES_README_PATH);
   ensureFileExists(DESKTOP_SAMPLE_PATH);
@@ -114,6 +197,10 @@ try {
   ensureFileExists(DIST_CORE_ORCHESTRATION_SIDECAR_ENTRY_PATH);
 
   const sample = normalizeSample(readJson(DESKTOP_SAMPLE_PATH));
+  const expectedMemoryProvider =
+    options.distributionMode === PLUGIN_ENABLED_DISTRIBUTION_MODE
+      ? sample.pluginEnabledMemoryProvider
+      : sample.defaultMemoryProvider;
   const [{ CliOrchestrationServiceRuntime }, { CliOrchestrationServiceRuntimeMode }, clientIndex] =
     await Promise.all([
       importDistModule(DIST_CLI_RUNTIME_PATH),
@@ -144,6 +231,20 @@ try {
   try {
     const runtime = new CliOrchestrationServiceRuntime(workspaceRoot, {
       runtimeMode: CliOrchestrationServiceRuntimeMode.SIDECAR_IPC,
+      memoryConfig:
+        options.distributionMode === PLUGIN_ENABLED_DISTRIBUTION_MODE
+          ? {
+              storeEngine: "sqlite_fs",
+              storeRoot: "context/memory/desktop-plugin",
+              provider: {
+                module: "@repo-ai-governor/memory-provider-sqlite-fs",
+                exportName: "createMemoryStoreProvider",
+              },
+            }
+          : {
+              storeEngine: "fs_csv",
+              storeRoot: "context/memory/desktop-default",
+            },
     });
 
     const health = await runtime.getHealth();
@@ -176,6 +277,7 @@ try {
       message: "desktop execution completed",
     });
 
+    const summary = await runtime.getExecution(started.executionId);
     const listed = await runtime.listExecutions({
       filter: {
         workspaceId: "desktop-workspace",
@@ -200,15 +302,35 @@ try {
         `desktop sidecar health returned transport="${health.serviceTransportKind}", expected "${sample.expectedServiceTransportKind}"`,
       );
     }
+    assertExpectedMemoryProvider(
+      health.memoryProvider,
+      expectedMemoryProvider,
+      "desktop sidecar health",
+    );
     if (started.serviceHostKind !== sample.expectedServiceHostKind) {
       throw new Error("desktop sidecar execution host kind drifted from sample baseline.");
     }
     if (started.serviceTransportKind !== sample.expectedServiceTransportKind) {
       throw new Error("desktop sidecar execution transport kind drifted from sample baseline.");
     }
+    assertExpectedMemoryProvider(
+      started.memoryProvider,
+      expectedMemoryProvider,
+      "desktop sidecar startExecution",
+    );
+    assertExpectedMemoryProvider(
+      summary?.memoryProvider,
+      expectedMemoryProvider,
+      "desktop sidecar getExecution",
+    );
     if (listed.executions.length !== 1) {
       throw new Error(`desktop sidecar listExecutions returned ${listed.executions.length} items.`);
     }
+    assertExpectedMemoryProvider(
+      listed.executions[0]?.memoryProvider,
+      expectedMemoryProvider,
+      "desktop sidecar listExecutions",
+    );
     if (subscribed.serviceHostKind !== sample.expectedServiceHostKind) {
       throw new Error("desktop sidecar subscribeExecution host kind drifted from sample baseline.");
     }
@@ -224,7 +346,7 @@ try {
     await runtime.dispose();
     gateInfo(
       GATE_NAME,
-      `desktop sidecar runtime smoke passed operations=${sample.requiredOperations.join(",")}`,
+      `desktop sidecar runtime smoke passed operations=${sample.requiredOperations.join(",")} distribution_mode=${options.distributionMode}`,
     );
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
@@ -232,7 +354,7 @@ try {
 
   gatePass(
     GATE_NAME,
-    `desktop execution surface verified using ${sample.runtimeMode} and ${sample.expectedServiceHostKind}/${sample.expectedServiceTransportKind}`,
+    `desktop execution surface verified using ${sample.runtimeMode} and ${sample.expectedServiceHostKind}/${sample.expectedServiceTransportKind} distribution_mode=${options.distributionMode}`,
   );
 } catch (error) {
   gateFail(GATE_NAME, error instanceof Error ? error.message : String(error));

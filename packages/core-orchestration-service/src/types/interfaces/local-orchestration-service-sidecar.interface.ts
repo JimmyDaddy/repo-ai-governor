@@ -15,7 +15,7 @@ import type {
   OrchestrationSubscribeExecutionRequest,
   OrchestrationSubscribeExecutionResponse,
 } from "@repo-ai-governor/orchestration-service-client";
-import type { GovernorErrorCode } from "@repo-ai-governor/shared";
+import type { GovernorErrorCode, MemoryRuntimeConfig } from "@repo-ai-governor/shared";
 import type { LocalOrchestrationServiceSidecarOperation } from "../../constants/index.js";
 import type {
   LocalOrchestrationServicePublishEventRequest,
@@ -84,6 +84,7 @@ export interface LocalOrchestrationServiceSidecarHostDependencies
 export interface LocalOrchestrationServiceSidecarClientDependencies {
   sidecarEntryPath?: string;
   requestTimeoutMs?: number;
+  memoryConfig?: MemoryRuntimeConfig;
   env?: NodeJS.ProcessEnv;
   execArgv?: string[];
   childProcessFactory?: (

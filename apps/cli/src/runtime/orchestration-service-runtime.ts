@@ -122,6 +122,11 @@ export class CliOrchestrationServiceRuntime {
             "@repo-ai-governor/core-orchestration-service"
           );
           return new LocalOrchestrationServiceSidecarClient(this.workspaceRoot, {
+            ...(this.dependencies.memoryConfig
+              ? {
+                  memoryConfig: this.dependencies.memoryConfig,
+                }
+              : {}),
             ...this.dependencies.sidecarClientDependencies,
           }) as CliOrchestrationServiceOwner;
         }
@@ -130,6 +135,12 @@ export class CliOrchestrationServiceRuntime {
         );
         return new LocalOrchestrationServiceShell({
           workspaceRoot: this.workspaceRoot,
+          ...(this.dependencies.memoryConfig
+            ? {
+                memoryConfig: this.dependencies.memoryConfig,
+              }
+            : {}),
+          ...this.dependencies.embeddedShellDependencies,
         });
       })().catch((error) => {
         this.serviceOwnerPromise = null;

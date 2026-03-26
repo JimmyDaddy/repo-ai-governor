@@ -5,6 +5,10 @@ import { join } from "node:path";
 import { ProcessCompiler, ProcessNodeType } from "@repo-ai-governor/core-process";
 import { CompiledIrGraphAdapter } from "@repo-ai-governor/core-runtime-langgraph";
 import {
+  MemoryProviderHostSurface,
+  MemoryProviderRuntimeMode,
+} from "@repo-ai-governor/memory-provider-registry";
+import {
   OrchestrationClientSurface,
   OrchestrationExecutionKind,
   OrchestrationExecutionStatus,
@@ -13,7 +17,12 @@ import {
   OrchestrationServiceLifecycleStatus,
   OrchestrationServiceTransportKind,
 } from "@repo-ai-governor/orchestration-service-client";
-import { GovernorError, GovernorErrorCode, standardizeError } from "@repo-ai-governor/shared";
+import {
+  GovernorError,
+  GovernorErrorCode,
+  MemoryStoreEngine,
+  standardizeError,
+} from "@repo-ai-governor/shared";
 import { LocalOrchestrationServiceShell } from "../src/index.js";
 
 function createGraphPlan() {
@@ -238,6 +247,49 @@ describe("core-orchestration-service local shell", () => {
         OrchestrationServiceEventType.ARTIFACT_READY,
       );
       expect(subscription.events[2]?.artifactPath).toBe(decisionResult.decisionReceiptArtifactPath);
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("resolves memory provider composition through the shared loader and exposes it in health and execution summaries", async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), "local-orchestration-shell-memory-"));
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot: temporaryRoot,
+      memoryConfig: {
+        storeEngine: MemoryStoreEngine.FS_CSV,
+        storeRoot: "context/memory/service-shared-loader",
+      },
+      executionIdProvider: () => "exec-shell-memory-001",
+      executionSessionIdProvider: () => "session-shell-memory-001",
+    });
+
+    try {
+      const health = await orchestrationService.getHealth();
+      const started = await orchestrationService.startExecution(
+        {
+          workspaceId: "workspace-memory",
+          workspaceRoot: temporaryRoot,
+          executionKind: OrchestrationExecutionKind.RUN,
+          clientSurface: OrchestrationClientSurface.DESKTOP,
+        },
+        {
+          processId: "process-orchestration-shell-memory",
+        },
+      );
+      const summary = await orchestrationService.getExecution(started.executionId);
+
+      expect(health.memoryProvider).toEqual(
+        expect.objectContaining({
+          memoryStoreProviderId: "fs-csv",
+          memoryStoreDistributionMode: "default",
+          memoryStoreResolutionSource: "legacy_store_engine",
+          memoryStoreHostSurface: MemoryProviderHostSurface.LOCAL_ORCHESTRATION_SERVICE,
+          memoryStoreRuntimeMode: MemoryProviderRuntimeMode.EMBEDDED,
+        }),
+      );
+      expect(started.memoryProvider).toEqual(health.memoryProvider);
+      expect(summary?.memoryProvider).toEqual(health.memoryProvider);
     } finally {
       await rm(temporaryRoot, { recursive: true, force: true });
     }

@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 
-import { cpSync, existsSync, mkdirSync, rmSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
 const PROJECT_ROOT = process.cwd();
 const COMPILED_CLI_ENTRY_PATH = resolve(PROJECT_ROOT, "dist/bin/repo-ai-governor.js");
 const DIST_SCOPE_NODE_MODULES = resolve(PROJECT_ROOT, "dist/node_modules/@repo-ai-governor");
+const DIST_PUBLISHED_SURFACES_ROOT = resolve(PROJECT_ROOT, "dist/packages/published-surfaces");
 const DEFAULT_DISTRIBUTION_MODE = "default";
 const PLUGIN_ENABLED_DISTRIBUTION_MODE = "plugin-enabled";
 const SUPPORTED_DISTRIBUTION_MODES = new Set([
@@ -267,9 +268,68 @@ function materializeWorkspacePackagesForDistributionRuntime(distributionMode) {
   }
 }
 
+/**
+ * Writes stable published-package wrappers for supported local service-host consumption.
+ */
+function writePublishedSurfaceWrappers() {
+  mkdirSync(DIST_PUBLISHED_SURFACES_ROOT, { recursive: true });
+
+  const serviceHostRuntimeModulePath =
+    "../../node_modules/@repo-ai-governor/core-orchestration-service/dist/src/index.js";
+  const orchestrationClientModulePath =
+    "../../node_modules/@repo-ai-governor/orchestration-service-client/dist/src/index.js";
+
+  writeFileSync(
+    resolve(DIST_PUBLISHED_SURFACES_ROOT, "service-host.js"),
+    [
+      "export {",
+      "  LocalOrchestrationServiceShell,",
+      "  LocalOrchestrationServiceSidecarClient,",
+      "  LocalOrchestrationServiceSidecarHost,",
+      `} from "${serviceHostRuntimeModulePath}";`,
+      "export {",
+      "  OrchestrationClientSurface,",
+      "  OrchestrationExecutionKind,",
+      "  OrchestrationExecutionStatus,",
+      "  OrchestrationServiceEventType,",
+      "  OrchestrationServiceHostKind,",
+      "  OrchestrationServiceLifecycleStatus,",
+      "  OrchestrationServiceTransportKind,",
+      `} from "${orchestrationClientModulePath}";`,
+      "",
+    ].join("\n"),
+    "utf8",
+  );
+
+  writeFileSync(
+    resolve(DIST_PUBLISHED_SURFACES_ROOT, "service-host.d.ts"),
+    [
+      "export {",
+      "  LocalOrchestrationServiceShell,",
+      "  LocalOrchestrationServiceSidecarClient,",
+      "  LocalOrchestrationServiceSidecarHost,",
+      `} from "${serviceHostRuntimeModulePath}";`,
+      "export {",
+      "  OrchestrationClientSurface,",
+      "  OrchestrationExecutionKind,",
+      "  OrchestrationExecutionStatus,",
+      "  OrchestrationServiceEventType,",
+      "  OrchestrationServiceHostKind,",
+      "  OrchestrationServiceLifecycleStatus,",
+      "  OrchestrationServiceTransportKind,",
+      `} from "${orchestrationClientModulePath}";`,
+      `export type * from "${serviceHostRuntimeModulePath}";`,
+      `export type * from "${orchestrationClientModulePath}";`,
+      "",
+    ].join("\n"),
+    "utf8",
+  );
+}
+
 const distributionMode = resolveDistributionMode();
 
 assertBuildArtifact(COMPILED_CLI_ENTRY_PATH, "CLI entry");
 mirrorPackageDistributions();
 pruneOptionalPackagesFromDefaultDistribution(distributionMode);
 materializeWorkspacePackagesForDistributionRuntime(distributionMode);
+writePublishedSurfaceWrappers();

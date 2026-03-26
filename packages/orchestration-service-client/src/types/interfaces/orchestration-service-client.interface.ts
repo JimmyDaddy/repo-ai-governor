@@ -1,3 +1,4 @@
+import type { MemoryProviderCompositionSummary } from "@repo-ai-governor/memory-provider-registry";
 import type {
   OrchestrationClientSurface,
   OrchestrationExecutionKind,
@@ -13,6 +14,7 @@ export interface OrchestrationServiceHealthResponse {
   serviceTransportKind: OrchestrationServiceTransportKind;
   lifecycleStatus: OrchestrationServiceLifecycleStatus;
   checkpointCapable: boolean;
+  memoryProvider?: MemoryProviderCompositionSummary;
   workspaceRoot: string;
   startedAt: string;
   protocolVersion: string;
@@ -37,6 +39,7 @@ export interface OrchestrationStartExecutionResponse {
   acceptedAt: string;
   status: OrchestrationExecutionStatus;
   checkpointCapable: boolean;
+  memoryProvider?: MemoryProviderCompositionSummary;
   serviceHostKind: OrchestrationServiceHostKind;
   serviceTransportKind: OrchestrationServiceTransportKind;
   eventStreamToken: string;
@@ -73,6 +76,7 @@ export interface OrchestrationExecutionSummary {
   eventStreamToken: string;
   serviceHostKind: OrchestrationServiceHostKind;
   serviceTransportKind: OrchestrationServiceTransportKind;
+  memoryProvider?: MemoryProviderCompositionSummary;
   status: OrchestrationExecutionStatus;
   checkpointCapable: boolean;
   recoveryCapable: boolean;

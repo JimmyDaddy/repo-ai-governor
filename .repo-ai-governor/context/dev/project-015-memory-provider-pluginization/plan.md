@@ -1,6 +1,6 @@
 # project-015-memory-provider-pluginization 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-03-26
 - Stage Mapping: Post-Stage-9 runtime packaging modularization
 - Phase Mapping: Runtime Modularity / Optional Plugin Resolution
@@ -44,6 +44,17 @@
   3. plugin-enabled distribution、clean-room、examples/runtime smoke 与 release gate 已与 default distribution 区分验证。
   4. sprint-003 的验收与 sprint-004 service reuse 输入约束已形成正式基线。
 
+## 2.4 sprint-004-shared-loader-and-service-reuse
+
+- Status: completed
+- Sprint Goal: 让 CLI、desktop host 与 service-backed runtime 共用同一条 memory provider shared loader seam，补齐 service-host packaging / clean-room / release gate，并完成 `project-015` 的闭项判断。
+- 任务包：`TK-175`、`TK-176`、`TK-177`、`TK-178`。
+- Exit Criteria:
+  1. `memory-provider-registry` 已成为 CLI、desktop host 与 service-backed runtime 共用的唯一 loader / registry seam。
+  2. `hostSurface` 与 `runtimeMode` 已形成正式 contract，不再由各 host 复制 provider resolution 逻辑。
+  3. service-host / desktop 的 packaging、clean-room 与 release gate 已与 CLI distribution 分离验证。
+  4. `project-015` 已形成 completion audit 或明确的残余 blocker 判断。
+
 ## 3. 任务拆解矩阵（WBS）
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
@@ -58,6 +69,10 @@
 | TK-172 | sprint-003 | CLI memory provider plugin loader cutover 与 dual-input compatibility | implementation/cli | TK-171,DA-170,DA-168,.repo-ai-governor/draft/memory-provider-pluginization-technical-solution.md | completed |
 | TK-173 | sprint-003 | plugin-enabled distribution、clean-room、examples 与 release gate expansion | implementation/release | TK-171,TK-172,DA-170,DA-169,.repo-ai-governor/draft/memory-provider-pluginization-technical-solution.md | completed |
 | TK-174 | sprint-003 | sprint-003 出口验收与 sprint-004 service reuse 输入约束 | acceptance/baseline | TK-171,TK-172,TK-173,DA-170 | completed |
+| TK-175 | sprint-004 | memory provider shared loader contract 与 host surface baseline | implementation/runtime | TK-174,DA-174,.repo-ai-governor/draft/memory-provider-pluginization-technical-solution.md | completed |
+| TK-176 | sprint-004 | CLI、desktop host 与 service-backed runtime 的 memory provider loader reuse cutover | implementation/host | TK-175,DA-174,.repo-ai-governor/draft/memory-provider-pluginization-technical-solution.md | completed |
+| TK-177 | sprint-004 | service-host packaging、clean-room 与 release gate expansion for memory providers | implementation/release | TK-175,TK-176,DA-173,DA-174,.repo-ai-governor/draft/memory-provider-pluginization-technical-solution.md | completed |
+| TK-178 | sprint-004 | sprint-004 出口验收与 project-015 completion assessment | acceptance/baseline | TK-175,TK-176,TK-177,DA-174 | completed |
 
 ## 4. 依赖产物策略
 
@@ -89,3 +104,10 @@
 11. 2026-03-26：通过 `TK-172 / DA-172` 将 CLI 正式切到统一 registry loader，打开 `provider.module` 受控解析路径，并为 dual-input compatibility 补齐 plugin source diagnostics 与 fail-closed integration coverage。
 12. 2026-03-26：通过 `TK-173 / DA-173` 建立 plugin-enabled distribution、examples/runtime smoke、local distribution verify 与 clean-room plugin scenario 的独立验证路径，不再复用 default distribution 结果代替。
 13. 2026-03-26：通过 `TK-174 / DA-174` 完成 sprint-003 出口验收，判定 optional plugin mode 达到 `accept`，并冻结 sprint-004 对 shared loader / host surface / packaging 的输入约束。
+14. 2026-03-26：拆解 `sprint-004-shared-loader-and-service-reuse`，将 shared loader / host surface / service-host packaging 作为 planned follow-up，暂不切换 active stream。
+15. 2026-03-26：正式激活 `sprint-004-shared-loader-and-service-reuse`，将主执行流切到 shared loader / service reuse，并启动 `TK-175` 收敛 shared loader / host surface 契约。
+16. 2026-03-26：通过 `TK-175 / DA-175` 冻结 memory provider shared loader、`hostSurface`、`runtimeMode` 与 service-owned `memoryProvider` composition summary contract。
+17. 2026-03-26：通过 `TK-176 / DA-176` 完成 CLI、desktop host 与 service-backed runtime 的 loader reuse cutover，embedded shell、sidecar client 与 CLI diagnostics 已统一消费 shared loader seam。
+18. 2026-03-26：通过 `TK-177 / DA-177` 建立 service-host / desktop 维度的 packaging、local distribution、clean-room 与 release gate baseline，不再复用 CLI-only 结果代替。
+19. 2026-03-26：通过 `TK-178 / DA-178` 完成 sprint-004 出口验收，判定 `project-015-memory-provider-pluginization` 达到 `completed`。
+20. 2026-03-26：产出 `project-015-memory-provider-pluginization-completion-audit-summary.md`，正式收口 project-015；在下一条主执行流显式激活前，该 stream 继续保留为 active closeout surface。

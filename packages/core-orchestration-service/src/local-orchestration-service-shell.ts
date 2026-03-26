@@ -8,6 +8,11 @@ import type {
 } from "@repo-ai-governor/core-runtime-langgraph";
 import { LangGraphSqliteFsCheckpointer } from "@repo-ai-governor/core-runtime-langgraph/sqlite-fs-checkpointer";
 import {
+  MemoryProviderHostSurface,
+  MemoryProviderRegistry,
+  MemoryProviderRuntimeMode,
+} from "@repo-ai-governor/memory-provider-registry";
+import {
   OrchestrationExecutionStatus,
   type OrchestrationExecutionSummary,
   type OrchestrationListExecutionsFilter,
@@ -31,6 +36,7 @@ import {
 } from "@repo-ai-governor/orchestration-service-client";
 import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
 import type {
+  LocalOrchestrationServiceMemoryProviderState,
   LocalOrchestrationServicePublishEventRequest,
   LocalOrchestrationServiceSaveCheckpointRequest,
   LocalOrchestrationServiceShellDependencies,
@@ -65,7 +71,10 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
   private readonly protocolVersion: string;
   private readonly pidProvider: () => number | undefined;
   private readonly startedAt: string;
+  private readonly memoryProviderRegistry: MemoryProviderRegistry;
   private executionRecordsLoadedPromise: Promise<void> | null = null;
+  private memoryProviderStatePromise: Promise<LocalOrchestrationServiceMemoryProviderState | null> | null =
+    null;
 
   public constructor(
     private readonly dependencies: LocalOrchestrationServiceShellDependencies & {
@@ -99,15 +108,25 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
       new LangGraphSqliteFsCheckpointer({
         rootDirectory: dependencies.workspaceRoot,
       });
+    this.memoryProviderRegistry =
+      dependencies.memoryProviderRegistry ?? new MemoryProviderRegistry();
   }
 
   public async getHealth(): Promise<OrchestrationServiceHealthResponse> {
     await this.ensureExecutionRecordsLoaded();
+    const memoryProviderState = await this.resolveMemoryProviderState();
     return {
       serviceHostKind: this.serviceHostKind,
       serviceTransportKind: this.serviceTransportKind,
       lifecycleStatus: this.lifecycleStatusProvider(),
       checkpointCapable: true,
+      ...(memoryProviderState
+        ? {
+            memoryProvider: {
+              ...memoryProviderState.composition,
+            },
+          }
+        : {}),
       workspaceRoot: this.dependencies.workspaceRoot,
       startedAt: this.startedAt,
       protocolVersion: this.protocolVersion,
@@ -120,6 +139,7 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
     runtimeContext?: LocalOrchestrationServiceStartExecutionRuntimeContext,
   ): Promise<OrchestrationStartExecutionResponse> {
     await this.ensureExecutionRecordsLoaded();
+    const memoryProviderState = await this.resolveMemoryProviderState();
     const executionId = runtimeContext?.executionId ?? this.executionIdProvider();
     const executionSessionId =
       runtimeContext?.executionSessionId ?? this.executionSessionIdProvider(executionId);
@@ -133,6 +153,13 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
         acceptedAt: existingRecord.summary.acceptedAt,
         status: existingRecord.summary.status,
         checkpointCapable: existingRecord.summary.checkpointCapable,
+        ...(existingRecord.summary.memoryProvider
+          ? {
+              memoryProvider: {
+                ...existingRecord.summary.memoryProvider,
+              },
+            }
+          : {}),
         serviceHostKind: existingRecord.summary.serviceHostKind,
         serviceTransportKind: existingRecord.summary.serviceTransportKind,
         eventStreamToken: existingRecord.summary.eventStreamToken,
@@ -156,6 +183,13 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
       eventStreamToken,
       serviceHostKind: this.serviceHostKind,
       serviceTransportKind: this.serviceTransportKind,
+      ...(memoryProviderState
+        ? {
+            memoryProvider: {
+              ...memoryProviderState.composition,
+            },
+          }
+        : {}),
       status: OrchestrationExecutionStatus.ACCEPTED,
       checkpointCapable: true,
       recoveryCapable: false,
@@ -188,6 +222,13 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
       acceptedAt: record.summary.acceptedAt,
       status: record.summary.status,
       checkpointCapable: record.summary.checkpointCapable,
+      ...(record.summary.memoryProvider
+        ? {
+            memoryProvider: {
+              ...record.summary.memoryProvider,
+            },
+          }
+        : {}),
       serviceHostKind: record.summary.serviceHostKind,
       serviceTransportKind: record.summary.serviceTransportKind,
       eventStreamToken: record.summary.eventStreamToken,
@@ -587,10 +628,60 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
   ): OrchestrationExecutionSummary {
     return {
       ...summary,
+      ...(summary.memoryProvider
+        ? {
+            memoryProvider: {
+              ...summary.memoryProvider,
+            },
+          }
+        : {}),
       ...(summary.recoveredNextNodeIds
         ? { recoveredNextNodeIds: [...summary.recoveredNextNodeIds] }
         : {}),
     };
+  }
+
+  private async resolveMemoryProviderState(): Promise<LocalOrchestrationServiceMemoryProviderState | null> {
+    const { memoryConfig } = this.dependencies;
+    if (!memoryConfig) {
+      return null;
+    }
+
+    if (!this.memoryProviderStatePromise) {
+      this.memoryProviderStatePromise = (async () => {
+        const composition = await this.memoryProviderRegistry.loadProvider({
+          workspaceRoot: this.dependencies.workspaceRoot,
+          memoryConfig,
+          hostSurface: MemoryProviderHostSurface.LOCAL_ORCHESTRATION_SERVICE,
+          runtimeMode: this.resolveMemoryProviderRuntimeMode(),
+        });
+        return {
+          composition: {
+            ...composition.summary,
+          },
+        };
+      })().catch((error) => {
+        this.memoryProviderStatePromise = null;
+        throw error;
+      });
+    }
+
+    return this.memoryProviderStatePromise;
+  }
+
+  private resolveMemoryProviderRuntimeMode(): MemoryProviderRuntimeMode {
+    if (this.dependencies.memoryProviderRuntimeMode) {
+      return this.dependencies.memoryProviderRuntimeMode;
+    }
+
+    if (
+      this.serviceHostKind === OrchestrationServiceHostKind.EMBEDDED &&
+      this.serviceTransportKind === OrchestrationServiceTransportKind.IN_PROCESS
+    ) {
+      return MemoryProviderRuntimeMode.EMBEDDED;
+    }
+
+    return MemoryProviderRuntimeMode.DAEMON;
   }
 
   private isTerminalExecutionStatus(status: OrchestrationExecutionStatus): boolean {

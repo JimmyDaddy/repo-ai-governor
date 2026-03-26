@@ -5,6 +5,8 @@
 1. desktop client 通过 `sidecar + ipc` 连接本地 orchestration service
 2. desktop client 只消费 transport-neutral DTO / event stream
 3. desktop client 不直接持有 runtime internals，也不旁路 artifact / recovery / HITL contract
+4. memory provider 必须由 service host 通过 shared loader 解析，desktop 只消费 `memoryProvider` composition summary
+5. packaged local host bootstrap 只能通过 `@cjhdev/repo-ai-governor/service-host`，不能依赖内部 `dist/node_modules` 目录结构
 
 示例文件：
 
@@ -14,4 +16,5 @@
 
 1. 固定 desktop surface 的默认 `runtimeMode`
 2. 固定期望的 `serviceHostKind / serviceTransportKind`
-3. 为 `check:desktop-entry-smoke` 和 release local verification 提供统一输入
+3. 固定 default / plugin-enabled 两条 memory provider 预期基线
+4. 为 `check:desktop-entry-smoke` 和 release local verification 提供统一输入

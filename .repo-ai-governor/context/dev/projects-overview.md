@@ -1,7 +1,7 @@
 # Repo AI Governor Project 拆解总览
 
 - Status: active
-- Date: 2026-03-25
+- Date: 2026-03-26
 - Basis:
   - `.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-master-execution-plan.md`
   - `.repo-ai-governor/normative_knowledge_sources/product-requirements.md`
@@ -26,7 +26,7 @@
 | `project-012-execution-context-optimization` | Cross-Stage follow-up | Context Efficiency / Governance Simplification | 收敛启动加载、active stream 上下文、TK 单写源与任务模板输入分层，降低单任务默认上下文成本 |
 | `project-013-remote-provider-and-adapter-ops` | Stage 9 remaining closure | Phase E follow-up + Adapter Operations Hardening | 收敛 Codex / GitHub Copilot / Claude Code 远端 provider 真实调用、adapter 运维契约与统一路由 truthfulness，补齐 Stage 9 剩余真实执行面 |
 | `project-014-langgraph-orchestration-runtime-adoption` | Post-Stage-9 runtime modernization | Runtime Modernization / CLI + Desktop Convergence | 采用 LangGraph 作为编排运行时方向，收敛 dual-runtime 迁移与 shared local orchestration service，为 CLI 与未来 desktop 共用执行面铺路 |
-| `project-015-memory-provider-pluginization` | Post-Stage-9 runtime packaging modularization | Runtime Modularity / Optional Plugin Resolution | 将 memory providers 从 CLI 全量内置依赖改造为 built-in registry + optional plugin 模式，收敛配置、分发与安全治理边界 |
+| `project-015-memory-provider-pluginization` | Post-Stage-9 runtime packaging modularization | Runtime Modularity / Optional Plugin Resolution | 已完成 built-in registry、optional plugin、shared loader / service reuse 与 service-host packaging / clean-room / release gate 收口；当前仅保留 active closeout surface |
 | `project-016-langgraph-runtime-productization` | Post-Stage-9 runtime modernization follow-up | Runtime Productization / Vendor Adapter + Service Host | 已完成 LangGraph runtime truthfulness、graph-first execution、`sidecar + ipc` host 与 desktop execution/service-ops baseline 收口 |
 
 ## 2. 依赖顺序
@@ -48,7 +48,7 @@
 15. `project-015-memory-provider-pluginization`
 16. `project-016-langgraph-runtime-productization`
 
-说明：Stage 主链按 001-007、009、010、013 推进；`project-008` 作为跨阶段治理优化轨可优先执行；`project-011` 作为 `project-010` 的工程支撑分解轨，为 CLI package 重构提供独立执行流；`project-012` 作为 `project-008` 的上下文效率 follow-up，负责收敛当前仓库的启动加载与台账上下文成本；`project-013` 已完成 Stage 9 最后业务阻断项收口；`project-014` 承接 post-Stage-9 的运行时现代化主线，但只完成了第一阶段 adoption/service-backed execution 收口；`project-016` 已完成 LangGraph runtime productization baseline 收口；当前 primary active track 仍是 `project-015 / sprint-002`，而 `sprint-003-optional-plugin-mode-and-policy-hardening` 已完成任务拆解并登记为 planned follow-up。
+说明：Stage 主链按 001-007、009、010、013 推进；`project-008` 作为跨阶段治理优化轨可优先执行；`project-011` 作为 `project-010` 的工程支撑分解轨，为 CLI package 重构提供独立执行流；`project-012` 作为 `project-008` 的上下文效率 follow-up，负责收敛当前仓库的启动加载与台账上下文成本；`project-013` 已完成 Stage 9 最后业务阻断项收口；`project-014` 承接 post-Stage-9 的运行时现代化主线，但只完成了第一阶段 adoption/service-backed execution 收口；`project-015` 已完成 memory provider pluginization 全量闭环，当前仅保留 active closeout surface；`project-016` 已完成 LangGraph runtime productization baseline 收口；当前默认执行面仍是 `project-015 / sprint-004`，待下一条主执行流显式激活后再迁入 history。
 
 ## 3. 交付原则
 

@@ -75,6 +75,21 @@ export interface MemoryProviderPluginLoadContext {
 }
 
 /**
+ * Defines one stable diagnostics summary shared by CLI, service, and desktop-adjacent hosts.
+ */
+export interface MemoryProviderCompositionSummary {
+  memoryStoreEngine: MemoryStoreEngine;
+  memoryStoreRoot: string;
+  memoryStoreProvider: string;
+  memoryStoreProviderId: string;
+  memoryStoreProviderModule?: string;
+  memoryStoreDistributionMode: MemoryProviderDistributionMode;
+  memoryStoreResolutionSource: MemoryProviderResolutionSource;
+  memoryStoreHostSurface: MemoryProviderHostSurface;
+  memoryStoreRuntimeMode: MemoryProviderRuntimeMode;
+}
+
+/**
  * Defines the factory export contract required by plugin-backed providers.
  */
 export type MemoryProviderPluginFactory = (
@@ -123,5 +138,8 @@ export interface MemoryProviderRegistryLoadResult {
   resolutionSource: MemoryProviderResolutionSource;
   memoryStoreRoot: string;
   providerName: string;
+  hostSurface: MemoryProviderHostSurface;
+  runtimeMode: MemoryProviderRuntimeMode;
+  summary: MemoryProviderCompositionSummary;
   provider: MemoryStoreProvider;
 }

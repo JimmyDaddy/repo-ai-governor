@@ -1,5 +1,6 @@
 export type {
   MemoryProviderBuiltInDescriptor,
+  MemoryProviderCompositionSummary,
   MemoryProviderConstructor,
   MemoryProviderInstanceOptions,
   MemoryProviderPluginDescriptor,

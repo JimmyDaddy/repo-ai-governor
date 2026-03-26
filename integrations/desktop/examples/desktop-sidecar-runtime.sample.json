@@ -6,6 +6,25 @@
   "expectedServiceHostKind": "sidecar",
   "expectedServiceTransportKind": "ipc",
   "expectedLifecycleStatus": "ready",
+  "defaultMemoryProvider": {
+    "memoryStoreEngine": "fs_csv",
+    "memoryStoreProvider": "FsCsvMemoryStoreProvider",
+    "memoryStoreProviderId": "fs-csv",
+    "memoryStoreDistributionMode": "default",
+    "memoryStoreResolutionSource": "legacy_store_engine",
+    "memoryStoreHostSurface": "local_orchestration_service",
+    "memoryStoreRuntimeMode": "daemon"
+  },
+  "pluginEnabledMemoryProvider": {
+    "memoryStoreEngine": "sqlite_fs",
+    "memoryStoreProvider": "@repo-ai-governor/memory-provider-sqlite-fs",
+    "memoryStoreProviderId": "@repo-ai-governor/memory-provider-sqlite-fs",
+    "memoryStoreProviderModule": "@repo-ai-governor/memory-provider-sqlite-fs",
+    "memoryStoreDistributionMode": "optional",
+    "memoryStoreResolutionSource": "plugin_module",
+    "memoryStoreHostSurface": "local_orchestration_service",
+    "memoryStoreRuntimeMode": "daemon"
+  },
   "requiredOperations": [
     "getHealth",
     "startExecution",

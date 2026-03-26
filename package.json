@@ -17,6 +17,13 @@
   "bin": {
     "repo-ai-governor": "./dist/bin/repo-ai-governor.js"
   },
+  "exports": {
+    "./service-host": {
+      "types": "./dist/packages/published-surfaces/service-host.d.ts",
+      "default": "./dist/packages/published-surfaces/service-host.js"
+    },
+    "./package.json": "./package.json"
+  },
   "files": [
     "bin",
     "dist",

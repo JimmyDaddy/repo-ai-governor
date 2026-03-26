@@ -18,6 +18,7 @@ import {
 } from "./constants/index.js";
 import type {
   MemoryProviderBuiltInDescriptor,
+  MemoryProviderCompositionSummary,
   MemoryProviderConstructor,
   MemoryProviderPluginDescriptor,
   MemoryProviderPluginFactory,
@@ -316,13 +317,15 @@ export class MemoryProviderRegistry {
       );
     }
 
+    const hostSurface = request.hostSurface ?? MemoryProviderHostSurface.CLI;
+    const runtimeMode = request.runtimeMode ?? MemoryProviderRuntimeMode.EMBEDDED;
     const provider = await this.initializeProvider(
       providerModule,
       descriptor,
       request.workspaceRoot,
       memoryStoreRoot,
-      request.hostSurface ?? MemoryProviderHostSurface.CLI,
-      request.runtimeMode ?? MemoryProviderRuntimeMode.EMBEDDED,
+      hostSurface,
+      runtimeMode,
       request.memoryConfig.provider?.options ?? {},
     );
 
@@ -333,7 +336,52 @@ export class MemoryProviderRegistry {
       resolutionSource,
       memoryStoreRoot,
       providerName: descriptor.providerName,
+      hostSurface,
+      runtimeMode,
+      summary: this.createCompositionSummary(
+        request.memoryConfig,
+        descriptor,
+        resolutionSource,
+        memoryStoreRoot,
+        hostSurface,
+        runtimeMode,
+      ),
       provider,
+    };
+  }
+
+  /**
+   * Builds one stable diagnostics summary shared by CLI and orchestration-service hosts.
+   * @param memoryConfig Validated memory runtime config.
+   * @param descriptor Resolved descriptor used for provider loading.
+   * @param resolutionSource Source used to select the descriptor.
+   * @param memoryStoreRoot Resolved absolute store root.
+   * @param hostSurface Host surface requesting provider loading.
+   * @param runtimeMode Runtime mode requesting provider loading.
+   * @returns Stable provider-composition summary.
+   */
+  private createCompositionSummary(
+    memoryConfig: MemoryRuntimeConfig,
+    descriptor: MemoryProviderResolvedDescriptor,
+    resolutionSource: MemoryProviderResolutionSource,
+    memoryStoreRoot: string,
+    hostSurface: MemoryProviderHostSurface,
+    runtimeMode: MemoryProviderRuntimeMode,
+  ): MemoryProviderCompositionSummary {
+    return {
+      memoryStoreEngine: memoryConfig.storeEngine,
+      memoryStoreRoot,
+      memoryStoreProvider: descriptor.providerName,
+      memoryStoreProviderId: descriptor.id,
+      ...(descriptor.kind === MemoryProviderDescriptorKind.PLUGIN
+        ? {
+            memoryStoreProviderModule: descriptor.moduleSpecifier,
+          }
+        : {}),
+      memoryStoreDistributionMode: descriptor.distributionMode,
+      memoryStoreResolutionSource: resolutionSource,
+      memoryStoreHostSurface: hostSurface,
+      memoryStoreRuntimeMode: runtimeMode,
     };
   }
 

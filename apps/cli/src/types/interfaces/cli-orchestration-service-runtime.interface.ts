@@ -1,6 +1,7 @@
 import type {
   LocalOrchestrationServicePublishEventRequest,
   LocalOrchestrationServiceSaveCheckpointRequest,
+  LocalOrchestrationServiceShellDependencies,
   LocalOrchestrationServiceSidecarClientDependencies,
   LocalOrchestrationServiceStartExecutionRuntimeContext,
 } from "@repo-ai-governor/core-orchestration-service";
@@ -10,6 +11,7 @@ import type {
   OrchestrationStartExecutionRequest,
   OrchestrationStartExecutionResponse,
 } from "@repo-ai-governor/orchestration-service-client";
+import type { MemoryRuntimeConfig } from "@repo-ai-governor/shared";
 import type { CliOrchestrationServiceRuntimeMode } from "../../constants/orchestration-service-runtime.constant.js";
 
 /**
@@ -32,6 +34,8 @@ export interface CliOrchestrationServiceOwner extends OrchestrationServiceClient
  */
 export interface CliOrchestrationServiceRuntimeDependencies {
   runtimeMode?: CliOrchestrationServiceRuntimeMode;
+  memoryConfig?: MemoryRuntimeConfig;
   serviceOwnerProvider?: (workspaceRoot: string) => Promise<CliOrchestrationServiceOwner>;
   sidecarClientDependencies?: LocalOrchestrationServiceSidecarClientDependencies;
+  embeddedShellDependencies?: Omit<LocalOrchestrationServiceShellDependencies, "memoryConfig">;
 }

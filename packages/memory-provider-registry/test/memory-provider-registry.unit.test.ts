@@ -9,10 +9,12 @@ import {
   MemoryProviderBuiltInId,
   MemoryProviderDescriptorKind,
   MemoryProviderDistributionMode,
+  MemoryProviderHostSurface,
   MemoryProviderPluginResolutionPolicyKind,
   MemoryProviderPluginSpecifierKind,
   MemoryProviderRegistry,
   MemoryProviderResolutionSource,
+  MemoryProviderRuntimeMode,
 } from "../src/index.js";
 
 describe("MemoryProviderRegistry", () => {
@@ -43,6 +45,17 @@ describe("MemoryProviderRegistry", () => {
     expect(result.providerName).toBe("FsCsvMemoryStoreProvider");
     expect(result.memoryStoreRoot).toBe(
       join("/tmp/repo-ai-governor-memory-provider-registry", "context/memory"),
+    );
+    expect(result.summary).toEqual(
+      expect.objectContaining({
+        memoryStoreEngine: MemoryStoreEngine.FS_CSV,
+        memoryStoreProvider: "FsCsvMemoryStoreProvider",
+        memoryStoreProviderId: MemoryProviderBuiltInId.FS_CSV,
+        memoryStoreDistributionMode: MemoryProviderDistributionMode.DEFAULT,
+        memoryStoreResolutionSource: MemoryProviderResolutionSource.LEGACY_STORE_ENGINE,
+        memoryStoreHostSurface: MemoryProviderHostSurface.CLI,
+        memoryStoreRuntimeMode: MemoryProviderRuntimeMode.EMBEDDED,
+      }),
     );
     expect(typeof result.provider.read).toBe("function");
   });
@@ -130,6 +143,37 @@ describe("MemoryProviderRegistry", () => {
     expect(result.memoryStoreRoot).toBe(
       join("/tmp/repo-ai-governor-memory-provider-registry", "context/memory"),
     );
+    expect(result.summary).toEqual(
+      expect.objectContaining({
+        memoryStoreProviderId: "@acme/memory-provider-postgres",
+        memoryStoreProviderModule: "@acme/memory-provider-postgres",
+        memoryStoreDistributionMode: MemoryProviderDistributionMode.OPTIONAL,
+        memoryStoreResolutionSource: MemoryProviderResolutionSource.PLUGIN_MODULE,
+        memoryStoreHostSurface: MemoryProviderHostSurface.CLI,
+        memoryStoreRuntimeMode: MemoryProviderRuntimeMode.EMBEDDED,
+      }),
+    );
+  });
+
+  it("records service-host hostSurface/runtimeMode in composition summary when explicitly requested", async () => {
+    const registry = new MemoryProviderRegistry();
+
+    const result = await registry.loadProvider({
+      workspaceRoot: "/tmp/repo-ai-governor-memory-provider-registry",
+      memoryConfig: {
+        storeEngine: MemoryStoreEngine.FS_CSV,
+        storeRoot: "context/memory",
+      },
+      hostSurface: MemoryProviderHostSurface.LOCAL_ORCHESTRATION_SERVICE,
+      runtimeMode: MemoryProviderRuntimeMode.DAEMON,
+    });
+
+    expect(result.hostSurface).toBe(MemoryProviderHostSurface.LOCAL_ORCHESTRATION_SERVICE);
+    expect(result.runtimeMode).toBe(MemoryProviderRuntimeMode.DAEMON);
+    expect(result.summary.memoryStoreHostSurface).toBe(
+      MemoryProviderHostSurface.LOCAL_ORCHESTRATION_SERVICE,
+    );
+    expect(result.summary.memoryStoreRuntimeMode).toBe(MemoryProviderRuntimeMode.DAEMON);
   });
 
   it("routes loadProvider through plugin resolution when provider.module is configured", async () => {

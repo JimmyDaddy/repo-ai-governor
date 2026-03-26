@@ -3,15 +3,24 @@ import type {
   LangGraphSaveCheckpointOptions,
 } from "@repo-ai-governor/core-runtime-langgraph";
 import type {
+  MemoryProviderCompositionSummary,
+  MemoryProviderRegistry,
+  MemoryProviderRuntimeMode,
+} from "@repo-ai-governor/memory-provider-registry";
+import type {
   OrchestrationExecutionStatus,
   OrchestrationServiceEventType,
   OrchestrationServiceHostKind,
   OrchestrationServiceLifecycleStatus,
   OrchestrationServiceTransportKind,
 } from "@repo-ai-governor/orchestration-service-client";
+import type { MemoryRuntimeConfig } from "@repo-ai-governor/shared";
 
 export interface LocalOrchestrationServiceShellDependencies {
   checkpointer?: LangGraphCheckpointer;
+  memoryConfig?: MemoryRuntimeConfig;
+  memoryProviderRegistry?: MemoryProviderRegistry;
+  memoryProviderRuntimeMode?: MemoryProviderRuntimeMode;
   nowProvider?: () => Date;
   eventStreamTokenProvider?: (executionId: string) => string;
   eventIdProvider?: (executionId: string, sequence: number) => string;
@@ -22,6 +31,10 @@ export interface LocalOrchestrationServiceShellDependencies {
   lifecycleStatusProvider?: () => OrchestrationServiceLifecycleStatus;
   protocolVersion?: string;
   pidProvider?: () => number | undefined;
+}
+
+export interface LocalOrchestrationServiceMemoryProviderState {
+  composition: MemoryProviderCompositionSummary;
 }
 
 export interface LocalOrchestrationServiceStartExecutionRuntimeContext {

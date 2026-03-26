@@ -7,6 +7,7 @@
 1. desktop execution surface 只能消费 `@repo-ai-governor/orchestration-service-client` 的 DTO / event contract。
 2. 当前唯一推荐的本地 host / transport 组合是 `sidecar + ipc`。
 3. `daemon + http` 仍只保留为后续选项，不进入当前产品化承诺。
+4. 已发布根包如需在 clean-room 或桌面宿主中启动本地 service host，只能通过 `@cjhdev/repo-ai-governor/service-host` 这个公开入口；不允许深导入内部打包目录结构。
 
 ## Baseline
 
@@ -17,6 +18,7 @@
 3. `serviceHostKind=sidecar`
 4. `serviceTransportKind=ipc`
 5. execution list / subscribe / recovery / HITL 都必须继续走 service-owned contract，而不是访问 CLI/runtime 内部状态
+6. memory provider 必须通过 shared loader 由 service host 自行解析，并在 `getHealth/startExecution/getExecution/listExecutions` 中回传 `memoryProvider` composition summary
 
 ## Assets
 
@@ -29,3 +31,4 @@
 
 1. `pnpm run check:desktop-entry-smoke`
 2. `pnpm run release:verify-local`
+3. `pnpm run release:verify-cleanroom-local-install`

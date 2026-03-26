@@ -29,6 +29,8 @@ const REQUIRED_PACKED_PATH_SUFFIXES = [
   "dist/node_modules/@repo-ai-governor/orchestration-service-client/package.json",
   "dist/node_modules/@repo-ai-governor/orchestration-service-client/dist/src/index.js",
   "dist/node_modules/@repo-ai-governor/cli/dist/src/runtime/orchestration-service-runtime.js",
+  "dist/packages/published-surfaces/service-host.js",
+  "dist/packages/published-surfaces/service-host.d.ts",
   "dist/packages/shared/src/index.js",
   "examples/README.md",
   "examples/single-role-minimal-flow/scenario.json",
@@ -242,7 +244,12 @@ try {
   gateInfo(GATE_NAME, "CLI help smoke check passed.");
   runCommand(
     "node",
-    ["./scripts/examples/check-desktop-entry-smoke.js"],
+    [
+      "./scripts/examples/check-desktop-entry-smoke.js",
+      ...(options.distributionMode === PLUGIN_ENABLED_DISTRIBUTION_MODE
+        ? ["--distribution-mode", PLUGIN_ENABLED_DISTRIBUTION_MODE]
+        : []),
+    ],
     "Desktop entry smoke check",
   );
   gateInfo(GATE_NAME, "Desktop entry smoke check passed.");

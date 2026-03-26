@@ -1,7 +1,7 @@
 # Repo AI Governor 从零到完成态总执行计划
 
 - Status: active
-- Date: 2026-03-25
+- Date: 2026-03-26
 - Role: execution master plan
 - Basis:
   - `.repo-ai-governor/normative_knowledge_sources/product-requirements.md`
@@ -40,7 +40,7 @@
 
 ## 3.1 一句话结论
 
-1. Stage 0-9 的业务闭环能力已经完成，`project-013` 已补齐远端 provider 真实调用与 adapter 运维契约；`project-014` 已完成 LangGraph runtime modernization 第一阶段；`project-016` 也已完成 LangGraph runtime productization baseline，当前 primary active stream 仍保留在 `project-015 / sprint-002-built-in-registry-and-loader-foundation`，而 `sprint-003-optional-plugin-mode-and-policy-hardening` 已完成任务拆解并登记为 planned follow-up。
+1. Stage 0-9 的业务闭环能力已经完成，`project-013` 已补齐远端 provider 真实调用与 adapter 运维契约；`project-014` 已完成 LangGraph runtime modernization 第一阶段；`project-015` 已完成 memory provider pluginization 全量闭环；`project-016` 也已完成 LangGraph runtime productization baseline。当前默认执行面仍保留在 `project-015 / sprint-004` 这个 active closeout surface，待下一条主执行流显式激活后再迁入 history。
 
 ## 3.2 当前真实状态
 
@@ -52,7 +52,7 @@
    - `LangGraph` Phase 0 backend、最小主链、checkpoint/recovery、service-backed execution 与 desktop-ready contract 已完成第一阶段收口。
    - `run/review/review-verify/HITL/recovery` 已通过 orchestration service client 进入统一 service-backed path，并形成 CLI / service summary / event stream 三层 parity 证据。
 2. 当前未完成的部分：
-   - 当前主线未完成项已经收敛到 runtime packaging / pluginization；`project-015` 是唯一 active primary stream，当前焦点是 built-in registry + loader foundation。
+   - 当前主线未完成项不再停留在 `project-015`；该项目已完成 built-in registry、optional plugin 与 shared loader / service reuse 全量收口。
    - `daemon + http` 仍保留为可选 follow-up option，但不属于当前 active 承诺。
    - 若后续需要继续扩围更深的 vendor-specific execution 或长期 daemon host，应新开 follow-up stream，而不是回退已完成的 `project-016` baseline。
 
@@ -67,7 +67,7 @@
 | 当前治理支撑主线 | `project-012-execution-context-optimization` | completed | 已完成 startup/context/task-ledger/review-chain 优化并形成正式 handoff |
 | 已完成 Stage 9 最后业务阻断收口 | `project-013-remote-provider-and-adapter-ops` | completed | 已完成远端 provider 真实调用、adapter 运维契约与统一路由 truthfulness 收口 |
 | 已完成 runtime modernization 第一阶段 | `project-014-langgraph-orchestration-runtime-adoption` | completed | 已完成 LangGraph adoption、shared local orchestration service、service-backed execution 与 desktop-ready contract 的第一阶段收口 |
-| 当前 packaging/modularity 主线 | `project-015-memory-provider-pluginization` | active | 继续承接 memory provider built-in registry + optional plugin 的实现主线；当前 active surface 仍停留在 sprint-002 收口，sprint-003 optional plugin mode / policy hardening 已完成任务拆解并登记为 planned follow-up |
+| 已完成 packaging/modularity 主线 | `project-015-memory-provider-pluginization` | completed | 已完成 built-in registry、optional plugin、shared loader / service reuse 与 service-host packaging / clean-room / release gate 收口；当前仅保留 active closeout surface |
 | 已完成 runtime productization baseline | `project-016-langgraph-runtime-productization` | completed | 已完成 LangGraph runtime truthfulness、graph-first execution、`sidecar + ipc` host 与 desktop execution/service-ops baseline 收口 |
 
 ## 3.4 当前推荐执行顺序
@@ -77,7 +77,7 @@
 3. `project-014 / sprint-002` 已通过 `DA-152` 完成出口验收，第一轮 LangGraph backend、checkpoint/recovery 与 service shell 实装已收口。
 4. `project-014 / sprint-003` 已通过 `DA-158` 完成出口验收，project-014 已形成 completion audit。
 5. `project-016` 已通过 `DA-166` 完成 sprint-001 出口验收，并形成 project completion audit。
-6. `project-015 / sprint-003-optional-plugin-mode-and-policy-hardening` 已完成任务拆解，但尚未切为 active primary stream；当前仍停留在 sprint-002 收口 surface，待显式启动后再进入 optional plugin mode 实现主线。
+6. `project-015 / sprint-004-shared-loader-and-service-reuse` 已完成出口验收并形成 completion audit；在下一条主执行流显式激活前，当前默认 active surface 仍保留在该 closeout stream。
 
 ## 4. 路线图总览
 
