@@ -5,6 +5,7 @@ import {
   DefaultRoleProfileId,
   GovernorErrorCode,
   LocalModelProvider,
+  MemoryStoreEngine,
   RoleProfileStatus,
   RoleSource,
 } from "@repo-ai-governor/shared";
@@ -392,6 +393,80 @@ describe("config unit", () => {
           },
         },
       ],
+    };
+
+    expect(() => validator.validateOrThrow(invalidConfig)).toThrowError(ConfigError);
+  });
+
+  it("accepts memory provider module config when it uses an allowlist-controlled package specifier", () => {
+    const validator = new SchemaValidator();
+    const validConfig: GovernorConfig = {
+      ...createConfigFixture(),
+      memory: {
+        storeEngine: MemoryStoreEngine.FS_CSV,
+        storeRoot: "context/memory",
+        provider: {
+          module: "@repo-ai-governor/memory-provider-postgres",
+          exportName: "createMemoryStoreProvider",
+          options: {
+            retentionDays: 30,
+          },
+        },
+      },
+    };
+
+    const validatedConfig = validator.validateOrThrow(validConfig);
+
+    expect(validatedConfig.memory?.provider?.module).toBe(
+      "@repo-ai-governor/memory-provider-postgres",
+    );
+    expect(validatedConfig.memory?.provider?.exportName).toBe("createMemoryStoreProvider");
+  });
+
+  it("rejects memory provider config when provider.id and provider.module are mixed", () => {
+    const validator = new SchemaValidator();
+    const invalidConfig: GovernorConfig = {
+      ...createConfigFixture(),
+      memory: {
+        storeEngine: MemoryStoreEngine.FS_CSV,
+        storeRoot: "context/memory",
+        provider: {
+          id: "fs-csv",
+          module: "@repo-ai-governor/memory-provider-postgres",
+        },
+      },
+    };
+
+    expect(() => validator.validateOrThrow(invalidConfig)).toThrowError(ConfigError);
+  });
+
+  it("rejects memory provider config when provider.module uses a relative path", () => {
+    const validator = new SchemaValidator();
+    const invalidConfig: GovernorConfig = {
+      ...createConfigFixture(),
+      memory: {
+        storeEngine: MemoryStoreEngine.FS_CSV,
+        storeRoot: "context/memory",
+        provider: {
+          module: "./plugins/postgres-provider",
+        },
+      },
+    };
+
+    expect(() => validator.validateOrThrow(invalidConfig)).toThrowError(ConfigError);
+  });
+
+  it("rejects memory provider exportName when provider.module is absent", () => {
+    const validator = new SchemaValidator();
+    const invalidConfig: GovernorConfig = {
+      ...createConfigFixture(),
+      memory: {
+        storeEngine: MemoryStoreEngine.FS_CSV,
+        storeRoot: "context/memory",
+        provider: {
+          exportName: "createMemoryStoreProvider",
+        },
+      },
     };
 
     expect(() => validator.validateOrThrow(invalidConfig)).toThrowError(ConfigError);

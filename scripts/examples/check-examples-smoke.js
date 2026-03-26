@@ -43,6 +43,57 @@ function assertNonEmptyString(value, fieldName) {
 }
 
 /**
+ * Normalizes one example entry list from the contract payload.
+ * @param {unknown} entriesRaw Raw entries value.
+ * @param {string} fieldName Field name for diagnostics.
+ * @returns {Array<{
+ *   id: string;
+ *   path: string;
+ *   runtimeScenarioPath: string;
+ *   fixturesPath: string;
+ *   expectedPath: string;
+ *   requiredCommands: string[];
+ * }>}
+ */
+function normalizeExampleEntries(entriesRaw, fieldName) {
+  if (entriesRaw === undefined) {
+    return [];
+  }
+
+  if (!Array.isArray(entriesRaw)) {
+    throw new Error(`Field "${fieldName}" must be an array when provided.`);
+  }
+
+  return entriesRaw.map((entry, index) => {
+    if (!entry || typeof entry !== "object") {
+      throw new Error(`${fieldName}[${index}] must be an object.`);
+    }
+
+    assertNonEmptyString(entry.id, `${fieldName}[${index}].id`);
+    assertNonEmptyString(entry.path, `${fieldName}[${index}].path`);
+    assertNonEmptyString(entry.runtimeScenarioPath, `${fieldName}[${index}].runtimeScenarioPath`);
+    assertNonEmptyString(entry.fixturesPath, `${fieldName}[${index}].fixturesPath`);
+    assertNonEmptyString(entry.expectedPath, `${fieldName}[${index}].expectedPath`);
+
+    if (!Array.isArray(entry.requiredCommands) || entry.requiredCommands.length === 0) {
+      throw new Error(`${fieldName}[${index}].requiredCommands must be a non-empty array.`);
+    }
+
+    return {
+      id: entry.id.trim(),
+      path: entry.path.trim(),
+      runtimeScenarioPath: entry.runtimeScenarioPath.trim(),
+      fixturesPath: entry.fixturesPath.trim(),
+      expectedPath: entry.expectedPath.trim(),
+      requiredCommands: entry.requiredCommands.map((command) => {
+        assertNonEmptyString(command, `${fieldName}[${index}].requiredCommands[]`);
+        return command.trim();
+      }),
+    };
+  });
+}
+
+/**
  * Collects CLI command names from enum declarations.
  * @returns {Set<string>}
  */
@@ -216,6 +267,14 @@ function ensureFileExists(issues, relativePath, reason) {
  *     expectedPath: string;
  *     requiredCommands: string[];
  *   }>;
+ *   pluginEnabledExamples: Array<{
+ *     id: string;
+ *     path: string;
+ *     runtimeScenarioPath: string;
+ *     fixturesPath: string;
+ *     expectedPath: string;
+ *     requiredCommands: string[];
+ *   }>;
  *   requiredGateScripts: string[];
  *   externalConsumptionContractMatrixRef: string;
  *   supportMatrixRef: string;
@@ -243,40 +302,13 @@ function normalizeContract(contractRaw) {
   if (!Array.isArray(contractRaw.readmeRefs) || contractRaw.readmeRefs.length === 0) {
     throw new Error('Field "readmeRefs" must be a non-empty string array.');
   }
-  if (!Array.isArray(contractRaw.requiredExamples) || contractRaw.requiredExamples.length === 0) {
+  const requiredExamples = normalizeExampleEntries(
+    contractRaw.requiredExamples,
+    "requiredExamples",
+  );
+  if (requiredExamples.length === 0) {
     throw new Error('Field "requiredExamples" must be a non-empty array.');
   }
-
-  const requiredExamples = contractRaw.requiredExamples.map((entry, index) => {
-    if (!entry || typeof entry !== "object") {
-      throw new Error(`requiredExamples[${index}] must be an object.`);
-    }
-
-    assertNonEmptyString(entry.id, `requiredExamples[${index}].id`);
-    assertNonEmptyString(entry.path, `requiredExamples[${index}].path`);
-    assertNonEmptyString(
-      entry.runtimeScenarioPath,
-      `requiredExamples[${index}].runtimeScenarioPath`,
-    );
-    assertNonEmptyString(entry.fixturesPath, `requiredExamples[${index}].fixturesPath`);
-    assertNonEmptyString(entry.expectedPath, `requiredExamples[${index}].expectedPath`);
-
-    if (!Array.isArray(entry.requiredCommands) || entry.requiredCommands.length === 0) {
-      throw new Error(`requiredExamples[${index}].requiredCommands must be a non-empty array.`);
-    }
-
-    return {
-      id: entry.id.trim(),
-      path: entry.path.trim(),
-      runtimeScenarioPath: entry.runtimeScenarioPath.trim(),
-      fixturesPath: entry.fixturesPath.trim(),
-      expectedPath: entry.expectedPath.trim(),
-      requiredCommands: entry.requiredCommands.map((command) => {
-        assertNonEmptyString(command, `requiredExamples[${index}].requiredCommands[]`);
-        return command.trim();
-      }),
-    };
-  });
 
   const requiredGateScripts = contractRaw.requiredGateScripts.map((scriptName) => {
     assertNonEmptyString(scriptName, "requiredGateScripts[]");
@@ -290,6 +322,10 @@ function normalizeContract(contractRaw) {
   return {
     schemaVersion: contractRaw.schemaVersion.trim(),
     requiredExamples,
+    pluginEnabledExamples: normalizeExampleEntries(
+      contractRaw.pluginEnabledExamples,
+      "pluginEnabledExamples",
+    ),
     requiredGateScripts,
     externalConsumptionContractMatrixRef: contractRaw.externalConsumptionContractMatrixRef.trim(),
     supportMatrixRef: contractRaw.supportMatrixRef.trim(),
@@ -364,7 +400,7 @@ try {
   }
 
   const validCliCommands = collectCliCommandNames();
-  for (const requiredExample of contract.requiredExamples) {
+  for (const requiredExample of [...contract.requiredExamples, ...contract.pluginEnabledExamples]) {
     ensureFileExists(issues, requiredExample.path, `example(${requiredExample.id})`);
     ensureFileExists(issues, requiredExample.runtimeScenarioPath, `example(${requiredExample.id})`);
     ensureFileExists(issues, requiredExample.fixturesPath, `example(${requiredExample.id})`);

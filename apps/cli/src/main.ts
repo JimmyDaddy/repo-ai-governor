@@ -389,7 +389,14 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
             memoryStoreRoot: activeMemoryStoreComposition.memoryStoreRoot,
             memoryStoreProvider: activeMemoryStoreComposition.providerName,
             memoryStoreProviderId: activeMemoryStoreComposition.descriptor.id,
+            ...(activeMemoryStoreComposition.descriptor.kind === "plugin"
+              ? {
+                  memoryStoreProviderModule:
+                    activeMemoryStoreComposition.descriptor.moduleSpecifier,
+                }
+              : {}),
             memoryStoreDistributionMode: activeMemoryStoreComposition.descriptor.distributionMode,
+            memoryStoreResolutionSource: activeMemoryStoreComposition.resolutionSource,
             ...(ideWrapperEnvironment.entrySurface
               ? {
                   entrySurface: ideWrapperEnvironment.entrySurface,

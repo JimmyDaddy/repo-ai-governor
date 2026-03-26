@@ -6,6 +6,12 @@ import { dirname, resolve } from "node:path";
 const PROJECT_ROOT = process.cwd();
 const COMPILED_CLI_ENTRY_PATH = resolve(PROJECT_ROOT, "dist/bin/repo-ai-governor.js");
 const DIST_SCOPE_NODE_MODULES = resolve(PROJECT_ROOT, "dist/node_modules/@repo-ai-governor");
+const DEFAULT_DISTRIBUTION_MODE = "default";
+const PLUGIN_ENABLED_DISTRIBUTION_MODE = "plugin-enabled";
+const SUPPORTED_DISTRIBUTION_MODES = new Set([
+  DEFAULT_DISTRIBUTION_MODE,
+  PLUGIN_ENABLED_DISTRIBUTION_MODE,
+]);
 
 const DISTRIBUTION_PACKAGES = [
   {
@@ -165,6 +171,27 @@ const DISTRIBUTION_PACKAGES = [
 ];
 
 /**
+ * Parses one optional distribution mode argument.
+ * @returns {"default" | "plugin-enabled"}
+ */
+function resolveDistributionMode() {
+  const rawArgs = process.argv.slice(2);
+  const distributionModeIndex = rawArgs.findIndex((arg) => arg === "--distribution-mode");
+  if (distributionModeIndex === -1) {
+    return DEFAULT_DISTRIBUTION_MODE;
+  }
+
+  const candidateMode = rawArgs[distributionModeIndex + 1]?.trim();
+  if (!candidateMode || !SUPPORTED_DISTRIBUTION_MODES.has(candidateMode)) {
+    throw new Error(
+      `Expected "--distribution-mode" to be one of ${Array.from(SUPPORTED_DISTRIBUTION_MODES).join("|")}.`,
+    );
+  }
+
+  return candidateMode;
+}
+
+/**
  * Asserts that the expected build artifact exists before mirroring runtime assets.
  * @param artifactPath Expected artifact path.
  * @param label Human-readable artifact description.
@@ -196,7 +223,11 @@ function mirrorPackageDistributions() {
  * package-local build outputs may still exist for optional providers, while the default
  * release payload should ship only the guaranteed built-in provider matrix.
  */
-function pruneOptionalPackagesFromDefaultDistribution() {
+function pruneOptionalPackagesFromDefaultDistribution(distributionMode) {
+  if (distributionMode !== DEFAULT_DISTRIBUTION_MODE) {
+    return;
+  }
+
   for (const distributionPackage of DISTRIBUTION_PACKAGES) {
     if (distributionPackage.runtimeDistributionMode !== "optional") {
       continue;
@@ -212,12 +243,15 @@ function pruneOptionalPackagesFromDefaultDistribution() {
  * released tarballs should resolve internal workspace packages without relying
  * on source-workspace paths that do not exist in clean-room environments.
  */
-function materializeWorkspacePackagesForDistributionRuntime() {
+function materializeWorkspacePackagesForDistributionRuntime(distributionMode) {
   rmSync(DIST_SCOPE_NODE_MODULES, { recursive: true, force: true });
   mkdirSync(DIST_SCOPE_NODE_MODULES, { recursive: true });
 
   for (const distributionPackage of DISTRIBUTION_PACKAGES) {
-    if (distributionPackage.runtimeDistributionMode === "optional") {
+    if (
+      distributionPackage.runtimeDistributionMode === "optional" &&
+      distributionMode === DEFAULT_DISTRIBUTION_MODE
+    ) {
       continue;
     }
     const packageJsonPath = resolve(distributionPackage.packageRoot, "package.json");
@@ -233,7 +267,9 @@ function materializeWorkspacePackagesForDistributionRuntime() {
   }
 }
 
+const distributionMode = resolveDistributionMode();
+
 assertBuildArtifact(COMPILED_CLI_ENTRY_PATH, "CLI entry");
 mirrorPackageDistributions();
-pruneOptionalPackagesFromDefaultDistribution();
-materializeWorkspacePackagesForDistributionRuntime();
+pruneOptionalPackagesFromDefaultDistribution(distributionMode);
+materializeWorkspacePackagesForDistributionRuntime(distributionMode);

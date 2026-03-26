@@ -35,9 +35,9 @@
 
 ## 2.3 sprint-003-optional-plugin-mode-and-policy-hardening
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 在受控 allowlist / prefix / path / module policy 下打开 optional plugin mode，建立 plugin-enabled distribution 与 clean-room/examples/release gate 基线，并冻结 sprint-004 service reuse 输入约束。
-- 任务包：`TK-171`、`TK-172`、`TK-173`、`TK-174`。
+- 任务包：`TK-171`、`TK-172`、`TK-173`、`TK-174`（completed）。
 - Exit Criteria:
   1. `provider.module / exportName / options` 的可控解析契约已形成正式基线。
   2. optional plugin mode 不允许任意模块执行，allowlist / prefix / path policy 已收敛为正式门禁。
@@ -54,10 +54,10 @@
 | TK-168 | sprint-002 | CLI memory provider loader cutover 与 legacy config 兼容 | implementation/cli | TK-167,DA-159,.repo-ai-governor/draft/memory-provider-pluginization-technical-solution.md | completed |
 | TK-169 | sprint-002 | distribution 与 release 对 optional built-in provider 的边界收口 | implementation/release | TK-167,TK-168,DA-159,.repo-ai-governor/draft/memory-provider-pluginization-technical-solution.md | completed |
 | TK-170 | sprint-002 | sprint-002 出口验收与 sprint-003 optional plugin 输入约束 | acceptance/baseline | TK-167,TK-168,TK-169,DA-159 | completed |
-| TK-171 | sprint-003 | memory provider plugin allowlist 与 registry resolution contract baseline | implementation/runtime | TK-170,DA-170,.repo-ai-governor/draft/memory-provider-pluginization-technical-solution.md | planned |
-| TK-172 | sprint-003 | CLI memory provider plugin loader cutover 与 dual-input compatibility | implementation/cli | TK-171,DA-170,DA-168,.repo-ai-governor/draft/memory-provider-pluginization-technical-solution.md | planned |
-| TK-173 | sprint-003 | plugin-enabled distribution、clean-room、examples 与 release gate expansion | implementation/release | TK-171,TK-172,DA-170,DA-169,.repo-ai-governor/draft/memory-provider-pluginization-technical-solution.md | planned |
-| TK-174 | sprint-003 | sprint-003 出口验收与 sprint-004 service reuse 输入约束 | acceptance/baseline | TK-171,TK-172,TK-173,DA-170 | planned |
+| TK-171 | sprint-003 | memory provider plugin allowlist 与 registry resolution contract baseline | implementation/runtime | TK-170,DA-170,.repo-ai-governor/draft/memory-provider-pluginization-technical-solution.md | completed |
+| TK-172 | sprint-003 | CLI memory provider plugin loader cutover 与 dual-input compatibility | implementation/cli | TK-171,DA-170,DA-168,.repo-ai-governor/draft/memory-provider-pluginization-technical-solution.md | completed |
+| TK-173 | sprint-003 | plugin-enabled distribution、clean-room、examples 与 release gate expansion | implementation/release | TK-171,TK-172,DA-170,DA-169,.repo-ai-governor/draft/memory-provider-pluginization-technical-solution.md | completed |
+| TK-174 | sprint-003 | sprint-003 出口验收与 sprint-004 service reuse 输入约束 | acceptance/baseline | TK-171,TK-172,TK-173,DA-170 | completed |
 
 ## 4. 依赖产物策略
 
@@ -84,3 +84,8 @@
 6. 2026-03-26：通过 `TK-169 / DA-169` 收口 default distribution 与 optional built-in provider 的 release/build 边界，默认发行包不再包含 `sqlite-fs` 的运行时载荷。
 7. 2026-03-26：通过 `TK-170 / DA-170` 完成 sprint-002 出口验收，判定 built-in registry / loader foundation 达到 `accept`，并明确默认发行包对 `sqlite-fs` optional built-in provider 只保证 parser/selection compatibility 与 fail-closed truthfulness，而非运行时可用性。
 8. 2026-03-26：创建 `sprint-003-optional-plugin-mode-and-policy-hardening`，将 `project-015` 主执行流切换到受控 optional plugin mode 的正式拆解阶段，并新增 `TK-171`~`TK-174` 任务骨架。
+9. 2026-03-26：正式激活 `sprint-003-optional-plugin-mode-and-policy-hardening`，将主执行流切到 optional plugin mode，并启动 `TK-171` 收敛 allowlist / prefix / path / module policy baseline。
+10. 2026-03-26：通过 `TK-171 / DA-171` 冻结 optional plugin baseline 的 allowlist / prefix / path / module policy，建立 plugin factory / resolution contract，并将其下沉到 `memory-provider-registry` 与 `config schema`。
+11. 2026-03-26：通过 `TK-172 / DA-172` 将 CLI 正式切到统一 registry loader，打开 `provider.module` 受控解析路径，并为 dual-input compatibility 补齐 plugin source diagnostics 与 fail-closed integration coverage。
+12. 2026-03-26：通过 `TK-173 / DA-173` 建立 plugin-enabled distribution、examples/runtime smoke、local distribution verify 与 clean-room plugin scenario 的独立验证路径，不再复用 default distribution 结果代替。
+13. 2026-03-26：通过 `TK-174 / DA-174` 完成 sprint-003 出口验收，判定 optional plugin mode 达到 `accept`，并冻结 sprint-004 对 shared loader / host surface / packaging 的输入约束。

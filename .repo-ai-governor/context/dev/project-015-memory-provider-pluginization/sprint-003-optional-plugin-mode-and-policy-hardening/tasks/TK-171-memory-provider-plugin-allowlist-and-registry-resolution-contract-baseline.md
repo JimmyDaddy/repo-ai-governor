@@ -1,6 +1,6 @@
 # TK-171 memory provider plugin allowlist 与 registry resolution contract baseline
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-26
 - Owner: AI-Agent
 - Priority: P0
@@ -53,7 +53,9 @@
 ## 9. 执行记录
 
 1. 2026-03-26：任务创建，状态初始化为 `planned`。
+2. 2026-03-26：状态切换为 `in_progress`，开始收敛 optional plugin mode 的 allowlist / prefix / path / module policy 与 registry resolution contract baseline。
+3. 2026-03-26：任务完成，已建立 plugin allowlist/prefix/path policy、plugin factory / resolution contract 与 config fail-closed 校验，并新增 `DA-171` 与 resolved review。
 
 ## 10. 产出
 
-1. 待 `DA-171`。
+1. [DA-171](/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-015-memory-provider-pluginization/sprint-003-optional-plugin-mode-and-policy-hardening/tasks/DA-171-memory-provider-plugin-allowlist-and-registry-resolution-contract-baseline.md)

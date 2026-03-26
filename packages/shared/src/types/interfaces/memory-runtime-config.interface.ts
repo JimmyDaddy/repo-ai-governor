@@ -1,7 +1,7 @@
 import type { MemoryStoreEngine } from "../../constants/memory-store.constant.js";
 
 /**
- * Defines optional provider override fields reserved for pluginized memory resolution.
+ * Defines optional provider override fields shared by built-in and pluginized memory resolution.
  */
 export interface MemoryProviderRuntimeConfig {
   id?: string;

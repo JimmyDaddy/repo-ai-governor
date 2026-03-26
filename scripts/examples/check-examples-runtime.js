@@ -1,15 +1,17 @@
 #!/usr/bin/env node
 
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 
 import { gateFail, gateInfo, gatePass } from "../governance/gate-output.js";
 
 const GATE_NAME = "examples-runtime-smoke";
 const CONTRACT_RELATIVE_PATH = "examples/example-smoke.contract.json";
 const CLI_ENTRY_RELATIVE_PATH = "dist/bin/repo-ai-governor.js";
+const DEFAULT_DISTRIBUTION_MODE = "default";
+const PLUGIN_ENABLED_DISTRIBUTION_MODE = "plugin-enabled";
 const CODEX_EXEC_FIXTURE_ENABLE_ENV_KEY = "REPO_AI_GOVERNOR_ENABLE_TEST_FIXTURES";
 const CODEX_EXEC_FIXTURE_ENV_KEY = "REPO_AI_GOVERNOR_CODEX_EXEC_FIXTURE";
 const CODEX_EXEC_FIXTURE_SUCCESS = "success";
@@ -48,10 +50,81 @@ function assertNonEmptyString(value, fieldName) {
 }
 
 /**
+ * Parses CLI options for runtime smoke execution.
+ * @returns {{distributionMode: "default" | "plugin-enabled"}}
+ */
+function parseCliOptions() {
+  const rawArgs = process.argv.slice(2);
+  const distributionModeIndex = rawArgs.findIndex((arg) => arg === "--distribution-mode");
+  if (distributionModeIndex === -1) {
+    return {
+      distributionMode: DEFAULT_DISTRIBUTION_MODE,
+    };
+  }
+
+  const candidateMode = rawArgs[distributionModeIndex + 1]?.trim();
+  if (
+    candidateMode !== DEFAULT_DISTRIBUTION_MODE &&
+    candidateMode !== PLUGIN_ENABLED_DISTRIBUTION_MODE
+  ) {
+    throw new Error('Expected "--distribution-mode" to be "default" or "plugin-enabled".');
+  }
+
+  return {
+    distributionMode: candidateMode,
+  };
+}
+
+/**
+ * Normalizes one example-entry array from the contract payload.
+ * @param {unknown} entriesRaw Raw contract field.
+ * @param {string} fieldName Field name for diagnostics.
+ * @returns {Array<{
+ *   id: string;
+ *   path: string;
+ *   runtimeScenarioPath: string;
+ *   expectedPath: string;
+ * }>}
+ */
+function normalizeExampleEntries(entriesRaw, fieldName) {
+  if (entriesRaw === undefined) {
+    return [];
+  }
+
+  if (!Array.isArray(entriesRaw)) {
+    throw new Error(`Field "${fieldName}" must be an array when provided.`);
+  }
+
+  return entriesRaw.map((entry, index) => {
+    if (!entry || typeof entry !== "object") {
+      throw new Error(`${fieldName}[${index}] must be an object.`);
+    }
+
+    assertNonEmptyString(entry.id, `${fieldName}[${index}].id`);
+    assertNonEmptyString(entry.path, `${fieldName}[${index}].path`);
+    assertNonEmptyString(entry.runtimeScenarioPath, `${fieldName}[${index}].runtimeScenarioPath`);
+    assertNonEmptyString(entry.expectedPath, `${fieldName}[${index}].expectedPath`);
+
+    return {
+      id: entry.id.trim(),
+      path: entry.path.trim(),
+      runtimeScenarioPath: entry.runtimeScenarioPath.trim(),
+      expectedPath: entry.expectedPath.trim(),
+    };
+  });
+}
+
+/**
  * Normalizes example-smoke contract payload.
  * @param {unknown} contractRaw Parsed contract JSON.
  * @returns {{
  *   requiredExamples: Array<{
+ *     id: string;
+ *     path: string;
+ *     runtimeScenarioPath: string;
+ *     expectedPath: string;
+ *   }>;
+ *   pluginEnabledExamples: Array<{
  *     id: string;
  *     path: string;
  *     runtimeScenarioPath: string;
@@ -64,31 +137,20 @@ function normalizeContract(contractRaw) {
     throw new Error("example smoke contract must be an object.");
   }
 
-  if (!Array.isArray(contractRaw.requiredExamples) || contractRaw.requiredExamples.length === 0) {
+  const requiredExamples = normalizeExampleEntries(
+    contractRaw.requiredExamples,
+    "requiredExamples",
+  );
+  if (requiredExamples.length === 0) {
     throw new Error('Field "requiredExamples" must be a non-empty array.');
   }
 
   return {
-    requiredExamples: contractRaw.requiredExamples.map((entry, index) => {
-      if (!entry || typeof entry !== "object") {
-        throw new Error(`requiredExamples[${index}] must be an object.`);
-      }
-
-      assertNonEmptyString(entry.id, `requiredExamples[${index}].id`);
-      assertNonEmptyString(entry.path, `requiredExamples[${index}].path`);
-      assertNonEmptyString(
-        entry.runtimeScenarioPath,
-        `requiredExamples[${index}].runtimeScenarioPath`,
-      );
-      assertNonEmptyString(entry.expectedPath, `requiredExamples[${index}].expectedPath`);
-
-      return {
-        id: entry.id.trim(),
-        path: entry.path.trim(),
-        runtimeScenarioPath: entry.runtimeScenarioPath.trim(),
-        expectedPath: entry.expectedPath.trim(),
-      };
-    }),
+    requiredExamples,
+    pluginEnabledExamples: normalizeExampleEntries(
+      contractRaw.pluginEnabledExamples,
+      "pluginEnabledExamples",
+    ),
   };
 }
 
@@ -139,6 +201,7 @@ function normalizeExpectedBaseline(expectedRaw, expectedPath) {
  *     operation?: string;
  *     minPassChecks?: number;
  *     requiredArtifactIds?: string[];
+ *     diagnostics?: Record<string, string | number | boolean | null>;
  *   };
  * }}
  */
@@ -186,6 +249,28 @@ function normalizeScenarioStep(stepRaw, index) {
           ),
         }
       : {}),
+    ...(!Array.isArray(stepRaw.expect.diagnostics) &&
+    stepRaw.expect.diagnostics &&
+    typeof stepRaw.expect.diagnostics === "object"
+      ? {
+          diagnostics: Object.fromEntries(
+            Object.entries(stepRaw.expect.diagnostics).map(([key, value]) => {
+              assertNonEmptyString(key, `commands[${index}].expect.diagnostics.key`);
+              if (
+                value !== null &&
+                typeof value !== "string" &&
+                typeof value !== "number" &&
+                typeof value !== "boolean"
+              ) {
+                throw new Error(
+                  `commands[${index}].expect.diagnostics.${key} must be string|number|boolean|null.`,
+                );
+              }
+              return [key.trim(), value];
+            }),
+          ),
+        }
+      : {}),
   };
 
   return {
@@ -201,6 +286,7 @@ function normalizeScenarioStep(stepRaw, index) {
  * @param {string} scenarioPath Scenario path for diagnostics.
  * @returns {{
  *   id: string;
+ *   files: Array<{path: string; content: string}>;
  *   commands: Array<ReturnType<typeof normalizeScenarioStep>>;
  * }}
  */
@@ -219,10 +305,39 @@ function normalizeScenario(scenarioRaw, scenarioPath) {
     normalizeScenarioStep(stepRaw, index),
   );
 
+  const files = Array.isArray(scenarioRaw.files)
+    ? scenarioRaw.files.map((fileRaw, index) => {
+        if (!fileRaw || typeof fileRaw !== "object") {
+          throw new Error(`${scenarioPath}:files[${index}] must be an object.`);
+        }
+        assertNonEmptyString(fileRaw.path, `${scenarioPath}:files[${index}].path`);
+        assertNonEmptyString(fileRaw.content, `${scenarioPath}:files[${index}].content`);
+
+        return {
+          path: fileRaw.path.trim(),
+          content: fileRaw.content,
+        };
+      })
+    : [];
+
   return {
     id: scenarioRaw.id.trim(),
+    files,
     commands,
   };
+}
+
+/**
+ * Materializes scenario-provided workspace files before command execution.
+ * @param {string} workspacePath Temp workspace path.
+ * @param {Array<{path: string; content: string}>} files Scenario files.
+ */
+function materializeScenarioFiles(workspacePath, files) {
+  for (const file of files) {
+    const absoluteFilePath = resolve(workspacePath, file.path);
+    mkdirSync(dirname(absoluteFilePath), { recursive: true });
+    writeFileSync(absoluteFilePath, file.content, "utf8");
+  }
 }
 
 /**
@@ -371,9 +486,30 @@ function assertStepExpectation(scenarioId, step, commandName, baselineOperation,
       }
     }
   }
+
+  if (step.expect.diagnostics) {
+    const diagnostics =
+      output.diagnostics &&
+      typeof output.diagnostics === "object" &&
+      !Array.isArray(output.diagnostics)
+        ? output.diagnostics
+        : null;
+    if (!diagnostics) {
+      throw new Error(`example(${scenarioId}) step(${step.id}) missing diagnostics object.`);
+    }
+
+    for (const [key, expectedValue] of Object.entries(step.expect.diagnostics)) {
+      if (diagnostics[key] !== expectedValue) {
+        throw new Error(
+          `example(${scenarioId}) step(${step.id}) expected diagnostics.${key}=${JSON.stringify(expectedValue)} but got ${JSON.stringify(diagnostics[key])}`,
+        );
+      }
+    }
+  }
 }
 
 const issues = [];
+const options = parseCliOptions();
 
 try {
   const cliEntryAbsolutePath = resolve(process.cwd(), CLI_ENTRY_RELATIVE_PATH);
@@ -383,8 +519,12 @@ try {
     );
   }
   const contract = normalizeContract(readJson(CONTRACT_RELATIVE_PATH));
+  const examplesToRun =
+    options.distributionMode === PLUGIN_ENABLED_DISTRIBUTION_MODE
+      ? [...contract.requiredExamples, ...contract.pluginEnabledExamples]
+      : contract.requiredExamples;
 
-  for (const requiredExample of contract.requiredExamples) {
+  for (const requiredExample of examplesToRun) {
     const scenarioRaw = readJson(requiredExample.runtimeScenarioPath);
     const scenario = normalizeScenario(scenarioRaw, requiredExample.runtimeScenarioPath);
     const expectedRaw = readJson(requiredExample.expectedPath);
@@ -394,6 +534,7 @@ try {
     );
 
     try {
+      materializeScenarioFiles(workspacePath, scenario.files);
       for (const step of scenario.commands) {
         const commandName = step.args[0];
         const baselineOperation = expectedBaseline.expectedCommandOperations[commandName];

@@ -157,6 +157,9 @@ function buildReleaseNotesMarkdown(packageJson, policyConfig) {
     "",
     "- `pnpm run release:check`",
     "- `pnpm run release:verify-local`",
+    "- `pnpm run build:plugin-enabled && pnpm run release:verify-local:plugin-enabled`",
+    "- `pnpm run build:plugin-enabled && pnpm run release:verify-cleanroom-local-install:plugin-enabled`",
+    "- `pnpm run build:plugin-enabled && pnpm run release:verify-cleanroom-local-install:plugin-enabled:tgz`",
     "- `pnpm run release:ga-check`",
     "",
   ].join("\n");

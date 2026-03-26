@@ -1,0 +1,52 @@
+{
+  "schemaVersion": "1.0",
+  "id": "optional-plugin-memory-flow",
+  "description": "Validates plugin-enabled distribution with an allowlisted memory provider module.",
+  "files": [
+    {
+      "path": ".repo-ai-governor/governor.yaml",
+      "content": "schemaVersion: \"1.1\"\nworkspace:\n  mode: repo_local\n  migrationPolicy: copy_verify_switch_rollback\ni18n:\n  runtimeEngine: i18next\n  defaultLocale: zh-CN\n  fallbackLocale: en-US\n  supportedLocales:\n    - zh-CN\n    - en-US\nmemory:\n  storeEngine: sqlite_fs\n  storeRoot: context/memory/plugin-sqlite\n  provider:\n    module: \"@repo-ai-governor/memory-provider-sqlite-fs\"\n    exportName: \"createMemoryStoreProvider\"\n"
+    }
+  ],
+  "commands": [
+    {
+      "id": "init",
+      "args": ["init", "--output", "json"],
+      "expect": {
+        "status": "success",
+        "command": "init",
+        "operation": "workspace_init",
+        "diagnostics": {
+          "memoryStoreResolutionSource": "plugin_module",
+          "memoryStoreProviderModule": "@repo-ai-governor/memory-provider-sqlite-fs",
+          "memoryStoreDistributionMode": "optional"
+        }
+      }
+    },
+    {
+      "id": "doctor",
+      "args": ["doctor", "--output", "json"],
+      "expect": {
+        "status": "success",
+        "command": "doctor",
+        "operation": "env_doctor",
+        "diagnostics": {
+          "memoryStoreResolutionSource": "plugin_module",
+          "memoryStoreProviderModule": "@repo-ai-governor/memory-provider-sqlite-fs"
+        }
+      }
+    },
+    {
+      "id": "check",
+      "args": ["check", "--output", "json"],
+      "expect": {
+        "status": "success",
+        "command": "check",
+        "operation": "governance_check",
+        "diagnostics": {
+          "memoryStoreResolutionSource": "plugin_module"
+        }
+      }
+    }
+  ]
+}

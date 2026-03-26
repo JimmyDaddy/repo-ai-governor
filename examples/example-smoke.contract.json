@@ -34,6 +34,16 @@
       "requiredCommands": ["doctor", "run", "check"]
     }
   ],
+  "pluginEnabledExamples": [
+    {
+      "id": "optional-plugin-memory-flow",
+      "path": "examples/optional-plugin-memory-flow/README.md",
+      "runtimeScenarioPath": "examples/optional-plugin-memory-flow/scenario.json",
+      "fixturesPath": "examples/optional-plugin-memory-flow/fixtures/input.md",
+      "expectedPath": "examples/optional-plugin-memory-flow/expected/runtime-baseline.json",
+      "requiredCommands": ["init", "doctor", "check"]
+    }
+  ],
   "requiredGateScripts": [
     "check:examples-doc-smoke",
     "check:examples-runtime-smoke",

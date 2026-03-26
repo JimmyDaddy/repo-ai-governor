@@ -35,6 +35,9 @@ const ROLE_PROFILE_STATUS_VALUES = new Set<string>(Object.values(RoleProfileStat
 const ADAPTER_SURFACE_VALUES = new Set<string>(Object.values(AdapterSurface));
 const ADAPTER_AVAILABILITY_VALUES = new Set<string>(Object.values(AdapterAvailability));
 const LOCAL_MODEL_PROVIDER_VALUES = new Set<string>(Object.values(LocalModelProvider));
+const MEMORY_PROVIDER_MODULE_PACKAGE_SPECIFIER_PATTERN =
+  /^(?:@[a-z0-9][a-z0-9-.]*\/)?[a-z0-9][a-z0-9-.]*$/u;
+const MEMORY_PROVIDER_EXPORT_NAME_PATTERN = /^[A-Za-z_$][A-Za-z0-9_$]*$/u;
 
 /**
  * Validates governor config payloads against the shared baseline contract.
@@ -1020,6 +1023,41 @@ export class SchemaValidator {
       provider.options === undefined
         ? undefined
         : this.expectRecord(provider.options, `${pointer}/options`);
+
+    if (module && id) {
+      this.throwConfigSchemaValidationError(
+        `${pointer}/id must not be combined with ${pointer}/module in the optional plugin baseline.`,
+        `${pointer}/id`,
+      );
+    }
+
+    if (module && !MEMORY_PROVIDER_MODULE_PACKAGE_SPECIFIER_PATTERN.test(module)) {
+      this.throwConfigSchemaValidationError(
+        `${pointer}/module must use an allowlist-controlled bare package specifier in the current optional plugin baseline.`,
+        `${pointer}/module`,
+      );
+    }
+
+    if (exportName && !module) {
+      this.throwConfigSchemaValidationError(
+        `${pointer}/exportName requires ${pointer}/module.`,
+        `${pointer}/exportName`,
+      );
+    }
+
+    if (exportName && !MEMORY_PROVIDER_EXPORT_NAME_PATTERN.test(exportName)) {
+      this.throwConfigSchemaValidationError(
+        `${pointer}/exportName must be a valid JavaScript identifier.`,
+        `${pointer}/exportName`,
+      );
+    }
+
+    if (options && !module) {
+      this.throwConfigSchemaValidationError(
+        `${pointer}/options requires ${pointer}/module.`,
+        `${pointer}/options`,
+      );
+    }
 
     return {
       ...(id ? { id } : {}),

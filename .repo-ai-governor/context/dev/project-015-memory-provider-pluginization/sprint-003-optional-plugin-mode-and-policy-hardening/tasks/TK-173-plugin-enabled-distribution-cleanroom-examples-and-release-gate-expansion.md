@@ -1,6 +1,6 @@
 # TK-173 plugin-enabled distribution、clean-room、examples 与 release gate expansion
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-26
 - Owner: AI-Agent
 - Priority: P0
@@ -58,7 +58,9 @@
 ## 9. 执行记录
 
 1. 2026-03-26：任务创建，状态初始化为 `planned`。
+2. 2026-03-26：状态切换为 `in_progress`，开始建立 plugin-enabled distribution、examples/runtime smoke、local verify 与 clean-room 的独立验证路径。
+3. 2026-03-26：任务完成，已建立 `build:plugin-enabled`、plugin-enabled examples/runtime smoke、local/tgz distribution verify 与 clean-room plugin scenario，并同步 `DA-173`。
 
 ## 10. 产出
 
-1. 待 `DA-173`。
+1. [DA-173](/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-015-memory-provider-pluginization/sprint-003-optional-plugin-mode-and-policy-hardening/tasks/DA-173-plugin-enabled-distribution-cleanroom-examples-and-release-gate-expansion.md)

@@ -1,6 +1,6 @@
 # sprint-003-optional-plugin-mode-and-policy-hardening 计划
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-26
 - Project: `project-015-memory-provider-pluginization`
 
@@ -10,10 +10,10 @@
 
 ## 2. Task Package
 
-1. `TK-171` memory provider plugin allowlist 与 registry resolution contract baseline（planned）
-2. `TK-172` CLI memory provider plugin loader cutover 与 dual-input compatibility（planned）
-3. `TK-173` plugin-enabled distribution、clean-room、examples 与 release gate expansion（planned）
-4. `TK-174` sprint-003 出口验收与 sprint-004 service reuse 输入约束（planned）
+1. `TK-171` memory provider plugin allowlist 与 registry resolution contract baseline（completed）
+2. `TK-172` CLI memory provider plugin loader cutover 与 dual-input compatibility（completed）
+3. `TK-173` plugin-enabled distribution、clean-room、examples 与 release gate expansion（completed）
+4. `TK-174` sprint-003 出口验收与 sprint-004 service reuse 输入约束（completed）
 
 ## 3. Exit Criteria
 
@@ -27,3 +27,4 @@
 1. 本 sprint 只承接 Phase 2 `optional plugin mode`，不把 service reuse 实装混入同一轮实现。
 2. 任意模块执行入口不在本 sprint 承诺范围内；所有 plugin 解析必须先经过 allowlist / prefix / path policy。
 3. sprint-004 再承接 CLI / desktop / service-backed runtime 的共享 loader reuse。
+4. 当前 sprint 已判定为 `accept`，但 `current-context` 仍暂留在 sprint-003，待下一条主执行流明确后再迁入 completed history。

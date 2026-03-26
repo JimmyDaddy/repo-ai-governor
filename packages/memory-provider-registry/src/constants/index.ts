@@ -1,7 +1,16 @@
 export {
   BUILT_IN_MEMORY_PROVIDER_DESCRIPTORS,
+  DEFAULT_MEMORY_PROVIDER_PLUGIN_ALLOWED_MODULES,
+  DEFAULT_MEMORY_PROVIDER_PLUGIN_ALLOWED_PACKAGE_PREFIXES,
+  DEFAULT_MEMORY_PROVIDER_PLUGIN_EXPORT_NAME,
+  DEFAULT_MEMORY_PROVIDER_PLUGIN_POLICY,
   MEMORY_STORE_ENGINE_TO_BUILT_IN_PROVIDER_ID,
   MemoryProviderBuiltInId,
   MemoryProviderDescriptorKind,
   MemoryProviderDistributionMode,
+  MemoryProviderHostSurface,
+  MemoryProviderPluginResolutionPolicyKind,
+  MemoryProviderPluginSpecifierKind,
+  MemoryProviderResolutionSource,
+  MemoryProviderRuntimeMode,
 } from "./memory-provider-registry.constant.js";

@@ -4,6 +4,11 @@ import type {
   MemoryProviderBuiltInId,
   MemoryProviderDescriptorKind,
   MemoryProviderDistributionMode,
+  MemoryProviderHostSurface,
+  MemoryProviderPluginResolutionPolicyKind,
+  MemoryProviderPluginSpecifierKind,
+  MemoryProviderResolutionSource,
+  MemoryProviderRuntimeMode,
 } from "../../constants/memory-provider-registry.constant.js";
 import type { MemoryProviderModuleLoader } from "../aliases/index.js";
 
@@ -12,12 +17,36 @@ import type { MemoryProviderModuleLoader } from "../aliases/index.js";
  */
 export interface MemoryProviderBuiltInDescriptor {
   id: MemoryProviderBuiltInId;
-  kind: MemoryProviderDescriptorKind;
+  kind: MemoryProviderDescriptorKind.BUILT_IN;
   distributionMode: MemoryProviderDistributionMode;
   packageName: string;
   exportName: string;
   providerName: string;
   supportedStoreEngines: MemoryStoreEngine[];
+}
+
+/**
+ * Defines one external plugin descriptor derived from runtime config and policy checks.
+ */
+export interface MemoryProviderPluginDescriptor {
+  id: string;
+  kind: MemoryProviderDescriptorKind.PLUGIN;
+  distributionMode: MemoryProviderDistributionMode.OPTIONAL;
+  moduleSpecifier: string;
+  exportName: string;
+  providerName: string;
+  specifierKind: MemoryProviderPluginSpecifierKind;
+  resolutionPolicyKind: MemoryProviderPluginResolutionPolicyKind;
+  supportedStoreEngines: MemoryStoreEngine[];
+}
+
+/**
+ * Defines the allowlist policy applied to `memory.provider.module`.
+ */
+export interface MemoryProviderPluginPolicy {
+  allowedModules: string[];
+  allowedPackagePrefixes: string[];
+  allowWorkspaceRelativeModules: boolean;
 }
 
 /**
@@ -35,11 +64,37 @@ export interface MemoryProviderConstructor {
 }
 
 /**
+ * Defines plugin-factory context shared across CLI and future service hosts.
+ */
+export interface MemoryProviderPluginLoadContext {
+  workspaceRoot: string;
+  memoryStoreRoot: string;
+  providerOptions: Record<string, unknown>;
+  hostSurface: MemoryProviderHostSurface;
+  runtimeMode: MemoryProviderRuntimeMode;
+}
+
+/**
+ * Defines the factory export contract required by plugin-backed providers.
+ */
+export type MemoryProviderPluginFactory = (
+  context: MemoryProviderPluginLoadContext,
+) => MemoryStoreProvider | Promise<MemoryStoreProvider>;
+
+/**
+ * Defines the registry-resolved descriptor union shared by built-in and plugin paths.
+ */
+export type MemoryProviderResolvedDescriptor =
+  | MemoryProviderBuiltInDescriptor
+  | MemoryProviderPluginDescriptor;
+
+/**
  * Defines registry construction options.
  */
 export interface MemoryProviderRegistryOptions {
   moduleLoader?: MemoryProviderModuleLoader;
   builtInDescriptors?: readonly MemoryProviderBuiltInDescriptor[];
+  pluginPolicy?: Partial<MemoryProviderPluginPolicy>;
 }
 
 /**
@@ -48,13 +103,24 @@ export interface MemoryProviderRegistryOptions {
 export interface MemoryProviderRegistryLoadRequest {
   workspaceRoot: string;
   memoryConfig: MemoryRuntimeConfig;
+  hostSurface?: MemoryProviderHostSurface;
+  runtimeMode?: MemoryProviderRuntimeMode;
+}
+
+/**
+ * Defines one descriptor-resolution result before the module export is loaded.
+ */
+export interface MemoryProviderRegistryResolutionResult {
+  descriptor: MemoryProviderResolvedDescriptor;
+  resolutionSource: MemoryProviderResolutionSource;
 }
 
 /**
  * Defines one resolved provider composition returned by the registry loader.
  */
 export interface MemoryProviderRegistryLoadResult {
-  descriptor: MemoryProviderBuiltInDescriptor;
+  descriptor: MemoryProviderResolvedDescriptor;
+  resolutionSource: MemoryProviderResolutionSource;
   memoryStoreRoot: string;
   providerName: string;
   provider: MemoryStoreProvider;

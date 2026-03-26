@@ -5,9 +5,14 @@ import { describe, expect, it } from "vitest";
 
 import {
   BUILT_IN_MEMORY_PROVIDER_DESCRIPTORS,
+  DEFAULT_MEMORY_PROVIDER_PLUGIN_EXPORT_NAME,
   MemoryProviderBuiltInId,
+  MemoryProviderDescriptorKind,
   MemoryProviderDistributionMode,
+  MemoryProviderPluginResolutionPolicyKind,
+  MemoryProviderPluginSpecifierKind,
   MemoryProviderRegistry,
+  MemoryProviderResolutionSource,
 } from "../src/index.js";
 
 describe("MemoryProviderRegistry", () => {
@@ -54,6 +59,143 @@ describe("MemoryProviderRegistry", () => {
 
     expect(descriptor.id).toBe(MemoryProviderBuiltInId.SQLITE_FS);
     expect(descriptor.providerName).toBe("SqliteFsMemoryStoreProvider");
+  });
+
+  it("resolves an allowlisted plugin descriptor from provider.module", () => {
+    const registry = new MemoryProviderRegistry({
+      pluginPolicy: {
+        allowedModules: ["@acme/memory-provider-postgres"],
+        allowedPackagePrefixes: [],
+      },
+    });
+
+    const resolution = registry.resolveDescriptor({
+      storeEngine: MemoryStoreEngine.FS_CSV,
+      storeRoot: "context/memory",
+      provider: {
+        module: "@acme/memory-provider-postgres",
+      },
+    });
+
+    expect(resolution.resolutionSource).toBe(MemoryProviderResolutionSource.PLUGIN_MODULE);
+    expect(resolution.descriptor).toEqual(
+      expect.objectContaining({
+        id: "@acme/memory-provider-postgres",
+        kind: MemoryProviderDescriptorKind.PLUGIN,
+        exportName: DEFAULT_MEMORY_PROVIDER_PLUGIN_EXPORT_NAME,
+        specifierKind: MemoryProviderPluginSpecifierKind.PACKAGE_NAME,
+        resolutionPolicyKind: MemoryProviderPluginResolutionPolicyKind.EXACT_ALLOWLIST,
+      }),
+    );
+  });
+
+  it("loads an allowlisted plugin provider via the factory contract", async () => {
+    const registry = new MemoryProviderRegistry({
+      pluginPolicy: {
+        allowedModules: ["@acme/memory-provider-postgres"],
+        allowedPackagePrefixes: [],
+      },
+      moduleLoader: async () => ({
+        createMemoryStoreProvider: async (context: {
+          memoryStoreRoot: string;
+          providerOptions: Record<string, unknown>;
+        }) => ({
+          read: async () => null,
+          write: async () => undefined,
+          query: async () => [],
+          snapshot: async () => undefined,
+          archive: async () => undefined,
+          context,
+        }),
+      }),
+    });
+
+    const result = await registry.loadPluginProvider({
+      workspaceRoot: "/tmp/repo-ai-governor-memory-provider-registry",
+      memoryConfig: {
+        storeEngine: MemoryStoreEngine.FS_CSV,
+        storeRoot: "context/memory",
+        provider: {
+          module: "@acme/memory-provider-postgres",
+          options: {
+            retentionDays: 30,
+          },
+        },
+      },
+    });
+
+    expect(result.resolutionSource).toBe(MemoryProviderResolutionSource.PLUGIN_MODULE);
+    expect(result.descriptor.kind).toBe(MemoryProviderDescriptorKind.PLUGIN);
+    expect(result.providerName).toBe("@acme/memory-provider-postgres");
+    expect(result.memoryStoreRoot).toBe(
+      join("/tmp/repo-ai-governor-memory-provider-registry", "context/memory"),
+    );
+  });
+
+  it("routes loadProvider through plugin resolution when provider.module is configured", async () => {
+    const registry = new MemoryProviderRegistry({
+      pluginPolicy: {
+        allowedModules: ["@acme/memory-provider-postgres"],
+        allowedPackagePrefixes: [],
+      },
+      moduleLoader: async () => ({
+        createMemoryStoreProvider: async () => ({
+          read: async () => null,
+          write: async () => undefined,
+          query: async () => [],
+          snapshot: async () => undefined,
+          archive: async () => undefined,
+        }),
+      }),
+    });
+
+    const result = await registry.loadProvider({
+      workspaceRoot: "/tmp/repo-ai-governor-memory-provider-registry",
+      memoryConfig: {
+        storeEngine: MemoryStoreEngine.FS_CSV,
+        storeRoot: "context/memory",
+        provider: {
+          module: "@acme/memory-provider-postgres",
+        },
+      },
+    });
+
+    expect(result.resolutionSource).toBe(MemoryProviderResolutionSource.PLUGIN_MODULE);
+    expect(result.descriptor.kind).toBe(MemoryProviderDescriptorKind.PLUGIN);
+    expect(result.providerName).toBe("@acme/memory-provider-postgres");
+  });
+
+  it("fails closed when a plugin module is not allowlisted", () => {
+    const registry = new MemoryProviderRegistry({
+      pluginPolicy: {
+        allowedModules: [],
+        allowedPackagePrefixes: ["@repo-ai-governor/memory-provider-"],
+      },
+    });
+
+    expect(() =>
+      registry.resolvePluginDescriptor({
+        storeEngine: MemoryStoreEngine.FS_CSV,
+        storeRoot: "context/memory",
+        provider: {
+          module: "@acme/memory-provider-postgres",
+        },
+      }),
+    ).toThrowError(RuntimeError);
+  });
+
+  it("fails closed when a plugin module uses a relative path", () => {
+    const registry = new MemoryProviderRegistry();
+
+    expect(() =>
+      registry.resolvePluginDescriptor({
+        storeEngine: MemoryStoreEngine.FS_CSV,
+        storeRoot: "context/memory",
+        provider: {
+          module: "./plugins/postgres-provider",
+        },
+      }),
+    ).toThrowError(RuntimeError);
   });
 
   it("fails closed with explicit default-distribution guidance when an optional built-in provider package is unavailable", async () => {

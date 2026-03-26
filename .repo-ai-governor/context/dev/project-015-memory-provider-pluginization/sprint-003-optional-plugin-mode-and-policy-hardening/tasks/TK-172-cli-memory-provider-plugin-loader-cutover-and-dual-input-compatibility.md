@@ -1,6 +1,6 @@
 # TK-172 CLI memory provider plugin loader cutover 与 dual-input compatibility
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-26
 - Owner: AI-Agent
 - Priority: P0
@@ -55,7 +55,9 @@
 ## 9. 执行记录
 
 1. 2026-03-26：任务创建，状态初始化为 `planned`。
+2. 2026-03-26：状态切换为 `in_progress`，开始将 CLI loader 正式切到 `provider.module` 受控解析路径，并补齐 dual-input diagnostics。
+3. 2026-03-26：任务完成，CLI 已通过统一 registry loader 支持 `storeEngine / provider.id / provider.module`，并补齐 plugin success / fail-closed integration coverage 与 `DA-172`。
 
 ## 10. 产出
 
-1. 待 `DA-172`。
+1. [DA-172](/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-015-memory-provider-pluginization/sprint-003-optional-plugin-mode-and-policy-hardening/tasks/DA-172-cli-memory-provider-plugin-loader-cutover-and-dual-input-compatibility.md)

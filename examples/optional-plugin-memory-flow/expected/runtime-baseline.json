@@ -1,0 +1,8 @@
+{
+  "expectedCommandOperations": {
+    "init": "workspace_init",
+    "doctor": "env_doctor",
+    "check": "governance_check"
+  },
+  "notes": "This baseline is consumed by plugin-enabled runtime smoke for optional memory-provider module loading."
+}

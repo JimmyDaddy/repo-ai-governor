@@ -7,6 +7,8 @@ import { resolve } from "node:path";
 import { gateFail, gateInfo, gatePass } from "../governance/gate-output.js";
 
 const GATE_NAME = "release-verify-local";
+const DEFAULT_DISTRIBUTION_MODE = "default";
+const PLUGIN_ENABLED_DISTRIBUTION_MODE = "plugin-enabled";
 const DIST_CLI_ENTRY_PATH = "dist/bin/repo-ai-governor.js";
 const REQUIRED_PACKED_PATH_SUFFIXES = [
   "dist/bin/repo-ai-governor.js",
@@ -40,10 +42,41 @@ const REQUIRED_PACKED_PATH_SUFFIXES = [
   "integrations/ide/examples/cursor-task.sample.json",
   "integrations/ide/examples/claude-code-commands.sample.json",
 ];
+const PLUGIN_ENABLED_REQUIRED_PACKED_PATH_SUFFIXES = [
+  "dist/packages/memory-providers/sqlite-fs/src/index.js",
+  "dist/node_modules/@repo-ai-governor/memory-provider-sqlite-fs/package.json",
+  "dist/node_modules/@repo-ai-governor/memory-provider-sqlite-fs/dist/src/index.js",
+];
 const FORBIDDEN_DEFAULT_PACKED_PATH_FRAGMENTS = [
   "dist/packages/memory-providers/sqlite-fs/",
   "dist/node_modules/@repo-ai-governor/memory-provider-sqlite-fs/",
 ];
+
+/**
+ * Parses CLI args for local-distribution verification.
+ * @returns {{distributionMode: "default" | "plugin-enabled"}}
+ */
+function parseCliOptions() {
+  const rawArgs = process.argv.slice(2);
+  const distributionModeIndex = rawArgs.findIndex((arg) => arg === "--distribution-mode");
+  if (distributionModeIndex === -1) {
+    return {
+      distributionMode: DEFAULT_DISTRIBUTION_MODE,
+    };
+  }
+
+  const candidateMode = rawArgs[distributionModeIndex + 1]?.trim();
+  if (
+    candidateMode !== DEFAULT_DISTRIBUTION_MODE &&
+    candidateMode !== PLUGIN_ENABLED_DISTRIBUTION_MODE
+  ) {
+    throw new Error('Expected "--distribution-mode" to be "default" or "plugin-enabled".');
+  }
+
+  return {
+    distributionMode: candidateMode,
+  };
+}
 
 /**
  * Runs one shell command and throws on non-zero status.
@@ -199,6 +232,7 @@ function hasPackedPathFragment(packedFilePaths, forbiddenFragment) {
 }
 
 try {
+  const options = parseCliOptions();
   const absoluteCliEntryPath = resolve(process.cwd(), DIST_CLI_ENTRY_PATH);
   if (!existsSync(absoluteCliEntryPath)) {
     throw new Error(`Distribution CLI entry is missing: ${DIST_CLI_ENTRY_PATH}`);
@@ -212,6 +246,20 @@ try {
     "Desktop entry smoke check",
   );
   gateInfo(GATE_NAME, "Desktop entry smoke check passed.");
+  runCommand(
+    "node",
+    [
+      "./scripts/examples/check-examples-runtime.js",
+      ...(options.distributionMode === PLUGIN_ENABLED_DISTRIBUTION_MODE
+        ? ["--distribution-mode", PLUGIN_ENABLED_DISTRIBUTION_MODE]
+        : []),
+    ],
+    "Examples runtime smoke check",
+  );
+  gateInfo(
+    GATE_NAME,
+    `Examples runtime smoke check passed for distribution_mode=${options.distributionMode}.`,
+  );
 
   const packResult = runCommand("pnpm", ["pack", "--json"], "pnpm pack --json");
   const parsedPackJson = parsePackOutputJson(packResult.stdout ?? "");
@@ -223,11 +271,22 @@ try {
       throw new Error(`Packed artifact is missing required path suffix: ${requiredSuffix}`);
     }
   }
-  for (const forbiddenFragment of FORBIDDEN_DEFAULT_PACKED_PATH_FRAGMENTS) {
-    if (hasPackedPathFragment(packedFilePaths, forbiddenFragment)) {
-      throw new Error(
-        `Packed artifact contains optional built-in provider payload in default distribution: ${forbiddenFragment}`,
-      );
+
+  if (options.distributionMode === PLUGIN_ENABLED_DISTRIBUTION_MODE) {
+    for (const requiredSuffix of PLUGIN_ENABLED_REQUIRED_PACKED_PATH_SUFFIXES) {
+      if (!hasPackedPathSuffix(packedFilePaths, requiredSuffix)) {
+        throw new Error(
+          `Plugin-enabled packed artifact is missing required path suffix: ${requiredSuffix}`,
+        );
+      }
+    }
+  } else {
+    for (const forbiddenFragment of FORBIDDEN_DEFAULT_PACKED_PATH_FRAGMENTS) {
+      if (hasPackedPathFragment(packedFilePaths, forbiddenFragment)) {
+        throw new Error(
+          `Packed artifact contains optional built-in provider payload in default distribution: ${forbiddenFragment}`,
+        );
+      }
     }
   }
 
@@ -243,7 +302,7 @@ try {
   rmSync(packTarballPath, { force: true });
   gatePass(
     GATE_NAME,
-    `local distribution verified. pack_file=${rawFilename.trim()} files=${packedFilePaths.length}`,
+    `local distribution verified. distribution_mode=${options.distributionMode} pack_file=${rawFilename.trim()} files=${packedFilePaths.length}`,
   );
 } catch (error) {
   const errorMessage = error instanceof Error ? error.message : String(error);

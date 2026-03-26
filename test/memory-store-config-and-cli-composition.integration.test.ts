@@ -132,4 +132,64 @@ describe("Memory store config and CLI composition smoke", () => {
       await rm(repositoryRoot, { recursive: true, force: true });
     }
   });
+
+  it("loads an allowlisted plugin provider module through CLI composition", async () => {
+    const repositoryRoot = await createTemporaryRepositoryRoot();
+    const configDirectory = resolve(repositoryRoot, ".repo-ai-governor");
+    const configPath = resolve(configDirectory, "governor.yaml");
+
+    await mkdir(configDirectory, { recursive: true });
+    await writeFile(
+      configPath,
+      [
+        'schemaVersion: "1.0"',
+        "workspace:",
+        "  mode: repo_local",
+        "i18n:",
+        "  runtimeEngine: i18next",
+        "  defaultLocale: zh-CN",
+        "  fallbackLocale: en-US",
+        "  supportedLocales:",
+        "    - zh-CN",
+        "    - en-US",
+        "memory:",
+        "  storeEngine: sqlite_fs",
+        "  storeRoot: context/memory/plugin-sqlite",
+        "  provider:",
+        '    module: "@repo-ai-governor/memory-provider-sqlite-fs"',
+        '    exportName: "createMemoryStoreProvider"',
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(repositoryRoot);
+
+    try {
+      const exitCode = await runCli(
+        ["node", "repo-ai-governor", "--locale", "en-US", "--output", "json", "init"],
+        io,
+      );
+      const payload = JSON.parse(stdoutBuffer.join(""));
+
+      expect(exitCode).toBe(0);
+      expect(stderrBuffer.join("")).toBe("");
+      expect(payload.status).toBe("success");
+      expect(payload.diagnostics.memoryStoreEngine).toBe("sqlite_fs");
+      expect(payload.diagnostics.memoryStoreProvider).toBe(
+        "@repo-ai-governor/memory-provider-sqlite-fs",
+      );
+      expect(payload.diagnostics.memoryStoreProviderId).toBe(
+        "@repo-ai-governor/memory-provider-sqlite-fs",
+      );
+      expect(payload.diagnostics.memoryStoreProviderModule).toBe(
+        "@repo-ai-governor/memory-provider-sqlite-fs",
+      );
+      expect(payload.diagnostics.memoryStoreDistributionMode).toBe("optional");
+      expect(payload.diagnostics.memoryStoreResolutionSource).toBe("plugin_module");
+      expect(payload.diagnostics.memoryStoreRoot).toContain("context/memory/plugin-sqlite");
+    } finally {
+      await rm(repositoryRoot, { recursive: true, force: true });
+    }
+  });
 });

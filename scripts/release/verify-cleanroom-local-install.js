@@ -22,6 +22,8 @@ const DEFAULT_MODE_LIST = ["path", "link"];
 const SUPPORTED_MODE_SET = new Set(["path", "tgz", "link"]);
 const DEFAULT_ITERATIONS = 3;
 const DEFAULT_REQUIRED_CHAIN = ["--help", "init", "doctor", "check"];
+const DEFAULT_DISTRIBUTION_MODE = "default";
+const PLUGIN_ENABLED_DISTRIBUTION_MODE = "plugin-enabled";
 const WORKSPACE_ROLLBACK_BASELINE_MODE = "path";
 const READ_ONLY_ATTACH_PRECHECK_MODE = "path";
 
@@ -58,6 +60,7 @@ function parseCliOptions() {
   let iterations = DEFAULT_ITERATIONS;
   let outputPath = DEFAULT_REPORT_PATH;
   let keepTemp = false;
+  let distributionMode = DEFAULT_DISTRIBUTION_MODE;
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
@@ -100,6 +103,16 @@ function parseCliOptions() {
       continue;
     }
 
+    if (arg === "--distribution-mode") {
+      const value = args[index + 1];
+      if (value !== DEFAULT_DISTRIBUTION_MODE && value !== PLUGIN_ENABLED_DISTRIBUTION_MODE) {
+        throw new Error('Expected "--distribution-mode" to be "default" or "plugin-enabled".');
+      }
+      distributionMode = value;
+      index += 1;
+      continue;
+    }
+
     throw new Error(`Unsupported option: ${arg}`);
   }
 
@@ -125,6 +138,7 @@ function parseCliOptions() {
     iterations,
     outputPath,
     keepTemp,
+    distributionMode,
   };
 }
 
@@ -706,6 +720,107 @@ function runWorkspaceSwitchRollbackScenario(options) {
 }
 
 /**
+ * Runs one plugin-enabled memory-provider scenario in clean-room install.
+ * @param {{
+ *   mode: string;
+ *   workingRoot: string;
+ *   installAssets: {repositoryRoot: string; tarballPath: string | null};
+ * }} options Scenario options.
+ * @returns {Record<string, unknown>}
+ */
+function runPluginEnabledMemoryProviderScenario(options) {
+  const scenarioRoot = resolve(options.workingRoot, `plugin-memory-${options.mode}`);
+  const repositoryPath = resolve(scenarioRoot, "target-repo");
+  const homePath = resolve(scenarioRoot, "home");
+  const runtimeEnv = buildIsolatedRuntimeEnv(homePath);
+  initializeCleanroomRepository(repositoryPath, `cleanroom-plugin-memory-${options.mode}`);
+  const install = installCleanroomPackage({
+    mode: options.mode,
+    repositoryPath,
+    runtimeEnv,
+    installAssets: options.installAssets,
+  });
+
+  const repoLocalConfigPath = resolve(repositoryPath, ".repo-ai-governor", "governor.yaml");
+  mkdirSync(dirname(repoLocalConfigPath), { recursive: true });
+  writeFileSync(
+    repoLocalConfigPath,
+    [
+      'schemaVersion: "1.1"',
+      "workspace:",
+      "  mode: repo_local",
+      "  migrationPolicy: copy_verify_switch_rollback",
+      "i18n:",
+      "  runtimeEngine: i18next",
+      "  defaultLocale: zh-CN",
+      "  fallbackLocale: en-US",
+      "  supportedLocales:",
+      "    - zh-CN",
+      "    - en-US",
+      "memory:",
+      "  storeEngine: sqlite_fs",
+      "  storeRoot: context/memory/plugin-sqlite",
+      "  provider:",
+      '    module: "@repo-ai-governor/memory-provider-sqlite-fs"',
+      '    exportName: "createMemoryStoreProvider"',
+      "",
+    ].join("\n"),
+    "utf8",
+  );
+
+  const initStep = runCleanroomCliCommand({
+    repositoryPath,
+    runtimeEnv,
+    args: ["--output", "json", "init"],
+    label: `init(plugin-memory/${options.mode})`,
+  });
+  const initPayload = parseJsonOutput(initStep.stdout, `init(plugin-memory/${options.mode})`);
+  assertCliSuccessPayload(initPayload, `init(plugin-memory/${options.mode})`);
+
+  const checkStep = runCleanroomCliCommand({
+    repositoryPath,
+    runtimeEnv,
+    args: ["--output", "json", "check"],
+    label: `check(plugin-memory/${options.mode})`,
+  });
+  const checkPayload = parseJsonOutput(checkStep.stdout, `check(plugin-memory/${options.mode})`);
+  assertCliSuccessPayload(checkPayload, `check(plugin-memory/${options.mode})`);
+
+  const initDiagnostics =
+    initPayload.diagnostics && typeof initPayload.diagnostics === "object"
+      ? initPayload.diagnostics
+      : {};
+  if (initDiagnostics.memoryStoreResolutionSource !== "plugin_module") {
+    throw new Error(
+      `Expected plugin_module memory resolution in clean-room plugin scenario. actual=${String(initDiagnostics.memoryStoreResolutionSource)}`,
+    );
+  }
+  if (initDiagnostics.memoryStoreProviderModule !== "@repo-ai-governor/memory-provider-sqlite-fs") {
+    throw new Error(
+      `Expected sqlite plugin module diagnostics in clean-room plugin scenario. actual=${String(initDiagnostics.memoryStoreProviderModule)}`,
+    );
+  }
+
+  return {
+    mode: options.mode,
+    status: "passed",
+    repositoryPath,
+    install,
+    init: {
+      command: initStep.command,
+      durationMs: initStep.durationMs,
+      diagnostics: initPayload.diagnostics ?? null,
+    },
+    check: {
+      command: checkStep.command,
+      durationMs: checkStep.durationMs,
+      diagnostics: checkPayload.diagnostics ?? null,
+      commandResult: checkPayload.command_result ?? null,
+    },
+  };
+}
+
+/**
  * Parses `pnpm pack --json` output payload.
  * @param {string} rawOutput Raw stdout from `pnpm pack --json`.
  * @returns {{filename: string}}
@@ -758,15 +873,21 @@ function parsePackResult(rawOutput) {
 /**
  * Creates install assets required by selected modes.
  * @param {string[]} modes Selected install modes.
+ * @param {"default" | "plugin-enabled"} distributionMode Selected distribution mode.
  * @returns {{repositoryRoot: string; tarballPath: string | null}}
  */
-function prepareInstallAssets(modes) {
+function prepareInstallAssets(modes, distributionMode) {
   const repositoryRoot = process.cwd();
-  runCommand("pnpm", ["run", "build"], {
+  const buildScriptName =
+    distributionMode === PLUGIN_ENABLED_DISTRIBUTION_MODE ? "build:plugin-enabled" : "build";
+  runCommand("pnpm", ["run", buildScriptName], {
     cwd: repositoryRoot,
     label: "build",
   });
-  gateInfo(GATE_NAME, "build completed for clean-room install validation.");
+  gateInfo(
+    GATE_NAME,
+    `build completed for clean-room install validation. distribution_mode=${distributionMode}`,
+  );
 
   if (!modes.includes("tgz")) {
     return {
@@ -805,7 +926,7 @@ function writeReport(reportPath, reportPayload) {
 
 const options = parseCliOptions();
 const createdTempRoot = mkdtempSync(resolve(tmpdir(), "repo-ai-governor-cleanroom-"));
-const installAssets = prepareInstallAssets(options.modes);
+const installAssets = prepareInstallAssets(options.modes, options.distributionMode);
 
 let overallStatus = "passed";
 let overallFailure = null;
@@ -815,6 +936,8 @@ const modeResults = [];
 let workspaceSwitchRollback = null;
 /** @type {Record<string, unknown> | null} */
 let readOnlyAttachPrecheck = null;
+/** @type {Array<Record<string, unknown>>} */
+let pluginEnabledMemoryProviderScenarios = [];
 
 try {
   for (const mode of options.modes) {
@@ -864,6 +987,18 @@ try {
     installAssets,
   });
   gateInfo(GATE_NAME, "read-only attach precheck passed.");
+
+  if (options.distributionMode === PLUGIN_ENABLED_DISTRIBUTION_MODE) {
+    pluginEnabledMemoryProviderScenarios = options.modes.map((mode) => {
+      const scenario = runPluginEnabledMemoryProviderScenario({
+        mode,
+        workingRoot: createdTempRoot,
+        installAssets,
+      });
+      gateInfo(GATE_NAME, `plugin-enabled memory provider scenario passed for mode=${mode}.`);
+      return scenario;
+    });
+  }
 } catch (error) {
   overallStatus = "failed";
   overallFailure = error instanceof Error ? error.message : String(error);
@@ -877,10 +1012,12 @@ const reportPayload = {
   selectedModes: options.modes,
   selectedModeCount: options.modes.length,
   iterationsPerMode: options.iterations,
+  distributionMode: options.distributionMode,
   requiredCommandChain: DEFAULT_REQUIRED_CHAIN,
   modeResults,
   workspaceSwitchRollback,
   readOnlyAttachPrecheck,
+  pluginEnabledMemoryProviderScenarios,
   stage9aHardExit: {
     requiredModeMinimum: 2,
     selectedModeCount: options.modes.length,
@@ -891,6 +1028,7 @@ const reportPayload = {
   },
   notes: {
     tgzModeSelected: options.modes.includes("tgz"),
+    pluginEnabledDistribution: options.distributionMode === PLUGIN_ENABLED_DISTRIBUTION_MODE,
     cleanupPolicy: options.keepTemp || overallStatus === "failed" ? "keep_temp" : "remove_temp",
   },
 };

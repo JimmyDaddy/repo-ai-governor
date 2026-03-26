@@ -114,6 +114,41 @@ async function createProfileOnlyAdaptersFixtureRepo(): Promise<string> {
   return temporaryRepositoryRoot;
 }
 
+/**
+ * Creates one temporary repo that configures a blocked plugin memory provider module.
+ * @returns Temporary repository absolute path.
+ */
+async function createBlockedMemoryProviderFixtureRepo(): Promise<string> {
+  const temporaryRepositoryRoot = await mkdtemp(resolve(tmpdir(), "cli-output-memory-plugin-"));
+  const workspaceRoot = resolve(temporaryRepositoryRoot, ".repo-ai-governor");
+  await mkdir(workspaceRoot, { recursive: true });
+  await writeFile(
+    resolve(workspaceRoot, "governor.yaml"),
+    [
+      'schemaVersion: "1.1"',
+      "workspace:",
+      "  mode: repo_local",
+      "  migrationPolicy: copy_verify_switch_rollback",
+      "i18n:",
+      "  runtimeEngine: i18next",
+      "  defaultLocale: zh-CN",
+      "  fallbackLocale: en-US",
+      "  supportedLocales:",
+      "    - zh-CN",
+      "    - en-US",
+      "memory:",
+      "  storeEngine: fs_csv",
+      "  storeRoot: context/memory",
+      "  provider:",
+      '    module: "@acme/memory-provider-postgres"',
+      '    exportName: "createMemoryStoreProvider"',
+      "",
+    ].join("\n"),
+    "utf8",
+  );
+  return temporaryRepositoryRoot;
+}
+
 describe("CLI output contract integration", () => {
   it("renders stable JSON schema in --output json mode", async () => {
     const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false);
@@ -277,6 +312,26 @@ describe("CLI output contract integration", () => {
     expect(payload.output_mode).toBe("json");
     expect(payload.error_code).toBe("ENTRYPOINT_COMMAND_WRAPPER_INVALID");
     expect(payload.command).toBe("init");
+  });
+
+  it("keeps JSON error contract when memory provider module is outside plugin allowlist", async () => {
+    const repositoryRoot = await createBlockedMemoryProviderFixtureRepo();
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, repositoryRoot);
+
+    try {
+      const exitCode = await runCli(["node", "repo-ai-governor", "--output", "json", "init"], io);
+      const payload = JSON.parse(stderrBuffer.join(""));
+
+      expect(exitCode).toBe(1);
+      expect(stdoutBuffer.join("")).toBe("");
+      expect(payload.status).toBe("error");
+      expect(payload.output_mode).toBe("json");
+      expect(payload.error_code).toBe("MEMORY_STORE_PROVIDER_NOT_FOUND");
+      expect(payload.message).toContain("not allowlisted");
+      expect(payload.command).toBe("init");
+    } finally {
+      await rm(repositoryRoot, { recursive: true, force: true });
+    }
   });
 
   it("fails fast when official IDE wrapper env carries invalid surface or source IDs", async () => {

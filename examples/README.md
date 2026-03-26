@@ -10,6 +10,7 @@ Included executable scenario docs:
 2. `examples/multi-role-collaboration-flow/README.md`
 3. `examples/hitl-escalation-flow/README.md`
 4. `examples/restricted-network-degrade-flow/README.md`
+5. `examples/optional-plugin-memory-flow/README.md` (`plugin-enabled distribution` only)
 
 Each scenario now includes runtime assets:
 
@@ -24,6 +25,7 @@ Run the blocking smoke gates before delivery:
 ```bash
 pnpm run check:examples-doc-smoke
 pnpm run check:examples-runtime-smoke
+pnpm run build:plugin-enabled && pnpm run check:examples-runtime-smoke:plugin-enabled
 ```
 
 The doc smoke gate blocks when:
@@ -38,6 +40,7 @@ The runtime smoke gate blocks when:
 1. Any scenario command cannot execute end-to-end in an isolated temp workspace.
 2. Output payload is not valid JSON contract (`status/command/command_result.operation`).
 3. Required artifact IDs declared by scenario assertions are missing.
+4. `plugin-enabled distribution` mode 下，optional plugin example 无法通过 `provider.module` 成功装载。
 
 ## 3. Doc Backlinks
 
