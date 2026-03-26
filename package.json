@@ -27,9 +27,10 @@
   "files": [
     "bin",
     "dist",
+    "docs",
+    ".codex/skills",
     "integrations/ide",
     "integrations/desktop",
-    "skills",
     "scripts/examples",
     "examples"
   ],

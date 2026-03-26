@@ -28,13 +28,13 @@
 
 ## 2.2 sprint-002-packaged-runtime-cutover-and-release-gate-block
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 修复 packaged distribution 真值，并将 clean-room packaged install 验证切为 release/GA blocking gate。
-- Task Package: 激活时拆分。
+- Task Package: `TK-226`、`TK-227`、`TK-228`、`TK-229`。
 - Exit Criteria:
   1. `pnpm pack` / `tgz` clean-room 路径下的 `--help -> init -> doctor -> check` 可稳定通过。
   2. published surface 不再依赖 workspace 内解析或未声明 runtime asset 偶然存在。
-  3. support matrix、README、playbook 与 release gate 的 truthfulness 口径一致。
+  3. support matrix、README、playbook、skill surface 与 release gate 的 truthfulness 口径一致。
 
 ## 2.3 sprint-003-upgrade-and-workspace-lifecycle-ux-baseline
 
@@ -64,6 +64,10 @@
 | TK-223 | sprint-001 | packaging/install matrix 与 failure-class baseline | package/baseline | TK-222,DA-216,DA-220 | completed |
 | TK-224 | sprint-001 | published surface inventory 与 packaged-runtime resolvability audit | package/runtime | TK-223,DA-223,package.json,apps/cli/README.md | completed |
 | TK-225 | sprint-001 | sprint-001 出口验收与 sprint-002 packaged cutover 输入约束 | acceptance/baseline | TK-222,TK-223,TK-224,DA-222,DA-223,DA-224 | completed |
+| TK-226 | sprint-002 | sprint-002 激活与 sprint-001 closeout handoff | bootstrap/governance | DA-225,sprint-001 completion | completed |
+| TK-227 | sprint-002 | packaged docs truthfulness 与 root README/playbook cutover | docs/package | TK-226,DA-224,README.md,docs/local-adoption-playbook.md | completed |
+| TK-228 | sprint-002 | skill publish surface、offline install truthfulness 与 blocking gate expansion | package/gate | TK-227,DA-225,DA-227,package.json,scripts/release/verify-local-distribution.js | completed |
+| TK-229 | sprint-002 | sprint-002 出口验收与 sprint-003 upgrade/workspace 输入约束 | acceptance/baseline | TK-226,TK-227,TK-228,DA-226,DA-227,DA-228 | completed |
 
 ## 4. 依赖产物策略
 
@@ -97,3 +101,5 @@
 
 1. 2026-03-26：创建 `project-020-adoption-productization-and-upgrade-ux`，将 `project-019 / sprint-002` 从 active closeout surface 迁入 completed history，并激活 `sprint-001-packaging-truthfulness-failure-baseline`。
 2. 2026-03-26：完成 `sprint-001-packaging-truthfulness-failure-baseline`，形成 `DA-222`、`DA-223`、`DA-224`、`DA-225`，并将 sprint-002 的输入约束冻结为 docs/skills publish surface truthfulness、offline install truthfulness 与 blocking gate cutover。
+3. 2026-03-26：激活 `sprint-002-packaged-runtime-cutover-and-release-gate-block`，将 `sprint-001` 迁入 completed history，并启动 `TK-227` 收敛 root README/playbook packaged docs truthfulness。
+4. 2026-03-26：完成 `sprint-002-packaged-runtime-cutover-and-release-gate-block`，形成 `DA-227`、`DA-228`、`DA-229`，确认 `.codex/skills/` 为 canonical publish path、`tgz` 为 online-only clean-room 路径，并将下一条推荐执行流切换到 `sprint-003-upgrade-and-workspace-lifecycle-ux-baseline`。

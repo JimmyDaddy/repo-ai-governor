@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { spawnSync } from "node:child_process";
-import { existsSync, rmSync } from "node:fs";
+import { existsSync, readFileSync, rmSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { gateFail, gateInfo, gatePass } from "../governance/gate-output.js";
@@ -32,6 +32,8 @@ const REQUIRED_PACKED_PATH_SUFFIXES = [
   "dist/packages/published-surfaces/service-host.js",
   "dist/packages/published-surfaces/service-host.d.ts",
   "dist/packages/shared/src/index.js",
+  "docs/local-adoption-playbook.md",
+  "docs/local-adoption-playbook.zh-CN.md",
   "examples/README.md",
   "examples/single-role-minimal-flow/scenario.json",
   "examples/single-role-minimal-flow/expected/runtime-baseline.json",
@@ -43,6 +45,12 @@ const REQUIRED_PACKED_PATH_SUFFIXES = [
   "integrations/ide/examples/jetbrains-run-configuration.sample.xml",
   "integrations/ide/examples/cursor-task.sample.json",
   "integrations/ide/examples/claude-code-commands.sample.json",
+  ".codex/skills/technical-solution-promotion/SKILL.md",
+  ".codex/skills/technical-solution-promotion/agents/openai.yaml",
+  ".codex/skills/workspace-code-review-workflow/SKILL.md",
+  ".codex/skills/workspace-code-review-workflow/agents/openai.yaml",
+  ".codex/skills/workspace-delivery-finisher/SKILL.md",
+  ".codex/skills/workspace-delivery-finisher/agents/openai.yaml",
 ];
 const PLUGIN_ENABLED_REQUIRED_PACKED_PATH_SUFFIXES = [
   "dist/packages/memory-providers/sqlite-fs/src/index.js",
@@ -52,6 +60,34 @@ const PLUGIN_ENABLED_REQUIRED_PACKED_PATH_SUFFIXES = [
 const FORBIDDEN_DEFAULT_PACKED_PATH_FRAGMENTS = [
   "dist/packages/memory-providers/sqlite-fs/",
   "dist/node_modules/@repo-ai-governor/memory-provider-sqlite-fs/",
+];
+const DOCUMENT_TRUTHFULNESS_ASSERTIONS = [
+  {
+    filePath: "README.md",
+    requiredFragments: [
+      "docs/local-adoption-playbook.md",
+      ".codex/skills/",
+      "npm registry",
+      "offline/self-contained",
+    ],
+  },
+  {
+    filePath: "README.zh-CN.md",
+    requiredFragments: [
+      "docs/local-adoption-playbook.zh-CN.md",
+      ".codex/skills/",
+      "npm registry",
+      "离线自包含",
+    ],
+  },
+  {
+    filePath: "docs/local-adoption-playbook.md",
+    requiredFragments: [".codex/skills/", "npm registry", "offline/self-contained"],
+  },
+  {
+    filePath: "docs/local-adoption-playbook.zh-CN.md",
+    requiredFragments: [".codex/skills/", "npm registry", "离线自包含"],
+  },
 ];
 
 /**
@@ -233,6 +269,36 @@ function hasPackedPathFragment(packedFilePaths, forbiddenFragment) {
   return packedFilePaths.some((candidatePath) => candidatePath.includes(normalizedFragment));
 }
 
+/**
+ * Reads one UTF-8 text file from the repository root.
+ * @param {string} relativeFilePath Relative repository path.
+ * @returns {string}
+ */
+function readTextFile(relativeFilePath) {
+  const absoluteFilePath = resolve(process.cwd(), relativeFilePath);
+  if (!existsSync(absoluteFilePath)) {
+    throw new Error(`Required truthfulness source file is missing: ${relativeFilePath}`);
+  }
+
+  return readFileSync(absoluteFilePath, "utf8");
+}
+
+/**
+ * Verifies user-facing docs describe the supported packaged surface accurately.
+ */
+function verifyDocumentationTruthfulness() {
+  for (const assertion of DOCUMENT_TRUTHFULNESS_ASSERTIONS) {
+    const fileContent = readTextFile(assertion.filePath);
+    for (const requiredFragment of assertion.requiredFragments) {
+      if (!fileContent.includes(requiredFragment)) {
+        throw new Error(
+          `Documentation truthfulness drift: ${assertion.filePath} is missing "${requiredFragment}"`,
+        );
+      }
+    }
+  }
+}
+
 try {
   const options = parseCliOptions();
   const absoluteCliEntryPath = resolve(process.cwd(), DIST_CLI_ENTRY_PATH);
@@ -272,6 +338,8 @@ try {
   const parsedPackJson = parsePackOutputJson(packResult.stdout ?? "");
   const packRecord = resolvePackRecord(parsedPackJson);
   const packedFilePaths = readPackedFilePaths(packRecord);
+
+  verifyDocumentationTruthfulness();
 
   for (const requiredSuffix of REQUIRED_PACKED_PATH_SUFFIXES) {
     if (!hasPackedPathSuffix(packedFilePaths, requiredSuffix)) {

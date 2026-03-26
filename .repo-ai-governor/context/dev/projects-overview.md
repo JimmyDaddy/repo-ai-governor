@@ -56,7 +56,7 @@
 19. `project-019-product-gap-assessment`
 20. `project-020-adoption-productization-and-upgrade-ux`
 
-说明：Stage 主链按 001-007、009、010、013 推进；`project-008` 作为跨阶段治理优化轨可优先执行；`project-011` 作为 `project-010` 的工程支撑分解轨，为 CLI package 重构提供独立执行流；`project-012` 作为 `project-008` 的上下文效率 follow-up，负责收敛当前仓库的启动加载与台账上下文成本；`project-013` 已完成 Stage 9 最后业务阻断项收口；`project-014` 承接 post-Stage-9 的运行时现代化主线，但只完成了第一阶段 adoption/service-backed execution 收口；`project-015`、`project-016`、`project-017`、`project-018` 与 `project-019` 均已完成并进入完成态消费面；`project-020 / sprint-001` 已完成 baseline 与输入约束冻结，当前 worktree 仅临时保留它作为 closeout surface，等待显式激活 `sprint-002`。
+说明：Stage 主链按 001-007、009、010、013 推进；`project-008` 作为跨阶段治理优化轨可优先执行；`project-011` 作为 `project-010` 的工程支撑分解轨，为 CLI package 重构提供独立执行流；`project-012` 作为 `project-008` 的上下文效率 follow-up，负责收敛当前仓库的启动加载与台账上下文成本；`project-013` 已完成 Stage 9 最后业务阻断项收口；`project-014` 承接 post-Stage-9 的运行时现代化主线，但只完成了第一阶段 adoption/service-backed execution 收口；`project-015`、`project-016`、`project-017`、`project-018` 与 `project-019` 均已完成并进入完成态消费面；`project-020 / sprint-002` 已完成 packaged docs/skills/offline-install truthfulness 收口，当前 worktree 仅临时保留它作为 closeout surface，下一条推荐执行流为 `sprint-003`。
 
 ## 3. 交付原则
 

@@ -4,6 +4,7 @@ Repository-local AI governance CLI for orchestrated workflows.
 
 - Chinese guide: `README.zh-CN.md`
 - Local adoption playbook: `docs/local-adoption-playbook.md`
+- Repo-local skill references: `.codex/skills/`
 - Examples assets: `examples/`
 - Changelog: `CHANGELOG.md`
 
@@ -33,7 +34,7 @@ cd <target-repo>
 pnpm add --save-exact link:<governor-repo>
 ```
 
-### Option C: `tgz` (Stage 9B follow-up, currently a known limitation)
+### Option C: `tgz` (release-candidate rehearsal; requires registry access)
 
 ```bash
 cd <governor-repo>
@@ -43,12 +44,25 @@ cd <target-repo>
 pnpm add --save-exact /absolute/path/to/cjhdev-repo-ai-governor-<version>.tgz
 ```
 
-Known limitation (validated on 2026-03-22):
-`tgz` mode still fails at `pnpm exec repo-ai-governor --help` with
-`ERR_MODULE_NOT_FOUND(@repo-ai-governor/cli)` in clean-room validation.
-Use `path` or `link` for Stage 9A onboarding, and treat `tgz` as a Stage 9B fix-forward item.
+Support boundary (validated on 2026-03-26):
 
-## 1.3 Command Bootstrap Chain
+1. `tgz` clean-room install is supported when `pnpm add` can reach the npm registry.
+2. The tarball is not offline/self-contained: external dependencies such as `commander`, `i18next`, and `yaml` are still resolved during `pnpm add`.
+3. For fully restricted or offline environments, use `path` or `link` with a pre-bootstrapped governor checkout.
+
+## 1.3 Packaged Reference Surface
+
+Published tarballs are expected to include:
+
+1. `README.md` and `README.zh-CN.md`
+2. `docs/local-adoption-playbook.md` and `docs/local-adoption-playbook.zh-CN.md`
+3. `examples/`
+4. `integrations/ide/` and `integrations/desktop/`
+5. `.codex/skills/`
+
+Repo-local skills under `.codex/skills/` are published as reference assets; they are not auto-copied into your target repository workspace.
+
+## 1.4 Command Bootstrap Chain
 
 Run this chain from `<target-repo>`:
 
@@ -65,7 +79,7 @@ Expected baseline:
 2. `doctor` returns attach mode via `command_result.attach_mode`.
 3. `check` returns governance check summary in `command_result.check_totals`.
 
-## 1.4 Read-only Attach Precheck
+## 1.5 Read-only Attach Precheck
 
 Use `doctor` to detect whether current repository can run in write mode.
 
@@ -116,13 +130,15 @@ pnpm run check
 
 ## 5. Troubleshooting Shortlist
 
-1. `ERR_MODULE_NOT_FOUND`: run `pnpm install` at governor repository root and rebuild.
-2. Runtime smoke fails on output parsing: force `--output json` in all automation calls.
-3. `review-verify` reports no queued request: run `review` once before `review-verify`.
-4. Unexpected workspace root: check `governor.yaml.workspace.mode` and current working directory.
+1. `pnpm add <tarball>` fails with `ENOTFOUND` or registry-resolution errors: `tgz` install still requires npm registry access; use `path`/`link` or run in an online environment.
+2. `ERR_MODULE_NOT_FOUND` after source-based adoption: run `pnpm install` at governor repository root and rebuild.
+3. Runtime smoke fails on output parsing: force `--output json` in all automation calls.
+4. `review-verify` reports no queued request: run `review` once before `review-verify`.
+5. Unexpected workspace root: check `governor.yaml.workspace.mode` and current working directory.
 
 ## 6. Next Steps
 
 1. Follow `docs/local-adoption-playbook.md` for clean-room validation and upgrade paths.
-2. Use `examples/` scenarios to bootstrap team-level onboarding and rehearsal.
-3. Track upgrades and migration notes in `CHANGELOG.md`.
+2. Inspect `.codex/skills/` if you want repo-local skill templates for Codex-based workflows.
+3. Use `examples/` scenarios to bootstrap team-level onboarding and rehearsal.
+4. Track upgrades and migration notes in `CHANGELOG.md`.

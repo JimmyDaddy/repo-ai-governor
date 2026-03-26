@@ -12,8 +12,23 @@
 | `link` | 源码联调 | `pnpm add --save-exact link:<governor-repo>` |
 | `tgz` | 候选发布/GA 演练与可复现安装 | `pnpm pack --json` + `pnpm add --save-exact <tarball>` |
 
-Stage 9A clean-room 基线以 `path + link` 为主。
-Stage 9B+ 基线：将 `tgz` 纳入 clean-room 与候选发布验证，确保打包产物运行时依赖可解析。
+当前口径：
+
+1. `path + link` 仍是默认本地接入路径。
+2. `tgz` 可用于 clean-room 与候选发布演练，但安装环境需要能访问 npm registry。
+3. `tgz` 不是离线自包含安装；`commander`、`i18next`、`yaml` 等外部依赖仍会在 `pnpm add` 阶段解析。
+
+## 2.1 已发布 package 参考资产面
+
+已发布 tarball 应包含：
+
+1. `README.md` 与 `README.zh-CN.md`
+2. `docs/local-adoption-playbook.md` 与 `docs/local-adoption-playbook.zh-CN.md`
+3. `examples/`
+4. `integrations/ide/` 与 `integrations/desktop/`
+5. `.codex/skills/`
+
+`.codex/skills/` 下的 repo-local skills 仅作为参考资产随包发布。如需在目标仓库中被 Codex 发现，请将所需 skill 复制到目标仓库自己的 `.codex/skills/` 目录。
 
 ## 3. 初始化与只读预检
 
@@ -154,6 +169,7 @@ pnpm run release:verify-cleanroom-local-install
 
 1. Stage 9A 基线要求 path/link 多轮重复验证。
 2. Stage 9B+ 基线已将 `tgz` 安装 smoke 纳入验证，用于持续确认打包运行时依赖解析。
+3. `tgz` 验证属于联网校验，不代表离线自包含安装已成立。
 
 ## 9. 接入期治理门禁
 

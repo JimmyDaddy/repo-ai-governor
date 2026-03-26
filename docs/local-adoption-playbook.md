@@ -12,8 +12,23 @@ This playbook is for repository users who need to onboard, debug, and upgrade `r
 | `link` | Source-linked development | `pnpm add --save-exact link:<governor-repo>` |
 | `tgz` | Candidate/GA rehearsal and reproducible package install | `pnpm pack --json` + `pnpm add --save-exact <tarball>` |
 
-Operational baseline for Stage 9A clean-room: `path + link`.
-Stage 9B+ baseline: add `tgz` validation in clean-room and release candidate verification to ensure packaged runtime remains resolvable.
+Operational baseline:
+
+1. `path + link` remain the default local adoption paths.
+2. `tgz` is supported for clean-room and release-candidate rehearsal when the install environment can reach the npm registry.
+3. `tgz` is not offline/self-contained; external dependencies such as `commander`, `i18next`, and `yaml` are still resolved during `pnpm add`.
+
+## 2.1 Published Package Surface
+
+Published tarballs are expected to include:
+
+1. `README.md` and `README.zh-CN.md`
+2. `docs/local-adoption-playbook.md` and `docs/local-adoption-playbook.zh-CN.md`
+3. `examples/`
+4. `integrations/ide/` and `integrations/desktop/`
+5. `.codex/skills/`
+
+Repo-local skills under `.codex/skills/` are reference assets only. If you want Codex to discover them in a target repository, copy the selected skill into that target repository's `.codex/skills/` directory.
 
 ## 3. Bootstrap And Read-only Precheck
 
@@ -154,6 +169,7 @@ Notes:
 
 1. Stage 9A baseline enforces repeated path/link validation.
 2. Stage 9B+ baseline includes `tgz` install smoke to verify packaged runtime dependency resolution.
+3. `tgz` validation is an online check, not proof of offline/self-contained installation.
 
 ## 9. Governance Gates For Adoption
 

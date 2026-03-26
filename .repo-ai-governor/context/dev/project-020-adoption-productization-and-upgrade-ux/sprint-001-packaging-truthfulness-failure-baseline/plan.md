@@ -26,4 +26,4 @@
 
 1. `sprint-001` 只处理 packaged distribution 的 baseline、诊断与边界盘点，不提前扩张到 upgrade/workspace UX 实装。
 2. 若 baseline 过程中发现必须修复的 instrumentation 阻断，可以 fix-forward，但不能跳过 failure taxonomy 与 support matrix truthfulness。
-3. sprint-001 已完成收口；在下一条主执行流显式激活前，当前 worktree 仅临时保留本 sprint 作为 active closeout surface。
+3. sprint-001 已完成收口；当前已由 `sprint-002-packaged-runtime-cutover-and-release-gate-block` 接管主执行流。

@@ -4,6 +4,7 @@
 
 - 英文指南：`README.md`
 - 本地接入手册：`docs/local-adoption-playbook.zh-CN.md`
+- 仓库本地 skill 参考：`.codex/skills/`
 - 示例资产：`examples/`
 - 变更日志：`CHANGELOG.zh-CN.md`
 
@@ -33,7 +34,7 @@ cd <target-repo>
 pnpm add --save-exact link:<governor-repo>
 ```
 
-### 方式 C：`tgz`（Stage 9B 跟进项，当前为已知限制）
+### 方式 C：`tgz`（候选发布演练；需要 registry 访问）
 
 ```bash
 cd <governor-repo>
@@ -43,12 +44,25 @@ cd <target-repo>
 pnpm add --save-exact /绝对路径/cjhdev-repo-ai-governor-<version>.tgz
 ```
 
-已知限制（2026-03-22 实测）：
-`tgz` 模式在 clean-room 下执行 `pnpm exec repo-ai-governor --help` 仍可能报
-`ERR_MODULE_NOT_FOUND(@repo-ai-governor/cli)`。
-Stage 9A 接入请优先使用 `path` / `link`，`tgz` 作为 Stage 9B 的 fix-forward 项处理。
+适用边界（2026-03-26 实测）：
 
-## 1.3 初始化命令链
+1. `tgz` clean-room 安装在 `pnpm add` 可访问 npm registry 时可稳定通过。
+2. tarball 不是离线自包含安装：`commander`、`i18next`、`yaml` 等外部依赖仍会在 `pnpm add` 阶段解析。
+3. 完全受限网络或离线环境请优先使用已完成 bootstrap 的 governor checkout，并通过 `path` / `link` 接入。
+
+## 1.3 打包参考资产面
+
+已发布 tarball 应包含：
+
+1. `README.md` 与 `README.zh-CN.md`
+2. `docs/local-adoption-playbook.md` 与 `docs/local-adoption-playbook.zh-CN.md`
+3. `examples/`
+4. `integrations/ide/` 与 `integrations/desktop/`
+5. `.codex/skills/`
+
+`.codex/skills/` 下的 repo-local skills 作为参考资产随包发布，但不会自动复制到目标仓库工作区。
+
+## 1.4 初始化命令链
 
 在 `<target-repo>` 下执行：
 
@@ -65,7 +79,7 @@ pnpm exec repo-ai-governor check --output json
 2. `doctor` 在 `command_result.attach_mode` 中返回 attach 模式。
 3. `check` 在 `command_result.check_totals` 中返回门禁统计。
 
-## 1.4 只读接入预检
+## 1.5 只读接入预检
 
 通过 `doctor` 判断当前仓库是否可写：
 
@@ -116,13 +130,15 @@ pnpm run check
 
 ## 5. 常见问题
 
-1. `ERR_MODULE_NOT_FOUND`：在 governor 仓库执行 `pnpm install` 并重新构建。
-2. runtime smoke 解析失败：确保自动化调用统一使用 `--output json`。
-3. `review-verify` 无待消费请求：先执行一次 `review`。
-4. workspace 根路径异常：检查 `governor.yaml.workspace.mode` 与当前执行目录。
+1. `pnpm add <tarball>` 报 `ENOTFOUND` 或 registry 解析失败：`tgz` 仍依赖 npm registry；请改用 `path` / `link` 或在联网环境安装。
+2. 源码接入后出现 `ERR_MODULE_NOT_FOUND`：在 governor 仓库执行 `pnpm install` 并重新构建。
+3. runtime smoke 解析失败：确保自动化调用统一使用 `--output json`。
+4. `review-verify` 无待消费请求：先执行一次 `review`。
+5. workspace 根路径异常：检查 `governor.yaml.workspace.mode` 与当前执行目录。
 
 ## 6. 下一步
 
 1. 阅读 `docs/local-adoption-playbook.zh-CN.md` 获取 clean-room 与升级细则。
-2. 使用 `examples/` 作为团队接入演练入口。
-3. 在 `CHANGELOG.zh-CN.md` 跟踪升级与迁移说明。
+2. 如需 Codex 仓库本地 skill 模板，可查看 `.codex/skills/`。
+3. 使用 `examples/` 作为团队接入演练入口。
+4. 在 `CHANGELOG.zh-CN.md` 跟踪升级与迁移说明。
