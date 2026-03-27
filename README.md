@@ -177,6 +177,8 @@ pnpm run check
 5. Existing Yarn/npm or dirty repositories: use the `dist` binary rehearsal path first if you want to validate behavior before mutating package-manager state.
 6. Keep the printed `plan-path` from the most recent `workspace execute`; once the target workspace becomes active, that path is the canonical rollback reference.
 7. After rollback, the rollback artifact follows the restored source workspace root; re-run `doctor` if you want to confirm the active workspace surface.
+8. If `upgrade` warns on `confirmation_items`, inspect `upgrade_report` and `upgrade_auto_migrated_config`, keep `upgrade_rollback_snapshot`, and do not overwrite `governor.yaml` until those items are confirmed.
+9. If `workspace execute` fails, inspect the reported failure-summary artifact before retrying; explicit rollback still uses the saved `plan-path`.
 
 ## 7. Next Steps
 
@@ -184,3 +186,4 @@ pnpm run check
 2. Inspect `.codex/skills/` if you want repo-local skill templates for Codex-based workflows.
 3. Use `examples/` scenarios to bootstrap team-level onboarding and rehearsal.
 4. Track upgrades and migration notes in `CHANGELOG.md`.
+5. See `docs/local-adoption-playbook.md` for the publish-safe Python/Go minimal governance pack entry.

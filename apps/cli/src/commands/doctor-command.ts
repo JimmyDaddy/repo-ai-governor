@@ -9,6 +9,10 @@ import {
 } from "@repo-ai-governor/shared";
 import { CliCommandName } from "../constants/cli-command.constant.js";
 import {
+  CLI_ADAPTER_TOOL_CHECK_ID_PREFIX,
+  CliCommandResultCheckId,
+} from "../constants/cli-command-result-check.constant.js";
+import {
   CLI_BASELINE_DOC_PATHS,
   CLI_DOCTOR_ATTACH_MODE,
   CLI_RUNTIME_OPERATION,
@@ -119,13 +123,13 @@ export class CliDoctorCommand implements CliCommandExecutor {
       adapterVerificationSnapshot = adapterVerification;
       adapterStatus = adapterVerification.overallStatus;
       checks.push({
-        id: "adapter_verification",
+        id: CliCommandResultCheckId.ADAPTER_VERIFICATION,
         status: adapterStatus,
         detail: `required_roles=${adapterVerification.requiredRoleCount} required_failures=${adapterVerification.requiredRoleFailedCount} degraded_roles=${adapterVerification.degradedRoleCount} fallback_roles=${adapterVerification.fallbackRoleCount}`,
       });
       for (const toolSnapshot of adapterVerification.tools) {
         checks.push({
-          id: `adapter_tool_${toolSnapshot.toolId}`,
+          id: `${CLI_ADAPTER_TOOL_CHECK_ID_PREFIX}${toolSnapshot.toolId}`,
           status: context.adapterDiagnosticsRuntime.resolveToolProbeCheckStatus(toolSnapshot),
           detail: context.adapterDiagnosticsRuntime.resolveToolProbeCheckDetail(toolSnapshot),
         });

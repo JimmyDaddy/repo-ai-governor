@@ -101,6 +101,23 @@ pnpm exec repo-ai-governor run --output json --dry-run --trace
 1. Stage 9A 基线下，`handledBy=cli-governance-runtime` 属于预期（治理链路先闭环）。
 2. Stage 9B（`TK-082`）会继续收敛 Codex/Claude Code/Copilot 的真实调用路径，届时沿用同一诊断字段进行验证。
 
+## 3.2 升级分析与回滚准备
+
+在把 schema 迁移结果写回 `governor.yaml` 之前，先执行 `upgrade`：
+
+```bash
+pnpm exec repo-ai-governor upgrade --output pretty
+pnpm exec repo-ai-governor upgrade --output json
+```
+
+输出解释：
+
+1. `upgrade_report` 是权威 schema diff 产物，包含差异摘要、迁移建议与 confirmation items。
+2. `upgrade_auto_migrated_config` 只是 analyze-only 候选配置；替换 `governor.yaml` 前应先与当前文件比对。
+3. `upgrade_rollback_snapshot` 是 canonical rollback source；建议与本次配置变更一起保存。
+4. 如果输出出现 `confirmation_items` warning，或 blocking 数量非零，应先完成人工确认，再决定是否写回迁移后的配置。
+5. 只有升级后的配置至少通过一轮 `doctor` + `check` 后，才可以移除最近一次 rollback reference。
+
 ## 4. Workspace 模式切换与回滚
 
 默认模式是 `tool_managed`。
@@ -124,6 +141,8 @@ Artifact locality 合同：
 1. `workspace dry-run` 会把计划产物写到当前活动 workspace 根。
 2. 成功执行 `workspace execute` 后，plan/execution 产物会重写到目标 workspace 根。
 3. `workspace rollback` 会把 rollback 产物写到恢复后的 source workspace 根，并在 cleanup 成功后移除空的 `.repo-ai-governor-migration/<migration-id>` scratch 目录。
+4. 如果 `workspace execute` 失败，请先查看 stderr 或 JSON `error_details.report_path` 给出的 failure summary 产物，再决定是否重试。
+5. 如果 rollback 结束时出现 `workspace_scratch_cleanup` warning，应先确认回滚状态稳定，再手工清理保留的 scratch 根目录。
 
 ## 5. 本地调试路径
 
@@ -175,6 +194,34 @@ pnpm run check:examples-doc-smoke
 pnpm run check:examples-runtime-smoke
 pnpm run check:examples-smoke
 ```
+
+## 7.1 最小语言模板基线
+
+当前已发布包通过 `@repo-ai-governor/standards` 暴露两套内置最小治理模板：
+
+1. `pythonMinimalGovernancePack`
+   - 基线聚焦：`pyproject.toml`、`ruff format/check`、`pytest`、`pyright`
+2. `goMinimalGovernancePack`
+   - 基线聚焦：`go.mod/go.sum`、`go fmt ./...`、`go test ./...`、`go vet ./...`
+
+推荐把它们作为 `official` 基线层，然后在其上叠加 team / repository overrides：
+
+```ts
+import {
+  StandardsPackRegistry,
+  goMinimalGovernancePack,
+  pythonMinimalGovernancePack,
+} from "@repo-ai-governor/standards";
+
+const registry = new StandardsPackRegistry({
+  packs: [pythonMinimalGovernancePack, goMinimalGovernancePack],
+});
+```
+
+说明：
+
+1. 该入口位于已发布的 `docs/` 与 `dist/` 范围内，适用于源码、tgz 与正式发布包用户。
+2. 这两套模板是“最小产品化基线”，不是完整语言最佳实践全集。
 
 ## 8. clean-room 验证与差异说明
 

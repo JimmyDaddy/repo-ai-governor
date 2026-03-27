@@ -31,6 +31,7 @@ export {
   AgentsProjectionNowProvider,
   DefaultAgentsProjectionNowProvider,
 } from "./providers/index.js";
+export { goMinimalGovernancePack, pythonMinimalGovernancePack } from "./examples/index.js";
 export { RuleRenderer } from "./rule-renderer.js";
 export { StandardsUpgradePlanner } from "./standards-upgrade-planner.js";
 export { StandardsPackRegistry } from "./standards-pack-registry.js";

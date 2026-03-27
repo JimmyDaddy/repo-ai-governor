@@ -325,6 +325,44 @@ describe("CLI output contract integration", () => {
     }
   });
 
+  it("renders workspace migration dry-run key details in pretty mode", async () => {
+    const temporaryRepositoryRoot = await createWorkspaceMigrationFixtureRepo();
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(true, temporaryRepositoryRoot);
+    const managedRoot = resolve(temporaryRepositoryRoot, "managed root");
+
+    try {
+      const exitCode = await runCli(
+        [
+          "node",
+          "repo-ai-governor",
+          "--locale",
+          "en-US",
+          "--output",
+          "pretty",
+          "--no-color",
+          "--workspace-action",
+          "dry-run",
+          "--workspace-mode",
+          "tool_managed",
+          "--workspace-root",
+          managedRoot,
+          "workspace",
+        ],
+        io,
+      );
+      const stdout = stdoutBuffer.join("");
+
+      expect(exitCode).toBe(0);
+      expect(stderrBuffer.join("")).toBe("");
+      expect(stdout).toContain("Key Details");
+      expect(stdout).toContain("Workspace action: dry_run");
+      expect(stdout).toContain(`Workspace target: mode tool_managed, root ${managedRoot}`);
+      expect(stdout).toContain("Rollback reference:");
+    } finally {
+      await rm(temporaryRepositoryRoot, { recursive: true, force: true });
+    }
+  });
+
   it("collapses pretty output detail blocks when --compact is enabled", async () => {
     const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(true);
 

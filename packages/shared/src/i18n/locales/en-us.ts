@@ -49,5 +49,26 @@ export const EN_US_TRANSLATIONS = {
     errors: {
       unexpected: "CLI execution failed [{{code}}]: {{message}}",
     },
+    output: {
+      pretty: {
+        checkLabels: {
+          upgradeSchemaDiff: "Upgrade schema diff",
+          migrationSuggestions: "Migration suggestions",
+          confirmationItems: "Confirmation items",
+          rollbackReference: "Rollback reference",
+          workspaceAction: "Workspace action",
+          workspaceTarget: "Workspace target",
+          workspaceScratchCleanup: "Workspace scratch cleanup",
+        },
+        checkDetails: {
+          upgradeSchemaDiff: "{{diffs}} diffs, {{source}} -> {{target}}",
+          migrationSuggestions: "{{count}} suggestions",
+          confirmationItems: "decision {{decision}}, {{count}} items, {{blocking}} blocking",
+          workspaceTarget: "mode {{mode}}, root {{root}}",
+          workspaceScratchCleanupRemoved: "scratch root removed: {{root}}",
+          workspaceScratchCleanupRetained: "scratch root retained: {{root}}",
+        },
+      },
+    },
   },
 } as const;

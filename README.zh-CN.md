@@ -177,6 +177,8 @@ pnpm run check
 5. 目标仓库本身是 Yarn/npm 或已有脏工作树：先走 `dist` 二进制演练路径，再决定是否落正式 package 安装。
 6. 请保留最近一次 `workspace execute` 输出中的 `plan-path`；当目标 workspace 成为活动面后，它就是 canonical rollback reference。
 7. rollback 完成后，rollback 产物会跟随恢复后的 source workspace 根；如需确认当前活动工作区面，请重新执行 `doctor`。
+8. 如果 `upgrade` 对 `confirmation_items` 给出 warning，请先查看 `upgrade_report` 与 `upgrade_auto_migrated_config`，保留 `upgrade_rollback_snapshot`，在确认完成前不要覆盖 `governor.yaml`。
+9. 如果 `workspace execute` 失败，请先查看报错中给出的 failure summary 产物，再决定是否重试；显式 rollback 仍使用保存下来的 `plan-path`。
 
 ## 7. 下一步
 
@@ -184,3 +186,4 @@ pnpm run check
 2. 如需 Codex 仓库本地 skill 模板，可查看 `.codex/skills/`。
 3. 使用 `examples/` 作为团队接入演练入口。
 4. 在 `CHANGELOG.zh-CN.md` 跟踪升级与迁移说明。
+5. Python / Go 最小治理模板入口见 `docs/local-adoption-playbook.zh-CN.md`，该路径会随发布包一并提供。

@@ -15,6 +15,7 @@ import {
   RuntimeError,
 } from "@repo-ai-governor/shared";
 import { CliCommandName } from "../constants/cli-command.constant.js";
+import { CliCommandResultCheckId } from "../constants/cli-command-result-check.constant.js";
 import {
   CLI_RUNTIME_OPERATION,
   CliGovernanceCheckStatus,
@@ -99,7 +100,7 @@ export class CliUpgradeCommand implements CliCommandExecutor {
     const message = `Upgrade analysis completed with decision=${upgradeDiffResult.confirmationDecision}; report=${reportPath}.`;
     const checks = [
       {
-        id: "upgrade_schema_diff",
+        id: CliCommandResultCheckId.UPGRADE_SCHEMA_DIFF,
         status:
           upgradeDiffResult.confirmationDecision === "allow"
             ? CliGovernanceCheckStatus.PASS
@@ -107,18 +108,18 @@ export class CliUpgradeCommand implements CliCommandExecutor {
         detail: `diffs=${upgradeDiffResult.diffs.length} source=${upgradeDiffResult.sourceVersion} target=${upgradeDiffResult.targetVersion}`,
       },
       {
-        id: "migration_suggestions",
+        id: CliCommandResultCheckId.MIGRATION_SUGGESTIONS,
         status: suggestionCount > 0 ? CliGovernanceCheckStatus.WARN : CliGovernanceCheckStatus.PASS,
         detail: `count=${suggestionCount}`,
       },
       {
-        id: "confirmation_items",
+        id: CliCommandResultCheckId.CONFIRMATION_ITEMS,
         status:
           confirmationCount > 0 ? CliGovernanceCheckStatus.WARN : CliGovernanceCheckStatus.PASS,
         detail: `decision=${upgradeDiffResult.confirmationDecision} count=${confirmationCount} blocking=${blockingConfirmationCount}`,
       },
       {
-        id: "rollback_reference",
+        id: CliCommandResultCheckId.ROLLBACK_REFERENCE,
         status: CliGovernanceCheckStatus.PASS,
         detail: rollbackSnapshotPath,
       },

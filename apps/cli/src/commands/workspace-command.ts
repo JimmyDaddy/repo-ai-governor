@@ -26,6 +26,12 @@ import {
 import { stringify } from "yaml";
 import { CliCommandName } from "../constants/cli-command.constant.js";
 import {
+  CliCommandResultCheckId,
+  CliWorkspaceScratchCleanupDetailField,
+  CliWorkspaceScratchCleanupStatus,
+  CliWorkspaceTargetDetailField,
+} from "../constants/cli-command-result-check.constant.js";
+import {
   CLI_RUNTIME_OPERATION,
   CliGovernanceCheckStatus,
 } from "../constants/cli-governance-runtime.constant.js";
@@ -347,14 +353,17 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
 
     const checks: CliCommandResultCheck[] = [
       {
-        id: "workspace_action",
+        id: CliCommandResultCheckId.WORKSPACE_ACTION,
         status: CliGovernanceCheckStatus.PASS,
         detail: `action=${CliWorkspaceAction.EXECUTE}`,
       },
       {
-        id: "workspace_target",
+        id: CliCommandResultCheckId.WORKSPACE_TARGET,
         status: CliGovernanceCheckStatus.PASS,
-        detail: `mode=${plan.targetWorkspace.mode} root=${plan.targetWorkspace.workspaceRoot}`,
+        detail: this.createWorkspaceTargetDetail(
+          plan.targetWorkspace.mode,
+          plan.targetWorkspace.workspaceRoot,
+        ),
       },
       ...executionResult.steps.map((step) => ({
         id: `workspace_step_${step.step}`,
@@ -367,7 +376,7 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
         detail: step.message,
       })),
       {
-        id: "rollback_reference",
+        id: CliCommandResultCheckId.ROLLBACK_REFERENCE,
         status: CliGovernanceCheckStatus.PASS,
         detail: relocatedPlanArtifactPath,
       },
@@ -499,7 +508,9 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
             },
     });
     const scratchCleanupRoot = this.resolveMigrationScratchRoot(plan);
-    const scratchCleanupStatus = existsSync(scratchCleanupRoot) ? "retained" : "removed";
+    const scratchCleanupStatus = existsSync(scratchCleanupRoot)
+      ? CliWorkspaceScratchCleanupStatus.RETAINED
+      : CliWorkspaceScratchCleanupStatus.REMOVED;
 
     if (
       rollbackResult.status === WorkspaceMigrationStepStatus.FAILED ||
@@ -519,14 +530,17 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
 
     const checks: CliCommandResultCheck[] = [
       {
-        id: "workspace_action",
+        id: CliCommandResultCheckId.WORKSPACE_ACTION,
         status: CliGovernanceCheckStatus.PASS,
         detail: `action=${CliWorkspaceAction.ROLLBACK}`,
       },
       {
-        id: "workspace_target",
+        id: CliCommandResultCheckId.WORKSPACE_TARGET,
         status: CliGovernanceCheckStatus.PASS,
-        detail: `mode=${plan.targetWorkspace.mode} root=${plan.targetWorkspace.workspaceRoot}`,
+        detail: this.createWorkspaceTargetDetail(
+          plan.targetWorkspace.mode,
+          plan.targetWorkspace.workspaceRoot,
+        ),
       },
       {
         id: "workspace_step_rollback",
@@ -534,15 +548,15 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
         detail: rollbackResult.message,
       },
       {
-        id: "workspace_scratch_cleanup",
+        id: CliCommandResultCheckId.WORKSPACE_SCRATCH_CLEANUP,
         status:
-          scratchCleanupStatus === "removed"
+          scratchCleanupStatus === CliWorkspaceScratchCleanupStatus.REMOVED
             ? CliGovernanceCheckStatus.PASS
             : CliGovernanceCheckStatus.WARN,
-        detail:
-          scratchCleanupStatus === "removed"
-            ? `scratch_root_removed=${scratchCleanupRoot}`
-            : `scratch_root_retained=${scratchCleanupRoot}`,
+        detail: this.createWorkspaceScratchCleanupDetail(
+          scratchCleanupStatus,
+          scratchCleanupRoot,
+        ),
       },
     ];
     const artifacts: CliCommandResultArtifact[] = [
@@ -600,17 +614,20 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
   ) {
     const checks: CliCommandResultCheck[] = [
       {
-        id: "workspace_action",
+        id: CliCommandResultCheckId.WORKSPACE_ACTION,
         status: CliGovernanceCheckStatus.PASS,
         detail: "action=dry_run",
       },
       {
-        id: "workspace_target",
+        id: CliCommandResultCheckId.WORKSPACE_TARGET,
         status: CliGovernanceCheckStatus.PASS,
-        detail: `mode=${plan.targetWorkspace.mode} root=${plan.targetWorkspace.workspaceRoot}`,
+        detail: this.createWorkspaceTargetDetail(
+          plan.targetWorkspace.mode,
+          plan.targetWorkspace.workspaceRoot,
+        ),
       },
       {
-        id: "rollback_reference",
+        id: CliCommandResultCheckId.ROLLBACK_REFERENCE,
         status: CliGovernanceCheckStatus.PASS,
         detail: planArtifactPath,
       },
@@ -727,6 +744,40 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
         detailed: [`artifact_path=${options.artifactPath}`],
       },
     });
+  }
+
+  /**
+   * Encodes workspace target detail into one stable machine-readable string.
+   * @param mode Target workspace mode.
+   * @param root Target workspace root.
+   * @returns Structured detail string.
+   */
+  private createWorkspaceTargetDetail(mode: string, root: string): string {
+    return JSON.stringify({
+      [CliWorkspaceTargetDetailField.MODE]: mode,
+      [CliWorkspaceTargetDetailField.ROOT]: root,
+    });
+  }
+
+  /**
+   * Encodes scratch cleanup detail into one stable machine-readable string.
+   * @param status Cleanup status.
+   * @param root Scratch cleanup root.
+   * @returns Structured detail string.
+   */
+  private createWorkspaceScratchCleanupDetail(
+    status: CliWorkspaceScratchCleanupStatus,
+    root: string,
+  ): string {
+    return JSON.stringify(
+      status === CliWorkspaceScratchCleanupStatus.REMOVED
+        ? {
+            [CliWorkspaceScratchCleanupDetailField.ROOT_REMOVED]: root,
+          }
+        : {
+            [CliWorkspaceScratchCleanupDetailField.ROOT_RETAINED]: root,
+          },
+    );
   }
 
   private parseWorkspaceMigrationPlan(

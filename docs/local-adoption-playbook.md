@@ -101,6 +101,23 @@ Notes:
 1. In Stage 9A baseline, `handledBy=cli-governance-runtime` is expected (governance chain first).
 2. Stage 9B (`TK-082`) continues with real Codex/Claude Code/Copilot invocation paths while keeping the same diagnostics contract.
 
+## 3.2 Upgrade Analysis And Rollback Preparation
+
+Run `upgrade` before writing any schema migration back into `governor.yaml`:
+
+```bash
+pnpm exec repo-ai-governor upgrade --output pretty
+pnpm exec repo-ai-governor upgrade --output json
+```
+
+Interpret the output as follows:
+
+1. `upgrade_report` is the authoritative schema diff artifact; it contains diff summary, migration suggestions, and confirmation items.
+2. `upgrade_auto_migrated_config` is an analyze-only candidate config; compare it with the current file before replacing `governor.yaml`.
+3. `upgrade_rollback_snapshot` is the canonical rollback source; keep it together with the config change you are reviewing.
+4. If output shows `confirmation_items` warnings or a non-zero blocking count, stop and manually confirm those items before writing any migrated config back.
+5. Keep the printed rollback reference until the upgraded config survives one `doctor` + `check` round in the target repository.
+
 ## 4. Workspace Mode Switch And Rollback
 
 Default mode is `tool_managed`.
@@ -124,6 +141,8 @@ Artifact locality contract:
 1. `workspace dry-run` writes the plan artifact under the current active workspace root.
 2. A successful `workspace execute` rewrites the plan and execution artifacts under the target workspace root.
 3. `workspace rollback` writes the rollback artifact under the restored source workspace root and removes empty `.repo-ai-governor-migration/<migration-id>` scratch directories after cleanup.
+4. If `workspace execute` fails, inspect the failure-summary artifact path returned in stderr or JSON `error_details.report_path` before retrying.
+5. If rollback completes with `workspace_scratch_cleanup` warning, inspect the retained scratch root and clean it up manually only after confirming rollback state is stable.
 
 ## 5. Local Debug Path
 
@@ -175,6 +194,34 @@ pnpm run check:examples-doc-smoke
 pnpm run check:examples-runtime-smoke
 pnpm run check:examples-smoke
 ```
+
+## 7.1 Minimal Language Pack Baseline
+
+The published package currently exposes two built-in minimal governance packs through `@repo-ai-governor/standards`:
+
+1. `pythonMinimalGovernancePack`
+   - baseline focus: `pyproject.toml`, `ruff format/check`, `pytest`, `pyright`
+2. `goMinimalGovernancePack`
+   - baseline focus: `go.mod/go.sum`, `go fmt ./...`, `go test ./...`, `go vet ./...`
+
+Use them as the official baseline layer, then add team or repository overrides on top:
+
+```ts
+import {
+  StandardsPackRegistry,
+  goMinimalGovernancePack,
+  pythonMinimalGovernancePack,
+} from "@repo-ai-governor/standards";
+
+const registry = new StandardsPackRegistry({
+  packs: [pythonMinimalGovernancePack, goMinimalGovernancePack],
+});
+```
+
+Notes:
+
+1. This path is publish-safe because the root package already ships `docs/` and `dist/`.
+2. Treat these packs as minimal productized baselines rather than complete language best-practice bundles.
 
 ## 8. Clean-room Verification And Differences
 

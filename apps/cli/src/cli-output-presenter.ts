@@ -1,4 +1,15 @@
 import { ErrorOutputEnvironment } from "@repo-ai-governor/shared";
+import {
+  CLI_ADAPTER_TOOL_CHECK_ID_PREFIX,
+  CLI_PRETTY_KEY_CHECK_IDS,
+  CliCommandResultCheckId,
+  CliConfirmationItemsDetailField,
+  CliMigrationSuggestionDetailField,
+  CliUpgradeSchemaDiffDetailField,
+  CliWorkspaceActionDetailField,
+  CliWorkspaceScratchCleanupDetailField,
+  CliWorkspaceTargetDetailField,
+} from "./constants/cli-command-result-check.constant.js";
 import { CliGovernanceCheckStatus } from "./constants/cli-governance-runtime.constant.js";
 import { CliVerbosity } from "./constants/cli-output.constant.js";
 import type {
@@ -14,6 +25,62 @@ const ANSI_RESET = "\u001b[0m";
 const ANSI_SUCCESS = "\u001b[1;32m";
 const ANSI_ERROR = "\u001b[1;31m";
 
+interface CliPrettyLabels {
+  successTitle: string;
+  summarySection: string;
+  commandLabel: string;
+  operationLabel: string;
+  attachModeLabel: string;
+  healthSection: string;
+  checksLabel: string;
+  passLabel: string;
+  warnLabel: string;
+  failLabel: string;
+  progressLabel: string;
+  attentionLabel: string;
+  keyDetailsLabel: string;
+  nextStepsSection: string;
+  moreHint: string;
+  artifactsSection: string;
+  artifactsGeneratedLabel: string;
+  primaryLabel: string;
+  contextSection: string;
+  localeLabel: string;
+  profileLabel: string;
+  outputLabel: string;
+  outputModeLabel: string;
+  downgradedFromLabel: string;
+  debugSection: string;
+  configSourceLabel: string;
+  workspaceModeLabel: string;
+  workspaceModeSourceLabel: string;
+  workspaceIdLabel: string;
+  workspaceRootLabel: string;
+  memoryStoreEngineLabel: string;
+  memoryStoreRootLabel: string;
+  memoryStoreProviderLabel: string;
+  checkSummaryLabel: string;
+  artifactSummaryLabel: string;
+  roleProgressLabel: string;
+  interactionPromptsLabel: string;
+  detailedLogsLabel: string;
+  adapterVerificationLabel: string;
+  adapterToolLabelPrefix: string;
+  upgradeSchemaDiffLabel: string;
+  migrationSuggestionsLabel: string;
+  confirmationItemsLabel: string;
+  rollbackReferenceLabel: string;
+  workspaceActionLabel: string;
+  workspaceTargetLabel: string;
+  workspaceScratchCleanupLabel: string;
+}
+
+interface CliOutputPresenterIo {
+  stdout: (value: string) => void;
+  stderr: (value: string) => void;
+  translate?: (key: string, interpolation?: Record<string, string>) => string | undefined;
+}
+
 /**
  * Renders and writes CLI output payloads for success/error flows.
  *
@@ -27,10 +94,7 @@ export class CliOutputPresenter {
    * @param io Output writer adapters from CLI runtime.
    */
   public constructor(
-    private readonly io: {
-      stdout: (value: string) => void;
-      stderr: (value: string) => void;
-    },
+    private readonly io: CliOutputPresenterIo,
   ) {}
 
   /**
@@ -144,6 +208,30 @@ export class CliOutputPresenter {
         } else {
           lines.push(`  - ${labels.attentionLabel}:`);
           for (const check of attentionChecks) {
+            lines.push(
+              `    - ${this.resolveReadableCheckLabel(check.id, payload.diagnostics.locale)}: ${this.resolveReadableCheckDetail(check, payload.diagnostics.locale)}`,
+            );
+          }
+        }
+      }
+
+      const keyChecks = this.resolveKeyChecks(commandResult);
+      if (keyChecks.length > 0) {
+        if (compactPretty) {
+          const firstKeyCheck = keyChecks[0];
+          if (firstKeyCheck) {
+            lines.push(
+              `  - ${labels.keyDetailsLabel}: ${this.resolveReadableCheckLabel(firstKeyCheck.id, payload.diagnostics.locale)}: ${this.resolveReadableCheckDetail(firstKeyCheck, payload.diagnostics.locale)}`,
+            );
+          }
+          if (keyChecks.length > 1) {
+            lines.push(
+              `  - ${labels.keyDetailsLabel}: +${keyChecks.length - 1} ${labels.moreHint}`,
+            );
+          }
+        } else {
+          lines.push(`  - ${labels.keyDetailsLabel}:`);
+          for (const check of keyChecks) {
             lines.push(
               `    - ${this.resolveReadableCheckLabel(check.id, payload.diagnostics.locale)}: ${this.resolveReadableCheckDetail(check, payload.diagnostics.locale)}`,
             );
@@ -422,22 +510,48 @@ export class CliOutputPresenter {
   }
 
   /**
+   * Resolves always-visible success-path checks for key adopter-facing actions.
+   * @param commandResult Command result payload.
+   * @returns Ordered key-check rows.
+   */
+  private resolveKeyChecks(commandResult: CliCommandExecutionResultPayload): CliCommandResultCheck[] {
+    return (commandResult.checks ?? []).filter(
+      (check) => CLI_PRETTY_KEY_CHECK_IDS.has(check.id) && check.status === CliGovernanceCheckStatus.PASS,
+    );
+  }
+
+  /**
    * Resolves human-friendly labels for check identifiers.
    * @param checkId Check id string.
    * @returns Human-friendly check label.
    */
   private resolveReadableCheckLabel(checkId: string, locale: string): string {
     const labels = this.resolvePrettyLabels(locale);
-    if (checkId === "adapter_verification") {
-      return labels.adapterVerificationLabel;
-    }
-
-    if (checkId.startsWith("adapter_tool_")) {
-      const toolId = checkId.slice("adapter_tool_".length);
+    if (checkId.startsWith(CLI_ADAPTER_TOOL_CHECK_ID_PREFIX)) {
+      const toolId = checkId.slice(CLI_ADAPTER_TOOL_CHECK_ID_PREFIX.length);
       return `${labels.adapterToolLabelPrefix} ${toolId}`;
     }
 
-    return checkId.replaceAll("_", " ");
+    switch (checkId) {
+      case CliCommandResultCheckId.ADAPTER_VERIFICATION:
+        return labels.adapterVerificationLabel;
+      case CliCommandResultCheckId.UPGRADE_SCHEMA_DIFF:
+        return labels.upgradeSchemaDiffLabel;
+      case CliCommandResultCheckId.MIGRATION_SUGGESTIONS:
+        return labels.migrationSuggestionsLabel;
+      case CliCommandResultCheckId.CONFIRMATION_ITEMS:
+        return labels.confirmationItemsLabel;
+      case CliCommandResultCheckId.ROLLBACK_REFERENCE:
+        return labels.rollbackReferenceLabel;
+      case CliCommandResultCheckId.WORKSPACE_ACTION:
+        return labels.workspaceActionLabel;
+      case CliCommandResultCheckId.WORKSPACE_TARGET:
+        return labels.workspaceTargetLabel;
+      case CliCommandResultCheckId.WORKSPACE_SCRATCH_CLEANUP:
+        return labels.workspaceScratchCleanupLabel;
+      default:
+        return checkId.replaceAll("_", " ");
+    }
   }
 
   /**
@@ -447,15 +561,28 @@ export class CliOutputPresenter {
    * @returns Human-readable check detail text.
    */
   private resolveReadableCheckDetail(check: CliCommandResultCheck, locale: string): string {
-    if (check.id === "adapter_verification") {
-      return this.humanizeAdapterVerificationDetail(check.detail, locale);
-    }
-
-    if (check.id.startsWith("adapter_tool_")) {
+    if (check.id.startsWith(CLI_ADAPTER_TOOL_CHECK_ID_PREFIX)) {
       return this.humanizeAdapterToolDetail(check.detail, locale);
     }
 
-    return check.detail;
+    switch (check.id) {
+      case CliCommandResultCheckId.ADAPTER_VERIFICATION:
+        return this.humanizeAdapterVerificationDetail(check.detail, locale);
+      case CliCommandResultCheckId.UPGRADE_SCHEMA_DIFF:
+        return this.humanizeUpgradeSchemaDiffDetail(check.detail, locale);
+      case CliCommandResultCheckId.MIGRATION_SUGGESTIONS:
+        return this.humanizeMigrationSuggestionDetail(check.detail, locale);
+      case CliCommandResultCheckId.CONFIRMATION_ITEMS:
+        return this.humanizeConfirmationItemsDetail(check.detail, locale);
+      case CliCommandResultCheckId.WORKSPACE_ACTION:
+        return this.humanizeWorkspaceActionDetail(check.detail);
+      case CliCommandResultCheckId.WORKSPACE_TARGET:
+        return this.humanizeWorkspaceTargetDetail(check.detail, locale);
+      case CliCommandResultCheckId.WORKSPACE_SCRATCH_CLEANUP:
+        return this.humanizeWorkspaceScratchCleanupDetail(check.detail, locale);
+      default:
+        return check.detail;
+    }
   }
 
   /**
@@ -519,6 +646,148 @@ export class CliOutputPresenter {
   }
 
   /**
+   * Converts upgrade schema diff detail into readable text.
+   * @param detail Raw detail string.
+   * @param locale Active output locale.
+   * @returns Human-readable diff summary.
+   */
+  private humanizeUpgradeSchemaDiffDetail(detail: string, locale: string): string {
+    const detailMap = this.parseSpaceSeparatedKeyValueDetail(detail);
+    const diffs = detailMap[CliUpgradeSchemaDiffDetailField.DIFFS] ?? "0";
+    const source = detailMap[CliUpgradeSchemaDiffDetailField.SOURCE] ?? "unknown";
+    const target = detailMap[CliUpgradeSchemaDiffDetailField.TARGET] ?? "unknown";
+
+    return this.translateText(
+      "cli.output.pretty.checkDetails.upgradeSchemaDiff",
+      locale,
+      "{{diffs}} diffs, {{source}} -> {{target}}",
+      "差异 {{diffs}} 项，{{source}} -> {{target}}",
+      {
+        diffs,
+        source,
+        target,
+      },
+    );
+  }
+
+  /**
+   * Converts migration suggestion count detail into readable text.
+   * @param detail Raw detail string.
+   * @param locale Active output locale.
+   * @returns Human-readable suggestion summary.
+   */
+  private humanizeMigrationSuggestionDetail(detail: string, locale: string): string {
+    const detailMap = this.parseSpaceSeparatedKeyValueDetail(detail);
+    const count = detailMap[CliMigrationSuggestionDetailField.COUNT] ?? "0";
+
+    return this.translateText(
+      "cli.output.pretty.checkDetails.migrationSuggestions",
+      locale,
+      "{{count}} suggestions",
+      "{{count}} 条建议",
+      {
+        count,
+      },
+    );
+  }
+
+  /**
+   * Converts upgrade confirmation detail into readable text.
+   * @param detail Raw detail string.
+   * @param locale Active output locale.
+   * @returns Human-readable confirmation summary.
+   */
+  private humanizeConfirmationItemsDetail(detail: string, locale: string): string {
+    const detailMap = this.parseSpaceSeparatedKeyValueDetail(detail);
+    const decision = detailMap[CliConfirmationItemsDetailField.DECISION] ?? "unknown";
+    const count = detailMap[CliConfirmationItemsDetailField.COUNT] ?? "0";
+    const blocking = detailMap[CliConfirmationItemsDetailField.BLOCKING] ?? "0";
+
+    return this.translateText(
+      "cli.output.pretty.checkDetails.confirmationItems",
+      locale,
+      "decision {{decision}}, {{count}} items, {{blocking}} blocking",
+      "决策 {{decision}}，确认项 {{count}} 条，阻断 {{blocking}} 条",
+      {
+        decision,
+        count,
+        blocking,
+      },
+    );
+  }
+
+  /**
+   * Converts workspace action detail into readable text.
+   * @param detail Raw detail string.
+   * @returns Human-readable action summary.
+   */
+  private humanizeWorkspaceActionDetail(detail: string): string {
+    const detailMap = this.parseSpaceSeparatedKeyValueDetail(detail);
+    return detailMap[CliWorkspaceActionDetailField.ACTION] ?? detail;
+  }
+
+  /**
+   * Converts workspace target detail into readable text.
+   * @param detail Raw detail string.
+   * @param locale Active output locale.
+   * @returns Human-readable workspace target summary.
+   */
+  private humanizeWorkspaceTargetDetail(detail: string, locale: string): string {
+    const detailMap = this.parseJsonOrSpaceSeparatedKeyValueDetail(detail);
+    const mode = detailMap[CliWorkspaceTargetDetailField.MODE] ?? "unknown";
+    const root = detailMap[CliWorkspaceTargetDetailField.ROOT] ?? "unknown";
+
+    return this.translateText(
+      "cli.output.pretty.checkDetails.workspaceTarget",
+      locale,
+      "mode {{mode}}, root {{root}}",
+      "模式 {{mode}}，根路径 {{root}}",
+      {
+        mode,
+        root,
+      },
+    );
+  }
+
+  /**
+   * Converts workspace scratch-cleanup detail into readable text.
+   * @param detail Raw detail string.
+   * @param locale Active output locale.
+   * @returns Human-readable scratch cleanup summary.
+   */
+  private humanizeWorkspaceScratchCleanupDetail(detail: string, locale: string): string {
+    const detailMap = this.parseJsonOrSpaceSeparatedKeyValueDetail(detail);
+    const removedRoot = detailMap[CliWorkspaceScratchCleanupDetailField.ROOT_REMOVED];
+    const retainedRoot = detailMap[CliWorkspaceScratchCleanupDetailField.ROOT_RETAINED];
+
+    if (removedRoot) {
+      return this.translateText(
+        "cli.output.pretty.checkDetails.workspaceScratchCleanupRemoved",
+        locale,
+        "scratch root removed: {{root}}",
+        "scratch 根目录已移除：{{root}}",
+        {
+          root: removedRoot,
+        },
+      );
+    }
+
+    if (retainedRoot) {
+      return this.translateText(
+        "cli.output.pretty.checkDetails.workspaceScratchCleanupRetained",
+        locale,
+        "scratch root retained: {{root}}",
+        "scratch 根目录保留：{{root}}",
+        {
+          root: retainedRoot,
+        },
+      );
+    }
+
+    return detail;
+  }
+
+  /**
    * Parses space-separated `key=value` detail strings into key-value records.
    * @param detail Raw detail text.
    * @returns Parsed key-value record.
@@ -539,6 +808,77 @@ export class CliOutputPresenter {
       parsedDetail[key] = value;
     }
     return parsedDetail;
+  }
+
+  /**
+   * Parses one check detail from JSON first, then falls back to space-separated `key=value`.
+   * @param detail Raw detail text.
+   * @returns Parsed key-value record.
+   */
+  private parseJsonOrSpaceSeparatedKeyValueDetail(detail: string): Record<string, string> {
+    const normalizedDetail = detail.trim();
+    if (normalizedDetail.startsWith("{") && normalizedDetail.endsWith("}")) {
+      try {
+        const parsedDetail = JSON.parse(normalizedDetail) as Record<string, unknown>;
+        return Object.fromEntries(
+          Object.entries(parsedDetail)
+            .filter((entry): entry is [string, string | number | boolean] => {
+              const [, value] = entry;
+              return ["string", "number", "boolean"].includes(typeof value);
+            })
+            .map(([key, value]) => [key, String(value)]),
+        );
+      } catch {
+        return this.parseSpaceSeparatedKeyValueDetail(detail);
+      }
+    }
+
+    return this.parseSpaceSeparatedKeyValueDetail(detail);
+  }
+
+  /**
+   * Resolves one presenter translation through i18n runtime when available, otherwise falls back.
+   * @param key Stable translation key.
+   * @param locale Active output locale.
+   * @param english English fallback text.
+   * @param chinese Simplified-Chinese fallback text.
+   * @param interpolation Optional interpolation variables.
+   * @returns Resolved localized text.
+   */
+  private translateText(
+    key: string,
+    locale: string,
+    english: string,
+    chinese: string,
+    interpolation?: Record<string, string>,
+  ): string {
+    const translated = this.io.translate?.(key, interpolation);
+    if (translated && translated !== key) {
+      return translated;
+    }
+
+    return this.interpolateTemplate(this.isZhCnLocale(locale) ? chinese : english, interpolation);
+  }
+
+  /**
+   * Applies simple `{{token}}` interpolation on presenter fallback strings.
+   * @param template Fallback text template.
+   * @param interpolation Optional interpolation variables.
+   * @returns Interpolated fallback text.
+   */
+  private interpolateTemplate(
+    template: string,
+    interpolation?: Record<string, string>,
+  ): string {
+    if (!interpolation) {
+      return template;
+    }
+
+    let resolvedTemplate = template;
+    for (const [token, value] of Object.entries(interpolation)) {
+      resolvedTemplate = resolvedTemplate.replaceAll(`{{${token}}}`, value);
+    }
+    return resolvedTemplate;
   }
 
   /**
@@ -595,47 +935,7 @@ export class CliOutputPresenter {
    * @param locale Active output locale.
    * @returns Localized label dictionary.
    */
-  private resolvePrettyLabels(locale: string): {
-    successTitle: string;
-    summarySection: string;
-    commandLabel: string;
-    operationLabel: string;
-    attachModeLabel: string;
-    healthSection: string;
-    checksLabel: string;
-    passLabel: string;
-    warnLabel: string;
-    failLabel: string;
-    progressLabel: string;
-    attentionLabel: string;
-    nextStepsSection: string;
-    moreHint: string;
-    artifactsSection: string;
-    artifactsGeneratedLabel: string;
-    primaryLabel: string;
-    contextSection: string;
-    localeLabel: string;
-    profileLabel: string;
-    outputLabel: string;
-    outputModeLabel: string;
-    downgradedFromLabel: string;
-    debugSection: string;
-    configSourceLabel: string;
-    workspaceModeLabel: string;
-    workspaceModeSourceLabel: string;
-    workspaceIdLabel: string;
-    workspaceRootLabel: string;
-    memoryStoreEngineLabel: string;
-    memoryStoreRootLabel: string;
-    memoryStoreProviderLabel: string;
-    checkSummaryLabel: string;
-    artifactSummaryLabel: string;
-    roleProgressLabel: string;
-    interactionPromptsLabel: string;
-    detailedLogsLabel: string;
-    adapterVerificationLabel: string;
-    adapterToolLabelPrefix: string;
-  } {
+  private resolvePrettyLabels(locale: string): CliPrettyLabels {
     if (this.isZhCnLocale(locale)) {
       return {
         successTitle: "repo-ai-governor：命令执行成功",
@@ -650,6 +950,7 @@ export class CliOutputPresenter {
         failLabel: "失败",
         progressLabel: "进度",
         attentionLabel: "关注项",
+        keyDetailsLabel: "关键项",
         nextStepsSection: "下一步",
         moreHint: "条更多（去掉 --compact 查看完整内容）",
         artifactsSection: "产物",
@@ -677,6 +978,48 @@ export class CliOutputPresenter {
         detailedLogsLabel: "详细日志",
         adapterVerificationLabel: "Adapter 校验",
         adapterToolLabelPrefix: "Adapter 工具",
+        upgradeSchemaDiffLabel: this.translateText(
+          "cli.output.pretty.checkLabels.upgradeSchemaDiff",
+          locale,
+          "Upgrade schema diff",
+          "升级 schema diff",
+        ),
+        migrationSuggestionsLabel: this.translateText(
+          "cli.output.pretty.checkLabels.migrationSuggestions",
+          locale,
+          "Migration suggestions",
+          "迁移建议",
+        ),
+        confirmationItemsLabel: this.translateText(
+          "cli.output.pretty.checkLabels.confirmationItems",
+          locale,
+          "Confirmation items",
+          "确认项",
+        ),
+        rollbackReferenceLabel: this.translateText(
+          "cli.output.pretty.checkLabels.rollbackReference",
+          locale,
+          "Rollback reference",
+          "回滚参考",
+        ),
+        workspaceActionLabel: this.translateText(
+          "cli.output.pretty.checkLabels.workspaceAction",
+          locale,
+          "Workspace action",
+          "工作区动作",
+        ),
+        workspaceTargetLabel: this.translateText(
+          "cli.output.pretty.checkLabels.workspaceTarget",
+          locale,
+          "Workspace target",
+          "工作区目标",
+        ),
+        workspaceScratchCleanupLabel: this.translateText(
+          "cli.output.pretty.checkLabels.workspaceScratchCleanup",
+          locale,
+          "Workspace scratch cleanup",
+          "工作区暂存清理",
+        ),
       };
     }
 
@@ -693,6 +1036,7 @@ export class CliOutputPresenter {
       failLabel: "fail",
       progressLabel: "Progress",
       attentionLabel: "Attention",
+      keyDetailsLabel: "Key Details",
       nextStepsSection: "Next Steps",
       moreHint: "more (rerun without --compact to expand).",
       artifactsSection: "Artifacts",
@@ -720,6 +1064,48 @@ export class CliOutputPresenter {
       detailedLogsLabel: "Detailed logs",
       adapterVerificationLabel: "Adapter verification",
       adapterToolLabelPrefix: "Adapter tool",
+      upgradeSchemaDiffLabel: this.translateText(
+        "cli.output.pretty.checkLabels.upgradeSchemaDiff",
+        locale,
+        "Upgrade schema diff",
+        "升级 schema diff",
+      ),
+      migrationSuggestionsLabel: this.translateText(
+        "cli.output.pretty.checkLabels.migrationSuggestions",
+        locale,
+        "Migration suggestions",
+        "迁移建议",
+      ),
+      confirmationItemsLabel: this.translateText(
+        "cli.output.pretty.checkLabels.confirmationItems",
+        locale,
+        "Confirmation items",
+        "确认项",
+      ),
+      rollbackReferenceLabel: this.translateText(
+        "cli.output.pretty.checkLabels.rollbackReference",
+        locale,
+        "Rollback reference",
+        "回滚参考",
+      ),
+      workspaceActionLabel: this.translateText(
+        "cli.output.pretty.checkLabels.workspaceAction",
+        locale,
+        "Workspace action",
+        "工作区动作",
+      ),
+      workspaceTargetLabel: this.translateText(
+        "cli.output.pretty.checkLabels.workspaceTarget",
+        locale,
+        "Workspace target",
+        "工作区目标",
+      ),
+      workspaceScratchCleanupLabel: this.translateText(
+        "cli.output.pretty.checkLabels.workspaceScratchCleanup",
+        locale,
+        "Workspace scratch cleanup",
+        "工作区暂存清理",
+      ),
     };
   }
 

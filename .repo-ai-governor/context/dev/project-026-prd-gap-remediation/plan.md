@@ -31,7 +31,7 @@
 
 ## 2.2 sprint-002-p1-productization-closure-baseline
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 收口 P1 产品化缺口中工作量最小、确定性最高的一批（三视图验证、i18n 核查、exports 核查、共享包分发路径）。
 - Task Package: `TK-293`、`TK-294`、`TK-295`、`TK-296`、`TK-297`。
 - Input Constraints:
@@ -40,7 +40,7 @@
 
 ## 2.3 sprint-003-p1-productization-closure-extended
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 收口 P1 产品化缺口中工作量较大的模板扩展和升级 UX 打磨。
 - Task Package: `TK-298`、`TK-299`、`TK-300`。
 - Input Constraints:
@@ -63,14 +63,14 @@
 | TK-290 | sprint-001 | webhook 通知 provider 实装与 dispatcher 接入 | notification/provider | TK-289, packages/notification-dispatcher | completed |
 | TK-291 | sprint-001 | 备选通知渠道 provider (email 或 chat-im) 实装 | notification/provider | TK-290 | completed |
 | TK-292 | sprint-001 | HITL 1 主 1 备通知 rehearsal 与审计回链验证 | verification/rehearsal | TK-290, TK-291 | completed |
-| TK-293 | sprint-002 | Standards Pack 三视图端到端链路验证 | standards/e2e | TK-292 | planned |
-| TK-294 | sprint-002 | i18n zh-CN/en 键集覆盖度核查与补齐 | i18n/quality | TK-292 | planned |
-| TK-295 | sprint-002 | 6 个 public 包 package.json exports 系统性核查 | packaging/contract | TK-292 | planned |
-| TK-296 | sprint-002 | 团队共享规范包分发路径文档与示例 | standards/docs | TK-293 | planned |
-| TK-297 | sprint-002 | sprint-002 出口验收与 sprint-003 输入约束 | acceptance/baseline | TK-293, TK-294, TK-295, TK-296 | planned |
-| TK-298 | sprint-003 | Python/Go 最小治理模板实装 | standards/template | TK-297 | planned |
-| TK-299 | sprint-003 | upgrade/workspace lifecycle adopter UX 打磨 | cli/ux | TK-297 | planned |
-| TK-300 | sprint-003 | sprint-003 出口验收与 sprint-004 输入约束 | acceptance/baseline | TK-298, TK-299 | planned |
+| TK-293 | sprint-002 | Standards Pack 三视图端到端链路验证 | standards/e2e | TK-292 | completed |
+| TK-294 | sprint-002 | i18n zh-CN/en 键集覆盖度核查与补齐 | i18n/quality | TK-292 | completed |
+| TK-295 | sprint-002 | 6 个 public 包 package.json exports 系统性核查 | packaging/contract | TK-292 | completed |
+| TK-296 | sprint-002 | 团队共享规范包分发路径文档与示例 | standards/docs | TK-293 | completed |
+| TK-297 | sprint-002 | sprint-002 出口验收与 sprint-003 输入约束 | acceptance/baseline | TK-293, TK-294, TK-295, TK-296 | completed |
+| TK-298 | sprint-003 | Python/Go 最小治理模板实装 | standards/template | TK-297 | completed |
+| TK-299 | sprint-003 | upgrade/workspace lifecycle adopter UX 打磨 | cli/ux | TK-297 | completed |
+| TK-300 | sprint-003 | sprint-003 出口验收与 sprint-004 输入约束 | acceptance/baseline | TK-298, TK-299 | completed |
 | TK-301 | sprint-004 | 正式支持矩阵文档与 clean-room smoke 记录 | docs/support | TK-300 | planned |
 | TK-302 | sprint-004 | GA Readiness §10.2 全量量化证据沉淀 | verification/ga | TK-300, TK-301 | planned |
 | TK-303 | sprint-004 | project-026 completion closeout 与 P2 staging 建议 | acceptance/closeout | TK-301, TK-302 | planned |

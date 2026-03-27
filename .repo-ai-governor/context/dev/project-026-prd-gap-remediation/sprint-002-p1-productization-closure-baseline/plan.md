@@ -1,7 +1,7 @@
 # sprint-002-p1-productization-closure-baseline 计划
 
-- Status: planned
-- Date: 2026-03-27
+- Status: completed
+- Date: 2026-03-28
 - Project: `project-026-prd-gap-remediation`
 
 ## 1. Sprint Goal
@@ -10,11 +10,11 @@
 
 ## 2. Task Package
 
-1. `TK-293` Standards Pack 三视图端到端链路验证（planned）
-2. `TK-294` i18n zh-CN/en 键集覆盖度核查与补齐（planned）
-3. `TK-295` 6 个 public 包 package.json exports 系统性核查（planned）
-4. `TK-296` 团队共享规范包分发路径文档与示例（planned）
-5. `TK-297` sprint-002 出口验收与 sprint-003 输入约束（planned）
+1. `TK-293` Standards Pack 三视图端到端链路验证（completed）
+2. `TK-294` i18n zh-CN/en 键集覆盖度核查与补齐（completed）
+3. `TK-295` 6 个 public 包 package.json exports 系统性核查（completed）
+4. `TK-296` 团队共享规范包分发路径文档与示例（completed）
+5. `TK-297` sprint-002 出口验收与 sprint-003 输入约束（completed）
 
 ## 3. Exit Criteria
 
@@ -22,3 +22,11 @@
 2. i18n zh-CN/en 键集 parity 已通过。
 3. 6 个 public 包 exports 声明已核查并补全。
 4. 团队共享规范包分发路径已有文档和示例。
+
+## 4. Evidence
+
+1. `tasks/TK-293-standards-pack-three-view-end-to-end-validation.md`
+2. `tasks/TK-294-i18n-zh-cn-en-key-parity-audit-and-backfill.md`
+3. `tasks/TK-295-public-package-exports-systematic-audit.md`
+4. `tasks/TK-296-team-shared-standards-pack-distribution-path-docs-and-examples.md`
+5. `tasks/TK-297-sprint-002-exit-acceptance-and-sprint-003-input-constraints.md`

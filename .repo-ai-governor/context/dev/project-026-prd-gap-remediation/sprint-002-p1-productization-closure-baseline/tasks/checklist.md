@@ -1,12 +1,22 @@
 # checklist
 
-- [ ] TK-293 Standards Pack 三视图端到端链路验证
+- [x] TK-293 Standards Pack 三视图端到端链路验证
   - 2026-03-27：任务创建，状态初始化为 `planned`。
-- [ ] TK-294 i18n zh-CN/en 键集覆盖度核查与补齐
+  - 2026-03-28：状态切换为 `in_progress`，开始核对 `StandardsPackRegistry -> RuleRenderer -> AgentsProjector -> AGENTS.md` 投影链路缺口与当前根级 `AGENTS.md` 维护方式。
+  - 2026-03-28：已完成端到端投影集成测试补强（含 `AGENTS.md` 文件落盘断言），并在 `packages/standards/README.md` 明确当前仓库根级 `AGENTS.md` 为手工维护入口而非 projector 自动渲染产物。
+- [x] TK-294 i18n zh-CN/en 键集覆盖度核查与补齐
   - 2026-03-27：任务创建，状态初始化为 `planned`。
-- [ ] TK-295 6 个 public 包 package.json exports 系统性核查
+  - 2026-03-28：状态切换为 `in_progress`，开始核对 shared i18n locale 资源、CLI `i18nRuntime.t(...)` 调用点与 parity gate 覆盖边界。
+  - 2026-03-28：已完成 `zh-CN/en-US` 资源 parity 核查，新增 CLI 翻译键覆盖集成测试并验证现有 key 使用全部命中双语资源。
+- [x] TK-295 6 个 public 包 package.json exports 系统性核查
   - 2026-03-27：任务创建，状态初始化为 `planned`。
-- [ ] TK-296 团队共享规范包分发路径文档与示例
+  - 2026-03-28：状态切换为 `in_progress`，开始按 GAP-06 定义审计 `adapter-sdk / memory-store-adapter / notification-dispatcher / orchestration-service-client / reporting / shared` 六个 public 包。
+  - 2026-03-28：已完成 6 个 public 包 `exports` 与 root import 边界审计，新增集成测试阻断深层路径隐式导入回退。
+- [x] TK-296 团队共享规范包分发路径文档与示例
   - 2026-03-27：任务创建，状态初始化为 `planned`。
-- [ ] TK-297 sprint-002 出口验收与 sprint-003 输入约束
+  - 2026-03-28：状态切换为 `in_progress`，开始整理 `official/team/repository` 三层 Standards Pack 分发路径与当前真实消费方式。
+  - 2026-03-28：已在 `packages/standards/README.md` 补充官方/团队/仓库三层分发路径、最小组装示例与当前 `governor.yaml.standards` 尚未自动 loader 化的真实边界说明。
+- [x] TK-297 sprint-002 出口验收与 sprint-003 输入约束
   - 2026-03-27：任务创建，状态初始化为 `planned`。
+  - 2026-03-28：状态切换为 `in_progress`，开始汇总 `TK-293 ~ TK-296` 的验证结果并冻结 `sprint-003` 输入约束。
+  - 2026-03-28：已完成 sprint-002 出口验收，确认四项 exit criteria 均达成，并冻结 `sprint-003` 需延续的 i18n / public exports / standards distribution baseline。

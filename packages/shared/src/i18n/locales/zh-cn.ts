@@ -45,5 +45,26 @@ export const ZH_CN_TRANSLATIONS = {
     errors: {
       unexpected: "CLI 执行失败 [{{code}}]：{{message}}",
     },
+    output: {
+      pretty: {
+        checkLabels: {
+          upgradeSchemaDiff: "升级 schema diff",
+          migrationSuggestions: "迁移建议",
+          confirmationItems: "确认项",
+          rollbackReference: "回滚参考",
+          workspaceAction: "工作区动作",
+          workspaceTarget: "工作区目标",
+          workspaceScratchCleanup: "工作区暂存清理",
+        },
+        checkDetails: {
+          upgradeSchemaDiff: "差异 {{diffs}} 项，{{source}} -> {{target}}",
+          migrationSuggestions: "{{count}} 条建议",
+          confirmationItems: "决策 {{decision}}，确认项 {{count}} 条，阻断 {{blocking}} 条",
+          workspaceTarget: "模式 {{mode}}，根路径 {{root}}",
+          workspaceScratchCleanupRemoved: "scratch 根目录已移除：{{root}}",
+          workspaceScratchCleanupRetained: "scratch 根目录保留：{{root}}",
+        },
+      },
+    },
   },
 } as const;

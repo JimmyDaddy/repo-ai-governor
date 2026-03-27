@@ -264,6 +264,7 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
   const outputPresenter = new CliOutputPresenter({
     stdout: io.stdout,
     stderr: io.stderr,
+    translate: (key, interpolation) => i18nRuntime?.t(key, interpolation),
   });
 
   let outputContext = resolveFallbackOutputContext(io);

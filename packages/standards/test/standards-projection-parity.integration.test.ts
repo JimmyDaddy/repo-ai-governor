@@ -1,3 +1,6 @@
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
 import {
   AgentsProjectionMetadataKey,
@@ -149,6 +152,52 @@ describe("AgentsProjector smoke", () => {
       `${AgentsProjectionMetadataKey.SOURCE_PACK_REFS}: pack.official.baseline@1.0.0`,
     );
     expect(projectionResult.projectedContent).toContain("stage-projection");
+  });
+
+  it("persists one projected AGENTS snapshot end-to-end", async () => {
+    const standardsPackRegistry = new StandardsPackRegistry({
+      packs: [createStandardsPackFixture()],
+    });
+    const ruleRenderer = new RuleRenderer({
+      registry: standardsPackRegistry,
+    });
+    const agentsProjector = new AgentsProjector({
+      renderer: ruleRenderer,
+      nowProvider: new FixedAgentsProjectionNowProvider(),
+    });
+
+    const temporaryProjectionRoot = await mkdtemp(join(tmpdir(), "agents-projection-"));
+    const projectionTarget = join(temporaryProjectionRoot, "AGENTS.md");
+
+    try {
+      const projectionResult = agentsProjector.project({
+        locale: "en-US",
+        projectionTarget,
+        interpolationBySemanticKey: {
+          "rule.hitl.review.required": {
+            stage: "stage-file-persist",
+          },
+        },
+      });
+
+      await writeFile(projectionTarget, projectionResult.projectedContent, "utf8");
+      const persistedProjection = await readFile(projectionTarget, "utf8");
+
+      expect(projectionResult.projectionTarget).toBe(projectionTarget);
+      expect(persistedProjection).toBe(projectionResult.projectedContent);
+      expect(persistedProjection).toContain(
+        `${AgentsProjectionMetadataKey.PROJECTION_TARGET}: ${projectionTarget}`,
+      );
+      expect(persistedProjection).toContain(
+        `${AgentsProjectionMetadataKey.PROJECTION_PARITY}: aligned`,
+      );
+      expect(persistedProjection).toContain("stage-file-persist");
+    } finally {
+      await rm(temporaryProjectionRoot, {
+        recursive: true,
+        force: true,
+      });
+    }
   });
 
   it("throws standardized error when projection parity is violated", () => {

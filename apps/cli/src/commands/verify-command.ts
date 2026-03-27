@@ -2,6 +2,7 @@ import { resolve } from "node:path";
 
 import { ExecutionProgressStage, GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
 import { CliCommandName } from "../constants/cli-command.constant.js";
+import { CliCommandResultCheckId } from "../constants/cli-command-result-check.constant.js";
 import {
   CLI_RUNTIME_OPERATION,
   CliGovernanceCheckStatus,
@@ -29,7 +30,7 @@ export class CliVerifyCommand implements CliCommandExecutor {
       });
     }
     checks.push({
-      id: "adapter_verification",
+      id: CliCommandResultCheckId.ADAPTER_VERIFICATION,
       status: adapterVerification.overallStatus,
       detail: `required_roles=${adapterVerification.requiredRoleCount} required_failures=${adapterVerification.requiredRoleFailedCount} degraded_roles=${adapterVerification.degradedRoleCount} fallback_roles=${adapterVerification.fallbackRoleCount}`,
     });

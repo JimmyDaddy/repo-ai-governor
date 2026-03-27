@@ -43,8 +43,8 @@
       "unsafeParameterDecoratorsEnabled": true
     },
     "formatter": {
-      "quoteStyle": "double",
-      "jsxQuoteStyle": "double",
+      "quoteStyle": "single",
+      "jsxQuoteStyle": "single",
       "semicolons": "always",
       "trailingCommas": "all"
     }
