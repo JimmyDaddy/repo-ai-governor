@@ -4,18 +4,18 @@
 
 - Status: active
 - Project: `project-022-memory-semantics-safety-and-consumer-hardening`
-- Sprint: `sprint-002-policy-tuning-and-surface-expansion`
+- Sprint: `sprint-003-seam-follow-through-or-project-closeout`
 - Docs root: `.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening`
-- Task records: `.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/sprint-002-policy-tuning-and-surface-expansion/tasks/`
-- Review records: `.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/sprint-002-policy-tuning-and-surface-expansion/review/`
+- Task records: `.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/sprint-003-seam-follow-through-or-project-closeout/tasks/`
+- Review records: `.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/sprint-003-seam-follow-through-or-project-closeout/review/`
 
 ## Active Streams
 
-- `primary`: project=`project-022-memory-semantics-safety-and-consumer-hardening`, sprint=`sprint-002-policy-tuning-and-surface-expansion`, docs=`.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening`, plan=`.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/plan.md`, tasks=`.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/sprint-002-policy-tuning-and-surface-expansion/tasks/`, checklist=`.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/sprint-002-policy-tuning-and-surface-expansion/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/sprint-002-policy-tuning-and-surface-expansion/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/sprint-002-policy-tuning-and-surface-expansion/review/`, status=`active`
+- `primary`: project=`project-022-memory-semantics-safety-and-consumer-hardening`, sprint=`sprint-003-seam-follow-through-or-project-closeout`, docs=`.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening`, plan=`.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/plan.md`, tasks=`.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/sprint-003-seam-follow-through-or-project-closeout/tasks/`, checklist=`.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/sprint-003-seam-follow-through-or-project-closeout/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/sprint-003-seam-follow-through-or-project-closeout/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/sprint-003-seam-follow-through-or-project-closeout/review/`, status=`active`
 
 ## Planned Follow-Up Streams
 
-1. 当前无 planned follow-up stream；如 `project-022` 在 `sprint-002` 后仍需继续扩张，再按实际输入补建新的 planned stream。
+1. 当前无 planned follow-up stream；`project-022` 已切换为 `completed` 真值，`current-context` 暂保留 `sprint-003` 作为 active closeout surface，待下一条 primary stream 显式激活后再迁入 history。
 
 ## Completed Stream History
 

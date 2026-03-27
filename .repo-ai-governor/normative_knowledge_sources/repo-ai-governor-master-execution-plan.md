@@ -40,7 +40,7 @@
 
 ## 3.1 一句话结论
 
-1. Stage 0-9 的业务闭环能力已经完成，`project-013` 已补齐远端 provider 真实调用与 adapter 运维契约；`project-014` 已完成 LangGraph runtime modernization 第一阶段；`project-015` 已完成 memory provider pluginization 全量闭环；`project-016` 已完成 LangGraph runtime productization baseline；`project-017` 已完成 module registry、总纲瘦身、首批模块迁移、typed detail-doc gate cutover、`draft -> final` lifecycle registry / promotion gate 治理，并补齐 repo-local promotion skill；`project-018` 已完成 `memory-provider-pluginization`、LangGraph 与 `memory-module` 的 promotion/backfill，并补齐 `runtime.memory-semantics` formal module baseline；`project-019` 已完成当前工具“现状 vs PRD”差距评估 draft 与 priority-1/2 delivery planning；`project-020` 已完成 packaging truthfulness、upgrade/workspace CLI UX、双仓库 adopter pilot 与文档 truthfulness 收口；`project-021` 已完成 implementation 主线；当前已激活 `project-022`，开始收敛 `workspace/user` 预留层 contract truth、assembly sensitivity enforcement 与 adopter-facing promotion output consumer。
+1. Stage 0-9 的业务闭环能力已经完成，`project-013` 已补齐远端 provider 真实调用与 adapter 运维契约；`project-014` 已完成 LangGraph runtime modernization 第一阶段；`project-015` 已完成 memory provider pluginization 全量闭环；`project-016` 已完成 LangGraph runtime productization baseline；`project-017` 已完成 module registry、总纲瘦身、首批模块迁移、typed detail-doc gate cutover、`draft -> final` lifecycle registry / promotion gate 治理，并补齐 repo-local promotion skill；`project-018` 已完成 `memory-provider-pluginization`、LangGraph 与 `memory-module` 的 promotion/backfill，并补齐 `runtime.memory-semantics` formal module baseline；`project-019` 已完成当前工具“现状 vs PRD”差距评估 draft 与 priority-1/2 delivery planning；`project-020` 已完成 packaging truthfulness、upgrade/workspace CLI UX、双仓库 adopter pilot 与文档 truthfulness 收口；`project-021` 已完成 implementation 主线；`project-022` 已完成 governance hardening closeout，当前未显式激活下一条 follow-up 主执行流。
 
 ## 3.2 当前真实状态
 
@@ -53,7 +53,7 @@
    - `run/review/review-verify/HITL/recovery` 已通过 orchestration service client 进入统一 service-backed path，并形成 CLI / service summary / event stream 三层 parity 证据。
    - `project-019` 已将 PRD 目标拆成能力域对照矩阵，并明确“内部治理成熟度高于外部产品化成熟度”是当前最核心的结构性偏差；`project-020` 已针对其中最高优先级的“打包分发真值”与“upgrade/workspace adopter UX”完成正式实现主线。
 2. 当前未完成的部分：
-   - 当前主线未完成项已经切换到 `project-022 / sprint-002`：需要继续细化 sensitivity / visibility policy、扩展 adopter-facing consumer surface，并决定 `workspace/user` seam 是否进入最小实现窗口。
+   - 当前未显式激活新的 runtime semantics governance hardening follow-up；若未来需要继续扩展 adopter-facing surface 或推进 `workspace/user` seam，必须基于 `project-022` completion audit 重新立项，而不是复活已完成 sprint。
    - 当前 P0/P1 主线缺口不再集中在“打包安装真值”或“adopter upgrade/workspace UX”本身，而是集中在 `runtime.memory-semantics` 实现、workspace artifact locality、migration scratch cleanup，以及更广泛的 package-manager-neutral onboarding polish。
    - 技术方案模块化治理主线已具备 module registry、contract-first loading、module graph gate、Spec Sync impact gate、typed detail-doc cutover、lifecycle/promotion blocking gate 与 repo-local skillized promotion workflow。
    - `daemon + http` 仍保留为可选 follow-up option，但不属于当前执行承诺。
@@ -72,7 +72,7 @@
 | 已完成 packaging/modularity 主线 | `project-015-memory-provider-pluginization` | completed | 已完成 built-in registry、optional plugin、shared loader / service reuse 与 service-host packaging / clean-room / release gate 收口，并作为后续治理主线的完成态输入 |
 | 已完成 runtime productization baseline | `project-016-langgraph-runtime-productization` | completed | 已完成 LangGraph runtime truthfulness、graph-first execution、`sidecar + ipc` host 与 desktop execution/service-ops baseline 收口 |
 | 已完成规范治理主线 | `project-017-technical-solution-modularization` | completed | 已完成总技术方案模块化、首批模块迁移、artifact handoff、typed detail-doc gate cutover、lifecycle/promotion 治理与 repo-local promotion skill |
-| 当前 runtime semantics follow-up 主线 | `project-022-memory-semantics-safety-and-consumer-hardening` | active | `sprint-001` 已完成，当前已激活 `sprint-002-policy-tuning-and-surface-expansion`，继续推进 policy tuning、consumer surface expansion 与 workspace/user seam 决策 |
+| 已完成 runtime semantics follow-up 主线 | `project-022-memory-semantics-safety-and-consumer-hardening` | completed | 已完成 `sprint-001`、`sprint-002` 与 `sprint-003`，给出“直接 closeout + workspace/user 继续 reserved capability”的正式结论；`current-context` 暂保留 `sprint-003` 作为 active closeout surface，等待下一条主执行流显式激活 |
 | 已完成 runtime semantics 实现主线 | `project-021-memory-semantics-runtime-implementation` | completed | 已完成 `sprint-001` recall/context assembly、`sprint-002` promotion pipeline/second consumer rollout 与 `sprint-003` promotion output reporting closeout |
 | 已完成 promotion/backfill 收口面 | `project-018-technical-solution-promotion-pilots` | completed | 已完成 `memory-provider-pluginization`、LangGraph 与 `memory-module` promotion/backfill，并已迁入 completed history |
 | 已完成产品差距评估与优先级规划主线 | `project-019-product-gap-assessment` | completed | 已形成当前工具“现状 vs PRD”差距评估 draft，并将最高优先级的两条 gap 收敛为 delivery planning |
@@ -80,9 +80,9 @@
 
 ## 3.4 当前推荐执行顺序
 
-1. `project-022 / sprint-002-policy-tuning-and-surface-expansion` 已激活，是当前默认主执行流；优先完成 policy tuning、surface expansion 与 workspace/user seam 决策。
-2. `project-022 / sprint-001-contract-alignment-safety-and-adopter-output-baseline` 已完成并迁入 completed history，作为 `sprint-002` 的输入基线保留。
-3. `project-021 / sprint-003-promotion-output-rollout-and-project-closeout` 已完成并迁入 completed history，作为 `project-022` 的输入基线保留。
+1. `project-022 / sprint-003-seam-follow-through-or-project-closeout` 已完成 closeout；在下一条主执行流显式激活前，`current-context` 暂保留其为 active closeout surface。
+2. `project-022 / sprint-002-policy-tuning-and-surface-expansion` 已完成并迁入 completed history，作为最终 closeout 的输入基线保留。
+3. `project-022 / sprint-001-contract-alignment-safety-and-adopter-output-baseline` 已完成并迁入 completed history，作为 `project-022` 的长期审计基线保留。
 4. `project-018 / sprint-005-memory-semantics-module-promotion-cutover` 已完成并迁入 completed history，作为 `runtime.memory-semantics` formal solution 与 handoff 基线输入。
 5. `project-020 / sprint-004-adopter-pilot-and-documentation-closure` 已完成并迁入 completed history，真实 pilot 已回灌文档真值。
 6. `project-020 / sprint-003-upgrade-and-workspace-lifecycle-ux-baseline` 已完成并迁入 completed history。
@@ -304,7 +304,7 @@
 | `project-019-product-gap-assessment` | Cross-stage product alignment follow-up | completed | 已形成当前工具“现状 vs PRD”差距评估 draft，并将最高优先级两条 gap 收敛为 delivery planning |
 | `project-020-adoption-productization-and-upgrade-ux` | Post-Stage-9 external adoption closure | completed | 已完成 packaging truthfulness、upgrade/workspace CLI UX、双仓库 adopter pilot 与文档真值闭环；后续仅保留体验型 polish 空间 |
 | `project-021-memory-semantics-runtime-implementation` | Post-Stage-9 runtime semantics implementation | completed | 已完成 `sprint-001` recall/context assembly、`sprint-002` promotion pipeline/second consumer rollout 与 `sprint-003` promotion output reporting closeout，并形成 project completion audit 与 completed delivery handoff |
-| `project-022-memory-semantics-safety-and-consumer-hardening` | Post-Stage-9 runtime semantics governance hardening follow-up | active | 已完成 `sprint-001-contract-alignment-safety-and-adopter-output-baseline`，当前激活 `sprint-002-policy-tuning-and-surface-expansion`，继续推进 policy tuning、surface expansion 与 workspace/user seam 决策 |
+| `project-022-memory-semantics-safety-and-consumer-hardening` | Post-Stage-9 runtime semantics governance hardening follow-up | completed | 已完成 `sprint-001-contract-alignment-safety-and-adopter-output-baseline`、`sprint-002-policy-tuning-and-surface-expansion` 与 `sprint-003-seam-follow-through-or-project-closeout`，并形成 project completion audit；未来若再推进额外 adopter surface 或 `workspace/user` 实现窗口，必须新开 stream |
 
 ## 9. Sprint 与 Task 最小模板
 

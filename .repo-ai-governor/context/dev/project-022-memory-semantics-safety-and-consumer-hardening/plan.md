@@ -1,6 +1,6 @@
 # project-022-memory-semantics-safety-and-consumer-hardening 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-03-27
 - Stage Mapping: Post-Stage-9 runtime semantics governance hardening follow-up
 - Phase Mapping: Runtime Memory Semantics / Contract Alignment / Safety Hardening / Adopter Output
@@ -43,13 +43,18 @@
 
 ## 2.3 sprint-003-seam-follow-through-or-project-closeout
 
-- Status: planned
-- Sprint Goal: 仅在需要继续推进 `workspace/user` seam follow-through、额外 adopter-facing surface rollout 或执行最终 project closeout 时激活。
-- Task Package: 待激活后拆解。
+- Status: completed
+- Sprint Goal: 在不伪造 `workspace/user` 实现的前提下，基于真实 adopter demand 决定继续推进 adopter-facing surface follow-through，或直接完成 `project-022` closeout。
+- Task Package: `TK-265`、`TK-266`、`TK-267`、`TK-268`、`TK-269`。
 - Input Constraints:
   1. 若 `workspace/user` seam 继续保持 reserved capability，则不得为了维持 active surface 而伪造实现任务。
   2. 若 adopter-facing surface 已满足近期目标，可直接在 project closeout surface 上收口，而不强制激活本 sprint。
   3. 只有当 substrate、ownership seam 与用户价值同时成立时，才允许进入 `workspace/user` 最小实现窗口。
+- Exit Criteria:
+  1. 已给出 adopter-facing surface 的“继续 follow-through / 直接 closeout”明确结论，而不是继续悬空。
+  2. `workspace/user` seam 已重新完成 gate revalidation；若仍不满足条件，则明确保持 reserved capability，而不是制造伪实现。
+  3. `project-022` completion audit、delivery closeout 与 project/sprint/task/artifact/master-plan 真值已同步，或已明确记录 blocker。
+  4. 当前 sprint 的 task ledger、review 生命周期与后续输入冻结保持一致。
 
 ## 3. 任务拆解矩阵（WBS）
 
@@ -65,6 +70,11 @@
 | TK-262 | sprint-002 | adopter-facing promotion output surface expansion 与 replay UX polish | runtime/rollout | TK-260,DA-258,DA-259 | completed |
 | TK-263 | sprint-002 | workspace-user seam readiness assessment 与 implementation decision baseline | governance/decision | TK-260,DA-256,DA-259 | completed |
 | TK-264 | sprint-002 | sprint-002 出口验收与 sprint-003 输入约束 | acceptance/baseline | TK-261,TK-262,TK-263 | completed |
+| TK-265 | sprint-003 | sprint-003 激活与 sprint-002 closeout handoff | bootstrap/governance | DA-264,sprint-002 completed | completed |
+| TK-266 | sprint-003 | adopter-facing surface follow-through 与 project closeout recommendation baseline | runtime/rollout | TK-265,DA-262,DA-264 | completed |
+| TK-267 | sprint-003 | workspace-user seam follow-through gate 与 implementation-window revalidation | governance/decision | TK-265,DA-263,DA-264 | completed |
+| TK-268 | sprint-003 | project-022 completion audit 与 delivery closeout baseline | acceptance/closeout | TK-266,TK-267,.repo-ai-governor/context/technical-solution-delivery-registry.yaml | completed |
+| TK-269 | sprint-003 | sprint-003 出口验收与 project-022 完成态收口 | acceptance/baseline | TK-266,TK-267,TK-268 | completed |
 
 ## 4. 依赖产物策略
 
@@ -80,6 +90,7 @@
 3. adopter-facing consumer 优先基于现有 `promotionSummary` / replay diagnostics，而不是重新回读 raw memory snapshot。
 4. 若需要 future capability 扩张，必须通过新 sprint 明确激活，而不是在本 sprint 内隐式扩 scope。
 5. `sprint-002` 默认消费 `DA-259`、`DA-257` 与 `DA-258`，不再回头重做 `sprint-001` 已完成的 baseline。
+6. `sprint-003` 默认消费 `DA-262`、`DA-263` 与 `DA-264`，优先判断 adopter-facing surface 是否还需要继续扩张，否则直接收敛到 project closeout。
 
 ## 5. DoD（project-022）
 
@@ -100,3 +111,8 @@
 8. 2026-03-27：通过 `TK-262 / DA-262` 扩展 adopter-facing `memory_policy / memory_promotion` surface，并改善 replay explain / diagnostics UX。
 9. 2026-03-27：通过 `TK-263 / DA-263` 完成 `workspace/user` seam readiness assessment，并决定继续保持 reserved capability。
 10. 2026-03-27：通过 `TK-264 / DA-264` 完成 sprint-002 验收，并将 `sprint-003-seam-follow-through-or-project-closeout` 冻结为 planned follow-up，而不提前激活。
+11. 2026-03-27：通过 `TK-265 / DA-265` 正式激活 `sprint-003-seam-follow-through-or-project-closeout`，将 active execution surface 从 `sprint-002` 切换到 seam follow-through / project closeout 窗口，并将 `sprint-002` 迁入 completed history。
+12. 2026-03-27：通过 `TK-266 / DA-266` 判定当前 adopter-facing `memory_policy / memory_promotion` surface 已满足本轮项目目标，不再继续扩张，直接进入 closeout recommendation。
+13. 2026-03-27：通过 `TK-267 / DA-267` 复核 `workspace/user` seam gate，结论仍为保持 reserved capability，暂不进入最小实现窗口。
+14. 2026-03-27：通过 `TK-268 / DA-268` 产出 [project-022 completion audit summary](./project-022-memory-semantics-safety-and-consumer-hardening-completion-audit-summary.md)，并同步 delivery closeout baseline。
+15. 2026-03-27：通过 `TK-269 / DA-269` 完成 sprint-003 验收与 `project-022` completed closeout；`current-context` 暂保留本 sprint 作为 active closeout surface，等待下一条主执行流显式激活。

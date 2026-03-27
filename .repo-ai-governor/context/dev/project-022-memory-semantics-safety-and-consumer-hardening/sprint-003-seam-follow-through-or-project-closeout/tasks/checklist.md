@@ -1,0 +1,22 @@
+# checklist
+
+- [x] TK-265 sprint-003 激活与 sprint-002 closeout handoff
+  - 2026-03-27：任务创建，状态初始化为 `planned`。
+  - 2026-03-27：状态切换为 `in_progress`，开始创建 sprint-003 skeleton、切换 current-context 并迁移 sprint-002 history。
+  - 2026-03-27：已完成 sprint-003 skeleton、active execution surface 切换、completed history 迁移、delivery handoff 同步与 `DA-265`。
+- [x] TK-266 adopter-facing surface follow-through 与 project closeout recommendation baseline
+  - 2026-03-27：任务创建，状态初始化为 `planned`。
+  - 2026-03-27：状态切换为 `in_progress`，开始复核 `memory_policy / memory_promotion` 在 `run/replay/reporting` consumer 的现状与残余 gap。
+  - 2026-03-27：已完成 adopter-facing surface recommendation，结论为当前 surface 已满足本轮项目目标、无需继续扩张，并形成 `DA-266`。
+- [x] TK-267 workspace-user seam follow-through gate 与 implementation-window revalidation
+  - 2026-03-27：任务创建，状态初始化为 `planned`。
+  - 2026-03-27：状态切换为 `in_progress`，开始基于 substrate、ownership、privacy 与用户价值信号重新复核 `workspace/user` seam。
+  - 2026-03-27：已完成 seam gate revalidation，结论为继续保持 reserved capability、暂不进入最小实现窗口，并形成 `DA-267`。
+- [x] TK-268 project-022 completion audit 与 delivery closeout baseline
+  - 2026-03-27：任务创建，状态初始化为 `planned`。
+  - 2026-03-27：状态切换为 `in_progress`，开始汇总 `project-022` 三个 sprint 的 ledger、rollout 与 seam-decision evidence，并准备 completion audit。
+  - 2026-03-27：已完成 `DA-268`、project completion audit summary、delivery registry completed baseline 与项目里程碑回链。
+- [x] TK-269 sprint-003 出口验收与 project-022 完成态收口
+  - 2026-03-27：任务创建，状态初始化为 `planned`。
+  - 2026-03-27：状态切换为 `in_progress`，开始执行 sprint-003 exit acceptance、resolved review 收口与 `project-022` completed closeout。
+  - 2026-03-27：已完成 `DA-269`、resolved sprint-003 closeout review、project/sprint/master-plan truth 同步与 `project-022` completed closeout；`current-context` 暂保留本 sprint 作为 active closeout surface。
