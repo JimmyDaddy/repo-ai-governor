@@ -3,7 +3,15 @@ import { resolve } from "node:path";
 
 import { AgentCapability } from "@repo-ai-governor/adapter-sdk";
 import type { AdaptersConfig } from "@repo-ai-governor/config";
-import type { MemoryLayeredSnapshotRequest, MemoryManager } from "@repo-ai-governor/core-memory";
+import type { MemoryLayeredSnapshotRequest } from "@repo-ai-governor/core-memory";
+import {
+  DEFAULT_MEMORY_RECALL_LAYERS,
+  DEFAULT_MEMORY_RECALL_ORDER,
+  MEMORY_RECALL_SELECTION_POLICY,
+  type MemoryContextAssembler,
+  type MemoryRecallRequest,
+  type MemoryRecallService,
+} from "@repo-ai-governor/core-memory-semantics";
 import { type ProcessDslNode, ProcessNodeType } from "@repo-ai-governor/core-process";
 import type { ProcessDslDefinition } from "@repo-ai-governor/core-process";
 import type { RuntimeStageInputMap } from "@repo-ai-governor/core-runtime";
@@ -36,7 +44,8 @@ const PROCESS_POLICY_BUDGET_REF = "policy/budget-default";
 export class CliTaskDrivenRunRuntime {
   public constructor(
     private readonly workspaceRoot: string,
-    private readonly memoryManager?: MemoryManager,
+    private readonly memoryRecallService?: MemoryRecallService,
+    private readonly memoryContextAssembler?: MemoryContextAssembler,
   ) {}
 
   /**
@@ -338,6 +347,8 @@ export class CliTaskDrivenRunRuntime {
       },
       taskContext: null,
       memorySelection: null,
+      memoryRecall: null,
+      memoryContext: null,
       memorySnapshotSummary: null,
       executionRoleProfileId: DefaultRoleProfileId.CODER,
       verificationRoleProfileId: null,
@@ -399,15 +410,23 @@ export class CliTaskDrivenRunRuntime {
       includeVerificationStage;
     const deliveryRehearsalAction = this.resolveDeliveryRehearsalAction(taskContext);
     const memorySelection = this.resolveMemorySelection(executionId, taskContext, streamMetadata);
-    const memorySnapshot =
-      memorySelection && this.memoryManager
-        ? await this.memoryManager.loadLayeredSnapshot(memorySelection)
+    const memoryRecall =
+      memorySelection && this.memoryRecallService
+        ? await this.memoryRecallService.recall(
+            this.createMemoryRecallRequest(executionId, memorySelection),
+          )
         : null;
-    const memorySnapshotSummary = memorySnapshot
+    const memoryContext =
+      memoryRecall && this.memoryContextAssembler
+        ? this.memoryContextAssembler.assemble({
+            recallResult: memoryRecall,
+          })
+        : null;
+    const memorySnapshotSummary = memoryRecall
       ? {
-          normativeEntryCount: memorySnapshot.normativeEntries.length,
-          executionEntryCount: memorySnapshot.executionEntries.length,
-          sessionEntryCount: memorySnapshot.sessionEntries.length,
+          normativeEntryCount: memoryRecall.resultSummary.normativeEntryCount,
+          executionEntryCount: memoryRecall.resultSummary.executionEntryCount,
+          sessionEntryCount: memoryRecall.resultSummary.sessionEntryCount,
         }
       : null;
 
@@ -423,7 +442,8 @@ export class CliTaskDrivenRunRuntime {
       inputArtifacts: taskContext.inputArtifacts,
       tracebackReferences: taskContext.tracebackReferences,
       ...(memorySelection ? { memorySelection } : {}),
-      ...(memorySnapshot ? { memorySnapshot } : {}),
+      ...(memorySnapshotSummary ? { memorySnapshotSummary } : {}),
+      ...(memoryContext ? { memoryContext } : {}),
     };
 
     const prepareNode = this.createNode(
@@ -591,11 +611,14 @@ export class CliTaskDrivenRunRuntime {
           taskContext: commonTaskContextPayload,
           ...(memorySelection ? { memorySelection } : {}),
           ...(memorySnapshotSummary ? { memorySnapshotSummary } : {}),
+          ...(memoryContext ? { memoryContext } : {}),
         },
       },
       stageInputs,
       taskContext,
       memorySelection,
+      memoryRecall,
+      memoryContext,
       memorySnapshotSummary,
       executionRoleProfileId,
       verificationRoleProfileId,
@@ -617,7 +640,7 @@ export class CliTaskDrivenRunRuntime {
       sprintId?: string;
     },
   ): MemoryLayeredSnapshotRequest | null {
-    if (!this.memoryManager) {
+    if (!this.memoryRecallService) {
       return null;
     }
 
@@ -629,6 +652,38 @@ export class CliTaskDrivenRunRuntime {
       sprintId: streamMetadata?.sprintId,
       artifactIds: taskContext.inputArtifacts.map((inputArtifact) => inputArtifact.artifactId),
       limitPerQuery: 20,
+    };
+  }
+
+  /**
+   * Creates one semantic recall request from the CLI task-driven selection payload.
+   * @param executionId Runtime execution id.
+   * @param memorySelection Layered snapshot selector already resolved from task context.
+   * @returns Semantic recall request.
+   */
+  private createMemoryRecallRequest(
+    executionId: string,
+    memorySelection: MemoryLayeredSnapshotRequest,
+  ): MemoryRecallRequest {
+    return {
+      queryIntent: "cli_task_driven_execution",
+      workspaceId: this.workspaceRoot,
+      executionId,
+      requestedLayers: [...DEFAULT_MEMORY_RECALL_LAYERS],
+      requestedMemoryKinds: [...DEFAULT_MEMORY_RECALL_ORDER],
+      metadataFilters: {
+        includeNormativeBaseline: memorySelection.includeNormativeBaseline !== false,
+        normativeKeyPrefixes: memorySelection.normativeKeyPrefixes ?? [],
+        normativeTags: memorySelection.normativeTags ?? [],
+        projectId: memorySelection.projectId,
+        sprintId: memorySelection.sprintId,
+        taskId: memorySelection.taskId,
+        artifactIds: memorySelection.artifactIds ?? [],
+        limitPerQuery: memorySelection.limitPerQuery,
+      },
+      recallOrder: [...DEFAULT_MEMORY_RECALL_ORDER],
+      selectionPolicy: MEMORY_RECALL_SELECTION_POLICY,
+      ...(memorySelection.sessionId ? { sessionId: memorySelection.sessionId } : {}),
     };
   }
 

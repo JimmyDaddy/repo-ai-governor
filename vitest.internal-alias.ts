@@ -14,6 +14,7 @@ const INTERNAL_PACKAGE_ENTRY_ALIASES = [
   ["@repo-ai-governor/config", "packages/config/src/index.ts"],
   ["@repo-ai-governor/core-change-risk", "packages/core-change-risk/src/index.ts"],
   ["@repo-ai-governor/core-memory", "packages/core-memory/src/index.ts"],
+  ["@repo-ai-governor/core-memory-semantics", "packages/core-memory-semantics/src/index.ts"],
   [
     "@repo-ai-governor/core-orchestration-service",
     "packages/core-orchestration-service/src/index.ts",

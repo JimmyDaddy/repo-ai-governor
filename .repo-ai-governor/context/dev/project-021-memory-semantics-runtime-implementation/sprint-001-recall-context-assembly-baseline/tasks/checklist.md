@@ -8,9 +8,10 @@
   - 2026-03-27：任务创建，状态初始化为 `planned`。
   - 2026-03-27：状态切换为 `in_progress`，开始新增 delivery registry、gate、promotion workflow 接线与 standards wiring。
   - 2026-03-27：已完成 `technical-solution-delivery-registry.yaml`、contract、gate、integration test、promotion skill 接线与 `DA-243`。
-- [ ] TK-244 core-memory-semantics package 与 CLI task-driven runtime baseline
+- [x] TK-244 core-memory-semantics package 与 CLI task-driven runtime baseline
   - 2026-03-27：任务创建，状态初始化为 `planned`。
   - 2026-03-27：状态切换为 `in_progress`，开始收敛 `packages/core-memory-semantics` 包结构、recall/context assembly service 与 CLI consumer 切换方案。
+  - 2026-03-27：已完成 `core-memory-semantics` 新包、CLI task-driven runtime recall/context assembly 接线、distribution runtime materialization 补齐与 `DA-244`。
 - [ ] TK-245 sprint-001 出口验收与 sprint-002 输入约束
   - 2026-03-27：任务创建，状态初始化为 `planned`。
 - [x] TK-246 technical-solution consumer surfaces 与 rollout ownership 扩展

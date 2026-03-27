@@ -17,6 +17,8 @@ const REQUIRED_PACKED_PATH_SUFFIXES = [
   "dist/node_modules/@repo-ai-governor/cli/dist/src/main.js",
   "dist/node_modules/@repo-ai-governor/config/package.json",
   "dist/node_modules/@repo-ai-governor/config/dist/src/index.js",
+  "dist/node_modules/@repo-ai-governor/core-memory-semantics/package.json",
+  "dist/node_modules/@repo-ai-governor/core-memory-semantics/dist/src/index.js",
   "dist/node_modules/@repo-ai-governor/core-orchestration-service/package.json",
   "dist/node_modules/@repo-ai-governor/core-orchestration-service/dist/src/index.js",
   "dist/node_modules/@repo-ai-governor/core-orchestration-service/dist/src/local-orchestration-service-sidecar-client.js",

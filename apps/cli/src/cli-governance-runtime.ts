@@ -17,6 +17,10 @@ import {
   ChangeRiskRequiredAction,
 } from "@repo-ai-governor/core-change-risk";
 import { MemoryManager, MemoryScope } from "@repo-ai-governor/core-memory";
+import {
+  MemoryContextAssembler,
+  MemoryRecallService,
+} from "@repo-ai-governor/core-memory-semantics";
 import { PolicyGateEngine } from "@repo-ai-governor/core-policy";
 import { ProcessCompiler, type ProcessIrNode } from "@repo-ai-governor/core-process";
 import {
@@ -206,7 +210,8 @@ export class CliGovernanceRuntime {
     this.replayExplainBuilder = new CliReplayExplainBuilder();
     this.taskDrivenRunRuntime = new CliTaskDrivenRunRuntime(
       this.options.workspace.workspaceRoot,
-      this.memoryManager,
+      new MemoryRecallService(this.memoryManager),
+      new MemoryContextAssembler(),
     );
     this.commandRegistry = new CliCommandRegistry([
       new CliInitCommand(),
@@ -2249,7 +2254,7 @@ export class CliGovernanceRuntime {
         runAssembly.assemblyMode === "task_id_fallback"
           ? CliGovernanceCheckStatus.WARN
           : CliGovernanceCheckStatus.PASS,
-      detail: `mode=${runAssembly.assemblyMode} reason=${runAssembly.assemblyReason} task_id=${taskIdLabel} nodes=${runAssembly.processDefinition.nodes.length} input_references=${runAssembly.taskContext?.inputReferences.length ?? 0} input_artifacts=${runAssembly.taskContext?.inputArtifacts.length ?? 0} memory_execution=${runAssembly.memorySnapshotSummary?.executionEntryCount ?? 0} memory_session=${runAssembly.memorySnapshotSummary?.sessionEntryCount ?? 0}`,
+      detail: `mode=${runAssembly.assemblyMode} reason=${runAssembly.assemblyReason} task_id=${taskIdLabel} nodes=${runAssembly.processDefinition.nodes.length} input_references=${runAssembly.taskContext?.inputReferences.length ?? 0} input_artifacts=${runAssembly.taskContext?.inputArtifacts.length ?? 0} memory_execution=${runAssembly.memorySnapshotSummary?.executionEntryCount ?? 0} memory_session=${runAssembly.memorySnapshotSummary?.sessionEntryCount ?? 0} memory_recalled=${runAssembly.memoryRecall?.resultSummary.selectedRecordCount ?? 0} memory_context_outcome=${runAssembly.memoryContext?.assemblyOutcome ?? "none"}`,
     };
   }
 

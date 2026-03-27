@@ -69,6 +69,9 @@ importers:
       '@repo-ai-governor/core-memory':
         specifier: workspace:*
         version: link:../../packages/core-memory
+      '@repo-ai-governor/core-memory-semantics':
+        specifier: workspace:*
+        version: link:../../packages/core-memory-semantics
       '@repo-ai-governor/core-orchestration-service':
         specifier: workspace:*
         version: link:../../packages/core-orchestration-service
@@ -174,6 +177,15 @@ importers:
 
   packages/core-memory:
     dependencies:
+      '@repo-ai-governor/memory-store-adapter':
+        specifier: workspace:*
+        version: link:../memory-store-adapter
+
+  packages/core-memory-semantics:
+    dependencies:
+      '@repo-ai-governor/core-memory':
+        specifier: workspace:*
+        version: link:../core-memory
       '@repo-ai-governor/memory-store-adapter':
         specifier: workspace:*
         version: link:../memory-store-adapter

@@ -70,6 +70,12 @@ const DISTRIBUTION_PACKAGES = [
     packageDistDirectory: resolve(PROJECT_ROOT, "packages/core-memory/dist"),
   },
   {
+    packageName: "core-memory-semantics",
+    packageRoot: resolve(PROJECT_ROOT, "packages/core-memory-semantics"),
+    compiledDirectory: resolve(PROJECT_ROOT, "dist/packages/core-memory-semantics"),
+    packageDistDirectory: resolve(PROJECT_ROOT, "packages/core-memory-semantics/dist"),
+  },
+  {
     packageName: "core-orchestration-service",
     packageRoot: resolve(PROJECT_ROOT, "packages/core-orchestration-service"),
     compiledDirectory: resolve(PROJECT_ROOT, "dist/packages/core-orchestration-service"),

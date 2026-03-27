@@ -6,6 +6,10 @@ import { AgentCapability } from "@repo-ai-governor/adapter-sdk";
 import type { AdaptersConfig } from "@repo-ai-governor/config";
 import { MemoryManager, MemoryScope } from "@repo-ai-governor/core-memory";
 import {
+  MemoryContextAssembler,
+  MemoryRecallService,
+} from "@repo-ai-governor/core-memory-semantics";
+import {
   MemoryStoreAdapter,
   type MemoryStoreProvider,
 } from "@repo-ai-governor/memory-store-adapter";
@@ -440,7 +444,11 @@ describe("CliTaskDrivenRunRuntime", () => {
         ],
       });
 
-      const runtime = new CliTaskDrivenRunRuntime(workspaceRoot, memoryManager);
+      const runtime = new CliTaskDrivenRunRuntime(
+        workspaceRoot,
+        new MemoryRecallService(memoryManager),
+        new MemoryContextAssembler(),
+      );
       const assembly = await runtime.buildRunAssembly({
         executionId: "cli-run-004",
         taskId: "TK-299",
@@ -465,15 +473,31 @@ describe("CliTaskDrivenRunRuntime", () => {
         executionEntryCount: 1,
         sessionEntryCount: 0,
       });
-      expect(assembly.stageInputs["node-task-execute"]?.memorySnapshot).toEqual(
+      expect(assembly.memoryRecall?.queryIntent).toBe("cli_task_driven_execution");
+      expect(assembly.memoryRecall?.selectedRecords).toEqual([
         expect.objectContaining({
-          executionEntries: [
-            expect.objectContaining({
-              key: "historic:stage-report:record-1",
-            }),
-          ],
+          key: "historic:stage-report:record-1",
+        }),
+      ]);
+      expect(assembly.memoryContext?.assemblyOutcome).toBe("context_ready");
+      expect(assembly.stageInputs["node-task-execute"]?.memorySnapshotSummary).toEqual({
+        normativeEntryCount: 0,
+        executionEntryCount: 1,
+        sessionEntryCount: 0,
+      });
+      expect(assembly.stageInputs["node-task-execute"]?.memoryContext).toEqual(
+        expect.objectContaining({
+          outputContext: expect.objectContaining({
+            recallItems: [
+              expect.objectContaining({
+                recordId: "execution:historic:stage-report:record-1",
+              }),
+            ],
+          }),
         }),
       );
+      expect(assembly.stageInputs["node-task-execute"]).not.toHaveProperty("memoryRecall");
+      expect(assembly.stageInputs["node-task-execute"]).not.toHaveProperty("memorySnapshot");
     } finally {
       await rm(workspaceRoot, { recursive: true, force: true });
     }

@@ -18,6 +18,7 @@
     "@repo-ai-governor/config": "workspace:*",
     "@repo-ai-governor/core-change-risk": "workspace:*",
     "@repo-ai-governor/core-memory": "workspace:*",
+    "@repo-ai-governor/core-memory-semantics": "workspace:*",
     "@repo-ai-governor/core-orchestration-service": "workspace:*",
     "@repo-ai-governor/core-policy": "workspace:*",
     "@repo-ai-governor/core-process": "workspace:*",
