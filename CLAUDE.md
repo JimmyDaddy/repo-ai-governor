@@ -135,6 +135,14 @@ Key normative docs:
 - `repo-ai-governor-overall-technical-solution.md` — runtime contracts (L1, load on architecture/runtime changes)
 - `repo-ai-governor-architecture-and-repo-layering.md` — module dependency constraints (L1, load on layering changes)
 
+## Repository-local Skills
+
+Repository-local skills live under `.codex/skills/`. When a task clearly matches one of these workflows, read the corresponding `SKILL.md` before executing:
+
+- `.codex/skills/technical-solution-promotion/SKILL.md`
+- `.codex/skills/workspace-code-review-workflow/SKILL.md`
+- `.codex/skills/workspace-delivery-finisher/SKILL.md`
+
 ## Context & Review Workflow
 
 Task and sprint ledgers live under `.repo-ai-governor/context/dev/<project-xxx>/sprint-xxx/tasks/`:

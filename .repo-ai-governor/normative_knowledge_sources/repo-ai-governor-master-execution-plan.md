@@ -40,7 +40,7 @@
 
 ## 3.1 一句话结论
 
-1. Stage 0-9 的业务闭环能力已经完成，`project-013` 已补齐远端 provider 真实调用与 adapter 运维契约；`project-014` 已完成 LangGraph runtime modernization 第一阶段；`project-015` 已完成 memory provider pluginization 全量闭环；`project-016` 已完成 LangGraph runtime productization baseline；`project-017` 已完成 module registry、总纲瘦身、首批模块迁移、typed detail-doc gate cutover、`draft -> final` lifecycle registry / promotion gate 治理，并补齐 repo-local promotion skill；`project-018` 已完成 `memory-provider-pluginization`、LangGraph 与 `memory-module` 的 promotion/backfill，并补齐 `runtime.memory-semantics` formal module baseline；`project-019` 已完成当前工具“现状 vs PRD”差距评估 draft 与 priority-1/2 delivery planning；`project-020` 已完成 packaging truthfulness、upgrade/workspace CLI UX、双仓库 adopter pilot 与文档 truthfulness 收口；`project-021` 已完成 implementation 主线；`project-022` 已完成 governance hardening closeout；`project-023` 已完成 workspace migration artifact locality 与 rollback scratch cleanup 收口；`project-024` 已完成 `gate execution efficiency optimization` 技术方案正式化与 promotion cutover，当前未显式激活下一条 follow-up 主执行流。
+1. Stage 0-9 的业务闭环能力已经完成，`project-013` 已补齐远端 provider 真实调用与 adapter 运维契约；`project-014` 已完成 LangGraph runtime modernization 第一阶段；`project-015` 已完成 memory provider pluginization 全量闭环；`project-016` 已完成 LangGraph runtime productization baseline；`project-017` 已完成 module registry、总纲瘦身、首批模块迁移、typed detail-doc gate cutover、`draft -> final` lifecycle registry / promotion gate 治理，并补齐 repo-local promotion skill；`project-018` 已完成 `memory-provider-pluginization`、LangGraph 与 `memory-module` 的 promotion/backfill，并补齐 `runtime.memory-semantics` formal module baseline；`project-019` 已完成当前工具“现状 vs PRD”差距评估 draft 与 priority-1/2 delivery planning；`project-020` 已完成 packaging truthfulness、upgrade/workspace CLI UX、双仓库 adopter pilot 与文档 truthfulness 收口；`project-021` 已完成 implementation 主线；`project-022` 已完成 governance hardening closeout；`project-023` 已完成 workspace migration artifact locality 与 rollback scratch cleanup 收口；`project-024` 已完成 `gate execution efficiency optimization` 技术方案正式化与 promotion cutover；当前主执行流已切换到 `project-025`，开始把整套方案拆成真实 implementation project。
 
 ## 3.2 当前真实状态
 
@@ -53,7 +53,7 @@
    - `run/review/review-verify/HITL/recovery` 已通过 orchestration service client 进入统一 service-backed path，并形成 CLI / service summary / event stream 三层 parity 证据。
    - `project-019` 已将 PRD 目标拆成能力域对照矩阵，并明确“内部治理成熟度高于外部产品化成熟度”是当前最核心的结构性偏差；`project-020` 已针对其中最高优先级的“打包分发真值”与“upgrade/workspace adopter UX”完成正式实现主线。
 2. 当前未完成的部分：
-   - 当前未显式激活新的 follow-up implementation 主执行流；若未来要继续推进 `gate execution efficiency` 的真实落地，或继续扩展 broader package-manager-neutral onboarding polish，需要基于 `project-024` 与 `project-023` 的 completion audit 重新立项。
+   - 当前主执行流已切换到 `project-025 / sprint-001-repo-global-parallelization-and-fast-check-baseline`，先承接 `gate execution efficiency` 方案的 project decomposition 与 phase-1 落地窗口。
    - 当前 P0/P1 主线缺口不再集中在 workspace artifact locality 或 migration scratch cleanup，而是更集中在 package-manager-neutral onboarding polish 与其他体验型 follow-up。
    - 技术方案模块化治理主线已具备 module registry、contract-first loading、module graph gate、Spec Sync impact gate、typed detail-doc cutover、lifecycle/promotion blocking gate 与 repo-local skillized promotion workflow。
    - `daemon + http` 仍保留为可选 follow-up option，但不属于当前执行承诺。
@@ -72,7 +72,8 @@
 | 已完成 packaging/modularity 主线 | `project-015-memory-provider-pluginization` | completed | 已完成 built-in registry、optional plugin、shared loader / service reuse 与 service-host packaging / clean-room / release gate 收口，并作为后续治理主线的完成态输入 |
 | 已完成 runtime productization baseline | `project-016-langgraph-runtime-productization` | completed | 已完成 LangGraph runtime truthfulness、graph-first execution、`sidecar + ipc` host 与 desktop execution/service-ops baseline 收口 |
 | 已完成规范治理主线 | `project-017-technical-solution-modularization` | completed | 已完成总技术方案模块化、首批模块迁移、artifact handoff、typed detail-doc gate cutover、lifecycle/promotion 治理与 repo-local promotion skill |
-| 当前 governance execution gate 技术方案 formalization closeout surface | `project-024-gate-execution-efficiency-technical-solution-promotion` | completed | 已完成 `sprint-001-formalization-and-promotion-cutover`，将 gate execution efficiency draft 正式化为 `governance.execution-gates` 模块，并同步 lifecycle/module-registry/manifest/delivery truth；`current-context` 暂保留其为 active closeout surface，等待下一条主执行流显式激活 |
+| 当前 gate execution efficiency implementation 主线 | `project-025-gate-execution-efficiency-implementation` | active | 已激活 `sprint-001-repo-global-parallelization-and-fast-check-baseline`，负责把 `governance.execution-gates` formal solution 拆成真实 project/sprint/task 与 phase-1 implementation baseline |
+| 已完成 governance execution gate 技术方案 formalization 主线 | `project-024-gate-execution-efficiency-technical-solution-promotion` | completed | 已完成 `sprint-001-formalization-and-promotion-cutover`，将 gate execution efficiency draft 正式化为 `governance.execution-gates` 模块，并同步 lifecycle/module-registry/manifest/delivery truth；已迁入 completed history |
 | 已完成 workspace migration ergonomics follow-up 主线 | `project-023-workspace-migration-artifact-locality-and-scratch-cleanup` | completed | 已完成 `sprint-001-workspace-artifact-locality-and-scratch-cleanup-baseline`，收敛 artifact locality target-root contract、rollback scratch cleanup 与相关 adopter-facing truthfulness，并已迁入 completed history |
 | 已完成 runtime semantics follow-up 主线 | `project-022-memory-semantics-safety-and-consumer-hardening` | completed | 已完成 `sprint-001`、`sprint-002` 与 `sprint-003`，给出“直接 closeout + workspace/user 继续 reserved capability”的正式结论，并已迁入 completed history |
 | 已完成 runtime semantics 实现主线 | `project-021-memory-semantics-runtime-implementation` | completed | 已完成 `sprint-001` recall/context assembly、`sprint-002` promotion pipeline/second consumer rollout 与 `sprint-003` promotion output reporting closeout |
@@ -82,11 +83,12 @@
 
 ## 3.4 当前推荐执行顺序
 
-1. `project-024 / sprint-001-formalization-and-promotion-cutover` 已完成 closeout；在下一条主执行流显式激活前，`current-context` 暂保留其为 active closeout surface。
-2. `project-023 / sprint-001-workspace-artifact-locality-and-scratch-cleanup-baseline` 已完成并迁入 completed history，作为 adopter ergonomics closeout 的历史输入。
-3. `project-020 / sprint-004-adopter-pilot-and-documentation-closure` 已完成并保留 completion audit，作为 artifact locality / scratch cleanup 已关闭 gap 的历史输入。
-4. `project-022 / sprint-003-seam-follow-through-or-project-closeout` 已完成并迁入 completed history，作为当前 closeout handoff 基线保留。
-5. `project-018 / sprint-005-memory-semantics-module-promotion-cutover` 已完成并迁入 completed history，作为 `runtime.memory-semantics` formal solution 与 handoff 基线输入。
+1. `project-025 / sprint-001-repo-global-parallelization-and-fast-check-baseline` 已激活，是当前默认主执行流；优先完成整套 gate efficiency 方案的 project decomposition 与 phase-1 baseline。
+2. `project-024 / sprint-001-formalization-and-promotion-cutover` 已完成并迁入 completed history，作为 `governance.execution-gates` formal solution 的 handoff 输入。
+3. `project-023 / sprint-001-workspace-artifact-locality-and-scratch-cleanup-baseline` 已完成并迁入 completed history，作为 adopter ergonomics closeout 的历史输入。
+4. `project-020 / sprint-004-adopter-pilot-and-documentation-closure` 已完成并保留 completion audit，作为 artifact locality / scratch cleanup 已关闭 gap 的历史输入。
+5. `project-022 / sprint-003-seam-follow-through-or-project-closeout` 已完成并迁入 completed history，作为当前 closeout handoff 基线保留。
+6. `project-018 / sprint-005-memory-semantics-module-promotion-cutover` 已完成并迁入 completed history，作为 `runtime.memory-semantics` formal solution 与 handoff 基线输入。
 6. `project-020 / sprint-004-adopter-pilot-and-documentation-closure` 已完成并迁入 completed history，真实 pilot 已回灌文档真值。
 7. `project-020 / sprint-003-upgrade-and-workspace-lifecycle-ux-baseline` 已完成并迁入 completed history。
 8. `project-020 / sprint-002-packaged-runtime-cutover-and-release-gate-block` 已完成并迁入 completed history。
@@ -310,6 +312,7 @@
 | `project-022-memory-semantics-safety-and-consumer-hardening` | Post-Stage-9 runtime semantics governance hardening follow-up | completed | 已完成 `sprint-001-contract-alignment-safety-and-adopter-output-baseline`、`sprint-002-policy-tuning-and-surface-expansion` 与 `sprint-003-seam-follow-through-or-project-closeout`，并形成 project completion audit；未来若再推进额外 adopter surface 或 `workspace/user` 实现窗口，必须新开 stream |
 | `project-023-workspace-migration-artifact-locality-and-scratch-cleanup` | Post-Stage-9 workspace migration ergonomics follow-up | completed | 已完成 artifact locality target-root contract、rollback scratch cleanup 与相关 adopter-facing CLI/documentation truthfulness，并形成 project completion audit；未来若继续做 package-manager-neutral onboarding polish，必须新开 stream |
 | `project-024-gate-execution-efficiency-technical-solution-promotion` | Post-Stage-9 governance gate execution efficiency formalization | completed | 已完成 draft 正式化、`governance.execution-gates` 模块 landing、lifecycle/module-registry/manifest/delivery promotion cutover，并形成 project completion audit |
+| `project-025-gate-execution-efficiency-implementation` | Post-Stage-9 governance gate execution efficiency implementation | active | 已将 formal solution 拆成真实 project；`sprint-001` 聚焦 repo-global gate decoupling、`check:fast` baseline 与 phase mapping，后续再推进 package-level graph、TS project references 与 affected planner |
 
 ## 9. Sprint 与 Task 最小模板
 
