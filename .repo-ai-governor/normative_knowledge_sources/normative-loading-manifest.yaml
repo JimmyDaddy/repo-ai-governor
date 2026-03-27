@@ -1,5 +1,5 @@
 schema_version: 1
-generated_at: 2026-03-26
+generated_at: 2026-03-27
 status: active
 owner: repo-ai-governor
 
@@ -36,6 +36,19 @@ external_required_inputs:
     owner: architecture
     last_reviewed_at: 2026-03-26
     notes: lifecycle state source outside normative_knowledge_sources
+
+  - doc_id: technical_solution_delivery_registry
+    path: .repo-ai-governor/context/technical-solution-delivery-registry.yaml
+    tier: L1
+    status: active
+    default_load: false
+    load_trigger:
+      - technical_solution_promotion_change
+      - technical_solution_module_change
+      - governance_engine_change
+    owner: architecture
+    last_reviewed_at: 2026-03-27
+    notes: solution-to-execution handoff source outside normative_knowledge_sources
 
 documents:
   - doc_id: normative_loading_manifest
@@ -205,6 +218,18 @@ documents:
     owner: architecture
     last_reviewed_at: 2026-03-26
 
+  - doc_id: technical_solution_registry_delivery_contract
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/governance-technical-solution-registry/contracts/technical-solution-delivery-registry-contract.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - technical_solution_promotion_change
+      - technical_solution_module_change
+      - governance_engine_change
+    owner: architecture
+    last_reviewed_at: 2026-03-27
+
   - doc_id: technical_solution_runtime_memory_provider_loading_overview
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-memory-provider-loading/module-overview.md
     tier: L2
@@ -253,6 +278,57 @@ documents:
     owner: architecture
     last_reviewed_at: 2026-03-26
 
+  - doc_id: technical_solution_runtime_memory_semantics_overview
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-memory-semantics/module-overview.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - runtime_contract_change
+      - module_dependency_change
+      - memory_provider_change
+      - governance_engine_change
+    owner: architecture
+    last_reviewed_at: 2026-03-27
+
+  - doc_id: technical_solution_runtime_memory_semantics_recall_contract
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-memory-semantics/contracts/memory-recall-policy-contract.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - runtime_contract_change
+      - module_dependency_change
+      - memory_provider_change
+      - governance_engine_change
+    owner: architecture
+    last_reviewed_at: 2026-03-27
+
+  - doc_id: technical_solution_runtime_memory_semantics_context_contract
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-memory-semantics/contracts/memory-context-assembly-contract.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - runtime_contract_change
+      - module_dependency_change
+      - memory_provider_change
+      - governance_engine_change
+    owner: architecture
+    last_reviewed_at: 2026-03-27
+
+  - doc_id: technical_solution_runtime_memory_semantics_adr
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-memory-semantics/adrs/working-memory-and-canonical-source-boundary.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - runtime_contract_change
+      - module_dependency_change
+      - governance_engine_change
+    owner: architecture
+    last_reviewed_at: 2026-03-27
+
   - doc_id: technical_solution_runtime_orchestration_overview
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/module-overview.md
     tier: L2
@@ -263,7 +339,7 @@ documents:
       - governance_engine_change
       - module_dependency_change
     owner: architecture
-    last_reviewed_at: 2026-03-26
+    last_reviewed_at: 2026-03-27
 
   - doc_id: technical_solution_runtime_orchestration_contract
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/contracts/runtime-graph-execution-contract.md

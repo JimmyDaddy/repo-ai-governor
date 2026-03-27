@@ -34,6 +34,7 @@ This file defines repository-level coding standards and the executable gate comm
 - [CS-028] `.repo-ai-governor/context/current-context.md` may declare at most one `Worktree Review Target` override for default CR routing. When present, it must point to a `completed` stream review directory that still contains open lifecycle artifacts (`code_review_*` / `verified_code_review_*`); once only `resolved` artifacts or no lifecycle files remain, the override must be removed before delivery.
 - [CS-029] Technical solution module graph governance is required: `.repo-ai-governor/normative_knowledge_sources/technical-solutions/technical-solution-module-registry.yaml` is the single source for module ids, exported/imported contracts, direct dependencies, and loading budgets; active module docs under `.repo-ai-governor/normative_knowledge_sources/technical-solutions/**` must be registered in manifest; contract changes must keep producer module overview synchronized; and the module graph gate defaults to blocking mode.
 - [CS-030] Technical solution draft/final lifecycle governance is required: `.repo-ai-governor/context/technical-solution-lifecycle-registry.yaml` is the single source for draft/review/approved/active/superseded/archived state; `draft_paths` must stay under `.repo-ai-governor/draft/**` and must not enter manifest; `active/superseded` `final_paths` must be manifest-registered; and promotion changes must keep lifecycle registry, review evidence, task ledger, and module registry/manifest (when impacted) synchronized.
+- [CS-031] Technical solution delivery handoff governance is required: `.repo-ai-governor/context/technical-solution-delivery-registry.yaml` is the single source for `active technical solution -> docs_only/existing_stream/followup_required` ownership, consumer surfaces, user impact, and rollout status; every `active` solution must declare one delivery entry; `followup_required` entries must resolve to real `project/sprint/task` records and remain visible from `current-context.md` active/planned stream surfaces; user-facing solutions must also declare rollout ownership and evidence; and promotion changes must keep lifecycle registry, delivery registry, `current-context.md`, task ledger, and artifact handoff synchronized.
 
 ## Monorepo Naming Convention (Refactor Baseline)
 
@@ -111,6 +112,7 @@ node ./scripts/governance/check-ts-only-residue.js
 node ./scripts/governance/check-docs-triad-sync.js
 node ./scripts/governance/check-technical-solution-module-graph.js
 node ./scripts/governance/check-technical-solution-lifecycle-registry.js
+node ./scripts/governance/check-technical-solution-delivery-registry.js
 node ./scripts/governance/check-jsdoc-governance.js
 node ./scripts/governance/check-oop-structure.js
 node ./scripts/governance/check-package-dependency-boundary.js --mode warn
@@ -140,7 +142,7 @@ node ./dist/bin/repo-ai-governor.js --help >/dev/null
    - `node ./scripts/governance/check-monorepo-naming.js`
    - `node ./scripts/governance/check-monorepo-versioning-policy.js`
    - `node ./scripts/governance/check-god-object-boundary.js`
-4. Current status: `check-package-dependency-boundary` 以 warning 模式接入；`normative-loading-manifest`、`technical-solution-module-graph` 与 `technical-solution-lifecycle-registry` 已切换默认 blocking；其余脚本维持 implementation-ready，待专门窗口激活。
+4. Current status: `check-package-dependency-boundary` 以 warning 模式接入；`normative-loading-manifest`、`technical-solution-module-graph`、`technical-solution-lifecycle-registry` 与 `technical-solution-delivery-registry` 已切换默认 blocking；其余脚本维持 implementation-ready，待专门窗口激活。
 
 ## Notes
 

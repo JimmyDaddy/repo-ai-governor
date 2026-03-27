@@ -3,15 +3,15 @@
 ## Primary Stream
 
 - Status: active
-- Project: `project-020-adoption-productization-and-upgrade-ux`
-- Sprint: `sprint-004-adopter-pilot-and-documentation-closure`
-- Docs root: `.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux`
-- Task records: `.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux/sprint-004-adopter-pilot-and-documentation-closure/tasks/`
-- Review records: `.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux/sprint-004-adopter-pilot-and-documentation-closure/review/`
+- Project: `project-021-memory-semantics-runtime-implementation`
+- Sprint: `sprint-001-recall-context-assembly-baseline`
+- Docs root: `.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation`
+- Task records: `.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-001-recall-context-assembly-baseline/tasks/`
+- Review records: `.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-001-recall-context-assembly-baseline/review/`
 
 ## Active Streams
 
-- `primary`: project=`project-020-adoption-productization-and-upgrade-ux`, sprint=`sprint-004-adopter-pilot-and-documentation-closure`, docs=`.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux`, plan=`.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux/plan.md`, tasks=`.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux/sprint-004-adopter-pilot-and-documentation-closure/tasks/`, checklist=`.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux/sprint-004-adopter-pilot-and-documentation-closure/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux/sprint-004-adopter-pilot-and-documentation-closure/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux/sprint-004-adopter-pilot-and-documentation-closure/review/`, status=`active`
+- `primary`: project=`project-021-memory-semantics-runtime-implementation`, sprint=`sprint-001-recall-context-assembly-baseline`, docs=`.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation`, plan=`.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/plan.md`, tasks=`.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-001-recall-context-assembly-baseline/tasks/`, checklist=`.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-001-recall-context-assembly-baseline/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-001-recall-context-assembly-baseline/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-001-recall-context-assembly-baseline/review/`, status=`active`
 
 ## Planned Follow-Up Streams
 

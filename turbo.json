@@ -35,6 +35,11 @@
       "dependsOn": ["//#gate:build"],
       "outputs": []
     },
+    "//#gate:technical-solution-delivery-registry": {
+      "cache": false,
+      "dependsOn": ["//#gate:build"],
+      "outputs": []
+    },
     "//#gate:finite-literal-sets": {
       "cache": false,
       "dependsOn": ["//#gate:build"],
@@ -152,6 +157,7 @@
         "//#gate:docs-triad-sync",
         "//#gate:technical-solution-module-graph",
         "//#gate:technical-solution-lifecycle-registry",
+        "//#gate:technical-solution-delivery-registry",
         "//#gate:finite-literal-sets",
         "//#gate:dependency-boundary",
         "//#gate:standardized-errors",

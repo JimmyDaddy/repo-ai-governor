@@ -1,7 +1,7 @@
 # project-018-technical-solution-promotion-pilots 计划
 
 - Status: completed
-- Date: 2026-03-26
+- Date: 2026-03-27
 - Stage Mapping: Cross-stage normative consumption follow-up
 - Phase Mapping: Technical Solution Promotion / Consumption Proof
 
@@ -58,7 +58,18 @@
   1. `project-018` 已在 reopen 后切换到 `sprint-004`，并将 `sprint-003` 迁入 completed history。
   2. `packages/core-runtime-langgraph/package.json` 与 `pnpm-lock.yaml` 已将 `@langchain/langgraph` 收敛为 direct dependency。
   3. `LangGraphCommunityVendorBinding`、相关类型、测试与 README 已从 optional peer 语义切换到 bundled dependency contract verification。
-  4. task/review/artifact gates 已通过，并生成新的 project-018 完成态审计摘要。
+4. task/review/artifact gates 已通过，并生成新的 project-018 完成态审计摘要。
+
+## 2.5 sprint-005-memory-semantics-module-promotion-cutover
+
+- Status: completed
+- Sprint Goal: 引入 `runtime.memory-semantics` formal module skeleton，并将 `technical-solution.memory-module` 从 draft 切到 lifecycle-managed final solution。
+- Task Package: `TK-238`、`TK-239`、`TK-240`、`TK-241`。
+- Exit Criteria:
+  1. `project-018` 已从 `project-020` closeout surface 切换回新的 `sprint-005` active stream，并将 `project-020 / sprint-004` 迁入 completed history。
+  2. 已引入 `runtime.memory-semantics` 的 formal module docs、module registry wiring 与 manifest 登记。
+  3. `technical-solution.memory-module` 已具备 review evidence、final paths、target module realignment 与 activation metadata，并切换到 `active`。
+  4. lifecycle/module/manifest/task/review/artifact gates 已通过，并生成新的 project-018 完成态审计摘要。
 
 ## 3. 任务拆解矩阵（WBS）
 
@@ -80,6 +91,10 @@
 | TK-211 | sprint-004 | core-runtime-langgraph 直连依赖切换与 vendor binding contract 对齐 | runtime/package | TK-210,packages/core-runtime-langgraph/package.json,pnpm-lock.yaml | completed |
 | TK-212 | sprint-004 | LangGraph package truthfulness 文档与 rollout 约束同步 | docs/governance | TK-211,DA-211,project-016 completion | completed |
 | TK-213 | sprint-004 | sprint-004 出口验收与 project-018 re-closeout | acceptance/baseline | TK-210,TK-211,TK-212,DA-210,DA-211,DA-212 | completed |
+| TK-238 | sprint-005 | sprint-005 激活与 project-018 reopen handoff | bootstrap/governance | DA-237,project-020 completion audit | completed |
+| TK-239 | sprint-005 | runtime.memory-semantics 正式模块 skeleton 与 contract baseline | runtime/docs | TK-238,DA-203,DA-204,.repo-ai-governor/draft/memory-module-technical-solution.md | completed |
+| TK-240 | sprint-005 | memory-module technical solution lifecycle、module-registry 与 manifest promotion cutover | governance/docs | TK-239,resolved_code_review_tk-203-memory-module-bounded-context-assessment-and-target-module-realignment-recommendation.md | completed |
+| TK-241 | sprint-005 | sprint-005 出口验收与 project-018 re-closeout | acceptance/baseline | TK-238,TK-239,TK-240,DA-238,DA-239,DA-240 | completed |
 
 ## 4. 依赖产物策略
 
@@ -108,6 +123,12 @@
    - `packages/core-runtime-langgraph/package.json`
    - `packages/core-runtime-langgraph/src/langgraph-community-vendor-binding.ts`
 5. 本项目只做真实 promotion pilot、promotion backfill、truthfulness follow-up 与 prepare-promotion readiness，不重写既有实现 history。
+6. `sprint-005` reopen 额外消费：
+   - `.repo-ai-governor/draft/memory-module-technical-solution.md`
+   - `.repo-ai-governor/draft/memory-module-community-practices-and-design-reference.md`
+   - `DA-203`
+   - `DA-204`
+   - `DA-237`
 
 ## 5. DoD（project-018）
 
@@ -128,3 +149,4 @@
 5. 2026-03-26：reopen `project-018` 执行 `sprint-002-memory-module-promotion-readiness`，形成 `DA-202` ~ `DA-205`、`memory-module` 的 bounded-context assessment 与 prepare-promotion blocker baseline，并产出新的项目完成态审计摘要 `project-018-technical-solution-promotion-pilots-completion-audit-summary-sprint-002-memory-module-readiness.md`。
 6. 2026-03-26：reopen `project-018` 执行 `sprint-003-langgraph-orchestration-promotion-backfill`，完成 `DA-206` ~ `DA-209`、`technical-solution.langgraph-orchestration-direction` 的 lifecycle promotion cutover，并产出新的项目完成态审计摘要 `project-018-technical-solution-promotion-pilots-completion-audit-summary-sprint-003-langgraph-orchestration-promotion-backfill.md`。
 7. 2026-03-26：reopen `project-018` 执行 `sprint-004-langgraph-hard-dependency-truthfulness-cutover`，完成 `DA-210` ~ `DA-213`、`core-runtime-langgraph` 的 direct dependency cutover 与 truthfulness 对齐，并产出新的项目完成态审计摘要 `project-018-technical-solution-promotion-pilots-completion-audit-summary-sprint-004-langgraph-hard-dependency-truthfulness-cutover.md`。
+8. 2026-03-27：reopen `project-018` 执行 `sprint-005-memory-semantics-module-promotion-cutover`，完成 `DA-238` ~ `DA-241`、`runtime.memory-semantics` formal module baseline 与 `technical-solution.memory-module` lifecycle promotion cutover，并产出新的项目完成态审计摘要 `project-018-technical-solution-promotion-pilots-completion-audit-summary-sprint-005-memory-semantics-module-promotion-cutover.md`。

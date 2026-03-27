@@ -40,10 +40,12 @@
 1. `draft` 资产只允许作为讨论输入或 traceback，不进入默认规范加载面。
 2. promotion 发生时，至少要同步：
    - lifecycle registry
+   - technical-solution-delivery-registry.yaml
    - `normative-loading-manifest.yaml`
    - `technical-solution-module-registry.yaml`（若命中模块事实面）
    - 对应 review / artifact / task ledger
 3. `approved` 不等于 `active`；只有完成 final docs 接线和 gate 对齐后，才能切换为 `active`。
+4. `active` technical solution 必须拥有 delivery handoff ownership；否则 promotion 视为未真正收口。
 
 ## 5. Compatibility
 

@@ -7,7 +7,7 @@ description: Repository-local workflow for promoting a technical solution from `
 
 ## Overview
 
-Use this repository-local skill to execute technical solution promotion in a controlled way. The skill does not approve a solution by itself and does not create a new source of truth. It projects the existing repository governance into a repeatable workflow: inspect readiness, promote approved content into formal module docs, update lifecycle/module/manifest state, run gates, and close the active sprint records.
+Use this repository-local skill to execute technical solution promotion in a controlled way. The skill does not approve a solution by itself and does not create a new source of truth. It projects the existing repository governance into a repeatable workflow: inspect readiness, promote approved content into formal module docs, update lifecycle/module/manifest/delivery-handoff/rollout state, run gates, and close the active sprint records.
 
 Prefer this skill over generic document-editing workflows whenever the request is about moving a technical solution from `draft` to formal usable status in this repository.
 
@@ -36,6 +36,7 @@ Read these before doing anything else:
 6. `.repo-ai-governor/normative_knowledge_sources/governance/long-term-maintenance-guide.md`
 7. `.repo-ai-governor/context/technical-solution-lifecycle-registry.yaml`
 8. `.repo-ai-governor/normative_knowledge_sources/technical-solutions/technical-solution-module-registry.yaml`
+9. `.repo-ai-governor/context/technical-solution-delivery-registry.yaml`
 
 Then load only the specific draft file, module docs, review artifacts, and triad docs required by the requested promotion.
 
@@ -56,6 +57,8 @@ Use this mode when the user wants a readiness check or has not explicitly said t
 3. Return a concrete promotion plan.
 - Expected `final_paths`
 - Required registry updates
+- Required delivery handoff mode (`docs_only | existing_stream | followup_required`)
+- Required consumer/rollout ownership (`consumer_surfaces`, `user_impact_level`, `rollout_status`, `rollout_artifacts`)
 - Required review/artifact/task updates
 - Required gates
 
@@ -79,6 +82,7 @@ Use this mode only when review approval is explicit and evidence already exists.
 
 3. Update the canonical governance surfaces in this order.
 - `technical-solution-lifecycle-registry.yaml`
+- `technical-solution-delivery-registry.yaml`
 - `technical-solution-module-registry.yaml` when module facts are impacted
 - `normative-loading-manifest.yaml`
 - triad or architecture docs only when the change hits north-star/layering/global contracts
@@ -92,6 +96,7 @@ Use this mode only when review approval is explicit and evidence already exists.
 
 5. Run the required gates.
 - `node ./scripts/governance/check-technical-solution-lifecycle-registry.js`
+- `node ./scripts/governance/check-technical-solution-delivery-registry.js`
 - `node ./scripts/governance/check-technical-solution-module-graph.js`
 - `node ./scripts/governance/check-normative-loading-manifest.js --mode block`
 - `node ./scripts/governance/check-docs-triad-sync.js`
@@ -121,9 +126,10 @@ Use this when a new formal solution replaces an older formal one.
 2. Never mark a solution `active` without review evidence.
 3. Never write `final_paths` for `draft` or `review_pending` entries.
 4. Never register `.repo-ai-governor/draft/**` paths in manifest.
-5. Never skip lifecycle/module/manifest synchronization just because the docs look small.
-6. Never claim a promotion succeeded if the gates failed.
-7. Never overwrite previous completion audits; each reopen/closeout must create a new audit artifact.
+5. Never leave an `active` technical solution without delivery ownership and consumer/rollout metadata.
+6. Never skip lifecycle/module/manifest/delivery synchronization just because the docs look small.
+7. Never claim a promotion succeeded if the gates failed.
+8. Never overwrite previous completion audits; each reopen/closeout must create a new audit artifact.
 
 ## Result Template
 

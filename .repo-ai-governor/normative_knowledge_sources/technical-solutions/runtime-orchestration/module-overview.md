@@ -1,7 +1,7 @@
 # Runtime Orchestration Module Overview
 
 - Status: active
-- Date: 2026-03-26
+- Date: 2026-03-27
 - Module ID: `runtime.orchestration`
 - Owner: runtime
 - Layer: `runtime-core`
@@ -32,6 +32,7 @@
 ## 5. Imported Contracts
 
 1. `contract.memory-provider.loading.v1`
+2. `contract.memory.context-assembly.v1`
 
 ## 6. Exported Contracts
 
@@ -47,7 +48,7 @@
 1. graph-first runtime 已是 primary execution path，parity harness 回到迁移比较工具角色。
 2. `sidecar + ipc` orchestration host 已形成正式 baseline；`daemon + http` 仍只保留为可选 follow-up，不属于当前 contract baseline。
 3. vendor checkpoint / thread state 只作为 runtime owner 的恢复机制，不得升格为替代 `DSL / IR / policy / audit / ledger` 的 canonical source。
-4. `runtime.memory-provider-loading` 仍通过 contract 引入，不允许 runtime 模块直接耦合 provider 实现包。
+4. `runtime.memory-provider-loading` 与 `runtime.memory-semantics` 仍通过 contract 引入，不允许 runtime 模块直接耦合 provider 实现包或 recall policy internals。
 
 ## 9. Detail Docs
 

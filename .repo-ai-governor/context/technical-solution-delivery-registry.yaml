@@ -1,0 +1,141 @@
+schema_version: 1
+generated_at: 2026-03-27
+status: active
+owner: architecture
+
+allowed_delivery_modes:
+  - docs_only
+  - existing_stream
+  - followup_required
+
+allowed_consumer_surfaces:
+  - internal_governance
+  - adopter_cli
+  - packaged_distribution
+  - runtime_service
+  - docs_playbook
+
+allowed_user_impact_levels:
+  - none
+  - low
+  - medium
+  - high
+
+allowed_execution_statuses:
+  - not_required
+  - planned
+  - in_progress
+  - completed
+
+allowed_rollout_statuses:
+  - not_required
+  - planned
+  - in_progress
+  - completed
+
+deliveries:
+  - solution_id: technical-solution.modular-loading-and-dependency-governance
+    delivery_mode: existing_stream
+    consumer_surfaces:
+      - internal_governance
+    user_impact_level: none
+    execution_status: completed
+    rollout_status: not_required
+    owner: architecture
+    project_ref: project-017-technical-solution-modularization
+    sprint_ref: sprint-001-module-registry-and-loading-contract-baseline
+    task_ids:
+      - TK-180
+    project_plan_path: .repo-ai-governor/context/dev/project-017-technical-solution-modularization/plan.md
+    sprint_plan_path: .repo-ai-governor/context/dev/project-017-technical-solution-modularization/sprint-001-module-registry-and-loading-contract-baseline/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-017-technical-solution-modularization/sprint-001-module-registry-and-loading-contract-baseline/tasks/tasks.csv
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-017-technical-solution-modularization/sprint-001-module-registry-and-loading-contract-baseline/tasks/DA-180-technical-solution-module-registry-and-loading-contract-baseline.md
+    rollout_artifacts: []
+    accepted_at: 2026-03-26
+
+  - solution_id: technical-solution.lifecycle-and-promotion-governance
+    delivery_mode: existing_stream
+    consumer_surfaces:
+      - internal_governance
+    user_impact_level: none
+    execution_status: completed
+    rollout_status: not_required
+    owner: architecture
+    project_ref: project-017-technical-solution-modularization
+    sprint_ref: sprint-003-lifecycle-registry-and-promotion-governance
+    task_ids:
+      - TK-190
+    project_plan_path: .repo-ai-governor/context/dev/project-017-technical-solution-modularization/plan.md
+    sprint_plan_path: .repo-ai-governor/context/dev/project-017-technical-solution-modularization/sprint-003-lifecycle-registry-and-promotion-governance/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-017-technical-solution-modularization/sprint-003-lifecycle-registry-and-promotion-governance/tasks/tasks.csv
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-017-technical-solution-modularization/sprint-003-lifecycle-registry-and-promotion-governance/tasks/DA-190-technical-solution-lifecycle-registry-and-seed-catalog-baseline.md
+    rollout_artifacts: []
+    accepted_at: 2026-03-26
+
+  - solution_id: technical-solution.memory-provider-pluginization
+    delivery_mode: existing_stream
+    consumer_surfaces:
+      - runtime_service
+      - packaged_distribution
+      - docs_playbook
+    user_impact_level: medium
+    execution_status: completed
+    rollout_status: completed
+    owner: runtime
+    project_ref: project-018-technical-solution-promotion-pilots
+    sprint_ref: sprint-001-memory-provider-pluginization-promotion-pilot
+    task_ids:
+      - TK-200
+    project_plan_path: .repo-ai-governor/context/dev/project-018-technical-solution-promotion-pilots/plan.md
+    sprint_plan_path: .repo-ai-governor/context/dev/project-018-technical-solution-promotion-pilots/sprint-001-memory-provider-pluginization-promotion-pilot/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-018-technical-solution-promotion-pilots/sprint-001-memory-provider-pluginization-promotion-pilot/tasks/tasks.csv
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-018-technical-solution-promotion-pilots/sprint-001-memory-provider-pluginization-promotion-pilot/tasks/DA-200-memory-provider-technical-solution-lifecycle-promotion-cutover.md
+    rollout_artifacts:
+      - .repo-ai-governor/context/dev/project-015-memory-provider-pluginization/sprint-004-shared-loader-and-service-reuse/tasks/DA-177-service-host-packaging-cleanroom-and-release-gate-expansion-for-memory-providers.md
+      - .repo-ai-governor/context/dev/project-018-technical-solution-promotion-pilots/sprint-001-memory-provider-pluginization-promotion-pilot/tasks/DA-200-memory-provider-technical-solution-lifecycle-promotion-cutover.md
+    accepted_at: 2026-03-26
+
+  - solution_id: technical-solution.memory-module
+    delivery_mode: followup_required
+    consumer_surfaces:
+      - runtime_service
+    user_impact_level: medium
+    execution_status: in_progress
+    rollout_status: in_progress
+    owner: runtime
+    project_ref: project-021-memory-semantics-runtime-implementation
+    sprint_ref: sprint-001-recall-context-assembly-baseline
+    task_ids:
+      - TK-242
+      - TK-243
+      - TK-244
+      - TK-245
+    project_plan_path: .repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/plan.md
+    sprint_plan_path: .repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-001-recall-context-assembly-baseline/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-001-recall-context-assembly-baseline/tasks/tasks.csv
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-001-recall-context-assembly-baseline/tasks/DA-242-project-021-activation-and-memory-semantics-delivery-handoff.md
+    rollout_artifacts:
+      - .repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/plan.md
+      - .repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-001-recall-context-assembly-baseline/tasks/DA-242-project-021-activation-and-memory-semantics-delivery-handoff.md
+    accepted_at: 2026-03-27
+
+  - solution_id: technical-solution.langgraph-orchestration-direction
+    delivery_mode: existing_stream
+    consumer_surfaces:
+      - runtime_service
+    user_impact_level: high
+    execution_status: completed
+    rollout_status: completed
+    owner: runtime
+    project_ref: project-018-technical-solution-promotion-pilots
+    sprint_ref: sprint-003-langgraph-orchestration-promotion-backfill
+    task_ids:
+      - TK-208
+    project_plan_path: .repo-ai-governor/context/dev/project-018-technical-solution-promotion-pilots/plan.md
+    sprint_plan_path: .repo-ai-governor/context/dev/project-018-technical-solution-promotion-pilots/sprint-003-langgraph-orchestration-promotion-backfill/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-018-technical-solution-promotion-pilots/sprint-003-langgraph-orchestration-promotion-backfill/tasks/tasks.csv
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-018-technical-solution-promotion-pilots/sprint-003-langgraph-orchestration-promotion-backfill/tasks/DA-208-langgraph-technical-solution-lifecycle-promotion-cutover.md
+    rollout_artifacts:
+      - .repo-ai-governor/context/dev/project-014-langgraph-orchestration-runtime-adoption/project-014-langgraph-orchestration-runtime-adoption-completion-audit-summary.md
+      - .repo-ai-governor/context/dev/project-016-langgraph-runtime-productization/project-016-langgraph-runtime-productization-completion-audit-summary.md
+    accepted_at: 2026-03-26

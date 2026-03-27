@@ -1,191 +1,189 @@
 # Memory 模块技术方案（Draft）
 
 - Status: draft
-- Date: 2026-03-26
+- Date: 2026-03-27
 - Owner: AI-Agent
-- Scope: `core-memory / memory-store-adapter / memory-provider-registry / recall-policy / future service reuse / future online collaboration`
+- Solution ID: `technical-solution.memory-module`
+- Scope: `runtime memory semantics / recall policy / context assembly / promotion pipeline / working-state boundary`
+- Intended Target Module: `runtime.memory-semantics`（尚未正式接线）
 - Related Inputs:
   - `.repo-ai-governor/draft/memory-module-community-practices-and-design-reference.md`
   - `.repo-ai-governor/draft/memory-provider-pluginization-technical-solution.md`
-  - `.repo-ai-governor/context/dev/project-015-memory-provider-pluginization/plan.md`
-  - `.repo-ai-governor/context/dev/project-015-memory-provider-pluginization/sprint-003-optional-plugin-mode-and-policy-hardening/tasks/DA-171-memory-provider-plugin-allowlist-and-registry-resolution-contract-baseline.md`
-  - `.repo-ai-governor/context/dev/project-015-memory-provider-pluginization/sprint-003-optional-plugin-mode-and-policy-hardening/tasks/DA-172-cli-memory-provider-plugin-loader-cutover-and-dual-input-compatibility.md`
-  - `.repo-ai-governor/context/dev/project-015-memory-provider-pluginization/sprint-003-optional-plugin-mode-and-policy-hardening/tasks/DA-174-sprint-003-exit-acceptance-and-sprint-004-service-reuse-input-constraints.md`
+  - `.repo-ai-governor/context/dev/project-018-technical-solution-promotion-pilots/sprint-002-memory-module-promotion-readiness/tasks/DA-203-memory-module-bounded-context-assessment-and-runtime-memory-semantics-recommendation.md`
+  - `.repo-ai-governor/context/dev/project-018-technical-solution-promotion-pilots/sprint-002-memory-module-promotion-readiness/tasks/DA-204-memory-module-prepare-promotion-readiness-and-blocker-register.md`
+  - `.repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-memory-provider-loading/module-overview.md`
+  - `.repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/module-overview.md`
 
 ## 1. 目的
 
-本方案的目标不是重新讨论“memory provider 要不要插件化”，这件事在 `project-015` 已经进入正式基线。
+本方案解决的不是 memory provider 插件化问题。那部分已经由 `project-015` 和正式模块 `runtime.memory-provider-loading` 收口。
 
-本方案解决的是更大的 Memory 模块问题：
+本方案要解决的是另一个更上层的问题：
 
-1. 当前仓库已经有本地 memory substrate，但还没有完整的 memory policy / recall 语义层。
-2. `project-015` 已完成 built-in registry、optional plugin mode 与 distribution 边界收口，下一步明确是 sprint-004 的 shared loader / service reuse。
-3. 用户希望后续可以走向线上协同，因此当前方案既要服务本地 CLI / local orchestration service，也要为 future service-backed / online collaborative mode 预留正确的 seam。
+1. 当前仓库已经有 memory substrate。
+2. 当前仓库还没有正式的 memory semantics module。
+3. working state、长期记忆、prompt/context 注入、promotion/retention 规则，仍没有稳定 contract。
 
-一句话总结：
+一句话结论：
 
-本方案把 Memory 模块收敛成“工作记忆 + 持久记忆 substrate + recall/promotion policy + capability 扩展 + canonical source 边界”的组合架构，而不是继续把所有语义堆进 `MemoryManager` 或 provider seam。
+本仓库下一步应引入新的 `runtime.memory-semantics` 模块，在现有 `core-memory` 和 `runtime.memory-provider-loading` 之上，正式定义 working-state boundary、recall policy、context assembly 与 promotion pipeline。
 
-## 2. 当前状态
+## 2. 当前现状
 
-### 2.1 已经成立的基线
+### 2.1 已存在的稳定能力
 
-当前仓库已经有以下正式事实：
+当前仓库已经具备以下正式能力：
 
 1. `packages/core-memory`
-   - 提供 `MemoryManager`
-   - 已支持 `normative / execution / session` 分层快照
+   - `MemoryManager` 提供统一的 `read / write / query / snapshot / archive / loadLayeredSnapshot`。
+   - 稳定 scope 仍是 `normative / execution / session`。
 2. `packages/memory-store-adapter`
-   - 提供最小 provider contract：`read / write / query / snapshot / archive / dispose`
+   - `MemoryStoreProvider` 作为确定性持久层 contract。
 3. `packages/memory-provider-registry`
-   - 已收口 built-in provider descriptor
-   - 已支持 `provider.module / exportName / options`
-   - 已收口 allowlist / prefix / path / module policy
-4. `project-015 / sprint-003`
-   - 已达到 `accept`
-   - 已完成 CLI plugin loader cutover
-   - 已冻结 sprint-004 service reuse 输入约束
+   - 负责 built-in registry、plugin allowlist、resolution policy、lazy loading。
+4. `runtime.memory-provider-loading`
+   - 已将 provider loading、host surface 与 distribution truthfulness 正式化。
+5. `runtime.orchestration`
+   - 已将 graph-first runtime、checkpoint/thread recovery 与 host surface 正式化。
 
-### 2.2 当前缺口
+### 2.2 当前缺失的能力
 
-当前还没有正式收口的部分是：
+当前还没有正式收口的是：
 
-1. memory candidate 如何分类
-2. 哪些内容属于 working memory，哪些属于 long-term memory
-3. recall 何时发生，按什么顺序发生
-4. prompt / execution context 注入的显式策略
-5. promotion / summarization / retention 的规则
-6. 为 future online collaboration 预留的 multi-tenant / visibility / conflict-resolution seam
+1. working state 与长期记忆的边界。
+2. recall 何时发生、以什么优先级发生。
+3. memory 如何显式进入 execution context。
+4. 哪些内容允许从 session/execution 提升为长期记忆。
+5. memory record 的审计字段、敏感性标签和 retention 语义。
 
-所以当前状态可以定义为：
+所以现在的状态不是“没有 memory”，而是“只有 substrate，没有 semantics”。
 
-1. provider/pluginization 基线已存在
-2. memory semantic layer 仍缺位
+## 3. 目标模块边界
 
-## 3. 设计目标
+### 3.1 推荐目标模块
 
-### 3.1 目标
+推荐目标模块：
 
-1. 明确区分 working memory 与 long-term recall memory。
-2. 保持 `MemoryStoreProvider` 简单，不把高级检索和协同语义塞进基础存储契约。
-3. 在 `MemoryManager` 之上新增显式 recall/promotion policy 层。
-4. 保持本地优先：CLI、embedded service、daemon service 都能复用同一套 memory loader / memory semantics。
-5. 为未来线上协同预留 host-neutral seam，但不把云端细节提前固化进基础 provider。
-6. 严守 canonical source 边界，memory 永远不是 `current-context` / task ledger / review lifecycle / normative docs 的替代品。
+1. `runtime.memory-semantics`
 
-### 3.2 非目标
+这也是 `project-018 / sprint-002` 已给出的 bounded-context 结论。`technical-solution.memory-module` 不应继续挂在 `runtime.memory-provider-loading` 下。
 
-1. 本轮不把 memory provider 改造成通用向量数据库 SDK。
-2. 本轮不把 canonical source 从 repo files 迁移到线上服务。
-3. 本轮不承诺立即实现 semantic search / hybrid search。
-4. 本轮不把所有运行时状态统一并入长期 memory store。
-5. 本轮不实现完整的 online collaboration control plane。
+### 3.2 该模块负责什么
+
+`runtime.memory-semantics` 负责：
+
+1. 定义 working memory 与 recall memory 的边界。
+2. 定义 recall policy 和 retrieval ordering。
+3. 定义 memory context assembly contract。
+4. 定义 promotion / summarize / retention 的规则。
+5. 定义 memory record 的 envelope 与 repository seam。
+
+### 3.3 该模块不负责什么
+
+`runtime.memory-semantics` 不负责：
+
+1. provider 解析、allowlist、安全加载。
+2. graph runtime 调度与 host process 管理。
+3. canonical source 的承载或替代。
+4. 立即实现完整 semantic/vector/hybrid search。
+5. 直接引入 online collaboration 的 RPC/HTTP transport 细节。
 
 ## 4. 设计原则
 
-### 4.1 Local-first, service-ready
+### 4.1 Substrate 与 semantics 分离
 
-默认运行模式仍以本地为准：
+保持两层分离：
 
-1. CLI embedded
+1. substrate
+   - `MemoryStoreProvider`
+   - `MemoryStoreAdapter`
+   - `MemoryManager`
+2. semantics
+   - `MemoryRecallService`
+   - `MemoryPromotionService`
+   - `MemoryContextAssembler`
+   - `MemoryRecordRepository`
+
+结论：
+
+1. `MemoryManager` 继续回答“怎么存、怎么查”。
+2. 新语义层回答“什么时候查、取什么、怎么注入、何时提升”。
+
+### 4.2 Working state 与长期记忆分离
+
+以下内容默认属于 working state，而不是长期记忆：
+
+1. node cursor
+2. pending interrupt
+3. thread-local scratch
+4. in-flight tool outputs
+5. temporary stage composition
+6. checkpoint owner state
+
+这些状态应继续归 `runtime.orchestration + checkpointer + future WorkingMemoryStateStore` 管理。
+
+### 4.3 Memory 不是 canonical source
+
+以下仍必须保持 canonical source 身份：
+
+1. `current-context.md`
+2. `tasks/checklist.md`
+3. `tasks/tasks.csv`
+4. review lifecycle files
+5. normative docs
+6. artifact registry
+
+memory 只能是：
+
+1. projection
+2. summary
+3. recall aid
+4. execution acceleration layer
+
+### 4.4 Local-first，service-ready
+
+本方案首先服务：
+
+1. CLI embedded mode
 2. local orchestration service
-3. daemon mode
+3. repo-local / tool-managed workspace
 
-但所有接口设计必须允许未来平滑进入：
+但接口需要允许未来扩展到：
 
 1. service-backed local host
 2. online collaboration gateway
 
-### 4.2 Substrate 与 semantics 分离
-
-分离下面两件事：
-
-1. provider / storage
-2. recall / promotion / retrieval / update-context
-
-换句话说：
-
-1. `MemoryStoreProvider` 只解决“怎么存、怎么查”
-2. `MemoryRecallService` 等语义层只解决“什么时候存、取什么、怎么注入”
-
-### 4.3 Working state 与 long-term memory 分离
-
-以下状态不能直接并入长期 memory：
-
-1. node cursor
-2. pending interrupt
-3. in-flight artifacts
-4. temporary stage outputs
-5. thread-local execution scratch
-
-这些状态属于：
-
-1. checkpointer
-2. working state store
-3. orchestration service
-
-### 4.4 Canonical source 不变
-
-memory 可以是：
-
-1. summary
-2. projection
-3. recall index
-4. execution aid
-
-memory 不可以是：
-
-1. `current-context` 的唯一事实源
-2. `tasks/checklist.md` 的唯一事实源
-3. `tasks/tasks.csv` 的唯一事实源
-4. review lifecycle 的唯一事实源
-5. normative docs 的唯一事实源
-
 ## 5. 目标架构
 
-## 5.1 分层总览
-
-建议把 Memory 模块拆成五层。
+## 5.1 五层结构
 
 ### A. Canonical Source Layer
 
 负责正式事实源：
 
-1. `current-context`
+1. current context
 2. task ledger
 3. review lifecycle
 4. normative docs
 5. artifact registry
 
-这层不属于 memory module。
-
 ### B. Working Memory Layer
 
-负责当前执行的短周期状态：
+负责当前执行恢复与线程状态：
 
-1. thread state
-2. execution scratch
-3. pending interrupt
-4. node cursor
-5. temporary context assembly
-
-建议落点：
-
-1. `LangGraph` state
-2. checkpointer
-3. local orchestration service
-4. future `WorkingMemoryStateStore`
+1. thread messages
+2. cursor / interrupt
+3. execution scratch
+4. temporary context assembly result
 
 ### C. Memory Substrate Layer
 
-负责确定性的持久层接口：
+负责持久化与快照：
 
 1. `MemoryStoreProvider`
 2. `MemoryStoreAdapter`
 3. `MemoryManager`
 4. `MemoryProviderRegistry`
-
-这是当前仓库已经基本具备的层。
 
 ### D. Memory Semantics Layer
 
@@ -193,78 +191,66 @@ memory 不可以是：
 
 1. `MemoryRecallService`
 2. `MemoryPromotionService`
-3. `MemoryRecordRepository`
-4. `MemoryCapabilityDescriptor`
+3. `MemoryContextAssembler`
+4. `MemoryRecordRepository`
+5. `MemoryCapabilityDescriptor`
 
-这是当前最缺的一层。
+### E. Host Integration Layer
 
-### E. Host / Collaboration Layer
+负责把 memory semantics 接到宿主：
 
-负责 host surface 与 future online seam：
+1. CLI
+2. local orchestration service
+3. future desktop / daemon / service host
 
-1. `cli`
-2. `local_orchestration_service`
-3. `desktop`
-4. `daemon`
-5. future `OnlineCollaborationMemoryGateway`
+## 5.2 模块依赖方向
 
-## 5.2 推荐包落位
+建议固定为：
 
-### 现有包保持
+1. `runtime.memory-semantics` 导入 `contract.memory-provider.loading.v1`
+2. `runtime.orchestration` 导入 memory semantics 导出的 recall/context contract
+3. `runtime.memory-provider-loading` 不反向导入 memory semantics
 
-1. `packages/core-memory`
-   - 保持为 substrate-facing manager
-2. `packages/memory-store-adapter`
-   - 保持为 provider contract
-3. `packages/memory-provider-registry`
-   - 保持为 provider resolution / plugin policy / lazy-load seam
+这意味着：
 
-### 建议新增包
+1. provider loading 是底层装配 seam
+2. memory semantics 是上层策略 seam
+3. orchestration 是运行时 owner
 
-1. `packages/core-memory-recall`
-   - 负责 recall / update-context / retrieval planning
-2. `packages/core-memory-promotion`
-   - 负责 capture / promote / merge / retention / archive policy
-3. `packages/core-working-memory`
-   - 负责 thread/session/execution working state 的抽象层
+## 6. 领域模型
 
-如果不想立即拆成多个 package，短期也可以先在 `packages/core-memory/src/` 下建立以下子模块：
+### 6.1 逻辑层
 
-1. `recall/`
-2. `promotion/`
-3. `working-state/`
-4. `repository/`
+当前代码里的真实 scope 仍然只有：
 
-但中期仍建议拆包，避免 `core-memory` 演变成 God package。
+1. `normative`
+2. `execution`
+3. `session`
 
-## 6. 核心领域模型
-
-### 6.1 Memory Layer
-
-建议新增逻辑层枚举：
+本方案不建议立刻推翻它们，而是增加更高阶逻辑层：
 
 1. `working`
 2. `session`
-3. `user`
-4. `workspace`
+3. `workspace`
+4. `user`
 5. `normative_projection`
 
 映射建议：
 
 1. `working`
-   - orchestration / checkpoint / thread state
+   - 由 orchestration/checkpointer 持有，不直接写入长期 store
 2. `session`
-   - 当前会话短期记忆
-3. `user`
-   - 用户偏好、风格、稳定约束
-4. `workspace`
-   - repo/team/shared memory
+   - 当前可继续映射到 `MemoryScope.SESSION`
+3. `workspace`
+   - 短期先通过受控 namespace 落到现有 substrate，后续再独立
+4. `user`
+   - 先作为模型和 contract 预留，不要求立刻实现
 5. `normative_projection`
-   - 对规范事实源的 recall projection
+   - 只保存规范事实源的 projection，不替代规范文档
 
 ### 6.2 Memory Kind
 
-建议新增 memory kind：
+建议冻结以下分类：
 
 1. `semantic`
 2. `episodic`
@@ -274,14 +260,19 @@ memory 不可以是：
 
 ### 6.3 Memory Record Envelope
 
-建议长期 memory 采用统一 envelope，而不是裸 `value + tags`：
+长期记忆建议使用统一 envelope：
 
 ```ts
 export interface MemoryRecordEnvelope {
   memoryId: string;
   scope: string;
-  layer: MemoryLayer;
-  memoryKind: MemoryKind;
+  layer: "session" | "workspace" | "user" | "normative_projection";
+  memoryKind:
+    | "semantic"
+    | "episodic"
+    | "procedural"
+    | "artifact_reference"
+    | "system_projection";
   subjectType: "user" | "workspace" | "project" | "sprint" | "task" | "execution" | "artifact";
   subjectId: string;
   content: Record<string, unknown>;
@@ -296,8 +287,8 @@ export interface MemoryRecordEnvelope {
   confidence?: number;
   retentionPolicy?: string;
   sensitivity?: "public" | "workspace" | "restricted" | "secret";
-  tenantId?: string;
   visibility?: "private" | "workspace" | "project" | "shared";
+  tenantId?: string;
   version?: number;
   updatedBy?: string;
   updatedAt: string;
@@ -305,37 +296,65 @@ export interface MemoryRecordEnvelope {
 }
 ```
 
-说明：
+设计取向：
 
-1. `tenantId / visibility / version / updatedBy`
-   - 是为后续线上协同预留的 host-neutral 字段
-2. `sourceRefs / provenance`
-   - 是治理型产品中最重要的审计字段
-3. 不要求当前 provider 立刻全量支持这些字段的高阶语义
-   - 但模型应该先固定下来
+1. `sourceRefs`
+2. `provenance`
+3. `sensitivity`
 
-## 7. 接口设计
+这三类字段对治理型产品比 embedding 能力更关键。
 
-### 7.1 基础存储契约保持不变
+## 7. 合同与服务设计
 
-当前 `MemoryStoreProvider` 保持：
+### 7.1 正式文档落点
 
-1. `read`
-2. `write`
-3. `query`
-4. `snapshot`
-5. `archive`
-6. `dispose`
+后续真正 promotion 时，推荐的 final paths 仍以 `DA-204` 为准：
 
-本方案不建议直接往这里加：
+1. `runtime-memory-semantics/module-overview.md`
+2. `runtime-memory-semantics/contracts/memory-recall-policy-contract.md`
+3. `runtime-memory-semantics/contracts/memory-context-assembly-contract.md`
+4. `runtime-memory-semantics/adrs/working-memory-and-canonical-source-boundary.md`
 
-1. `semanticSearch()`
-2. `rerank()`
-3. `share()`
-4. `syncToCloud()`
-5. `resolveConflict()`
+### 7.2 Memory Recall Service
 
-### 7.2 建议新增的 repository seam
+建议接口：
+
+```ts
+export interface MemoryRecallService {
+  recall(request: MemoryRecallRequest): Promise<MemoryRecallResult>;
+  updateExecutionContext(
+    request: MemoryContextUpdateRequest,
+  ): Promise<MemoryContextUpdateResult>;
+}
+```
+
+职责：
+
+1. 按 request intent 做 recall planning。
+2. 做 metadata filtering。
+3. 输出 prompt-safe / execution-safe 的 memory slice。
+
+### 7.3 Memory Promotion Service
+
+建议接口：
+
+```ts
+export interface MemoryPromotionService {
+  capture(request: MemoryCaptureRequest): Promise<void>;
+  promote(request: MemoryPromoteRequest): Promise<MemoryPromoteResult>;
+  merge(request: MemoryMergeRequest): Promise<MemoryMergeResult>;
+}
+```
+
+职责：
+
+1. 决定什么值得持久化。
+2. 决定提升到哪一层。
+3. 决定新增、合并还是丢弃。
+
+### 7.4 Memory Record Repository
+
+建议接口：
 
 ```ts
 export interface MemoryRecordRepository {
@@ -348,55 +367,12 @@ export interface MemoryRecordRepository {
 
 职责：
 
-1. 面向 memory record envelope
-2. 隔离底层 store/provider 差异
-3. 为 future online gateway 保留 transport-neutral seam
+1. 隔离 substrate/provider 差异。
+2. 为 future service-backed / online gateway 预留 transport-neutral seam。
 
-### 7.3 建议新增的 recall service
+### 7.5 Working State Store
 
-```ts
-export interface MemoryRecallService {
-  recall(request: MemoryRecallRequest): Promise<MemoryRecallResult>;
-  updateExecutionContext(request: MemoryContextUpdateRequest): Promise<MemoryContextUpdateResult>;
-}
-```
-
-最少输入建议：
-
-1. `workspaceId`
-2. `actorId`
-3. `taskId?`
-4. `projectId?`
-5. `sprintId?`
-6. `executionId?`
-7. `sessionId?`
-8. `queryIntent`
-9. `limit`
-
-职责：
-
-1. 按 layer / kind / metadata 做 recall planning
-2. 执行 metadata filter
-3. 在 capability available 时执行 semantic / hybrid search
-4. 生成 prompt-safe / execution-safe 的 recall result
-
-### 7.4 建议新增的 promotion service
-
-```ts
-export interface MemoryPromotionService {
-  capture(request: MemoryCaptureRequest): Promise<void>;
-  promote(request: MemoryPromoteRequest): Promise<MemoryPromoteResult>;
-  merge(request: MemoryMergeRequest): Promise<MemoryMergeResult>;
-}
-```
-
-职责：
-
-1. 决定什么内容进入长期 memory
-2. 决定进入哪一层
-3. 决定是新增、合并还是只留在 session / working state
-
-### 7.5 建议新增的 working state store
+建议单独声明：
 
 ```ts
 export interface WorkingMemoryStateStore {
@@ -406,53 +382,40 @@ export interface WorkingMemoryStateStore {
 }
 ```
 
-职责：
+意义：
 
-1. 对 working state 做显式抽象
-2. 不再把“working memory”和“long-term memory”混成同一个概念
-3. 为 future service reuse / daemon mode 提供共享 seam
+1. 显式声明 working state 不属于长期 recall memory。
+2. 避免 `core-memory` 被继续误用成“大一统状态仓”。
 
-## 8. 检索与注入流程
+## 8. 关键流程
 
-### 8.1 执行前 recall
+### 8.1 Recall Flow
 
-建议在 runtime/service 中显式增加 recall phase：
+执行前显式存在：
 
 1. `queryRelevantMemory(context)`
-2. `selectMemoryForPrompt(result)`
+2. `selectMemoryForContext(result)`
 3. `updateExecutionContext(...)`
 
-推荐顺序：
+默认优先级建议：
 
-1. execution short-term result
+1. execution short-term facts
 2. session memory
 3. workspace memory
 4. user memory
 5. normative projection
 
-只有 queryIntent 明确需要长程召回时，才进入 semantic / hybrid search。
+### 8.2 Promotion Flow
 
-### 8.2 执行中 working state
-
-执行中状态只进入：
-
-1. thread state
-2. checkpointer
-3. orchestration service working store
-
-不直接 promote 到长期 memory。
-
-### 8.3 执行后 promotion
-
-执行后走显式 promotion pipeline：
+执行后采用：
 
 1. capture candidate
-2. classify by kind
-3. decide target layer
-4. dedupe / merge
-5. persist or discard
+2. classify by `memoryKind`
+3. validate provenance / sensitivity / traceability
+4. decide target layer
+5. merge or persist
 
-推荐判定规则：
+建议 promotion 判定条件：
 
 1. 可复用
 2. 可归属
@@ -460,181 +423,134 @@ export interface WorkingMemoryStateStore {
 4. 非敏感或已脱敏
 5. 不与 canonical source 冲突
 
-## 9. Capability 设计
+### 8.3 Never Persist 规则
 
-### 9.1 为什么要 capability，而不是把搜索硬塞进 provider
+默认不进入长期记忆：
 
-原因：
+1. 临时 tool output 全量原文
+2. 一次性 scratch
+3. 会伪装成 canonical source 的“事实副本”
+4. 敏感或未脱敏内容
 
-1. `fs-csv` 不应被逼着支持向量搜索
-2. `sqlite-fs` 可能支持 richer retrieval，但那是增强能力，不是基础门槛
-3. future online collaborative store 可能支持更强 search / merge / conflict-resolution
+## 9. 与现有代码和模块的兼容策略
 
-### 9.2 建议 capability 枚举
+### 9.1 不把 `MemoryManager` 做成 God object
 
-1. `metadata_query`
-2. `semantic_search`
-3. `hybrid_search`
-4. `promotion_merge`
-5. `conflict_resolution`
-6. `remote_sync`
+当前 `MemoryManager` 应继续保持 substrate manager 定位。
 
-### 9.3 Capability Descriptor
+不建议继续往里塞：
 
-```ts
-export interface MemoryCapabilityDescriptor {
-  supportedCapabilities: string[];
-  consistencyHint: "strong" | "eventual" | "local-cache-preferred";
-  distributionMode: "default" | "plugin-enabled" | "service-host";
-}
-```
+1. recall planning
+2. context assembly
+3. promotion policy
+4. online collaboration 语义
 
-## 10. 与当前项目现状的对齐
+### 9.2 不扩坏 `MemoryStoreProvider`
 
-### 10.1 与 project-015 的关系
+当前 provider contract 保持简单是对的。
 
-本方案不替代 `project-015`，而是站在其之上：
+本方案不建议直接加入：
 
-1. `project-015 / sprint-003`
-   - 已完成 provider/plugin loader 基线
-2. 本方案
-   - 负责定义 memory semantic layer 的目标形态
-3. sprint-004
-   - 首先承接 shared loader / host surface / service reuse
-   - 不应把 semantic recall / promotion 与 service reuse 一次性混做
+1. `semanticSearch`
+2. `rerank`
+3. `syncToCloud`
+4. `shareWithUsers`
+5. `resolveConflict`
 
-### 10.2 与 DA-171 / DA-172 / DA-174 的兼容性
+如果未来需要，应通过 capability seam 增量扩展。
 
-本方案必须遵守以下既有约束：
+### 9.3 与 `runtime.memory-provider-loading` 的关系
 
-1. shared loader seam 必须继续复用 `@repo-ai-governor/memory-provider-registry`
-2. `hostSurface` 仍需显式区分 `cli` 与 `local_orchestration_service`
-3. `embedded` 与 `daemon` 仍需保留为正式 runtimeMode 输入
-4. default distribution 与 plugin-enabled distribution 必须继续分离验证
-5. 不得开放任意 module specifier
+provider loading 负责：
 
-### 10.3 与 future online collaboration 的关系
+1. 选择哪个 provider
+2. 确认能否安全加载
+3. 输出稳定 machine-readable loading summary
 
-如果未来要做线上协同，建议在当前方案基础上新增：
+memory semantics 负责：
 
-1. `OnlineCollaborationMemoryGateway`
-2. `CanonicalSourceRepository`
-3. `FileProjector`
+1. 什么时候查
+2. 取多少
+3. 如何注入 context
+4. 哪些内容允许持久化
 
-而不是：
+### 9.4 与 `runtime.orchestration` 的关系
 
-1. 修改 `MemoryStoreProvider` 变成云端大接口
-2. 让 memory 层直接接管 canonical source
+orchestration 继续负责：
 
-## 11. 承载方式演进
+1. graph runtime
+2. host surface
+3. checkpoint / thread recovery
+4. execution ownership
 
-### 11.1 当前默认模式
+它消费 memory semantics contract，但不自己定义一套独立 memory policy。
 
-1. repo-local files 作为 canonical source
-2. local provider/store 作为 memory substrate
-3. local orchestration service 作为 working-state owner
+## 10. 分阶段落地
 
-### 11.2 future service-backed mode
-
-可以演进到：
-
-1. service-backed canonical source repository
-2. 本地 materialized file projection
-3. local/remote dual-mode memory repository
-
-但逻辑契约不变：
-
-1. canonical source 仍是事实源
-2. memory 仍是 projection / recall / aid
-
-### 11.3 future online collaboration mode
-
-建议仅在新一轮项目中进入：
-
-1. tenant-aware memory repository
-2. visibility / sharing policy
-3. version / conflict resolution
-4. remote sync / local cache coordination
-
-## 12. 推荐落地顺序
-
-### Phase 1：Sprint-004 Service Reuse
+### Phase A：模块与 contract 冻结
 
 目标：
 
-1. 共用 `memory-provider-registry`
-2. 固化 `hostSurface / runtimeMode`
-3. 让 CLI / local orchestration service 共用同一 loader seam
+1. 引入 `runtime.memory-semantics` 模块 skeleton
+2. 冻结 module overview + 两份 contract + 一份 ADR
+3. 接线 module registry / manifest / lifecycle registry
 
-本阶段不做：
-
-1. recall semantic layer 的完整实现
-2. online collaboration
-
-### Phase 2：Memory Semantic Layer Baseline
+### Phase B：Recall / Context Assembly Baseline
 
 目标：
 
-1. 新增 `MemoryLayer / MemoryKind / MemoryRecordEnvelope`
-2. 新增 `MemoryRecordRepository`
-3. 新增 `MemoryRecallService`
+1. 新增 `MemoryRecallService`
+2. 在 runtime/service 中显式化 recall phase
+3. 先用 metadata filtering 路径跑通
 
-### Phase 3：Promotion Pipeline
+### Phase C：Promotion Baseline
 
 目标：
 
 1. 新增 `MemoryPromotionService`
-2. 落地 `capture -> promote -> merge -> archive`
-3. 明确 session -> workspace / user 的提升规则
+2. 落地 `capture -> promote -> merge`
+3. 明确 session/execution 到 workspace 的提升条件
 
-### Phase 4：Working State Explicitness
+### Phase D：Working-State Explicitness
 
 目标：
 
 1. 新增 `WorkingMemoryStateStore`
-2. 将 thread state / checkpointer / working memory 的概念正式分离
+2. 正式分离 checkpoint / thread state / long-term recall
 
-### Phase 5：Capability Expansion
+### Phase E：Capability 扩展
 
-目标：
+前四步稳定后再考虑：
 
-1. 在 capability seam 下增加 semantic / hybrid search
-2. 不破坏基础 provider contract
+1. semantic search
+2. hybrid search
+3. conflict resolution
+4. remote sync
 
-### Phase 6：Online Collaboration
+## 11. 当前 blocker
 
-目标：
+这份方案现在仍只能保持 `draft`，原因不变：
 
-1. 增加 `tenantId / visibility / version / updatedBy`
-2. 新增 online gateway / remote repository
-3. 明确一致性、权限、冲突解决策略
+1. `runtime.memory-semantics` 还没有正式 module docs。
+2. module registry / manifest 还没有接入新模块。
+3. lifecycle registry 还没有切到新的 `target_module_ids`。
+4. 还缺 review approval evidence。
 
-## 13. 风险与防错
+因此当前正确动作不是直接 promotion，而是：
 
-### 13.1 最大风险
+1. 先把模块 skeleton 建出来。
+2. 再把 draft -> formal docs 的 promotion change set 做完整。
 
-1. 把 working state 和 long-term memory 混在一起
-2. 把 canonical source 和 memory projection 混在一起
-3. 把 provider seam 和 semantic/service seam 混在一起
-4. 把本地模式和 future online collaboration 一次性混做
+## 12. 与 supporting reference 的关系
 
-### 13.2 防错规则
+`.repo-ai-governor/draft/memory-module-community-practices-and-design-reference.md` 现在应视为 supporting reference：
 
-1. `MemoryStoreProvider` 不新增协同 transport 细节
-2. recall / promotion 走显式 service
-3. canonical source 仍通过 repository/projector 层承载
-4. service reuse 先于 online collaboration
-5. capability 增量扩展，避免破坏现有 provider contract
+1. 用来解释为什么这个方向合理。
+2. 用来记录外部实践如何映射到本仓库。
+3. 不再充当主技术方案本体。
 
-## 14. 推荐下一步
+主技术方案应以本文件为准。
 
-如果基于当前项目状态继续推进，我建议下一步按下面顺序拆任务：
+## 13. 一句话收口
 
-1. sprint-004 先做 shared loader / service reuse，不在同一轮混入 semantic recall
-2. 新开一轮 memory semantic baseline 任务，冻结 `MemoryLayer / MemoryKind / MemoryRecordEnvelope`
-3. 再开 recall/promotion 任务，把 `MemoryManager` 从“唯一 memory 入口”降级为 substrate manager
-4. online collaboration 单独立项，不放进 `project-015` 的当前尾项里硬做
-
-## 15. 一句话结论
-
-当前仓库已经完成了 Memory 模块的 provider/pluginization 基线；下一步正确的方向不是继续做更重的 provider，而是补齐 `working state / recall policy / promotion pipeline / capability seam / collaboration-ready repository` 这几层，并且严格保持 canonical source 不被 memory 接管。
+`repo-ai-governor` 的 Memory 下一步不该继续沿着“更强的 provider”推进，而应正式建立一个新的 `runtime.memory-semantics` 模块，把 working-state boundary、recall policy、context assembly 和 promotion pipeline 独立出来，同时严格维持 provider loading、runtime orchestration 和 canonical source 的既有边界。
