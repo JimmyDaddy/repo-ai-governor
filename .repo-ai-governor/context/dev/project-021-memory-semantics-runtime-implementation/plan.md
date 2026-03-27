@@ -33,7 +33,7 @@
 | TK-242 | sprint-001 | project-021 激活与 memory-module delivery handoff bootstrap | bootstrap/governance | DA-240,project-018 sprint-005 completion audit | completed |
 | TK-243 | sprint-001 | technical-solution delivery registry 与 execution handoff gate baseline | governance/gate | TK-242,.repo-ai-governor/context/technical-solution-lifecycle-registry.yaml | completed |
 | TK-244 | sprint-001 | core-memory-semantics package 与 CLI task-driven runtime baseline | runtime/implementation | TK-243,DA-239,.repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-memory-semantics/module-overview.md | completed |
-| TK-245 | sprint-001 | sprint-001 出口验收与 sprint-002 输入约束 | acceptance/baseline | TK-242,TK-243,TK-244 | planned |
+| TK-245 | sprint-001 | sprint-001 出口验收与 sprint-002 输入约束 | acceptance/baseline | TK-242,TK-243,TK-244 | completed |
 | TK-246 | sprint-001 | technical-solution consumer surfaces 与 rollout ownership 扩展 | governance/rollout | TK-243,.repo-ai-governor/context/technical-solution-delivery-registry.yaml | completed |
 
 ## 4. 依赖产物策略
@@ -61,3 +61,4 @@
 1. 2026-03-27：创建 `project-021-memory-semantics-runtime-implementation`，并通过 `TK-242/TK-243` 将 `technical-solution.memory-module` 从“仅 formal solution”接入新的 delivery handoff 与实现主执行流。
 2. 2026-03-27：通过 `TK-246 / DA-246` 将 technical solution handoff 从“只接执行流”扩展为“执行流 + consumer surfaces + rollout ownership”治理基线。
 3. 2026-03-27：通过 `TK-244 / DA-244` 建立 `core-memory-semantics` baseline，并将 CLI task-driven runtime 的 memory path 切到显式 recall/context assembly。
+4. 2026-03-27：通过 `TK-245 / DA-245` 完成 sprint-001 出口验收，并冻结 `sprint-002-promotion-pipeline-and-runtime-consumer-rollout` 的输入约束。

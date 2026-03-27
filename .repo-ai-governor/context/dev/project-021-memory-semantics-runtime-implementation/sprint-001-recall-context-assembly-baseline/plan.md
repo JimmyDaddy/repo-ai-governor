@@ -1,6 +1,6 @@
 # sprint-001-recall-context-assembly-baseline 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-03-27
 - Project: `project-021-memory-semantics-runtime-implementation`
 
@@ -13,7 +13,7 @@
 1. `TK-242` project-021 激活与 memory-module delivery handoff bootstrap（completed）
 2. `TK-243` technical-solution delivery registry 与 execution handoff gate baseline（completed）
 3. `TK-244` core-memory-semantics package 与 CLI task-driven runtime baseline（completed）
-4. `TK-245` sprint-001 出口验收与 sprint-002 输入约束（planned）
+4. `TK-245` sprint-001 出口验收与 sprint-002 输入约束（completed）
 5. `TK-246` technical-solution consumer surfaces 与 rollout ownership 扩展（completed）
 
 ## 3. Exit Criteria

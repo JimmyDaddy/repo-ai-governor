@@ -12,8 +12,10 @@
   - 2026-03-27：任务创建，状态初始化为 `planned`。
   - 2026-03-27：状态切换为 `in_progress`，开始收敛 `packages/core-memory-semantics` 包结构、recall/context assembly service 与 CLI consumer 切换方案。
   - 2026-03-27：已完成 `core-memory-semantics` 新包、CLI task-driven runtime recall/context assembly 接线、distribution runtime materialization 补齐与 `DA-244`。
-- [ ] TK-245 sprint-001 出口验收与 sprint-002 输入约束
+- [x] TK-245 sprint-001 出口验收与 sprint-002 输入约束
   - 2026-03-27：任务创建，状态初始化为 `planned`。
+  - 2026-03-27：状态切换为 `in_progress`，开始汇总 sprint-001 acceptance evidence、review closeout 与 sprint-002 rollout input constraints。
+  - 2026-03-27：已完成 `DA-245`、sprint/project closeout 同步与 sprint-002 输入约束冻结。
 - [x] TK-246 technical-solution consumer surfaces 与 rollout ownership 扩展
   - 2026-03-27：任务创建，状态初始化为 `planned`。
   - 2026-03-27：状态切换为 `in_progress`，开始将 delivery registry 扩展为 consumer surfaces、user impact 与 rollout ownership 事实源。

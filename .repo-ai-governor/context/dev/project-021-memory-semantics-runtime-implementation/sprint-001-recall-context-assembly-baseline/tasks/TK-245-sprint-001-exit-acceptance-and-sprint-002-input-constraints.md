@@ -1,6 +1,6 @@
 # TK-245 sprint-001 出口验收与 sprint-002 输入约束
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-27
 - Owner: AI-Agent
 - Priority: P1
@@ -33,7 +33,12 @@
 1. `node ./scripts/governance/check-task-ledger-sync.js`
 2. `node ./scripts/governance/check-sprint-plan-status-sync.js`
 3. `node ./scripts/governance/check-artifact-registry-lifecycle.js`
+4. `node ./scripts/governance/check-code-review-status-sync.js`
+5. `node ./scripts/governance/check-worktree-review-target.js`
+6. `pnpm run check`
 
 ## 6. 执行记录
 
 1. 2026-03-27：任务创建，状态初始化为 `planned`。
+2. 2026-03-27：状态切换为 `in_progress`，开始汇总 sprint-001 acceptance evidence、review closeout 与 sprint-002 rollout input constraints。
+3. 2026-03-27：已完成 `DA-245`、sprint/project closeout 同步与 sprint-002 输入约束冻结。
