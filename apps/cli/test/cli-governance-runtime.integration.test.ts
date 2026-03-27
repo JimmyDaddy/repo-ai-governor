@@ -1704,6 +1704,113 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
     );
   });
 
+  it("persists promotion summary into execution report and session projection for reporting consumers", async () => {
+    await withRuntimeFixture(
+      async (fixture) => {
+        await writeTaskCardFixture(fixture.workspaceRoot, "TK-099");
+        const currentContextPath = resolve(fixture.workspaceRoot, "context", "current-context.md");
+        await mkdir(resolve(fixture.workspaceRoot, "context"), { recursive: true });
+        await writeFile(
+          currentContextPath,
+          [
+            "# Workspace Current Context",
+            "",
+            "## Primary Stream",
+            "",
+            "- Status: active",
+            "- Project: `project-010-local-model-and-ide-expansion`",
+            "- Sprint: `sprint-002-autonomous-mainchain-foundation`",
+            "",
+          ].join("\n"),
+          "utf8",
+        );
+
+        const memoryManager = new MemoryManager(new MemoryStoreAdapter(fixture.provider));
+        await memoryManager.writeEntry({
+          scope: MemoryScope.EXECUTION,
+          key: "historic:stage-report:record-1",
+          payload: {
+            summary: "Verifier requested follow-up audit on the same dependency edge.",
+            artifactId: "DA-121",
+            sourceRefs: [
+              ".repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-002-autonomous-mainchain-foundation/tasks/DA-121-shared-and-package-local-boundary-hardening-and-exports-cleanup.md",
+            ],
+          },
+          tags: [
+            "audit-record",
+            "project:project-010-local-model-and-ide-expansion",
+            "sprint:sprint-002-autonomous-mainchain-foundation",
+            "task:TK-099",
+            "artifact:DA-121",
+            "sensitivity:internal",
+          ],
+          updatedAt: "2026-03-27T00:00:04Z",
+        });
+
+        const runtimeWithOverrides = fixture.runtime as unknown as {
+          collectGitChangedPaths: () => Promise<string[]>;
+        };
+        runtimeWithOverrides.collectGitChangedPaths = async () => [];
+
+        const runResult = await fixture.runtime.execute(CliCommandName.RUN);
+        const reportPath = String(
+          runResult.commandResult.artifacts?.find((artifact) => artifact.id === "execution_report")
+            ?.path,
+        );
+        const executionReport = JSON.parse(await readFile(reportPath, "utf8")) as {
+          memorySemantics?: {
+            contextSummary?: {
+              selectedRecordCount?: number;
+              assemblyOutcome?: string;
+            };
+            promotion?: {
+              outcome?: string;
+              mergedCount?: number;
+              sessionSummaryProjection?: {
+                key?: string;
+                promotedRecordIds?: string[];
+              } | null;
+            } | null;
+          };
+        };
+
+        expect(executionReport.memorySemantics?.contextSummary?.selectedRecordCount).toBe(1);
+        expect(executionReport.memorySemantics?.contextSummary?.assemblyOutcome).toBe(
+          "context_ready",
+        );
+        expect(executionReport.memorySemantics?.promotion?.outcome).toBe("session_summary_merged");
+        expect(executionReport.memorySemantics?.promotion?.mergedCount).toBe(1);
+        expect(
+          executionReport.memorySemantics?.promotion?.sessionSummaryProjection?.promotedRecordIds,
+        ).toEqual(["execution:historic:stage-report:record-1"]);
+
+        const sessionSummaryProjectionKey = String(
+          executionReport.memorySemantics?.promotion?.sessionSummaryProjection?.key,
+        );
+        const sessionRecord = await memoryManager.readEntry({
+          scope: MemoryScope.SESSION,
+          key: sessionSummaryProjectionKey,
+        });
+
+        expect(sessionRecord?.value.promotedContextItems).toEqual([
+          expect.objectContaining({
+            sourceRecordId: "execution:historic:stage-report:record-1",
+            summary: "Verifier requested follow-up audit on the same dependency edge. | DA-121",
+          }),
+        ]);
+      },
+      {
+        runtimeDebugOptions: {
+          dryRun: false,
+          trace: false,
+          replayPath: null,
+          adapters: true,
+          taskId: "TK-099",
+        },
+      },
+    );
+  });
+
   it("persists controlled delivery rehearsal artifacts and exposes replay-linked audit pointers", async () => {
     await withRuntimeFixture(
       async (fixture) => {

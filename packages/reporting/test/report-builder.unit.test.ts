@@ -143,4 +143,75 @@ describe("report-builder unit", () => {
     ]);
     expect(report.records?.map((record) => record.recordId)).toEqual(["record-a", "record-b"]);
   });
+
+  it("carries optional memory-semantics summary into the execution report", async () => {
+    const reader = new StubAuditRecordReader([
+      createPersistedRecord("record-001", "2026-03-21T10:00:05Z"),
+    ]);
+    const builder = new ReportBuilder(reader);
+
+    const report = await builder.buildExecutionReport({
+      executionId: "exec-report-001",
+      memorySemantics: {
+        contextSummary: {
+          queryIntent: "cli_task_driven_execution",
+          assemblyOutcome: "context_ready",
+          selectedRecordCount: 1,
+          sourceRefCount: 1,
+          recordsMissingExplicitSourceRefs: 0,
+          truncationReason: null,
+          layerCounts: {
+            execution: 1,
+          },
+          memoryKindCounts: {
+            execution_short_term_fact: 1,
+          },
+          safetyNotes: [],
+        },
+        promotion: {
+          outcome: "session_summary_merged",
+          candidateCount: 1,
+          promotableCount: 1,
+          plannedMergeCount: 1,
+          mergedCount: 1,
+          skippedCount: 0,
+          rejectedCount: 0,
+          targetLayerCounts: {
+            session: 1,
+          },
+          failureReasonCounts: {},
+          phaseResults: [
+            {
+              phase: "merge_or_persist",
+              status: "completed",
+              candidateCount: 1,
+              detail: "session_summary_merged=1",
+            },
+          ],
+          sessionSummaryProjection: {
+            scope: "session",
+            key: "session-report-001",
+            promotedRecordIds: ["execution:record-001"],
+            updatedAt: "2026-03-21T10:00:05Z",
+          },
+        },
+      },
+    });
+
+    expect(report.memorySemantics).toEqual(
+      expect.objectContaining({
+        contextSummary: expect.objectContaining({
+          assemblyOutcome: "context_ready",
+          selectedRecordCount: 1,
+        }),
+        promotion: expect.objectContaining({
+          outcome: "session_summary_merged",
+          mergedCount: 1,
+          sessionSummaryProjection: expect.objectContaining({
+            key: "session-report-001",
+          }),
+        }),
+      }),
+    );
+  });
 });

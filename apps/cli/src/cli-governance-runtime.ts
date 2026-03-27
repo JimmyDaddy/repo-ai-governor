@@ -19,6 +19,8 @@ import {
 import { MemoryManager, MemoryScope } from "@repo-ai-governor/core-memory";
 import {
   MemoryContextAssembler,
+  type MemoryPromotionResult,
+  MemoryPromotionService,
   MemoryRecallService,
 } from "@repo-ai-governor/core-memory-semantics";
 import { PolicyGateEngine } from "@repo-ai-governor/core-policy";
@@ -572,10 +574,24 @@ export class CliGovernanceRuntime {
       }
     }
 
+    const memoryPromotionResult =
+      runAssembly.memoryContext && runAssembly.taskContext
+        ? await new MemoryPromotionService(this.memoryManager).promote({
+            contextSummary: runAssembly.memoryContext.contractSafeSummary,
+            sessionId: executionSessionId,
+            persist: !runtimeDebugOptions.dryRun,
+            promotedBy: "cli-governance-runtime",
+          })
+        : null;
+
     const reportBuilder = new ReportBuilder(auditRecorder);
     const executionReport = await reportBuilder.buildExecutionReport({
       executionId,
       includeRecords: false,
+      memorySemantics: this.createExecutionReportMemorySemanticsSummary(
+        runAssembly,
+        memoryPromotionResult,
+      ),
     });
     const replayExplainResult = this.replayExplainBuilder.buildFromExecutionReport(
       executionReport,
@@ -861,6 +877,14 @@ export class CliGovernanceRuntime {
           input_reference_count: runAssembly.taskContext?.inputReferences.length ?? 0,
           input_artifact_count: runAssembly.taskContext?.inputArtifacts.length ?? 0,
           dependency_task_count: runAssembly.taskContext?.dependsOnTaskIds.length ?? 0,
+          memory_context_selected_count:
+            runAssembly.memoryContext?.contractSafeSummary.selectedRecordCount ?? 0,
+          memory_promotion_outcome: memoryPromotionResult?.outcome ?? null,
+          memory_promotion_planned_merge_count:
+            memoryPromotionResult?.summary.plannedMergeCount ?? null,
+          memory_promotion_merged_count: memoryPromotionResult?.summary.mergedCount ?? null,
+          memory_promotion_session_projection_key:
+            memoryPromotionResult?.persistedRecord?.key ?? null,
           inline_review_chain_enabled: inlineReviewChainSummary.enabled,
           inline_review_chain_status: inlineReviewChainSummary.status,
           inline_review_chain_skip_reason: inlineReviewChainSummary.skipReason,
@@ -2256,6 +2280,63 @@ export class CliGovernanceRuntime {
           ? CliGovernanceCheckStatus.WARN
           : CliGovernanceCheckStatus.PASS,
       detail: `mode=${runAssembly.assemblyMode} reason=${runAssembly.assemblyReason} task_id=${taskIdLabel} nodes=${runAssembly.processDefinition.nodes.length} input_references=${runAssembly.taskContext?.inputReferences.length ?? 0} input_artifacts=${runAssembly.taskContext?.inputArtifacts.length ?? 0} memory_context_selected=${contractSafeSummary?.selectedRecordCount ?? 0} memory_context_execution=${contractSafeSummary?.layerCounts.execution ?? 0} memory_context_session=${contractSafeSummary?.layerCounts.session ?? 0} memory_context_outcome=${runAssembly.memoryContext?.assemblyOutcome ?? "none"}`,
+    };
+  }
+
+  /**
+   * Creates one report-safe memory-semantics block for execution-report consumers.
+   * @param runAssembly Resolved task-driven run assembly.
+   * @param memoryPromotionResult Optional promotion pipeline result.
+   * @returns Execution-report augmentation or null when memory semantics are unavailable.
+   */
+  private createExecutionReportMemorySemanticsSummary(
+    runAssembly: CliTaskDrivenRunAssembly,
+    memoryPromotionResult: MemoryPromotionResult | null,
+  ) {
+    const contractSafeSummary = runAssembly.memoryContext?.contractSafeSummary;
+    if (!contractSafeSummary) {
+      return null;
+    }
+
+    return {
+      contextSummary: {
+        queryIntent: contractSafeSummary.queryIntent,
+        assemblyOutcome: contractSafeSummary.assemblyOutcome,
+        selectedRecordCount: contractSafeSummary.selectedRecordCount,
+        sourceRefCount: contractSafeSummary.sourceRefCount,
+        recordsMissingExplicitSourceRefs: contractSafeSummary.recordsMissingExplicitSourceRefs,
+        truncationReason: contractSafeSummary.truncationReason,
+        layerCounts: { ...contractSafeSummary.layerCounts },
+        memoryKindCounts: { ...contractSafeSummary.memoryKindCounts },
+        safetyNotes: [...contractSafeSummary.safetyNotes],
+      },
+      promotion: memoryPromotionResult
+        ? {
+            outcome: memoryPromotionResult.outcome,
+            candidateCount: memoryPromotionResult.summary.candidateCount,
+            promotableCount: memoryPromotionResult.summary.promotableCount,
+            plannedMergeCount: memoryPromotionResult.summary.plannedMergeCount,
+            mergedCount: memoryPromotionResult.summary.mergedCount,
+            skippedCount: memoryPromotionResult.summary.skippedCount,
+            rejectedCount: memoryPromotionResult.summary.rejectedCount,
+            targetLayerCounts: { ...memoryPromotionResult.summary.targetLayerCounts },
+            failureReasonCounts: { ...memoryPromotionResult.summary.failureReasonCounts },
+            phaseResults: memoryPromotionResult.phaseResults.map((phaseResult) => ({
+              phase: phaseResult.phase,
+              status: phaseResult.status,
+              candidateCount: phaseResult.candidateCount,
+              detail: phaseResult.detail,
+            })),
+            sessionSummaryProjection: memoryPromotionResult.persistedRecord
+              ? {
+                  scope: memoryPromotionResult.persistedRecord.scope,
+                  key: memoryPromotionResult.persistedRecord.key,
+                  promotedRecordIds: [...memoryPromotionResult.persistedRecord.promotedRecordIds],
+                  updatedAt: memoryPromotionResult.persistedRecord.updatedAt,
+                }
+              : null,
+          }
+        : null,
     };
   }
 

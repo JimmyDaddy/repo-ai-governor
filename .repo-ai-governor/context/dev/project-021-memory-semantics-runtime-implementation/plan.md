@@ -1,6 +1,6 @@
 # project-021-memory-semantics-runtime-implementation 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-03-27
 - Stage Mapping: Post-Stage-9 runtime semantics implementation follow-up
 - Phase Mapping: Runtime Memory Semantics / Recall Context Assembly
@@ -39,14 +39,19 @@
 
 ## 2.3 sprint-003-promotion-output-rollout-and-project-closeout
 
-- Status: planned
-- Sprint Goal: 仅在需要继续扩展 promotion output rollout 或完成最终项目收口时激活，优先处理 session summary / promotion output 的后续 consumer 和 `project-021` completion closeout。
-- Task Package: 待激活后拆解。
+- Status: completed
+- Sprint Goal: 将 promotion output / session summary 投影扩展到至少一个 reporting-facing consumer，并完成 `project-021` 的 completion closeout 准备与判定。
+- Task Package: `TK-251`、`TK-252`、`TK-253`、`TK-254`。
 - Input Constraints:
   1. 不得把 canonical source ownership 挪进 `runtime.memory-semantics`。
   2. 新 consumer 仍只能消费 `memoryContext`、contract-safe summary 或 promotion summary，不允许回退到底层 `layeredSnapshot`。
   3. 不默认承诺 semantic/vector search、workspace/user 全量 memory rewrite 或 canonical-source rewrite。
-  4. 若没有新的 rollout 需求，允许直接在 `project-021` closeout surface 上完成项目收口，而不强制激活本 sprint。
+  4. `project-021` 是否切为 `completed` 必须以 project completion audit、delivery registry 与 task ledger 真值同步为前置条件。
+  5. 如 rollout 证据不足以支撑项目收口，必须冻结 blocker 与后续输入，而不是模糊保留 active closeout surface。
+- Exit Criteria:
+  1. 至少一个 runtime/reporting consumer 已通过 `promotionSummary` 或 session-summary projection 消费 `runtime.memory-semantics` 输出，而不是读取底层 snapshot。
+  2. `technical-solution.memory-module` 的 delivery handoff、artifact ledger、project/sprint/task truth 与 current-context 保持同步，并形成 `project-021` completion audit 输入。
+  3. 已明确给出 `project-021` 的 completed / blocked closeout 结论；若为 completed，必须产出 completion audit summary 并同步项目里程碑记录。
 
 ## 3. 任务拆解矩阵（WBS）
 
@@ -61,6 +66,10 @@
 | TK-248 | sprint-002 | memory promotion pipeline 与 contract-safe summary baseline | runtime/implementation | TK-244,DA-245,.repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-memory-semantics/contracts/memory-context-assembly-contract.md | completed |
 | TK-249 | sprint-002 | second runtime consumer rollout 与 memory-context consumer cutover | runtime/rollout | TK-248,DA-244,.repo-ai-governor/context/technical-solution-delivery-registry.yaml | completed |
 | TK-250 | sprint-002 | sprint-002 出口验收与 sprint-003 输入约束 | acceptance/baseline | TK-247,TK-248,TK-249 | completed |
+| TK-251 | sprint-003 | sprint-003 激活与 sprint-002 closeout handoff | bootstrap/governance | DA-250,sprint-002 completed | completed |
+| TK-252 | sprint-003 | promotion output reporting consumer 与 session-summary projection baseline | runtime/rollout | TK-251,DA-248,DA-249,DA-250 | completed |
+| TK-253 | sprint-003 | project-021 completion audit 与 delivery closeout baseline | governance/closeout | TK-252,.repo-ai-governor/context/technical-solution-delivery-registry.yaml | completed |
+| TK-254 | sprint-003 | sprint-003 出口验收与 project-021 完成态收口 | acceptance/closeout | TK-252,TK-253 | completed |
 
 ## 4. 依赖产物策略
 
@@ -75,6 +84,7 @@
 2. `sprint-001` 先建立 recall/context assembly baseline，不直接承诺 memory canonical source rewrite。
 3. `runtime.memory-provider-loading` 继续只承接 provider loading；新的语义服务只允许通过明确 contract 接口消费 provider substrate。
 4. `sprint-002` 默认消费 `DA-245` 与 `DA-244`，优先收敛 promotion pipeline 与第二 consumer rollout，而不是继续扩大 formal docs/gate 面。
+5. `sprint-003` 默认消费 `DA-250`、`DA-248` 与 `DA-249`，优先把 promotion output / session summary 投影接到 reporting-facing consumer，并准备项目 closeout。
 
 ## 5. DoD（project-021）
 
@@ -94,3 +104,7 @@
 6. 2026-03-27：通过 `TK-248 / DA-248` 建立 `MemoryPromotionService` 与 `contractSafeSummary` 基线，使 promotion pipeline 不再依赖 raw snapshot shape。
 7. 2026-03-27：通过 `TK-249 / DA-249` 将 `CliGovernanceRuntime` assembly check 切到 `memoryContext.contractSafeSummary`，完成第二个 runtime consumer rollout。
 8. 2026-03-27：通过 `TK-250 / DA-250` 完成 `sprint-002` 出口验收，并将 `sprint-003-promotion-output-rollout-and-project-closeout` 冻结为 planned follow-up，而不提前激活。
+9. 2026-03-27：通过 `TK-251 / DA-251` 正式激活 `sprint-003-promotion-output-rollout-and-project-closeout`，并将 `sprint-002` 迁入 completed history。
+10. 2026-03-27：通过 `TK-252 / DA-252` 将 task-driven `execution_report` 扩展为 reporting-facing promotion output consumer，并把 session-summary projection 回写到 report contract。
+11. 2026-03-27：通过 `TK-253 / DA-253` 完成 `project-021` completion audit、delivery closeout 真值同步，并产出 [project-021 completion audit summary](./project-021-memory-semantics-runtime-implementation-completion-audit-summary.md)。
+12. 2026-03-27：通过 `TK-254 / DA-254` 完成 `sprint-003` 出口验收与 `project-021` 完成态收口；`current-context` 暂保留 `sprint-003` 作为 active closeout surface，等待下一条主执行流显式激活。

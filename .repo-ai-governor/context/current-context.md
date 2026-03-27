@@ -4,18 +4,18 @@
 
 - Status: active
 - Project: `project-021-memory-semantics-runtime-implementation`
-- Sprint: `sprint-002-promotion-pipeline-and-runtime-consumer-rollout`
+- Sprint: `sprint-003-promotion-output-rollout-and-project-closeout`
 - Docs root: `.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation`
-- Task records: `.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-002-promotion-pipeline-and-runtime-consumer-rollout/tasks/`
-- Review records: `.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-002-promotion-pipeline-and-runtime-consumer-rollout/review/`
+- Task records: `.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-003-promotion-output-rollout-and-project-closeout/tasks/`
+- Review records: `.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-003-promotion-output-rollout-and-project-closeout/review/`
 
 ## Active Streams
 
-- `primary`: project=`project-021-memory-semantics-runtime-implementation`, sprint=`sprint-002-promotion-pipeline-and-runtime-consumer-rollout`, docs=`.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation`, plan=`.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/plan.md`, tasks=`.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-002-promotion-pipeline-and-runtime-consumer-rollout/tasks/`, checklist=`.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-002-promotion-pipeline-and-runtime-consumer-rollout/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-002-promotion-pipeline-and-runtime-consumer-rollout/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-002-promotion-pipeline-and-runtime-consumer-rollout/review/`, status=`active`
+- `primary`: project=`project-021-memory-semantics-runtime-implementation`, sprint=`sprint-003-promotion-output-rollout-and-project-closeout`, docs=`.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation`, plan=`.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/plan.md`, tasks=`.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-003-promotion-output-rollout-and-project-closeout/tasks/`, checklist=`.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-003-promotion-output-rollout-and-project-closeout/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-003-promotion-output-rollout-and-project-closeout/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-003-promotion-output-rollout-and-project-closeout/review/`, status=`active`
 
 ## Planned Follow-Up Streams
 
-1. `planned-next`: project=`project-021-memory-semantics-runtime-implementation`, sprint=`sprint-003-promotion-output-rollout-and-project-closeout`, docs=`.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation`, plan=`.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/plan.md`, status=`planned`, notes=`仅在继续扩展 promotion output / session summary consumer 或完成 project-021 最终 closeout 时激活`
+1. 当前无 planned follow-up stream；如 `project-021` closeout 后仍存在新增 rollout 需求，再按实际输入补建新的 planned stream。
 
 ## Completed Stream History
 

@@ -22,6 +22,7 @@ export interface BuildExecutionReportOptions {
   stageId?: string;
   limit?: number;
   includeRecords?: boolean;
+  memorySemantics?: ExecutionReportMemorySemanticsSummary | null;
 }
 
 /**
@@ -58,6 +59,61 @@ export interface ExecutionReportFailureSummary {
 }
 
 /**
+ * Defines one report-safe memory-context summary block.
+ */
+export interface ExecutionReportMemoryContextSummary {
+  queryIntent: string;
+  assemblyOutcome: string;
+  selectedRecordCount: number;
+  sourceRefCount: number;
+  recordsMissingExplicitSourceRefs: number;
+  truncationReason: string | null;
+  layerCounts: Record<string, number>;
+  memoryKindCounts: Record<string, number>;
+  safetyNotes: string[];
+}
+
+/**
+ * Defines one report-safe session-summary projection row.
+ */
+export interface ExecutionReportSessionSummaryProjection {
+  scope: string;
+  key: string;
+  promotedRecordIds: string[];
+  updatedAt: string;
+}
+
+/**
+ * Defines one report-safe promotion summary block.
+ */
+export interface ExecutionReportPromotionSummary {
+  outcome: string;
+  candidateCount: number;
+  promotableCount: number;
+  plannedMergeCount: number;
+  mergedCount: number;
+  skippedCount: number;
+  rejectedCount: number;
+  targetLayerCounts: Record<string, number>;
+  failureReasonCounts: Record<string, number>;
+  phaseResults: Array<{
+    phase: string;
+    status: "completed" | "skipped";
+    candidateCount: number;
+    detail: string;
+  }>;
+  sessionSummaryProjection: ExecutionReportSessionSummaryProjection | null;
+}
+
+/**
+ * Defines one optional memory-semantics block for reporting-facing consumers.
+ */
+export interface ExecutionReportMemorySemanticsSummary {
+  contextSummary: ExecutionReportMemoryContextSummary;
+  promotion: ExecutionReportPromotionSummary | null;
+}
+
+/**
  * Defines one replay pointer row derived from audit records.
  */
 export interface ReplayPointer {
@@ -85,6 +141,7 @@ export interface ExecutionReport {
   riskSummary: ExecutionReportRiskSummary;
   failureSummary: ExecutionReportFailureSummary;
   replayPointers: ReplayPointer[];
+  memorySemantics?: ExecutionReportMemorySemanticsSummary;
   records?: PersistedAuditRecord[];
 }
 

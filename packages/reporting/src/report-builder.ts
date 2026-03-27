@@ -41,6 +41,7 @@ export class ReportBuilder {
     const stageId = this.readOptionalString(options.stageId, "stageId");
     const limit = this.readOptionalPositiveInteger(options.limit, "limit");
     const includeRecords = this.readOptionalBoolean(options.includeRecords, "includeRecords");
+    const memorySemantics = options.memorySemantics ?? null;
 
     const records = await this.auditRecordReader.listEvents({
       executionId,
@@ -147,6 +148,7 @@ export class ReportBuilder {
         timeoutRecordIds,
       },
       replayPointers,
+      ...(memorySemantics ? { memorySemantics } : {}),
       ...(includeRecords ? { records: filteredRecords } : {}),
     };
   }
