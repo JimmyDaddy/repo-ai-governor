@@ -28,7 +28,7 @@
 
 ## 2.2 sprint-002-promotion-pipeline-and-runtime-consumer-rollout
 
-- Status: active
+- Status: completed
 - Sprint Goal: 在不重写 canonical source ownership 的前提下，建立显式 memory promotion pipeline baseline，并将 `runtime.memory-semantics` 扩展到第二个 runtime consumer。
 - Task Package: `TK-247`、`TK-248`、`TK-249`、`TK-250`。
 - Exit Criteria:
@@ -36,6 +36,17 @@
   2. `runtime.memory-semantics` 已形成 audit-friendly 的显式 promotion pipeline baseline，且 machine-readable promotion summary 不回退到 raw snapshot shape。
   3. 至少一个第二 runtime consumer 已通过 `memoryContext` 或 contract-safe summary 消费 memory semantics，而不是重新暴露 `layeredSnapshot`。
   4. project/task/artifact truth 已同步，且 `sprint-003` 输入约束完成冻结。
+
+## 2.3 sprint-003-promotion-output-rollout-and-project-closeout
+
+- Status: planned
+- Sprint Goal: 仅在需要继续扩展 promotion output rollout 或完成最终项目收口时激活，优先处理 session summary / promotion output 的后续 consumer 和 `project-021` completion closeout。
+- Task Package: 待激活后拆解。
+- Input Constraints:
+  1. 不得把 canonical source ownership 挪进 `runtime.memory-semantics`。
+  2. 新 consumer 仍只能消费 `memoryContext`、contract-safe summary 或 promotion summary，不允许回退到底层 `layeredSnapshot`。
+  3. 不默认承诺 semantic/vector search、workspace/user 全量 memory rewrite 或 canonical-source rewrite。
+  4. 若没有新的 rollout 需求，允许直接在 `project-021` closeout surface 上完成项目收口，而不强制激活本 sprint。
 
 ## 3. 任务拆解矩阵（WBS）
 
@@ -48,8 +59,8 @@
 | TK-246 | sprint-001 | technical-solution consumer surfaces 与 rollout ownership 扩展 | governance/rollout | TK-243,.repo-ai-governor/context/technical-solution-delivery-registry.yaml | completed |
 | TK-247 | sprint-002 | sprint-002 激活与 sprint-001 closeout handoff | bootstrap/governance | DA-245,sprint-001 completed | completed |
 | TK-248 | sprint-002 | memory promotion pipeline 与 contract-safe summary baseline | runtime/implementation | TK-244,DA-245,.repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-memory-semantics/contracts/memory-context-assembly-contract.md | completed |
-| TK-249 | sprint-002 | second runtime consumer rollout 与 memory-context consumer cutover | runtime/rollout | TK-248,DA-244,.repo-ai-governor/context/technical-solution-delivery-registry.yaml | planned |
-| TK-250 | sprint-002 | sprint-002 出口验收与 sprint-003 输入约束 | acceptance/baseline | TK-247,TK-248,TK-249 | planned |
+| TK-249 | sprint-002 | second runtime consumer rollout 与 memory-context consumer cutover | runtime/rollout | TK-248,DA-244,.repo-ai-governor/context/technical-solution-delivery-registry.yaml | completed |
+| TK-250 | sprint-002 | sprint-002 出口验收与 sprint-003 输入约束 | acceptance/baseline | TK-247,TK-248,TK-249 | completed |
 
 ## 4. 依赖产物策略
 
@@ -81,3 +92,5 @@
 4. 2026-03-27：通过 `TK-245 / DA-245` 完成 sprint-001 出口验收，并冻结 `sprint-002-promotion-pipeline-and-runtime-consumer-rollout` 的输入约束。
 5. 2026-03-27：通过 `TK-247 / DA-247` 激活 `sprint-002-promotion-pipeline-and-runtime-consumer-rollout`，并将 `sprint-001` 迁入 completed history。
 6. 2026-03-27：通过 `TK-248 / DA-248` 建立 `MemoryPromotionService` 与 `contractSafeSummary` 基线，使 promotion pipeline 不再依赖 raw snapshot shape。
+7. 2026-03-27：通过 `TK-249 / DA-249` 将 `CliGovernanceRuntime` assembly check 切到 `memoryContext.contractSafeSummary`，完成第二个 runtime consumer rollout。
+8. 2026-03-27：通过 `TK-250 / DA-250` 完成 `sprint-002` 出口验收，并将 `sprint-003-promotion-output-rollout-and-project-closeout` 冻结为 planned follow-up，而不提前激活。

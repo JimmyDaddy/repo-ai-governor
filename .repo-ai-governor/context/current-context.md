@@ -15,7 +15,7 @@
 
 ## Planned Follow-Up Streams
 
-1. 当前无已登记的 follow-up stream。
+1. `planned-next`: project=`project-021-memory-semantics-runtime-implementation`, sprint=`sprint-003-promotion-output-rollout-and-project-closeout`, docs=`.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation`, plan=`.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/plan.md`, status=`planned`, notes=`仅在继续扩展 promotion output / session summary consumer 或完成 project-021 最终 closeout 时激活`
 
 ## Completed Stream History
 

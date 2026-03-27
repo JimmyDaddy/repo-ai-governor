@@ -1,6 +1,6 @@
 # TK-249 second runtime consumer rollout 与 memory-context consumer cutover
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-27
 - Owner: AI-Agent
 - Priority: P0
@@ -38,3 +38,5 @@
 ## 6. 执行记录
 
 1. 2026-03-27：任务创建，状态初始化为 `planned`。
+2. 2026-03-27：状态切换为 `in_progress`，开始收敛第二个 runtime consumer，优先评估 `CliGovernanceRuntime` 的 assembly check 是否可以从 `memoryRecall.resultSummary` 切到 `memoryContext.contractSafeSummary`。
+3. 2026-03-27：已完成 `CliGovernanceRuntime` assembly check 的 second consumer cutover，并形成 `DA-249` 与目标集成回归。

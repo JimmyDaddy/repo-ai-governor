@@ -119,6 +119,8 @@ deliveries:
       - .repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-001-recall-context-assembly-baseline/tasks/DA-242-project-021-activation-and-memory-semantics-delivery-handoff.md
       - .repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-002-promotion-pipeline-and-runtime-consumer-rollout/tasks/DA-247-sprint-002-activation-and-sprint-001-closeout-handoff.md
       - .repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-002-promotion-pipeline-and-runtime-consumer-rollout/tasks/DA-248-memory-promotion-pipeline-and-contract-safe-summary-baseline.md
+      - .repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-002-promotion-pipeline-and-runtime-consumer-rollout/tasks/DA-249-second-runtime-consumer-rollout-and-memory-context-consumer-cutover.md
+      - .repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-002-promotion-pipeline-and-runtime-consumer-rollout/tasks/DA-250-sprint-002-exit-acceptance-and-sprint-003-input-constraints.md
     accepted_at: 2026-03-27
 
   - solution_id: technical-solution.langgraph-orchestration-direction

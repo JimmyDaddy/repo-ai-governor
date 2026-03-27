@@ -17,7 +17,7 @@ import {
   WorkspaceMode,
   WorkspaceModeSource,
 } from "@repo-ai-governor/config";
-import { MemoryManager } from "@repo-ai-governor/core-memory";
+import { MemoryManager, MemoryScope } from "@repo-ai-governor/core-memory";
 import { AuditRecorder } from "@repo-ai-governor/core-session";
 import { FsCsvMemoryStoreProvider } from "@repo-ai-governor/memory-provider-fs-csv";
 import { MemoryStoreAdapter } from "@repo-ai-governor/memory-store-adapter";
@@ -1644,6 +1644,53 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
         };
         expect(sourceRequestPayload.status).toBe("verified");
         expect(sourceRequestPayload.ledgerBackfillStatus).toBe("applied");
+      },
+      {
+        runtimeDebugOptions: {
+          dryRun: false,
+          trace: false,
+          replayPath: null,
+          adapters: true,
+          taskId: "TK-099",
+        },
+      },
+    );
+  });
+
+  it("renders assembly check from contract-safe memory context rather than raw recall summary", async () => {
+    await withRuntimeFixture(
+      async (fixture) => {
+        await writeTaskCardFixture(fixture.workspaceRoot, "TK-099");
+        const memoryManager = new MemoryManager(new MemoryStoreAdapter(fixture.provider));
+        await memoryManager.writeEntry({
+          scope: MemoryScope.EXECUTION,
+          key: "historic:stage-report:record-1",
+          payload: {
+            artifactId: "DA-121",
+          },
+          tags: [
+            "audit-record",
+            "project:project-010-local-model-and-ide-expansion",
+            "sprint:sprint-002-autonomous-mainchain-foundation",
+            "task:TK-099",
+            "artifact:DA-121",
+          ],
+        });
+
+        const runtimeWithOverrides = fixture.runtime as unknown as {
+          collectGitChangedPaths: () => Promise<string[]>;
+        };
+        runtimeWithOverrides.collectGitChangedPaths = async () => [];
+
+        const runResult = await fixture.runtime.execute(CliCommandName.RUN);
+        const assemblyCheckDetail =
+          runResult.commandResult.checks?.find((check) => check.id === "assembly")?.detail ?? "";
+
+        expect(assemblyCheckDetail).toContain("memory_context_selected=1");
+        expect(assemblyCheckDetail).toContain("memory_context_execution=1");
+        expect(assemblyCheckDetail).toContain("memory_context_session=0");
+        expect(assemblyCheckDetail).toContain("memory_context_outcome=context_ready");
+        expect(assemblyCheckDetail).not.toContain("memory_recalled=");
       },
       {
         runtimeDebugOptions: {

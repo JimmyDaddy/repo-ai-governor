@@ -1,6 +1,6 @@
 # TK-250 sprint-002 出口验收与 sprint-003 输入约束
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-27
 - Owner: AI-Agent
 - Priority: P1
@@ -40,3 +40,5 @@
 ## 6. 执行记录
 
 1. 2026-03-27：任务创建，状态初始化为 `planned`。
+2. 2026-03-27：状态切换为 `in_progress`，开始汇总 sprint-002 exit evidence、`TK-248/TK-249` rollout 证据与后续 follow-up 约束。
+3. 2026-03-27：已完成 `DA-250`、sprint/project 计划同步，以及 `current-context` 的 planned follow-up stream 冻结。

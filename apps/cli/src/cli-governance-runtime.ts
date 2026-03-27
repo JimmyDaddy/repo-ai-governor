@@ -2248,13 +2248,14 @@ export class CliGovernanceRuntime {
     requestedTaskId: string | null,
   ): CliCommandResultCheck {
     const taskIdLabel = runAssembly.taskContext?.taskId ?? requestedTaskId ?? "none";
+    const contractSafeSummary = runAssembly.memoryContext?.contractSafeSummary;
     return {
       id: "assembly",
       status:
         runAssembly.assemblyMode === "task_id_fallback"
           ? CliGovernanceCheckStatus.WARN
           : CliGovernanceCheckStatus.PASS,
-      detail: `mode=${runAssembly.assemblyMode} reason=${runAssembly.assemblyReason} task_id=${taskIdLabel} nodes=${runAssembly.processDefinition.nodes.length} input_references=${runAssembly.taskContext?.inputReferences.length ?? 0} input_artifacts=${runAssembly.taskContext?.inputArtifacts.length ?? 0} memory_execution=${runAssembly.memorySnapshotSummary?.executionEntryCount ?? 0} memory_session=${runAssembly.memorySnapshotSummary?.sessionEntryCount ?? 0} memory_recalled=${runAssembly.memoryRecall?.resultSummary.selectedRecordCount ?? 0} memory_context_outcome=${runAssembly.memoryContext?.assemblyOutcome ?? "none"}`,
+      detail: `mode=${runAssembly.assemblyMode} reason=${runAssembly.assemblyReason} task_id=${taskIdLabel} nodes=${runAssembly.processDefinition.nodes.length} input_references=${runAssembly.taskContext?.inputReferences.length ?? 0} input_artifacts=${runAssembly.taskContext?.inputArtifacts.length ?? 0} memory_context_selected=${contractSafeSummary?.selectedRecordCount ?? 0} memory_context_execution=${contractSafeSummary?.layerCounts.execution ?? 0} memory_context_session=${contractSafeSummary?.layerCounts.session ?? 0} memory_context_outcome=${runAssembly.memoryContext?.assemblyOutcome ?? "none"}`,
     };
   }
 
