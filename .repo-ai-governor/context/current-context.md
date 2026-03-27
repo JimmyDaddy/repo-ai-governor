@@ -4,19 +4,17 @@
 
 - Status: active
 - Project: `project-026-prd-gap-remediation`
-- Sprint: `sprint-003-p1-productization-closure-extended`
+- Sprint: `sprint-004-ga-evidence-and-support-matrix`
 - Docs root: `.repo-ai-governor/context/dev/project-026-prd-gap-remediation`
-- Task records: `.repo-ai-governor/context/dev/project-026-prd-gap-remediation/sprint-003-p1-productization-closure-extended/tasks/`
-- Review records: `.repo-ai-governor/context/dev/project-026-prd-gap-remediation/sprint-003-p1-productization-closure-extended/review/`
-- Note: `project-026 / sprint-003` 已完成本轮 P1 extended 收口，当前暂保留为 closeout surface，待用户确认是否切换到 `sprint-004-ga-evidence-and-support-matrix`。
+- Task records: `.repo-ai-governor/context/dev/project-026-prd-gap-remediation/sprint-004-ga-evidence-and-support-matrix/tasks/`
+- Review records: `.repo-ai-governor/context/dev/project-026-prd-gap-remediation/sprint-004-ga-evidence-and-support-matrix/review/`
+- Note: `project-026 / sprint-004` 已激活，聚焦 GA Readiness §10.2 全量量化证据沉淀与正式支持矩阵发布。
 
 ## Active Streams
 
-- `primary`: project=`project-026-prd-gap-remediation`, sprint=`sprint-003-p1-productization-closure-extended`, docs=`.repo-ai-governor/context/dev/project-026-prd-gap-remediation`, plan=`.repo-ai-governor/context/dev/project-026-prd-gap-remediation/plan.md`, tasks=`.repo-ai-governor/context/dev/project-026-prd-gap-remediation/sprint-003-p1-productization-closure-extended/tasks/`, checklist=`.repo-ai-governor/context/dev/project-026-prd-gap-remediation/sprint-003-p1-productization-closure-extended/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-026-prd-gap-remediation/sprint-003-p1-productization-closure-extended/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-026-prd-gap-remediation/sprint-003-p1-productization-closure-extended/review/`, status=`active`
+- `primary`: project=`project-026-prd-gap-remediation`, sprint=`sprint-004-ga-evidence-and-support-matrix`, docs=`.repo-ai-governor/context/dev/project-026-prd-gap-remediation`, plan=`.repo-ai-governor/context/dev/project-026-prd-gap-remediation/plan.md`, tasks=`.repo-ai-governor/context/dev/project-026-prd-gap-remediation/sprint-004-ga-evidence-and-support-matrix/tasks/`, checklist=`.repo-ai-governor/context/dev/project-026-prd-gap-remediation/sprint-004-ga-evidence-and-support-matrix/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-026-prd-gap-remediation/sprint-004-ga-evidence-and-support-matrix/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-026-prd-gap-remediation/sprint-004-ga-evidence-and-support-matrix/review/`, status=`active`
 
 ## Planned Follow-Up Streams
-
-- `follow-up-1`: project=`project-026-prd-gap-remediation`, sprint=`sprint-004-ga-evidence-and-support-matrix`, docs=`.repo-ai-governor/context/dev/project-026-prd-gap-remediation`, status=`planned`
 
 ## Completed Stream History
 

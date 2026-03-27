@@ -1,7 +1,7 @@
 # sprint-004-ga-evidence-and-support-matrix 计划
 
-- Status: planned
-- Date: 2026-03-27
+- Status: active
+- Date: 2026-03-28
 - Project: `project-026-prd-gap-remediation`
 
 ## 1. Sprint Goal

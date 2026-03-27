@@ -48,7 +48,7 @@
 
 ## 2.4 sprint-004-ga-evidence-and-support-matrix
 
-- Status: planned
+- Status: active
 - Sprint Goal: 沉淀 GA Readiness §10.2 全量运营证据并发布正式支持矩阵。
 - Task Package: `TK-301`、`TK-302`、`TK-303`。
 - Input Constraints:
