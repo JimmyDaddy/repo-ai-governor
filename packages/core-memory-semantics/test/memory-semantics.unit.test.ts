@@ -2,6 +2,7 @@ import { MemoryManager, MemoryScope } from "@repo-ai-governor/core-memory";
 import {
   MEMORY_RECALL_SELECTION_POLICY,
   MemoryContextAssembler,
+  MemoryPromotionService,
   MemoryRecallKind,
   MemoryRecallLayer,
   MemoryRecallService,
@@ -179,6 +180,27 @@ describe("core-memory-semantics", () => {
     expect(assemblyResult.assemblyOutcome).toBe("truncated");
     expect(assemblyResult.truncationReason).toBe("selected_records_truncated_to_2");
     expect(assemblyResult.selectionSummary.selectedRecordCount).toBe(2);
+    expect(assemblyResult.contractSafeSummary).toEqual(
+      expect.objectContaining({
+        executionId: "exec-001",
+        queryIntent: "cli_task_driven_execution",
+        assemblyOutcome: "truncated",
+        selectedRecordCount: 2,
+        truncationReason: "selected_records_truncated_to_2",
+        items: [
+          expect.objectContaining({
+            recordId: "execution:exec-001:report-fact",
+            sourceRefCount: 3,
+            explicitSourceRefCount: 2,
+          }),
+          expect.objectContaining({
+            recordId: "session:session-001",
+            sourceRefCount: 2,
+            explicitSourceRefCount: 1,
+          }),
+        ],
+      }),
+    );
     expect(assemblyResult.outputContext.recallItems).toEqual([
       expect.objectContaining({
         layer: MemoryRecallLayer.EXECUTION,
@@ -202,5 +224,286 @@ describe("core-memory-semantics", () => {
     expect(assemblyResult.provenanceSummary.canonicalSourceNote).toBe(
       "memory_projection_only_canonical_source_stays_external",
     );
+  });
+
+  it("builds an explicit promotion pipeline and merges eligible execution summaries into session memory", async () => {
+    const memoryManager = new MemoryManager(new MemoryStoreAdapter(createInMemoryStoreProvider()));
+    await memoryManager.writeEntry({
+      scope: MemoryScope.EXECUTION,
+      key: "exec-777:summary-eligible",
+      payload: {
+        summary: "Verifier requested follow-up audit on the same dependency edge.",
+        sourceRefs: [".repo-ai-governor/context/dev/project-021/tasks/DA-244.md"],
+      },
+      tags: ["task:TK-244", "sensitivity:internal"],
+      updatedAt: "2026-03-27T00:00:04Z",
+    });
+    await memoryManager.writeEntry({
+      scope: MemoryScope.EXECUTION,
+      key: "exec-777:summary-sensitive",
+      payload: {
+        summary: "Contains credential hints and must stay ephemeral.",
+        sourceRefs: [".repo-ai-governor/context/dev/project-021/tasks/TK-244.md"],
+      },
+      tags: ["task:TK-244", "sensitivity:secret"],
+      updatedAt: "2026-03-27T00:00:03Z",
+    });
+    await memoryManager.writeEntry({
+      scope: MemoryScope.NORMATIVE,
+      key: "policy/runtime-boundary",
+      payload: {
+        summary: "Canonical runtime boundary must stay in the normative source.",
+        referencePath:
+          ".repo-ai-governor/normative_knowledge_sources/repo-ai-governor-architecture-and-repo-layering.md",
+      },
+      tags: ["policy"],
+      updatedAt: "2026-03-27T00:00:02Z",
+    });
+
+    const recallResult = await new MemoryRecallService(memoryManager).recall({
+      queryIntent: "memory_promotion_rehearsal",
+      workspaceId: "/tmp/workspace",
+      executionId: "exec-777",
+      sessionId: "session-777",
+      requestedLayers: [MemoryRecallLayer.EXECUTION, MemoryRecallLayer.NORMATIVE],
+      requestedMemoryKinds: [
+        MemoryRecallKind.EXECUTION_SHORT_TERM_FACT,
+        MemoryRecallKind.NORMATIVE_PROJECTION,
+      ],
+      metadataFilters: {
+        includeNormativeBaseline: true,
+        normativeKeyPrefixes: [],
+        normativeTags: [],
+        projectId: "project-021",
+        sprintId: "sprint-002",
+        taskId: "TK-248",
+        artifactIds: [],
+        limitPerQuery: 20,
+      },
+      recallOrder: [
+        MemoryRecallKind.EXECUTION_SHORT_TERM_FACT,
+        MemoryRecallKind.NORMATIVE_PROJECTION,
+      ],
+      selectionPolicy: MEMORY_RECALL_SELECTION_POLICY,
+    });
+    const assemblyResult = new MemoryContextAssembler().assemble({
+      recallResult,
+      maxRecordCount: 10,
+    });
+
+    const promotionResult = await new MemoryPromotionService(memoryManager).promote({
+      contextSummary: assemblyResult.contractSafeSummary,
+      sessionId: "session-777",
+      promotedBy: "memory-semantics-unit-test",
+    });
+
+    expect(promotionResult.outcome).toBe("session_summary_merged");
+    expect(promotionResult.summary).toEqual(
+      expect.objectContaining({
+        candidateCount: 3,
+        promotableCount: 1,
+        plannedMergeCount: 1,
+        mergedCount: 1,
+        skippedCount: 0,
+        rejectedCount: 2,
+        targetLayerCounts: {
+          session: 1,
+        },
+      }),
+    );
+    expect(promotionResult.candidateDecisions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          sourceRecordId: "execution:exec-777:summary-eligible",
+          action: "merge",
+          targetLayer: "session",
+          decisionReason: "session_summary_projection_merge",
+        }),
+        expect.objectContaining({
+          sourceRecordId: "execution:exec-777:summary-sensitive",
+          action: "reject",
+          decisionReason: "sensitivity_requires_redaction",
+        }),
+        expect.objectContaining({
+          sourceRecordId: "normative:policy/runtime-boundary",
+          action: "reject",
+          decisionReason: "canonical_projection_not_promotable",
+        }),
+      ]),
+    );
+
+    const sessionRecord = await memoryManager.readEntry({
+      scope: MemoryScope.SESSION,
+      key: "session-777",
+    });
+
+    expect(sessionRecord?.value.promotedContextItems).toEqual([
+      expect.objectContaining({
+        sourceRecordId: "execution:exec-777:summary-eligible",
+        summary: "Verifier requested follow-up audit on the same dependency edge.",
+      }),
+    ]);
+    expect(sessionRecord?.tags).toEqual(
+      expect.arrayContaining(["memory-promotion", "execution:exec-777"]),
+    );
+  });
+
+  it("blocks persistence when the contract-safe summary is truncated", async () => {
+    const memoryManager = new MemoryManager(new MemoryStoreAdapter(createInMemoryStoreProvider()));
+    await memoryManager.writeEntry({
+      scope: MemoryScope.EXECUTION,
+      key: "exec-888:summary-first",
+      payload: {
+        summary: "First execution summary is eligible for promotion.",
+        sourceRefs: [".repo-ai-governor/context/dev/project-021/tasks/DA-248.md"],
+      },
+      tags: ["task:TK-248", "sensitivity:internal"],
+      updatedAt: "2026-03-27T00:00:05Z",
+    });
+    await memoryManager.writeEntry({
+      scope: MemoryScope.EXECUTION,
+      key: "exec-888:summary-second",
+      payload: {
+        summary: "Second execution summary would be silently dropped by truncation.",
+        sourceRefs: [".repo-ai-governor/context/dev/project-021/tasks/TK-248.md"],
+      },
+      tags: ["task:TK-248", "sensitivity:internal"],
+      updatedAt: "2026-03-27T00:00:04Z",
+    });
+
+    const recallResult = await new MemoryRecallService(memoryManager).recall({
+      queryIntent: "memory_promotion_rehearsal",
+      workspaceId: "/tmp/workspace",
+      executionId: "exec-888",
+      sessionId: "session-888",
+      requestedLayers: [MemoryRecallLayer.EXECUTION],
+      requestedMemoryKinds: [MemoryRecallKind.EXECUTION_SHORT_TERM_FACT],
+      metadataFilters: {
+        includeNormativeBaseline: false,
+        normativeKeyPrefixes: [],
+        normativeTags: [],
+        projectId: "project-021",
+        sprintId: "sprint-002",
+        taskId: "TK-248",
+        artifactIds: [],
+        limitPerQuery: 20,
+      },
+      recallOrder: [MemoryRecallKind.EXECUTION_SHORT_TERM_FACT],
+      selectionPolicy: MEMORY_RECALL_SELECTION_POLICY,
+    });
+    const assemblyResult = new MemoryContextAssembler().assemble({
+      recallResult,
+      maxRecordCount: 1,
+    });
+
+    const promotionResult = await new MemoryPromotionService(memoryManager).promote({
+      contextSummary: assemblyResult.contractSafeSummary,
+      sessionId: "session-888",
+      promotedBy: "memory-semantics-unit-test",
+    });
+
+    expect(assemblyResult.contractSafeSummary.assemblyOutcome).toBe("truncated");
+    expect(promotionResult.outcome).toBe("plan_only");
+    expect(promotionResult.persistedRecord).toBeNull();
+    expect(promotionResult.summary).toEqual(
+      expect.objectContaining({
+        candidateCount: 1,
+        promotableCount: 1,
+        plannedMergeCount: 1,
+        mergedCount: 0,
+      }),
+    );
+    expect(promotionResult.summary.failureReasonCounts).toEqual(
+      expect.objectContaining({
+        context_summary_truncated: 1,
+      }),
+    );
+    expect(
+      promotionResult.phaseResults.find((phaseResult) => phaseResult.phase === "merge_or_persist"),
+    ).toEqual(
+      expect.objectContaining({
+        status: "skipped",
+        detail: "promotion_blocked=context_summary_truncated;planned_merge_candidates=1",
+      }),
+    );
+
+    const sessionRecord = await memoryManager.readEntry({
+      scope: MemoryScope.SESSION,
+      key: "session-888",
+    });
+
+    expect(sessionRecord).toBeUndefined();
+  });
+
+  it("reports plan-only promotion without claiming a completed merge", async () => {
+    const memoryManager = new MemoryManager(new MemoryStoreAdapter(createInMemoryStoreProvider()));
+    await memoryManager.writeEntry({
+      scope: MemoryScope.EXECUTION,
+      key: "exec-889:summary-eligible",
+      payload: {
+        summary: "Eligible promotion candidate stays plan-only when persist is disabled.",
+        sourceRefs: [".repo-ai-governor/context/dev/project-021/tasks/DA-248.md"],
+      },
+      tags: ["task:TK-248", "sensitivity:internal"],
+      updatedAt: "2026-03-27T00:00:06Z",
+    });
+
+    const recallResult = await new MemoryRecallService(memoryManager).recall({
+      queryIntent: "memory_promotion_rehearsal",
+      workspaceId: "/tmp/workspace",
+      executionId: "exec-889",
+      sessionId: "session-889",
+      requestedLayers: [MemoryRecallLayer.EXECUTION],
+      requestedMemoryKinds: [MemoryRecallKind.EXECUTION_SHORT_TERM_FACT],
+      metadataFilters: {
+        includeNormativeBaseline: false,
+        normativeKeyPrefixes: [],
+        normativeTags: [],
+        projectId: "project-021",
+        sprintId: "sprint-002",
+        taskId: "TK-248",
+        artifactIds: [],
+        limitPerQuery: 20,
+      },
+      recallOrder: [MemoryRecallKind.EXECUTION_SHORT_TERM_FACT],
+      selectionPolicy: MEMORY_RECALL_SELECTION_POLICY,
+    });
+    const assemblyResult = new MemoryContextAssembler().assemble({
+      recallResult,
+      maxRecordCount: 10,
+    });
+
+    const promotionResult = await new MemoryPromotionService(memoryManager).promote({
+      contextSummary: assemblyResult.contractSafeSummary,
+      sessionId: "session-889",
+      promotedBy: "memory-semantics-unit-test",
+      persist: false,
+    });
+
+    expect(promotionResult.outcome).toBe("plan_only");
+    expect(promotionResult.persistedRecord).toBeNull();
+    expect(promotionResult.summary).toEqual(
+      expect.objectContaining({
+        candidateCount: 1,
+        promotableCount: 1,
+        plannedMergeCount: 1,
+        mergedCount: 0,
+      }),
+    );
+    expect(
+      promotionResult.phaseResults.find((phaseResult) => phaseResult.phase === "merge_or_persist"),
+    ).toEqual(
+      expect.objectContaining({
+        status: "skipped",
+        detail: "plan_only_requested;planned_merge_candidates=1",
+      }),
+    );
+
+    const sessionRecord = await memoryManager.readEntry({
+      scope: MemoryScope.SESSION,
+      key: "session-889",
+    });
+
+    expect(sessionRecord).toBeUndefined();
   });
 });

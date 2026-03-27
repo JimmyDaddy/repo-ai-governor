@@ -32,7 +32,7 @@
 | `project-018-technical-solution-promotion-pilots` | Cross-stage normative consumption follow-up | Technical Solution Promotion / Consumption Proof | 已完成 `memory-provider-pluginization`、LangGraph 与 `memory-module` 的 promotion/backfill，补齐 `runtime.memory-semantics` formal module baseline，并保留 `core-runtime-langgraph` truthfulness follow-up 历史证据 |
 | `project-019-product-gap-assessment` | Cross-stage product alignment follow-up | PRD Gap Assessment / Priority Recalibration | 盘点当前工具对 PRD 的真实覆盖面，形成“现状 vs 目标”差距评估 draft，并为下一阶段优先级重排提供输入 |
 | `project-020-adoption-productization-and-upgrade-ux` | Post-Stage-9 external adoption closure | Packaging Truthfulness / Upgrade UX / Adopter Pilot | 已完成打包分发真值、upgrade/workspace adopter UX 与双仓库真实 pilot，并已退出 closeout surface |
-| `project-021-memory-semantics-runtime-implementation` | Post-Stage-9 runtime semantics follow-up | Runtime Memory Semantics / Recall Context Assembly | 将 `runtime.memory-semantics` 从 formal module docs 转成真实运行时代码，并通过 solution delivery handoff 将 `technical-solution.memory-module` 正式接入执行流 |
+| `project-021-memory-semantics-runtime-implementation` | Post-Stage-9 runtime semantics follow-up | Runtime Memory Semantics / Recall Context Assembly | 将 `runtime.memory-semantics` 从 formal module docs 转成真实运行时代码；当前 active 主线已切到 `sprint-002`，开始收敛 promotion pipeline 与第二 runtime consumer rollout |
 
 ## 2. 依赖顺序
 
@@ -58,7 +58,7 @@
 20. `project-020-adoption-productization-and-upgrade-ux`
 21. `project-021-memory-semantics-runtime-implementation`
 
-说明：Stage 主链按 001-007、009、010、013 推进；`project-008` 作为跨阶段治理优化轨可优先执行；`project-011` 作为 `project-010` 的工程支撑分解轨，为 CLI package 重构提供独立执行流；`project-012` 作为 `project-008` 的上下文效率 follow-up，负责收敛当前仓库的启动加载与台账上下文成本；`project-013` 已完成 Stage 9 最后业务阻断项收口；`project-014` 承接 post-Stage-9 的运行时现代化主线，但只完成了第一阶段 adoption/service-backed execution 收口；`project-015`、`project-016`、`project-017`、`project-018`、`project-019` 与 `project-020` 均已完成并进入完成态消费面；`project-021` 是当前 active 主执行流，用于落地 `runtime.memory-semantics` 的首轮运行时代码与 recall/context assembly baseline。
+说明：Stage 主链按 001-007、009、010、013 推进；`project-008` 作为跨阶段治理优化轨可优先执行；`project-011` 作为 `project-010` 的工程支撑分解轨，为 CLI package 重构提供独立执行流；`project-012` 作为 `project-008` 的上下文效率 follow-up，负责收敛当前仓库的启动加载与台账上下文成本；`project-013` 已完成 Stage 9 最后业务阻断项收口；`project-014` 承接 post-Stage-9 的运行时现代化主线，但只完成了第一阶段 adoption/service-backed execution 收口；`project-015`、`project-016`、`project-017`、`project-018`、`project-019` 与 `project-020` 均已完成并进入完成态消费面；`project-021` 是当前 active 主执行流，`sprint-001` 已完成 recall/context assembly baseline，当前 `sprint-002` 开始收敛 promotion pipeline 与第二 runtime consumer rollout。
 
 ## 3. 交付原则
 

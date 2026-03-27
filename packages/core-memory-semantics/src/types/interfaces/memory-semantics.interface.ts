@@ -4,6 +4,9 @@ import type {
 } from "@repo-ai-governor/core-memory";
 import type {
   MemoryContextAssemblyOutcomeValue,
+  MemoryPromotionCandidateActionValue,
+  MemoryPromotionOutcomeValue,
+  MemoryPromotionPhaseValue,
   MemoryRecallKindValue,
   MemoryRecallLayerValue,
   MemoryRecallSelectionPolicyValue,
@@ -114,6 +117,21 @@ export interface MemoryContextOutput {
 }
 
 /**
+ * Defines one contract-safe summary item derived from assembled output context.
+ */
+export interface MemoryContextContractSafeSummaryItem {
+  recordId: string;
+  layer: MemoryRecallLayerValue;
+  memoryKind: MemoryRecallKindValue;
+  summary: string;
+  sourceRefs: string[];
+  sourceRefCount: number;
+  explicitSourceRefCount: number;
+  updatedAt: string;
+  sensitivity: string[];
+}
+
+/**
  * Defines machine-readable selection summary for assembled context.
  */
 export interface MemoryContextSelectionSummary {
@@ -129,6 +147,24 @@ export interface MemoryContextProvenanceSummary {
   sourceRefCount: number;
   recordsMissingExplicitSourceRefs: number;
   canonicalSourceNote: string;
+}
+
+/**
+ * Defines one machine-readable summary safe to share with downstream runtime consumers.
+ */
+export interface MemoryContextContractSafeSummary {
+  executionId: string;
+  queryIntent: string;
+  assemblyOutcome: MemoryContextAssemblyOutcomeValue;
+  selectedRecordCount: number;
+  layerCounts: Partial<Record<MemoryRecallLayerValue, number>>;
+  memoryKindCounts: Partial<Record<MemoryRecallKindValue, number>>;
+  sourceRefCount: number;
+  recordsMissingExplicitSourceRefs: number;
+  canonicalSourceNote: string;
+  truncationReason: string | null;
+  safetyNotes: string[];
+  items: MemoryContextContractSafeSummaryItem[];
 }
 
 /**
@@ -148,9 +184,96 @@ export interface MemoryContextAssemblyResult {
   selectedRecords: MemoryRecalledRecord[];
   selectionSummary: MemoryContextSelectionSummary;
   outputContext: MemoryContextOutput;
+  contractSafeSummary: MemoryContextContractSafeSummary;
   sourceRefs: MemorySourceRef[];
   provenanceSummary: MemoryContextProvenanceSummary;
   truncationReason: string | null;
   safetyNotes: string[];
   assemblyOutcome: MemoryContextAssemblyOutcomeValue;
+}
+
+/**
+ * Defines one promotion request built from contract-safe context.
+ */
+export interface MemoryPromotionRequest {
+  contextSummary: MemoryContextContractSafeSummary;
+  sessionId?: string | null;
+  persist?: boolean;
+  promotedBy?: string;
+}
+
+/**
+ * Defines validation facts for one promotion candidate.
+ */
+export interface MemoryPromotionCandidateValidation {
+  reusable: boolean;
+  attributable: boolean;
+  traceable: boolean;
+  sensitivitySafe: boolean;
+  canonicalSourceSafe: boolean;
+  failureReasons: string[];
+}
+
+/**
+ * Defines one promotion candidate decision.
+ */
+export interface MemoryPromotionCandidateDecision {
+  sourceRecordId: string;
+  sourceLayer: MemoryRecallLayerValue;
+  memoryKind: MemoryRecallKindValue;
+  action: MemoryPromotionCandidateActionValue;
+  targetLayer: MemoryRecallLayerValue | null;
+  targetScope: string | null;
+  targetKey: string | null;
+  mergeStrategy: string | null;
+  decisionReason: string;
+  validation: MemoryPromotionCandidateValidation;
+}
+
+/**
+ * Defines one explicit promotion pipeline phase summary.
+ */
+export interface MemoryPromotionPhaseResult {
+  phase: MemoryPromotionPhaseValue;
+  status: "completed" | "skipped";
+  candidateCount: number;
+  detail: string;
+}
+
+/**
+ * Defines one machine-readable promotion summary.
+ */
+export interface MemoryPromotionSummary {
+  candidateCount: number;
+  promotableCount: number;
+  plannedMergeCount: number;
+  mergedCount: number;
+  skippedCount: number;
+  rejectedCount: number;
+  targetLayerCounts: Partial<Record<MemoryRecallLayerValue, number>>;
+  failureReasonCounts: Record<string, number>;
+}
+
+/**
+ * Defines one persisted session summary projection.
+ */
+export interface MemoryPromotionPersistedRecord {
+  scope: string;
+  key: string;
+  promotedRecordIds: string[];
+  updatedAt: string;
+}
+
+/**
+ * Defines one explicit promotion pipeline result.
+ */
+export interface MemoryPromotionResult {
+  executionId: string;
+  queryIntent: string;
+  sessionId: string | null;
+  outcome: MemoryPromotionOutcomeValue;
+  summary: MemoryPromotionSummary;
+  candidateDecisions: MemoryPromotionCandidateDecision[];
+  phaseResults: MemoryPromotionPhaseResult[];
+  persistedRecord: MemoryPromotionPersistedRecord | null;
 }

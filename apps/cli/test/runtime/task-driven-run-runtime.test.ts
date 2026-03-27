@@ -480,6 +480,19 @@ describe("CliTaskDrivenRunRuntime", () => {
         }),
       ]);
       expect(assembly.memoryContext?.assemblyOutcome).toBe("context_ready");
+      expect(assembly.memoryContext?.contractSafeSummary).toEqual(
+        expect.objectContaining({
+          executionId: "cli-run-004",
+          assemblyOutcome: "context_ready",
+          selectedRecordCount: 1,
+          items: [
+            expect.objectContaining({
+              recordId: "execution:historic:stage-report:record-1",
+              sourceRefCount: 2,
+            }),
+          ],
+        }),
+      );
       expect(assembly.stageInputs["node-task-execute"]?.memorySnapshotSummary).toEqual({
         normativeEntryCount: 0,
         executionEntryCount: 1,
@@ -489,6 +502,13 @@ describe("CliTaskDrivenRunRuntime", () => {
         expect.objectContaining({
           outputContext: expect.objectContaining({
             recallItems: [
+              expect.objectContaining({
+                recordId: "execution:historic:stage-report:record-1",
+              }),
+            ],
+          }),
+          contractSafeSummary: expect.objectContaining({
+            items: [
               expect.objectContaining({
                 recordId: "execution:historic:stage-report:record-1",
               }),

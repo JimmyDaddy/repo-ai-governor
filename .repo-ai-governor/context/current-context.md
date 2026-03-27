@@ -4,14 +4,14 @@
 
 - Status: active
 - Project: `project-021-memory-semantics-runtime-implementation`
-- Sprint: `sprint-001-recall-context-assembly-baseline`
+- Sprint: `sprint-002-promotion-pipeline-and-runtime-consumer-rollout`
 - Docs root: `.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation`
-- Task records: `.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-001-recall-context-assembly-baseline/tasks/`
-- Review records: `.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-001-recall-context-assembly-baseline/review/`
+- Task records: `.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-002-promotion-pipeline-and-runtime-consumer-rollout/tasks/`
+- Review records: `.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-002-promotion-pipeline-and-runtime-consumer-rollout/review/`
 
 ## Active Streams
 
-- `primary`: project=`project-021-memory-semantics-runtime-implementation`, sprint=`sprint-001-recall-context-assembly-baseline`, docs=`.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation`, plan=`.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/plan.md`, tasks=`.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-001-recall-context-assembly-baseline/tasks/`, checklist=`.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-001-recall-context-assembly-baseline/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-001-recall-context-assembly-baseline/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-001-recall-context-assembly-baseline/review/`, status=`active`
+- `primary`: project=`project-021-memory-semantics-runtime-implementation`, sprint=`sprint-002-promotion-pipeline-and-runtime-consumer-rollout`, docs=`.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation`, plan=`.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/plan.md`, tasks=`.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-002-promotion-pipeline-and-runtime-consumer-rollout/tasks/`, checklist=`.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-002-promotion-pipeline-and-runtime-consumer-rollout/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-002-promotion-pipeline-and-runtime-consumer-rollout/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-002-promotion-pipeline-and-runtime-consumer-rollout/review/`, status=`active`
 
 ## Planned Follow-Up Streams
 

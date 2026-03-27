@@ -104,19 +104,21 @@ deliveries:
     rollout_status: in_progress
     owner: runtime
     project_ref: project-021-memory-semantics-runtime-implementation
-    sprint_ref: sprint-001-recall-context-assembly-baseline
+    sprint_ref: sprint-002-promotion-pipeline-and-runtime-consumer-rollout
     task_ids:
-      - TK-242
-      - TK-243
-      - TK-244
-      - TK-245
+      - TK-247
+      - TK-248
+      - TK-249
+      - TK-250
     project_plan_path: .repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/plan.md
-    sprint_plan_path: .repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-001-recall-context-assembly-baseline/plan.md
-    task_csv_path: .repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-001-recall-context-assembly-baseline/tasks/tasks.csv
-    handoff_artifact_path: .repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-001-recall-context-assembly-baseline/tasks/DA-242-project-021-activation-and-memory-semantics-delivery-handoff.md
+    sprint_plan_path: .repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-002-promotion-pipeline-and-runtime-consumer-rollout/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-002-promotion-pipeline-and-runtime-consumer-rollout/tasks/tasks.csv
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-002-promotion-pipeline-and-runtime-consumer-rollout/tasks/DA-247-sprint-002-activation-and-sprint-001-closeout-handoff.md
     rollout_artifacts:
       - .repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/plan.md
       - .repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-001-recall-context-assembly-baseline/tasks/DA-242-project-021-activation-and-memory-semantics-delivery-handoff.md
+      - .repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-002-promotion-pipeline-and-runtime-consumer-rollout/tasks/DA-247-sprint-002-activation-and-sprint-001-closeout-handoff.md
+      - .repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-002-promotion-pipeline-and-runtime-consumer-rollout/tasks/DA-248-memory-promotion-pipeline-and-contract-safe-summary-baseline.md
     accepted_at: 2026-03-27
 
   - solution_id: technical-solution.langgraph-orchestration-direction

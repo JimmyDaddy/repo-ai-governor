@@ -51,6 +51,28 @@ export class MemoryContextAssembler {
     const recordsMissingExplicitSourceRefs = selectedRecords.filter((record) =>
       record.sourceRefs.every((sourceRef) => sourceRef.referenceType === "record"),
     ).length;
+    const contractSafeSummaryItems = selectedRecords.map((record) => {
+      const outputItem = this.renderOutputItem(record);
+      return {
+        recordId: outputItem.recordId,
+        layer: outputItem.layer,
+        memoryKind: outputItem.memoryKind,
+        summary: outputItem.summary,
+        sourceRefs: [...outputItem.sourceRefs],
+        sourceRefCount: outputItem.sourceRefs.length,
+        explicitSourceRefCount: record.sourceRefs.filter(
+          (sourceRef) => sourceRef.referenceType !== "record",
+        ).length,
+        updatedAt: outputItem.updatedAt,
+        sensitivity: [...outputItem.sensitivity],
+      };
+    });
+    const assemblyOutcome =
+      selectedRecords.length === 0
+        ? MemoryContextAssemblyOutcome.NO_MATCHING_RECORDS
+        : truncationReason
+          ? MemoryContextAssemblyOutcome.TRUNCATED
+          : MemoryContextAssemblyOutcome.CONTEXT_READY;
 
     return {
       executionId: request.recallResult.executionId,
@@ -62,6 +84,20 @@ export class MemoryContextAssembler {
         memoryKindCounts,
       },
       outputContext,
+      contractSafeSummary: {
+        executionId: request.recallResult.executionId,
+        queryIntent: request.recallResult.queryIntent,
+        assemblyOutcome,
+        selectedRecordCount: selectedRecords.length,
+        layerCounts,
+        memoryKindCounts,
+        sourceRefCount: sourceRefs.length,
+        recordsMissingExplicitSourceRefs,
+        canonicalSourceNote: MEMORY_CANONICAL_SOURCE_NOTE,
+        truncationReason,
+        safetyNotes,
+        items: contractSafeSummaryItems,
+      },
       sourceRefs,
       provenanceSummary: {
         sourceRefCount: sourceRefs.length,
@@ -70,12 +106,7 @@ export class MemoryContextAssembler {
       },
       truncationReason,
       safetyNotes,
-      assemblyOutcome:
-        selectedRecords.length === 0
-          ? MemoryContextAssemblyOutcome.NO_MATCHING_RECORDS
-          : truncationReason
-            ? MemoryContextAssemblyOutcome.TRUNCATED
-            : MemoryContextAssemblyOutcome.CONTEXT_READY,
+      assemblyOutcome,
     };
   }
 

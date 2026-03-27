@@ -16,7 +16,7 @@
 
 ## 2.1 sprint-001-recall-context-assembly-baseline
 
-- Status: active
+- Status: completed
 - Sprint Goal: 建立 technical solution delivery handoff baseline，并实现 `runtime.memory-semantics` 的首个可用 recall/context assembly 运行时路径。
 - Task Package: `TK-242`、`TK-243`、`TK-244`、`TK-245`、`TK-246`。
 - Exit Criteria:
@@ -25,6 +25,17 @@
   3. delivery handoff 已扩展到 consumer surfaces、user impact 与 rollout ownership，不再只回答“有没有执行任务”。
   4. 已引入 `packages/core-memory-semantics` baseline，并形成 `MemoryRecallService` / `MemoryContextAssembler` 的首轮 contract-to-code 映射。
   5. CLI task-driven runtime 已消费 memory semantics baseline，且相关 package/integration tests 具备可执行验证面。
+
+## 2.2 sprint-002-promotion-pipeline-and-runtime-consumer-rollout
+
+- Status: active
+- Sprint Goal: 在不重写 canonical source ownership 的前提下，建立显式 memory promotion pipeline baseline，并将 `runtime.memory-semantics` 扩展到第二个 runtime consumer。
+- Task Package: `TK-247`、`TK-248`、`TK-249`、`TK-250`。
+- Exit Criteria:
+  1. `sprint-002` skeleton 已建立，`current-context.md` 已切换到新的 active primary stream，并将 `sprint-001` 迁入 completed history。
+  2. `runtime.memory-semantics` 已形成 audit-friendly 的显式 promotion pipeline baseline，且 machine-readable promotion summary 不回退到 raw snapshot shape。
+  3. 至少一个第二 runtime consumer 已通过 `memoryContext` 或 contract-safe summary 消费 memory semantics，而不是重新暴露 `layeredSnapshot`。
+  4. project/task/artifact truth 已同步，且 `sprint-003` 输入约束完成冻结。
 
 ## 3. 任务拆解矩阵（WBS）
 
@@ -35,6 +46,10 @@
 | TK-244 | sprint-001 | core-memory-semantics package 与 CLI task-driven runtime baseline | runtime/implementation | TK-243,DA-239,.repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-memory-semantics/module-overview.md | completed |
 | TK-245 | sprint-001 | sprint-001 出口验收与 sprint-002 输入约束 | acceptance/baseline | TK-242,TK-243,TK-244 | completed |
 | TK-246 | sprint-001 | technical-solution consumer surfaces 与 rollout ownership 扩展 | governance/rollout | TK-243,.repo-ai-governor/context/technical-solution-delivery-registry.yaml | completed |
+| TK-247 | sprint-002 | sprint-002 激活与 sprint-001 closeout handoff | bootstrap/governance | DA-245,sprint-001 completed | completed |
+| TK-248 | sprint-002 | memory promotion pipeline 与 contract-safe summary baseline | runtime/implementation | TK-244,DA-245,.repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-memory-semantics/contracts/memory-context-assembly-contract.md | completed |
+| TK-249 | sprint-002 | second runtime consumer rollout 与 memory-context consumer cutover | runtime/rollout | TK-248,DA-244,.repo-ai-governor/context/technical-solution-delivery-registry.yaml | planned |
+| TK-250 | sprint-002 | sprint-002 出口验收与 sprint-003 输入约束 | acceptance/baseline | TK-247,TK-248,TK-249 | planned |
 
 ## 4. 依赖产物策略
 
@@ -48,13 +63,15 @@
    - `.repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-memory-semantics/contracts/memory-context-assembly-contract.md`
 2. `sprint-001` 先建立 recall/context assembly baseline，不直接承诺 memory canonical source rewrite。
 3. `runtime.memory-provider-loading` 继续只承接 provider loading；新的语义服务只允许通过明确 contract 接口消费 provider substrate。
+4. `sprint-002` 默认消费 `DA-245` 与 `DA-244`，优先收敛 promotion pipeline 与第二 consumer rollout，而不是继续扩大 formal docs/gate 面。
 
 ## 5. DoD（project-021）
 
 1. `technical-solution.memory-module` 不再只有 formal docs，而是拥有真实执行流与明确 handoff ownership。
 2. `packages/core-memory-semantics` 已形成首轮 bounded context，实现 recall/context assembly 基线且不越界承接 canonical source。
 3. CLI task-driven runtime 已通过新的 memory semantics service 消费 memory context，而不是继续直连底层 snapshot shape。
-4. task/review/artifact/delivery-handoff registries 保持同步，`pnpm run check` 能阻断“active solution 无执行流”的回归。
+4. 第二 runtime consumer 已通过 `memoryContext` 或 contract-safe summary 接入 `runtime.memory-semantics`，并保持 canonical source ownership 不外溢。
+5. task/review/artifact/delivery-handoff registries 保持同步，`pnpm run check` 能阻断“active solution 无执行流”的回归。
 
 ## 6. 里程碑记录
 
@@ -62,3 +79,5 @@
 2. 2026-03-27：通过 `TK-246 / DA-246` 将 technical solution handoff 从“只接执行流”扩展为“执行流 + consumer surfaces + rollout ownership”治理基线。
 3. 2026-03-27：通过 `TK-244 / DA-244` 建立 `core-memory-semantics` baseline，并将 CLI task-driven runtime 的 memory path 切到显式 recall/context assembly。
 4. 2026-03-27：通过 `TK-245 / DA-245` 完成 sprint-001 出口验收，并冻结 `sprint-002-promotion-pipeline-and-runtime-consumer-rollout` 的输入约束。
+5. 2026-03-27：通过 `TK-247 / DA-247` 激活 `sprint-002-promotion-pipeline-and-runtime-consumer-rollout`，并将 `sprint-001` 迁入 completed history。
+6. 2026-03-27：通过 `TK-248 / DA-248` 建立 `MemoryPromotionService` 与 `contractSafeSummary` 基线，使 promotion pipeline 不再依赖 raw snapshot shape。
