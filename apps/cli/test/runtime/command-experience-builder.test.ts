@@ -74,6 +74,12 @@ describe("Cli command experience builder", () => {
         rehearsalPath: null,
         stageStatus: null,
       },
+      memoryPolicy: {
+        overallAction: "warn",
+        warningRecordCount: 1,
+        redactedRecordCount: 0,
+        blockedRecordCount: 0,
+      },
       memoryPromotion: {
         outcome: "session_summary_merged",
         plannedMergeCount: 1,
@@ -91,6 +97,7 @@ describe("Cli command experience builder", () => {
     ).toBe(true);
     expect(experience.interactionPrompts[0]?.blocking).toBe(true);
     expect(experience.layeredLogs.summary).toContain("root_cause=policy_hitl_required");
+    expect(experience.layeredLogs.summary).toContain("memory_policy_action=warn");
     expect(experience.layeredLogs.summary).toContain(
       "memory_promotion_outcome=session_summary_merged",
     );
@@ -116,6 +123,10 @@ describe("Cli command experience builder", () => {
         memorySemantics: {
           contextSelectedCount: 1,
           contextAssemblyOutcome: "context_ready",
+          policyOverallAction: "redact",
+          warningRecordCount: 0,
+          redactedRecordCount: 1,
+          blockedRecordCount: 0,
           promotionOutcome: "session_summary_merged",
           plannedMergeCount: 1,
           mergedCount: 1,
@@ -126,6 +137,7 @@ describe("Cli command experience builder", () => {
 
     expect(experience.roleProgress[0]?.backlink?.artifactPath).toBe("/tmp/replay-diagnostics.json");
     expect(experience.interactionPrompts.every((prompt) => prompt.blocking === false)).toBe(true);
+    expect(experience.layeredLogs.summary).toContain("memory_policy_action=redact");
     expect(experience.layeredLogs.summary).toContain(
       "memory_promotion_outcome=session_summary_merged",
     );
@@ -182,6 +194,8 @@ describe("Cli command experience builder", () => {
         rehearsalPath: "/tmp/exec-456.commit.json",
         stageStatus: RuntimeStageStatus.SUCCEEDED,
       },
+      memoryPolicy: null,
+      memoryPromotion: null,
     });
 
     expect(

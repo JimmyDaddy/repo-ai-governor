@@ -13,6 +13,10 @@ export interface CliReplayExplainResolution {
   memorySemantics?: {
     contextSelectedCount: number;
     contextAssemblyOutcome: string;
+    policyOverallAction: string;
+    warningRecordCount: number;
+    redactedRecordCount: number;
+    blockedRecordCount: number;
     promotionOutcome: string | null;
     plannedMergeCount: number;
     mergedCount: number;
@@ -142,6 +146,10 @@ export class CliReplayExplainBuilder {
     return {
       contextSelectedCount: report.memorySemantics.contextSummary.selectedRecordCount,
       contextAssemblyOutcome: report.memorySemantics.contextSummary.assemblyOutcome,
+      policyOverallAction: report.memorySemantics.contextSummary.policySummary.overallAction,
+      warningRecordCount: report.memorySemantics.contextSummary.policySummary.warningRecordCount,
+      redactedRecordCount: report.memorySemantics.contextSummary.policySummary.redactedRecordCount,
+      blockedRecordCount: report.memorySemantics.contextSummary.policySummary.blockedRecordCount,
       promotionOutcome: report.memorySemantics.promotion?.outcome ?? null,
       plannedMergeCount: report.memorySemantics.promotion?.plannedMergeCount ?? 0,
       mergedCount: report.memorySemantics.promotion?.mergedCount ?? 0,
@@ -164,6 +172,10 @@ export class CliReplayExplainBuilder {
     return [
       `memory_context_selected=${memorySemantics.contextSelectedCount}`,
       `memory_context_outcome=${memorySemantics.contextAssemblyOutcome}`,
+      `memory_policy_action=${memorySemantics.policyOverallAction}`,
+      `memory_policy_warn_count=${memorySemantics.warningRecordCount}`,
+      `memory_policy_redact_count=${memorySemantics.redactedRecordCount}`,
+      `memory_policy_block_count=${memorySemantics.blockedRecordCount}`,
       `memory_promotion_outcome=${memorySemantics.promotionOutcome ?? "none"}`,
       `memory_promotion_planned_merge_count=${memorySemantics.plannedMergeCount}`,
       `memory_promotion_merged_count=${memorySemantics.mergedCount}`,

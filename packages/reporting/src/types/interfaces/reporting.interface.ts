@@ -71,6 +71,14 @@ export interface ExecutionReportMemoryContextSummary {
   layerCounts: Record<string, number>;
   memoryKindCounts: Record<string, number>;
   safetyNotes: string[];
+  policySummary: {
+    overallAction: string;
+    actionCounts: Record<string, number>;
+    allowedRecordCount: number;
+    warningRecordCount: number;
+    redactedRecordCount: number;
+    blockedRecordCount: number;
+  };
 }
 
 /**

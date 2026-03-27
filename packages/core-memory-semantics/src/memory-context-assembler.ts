@@ -3,11 +3,13 @@ import {
   MEMORY_CANONICAL_SOURCE_NOTE,
   MEMORY_PROMOTION_FORBIDDEN_SENSITIVITY_LABELS,
   MemoryContextAssemblyOutcome,
+  MemoryContextPolicyAction,
 } from "./constants/index.js";
 import type {
   MemoryContextAssemblyRequest,
   MemoryContextAssemblyResult,
   MemoryContextOutputItem,
+  MemoryContextPolicySummary,
   MemoryRecalledRecord,
   MemorySourceRef,
 } from "./types/index.js";
@@ -17,9 +19,15 @@ const MEMORY_CONTEXT_REDACTED_SUMMARY_BY_REASON = {
   missing_sensitivity_labels: "[redacted: sensitivity_labels_required]",
   sensitivity_policy: "[redacted: sensitivity_policy]",
   visibility_policy: "[redacted: visibility_policy]",
+  blocked_sensitivity_policy: "[blocked: sensitivity_policy]",
 } as const;
 
 type MemoryContextRedactionReason = keyof typeof MEMORY_CONTEXT_REDACTED_SUMMARY_BY_REASON;
+type MemoryContextSafetyDecision = {
+  action: "allow" | "warn" | "redact" | "block";
+  reasons: string[];
+  redactionReason: MemoryContextRedactionReason | null;
+};
 
 /**
  * Assembles prompt-safe and execution-safe memory context from one recall result.
@@ -36,17 +44,22 @@ export class MemoryContextAssembler {
    */
   public assemble(request: MemoryContextAssemblyRequest): MemoryContextAssemblyResult {
     const maxRecordCount = request.maxRecordCount ?? DEFAULT_MEMORY_CONTEXT_RECORD_LIMIT;
-    const selectedRecords = request.recallResult.selectedRecords.slice(0, maxRecordCount);
-    const safetyDecisions = selectedRecords.map((record) => this.evaluateRecordSafety(record));
+    const recalledRecords = request.recallResult.selectedRecords.slice(0, maxRecordCount);
+    const safetyDecisions = recalledRecords.map((record) => this.evaluateRecordSafety(record));
+    const selectedRecords = recalledRecords.map((record, index) =>
+      this.createRuntimeSafeRecord(record, safetyDecisions[index]),
+    );
     const truncationReason =
       request.recallResult.selectedRecords.length > maxRecordCount
         ? `selected_records_truncated_to_${maxRecordCount}`
         : null;
-    const sourceRefs = this.collectSourceRefs(selectedRecords);
+    const sourceRefs = this.collectSourceRefs(recalledRecords);
     const outputContext = {
-      recallItems: selectedRecords.map((record, index) =>
-        this.renderOutputItem(record, safetyDecisions[index]?.redactionReason ?? null),
-      ),
+      recallItems: selectedRecords
+        .map((record, index) => this.renderOutputItem(record, safetyDecisions[index]))
+        .filter(
+          (item, index) => safetyDecisions[index]?.action !== MemoryContextPolicyAction.BLOCK,
+        ),
     };
     const safetyNotes = this.collectSafetyNotes(selectedRecords, safetyDecisions);
     const layerCounts = selectedRecords.reduce<
@@ -64,11 +77,9 @@ export class MemoryContextAssembler {
     const recordsMissingExplicitSourceRefs = selectedRecords.filter((record) =>
       record.sourceRefs.every((sourceRef) => sourceRef.referenceType === "record"),
     ).length;
+    const policySummary = this.createPolicySummary(safetyDecisions);
     const contractSafeSummaryItems = selectedRecords.map((record, index) => {
-      const outputItem = this.renderOutputItem(
-        record,
-        safetyDecisions[index]?.redactionReason ?? null,
-      );
+      const outputItem = this.renderOutputItem(record, safetyDecisions[index]);
       return {
         recordId: outputItem.recordId,
         layer: outputItem.layer,
@@ -82,6 +93,8 @@ export class MemoryContextAssembler {
         updatedAt: outputItem.updatedAt,
         sensitivity: [...outputItem.sensitivity],
         visibility: [...outputItem.visibility],
+        policyAction: outputItem.policyAction,
+        policyReasons: [...outputItem.policyReasons],
       };
     });
     const assemblyOutcome =
@@ -113,6 +126,7 @@ export class MemoryContextAssembler {
         canonicalSourceNote: MEMORY_CANONICAL_SOURCE_NOTE,
         truncationReason,
         safetyNotes,
+        policySummary,
         items: contractSafeSummaryItems,
       },
       sourceRefs,
@@ -123,6 +137,7 @@ export class MemoryContextAssembler {
       },
       truncationReason,
       safetyNotes,
+      policySummary,
       assemblyOutcome,
     };
   }
@@ -151,17 +166,19 @@ export class MemoryContextAssembler {
    */
   private renderOutputItem(
     record: MemoryRecalledRecord,
-    redactionReason: MemoryContextRedactionReason | null,
+    safetyDecision: MemoryContextSafetyDecision,
   ): MemoryContextOutputItem {
     return {
       recordId: record.recordId,
       layer: record.layer,
       memoryKind: record.memoryKind,
-      summary: this.renderRecordSummary(record, redactionReason),
+      summary: this.renderRecordSummary(record, safetyDecision.redactionReason),
       sourceRefs: record.sourceRefs.map((sourceRef) => sourceRef.reference),
       updatedAt: record.updatedAt,
       sensitivity: [...record.sensitivity],
       visibility: [...record.visibility],
+      policyAction: safetyDecision.action,
+      policyReasons: [...safetyDecision.reasons],
     };
   }
 
@@ -213,7 +230,7 @@ export class MemoryContextAssembler {
    */
   private collectSafetyNotes(
     selectedRecords: MemoryRecalledRecord[],
-    safetyDecisions: Array<{ redactionReason: MemoryContextRedactionReason | null }>,
+    safetyDecisions: MemoryContextSafetyDecision[],
   ): string[] {
     const safetyNotes = new Set<string>();
 
@@ -235,8 +252,22 @@ export class MemoryContextAssembler {
       safetyNotes.add("some_records_redacted_due_to_sensitivity_policy");
     }
 
+    if (
+      safetyDecisions.some((decision) => decision.redactionReason === "blocked_sensitivity_policy")
+    ) {
+      safetyNotes.add("some_records_blocked_due_to_sensitivity_policy");
+    }
+
     if (safetyDecisions.some((decision) => decision.redactionReason === "visibility_policy")) {
       safetyNotes.add("some_records_redacted_due_to_visibility_policy");
+    }
+
+    if (
+      safetyDecisions.some((decision) =>
+        decision.reasons.includes("explicit_traceability_policy_warning"),
+      )
+    ) {
+      safetyNotes.add("some_records_warned_due_to_explicit_traceability_policy");
     }
 
     return Array.from(safetyNotes.values());
@@ -247,11 +278,13 @@ export class MemoryContextAssembler {
    * @param record Selected recalled record.
    * @returns One redaction decision.
    */
-  private evaluateRecordSafety(record: MemoryRecalledRecord): {
-    redactionReason: MemoryContextRedactionReason | null;
-  } {
+  private evaluateRecordSafety(record: MemoryRecalledRecord): MemoryContextSafetyDecision {
+    const reasons: string[] = [];
+
     if (record.sensitivity.length === 0) {
       return {
+        action: MemoryContextPolicyAction.REDACT,
+        reasons: ["sensitivity_labels_required"],
         redactionReason: "missing_sensitivity_labels",
       };
     }
@@ -264,7 +297,9 @@ export class MemoryContextAssembler {
       )
     ) {
       return {
-        redactionReason: "sensitivity_policy",
+        action: MemoryContextPolicyAction.BLOCK,
+        reasons: ["sensitivity_policy_blocked"],
+        redactionReason: "blocked_sensitivity_policy",
       };
     }
 
@@ -277,12 +312,81 @@ export class MemoryContextAssembler {
       )
     ) {
       return {
+        action: MemoryContextPolicyAction.REDACT,
+        reasons: ["visibility_policy_redacted"],
         redactionReason: "visibility_policy",
       };
     }
 
+    if (record.sourceRefs.every((sourceRef) => sourceRef.referenceType === "record")) {
+      reasons.push("explicit_traceability_policy_warning");
+      return {
+        action: MemoryContextPolicyAction.WARN,
+        reasons,
+        redactionReason: null,
+      };
+    }
+
     return {
+      action: MemoryContextPolicyAction.ALLOW,
+      reasons,
       redactionReason: null,
+    };
+  }
+
+  private createRuntimeSafeRecord(
+    record: MemoryRecalledRecord,
+    safetyDecision: MemoryContextSafetyDecision,
+  ): MemoryRecalledRecord {
+    if (!safetyDecision.redactionReason) {
+      return {
+        ...record,
+        payload: {
+          ...record.payload,
+        },
+      };
+    }
+
+    return {
+      ...record,
+      payload: {
+        summary: MEMORY_CONTEXT_REDACTED_SUMMARY_BY_REASON[safetyDecision.redactionReason],
+        policyAction: safetyDecision.action,
+        policyReasons: [...safetyDecision.reasons],
+      },
+    };
+  }
+
+  private createPolicySummary(
+    safetyDecisions: MemoryContextSafetyDecision[],
+  ): MemoryContextPolicySummary {
+    const actionCounts = {
+      allow: 0,
+      warn: 0,
+      redact: 0,
+      block: 0,
+    } satisfies Record<"allow" | "warn" | "redact" | "block", number>;
+
+    for (const decision of safetyDecisions) {
+      actionCounts[decision.action] += 1;
+    }
+
+    const overallAction =
+      actionCounts.block > 0
+        ? MemoryContextPolicyAction.BLOCK
+        : actionCounts.redact > 0
+          ? MemoryContextPolicyAction.REDACT
+          : actionCounts.warn > 0
+            ? MemoryContextPolicyAction.WARN
+            : MemoryContextPolicyAction.ALLOW;
+
+    return {
+      overallAction,
+      actionCounts,
+      allowedRecordCount: actionCounts.allow,
+      warningRecordCount: actionCounts.warn,
+      redactedRecordCount: actionCounts.redact,
+      blockedRecordCount: actionCounts.block,
     };
   }
 }

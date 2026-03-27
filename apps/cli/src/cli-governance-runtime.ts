@@ -685,6 +685,7 @@ export class CliGovernanceRuntime {
     }
     const checks: CliCommandResultCheck[] = [
       this.createRunAssemblyCheck(runAssembly, runtimeDebugOptions.taskId),
+      this.createMemoryPolicyCheck(runAssembly),
       {
         id: "runtime_backend",
         status: CliGovernanceCheckStatus.PASS,
@@ -811,6 +812,14 @@ export class CliGovernanceRuntime {
       diagnosticsTracePath,
       reviewChain: inlineReviewChainSummary,
       deliveryRehearsal: deliveryRehearsalSummary,
+      memoryPolicy: runAssembly.memoryContext
+        ? {
+            overallAction: runAssembly.memoryContext.policySummary.overallAction,
+            warningRecordCount: runAssembly.memoryContext.policySummary.warningRecordCount,
+            redactedRecordCount: runAssembly.memoryContext.policySummary.redactedRecordCount,
+            blockedRecordCount: runAssembly.memoryContext.policySummary.blockedRecordCount,
+          }
+        : null,
       memoryPromotion: memoryPromotionResult
         ? {
             outcome: memoryPromotionResult.outcome,
@@ -857,7 +866,7 @@ export class CliGovernanceRuntime {
     });
     const orchestrationSummary = await orchestrationService.getExecution(executionId);
 
-    const message = `Run completed with execution_id=${executionId} and policy_outcome=${resolvedPolicyOutcome}${runtimeDebugOptions.dryRun ? " (dry_run=true)" : ""}${memoryPromotionResult ? ` memory_promotion=${memoryPromotionResult.outcome} merged=${memoryPromotionResult.summary.mergedCount} session_projection=${memoryPromotionResult.persistedRecord?.key ?? "none"}` : ""}.`;
+    const message = `Run completed with execution_id=${executionId} and policy_outcome=${resolvedPolicyOutcome}${runtimeDebugOptions.dryRun ? " (dry_run=true)" : ""}${runAssembly.memoryContext ? ` memory_policy=${runAssembly.memoryContext.policySummary.overallAction} warn=${runAssembly.memoryContext.policySummary.warningRecordCount} redact=${runAssembly.memoryContext.policySummary.redactedRecordCount} block=${runAssembly.memoryContext.policySummary.blockedRecordCount}` : ""}${memoryPromotionResult ? ` memory_promotion=${memoryPromotionResult.outcome} merged=${memoryPromotionResult.summary.mergedCount} session_projection=${memoryPromotionResult.persistedRecord?.key ?? "none"}` : ""}.`;
     return {
       message,
       commandResult: {
@@ -887,6 +896,13 @@ export class CliGovernanceRuntime {
           dependency_task_count: runAssembly.taskContext?.dependsOnTaskIds.length ?? 0,
           memory_context_selected_count:
             runAssembly.memoryContext?.contractSafeSummary.selectedRecordCount ?? 0,
+          memory_policy_action: runAssembly.memoryContext?.policySummary.overallAction ?? null,
+          memory_policy_warning_count:
+            runAssembly.memoryContext?.policySummary.warningRecordCount ?? null,
+          memory_policy_redacted_count:
+            runAssembly.memoryContext?.policySummary.redactedRecordCount ?? null,
+          memory_policy_blocked_count:
+            runAssembly.memoryContext?.policySummary.blockedRecordCount ?? null,
           memory_promotion_outcome: memoryPromotionResult?.outcome ?? null,
           memory_promotion_planned_merge_count:
             memoryPromotionResult?.summary.plannedMergeCount ?? null,
@@ -1138,6 +1154,18 @@ export class CliGovernanceRuntime {
         status: CliGovernanceCheckStatus.PASS,
         detail: `matched=${replayResolution.explainResult.matchedCount}`,
       },
+      ...(replayResolution.memorySemantics
+        ? [
+            {
+              id: "memory_policy",
+              status:
+                replayResolution.memorySemantics.policyOverallAction === "allow"
+                  ? CliGovernanceCheckStatus.PASS
+                  : CliGovernanceCheckStatus.WARN,
+              detail: `action=${replayResolution.memorySemantics.policyOverallAction} warn=${replayResolution.memorySemantics.warningRecordCount} redact=${replayResolution.memorySemantics.redactedRecordCount} block=${replayResolution.memorySemantics.blockedRecordCount}`,
+            } satisfies CliCommandResultCheck,
+          ]
+        : []),
     ];
 
     if (runtimeDebugOptions.trace) {
@@ -1153,7 +1181,7 @@ export class CliGovernanceRuntime {
       diagnosticsPath,
       replayResolution,
     });
-    const message = `Replay diagnostics completed from ${replayPath}${replayResolution.memorySemantics ? ` memory_promotion=${replayResolution.memorySemantics.promotionOutcome ?? "none"} merged=${replayResolution.memorySemantics.mergedCount} session_projection=${replayResolution.memorySemantics.sessionSummaryProjectionKey ?? "none"}` : ""}.`;
+    const message = `Replay diagnostics completed from ${replayPath}${replayResolution.memorySemantics ? ` memory_policy=${replayResolution.memorySemantics.policyOverallAction} warn=${replayResolution.memorySemantics.warningRecordCount} redact=${replayResolution.memorySemantics.redactedRecordCount} block=${replayResolution.memorySemantics.blockedRecordCount} memory_promotion=${replayResolution.memorySemantics.promotionOutcome ?? "none"} merged=${replayResolution.memorySemantics.mergedCount} session_projection=${replayResolution.memorySemantics.sessionSummaryProjectionKey ?? "none"}` : ""}.`;
     return {
       message,
       commandResult: {
@@ -1168,6 +1196,14 @@ export class CliGovernanceRuntime {
           replay_source_type: replayResolution.sourceType,
           replay_execution_id: replayResolution.executionId,
           replay_matched_count: replayResolution.explainResult.matchedCount,
+          replay_memory_policy_action:
+            replayResolution.memorySemantics?.policyOverallAction ?? null,
+          replay_memory_policy_warning_count:
+            replayResolution.memorySemantics?.warningRecordCount ?? null,
+          replay_memory_policy_redacted_count:
+            replayResolution.memorySemantics?.redactedRecordCount ?? null,
+          replay_memory_policy_blocked_count:
+            replayResolution.memorySemantics?.blockedRecordCount ?? null,
           replay_memory_promotion_outcome:
             replayResolution.memorySemantics?.promotionOutcome ?? null,
           replay_memory_promotion_merged_count:
@@ -2297,6 +2333,18 @@ export class CliGovernanceRuntime {
     };
   }
 
+  private createMemoryPolicyCheck(runAssembly: CliTaskDrivenRunAssembly): CliCommandResultCheck {
+    const policySummary = runAssembly.memoryContext?.policySummary;
+    return {
+      id: "memory_policy",
+      status:
+        !policySummary || policySummary.overallAction === "allow"
+          ? CliGovernanceCheckStatus.PASS
+          : CliGovernanceCheckStatus.WARN,
+      detail: `action=${policySummary?.overallAction ?? "allow"} warn=${policySummary?.warningRecordCount ?? 0} redact=${policySummary?.redactedRecordCount ?? 0} block=${policySummary?.blockedRecordCount ?? 0}`,
+    };
+  }
+
   /**
    * Creates one report-safe memory-semantics block for execution-report consumers.
    * @param runAssembly Resolved task-driven run assembly.
@@ -2323,6 +2371,14 @@ export class CliGovernanceRuntime {
         layerCounts: { ...contractSafeSummary.layerCounts },
         memoryKindCounts: { ...contractSafeSummary.memoryKindCounts },
         safetyNotes: [...contractSafeSummary.safetyNotes],
+        policySummary: {
+          overallAction: contractSafeSummary.policySummary.overallAction,
+          actionCounts: { ...contractSafeSummary.policySummary.actionCounts },
+          allowedRecordCount: contractSafeSummary.policySummary.allowedRecordCount,
+          warningRecordCount: contractSafeSummary.policySummary.warningRecordCount,
+          redactedRecordCount: contractSafeSummary.policySummary.redactedRecordCount,
+          blockedRecordCount: contractSafeSummary.policySummary.blockedRecordCount,
+        },
       },
       promotion: memoryPromotionResult
         ? {

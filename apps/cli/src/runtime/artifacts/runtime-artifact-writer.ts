@@ -295,6 +295,10 @@ export class CliRuntimeArtifactWriter {
                 contextSelectedCount: options.replayResolution.memorySemantics.contextSelectedCount,
                 contextAssemblyOutcome:
                   options.replayResolution.memorySemantics.contextAssemblyOutcome,
+                policyOverallAction: options.replayResolution.memorySemantics.policyOverallAction,
+                warningRecordCount: options.replayResolution.memorySemantics.warningRecordCount,
+                redactedRecordCount: options.replayResolution.memorySemantics.redactedRecordCount,
+                blockedRecordCount: options.replayResolution.memorySemantics.blockedRecordCount,
                 promotionOutcome: options.replayResolution.memorySemantics.promotionOutcome,
                 plannedMergeCount: options.replayResolution.memorySemantics.plannedMergeCount,
                 mergedCount: options.replayResolution.memorySemantics.mergedCount,

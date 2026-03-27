@@ -28,13 +28,28 @@
 
 ## 2.2 sprint-002-policy-tuning-and-surface-expansion
 
-- Status: planned
-- Sprint Goal: 仅在需要扩展更多 consumer surface、policy tuning 或进一步实现 `workspace/user` seam 时激活。
-- Task Package: 待激活后拆解。
+- Status: completed
+- Sprint Goal: 继续细化 `sensitivity / visibility` policy、扩展 adopter-facing consumer surface，并明确 `workspace/user` seam 是否进入最小实现窗口。
+- Task Package: `TK-260`、`TK-261`、`TK-262`、`TK-263`、`TK-264`。
 - Input Constraints:
   1. 不得把 follow-up 误扩成 canonical-source rewrite 或 provider loading 责任回流。
   2. 若 `workspace/user` 仍保持 reserved capability，则新增 consumer 必须继续基于已实现层工作。
   3. 若 adopter-facing consumer 已能满足近期产品目标，则允许 project-022 直接收口，不强制激活本 sprint。
+- Exit Criteria:
+  1. `sensitivity / visibility` 至少形成分层 policy（如 warn/redact/block 的明确边界），而不只剩单一 redaction baseline。
+  2. adopter-facing consumer 至少再扩一条真实 surface，且不回退到 raw memory snapshot。
+  3. `workspace/user` seam 是否进入实现窗口已有明确决策与证据，而不是继续悬空。
+  4. project / sprint / task / artifact / delivery / master-plan 真值保持同步。
+
+## 2.3 sprint-003-seam-follow-through-or-project-closeout
+
+- Status: planned
+- Sprint Goal: 仅在需要继续推进 `workspace/user` seam follow-through、额外 adopter-facing surface rollout 或执行最终 project closeout 时激活。
+- Task Package: 待激活后拆解。
+- Input Constraints:
+  1. 若 `workspace/user` seam 继续保持 reserved capability，则不得为了维持 active surface 而伪造实现任务。
+  2. 若 adopter-facing surface 已满足近期目标，可直接在 project closeout surface 上收口，而不强制激活本 sprint。
+  3. 只有当 substrate、ownership seam 与用户价值同时成立时，才允许进入 `workspace/user` 最小实现窗口。
 
 ## 3. 任务拆解矩阵（WBS）
 
@@ -45,6 +60,11 @@
 | TK-257 | sprint-001 | sensitivity visibility assembly enforcement baseline | runtime/safety | TK-255,DA-255,.repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-memory-semantics/contracts/memory-context-assembly-contract.md | completed |
 | TK-258 | sprint-001 | adopter-facing promotion output 与 replay diagnostics baseline | runtime/rollout | TK-255,DA-255,DA-252 | completed |
 | TK-259 | sprint-001 | sprint-001 出口验收与 sprint-002 输入约束 | acceptance/baseline | TK-256,TK-257,TK-258 | completed |
+| TK-260 | sprint-002 | sprint-002 激活与 sprint-001 closeout handoff | bootstrap/governance | DA-259,sprint-001 completed | completed |
+| TK-261 | sprint-002 | sensitivity visibility policy stratification 与 runtime-safe decision baseline | runtime/policy | TK-260,DA-257,DA-259 | completed |
+| TK-262 | sprint-002 | adopter-facing promotion output surface expansion 与 replay UX polish | runtime/rollout | TK-260,DA-258,DA-259 | completed |
+| TK-263 | sprint-002 | workspace-user seam readiness assessment 与 implementation decision baseline | governance/decision | TK-260,DA-256,DA-259 | completed |
+| TK-264 | sprint-002 | sprint-002 出口验收与 sprint-003 输入约束 | acceptance/baseline | TK-261,TK-262,TK-263 | completed |
 
 ## 4. 依赖产物策略
 
@@ -59,6 +79,7 @@
 2. `sprint-001` 先收敛 contract truth 与 assembly safety，不直接承诺 full `workspace/user` memory substrate 落地。
 3. adopter-facing consumer 优先基于现有 `promotionSummary` / replay diagnostics，而不是重新回读 raw memory snapshot。
 4. 若需要 future capability 扩张，必须通过新 sprint 明确激活，而不是在本 sprint 内隐式扩 scope。
+5. `sprint-002` 默认消费 `DA-259`、`DA-257` 与 `DA-258`，不再回头重做 `sprint-001` 已完成的 baseline。
 
 ## 5. DoD（project-022）
 
@@ -74,3 +95,8 @@
 3. 2026-03-27：通过 `TK-257 / DA-257` 将缺失 sensitivity 标签与显式 visibility 不允许 runtime 消费的记录收敛为 assembly redaction，而不再仅依赖 `safetyNotes` 提示。
 4. 2026-03-27：通过 `TK-258 / DA-258` 将 promotion output 扩展到 adopter-facing `run`/`replay` CLI message、replay explain lines 与 replay diagnostics artifact summary。
 5. 2026-03-27：通过 `TK-259 / DA-259` 完成 sprint-001 验收，并将 `sprint-002-policy-tuning-and-surface-expansion` 冻结为 planned follow-up，而不提前激活。
+6. 2026-03-27：通过 `TK-260 / DA-260` 正式激活 `sprint-002-policy-tuning-and-surface-expansion`，并将 `sprint-001` 迁入 completed history。
+7. 2026-03-27：通过 `TK-261 / DA-261` 建立 `allow / warn / redact / block` policy stratification，并切断 raw selected records 向执行链路的透传。
+8. 2026-03-27：通过 `TK-262 / DA-262` 扩展 adopter-facing `memory_policy / memory_promotion` surface，并改善 replay explain / diagnostics UX。
+9. 2026-03-27：通过 `TK-263 / DA-263` 完成 `workspace/user` seam readiness assessment，并决定继续保持 reserved capability。
+10. 2026-03-27：通过 `TK-264 / DA-264` 完成 sprint-002 验收，并将 `sprint-003-seam-follow-through-or-project-closeout` 冻结为 planned follow-up，而不提前激活。

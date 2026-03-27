@@ -167,6 +167,19 @@ describe("report-builder unit", () => {
             execution_short_term_fact: 1,
           },
           safetyNotes: [],
+          policySummary: {
+            overallAction: "allow",
+            actionCounts: {
+              allow: 1,
+              warn: 0,
+              redact: 0,
+              block: 0,
+            },
+            allowedRecordCount: 1,
+            warningRecordCount: 0,
+            redactedRecordCount: 0,
+            blockedRecordCount: 0,
+          },
         },
         promotion: {
           outcome: "session_summary_merged",

@@ -53,6 +53,7 @@
 3. working state 继续归 runtime/checkpointer 所有，长期记忆只保存 projection / summary / recall aid。
 4. `sourceRefs / provenance / sensitivity / visibility` 是治理型 memory semantics 的基线字段，优先级高于可选的重型搜索能力。
 5. 当前 `v1` 已交付的 active recall baseline 只覆盖 `execution / session / normative_projection`；`workspace / user` 仍保留为 future capability / reserved logical layer，不应被视为已落地 consumer surface。
+6. 2026-03-27 readiness assessment 结论：`workspace / user` seam 继续保持 reserved capability，直到 substrate、ownership seam 与 adopter demand 同时具备进入最小实现窗口的条件。
 
 ## 9. Detail Docs
 

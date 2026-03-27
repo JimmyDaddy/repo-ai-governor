@@ -513,6 +513,10 @@ describe("CliTaskDrivenRunRuntime", () => {
       });
       expect(assembly.stageInputs["node-task-execute"]?.memoryContext).toEqual(
         expect.objectContaining({
+          policySummary: expect.objectContaining({
+            overallAction: "redact",
+            redactedRecordCount: 1,
+          }),
           outputContext: expect.objectContaining({
             recallItems: [
               expect.objectContaining({
@@ -529,6 +533,9 @@ describe("CliTaskDrivenRunRuntime", () => {
             ],
           }),
         }),
+      );
+      expect(assembly.stageInputs["node-task-execute"]?.memoryContext).not.toHaveProperty(
+        "selectedRecords",
       );
       expect(assembly.stageInputs["node-task-execute"]).not.toHaveProperty("memoryRecall");
       expect(assembly.stageInputs["node-task-execute"]).not.toHaveProperty("memorySnapshot");

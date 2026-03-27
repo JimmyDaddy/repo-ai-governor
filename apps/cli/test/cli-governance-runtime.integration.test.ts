@@ -1362,7 +1362,12 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
         };
         runtimeWithOverrides.collectGitChangedPaths = async () => [];
         const runResult = await fixture.runtime.execute(CliCommandName.RUN);
+        expect(runResult.message).toContain("memory_policy=allow");
         expect(runResult.message).toContain("memory_promotion=session_summary_merged");
+        expect(
+          runResult.commandResult.checks?.find((check) => check.id === "memory_policy")?.detail,
+        ).toContain("action=allow");
+        expect(runResult.commandResult.details?.memory_policy_action).toBe("allow");
         const reportPath = runResult.commandResult.artifacts?.find(
           (artifact) => artifact.id === "execution_report",
         )?.path;
@@ -1396,7 +1401,12 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
 
         expect(replayResult.commandResult.operation).toBe("governance_run_replay");
         expect(replayResult.commandResult.details?.replay_source_type).toBe("execution_report");
+        expect(replayResult.message).toContain("memory_policy=allow");
         expect(replayResult.message).toContain("memory_promotion=session_summary_merged");
+        expect(
+          replayResult.commandResult.checks?.find((check) => check.id === "memory_policy")?.detail,
+        ).toContain("action=allow");
+        expect(replayResult.commandResult.details?.replay_memory_policy_action).toBe("allow");
         expect(replayResult.commandResult.details?.replay_memory_promotion_outcome).toBe(
           "session_summary_merged",
         );
@@ -1842,6 +1852,9 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
             contextSummary?: {
               selectedRecordCount?: number;
               assemblyOutcome?: string;
+              policySummary?: {
+                overallAction?: string;
+              };
             };
             promotion?: {
               outcome?: string;
@@ -1857,6 +1870,9 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
         expect(executionReport.memorySemantics?.contextSummary?.selectedRecordCount).toBe(1);
         expect(executionReport.memorySemantics?.contextSummary?.assemblyOutcome).toBe(
           "context_ready",
+        );
+        expect(executionReport.memorySemantics?.contextSummary?.policySummary?.overallAction).toBe(
+          "allow",
         );
         expect(executionReport.memorySemantics?.promotion?.outcome).toBe("session_summary_merged");
         expect(executionReport.memorySemantics?.promotion?.mergedCount).toBe(1);

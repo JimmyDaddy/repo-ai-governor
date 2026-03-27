@@ -6,6 +6,7 @@ export {
   MEMORY_PROMOTION_FORBIDDEN_SENSITIVITY_LABELS,
   MEMORY_RECALL_SELECTION_POLICY,
   MemoryContextAssemblyOutcome,
+  MemoryContextPolicyAction,
   MemoryPromotionCandidateAction,
   MemoryPromotionOutcome,
   MemoryPromotionPhase,
@@ -17,6 +18,7 @@ export { MemoryPromotionService } from "./memory-promotion-service.js";
 export { MemoryRecallService } from "./memory-recall-service.js";
 export type {
   MemoryContextAssemblyOutcomeValue,
+  MemoryContextPolicyActionValue,
   MemoryPromotionCandidateActionValue,
   MemoryPromotionOutcomeValue,
   MemoryPromotionPhaseValue,
@@ -31,6 +33,7 @@ export type {
   MemoryContextAssemblyResult,
   MemoryContextOutput,
   MemoryContextOutputItem,
+  MemoryContextPolicySummary,
   MemoryContextProvenanceSummary,
   MemoryContextSelectionSummary,
   MemoryPromotionCandidateDecision,

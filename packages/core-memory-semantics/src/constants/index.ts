@@ -6,6 +6,7 @@ export {
   MEMORY_PROMOTION_FORBIDDEN_SENSITIVITY_LABELS,
   MEMORY_RECALL_SELECTION_POLICY,
   MemoryContextAssemblyOutcome,
+  MemoryContextPolicyAction,
   MemoryPromotionCandidateAction,
   MemoryPromotionOutcome,
   MemoryPromotionPhase,
@@ -14,6 +15,7 @@ export {
 } from "./memory-semantics.constant.js";
 export type {
   MemoryContextAssemblyOutcomeValue,
+  MemoryContextPolicyActionValue,
   MemoryPromotionCandidateActionValue,
   MemoryPromotionOutcomeValue,
   MemoryPromotionPhaseValue,

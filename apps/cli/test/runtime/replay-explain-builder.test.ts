@@ -50,6 +50,19 @@ function createExecutionReportFixture(): ExecutionReport {
           execution_short_term_fact: 1,
         },
         safetyNotes: [],
+        policySummary: {
+          overallAction: "warn",
+          actionCounts: {
+            allow: 0,
+            warn: 1,
+            redact: 0,
+            block: 0,
+          },
+          allowedRecordCount: 0,
+          warningRecordCount: 1,
+          redactedRecordCount: 0,
+          blockedRecordCount: 0,
+        },
       },
       promotion: {
         outcome: "session_summary_merged",
@@ -95,6 +108,7 @@ describe("Cli replay explain builder", () => {
     expect(resolution.explainResult.explainLines).toContain(
       "memory_promotion_outcome=session_summary_merged",
     );
+    expect(resolution.explainResult.explainLines).toContain("memory_policy_action=warn");
     expect(resolution.memorySemantics?.sessionSummaryProjectionKey).toBe("session-123");
   });
 

@@ -1,0 +1,22 @@
+# checklist
+
+- [x] TK-260 sprint-002 激活与 sprint-001 closeout handoff
+  - 2026-03-27：任务创建，状态初始化为 `planned`。
+  - 2026-03-27：状态切换为 `in_progress`，开始创建 sprint-002 skeleton、切换 current-context 并迁移 sprint-001 history。
+  - 2026-03-27：已完成 sprint-002 skeleton、active execution surface 切换、completed history 迁移、delivery handoff 同步与 `DA-260`。
+- [x] TK-261 sensitivity visibility policy stratification 与 runtime-safe decision baseline
+  - 2026-03-27：任务创建，状态初始化为 `planned`。
+  - 2026-03-27：状态切换为 `in_progress`，开始把单一 redaction baseline 升级为 `allow / warn / redact / block` stratification，并切断 raw selected records 进入 stage inputs 的路径。
+  - 2026-03-27：已完成 policy stratification、runtime-safe memoryContext 注入、contract truth 对齐、相关 unit/integration tests 与 `DA-261`。
+- [x] TK-262 adopter-facing promotion output surface expansion 与 replay UX polish
+  - 2026-03-27：任务创建，状态初始化为 `planned`。
+  - 2026-03-27：状态切换为 `in_progress`，开始将 memory policy / promotion summary 扩展到 adopter-facing check、layered logs、replay explain 与 diagnostics summary。
+  - 2026-03-27：已完成 adopter-facing surface expansion、replay UX polish、相关 unit/integration tests 与 `DA-262`。
+- [x] TK-263 workspace-user seam readiness assessment 与 implementation decision baseline
+  - 2026-03-27：任务创建，状态初始化为 `planned`。
+  - 2026-03-27：状态切换为 `in_progress`，开始盘点 substrate、ownership seam、consumer demand 与 policy risk。
+  - 2026-03-27：已完成 readiness assessment，结论为继续保持 `workspace/user` reserved capability、暂不进入最小实现窗口，并形成 `DA-263`。
+- [x] TK-264 sprint-002 出口验收与 sprint-003 输入约束
+  - 2026-03-27：任务创建，状态初始化为 `planned`。
+  - 2026-03-27：状态切换为 `in_progress`，开始汇总 policy tuning、surface expansion 与 seam decision evidence，并冻结 `sprint-003` 输入约束。
+  - 2026-03-27：已完成 `DA-264`、resolved sprint-002 working-tree review、project/sprint/current-context truth 同步与 `sprint-003-seam-follow-through-or-project-closeout` planned follow-up 冻结。

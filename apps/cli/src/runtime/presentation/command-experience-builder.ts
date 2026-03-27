@@ -165,6 +165,12 @@ export class CliCommandExperienceBuilder {
       mergedCount: number;
       sessionSummaryProjectionKey: string | null;
     } | null;
+    memoryPolicy?: {
+      overallAction: string;
+      warningRecordCount: number;
+      redactedRecordCount: number;
+      blockedRecordCount: number;
+    } | null;
   }): CliCommandExperiencePayload {
     const rootCause = this.resolveRunDiagnosticRootCause({
       policyOutcome: options.policyResult.policyOutcome,
@@ -469,6 +475,14 @@ export class CliCommandExperienceBuilder {
           `inline_review_skip_reason=${options.reviewChain.skipReason ?? "none"}`,
           `delivery_rehearsal=${options.deliveryRehearsal.status}`,
           `delivery_rehearsal_action=${options.deliveryRehearsal.rehearsalAction ?? "none"}`,
+          ...(options.memoryPolicy
+            ? [
+                `memory_policy_action=${options.memoryPolicy.overallAction}`,
+                `memory_policy_warn_count=${options.memoryPolicy.warningRecordCount}`,
+                `memory_policy_redact_count=${options.memoryPolicy.redactedRecordCount}`,
+                `memory_policy_block_count=${options.memoryPolicy.blockedRecordCount}`,
+              ]
+            : []),
           ...(options.memoryPromotion
             ? [
                 `memory_promotion_outcome=${options.memoryPromotion.outcome}`,
@@ -633,6 +647,10 @@ export class CliCommandExperienceBuilder {
           `matched_count=${options.replayResolution.explainResult.matchedCount}`,
           ...(options.replayResolution.memorySemantics
             ? [
+                `memory_policy_action=${options.replayResolution.memorySemantics.policyOverallAction}`,
+                `memory_policy_warn_count=${options.replayResolution.memorySemantics.warningRecordCount}`,
+                `memory_policy_redact_count=${options.replayResolution.memorySemantics.redactedRecordCount}`,
+                `memory_policy_block_count=${options.replayResolution.memorySemantics.blockedRecordCount}`,
                 `memory_promotion_outcome=${options.replayResolution.memorySemantics.promotionOutcome ?? "none"}`,
                 `memory_promotion_merged_count=${options.replayResolution.memorySemantics.mergedCount}`,
               ]

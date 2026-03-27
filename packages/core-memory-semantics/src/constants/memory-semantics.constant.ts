@@ -20,6 +20,13 @@ export const MemoryContextAssemblyOutcome = {
   TRUNCATED: "truncated",
 } as const;
 
+export const MemoryContextPolicyAction = {
+  ALLOW: "allow",
+  WARN: "warn",
+  REDACT: "redact",
+  BLOCK: "block",
+} as const;
+
 export const MemoryPromotionCandidateAction = {
   MERGE: "merge",
   SKIP: "skip",
@@ -76,6 +83,9 @@ export type MemoryRecallSelectionPolicyValue = typeof MEMORY_RECALL_SELECTION_PO
 
 export type MemoryContextAssemblyOutcomeValue =
   (typeof MemoryContextAssemblyOutcome)[keyof typeof MemoryContextAssemblyOutcome];
+
+export type MemoryContextPolicyActionValue =
+  (typeof MemoryContextPolicyAction)[keyof typeof MemoryContextPolicyAction];
 
 export type MemoryPromotionCandidateActionValue =
   (typeof MemoryPromotionCandidateAction)[keyof typeof MemoryPromotionCandidateAction];

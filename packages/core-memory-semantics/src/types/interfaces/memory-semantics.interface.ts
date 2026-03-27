@@ -4,6 +4,7 @@ import type {
 } from "@repo-ai-governor/core-memory";
 import type {
   MemoryContextAssemblyOutcomeValue,
+  MemoryContextPolicyActionValue,
   MemoryPromotionCandidateActionValue,
   MemoryPromotionOutcomeValue,
   MemoryPromotionPhaseValue,
@@ -109,6 +110,8 @@ export interface MemoryContextOutputItem {
   updatedAt: string;
   sensitivity: string[];
   visibility: string[];
+  policyAction: MemoryContextPolicyActionValue;
+  policyReasons: string[];
 }
 
 /**
@@ -132,6 +135,17 @@ export interface MemoryContextContractSafeSummaryItem {
   updatedAt: string;
   sensitivity: string[];
   visibility: string[];
+  policyAction: MemoryContextPolicyActionValue;
+  policyReasons: string[];
+}
+
+export interface MemoryContextPolicySummary {
+  overallAction: MemoryContextPolicyActionValue;
+  actionCounts: Record<MemoryContextPolicyActionValue, number>;
+  allowedRecordCount: number;
+  warningRecordCount: number;
+  redactedRecordCount: number;
+  blockedRecordCount: number;
 }
 
 /**
@@ -167,6 +181,7 @@ export interface MemoryContextContractSafeSummary {
   canonicalSourceNote: string;
   truncationReason: string | null;
   safetyNotes: string[];
+  policySummary: MemoryContextPolicySummary;
   items: MemoryContextContractSafeSummaryItem[];
 }
 
@@ -192,6 +207,7 @@ export interface MemoryContextAssemblyResult {
   provenanceSummary: MemoryContextProvenanceSummary;
   truncationReason: string | null;
   safetyNotes: string[];
+  policySummary: MemoryContextPolicySummary;
   assemblyOutcome: MemoryContextAssemblyOutcomeValue;
 }
 

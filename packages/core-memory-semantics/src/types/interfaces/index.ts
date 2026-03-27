@@ -5,6 +5,7 @@ export type {
   MemoryContextAssemblyResult,
   MemoryContextOutput,
   MemoryContextOutputItem,
+  MemoryContextPolicySummary,
   MemoryContextProvenanceSummary,
   MemoryContextSelectionSummary,
   MemoryPromotionCandidateDecision,

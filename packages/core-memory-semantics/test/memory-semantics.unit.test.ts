@@ -201,6 +201,15 @@ describe("core-memory-semantics", () => {
         ],
       }),
     );
+    expect(assemblyResult.policySummary).toEqual(
+      expect.objectContaining({
+        overallAction: "allow",
+        allowedRecordCount: 2,
+        warningRecordCount: 0,
+        redactedRecordCount: 0,
+        blockedRecordCount: 0,
+      }),
+    );
     expect(assemblyResult.outputContext.recallItems).toEqual([
       expect.objectContaining({
         layer: MemoryRecallLayer.EXECUTION,
@@ -540,6 +549,16 @@ describe("core-memory-semantics", () => {
       tags: ["task:TK-255", "sensitivity:internal", "visibility:runtime"],
       updatedAt: "2026-03-27T00:00:05Z",
     });
+    await memoryManager.writeEntry({
+      scope: MemoryScope.EXECUTION,
+      key: "exec-990:secret-blocked",
+      payload: {
+        summary: "Secret summary must be blocked from runtime context.",
+        sourceRefs: [".repo-ai-governor/context/dev/project-022/tasks/TK-257.md"],
+      },
+      tags: ["task:TK-257", "sensitivity:secret", "visibility:runtime"],
+      updatedAt: "2026-03-27T00:00:04Z",
+    });
 
     const recallResult = await new MemoryRecallService(memoryManager).recall({
       queryIntent: "memory_safety_rehearsal",
@@ -582,23 +601,55 @@ describe("core-memory-semantics", () => {
         }),
       ]),
     );
+    expect(
+      assemblyResult.outputContext.recallItems.some(
+        (item) => item.recordId === "execution:exec-990:secret-blocked",
+      ),
+    ).toBe(false);
     expect(assemblyResult.contractSafeSummary.items).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           recordId: "execution:exec-990:visibility-adopter",
           summary: "[redacted: visibility_policy]",
+          policyAction: "redact",
           visibility: ["adopter"],
         }),
         expect.objectContaining({
           recordId: "execution:exec-990:missing-sensitivity",
           summary: "[redacted: sensitivity_labels_required]",
+          policyAction: "redact",
           visibility: [],
         }),
+        expect.objectContaining({
+          recordId: "execution:exec-990:secret-blocked",
+          summary: "[blocked: sensitivity_policy]",
+          policyAction: "block",
+        }),
       ]),
+    );
+    expect(assemblyResult.selectedRecords).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          recordId: "execution:exec-990:secret-blocked",
+          payload: expect.objectContaining({
+            summary: "[blocked: sensitivity_policy]",
+            policyAction: "block",
+          }),
+        }),
+      ]),
+    );
+    expect(assemblyResult.policySummary).toEqual(
+      expect.objectContaining({
+        overallAction: "block",
+        allowedRecordCount: 1,
+        redactedRecordCount: 2,
+        blockedRecordCount: 1,
+      }),
     );
     expect(assemblyResult.safetyNotes).toEqual(
       expect.arrayContaining([
         "some_records_redacted_due_to_missing_sensitivity_labels",
+        "some_records_blocked_due_to_sensitivity_policy",
         "some_records_redacted_due_to_visibility_policy",
       ]),
     );

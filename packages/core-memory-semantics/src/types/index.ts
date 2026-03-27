@@ -1,4 +1,5 @@
 export type {
+  MemoryContextPolicyActionValue,
   MemoryPromotionCandidateActionValue,
   MemoryPromotionOutcomeValue,
   MemoryPromotionPhaseValue,
@@ -14,6 +15,7 @@ export type {
   MemoryContextAssemblyResult,
   MemoryContextOutput,
   MemoryContextOutputItem,
+  MemoryContextPolicySummary,
   MemoryContextProvenanceSummary,
   MemoryContextSelectionSummary,
   MemoryPromotionCandidateDecision,

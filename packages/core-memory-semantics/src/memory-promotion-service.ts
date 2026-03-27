@@ -111,6 +111,9 @@ export class MemoryPromotionService {
       explicitSourceRefCount: item.explicitSourceRefCount,
       updatedAt: item.updatedAt,
       sensitivity: [...item.sensitivity],
+      visibility: [...item.visibility],
+      policyAction: item.policyAction,
+      policyReasons: [...item.policyReasons],
     }));
   }
 
@@ -217,6 +220,7 @@ export class MemoryPromotionService {
         ),
     );
     const sensitivityLabeled = candidate.sensitivity.length > 0;
+    const policySafe = candidate.policyAction === "allow";
     const canonicalSourceSafe =
       candidate.sourceLayer !== MemoryRecallLayer.NORMATIVE &&
       candidate.memoryKind !== MemoryRecallKind.NORMATIVE_PROJECTION;
@@ -236,6 +240,9 @@ export class MemoryPromotionService {
     }
     if (!sensitivitySafe) {
       failureReasons.push("sensitivity_requires_redaction");
+    }
+    if (!policySafe) {
+      failureReasons.push("context_policy_not_promotable");
     }
     if (!canonicalSourceSafe) {
       failureReasons.push("canonical_projection_not_promotable");

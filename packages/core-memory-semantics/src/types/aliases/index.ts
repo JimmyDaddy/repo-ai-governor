@@ -1,5 +1,6 @@
 export type {
   MemoryContextAssemblyOutcomeValue,
+  MemoryContextPolicyActionValue,
   MemoryPromotionCandidateActionValue,
   MemoryPromotionOutcomeValue,
   MemoryPromotionPhaseValue,

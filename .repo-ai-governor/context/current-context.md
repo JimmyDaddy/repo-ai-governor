@@ -4,18 +4,18 @@
 
 - Status: active
 - Project: `project-022-memory-semantics-safety-and-consumer-hardening`
-- Sprint: `sprint-001-contract-alignment-safety-and-adopter-output-baseline`
+- Sprint: `sprint-002-policy-tuning-and-surface-expansion`
 - Docs root: `.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening`
-- Task records: `.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/sprint-001-contract-alignment-safety-and-adopter-output-baseline/tasks/`
-- Review records: `.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/sprint-001-contract-alignment-safety-and-adopter-output-baseline/review/`
+- Task records: `.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/sprint-002-policy-tuning-and-surface-expansion/tasks/`
+- Review records: `.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/sprint-002-policy-tuning-and-surface-expansion/review/`
 
 ## Active Streams
 
-- `primary`: project=`project-022-memory-semantics-safety-and-consumer-hardening`, sprint=`sprint-001-contract-alignment-safety-and-adopter-output-baseline`, docs=`.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening`, plan=`.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/plan.md`, tasks=`.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/sprint-001-contract-alignment-safety-and-adopter-output-baseline/tasks/`, checklist=`.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/sprint-001-contract-alignment-safety-and-adopter-output-baseline/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/sprint-001-contract-alignment-safety-and-adopter-output-baseline/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/sprint-001-contract-alignment-safety-and-adopter-output-baseline/review/`, status=`active`
+- `primary`: project=`project-022-memory-semantics-safety-and-consumer-hardening`, sprint=`sprint-002-policy-tuning-and-surface-expansion`, docs=`.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening`, plan=`.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/plan.md`, tasks=`.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/sprint-002-policy-tuning-and-surface-expansion/tasks/`, checklist=`.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/sprint-002-policy-tuning-and-surface-expansion/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/sprint-002-policy-tuning-and-surface-expansion/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/sprint-002-policy-tuning-and-surface-expansion/review/`, status=`active`
 
 ## Planned Follow-Up Streams
 
-1. `planned-next`: project=`project-022-memory-semantics-safety-and-consumer-hardening`, sprint=`sprint-002-policy-tuning-and-surface-expansion`, docs=`.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening`, plan=`.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/plan.md`, status=`planned`, notes=`仅在需要继续扩展 adopter-facing consumer、policy tuning 或进一步落地 workspace/user seam 时激活`
+1. 当前无 planned follow-up stream；如 `project-022` 在 `sprint-002` 后仍需继续扩张，再按实际输入补建新的 planned stream。
 
 ## Completed Stream History
 

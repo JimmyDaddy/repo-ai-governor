@@ -9,6 +9,7 @@ import {
   DEFAULT_MEMORY_RECALL_ORDER,
   MEMORY_RECALL_SELECTION_POLICY,
   type MemoryContextAssembler,
+  type MemoryContextAssemblyResult,
   type MemoryRecallRequest,
   type MemoryRecallService,
 } from "@repo-ai-governor/core-memory-semantics";
@@ -422,6 +423,9 @@ export class CliTaskDrivenRunRuntime {
             recallResult: memoryRecall,
           })
         : null;
+    const runtimeSafeMemoryContext = memoryContext
+      ? this.createRuntimeSafeMemoryContext(memoryContext)
+      : null;
     const memorySnapshotSummary = memoryRecall
       ? {
           normativeEntryCount: memoryRecall.resultSummary.normativeEntryCount,
@@ -443,7 +447,7 @@ export class CliTaskDrivenRunRuntime {
       tracebackReferences: taskContext.tracebackReferences,
       ...(memorySelection ? { memorySelection } : {}),
       ...(memorySnapshotSummary ? { memorySnapshotSummary } : {}),
-      ...(memoryContext ? { memoryContext } : {}),
+      ...(runtimeSafeMemoryContext ? { memoryContext: runtimeSafeMemoryContext } : {}),
     };
 
     const prepareNode = this.createNode(
@@ -611,7 +615,7 @@ export class CliTaskDrivenRunRuntime {
           taskContext: commonTaskContextPayload,
           ...(memorySelection ? { memorySelection } : {}),
           ...(memorySnapshotSummary ? { memorySnapshotSummary } : {}),
-          ...(memoryContext ? { memoryContext } : {}),
+          ...(runtimeSafeMemoryContext ? { memoryContext: runtimeSafeMemoryContext } : {}),
         },
       },
       stageInputs,
@@ -622,6 +626,22 @@ export class CliTaskDrivenRunRuntime {
       memorySnapshotSummary,
       executionRoleProfileId,
       verificationRoleProfileId,
+    };
+  }
+
+  private createRuntimeSafeMemoryContext(memoryContext: MemoryContextAssemblyResult) {
+    return {
+      executionId: memoryContext.executionId,
+      queryIntent: memoryContext.queryIntent,
+      selectionSummary: memoryContext.selectionSummary,
+      outputContext: memoryContext.outputContext,
+      contractSafeSummary: memoryContext.contractSafeSummary,
+      sourceRefs: memoryContext.sourceRefs,
+      provenanceSummary: memoryContext.provenanceSummary,
+      truncationReason: memoryContext.truncationReason,
+      safetyNotes: memoryContext.safetyNotes,
+      policySummary: memoryContext.policySummary,
+      assemblyOutcome: memoryContext.assemblyOutcome,
     };
   }
 
