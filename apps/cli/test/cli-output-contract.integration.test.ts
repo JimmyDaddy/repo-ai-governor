@@ -4,6 +4,10 @@ import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 
 import {
+  CliClaudeCodeExecFixtureEnvironmentKey,
+  CliClaudeCodeExecFixtureMode,
+} from "../src/constants/claude-code-exec-fixture.constant.js";
+import {
   CliCodexExecFixtureEnvironmentKey,
   CliCodexExecFixtureMode,
 } from "../src/constants/codex-exec-fixture.constant.js";
@@ -13,6 +17,22 @@ import {
 } from "../src/constants/github-copilot-exec-fixture.constant.js";
 import { runCli } from "../src/main.js";
 
+function createDeterministicCliEnvironment(overrides: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
+  return {
+    ...Object.fromEntries(
+      Object.entries(process.env).filter(([environmentKey]) => {
+        return !environmentKey.startsWith("REPO_AI_GOVERNOR_");
+      }),
+    ),
+    [CliCodexExecFixtureEnvironmentKey.ENABLE_FIXTURES]: "1",
+    [CliCodexExecFixtureEnvironmentKey.EXEC_FIXTURE]: CliCodexExecFixtureMode.SUCCESS,
+    [CliClaudeCodeExecFixtureEnvironmentKey.EXEC_FIXTURE]: CliClaudeCodeExecFixtureMode.SUCCESS,
+    [CliGithubCopilotExecFixtureEnvironmentKey.EXEC_FIXTURE]:
+      CliGithubCopilotExecFixtureMode.SUCCESS,
+    ...overrides,
+  };
+}
+
 /**
  * Creates buffered IO adapters for output-contract integration tests.
  * @param isStdoutTty Whether runtime stdout should be treated as TTY.
@@ -21,13 +41,7 @@ import { runCli } from "../src/main.js";
 function createBufferedIo(
   isStdoutTty: boolean,
   currentWorkingDirectory: string = process.cwd(),
-  environment: NodeJS.ProcessEnv = {
-    ...process.env,
-    [CliCodexExecFixtureEnvironmentKey.ENABLE_FIXTURES]: "1",
-    [CliCodexExecFixtureEnvironmentKey.EXEC_FIXTURE]: CliCodexExecFixtureMode.SUCCESS,
-    [CliGithubCopilotExecFixtureEnvironmentKey.EXEC_FIXTURE]:
-      CliGithubCopilotExecFixtureMode.SUCCESS,
-  },
+  environmentOverrides: NodeJS.ProcessEnv = {},
 ): {
   stdoutBuffer: string[];
   stderrBuffer: string[];
@@ -41,6 +55,7 @@ function createBufferedIo(
 } {
   const stdoutBuffer: string[] = [];
   const stderrBuffer: string[] = [];
+  const environment = createDeterministicCliEnvironment(environmentOverrides);
 
   return {
     stdoutBuffer,
@@ -206,7 +221,6 @@ describe("CLI output contract integration", () => {
 
   it("surfaces configured codex exec fixture mode in JSON diagnostics", async () => {
     const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, process.cwd(), {
-      ...process.env,
       [CliCodexExecFixtureEnvironmentKey.ENABLE_FIXTURES]: "1",
       [CliCodexExecFixtureEnvironmentKey.EXEC_FIXTURE]: CliCodexExecFixtureMode.SUCCESS,
     });
@@ -224,7 +238,6 @@ describe("CLI output contract integration", () => {
 
   it("surfaces configured github copilot exec fixture mode in JSON diagnostics", async () => {
     const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, process.cwd(), {
-      ...process.env,
       [CliGithubCopilotExecFixtureEnvironmentKey.ENABLE_FIXTURES]: "1",
       [CliGithubCopilotExecFixtureEnvironmentKey.EXEC_FIXTURE]:
         CliGithubCopilotExecFixtureMode.SUCCESS,
@@ -404,7 +417,6 @@ describe("CLI output contract integration", () => {
 
   it("fails fast when official IDE wrapper env carries invalid surface or source IDs", async () => {
     const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, process.cwd(), {
-      ...process.env,
       REPO_AI_GOVERNOR_ENTRY_SURFACE: "not_a_surface",
       REPO_AI_GOVERNOR_STANDARDS_PROFILE_ID: "broken-profile",
       REPO_AI_GOVERNOR_STANDARDS_SOURCES: "totally_invalid",
@@ -426,7 +438,6 @@ describe("CLI output contract integration", () => {
 
   it("surfaces validated IDE wrapper env in JSON diagnostics", async () => {
     const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, process.cwd(), {
-      ...process.env,
       REPO_AI_GOVERNOR_ENTRY_SURFACE: "vscode",
       REPO_AI_GOVERNOR_STANDARDS_PROFILE_ID: "stage5-entry-baseline",
       REPO_AI_GOVERNOR_STANDARDS_SOURCES:

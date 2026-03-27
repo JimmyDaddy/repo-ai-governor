@@ -1,6 +1,6 @@
 # sprint-001-repo-global-parallelization-and-fast-check-baseline 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-03-27
 - Project: `project-025-gate-execution-efficiency-implementation`
 
@@ -12,8 +12,8 @@
 
 1. `TK-279` project-025 激活与 project-024 closeout handoff（completed）
 2. `TK-280` gate execution efficiency 全方案 project decomposition 与 phase mapping baseline（completed）
-3. `TK-281` repo-global gate build dependency decoupling 与 `check:fast` baseline（planned）
-4. `TK-282` root gate runner profile split 与 observability baseline（planned）
+3. `TK-281` repo-global gate build dependency decoupling 与 `check:fast` baseline（completed）
+4. `TK-282` root gate runner profile split 与 observability baseline（completed）
 
 ## 3. Exit Criteria
 
@@ -26,4 +26,4 @@
 
 1. `sprint-001` 不提前做 package-level script 全量迁移。
 2. `sprint-001` 的主要作用是把“整套方案”落成真实 project/sprint/task truth，并为 phase-1 实装打开边界。
-3. future `sprint-002 / sprint-003` 已在 project plan 中冻结为 planned sprint，不在当前 sprint 内隐式开工。
+3. `sprint-002-package-level-gates-and-build-graph-cutover` 已接管主执行流；本 sprint 仅保留为 completed evidence surface。

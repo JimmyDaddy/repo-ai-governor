@@ -4,19 +4,18 @@
 
 - Status: active
 - Project: `project-025-gate-execution-efficiency-implementation`
-- Sprint: `sprint-001-repo-global-parallelization-and-fast-check-baseline`
+- Sprint: `sprint-002-package-level-gates-and-build-graph-cutover`
 - Docs root: `.repo-ai-governor/context/dev/project-025-gate-execution-efficiency-implementation`
-- Task records: `.repo-ai-governor/context/dev/project-025-gate-execution-efficiency-implementation/sprint-001-repo-global-parallelization-and-fast-check-baseline/tasks/`
-- Review records: `.repo-ai-governor/context/dev/project-025-gate-execution-efficiency-implementation/sprint-001-repo-global-parallelization-and-fast-check-baseline/review/`
+- Task records: `.repo-ai-governor/context/dev/project-025-gate-execution-efficiency-implementation/sprint-002-package-level-gates-and-build-graph-cutover/tasks/`
+- Review records: `.repo-ai-governor/context/dev/project-025-gate-execution-efficiency-implementation/sprint-002-package-level-gates-and-build-graph-cutover/review/`
 
 ## Active Streams
 
-- `primary`: project=`project-025-gate-execution-efficiency-implementation`, sprint=`sprint-001-repo-global-parallelization-and-fast-check-baseline`, docs=`.repo-ai-governor/context/dev/project-025-gate-execution-efficiency-implementation`, plan=`.repo-ai-governor/context/dev/project-025-gate-execution-efficiency-implementation/plan.md`, tasks=`.repo-ai-governor/context/dev/project-025-gate-execution-efficiency-implementation/sprint-001-repo-global-parallelization-and-fast-check-baseline/tasks/`, checklist=`.repo-ai-governor/context/dev/project-025-gate-execution-efficiency-implementation/sprint-001-repo-global-parallelization-and-fast-check-baseline/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-025-gate-execution-efficiency-implementation/sprint-001-repo-global-parallelization-and-fast-check-baseline/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-025-gate-execution-efficiency-implementation/sprint-001-repo-global-parallelization-and-fast-check-baseline/review/`, status=`active`
+- `primary`: project=`project-025-gate-execution-efficiency-implementation`, sprint=`sprint-002-package-level-gates-and-build-graph-cutover`, docs=`.repo-ai-governor/context/dev/project-025-gate-execution-efficiency-implementation`, plan=`.repo-ai-governor/context/dev/project-025-gate-execution-efficiency-implementation/plan.md`, tasks=`.repo-ai-governor/context/dev/project-025-gate-execution-efficiency-implementation/sprint-002-package-level-gates-and-build-graph-cutover/tasks/`, checklist=`.repo-ai-governor/context/dev/project-025-gate-execution-efficiency-implementation/sprint-002-package-level-gates-and-build-graph-cutover/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-025-gate-execution-efficiency-implementation/sprint-002-package-level-gates-and-build-graph-cutover/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-025-gate-execution-efficiency-implementation/sprint-002-package-level-gates-and-build-graph-cutover/review/`, status=`active`
 
 ## Planned Follow-Up Streams
 
-1. `planned-next`: project=`project-025-gate-execution-efficiency-implementation`, sprint=`sprint-002-package-level-gates-and-build-graph-cutover`, docs=`.repo-ai-governor/context/dev/project-025-gate-execution-efficiency-implementation`, plan=`.repo-ai-governor/context/dev/project-025-gate-execution-efficiency-implementation/plan.md`, status=`planned`, notes=`在 sprint-001 完成 repo-global decoupling 与 check:fast baseline 后激活`
-2. `planned-later`: project=`project-025-gate-execution-efficiency-implementation`, sprint=`sprint-003-project-references-affected-check-and-ci-matrix`, docs=`.repo-ai-governor/context/dev/project-025-gate-execution-efficiency-implementation`, plan=`.repo-ai-governor/context/dev/project-025-gate-execution-efficiency-implementation/plan.md`, status=`planned`, notes=`在 sprint-002 完成 package-level gate graph 与 cache policy cutover 后激活`
+1. `planned-next`: project=`project-025-gate-execution-efficiency-implementation`, sprint=`sprint-003-project-references-affected-check-and-ci-matrix`, docs=`.repo-ai-governor/context/dev/project-025-gate-execution-efficiency-implementation`, plan=`.repo-ai-governor/context/dev/project-025-gate-execution-efficiency-implementation/plan.md`, status=`planned`, notes=`在 sprint-002 完成 package-level gate graph 与 cache policy cutover 后激活`
 
 ## Completed Stream History
 

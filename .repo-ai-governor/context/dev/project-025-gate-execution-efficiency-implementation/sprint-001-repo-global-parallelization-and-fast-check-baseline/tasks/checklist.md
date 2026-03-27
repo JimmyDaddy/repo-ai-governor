@@ -8,7 +8,17 @@
   - 2026-03-27：任务创建，状态初始化为 `planned`。
   - 2026-03-27：状态切换为 `in_progress`，开始将 formal solution 的四个 phase 收敛为真实 project / sprint / task decomposition。
   - 2026-03-27：已完成 project-025 plan、sprint decomposition、delivery handoff 同步与 `DA-280`。
-- [ ] TK-281 repo-global gate build dependency decoupling 与 check:fast baseline
+- [x] TK-281 repo-global gate build dependency decoupling 与 check:fast baseline
   - 2026-03-27：任务创建，状态初始化为 `planned`。
-- [ ] TK-282 root gate runner profile split 与 observability baseline
+  - 2026-03-27：状态切换为 `in_progress`。
+  - 2026-03-27：已落地变更：`turbo.json`（11 gate 解耦 build、cache 启用、`gate:fast` 组合任务）、`package.json`（新增 `check:fast`/`check:full`/`gate:fast`）、`run-gate-check.js`（`--profile` 参数 + timing）、`gate-fast-complete.js`（新增）。待用户验证。
+  - 2026-03-27：CR 复核后修复 `run-repo-global-gates.js` 的 `--output json` stdout 契约，避免启动 banner 污染机器可读输出。
+  - 2026-03-27：验证通过：`node ./scripts/ci/run-repo-global-gates.js --output json`、`pnpm run test:integration -- test/gate-runner-output.integration.test.ts`、`pnpm run check:fast`。
+  - 2026-03-27：状态切换为 `completed`，作为 sprint-001 phase-1 baseline 证据面收口。
+- [x] TK-282 root gate runner profile split 与 observability baseline
   - 2026-03-27：任务创建，状态初始化为 `planned`。
+  - 2026-03-27：状态切换为 `in_progress`。
+  - 2026-03-27：已落地变更：`run-gate-check.js`（profile split + timing observability）、`run-repo-global-gates.js`（新增，并行执行 + per-gate timing + JSON 输出）。待用户验证。
+  - 2026-03-27：CR 复核后将 `TK-282` 范围收敛为 `full/fast` runner split + observability，并为 `affected` 增加显式 deferred 提示；真实 rollout 保持在 `sprint-003 / TK-287`。
+  - 2026-03-27：验证通过：`node ./scripts/ci/run-gate-check.js --profile affected`（返回 deferred 提示）、`pnpm run check:full`、`pnpm run check`。
+  - 2026-03-27：状态切换为 `completed`，并将下一阶段 `affected` rollout 约束冻结到 `sprint-003 / TK-287`。

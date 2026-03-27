@@ -81,15 +81,14 @@ deliveries:
     rollout_status: not_required
     owner: architecture
     project_ref: project-025-gate-execution-efficiency-implementation
-    sprint_ref: sprint-001-repo-global-parallelization-and-fast-check-baseline
+    sprint_ref: sprint-002-package-level-gates-and-build-graph-cutover
     task_ids:
-      - TK-279
-      - TK-280
-      - TK-281
-      - TK-282
+      - TK-283
+      - TK-284
+      - TK-285
     project_plan_path: .repo-ai-governor/context/dev/project-025-gate-execution-efficiency-implementation/plan.md
-    sprint_plan_path: .repo-ai-governor/context/dev/project-025-gate-execution-efficiency-implementation/sprint-001-repo-global-parallelization-and-fast-check-baseline/plan.md
-    task_csv_path: .repo-ai-governor/context/dev/project-025-gate-execution-efficiency-implementation/sprint-001-repo-global-parallelization-and-fast-check-baseline/tasks/tasks.csv
+    sprint_plan_path: .repo-ai-governor/context/dev/project-025-gate-execution-efficiency-implementation/sprint-002-package-level-gates-and-build-graph-cutover/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-025-gate-execution-efficiency-implementation/sprint-002-package-level-gates-and-build-graph-cutover/tasks/tasks.csv
     handoff_artifact_path: .repo-ai-governor/context/dev/project-025-gate-execution-efficiency-implementation/sprint-001-repo-global-parallelization-and-fast-check-baseline/tasks/DA-280-gate-execution-efficiency-full-solution-project-decomposition-and-phase-mapping-baseline.md
     rollout_artifacts: []
     accepted_at: 2026-03-27

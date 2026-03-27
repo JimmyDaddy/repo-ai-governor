@@ -16,7 +16,7 @@
 
 ## 2.1 sprint-001-repo-global-parallelization-and-fast-check-baseline
 
-- Status: active
+- Status: completed
 - Sprint Goal: 完成整套方案的 project decomposition，并建立 `repo-global gate decoupling + check:fast` 的 phase-1 baseline。
 - Task Package: `TK-279`、`TK-280`、`TK-281`、`TK-282`。
 - Exit Criteria:
@@ -27,7 +27,7 @@
 
 ## 2.2 sprint-002-package-level-gates-and-build-graph-cutover
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 将核心 package 的 `build / typecheck / test:unit` 下沉到 package-level，并让 Turbo 真正消费 workspace package graph 与 cache policy。
 - Task Package: `TK-283`、`TK-284`、`TK-285`。
 - Input Constraints:
@@ -51,11 +51,11 @@
 |---|---|---|---|---|---|
 | TK-279 | sprint-001 | project-025 激活与 project-024 closeout handoff | bootstrap/governance | project-024 completion audit,project-024 sprint-001 completed | completed |
 | TK-280 | sprint-001 | gate execution efficiency 全方案 project decomposition 与 phase mapping baseline | planning/baseline | TK-279,DA-277,.repo-ai-governor/draft/gate-execution-efficiency-optimization-plan.md | completed |
-| TK-281 | sprint-001 | repo-global gate build dependency decoupling 与 check:fast baseline | gate/orchestration | TK-280,package.json,turbo.json,scripts/ci/run-gate-check.js | planned |
-| TK-282 | sprint-001 | root gate runner profile split 与 observability baseline | cli/runner | TK-280,package.json,scripts/ci/run-gate-check.js | planned |
-| TK-283 | sprint-002 | package-level build typecheck test pilot 与 core package cutover | package-graph | TK-281,TK-282,apps/cli/package.json,packages/core-memory-semantics/package.json,packages/reporting/package.json | planned |
-| TK-284 | sprint-002 | turbo package graph 与 cache policy cutover | build-system | TK-283,turbo.json,tsconfig.build.json | planned |
-| TK-285 | sprint-002 | sprint-002 出口验收与 sprint-003 输入约束 | acceptance/baseline | TK-283,TK-284 | planned |
+| TK-281 | sprint-001 | repo-global gate build dependency decoupling 与 check:fast baseline | gate/orchestration | TK-280,package.json,turbo.json,scripts/ci/run-gate-check.js | completed |
+| TK-282 | sprint-001 | root gate runner profile split 与 observability baseline | cli/runner | TK-280,package.json,scripts/ci/run-gate-check.js | completed |
+| TK-283 | sprint-002 | package-level build typecheck test pilot 与 core package cutover | package-graph | TK-281,TK-282,apps/cli/package.json,packages/core-memory-semantics/package.json,packages/reporting/package.json | completed |
+| TK-284 | sprint-002 | turbo package graph 与 cache policy cutover | build-system | TK-283,turbo.json,tsconfig.build.json | completed |
+| TK-285 | sprint-002 | sprint-002 出口验收与 sprint-003 输入约束 | acceptance/baseline | TK-283,TK-284 | completed |
 | TK-286 | sprint-003 | ts project references 与 incremental build baseline | ts/build | TK-285,tsconfig.json,tsconfig.build.json | planned |
 | TK-287 | sprint-003 | affected gate planner 与 ci matrix rollout | ci/orchestration | TK-286,scripts/ci/run-affected-check.js | planned |
 | TK-288 | sprint-003 | sprint-003 出口验收与 project-025 completion closeout | acceptance/closeout | TK-286,TK-287 | planned |
@@ -83,3 +83,8 @@
 
 1. 2026-03-27：创建 `project-025-gate-execution-efficiency-implementation`，并通过 `TK-279 / DA-279` 将 active execution surface 从 `project-024 / sprint-001` closeout 切换到新的 implementation 主线。
 2. 2026-03-27：通过 `TK-280 / DA-280` 完成整套方案的 project decomposition，将 formal solution 的四个 phase 收敛为三段真实 sprint。
+3. 2026-03-27：完成 `sprint-001` phase-1 baseline 收口，并将主执行流切换到 `sprint-002-package-level-gates-and-build-graph-cutover`。
+4. 2026-03-28：通过 `TK-283` 完成 `packages/core-memory-semantics` 的首个 package-level build/typecheck/test pilot，并将 `TK-284` 推进到 Turbo package graph / cache policy cutover。
+5. 2026-03-28：通过 `TK-284` 沿 `shared -> memory-store-adapter -> core-memory -> core-memory-semantics` 依赖链打通 Turbo package graph / cache policy pilot，并将 `TK-285` 切换为当前活跃验收任务。
+6. 2026-03-28：完成 `code_review_working-tree-20260328` 复核与收口，接受并修复 `TK-283 / TK-284` 的两项脚本健壮性问题，并将 CR 生命周期推进到 `resolved`。
+7. 2026-03-28：`TK-285` sprint-002 出口验收完成，4 项 exit criteria 全部满足，sprint-003 输入约束清单已冻结，sprint-002 切换为 `completed`。

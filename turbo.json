@@ -1,6 +1,21 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "tasks": {
+    "build": {
+      "cache": true,
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"]
+    },
+    "typecheck": {
+      "cache": true,
+      "dependsOn": ["^typecheck"],
+      "outputs": []
+    },
+    "test": {
+      "cache": true,
+      "dependsOn": ["build", "^build"],
+      "outputs": []
+    },
     "//#gate:format": {
       "cache": false,
       "outputs": []
@@ -16,28 +31,47 @@
       "outputs": []
     },
     "//#gate:code-standards": {
-      "cache": false,
-      "dependsOn": ["//#gate:build"],
+      "cache": true,
       "outputs": []
     },
     "//#gate:docs-triad-sync": {
-      "cache": false,
-      "dependsOn": ["//#gate:build"],
+      "cache": true,
       "outputs": []
     },
     "//#gate:technical-solution-module-graph": {
-      "cache": false,
-      "dependsOn": ["//#gate:build"],
+      "cache": true,
       "outputs": []
     },
     "//#gate:technical-solution-lifecycle-registry": {
-      "cache": false,
-      "dependsOn": ["//#gate:build"],
+      "cache": true,
       "outputs": []
     },
     "//#gate:technical-solution-delivery-registry": {
-      "cache": false,
-      "dependsOn": ["//#gate:build"],
+      "cache": true,
+      "outputs": []
+    },
+    "//#gate:task-ledger-sync": {
+      "cache": true,
+      "outputs": []
+    },
+    "//#gate:sprint-plan-status-sync": {
+      "cache": true,
+      "outputs": []
+    },
+    "//#gate:code-review-status-sync": {
+      "cache": true,
+      "outputs": []
+    },
+    "//#gate:worktree-review-target": {
+      "cache": true,
+      "outputs": []
+    },
+    "//#gate:artifact-lifecycle": {
+      "cache": true,
+      "outputs": []
+    },
+    "//#gate:normative-loading-manifest": {
+      "cache": true,
       "outputs": []
     },
     "//#gate:finite-literal-sets": {
@@ -51,11 +85,6 @@
       "outputs": []
     },
     "//#gate:standardized-errors": {
-      "cache": false,
-      "dependsOn": ["//#gate:build"],
-      "outputs": []
-    },
-    "//#gate:artifact-lifecycle": {
       "cache": false,
       "dependsOn": ["//#gate:build"],
       "outputs": []
@@ -85,32 +114,7 @@
       "dependsOn": ["//#gate:build"],
       "outputs": []
     },
-    "//#gate:normative-loading-manifest": {
-      "cache": false,
-      "dependsOn": ["//#gate:build"],
-      "outputs": []
-    },
     "//#gate:stage9-handoff": {
-      "cache": false,
-      "dependsOn": ["//#gate:build"],
-      "outputs": []
-    },
-    "//#gate:task-ledger-sync": {
-      "cache": false,
-      "dependsOn": ["//#gate:build"],
-      "outputs": []
-    },
-    "//#gate:sprint-plan-status-sync": {
-      "cache": false,
-      "dependsOn": ["//#gate:build"],
-      "outputs": []
-    },
-    "//#gate:code-review-status-sync": {
-      "cache": false,
-      "dependsOn": ["//#gate:build"],
-      "outputs": []
-    },
-    "//#gate:worktree-review-target": {
       "cache": false,
       "dependsOn": ["//#gate:build"],
       "outputs": []
@@ -150,18 +154,32 @@
       "dependsOn": ["//#gate:test:e2e", "//#gate:test:resilience"],
       "outputs": []
     },
-    "//#gate:check": {
+    "//#gate:fast": {
       "cache": false,
       "dependsOn": [
+        "//#gate:format",
+        "//#gate:lint",
         "//#gate:code-standards",
         "//#gate:docs-triad-sync",
         "//#gate:technical-solution-module-graph",
         "//#gate:technical-solution-lifecycle-registry",
         "//#gate:technical-solution-delivery-registry",
+        "//#gate:task-ledger-sync",
+        "//#gate:sprint-plan-status-sync",
+        "//#gate:code-review-status-sync",
+        "//#gate:worktree-review-target",
+        "//#gate:artifact-lifecycle",
+        "//#gate:normative-loading-manifest"
+      ],
+      "outputs": []
+    },
+    "//#gate:check": {
+      "cache": false,
+      "dependsOn": [
+        "//#gate:fast",
         "//#gate:finite-literal-sets",
         "//#gate:dependency-boundary",
         "//#gate:standardized-errors",
-        "//#gate:artifact-lifecycle",
         "//#gate:examples-smoke",
         "//#gate:examples-runtime-smoke",
         "//#gate:ide-entry-smoke",
@@ -169,10 +187,6 @@
         "//#gate:ide-docs-parity",
         "//#gate:normative-loading-manifest",
         "//#gate:stage9-handoff",
-        "//#gate:task-ledger-sync",
-        "//#gate:sprint-plan-status-sync",
-        "//#gate:code-review-status-sync",
-        "//#gate:worktree-review-target",
         "//#gate:i18n-parity-fallback",
         "//#gate:test:contract",
         "//#gate:test:packages",

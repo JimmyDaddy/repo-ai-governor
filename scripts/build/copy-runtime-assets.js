@@ -2,8 +2,9 @@
 
 import { cpSync, existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const PROJECT_ROOT = process.cwd();
+const PROJECT_ROOT = fileURLToPath(new URL("../..", import.meta.url));
 const COMPILED_CLI_ENTRY_PATH = resolve(PROJECT_ROOT, "dist/bin/repo-ai-governor.js");
 const DIST_SCOPE_NODE_MODULES = resolve(PROJECT_ROOT, "dist/node_modules/@repo-ai-governor");
 const DIST_PUBLISHED_SURFACES_ROOT = resolve(PROJECT_ROOT, "dist/packages/published-surfaces");
@@ -13,6 +14,7 @@ const SUPPORTED_DISTRIBUTION_MODES = new Set([
   DEFAULT_DISTRIBUTION_MODE,
   PLUGIN_ENABLED_DISTRIBUTION_MODE,
 ]);
+const RAW_ARGS = process.argv.slice(2);
 
 const DISTRIBUTION_PACKAGES = [
   {
@@ -182,13 +184,12 @@ const DISTRIBUTION_PACKAGES = [
  * @returns {"default" | "plugin-enabled"}
  */
 function resolveDistributionMode() {
-  const rawArgs = process.argv.slice(2);
-  const distributionModeIndex = rawArgs.findIndex((arg) => arg === "--distribution-mode");
+  const distributionModeIndex = RAW_ARGS.findIndex((arg) => arg === "--distribution-mode");
   if (distributionModeIndex === -1) {
     return DEFAULT_DISTRIBUTION_MODE;
   }
 
-  const candidateMode = rawArgs[distributionModeIndex + 1]?.trim();
+  const candidateMode = RAW_ARGS[distributionModeIndex + 1]?.trim();
   if (!candidateMode || !SUPPORTED_DISTRIBUTION_MODES.has(candidateMode)) {
     throw new Error(
       `Expected "--distribution-mode" to be one of ${Array.from(SUPPORTED_DISTRIBUTION_MODES).join("|")}.`,
@@ -196,6 +197,59 @@ function resolveDistributionMode() {
   }
 
   return candidateMode;
+}
+
+/**
+ * Resolves optional `--package <name>` filters for partial package-local mirroring.
+ * @returns {Set<string>}
+ */
+function resolveSelectedPackageNames() {
+  const selectedPackageNames = new Set();
+
+  for (let argumentIndex = 0; argumentIndex < RAW_ARGS.length; argumentIndex += 1) {
+    if (RAW_ARGS[argumentIndex] !== "--package") {
+      continue;
+    }
+
+    const candidatePackageName = RAW_ARGS[argumentIndex + 1]?.trim();
+    if (!candidatePackageName) {
+      throw new Error('Expected "--package" to be followed by one workspace package name.');
+    }
+
+    selectedPackageNames.add(candidatePackageName);
+    argumentIndex += 1;
+  }
+
+  return selectedPackageNames;
+}
+
+/**
+ * Filters distribution packages when package-local build mirroring targets a subset.
+ * @param {Set<string>} selectedPackageNames Explicit package filters from CLI args.
+ * @returns {typeof DISTRIBUTION_PACKAGES}
+ */
+function resolveTargetDistributionPackages(selectedPackageNames) {
+  if (selectedPackageNames.size === 0) {
+    return DISTRIBUTION_PACKAGES;
+  }
+
+  const targetDistributionPackages = DISTRIBUTION_PACKAGES.filter((distributionPackage) =>
+    selectedPackageNames.has(distributionPackage.packageName),
+  );
+  const resolvedPackageNames = new Set(
+    targetDistributionPackages.map((distributionPackage) => distributionPackage.packageName),
+  );
+  const unknownPackageNames = Array.from(selectedPackageNames).filter(
+    (packageName) => !resolvedPackageNames.has(packageName),
+  );
+
+  if (unknownPackageNames.length > 0) {
+    throw new Error(
+      `Unknown "--package" target(s): ${unknownPackageNames.join(", ")}. Supported values: ${DISTRIBUTION_PACKAGES.map((distributionPackage) => distributionPackage.packageName).join(", ")}`,
+    );
+  }
+
+  return targetDistributionPackages;
 }
 
 /**
@@ -210,10 +264,11 @@ function assertBuildArtifact(artifactPath, label) {
 }
 
 /**
- * Mirrors compiler output into each workspace package-local `dist` directory.
+ * Mirrors compiler output into target workspace package-local `dist` directories.
+ * @param {typeof DISTRIBUTION_PACKAGES} targetDistributionPackages Packages selected for mirroring.
  */
-function mirrorPackageDistributions() {
-  for (const distributionPackage of DISTRIBUTION_PACKAGES) {
+function mirrorPackageDistributions(targetDistributionPackages) {
+  for (const distributionPackage of targetDistributionPackages) {
     assertBuildArtifact(distributionPackage.compiledDirectory, "compiled package directory");
     rmSync(distributionPackage.packageDistDirectory, { recursive: true, force: true });
     mkdirSync(dirname(distributionPackage.packageDistDirectory), { recursive: true });
@@ -333,9 +388,18 @@ function writePublishedSurfaceWrappers() {
 }
 
 const distributionMode = resolveDistributionMode();
+const selectedPackageNames = resolveSelectedPackageNames();
+const targetDistributionPackages = resolveTargetDistributionPackages(selectedPackageNames);
+const isPartialPackageMirror = selectedPackageNames.size > 0;
 
-assertBuildArtifact(COMPILED_CLI_ENTRY_PATH, "CLI entry");
-mirrorPackageDistributions();
-pruneOptionalPackagesFromDefaultDistribution(distributionMode);
-materializeWorkspacePackagesForDistributionRuntime(distributionMode);
-writePublishedSurfaceWrappers();
+if (!isPartialPackageMirror) {
+  assertBuildArtifact(COMPILED_CLI_ENTRY_PATH, "CLI entry");
+}
+
+mirrorPackageDistributions(targetDistributionPackages);
+
+if (!isPartialPackageMirror) {
+  pruneOptionalPackagesFromDefaultDistribution(distributionMode);
+  materializeWorkspacePackagesForDistributionRuntime(distributionMode);
+  writePublishedSurfaceWrappers();
+}
