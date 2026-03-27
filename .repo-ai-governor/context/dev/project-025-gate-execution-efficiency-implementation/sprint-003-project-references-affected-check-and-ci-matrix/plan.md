@@ -1,6 +1,6 @@
 # sprint-003-project-references-affected-check-and-ci-matrix 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-03-28
 - Project: `project-025-gate-execution-efficiency-implementation`
 
@@ -10,9 +10,9 @@
 
 ## 2. Task Package
 
-1. `TK-286` ts project references 与 incremental build baseline（in_progress）
-2. `TK-287` affected gate planner 与 ci matrix rollout（planned）
-3. `TK-288` sprint-003 出口验收与 project-025 completion closeout（planned）
+1. `TK-286` ts project references 与 incremental build baseline（completed）
+2. `TK-287` affected gate planner 与 ci matrix rollout（completed）
+3. `TK-288` sprint-003 出口验收与 project-025 completion closeout（completed）
 
 ## 3. Exit Criteria
 
@@ -31,3 +31,6 @@
 
 1. 本 sprint 由 `sprint-002-package-level-gates-and-build-graph-cutover` 完成态激活。
 2. 本 sprint 是 project-025 的最后一个 sprint，完成后需执行 project-level closeout。
+3. 2026-03-28：`TK-286` 已完成 4 个核心 package 的 TS project references 与 `tsc -b` incremental pilot baseline。
+4. 2026-03-28：`TK-287` 已完成 `affected` planner 真执行路径、CI matrix 分层与 integration coverage。
+5. 2026-03-28：`sprint-003` 已完成验收；`project-025` 已切换为 `completed`，`current-context` 暂保留本 sprint 作为 active closeout surface，等待下一条主执行流显式激活。

@@ -79,27 +79,83 @@ describe("gate runner wrappers", () => {
     }
   });
 
-  it("returns an explicit deferred message for the affected profile", async () => {
-    try {
-      await execFileAsync(
-        process.execPath,
-        ["./scripts/ci/run-gate-check.js", "--profile", "affected"],
-        {
-          cwd: REPOSITORY_ROOT_PATH,
-        },
-      );
-      expect.unreachable("Expected affected profile to be rejected as deferred.");
-    } catch (error) {
-      const execError = error as ExecFileException & { stderr: string; stdout: string };
+  it("routes affected profile to the real planner instead of deferred stderr", async () => {
+    const { stdout, stderr } = await execFileAsync(
+      process.execPath,
+      [
+        "./scripts/ci/run-gate-check.js",
+        "--profile",
+        "affected",
+        "--dry-run",
+        "--changed-file",
+        "packages/shared/src/index.ts",
+      ],
+      {
+        cwd: REPOSITORY_ROOT_PATH,
+      },
+    );
 
-      expect(execError.code).toBe(2);
-      expect(execError.stdout).toBe("");
-      expect(execError.stderr).toContain('Profile "affected" is reserved but not implemented');
-      expect(execError.stderr).toContain(
-        "sprint-003-project-references-affected-check-and-ci-matrix",
-      );
-      expect(execError.stderr).toContain("TK-287");
-    }
+    expect(stderr).toBe("");
+    expect(stdout).toContain("[gate-check] profile=affected");
+    expect(stdout).toContain("[gate-check] profile=affected status=PASSED");
+    expect(stdout).not.toContain("reserved but not implemented");
+  });
+
+  it("selects package-local pilot mode for affected package changes in JSON dry-run mode", async () => {
+    const { stdout, stderr } = await execFileAsync(
+      process.execPath,
+      [
+        "./scripts/ci/run-affected-check.js",
+        "--dry-run",
+        "--output",
+        "json",
+        "--changed-file",
+        "packages/shared/src/index.ts",
+      ],
+      {
+        cwd: REPOSITORY_ROOT_PATH,
+      },
+    );
+
+    const payload = JSON.parse(stdout) as {
+      profile: string;
+      selection_mode: string;
+      commands: string[];
+    };
+
+    expect(stderr).toBe("");
+    expect(payload.profile).toBe("affected");
+    expect(payload.selection_mode).toBe("package_local_pilot");
+    expect(payload.commands).toContain("pnpm run check:package-local:pilot:incremental");
+    expect(payload.commands).toContain("pnpm run check:package-local:pilot");
+  });
+
+  it("treats .codex skill docs as fast-only changes in JSON dry-run mode", async () => {
+    const { stdout, stderr } = await execFileAsync(
+      process.execPath,
+      [
+        "./scripts/ci/run-affected-check.js",
+        "--dry-run",
+        "--output",
+        "json",
+        "--changed-file",
+        ".codex/skills/workspace-code-review-workflow/SKILL.md",
+      ],
+      {
+        cwd: REPOSITORY_ROOT_PATH,
+      },
+    );
+
+    const payload = JSON.parse(stdout) as {
+      profile: string;
+      selection_mode: string;
+      commands: string[];
+    };
+
+    expect(stderr).toBe("");
+    expect(payload.profile).toBe("affected");
+    expect(payload.selection_mode).toBe("fast_only");
+    expect(payload.commands).toEqual(["pnpm run check:fast"]);
   });
 
   it("keeps extended stderr context in repo-global JSON failure output", async () => {

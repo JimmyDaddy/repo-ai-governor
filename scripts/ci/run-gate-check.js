@@ -58,15 +58,20 @@ function pipePrettifiedLines(stream, writer) {
   });
 }
 
-/** Supported gate profiles mapping to Turbo tasks. */
+/** Supported gate profiles with execution backend. */
 const SUPPORTED_GATE_PROFILES = {
-  full: "gate:check",
-  fast: "gate:fast",
-};
-
-/** Why: `affected` is a formal profile id, but rollout is deferred to sprint-003. */
-const DEFERRED_GATE_PROFILES = {
-  affected: "planned for sprint-003-project-references-affected-check-and-ci-matrix via TK-287",
+  full: {
+    kind: "turbo",
+    target: "gate:check",
+  },
+  fast: {
+    kind: "turbo",
+    target: "gate:fast",
+  },
+  affected: {
+    kind: "script",
+    command: [process.execPath, "./scripts/ci/run-affected-check.js"],
+  },
 };
 
 const rawArgs = process.argv.slice(2);
@@ -79,14 +84,6 @@ const profileName =
   profileIndex !== -1 && normalizedArgs[profileIndex + 1]
     ? normalizedArgs[profileIndex + 1]
     : "full";
-
-if (DEFERRED_GATE_PROFILES[profileName]) {
-  console.error(
-    `[gate-check] Profile "${profileName}" is reserved but not implemented in sprint-001; ${DEFERRED_GATE_PROFILES[profileName]}. Use "fast" or "full" for the current baseline.`,
-  );
-  process.exit(2);
-}
-
 if (!SUPPORTED_GATE_PROFILES[profileName]) {
   console.error(
     `[gate-check] Unknown profile "${profileName}". Available: ${Object.keys(SUPPORTED_GATE_PROFILES).join(", ")}`,
@@ -94,7 +91,7 @@ if (!SUPPORTED_GATE_PROFILES[profileName]) {
   process.exit(1);
 }
 
-const turboTask = SUPPORTED_GATE_PROFILES[profileName];
+const profileDefinition = SUPPORTED_GATE_PROFILES[profileName];
 const passthroughArgs = normalizedArgs.filter(
   (arg, index) =>
     arg !== "--verbose" &&
@@ -102,35 +99,50 @@ const passthroughArgs = normalizedArgs.filter(
     (profileIndex === -1 || index !== profileIndex + 1),
 );
 
-// Why: default quiet mode is token-efficient for AI execution while `--verbose`
-// provides full human-oriented logs on demand.
-const outputLogs = isVerbose ? "full" : "errors-only";
-const turboArgs = [
-  "turbo",
-  "run",
-  turboTask,
-  `--output-logs=${outputLogs}`,
-  "--log-prefix=task",
-  "--log-order=grouped",
-  ...passthroughArgs,
-];
-
 const startTime = Date.now();
-console.info(
-  `[gate-check] profile=${profileName} task=${turboTask} started at ${new Date(startTime).toISOString()}`,
-);
+let child;
 
-const child = spawn("pnpm", turboArgs, {
-  stdio: ["inherit", "pipe", "pipe"],
-});
+if (profileDefinition.kind === "turbo") {
+  const outputLogs = isVerbose ? "full" : "errors-only";
+  const turboArgs = [
+    "turbo",
+    "run",
+    profileDefinition.target,
+    `--output-logs=${outputLogs}`,
+    "--log-prefix=task",
+    "--log-order=grouped",
+    ...passthroughArgs,
+  ];
 
-pipePrettifiedLines(child.stdout, (line) => {
-  process.stdout.write(`${line}\n`);
-});
+  console.info(
+    `[gate-check] profile=${profileName} task=${profileDefinition.target} started at ${new Date(startTime).toISOString()}`,
+  );
 
-pipePrettifiedLines(child.stderr, (line) => {
-  process.stderr.write(`${line}\n`);
-});
+  child = spawn("pnpm", turboArgs, {
+    stdio: ["inherit", "pipe", "pipe"],
+  });
+
+  pipePrettifiedLines(child.stdout, (line) => {
+    process.stdout.write(`${line}\n`);
+  });
+
+  pipePrettifiedLines(child.stderr, (line) => {
+    process.stderr.write(`${line}\n`);
+  });
+} else {
+  const scriptArgs = [...profileDefinition.command.slice(1), ...passthroughArgs];
+  if (isVerbose) {
+    scriptArgs.push("--verbose");
+  }
+
+  console.info(
+    `[gate-check] profile=${profileName} script=${profileDefinition.command.slice(1).join(" ")} started at ${new Date(startTime).toISOString()}`,
+  );
+
+  child = spawn(profileDefinition.command[0], scriptArgs, {
+    stdio: "inherit",
+  });
+}
 
 child.on("error", (error) => {
   console.error(error.message);

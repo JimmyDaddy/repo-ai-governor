@@ -11,7 +11,44 @@ env:
   NODE_VERSION: 22
 
 jobs:
-  quality-gate:
+  quality-gate-fast-affected:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        profile:
+          - fast
+          - affected
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate Stage9 handoff constraints (DA-092)
+        env:
+          STAGE9_HANDOFF_PATH: .repo-ai-governor/context/dev/project-009-production-readiness/sprint-001-local-adoption-and-install-readiness/tasks/TK-080-sprint-001-exit-acceptance-and-sprint-002-input-constraints.md
+        run: pnpm run check:stage9-handoff
+
+      - name: Run quality gate (${{ matrix.profile }})
+        run: pnpm run check:${{ matrix.profile }}
+
+  quality-gate-full:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -39,5 +76,5 @@ jobs:
           STAGE9_HANDOFF_PATH: .repo-ai-governor/context/dev/project-009-production-readiness/sprint-001-local-adoption-and-install-readiness/tasks/TK-080-sprint-001-exit-acceptance-and-sprint-002-input-constraints.md
         run: pnpm run check:stage9-handoff
 
-      - name: Run quality gate
-        run: pnpm run check
+      - name: Run full quality gate (authoritative)
+        run: pnpm run check:full

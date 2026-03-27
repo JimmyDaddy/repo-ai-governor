@@ -77,7 +77,7 @@ deliveries:
     consumer_surfaces:
       - internal_governance
     user_impact_level: none
-    execution_status: in_progress
+    execution_status: completed
     rollout_status: not_required
     owner: architecture
     project_ref: project-025-gate-execution-efficiency-implementation

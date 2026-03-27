@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "files": [],
+  "references": [
+    {
+      "path": "./packages/shared/tsconfig.build.json"
+    },
+    {
+      "path": "./packages/memory-store-adapter/tsconfig.build.json"
+    },
+    {
+      "path": "./packages/core-memory/tsconfig.build.json"
+    },
+    {
+      "path": "./packages/core-memory-semantics/tsconfig.build.json"
+    }
+  ]
+}

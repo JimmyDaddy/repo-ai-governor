@@ -3,7 +3,11 @@
   "extends": "../../tsconfig.build.json",
   "compilerOptions": {
     "rootDir": "../..",
-    "outDir": "../../dist"
+    "outDir": "../../dist",
+    "composite": true,
+    "incremental": true,
+    "declaration": true,
+    "tsBuildInfoFile": "../../dist/packages/shared/tsconfig.build.tsbuildinfo"
   },
   "include": ["src/**/*"],
   "exclude": ["test/**/*"]

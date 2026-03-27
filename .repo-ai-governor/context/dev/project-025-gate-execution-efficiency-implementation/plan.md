@@ -1,6 +1,6 @@
 # project-025-gate-execution-efficiency-implementation 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-03-27
 - Stage Mapping: Post-Stage-9 governance gate execution efficiency implementation
 - Phase Mapping: Governance Gate Orchestration / Package Graph / Incremental Build / CI Matrix
@@ -37,7 +37,7 @@
 
 ## 2.3 sprint-003-project-references-affected-check-and-ci-matrix
 
-- Status: active
+- Status: completed
 - Sprint Goal: 落地 TS project references、affected gate planner 与 CI matrix，完成 project-025 closeout。
 - Task Package: `TK-286`、`TK-287`、`TK-288`。
 - Input Constraints:
@@ -56,9 +56,9 @@
 | TK-283 | sprint-002 | package-level build typecheck test pilot 与 core package cutover | package-graph | TK-281,TK-282,apps/cli/package.json,packages/core-memory-semantics/package.json,packages/reporting/package.json | completed |
 | TK-284 | sprint-002 | turbo package graph 与 cache policy cutover | build-system | TK-283,turbo.json,tsconfig.build.json | completed |
 | TK-285 | sprint-002 | sprint-002 出口验收与 sprint-003 输入约束 | acceptance/baseline | TK-283,TK-284 | completed |
-| TK-286 | sprint-003 | ts project references 与 incremental build baseline | ts/build | TK-285,tsconfig.json,tsconfig.build.json | in_progress |
-| TK-287 | sprint-003 | affected gate planner 与 ci matrix rollout | ci/orchestration | TK-286,scripts/ci/run-affected-check.js | planned |
-| TK-288 | sprint-003 | sprint-003 出口验收与 project-025 completion closeout | acceptance/closeout | TK-286,TK-287 | planned |
+| TK-286 | sprint-003 | ts project references 与 incremental build baseline | ts/build | TK-285,tsconfig.json,tsconfig.build.json | completed |
+| TK-287 | sprint-003 | affected gate planner 与 ci matrix rollout | ci/orchestration | TK-286,scripts/ci/run-affected-check.js | completed |
+| TK-288 | sprint-003 | sprint-003 出口验收与 project-025 completion closeout | acceptance/closeout | TK-286,TK-287 | completed |
 
 ## 4. 依赖产物策略
 
@@ -88,3 +88,6 @@
 5. 2026-03-28：通过 `TK-284` 沿 `shared -> memory-store-adapter -> core-memory -> core-memory-semantics` 依赖链打通 Turbo package graph / cache policy pilot，并将 `TK-285` 切换为当前活跃验收任务。
 6. 2026-03-28：完成 `code_review_working-tree-20260328` 复核与收口，接受并修复 `TK-283 / TK-284` 的两项脚本健壮性问题，并将 CR 生命周期推进到 `resolved`。
 7. 2026-03-28：`TK-285` sprint-002 出口验收完成，4 项 exit criteria 全部满足，sprint-003 输入约束清单已冻结，sprint-002 切换为 `completed`，主执行流切换到 `sprint-003-project-references-affected-check-and-ci-matrix`。
+8. 2026-03-28：通过 `TK-286` 为 `shared -> memory-store-adapter -> core-memory -> core-memory-semantics` 依赖链建立 TS project references 与 `tsc -b` incremental pilot baseline。
+9. 2026-03-28：通过 `TK-287` 完成 `affected` gate planner 真执行路径、`check:affected` 入口与 fast / affected / full CI matrix 分层。
+10. 2026-03-28：通过 `TK-288` 完成 sprint-003 验收与 `project-025` completion closeout，产出 [project-025 completion audit summary](./project-025-gate-execution-efficiency-implementation-completion-audit-summary.md)，并将 `project-025` 切换为 `completed`；`current-context` 暂保留 `sprint-003` 作为 active closeout surface，等待下一条主执行流显式激活。

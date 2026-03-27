@@ -8,6 +8,7 @@
 - Docs root: `.repo-ai-governor/context/dev/project-025-gate-execution-efficiency-implementation`
 - Task records: `.repo-ai-governor/context/dev/project-025-gate-execution-efficiency-implementation/sprint-003-project-references-affected-check-and-ci-matrix/tasks/`
 - Review records: `.repo-ai-governor/context/dev/project-025-gate-execution-efficiency-implementation/sprint-003-project-references-affected-check-and-ci-matrix/review/`
+- Note: `project-025 / sprint-003` 真值已完成；在下一条主执行流显式激活前，当前仅暂保留为 active closeout surface。
 
 ## Active Streams
 
@@ -15,7 +16,7 @@
 
 ## Planned Follow-Up Streams
 
-（无——sprint-003 是 project-025 最后一个 sprint，激活后无后续 planned stream）
+（无——`project-025 / sprint-003` 真值已 completed；下一条主执行流尚未显式激活，当前暂保留本 stream 作为 active closeout surface）
 
 ## Completed Stream History
 

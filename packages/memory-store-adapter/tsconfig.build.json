@@ -3,8 +3,17 @@
   "extends": "../../tsconfig.build.json",
   "compilerOptions": {
     "rootDir": "../..",
-    "outDir": "../../dist"
+    "outDir": "../../dist",
+    "composite": true,
+    "incremental": true,
+    "declaration": true,
+    "tsBuildInfoFile": "../../dist/packages/memory-store-adapter/tsconfig.build.tsbuildinfo"
   },
+  "references": [
+    {
+      "path": "../shared/tsconfig.build.json"
+    }
+  ],
   "include": ["src/**/*"],
   "exclude": ["test/**/*"]
 }

@@ -1,6 +1,6 @@
 # TK-286 ts project references 与 incremental build baseline
 
-- Status: in_progress
+- Status: completed
 - Date: 2026-03-28
 - Owner: AI-Agent
 - Priority: P0
@@ -40,3 +40,5 @@ pnpm run check
 
 1. 2026-03-28：任务创建，状态初始化为 `planned`。
 2. 2026-03-28：sprint-003 激活，状态切换为 `in_progress`。
+3. 2026-03-28：为 `shared -> memory-store-adapter -> core-memory -> core-memory-semantics` 依赖链补齐 `references`、`composite`、`incremental`、`declaration` 与 `tsBuildInfoFile`，并新增 `tsconfig.package-local-pilot.build.json` 作为 `tsc -b` pilot solution。
+4. 2026-03-28：验证通过：`pnpm run check:package-local:pilot:incremental`、二次 `pnpm run check:package-local:pilot:incremental`、`pnpm run check:affected -- --changed-file packages/shared/src/index.ts`、`pnpm run check:full`；状态切换为 `completed`。

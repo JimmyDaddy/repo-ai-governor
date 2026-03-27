@@ -1,6 +1,6 @@
 # TK-287 affected gate planner 与 ci matrix rollout
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-28
 - Owner: AI-Agent
 - Priority: P0
@@ -38,3 +38,8 @@ pnpm run check
 ## 6. 执行记录
 
 1. 2026-03-28：任务创建，状态初始化为 `planned`。
+2. 2026-03-28：状态切换为 `in_progress`，开始实现 `affected` planner、runner cutover 与 CI matrix 分层。
+3. 2026-03-28：新增 `scripts/ci/run-affected-check.js`，将 docs-only 变更路由到 `check:fast`，将 `package_local_pilot` 范围路由到 `check:fast + check:package-local:pilot:incremental + check:package-local:pilot`，其余变更回退到 `check:full`。
+4. 2026-03-28：完成 `run-gate-check.js` 的 `affected` profile script-backed cutover、`package.json` 新入口、`.github/workflows/quality-gate.yml` fast / affected / full matrix 分层与 integration test 更新。
+5. 2026-03-28：验证通过：`pnpm exec biome check scripts/ci/run-gate-check.js scripts/ci/run-affected-check.js test/gate-runner-output.integration.test.ts .github/workflows/quality-gate.yml package.json tsconfig.package-local-pilot.build.json packages/shared/tsconfig.build.json packages/memory-store-adapter/tsconfig.build.json packages/core-memory/tsconfig.build.json packages/core-memory-semantics/tsconfig.build.json`、`pnpm vitest run --config vitest.integration.config.ts test/gate-runner-output.integration.test.ts`、`node ./scripts/ci/run-affected-check.js --dry-run --output json --changed-file packages/shared/src/index.ts`、`node ./scripts/ci/run-gate-check.js --profile affected --dry-run --changed-file packages/shared/src/index.ts`、`pnpm run check:affected -- --changed-file packages/shared/src/index.ts`；状态切换为 `completed`。
+6. 2026-03-28：完成 CR `2.2` 修复，补充 `.codex/` 与 `docs/` 的 doc-only 路由覆盖，并新增 `.codex` 文档变更回归测试；`resolved_code_review_working-tree-20260328-sprint-003.md` 已收口。
