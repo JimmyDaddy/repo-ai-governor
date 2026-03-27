@@ -43,16 +43,12 @@ export const MemoryPromotionOutcome = {
 export const DEFAULT_MEMORY_RECALL_LAYERS = [
   MemoryRecallLayer.EXECUTION,
   MemoryRecallLayer.SESSION,
-  MemoryRecallLayer.WORKSPACE,
-  MemoryRecallLayer.USER,
   MemoryRecallLayer.NORMATIVE,
 ] as const;
 
 export const DEFAULT_MEMORY_RECALL_ORDER = [
   MemoryRecallKind.EXECUTION_SHORT_TERM_FACT,
   MemoryRecallKind.SESSION,
-  MemoryRecallKind.WORKSPACE,
-  MemoryRecallKind.USER,
   MemoryRecallKind.NORMATIVE_PROJECTION,
 ] as const;
 

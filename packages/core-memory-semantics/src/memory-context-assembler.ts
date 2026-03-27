@@ -1,6 +1,7 @@
 import {
   DEFAULT_MEMORY_CONTEXT_RECORD_LIMIT,
   MEMORY_CANONICAL_SOURCE_NOTE,
+  MEMORY_PROMOTION_FORBIDDEN_SENSITIVITY_LABELS,
   MemoryContextAssemblyOutcome,
 } from "./constants/index.js";
 import type {
@@ -10,6 +11,15 @@ import type {
   MemoryRecalledRecord,
   MemorySourceRef,
 } from "./types/index.js";
+
+const MEMORY_CONTEXT_ALLOWED_RUNTIME_VISIBILITY = ["internal", "public", "runtime"] as const;
+const MEMORY_CONTEXT_REDACTED_SUMMARY_BY_REASON = {
+  missing_sensitivity_labels: "[redacted: sensitivity_labels_required]",
+  sensitivity_policy: "[redacted: sensitivity_policy]",
+  visibility_policy: "[redacted: visibility_policy]",
+} as const;
+
+type MemoryContextRedactionReason = keyof typeof MEMORY_CONTEXT_REDACTED_SUMMARY_BY_REASON;
 
 /**
  * Assembles prompt-safe and execution-safe memory context from one recall result.
@@ -27,15 +37,18 @@ export class MemoryContextAssembler {
   public assemble(request: MemoryContextAssemblyRequest): MemoryContextAssemblyResult {
     const maxRecordCount = request.maxRecordCount ?? DEFAULT_MEMORY_CONTEXT_RECORD_LIMIT;
     const selectedRecords = request.recallResult.selectedRecords.slice(0, maxRecordCount);
+    const safetyDecisions = selectedRecords.map((record) => this.evaluateRecordSafety(record));
     const truncationReason =
       request.recallResult.selectedRecords.length > maxRecordCount
         ? `selected_records_truncated_to_${maxRecordCount}`
         : null;
     const sourceRefs = this.collectSourceRefs(selectedRecords);
     const outputContext = {
-      recallItems: selectedRecords.map((record) => this.renderOutputItem(record)),
+      recallItems: selectedRecords.map((record, index) =>
+        this.renderOutputItem(record, safetyDecisions[index]?.redactionReason ?? null),
+      ),
     };
-    const safetyNotes = this.collectSafetyNotes(selectedRecords);
+    const safetyNotes = this.collectSafetyNotes(selectedRecords, safetyDecisions);
     const layerCounts = selectedRecords.reduce<
       MemoryContextAssemblyResult["selectionSummary"]["layerCounts"]
     >((accumulator, record) => {
@@ -51,8 +64,11 @@ export class MemoryContextAssembler {
     const recordsMissingExplicitSourceRefs = selectedRecords.filter((record) =>
       record.sourceRefs.every((sourceRef) => sourceRef.referenceType === "record"),
     ).length;
-    const contractSafeSummaryItems = selectedRecords.map((record) => {
-      const outputItem = this.renderOutputItem(record);
+    const contractSafeSummaryItems = selectedRecords.map((record, index) => {
+      const outputItem = this.renderOutputItem(
+        record,
+        safetyDecisions[index]?.redactionReason ?? null,
+      );
       return {
         recordId: outputItem.recordId,
         layer: outputItem.layer,
@@ -65,6 +81,7 @@ export class MemoryContextAssembler {
         ).length,
         updatedAt: outputItem.updatedAt,
         sensitivity: [...outputItem.sensitivity],
+        visibility: [...outputItem.visibility],
       };
     });
     const assemblyOutcome =
@@ -132,15 +149,19 @@ export class MemoryContextAssembler {
    * @param record Selected recalled record.
    * @returns Prompt-safe context item.
    */
-  private renderOutputItem(record: MemoryRecalledRecord): MemoryContextOutputItem {
+  private renderOutputItem(
+    record: MemoryRecalledRecord,
+    redactionReason: MemoryContextRedactionReason | null,
+  ): MemoryContextOutputItem {
     return {
       recordId: record.recordId,
       layer: record.layer,
       memoryKind: record.memoryKind,
-      summary: this.renderRecordSummary(record),
+      summary: this.renderRecordSummary(record, redactionReason),
       sourceRefs: record.sourceRefs.map((sourceRef) => sourceRef.reference),
       updatedAt: record.updatedAt,
       sensitivity: [...record.sensitivity],
+      visibility: [...record.visibility],
     };
   }
 
@@ -149,7 +170,14 @@ export class MemoryContextAssembler {
    * @param record Selected recalled record.
    * @returns Compact summary string.
    */
-  private renderRecordSummary(record: MemoryRecalledRecord): string {
+  private renderRecordSummary(
+    record: MemoryRecalledRecord,
+    redactionReason: MemoryContextRedactionReason | null,
+  ): string {
+    if (redactionReason) {
+      return MEMORY_CONTEXT_REDACTED_SUMMARY_BY_REASON[redactionReason];
+    }
+
     const summaryParts: string[] = [];
     const addSummaryPart = (value: unknown) => {
       if (typeof value !== "string") {
@@ -183,7 +211,10 @@ export class MemoryContextAssembler {
    * @param selectedRecords Selected recalled records.
    * @returns Deduplicated safety notes.
    */
-  private collectSafetyNotes(selectedRecords: MemoryRecalledRecord[]): string[] {
+  private collectSafetyNotes(
+    selectedRecords: MemoryRecalledRecord[],
+    safetyDecisions: Array<{ redactionReason: MemoryContextRedactionReason | null }>,
+  ): string[] {
     const safetyNotes = new Set<string>();
 
     if (
@@ -194,10 +225,64 @@ export class MemoryContextAssembler {
       safetyNotes.add("some_records_only_have_record_identity_fallback");
     }
 
-    if (selectedRecords.some((record) => record.sensitivity.length === 0)) {
-      safetyNotes.add("some_records_missing_sensitivity_labels");
+    if (
+      safetyDecisions.some((decision) => decision.redactionReason === "missing_sensitivity_labels")
+    ) {
+      safetyNotes.add("some_records_redacted_due_to_missing_sensitivity_labels");
+    }
+
+    if (safetyDecisions.some((decision) => decision.redactionReason === "sensitivity_policy")) {
+      safetyNotes.add("some_records_redacted_due_to_sensitivity_policy");
+    }
+
+    if (safetyDecisions.some((decision) => decision.redactionReason === "visibility_policy")) {
+      safetyNotes.add("some_records_redacted_due_to_visibility_policy");
     }
 
     return Array.from(safetyNotes.values());
+  }
+
+  /**
+   * Evaluates whether one recalled record must be redacted before entering runtime context.
+   * @param record Selected recalled record.
+   * @returns One redaction decision.
+   */
+  private evaluateRecordSafety(record: MemoryRecalledRecord): {
+    redactionReason: MemoryContextRedactionReason | null;
+  } {
+    if (record.sensitivity.length === 0) {
+      return {
+        redactionReason: "missing_sensitivity_labels",
+      };
+    }
+
+    if (
+      record.sensitivity.some((label) =>
+        MEMORY_PROMOTION_FORBIDDEN_SENSITIVITY_LABELS.includes(
+          label.toLowerCase() as (typeof MEMORY_PROMOTION_FORBIDDEN_SENSITIVITY_LABELS)[number],
+        ),
+      )
+    ) {
+      return {
+        redactionReason: "sensitivity_policy",
+      };
+    }
+
+    if (
+      record.visibility.length > 0 &&
+      !record.visibility.some((label) =>
+        MEMORY_CONTEXT_ALLOWED_RUNTIME_VISIBILITY.includes(
+          label.toLowerCase() as (typeof MEMORY_CONTEXT_ALLOWED_RUNTIME_VISIBILITY)[number],
+        ),
+      )
+    ) {
+      return {
+        redactionReason: "visibility_policy",
+      };
+    }
+
+    return {
+      redactionReason: null,
+    };
   }
 }

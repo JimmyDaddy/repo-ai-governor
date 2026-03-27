@@ -1,0 +1,22 @@
+# checklist
+
+- [x] TK-255 project-022 激活与 project-021 closeout handoff
+  - 2026-03-27：任务创建，状态初始化为 `planned`。
+  - 2026-03-27：状态切换为 `in_progress`，开始创建 `project-022 / sprint-001` skeleton、切换 current-context 并迁移 `project-021 / sprint-003` history。
+  - 2026-03-27：已完成 `project-022` skeleton、active execution surface 切换、completed history 迁移、delivery handoff 同步与 `DA-255`。
+- [x] TK-256 workspace-user layer contract 对齐与 future capability 降级
+  - 2026-03-27：任务创建，状态初始化为 `planned`。
+  - 2026-03-27：状态切换为 `in_progress`，开始盘点 `workspace/user` 在 docs、default constants、recall service 与 substrate 中的真实状态。
+  - 2026-03-27：已完成 module overview / recall contract / ADR / default constants / task-driven runtime tests 对齐，并形成 `DA-256`。
+- [x] TK-257 sensitivity visibility assembly enforcement baseline
+  - 2026-03-27：任务创建，状态初始化为 `planned`。
+  - 2026-03-27：状态切换为 `in_progress`，开始明确缺失 sensitivity 标签、禁止 sensitivity 标签和显式 visibility 不允许 runtime 消费时的最小 enforcement。
+  - 2026-03-27：已完成 assembly redaction baseline、promotion sensitivity label enforcement、contract truth 对齐、回归测试与 `DA-257`。
+- [x] TK-258 adopter-facing promotion output 与 replay diagnostics baseline
+  - 2026-03-27：任务创建，状态初始化为 `planned`。
+  - 2026-03-27：状态切换为 `in_progress`，开始把 promotion output 扩展到 adopter-facing `run`/`replay` CLI surface 与 replay diagnostics artifact。
+  - 2026-03-27：已完成 `run`/`replay` message augmentation、replay explain lines、replay diagnostics summary、相关 unit/integration tests 与 `DA-258`。
+- [x] TK-259 sprint-001 出口验收与 sprint-002 输入约束
+  - 2026-03-27：任务创建，状态初始化为 `planned`。
+  - 2026-03-27：状态切换为 `in_progress`，开始汇总 contract alignment、safety hardening 与 adopter-facing consumer rollout 证据，并冻结 `sprint-002` 输入约束。
+  - 2026-03-27：已完成 `DA-259`、resolved sprint-001 working-tree review、project/sprint/current-context truth 同步与 `sprint-002-policy-tuning-and-surface-expansion` planned follow-up 冻结。

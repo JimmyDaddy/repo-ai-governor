@@ -3,19 +3,19 @@
 ## Primary Stream
 
 - Status: active
-- Project: `project-021-memory-semantics-runtime-implementation`
-- Sprint: `sprint-003-promotion-output-rollout-and-project-closeout`
-- Docs root: `.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation`
-- Task records: `.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-003-promotion-output-rollout-and-project-closeout/tasks/`
-- Review records: `.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-003-promotion-output-rollout-and-project-closeout/review/`
+- Project: `project-022-memory-semantics-safety-and-consumer-hardening`
+- Sprint: `sprint-001-contract-alignment-safety-and-adopter-output-baseline`
+- Docs root: `.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening`
+- Task records: `.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/sprint-001-contract-alignment-safety-and-adopter-output-baseline/tasks/`
+- Review records: `.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/sprint-001-contract-alignment-safety-and-adopter-output-baseline/review/`
 
 ## Active Streams
 
-- `primary`: project=`project-021-memory-semantics-runtime-implementation`, sprint=`sprint-003-promotion-output-rollout-and-project-closeout`, docs=`.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation`, plan=`.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/plan.md`, tasks=`.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-003-promotion-output-rollout-and-project-closeout/tasks/`, checklist=`.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-003-promotion-output-rollout-and-project-closeout/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-003-promotion-output-rollout-and-project-closeout/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-003-promotion-output-rollout-and-project-closeout/review/`, status=`active`
+- `primary`: project=`project-022-memory-semantics-safety-and-consumer-hardening`, sprint=`sprint-001-contract-alignment-safety-and-adopter-output-baseline`, docs=`.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening`, plan=`.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/plan.md`, tasks=`.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/sprint-001-contract-alignment-safety-and-adopter-output-baseline/tasks/`, checklist=`.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/sprint-001-contract-alignment-safety-and-adopter-output-baseline/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/sprint-001-contract-alignment-safety-and-adopter-output-baseline/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/sprint-001-contract-alignment-safety-and-adopter-output-baseline/review/`, status=`active`
 
 ## Planned Follow-Up Streams
 
-1. 当前无 planned follow-up stream；如 `project-021` closeout 后仍存在新增 rollout 需求，再按实际输入补建新的 planned stream。
+1. `planned-next`: project=`project-022-memory-semantics-safety-and-consumer-hardening`, sprint=`sprint-002-policy-tuning-and-surface-expansion`, docs=`.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening`, plan=`.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/plan.md`, status=`planned`, notes=`仅在需要继续扩展 adopter-facing consumer、policy tuning 或进一步落地 workspace/user seam 时激活`
 
 ## Completed Stream History
 

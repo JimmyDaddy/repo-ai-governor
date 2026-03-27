@@ -25,7 +25,7 @@
 ## 3. Behavioral Constraints
 
 1. recall 必须是显式 phase，而不是 provider 注册后的默认自动注入。
-2. 默认 recall order 固定为 `execution short-term facts -> session -> workspace -> user -> normative_projection`。
+2. 当前 `v1` 的默认 active recall order 固定为 `execution short-term facts -> session -> normative_projection`；`workspace / user` 只允许作为 reserved logical layer 保留，直到 substrate、filtering 与 ownership seam 真正落地。
 3. metadata filtering 必须先于任何更重的搜索或排序能力。
 4. working state 不得被伪装成长期 recall memory 写回 provider store。
 5. canonical-source projection 只能作为 recall aid，不得替代 source document 本体。
@@ -39,4 +39,5 @@
 
 1. `v1` 只要求 metadata filtering、recall ordering 与 selection policy 稳定可判定。
 2. `v1` 不要求 semantic/vector/hybrid search 成为基础门槛。
-3. `v1` 允许将 `user` 层保持为预留逻辑层，而不要求当前 runtime 必须立即落地完整 user memory。
+3. `v1` 允许将 `workspace / user` 保持为预留逻辑层，而不要求当前 runtime 必须立即落地完整 workspace/user memory。
+4. 当 `workspace / user` 尚未落地时，默认 recall 常量、task-driven runtime 与 adopter-facing consumer 不应把它们表现成 active baseline。

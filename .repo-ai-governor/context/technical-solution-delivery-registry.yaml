@@ -99,21 +99,23 @@ deliveries:
     delivery_mode: followup_required
     consumer_surfaces:
       - runtime_service
+      - adopter_cli
     user_impact_level: medium
-    execution_status: completed
-    rollout_status: completed
+    execution_status: in_progress
+    rollout_status: in_progress
     owner: runtime
-    project_ref: project-021-memory-semantics-runtime-implementation
-    sprint_ref: sprint-003-promotion-output-rollout-and-project-closeout
+    project_ref: project-022-memory-semantics-safety-and-consumer-hardening
+    sprint_ref: sprint-001-contract-alignment-safety-and-adopter-output-baseline
     task_ids:
-      - TK-251
-      - TK-252
-      - TK-253
-      - TK-254
-    project_plan_path: .repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/plan.md
-    sprint_plan_path: .repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-003-promotion-output-rollout-and-project-closeout/plan.md
-    task_csv_path: .repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-003-promotion-output-rollout-and-project-closeout/tasks/tasks.csv
-    handoff_artifact_path: .repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-003-promotion-output-rollout-and-project-closeout/tasks/DA-254-sprint-003-exit-acceptance-and-project-021-completion-closeout.md
+      - TK-255
+      - TK-256
+      - TK-257
+      - TK-258
+      - TK-259
+    project_plan_path: .repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/plan.md
+    sprint_plan_path: .repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/sprint-001-contract-alignment-safety-and-adopter-output-baseline/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/sprint-001-contract-alignment-safety-and-adopter-output-baseline/tasks/tasks.csv
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/sprint-001-contract-alignment-safety-and-adopter-output-baseline/tasks/DA-259-sprint-001-exit-acceptance-and-sprint-002-input-constraints.md
     rollout_artifacts:
       - .repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/plan.md
       - .repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-001-recall-context-assembly-baseline/tasks/DA-242-project-021-activation-and-memory-semantics-delivery-handoff.md
@@ -127,6 +129,13 @@ deliveries:
       - .repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-003-promotion-output-rollout-and-project-closeout/tasks/DA-253-project-021-completion-audit-and-delivery-closeout-baseline.md
       - .repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/sprint-003-promotion-output-rollout-and-project-closeout/tasks/DA-254-sprint-003-exit-acceptance-and-project-021-completion-closeout.md
       - .repo-ai-governor/context/dev/project-021-memory-semantics-runtime-implementation/project-021-memory-semantics-runtime-implementation-completion-audit-summary.md
+      - .repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/plan.md
+      - .repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/sprint-001-contract-alignment-safety-and-adopter-output-baseline/plan.md
+      - .repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/sprint-001-contract-alignment-safety-and-adopter-output-baseline/tasks/DA-255-project-022-activation-and-project-021-closeout-handoff.md
+      - .repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/sprint-001-contract-alignment-safety-and-adopter-output-baseline/tasks/DA-256-workspace-user-layer-contract-alignment-and-future-capability-downgrade.md
+      - .repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/sprint-001-contract-alignment-safety-and-adopter-output-baseline/tasks/DA-257-sensitivity-visibility-assembly-enforcement-baseline.md
+      - .repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/sprint-001-contract-alignment-safety-and-adopter-output-baseline/tasks/DA-258-adopter-facing-promotion-output-and-replay-diagnostics-baseline.md
+      - .repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/sprint-001-contract-alignment-safety-and-adopter-output-baseline/tasks/DA-259-sprint-001-exit-acceptance-and-sprint-002-input-constraints.md
     accepted_at: 2026-03-27
 
   - solution_id: technical-solution.langgraph-orchestration-direction

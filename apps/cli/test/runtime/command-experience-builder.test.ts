@@ -74,6 +74,12 @@ describe("Cli command experience builder", () => {
         rehearsalPath: null,
         stageStatus: null,
       },
+      memoryPromotion: {
+        outcome: "session_summary_merged",
+        plannedMergeCount: 1,
+        mergedCount: 1,
+        sessionSummaryProjectionKey: "session-123",
+      },
     });
 
     expect(
@@ -85,6 +91,9 @@ describe("Cli command experience builder", () => {
     ).toBe(true);
     expect(experience.interactionPrompts[0]?.blocking).toBe(true);
     expect(experience.layeredLogs.summary).toContain("root_cause=policy_hitl_required");
+    expect(experience.layeredLogs.summary).toContain(
+      "memory_promotion_outcome=session_summary_merged",
+    );
   });
 
   it("builds replay experience with diagnostics backlink and non-blocking prompts", () => {
@@ -104,11 +113,23 @@ describe("Cli command experience builder", () => {
           pointers: [],
           explainLines: ["line"],
         },
+        memorySemantics: {
+          contextSelectedCount: 1,
+          contextAssemblyOutcome: "context_ready",
+          promotionOutcome: "session_summary_merged",
+          plannedMergeCount: 1,
+          mergedCount: 1,
+          sessionSummaryProjectionKey: "session-234",
+        },
       },
     });
 
     expect(experience.roleProgress[0]?.backlink?.artifactPath).toBe("/tmp/replay-diagnostics.json");
     expect(experience.interactionPrompts.every((prompt) => prompt.blocking === false)).toBe(true);
+    expect(experience.layeredLogs.summary).toContain(
+      "memory_promotion_outcome=session_summary_merged",
+    );
+    expect(experience.layeredLogs.detailed).toContain("memory_session_projection_key=session-234");
   });
 
   it("surfaces controlled delivery rehearsal progress and layered logs", () => {

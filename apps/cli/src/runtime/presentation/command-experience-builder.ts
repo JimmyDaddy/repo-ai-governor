@@ -159,6 +159,12 @@ export class CliCommandExperienceBuilder {
       rehearsalPath: string | null;
       stageStatus: RuntimeStageStatus | null;
     };
+    memoryPromotion?: {
+      outcome: string;
+      plannedMergeCount: number;
+      mergedCount: number;
+      sessionSummaryProjectionKey: string | null;
+    } | null;
   }): CliCommandExperiencePayload {
     const rootCause = this.resolveRunDiagnosticRootCause({
       policyOutcome: options.policyResult.policyOutcome,
@@ -463,6 +469,13 @@ export class CliCommandExperienceBuilder {
           `inline_review_skip_reason=${options.reviewChain.skipReason ?? "none"}`,
           `delivery_rehearsal=${options.deliveryRehearsal.status}`,
           `delivery_rehearsal_action=${options.deliveryRehearsal.rehearsalAction ?? "none"}`,
+          ...(options.memoryPromotion
+            ? [
+                `memory_promotion_outcome=${options.memoryPromotion.outcome}`,
+                `memory_promotion_planned_merge_count=${options.memoryPromotion.plannedMergeCount}`,
+                `memory_promotion_merged_count=${options.memoryPromotion.mergedCount}`,
+              ]
+            : []),
         ],
         detailed: [
           `report_path=${options.reportPath}`,
@@ -472,6 +485,11 @@ export class CliCommandExperienceBuilder {
           `inline_review_verify_path=${options.reviewChain.reviewVerifyPath ?? "none"}`,
           `inline_review_ledger_backfill_path=${options.reviewChain.ledgerBackfillPath ?? "none"}`,
           `delivery_rehearsal_path=${options.deliveryRehearsal.rehearsalPath ?? "none"}`,
+          ...(options.memoryPromotion
+            ? [
+                `memory_session_projection_key=${options.memoryPromotion.sessionSummaryProjectionKey ?? "none"}`,
+              ]
+            : []),
         ],
       },
     });
@@ -613,10 +631,21 @@ export class CliCommandExperienceBuilder {
         summary: [
           `source_type=${options.replayResolution.sourceType}`,
           `matched_count=${options.replayResolution.explainResult.matchedCount}`,
+          ...(options.replayResolution.memorySemantics
+            ? [
+                `memory_promotion_outcome=${options.replayResolution.memorySemantics.promotionOutcome ?? "none"}`,
+                `memory_promotion_merged_count=${options.replayResolution.memorySemantics.mergedCount}`,
+              ]
+            : []),
         ],
         detailed: [
           `source_path=${options.replayPath}`,
           `diagnostics_path=${options.diagnosticsPath}`,
+          ...(options.replayResolution.memorySemantics
+            ? [
+                `memory_session_projection_key=${options.replayResolution.memorySemantics.sessionSummaryProjectionKey ?? "none"}`,
+              ]
+            : []),
         ],
       },
     });

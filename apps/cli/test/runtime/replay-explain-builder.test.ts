@@ -35,6 +35,43 @@ function createExecutionReportFixture(): ExecutionReport {
         outputLocale: "zh-CN",
       },
     ],
+    memorySemantics: {
+      contextSummary: {
+        queryIntent: "cli_task_driven_execution",
+        assemblyOutcome: "context_ready",
+        selectedRecordCount: 1,
+        sourceRefCount: 1,
+        recordsMissingExplicitSourceRefs: 0,
+        truncationReason: null,
+        layerCounts: {
+          execution: 1,
+        },
+        memoryKindCounts: {
+          execution_short_term_fact: 1,
+        },
+        safetyNotes: [],
+      },
+      promotion: {
+        outcome: "session_summary_merged",
+        candidateCount: 1,
+        promotableCount: 1,
+        plannedMergeCount: 1,
+        mergedCount: 1,
+        skippedCount: 0,
+        rejectedCount: 0,
+        targetLayerCounts: {
+          session: 1,
+        },
+        failureReasonCounts: {},
+        phaseResults: [],
+        sessionSummaryProjection: {
+          scope: "session",
+          key: "session-123",
+          promotedRecordIds: ["execution:record-1"],
+          updatedAt: "2026-03-24T12:00:00Z",
+        },
+      },
+    },
   };
 }
 
@@ -55,6 +92,10 @@ describe("Cli replay explain builder", () => {
       CliRunReplaySourceType.EXECUTION_REPORT,
     );
     expect(resolution.explainResult.explainLines[0]).toContain("stage=stage-execute");
+    expect(resolution.explainResult.explainLines).toContain(
+      "memory_promotion_outcome=session_summary_merged",
+    );
+    expect(resolution.memorySemantics?.sessionSummaryProjectionKey).toBe("session-123");
   });
 
   it("passes through replay-explain payloads without rebuilding snapshot", () => {

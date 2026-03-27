@@ -1316,50 +1316,130 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
   });
 
   it("supports replay diagnostics from execution report artifacts", async () => {
-    await withRuntimeFixture(async (fixture) => {
-      const runtimeWithOverrides = fixture.runtime as unknown as {
-        collectGitChangedPaths: () => Promise<string[]>;
-      };
-      runtimeWithOverrides.collectGitChangedPaths = async () => [];
-      const runResult = await fixture.runtime.execute(CliCommandName.RUN);
-      const reportPath = runResult.commandResult.artifacts?.find(
-        (artifact) => artifact.id === "execution_report",
-      )?.path;
-      expect(typeof reportPath).toBe("string");
+    await withRuntimeFixture(
+      async (fixture) => {
+        await writeTaskCardFixture(fixture.workspaceRoot, "TK-099");
+        const currentContextPath = resolve(fixture.workspaceRoot, "context", "current-context.md");
+        await mkdir(resolve(fixture.workspaceRoot, "context"), { recursive: true });
+        await writeFile(
+          currentContextPath,
+          [
+            "# Workspace Current Context",
+            "",
+            "## Primary Stream",
+            "",
+            "- Status: active",
+            "- Project: `project-010-local-model-and-ide-expansion`",
+            "- Sprint: `sprint-002-autonomous-mainchain-foundation`",
+            "",
+          ].join("\n"),
+          "utf8",
+        );
+        const memoryManager = new MemoryManager(new MemoryStoreAdapter(fixture.provider));
+        await memoryManager.writeEntry({
+          scope: MemoryScope.EXECUTION,
+          key: "historic:stage-report:record-1",
+          payload: {
+            summary: "Verifier requested follow-up audit on the same dependency edge.",
+            artifactId: "DA-121",
+            sourceRefs: [
+              ".repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-002-autonomous-mainchain-foundation/tasks/DA-121-shared-and-package-local-boundary-hardening-and-exports-cleanup.md",
+            ],
+          },
+          tags: [
+            "audit-record",
+            "project:project-010-local-model-and-ide-expansion",
+            "sprint:sprint-002-autonomous-mainchain-foundation",
+            "task:TK-099",
+            "artifact:DA-121",
+            "sensitivity:internal",
+            "visibility:runtime",
+          ],
+          updatedAt: "2026-03-27T00:00:04Z",
+        });
+        const runtimeWithOverrides = fixture.runtime as unknown as {
+          collectGitChangedPaths: () => Promise<string[]>;
+        };
+        runtimeWithOverrides.collectGitChangedPaths = async () => [];
+        const runResult = await fixture.runtime.execute(CliCommandName.RUN);
+        expect(runResult.message).toContain("memory_promotion=session_summary_merged");
+        const reportPath = runResult.commandResult.artifacts?.find(
+          (artifact) => artifact.id === "execution_report",
+        )?.path;
+        expect(typeof reportPath).toBe("string");
 
-      const replayRuntime = new CliGovernanceRuntime({
-        currentWorkingDirectory: fixture.tempRoot,
-        workspace: fixture.workspace,
-        configSource: "default",
-        profileId: null,
-        locale: "en-US",
-        outputMode: ErrorOutputEnvironment.PLAIN,
-        isTty: false,
-        memoryConfig: {
-          ...DEFAULT_MEMORY_RUNTIME_CONFIG,
-          storeRoot: "context/memory",
-        },
-        memoryStoreRoot: fixture.memoryStoreRoot,
-        memoryStoreProviderName: fixture.provider.constructor.name,
-        memoryStoreProvider: fixture.provider,
-        adaptersConfig: createAdaptersConfigFixture(),
-        adapterLocalProbeOverrides: createAdapterLocalProbeOverrides(),
-        codexExecRunner: createCodexExecRunnerFixture(),
+        const replayRuntime = new CliGovernanceRuntime({
+          currentWorkingDirectory: fixture.tempRoot,
+          workspace: fixture.workspace,
+          configSource: "default",
+          profileId: null,
+          locale: "en-US",
+          outputMode: ErrorOutputEnvironment.PLAIN,
+          isTty: false,
+          memoryConfig: {
+            ...DEFAULT_MEMORY_RUNTIME_CONFIG,
+            storeRoot: "context/memory",
+          },
+          memoryStoreRoot: fixture.memoryStoreRoot,
+          memoryStoreProviderName: fixture.provider.constructor.name,
+          memoryStoreProvider: fixture.provider,
+          adaptersConfig: createAdaptersConfigFixture(),
+          adapterLocalProbeOverrides: createAdapterLocalProbeOverrides(),
+          codexExecRunner: createCodexExecRunnerFixture(),
+          runtimeDebugOptions: {
+            dryRun: false,
+            trace: true,
+            replayPath: String(reportPath),
+          },
+        });
+        const replayResult = await replayRuntime.execute(CliCommandName.RUN);
+
+        expect(replayResult.commandResult.operation).toBe("governance_run_replay");
+        expect(replayResult.commandResult.details?.replay_source_type).toBe("execution_report");
+        expect(replayResult.message).toContain("memory_promotion=session_summary_merged");
+        expect(replayResult.commandResult.details?.replay_memory_promotion_outcome).toBe(
+          "session_summary_merged",
+        );
+        const replayDiagnosticsPath = replayResult.commandResult.artifacts?.find(
+          (artifact) => artifact.id === "replay_diagnostics",
+        )?.path;
+        expect(typeof replayDiagnosticsPath).toBe("string");
+        const replayDiagnosticsPayload = JSON.parse(
+          await readFile(String(replayDiagnosticsPath), "utf8"),
+        ) as {
+          summary?: {
+            memorySemantics?: {
+              promotionOutcome?: string;
+              sessionSummaryProjectionKey?: string | null;
+            };
+          };
+          explain?: {
+            explainLines?: string[];
+          };
+        };
+        expect(replayDiagnosticsPayload.summary?.memorySemantics?.promotionOutcome).toBe(
+          "session_summary_merged",
+        );
+        expect(
+          replayDiagnosticsPayload.summary?.memorySemantics?.sessionSummaryProjectionKey,
+        ).toMatch(/^session-cli-run-/u);
+        expect(replayDiagnosticsPayload.explain?.explainLines).toEqual(
+          expect.arrayContaining([
+            "memory_promotion_outcome=session_summary_merged",
+            expect.stringMatching(/^memory_session_projection_key=session-cli-run-/u),
+          ]),
+        );
+      },
+      {
         runtimeDebugOptions: {
           dryRun: false,
-          trace: true,
-          replayPath: String(reportPath),
+          trace: false,
+          replayPath: null,
+          adapters: true,
+          taskId: "TK-099",
         },
-      });
-      const replayResult = await replayRuntime.execute(CliCommandName.RUN);
-
-      expect(replayResult.commandResult.operation).toBe("governance_run_replay");
-      expect(replayResult.commandResult.details?.replay_source_type).toBe("execution_report");
-      const replayDiagnosticsPath = replayResult.commandResult.artifacts?.find(
-        (artifact) => artifact.id === "replay_diagnostics",
-      )?.path;
-      expect(typeof replayDiagnosticsPath).toBe("string");
-    });
+      },
+    );
   });
 
   it("writes review-verify ledger backfill artifact with attribution metadata", async () => {

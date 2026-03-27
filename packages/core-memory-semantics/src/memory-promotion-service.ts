@@ -216,6 +216,7 @@ export class MemoryPromotionService {
           label.toLowerCase() as (typeof MEMORY_PROMOTION_FORBIDDEN_SENSITIVITY_LABELS)[number],
         ),
     );
+    const sensitivityLabeled = candidate.sensitivity.length > 0;
     const canonicalSourceSafe =
       candidate.sourceLayer !== MemoryRecallLayer.NORMATIVE &&
       candidate.memoryKind !== MemoryRecallKind.NORMATIVE_PROJECTION;
@@ -230,6 +231,9 @@ export class MemoryPromotionService {
     if (!traceable) {
       failureReasons.push("explicit_traceability_missing");
     }
+    if (!sensitivityLabeled) {
+      failureReasons.push("sensitivity_labels_required");
+    }
     if (!sensitivitySafe) {
       failureReasons.push("sensitivity_requires_redaction");
     }
@@ -241,6 +245,7 @@ export class MemoryPromotionService {
       reusable,
       attributable,
       traceable,
+      sensitivityLabeled,
       sensitivitySafe,
       canonicalSourceSafe,
       failureReasons,

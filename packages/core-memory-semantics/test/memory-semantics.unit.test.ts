@@ -103,7 +103,7 @@ describe("core-memory-semantics", () => {
         summary: "Session asked for explicit verification before closeout.",
         sourceRefs: ["session:review-note"],
       },
-      tags: ["execution:exec-001"],
+      tags: ["execution:exec-001", "sensitivity:internal"],
       updatedAt: "2026-03-27T00:00:02Z",
     });
     await memoryManager.writeEntry({
@@ -114,7 +114,7 @@ describe("core-memory-semantics", () => {
         referencePath:
           ".repo-ai-governor/normative_knowledge_sources/repo-ai-governor-overall-technical-solution.md",
       },
-      tags: ["policy"],
+      tags: ["policy", "sensitivity:internal"],
       updatedAt: "2026-03-27T00:00:01Z",
     });
 
@@ -256,7 +256,7 @@ describe("core-memory-semantics", () => {
         referencePath:
           ".repo-ai-governor/normative_knowledge_sources/repo-ai-governor-architecture-and-repo-layering.md",
       },
-      tags: ["policy"],
+      tags: ["policy", "sensitivity:internal"],
       updatedAt: "2026-03-27T00:00:02Z",
     });
 
@@ -505,5 +505,102 @@ describe("core-memory-semantics", () => {
     });
 
     expect(sessionRecord).toBeUndefined();
+  });
+
+  it("redacts assembly summaries when sensitivity labels are missing or visibility excludes runtime", async () => {
+    const memoryManager = new MemoryManager(new MemoryStoreAdapter(createInMemoryStoreProvider()));
+    await memoryManager.writeEntry({
+      scope: MemoryScope.EXECUTION,
+      key: "exec-990:missing-sensitivity",
+      payload: {
+        summary: "Missing sensitivity labels should not pass through unchanged.",
+        sourceRefs: [".repo-ai-governor/context/dev/project-022/tasks/TK-257.md"],
+      },
+      tags: ["task:TK-257"],
+      updatedAt: "2026-03-27T00:00:07Z",
+    });
+    await memoryManager.writeEntry({
+      scope: MemoryScope.EXECUTION,
+      key: "exec-990:visibility-adopter",
+      payload: {
+        summary: "Adopter-only summary should not enter runtime context.",
+        sourceRefs: [".repo-ai-governor/context/dev/project-022/tasks/TK-258.md"],
+        visibility: "adopter",
+      },
+      tags: ["task:TK-258", "sensitivity:internal"],
+      updatedAt: "2026-03-27T00:00:06Z",
+    });
+    await memoryManager.writeEntry({
+      scope: MemoryScope.EXECUTION,
+      key: "exec-990:runtime-visible",
+      payload: {
+        summary: "Runtime-visible summary remains available.",
+        sourceRefs: [".repo-ai-governor/context/dev/project-022/tasks/DA-255.md"],
+      },
+      tags: ["task:TK-255", "sensitivity:internal", "visibility:runtime"],
+      updatedAt: "2026-03-27T00:00:05Z",
+    });
+
+    const recallResult = await new MemoryRecallService(memoryManager).recall({
+      queryIntent: "memory_safety_rehearsal",
+      workspaceId: "/tmp/workspace",
+      executionId: "exec-990",
+      requestedLayers: [MemoryRecallLayer.EXECUTION],
+      requestedMemoryKinds: [MemoryRecallKind.EXECUTION_SHORT_TERM_FACT],
+      metadataFilters: {
+        includeNormativeBaseline: false,
+        normativeKeyPrefixes: [],
+        normativeTags: [],
+        projectId: "project-022",
+        sprintId: "sprint-001",
+        taskId: "TK-257",
+        artifactIds: [],
+        limitPerQuery: 20,
+      },
+      recallOrder: [MemoryRecallKind.EXECUTION_SHORT_TERM_FACT],
+      selectionPolicy: MEMORY_RECALL_SELECTION_POLICY,
+    });
+
+    const assemblyResult = new MemoryContextAssembler().assemble({
+      recallResult,
+      maxRecordCount: 10,
+    });
+
+    expect(assemblyResult.outputContext.recallItems).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          recordId: "execution:exec-990:runtime-visible",
+          summary: "Runtime-visible summary remains available.",
+        }),
+        expect.objectContaining({
+          recordId: "execution:exec-990:visibility-adopter",
+          summary: "[redacted: visibility_policy]",
+        }),
+        expect.objectContaining({
+          recordId: "execution:exec-990:missing-sensitivity",
+          summary: "[redacted: sensitivity_labels_required]",
+        }),
+      ]),
+    );
+    expect(assemblyResult.contractSafeSummary.items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          recordId: "execution:exec-990:visibility-adopter",
+          summary: "[redacted: visibility_policy]",
+          visibility: ["adopter"],
+        }),
+        expect.objectContaining({
+          recordId: "execution:exec-990:missing-sensitivity",
+          summary: "[redacted: sensitivity_labels_required]",
+          visibility: [],
+        }),
+      ]),
+    );
+    expect(assemblyResult.safetyNotes).toEqual(
+      expect.arrayContaining([
+        "some_records_redacted_due_to_missing_sensitivity_labels",
+        "some_records_redacted_due_to_visibility_policy",
+      ]),
+    );
   });
 });

@@ -183,6 +183,7 @@ export class MemoryRecallService {
       updatedAt: record.updatedAt,
       sourceRefs: this.extractSourceRefs(record),
       sensitivity: this.extractSensitivity(record),
+      visibility: this.extractVisibility(record),
     };
   }
 
@@ -262,5 +263,40 @@ export class MemoryRecallService {
     }
 
     return Array.from(sensitivities.values()).sort((left, right) => left.localeCompare(right));
+  }
+
+  /**
+   * Extracts visibility labels from payload or tags.
+   * @param record Raw substrate record.
+   * @returns Deduplicated visibility labels.
+   */
+  private extractVisibility(record: MemoryRecord): string[] {
+    const visibilities = new Set<string>();
+    const visibilityValue = record.value.visibility;
+
+    if (typeof visibilityValue === "string" && visibilityValue.trim().length > 0) {
+      visibilities.add(visibilityValue.trim());
+    }
+
+    if (Array.isArray(visibilityValue)) {
+      for (const entry of visibilityValue) {
+        if (typeof entry === "string" && entry.trim().length > 0) {
+          visibilities.add(entry.trim());
+        }
+      }
+    }
+
+    for (const tag of record.tags) {
+      if (!tag.startsWith("visibility:")) {
+        continue;
+      }
+
+      const visibilityLabel = tag.slice("visibility:".length).trim();
+      if (visibilityLabel.length > 0) {
+        visibilities.add(visibilityLabel);
+      }
+    }
+
+    return Array.from(visibilities.values()).sort((left, right) => left.localeCompare(right));
   }
 }

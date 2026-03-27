@@ -30,4 +30,5 @@
 
 1. `MemoryManager` 保持 substrate manager 身份，避免演变成 God object。
 2. `runtime.orchestration` 可通过 contract 依赖 memory semantics，而不必把 memory policy 内嵌到 runtime owner 中。
-3. future semantic/hybrid search、online collaboration 与 conflict-resolution 可通过 capability 或 repository seam 增量扩展，而不破坏当前基线。
+3. `workspace / user` 记忆层在 substrate 与 ownership seam 落地前，只能作为 reserved capability 保留，不应进入默认 active recall baseline。
+4. future semantic/hybrid search、online collaboration 与 conflict-resolution 可通过 capability 或 repository seam 增量扩展，而不破坏当前基线。

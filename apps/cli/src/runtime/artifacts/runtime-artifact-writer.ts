@@ -289,6 +289,20 @@ export class CliRuntimeArtifactWriter {
         matchedCount: options.replayResolution.explainResult.matchedCount,
         outputLocale: options.locale,
         nextActions: options.nextActions,
+        ...(options.replayResolution.memorySemantics
+          ? {
+              memorySemantics: {
+                contextSelectedCount: options.replayResolution.memorySemantics.contextSelectedCount,
+                contextAssemblyOutcome:
+                  options.replayResolution.memorySemantics.contextAssemblyOutcome,
+                promotionOutcome: options.replayResolution.memorySemantics.promotionOutcome,
+                plannedMergeCount: options.replayResolution.memorySemantics.plannedMergeCount,
+                mergedCount: options.replayResolution.memorySemantics.mergedCount,
+                sessionSummaryProjectionKey:
+                  options.replayResolution.memorySemantics.sessionSummaryProjectionKey,
+              },
+            }
+          : {}),
       },
       explain: options.replayResolution.explainResult,
     });

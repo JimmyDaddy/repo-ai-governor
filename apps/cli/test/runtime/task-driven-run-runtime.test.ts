@@ -7,6 +7,8 @@ import type { AdaptersConfig } from "@repo-ai-governor/config";
 import { MemoryManager, MemoryScope } from "@repo-ai-governor/core-memory";
 import {
   MemoryContextAssembler,
+  MemoryRecallKind,
+  MemoryRecallLayer,
   MemoryRecallService,
 } from "@repo-ai-governor/core-memory-semantics";
 import {
@@ -474,6 +476,16 @@ describe("CliTaskDrivenRunRuntime", () => {
         sessionEntryCount: 0,
       });
       expect(assembly.memoryRecall?.queryIntent).toBe("cli_task_driven_execution");
+      expect(assembly.memoryRecall?.requestedLayers).toEqual([
+        MemoryRecallLayer.EXECUTION,
+        MemoryRecallLayer.SESSION,
+        MemoryRecallLayer.NORMATIVE,
+      ]);
+      expect(assembly.memoryRecall?.requestedMemoryKinds).toEqual([
+        MemoryRecallKind.EXECUTION_SHORT_TERM_FACT,
+        MemoryRecallKind.SESSION,
+        MemoryRecallKind.NORMATIVE_PROJECTION,
+      ]);
       expect(assembly.memoryRecall?.selectedRecords).toEqual([
         expect.objectContaining({
           key: "historic:stage-report:record-1",
@@ -488,6 +500,7 @@ describe("CliTaskDrivenRunRuntime", () => {
           items: [
             expect.objectContaining({
               recordId: "execution:historic:stage-report:record-1",
+              summary: "[redacted: sensitivity_labels_required]",
               sourceRefCount: 2,
             }),
           ],
@@ -504,6 +517,7 @@ describe("CliTaskDrivenRunRuntime", () => {
             recallItems: [
               expect.objectContaining({
                 recordId: "execution:historic:stage-report:record-1",
+                summary: "[redacted: sensitivity_labels_required]",
               }),
             ],
           }),

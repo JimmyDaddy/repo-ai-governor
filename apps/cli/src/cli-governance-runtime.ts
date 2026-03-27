@@ -811,6 +811,14 @@ export class CliGovernanceRuntime {
       diagnosticsTracePath,
       reviewChain: inlineReviewChainSummary,
       deliveryRehearsal: deliveryRehearsalSummary,
+      memoryPromotion: memoryPromotionResult
+        ? {
+            outcome: memoryPromotionResult.outcome,
+            plannedMergeCount: memoryPromotionResult.summary.plannedMergeCount,
+            mergedCount: memoryPromotionResult.summary.mergedCount,
+            sessionSummaryProjectionKey: memoryPromotionResult.persistedRecord?.key ?? null,
+          }
+        : null,
     });
     if (resolvedPolicyOutcome !== ChangeRiskRequiredAction.ALLOW) {
       await orchestrationService.publishEvent({
@@ -849,7 +857,7 @@ export class CliGovernanceRuntime {
     });
     const orchestrationSummary = await orchestrationService.getExecution(executionId);
 
-    const message = `Run completed with execution_id=${executionId} and policy_outcome=${resolvedPolicyOutcome}${runtimeDebugOptions.dryRun ? " (dry_run=true)" : ""}.`;
+    const message = `Run completed with execution_id=${executionId} and policy_outcome=${resolvedPolicyOutcome}${runtimeDebugOptions.dryRun ? " (dry_run=true)" : ""}${memoryPromotionResult ? ` memory_promotion=${memoryPromotionResult.outcome} merged=${memoryPromotionResult.summary.mergedCount} session_projection=${memoryPromotionResult.persistedRecord?.key ?? "none"}` : ""}.`;
     return {
       message,
       commandResult: {
@@ -1145,7 +1153,7 @@ export class CliGovernanceRuntime {
       diagnosticsPath,
       replayResolution,
     });
-    const message = `Replay diagnostics completed from ${replayPath}.`;
+    const message = `Replay diagnostics completed from ${replayPath}${replayResolution.memorySemantics ? ` memory_promotion=${replayResolution.memorySemantics.promotionOutcome ?? "none"} merged=${replayResolution.memorySemantics.mergedCount} session_projection=${replayResolution.memorySemantics.sessionSummaryProjectionKey ?? "none"}` : ""}.`;
     return {
       message,
       commandResult: {
@@ -1160,6 +1168,12 @@ export class CliGovernanceRuntime {
           replay_source_type: replayResolution.sourceType,
           replay_execution_id: replayResolution.executionId,
           replay_matched_count: replayResolution.explainResult.matchedCount,
+          replay_memory_promotion_outcome:
+            replayResolution.memorySemantics?.promotionOutcome ?? null,
+          replay_memory_promotion_merged_count:
+            replayResolution.memorySemantics?.mergedCount ?? null,
+          replay_memory_session_projection_key:
+            replayResolution.memorySemantics?.sessionSummaryProjectionKey ?? null,
           trace_enabled: runtimeDebugOptions.trace,
         },
       },

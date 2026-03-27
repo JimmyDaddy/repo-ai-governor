@@ -63,6 +63,7 @@ export interface MemoryRecalledRecord {
   updatedAt: string;
   sourceRefs: MemorySourceRef[];
   sensitivity: string[];
+  visibility: string[];
 }
 
 /**
@@ -107,6 +108,7 @@ export interface MemoryContextOutputItem {
   sourceRefs: string[];
   updatedAt: string;
   sensitivity: string[];
+  visibility: string[];
 }
 
 /**
@@ -129,6 +131,7 @@ export interface MemoryContextContractSafeSummaryItem {
   explicitSourceRefCount: number;
   updatedAt: string;
   sensitivity: string[];
+  visibility: string[];
 }
 
 /**
@@ -209,6 +212,7 @@ export interface MemoryPromotionCandidateValidation {
   reusable: boolean;
   attributable: boolean;
   traceable: boolean;
+  sensitivityLabeled: boolean;
   sensitivitySafe: boolean;
   canonicalSourceSafe: boolean;
   failureReasons: string[];

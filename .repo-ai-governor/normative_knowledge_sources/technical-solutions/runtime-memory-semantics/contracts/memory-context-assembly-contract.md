@@ -27,7 +27,7 @@
 1. context assembly 必须是显式步骤，不得把 recall 结果隐式拼进模型上下文。
 2. 注入结果必须保留 `source_refs` 或等价 provenance tracing，避免审计不可追溯。
 3. assembly 允许使用 summary/projection，但不得把 canonical source 原文伪装成 memory-owned truth。
-4. 敏感内容必须遵守 `sensitivity / visibility` 约束；不允许无标签透传。
+4. 敏感内容必须遵守 `sensitivity / visibility` 约束；不允许无标签透传。当前 baseline 至少必须对“缺失 sensitivity 标签”“命中禁止 sensitivity 标签”“显式 visibility 不允许 runtime 消费”执行 redaction 或 block，而不是仅写 `safety_notes`。
 5. context assembly 可以组合 working-state summary，但不得因此把 working state 自动 promote 为长期记忆。
 
 ## 4. Consumers

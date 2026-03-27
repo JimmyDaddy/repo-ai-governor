@@ -10,6 +10,14 @@ export interface CliReplayExplainResolution {
   sourceType: string;
   executionId: string;
   explainResult: ReplayExplainResult;
+  memorySemantics?: {
+    contextSelectedCount: number;
+    contextAssemblyOutcome: string;
+    promotionOutcome: string | null;
+    plannedMergeCount: number;
+    mergedCount: number;
+    sessionSummaryProjectionKey: string | null;
+  } | null;
 }
 
 /**
@@ -28,10 +36,19 @@ export class CliReplayExplainBuilder {
     const snapshot = this.replayExplainer.createSnapshot({
       report,
     });
-    return this.replayExplainer.explain({
+    const explainResult = this.replayExplainer.explain({
       snapshot,
       limit,
     });
+    const memorySemanticsExplainLines = this.buildMemorySemanticsExplainLines(report);
+    if (memorySemanticsExplainLines.length === 0) {
+      return explainResult;
+    }
+
+    return {
+      ...explainResult,
+      explainLines: [...explainResult.explainLines, ...memorySemanticsExplainLines],
+    };
   }
 
   /**
@@ -48,6 +65,7 @@ export class CliReplayExplainBuilder {
         sourceType: CLI_RUN_REPLAY_SOURCE_TYPE.EXECUTION_REPORT,
         executionId: options.replayPayload.executionId,
         explainResult: this.buildFromExecutionReport(options.replayPayload, 10),
+        memorySemantics: this.extractMemorySemanticsSummary(options.replayPayload),
       };
     }
 
@@ -56,6 +74,7 @@ export class CliReplayExplainBuilder {
         sourceType: CLI_RUN_REPLAY_SOURCE_TYPE.REPLAY_EXPLAIN,
         executionId: options.replayPayload.executionId,
         explainResult: options.replayPayload,
+        memorySemantics: null,
       };
     }
 
@@ -106,5 +125,49 @@ export class CliReplayExplainBuilder {
       candidate.query !== null &&
       typeof candidate.query === "object"
     );
+  }
+
+  /**
+   * Extracts one stable memory-semantics summary from execution report payload.
+   * @param report Execution report payload.
+   * @returns Replay-facing memory semantics summary.
+   */
+  private extractMemorySemanticsSummary(
+    report: ExecutionReport,
+  ): CliReplayExplainResolution["memorySemantics"] {
+    if (!report.memorySemantics) {
+      return null;
+    }
+
+    return {
+      contextSelectedCount: report.memorySemantics.contextSummary.selectedRecordCount,
+      contextAssemblyOutcome: report.memorySemantics.contextSummary.assemblyOutcome,
+      promotionOutcome: report.memorySemantics.promotion?.outcome ?? null,
+      plannedMergeCount: report.memorySemantics.promotion?.plannedMergeCount ?? 0,
+      mergedCount: report.memorySemantics.promotion?.mergedCount ?? 0,
+      sessionSummaryProjectionKey:
+        report.memorySemantics.promotion?.sessionSummaryProjection?.key ?? null,
+    };
+  }
+
+  /**
+   * Builds replay-explain lines for memory-semantics facts when execution report carries them.
+   * @param report Execution report payload.
+   * @returns Stable explain lines appended to replay diagnostics.
+   */
+  private buildMemorySemanticsExplainLines(report: ExecutionReport): string[] {
+    const memorySemantics = this.extractMemorySemanticsSummary(report);
+    if (!memorySemantics) {
+      return [];
+    }
+
+    return [
+      `memory_context_selected=${memorySemantics.contextSelectedCount}`,
+      `memory_context_outcome=${memorySemantics.contextAssemblyOutcome}`,
+      `memory_promotion_outcome=${memorySemantics.promotionOutcome ?? "none"}`,
+      `memory_promotion_planned_merge_count=${memorySemantics.plannedMergeCount}`,
+      `memory_promotion_merged_count=${memorySemantics.mergedCount}`,
+      `memory_session_projection_key=${memorySemantics.sessionSummaryProjectionKey ?? "none"}`,
+    ];
   }
 }
