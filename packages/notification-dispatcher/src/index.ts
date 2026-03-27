@@ -9,6 +9,7 @@ export {
   NOTIFICATION_TRIGGER_OUTCOME_VALUES,
 } from "./constants/index.js";
 export { NotificationDispatcher } from "./notification-dispatcher.js";
+export { NotificationProviderRegistry } from "./notification-provider-registry.js";
 export type {
   NotificationAuditRecord,
   NotificationChannelAttempt,

@@ -1,4 +1,6 @@
+import { once } from "node:events";
 import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 
@@ -21,6 +23,15 @@ import { MemoryManager, MemoryScope } from "@repo-ai-governor/core-memory";
 import { AuditRecorder } from "@repo-ai-governor/core-session";
 import { FsCsvMemoryStoreProvider } from "@repo-ai-governor/memory-provider-fs-csv";
 import { MemoryStoreAdapter } from "@repo-ai-governor/memory-store-adapter";
+import {
+  NotificationChannel,
+  NotificationDispatchStatus,
+  type NotificationProvider,
+  NotificationRiskLevel,
+  type NotificationRiskLevelPolicyMatrix,
+} from "@repo-ai-governor/notification-dispatcher";
+import { ChatImNotificationProvider } from "@repo-ai-governor/notification-provider-chat-im";
+import { WebhookNotificationProvider } from "@repo-ai-governor/notification-provider-webhook";
 import { OrchestrationServiceEventType } from "@repo-ai-governor/orchestration-service-client";
 import {
   AdapterAvailability,
@@ -68,7 +79,15 @@ interface RuntimeFixtureOptions {
   claudeCodeExecRunner?: ClaudeCodeExecRunner;
   codexExecRunner?: CodexExecRunner;
   githubCopilotExecRunner?: GithubCopilotExecRunner;
+  notificationProviders?: NotificationProvider[];
+  notificationPolicyMatrix?: NotificationRiskLevelPolicyMatrix;
   orchestrationServiceRuntimeDependencies?: CliOrchestrationServiceRuntimeDependencies;
+}
+
+interface NotificationEndpointFixture {
+  url: string;
+  requests: Array<Record<string, unknown>>;
+  close(): Promise<void>;
 }
 
 function createCodexExecRunnerFixture(): CodexExecRunner {
@@ -162,6 +181,65 @@ function createGithubCopilotCredentialFailureRunner(): GithubCopilotExecRunner {
         stderr: "Authentication required. Run `gh auth login` or `gh copilot -- login` first.",
       },
     );
+  };
+}
+
+function createWebhookPrimaryPolicyMatrixFixture(): NotificationRiskLevelPolicyMatrix {
+  return {
+    [NotificationRiskLevel.LOW]: {
+      primaryChannel: NotificationChannel.WEBHOOK,
+      fallbackChannels: [NotificationChannel.CHAT_IM],
+      escalationChannel: NotificationChannel.WEBHOOK,
+    },
+    [NotificationRiskLevel.MEDIUM]: {
+      primaryChannel: NotificationChannel.WEBHOOK,
+      fallbackChannels: [NotificationChannel.CHAT_IM],
+      escalationChannel: NotificationChannel.WEBHOOK,
+    },
+    [NotificationRiskLevel.HIGH]: {
+      primaryChannel: NotificationChannel.WEBHOOK,
+      fallbackChannels: [NotificationChannel.CHAT_IM],
+      escalationChannel: NotificationChannel.WEBHOOK,
+    },
+    [NotificationRiskLevel.CRITICAL]: {
+      primaryChannel: NotificationChannel.WEBHOOK,
+      fallbackChannels: [NotificationChannel.CHAT_IM],
+      escalationChannel: NotificationChannel.WEBHOOK,
+    },
+  };
+}
+
+async function createNotificationEndpointFixture(options: {
+  statusCode: number;
+  responseBody: Record<string, unknown>;
+}): Promise<NotificationEndpointFixture> {
+  const requests: Array<Record<string, unknown>> = [];
+  const server = createServer((request, response) => {
+    let requestBody = "";
+    request.on("data", (chunk) => {
+      requestBody += chunk.toString();
+    });
+    request.on("end", () => {
+      requests.push(JSON.parse(requestBody) as Record<string, unknown>);
+      response.writeHead(options.statusCode, {
+        "content-type": "application/json",
+      });
+      response.end(JSON.stringify(options.responseBody));
+    });
+  });
+
+  server.listen(0, "127.0.0.1");
+  await once(server, "listening");
+
+  const address = server.address();
+  const port = typeof address === "object" && address ? address.port : 0;
+
+  return {
+    url: `http://127.0.0.1:${port}/notify`,
+    requests,
+    close: async () => {
+      await new Promise<void>((resolveServer) => server.close(() => resolveServer()));
+    },
   };
 }
 
@@ -384,6 +462,8 @@ async function createRuntimeFixture(options: RuntimeFixtureOptions = {}): Promis
     codexExecRunner: options.codexExecRunner ?? createCodexExecRunnerFixture(),
     githubCopilotExecRunner:
       options.githubCopilotExecRunner ?? createGithubCopilotExecRunnerFixture(),
+    notificationProviders: options.notificationProviders,
+    notificationPolicyMatrix: options.notificationPolicyMatrix,
     orchestrationServiceRuntimeDependencies: options.orchestrationServiceRuntimeDependencies,
   });
 
@@ -565,6 +645,363 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
       expect(notificationPayload.channel).toBe("webhook");
       expect(notificationPayload.payload?.policyOutcome).toBe("escalate");
     });
+  });
+
+  it("dispatches HITL notifications through configured webhook provider and records receipt metadata", async () => {
+    const webhookEndpoint = await createNotificationEndpointFixture({
+      statusCode: 202,
+      responseBody: {
+        id: "webhook-receipt-001",
+      },
+    });
+
+    try {
+      await withRuntimeFixture(
+        async (fixture) => {
+          const runtimeWithOverrides = fixture.runtime as unknown as {
+            collectGitChangedPaths: () => Promise<string[]>;
+          };
+          runtimeWithOverrides.collectGitChangedPaths = async () => ["migrations/001.sql"];
+
+          await expect(fixture.runtime.execute(CliCommandName.RUN)).rejects.toMatchObject({
+            code: GovernorErrorCode.POLICY_GATE_HITL_FEEDBACK_INVALID,
+            details: {
+              pendingStatus: ExecutionProgressStage.HUMAN_CONFIRMATION,
+            },
+          });
+
+          const notificationDirectoryPath = resolve(
+            fixture.workspaceRoot,
+            "context",
+            "hitl",
+            "notifications",
+          );
+          const notificationFileNames = await readdir(notificationDirectoryPath);
+          const notificationFileName = notificationFileNames[0] ?? "";
+          const notificationPayload = JSON.parse(
+            await readFile(resolve(notificationDirectoryPath, notificationFileName), "utf8"),
+          ) as {
+            channel?: string | null;
+            dispatchStatus?: string;
+            attemptedChannels?: Array<{
+              providerId?: string;
+              providerMessageId?: string;
+            }>;
+          };
+          const executionId = notificationFileName.replace(/\.notification\.json$/u, "");
+
+          expect(webhookEndpoint.requests).toHaveLength(1);
+          expect(notificationPayload.channel).toBe("webhook");
+          expect(notificationPayload.dispatchStatus).toBe(
+            NotificationDispatchStatus.DELIVERED_PRIMARY,
+          );
+          expect(notificationPayload.attemptedChannels?.[0]?.providerId).toBe(
+            "notification-webhook",
+          );
+          expect(notificationPayload.attemptedChannels?.[0]?.providerMessageId).toBe(
+            "webhook-receipt-001",
+          );
+
+          const auditRecorder = new AuditRecorder(
+            new MemoryManager(new MemoryStoreAdapter(fixture.provider)),
+          );
+          const auditRecords = await auditRecorder.listEvents({
+            executionId,
+          });
+          const notificationAuditRecord = auditRecords.find(
+            (auditRecord) => auditRecord.event.stageId === "stage-hitl-notification",
+          );
+
+          expect(notificationAuditRecord?.event.notificationChannel).toBe(
+            NotificationChannel.WEBHOOK,
+          );
+          expect(notificationAuditRecord?.event.notificationStatus).toBe(
+            NotificationDispatchStatus.DELIVERED_PRIMARY,
+          );
+          const memoryDelta = (notificationAuditRecord?.event.memoryDelta ?? {}) as {
+            attemptedChannels?: Array<{
+              providerMessageId?: string;
+            }>;
+          };
+          expect(memoryDelta.attemptedChannels?.[0]?.providerMessageId).toBe("webhook-receipt-001");
+          expect(typeof notificationAuditRecord?.event.notifiedAtDisplay).toBe("string");
+        },
+        {
+          notificationProviders: [
+            new WebhookNotificationProvider({
+              endpointUrl: webhookEndpoint.url,
+            }),
+          ],
+          notificationPolicyMatrix: createWebhookPrimaryPolicyMatrixFixture(),
+        },
+      );
+    } finally {
+      await webhookEndpoint.close();
+    }
+  });
+
+  it("uses webhook as the default primary channel for high-risk HITL notifications when only webhook provider is configured", async () => {
+    const webhookEndpoint = await createNotificationEndpointFixture({
+      statusCode: 202,
+      responseBody: {
+        id: "webhook-critical-001",
+      },
+    });
+
+    try {
+      await withRuntimeFixture(
+        async (fixture) => {
+          const runtimeWithOverrides = fixture.runtime as unknown as {
+            collectGitChangedPaths: () => Promise<string[]>;
+          };
+          runtimeWithOverrides.collectGitChangedPaths = async () => ["migrations/001.sql"];
+
+          await expect(fixture.runtime.execute(CliCommandName.RUN)).rejects.toMatchObject({
+            code: GovernorErrorCode.POLICY_GATE_HITL_FEEDBACK_INVALID,
+            details: {
+              pendingStatus: ExecutionProgressStage.HUMAN_CONFIRMATION,
+            },
+          });
+
+          const notificationDirectoryPath = resolve(
+            fixture.workspaceRoot,
+            "context",
+            "hitl",
+            "notifications",
+          );
+          const notificationFileNames = await readdir(notificationDirectoryPath);
+          const notificationPayload = JSON.parse(
+            await readFile(
+              resolve(notificationDirectoryPath, notificationFileNames[0] ?? ""),
+              "utf8",
+            ),
+          ) as {
+            channel?: string | null;
+            dispatchStatus?: string;
+            payload?: {
+              riskLevel?: string;
+            };
+            attemptedChannels?: Array<{
+              channel?: string;
+              providerMessageId?: string;
+            }>;
+          };
+
+          expect(webhookEndpoint.requests).toHaveLength(1);
+          expect(notificationPayload.payload?.riskLevel).toBe(NotificationRiskLevel.HIGH);
+          expect(notificationPayload.channel).toBe(NotificationChannel.WEBHOOK);
+          expect(notificationPayload.dispatchStatus).toBe(
+            NotificationDispatchStatus.DELIVERED_PRIMARY,
+          );
+          expect(notificationPayload.attemptedChannels?.[0]?.channel).toBe(
+            NotificationChannel.WEBHOOK,
+          );
+          expect(notificationPayload.attemptedChannels?.[0]?.providerMessageId).toBe(
+            "webhook-critical-001",
+          );
+        },
+        {
+          notificationProviders: [
+            new WebhookNotificationProvider({
+              endpointUrl: webhookEndpoint.url,
+            }),
+          ],
+        },
+      );
+    } finally {
+      await webhookEndpoint.close();
+    }
+  });
+
+  it("falls back to chat-im provider when webhook delivery fails", async () => {
+    const webhookEndpoint = await createNotificationEndpointFixture({
+      statusCode: 500,
+      responseBody: {
+        error: "webhook unavailable",
+      },
+    });
+    const chatImEndpoint = await createNotificationEndpointFixture({
+      statusCode: 200,
+      responseBody: {
+        messageId: "chat-receipt-001",
+      },
+    });
+
+    try {
+      await withRuntimeFixture(
+        async (fixture) => {
+          const runtimeWithOverrides = fixture.runtime as unknown as {
+            collectGitChangedPaths: () => Promise<string[]>;
+          };
+          runtimeWithOverrides.collectGitChangedPaths = async () => ["migrations/001.sql"];
+
+          await expect(fixture.runtime.execute(CliCommandName.RUN)).rejects.toMatchObject({
+            code: GovernorErrorCode.POLICY_GATE_HITL_FEEDBACK_INVALID,
+            details: {
+              pendingStatus: ExecutionProgressStage.HUMAN_CONFIRMATION,
+            },
+          });
+
+          const notificationDirectoryPath = resolve(
+            fixture.workspaceRoot,
+            "context",
+            "hitl",
+            "notifications",
+          );
+          const notificationFileNames = await readdir(notificationDirectoryPath);
+          const notificationFileName = notificationFileNames[0] ?? "";
+          const notificationPayload = JSON.parse(
+            await readFile(resolve(notificationDirectoryPath, notificationFileName), "utf8"),
+          ) as {
+            channel?: string | null;
+            dispatchStatus?: string;
+            attemptedChannels?: Array<{
+              channel?: string;
+              errorMessage?: string;
+              providerMessageId?: string;
+            }>;
+          };
+          const executionId = notificationFileName.replace(/\.notification\.json$/u, "");
+
+          expect(webhookEndpoint.requests).toHaveLength(2);
+          expect(chatImEndpoint.requests).toHaveLength(1);
+          expect(notificationPayload.channel).toBe("chat_im");
+          expect(notificationPayload.dispatchStatus).toBe(
+            NotificationDispatchStatus.DELIVERED_FALLBACK,
+          );
+          expect(notificationPayload.attemptedChannels?.[0]?.channel).toBe("webhook");
+          expect(notificationPayload.attemptedChannels?.[0]?.errorMessage).toContain("HTTP 500");
+          expect(notificationPayload.attemptedChannels?.[2]?.providerMessageId).toBe(
+            "chat-receipt-001",
+          );
+
+          const auditRecorder = new AuditRecorder(
+            new MemoryManager(new MemoryStoreAdapter(fixture.provider)),
+          );
+          const auditRecords = await auditRecorder.listEvents({
+            executionId,
+          });
+          const notificationAuditRecord = auditRecords.find(
+            (auditRecord) => auditRecord.event.stageId === "stage-hitl-notification",
+          );
+
+          expect(notificationAuditRecord?.event.notificationChannel).toBe(
+            NotificationChannel.CHAT_IM,
+          );
+          expect(notificationAuditRecord?.event.notificationStatus).toBe(
+            NotificationDispatchStatus.DELIVERED_FALLBACK,
+          );
+        },
+        {
+          notificationProviders: [
+            new WebhookNotificationProvider({
+              endpointUrl: webhookEndpoint.url,
+            }),
+            new ChatImNotificationProvider({
+              endpointUrl: chatImEndpoint.url,
+            }),
+          ],
+          notificationPolicyMatrix: createWebhookPrimaryPolicyMatrixFixture(),
+        },
+      );
+    } finally {
+      await webhookEndpoint.close();
+      await chatImEndpoint.close();
+    }
+  });
+
+  it("persists failed notification artifact and audit evidence when all configured channels fail", async () => {
+    const webhookEndpoint = await createNotificationEndpointFixture({
+      statusCode: 500,
+      responseBody: {
+        error: "webhook unavailable",
+      },
+    });
+    const chatImEndpoint = await createNotificationEndpointFixture({
+      statusCode: 503,
+      responseBody: {
+        error: "chat unavailable",
+      },
+    });
+
+    try {
+      await withRuntimeFixture(
+        async (fixture) => {
+          const runtimeWithOverrides = fixture.runtime as unknown as {
+            collectGitChangedPaths: () => Promise<string[]>;
+          };
+          runtimeWithOverrides.collectGitChangedPaths = async () => ["migrations/001.sql"];
+
+          await expect(fixture.runtime.execute(CliCommandName.RUN)).rejects.toMatchObject({
+            code: GovernorErrorCode.POLICY_GATE_HITL_FEEDBACK_INVALID,
+            details: {
+              pendingStatus: ExecutionProgressStage.HUMAN_CONFIRMATION,
+            },
+          });
+
+          const notificationDirectoryPath = resolve(
+            fixture.workspaceRoot,
+            "context",
+            "hitl",
+            "notifications",
+          );
+          const notificationFileNames = await readdir(notificationDirectoryPath);
+          const notificationFileName = notificationFileNames[0] ?? "";
+          const executionId = notificationFileName.replace(/\.notification\.json$/u, "");
+          const notificationPayload = JSON.parse(
+            await readFile(resolve(notificationDirectoryPath, notificationFileName), "utf8"),
+          ) as {
+            channel?: string | null;
+            dispatchStatus?: string;
+            attemptedChannels?: Array<{
+              channel?: string;
+              errorMessage?: string;
+            }>;
+            payload?: {
+              riskLevel?: string;
+            };
+          };
+
+          expect(notificationPayload.payload?.riskLevel).toBe(NotificationRiskLevel.HIGH);
+          expect(notificationPayload.channel).toBeNull();
+          expect(notificationPayload.dispatchStatus).toBe(NotificationDispatchStatus.FAILED);
+          expect(notificationPayload.attemptedChannels?.length).toBeGreaterThan(0);
+          expect(
+            notificationPayload.attemptedChannels?.some((attempt) =>
+              attempt.errorMessage?.includes("HTTP"),
+            ),
+          ).toBe(true);
+
+          const auditRecorder = new AuditRecorder(
+            new MemoryManager(new MemoryStoreAdapter(fixture.provider)),
+          );
+          const auditRecords = await auditRecorder.listEvents({
+            executionId,
+          });
+          const notificationAuditRecord = auditRecords.find(
+            (auditRecord) => auditRecord.event.stageId === "stage-hitl-notification",
+          );
+
+          expect(notificationAuditRecord?.event.notificationStatus).toBe(
+            NotificationDispatchStatus.FAILED,
+          );
+          expect(typeof notificationAuditRecord?.event.notifiedAtDisplay).toBe("string");
+        },
+        {
+          notificationProviders: [
+            new WebhookNotificationProvider({
+              endpointUrl: webhookEndpoint.url,
+            }),
+            new ChatImNotificationProvider({
+              endpointUrl: chatImEndpoint.url,
+            }),
+          ],
+        },
+      );
+    } finally {
+      await webhookEndpoint.close();
+      await chatImEndpoint.close();
+    }
   });
 
   it("does not persist HITL notification artifacts during dry-run high-risk execution", async () => {

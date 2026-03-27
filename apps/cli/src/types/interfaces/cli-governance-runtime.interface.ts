@@ -3,6 +3,10 @@ import type { CodexExecRunner } from "@repo-ai-governor/adapter-codex";
 import type { GithubCopilotExecRunner } from "@repo-ai-governor/adapter-github-copilot";
 import type { AdaptersConfig, ResolvedWorkspace } from "@repo-ai-governor/config";
 import type { MemoryStoreProvider } from "@repo-ai-governor/memory-store-adapter";
+import type {
+  NotificationProvider,
+  NotificationRiskLevelPolicyMatrix,
+} from "@repo-ai-governor/notification-dispatcher";
 import type { AdapterSurface } from "@repo-ai-governor/shared";
 import type { ErrorOutputEnvironment, MemoryRuntimeConfig } from "@repo-ai-governor/shared";
 import type { CliHitlResumeAction } from "../../constants/cli-task-driven-run.constant.js";
@@ -43,6 +47,8 @@ export interface CliGovernanceRuntimeOptions {
   claudeCodeExecRunner?: ClaudeCodeExecRunner;
   codexExecRunner?: CodexExecRunner;
   githubCopilotExecRunner?: GithubCopilotExecRunner;
+  notificationProviders?: NotificationProvider[];
+  notificationPolicyMatrix?: NotificationRiskLevelPolicyMatrix;
   orchestrationServiceRuntimeDependencies?: CliOrchestrationServiceRuntimeDependencies;
 }
 

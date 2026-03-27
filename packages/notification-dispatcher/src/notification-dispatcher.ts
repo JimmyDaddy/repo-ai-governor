@@ -442,6 +442,11 @@ export class NotificationDispatcher {
           providerId: provider.providerId,
           attempt,
           delivered,
+          ...(receipt?.providerMessageId
+            ? {
+                providerMessageId: receipt.providerMessageId,
+              }
+            : {}),
           ...(delivered
             ? {}
             : {
@@ -449,6 +454,11 @@ export class NotificationDispatcher {
                   this.normalizeOptionalString(receipt?.errorMessage) ??
                   "Provider returned delivered=false.",
               }),
+          ...(this.isRecord(receipt?.metadata)
+            ? {
+                metadata: receipt.metadata,
+              }
+            : {}),
         });
 
         if (delivered) {

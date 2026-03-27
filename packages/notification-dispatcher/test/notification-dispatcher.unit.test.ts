@@ -5,6 +5,7 @@ import {
   NotificationDispatchStatus,
   NotificationDispatcher,
   type NotificationProvider,
+  NotificationProviderRegistry,
 } from "../src/index.js";
 
 function createProvider(): NotificationProvider {
@@ -56,5 +57,33 @@ describe("notification-dispatcher unit", () => {
     expect(result.dispatchStatus).toBe(NotificationDispatchStatus.DELIVERED_PRIMARY);
     expect(result.selectedChannel).toBe(NotificationChannel.WEBHOOK);
     expect(result.attemptedChannels).toHaveLength(1);
+  });
+
+  it("keeps deterministic provider registration order and lookup", () => {
+    const webhookProvider = createProvider();
+    const registry = new NotificationProviderRegistry();
+
+    registry.register(webhookProvider);
+
+    expect(registry.resolve(NotificationChannel.WEBHOOK)).toBe(webhookProvider);
+    expect(registry.list()).toEqual([webhookProvider]);
+  });
+
+  it("rejects duplicate provider registrations for the same channel", () => {
+    const registry = new NotificationProviderRegistry();
+
+    registry.register(createProvider());
+
+    expect(() =>
+      registry.register({
+        providerId: "provider-webhook-secondary",
+        channel: NotificationChannel.WEBHOOK,
+        async send() {
+          return {
+            delivered: true,
+          };
+        },
+      }),
+    ).toThrow('Duplicate notification provider registration for channel "webhook".');
   });
 });

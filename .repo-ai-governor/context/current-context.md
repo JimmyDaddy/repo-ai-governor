@@ -3,20 +3,22 @@
 ## Primary Stream
 
 - Status: active
-- Project: `project-025-gate-execution-efficiency-implementation`
-- Sprint: `sprint-003-project-references-affected-check-and-ci-matrix`
-- Docs root: `.repo-ai-governor/context/dev/project-025-gate-execution-efficiency-implementation`
-- Task records: `.repo-ai-governor/context/dev/project-025-gate-execution-efficiency-implementation/sprint-003-project-references-affected-check-and-ci-matrix/tasks/`
-- Review records: `.repo-ai-governor/context/dev/project-025-gate-execution-efficiency-implementation/sprint-003-project-references-affected-check-and-ci-matrix/review/`
-- Note: `project-025 / sprint-003` 真值已完成；在下一条主执行流显式激活前，当前仅暂保留为 active closeout surface。
+- Project: `project-026-prd-gap-remediation`
+- Sprint: `sprint-001-ga-blocker-notification-provider-implementation`
+- Docs root: `.repo-ai-governor/context/dev/project-026-prd-gap-remediation`
+- Task records: `.repo-ai-governor/context/dev/project-026-prd-gap-remediation/sprint-001-ga-blocker-notification-provider-implementation/tasks/`
+- Review records: `.repo-ai-governor/context/dev/project-026-prd-gap-remediation/sprint-001-ga-blocker-notification-provider-implementation/review/`
+- Note: `project-026 / sprint-001` 已显式激活，当前执行面聚焦 GA blocker `GAP-NP`（主 webhook + 备渠道 + rehearsal/audit evidence）。
 
 ## Active Streams
 
-- `primary`: project=`project-025-gate-execution-efficiency-implementation`, sprint=`sprint-003-project-references-affected-check-and-ci-matrix`, docs=`.repo-ai-governor/context/dev/project-025-gate-execution-efficiency-implementation`, plan=`.repo-ai-governor/context/dev/project-025-gate-execution-efficiency-implementation/plan.md`, tasks=`.repo-ai-governor/context/dev/project-025-gate-execution-efficiency-implementation/sprint-003-project-references-affected-check-and-ci-matrix/tasks/`, checklist=`.repo-ai-governor/context/dev/project-025-gate-execution-efficiency-implementation/sprint-003-project-references-affected-check-and-ci-matrix/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-025-gate-execution-efficiency-implementation/sprint-003-project-references-affected-check-and-ci-matrix/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-025-gate-execution-efficiency-implementation/sprint-003-project-references-affected-check-and-ci-matrix/review/`, status=`active`
+- `primary`: project=`project-026-prd-gap-remediation`, sprint=`sprint-001-ga-blocker-notification-provider-implementation`, docs=`.repo-ai-governor/context/dev/project-026-prd-gap-remediation`, plan=`.repo-ai-governor/context/dev/project-026-prd-gap-remediation/plan.md`, tasks=`.repo-ai-governor/context/dev/project-026-prd-gap-remediation/sprint-001-ga-blocker-notification-provider-implementation/tasks/`, checklist=`.repo-ai-governor/context/dev/project-026-prd-gap-remediation/sprint-001-ga-blocker-notification-provider-implementation/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-026-prd-gap-remediation/sprint-001-ga-blocker-notification-provider-implementation/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-026-prd-gap-remediation/sprint-001-ga-blocker-notification-provider-implementation/review/`, status=`active`
 
 ## Planned Follow-Up Streams
 
-（无——`project-025 / sprint-003` 真值已 completed；下一条主执行流尚未显式激活，当前暂保留本 stream 作为 active closeout surface）
+- `follow-up-1`: project=`project-026-prd-gap-remediation`, sprint=`sprint-002-p1-productization-closure-baseline`, docs=`.repo-ai-governor/context/dev/project-026-prd-gap-remediation`, status=`planned`
+- `follow-up-2`: project=`project-026-prd-gap-remediation`, sprint=`sprint-003-p1-productization-closure-extended`, docs=`.repo-ai-governor/context/dev/project-026-prd-gap-remediation`, status=`planned`
+- `follow-up-3`: project=`project-026-prd-gap-remediation`, sprint=`sprint-004-ga-evidence-and-support-matrix`, docs=`.repo-ai-governor/context/dev/project-026-prd-gap-remediation`, status=`planned`
 
 ## Completed Stream History
 

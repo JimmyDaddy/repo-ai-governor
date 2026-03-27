@@ -82,7 +82,9 @@ export interface NotificationChannelAttempt {
   providerId?: string;
   attempt: number;
   delivered: boolean;
+  providerMessageId?: string;
   errorMessage?: string;
+  metadata?: Record<string, unknown>;
 }
 
 /**

@@ -28,6 +28,8 @@
     "@repo-ai-governor/memory-provider-registry": "workspace:*",
     "@repo-ai-governor/memory-store-adapter": "workspace:*",
     "@repo-ai-governor/notification-dispatcher": "workspace:*",
+    "@repo-ai-governor/notification-provider-chat-im": "workspace:*",
+    "@repo-ai-governor/notification-provider-webhook": "workspace:*",
     "@repo-ai-governor/orchestration-service-client": "workspace:*",
     "@repo-ai-governor/reporting": "workspace:*",
     "@repo-ai-governor/shared": "workspace:*",

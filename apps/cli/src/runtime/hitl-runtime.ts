@@ -16,11 +16,16 @@ import {
 } from "@repo-ai-governor/core-session";
 import {
   NotificationChannel,
+  type NotificationChannelAttempt,
   type NotificationDispatchResult,
   NotificationDispatchStatus,
   NotificationDispatcher,
+  type NotificationMessage,
   type NotificationProvider,
+  NotificationRiskLevel,
+  type NotificationRiskLevelPolicyMatrix,
 } from "@repo-ai-governor/notification-dispatcher";
+import { GovernorErrorCode, standardizeError } from "@repo-ai-governor/shared";
 import { CliHitlResumeAction } from "../constants/cli-task-driven-run.constant.js";
 import type {
   CliArtifactWriter,
@@ -32,6 +37,8 @@ interface CliHitlRuntimeOptions {
   artifactWriter: CliArtifactWriter;
   toRfc3339SecondsTimestamp: (value: Date) => string;
   toDisplayTimestamp: (value: string) => string;
+  notificationProviders?: NotificationProvider[];
+  notificationPolicyMatrix?: NotificationRiskLevelPolicyMatrix;
 }
 
 interface CliRunHitlResolution {
@@ -181,20 +188,28 @@ export class CliHitlRuntime {
     }
 
     const notificationArtifactPath = this.resolveNotificationArtifactPath(options.executionId);
+    const notificationProviders = this.resolveNotificationProviders();
+    const notificationPolicyMatrix = this.resolveNotificationPolicyMatrix(notificationProviders);
     const notificationDispatcher = new NotificationDispatcher({
-      providers: [this.createArtifactNotificationProvider(notificationArtifactPath)],
+      providers: notificationProviders,
+      ...(notificationPolicyMatrix
+        ? {
+            policyMatrix: notificationPolicyMatrix,
+          }
+        : {}),
     });
-    const notificationResult = await notificationDispatcher.dispatch({
-      policyEvaluation: options.policyResult,
-      deadlineAt: this.resolveDeadlineAt(options.policyResult.policyOutcome),
-      message: {
-        title: `HITL ${options.policyResult.policyOutcome} required`,
-        body: options.policyResult.reason,
-        metadata: {
-          executionId: options.executionId,
-          matchedRuleIds: options.policyResult.matchedRuleIds,
-        },
-      },
+    const deadlineAt = this.resolveDeadlineAt(options.policyResult.policyOutcome);
+    const notificationMessage = this.createNotificationMessage(options.policyResult);
+    const notificationResult = await this.dispatchNotification({
+      notificationDispatcher,
+      policyResult: options.policyResult,
+      deadlineAt,
+      message: notificationMessage,
+    });
+    await this.writeNotificationArtifact({
+      executionId: options.executionId,
+      notificationArtifactPath,
+      notificationResult,
     });
     await this.recordNotificationAuditEvent({
       executionId: options.executionId,
@@ -292,6 +307,54 @@ export class CliHitlRuntime {
     };
   }
 
+  private resolveNotificationProviders(): NotificationProvider[] {
+    if (this.options.notificationProviders && this.options.notificationProviders.length > 0) {
+      return [...this.options.notificationProviders];
+    }
+
+    return [this.createArtifactNotificationProvider()];
+  }
+
+  private resolveNotificationPolicyMatrix(
+    providers: NotificationProvider[],
+  ): NotificationRiskLevelPolicyMatrix | undefined {
+    if (this.options.notificationPolicyMatrix) {
+      return this.options.notificationPolicyMatrix;
+    }
+
+    const availableChannels = Array.from(new Set(providers.map((provider) => provider.channel)));
+    if (availableChannels.length === 0) {
+      return undefined;
+    }
+
+    const primaryChannel = availableChannels[0];
+    const fallbackChannels = availableChannels.filter((channel) => channel !== primaryChannel);
+    const escalationChannel = fallbackChannels[0] ?? primaryChannel;
+
+    return {
+      [NotificationRiskLevel.LOW]: {
+        primaryChannel,
+        fallbackChannels,
+        escalationChannel,
+      },
+      [NotificationRiskLevel.MEDIUM]: {
+        primaryChannel,
+        fallbackChannels,
+        escalationChannel,
+      },
+      [NotificationRiskLevel.HIGH]: {
+        primaryChannel,
+        fallbackChannels,
+        escalationChannel,
+      },
+      [NotificationRiskLevel.CRITICAL]: {
+        primaryChannel,
+        fallbackChannels,
+        escalationChannel,
+      },
+    };
+  }
+
   private createPredictedNotificationResult(
     policyResult: PolicyGateEvaluationResult,
   ): NotificationDispatchResult {
@@ -312,38 +375,22 @@ export class CliHitlRuntime {
     };
   }
 
-  private createArtifactNotificationProvider(artifactPath: string): NotificationProvider {
+  private createArtifactNotificationProvider(): NotificationProvider {
     return {
       providerId: "cli-artifact-webhook",
       channel: NotificationChannel.WEBHOOK,
-      send: async (request) => {
-        const sentAt = this.options.toRfc3339SecondsTimestamp(new Date());
-        await this.options.artifactWriter.writeJsonArtifact(artifactPath, {
-          notificationId: `hitl-notification-${request.payload.executionId}`,
-          sentAt,
+      send: async (request) => ({
+        delivered: true,
+        providerMessageId: `artifact-${request.payload.executionId}`,
+        metadata: {
+          mode: "artifact_fallback",
           channel: request.channel,
-          attempt: request.attempt,
-          providerId: "cli-artifact-webhook",
-          title: request.message.title,
-          body: request.message.body,
-          payload: request.payload,
-        });
-        return {
-          delivered: true,
-          providerMessageId: `artifact-${request.payload.executionId}`,
-          metadata: {
-            artifactPath,
-          },
-        };
-      },
+        },
+      }),
     };
   }
 
-  private createNotificationMessage(policyResult: PolicyGateEvaluationResult): {
-    title: string;
-    body: string;
-    metadata: Record<string, unknown>;
-  } {
+  private createNotificationMessage(policyResult: PolicyGateEvaluationResult): NotificationMessage {
     return {
       title: `HITL ${policyResult.policyOutcome} required`,
       body: policyResult.reason,
@@ -352,6 +399,33 @@ export class CliHitlRuntime {
         matchedRuleIds: policyResult.matchedRuleIds,
       },
     };
+  }
+
+  private async dispatchNotification(options: {
+    notificationDispatcher: NotificationDispatcher;
+    policyResult: PolicyGateEvaluationResult;
+    deadlineAt: string;
+    message: NotificationMessage;
+  }): Promise<NotificationDispatchResult> {
+    try {
+      return await options.notificationDispatcher.dispatch({
+        policyEvaluation: options.policyResult,
+        deadlineAt: options.deadlineAt,
+        message: options.message,
+      });
+    } catch (error) {
+      const standardizedError = standardizeError(error);
+      if (standardizedError.code !== GovernorErrorCode.NOTIFICATION_DISPATCH_FAILED) {
+        throw error;
+      }
+
+      return this.createFailedNotificationResult({
+        policyResult: options.policyResult,
+        deadlineAt: options.deadlineAt,
+        message: options.message,
+        attemptedChannels: this.readAttemptedChannels(standardizedError.details?.attemptedChannels),
+      });
+    }
   }
 
   private createNotificationPayload(
@@ -370,6 +444,48 @@ export class CliHitlRuntime {
       matchedPolicies: policyResult.matchedPolicies,
       requiredReviewerRoles: policyResult.requiredReviewerRoles,
     };
+  }
+
+  private createFailedNotificationResult(options: {
+    policyResult: PolicyGateEvaluationResult;
+    deadlineAt: string;
+    message: NotificationMessage;
+    attemptedChannels: NotificationChannelAttempt[];
+  }): NotificationDispatchResult {
+    const failedAt = this.options.toRfc3339SecondsTimestamp(new Date());
+    return {
+      shouldNotify: true,
+      dispatchStatus: NotificationDispatchStatus.FAILED,
+      attemptedChannels: options.attemptedChannels,
+      selectedChannel: null,
+      payload: this.createNotificationPayload(options.policyResult, options.deadlineAt),
+      message: options.message,
+      auditRecord: {
+        notificationChannel: null,
+        notificationStatus: NotificationDispatchStatus.FAILED,
+        notifiedAtDisplay: this.options.toDisplayTimestamp(failedAt),
+      },
+    };
+  }
+
+  private readAttemptedChannels(value: unknown): NotificationChannelAttempt[] {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    return value.filter((attempt): attempt is NotificationChannelAttempt => {
+      if (!attempt || typeof attempt !== "object") {
+        return false;
+      }
+
+      const attemptRecord = attempt as Record<string, unknown>;
+      return (
+        typeof attemptRecord.channel === "string" &&
+        Object.values(NotificationChannel).includes(attemptRecord.channel as NotificationChannel) &&
+        typeof attemptRecord.attempt === "number" &&
+        typeof attemptRecord.delivered === "boolean"
+      );
+    });
   }
 
   private normalizeDecision(rawDecision: string | null): PolicyHitlDecision | null {
@@ -420,6 +536,23 @@ export class CliHitlRuntime {
     const hourOffset = policyOutcome === ChangeRiskRequiredAction.ESCALATE ? 2 : 4;
     deadline.setHours(deadline.getHours() + hourOffset);
     return this.options.toRfc3339SecondsTimestamp(deadline);
+  }
+
+  private async writeNotificationArtifact(options: {
+    executionId: string;
+    notificationArtifactPath: string;
+    notificationResult: NotificationDispatchResult;
+  }): Promise<void> {
+    await this.options.artifactWriter.writeJsonArtifact(options.notificationArtifactPath, {
+      notificationId: `hitl-notification-${options.executionId}`,
+      sentAt: this.options.toRfc3339SecondsTimestamp(new Date()),
+      channel: options.notificationResult.selectedChannel,
+      dispatchStatus: options.notificationResult.dispatchStatus,
+      attemptedChannels: options.notificationResult.attemptedChannels,
+      message: options.notificationResult.message,
+      payload: options.notificationResult.payload,
+      auditRecord: options.notificationResult.auditRecord,
+    });
   }
 
   private async recordNotificationAuditEvent(options: {

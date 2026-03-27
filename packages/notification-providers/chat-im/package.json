@@ -1,0 +1,16 @@
+{
+  "name": "@repo-ai-governor/notification-provider-chat-im",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./dist/src/index.js"
+    }
+  },
+  "dependencies": {
+    "@repo-ai-governor/notification-dispatcher": "workspace:*",
+    "@repo-ai-governor/shared": "workspace:*"
+  }
+}

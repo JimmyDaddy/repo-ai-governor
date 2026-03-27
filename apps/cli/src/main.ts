@@ -59,6 +59,7 @@ import { CliCodexExecFixtureRuntime } from "./runtime/codex-exec-fixture-runtime
 import { CliGithubCopilotExecFixtureRuntime } from "./runtime/github-copilot-exec-fixture-runtime.js";
 import { IdeStandardsSourceRuntime } from "./runtime/ide-standards-source-runtime.js";
 import { IdeSurfaceRegistryRuntime } from "./runtime/ide-surface-registry-runtime.js";
+import { CliNotificationProviderRegistryRuntime } from "./runtime/notification-provider-registry-runtime.js";
 export {
   IDE_SURFACE_REGISTRY,
   IDE_WRAPPER_DEFAULT_OUTPUT_MODE,
@@ -285,6 +286,8 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
     const claudeCodeExecRunner = claudeCodeExecFixtureRuntime.resolveExecRunner(environment);
     const githubCopilotExecFixtureRuntime = new CliGithubCopilotExecFixtureRuntime();
     const githubCopilotExecRunner = githubCopilotExecFixtureRuntime.resolveExecRunner(environment);
+    const notificationProviderRegistryRuntime = new CliNotificationProviderRegistryRuntime();
+    const notificationProviders = notificationProviderRegistryRuntime.resolveProviders(environment);
     const adapterLocalProbeOverrides = resolveFixtureBackedLocalProbeOverrides({
       hasCodexExecFixture: Boolean(codexExecRunner),
       hasClaudeCodeExecFixture: Boolean(claudeCodeExecRunner),
@@ -320,6 +323,11 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
         memoryConfig: runtimeContext.memory,
       },
       adaptersConfig: runtimeContext.adapters,
+      ...(notificationProviders.length > 0
+        ? {
+            notificationProviders,
+          }
+        : {}),
       ...(adapterLocalProbeOverrides
         ? {
             adapterLocalProbeOverrides,

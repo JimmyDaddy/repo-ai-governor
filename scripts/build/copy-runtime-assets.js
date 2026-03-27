@@ -148,6 +148,21 @@ const DISTRIBUTION_PACKAGES = [
     packageDistDirectory: resolve(PROJECT_ROOT, "packages/notification-dispatcher/dist"),
   },
   {
+    packageName: "notification-provider-chat-im",
+    packageRoot: resolve(PROJECT_ROOT, "packages/notification-providers/chat-im"),
+    compiledDirectory: resolve(PROJECT_ROOT, "dist/packages/notification-providers/chat-im"),
+    packageDistDirectory: resolve(PROJECT_ROOT, "packages/notification-providers/chat-im/dist"),
+  },
+  {
+    packageName: "notification-provider-webhook",
+    packageRoot: resolve(PROJECT_ROOT, "packages/notification-providers/webhook"),
+    compiledDirectory: resolve(PROJECT_ROOT, "dist/packages/notification-providers/webhook"),
+    packageDistDirectory: resolve(
+      PROJECT_ROOT,
+      "packages/notification-providers/webhook/dist",
+    ),
+  },
+  {
     packageName: "orchestration-service-client",
     packageRoot: resolve(PROJECT_ROOT, "packages/orchestration-service-client"),
     compiledDirectory: resolve(PROJECT_ROOT, "dist/packages/orchestration-service-client"),

@@ -136,7 +136,24 @@ pnpm exec repo-ai-governor workspace --workspace-action rollback --workspace-pla
 2. `workspace dry-run` 会把计划产物写到当前活动 workspace 根；成功执行 `workspace execute` 后，plan/execution 产物会重写到目标 workspace 根。
 3. `workspace rollback` 会把 rollback 产物写到恢复后的 source workspace 根，并在 cleanup 成功后移除空的 `.repo-ai-governor-migration/<migration-id>` scratch 目录。
 
-## 4. 示例与门禁
+## 4. HITL 通知 Provider
+
+可以通过环境变量启用真实 HITL 通知渠道：
+
+```bash
+export REPO_AI_GOVERNOR_NOTIFICATION_WEBHOOK_URL="https://example.com/webhook"
+export REPO_AI_GOVERNOR_NOTIFICATION_CHAT_IM_URL="https://example.com/chat-im"
+pnpm exec repo-ai-governor run --output json
+```
+
+说明：
+
+1. `REPO_AI_GOVERNOR_NOTIFICATION_WEBHOOK_URL` 用于启用主 webhook provider。
+2. `REPO_AI_GOVERNOR_NOTIFICATION_CHAT_IM_URL` 用于启用备选 `chat_im` provider，覆盖主渠道失败演练。
+3. 每个渠道还支持可选参数：`*_AUTH_TOKEN`、`*_HEADERS_JSON`、`*_TIMEOUT_MS`、`*_BACKOFF_BASE_MS`。
+4. 如果没有配置外部 provider，CLI 仍会保留本地 notification artifact fallback，方便演练与调试。
+
+## 5. 示例与门禁
 
 以下命令需在 `<governor-repo>` 执行（属于仓库维护脚本，不是目标仓库 CLI 子命令）：
 
@@ -151,7 +168,7 @@ pnpm exec repo-ai-governor workspace --workspace-action rollback --workspace-pla
 pnpm run check
 ```
 
-## 5. 常见问题
+## 6. 常见问题
 
 1. `pnpm add <tarball>` 报 `ENOTFOUND` 或 registry 解析失败：`tgz` 仍依赖 npm registry；请改用 `path` / `link` 或在联网环境安装。
 2. 源码接入后出现 `ERR_MODULE_NOT_FOUND`：在 governor 仓库执行 `pnpm install` 并重新构建。
@@ -161,7 +178,7 @@ pnpm run check
 6. 请保留最近一次 `workspace execute` 输出中的 `plan-path`；当目标 workspace 成为活动面后，它就是 canonical rollback reference。
 7. rollback 完成后，rollback 产物会跟随恢复后的 source workspace 根；如需确认当前活动工作区面，请重新执行 `doctor`。
 
-## 6. 下一步
+## 7. 下一步
 
 1. 阅读 `docs/local-adoption-playbook.zh-CN.md` 获取 clean-room 与升级细则。
 2. 如需 Codex 仓库本地 skill 模板，可查看 `.codex/skills/`。

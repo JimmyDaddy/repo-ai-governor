@@ -207,6 +207,8 @@ export class CliGovernanceRuntime {
       artifactWriter: this.artifactWriter,
       toRfc3339SecondsTimestamp: (value: Date) => this.toRfc3339SecondsTimestamp(value),
       toDisplayTimestamp: (value: string) => this.toDisplayTimestamp(value),
+      notificationProviders: this.options.notificationProviders,
+      notificationPolicyMatrix: this.options.notificationPolicyMatrix,
     });
     this.commandExperienceBuilder = new CliCommandExperienceBuilder();
     this.replayExplainBuilder = new CliReplayExplainBuilder();

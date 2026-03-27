@@ -1,0 +1,4 @@
+execution_id,task_id,title,owner,priority,due_date,status,project,sprint,plan,result,verify,review_delta,recorded_at
+exec-20260327-518,TK-301,正式支持矩阵文档与 clean-room smoke 记录,AI-Agent,P1,2026-04-15,planned,project-026-prd-gap-remediation,sprint-004-ga-evidence-and-support-matrix,声明正式支持的安装模式适配器 IDE surface 并附 clean-room smoke 记录,待执行,待验证,待执行,2026-03-27
+exec-20260327-519,TK-302,GA Readiness §10.2 全量量化证据沉淀,AI-Agent,P1,2026-04-15,planned,project-026-prd-gap-remediation,sprint-004-ga-evidence-and-support-matrix,沉淀 GA Readiness §10.2 全量运营证据,待执行,待验证,待执行,2026-03-27
+exec-20260327-520,TK-303,project-026 completion closeout 与 P2 staging 建议,AI-Agent,P1,2026-04-15,planned,project-026-prd-gap-remediation,sprint-004-ga-evidence-and-support-matrix,project-026 closeout 完成并输出 P2 staging 建议,待执行,待验证,待执行,2026-03-27

@@ -136,7 +136,24 @@ Notes:
 2. `workspace dry-run` writes the plan artifact under the current active workspace root; a successful `workspace execute` rewrites the plan and execution artifacts under the target workspace root.
 3. `workspace rollback` writes the rollback artifact under the restored source workspace root and removes empty `.repo-ai-governor-migration/<migration-id>` scratch directories after a successful cleanup.
 
-## 4. Examples And Validation Gates
+## 4. HITL Notification Providers
+
+Real HITL notification delivery can be enabled with environment-backed providers:
+
+```bash
+export REPO_AI_GOVERNOR_NOTIFICATION_WEBHOOK_URL="https://example.com/webhook"
+export REPO_AI_GOVERNOR_NOTIFICATION_CHAT_IM_URL="https://example.com/chat-im"
+pnpm exec repo-ai-governor run --output json
+```
+
+Notes:
+
+1. `REPO_AI_GOVERNOR_NOTIFICATION_WEBHOOK_URL` enables the primary webhook provider.
+2. `REPO_AI_GOVERNOR_NOTIFICATION_CHAT_IM_URL` enables one backup `chat_im` provider for fallback rehearsal.
+3. Optional per-channel knobs: `*_AUTH_TOKEN`, `*_HEADERS_JSON`, `*_TIMEOUT_MS`, `*_BACKOFF_BASE_MS`.
+4. When no external notification provider is configured, CLI still records one local notification artifact fallback for deterministic rehearsal/debugging.
+
+## 5. Examples And Validation Gates
 
 Run the following scripts from `<governor-repo>` (repository maintenance scripts, not target-repo CLI commands):
 
@@ -151,7 +168,7 @@ For repository-wide validation, run:
 pnpm run check
 ```
 
-## 5. Troubleshooting Shortlist
+## 6. Troubleshooting Shortlist
 
 1. `pnpm add <tarball>` fails with `ENOTFOUND` or registry-resolution errors: `tgz` install still requires npm registry access; use `path`/`link` or run in an online environment.
 2. `ERR_MODULE_NOT_FOUND` after source-based adoption: run `pnpm install` at governor repository root and rebuild.
@@ -161,7 +178,7 @@ pnpm run check
 6. Keep the printed `plan-path` from the most recent `workspace execute`; once the target workspace becomes active, that path is the canonical rollback reference.
 7. After rollback, the rollback artifact follows the restored source workspace root; re-run `doctor` if you want to confirm the active workspace surface.
 
-## 6. Next Steps
+## 7. Next Steps
 
 1. Follow `docs/local-adoption-playbook.md` for clean-room validation and upgrade paths.
 2. Inspect `.codex/skills/` if you want repo-local skill templates for Codex-based workflows.

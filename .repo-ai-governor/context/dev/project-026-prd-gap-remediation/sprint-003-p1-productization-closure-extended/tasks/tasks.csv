@@ -1,0 +1,4 @@
+execution_id,task_id,title,owner,priority,due_date,status,project,sprint,plan,result,verify,review_delta,recorded_at
+exec-20260327-515,TK-298,Python/Go 最小治理模板实装,AI-Agent,P1,2026-04-10,planned,project-026-prd-gap-remediation,sprint-003-p1-productization-closure-extended,至少补齐 Python 和 Go 的最小治理模板示例,待执行,待验证,待执行,2026-03-27
+exec-20260327-516,TK-299,upgrade/workspace lifecycle adopter UX 打磨,AI-Agent,P1,2026-04-10,planned,project-026-prd-gap-remediation,sprint-003-p1-productization-closure-extended,优化 upgrade 命令的 schema diff 冲突分级确认回滚体验,待执行,待验证,待执行,2026-03-27
+exec-20260327-517,TK-300,sprint-003 出口验收与 sprint-004 输入约束,AI-Agent,P1,2026-04-10,planned,project-026-prd-gap-remediation,sprint-003-p1-productization-closure-extended,sprint-003 出口验收并确认 sprint-004 输入约束,待执行,待验证,待执行,2026-03-27

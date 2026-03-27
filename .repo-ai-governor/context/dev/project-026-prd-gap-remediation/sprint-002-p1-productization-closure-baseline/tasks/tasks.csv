@@ -1,0 +1,6 @@
+execution_id,task_id,title,owner,priority,due_date,status,project,sprint,plan,result,verify,review_delta,recorded_at
+exec-20260327-510,TK-293,Standards Pack 三视图端到端链路验证,AI-Agent,P1,2026-04-05,planned,project-026-prd-gap-remediation,sprint-002-p1-productization-closure-baseline,补写 E2E 测试覆盖 pack rule-renderer agents-projector AGENTS.md 投影链路,待执行,待验证,待执行,2026-03-27
+exec-20260327-511,TK-294,i18n zh-CN/en 键集覆盖度核查与补齐,AI-Agent,P1,2026-04-05,planned,project-026-prd-gap-remediation,sprint-002-p1-productization-closure-baseline,核查 zh-CN en 两套资源语义键完整性并补缺失翻译键,待执行,待验证,待执行,2026-03-27
+exec-20260327-512,TK-295,6 个 public 包 package.json exports 系统性核查,AI-Agent,P1,2026-04-05,planned,project-026-prd-gap-remediation,sprint-002-p1-productization-closure-baseline,逐包核查 6 个 public 包的 exports 字段覆盖全部公开 API 入口,待执行,待验证,待执行,2026-03-27
+exec-20260327-513,TK-296,团队共享规范包分发路径文档与示例,AI-Agent,P1,2026-04-05,planned,project-026-prd-gap-remediation,sprint-002-p1-productization-closure-baseline,明确官方团队仓库三层来源的外部消费路径并补充文档示例,待执行,待验证,待执行,2026-03-27
+exec-20260327-514,TK-297,sprint-002 出口验收与 sprint-003 输入约束,AI-Agent,P1,2026-04-05,planned,project-026-prd-gap-remediation,sprint-002-p1-productization-closure-baseline,sprint-002 出口验收并确认 sprint-003 输入约束,待执行,待验证,待执行,2026-03-27
