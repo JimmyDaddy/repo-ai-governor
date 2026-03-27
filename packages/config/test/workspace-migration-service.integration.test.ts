@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -139,5 +140,8 @@ describe("WorkspaceMigrationService smoke", () => {
       "utf8",
     );
     expect(restoredState).toBe("restored");
+    expect(existsSync(resolve(tempRoot, ".repo-ai-governor-migration", plan.migrationId))).toBe(
+      false,
+    );
   });
 });

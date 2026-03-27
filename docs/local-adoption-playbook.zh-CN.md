@@ -119,10 +119,11 @@ pnpm exec repo-ai-governor workspace --workspace-action rollback --workspace-pla
 2. 使用同一个 `plan-path` 执行显式 rollback。
 3. 重新执行 `doctor`，确认 `workspaceRoot` 已恢复到 `tool_managed`。
 
-当前已知限制：
+Artifact locality 合同：
 
-1. `workspace execute` / `rollback` 的正式产物仍主要位于 source `tool_managed` workspace，而不是当前 repo-local 根。
-2. `rollback` 之后，目标仓库里可能仍残留空的 `.repo-ai-governor-migration/<migration-id>/backup` 目录。
+1. `workspace dry-run` 会把计划产物写到当前活动 workspace 根。
+2. 成功执行 `workspace execute` 后，plan/execution 产物会重写到目标 workspace 根。
+3. `workspace rollback` 会把 rollback 产物写到恢复后的 source workspace 根，并在 cleanup 成功后移除空的 `.repo-ai-governor-migration/<migration-id>` scratch 目录。
 
 ## 5. 本地调试路径
 
@@ -211,4 +212,3 @@ pnpm run release:ga-check
 
 1. `dist-binary` 只证明 CLI/runtime 行为成立，不等于已经验证 package install surface。
 2. 在全新的外部 adopter 仓库里，`doctor` / `check` 仍会出现 external-baseline warning，除非你主动把 self-host 治理文档与脚本一起 vendoring 进去。
-3. workspace migration 的 truthfulness 已经成立，但人体工程学还没完全收口：artifact locality 仍偏 source `tool_managed`，且 rollback 后 scratch cleanup 还不彻底。

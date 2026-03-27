@@ -116,3 +116,4 @@
 13. 2026-03-27：通过 `TK-267 / DA-267` 复核 `workspace/user` seam gate，结论仍为保持 reserved capability，暂不进入最小实现窗口。
 14. 2026-03-27：通过 `TK-268 / DA-268` 产出 [project-022 completion audit summary](./project-022-memory-semantics-safety-and-consumer-hardening-completion-audit-summary.md)，并同步 delivery closeout baseline。
 15. 2026-03-27：通过 `TK-269 / DA-269` 完成 sprint-003 验收与 `project-022` completed closeout；`current-context` 暂保留本 sprint 作为 active closeout surface，等待下一条主执行流显式激活。
+16. 2026-03-27：激活 `project-023 / sprint-001-workspace-artifact-locality-and-scratch-cleanup-baseline` 后，`project-022 / sprint-003` 已从 `current-context` closeout surface 迁入 `completed-streams-history.md`。

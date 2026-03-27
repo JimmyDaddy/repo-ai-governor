@@ -133,8 +133,8 @@ pnpm exec repo-ai-governor workspace --workspace-action rollback --workspace-pla
 Notes:
 
 1. `init` alone keeps the repository on `tool_managed`; repo-local files appear only after `workspace execute`.
-2. Current `workspace execute` / `rollback` artifacts remain under the source `tool_managed` workspace even when the target becomes `repo_local`.
-3. Current rollback may leave an empty `.repo-ai-governor-migration/<migration-id>/backup` directory in the target repository.
+2. `workspace dry-run` writes the plan artifact under the current active workspace root; a successful `workspace execute` rewrites the plan and execution artifacts under the target workspace root.
+3. `workspace rollback` writes the rollback artifact under the restored source workspace root and removes empty `.repo-ai-governor-migration/<migration-id>` scratch directories after a successful cleanup.
 
 ## 4. Examples And Validation Gates
 
@@ -158,8 +158,8 @@ pnpm run check
 3. Fresh external repos may report `baseline_docs missing=5/5` in `doctor`: this is the current external-adopter baseline unless you explicitly vendor self-host governance docs into the target repo.
 4. External target repos may report governance `script_not_found` warnings in `check`: this is expected unless that repo also carries the self-host governance scripts.
 5. Existing Yarn/npm or dirty repositories: use the `dist` binary rehearsal path first if you want to validate behavior before mutating package-manager state.
-6. Workspace plan/execution/rollback artifacts may still point to the source `tool_managed` root after `repo_local` execute: keep the printed plan path and use it for rollback.
-7. Rollback may leave an empty `.repo-ai-governor-migration/<migration-id>/backup` directory: remove it manually if you need a spotless working tree before automated cleanup lands.
+6. Keep the printed `plan-path` from the most recent `workspace execute`; once the target workspace becomes active, that path is the canonical rollback reference.
+7. After rollback, the rollback artifact follows the restored source workspace root; re-run `doctor` if you want to confirm the active workspace surface.
 
 ## 6. Next Steps
 

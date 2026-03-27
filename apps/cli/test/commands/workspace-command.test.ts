@@ -204,14 +204,23 @@ describe("CliWorkspaceCommand", () => {
       const planPath = executeResult.commandResult.artifacts?.find(
         (artifact) => artifact.id === "workspace_migration_plan",
       )?.path;
+      const executionPath = executeResult.commandResult.artifacts?.find(
+        (artifact) => artifact.id === "workspace_migration_execution",
+      )?.path;
       const targetWorkspaceRoot = String(
         executeResult.commandResult.details?.target_workspace_root,
       );
+      const migrationId = String(executeResult.commandResult.details?.migration_id);
       const repoLocalConfigLoader = new ConfigLoader();
 
       expect(executeResult.commandResult.operation).toBe("workspace_migration_execute");
       expect(existsSync(targetWorkspaceRoot)).toBe(true);
       expect(typeof planPath).toBe("string");
+      expect(typeof executionPath).toBe("string");
+      expect(String(planPath)).toContain(targetWorkspaceRoot);
+      expect(String(executionPath)).toContain(targetWorkspaceRoot);
+      expect(existsSync(String(planPath))).toBe(true);
+      expect(existsSync(String(executionPath))).toBe(true);
       expect(repoLocalConfigLoader.loadFromFile(fixture.configPath).workspace).toEqual({
         mode: WorkspaceMode.TOOL_MANAGED,
         toolManagedRoot: fixture.managedWorkspaceRoot,
@@ -238,6 +247,10 @@ describe("CliWorkspaceCommand", () => {
       expect(rollbackResult.commandResult.operation).toBe("workspace_migration_rollback");
       expect(existsSync(targetWorkspaceRoot)).toBe(false);
       expect(existsSync(resolve(targetWorkspaceRoot, "context", "workspace"))).toBe(false);
+      expect(
+        (rollbackResult.commandResult.details as Record<string, unknown> | undefined)
+          ?.scratch_cleanup_status,
+      ).toBe("removed");
       expect(repoLocalConfigLoader.loadFromFile(fixture.configPath).workspace).toEqual({
         mode: WorkspaceMode.REPO_LOCAL,
         migrationPolicy: "copy_verify_switch_rollback",
@@ -248,6 +261,9 @@ describe("CliWorkspaceCommand", () => {
         )?.path,
       );
       expect(rollbackArtifactPath).toContain(fixture.workspaceRoot);
+      expect(
+        existsSync(resolve(fixture.tempRoot, ".repo-ai-governor-migration", migrationId)),
+      ).toBe(false);
     } finally {
       await rm(fixture.tempRoot, { recursive: true, force: true });
     }

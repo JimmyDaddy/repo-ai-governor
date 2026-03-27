@@ -152,6 +152,8 @@ export class WorkspaceMigrationService {
         await rm(plan.stagingWorkspaceRoot, { recursive: true, force: true });
       }
 
+      await this.cleanupScratchDirectories(plan);
+
       return {
         step: WorkspaceMigrationStep.ROLLBACK,
         status: WorkspaceMigrationStepStatus.SUCCEEDED,
@@ -371,6 +373,41 @@ export class WorkspaceMigrationService {
       await cp(sourceDirectory, targetDirectory, { recursive: true });
       await rm(sourceDirectory, { recursive: true, force: true });
     }
+  }
+
+  /**
+   * Removes empty per-migration scratch directories after a successful rollback.
+   * @param plan Migration plan.
+   * @returns Void promise.
+   */
+  private async cleanupScratchDirectories(plan: WorkspaceMigrationPlan): Promise<void> {
+    await this.removeDirectoryIfEmpty(plan.backupWorkspaceRoot);
+    await this.removeDirectoryIfEmpty(this.resolveMigrationRoot(plan));
+  }
+
+  /**
+   * Removes a directory only when it exists and has no remaining entries.
+   * @param directoryPath Candidate directory path.
+   * @returns Void promise.
+   */
+  private async removeDirectoryIfEmpty(directoryPath: string): Promise<void> {
+    if (!existsSync(directoryPath)) {
+      return;
+    }
+
+    const directoryEntries = await readdir(directoryPath);
+    if (directoryEntries.length === 0) {
+      await rm(directoryPath, { recursive: true, force: true });
+    }
+  }
+
+  /**
+   * Resolves the per-migration scratch root from the staging workspace path.
+   * @param plan Migration plan.
+   * @returns Absolute migration scratch root path.
+   */
+  private resolveMigrationRoot(plan: WorkspaceMigrationPlan): string {
+    return dirname(plan.stagingWorkspaceRoot);
   }
 
   /**

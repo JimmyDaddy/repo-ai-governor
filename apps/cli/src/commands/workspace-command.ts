@@ -96,11 +96,10 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
       targetWorkspace,
     });
     const cutoverPersistence = await this.captureCutoverPersistence(plan);
-    const planArtifactPath = resolve(
+    const planArtifactPath = this.buildWorkspaceArtifactPath(
       context.options.workspace.workspaceRoot,
-      "context",
-      "workspace",
-      `${plan.migrationId}.plan.json`,
+      plan.migrationId,
+      "plan",
     );
 
     await context.artifactWriter.writeJsonArtifact(
@@ -215,19 +214,17 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
     cutoverPersistence: WorkspaceCutoverPersistence,
   ) {
     const executionResult = await this.workspaceMigrationService.execute(plan);
-    const executionArtifactPath = resolve(
+    const sourceExecutionArtifactPath = this.buildWorkspaceArtifactPath(
       context.options.workspace.workspaceRoot,
-      "context",
-      "workspace",
-      `${plan.migrationId}.execution.json`,
+      plan.migrationId,
+      "execution",
     );
 
     if (!executionResult.success) {
-      const failureSummaryPath = resolve(
+      const failureSummaryPath = this.buildWorkspaceArtifactPath(
         context.options.workspace.workspaceRoot,
-        "context",
-        "workspace",
-        `${plan.migrationId}.failure.json`,
+        plan.migrationId,
+        "failure",
       );
       const failedStep = executionResult.steps.find(
         (step) => step.status === WorkspaceMigrationStepStatus.FAILED,
@@ -236,7 +233,7 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
         generatedAt: context.toRfc3339SecondsTimestamp(new Date()),
         migrationId: plan.migrationId,
         planPath: planArtifactPath,
-        executionPath: executionArtifactPath,
+        executionPath: sourceExecutionArtifactPath,
         failedStep: failedStep?.step ?? null,
         rollbackStatus:
           executionResult.steps.find((step) => step.step === "rollback")?.status ?? "unknown",
@@ -251,7 +248,7 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
           reportPath: failureSummaryPath,
           migrationId: plan.migrationId,
           planPath: planArtifactPath,
-          executionPath: executionArtifactPath,
+          executionPath: sourceExecutionArtifactPath,
           failedStep: failedStep?.step ?? null,
         },
       );
@@ -263,14 +260,13 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
       const rollbackResult = await this.workspaceMigrationService.rollback(plan);
       await this.restoreCutoverPersistence(context, cutoverPersistence);
       const normalizedError = standardizeError(error);
-      const failureSummaryPath = resolve(
+      const failureSummaryPath = this.buildWorkspaceArtifactPath(
         context.options.workspace.workspaceRoot,
-        "context",
-        "workspace",
-        `${plan.migrationId}.failure.json`,
+        plan.migrationId,
+        "failure",
       );
 
-      await context.artifactWriter.writeJsonArtifact(executionArtifactPath, {
+      await context.artifactWriter.writeJsonArtifact(sourceExecutionArtifactPath, {
         generatedAt: context.toRfc3339SecondsTimestamp(new Date()),
         migrationId: plan.migrationId,
         success: false,
@@ -294,7 +290,7 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
         generatedAt: context.toRfc3339SecondsTimestamp(new Date()),
         migrationId: plan.migrationId,
         planPath: planArtifactPath,
-        executionPath: executionArtifactPath,
+        executionPath: sourceExecutionArtifactPath,
         failedStep: "cutover_persistence",
         rollbackStatus: rollbackResult.status,
         error: normalizedError,
@@ -308,18 +304,44 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
           reportPath: failureSummaryPath,
           migrationId: plan.migrationId,
           planPath: planArtifactPath,
-          executionPath: executionArtifactPath,
+          executionPath: sourceExecutionArtifactPath,
           failedStep: "cutover_persistence",
         },
       );
     }
 
+    const relocatedPlanArtifactPath = this.buildWorkspaceArtifactPath(
+      plan.targetWorkspace.workspaceRoot,
+      plan.migrationId,
+      "plan",
+    );
+    await context.artifactWriter.writeJsonArtifact(
+      relocatedPlanArtifactPath,
+      this.createPlanArtifactPayload(
+        context,
+        CliWorkspaceAction.EXECUTE,
+        config,
+        targetWorkspace,
+        plan,
+        relocatedPlanArtifactPath,
+        cutoverPersistence,
+      ),
+    );
+    if (relocatedPlanArtifactPath !== planArtifactPath) {
+      await rm(planArtifactPath, { force: true });
+    }
+
+    const executionArtifactPath = this.buildWorkspaceArtifactPath(
+      plan.targetWorkspace.workspaceRoot,
+      plan.migrationId,
+      "execution",
+    );
     await context.artifactWriter.writeJsonArtifact(executionArtifactPath, {
       generatedAt: context.toRfc3339SecondsTimestamp(new Date()),
       migrationId: plan.migrationId,
       success: executionResult.success,
-      planPath: planArtifactPath,
-      rollbackCommand: `repo-ai-governor workspace --workspace-action rollback --workspace-plan ${planArtifactPath}`,
+      planPath: relocatedPlanArtifactPath,
+      rollbackCommand: `repo-ai-governor workspace --workspace-action rollback --workspace-plan ${relocatedPlanArtifactPath}`,
       execution: executionResult,
     });
 
@@ -347,13 +369,13 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
       {
         id: "rollback_reference",
         status: CliGovernanceCheckStatus.PASS,
-        detail: planArtifactPath,
+        detail: relocatedPlanArtifactPath,
       },
     ];
     const artifacts: CliCommandResultArtifact[] = [
       {
         id: "workspace_migration_plan",
-        path: planArtifactPath,
+        path: relocatedPlanArtifactPath,
       },
       {
         id: "workspace_migration_execution",
@@ -361,8 +383,8 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
       },
     ];
     const message = context.localizeText(
-      `Workspace migration executed successfully; plan=${planArtifactPath}.`,
-      `工作区迁移执行成功；计划文件=${planArtifactPath}。`,
+      `Workspace migration executed successfully; plan=${relocatedPlanArtifactPath}.`,
+      `工作区迁移执行成功；计划文件=${relocatedPlanArtifactPath}。`,
     );
 
     return {
@@ -382,8 +404,8 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
           artifactPath: executionArtifactPath,
           nextActions: [
             context.localizeText(
-              `Keep ${planArtifactPath} so you can run an explicit rollback if the new workspace surface is not acceptable.`,
-              `请保留 ${planArtifactPath}，如果新的工作区面不符合预期，可显式执行 rollback。`,
+              `Keep ${relocatedPlanArtifactPath} so you can run an explicit rollback if the new workspace surface is not acceptable.`,
+              `请保留 ${relocatedPlanArtifactPath}，如果新的工作区面不符合预期，可显式执行 rollback。`,
             ),
             context.localizeText(
               `Re-run doctor/check against ${plan.targetWorkspace.workspaceRoot} before adopting it as the default workspace surface.`,
@@ -398,7 +420,8 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
           target_workspace_mode: plan.targetWorkspace.mode,
           source_workspace_root: plan.sourceWorkspace.workspaceRoot,
           target_workspace_root: plan.targetWorkspace.workspaceRoot,
-          plan_path: planArtifactPath,
+          artifact_workspace_root: plan.targetWorkspace.workspaceRoot,
+          plan_path: relocatedPlanArtifactPath,
           execution_path: executionArtifactPath,
           step_count: executionResult.steps.length,
         },
@@ -439,11 +462,10 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
     const plan = this.parseWorkspaceMigrationPlan(planArtifactPayload, planArtifactPath);
     const cutoverPersistence = this.parseCutoverPersistence(planArtifactPayload, planArtifactPath);
     const rollbackResult = await this.workspaceMigrationService.rollback(plan);
-    const rollbackArtifactPath = resolve(
+    const rollbackArtifactPath = this.buildWorkspaceArtifactPath(
       plan.sourceWorkspace.workspaceRoot,
-      "context",
-      "workspace",
-      `${plan.migrationId}.rollback.json`,
+      plan.migrationId,
+      "rollback",
     );
     let selectorRestoreError: RuntimeError | null = null;
     try {
@@ -476,6 +498,8 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
               error: standardizeError(selectorRestoreError),
             },
     });
+    const scratchCleanupRoot = this.resolveMigrationScratchRoot(plan);
+    const scratchCleanupStatus = existsSync(scratchCleanupRoot) ? "retained" : "removed";
 
     if (
       rollbackResult.status === WorkspaceMigrationStepStatus.FAILED ||
@@ -508,6 +532,17 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
         id: "workspace_step_rollback",
         status: CliGovernanceCheckStatus.PASS,
         detail: rollbackResult.message,
+      },
+      {
+        id: "workspace_scratch_cleanup",
+        status:
+          scratchCleanupStatus === "removed"
+            ? CliGovernanceCheckStatus.PASS
+            : CliGovernanceCheckStatus.WARN,
+        detail:
+          scratchCleanupStatus === "removed"
+            ? `scratch_root_removed=${scratchCleanupRoot}`
+            : `scratch_root_retained=${scratchCleanupRoot}`,
       },
     ];
     const artifacts: CliCommandResultArtifact[] = [
@@ -550,6 +585,9 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
           plan_path: planArtifactPath,
           rollback_path: rollbackArtifactPath,
           target_workspace_root: plan.targetWorkspace.workspaceRoot,
+          artifact_workspace_root: plan.sourceWorkspace.workspaceRoot,
+          scratch_cleanup_root: scratchCleanupRoot,
+          scratch_cleanup_status: scratchCleanupStatus,
         },
       },
     };
@@ -857,6 +895,18 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
     }
 
     return resolve(currentWorkingDirectory, pathValue);
+  }
+
+  private buildWorkspaceArtifactPath(
+    workspaceRoot: string,
+    migrationId: string,
+    artifactType: "plan" | "execution" | "failure" | "rollback",
+  ): string {
+    return resolve(workspaceRoot, "context", "workspace", `${migrationId}.${artifactType}.json`);
+  }
+
+  private resolveMigrationScratchRoot(plan: WorkspaceMigrationPlan): string {
+    return resolve(plan.stagingWorkspaceRoot, "..");
   }
 
   private async captureCutoverPersistence(

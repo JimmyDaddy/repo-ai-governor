@@ -119,10 +119,11 @@ Rollback plan:
 2. Use that same `plan-path` for explicit rollback.
 3. Re-run `doctor` and verify `workspaceRoot` resolves back to `tool_managed`.
 
-Current known limitations from pilot validation:
+Artifact locality contract:
 
-1. `workspace execute` / `rollback` artifacts remain under the source `tool_managed` workspace even when target becomes `repo_local`.
-2. `rollback` may leave an empty `.repo-ai-governor-migration/<migration-id>/backup` directory in the target repository.
+1. `workspace dry-run` writes the plan artifact under the current active workspace root.
+2. A successful `workspace execute` rewrites the plan and execution artifacts under the target workspace root.
+3. `workspace rollback` writes the rollback artifact under the restored source workspace root and removes empty `.repo-ai-governor-migration/<migration-id>` scratch directories after cleanup.
 
 ## 5. Local Debug Path
 
@@ -211,4 +212,3 @@ pnpm run release:ga-check
 
 1. `dist-binary` validates CLI/runtime behavior but does not prove packaged install surface.
 2. `doctor` / `check` still emit external-baseline warnings in fresh target repos until self-host governance docs/scripts are explicitly vendored there.
-3. Workspace migration artifacts and cleanup semantics are truthful but not yet fully ergonomic: artifact locality stays on the source `tool_managed` side, and scratch cleanup is incomplete after rollback.

@@ -1,0 +1,22 @@
+# checklist
+
+- [x] TK-270 project-023 激活与 project-022 closeout handoff
+  - 2026-03-27：任务创建，状态初始化为 `planned`。
+  - 2026-03-27：状态切换为 `in_progress`，开始创建 `project-023 / sprint-001` skeleton、切换 current-context 并迁移 `project-022 / sprint-003` history。
+  - 2026-03-27：已完成 `project-023` skeleton、active execution surface 切换、completed history 迁移与 `DA-270`。
+- [x] TK-271 workspace artifact locality contract 与 target-root decision baseline
+  - 2026-03-27：任务创建，状态初始化为 `planned`。
+  - 2026-03-27：状态切换为 `in_progress`，开始对照 `DA-235/DA-236` 与当前 workspace 命令行为，明确 migration artifact 的 canonical location contract。
+  - 2026-03-27：已完成 locality contract 决策，结论为 dry-run 跟随当前 active root、execute 成功后 plan/execution 跟随 target root、rollback artifact 跟随恢复后的 source root，并形成 `DA-271`。
+- [x] TK-272 workspace artifact locality execute rollback cutover 与 CLI truthfulness
+  - 2026-03-27：任务创建，状态初始化为 `planned`。
+  - 2026-03-27：状态切换为 `in_progress`，开始将 execute 成功后的 plan/execution artifact path 与 CLI 输出切到 target workspace root。
+  - 2026-03-27：已完成 artifact locality cutover、CLI truthfulness、命令/集成测试与 clean-room 验证，并形成 `DA-272`。
+- [x] TK-273 rollback scratch cleanup 与 residual-state semantics hardening
+  - 2026-03-27：任务创建，状态初始化为 `planned`。
+  - 2026-03-27：状态切换为 `in_progress`，开始清理 rollback 后无语义的 `.repo-ai-governor-migration` scratch 残留，并补充 cleanup 状态输出。
+  - 2026-03-27：已完成 rollback scratch cleanup hardening、cleanup 状态输出与相关测试，并形成 `DA-273`。
+- [x] TK-274 sprint-001 出口验收与 project-023 完成态评估
+  - 2026-03-27：任务创建，状态初始化为 `planned`。
+  - 2026-03-27：状态切换为 `in_progress`，开始执行 sprint-001 exit acceptance、review 收口与 `project-023` completion assessment。
+  - 2026-03-27：已完成 `DA-274`、resolved sprint-001 review、project-023 completion audit summary、project/sprint/master-plan truth 同步，并将 `project-023` 切换为 `completed`。

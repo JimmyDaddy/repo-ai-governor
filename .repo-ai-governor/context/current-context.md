@@ -3,19 +3,19 @@
 ## Primary Stream
 
 - Status: active
-- Project: `project-022-memory-semantics-safety-and-consumer-hardening`
-- Sprint: `sprint-003-seam-follow-through-or-project-closeout`
-- Docs root: `.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening`
-- Task records: `.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/sprint-003-seam-follow-through-or-project-closeout/tasks/`
-- Review records: `.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/sprint-003-seam-follow-through-or-project-closeout/review/`
+- Project: `project-024-gate-execution-efficiency-technical-solution-promotion`
+- Sprint: `sprint-001-formalization-and-promotion-cutover`
+- Docs root: `.repo-ai-governor/context/dev/project-024-gate-execution-efficiency-technical-solution-promotion`
+- Task records: `.repo-ai-governor/context/dev/project-024-gate-execution-efficiency-technical-solution-promotion/sprint-001-formalization-and-promotion-cutover/tasks/`
+- Review records: `.repo-ai-governor/context/dev/project-024-gate-execution-efficiency-technical-solution-promotion/sprint-001-formalization-and-promotion-cutover/review/`
 
 ## Active Streams
 
-- `primary`: project=`project-022-memory-semantics-safety-and-consumer-hardening`, sprint=`sprint-003-seam-follow-through-or-project-closeout`, docs=`.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening`, plan=`.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/plan.md`, tasks=`.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/sprint-003-seam-follow-through-or-project-closeout/tasks/`, checklist=`.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/sprint-003-seam-follow-through-or-project-closeout/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/sprint-003-seam-follow-through-or-project-closeout/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/sprint-003-seam-follow-through-or-project-closeout/review/`, status=`active`
+- `primary`: project=`project-024-gate-execution-efficiency-technical-solution-promotion`, sprint=`sprint-001-formalization-and-promotion-cutover`, docs=`.repo-ai-governor/context/dev/project-024-gate-execution-efficiency-technical-solution-promotion`, plan=`.repo-ai-governor/context/dev/project-024-gate-execution-efficiency-technical-solution-promotion/plan.md`, tasks=`.repo-ai-governor/context/dev/project-024-gate-execution-efficiency-technical-solution-promotion/sprint-001-formalization-and-promotion-cutover/tasks/`, checklist=`.repo-ai-governor/context/dev/project-024-gate-execution-efficiency-technical-solution-promotion/sprint-001-formalization-and-promotion-cutover/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-024-gate-execution-efficiency-technical-solution-promotion/sprint-001-formalization-and-promotion-cutover/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-024-gate-execution-efficiency-technical-solution-promotion/sprint-001-formalization-and-promotion-cutover/review/`, status=`active`
 
 ## Planned Follow-Up Streams
 
-1. 当前无 planned follow-up stream；`project-022` 已切换为 `completed` 真值，`current-context` 暂保留 `sprint-003` 作为 active closeout surface，待下一条 primary stream 显式激活后再迁入 history。
+1. 当前无 planned follow-up stream；`project-024` 已切换为 `completed` 真值，`current-context` 暂保留 `sprint-001` 作为 active closeout surface，待下一条 primary stream 显式激活后再迁入 history。
 
 ## Completed Stream History
 

@@ -133,8 +133,8 @@ pnpm exec repo-ai-governor workspace --workspace-action rollback --workspace-pla
 说明：
 
 1. 单独执行 `init` 仍会停留在 `tool_managed`；只有 `workspace execute` 后才会真正落 repo-local 工作区面。
-2. 当前 `workspace execute` / `rollback` 的 plan/execution/rollback 产物仍主要写回 source `tool_managed` workspace。
-3. 当前 rollback 之后，目标仓库里可能仍残留空的 `.repo-ai-governor-migration/<migration-id>/backup` 目录。
+2. `workspace dry-run` 会把计划产物写到当前活动 workspace 根；成功执行 `workspace execute` 后，plan/execution 产物会重写到目标 workspace 根。
+3. `workspace rollback` 会把 rollback 产物写到恢复后的 source workspace 根，并在 cleanup 成功后移除空的 `.repo-ai-governor-migration/<migration-id>` scratch 目录。
 
 ## 4. 示例与门禁
 
@@ -158,8 +158,8 @@ pnpm run check
 3. 全新外部 adopter 仓库中 `doctor` 报 `baseline_docs missing=5/5`：这是当前 external-adopter 基线，除非你主动把 self-host 治理文档一起 vendoring 到目标仓库。
 4. 外部目标仓库里 `check` 报 governance `script_not_found`：这是当前预期，除非该仓库也携带 self-host 的治理脚本。
 5. 目标仓库本身是 Yarn/npm 或已有脏工作树：先走 `dist` 二进制演练路径，再决定是否落正式 package 安装。
-6. 执行 `repo_local` 切换后看到的 plan/execution/rollback 产物仍指向 home 下的 `tool_managed` 根：这是当前 artifact locality 行为，请保留输出中的 `plan-path` 用于回滚。
-7. rollback 后若仍看到空的 `.repo-ai-governor-migration/<migration-id>/backup` 目录：当前可手动删除，自动 cleanup 仍属 follow-up。
+6. 请保留最近一次 `workspace execute` 输出中的 `plan-path`；当目标 workspace 成为活动面后，它就是 canonical rollback reference。
+7. rollback 完成后，rollback 产物会跟随恢复后的 source workspace 根；如需确认当前活动工作区面，请重新执行 `doctor`。
 
 ## 6. 下一步
 
