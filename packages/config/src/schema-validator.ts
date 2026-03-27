@@ -10,9 +10,9 @@ import {
   RoleSource,
   WorkspaceMigrationPolicy,
   WorkspaceMode,
-} from "@repo-ai-governor/shared";
-import { ConfigError, GovernorErrorCode } from "@repo-ai-governor/shared";
-import { GovernorSchemaVersion, SUPPORTED_GOVERNOR_SCHEMA_VERSIONS } from "./constants/index.js";
+} from '@repo-ai-governor/shared';
+import { ConfigError, GovernorErrorCode } from '@repo-ai-governor/shared';
+import { GovernorSchemaVersion, SUPPORTED_GOVERNOR_SCHEMA_VERSIONS } from './constants/index.js';
 import type {
   AdapterRoleBindingConfig,
   AdapterRoleConfig,
@@ -25,7 +25,7 @@ import type {
   MemoryConfig,
   RoleProfileConfig,
   WorkspaceConfig,
-} from "./types/interfaces/index.js";
+} from './types/interfaces/index.js';
 
 const WORKSPACE_MODE_VALUES = new Set<string>(Object.values(WorkspaceMode));
 const WORKSPACE_MIGRATION_POLICY_VALUES = new Set<string>(Object.values(WorkspaceMigrationPolicy));
@@ -53,39 +53,39 @@ export class SchemaValidator {
    * @returns Strongly-typed governor config when validation succeeds.
    */
   public validateOrThrow(candidate: unknown): GovernorConfig {
-    const root = this.expectRecord(candidate, "/");
+    const root = this.expectRecord(candidate, '/');
 
-    const schemaVersion = this.resolveSchemaVersion(root.schemaVersion, "/schemaVersion");
+    const schemaVersion = this.resolveSchemaVersion(root.schemaVersion, '/schemaVersion');
     const workspace = this.validateWorkspace(
       root.workspace,
-      "/workspace",
+      '/workspace',
       false,
       schemaVersion,
     ) as WorkspaceConfig;
-    const i18n = this.validateI18n(root.i18n, "/i18n", false) as I18nConfig;
-    const memory = this.validateMemory(root.memory, "/memory", false) as
+    const i18n = this.validateI18n(root.i18n, '/i18n', false) as I18nConfig;
+    const memory = this.validateMemory(root.memory, '/memory', false) as
       | Partial<MemoryConfig>
       | undefined;
-    const roles = this.validateRoles(root.roles, "/roles");
-    const adapters = this.validateAdapters(root.adapters, "/adapters", false) as
+    const roles = this.validateRoles(root.roles, '/roles');
+    const adapters = this.validateAdapters(root.adapters, '/adapters', false) as
       | AdaptersConfig
       | undefined;
-    const activeProfile = this.expectOptionalString(root.activeProfile, "/activeProfile");
-    const profiles = this.validateProfiles(root.profiles, "/profiles", schemaVersion);
+    const activeProfile = this.expectOptionalString(root.activeProfile, '/activeProfile');
+    const profiles = this.validateProfiles(root.profiles, '/profiles', schemaVersion);
 
     this.assertNoUnknownKeys(
       root,
       new Set([
-        "schemaVersion",
-        "workspace",
-        "i18n",
-        "memory",
-        "roles",
-        "adapters",
-        "activeProfile",
-        "profiles",
+        'schemaVersion',
+        'workspace',
+        'i18n',
+        'memory',
+        'roles',
+        'adapters',
+        'activeProfile',
+        'profiles',
       ]),
-      "/",
+      '/',
     );
 
     return {
@@ -123,7 +123,7 @@ export class SchemaValidator {
       const profile = this.expectRecord(profileValue, profilePointer);
       this.assertNoUnknownKeys(
         profile,
-        new Set(["workspace", "i18n", "memory", "adapters"]),
+        new Set(['workspace', 'i18n', 'memory', 'adapters']),
         profilePointer,
       );
 
@@ -175,7 +175,7 @@ export class SchemaValidator {
     const workspace = this.expectRecord(candidate, pointer);
     this.assertNoUnknownKeys(
       workspace,
-      new Set(["mode", "toolManagedRoot", "repoLocalRoot", "migrationPolicy"]),
+      new Set(['mode', 'toolManagedRoot', 'repoLocalRoot', 'migrationPolicy']),
       pointer,
     );
 
@@ -231,7 +231,7 @@ export class SchemaValidator {
 
     throw new ConfigError(
       GovernorErrorCode.CONFIG_SCHEMA_VERSION_UNSUPPORTED,
-      `${pointer} must be one of: ${Array.from(SUPPORTED_GOVERNOR_SCHEMA_VERSIONS).join(", ")}.`,
+      `${pointer} must be one of: ${Array.from(SUPPORTED_GOVERNOR_SCHEMA_VERSIONS).join(', ')}.`,
       {
         pointer,
         schemaVersion,
@@ -255,7 +255,7 @@ export class SchemaValidator {
 
     if (!WORKSPACE_MODE_VALUES.has(mode)) {
       this.throwConfigSchemaValidationError(
-        `${pointer}/mode must be one of: ${Array.from(WORKSPACE_MODE_VALUES).join(", ")}.`,
+        `${pointer}/mode must be one of: ${Array.from(WORKSPACE_MODE_VALUES).join(', ')}.`,
         pointer,
       );
     }
@@ -281,7 +281,7 @@ export class SchemaValidator {
       this.throwConfigSchemaValidationError(
         `${pointer}/migrationPolicy must be one of: ${Array.from(
           WORKSPACE_MIGRATION_POLICY_VALUES,
-        ).join(", ")}.`,
+        ).join(', ')}.`,
         pointer,
       );
     }
@@ -304,7 +304,7 @@ export class SchemaValidator {
     const i18n = this.expectRecord(candidate, pointer);
     this.assertNoUnknownKeys(
       i18n,
-      new Set(["runtimeEngine", "defaultLocale", "fallbackLocale", "supportedLocales"]),
+      new Set(['runtimeEngine', 'defaultLocale', 'fallbackLocale', 'supportedLocales']),
       pointer,
     );
 
@@ -380,15 +380,15 @@ export class SchemaValidator {
       this.assertNoUnknownKeys(
         roleRecord,
         new Set([
-          "roleProfileId",
-          "roleProfileVersion",
-          "displayName",
-          "responsibilities",
-          "capabilities",
-          "permissionCeiling",
-          "roleSource",
-          "status",
-          "lifecycle",
+          'roleProfileId',
+          'roleProfileVersion',
+          'displayName',
+          'responsibilities',
+          'capabilities',
+          'permissionCeiling',
+          'roleSource',
+          'status',
+          'lifecycle',
         ]),
         rolePointer,
       );
@@ -457,13 +457,13 @@ export class SchemaValidator {
       }
       if (!ROLE_SOURCE_VALUES.has(roleSource)) {
         this.throwConfigSchemaValidationError(
-          `${rolePointer}/roleSource must be one of: ${Array.from(ROLE_SOURCE_VALUES).join(", ")}.`,
+          `${rolePointer}/roleSource must be one of: ${Array.from(ROLE_SOURCE_VALUES).join(', ')}.`,
           `${rolePointer}/roleSource`,
         );
       }
       if (!ROLE_PROFILE_STATUS_VALUES.has(status)) {
         this.throwConfigSchemaValidationError(
-          `${rolePointer}/status must be one of: ${Array.from(ROLE_PROFILE_STATUS_VALUES).join(", ")}.`,
+          `${rolePointer}/status must be one of: ${Array.from(ROLE_PROFILE_STATUS_VALUES).join(', ')}.`,
           `${rolePointer}/status`,
         );
       }
@@ -539,7 +539,7 @@ export class SchemaValidator {
     const lifecycle = this.expectRecord(candidate, pointer);
     this.assertNoUnknownKeys(
       lifecycle,
-      new Set(["aliases", "supersedes", "replacedBy", "deprecatedAt", "migrationNotes"]),
+      new Set(['aliases', 'supersedes', 'replacedBy', 'deprecatedAt', 'migrationNotes']),
       pointer,
     );
 
@@ -584,7 +584,7 @@ export class SchemaValidator {
     }
 
     const adapters = this.expectRecord(candidate, pointer);
-    this.assertNoUnknownKeys(adapters, new Set(["roles", "routing", "tools"]), pointer);
+    this.assertNoUnknownKeys(adapters, new Set(['roles', 'routing', 'tools']), pointer);
 
     const roles = this.validateAdapterRoles(adapters.roles, `${pointer}/roles`, isPartial);
     const routing = this.validateAdapterRouting(
@@ -631,7 +631,7 @@ export class SchemaValidator {
       const roleRecord = this.expectRecord(entry, rolePointer);
       this.assertNoUnknownKeys(
         roleRecord,
-        new Set(["roleId", "roleProfileId", "requiredCapabilities", "required"]),
+        new Set(['roleId', 'roleProfileId', 'requiredCapabilities', 'required']),
         rolePointer,
       );
 
@@ -711,7 +711,7 @@ export class SchemaValidator {
     }
 
     const routing = this.expectRecord(candidate, pointer);
-    this.assertNoUnknownKeys(routing, new Set(["roleBindings"]), pointer);
+    this.assertNoUnknownKeys(routing, new Set(['roleBindings']), pointer);
     const roleBindingsRecord = this.expectRecord(routing.roleBindings, `${pointer}/roleBindings`);
 
     const roleBindings: Record<string, AdapterRoleBindingConfig> = {};
@@ -726,7 +726,7 @@ export class SchemaValidator {
       const roleBinding = this.expectRecord(value, roleBindingPointer);
       this.assertNoUnknownKeys(
         roleBinding,
-        new Set(["primarySurface", "fallbackSurfaces"]),
+        new Set(['primarySurface', 'fallbackSurfaces']),
         roleBindingPointer,
       );
 
@@ -818,7 +818,7 @@ export class SchemaValidator {
       const toolRecord = this.expectRecord(entry, toolPointer);
       this.assertNoUnknownKeys(
         toolRecord,
-        new Set(["toolId", "enabled", "availability", "unavailableReasons", "localModel"]),
+        new Set(['toolId', 'enabled', 'availability', 'unavailableReasons', 'localModel']),
         toolPointer,
       );
 
@@ -887,14 +887,14 @@ export class SchemaValidator {
     const localModel = this.expectRecord(candidate, pointer);
     this.assertNoUnknownKeys(
       localModel,
-      new Set(["provider", "endpoint", "model", "requestTimeoutMs", "maxRetries"]),
+      new Set(['provider', 'endpoint', 'model', 'requestTimeoutMs', 'maxRetries']),
       pointer,
     );
 
     const provider = this.expectString(localModel.provider, `${pointer}/provider`);
     if (!LOCAL_MODEL_PROVIDER_VALUES.has(provider)) {
       this.throwConfigSchemaValidationError(
-        `${pointer}/provider must be one of: ${Array.from(LOCAL_MODEL_PROVIDER_VALUES).join(", ")}.`,
+        `${pointer}/provider must be one of: ${Array.from(LOCAL_MODEL_PROVIDER_VALUES).join(', ')}.`,
         `${pointer}/provider`,
       );
     }
@@ -928,7 +928,7 @@ export class SchemaValidator {
     const value = this.expectString(candidate, pointer);
     if (!ADAPTER_SURFACE_VALUES.has(value)) {
       this.throwConfigSchemaValidationError(
-        `${pointer} must be one of: ${Array.from(ADAPTER_SURFACE_VALUES).join(", ")}.`,
+        `${pointer} must be one of: ${Array.from(ADAPTER_SURFACE_VALUES).join(', ')}.`,
         pointer,
       );
     }
@@ -951,7 +951,7 @@ export class SchemaValidator {
     }
     if (!ADAPTER_AVAILABILITY_VALUES.has(value)) {
       this.throwConfigSchemaValidationError(
-        `${pointer} must be one of: ${Array.from(ADAPTER_AVAILABILITY_VALUES).join(", ")}.`,
+        `${pointer} must be one of: ${Array.from(ADAPTER_AVAILABILITY_VALUES).join(', ')}.`,
         pointer,
       );
     }
@@ -975,7 +975,7 @@ export class SchemaValidator {
     }
 
     const memory = this.expectRecord(candidate, pointer);
-    this.assertNoUnknownKeys(memory, new Set(["storeEngine", "storeRoot", "provider"]), pointer);
+    this.assertNoUnknownKeys(memory, new Set(['storeEngine', 'storeRoot', 'provider']), pointer);
 
     const storeEngine = this.expectOptionalString(memory.storeEngine, `${pointer}/storeEngine`);
     const storeRoot = this.expectOptionalString(memory.storeRoot, `${pointer}/storeRoot`);
@@ -987,7 +987,7 @@ export class SchemaValidator {
 
     if (storeEngine && !MEMORY_STORE_ENGINE_VALUES.has(storeEngine)) {
       this.throwConfigSchemaValidationError(
-        `${pointer}/storeEngine must be one of: ${Array.from(MEMORY_STORE_ENGINE_VALUES).join(", ")}.`,
+        `${pointer}/storeEngine must be one of: ${Array.from(MEMORY_STORE_ENGINE_VALUES).join(', ')}.`,
         pointer,
       );
     }
@@ -1008,13 +1008,13 @@ export class SchemaValidator {
   private validateMemoryProvider(
     candidate: unknown,
     pointer: string,
-  ): MemoryConfig["provider"] | undefined {
+  ): MemoryConfig['provider'] | undefined {
     if (candidate === undefined) {
       return undefined;
     }
 
     const provider = this.expectRecord(candidate, pointer);
-    this.assertNoUnknownKeys(provider, new Set(["id", "module", "exportName", "options"]), pointer);
+    this.assertNoUnknownKeys(provider, new Set(['id', 'module', 'exportName', 'options']), pointer);
 
     const id = this.expectOptionalString(provider.id, `${pointer}/id`);
     const module = this.expectOptionalString(provider.module, `${pointer}/module`);
@@ -1074,7 +1074,7 @@ export class SchemaValidator {
    * @returns Candidate cast as string-keyed record.
    */
   private expectRecord(candidate: unknown, pointer: string): Record<string, unknown> {
-    if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
+    if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) {
       this.throwConfigSchemaValidationError(`${pointer} must be an object.`, pointer);
     }
     return candidate as Record<string, unknown>;
@@ -1087,7 +1087,7 @@ export class SchemaValidator {
    * @returns Non-empty string field value.
    */
   private expectString(candidate: unknown, pointer: string): string {
-    if (typeof candidate !== "string" || candidate.length === 0) {
+    if (typeof candidate !== 'string' || candidate.length === 0) {
       this.throwConfigSchemaValidationError(`${pointer} must be a non-empty string.`, pointer);
     }
     return candidate;
@@ -1117,7 +1117,7 @@ export class SchemaValidator {
       return undefined;
     }
 
-    if (typeof candidate !== "boolean") {
+    if (typeof candidate !== 'boolean') {
       this.throwConfigSchemaValidationError(`${pointer} must be a boolean.`, pointer);
     }
 
@@ -1135,7 +1135,7 @@ export class SchemaValidator {
       return undefined;
     }
 
-    if (typeof candidate !== "number" || !Number.isInteger(candidate) || candidate <= 0) {
+    if (typeof candidate !== 'number' || !Number.isInteger(candidate) || candidate <= 0) {
       this.throwConfigSchemaValidationError(`${pointer} must be a positive integer.`, pointer);
     }
 
@@ -1156,7 +1156,7 @@ export class SchemaValidator {
       return undefined;
     }
 
-    if (typeof candidate !== "number" || !Number.isInteger(candidate) || candidate < 0) {
+    if (typeof candidate !== 'number' || !Number.isInteger(candidate) || candidate < 0) {
       this.throwConfigSchemaValidationError(`${pointer} must be a non-negative integer.`, pointer);
     }
 
@@ -1179,7 +1179,7 @@ export class SchemaValidator {
     }
 
     candidate.forEach((item, index) => {
-      if (typeof item !== "string" || item.length === 0) {
+      if (typeof item !== 'string' || item.length === 0) {
         this.throwConfigSchemaValidationError(
           `${pointer}/${index} must be a non-empty string.`,
           pointer,
@@ -1205,7 +1205,7 @@ export class SchemaValidator {
     const unknownKeys = Object.keys(record).filter((key) => !allowList.has(key));
     if (unknownKeys.length > 0) {
       this.throwConfigSchemaValidationError(
-        `${pointer} contains unsupported keys: ${unknownKeys.join(", ")}.`,
+        `${pointer} contains unsupported keys: ${unknownKeys.join(', ')}.`,
         pointer,
       );
     }

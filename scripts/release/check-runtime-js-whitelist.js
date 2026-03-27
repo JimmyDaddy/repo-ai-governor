@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 
-import { existsSync, readFileSync } from "node:fs";
-import { globSync } from "node:fs";
-import { resolve } from "node:path";
+import { existsSync, readFileSync } from 'node:fs';
+import { globSync } from 'node:fs';
+import { resolve } from 'node:path';
 
-import { gateFail, gateInfo, gatePass } from "../governance/gate-output.js";
+import { gateFail, gateInfo, gatePass } from '../governance/gate-output.js';
 
-const GATE_NAME = "release-runtime-js-whitelist";
-const WHITELIST_PATH = "scripts/release/runtime-js-whitelist.json";
-const RUNTIME_GLOB = "dist/{bin,apps,packages}/**/*.{js,mjs,cjs}";
+const GATE_NAME = 'release-runtime-js-whitelist';
+const WHITELIST_PATH = 'scripts/release/runtime-js-whitelist.json';
+const RUNTIME_GLOB = 'dist/{bin,apps,packages}/**/*.{js,mjs,cjs}';
 
 /**
  * Normalizes file path separators for cross-platform matching.
@@ -16,7 +16,7 @@ const RUNTIME_GLOB = "dist/{bin,apps,packages}/**/*.{js,mjs,cjs}";
  * @returns {string}
  */
 function normalizeFilePath(filePath) {
-  return filePath.replace(/\\/g, "/");
+  return filePath.replace(/\\/g, '/');
 }
 
 /**
@@ -29,13 +29,13 @@ function readRuntimeJsWhitelist() {
     throw new Error(`Whitelist config not found: ${WHITELIST_PATH}`);
   }
 
-  const rawContent = readFileSync(absoluteConfigPath, "utf8");
+  const rawContent = readFileSync(absoluteConfigPath, 'utf8');
   const parsedConfig = JSON.parse(rawContent);
   if (!Array.isArray(parsedConfig.allowedPathPatterns)) {
-    throw new Error("Whitelist config must define allowedPathPatterns.");
+    throw new Error('Whitelist config must define allowedPathPatterns.');
   }
   if (!Array.isArray(parsedConfig.requiredPaths)) {
-    throw new Error("Whitelist config must define requiredPaths.");
+    throw new Error('Whitelist config must define requiredPaths.');
   }
 
   return {
@@ -57,7 +57,7 @@ function toRepositoryRelativePaths(absolutePaths) {
   const repositoryRoot = resolve(process.cwd());
   const repositoryRootPrefix = normalizeFilePath(`${repositoryRoot}/`);
   return absolutePaths.map((absolutePath) =>
-    normalizeFilePath(absolutePath).replace(repositoryRootPrefix, ""),
+    normalizeFilePath(absolutePath).replace(repositoryRootPrefix, ''),
   );
 }
 
@@ -96,7 +96,7 @@ try {
     throw new Error(`No runtime JS files matched ${RUNTIME_GLOB}. Run build first.`);
   }
   const recursiveDistArtifacts = runtimeJsFiles.filter((runtimeJsFile) =>
-    runtimeJsFile.includes("/dist/dist/"),
+    runtimeJsFile.includes('/dist/dist/'),
   );
   if (recursiveDistArtifacts.length > 0) {
     throw new Error(
@@ -124,7 +124,7 @@ try {
     GATE_NAME,
     `checked ${runtimeJsFiles.length} runtime JS files against ${whitelist.allowedPathPatterns.length} patterns.`,
   );
-  gatePass(GATE_NAME, "runtime JS whitelist check passed.");
+  gatePass(GATE_NAME, 'runtime JS whitelist check passed.');
 } catch (error) {
   const errorMessage = error instanceof Error ? error.message : String(error);
   gateFail(GATE_NAME, errorMessage);

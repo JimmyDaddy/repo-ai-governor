@@ -1,38 +1,38 @@
-import { once } from "node:events";
-import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
-import { createServer } from "node:http";
-import { tmpdir } from "node:os";
-import { resolve } from "node:path";
+import { once } from 'node:events';
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { createServer } from 'node:http';
+import { tmpdir } from 'node:os';
+import { resolve } from 'node:path';
 
-import type { ClaudeCodeExecRunner } from "@repo-ai-governor/adapter-claude-code";
-import type { CodexExecRunner } from "@repo-ai-governor/adapter-codex";
-import type { GithubCopilotExecRunner } from "@repo-ai-governor/adapter-github-copilot";
+import type { ClaudeCodeExecRunner } from '@repo-ai-governor/adapter-claude-code';
+import type { CodexExecRunner } from '@repo-ai-governor/adapter-codex';
+import type { GithubCopilotExecRunner } from '@repo-ai-governor/adapter-github-copilot';
 import {
   AGENT_LOCAL_FALLBACK_SURFACE,
   AgentAvailabilityStatus,
   AgentCapability,
   AgentCliExecOperation,
-} from "@repo-ai-governor/adapter-sdk";
+} from '@repo-ai-governor/adapter-sdk';
 import {
   type AdaptersConfig,
   type ResolvedWorkspace,
   WorkspaceMode,
   WorkspaceModeSource,
-} from "@repo-ai-governor/config";
-import { MemoryManager, MemoryScope } from "@repo-ai-governor/core-memory";
-import { AuditRecorder } from "@repo-ai-governor/core-session";
-import { FsCsvMemoryStoreProvider } from "@repo-ai-governor/memory-provider-fs-csv";
-import { MemoryStoreAdapter } from "@repo-ai-governor/memory-store-adapter";
+} from '@repo-ai-governor/config';
+import { MemoryManager, MemoryScope } from '@repo-ai-governor/core-memory';
+import { AuditRecorder } from '@repo-ai-governor/core-session';
+import { FsCsvMemoryStoreProvider } from '@repo-ai-governor/memory-provider-fs-csv';
+import { MemoryStoreAdapter } from '@repo-ai-governor/memory-store-adapter';
 import {
   NotificationChannel,
   NotificationDispatchStatus,
   type NotificationProvider,
   NotificationRiskLevel,
   type NotificationRiskLevelPolicyMatrix,
-} from "@repo-ai-governor/notification-dispatcher";
-import { ChatImNotificationProvider } from "@repo-ai-governor/notification-provider-chat-im";
-import { WebhookNotificationProvider } from "@repo-ai-governor/notification-provider-webhook";
-import { OrchestrationServiceEventType } from "@repo-ai-governor/orchestration-service-client";
+} from '@repo-ai-governor/notification-dispatcher';
+import { ChatImNotificationProvider } from '@repo-ai-governor/notification-provider-chat-im';
+import { WebhookNotificationProvider } from '@repo-ai-governor/notification-provider-webhook';
+import { OrchestrationServiceEventType } from '@repo-ai-governor/orchestration-service-client';
 import {
   AdapterAvailability,
   AdapterSurface,
@@ -44,14 +44,14 @@ import {
   GovernorErrorCode,
   LocalModelProvider,
   RuntimeError,
-} from "@repo-ai-governor/shared";
-import { CliGovernanceRuntime } from "../src/cli-governance-runtime.js";
-import { CliCommandName } from "../src/constants/cli-command.constant.js";
+} from '@repo-ai-governor/shared';
+import { CliGovernanceRuntime } from '../src/cli-governance-runtime.js';
+import { CliCommandName } from '../src/constants/cli-command.constant.js';
 import type {
   CliOrchestrationServiceRuntimeDependencies,
   CliRuntimeDebugOptions,
   CliWorkspaceCommandOptions,
-} from "../src/types/index.js";
+} from '../src/types/index.js';
 
 interface RuntimeFixture {
   tempRoot: string;
@@ -93,16 +93,16 @@ interface NotificationEndpointFixture {
 function createCodexExecRunnerFixture(): CodexExecRunner {
   return async ({ prompt, operation }) => {
     const responseText =
-      operation === AgentCliExecOperation.PROBE || prompt.includes("Respond with exactly OK.")
-        ? "OK"
-        : "simulated codex response";
+      operation === AgentCliExecOperation.PROBE || prompt.includes('Respond with exactly OK.')
+        ? 'OK'
+        : 'simulated codex response';
     return {
       stdout: [
         '{"type":"thread.started","thread_id":"thread-1"}',
         `{"type":"item.completed","item":{"id":"item-1","type":"agent_message","text":"${responseText}"}}`,
         '{"type":"turn.completed","usage":{"input_tokens":21,"output_tokens":13}}',
-      ].join("\n"),
-      stderr: "",
+      ].join('\n'),
+      stderr: '',
       exitCode: 0,
       signal: null,
       elapsedMs: 9,
@@ -114,11 +114,11 @@ function createCodexCredentialFailureRunner(): CodexExecRunner {
   return async () => {
     throw new RuntimeError(
       GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED,
-      "Codex probe failed: login required",
+      'Codex probe failed: login required',
       {
         surface: AdapterSurface.CODEX,
         operation: AgentCliExecOperation.PROBE,
-        stderr: "Not logged in. Run `codex login` first.",
+        stderr: 'Not logged in. Run `codex login` first.',
       },
     );
   };
@@ -127,10 +127,10 @@ function createCodexCredentialFailureRunner(): CodexExecRunner {
 function createClaudeCodeExecRunnerFixture(): ClaudeCodeExecRunner {
   return async ({ prompt, operation }) => ({
     stdout:
-      operation === AgentCliExecOperation.PROBE || prompt.includes("Respond with exactly OK.")
-        ? "OK\n"
-        : "simulated claude code response\n",
-    stderr: "",
+      operation === AgentCliExecOperation.PROBE || prompt.includes('Respond with exactly OK.')
+        ? 'OK\n'
+        : 'simulated claude code response\n',
+    stderr: '',
     exitCode: 0,
     signal: null,
     elapsedMs: 8,
@@ -141,11 +141,11 @@ function createClaudeCodeCredentialFailureRunner(): ClaudeCodeExecRunner {
   return async () => {
     throw new RuntimeError(
       GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED,
-      "Claude Code probe failed: login required",
+      'Claude Code probe failed: login required',
       {
         surface: AdapterSurface.CLAUDE_CODE,
         operation: AgentCliExecOperation.PROBE,
-        stderr: "Authentication required. Run `claude auth login` first.",
+        stderr: 'Authentication required. Run `claude auth login` first.',
       },
     );
   };
@@ -154,16 +154,16 @@ function createClaudeCodeCredentialFailureRunner(): ClaudeCodeExecRunner {
 function createGithubCopilotExecRunnerFixture(): GithubCopilotExecRunner {
   return async ({ prompt, operation }) => ({
     stdout:
-      operation === AgentCliExecOperation.PROBE || prompt.includes("Respond with exactly OK.")
+      operation === AgentCliExecOperation.PROBE || prompt.includes('Respond with exactly OK.')
         ? [
             '{"type":"assistant.message","data":{"content":"OK"}}',
             '{"type":"result","exitCode":0}',
-          ].join("\n")
+          ].join('\n')
         : [
             '{"type":"assistant.message","data":{"content":"simulated github copilot response"}}',
             '{"type":"result","exitCode":0}',
-          ].join("\n"),
-    stderr: "",
+          ].join('\n'),
+    stderr: '',
     exitCode: 0,
     signal: null,
     elapsedMs: 8,
@@ -174,11 +174,11 @@ function createGithubCopilotCredentialFailureRunner(): GithubCopilotExecRunner {
   return async () => {
     throw new RuntimeError(
       GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED,
-      "GitHub Copilot probe failed: login required",
+      'GitHub Copilot probe failed: login required',
       {
         surface: AdapterSurface.GITHUB_COPILOT,
         operation: AgentCliExecOperation.PROBE,
-        stderr: "Authentication required. Run `gh auth login` or `gh copilot -- login` first.",
+        stderr: 'Authentication required. Run `gh auth login` or `gh copilot -- login` first.',
       },
     );
   };
@@ -215,24 +215,24 @@ async function createNotificationEndpointFixture(options: {
 }): Promise<NotificationEndpointFixture> {
   const requests: Array<Record<string, unknown>> = [];
   const server = createServer((request, response) => {
-    let requestBody = "";
-    request.on("data", (chunk) => {
+    let requestBody = '';
+    request.on('data', (chunk) => {
       requestBody += chunk.toString();
     });
-    request.on("end", () => {
+    request.on('end', () => {
       requests.push(JSON.parse(requestBody) as Record<string, unknown>);
       response.writeHead(options.statusCode, {
-        "content-type": "application/json",
+        'content-type': 'application/json',
       });
       response.end(JSON.stringify(options.responseBody));
     });
   });
 
-  server.listen(0, "127.0.0.1");
-  await once(server, "listening");
+  server.listen(0, '127.0.0.1');
+  await once(server, 'listening');
 
   const address = server.address();
-  const port = typeof address === "object" && address ? address.port : 0;
+  const port = typeof address === 'object' && address ? address.port : 0;
 
   return {
     url: `http://127.0.0.1:${port}/notify`,
@@ -251,19 +251,19 @@ function createAdaptersConfigFixture(): AdaptersConfig {
   return {
     roles: [
       {
-        roleId: "planner",
+        roleId: 'planner',
         roleProfileId: DefaultRoleProfileId.PLANNER,
         requiredCapabilities: [AgentCapability.STRUCTURED_OUTPUT],
         required: true,
       },
       {
-        roleId: "coder",
+        roleId: 'coder',
         roleProfileId: DefaultRoleProfileId.CODER,
         requiredCapabilities: [AgentCapability.TOOL_CALLING],
         required: true,
       },
       {
-        roleId: "reviewer",
+        roleId: 'reviewer',
         roleProfileId: DefaultRoleProfileId.REVIEWER,
         requiredCapabilities: [AgentCapability.STRUCTURED_OUTPUT],
         required: true,
@@ -349,19 +349,19 @@ function createLocalFallbackAdaptersConfig(): AdaptersConfig {
       toolId: AdapterSurface.CODEX,
       enabled: true,
       availability: AdapterAvailability.UNAVAILABLE,
-      unavailableReasons: ["login_required"],
+      unavailableReasons: ['login_required'],
     },
     {
       toolId: AdapterSurface.GITHUB_COPILOT,
       enabled: true,
       availability: AdapterAvailability.UNAVAILABLE,
-      unavailableReasons: ["login_required"],
+      unavailableReasons: ['login_required'],
     },
     {
       toolId: AdapterSurface.CLAUDE_CODE,
       enabled: true,
       availability: AdapterAvailability.UNAVAILABLE,
-      unavailableReasons: ["login_required"],
+      unavailableReasons: ['login_required'],
     },
     {
       toolId: AdapterSurface.OLLAMA,
@@ -369,8 +369,8 @@ function createLocalFallbackAdaptersConfig(): AdaptersConfig {
       availability: AdapterAvailability.AVAILABLE,
       localModel: {
         provider: LocalModelProvider.OLLAMA,
-        endpoint: "http://127.0.0.1:11434",
-        model: "qwen2.5-coder:7b",
+        endpoint: 'http://127.0.0.1:11434',
+        model: 'qwen2.5-coder:7b',
         maxRetries: 0,
       },
     },
@@ -393,8 +393,8 @@ function createRestrictedNetworkRehearsalAdaptersConfig(): AdaptersConfig {
       availability: AdapterAvailability.AVAILABLE,
       localModel: {
         provider: LocalModelProvider.OLLAMA,
-        endpoint: "http://127.0.0.1:11434",
-        model: "qwen2.5-coder:7b",
+        endpoint: 'http://127.0.0.1:11434',
+        model: 'qwen2.5-coder:7b',
         maxRetries: 0,
       },
     },
@@ -421,18 +421,18 @@ function createRestrictedNetworkCapabilityCompatibleAdaptersConfig(): AdaptersCo
  * @returns Runtime fixture with workspace and provider handles.
  */
 async function createRuntimeFixture(options: RuntimeFixtureOptions = {}): Promise<RuntimeFixture> {
-  const tempRoot = await mkdtemp(resolve(tmpdir(), "cli-governance-runtime-"));
-  const workspaceRoot = resolve(tempRoot, ".repo-ai-governor");
-  const memoryStoreRoot = resolve(workspaceRoot, "context", "memory");
+  const tempRoot = await mkdtemp(resolve(tmpdir(), 'cli-governance-runtime-'));
+  const workspaceRoot = resolve(tempRoot, '.repo-ai-governor');
+  const memoryStoreRoot = resolve(workspaceRoot, 'context', 'memory');
   await mkdir(memoryStoreRoot, { recursive: true });
 
   const workspace: ResolvedWorkspace = {
-    workspaceId: "test-workspace",
+    workspaceId: 'test-workspace',
     mode: WorkspaceMode.REPO_LOCAL,
     modeSource: WorkspaceModeSource.RUNTIME,
     repositoryRoot: tempRoot,
     workspaceRoot,
-    configPath: resolve(workspaceRoot, "governor.yaml"),
+    configPath: resolve(workspaceRoot, 'governor.yaml'),
   };
   const provider = new FsCsvMemoryStoreProvider({
     rootDirectory: memoryStoreRoot,
@@ -440,14 +440,14 @@ async function createRuntimeFixture(options: RuntimeFixtureOptions = {}): Promis
   const runtime = new CliGovernanceRuntime({
     currentWorkingDirectory: tempRoot,
     workspace,
-    configSource: "default",
+    configSource: 'default',
     profileId: null,
-    locale: "en-US",
+    locale: 'en-US',
     outputMode: ErrorOutputEnvironment.PLAIN,
     isTty: false,
     memoryConfig: {
       ...DEFAULT_MEMORY_RUNTIME_CONFIG,
-      storeRoot: "context/memory",
+      storeRoot: 'context/memory',
     },
     memoryStoreRoot,
     memoryStoreProviderName: provider.constructor.name,
@@ -504,10 +504,10 @@ async function withRuntimeFixture(
 async function writeTaskCardFixture(workspaceRoot: string, taskId: string): Promise<string> {
   const taskCardPath = resolve(
     workspaceRoot,
-    "context/dev/project-010-local-model-and-ide-expansion/sprint-002-autonomous-mainchain-foundation/tasks",
+    'context/dev/project-010-local-model-and-ide-expansion/sprint-002-autonomous-mainchain-foundation/tasks',
     `${taskId}-task-driven-dag-and-run-mainchain-assembly.md`,
   );
-  await mkdir(resolve(taskCardPath, ".."), { recursive: true });
+  await mkdir(resolve(taskCardPath, '..'), { recursive: true });
   await writeFile(
     taskCardPath,
     `# ${taskId} 任务驱动 DAG 与 \`run\` 主链装配
@@ -537,7 +537,7 @@ async function writeTaskCardFixture(workspaceRoot: string, taskId: string): Prom
 
 1. \`.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/plan.md\`
 `,
-    "utf8",
+    'utf8',
   );
 
   return taskCardPath;
@@ -555,10 +555,10 @@ async function writeDeliveryTaskCardFixture(
 ): Promise<string> {
   const taskCardPath = resolve(
     workspaceRoot,
-    "context/dev/project-010-local-model-and-ide-expansion/sprint-003-delivery-ide-and-ga-hardening/tasks",
+    'context/dev/project-010-local-model-and-ide-expansion/sprint-003-delivery-ide-and-ga-hardening/tasks',
     `${taskId}-controlled-delivery-rehearsal-and-audit-replay-integration.md`,
   );
-  await mkdir(resolve(taskCardPath, ".."), { recursive: true });
+  await mkdir(resolve(taskCardPath, '..'), { recursive: true });
   await writeFile(
     taskCardPath,
     `# ${taskId} 受控 delivery rehearsal 与 audit/replay 集成
@@ -582,25 +582,25 @@ async function writeDeliveryTaskCardFixture(
 
 1. \`.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-002-autonomous-mainchain-foundation/tasks/DA-106-sprint-002-exit-acceptance-and-sprint-003-input-constraints.md\`
 `,
-    "utf8",
+    'utf8',
   );
 
   return taskCardPath;
 }
 
-describe("CliGovernanceRuntime policy/review safeguards", () => {
+describe('CliGovernanceRuntime policy/review safeguards', () => {
   afterEach(() => {
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });
 
-  it("fails run when policy outcome requires HITL confirmation", async () => {
+  it('fails run when policy outcome requires HITL confirmation', async () => {
     await withRuntimeFixture(async (fixture) => {
       const runtimeWithOverrides = fixture.runtime as unknown as {
         collectGitChangedPaths: () => Promise<string[]>;
       };
       // Why: deterministic change facts keep this test independent from host git state.
-      runtimeWithOverrides.collectGitChangedPaths = async () => ["migrations/001.sql"];
+      runtimeWithOverrides.collectGitChangedPaths = async () => ['migrations/001.sql'];
 
       await expect(fixture.runtime.execute(CliCommandName.RUN)).rejects.toMatchObject({
         code: GovernorErrorCode.POLICY_GATE_HITL_FEEDBACK_INVALID,
@@ -611,12 +611,12 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
     });
   });
 
-  it("writes HITL notification artifact when policy outcome requires confirmation", async () => {
+  it('writes HITL notification artifact when policy outcome requires confirmation', async () => {
     await withRuntimeFixture(async (fixture) => {
       const runtimeWithOverrides = fixture.runtime as unknown as {
         collectGitChangedPaths: () => Promise<string[]>;
       };
-      runtimeWithOverrides.collectGitChangedPaths = async () => ["migrations/001.sql"];
+      runtimeWithOverrides.collectGitChangedPaths = async () => ['migrations/001.sql'];
 
       await expect(fixture.runtime.execute(CliCommandName.RUN)).rejects.toMatchObject({
         code: GovernorErrorCode.POLICY_GATE_HITL_FEEDBACK_INVALID,
@@ -627,31 +627,31 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
 
       const notificationDirectoryPath = resolve(
         fixture.workspaceRoot,
-        "context",
-        "hitl",
-        "notifications",
+        'context',
+        'hitl',
+        'notifications',
       );
       const notificationFileNames = await readdir(notificationDirectoryPath);
       expect(notificationFileNames).toHaveLength(1);
 
       const notificationPayload = JSON.parse(
-        await readFile(resolve(notificationDirectoryPath, notificationFileNames[0] ?? ""), "utf8"),
+        await readFile(resolve(notificationDirectoryPath, notificationFileNames[0] ?? ''), 'utf8'),
       ) as {
         channel?: string;
         payload?: {
           policyOutcome?: string;
         };
       };
-      expect(notificationPayload.channel).toBe("webhook");
-      expect(notificationPayload.payload?.policyOutcome).toBe("escalate");
+      expect(notificationPayload.channel).toBe('webhook');
+      expect(notificationPayload.payload?.policyOutcome).toBe('escalate');
     });
   });
 
-  it("dispatches HITL notifications through configured webhook provider and records receipt metadata", async () => {
+  it('dispatches HITL notifications through configured webhook provider and records receipt metadata', async () => {
     const webhookEndpoint = await createNotificationEndpointFixture({
       statusCode: 202,
       responseBody: {
-        id: "webhook-receipt-001",
+        id: 'webhook-receipt-001',
       },
     });
 
@@ -661,7 +661,7 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
           const runtimeWithOverrides = fixture.runtime as unknown as {
             collectGitChangedPaths: () => Promise<string[]>;
           };
-          runtimeWithOverrides.collectGitChangedPaths = async () => ["migrations/001.sql"];
+          runtimeWithOverrides.collectGitChangedPaths = async () => ['migrations/001.sql'];
 
           await expect(fixture.runtime.execute(CliCommandName.RUN)).rejects.toMatchObject({
             code: GovernorErrorCode.POLICY_GATE_HITL_FEEDBACK_INVALID,
@@ -672,14 +672,14 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
 
           const notificationDirectoryPath = resolve(
             fixture.workspaceRoot,
-            "context",
-            "hitl",
-            "notifications",
+            'context',
+            'hitl',
+            'notifications',
           );
           const notificationFileNames = await readdir(notificationDirectoryPath);
-          const notificationFileName = notificationFileNames[0] ?? "";
+          const notificationFileName = notificationFileNames[0] ?? '';
           const notificationPayload = JSON.parse(
-            await readFile(resolve(notificationDirectoryPath, notificationFileName), "utf8"),
+            await readFile(resolve(notificationDirectoryPath, notificationFileName), 'utf8'),
           ) as {
             channel?: string | null;
             dispatchStatus?: string;
@@ -688,18 +688,18 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
               providerMessageId?: string;
             }>;
           };
-          const executionId = notificationFileName.replace(/\.notification\.json$/u, "");
+          const executionId = notificationFileName.replace(/\.notification\.json$/u, '');
 
           expect(webhookEndpoint.requests).toHaveLength(1);
-          expect(notificationPayload.channel).toBe("webhook");
+          expect(notificationPayload.channel).toBe('webhook');
           expect(notificationPayload.dispatchStatus).toBe(
             NotificationDispatchStatus.DELIVERED_PRIMARY,
           );
           expect(notificationPayload.attemptedChannels?.[0]?.providerId).toBe(
-            "notification-webhook",
+            'notification-webhook',
           );
           expect(notificationPayload.attemptedChannels?.[0]?.providerMessageId).toBe(
-            "webhook-receipt-001",
+            'webhook-receipt-001',
           );
 
           const auditRecorder = new AuditRecorder(
@@ -709,7 +709,7 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
             executionId,
           });
           const notificationAuditRecord = auditRecords.find(
-            (auditRecord) => auditRecord.event.stageId === "stage-hitl-notification",
+            (auditRecord) => auditRecord.event.stageId === 'stage-hitl-notification',
           );
 
           expect(notificationAuditRecord?.event.notificationChannel).toBe(
@@ -723,8 +723,8 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
               providerMessageId?: string;
             }>;
           };
-          expect(memoryDelta.attemptedChannels?.[0]?.providerMessageId).toBe("webhook-receipt-001");
-          expect(typeof notificationAuditRecord?.event.notifiedAtDisplay).toBe("string");
+          expect(memoryDelta.attemptedChannels?.[0]?.providerMessageId).toBe('webhook-receipt-001');
+          expect(typeof notificationAuditRecord?.event.notifiedAtDisplay).toBe('string');
         },
         {
           notificationProviders: [
@@ -740,11 +740,11 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
     }
   });
 
-  it("uses webhook as the default primary channel for high-risk HITL notifications when only webhook provider is configured", async () => {
+  it('uses webhook as the default primary channel for high-risk HITL notifications when only webhook provider is configured', async () => {
     const webhookEndpoint = await createNotificationEndpointFixture({
       statusCode: 202,
       responseBody: {
-        id: "webhook-critical-001",
+        id: 'webhook-critical-001',
       },
     });
 
@@ -754,7 +754,7 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
           const runtimeWithOverrides = fixture.runtime as unknown as {
             collectGitChangedPaths: () => Promise<string[]>;
           };
-          runtimeWithOverrides.collectGitChangedPaths = async () => ["migrations/001.sql"];
+          runtimeWithOverrides.collectGitChangedPaths = async () => ['migrations/001.sql'];
 
           await expect(fixture.runtime.execute(CliCommandName.RUN)).rejects.toMatchObject({
             code: GovernorErrorCode.POLICY_GATE_HITL_FEEDBACK_INVALID,
@@ -765,15 +765,15 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
 
           const notificationDirectoryPath = resolve(
             fixture.workspaceRoot,
-            "context",
-            "hitl",
-            "notifications",
+            'context',
+            'hitl',
+            'notifications',
           );
           const notificationFileNames = await readdir(notificationDirectoryPath);
           const notificationPayload = JSON.parse(
             await readFile(
-              resolve(notificationDirectoryPath, notificationFileNames[0] ?? ""),
-              "utf8",
+              resolve(notificationDirectoryPath, notificationFileNames[0] ?? ''),
+              'utf8',
             ),
           ) as {
             channel?: string | null;
@@ -797,7 +797,7 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
             NotificationChannel.WEBHOOK,
           );
           expect(notificationPayload.attemptedChannels?.[0]?.providerMessageId).toBe(
-            "webhook-critical-001",
+            'webhook-critical-001',
           );
         },
         {
@@ -813,17 +813,17 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
     }
   });
 
-  it("falls back to chat-im provider when webhook delivery fails", async () => {
+  it('falls back to chat-im provider when webhook delivery fails', async () => {
     const webhookEndpoint = await createNotificationEndpointFixture({
       statusCode: 500,
       responseBody: {
-        error: "webhook unavailable",
+        error: 'webhook unavailable',
       },
     });
     const chatImEndpoint = await createNotificationEndpointFixture({
       statusCode: 200,
       responseBody: {
-        messageId: "chat-receipt-001",
+        messageId: 'chat-receipt-001',
       },
     });
 
@@ -833,7 +833,7 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
           const runtimeWithOverrides = fixture.runtime as unknown as {
             collectGitChangedPaths: () => Promise<string[]>;
           };
-          runtimeWithOverrides.collectGitChangedPaths = async () => ["migrations/001.sql"];
+          runtimeWithOverrides.collectGitChangedPaths = async () => ['migrations/001.sql'];
 
           await expect(fixture.runtime.execute(CliCommandName.RUN)).rejects.toMatchObject({
             code: GovernorErrorCode.POLICY_GATE_HITL_FEEDBACK_INVALID,
@@ -844,14 +844,14 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
 
           const notificationDirectoryPath = resolve(
             fixture.workspaceRoot,
-            "context",
-            "hitl",
-            "notifications",
+            'context',
+            'hitl',
+            'notifications',
           );
           const notificationFileNames = await readdir(notificationDirectoryPath);
-          const notificationFileName = notificationFileNames[0] ?? "";
+          const notificationFileName = notificationFileNames[0] ?? '';
           const notificationPayload = JSON.parse(
-            await readFile(resolve(notificationDirectoryPath, notificationFileName), "utf8"),
+            await readFile(resolve(notificationDirectoryPath, notificationFileName), 'utf8'),
           ) as {
             channel?: string | null;
             dispatchStatus?: string;
@@ -861,18 +861,18 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
               providerMessageId?: string;
             }>;
           };
-          const executionId = notificationFileName.replace(/\.notification\.json$/u, "");
+          const executionId = notificationFileName.replace(/\.notification\.json$/u, '');
 
           expect(webhookEndpoint.requests).toHaveLength(2);
           expect(chatImEndpoint.requests).toHaveLength(1);
-          expect(notificationPayload.channel).toBe("chat_im");
+          expect(notificationPayload.channel).toBe('chat_im');
           expect(notificationPayload.dispatchStatus).toBe(
             NotificationDispatchStatus.DELIVERED_FALLBACK,
           );
-          expect(notificationPayload.attemptedChannels?.[0]?.channel).toBe("webhook");
-          expect(notificationPayload.attemptedChannels?.[0]?.errorMessage).toContain("HTTP 500");
+          expect(notificationPayload.attemptedChannels?.[0]?.channel).toBe('webhook');
+          expect(notificationPayload.attemptedChannels?.[0]?.errorMessage).toContain('HTTP 500');
           expect(notificationPayload.attemptedChannels?.[2]?.providerMessageId).toBe(
-            "chat-receipt-001",
+            'chat-receipt-001',
           );
 
           const auditRecorder = new AuditRecorder(
@@ -882,7 +882,7 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
             executionId,
           });
           const notificationAuditRecord = auditRecords.find(
-            (auditRecord) => auditRecord.event.stageId === "stage-hitl-notification",
+            (auditRecord) => auditRecord.event.stageId === 'stage-hitl-notification',
           );
 
           expect(notificationAuditRecord?.event.notificationChannel).toBe(
@@ -910,17 +910,17 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
     }
   });
 
-  it("persists failed notification artifact and audit evidence when all configured channels fail", async () => {
+  it('persists failed notification artifact and audit evidence when all configured channels fail', async () => {
     const webhookEndpoint = await createNotificationEndpointFixture({
       statusCode: 500,
       responseBody: {
-        error: "webhook unavailable",
+        error: 'webhook unavailable',
       },
     });
     const chatImEndpoint = await createNotificationEndpointFixture({
       statusCode: 503,
       responseBody: {
-        error: "chat unavailable",
+        error: 'chat unavailable',
       },
     });
 
@@ -930,7 +930,7 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
           const runtimeWithOverrides = fixture.runtime as unknown as {
             collectGitChangedPaths: () => Promise<string[]>;
           };
-          runtimeWithOverrides.collectGitChangedPaths = async () => ["migrations/001.sql"];
+          runtimeWithOverrides.collectGitChangedPaths = async () => ['migrations/001.sql'];
 
           await expect(fixture.runtime.execute(CliCommandName.RUN)).rejects.toMatchObject({
             code: GovernorErrorCode.POLICY_GATE_HITL_FEEDBACK_INVALID,
@@ -941,15 +941,15 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
 
           const notificationDirectoryPath = resolve(
             fixture.workspaceRoot,
-            "context",
-            "hitl",
-            "notifications",
+            'context',
+            'hitl',
+            'notifications',
           );
           const notificationFileNames = await readdir(notificationDirectoryPath);
-          const notificationFileName = notificationFileNames[0] ?? "";
-          const executionId = notificationFileName.replace(/\.notification\.json$/u, "");
+          const notificationFileName = notificationFileNames[0] ?? '';
+          const executionId = notificationFileName.replace(/\.notification\.json$/u, '');
           const notificationPayload = JSON.parse(
-            await readFile(resolve(notificationDirectoryPath, notificationFileName), "utf8"),
+            await readFile(resolve(notificationDirectoryPath, notificationFileName), 'utf8'),
           ) as {
             channel?: string | null;
             dispatchStatus?: string;
@@ -968,7 +968,7 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
           expect(notificationPayload.attemptedChannels?.length).toBeGreaterThan(0);
           expect(
             notificationPayload.attemptedChannels?.some((attempt) =>
-              attempt.errorMessage?.includes("HTTP"),
+              attempt.errorMessage?.includes('HTTP'),
             ),
           ).toBe(true);
 
@@ -979,13 +979,13 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
             executionId,
           });
           const notificationAuditRecord = auditRecords.find(
-            (auditRecord) => auditRecord.event.stageId === "stage-hitl-notification",
+            (auditRecord) => auditRecord.event.stageId === 'stage-hitl-notification',
           );
 
           expect(notificationAuditRecord?.event.notificationStatus).toBe(
             NotificationDispatchStatus.FAILED,
           );
-          expect(typeof notificationAuditRecord?.event.notifiedAtDisplay).toBe("string");
+          expect(typeof notificationAuditRecord?.event.notifiedAtDisplay).toBe('string');
         },
         {
           notificationProviders: [
@@ -1004,28 +1004,28 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
     }
   });
 
-  it("does not persist HITL notification artifacts during dry-run high-risk execution", async () => {
+  it('does not persist HITL notification artifacts during dry-run high-risk execution', async () => {
     await withRuntimeFixture(
       async (fixture) => {
         const runtimeWithOverrides = fixture.runtime as unknown as {
           collectGitChangedPaths: () => Promise<string[]>;
         };
-        runtimeWithOverrides.collectGitChangedPaths = async () => ["migrations/001.sql"];
+        runtimeWithOverrides.collectGitChangedPaths = async () => ['migrations/001.sql'];
 
         await expect(fixture.runtime.execute(CliCommandName.RUN)).rejects.toMatchObject({
           code: GovernorErrorCode.POLICY_GATE_HITL_FEEDBACK_INVALID,
           details: {
             pendingStatus: ExecutionProgressStage.HUMAN_CONFIRMATION,
-            runtimeBackend: "langgraph",
-            runtimeRecoveryState: "recovered",
+            runtimeBackend: 'langgraph',
+            runtimeRecoveryState: 'recovered',
           },
         });
 
         const notificationFiles = await readdir(
-          resolve(fixture.workspaceRoot, "context", "hitl", "notifications"),
+          resolve(fixture.workspaceRoot, 'context', 'hitl', 'notifications'),
         ).catch(() => []);
         const decisionFiles = await readdir(
-          resolve(fixture.workspaceRoot, "context", "hitl", "decisions"),
+          resolve(fixture.workspaceRoot, 'context', 'hitl', 'decisions'),
         ).catch(() => []);
 
         expect(notificationFiles).toHaveLength(0);
@@ -1041,14 +1041,14 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
     );
   });
 
-  it("does not persist inline review side effects when task-driven run requires HITL confirmation", async () => {
+  it('does not persist inline review side effects when task-driven run requires HITL confirmation', async () => {
     await withRuntimeFixture(
       async (fixture) => {
-        await writeTaskCardFixture(fixture.workspaceRoot, "TK-099");
+        await writeTaskCardFixture(fixture.workspaceRoot, 'TK-099');
         const runtimeWithOverrides = fixture.runtime as unknown as {
           collectGitChangedPaths: () => Promise<string[]>;
         };
-        runtimeWithOverrides.collectGitChangedPaths = async () => ["migrations/001.sql"];
+        runtimeWithOverrides.collectGitChangedPaths = async () => ['migrations/001.sql'];
 
         await expect(fixture.runtime.execute(CliCommandName.RUN)).rejects.toMatchObject({
           code: GovernorErrorCode.POLICY_GATE_HITL_FEEDBACK_INVALID,
@@ -1058,13 +1058,13 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
         });
 
         const requestFiles = await readdir(
-          resolve(fixture.workspaceRoot, "context", "review-queue", "requests"),
+          resolve(fixture.workspaceRoot, 'context', 'review-queue', 'requests'),
         ).catch(() => []);
         const resultFiles = await readdir(
-          resolve(fixture.workspaceRoot, "context", "review-queue", "results"),
+          resolve(fixture.workspaceRoot, 'context', 'review-queue', 'results'),
         ).catch(() => []);
         const ledgerFiles = await readdir(
-          resolve(fixture.workspaceRoot, "context", "ledger-backfill", "review-verify"),
+          resolve(fixture.workspaceRoot, 'context', 'ledger-backfill', 'review-verify'),
         ).catch(() => []);
 
         expect(requestFiles).toHaveLength(0);
@@ -1077,30 +1077,30 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
           trace: false,
           replayPath: null,
           adapters: true,
-          taskId: "TK-099",
+          taskId: 'TK-099',
         },
       },
     );
   });
 
-  it("skips inline review side effects during task-driven dry-run execution", async () => {
+  it('skips inline review side effects during task-driven dry-run execution', async () => {
     await withRuntimeFixture(
       async (fixture) => {
-        await writeTaskCardFixture(fixture.workspaceRoot, "TK-099");
+        await writeTaskCardFixture(fixture.workspaceRoot, 'TK-099');
         const runtimeWithOverrides = fixture.runtime as unknown as {
           collectGitChangedPaths: () => Promise<string[]>;
         };
         runtimeWithOverrides.collectGitChangedPaths = async () => [];
 
         const runResult = await fixture.runtime.execute(CliCommandName.RUN);
-        expect(runResult.commandResult.details?.inline_review_chain_status).toBe("dry_run");
-        expect(runResult.commandResult.details?.inline_review_chain_skip_reason).toBe("dry_run");
+        expect(runResult.commandResult.details?.inline_review_chain_status).toBe('dry_run');
+        expect(runResult.commandResult.details?.inline_review_chain_skip_reason).toBe('dry_run');
         expect(runResult.commandResult.details?.inline_review_request_path).toBeNull();
         expect(runResult.commandResult.details?.inline_review_verify_path).toBeNull();
         expect(runResult.commandResult.details?.inline_review_ledger_backfill_path).toBeNull();
         expect(
-          runResult.commandResult.checks?.find((check) => check.id === "review_chain")?.detail,
-        ).toContain("status=dry_run");
+          runResult.commandResult.checks?.find((check) => check.id === 'review_chain')?.detail,
+        ).toContain('status=dry_run');
         expect(
           runResult.commandResult.experience?.roleProgress.some(
             (row) =>
@@ -1110,13 +1110,13 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
         ).toBe(true);
 
         const requestFiles = await readdir(
-          resolve(fixture.workspaceRoot, "context", "review-queue", "requests"),
+          resolve(fixture.workspaceRoot, 'context', 'review-queue', 'requests'),
         ).catch(() => []);
         const resultFiles = await readdir(
-          resolve(fixture.workspaceRoot, "context", "review-queue", "results"),
+          resolve(fixture.workspaceRoot, 'context', 'review-queue', 'results'),
         ).catch(() => []);
         const ledgerFiles = await readdir(
-          resolve(fixture.workspaceRoot, "context", "ledger-backfill", "review-verify"),
+          resolve(fixture.workspaceRoot, 'context', 'ledger-backfill', 'review-verify'),
         ).catch(() => []);
 
         expect(requestFiles).toHaveLength(0);
@@ -1129,106 +1129,106 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
           trace: false,
           replayPath: null,
           adapters: true,
-          taskId: "TK-099",
+          taskId: 'TK-099',
         },
       },
     );
   });
 
-  it("resumes task-driven review subchain when an approve HITL decision receipt is supplied", async () => {
+  it('resumes task-driven review subchain when an approve HITL decision receipt is supplied', async () => {
     await withRuntimeFixture(
       async (fixture) => {
-        await writeTaskCardFixture(fixture.workspaceRoot, "TK-099");
+        await writeTaskCardFixture(fixture.workspaceRoot, 'TK-099');
         const runtimeWithOverrides = fixture.runtime as unknown as {
           collectGitChangedPaths: () => Promise<string[]>;
         };
-        runtimeWithOverrides.collectGitChangedPaths = async () => ["migrations/001.sql"];
+        runtimeWithOverrides.collectGitChangedPaths = async () => ['migrations/001.sql'];
 
         const runResult = await fixture.runtime.execute(CliCommandName.RUN);
-        expect(runResult.commandResult.details?.original_policy_outcome).toBe("escalate");
-        expect(runResult.commandResult.details?.effective_policy_outcome).toBe("allow");
-        expect(runResult.commandResult.details?.task_id).toBe("TK-099");
-        expect(runResult.commandResult.details?.runtime_backend).toBe("langgraph");
+        expect(runResult.commandResult.details?.original_policy_outcome).toBe('escalate');
+        expect(runResult.commandResult.details?.effective_policy_outcome).toBe('allow');
+        expect(runResult.commandResult.details?.task_id).toBe('TK-099');
+        expect(runResult.commandResult.details?.runtime_backend).toBe('langgraph');
         expect(runResult.commandResult.details?.runtime_comparison_backend).toBeNull();
-        expect(runResult.commandResult.details?.runtime_parity_mode).toBe("disabled");
-        expect(runResult.commandResult.details?.hitl_decision).toBe("approve");
-        expect(runResult.commandResult.details?.hitl_resume_action).toBe("resume");
-        expect(runResult.commandResult.details?.langgraph_checkpoint_source).toBe("sqlite-fs");
-        expect(runResult.commandResult.details?.langgraph_recovery_state).toBe("recovered");
+        expect(runResult.commandResult.details?.runtime_parity_mode).toBe('disabled');
+        expect(runResult.commandResult.details?.hitl_decision).toBe('approve');
+        expect(runResult.commandResult.details?.hitl_resume_action).toBe('resume');
+        expect(runResult.commandResult.details?.langgraph_checkpoint_source).toBe('sqlite-fs');
+        expect(runResult.commandResult.details?.langgraph_recovery_state).toBe('recovered');
         expect(runResult.commandResult.details?.inline_review_chain_enabled).toBe(true);
-        expect(runResult.commandResult.details?.inline_review_chain_status).toBe("applied");
+        expect(runResult.commandResult.details?.inline_review_chain_status).toBe('applied');
         expect(
-          runResult.commandResult.checks?.find((check) => check.id === "runtime_backend")?.detail,
-        ).toContain("primary=langgraph");
+          runResult.commandResult.checks?.find((check) => check.id === 'runtime_backend')?.detail,
+        ).toContain('primary=langgraph');
         expect(
-          runResult.commandResult.checks?.find((check) => check.id === "runtime_backend")?.detail,
-        ).toContain("comparison=none");
+          runResult.commandResult.checks?.find((check) => check.id === 'runtime_backend')?.detail,
+        ).toContain('comparison=none');
         expect(
-          runResult.commandResult.checks?.find((check) => check.id === "recovery")?.detail,
-        ).toContain("state=recovered");
+          runResult.commandResult.checks?.find((check) => check.id === 'recovery')?.detail,
+        ).toContain('state=recovered');
         expect(
-          runResult.commandResult.checks?.find((check) => check.id === "hitl")?.detail,
-        ).toContain("decision=approve");
+          runResult.commandResult.checks?.find((check) => check.id === 'hitl')?.detail,
+        ).toContain('decision=approve');
         expect(
-          runResult.commandResult.checks?.find((check) => check.id === "review_chain")?.detail,
-        ).toContain("status=applied");
+          runResult.commandResult.checks?.find((check) => check.id === 'review_chain')?.detail,
+        ).toContain('status=applied');
         expect(
           runResult.commandResult.artifacts?.some(
-            (artifact) => artifact.id === "hitl_notification",
+            (artifact) => artifact.id === 'hitl_notification',
           ),
         ).toBe(true);
         expect(
           runResult.commandResult.artifacts?.some(
-            (artifact) => artifact.id === "hitl_decision_receipt",
+            (artifact) => artifact.id === 'hitl_decision_receipt',
           ),
         ).toBe(true);
         expect(
           runResult.commandResult.artifacts?.some(
-            (artifact) => artifact.id === "langgraph_checkpoint",
+            (artifact) => artifact.id === 'langgraph_checkpoint',
           ),
         ).toBe(true);
 
         const decisionReceiptPath = runResult.commandResult.artifacts?.find(
-          (artifact) => artifact.id === "hitl_decision_receipt",
+          (artifact) => artifact.id === 'hitl_decision_receipt',
         )?.path;
-        expect(typeof decisionReceiptPath).toBe("string");
-        expect(typeof runResult.commandResult.details?.langgraph_checkpoint_path).toBe("string");
+        expect(typeof decisionReceiptPath).toBe('string');
+        expect(typeof runResult.commandResult.details?.langgraph_checkpoint_path).toBe('string');
         expect(runResult.commandResult.details?.langgraph_checkpoint_path).toContain(
-          "langgraph-checkpoints.sqlite#",
+          'langgraph-checkpoints.sqlite#',
         );
         expect(typeof runResult.commandResult.details?.orchestration_event_stream_token).toBe(
-          "string",
+          'string',
         );
-        expect(runResult.commandResult.details?.orchestration_status).toBe("completed");
-        expect(runResult.commandResult.details?.orchestration_service_host_kind).toBe("embedded");
+        expect(runResult.commandResult.details?.orchestration_status).toBe('completed');
+        expect(runResult.commandResult.details?.orchestration_service_host_kind).toBe('embedded');
         expect(runResult.commandResult.details?.orchestration_service_transport_kind).toBe(
-          "in_process",
+          'in_process',
         );
         expect(
           runResult.commandResult.details?.orchestration_latest_event_sequence,
         ).toBeGreaterThan(0);
-        expect(typeof runResult.commandResult.details?.orchestration_next_cursor).toBe("string");
+        expect(typeof runResult.commandResult.details?.orchestration_next_cursor).toBe('string');
 
         const decisionReceiptPayload = JSON.parse(
-          await readFile(String(decisionReceiptPath), "utf8"),
+          await readFile(String(decisionReceiptPath), 'utf8'),
         ) as {
           decision?: string;
           resumeAction?: string;
           finalPolicyOutcome?: string;
           decidedBy?: string;
         };
-        expect(decisionReceiptPayload.decision).toBe("approve");
-        expect(decisionReceiptPayload.resumeAction).toBe("resume");
-        expect(decisionReceiptPayload.finalPolicyOutcome).toBe("allow");
-        expect(decisionReceiptPayload.decidedBy).toBe("maintainer@example.com");
+        expect(decisionReceiptPayload.decision).toBe('approve');
+        expect(decisionReceiptPayload.resumeAction).toBe('resume');
+        expect(decisionReceiptPayload.finalPolicyOutcome).toBe('allow');
+        expect(decisionReceiptPayload.decidedBy).toBe('maintainer@example.com');
         expect(
           runResult.commandResult.artifacts?.some(
-            (artifact) => artifact.id === "inline_review_request",
+            (artifact) => artifact.id === 'inline_review_request',
           ),
         ).toBe(true);
         expect(
           runResult.commandResult.artifacts?.some(
-            (artifact) => artifact.id === "inline_review_verify_result",
+            (artifact) => artifact.id === 'inline_review_verify_result',
           ),
         ).toBe(true);
       },
@@ -1237,19 +1237,19 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
           dryRun: false,
           trace: false,
           replayPath: null,
-          taskId: "TK-099",
-          hitlDecision: "approve",
-          hitlDecisionReason: "Maintainer approved unattended continuation.",
-          hitlDecidedBy: "maintainer@example.com",
+          taskId: 'TK-099',
+          hitlDecision: 'approve',
+          hitlDecisionReason: 'Maintainer approved unattended continuation.',
+          hitlDecidedBy: 'maintainer@example.com',
         },
       },
     );
   });
 
-  it("keeps service-backed run summary and event stream aligned with CLI output contract", async () => {
+  it('keeps service-backed run summary and event stream aligned with CLI output contract', async () => {
     await withRuntimeFixture(
       async (fixture) => {
-        await writeTaskCardFixture(fixture.workspaceRoot, "TK-099");
+        await writeTaskCardFixture(fixture.workspaceRoot, 'TK-099');
         const runtimeWithOverrides = fixture.runtime as unknown as {
           collectGitChangedPaths: () => Promise<string[]>;
           orchestrationServiceRuntime: {
@@ -1264,7 +1264,7 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
             }>;
           };
         };
-        runtimeWithOverrides.collectGitChangedPaths = async () => ["migrations/001.sql"];
+        runtimeWithOverrides.collectGitChangedPaths = async () => ['migrations/001.sql'];
 
         const runResult = await fixture.runtime.execute(CliCommandName.RUN);
         const executionId = String(runResult.commandResult.details?.execution_id);
@@ -1303,8 +1303,8 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
           runResult.commandResult.details?.langgraph_checkpoint_source,
         );
         const recoveredNextNodeIds =
-          typeof runResult.commandResult.details?.langgraph_recovery_next_node_ids === "string"
-            ? runResult.commandResult.details.langgraph_recovery_next_node_ids.split("|")
+          typeof runResult.commandResult.details?.langgraph_recovery_next_node_ids === 'string'
+            ? runResult.commandResult.details.langgraph_recovery_next_node_ids.split('|')
             : [];
         expect(summary?.recoveredNextNodeIds).toEqual(recoveredNextNodeIds);
         expect(listed.executions.some((execution) => execution.executionId === executionId)).toBe(
@@ -1325,7 +1325,7 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
           subscription.events.some(
             (event) =>
               event.type === OrchestrationServiceEventType.ARTIFACT_READY &&
-              event.artifactId === "langgraph_checkpoint",
+              event.artifactId === 'langgraph_checkpoint',
           ),
         ).toBe(true);
         expect(subscription.events.at(-1)?.type).toBe(
@@ -1337,24 +1337,24 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
           dryRun: false,
           trace: false,
           replayPath: null,
-          taskId: "TK-099",
-          hitlDecision: "approve",
-          hitlDecisionReason: "Maintainer approved unattended continuation.",
-          hitlResumeAction: "resume",
-          hitlDecidedBy: "maintainer@example.com",
+          taskId: 'TK-099',
+          hitlDecision: 'approve',
+          hitlDecisionReason: 'Maintainer approved unattended continuation.',
+          hitlResumeAction: 'resume',
+          hitlDecidedBy: 'maintainer@example.com',
         },
       },
     );
   });
 
-  it("terminates task-driven run when a reject HITL decision receipt is supplied", async () => {
+  it('terminates task-driven run when a reject HITL decision receipt is supplied', async () => {
     await withRuntimeFixture(
       async (fixture) => {
-        await writeTaskCardFixture(fixture.workspaceRoot, "TK-099");
+        await writeTaskCardFixture(fixture.workspaceRoot, 'TK-099');
         const runtimeWithOverrides = fixture.runtime as unknown as {
           collectGitChangedPaths: () => Promise<string[]>;
         };
-        runtimeWithOverrides.collectGitChangedPaths = async () => ["migrations/001.sql"];
+        runtimeWithOverrides.collectGitChangedPaths = async () => ['migrations/001.sql'];
 
         const runtimeError = await fixture.runtime
           .execute(CliCommandName.RUN)
@@ -1364,29 +1364,29 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
         expect(runtimeError).toMatchObject({
           code: GovernorErrorCode.POLICY_GATE_EVALUATION_FAILED,
           details: {
-            hitlResumeAction: "terminate",
+            hitlResumeAction: 'terminate',
           },
         });
 
         const decisionReceiptPath = runtimeError?.details?.hitlDecisionReceiptPath;
-        expect(typeof decisionReceiptPath).toBe("string");
+        expect(typeof decisionReceiptPath).toBe('string');
 
         const decisionReceiptPayload = JSON.parse(
-          await readFile(String(decisionReceiptPath), "utf8"),
+          await readFile(String(decisionReceiptPath), 'utf8'),
         ) as {
           decision?: string;
           resumeAction?: string;
           finalPolicyOutcome?: string;
         };
-        expect(decisionReceiptPayload.decision).toBe("reject");
-        expect(decisionReceiptPayload.resumeAction).toBe("terminate");
-        expect(decisionReceiptPayload.finalPolicyOutcome).toBe("block");
+        expect(decisionReceiptPayload.decision).toBe('reject');
+        expect(decisionReceiptPayload.resumeAction).toBe('terminate');
+        expect(decisionReceiptPayload.finalPolicyOutcome).toBe('block');
 
         const requestFiles = await readdir(
-          resolve(fixture.workspaceRoot, "context", "review-queue", "requests"),
+          resolve(fixture.workspaceRoot, 'context', 'review-queue', 'requests'),
         ).catch(() => []);
         const resultFiles = await readdir(
-          resolve(fixture.workspaceRoot, "context", "review-queue", "results"),
+          resolve(fixture.workspaceRoot, 'context', 'review-queue', 'results'),
         ).catch(() => []);
         expect(requestFiles).toHaveLength(0);
         expect(resultFiles).toHaveLength(0);
@@ -1396,23 +1396,23 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
           dryRun: false,
           trace: false,
           replayPath: null,
-          taskId: "TK-099",
-          hitlDecision: "reject",
-          hitlDecisionReason: "Maintainer rejected unattended continuation.",
-          hitlDecidedBy: "maintainer@example.com",
+          taskId: 'TK-099',
+          hitlDecision: 'reject',
+          hitlDecisionReason: 'Maintainer rejected unattended continuation.',
+          hitlDecidedBy: 'maintainer@example.com',
         },
       },
     );
   });
 
-  it("keeps run in HITL follow-up when a revise decision degrades execution", async () => {
+  it('keeps run in HITL follow-up when a revise decision degrades execution', async () => {
     await withRuntimeFixture(
       async (fixture) => {
-        await writeTaskCardFixture(fixture.workspaceRoot, "TK-099");
+        await writeTaskCardFixture(fixture.workspaceRoot, 'TK-099');
         const runtimeWithOverrides = fixture.runtime as unknown as {
           collectGitChangedPaths: () => Promise<string[]>;
         };
-        runtimeWithOverrides.collectGitChangedPaths = async () => ["migrations/001.sql"];
+        runtimeWithOverrides.collectGitChangedPaths = async () => ['migrations/001.sql'];
 
         const runtimeError = await fixture.runtime
           .execute(CliCommandName.RUN)
@@ -1423,29 +1423,29 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
           code: GovernorErrorCode.POLICY_GATE_HITL_FEEDBACK_INVALID,
           details: {
             pendingStatus: ExecutionProgressStage.HUMAN_CONFIRMATION,
-            hitlResumeAction: "degrade",
+            hitlResumeAction: 'degrade',
           },
         });
 
         const decisionReceiptPath = runtimeError?.details?.hitlDecisionReceiptPath;
-        expect(typeof decisionReceiptPath).toBe("string");
+        expect(typeof decisionReceiptPath).toBe('string');
 
         const decisionReceiptPayload = JSON.parse(
-          await readFile(String(decisionReceiptPath), "utf8"),
+          await readFile(String(decisionReceiptPath), 'utf8'),
         ) as {
           decision?: string;
           resumeAction?: string;
           finalPolicyOutcome?: string;
         };
-        expect(decisionReceiptPayload.decision).toBe("revise");
-        expect(decisionReceiptPayload.resumeAction).toBe("degrade");
-        expect(decisionReceiptPayload.finalPolicyOutcome).toBe("escalate");
+        expect(decisionReceiptPayload.decision).toBe('revise');
+        expect(decisionReceiptPayload.resumeAction).toBe('degrade');
+        expect(decisionReceiptPayload.finalPolicyOutcome).toBe('escalate');
 
         const requestFiles = await readdir(
-          resolve(fixture.workspaceRoot, "context", "review-queue", "requests"),
+          resolve(fixture.workspaceRoot, 'context', 'review-queue', 'requests'),
         ).catch(() => []);
         const resultFiles = await readdir(
-          resolve(fixture.workspaceRoot, "context", "review-queue", "results"),
+          resolve(fixture.workspaceRoot, 'context', 'review-queue', 'results'),
         ).catch(() => []);
         expect(requestFiles).toHaveLength(0);
         expect(resultFiles).toHaveLength(0);
@@ -1455,33 +1455,33 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
           dryRun: false,
           trace: false,
           replayPath: null,
-          taskId: "TK-099",
-          hitlDecision: "revise",
-          hitlDecisionReason: "Maintainer requested a guarded manual follow-up.",
-          hitlResumeAction: "degrade",
-          hitlDecidedBy: "maintainer@example.com",
+          taskId: 'TK-099',
+          hitlDecision: 'revise',
+          hitlDecisionReason: 'Maintainer requested a guarded manual follow-up.',
+          hitlResumeAction: 'degrade',
+          hitlDecidedBy: 'maintainer@example.com',
         },
       },
     );
   });
 
-  it("reads project/sprint audit tags from workspace current-context", async () => {
+  it('reads project/sprint audit tags from workspace current-context', async () => {
     await withRuntimeFixture(async (fixture) => {
-      const currentContextPath = resolve(fixture.workspaceRoot, "context", "current-context.md");
-      await mkdir(resolve(fixture.workspaceRoot, "context"), { recursive: true });
+      const currentContextPath = resolve(fixture.workspaceRoot, 'context', 'current-context.md');
+      await mkdir(resolve(fixture.workspaceRoot, 'context'), { recursive: true });
       await writeFile(
         currentContextPath,
         [
-          "# Workspace Current Context",
-          "",
-          "## Primary Stream",
-          "",
-          "- Status: active",
-          "- Project: `project-target-runtime`",
-          "- Sprint: `sprint-900-policy`",
-          "",
-        ].join("\n"),
-        "utf8",
+          '# Workspace Current Context',
+          '',
+          '## Primary Stream',
+          '',
+          '- Status: active',
+          '- Project: `project-target-runtime`',
+          '- Sprint: `sprint-900-policy`',
+          '',
+        ].join('\n'),
+        'utf8',
       );
 
       const runtimeWithOverrides = fixture.runtime as unknown as {
@@ -1491,7 +1491,7 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
 
       const executionResult = await fixture.runtime.execute(CliCommandName.RUN);
       const executionId = executionResult.commandResult.details?.execution_id;
-      expect(typeof executionId).toBe("string");
+      expect(typeof executionId).toBe('string');
 
       const auditRecorder = new AuditRecorder(
         new MemoryManager(new MemoryStoreAdapter(fixture.provider)),
@@ -1502,43 +1502,43 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
 
       expect(auditRecords.length).toBeGreaterThan(0);
       for (const auditRecord of auditRecords) {
-        expect(auditRecord.event.projectId).toBe("project-target-runtime");
-        expect(auditRecord.event.sprintId).toBe("sprint-900-policy");
+        expect(auditRecord.event.projectId).toBe('project-target-runtime');
+        expect(auditRecord.event.sprintId).toBe('sprint-900-policy');
       }
       const stageRecords = auditRecords.filter(
-        (auditRecord) => auditRecord.event.stageId !== "stage-policy-gate",
+        (auditRecord) => auditRecord.event.stageId !== 'stage-policy-gate',
       );
       expect(
         stageRecords.some((auditRecord) => {
           const memoryDelta = (auditRecord.event.memoryDelta ?? {}) as Record<string, unknown>;
           const output =
-            memoryDelta.output && typeof memoryDelta.output === "object"
+            memoryDelta.output && typeof memoryDelta.output === 'object'
               ? (memoryDelta.output as Record<string, unknown>)
               : null;
           return (
-            output?.handledBy === "adapter-route-runner" &&
-            typeof output.adapterSurface === "string"
+            output?.handledBy === 'adapter-route-runner' &&
+            typeof output.adapterSurface === 'string'
           );
         }),
       ).toBe(true);
     });
   });
 
-  it("blocks run when only ollama fallback remains but required capabilities are unsupported", async () => {
+  it('blocks run when only ollama fallback remains but required capabilities are unsupported', async () => {
     const fetchMock = vi.fn(async (input: string | URL | Request) => {
-      if (String(input).includes("/api/tags")) {
+      if (String(input).includes('/api/tags')) {
         return new Response(
           JSON.stringify({
             models: [
               {
-                name: "qwen2.5-coder:7b",
+                name: 'qwen2.5-coder:7b',
               },
             ],
           }),
           {
             status: 200,
             headers: {
-              "content-type": "application/json",
+              'content-type': 'application/json',
             },
           },
         );
@@ -1546,18 +1546,18 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
 
       return new Response(
         JSON.stringify({
-          response: "local fallback completed",
+          response: 'local fallback completed',
           done: true,
         }),
         {
           status: 200,
           headers: {
-            "content-type": "application/json",
+            'content-type': 'application/json',
           },
         },
       );
     });
-    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal('fetch', fetchMock);
 
     await withRuntimeFixture(
       async (fixture) => {
@@ -1567,10 +1567,10 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
         runtimeWithOverrides.collectGitChangedPaths = async () => [];
         const runResult = await fixture.runtime.execute(CliCommandName.RUN);
 
-        expect(runResult.commandResult.details?.runtime_status).toBe("failed");
+        expect(runResult.commandResult.details?.runtime_status).toBe('failed');
         expect(
           runResult.commandResult.checks?.some(
-            (check) => check.id === "runtime" && check.detail.includes("status=failed"),
+            (check) => check.id === 'runtime' && check.detail.includes('status=failed'),
           ),
         ).toBe(true);
       },
@@ -1580,41 +1580,41 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
     );
   });
 
-  it("drains queued review request after review-verify emits verify/backfill artifacts", async () => {
+  it('drains queued review request after review-verify emits verify/backfill artifacts', async () => {
     await withRuntimeFixture(async (fixture) => {
       const reviewResult = await fixture.runtime.execute(CliCommandName.REVIEW);
       expect(reviewResult.commandResult.details?.orchestration_execution_id).toMatch(/^review-/u);
-      expect(reviewResult.commandResult.details?.orchestration_status).toBe("completed");
+      expect(reviewResult.commandResult.details?.orchestration_status).toBe('completed');
       expect(typeof reviewResult.commandResult.details?.orchestration_event_stream_token).toBe(
-        "string",
+        'string',
       );
 
       const firstVerifyResult = await fixture.runtime.execute(CliCommandName.REVIEW_VERIFY);
       expect(firstVerifyResult.commandResult.details?.orchestration_execution_id).toMatch(
         /^review-verify-/u,
       );
-      expect(firstVerifyResult.commandResult.details?.orchestration_status).toBe("completed");
+      expect(firstVerifyResult.commandResult.details?.orchestration_status).toBe('completed');
       expect(typeof firstVerifyResult.commandResult.details?.orchestration_event_stream_token).toBe(
-        "string",
+        'string',
       );
 
       const verifyArtifactPath = firstVerifyResult.commandResult.artifacts?.find(
-        (artifact) => artifact.id === "review_verify_result",
+        (artifact) => artifact.id === 'review_verify_result',
       )?.path;
-      expect(typeof verifyArtifactPath).toBe("string");
-      const verifyPayload = JSON.parse(await readFile(String(verifyArtifactPath), "utf8")) as {
+      expect(typeof verifyArtifactPath).toBe('string');
+      const verifyPayload = JSON.parse(await readFile(String(verifyArtifactPath), 'utf8')) as {
         verifyId?: string;
         sourceRequestPath?: string;
       };
       expect(verifyPayload.sourceRequestPath).toMatch(/review-queue[\\/]+requests[\\/]+review-/u);
-      expect(verifyPayload.sourceRequestPath).not.toContain("review-verify-");
+      expect(verifyPayload.sourceRequestPath).not.toContain('review-verify-');
 
       const sourceRequestPath = String(verifyPayload.sourceRequestPath);
-      const sourceRequestPayload = JSON.parse(await readFile(sourceRequestPath, "utf8")) as {
+      const sourceRequestPayload = JSON.parse(await readFile(sourceRequestPath, 'utf8')) as {
         status?: string;
         consumedByVerifyId?: string;
       };
-      expect(sourceRequestPayload.status).toBe("verified");
+      expect(sourceRequestPayload.status).toBe('verified');
       expect(sourceRequestPayload.consumedByVerifyId).toBe(verifyPayload.verifyId);
       const experience = firstVerifyResult.commandResult.experience;
       expect(experience).toBeDefined();
@@ -1639,16 +1639,16 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
 
       const backfillDirectoryPath = resolve(
         fixture.workspaceRoot,
-        "context",
-        "ledger-backfill",
-        "review-verify",
+        'context',
+        'ledger-backfill',
+        'review-verify',
       );
       const backfillFileNames = await readdir(backfillDirectoryPath);
       expect(backfillFileNames.length).toBe(1);
     });
   });
 
-  it("keeps review and review-verify service-backed summaries aligned with command artifacts", async () => {
+  it('keeps review and review-verify service-backed summaries aligned with command artifacts', async () => {
     await withRuntimeFixture(async (fixture) => {
       const runtimeWithOrchestration = fixture.runtime as unknown as {
         orchestrationServiceRuntime: {
@@ -1661,7 +1661,7 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
 
       const reviewResult = await fixture.runtime.execute(CliCommandName.REVIEW);
       const reviewRequestPath = reviewResult.commandResult.artifacts?.find(
-        (artifact) => artifact.id === "review_request",
+        (artifact) => artifact.id === 'review_request',
       )?.path;
       const reviewSummary = await runtimeWithOrchestration.orchestrationServiceRuntime.getExecution(
         String(reviewResult.commandResult.details?.orchestration_execution_id),
@@ -1671,24 +1671,24 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
           eventStreamToken: reviewResult.commandResult.details?.orchestration_event_stream_token,
         });
 
-      expect(reviewResult.commandResult.details?.orchestration_service_host_kind).toBe("embedded");
+      expect(reviewResult.commandResult.details?.orchestration_service_host_kind).toBe('embedded');
       expect(reviewResult.commandResult.details?.orchestration_service_transport_kind).toBe(
-        "in_process",
+        'in_process',
       );
-      expect(reviewSummary?.latestArtifactId).toBe("review_request");
+      expect(reviewSummary?.latestArtifactId).toBe('review_request');
       expect(reviewSummary?.latestArtifactPath).toBe(reviewRequestPath);
       expect(
         reviewSubscription.events.some(
           (event) =>
             event.type === OrchestrationServiceEventType.ARTIFACT_READY &&
-            event.artifactId === "review_request" &&
+            event.artifactId === 'review_request' &&
             event.artifactPath === reviewRequestPath,
         ),
       ).toBe(true);
 
       const verifyResult = await fixture.runtime.execute(CliCommandName.REVIEW_VERIFY);
       const ledgerBackfillPath = verifyResult.commandResult.artifacts?.find(
-        (artifact) => artifact.id === "review_ledger_backfill",
+        (artifact) => artifact.id === 'review_ledger_backfill',
       )?.path;
       const verifySummary = await runtimeWithOrchestration.orchestrationServiceRuntime.getExecution(
         String(verifyResult.commandResult.details?.orchestration_execution_id),
@@ -1698,17 +1698,17 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
           eventStreamToken: verifyResult.commandResult.details?.orchestration_event_stream_token,
         });
 
-      expect(verifyResult.commandResult.details?.orchestration_service_host_kind).toBe("embedded");
+      expect(verifyResult.commandResult.details?.orchestration_service_host_kind).toBe('embedded');
       expect(verifyResult.commandResult.details?.orchestration_service_transport_kind).toBe(
-        "in_process",
+        'in_process',
       );
-      expect(verifySummary?.latestArtifactId).toBe("review_ledger_backfill");
+      expect(verifySummary?.latestArtifactId).toBe('review_ledger_backfill');
       expect(verifySummary?.latestArtifactPath).toBe(ledgerBackfillPath);
       expect(
         verifySubscription.events.some(
           (event) =>
             event.type === OrchestrationServiceEventType.ARTIFACT_READY &&
-            event.artifactId === "review_ledger_backfill" &&
+            event.artifactId === 'review_ledger_backfill' &&
             event.artifactPath === ledgerBackfillPath,
         ),
       ).toBe(true);
@@ -1718,7 +1718,7 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
     });
   });
 
-  it("emits layered diagnostics trace when dry-run/trace debug mode is enabled", async () => {
+  it('emits layered diagnostics trace when dry-run/trace debug mode is enabled', async () => {
     await withRuntimeFixture(
       async (fixture) => {
         const runtimeWithOverrides = fixture.runtime as unknown as {
@@ -1728,12 +1728,12 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
 
         const executionResult = await fixture.runtime.execute(CliCommandName.RUN);
         const diagnosticsTracePath = executionResult.commandResult.artifacts?.find(
-          (artifact) => artifact.id === "diagnostics_trace",
+          (artifact) => artifact.id === 'diagnostics_trace',
         )?.path;
-        expect(typeof diagnosticsTracePath).toBe("string");
+        expect(typeof diagnosticsTracePath).toBe('string');
 
         const diagnosticsTrace = JSON.parse(
-          await readFile(String(diagnosticsTracePath), "utf8"),
+          await readFile(String(diagnosticsTracePath), 'utf8'),
         ) as Record<string, unknown>;
         expect((diagnosticsTrace.mode as Record<string, unknown>).dryRun).toBe(true);
         expect((diagnosticsTrace.mode as Record<string, unknown>).trace).toBe(true);
@@ -1752,75 +1752,75 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
     );
   });
 
-  it("supports replay diagnostics from execution report artifacts", async () => {
+  it('supports replay diagnostics from execution report artifacts', async () => {
     await withRuntimeFixture(
       async (fixture) => {
-        await writeTaskCardFixture(fixture.workspaceRoot, "TK-099");
-        const currentContextPath = resolve(fixture.workspaceRoot, "context", "current-context.md");
-        await mkdir(resolve(fixture.workspaceRoot, "context"), { recursive: true });
+        await writeTaskCardFixture(fixture.workspaceRoot, 'TK-099');
+        const currentContextPath = resolve(fixture.workspaceRoot, 'context', 'current-context.md');
+        await mkdir(resolve(fixture.workspaceRoot, 'context'), { recursive: true });
         await writeFile(
           currentContextPath,
           [
-            "# Workspace Current Context",
-            "",
-            "## Primary Stream",
-            "",
-            "- Status: active",
-            "- Project: `project-010-local-model-and-ide-expansion`",
-            "- Sprint: `sprint-002-autonomous-mainchain-foundation`",
-            "",
-          ].join("\n"),
-          "utf8",
+            '# Workspace Current Context',
+            '',
+            '## Primary Stream',
+            '',
+            '- Status: active',
+            '- Project: `project-010-local-model-and-ide-expansion`',
+            '- Sprint: `sprint-002-autonomous-mainchain-foundation`',
+            '',
+          ].join('\n'),
+          'utf8',
         );
         const memoryManager = new MemoryManager(new MemoryStoreAdapter(fixture.provider));
         await memoryManager.writeEntry({
           scope: MemoryScope.EXECUTION,
-          key: "historic:stage-report:record-1",
+          key: 'historic:stage-report:record-1',
           payload: {
-            summary: "Verifier requested follow-up audit on the same dependency edge.",
-            artifactId: "DA-121",
+            summary: 'Verifier requested follow-up audit on the same dependency edge.',
+            artifactId: 'DA-121',
             sourceRefs: [
-              ".repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-002-autonomous-mainchain-foundation/tasks/DA-121-shared-and-package-local-boundary-hardening-and-exports-cleanup.md",
+              '.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-002-autonomous-mainchain-foundation/tasks/DA-121-shared-and-package-local-boundary-hardening-and-exports-cleanup.md',
             ],
           },
           tags: [
-            "audit-record",
-            "project:project-010-local-model-and-ide-expansion",
-            "sprint:sprint-002-autonomous-mainchain-foundation",
-            "task:TK-099",
-            "artifact:DA-121",
-            "sensitivity:internal",
-            "visibility:runtime",
+            'audit-record',
+            'project:project-010-local-model-and-ide-expansion',
+            'sprint:sprint-002-autonomous-mainchain-foundation',
+            'task:TK-099',
+            'artifact:DA-121',
+            'sensitivity:internal',
+            'visibility:runtime',
           ],
-          updatedAt: "2026-03-27T00:00:04Z",
+          updatedAt: '2026-03-27T00:00:04Z',
         });
         const runtimeWithOverrides = fixture.runtime as unknown as {
           collectGitChangedPaths: () => Promise<string[]>;
         };
         runtimeWithOverrides.collectGitChangedPaths = async () => [];
         const runResult = await fixture.runtime.execute(CliCommandName.RUN);
-        expect(runResult.message).toContain("memory_policy=allow");
-        expect(runResult.message).toContain("memory_promotion=session_summary_merged");
+        expect(runResult.message).toContain('memory_policy=allow');
+        expect(runResult.message).toContain('memory_promotion=session_summary_merged');
         expect(
-          runResult.commandResult.checks?.find((check) => check.id === "memory_policy")?.detail,
-        ).toContain("action=allow");
-        expect(runResult.commandResult.details?.memory_policy_action).toBe("allow");
+          runResult.commandResult.checks?.find((check) => check.id === 'memory_policy')?.detail,
+        ).toContain('action=allow');
+        expect(runResult.commandResult.details?.memory_policy_action).toBe('allow');
         const reportPath = runResult.commandResult.artifacts?.find(
-          (artifact) => artifact.id === "execution_report",
+          (artifact) => artifact.id === 'execution_report',
         )?.path;
-        expect(typeof reportPath).toBe("string");
+        expect(typeof reportPath).toBe('string');
 
         const replayRuntime = new CliGovernanceRuntime({
           currentWorkingDirectory: fixture.tempRoot,
           workspace: fixture.workspace,
-          configSource: "default",
+          configSource: 'default',
           profileId: null,
-          locale: "en-US",
+          locale: 'en-US',
           outputMode: ErrorOutputEnvironment.PLAIN,
           isTty: false,
           memoryConfig: {
             ...DEFAULT_MEMORY_RUNTIME_CONFIG,
-            storeRoot: "context/memory",
+            storeRoot: 'context/memory',
           },
           memoryStoreRoot: fixture.memoryStoreRoot,
           memoryStoreProviderName: fixture.provider.constructor.name,
@@ -1836,23 +1836,23 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
         });
         const replayResult = await replayRuntime.execute(CliCommandName.RUN);
 
-        expect(replayResult.commandResult.operation).toBe("governance_run_replay");
-        expect(replayResult.commandResult.details?.replay_source_type).toBe("execution_report");
-        expect(replayResult.message).toContain("memory_policy=allow");
-        expect(replayResult.message).toContain("memory_promotion=session_summary_merged");
+        expect(replayResult.commandResult.operation).toBe('governance_run_replay');
+        expect(replayResult.commandResult.details?.replay_source_type).toBe('execution_report');
+        expect(replayResult.message).toContain('memory_policy=allow');
+        expect(replayResult.message).toContain('memory_promotion=session_summary_merged');
         expect(
-          replayResult.commandResult.checks?.find((check) => check.id === "memory_policy")?.detail,
-        ).toContain("action=allow");
-        expect(replayResult.commandResult.details?.replay_memory_policy_action).toBe("allow");
+          replayResult.commandResult.checks?.find((check) => check.id === 'memory_policy')?.detail,
+        ).toContain('action=allow');
+        expect(replayResult.commandResult.details?.replay_memory_policy_action).toBe('allow');
         expect(replayResult.commandResult.details?.replay_memory_promotion_outcome).toBe(
-          "session_summary_merged",
+          'session_summary_merged',
         );
         const replayDiagnosticsPath = replayResult.commandResult.artifacts?.find(
-          (artifact) => artifact.id === "replay_diagnostics",
+          (artifact) => artifact.id === 'replay_diagnostics',
         )?.path;
-        expect(typeof replayDiagnosticsPath).toBe("string");
+        expect(typeof replayDiagnosticsPath).toBe('string');
         const replayDiagnosticsPayload = JSON.parse(
-          await readFile(String(replayDiagnosticsPath), "utf8"),
+          await readFile(String(replayDiagnosticsPath), 'utf8'),
         ) as {
           summary?: {
             memorySemantics?: {
@@ -1865,14 +1865,14 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
           };
         };
         expect(replayDiagnosticsPayload.summary?.memorySemantics?.promotionOutcome).toBe(
-          "session_summary_merged",
+          'session_summary_merged',
         );
         expect(
           replayDiagnosticsPayload.summary?.memorySemantics?.sessionSummaryProjectionKey,
         ).toMatch(/^session-cli-run-/u);
         expect(replayDiagnosticsPayload.explain?.explainLines).toEqual(
           expect.arrayContaining([
-            "memory_promotion_outcome=session_summary_merged",
+            'memory_promotion_outcome=session_summary_merged',
             expect.stringMatching(/^memory_session_projection_key=session-cli-run-/u),
           ]),
         );
@@ -1883,63 +1883,63 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
           trace: false,
           replayPath: null,
           adapters: true,
-          taskId: "TK-099",
+          taskId: 'TK-099',
         },
       },
     );
   });
 
-  it("writes review-verify ledger backfill artifact with attribution metadata", async () => {
+  it('writes review-verify ledger backfill artifact with attribution metadata', async () => {
     await withRuntimeFixture(async (fixture) => {
       await fixture.runtime.execute(CliCommandName.REVIEW);
       const verifyResult = await fixture.runtime.execute(CliCommandName.REVIEW_VERIFY);
-      expect(verifyResult.commandResult.details?.orchestration_status).toBe("completed");
+      expect(verifyResult.commandResult.details?.orchestration_status).toBe('completed');
       expect(
         verifyResult.commandResult.details?.orchestration_latest_event_sequence,
       ).toBeGreaterThan(0);
 
       const verifyArtifactPath = verifyResult.commandResult.artifacts?.find(
-        (artifact) => artifact.id === "review_verify_result",
+        (artifact) => artifact.id === 'review_verify_result',
       )?.path;
       const backfillArtifactPath = verifyResult.commandResult.artifacts?.find(
-        (artifact) => artifact.id === "review_ledger_backfill",
+        (artifact) => artifact.id === 'review_ledger_backfill',
       )?.path;
-      expect(typeof verifyArtifactPath).toBe("string");
-      expect(typeof backfillArtifactPath).toBe("string");
+      expect(typeof verifyArtifactPath).toBe('string');
+      expect(typeof backfillArtifactPath).toBe('string');
 
-      const verifyPayload = JSON.parse(await readFile(String(verifyArtifactPath), "utf8")) as {
+      const verifyPayload = JSON.parse(await readFile(String(verifyArtifactPath), 'utf8')) as {
         ledgerBackfillPath?: string;
       };
-      const backfillPayload = JSON.parse(await readFile(String(backfillArtifactPath), "utf8")) as {
+      const backfillPayload = JSON.parse(await readFile(String(backfillArtifactPath), 'utf8')) as {
         status?: string;
         attribution?: { chain?: string };
       };
       expect(verifyPayload.ledgerBackfillPath).toBe(backfillArtifactPath);
-      expect(backfillPayload.status).toBe("pending");
-      expect(backfillPayload.attribution?.chain).toBe("review->review-verify->ledger-backfill");
+      expect(backfillPayload.status).toBe('pending');
+      expect(backfillPayload.attribution?.chain).toBe('review->review-verify->ledger-backfill');
     });
   });
 
-  it("auto-applies task ledger backfill when review chain runs with --record-ledger and --task-id", async () => {
+  it('auto-applies task ledger backfill when review chain runs with --record-ledger and --task-id', async () => {
     await withRuntimeFixture(
       async (fixture) => {
-        await writeTaskCardFixture(fixture.workspaceRoot, "TK-130");
+        await writeTaskCardFixture(fixture.workspaceRoot, 'TK-130');
         await fixture.runtime.execute(CliCommandName.REVIEW);
         const verifyResult = await fixture.runtime.execute(CliCommandName.REVIEW_VERIFY);
 
         const backfillArtifactPath = verifyResult.commandResult.artifacts?.find(
-          (artifact) => artifact.id === "review_ledger_backfill",
+          (artifact) => artifact.id === 'review_ledger_backfill',
         )?.path;
-        expect(typeof backfillArtifactPath).toBe("string");
+        expect(typeof backfillArtifactPath).toBe('string');
 
         const backfillPayload = JSON.parse(
-          await readFile(String(backfillArtifactPath), "utf8"),
+          await readFile(String(backfillArtifactPath), 'utf8'),
         ) as {
           status?: string;
           taskId?: string;
         };
-        expect(backfillPayload.status).toBe("applied");
-        expect(backfillPayload.taskId).toBe("TK-130");
+        expect(backfillPayload.status).toBe('applied');
+        expect(backfillPayload.taskId).toBe('TK-130');
         expect(
           verifyResult.commandResult.experience?.roleProgress.some(
             (row) =>
@@ -1950,19 +1950,19 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
 
         const tasksCsvPath = resolve(
           fixture.workspaceRoot,
-          "context/dev/project-010-local-model-and-ide-expansion/sprint-002-autonomous-mainchain-foundation/tasks/tasks.csv",
+          'context/dev/project-010-local-model-and-ide-expansion/sprint-002-autonomous-mainchain-foundation/tasks/tasks.csv',
         );
         const checklistPath = resolve(
           fixture.workspaceRoot,
-          "context/dev/project-010-local-model-and-ide-expansion/sprint-002-autonomous-mainchain-foundation/tasks/checklist.md",
+          'context/dev/project-010-local-model-and-ide-expansion/sprint-002-autonomous-mainchain-foundation/tasks/checklist.md',
         );
-        const tasksCsvContent = await readFile(tasksCsvPath, "utf8");
-        const checklistContent = await readFile(checklistPath, "utf8");
+        const tasksCsvContent = await readFile(tasksCsvPath, 'utf8');
+        const checklistContent = await readFile(checklistPath, 'utf8');
 
-        expect(tasksCsvContent).toContain("TK-130");
-        expect(tasksCsvContent).toContain("review-verify review-verify-");
-        expect(tasksCsvContent).toContain("managed ledger backfill applied from review-verify-");
-        expect(checklistContent).toContain("自动消费 review-verify 产物并完成 ledger backfill");
+        expect(tasksCsvContent).toContain('TK-130');
+        expect(tasksCsvContent).toContain('review-verify review-verify-');
+        expect(tasksCsvContent).toContain('managed ledger backfill applied from review-verify-');
+        expect(checklistContent).toContain('自动消费 review-verify 产物并完成 ledger backfill');
       },
       {
         runtimeDebugOptions: {
@@ -1970,32 +1970,32 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
           trace: false,
           replayPath: null,
           recordLedger: true,
-          taskId: "TK-130",
+          taskId: 'TK-130',
         },
       },
     );
   });
 
-  it("writes connect diagnostics and optional ledger-backfill artifacts", async () => {
+  it('writes connect diagnostics and optional ledger-backfill artifacts', async () => {
     await withRuntimeFixture(
       async (fixture) => {
         const connectResult = await fixture.runtime.execute(CliCommandName.CONNECT);
 
-        expect(connectResult.commandResult.operation).toBe("adapter_connect");
+        expect(connectResult.commandResult.operation).toBe('adapter_connect');
         const diagnosticsArtifactPath = connectResult.commandResult.artifacts?.find(
-          (artifact) => artifact.id === "connect_diagnostics",
+          (artifact) => artifact.id === 'connect_diagnostics',
         )?.path;
         const ledgerArtifactPath = connectResult.commandResult.artifacts?.find(
-          (artifact) => artifact.id === "connect_ledger_backfill",
+          (artifact) => artifact.id === 'connect_ledger_backfill',
         )?.path;
-        expect(typeof diagnosticsArtifactPath).toBe("string");
-        expect(typeof ledgerArtifactPath).toBe("string");
-        const ledgerPayload = JSON.parse(await readFile(String(ledgerArtifactPath), "utf8")) as {
+        expect(typeof diagnosticsArtifactPath).toBe('string');
+        expect(typeof ledgerArtifactPath).toBe('string');
+        const ledgerPayload = JSON.parse(await readFile(String(ledgerArtifactPath), 'utf8')) as {
           taskId?: string;
           attribution?: { chainStep?: string };
         };
-        expect(ledgerPayload.taskId).toBe("TK-082");
-        expect(ledgerPayload.attribution?.chainStep).toBe("connect");
+        expect(ledgerPayload.taskId).toBe('TK-082');
+        expect(ledgerPayload.attribution?.chainStep).toBe('connect');
         expect(
           connectResult.commandResult.experience?.roleProgress.some(
             (row) => row.stage === ExecutionProgressStage.CONNECT,
@@ -2009,13 +2009,13 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
           replayPath: null,
           adapters: true,
           recordLedger: true,
-          taskId: "TK-082",
+          taskId: 'TK-082',
         },
       },
     );
   });
 
-  it("dispatches extracted init/check/plan/upgrade/workspace/run commands through the facade registry", async () => {
+  it('dispatches extracted init/check/plan/upgrade/workspace/run commands through the facade registry', async () => {
     await withRuntimeFixture(async (fixture) => {
       const initResult = await fixture.runtime.execute(CliCommandName.INIT);
       const checkResult = await fixture.runtime.execute(CliCommandName.CHECK);
@@ -2032,9 +2032,9 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
         }>;
       };
       workspaceRuntime.options.workspaceCommandOptions = {
-        action: "dry-run",
+        action: 'dry-run',
         targetMode: WorkspaceMode.TOOL_MANAGED,
-        targetRoot: resolve(fixture.tempRoot, "managed-root"),
+        targetRoot: resolve(fixture.tempRoot, 'managed-root'),
         planPath: null,
       };
       const workspaceResult = await workspaceRuntime.execute(CliCommandName.WORKSPACE);
@@ -2044,36 +2044,36 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
       runtimeWithOverrides.collectGitChangedPaths = async () => [];
       const runResult = await fixture.runtime.execute(CliCommandName.RUN);
 
-      expect(initResult.commandResult.operation).toBe("workspace_init");
-      expect(checkResult.commandResult.operation).toBe("governance_check");
-      expect(planResult.commandResult.operation).toBe("plan_snapshot");
-      expect(upgradeResult.commandResult.operation).toBe("schema_upgrade_analyze");
-      expect(workspaceResult.commandResult.operation).toBe("workspace_migration_plan");
-      expect(runResult.commandResult.operation).toBe("governance_run");
+      expect(initResult.commandResult.operation).toBe('workspace_init');
+      expect(checkResult.commandResult.operation).toBe('governance_check');
+      expect(planResult.commandResult.operation).toBe('plan_snapshot');
+      expect(upgradeResult.commandResult.operation).toBe('schema_upgrade_analyze');
+      expect(workspaceResult.commandResult.operation).toBe('workspace_migration_plan');
+      expect(runResult.commandResult.operation).toBe('governance_run');
     });
   });
 
-  it("writes upgrade adopter-facing artifacts including rollback snapshot and migrated config", async () => {
+  it('writes upgrade adopter-facing artifacts including rollback snapshot and migrated config', async () => {
     await withRuntimeFixture(async (fixture) => {
       const upgradeResult = await fixture.runtime.execute(CliCommandName.UPGRADE);
       const artifactIds =
         upgradeResult.commandResult.artifacts?.map((artifact) => artifact.id).sort() ?? [];
 
       expect(artifactIds).toEqual([
-        "upgrade_auto_migrated_config",
-        "upgrade_report",
-        "upgrade_rollback_snapshot",
+        'upgrade_auto_migrated_config',
+        'upgrade_report',
+        'upgrade_rollback_snapshot',
       ]);
-      expect(upgradeResult.commandResult.details?.rollback_snapshot_path).toBeTypeOf("string");
-      expect(upgradeResult.commandResult.details?.auto_migrated_config_path).toBeTypeOf("string");
-      expect(upgradeResult.commandResult.details?.confirmation_count).toBeTypeOf("number");
+      expect(upgradeResult.commandResult.details?.rollback_snapshot_path).toBeTypeOf('string');
+      expect(upgradeResult.commandResult.details?.auto_migrated_config_path).toBeTypeOf('string');
+      expect(upgradeResult.commandResult.details?.confirmation_count).toBeTypeOf('number');
     });
   });
 
-  it("assembles task-driven run flow when --task-id points to a canonical task card", async () => {
+  it('assembles task-driven run flow when --task-id points to a canonical task card', async () => {
     await withRuntimeFixture(
       async (fixture) => {
-        await writeTaskCardFixture(fixture.workspaceRoot, "TK-099");
+        await writeTaskCardFixture(fixture.workspaceRoot, 'TK-099');
         const runtimeWithOverrides = fixture.runtime as unknown as {
           collectGitChangedPaths: () => Promise<string[]>;
         };
@@ -2081,41 +2081,41 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
 
         const runResult = await fixture.runtime.execute(CliCommandName.RUN);
 
-        expect(runResult.commandResult.operation).toBe("governance_run");
-        expect(runResult.commandResult.details?.assembly_mode).toBe("task_driven");
-        expect(runResult.commandResult.details?.task_id).toBe("TK-099");
+        expect(runResult.commandResult.operation).toBe('governance_run');
+        expect(runResult.commandResult.details?.assembly_mode).toBe('task_driven');
+        expect(runResult.commandResult.details?.task_id).toBe('TK-099');
         expect(runResult.commandResult.details?.assembly_node_count).toBe(6);
         expect(runResult.commandResult.details?.input_reference_count).toBe(3);
         expect(runResult.commandResult.details?.input_artifact_count).toBe(2);
         expect(runResult.commandResult.details?.inline_review_chain_enabled).toBe(true);
-        expect(runResult.commandResult.details?.inline_review_chain_status).toBe("applied");
-        expect(typeof runResult.commandResult.details?.inline_review_request_path).toBe("string");
-        expect(typeof runResult.commandResult.details?.inline_review_verify_path).toBe("string");
+        expect(runResult.commandResult.details?.inline_review_chain_status).toBe('applied');
+        expect(typeof runResult.commandResult.details?.inline_review_request_path).toBe('string');
+        expect(typeof runResult.commandResult.details?.inline_review_verify_path).toBe('string');
         expect(typeof runResult.commandResult.details?.inline_review_ledger_backfill_path).toBe(
-          "string",
+          'string',
         );
         expect(
-          runResult.commandResult.checks?.find((check) => check.id === "assembly")?.detail,
-        ).toContain("mode=task_driven");
+          runResult.commandResult.checks?.find((check) => check.id === 'assembly')?.detail,
+        ).toContain('mode=task_driven');
         expect(
-          runResult.commandResult.checks?.find((check) => check.id === "assembly")?.detail,
-        ).toContain("input_references=3");
+          runResult.commandResult.checks?.find((check) => check.id === 'assembly')?.detail,
+        ).toContain('input_references=3');
         expect(
-          runResult.commandResult.checks?.find((check) => check.id === "review_chain")?.detail,
-        ).toContain("status=applied");
+          runResult.commandResult.checks?.find((check) => check.id === 'review_chain')?.detail,
+        ).toContain('status=applied');
         expect(
           runResult.commandResult.artifacts?.some(
-            (artifact) => artifact.id === "inline_review_request",
+            (artifact) => artifact.id === 'inline_review_request',
           ),
         ).toBe(true);
         expect(
           runResult.commandResult.artifacts?.some(
-            (artifact) => artifact.id === "inline_review_verify_result",
+            (artifact) => artifact.id === 'inline_review_verify_result',
           ),
         ).toBe(true);
         expect(
           runResult.commandResult.artifacts?.some(
-            (artifact) => artifact.id === "inline_review_ledger_backfill",
+            (artifact) => artifact.id === 'inline_review_ledger_backfill',
           ),
         ).toBe(true);
         expect(
@@ -2142,35 +2142,35 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
 
         const reviewQueueRequestDirectoryPath = resolve(
           fixture.workspaceRoot,
-          "context",
-          "review-queue",
-          "requests",
+          'context',
+          'review-queue',
+          'requests',
         );
         const reviewQueueResultDirectoryPath = resolve(
           fixture.workspaceRoot,
-          "context",
-          "review-queue",
-          "results",
+          'context',
+          'review-queue',
+          'results',
         );
         const reviewQueueRequestFileNames = await readdir(reviewQueueRequestDirectoryPath);
         const reviewQueueResultFileNames = await readdir(reviewQueueResultDirectoryPath);
-        expect(reviewQueueRequestFileNames.some((fileName) => fileName.startsWith("review-"))).toBe(
+        expect(reviewQueueRequestFileNames.some((fileName) => fileName.startsWith('review-'))).toBe(
           true,
         );
         expect(
-          reviewQueueResultFileNames.some((fileName) => fileName.startsWith("review-verify-")),
+          reviewQueueResultFileNames.some((fileName) => fileName.startsWith('review-verify-')),
         ).toBe(true);
 
         const sourceRequestPath = resolve(
           reviewQueueRequestDirectoryPath,
-          reviewQueueRequestFileNames[0] ?? "",
+          reviewQueueRequestFileNames[0] ?? '',
         );
-        const sourceRequestPayload = JSON.parse(await readFile(sourceRequestPath, "utf8")) as {
+        const sourceRequestPayload = JSON.parse(await readFile(sourceRequestPath, 'utf8')) as {
           status?: string;
           ledgerBackfillStatus?: string;
         };
-        expect(sourceRequestPayload.status).toBe("verified");
-        expect(sourceRequestPayload.ledgerBackfillStatus).toBe("applied");
+        expect(sourceRequestPayload.status).toBe('verified');
+        expect(sourceRequestPayload.ledgerBackfillStatus).toBe('applied');
       },
       {
         runtimeDebugOptions: {
@@ -2178,29 +2178,29 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
           trace: false,
           replayPath: null,
           adapters: true,
-          taskId: "TK-099",
+          taskId: 'TK-099',
         },
       },
     );
   });
 
-  it("renders assembly check from contract-safe memory context rather than raw recall summary", async () => {
+  it('renders assembly check from contract-safe memory context rather than raw recall summary', async () => {
     await withRuntimeFixture(
       async (fixture) => {
-        await writeTaskCardFixture(fixture.workspaceRoot, "TK-099");
+        await writeTaskCardFixture(fixture.workspaceRoot, 'TK-099');
         const memoryManager = new MemoryManager(new MemoryStoreAdapter(fixture.provider));
         await memoryManager.writeEntry({
           scope: MemoryScope.EXECUTION,
-          key: "historic:stage-report:record-1",
+          key: 'historic:stage-report:record-1',
           payload: {
-            artifactId: "DA-121",
+            artifactId: 'DA-121',
           },
           tags: [
-            "audit-record",
-            "project:project-010-local-model-and-ide-expansion",
-            "sprint:sprint-002-autonomous-mainchain-foundation",
-            "task:TK-099",
-            "artifact:DA-121",
+            'audit-record',
+            'project:project-010-local-model-and-ide-expansion',
+            'sprint:sprint-002-autonomous-mainchain-foundation',
+            'task:TK-099',
+            'artifact:DA-121',
           ],
         });
 
@@ -2211,13 +2211,13 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
 
         const runResult = await fixture.runtime.execute(CliCommandName.RUN);
         const assemblyCheckDetail =
-          runResult.commandResult.checks?.find((check) => check.id === "assembly")?.detail ?? "";
+          runResult.commandResult.checks?.find((check) => check.id === 'assembly')?.detail ?? '';
 
-        expect(assemblyCheckDetail).toContain("memory_context_selected=1");
-        expect(assemblyCheckDetail).toContain("memory_context_execution=1");
-        expect(assemblyCheckDetail).toContain("memory_context_session=0");
-        expect(assemblyCheckDetail).toContain("memory_context_outcome=context_ready");
-        expect(assemblyCheckDetail).not.toContain("memory_recalled=");
+        expect(assemblyCheckDetail).toContain('memory_context_selected=1');
+        expect(assemblyCheckDetail).toContain('memory_context_execution=1');
+        expect(assemblyCheckDetail).toContain('memory_context_session=0');
+        expect(assemblyCheckDetail).toContain('memory_context_outcome=context_ready');
+        expect(assemblyCheckDetail).not.toContain('memory_recalled=');
       },
       {
         runtimeDebugOptions: {
@@ -2225,53 +2225,53 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
           trace: false,
           replayPath: null,
           adapters: true,
-          taskId: "TK-099",
+          taskId: 'TK-099',
         },
       },
     );
   });
 
-  it("persists promotion summary into execution report and session projection for reporting consumers", async () => {
+  it('persists promotion summary into execution report and session projection for reporting consumers', async () => {
     await withRuntimeFixture(
       async (fixture) => {
-        await writeTaskCardFixture(fixture.workspaceRoot, "TK-099");
-        const currentContextPath = resolve(fixture.workspaceRoot, "context", "current-context.md");
-        await mkdir(resolve(fixture.workspaceRoot, "context"), { recursive: true });
+        await writeTaskCardFixture(fixture.workspaceRoot, 'TK-099');
+        const currentContextPath = resolve(fixture.workspaceRoot, 'context', 'current-context.md');
+        await mkdir(resolve(fixture.workspaceRoot, 'context'), { recursive: true });
         await writeFile(
           currentContextPath,
           [
-            "# Workspace Current Context",
-            "",
-            "## Primary Stream",
-            "",
-            "- Status: active",
-            "- Project: `project-010-local-model-and-ide-expansion`",
-            "- Sprint: `sprint-002-autonomous-mainchain-foundation`",
-            "",
-          ].join("\n"),
-          "utf8",
+            '# Workspace Current Context',
+            '',
+            '## Primary Stream',
+            '',
+            '- Status: active',
+            '- Project: `project-010-local-model-and-ide-expansion`',
+            '- Sprint: `sprint-002-autonomous-mainchain-foundation`',
+            '',
+          ].join('\n'),
+          'utf8',
         );
 
         const memoryManager = new MemoryManager(new MemoryStoreAdapter(fixture.provider));
         await memoryManager.writeEntry({
           scope: MemoryScope.EXECUTION,
-          key: "historic:stage-report:record-1",
+          key: 'historic:stage-report:record-1',
           payload: {
-            summary: "Verifier requested follow-up audit on the same dependency edge.",
-            artifactId: "DA-121",
+            summary: 'Verifier requested follow-up audit on the same dependency edge.',
+            artifactId: 'DA-121',
             sourceRefs: [
-              ".repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-002-autonomous-mainchain-foundation/tasks/DA-121-shared-and-package-local-boundary-hardening-and-exports-cleanup.md",
+              '.repo-ai-governor/context/dev/project-010-local-model-and-ide-expansion/sprint-002-autonomous-mainchain-foundation/tasks/DA-121-shared-and-package-local-boundary-hardening-and-exports-cleanup.md',
             ],
           },
           tags: [
-            "audit-record",
-            "project:project-010-local-model-and-ide-expansion",
-            "sprint:sprint-002-autonomous-mainchain-foundation",
-            "task:TK-099",
-            "artifact:DA-121",
-            "sensitivity:internal",
+            'audit-record',
+            'project:project-010-local-model-and-ide-expansion',
+            'sprint:sprint-002-autonomous-mainchain-foundation',
+            'task:TK-099',
+            'artifact:DA-121',
+            'sensitivity:internal',
           ],
-          updatedAt: "2026-03-27T00:00:04Z",
+          updatedAt: '2026-03-27T00:00:04Z',
         });
 
         const runtimeWithOverrides = fixture.runtime as unknown as {
@@ -2281,10 +2281,10 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
 
         const runResult = await fixture.runtime.execute(CliCommandName.RUN);
         const reportPath = String(
-          runResult.commandResult.artifacts?.find((artifact) => artifact.id === "execution_report")
+          runResult.commandResult.artifacts?.find((artifact) => artifact.id === 'execution_report')
             ?.path,
         );
-        const executionReport = JSON.parse(await readFile(reportPath, "utf8")) as {
+        const executionReport = JSON.parse(await readFile(reportPath, 'utf8')) as {
           memorySemantics?: {
             contextSummary?: {
               selectedRecordCount?: number;
@@ -2306,16 +2306,16 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
 
         expect(executionReport.memorySemantics?.contextSummary?.selectedRecordCount).toBe(1);
         expect(executionReport.memorySemantics?.contextSummary?.assemblyOutcome).toBe(
-          "context_ready",
+          'context_ready',
         );
         expect(executionReport.memorySemantics?.contextSummary?.policySummary?.overallAction).toBe(
-          "allow",
+          'allow',
         );
-        expect(executionReport.memorySemantics?.promotion?.outcome).toBe("session_summary_merged");
+        expect(executionReport.memorySemantics?.promotion?.outcome).toBe('session_summary_merged');
         expect(executionReport.memorySemantics?.promotion?.mergedCount).toBe(1);
         expect(
           executionReport.memorySemantics?.promotion?.sessionSummaryProjection?.promotedRecordIds,
-        ).toEqual(["execution:historic:stage-report:record-1"]);
+        ).toEqual(['execution:historic:stage-report:record-1']);
 
         const sessionSummaryProjectionKey = String(
           executionReport.memorySemantics?.promotion?.sessionSummaryProjection?.key,
@@ -2327,8 +2327,8 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
 
         expect(sessionRecord?.value.promotedContextItems).toEqual([
           expect.objectContaining({
-            sourceRecordId: "execution:historic:stage-report:record-1",
-            summary: "Verifier requested follow-up audit on the same dependency edge. | DA-121",
+            sourceRecordId: 'execution:historic:stage-report:record-1',
+            summary: 'Verifier requested follow-up audit on the same dependency edge. | DA-121',
           }),
         ]);
       },
@@ -2338,16 +2338,16 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
           trace: false,
           replayPath: null,
           adapters: true,
-          taskId: "TK-099",
+          taskId: 'TK-099',
         },
       },
     );
   });
 
-  it("persists controlled delivery rehearsal artifacts and exposes replay-linked audit pointers", async () => {
+  it('persists controlled delivery rehearsal artifacts and exposes replay-linked audit pointers', async () => {
     await withRuntimeFixture(
       async (fixture) => {
-        await writeDeliveryTaskCardFixture(fixture.workspaceRoot, "TK-107");
+        await writeDeliveryTaskCardFixture(fixture.workspaceRoot, 'TK-107');
         const runtimeWithOverrides = fixture.runtime as unknown as {
           collectGitChangedPaths: () => Promise<string[]>;
         };
@@ -2355,18 +2355,18 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
 
         const runResult = await fixture.runtime.execute(CliCommandName.RUN);
 
-        expect(runResult.commandResult.details?.task_id).toBe("TK-107");
+        expect(runResult.commandResult.details?.task_id).toBe('TK-107');
         expect(runResult.commandResult.details?.delivery_rehearsal_enabled).toBe(true);
-        expect(runResult.commandResult.details?.delivery_rehearsal_status).toBe("applied");
-        expect(runResult.commandResult.details?.delivery_rehearsal_action).toBe("pr_draft");
-        expect(typeof runResult.commandResult.details?.delivery_rehearsal_path).toBe("string");
+        expect(runResult.commandResult.details?.delivery_rehearsal_status).toBe('applied');
+        expect(runResult.commandResult.details?.delivery_rehearsal_action).toBe('pr_draft');
+        expect(typeof runResult.commandResult.details?.delivery_rehearsal_path).toBe('string');
         expect(
-          runResult.commandResult.checks?.find((check) => check.id === "delivery_rehearsal")
+          runResult.commandResult.checks?.find((check) => check.id === 'delivery_rehearsal')
             ?.detail,
-        ).toContain("status=applied");
+        ).toContain('status=applied');
         expect(
           runResult.commandResult.artifacts?.some(
-            (artifact) => artifact.id === "delivery_rehearsal",
+            (artifact) => artifact.id === 'delivery_rehearsal',
           ),
         ).toBe(true);
         expect(
@@ -2381,29 +2381,29 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
           runResult.commandResult.details?.delivery_rehearsal_path,
         );
         const deliveryRehearsalPayload = JSON.parse(
-          await readFile(deliveryRehearsalPath, "utf8"),
+          await readFile(deliveryRehearsalPath, 'utf8'),
         ) as {
           rehearsalAction?: string;
           mode?: string;
           auditReplay?: { artifactId?: string; stageId?: string };
         };
-        expect(deliveryRehearsalPayload.rehearsalAction).toBe("pr_draft");
-        expect(deliveryRehearsalPayload.mode).toBe("rehearsal_only");
-        expect(deliveryRehearsalPayload.auditReplay?.artifactId).toBe("delivery_rehearsal");
-        expect(deliveryRehearsalPayload.auditReplay?.stageId).toBe("stage-delivery-rehearsal");
+        expect(deliveryRehearsalPayload.rehearsalAction).toBe('pr_draft');
+        expect(deliveryRehearsalPayload.mode).toBe('rehearsal_only');
+        expect(deliveryRehearsalPayload.auditReplay?.artifactId).toBe('delivery_rehearsal');
+        expect(deliveryRehearsalPayload.auditReplay?.stageId).toBe('stage-delivery-rehearsal');
 
         const reportPath = String(
-          runResult.commandResult.artifacts?.find((artifact) => artifact.id === "execution_report")
+          runResult.commandResult.artifacts?.find((artifact) => artifact.id === 'execution_report')
             ?.path,
         );
-        const executionReport = JSON.parse(await readFile(reportPath, "utf8")) as {
+        const executionReport = JSON.parse(await readFile(reportPath, 'utf8')) as {
           replayPointers?: Array<{ stageId?: string; artifactId?: string }>;
         };
         expect(
           executionReport.replayPointers?.some(
             (pointer) =>
-              pointer.stageId === "stage-delivery-rehearsal" &&
-              pointer.artifactId === "delivery_rehearsal",
+              pointer.stageId === 'stage-delivery-rehearsal' &&
+              pointer.artifactId === 'delivery_rehearsal',
           ),
         ).toBe(true);
       },
@@ -2413,16 +2413,16 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
           trace: false,
           replayPath: null,
           adapters: true,
-          taskId: "TK-107",
+          taskId: 'TK-107',
         },
       },
     );
   });
 
-  it("skips delivery rehearsal side effects during task-driven dry-run execution", async () => {
+  it('skips delivery rehearsal side effects during task-driven dry-run execution', async () => {
     await withRuntimeFixture(
       async (fixture) => {
-        await writeDeliveryTaskCardFixture(fixture.workspaceRoot, "TK-107");
+        await writeDeliveryTaskCardFixture(fixture.workspaceRoot, 'TK-107');
         const runtimeWithOverrides = fixture.runtime as unknown as {
           collectGitChangedPaths: () => Promise<string[]>;
         };
@@ -2431,11 +2431,11 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
         const runResult = await fixture.runtime.execute(CliCommandName.RUN);
 
         expect(runResult.commandResult.details?.delivery_rehearsal_enabled).toBe(true);
-        expect(runResult.commandResult.details?.delivery_rehearsal_status).toBe("dry_run");
+        expect(runResult.commandResult.details?.delivery_rehearsal_status).toBe('dry_run');
         expect(runResult.commandResult.details?.delivery_rehearsal_path).toBeNull();
         expect(
           runResult.commandResult.artifacts?.some(
-            (artifact) => artifact.id === "delivery_rehearsal",
+            (artifact) => artifact.id === 'delivery_rehearsal',
           ),
         ).toBe(false);
         expect(
@@ -2452,21 +2452,21 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
           trace: false,
           replayPath: null,
           adapters: true,
-          taskId: "TK-107",
+          taskId: 'TK-107',
         },
       },
     );
   });
 
-  it("auto-bootstraps workspace config when connect runs before explicit init", async () => {
+  it('auto-bootstraps workspace config when connect runs before explicit init', async () => {
     await withRuntimeFixture(
       async (fixture) => {
         await rm(fixture.workspace.configPath, { force: true });
         await fixture.runtime.execute(CliCommandName.CONNECT);
-        const configContent = await readFile(fixture.workspace.configPath, "utf8");
+        const configContent = await readFile(fixture.workspace.configPath, 'utf8');
 
         expect(configContent).toContain('schemaVersion: "1.1"');
-        expect(configContent).toContain("workspace:");
+        expect(configContent).toContain('workspace:');
       },
       {
         runtimeDebugOptions: {
@@ -2479,17 +2479,17 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
     );
   });
 
-  it("marks runtime availability unavailable when local probe fails despite configured available", async () => {
+  it('marks runtime availability unavailable when local probe fails despite configured available', async () => {
     await withRuntimeFixture(
       async (fixture) => {
         const connectResult = await fixture.runtime.execute(CliCommandName.CONNECT);
         const diagnosticsArtifactPath = connectResult.commandResult.artifacts?.find(
-          (artifact) => artifact.id === "connect_diagnostics",
+          (artifact) => artifact.id === 'connect_diagnostics',
         )?.path;
-        expect(typeof diagnosticsArtifactPath).toBe("string");
+        expect(typeof diagnosticsArtifactPath).toBe('string');
 
         const diagnosticsPayload = JSON.parse(
-          await readFile(String(diagnosticsArtifactPath), "utf8"),
+          await readFile(String(diagnosticsArtifactPath), 'utf8'),
         ) as {
           verification?: {
             tools?: Array<{
@@ -2505,7 +2505,7 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
         );
         expect(codexSnapshot?.configuredAvailability).toBe(AdapterAvailability.AVAILABLE);
         expect(codexSnapshot?.availabilityStatus).toBe(AgentAvailabilityStatus.UNAVAILABLE);
-        expect(codexSnapshot?.unavailableReasons ?? []).toContain("command_missing:codex:codex");
+        expect(codexSnapshot?.unavailableReasons ?? []).toContain('command_missing:codex:codex');
       },
       {
         runtimeDebugOptions: {
@@ -2517,7 +2517,7 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
         adapterLocalProbeOverrides: {
           [AdapterSurface.CODEX]: {
             availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
-            unavailableReasons: ["command_missing:codex:codex"],
+            unavailableReasons: ['command_missing:codex:codex'],
           },
           [AdapterSurface.CLAUDE_CODE]: {
             availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
@@ -2532,19 +2532,19 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
     );
   });
 
-  it("renders human-friendly unavailable reason details in doctor adapter checks", async () => {
+  it('renders human-friendly unavailable reason details in doctor adapter checks', async () => {
     await withRuntimeFixture(
       async (fixture) => {
         const doctorResult = await fixture.runtime.execute(CliCommandName.DOCTOR);
         const codexCheck = doctorResult.commandResult.checks?.find(
-          (check) => check.id === "adapter_tool_codex",
+          (check) => check.id === 'adapter_tool_codex',
         );
         const claudeCheck = doctorResult.commandResult.checks?.find(
-          (check) => check.id === "adapter_tool_claude-code",
+          (check) => check.id === 'adapter_tool_claude-code',
         );
 
         expect(codexCheck?.detail).toContain('missing command "codex"');
-        expect(claudeCheck?.detail).toContain("command exists but check failed");
+        expect(claudeCheck?.detail).toContain('command exists but check failed');
       },
       {
         runtimeDebugOptions: {
@@ -2556,12 +2556,12 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
         adapterLocalProbeOverrides: {
           [AdapterSurface.CODEX]: {
             availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
-            unavailableReasons: ["command_missing:codex:codex"],
+            unavailableReasons: ['command_missing:codex:codex'],
           },
           [AdapterSurface.CLAUDE_CODE]: {
             availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
             unavailableReasons: [
-              "command_probe_failed:claude-code:claude:exit_code_1:login_required",
+              'command_probe_failed:claude-code:claude:exit_code_1:login_required',
             ],
           },
           [AdapterSurface.GITHUB_COPILOT]: {
@@ -2573,17 +2573,17 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
     );
   });
 
-  it("surfaces codex credential failures as diagnostics and next actions", async () => {
+  it('surfaces codex credential failures as diagnostics and next actions', async () => {
     await withRuntimeFixture(
       async (fixture) => {
         const connectResult = await fixture.runtime.execute(CliCommandName.CONNECT);
         const diagnosticsArtifactPath = connectResult.commandResult.artifacts?.find(
-          (artifact) => artifact.id === "connect_diagnostics",
+          (artifact) => artifact.id === 'connect_diagnostics',
         )?.path;
-        expect(typeof diagnosticsArtifactPath).toBe("string");
+        expect(typeof diagnosticsArtifactPath).toBe('string');
 
         const diagnosticsPayload = JSON.parse(
-          await readFile(String(diagnosticsArtifactPath), "utf8"),
+          await readFile(String(diagnosticsArtifactPath), 'utf8'),
         ) as {
           verification?: {
             tools?: Array<{
@@ -2599,18 +2599,18 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
         );
 
         expect(codexSnapshot?.availabilityStatus).toBe(AgentAvailabilityStatus.UNAVAILABLE);
-        expect(codexSnapshot?.unavailableReasons ?? []).toContain("credential_missing:codex");
+        expect(codexSnapshot?.unavailableReasons ?? []).toContain('credential_missing:codex');
         expect(
           diagnosticsPayload.verification?.nextActions?.some((action) =>
-            action.includes("Authenticate or refresh login"),
+            action.includes('Authenticate or refresh login'),
           ),
         ).toBe(true);
 
         const doctorResult = await fixture.runtime.execute(CliCommandName.DOCTOR);
         const codexCheck = doctorResult.commandResult.checks?.find(
-          (check) => check.id === "adapter_tool_codex",
+          (check) => check.id === 'adapter_tool_codex',
         );
-        expect(codexCheck?.detail).toContain("missing required credentials or login state");
+        expect(codexCheck?.detail).toContain('missing required credentials or login state');
       },
       {
         runtimeDebugOptions: {
@@ -2624,17 +2624,17 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
     );
   });
 
-  it("surfaces github copilot credential failures as diagnostics and next actions", async () => {
+  it('surfaces github copilot credential failures as diagnostics and next actions', async () => {
     await withRuntimeFixture(
       async (fixture) => {
         const connectResult = await fixture.runtime.execute(CliCommandName.CONNECT);
         const diagnosticsArtifactPath = connectResult.commandResult.artifacts?.find(
-          (artifact) => artifact.id === "connect_diagnostics",
+          (artifact) => artifact.id === 'connect_diagnostics',
         )?.path;
-        expect(typeof diagnosticsArtifactPath).toBe("string");
+        expect(typeof diagnosticsArtifactPath).toBe('string');
 
         const diagnosticsPayload = JSON.parse(
-          await readFile(String(diagnosticsArtifactPath), "utf8"),
+          await readFile(String(diagnosticsArtifactPath), 'utf8'),
         ) as {
           verification?: {
             tools?: Array<{
@@ -2651,19 +2651,19 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
 
         expect(githubCopilotSnapshot?.availabilityStatus).toBe(AgentAvailabilityStatus.UNAVAILABLE);
         expect(githubCopilotSnapshot?.unavailableReasons ?? []).toContain(
-          "credential_missing:github-copilot",
+          'credential_missing:github-copilot',
         );
         expect(
           diagnosticsPayload.verification?.nextActions?.some((action) =>
-            action.includes("Authenticate or refresh login"),
+            action.includes('Authenticate or refresh login'),
           ),
         ).toBe(true);
 
         const doctorResult = await fixture.runtime.execute(CliCommandName.DOCTOR);
         const githubCopilotCheck = doctorResult.commandResult.checks?.find(
-          (check) => check.id === "adapter_tool_github-copilot",
+          (check) => check.id === 'adapter_tool_github-copilot',
         );
-        expect(githubCopilotCheck?.detail).toContain("missing required credentials or login state");
+        expect(githubCopilotCheck?.detail).toContain('missing required credentials or login state');
       },
       {
         runtimeDebugOptions: {
@@ -2677,17 +2677,17 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
     );
   });
 
-  it("surfaces claude code credential failures as diagnostics and next actions", async () => {
+  it('surfaces claude code credential failures as diagnostics and next actions', async () => {
     await withRuntimeFixture(
       async (fixture) => {
         const connectResult = await fixture.runtime.execute(CliCommandName.CONNECT);
         const diagnosticsArtifactPath = connectResult.commandResult.artifacts?.find(
-          (artifact) => artifact.id === "connect_diagnostics",
+          (artifact) => artifact.id === 'connect_diagnostics',
         )?.path;
-        expect(typeof diagnosticsArtifactPath).toBe("string");
+        expect(typeof diagnosticsArtifactPath).toBe('string');
 
         const diagnosticsPayload = JSON.parse(
-          await readFile(String(diagnosticsArtifactPath), "utf8"),
+          await readFile(String(diagnosticsArtifactPath), 'utf8'),
         ) as {
           verification?: {
             tools?: Array<{
@@ -2704,19 +2704,19 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
 
         expect(claudeCodeSnapshot?.availabilityStatus).toBe(AgentAvailabilityStatus.UNAVAILABLE);
         expect(claudeCodeSnapshot?.unavailableReasons ?? []).toContain(
-          "credential_missing:claude-code",
+          'credential_missing:claude-code',
         );
         expect(
           diagnosticsPayload.verification?.nextActions?.some((action) =>
-            action.includes("Authenticate or refresh login"),
+            action.includes('Authenticate or refresh login'),
           ),
         ).toBe(true);
 
         const doctorResult = await fixture.runtime.execute(CliCommandName.DOCTOR);
         const claudeCodeCheck = doctorResult.commandResult.checks?.find(
-          (check) => check.id === "adapter_tool_claude-code",
+          (check) => check.id === 'adapter_tool_claude-code',
         );
-        expect(claudeCodeCheck?.detail).toContain("missing required credentials or login state");
+        expect(claudeCodeCheck?.detail).toContain('missing required credentials or login state');
       },
       {
         runtimeDebugOptions: {
@@ -2730,17 +2730,17 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
     );
   });
 
-  it("persists safe_local boundary and final next-actions in doctor diagnostics when fix is enabled", async () => {
+  it('persists safe_local boundary and final next-actions in doctor diagnostics when fix is enabled', async () => {
     await withRuntimeFixture(
       async (fixture) => {
         const doctorResult = await fixture.runtime.execute(CliCommandName.DOCTOR);
         const diagnosticsArtifactPath = doctorResult.commandResult.artifacts?.find(
-          (artifact) => artifact.id === "doctor_diagnostics",
+          (artifact) => artifact.id === 'doctor_diagnostics',
         )?.path;
-        expect(typeof diagnosticsArtifactPath).toBe("string");
+        expect(typeof diagnosticsArtifactPath).toBe('string');
 
         const diagnosticsPayload = JSON.parse(
-          await readFile(String(diagnosticsArtifactPath), "utf8"),
+          await readFile(String(diagnosticsArtifactPath), 'utf8'),
         ) as {
           safeLocalBoundary?: {
             mode?: string;
@@ -2753,18 +2753,18 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
           nextActions?: string[];
         };
 
-        expect(diagnosticsPayload.safeLocalBoundary?.mode).toBe("safe_local_only");
+        expect(diagnosticsPayload.safeLocalBoundary?.mode).toBe('safe_local_only');
         expect(diagnosticsPayload.safeLocalBoundary?.fixEnabled).toBe(true);
         expect(diagnosticsPayload.safeLocalBoundary?.blockedMutations ?? []).toContain(
-          "local_model_model_pull",
+          'local_model_model_pull',
         );
         expect(
-          (diagnosticsPayload.checks ?? []).some((check) => check.id === "safe_local_fix"),
+          (diagnosticsPayload.checks ?? []).some((check) => check.id === 'safe_local_fix'),
         ).toBe(true);
         expect(
           (diagnosticsPayload.nextActions ?? []).some((action) =>
             action.includes(
-              "safe_local fix only creates writable workspace/config/memory baseline paths",
+              'safe_local fix only creates writable workspace/config/memory baseline paths',
             ),
           ),
         ).toBe(true);
@@ -2781,17 +2781,17 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
     );
   });
 
-  it("writes doctor diagnostics even when fix runs without adapters", async () => {
+  it('writes doctor diagnostics even when fix runs without adapters', async () => {
     await withRuntimeFixture(
       async (fixture) => {
         const doctorResult = await fixture.runtime.execute(CliCommandName.DOCTOR);
         const diagnosticsArtifactPath = doctorResult.commandResult.artifacts?.find(
-          (artifact) => artifact.id === "doctor_diagnostics",
+          (artifact) => artifact.id === 'doctor_diagnostics',
         )?.path;
-        expect(typeof diagnosticsArtifactPath).toBe("string");
+        expect(typeof diagnosticsArtifactPath).toBe('string');
 
         const diagnosticsPayload = JSON.parse(
-          await readFile(String(diagnosticsArtifactPath), "utf8"),
+          await readFile(String(diagnosticsArtifactPath), 'utf8'),
         ) as {
           options?: {
             adapters?: boolean;
@@ -2809,15 +2809,15 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
 
         expect(diagnosticsPayload.options?.adapters).toBe(false);
         expect(diagnosticsPayload.options?.fix).toBe(true);
-        expect(diagnosticsPayload.safeLocalBoundary?.mode).toBe("safe_local_only");
+        expect(diagnosticsPayload.safeLocalBoundary?.mode).toBe('safe_local_only');
         expect(
-          (diagnosticsPayload.checks ?? []).some((check) => check.id === "safe_local_fix"),
+          (diagnosticsPayload.checks ?? []).some((check) => check.id === 'safe_local_fix'),
         ).toBe(true);
         expect(diagnosticsPayload.verification).toBeUndefined();
         expect(
           (diagnosticsPayload.nextActions ?? []).some((action) =>
             action.includes(
-              "safe_local fix only creates writable workspace/config/memory baseline paths",
+              'safe_local fix only creates writable workspace/config/memory baseline paths',
             ),
           ),
         ).toBe(true);
@@ -2834,28 +2834,28 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
     );
   });
 
-  it("emits actionable next-actions for missing command and probe failures", async () => {
+  it('emits actionable next-actions for missing command and probe failures', async () => {
     await withRuntimeFixture(
       async (fixture) => {
         const connectResult = await fixture.runtime.execute(CliCommandName.CONNECT);
         const diagnosticsArtifactPath = connectResult.commandResult.artifacts?.find(
-          (artifact) => artifact.id === "connect_diagnostics",
+          (artifact) => artifact.id === 'connect_diagnostics',
         )?.path;
-        expect(typeof diagnosticsArtifactPath).toBe("string");
+        expect(typeof diagnosticsArtifactPath).toBe('string');
 
         const diagnosticsPayload = JSON.parse(
-          await readFile(String(diagnosticsArtifactPath), "utf8"),
+          await readFile(String(diagnosticsArtifactPath), 'utf8'),
         ) as {
           nextActions?: string[];
         };
         const nextActions = diagnosticsPayload.nextActions ?? [];
         expect(
           nextActions.some((action) =>
-            action.includes("Install missing local commands before connect/verify"),
+            action.includes('Install missing local commands before connect/verify'),
           ),
         ).toBe(true);
         expect(
-          nextActions.some((action) => action.includes("Some commands exist but probe failed")),
+          nextActions.some((action) => action.includes('Some commands exist but probe failed')),
         ).toBe(true);
       },
       {
@@ -2868,12 +2868,12 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
         adapterLocalProbeOverrides: {
           [AdapterSurface.CODEX]: {
             availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
-            unavailableReasons: ["command_missing:codex:codex"],
+            unavailableReasons: ['command_missing:codex:codex'],
           },
           [AdapterSurface.CLAUDE_CODE]: {
             availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
             unavailableReasons: [
-              "command_probe_failed:claude-code:claude:exit_code_1:login_required",
+              'command_probe_failed:claude-code:claude:exit_code_1:login_required',
             ],
           },
           [AdapterSurface.GITHUB_COPILOT]: {
@@ -2885,11 +2885,11 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
     );
   });
 
-  it("fails verify when required role routing has no available tool", async () => {
+  it('fails verify when required role routing has no available tool', async () => {
     const failingAdaptersConfig: AdaptersConfig = {
       roles: [
         {
-          roleId: "coder",
+          roleId: 'coder',
           roleProfileId: DefaultRoleProfileId.CODER,
           requiredCapabilities: [AgentCapability.TOOL_CALLING],
           required: true,
@@ -2907,7 +2907,7 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
           toolId: AdapterSurface.CODEX,
           enabled: true,
           availability: AdapterAvailability.UNAVAILABLE,
-          unavailableReasons: ["login_required"],
+          unavailableReasons: ['login_required'],
         },
       ],
     };
@@ -2930,13 +2930,13 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
     );
   });
 
-  it("returns adapter_verify operation when verify passes", async () => {
+  it('returns adapter_verify operation when verify passes', async () => {
     await withRuntimeFixture(
       async (fixture) => {
         const verifyResult = await fixture.runtime.execute(CliCommandName.VERIFY);
 
-        expect(verifyResult.commandResult.operation).toBe("adapter_verify");
-        expect(verifyResult.commandResult.details?.adapters_status).toBe("pass");
+        expect(verifyResult.commandResult.operation).toBe('adapter_verify');
+        expect(verifyResult.commandResult.details?.adapters_status).toBe('pass');
         expect(
           verifyResult.commandResult.experience?.roleProgress.some(
             (row) =>
@@ -2956,26 +2956,26 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
     );
   });
 
-  it("fails verify when only local-model fallback is available for unsupported required roles", async () => {
+  it('fails verify when only local-model fallback is available for unsupported required roles', async () => {
     const fetchMock = vi.fn(
       async () =>
         new Response(
           JSON.stringify({
             models: [
               {
-                name: "qwen2.5-coder:7b",
+                name: 'qwen2.5-coder:7b',
               },
             ],
           }),
           {
             status: 200,
             headers: {
-              "content-type": "application/json",
+              'content-type': 'application/json',
             },
           },
         ),
     );
-    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal('fetch', fetchMock);
 
     await withRuntimeFixture(
       async (fixture) => {
@@ -3010,37 +3010,37 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
     );
   });
 
-  it("keeps endpoint-backed ollama probe available when local binary is missing", async () => {
+  it('keeps endpoint-backed ollama probe available when local binary is missing', async () => {
     const fetchMock = vi.fn(
       async () =>
         new Response(
           JSON.stringify({
             models: [
               {
-                name: "qwen2.5-coder:7b",
+                name: 'qwen2.5-coder:7b',
               },
             ],
           }),
           {
             status: 200,
             headers: {
-              "content-type": "application/json",
+              'content-type': 'application/json',
             },
           },
         ),
     );
-    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal('fetch', fetchMock);
 
     await withRuntimeFixture(
       async (fixture) => {
         const connectResult = await fixture.runtime.execute(CliCommandName.CONNECT);
         const diagnosticsArtifactPath = connectResult.commandResult.artifacts?.find(
-          (artifact) => artifact.id === "connect_diagnostics",
+          (artifact) => artifact.id === 'connect_diagnostics',
         )?.path;
-        expect(typeof diagnosticsArtifactPath).toBe("string");
+        expect(typeof diagnosticsArtifactPath).toBe('string');
 
         const diagnosticsPayload = JSON.parse(
-          await readFile(String(diagnosticsArtifactPath), "utf8"),
+          await readFile(String(diagnosticsArtifactPath), 'utf8'),
         ) as {
           verification?: {
             tools?: Array<{
@@ -3056,7 +3056,7 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
 
         expect(ollamaSnapshot?.availabilityStatus).toBe(AgentAvailabilityStatus.AVAILABLE);
         expect(ollamaSnapshot?.unavailableReasons ?? []).not.toContain(
-          "command_missing:ollama:ollama",
+          'command_missing:ollama:ollama',
         );
       },
       {
@@ -3082,12 +3082,12 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
           },
         },
         commandProbeExecutor: async (command) => {
-          if (command === "ollama") {
+          if (command === 'ollama') {
             const error = new RuntimeError(
               GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED,
-              "spawn ollama ENOENT",
+              'spawn ollama ENOENT',
             ) as NodeJS.ErrnoException;
-            error.code = "ENOENT";
+            error.code = 'ENOENT';
             throw error;
           }
         },
@@ -3095,7 +3095,7 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
     );
   });
 
-  it("reports configuration_missing attribution for incomplete local-model config", async () => {
+  it('reports configuration_missing attribution for incomplete local-model config', async () => {
     const adaptersConfig = createRestrictedNetworkRehearsalAdaptersConfig();
     const ollamaTool = adaptersConfig.tools?.find((tool) => tool.toolId === AdapterSurface.OLLAMA);
     if (ollamaTool) {
@@ -3106,12 +3106,12 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
       async (fixture) => {
         const connectResult = await fixture.runtime.execute(CliCommandName.CONNECT);
         const diagnosticsArtifactPath = connectResult.commandResult.artifacts?.find(
-          (artifact) => artifact.id === "connect_diagnostics",
+          (artifact) => artifact.id === 'connect_diagnostics',
         )?.path;
-        expect(typeof diagnosticsArtifactPath).toBe("string");
+        expect(typeof diagnosticsArtifactPath).toBe('string');
 
         const diagnosticsPayload = JSON.parse(
-          await readFile(String(diagnosticsArtifactPath), "utf8"),
+          await readFile(String(diagnosticsArtifactPath), 'utf8'),
         ) as {
           nextActions?: string[];
           verification?: {
@@ -3128,15 +3128,15 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
         );
 
         expect(ollamaSnapshot?.unavailableReasons ?? []).toContain(
-          "local_model_config_missing:ollama:provider|endpoint|model",
+          'local_model_config_missing:ollama:provider|endpoint|model',
         );
-        expect(ollamaSnapshot?.failureAttributions ?? []).toContain("configuration_missing");
+        expect(ollamaSnapshot?.failureAttributions ?? []).toContain('configuration_missing');
         expect(
           diagnosticsPayload.verification?.failureAttributionSummary?.configuration_missing ?? 0,
         ).toBeGreaterThan(0);
         expect(
           (diagnosticsPayload.nextActions ?? []).some((action) =>
-            action.includes("Provide adapters.tools[].localModel"),
+            action.includes('Provide adapters.tools[].localModel'),
           ),
         ).toBe(true);
       },
@@ -3152,21 +3152,21 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
     );
   });
 
-  it("keeps restricted-network local fallback gated by required capabilities", async () => {
+  it('keeps restricted-network local fallback gated by required capabilities', async () => {
     const fetchMock = vi.fn(async (input: string | URL | Request) => {
-      if (String(input).includes("/api/tags")) {
+      if (String(input).includes('/api/tags')) {
         return new Response(
           JSON.stringify({
             models: [
               {
-                name: "qwen2.5-coder:7b",
+                name: 'qwen2.5-coder:7b',
               },
             ],
           }),
           {
             status: 200,
             headers: {
-              "content-type": "application/json",
+              'content-type': 'application/json',
             },
           },
         );
@@ -3174,18 +3174,18 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
 
       return new Response(
         JSON.stringify({
-          response: "restricted-network local fallback completed",
+          response: 'restricted-network local fallback completed',
           done: true,
         }),
         {
           status: 200,
           headers: {
-            "content-type": "application/json",
+            'content-type': 'application/json',
           },
         },
       );
     });
-    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal('fetch', fetchMock);
 
     await withRuntimeFixture(
       async (fixture) => {
@@ -3195,10 +3195,10 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
         runtimeWithOverrides.collectGitChangedPaths = async () => [];
 
         const runResult = await fixture.runtime.execute(CliCommandName.RUN);
-        expect(runResult.commandResult.details?.runtime_status).toBe("failed");
+        expect(runResult.commandResult.details?.runtime_status).toBe('failed');
         expect(
           runResult.commandResult.checks?.some(
-            (check) => check.id === "runtime" && check.detail.includes("status=failed"),
+            (check) => check.id === 'runtime' && check.detail.includes('status=failed'),
           ),
         ).toBe(true);
       },
@@ -3209,28 +3209,28 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
           trace: true,
           replayPath: null,
           restrictedNetwork: true,
-          restrictedReason: "ci_restricted_rehearsal",
+          restrictedReason: 'ci_restricted_rehearsal',
           allowLocalFallback: true,
         },
       },
     );
   });
 
-  it("supports restricted-network local fallback rehearsal during run when capability-compatible", async () => {
+  it('supports restricted-network local fallback rehearsal during run when capability-compatible', async () => {
     const fetchMock = vi.fn(async (input: string | URL | Request) => {
-      if (String(input).includes("/api/tags")) {
+      if (String(input).includes('/api/tags')) {
         return new Response(
           JSON.stringify({
             models: [
               {
-                name: "qwen2.5-coder:7b",
+                name: 'qwen2.5-coder:7b',
               },
             ],
           }),
           {
             status: 200,
             headers: {
-              "content-type": "application/json",
+              'content-type': 'application/json',
             },
           },
         );
@@ -3238,18 +3238,18 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
 
       return new Response(
         JSON.stringify({
-          response: "restricted-network local fallback completed",
+          response: 'restricted-network local fallback completed',
           done: true,
         }),
         {
           status: 200,
           headers: {
-            "content-type": "application/json",
+            'content-type': 'application/json',
           },
         },
       );
     });
-    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal('fetch', fetchMock);
 
     await withRuntimeFixture(
       async (fixture) => {
@@ -3260,12 +3260,12 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
 
         const runResult = await fixture.runtime.execute(CliCommandName.RUN);
         const diagnosticsTracePath = runResult.commandResult.artifacts?.find(
-          (artifact) => artifact.id === "diagnostics_trace",
+          (artifact) => artifact.id === 'diagnostics_trace',
         )?.path;
-        expect(runResult.commandResult.details?.runtime_status).toBe("succeeded");
-        expect(typeof diagnosticsTracePath).toBe("string");
+        expect(runResult.commandResult.details?.runtime_status).toBe('succeeded');
+        expect(typeof diagnosticsTracePath).toBe('string');
 
-        const tracePayload = JSON.parse(await readFile(String(diagnosticsTracePath), "utf8")) as {
+        const tracePayload = JSON.parse(await readFile(String(diagnosticsTracePath), 'utf8')) as {
           adapterInvocationSummary?: Array<{
             selectedSurface?: string;
             adapterSurface?: string;
@@ -3280,7 +3280,7 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
               stage.selectedSurface === AGENT_LOCAL_FALLBACK_SURFACE &&
               stage.adapterSurface === AdapterSurface.OLLAMA &&
               stage.localFallbackActivated === true &&
-              stage.restrictedReason === "ci_restricted_rehearsal",
+              stage.restrictedReason === 'ci_restricted_rehearsal',
           ),
         ).toBe(true);
       },
@@ -3291,7 +3291,7 @@ describe("CliGovernanceRuntime policy/review safeguards", () => {
           trace: true,
           replayPath: null,
           restrictedNetwork: true,
-          restrictedReason: "ci_restricted_rehearsal",
+          restrictedReason: 'ci_restricted_rehearsal',
           allowLocalFallback: true,
         },
       },

@@ -3,8 +3,8 @@ import {
   ChangeRiskLevel,
   ChangeRiskReasonCode,
   ChangeRiskRequiredAction,
-} from "@repo-ai-governor/core-change-risk";
-import { PolicyDecisionSource, PolicyGateEngine, PolicyGateRuleId } from "../src/index.js";
+} from '@repo-ai-governor/core-change-risk';
+import { PolicyDecisionSource, PolicyGateEngine, PolicyGateRuleId } from '../src/index.js';
 
 function createRiskEvaluationFixture(
   overrides: Partial<ChangeRiskEvaluationResult> = {},
@@ -14,26 +14,26 @@ function createRiskEvaluationFixture(
     riskReasons: [
       {
         code: ChangeRiskReasonCode.HIGH_RISK_COMMAND_CLASS,
-        message: "baseline reason",
-        evidence: ["command_class=code_edit"],
+        message: 'baseline reason',
+        evidence: ['command_class=code_edit'],
       },
     ],
     requiredAction: ChangeRiskRequiredAction.ALLOW,
     requiredReviewerRoles: [],
-    matchedPolicies: ["policy.risk.action.allow"],
+    matchedPolicies: ['policy.risk.action.allow'],
     ...overrides,
   };
 }
 
-describe("core-policy unit", () => {
-  it("upgrades allow decision to block when proposal approval is missing", () => {
+describe('core-policy unit', () => {
+  it('upgrades allow decision to block when proposal approval is missing', () => {
     const engine = new PolicyGateEngine();
     const result = engine.evaluate({
       riskEvaluation: createRiskEvaluationFixture(),
       context: {
-        executionId: "exec-policy-unit-001",
-        stageId: "stage-policy",
-        routeKey: "policy",
+        executionId: 'exec-policy-unit-001',
+        stageId: 'stage-policy',
+        routeKey: 'policy',
         proposalApproved: false,
         reviewVerifyConsecutiveFailures: 0,
       },

@@ -9,4 +9,4 @@ export type {
   PolicyGateRuleCondition,
   PolicyHitlFeedback,
   PolicyHitlFeedbackSchema,
-} from "./policy-gate.interface.js";
+} from './policy-gate.interface.js';

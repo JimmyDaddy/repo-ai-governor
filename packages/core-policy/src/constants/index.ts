@@ -6,4 +6,4 @@ export {
   POLICY_HITL_DECISION_VALUES,
   PolicyHitlDecision,
   POLICY_OUTCOME_SEVERITY,
-} from "./policy-gate.constant.js";
+} from './policy-gate.constant.js';

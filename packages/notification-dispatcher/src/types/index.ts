@@ -4,7 +4,7 @@ export type {
   NotificationPolicyOutcome,
   NotificationRiskLevelKey,
   NotificationRiskLevelPolicyMatrix,
-} from "./aliases/index.js";
+} from './aliases/index.js';
 export type {
   NotificationAuditRecord,
   NotificationChannelAttempt,
@@ -17,4 +17,4 @@ export type {
   NotificationProvider,
   NotificationProviderReceipt,
   NotificationProviderRequest,
-} from "./interfaces/index.js";
+} from './interfaces/index.js';

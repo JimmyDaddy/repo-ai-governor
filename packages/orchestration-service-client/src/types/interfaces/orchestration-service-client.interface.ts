@@ -1,4 +1,4 @@
-import type { MemoryProviderCompositionSummary } from "@repo-ai-governor/memory-provider-registry";
+import type { MemoryProviderCompositionSummary } from '@repo-ai-governor/memory-provider-registry';
 import type {
   OrchestrationClientSurface,
   OrchestrationExecutionKind,
@@ -7,7 +7,7 @@ import type {
   OrchestrationServiceHostKind,
   OrchestrationServiceLifecycleStatus,
   OrchestrationServiceTransportKind,
-} from "../../constants/index.js";
+} from '../../constants/index.js';
 
 export interface OrchestrationServiceHealthResponse {
   serviceHostKind: OrchestrationServiceHostKind;

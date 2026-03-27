@@ -1,1 +1,1 @@
-export { MemoryScope } from "./memory-scope.constant.js";
+export { MemoryScope } from './memory-scope.constant.js';

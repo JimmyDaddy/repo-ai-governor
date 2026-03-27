@@ -2,13 +2,13 @@ import {
   OrchestrationServiceHostKind,
   OrchestrationServiceLifecycleStatus,
   OrchestrationServiceTransportKind,
-} from "@repo-ai-governor/orchestration-service-client";
-import { GovernorErrorCode, RuntimeError, standardizeError } from "@repo-ai-governor/shared";
+} from '@repo-ai-governor/orchestration-service-client';
+import { GovernorErrorCode, RuntimeError, standardizeError } from '@repo-ai-governor/shared';
 import {
   LOCAL_ORCHESTRATION_SERVICE_SIDECAR_PROTOCOL_VERSION,
   LocalOrchestrationServiceSidecarOperation,
-} from "./constants/index.js";
-import { LocalOrchestrationServiceShell } from "./local-orchestration-service-shell.js";
+} from './constants/index.js';
+import { LocalOrchestrationServiceShell } from './local-orchestration-service-shell.js';
 import type {
   LocalOrchestrationServiceSidecarDispatchTable,
   LocalOrchestrationServiceSidecarHostDependencies,
@@ -16,7 +16,7 @@ import type {
   LocalOrchestrationServiceSidecarResponseEnvelope,
   LocalOrchestrationServiceSidecarShutdownResponse,
   LocalOrchestrationServiceSidecarStartExecutionPayload,
-} from "./types/index.js";
+} from './types/index.js';
 
 /**
  * Hosts the local orchestration service shell behind a Node IPC request/response loop.
@@ -50,7 +50,7 @@ export class LocalOrchestrationServiceSidecarHost
     if (!process.send) {
       throw new RuntimeError(
         GovernorErrorCode.MEMORY_SESSION_PAYLOAD_INVALID,
-        "Local orchestration sidecar host requires an IPC-enabled process.",
+        'Local orchestration sidecar host requires an IPC-enabled process.',
         {
           workspaceRoot: this.dependencies.workspaceRoot,
         },
@@ -58,12 +58,12 @@ export class LocalOrchestrationServiceSidecarHost
     }
 
     this.lifecycleStatus = OrchestrationServiceLifecycleStatus.READY;
-    process.on("message", this.boundMessageHandler);
+    process.on('message', this.boundMessageHandler);
   }
 
   public async dispose(): Promise<void> {
     this.lifecycleStatus = OrchestrationServiceLifecycleStatus.STOPPED;
-    process.off("message", this.boundMessageHandler);
+    process.off('message', this.boundMessageHandler);
   }
 
   public getHealth() {
@@ -78,36 +78,36 @@ export class LocalOrchestrationServiceSidecarHost
     return this.shell.getExecution(executionId);
   }
 
-  public listExecutions(request?: Parameters<LocalOrchestrationServiceShell["listExecutions"]>[0]) {
+  public listExecutions(request?: Parameters<LocalOrchestrationServiceShell['listExecutions']>[0]) {
     return this.shell.listExecutions(request);
   }
 
   public subscribeExecution(
-    request: Parameters<LocalOrchestrationServiceSidecarDispatchTable["subscribeExecution"]>[0],
+    request: Parameters<LocalOrchestrationServiceSidecarDispatchTable['subscribeExecution']>[0],
   ) {
     return this.shell.subscribeExecution(request);
   }
 
   public submitHitlDecision(
-    request: Parameters<LocalOrchestrationServiceSidecarDispatchTable["submitHitlDecision"]>[0],
+    request: Parameters<LocalOrchestrationServiceSidecarDispatchTable['submitHitlDecision']>[0],
   ) {
     return this.shell.submitHitlDecision(request);
   }
 
   public recoverExecution(
-    request: Parameters<LocalOrchestrationServiceSidecarDispatchTable["recoverExecution"]>[0],
+    request: Parameters<LocalOrchestrationServiceSidecarDispatchTable['recoverExecution']>[0],
   ) {
     return this.shell.recoverExecution(request);
   }
 
   public publishEvent(
-    request: Parameters<LocalOrchestrationServiceSidecarDispatchTable["publishEvent"]>[0],
+    request: Parameters<LocalOrchestrationServiceSidecarDispatchTable['publishEvent']>[0],
   ) {
     return this.shell.publishEvent(request);
   }
 
   public saveCheckpoint(
-    request: Parameters<LocalOrchestrationServiceSidecarDispatchTable["saveCheckpoint"]>[0],
+    request: Parameters<LocalOrchestrationServiceSidecarDispatchTable['saveCheckpoint']>[0],
   ) {
     return this.shell.saveCheckpoint(request);
   }
@@ -161,36 +161,36 @@ export class LocalOrchestrationServiceSidecarHost
         return this.getExecution(this.assertPayload<string>(payload, operation));
       case LocalOrchestrationServiceSidecarOperation.LIST_EXECUTIONS:
         return this.listExecutions(
-          payload as Parameters<LocalOrchestrationServiceSidecarDispatchTable["listExecutions"]>[0],
+          payload as Parameters<LocalOrchestrationServiceSidecarDispatchTable['listExecutions']>[0],
         );
       case LocalOrchestrationServiceSidecarOperation.SUBSCRIBE_EXECUTION:
         return this.subscribeExecution(
           this.assertPayload<
-            Parameters<LocalOrchestrationServiceSidecarDispatchTable["subscribeExecution"]>[0]
+            Parameters<LocalOrchestrationServiceSidecarDispatchTable['subscribeExecution']>[0]
           >(payload, operation),
         );
       case LocalOrchestrationServiceSidecarOperation.SUBMIT_HITL_DECISION:
         return this.submitHitlDecision(
           this.assertPayload<
-            Parameters<LocalOrchestrationServiceSidecarDispatchTable["submitHitlDecision"]>[0]
+            Parameters<LocalOrchestrationServiceSidecarDispatchTable['submitHitlDecision']>[0]
           >(payload, operation),
         );
       case LocalOrchestrationServiceSidecarOperation.RECOVER_EXECUTION:
         return this.recoverExecution(
           this.assertPayload<
-            Parameters<LocalOrchestrationServiceSidecarDispatchTable["recoverExecution"]>[0]
+            Parameters<LocalOrchestrationServiceSidecarDispatchTable['recoverExecution']>[0]
           >(payload, operation),
         );
       case LocalOrchestrationServiceSidecarOperation.PUBLISH_EVENT:
         return this.publishEvent(
           this.assertPayload<
-            Parameters<LocalOrchestrationServiceSidecarDispatchTable["publishEvent"]>[0]
+            Parameters<LocalOrchestrationServiceSidecarDispatchTable['publishEvent']>[0]
           >(payload, operation),
         );
       case LocalOrchestrationServiceSidecarOperation.SAVE_CHECKPOINT:
         return this.saveCheckpoint(
           this.assertPayload<
-            Parameters<LocalOrchestrationServiceSidecarDispatchTable["saveCheckpoint"]>[0]
+            Parameters<LocalOrchestrationServiceSidecarDispatchTable['saveCheckpoint']>[0]
           >(payload, operation),
         );
       case LocalOrchestrationServiceSidecarOperation.SHUTDOWN:
@@ -217,12 +217,12 @@ export class LocalOrchestrationServiceSidecarHost
   private isRequestEnvelope(
     message: unknown,
   ): message is LocalOrchestrationServiceSidecarRequestEnvelope {
-    if (!message || typeof message !== "object") {
+    if (!message || typeof message !== 'object') {
       return false;
     }
     const requestId = (message as { requestId?: unknown }).requestId;
     const operation = (message as { operation?: unknown }).operation;
-    return typeof requestId === "string" && typeof operation === "string";
+    return typeof requestId === 'string' && typeof operation === 'string';
   }
 
   private assertPayload<T>(

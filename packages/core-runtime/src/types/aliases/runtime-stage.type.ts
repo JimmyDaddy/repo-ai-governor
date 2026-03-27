@@ -1,4 +1,4 @@
-import type { RuntimeStageContext } from "../interfaces/runtime-stage.interface.js";
+import type { RuntimeStageContext } from '../interfaces/runtime-stage.interface.js';
 
 /**
  * Defines per-node stage input map keyed by node id.

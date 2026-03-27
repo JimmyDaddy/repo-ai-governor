@@ -1,10 +1,10 @@
-import type { ClaudeCodeExecRunner } from "@repo-ai-governor/adapter-claude-code";
-import { AgentCliExecOperation } from "@repo-ai-governor/adapter-sdk";
-import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
+import type { ClaudeCodeExecRunner } from '@repo-ai-governor/adapter-claude-code';
+import { AgentCliExecOperation } from '@repo-ai-governor/adapter-sdk';
+import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import {
   CliClaudeCodeExecFixtureEnvironmentKey,
   CliClaudeCodeExecFixtureMode,
-} from "../constants/claude-code-exec-fixture.constant.js";
+} from '../constants/claude-code-exec-fixture.constant.js';
 
 /**
  * Resolves deterministic Claude Code exec fixtures for gate and smoke execution paths.
@@ -21,7 +21,7 @@ export class CliClaudeCodeExecFixtureRuntime {
       return undefined;
     }
 
-    if (environment[CliClaudeCodeExecFixtureEnvironmentKey.ENABLE_FIXTURES]?.trim() !== "1") {
+    if (environment[CliClaudeCodeExecFixtureEnvironmentKey.ENABLE_FIXTURES]?.trim() !== '1') {
       throw new RuntimeError(
         GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
         `${CliClaudeCodeExecFixtureEnvironmentKey.EXEC_FIXTURE} requires ${CliClaudeCodeExecFixtureEnvironmentKey.ENABLE_FIXTURES}=1.`,
@@ -35,10 +35,10 @@ export class CliClaudeCodeExecFixtureRuntime {
     if (configuredMode === CliClaudeCodeExecFixtureMode.SUCCESS) {
       return async ({ prompt, operation }) => ({
         stdout:
-          operation === AgentCliExecOperation.PROBE || prompt.includes("Respond with exactly OK.")
-            ? "OK\n"
-            : "simulated claude code response\n",
-        stderr: "",
+          operation === AgentCliExecOperation.PROBE || prompt.includes('Respond with exactly OK.')
+            ? 'OK\n'
+            : 'simulated claude code response\n',
+        stderr: '',
         exitCode: 0,
         signal: null,
         elapsedMs: 1,
@@ -51,11 +51,11 @@ export class CliClaudeCodeExecFixtureRuntime {
           request.operation === AgentCliExecOperation.PROBE
             ? GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED
             : GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
-          "Claude Code fixture simulated credential failure.",
+          'Claude Code fixture simulated credential failure.',
           {
-            surface: "claude-code",
+            surface: 'claude-code',
             operation: request.operation,
-            stderr: "Authentication required. Run `claude auth login` first.",
+            stderr: 'Authentication required. Run `claude auth login` first.',
           },
         );
       };

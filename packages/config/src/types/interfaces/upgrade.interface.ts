@@ -4,8 +4,8 @@ import type {
   UpgradeConfirmationReason,
   UpgradeMigrationSuggestionType,
   UpgradeSchemaDiffType,
-} from "../../constants/schema-upgrade.constant.js";
-import type { GovernorConfig } from "./governor.interface.js";
+} from '../../constants/schema-upgrade.constant.js';
+import type { GovernorConfig } from './governor.interface.js';
 
 /**
  * Defines one schema diff row for upgrade analysis.

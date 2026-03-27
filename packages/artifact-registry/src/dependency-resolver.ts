@@ -1,5 +1,5 @@
-import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
-import type { ArtifactRegistry } from "./artifact-registry.js";
+import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
+import type { ArtifactRegistry } from './artifact-registry.js';
 import {
   ALL_ARTIFACT_FAILURE_ACTIONS,
   ALL_ARTIFACT_RESOLUTION_POLICIES,
@@ -10,14 +10,14 @@ import {
   ArtifactDependencyResolutionStatus,
   ArtifactDependencyUnresolvedReason,
   RESOLVABLE_ARTIFACT_STATUSES,
-} from "./constants/index.js";
+} from './constants/index.js';
 import type {
   ArtifactDependencyResolutionResult,
   ArtifactDependencyUnresolvedItem,
   ArtifactRegistryRecord,
   ParsedArtifactDependency,
   ResolveArtifactDependenciesOptions,
-} from "./types/index.js";
+} from './types/index.js';
 
 /**
  * Resolves task dependency artifacts using policy-driven version matching rules.
@@ -37,23 +37,23 @@ export class ArtifactDependencyResolver {
   public async resolve(
     options: ResolveArtifactDependenciesOptions,
   ): Promise<ArtifactDependencyResolutionResult> {
-    if (!options || typeof options !== "object") {
+    if (!options || typeof options !== 'object') {
       throw new RuntimeError(
         GovernorErrorCode.ARTIFACT_DEPENDENCY_EXPRESSION_INVALID,
-        "Dependency resolution options must be an object.",
+        'Dependency resolution options must be an object.',
       );
     }
 
-    const consumerTaskId = this.readRequiredString(options.consumerTaskId, "consumerTaskId");
+    const consumerTaskId = this.readRequiredString(options.consumerTaskId, 'consumerTaskId');
     const resolutionPolicy = this.readResolutionPolicy(options.resolutionPolicy);
     const missingArtifactAction = this.readFailureAction(
       options.missingArtifactAction,
-      "missingArtifactAction",
+      'missingArtifactAction',
       ArtifactDependencyFailureAction.BLOCK,
     );
     const versionMismatchAction = this.readFailureAction(
       options.versionMismatchAction,
-      "versionMismatchAction",
+      'versionMismatchAction',
       ArtifactDependencyFailureAction.ESCALATE,
     );
     const parsedDependencies = this.parseDependencyExpressions(options.dependsOnArtifacts);
@@ -135,7 +135,7 @@ export class ArtifactDependencyResolver {
         action: missingArtifactAction,
         message:
           `Dependency artifact "${dependency.rawExpression}" has no resolvable versions ` +
-          `(allowed statuses: ${Array.from(RESOLVABLE_ARTIFACT_STATUSES).join(", ")}).`,
+          `(allowed statuses: ${Array.from(RESOLVABLE_ARTIFACT_STATUSES).join(', ')}).`,
       };
     }
 
@@ -161,7 +161,7 @@ export class ArtifactDependencyResolver {
         `Dependency artifact "${dependency.rawExpression}" cannot be resolved by policy ` +
         `"${resolutionPolicy}" with available versions ${resolvableVersions
           .map((artifact) => artifact.artifactVersion)
-          .join(", ")}.`,
+          .join(', ')}.`,
     };
   }
 
@@ -193,7 +193,7 @@ export class ArtifactDependencyResolver {
       return candidates[0];
     }
 
-    if (dependency.constraint.startsWith("^")) {
+    if (dependency.constraint.startsWith('^')) {
       const major = this.parseMajorVersion(dependency.constraint.slice(1));
       return candidates.find(
         (candidate) => this.parseMajorVersion(candidate.artifactVersion) === major,
@@ -220,7 +220,7 @@ export class ArtifactDependencyResolver {
     }
 
     return dependsOnArtifacts.map((rawExpression, index) => {
-      if (typeof rawExpression !== "string" || rawExpression.trim().length === 0) {
+      if (typeof rawExpression !== 'string' || rawExpression.trim().length === 0) {
         throw new RuntimeError(
           GovernorErrorCode.ARTIFACT_DEPENDENCY_EXPRESSION_INVALID,
           `Field "dependsOnArtifacts[${index}]" must be a non-empty string.`,
@@ -240,7 +240,7 @@ export class ArtifactDependencyResolver {
         );
       }
 
-      const artifactId = this.readRequiredString(matched.groups.artifactId, "artifactId");
+      const artifactId = this.readRequiredString(matched.groups.artifactId, 'artifactId');
       const constraint = matched.groups.constraint?.trim();
 
       return {
@@ -266,7 +266,7 @@ export class ArtifactDependencyResolver {
     if (!ALL_ARTIFACT_RESOLUTION_POLICIES.has(candidate)) {
       throw new RuntimeError(
         GovernorErrorCode.ARTIFACT_DEPENDENCY_EXPRESSION_INVALID,
-        `resolutionPolicy must be one of ${Array.from(ALL_ARTIFACT_RESOLUTION_POLICIES).join(", ")}.`,
+        `resolutionPolicy must be one of ${Array.from(ALL_ARTIFACT_RESOLUTION_POLICIES).join(', ')}.`,
         {
           value: candidate,
         },
@@ -295,7 +295,7 @@ export class ArtifactDependencyResolver {
     if (!ALL_ARTIFACT_FAILURE_ACTIONS.has(candidate)) {
       throw new RuntimeError(
         GovernorErrorCode.ARTIFACT_DEPENDENCY_EXPRESSION_INVALID,
-        `Field "${fieldName}" must be one of ${Array.from(ALL_ARTIFACT_FAILURE_ACTIONS).join(", ")}.`,
+        `Field "${fieldName}" must be one of ${Array.from(ALL_ARTIFACT_FAILURE_ACTIONS).join(', ')}.`,
         {
           fieldName,
           value: candidate,
@@ -360,7 +360,7 @@ export class ArtifactDependencyResolver {
    * @returns Trimmed string.
    */
   private readRequiredString(candidate: unknown, fieldName: string): string {
-    if (typeof candidate !== "string" || candidate.trim().length === 0) {
+    if (typeof candidate !== 'string' || candidate.trim().length === 0) {
       throw new RuntimeError(
         GovernorErrorCode.ARTIFACT_DEPENDENCY_EXPRESSION_INVALID,
         `Field "${fieldName}" must be a non-empty string.`,
@@ -380,8 +380,8 @@ export class ArtifactDependencyResolver {
    * @returns Major version number.
    */
   private parseMajorVersion(version: string): number {
-    const normalizedVersion = version.trim().replace(/^v/u, "");
-    const majorToken = normalizedVersion.split(".")[0] ?? "0";
+    const normalizedVersion = version.trim().replace(/^v/u, '');
+    const majorToken = normalizedVersion.split('.')[0] ?? '0';
     const majorVersion = Number.parseInt(majorToken, 10);
 
     if (!Number.isFinite(majorVersion)) {
@@ -402,6 +402,6 @@ export class ArtifactDependencyResolver {
   private isResolvedArtifact(
     row: ArtifactRegistryRecord | ArtifactDependencyUnresolvedItem,
   ): row is ArtifactRegistryRecord {
-    return "artifactId" in row;
+    return 'artifactId' in row;
   }
 }

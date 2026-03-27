@@ -4,8 +4,8 @@ import type {
   DependencyResolutionStatus,
   ListAuditRecordsOptions,
   PersistedAuditRecord,
-} from "@repo-ai-governor/core-session";
-import type { ReportStatusBreakdown } from "../aliases/index.js";
+} from '@repo-ai-governor/core-session';
+import type { ReportStatusBreakdown } from '../aliases/index.js';
 
 /**
  * Defines one adapter contract for reading persisted audit records.
@@ -106,7 +106,7 @@ export interface ExecutionReportPromotionSummary {
   failureReasonCounts: Record<string, number>;
   phaseResults: Array<{
     phase: string;
-    status: "completed" | "skipped";
+    status: 'completed' | 'skipped';
     candidateCount: number;
     detail: string;
   }>;

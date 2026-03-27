@@ -3,14 +3,14 @@ import {
   ChangeRiskLevel,
   ChangeRiskReasonCode,
   ChangeRiskRequiredAction,
-} from "@repo-ai-governor/core-change-risk";
-import { GovernanceReviewerRole, GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
+} from '@repo-ai-governor/core-change-risk';
+import { GovernanceReviewerRole, GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import {
   PolicyDecisionSource,
   PolicyGateEngine,
   PolicyGateRuleId,
   PolicyHitlDecision,
-} from "../src/index.js";
+} from '../src/index.js';
 
 /**
  * Creates baseline risk evaluation payload for policy smoke tests.
@@ -25,27 +25,27 @@ function createRiskEvaluationFixture(
     riskReasons: [
       {
         code: ChangeRiskReasonCode.HIGH_RISK_COMMAND_CLASS,
-        message: "baseline reason",
-        evidence: ["command_class=code_edit"],
+        message: 'baseline reason',
+        evidence: ['command_class=code_edit'],
       },
     ],
     requiredAction: ChangeRiskRequiredAction.ALLOW,
     requiredReviewerRoles: [],
-    matchedPolicies: ["policy.risk.action.allow"],
+    matchedPolicies: ['policy.risk.action.allow'],
     ...overrides,
   };
 }
 
-describe("PolicyGateEngine smoke", () => {
-  it("keeps allow when baseline risk requires no manual gate", () => {
+describe('PolicyGateEngine smoke', () => {
+  it('keeps allow when baseline risk requires no manual gate', () => {
     const policyGateEngine = new PolicyGateEngine();
 
     const result = policyGateEngine.evaluate({
       riskEvaluation: createRiskEvaluationFixture(),
       context: {
-        executionId: "exec-policy-001",
-        stageId: "stage-policy",
-        routeKey: "policy",
+        executionId: 'exec-policy-001',
+        stageId: 'stage-policy',
+        routeKey: 'policy',
         proposalApproved: true,
         reviewVerifyConsecutiveFailures: 0,
       },
@@ -57,18 +57,18 @@ describe("PolicyGateEngine smoke", () => {
     expect(result.matchedRuleIds).toEqual([]);
   });
 
-  it("maps risk confirm action to confirm policy outcome and requires HITL", () => {
+  it('maps risk confirm action to confirm policy outcome and requires HITL', () => {
     const policyGateEngine = new PolicyGateEngine();
 
     const result = policyGateEngine.evaluate({
       riskEvaluation: createRiskEvaluationFixture({
         requiredAction: ChangeRiskRequiredAction.CONFIRM,
-        matchedPolicies: ["policy.risk.action.confirm"],
+        matchedPolicies: ['policy.risk.action.confirm'],
       }),
       context: {
-        executionId: "exec-policy-002",
-        stageId: "stage-policy",
-        routeKey: "policy",
+        executionId: 'exec-policy-002',
+        stageId: 'stage-policy',
+        routeKey: 'policy',
         proposalApproved: true,
         reviewVerifyConsecutiveFailures: 0,
       },
@@ -80,7 +80,7 @@ describe("PolicyGateEngine smoke", () => {
     expect(result.matchedRuleIds).toContain(PolicyGateRuleId.RISK_ACTION_CONFIRM);
   });
 
-  it("blocks when proposal approval is missing", () => {
+  it('blocks when proposal approval is missing', () => {
     const policyGateEngine = new PolicyGateEngine();
 
     const result = policyGateEngine.evaluate({
@@ -88,9 +88,9 @@ describe("PolicyGateEngine smoke", () => {
         requiredAction: ChangeRiskRequiredAction.ALLOW,
       }),
       context: {
-        executionId: "exec-policy-003",
-        stageId: "stage-policy",
-        routeKey: "policy",
+        executionId: 'exec-policy-003',
+        stageId: 'stage-policy',
+        routeKey: 'policy',
         proposalApproved: false,
         reviewVerifyConsecutiveFailures: 0,
       },
@@ -101,7 +101,7 @@ describe("PolicyGateEngine smoke", () => {
     expect(result.requiredReviewerRoles).toEqual([GovernanceReviewerRole.MAINTAINER]);
   });
 
-  it("escalates when review-verify failures exceed threshold", () => {
+  it('escalates when review-verify failures exceed threshold', () => {
     const policyGateEngine = new PolicyGateEngine({
       reviewVerifyFailureEscalationThreshold: 2,
     });
@@ -111,9 +111,9 @@ describe("PolicyGateEngine smoke", () => {
         requiredAction: ChangeRiskRequiredAction.ALLOW,
       }),
       context: {
-        executionId: "exec-policy-004",
-        stageId: "stage-policy",
-        routeKey: "policy",
+        executionId: 'exec-policy-004',
+        stageId: 'stage-policy',
+        routeKey: 'policy',
         proposalApproved: true,
         reviewVerifyConsecutiveFailures: 2,
       },
@@ -124,17 +124,17 @@ describe("PolicyGateEngine smoke", () => {
     expect(result.shouldTriggerHitl).toBe(true);
   });
 
-  it("applies HITL feedback and resolves final policy outcome", () => {
+  it('applies HITL feedback and resolves final policy outcome', () => {
     const policyGateEngine = new PolicyGateEngine();
     const evaluationResult = policyGateEngine.evaluate({
       riskEvaluation: createRiskEvaluationFixture({
         requiredAction: ChangeRiskRequiredAction.CONFIRM,
-        matchedPolicies: ["policy.risk.action.confirm"],
+        matchedPolicies: ['policy.risk.action.confirm'],
       }),
       context: {
-        executionId: "exec-policy-005",
-        stageId: "stage-policy",
-        routeKey: "policy",
+        executionId: 'exec-policy-005',
+        stageId: 'stage-policy',
+        routeKey: 'policy',
         proposalApproved: true,
         reviewVerifyConsecutiveFailures: 0,
       },
@@ -142,40 +142,40 @@ describe("PolicyGateEngine smoke", () => {
 
     const approvedResolution = policyGateEngine.applyHitlFeedback(evaluationResult, {
       decision: PolicyHitlDecision.APPROVE,
-      reason: "human reviewer approved",
-      constraints: ["no force push"],
+      reason: 'human reviewer approved',
+      constraints: ['no force push'],
     });
     const rejectedResolution = policyGateEngine.applyHitlFeedback(evaluationResult, {
       decision: PolicyHitlDecision.REJECT,
-      reason: "change violates release policy",
+      reason: 'change violates release policy',
     });
     const reviseResolution = policyGateEngine.applyHitlFeedback(evaluationResult, {
       decision: PolicyHitlDecision.REVISE,
-      reason: "requires patch update and re-check",
+      reason: 'requires patch update and re-check',
     });
 
     expect(approvedResolution.finalOutcome).toBe(ChangeRiskRequiredAction.ALLOW);
     expect(rejectedResolution.finalOutcome).toBe(ChangeRiskRequiredAction.BLOCK);
     expect(reviseResolution.finalOutcome).toBe(ChangeRiskRequiredAction.ESCALATE);
     expect(approvedResolution.auditRecord.matchedPolicies).toContain(
-      "policy.hitl.feedback.approve",
+      'policy.hitl.feedback.approve',
     );
-    expect(reviseResolution.auditRecord.matchedPolicies).toContain("policy.hitl.feedback.revise");
+    expect(reviseResolution.auditRecord.matchedPolicies).toContain('policy.hitl.feedback.revise');
   });
 
-  it("throws standardized error for invalid risk level", () => {
+  it('throws standardized error for invalid risk level', () => {
     const policyGateEngine = new PolicyGateEngine();
 
     expect(() =>
       policyGateEngine.evaluate({
         riskEvaluation: {
           ...createRiskEvaluationFixture(),
-          riskLevel: "not-a-valid-level" as ChangeRiskLevel,
+          riskLevel: 'not-a-valid-level' as ChangeRiskLevel,
         },
         context: {
-          executionId: "exec-policy-007",
-          stageId: "stage-policy",
-          routeKey: "policy",
+          executionId: 'exec-policy-007',
+          stageId: 'stage-policy',
+          routeKey: 'policy',
           proposalApproved: true,
           reviewVerifyConsecutiveFailures: 0,
         },
@@ -186,12 +186,12 @@ describe("PolicyGateEngine smoke", () => {
       policyGateEngine.evaluate({
         riskEvaluation: {
           ...createRiskEvaluationFixture(),
-          riskLevel: "not-a-valid-level" as ChangeRiskLevel,
+          riskLevel: 'not-a-valid-level' as ChangeRiskLevel,
         },
         context: {
-          executionId: "exec-policy-007",
-          stageId: "stage-policy",
-          routeKey: "policy",
+          executionId: 'exec-policy-007',
+          stageId: 'stage-policy',
+          routeKey: 'policy',
           proposalApproved: true,
           reviewVerifyConsecutiveFailures: 0,
         },
@@ -202,16 +202,16 @@ describe("PolicyGateEngine smoke", () => {
     }
   });
 
-  it("throws standardized error for invalid HITL feedback", () => {
+  it('throws standardized error for invalid HITL feedback', () => {
     const policyGateEngine = new PolicyGateEngine();
     const evaluationResult = policyGateEngine.evaluate({
       riskEvaluation: createRiskEvaluationFixture({
         requiredAction: ChangeRiskRequiredAction.CONFIRM,
       }),
       context: {
-        executionId: "exec-policy-006",
-        stageId: "stage-policy",
-        routeKey: "policy",
+        executionId: 'exec-policy-006',
+        stageId: 'stage-policy',
+        routeKey: 'policy',
         proposalApproved: true,
         reviewVerifyConsecutiveFailures: 0,
       },
@@ -220,14 +220,14 @@ describe("PolicyGateEngine smoke", () => {
     expect(() =>
       policyGateEngine.applyHitlFeedback(evaluationResult, {
         decision: PolicyHitlDecision.APPROVE,
-        reason: "",
+        reason: '',
       }),
     ).toThrowError(RuntimeError);
 
     try {
       policyGateEngine.applyHitlFeedback(evaluationResult, {
         decision: PolicyHitlDecision.APPROVE,
-        reason: "",
+        reason: '',
       });
     } catch (error) {
       const runtimeError = error as RuntimeError;

@@ -3,7 +3,7 @@ import type {
   AgentCliExecRunner,
   AgentCliExecRunnerRequest,
   AgentCliExecRunnerResult,
-} from "@repo-ai-governor/adapter-sdk";
+} from '@repo-ai-governor/adapter-sdk';
 
 export interface GithubCopilotExecRunnerRequest extends AgentCliExecRunnerRequest {
   commandArgumentsPrefix: string[];

@@ -1,14 +1,14 @@
-import type { ProcessCompiler } from "@repo-ai-governor/core-process";
-import type { LangGraphRuntimeBackend } from "@repo-ai-governor/core-runtime-langgraph";
+import type { ProcessCompiler } from '@repo-ai-governor/core-process';
+import type { LangGraphRuntimeBackend } from '@repo-ai-governor/core-runtime-langgraph';
 import type {
   ProcessRuntimeBackendKind,
   ProcessRuntimeParityMode,
   ProcessRuntimeParitySeverity,
-} from "../../constants/runtime.constant.js";
-import type { ProcessRuntimeEngine } from "../../process-runtime-engine.js";
-import type { RuntimeStageHandler } from "../aliases/runtime-stage.type.js";
-import type { RuntimeExecuteOptions } from "./runtime-control.interface.js";
-import type { RuntimeExecutionResult } from "./runtime-execution.interface.js";
+} from '../../constants/runtime.constant.js';
+import type { ProcessRuntimeEngine } from '../../process-runtime-engine.js';
+import type { RuntimeStageHandler } from '../aliases/runtime-stage.type.js';
+import type { RuntimeExecuteOptions } from './runtime-control.interface.js';
+import type { RuntimeExecutionResult } from './runtime-execution.interface.js';
 
 export interface ProcessRuntimeLifecycleEvent {
   type: string;
@@ -119,14 +119,14 @@ export interface ProcessRuntimeParitySnapshot {
 }
 
 export type ProcessRuntimeParityDimension =
-  | "prepared_execution_profile"
-  | "output_contract"
-  | "artifact_state"
-  | "audit_state"
-  | "review_state"
-  | "hitl_state"
-  | "recovery_state"
-  | "execution_state";
+  | 'prepared_execution_profile'
+  | 'output_contract'
+  | 'artifact_state'
+  | 'audit_state'
+  | 'review_state'
+  | 'hitl_state'
+  | 'recovery_state'
+  | 'execution_state';
 
 export interface ProcessRuntimeParityDiff {
   dimension: ProcessRuntimeParityDimension;

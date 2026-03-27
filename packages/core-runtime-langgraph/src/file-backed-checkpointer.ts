@@ -1,19 +1,19 @@
-import { existsSync } from "node:fs";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { existsSync } from 'node:fs';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
 
-import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
+import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import {
   LANGGRAPH_FILE_CHECKPOINTER_DIRECTORY_NAME,
   LANGGRAPH_FILE_CHECKPOINTER_FILE_NAME,
-} from "./constants/index.js";
-import { LangGraphCheckpointerBase } from "./langgraph-checkpointer.abstract.js";
+} from './constants/index.js';
+import { LangGraphCheckpointerBase } from './langgraph-checkpointer.abstract.js';
 import type {
   LangGraphCheckpointEnvelope,
   LangGraphFileCheckpointerOptions,
   LangGraphRecoveredExecution,
   LangGraphSaveCheckpointOptions,
-} from "./types/index.js";
+} from './types/index.js';
 
 /**
  * Persists one checkpoint envelope per execution/session namespace as JSON.
@@ -39,17 +39,17 @@ export class LangGraphFileCheckpointer extends LangGraphCheckpointerBase {
     const checkpointPath = resolve(directoryPath, LANGGRAPH_FILE_CHECKPOINTER_FILE_NAME);
     const checkpointEnvelope = this.createCheckpointEnvelope(
       options,
-      "file-backed",
+      'file-backed',
       checkpointPath,
     );
 
     try {
       await mkdir(directoryPath, { recursive: true });
-      await writeFile(checkpointPath, JSON.stringify(checkpointEnvelope, null, 2), "utf8");
+      await writeFile(checkpointPath, JSON.stringify(checkpointEnvelope, null, 2), 'utf8');
     } catch {
       throw new RuntimeError(
         GovernorErrorCode.PROCESS_RUNTIME_CHECKPOINT_WRITE_FAILED,
-        "Failed to persist LangGraph checkpoint to local file storage.",
+        'Failed to persist LangGraph checkpoint to local file storage.',
         {
           checkpointPath,
           executionId: options.plan.executionId,
@@ -72,7 +72,7 @@ export class LangGraphFileCheckpointer extends LangGraphCheckpointerBase {
     }
 
     try {
-      const rawContent = await readFile(checkpointPath, "utf8");
+      const rawContent = await readFile(checkpointPath, 'utf8');
       const parsedContent = JSON.parse(rawContent) as LangGraphCheckpointEnvelope;
       this.assertCheckpointEnvelope(
         parsedContent,
@@ -89,7 +89,7 @@ export class LangGraphFileCheckpointer extends LangGraphCheckpointerBase {
 
       throw new RuntimeError(
         GovernorErrorCode.PROCESS_RUNTIME_CHECKPOINT_READ_FAILED,
-        "Failed to read LangGraph checkpoint from local file storage.",
+        'Failed to read LangGraph checkpoint from local file storage.',
         {
           checkpointPath,
           executionId,

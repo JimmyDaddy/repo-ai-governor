@@ -1,5 +1,5 @@
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 import {
   IDE_SURFACE_REGISTRY,
@@ -11,14 +11,14 @@ import {
   IDE_WRAPPER_SUPPORTED_SURFACES,
   IdeCommandWrapper,
   IdeEntrySurface,
-} from "../src/main.js";
+} from '../src/main.js';
 
-describe("IDE wrapper contract alignment", () => {
-  it("keeps command-wrapper contract JSON aligned with runtime registry", () => {
+describe('IDE wrapper contract alignment', () => {
+  it('keeps command-wrapper contract JSON aligned with runtime registry', () => {
     const commandWrapperContract = JSON.parse(
       readFileSync(
-        resolve(process.cwd(), "integrations/ide/contracts/command-wrapper.contract.json"),
-        "utf8",
+        resolve(process.cwd(), 'integrations/ide/contracts/command-wrapper.contract.json'),
+        'utf8',
       ),
     ) as {
       supportedCommands: string[];
@@ -41,11 +41,11 @@ describe("IDE wrapper contract alignment", () => {
     ).toEqual(IDE_SURFACE_REGISTRY.map((surfaceContract) => surfaceContract.surfaceId));
   });
 
-  it("keeps standards-injection contract JSON aligned with wrapper defaults", () => {
+  it('keeps standards-injection contract JSON aligned with wrapper defaults', () => {
     const standardsInjectionContract = JSON.parse(
       readFileSync(
-        resolve(process.cwd(), "integrations/ide/contracts/standards-injection.contract.json"),
-        "utf8",
+        resolve(process.cwd(), 'integrations/ide/contracts/standards-injection.contract.json'),
+        'utf8',
       ),
     ) as {
       defaultSourceIds: string[];

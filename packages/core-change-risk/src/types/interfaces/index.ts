@@ -3,4 +3,4 @@ export type {
   ChangeRiskEvaluatorOptions,
   ChangeRiskFactsInput,
   ChangeRiskReason,
-} from "./change-risk.interface.js";
+} from './change-risk.interface.js';

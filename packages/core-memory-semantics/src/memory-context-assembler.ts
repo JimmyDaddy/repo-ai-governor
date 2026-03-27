@@ -4,7 +4,7 @@ import {
   MEMORY_PROMOTION_FORBIDDEN_SENSITIVITY_LABELS,
   MemoryContextAssemblyOutcome,
   MemoryContextPolicyAction,
-} from "./constants/index.js";
+} from './constants/index.js';
 import type {
   MemoryContextAssemblyRequest,
   MemoryContextAssemblyResult,
@@ -12,19 +12,19 @@ import type {
   MemoryContextPolicySummary,
   MemoryRecalledRecord,
   MemorySourceRef,
-} from "./types/index.js";
+} from './types/index.js';
 
-const MEMORY_CONTEXT_ALLOWED_RUNTIME_VISIBILITY = ["internal", "public", "runtime"] as const;
+const MEMORY_CONTEXT_ALLOWED_RUNTIME_VISIBILITY = ['internal', 'public', 'runtime'] as const;
 const MEMORY_CONTEXT_REDACTED_SUMMARY_BY_REASON = {
-  missing_sensitivity_labels: "[redacted: sensitivity_labels_required]",
-  sensitivity_policy: "[redacted: sensitivity_policy]",
-  visibility_policy: "[redacted: visibility_policy]",
-  blocked_sensitivity_policy: "[blocked: sensitivity_policy]",
+  missing_sensitivity_labels: '[redacted: sensitivity_labels_required]',
+  sensitivity_policy: '[redacted: sensitivity_policy]',
+  visibility_policy: '[redacted: visibility_policy]',
+  blocked_sensitivity_policy: '[blocked: sensitivity_policy]',
 } as const;
 
 type MemoryContextRedactionReason = keyof typeof MEMORY_CONTEXT_REDACTED_SUMMARY_BY_REASON;
 type MemoryContextSafetyDecision = {
-  action: "allow" | "warn" | "redact" | "block";
+  action: 'allow' | 'warn' | 'redact' | 'block';
   reasons: string[];
   redactionReason: MemoryContextRedactionReason | null;
 };
@@ -58,24 +58,24 @@ export class MemoryContextAssembler {
       recallItems: selectedRecords
         .map((record, index) => this.renderOutputItem(record, safetyDecisions[index]))
         .filter(
-          (item, index) => safetyDecisions[index]?.action !== MemoryContextPolicyAction.BLOCK,
+          (_item, index) => safetyDecisions[index]?.action !== MemoryContextPolicyAction.BLOCK,
         ),
     };
     const safetyNotes = this.collectSafetyNotes(selectedRecords, safetyDecisions);
     const layerCounts = selectedRecords.reduce<
-      MemoryContextAssemblyResult["selectionSummary"]["layerCounts"]
+      MemoryContextAssemblyResult['selectionSummary']['layerCounts']
     >((accumulator, record) => {
       accumulator[record.layer] = (accumulator[record.layer] ?? 0) + 1;
       return accumulator;
     }, {});
     const memoryKindCounts = selectedRecords.reduce<
-      MemoryContextAssemblyResult["selectionSummary"]["memoryKindCounts"]
+      MemoryContextAssemblyResult['selectionSummary']['memoryKindCounts']
     >((accumulator, record) => {
       accumulator[record.memoryKind] = (accumulator[record.memoryKind] ?? 0) + 1;
       return accumulator;
     }, {});
     const recordsMissingExplicitSourceRefs = selectedRecords.filter((record) =>
-      record.sourceRefs.every((sourceRef) => sourceRef.referenceType === "record"),
+      record.sourceRefs.every((sourceRef) => sourceRef.referenceType === 'record'),
     ).length;
     const policySummary = this.createPolicySummary(safetyDecisions);
     const contractSafeSummaryItems = selectedRecords.map((record, index) => {
@@ -88,7 +88,7 @@ export class MemoryContextAssembler {
         sourceRefs: [...outputItem.sourceRefs],
         sourceRefCount: outputItem.sourceRefs.length,
         explicitSourceRefCount: record.sourceRefs.filter(
-          (sourceRef) => sourceRef.referenceType !== "record",
+          (sourceRef) => sourceRef.referenceType !== 'record',
         ).length,
         updatedAt: outputItem.updatedAt,
         sensitivity: [...outputItem.sensitivity],
@@ -197,7 +197,7 @@ export class MemoryContextAssembler {
 
     const summaryParts: string[] = [];
     const addSummaryPart = (value: unknown) => {
-      if (typeof value !== "string") {
+      if (typeof value !== 'string') {
         return;
       }
 
@@ -216,7 +216,7 @@ export class MemoryContextAssembler {
     addSummaryPart(record.payload.artifactId);
 
     if (summaryParts.length > 0) {
-      return summaryParts.join(" | ").slice(0, 240);
+      return summaryParts.join(' | ').slice(0, 240);
     }
 
     const fallbackSummary = JSON.stringify(record.payload);
@@ -236,38 +236,38 @@ export class MemoryContextAssembler {
 
     if (
       selectedRecords.some((record) =>
-        record.sourceRefs.every((sourceRef) => sourceRef.referenceType === "record"),
+        record.sourceRefs.every((sourceRef) => sourceRef.referenceType === 'record'),
       )
     ) {
-      safetyNotes.add("some_records_only_have_record_identity_fallback");
+      safetyNotes.add('some_records_only_have_record_identity_fallback');
     }
 
     if (
-      safetyDecisions.some((decision) => decision.redactionReason === "missing_sensitivity_labels")
+      safetyDecisions.some((decision) => decision.redactionReason === 'missing_sensitivity_labels')
     ) {
-      safetyNotes.add("some_records_redacted_due_to_missing_sensitivity_labels");
+      safetyNotes.add('some_records_redacted_due_to_missing_sensitivity_labels');
     }
 
-    if (safetyDecisions.some((decision) => decision.redactionReason === "sensitivity_policy")) {
-      safetyNotes.add("some_records_redacted_due_to_sensitivity_policy");
+    if (safetyDecisions.some((decision) => decision.redactionReason === 'sensitivity_policy')) {
+      safetyNotes.add('some_records_redacted_due_to_sensitivity_policy');
     }
 
     if (
-      safetyDecisions.some((decision) => decision.redactionReason === "blocked_sensitivity_policy")
+      safetyDecisions.some((decision) => decision.redactionReason === 'blocked_sensitivity_policy')
     ) {
-      safetyNotes.add("some_records_blocked_due_to_sensitivity_policy");
+      safetyNotes.add('some_records_blocked_due_to_sensitivity_policy');
     }
 
-    if (safetyDecisions.some((decision) => decision.redactionReason === "visibility_policy")) {
-      safetyNotes.add("some_records_redacted_due_to_visibility_policy");
+    if (safetyDecisions.some((decision) => decision.redactionReason === 'visibility_policy')) {
+      safetyNotes.add('some_records_redacted_due_to_visibility_policy');
     }
 
     if (
       safetyDecisions.some((decision) =>
-        decision.reasons.includes("explicit_traceability_policy_warning"),
+        decision.reasons.includes('explicit_traceability_policy_warning'),
       )
     ) {
-      safetyNotes.add("some_records_warned_due_to_explicit_traceability_policy");
+      safetyNotes.add('some_records_warned_due_to_explicit_traceability_policy');
     }
 
     return Array.from(safetyNotes.values());
@@ -284,8 +284,8 @@ export class MemoryContextAssembler {
     if (record.sensitivity.length === 0) {
       return {
         action: MemoryContextPolicyAction.REDACT,
-        reasons: ["sensitivity_labels_required"],
-        redactionReason: "missing_sensitivity_labels",
+        reasons: ['sensitivity_labels_required'],
+        redactionReason: 'missing_sensitivity_labels',
       };
     }
 
@@ -298,8 +298,8 @@ export class MemoryContextAssembler {
     ) {
       return {
         action: MemoryContextPolicyAction.BLOCK,
-        reasons: ["sensitivity_policy_blocked"],
-        redactionReason: "blocked_sensitivity_policy",
+        reasons: ['sensitivity_policy_blocked'],
+        redactionReason: 'blocked_sensitivity_policy',
       };
     }
 
@@ -313,13 +313,13 @@ export class MemoryContextAssembler {
     ) {
       return {
         action: MemoryContextPolicyAction.REDACT,
-        reasons: ["visibility_policy_redacted"],
-        redactionReason: "visibility_policy",
+        reasons: ['visibility_policy_redacted'],
+        redactionReason: 'visibility_policy',
       };
     }
 
-    if (record.sourceRefs.every((sourceRef) => sourceRef.referenceType === "record")) {
-      reasons.push("explicit_traceability_policy_warning");
+    if (record.sourceRefs.every((sourceRef) => sourceRef.referenceType === 'record')) {
+      reasons.push('explicit_traceability_policy_warning');
       return {
         action: MemoryContextPolicyAction.WARN,
         reasons,
@@ -365,7 +365,7 @@ export class MemoryContextAssembler {
       warn: 0,
       redact: 0,
       block: 0,
-    } satisfies Record<"allow" | "warn" | "redact" | "block", number>;
+    } satisfies Record<'allow' | 'warn' | 'redact' | 'block', number>;
 
     for (const decision of safetyDecisions) {
       actionCounts[decision.action] += 1;

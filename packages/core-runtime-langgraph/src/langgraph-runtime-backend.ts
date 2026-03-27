@@ -1,17 +1,16 @@
-import type { ProcessCompiledIr } from "@repo-ai-governor/core-process";
+import type { ProcessCompiledIr } from '@repo-ai-governor/core-process';
 import {
   GovernorErrorCode,
   RuntimeError,
   type StandardizedError,
   standardizeError,
-} from "@repo-ai-governor/shared";
-import { CompiledIrGraphAdapter } from "./compiled-ir-graph-adapter.js";
+} from '@repo-ai-governor/shared';
+import { CompiledIrGraphAdapter } from './compiled-ir-graph-adapter.js';
 import {
   LANGGRAPH_RUNTIME_INTERRUPT_KINDS,
   LANGGRAPH_RUNTIME_TERMINAL_STATUSES,
   type LangGraphRuntimeExecutionStatus,
-  type LangGraphRuntimeTerminalStatus,
-} from "./constants/index.js";
+} from './constants/index.js';
 import type {
   LangGraphCompiledGraphEdge,
   LangGraphCompiledGraphNode,
@@ -24,7 +23,7 @@ import type {
   LangGraphRuntimeLoopController,
   LangGraphRuntimeStageHandler,
   LangGraphRuntimeStageResult,
-} from "./types/index.js";
+} from './types/index.js';
 
 const DEFAULT_STAGE_TIMEOUT_MS = 30000;
 const DEFAULT_FLOW_TIMEOUT_MS = 300000;
@@ -68,7 +67,7 @@ interface LangGraphParallelJoinExpectation {
 }
 
 function formatRfc3339Seconds(date: Date): string {
-  return date.toISOString().replace(/\.\d{3}Z$/u, "Z");
+  return date.toISOString().replace(/\.\d{3}Z$/u, 'Z');
 }
 
 export class LangGraphRuntimeBackend {
@@ -92,20 +91,20 @@ export class LangGraphRuntimeBackend {
       );
     }
 
-    const currentStatus: LangGraphRuntimeExecutionStatus = "pending";
+    const currentStatus: LangGraphRuntimeExecutionStatus = 'pending';
     const occurredAt = formatRfc3339Seconds(this.nowProvider());
     const lifecycleEvents: LangGraphRuntimeLifecycleEvent[] = [
       {
-        type: "execution.ready",
+        type: 'execution.ready',
         processId: plan.processId,
         executionId: plan.executionId,
         status: currentStatus,
         occurredAt,
         nodeId: plan.entryNodeId,
-        message: "LangGraph graph-first backend prepared the execution envelope.",
+        message: 'LangGraph graph-first backend prepared the execution envelope.',
       },
       {
-        type: "graph.compiled",
+        type: 'graph.compiled',
         processId: plan.processId,
         executionId: plan.executionId,
         status: currentStatus,
@@ -113,7 +112,7 @@ export class LangGraphRuntimeBackend {
         message: `Compiled IR was adapted into a graph plan with ${plan.nodes.length} node(s) and ${plan.edges.length} edge(s).`,
       },
       ...plan.nodes.map<LangGraphRuntimeLifecycleEvent>((node) => ({
-        type: "node.ready",
+        type: 'node.ready',
         processId: plan.processId,
         executionId: plan.executionId,
         status: currentStatus,
@@ -122,7 +121,7 @@ export class LangGraphRuntimeBackend {
         message: `Node "${node.nodeId}" is registered for graph-first scheduling.`,
       })),
       ...plan.edges.map<LangGraphRuntimeLifecycleEvent>((edge) => ({
-        type: "edge.ready",
+        type: 'edge.ready',
         processId: plan.processId,
         executionId: plan.executionId,
         status: currentStatus,
@@ -134,7 +133,7 @@ export class LangGraphRuntimeBackend {
 
     return {
       plan,
-      executionMode: "graph_first_dispatch",
+      executionMode: 'graph_first_dispatch',
       initialNodeIds: [entryNode.nodeId],
       currentStatus,
       supportedInterruptKinds: [...LANGGRAPH_RUNTIME_INTERRUPT_KINDS],
@@ -175,7 +174,7 @@ export class LangGraphRuntimeBackend {
       parallelJoinArrivals: new Map(),
     };
 
-    let executionStatus: LangGraphRuntimeExecutionResult["status"] = "succeeded";
+    let executionStatus: LangGraphRuntimeExecutionResult['status'] = 'succeeded';
     let interruption: LangGraphRuntimeExecutionInterruption | undefined;
 
     try {
@@ -276,7 +275,7 @@ export class LangGraphRuntimeBackend {
     const outgoingEdges = edgeByFromNodeId.get(node.nodeId) ?? [];
     const downstreamParallelContexts = joinBarrierResolution.nextParallelContexts;
 
-    if (node.behavior === "invoke_stage") {
+    if (node.behavior === 'invoke_stage') {
       const nextEdge = outgoingEdges[0];
       if (nextEdge) {
         await this.executeNode(
@@ -295,7 +294,7 @@ export class LangGraphRuntimeBackend {
       return;
     }
 
-    if (node.behavior === "branch") {
+    if (node.behavior === 'branch') {
       const nextEdge = await this.resolveConditionEdge(
         node,
         processId,
@@ -321,7 +320,7 @@ export class LangGraphRuntimeBackend {
       return;
     }
 
-    if (node.behavior === "loop") {
+    if (node.behavior === 'loop') {
       const nextEdge = await this.resolveLoopNextEdge(
         node,
         processId,
@@ -378,7 +377,7 @@ export class LangGraphRuntimeBackend {
   ): Map<string, LangGraphParallelJoinExpectation> {
     const expectationByKey = new Map<string, LangGraphParallelJoinExpectation>();
     for (const node of nodes) {
-      if (node.behavior !== "fan_out") {
+      if (node.behavior !== 'fan_out') {
         continue;
       }
 
@@ -472,7 +471,7 @@ export class LangGraphRuntimeBackend {
       return {
         blocked: false,
         nextParallelContexts: activeParallelContexts.filter(
-          (candidate, candidateIndex) => candidateIndex !== index,
+          (_candidate, candidateIndex) => candidateIndex !== index,
         ),
       };
     }
@@ -528,7 +527,7 @@ export class LangGraphRuntimeBackend {
         nodeId: node.nodeId,
         stageId: node.stageId,
         nodeType: node.nodeType,
-        status: "succeeded",
+        status: 'succeeded',
         attempt,
         startedAt: formatRfc3339Seconds(stageStartedAtDate),
         endedAt: formatRfc3339Seconds(endedAtDate),
@@ -692,7 +691,7 @@ export class LangGraphRuntimeBackend {
     if (runtimeConfig.signal?.aborted) {
       throw new RuntimeError(
         GovernorErrorCode.PROCESS_RUNTIME_CANCELLED,
-        "LangGraph execution was cancelled by abort signal.",
+        'LangGraph execution was cancelled by abort signal.',
         {
           processId,
           executionId,
@@ -729,59 +728,59 @@ export class LangGraphRuntimeBackend {
 
   private resolveStageStatus(
     standardizedError: StandardizedError,
-  ): LangGraphRuntimeStageResult["status"] {
+  ): LangGraphRuntimeStageResult['status'] {
     if (standardizedError.code === GovernorErrorCode.PROCESS_RUNTIME_STAGE_TIMEOUT) {
-      return "timeout";
+      return 'timeout';
     }
 
     if (standardizedError.code === GovernorErrorCode.PROCESS_RUNTIME_CANCELLED) {
-      return "cancelled";
+      return 'cancelled';
     }
 
-    return "failed";
+    return 'failed';
   }
 
   private resolveExecutionStatus(
     standardizedError: StandardizedError,
-  ): LangGraphRuntimeExecutionResult["status"] {
+  ): LangGraphRuntimeExecutionResult['status'] {
     if (
       standardizedError.code === GovernorErrorCode.PROCESS_RUNTIME_STAGE_TIMEOUT ||
       standardizedError.code === GovernorErrorCode.PROCESS_RUNTIME_FLOW_TIMEOUT
     ) {
-      return "timeout";
+      return 'timeout';
     }
 
     if (standardizedError.code === GovernorErrorCode.PROCESS_RUNTIME_CANCELLED) {
-      return "cancelled";
+      return 'cancelled';
     }
 
-    return "failed";
+    return 'failed';
   }
 
   private resolveInterruption(
     standardizedError: StandardizedError,
-    executionStatus: LangGraphRuntimeExecutionResult["status"],
+    executionStatus: LangGraphRuntimeExecutionResult['status'],
   ): LangGraphRuntimeExecutionInterruption | undefined {
-    if (executionStatus !== "timeout" && executionStatus !== "cancelled") {
+    if (executionStatus !== 'timeout' && executionStatus !== 'cancelled') {
       return undefined;
     }
 
-    if (executionStatus === "cancelled") {
+    if (executionStatus === 'cancelled') {
       return {
-        reason: "cancelled",
+        reason: 'cancelled',
         errorCode: standardizedError.code,
         message: standardizedError.message,
       };
     }
 
     return {
-      reason: "timeout",
+      reason: 'timeout',
       errorCode: standardizedError.code,
       message: standardizedError.message,
       timeoutScope:
         standardizedError.code === GovernorErrorCode.PROCESS_RUNTIME_FLOW_TIMEOUT
-          ? "flow"
-          : "stage",
+          ? 'flow'
+          : 'stage',
     };
   }
 }

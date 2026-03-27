@@ -1,4 +1,4 @@
-import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
+import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import {
   SlotConflictStrategy,
   SlotEngine,
@@ -8,13 +8,13 @@ import {
   SlotSecurityCheckId,
   SlotSource,
   SlotTrack,
-} from "../src/index.js";
+} from '../src/index.js';
 import type {
   DeclarativeSlotDefinition,
   ScriptSlotDefinition,
   SlotExecutionPlan,
   SlotResolutionContext,
-} from "../src/index.js";
+} from '../src/index.js';
 
 /**
  * Creates one declarative slot fixture for slot-engine smoke tests.
@@ -25,8 +25,8 @@ function createDeclarativeSlotFixture(
   overrides: Partial<DeclarativeSlotDefinition> = {},
 ): DeclarativeSlotDefinition {
   const baseFixture: DeclarativeSlotDefinition = {
-    slotId: "slot.declarative.docs.sync",
-    slotVersion: "1.0.0",
+    slotId: 'slot.declarative.docs.sync',
+    slotVersion: '1.0.0',
     track: SlotTrack.DECLARATIVE,
     source: SlotSource.REPOSITORY,
     scope: SlotScope.REPOSITORY,
@@ -34,24 +34,24 @@ function createDeclarativeSlotFixture(
     enabled: true,
     blockOnFailure: true,
     metadata: {
-      title: "Docs sync check",
-      description: "Enforce docs sync before merge.",
-      tags: ["docs", "gate"],
+      title: 'Docs sync check',
+      description: 'Enforce docs sync before merge.',
+      tags: ['docs', 'gate'],
     },
     trigger: {
-      stageIds: ["stage-implement"],
-      routeKeys: ["slot-security"],
+      stageIds: ['stage-implement'],
+      routeKeys: ['slot-security'],
     },
     applicability: {
-      pathPrefixes: ["packages/"],
+      pathPrefixes: ['packages/'],
     },
-    promptInjections: ["Sync triad docs before continuing."],
-    preChecks: ["docs-triad-sync"],
-    postChecks: ["docs-ledger-sync"],
+    promptInjections: ['Sync triad docs before continuing.'],
+    preChecks: ['docs-triad-sync'],
+    postChecks: ['docs-ledger-sync'],
     dependencySlotIds: [],
-    conflictKey: "docs.sync",
+    conflictKey: 'docs.sync',
     declarativeRule: {
-      ruleKey: "rule.docs.sync.required",
+      ruleKey: 'rule.docs.sync.required',
       parameters: {
         strict: true,
       },
@@ -81,8 +81,8 @@ function createScriptSlotFixture(
   overrides: Partial<ScriptSlotDefinition> = {},
 ): ScriptSlotDefinition {
   const baseFixture: ScriptSlotDefinition = {
-    slotId: "slot.script.security.baseline",
-    slotVersion: "1.0.0",
+    slotId: 'slot.script.security.baseline',
+    slotVersion: '1.0.0',
     track: SlotTrack.SCRIPT,
     source: SlotSource.TEAM,
     scope: SlotScope.REPOSITORY,
@@ -90,34 +90,34 @@ function createScriptSlotFixture(
     enabled: true,
     blockOnFailure: true,
     metadata: {
-      title: "Script security baseline",
-      description: "Execute guarded script slot with full security contract.",
-      tags: ["slot", "security"],
+      title: 'Script security baseline',
+      description: 'Execute guarded script slot with full security contract.',
+      tags: ['slot', 'security'],
     },
     trigger: {
-      stageIds: ["stage-implement"],
-      routeKeys: ["slot-security"],
-      changedPathPatterns: ["packages/*"],
+      stageIds: ['stage-implement'],
+      routeKeys: ['slot-security'],
+      changedPathPatterns: ['packages/*'],
     },
     applicability: {
-      pathPrefixes: ["packages/"],
+      pathPrefixes: ['packages/'],
     },
-    promptInjections: ["Apply script-slot guardrails for this stage."],
-    preChecks: ["slot-sandbox-ready"],
-    postChecks: ["slot-audit-recorded"],
-    dependencySlotIds: ["slot.declarative.docs.sync"],
-    conflictKey: "slot.security",
+    promptInjections: ['Apply script-slot guardrails for this stage.'],
+    preChecks: ['slot-sandbox-ready'],
+    postChecks: ['slot-audit-recorded'],
+    dependencySlotIds: ['slot.declarative.docs.sync'],
+    conflictKey: 'slot.security',
     script: {
-      slotScriptId: "slot.script.security.baseline",
-      slotScriptVersion: "1.0.0",
-      slotScriptHash: "sha256:slot-security-baseline",
-      entryCommand: "node scripts/slot-security-baseline.js",
+      slotScriptId: 'slot.script.security.baseline',
+      slotScriptVersion: '1.0.0',
+      slotScriptHash: 'sha256:slot-security-baseline',
+      entryCommand: 'node scripts/slot-security-baseline.js',
     },
     scriptPolicy: {
       requestedPermissions: [SlotPermissionCapability.FILESYSTEM, SlotPermissionCapability.COMMAND],
       sandbox: {
         enabled: true,
-        profile: "restricted",
+        profile: 'restricted',
       },
       resourceLimits: {
         maxCpu: 1,
@@ -126,9 +126,9 @@ function createScriptSlotFixture(
         maxOutputBytes: 16384,
       },
       ioContract: {
-        inputSchema: "schemas/slot-input.schema.json",
-        outputSchema: "schemas/slot-output.schema.json",
-        sideEffectManifest: ["write:context/artifact-registry/artifacts.csv"],
+        inputSchema: 'schemas/slot-input.schema.json',
+        outputSchema: 'schemas/slot-output.schema.json',
+        sideEffectManifest: ['write:context/artifact-registry/artifacts.csv'],
       },
       failureIsolation: {
         isolateOnError: true,
@@ -161,17 +161,17 @@ function createResolutionContextFixture(
   overrides: Partial<SlotResolutionContext> = {},
 ): SlotResolutionContext {
   return {
-    executionId: "exec-slot-001",
-    stageId: "stage-implement",
-    routeKey: "slot-security",
-    changedPaths: ["packages/slots/src/slot-engine.ts"],
+    executionId: 'exec-slot-001',
+    stageId: 'stage-implement',
+    routeKey: 'slot-security',
+    changedPaths: ['packages/slots/src/slot-engine.ts'],
     approvedPermissions: [SlotPermissionCapability.FILESYSTEM, SlotPermissionCapability.COMMAND],
     ...overrides,
   };
 }
 
-describe("SlotEngine smoke", () => {
-  it("builds dual-track execution plan with deterministic order", () => {
+describe('SlotEngine smoke', () => {
+  it('builds dual-track execution plan with deterministic order', () => {
     const slotEngine = new SlotEngine({
       slots: [createDeclarativeSlotFixture(), createScriptSlotFixture()],
     });
@@ -185,7 +185,7 @@ describe("SlotEngine smoke", () => {
     );
     expect(plan.requiredAction).toBe(SlotRequiredAction.ALLOW);
     expect(plan.scriptSlots[0]?.security.auditRecord.slotScriptId).toBe(
-      "slot.script.security.baseline",
+      'slot.script.security.baseline',
     );
     expect(plan.scriptSlots[0]?.security.auditRecord.grantedPermissions).toEqual([
       SlotPermissionCapability.FILESYSTEM,
@@ -193,7 +193,7 @@ describe("SlotEngine smoke", () => {
     ]);
   });
 
-  it("returns confirm when script permissions are not approved", () => {
+  it('returns confirm when script permissions are not approved', () => {
     const slotEngine = new SlotEngine({
       slots: [createScriptSlotFixture()],
     });
@@ -212,7 +212,7 @@ describe("SlotEngine smoke", () => {
     ).toBe(true);
   });
 
-  it("returns block when sandbox is disabled", () => {
+  it('returns block when sandbox is disabled', () => {
     const slotEngine = new SlotEngine({
       slots: [
         createScriptSlotFixture({
@@ -220,7 +220,7 @@ describe("SlotEngine smoke", () => {
             ...createScriptSlotFixture().scriptPolicy,
             sandbox: {
               enabled: false,
-              profile: "none",
+              profile: 'none',
             },
           },
         }),
@@ -238,16 +238,16 @@ describe("SlotEngine smoke", () => {
     ).toBe(true);
   });
 
-  it("keeps one winner when conflict strategy is highest_priority", () => {
+  it('keeps one winner when conflict strategy is highest_priority', () => {
     const lowPriority = createDeclarativeSlotFixture({
-      slotId: "slot.docs.low",
+      slotId: 'slot.docs.low',
       priority: 5,
-      conflictKey: "docs.sync",
+      conflictKey: 'docs.sync',
     });
     const highPriority = createDeclarativeSlotFixture({
-      slotId: "slot.docs.high",
+      slotId: 'slot.docs.high',
       priority: 90,
-      conflictKey: "docs.sync",
+      conflictKey: 'docs.sync',
     });
     const slotEngine = new SlotEngine({
       conflictStrategy: SlotConflictStrategy.HIGHEST_PRIORITY,
@@ -257,22 +257,22 @@ describe("SlotEngine smoke", () => {
     const plan = slotEngine.buildExecutionPlan(createResolutionContextFixture());
 
     expect(plan.declarativeSlots).toHaveLength(1);
-    expect(plan.declarativeSlots[0]?.slot.slotId).toBe("slot.docs.high");
+    expect(plan.declarativeSlots[0]?.slot.slotId).toBe('slot.docs.high');
     expect(plan.conflicts).toHaveLength(1);
-    expect(plan.conflicts[0]?.winningSlotId).toBe("slot.docs.high");
+    expect(plan.conflicts[0]?.winningSlotId).toBe('slot.docs.high');
   });
 
-  it("throws standardized conflict error when strategy is error", () => {
+  it('throws standardized conflict error when strategy is error', () => {
     const slotEngine = new SlotEngine({
       conflictStrategy: SlotConflictStrategy.ERROR,
       slots: [
         createDeclarativeSlotFixture({
-          slotId: "slot.docs.a",
-          conflictKey: "docs.sync",
+          slotId: 'slot.docs.a',
+          conflictKey: 'docs.sync',
         }),
         createDeclarativeSlotFixture({
-          slotId: "slot.docs.b",
-          conflictKey: "docs.sync",
+          slotId: 'slot.docs.b',
+          conflictKey: 'docs.sync',
           priority: 99,
         }),
       ],
@@ -290,13 +290,13 @@ describe("SlotEngine smoke", () => {
     }
   });
 
-  it("throws standardized validation error for malformed slot definitions", () => {
+  it('throws standardized validation error for malformed slot definitions', () => {
     expect(
       () =>
         new SlotEngine({
           slots: [
             createDeclarativeSlotFixture({
-              slotId: "",
+              slotId: '',
             }),
           ],
         }),
@@ -306,7 +306,7 @@ describe("SlotEngine smoke", () => {
       new SlotEngine({
         slots: [
           createDeclarativeSlotFixture({
-            slotId: "",
+            slotId: '',
           }),
         ],
       });
@@ -317,8 +317,8 @@ describe("SlotEngine smoke", () => {
   });
 });
 
-describe("SlotEngine security contracts", () => {
-  it("keeps script slot audit fields for replay and governance handoff", () => {
+describe('SlotEngine security contracts', () => {
+  it('keeps script slot audit fields for replay and governance handoff', () => {
     const slotEngine = new SlotEngine({
       slots: [createScriptSlotFixture()],
     });
@@ -326,8 +326,8 @@ describe("SlotEngine security contracts", () => {
     const plan: SlotExecutionPlan = slotEngine.buildExecutionPlan(createResolutionContextFixture());
     const auditRecord = plan.scriptSlots[0]?.security.auditRecord;
 
-    expect(auditRecord?.slotScriptVersion).toBe("1.0.0");
-    expect(auditRecord?.slotScriptHash).toContain("sha256:");
+    expect(auditRecord?.slotScriptVersion).toBe('1.0.0');
+    expect(auditRecord?.slotScriptHash).toContain('sha256:');
     expect(auditRecord?.exitCode).toBeNull();
     expect(auditRecord?.maxExecutionTimeSeconds).toBe(30);
   });

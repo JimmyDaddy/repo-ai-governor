@@ -1,24 +1,24 @@
-import { resolve } from "node:path";
+import { resolve } from 'node:path';
 
 import {
   OrchestrationClientSurface,
   OrchestrationExecutionKind,
   OrchestrationExecutionStatus,
   OrchestrationServiceEventType,
-} from "@repo-ai-governor/orchestration-service-client";
+} from '@repo-ai-governor/orchestration-service-client';
 import {
   ExecutionInteractionCategory,
   ExecutionProgressStage,
   ExecutionProgressStatus,
-} from "@repo-ai-governor/shared";
-import { CliCommandName } from "../constants/cli-command.constant.js";
+} from '@repo-ai-governor/shared';
+import { CliCommandName } from '../constants/cli-command.constant.js';
 import {
   CLI_REVIEW_REQUEST_STATUS,
   CLI_RUNTIME_OPERATION,
   CliGovernanceCheckStatus,
-} from "../constants/cli-governance-runtime.constant.js";
-import type { CliCommandExecutorContext } from "../types/interfaces/cli-governance-runtime.interface.js";
-import type { CliCommandExecutor } from "./cli-command-executor.interface.js";
+} from '../constants/cli-governance-runtime.constant.js';
+import type { CliCommandExecutorContext } from '../types/interfaces/cli-governance-runtime.interface.js';
+import type { CliCommandExecutor } from './cli-command-executor.interface.js';
 
 /**
  * Owns `review` command execution outside the runtime facade.
@@ -35,10 +35,10 @@ export class CliReviewCommand implements CliCommandExecutor {
     const taskId = runtimeDebugOptions.taskId;
     const executionSessionId = `session-${requestId}`;
     const managedLedgerBackfill =
-      runtimeDebugOptions.recordLedger === true && typeof taskId === "string";
+      runtimeDebugOptions.recordLedger === true && typeof taskId === 'string';
     const reviewVerifyAction = managedLedgerBackfill
       ? `Execute \`repo-ai-governor review-verify --record-ledger --task-id ${taskId}\` to continue managed review chain.`
-      : "Execute `repo-ai-governor review-verify` to consume queued review request.";
+      : 'Execute `repo-ai-governor review-verify` to consume queued review request.';
     const streamMetadata = await context.resolveExecutionStreamMetadata();
     const orchestrationExecution = await context.orchestrationServiceRuntime.startExecution(
       {
@@ -54,7 +54,7 @@ export class CliReviewCommand implements CliCommandExecutor {
       {
         executionId: requestId,
         executionSessionId,
-        processId: "review-queue",
+        processId: 'review-queue',
       },
     );
     await context.artifactWriter.writeJsonArtifact(requestPath, {
@@ -69,10 +69,10 @@ export class CliReviewCommand implements CliCommandExecutor {
       recordLedger: managedLedgerBackfill,
       diagnosticContext: {
         correlationId,
-        queueStage: "review",
-        chain: "review->review-verify->ledger-backfill",
+        queueStage: 'review',
+        chain: 'review->review-verify->ledger-backfill',
         ...(taskId ? { taskId } : {}),
-        reviewChainMode: managedLedgerBackfill ? "managed_task_chain" : "queued_external_chain",
+        reviewChainMode: managedLedgerBackfill ? 'managed_task_chain' : 'queued_external_chain',
       },
       orchestrationExecutionId: orchestrationExecution.executionId,
       orchestrationEventStreamToken: orchestrationExecution.eventStreamToken,
@@ -81,7 +81,7 @@ export class CliReviewCommand implements CliCommandExecutor {
       executionId: requestId,
       type: OrchestrationServiceEventType.ARTIFACT_READY,
       status: OrchestrationExecutionStatus.RUNNING,
-      artifactId: "review_request",
+      artifactId: 'review_request',
       artifactPath: requestPath,
       message: `Queued review request artifact at ${requestPath}.`,
     });
@@ -99,11 +99,11 @@ export class CliReviewCommand implements CliCommandExecutor {
     const experience = context.commandExperienceBuilder.buildExperiencePayload({
       roleProgress: [
         {
-          roleId: "reviewer",
+          roleId: 'reviewer',
           stage: ExecutionProgressStage.REVIEW,
           status: ExecutionProgressStatus.COMPLETED,
           category: ExecutionInteractionCategory.NONE,
-          summary: "Review request artifact queued.",
+          summary: 'Review request artifact queued.',
           detail: `request_id=${requestId}`,
           backlink: {
             stageId: ExecutionProgressStage.REVIEW,
@@ -111,11 +111,11 @@ export class CliReviewCommand implements CliCommandExecutor {
           },
         },
         {
-          roleId: "verifier",
+          roleId: 'verifier',
           stage: ExecutionProgressStage.REVIEW_VERIFY,
           status: ExecutionProgressStatus.QUEUED,
           category: ExecutionInteractionCategory.POLICY_WAITING,
-          summary: "Awaiting review-verify consumption.",
+          summary: 'Awaiting review-verify consumption.',
           detail: taskId ? `chain=${correlationId} task_id=${taskId}` : `chain=${correlationId}`,
           backlink: {
             stageId: ExecutionProgressStage.REVIEW_VERIFY,
@@ -127,7 +127,7 @@ export class CliReviewCommand implements CliCommandExecutor {
         {
           category: ExecutionInteractionCategory.POLICY_WAITING,
           stage: ExecutionProgressStage.REVIEW_VERIFY,
-          title: "Run review-verify",
+          title: 'Run review-verify',
           action: reviewVerifyAction,
           blocking: true,
         },
@@ -135,7 +135,7 @@ export class CliReviewCommand implements CliCommandExecutor {
       layeredLogs: {
         summary: [
           `review_request=${requestId}`,
-          "chain=review->review-verify->ledger-backfill",
+          'chain=review->review-verify->ledger-backfill',
           `managed_ledger_backfill=${managedLedgerBackfill}`,
         ],
         detailed: [
@@ -157,14 +157,14 @@ export class CliReviewCommand implements CliCommandExecutor {
         },
         checks: [
           {
-            id: "review_request",
+            id: 'review_request',
             status: CliGovernanceCheckStatus.PASS,
             detail: requestId,
           },
         ],
         artifacts: [
           {
-            id: "review_request",
+            id: 'review_request',
             path: requestPath,
           },
         ],

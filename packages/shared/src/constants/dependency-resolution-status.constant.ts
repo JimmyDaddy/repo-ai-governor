@@ -5,10 +5,10 @@
  * a single enum source prevents cross-package contract drift in runtime outputs.
  */
 export enum DependencyResolutionStatus {
-  RESOLVED = "resolved",
-  WARNED = "warned",
-  ESCALATED = "escalated",
-  BLOCKED = "blocked",
+  RESOLVED = 'resolved',
+  WARNED = 'warned',
+  ESCALATED = 'escalated',
+  BLOCKED = 'blocked',
 }
 
 /**

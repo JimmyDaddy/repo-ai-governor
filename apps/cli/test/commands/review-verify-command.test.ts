@@ -1,15 +1,15 @@
-import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { dirname, resolve } from "node:path";
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { dirname, resolve } from 'node:path';
 
-import { GovernorErrorCode, RuntimeError, standardizeError } from "@repo-ai-governor/shared";
-import { CliReviewVerifyCommand } from "../../src/commands/review-verify-command.js";
+import { GovernorErrorCode, RuntimeError, standardizeError } from '@repo-ai-governor/shared';
+import { CliReviewVerifyCommand } from '../../src/commands/review-verify-command.js';
 import {
   CLI_REVIEW_LEDGER_BACKFILL_STATUS,
   CLI_REVIEW_REQUEST_STATUS,
-} from "../../src/constants/cli-governance-runtime.constant.js";
-import { CliReviewQueueRuntime } from "../../src/runtime/artifacts/review-queue-runtime.js";
-import type { CliCommandExecutorContext } from "../../src/types/interfaces/cli-governance-runtime.interface.js";
+} from '../../src/constants/cli-governance-runtime.constant.js';
+import { CliReviewQueueRuntime } from '../../src/runtime/artifacts/review-queue-runtime.js';
+import type { CliCommandExecutorContext } from '../../src/types/interfaces/cli-governance-runtime.interface.js';
 
 interface ReviewVerifyFixture {
   tempRoot: string;
@@ -24,14 +24,14 @@ async function createReviewVerifyFixture(
   options: {
     taskId?: string | null;
     recordLedger?: boolean;
-    runNodeScript?: CliCommandExecutorContext["runNodeScript"];
+    runNodeScript?: CliCommandExecutorContext['runNodeScript'];
   } = {},
 ): Promise<ReviewVerifyFixture> {
-  const tempRoot = await mkdtemp(resolve(tmpdir(), "review-verify-command-"));
-  const workspaceRoot = resolve(tempRoot, ".repo-ai-governor");
+  const tempRoot = await mkdtemp(resolve(tmpdir(), 'review-verify-command-'));
+  const workspaceRoot = resolve(tempRoot, '.repo-ai-governor');
   const reviewQueueRuntime = new CliReviewQueueRuntime(workspaceRoot, async (filePath) => {
     try {
-      return JSON.parse(await readFile(filePath, "utf8")) as Record<string, unknown>;
+      return JSON.parse(await readFile(filePath, 'utf8')) as Record<string, unknown>;
     } catch {
       return null;
     }
@@ -44,15 +44,15 @@ async function createReviewVerifyFixture(
   const artifactWriter = {
     writeTextArtifact: async (filePath: string, content: string) => {
       await mkdir(dirname(filePath), { recursive: true });
-      await writeFile(filePath, content, "utf8");
+      await writeFile(filePath, content, 'utf8');
     },
     writeJsonArtifact: async (filePath: string, payload: unknown) => {
       await mkdir(dirname(filePath), { recursive: true });
-      await writeFile(filePath, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
+      await writeFile(filePath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
     },
     safeReadJson: async (filePath: string) => {
       try {
-        return JSON.parse(await readFile(filePath, "utf8")) as Record<string, unknown>;
+        return JSON.parse(await readFile(filePath, 'utf8')) as Record<string, unknown>;
       } catch {
         return null;
       }
@@ -62,26 +62,26 @@ async function createReviewVerifyFixture(
   const context = {
     options: {
       workspace: {
-        workspaceId: "test-workspace",
+        workspaceId: 'test-workspace',
         workspaceRoot,
       },
-      locale: "en-US",
-      outputMode: "plain",
+      locale: 'en-US',
+      outputMode: 'plain',
     },
     artifactWriter,
     reviewQueueRuntime,
     orchestrationServiceRuntime: {
       startExecution: async (_request: unknown, runtimeContext?: { executionId?: string }) => ({
-        executionId: runtimeContext?.executionId ?? "review-verify-fixture",
-        executionSessionId: "session-review-verify-fixture",
-        acceptedAt: "2026-03-25T00:00:00Z",
-        status: "accepted",
+        executionId: runtimeContext?.executionId ?? 'review-verify-fixture',
+        executionSessionId: 'session-review-verify-fixture',
+        acceptedAt: '2026-03-25T00:00:00Z',
+        status: 'accepted',
         checkpointCapable: false,
-        serviceHostKind: "embedded",
-        serviceTransportKind: "in_process",
-        eventStreamToken: "stream-review-verify-fixture",
+        serviceHostKind: 'embedded',
+        serviceTransportKind: 'in_process',
+        eventStreamToken: 'stream-review-verify-fixture',
         latestEventSequence: 0,
-        nextCursor: "cursor-review-verify-fixture",
+        nextCursor: 'cursor-review-verify-fixture',
       }),
       publishEvent: async () => undefined,
       getExecution: async () => undefined,
@@ -92,7 +92,7 @@ async function createReviewVerifyFixture(
     executeRunCommand: async () => {
       throw new RuntimeError(
         GovernorErrorCode.UNKNOWN,
-        "executeRunCommand is not used in review-verify-command tests.",
+        'executeRunCommand is not used in review-verify-command tests.',
       );
     },
     calculateCheckTotals: () => ({
@@ -100,8 +100,8 @@ async function createReviewVerifyFixture(
       warn: 0,
       fail: 0,
     }),
-    buildDefaultConfigContent: () => "",
-    toRfc3339SecondsTimestamp: (value: Date) => value.toISOString().replace(/\.\d{3}Z$/u, "Z"),
+    buildDefaultConfigContent: () => '',
+    toRfc3339SecondsTimestamp: (value: Date) => value.toISOString().replace(/\.\d{3}Z$/u, 'Z'),
     formatExecFailureDetail: (error: unknown) => standardizeError(error).message,
     resolveRuntimeDebugOptions: () => ({
       dryRun: false,
@@ -129,12 +129,12 @@ async function createReviewVerifyFixture(
     }),
     canWritePath: async () => true,
     localizeText: (english: string) => english,
-    adapterDiagnosticsRuntime: {} as CliCommandExecutorContext["adapterDiagnosticsRuntime"],
+    adapterDiagnosticsRuntime: {} as CliCommandExecutorContext['adapterDiagnosticsRuntime'],
     runNodeScript:
       options.runNodeScript ??
       (async () => ({
-        stdout: "",
-        stderr: "",
+        stdout: '',
+        stderr: '',
       })),
   } as unknown as CliCommandExecutorContext;
 
@@ -154,53 +154,53 @@ async function writeQueuedRequest(
   payload: Record<string, unknown>,
 ): Promise<string> {
   const filePath = resolve(requestDirectoryPath, fileName);
-  await writeFile(filePath, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
+  await writeFile(filePath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
   return filePath;
 }
 
-describe("CliReviewVerifyCommand", () => {
-  it("consumes the queued request matching --task-id instead of blindly taking the latest request", async () => {
+describe('CliReviewVerifyCommand', () => {
+  it('consumes the queued request matching --task-id instead of blindly taking the latest request', async () => {
     const fixture = await createReviewVerifyFixture({
-      taskId: "TK-130",
+      taskId: 'TK-130',
     });
 
     try {
       const tk130RequestPath = await writeQueuedRequest(
         fixture.requestDirectoryPath,
-        "review-100.json",
+        'review-100.json',
         {
-          requestId: "review-100",
+          requestId: 'review-100',
           status: CLI_REVIEW_REQUEST_STATUS.QUEUED,
-          taskId: "TK-130",
+          taskId: 'TK-130',
         },
       );
       const tk131RequestPath = await writeQueuedRequest(
         fixture.requestDirectoryPath,
-        "review-200.json",
+        'review-200.json',
         {
-          requestId: "review-200",
+          requestId: 'review-200',
           status: CLI_REVIEW_REQUEST_STATUS.QUEUED,
-          taskId: "TK-131",
+          taskId: 'TK-131',
         },
       );
 
       const commandResult = await fixture.command.execute(fixture.context);
       const verifyArtifactPath = commandResult.commandResult.artifacts?.find(
-        (artifact) => artifact.id === "review_verify_result",
+        (artifact) => artifact.id === 'review_verify_result',
       )?.path;
-      expect(typeof verifyArtifactPath).toBe("string");
+      expect(typeof verifyArtifactPath).toBe('string');
 
-      const verifyPayload = JSON.parse(await readFile(String(verifyArtifactPath), "utf8")) as {
+      const verifyPayload = JSON.parse(await readFile(String(verifyArtifactPath), 'utf8')) as {
         taskId?: string;
         sourceRequestPath?: string;
       };
-      expect(verifyPayload.taskId).toBe("TK-130");
+      expect(verifyPayload.taskId).toBe('TK-130');
       expect(verifyPayload.sourceRequestPath).toBe(tk130RequestPath);
 
-      const tk130Payload = JSON.parse(await readFile(tk130RequestPath, "utf8")) as {
+      const tk130Payload = JSON.parse(await readFile(tk130RequestPath, 'utf8')) as {
         status?: string;
       };
-      const tk131Payload = JSON.parse(await readFile(tk131RequestPath, "utf8")) as {
+      const tk131Payload = JSON.parse(await readFile(tk131RequestPath, 'utf8')) as {
         status?: string;
       };
       expect(tk130Payload.status).toBe(CLI_REVIEW_REQUEST_STATUS.VERIFIED);
@@ -210,44 +210,44 @@ describe("CliReviewVerifyCommand", () => {
     }
   });
 
-  it("fails explicitly when --task-id does not match any queued request", async () => {
+  it('fails explicitly when --task-id does not match any queued request', async () => {
     const fixture = await createReviewVerifyFixture({
-      taskId: "TK-999",
+      taskId: 'TK-999',
     });
 
     try {
-      await writeQueuedRequest(fixture.requestDirectoryPath, "review-100.json", {
-        requestId: "review-100",
+      await writeQueuedRequest(fixture.requestDirectoryPath, 'review-100.json', {
+        requestId: 'review-100',
         status: CLI_REVIEW_REQUEST_STATUS.QUEUED,
-        taskId: "TK-130",
+        taskId: 'TK-130',
       });
 
       await expect(fixture.command.execute(fixture.context)).rejects.toMatchObject({
         code: GovernorErrorCode.UNKNOWN,
-        message: expect.stringContaining("task_id=TK-999"),
+        message: expect.stringContaining('task_id=TK-999'),
       });
     } finally {
       await rm(fixture.tempRoot, { recursive: true, force: true });
     }
   });
 
-  it("keeps the source request queued when managed ledger backfill fails", async () => {
+  it('keeps the source request queued when managed ledger backfill fails', async () => {
     const fixture = await createReviewVerifyFixture({
-      taskId: "TK-130",
+      taskId: 'TK-130',
       recordLedger: true,
       runNodeScript: async () => {
-        throw new RuntimeError(GovernorErrorCode.UNKNOWN, "synthetic ledger sync failure");
+        throw new RuntimeError(GovernorErrorCode.UNKNOWN, 'synthetic ledger sync failure');
       },
     });
 
     try {
       const sourceRequestPath = await writeQueuedRequest(
         fixture.requestDirectoryPath,
-        "review-100.json",
+        'review-100.json',
         {
-          requestId: "review-100",
+          requestId: 'review-100',
           status: CLI_REVIEW_REQUEST_STATUS.QUEUED,
-          taskId: "TK-130",
+          taskId: 'TK-130',
           recordLedger: true,
         },
       );
@@ -256,7 +256,7 @@ describe("CliReviewVerifyCommand", () => {
         code: GovernorErrorCode.UNKNOWN,
       });
 
-      const sourceRequestPayload = JSON.parse(await readFile(sourceRequestPath, "utf8")) as {
+      const sourceRequestPayload = JSON.parse(await readFile(sourceRequestPath, 'utf8')) as {
         status?: string;
         consumedAt?: string;
         lastVerifyAttemptAt?: string;
@@ -264,7 +264,7 @@ describe("CliReviewVerifyCommand", () => {
       };
       expect(sourceRequestPayload.status).toBe(CLI_REVIEW_REQUEST_STATUS.QUEUED);
       expect(sourceRequestPayload.consumedAt).toBeUndefined();
-      expect(typeof sourceRequestPayload.lastVerifyAttemptAt).toBe("string");
+      expect(typeof sourceRequestPayload.lastVerifyAttemptAt).toBe('string');
       expect(sourceRequestPayload.ledgerBackfillStatus).toBe(
         CLI_REVIEW_LEDGER_BACKFILL_STATUS.FAILED,
       );
@@ -272,7 +272,7 @@ describe("CliReviewVerifyCommand", () => {
       const resultFileNames = await readdir(fixture.resultDirectoryPath);
       expect(resultFileNames).toHaveLength(1);
       const verifyPayload = JSON.parse(
-        await readFile(resolve(fixture.resultDirectoryPath, resultFileNames[0]), "utf8"),
+        await readFile(resolve(fixture.resultDirectoryPath, resultFileNames[0]), 'utf8'),
       ) as {
         status?: string;
         ledgerBackfillStatus?: string;

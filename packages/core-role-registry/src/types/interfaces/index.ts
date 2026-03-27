@@ -5,4 +5,4 @@ export type {
   RoleRegistryOptions,
   RoleRegistryResolveContext,
   RoleRegistryResolveResult,
-} from "./role-registry.interface.js";
+} from './role-registry.interface.js';

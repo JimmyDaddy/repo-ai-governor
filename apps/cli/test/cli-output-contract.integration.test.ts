@@ -1,30 +1,30 @@
-import { execFileSync } from "node:child_process";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { resolve } from "node:path";
+import { execFileSync } from 'node:child_process';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { resolve } from 'node:path';
 
 import {
   CliClaudeCodeExecFixtureEnvironmentKey,
   CliClaudeCodeExecFixtureMode,
-} from "../src/constants/claude-code-exec-fixture.constant.js";
+} from '../src/constants/claude-code-exec-fixture.constant.js';
 import {
   CliCodexExecFixtureEnvironmentKey,
   CliCodexExecFixtureMode,
-} from "../src/constants/codex-exec-fixture.constant.js";
+} from '../src/constants/codex-exec-fixture.constant.js';
 import {
   CliGithubCopilotExecFixtureEnvironmentKey,
   CliGithubCopilotExecFixtureMode,
-} from "../src/constants/github-copilot-exec-fixture.constant.js";
-import { runCli } from "../src/main.js";
+} from '../src/constants/github-copilot-exec-fixture.constant.js';
+import { runCli } from '../src/main.js';
 
 function createDeterministicCliEnvironment(overrides: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
   return {
     ...Object.fromEntries(
       Object.entries(process.env).filter(([environmentKey]) => {
-        return !environmentKey.startsWith("REPO_AI_GOVERNOR_");
+        return !environmentKey.startsWith('REPO_AI_GOVERNOR_');
       }),
     ),
-    [CliCodexExecFixtureEnvironmentKey.ENABLE_FIXTURES]: "1",
+    [CliCodexExecFixtureEnvironmentKey.ENABLE_FIXTURES]: '1',
     [CliCodexExecFixtureEnvironmentKey.EXEC_FIXTURE]: CliCodexExecFixtureMode.SUCCESS,
     [CliClaudeCodeExecFixtureEnvironmentKey.EXEC_FIXTURE]: CliClaudeCodeExecFixtureMode.SUCCESS,
     [CliGithubCopilotExecFixtureEnvironmentKey.EXEC_FIXTURE]:
@@ -79,16 +79,16 @@ function createBufferedIo(
  * @returns Temporary repository absolute path.
  */
 async function createPolicyGateFixtureRepo(): Promise<string> {
-  const temporaryRepositoryRoot = await mkdtemp(resolve(tmpdir(), "cli-output-policy-"));
-  execFileSync("git", ["init"], {
+  const temporaryRepositoryRoot = await mkdtemp(resolve(tmpdir(), 'cli-output-policy-'));
+  execFileSync('git', ['init'], {
     cwd: temporaryRepositoryRoot,
-    stdio: "ignore",
+    stdio: 'ignore',
   });
-  await mkdir(resolve(temporaryRepositoryRoot, "migrations"), { recursive: true });
+  await mkdir(resolve(temporaryRepositoryRoot, 'migrations'), { recursive: true });
   await writeFile(
-    resolve(temporaryRepositoryRoot, "migrations", "001.sql"),
-    "-- migration\n",
-    "utf8",
+    resolve(temporaryRepositoryRoot, 'migrations', '001.sql'),
+    '-- migration\n',
+    'utf8',
   );
   return temporaryRepositoryRoot;
 }
@@ -98,33 +98,33 @@ async function createPolicyGateFixtureRepo(): Promise<string> {
  * @returns Temporary repository absolute path.
  */
 async function createProfileOnlyAdaptersFixtureRepo(): Promise<string> {
-  const temporaryRepositoryRoot = await mkdtemp(resolve(tmpdir(), "cli-output-profile-adapters-"));
-  const workspaceRoot = resolve(temporaryRepositoryRoot, ".repo-ai-governor");
+  const temporaryRepositoryRoot = await mkdtemp(resolve(tmpdir(), 'cli-output-profile-adapters-'));
+  const workspaceRoot = resolve(temporaryRepositoryRoot, '.repo-ai-governor');
   await mkdir(workspaceRoot, { recursive: true });
   await writeFile(
-    resolve(workspaceRoot, "governor.yaml"),
+    resolve(workspaceRoot, 'governor.yaml'),
     [
       'schemaVersion: "1.1"',
-      "workspace:",
-      "  mode: repo_local",
-      "  migrationPolicy: copy_verify_switch_rollback",
-      "i18n:",
-      "  runtimeEngine: i18next",
-      "  defaultLocale: zh-CN",
-      "  fallbackLocale: en-US",
-      "  supportedLocales:",
-      "    - zh-CN",
-      "    - en-US",
-      "profiles:",
-      "  tool-only:",
-      "    adapters:",
-      "      tools:",
-      "        - toolId: github-copilot",
-      "          enabled: true",
-      "          availability: degraded",
-      "",
-    ].join("\n"),
-    "utf8",
+      'workspace:',
+      '  mode: repo_local',
+      '  migrationPolicy: copy_verify_switch_rollback',
+      'i18n:',
+      '  runtimeEngine: i18next',
+      '  defaultLocale: zh-CN',
+      '  fallbackLocale: en-US',
+      '  supportedLocales:',
+      '    - zh-CN',
+      '    - en-US',
+      'profiles:',
+      '  tool-only:',
+      '    adapters:',
+      '      tools:',
+      '        - toolId: github-copilot',
+      '          enabled: true',
+      '          availability: degraded',
+      '',
+    ].join('\n'),
+    'utf8',
   );
   return temporaryRepositoryRoot;
 }
@@ -134,32 +134,32 @@ async function createProfileOnlyAdaptersFixtureRepo(): Promise<string> {
  * @returns Temporary repository absolute path.
  */
 async function createBlockedMemoryProviderFixtureRepo(): Promise<string> {
-  const temporaryRepositoryRoot = await mkdtemp(resolve(tmpdir(), "cli-output-memory-plugin-"));
-  const workspaceRoot = resolve(temporaryRepositoryRoot, ".repo-ai-governor");
+  const temporaryRepositoryRoot = await mkdtemp(resolve(tmpdir(), 'cli-output-memory-plugin-'));
+  const workspaceRoot = resolve(temporaryRepositoryRoot, '.repo-ai-governor');
   await mkdir(workspaceRoot, { recursive: true });
   await writeFile(
-    resolve(workspaceRoot, "governor.yaml"),
+    resolve(workspaceRoot, 'governor.yaml'),
     [
       'schemaVersion: "1.1"',
-      "workspace:",
-      "  mode: repo_local",
-      "  migrationPolicy: copy_verify_switch_rollback",
-      "i18n:",
-      "  runtimeEngine: i18next",
-      "  defaultLocale: zh-CN",
-      "  fallbackLocale: en-US",
-      "  supportedLocales:",
-      "    - zh-CN",
-      "    - en-US",
-      "memory:",
-      "  storeEngine: fs_csv",
-      "  storeRoot: context/memory",
-      "  provider:",
+      'workspace:',
+      '  mode: repo_local',
+      '  migrationPolicy: copy_verify_switch_rollback',
+      'i18n:',
+      '  runtimeEngine: i18next',
+      '  defaultLocale: zh-CN',
+      '  fallbackLocale: en-US',
+      '  supportedLocales:',
+      '    - zh-CN',
+      '    - en-US',
+      'memory:',
+      '  storeEngine: fs_csv',
+      '  storeRoot: context/memory',
+      '  provider:',
       '    module: "@acme/memory-provider-postgres"',
       '    exportName: "createMemoryStoreProvider"',
-      "",
-    ].join("\n"),
-    "utf8",
+      '',
+    ].join('\n'),
+    'utf8',
   );
   return temporaryRepositoryRoot;
 }
@@ -169,487 +169,487 @@ async function createBlockedMemoryProviderFixtureRepo(): Promise<string> {
  * @returns Temporary repository absolute path.
  */
 async function createWorkspaceMigrationFixtureRepo(): Promise<string> {
-  const temporaryRepositoryRoot = await mkdtemp(resolve(tmpdir(), "cli-output-workspace-"));
-  const workspaceRoot = resolve(temporaryRepositoryRoot, ".repo-ai-governor");
-  await mkdir(resolve(workspaceRoot, "context", "memory"), { recursive: true });
+  const temporaryRepositoryRoot = await mkdtemp(resolve(tmpdir(), 'cli-output-workspace-'));
+  const workspaceRoot = resolve(temporaryRepositoryRoot, '.repo-ai-governor');
+  await mkdir(resolve(workspaceRoot, 'context', 'memory'), { recursive: true });
   await writeFile(
-    resolve(workspaceRoot, "governor.yaml"),
+    resolve(workspaceRoot, 'governor.yaml'),
     [
       'schemaVersion: "1.1"',
-      "workspace:",
-      "  mode: repo_local",
-      "  migrationPolicy: copy_verify_switch_rollback",
-      "i18n:",
-      "  runtimeEngine: i18next",
-      "  defaultLocale: en-US",
-      "  fallbackLocale: en-US",
-      "  supportedLocales:",
-      "    - en-US",
-      "memory:",
-      "  storeEngine: fs_csv",
-      "  storeRoot: context/memory",
-      "",
-    ].join("\n"),
-    "utf8",
+      'workspace:',
+      '  mode: repo_local',
+      '  migrationPolicy: copy_verify_switch_rollback',
+      'i18n:',
+      '  runtimeEngine: i18next',
+      '  defaultLocale: en-US',
+      '  fallbackLocale: en-US',
+      '  supportedLocales:',
+      '    - en-US',
+      'memory:',
+      '  storeEngine: fs_csv',
+      '  storeRoot: context/memory',
+      '',
+    ].join('\n'),
+    'utf8',
   );
   return temporaryRepositoryRoot;
 }
 
-describe("CLI output contract integration", () => {
-  it("renders stable JSON schema in --output json mode", async () => {
+describe('CLI output contract integration', () => {
+  it('renders stable JSON schema in --output json mode', async () => {
     const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false);
 
     const exitCode = await runCli(
-      ["node", "repo-ai-governor", "--locale", "en-US", "--output", "json", "init"],
+      ['node', 'repo-ai-governor', '--locale', 'en-US', '--output', 'json', 'init'],
       io,
     );
 
-    const payload = JSON.parse(stdoutBuffer.join(""));
+    const payload = JSON.parse(stdoutBuffer.join(''));
 
     expect(exitCode).toBe(0);
-    expect(stderrBuffer.join("")).toBe("");
-    expect(payload.schema_version).toBe("cli_output_v1");
-    expect(payload.status).toBe("success");
-    expect(payload.output_mode).toBe("json");
-    expect(payload.verbosity).toBe("normal");
-    expect(payload.command).toBe("init");
+    expect(stderrBuffer.join('')).toBe('');
+    expect(payload.schema_version).toBe('cli_output_v1');
+    expect(payload.status).toBe('success');
+    expect(payload.output_mode).toBe('json');
+    expect(payload.verbosity).toBe('normal');
+    expect(payload.command).toBe('init');
     expect(payload.runtime.is_tty).toBe(false);
     expect(payload.runtime.downgraded_from).toBeNull();
-    expect(payload.message).toContain("Initialized workspace at");
-    expect(payload.command_result.operation).toBe("workspace_init");
+    expect(payload.message).toContain('Initialized workspace at');
+    expect(payload.command_result.operation).toBe('workspace_init');
   });
 
-  it("surfaces configured codex exec fixture mode in JSON diagnostics", async () => {
+  it('surfaces configured codex exec fixture mode in JSON diagnostics', async () => {
     const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, process.cwd(), {
-      [CliCodexExecFixtureEnvironmentKey.ENABLE_FIXTURES]: "1",
+      [CliCodexExecFixtureEnvironmentKey.ENABLE_FIXTURES]: '1',
       [CliCodexExecFixtureEnvironmentKey.EXEC_FIXTURE]: CliCodexExecFixtureMode.SUCCESS,
     });
 
     const exitCode = await runCli(
-      ["node", "repo-ai-governor", "--locale", "en-US", "--output", "json", "init"],
+      ['node', 'repo-ai-governor', '--locale', 'en-US', '--output', 'json', 'init'],
       io,
     );
-    const payload = JSON.parse(stdoutBuffer.join(""));
+    const payload = JSON.parse(stdoutBuffer.join(''));
 
     expect(exitCode).toBe(0);
-    expect(stderrBuffer.join("")).toBe("");
+    expect(stderrBuffer.join('')).toBe('');
     expect(payload.diagnostics.codexExecFixture).toBe(CliCodexExecFixtureMode.SUCCESS);
   });
 
-  it("surfaces configured github copilot exec fixture mode in JSON diagnostics", async () => {
+  it('surfaces configured github copilot exec fixture mode in JSON diagnostics', async () => {
     const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, process.cwd(), {
-      [CliGithubCopilotExecFixtureEnvironmentKey.ENABLE_FIXTURES]: "1",
+      [CliGithubCopilotExecFixtureEnvironmentKey.ENABLE_FIXTURES]: '1',
       [CliGithubCopilotExecFixtureEnvironmentKey.EXEC_FIXTURE]:
         CliGithubCopilotExecFixtureMode.SUCCESS,
     });
 
     const exitCode = await runCli(
-      ["node", "repo-ai-governor", "--locale", "en-US", "--output", "json", "init"],
+      ['node', 'repo-ai-governor', '--locale', 'en-US', '--output', 'json', 'init'],
       io,
     );
-    const payload = JSON.parse(stdoutBuffer.join(""));
+    const payload = JSON.parse(stdoutBuffer.join(''));
 
     expect(exitCode).toBe(0);
-    expect(stderrBuffer.join("")).toBe("");
+    expect(stderrBuffer.join('')).toBe('');
     expect(payload.diagnostics.githubCopilotExecFixture).toBe(
       CliGithubCopilotExecFixtureMode.SUCCESS,
     );
   });
 
-  it("downgrades pretty to plain in non-TTY environment", async () => {
+  it('downgrades pretty to plain in non-TTY environment', async () => {
     const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false);
 
     const exitCode = await runCli(
-      ["node", "repo-ai-governor", "--locale", "en-US", "--output", "pretty", "init"],
+      ['node', 'repo-ai-governor', '--locale', 'en-US', '--output', 'pretty', 'init'],
       io,
     );
 
-    const stdout = stdoutBuffer.join("");
+    const stdout = stdoutBuffer.join('');
 
     expect(exitCode).toBe(0);
-    expect(stderrBuffer.join("")).toBe("");
-    expect(stdout).toContain("outputMode=plain");
-    expect(stdout).not.toContain("\u001b[");
+    expect(stderrBuffer.join('')).toBe('');
+    expect(stdout).toContain('outputMode=plain');
+    expect(stdout).not.toContain('\u001b[');
   });
 
-  it("honors --no-color in pretty mode when stdout is TTY", async () => {
+  it('honors --no-color in pretty mode when stdout is TTY', async () => {
     const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(true);
 
     const exitCode = await runCli(
-      ["node", "repo-ai-governor", "--locale", "en-US", "--output", "pretty", "--no-color", "init"],
+      ['node', 'repo-ai-governor', '--locale', 'en-US', '--output', 'pretty', '--no-color', 'init'],
       io,
     );
 
-    const stdout = stdoutBuffer.join("");
+    const stdout = stdoutBuffer.join('');
 
     expect(exitCode).toBe(0);
-    expect(stderrBuffer.join("")).toBe("");
-    expect(stdout).toContain("repo-ai-governor: command succeeded");
-    expect(stdout).not.toContain("\u001b[");
+    expect(stderrBuffer.join('')).toBe('');
+    expect(stdout).toContain('repo-ai-governor: command succeeded');
+    expect(stdout).not.toContain('\u001b[');
   });
 
-  it("renders workspace migration dry-run output in stable JSON shape", async () => {
+  it('renders workspace migration dry-run output in stable JSON shape', async () => {
     const temporaryRepositoryRoot = await createWorkspaceMigrationFixtureRepo();
     const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, temporaryRepositoryRoot);
-    const managedRoot = resolve(temporaryRepositoryRoot, "managed-root");
+    const managedRoot = resolve(temporaryRepositoryRoot, 'managed-root');
 
     try {
       const exitCode = await runCli(
         [
-          "node",
-          "repo-ai-governor",
-          "--locale",
-          "en-US",
-          "--output",
-          "json",
-          "--workspace-action",
-          "dry-run",
-          "--workspace-mode",
-          "tool_managed",
-          "--workspace-root",
+          'node',
+          'repo-ai-governor',
+          '--locale',
+          'en-US',
+          '--output',
+          'json',
+          '--workspace-action',
+          'dry-run',
+          '--workspace-mode',
+          'tool_managed',
+          '--workspace-root',
           managedRoot,
-          "workspace",
+          'workspace',
         ],
         io,
       );
-      const payload = JSON.parse(stdoutBuffer.join(""));
+      const payload = JSON.parse(stdoutBuffer.join(''));
 
       expect(exitCode).toBe(0);
-      expect(stderrBuffer.join("")).toBe("");
-      expect(payload.command).toBe("workspace");
-      expect(payload.command_result.operation).toBe("workspace_migration_plan");
-      expect(payload.command_result.details.action).toBe("dry_run");
-      expect(payload.command_result.details.target_workspace_mode).toBe("tool_managed");
+      expect(stderrBuffer.join('')).toBe('');
+      expect(payload.command).toBe('workspace');
+      expect(payload.command_result.operation).toBe('workspace_migration_plan');
+      expect(payload.command_result.details.action).toBe('dry_run');
+      expect(payload.command_result.details.target_workspace_mode).toBe('tool_managed');
     } finally {
       await rm(temporaryRepositoryRoot, { recursive: true, force: true });
     }
   });
 
-  it("renders workspace migration dry-run key details in pretty mode", async () => {
+  it('renders workspace migration dry-run key details in pretty mode', async () => {
     const temporaryRepositoryRoot = await createWorkspaceMigrationFixtureRepo();
     const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(true, temporaryRepositoryRoot);
-    const managedRoot = resolve(temporaryRepositoryRoot, "managed root");
+    const managedRoot = resolve(temporaryRepositoryRoot, 'managed root');
 
     try {
       const exitCode = await runCli(
         [
-          "node",
-          "repo-ai-governor",
-          "--locale",
-          "en-US",
-          "--output",
-          "pretty",
-          "--no-color",
-          "--workspace-action",
-          "dry-run",
-          "--workspace-mode",
-          "tool_managed",
-          "--workspace-root",
+          'node',
+          'repo-ai-governor',
+          '--locale',
+          'en-US',
+          '--output',
+          'pretty',
+          '--no-color',
+          '--workspace-action',
+          'dry-run',
+          '--workspace-mode',
+          'tool_managed',
+          '--workspace-root',
           managedRoot,
-          "workspace",
+          'workspace',
         ],
         io,
       );
-      const stdout = stdoutBuffer.join("");
+      const stdout = stdoutBuffer.join('');
 
       expect(exitCode).toBe(0);
-      expect(stderrBuffer.join("")).toBe("");
-      expect(stdout).toContain("Key Details");
-      expect(stdout).toContain("Workspace action: dry_run");
+      expect(stderrBuffer.join('')).toBe('');
+      expect(stdout).toContain('Key Details');
+      expect(stdout).toContain('Workspace action: dry_run');
       expect(stdout).toContain(`Workspace target: mode tool_managed, root ${managedRoot}`);
-      expect(stdout).toContain("Rollback reference:");
+      expect(stdout).toContain('Rollback reference:');
     } finally {
       await rm(temporaryRepositoryRoot, { recursive: true, force: true });
     }
   });
 
-  it("collapses pretty output detail blocks when --compact is enabled", async () => {
+  it('collapses pretty output detail blocks when --compact is enabled', async () => {
     const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(true);
 
     const exitCode = await runCli(
       [
-        "node",
-        "repo-ai-governor",
-        "--locale",
-        "en-US",
-        "--output",
-        "pretty",
-        "--compact",
-        "--no-color",
-        "init",
+        'node',
+        'repo-ai-governor',
+        '--locale',
+        'en-US',
+        '--output',
+        'pretty',
+        '--compact',
+        '--no-color',
+        'init',
       ],
       io,
     );
 
-    const stdout = stdoutBuffer.join("");
+    const stdout = stdoutBuffer.join('');
 
     expect(exitCode).toBe(0);
-    expect(stderrBuffer.join("")).toBe("");
-    expect(stdout).toContain("Summary");
-    expect(stdout).toContain("Artifacts");
-    expect(stdout).toContain("artifact(s) generated.");
-    expect(stdout).toContain("Primary:");
-    expect(stdout).toContain("Context");
-    expect(stdout).toContain("Locale=en-US");
-    expect(stdout).not.toContain("Output mode:");
+    expect(stderrBuffer.join('')).toBe('');
+    expect(stdout).toContain('Summary');
+    expect(stdout).toContain('Artifacts');
+    expect(stdout).toContain('artifact(s) generated.');
+    expect(stdout).toContain('Primary:');
+    expect(stdout).toContain('Context');
+    expect(stdout).toContain('Locale=en-US');
+    expect(stdout).not.toContain('Output mode:');
   });
 
-  it("outputs structured error fields in JSON mode for invalid command", async () => {
+  it('outputs structured error fields in JSON mode for invalid command', async () => {
     const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false);
 
     const exitCode = await runCli(
-      ["node", "repo-ai-governor", "--output", "json", "unknown-command"],
+      ['node', 'repo-ai-governor', '--output', 'json', 'unknown-command'],
       io,
     );
 
-    const payload = JSON.parse(stderrBuffer.join(""));
+    const payload = JSON.parse(stderrBuffer.join(''));
 
     expect(exitCode).toBe(1);
-    expect(stdoutBuffer.join("")).toBe("");
-    expect(payload.schema_version).toBe("cli_output_v1");
-    expect(payload.status).toBe("error");
-    expect(payload.output_mode).toBe("json");
-    expect(payload.error_code).toBe("ENTRYPOINT_COMMAND_WRAPPER_INVALID");
-    expect(payload.hint).toContain("Command name or option values");
-    expect(payload.next_action).toBe("check_command_usage");
-    expect(payload.command).toBe("unknown-command");
+    expect(stdoutBuffer.join('')).toBe('');
+    expect(payload.schema_version).toBe('cli_output_v1');
+    expect(payload.status).toBe('error');
+    expect(payload.output_mode).toBe('json');
+    expect(payload.error_code).toBe('ENTRYPOINT_COMMAND_WRAPPER_INVALID');
+    expect(payload.hint).toContain('Command name or option values');
+    expect(payload.next_action).toBe('check_command_usage');
+    expect(payload.command).toBe('unknown-command');
   });
 
-  it("keeps JSON error contract when another global option fails validation", async () => {
+  it('keeps JSON error contract when another global option fails validation', async () => {
     const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false);
 
     const exitCode = await runCli(
-      ["node", "repo-ai-governor", "--output", "json", "--verbosity", "invalid", "init"],
+      ['node', 'repo-ai-governor', '--output', 'json', '--verbosity', 'invalid', 'init'],
       io,
     );
 
-    const payload = JSON.parse(stderrBuffer.join(""));
+    const payload = JSON.parse(stderrBuffer.join(''));
 
     expect(exitCode).toBe(1);
-    expect(stdoutBuffer.join("")).toBe("");
-    expect(payload.status).toBe("error");
-    expect(payload.output_mode).toBe("json");
-    expect(payload.error_code).toBe("ENTRYPOINT_COMMAND_WRAPPER_INVALID");
-    expect(payload.command).toBe("init");
+    expect(stdoutBuffer.join('')).toBe('');
+    expect(payload.status).toBe('error');
+    expect(payload.output_mode).toBe('json');
+    expect(payload.error_code).toBe('ENTRYPOINT_COMMAND_WRAPPER_INVALID');
+    expect(payload.command).toBe('init');
   });
 
-  it("keeps JSON error contract when memory provider module is outside plugin allowlist", async () => {
+  it('keeps JSON error contract when memory provider module is outside plugin allowlist', async () => {
     const repositoryRoot = await createBlockedMemoryProviderFixtureRepo();
     const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, repositoryRoot);
 
     try {
-      const exitCode = await runCli(["node", "repo-ai-governor", "--output", "json", "init"], io);
-      const payload = JSON.parse(stderrBuffer.join(""));
+      const exitCode = await runCli(['node', 'repo-ai-governor', '--output', 'json', 'init'], io);
+      const payload = JSON.parse(stderrBuffer.join(''));
 
       expect(exitCode).toBe(1);
-      expect(stdoutBuffer.join("")).toBe("");
-      expect(payload.status).toBe("error");
-      expect(payload.output_mode).toBe("json");
-      expect(payload.error_code).toBe("MEMORY_STORE_PROVIDER_NOT_FOUND");
-      expect(payload.message).toContain("not allowlisted");
-      expect(payload.command).toBe("init");
+      expect(stdoutBuffer.join('')).toBe('');
+      expect(payload.status).toBe('error');
+      expect(payload.output_mode).toBe('json');
+      expect(payload.error_code).toBe('MEMORY_STORE_PROVIDER_NOT_FOUND');
+      expect(payload.message).toContain('not allowlisted');
+      expect(payload.command).toBe('init');
     } finally {
       await rm(repositoryRoot, { recursive: true, force: true });
     }
   });
 
-  it("fails fast when official IDE wrapper env carries invalid surface or source IDs", async () => {
+  it('fails fast when official IDE wrapper env carries invalid surface or source IDs', async () => {
     const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, process.cwd(), {
-      REPO_AI_GOVERNOR_ENTRY_SURFACE: "not_a_surface",
-      REPO_AI_GOVERNOR_STANDARDS_PROFILE_ID: "broken-profile",
-      REPO_AI_GOVERNOR_STANDARDS_SOURCES: "totally_invalid",
+      REPO_AI_GOVERNOR_ENTRY_SURFACE: 'not_a_surface',
+      REPO_AI_GOVERNOR_STANDARDS_PROFILE_ID: 'broken-profile',
+      REPO_AI_GOVERNOR_STANDARDS_SOURCES: 'totally_invalid',
     });
 
     const exitCode = await runCli(
-      ["node", "repo-ai-governor", "--locale", "en-US", "--output", "json", "doctor"],
+      ['node', 'repo-ai-governor', '--locale', 'en-US', '--output', 'json', 'doctor'],
       io,
     );
 
-    const payload = JSON.parse(stderrBuffer.join(""));
+    const payload = JSON.parse(stderrBuffer.join(''));
 
     expect(exitCode).toBe(1);
-    expect(stdoutBuffer.join("")).toBe("");
-    expect(payload.status).toBe("error");
-    expect(payload.error_code).toBe("ENTRYPOINT_COMMAND_WRAPPER_INVALID");
-    expect(payload.command).toBe("doctor");
+    expect(stdoutBuffer.join('')).toBe('');
+    expect(payload.status).toBe('error');
+    expect(payload.error_code).toBe('ENTRYPOINT_COMMAND_WRAPPER_INVALID');
+    expect(payload.command).toBe('doctor');
   });
 
-  it("surfaces validated IDE wrapper env in JSON diagnostics", async () => {
+  it('surfaces validated IDE wrapper env in JSON diagnostics', async () => {
     const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, process.cwd(), {
-      REPO_AI_GOVERNOR_ENTRY_SURFACE: "vscode",
-      REPO_AI_GOVERNOR_STANDARDS_PROFILE_ID: "stage5-entry-baseline",
+      REPO_AI_GOVERNOR_ENTRY_SURFACE: 'vscode',
+      REPO_AI_GOVERNOR_STANDARDS_PROFILE_ID: 'stage5-entry-baseline',
       REPO_AI_GOVERNOR_STANDARDS_SOURCES:
-        "product_requirements_brief,overall_technical_solution,architecture_and_repo_layering,code_standards,long_term_maintenance_guide,agents_projection",
+        'product_requirements_brief,overall_technical_solution,architecture_and_repo_layering,code_standards,long_term_maintenance_guide,agents_projection',
     });
 
     const exitCode = await runCli(
-      ["node", "repo-ai-governor", "--locale", "en-US", "--output", "json", "doctor"],
+      ['node', 'repo-ai-governor', '--locale', 'en-US', '--output', 'json', 'doctor'],
       io,
     );
 
-    const payload = JSON.parse(stdoutBuffer.join(""));
+    const payload = JSON.parse(stdoutBuffer.join(''));
 
     expect(exitCode).toBe(0);
-    expect(stderrBuffer.join("")).toBe("");
-    expect(payload.status).toBe("success");
-    expect(payload.diagnostics.entrySurface).toBe("vscode");
-    expect(payload.diagnostics.standardsProfileId).toBe("stage5-entry-baseline");
+    expect(stderrBuffer.join('')).toBe('');
+    expect(payload.status).toBe('success');
+    expect(payload.diagnostics.entrySurface).toBe('vscode');
+    expect(payload.diagnostics.standardsProfileId).toBe('stage5-entry-baseline');
     expect(payload.diagnostics.standardsSourceIds).toEqual([
-      "product_requirements_brief",
-      "overall_technical_solution",
-      "architecture_and_repo_layering",
-      "code_standards",
-      "long_term_maintenance_guide",
-      "agents_projection",
+      'product_requirements_brief',
+      'overall_technical_solution',
+      'architecture_and_repo_layering',
+      'code_standards',
+      'long_term_maintenance_guide',
+      'agents_projection',
     ]);
   });
 
-  it("reduces diagnostics noise in quiet mode", async () => {
+  it('reduces diagnostics noise in quiet mode', async () => {
     const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false);
 
     const exitCode = await runCli(
       [
-        "node",
-        "repo-ai-governor",
-        "--locale",
-        "en-US",
-        "--output",
-        "plain",
-        "--verbosity",
-        "quiet",
-        "init",
+        'node',
+        'repo-ai-governor',
+        '--locale',
+        'en-US',
+        '--output',
+        'plain',
+        '--verbosity',
+        'quiet',
+        'init',
       ],
       io,
     );
 
-    const stdout = stdoutBuffer.join("");
+    const stdout = stdoutBuffer.join('');
 
     expect(exitCode).toBe(0);
-    expect(stderrBuffer.join("")).toBe("");
-    expect(stdout).toContain("Initialized workspace at");
-    expect(stdout).toContain("outputMode=plain");
-    expect(stdout).not.toContain("workspaceRoot=");
-    expect(stdout).not.toContain("memoryStoreRoot=");
-    expect(stdout).not.toContain("verbosity=");
+    expect(stderrBuffer.join('')).toBe('');
+    expect(stdout).toContain('Initialized workspace at');
+    expect(stdout).toContain('outputMode=plain');
+    expect(stdout).not.toContain('workspaceRoot=');
+    expect(stdout).not.toContain('memoryStoreRoot=');
+    expect(stdout).not.toContain('verbosity=');
   });
 
-  it("maps replay-input failures to dedicated next action with structured replay_path", async () => {
+  it('maps replay-input failures to dedicated next action with structured replay_path', async () => {
     const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false);
     const missingReplayPath = resolve(process.cwd(), `.tmp-missing-replay-${Date.now()}.json`);
 
     const exitCode = await runCli(
-      ["node", "repo-ai-governor", "--output", "json", "run", "--replay", missingReplayPath],
+      ['node', 'repo-ai-governor', '--output', 'json', 'run', '--replay', missingReplayPath],
       io,
     );
-    const payload = JSON.parse(stderrBuffer.join(""));
+    const payload = JSON.parse(stderrBuffer.join(''));
 
     expect(exitCode).toBe(1);
-    expect(stdoutBuffer.join("")).toBe("");
-    expect(payload.error_code).toBe("REPORT_REPLAY_INPUT_INVALID");
-    expect(payload.next_action).toBe("check_replay_source");
+    expect(stdoutBuffer.join('')).toBe('');
+    expect(payload.error_code).toBe('REPORT_REPLAY_INPUT_INVALID');
+    expect(payload.next_action).toBe('check_replay_source');
     expect(payload.error_details.replay_path).toBe(missingReplayPath);
   });
 
-  it("maps policy-gated run failures to policy diagnostics next action", async () => {
+  it('maps policy-gated run failures to policy diagnostics next action', async () => {
     const fixtureRepositoryRoot = await createPolicyGateFixtureRepo();
     try {
       const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, fixtureRepositoryRoot);
-      const exitCode = await runCli(["node", "repo-ai-governor", "--output", "json", "run"], io);
-      const payload = JSON.parse(stderrBuffer.join(""));
+      const exitCode = await runCli(['node', 'repo-ai-governor', '--output', 'json', 'run'], io);
+      const payload = JSON.parse(stderrBuffer.join(''));
 
       expect(exitCode).toBe(1);
-      expect(stdoutBuffer.join("")).toBe("");
-      expect(["POLICY_GATE_HITL_FEEDBACK_INVALID", "POLICY_GATE_EVALUATION_FAILED"]).toContain(
+      expect(stdoutBuffer.join('')).toBe('');
+      expect(['POLICY_GATE_HITL_FEEDBACK_INVALID', 'POLICY_GATE_EVALUATION_FAILED']).toContain(
         payload.error_code,
       );
-      expect(payload.next_action).toBe("inspect_policy_diagnostics");
-      expect(typeof payload.error_details.report_path).toBe("string");
-      expect(typeof payload.error_details.replay_path).toBe("string");
+      expect(payload.next_action).toBe('inspect_policy_diagnostics');
+      expect(typeof payload.error_details.report_path).toBe('string');
+      expect(typeof payload.error_details.replay_path).toBe('string');
     } finally {
       await rm(fixtureRepositoryRoot, { recursive: true, force: true });
     }
   });
 
-  it("parses HITL decision receipt flags from CLI argv and resumes run", async () => {
+  it('parses HITL decision receipt flags from CLI argv and resumes run', async () => {
     const fixtureRepositoryRoot = await createPolicyGateFixtureRepo();
     try {
       const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, fixtureRepositoryRoot);
       const exitCode = await runCli(
         [
-          "node",
-          "repo-ai-governor",
-          "--output",
-          "json",
-          "run",
-          "--hitl-decision",
-          "approve",
-          "--hitl-decision-reason",
-          "Maintainer approved unattended continuation.",
-          "--hitl-decided-by",
-          "maintainer@example.com",
+          'node',
+          'repo-ai-governor',
+          '--output',
+          'json',
+          'run',
+          '--hitl-decision',
+          'approve',
+          '--hitl-decision-reason',
+          'Maintainer approved unattended continuation.',
+          '--hitl-decided-by',
+          'maintainer@example.com',
         ],
         io,
       );
-      const payload = JSON.parse(stdoutBuffer.join(""));
+      const payload = JSON.parse(stdoutBuffer.join(''));
 
       expect(exitCode).toBe(0);
-      expect(stderrBuffer.join("")).toBe("");
-      expect(payload.status).toBe("success");
-      expect(payload.command_result.operation).toBe("governance_run");
-      expect(payload.command_result.details.original_policy_outcome).toBe("escalate");
-      expect(payload.command_result.details.effective_policy_outcome).toBe("allow");
-      expect(payload.command_result.details.hitl_decision).toBe("approve");
-      expect(payload.command_result.details.hitl_resume_action).toBe("resume");
-      expect(typeof payload.command_result.details.hitl_decision_receipt_path).toBe("string");
+      expect(stderrBuffer.join('')).toBe('');
+      expect(payload.status).toBe('success');
+      expect(payload.command_result.operation).toBe('governance_run');
+      expect(payload.command_result.details.original_policy_outcome).toBe('escalate');
+      expect(payload.command_result.details.effective_policy_outcome).toBe('allow');
+      expect(payload.command_result.details.hitl_decision).toBe('approve');
+      expect(payload.command_result.details.hitl_resume_action).toBe('resume');
+      expect(typeof payload.command_result.details.hitl_decision_receipt_path).toBe('string');
     } finally {
       await rm(fixtureRepositoryRoot, { recursive: true, force: true });
     }
   });
 
-  it("rejects unsupported HITL decision option values", async () => {
+  it('rejects unsupported HITL decision option values', async () => {
     const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false);
 
     const exitCode = await runCli(
-      ["node", "repo-ai-governor", "--output", "json", "run", "--hitl-decision", "invalid"],
+      ['node', 'repo-ai-governor', '--output', 'json', 'run', '--hitl-decision', 'invalid'],
       io,
     );
-    const payload = JSON.parse(stderrBuffer.join(""));
+    const payload = JSON.parse(stderrBuffer.join(''));
 
     expect(exitCode).toBe(1);
-    expect(stdoutBuffer.join("")).toBe("");
-    expect(payload.error_code).toBe("ENTRYPOINT_COMMAND_WRAPPER_INVALID");
-    expect(payload.command).toBe("run");
+    expect(stdoutBuffer.join('')).toBe('');
+    expect(payload.error_code).toBe('ENTRYPOINT_COMMAND_WRAPPER_INVALID');
+    expect(payload.command).toBe('run');
   });
 
-  it("keeps default adapter baseline when profile only overrides tools", async () => {
+  it('keeps default adapter baseline when profile only overrides tools', async () => {
     const fixtureRepositoryRoot = await createProfileOnlyAdaptersFixtureRepo();
     try {
       const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, fixtureRepositoryRoot, {
-        PATH: "",
-        Path: "",
+        PATH: '',
+        Path: '',
       });
       const exitCode = await runCli(
         [
-          "node",
-          "repo-ai-governor",
-          "--output",
-          "json",
-          "--profile",
-          "tool-only",
-          "verify",
-          "--adapters",
+          'node',
+          'repo-ai-governor',
+          '--output',
+          'json',
+          '--profile',
+          'tool-only',
+          'verify',
+          '--adapters',
         ],
         io,
       );
-      const stdout = stdoutBuffer.join("");
-      const stderr = stderrBuffer.join("");
+      const stdout = stdoutBuffer.join('');
+      const stderr = stderrBuffer.join('');
 
       expect(exitCode).toBe(0);
-      expect(stderr).toBe("");
-      expect(stdout).not.toBe("");
+      expect(stderr).toBe('');
+      expect(stdout).not.toBe('');
       const payload = JSON.parse(stdout);
-      expect(payload.status).toBe("success");
-      expect(payload.command_result.operation).toBe("adapter_verify");
+      expect(payload.status).toBe('success');
+      expect(payload.command_result.operation).toBe('adapter_verify');
       expect(payload.command_result.details.required_roles).toBeGreaterThan(0);
     } finally {
       await rm(fixtureRepositoryRoot, { recursive: true, force: true });

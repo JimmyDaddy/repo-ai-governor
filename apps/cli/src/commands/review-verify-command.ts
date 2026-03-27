@@ -1,30 +1,30 @@
-import { existsSync } from "node:fs";
-import { mkdir } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { existsSync } from 'node:fs';
+import { mkdir } from 'node:fs/promises';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import {
   OrchestrationClientSurface,
   OrchestrationExecutionKind,
   OrchestrationExecutionStatus,
   OrchestrationServiceEventType,
-} from "@repo-ai-governor/orchestration-service-client";
-import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
+} from '@repo-ai-governor/orchestration-service-client';
+import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import {
   ExecutionInteractionCategory,
   ExecutionProgressStage,
   ExecutionProgressStatus,
-} from "@repo-ai-governor/shared";
-import { CliCommandName } from "../constants/cli-command.constant.js";
+} from '@repo-ai-governor/shared';
+import { CliCommandName } from '../constants/cli-command.constant.js';
 import {
   CLI_DIAGNOSTIC_ROOT_CAUSE,
   CLI_REVIEW_LEDGER_BACKFILL_STATUS,
   CLI_REVIEW_REQUEST_STATUS,
   CLI_RUNTIME_OPERATION,
   CliGovernanceCheckStatus,
-} from "../constants/cli-governance-runtime.constant.js";
-import type { CliCommandExecutorContext } from "../types/interfaces/cli-governance-runtime.interface.js";
-import type { CliCommandExecutor } from "./cli-command-executor.interface.js";
+} from '../constants/cli-governance-runtime.constant.js';
+import type { CliCommandExecutorContext } from '../types/interfaces/cli-governance-runtime.interface.js';
+import type { CliCommandExecutor } from './cli-command-executor.interface.js';
 
 function resolveTaskLedgerSyncScriptPath(): string | null {
   const sourceFilePath = fileURLToPath(import.meta.url);
@@ -35,15 +35,15 @@ function resolveTaskLedgerSyncScriptPath(): string | null {
     for (let depth = 0; depth < 8; depth += 1) {
       const candidatePath = resolve(
         currentDirectory,
-        "scripts",
-        "governance",
-        "sync-task-ledger.js",
+        'scripts',
+        'governance',
+        'sync-task-ledger.js',
       );
       if (existsSync(candidatePath)) {
         return candidatePath;
       }
 
-      const parentDirectory = resolve(currentDirectory, "..");
+      const parentDirectory = resolve(currentDirectory, '..');
       if (parentDirectory === currentDirectory) {
         break;
       }
@@ -68,7 +68,7 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
    */
   private resolveRequestTaskId(requestPayload: Record<string, unknown> | null): string | null {
     return requestPayload &&
-      typeof requestPayload.taskId === "string" &&
+      typeof requestPayload.taskId === 'string' &&
       requestPayload.taskId.trim().length > 0
       ? requestPayload.taskId.trim()
       : null;
@@ -85,7 +85,7 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
     context: CliCommandExecutorContext,
     queuedRequestArtifacts: Awaited<
       ReturnType<
-        CliCommandExecutorContext["reviewQueueRuntime"]["collectQueuedReviewRequestArtifacts"]
+        CliCommandExecutorContext['reviewQueueRuntime']['collectQueuedReviewRequestArtifacts']
       >
     >,
     requestedTaskId: string | null,
@@ -129,7 +129,7 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
     if (!latestQueuedRequest) {
       throw new RuntimeError(
         GovernorErrorCode.UNKNOWN,
-        "review-verify failed to resolve queued request artifact.",
+        'review-verify failed to resolve queued request artifact.',
       );
     }
 
@@ -148,7 +148,7 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
     if (queuedRequestArtifacts.length === 0) {
       throw new RuntimeError(
         GovernorErrorCode.UNKNOWN,
-        "review-verify requires at least one queued review request artifact.",
+        'review-verify requires at least one queued review request artifact.',
       );
     }
 
@@ -161,7 +161,7 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
     const verifyId = `review-verify-${Date.now()}`;
     const verifyPath = resolve(reviewQueueDirectories.resultDirectoryPath, `${verifyId}.json`);
     const sourceRequestId =
-      typeof requestPayload?.requestId === "string"
+      typeof requestPayload?.requestId === 'string'
         ? requestPayload.requestId
         : latestQueuedRequest.requestId;
     const requestTaskId = this.resolveRequestTaskId(requestPayload);
@@ -172,19 +172,19 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
         runtimeDebugOptions.recordLedger);
     const diagnosticContext =
       requestPayload &&
-      typeof requestPayload.diagnosticContext === "object" &&
+      typeof requestPayload.diagnosticContext === 'object' &&
       requestPayload.diagnosticContext
         ? (requestPayload.diagnosticContext as Record<string, unknown>)
         : null;
     const correlationId =
-      diagnosticContext && typeof diagnosticContext.correlationId === "string"
+      diagnosticContext && typeof diagnosticContext.correlationId === 'string'
         ? diagnosticContext.correlationId
         : `review-chain-${sourceRequestId}`;
     const ledgerBackfillPath = resolve(
       context.options.workspace.workspaceRoot,
-      "context",
-      "ledger-backfill",
-      "review-verify",
+      'context',
+      'ledger-backfill',
+      'review-verify',
       `${verifyId}.json`,
     );
     const verifiedAt = context.toRfc3339SecondsTimestamp(new Date());
@@ -204,7 +204,7 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
       {
         executionId: verifyId,
         executionSessionId,
-        processId: "review-verify",
+        processId: 'review-verify',
       },
     );
     let ledgerBackfillStatus = CLI_REVIEW_LEDGER_BACKFILL_STATUS.PENDING;
@@ -216,21 +216,21 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
       if (!syncScriptPath) {
         ledgerBackfillStatus = CLI_REVIEW_LEDGER_BACKFILL_STATUS.FAILED;
         ledgerBackfillErrorMessage =
-          "sync-task-ledger.js could not be resolved from current installation.";
+          'sync-task-ledger.js could not be resolved from current installation.';
       } else {
         try {
           await context.runNodeScript(syncScriptPath, [
-            "--workspace-root",
+            '--workspace-root',
             context.options.workspace.workspaceRoot,
-            "--task-id",
+            '--task-id',
             taskId,
-            "--execution-id",
+            '--execution-id',
             verifyId,
-            "--verify",
+            '--verify',
             `review-verify ${verifyId} consumed queued request ${sourceRequestId}`,
-            "--review-delta",
+            '--review-delta',
             `managed ledger backfill applied from ${verifyId}`,
-            "--checklist-note",
+            '--checklist-note',
             `${verifiedAt.slice(0, 10)}：自动消费 review-verify 产物并完成 ledger backfill（verify_id=${verifyId}）。`,
           ]);
           ledgerBackfillStatus = CLI_REVIEW_LEDGER_BACKFILL_STATUS.APPLIED;
@@ -255,8 +255,8 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
       ...(ledgerBackfillApplied ? { appliedAt: verifiedAt } : {}),
       attribution: {
         correlationId,
-        chain: "review->review-verify->ledger-backfill",
-        chainStep: "ledger-backfill",
+        chain: 'review->review-verify->ledger-backfill',
+        chainStep: 'ledger-backfill',
       },
       diagnostics: {
         rootCause:
@@ -264,8 +264,8 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
             ? CLI_DIAGNOSTIC_ROOT_CAUSE.RUNTIME_FAILURE
             : CLI_DIAGNOSTIC_ROOT_CAUSE.NONE,
         note: ledgerBackfillApplied
-          ? "Managed review chain auto-applied task ledger backfill."
-          : "Ready for tasks/checklist/csv backfill consumption.",
+          ? 'Managed review chain auto-applied task ledger backfill.'
+          : 'Ready for tasks/checklist/csv backfill consumption.',
         ...(ledgerBackfillErrorMessage ? { error: ledgerBackfillErrorMessage } : {}),
       },
     });
@@ -290,8 +290,8 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
       ledgerBackfillStatus,
       diagnosticAttribution: {
         correlationId,
-        chain: "review->review-verify->ledger-backfill",
-        chainStep: "review-verify",
+        chain: 'review->review-verify->ledger-backfill',
+        chainStep: 'review-verify',
       },
       orchestrationExecutionId: orchestrationExecution.executionId,
       orchestrationEventStreamToken: orchestrationExecution.eventStreamToken,
@@ -319,9 +319,9 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
         correlationId,
         queueStage:
           ledgerBackfillStatus === CLI_REVIEW_LEDGER_BACKFILL_STATUS.FAILED
-            ? "review-verify-failed"
-            : "review-verify-consumed",
-        chain: "review->review-verify->ledger-backfill",
+            ? 'review-verify-failed'
+            : 'review-verify-consumed',
+        chain: 'review->review-verify->ledger-backfill',
         ...(taskId ? { taskId } : {}),
         managedLedgerBackfill: shouldAutoApplyLedgerBackfill,
         ...(ledgerBackfillErrorMessage
@@ -337,7 +337,7 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
         executionId: verifyId,
         type: OrchestrationServiceEventType.ARTIFACT_READY,
         status: OrchestrationExecutionStatus.FAILED,
-        artifactId: "review_verify_result",
+        artifactId: 'review_verify_result',
         artifactPath: verifyPath,
         message: `Review verify artifact ${verifyId} persisted with failed ledger backfill.`,
       });
@@ -345,7 +345,7 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
         executionId: verifyId,
         type: OrchestrationServiceEventType.EXECUTION_FAILED,
         status: OrchestrationExecutionStatus.FAILED,
-        artifactId: "review_ledger_backfill",
+        artifactId: 'review_ledger_backfill',
         artifactPath: ledgerBackfillPath,
         message: `Review verify execution ${verifyId} failed during managed ledger backfill.`,
       });
@@ -365,7 +365,7 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
       executionId: verifyId,
       type: OrchestrationServiceEventType.ARTIFACT_READY,
       status: OrchestrationExecutionStatus.RUNNING,
-      artifactId: "review_verify_result",
+      artifactId: 'review_verify_result',
       artifactPath: verifyPath,
       message: `Review verify artifact ${verifyId} persisted.`,
     });
@@ -373,7 +373,7 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
       executionId: verifyId,
       type: OrchestrationServiceEventType.ARTIFACT_READY,
       status: OrchestrationExecutionStatus.RUNNING,
-      artifactId: "review_ledger_backfill",
+      artifactId: 'review_ledger_backfill',
       artifactPath: ledgerBackfillPath,
       message: `Review ledger-backfill artifact ${verifyId} persisted.`,
     });
@@ -391,11 +391,11 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
     const experience = context.commandExperienceBuilder.buildExperiencePayload({
       roleProgress: [
         {
-          roleId: "verifier",
+          roleId: 'verifier',
           stage: ExecutionProgressStage.REVIEW_VERIFY,
           status: ExecutionProgressStatus.COMPLETED,
           category: ExecutionInteractionCategory.NONE,
-          summary: "Review verification artifact persisted.",
+          summary: 'Review verification artifact persisted.',
           detail: `verify_id=${verifyId}`,
           backlink: {
             stageId: ExecutionProgressStage.REVIEW_VERIFY,
@@ -403,7 +403,7 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
           },
         },
         {
-          roleId: "ledger-backfill",
+          roleId: 'ledger-backfill',
           stage: ExecutionProgressStage.LEDGER_BACKFILL,
           status: ledgerBackfillApplied
             ? ExecutionProgressStatus.COMPLETED
@@ -412,8 +412,8 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
             ? ExecutionInteractionCategory.NONE
             : ExecutionInteractionCategory.POLICY_WAITING,
           summary: ledgerBackfillApplied
-            ? "Managed ledger backfill applied."
-            : "Ledger backfill pending downstream task ledger consumption.",
+            ? 'Managed ledger backfill applied.'
+            : 'Ledger backfill pending downstream task ledger consumption.',
           detail: taskId
             ? `source_request_id=${sourceRequestId} task_id=${taskId}`
             : `source_request_id=${sourceRequestId}`,
@@ -429,16 +429,16 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
             {
               category: ExecutionInteractionCategory.POLICY_WAITING,
               stage: ExecutionProgressStage.LEDGER_BACKFILL,
-              title: "Consume ledger-backfill artifact",
+              title: 'Consume ledger-backfill artifact',
               action:
-                "Apply ledger-backfill payload into tasks/checklist/tasks.csv to close review chain.",
+                'Apply ledger-backfill payload into tasks/checklist/tasks.csv to close review chain.',
               blocking: true,
             },
           ],
       layeredLogs: {
         summary: [
           `verify_id=${verifyId}`,
-          "chain=review->review-verify->ledger-backfill",
+          'chain=review->review-verify->ledger-backfill',
           `ledger_backfill_status=${ledgerBackfillStatus}`,
         ],
         detailed: [
@@ -461,18 +461,18 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
         },
         checks: [
           {
-            id: "review_verify",
+            id: 'review_verify',
             status: CliGovernanceCheckStatus.PASS,
             detail: latestQueuedRequest.fileName,
           },
         ],
         artifacts: [
           {
-            id: "review_verify_result",
+            id: 'review_verify_result',
             path: verifyPath,
           },
           {
-            id: "review_ledger_backfill",
+            id: 'review_ledger_backfill',
             path: ledgerBackfillPath,
           },
         ],

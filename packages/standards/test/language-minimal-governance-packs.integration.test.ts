@@ -5,8 +5,8 @@ import {
   StandardsRenderTarget,
   goMinimalGovernancePack,
   pythonMinimalGovernancePack,
-} from "../src/index.js";
-import type { StandardsPack } from "../src/index.js";
+} from '../src/index.js';
+import type { StandardsPack } from '../src/index.js';
 
 const RENDER_TARGETS = [
   StandardsRenderTarget.HUMAN,
@@ -32,7 +32,7 @@ function expectPackToRender(pack: StandardsPack): void {
   for (const renderTarget of RENDER_TARGETS) {
     const renderResult = ruleRenderer.render({
       target: renderTarget,
-      locale: "en-US",
+      locale: 'en-US',
     });
 
     expect(renderResult.renderedRules).toHaveLength(pack.rules.length);
@@ -42,7 +42,7 @@ function expectPackToRender(pack: StandardsPack): void {
   }
 
   const zhProjection = agentsProjector.project({
-    locale: "zh-CN",
+    locale: 'zh-CN',
   });
 
   expect(zhProjection.parity.isAligned).toBe(true);
@@ -55,23 +55,23 @@ function expectPackToRender(pack: StandardsPack): void {
   expect(zhProjection.renderedRules).toHaveLength(pack.rules.length);
 }
 
-describe("minimal language governance packs", () => {
-  it("provides one renderable Python governance baseline pack", () => {
+describe('minimal language governance packs', () => {
+  it('provides one renderable Python governance baseline pack', () => {
     expect(pythonMinimalGovernancePack.rules.map((rule) => rule.semanticKey)).toEqual([
-      "rule.python.project.pyproject",
-      "rule.python.lint.ruff",
-      "rule.python.test.pytest",
-      "rule.python.types.pyright",
+      'rule.python.project.pyproject',
+      'rule.python.lint.ruff',
+      'rule.python.test.pytest',
+      'rule.python.types.pyright',
     ]);
     expectPackToRender(pythonMinimalGovernancePack);
   });
 
-  it("provides one renderable Go governance baseline pack", () => {
+  it('provides one renderable Go governance baseline pack', () => {
     expect(goMinimalGovernancePack.rules.map((rule) => rule.semanticKey)).toEqual([
-      "rule.go.project.modules",
-      "rule.go.format.go-fmt",
-      "rule.go.test.go-test",
-      "rule.go.vet.go-vet",
+      'rule.go.project.modules',
+      'rule.go.format.go-fmt',
+      'rule.go.test.go-test',
+      'rule.go.vet.go-vet',
     ]);
     expectPackToRender(goMinimalGovernancePack);
   });

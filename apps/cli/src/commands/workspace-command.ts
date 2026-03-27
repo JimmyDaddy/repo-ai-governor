@@ -1,6 +1,6 @@
-import { existsSync } from "node:fs";
-import { readFile, rm } from "node:fs/promises";
-import { isAbsolute, resolve } from "node:path";
+import { existsSync } from 'node:fs';
+import { readFile, rm } from 'node:fs/promises';
+import { isAbsolute, resolve } from 'node:path';
 
 import {
   ConfigLoader,
@@ -14,7 +14,7 @@ import {
   WorkspaceMigrationStepStatus,
   WorkspaceMode,
   WorkspaceModeSource,
-} from "@repo-ai-governor/config";
+} from '@repo-ai-governor/config';
 import {
   ExecutionInteractionCategory,
   ExecutionProgressStage,
@@ -22,35 +22,35 @@ import {
   GovernorErrorCode,
   RuntimeError,
   standardizeError,
-} from "@repo-ai-governor/shared";
-import { stringify } from "yaml";
-import { CliCommandName } from "../constants/cli-command.constant.js";
+} from '@repo-ai-governor/shared';
+import { stringify } from 'yaml';
+import { CliCommandName } from '../constants/cli-command.constant.js';
 import {
   CliCommandResultCheckId,
   CliWorkspaceScratchCleanupDetailField,
   CliWorkspaceScratchCleanupStatus,
   CliWorkspaceTargetDetailField,
-} from "../constants/cli-command-result-check.constant.js";
+} from '../constants/cli-command-result-check.constant.js';
 import {
   CLI_RUNTIME_OPERATION,
   CliGovernanceCheckStatus,
-} from "../constants/cli-governance-runtime.constant.js";
+} from '../constants/cli-governance-runtime.constant.js';
 import type {
   CliCommandExecutorContext,
   CliCommandResultArtifact,
   CliCommandResultCheck,
-} from "../types/index.js";
-import type { CliCommandExecutor } from "./cli-command-executor.interface.js";
+} from '../types/index.js';
+import type { CliCommandExecutor } from './cli-command-executor.interface.js';
 
 enum CliWorkspaceAction {
-  DRY_RUN = "dry-run",
-  EXECUTE = "execute",
-  ROLLBACK = "rollback",
+  DRY_RUN = 'dry-run',
+  EXECUTE = 'execute',
+  ROLLBACK = 'rollback',
 }
 
 interface CliWorkspaceCommandDependencies {
-  configLoader?: Pick<ConfigLoader, "loadFromFile">;
-  workspaceMigrationService?: Pick<WorkspaceMigrationService, "plan" | "execute" | "rollback">;
+  configLoader?: Pick<ConfigLoader, 'loadFromFile'>;
+  workspaceMigrationService?: Pick<WorkspaceMigrationService, 'plan' | 'execute' | 'rollback'>;
 }
 
 interface WorkspaceCutoverPersistence {
@@ -64,10 +64,10 @@ interface WorkspaceCutoverPersistence {
 export class CliWorkspaceCommand implements CliCommandExecutor {
   public readonly commandName = CliCommandName.WORKSPACE;
 
-  private readonly configLoader: Pick<ConfigLoader, "loadFromFile">;
+  private readonly configLoader: Pick<ConfigLoader, 'loadFromFile'>;
   private readonly workspaceMigrationService: Pick<
     WorkspaceMigrationService,
-    "plan" | "execute" | "rollback"
+    'plan' | 'execute' | 'rollback'
   >;
 
   public constructor(dependencies: CliWorkspaceCommandDependencies = {}) {
@@ -105,7 +105,7 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
     const planArtifactPath = this.buildWorkspaceArtifactPath(
       context.options.workspace.workspaceRoot,
       plan.migrationId,
-      "plan",
+      'plan',
     );
 
     await context.artifactWriter.writeJsonArtifact(
@@ -148,7 +148,7 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
 
     throw new RuntimeError(
       GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
-      "workspace requires --workspace-action dry-run|execute|rollback.",
+      'workspace requires --workspace-action dry-run|execute|rollback.',
       {
         command: CliCommandName.WORKSPACE,
         action: rawAction,
@@ -223,14 +223,14 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
     const sourceExecutionArtifactPath = this.buildWorkspaceArtifactPath(
       context.options.workspace.workspaceRoot,
       plan.migrationId,
-      "execution",
+      'execution',
     );
 
     if (!executionResult.success) {
       const failureSummaryPath = this.buildWorkspaceArtifactPath(
         context.options.workspace.workspaceRoot,
         plan.migrationId,
-        "failure",
+        'failure',
       );
       const failedStep = executionResult.steps.find(
         (step) => step.status === WorkspaceMigrationStepStatus.FAILED,
@@ -242,7 +242,7 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
         executionPath: sourceExecutionArtifactPath,
         failedStep: failedStep?.step ?? null,
         rollbackStatus:
-          executionResult.steps.find((step) => step.step === "rollback")?.status ?? "unknown",
+          executionResult.steps.find((step) => step.step === 'rollback')?.status ?? 'unknown',
         error: executionResult.error ?? null,
         steps: executionResult.steps,
       });
@@ -269,7 +269,7 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
       const failureSummaryPath = this.buildWorkspaceArtifactPath(
         context.options.workspace.workspaceRoot,
         plan.migrationId,
-        "failure",
+        'failure',
       );
 
       await context.artifactWriter.writeJsonArtifact(sourceExecutionArtifactPath, {
@@ -297,7 +297,7 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
         migrationId: plan.migrationId,
         planPath: planArtifactPath,
         executionPath: sourceExecutionArtifactPath,
-        failedStep: "cutover_persistence",
+        failedStep: 'cutover_persistence',
         rollbackStatus: rollbackResult.status,
         error: normalizedError,
         steps: executionResult.steps,
@@ -311,7 +311,7 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
           migrationId: plan.migrationId,
           planPath: planArtifactPath,
           executionPath: sourceExecutionArtifactPath,
-          failedStep: "cutover_persistence",
+          failedStep: 'cutover_persistence',
         },
       );
     }
@@ -319,7 +319,7 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
     const relocatedPlanArtifactPath = this.buildWorkspaceArtifactPath(
       plan.targetWorkspace.workspaceRoot,
       plan.migrationId,
-      "plan",
+      'plan',
     );
     await context.artifactWriter.writeJsonArtifact(
       relocatedPlanArtifactPath,
@@ -340,7 +340,7 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
     const executionArtifactPath = this.buildWorkspaceArtifactPath(
       plan.targetWorkspace.workspaceRoot,
       plan.migrationId,
-      "execution",
+      'execution',
     );
     await context.artifactWriter.writeJsonArtifact(executionArtifactPath, {
       generatedAt: context.toRfc3339SecondsTimestamp(new Date()),
@@ -383,11 +383,11 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
     ];
     const artifacts: CliCommandResultArtifact[] = [
       {
-        id: "workspace_migration_plan",
+        id: 'workspace_migration_plan',
         path: relocatedPlanArtifactPath,
       },
       {
-        id: "workspace_migration_execution",
+        id: 'workspace_migration_execution',
         path: executionArtifactPath,
       },
     ];
@@ -407,8 +407,8 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
         experience: this.buildWorkspaceExperience(context, {
           blocking: false,
           summary: context.localizeText(
-            "Workspace migration execution completed.",
-            "工作区迁移执行已完成。",
+            'Workspace migration execution completed.',
+            '工作区迁移执行已完成。',
           ),
           artifactPath: executionArtifactPath,
           nextActions: [
@@ -474,7 +474,7 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
     const rollbackArtifactPath = this.buildWorkspaceArtifactPath(
       plan.sourceWorkspace.workspaceRoot,
       plan.migrationId,
-      "rollback",
+      'rollback',
     );
     let selectorRestoreError: RuntimeError | null = null;
     try {
@@ -543,7 +543,7 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
         ),
       },
       {
-        id: "workspace_step_rollback",
+        id: 'workspace_step_rollback',
         status: CliGovernanceCheckStatus.PASS,
         detail: rollbackResult.message,
       },
@@ -553,19 +553,16 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
           scratchCleanupStatus === CliWorkspaceScratchCleanupStatus.REMOVED
             ? CliGovernanceCheckStatus.PASS
             : CliGovernanceCheckStatus.WARN,
-        detail: this.createWorkspaceScratchCleanupDetail(
-          scratchCleanupStatus,
-          scratchCleanupRoot,
-        ),
+        detail: this.createWorkspaceScratchCleanupDetail(scratchCleanupStatus, scratchCleanupRoot),
       },
     ];
     const artifacts: CliCommandResultArtifact[] = [
       {
-        id: "workspace_migration_plan",
+        id: 'workspace_migration_plan',
         path: planArtifactPath,
       },
       {
-        id: "workspace_migration_rollback",
+        id: 'workspace_migration_rollback',
         path: rollbackArtifactPath,
       },
     ];
@@ -584,7 +581,7 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
         artifacts,
         experience: this.buildWorkspaceExperience(context, {
           blocking: false,
-          summary: context.localizeText("Workspace rollback completed.", "工作区回滚已完成。"),
+          summary: context.localizeText('Workspace rollback completed.', '工作区回滚已完成。'),
           artifactPath: rollbackArtifactPath,
           nextActions: [
             context.localizeText(
@@ -616,7 +613,7 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
       {
         id: CliCommandResultCheckId.WORKSPACE_ACTION,
         status: CliGovernanceCheckStatus.PASS,
-        detail: "action=dry_run",
+        detail: 'action=dry_run',
       },
       {
         id: CliCommandResultCheckId.WORKSPACE_TARGET,
@@ -646,15 +643,15 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
         checks,
         artifacts: [
           {
-            id: "workspace_migration_plan",
+            id: 'workspace_migration_plan',
             path: planArtifactPath,
           },
         ],
         experience: this.buildWorkspaceExperience(context, {
           blocking: false,
           summary: context.localizeText(
-            "Workspace migration dry-run completed.",
-            "工作区迁移 dry-run 已完成。",
+            'Workspace migration dry-run completed.',
+            '工作区迁移 dry-run 已完成。',
           ),
           artifactPath: planArtifactPath,
           nextActions: [
@@ -663,13 +660,13 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
               `先检查 ${planArtifactPath}，确认目标工作区根路径后再执行迁移。`,
             ),
             context.localizeText(
-              "Use --workspace-action execute with the same --workspace-mode/--workspace-root inputs when you are ready to cut over.",
-              "准备切换时，使用相同的 --workspace-mode/--workspace-root 参数执行 --workspace-action execute。",
+              'Use --workspace-action execute with the same --workspace-mode/--workspace-root inputs when you are ready to cut over.',
+              '准备切换时，使用相同的 --workspace-mode/--workspace-root 参数执行 --workspace-action execute。',
             ),
           ],
         }),
         details: {
-          action: "dry_run",
+          action: 'dry_run',
           migration_id: plan.migrationId,
           source_workspace_mode: plan.sourceWorkspace.mode,
           target_workspace_mode: plan.targetWorkspace.mode,
@@ -717,7 +714,7 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
     return context.commandExperienceBuilder.buildExperiencePayload({
       roleProgress: [
         {
-          roleId: "workspace-migrator",
+          roleId: 'workspace-migrator',
           stage: ExecutionProgressStage.REPORT,
           status: options.blocking
             ? ExecutionProgressStatus.WARNING
@@ -735,7 +732,7 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
       interactionPrompts: options.nextActions.map((action) => ({
         category: ExecutionInteractionCategory.NONE,
         stage: ExecutionProgressStage.REPORT,
-        title: context.localizeText("Next step", "下一步"),
+        title: context.localizeText('Next step', '下一步'),
         action,
         blocking: false,
       })),
@@ -784,32 +781,32 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
     payload: Record<string, unknown>,
     planArtifactPath: string,
   ): WorkspaceMigrationPlan {
-    const rawPlan = this.readRecord(payload.plan, "plan", planArtifactPath);
+    const rawPlan = this.readRecord(payload.plan, 'plan', planArtifactPath);
     return {
-      migrationId: this.readString(rawPlan.migrationId, "plan.migrationId", planArtifactPath),
+      migrationId: this.readString(rawPlan.migrationId, 'plan.migrationId', planArtifactPath),
       sourceWorkspace: this.parseResolvedWorkspace(
         rawPlan.sourceWorkspace,
-        "plan.sourceWorkspace",
+        'plan.sourceWorkspace',
         planArtifactPath,
       ),
       targetWorkspace: this.parseResolvedWorkspace(
         rawPlan.targetWorkspace,
-        "plan.targetWorkspace",
+        'plan.targetWorkspace',
         planArtifactPath,
       ),
       stagingWorkspaceRoot: this.readString(
         rawPlan.stagingWorkspaceRoot,
-        "plan.stagingWorkspaceRoot",
+        'plan.stagingWorkspaceRoot',
         planArtifactPath,
       ),
       backupWorkspaceRoot: this.readString(
         rawPlan.backupWorkspaceRoot,
-        "plan.backupWorkspaceRoot",
+        'plan.backupWorkspaceRoot',
         planArtifactPath,
       ),
       previousTargetBackupRoot: this.readString(
         rawPlan.previousTargetBackupRoot,
-        "plan.previousTargetBackupRoot",
+        'plan.previousTargetBackupRoot',
         planArtifactPath,
       ),
     };
@@ -824,10 +821,10 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
       return null;
     }
 
-    const record = this.readRecord(rawPersistence, "cutoverPersistence", planArtifactPath);
+    const record = this.readRecord(rawPersistence, 'cutoverPersistence', planArtifactPath);
     const repoLocalConfigPath = this.readString(
       record.repoLocalConfigPath,
-      "cutoverPersistence.repoLocalConfigPath",
+      'cutoverPersistence.repoLocalConfigPath',
       planArtifactPath,
     );
     const repoLocalConfigSnapshot =
@@ -835,7 +832,7 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
         ? null
         : this.readString(
             record.repoLocalConfigSnapshot,
-            "cutoverPersistence.repoLocalConfigSnapshot",
+            'cutoverPersistence.repoLocalConfigSnapshot',
             planArtifactPath,
           );
 
@@ -911,7 +908,7 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
     fieldPath: string,
     planArtifactPath: string,
   ): Record<string, unknown> {
-    if (value && typeof value === "object" && !Array.isArray(value)) {
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
       return value as Record<string, unknown>;
     }
 
@@ -926,7 +923,7 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
   }
 
   private readString(value: unknown, fieldPath: string, planArtifactPath: string): string {
-    if (typeof value === "string" && value.length > 0) {
+    if (typeof value === 'string' && value.length > 0) {
       return value;
     }
 
@@ -951,13 +948,13 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
   private buildWorkspaceArtifactPath(
     workspaceRoot: string,
     migrationId: string,
-    artifactType: "plan" | "execution" | "failure" | "rollback",
+    artifactType: 'plan' | 'execution' | 'failure' | 'rollback',
   ): string {
-    return resolve(workspaceRoot, "context", "workspace", `${migrationId}.${artifactType}.json`);
+    return resolve(workspaceRoot, 'context', 'workspace', `${migrationId}.${artifactType}.json`);
   }
 
   private resolveMigrationScratchRoot(plan: WorkspaceMigrationPlan): string {
-    return resolve(plan.stagingWorkspaceRoot, "..");
+    return resolve(plan.stagingWorkspaceRoot, '..');
   }
 
   private async captureCutoverPersistence(
@@ -965,13 +962,13 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
   ): Promise<WorkspaceCutoverPersistence> {
     const repoLocalConfigPath = resolve(
       plan.sourceWorkspace.repositoryRoot,
-      ".repo-ai-governor",
-      "governor.yaml",
+      '.repo-ai-governor',
+      'governor.yaml',
     );
     return {
       repoLocalConfigPath,
       repoLocalConfigSnapshot: existsSync(repoLocalConfigPath)
-        ? await readFile(repoLocalConfigPath, "utf8")
+        ? await readFile(repoLocalConfigPath, 'utf8')
         : null,
     };
   }
@@ -989,8 +986,8 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
     );
     const repoLocalConfigPath = resolve(
       plan.sourceWorkspace.repositoryRoot,
-      ".repo-ai-governor",
-      "governor.yaml",
+      '.repo-ai-governor',
+      'governor.yaml',
     );
 
     await context.artifactWriter.writeTextArtifact(
@@ -1054,10 +1051,10 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
   }
 
   private buildProfileWorkspaceShape(
-    currentWorkspace: GovernorProfile["workspace"],
+    currentWorkspace: GovernorProfile['workspace'],
     targetWorkspace: WorkspaceConfig,
-    fallbackMigrationPolicy: WorkspaceConfig["migrationPolicy"],
-  ): GovernorProfile["workspace"] {
+    fallbackMigrationPolicy: WorkspaceConfig['migrationPolicy'],
+  ): GovernorProfile['workspace'] {
     return this.buildWorkspaceShape(
       targetWorkspace,
       currentWorkspace?.migrationPolicy ?? fallbackMigrationPolicy,
@@ -1066,7 +1063,7 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
 
   private buildWorkspaceShape(
     targetWorkspace: WorkspaceConfig,
-    migrationPolicy: WorkspaceConfig["migrationPolicy"],
+    migrationPolicy: WorkspaceConfig['migrationPolicy'],
   ): WorkspaceConfig {
     return {
       mode: targetWorkspace.mode,

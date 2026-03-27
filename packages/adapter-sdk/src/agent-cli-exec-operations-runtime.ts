@@ -1,5 +1,5 @@
-import { GovernorErrorCode, RuntimeError, standardizeError } from "@repo-ai-governor/shared";
-import { AgentCliExecOperation } from "./constants/index.js";
+import { GovernorErrorCode, RuntimeError, standardizeError } from '@repo-ai-governor/shared';
+import { AgentCliExecOperation } from './constants/index.js';
 
 const REDACTION_PATTERNS = [
   /(authorization\s*:\s*bearer\s+)([^\s]+)/giu,
@@ -36,7 +36,7 @@ export class AgentCliExecOperationsRuntime {
     } = {},
   ): Promise<T> {
     const deadlineAt =
-      typeof options.timeoutMs === "number" && Number.isFinite(options.timeoutMs)
+      typeof options.timeoutMs === 'number' && Number.isFinite(options.timeoutMs)
         ? Date.now() + Math.max(0, options.timeoutMs)
         : undefined;
     let attempt = 0;
@@ -88,14 +88,14 @@ export class AgentCliExecOperationsRuntime {
    * @returns Concatenated detail string.
    */
   public collectErrorDetail(error: unknown, fallbackMessage: string): string {
-    if (!error || typeof error !== "object") {
+    if (!error || typeof error !== 'object') {
       return fallbackMessage;
     }
 
     const detailsRecord = this.readStructuredDetails(error);
-    const stderr = typeof detailsRecord?.stderr === "string" ? detailsRecord.stderr : "";
-    const stdout = typeof detailsRecord?.stdout === "string" ? detailsRecord.stdout : "";
-    return [fallbackMessage, stderr, stdout].filter((value) => value.length > 0).join(" ");
+    const stderr = typeof detailsRecord?.stderr === 'string' ? detailsRecord.stderr : '';
+    const stdout = typeof detailsRecord?.stdout === 'string' ? detailsRecord.stdout : '';
+    return [fallbackMessage, stderr, stdout].filter((value) => value.length > 0).join(' ');
   }
 
   /**
@@ -104,7 +104,7 @@ export class AgentCliExecOperationsRuntime {
    * @returns Sanitized single-line string.
    */
   public sanitizeReasonSegment(value: string): string {
-    return this.redactSensitiveText(value).replace(/\s+/gu, " ").trim();
+    return this.redactSensitiveText(value).replace(/\s+/gu, ' ').trim();
   }
 
   /**
@@ -115,8 +115,8 @@ export class AgentCliExecOperationsRuntime {
   public createRedactedProcessDetails(details: Record<string, unknown>): Record<string, unknown> {
     return Object.fromEntries(
       Object.entries(details).map(([key, value]) => {
-        if (key === "stdout" || key === "stderr" || key === "message") {
-          return [key, typeof value === "string" ? this.redactSensitiveText(value) : value];
+        if (key === 'stdout' || key === 'stderr' || key === 'message') {
+          return [key, typeof value === 'string' ? this.redactSensitiveText(value) : value];
         }
         return [key, value];
       }),
@@ -129,17 +129,17 @@ export class AgentCliExecOperationsRuntime {
    * @returns Structured details record when present.
    */
   private readStructuredDetails(error: unknown): Record<string, unknown> | undefined {
-    if (!error || typeof error !== "object") {
+    if (!error || typeof error !== 'object') {
       return undefined;
     }
 
     const details = (error as { details?: unknown }).details;
-    if (details && typeof details === "object") {
+    if (details && typeof details === 'object') {
       return details as Record<string, unknown>;
     }
 
     const metadata = (error as { metadata?: unknown }).metadata;
-    if (metadata && typeof metadata === "object") {
+    if (metadata && typeof metadata === 'object') {
       return metadata as Record<string, unknown>;
     }
 
@@ -175,8 +175,8 @@ export class AgentCliExecOperationsRuntime {
     let redactedValue = value;
     for (const pattern of REDACTION_PATTERNS) {
       redactedValue = redactedValue.replace(pattern, (...groups) => {
-        const prefix = typeof groups[1] === "string" ? groups[1] : "";
-        return prefix.length > 0 ? `${prefix}[REDACTED]` : "[REDACTED]";
+        const prefix = typeof groups[1] === 'string' ? groups[1] : '';
+        return prefix.length > 0 ? `${prefix}[REDACTED]` : '[REDACTED]';
       });
     }
     return redactedValue;
@@ -198,7 +198,7 @@ export class AgentCliExecOperationsRuntime {
     await new Promise<void>((resolve, reject) => {
       if (signal?.aborted) {
         reject(
-          this.createOperationRuntimeError(operation, "Operation aborted during retry backoff."),
+          this.createOperationRuntimeError(operation, 'Operation aborted during retry backoff.'),
         );
         return;
       }
@@ -212,15 +212,15 @@ export class AgentCliExecOperationsRuntime {
         clearTimeout(timeoutHandle);
         cleanup();
         reject(
-          this.createOperationRuntimeError(operation, "Operation aborted during retry backoff."),
+          this.createOperationRuntimeError(operation, 'Operation aborted during retry backoff.'),
         );
       };
 
       const cleanup = () => {
-        signal?.removeEventListener("abort", onAbort);
+        signal?.removeEventListener('abort', onAbort);
       };
 
-      signal?.addEventListener("abort", onAbort, { once: true });
+      signal?.addEventListener('abort', onAbort, { once: true });
     });
   }
 
@@ -230,7 +230,7 @@ export class AgentCliExecOperationsRuntime {
    */
   private throwIfAborted(operation: AgentCliExecOperation, signal?: AbortSignal): void {
     if (signal?.aborted) {
-      throw this.createOperationRuntimeError(operation, "Operation aborted before retry attempt.");
+      throw this.createOperationRuntimeError(operation, 'Operation aborted before retry attempt.');
     }
   }
 

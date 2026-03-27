@@ -1,5 +1,5 @@
-import type { ProcessNodeType } from "@repo-ai-governor/core-process";
-import type { GovernorErrorCode, RoleSource } from "@repo-ai-governor/shared";
+import type { ProcessNodeType } from '@repo-ai-governor/core-process';
+import type { GovernorErrorCode, RoleSource } from '@repo-ai-governor/shared';
 import type {
   LangGraphRuntimeEventType,
   LangGraphRuntimeExecutionMode,
@@ -7,8 +7,8 @@ import type {
   LangGraphRuntimeInterruptKind,
   LangGraphRuntimeStageStatus,
   LangGraphRuntimeTerminalStatus,
-} from "../../constants/index.js";
-import type { LangGraphCompiledGraphPlan } from "./langgraph-compiled-graph-plan.interface.js";
+} from '../../constants/index.js';
+import type { LangGraphCompiledGraphPlan } from './langgraph-compiled-graph-plan.interface.js';
 
 export interface LangGraphRuntimeLifecycleEvent {
   type: LangGraphRuntimeEventType;
@@ -61,10 +61,10 @@ export interface LangGraphRuntimeStageResult {
 }
 
 export interface LangGraphRuntimeExecutionInterruption {
-  reason: "timeout" | "cancelled";
+  reason: 'timeout' | 'cancelled';
   errorCode: GovernorErrorCode;
   message: string;
-  timeoutScope?: "stage" | "flow";
+  timeoutScope?: 'stage' | 'flow';
 }
 
 export interface LangGraphRuntimeConditionContext {
@@ -121,7 +121,7 @@ export type LangGraphRuntimeStageHandler = (
 export interface LangGraphRuntimeExecutionResult {
   processId: string;
   executionId: string;
-  status: "succeeded" | "failed" | "timeout" | "cancelled";
+  status: 'succeeded' | 'failed' | 'timeout' | 'cancelled';
   startedAt: string;
   endedAt: string;
   durationMs: number;

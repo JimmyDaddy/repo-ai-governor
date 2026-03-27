@@ -1,25 +1,25 @@
 #!/usr/bin/env node
 
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
-import { relative, resolve } from "node:path";
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { relative, resolve } from 'node:path';
 
-import { gateFail, gateInfo, gatePass, gateWarn } from "./gate-output.js";
+import { gateFail, gateInfo, gatePass, gateWarn } from './gate-output.js';
 
-const GATE_NAME = "normative-loading-manifest";
-const DEFAULT_MODE = "warn";
-const DEFAULT_FORMAT = "text";
+const GATE_NAME = 'normative-loading-manifest';
+const DEFAULT_MODE = 'warn';
+const DEFAULT_FORMAT = 'text';
 const DEFAULT_MANIFEST_PATH =
-  ".repo-ai-governor/normative_knowledge_sources/normative-loading-manifest.yaml";
-const DEFAULT_NORMATIVE_ROOT = ".repo-ai-governor/normative_knowledge_sources";
-const SUPPORTED_MODES = new Set(["warn", "block"]);
-const SUPPORTED_FORMATS = new Set(["text", "json"]);
+  '.repo-ai-governor/normative_knowledge_sources/normative-loading-manifest.yaml';
+const DEFAULT_NORMATIVE_ROOT = '.repo-ai-governor/normative_knowledge_sources';
+const SUPPORTED_MODES = new Set(['warn', 'block']);
+const SUPPORTED_FORMATS = new Set(['text', 'json']);
 const TRIAD_PATHS = [
-  ".repo-ai-governor/normative_knowledge_sources/product-requirements.md",
-  ".repo-ai-governor/normative_knowledge_sources/repo-ai-governor-overall-technical-solution.md",
-  ".repo-ai-governor/normative_knowledge_sources/repo-ai-governor-architecture-and-repo-layering.md",
+  '.repo-ai-governor/normative_knowledge_sources/product-requirements.md',
+  '.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-overall-technical-solution.md',
+  '.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-architecture-and-repo-layering.md',
 ];
-const ACTIVE_STATUS_SET = new Set(["active", "frozen"]);
-const DEFAULT_LOAD_ALLOWED_TIERS = new Set(["L0", "L1"]);
+const ACTIVE_STATUS_SET = new Set(['active', 'frozen']);
+const DEFAULT_LOAD_ALLOWED_TIERS = new Set(['L0', 'L1']);
 
 /**
  * Resolves script CLI options.
@@ -27,20 +27,20 @@ const DEFAULT_LOAD_ALLOWED_TIERS = new Set(["L0", "L1"]);
  * @returns {{mode: "warn" | "block", format: "text" | "json", manifestPath: string, normativeRootPath: string}}
  */
 function resolveCliOptions(argv) {
-  const modeCandidate = readFlagValue(argv, "--mode") ?? DEFAULT_MODE;
-  const formatCandidate = readFlagValue(argv, "--format") ?? DEFAULT_FORMAT;
-  const manifestCandidate = readFlagValue(argv, "--manifest") ?? DEFAULT_MANIFEST_PATH;
-  const rootCandidate = readFlagValue(argv, "--normative-root") ?? DEFAULT_NORMATIVE_ROOT;
+  const modeCandidate = readFlagValue(argv, '--mode') ?? DEFAULT_MODE;
+  const formatCandidate = readFlagValue(argv, '--format') ?? DEFAULT_FORMAT;
+  const manifestCandidate = readFlagValue(argv, '--manifest') ?? DEFAULT_MANIFEST_PATH;
+  const rootCandidate = readFlagValue(argv, '--normative-root') ?? DEFAULT_NORMATIVE_ROOT;
 
   if (!SUPPORTED_MODES.has(modeCandidate)) {
     throw new Error(
-      `Unsupported --mode "${modeCandidate}". Expected one of: ${Array.from(SUPPORTED_MODES).join(", ")}`,
+      `Unsupported --mode "${modeCandidate}". Expected one of: ${Array.from(SUPPORTED_MODES).join(', ')}`,
     );
   }
 
   if (!SUPPORTED_FORMATS.has(formatCandidate)) {
     throw new Error(
-      `Unsupported --format "${formatCandidate}". Expected one of: ${Array.from(SUPPORTED_FORMATS).join(", ")}`,
+      `Unsupported --format "${formatCandidate}". Expected one of: ${Array.from(SUPPORTED_FORMATS).join(', ')}`,
     );
   }
 
@@ -65,7 +65,7 @@ function readFlagValue(argv, flagName) {
   }
 
   const nextValue = argv[flagIndex + 1];
-  if (!nextValue || nextValue.startsWith("--")) {
+  if (!nextValue || nextValue.startsWith('--')) {
     throw new Error(`Flag "${flagName}" requires a value.`);
   }
 
@@ -89,7 +89,7 @@ function parseManifest(manifestPath) {
     throw new Error(`Manifest file not found: ${manifestPath}`);
   }
 
-  const content = readFileSync(manifestPath, "utf8");
+  const content = readFileSync(manifestPath, 'utf8');
   const lines = content.split(/\r?\n/);
 
   const documents = [];
@@ -106,9 +106,9 @@ function parseManifest(manifestPath) {
       return;
     }
 
-    if (currentSection === "documents") {
+    if (currentSection === 'documents') {
       documents.push(currentEntry);
-    } else if (currentSection === "external_required_inputs") {
+    } else if (currentSection === 'external_required_inputs') {
       externalRequiredInputs.push(currentEntry);
     }
 
@@ -119,19 +119,19 @@ function parseManifest(manifestPath) {
   for (const rawLine of lines) {
     const line = rawLine.trimEnd();
 
-    if (line.trim().length === 0 || line.trimStart().startsWith("#")) {
+    if (line.trim().length === 0 || line.trimStart().startsWith('#')) {
       continue;
     }
 
-    if (line === "documents:") {
+    if (line === 'documents:') {
       flushEntry();
-      currentSection = "documents";
+      currentSection = 'documents';
       continue;
     }
 
-    if (line === "external_required_inputs:") {
+    if (line === 'external_required_inputs:') {
       flushEntry();
-      currentSection = "external_required_inputs";
+      currentSection = 'external_required_inputs';
       continue;
     }
 
@@ -196,11 +196,11 @@ function parseScalar(rawValue) {
     return value.slice(1, -1);
   }
 
-  if (value === "true") {
+  if (value === 'true') {
     return true;
   }
 
-  if (value === "false") {
+  if (value === 'false') {
     return false;
   }
 
@@ -258,7 +258,7 @@ function toRepoRelativePath(absolutePath) {
  * @returns {string}
  */
 function normalizePathSeparators(value) {
-  return value.replace(/\\/g, "/");
+  return value.replace(/\\/g, '/');
 }
 
 /**
@@ -267,28 +267,28 @@ function normalizePathSeparators(value) {
  * @returns {string}
  */
 function normalizeStatus(value) {
-  const raw = String(value ?? "")
+  const raw = String(value ?? '')
     .trim()
     .toLowerCase();
 
   if (!raw) {
-    return "unknown";
+    return 'unknown';
   }
 
-  if (raw.includes("archiv") || raw.includes("归档")) {
-    return "archived";
+  if (raw.includes('archiv') || raw.includes('归档')) {
+    return 'archived';
   }
 
-  if (raw.includes("deprecat") || raw.includes("废弃")) {
-    return "deprecated";
+  if (raw.includes('deprecat') || raw.includes('废弃')) {
+    return 'deprecated';
   }
 
-  if (raw.includes("frozen") || raw.includes("冻结")) {
-    return "frozen";
+  if (raw.includes('frozen') || raw.includes('冻结')) {
+    return 'frozen';
   }
 
-  if (raw.includes("active") || raw.includes("执行中") || raw.includes("进行中")) {
-    return "active";
+  if (raw.includes('active') || raw.includes('执行中') || raw.includes('进行中')) {
+    return 'active';
   }
 
   return raw;
@@ -300,7 +300,7 @@ function normalizeStatus(value) {
  * @returns {string}
  */
 function readDocumentStatus(absolutePath) {
-  const content = readFileSync(absolutePath, "utf8");
+  const content = readFileSync(absolutePath, 'utf8');
   const lines = content.split(/\r?\n/).slice(0, 80);
 
   for (const line of lines) {
@@ -314,12 +314,12 @@ function readDocumentStatus(absolutePath) {
       return normalizeStatus(chineseStatusMatch[1]);
     }
 
-    if (line.startsWith("## ")) {
+    if (line.startsWith('## ')) {
       break;
     }
   }
 
-  return "unknown";
+  return 'unknown';
 }
 
 /**
@@ -344,15 +344,15 @@ function validateManifest(manifest, manifestPath, normativeRootPath) {
   const seenPaths = new Set();
 
   for (const documentEntry of manifest.documents) {
-    const docId = String(documentEntry.doc_id ?? "").trim();
-    const pathValue = String(documentEntry.path ?? "").trim();
-    const tier = String(documentEntry.tier ?? "").trim();
+    const docId = String(documentEntry.doc_id ?? '').trim();
+    const pathValue = String(documentEntry.path ?? '').trim();
+    const tier = String(documentEntry.tier ?? '').trim();
     const status = normalizeStatus(documentEntry.status);
     const defaultLoad = Boolean(documentEntry.default_load);
     const loadTrigger = documentEntry.load_trigger;
 
     if (!docId) {
-      issues.push("Manifest document entry has empty doc_id.");
+      issues.push('Manifest document entry has empty doc_id.');
       continue;
     }
 
@@ -378,11 +378,11 @@ function validateManifest(manifest, manifestPath, normativeRootPath) {
 
     if (defaultLoad && !DEFAULT_LOAD_ALLOWED_TIERS.has(tier)) {
       issues.push(
-        `Manifest default_load=true requires tier L0/L1. doc_id=${docId} tier=${tier || "(empty)"}`,
+        `Manifest default_load=true requires tier L0/L1. doc_id=${docId} tier=${tier || '(empty)'}`,
       );
     }
 
-    if ((status === "archived" || status === "deprecated") && defaultLoad) {
+    if ((status === 'archived' || status === 'deprecated') && defaultLoad) {
       issues.push(
         `Archived/deprecated document must not default load. doc_id=${docId} status=${status}`,
       );
@@ -405,20 +405,20 @@ function validateManifest(manifest, manifestPath, normativeRootPath) {
     Boolean,
   );
   if (triadEntries.length !== TRIAD_PATHS.length) {
-    issues.push("Triad documents are not fully registered in manifest documents.");
+    issues.push('Triad documents are not fully registered in manifest documents.');
   } else {
     const triadStatuses = triadEntries.map((entry) => entry.status);
     for (const triadStatus of triadStatuses) {
       if (!ACTIVE_STATUS_SET.has(triadStatus)) {
         issues.push(
-          `Triad document status must be active/frozen. Found: ${triadStatuses.join(", ")}`,
+          `Triad document status must be active/frozen. Found: ${triadStatuses.join(', ')}`,
         );
         break;
       }
     }
 
     if (new Set(triadStatuses).size > 1) {
-      issues.push(`Triad document statuses must be consistent. Found: ${triadStatuses.join(", ")}`);
+      issues.push(`Triad document statuses must be consistent. Found: ${triadStatuses.join(', ')}`);
     }
   }
 
@@ -430,18 +430,18 @@ function validateManifest(manifest, manifestPath, normativeRootPath) {
     const normalizedRelativeFilePath = normalizePathSeparators(relativeFilePath);
 
     if (
-      normalizedRelativeFilePath.includes("/archive/") ||
-      normalizedRelativeFilePath.includes("/superseded/")
+      normalizedRelativeFilePath.includes('/archive/') ||
+      normalizedRelativeFilePath.includes('/superseded/')
     ) {
       continue;
     }
 
     const status =
-      normalizedRelativeFilePath.endsWith(".md") || normalizedRelativeFilePath.endsWith(".markdown")
+      normalizedRelativeFilePath.endsWith('.md') || normalizedRelativeFilePath.endsWith('.markdown')
         ? readDocumentStatus(absoluteFilePath)
-        : "unknown";
+        : 'unknown';
 
-    if (status === "archived" || status === "deprecated") {
+    if (status === 'archived' || status === 'deprecated') {
       continue;
     }
 
@@ -480,7 +480,7 @@ function printTextResult(result) {
   );
 
   if (result.issues.length === 0) {
-    gatePass(GATE_NAME, "Normative loading manifest checks passed.");
+    gatePass(GATE_NAME, 'Normative loading manifest checks passed.');
     return;
   }
 
@@ -488,8 +488,8 @@ function printTextResult(result) {
     gateWarn(GATE_NAME, `- ${issue}`);
   }
 
-  if (result.mode === "warn") {
-    gateWarn(GATE_NAME, "Warning mode is active: issues are reported but do not fail this gate.");
+  if (result.mode === 'warn') {
+    gateWarn(GATE_NAME, 'Warning mode is active: issues are reported but do not fail this gate.');
   }
 }
 
@@ -512,14 +512,14 @@ try {
     issues: validation.issues,
   };
 
-  if (options.format === "json") {
+  if (options.format === 'json') {
     console.info(JSON.stringify(result, null, 2));
   } else {
     printTextResult(result);
   }
 
-  if (options.mode === "block" && result.issues.length > 0) {
-    gateFail(GATE_NAME, "Blocking mode detected normative loading manifest violations.");
+  if (options.mode === 'block' && result.issues.length > 0) {
+    gateFail(GATE_NAME, 'Blocking mode detected normative loading manifest violations.');
     process.exit(1);
   }
 } catch (error) {

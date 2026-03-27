@@ -1,6 +1,6 @@
-import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
-import type { CliCommandName } from "../constants/cli-command.constant.js";
-import type { CliCommandExecutor } from "./cli-command-executor.interface.js";
+import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
+import type { CliCommandName } from '../constants/cli-command.constant.js';
+import type { CliCommandExecutor } from './cli-command-executor.interface.js';
 
 /**
  * Owns extracted command-executor lookup so the facade can dispatch through a stable registry.

@@ -1,32 +1,32 @@
-import { ChangeRiskRequiredAction } from "@repo-ai-governor/core-change-risk";
+import { ChangeRiskRequiredAction } from '@repo-ai-governor/core-change-risk';
 
 /**
  * Defines supported human feedback decisions for HITL callbacks.
  */
 export enum PolicyHitlDecision {
-  APPROVE = "approve",
-  REJECT = "reject",
-  REVISE = "revise",
+  APPROVE = 'approve',
+  REJECT = 'reject',
+  REVISE = 'revise',
 }
 
 /**
  * Defines traceable decision sources for audit records.
  */
 export enum PolicyDecisionSource {
-  RISK_REQUIRED_ACTION = "risk_required_action",
-  POLICY_RULE = "policy_rule",
-  HITL_FEEDBACK = "hitl_feedback",
+  RISK_REQUIRED_ACTION = 'risk_required_action',
+  POLICY_RULE = 'policy_rule',
+  HITL_FEEDBACK = 'hitl_feedback',
 }
 
 /**
  * Defines baseline policy rule identifiers.
  */
 export enum PolicyGateRuleId {
-  PROPOSAL_APPROVAL_REQUIRED = "policy.hitl.proposal_approval_required",
-  REVIEW_VERIFY_FAILURE_ESCALATION = "policy.hitl.review_verify_failure_escalation",
-  RISK_ACTION_BLOCK = "policy.risk.action.block",
-  RISK_ACTION_ESCALATE = "policy.risk.action.escalate",
-  RISK_ACTION_CONFIRM = "policy.risk.action.confirm",
+  PROPOSAL_APPROVAL_REQUIRED = 'policy.hitl.proposal_approval_required',
+  REVIEW_VERIFY_FAILURE_ESCALATION = 'policy.hitl.review_verify_failure_escalation',
+  RISK_ACTION_BLOCK = 'policy.risk.action.block',
+  RISK_ACTION_ESCALATE = 'policy.risk.action.escalate',
+  RISK_ACTION_CONFIRM = 'policy.risk.action.confirm',
 }
 
 /**

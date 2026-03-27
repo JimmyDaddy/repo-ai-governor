@@ -1,98 +1,98 @@
 #!/usr/bin/env node
 
-import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync, rmSync } from "node:fs";
-import { resolve } from "node:path";
+import { spawnSync } from 'node:child_process';
+import { existsSync, readFileSync, rmSync } from 'node:fs';
+import { resolve } from 'node:path';
 
-import { gateFail, gateInfo, gatePass } from "../governance/gate-output.js";
+import { gateFail, gateInfo, gatePass } from '../governance/gate-output.js';
 
-const GATE_NAME = "release-verify-local";
-const DEFAULT_DISTRIBUTION_MODE = "default";
-const PLUGIN_ENABLED_DISTRIBUTION_MODE = "plugin-enabled";
-const DIST_CLI_ENTRY_PATH = "dist/bin/repo-ai-governor.js";
+const GATE_NAME = 'release-verify-local';
+const DEFAULT_DISTRIBUTION_MODE = 'default';
+const PLUGIN_ENABLED_DISTRIBUTION_MODE = 'plugin-enabled';
+const DIST_CLI_ENTRY_PATH = 'dist/bin/repo-ai-governor.js';
 const REQUIRED_PACKED_PATH_SUFFIXES = [
-  "dist/bin/repo-ai-governor.js",
-  "dist/apps/cli/src/main.js",
-  "dist/node_modules/@repo-ai-governor/cli/package.json",
-  "dist/node_modules/@repo-ai-governor/cli/dist/src/main.js",
-  "dist/node_modules/@repo-ai-governor/config/package.json",
-  "dist/node_modules/@repo-ai-governor/config/dist/src/index.js",
-  "dist/node_modules/@repo-ai-governor/core-memory-semantics/package.json",
-  "dist/node_modules/@repo-ai-governor/core-memory-semantics/dist/src/index.js",
-  "dist/node_modules/@repo-ai-governor/core-orchestration-service/package.json",
-  "dist/node_modules/@repo-ai-governor/core-orchestration-service/dist/src/index.js",
-  "dist/node_modules/@repo-ai-governor/core-orchestration-service/dist/src/local-orchestration-service-sidecar-client.js",
-  "dist/node_modules/@repo-ai-governor/core-orchestration-service/dist/src/local-orchestration-service-sidecar-host.js",
-  "dist/node_modules/@repo-ai-governor/core-orchestration-service/dist/src/local-orchestration-service-sidecar-entry.js",
-  "dist/node_modules/@repo-ai-governor/core-runtime-langgraph/package.json",
-  "dist/node_modules/@repo-ai-governor/core-runtime-langgraph/dist/src/index.js",
-  "dist/node_modules/@repo-ai-governor/memory-provider-registry/package.json",
-  "dist/node_modules/@repo-ai-governor/memory-provider-registry/dist/src/index.js",
-  "dist/node_modules/@repo-ai-governor/notification-provider-chat-im/package.json",
-  "dist/node_modules/@repo-ai-governor/notification-provider-chat-im/dist/src/index.js",
-  "dist/node_modules/@repo-ai-governor/notification-provider-webhook/package.json",
-  "dist/node_modules/@repo-ai-governor/notification-provider-webhook/dist/src/index.js",
-  "dist/node_modules/@repo-ai-governor/orchestration-service-client/package.json",
-  "dist/node_modules/@repo-ai-governor/orchestration-service-client/dist/src/index.js",
-  "dist/node_modules/@repo-ai-governor/cli/dist/src/runtime/orchestration-service-runtime.js",
-  "dist/packages/published-surfaces/service-host.js",
-  "dist/packages/published-surfaces/service-host.d.ts",
-  "dist/packages/shared/src/index.js",
-  "docs/local-adoption-playbook.md",
-  "docs/local-adoption-playbook.zh-CN.md",
-  "examples/README.md",
-  "examples/single-role-minimal-flow/scenario.json",
-  "examples/single-role-minimal-flow/expected/runtime-baseline.json",
-  "integrations/ide/README.md",
-  "integrations/desktop/README.md",
-  "integrations/desktop/examples/README.md",
-  "integrations/desktop/examples/desktop-sidecar-runtime.sample.json",
-  "integrations/ide/examples/vscode-task.sample.json",
-  "integrations/ide/examples/jetbrains-run-configuration.sample.xml",
-  "integrations/ide/examples/cursor-task.sample.json",
-  "integrations/ide/examples/claude-code-commands.sample.json",
-  ".codex/skills/technical-solution-promotion/SKILL.md",
-  ".codex/skills/technical-solution-promotion/agents/openai.yaml",
-  ".codex/skills/workspace-code-review-workflow/SKILL.md",
-  ".codex/skills/workspace-code-review-workflow/agents/openai.yaml",
-  ".codex/skills/workspace-delivery-finisher/SKILL.md",
-  ".codex/skills/workspace-delivery-finisher/agents/openai.yaml",
+  'dist/bin/repo-ai-governor.js',
+  'dist/apps/cli/src/main.js',
+  'dist/node_modules/@repo-ai-governor/cli/package.json',
+  'dist/node_modules/@repo-ai-governor/cli/dist/src/main.js',
+  'dist/node_modules/@repo-ai-governor/config/package.json',
+  'dist/node_modules/@repo-ai-governor/config/dist/src/index.js',
+  'dist/node_modules/@repo-ai-governor/core-memory-semantics/package.json',
+  'dist/node_modules/@repo-ai-governor/core-memory-semantics/dist/src/index.js',
+  'dist/node_modules/@repo-ai-governor/core-orchestration-service/package.json',
+  'dist/node_modules/@repo-ai-governor/core-orchestration-service/dist/src/index.js',
+  'dist/node_modules/@repo-ai-governor/core-orchestration-service/dist/src/local-orchestration-service-sidecar-client.js',
+  'dist/node_modules/@repo-ai-governor/core-orchestration-service/dist/src/local-orchestration-service-sidecar-host.js',
+  'dist/node_modules/@repo-ai-governor/core-orchestration-service/dist/src/local-orchestration-service-sidecar-entry.js',
+  'dist/node_modules/@repo-ai-governor/core-runtime-langgraph/package.json',
+  'dist/node_modules/@repo-ai-governor/core-runtime-langgraph/dist/src/index.js',
+  'dist/node_modules/@repo-ai-governor/memory-provider-registry/package.json',
+  'dist/node_modules/@repo-ai-governor/memory-provider-registry/dist/src/index.js',
+  'dist/node_modules/@repo-ai-governor/notification-provider-chat-im/package.json',
+  'dist/node_modules/@repo-ai-governor/notification-provider-chat-im/dist/src/index.js',
+  'dist/node_modules/@repo-ai-governor/notification-provider-webhook/package.json',
+  'dist/node_modules/@repo-ai-governor/notification-provider-webhook/dist/src/index.js',
+  'dist/node_modules/@repo-ai-governor/orchestration-service-client/package.json',
+  'dist/node_modules/@repo-ai-governor/orchestration-service-client/dist/src/index.js',
+  'dist/node_modules/@repo-ai-governor/cli/dist/src/runtime/orchestration-service-runtime.js',
+  'dist/packages/published-surfaces/service-host.js',
+  'dist/packages/published-surfaces/service-host.d.ts',
+  'dist/packages/shared/src/index.js',
+  'docs/local-adoption-playbook.md',
+  'docs/local-adoption-playbook.zh-CN.md',
+  'examples/README.md',
+  'examples/single-role-minimal-flow/scenario.json',
+  'examples/single-role-minimal-flow/expected/runtime-baseline.json',
+  'integrations/ide/README.md',
+  'integrations/desktop/README.md',
+  'integrations/desktop/examples/README.md',
+  'integrations/desktop/examples/desktop-sidecar-runtime.sample.json',
+  'integrations/ide/examples/vscode-task.sample.json',
+  'integrations/ide/examples/jetbrains-run-configuration.sample.xml',
+  'integrations/ide/examples/cursor-task.sample.json',
+  'integrations/ide/examples/claude-code-commands.sample.json',
+  '.codex/skills/technical-solution-promotion/SKILL.md',
+  '.codex/skills/technical-solution-promotion/agents/openai.yaml',
+  '.codex/skills/workspace-code-review-workflow/SKILL.md',
+  '.codex/skills/workspace-code-review-workflow/agents/openai.yaml',
+  '.codex/skills/workspace-delivery-finisher/SKILL.md',
+  '.codex/skills/workspace-delivery-finisher/agents/openai.yaml',
 ];
 const PLUGIN_ENABLED_REQUIRED_PACKED_PATH_SUFFIXES = [
-  "dist/packages/memory-providers/sqlite-fs/src/index.js",
-  "dist/node_modules/@repo-ai-governor/memory-provider-sqlite-fs/package.json",
-  "dist/node_modules/@repo-ai-governor/memory-provider-sqlite-fs/dist/src/index.js",
+  'dist/packages/memory-providers/sqlite-fs/src/index.js',
+  'dist/node_modules/@repo-ai-governor/memory-provider-sqlite-fs/package.json',
+  'dist/node_modules/@repo-ai-governor/memory-provider-sqlite-fs/dist/src/index.js',
 ];
 const FORBIDDEN_DEFAULT_PACKED_PATH_FRAGMENTS = [
-  "dist/packages/memory-providers/sqlite-fs/",
-  "dist/node_modules/@repo-ai-governor/memory-provider-sqlite-fs/",
+  'dist/packages/memory-providers/sqlite-fs/',
+  'dist/node_modules/@repo-ai-governor/memory-provider-sqlite-fs/',
 ];
 const DOCUMENT_TRUTHFULNESS_ASSERTIONS = [
   {
-    filePath: "README.md",
+    filePath: 'README.md',
     requiredFragments: [
-      "docs/local-adoption-playbook.md",
-      ".codex/skills/",
-      "npm registry",
-      "offline/self-contained",
+      'docs/local-adoption-playbook.md',
+      '.codex/skills/',
+      'npm registry',
+      'offline/self-contained',
     ],
   },
   {
-    filePath: "README.zh-CN.md",
+    filePath: 'README.zh-CN.md',
     requiredFragments: [
-      "docs/local-adoption-playbook.zh-CN.md",
-      ".codex/skills/",
-      "npm registry",
-      "离线自包含",
+      'docs/local-adoption-playbook.zh-CN.md',
+      '.codex/skills/',
+      'npm registry',
+      '离线自包含',
     ],
   },
   {
-    filePath: "docs/local-adoption-playbook.md",
-    requiredFragments: [".codex/skills/", "npm registry", "offline/self-contained"],
+    filePath: 'docs/local-adoption-playbook.md',
+    requiredFragments: ['.codex/skills/', 'npm registry', 'offline/self-contained'],
   },
   {
-    filePath: "docs/local-adoption-playbook.zh-CN.md",
-    requiredFragments: [".codex/skills/", "npm registry", "离线自包含"],
+    filePath: 'docs/local-adoption-playbook.zh-CN.md',
+    requiredFragments: ['.codex/skills/', 'npm registry', '离线自包含'],
   },
 ];
 
@@ -102,7 +102,7 @@ const DOCUMENT_TRUTHFULNESS_ASSERTIONS = [
  */
 function parseCliOptions() {
   const rawArgs = process.argv.slice(2);
-  const distributionModeIndex = rawArgs.findIndex((arg) => arg === "--distribution-mode");
+  const distributionModeIndex = rawArgs.findIndex((arg) => arg === '--distribution-mode');
   if (distributionModeIndex === -1) {
     return {
       distributionMode: DEFAULT_DISTRIBUTION_MODE,
@@ -132,8 +132,8 @@ function parseCliOptions() {
 function runCommand(command, args, label) {
   const result = spawnSync(command, args, {
     cwd: process.cwd(),
-    encoding: "utf8",
-    stdio: ["ignore", "pipe", "pipe"],
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
   });
 
   if (result.error) {
@@ -141,8 +141,8 @@ function runCommand(command, args, label) {
   }
 
   if (result.status !== 0) {
-    const stderr = result.stderr?.trim() ?? "";
-    const stdout = result.stdout?.trim() ?? "";
+    const stderr = result.stderr?.trim() ?? '';
+    const stdout = result.stdout?.trim() ?? '';
     throw new Error(
       `${label} exited with code ${result.status}. stdout="${stdout}" stderr="${stderr}"`,
     );
@@ -160,7 +160,7 @@ function runCommand(command, args, label) {
 function parsePackOutputJson(rawOutput) {
   const normalizedOutput = rawOutput.trim();
   if (normalizedOutput.length === 0) {
-    throw new Error("pnpm pack --json returned empty stdout.");
+    throw new Error('pnpm pack --json returned empty stdout.');
   }
 
   try {
@@ -183,7 +183,7 @@ function parsePackOutputJson(rawOutput) {
     }
   }
 
-  throw new Error("Unable to parse JSON payload from pnpm pack --json output.");
+  throw new Error('Unable to parse JSON payload from pnpm pack --json output.');
 }
 
 /**
@@ -194,14 +194,14 @@ function parsePackOutputJson(rawOutput) {
 function resolvePackRecord(packJson) {
   if (Array.isArray(packJson)) {
     const firstRecord = packJson[0];
-    if (!firstRecord || typeof firstRecord !== "object") {
-      throw new Error("pnpm pack --json returned an empty or invalid array payload.");
+    if (!firstRecord || typeof firstRecord !== 'object') {
+      throw new Error('pnpm pack --json returned an empty or invalid array payload.');
     }
     return firstRecord;
   }
 
-  if (!packJson || typeof packJson !== "object") {
-    throw new Error("pnpm pack --json returned unsupported payload shape.");
+  if (!packJson || typeof packJson !== 'object') {
+    throw new Error('pnpm pack --json returned unsupported payload shape.');
   }
 
   return packJson;
@@ -213,7 +213,7 @@ function resolvePackRecord(packJson) {
  * @returns {string}
  */
 function normalizeFilePath(filePath) {
-  return filePath.replace(/\\/g, "/");
+  return filePath.replace(/\\/g, '/');
 }
 
 /**
@@ -224,20 +224,20 @@ function normalizeFilePath(filePath) {
 function readPackedFilePaths(packRecord) {
   const files = packRecord.files;
   if (!Array.isArray(files) || files.length === 0) {
-    throw new Error("pnpm pack --json did not provide file manifest.");
+    throw new Error('pnpm pack --json did not provide file manifest.');
   }
 
   const normalizedPaths = [];
   for (const fileEntry of files) {
-    if (typeof fileEntry === "string" && fileEntry.trim().length > 0) {
+    if (typeof fileEntry === 'string' && fileEntry.trim().length > 0) {
       normalizedPaths.push(normalizeFilePath(fileEntry.trim()));
       continue;
     }
 
     if (
       fileEntry &&
-      typeof fileEntry === "object" &&
-      typeof fileEntry.path === "string" &&
+      typeof fileEntry === 'object' &&
+      typeof fileEntry.path === 'string' &&
       fileEntry.path.trim().length > 0
     ) {
       normalizedPaths.push(normalizeFilePath(fileEntry.path.trim()));
@@ -245,7 +245,7 @@ function readPackedFilePaths(packRecord) {
   }
 
   if (normalizedPaths.length === 0) {
-    throw new Error("pnpm pack file manifest contains no usable path entries.");
+    throw new Error('pnpm pack file manifest contains no usable path entries.');
   }
 
   return normalizedPaths;
@@ -286,7 +286,7 @@ function readTextFile(relativeFilePath) {
     throw new Error(`Required truthfulness source file is missing: ${relativeFilePath}`);
   }
 
-  return readFileSync(absoluteFilePath, "utf8");
+  return readFileSync(absoluteFilePath, 'utf8');
 }
 
 /**
@@ -312,36 +312,36 @@ try {
     throw new Error(`Distribution CLI entry is missing: ${DIST_CLI_ENTRY_PATH}`);
   }
 
-  runCommand("node", [DIST_CLI_ENTRY_PATH, "--help"], "CLI help smoke check");
-  gateInfo(GATE_NAME, "CLI help smoke check passed.");
+  runCommand('node', [DIST_CLI_ENTRY_PATH, '--help'], 'CLI help smoke check');
+  gateInfo(GATE_NAME, 'CLI help smoke check passed.');
   runCommand(
-    "node",
+    'node',
     [
-      "./scripts/examples/check-desktop-entry-smoke.js",
+      './scripts/examples/check-desktop-entry-smoke.js',
       ...(options.distributionMode === PLUGIN_ENABLED_DISTRIBUTION_MODE
-        ? ["--distribution-mode", PLUGIN_ENABLED_DISTRIBUTION_MODE]
+        ? ['--distribution-mode', PLUGIN_ENABLED_DISTRIBUTION_MODE]
         : []),
     ],
-    "Desktop entry smoke check",
+    'Desktop entry smoke check',
   );
-  gateInfo(GATE_NAME, "Desktop entry smoke check passed.");
+  gateInfo(GATE_NAME, 'Desktop entry smoke check passed.');
   runCommand(
-    "node",
+    'node',
     [
-      "./scripts/examples/check-examples-runtime.js",
+      './scripts/examples/check-examples-runtime.js',
       ...(options.distributionMode === PLUGIN_ENABLED_DISTRIBUTION_MODE
-        ? ["--distribution-mode", PLUGIN_ENABLED_DISTRIBUTION_MODE]
+        ? ['--distribution-mode', PLUGIN_ENABLED_DISTRIBUTION_MODE]
         : []),
     ],
-    "Examples runtime smoke check",
+    'Examples runtime smoke check',
   );
   gateInfo(
     GATE_NAME,
     `Examples runtime smoke check passed for distribution_mode=${options.distributionMode}.`,
   );
 
-  const packResult = runCommand("pnpm", ["pack", "--json"], "pnpm pack --json");
-  const parsedPackJson = parsePackOutputJson(packResult.stdout ?? "");
+  const packResult = runCommand('pnpm', ['pack', '--json'], 'pnpm pack --json');
+  const parsedPackJson = parsePackOutputJson(packResult.stdout ?? '');
   const packRecord = resolvePackRecord(parsedPackJson);
   const packedFilePaths = readPackedFilePaths(packRecord);
 
@@ -372,8 +372,8 @@ try {
   }
 
   const rawFilename = packRecord.filename;
-  if (typeof rawFilename !== "string" || rawFilename.trim().length === 0) {
-    throw new Error("pnpm pack --json did not provide tarball filename.");
+  if (typeof rawFilename !== 'string' || rawFilename.trim().length === 0) {
+    throw new Error('pnpm pack --json did not provide tarball filename.');
   }
   const packTarballPath = resolve(process.cwd(), rawFilename.trim());
   if (!existsSync(packTarballPath)) {

@@ -1,17 +1,17 @@
-import { existsSync, readFileSync } from "node:fs";
-import { relative, resolve } from "node:path";
+import { existsSync, readFileSync } from 'node:fs';
+import { relative, resolve } from 'node:path';
 
-import { parse } from "yaml";
+import { parse } from 'yaml';
 
 export const DEFAULT_TECHNICAL_SOLUTION_LIFECYCLE_REGISTRY_PATH =
-  ".repo-ai-governor/context/technical-solution-lifecycle-registry.yaml";
+  '.repo-ai-governor/context/technical-solution-lifecycle-registry.yaml';
 export const SUPPORTED_TECHNICAL_SOLUTION_LIFECYCLE_STATUSES = [
-  "draft",
-  "review_pending",
-  "approved",
-  "active",
-  "superseded",
-  "archived",
+  'draft',
+  'review_pending',
+  'approved',
+  'active',
+  'superseded',
+  'archived',
 ];
 
 /**
@@ -20,7 +20,7 @@ export const SUPPORTED_TECHNICAL_SOLUTION_LIFECYCLE_STATUSES = [
  * @returns {string}
  */
 function normalizePathSeparators(value) {
-  return value.replace(/\\/gu, "/");
+  return value.replace(/\\/gu, '/');
 }
 
 /**
@@ -34,7 +34,7 @@ function toStringArray(value) {
   }
 
   return value
-    .map((entry) => String(entry ?? "").trim())
+    .map((entry) => String(entry ?? '').trim())
     .filter((entry) => entry.length > 0)
     .map((entry) => normalizePathSeparators(entry));
 }
@@ -74,41 +74,41 @@ export function loadTechnicalSolutionLifecycleRegistry(
     return null;
   }
 
-  const payload = parse(readFileSync(absoluteRegistryPath, "utf8"));
+  const payload = parse(readFileSync(absoluteRegistryPath, 'utf8'));
   const rootRecord =
-    payload && typeof payload === "object" ? /** @type {Record<string, unknown>} */ (payload) : {};
+    payload && typeof payload === 'object' ? /** @type {Record<string, unknown>} */ (payload) : {};
   const solutions = Array.isArray(rootRecord.solutions) ? rootRecord.solutions : [];
 
   return {
     registry_path: normalizePathSeparators(registryPath),
     schema_version:
-      typeof rootRecord.schema_version === "number" || typeof rootRecord.schema_version === "string"
+      typeof rootRecord.schema_version === 'number' || typeof rootRecord.schema_version === 'string'
         ? rootRecord.schema_version
         : null,
     allowed_statuses: toStringArray(rootRecord.allowed_statuses),
     solutions: solutions.map((solutionValue) => {
       const solutionRecord =
-        solutionValue && typeof solutionValue === "object"
+        solutionValue && typeof solutionValue === 'object'
           ? /** @type {Record<string, unknown>} */ (solutionValue)
           : {};
 
       return {
-        solution_id: String(solutionRecord.solution_id ?? "").trim(),
-        title: String(solutionRecord.title ?? "").trim(),
-        status: String(solutionRecord.status ?? "").trim(),
-        owner: String(solutionRecord.owner ?? "").trim(),
-        version: String(solutionRecord.version ?? "").trim(),
-        scope: String(solutionRecord.scope ?? "").trim(),
+        solution_id: String(solutionRecord.solution_id ?? '').trim(),
+        title: String(solutionRecord.title ?? '').trim(),
+        status: String(solutionRecord.status ?? '').trim(),
+        owner: String(solutionRecord.owner ?? '').trim(),
+        version: String(solutionRecord.version ?? '').trim(),
+        scope: String(solutionRecord.scope ?? '').trim(),
         draft_paths: toStringArray(solutionRecord.draft_paths),
         review_paths: toStringArray(solutionRecord.review_paths),
         final_paths: toStringArray(solutionRecord.final_paths),
         target_module_ids: toStringArray(solutionRecord.target_module_ids),
         north_star_refs: toStringArray(solutionRecord.north_star_refs),
-        approved_at: String(solutionRecord.approved_at ?? "").trim(),
-        approved_by: String(solutionRecord.approved_by ?? "").trim(),
-        activated_at: String(solutionRecord.activated_at ?? "").trim(),
+        approved_at: String(solutionRecord.approved_at ?? '').trim(),
+        approved_by: String(solutionRecord.approved_by ?? '').trim(),
+        activated_at: String(solutionRecord.activated_at ?? '').trim(),
         supersedes: toStringArray(solutionRecord.supersedes),
-        superseded_by: String(solutionRecord.superseded_by ?? "").trim(),
+        superseded_by: String(solutionRecord.superseded_by ?? '').trim(),
       };
     }),
   };

@@ -9,4 +9,4 @@ export type {
   MemorySnapshotMetadata,
   MemorySnapshotPayload,
   MemoryWriteEntryRequest,
-} from "./interfaces/index.js";
+} from './interfaces/index.js';

@@ -1,13 +1,13 @@
-import type { NotificationRiskLevelPolicyMatrix } from "../types/aliases/index.js";
+import type { NotificationRiskLevelPolicyMatrix } from '../types/aliases/index.js';
 
 /**
  * Defines supported notification channels for HITL dispatch.
  */
 export enum NotificationChannel {
-  EMAIL = "email",
-  WEBHOOK = "webhook",
-  CHAT_IM = "chat_im",
-  ISSUE_SYSTEM = "issue_system",
+  EMAIL = 'email',
+  WEBHOOK = 'webhook',
+  CHAT_IM = 'chat_im',
+  ISSUE_SYSTEM = 'issue_system',
 }
 
 /**
@@ -18,21 +18,21 @@ export enum NotificationChannel {
  * so these values intentionally mirror `ChangeRiskLevel` and must stay synchronized.
  */
 export enum NotificationRiskLevel {
-  LOW = "low",
-  MEDIUM = "medium",
-  HIGH = "high",
-  CRITICAL = "critical",
+  LOW = 'low',
+  MEDIUM = 'medium',
+  HIGH = 'high',
+  CRITICAL = 'critical',
 }
 
 /**
  * Defines notification dispatch status values written into audit payloads.
  */
 export enum NotificationDispatchStatus {
-  SKIPPED = "skipped",
-  DELIVERED_PRIMARY = "delivered_primary",
-  DELIVERED_FALLBACK = "delivered_fallback",
-  ESCALATED = "escalated",
-  FAILED = "failed",
+  SKIPPED = 'skipped',
+  DELIVERED_PRIMARY = 'delivered_primary',
+  DELIVERED_FALLBACK = 'delivered_fallback',
+  ESCALATED = 'escalated',
+  FAILED = 'failed',
 }
 
 /**
@@ -69,7 +69,7 @@ export const DEFAULT_NOTIFICATION_POLICY_MATRIX: NotificationRiskLevelPolicyMatr
 /**
  * Defines policy outcomes that require HITL notification dispatch.
  */
-export const NOTIFICATION_TRIGGER_OUTCOME_VALUES = new Set<string>(["confirm", "escalate"]);
+export const NOTIFICATION_TRIGGER_OUTCOME_VALUES = new Set<string>(['confirm', 'escalate']);
 
 /**
  * Defines supported enum value sets for runtime validation.

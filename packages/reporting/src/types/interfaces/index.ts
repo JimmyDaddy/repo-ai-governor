@@ -15,4 +15,4 @@ export type {
   ReplayExplainResult,
   ReplayPointer,
   ReplaySnapshot,
-} from "./reporting.interface.js";
+} from './reporting.interface.js';

@@ -1,9 +1,7 @@
-import { readFile, readdir } from "node:fs/promises";
-import { resolve } from "node:path";
-
-import { AgentCapability } from "@repo-ai-governor/adapter-sdk";
-import type { AdaptersConfig } from "@repo-ai-governor/config";
-import type { MemoryLayeredSnapshotRequest } from "@repo-ai-governor/core-memory";
+import { readFile, readdir } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import type { AdaptersConfig } from '@repo-ai-governor/config';
+import type { MemoryLayeredSnapshotRequest } from '@repo-ai-governor/core-memory';
 import {
   DEFAULT_MEMORY_RECALL_LAYERS,
   DEFAULT_MEMORY_RECALL_ORDER,
@@ -12,28 +10,28 @@ import {
   type MemoryContextAssemblyResult,
   type MemoryRecallRequest,
   type MemoryRecallService,
-} from "@repo-ai-governor/core-memory-semantics";
-import { type ProcessDslNode, ProcessNodeType } from "@repo-ai-governor/core-process";
-import type { ProcessDslDefinition } from "@repo-ai-governor/core-process";
-import type { RuntimeStageInputMap } from "@repo-ai-governor/core-runtime";
-import { DefaultRoleProfileId } from "@repo-ai-governor/shared";
+} from '@repo-ai-governor/core-memory-semantics';
+import { type ProcessDslNode, ProcessNodeType } from '@repo-ai-governor/core-process';
+import type { ProcessDslDefinition } from '@repo-ai-governor/core-process';
+import type { RuntimeStageInputMap } from '@repo-ai-governor/core-runtime';
+import { DefaultRoleProfileId } from '@repo-ai-governor/shared';
 import {
   CLI_TASK_DRIVEN_RUN_KEYWORDS,
   CLI_TASK_DRIVEN_RUN_NODE_DEFINITIONS,
   CliDeliveryRehearsalAction,
   CliTaskDrivenRunAssemblyMode,
   CliTaskDrivenRunAssemblyReason,
-} from "../constants/cli-task-driven-run.constant.js";
+} from '../constants/cli-task-driven-run.constant.js';
 import type {
   CliTaskCardContext,
   CliTaskDrivenRunAssembly,
   CliTaskInputArtifactReference,
   CliTaskInputReference,
-} from "../types/index.js";
+} from '../types/index.js';
 
-const PROCESS_POLICY_RETRY_REF = "policy/retry-default";
-const PROCESS_POLICY_TIMEOUT_REF = "policy/timeout-default";
-const PROCESS_POLICY_BUDGET_REF = "policy/budget-default";
+const PROCESS_POLICY_RETRY_REF = 'policy/retry-default';
+const PROCESS_POLICY_TIMEOUT_REF = 'policy/timeout-default';
+const PROCESS_POLICY_BUDGET_REF = 'policy/budget-default';
 
 /**
  * Owns task-driven `run` assembly so CLI can translate `--task-id` context into process DSL/stage inputs.
@@ -97,21 +95,21 @@ export class CliTaskDrivenRunRuntime {
       return null;
     }
 
-    const content = await readFile(taskCardPath, "utf8");
+    const content = await readFile(taskCardPath, 'utf8');
     const title = this.readTaskTitle(content, taskId);
-    const goal = this.extractSection(content, "任务目标");
-    const dependsOnTaskIds = this.extractTaskIds(this.extractSection(content, "Depends On"));
+    const goal = this.extractSection(content, '任务目标');
+    const dependsOnTaskIds = this.extractTaskIds(this.extractSection(content, 'Depends On'));
     const requiredInputReferences = this.extractInputReferences(
-      this.extractSection(content, "Required Inputs"),
+      this.extractSection(content, 'Required Inputs'),
     );
     const legacyInputReferences = this.extractInputReferences(
-      this.extractSection(content, "Input References"),
+      this.extractSection(content, 'Input References'),
     );
     const inputReferences =
       requiredInputReferences.length > 0 ? requiredInputReferences : legacyInputReferences;
     const inputArtifacts = this.extractInputArtifacts(inputReferences);
     const tracebackReferences = this.extractInputReferences(
-      this.extractSection(content, "Traceback References"),
+      this.extractSection(content, 'Traceback References'),
     );
 
     return {
@@ -132,7 +130,7 @@ export class CliTaskDrivenRunRuntime {
    * @returns Absolute task-card path when present.
    */
   private async findTaskCardPath(taskId: string): Promise<string | null> {
-    const rootDirectory = resolve(this.workspaceRoot, "context", "dev");
+    const rootDirectory = resolve(this.workspaceRoot, 'context', 'dev');
     const pendingDirectories = [rootDirectory];
 
     while (pendingDirectories.length > 0) {
@@ -150,7 +148,7 @@ export class CliTaskDrivenRunRuntime {
             continue;
           }
 
-          if (entry.isFile() && entry.name.startsWith(`${taskId}-`) && entry.name.endsWith(".md")) {
+          if (entry.isFile() && entry.name.startsWith(`${taskId}-`) && entry.name.endsWith('.md')) {
             return entryPath;
           }
         }
@@ -184,9 +182,9 @@ export class CliTaskDrivenRunRuntime {
 
     for (let index = 0; index < headingMatches.length; index += 1) {
       const currentHeadingMatch = headingMatches[index];
-      const rawHeadingText = currentHeadingMatch[1]?.trim() ?? "";
+      const rawHeadingText = currentHeadingMatch[1]?.trim() ?? '';
       const currentHeadingIndex = currentHeadingMatch.index;
-      if (typeof currentHeadingIndex !== "number") {
+      if (typeof currentHeadingIndex !== 'number') {
         continue;
       }
       if (this.normalizeSectionHeading(rawHeadingText) !== normalizedHeadingText) {
@@ -198,7 +196,7 @@ export class CliTaskDrivenRunRuntime {
       return content.slice(sectionStart, sectionEnd).trim();
     }
 
-    return "";
+    return '';
   }
 
   /**
@@ -208,7 +206,7 @@ export class CliTaskDrivenRunRuntime {
    */
   private normalizeSectionHeading(headingText: string): string {
     return headingText
-      .replace(/^\d+(?:\.\d+)*\.?\s*/u, "")
+      .replace(/^\d+(?:\.\d+)*\.?\s*/u, '')
       .trim()
       .toLowerCase();
   }
@@ -234,14 +232,14 @@ export class CliTaskDrivenRunRuntime {
     const referencesByKey = new Map<string, CliTaskInputReference>();
 
     for (const rawLine of sectionContent.split(/\r?\n/u)) {
-      const line = rawLine.replace(/^\s*(?:\d+\.\s+|[-*]\s+)/u, "").trim();
+      const line = rawLine.replace(/^\s*(?:\d+\.\s+|[-*]\s+)/u, '').trim();
       if (line.length === 0) {
         continue;
       }
 
       const artifactId = line.match(/DA-\d{3}/u)?.[0] ?? null;
       const referencePath = line.match(/`([^`]+)`/u)?.[1] ?? null;
-      const dedupeKey = [artifactId ?? "no-artifact", referencePath ?? line].join("::");
+      const dedupeKey = [artifactId ?? 'no-artifact', referencePath ?? line].join('::');
 
       referencesByKey.set(dedupeKey, {
         artifactId,
@@ -270,7 +268,7 @@ export class CliTaskDrivenRunRuntime {
 
       artifactById.set(inputReference.artifactId, {
         artifactId: inputReference.artifactId,
-        artifactPath: inputReference.referencePath?.includes("DA-")
+        artifactPath: inputReference.referencePath?.includes('DA-')
           ? inputReference.referencePath
           : null,
       });
@@ -309,7 +307,7 @@ export class CliTaskDrivenRunRuntime {
           : CliTaskDrivenRunAssemblyMode.TASK_ID_FALLBACK,
       assemblyReason,
       processDefinition: {
-        processId: "cli-minimal-governance-run",
+        processId: 'cli-minimal-governance-run',
         executionId,
         entryNodeId: prepareNode.nodeId ?? CLI_TASK_DRIVEN_RUN_NODE_DEFINITIONS.PREPARE.nodeId,
         nodes: [prepareNode, executeNode, reportNode],
@@ -333,17 +331,17 @@ export class CliTaskDrivenRunRuntime {
       },
       stageInputs: {
         [CLI_TASK_DRIVEN_RUN_NODE_DEFINITIONS.PREPARE.nodeId]: {
-          phase: "prepare",
+          phase: 'prepare',
           assemblyMode:
             assemblyReason === CliTaskDrivenRunAssemblyReason.NO_TASK_ID
               ? CliTaskDrivenRunAssemblyMode.BASELINE
               : CliTaskDrivenRunAssemblyMode.TASK_ID_FALLBACK,
         },
         [CLI_TASK_DRIVEN_RUN_NODE_DEFINITIONS.EXECUTE.nodeId]: {
-          phase: "execute",
+          phase: 'execute',
         },
         [CLI_TASK_DRIVEN_RUN_NODE_DEFINITIONS.REPORT.nodeId]: {
-          phase: "report",
+          phase: 'report',
         },
       },
       taskContext: null,
@@ -456,12 +454,12 @@ export class CliTaskDrivenRunRuntime {
     );
     nodes.push(prepareNode);
     stageInputs[prepareNode.nodeId ?? CLI_TASK_DRIVEN_RUN_NODE_DEFINITIONS.PREPARE.nodeId] = {
-      phase: "prepare",
+      phase: 'prepare',
       ...commonTaskContextPayload,
     };
 
     let previousNodeId = prepareNode.nodeId ?? CLI_TASK_DRIVEN_RUN_NODE_DEFINITIONS.PREPARE.nodeId;
-    const edges: ProcessDslDefinition["edges"] = [];
+    const edges: ProcessDslDefinition['edges'] = [];
 
     if (includeArtifactContextStage) {
       const artifactContextNode = this.createNode(
@@ -476,7 +474,7 @@ export class CliTaskDrivenRunRuntime {
         toNodeId: artifactContextNodeId,
       });
       stageInputs[artifactContextNodeId] = {
-        phase: "artifact_context",
+        phase: 'artifact_context',
         ...commonTaskContextPayload,
       };
       previousNodeId = artifactContextNodeId;
@@ -493,7 +491,7 @@ export class CliTaskDrivenRunRuntime {
       toNodeId: executeNodeId,
     });
     stageInputs[executeNodeId] = {
-      phase: "execute",
+      phase: 'execute',
       executionRoleProfileId,
       ...commonTaskContextPayload,
     };
@@ -511,7 +509,7 @@ export class CliTaskDrivenRunRuntime {
         toNodeId: verifyNodeId,
       });
       stageInputs[verifyNodeId] = {
-        phase: "verify",
+        phase: 'verify',
         verificationRoleProfileId,
         ...commonTaskContextPayload,
       };
@@ -530,7 +528,7 @@ export class CliTaskDrivenRunRuntime {
         toNodeId: reviewNodeId,
       });
       stageInputs[reviewNodeId] = {
-        phase: "review",
+        phase: 'review',
         managedReviewChain: true,
         reviewRoleProfileId,
         reviewVerifyRoleProfileId,
@@ -550,7 +548,7 @@ export class CliTaskDrivenRunRuntime {
         toNodeId: reviewVerifyNodeId,
       });
       stageInputs[reviewVerifyNodeId] = {
-        phase: "review_verify",
+        phase: 'review_verify',
         managedReviewChain: true,
         reviewRoleProfileId,
         reviewVerifyRoleProfileId,
@@ -573,7 +571,7 @@ export class CliTaskDrivenRunRuntime {
         toNodeId: deliveryRehearsalNodeId,
       });
       stageInputs[deliveryRehearsalNodeId] = {
-        phase: "delivery_rehearsal",
+        phase: 'delivery_rehearsal',
         deliveryRehearsalAction,
         managedDeliveryRehearsal: true,
         ...commonTaskContextPayload,
@@ -592,7 +590,7 @@ export class CliTaskDrivenRunRuntime {
       toNodeId: reportNodeId,
     });
     stageInputs[reportNodeId] = {
-      phase: "report",
+      phase: 'report',
       executionRoleProfileId,
       verificationRoleProfileId,
       ...commonTaskContextPayload,
@@ -602,7 +600,7 @@ export class CliTaskDrivenRunRuntime {
       assemblyMode: CliTaskDrivenRunAssemblyMode.TASK_DRIVEN,
       assemblyReason: CliTaskDrivenRunAssemblyReason.TASK_CONTEXT_LOADED,
       processDefinition: {
-        processId: "cli-task-driven-governance-run",
+        processId: 'cli-task-driven-governance-run',
         executionId,
         entryNodeId: prepareNode.nodeId ?? CLI_TASK_DRIVEN_RUN_NODE_DEFINITIONS.PREPARE.nodeId,
         nodes,
@@ -686,7 +684,7 @@ export class CliTaskDrivenRunRuntime {
     memorySelection: MemoryLayeredSnapshotRequest,
   ): MemoryRecallRequest {
     return {
-      queryIntent: "cli_task_driven_execution",
+      queryIntent: 'cli_task_driven_execution',
       workspaceId: this.workspaceRoot,
       executionId,
       requestedLayers: [...DEFAULT_MEMORY_RECALL_LAYERS],

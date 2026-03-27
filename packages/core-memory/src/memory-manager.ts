@@ -1,6 +1,6 @@
-import type { MemoryStoreAdapter } from "@repo-ai-governor/memory-store-adapter";
-import type { MemoryRecord } from "@repo-ai-governor/memory-store-adapter";
-import { MemoryScope } from "./constants/index.js";
+import type { MemoryStoreAdapter } from '@repo-ai-governor/memory-store-adapter';
+import type { MemoryRecord } from '@repo-ai-governor/memory-store-adapter';
+import { MemoryScope } from './constants/index.js';
 import type {
   MemoryArchiveEntriesRequest,
   MemoryLayeredSnapshot,
@@ -10,7 +10,7 @@ import type {
   MemorySnapshotMetadata,
   MemorySnapshotPayload,
   MemoryWriteEntryRequest,
-} from "./types/index.js";
+} from './types/index.js';
 
 /**
  * Manages layered memory access through one store adapter boundary.
@@ -172,7 +172,7 @@ export class MemoryManager {
     if (options.includeBaseline || (keyPrefixes.length === 0 && tags.length === 0)) {
       for (const entry of await this.queryEntries({
         scope,
-        ...(typeof options.limitPerQuery === "number" ? { limit: options.limitPerQuery } : {}),
+        ...(typeof options.limitPerQuery === 'number' ? { limit: options.limitPerQuery } : {}),
       })) {
         recordsByKey.set(`${entry.namespace}:${entry.key}`, entry);
       }
@@ -182,7 +182,7 @@ export class MemoryManager {
       for (const entry of await this.queryEntries({
         scope,
         keyPrefix,
-        ...(typeof options.limitPerQuery === "number" ? { limit: options.limitPerQuery } : {}),
+        ...(typeof options.limitPerQuery === 'number' ? { limit: options.limitPerQuery } : {}),
       })) {
         recordsByKey.set(`${entry.namespace}:${entry.key}`, entry);
       }
@@ -192,7 +192,7 @@ export class MemoryManager {
       for (const entry of await this.queryEntries({
         scope,
         tag,
-        ...(typeof options.limitPerQuery === "number" ? { limit: options.limitPerQuery } : {}),
+        ...(typeof options.limitPerQuery === 'number' ? { limit: options.limitPerQuery } : {}),
       })) {
         recordsByKey.set(`${entry.namespace}:${entry.key}`, entry);
       }

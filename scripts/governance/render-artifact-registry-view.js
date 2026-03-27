@@ -1,22 +1,22 @@
 #!/usr/bin/env node
 
-import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
-const MAIN_REGISTRY_PATH = ".repo-ai-governor/context/artifact-registry/artifacts.csv";
+const MAIN_REGISTRY_PATH = '.repo-ai-governor/context/artifact-registry/artifacts.csv';
 const ARCHIVE_REGISTRY_PATH =
-  ".repo-ai-governor/context/artifact-registry/archive/artifacts.archive.csv";
+  '.repo-ai-governor/context/artifact-registry/archive/artifacts.archive.csv';
 const REQUIRED_HEADERS = [
-  "artifact_id",
-  "artifact_type",
-  "artifact_path",
-  "artifact_version",
-  "artifact_status",
-  "producer_task_id",
-  "producer_execution_id",
-  "registered_at",
-  "last_updated_at",
-  "dependent_tasks",
+  'artifact_id',
+  'artifact_type',
+  'artifact_path',
+  'artifact_version',
+  'artifact_status',
+  'producer_task_id',
+  'producer_execution_id',
+  'registered_at',
+  'last_updated_at',
+  'dependent_tasks',
 ];
 
 /**
@@ -26,7 +26,7 @@ const REQUIRED_HEADERS = [
  */
 function parseCsvLine(line) {
   const values = [];
-  let currentValue = "";
+  let currentValue = '';
   let inQuotes = false;
 
   for (let index = 0; index < line.length; index += 1) {
@@ -44,9 +44,9 @@ function parseCsvLine(line) {
       continue;
     }
 
-    if (character === "," && !inQuotes) {
+    if (character === ',' && !inQuotes) {
       values.push(currentValue);
-      currentValue = "";
+      currentValue = '';
       continue;
     }
 
@@ -68,7 +68,7 @@ function readRegistry(relativeFilePath) {
     throw new Error(`Registry file not found: ${relativeFilePath}`);
   }
 
-  const lines = readFileSync(absoluteFilePath, "utf8")
+  const lines = readFileSync(absoluteFilePath, 'utf8')
     .split(/\r?\n/u)
     .map((line) => line.trimEnd())
     .filter((line) => line.trim().length > 0);
@@ -113,13 +113,13 @@ function renderStatusSummary(rows) {
   const counts = new Map();
 
   for (const row of rows) {
-    const status = row.artifact_status || "unknown";
+    const status = row.artifact_status || 'unknown';
     counts.set(status, (counts.get(status) ?? 0) + 1);
   }
 
   return Array.from(counts.entries())
     .map(([status, count]) => `${status}=${count}`)
-    .join(", ");
+    .join(', ');
 }
 
 /**
@@ -132,24 +132,24 @@ function renderRegistrySection(title, rows) {
   const lines = [`## ${title}`];
 
   if (rows.length === 0) {
-    lines.push("", "_No rows._");
-    return lines.join("\n");
+    lines.push('', '_No rows._');
+    return lines.join('\n');
   }
 
-  lines.push("");
+  lines.push('');
   lines.push(
-    "| artifact_id | status | artifact_type | producer_task_id | dependent_tasks | artifact_path |",
+    '| artifact_id | status | artifact_type | producer_task_id | dependent_tasks | artifact_path |',
   );
-  lines.push("|---|---|---|---|---|---|");
+  lines.push('|---|---|---|---|---|---|');
 
   for (const row of rows) {
-    const dependentTasks = row.dependent_tasks ? row.dependent_tasks : "*(none)*";
+    const dependentTasks = row.dependent_tasks ? row.dependent_tasks : '*(none)*';
     lines.push(
       `| ${row.artifact_id} | ${row.artifact_status} | ${row.artifact_type} | ${row.producer_task_id} | ${dependentTasks} | ${row.artifact_path} |`,
     );
   }
 
-  return lines.join("\n");
+  return lines.join('\n');
 }
 
 try {
@@ -158,19 +158,19 @@ try {
   const renderedAt = new Date().toISOString().slice(0, 10);
 
   const output = [
-    "# Artifact Registry View",
-    "",
+    '# Artifact Registry View',
+    '',
     `- Generated At: ${renderedAt}`,
     `- Main Registry: \`${MAIN_REGISTRY_PATH}\``,
     `- Archive Registry: \`${ARCHIVE_REGISTRY_PATH}\``,
     `- Main Status Summary: ${renderStatusSummary(mainRows)}`,
     `- Archive Status Summary: ${renderStatusSummary(archiveRows)}`,
-    "",
-    renderRegistrySection("Main Registry", mainRows),
-    "",
-    renderRegistrySection("Archive Registry", archiveRows),
-    "",
-  ].join("\n");
+    '',
+    renderRegistrySection('Main Registry', mainRows),
+    '',
+    renderRegistrySection('Archive Registry', archiveRows),
+    '',
+  ].join('\n');
 
   process.stdout.write(output);
 } catch (error) {

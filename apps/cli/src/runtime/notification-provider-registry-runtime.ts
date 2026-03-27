@@ -1,11 +1,11 @@
 import {
   type NotificationProvider,
   NotificationProviderRegistry,
-} from "@repo-ai-governor/notification-dispatcher";
-import { ChatImNotificationProvider } from "@repo-ai-governor/notification-provider-chat-im";
-import { WebhookNotificationProvider } from "@repo-ai-governor/notification-provider-webhook";
-import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
-import { CliNotificationProviderEnvironmentKey } from "../constants/notification-provider.constant.js";
+} from '@repo-ai-governor/notification-dispatcher';
+import { ChatImNotificationProvider } from '@repo-ai-governor/notification-provider-chat-im';
+import { WebhookNotificationProvider } from '@repo-ai-governor/notification-provider-webhook';
+import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
+import { CliNotificationProviderEnvironmentKey } from '../constants/notification-provider.constant.js';
 
 /**
  * Resolves CLI notification providers from environment-backed configuration.
@@ -282,7 +282,7 @@ export class CliNotificationProviderRegistryRuntime {
       );
     }
 
-    if (!parsedValue || typeof parsedValue !== "object" || Array.isArray(parsedValue)) {
+    if (!parsedValue || typeof parsedValue !== 'object' || Array.isArray(parsedValue)) {
       throw new RuntimeError(
         GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
         `Environment variable ${environmentKey} must be a JSON object.`,
@@ -297,7 +297,7 @@ export class CliNotificationProviderRegistryRuntime {
       parsedValue as Record<string, unknown>,
     )) {
       const normalizedHeaderName = headerName.trim();
-      const normalizedHeaderValue = String(headerValue ?? "").trim();
+      const normalizedHeaderValue = String(headerValue ?? '').trim();
       if (normalizedHeaderName.length === 0 || normalizedHeaderValue.length === 0) {
         throw new RuntimeError(
           GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,

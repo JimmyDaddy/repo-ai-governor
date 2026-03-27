@@ -1,16 +1,16 @@
-import { AgentCliExecOperation } from "@repo-ai-governor/adapter-sdk";
-import { GovernorErrorCode } from "@repo-ai-governor/shared";
+import { AgentCliExecOperation } from '@repo-ai-governor/adapter-sdk';
+import { GovernorErrorCode } from '@repo-ai-governor/shared';
 import {
   CliClaudeCodeExecFixtureEnvironmentKey,
   CliClaudeCodeExecFixtureMode,
-} from "../../src/constants/claude-code-exec-fixture.constant.js";
-import { CliClaudeCodeExecFixtureRuntime } from "../../src/runtime/claude-code-exec-fixture-runtime.js";
+} from '../../src/constants/claude-code-exec-fixture.constant.js';
+import { CliClaudeCodeExecFixtureRuntime } from '../../src/runtime/claude-code-exec-fixture-runtime.js';
 
-describe("Cli claude code exec fixture runtime", () => {
-  it("returns deterministic success runner when fixture gate is enabled", async () => {
+describe('Cli claude code exec fixture runtime', () => {
+  it('returns deterministic success runner when fixture gate is enabled', async () => {
     const runtime = new CliClaudeCodeExecFixtureRuntime();
     const runner = runtime.resolveExecRunner({
-      [CliClaudeCodeExecFixtureEnvironmentKey.ENABLE_FIXTURES]: "1",
+      [CliClaudeCodeExecFixtureEnvironmentKey.ENABLE_FIXTURES]: '1',
       [CliClaudeCodeExecFixtureEnvironmentKey.EXEC_FIXTURE]: CliClaudeCodeExecFixtureMode.SUCCESS,
     });
 
@@ -19,18 +19,18 @@ describe("Cli claude code exec fixture runtime", () => {
       return;
     }
     const result = await runner({
-      command: "claude",
+      command: 'claude',
       commandArgumentsPrefix: [],
       cwd: process.cwd(),
       env: process.env,
-      prompt: "Respond with exactly OK.",
+      prompt: 'Respond with exactly OK.',
       timeoutMs: 1000,
       operation: AgentCliExecOperation.PROBE,
     });
-    expect(result.stdout).toContain("OK");
+    expect(result.stdout).toContain('OK');
   });
 
-  it("fails closed when fixture mode is configured without enable flag", () => {
+  it('fails closed when fixture mode is configured without enable flag', () => {
     const runtime = new CliClaudeCodeExecFixtureRuntime();
 
     expect(() =>
@@ -44,10 +44,10 @@ describe("Cli claude code exec fixture runtime", () => {
     );
   });
 
-  it("returns credential failure runner", async () => {
+  it('returns credential failure runner', async () => {
     const runtime = new CliClaudeCodeExecFixtureRuntime();
     const runner = runtime.resolveExecRunner({
-      [CliClaudeCodeExecFixtureEnvironmentKey.ENABLE_FIXTURES]: "1",
+      [CliClaudeCodeExecFixtureEnvironmentKey.ENABLE_FIXTURES]: '1',
       [CliClaudeCodeExecFixtureEnvironmentKey.EXEC_FIXTURE]:
         CliClaudeCodeExecFixtureMode.CREDENTIAL_MISSING,
     });
@@ -59,11 +59,11 @@ describe("Cli claude code exec fixture runtime", () => {
 
     await expect(
       runner({
-        command: "claude",
+        command: 'claude',
         commandArgumentsPrefix: [],
         cwd: process.cwd(),
         env: process.env,
-        prompt: "Respond with exactly OK.",
+        prompt: 'Respond with exactly OK.',
         timeoutMs: 1000,
         operation: AgentCliExecOperation.PROBE,
       }),

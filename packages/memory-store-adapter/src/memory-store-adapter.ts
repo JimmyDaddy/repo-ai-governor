@@ -1,4 +1,4 @@
-import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
+import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import type {
   MemoryArchiveOptions,
   MemoryQueryRequest,
@@ -8,7 +8,7 @@ import type {
   MemorySnapshotRecord,
   MemoryStoreProvider,
   MemoryWriteRequest,
-} from "./types/index.js";
+} from './types/index.js';
 
 /**
  * Encapsulates provider contract calls with consistent error and payload handling.
@@ -31,7 +31,7 @@ export class MemoryStoreAdapter {
     } catch (error) {
       throw new RuntimeError(
         GovernorErrorCode.MEMORY_STORE_READ_FAILED,
-        "Failed to read memory record from store provider.",
+        'Failed to read memory record from store provider.',
         {
           namespace: request.namespace,
           key: request.key,
@@ -61,7 +61,7 @@ export class MemoryStoreAdapter {
     } catch (error) {
       throw new RuntimeError(
         GovernorErrorCode.MEMORY_STORE_WRITE_FAILED,
-        "Failed to write memory record to store provider.",
+        'Failed to write memory record to store provider.',
         {
           namespace: request.namespace,
           key: request.key,
@@ -83,7 +83,7 @@ export class MemoryStoreAdapter {
     } catch (error) {
       throw new RuntimeError(
         GovernorErrorCode.MEMORY_STORE_QUERY_FAILED,
-        "Failed to query memory records from store provider.",
+        'Failed to query memory records from store provider.',
         {
           namespace: request.namespace,
           keyPrefix: request.keyPrefix,
@@ -106,7 +106,7 @@ export class MemoryStoreAdapter {
     } catch (error) {
       throw new RuntimeError(
         GovernorErrorCode.MEMORY_STORE_SNAPSHOT_FAILED,
-        "Failed to create memory snapshot from store provider.",
+        'Failed to create memory snapshot from store provider.',
         {
           reason: options.reason,
           recordKeys: options.recordKeys ?? [],
@@ -127,7 +127,7 @@ export class MemoryStoreAdapter {
     } catch (error) {
       throw new RuntimeError(
         GovernorErrorCode.MEMORY_STORE_ARCHIVE_FAILED,
-        "Failed to archive memory records from store provider.",
+        'Failed to archive memory records from store provider.',
         {
           namespace: options.namespace,
           updatedBefore: options.updatedBefore,

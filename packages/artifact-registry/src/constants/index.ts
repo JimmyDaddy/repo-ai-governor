@@ -11,4 +11,4 @@ export {
   ArtifactDependencyResolutionStatus,
   ArtifactDependencyUnresolvedReason,
   ArtifactLifecycleStatus,
-} from "./artifact-registry.constant.js";
+} from './artifact-registry.constant.js';

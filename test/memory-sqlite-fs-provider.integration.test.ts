@@ -1,27 +1,27 @@
-import { existsSync } from "node:fs";
-import { mkdtemp, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { existsSync } from 'node:fs';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
-import { MemoryManager, MemoryScope } from "@repo-ai-governor/core-memory";
-import { SessionStatus, SharedSessionManager } from "@repo-ai-governor/core-session";
-import { SqliteFsMemoryStoreProvider } from "@repo-ai-governor/memory-provider-sqlite-fs";
-import { MemoryStoreAdapter } from "@repo-ai-governor/memory-store-adapter";
-import { GovernorErrorCode, standardizeError } from "@repo-ai-governor/shared";
+import { MemoryManager, MemoryScope } from '@repo-ai-governor/core-memory';
+import { SessionStatus, SharedSessionManager } from '@repo-ai-governor/core-session';
+import { SqliteFsMemoryStoreProvider } from '@repo-ai-governor/memory-provider-sqlite-fs';
+import { MemoryStoreAdapter } from '@repo-ai-governor/memory-store-adapter';
+import { GovernorErrorCode, standardizeError } from '@repo-ai-governor/shared';
 
 /**
  * Creates one temporary root directory for sqlite+fs smoke tests.
  * @returns Temporary absolute directory path.
  */
 async function createTemporaryRootDirectory(): Promise<string> {
-  return mkdtemp(join(tmpdir(), "repo-ai-governor-memory-sqlite-smoke-"));
+  return mkdtemp(join(tmpdir(), 'repo-ai-governor-memory-sqlite-smoke-'));
 }
 
-describe("Sqlite+fs memory provider smoke", () => {
-  it("persists memory records through sqlite+fs provider and adapter", async () => {
+describe('Sqlite+fs memory provider smoke', () => {
+  it('persists memory records through sqlite+fs provider and adapter', async () => {
     const temporaryRootDirectory = await createTemporaryRootDirectory();
     const provider = new SqliteFsMemoryStoreProvider({
-      rootDirectory: join(temporaryRootDirectory, ".repo-ai-governor", "memory"),
+      rootDirectory: join(temporaryRootDirectory, '.repo-ai-governor', 'memory'),
     });
     const adapter = new MemoryStoreAdapter(provider);
     const memoryManager = new MemoryManager(adapter);
@@ -29,34 +29,34 @@ describe("Sqlite+fs memory provider smoke", () => {
     try {
       await memoryManager.writeEntry({
         scope: MemoryScope.NORMATIVE,
-        key: "prd:brief",
-        payload: { version: "v1" },
-        tags: ["normative", "prd"],
+        key: 'prd:brief',
+        payload: { version: 'v1' },
+        tags: ['normative', 'prd'],
       });
       await memoryManager.writeEntry({
         scope: MemoryScope.EXECUTION,
-        key: "task:tk-022",
-        payload: { status: "in_progress" },
-        tags: ["execution", "task"],
+        key: 'task:tk-022',
+        payload: { status: 'in_progress' },
+        tags: ['execution', 'task'],
       });
       await memoryManager.writeEntry({
         scope: MemoryScope.NORMATIVE,
-        key: "shared-key",
-        payload: { lane: "normative" },
-        tags: ["normative", "shared"],
+        key: 'shared-key',
+        payload: { lane: 'normative' },
+        tags: ['normative', 'shared'],
       });
       await memoryManager.writeEntry({
         scope: MemoryScope.EXECUTION,
-        key: "shared-key",
-        payload: { lane: "execution" },
-        tags: ["execution", "shared"],
+        key: 'shared-key',
+        payload: { lane: 'execution' },
+        tags: ['execution', 'shared'],
       });
 
       const normativeRecord = await memoryManager.readEntry({
         scope: MemoryScope.NORMATIVE,
-        key: "prd:brief",
+        key: 'prd:brief',
       });
-      expect(normativeRecord?.value.version).toBe("v1");
+      expect(normativeRecord?.value.version).toBe('v1');
 
       const executionRecords = await memoryManager.queryEntries({
         scope: MemoryScope.EXECUTION,
@@ -64,29 +64,29 @@ describe("Sqlite+fs memory provider smoke", () => {
       expect(executionRecords).toHaveLength(2);
 
       const snapshot = await memoryManager.snapshot({
-        reason: "sqlite-smoke-test",
-        recordKeys: ["normative:shared-key"],
+        reason: 'sqlite-smoke-test',
+        recordKeys: ['normative:shared-key'],
       });
       expect(snapshot.recordCount).toBe(1);
       expect(existsSync(snapshot.snapshotPath)).toBe(true);
 
       const archivedCount = await memoryManager.archiveEntries({
-        keys: ["normative:shared-key"],
+        keys: ['normative:shared-key'],
         updatedBefore: new Date(Date.now() + 1000).toISOString(),
       });
       expect(archivedCount).toBe(1);
 
       const normativeSharedRecord = await memoryManager.readEntry({
         scope: MemoryScope.NORMATIVE,
-        key: "shared-key",
+        key: 'shared-key',
       });
       expect(normativeSharedRecord).toBeUndefined();
 
       const executionSharedRecord = await memoryManager.readEntry({
         scope: MemoryScope.EXECUTION,
-        key: "shared-key",
+        key: 'shared-key',
       });
-      expect(executionSharedRecord?.value.lane).toBe("execution");
+      expect(executionSharedRecord?.value.lane).toBe('execution');
 
       const executionRecordsAfterArchive = await memoryManager.queryEntries({
         scope: MemoryScope.EXECUTION,
@@ -98,10 +98,10 @@ describe("Sqlite+fs memory provider smoke", () => {
     }
   });
 
-  it("keeps session lifecycle semantics on sqlite+fs store", async () => {
+  it('keeps session lifecycle semantics on sqlite+fs store', async () => {
     const temporaryRootDirectory = await createTemporaryRootDirectory();
     const provider = new SqliteFsMemoryStoreProvider({
-      rootDirectory: join(temporaryRootDirectory, ".repo-ai-governor", "memory"),
+      rootDirectory: join(temporaryRootDirectory, '.repo-ai-governor', 'memory'),
     });
     const adapter = new MemoryStoreAdapter(provider);
     const memoryManager = new MemoryManager(adapter);
@@ -109,17 +109,17 @@ describe("Sqlite+fs memory provider smoke", () => {
 
     try {
       const openedSession = await sharedSessionManager.openSession({
-        sessionId: "session-tk-022",
-        processId: "process-022",
-        executionId: "exec-022",
-        initialContext: { lane: "sqlite-fs-memory" },
+        sessionId: 'session-tk-022',
+        processId: 'process-022',
+        executionId: 'exec-022',
+        initialContext: { lane: 'sqlite-fs-memory' },
       });
       expect(openedSession.status).toBe(SessionStatus.ACTIVE);
 
       const sessionWithEvent = await sharedSessionManager.appendEvent({
         sessionId: openedSession.sessionId,
-        type: "runtime.node.completed",
-        payload: { nodeId: "node-sqlite-fs" },
+        type: 'runtime.node.completed',
+        payload: { nodeId: 'node-sqlite-fs' },
       });
       expect(sessionWithEvent.events).toHaveLength(1);
 
@@ -132,7 +132,7 @@ describe("Sqlite+fs memory provider smoke", () => {
       await expect(
         sharedSessionManager.appendEvent({
           sessionId: openedSession.sessionId,
-          type: "runtime.node.failed",
+          type: 'runtime.node.failed',
         }),
       ).rejects.toSatisfy((error: unknown) => {
         const standardizedError = standardizeError(error);

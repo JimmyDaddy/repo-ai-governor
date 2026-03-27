@@ -1,7 +1,7 @@
 export type {
   RuntimeStageHandler,
   RuntimeStageInputMap,
-} from "./aliases/index.js";
+} from './aliases/index.js';
 export type {
   ProcessRuntimeBackendAvailability,
   ProcessRuntimeBackendExecuteRequest,
@@ -21,12 +21,12 @@ export type {
   ProcessRuntimeParitySnapshot,
   ProcessRuntimePreparedExecution,
   ProcessRuntimePreparedExecutionProfile,
-} from "./interfaces/index.js";
+} from './interfaces/index.js';
 export type {
   ProcessRuntimeBackendKind,
   ProcessRuntimeParityMode,
   ProcessRuntimeParitySeverity,
-} from "../constants/index.js";
+} from '../constants/index.js';
 export type {
   RuntimeConditionContext,
   RuntimeConditionResolver,
@@ -37,4 +37,4 @@ export type {
   RuntimeLoopController,
   RuntimeStageContext,
   RuntimeStageResult,
-} from "./interfaces/index.js";
+} from './interfaces/index.js';

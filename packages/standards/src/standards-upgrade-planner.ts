@@ -1,4 +1,4 @@
-import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
+import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import {
   DEFAULT_STANDARDS_ALLOW_MINOR_AUTO_UPGRADE,
   DEFAULT_STANDARDS_ALLOW_PATCH_AUTO_UPGRADE,
@@ -12,7 +12,7 @@ import {
   StandardsUpgradeRequiredAction,
   StandardsUpgradeRollbackStrategy,
   StandardsVersionPinMode,
-} from "./constants/index.js";
+} from './constants/index.js';
 import type {
   StandardsUpgradeAutoFixSuggestion,
   StandardsUpgradeConflict,
@@ -22,8 +22,8 @@ import type {
   StandardsUpgradePlanResult,
   StandardsUpgradePlannerOptions,
   StandardsVersionPinPolicy,
-} from "./types/index.js";
-import { readRequiredString } from "./utils/index.js";
+} from './types/index.js';
+import { readRequiredString } from './utils/index.js';
 
 interface ParsedSemver {
   major: number;
@@ -59,8 +59,8 @@ export class StandardsUpgradePlanner {
   public plan(input: StandardsUpgradePlanInput): StandardsUpgradePlanResult {
     try {
       const pinPolicy = this.resolvePinPolicy(input.pinPolicy);
-      const indexedCurrentPacks = this.indexPackStates(input.currentPacks, "currentPacks");
-      const indexedTargetPacks = this.indexPackStates(input.targetPacks, "targetPacks");
+      const indexedCurrentPacks = this.indexPackStates(input.currentPacks, 'currentPacks');
+      const indexedTargetPacks = this.indexPackStates(input.targetPacks, 'targetPacks');
       const allPackIds = Array.from(
         new Set([...indexedCurrentPacks.keys(), ...indexedTargetPacks.keys()]),
       ).sort((left, right) => left.localeCompare(right));
@@ -88,7 +88,7 @@ export class StandardsUpgradePlanner {
           autoFixSuggestions.push({
             suggestionId: `${packId}:restore-current`,
             packId,
-            description: "Restore the removed pack from current baseline snapshot.",
+            description: 'Restore the removed pack from current baseline snapshot.',
             suggestedTargetVersion: currentPack.packVersion,
           });
           continue;
@@ -164,7 +164,7 @@ export class StandardsUpgradePlanner {
           autoFixSuggestions.push({
             suggestionId: `${packId}:pin-major`,
             packId,
-            description: "Pin target version to current major line before retry.",
+            description: 'Pin target version to current major line before retry.',
             suggestedTargetVersion: `${currentPack.parsedVersion.major}.x`,
           });
           continue;
@@ -227,7 +227,7 @@ export class StandardsUpgradePlanner {
           autoFixSuggestions.push({
             suggestionId: `${packId}:apply-minor`,
             packId,
-            description: "Apply validated minor upgrade and refresh standards projection snapshot.",
+            description: 'Apply validated minor upgrade and refresh standards projection snapshot.',
             suggestedTargetVersion: targetPack.packVersion,
           });
           continue;
@@ -249,7 +249,7 @@ export class StandardsUpgradePlanner {
           autoFixSuggestions.push({
             suggestionId: `${packId}:apply-patch`,
             packId,
-            description: "Apply validated patch upgrade and re-run standards parity checks.",
+            description: 'Apply validated patch upgrade and re-run standards parity checks.',
             suggestedTargetVersion: targetPack.packVersion,
           });
           continue;
@@ -280,9 +280,9 @@ export class StandardsUpgradePlanner {
           strategy: StandardsUpgradeRollbackStrategy.RESTORE_PREVIOUS_SNAPSHOT,
           rollbackRef: this.resolveRollbackRef(input.rollbackRef),
           rollbackSteps: [
-            "restore standards pack versions from pre-upgrade snapshot",
-            "rebuild standards render outputs (human/ai/agents)",
-            "re-run standards parity and docs sync gates",
+            'restore standards pack versions from pre-upgrade snapshot',
+            'rebuild standards render outputs (human/ai/agents)',
+            're-run standards parity and docs sync gates',
           ],
         },
       };
@@ -293,7 +293,7 @@ export class StandardsUpgradePlanner {
 
       throw new RuntimeError(
         GovernorErrorCode.STANDARDS_UPGRADE_PLAN_FAILED,
-        "Standards upgrade planning failed unexpectedly.",
+        'Standards upgrade planning failed unexpectedly.',
         undefined,
         error,
       );
@@ -546,11 +546,11 @@ export class StandardsUpgradePlanner {
     if (rollbackRef) {
       return readRequiredString(
         rollbackRef,
-        "rollbackRef",
+        'rollbackRef',
         GovernorErrorCode.STANDARDS_UPGRADE_INVALID,
       );
     }
 
-    return "standards-upgrade-rollback";
+    return 'standards-upgrade-rollback';
   }
 }

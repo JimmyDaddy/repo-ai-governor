@@ -1,35 +1,35 @@
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 
-import { AgentAvailabilityStatus } from "@repo-ai-governor/adapter-sdk";
-import type { AdaptersConfig } from "@repo-ai-governor/config";
-import { AdapterSurface, LocalModelProvider } from "@repo-ai-governor/shared";
+import { AgentAvailabilityStatus } from '@repo-ai-governor/adapter-sdk';
+import type { AdaptersConfig } from '@repo-ai-governor/config';
+import { AdapterSurface, LocalModelProvider } from '@repo-ai-governor/shared';
 import type {
   CliLocalAdapterProbeOverride,
   CliLocalAdapterProbeResolution,
-} from "../types/index.js";
+} from '../types/index.js';
 
 const execFileAsync = promisify(execFile);
 const CLI_ADAPTER_LOCAL_PROBE_TIMEOUT_MS = 5000;
 const CLI_ADAPTER_LOCAL_PROBE_MAX_BUFFER_BYTES = 65536;
 const CLI_CLAUDE_CODE_COMMAND_CANDIDATES = [
   {
-    command: "claude",
-    args: ["--version"],
+    command: 'claude',
+    args: ['--version'],
   },
   {
-    command: "claude-code",
-    args: ["--version"],
+    command: 'claude-code',
+    args: ['--version'],
   },
 ] as const;
 const CLI_GITHUB_COPILOT_COMMAND_CANDIDATES = [
   {
-    command: "copilot",
-    args: ["--version"],
+    command: 'copilot',
+    args: ['--version'],
   },
   {
-    command: "gh",
-    args: ["copilot", "--", "--version"],
+    command: 'gh',
+    args: ['copilot', '--', '--version'],
   },
 ] as const;
 
@@ -55,7 +55,7 @@ export class CliLocalModelProbeRuntime {
    */
   public async probeLocalAdapterAvailability(
     surface: AdapterSurface,
-    toolConfig?: NonNullable<AdaptersConfig["tools"]>[number],
+    toolConfig?: NonNullable<AdaptersConfig['tools']>[number],
   ): Promise<CliLocalAdapterProbeResolution> {
     const overrideResolution = this.adapterLocalProbeOverrides?.[surface];
     if (overrideResolution) {
@@ -66,7 +66,7 @@ export class CliLocalModelProbeRuntime {
     }
 
     if (surface === AdapterSurface.CODEX) {
-      return this.probeSingleCommandAvailability(surface, "codex", ["--version"]);
+      return this.probeSingleCommandAvailability(surface, 'codex', ['--version']);
     }
 
     if (surface === AdapterSurface.CLAUDE_CODE) {
@@ -97,7 +97,7 @@ export class CliLocalModelProbeRuntime {
           unavailableReasons: [],
         };
       }
-      return this.probeSingleCommandAvailability(surface, "ollama", ["--version"]);
+      return this.probeSingleCommandAvailability(surface, 'ollama', ['--version']);
     }
 
     const unavailableReasons: string[] = [];
@@ -129,7 +129,7 @@ export class CliLocalModelProbeRuntime {
    */
   public resolveLocalModelConfigurationResolution(
     surface: AdapterSurface,
-    toolConfig?: NonNullable<AdaptersConfig["tools"]>[number],
+    toolConfig?: NonNullable<AdaptersConfig['tools']>[number],
   ): CliLocalAdapterProbeResolution {
     if (surface !== AdapterSurface.OLLAMA) {
       return {
@@ -141,16 +141,16 @@ export class CliLocalModelProbeRuntime {
     const missingKeys: string[] = [];
     const localModel = toolConfig?.localModel;
     if (!localModel) {
-      missingKeys.push("provider", "endpoint", "model");
+      missingKeys.push('provider', 'endpoint', 'model');
     } else {
-      if (typeof localModel.provider !== "string" || localModel.provider.trim().length === 0) {
-        missingKeys.push("provider");
+      if (typeof localModel.provider !== 'string' || localModel.provider.trim().length === 0) {
+        missingKeys.push('provider');
       }
-      if (typeof localModel.endpoint !== "string" || localModel.endpoint.trim().length === 0) {
-        missingKeys.push("endpoint");
+      if (typeof localModel.endpoint !== 'string' || localModel.endpoint.trim().length === 0) {
+        missingKeys.push('endpoint');
       }
-      if (typeof localModel.model !== "string" || localModel.model.trim().length === 0) {
-        missingKeys.push("model");
+      if (typeof localModel.model !== 'string' || localModel.model.trim().length === 0) {
+        missingKeys.push('model');
       }
     }
 
@@ -164,7 +164,7 @@ export class CliLocalModelProbeRuntime {
     return {
       availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
       unavailableReasons: [
-        `local_model_config_missing:${surface}:${missingKeys.filter((key, index, list) => list.indexOf(key) === index).join("|")}`,
+        `local_model_config_missing:${surface}:${missingKeys.filter((key, index, list) => list.indexOf(key) === index).join('|')}`,
       ],
     };
   }
@@ -264,15 +264,15 @@ export class CliLocalModelProbeRuntime {
    * @returns `true` when endpoint-backed local-model config is present.
    */
   private shouldTrustEndpointBackedLocalModelProbe(
-    toolConfig?: NonNullable<AdaptersConfig["tools"]>[number],
+    toolConfig?: NonNullable<AdaptersConfig['tools']>[number],
   ): boolean {
     const localModel = toolConfig?.localModel;
     return (
       toolConfig?.toolId === AdapterSurface.OLLAMA &&
       localModel?.provider === LocalModelProvider.OLLAMA &&
-      typeof localModel.endpoint === "string" &&
+      typeof localModel.endpoint === 'string' &&
       localModel.endpoint.trim().length > 0 &&
-      typeof localModel.model === "string" &&
+      typeof localModel.model === 'string' &&
       localModel.model.trim().length > 0
     );
   }
@@ -283,10 +283,10 @@ export class CliLocalModelProbeRuntime {
    * @returns True when process failed because command is missing.
    */
   private isMissingCommandFailure(error: unknown): boolean {
-    if (!error || typeof error !== "object") {
+    if (!error || typeof error !== 'object') {
       return false;
     }
     const errorCode = (error as { code?: unknown }).code;
-    return errorCode === "ENOENT";
+    return errorCode === 'ENOENT';
   }
 }

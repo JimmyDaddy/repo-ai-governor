@@ -1,24 +1,24 @@
 #!/usr/bin/env node
 
-import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { dirname, resolve } from "node:path";
+import { spawnSync } from 'node:child_process';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, resolve } from 'node:path';
 
-import { gateFail, gateInfo, gatePass } from "../governance/gate-output.js";
+import { gateFail, gateInfo, gatePass } from '../governance/gate-output.js';
 
-const GATE_NAME = "examples-runtime-smoke";
-const CONTRACT_RELATIVE_PATH = "examples/example-smoke.contract.json";
-const CLI_ENTRY_RELATIVE_PATH = "dist/bin/repo-ai-governor.js";
-const DEFAULT_DISTRIBUTION_MODE = "default";
-const PLUGIN_ENABLED_DISTRIBUTION_MODE = "plugin-enabled";
-const CODEX_EXEC_FIXTURE_ENABLE_ENV_KEY = "REPO_AI_GOVERNOR_ENABLE_TEST_FIXTURES";
-const CODEX_EXEC_FIXTURE_ENV_KEY = "REPO_AI_GOVERNOR_CODEX_EXEC_FIXTURE";
-const CODEX_EXEC_FIXTURE_SUCCESS = "success";
-const CLAUDE_CODE_EXEC_FIXTURE_ENV_KEY = "REPO_AI_GOVERNOR_CLAUDE_CODE_EXEC_FIXTURE";
-const CLAUDE_CODE_EXEC_FIXTURE_SUCCESS = "success";
-const GITHUB_COPILOT_EXEC_FIXTURE_ENV_KEY = "REPO_AI_GOVERNOR_GITHUB_COPILOT_EXEC_FIXTURE";
-const GITHUB_COPILOT_EXEC_FIXTURE_SUCCESS = "success";
+const GATE_NAME = 'examples-runtime-smoke';
+const CONTRACT_RELATIVE_PATH = 'examples/example-smoke.contract.json';
+const CLI_ENTRY_RELATIVE_PATH = 'dist/bin/repo-ai-governor.js';
+const DEFAULT_DISTRIBUTION_MODE = 'default';
+const PLUGIN_ENABLED_DISTRIBUTION_MODE = 'plugin-enabled';
+const CODEX_EXEC_FIXTURE_ENABLE_ENV_KEY = 'REPO_AI_GOVERNOR_ENABLE_TEST_FIXTURES';
+const CODEX_EXEC_FIXTURE_ENV_KEY = 'REPO_AI_GOVERNOR_CODEX_EXEC_FIXTURE';
+const CODEX_EXEC_FIXTURE_SUCCESS = 'success';
+const CLAUDE_CODE_EXEC_FIXTURE_ENV_KEY = 'REPO_AI_GOVERNOR_CLAUDE_CODE_EXEC_FIXTURE';
+const CLAUDE_CODE_EXEC_FIXTURE_SUCCESS = 'success';
+const GITHUB_COPILOT_EXEC_FIXTURE_ENV_KEY = 'REPO_AI_GOVERNOR_GITHUB_COPILOT_EXEC_FIXTURE';
+const GITHUB_COPILOT_EXEC_FIXTURE_SUCCESS = 'success';
 
 /**
  * Reads UTF-8 text content from one repository-relative path.
@@ -26,7 +26,7 @@ const GITHUB_COPILOT_EXEC_FIXTURE_SUCCESS = "success";
  * @returns {string}
  */
 function readText(relativePath) {
-  return readFileSync(resolve(process.cwd(), relativePath), "utf8");
+  return readFileSync(resolve(process.cwd(), relativePath), 'utf8');
 }
 
 /**
@@ -44,7 +44,7 @@ function readJson(relativePath) {
  * @param {string} fieldName Field name for diagnostics.
  */
 function assertNonEmptyString(value, fieldName) {
-  if (typeof value !== "string" || value.trim().length === 0) {
+  if (typeof value !== 'string' || value.trim().length === 0) {
     throw new Error(`Field "${fieldName}" must be a non-empty string.`);
   }
 }
@@ -55,7 +55,7 @@ function assertNonEmptyString(value, fieldName) {
  */
 function parseCliOptions() {
   const rawArgs = process.argv.slice(2);
-  const distributionModeIndex = rawArgs.findIndex((arg) => arg === "--distribution-mode");
+  const distributionModeIndex = rawArgs.findIndex((arg) => arg === '--distribution-mode');
   if (distributionModeIndex === -1) {
     return {
       distributionMode: DEFAULT_DISTRIBUTION_MODE,
@@ -96,7 +96,7 @@ function normalizeExampleEntries(entriesRaw, fieldName) {
   }
 
   return entriesRaw.map((entry, index) => {
-    if (!entry || typeof entry !== "object") {
+    if (!entry || typeof entry !== 'object') {
       throw new Error(`${fieldName}[${index}] must be an object.`);
     }
 
@@ -133,13 +133,13 @@ function normalizeExampleEntries(entriesRaw, fieldName) {
  * }}
  */
 function normalizeContract(contractRaw) {
-  if (!contractRaw || typeof contractRaw !== "object") {
-    throw new Error("example smoke contract must be an object.");
+  if (!contractRaw || typeof contractRaw !== 'object') {
+    throw new Error('example smoke contract must be an object.');
   }
 
   const requiredExamples = normalizeExampleEntries(
     contractRaw.requiredExamples,
-    "requiredExamples",
+    'requiredExamples',
   );
   if (requiredExamples.length === 0) {
     throw new Error('Field "requiredExamples" must be a non-empty array.');
@@ -149,7 +149,7 @@ function normalizeContract(contractRaw) {
     requiredExamples,
     pluginEnabledExamples: normalizeExampleEntries(
       contractRaw.pluginEnabledExamples,
-      "pluginEnabledExamples",
+      'pluginEnabledExamples',
     ),
   };
 }
@@ -161,13 +161,13 @@ function normalizeContract(contractRaw) {
  * @returns {{expectedCommandOperations: Record<string, string>}}
  */
 function normalizeExpectedBaseline(expectedRaw, expectedPath) {
-  if (!expectedRaw || typeof expectedRaw !== "object" || Array.isArray(expectedRaw)) {
+  if (!expectedRaw || typeof expectedRaw !== 'object' || Array.isArray(expectedRaw)) {
     throw new Error(`expected baseline must be an object: ${expectedPath}`);
   }
 
   if (
     !expectedRaw.expectedCommandOperations ||
-    typeof expectedRaw.expectedCommandOperations !== "object" ||
+    typeof expectedRaw.expectedCommandOperations !== 'object' ||
     Array.isArray(expectedRaw.expectedCommandOperations)
   ) {
     throw new Error(`expectedCommandOperations must be an object: ${expectedPath}`);
@@ -206,7 +206,7 @@ function normalizeExpectedBaseline(expectedRaw, expectedPath) {
  * }}
  */
 function normalizeScenarioStep(stepRaw, index) {
-  if (!stepRaw || typeof stepRaw !== "object") {
+  if (!stepRaw || typeof stepRaw !== 'object') {
     throw new Error(`commands[${index}] must be an object.`);
   }
 
@@ -221,19 +221,19 @@ function normalizeScenarioStep(stepRaw, index) {
     return arg.trim();
   });
 
-  if (!stepRaw.expect || typeof stepRaw.expect !== "object") {
+  if (!stepRaw.expect || typeof stepRaw.expect !== 'object') {
     throw new Error(`commands[${index}].expect must be an object.`);
   }
 
   const normalizedExpect = {
-    ...(typeof stepRaw.expect.status === "string" ? { status: stepRaw.expect.status.trim() } : {}),
-    ...(typeof stepRaw.expect.command === "string"
+    ...(typeof stepRaw.expect.status === 'string' ? { status: stepRaw.expect.status.trim() } : {}),
+    ...(typeof stepRaw.expect.command === 'string'
       ? { command: stepRaw.expect.command.trim() }
       : {}),
-    ...(typeof stepRaw.expect.operation === "string"
+    ...(typeof stepRaw.expect.operation === 'string'
       ? { operation: stepRaw.expect.operation.trim() }
       : {}),
-    ...(typeof stepRaw.expect.minPassChecks === "number"
+    ...(typeof stepRaw.expect.minPassChecks === 'number'
       ? { minPassChecks: stepRaw.expect.minPassChecks }
       : {}),
     ...(Array.isArray(stepRaw.expect.requiredArtifactIds)
@@ -251,16 +251,16 @@ function normalizeScenarioStep(stepRaw, index) {
       : {}),
     ...(!Array.isArray(stepRaw.expect.diagnostics) &&
     stepRaw.expect.diagnostics &&
-    typeof stepRaw.expect.diagnostics === "object"
+    typeof stepRaw.expect.diagnostics === 'object'
       ? {
           diagnostics: Object.fromEntries(
             Object.entries(stepRaw.expect.diagnostics).map(([key, value]) => {
               assertNonEmptyString(key, `commands[${index}].expect.diagnostics.key`);
               if (
                 value !== null &&
-                typeof value !== "string" &&
-                typeof value !== "number" &&
-                typeof value !== "boolean"
+                typeof value !== 'string' &&
+                typeof value !== 'number' &&
+                typeof value !== 'boolean'
               ) {
                 throw new Error(
                   `commands[${index}].expect.diagnostics.${key} must be string|number|boolean|null.`,
@@ -291,7 +291,7 @@ function normalizeScenarioStep(stepRaw, index) {
  * }}
  */
 function normalizeScenario(scenarioRaw, scenarioPath) {
-  if (!scenarioRaw || typeof scenarioRaw !== "object") {
+  if (!scenarioRaw || typeof scenarioRaw !== 'object') {
     throw new Error(`scenario must be an object: ${scenarioPath}`);
   }
 
@@ -307,7 +307,7 @@ function normalizeScenario(scenarioRaw, scenarioPath) {
 
   const files = Array.isArray(scenarioRaw.files)
     ? scenarioRaw.files.map((fileRaw, index) => {
-        if (!fileRaw || typeof fileRaw !== "object") {
+        if (!fileRaw || typeof fileRaw !== 'object') {
           throw new Error(`${scenarioPath}:files[${index}] must be an object.`);
         }
         assertNonEmptyString(fileRaw.path, `${scenarioPath}:files[${index}].path`);
@@ -336,7 +336,7 @@ function materializeScenarioFiles(workspacePath, files) {
   for (const file of files) {
     const absoluteFilePath = resolve(workspacePath, file.path);
     mkdirSync(dirname(absoluteFilePath), { recursive: true });
-    writeFileSync(absoluteFilePath, file.content, "utf8");
+    writeFileSync(absoluteFilePath, file.content, 'utf8');
   }
 }
 
@@ -352,25 +352,25 @@ function materializeScenarioFiles(workspacePath, files) {
 function executeStep(cliEntryAbsolutePath, workspacePath, scenarioId, step) {
   const result = spawnSync(process.execPath, [cliEntryAbsolutePath, ...step.args], {
     cwd: workspacePath,
-    encoding: "utf8",
+    encoding: 'utf8',
     env: {
       ...process.env,
-      [CODEX_EXEC_FIXTURE_ENABLE_ENV_KEY]: "1",
+      [CODEX_EXEC_FIXTURE_ENABLE_ENV_KEY]: '1',
       [CODEX_EXEC_FIXTURE_ENV_KEY]: CODEX_EXEC_FIXTURE_SUCCESS,
       [CLAUDE_CODE_EXEC_FIXTURE_ENV_KEY]: CLAUDE_CODE_EXEC_FIXTURE_SUCCESS,
       [GITHUB_COPILOT_EXEC_FIXTURE_ENV_KEY]: GITHUB_COPILOT_EXEC_FIXTURE_SUCCESS,
     },
-    stdio: ["ignore", "pipe", "pipe"],
+    stdio: ['ignore', 'pipe', 'pipe'],
   });
 
-  if (typeof result.status !== "number") {
+  if (typeof result.status !== 'number') {
     throw new Error(
-      `example(${scenarioId}) step(${step.id}) failed to start: ${result.error?.message ?? "unknown error"}`,
+      `example(${scenarioId}) step(${step.id}) failed to start: ${result.error?.message ?? 'unknown error'}`,
     );
   }
 
-  const stdout = (result.stdout ?? "").trim();
-  const stderr = (result.stderr ?? "").trim();
+  const stdout = (result.stdout ?? '').trim();
+  const stderr = (result.stderr ?? '').trim();
 
   if (result.status !== 0) {
     throw new Error(
@@ -387,7 +387,7 @@ function executeStep(cliEntryAbsolutePath, workspacePath, scenarioId, step) {
     );
   }
 
-  if (!parsedOutput || typeof parsedOutput !== "object" || Array.isArray(parsedOutput)) {
+  if (!parsedOutput || typeof parsedOutput !== 'object' || Array.isArray(parsedOutput)) {
     throw new Error(`example(${scenarioId}) step(${step.id}) returned invalid JSON payload.`);
   }
 
@@ -422,7 +422,7 @@ function assertStepExpectation(scenarioId, step, commandName, baselineOperation,
 
   const commandResult =
     output.command_result &&
-    typeof output.command_result === "object" &&
+    typeof output.command_result === 'object' &&
     !Array.isArray(output.command_result)
       ? output.command_result
       : null;
@@ -449,15 +449,15 @@ function assertStepExpectation(scenarioId, step, commandName, baselineOperation,
     );
   }
 
-  if (typeof step.expect.minPassChecks === "number") {
+  if (typeof step.expect.minPassChecks === 'number') {
     const checkTotals =
       commandResult.check_totals &&
-      typeof commandResult.check_totals === "object" &&
+      typeof commandResult.check_totals === 'object' &&
       !Array.isArray(commandResult.check_totals)
         ? commandResult.check_totals
         : null;
 
-    const passCount = checkTotals && typeof checkTotals.pass === "number" ? checkTotals.pass : -1;
+    const passCount = checkTotals && typeof checkTotals.pass === 'number' ? checkTotals.pass : -1;
     if (passCount < step.expect.minPassChecks) {
       throw new Error(
         `example(${scenarioId}) step(${step.id}) expected min pass checks ${step.expect.minPassChecks} but got ${passCount}`,
@@ -473,7 +473,7 @@ function assertStepExpectation(scenarioId, step, commandName, baselineOperation,
     const artifactIds = new Set(
       artifacts
         .filter(
-          (artifact) => artifact && typeof artifact === "object" && typeof artifact.id === "string",
+          (artifact) => artifact && typeof artifact === 'object' && typeof artifact.id === 'string',
         )
         .map((artifact) => artifact.id),
     );
@@ -490,7 +490,7 @@ function assertStepExpectation(scenarioId, step, commandName, baselineOperation,
   if (step.expect.diagnostics) {
     const diagnostics =
       output.diagnostics &&
-      typeof output.diagnostics === "object" &&
+      typeof output.diagnostics === 'object' &&
       !Array.isArray(output.diagnostics)
         ? output.diagnostics
         : null;
@@ -574,4 +574,4 @@ if (issues.length > 0) {
   process.exit(1);
 }
 
-gatePass(GATE_NAME, "examples runtime smoke checks passed.");
+gatePass(GATE_NAME, 'examples runtime smoke checks passed.');

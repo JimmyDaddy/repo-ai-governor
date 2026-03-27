@@ -1,7 +1,7 @@
 import type {
   MemoryLayeredSnapshot,
   MemoryLayeredSnapshotRequest,
-} from "@repo-ai-governor/core-memory";
+} from '@repo-ai-governor/core-memory';
 import type {
   MemoryContextAssemblyOutcomeValue,
   MemoryContextPolicyActionValue,
@@ -11,7 +11,7 @@ import type {
   MemoryRecallKindValue,
   MemoryRecallLayerValue,
   MemoryRecallSelectionPolicyValue,
-} from "../aliases/index.js";
+} from '../aliases/index.js';
 
 /**
  * Defines explicit metadata filters consumed by memory recall.
@@ -47,7 +47,7 @@ export interface MemoryRecallRequest {
  */
 export interface MemorySourceRef {
   reference: string;
-  referenceType: "record" | "source_ref" | "artifact" | "path";
+  referenceType: 'record' | 'source_ref' | 'artifact' | 'path';
 }
 
 /**
@@ -255,7 +255,7 @@ export interface MemoryPromotionCandidateDecision {
  */
 export interface MemoryPromotionPhaseResult {
   phase: MemoryPromotionPhaseValue;
-  status: "completed" | "skipped";
+  status: 'completed' | 'skipped';
   candidateCount: number;
   detail: string;
 }

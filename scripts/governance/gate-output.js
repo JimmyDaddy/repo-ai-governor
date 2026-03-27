@@ -1,10 +1,10 @@
 const ANSI = {
-  reset: "\u001B[0m",
-  bold: "\u001B[1m",
-  blue: "\u001B[34m",
-  green: "\u001B[32m",
-  yellow: "\u001B[33m",
-  red: "\u001B[31m",
+  reset: '\u001B[0m',
+  bold: '\u001B[1m',
+  blue: '\u001B[34m',
+  green: '\u001B[32m',
+  yellow: '\u001B[33m',
+  red: '\u001B[31m',
 };
 
 /**

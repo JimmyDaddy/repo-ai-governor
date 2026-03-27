@@ -2,9 +2,9 @@ import type {
   ChangeRiskEvaluationResult,
   ChangeRiskLevel,
   ChangeRiskRequiredAction,
-} from "@repo-ai-governor/core-change-risk";
-import type { PolicyDecisionSource, PolicyHitlDecision } from "../../constants/index.js";
-import type { PolicyGateOutcome, PolicyGateRuleKey, PolicyReviewerRole } from "../aliases/index.js";
+} from '@repo-ai-governor/core-change-risk';
+import type { PolicyDecisionSource, PolicyHitlDecision } from '../../constants/index.js';
+import type { PolicyGateOutcome, PolicyGateRuleKey, PolicyReviewerRole } from '../aliases/index.js';
 
 /**
  * Defines one structured condition block for policy-rule matching.

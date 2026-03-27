@@ -1,4 +1,4 @@
-import type { AuditRecordStatus } from "@repo-ai-governor/core-session";
+import type { AuditRecordStatus } from '@repo-ai-governor/core-session';
 
 /**
  * Represents aggregated status counters for one execution or stage report block.

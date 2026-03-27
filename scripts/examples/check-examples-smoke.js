@@ -1,16 +1,16 @@
 #!/usr/bin/env node
 
-import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
-import { gateFail, gateInfo, gatePass } from "../governance/gate-output.js";
+import { gateFail, gateInfo, gatePass } from '../governance/gate-output.js';
 
-const GATE_NAME = "examples-doc-smoke";
-const EXAMPLES_ROOT = "examples";
-const CONTRACT_RELATIVE_PATH = "examples/example-smoke.contract.json";
-const PACKAGE_JSON_RELATIVE_PATH = "package.json";
-const CLI_COMMANDS_RELATIVE_PATH = "apps/cli/src/constants/cli-command.constant.ts";
-const REQUIRED_SECTION_HEADINGS = ["## 输入", "## 命令", "## 预期输出", "## 排障"];
+const GATE_NAME = 'examples-doc-smoke';
+const EXAMPLES_ROOT = 'examples';
+const CONTRACT_RELATIVE_PATH = 'examples/example-smoke.contract.json';
+const PACKAGE_JSON_RELATIVE_PATH = 'package.json';
+const CLI_COMMANDS_RELATIVE_PATH = 'apps/cli/src/constants/cli-command.constant.ts';
+const REQUIRED_SECTION_HEADINGS = ['## 输入', '## 命令', '## 预期输出', '## 排障'];
 
 /**
  * Reads UTF-8 text from one relative path.
@@ -19,7 +19,7 @@ const REQUIRED_SECTION_HEADINGS = ["## 输入", "## 命令", "## 预期输出", 
  */
 function readText(relativePath) {
   const absolutePath = resolve(process.cwd(), relativePath);
-  return readFileSync(absolutePath, "utf8");
+  return readFileSync(absolutePath, 'utf8');
 }
 
 /**
@@ -37,7 +37,7 @@ function readJson(relativePath) {
  * @param {string} fieldName Field name for diagnostics.
  */
 function assertNonEmptyString(value, fieldName) {
-  if (typeof value !== "string" || value.trim().length === 0) {
+  if (typeof value !== 'string' || value.trim().length === 0) {
     throw new Error(`Field "${fieldName}" must be a non-empty string.`);
   }
 }
@@ -65,7 +65,7 @@ function normalizeExampleEntries(entriesRaw, fieldName) {
   }
 
   return entriesRaw.map((entry, index) => {
-    if (!entry || typeof entry !== "object") {
+    if (!entry || typeof entry !== 'object') {
       throw new Error(`${fieldName}[${index}] must be an object.`);
     }
 
@@ -120,26 +120,26 @@ function collectCliCommandNames() {
 function readCommandNameFromReadmeLine(line) {
   const normalized = line.trim();
   const hasExecutablePrefix =
-    normalized.includes("pnpm exec repo-ai-governor") || normalized.startsWith("repo-ai-governor ");
+    normalized.includes('pnpm exec repo-ai-governor') || normalized.startsWith('repo-ai-governor ');
   if (normalized.length === 0 || !hasExecutablePrefix) {
     return null;
   }
 
   const tokens = normalized.split(/\s+/u);
-  const cliIndex = tokens.findIndex((token) => token.includes("repo-ai-governor"));
+  const cliIndex = tokens.findIndex((token) => token.includes('repo-ai-governor'));
   if (cliIndex === -1) {
     return null;
   }
 
   for (let index = cliIndex + 1; index < tokens.length; index += 1) {
     const token = tokens[index];
-    if (token.startsWith("-")) {
+    if (token.startsWith('-')) {
       continue;
     }
-    if (token.startsWith("#")) {
+    if (token.startsWith('#')) {
       break;
     }
-    return token.replace(/[;|].*$/u, "");
+    return token.replace(/[;|].*$/u, '');
   }
 
   return null;
@@ -169,7 +169,7 @@ function collectExampleReadmeCommands(content) {
  * @returns {Set<string>}
  */
 function collectScenarioCommands(scenarioRaw, scenarioPath) {
-  if (!scenarioRaw || typeof scenarioRaw !== "object") {
+  if (!scenarioRaw || typeof scenarioRaw !== 'object') {
     throw new Error(`scenario must be an object: ${scenarioPath}`);
   }
 
@@ -181,7 +181,7 @@ function collectScenarioCommands(scenarioRaw, scenarioPath) {
   for (const [index, command] of scenarioRaw.commands.entries()) {
     if (
       !command ||
-      typeof command !== "object" ||
+      typeof command !== 'object' ||
       !Array.isArray(command.args) ||
       command.args.length === 0
     ) {
@@ -203,7 +203,7 @@ function collectScenarioCommands(scenarioRaw, scenarioPath) {
  * @returns {Map<string, string>}
  */
 function collectScenarioCommandOperations(scenarioRaw, scenarioPath) {
-  if (!scenarioRaw || typeof scenarioRaw !== "object") {
+  if (!scenarioRaw || typeof scenarioRaw !== 'object') {
     throw new Error(`scenario must be an object: ${scenarioPath}`);
   }
 
@@ -215,7 +215,7 @@ function collectScenarioCommandOperations(scenarioRaw, scenarioPath) {
   for (const [index, command] of scenarioRaw.commands.entries()) {
     if (
       !command ||
-      typeof command !== "object" ||
+      typeof command !== 'object' ||
       !Array.isArray(command.args) ||
       command.args.length === 0
     ) {
@@ -227,10 +227,10 @@ function collectScenarioCommandOperations(scenarioRaw, scenarioPath) {
 
     const operationName =
       command.expect &&
-      typeof command.expect === "object" &&
-      typeof command.expect.operation === "string"
+      typeof command.expect === 'object' &&
+      typeof command.expect.operation === 'string'
         ? command.expect.operation.trim()
-        : "";
+        : '';
     if (operationName.length === 0) {
       continue;
     }
@@ -282,16 +282,16 @@ function ensureFileExists(issues, relativePath, reason) {
  * }}
  */
 function normalizeContract(contractRaw) {
-  if (!contractRaw || typeof contractRaw !== "object") {
-    throw new Error("example smoke contract must be an object.");
+  if (!contractRaw || typeof contractRaw !== 'object') {
+    throw new Error('example smoke contract must be an object.');
   }
 
-  assertNonEmptyString(contractRaw.schemaVersion, "schemaVersion");
+  assertNonEmptyString(contractRaw.schemaVersion, 'schemaVersion');
   assertNonEmptyString(
     contractRaw.externalConsumptionContractMatrixRef,
-    "externalConsumptionContractMatrixRef",
+    'externalConsumptionContractMatrixRef',
   );
-  assertNonEmptyString(contractRaw.supportMatrixRef, "supportMatrixRef");
+  assertNonEmptyString(contractRaw.supportMatrixRef, 'supportMatrixRef');
 
   if (
     !Array.isArray(contractRaw.requiredGateScripts) ||
@@ -304,18 +304,18 @@ function normalizeContract(contractRaw) {
   }
   const requiredExamples = normalizeExampleEntries(
     contractRaw.requiredExamples,
-    "requiredExamples",
+    'requiredExamples',
   );
   if (requiredExamples.length === 0) {
     throw new Error('Field "requiredExamples" must be a non-empty array.');
   }
 
   const requiredGateScripts = contractRaw.requiredGateScripts.map((scriptName) => {
-    assertNonEmptyString(scriptName, "requiredGateScripts[]");
+    assertNonEmptyString(scriptName, 'requiredGateScripts[]');
     return scriptName.trim();
   });
   const readmeRefs = contractRaw.readmeRefs.map((referencePath) => {
-    assertNonEmptyString(referencePath, "readmeRefs[]");
+    assertNonEmptyString(referencePath, 'readmeRefs[]');
     return referencePath.trim();
   });
 
@@ -324,7 +324,7 @@ function normalizeContract(contractRaw) {
     requiredExamples,
     pluginEnabledExamples: normalizeExampleEntries(
       contractRaw.pluginEnabledExamples,
-      "pluginEnabledExamples",
+      'pluginEnabledExamples',
     ),
     requiredGateScripts,
     externalConsumptionContractMatrixRef: contractRaw.externalConsumptionContractMatrixRef.trim(),
@@ -339,13 +339,13 @@ function normalizeContract(contractRaw) {
  * @param {string} expectedPath Expected file path.
  */
 function validateExpectedShape(expectedRaw, expectedPath) {
-  if (!expectedRaw || typeof expectedRaw !== "object") {
+  if (!expectedRaw || typeof expectedRaw !== 'object') {
     throw new Error(`expected baseline must be an object: ${expectedPath}`);
   }
 
   if (
     !expectedRaw.expectedCommandOperations ||
-    typeof expectedRaw.expectedCommandOperations !== "object" ||
+    typeof expectedRaw.expectedCommandOperations !== 'object' ||
     Array.isArray(expectedRaw.expectedCommandOperations)
   ) {
     throw new Error(`expectedCommandOperations must be an object: ${expectedPath}`);
@@ -355,10 +355,10 @@ function validateExpectedShape(expectedRaw, expectedPath) {
 const issues = [];
 
 try {
-  ensureFileExists(issues, CONTRACT_RELATIVE_PATH, "contract");
-  ensureFileExists(issues, `${EXAMPLES_ROOT}/README.md`, "examples root");
-  ensureFileExists(issues, PACKAGE_JSON_RELATIVE_PATH, "package metadata");
-  ensureFileExists(issues, CLI_COMMANDS_RELATIVE_PATH, "cli command baseline");
+  ensureFileExists(issues, CONTRACT_RELATIVE_PATH, 'contract');
+  ensureFileExists(issues, `${EXAMPLES_ROOT}/README.md`, 'examples root');
+  ensureFileExists(issues, PACKAGE_JSON_RELATIVE_PATH, 'package metadata');
+  ensureFileExists(issues, CLI_COMMANDS_RELATIVE_PATH, 'cli command baseline');
 
   const examplesRootPath = resolve(process.cwd(), EXAMPLES_ROOT);
   if (!existsSync(examplesRootPath)) {
@@ -369,9 +369,9 @@ try {
   const packageJson = readJson(PACKAGE_JSON_RELATIVE_PATH);
   const packageScripts =
     packageJson &&
-    typeof packageJson === "object" &&
+    typeof packageJson === 'object' &&
     packageJson.scripts &&
-    typeof packageJson.scripts === "object"
+    typeof packageJson.scripts === 'object'
       ? packageJson.scripts
       : null;
   if (!packageScripts) {
@@ -380,7 +380,7 @@ try {
 
   const rootReadmeContent = readText(`${EXAMPLES_ROOT}/README.md`);
   for (const readmeRef of contract.readmeRefs) {
-    ensureFileExists(issues, readmeRef, "readme refs");
+    ensureFileExists(issues, readmeRef, 'readme refs');
     if (!rootReadmeContent.includes(readmeRef)) {
       issues.push(`examples root README missing ref path: "${readmeRef}"`);
     }
@@ -389,9 +389,9 @@ try {
   ensureFileExists(
     issues,
     contract.externalConsumptionContractMatrixRef,
-    "external contract matrix ref",
+    'external contract matrix ref',
   );
-  ensureFileExists(issues, contract.supportMatrixRef, "support matrix ref");
+  ensureFileExists(issues, contract.supportMatrixRef, 'support matrix ref');
 
   for (const requiredScriptName of contract.requiredGateScripts) {
     if (!packageScripts || !(requiredScriptName in packageScripts)) {
@@ -476,8 +476,8 @@ try {
       }
     }
 
-    if (requiredExample.id === "multi-role-collaboration-flow") {
-      if (!exampleContent.includes("review-verify")) {
+    if (requiredExample.id === 'multi-role-collaboration-flow') {
+      if (!exampleContent.includes('review-verify')) {
         issues.push('example(multi-role-collaboration-flow) must mention "review-verify"');
       }
       if (!/ledger[-\s]backfill/iu.test(exampleContent)) {
@@ -485,18 +485,18 @@ try {
       }
     }
 
-    if (requiredExample.id === "restricted-network-degrade-flow") {
+    if (requiredExample.id === 'restricted-network-degrade-flow') {
       if (!/read-only attach/iu.test(exampleContent)) {
         issues.push('example(restricted-network-degrade-flow) must mention "read-only attach"');
       }
-      if (!exampleContent.includes("tool_managed") || !exampleContent.includes("repo_local")) {
+      if (!exampleContent.includes('tool_managed') || !exampleContent.includes('repo_local')) {
         issues.push(
           'example(restricted-network-degrade-flow) must mention "tool_managed" and "repo_local"',
         );
       }
     }
 
-    if (requiredExample.id === "hitl-escalation-flow") {
+    if (requiredExample.id === 'hitl-escalation-flow') {
       if (!/confirm/iu.test(exampleContent) || !/escalate/iu.test(exampleContent)) {
         issues.push('example(hitl-escalation-flow) must mention "confirm" and "escalate"');
       }
@@ -515,4 +515,4 @@ if (issues.length > 0) {
   process.exit(1);
 }
 
-gatePass(GATE_NAME, "examples doc smoke checks passed.");
+gatePass(GATE_NAME, 'examples doc smoke checks passed.');

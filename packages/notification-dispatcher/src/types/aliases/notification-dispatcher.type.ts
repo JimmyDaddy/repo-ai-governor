@@ -1,10 +1,10 @@
-import type { PolicyGateOutcome } from "@repo-ai-governor/core-policy";
+import type { PolicyGateOutcome } from '@repo-ai-governor/core-policy';
 import type {
   NotificationChannel,
   NotificationDispatchStatus,
   NotificationRiskLevel,
-} from "../../constants/index.js";
-import type { NotificationChannelPolicy } from "../interfaces/index.js";
+} from '../../constants/index.js';
+import type { NotificationChannelPolicy } from '../interfaces/index.js';
 
 /**
  * Defines policy outcome value space consumed by notification dispatcher.

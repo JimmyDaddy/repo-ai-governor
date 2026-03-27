@@ -2,9 +2,9 @@ import {
   type ExecutionReport,
   type ReplayExplainResult,
   ReplayExplainer,
-} from "@repo-ai-governor/reporting";
-import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
-import { CLI_RUN_REPLAY_SOURCE_TYPE } from "../../constants/cli-governance-runtime.constant.js";
+} from '@repo-ai-governor/reporting';
+import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
+import { CLI_RUN_REPLAY_SOURCE_TYPE } from '../../constants/cli-governance-runtime.constant.js';
 
 export interface CliReplayExplainResolution {
   sourceType: string;
@@ -97,16 +97,16 @@ export class CliReplayExplainBuilder {
    * @returns True when payload can be treated as execution report.
    */
   private isExecutionReportPayload(payload: unknown): payload is ExecutionReport {
-    if (!payload || typeof payload !== "object") {
+    if (!payload || typeof payload !== 'object') {
       return false;
     }
 
     const candidate = payload as Record<string, unknown>;
     return (
-      typeof candidate.executionId === "string" &&
+      typeof candidate.executionId === 'string' &&
       Array.isArray(candidate.stageSummaries) &&
       Array.isArray(candidate.replayPointers) &&
-      typeof candidate.generatedAt === "string"
+      typeof candidate.generatedAt === 'string'
     );
   }
 
@@ -116,18 +116,18 @@ export class CliReplayExplainBuilder {
    * @returns True when payload can be treated as replay-explain result.
    */
   private isReplayExplainPayload(payload: unknown): payload is ReplayExplainResult {
-    if (!payload || typeof payload !== "object") {
+    if (!payload || typeof payload !== 'object') {
       return false;
     }
 
     const candidate = payload as Record<string, unknown>;
     return (
-      typeof candidate.executionId === "string" &&
-      typeof candidate.matchedCount === "number" &&
+      typeof candidate.executionId === 'string' &&
+      typeof candidate.matchedCount === 'number' &&
       Array.isArray(candidate.pointers) &&
       Array.isArray(candidate.explainLines) &&
       candidate.query !== null &&
-      typeof candidate.query === "object"
+      typeof candidate.query === 'object'
     );
   }
 
@@ -138,7 +138,7 @@ export class CliReplayExplainBuilder {
    */
   private extractMemorySemanticsSummary(
     report: ExecutionReport,
-  ): CliReplayExplainResolution["memorySemantics"] {
+  ): CliReplayExplainResolution['memorySemantics'] {
     if (!report.memorySemantics) {
       return null;
     }
@@ -176,10 +176,10 @@ export class CliReplayExplainBuilder {
       `memory_policy_warn_count=${memorySemantics.warningRecordCount}`,
       `memory_policy_redact_count=${memorySemantics.redactedRecordCount}`,
       `memory_policy_block_count=${memorySemantics.blockedRecordCount}`,
-      `memory_promotion_outcome=${memorySemantics.promotionOutcome ?? "none"}`,
+      `memory_promotion_outcome=${memorySemantics.promotionOutcome ?? 'none'}`,
       `memory_promotion_planned_merge_count=${memorySemantics.plannedMergeCount}`,
       `memory_promotion_merged_count=${memorySemantics.mergedCount}`,
-      `memory_session_projection_key=${memorySemantics.sessionSummaryProjectionKey ?? "none"}`,
+      `memory_session_projection_key=${memorySemantics.sessionSummaryProjectionKey ?? 'none'}`,
     ];
   }
 }

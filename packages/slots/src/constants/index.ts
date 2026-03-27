@@ -10,4 +10,4 @@ export {
   SlotSource,
   SlotTrack,
   SlotValidationSeverity,
-} from "./slot.constant.js";
+} from './slot.constant.js';

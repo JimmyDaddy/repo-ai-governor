@@ -1,16 +1,16 @@
-import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
+import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import {
   DEFAULT_REPLAY_EXPLAIN_LIMIT,
   MAX_REPLAY_EXPLAIN_LIMIT,
   NO_REPLAY_MATCH_EXPLAIN_LINE,
-} from "./constants/index.js";
+} from './constants/index.js';
 import type {
   CreateReplaySnapshotOptions,
   ExplainReplayOptions,
   ReplayExplainResult,
   ReplayPointer,
   ReplaySnapshot,
-} from "./types/index.js";
+} from './types/index.js';
 
 /**
  * Builds replay snapshots and explain output from report pointers.
@@ -26,27 +26,27 @@ export class ReplayExplainer {
    * @returns Replay snapshot with record/stage/route indexes.
    */
   public createSnapshot(options: CreateReplaySnapshotOptions): ReplaySnapshot {
-    if (!options || typeof options !== "object") {
+    if (!options || typeof options !== 'object') {
       throw new RuntimeError(
         GovernorErrorCode.REPORT_REPLAY_INPUT_INVALID,
-        "Replay snapshot options must be an object.",
+        'Replay snapshot options must be an object.',
       );
     }
 
     const report = options.report;
-    if (!report || typeof report !== "object") {
+    if (!report || typeof report !== 'object') {
       throw new RuntimeError(
         GovernorErrorCode.REPORT_REPLAY_INPUT_INVALID,
-        "Replay snapshot requires a report payload.",
+        'Replay snapshot requires a report payload.',
       );
     }
 
-    const executionId = this.readRequiredString(report.executionId, "report.executionId");
-    const generatedAt = this.readRequiredString(report.generatedAt, "report.generatedAt");
+    const executionId = this.readRequiredString(report.executionId, 'report.executionId');
+    const generatedAt = this.readRequiredString(report.generatedAt, 'report.generatedAt');
     if (!Array.isArray(report.replayPointers)) {
       throw new RuntimeError(
         GovernorErrorCode.REPORT_REPLAY_INPUT_INVALID,
-        "Replay snapshot requires report.replayPointers array.",
+        'Replay snapshot requires report.replayPointers array.',
       );
     }
 
@@ -59,7 +59,7 @@ export class ReplayExplainer {
       if (pointerByRecordId[normalizedPointer.recordId]) {
         throw new RuntimeError(
           GovernorErrorCode.REPORT_REPLAY_INPUT_INVALID,
-          "Replay pointer recordId must be unique in one snapshot.",
+          'Replay pointer recordId must be unique in one snapshot.',
           {
             recordId: normalizedPointer.recordId,
           },
@@ -88,24 +88,24 @@ export class ReplayExplainer {
    * @returns Explain payload containing matched pointers and human-readable lines.
    */
   public explain(options: ExplainReplayOptions): ReplayExplainResult {
-    if (!options || typeof options !== "object") {
+    if (!options || typeof options !== 'object') {
       throw new RuntimeError(
         GovernorErrorCode.REPORT_REPLAY_INPUT_INVALID,
-        "Replay explain options must be an object.",
+        'Replay explain options must be an object.',
       );
     }
 
     const snapshot = this.normalizeSnapshot(options.snapshot);
-    const stageId = this.readOptionalString(options.stageId, "stageId");
-    const routeKey = this.readOptionalString(options.routeKey, "routeKey");
-    const recordId = this.readOptionalString(options.recordId, "recordId");
-    const outputLocale = this.readOptionalString(options.outputLocale, "outputLocale");
-    const limit = this.readOptionalLimit(options.limit, "limit");
+    const stageId = this.readOptionalString(options.stageId, 'stageId');
+    const routeKey = this.readOptionalString(options.routeKey, 'routeKey');
+    const recordId = this.readOptionalString(options.recordId, 'recordId');
+    const outputLocale = this.readOptionalString(options.outputLocale, 'outputLocale');
+    const limit = this.readOptionalLimit(options.limit, 'limit');
 
     if (recordId && !snapshot.pointerByRecordId[recordId]) {
       throw new RuntimeError(
         GovernorErrorCode.REPORT_REPLAY_INPUT_INVALID,
-        "Replay explain recordId was not found in snapshot.",
+        'Replay explain recordId was not found in snapshot.',
         {
           recordId,
         },
@@ -225,7 +225,7 @@ export class ReplayExplainer {
       segments.push(`output_locale=${pointer.outputLocale}`);
     }
 
-    return segments.join(" ");
+    return segments.join(' ');
   }
 
   /**
@@ -234,24 +234,24 @@ export class ReplayExplainer {
    * @returns Normalized replay snapshot.
    */
   private normalizeSnapshot(snapshot: ReplaySnapshot): ReplaySnapshot {
-    if (!snapshot || typeof snapshot !== "object") {
+    if (!snapshot || typeof snapshot !== 'object') {
       throw new RuntimeError(
         GovernorErrorCode.REPORT_REPLAY_INPUT_INVALID,
-        "Replay explain requires snapshot payload.",
+        'Replay explain requires snapshot payload.',
       );
     }
 
-    const executionId = this.readRequiredString(snapshot.executionId, "snapshot.executionId");
-    const generatedAt = this.readRequiredString(snapshot.generatedAt, "snapshot.generatedAt");
+    const executionId = this.readRequiredString(snapshot.executionId, 'snapshot.executionId');
+    const generatedAt = this.readRequiredString(snapshot.generatedAt, 'snapshot.generatedAt');
     const pointerByRecordId = this.readObject(
       snapshot.pointerByRecordId,
-      "snapshot.pointerByRecordId",
+      'snapshot.pointerByRecordId',
     ) as Record<string, ReplayPointer>;
-    const stageIndex = this.readObject(snapshot.stageIndex, "snapshot.stageIndex") as Record<
+    const stageIndex = this.readObject(snapshot.stageIndex, 'snapshot.stageIndex') as Record<
       string,
       string[]
     >;
-    const routeIndex = this.readObject(snapshot.routeIndex, "snapshot.routeIndex") as Record<
+    const routeIndex = this.readObject(snapshot.routeIndex, 'snapshot.routeIndex') as Record<
       string,
       string[]
     >;
@@ -271,48 +271,48 @@ export class ReplayExplainer {
    * @returns Normalized pointer.
    */
   private normalizePointer(pointer: ReplayPointer): ReplayPointer {
-    if (!pointer || typeof pointer !== "object") {
+    if (!pointer || typeof pointer !== 'object') {
       throw new RuntimeError(
         GovernorErrorCode.REPORT_REPLAY_INPUT_INVALID,
-        "Replay pointer row must be an object.",
+        'Replay pointer row must be an object.',
       );
     }
 
     return {
-      recordId: this.readRequiredString(pointer.recordId, "pointer.recordId"),
-      recordedAt: this.readRequiredString(pointer.recordedAt, "pointer.recordedAt"),
-      stageId: this.readRequiredString(pointer.stageId, "pointer.stageId"),
-      routeKey: this.readRequiredString(pointer.routeKey, "pointer.routeKey"),
+      recordId: this.readRequiredString(pointer.recordId, 'pointer.recordId'),
+      recordedAt: this.readRequiredString(pointer.recordedAt, 'pointer.recordedAt'),
+      stageId: this.readRequiredString(pointer.stageId, 'pointer.stageId'),
+      routeKey: this.readRequiredString(pointer.routeKey, 'pointer.routeKey'),
       status: pointer.status,
-      policyOutcome: this.readRequiredString(pointer.policyOutcome, "pointer.policyOutcome"),
-      ...(this.readOptionalString(pointer.riskLevel, "pointer.riskLevel")
-        ? { riskLevel: this.readOptionalString(pointer.riskLevel, "pointer.riskLevel") }
+      policyOutcome: this.readRequiredString(pointer.policyOutcome, 'pointer.policyOutcome'),
+      ...(this.readOptionalString(pointer.riskLevel, 'pointer.riskLevel')
+        ? { riskLevel: this.readOptionalString(pointer.riskLevel, 'pointer.riskLevel') }
         : {}),
-      ...(this.readOptionalString(pointer.artifactId, "pointer.artifactId")
-        ? { artifactId: this.readOptionalString(pointer.artifactId, "pointer.artifactId") }
+      ...(this.readOptionalString(pointer.artifactId, 'pointer.artifactId')
+        ? { artifactId: this.readOptionalString(pointer.artifactId, 'pointer.artifactId') }
         : {}),
       ...(this.readOptionalString(
         pointer.dependencyResolutionStatus,
-        "pointer.dependencyResolutionStatus",
+        'pointer.dependencyResolutionStatus',
       )
         ? {
             dependencyResolutionStatus: this.readOptionalString(
               pointer.dependencyResolutionStatus,
-              "pointer.dependencyResolutionStatus",
-            ) as ReplayPointer["dependencyResolutionStatus"],
+              'pointer.dependencyResolutionStatus',
+            ) as ReplayPointer['dependencyResolutionStatus'],
           }
         : {}),
-      ...(this.readOptionalString(pointer.outputMode, "pointer.outputMode")
+      ...(this.readOptionalString(pointer.outputMode, 'pointer.outputMode')
         ? {
             outputMode: this.readOptionalString(
               pointer.outputMode,
-              "pointer.outputMode",
-            ) as ReplayPointer["outputMode"],
+              'pointer.outputMode',
+            ) as ReplayPointer['outputMode'],
           }
         : {}),
-      ...(this.readOptionalString(pointer.outputLocale, "pointer.outputLocale")
+      ...(this.readOptionalString(pointer.outputLocale, 'pointer.outputLocale')
         ? {
-            outputLocale: this.readOptionalString(pointer.outputLocale, "pointer.outputLocale"),
+            outputLocale: this.readOptionalString(pointer.outputLocale, 'pointer.outputLocale'),
           }
         : {}),
     };
@@ -325,7 +325,7 @@ export class ReplayExplainer {
    * @returns Trimmed string.
    */
   private readRequiredString(candidate: unknown, fieldName: string): string {
-    if (typeof candidate !== "string" || candidate.trim().length === 0) {
+    if (typeof candidate !== 'string' || candidate.trim().length === 0) {
       throw new RuntimeError(
         GovernorErrorCode.REPORT_REPLAY_INPUT_INVALID,
         `Field "${fieldName}" must be a non-empty string.`,
@@ -393,7 +393,7 @@ export class ReplayExplainer {
    * @returns Object value.
    */
   private readObject(candidate: unknown, fieldName: string): Record<string, unknown> {
-    if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
+    if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) {
       throw new RuntimeError(
         GovernorErrorCode.REPORT_REPLAY_INPUT_INVALID,
         `Field "${fieldName}" must be an object.`,

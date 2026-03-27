@@ -1,4 +1,4 @@
-import { type GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
+import { type GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 
 /**
  * Validates a required string field and returns a trimmed value.
@@ -12,7 +12,7 @@ export function readRequiredString(
   fieldName: string,
   errorCode: GovernorErrorCode,
 ): string {
-  if (typeof value !== "string") {
+  if (typeof value !== 'string') {
     throw new RuntimeError(errorCode, `Field "${fieldName}" must be a string.`);
   }
 

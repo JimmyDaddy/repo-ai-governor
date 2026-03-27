@@ -10,4 +10,4 @@ export type {
   NotificationProvider,
   NotificationProviderReceipt,
   NotificationProviderRequest,
-} from "./notification-dispatcher.interface.js";
+} from './notification-dispatcher.interface.js';

@@ -1,4 +1,4 @@
-export type { MemoryProviderModuleLoader } from "./aliases/index.js";
+export type { MemoryProviderModuleLoader } from './aliases/index.js';
 export type {
   MemoryProviderBuiltInDescriptor,
   MemoryProviderCompositionSummary,
@@ -13,4 +13,4 @@ export type {
   MemoryProviderRegistryOptions,
   MemoryProviderRegistryResolutionResult,
   MemoryProviderResolvedDescriptor,
-} from "./interfaces/index.js";
+} from './interfaces/index.js';

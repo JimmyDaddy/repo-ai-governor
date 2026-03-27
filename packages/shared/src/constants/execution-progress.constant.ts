@@ -6,19 +6,19 @@
  * interaction prompts aligned across command outputs.
  */
 export enum ExecutionProgressStage {
-  CONNECT = "connect",
-  DOCTOR = "doctor",
-  VERIFY = "verify",
-  RUN_COMPILE = "run_compile",
-  RUN_RUNTIME = "run_runtime",
-  DELIVERY_REHEARSAL = "delivery_rehearsal",
-  REPORT = "report",
-  REPLAY = "replay",
-  REVIEW = "review",
-  REVIEW_VERIFY = "review_verify",
-  LEDGER_BACKFILL = "ledger_backfill",
-  POLICY_WAITING = "policy_waiting",
-  HUMAN_CONFIRMATION = "human_confirmation",
+  CONNECT = 'connect',
+  DOCTOR = 'doctor',
+  VERIFY = 'verify',
+  RUN_COMPILE = 'run_compile',
+  RUN_RUNTIME = 'run_runtime',
+  DELIVERY_REHEARSAL = 'delivery_rehearsal',
+  REPORT = 'report',
+  REPLAY = 'replay',
+  REVIEW = 'review',
+  REVIEW_VERIFY = 'review_verify',
+  LEDGER_BACKFILL = 'ledger_backfill',
+  POLICY_WAITING = 'policy_waiting',
+  HUMAN_CONFIRMATION = 'human_confirmation',
 }
 
 /**
@@ -29,12 +29,12 @@ export enum ExecutionProgressStage {
  * and automate follow-up actions.
  */
 export enum ExecutionProgressStatus {
-  QUEUED = "queued",
-  RUNNING = "running",
-  COMPLETED = "completed",
-  WAITING = "waiting",
-  WARNING = "warning",
-  FAILED = "failed",
+  QUEUED = 'queued',
+  RUNNING = 'running',
+  COMPLETED = 'completed',
+  WAITING = 'waiting',
+  WARNING = 'warning',
+  FAILED = 'failed',
 }
 
 /**
@@ -45,22 +45,22 @@ export enum ExecutionProgressStatus {
  * without forcing users to inspect raw artifacts first.
  */
 export enum ExecutionInteractionCategory {
-  NONE = "none",
-  POLICY_WAITING = "policy_waiting",
-  HUMAN_CONFIRMATION = "human_confirmation",
-  ENVIRONMENT_PRECONDITION = "environment_precondition",
-  PERMISSION_CONFIRMATION = "permission_confirmation",
-  RUNTIME_FAILURE = "runtime_failure",
+  NONE = 'none',
+  POLICY_WAITING = 'policy_waiting',
+  HUMAN_CONFIRMATION = 'human_confirmation',
+  ENVIRONMENT_PRECONDITION = 'environment_precondition',
+  PERMISSION_CONFIRMATION = 'permission_confirmation',
+  RUNTIME_FAILURE = 'runtime_failure',
 }
 
 /**
  * Defines human-readable labels for progress statuses.
  */
 export const EXECUTION_PROGRESS_STATUS_LABELS: Record<ExecutionProgressStatus, string> = {
-  [ExecutionProgressStatus.QUEUED]: "Queued",
-  [ExecutionProgressStatus.RUNNING]: "Running",
-  [ExecutionProgressStatus.COMPLETED]: "Completed",
-  [ExecutionProgressStatus.WAITING]: "Waiting for action",
-  [ExecutionProgressStatus.WARNING]: "Completed with warning",
-  [ExecutionProgressStatus.FAILED]: "Failed",
+  [ExecutionProgressStatus.QUEUED]: 'Queued',
+  [ExecutionProgressStatus.RUNNING]: 'Running',
+  [ExecutionProgressStatus.COMPLETED]: 'Completed',
+  [ExecutionProgressStatus.WAITING]: 'Waiting for action',
+  [ExecutionProgressStatus.WARNING]: 'Completed with warning',
+  [ExecutionProgressStatus.FAILED]: 'Failed',
 };

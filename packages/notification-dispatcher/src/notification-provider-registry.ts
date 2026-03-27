@@ -1,6 +1,6 @@
-import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
-import type { NotificationChannel } from "./constants/index.js";
-import type { NotificationProvider } from "./types/index.js";
+import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
+import type { NotificationChannel } from './constants/index.js';
+import type { NotificationProvider } from './types/index.js';
 
 /**
  * Owns deterministic registration and lookup for notification channel providers.
@@ -22,16 +22,16 @@ export class NotificationProviderRegistry {
    * @returns Registry instance for fluent assembly.
    */
   public register(provider: NotificationProvider): NotificationProviderRegistry {
-    if (!provider || typeof provider !== "object") {
+    if (!provider || typeof provider !== 'object') {
       throw new RuntimeError(
         GovernorErrorCode.NOTIFICATION_DISPATCH_INPUT_INVALID,
-        "Notification provider registry requires non-null provider instances.",
+        'Notification provider registry requires non-null provider instances.',
       );
     }
 
-    const providerId = this.readRequiredString(provider.providerId, "provider.providerId");
-    const channel = this.readRequiredString(provider.channel, "provider.channel");
-    if (typeof provider.send !== "function") {
+    const providerId = this.readRequiredString(provider.providerId, 'provider.providerId');
+    const channel = this.readRequiredString(provider.channel, 'provider.channel');
+    if (typeof provider.send !== 'function') {
       throw new RuntimeError(
         GovernorErrorCode.NOTIFICATION_DISPATCH_INPUT_INVALID,
         `Notification provider "${providerId}" must expose one send(request) function.`,
@@ -89,7 +89,7 @@ export class NotificationProviderRegistry {
    * @returns Trimmed string value.
    */
   private readRequiredString(value: unknown, fieldName: string): string {
-    if (typeof value !== "string") {
+    if (typeof value !== 'string') {
       throw new RuntimeError(
         GovernorErrorCode.NOTIFICATION_DISPATCH_INPUT_INVALID,
         `Field "${fieldName}" must be a string.`,

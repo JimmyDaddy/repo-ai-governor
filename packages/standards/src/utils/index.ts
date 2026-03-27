@@ -1,1 +1,1 @@
-export { readRequiredString } from "./validation.util.js";
+export { readRequiredString } from './validation.util.js';

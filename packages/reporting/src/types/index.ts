@@ -1,4 +1,4 @@
-export type { ReportStatusBreakdown } from "./aliases/index.js";
+export type { ReportStatusBreakdown } from './aliases/index.js';
 export type {
   AuditRecordReader,
   BuildExecutionReportOptions,
@@ -16,4 +16,4 @@ export type {
   ReplayExplainResult,
   ReplayPointer,
   ReplaySnapshot,
-} from "./interfaces/index.js";
+} from './interfaces/index.js';

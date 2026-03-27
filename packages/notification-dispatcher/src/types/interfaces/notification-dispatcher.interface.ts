@@ -1,9 +1,9 @@
-import type { PolicyGateEvaluationResult } from "@repo-ai-governor/core-policy";
+import type { PolicyGateEvaluationResult } from '@repo-ai-governor/core-policy';
 import type {
   NotificationChannel,
   NotificationDispatchStatus,
   NotificationRiskLevel,
-} from "../../constants/index.js";
+} from '../../constants/index.js';
 
 /**
  * Defines human-readable notification message payload.

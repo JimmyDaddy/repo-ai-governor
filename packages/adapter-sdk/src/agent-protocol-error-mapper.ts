@@ -1,10 +1,10 @@
-import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
+import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import type {
   AgentCancelRequest,
   AgentConfirmationRequest,
   AgentInvokeStageRequest,
   AgentStreamEventsRequest,
-} from "./types/index.js";
+} from './types/index.js';
 
 /**
  * Maps adapter protocol failures to standardized runtime errors.

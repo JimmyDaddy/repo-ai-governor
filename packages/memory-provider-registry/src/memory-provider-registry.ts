@@ -1,8 +1,8 @@
-import { isAbsolute, resolve } from "node:path";
+import { isAbsolute, resolve } from 'node:path';
 
-import type { MemoryStoreProvider } from "@repo-ai-governor/memory-store-adapter";
-import { GovernorErrorCode, RuntimeError, standardizeError } from "@repo-ai-governor/shared";
-import type { MemoryRuntimeConfig, MemoryStoreEngine } from "@repo-ai-governor/shared";
+import type { MemoryStoreProvider } from '@repo-ai-governor/memory-store-adapter';
+import { GovernorErrorCode, RuntimeError, standardizeError } from '@repo-ai-governor/shared';
+import type { MemoryRuntimeConfig, MemoryStoreEngine } from '@repo-ai-governor/shared';
 import {
   BUILT_IN_MEMORY_PROVIDER_DESCRIPTORS,
   DEFAULT_MEMORY_PROVIDER_PLUGIN_EXPORT_NAME,
@@ -15,7 +15,7 @@ import {
   MemoryProviderPluginSpecifierKind,
   MemoryProviderResolutionSource,
   MemoryProviderRuntimeMode,
-} from "./constants/index.js";
+} from './constants/index.js';
 import type {
   MemoryProviderBuiltInDescriptor,
   MemoryProviderCompositionSummary,
@@ -28,7 +28,7 @@ import type {
   MemoryProviderRegistryOptions,
   MemoryProviderRegistryResolutionResult,
   MemoryProviderResolvedDescriptor,
-} from "./types/index.js";
+} from './types/index.js';
 
 /**
  * Resolves built-in memory provider descriptors and lazily loads provider instances.
@@ -156,7 +156,7 @@ export class MemoryProviderRegistry {
     if (!moduleSpecifier) {
       throw new RuntimeError(
         GovernorErrorCode.MEMORY_STORE_PROVIDER_NOT_FOUND,
-        "No memory.provider.module is configured for plugin resolution.",
+        'No memory.provider.module is configured for plugin resolution.',
         {
           storeEngine: memoryConfig.storeEngine,
         },
@@ -406,7 +406,7 @@ export class MemoryProviderRegistry {
     descriptor: MemoryProviderBuiltInDescriptor,
   ): MemoryProviderConstructor {
     const candidate = providerModule[descriptor.exportName];
-    if (typeof candidate === "function") {
+    if (typeof candidate === 'function') {
       return candidate as MemoryProviderConstructor;
     }
 
@@ -432,7 +432,7 @@ export class MemoryProviderRegistry {
     descriptor: MemoryProviderPluginDescriptor,
   ): MemoryProviderPluginFactory {
     const candidate = providerModule[descriptor.exportName];
-    if (typeof candidate === "function") {
+    if (typeof candidate === 'function') {
       return candidate as MemoryProviderPluginFactory;
     }
 
@@ -518,9 +518,9 @@ export class MemoryProviderRegistry {
     provider: MemoryStoreProvider,
     descriptor: MemoryProviderResolvedDescriptor,
   ): void {
-    const requiredMethods = ["read", "write", "query", "snapshot", "archive"] as const;
+    const requiredMethods = ['read', 'write', 'query', 'snapshot', 'archive'] as const;
     for (const methodName of requiredMethods) {
-      if (typeof provider[methodName] !== "function") {
+      if (typeof provider[methodName] !== 'function') {
         throw new RuntimeError(
           GovernorErrorCode.MEMORY_STORE_PROVIDER_EXPORT_INVALID,
           `Memory provider "${descriptor.providerName}" does not implement "${methodName}()".`,
@@ -559,7 +559,7 @@ export class MemoryProviderRegistry {
       descriptor.kind !== MemoryProviderDescriptorKind.BUILT_IN ||
       descriptor.distributionMode !== MemoryProviderDistributionMode.OPTIONAL
     ) {
-      return "";
+      return '';
     }
 
     return ` This optional built-in provider is not bundled in the default distribution baseline and currently fail-closes unless a plugin-enabled distribution explicitly provides "${descriptor.packageName}".`;
@@ -584,7 +584,7 @@ export class MemoryProviderRegistry {
    * @returns Classified specifier kind.
    */
   private resolvePluginSpecifierKind(moduleSpecifier: string): MemoryProviderPluginSpecifierKind {
-    if (moduleSpecifier.startsWith("file:")) {
+    if (moduleSpecifier.startsWith('file:')) {
       return MemoryProviderPluginSpecifierKind.FILE_URL;
     }
 
@@ -592,7 +592,7 @@ export class MemoryProviderRegistry {
       return MemoryProviderPluginSpecifierKind.ABSOLUTE_PATH;
     }
 
-    if (moduleSpecifier.startsWith("./") || moduleSpecifier.startsWith("../")) {
+    if (moduleSpecifier.startsWith('./') || moduleSpecifier.startsWith('../')) {
       return MemoryProviderPluginSpecifierKind.RELATIVE_PATH;
     }
 

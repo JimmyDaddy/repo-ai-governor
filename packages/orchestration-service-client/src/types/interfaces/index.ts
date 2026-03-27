@@ -14,4 +14,4 @@ export type {
   OrchestrationSubscribeExecutionResponse,
   OrchestrationSubmitHitlDecisionRequest,
   OrchestrationSubmitHitlDecisionResponse,
-} from "./orchestration-service-client.interface.js";
+} from './orchestration-service-client.interface.js';

@@ -5,8 +5,8 @@ export {
   ProcessCompilerIssueCode,
   ProcessCompilerSeverity,
   ProcessNodeType,
-} from "./constants/index.js";
-export { ProcessCompiler } from "./process-compiler.js";
+} from './constants/index.js';
+export { ProcessCompiler } from './process-compiler.js';
 export type {
   ProcessCompiledIr,
   ProcessCompiledIrSnapshot,
@@ -23,4 +23,4 @@ export type {
   ProcessIrNodeLimits,
   ProcessIrNodeLimitsSnapshot,
   ProcessIrNodeSnapshot,
-} from "./types/index.js";
+} from './types/index.js';

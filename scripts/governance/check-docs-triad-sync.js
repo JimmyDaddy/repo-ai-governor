@@ -1,27 +1,27 @@
 #!/usr/bin/env node
 
-import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { execFileSync } from 'node:child_process';
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
-import { gateFail, gateInfo, gatePass } from "./gate-output.js";
+import { gateFail, gateInfo, gatePass } from './gate-output.js';
 import {
   DEFAULT_TECHNICAL_SOLUTION_MODULE_REGISTRY_PATH,
   buildTechnicalSolutionModuleIndex,
   loadTechnicalSolutionModuleRegistry,
-} from "./technical-solution-module-registry.js";
+} from './technical-solution-module-registry.js';
 
-const GATE_NAME = "docs-triad-sync";
-const PRD_DOC_PATH = ".repo-ai-governor/normative_knowledge_sources/product-requirements.md";
+const GATE_NAME = 'docs-triad-sync';
+const PRD_DOC_PATH = '.repo-ai-governor/normative_knowledge_sources/product-requirements.md';
 const SOLUTION_DOC_PATH =
-  ".repo-ai-governor/normative_knowledge_sources/repo-ai-governor-overall-technical-solution.md";
+  '.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-overall-technical-solution.md';
 const ARCHITECTURE_DOC_PATH =
-  ".repo-ai-governor/normative_knowledge_sources/repo-ai-governor-architecture-and-repo-layering.md";
+  '.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-architecture-and-repo-layering.md';
 const BRIEF_DOC_PATH =
-  ".repo-ai-governor/normative_knowledge_sources/product-requirements-brief.md";
+  '.repo-ai-governor/normative_knowledge_sources/product-requirements-brief.md';
 const TRIAD_DOC_PATHS = [PRD_DOC_PATH, SOLUTION_DOC_PATH, ARCHITECTURE_DOC_PATH];
 const BASE_MONITORED_DOC_PATHS = [...TRIAD_DOC_PATHS, BRIEF_DOC_PATH];
-const MODULE_REGISTRY_OWNER_MODULE_ID = "governance.technical-solution-registry";
+const MODULE_REGISTRY_OWNER_MODULE_ID = 'governance.technical-solution-registry';
 
 /**
  * @typedef {{rule_id: string, message: string, details: Record<string, unknown>}} SyncFailure
@@ -45,7 +45,7 @@ const MODULE_REGISTRY_OWNER_MODULE_ID = "governance.technical-solution-registry"
 function resolveCliOptions(argv) {
   /** @type {{format: "text" | "json", changedFiles: string[], moduleRegistryPath: string}} */
   const options = {
-    format: "text",
+    format: 'text',
     changedFiles: [],
     moduleRegistryPath: DEFAULT_TECHNICAL_SOLUTION_MODULE_REGISTRY_PATH,
   };
@@ -53,7 +53,7 @@ function resolveCliOptions(argv) {
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
 
-    if (argument === "--format") {
+    if (argument === '--format') {
       const nextValue = argv[index + 1];
       if (!nextValue) {
         throw new Error('Missing value for "--format".');
@@ -63,12 +63,12 @@ function resolveCliOptions(argv) {
       continue;
     }
 
-    if (argument.startsWith("--format=")) {
-      options.format = readFormatValue(argument.slice("--format=".length));
+    if (argument.startsWith('--format=')) {
+      options.format = readFormatValue(argument.slice('--format='.length));
       continue;
     }
 
-    if (argument === "--changed-file") {
+    if (argument === '--changed-file') {
       const nextValue = argv[index + 1];
       if (!nextValue) {
         throw new Error('Missing value for "--changed-file".');
@@ -78,12 +78,12 @@ function resolveCliOptions(argv) {
       continue;
     }
 
-    if (argument.startsWith("--changed-file=")) {
-      options.changedFiles.push(argument.slice("--changed-file=".length));
+    if (argument.startsWith('--changed-file=')) {
+      options.changedFiles.push(argument.slice('--changed-file='.length));
       continue;
     }
 
-    if (argument === "--module-registry" || argument === "--registry") {
+    if (argument === '--module-registry' || argument === '--registry') {
       const nextValue = argv[index + 1];
       if (!nextValue) {
         throw new Error(`Missing value for "${argument}".`);
@@ -93,13 +93,13 @@ function resolveCliOptions(argv) {
       continue;
     }
 
-    if (argument.startsWith("--module-registry=")) {
-      options.moduleRegistryPath = argument.slice("--module-registry=".length).trim();
+    if (argument.startsWith('--module-registry=')) {
+      options.moduleRegistryPath = argument.slice('--module-registry='.length).trim();
       continue;
     }
 
-    if (argument.startsWith("--registry=")) {
-      options.moduleRegistryPath = argument.slice("--registry=".length).trim();
+    if (argument.startsWith('--registry=')) {
+      options.moduleRegistryPath = argument.slice('--registry='.length).trim();
       continue;
     }
 
@@ -116,7 +116,7 @@ function resolveCliOptions(argv) {
  */
 function readFormatValue(value) {
   const normalizedValue = value.trim().toLowerCase();
-  if (normalizedValue !== "text" && normalizedValue !== "json") {
+  if (normalizedValue !== 'text' && normalizedValue !== 'json') {
     throw new Error(`Unsupported format "${value}". Expected "text" or "json".`);
   }
 
@@ -129,9 +129,9 @@ function readFormatValue(value) {
  */
 function collectChangedFilesFromGit() {
   const changedFiles = new Set([
-    ...runGitPathList(["diff", "--name-only", "--relative", "--cached", "HEAD"]),
-    ...runGitPathList(["diff", "--name-only", "--relative"]),
-    ...runGitPathList(["ls-files", "--others", "--exclude-standard"]),
+    ...runGitPathList(['diff', '--name-only', '--relative', '--cached', 'HEAD']),
+    ...runGitPathList(['diff', '--name-only', '--relative']),
+    ...runGitPathList(['ls-files', '--others', '--exclude-standard']),
   ]);
 
   return Array.from(changedFiles).sort();
@@ -144,10 +144,10 @@ function collectChangedFilesFromGit() {
  */
 function runGitPathList(args) {
   try {
-    const output = execFileSync("git", args, {
+    const output = execFileSync('git', args, {
       cwd: process.cwd(),
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "pipe"],
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
     });
 
     return output
@@ -157,7 +157,7 @@ function runGitPathList(args) {
       .map((line) => normalizeChangedFilePath(line));
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    throw new Error(`Failed to collect changed files from git (${args.join(" ")}): ${message}`);
+    throw new Error(`Failed to collect changed files from git (${args.join(' ')}): ${message}`);
   }
 }
 
@@ -167,7 +167,7 @@ function runGitPathList(args) {
  * @returns {string}
  */
 function normalizePathSeparators(value) {
-  return value.replace(/\\/gu, "/");
+  return value.replace(/\\/gu, '/');
 }
 
 /**
@@ -197,7 +197,7 @@ function readMetadataDate(relativeDocPath) {
     return { date: null, missing: true };
   }
 
-  const content = readFileSync(absoluteDocPath, "utf8");
+  const content = readFileSync(absoluteDocPath, 'utf8');
   const matched = content.match(/^- (?:Date|日期)\s*[:：]\s*(\d{4}-\d{2}-\d{2})\s*$/imu);
   if (!matched) {
     return { date: null, missing: false };
@@ -243,44 +243,44 @@ function resolveSyncTargets(targetTokens, moduleEntry, registry, registryIndex) 
   const resolvedTargets = [];
 
   for (const targetToken of targetTokens) {
-    if (targetToken === "summary_doc") {
+    if (targetToken === 'summary_doc') {
       resolvedTargets.push(moduleEntry.summary_doc);
       continue;
     }
 
-    if (targetToken === "module_registry") {
+    if (targetToken === 'module_registry') {
       resolvedTargets.push(registry.registry_path);
       continue;
     }
 
-    if (targetToken === "direct_consumers") {
+    if (targetToken === 'direct_consumers') {
       const consumerSummaryDocs = (
         registryIndex.direct_consumers_by_module_id.get(moduleEntry.module_id) ?? []
       )
         .map(
-          (consumerModuleId) => registryIndex.module_by_id.get(consumerModuleId)?.summary_doc ?? "",
+          (consumerModuleId) => registryIndex.module_by_id.get(consumerModuleId)?.summary_doc ?? '',
         )
         .filter((summaryDocPath) => summaryDocPath.length > 0);
       resolvedTargets.push(...consumerSummaryDocs);
       continue;
     }
 
-    if (targetToken === "overall_technical_solution") {
+    if (targetToken === 'overall_technical_solution') {
       resolvedTargets.push(SOLUTION_DOC_PATH);
       continue;
     }
 
-    if (targetToken === "architecture_and_repo_layering") {
+    if (targetToken === 'architecture_and_repo_layering') {
       resolvedTargets.push(ARCHITECTURE_DOC_PATH);
       continue;
     }
 
-    if (targetToken === "product_requirements") {
+    if (targetToken === 'product_requirements') {
       resolvedTargets.push(PRD_DOC_PATH);
       continue;
     }
 
-    if (targetToken === "product_requirements_brief") {
+    if (targetToken === 'product_requirements_brief') {
       resolvedTargets.push(BRIEF_DOC_PATH);
     }
   }
@@ -307,7 +307,7 @@ function buildModuleImpact(
   registryIndex,
 ) {
   const policy = moduleEntry.change_impact_policy[changeKind] ?? {
-    classification: "unknown",
+    classification: 'unknown',
     requires_sync: [],
     recommends_sync: [],
   };
@@ -345,13 +345,7 @@ function buildModuleImpact(
  * @param {string} moduleRegistryPath Configured module registry path.
  * @returns {{moduleImpacts: ModuleImpact[], monitoredModulePaths: string[]}}
  */
-function evaluateModuleImpacts(
-  normalizedChangedFiles,
-  changedFileSet,
-  failures,
-  missingSyncFileSet,
-  moduleRegistryPath,
-) {
+function evaluateModuleImpacts(changedFileSet, failures, missingSyncFileSet, moduleRegistryPath) {
   /** @type {ModuleImpact[]} */
   const moduleImpacts = [];
   /** @type {string[]} */
@@ -361,8 +355,8 @@ function evaluateModuleImpacts(
   if (!registry) {
     failures.push(
       buildFailure(
-        "technical_solution_module_registry_missing",
-        "Technical solution module registry is required for module impact classification.",
+        'technical_solution_module_registry_missing',
+        'Technical solution module registry is required for module impact classification.',
         {
           registry_path: normalizeChangedFilePath(moduleRegistryPath),
         },
@@ -384,7 +378,7 @@ function evaluateModuleImpacts(
       moduleImpacts.push(
         buildModuleImpact(
           moduleEntry,
-          "summary_doc_change",
+          'summary_doc_change',
           [moduleEntry.summary_doc],
           changedFileSet,
           registry,
@@ -394,13 +388,13 @@ function evaluateModuleImpacts(
     }
 
     const changedContractDocs = moduleEntry.detail_doc_catalog
-      .filter((detailDocEntry) => detailDocEntry.kind === "contract")
+      .filter((detailDocEntry) => detailDocEntry.kind === 'contract')
       .map((detailDocEntry) => detailDocEntry.path)
       .filter((docPath) => changedFileSet.has(docPath));
     if (changedContractDocs.length > 0) {
       const impact = buildModuleImpact(
         moduleEntry,
-        "contract_doc_change",
+        'contract_doc_change',
         changedContractDocs,
         changedFileSet,
         registry,
@@ -414,8 +408,8 @@ function evaluateModuleImpacts(
         }
         failures.push(
           buildFailure(
-            "module_contract_sync_missing",
-            "Module contract changes must synchronize the producer module overview in the same changeset.",
+            'module_contract_sync_missing',
+            'Module contract changes must synchronize the producer module overview in the same changeset.',
             {
               module_id: impact.module_id,
               classification: impact.classification,
@@ -431,14 +425,14 @@ function evaluateModuleImpacts(
     }
 
     const changedAdrDocs = moduleEntry.detail_doc_catalog
-      .filter((detailDocEntry) => detailDocEntry.kind === "adr")
+      .filter((detailDocEntry) => detailDocEntry.kind === 'adr')
       .map((detailDocEntry) => detailDocEntry.path)
       .filter((docPath) => changedFileSet.has(docPath));
     if (changedAdrDocs.length > 0) {
       moduleImpacts.push(
         buildModuleImpact(
           moduleEntry,
-          "adr_doc_change",
+          'adr_doc_change',
           changedAdrDocs,
           changedFileSet,
           registry,
@@ -454,7 +448,7 @@ function evaluateModuleImpacts(
       moduleImpacts.push(
         buildModuleImpact(
           registryOwnerModule,
-          "registry_change",
+          'registry_change',
           [registry.registry_path],
           changedFileSet,
           registry,
@@ -508,7 +502,7 @@ function evaluateSpecSync(options) {
     if (metadataDate.missing) {
       hasMissingTriadDoc = true;
       failures.push(
-        buildFailure("triad_doc_missing", "Triad document is missing.", {
+        buildFailure('triad_doc_missing', 'Triad document is missing.', {
           doc_path: triadDocPath,
         }),
       );
@@ -519,8 +513,8 @@ function evaluateSpecSync(options) {
       hasMissingTriadDate = true;
       failures.push(
         buildFailure(
-          "triad_date_metadata_missing",
-          "Triad document missing `Date/日期` metadata.",
+          'triad_date_metadata_missing',
+          'Triad document missing `Date/日期` metadata.',
           {
             doc_path: triadDocPath,
           },
@@ -536,7 +530,7 @@ function evaluateSpecSync(options) {
     const uniqueTriadDates = Array.from(new Set(Object.values(triadDateMap)));
     if (uniqueTriadDates.length > 1) {
       failures.push(
-        buildFailure("triad_date_metadata_mismatch", "Triad document dates must be synchronized.", {
+        buildFailure('triad_date_metadata_mismatch', 'Triad document dates must be synchronized.', {
           triad_dates: triadDateMap,
         }),
       );
@@ -552,8 +546,8 @@ function evaluateSpecSync(options) {
 
     failures.push(
       buildFailure(
-        "triad_changeset_incomplete",
-        "When one triad document changes, all triad documents must be updated in the same changeset.",
+        'triad_changeset_incomplete',
+        'When one triad document changes, all triad documents must be updated in the same changeset.',
         {
           changed_files: changedTriadDocs,
           required_files: TRIAD_DOC_PATHS,
@@ -569,8 +563,8 @@ function evaluateSpecSync(options) {
     missingSyncFileSet.add(BRIEF_DOC_PATH);
     failures.push(
       buildFailure(
-        "prd_brief_sync_missing",
-        "When product-requirements.md changes, product-requirements-brief.md must change in the same changeset.",
+        'prd_brief_sync_missing',
+        'When product-requirements.md changes, product-requirements-brief.md must change in the same changeset.',
         {
           changed_files: [PRD_DOC_PATH],
           missing_sync_files: [BRIEF_DOC_PATH],
@@ -580,7 +574,6 @@ function evaluateSpecSync(options) {
   }
 
   const { moduleImpacts, monitoredModulePaths } = evaluateModuleImpacts(
-    normalizedChangedFiles,
     changedFileSet,
     failures,
     missingSyncFileSet,
@@ -593,7 +586,7 @@ function evaluateSpecSync(options) {
   ]);
 
   return {
-    status: failures.length === 0 ? "pass" : "fail",
+    status: failures.length === 0 ? 'pass' : 'fail',
     failures,
     changed_files: monitoredDocPaths.filter((docPath) => changedFileSet.has(docPath)),
     missing_sync_files: Array.from(missingSyncFileSet).sort(),
@@ -612,22 +605,22 @@ function evaluateSpecSync(options) {
  * }} result
  */
 function printTextResult(result) {
-  if (result.status === "pass") {
+  if (result.status === 'pass') {
     gatePass(
       GATE_NAME,
       `Triad/module sync check passed. changed_files=${result.changed_files.length} module_impacts=${result.module_impacts.length}`,
     );
     if (result.changed_files.length > 0) {
-      gateInfo(GATE_NAME, `changed files: ${result.changed_files.join(", ")}`);
+      gateInfo(GATE_NAME, `changed files: ${result.changed_files.join(', ')}`);
     }
   } else {
-    gateFail(GATE_NAME, "Triad/module sync check failed.");
+    gateFail(GATE_NAME, 'Triad/module sync check failed.');
     for (const failure of result.failures) {
       gateFail(GATE_NAME, `- rule=${failure.rule_id} message="${failure.message}"`);
       gateInfo(GATE_NAME, `  details=${JSON.stringify(failure.details)}`);
     }
     if (result.missing_sync_files.length > 0) {
-      gateInfo(GATE_NAME, `missing_sync_files=${result.missing_sync_files.join(", ")}`);
+      gateInfo(GATE_NAME, `missing_sync_files=${result.missing_sync_files.join(', ')}`);
     }
   }
 
@@ -637,10 +630,10 @@ function printTextResult(result) {
       `module_impact module=${impact.module_id} change=${impact.change_kind} classification=${impact.classification}`,
     );
     if (impact.required_sync_files.length > 0) {
-      gateInfo(GATE_NAME, `  required_sync_files=${impact.required_sync_files.join(", ")}`);
+      gateInfo(GATE_NAME, `  required_sync_files=${impact.required_sync_files.join(', ')}`);
     }
     if (impact.recommended_sync_files.length > 0) {
-      gateInfo(GATE_NAME, `  recommended_sync_files=${impact.recommended_sync_files.join(", ")}`);
+      gateInfo(GATE_NAME, `  recommended_sync_files=${impact.recommended_sync_files.join(', ')}`);
     }
   }
 }
@@ -648,12 +641,12 @@ function printTextResult(result) {
 const options = resolveCliOptions(process.argv.slice(2));
 const result = evaluateSpecSync(options);
 
-if (options.format === "json") {
+if (options.format === 'json') {
   console.info(JSON.stringify(result, null, 2));
 } else {
   printTextResult(result);
 }
 
-if (result.status === "fail") {
+if (result.status === 'fail') {
   process.exit(1);
 }

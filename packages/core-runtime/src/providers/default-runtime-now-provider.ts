@@ -1,4 +1,4 @@
-import { RuntimeNowProvider } from "./runtime-now-provider.abstract.js";
+import { RuntimeNowProvider } from './runtime-now-provider.abstract.js';
 
 /**
  * Uses system wall clock for production runtime execution.

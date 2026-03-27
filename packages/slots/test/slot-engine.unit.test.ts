@@ -1,12 +1,12 @@
-import { SlotEngine, SlotRequiredAction, SlotScope, SlotSource, SlotTrack } from "../src/index.js";
+import { SlotEngine, SlotRequiredAction, SlotScope, SlotSource, SlotTrack } from '../src/index.js';
 
-describe("slots unit", () => {
-  it("builds declarative slot execution plan for matched stage context", () => {
+describe('slots unit', () => {
+  it('builds declarative slot execution plan for matched stage context', () => {
     const engine = new SlotEngine({
       slots: [
         {
-          slotId: "slot-style-rule",
-          slotVersion: "1.0.0",
+          slotId: 'slot-style-rule',
+          slotVersion: '1.0.0',
           track: SlotTrack.DECLARATIVE,
           source: SlotSource.OFFICIAL,
           scope: SlotScope.STAGE,
@@ -14,22 +14,22 @@ describe("slots unit", () => {
           enabled: true,
           blockOnFailure: false,
           metadata: {
-            title: "Style Rule",
-            description: "Inject baseline style guidance.",
-            tags: ["style"],
+            title: 'Style Rule',
+            description: 'Inject baseline style guidance.',
+            tags: ['style'],
           },
           trigger: {
-            stageIds: ["stage-review"],
+            stageIds: ['stage-review'],
           },
           applicability: {},
-          promptInjections: ["follow coding standards"],
-          preChecks: ["lint"],
-          postChecks: ["unit-test"],
+          promptInjections: ['follow coding standards'],
+          preChecks: ['lint'],
+          postChecks: ['unit-test'],
           dependencySlotIds: [],
           declarativeRule: {
-            ruleKey: "style.rule.required",
+            ruleKey: 'style.rule.required',
             parameters: {
-              scope: "review",
+              scope: 'review',
             },
           },
         },
@@ -37,10 +37,10 @@ describe("slots unit", () => {
     });
 
     const plan = engine.buildExecutionPlan({
-      executionId: "exec-slot-unit-001",
-      stageId: "stage-review",
-      routeKey: "review",
-      changedPaths: ["packages/slots/src/slot-engine.ts"],
+      executionId: 'exec-slot-unit-001',
+      stageId: 'stage-review',
+      routeKey: 'review',
+      changedPaths: ['packages/slots/src/slot-engine.ts'],
     });
 
     expect(plan.declarativeSlots).toHaveLength(1);

@@ -8,4 +8,4 @@ export {
   DEFAULT_HIGH_RISK_FILE_CATEGORIES,
   DEFAULT_HIGH_RISK_PERMISSION_PREFIXES,
   DEFAULT_SENSITIVE_PATH_SEGMENTS,
-} from "./change-risk.constant.js";
+} from './change-risk.constant.js';

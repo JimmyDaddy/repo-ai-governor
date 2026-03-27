@@ -1,20 +1,20 @@
-import { existsSync } from "node:fs";
-import { dirname, resolve as resolvePath } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { existsSync } from 'node:fs';
+import { dirname, resolve as resolvePath } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const WORKSPACE_PACKAGE_DIRECTORY_BY_NAME: Record<string, string> = {
-  "core-orchestration-service": "packages/core-orchestration-service",
-  "core-runtime-langgraph": "packages/core-runtime-langgraph",
-  "memory-provider-fs-csv": "packages/memory-providers/fs-csv",
-  "memory-provider-registry": "packages/memory-provider-registry",
-  "memory-provider-sqlite-fs": "packages/memory-providers/sqlite-fs",
-  "memory-store-adapter": "packages/memory-store-adapter",
-  "orchestration-service-client": "packages/orchestration-service-client",
-  shared: "packages/shared",
+  'core-orchestration-service': 'packages/core-orchestration-service',
+  'core-runtime-langgraph': 'packages/core-runtime-langgraph',
+  'memory-provider-fs-csv': 'packages/memory-providers/fs-csv',
+  'memory-provider-registry': 'packages/memory-provider-registry',
+  'memory-provider-sqlite-fs': 'packages/memory-providers/sqlite-fs',
+  'memory-store-adapter': 'packages/memory-store-adapter',
+  'orchestration-service-client': 'packages/orchestration-service-client',
+  shared: 'packages/shared',
 };
 
 const loaderDirectory = dirname(fileURLToPath(import.meta.url));
-const workspaceRoot = resolvePath(loaderDirectory, "..", "..", "..");
+const workspaceRoot = resolvePath(loaderDirectory, '..', '..', '..');
 
 export async function resolve(
   specifier: string,
@@ -26,11 +26,11 @@ export async function resolve(
 ): Promise<{ url: string; shortCircuit?: boolean }> {
   if (
     context.parentURL &&
-    (specifier.startsWith("./") || specifier.startsWith("../")) &&
-    specifier.endsWith(".js")
+    (specifier.startsWith('./') || specifier.startsWith('../')) &&
+    specifier.endsWith('.js')
   ) {
     const parentPath = fileURLToPath(context.parentURL);
-    const tsCandidatePath = resolvePath(dirname(parentPath), specifier.replace(/\.js$/u, ".ts"));
+    const tsCandidatePath = resolvePath(dirname(parentPath), specifier.replace(/\.js$/u, '.ts'));
     if (existsSync(tsCandidatePath)) {
       return {
         url: pathToFileURL(tsCandidatePath).href,
@@ -54,8 +54,8 @@ export async function resolve(
   }
 
   const targetPath = subpath
-    ? resolvePath(workspaceRoot, packageDirectory, "src", `${subpath}.ts`)
-    : resolvePath(workspaceRoot, packageDirectory, "src", "index.ts");
+    ? resolvePath(workspaceRoot, packageDirectory, 'src', `${subpath}.ts`)
+    : resolvePath(workspaceRoot, packageDirectory, 'src', 'index.ts');
 
   return {
     url: pathToFileURL(targetPath).href,

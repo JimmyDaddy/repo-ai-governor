@@ -1,10 +1,10 @@
-import { ConfigError, GovernorErrorCode } from "@repo-ai-governor/shared";
+import { ConfigError, GovernorErrorCode } from '@repo-ai-governor/shared';
 import type {
   AdaptersConfig,
   GovernorConfig,
   GovernorProfile,
   ResolvedConfig,
-} from "./types/interfaces/index.js";
+} from './types/interfaces/index.js';
 
 /**
  * Resolves active profile overrides into a single effective config object.
@@ -70,8 +70,8 @@ export class ProfileResolver {
         ...baseConfig.i18n,
         ...(profile.i18n ?? {}),
       },
-      ...(mergedMemory ? { memory: mergedMemory as GovernorConfig["memory"] } : {}),
-      ...(mergedAdapters ? { adapters: mergedAdapters as GovernorConfig["adapters"] } : {}),
+      ...(mergedMemory ? { memory: mergedMemory as GovernorConfig['memory'] } : {}),
+      ...(mergedAdapters ? { adapters: mergedAdapters as GovernorConfig['adapters'] } : {}),
     };
   }
 
@@ -82,8 +82,8 @@ export class ProfileResolver {
    * @returns Merged adapters config when base or profile defines adapters.
    */
   private mergeAdapters(
-    baseAdapters: GovernorConfig["adapters"],
-    profileAdapters: GovernorProfile["adapters"],
+    baseAdapters: GovernorConfig['adapters'],
+    profileAdapters: GovernorProfile['adapters'],
   ): Partial<AdaptersConfig> | undefined {
     if (!baseAdapters && !profileAdapters) {
       return undefined;

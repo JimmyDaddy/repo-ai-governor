@@ -1,1 +1,1 @@
-export type { SqliteFsMemoryStoreProviderOptions } from "./interfaces/index.js";
+export type { SqliteFsMemoryStoreProviderOptions } from './interfaces/index.js';

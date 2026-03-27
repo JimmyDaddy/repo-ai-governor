@@ -1,4 +1,4 @@
-export type { PolicyGateOutcome, PolicyGateRuleKey, PolicyReviewerRole } from "./aliases/index.js";
+export type { PolicyGateOutcome, PolicyGateRuleKey, PolicyReviewerRole } from './aliases/index.js';
 export type {
   PolicyGateAuditRecord,
   PolicyGateEngineOptions,
@@ -10,4 +10,4 @@ export type {
   PolicyGateRuleCondition,
   PolicyHitlFeedback,
   PolicyHitlFeedbackSchema,
-} from "./interfaces/index.js";
+} from './interfaces/index.js';

@@ -1,27 +1,27 @@
-import { existsSync } from "node:fs";
-import { readFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { existsSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
 
 import {
   ConfigLoader,
   GovernorSchemaVersion,
   UpgradeSchemaDiffService,
-} from "@repo-ai-governor/config";
+} from '@repo-ai-governor/config';
 import {
   ExecutionInteractionCategory,
   ExecutionProgressStage,
   ExecutionProgressStatus,
   GovernorErrorCode,
   RuntimeError,
-} from "@repo-ai-governor/shared";
-import { CliCommandName } from "../constants/cli-command.constant.js";
-import { CliCommandResultCheckId } from "../constants/cli-command-result-check.constant.js";
+} from '@repo-ai-governor/shared';
+import { CliCommandName } from '../constants/cli-command.constant.js';
+import { CliCommandResultCheckId } from '../constants/cli-command-result-check.constant.js';
 import {
   CLI_RUNTIME_OPERATION,
   CliGovernanceCheckStatus,
-} from "../constants/cli-governance-runtime.constant.js";
-import type { CliCommandExecutorContext } from "../types/index.js";
-import type { CliCommandExecutor } from "./cli-command-executor.interface.js";
+} from '../constants/cli-governance-runtime.constant.js';
+import type { CliCommandExecutorContext } from '../types/index.js';
+import type { CliCommandExecutor } from './cli-command-executor.interface.js';
 
 /**
  * Owns `upgrade` command execution outside the runtime facade.
@@ -50,23 +50,23 @@ export class CliUpgradeCommand implements CliCommandExecutor {
     const upgradeId = `upgrade-${Date.now()}`;
     const reportPath = resolve(
       context.options.workspace.workspaceRoot,
-      "context",
-      "upgrade",
+      'context',
+      'upgrade',
       `${upgradeId}.report.json`,
     );
     const autoMigratedConfigPath = resolve(
       context.options.workspace.workspaceRoot,
-      "context",
-      "upgrade",
+      'context',
+      'upgrade',
       `${upgradeId}.auto-migrated-config.json`,
     );
     const rollbackSnapshotPath = resolve(
       context.options.workspace.workspaceRoot,
-      "context",
-      "upgrade",
+      'context',
+      'upgrade',
       `${upgradeId}.rollback-snapshot.yaml`,
     );
-    const rawConfigContent = await readFile(context.options.workspace.configPath, "utf8");
+    const rawConfigContent = await readFile(context.options.workspace.configPath, 'utf8');
     await context.artifactWriter.writeTextArtifact(rollbackSnapshotPath, rawConfigContent);
     await context.artifactWriter.writeJsonArtifact(autoMigratedConfigPath, {
       generatedAt: context.toRfc3339SecondsTimestamp(new Date()),
@@ -87,7 +87,7 @@ export class CliUpgradeCommand implements CliCommandExecutor {
         rollbackSnapshotPath,
         restoreCommand: `cp ${rollbackSnapshotPath} ${context.options.workspace.configPath}`,
         reason:
-          "Analyze-only upgrade keeps the current config snapshot as the explicit rollback source.",
+          'Analyze-only upgrade keeps the current config snapshot as the explicit rollback source.',
       },
       analysis: upgradeDiffResult,
     });
@@ -102,7 +102,7 @@ export class CliUpgradeCommand implements CliCommandExecutor {
       {
         id: CliCommandResultCheckId.UPGRADE_SCHEMA_DIFF,
         status:
-          upgradeDiffResult.confirmationDecision === "allow"
+          upgradeDiffResult.confirmationDecision === 'allow'
             ? CliGovernanceCheckStatus.PASS
             : CliGovernanceCheckStatus.WARN,
         detail: `diffs=${upgradeDiffResult.diffs.length} source=${upgradeDiffResult.sourceVersion} target=${upgradeDiffResult.targetVersion}`,
@@ -132,8 +132,8 @@ export class CliUpgradeCommand implements CliCommandExecutor {
       ...(confirmationCount > 0
         ? [
             context.localizeText(
-              "Confirm every listed confirmation item before replacing governor.yaml.",
-              "在替换 governor.yaml 之前，先逐条确认所有 confirmation item。",
+              'Confirm every listed confirmation item before replacing governor.yaml.',
+              '在替换 governor.yaml 之前，先逐条确认所有 confirmation item。',
             ),
           ]
         : []),
@@ -145,13 +145,13 @@ export class CliUpgradeCommand implements CliCommandExecutor {
     const experience = context.commandExperienceBuilder.buildExperiencePayload({
       roleProgress: [
         {
-          roleId: "upgrade-planner",
+          roleId: 'upgrade-planner',
           stage: ExecutionProgressStage.REPORT,
           status: ExecutionProgressStatus.COMPLETED,
           category: ExecutionInteractionCategory.NONE,
           summary: context.localizeText(
-            "Upgrade analysis artifacts were generated.",
-            "升级分析产物已生成。",
+            'Upgrade analysis artifacts were generated.',
+            '升级分析产物已生成。',
           ),
           detail: reportPath,
           backlink: {
@@ -159,7 +159,7 @@ export class CliUpgradeCommand implements CliCommandExecutor {
           },
         },
         {
-          roleId: "operator",
+          roleId: 'operator',
           stage: ExecutionProgressStage.HUMAN_CONFIRMATION,
           status:
             confirmationCount > 0
@@ -172,12 +172,12 @@ export class CliUpgradeCommand implements CliCommandExecutor {
           summary:
             confirmationCount > 0
               ? context.localizeText(
-                  "Manual confirmation is required before applying upgrade changes.",
-                  "写回升级变更前需要人工确认。",
+                  'Manual confirmation is required before applying upgrade changes.',
+                  '写回升级变更前需要人工确认。',
                 )
               : context.localizeText(
-                  "No manual confirmation is required for the analyzed upgrade path.",
-                  "当前分析的升级路径无需人工确认。",
+                  'No manual confirmation is required for the analyzed upgrade path.',
+                  '当前分析的升级路径无需人工确认。',
                 ),
           detail: `confirmation_items=${confirmationCount}`,
         },
@@ -193,10 +193,10 @@ export class CliUpgradeCommand implements CliCommandExecutor {
             : ExecutionProgressStage.REPORT,
         title:
           index === 0
-            ? context.localizeText("Review upgrade artifacts", "检查升级产物")
+            ? context.localizeText('Review upgrade artifacts', '检查升级产物')
             : index === 1 && confirmationCount > 0
-              ? context.localizeText("Confirm upgrade changes", "确认升级变更")
-              : context.localizeText("Retain rollback snapshot", "保留回滚快照"),
+              ? context.localizeText('Confirm upgrade changes', '确认升级变更')
+              : context.localizeText('Retain rollback snapshot', '保留回滚快照'),
         action,
         blocking: index === 1 && confirmationCount > 0,
       })),
@@ -223,15 +223,15 @@ export class CliUpgradeCommand implements CliCommandExecutor {
         checks,
         artifacts: [
           {
-            id: "upgrade_report",
+            id: 'upgrade_report',
             path: reportPath,
           },
           {
-            id: "upgrade_auto_migrated_config",
+            id: 'upgrade_auto_migrated_config',
             path: autoMigratedConfigPath,
           },
           {
-            id: "upgrade_rollback_snapshot",
+            id: 'upgrade_rollback_snapshot',
             path: rollbackSnapshotPath,
           },
         ],

@@ -1,7 +1,7 @@
-import { mkdirSync, writeFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
-import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
+import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import {
   COMPILED_IR_ROOT_SEGMENTS,
   PROCESS_IR_SUPPORTED_MAJOR_VERSION,
@@ -9,7 +9,7 @@ import {
   ProcessCompilerIssueCode,
   ProcessCompilerSeverity,
   ProcessNodeType,
-} from "./constants/index.js";
+} from './constants/index.js';
 import type {
   ProcessCompiledIr,
   ProcessCompiledIrSnapshot,
@@ -24,7 +24,7 @@ import type {
   ProcessIrNodeLimits,
   ProcessIrNodeLimitsSnapshot,
   ProcessIrNodeSnapshot,
-} from "./types/index.js";
+} from './types/index.js';
 
 const PROCESS_NODE_TYPE_VALUES = new Set<string>(Object.values(ProcessNodeType));
 
@@ -45,9 +45,9 @@ export class ProcessCompiler {
     const compileWarnings: ProcessCompilerIssue[] = [];
     const compileErrors: ProcessCompilerIssue[] = [];
 
-    const processId = (definition.processId ?? "").trim();
-    const executionId = (definition.executionId ?? "").trim();
-    const entryNodeId = (definition.entryNodeId ?? "").trim();
+    const processId = (definition.processId ?? '').trim();
+    const executionId = (definition.executionId ?? '').trim();
+    const entryNodeId = (definition.entryNodeId ?? '').trim();
     const nodes = Array.isArray(definition.nodes) ? definition.nodes : [];
     const edges = Array.isArray(definition.edges) ? definition.edges : [];
     const nodeIds = this.collectNodeIds(nodes, compileErrors);
@@ -57,9 +57,9 @@ export class ProcessCompiler {
         this.createIssue(
           ProcessCompilerIssueCode.PROCESS_ID_REQUIRED,
           ProcessCompilerSeverity.ERROR,
-          "processId is required.",
-          "/processId",
-          "Provide a stable processId for runtime and audit correlation.",
+          'processId is required.',
+          '/processId',
+          'Provide a stable processId for runtime and audit correlation.',
         ),
       );
     }
@@ -69,9 +69,9 @@ export class ProcessCompiler {
         this.createIssue(
           ProcessCompilerIssueCode.EXECUTION_ID_REQUIRED,
           ProcessCompilerSeverity.ERROR,
-          "executionId is required.",
-          "/executionId",
-          "Provide executionId so snapshots and audit events can be traced.",
+          'executionId is required.',
+          '/executionId',
+          'Provide executionId so snapshots and audit events can be traced.',
         ),
       );
     }
@@ -81,9 +81,9 @@ export class ProcessCompiler {
         this.createIssue(
           ProcessCompilerIssueCode.ENTRY_NODE_ID_REQUIRED,
           ProcessCompilerSeverity.ERROR,
-          "entryNodeId is required.",
-          "/entryNodeId",
-          "Declare one nodeId as the runtime entry node.",
+          'entryNodeId is required.',
+          '/entryNodeId',
+          'Declare one nodeId as the runtime entry node.',
         ),
       );
     } else if (!nodeIds.has(entryNodeId)) {
@@ -92,8 +92,8 @@ export class ProcessCompiler {
           ProcessCompilerIssueCode.ENTRY_NODE_NOT_FOUND,
           ProcessCompilerSeverity.ERROR,
           `entryNodeId "${entryNodeId}" does not exist in nodes.`,
-          "/entryNodeId",
-          "Ensure entryNodeId references one defined node.",
+          '/entryNodeId',
+          'Ensure entryNodeId references one defined node.',
         ),
       );
     }
@@ -103,9 +103,9 @@ export class ProcessCompiler {
         this.createIssue(
           ProcessCompilerIssueCode.NODES_REQUIRED,
           ProcessCompilerSeverity.ERROR,
-          "At least one process node is required.",
-          "/nodes",
-          "Define one or more nodes before compile.",
+          'At least one process node is required.',
+          '/nodes',
+          'Define one or more nodes before compile.',
         ),
       );
     }
@@ -174,7 +174,7 @@ export class ProcessCompiler {
 
     try {
       mkdirSync(compiledIrDirectory, { recursive: true });
-      writeFileSync(snapshotPath, `${JSON.stringify(compiledIrSnapshot, null, 2)}\n`, "utf8");
+      writeFileSync(snapshotPath, `${JSON.stringify(compiledIrSnapshot, null, 2)}\n`, 'utf8');
       return snapshotPath;
     } catch (error) {
       throw new RuntimeError(
@@ -202,7 +202,7 @@ export class ProcessCompiler {
     const nodeIds = new Set<string>();
 
     for (const [index, node] of nodes.entries()) {
-      const nodeId = (node.nodeId ?? "").trim();
+      const nodeId = (node.nodeId ?? '').trim();
       const location = `/nodes/${index}/nodeId`;
 
       if (!nodeId) {
@@ -210,9 +210,9 @@ export class ProcessCompiler {
           this.createIssue(
             ProcessCompilerIssueCode.NODE_ID_REQUIRED,
             ProcessCompilerSeverity.ERROR,
-            "nodeId is required.",
+            'nodeId is required.',
             location,
-            "Provide a stable nodeId for graph references.",
+            'Provide a stable nodeId for graph references.',
           ),
         );
         continue;
@@ -225,7 +225,7 @@ export class ProcessCompiler {
             ProcessCompilerSeverity.ERROR,
             `nodeId "${nodeId}" is duplicated.`,
             location,
-            "Ensure every nodeId is unique inside one process definition.",
+            'Ensure every nodeId is unique inside one process definition.',
           ),
         );
         continue;
@@ -251,80 +251,80 @@ export class ProcessCompiler {
     compileWarnings: ProcessCompilerIssue[],
     compileErrors: ProcessCompilerIssue[],
   ): ProcessIrNode {
-    const nodeId = (node.nodeId ?? "").trim();
+    const nodeId = (node.nodeId ?? '').trim();
     const nodeType = this.resolveNodeType(node.nodeType, index, compileErrors);
-    const stageId = (node.stageId ?? "").trim();
-    const routeKey = (node.routeKey ?? "").trim();
-    const roleProfileId = (node.roleProfileId ?? "").trim();
-    const inputSchemaRef = (node.inputSchemaRef ?? "").trim();
-    const outputSchemaRef = (node.outputSchemaRef ?? "").trim();
-    const retryPolicyRef = (node.retryPolicyRef ?? "").trim();
-    const timeoutPolicyRef = (node.timeoutPolicyRef ?? "").trim();
-    const budgetPolicyRef = (node.budgetPolicyRef ?? "").trim();
+    const stageId = (node.stageId ?? '').trim();
+    const routeKey = (node.routeKey ?? '').trim();
+    const roleProfileId = (node.roleProfileId ?? '').trim();
+    const inputSchemaRef = (node.inputSchemaRef ?? '').trim();
+    const outputSchemaRef = (node.outputSchemaRef ?? '').trim();
+    const retryPolicyRef = (node.retryPolicyRef ?? '').trim();
+    const timeoutPolicyRef = (node.timeoutPolicyRef ?? '').trim();
+    const budgetPolicyRef = (node.budgetPolicyRef ?? '').trim();
     const baseLocation = `/nodes/${index}`;
 
     this.requireNodeField(
       stageId,
       ProcessCompilerIssueCode.STAGE_ID_REQUIRED,
       `${baseLocation}/stageId`,
-      "stageId is required.",
-      "Set stageId for stage-level traceability and policy correlation.",
+      'stageId is required.',
+      'Set stageId for stage-level traceability and policy correlation.',
       compileErrors,
     );
     this.requireNodeField(
       routeKey,
       ProcessCompilerIssueCode.ROUTE_KEY_REQUIRED,
       `${baseLocation}/routeKey`,
-      "routeKey is required.",
-      "Set routeKey to bind runtime routing and role policy.",
+      'routeKey is required.',
+      'Set routeKey to bind runtime routing and role policy.',
       compileErrors,
     );
     this.requireNodeField(
       roleProfileId,
       ProcessCompilerIssueCode.ROLE_PROFILE_ID_REQUIRED,
       `${baseLocation}/roleProfileId`,
-      "roleProfileId is required.",
-      "Set roleProfileId for agent role governance.",
+      'roleProfileId is required.',
+      'Set roleProfileId for agent role governance.',
       compileErrors,
     );
     this.requireNodeField(
       inputSchemaRef,
       ProcessCompilerIssueCode.INPUT_SCHEMA_REF_REQUIRED,
       `${baseLocation}/inputSchemaRef`,
-      "inputSchemaRef is required.",
-      "Declare input schema reference for contract validation.",
+      'inputSchemaRef is required.',
+      'Declare input schema reference for contract validation.',
       compileErrors,
     );
     this.requireNodeField(
       outputSchemaRef,
       ProcessCompilerIssueCode.OUTPUT_SCHEMA_REF_REQUIRED,
       `${baseLocation}/outputSchemaRef`,
-      "outputSchemaRef is required.",
-      "Declare output schema reference for contract validation.",
+      'outputSchemaRef is required.',
+      'Declare output schema reference for contract validation.',
       compileErrors,
     );
     this.requireNodeField(
       retryPolicyRef,
       ProcessCompilerIssueCode.RETRY_POLICY_REF_REQUIRED,
       `${baseLocation}/retryPolicyRef`,
-      "retryPolicyRef is required.",
-      "Bind node retry policy to avoid implicit retry behavior.",
+      'retryPolicyRef is required.',
+      'Bind node retry policy to avoid implicit retry behavior.',
       compileErrors,
     );
     this.requireNodeField(
       timeoutPolicyRef,
       ProcessCompilerIssueCode.TIMEOUT_POLICY_REF_REQUIRED,
       `${baseLocation}/timeoutPolicyRef`,
-      "timeoutPolicyRef is required.",
-      "Bind node timeout policy to avoid hanging stage execution.",
+      'timeoutPolicyRef is required.',
+      'Bind node timeout policy to avoid hanging stage execution.',
       compileErrors,
     );
     this.requireNodeField(
       budgetPolicyRef,
       ProcessCompilerIssueCode.BUDGET_POLICY_REF_REQUIRED,
       `${baseLocation}/budgetPolicyRef`,
-      "budgetPolicyRef is required.",
-      "Bind node budget policy for token/time/cost governance.",
+      'budgetPolicyRef is required.',
+      'Bind node budget policy for token/time/cost governance.',
       compileErrors,
     );
 
@@ -370,9 +370,9 @@ export class ProcessCompiler {
           this.createIssue(
             ProcessCompilerIssueCode.LOOP_LIMITS_IGNORED,
             ProcessCompilerSeverity.WARNING,
-            "limits is ignored for non-loop nodes.",
+            'limits is ignored for non-loop nodes.',
             baseLocation,
-            "Remove limits or switch nodeType to loop when guardrails are required.",
+            'Remove limits or switch nodeType to loop when guardrails are required.',
           ),
         );
       }
@@ -388,9 +388,9 @@ export class ProcessCompiler {
         this.createIssue(
           ProcessCompilerIssueCode.LOOP_MAX_CYCLES_REQUIRED,
           ProcessCompilerSeverity.ERROR,
-          "Loop node requires a positive integer maxCycles.",
+          'Loop node requires a positive integer maxCycles.',
           `${baseLocation}/maxCycles`,
-          "Set maxCycles to a positive integer to prevent unbounded retry loops.",
+          'Set maxCycles to a positive integer to prevent unbounded retry loops.',
         ),
       );
     }
@@ -400,9 +400,9 @@ export class ProcessCompiler {
         this.createIssue(
           ProcessCompilerIssueCode.LOOP_MAX_WALL_TIME_REQUIRED,
           ProcessCompilerSeverity.ERROR,
-          "Loop node requires a positive integer maxWallTimeSeconds.",
+          'Loop node requires a positive integer maxWallTimeSeconds.',
           `${baseLocation}/maxWallTimeSeconds`,
-          "Set maxWallTimeSeconds to bound long-running loop execution.",
+          'Set maxWallTimeSeconds to bound long-running loop execution.',
         ),
       );
     }
@@ -431,8 +431,8 @@ export class ProcessCompiler {
     nodeIds: Set<string>,
     compileErrors: ProcessCompilerIssue[],
   ): ProcessIrEdge {
-    const fromNodeId = (edge.fromNodeId ?? "").trim();
-    const toNodeId = (edge.toNodeId ?? "").trim();
+    const fromNodeId = (edge.fromNodeId ?? '').trim();
+    const toNodeId = (edge.toNodeId ?? '').trim();
     const conditionKey = edge.conditionKey?.trim();
     const baseLocation = `/edges/${index}`;
 
@@ -441,9 +441,9 @@ export class ProcessCompiler {
         this.createIssue(
           ProcessCompilerIssueCode.EDGE_FROM_NODE_NOT_FOUND,
           ProcessCompilerSeverity.ERROR,
-          `Edge source "${fromNodeId || "<empty>"}" does not match a known nodeId.`,
+          `Edge source "${fromNodeId || '<empty>'}" does not match a known nodeId.`,
           `${baseLocation}/fromNodeId`,
-          "Ensure edge source references one declared nodeId.",
+          'Ensure edge source references one declared nodeId.',
         ),
       );
     }
@@ -453,9 +453,9 @@ export class ProcessCompiler {
         this.createIssue(
           ProcessCompilerIssueCode.EDGE_TO_NODE_NOT_FOUND,
           ProcessCompilerSeverity.ERROR,
-          `Edge target "${toNodeId || "<empty>"}" does not match a known nodeId.`,
+          `Edge target "${toNodeId || '<empty>'}" does not match a known nodeId.`,
           `${baseLocation}/toNodeId`,
-          "Ensure edge target references one declared nodeId.",
+          'Ensure edge target references one declared nodeId.',
         ),
       );
     }
@@ -480,14 +480,14 @@ export class ProcessCompiler {
     compileErrors: ProcessCompilerIssue[],
   ): ProcessNodeType {
     const nodeTypeLocation = `/nodes/${nodeIndex}/nodeType`;
-    if (typeof nodeTypeCandidate !== "string" || nodeTypeCandidate.trim().length === 0) {
+    if (typeof nodeTypeCandidate !== 'string' || nodeTypeCandidate.trim().length === 0) {
       compileErrors.push(
         this.createIssue(
           ProcessCompilerIssueCode.NODE_TYPE_REQUIRED,
           ProcessCompilerSeverity.ERROR,
-          "nodeType is required.",
+          'nodeType is required.',
           nodeTypeLocation,
-          "Provide one of sequential/parallel/loop/condition.",
+          'Provide one of sequential/parallel/loop/condition.',
         ),
       );
       return ProcessNodeType.SEQUENTIAL;
@@ -500,7 +500,7 @@ export class ProcessCompiler {
           ProcessCompilerSeverity.ERROR,
           `Unsupported nodeType "${nodeTypeCandidate}".`,
           nodeTypeLocation,
-          `Use one of: ${Array.from(PROCESS_NODE_TYPE_VALUES).join(", ")}.`,
+          `Use one of: ${Array.from(PROCESS_NODE_TYPE_VALUES).join(', ')}.`,
         ),
       );
       return ProcessNodeType.SEQUENTIAL;
@@ -654,7 +654,7 @@ export class ProcessCompiler {
    * @returns Parsed major version; returns `-1` when parsing fails.
    */
   private parseMajorVersion(irVersion: string): number {
-    const majorSegment = irVersion.split(".", 1)[0];
+    const majorSegment = irVersion.split('.', 1)[0];
     if (!majorSegment) {
       return -1;
     }
@@ -683,5 +683,5 @@ function isPositiveInteger(value: unknown): value is number {
  * @returns RFC3339 timestamp without milliseconds.
  */
 function formatRfc3339Seconds(value: Date): string {
-  return value.toISOString().replace(/\.\d{3}Z$/u, "Z");
+  return value.toISOString().replace(/\.\d{3}Z$/u, 'Z');
 }

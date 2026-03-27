@@ -2,16 +2,16 @@ import {
   ProcessCompiler,
   type ProcessDslDefinition,
   ProcessNodeType,
-} from "@repo-ai-governor/core-process";
-import { RoleRegistry } from "@repo-ai-governor/core-role-registry";
-import { GovernorErrorCode, RoleSource } from "@repo-ai-governor/shared";
+} from '@repo-ai-governor/core-process';
+import { RoleRegistry } from '@repo-ai-governor/core-role-registry';
+import { GovernorErrorCode, RoleSource } from '@repo-ai-governor/shared';
 import {
   ProcessRuntimeEngine,
   RuntimeExecutionStatus,
   RuntimeNowProvider,
   RuntimeStageStatus,
   RuntimeTimeoutScope,
-} from "../src/index.js";
+} from '../src/index.js';
 
 /**
  * Creates a process DSL fixture that covers all control-flow node types.
@@ -19,117 +19,117 @@ import {
  */
 function createRuntimeFlowFixture(): ProcessDslDefinition {
   return {
-    processId: "process-runtime-flow",
-    executionId: "exec-runtime-001",
-    entryNodeId: "node-entry",
+    processId: 'process-runtime-flow',
+    executionId: 'exec-runtime-001',
+    entryNodeId: 'node-entry',
     nodes: [
       {
-        nodeId: "node-entry",
-        stageId: "stage-entry",
+        nodeId: 'node-entry',
+        stageId: 'stage-entry',
         nodeType: ProcessNodeType.SEQUENTIAL,
-        routeKey: "entry",
-        roleProfileId: "planner-default",
-        inputSchemaRef: "schemas/entry-input.json",
-        outputSchemaRef: "schemas/entry-output.json",
-        retryPolicyRef: "policy/retry-default",
-        timeoutPolicyRef: "policy/timeout-default",
-        budgetPolicyRef: "policy/budget-default",
+        routeKey: 'entry',
+        roleProfileId: 'planner-default',
+        inputSchemaRef: 'schemas/entry-input.json',
+        outputSchemaRef: 'schemas/entry-output.json',
+        retryPolicyRef: 'policy/retry-default',
+        timeoutPolicyRef: 'policy/timeout-default',
+        budgetPolicyRef: 'policy/budget-default',
       },
       {
-        nodeId: "node-loop",
-        stageId: "stage-loop",
+        nodeId: 'node-loop',
+        stageId: 'stage-loop',
         nodeType: ProcessNodeType.LOOP,
-        routeKey: "loop",
-        roleProfileId: "coder-default",
-        inputSchemaRef: "schemas/loop-input.json",
-        outputSchemaRef: "schemas/loop-output.json",
-        retryPolicyRef: "policy/retry-default",
-        timeoutPolicyRef: "policy/timeout-default",
-        budgetPolicyRef: "policy/budget-default",
+        routeKey: 'loop',
+        roleProfileId: 'coder-default',
+        inputSchemaRef: 'schemas/loop-input.json',
+        outputSchemaRef: 'schemas/loop-output.json',
+        retryPolicyRef: 'policy/retry-default',
+        timeoutPolicyRef: 'policy/timeout-default',
+        budgetPolicyRef: 'policy/budget-default',
         limits: {
           maxCycles: 3,
           maxWallTimeSeconds: 300,
         },
       },
       {
-        nodeId: "node-condition",
-        stageId: "stage-condition",
+        nodeId: 'node-condition',
+        stageId: 'stage-condition',
         nodeType: ProcessNodeType.CONDITION,
-        routeKey: "condition",
-        roleProfileId: "reviewer-default",
-        inputSchemaRef: "schemas/condition-input.json",
-        outputSchemaRef: "schemas/condition-output.json",
-        retryPolicyRef: "policy/retry-default",
-        timeoutPolicyRef: "policy/timeout-default",
-        budgetPolicyRef: "policy/budget-default",
+        routeKey: 'condition',
+        roleProfileId: 'reviewer-default',
+        inputSchemaRef: 'schemas/condition-input.json',
+        outputSchemaRef: 'schemas/condition-output.json',
+        retryPolicyRef: 'policy/retry-default',
+        timeoutPolicyRef: 'policy/timeout-default',
+        budgetPolicyRef: 'policy/budget-default',
       },
       {
-        nodeId: "node-parallel",
-        stageId: "stage-parallel",
+        nodeId: 'node-parallel',
+        stageId: 'stage-parallel',
         nodeType: ProcessNodeType.PARALLEL,
-        routeKey: "parallel",
-        roleProfileId: "tester-default",
-        inputSchemaRef: "schemas/parallel-input.json",
-        outputSchemaRef: "schemas/parallel-output.json",
-        retryPolicyRef: "policy/retry-default",
-        timeoutPolicyRef: "policy/timeout-default",
-        budgetPolicyRef: "policy/budget-default",
+        routeKey: 'parallel',
+        roleProfileId: 'tester-default',
+        inputSchemaRef: 'schemas/parallel-input.json',
+        outputSchemaRef: 'schemas/parallel-output.json',
+        retryPolicyRef: 'policy/retry-default',
+        timeoutPolicyRef: 'policy/timeout-default',
+        budgetPolicyRef: 'policy/budget-default',
       },
       {
-        nodeId: "node-parallel-a",
-        stageId: "stage-parallel-a",
+        nodeId: 'node-parallel-a',
+        stageId: 'stage-parallel-a',
         nodeType: ProcessNodeType.SEQUENTIAL,
-        routeKey: "parallel-a",
-        roleProfileId: "tester-default",
-        inputSchemaRef: "schemas/parallel-a-input.json",
-        outputSchemaRef: "schemas/parallel-a-output.json",
-        retryPolicyRef: "policy/retry-default",
-        timeoutPolicyRef: "policy/timeout-default",
-        budgetPolicyRef: "policy/budget-default",
+        routeKey: 'parallel-a',
+        roleProfileId: 'tester-default',
+        inputSchemaRef: 'schemas/parallel-a-input.json',
+        outputSchemaRef: 'schemas/parallel-a-output.json',
+        retryPolicyRef: 'policy/retry-default',
+        timeoutPolicyRef: 'policy/timeout-default',
+        budgetPolicyRef: 'policy/budget-default',
       },
       {
-        nodeId: "node-parallel-b",
-        stageId: "stage-parallel-b",
+        nodeId: 'node-parallel-b',
+        stageId: 'stage-parallel-b',
         nodeType: ProcessNodeType.SEQUENTIAL,
-        routeKey: "parallel-b",
-        roleProfileId: "tester-default",
-        inputSchemaRef: "schemas/parallel-b-input.json",
-        outputSchemaRef: "schemas/parallel-b-output.json",
-        retryPolicyRef: "policy/retry-default",
-        timeoutPolicyRef: "policy/timeout-default",
-        budgetPolicyRef: "policy/budget-default",
+        routeKey: 'parallel-b',
+        roleProfileId: 'tester-default',
+        inputSchemaRef: 'schemas/parallel-b-input.json',
+        outputSchemaRef: 'schemas/parallel-b-output.json',
+        retryPolicyRef: 'policy/retry-default',
+        timeoutPolicyRef: 'policy/timeout-default',
+        budgetPolicyRef: 'policy/budget-default',
       },
     ],
     edges: [
       {
-        fromNodeId: "node-entry",
-        toNodeId: "node-loop",
+        fromNodeId: 'node-entry',
+        toNodeId: 'node-loop',
       },
       {
-        fromNodeId: "node-loop",
-        toNodeId: "node-loop",
+        fromNodeId: 'node-loop',
+        toNodeId: 'node-loop',
       },
       {
-        fromNodeId: "node-loop",
-        toNodeId: "node-condition",
+        fromNodeId: 'node-loop',
+        toNodeId: 'node-condition',
       },
       {
-        fromNodeId: "node-condition",
-        toNodeId: "node-parallel",
-        conditionKey: "parallel",
+        fromNodeId: 'node-condition',
+        toNodeId: 'node-parallel',
+        conditionKey: 'parallel',
       },
       {
-        fromNodeId: "node-condition",
-        toNodeId: "node-parallel-a",
-        conditionKey: "single",
+        fromNodeId: 'node-condition',
+        toNodeId: 'node-parallel-a',
+        conditionKey: 'single',
       },
       {
-        fromNodeId: "node-parallel",
-        toNodeId: "node-parallel-a",
+        fromNodeId: 'node-parallel',
+        toNodeId: 'node-parallel-a',
       },
       {
-        fromNodeId: "node-parallel",
-        toNodeId: "node-parallel-b",
+        fromNodeId: 'node-parallel',
+        toNodeId: 'node-parallel-b',
       },
     ],
   };
@@ -154,8 +154,8 @@ class DeterministicRuntimeNowProvider extends RuntimeNowProvider {
   }
 }
 
-describe("ProcessRuntimeEngine smoke", () => {
-  it("executes sequential/loop/condition/parallel control flow", async () => {
+describe('ProcessRuntimeEngine smoke', () => {
+  it('executes sequential/loop/condition/parallel control flow', async () => {
     const compiler = new ProcessCompiler();
     const engine = new ProcessRuntimeEngine(compiler);
     const compiledIr = compiler.compile(createRuntimeFlowFixture());
@@ -169,7 +169,7 @@ describe("ProcessRuntimeEngine smoke", () => {
       },
       {
         conditionResolver: {
-          resolveConditionKey: () => "parallel",
+          resolveConditionKey: () => 'parallel',
         },
         loopController: {
           shouldContinue: ({ cycle }) => cycle < 2,
@@ -178,33 +178,33 @@ describe("ProcessRuntimeEngine smoke", () => {
     );
 
     expect(result.status).toBe(RuntimeExecutionStatus.SUCCEEDED);
-    expect(stageVisitCounter.get("node-entry")).toBe(1);
-    expect(stageVisitCounter.get("node-loop")).toBe(2);
-    expect(stageVisitCounter.get("node-condition")).toBe(1);
-    expect(stageVisitCounter.get("node-parallel")).toBe(1);
-    expect(stageVisitCounter.get("node-parallel-a")).toBe(1);
-    expect(stageVisitCounter.get("node-parallel-b")).toBe(1);
+    expect(stageVisitCounter.get('node-entry')).toBe(1);
+    expect(stageVisitCounter.get('node-loop')).toBe(2);
+    expect(stageVisitCounter.get('node-condition')).toBe(1);
+    expect(stageVisitCounter.get('node-parallel')).toBe(1);
+    expect(stageVisitCounter.get('node-parallel-a')).toBe(1);
+    expect(stageVisitCounter.get('node-parallel-b')).toBe(1);
   });
 
-  it("returns timeout status when stage execution exceeds stage timeout", async () => {
+  it('returns timeout status when stage execution exceeds stage timeout', async () => {
     const compiler = new ProcessCompiler();
     const engine = new ProcessRuntimeEngine(compiler);
     const compiledIr = compiler.compile({
-      processId: "process-runtime-timeout-stage",
-      executionId: "exec-runtime-002",
-      entryNodeId: "node-stage-timeout",
+      processId: 'process-runtime-timeout-stage',
+      executionId: 'exec-runtime-002',
+      entryNodeId: 'node-stage-timeout',
       nodes: [
         {
-          nodeId: "node-stage-timeout",
-          stageId: "stage-timeout",
+          nodeId: 'node-stage-timeout',
+          stageId: 'stage-timeout',
           nodeType: ProcessNodeType.SEQUENTIAL,
-          routeKey: "timeout",
-          roleProfileId: "tester-default",
-          inputSchemaRef: "schemas/input.json",
-          outputSchemaRef: "schemas/output.json",
-          retryPolicyRef: "policy/retry-default",
-          timeoutPolicyRef: "policy/timeout-default",
-          budgetPolicyRef: "policy/budget-default",
+          routeKey: 'timeout',
+          roleProfileId: 'tester-default',
+          inputSchemaRef: 'schemas/input.json',
+          outputSchemaRef: 'schemas/output.json',
+          retryPolicyRef: 'policy/retry-default',
+          timeoutPolicyRef: 'policy/timeout-default',
+          budgetPolicyRef: 'policy/budget-default',
         },
       ],
       edges: [],
@@ -226,25 +226,25 @@ describe("ProcessRuntimeEngine smoke", () => {
     expect(result.stageResults[0]?.status).toBe(RuntimeStageStatus.TIMEOUT);
   });
 
-  it("returns timeout status when flow execution exceeds flow timeout", async () => {
+  it('returns timeout status when flow execution exceeds flow timeout', async () => {
     const compiler = new ProcessCompiler();
     const engine = new ProcessRuntimeEngine(compiler);
     const compiledIr = compiler.compile({
-      processId: "process-runtime-timeout-flow",
-      executionId: "exec-runtime-003",
-      entryNodeId: "node-loop-timeout",
+      processId: 'process-runtime-timeout-flow',
+      executionId: 'exec-runtime-003',
+      entryNodeId: 'node-loop-timeout',
       nodes: [
         {
-          nodeId: "node-loop-timeout",
-          stageId: "stage-loop-timeout",
+          nodeId: 'node-loop-timeout',
+          stageId: 'stage-loop-timeout',
           nodeType: ProcessNodeType.LOOP,
-          routeKey: "loop-timeout",
-          roleProfileId: "tester-default",
-          inputSchemaRef: "schemas/input.json",
-          outputSchemaRef: "schemas/output.json",
-          retryPolicyRef: "policy/retry-default",
-          timeoutPolicyRef: "policy/timeout-default",
-          budgetPolicyRef: "policy/budget-default",
+          routeKey: 'loop-timeout',
+          roleProfileId: 'tester-default',
+          inputSchemaRef: 'schemas/input.json',
+          outputSchemaRef: 'schemas/output.json',
+          retryPolicyRef: 'policy/retry-default',
+          timeoutPolicyRef: 'policy/timeout-default',
+          budgetPolicyRef: 'policy/budget-default',
           limits: {
             maxCycles: 500,
             maxWallTimeSeconds: 3600,
@@ -253,8 +253,8 @@ describe("ProcessRuntimeEngine smoke", () => {
       ],
       edges: [
         {
-          fromNodeId: "node-loop-timeout",
-          toNodeId: "node-loop-timeout",
+          fromNodeId: 'node-loop-timeout',
+          toNodeId: 'node-loop-timeout',
         },
       ],
     });
@@ -279,25 +279,25 @@ describe("ProcessRuntimeEngine smoke", () => {
     expect(result.interruption?.timeoutScope).toBe(RuntimeTimeoutScope.FLOW);
   });
 
-  it("returns cancelled status when AbortSignal is already aborted", async () => {
+  it('returns cancelled status when AbortSignal is already aborted', async () => {
     const compiler = new ProcessCompiler();
     const engine = new ProcessRuntimeEngine(compiler);
     const compiledIr = compiler.compile({
-      processId: "process-runtime-cancelled",
-      executionId: "exec-runtime-004",
-      entryNodeId: "node-cancelled",
+      processId: 'process-runtime-cancelled',
+      executionId: 'exec-runtime-004',
+      entryNodeId: 'node-cancelled',
       nodes: [
         {
-          nodeId: "node-cancelled",
-          stageId: "stage-cancelled",
+          nodeId: 'node-cancelled',
+          stageId: 'stage-cancelled',
           nodeType: ProcessNodeType.SEQUENTIAL,
-          routeKey: "cancelled",
-          roleProfileId: "tester-default",
-          inputSchemaRef: "schemas/input.json",
-          outputSchemaRef: "schemas/output.json",
-          retryPolicyRef: "policy/retry-default",
-          timeoutPolicyRef: "policy/timeout-default",
-          budgetPolicyRef: "policy/budget-default",
+          routeKey: 'cancelled',
+          roleProfileId: 'tester-default',
+          inputSchemaRef: 'schemas/input.json',
+          outputSchemaRef: 'schemas/output.json',
+          retryPolicyRef: 'policy/retry-default',
+          timeoutPolicyRef: 'policy/timeout-default',
+          budgetPolicyRef: 'policy/budget-default',
         },
       ],
       edges: [],
@@ -313,25 +313,25 @@ describe("ProcessRuntimeEngine smoke", () => {
     expect(result.stageResults).toHaveLength(0);
   });
 
-  it("fails with standardized error when role profile is missing from registry", async () => {
+  it('fails with standardized error when role profile is missing from registry', async () => {
     const compiler = new ProcessCompiler();
     const engine = new ProcessRuntimeEngine(compiler);
     const compiledIr = compiler.compile({
-      processId: "process-runtime-role-missing",
-      executionId: "exec-runtime-006",
-      entryNodeId: "node-role-missing",
+      processId: 'process-runtime-role-missing',
+      executionId: 'exec-runtime-006',
+      entryNodeId: 'node-role-missing',
       nodes: [
         {
-          nodeId: "node-role-missing",
-          stageId: "stage-role-missing",
+          nodeId: 'node-role-missing',
+          stageId: 'stage-role-missing',
           nodeType: ProcessNodeType.SEQUENTIAL,
-          routeKey: "role-missing",
-          roleProfileId: "missing-role-profile",
-          inputSchemaRef: "schemas/input.json",
-          outputSchemaRef: "schemas/output.json",
-          retryPolicyRef: "policy/retry-default",
-          timeoutPolicyRef: "policy/timeout-default",
-          budgetPolicyRef: "policy/budget-default",
+          routeKey: 'role-missing',
+          roleProfileId: 'missing-role-profile',
+          inputSchemaRef: 'schemas/input.json',
+          outputSchemaRef: 'schemas/output.json',
+          retryPolicyRef: 'policy/retry-default',
+          timeoutPolicyRef: 'policy/timeout-default',
+          budgetPolicyRef: 'policy/budget-default',
         },
       ],
       edges: [],
@@ -347,25 +347,25 @@ describe("ProcessRuntimeEngine smoke", () => {
     );
   });
 
-  it("injects resolved role metadata into stage context when role registry is enabled", async () => {
+  it('injects resolved role metadata into stage context when role registry is enabled', async () => {
     const compiler = new ProcessCompiler();
     const engine = new ProcessRuntimeEngine(compiler);
     const compiledIr = compiler.compile({
-      processId: "process-runtime-role-context",
-      executionId: "exec-runtime-007",
-      entryNodeId: "node-role-context",
+      processId: 'process-runtime-role-context',
+      executionId: 'exec-runtime-007',
+      entryNodeId: 'node-role-context',
       nodes: [
         {
-          nodeId: "node-role-context",
-          stageId: "stage-role-context",
+          nodeId: 'node-role-context',
+          stageId: 'stage-role-context',
           nodeType: ProcessNodeType.SEQUENTIAL,
-          routeKey: "role-context",
-          roleProfileId: "planner-default",
-          inputSchemaRef: "schemas/input.json",
-          outputSchemaRef: "schemas/output.json",
-          retryPolicyRef: "policy/retry-default",
-          timeoutPolicyRef: "policy/timeout-default",
-          budgetPolicyRef: "policy/budget-default",
+          routeKey: 'role-context',
+          roleProfileId: 'planner-default',
+          inputSchemaRef: 'schemas/input.json',
+          outputSchemaRef: 'schemas/output.json',
+          retryPolicyRef: 'policy/retry-default',
+          timeoutPolicyRef: 'policy/timeout-default',
+          budgetPolicyRef: 'policy/budget-default',
         },
       ],
       edges: [],
@@ -387,36 +387,36 @@ describe("ProcessRuntimeEngine smoke", () => {
     );
 
     expect(result.status).toBe(RuntimeExecutionStatus.SUCCEEDED);
-    expect(capturedRoleVersion).toBe("1.0.0");
+    expect(capturedRoleVersion).toBe('1.0.0');
     expect(capturedRoleSource).toBe(RoleSource.DEFAULT);
   });
 
-  it("supports custom runtime now provider extensions", async () => {
+  it('supports custom runtime now provider extensions', async () => {
     const compiler = new ProcessCompiler();
     const engine = new ProcessRuntimeEngine(compiler);
     const compiledIr = compiler.compile({
-      processId: "process-runtime-clock-provider",
-      executionId: "exec-runtime-005",
-      entryNodeId: "node-clock-provider",
+      processId: 'process-runtime-clock-provider',
+      executionId: 'exec-runtime-005',
+      entryNodeId: 'node-clock-provider',
       nodes: [
         {
-          nodeId: "node-clock-provider",
-          stageId: "stage-clock-provider",
+          nodeId: 'node-clock-provider',
+          stageId: 'stage-clock-provider',
           nodeType: ProcessNodeType.SEQUENTIAL,
-          routeKey: "clock-provider",
-          roleProfileId: "tester-default",
-          inputSchemaRef: "schemas/input.json",
-          outputSchemaRef: "schemas/output.json",
-          retryPolicyRef: "policy/retry-default",
-          timeoutPolicyRef: "policy/timeout-default",
-          budgetPolicyRef: "policy/budget-default",
+          routeKey: 'clock-provider',
+          roleProfileId: 'tester-default',
+          inputSchemaRef: 'schemas/input.json',
+          outputSchemaRef: 'schemas/output.json',
+          retryPolicyRef: 'policy/retry-default',
+          timeoutPolicyRef: 'policy/timeout-default',
+          budgetPolicyRef: 'policy/budget-default',
         },
       ],
       edges: [],
     });
 
     const result = await engine.execute(compiledIr, async () => undefined, {
-      nowProvider: new DeterministicRuntimeNowProvider(Date.parse("2026-01-01T00:00:00.000Z"), 100),
+      nowProvider: new DeterministicRuntimeNowProvider(Date.parse('2026-01-01T00:00:00.000Z'), 100),
     });
 
     expect(result.status).toBe(RuntimeExecutionStatus.SUCCEEDED);

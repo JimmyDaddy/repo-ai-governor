@@ -1,10 +1,10 @@
-import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
+import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import {
   AgentsProjectionMetadataKey,
   DEFAULT_AGENTS_PROJECTION_TARGET,
   StandardsRenderTarget,
-} from "./constants/index.js";
-import { DefaultAgentsProjectionNowProvider } from "./providers/index.js";
+} from './constants/index.js';
+import { DefaultAgentsProjectionNowProvider } from './providers/index.js';
 import type {
   AgentsProjectionNowProviderContract,
   AgentsProjectionSourcePackRef,
@@ -15,8 +15,8 @@ import type {
   StandardsProjectionParityResult,
   StandardsProjectionParityViolation,
   StandardsRuleRendererReader,
-} from "./types/index.js";
-import { readRequiredString } from "./utils/index.js";
+} from './types/index.js';
+import { readRequiredString } from './utils/index.js';
 
 interface NormalizedAgentsProjectorOptions {
   renderer: StandardsRuleRendererReader;
@@ -50,16 +50,16 @@ export class AgentsProjector {
    * @returns Structured projection result with traceable metadata.
    */
   public project(input: AgentsProjectorProjectInput = {}): AgentsProjectorProjectResult {
-    if (!input || typeof input !== "object") {
+    if (!input || typeof input !== 'object') {
       throw new RuntimeError(
         GovernorErrorCode.AGENTS_PROJECTION_INVALID,
-        "Agents projector input must be an object.",
+        'Agents projector input must be an object.',
       );
     }
 
     const projectionTarget = readRequiredString(
       input.projectionTarget ?? this.resolvedOptions.defaultProjectionTarget,
-      "input.projectionTarget",
+      'input.projectionTarget',
       GovernorErrorCode.AGENTS_PROJECTION_INVALID,
     );
 
@@ -94,7 +94,7 @@ export class AgentsProjector {
     if (enforceParity && !parity.isAligned) {
       throw new RuntimeError(
         GovernorErrorCode.STANDARDS_PROJECTION_PARITY_FAILED,
-        "Agents projection parity check failed across human/ai/agents targets.",
+        'Agents projection parity check failed across human/ai/agents targets.',
         {
           projectionTarget,
           violations: parity.violations,
@@ -130,14 +130,14 @@ export class AgentsProjector {
    * @returns Normalized options.
    */
   private resolveOptions(options: AgentsProjectorOptions): NormalizedAgentsProjectorOptions {
-    if (!options || typeof options !== "object") {
+    if (!options || typeof options !== 'object') {
       throw new RuntimeError(
         GovernorErrorCode.AGENTS_PROJECTION_INVALID,
-        "Agents projector options must be an object.",
+        'Agents projector options must be an object.',
       );
     }
 
-    if (!options.renderer || typeof options.renderer.render !== "function") {
+    if (!options.renderer || typeof options.renderer.render !== 'function') {
       throw new RuntimeError(
         GovernorErrorCode.AGENTS_PROJECTION_INVALID,
         'Agents projector option "renderer" must provide render().',
@@ -146,7 +146,7 @@ export class AgentsProjector {
 
     const defaultProjectionTarget = readRequiredString(
       options.defaultProjectionTarget ?? DEFAULT_AGENTS_PROJECTION_TARGET,
-      "options.defaultProjectionTarget",
+      'options.defaultProjectionTarget',
       GovernorErrorCode.AGENTS_PROJECTION_INVALID,
     );
 
@@ -197,7 +197,7 @@ export class AgentsProjector {
           violations.push({
             semanticKey,
             target: comparedTarget.target,
-            reason: "semantic-key-missing",
+            reason: 'semantic-key-missing',
             ...(expected ? { expectedRuleId: expected.ruleId } : {}),
             ...(actual ? { actualRuleId: actual.ruleId } : {}),
           });
@@ -212,7 +212,7 @@ export class AgentsProjector {
           violations.push({
             semanticKey,
             target: comparedTarget.target,
-            reason: "rule-signature-mismatch",
+            reason: 'rule-signature-mismatch',
             expectedRuleId: expected.ruleId,
             actualRuleId: actual.ruleId,
             expectedSourcePackId: expected.sourcePackId,
@@ -272,12 +272,12 @@ export class AgentsProjector {
     }
 
     return Array.from(sourcePackRefByKey.values()).sort((left, right) => {
-      const packIdComparison = left.packId.localeCompare(right.packId, "en");
+      const packIdComparison = left.packId.localeCompare(right.packId, 'en');
       if (packIdComparison !== 0) {
         return packIdComparison;
       }
 
-      return left.packVersion.localeCompare(right.packVersion, "en");
+      return left.packVersion.localeCompare(right.packVersion, 'en');
     });
   }
 
@@ -296,26 +296,26 @@ export class AgentsProjector {
   }): string {
     const sourcePackRefSummary =
       input.sourcePackRefs.length === 0
-        ? "(none)"
+        ? '(none)'
         : input.sourcePackRefs
             .map((sourcePackRef) => `${sourcePackRef.packId}@${sourcePackRef.packVersion}`)
-            .join(", ");
+            .join(', ');
 
     const lines: string[] = [
-      "# AGENTS.md Projection",
-      "",
+      '# AGENTS.md Projection',
+      '',
       `${AgentsProjectionMetadataKey.PROJECTION_TARGET}: ${input.projectionTarget}`,
       `${AgentsProjectionMetadataKey.PROJECTED_AT}: ${input.projectedAt}`,
       `${AgentsProjectionMetadataKey.LOCALE}: ${input.locale}`,
       `${AgentsProjectionMetadataKey.SOURCE_PACK_REFS}: ${sourcePackRefSummary}`,
-      `${AgentsProjectionMetadataKey.PROJECTION_PARITY}: ${input.parity.isAligned ? "aligned" : "violated"}`,
-      "",
-      "## Agents Rules",
+      `${AgentsProjectionMetadataKey.PROJECTION_PARITY}: ${input.parity.isAligned ? 'aligned' : 'violated'}`,
+      '',
+      '## Agents Rules',
     ];
 
     if (input.renderedRules.length === 0) {
-      lines.push("(none)");
-      return lines.join("\n");
+      lines.push('(none)');
+      return lines.join('\n');
     }
 
     for (const [index, renderedRule] of input.renderedRules.entries()) {
@@ -327,6 +327,6 @@ export class AgentsProjector {
       lines.push(`   text: ${renderedRule.text}`);
     }
 
-    return lines.join("\n");
+    return lines.join('\n');
   }
 }

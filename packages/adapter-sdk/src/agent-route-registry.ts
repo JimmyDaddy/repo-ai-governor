@@ -1,12 +1,12 @@
-import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
-import { AgentCapability, AgentCapabilityFallbackAction } from "./constants/index.js";
+import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
+import { AgentCapability, AgentCapabilityFallbackAction } from './constants/index.js';
 import type {
   AgentCapabilityFallbackRule,
   AgentCapabilityRequirement,
   AgentRoutePolicy,
   AgentRouteRegistryOptions,
   AgentRouteResolvedPolicy,
-} from "./types/index.js";
+} from './types/index.js';
 
 /**
  * Maintains routeKey -> primary/fallback surface routing policy definitions.
@@ -68,7 +68,7 @@ export class AgentRouteRegistry {
    * @returns Normalized route policy.
    */
   public resolveRoute(routeKey: string): AgentRouteResolvedPolicy {
-    const normalizedRouteKey = this.readRequiredString(routeKey, "routeKey");
+    const normalizedRouteKey = this.readRequiredString(routeKey, 'routeKey');
     const policy = this.policyByRouteKey.get(normalizedRouteKey);
     if (!policy) {
       throw new RuntimeError(
@@ -96,16 +96,16 @@ export class AgentRouteRegistry {
    * @param options Route registry options.
    */
   private assertOptions(options: AgentRouteRegistryOptions): void {
-    if (!options || typeof options !== "object") {
+    if (!options || typeof options !== 'object') {
       throw new RuntimeError(
         GovernorErrorCode.ADAPTER_ROUTE_CONFIG_INVALID,
-        "Route registry options must be an object.",
+        'Route registry options must be an object.',
       );
     }
     if (!Array.isArray(options.routePolicies)) {
       throw new RuntimeError(
         GovernorErrorCode.ADAPTER_ROUTE_CONFIG_INVALID,
-        "Route registry options must provide routePolicies array.",
+        'Route registry options must provide routePolicies array.',
       );
     }
   }
@@ -117,7 +117,7 @@ export class AgentRouteRegistry {
    * @returns Normalized route policy.
    */
   private normalizePolicy(policy: AgentRoutePolicy, pointer: string): AgentRouteResolvedPolicy {
-    if (!policy || typeof policy !== "object") {
+    if (!policy || typeof policy !== 'object') {
       throw new RuntimeError(
         GovernorErrorCode.ADAPTER_ROUTE_CONFIG_INVALID,
         `${pointer} must be an object.`,
@@ -173,7 +173,7 @@ export class AgentRouteRegistry {
     policy: AgentRoutePolicy,
     pointer: string,
   ): AgentCapabilityRequirement | undefined {
-    if (!Object.hasOwn(policy, "capabilityRequirement")) {
+    if (!Object.hasOwn(policy, 'capabilityRequirement')) {
       return undefined;
     }
     if (policy.capabilityRequirement === undefined) {
@@ -195,13 +195,13 @@ export class AgentRouteRegistry {
     requirement: unknown,
     pointer: string,
   ): AgentCapabilityRequirement {
-    if (!requirement || typeof requirement !== "object") {
+    if (!requirement || typeof requirement !== 'object') {
       throw new RuntimeError(
         GovernorErrorCode.ADAPTER_ROUTE_CONFIG_INVALID,
         `${pointer} must be an object.`,
         {
           pointer,
-          actualType: requirement === null ? "null" : typeof requirement,
+          actualType: requirement === null ? 'null' : typeof requirement,
         },
       );
     }
@@ -295,13 +295,13 @@ export class AgentRouteRegistry {
     }
 
     return values.map((value, index) => {
-      if (!value || typeof value !== "object") {
+      if (!value || typeof value !== 'object') {
         throw new RuntimeError(
           GovernorErrorCode.ADAPTER_ROUTE_CONFIG_INVALID,
           `${pointer}[${index}] must be an object.`,
           {
             pointer: `${pointer}[${index}]`,
-            actualType: value === null ? "null" : typeof value,
+            actualType: value === null ? 'null' : typeof value,
           },
         );
       }
@@ -318,13 +318,13 @@ export class AgentRouteRegistry {
         fallbackRule.onDegraded,
         `${pointer}[${index}].onDegraded`,
       );
-      if (fallbackRule.note !== undefined && typeof fallbackRule.note !== "string") {
+      if (fallbackRule.note !== undefined && typeof fallbackRule.note !== 'string') {
         throw new RuntimeError(
           GovernorErrorCode.ADAPTER_ROUTE_CONFIG_INVALID,
           `${pointer}[${index}].note must be a string when provided.`,
           {
             pointer: `${pointer}[${index}].note`,
-            actualType: fallbackRule.note === null ? "null" : typeof fallbackRule.note,
+            actualType: fallbackRule.note === null ? 'null' : typeof fallbackRule.note,
           },
         );
       }
@@ -350,13 +350,13 @@ export class AgentRouteRegistry {
    * @returns Capability enum value.
    */
   private readCapability(value: unknown, pointer: string): AgentCapability {
-    if (typeof value !== "string" || !this.capabilitySet.has(value)) {
+    if (typeof value !== 'string' || !this.capabilitySet.has(value)) {
       throw new RuntimeError(
         GovernorErrorCode.ADAPTER_ROUTE_CONFIG_INVALID,
         `${pointer} must be one of AgentCapability values.`,
         {
           pointer,
-          actualType: value === null ? "null" : typeof value,
+          actualType: value === null ? 'null' : typeof value,
         },
       );
     }
@@ -370,13 +370,13 @@ export class AgentRouteRegistry {
    * @returns Fallback action enum value.
    */
   private readFallbackAction(value: unknown, pointer: string): AgentCapabilityFallbackAction {
-    if (typeof value !== "string" || !this.fallbackActionSet.has(value)) {
+    if (typeof value !== 'string' || !this.fallbackActionSet.has(value)) {
       throw new RuntimeError(
         GovernorErrorCode.ADAPTER_ROUTE_CONFIG_INVALID,
         `${pointer} must be one of AgentCapabilityFallbackAction values.`,
         {
           pointer,
-          actualType: value === null ? "null" : typeof value,
+          actualType: value === null ? 'null' : typeof value,
         },
       );
     }
@@ -444,13 +444,13 @@ export class AgentRouteRegistry {
    * @returns Normalized string.
    */
   private readRequiredString(value: unknown, pointer: string): string {
-    if (typeof value !== "string") {
+    if (typeof value !== 'string') {
       throw new RuntimeError(
         GovernorErrorCode.ADAPTER_ROUTE_CONFIG_INVALID,
         `${pointer} must be a string.`,
         {
           pointer,
-          actualType: value === null ? "null" : typeof value,
+          actualType: value === null ? 'null' : typeof value,
         },
       );
     }

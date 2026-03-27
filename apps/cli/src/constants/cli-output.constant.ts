@@ -1,4 +1,4 @@
-import { ErrorOutputEnvironment } from "@repo-ai-governor/shared";
+import { ErrorOutputEnvironment } from '@repo-ai-governor/shared';
 
 /**
  * Defines verbosity levels supported by the CLI output contract.
@@ -7,9 +7,9 @@ import { ErrorOutputEnvironment } from "@repo-ai-governor/shared";
  * output density should be controlled through one finite enum instead of scattered literals.
  */
 export enum CliVerbosity {
-  QUIET = "quiet",
-  NORMAL = "normal",
-  VERBOSE = "verbose",
+  QUIET = 'quiet',
+  NORMAL = 'normal',
+  VERBOSE = 'verbose',
 }
 
 /**
@@ -19,8 +19,8 @@ export enum CliVerbosity {
  * status values are consumed by both human renderers and JSON parsers.
  */
 export enum CliOutputStatus {
-  SUCCESS = "success",
-  ERROR = "error",
+  SUCCESS = 'success',
+  ERROR = 'error',
 }
 
 /**
@@ -30,18 +30,18 @@ export enum CliOutputStatus {
  * downstream automations can branch on finite next_action values.
  */
 export enum CliNextAction {
-  CHECK_COMMAND_USAGE = "check_command_usage",
-  INSPECT_GOVERNOR_CONFIG = "inspect_governor_config",
-  INSPECT_POLICY_DIAGNOSTICS = "inspect_policy_diagnostics",
-  CHECK_REPLAY_SOURCE = "check_replay_source",
-  RETRY_WITH_VERBOSE = "retry_with_verbose",
-  REPORT_ISSUE = "report_issue",
+  CHECK_COMMAND_USAGE = 'check_command_usage',
+  INSPECT_GOVERNOR_CONFIG = 'inspect_governor_config',
+  INSPECT_POLICY_DIAGNOSTICS = 'inspect_policy_diagnostics',
+  CHECK_REPLAY_SOURCE = 'check_replay_source',
+  RETRY_WITH_VERBOSE = 'retry_with_verbose',
+  REPORT_ISSUE = 'report_issue',
 }
 
 /**
  * Defines the stable schema version for machine-readable CLI output.
  */
-export const CLI_OUTPUT_SCHEMA_VERSION = "cli_output_v1";
+export const CLI_OUTPUT_SCHEMA_VERSION = 'cli_output_v1';
 
 /**
  * Defines supported CLI output modes as a reusable runtime validation set.
@@ -82,19 +82,19 @@ export const NON_TTY_FALLBACK_OUTPUT_MODE = ErrorOutputEnvironment.PLAIN;
  * Defines global CLI options that require one following value token.
  */
 export const CLI_OPTIONS_REQUIRING_VALUE = new Set<string>([
-  "--locale",
-  "--profile",
-  "--output",
-  "--verbosity",
-  "--replay",
-  "--task-id",
-  "--workspace-action",
-  "--workspace-mode",
-  "--workspace-root",
-  "--workspace-plan",
-  "--hitl-decision",
-  "--hitl-decision-reason",
-  "--hitl-resume-action",
-  "--hitl-decided-by",
-  "--hitl-constraints",
+  '--locale',
+  '--profile',
+  '--output',
+  '--verbosity',
+  '--replay',
+  '--task-id',
+  '--workspace-action',
+  '--workspace-mode',
+  '--workspace-root',
+  '--workspace-plan',
+  '--hitl-decision',
+  '--hitl-decision-reason',
+  '--hitl-resume-action',
+  '--hitl-decided-by',
+  '--hitl-constraints',
 ]);

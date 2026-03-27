@@ -11,7 +11,7 @@
  *   node ./scripts/ci/run-repo-global-gates.js [--group governance|docs|all] [--output json]
  */
 
-import { spawn } from "node:child_process";
+import { spawn } from 'node:child_process';
 
 /** @typedef {{ name: string; script: string; group: string }} GateEntry */
 
@@ -20,59 +20,59 @@ const JSON_STDERR_PREVIEW_LIMIT = 2000;
 /** @type {GateEntry[]} */
 const REPO_GLOBAL_GATES = [
   {
-    name: "code-standards",
-    script: "gate:code-standards",
-    group: "governance",
+    name: 'code-standards',
+    script: 'gate:code-standards',
+    group: 'governance',
   },
   {
-    name: "docs-triad-sync",
-    script: "gate:docs-triad-sync",
-    group: "docs",
+    name: 'docs-triad-sync',
+    script: 'gate:docs-triad-sync',
+    group: 'docs',
   },
   {
-    name: "technical-solution-module-graph",
-    script: "gate:technical-solution-module-graph",
-    group: "docs",
+    name: 'technical-solution-module-graph',
+    script: 'gate:technical-solution-module-graph',
+    group: 'docs',
   },
   {
-    name: "technical-solution-lifecycle-registry",
-    script: "gate:technical-solution-lifecycle-registry",
-    group: "docs",
+    name: 'technical-solution-lifecycle-registry',
+    script: 'gate:technical-solution-lifecycle-registry',
+    group: 'docs',
   },
   {
-    name: "technical-solution-delivery-registry",
-    script: "gate:technical-solution-delivery-registry",
-    group: "docs",
+    name: 'technical-solution-delivery-registry',
+    script: 'gate:technical-solution-delivery-registry',
+    group: 'docs',
   },
   {
-    name: "task-ledger-sync",
-    script: "gate:task-ledger-sync",
-    group: "governance",
+    name: 'task-ledger-sync',
+    script: 'gate:task-ledger-sync',
+    group: 'governance',
   },
   {
-    name: "sprint-plan-status-sync",
-    script: "gate:sprint-plan-status-sync",
-    group: "governance",
+    name: 'sprint-plan-status-sync',
+    script: 'gate:sprint-plan-status-sync',
+    group: 'governance',
   },
   {
-    name: "code-review-status-sync",
-    script: "gate:code-review-status-sync",
-    group: "governance",
+    name: 'code-review-status-sync',
+    script: 'gate:code-review-status-sync',
+    group: 'governance',
   },
   {
-    name: "worktree-review-target",
-    script: "gate:worktree-review-target",
-    group: "governance",
+    name: 'worktree-review-target',
+    script: 'gate:worktree-review-target',
+    group: 'governance',
   },
   {
-    name: "artifact-lifecycle",
-    script: "gate:artifact-lifecycle",
-    group: "governance",
+    name: 'artifact-lifecycle',
+    script: 'gate:artifact-lifecycle',
+    group: 'governance',
   },
   {
-    name: "normative-loading-manifest",
-    script: "gate:normative-loading-manifest",
-    group: "docs",
+    name: 'normative-loading-manifest',
+    script: 'gate:normative-loading-manifest',
+    group: 'docs',
   },
 ];
 
@@ -84,34 +84,34 @@ const REPO_GLOBAL_GATES = [
 function runGate(gate) {
   return new Promise((resolve) => {
     const startMs = Date.now();
-    const child = spawn("pnpm", ["run", gate.script], {
-      stdio: ["ignore", "pipe", "pipe"],
+    const child = spawn('pnpm', ['run', gate.script], {
+      stdio: ['ignore', 'pipe', 'pipe'],
     });
 
     /** @type {string[]} */
     const stderrChunks = [];
 
-    child.stderr.on("data", (chunk) => {
-      stderrChunks.push(chunk.toString("utf8"));
+    child.stderr.on('data', (chunk) => {
+      stderrChunks.push(chunk.toString('utf8'));
     });
 
-    child.on("error", (err) => {
+    child.on('error', (err) => {
       resolve({
         name: gate.name,
         group: gate.group,
-        status: "error",
+        status: 'error',
         elapsed: Date.now() - startMs,
         error: err.message,
       });
     });
 
-    child.on("close", (code) => {
+    child.on('close', (code) => {
       resolve({
         name: gate.name,
         group: gate.group,
-        status: code === 0 ? "passed" : "failed",
+        status: code === 0 ? 'passed' : 'failed',
         elapsed: Date.now() - startMs,
-        error: code !== 0 ? stderrChunks.join("").slice(0, JSON_STDERR_PREVIEW_LIMIT) : undefined,
+        error: code !== 0 ? stderrChunks.join('').slice(0, JSON_STDERR_PREVIEW_LIMIT) : undefined,
       });
     });
   });
@@ -120,14 +120,14 @@ function runGate(gate) {
 // --- CLI argument parsing ---
 
 const args = process.argv.slice(2);
-const groupIndex = args.indexOf("--group");
-const groupFilter = groupIndex !== -1 && args[groupIndex + 1] ? args[groupIndex + 1] : "all";
-const outputIndex = args.indexOf("--output");
-const outputMode = outputIndex !== -1 && args[outputIndex + 1] ? args[outputIndex + 1] : "pretty";
-const jsonOutput = outputMode === "json";
+const groupIndex = args.indexOf('--group');
+const groupFilter = groupIndex !== -1 && args[groupIndex + 1] ? args[groupIndex + 1] : 'all';
+const outputIndex = args.indexOf('--output');
+const outputMode = outputIndex !== -1 && args[outputIndex + 1] ? args[outputIndex + 1] : 'pretty';
+const jsonOutput = outputMode === 'json';
 
 const gates =
-  groupFilter === "all"
+  groupFilter === 'all'
     ? REPO_GLOBAL_GATES
     : REPO_GLOBAL_GATES.filter((g) => g.group === groupFilter);
 
@@ -150,12 +150,12 @@ if (!jsonOutput) {
 const results = await Promise.all(gates.map(runGate));
 
 const overallElapsed = ((Date.now() - overallStart) / 1000).toFixed(1);
-const passed = results.filter((r) => r.status === "passed").length;
-const failed = results.filter((r) => r.status !== "passed").length;
+const passed = results.filter((r) => r.status === 'passed').length;
+const failed = results.filter((r) => r.status !== 'passed').length;
 
 if (jsonOutput) {
   const summary = {
-    profile: "repo-global",
+    profile: 'repo-global',
     group: groupFilter,
     total: results.length,
     passed,
@@ -171,18 +171,18 @@ if (jsonOutput) {
   };
   process.stdout.write(`${JSON.stringify(summary, null, 2)}\n`);
 } else {
-  console.info("");
-  console.info("─── Repo-Global Gate Results ───");
+  console.info('');
+  console.info('─── Repo-Global Gate Results ───');
   for (const r of results) {
-    const icon = r.status === "passed" ? "✓" : "✗";
+    const icon = r.status === 'passed' ? '✓' : '✗';
     const timeStr = (r.elapsed / 1000).toFixed(1);
     console.info(`  ${icon} ${r.name} (${r.group}) — ${timeStr}s`);
     if (r.error) {
-      const firstLine = r.error.split("\n")[0];
+      const firstLine = r.error.split('\n')[0];
       console.info(`    └─ ${firstLine}`);
     }
   }
-  console.info("");
+  console.info('');
   console.info(
     `[repo-global-gates] ${passed}/${results.length} passed, elapsed=${overallElapsed}s`,
   );

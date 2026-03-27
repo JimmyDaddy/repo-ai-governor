@@ -1,8 +1,8 @@
-import { randomUUID } from "node:crypto";
+import { randomUUID } from 'node:crypto';
 
-import { type MemoryManager, MemoryScope } from "@repo-ai-governor/core-memory";
-import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
-import { SessionStatus } from "./constants/index.js";
+import { type MemoryManager, MemoryScope } from '@repo-ai-governor/core-memory';
+import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
+import { SessionStatus } from './constants/index.js';
 import type {
   AppendSessionEventOptions,
   FinalizeSessionOptions,
@@ -11,9 +11,9 @@ import type {
   SessionEvent,
   SharedSession,
   UpdateSessionContextOptions,
-} from "./types/index.js";
+} from './types/index.js';
 
-const SESSION_TAG = "session";
+const SESSION_TAG = 'session';
 const SESSION_STATUS_VALUES = new Set<string>(Object.values(SessionStatus));
 
 /**
@@ -153,7 +153,7 @@ export class SharedSessionManager {
     if (nextStatus === SessionStatus.ACTIVE) {
       throw new RuntimeError(
         GovernorErrorCode.MEMORY_SESSION_INVALID_STATUS,
-        "Finalize session requires terminal status (completed/cancelled/failed).",
+        'Finalize session requires terminal status (completed/cancelled/failed).',
         {
           sessionId: options.sessionId,
           status: nextStatus,
@@ -221,14 +221,14 @@ export class SharedSessionManager {
     payload: Record<string, unknown>,
     sessionId: string,
   ): SharedSession {
-    const parsedSessionId = this.readStringField(payload.sessionId, "sessionId");
-    const parsedStatus = this.readStringField(payload.status, "status");
-    const parsedOpenedAt = this.readStringField(payload.openedAt, "openedAt");
-    const parsedClosedAt = this.readOptionalStringField(payload.closedAt, "closedAt");
-    const parsedProcessId = this.readOptionalStringField(payload.processId, "processId");
-    const parsedExecutionId = this.readOptionalStringField(payload.executionId, "executionId");
-    const parsedContext = this.readRecordField(payload.context, "context");
-    const parsedEvents = this.readSessionEvents(payload.events, "events");
+    const parsedSessionId = this.readStringField(payload.sessionId, 'sessionId');
+    const parsedStatus = this.readStringField(payload.status, 'status');
+    const parsedOpenedAt = this.readStringField(payload.openedAt, 'openedAt');
+    const parsedClosedAt = this.readOptionalStringField(payload.closedAt, 'closedAt');
+    const parsedProcessId = this.readOptionalStringField(payload.processId, 'processId');
+    const parsedExecutionId = this.readOptionalStringField(payload.executionId, 'executionId');
+    const parsedContext = this.readRecordField(payload.context, 'context');
+    const parsedEvents = this.readSessionEvents(payload.events, 'events');
 
     if (parsedSessionId !== sessionId) {
       throw new RuntimeError(
@@ -291,7 +291,7 @@ export class SharedSessionManager {
    * @returns Parsed string value.
    */
   private readStringField(candidate: unknown, fieldName: string): string {
-    if (typeof candidate === "string" && candidate.length > 0) {
+    if (typeof candidate === 'string' && candidate.length > 0) {
       return candidate;
     }
 
@@ -313,7 +313,7 @@ export class SharedSessionManager {
       return undefined;
     }
 
-    if (typeof candidate === "string" && candidate.length > 0) {
+    if (typeof candidate === 'string' && candidate.length > 0) {
       return candidate;
     }
 
@@ -331,7 +331,7 @@ export class SharedSessionManager {
    * @returns Parsed record.
    */
   private readRecordField(candidate: unknown, fieldName: string): Record<string, unknown> {
-    if (candidate && typeof candidate === "object" && !Array.isArray(candidate)) {
+    if (candidate && typeof candidate === 'object' && !Array.isArray(candidate)) {
       return candidate as Record<string, unknown>;
     }
 
@@ -358,10 +358,10 @@ export class SharedSessionManager {
     }
 
     return candidate.map((eventCandidate, eventIndex) => {
-      if (!eventCandidate || typeof eventCandidate !== "object" || Array.isArray(eventCandidate)) {
+      if (!eventCandidate || typeof eventCandidate !== 'object' || Array.isArray(eventCandidate)) {
         throw new RuntimeError(
           GovernorErrorCode.MEMORY_SESSION_PAYLOAD_INVALID,
-          "Session event item must be an object.",
+          'Session event item must be an object.',
           {
             fieldName,
             eventIndex,
@@ -370,11 +370,11 @@ export class SharedSessionManager {
       }
 
       const eventRecord = eventCandidate as Record<string, unknown>;
-      const eventPayload = this.readRecordField(eventRecord.payload, "event.payload");
+      const eventPayload = this.readRecordField(eventRecord.payload, 'event.payload');
       return {
-        eventId: this.readStringField(eventRecord.eventId, "event.eventId"),
-        type: this.readStringField(eventRecord.type, "event.type"),
-        createdAt: this.readStringField(eventRecord.createdAt, "event.createdAt"),
+        eventId: this.readStringField(eventRecord.eventId, 'event.eventId'),
+        type: this.readStringField(eventRecord.type, 'event.type'),
+        createdAt: this.readStringField(eventRecord.createdAt, 'event.createdAt'),
         payload: eventPayload,
       };
     });

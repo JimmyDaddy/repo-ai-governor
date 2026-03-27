@@ -1,20 +1,20 @@
-import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
+import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import {
   DEFAULT_STANDARDS_FALLBACK_LOCALE,
   DEFAULT_STANDARDS_RENDER_LOCALE,
   STANDARDS_RENDER_TARGET_VALUES,
-} from "./constants/index.js";
+} from './constants/index.js';
 import type {
   RenderedStandardsRule,
   ResolvedStandardsRule,
   RuleRendererOptions,
   RuleRendererRenderInput,
   RuleRendererRenderResult,
-} from "./types/index.js";
-import { readRequiredString } from "./utils/index.js";
+} from './types/index.js';
+import { readRequiredString } from './utils/index.js';
 
 interface NormalizedRuleRendererOptions {
-  registry: RuleRendererOptions["registry"];
+  registry: RuleRendererOptions['registry'];
   defaultLocale: string;
   fallbackLocale: string;
 }
@@ -39,19 +39,19 @@ export class RuleRenderer {
    * @returns Structured render result with per-rule provenance.
    */
   public render(input: RuleRendererRenderInput): RuleRendererRenderResult {
-    if (!input || typeof input !== "object") {
+    if (!input || typeof input !== 'object') {
       throw new RuntimeError(
         GovernorErrorCode.RULE_RENDER_INVALID,
-        "Rule renderer input must be an object.",
+        'Rule renderer input must be an object.',
       );
     }
 
-    const target = this.readRenderTarget(input.target, "input.target");
+    const target = this.readRenderTarget(input.target, 'input.target');
     const requestedLocale =
       input.locale === undefined ? this.resolvedOptions.defaultLocale : input.locale;
     const baseLocale = readRequiredString(
       requestedLocale,
-      "input.locale",
+      'input.locale',
       GovernorErrorCode.RULE_RENDER_INVALID,
     );
     const resolvedRules = this.resolvedOptions.registry.resolveRules({
@@ -80,14 +80,14 @@ export class RuleRenderer {
    * @returns Normalized options.
    */
   private resolveOptions(options: RuleRendererOptions): NormalizedRuleRendererOptions {
-    if (!options || typeof options !== "object") {
+    if (!options || typeof options !== 'object') {
       throw new RuntimeError(
         GovernorErrorCode.RULE_RENDER_INVALID,
-        "Rule renderer options must be an object.",
+        'Rule renderer options must be an object.',
       );
     }
 
-    if (!options.registry || typeof options.registry.resolveRules !== "function") {
+    if (!options.registry || typeof options.registry.resolveRules !== 'function') {
       throw new RuntimeError(
         GovernorErrorCode.RULE_RENDER_INVALID,
         'Rule renderer option "registry" must provide resolveRules().',
@@ -96,12 +96,12 @@ export class RuleRenderer {
 
     const defaultLocale = readRequiredString(
       options.defaultLocale ?? DEFAULT_STANDARDS_RENDER_LOCALE,
-      "options.defaultLocale",
+      'options.defaultLocale',
       GovernorErrorCode.RULE_RENDER_INVALID,
     );
     const fallbackLocale = readRequiredString(
       options.fallbackLocale ?? DEFAULT_STANDARDS_FALLBACK_LOCALE,
-      "options.fallbackLocale",
+      'options.fallbackLocale',
       GovernorErrorCode.RULE_RENDER_INVALID,
     );
 
@@ -122,7 +122,7 @@ export class RuleRenderer {
    */
   private renderResolvedRule(
     resolvedRule: ResolvedStandardsRule,
-    target: RuleRendererRenderInput["target"],
+    target: RuleRendererRenderInput['target'],
     baseLocale: string,
     interpolation?: Record<string, string>,
   ): RenderedStandardsRule {
@@ -168,7 +168,7 @@ export class RuleRenderer {
    */
   private resolveLocalizedTemplate(
     resolvedRule: ResolvedStandardsRule,
-    target: RuleRendererRenderInput["target"],
+    target: RuleRendererRenderInput['target'],
     baseLocale: string,
   ): { locale: string; template: string } {
     const localeCandidates = this.collectLocaleCandidates(baseLocale);
@@ -191,7 +191,7 @@ export class RuleRenderer {
 
     throw new RuntimeError(
       GovernorErrorCode.RULE_RENDER_TEMPLATE_MISSING,
-      "Rule renderer cannot resolve localized template for target.",
+      'Rule renderer cannot resolve localized template for target.',
       {
         ruleId: resolvedRule.definition.ruleId,
         semanticKey: resolvedRule.definition.semanticKey,
@@ -266,7 +266,7 @@ export class RuleRenderer {
     for (const [key, value] of Object.entries(interpolation)) {
       const normalizedKey = readRequiredString(
         key,
-        "interpolation.key",
+        'interpolation.key',
         GovernorErrorCode.RULE_RENDER_INVALID,
       );
       const normalizedValue = readRequiredString(
@@ -276,7 +276,7 @@ export class RuleRenderer {
       );
       const tokenPattern = new RegExp(
         `\\{\\{\\s*${this.escapeRegExp(normalizedKey)}\\s*\\}\\}`,
-        "g",
+        'g',
       );
       renderedText = renderedText.replace(tokenPattern, normalizedValue);
     }
@@ -290,7 +290,7 @@ export class RuleRenderer {
    * @returns Escaped key text.
    */
   private escapeRegExp(value: string): string {
-    return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
   /**
@@ -299,7 +299,7 @@ export class RuleRenderer {
    * @param fieldName Field name for diagnostics.
    * @returns Normalized target value.
    */
-  private readRenderTarget(value: unknown, fieldName: string): RuleRendererRenderInput["target"] {
+  private readRenderTarget(value: unknown, fieldName: string): RuleRendererRenderInput['target'] {
     const normalizedValue = readRequiredString(
       value,
       fieldName,
@@ -316,7 +316,7 @@ export class RuleRenderer {
       );
     }
 
-    return normalizedValue as RuleRendererRenderInput["target"];
+    return normalizedValue as RuleRendererRenderInput['target'];
   }
 
   /**
@@ -334,6 +334,6 @@ export class RuleRenderer {
       return undefined;
     }
 
-    return normalizedLocale.split("-")[0];
+    return normalizedLocale.split('-')[0];
   }
 }

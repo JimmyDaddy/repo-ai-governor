@@ -5,4 +5,4 @@
  * Why this exists:
  * Turbo root task graph requires a terminal script node for `gate:check`.
  */
-console.info("[gate:check] Turbo pipeline completed.");
+console.info('[gate:check] Turbo pipeline completed.');

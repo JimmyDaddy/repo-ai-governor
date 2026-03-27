@@ -1,28 +1,28 @@
-import type { ClaudeCodeExecRunner } from "@repo-ai-governor/adapter-claude-code";
-import type { CodexExecRunner } from "@repo-ai-governor/adapter-codex";
-import type { GithubCopilotExecRunner } from "@repo-ai-governor/adapter-github-copilot";
-import type { AdaptersConfig, ResolvedWorkspace } from "@repo-ai-governor/config";
-import type { MemoryStoreProvider } from "@repo-ai-governor/memory-store-adapter";
+import type { ClaudeCodeExecRunner } from '@repo-ai-governor/adapter-claude-code';
+import type { CodexExecRunner } from '@repo-ai-governor/adapter-codex';
+import type { GithubCopilotExecRunner } from '@repo-ai-governor/adapter-github-copilot';
+import type { AdaptersConfig, ResolvedWorkspace } from '@repo-ai-governor/config';
+import type { MemoryStoreProvider } from '@repo-ai-governor/memory-store-adapter';
 import type {
   NotificationProvider,
   NotificationRiskLevelPolicyMatrix,
-} from "@repo-ai-governor/notification-dispatcher";
-import type { AdapterSurface } from "@repo-ai-governor/shared";
-import type { ErrorOutputEnvironment, MemoryRuntimeConfig } from "@repo-ai-governor/shared";
-import type { CliHitlResumeAction } from "../../constants/cli-task-driven-run.constant.js";
-import type { CliAdapterDiagnosticsRuntime } from "../../runtime/adapter-diagnostics-runtime.js";
-import type { CliReviewQueueRuntime } from "../../runtime/artifacts/review-queue-runtime.js";
-import type { CliOrchestrationServiceRuntime } from "../../runtime/orchestration-service-runtime.js";
-import type { CliCommandExperienceBuilder } from "../../runtime/presentation/command-experience-builder.js";
-import type { CliLocalAdapterProbeOverride } from "./cli-adapter-verification.interface.js";
-import type { CliAdapterVerificationResolution } from "./cli-adapter-verification.interface.js";
-import type { CliOrchestrationServiceRuntimeDependencies } from "./cli-orchestration-service-runtime.interface.js";
+} from '@repo-ai-governor/notification-dispatcher';
+import type { AdapterSurface } from '@repo-ai-governor/shared';
+import type { ErrorOutputEnvironment, MemoryRuntimeConfig } from '@repo-ai-governor/shared';
+import type { CliHitlResumeAction } from '../../constants/cli-task-driven-run.constant.js';
+import type { CliAdapterDiagnosticsRuntime } from '../../runtime/adapter-diagnostics-runtime.js';
+import type { CliReviewQueueRuntime } from '../../runtime/artifacts/review-queue-runtime.js';
+import type { CliOrchestrationServiceRuntime } from '../../runtime/orchestration-service-runtime.js';
+import type { CliCommandExperienceBuilder } from '../../runtime/presentation/command-experience-builder.js';
+import type { CliLocalAdapterProbeOverride } from './cli-adapter-verification.interface.js';
+import type { CliAdapterVerificationResolution } from './cli-adapter-verification.interface.js';
+import type { CliOrchestrationServiceRuntimeDependencies } from './cli-orchestration-service-runtime.interface.js';
 import type {
   CliCommandExecutionResultPayload,
   CliCommandResultCheck,
-} from "./cli-output.interface.js";
-import type { CliRuntimeDebugOptions } from "./cli-runtime-debug.interface.js";
-import type { CliWorkspaceCommandOptions } from "./cli-workspace-command.interface.js";
+} from './cli-output.interface.js';
+import type { CliRuntimeDebugOptions } from './cli-runtime-debug.interface.js';
+import type { CliWorkspaceCommandOptions } from './cli-workspace-command.interface.js';
 
 /**
  * Defines CLI runtime constructor options shared by the facade and extracted command executors.
@@ -30,7 +30,7 @@ import type { CliWorkspaceCommandOptions } from "./cli-workspace-command.interfa
 export interface CliGovernanceRuntimeOptions {
   currentWorkingDirectory: string;
   workspace: ResolvedWorkspace;
-  configSource: "default" | "file";
+  configSource: 'default' | 'file';
   profileId: string | null;
   locale: string;
   outputMode: ErrorOutputEnvironment;

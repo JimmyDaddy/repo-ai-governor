@@ -2,32 +2,32 @@ import {
   ClaudeCodeAgentAdapter,
   ClaudeCodeAgentAdapterExecutionMode,
   type ClaudeCodeExecRunner,
-} from "@repo-ai-governor/adapter-claude-code";
+} from '@repo-ai-governor/adapter-claude-code';
 import {
   CodexAgentAdapter,
   CodexAgentAdapterExecutionMode,
   type CodexExecRunner,
-} from "@repo-ai-governor/adapter-codex";
+} from '@repo-ai-governor/adapter-codex';
 import {
   GithubCopilotAgentAdapter,
   GithubCopilotAgentAdapterExecutionMode,
   type GithubCopilotExecRunner,
-} from "@repo-ai-governor/adapter-github-copilot";
-import { LocalModelAgentAdapter } from "@repo-ai-governor/adapter-local-model";
+} from '@repo-ai-governor/adapter-github-copilot';
+import { LocalModelAgentAdapter } from '@repo-ai-governor/adapter-local-model';
 import {
   AgentAvailabilityStatus,
   AgentCapabilityEvaluator,
   type AgentProtocolContract,
   type AgentRestrictedNetworkFallbackContext,
   AgentSurfaceNetworkRequirement,
-} from "@repo-ai-governor/adapter-sdk";
-import type { AdaptersConfig } from "@repo-ai-governor/config";
+} from '@repo-ai-governor/adapter-sdk';
+import type { AdaptersConfig } from '@repo-ai-governor/config';
 import {
   AdapterAvailability,
   AdapterSurface,
   GovernorErrorCode,
   RuntimeError,
-} from "@repo-ai-governor/shared";
+} from '@repo-ai-governor/shared';
 
 /**
  * Owns CLI-local adapter surface resolution, protocol construction, and restricted fallback wiring.
@@ -50,7 +50,7 @@ export class CliAdapterRoutingRuntime {
   public createProtocolBySurface(
     toolConfigBySurface: Map<
       AdapterSurface,
-      NonNullable<AdaptersConfig["tools"]>[number]
+      NonNullable<AdaptersConfig['tools']>[number]
     > = this.createToolConfigBySurfaceMap(),
   ): Record<string, AgentProtocolContract> {
     const protocolBySurface: Record<string, AgentProtocolContract> = {};
@@ -122,11 +122,11 @@ export class CliAdapterRoutingRuntime {
    */
   public createToolConfigBySurfaceMap(): Map<
     AdapterSurface,
-    NonNullable<AdaptersConfig["tools"]>[number]
+    NonNullable<AdaptersConfig['tools']>[number]
   > {
     const toolConfigBySurface = new Map<
       AdapterSurface,
-      NonNullable<AdaptersConfig["tools"]>[number]
+      NonNullable<AdaptersConfig['tools']>[number]
     >();
     for (const toolConfig of this.adaptersConfig.tools ?? []) {
       toolConfigBySurface.set(toolConfig.toolId, toolConfig);
@@ -142,8 +142,8 @@ export class CliAdapterRoutingRuntime {
    * @returns Ordered candidate surfaces shared by runtime and diagnostics.
    */
   public resolveRoleBindingCandidateSurfaces(
-    roleBinding: AdaptersConfig["routing"]["roleBindings"][string],
-    toolConfigBySurface: Map<AdapterSurface, NonNullable<AdaptersConfig["tools"]>[number]>,
+    roleBinding: AdaptersConfig['routing']['roleBindings'][string],
+    toolConfigBySurface: Map<AdapterSurface, NonNullable<AdaptersConfig['tools']>[number]>,
     includeLocalModelFallbackCandidate = true,
   ): AdapterSurface[] {
     const candidateSurfaces = [
@@ -165,7 +165,7 @@ export class CliAdapterRoutingRuntime {
    * @returns Local-model surface when enabled, otherwise `null`.
    */
   public resolveLocalModelFallbackSurface(
-    toolConfigBySurface: Map<AdapterSurface, NonNullable<AdaptersConfig["tools"]>[number]>,
+    toolConfigBySurface: Map<AdapterSurface, NonNullable<AdaptersConfig['tools']>[number]>,
   ): AdapterSurface | null {
     const localModelToolConfig = toolConfigBySurface.get(AdapterSurface.OLLAMA);
     if (!localModelToolConfig || localModelToolConfig.enabled === false) {
@@ -180,7 +180,7 @@ export class CliAdapterRoutingRuntime {
    * @returns Surface -> network requirement map.
    */
   public createSurfaceNetworkRequirementMap(
-    toolConfigBySurface: Map<AdapterSurface, NonNullable<AdaptersConfig["tools"]>[number]>,
+    toolConfigBySurface: Map<AdapterSurface, NonNullable<AdaptersConfig['tools']>[number]>,
   ): Partial<Record<string, AgentSurfaceNetworkRequirement>> {
     const requirementBySurface: Partial<Record<string, AgentSurfaceNetworkRequirement>> = {};
     for (const surface of this.resolveTrackedAdapterSurfaces(toolConfigBySurface)) {
@@ -199,13 +199,13 @@ export class CliAdapterRoutingRuntime {
    * @returns Restricted-network fallback handler when local-model tool is enabled.
    */
   public createRestrictedNetworkFallbackHandler(
-    toolConfigBySurface: Map<AdapterSurface, NonNullable<AdaptersConfig["tools"]>[number]>,
+    toolConfigBySurface: Map<AdapterSurface, NonNullable<AdaptersConfig['tools']>[number]>,
     protocolBySurface: Record<string, AgentProtocolContract>,
   ):
     | {
         invokeFallback(
           context: AgentRestrictedNetworkFallbackContext,
-        ): ReturnType<AgentProtocolContract["invokeStage"]>;
+        ): ReturnType<AgentProtocolContract['invokeStage']>;
       }
     | undefined {
     const localModelFallbackSurface = this.resolveLocalModelFallbackSurface(toolConfigBySurface);
@@ -276,7 +276,7 @@ export class CliAdapterRoutingRuntime {
    * @returns Deduplicated surface list derived from routing/tool contracts.
    */
   public resolveTrackedAdapterSurfaces(
-    toolConfigBySurface?: Map<AdapterSurface, NonNullable<AdaptersConfig["tools"]>[number]>,
+    toolConfigBySurface?: Map<AdapterSurface, NonNullable<AdaptersConfig['tools']>[number]>,
   ): AdapterSurface[] {
     const surfaceSet = new Set<AdapterSurface>();
     if (toolConfigBySurface) {

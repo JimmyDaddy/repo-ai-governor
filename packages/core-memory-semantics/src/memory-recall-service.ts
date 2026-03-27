@@ -2,16 +2,15 @@ import type {
   MemoryLayeredSnapshot,
   MemoryLayeredSnapshotRequest,
   MemoryManager,
-} from "@repo-ai-governor/core-memory";
-import { MemoryScope } from "@repo-ai-governor/core-memory";
-import type { MemoryRecord } from "@repo-ai-governor/memory-store-adapter";
-import { MemoryRecallKind, MemoryRecallLayer } from "./constants/index.js";
+} from '@repo-ai-governor/core-memory';
+import type { MemoryRecord } from '@repo-ai-governor/memory-store-adapter';
+import { MemoryRecallKind, MemoryRecallLayer } from './constants/index.js';
 import type {
   MemoryRecallRequest,
   MemoryRecallResult,
   MemoryRecalledRecord,
   MemorySourceRef,
-} from "./types/index.js";
+} from './types/index.js';
 
 /**
  * Resolves one explicit recall phase on top of the stable core-memory substrate.
@@ -169,8 +168,8 @@ export class MemoryRecallService {
    */
   private normalizeRecord(
     record: MemoryRecord,
-    layer: MemoryRecalledRecord["layer"],
-    memoryKind: MemoryRecalledRecord["memoryKind"],
+    layer: MemoryRecalledRecord['layer'],
+    memoryKind: MemoryRecalledRecord['memoryKind'],
   ): MemoryRecalledRecord {
     return {
       recordId: `${record.namespace}:${record.key}`,
@@ -195,10 +194,10 @@ export class MemoryRecallService {
   private extractSourceRefs(record: MemoryRecord): MemorySourceRef[] {
     const sourceRefsByKey = new Map<string, MemorySourceRef>();
     const addSourceRef = (
-      referenceType: MemorySourceRef["referenceType"],
+      referenceType: MemorySourceRef['referenceType'],
       referenceValue: unknown,
     ) => {
-      if (typeof referenceValue !== "string") {
+      if (typeof referenceValue !== 'string') {
         return;
       }
 
@@ -216,16 +215,16 @@ export class MemoryRecallService {
     const sourceRefsValue = record.value.sourceRefs;
     if (Array.isArray(sourceRefsValue)) {
       for (const sourceRef of sourceRefsValue) {
-        addSourceRef("source_ref", sourceRef);
+        addSourceRef('source_ref', sourceRef);
       }
     }
 
-    addSourceRef("source_ref", record.value.sourceRef);
-    addSourceRef("path", record.value.referencePath);
-    addSourceRef("path", record.value.taskCardPath);
-    addSourceRef("path", record.value.artifactPath);
-    addSourceRef("artifact", record.value.artifactId);
-    addSourceRef("record", `${record.namespace}:${record.key}`);
+    addSourceRef('source_ref', record.value.sourceRef);
+    addSourceRef('path', record.value.referencePath);
+    addSourceRef('path', record.value.taskCardPath);
+    addSourceRef('path', record.value.artifactPath);
+    addSourceRef('artifact', record.value.artifactId);
+    addSourceRef('record', `${record.namespace}:${record.key}`);
 
     return Array.from(sourceRefsByKey.values());
   }
@@ -239,24 +238,24 @@ export class MemoryRecallService {
     const sensitivities = new Set<string>();
     const sensitivityValue = record.value.sensitivity;
 
-    if (typeof sensitivityValue === "string" && sensitivityValue.trim().length > 0) {
+    if (typeof sensitivityValue === 'string' && sensitivityValue.trim().length > 0) {
       sensitivities.add(sensitivityValue.trim());
     }
 
     if (Array.isArray(sensitivityValue)) {
       for (const entry of sensitivityValue) {
-        if (typeof entry === "string" && entry.trim().length > 0) {
+        if (typeof entry === 'string' && entry.trim().length > 0) {
           sensitivities.add(entry.trim());
         }
       }
     }
 
     for (const tag of record.tags) {
-      if (!tag.startsWith("sensitivity:")) {
+      if (!tag.startsWith('sensitivity:')) {
         continue;
       }
 
-      const sensitivityLabel = tag.slice("sensitivity:".length).trim();
+      const sensitivityLabel = tag.slice('sensitivity:'.length).trim();
       if (sensitivityLabel.length > 0) {
         sensitivities.add(sensitivityLabel);
       }
@@ -274,24 +273,24 @@ export class MemoryRecallService {
     const visibilities = new Set<string>();
     const visibilityValue = record.value.visibility;
 
-    if (typeof visibilityValue === "string" && visibilityValue.trim().length > 0) {
+    if (typeof visibilityValue === 'string' && visibilityValue.trim().length > 0) {
       visibilities.add(visibilityValue.trim());
     }
 
     if (Array.isArray(visibilityValue)) {
       for (const entry of visibilityValue) {
-        if (typeof entry === "string" && entry.trim().length > 0) {
+        if (typeof entry === 'string' && entry.trim().length > 0) {
           visibilities.add(entry.trim());
         }
       }
     }
 
     for (const tag of record.tags) {
-      if (!tag.startsWith("visibility:")) {
+      if (!tag.startsWith('visibility:')) {
         continue;
       }
 
-      const visibilityLabel = tag.slice("visibility:".length).trim();
+      const visibilityLabel = tag.slice('visibility:'.length).trim();
       if (visibilityLabel.length > 0) {
         visibilities.add(visibilityLabel);
       }

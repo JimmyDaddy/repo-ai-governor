@@ -1,6 +1,6 @@
-import type { ChildProcess } from "node:child_process";
+import type { ChildProcess } from 'node:child_process';
 
-import type { LangGraphRecoveredExecution } from "@repo-ai-governor/core-runtime-langgraph";
+import type { LangGraphRecoveredExecution } from '@repo-ai-governor/core-runtime-langgraph';
 import type {
   OrchestrationExecutionSummary,
   OrchestrationListExecutionsRequest,
@@ -14,15 +14,15 @@ import type {
   OrchestrationSubmitHitlDecisionResponse,
   OrchestrationSubscribeExecutionRequest,
   OrchestrationSubscribeExecutionResponse,
-} from "@repo-ai-governor/orchestration-service-client";
-import type { GovernorErrorCode, MemoryRuntimeConfig } from "@repo-ai-governor/shared";
-import type { LocalOrchestrationServiceSidecarOperation } from "../../constants/index.js";
+} from '@repo-ai-governor/orchestration-service-client';
+import type { GovernorErrorCode, MemoryRuntimeConfig } from '@repo-ai-governor/shared';
+import type { LocalOrchestrationServiceSidecarOperation } from '../../constants/index.js';
 import type {
   LocalOrchestrationServicePublishEventRequest,
   LocalOrchestrationServiceSaveCheckpointRequest,
   LocalOrchestrationServiceShellDependencies,
   LocalOrchestrationServiceStartExecutionRuntimeContext,
-} from "./local-orchestration-service-shell.interface.js";
+} from './local-orchestration-service-shell.interface.js';
 
 export interface LocalOrchestrationServiceSidecarSerializedError {
   code: GovernorErrorCode;

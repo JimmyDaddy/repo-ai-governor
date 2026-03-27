@@ -1,12 +1,12 @@
-import type { WorkspaceMigrationPolicy } from "@repo-ai-governor/shared";
+import type { WorkspaceMigrationPolicy } from '@repo-ai-governor/shared';
 import type {
   AdapterAvailability,
   AdapterSurface,
   LocalModelProvider,
-} from "@repo-ai-governor/shared";
-import type { I18nRuntimeConfig, MemoryRuntimeConfig } from "@repo-ai-governor/shared";
-import type { RoleProfileStatus, RoleSource } from "@repo-ai-governor/shared";
-import type { WorkspaceMode } from "../aliases/workspace-mode.type.js";
+} from '@repo-ai-governor/shared';
+import type { I18nRuntimeConfig, MemoryRuntimeConfig } from '@repo-ai-governor/shared';
+import type { RoleProfileStatus, RoleSource } from '@repo-ai-governor/shared';
+import type { WorkspaceMode } from '../aliases/workspace-mode.type.js';
 
 /**
  * Reuses shared i18n runtime contract as config-level i18n contract.

@@ -15,4 +15,4 @@ export type {
   SessionEvent,
   SharedSession,
   UpdateSessionContextOptions,
-} from "./interfaces/index.js";
+} from './interfaces/index.js';

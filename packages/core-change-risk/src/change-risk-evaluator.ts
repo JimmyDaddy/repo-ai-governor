@@ -1,4 +1,4 @@
-import { GovernanceReviewerRole, GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
+import { GovernanceReviewerRole, GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import {
   CHANGE_RISK_SCORE_THRESHOLDS,
   ChangeRiskLevel,
@@ -8,14 +8,14 @@ import {
   DEFAULT_HIGH_RISK_FILE_CATEGORIES,
   DEFAULT_HIGH_RISK_PERMISSION_PREFIXES,
   DEFAULT_SENSITIVE_PATH_SEGMENTS,
-} from "./constants/index.js";
+} from './constants/index.js';
 import type {
   ChangeRiskEvaluationResult,
   ChangeRiskEvaluatorOptions,
   ChangeRiskFactsInput,
   ChangeRiskReason,
   ChangeRiskReviewerRole,
-} from "./types/index.js";
+} from './types/index.js';
 
 interface ResolvedEvaluatorOptions {
   sensitivePathSegments: string[];
@@ -56,8 +56,8 @@ export class ChangeRiskEvaluator {
         riskReasons.push(
           this.createReason(
             ChangeRiskReasonCode.LOCKFILE_DELTA,
-            "Lockfile changes can impact dependency graph integrity.",
-            ["lockfile_delta=true"],
+            'Lockfile changes can impact dependency graph integrity.',
+            ['lockfile_delta=true'],
           ),
         );
       }
@@ -67,8 +67,8 @@ export class ChangeRiskEvaluator {
         riskReasons.push(
           this.createReason(
             ChangeRiskReasonCode.MIGRATION_DETECTED,
-            "Database or schema migration changes require stricter review.",
-            ["migration_detected=true"],
+            'Database or schema migration changes require stricter review.',
+            ['migration_detected=true'],
           ),
         );
       }
@@ -78,8 +78,8 @@ export class ChangeRiskEvaluator {
         riskReasons.push(
           this.createReason(
             ChangeRiskReasonCode.CI_WORKFLOW_CHANGED,
-            "CI workflow modifications can alter trusted delivery behavior.",
-            ["ci_workflow_changed=true"],
+            'CI workflow modifications can alter trusted delivery behavior.',
+            ['ci_workflow_changed=true'],
           ),
         );
       }
@@ -89,8 +89,8 @@ export class ChangeRiskEvaluator {
         riskReasons.push(
           this.createReason(
             ChangeRiskReasonCode.RELEASE_SCRIPT_CHANGED,
-            "Release script changes can affect deployment safety.",
-            ["release_script_changed=true"],
+            'Release script changes can affect deployment safety.',
+            ['release_script_changed=true'],
           ),
         );
       }
@@ -101,7 +101,7 @@ export class ChangeRiskEvaluator {
         riskReasons.push(
           this.createReason(
             ChangeRiskReasonCode.SENSITIVE_PATH_CHANGED,
-            "Sensitive path changes require additional governance checks.",
+            'Sensitive path changes require additional governance checks.',
             sensitivePaths,
           ),
         );
@@ -113,7 +113,7 @@ export class ChangeRiskEvaluator {
         riskReasons.push(
           this.createReason(
             ChangeRiskReasonCode.HIGH_RISK_FILE_CATEGORY,
-            "High-risk file categories were detected in this change set.",
+            'High-risk file categories were detected in this change set.',
             highRiskCategories,
           ),
         );
@@ -125,7 +125,7 @@ export class ChangeRiskEvaluator {
         riskReasons.push(
           this.createReason(
             ChangeRiskReasonCode.HIGH_RISK_PERMISSION,
-            "Requested permissions exceed baseline low-risk operation set.",
+            'Requested permissions exceed baseline low-risk operation set.',
             highRiskPermissions,
           ),
         );
@@ -136,7 +136,7 @@ export class ChangeRiskEvaluator {
         riskReasons.push(
           this.createReason(
             ChangeRiskReasonCode.HIGH_RISK_COMMAND_CLASS,
-            "Command class indicates high-impact execution intent.",
+            'Command class indicates high-impact execution intent.',
             [facts.commandClass],
           ),
         );
@@ -161,7 +161,7 @@ export class ChangeRiskEvaluator {
 
       throw new RuntimeError(
         GovernorErrorCode.CHANGE_RISK_EVALUATION_FAILED,
-        "Change risk evaluation failed unexpectedly.",
+        'Change risk evaluation failed unexpectedly.',
         undefined,
         error,
       );
@@ -187,7 +187,7 @@ export class ChangeRiskEvaluator {
       highRiskCommandClasses: this.normalizeStringList(
         options.highRiskCommandClasses ?? [...DEFAULT_HIGH_RISK_COMMAND_CLASSES],
       ),
-      policyPrefix: (options.policyPrefix ?? "policy.risk").trim(),
+      policyPrefix: (options.policyPrefix ?? 'policy.risk').trim(),
       reviewerRoleMatrix: {
         [ChangeRiskRequiredAction.ALLOW]: [],
         [ChangeRiskRequiredAction.CONFIRM]: [GovernanceReviewerRole.MAINTAINER],
@@ -214,7 +214,7 @@ export class ChangeRiskEvaluator {
       changedPaths: this.normalizeStringList(facts?.changedPaths),
       fileCategories: this.normalizeStringList(facts?.fileCategories),
       requestedPermissions: this.normalizeStringList(facts?.requestedPermissions),
-      commandClass: typeof facts?.commandClass === "string" ? facts.commandClass.trim() : "",
+      commandClass: typeof facts?.commandClass === 'string' ? facts.commandClass.trim() : '',
       lockfileDelta: Boolean(facts?.lockfileDelta),
       migrationDetected: Boolean(facts?.migrationDetected),
       ciWorkflowChanged: Boolean(facts?.ciWorkflowChanged),
@@ -224,9 +224,9 @@ export class ChangeRiskEvaluator {
     if (!normalizedFacts.commandClass) {
       throw new RuntimeError(
         GovernorErrorCode.CHANGE_RISK_FACTS_INVALID,
-        "Change risk facts require a non-empty commandClass.",
+        'Change risk facts require a non-empty commandClass.',
         {
-          field: "commandClass",
+          field: 'commandClass',
         },
       );
     }
@@ -243,13 +243,13 @@ export class ChangeRiskEvaluator {
     if (!Array.isArray(values)) {
       throw new RuntimeError(
         GovernorErrorCode.CHANGE_RISK_FACTS_INVALID,
-        "Change risk list fields must be arrays.",
+        'Change risk list fields must be arrays.',
       );
     }
 
     const uniqueValues = new Set(
       values
-        .filter((value): value is string => typeof value === "string")
+        .filter((value): value is string => typeof value === 'string')
         .map((value) => value.trim())
         .filter((value) => value.length > 0),
     );

@@ -2,7 +2,7 @@ import type {
   LangGraphCommunityVendorBindingStatus,
   LangGraphCommunityVendorDependencyMode,
   LangGraphCommunityVendorRuntimeKind,
-} from "../../constants/index.js";
+} from '../../constants/index.js';
 
 export type LangGraphCommunityVendorModuleLoader = (moduleSpecifier: string) => Promise<unknown>;
 

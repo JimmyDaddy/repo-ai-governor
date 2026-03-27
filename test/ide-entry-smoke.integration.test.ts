@@ -1,31 +1,31 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { resolve } from "node:path";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { resolve } from 'node:path';
 
-import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
-import { runCli } from "../apps/cli/src/main.js";
+import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
+import { runCli } from '../apps/cli/src/main.js';
 
 const VSCODE_TASK_SAMPLE_PATH = resolve(
   process.cwd(),
-  "integrations/ide/examples/vscode-task.sample.json",
+  'integrations/ide/examples/vscode-task.sample.json',
 );
 const CURSOR_TASK_SAMPLE_PATH = resolve(
   process.cwd(),
-  "integrations/ide/examples/cursor-task.sample.json",
+  'integrations/ide/examples/cursor-task.sample.json',
 );
 const JETBRAINS_RUN_CONFIGURATION_SAMPLE_PATH = resolve(
   process.cwd(),
-  "integrations/ide/examples/jetbrains-run-configuration.sample.xml",
+  'integrations/ide/examples/jetbrains-run-configuration.sample.xml',
 );
 const CLAUDE_CODE_COMMANDS_SAMPLE_PATH = resolve(
   process.cwd(),
-  "integrations/ide/examples/claude-code-commands.sample.json",
+  'integrations/ide/examples/claude-code-commands.sample.json',
 );
-const REQUIRED_COMMAND_SEQUENCE = ["init", "doctor", "check"] as const;
+const REQUIRED_COMMAND_SEQUENCE = ['init', 'doctor', 'check'] as const;
 const EXPECTED_OPERATION_BY_COMMAND = {
-  init: "workspace_init",
-  doctor: "env_doctor",
-  check: "governance_check",
+  init: 'workspace_init',
+  doctor: 'env_doctor',
+  check: 'governance_check',
 } as const;
 
 /**
@@ -71,7 +71,7 @@ function createBufferedIo(currentWorkingDirectory: string): {
  * @returns {string}
  */
 function normalizeCommandLabel(label: string): string {
-  return label.replace("repo-ai-governor:", "").trim();
+  return label.replace('repo-ai-governor:', '').trim();
 }
 
 /**
@@ -79,24 +79,24 @@ function normalizeCommandLabel(label: string): string {
  * @param workspaceRoot Temporary workspace root.
  */
 async function writeRepoLocalGovernorConfig(workspaceRoot: string): Promise<void> {
-  await mkdir(resolve(workspaceRoot, ".repo-ai-governor"), { recursive: true });
+  await mkdir(resolve(workspaceRoot, '.repo-ai-governor'), { recursive: true });
   await writeFile(
-    resolve(workspaceRoot, ".repo-ai-governor", "governor.yaml"),
+    resolve(workspaceRoot, '.repo-ai-governor', 'governor.yaml'),
     [
       'schemaVersion: "1.1"',
-      "workspace:",
-      "  mode: repo_local",
-      "  migrationPolicy: copy_verify_switch_rollback",
-      "i18n:",
-      "  runtimeEngine: i18next",
-      "  defaultLocale: zh-CN",
-      "  fallbackLocale: en-US",
-      "  supportedLocales:",
-      "    - zh-CN",
-      "    - en-US",
-      "",
-    ].join("\n"),
-    "utf8",
+      'workspace:',
+      '  mode: repo_local',
+      '  migrationPolicy: copy_verify_switch_rollback',
+      'i18n:',
+      '  runtimeEngine: i18next',
+      '  defaultLocale: zh-CN',
+      '  fallbackLocale: en-US',
+      '  supportedLocales:',
+      '    - zh-CN',
+      '    - en-US',
+      '',
+    ].join('\n'),
+    'utf8',
   );
 }
 
@@ -142,8 +142,8 @@ function parseJetBrainsRunConfigurations(
   const definitions = new Map<string, { argv: string[]; env: Record<string, string> }>();
   let matchedConfiguration = configurationPattern.exec(xmlText);
   while (matchedConfiguration) {
-    const configurationName = matchedConfiguration[1]?.trim() ?? "";
-    const configurationBody = matchedConfiguration[2] ?? "";
+    const configurationName = matchedConfiguration[1]?.trim() ?? '';
+    const configurationBody = matchedConfiguration[2] ?? '';
     const commandName = normalizeCommandLabel(configurationName);
     const scriptMatch = configurationBody.match(/<option name="SCRIPT_TEXT" value="([^"]+)" \/>/u);
     if (!scriptMatch) {
@@ -228,66 +228,66 @@ async function executeOfficialIdeChain(
     const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(workspaceRoot);
     Object.assign(io.env(), definition?.env ?? {});
     const exitCode = await runCli(definition?.argv ?? [], io);
-    const payload = JSON.parse(stdoutBuffer.join(""));
+    const payload = JSON.parse(stdoutBuffer.join(''));
 
     expect(exitCode).toBe(0);
-    expect(stderrBuffer.join("")).toBe("");
+    expect(stderrBuffer.join('')).toBe('');
     expect(payload.command_result.operation).toBe(EXPECTED_OPERATION_BY_COMMAND[commandName]);
     expect(payload.diagnostics.entrySurface).toBe(surface);
     expect(payload.diagnostics.standardsProfileId).toBe(
       definition?.env.REPO_AI_GOVERNOR_STANDARDS_PROFILE_ID,
     );
     expect(payload.diagnostics.standardsSourceIds).toEqual(
-      definition?.env.REPO_AI_GOVERNOR_STANDARDS_SOURCES.split(","),
+      definition?.env.REPO_AI_GOVERNOR_STANDARDS_SOURCES.split(','),
     );
   }
 }
 
-describe("IDE entry template smoke integration", () => {
-  it("executes the VS Code init -> doctor -> check chain against runCli", async () => {
-    const workspaceRoot = await mkdtemp(resolve(tmpdir(), "repo-ai-governor-vscode-ide-"));
-    const taskDefinitions = parseTaskTemplate(await readFile(VSCODE_TASK_SAMPLE_PATH, "utf8"));
+describe('IDE entry template smoke integration', () => {
+  it('executes the VS Code init -> doctor -> check chain against runCli', async () => {
+    const workspaceRoot = await mkdtemp(resolve(tmpdir(), 'repo-ai-governor-vscode-ide-'));
+    const taskDefinitions = parseTaskTemplate(await readFile(VSCODE_TASK_SAMPLE_PATH, 'utf8'));
 
     try {
-      await executeOfficialIdeChain(workspaceRoot, "vscode", taskDefinitions);
+      await executeOfficialIdeChain(workspaceRoot, 'vscode', taskDefinitions);
     } finally {
       await rm(workspaceRoot, { recursive: true, force: true });
     }
   });
 
-  it("executes the JetBrains init -> doctor -> check chain against runCli", async () => {
-    const workspaceRoot = await mkdtemp(resolve(tmpdir(), "repo-ai-governor-jetbrains-ide-"));
+  it('executes the JetBrains init -> doctor -> check chain against runCli', async () => {
+    const workspaceRoot = await mkdtemp(resolve(tmpdir(), 'repo-ai-governor-jetbrains-ide-'));
     const configurationDefinitions = parseJetBrainsRunConfigurations(
-      await readFile(JETBRAINS_RUN_CONFIGURATION_SAMPLE_PATH, "utf8"),
+      await readFile(JETBRAINS_RUN_CONFIGURATION_SAMPLE_PATH, 'utf8'),
     );
 
     try {
-      await executeOfficialIdeChain(workspaceRoot, "jetbrains", configurationDefinitions);
+      await executeOfficialIdeChain(workspaceRoot, 'jetbrains', configurationDefinitions);
     } finally {
       await rm(workspaceRoot, { recursive: true, force: true });
     }
   });
 
-  it("executes the Cursor init -> doctor -> check chain against runCli", async () => {
-    const workspaceRoot = await mkdtemp(resolve(tmpdir(), "repo-ai-governor-cursor-ide-"));
-    const taskDefinitions = parseTaskTemplate(await readFile(CURSOR_TASK_SAMPLE_PATH, "utf8"));
+  it('executes the Cursor init -> doctor -> check chain against runCli', async () => {
+    const workspaceRoot = await mkdtemp(resolve(tmpdir(), 'repo-ai-governor-cursor-ide-'));
+    const taskDefinitions = parseTaskTemplate(await readFile(CURSOR_TASK_SAMPLE_PATH, 'utf8'));
 
     try {
-      await executeOfficialIdeChain(workspaceRoot, "cursor", taskDefinitions);
+      await executeOfficialIdeChain(workspaceRoot, 'cursor', taskDefinitions);
     } finally {
       await rm(workspaceRoot, { recursive: true, force: true });
     }
   });
 
-  it("executes the Claude Code init -> doctor -> check chain against runCli", async () => {
-    const workspaceRoot = await mkdtemp(resolve(tmpdir(), "repo-ai-governor-claude-code-ide-"));
+  it('executes the Claude Code init -> doctor -> check chain against runCli', async () => {
+    const workspaceRoot = await mkdtemp(resolve(tmpdir(), 'repo-ai-governor-claude-code-ide-'));
     const { surface, definitions } = parseClaudeCodeCommands(
-      await readFile(CLAUDE_CODE_COMMANDS_SAMPLE_PATH, "utf8"),
+      await readFile(CLAUDE_CODE_COMMANDS_SAMPLE_PATH, 'utf8'),
     );
 
     try {
-      expect(surface).toBe("claude_code");
-      await executeOfficialIdeChain(workspaceRoot, "claude_code", definitions);
+      expect(surface).toBe('claude_code');
+      await executeOfficialIdeChain(workspaceRoot, 'claude_code', definitions);
     } finally {
       await rm(workspaceRoot, { recursive: true, force: true });
     }

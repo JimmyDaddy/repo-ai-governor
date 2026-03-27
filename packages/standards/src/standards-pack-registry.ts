@@ -1,4 +1,4 @@
-import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
+import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import {
   STANDARDS_PACK_SCOPE_VALUES,
   STANDARDS_PACK_SOURCE_VALUES,
@@ -7,7 +7,7 @@ import {
   STANDARDS_RULE_SEVERITY_VALUES,
   type StandardsPackScope,
   StandardsPackStatus,
-} from "./constants/index.js";
+} from './constants/index.js';
 import type {
   ResolvedStandardsRule,
   StandardsPack,
@@ -15,8 +15,8 @@ import type {
   StandardsPackRegistryOptions,
   StandardsRuleDefinition,
   StandardsRuleResolveOptions,
-} from "./types/index.js";
-import { readRequiredString } from "./utils/index.js";
+} from './types/index.js';
+import { readRequiredString } from './utils/index.js';
 
 /**
  * Stores and resolves standards packs with deterministic precedence.
@@ -60,7 +60,7 @@ export class StandardsPackRegistry {
   public getPack(packId: string): StandardsPack | undefined {
     const normalizedPackId = readRequiredString(
       packId,
-      "packId",
+      'packId',
       GovernorErrorCode.STANDARDS_PACK_INVALID,
     );
     return this.packById.get(normalizedPackId);
@@ -76,11 +76,11 @@ export class StandardsPackRegistry {
     const normalizedScope =
       options.scope === undefined
         ? undefined
-        : this.readEnumValue(options.scope, "scope", STANDARDS_PACK_SCOPE_VALUES);
+        : this.readEnumValue(options.scope, 'scope', STANDARDS_PACK_SCOPE_VALUES);
     const normalizedStatus =
       options.status === undefined
         ? undefined
-        : this.readEnumValue(options.status, "status", STANDARDS_PACK_STATUS_VALUES);
+        : this.readEnumValue(options.status, 'status', STANDARDS_PACK_STATUS_VALUES);
 
     return Array.from(this.packById.values())
       .filter((pack) => {
@@ -103,7 +103,7 @@ export class StandardsPackRegistry {
           return right.mergePrecedence - left.mergePrecedence;
         }
 
-        return left.packId.localeCompare(right.packId, "en");
+        return left.packId.localeCompare(right.packId, 'en');
       });
   }
 
@@ -140,7 +140,7 @@ export class StandardsPackRegistry {
     }
 
     return Array.from(resolvedRuleBySemanticKey.values()).sort((left, right) =>
-      left.definition.semanticKey.localeCompare(right.definition.semanticKey, "en"),
+      left.definition.semanticKey.localeCompare(right.definition.semanticKey, 'en'),
     );
   }
 
@@ -150,36 +150,36 @@ export class StandardsPackRegistry {
    * @returns Normalized pack.
    */
   private normalizePack(pack: StandardsPack): StandardsPack {
-    if (!pack || typeof pack !== "object") {
+    if (!pack || typeof pack !== 'object') {
       throw new RuntimeError(
         GovernorErrorCode.STANDARDS_PACK_INVALID,
-        "Standards pack must be an object.",
+        'Standards pack must be an object.',
       );
     }
 
     const normalizedPackId = readRequiredString(
       pack.packId,
-      "pack.packId",
+      'pack.packId',
       GovernorErrorCode.STANDARDS_PACK_INVALID,
     );
     const normalizedPackVersion = readRequiredString(
       pack.packVersion,
-      "pack.packVersion",
+      'pack.packVersion',
       GovernorErrorCode.STANDARDS_PACK_INVALID,
     );
     const normalizedPackSource = this.readEnumValue(
       pack.packSource,
-      "pack.packSource",
+      'pack.packSource',
       STANDARDS_PACK_SOURCE_VALUES,
-    ) as StandardsPack["packSource"];
+    ) as StandardsPack['packSource'];
     const normalizedScope = this.readEnumValue(
       pack.scope,
-      "pack.scope",
+      'pack.scope',
       STANDARDS_PACK_SCOPE_VALUES,
     ) as StandardsPackScope;
     const normalizedStatus = this.readEnumValue(
       pack.status,
-      "pack.status",
+      'pack.status',
       STANDARDS_PACK_STATUS_VALUES,
     ) as StandardsPackStatus;
 
@@ -223,7 +223,7 @@ export class StandardsPackRegistry {
     definition: StandardsRuleDefinition,
     fieldName: string,
   ): StandardsRuleDefinition {
-    if (!definition || typeof definition !== "object") {
+    if (!definition || typeof definition !== 'object') {
       throw new RuntimeError(
         GovernorErrorCode.STANDARDS_PACK_INVALID,
         `Field "${fieldName}" must be an object.`,
@@ -244,30 +244,30 @@ export class StandardsPackRegistry {
       definition.severity,
       `${fieldName}.severity`,
       STANDARDS_RULE_SEVERITY_VALUES,
-    ) as StandardsRuleDefinition["severity"];
+    ) as StandardsRuleDefinition['severity'];
 
-    if (typeof definition.enabled !== "boolean") {
+    if (typeof definition.enabled !== 'boolean') {
       throw new RuntimeError(
         GovernorErrorCode.STANDARDS_PACK_INVALID,
         `Field "${fieldName}.enabled" must be a boolean.`,
       );
     }
 
-    if (!definition.localizedTemplates || typeof definition.localizedTemplates !== "object") {
+    if (!definition.localizedTemplates || typeof definition.localizedTemplates !== 'object') {
       throw new RuntimeError(
         GovernorErrorCode.STANDARDS_PACK_INVALID,
         `Field "${fieldName}.localizedTemplates" must be an object.`,
       );
     }
 
-    const normalizedLocalizedTemplates: StandardsRuleDefinition["localizedTemplates"] = {};
+    const normalizedLocalizedTemplates: StandardsRuleDefinition['localizedTemplates'] = {};
     for (const [locale, targetTemplateMap] of Object.entries(definition.localizedTemplates)) {
       const normalizedLocale = readRequiredString(
         locale,
         `${fieldName}.localizedTemplates`,
         GovernorErrorCode.STANDARDS_PACK_INVALID,
       );
-      if (!targetTemplateMap || typeof targetTemplateMap !== "object") {
+      if (!targetTemplateMap || typeof targetTemplateMap !== 'object') {
         throw new RuntimeError(
           GovernorErrorCode.STANDARDS_PACK_INVALID,
           `Field "${fieldName}.localizedTemplates.${locale}" must be an object.`,
@@ -304,7 +304,7 @@ export class StandardsPackRegistry {
       }
 
       normalizedLocalizedTemplates[normalizedLocale] =
-        normalizedTargetTemplateMap as StandardsRuleDefinition["localizedTemplates"][string];
+        normalizedTargetTemplateMap as StandardsRuleDefinition['localizedTemplates'][string];
     }
 
     const normalizedMetadata = definition.metadata
@@ -327,7 +327,7 @@ export class StandardsPackRegistry {
    * @returns Normalized metadata map.
    */
   private normalizeMetadata(metadata: Record<string, string>): Record<string, string> {
-    if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
       throw new RuntimeError(
         GovernorErrorCode.STANDARDS_PACK_INVALID,
         'Field "metadata" must be a plain object when provided.',
@@ -338,7 +338,7 @@ export class StandardsPackRegistry {
     for (const [key, value] of Object.entries(metadata)) {
       const normalizedKey = readRequiredString(
         key,
-        "metadata.key",
+        'metadata.key',
         GovernorErrorCode.STANDARDS_PACK_INVALID,
       );
       normalizedMetadata[normalizedKey] = readRequiredString(

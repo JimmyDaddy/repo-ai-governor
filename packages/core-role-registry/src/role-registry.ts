@@ -3,12 +3,12 @@ import {
   RoleProfileStatus,
   RoleSource,
   RuntimeError,
-} from "@repo-ai-governor/shared";
+} from '@repo-ai-governor/shared';
 import {
   ROLE_PROFILE_ID_PATTERN,
   ROLE_PROFILE_VERSION_PATTERN,
   createDefaultRoleProfiles,
-} from "./constants/index.js";
+} from './constants/index.js';
 import type {
   RoleProfile,
   RoleProfileById,
@@ -16,7 +16,7 @@ import type {
   RoleRegistryOptions,
   RoleRegistryResolveContext,
   RoleRegistryResolveResult,
-} from "./types/index.js";
+} from './types/index.js';
 
 const ROLE_SOURCE_VALUES = new Set<string>(Object.values(RoleSource));
 const ROLE_PROFILE_STATUS_VALUES = new Set<string>(Object.values(RoleProfileStatus));
@@ -40,8 +40,8 @@ export class RoleRegistry {
     const defaultProfiles = options.defaultProfiles ?? createDefaultRoleProfiles();
     const customProfiles = options.customProfiles ?? [];
 
-    this.registerProfiles(defaultProfiles, "defaultProfiles");
-    this.registerProfiles(customProfiles, "customProfiles");
+    this.registerProfiles(defaultProfiles, 'defaultProfiles');
+    this.registerProfiles(customProfiles, 'customProfiles');
     this.validateReplacementTargets();
   }
 
@@ -65,7 +65,7 @@ export class RoleRegistry {
   ): RoleRegistryResolveResult | null {
     const normalizedRequestedId = this.readRequiredString(
       requestedRoleProfileId,
-      "requestedRoleProfileId",
+      'requestedRoleProfileId',
     );
 
     let resolvedByAlias = false;
@@ -234,7 +234,7 @@ export class RoleRegistry {
    * @returns Normalized role profile.
    */
   private normalizeProfile(profileCandidate: RoleProfile, pointer: string): RoleProfile {
-    if (!profileCandidate || typeof profileCandidate !== "object") {
+    if (!profileCandidate || typeof profileCandidate !== 'object') {
       throw new RuntimeError(
         GovernorErrorCode.ROLE_REGISTRY_PROFILE_INVALID,
         `${pointer} must be an object.`,
@@ -298,7 +298,7 @@ export class RoleRegistry {
     if (!ROLE_SOURCE_VALUES.has(roleSource)) {
       throw new RuntimeError(
         GovernorErrorCode.ROLE_REGISTRY_PROFILE_INVALID,
-        `${pointer}.roleSource must be one of: ${Array.from(ROLE_SOURCE_VALUES).join(", ")}.`,
+        `${pointer}.roleSource must be one of: ${Array.from(ROLE_SOURCE_VALUES).join(', ')}.`,
         {
           pointer,
           roleSource,
@@ -310,7 +310,7 @@ export class RoleRegistry {
     if (!ROLE_PROFILE_STATUS_VALUES.has(status)) {
       throw new RuntimeError(
         GovernorErrorCode.ROLE_REGISTRY_PROFILE_INVALID,
-        `${pointer}.status must be one of: ${Array.from(ROLE_PROFILE_STATUS_VALUES).join(", ")}.`,
+        `${pointer}.status must be one of: ${Array.from(ROLE_PROFILE_STATUS_VALUES).join(', ')}.`,
         {
           pointer,
           status,
@@ -318,8 +318,8 @@ export class RoleRegistry {
       );
     }
 
-    const lifecycleRecord: Partial<RoleProfile["lifecycle"]> =
-      profileCandidate.lifecycle && typeof profileCandidate.lifecycle === "object"
+    const lifecycleRecord: Partial<RoleProfile['lifecycle']> =
+      profileCandidate.lifecycle && typeof profileCandidate.lifecycle === 'object'
         ? profileCandidate.lifecycle
         : {};
     const aliases = this.normalizeStringList(
@@ -452,7 +452,7 @@ export class RoleRegistry {
    * @returns Trimmed non-empty string.
    */
   private readRequiredString(candidate: unknown, pointer: string): string {
-    if (typeof candidate !== "string") {
+    if (typeof candidate !== 'string') {
       throw new RuntimeError(
         GovernorErrorCode.ROLE_REGISTRY_PROFILE_INVALID,
         `${pointer} must be a non-empty string.`,

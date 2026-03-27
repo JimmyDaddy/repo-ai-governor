@@ -1,4 +1,4 @@
-import type { RoleProfile } from "../interfaces/index.js";
+import type { RoleProfile } from '../interfaces/index.js';
 
 /**
  * Defines registry map keyed by canonical role-profile identifier.

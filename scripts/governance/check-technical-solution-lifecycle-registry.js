@@ -1,27 +1,27 @@
 #!/usr/bin/env node
 
-import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
-import { parse } from "yaml";
+import { parse } from 'yaml';
 
-import { gateFail, gateInfo, gatePass } from "./gate-output.js";
+import { gateFail, gateInfo, gatePass } from './gate-output.js';
 import {
   DEFAULT_TECHNICAL_SOLUTION_LIFECYCLE_REGISTRY_PATH,
   SUPPORTED_TECHNICAL_SOLUTION_LIFECYCLE_STATUSES,
   buildTechnicalSolutionLifecycleIndex,
   loadTechnicalSolutionLifecycleRegistry,
-} from "./technical-solution-lifecycle-registry.js";
+} from './technical-solution-lifecycle-registry.js';
 import {
   DEFAULT_TECHNICAL_SOLUTION_MODULE_REGISTRY_PATH,
   loadTechnicalSolutionModuleRegistry,
-} from "./technical-solution-module-registry.js";
+} from './technical-solution-module-registry.js';
 
-const GATE_NAME = "technical-solution-lifecycle-registry";
+const GATE_NAME = 'technical-solution-lifecycle-registry';
 const DEFAULT_MANIFEST_PATH =
-  ".repo-ai-governor/normative_knowledge_sources/normative-loading-manifest.yaml";
-const STATUS_REQUIRES_REVIEW = new Set(["review_pending", "approved", "active", "superseded"]);
-const STATUS_REQUIRES_APPROVAL = new Set(["approved", "active", "superseded"]);
+  '.repo-ai-governor/normative_knowledge_sources/normative-loading-manifest.yaml';
+const STATUS_REQUIRES_REVIEW = new Set(['review_pending', 'approved', 'active', 'superseded']);
+const STATUS_REQUIRES_APPROVAL = new Set(['approved', 'active', 'superseded']);
 
 /**
  * Resolves CLI options.
@@ -31,7 +31,7 @@ const STATUS_REQUIRES_APPROVAL = new Set(["approved", "active", "superseded"]);
 function resolveCliOptions(argv) {
   /** @type {{format: "text" | "json", registryPath: string, moduleRegistryPath: string, manifestPath: string}} */
   const options = {
-    format: "text",
+    format: 'text',
     registryPath: DEFAULT_TECHNICAL_SOLUTION_LIFECYCLE_REGISTRY_PATH,
     moduleRegistryPath: DEFAULT_TECHNICAL_SOLUTION_MODULE_REGISTRY_PATH,
     manifestPath: DEFAULT_MANIFEST_PATH,
@@ -40,7 +40,7 @@ function resolveCliOptions(argv) {
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
 
-    if (argument === "--format") {
+    if (argument === '--format') {
       const nextValue = argv[index + 1];
       if (!nextValue) {
         throw new Error('Missing value for "--format".');
@@ -50,12 +50,12 @@ function resolveCliOptions(argv) {
       continue;
     }
 
-    if (argument.startsWith("--format=")) {
-      options.format = readFormatValue(argument.slice("--format=".length));
+    if (argument.startsWith('--format=')) {
+      options.format = readFormatValue(argument.slice('--format='.length));
       continue;
     }
 
-    if (argument === "--registry") {
+    if (argument === '--registry') {
       const nextValue = argv[index + 1];
       if (!nextValue) {
         throw new Error('Missing value for "--registry".');
@@ -65,12 +65,12 @@ function resolveCliOptions(argv) {
       continue;
     }
 
-    if (argument.startsWith("--registry=")) {
-      options.registryPath = argument.slice("--registry=".length).trim();
+    if (argument.startsWith('--registry=')) {
+      options.registryPath = argument.slice('--registry='.length).trim();
       continue;
     }
 
-    if (argument === "--module-registry") {
+    if (argument === '--module-registry') {
       const nextValue = argv[index + 1];
       if (!nextValue) {
         throw new Error('Missing value for "--module-registry".');
@@ -80,12 +80,12 @@ function resolveCliOptions(argv) {
       continue;
     }
 
-    if (argument.startsWith("--module-registry=")) {
-      options.moduleRegistryPath = argument.slice("--module-registry=".length).trim();
+    if (argument.startsWith('--module-registry=')) {
+      options.moduleRegistryPath = argument.slice('--module-registry='.length).trim();
       continue;
     }
 
-    if (argument === "--manifest") {
+    if (argument === '--manifest') {
       const nextValue = argv[index + 1];
       if (!nextValue) {
         throw new Error('Missing value for "--manifest".');
@@ -95,8 +95,8 @@ function resolveCliOptions(argv) {
       continue;
     }
 
-    if (argument.startsWith("--manifest=")) {
-      options.manifestPath = argument.slice("--manifest=".length).trim();
+    if (argument.startsWith('--manifest=')) {
+      options.manifestPath = argument.slice('--manifest='.length).trim();
       continue;
     }
 
@@ -113,7 +113,7 @@ function resolveCliOptions(argv) {
  */
 function readFormatValue(value) {
   const normalizedValue = value.trim().toLowerCase();
-  if (normalizedValue !== "text" && normalizedValue !== "json") {
+  if (normalizedValue !== 'text' && normalizedValue !== 'json') {
     throw new Error(`Unsupported format "${value}". Expected "text" or "json".`);
   }
 
@@ -149,9 +149,9 @@ function loadManifestPathCatalog(manifestPath) {
     };
   }
 
-  const payload = parse(readFileSync(absoluteManifestPath, "utf8"));
+  const payload = parse(readFileSync(absoluteManifestPath, 'utf8'));
   const rootRecord =
-    payload && typeof payload === "object" ? /** @type {Record<string, unknown>} */ (payload) : {};
+    payload && typeof payload === 'object' ? /** @type {Record<string, unknown>} */ (payload) : {};
   const allPaths = new Set();
   const activePaths = new Set();
   const entryGroups = [
@@ -162,18 +162,18 @@ function loadManifestPathCatalog(manifestPath) {
   for (const entryGroup of entryGroups) {
     for (const entryValue of entryGroup) {
       const entryRecord =
-        entryValue && typeof entryValue === "object"
+        entryValue && typeof entryValue === 'object'
           ? /** @type {Record<string, unknown>} */ (entryValue)
           : {};
-      const pathValue = String(entryRecord.path ?? "")
+      const pathValue = String(entryRecord.path ?? '')
         .trim()
-        .replace(/\\/gu, "/");
-      const statusValue = String(entryRecord.status ?? "").trim();
+        .replace(/\\/gu, '/');
+      const statusValue = String(entryRecord.status ?? '').trim();
       if (!pathValue) {
         continue;
       }
       allPaths.add(pathValue);
-      if (statusValue === "active" || statusValue === "frozen") {
+      if (statusValue === 'active' || statusValue === 'frozen') {
         activePaths.add(pathValue);
       }
     }
@@ -198,15 +198,15 @@ function evaluateLifecycleRegistry(options) {
   if (!lifecycleRegistry) {
     failures.push(
       buildFailure(
-        "lifecycle_registry_missing",
-        "Technical solution lifecycle registry is missing.",
+        'lifecycle_registry_missing',
+        'Technical solution lifecycle registry is missing.',
         {
           registry_path: options.registryPath,
         },
       ),
     );
     return {
-      status: "fail",
+      status: 'fail',
       failures,
       solutions_scanned: 0,
       draft_paths_scanned: 0,
@@ -218,7 +218,7 @@ function evaluateLifecycleRegistry(options) {
   const moduleRegistry = loadTechnicalSolutionModuleRegistry(options.moduleRegistryPath);
   if (!moduleRegistry) {
     failures.push(
-      buildFailure("module_registry_missing", "Technical solution module registry is missing.", {
+      buildFailure('module_registry_missing', 'Technical solution module registry is missing.', {
         registry_path: options.moduleRegistryPath,
       }),
     );
@@ -232,7 +232,7 @@ function evaluateLifecycleRegistry(options) {
   for (const solutionEntry of lifecycleRegistry.solutions) {
     if (!solutionEntry.solution_id) {
       failures.push(
-        buildFailure("solution_id_missing", "Lifecycle entry is missing solution_id.", {
+        buildFailure('solution_id_missing', 'Lifecycle entry is missing solution_id.', {
           registry_path: lifecycleRegistry.registry_path,
         }),
       );
@@ -241,7 +241,7 @@ function evaluateLifecycleRegistry(options) {
 
     if (solutionIdSet.has(solutionEntry.solution_id)) {
       failures.push(
-        buildFailure("duplicate_solution_id", "solution_id must be unique.", {
+        buildFailure('duplicate_solution_id', 'solution_id must be unique.', {
           solution_id: solutionEntry.solution_id,
         }),
       );
@@ -255,7 +255,7 @@ function evaluateLifecycleRegistry(options) {
         !lifecycleRegistry.allowed_statuses.includes(solutionEntry.status))
     ) {
       failures.push(
-        buildFailure("solution_status_invalid", "Lifecycle status is invalid.", {
+        buildFailure('solution_status_invalid', 'Lifecycle status is invalid.', {
           solution_id: solutionEntry.solution_id,
           status: solutionEntry.status,
           allowed_statuses:
@@ -269,8 +269,8 @@ function evaluateLifecycleRegistry(options) {
     if (solutionEntry.draft_paths.length === 0 && solutionEntry.final_paths.length === 0) {
       failures.push(
         buildFailure(
-          "solution_paths_missing",
-          "Lifecycle entry must declare draft_paths or final_paths.",
+          'solution_paths_missing',
+          'Lifecycle entry must declare draft_paths or final_paths.',
           {
             solution_id: solutionEntry.solution_id,
           },
@@ -279,13 +279,13 @@ function evaluateLifecycleRegistry(options) {
     }
 
     if (
-      (solutionEntry.status === "active" || solutionEntry.status === "superseded") &&
+      (solutionEntry.status === 'active' || solutionEntry.status === 'superseded') &&
       solutionEntry.north_star_refs.length === 0
     ) {
       failures.push(
         buildFailure(
-          "north_star_refs_missing",
-          "Active lifecycle entries must declare north_star_refs.",
+          'north_star_refs_missing',
+          'Active lifecycle entries must declare north_star_refs.',
           {
             solution_id: solutionEntry.solution_id,
           },
@@ -298,7 +298,7 @@ function evaluateLifecycleRegistry(options) {
       solutionEntry.review_paths.length === 0
     ) {
       failures.push(
-        buildFailure("review_paths_missing", "Lifecycle status requires review_paths evidence.", {
+        buildFailure('review_paths_missing', 'Lifecycle status requires review_paths evidence.', {
           solution_id: solutionEntry.solution_id,
           status: solutionEntry.status,
         }),
@@ -311,8 +311,8 @@ function evaluateLifecycleRegistry(options) {
     ) {
       failures.push(
         buildFailure(
-          "approval_metadata_missing",
-          "Lifecycle status requires approved_at and approved_by.",
+          'approval_metadata_missing',
+          'Lifecycle status requires approved_at and approved_by.',
           {
             solution_id: solutionEntry.solution_id,
             status: solutionEntry.status,
@@ -321,20 +321,20 @@ function evaluateLifecycleRegistry(options) {
       );
     }
 
-    if (solutionEntry.status === "draft" && solutionEntry.final_paths.length > 0) {
+    if (solutionEntry.status === 'draft' && solutionEntry.final_paths.length > 0) {
       failures.push(
-        buildFailure("draft_entry_has_final_paths", "Draft entries must not declare final_paths.", {
+        buildFailure('draft_entry_has_final_paths', 'Draft entries must not declare final_paths.', {
           solution_id: solutionEntry.solution_id,
           final_paths: solutionEntry.final_paths,
         }),
       );
     }
 
-    if (solutionEntry.status === "review_pending" && solutionEntry.final_paths.length > 0) {
+    if (solutionEntry.status === 'review_pending' && solutionEntry.final_paths.length > 0) {
       failures.push(
         buildFailure(
-          "review_pending_entry_has_final_paths",
-          "review_pending entries must not declare final_paths.",
+          'review_pending_entry_has_final_paths',
+          'review_pending entries must not declare final_paths.',
           {
             solution_id: solutionEntry.solution_id,
             final_paths: solutionEntry.final_paths,
@@ -343,11 +343,11 @@ function evaluateLifecycleRegistry(options) {
       );
     }
 
-    if (solutionEntry.status === "approved" && solutionEntry.final_paths.length > 0) {
+    if (solutionEntry.status === 'approved' && solutionEntry.final_paths.length > 0) {
       failures.push(
         buildFailure(
-          "approved_entry_has_final_paths",
-          "approved entries must promote before declaring final_paths.",
+          'approved_entry_has_final_paths',
+          'approved entries must promote before declaring final_paths.',
           {
             solution_id: solutionEntry.solution_id,
             final_paths: solutionEntry.final_paths,
@@ -357,13 +357,13 @@ function evaluateLifecycleRegistry(options) {
     }
 
     if (
-      (solutionEntry.status === "draft" || solutionEntry.status === "review_pending") &&
+      (solutionEntry.status === 'draft' || solutionEntry.status === 'review_pending') &&
       solutionEntry.draft_paths.length === 0
     ) {
       failures.push(
         buildFailure(
-          "draft_paths_missing",
-          "Draft-like lifecycle entries must declare draft_paths.",
+          'draft_paths_missing',
+          'Draft-like lifecycle entries must declare draft_paths.',
           {
             solution_id: solutionEntry.solution_id,
             status: solutionEntry.status,
@@ -373,13 +373,13 @@ function evaluateLifecycleRegistry(options) {
     }
 
     if (
-      (solutionEntry.status === "active" || solutionEntry.status === "superseded") &&
+      (solutionEntry.status === 'active' || solutionEntry.status === 'superseded') &&
       solutionEntry.final_paths.length === 0
     ) {
       failures.push(
         buildFailure(
-          "final_paths_missing",
-          "Active/superseded lifecycle entries must declare final_paths.",
+          'final_paths_missing',
+          'Active/superseded lifecycle entries must declare final_paths.',
           {
             solution_id: solutionEntry.solution_id,
             status: solutionEntry.status,
@@ -394,8 +394,8 @@ function evaluateLifecycleRegistry(options) {
       ) {
         failures.push(
           buildFailure(
-            "target_module_unresolved",
-            "target_module_ids must resolve to existing modules.",
+            'target_module_unresolved',
+            'target_module_ids must resolve to existing modules.',
             {
               solution_id: solutionEntry.solution_id,
               target_module_id: targetModuleId,
@@ -409,8 +409,8 @@ function evaluateLifecycleRegistry(options) {
       if (draftPathSet.has(draftPath)) {
         failures.push(
           buildFailure(
-            "duplicate_draft_path",
-            "draft_paths must be unique across lifecycle entries.",
+            'duplicate_draft_path',
+            'draft_paths must be unique across lifecycle entries.',
             {
               solution_id: solutionEntry.solution_id,
               draft_path: draftPath,
@@ -420,11 +420,11 @@ function evaluateLifecycleRegistry(options) {
       }
       draftPathSet.add(draftPath);
 
-      if (!draftPath.startsWith(".repo-ai-governor/draft/")) {
+      if (!draftPath.startsWith('.repo-ai-governor/draft/')) {
         failures.push(
           buildFailure(
-            "draft_path_outside_draft_root",
-            "draft_paths must stay under .repo-ai-governor/draft/.",
+            'draft_path_outside_draft_root',
+            'draft_paths must stay under .repo-ai-governor/draft/.',
             {
               solution_id: solutionEntry.solution_id,
               draft_path: draftPath,
@@ -435,7 +435,7 @@ function evaluateLifecycleRegistry(options) {
 
       if (!existsSync(resolve(process.cwd(), draftPath))) {
         failures.push(
-          buildFailure("draft_path_missing", "draft_paths entry does not exist.", {
+          buildFailure('draft_path_missing', 'draft_paths entry does not exist.', {
             solution_id: solutionEntry.solution_id,
             draft_path: draftPath,
           }),
@@ -445,8 +445,8 @@ function evaluateLifecycleRegistry(options) {
       if (manifestCatalog.all_paths.has(draftPath)) {
         failures.push(
           buildFailure(
-            "draft_path_registered_in_manifest",
-            "draft_paths must not be registered in manifest.",
+            'draft_path_registered_in_manifest',
+            'draft_paths must not be registered in manifest.',
             {
               solution_id: solutionEntry.solution_id,
               draft_path: draftPath,
@@ -459,7 +459,7 @@ function evaluateLifecycleRegistry(options) {
     for (const reviewPath of solutionEntry.review_paths) {
       if (!existsSync(resolve(process.cwd(), reviewPath))) {
         failures.push(
-          buildFailure("review_path_missing", "review_paths entry does not exist.", {
+          buildFailure('review_path_missing', 'review_paths entry does not exist.', {
             solution_id: solutionEntry.solution_id,
             review_path: reviewPath,
           }),
@@ -471,8 +471,8 @@ function evaluateLifecycleRegistry(options) {
       if (finalPathSet.has(finalPath)) {
         failures.push(
           buildFailure(
-            "duplicate_final_path",
-            "final_paths must be unique across lifecycle entries.",
+            'duplicate_final_path',
+            'final_paths must be unique across lifecycle entries.',
             {
               solution_id: solutionEntry.solution_id,
               final_path: finalPath,
@@ -482,9 +482,9 @@ function evaluateLifecycleRegistry(options) {
       }
       finalPathSet.add(finalPath);
 
-      if (finalPath.startsWith(".repo-ai-governor/draft/")) {
+      if (finalPath.startsWith('.repo-ai-governor/draft/')) {
         failures.push(
-          buildFailure("final_path_inside_draft_root", "final_paths must not point into draft/.", {
+          buildFailure('final_path_inside_draft_root', 'final_paths must not point into draft/.', {
             solution_id: solutionEntry.solution_id,
             final_path: finalPath,
           }),
@@ -493,7 +493,7 @@ function evaluateLifecycleRegistry(options) {
 
       if (!existsSync(resolve(process.cwd(), finalPath))) {
         failures.push(
-          buildFailure("final_path_missing", "final_paths entry does not exist.", {
+          buildFailure('final_path_missing', 'final_paths entry does not exist.', {
             solution_id: solutionEntry.solution_id,
             final_path: finalPath,
           }),
@@ -503,8 +503,8 @@ function evaluateLifecycleRegistry(options) {
       if (!manifestCatalog.active_paths.has(finalPath)) {
         failures.push(
           buildFailure(
-            "final_path_not_manifest_registered",
-            "final_paths must be registered as active/frozen in manifest.",
+            'final_path_not_manifest_registered',
+            'final_paths must be registered as active/frozen in manifest.',
             {
               solution_id: solutionEntry.solution_id,
               final_path: finalPath,
@@ -525,8 +525,8 @@ function evaluateLifecycleRegistry(options) {
       ) {
         failures.push(
           buildFailure(
-            "supersedes_reference_invalid",
-            "supersedes must point to another known solution_id.",
+            'supersedes_reference_invalid',
+            'supersedes must point to another known solution_id.',
             {
               solution_id: solutionEntry.solution_id,
               supersedes: supersededId,
@@ -536,10 +536,10 @@ function evaluateLifecycleRegistry(options) {
       }
     }
 
-    if (solutionEntry.status === "superseded") {
+    if (solutionEntry.status === 'superseded') {
       if (!solutionEntry.superseded_by) {
         failures.push(
-          buildFailure("superseded_by_missing", "superseded entries must declare superseded_by.", {
+          buildFailure('superseded_by_missing', 'superseded entries must declare superseded_by.', {
             solution_id: solutionEntry.solution_id,
           }),
         );
@@ -549,8 +549,8 @@ function evaluateLifecycleRegistry(options) {
       ) {
         failures.push(
           buildFailure(
-            "superseded_by_invalid",
-            "superseded_by must point to another known solution_id.",
+            'superseded_by_invalid',
+            'superseded_by must point to another known solution_id.',
             {
               solution_id: solutionEntry.solution_id,
               superseded_by: solutionEntry.superseded_by,
@@ -562,7 +562,7 @@ function evaluateLifecycleRegistry(options) {
   }
 
   return {
-    status: failures.length === 0 ? "pass" : "fail",
+    status: failures.length === 0 ? 'pass' : 'fail',
     failures,
     solutions_scanned: lifecycleRegistry.solutions.length,
     draft_paths_scanned: Array.from(draftPathSet).length,
@@ -576,7 +576,7 @@ function evaluateLifecycleRegistry(options) {
  * @param {{status: "pass" | "fail", failures: Array<{rule_id: string, message: string, details: Record<string, unknown>}>, solutions_scanned: number, draft_paths_scanned: number, final_paths_scanned: number, registry_path: string}} result
  */
 function printTextResult(result) {
-  if (result.status === "pass") {
+  if (result.status === 'pass') {
     gatePass(
       GATE_NAME,
       `Lifecycle validation passed. solutions=${result.solutions_scanned} drafts=${result.draft_paths_scanned} finals=${result.final_paths_scanned}`,
@@ -585,7 +585,7 @@ function printTextResult(result) {
     return;
   }
 
-  gateFail(GATE_NAME, "Lifecycle validation failed.");
+  gateFail(GATE_NAME, 'Lifecycle validation failed.');
   for (const failure of result.failures) {
     gateFail(GATE_NAME, `- rule=${failure.rule_id} message="${failure.message}"`);
     gateInfo(GATE_NAME, `  details=${JSON.stringify(failure.details)}`);
@@ -595,12 +595,12 @@ function printTextResult(result) {
 const options = resolveCliOptions(process.argv.slice(2));
 const result = evaluateLifecycleRegistry(options);
 
-if (options.format === "json") {
+if (options.format === 'json') {
   console.info(JSON.stringify(result, null, 2));
 } else {
   printTextResult(result);
 }
 
-if (result.status === "fail") {
+if (result.status === 'fail') {
   process.exit(1);
 }

@@ -3,4 +3,4 @@ export {
   WEBHOOK_NOTIFICATION_DEFAULT_PROVIDER_ID,
   WEBHOOK_NOTIFICATION_DEFAULT_TIMEOUT_MS,
   WEBHOOK_NOTIFICATION_MAX_RESPONSE_SNIPPET_LENGTH,
-} from "./webhook-notification-provider.constant.js";
+} from './webhook-notification-provider.constant.js';

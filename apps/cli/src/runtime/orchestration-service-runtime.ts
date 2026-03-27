@@ -1,10 +1,9 @@
 import type {
   LocalOrchestrationServicePublishEventRequest,
   LocalOrchestrationServiceSaveCheckpointRequest,
-  LocalOrchestrationServiceSidecarClient,
   LocalOrchestrationServiceStartExecutionRuntimeContext,
-} from "@repo-ai-governor/core-orchestration-service";
-import type { LangGraphRecoveredExecution } from "@repo-ai-governor/core-runtime-langgraph";
+} from '@repo-ai-governor/core-orchestration-service';
+import type { LangGraphRecoveredExecution } from '@repo-ai-governor/core-runtime-langgraph';
 import type {
   OrchestrationExecutionSummary,
   OrchestrationListExecutionsRequest,
@@ -18,12 +17,12 @@ import type {
   OrchestrationSubmitHitlDecisionResponse,
   OrchestrationSubscribeExecutionRequest,
   OrchestrationSubscribeExecutionResponse,
-} from "@repo-ai-governor/orchestration-service-client";
-import { CliOrchestrationServiceRuntimeMode } from "../constants/orchestration-service-runtime.constant.js";
+} from '@repo-ai-governor/orchestration-service-client';
+import { CliOrchestrationServiceRuntimeMode } from '../constants/orchestration-service-runtime.constant.js';
 import type {
   CliOrchestrationServiceOwner,
   CliOrchestrationServiceRuntimeDependencies,
-} from "../types/interfaces/cli-orchestration-service-runtime.interface.js";
+} from '../types/interfaces/cli-orchestration-service-runtime.interface.js';
 
 /**
  * Owns lazy embedded orchestration-service resolution for CLI runtime and command executors.
@@ -119,7 +118,7 @@ export class CliOrchestrationServiceRuntime {
         }
         if (this.dependencies.runtimeMode === CliOrchestrationServiceRuntimeMode.SIDECAR_IPC) {
           const { LocalOrchestrationServiceSidecarClient } = await import(
-            "@repo-ai-governor/core-orchestration-service"
+            '@repo-ai-governor/core-orchestration-service'
           );
           return new LocalOrchestrationServiceSidecarClient(this.workspaceRoot, {
             ...(this.dependencies.memoryConfig
@@ -131,7 +130,7 @@ export class CliOrchestrationServiceRuntime {
           }) as CliOrchestrationServiceOwner;
         }
         const { LocalOrchestrationServiceShell } = await import(
-          "@repo-ai-governor/core-orchestration-service"
+          '@repo-ai-governor/core-orchestration-service'
         );
         return new LocalOrchestrationServiceShell({
           workspaceRoot: this.workspaceRoot,

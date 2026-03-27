@@ -1,10 +1,10 @@
-import { readFileSync } from "node:fs";
+import { readFileSync } from 'node:fs';
 
-import { parse } from "yaml";
+import { parse } from 'yaml';
 
-import { ConfigError, GovernorErrorCode } from "@repo-ai-governor/shared";
-import { SchemaValidator } from "./schema-validator.js";
-import type { GovernorConfig } from "./types/interfaces/index.js";
+import { ConfigError, GovernorErrorCode } from '@repo-ai-governor/shared';
+import { SchemaValidator } from './schema-validator.js';
+import type { GovernorConfig } from './types/interfaces/index.js';
 
 /**
  * Loads governor config from disk and enforces schema validation before use.
@@ -34,7 +34,7 @@ export class ConfigLoader {
    */
   private readConfigContent(configPath: string): string {
     try {
-      return readFileSync(configPath, "utf8");
+      return readFileSync(configPath, 'utf8');
     } catch (error) {
       throw new ConfigError(
         GovernorErrorCode.CONFIG_FILE_READ_FAILED,

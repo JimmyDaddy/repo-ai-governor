@@ -2,8 +2,8 @@ import type {
   LangGraphCheckpointSource,
   LangGraphReducedStateKey,
   LangGraphRuntimeInterruptKind,
-} from "../../constants/index.js";
-import type { LangGraphCompiledGraphPlan } from "./langgraph-compiled-graph-plan.interface.js";
+} from '../../constants/index.js';
+import type { LangGraphCompiledGraphPlan } from './langgraph-compiled-graph-plan.interface.js';
 
 export interface LangGraphCheckpointPendingInterrupt {
   kind: LangGraphRuntimeInterruptKind;

@@ -2,7 +2,7 @@ import type {
   AuditOutputMode,
   AuditRecordStatus,
   DependencyResolutionStatus,
-} from "../../constants/index.js";
+} from '../../constants/index.js';
 
 /**
  * Defines one normalized audit event payload.

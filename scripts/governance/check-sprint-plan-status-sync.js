@@ -1,52 +1,52 @@
 #!/usr/bin/env node
 
-import { existsSync, readFileSync, readdirSync } from "node:fs";
-import { resolve } from "node:path";
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { resolve } from 'node:path';
 
-import { gateFail, gateInfo, gatePass } from "./gate-output.js";
+import { gateFail, gateInfo, gatePass } from './gate-output.js';
 
-const GATE_NAME = "sprint-plan-status-sync";
-const DEV_CONTEXT_ROOT = ".repo-ai-governor/context/dev";
+const GATE_NAME = 'sprint-plan-status-sync';
+const DEV_CONTEXT_ROOT = '.repo-ai-governor/context/dev';
 const REQUIRED_TASK_HEADERS = [
-  "execution_id",
-  "task_id",
-  "title",
-  "owner",
-  "priority",
-  "due_date",
-  "status",
-  "project",
-  "sprint",
-  "plan",
-  "result",
-  "verify",
-  "review_delta",
-  "recorded_at",
+  'execution_id',
+  'task_id',
+  'title',
+  'owner',
+  'priority',
+  'due_date',
+  'status',
+  'project',
+  'sprint',
+  'plan',
+  'result',
+  'verify',
+  'review_delta',
+  'recorded_at',
 ];
 const SPRINT_STATUS_MAP = new Map([
-  ["planned", "planned"],
-  ["todo", "planned"],
-  ["backlog", "planned"],
-  ["active", "active"],
-  ["in_progress", "active"],
-  ["in-progress", "active"],
-  ["completed", "completed"],
-  ["done", "completed"],
-  ["closed", "completed"],
-  ["resolved", "completed"],
+  ['planned', 'planned'],
+  ['todo', 'planned'],
+  ['backlog', 'planned'],
+  ['active', 'active'],
+  ['in_progress', 'active'],
+  ['in-progress', 'active'],
+  ['completed', 'completed'],
+  ['done', 'completed'],
+  ['closed', 'completed'],
+  ['resolved', 'completed'],
 ]);
 const TASK_STATUS_COMPLETED = new Set([
-  "completed",
-  "done",
-  "closed",
-  "cancelled",
-  "canceled",
-  "resolved",
-  "retired",
-  "archived",
+  'completed',
+  'done',
+  'closed',
+  'cancelled',
+  'canceled',
+  'resolved',
+  'retired',
+  'archived',
 ]);
-const TASK_STATUS_IN_PROGRESS = new Set(["in_progress", "in-progress", "active", "running"]);
-const TASK_STATUS_PLANNED = new Set(["planned", "todo", "backlog", "pending"]);
+const TASK_STATUS_IN_PROGRESS = new Set(['in_progress', 'in-progress', 'active', 'running']);
+const TASK_STATUS_PLANNED = new Set(['planned', 'todo', 'backlog', 'pending']);
 
 /**
  * Parses one CSV line with quote support.
@@ -55,7 +55,7 @@ const TASK_STATUS_PLANNED = new Set(["planned", "todo", "backlog", "pending"]);
  */
 function parseCsvLine(line) {
   const values = [];
-  let current = "";
+  let current = '';
   let inQuotes = false;
 
   for (let index = 0; index < line.length; index += 1) {
@@ -70,9 +70,9 @@ function parseCsvLine(line) {
       continue;
     }
 
-    if (character === "," && !inQuotes) {
+    if (character === ',' && !inQuotes) {
       values.push(current);
-      current = "";
+      current = '';
       continue;
     }
 
@@ -128,7 +128,7 @@ function readLatestTaskStatuses(tasksCsvPath) {
     throw new Error(`tasks.csv not found: ${tasksCsvPath}`);
   }
 
-  const lines = readFileSync(tasksCsvPath, "utf8")
+  const lines = readFileSync(tasksCsvPath, 'utf8')
     .split(/\r?\n/u)
     .map((line) => line.trimEnd())
     .filter((line) => line.trim().length > 0);
@@ -167,8 +167,8 @@ function readLatestTaskStatuses(tasksCsvPath) {
       continue;
     }
 
-    const recordedAt = row.recorded_at || "0000-00-00";
-    const score = `${recordedAt}|${String(index).padStart(6, "0")}`;
+    const recordedAt = row.recorded_at || '0000-00-00';
+    const score = `${recordedAt}|${String(index).padStart(6, '0')}`;
     const current = latestByTaskId.get(taskId);
     if (!current || score >= current.score) {
       latestByTaskId.set(taskId, {
@@ -193,7 +193,7 @@ function readChecklistAggregateStatus(checklistPath) {
     return null;
   }
 
-  const checklistContent = readFileSync(checklistPath, "utf8");
+  const checklistContent = readFileSync(checklistPath, 'utf8');
   const entries = [];
   let currentEntry = null;
 
@@ -201,7 +201,7 @@ function readChecklistAggregateStatus(checklistPath) {
     const taskLineMatch = line.match(/^- \[(x| )\] (TK-\d{3}) /iu);
     if (taskLineMatch) {
       currentEntry = {
-        checked: taskLineMatch[1].toLowerCase() === "x",
+        checked: taskLineMatch[1].toLowerCase() === 'x',
         hasInProgressRecord: false,
       };
       entries.push(currentEntry);
@@ -231,22 +231,22 @@ function readChecklistAggregateStatus(checklistPath) {
   }
 
   if (entries.every((entry) => entry.checked)) {
-    return "completed";
+    return 'completed';
   }
 
   if (entries.some((entry) => entry.checked)) {
-    return "active";
+    return 'active';
   }
 
   if (entries.some((entry) => entry.hasInProgressRecord)) {
-    return "active";
+    return 'active';
   }
 
   if (entries.every((entry) => !entry.checked)) {
-    return "planned";
+    return 'planned';
   }
 
-  return "active";
+  return 'active';
 }
 
 /**
@@ -259,7 +259,7 @@ function readSprintPlanStatus(sprintPlanPath) {
     throw new Error(`sprint plan not found: ${sprintPlanPath}`);
   }
 
-  const content = readFileSync(sprintPlanPath, "utf8");
+  const content = readFileSync(sprintPlanPath, 'utf8');
   const matched = content.match(/^- Status:\s*(.+)$/imu);
   if (!matched) {
     throw new Error(`missing "- Status:" metadata in sprint plan: ${sprintPlanPath}`);
@@ -274,7 +274,7 @@ function readSprintPlanStatus(sprintPlanPath) {
  * @returns {string}
  */
 function normalizeTaskStatus(status) {
-  return status.trim().toLowerCase().replace(/\s+/gu, "_");
+  return status.trim().toLowerCase().replace(/\s+/gu, '_');
 }
 
 /**
@@ -301,22 +301,22 @@ function normalizeSprintStatus(status) {
  */
 function deriveExpectedSprintStatus(statuses) {
   if (statuses.length === 0) {
-    return "planned";
+    return 'planned';
   }
 
   if (statuses.every((status) => TASK_STATUS_COMPLETED.has(status))) {
-    return "completed";
+    return 'completed';
   }
 
   if (statuses.every((status) => TASK_STATUS_PLANNED.has(status))) {
-    return "planned";
+    return 'planned';
   }
 
   if (statuses.some((status) => TASK_STATUS_IN_PROGRESS.has(status))) {
-    return "active";
+    return 'active';
   }
 
-  return "active";
+  return 'active';
 }
 
 try {
@@ -333,15 +333,15 @@ try {
   const issues = [];
 
   for (const sprintDirectory of sprintDirectories) {
-    const sprintPlanPath = resolve(sprintDirectory, "plan.md");
-    const tasksCsvPath = resolve(sprintDirectory, "tasks/tasks.csv");
-    const checklistPath = resolve(sprintDirectory, "tasks/checklist.md");
+    const sprintPlanPath = resolve(sprintDirectory, 'plan.md');
+    const tasksCsvPath = resolve(sprintDirectory, 'tasks/tasks.csv');
+    const checklistPath = resolve(sprintDirectory, 'tasks/checklist.md');
 
     const sprintStatus = readSprintPlanStatus(sprintPlanPath);
     const latestTaskStatuses = Array.from(readLatestTaskStatuses(tasksCsvPath).values());
     const expectedStatusFromTasks = deriveExpectedSprintStatus(latestTaskStatuses);
     const checklistAggregateStatus = readChecklistAggregateStatus(checklistPath);
-    const sprintLabel = sprintDirectory.replace(`${process.cwd()}/`, "");
+    const sprintLabel = sprintDirectory.replace(`${process.cwd()}/`, '');
 
     if (sprintStatus !== expectedStatusFromTasks) {
       issues.push(

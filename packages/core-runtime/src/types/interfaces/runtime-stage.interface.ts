@@ -1,7 +1,7 @@
-import type { ProcessNodeType } from "@repo-ai-governor/core-process";
-import type { GovernorErrorCode } from "@repo-ai-governor/shared";
-import type { RoleSource } from "@repo-ai-governor/shared";
-import type { RuntimeStageStatus } from "../../constants/runtime.constant.js";
+import type { ProcessNodeType } from '@repo-ai-governor/core-process';
+import type { GovernorErrorCode } from '@repo-ai-governor/shared';
+import type { RoleSource } from '@repo-ai-governor/shared';
+import type { RuntimeStageStatus } from '../../constants/runtime.constant.js';
 
 /**
  * Describes stage execution context passed to runtime stage handlers.

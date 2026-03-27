@@ -1,7 +1,7 @@
-import type { ProcessIrEdge } from "@repo-ai-governor/core-process";
-import type { RoleRegistry } from "@repo-ai-governor/core-role-registry";
-import type { RuntimeNowProvider } from "../../providers/index.js";
-import type { RuntimeStageInputMap } from "../aliases/index.js";
+import type { ProcessIrEdge } from '@repo-ai-governor/core-process';
+import type { RoleRegistry } from '@repo-ai-governor/core-role-registry';
+import type { RuntimeNowProvider } from '../../providers/index.js';
+import type { RuntimeStageInputMap } from '../aliases/index.js';
 
 /**
  * Describes condition-routing context used by runtime condition resolver.

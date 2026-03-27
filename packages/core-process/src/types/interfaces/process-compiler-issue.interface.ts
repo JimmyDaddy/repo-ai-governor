@@ -1,7 +1,7 @@
 import type {
   ProcessCompilerIssueCode,
   ProcessCompilerSeverity,
-} from "../../constants/compiler-ir.constant.js";
+} from '../../constants/compiler-ir.constant.js';
 
 /**
  * Defines one compiler warning/error record in compile output.

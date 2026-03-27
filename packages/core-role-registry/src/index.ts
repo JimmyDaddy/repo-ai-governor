@@ -3,8 +3,8 @@ export {
   ROLE_PROFILE_ID_PATTERN,
   ROLE_PROFILE_VERSION_PATTERN,
   createDefaultRoleProfiles,
-} from "./constants/index.js";
-export { RoleRegistry } from "./role-registry.js";
+} from './constants/index.js';
+export { RoleRegistry } from './role-registry.js';
 export type {
   RoleProfile,
   RoleProfileById,
@@ -14,4 +14,4 @@ export type {
   RoleRegistryOptions,
   RoleRegistryResolveContext,
   RoleRegistryResolveResult,
-} from "./types/index.js";
+} from './types/index.js';

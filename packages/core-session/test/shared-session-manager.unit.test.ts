@@ -1,9 +1,9 @@
-import { MemoryManager } from "@repo-ai-governor/core-memory";
+import { MemoryManager } from '@repo-ai-governor/core-memory';
 import {
   MemoryStoreAdapter,
   type MemoryStoreProvider,
-} from "@repo-ai-governor/memory-store-adapter";
-import { SessionStatus, SharedSessionManager } from "../src/index.js";
+} from '@repo-ai-governor/memory-store-adapter';
+import { SessionStatus, SharedSessionManager } from '../src/index.js';
 
 function createInMemoryStoreProvider(): MemoryStoreProvider {
   const records = new Map<
@@ -35,7 +35,7 @@ function createInMemoryStoreProvider(): MemoryStoreProvider {
     },
     async query() {
       return Array.from(records.entries()).map(([compoundKey, record]) => {
-        const delimiterIndex = compoundKey.indexOf(":");
+        const delimiterIndex = compoundKey.indexOf(':');
         return {
           namespace: compoundKey.slice(0, delimiterIndex),
           key: compoundKey.slice(delimiterIndex + 1),
@@ -47,10 +47,10 @@ function createInMemoryStoreProvider(): MemoryStoreProvider {
     },
     async snapshot() {
       return {
-        snapshotId: "snapshot-session-unit",
-        createdAt: "2026-03-21T00:00:00Z",
+        snapshotId: 'snapshot-session-unit',
+        createdAt: '2026-03-21T00:00:00Z',
         recordCount: records.size,
-        snapshotPath: "/tmp/snapshot-session-unit.json",
+        snapshotPath: '/tmp/snapshot-session-unit.json',
       };
     },
     async archive() {
@@ -59,19 +59,19 @@ function createInMemoryStoreProvider(): MemoryStoreProvider {
   };
 }
 
-describe("core-session unit", () => {
-  it("opens session, appends event, and finalizes lifecycle", async () => {
+describe('core-session unit', () => {
+  it('opens session, appends event, and finalizes lifecycle', async () => {
     const memoryManager = new MemoryManager(new MemoryStoreAdapter(createInMemoryStoreProvider()));
     const sessionManager = new SharedSessionManager(memoryManager);
 
     const openedSession = await sessionManager.openSession({
-      sessionId: "session-unit-001",
-      executionId: "exec-unit-001",
+      sessionId: 'session-unit-001',
+      executionId: 'exec-unit-001',
     });
     const sessionWithEvent = await sessionManager.appendEvent({
       sessionId: openedSession.sessionId,
-      type: "runtime.node.completed",
-      payload: { nodeId: "node-entry" },
+      type: 'runtime.node.completed',
+      payload: { nodeId: 'node-entry' },
     });
     const finalizedSession = await sessionManager.finalizeSession({
       sessionId: openedSession.sessionId,

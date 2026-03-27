@@ -13,4 +13,4 @@ export {
   MemoryProviderPluginSpecifierKind,
   MemoryProviderResolutionSource,
   MemoryProviderRuntimeMode,
-} from "./memory-provider-registry.constant.js";
+} from './memory-provider-registry.constant.js';

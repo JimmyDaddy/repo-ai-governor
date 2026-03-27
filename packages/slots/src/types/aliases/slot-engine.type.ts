@@ -2,7 +2,7 @@ import type {
   DeclarativeSlotDefinition,
   ScriptSlotDefinition,
   SlotSecurityEvaluation,
-} from "../interfaces/index.js";
+} from '../interfaces/index.js';
 
 /**
  * Defines union alias for slot definitions.

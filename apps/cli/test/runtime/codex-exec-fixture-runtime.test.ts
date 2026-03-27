@@ -1,26 +1,26 @@
-import { AgentCliExecOperation } from "@repo-ai-governor/adapter-sdk";
-import { GovernorErrorCode, type RuntimeError } from "@repo-ai-governor/shared";
+import { AgentCliExecOperation } from '@repo-ai-governor/adapter-sdk';
+import { GovernorErrorCode, type RuntimeError } from '@repo-ai-governor/shared';
 import {
   CliCodexExecFixtureEnvironmentKey,
   CliCodexExecFixtureMode,
-} from "../../src/constants/codex-exec-fixture.constant.js";
-import { CliCodexExecFixtureRuntime } from "../../src/runtime/codex-exec-fixture-runtime.js";
+} from '../../src/constants/codex-exec-fixture.constant.js';
+import { CliCodexExecFixtureRuntime } from '../../src/runtime/codex-exec-fixture-runtime.js';
 
-describe("Cli codex exec fixture runtime", () => {
-  it("returns one deterministic success runner for success fixture mode", async () => {
+describe('Cli codex exec fixture runtime', () => {
+  it('returns one deterministic success runner for success fixture mode', async () => {
     const runtime = new CliCodexExecFixtureRuntime();
 
     const runner = runtime.resolveExecRunner({
-      [CliCodexExecFixtureEnvironmentKey.ENABLE_FIXTURES]: "1",
+      [CliCodexExecFixtureEnvironmentKey.ENABLE_FIXTURES]: '1',
       [CliCodexExecFixtureEnvironmentKey.EXEC_FIXTURE]: CliCodexExecFixtureMode.SUCCESS,
     });
 
     expect(runner).toBeDefined();
     const result = await runner?.({
-      command: "codex",
+      command: 'codex',
       cwd: process.cwd(),
       env: process.env,
-      prompt: "probe",
+      prompt: 'probe',
       timeoutMs: 1000,
       operation: AgentCliExecOperation.PROBE,
     });
@@ -29,13 +29,13 @@ describe("Cli codex exec fixture runtime", () => {
     expect(result?.stdout).toContain('"type":"item.completed"');
   });
 
-  it("rejects unsupported fixture mode values", () => {
+  it('rejects unsupported fixture mode values', () => {
     const runtime = new CliCodexExecFixtureRuntime();
 
     expect(() =>
       runtime.resolveExecRunner({
-        [CliCodexExecFixtureEnvironmentKey.ENABLE_FIXTURES]: "1",
-        [CliCodexExecFixtureEnvironmentKey.EXEC_FIXTURE]: "invalid",
+        [CliCodexExecFixtureEnvironmentKey.ENABLE_FIXTURES]: '1',
+        [CliCodexExecFixtureEnvironmentKey.EXEC_FIXTURE]: 'invalid',
       }),
     ).toThrowError(
       expect.objectContaining<Partial<RuntimeError>>({
@@ -44,7 +44,7 @@ describe("Cli codex exec fixture runtime", () => {
     );
   });
 
-  it("rejects fixture override when test fixtures are not explicitly enabled", () => {
+  it('rejects fixture override when test fixtures are not explicitly enabled', () => {
     const runtime = new CliCodexExecFixtureRuntime();
 
     expect(() =>

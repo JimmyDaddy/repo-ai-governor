@@ -1,4 +1,4 @@
-import type { GovernorErrorCode } from "../../errors/error-code.constant.js";
+import type { GovernorErrorCode } from '../../errors/error-code.constant.js';
 
 /**
  * Describes a normalized runtime error payload for cross-package display/output.

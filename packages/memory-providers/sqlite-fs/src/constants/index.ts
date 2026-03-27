@@ -4,4 +4,4 @@ export {
   SQLITE_FS_RECORDS_TABLE_NAME,
   SQLITE_FS_SNAPSHOTS_DIRECTORY_NAME,
   SQLITE_FS_SNAPSHOTS_TABLE_NAME,
-} from "./sqlite-fs-memory-store.constant.js";
+} from './sqlite-fs-memory-store.constant.js';

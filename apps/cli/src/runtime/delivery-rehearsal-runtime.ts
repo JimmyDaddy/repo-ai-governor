@@ -1,17 +1,17 @@
-import type { ResolvedWorkspace } from "@repo-ai-governor/config";
-import { ChangeRiskRequiredAction } from "@repo-ai-governor/core-change-risk";
+import type { ResolvedWorkspace } from '@repo-ai-governor/config';
+import { ChangeRiskRequiredAction } from '@repo-ai-governor/core-change-risk';
 import {
   CliDeliveryRehearsalAction,
   CliDeliveryRehearsalSkipReason,
   CliDeliveryRehearsalStatus,
-} from "../constants/cli-task-driven-run.constant.js";
+} from '../constants/cli-task-driven-run.constant.js';
 import type {
   CliArtifactWriter,
   CliNormalizedRuntimeDebugOptions,
-} from "../types/interfaces/cli-governance-runtime.interface.js";
+} from '../types/interfaces/cli-governance-runtime.interface.js';
 
 interface CliDeliveryRehearsalRuntimeOptions {
-  workspace: Pick<ResolvedWorkspace, "workspaceId" | "workspaceRoot" | "mode">;
+  workspace: Pick<ResolvedWorkspace, 'workspaceId' | 'workspaceRoot' | 'mode'>;
   artifactWriter: CliArtifactWriter & {
     writeDeliveryRehearsalArtifact(options: {
       executionId: string;
@@ -40,7 +40,7 @@ export class CliDeliveryRehearsalRuntime {
     taskId: string | null;
     taskTitle: string | null;
     rehearsalAction: CliDeliveryRehearsalAction;
-    runtimeDebugOptions: Pick<CliNormalizedRuntimeDebugOptions, "dryRun">;
+    runtimeDebugOptions: Pick<CliNormalizedRuntimeDebugOptions, 'dryRun'>;
     policyOutcome: ChangeRiskRequiredAction;
     riskLevel: string | null;
     projectId?: string;
@@ -48,10 +48,10 @@ export class CliDeliveryRehearsalRuntime {
   }): Promise<Record<string, unknown>> {
     if (options.runtimeDebugOptions.dryRun) {
       return {
-        handledBy: "delivery-rehearsal-runtime",
+        handledBy: 'delivery-rehearsal-runtime',
         stageId: options.stageId,
         taskId: options.taskId,
-        artifactId: "delivery_rehearsal",
+        artifactId: 'delivery_rehearsal',
         deliveryRehearsalAction: options.rehearsalAction,
         deliveryRehearsalStatus: CliDeliveryRehearsalStatus.DRY_RUN,
         deliveryRehearsalSkipReason: CliDeliveryRehearsalSkipReason.DRY_RUN,
@@ -62,10 +62,10 @@ export class CliDeliveryRehearsalRuntime {
 
     if (options.policyOutcome !== ChangeRiskRequiredAction.ALLOW) {
       return {
-        handledBy: "delivery-rehearsal-runtime",
+        handledBy: 'delivery-rehearsal-runtime',
         stageId: options.stageId,
         taskId: options.taskId,
-        artifactId: "delivery_rehearsal",
+        artifactId: 'delivery_rehearsal',
         deliveryRehearsalAction: options.rehearsalAction,
         deliveryRehearsalStatus: CliDeliveryRehearsalStatus.DEFERRED,
         deliveryRehearsalSkipReason: this.resolveSkipReason(options.policyOutcome),
@@ -78,8 +78,8 @@ export class CliDeliveryRehearsalRuntime {
     const deliveryRehearsalId = `delivery-rehearsal-${options.executionId}`;
     const deliveryRehearsalSummary =
       options.rehearsalAction === CliDeliveryRehearsalAction.PR_DRAFT
-        ? "Prepared one guarded PR draft rehearsal payload without opening a real PR."
-        : "Prepared one guarded commit rehearsal payload without creating a real git commit.";
+        ? 'Prepared one guarded PR draft rehearsal payload without opening a real PR.'
+        : 'Prepared one guarded commit rehearsal payload without creating a real git commit.';
     const rehearsalPath = await this.options.artifactWriter.writeDeliveryRehearsalArtifact({
       executionId: options.executionId,
       rehearsalAction: options.rehearsalAction,
@@ -91,8 +91,8 @@ export class CliDeliveryRehearsalRuntime {
         taskTitle: options.taskTitle,
         stageId: options.stageId,
         rehearsalAction: options.rehearsalAction,
-        status: "rehearsed",
-        mode: "rehearsal_only",
+        status: 'rehearsed',
+        mode: 'rehearsal_only',
         policyOutcome: options.policyOutcome,
         riskLevel: options.riskLevel,
         workspace: {
@@ -106,7 +106,7 @@ export class CliDeliveryRehearsalRuntime {
         nextAction: this.resolveNextAction(options.rehearsalAction),
         manualHandoffRequired: true,
         auditReplay: {
-          artifactId: "delivery_rehearsal",
+          artifactId: 'delivery_rehearsal',
           executionId: options.executionId,
           stageId: options.stageId,
         },
@@ -114,10 +114,10 @@ export class CliDeliveryRehearsalRuntime {
     });
 
     return {
-      handledBy: "delivery-rehearsal-runtime",
+      handledBy: 'delivery-rehearsal-runtime',
       stageId: options.stageId,
       taskId: options.taskId,
-      artifactId: "delivery_rehearsal",
+      artifactId: 'delivery_rehearsal',
       deliveryRehearsalAction: options.rehearsalAction,
       deliveryRehearsalStatus: CliDeliveryRehearsalStatus.APPLIED,
       deliveryRehearsalPath: rehearsalPath,
@@ -150,7 +150,7 @@ export class CliDeliveryRehearsalRuntime {
    */
   private resolveNextAction(rehearsalAction: CliDeliveryRehearsalAction): string {
     return rehearsalAction === CliDeliveryRehearsalAction.PR_DRAFT
-      ? "Review the rehearsal artifact, then open a guarded PR draft manually after approval."
-      : "Review the rehearsal artifact, then create a guarded git commit manually after approval.";
+      ? 'Review the rehearsal artifact, then open a guarded PR draft manually after approval.'
+      : 'Review the rehearsal artifact, then create a guarded git commit manually after approval.';
   }
 }

@@ -1,12 +1,12 @@
 import type {
   AgentAvailabilityStatus,
   AgentCapabilitySupportLevel,
-} from "@repo-ai-governor/adapter-sdk";
-import type { AdapterAvailability, AdapterSurface } from "@repo-ai-governor/shared";
+} from '@repo-ai-governor/adapter-sdk';
+import type { AdapterAvailability, AdapterSurface } from '@repo-ai-governor/shared';
 import type {
   CliAdapterRoleSelectionSource,
   CliGovernanceCheckStatus,
-} from "../../constants/cli-governance-runtime.constant.js";
+} from '../../constants/cli-governance-runtime.constant.js';
 
 /**
  * Defines one local adapter probe override row used by CLI runtime tests and diagnostics.

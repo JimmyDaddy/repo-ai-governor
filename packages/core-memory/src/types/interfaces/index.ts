@@ -9,4 +9,4 @@ export type {
   MemorySnapshotMetadata,
   MemorySnapshotPayload,
   MemoryWriteEntryRequest,
-} from "./memory-manager.interface.js";
+} from './memory-manager.interface.js';

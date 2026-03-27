@@ -1,8 +1,8 @@
-import { ErrorOutputEnvironment, ErrorScenario } from "../constants/error.constant.js";
-import type { StandardizedError } from "../types/interfaces/standardized-error.interface.js";
-import { GovernorErrorCode } from "./error-code.constant.js";
+import { ErrorOutputEnvironment, ErrorScenario } from '../constants/error.constant.js';
+import type { StandardizedError } from '../types/interfaces/standardized-error.interface.js';
+import { GovernorErrorCode } from './error-code.constant.js';
 
-const ERROR_OUTPUT_ENVIRONMENT_ENV_KEY = "REPO_AI_GOVERNOR_ERROR_OUTPUT";
+const ERROR_OUTPUT_ENVIRONMENT_ENV_KEY = 'REPO_AI_GOVERNOR_ERROR_OUTPUT';
 const ERROR_OUTPUT_ENVIRONMENTS = new Set(Object.values(ErrorOutputEnvironment));
 
 /**
@@ -49,7 +49,7 @@ export abstract class BaseError extends Error {
     }
 
     if (outputEnvironment === ErrorOutputEnvironment.PRETTY) {
-      const detailsSuffix = this.details ? `\n  details: ${JSON.stringify(this.details)}` : "";
+      const detailsSuffix = this.details ? `\n  details: ${JSON.stringify(this.details)}` : '';
       return `[${outputPayload.scenario}/${outputPayload.code}] ${outputPayload.message}${detailsSuffix}`;
     }
 
@@ -146,12 +146,12 @@ export function standardizeError(error: unknown): StandardizedError {
  * @returns True when candidate contains a string `message`.
  */
 function isErrorLike(candidate: unknown): candidate is { message: string } {
-  if (!candidate || typeof candidate !== "object") {
+  if (!candidate || typeof candidate !== 'object') {
     return false;
   }
 
   const message = (candidate as { message?: unknown }).message;
-  return typeof message === "string";
+  return typeof message === 'string';
 }
 
 /**
@@ -161,6 +161,6 @@ function isErrorLike(candidate: unknown): candidate is { message: string } {
  */
 function isErrorOutputEnvironment(value: unknown): value is ErrorOutputEnvironment {
   return (
-    typeof value === "string" && ERROR_OUTPUT_ENVIRONMENTS.has(value as ErrorOutputEnvironment)
+    typeof value === 'string' && ERROR_OUTPUT_ENVIRONMENTS.has(value as ErrorOutputEnvironment)
   );
 }

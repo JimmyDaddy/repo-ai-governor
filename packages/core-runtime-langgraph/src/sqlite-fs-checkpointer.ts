@@ -1,19 +1,19 @@
-import { mkdir } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
-import { DatabaseSync } from "node:sqlite";
+import { mkdir } from 'node:fs/promises';
+import { dirname, resolve } from 'node:path';
+import { DatabaseSync } from 'node:sqlite';
 
-import { GovernorErrorCode, RuntimeError, standardizeError } from "@repo-ai-governor/shared";
+import { GovernorErrorCode, RuntimeError, standardizeError } from '@repo-ai-governor/shared';
 import {
   LANGGRAPH_SQLITE_FS_CHECKPOINTER_DATABASE_FILE_NAME,
   LANGGRAPH_SQLITE_FS_CHECKPOINTER_TABLE_NAME,
-} from "./constants/index.js";
-import { LangGraphCheckpointerBase } from "./langgraph-checkpointer.abstract.js";
+} from './constants/index.js';
+import { LangGraphCheckpointerBase } from './langgraph-checkpointer.abstract.js';
 import type {
   LangGraphCheckpointEnvelope,
   LangGraphRecoveredExecution,
   LangGraphSaveCheckpointOptions,
   LangGraphSqliteFsCheckpointerOptions,
-} from "./types/index.js";
+} from './types/index.js';
 
 interface SqliteCheckpointRow {
   envelopeJson: string;
@@ -49,7 +49,7 @@ export class LangGraphSqliteFsCheckpointer extends LangGraphCheckpointerBase {
       options.plan.executionId,
       options.executionSessionId,
     );
-    const checkpointEnvelope = this.createCheckpointEnvelope(options, "sqlite-fs", checkpointPath);
+    const checkpointEnvelope = this.createCheckpointEnvelope(options, 'sqlite-fs', checkpointPath);
 
     try {
       await this.ensureDatabaseReady();
@@ -80,7 +80,7 @@ export class LangGraphSqliteFsCheckpointer extends LangGraphCheckpointerBase {
       const standardizedError = standardizeError(error);
       throw new RuntimeError(
         GovernorErrorCode.PROCESS_RUNTIME_CHECKPOINT_WRITE_FAILED,
-        "Failed to persist LangGraph checkpoint to sqlite-fs storage.",
+        'Failed to persist LangGraph checkpoint to sqlite-fs storage.',
         {
           databaseFilePath: this.databaseFilePath,
           executionId: options.plan.executionId,
@@ -132,7 +132,7 @@ export class LangGraphSqliteFsCheckpointer extends LangGraphCheckpointerBase {
 
       throw new RuntimeError(
         GovernorErrorCode.PROCESS_RUNTIME_CHECKPOINT_READ_FAILED,
-        "Failed to read LangGraph checkpoint from sqlite-fs storage.",
+        'Failed to read LangGraph checkpoint from sqlite-fs storage.',
         {
           databaseFilePath: this.databaseFilePath,
           executionId,

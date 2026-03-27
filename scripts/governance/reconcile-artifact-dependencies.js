@@ -1,54 +1,54 @@
 #!/usr/bin/env node
 
-import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
-import { basename, resolve } from "node:path";
+import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { basename, resolve } from 'node:path';
 
-import { gateInfo, gatePass } from "./gate-output.js";
+import { gateInfo, gatePass } from './gate-output.js';
 
-const GATE_NAME = "artifact-reconcile";
-const MAIN_REGISTRY_PATH = ".repo-ai-governor/context/artifact-registry/artifacts.csv";
-const TASK_LEDGER_ROOT = ".repo-ai-governor/context/dev";
-const TASK_CARD_ROOT = ".repo-ai-governor/context/dev";
+const GATE_NAME = 'artifact-reconcile';
+const MAIN_REGISTRY_PATH = '.repo-ai-governor/context/artifact-registry/artifacts.csv';
+const TASK_LEDGER_ROOT = '.repo-ai-governor/context/dev';
+const TASK_CARD_ROOT = '.repo-ai-governor/context/dev';
 const DEPENDS_ON_SECTION_HEADING_PATTERN = /^##\s*(?:\d+(?:\.\d+)*\.?\s*)?Depends On\s*$/u;
 const REQUIRED_REGISTRY_HEADERS = [
-  "artifact_id",
-  "artifact_type",
-  "artifact_path",
-  "artifact_version",
-  "artifact_status",
-  "producer_task_id",
-  "producer_execution_id",
-  "registered_at",
-  "last_updated_at",
-  "dependent_tasks",
+  'artifact_id',
+  'artifact_type',
+  'artifact_path',
+  'artifact_version',
+  'artifact_status',
+  'producer_task_id',
+  'producer_execution_id',
+  'registered_at',
+  'last_updated_at',
+  'dependent_tasks',
 ];
 const REQUIRED_TASK_HEADERS = [
-  "execution_id",
-  "task_id",
-  "title",
-  "owner",
-  "priority",
-  "due_date",
-  "status",
-  "project",
-  "sprint",
-  "plan",
-  "result",
-  "verify",
-  "review_delta",
-  "recorded_at",
+  'execution_id',
+  'task_id',
+  'title',
+  'owner',
+  'priority',
+  'due_date',
+  'status',
+  'project',
+  'sprint',
+  'plan',
+  'result',
+  'verify',
+  'review_delta',
+  'recorded_at',
 ];
 const CLOSED_TASK_STATUSES = new Set([
-  "completed",
-  "done",
-  "closed",
-  "cancelled",
-  "canceled",
-  "resolved",
-  "retired",
-  "archived",
+  'completed',
+  'done',
+  'closed',
+  'cancelled',
+  'canceled',
+  'resolved',
+  'retired',
+  'archived',
 ]);
-const ACTIVE_REGISTRY_STATUSES = new Set(["active", "frozen"]);
+const ACTIVE_REGISTRY_STATUSES = new Set(['active', 'frozen']);
 
 /**
  * Parses one CSV line with quote support.
@@ -57,7 +57,7 @@ const ACTIVE_REGISTRY_STATUSES = new Set(["active", "frozen"]);
  */
 function parseCsvLine(line) {
   const values = [];
-  let currentValue = "";
+  let currentValue = '';
   let inQuotes = false;
 
   for (let index = 0; index < line.length; index += 1) {
@@ -75,9 +75,9 @@ function parseCsvLine(line) {
       continue;
     }
 
-    if (character === "," && !inQuotes) {
+    if (character === ',' && !inQuotes) {
       values.push(currentValue);
-      currentValue = "";
+      currentValue = '';
       continue;
     }
 
@@ -112,7 +112,7 @@ function readCsv(filePath, requiredHeaders) {
     throw new Error(`CSV file not found: ${filePath}`);
   }
 
-  const lines = readFileSync(filePath, "utf8")
+  const lines = readFileSync(filePath, 'utf8')
     .split(/\r?\n/u)
     .map((line) => line.trimEnd())
     .filter((line) => line.trim().length > 0);
@@ -155,10 +155,10 @@ function readCsv(filePath, requiredHeaders) {
  */
 function writeCsv(filePath, headers, rows) {
   const lines = [
-    headers.join(","),
-    ...rows.map((row) => headers.map((header) => escapeCsvCell(row[header] ?? "")).join(",")),
+    headers.join(','),
+    ...rows.map((row) => headers.map((header) => escapeCsvCell(row[header] ?? '')).join(',')),
   ];
-  writeFileSync(filePath, `${lines.join("\n")}\n`, "utf8");
+  writeFileSync(filePath, `${lines.join('\n')}\n`, 'utf8');
 }
 
 /**
@@ -172,13 +172,13 @@ function parseDependentTasks(rawDependentTasks) {
     return { values: [], hasTbdPlaceholder: false };
   }
 
-  if (trimmedValue.toUpperCase() === "TBD") {
+  if (trimmedValue.toUpperCase() === 'TBD') {
     return { values: [], hasTbdPlaceholder: true };
   }
 
   return {
     values: trimmedValue
-      .split("|")
+      .split('|')
       .map((value) => value.trim())
       .filter((value) => value.length > 0),
     hasTbdPlaceholder: false,
@@ -211,7 +211,7 @@ function listTaskCsvFiles(rootDirectory) {
         continue;
       }
 
-      if (entry.isFile() && entry.name === "tasks.csv" && basename(directoryPath) === "tasks") {
+      if (entry.isFile() && entry.name === 'tasks.csv' && basename(directoryPath) === 'tasks') {
         filePaths.push(absolutePath);
       }
     }
@@ -282,8 +282,8 @@ function parseDateWeight(value) {
  */
 function formatDate(value) {
   const year = value.getFullYear();
-  const month = String(value.getMonth() + 1).padStart(2, "0");
-  const day = String(value.getDate()).padStart(2, "0");
+  const month = String(value.getMonth() + 1).padStart(2, '0');
+  const day = String(value.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
 
@@ -336,7 +336,7 @@ function extractDependsOnArtifactIds(content) {
     sectionLines.push(lines[index]);
   }
 
-  const sectionContent = sectionLines.join("\n");
+  const sectionContent = sectionLines.join('\n');
   const artifactMatches = sectionContent.match(/DA-\d+/gu) ?? [];
   return Array.from(new Set(artifactMatches)).sort((left, right) => left.localeCompare(right));
 }
@@ -399,7 +399,7 @@ function buildArtifactDependencyIndexFromTaskCards(taskCardPaths, latestTaskStat
       continue;
     }
 
-    const content = readFileSync(taskCardPath, "utf8");
+    const content = readFileSync(taskCardPath, 'utf8');
     const fromLedger = latestTaskStatuses.get(taskId)?.status;
     const fromCard = readTaskStatusFromCard(content);
     const taskStatus = fromLedger ?? fromCard;
@@ -438,7 +438,7 @@ function buildArtifactDependencyIndexFromTaskCards(taskCardPaths, latestTaskStat
 }
 
 const argv = process.argv.slice(2);
-const dryRun = argv.includes("--dry-run");
+const dryRun = argv.includes('--dry-run');
 const mainRegistryPath = resolve(process.cwd(), MAIN_REGISTRY_PATH);
 const taskLedgerRoot = resolve(process.cwd(), TASK_LEDGER_ROOT);
 const taskCardRoot = resolve(process.cwd(), TASK_CARD_ROOT);
@@ -463,10 +463,10 @@ let activeArtifactWithoutDependentsCount = 0;
 let totalResolvedDependencyLinks = 0;
 
 for (const row of rows) {
-  const currentDependentTasks = parseDependentTasks(row.dependent_tasks ?? "");
+  const currentDependentTasks = parseDependentTasks(row.dependent_tasks ?? '');
   let changed = false;
 
-  if (parseDateWeight(row.last_updated_at ?? "") < parseDateWeight(row.registered_at ?? "")) {
+  if (parseDateWeight(row.last_updated_at ?? '') < parseDateWeight(row.registered_at ?? '')) {
     row.last_updated_at = today;
     correctedDateInversionCount += 1;
     changed = true;
@@ -488,14 +488,14 @@ for (const row of rows) {
     }
   }
 
-  const nextDependentTasks = expectedDependentTasks.join("|");
-  if (nextDependentTasks !== currentDependentTasks.values.join("|")) {
+  const nextDependentTasks = expectedDependentTasks.join('|');
+  if (nextDependentTasks !== currentDependentTasks.values.join('|')) {
     row.dependent_tasks = nextDependentTasks;
     changed = true;
   }
 
   if (!nextDependentTasks && currentDependentTasks.hasTbdPlaceholder) {
-    row.dependent_tasks = "";
+    row.dependent_tasks = '';
     changed = true;
   }
 
@@ -527,7 +527,7 @@ const summary = {
 if (unresolvedArtifactIds.length > 0) {
   gateInfo(
     GATE_NAME,
-    `unresolved artifact refs in open task cards=${unresolvedArtifactIds.join(",")}`,
+    `unresolved artifact refs in open task cards=${unresolvedArtifactIds.join(',')}`,
   );
 }
 

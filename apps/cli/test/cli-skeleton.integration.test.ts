@@ -1,4 +1,4 @@
-import { runCli } from "../src/main.js";
+import { runCli } from '../src/main.js';
 
 /**
  * Creates in-memory IO adapters for CLI integration tests.
@@ -31,31 +31,31 @@ function createBufferedIo(): {
   };
 }
 
-describe("CLI command integration", () => {
-  it("prints executable init output for workspace bootstrap", async () => {
+describe('CLI command integration', () => {
+  it('prints executable init output for workspace bootstrap', async () => {
     const { stdoutBuffer, stderrBuffer, io } = createBufferedIo();
 
-    const exitCode = await runCli(["node", "repo-ai-governor", "--locale", "en-US", "init"], io);
+    const exitCode = await runCli(['node', 'repo-ai-governor', '--locale', 'en-US', 'init'], io);
 
     expect(exitCode).toBe(0);
-    expect(stderrBuffer.join("")).toBe("");
-    expect(stdoutBuffer.join("")).toContain("Initialized workspace at");
-    expect(stdoutBuffer.join("")).toContain("operation=workspace_init");
-    expect(stdoutBuffer.join("")).toContain("outputMode=plain");
-    expect(stdoutBuffer.join("")).toContain("verbosity=normal");
+    expect(stderrBuffer.join('')).toBe('');
+    expect(stdoutBuffer.join('')).toContain('Initialized workspace at');
+    expect(stdoutBuffer.join('')).toContain('operation=workspace_init');
+    expect(stdoutBuffer.join('')).toContain('outputMode=plain');
+    expect(stdoutBuffer.join('')).toContain('verbosity=normal');
   });
 
-  it("shows help with all Stage-1 commands", async () => {
+  it('shows help with all Stage-1 commands', async () => {
     const { stdoutBuffer, stderrBuffer, io } = createBufferedIo();
 
-    const exitCode = await runCli(["node", "repo-ai-governor", "--help"], io);
+    const exitCode = await runCli(['node', 'repo-ai-governor', '--help'], io);
 
     expect(exitCode).toBe(0);
-    expect(stderrBuffer.join("")).toBe("");
-    expect(stdoutBuffer.join("")).toContain("connect");
-    expect(stdoutBuffer.join("")).toContain("review-verify");
-    expect(stdoutBuffer.join("")).toContain("verify");
-    expect(stdoutBuffer.join("")).toContain("upgrade");
-    expect(stdoutBuffer.join("")).toContain("workspace");
+    expect(stderrBuffer.join('')).toBe('');
+    expect(stdoutBuffer.join('')).toContain('connect');
+    expect(stdoutBuffer.join('')).toContain('review-verify');
+    expect(stdoutBuffer.join('')).toContain('verify');
+    expect(stdoutBuffer.join('')).toContain('upgrade');
+    expect(stdoutBuffer.join('')).toContain('workspace');
   });
 });

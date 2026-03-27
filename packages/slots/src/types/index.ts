@@ -2,7 +2,7 @@ export type {
   SlotDefinition,
   SlotDefinitionList,
   SlotSecurityEvaluationBySlotId,
-} from "./aliases/index.js";
+} from './aliases/index.js';
 export type {
   DeclarativeSlotDefinition,
   DeclarativeSlotRule,
@@ -27,4 +27,4 @@ export type {
   SlotSecurityEvaluation,
   SlotSecurityIssue,
   SlotTriggerCondition,
-} from "./interfaces/index.js";
+} from './interfaces/index.js';

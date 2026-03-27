@@ -1,15 +1,15 @@
-import { resolve } from "node:path";
+import { resolve } from 'node:path';
 
-import { ExecutionProgressStage, GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
-import { CliCommandName } from "../constants/cli-command.constant.js";
-import { CliCommandResultCheckId } from "../constants/cli-command-result-check.constant.js";
+import { ExecutionProgressStage, GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
+import { CliCommandName } from '../constants/cli-command.constant.js';
+import { CliCommandResultCheckId } from '../constants/cli-command-result-check.constant.js';
 import {
   CLI_RUNTIME_OPERATION,
   CliGovernanceCheckStatus,
-} from "../constants/cli-governance-runtime.constant.js";
-import type { CliCommandResultArtifact, CliCommandResultCheck } from "../types/index.js";
-import type { CliCommandExecutorContext } from "../types/interfaces/cli-governance-runtime.interface.js";
-import type { CliCommandExecutor } from "./cli-command-executor.interface.js";
+} from '../constants/cli-governance-runtime.constant.js';
+import type { CliCommandResultArtifact, CliCommandResultCheck } from '../types/index.js';
+import type { CliCommandExecutorContext } from '../types/interfaces/cli-governance-runtime.interface.js';
+import type { CliCommandExecutor } from './cli-command-executor.interface.js';
 
 /**
  * Owns `verify` command execution outside the runtime facade.
@@ -24,9 +24,9 @@ export class CliVerifyCommand implements CliCommandExecutor {
 
     if (!runtimeDebugOptions.adapters) {
       checks.push({
-        id: "adapters_flag",
+        id: 'adapters_flag',
         status: CliGovernanceCheckStatus.WARN,
-        detail: "--adapters not set; verify still executed with adapters baseline by default",
+        detail: '--adapters not set; verify still executed with adapters baseline by default',
       });
     }
     checks.push({
@@ -45,9 +45,9 @@ export class CliVerifyCommand implements CliCommandExecutor {
     const verifyId = `verify-${Date.now()}`;
     const diagnosticsArtifactPath = resolve(
       context.options.workspace.workspaceRoot,
-      "context",
-      "diagnostics",
-      "verify",
+      'context',
+      'diagnostics',
+      'verify',
       `${verifyId}.json`,
     );
     await context.artifactWriter.writeJsonArtifact(diagnosticsArtifactPath, {
@@ -67,7 +67,7 @@ export class CliVerifyCommand implements CliCommandExecutor {
 
     const artifacts: CliCommandResultArtifact[] = [
       {
-        id: "verify_diagnostics",
+        id: 'verify_diagnostics',
         path: diagnosticsArtifactPath,
       },
     ];

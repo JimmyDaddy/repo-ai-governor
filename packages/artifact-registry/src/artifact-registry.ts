@@ -1,12 +1,12 @@
-import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
-import { ALL_ARTIFACT_LIFECYCLE_STATUSES, ARTIFACT_VERSION_PATTERN } from "./constants/index.js";
-import type { ArtifactLifecycleStatus } from "./constants/index.js";
+import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
+import { ALL_ARTIFACT_LIFECYCLE_STATUSES, ARTIFACT_VERSION_PATTERN } from './constants/index.js';
+import type { ArtifactLifecycleStatus } from './constants/index.js';
 import type {
   ArtifactIndexStore,
   ArtifactRegistryRecord,
   ListArtifactsOptions,
   RegisterArtifactOptions,
-} from "./types/index.js";
+} from './types/index.js';
 
 /**
  * Manages artifact registry records with deterministic validation and query semantics.
@@ -24,18 +24,18 @@ export class ArtifactRegistry {
    * @returns Persisted artifact record.
    */
   public async registerArtifact(options: RegisterArtifactOptions): Promise<ArtifactRegistryRecord> {
-    const artifactId = this.readRequiredString(options.artifactId, "artifactId");
-    const artifactType = this.readRequiredString(options.artifactType, "artifactType");
-    const artifactPath = this.readRequiredString(options.artifactPath, "artifactPath");
-    const artifactVersion = this.readArtifactVersion(options.artifactVersion, "artifactVersion");
+    const artifactId = this.readRequiredString(options.artifactId, 'artifactId');
+    const artifactType = this.readRequiredString(options.artifactType, 'artifactType');
+    const artifactPath = this.readRequiredString(options.artifactPath, 'artifactPath');
+    const artifactVersion = this.readArtifactVersion(options.artifactVersion, 'artifactVersion');
     const artifactStatus = this.readArtifactLifecycleStatus(
       options.artifactStatus,
-      "artifactStatus",
+      'artifactStatus',
     );
-    const producerTaskId = this.readRequiredString(options.producerTaskId, "producerTaskId");
+    const producerTaskId = this.readRequiredString(options.producerTaskId, 'producerTaskId');
     const producerExecutionId = this.readRequiredString(
       options.producerExecutionId,
-      "producerExecutionId",
+      'producerExecutionId',
     );
 
     const now = this.toRfc3339SecondsTimestamp(new Date());
@@ -51,8 +51,8 @@ export class ArtifactRegistry {
       artifactStatus,
       producerTaskId,
       producerExecutionId,
-      registeredAt: this.readRfc3339SecondsTimestamp(registeredAt, "registeredAt"),
-      lastUpdatedAt: this.readRfc3339SecondsTimestamp(lastUpdatedAt, "lastUpdatedAt"),
+      registeredAt: this.readRfc3339SecondsTimestamp(registeredAt, 'registeredAt'),
+      lastUpdatedAt: this.readRfc3339SecondsTimestamp(lastUpdatedAt, 'lastUpdatedAt'),
       dependentTasks: this.normalizeDependentTasks(options.dependentTasks ?? []),
     };
 
@@ -104,7 +104,7 @@ export class ArtifactRegistry {
    * @returns Artifact-version rows.
    */
   public async listArtifactVersions(artifactId: string): Promise<ArtifactRegistryRecord[]> {
-    const normalizedArtifactId = this.readRequiredString(artifactId, "artifactId");
+    const normalizedArtifactId = this.readRequiredString(artifactId, 'artifactId');
     const records = await this.listArtifacts({
       artifactIds: [normalizedArtifactId],
     });
@@ -142,7 +142,7 @@ export class ArtifactRegistry {
     if (!ALL_ARTIFACT_LIFECYCLE_STATUSES.has(value)) {
       throw new RuntimeError(
         GovernorErrorCode.ARTIFACT_REGISTRY_RECORD_INVALID,
-        `Field "${fieldName}" must be one of ${Array.from(ALL_ARTIFACT_LIFECYCLE_STATUSES).join(", ")}.`,
+        `Field "${fieldName}" must be one of ${Array.from(ALL_ARTIFACT_LIFECYCLE_STATUSES).join(', ')}.`,
         {
           fieldName,
           value,
@@ -226,7 +226,7 @@ export class ArtifactRegistry {
    * @returns Trimmed string.
    */
   private readRequiredString(candidate: unknown, fieldName: string): string {
-    if (typeof candidate !== "string" || candidate.trim().length === 0) {
+    if (typeof candidate !== 'string' || candidate.trim().length === 0) {
       throw new RuntimeError(
         GovernorErrorCode.ARTIFACT_REGISTRY_RECORD_INVALID,
         `Field "${fieldName}" must be a non-empty string.`,
@@ -267,8 +267,8 @@ export class ArtifactRegistry {
    * @returns Numeric version segments.
    */
   private parseVersionSegments(artifactVersion: string): [number, number, number] {
-    const version = this.readArtifactVersion(artifactVersion, "artifactVersion").replace(/^v/u, "");
-    const segments = version.split(".").map((segment) => Number.parseInt(segment, 10));
+    const version = this.readArtifactVersion(artifactVersion, 'artifactVersion').replace(/^v/u, '');
+    const segments = version.split('.').map((segment) => Number.parseInt(segment, 10));
 
     return [segments[0] ?? 0, segments[1] ?? 0, segments[2] ?? 0];
   }
@@ -279,6 +279,6 @@ export class ArtifactRegistry {
    * @returns Timestamp without milliseconds.
    */
   private toRfc3339SecondsTimestamp(date: Date): string {
-    return date.toISOString().replace(/\.\d{3}Z$/u, "Z");
+    return date.toISOString().replace(/\.\d{3}Z$/u, 'Z');
   }
 }

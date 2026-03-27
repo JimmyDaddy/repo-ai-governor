@@ -1,11 +1,11 @@
-import { existsSync, readFileSync } from "node:fs";
-import { relative, resolve } from "node:path";
+import { existsSync, readFileSync } from 'node:fs';
+import { relative, resolve } from 'node:path';
 
-import { parse } from "yaml";
+import { parse } from 'yaml';
 
 export const DEFAULT_TECHNICAL_SOLUTION_MODULE_REGISTRY_PATH =
-  ".repo-ai-governor/normative_knowledge_sources/technical-solutions/technical-solution-module-registry.yaml";
-export const SUPPORTED_TECHNICAL_SOLUTION_DETAIL_DOC_KINDS = ["contract", "adr"];
+  '.repo-ai-governor/normative_knowledge_sources/technical-solutions/technical-solution-module-registry.yaml';
+export const SUPPORTED_TECHNICAL_SOLUTION_DETAIL_DOC_KINDS = ['contract', 'adr'];
 
 /**
  * Normalizes path separators.
@@ -13,7 +13,7 @@ export const SUPPORTED_TECHNICAL_SOLUTION_DETAIL_DOC_KINDS = ["contract", "adr"]
  * @returns {string}
  */
 function normalizePathSeparators(value) {
-  return value.replace(/\\/gu, "/");
+  return value.replace(/\\/gu, '/');
 }
 
 /**
@@ -26,7 +26,7 @@ function toStringArray(value) {
     return [];
   }
 
-  return value.map((entry) => String(entry ?? "").trim()).filter((entry) => entry.length > 0);
+  return value.map((entry) => String(entry ?? '').trim()).filter((entry) => entry.length > 0);
 }
 
 /**
@@ -44,9 +44,9 @@ function toRepoRelativePath(absolutePath) {
  * @returns {{classification: string, requires_sync: string[], recommends_sync: string[]}}
  */
 function normalizeSyncPolicyEntry(value) {
-  if (!value || typeof value !== "object") {
+  if (!value || typeof value !== 'object') {
     return {
-      classification: "unknown",
+      classification: 'unknown',
       requires_sync: [],
       recommends_sync: [],
     };
@@ -54,7 +54,7 @@ function normalizeSyncPolicyEntry(value) {
 
   const policyEntry = /** @type {Record<string, unknown>} */ (value);
   return {
-    classification: String(policyEntry.classification ?? "").trim() || "unknown",
+    classification: String(policyEntry.classification ?? '').trim() || 'unknown',
     requires_sync: toStringArray(policyEntry.requires_sync),
     recommends_sync: toStringArray(policyEntry.recommends_sync),
   };
@@ -68,10 +68,10 @@ function normalizeSyncPolicyEntry(value) {
  */
 function inferDetailDocKind(detailDocPath) {
   if (/\/adrs?\//u.test(detailDocPath)) {
-    return "adr";
+    return 'adr';
   }
 
-  return "contract";
+  return 'contract';
 }
 
 /**
@@ -80,7 +80,7 @@ function inferDetailDocKind(detailDocPath) {
  * @returns {{path: string, kind: string}}
  */
 function normalizeDetailDocEntry(value) {
-  if (typeof value === "string") {
+  if (typeof value === 'string') {
     const normalizedPath = value.trim();
     return {
       path: normalizedPath,
@@ -88,18 +88,18 @@ function normalizeDetailDocEntry(value) {
     };
   }
 
-  if (!value || typeof value !== "object") {
+  if (!value || typeof value !== 'object') {
     return {
-      path: "",
-      kind: "contract",
+      path: '',
+      kind: 'contract',
     };
   }
 
   const detailDocRecord = /** @type {Record<string, unknown>} */ (value);
-  const normalizedPath = String(detailDocRecord.path ?? "").trim();
+  const normalizedPath = String(detailDocRecord.path ?? '').trim();
   return {
     path: normalizedPath,
-    kind: String(detailDocRecord.kind ?? inferDetailDocKind(normalizedPath)).trim() || "contract",
+    kind: String(detailDocRecord.kind ?? inferDetailDocKind(normalizedPath)).trim() || 'contract',
   };
 }
 
@@ -153,15 +153,15 @@ export function loadTechnicalSolutionModuleRegistry(
     return null;
   }
 
-  const payload = parse(readFileSync(absoluteRegistryPath, "utf8"));
+  const payload = parse(readFileSync(absoluteRegistryPath, 'utf8'));
   const rootRecord =
-    payload && typeof payload === "object" ? /** @type {Record<string, unknown>} */ (payload) : {};
+    payload && typeof payload === 'object' ? /** @type {Record<string, unknown>} */ (payload) : {};
   const modules = Array.isArray(rootRecord.modules) ? rootRecord.modules : [];
 
   return {
     registry_path: normalizePathSeparators(registryPath),
     schema_version:
-      typeof rootRecord.schema_version === "number" || typeof rootRecord.schema_version === "string"
+      typeof rootRecord.schema_version === 'number' || typeof rootRecord.schema_version === 'string'
         ? rootRecord.schema_version
         : null,
     allowed_layers: toStringArray(rootRecord.allowed_layers),
@@ -169,11 +169,11 @@ export function loadTechnicalSolutionModuleRegistry(
     sync_target_tokens: toStringArray(rootRecord.sync_target_tokens),
     modules: modules.map((moduleValue) => {
       const moduleRecord =
-        moduleValue && typeof moduleValue === "object"
+        moduleValue && typeof moduleValue === 'object'
           ? /** @type {Record<string, unknown>} */ (moduleValue)
           : {};
       const rawPolicy =
-        moduleRecord.change_impact_policy && typeof moduleRecord.change_impact_policy === "object"
+        moduleRecord.change_impact_policy && typeof moduleRecord.change_impact_policy === 'object'
           ? /** @type {Record<string, unknown>} */ (moduleRecord.change_impact_policy)
           : {};
       /** @type {Record<string, {classification: string, requires_sync: string[], recommends_sync: string[]}>} */
@@ -185,11 +185,11 @@ export function loadTechnicalSolutionModuleRegistry(
       const detailDocCatalog = toDetailDocCatalog(moduleRecord.detail_docs);
 
       return {
-        module_id: String(moduleRecord.module_id ?? "").trim(),
-        status: String(moduleRecord.status ?? "").trim(),
-        owner: String(moduleRecord.owner ?? "").trim(),
-        layer: String(moduleRecord.layer ?? "").trim(),
-        summary_doc: String(moduleRecord.summary_doc ?? "").trim(),
+        module_id: String(moduleRecord.module_id ?? '').trim(),
+        status: String(moduleRecord.status ?? '').trim(),
+        owner: String(moduleRecord.owner ?? '').trim(),
+        layer: String(moduleRecord.layer ?? '').trim(),
+        summary_doc: String(moduleRecord.summary_doc ?? '').trim(),
         detail_docs: detailDocCatalog.map((detailDocEntry) => detailDocEntry.path),
         detail_doc_catalog: detailDocCatalog,
         north_star_refs: toStringArray(moduleRecord.north_star_refs),
@@ -199,7 +199,7 @@ export function loadTechnicalSolutionModuleRegistry(
         load_triggers: toStringArray(moduleRecord.load_triggers),
         change_impact_policy: normalizedPolicy,
         context_budget:
-          moduleRecord.context_budget && typeof moduleRecord.context_budget === "object"
+          moduleRecord.context_budget && typeof moduleRecord.context_budget === 'object'
             ? /** @type {Record<string, unknown>} */ (moduleRecord.context_budget)
             : {},
       };

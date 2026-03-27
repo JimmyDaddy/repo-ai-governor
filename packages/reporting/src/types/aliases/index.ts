@@ -1,1 +1,1 @@
-export type { ReportStatusBreakdown } from "./report-status-breakdown.type.js";
+export type { ReportStatusBreakdown } from './report-status-breakdown.type.js';

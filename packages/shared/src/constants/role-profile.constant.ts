@@ -6,8 +6,8 @@
  * defaults from repository-specific custom profiles.
  */
 export enum RoleSource {
-  DEFAULT = "default",
-  CUSTOM = "custom",
+  DEFAULT = 'default',
+  CUSTOM = 'custom',
 }
 
 /**
@@ -36,19 +36,19 @@ export const ROLE_PROFILE_VERSION_PATTERN = /^\d+\.\d+\.\d+$/u;
  * consistent across config, runtime, and audit outputs.
  */
 export enum RoleProfileStatus {
-  ACTIVE = "active",
-  DEPRECATED = "deprecated",
-  RETIRED = "retired",
+  ACTIVE = 'active',
+  DEPRECATED = 'deprecated',
+  RETIRED = 'retired',
 }
 
 /**
  * Defines built-in role-profile identifiers shipped by default registry baseline.
  */
 export enum DefaultRoleProfileId {
-  PLANNER = "planner-default",
-  ARCHITECT = "architect-default",
-  CODER = "coder-default",
-  TESTER = "tester-default",
-  REVIEWER = "reviewer-default",
-  VERIFIER = "verifier-default",
+  PLANNER = 'planner-default',
+  ARCHITECT = 'architect-default',
+  CODER = 'coder-default',
+  TESTER = 'tester-default',
+  REVIEWER = 'reviewer-default',
+  VERIFIER = 'verifier-default',
 }

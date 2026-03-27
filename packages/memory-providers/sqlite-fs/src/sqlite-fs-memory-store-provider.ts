@@ -1,7 +1,7 @@
-import { randomUUID } from "node:crypto";
-import { mkdir, writeFile } from "node:fs/promises";
-import { resolve } from "node:path";
-import { DatabaseSync } from "node:sqlite";
+import { randomUUID } from 'node:crypto';
+import { mkdir, writeFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import { DatabaseSync } from 'node:sqlite';
 
 import type {
   MemoryArchiveOptions,
@@ -10,16 +10,16 @@ import type {
   MemorySnapshotOptions,
   MemorySnapshotRecord,
   MemoryStoreProvider,
-} from "@repo-ai-governor/memory-store-adapter";
-import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
+} from '@repo-ai-governor/memory-store-adapter';
+import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import {
   SQLITE_FS_ARCHIVE_TABLE_NAME,
   SQLITE_FS_DATABASE_FILE_NAME,
   SQLITE_FS_RECORDS_TABLE_NAME,
   SQLITE_FS_SNAPSHOTS_DIRECTORY_NAME,
   SQLITE_FS_SNAPSHOTS_TABLE_NAME,
-} from "./constants/index.js";
-import type { SqliteFsMemoryStoreProviderOptions } from "./types/index.js";
+} from './constants/index.js';
+import type { SqliteFsMemoryStoreProviderOptions } from './types/index.js';
 
 interface SqliteMemoryRow {
   namespace: string;
@@ -122,7 +122,7 @@ export class SqliteFsMemoryStoreProvider implements MemoryStoreProvider {
     const parameters: (string | number)[] = [];
 
     if (request.namespace) {
-      conditions.push("namespace = ?");
+      conditions.push('namespace = ?');
       parameters.push(request.namespace);
     }
 
@@ -131,7 +131,7 @@ export class SqliteFsMemoryStoreProvider implements MemoryStoreProvider {
       parameters.push(this.toLikePrefixPattern(request.keyPrefix));
     }
 
-    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
     const sql = `
       SELECT namespace, key, value_json AS valueJson, tags_json AS tagsJson, updated_at AS updatedAt
       FROM ${SQLITE_FS_RECORDS_TABLE_NAME}
@@ -169,7 +169,7 @@ export class SqliteFsMemoryStoreProvider implements MemoryStoreProvider {
     const snapshotPath = resolve(this.snapshotsDirectoryPath, `${snapshotId}.json`);
 
     await mkdir(this.snapshotsDirectoryPath, { recursive: true });
-    await writeFile(snapshotPath, JSON.stringify(snapshotRecords, null, 2), "utf8");
+    await writeFile(snapshotPath, JSON.stringify(snapshotRecords, null, 2), 'utf8');
 
     this.getDatabase()
       .prepare(
@@ -179,7 +179,7 @@ export class SqliteFsMemoryStoreProvider implements MemoryStoreProvider {
           VALUES (?, ?, ?, ?, ?)
         `,
       )
-      .run(snapshotId, createdAt, options.reason ?? "", snapshotRecords.length, snapshotPath);
+      .run(snapshotId, createdAt, options.reason ?? '', snapshotRecords.length, snapshotPath);
 
     return {
       snapshotId,
@@ -254,7 +254,7 @@ export class SqliteFsMemoryStoreProvider implements MemoryStoreProvider {
     } catch (error) {
       throw new RuntimeError(
         GovernorErrorCode.MEMORY_STORE_WRITE_FAILED,
-        "Failed to dispose sqlite+fs memory provider connection.",
+        'Failed to dispose sqlite+fs memory provider connection.',
         {
           databaseFilePath: this.databaseFilePath,
         },
@@ -291,7 +291,7 @@ export class SqliteFsMemoryStoreProvider implements MemoryStoreProvider {
     await mkdir(this.snapshotsDirectoryPath, { recursive: true });
 
     const database = new DatabaseSync(this.databaseFilePath);
-    database.exec("PRAGMA journal_mode = WAL;");
+    database.exec('PRAGMA journal_mode = WAL;');
     database.exec(
       `
         CREATE TABLE IF NOT EXISTS ${SQLITE_FS_RECORDS_TABLE_NAME} (
@@ -340,7 +340,7 @@ export class SqliteFsMemoryStoreProvider implements MemoryStoreProvider {
 
     throw new RuntimeError(
       GovernorErrorCode.MEMORY_STORE_WRITE_FAILED,
-      "Sqlite+fs memory provider database is not initialized.",
+      'Sqlite+fs memory provider database is not initialized.',
       {
         databaseFilePath: this.databaseFilePath,
       },
@@ -354,13 +354,13 @@ export class SqliteFsMemoryStoreProvider implements MemoryStoreProvider {
    */
   private runInTransaction(transactionBody: () => void): void {
     const database = this.getDatabase();
-    database.exec("BEGIN IMMEDIATE TRANSACTION;");
+    database.exec('BEGIN IMMEDIATE TRANSACTION;');
 
     try {
       transactionBody();
-      database.exec("COMMIT;");
+      database.exec('COMMIT;');
     } catch (error) {
-      database.exec("ROLLBACK;");
+      database.exec('ROLLBACK;');
       throw error;
     }
   }
@@ -374,17 +374,17 @@ export class SqliteFsMemoryStoreProvider implements MemoryStoreProvider {
     const parsedValue = this.parseJsonCell<unknown>(row.valueJson, {
       namespace: row.namespace,
       key: row.key,
-      field: "value_json",
+      field: 'value_json',
     });
 
-    if (!parsedValue || typeof parsedValue !== "object" || Array.isArray(parsedValue)) {
+    if (!parsedValue || typeof parsedValue !== 'object' || Array.isArray(parsedValue)) {
       throw new RuntimeError(
         GovernorErrorCode.MEMORY_STORE_READ_FAILED,
-        "Memory record value_json must parse to an object.",
+        'Memory record value_json must parse to an object.',
         {
           namespace: row.namespace,
           key: row.key,
-          field: "value_json",
+          field: 'value_json',
         },
       );
     }
@@ -392,7 +392,7 @@ export class SqliteFsMemoryStoreProvider implements MemoryStoreProvider {
     const parsedTags = this.parseJsonCell<unknown>(row.tagsJson, {
       namespace: row.namespace,
       key: row.key,
-      field: "tags_json",
+      field: 'tags_json',
     });
 
     return {
@@ -400,7 +400,7 @@ export class SqliteFsMemoryStoreProvider implements MemoryStoreProvider {
       key: row.key,
       value: parsedValue as Record<string, unknown>,
       tags: Array.isArray(parsedTags)
-        ? parsedTags.filter((tagValue): tagValue is string => typeof tagValue === "string")
+        ? parsedTags.filter((tagValue): tagValue is string => typeof tagValue === 'string')
         : [],
       updatedAt: row.updatedAt,
     };
@@ -425,7 +425,7 @@ export class SqliteFsMemoryStoreProvider implements MemoryStoreProvider {
     } catch (error) {
       throw new RuntimeError(
         GovernorErrorCode.MEMORY_STORE_READ_FAILED,
-        "Failed to parse sqlite JSON cell in memory provider.",
+        'Failed to parse sqlite JSON cell in memory provider.',
         context,
         error,
       );
@@ -438,7 +438,7 @@ export class SqliteFsMemoryStoreProvider implements MemoryStoreProvider {
    * @returns Escaped sqlite LIKE pattern.
    */
   private toLikePrefixPattern(keyPrefix: string): string {
-    return `${keyPrefix.replace(/([\\%_])/gu, "\\$1")}%`;
+    return `${keyPrefix.replace(/([\\%_])/gu, '\\$1')}%`;
   }
 
   /**

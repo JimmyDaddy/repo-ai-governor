@@ -6,7 +6,7 @@ export type {
   SessionEvent,
   SharedSession,
   UpdateSessionContextOptions,
-} from "./shared-session.interface.js";
+} from './shared-session.interface.js';
 export type {
   ApplyAuditRetentionOptions,
   AuditEventRecord,
@@ -17,4 +17,4 @@ export type {
   ListAuditRecordsOptions,
   PersistedAuditRecord,
   RecordAuditEventOptions,
-} from "./audit-recorder.interface.js";
+} from './audit-recorder.interface.js';

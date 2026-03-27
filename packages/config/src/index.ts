@@ -1,6 +1,6 @@
-export { ConfigLoader } from "./config-loader.js";
-export { ProfileResolver } from "./profile-resolver.js";
-export { SchemaValidator } from "./schema-validator.js";
+export { ConfigLoader } from './config-loader.js';
+export { ProfileResolver } from './profile-resolver.js';
+export { SchemaValidator } from './schema-validator.js';
 export {
   GovernorSchemaVersion,
   UpgradeConfirmationDecision,
@@ -8,12 +8,12 @@ export {
   UpgradeMigrationSuggestionType,
   UpgradeSchemaDiffType,
   WorkspaceModeSource,
-} from "./constants/index.js";
-export { WorkspaceMigrationStep, WorkspaceMigrationStepStatus } from "./constants/index.js";
-export { UpgradeSchemaDiffService } from "./upgrade-schema-diff-service.js";
-export { WorkspaceMigrationService } from "./workspace-migration-service.js";
-export { WorkspaceResolver } from "./workspace-resolver.js";
-export { WorkspaceMode } from "@repo-ai-governor/shared";
+} from './constants/index.js';
+export { WorkspaceMigrationStep, WorkspaceMigrationStepStatus } from './constants/index.js';
+export { UpgradeSchemaDiffService } from './upgrade-schema-diff-service.js';
+export { WorkspaceMigrationService } from './workspace-migration-service.js';
+export { WorkspaceResolver } from './workspace-resolver.js';
+export { WorkspaceMode } from '@repo-ai-governor/shared';
 export type {
   AdaptersConfig,
   AdapterRoleBindingConfig,
@@ -40,4 +40,4 @@ export type {
   WorkspaceMigrationStepResult,
   WorkspaceResolverOptions,
   WorkspaceRuntimeOverrides,
-} from "./types/interfaces/index.js";
+} from './types/interfaces/index.js';

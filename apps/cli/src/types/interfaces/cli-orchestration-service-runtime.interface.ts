@@ -4,15 +4,15 @@ import type {
   LocalOrchestrationServiceShellDependencies,
   LocalOrchestrationServiceSidecarClientDependencies,
   LocalOrchestrationServiceStartExecutionRuntimeContext,
-} from "@repo-ai-governor/core-orchestration-service";
-import type { LangGraphRecoveredExecution } from "@repo-ai-governor/core-runtime-langgraph";
+} from '@repo-ai-governor/core-orchestration-service';
+import type { LangGraphRecoveredExecution } from '@repo-ai-governor/core-runtime-langgraph';
 import type {
   OrchestrationServiceClient,
   OrchestrationStartExecutionRequest,
   OrchestrationStartExecutionResponse,
-} from "@repo-ai-governor/orchestration-service-client";
-import type { MemoryRuntimeConfig } from "@repo-ai-governor/shared";
-import type { CliOrchestrationServiceRuntimeMode } from "../../constants/orchestration-service-runtime.constant.js";
+} from '@repo-ai-governor/orchestration-service-client';
+import type { MemoryRuntimeConfig } from '@repo-ai-governor/shared';
+import type { CliOrchestrationServiceRuntimeMode } from '../../constants/orchestration-service-runtime.constant.js';
 
 /**
  * Defines the minimal owner-side orchestration service surface required by CLI runtime.
@@ -37,5 +37,5 @@ export interface CliOrchestrationServiceRuntimeDependencies {
   memoryConfig?: MemoryRuntimeConfig;
   serviceOwnerProvider?: (workspaceRoot: string) => Promise<CliOrchestrationServiceOwner>;
   sidecarClientDependencies?: LocalOrchestrationServiceSidecarClientDependencies;
-  embeddedShellDependencies?: Omit<LocalOrchestrationServiceShellDependencies, "memoryConfig">;
+  embeddedShellDependencies?: Omit<LocalOrchestrationServiceShellDependencies, 'memoryConfig'>;
 }

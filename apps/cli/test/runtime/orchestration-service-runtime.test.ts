@@ -1,12 +1,12 @@
-import { mkdtemp, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { resolve } from "node:path";
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { resolve } from 'node:path';
 
-import { LocalOrchestrationServiceShell } from "@repo-ai-governor/core-orchestration-service";
+import { LocalOrchestrationServiceShell } from '@repo-ai-governor/core-orchestration-service';
 import {
   MemoryProviderHostSurface,
   MemoryProviderRuntimeMode,
-} from "@repo-ai-governor/memory-provider-registry";
+} from '@repo-ai-governor/memory-provider-registry';
 import {
   OrchestrationClientSurface,
   OrchestrationExecutionKind,
@@ -14,12 +14,12 @@ import {
   OrchestrationServiceEventType,
   OrchestrationServiceHostKind,
   OrchestrationServiceTransportKind,
-} from "@repo-ai-governor/orchestration-service-client";
-import { MemoryStoreEngine } from "@repo-ai-governor/shared";
-import { CliOrchestrationServiceRuntimeMode } from "../../src/constants/orchestration-service-runtime.constant.js";
-import { CliOrchestrationServiceRuntime } from "../../src/runtime/orchestration-service-runtime.js";
+} from '@repo-ai-governor/orchestration-service-client';
+import { MemoryStoreEngine } from '@repo-ai-governor/shared';
+import { CliOrchestrationServiceRuntimeMode } from '../../src/constants/orchestration-service-runtime.constant.js';
+import { CliOrchestrationServiceRuntime } from '../../src/runtime/orchestration-service-runtime.js';
 
-describe("CliOrchestrationServiceRuntime", () => {
+describe('CliOrchestrationServiceRuntime', () => {
   it.each([
     {
       hostKind: OrchestrationServiceHostKind.SIDECAR,
@@ -30,23 +30,23 @@ describe("CliOrchestrationServiceRuntime", () => {
       transportKind: OrchestrationServiceTransportKind.HTTP,
     },
   ])(
-    "preserves transport-neutral host descriptors for $hostKind/$transportKind providers",
+    'preserves transport-neutral host descriptors for $hostKind/$transportKind providers',
     async ({ hostKind, transportKind }) => {
-      const tempRoot = await mkdtemp(resolve(tmpdir(), "cli-orchestration-runtime-"));
-      const workspaceRoot = resolve(tempRoot, ".repo-ai-governor");
+      const tempRoot = await mkdtemp(resolve(tmpdir(), 'cli-orchestration-runtime-'));
+      const workspaceRoot = resolve(tempRoot, '.repo-ai-governor');
 
       try {
         const runtime = new CliOrchestrationServiceRuntime(workspaceRoot, {
           memoryConfig: {
             storeEngine: MemoryStoreEngine.FS_CSV,
-            storeRoot: "context/memory/runtime-test",
+            storeRoot: 'context/memory/runtime-test',
           },
           serviceOwnerProvider: async (root) =>
             new LocalOrchestrationServiceShell({
               workspaceRoot: root,
               memoryConfig: {
                 storeEngine: MemoryStoreEngine.FS_CSV,
-                storeRoot: "context/memory/runtime-test",
+                storeRoot: 'context/memory/runtime-test',
               },
               serviceHostKind: hostKind,
               serviceTransportKind: transportKind,
@@ -56,30 +56,30 @@ describe("CliOrchestrationServiceRuntime", () => {
         const health = await runtime.getHealth();
         const started = await runtime.startExecution(
           {
-            workspaceId: "test-workspace",
+            workspaceId: 'test-workspace',
             workspaceRoot,
             executionKind: OrchestrationExecutionKind.RUN,
             clientSurface: OrchestrationClientSurface.DESKTOP,
           },
           {
-            processId: "process-1",
-            executionId: "execution-1",
-            executionSessionId: "session-1",
+            processId: 'process-1',
+            executionId: 'execution-1',
+            executionSessionId: 'session-1',
           },
         );
         await runtime.publishEvent({
           executionId: started.executionId,
           type: OrchestrationServiceEventType.ARTIFACT_READY,
           status: OrchestrationExecutionStatus.RUNNING,
-          artifactId: "artifact-1",
-          artifactPath: resolve(workspaceRoot, "artifact-1.json"),
-          message: "artifact ready",
+          artifactId: 'artifact-1',
+          artifactPath: resolve(workspaceRoot, 'artifact-1.json'),
+          message: 'artifact ready',
         });
         await runtime.publishEvent({
           executionId: started.executionId,
           type: OrchestrationServiceEventType.EXECUTION_COMPLETED,
           status: OrchestrationExecutionStatus.COMPLETED,
-          message: "completed",
+          message: 'completed',
         });
 
         const replayedRuntime = new CliOrchestrationServiceRuntime(workspaceRoot, {
@@ -93,7 +93,7 @@ describe("CliOrchestrationServiceRuntime", () => {
         const summary = await replayedRuntime.getExecution(started.executionId);
         const listed = await replayedRuntime.listExecutions({
           filter: {
-            workspaceId: "test-workspace",
+            workspaceId: 'test-workspace',
           },
         });
         const subscription = await replayedRuntime.subscribeExecution({
@@ -102,7 +102,7 @@ describe("CliOrchestrationServiceRuntime", () => {
 
         expect(health.memoryProvider).toEqual(
           expect.objectContaining({
-            memoryStoreProviderId: "fs-csv",
+            memoryStoreProviderId: 'fs-csv',
             memoryStoreHostSurface: MemoryProviderHostSurface.LOCAL_ORCHESTRATION_SERVICE,
             memoryStoreRuntimeMode:
               hostKind === OrchestrationServiceHostKind.EMBEDDED &&
@@ -135,19 +135,19 @@ describe("CliOrchestrationServiceRuntime", () => {
     },
   );
 
-  it("can resolve the default sidecar IPC owner without a custom provider", async () => {
-    const tempRoot = await mkdtemp(resolve(tmpdir(), "cli-orchestration-runtime-sidecar-"));
-    const workspaceRoot = resolve(tempRoot, ".repo-ai-governor");
+  it('can resolve the default sidecar IPC owner without a custom provider', async () => {
+    const tempRoot = await mkdtemp(resolve(tmpdir(), 'cli-orchestration-runtime-sidecar-'));
+    const workspaceRoot = resolve(tempRoot, '.repo-ai-governor');
 
     try {
       const runtime = new CliOrchestrationServiceRuntime(workspaceRoot, {
         runtimeMode: CliOrchestrationServiceRuntimeMode.SIDECAR_IPC,
         memoryConfig: {
           storeEngine: MemoryStoreEngine.SQLITE_FS,
-          storeRoot: "context/memory/sidecar-runtime",
+          storeRoot: 'context/memory/sidecar-runtime',
           provider: {
-            module: "@repo-ai-governor/memory-provider-sqlite-fs",
-            exportName: "createMemoryStoreProvider",
+            module: '@repo-ai-governor/memory-provider-sqlite-fs',
+            exportName: 'createMemoryStoreProvider',
           },
         },
       });
@@ -155,15 +155,15 @@ describe("CliOrchestrationServiceRuntime", () => {
       const health = await runtime.getHealth();
       const started = await runtime.startExecution(
         {
-          workspaceId: "workspace-sidecar",
+          workspaceId: 'workspace-sidecar',
           workspaceRoot,
           executionKind: OrchestrationExecutionKind.RUN,
           clientSurface: OrchestrationClientSurface.CLI,
         },
         {
-          processId: "process-sidecar-runtime",
-          executionId: "execution-sidecar-runtime",
-          executionSessionId: "session-sidecar-runtime",
+          processId: 'process-sidecar-runtime',
+          executionId: 'execution-sidecar-runtime',
+          executionSessionId: 'session-sidecar-runtime',
         },
       );
 
@@ -171,8 +171,8 @@ describe("CliOrchestrationServiceRuntime", () => {
       expect(health.serviceTransportKind).toBe(OrchestrationServiceTransportKind.IPC);
       expect(health.memoryProvider).toEqual(
         expect.objectContaining({
-          memoryStoreProviderId: "@repo-ai-governor/memory-provider-sqlite-fs",
-          memoryStoreProviderModule: "@repo-ai-governor/memory-provider-sqlite-fs",
+          memoryStoreProviderId: '@repo-ai-governor/memory-provider-sqlite-fs',
+          memoryStoreProviderModule: '@repo-ai-governor/memory-provider-sqlite-fs',
           memoryStoreHostSurface: MemoryProviderHostSurface.LOCAL_ORCHESTRATION_SERVICE,
           memoryStoreRuntimeMode: MemoryProviderRuntimeMode.DAEMON,
         }),

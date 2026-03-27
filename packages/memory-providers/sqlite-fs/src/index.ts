@@ -1,7 +1,7 @@
-import { SqliteFsMemoryStoreProvider } from "./sqlite-fs-memory-store-provider.js";
+import { SqliteFsMemoryStoreProvider } from './sqlite-fs-memory-store-provider.js';
 
-export { SqliteFsMemoryStoreProvider } from "./sqlite-fs-memory-store-provider.js";
-export type { SqliteFsMemoryStoreProviderOptions } from "./types/index.js";
+export { SqliteFsMemoryStoreProvider } from './sqlite-fs-memory-store-provider.js';
+export type { SqliteFsMemoryStoreProviderOptions } from './types/index.js';
 
 /**
  * Creates one sqlite-fs memory provider instance through the plugin factory contract.

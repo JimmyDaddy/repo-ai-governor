@@ -10,7 +10,7 @@ import type {
   AgentProtocolContract,
   AgentStreamEvent,
   AgentStreamEventsRequest,
-} from "./types/index.js";
+} from './types/index.js';
 
 /**
  * Provides class-based baseline for adapter protocol implementations.

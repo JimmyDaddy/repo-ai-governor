@@ -17,46 +17,46 @@ export const DEFAULT_AUDIT_MASKING_ENABLED = true;
 /**
  * Defines masked placeholder used when sensitive fields are redacted.
  */
-export const DEFAULT_AUDIT_MASKED_VALUE = "[REDACTED]";
+export const DEFAULT_AUDIT_MASKED_VALUE = '[REDACTED]';
 
 /**
  * Defines exact field names treated as sensitive for object-key based masking.
  */
 export const AUDIT_SENSITIVE_FIELD_NAME_MARKERS = [
-  "accessToken",
-  "refreshToken",
-  "sessionToken",
-  "secret",
-  "clientSecret",
-  "password",
-  "passwd",
-  "authorization",
-  "credential",
-  "apiKey",
-  "apikey",
-  "accessKey",
-  "privateKey",
+  'accessToken',
+  'refreshToken',
+  'sessionToken',
+  'secret',
+  'clientSecret',
+  'password',
+  'passwd',
+  'authorization',
+  'credential',
+  'apiKey',
+  'apikey',
+  'accessKey',
+  'privateKey',
 ] as const;
 
 /**
  * Defines normalized field-name suffix markers treated as sensitive.
  */
 export const AUDIT_SENSITIVE_FIELD_SUFFIX_MARKERS = [
-  "token",
-  "secret",
-  "password",
-  "passwd",
-  "apikey",
-  "accesskey",
-  "privatekey",
-  "credential",
-  "authorization",
+  'token',
+  'secret',
+  'password',
+  'passwd',
+  'apikey',
+  'accesskey',
+  'privatekey',
+  'credential',
+  'authorization',
 ] as const;
 
 /**
  * Defines non-sensitive metric fields explicitly excluded from key-based masking.
  */
-export const AUDIT_NON_SENSITIVE_FIELD_NAME_EXCEPTIONS = ["tokenBudget", "tokenUsed"] as const;
+export const AUDIT_NON_SENSITIVE_FIELD_NAME_EXCEPTIONS = ['tokenBudget', 'tokenUsed'] as const;
 
 /**
  * Defines text patterns treated as sensitive when embedded in free-form strings.

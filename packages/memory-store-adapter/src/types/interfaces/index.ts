@@ -7,4 +7,4 @@ export type {
   MemorySnapshotRecord,
   MemoryStoreProvider,
   MemoryWriteRequest,
-} from "./memory-store.interface.js";
+} from './memory-store.interface.js';

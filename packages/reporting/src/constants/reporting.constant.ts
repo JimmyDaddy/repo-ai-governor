@@ -11,4 +11,4 @@ export const MAX_REPLAY_EXPLAIN_LIMIT = 500;
 /**
  * Defines fallback line when replay query resolves no records.
  */
-export const NO_REPLAY_MATCH_EXPLAIN_LINE = "No replay pointers matched the query filters.";
+export const NO_REPLAY_MATCH_EXPLAIN_LINE = 'No replay pointers matched the query filters.';

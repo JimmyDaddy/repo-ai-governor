@@ -4,7 +4,7 @@ import {
   RuntimeError,
   type StandardizedError,
   standardizeError,
-} from "@repo-ai-governor/shared";
+} from '@repo-ai-governor/shared';
 import {
   IDE_WRAPPER_DEFAULT_OUTPUT_MODE,
   IDE_WRAPPER_DEFAULT_STANDARDS_PROFILE_ID,
@@ -12,10 +12,10 @@ import {
   IDE_WRAPPER_SUPPORTED_COMMANDS,
   IDE_WRAPPER_SUPPORTED_SURFACES,
   IdeWrapperEnvironmentKey,
-} from "./constants/ide-command-wrapper.constant.js";
-import type { IdeStandardsSourceId } from "./constants/ide-standards-source.constant.js";
-import { IdeStandardsSourceRuntime } from "./runtime/ide-standards-source-runtime.js";
-import { IdeSurfaceRegistryRuntime } from "./runtime/ide-surface-registry-runtime.js";
+} from './constants/ide-command-wrapper.constant.js';
+import type { IdeStandardsSourceId } from './constants/ide-standards-source.constant.js';
+import { IdeStandardsSourceRuntime } from './runtime/ide-standards-source-runtime.js';
+import { IdeSurfaceRegistryRuntime } from './runtime/ide-surface-registry-runtime.js';
 import type {
   IdeCommandInvocationEnvelope,
   IdeCommandWrapperOptions,
@@ -23,10 +23,10 @@ import type {
   IdeStandardsInjectionPayload,
   IdeSurfaceContract,
   IdeWrapperCommandName,
-} from "./types/index.js";
+} from './types/index.js';
 
-const DEFAULT_NODE_EXECUTABLE = "node";
-const DEFAULT_BINARY_ENTRYPOINT = "./dist/bin/repo-ai-governor.js";
+const DEFAULT_NODE_EXECUTABLE = 'node';
+const DEFAULT_BINARY_ENTRYPOINT = './dist/bin/repo-ai-governor.js';
 const ERROR_OUTPUT_MODE_VALUES = new Set<string>(Object.values(ErrorOutputEnvironment));
 const RESERVED_WRAPPER_ENV_KEYS = new Set<string>(IDE_WRAPPER_RESERVED_ENVIRONMENT_KEYS);
 
@@ -79,10 +79,10 @@ export class IdeCommandWrapper {
 
     const argv = [this.nodeExecutable, this.binaryEntrypoint];
     if (locale) {
-      argv.push("--locale", locale);
+      argv.push('--locale', locale);
     }
     if (profileId) {
-      argv.push("--profile", profileId);
+      argv.push('--profile', profileId);
     }
     argv.push(command, ...args);
 
@@ -91,7 +91,7 @@ export class IdeCommandWrapper {
       [IdeWrapperEnvironmentKey.OUTPUT_MODE]: outputMode,
       [IdeWrapperEnvironmentKey.ENTRY_SURFACE]: surfaceContract.surfaceId,
       [IdeWrapperEnvironmentKey.STANDARDS_PROFILE_ID]: standards.profileId,
-      [IdeWrapperEnvironmentKey.STANDARDS_SOURCES]: standards.sourceIds.join(","),
+      [IdeWrapperEnvironmentKey.STANDARDS_SOURCES]: standards.sourceIds.join(','),
     };
 
     return {
@@ -186,10 +186,10 @@ export class IdeCommandWrapper {
       return [];
     }
 
-    if (!Array.isArray(args) || !args.every((item) => typeof item === "string")) {
+    if (!Array.isArray(args) || !args.every((item) => typeof item === 'string')) {
       throw new RuntimeError(
         GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
-        "IDE wrapper args must be an array of strings.",
+        'IDE wrapper args must be an array of strings.',
       );
     }
 
@@ -209,10 +209,10 @@ export class IdeCommandWrapper {
       return {};
     }
 
-    if (typeof additionalEnv !== "object" || Array.isArray(additionalEnv)) {
+    if (typeof additionalEnv !== 'object' || Array.isArray(additionalEnv)) {
       throw new RuntimeError(
         GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
-        "IDE wrapper additionalEnv must be a plain object.",
+        'IDE wrapper additionalEnv must be a plain object.',
       );
     }
 
@@ -230,7 +230,7 @@ export class IdeCommandWrapper {
           },
         );
       }
-      if (typeof envValue !== "string") {
+      if (typeof envValue !== 'string') {
         throw new RuntimeError(
           GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
           `IDE wrapper additionalEnv["${envKey}"] must be a string.`,
@@ -294,22 +294,22 @@ function resolveIdeWrapperNextAction(error: unknown): string | undefined {
   }
 
   const nextAction =
-    typeof error.details?.nextAction === "string" ? error.details.nextAction.trim() : "";
+    typeof error.details?.nextAction === 'string' ? error.details.nextAction.trim() : '';
   if (nextAction.length > 0) {
     return nextAction;
   }
 
   if (Array.isArray(error.details?.supportedCommands)) {
-    return "Retry with one of the supported wrapper commands declared by the IDE contract.";
+    return 'Retry with one of the supported wrapper commands declared by the IDE contract.';
   }
 
   if (Array.isArray(error.details?.supportedSurfaces)) {
-    return `Retry with one of ${IDE_WRAPPER_SUPPORTED_SURFACES.join(", ")} or omit surface to use generic_ide.`;
+    return `Retry with one of ${IDE_WRAPPER_SUPPORTED_SURFACES.join(', ')} or omit surface to use generic_ide.`;
   }
 
-  if (typeof error.details?.envKey === "string") {
-    return "Remove the reserved IDE wrapper environment override and let the wrapper populate baseline keys.";
+  if (typeof error.details?.envKey === 'string') {
+    return 'Remove the reserved IDE wrapper environment override and let the wrapper populate baseline keys.';
   }
 
-  return "Inspect integrations/ide/contracts/command-wrapper.contract.json and retry with the baseline wrapper contract.";
+  return 'Inspect integrations/ide/contracts/command-wrapper.contract.json and retry with the baseline wrapper contract.';
 }

@@ -1,32 +1,32 @@
-import { existsSync } from "node:fs";
-import { mkdir } from "node:fs/promises";
-import { resolve } from "node:path";
+import { existsSync } from 'node:fs';
+import { mkdir } from 'node:fs/promises';
+import { resolve } from 'node:path';
 
 import {
   ExecutionInteractionCategory,
   ExecutionProgressStage,
   ExecutionProgressStatus,
-} from "@repo-ai-governor/shared";
-import { CliCommandName } from "../constants/cli-command.constant.js";
+} from '@repo-ai-governor/shared';
+import { CliCommandName } from '../constants/cli-command.constant.js';
 import {
   CLI_ADAPTER_TOOL_CHECK_ID_PREFIX,
   CliCommandResultCheckId,
-} from "../constants/cli-command-result-check.constant.js";
+} from '../constants/cli-command-result-check.constant.js';
 import {
   CLI_BASELINE_DOC_PATHS,
   CLI_DOCTOR_ATTACH_MODE,
   CLI_RUNTIME_OPERATION,
   CliGovernanceCheckStatus,
-} from "../constants/cli-governance-runtime.constant.js";
+} from '../constants/cli-governance-runtime.constant.js';
 import type {
   CliAdapterVerificationResolution,
   CliCommandResultArtifact,
   CliCommandResultCheck,
   CliInteractionPrompt,
   CliRoleStageProgress,
-} from "../types/index.js";
-import type { CliCommandExecutorContext } from "../types/interfaces/cli-governance-runtime.interface.js";
-import type { CliCommandExecutor } from "./cli-command-executor.interface.js";
+} from '../types/index.js';
+import type { CliCommandExecutorContext } from '../types/interfaces/cli-governance-runtime.interface.js';
+import type { CliCommandExecutor } from './cli-command-executor.interface.js';
 
 /**
  * Owns `doctor` command execution outside the runtime facade.
@@ -48,7 +48,7 @@ export class CliDoctorCommand implements CliCommandExecutor {
       safeLocalFixCount += 1;
     }
     checks.push({
-      id: "workspace_root_exists",
+      id: 'workspace_root_exists',
       status: workspaceRootExists ? CliGovernanceCheckStatus.PASS : CliGovernanceCheckStatus.FAIL,
       detail: workspaceRootExists
         ? context.options.workspace.workspaceRoot
@@ -57,9 +57,9 @@ export class CliDoctorCommand implements CliCommandExecutor {
 
     const workspaceWritable = await context.canWritePath(context.options.workspace.workspaceRoot);
     checks.push({
-      id: "workspace_write_access",
+      id: 'workspace_write_access',
       status: workspaceWritable ? CliGovernanceCheckStatus.PASS : CliGovernanceCheckStatus.WARN,
-      detail: workspaceWritable ? "writeable" : "read_only_attach_mode_enabled",
+      detail: workspaceWritable ? 'writeable' : 'read_only_attach_mode_enabled',
     });
     const attachMode = workspaceWritable
       ? CLI_DOCTOR_ATTACH_MODE.READ_WRITE
@@ -75,9 +75,9 @@ export class CliDoctorCommand implements CliCommandExecutor {
       safeLocalFixCount += 1;
     }
     checks.push({
-      id: "workspace_config_exists",
+      id: 'workspace_config_exists',
       status: configExists ? CliGovernanceCheckStatus.PASS : CliGovernanceCheckStatus.WARN,
-      detail: configExists ? context.options.workspace.configPath : "missing; run `init` first",
+      detail: configExists ? context.options.workspace.configPath : 'missing; run `init` first',
     });
 
     const docs = CLI_BASELINE_DOC_PATHS.map((relativePath) => ({
@@ -86,7 +86,7 @@ export class CliDoctorCommand implements CliCommandExecutor {
     }));
     const missingDocCount = docs.filter((item) => !item.exists).length;
     checks.push({
-      id: "baseline_docs",
+      id: 'baseline_docs',
       status: missingDocCount === 0 ? CliGovernanceCheckStatus.PASS : CliGovernanceCheckStatus.WARN,
       detail:
         missingDocCount === 0
@@ -101,7 +101,7 @@ export class CliDoctorCommand implements CliCommandExecutor {
       safeLocalFixCount += 1;
     }
     checks.push({
-      id: "memory_store_root",
+      id: 'memory_store_root',
       status: memoryRootExists ? CliGovernanceCheckStatus.PASS : CliGovernanceCheckStatus.WARN,
       detail: memoryRootExists
         ? context.options.memoryStoreRoot
@@ -113,9 +113,9 @@ export class CliDoctorCommand implements CliCommandExecutor {
     const doctorId = `doctor-${Date.now()}`;
     const doctorDiagnosticsArtifactPath = resolve(
       context.options.workspace.workspaceRoot,
-      "context",
-      "diagnostics",
-      "doctor",
+      'context',
+      'diagnostics',
+      'doctor',
       `${doctorId}.json`,
     );
     if (runtimeDebugOptions.adapters) {
@@ -141,24 +141,24 @@ export class CliDoctorCommand implements CliCommandExecutor {
 
     if (runtimeDebugOptions.fix) {
       checks.push({
-        id: "safe_local_fix",
+        id: 'safe_local_fix',
         status:
           safeLocalFixCount > 0 ? CliGovernanceCheckStatus.PASS : CliGovernanceCheckStatus.WARN,
         detail:
-          safeLocalFixCount > 0 ? `applied=${safeLocalFixCount}` : "no_safe_local_changes_applied",
+          safeLocalFixCount > 0 ? `applied=${safeLocalFixCount}` : 'no_safe_local_changes_applied',
       });
       nextActions.push(
         context.localizeText(
-          "safe_local fix only creates writable workspace/config/memory baseline paths; it never installs commands, logs in adapters, or pulls local models.",
-          "safe_local 仅会创建可写的 workspace/config/memory 基线路径；不会安装命令、处理 adapter 登录态，也不会拉取本地模型。",
+          'safe_local fix only creates writable workspace/config/memory baseline paths; it never installs commands, logs in adapters, or pulls local models.',
+          'safe_local 仅会创建可写的 workspace/config/memory 基线路径；不会安装命令、处理 adapter 登录态，也不会拉取本地模型。',
         ),
       );
     }
     if (nextActions.length > 0) {
       checks.push({
-        id: "next_action_hint",
+        id: 'next_action_hint',
         status: CliGovernanceCheckStatus.WARN,
-        detail: nextActions[0] ?? "review adapter diagnostics for next action",
+        detail: nextActions[0] ?? 'review adapter diagnostics for next action',
       });
     }
     await context.artifactWriter.writeJsonArtifact(doctorDiagnosticsArtifactPath, {
@@ -188,7 +188,7 @@ export class CliDoctorCommand implements CliCommandExecutor {
       nextActions,
     });
     artifacts.push({
-      id: "doctor_diagnostics",
+      id: 'doctor_diagnostics',
       path: doctorDiagnosticsArtifactPath,
     });
 
@@ -200,7 +200,7 @@ export class CliDoctorCommand implements CliCommandExecutor {
           : ExecutionProgressStatus.WARNING;
     const roleProgress: CliRoleStageProgress[] = [
       {
-        roleId: "workspace",
+        roleId: 'workspace',
         stage: ExecutionProgressStage.DOCTOR,
         status: doctorStatus,
         category:
@@ -230,8 +230,8 @@ export class CliDoctorCommand implements CliCommandExecutor {
       interactionPrompts.push({
         category: ExecutionInteractionCategory.PERMISSION_CONFIRMATION,
         stage: ExecutionProgressStage.DOCTOR,
-        title: "Workspace is read-only",
-        action: "Switch to writable attach mode if you need to create/update governance artifacts.",
+        title: 'Workspace is read-only',
+        action: 'Switch to writable attach mode if you need to create/update governance artifacts.',
         blocking: false,
       });
     }
@@ -272,7 +272,7 @@ export class CliDoctorCommand implements CliCommandExecutor {
         experience,
         details: {
           config_source: context.options.configSource,
-          profile: context.options.profileId ?? "none",
+          profile: context.options.profileId ?? 'none',
           memory_store_provider: context.options.memoryStoreProviderName,
           adapters_enabled: runtimeDebugOptions.adapters,
           safe_local_fix_applied: safeLocalFixCount,

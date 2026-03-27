@@ -1,19 +1,19 @@
-import { existsSync } from "node:fs";
-import { mkdir } from "node:fs/promises";
-import { resolve } from "node:path";
+import { existsSync } from 'node:fs';
+import { mkdir } from 'node:fs/promises';
+import { resolve } from 'node:path';
 
-import { CliCommandName } from "../constants/cli-command.constant.js";
+import { CliCommandName } from '../constants/cli-command.constant.js';
 import {
   CLI_INIT_REQUIRED_DIRECTORY_SEGMENTS,
   CLI_RUNTIME_OPERATION,
   CliGovernanceCheckStatus,
-} from "../constants/cli-governance-runtime.constant.js";
+} from '../constants/cli-governance-runtime.constant.js';
 import type {
   CliCommandExecutorContext,
   CliCommandResultArtifact,
   CliCommandResultCheck,
-} from "../types/index.js";
-import type { CliCommandExecutor } from "./cli-command-executor.interface.js";
+} from '../types/index.js';
+import type { CliCommandExecutor } from './cli-command-executor.interface.js';
 
 /**
  * Owns `init` command execution outside the runtime facade.
@@ -38,7 +38,7 @@ export class CliInitCommand implements CliCommandExecutor {
     }
 
     checks.push({
-      id: "workspace_directories",
+      id: 'workspace_directories',
       status: CliGovernanceCheckStatus.PASS,
       detail: `ensured=${ensuredDirectoryPaths.length} created=${createdDirectoryPaths.length}`,
     });
@@ -53,20 +53,20 @@ export class CliInitCommand implements CliCommandExecutor {
     }
 
     checks.push({
-      id: "workspace_config",
+      id: 'workspace_config',
       status: CliGovernanceCheckStatus.PASS,
       detail: configCreated ? `created=${configPath}` : `reused=${configPath}`,
     });
     artifacts.push({
-      id: "workspace_config",
+      id: 'workspace_config',
       path: configPath,
     });
 
     const initManifestPath = resolve(
       context.options.workspace.workspaceRoot,
-      "context",
-      "bootstrap",
-      "init-manifest.json",
+      'context',
+      'bootstrap',
+      'init-manifest.json',
     );
     await context.artifactWriter.writeJsonArtifact(initManifestPath, {
       initializedAt: context.toRfc3339SecondsTimestamp(new Date()),
@@ -81,11 +81,11 @@ export class CliInitCommand implements CliCommandExecutor {
       memoryStoreRoot: context.options.memoryStoreRoot,
     });
     artifacts.push({
-      id: "init_manifest",
+      id: 'init_manifest',
       path: initManifestPath,
     });
 
-    const message = `Initialized workspace at ${context.options.workspace.workspaceRoot}; config ${configCreated ? "created" : "reused"}.`;
+    const message = `Initialized workspace at ${context.options.workspace.workspaceRoot}; config ${configCreated ? 'created' : 'reused'}.`;
     return {
       message,
       commandResult: {

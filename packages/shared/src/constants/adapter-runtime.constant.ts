@@ -6,10 +6,10 @@
  * CLI runtime routing, and adapter implementations.
  */
 export enum AdapterSurface {
-  CODEX = "codex",
-  GITHUB_COPILOT = "github-copilot",
-  CLAUDE_CODE = "claude-code",
-  OLLAMA = "ollama",
+  CODEX = 'codex',
+  GITHUB_COPILOT = 'github-copilot',
+  CLAUDE_CODE = 'claude-code',
+  OLLAMA = 'ollama',
 }
 
 /**
@@ -20,7 +20,7 @@ export enum AdapterSurface {
  * one finite vocabulary to keep pass/warn/fail semantics deterministic.
  */
 export enum AdapterAvailability {
-  AVAILABLE = "available",
-  DEGRADED = "degraded",
-  UNAVAILABLE = "unavailable",
+  AVAILABLE = 'available',
+  DEGRADED = 'degraded',
+  UNAVAILABLE = 'unavailable',
 }

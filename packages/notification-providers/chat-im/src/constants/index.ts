@@ -3,4 +3,4 @@ export {
   CHAT_IM_NOTIFICATION_DEFAULT_PROVIDER_ID,
   CHAT_IM_NOTIFICATION_DEFAULT_TIMEOUT_MS,
   CHAT_IM_NOTIFICATION_MAX_RESPONSE_SNIPPET_LENGTH,
-} from "./chat-im-notification-provider.constant.js";
+} from './chat-im-notification-provider.constant.js';

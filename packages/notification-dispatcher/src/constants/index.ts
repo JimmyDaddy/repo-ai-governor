@@ -7,4 +7,4 @@ export {
   NotificationRiskLevel,
   NOTIFICATION_RISK_LEVEL_VALUES,
   NOTIFICATION_TRIGGER_OUTCOME_VALUES,
-} from "./notification-dispatcher.constant.js";
+} from './notification-dispatcher.constant.js';

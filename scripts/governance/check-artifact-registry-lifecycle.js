@@ -1,58 +1,58 @@
 #!/usr/bin/env node
 
-import { existsSync, readFileSync, readdirSync } from "node:fs";
-import { basename, resolve } from "node:path";
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { basename, resolve } from 'node:path';
 
-import { gateFail, gateInfo, gatePass } from "./gate-output.js";
+import { gateFail, gateInfo, gatePass } from './gate-output.js';
 
-const GATE_NAME = "artifact-lifecycle";
-const MAIN_REGISTRY_PATH = ".repo-ai-governor/context/artifact-registry/artifacts.csv";
+const GATE_NAME = 'artifact-lifecycle';
+const MAIN_REGISTRY_PATH = '.repo-ai-governor/context/artifact-registry/artifacts.csv';
 const ARCHIVE_REGISTRY_PATH =
-  ".repo-ai-governor/context/artifact-registry/archive/artifacts.archive.csv";
-const TASK_LEDGER_ROOT = ".repo-ai-governor/context/dev";
-const TASK_CARD_ROOT = ".repo-ai-governor/context/dev";
+  '.repo-ai-governor/context/artifact-registry/archive/artifacts.archive.csv';
+const TASK_LEDGER_ROOT = '.repo-ai-governor/context/dev';
+const TASK_CARD_ROOT = '.repo-ai-governor/context/dev';
 const REQUIRED_HEADERS = [
-  "artifact_id",
-  "artifact_type",
-  "artifact_path",
-  "artifact_version",
-  "artifact_status",
-  "producer_task_id",
-  "producer_execution_id",
-  "registered_at",
-  "last_updated_at",
-  "dependent_tasks",
+  'artifact_id',
+  'artifact_type',
+  'artifact_path',
+  'artifact_version',
+  'artifact_status',
+  'producer_task_id',
+  'producer_execution_id',
+  'registered_at',
+  'last_updated_at',
+  'dependent_tasks',
 ];
 const REQUIRED_TASK_HEADERS = [
-  "execution_id",
-  "task_id",
-  "title",
-  "owner",
-  "priority",
-  "due_date",
-  "status",
-  "project",
-  "sprint",
-  "plan",
-  "result",
-  "verify",
-  "review_delta",
-  "recorded_at",
+  'execution_id',
+  'task_id',
+  'title',
+  'owner',
+  'priority',
+  'due_date',
+  'status',
+  'project',
+  'sprint',
+  'plan',
+  'result',
+  'verify',
+  'review_delta',
+  'recorded_at',
 ];
-const ALL_LIFECYCLE_STATUSES = new Set(["active", "frozen", "deprecated", "archived", "retired"]);
-const MAIN_REGISTRY_ALLOWED_STATUSES = new Set(["active", "frozen", "deprecated"]);
-const ARCHIVE_REGISTRY_ALLOWED_STATUSES = new Set(["archived", "retired"]);
-const ACTIVE_REGISTRY_STATUSES = new Set(["active", "frozen"]);
+const ALL_LIFECYCLE_STATUSES = new Set(['active', 'frozen', 'deprecated', 'archived', 'retired']);
+const MAIN_REGISTRY_ALLOWED_STATUSES = new Set(['active', 'frozen', 'deprecated']);
+const ARCHIVE_REGISTRY_ALLOWED_STATUSES = new Set(['archived', 'retired']);
+const ACTIVE_REGISTRY_STATUSES = new Set(['active', 'frozen']);
 const DEPENDS_ON_SECTION_HEADING_PATTERN = /^##\s*(?:\d+(?:\.\d+)*\.?\s*)?Depends On\s*$/u;
 const CLOSED_TASK_STATUSES = new Set([
-  "completed",
-  "done",
-  "closed",
-  "cancelled",
-  "canceled",
-  "resolved",
-  "retired",
-  "archived",
+  'completed',
+  'done',
+  'closed',
+  'cancelled',
+  'canceled',
+  'resolved',
+  'retired',
+  'archived',
 ]);
 const MAX_DEPRECATED_DAYS = 14;
 const MAX_UNREFERENCED_ACTIVE_DAYS = 7;
@@ -64,7 +64,7 @@ const MAX_UNREFERENCED_ACTIVE_DAYS = 7;
  */
 function parseCsvLine(line) {
   const values = [];
-  let currentValue = "";
+  let currentValue = '';
   let inQuotes = false;
 
   for (let index = 0; index < line.length; index += 1) {
@@ -82,9 +82,9 @@ function parseCsvLine(line) {
       continue;
     }
 
-    if (character === "," && !inQuotes) {
+    if (character === ',' && !inQuotes) {
       values.push(currentValue);
-      currentValue = "";
+      currentValue = '';
       continue;
     }
 
@@ -106,7 +106,7 @@ function parseRegistry(filePath, requiredHeaders = REQUIRED_HEADERS) {
     throw new Error(`Registry file not found: ${filePath}`);
   }
 
-  const content = readFileSync(filePath, "utf8");
+  const content = readFileSync(filePath, 'utf8');
   const lines = content
     .split(/\r?\n/)
     .map((line) => line.trimEnd())
@@ -170,7 +170,7 @@ function listTaskCsvFiles(rootDirectory) {
         continue;
       }
 
-      if (entry.isFile() && entry.name === "tasks.csv" && basename(directoryPath) === "tasks") {
+      if (entry.isFile() && entry.name === 'tasks.csv' && basename(directoryPath) === 'tasks') {
         filePaths.push(absolutePath);
       }
     }
@@ -265,7 +265,7 @@ function extractDependsOnArtifactIds(content) {
     sectionLines.push(lines[index]);
   }
 
-  const sectionContent = sectionLines.join("\n");
+  const sectionContent = sectionLines.join('\n');
   const artifactMatches = sectionContent.match(/DA-\d+/gu) ?? [];
   return Array.from(new Set(artifactMatches)).sort((left, right) => left.localeCompare(right));
 }
@@ -334,7 +334,7 @@ function buildExpectedArtifactDependencyIndex(taskCardPaths, latestTaskStatuses)
       continue;
     }
 
-    const content = readFileSync(taskCardPath, "utf8");
+    const content = readFileSync(taskCardPath, 'utf8');
     const fromLedger = latestTaskStatuses.get(taskId);
     const fromCard = readTaskStatusFromCard(content);
     const taskStatus = fromLedger ?? fromCard;
@@ -384,13 +384,13 @@ function parseDependentTasks(rawDependentTasks) {
     return { values: [], hasTbdPlaceholder: false };
   }
 
-  if (trimmedValue.toUpperCase() === "TBD") {
+  if (trimmedValue.toUpperCase() === 'TBD') {
     return { values: [], hasTbdPlaceholder: true };
   }
 
   return {
     values: trimmedValue
-      .split("|")
+      .split('|')
       .map((value) => value.trim())
       .filter((value) => value.length > 0),
     hasTbdPlaceholder: false,
@@ -473,7 +473,7 @@ try {
       if (!dependentTaskStatus) {
         issues.push(
           formatIssue(
-            "main",
+            'main',
             row.__rowNumber,
             `dependent_tasks contains unknown task_id "${dependentTaskId}"`,
           ),
@@ -484,7 +484,7 @@ try {
       if (CLOSED_TASK_STATUSES.has(dependentTaskStatus)) {
         issues.push(
           formatIssue(
-            "main",
+            'main',
             row.__rowNumber,
             `dependent_tasks contains closed task "${dependentTaskId}" with status "${dependentTaskStatus}", remove stale dependency`,
           ),
@@ -496,25 +496,25 @@ try {
       if (!isSameStringArray(actualDependentTaskIds, expectedDependentTaskIds)) {
         issues.push(
           formatIssue(
-            "main",
+            'main',
             row.__rowNumber,
-            `dependent_tasks drift detected. expected="${expectedDependentTaskIds.join("|")}" actual="${actualDependentTaskIds.join("|")}". run reconcile-artifact-dependencies`,
+            `dependent_tasks drift detected. expected="${expectedDependentTaskIds.join('|')}" actual="${actualDependentTaskIds.join('|')}". run reconcile-artifact-dependencies`,
           ),
         );
       }
     }
 
     if (
-      (artifactStatus === "deprecated" ||
-        artifactStatus === "archived" ||
-        artifactStatus === "retired") &&
+      (artifactStatus === 'deprecated' ||
+        artifactStatus === 'archived' ||
+        artifactStatus === 'retired') &&
       expectedDependentTaskIds.length > 0
     ) {
       issues.push(
         formatIssue(
-          "main",
+          'main',
           row.__rowNumber,
-          `non-consumable artifact status "${artifactStatus}" is still referenced by open tasks "${expectedDependentTaskIds.join("|")}"`,
+          `non-consumable artifact status "${artifactStatus}" is still referenced by open tasks "${expectedDependentTaskIds.join('|')}"`,
         ),
       );
     }
@@ -522,7 +522,7 @@ try {
     if (seenArtifactIds.has(artifactId)) {
       issues.push(
         formatIssue(
-          "main",
+          'main',
           row.__rowNumber,
           `duplicate artifact_id "${artifactId}" also found at ${seenArtifactIds.get(artifactId)}`,
         ),
@@ -534,9 +534,9 @@ try {
     if (!ALL_LIFECYCLE_STATUSES.has(artifactStatus)) {
       issues.push(
         formatIssue(
-          "main",
+          'main',
           row.__rowNumber,
-          `invalid artifact_status "${artifactStatus}", expected one of ${Array.from(ALL_LIFECYCLE_STATUSES).join(", ")}`,
+          `invalid artifact_status "${artifactStatus}", expected one of ${Array.from(ALL_LIFECYCLE_STATUSES).join(', ')}`,
         ),
       );
       continue;
@@ -545,7 +545,7 @@ try {
     if (!MAIN_REGISTRY_ALLOWED_STATUSES.has(artifactStatus)) {
       issues.push(
         formatIssue(
-          "main",
+          'main',
           row.__rowNumber,
           `artifact_status "${artifactStatus}" is not allowed in main registry, move it to archive registry`,
         ),
@@ -555,7 +555,7 @@ try {
     if (!lastUpdatedDate) {
       issues.push(
         formatIssue(
-          "main",
+          'main',
           row.__rowNumber,
           `invalid last_updated_at "${row.last_updated_at}", expected YYYY-MM-DD`,
         ),
@@ -565,11 +565,11 @@ try {
 
     const ageInDays = calculateDayDistance(lastUpdatedDate, todayDate);
 
-    if (artifactStatus === "active") {
+    if (artifactStatus === 'active') {
       if (dependentTasks.hasTbdPlaceholder) {
         issues.push(
           formatIssue(
-            "main",
+            'main',
             row.__rowNumber,
             'active artifact cannot keep dependent_tasks as "TBD"',
           ),
@@ -579,7 +579,7 @@ try {
       if (dependentTasks.values.length === 0 && ageInDays > MAX_UNREFERENCED_ACTIVE_DAYS) {
         issues.push(
           formatIssue(
-            "main",
+            'main',
             row.__rowNumber,
             `active artifact has no dependent tasks for ${ageInDays} days, transition to deprecated/archive to reduce context size`,
           ),
@@ -587,13 +587,13 @@ try {
       }
     }
 
-    if (artifactStatus === "deprecated") {
+    if (artifactStatus === 'deprecated') {
       if (dependentTasks.values.length > 0 || dependentTasks.hasTbdPlaceholder) {
         issues.push(
           formatIssue(
-            "main",
+            'main',
             row.__rowNumber,
-            "deprecated artifact must not keep dependent_tasks references",
+            'deprecated artifact must not keep dependent_tasks references',
           ),
         );
       }
@@ -601,7 +601,7 @@ try {
       if (ageInDays > MAX_DEPRECATED_DAYS) {
         issues.push(
           formatIssue(
-            "main",
+            'main',
             row.__rowNumber,
             `deprecated artifact exceeded ${MAX_DEPRECATED_DAYS} days grace window, move to archive registry`,
           ),
@@ -622,7 +622,7 @@ try {
     if (seenArtifactIds.has(artifactId)) {
       issues.push(
         formatIssue(
-          "archive",
+          'archive',
           row.__rowNumber,
           `duplicate artifact_id "${artifactId}" also found at ${seenArtifactIds.get(artifactId)}`,
         ),
@@ -634,9 +634,9 @@ try {
     if (!ALL_LIFECYCLE_STATUSES.has(artifactStatus)) {
       issues.push(
         formatIssue(
-          "archive",
+          'archive',
           row.__rowNumber,
-          `invalid artifact_status "${artifactStatus}", expected one of ${Array.from(ALL_LIFECYCLE_STATUSES).join(", ")}`,
+          `invalid artifact_status "${artifactStatus}", expected one of ${Array.from(ALL_LIFECYCLE_STATUSES).join(', ')}`,
         ),
       );
       continue;
@@ -645,7 +645,7 @@ try {
     if (!ARCHIVE_REGISTRY_ALLOWED_STATUSES.has(artifactStatus)) {
       issues.push(
         formatIssue(
-          "archive",
+          'archive',
           row.__rowNumber,
           `artifact_status "${artifactStatus}" is not allowed in archive registry`,
         ),
@@ -655,9 +655,9 @@ try {
     if (dependentTasks.values.length > 0 || dependentTasks.hasTbdPlaceholder) {
       issues.push(
         formatIssue(
-          "archive",
+          'archive',
           row.__rowNumber,
-          "archived/retired artifact must not keep dependent_tasks references",
+          'archived/retired artifact must not keep dependent_tasks references',
         ),
       );
     }
@@ -665,9 +665,9 @@ try {
     if (expectedDependentTaskIds.length > 0) {
       issues.push(
         formatIssue(
-          "archive",
+          'archive',
           row.__rowNumber,
-          `archive artifact is still referenced by open tasks "${expectedDependentTaskIds.join("|")}"`,
+          `archive artifact is still referenced by open tasks "${expectedDependentTaskIds.join('|')}"`,
         ),
       );
     }
@@ -675,7 +675,7 @@ try {
     if (!lastUpdatedDate) {
       issues.push(
         formatIssue(
-          "archive",
+          'archive',
           row.__rowNumber,
           `invalid last_updated_at "${row.last_updated_at}", expected YYYY-MM-DD`,
         ),
@@ -696,4 +696,4 @@ if (issues.length > 0) {
   process.exit(1);
 }
 
-gatePass(GATE_NAME, "Artifact registry lifecycle is valid.");
+gatePass(GATE_NAME, 'Artifact registry lifecycle is valid.');

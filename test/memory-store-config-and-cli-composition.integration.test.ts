@@ -1,17 +1,17 @@
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 
-import { runCli } from "@repo-ai-governor/cli";
-import { ProfileResolver, SchemaValidator, WorkspaceMode } from "@repo-ai-governor/config";
-import { MemoryStoreEngine } from "@repo-ai-governor/shared";
+import { runCli } from '@repo-ai-governor/cli';
+import { ProfileResolver, SchemaValidator, WorkspaceMode } from '@repo-ai-governor/config';
+import { MemoryStoreEngine } from '@repo-ai-governor/shared';
 
 /**
  * Creates one temporary repository root for config and CLI composition smoke tests.
  * @returns Temporary repository root path.
  */
 async function createTemporaryRepositoryRoot(): Promise<string> {
-  return mkdtemp(join(tmpdir(), "repo-ai-governor-memory-config-cli-"));
+  return mkdtemp(join(tmpdir(), 'repo-ai-governor-memory-config-cli-'));
 }
 
 /**
@@ -46,25 +46,25 @@ function createBufferedIo(currentWorkingDirectory: string): {
   };
 }
 
-describe("Memory store config and CLI composition smoke", () => {
-  it("validates and merges memory store engine config through profile resolver", () => {
+describe('Memory store config and CLI composition smoke', () => {
+  it('validates and merges memory store engine config through profile resolver', () => {
     const schemaValidator = new SchemaValidator();
     const profileResolver = new ProfileResolver();
 
     const validatedConfig = schemaValidator.validateOrThrow({
-      schemaVersion: "1.0",
+      schemaVersion: '1.0',
       workspace: {
         mode: WorkspaceMode.REPO_LOCAL,
       },
       i18n: {
-        runtimeEngine: "i18next",
-        defaultLocale: "zh-CN",
-        fallbackLocale: "en-US",
-        supportedLocales: ["zh-CN", "en-US"],
+        runtimeEngine: 'i18next',
+        defaultLocale: 'zh-CN',
+        fallbackLocale: 'en-US',
+        supportedLocales: ['zh-CN', 'en-US'],
       },
       memory: {
         storeEngine: MemoryStoreEngine.FS_CSV,
-        storeRoot: "context/memory/custom",
+        storeRoot: 'context/memory/custom',
       },
       profiles: {
         sqlite: {
@@ -75,123 +75,123 @@ describe("Memory store config and CLI composition smoke", () => {
       },
     });
 
-    const resolvedConfig = profileResolver.resolve(validatedConfig, "sqlite");
+    const resolvedConfig = profileResolver.resolve(validatedConfig, 'sqlite');
 
     expect(resolvedConfig.config.memory?.storeEngine).toBe(MemoryStoreEngine.SQLITE_FS);
-    expect(resolvedConfig.config.memory?.storeRoot).toBe("context/memory/custom");
+    expect(resolvedConfig.config.memory?.storeRoot).toBe('context/memory/custom');
   });
 
-  it("loads the optional sqlite built-in provider in workspace composition when the package is present", async () => {
+  it('loads the optional sqlite built-in provider in workspace composition when the package is present', async () => {
     const repositoryRoot = await createTemporaryRepositoryRoot();
-    const configDirectory = resolve(repositoryRoot, ".repo-ai-governor");
-    const configPath = resolve(configDirectory, "governor.yaml");
+    const configDirectory = resolve(repositoryRoot, '.repo-ai-governor');
+    const configPath = resolve(configDirectory, 'governor.yaml');
 
     await mkdir(configDirectory, { recursive: true });
     await writeFile(
       configPath,
       [
         'schemaVersion: "1.0"',
-        "workspace:",
-        "  mode: repo_local",
-        "i18n:",
-        "  runtimeEngine: i18next",
-        "  defaultLocale: zh-CN",
-        "  fallbackLocale: en-US",
-        "  supportedLocales:",
-        "    - zh-CN",
-        "    - en-US",
-        "memory:",
-        "  storeEngine: sqlite_fs",
-        "  storeRoot: context/memory/sqlite",
-        "  provider:",
-        "    id: sqlite-fs",
-        "",
-      ].join("\n"),
-      "utf8",
+        'workspace:',
+        '  mode: repo_local',
+        'i18n:',
+        '  runtimeEngine: i18next',
+        '  defaultLocale: zh-CN',
+        '  fallbackLocale: en-US',
+        '  supportedLocales:',
+        '    - zh-CN',
+        '    - en-US',
+        'memory:',
+        '  storeEngine: sqlite_fs',
+        '  storeRoot: context/memory/sqlite',
+        '  provider:',
+        '    id: sqlite-fs',
+        '',
+      ].join('\n'),
+      'utf8',
     );
 
     const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(repositoryRoot);
 
     try {
       const exitCode = await runCli(
-        ["node", "repo-ai-governor", "--locale", "en-US", "--output", "json", "init"],
+        ['node', 'repo-ai-governor', '--locale', 'en-US', '--output', 'json', 'init'],
         io,
       );
-      const payload = JSON.parse(stdoutBuffer.join(""));
+      const payload = JSON.parse(stdoutBuffer.join(''));
 
       expect(exitCode).toBe(0);
-      expect(stderrBuffer.join("")).toBe("");
-      expect(payload.status).toBe("success");
-      expect(payload.output_mode).toBe("json");
-      expect(payload.diagnostics.memoryStoreEngine).toBe("sqlite_fs");
-      expect(payload.diagnostics.memoryStoreProvider).toBe("SqliteFsMemoryStoreProvider");
-      expect(payload.diagnostics.memoryStoreProviderId).toBe("sqlite-fs");
-      expect(payload.diagnostics.memoryStoreDistributionMode).toBe("optional");
-      expect(payload.diagnostics.memoryStoreHostSurface).toBe("cli");
-      expect(payload.diagnostics.memoryStoreRuntimeMode).toBe("embedded");
-      expect(payload.diagnostics.memoryStoreRoot).toContain("context/memory/sqlite");
+      expect(stderrBuffer.join('')).toBe('');
+      expect(payload.status).toBe('success');
+      expect(payload.output_mode).toBe('json');
+      expect(payload.diagnostics.memoryStoreEngine).toBe('sqlite_fs');
+      expect(payload.diagnostics.memoryStoreProvider).toBe('SqliteFsMemoryStoreProvider');
+      expect(payload.diagnostics.memoryStoreProviderId).toBe('sqlite-fs');
+      expect(payload.diagnostics.memoryStoreDistributionMode).toBe('optional');
+      expect(payload.diagnostics.memoryStoreHostSurface).toBe('cli');
+      expect(payload.diagnostics.memoryStoreRuntimeMode).toBe('embedded');
+      expect(payload.diagnostics.memoryStoreRoot).toContain('context/memory/sqlite');
     } finally {
       await rm(repositoryRoot, { recursive: true, force: true });
     }
   });
 
-  it("loads an allowlisted plugin provider module through CLI composition", async () => {
+  it('loads an allowlisted plugin provider module through CLI composition', async () => {
     const repositoryRoot = await createTemporaryRepositoryRoot();
-    const configDirectory = resolve(repositoryRoot, ".repo-ai-governor");
-    const configPath = resolve(configDirectory, "governor.yaml");
+    const configDirectory = resolve(repositoryRoot, '.repo-ai-governor');
+    const configPath = resolve(configDirectory, 'governor.yaml');
 
     await mkdir(configDirectory, { recursive: true });
     await writeFile(
       configPath,
       [
         'schemaVersion: "1.0"',
-        "workspace:",
-        "  mode: repo_local",
-        "i18n:",
-        "  runtimeEngine: i18next",
-        "  defaultLocale: zh-CN",
-        "  fallbackLocale: en-US",
-        "  supportedLocales:",
-        "    - zh-CN",
-        "    - en-US",
-        "memory:",
-        "  storeEngine: sqlite_fs",
-        "  storeRoot: context/memory/plugin-sqlite",
-        "  provider:",
+        'workspace:',
+        '  mode: repo_local',
+        'i18n:',
+        '  runtimeEngine: i18next',
+        '  defaultLocale: zh-CN',
+        '  fallbackLocale: en-US',
+        '  supportedLocales:',
+        '    - zh-CN',
+        '    - en-US',
+        'memory:',
+        '  storeEngine: sqlite_fs',
+        '  storeRoot: context/memory/plugin-sqlite',
+        '  provider:',
         '    module: "@repo-ai-governor/memory-provider-sqlite-fs"',
         '    exportName: "createMemoryStoreProvider"',
-        "",
-      ].join("\n"),
-      "utf8",
+        '',
+      ].join('\n'),
+      'utf8',
     );
 
     const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(repositoryRoot);
 
     try {
       const exitCode = await runCli(
-        ["node", "repo-ai-governor", "--locale", "en-US", "--output", "json", "init"],
+        ['node', 'repo-ai-governor', '--locale', 'en-US', '--output', 'json', 'init'],
         io,
       );
-      const payload = JSON.parse(stdoutBuffer.join(""));
+      const payload = JSON.parse(stdoutBuffer.join(''));
 
       expect(exitCode).toBe(0);
-      expect(stderrBuffer.join("")).toBe("");
-      expect(payload.status).toBe("success");
-      expect(payload.diagnostics.memoryStoreEngine).toBe("sqlite_fs");
+      expect(stderrBuffer.join('')).toBe('');
+      expect(payload.status).toBe('success');
+      expect(payload.diagnostics.memoryStoreEngine).toBe('sqlite_fs');
       expect(payload.diagnostics.memoryStoreProvider).toBe(
-        "@repo-ai-governor/memory-provider-sqlite-fs",
+        '@repo-ai-governor/memory-provider-sqlite-fs',
       );
       expect(payload.diagnostics.memoryStoreProviderId).toBe(
-        "@repo-ai-governor/memory-provider-sqlite-fs",
+        '@repo-ai-governor/memory-provider-sqlite-fs',
       );
       expect(payload.diagnostics.memoryStoreProviderModule).toBe(
-        "@repo-ai-governor/memory-provider-sqlite-fs",
+        '@repo-ai-governor/memory-provider-sqlite-fs',
       );
-      expect(payload.diagnostics.memoryStoreDistributionMode).toBe("optional");
-      expect(payload.diagnostics.memoryStoreResolutionSource).toBe("plugin_module");
-      expect(payload.diagnostics.memoryStoreHostSurface).toBe("cli");
-      expect(payload.diagnostics.memoryStoreRuntimeMode).toBe("embedded");
-      expect(payload.diagnostics.memoryStoreRoot).toContain("context/memory/plugin-sqlite");
+      expect(payload.diagnostics.memoryStoreDistributionMode).toBe('optional');
+      expect(payload.diagnostics.memoryStoreResolutionSource).toBe('plugin_module');
+      expect(payload.diagnostics.memoryStoreHostSurface).toBe('cli');
+      expect(payload.diagnostics.memoryStoreRuntimeMode).toBe('embedded');
+      expect(payload.diagnostics.memoryStoreRoot).toContain('context/memory/plugin-sqlite');
     } finally {
       await rm(repositoryRoot, { recursive: true, force: true });
     }

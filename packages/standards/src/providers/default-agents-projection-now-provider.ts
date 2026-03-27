@@ -1,4 +1,4 @@
-import { AgentsProjectionNowProvider } from "./agents-projection-now-provider.abstract.js";
+import { AgentsProjectionNowProvider } from './agents-projection-now-provider.abstract.js';
 
 /**
  * Uses system wall clock for standards projection runtime.

@@ -22,4 +22,4 @@ export type {
   SlotSecurityEvaluation,
   SlotSecurityIssue,
   SlotTriggerCondition,
-} from "./slot-engine.interface.js";
+} from './slot-engine.interface.js';

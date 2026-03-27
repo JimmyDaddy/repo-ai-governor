@@ -1,5 +1,5 @@
-import { ChangeRiskLevel, ChangeRiskRequiredAction } from "@repo-ai-governor/core-change-risk";
-import { GovernanceReviewerRole, GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
+import { ChangeRiskLevel, ChangeRiskRequiredAction } from '@repo-ai-governor/core-change-risk';
+import { GovernanceReviewerRole, GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import {
   DEFAULT_REVIEW_VERIFY_FAILURE_ESCALATION_THRESHOLD,
   POLICY_GATE_OUTCOME_VALUES,
@@ -8,7 +8,7 @@ import {
   PolicyDecisionSource,
   PolicyGateRuleId,
   PolicyHitlDecision,
-} from "./constants/index.js";
+} from './constants/index.js';
 import type {
   PolicyGateEngineOptions,
   PolicyGateEvaluateInput,
@@ -17,15 +17,15 @@ import type {
   PolicyGateRule,
   PolicyHitlFeedback,
   PolicyReviewerRole,
-} from "./types/index.js";
+} from './types/index.js';
 
 interface ResolvedPolicyGateOptions {
   defaultRules: PolicyGateRule[];
 }
 
 interface NormalizedEvaluateInput {
-  riskEvaluation: PolicyGateEvaluateInput["riskEvaluation"];
-  context: PolicyGateEvaluateInput["context"];
+  riskEvaluation: PolicyGateEvaluateInput['riskEvaluation'];
+  context: PolicyGateEvaluateInput['context'];
   compiledRules: PolicyGateRule[];
 }
 
@@ -86,8 +86,8 @@ export class PolicyGateEngine {
         shouldTriggerHitl,
         hitlFeedbackSchema: shouldTriggerHitl
           ? {
-              requiredFields: ["decision", "reason"],
-              optionalFields: ["constraints"],
+              requiredFields: ['decision', 'reason'],
+              optionalFields: ['constraints'],
             }
           : null,
         auditRecord: {
@@ -113,7 +113,7 @@ export class PolicyGateEngine {
 
       throw new RuntimeError(
         GovernorErrorCode.POLICY_GATE_EVALUATION_FAILED,
-        "Policy gate evaluation failed unexpectedly.",
+        'Policy gate evaluation failed unexpectedly.',
         undefined,
         error,
       );
@@ -134,7 +134,7 @@ export class PolicyGateEngine {
     if (!evaluationResult.shouldTriggerHitl) {
       throw new RuntimeError(
         GovernorErrorCode.POLICY_GATE_HITL_FEEDBACK_INVALID,
-        "HITL feedback is only accepted for confirm/escalate outcomes.",
+        'HITL feedback is only accepted for confirm/escalate outcomes.',
         {
           policyOutcome: evaluationResult.policyOutcome,
         },
@@ -176,14 +176,14 @@ export class PolicyGateEngine {
       DEFAULT_REVIEW_VERIFY_FAILURE_ESCALATION_THRESHOLD;
     this.assertNonNegativeInteger(
       failureEscalationThreshold,
-      "reviewVerifyFailureEscalationThreshold",
+      'reviewVerifyFailureEscalationThreshold',
     );
 
     const defaultRules =
       options.defaultRules ?? this.createDefaultRules(failureEscalationThreshold);
 
     return {
-      defaultRules: this.normalizePolicyRules(defaultRules, "defaultRules"),
+      defaultRules: this.normalizePolicyRules(defaultRules, 'defaultRules'),
     };
   }
 
@@ -196,8 +196,8 @@ export class PolicyGateEngine {
     return [
       {
         ruleId: PolicyGateRuleId.PROPOSAL_APPROVAL_REQUIRED,
-        description: "Block coding flow when proposal is not approved.",
-        reason: "Coding cannot proceed before proposal review approval.",
+        description: 'Block coding flow when proposal is not approved.',
+        reason: 'Coding cannot proceed before proposal review approval.',
         outcome: ChangeRiskRequiredAction.BLOCK,
         priority: 100,
         enabled: true,
@@ -208,8 +208,8 @@ export class PolicyGateEngine {
       },
       {
         ruleId: PolicyGateRuleId.REVIEW_VERIFY_FAILURE_ESCALATION,
-        description: "Escalate when review-verify failures reach threshold.",
-        reason: "Consecutive review-verify failures require manual escalation.",
+        description: 'Escalate when review-verify failures reach threshold.',
+        reason: 'Consecutive review-verify failures require manual escalation.',
         outcome: ChangeRiskRequiredAction.ESCALATE,
         priority: 90,
         enabled: true,
@@ -223,8 +223,8 @@ export class PolicyGateEngine {
       },
       {
         ruleId: PolicyGateRuleId.RISK_ACTION_BLOCK,
-        description: "Map risk requiredAction=block to policy block outcome.",
-        reason: "Risk evaluator signaled mandatory block outcome.",
+        description: 'Map risk requiredAction=block to policy block outcome.',
+        reason: 'Risk evaluator signaled mandatory block outcome.',
         outcome: ChangeRiskRequiredAction.BLOCK,
         priority: 70,
         enabled: true,
@@ -234,8 +234,8 @@ export class PolicyGateEngine {
       },
       {
         ruleId: PolicyGateRuleId.RISK_ACTION_ESCALATE,
-        description: "Map risk requiredAction=escalate to policy escalate outcome.",
-        reason: "Risk evaluator signaled escalation outcome.",
+        description: 'Map risk requiredAction=escalate to policy escalate outcome.',
+        reason: 'Risk evaluator signaled escalation outcome.',
         outcome: ChangeRiskRequiredAction.ESCALATE,
         priority: 60,
         enabled: true,
@@ -245,8 +245,8 @@ export class PolicyGateEngine {
       },
       {
         ruleId: PolicyGateRuleId.RISK_ACTION_CONFIRM,
-        description: "Map risk requiredAction=confirm to policy confirm outcome.",
-        reason: "Risk evaluator signaled confirmation outcome.",
+        description: 'Map risk requiredAction=confirm to policy confirm outcome.',
+        reason: 'Risk evaluator signaled confirmation outcome.',
         outcome: ChangeRiskRequiredAction.CONFIRM,
         priority: 50,
         enabled: true,
@@ -263,36 +263,36 @@ export class PolicyGateEngine {
    * @returns Normalized input payload.
    */
   private normalizeEvaluateInput(input: PolicyGateEvaluateInput): NormalizedEvaluateInput {
-    if (!input || typeof input !== "object") {
+    if (!input || typeof input !== 'object') {
       throw new RuntimeError(
         GovernorErrorCode.POLICY_GATE_INPUT_INVALID,
-        "Policy gate evaluate input must be a non-null object.",
+        'Policy gate evaluate input must be a non-null object.',
       );
     }
 
     const riskEvaluation = input.riskEvaluation;
-    if (!riskEvaluation || typeof riskEvaluation !== "object") {
+    if (!riskEvaluation || typeof riskEvaluation !== 'object') {
       throw new RuntimeError(
         GovernorErrorCode.POLICY_GATE_INPUT_INVALID,
-        "Policy gate evaluate input requires riskEvaluation object.",
+        'Policy gate evaluate input requires riskEvaluation object.',
       );
     }
 
-    const requiredAction = String(riskEvaluation.requiredAction ?? "").trim();
+    const requiredAction = String(riskEvaluation.requiredAction ?? '').trim();
     if (!POLICY_GATE_OUTCOME_VALUES.has(requiredAction)) {
       throw new RuntimeError(
         GovernorErrorCode.POLICY_GATE_INPUT_INVALID,
-        "Policy gate evaluate input has unsupported risk requiredAction.",
+        'Policy gate evaluate input has unsupported risk requiredAction.',
         {
           requiredAction,
         },
       );
     }
-    const riskLevel = String(riskEvaluation.riskLevel ?? "").trim();
+    const riskLevel = String(riskEvaluation.riskLevel ?? '').trim();
     if (!CHANGE_RISK_LEVEL_VALUES.has(riskLevel)) {
       throw new RuntimeError(
         GovernorErrorCode.POLICY_GATE_INPUT_INVALID,
-        "Policy gate evaluate input has unsupported risk level.",
+        'Policy gate evaluate input has unsupported risk level.',
         {
           riskLevel,
         },
@@ -300,25 +300,25 @@ export class PolicyGateEngine {
     }
 
     const context = input.context;
-    if (!context || typeof context !== "object") {
+    if (!context || typeof context !== 'object') {
       throw new RuntimeError(
         GovernorErrorCode.POLICY_GATE_INPUT_INVALID,
-        "Policy gate evaluate input requires context object.",
+        'Policy gate evaluate input requires context object.',
       );
     }
 
-    const executionId = this.readRequiredString(context.executionId, "context.executionId");
-    const stageId = this.readRequiredString(context.stageId, "context.stageId");
-    const routeKey = this.readRequiredString(context.routeKey, "context.routeKey");
-    if (typeof context.proposalApproved !== "boolean") {
+    const executionId = this.readRequiredString(context.executionId, 'context.executionId');
+    const stageId = this.readRequiredString(context.stageId, 'context.stageId');
+    const routeKey = this.readRequiredString(context.routeKey, 'context.routeKey');
+    if (typeof context.proposalApproved !== 'boolean') {
       throw new RuntimeError(
         GovernorErrorCode.POLICY_GATE_INPUT_INVALID,
-        "Policy gate context.proposalApproved must be a boolean.",
+        'Policy gate context.proposalApproved must be a boolean.',
       );
     }
     this.assertNonNegativeInteger(
       context.reviewVerifyConsecutiveFailures,
-      "context.reviewVerifyConsecutiveFailures",
+      'context.reviewVerifyConsecutiveFailures',
     );
 
     return {
@@ -336,7 +336,7 @@ export class PolicyGateEngine {
         proposalApproved: context.proposalApproved,
         reviewVerifyConsecutiveFailures: context.reviewVerifyConsecutiveFailures,
       },
-      compiledRules: this.normalizePolicyRules(input.compiledRules ?? [], "compiledRules"),
+      compiledRules: this.normalizePolicyRules(input.compiledRules ?? [], 'compiledRules'),
     };
   }
 
@@ -355,7 +355,7 @@ export class PolicyGateEngine {
     }
 
     return rules.map((rawRule, index) => {
-      if (!rawRule || typeof rawRule !== "object") {
+      if (!rawRule || typeof rawRule !== 'object') {
         throw new RuntimeError(
           GovernorErrorCode.POLICY_GATE_RULE_INVALID,
           `Policy rule "${fieldName}[${index}]" must be an object.`,
@@ -401,7 +401,7 @@ export class PolicyGateEngine {
       }
 
       const enabled = (rawRule as { enabled?: unknown }).enabled;
-      if (typeof enabled !== "boolean") {
+      if (typeof enabled !== 'boolean') {
         throw new RuntimeError(
           GovernorErrorCode.POLICY_GATE_RULE_INVALID,
           `Policy rule "${fieldName}[${index}].enabled" must be a boolean.`,
@@ -409,7 +409,7 @@ export class PolicyGateEngine {
       }
 
       const condition = (rawRule as { condition?: unknown }).condition;
-      if (!condition || typeof condition !== "object") {
+      if (!condition || typeof condition !== 'object') {
         throw new RuntimeError(
           GovernorErrorCode.POLICY_GATE_RULE_INVALID,
           `Policy rule "${fieldName}[${index}].condition" must be an object.`,
@@ -452,13 +452,13 @@ export class PolicyGateEngine {
 
       const proposalApprovedValue = (condition as { proposalApproved?: unknown }).proposalApproved;
       let proposalApproved: boolean | undefined;
-      if (proposalApprovedValue !== undefined && typeof proposalApprovedValue !== "boolean") {
+      if (proposalApprovedValue !== undefined && typeof proposalApprovedValue !== 'boolean') {
         throw new RuntimeError(
           GovernorErrorCode.POLICY_GATE_RULE_INVALID,
           `Policy rule "${fieldName}[${index}].condition.proposalApproved" must be a boolean when provided.`,
         );
       }
-      if (typeof proposalApprovedValue === "boolean") {
+      if (typeof proposalApprovedValue === 'boolean') {
         proposalApproved = proposalApprovedValue;
       }
 
@@ -591,22 +591,22 @@ export class PolicyGateEngine {
    * @returns Normalized feedback payload.
    */
   private normalizeHitlFeedback(feedback: PolicyHitlFeedback): PolicyHitlFeedback {
-    if (!feedback || typeof feedback !== "object") {
+    if (!feedback || typeof feedback !== 'object') {
       throw new RuntimeError(
         GovernorErrorCode.POLICY_GATE_HITL_FEEDBACK_INVALID,
-        "HITL feedback must be a non-null object.",
+        'HITL feedback must be a non-null object.',
       );
     }
 
     const decision = this.readRequiredString(
       feedback.decision,
-      "feedback.decision",
+      'feedback.decision',
       GovernorErrorCode.POLICY_GATE_HITL_FEEDBACK_INVALID,
     );
     if (!POLICY_HITL_DECISION_VALUES.has(decision)) {
       throw new RuntimeError(
         GovernorErrorCode.POLICY_GATE_HITL_FEEDBACK_INVALID,
-        "HITL feedback decision is unsupported.",
+        'HITL feedback decision is unsupported.',
         {
           decision,
         },
@@ -615,7 +615,7 @@ export class PolicyGateEngine {
 
     const reason = this.readRequiredString(
       feedback.reason,
-      "feedback.reason",
+      'feedback.reason',
       GovernorErrorCode.POLICY_GATE_HITL_FEEDBACK_INVALID,
     );
     const constraints =
@@ -664,7 +664,7 @@ export class PolicyGateEngine {
     fieldName: string,
     errorCode: GovernorErrorCode = GovernorErrorCode.POLICY_GATE_INPUT_INVALID,
   ): string {
-    if (typeof value !== "string") {
+    if (typeof value !== 'string') {
       throw new RuntimeError(errorCode, `Field "${fieldName}" must be a string.`);
     }
 
@@ -704,12 +704,12 @@ export class PolicyGateEngine {
     errorCode: GovernorErrorCode = GovernorErrorCode.POLICY_GATE_INPUT_INVALID,
   ): string[] {
     if (!Array.isArray(values)) {
-      throw new RuntimeError(errorCode, "Policy gate list fields must be arrays.");
+      throw new RuntimeError(errorCode, 'Policy gate list fields must be arrays.');
     }
 
     const uniqueValues = new Set(
       values
-        .filter((value): value is string => typeof value === "string")
+        .filter((value): value is string => typeof value === 'string')
         .map((value) => value.trim())
         .filter((value) => value.length > 0),
     );

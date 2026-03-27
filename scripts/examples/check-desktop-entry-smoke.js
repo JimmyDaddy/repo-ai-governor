@@ -1,26 +1,26 @@
 #!/usr/bin/env node
 
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { resolve } from "node:path";
-import { pathToFileURL } from "node:url";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
-import { gateFail, gateInfo, gatePass } from "../governance/gate-output.js";
+import { gateFail, gateInfo, gatePass } from '../governance/gate-output.js';
 
-const GATE_NAME = "desktop-entry-smoke";
-const DEFAULT_DISTRIBUTION_MODE = "default";
-const PLUGIN_ENABLED_DISTRIBUTION_MODE = "plugin-enabled";
-const DESKTOP_README_PATH = "integrations/desktop/README.md";
-const DESKTOP_EXAMPLES_README_PATH = "integrations/desktop/examples/README.md";
-const DESKTOP_SAMPLE_PATH = "integrations/desktop/examples/desktop-sidecar-runtime.sample.json";
+const GATE_NAME = 'desktop-entry-smoke';
+const DEFAULT_DISTRIBUTION_MODE = 'default';
+const PLUGIN_ENABLED_DISTRIBUTION_MODE = 'plugin-enabled';
+const DESKTOP_README_PATH = 'integrations/desktop/README.md';
+const DESKTOP_EXAMPLES_README_PATH = 'integrations/desktop/examples/README.md';
+const DESKTOP_SAMPLE_PATH = 'integrations/desktop/examples/desktop-sidecar-runtime.sample.json';
 const DIST_CLI_RUNTIME_PATH =
-  "dist/node_modules/@repo-ai-governor/cli/dist/src/runtime/orchestration-service-runtime.js";
+  'dist/node_modules/@repo-ai-governor/cli/dist/src/runtime/orchestration-service-runtime.js';
 const DIST_CLI_RUNTIME_MODE_CONSTANT_PATH =
-  "dist/node_modules/@repo-ai-governor/cli/dist/src/constants/orchestration-service-runtime.constant.js";
+  'dist/node_modules/@repo-ai-governor/cli/dist/src/constants/orchestration-service-runtime.constant.js';
 const DIST_ORCHESTRATION_CLIENT_INDEX_PATH =
-  "dist/node_modules/@repo-ai-governor/orchestration-service-client/dist/src/index.js";
+  'dist/node_modules/@repo-ai-governor/orchestration-service-client/dist/src/index.js';
 const DIST_CORE_ORCHESTRATION_SIDECAR_ENTRY_PATH =
-  "dist/node_modules/@repo-ai-governor/core-orchestration-service/dist/src/local-orchestration-service-sidecar-entry.js";
+  'dist/node_modules/@repo-ai-governor/core-orchestration-service/dist/src/local-orchestration-service-sidecar-entry.js';
 
 /**
  * Reads one repository-relative JSON file.
@@ -28,7 +28,7 @@ const DIST_CORE_ORCHESTRATION_SIDECAR_ENTRY_PATH =
  * @returns {unknown}
  */
 function readJson(relativePath) {
-  return JSON.parse(readFileSync(resolve(process.cwd(), relativePath), "utf8"));
+  return JSON.parse(readFileSync(resolve(process.cwd(), relativePath), 'utf8'));
 }
 
 /**
@@ -47,7 +47,7 @@ function ensureFileExists(relativePath) {
  * @param {string} fieldName Field name for diagnostics.
  */
 function assertNonEmptyString(value, fieldName) {
-  if (typeof value !== "string" || value.trim().length === 0) {
+  if (typeof value !== 'string' || value.trim().length === 0) {
     throw new Error(`Field "${fieldName}" must be a non-empty string.`);
   }
 }
@@ -58,7 +58,7 @@ function assertNonEmptyString(value, fieldName) {
  */
 function parseCliOptions() {
   const rawArgs = process.argv.slice(2);
-  const distributionModeIndex = rawArgs.findIndex((arg) => arg === "--distribution-mode");
+  const distributionModeIndex = rawArgs.findIndex((arg) => arg === '--distribution-mode');
   if (distributionModeIndex === -1) {
     return {
       distributionMode: DEFAULT_DISTRIBUTION_MODE,
@@ -85,7 +85,7 @@ function parseCliOptions() {
  * @returns {Record<string, string>}
  */
 function normalizeExpectedMemoryProvider(expectedRaw, fieldName) {
-  if (!expectedRaw || typeof expectedRaw !== "object" || Array.isArray(expectedRaw)) {
+  if (!expectedRaw || typeof expectedRaw !== 'object' || Array.isArray(expectedRaw)) {
     throw new Error(`Field "${fieldName}" must be an object.`);
   }
 
@@ -114,19 +114,19 @@ function normalizeExpectedMemoryProvider(expectedRaw, fieldName) {
  * }}
  */
 function normalizeSample(sampleRaw) {
-  if (!sampleRaw || typeof sampleRaw !== "object" || Array.isArray(sampleRaw)) {
-    throw new Error("desktop runtime sample must be an object.");
+  if (!sampleRaw || typeof sampleRaw !== 'object' || Array.isArray(sampleRaw)) {
+    throw new Error('desktop runtime sample must be an object.');
   }
 
-  assertNonEmptyString(sampleRaw.surface, "surface");
-  assertNonEmptyString(sampleRaw.runtimeMode, "runtimeMode");
-  assertNonEmptyString(sampleRaw.executionKind, "executionKind");
-  assertNonEmptyString(sampleRaw.expectedServiceHostKind, "expectedServiceHostKind");
-  assertNonEmptyString(sampleRaw.expectedServiceTransportKind, "expectedServiceTransportKind");
-  assertNonEmptyString(sampleRaw.expectedLifecycleStatus, "expectedLifecycleStatus");
+  assertNonEmptyString(sampleRaw.surface, 'surface');
+  assertNonEmptyString(sampleRaw.runtimeMode, 'runtimeMode');
+  assertNonEmptyString(sampleRaw.executionKind, 'executionKind');
+  assertNonEmptyString(sampleRaw.expectedServiceHostKind, 'expectedServiceHostKind');
+  assertNonEmptyString(sampleRaw.expectedServiceTransportKind, 'expectedServiceTransportKind');
+  assertNonEmptyString(sampleRaw.expectedLifecycleStatus, 'expectedLifecycleStatus');
 
   if (!Array.isArray(sampleRaw.requiredOperations) || sampleRaw.requiredOperations.length === 0) {
-    throw new Error("requiredOperations must be a non-empty array.");
+    throw new Error('requiredOperations must be a non-empty array.');
   }
 
   return {
@@ -138,11 +138,11 @@ function normalizeSample(sampleRaw) {
     expectedLifecycleStatus: sampleRaw.expectedLifecycleStatus.trim(),
     defaultMemoryProvider: normalizeExpectedMemoryProvider(
       sampleRaw.defaultMemoryProvider,
-      "defaultMemoryProvider",
+      'defaultMemoryProvider',
     ),
     pluginEnabledMemoryProvider: normalizeExpectedMemoryProvider(
       sampleRaw.pluginEnabledMemoryProvider,
-      "pluginEnabledMemoryProvider",
+      'pluginEnabledMemoryProvider',
     ),
     requiredOperations: sampleRaw.requiredOperations.map((entry, index) => {
       assertNonEmptyString(entry, `requiredOperations[${index}]`);
@@ -171,7 +171,7 @@ async function importDistModule(relativePath) {
 function assertExpectedMemoryProvider(actualMemoryProvider, expectedMemoryProvider, label) {
   if (
     !actualMemoryProvider ||
-    typeof actualMemoryProvider !== "object" ||
+    typeof actualMemoryProvider !== 'object' ||
     Array.isArray(actualMemoryProvider)
   ) {
     throw new Error(`${label} did not provide a memoryProvider payload.`);
@@ -216,17 +216,17 @@ try {
   } = clientIndex;
 
   if (sample.surface !== OrchestrationClientSurface.DESKTOP) {
-    throw new Error("desktop runtime sample must declare surface=desktop.");
+    throw new Error('desktop runtime sample must declare surface=desktop.');
   }
   if (sample.runtimeMode !== CliOrchestrationServiceRuntimeMode.SIDECAR_IPC) {
-    throw new Error("desktop runtime sample must declare runtimeMode=sidecar_ipc.");
+    throw new Error('desktop runtime sample must declare runtimeMode=sidecar_ipc.');
   }
   if (sample.executionKind !== OrchestrationExecutionKind.RUN) {
-    throw new Error("desktop runtime sample must declare executionKind=run.");
+    throw new Error('desktop runtime sample must declare executionKind=run.');
   }
 
-  const tempRoot = mkdtempSync(resolve(tmpdir(), "repo-ai-governor-desktop-sidecar-"));
-  const workspaceRoot = resolve(tempRoot, ".repo-ai-governor");
+  const tempRoot = mkdtempSync(resolve(tmpdir(), 'repo-ai-governor-desktop-sidecar-'));
+  const workspaceRoot = resolve(tempRoot, '.repo-ai-governor');
 
   try {
     const runtime = new CliOrchestrationServiceRuntime(workspaceRoot, {
@@ -234,31 +234,31 @@ try {
       memoryConfig:
         options.distributionMode === PLUGIN_ENABLED_DISTRIBUTION_MODE
           ? {
-              storeEngine: "sqlite_fs",
-              storeRoot: "context/memory/desktop-plugin",
+              storeEngine: 'sqlite_fs',
+              storeRoot: 'context/memory/desktop-plugin',
               provider: {
-                module: "@repo-ai-governor/memory-provider-sqlite-fs",
-                exportName: "createMemoryStoreProvider",
+                module: '@repo-ai-governor/memory-provider-sqlite-fs',
+                exportName: 'createMemoryStoreProvider',
               },
             }
           : {
-              storeEngine: "fs_csv",
-              storeRoot: "context/memory/desktop-default",
+              storeEngine: 'fs_csv',
+              storeRoot: 'context/memory/desktop-default',
             },
     });
 
     const health = await runtime.getHealth();
     const started = await runtime.startExecution(
       {
-        workspaceId: "desktop-workspace",
+        workspaceId: 'desktop-workspace',
         workspaceRoot,
         executionKind: OrchestrationExecutionKind.RUN,
         clientSurface: OrchestrationClientSurface.DESKTOP,
       },
       {
-        processId: "desktop-process",
-        executionId: "desktop-execution",
-        executionSessionId: "desktop-session",
+        processId: 'desktop-process',
+        executionId: 'desktop-execution',
+        executionSessionId: 'desktop-session',
       },
     );
 
@@ -266,21 +266,21 @@ try {
       executionId: started.executionId,
       type: OrchestrationServiceEventType.ARTIFACT_READY,
       status: OrchestrationExecutionStatus.RUNNING,
-      artifactId: "desktop-artifact",
-      artifactPath: resolve(workspaceRoot, "desktop-artifact.json"),
-      message: "desktop artifact ready",
+      artifactId: 'desktop-artifact',
+      artifactPath: resolve(workspaceRoot, 'desktop-artifact.json'),
+      message: 'desktop artifact ready',
     });
     await runtime.publishEvent({
       executionId: started.executionId,
       type: OrchestrationServiceEventType.EXECUTION_COMPLETED,
       status: OrchestrationExecutionStatus.COMPLETED,
-      message: "desktop execution completed",
+      message: 'desktop execution completed',
     });
 
     const summary = await runtime.getExecution(started.executionId);
     const listed = await runtime.listExecutions({
       filter: {
-        workspaceId: "desktop-workspace",
+        workspaceId: 'desktop-workspace',
       },
     });
     const subscribed = await runtime.subscribeExecution({
@@ -305,23 +305,23 @@ try {
     assertExpectedMemoryProvider(
       health.memoryProvider,
       expectedMemoryProvider,
-      "desktop sidecar health",
+      'desktop sidecar health',
     );
     if (started.serviceHostKind !== sample.expectedServiceHostKind) {
-      throw new Error("desktop sidecar execution host kind drifted from sample baseline.");
+      throw new Error('desktop sidecar execution host kind drifted from sample baseline.');
     }
     if (started.serviceTransportKind !== sample.expectedServiceTransportKind) {
-      throw new Error("desktop sidecar execution transport kind drifted from sample baseline.");
+      throw new Error('desktop sidecar execution transport kind drifted from sample baseline.');
     }
     assertExpectedMemoryProvider(
       started.memoryProvider,
       expectedMemoryProvider,
-      "desktop sidecar startExecution",
+      'desktop sidecar startExecution',
     );
     assertExpectedMemoryProvider(
       summary?.memoryProvider,
       expectedMemoryProvider,
-      "desktop sidecar getExecution",
+      'desktop sidecar getExecution',
     );
     if (listed.executions.length !== 1) {
       throw new Error(`desktop sidecar listExecutions returned ${listed.executions.length} items.`);
@@ -329,24 +329,24 @@ try {
     assertExpectedMemoryProvider(
       listed.executions[0]?.memoryProvider,
       expectedMemoryProvider,
-      "desktop sidecar listExecutions",
+      'desktop sidecar listExecutions',
     );
     if (subscribed.serviceHostKind !== sample.expectedServiceHostKind) {
-      throw new Error("desktop sidecar subscribeExecution host kind drifted from sample baseline.");
+      throw new Error('desktop sidecar subscribeExecution host kind drifted from sample baseline.');
     }
     if (subscribed.serviceTransportKind !== sample.expectedServiceTransportKind) {
       throw new Error(
-        "desktop sidecar subscribeExecution transport kind drifted from sample baseline.",
+        'desktop sidecar subscribeExecution transport kind drifted from sample baseline.',
       );
     }
     if (subscribed.events.length < 3) {
-      throw new Error("desktop sidecar subscribeExecution returned too few events.");
+      throw new Error('desktop sidecar subscribeExecution returned too few events.');
     }
 
     await runtime.dispose();
     gateInfo(
       GATE_NAME,
-      `desktop sidecar runtime smoke passed operations=${sample.requiredOperations.join(",")} distribution_mode=${options.distributionMode}`,
+      `desktop sidecar runtime smoke passed operations=${sample.requiredOperations.join(',')} distribution_mode=${options.distributionMode}`,
     );
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });

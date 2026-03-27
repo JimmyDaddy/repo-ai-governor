@@ -1,9 +1,9 @@
-import { type ChildProcess, fork } from "node:child_process";
-import { existsSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { type ChildProcess, fork } from 'node:child_process';
+import { existsSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-import type { LangGraphRecoveredExecution } from "@repo-ai-governor/core-runtime-langgraph";
+import type { LangGraphRecoveredExecution } from '@repo-ai-governor/core-runtime-langgraph';
 import type {
   OrchestrationExecutionSummary,
   OrchestrationListExecutionsRequest,
@@ -17,24 +17,23 @@ import type {
   OrchestrationSubmitHitlDecisionResponse,
   OrchestrationSubscribeExecutionRequest,
   OrchestrationSubscribeExecutionResponse,
-} from "@repo-ai-governor/orchestration-service-client";
-import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
+} from '@repo-ai-governor/orchestration-service-client';
+import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import {
   LOCAL_ORCHESTRATION_SERVICE_SIDECAR_MEMORY_CONFIG_ENV,
-  LOCAL_ORCHESTRATION_SERVICE_SIDECAR_PROTOCOL_VERSION,
   LocalOrchestrationServiceSidecarOperation,
-} from "./constants/index.js";
+} from './constants/index.js';
 import type {
   LocalOrchestrationServicePublishEventRequest,
   LocalOrchestrationServiceSaveCheckpointRequest,
   LocalOrchestrationServiceStartExecutionRuntimeContext,
-} from "./types/index.js";
+} from './types/index.js';
 import type {
   LocalOrchestrationServiceSidecarClientDependencies,
   LocalOrchestrationServiceSidecarRequestEnvelope,
   LocalOrchestrationServiceSidecarResponseEnvelope,
   LocalOrchestrationServiceSidecarSerializedError,
-} from "./types/interfaces/local-orchestration-service-sidecar.interface.js";
+} from './types/interfaces/local-orchestration-service-sidecar.interface.js';
 
 const DEFAULT_SIDECAR_REQUEST_TIMEOUT_MS = 10000;
 
@@ -51,7 +50,7 @@ export class LocalOrchestrationServiceSidecarClient {
   private childProcessPromise: Promise<ChildProcess> | null = null;
   private requestSequence = 0;
   private readonly pendingRequests = new Map<string, PendingRequest>();
-  private lastSidecarStderr = "";
+  private lastSidecarStderr = '';
 
   public constructor(
     private readonly workspaceRoot: string,
@@ -151,7 +150,7 @@ export class LocalOrchestrationServiceSidecarClient {
       this.rejectAllPending(
         new RuntimeError(
           GovernorErrorCode.PROCESS_RUNTIME_CANCELLED,
-          "Local orchestration sidecar client was disposed.",
+          'Local orchestration sidecar client was disposed.',
         ),
       );
     }
@@ -221,7 +220,7 @@ export class LocalOrchestrationServiceSidecarClient {
         const sidecarEntryPath =
           this.dependencies.sidecarEntryPath ?? this.resolveDefaultSidecarEntryPath();
         const execArgv = this.resolveExecArgv(sidecarEntryPath);
-        this.lastSidecarStderr = "";
+        this.lastSidecarStderr = '';
         const childProcess = this.dependencies.childProcessFactory
           ? this.dependencies.childProcessFactory(
               this.workspaceRoot,
@@ -229,24 +228,24 @@ export class LocalOrchestrationServiceSidecarClient {
               execArgv,
               this.resolveSidecarEnvironment(),
             )
-          : fork(sidecarEntryPath, ["--workspace-root", this.workspaceRoot], {
+          : fork(sidecarEntryPath, ['--workspace-root', this.workspaceRoot], {
               execArgv,
               env: this.resolveSidecarEnvironment(),
-              stdio: ["ignore", "ignore", "pipe", "ipc"],
+              stdio: ['ignore', 'ignore', 'pipe', 'ipc'],
             });
-        childProcess.stderr?.setEncoding("utf8");
-        childProcess.stderr?.on("data", (chunk: string) => {
+        childProcess.stderr?.setEncoding('utf8');
+        childProcess.stderr?.on('data', (chunk: string) => {
           this.lastSidecarStderr += chunk;
         });
-        childProcess.on("message", (message) => {
+        childProcess.on('message', (message) => {
           this.handleResponse(message);
         });
-        childProcess.on("exit", () => {
+        childProcess.on('exit', () => {
           this.childProcessPromise = null;
           this.rejectAllPending(
             new RuntimeError(
               GovernorErrorCode.PROCESS_RUNTIME_CANCELLED,
-              "Local orchestration sidecar process exited.",
+              'Local orchestration sidecar process exited.',
               this.lastSidecarStderr
                 ? {
                     stderr: this.lastSidecarStderr.trim(),
@@ -299,7 +298,7 @@ export class LocalOrchestrationServiceSidecarClient {
   ): RuntimeError {
     return new RuntimeError(
       serializedError?.code ?? GovernorErrorCode.UNKNOWN,
-      serializedError?.message ?? "Local orchestration sidecar request failed.",
+      serializedError?.message ?? 'Local orchestration sidecar request failed.',
       serializedError?.details,
     );
   }
@@ -311,19 +310,19 @@ export class LocalOrchestrationServiceSidecarClient {
 
   private resolveDefaultSidecarEntryPath(): string {
     const moduleDirectory = dirname(fileURLToPath(import.meta.url));
-    const jsEntryPath = resolve(moduleDirectory, "local-orchestration-service-sidecar-entry.js");
+    const jsEntryPath = resolve(moduleDirectory, 'local-orchestration-service-sidecar-entry.js');
     if (existsSync(jsEntryPath)) {
       return jsEntryPath;
     }
 
-    const tsEntryPath = resolve(moduleDirectory, "local-orchestration-service-sidecar-entry.ts");
+    const tsEntryPath = resolve(moduleDirectory, 'local-orchestration-service-sidecar-entry.ts');
     if (existsSync(tsEntryPath)) {
       return tsEntryPath;
     }
 
     throw new RuntimeError(
       GovernorErrorCode.WORKSPACE_SOURCE_NOT_FOUND,
-      "Local orchestration sidecar entry was not found.",
+      'Local orchestration sidecar entry was not found.',
       {
         moduleDirectory,
       },
@@ -335,12 +334,12 @@ export class LocalOrchestrationServiceSidecarClient {
       return [...this.dependencies.execArgv];
     }
 
-    if (sidecarEntryPath.endsWith(".ts")) {
+    if (sidecarEntryPath.endsWith('.ts')) {
       const moduleDirectory = dirname(fileURLToPath(import.meta.url));
       return [
-        "--experimental-transform-types",
-        "--loader",
-        resolve(moduleDirectory, "local-orchestration-service-sidecar-loader.ts"),
+        '--experimental-transform-types',
+        '--loader',
+        resolve(moduleDirectory, 'local-orchestration-service-sidecar-loader.ts'),
       ];
     }
 
@@ -366,11 +365,11 @@ export class LocalOrchestrationServiceSidecarClient {
   private isResponseEnvelope(
     message: unknown,
   ): message is LocalOrchestrationServiceSidecarResponseEnvelope {
-    if (!message || typeof message !== "object") {
+    if (!message || typeof message !== 'object') {
       return false;
     }
     const requestId = (message as { requestId?: unknown }).requestId;
     const ok = (message as { ok?: unknown }).ok;
-    return typeof requestId === "string" && typeof ok === "boolean";
+    return typeof requestId === 'string' && typeof ok === 'boolean';
   }
 }

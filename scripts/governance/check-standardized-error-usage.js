@@ -1,30 +1,30 @@
 #!/usr/bin/env node
 
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
-import { resolve } from "node:path";
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { resolve } from 'node:path';
 
-import { gateFail, gateInfo, gatePass } from "./gate-output.js";
+import { gateFail, gateInfo, gatePass } from './gate-output.js';
 
-const GATE_NAME = "standardized-errors";
-const TARGET_DIRECTORIES = ["apps", "packages", "bin", "test"];
+const GATE_NAME = 'standardized-errors';
+const TARGET_DIRECTORIES = ['apps', 'packages', 'bin', 'test'];
 const TARGET_FILE_PATTERN = /\.(ts|tsx|js|mjs|cjs)$/;
-const IGNORED_DIRECTORY_NAMES = new Set(["node_modules", "dist", "coverage", ".turbo"]);
+const IGNORED_DIRECTORY_NAMES = new Set(['node_modules', 'dist', 'coverage', '.turbo']);
 const BASE_ERROR_IMPLEMENTATION_ALLOWLIST = [
   /\/packages\/shared\/src\/errors\/governor-error\.ts$/,
 ];
 const VIOLATION_PATTERNS = [
   {
     pattern: /\bnew\s+Error\s*\(/,
-    reason: "Use `GovernorError` instead of native `new Error(...)`.",
+    reason: 'Use `GovernorError` instead of native `new Error(...)`.',
   },
   {
     pattern: /\bextends\s+Error\b/,
-    reason: "Only abstract BaseError implementation may extend native Error.",
+    reason: 'Only abstract BaseError implementation may extend native Error.',
     allowPathPatterns: BASE_ERROR_IMPLEMENTATION_ALLOWLIST,
   },
   {
     pattern: /\binstanceof\s+Error\b/,
-    reason: "Use `standardizeError(...)` instead of `instanceof Error` checks.",
+    reason: 'Use `standardizeError(...)` instead of `instanceof Error` checks.',
   },
 ];
 
@@ -63,7 +63,7 @@ function collectFiles(directoryPath) {
  * @returns {Array<{filePath: string, lineNumber: number, reason: string, sourceLine: string}>}
  */
 function collectViolations(filePath) {
-  const source = readFileSync(filePath, "utf8");
+  const source = readFileSync(filePath, 'utf8');
   const lines = source.split(/\r?\n/);
   const violations = [];
 
@@ -129,4 +129,4 @@ if (allViolations.length > 0) {
   process.exit(1);
 }
 
-gatePass(GATE_NAME, "Native Error usage is standardized.");
+gatePass(GATE_NAME, 'Native Error usage is standardized.');

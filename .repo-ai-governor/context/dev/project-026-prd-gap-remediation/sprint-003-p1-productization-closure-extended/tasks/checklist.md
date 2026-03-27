@@ -14,3 +14,9 @@
   - 2026-03-27：任务创建，状态初始化为 `planned`。
   - 2026-03-28：状态切换为 `in_progress`，开始汇总 `TK-298` 与 `TK-299` 证据并冻结 `sprint-004` 输入约束。
   - 2026-03-28：已完成 sprint-003 出口验收，确认模板与 UX 两项 exit criteria 全部达成，并冻结 `sprint-004` 继续沉淀 GA 证据所需输入约束。
+- [x] TK-301 unused var lint 规则接入
+  - 2026-03-28：任务创建并直接收口，补齐仓库级 `Biome` `correctness/noUnusedVariables` 规则。
+  - 2026-03-28：已完成规则接入，并修复 7 处现存 unused variable / parameter 命中点；已通过 `pnpm biome lint . --only=correctness/noUnusedVariables` 与 `pnpm run typecheck`。
+- [x] TK-302 unused import lint 规则接入
+  - 2026-03-28：任务创建并直接收口，补齐仓库级 `Biome` `correctness/noUnusedImports` 规则，对齐 `ts(6133)` 所指向的未使用 import 场景。
+  - 2026-03-28：已完成规则接入，并用 `Biome` safe fix 清理 8 个文件中的现存 unused imports（含 `ClaudeCodeAgentAdapter`）；已通过 `pnpm biome lint . --only=correctness/noUnusedImports` 与 `pnpm run typecheck`。

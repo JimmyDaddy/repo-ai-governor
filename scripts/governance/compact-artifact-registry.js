@@ -1,25 +1,25 @@
 #!/usr/bin/env node
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
 
-import { gateInfo, gatePass } from "./gate-output.js";
+import { gateInfo, gatePass } from './gate-output.js';
 
-const GATE_NAME = "artifact-compact";
-const MAIN_REGISTRY_PATH = ".repo-ai-governor/context/artifact-registry/artifacts.csv";
+const GATE_NAME = 'artifact-compact';
+const MAIN_REGISTRY_PATH = '.repo-ai-governor/context/artifact-registry/artifacts.csv';
 const ARCHIVE_REGISTRY_PATH =
-  ".repo-ai-governor/context/artifact-registry/archive/artifacts.archive.csv";
+  '.repo-ai-governor/context/artifact-registry/archive/artifacts.archive.csv';
 const REQUIRED_HEADERS = [
-  "artifact_id",
-  "artifact_type",
-  "artifact_path",
-  "artifact_version",
-  "artifact_status",
-  "producer_task_id",
-  "producer_execution_id",
-  "registered_at",
-  "last_updated_at",
-  "dependent_tasks",
+  'artifact_id',
+  'artifact_type',
+  'artifact_path',
+  'artifact_version',
+  'artifact_status',
+  'producer_task_id',
+  'producer_execution_id',
+  'registered_at',
+  'last_updated_at',
+  'dependent_tasks',
 ];
 
 /**
@@ -29,7 +29,7 @@ const REQUIRED_HEADERS = [
  */
 function parseCsvLine(line) {
   const values = [];
-  let currentValue = "";
+  let currentValue = '';
   let inQuotes = false;
 
   for (let index = 0; index < line.length; index += 1) {
@@ -47,9 +47,9 @@ function parseCsvLine(line) {
       continue;
     }
 
-    if (character === "," && !inQuotes) {
+    if (character === ',' && !inQuotes) {
       values.push(currentValue);
-      currentValue = "";
+      currentValue = '';
       continue;
     }
 
@@ -83,7 +83,7 @@ function readRegistryRows(filePath) {
     return [];
   }
 
-  const content = readFileSync(filePath, "utf8");
+  const content = readFileSync(filePath, 'utf8');
   const lines = content
     .split(/\r?\n/)
     .map((line) => line.trimEnd())
@@ -123,14 +123,14 @@ function readRegistryRows(filePath) {
  * @param {Array<Record<string, string>>} rows CSV rows.
  */
 function writeRegistryRows(filePath, rows) {
-  const headerLine = REQUIRED_HEADERS.join(",");
+  const headerLine = REQUIRED_HEADERS.join(',');
   const bodyLines = rows.map((row) =>
-    REQUIRED_HEADERS.map((header) => escapeCsvCell(row[header] ?? "")).join(","),
+    REQUIRED_HEADERS.map((header) => escapeCsvCell(row[header] ?? '')).join(','),
   );
-  const content = [headerLine, ...bodyLines].join("\n");
+  const content = [headerLine, ...bodyLines].join('\n');
 
   mkdirSync(dirname(filePath), { recursive: true });
-  writeFileSync(filePath, `${content}\n`, "utf8");
+  writeFileSync(filePath, `${content}\n`, 'utf8');
 }
 
 /**
@@ -146,7 +146,7 @@ function readFlagValue(argv, flagName) {
   }
 
   const nextValue = argv[flagIndex + 1];
-  if (!nextValue || nextValue.startsWith("--")) {
+  if (!nextValue || nextValue.startsWith('--')) {
     throw new Error(`Flag "${flagName}" requires a value.`);
   }
 
@@ -164,13 +164,13 @@ function parseDependentTasks(rawDependentTasks) {
     return { values: [], hasTbdPlaceholder: false };
   }
 
-  if (trimmedValue.toUpperCase() === "TBD") {
+  if (trimmedValue.toUpperCase() === 'TBD') {
     return { values: [], hasTbdPlaceholder: true };
   }
 
   return {
     values: trimmedValue
-      .split("|")
+      .split('|')
       .map((value) => value.trim())
       .filter((value) => value.length > 0),
     hasTbdPlaceholder: false,
@@ -202,8 +202,8 @@ function parseDate(rawDate) {
  */
 function formatDate(date) {
   const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
 
@@ -219,15 +219,15 @@ function calculateDayDistance(fromDate, toDate) {
 }
 
 const argv = process.argv.slice(2);
-const mainPath = resolve(process.cwd(), readFlagValue(argv, "--main") ?? MAIN_REGISTRY_PATH);
+const mainPath = resolve(process.cwd(), readFlagValue(argv, '--main') ?? MAIN_REGISTRY_PATH);
 const archivePath = resolve(
   process.cwd(),
-  readFlagValue(argv, "--archive") ?? ARCHIVE_REGISTRY_PATH,
+  readFlagValue(argv, '--archive') ?? ARCHIVE_REGISTRY_PATH,
 );
-const inactiveDays = Number(readFlagValue(argv, "--inactive-days") ?? "7");
-const deprecationDays = Number(readFlagValue(argv, "--deprecation-days") ?? "14");
-const dryRun = argv.includes("--dry-run");
-const today = parseDate(readFlagValue(argv, "--today") ?? formatDate(new Date())) ?? new Date();
+const inactiveDays = Number(readFlagValue(argv, '--inactive-days') ?? '7');
+const deprecationDays = Number(readFlagValue(argv, '--deprecation-days') ?? '14');
+const dryRun = argv.includes('--dry-run');
+const today = parseDate(readFlagValue(argv, '--today') ?? formatDate(new Date())) ?? new Date();
 
 if (!Number.isFinite(inactiveDays) || inactiveDays < 0) {
   throw new Error(`Invalid --inactive-days value: ${inactiveDays}`);
@@ -244,40 +244,40 @@ const movedToArchiveRows = [];
 let markedDeprecatedCount = 0;
 
 for (const row of mainRows) {
-  const dependentTasks = parseDependentTasks(row.dependent_tasks ?? "");
-  const lastUpdatedDate = parseDate(row.last_updated_at ?? "") ?? today;
+  const dependentTasks = parseDependentTasks(row.dependent_tasks ?? '');
+  const lastUpdatedDate = parseDate(row.last_updated_at ?? '') ?? today;
   const ageInDays = calculateDayDistance(lastUpdatedDate, today);
   const status = row.artifact_status;
 
-  if (status === "archived" || status === "retired") {
+  if (status === 'archived' || status === 'retired') {
     movedToArchiveRows.push({
       ...row,
       artifact_status: status,
-      dependent_tasks: "",
+      dependent_tasks: '',
       last_updated_at: formatDate(today),
     });
     continue;
   }
 
-  if (status === "deprecated" && ageInDays >= deprecationDays) {
+  if (status === 'deprecated' && ageInDays >= deprecationDays) {
     movedToArchiveRows.push({
       ...row,
-      artifact_status: "archived",
-      dependent_tasks: "",
+      artifact_status: 'archived',
+      dependent_tasks: '',
       last_updated_at: formatDate(today),
     });
     continue;
   }
 
   if (
-    (status === "active" || status === "frozen") &&
+    (status === 'active' || status === 'frozen') &&
     (dependentTasks.values.length === 0 || dependentTasks.hasTbdPlaceholder) &&
     ageInDays >= inactiveDays
   ) {
     nextMainRows.push({
       ...row,
-      artifact_status: "deprecated",
-      dependent_tasks: "",
+      artifact_status: 'deprecated',
+      dependent_tasks: '',
       last_updated_at: formatDate(today),
     });
     markedDeprecatedCount += 1;

@@ -1,27 +1,27 @@
 #!/usr/bin/env node
 
-import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
-import { Script } from "node:vm";
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { Script } from 'node:vm';
 
-import { gateFail, gateInfo, gatePass } from "./gate-output.js";
+import { gateFail, gateInfo, gatePass } from './gate-output.js';
 
-const GATE_NAME = "i18n-parity-fallback";
-const I18N_CONSTANTS_PATH = "packages/shared/src/constants/i18n.constant.ts";
+const GATE_NAME = 'i18n-parity-fallback';
+const I18N_CONSTANTS_PATH = 'packages/shared/src/constants/i18n.constant.ts';
 const LOCALE_SOURCE_DEFINITIONS = [
   {
-    locale: "en-US",
-    filePath: "packages/shared/src/i18n/locales/en-us.ts",
-    exportName: "EN_US_TRANSLATIONS",
+    locale: 'en-US',
+    filePath: 'packages/shared/src/i18n/locales/en-us.ts',
+    exportName: 'EN_US_TRANSLATIONS',
   },
   {
-    locale: "zh-CN",
-    filePath: "packages/shared/src/i18n/locales/zh-cn.ts",
-    exportName: "ZH_CN_TRANSLATIONS",
+    locale: 'zh-CN',
+    filePath: 'packages/shared/src/i18n/locales/zh-cn.ts',
+    exportName: 'ZH_CN_TRANSLATIONS',
   },
 ];
-const FORMAT_VALUES = new Set(["text", "json"]);
-const OBJECT_LITERAL_LEAF_TYPES = new Set(["string"]);
+const FORMAT_VALUES = new Set(['text', 'json']);
+const OBJECT_LITERAL_LEAF_TYPES = new Set(['string']);
 
 /**
  * Resolves CLI options for output format.
@@ -31,13 +31,13 @@ const OBJECT_LITERAL_LEAF_TYPES = new Set(["string"]);
 function resolveCliOptions(argv) {
   /** @type {{format: "text" | "json"}} */
   const options = {
-    format: "text",
+    format: 'text',
   };
 
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
 
-    if (argument === "--format") {
+    if (argument === '--format') {
       const nextValue = argv[index + 1];
       if (!nextValue) {
         throw new Error('Missing value for "--format".');
@@ -47,8 +47,8 @@ function resolveCliOptions(argv) {
       continue;
     }
 
-    if (argument.startsWith("--format=")) {
-      options.format = readFormatValue(argument.slice("--format=".length));
+    if (argument.startsWith('--format=')) {
+      options.format = readFormatValue(argument.slice('--format='.length));
       continue;
     }
 
@@ -83,7 +83,7 @@ function readSource(relativePath) {
     throw new Error(`Source file not found: ${relativePath}`);
   }
 
-  return readFileSync(absolutePath, "utf8");
+  return readFileSync(absolutePath, 'utf8');
 }
 
 /**
@@ -95,7 +95,7 @@ function readSource(relativePath) {
 function extractObjectLiteralExpression(content, exportName) {
   const pattern = new RegExp(
     `export\\s+const\\s+${escapeRegExp(exportName)}\\s*=\\s*([\\s\\S]*?)\\s+as\\s+const\\s*;`,
-    "u",
+    'u',
   );
   const matched = content.match(pattern);
   if (!matched || !matched[1]) {
@@ -140,13 +140,13 @@ function parseI18nConstants(content) {
   const localeEnumMap = parseLocaleEnum(content);
   const defaultLocale = resolveLocaleAssignment(
     content,
-    "DEFAULT_I18N_LOCALE",
+    'DEFAULT_I18N_LOCALE',
     localeEnumMap,
     Object.create(null),
   );
   const fallbackLocale = resolveLocaleAssignment(
     content,
-    "DEFAULT_I18N_FALLBACK_LOCALE",
+    'DEFAULT_I18N_FALLBACK_LOCALE',
     localeEnumMap,
     {
       DEFAULT_I18N_LOCALE: defaultLocale,
@@ -203,7 +203,7 @@ function parseLocaleEnum(content) {
 function resolveLocaleAssignment(content, constantName, localeEnumMap, constantMap) {
   const assignmentPattern = new RegExp(
     `export\\s+const\\s+${escapeRegExp(constantName)}\\s*=\\s*([^;]+);`,
-    "u",
+    'u',
   );
   const matched = content.match(assignmentPattern);
   if (!matched || !matched[1]) {
@@ -229,7 +229,7 @@ function parseSupportedLocales(content, localeEnumMap, constantMap) {
   }
 
   const rawItems = arrayMatch[1]
-    .split(",")
+    .split(',')
     .map((item) => item.trim())
     .filter((item) => item.length > 0);
   if (rawItems.length === 0) {
@@ -237,7 +237,7 @@ function parseSupportedLocales(content, localeEnumMap, constantMap) {
   }
 
   return rawItems.map((token) =>
-    resolveLocaleToken(token, localeEnumMap, constantMap, "DEFAULT_I18N_SUPPORTED_LOCALES"),
+    resolveLocaleToken(token, localeEnumMap, constantMap, 'DEFAULT_I18N_SUPPORTED_LOCALES'),
   );
 }
 
@@ -254,8 +254,8 @@ function resolveLocaleToken(token, localeEnumMap, constantMap, ownerName) {
     return token.slice(1, -1);
   }
 
-  if (token.startsWith("Locale.")) {
-    const enumKey = token.slice("Locale.".length);
+  if (token.startsWith('Locale.')) {
+    const enumKey = token.slice('Locale.'.length);
     const resolved = localeEnumMap[enumKey];
     if (!resolved) {
       throw new Error(`"${ownerName}" references unknown enum key: ${token}`);
@@ -288,11 +288,11 @@ function collectTranslationKeyPaths(source, parentPath, outputKeySet) {
     const valueType = typeof value;
     if (!OBJECT_LITERAL_LEAF_TYPES.has(valueType)) {
       throw new Error(
-        `Translation key "${nextPath.join(".")}" must resolve to string leaf, got ${valueType}.`,
+        `Translation key "${nextPath.join('.')}" must resolve to string leaf, got ${valueType}.`,
       );
     }
 
-    outputKeySet.add(nextPath.join("."));
+    outputKeySet.add(nextPath.join('.'));
   }
 }
 
@@ -327,7 +327,7 @@ function evaluateI18nParityFallbackGate() {
       localeKeyCounts[definition.locale] = keySet.size;
     } catch (error) {
       failures.push(
-        buildFailure("locale_source_parse_failed", "Failed to parse locale translation source.", {
+        buildFailure('locale_source_parse_failed', 'Failed to parse locale translation source.', {
           locale: definition.locale,
           file_path: definition.filePath,
           export_name: definition.exportName,
@@ -344,8 +344,8 @@ function evaluateI18nParityFallbackGate() {
   if (!baselineLocale) {
     failures.push(
       buildFailure(
-        "locale_source_empty",
-        "No locale resources were parsed successfully from configured locale sources.",
+        'locale_source_empty',
+        'No locale resources were parsed successfully from configured locale sources.',
         {},
       ),
     );
@@ -363,8 +363,8 @@ function evaluateI18nParityFallbackGate() {
       if (missingKeys.length > 0) {
         failures.push(
           buildFailure(
-            "locale_key_parity_missing",
-            "Locale is missing translation keys from parity baseline.",
+            'locale_key_parity_missing',
+            'Locale is missing translation keys from parity baseline.',
             {
               baseline_locale: baselineLocale,
               locale,
@@ -377,8 +377,8 @@ function evaluateI18nParityFallbackGate() {
       if (extraKeys.length > 0) {
         failures.push(
           buildFailure(
-            "locale_key_parity_extra",
-            "Locale has keys not present in parity baseline.",
+            'locale_key_parity_extra',
+            'Locale has keys not present in parity baseline.',
             {
               baseline_locale: baselineLocale,
               locale,
@@ -390,8 +390,8 @@ function evaluateI18nParityFallbackGate() {
     }
   }
 
-  let defaultLocale = "";
-  let fallbackLocale = "";
+  let defaultLocale = '';
+  let fallbackLocale = '';
   /** @type {string[]} */
   let supportedLocales = [];
 
@@ -403,7 +403,7 @@ function evaluateI18nParityFallbackGate() {
     supportedLocales = parsedConstants.supportedLocales;
   } catch (error) {
     failures.push(
-      buildFailure("i18n_constants_parse_failed", "Failed to parse i18n constant defaults.", {
+      buildFailure('i18n_constants_parse_failed', 'Failed to parse i18n constant defaults.', {
         path: I18N_CONSTANTS_PATH,
         error: error instanceof Error ? error.message : String(error),
       }),
@@ -418,8 +418,8 @@ function evaluateI18nParityFallbackGate() {
   if (defaultLocale && !resourceLocaleSet.has(defaultLocale)) {
     failures.push(
       buildFailure(
-        "i18n_default_locale_missing_resource",
-        "DEFAULT_I18N_LOCALE must resolve to an existing locale resource.",
+        'i18n_default_locale_missing_resource',
+        'DEFAULT_I18N_LOCALE must resolve to an existing locale resource.',
         {
           default_locale: defaultLocale,
           resource_locales: resourceLocales,
@@ -431,8 +431,8 @@ function evaluateI18nParityFallbackGate() {
   if (fallbackLocale && !resourceLocaleSet.has(fallbackLocale)) {
     failures.push(
       buildFailure(
-        "i18n_fallback_locale_missing_resource",
-        "DEFAULT_I18N_FALLBACK_LOCALE must resolve to an existing locale resource.",
+        'i18n_fallback_locale_missing_resource',
+        'DEFAULT_I18N_FALLBACK_LOCALE must resolve to an existing locale resource.',
         {
           fallback_locale: fallbackLocale,
           resource_locales: resourceLocales,
@@ -445,8 +445,8 @@ function evaluateI18nParityFallbackGate() {
   if (supportedLocaleSet.size !== supportedLocales.length) {
     failures.push(
       buildFailure(
-        "i18n_supported_locale_duplicate",
-        "DEFAULT_I18N_SUPPORTED_LOCALES must not contain duplicates.",
+        'i18n_supported_locale_duplicate',
+        'DEFAULT_I18N_SUPPORTED_LOCALES must not contain duplicates.',
         {
           supported_locales: supportedLocales,
         },
@@ -457,8 +457,8 @@ function evaluateI18nParityFallbackGate() {
   if (defaultLocale && !supportedLocaleSet.has(defaultLocale)) {
     failures.push(
       buildFailure(
-        "i18n_supported_locale_missing_default",
-        "DEFAULT_I18N_SUPPORTED_LOCALES must include DEFAULT_I18N_LOCALE.",
+        'i18n_supported_locale_missing_default',
+        'DEFAULT_I18N_SUPPORTED_LOCALES must include DEFAULT_I18N_LOCALE.',
         {
           default_locale: defaultLocale,
           supported_locales: supportedLocales,
@@ -470,8 +470,8 @@ function evaluateI18nParityFallbackGate() {
   if (fallbackLocale && !supportedLocaleSet.has(fallbackLocale)) {
     failures.push(
       buildFailure(
-        "i18n_supported_locale_missing_fallback",
-        "DEFAULT_I18N_SUPPORTED_LOCALES must include DEFAULT_I18N_FALLBACK_LOCALE.",
+        'i18n_supported_locale_missing_fallback',
+        'DEFAULT_I18N_SUPPORTED_LOCALES must include DEFAULT_I18N_FALLBACK_LOCALE.',
         {
           fallback_locale: fallbackLocale,
           supported_locales: supportedLocales,
@@ -484,8 +484,8 @@ function evaluateI18nParityFallbackGate() {
     if (!resourceLocaleSet.has(supportedLocale)) {
       failures.push(
         buildFailure(
-          "i18n_supported_locale_missing_resource",
-          "Supported locale must map to an existing translation resource.",
+          'i18n_supported_locale_missing_resource',
+          'Supported locale must map to an existing translation resource.',
           {
             locale: supportedLocale,
             supported_locales: supportedLocales,
@@ -497,7 +497,7 @@ function evaluateI18nParityFallbackGate() {
   }
 
   return {
-    status: failures.length === 0 ? "pass" : "fail",
+    status: failures.length === 0 ? 'pass' : 'fail',
     failures,
     locale_key_counts: localeKeyCounts,
     default_locale: defaultLocale,
@@ -535,20 +535,20 @@ function buildFailure(ruleId, message, details) {
  * }} result
  */
 function printTextResult(result) {
-  if (result.status === "pass") {
+  if (result.status === 'pass') {
     gatePass(
       GATE_NAME,
-      `i18n parity/fallback check passed. locales=${result.resource_locales.join(", ")}`,
+      `i18n parity/fallback check passed. locales=${result.resource_locales.join(', ')}`,
     );
     gateInfo(
       GATE_NAME,
-      `default=${result.default_locale} fallback=${result.fallback_locale} supported=${result.supported_locales.join(", ")}`,
+      `default=${result.default_locale} fallback=${result.fallback_locale} supported=${result.supported_locales.join(', ')}`,
     );
     gateInfo(GATE_NAME, `key_counts=${JSON.stringify(result.locale_key_counts)}`);
     return;
   }
 
-  gateFail(GATE_NAME, "i18n parity/fallback check failed.");
+  gateFail(GATE_NAME, 'i18n parity/fallback check failed.');
   for (const failure of result.failures) {
     gateFail(GATE_NAME, `- rule=${failure.rule_id} message="${failure.message}"`);
     gateInfo(GATE_NAME, `  details=${JSON.stringify(failure.details)}`);
@@ -561,7 +561,7 @@ function printTextResult(result) {
  * @returns {string}
  */
 function escapeRegExp(value) {
-  return value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+  return value.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
 }
 
 /**
@@ -570,18 +570,18 @@ function escapeRegExp(value) {
  * @returns {value is Record<string, unknown>}
  */
 function isPlainRecord(value) {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
 const options = resolveCliOptions(process.argv.slice(2));
 const result = evaluateI18nParityFallbackGate();
 
-if (options.format === "json") {
+if (options.format === 'json') {
   console.info(JSON.stringify(result, null, 2));
 } else {
   printTextResult(result);
 }
 
-if (result.status === "fail") {
+if (result.status === 'fail') {
   process.exit(1);
 }

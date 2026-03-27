@@ -17,16 +17,16 @@ export type {
   ProcessRuntimeParitySnapshot,
   ProcessRuntimePreparedExecution,
   ProcessRuntimePreparedExecutionProfile,
-} from "./runtime-facade.interface.js";
+} from './runtime-facade.interface.js';
 export type {
   RuntimeConditionContext,
   RuntimeConditionResolver,
   RuntimeExecuteOptions,
   RuntimeLoopContext,
   RuntimeLoopController,
-} from "./runtime-control.interface.js";
+} from './runtime-control.interface.js';
 export type {
   RuntimeExecutionInterruption,
   RuntimeExecutionResult,
-} from "./runtime-execution.interface.js";
-export type { RuntimeStageContext, RuntimeStageResult } from "./runtime-stage.interface.js";
+} from './runtime-execution.interface.js';
+export type { RuntimeStageContext, RuntimeStageResult } from './runtime-stage.interface.js';

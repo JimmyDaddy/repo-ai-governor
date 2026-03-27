@@ -1,4 +1,4 @@
-export { MemoryStoreAdapter } from "./memory-store-adapter.js";
+export { MemoryStoreAdapter } from './memory-store-adapter.js';
 export type {
   MemoryArchiveOptions,
   MemoryQueryRequest,
@@ -8,4 +8,4 @@ export type {
   MemorySnapshotRecord,
   MemoryStoreProvider,
   MemoryWriteRequest,
-} from "./types/index.js";
+} from './types/index.js';

@@ -8,4 +8,4 @@ export type {
   ParsedArtifactDependency,
   RegisterArtifactOptions,
   ResolveArtifactDependenciesOptions,
-} from "./artifact-registry.interface.js";
+} from './artifact-registry.interface.js';

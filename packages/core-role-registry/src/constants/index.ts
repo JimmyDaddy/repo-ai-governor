@@ -3,4 +3,4 @@ export {
   ROLE_PROFILE_ID_PATTERN,
   ROLE_PROFILE_VERSION_PATTERN,
   createDefaultRoleProfiles,
-} from "./role-registry.constant.js";
+} from './role-registry.constant.js';

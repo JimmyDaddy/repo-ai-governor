@@ -1,4 +1,4 @@
-import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
+import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import {
   DEFAULT_NOTIFICATION_POLICY_MATRIX,
   DEFAULT_NOTIFICATION_PRIMARY_MAX_ATTEMPTS,
@@ -8,7 +8,7 @@ import {
   type NotificationChannel,
   NotificationDispatchStatus,
   NotificationRiskLevel,
-} from "./constants/index.js";
+} from './constants/index.js';
 import type {
   NotificationChannelAttempt,
   NotificationChannelPolicy,
@@ -19,7 +19,7 @@ import type {
   NotificationPayload,
   NotificationProvider,
   NotificationRiskLevelPolicyMatrix,
-} from "./types/index.js";
+} from './types/index.js';
 
 interface ResolvedNotificationDispatcherOptions {
   providerByChannel: Map<NotificationChannel, NotificationProvider>;
@@ -28,7 +28,7 @@ interface ResolvedNotificationDispatcherOptions {
 }
 
 interface NormalizedDispatchRequest {
-  policyEvaluation: NotificationDispatchRequest["policyEvaluation"];
+  policyEvaluation: NotificationDispatchRequest['policyEvaluation'];
   policy: NotificationChannelPolicy;
   message?: NotificationMessage;
   deadlineAt?: string;
@@ -120,7 +120,7 @@ export class NotificationDispatcher {
 
     throw new RuntimeError(
       GovernorErrorCode.NOTIFICATION_DISPATCH_FAILED,
-      "Notification dispatch exhausted primary/fallback/escalation channels.",
+      'Notification dispatch exhausted primary/fallback/escalation channels.',
       {
         executionId: payload.executionId,
         stageId: payload.stageId,
@@ -155,7 +155,7 @@ export class NotificationDispatcher {
       primaryMaxAttempts,
       policyMatrix: this.normalizePolicyMatrix(
         options.policyMatrix ?? DEFAULT_NOTIFICATION_POLICY_MATRIX,
-        "policyMatrix",
+        'policyMatrix',
       ),
     };
   }
@@ -168,35 +168,35 @@ export class NotificationDispatcher {
   private normalizeDispatchRequest(
     request: NotificationDispatchRequest,
   ): NormalizedDispatchRequest {
-    if (!request || typeof request !== "object") {
+    if (!request || typeof request !== 'object') {
       throw new RuntimeError(
         GovernorErrorCode.NOTIFICATION_DISPATCH_INPUT_INVALID,
-        "Notification dispatch request must be a non-null object.",
+        'Notification dispatch request must be a non-null object.',
       );
     }
 
     const policyEvaluation = request.policyEvaluation;
-    if (!policyEvaluation || typeof policyEvaluation !== "object") {
+    if (!policyEvaluation || typeof policyEvaluation !== 'object') {
       throw new RuntimeError(
         GovernorErrorCode.NOTIFICATION_DISPATCH_INPUT_INVALID,
-        "Notification dispatch request requires policyEvaluation object.",
+        'Notification dispatch request requires policyEvaluation object.',
       );
     }
 
     const riskLevel = this.readRiskLevel(
       policyEvaluation.auditRecord?.riskLevel,
-      "policyEvaluation.auditRecord.riskLevel",
+      'policyEvaluation.auditRecord.riskLevel',
     );
     const policy = this.normalizeChannelPolicy(
       request.policyOverride ?? this.resolvedOptions.policyMatrix[riskLevel],
-      "policy",
+      'policy',
     );
 
-    const message = request.message ? this.normalizeMessage(request.message, "message") : undefined;
+    const message = request.message ? this.normalizeMessage(request.message, 'message') : undefined;
     const deadlineAt =
       request.deadlineAt === undefined
         ? undefined
-        : this.readRequiredString(request.deadlineAt, "deadlineAt");
+        : this.readRequiredString(request.deadlineAt, 'deadlineAt');
 
     return {
       policyEvaluation,
@@ -224,10 +224,10 @@ export class NotificationDispatcher {
     const providerByChannel = new Map<NotificationChannel, NotificationProvider>();
     for (let providerIndex = 0; providerIndex < providers.length; providerIndex += 1) {
       const provider = providers[providerIndex];
-      if (!provider || typeof provider !== "object") {
+      if (!provider || typeof provider !== 'object') {
         throw new RuntimeError(
           GovernorErrorCode.NOTIFICATION_DISPATCH_INPUT_INVALID,
-          "Notification provider must be an object.",
+          'Notification provider must be an object.',
           {
             providerIndex,
           },
@@ -239,7 +239,7 @@ export class NotificationDispatcher {
         provider.channel,
         `providers[${providerIndex}].channel`,
       );
-      if (typeof provider.send !== "function") {
+      if (typeof provider.send !== 'function') {
         throw new RuntimeError(
           GovernorErrorCode.NOTIFICATION_DISPATCH_INPUT_INVALID,
           `Field "providers[${providerIndex}].send" must be a function.`,
@@ -282,7 +282,7 @@ export class NotificationDispatcher {
    * @returns Normalized channel policy.
    */
   private normalizeChannelPolicy(policy: unknown, fieldName: string): NotificationChannelPolicy {
-    if (!policy || typeof policy !== "object") {
+    if (!policy || typeof policy !== 'object') {
       throw new RuntimeError(
         GovernorErrorCode.NOTIFICATION_DISPATCH_INPUT_INVALID,
         `Field "${fieldName}" must be an object.`,
@@ -317,7 +317,7 @@ export class NotificationDispatcher {
    * @returns Normalized message payload.
    */
   private normalizeMessage(message: unknown, fieldName: string): NotificationMessage {
-    if (!message || typeof message !== "object") {
+    if (!message || typeof message !== 'object') {
       throw new RuntimeError(
         GovernorErrorCode.NOTIFICATION_DISPATCH_INPUT_INVALID,
         `Field "${fieldName}" must be an object.`,
@@ -352,37 +352,37 @@ export class NotificationDispatcher {
     const auditRecord = policyEvaluation.auditRecord;
     const riskLevel = this.readRiskLevel(
       auditRecord.riskLevel,
-      "policyEvaluation.auditRecord.riskLevel",
+      'policyEvaluation.auditRecord.riskLevel',
     );
 
     return {
       executionId: this.readRequiredString(
         auditRecord.executionId,
-        "policyEvaluation.auditRecord.executionId",
+        'policyEvaluation.auditRecord.executionId',
       ),
-      stageId: this.readRequiredString(auditRecord.stageId, "policyEvaluation.auditRecord.stageId"),
+      stageId: this.readRequiredString(auditRecord.stageId, 'policyEvaluation.auditRecord.stageId'),
       routeKey: this.readRequiredString(
         auditRecord.routeKey,
-        "policyEvaluation.auditRecord.routeKey",
+        'policyEvaluation.auditRecord.routeKey',
       ),
       riskLevel,
       requiredAction: this.readRequiredString(
         auditRecord.requiredAction,
-        "policyEvaluation.auditRecord.requiredAction",
+        'policyEvaluation.auditRecord.requiredAction',
       ),
       ...(request.deadlineAt ? { deadlineAt: request.deadlineAt } : {}),
       policyOutcome: this.readRequiredString(
         policyEvaluation.policyOutcome,
-        "policyEvaluation.policyOutcome",
+        'policyEvaluation.policyOutcome',
       ),
-      reason: this.readRequiredString(policyEvaluation.reason, "policyEvaluation.reason"),
+      reason: this.readRequiredString(policyEvaluation.reason, 'policyEvaluation.reason'),
       matchedPolicies: this.normalizeStringList(
         policyEvaluation.matchedPolicies,
-        "policyEvaluation.matchedPolicies",
+        'policyEvaluation.matchedPolicies',
       ),
       requiredReviewerRoles: this.normalizeStringList(
         policyEvaluation.requiredReviewerRoles,
-        "policyEvaluation.requiredReviewerRoles",
+        'policyEvaluation.requiredReviewerRoles',
       ),
     };
   }
@@ -452,7 +452,7 @@ export class NotificationDispatcher {
             : {
                 errorMessage:
                   this.normalizeOptionalString(receipt?.errorMessage) ??
-                  "Provider returned delivered=false.",
+                  'Provider returned delivered=false.',
               }),
           ...(this.isRecord(receipt?.metadata)
             ? {
@@ -535,7 +535,7 @@ export class NotificationDispatcher {
    * @returns True when outcome belongs to notification-trigger set.
    */
   private shouldDispatch(policyOutcome: unknown): boolean {
-    return NOTIFICATION_TRIGGER_OUTCOME_VALUES.has(String(policyOutcome ?? "").trim());
+    return NOTIFICATION_TRIGGER_OUTCOME_VALUES.has(String(policyOutcome ?? '').trim());
   }
 
   /**
@@ -558,7 +558,7 @@ export class NotificationDispatcher {
       // non-string noise; invalid entries are dropped while canonical fields are
       // still validated by required-string checks and enum guards.
       values
-        .filter((value): value is string => typeof value === "string")
+        .filter((value): value is string => typeof value === 'string')
         .map((value) => value.trim())
         .filter((value) => value.length > 0),
     );
@@ -591,7 +591,7 @@ export class NotificationDispatcher {
    * @returns Trimmed string value.
    */
   private readRequiredString(value: unknown, fieldName: string): string {
-    if (typeof value !== "string") {
+    if (typeof value !== 'string') {
       throw new RuntimeError(
         GovernorErrorCode.NOTIFICATION_DISPATCH_INPUT_INVALID,
         `Field "${fieldName}" must be a string.`,
@@ -657,9 +657,9 @@ export class NotificationDispatcher {
    * @returns Display-formatted timestamp.
    */
   private toDisplayTimestamp(date: Date): string {
-    const pad = (value: number): string => String(value).padStart(2, "0");
+    const pad = (value: number): string => String(value).padStart(2, '0');
     const offsetMinutes = -date.getTimezoneOffset();
-    const offsetSign = offsetMinutes >= 0 ? "+" : "-";
+    const offsetSign = offsetMinutes >= 0 ? '+' : '-';
     const offsetHour = Math.floor(Math.abs(offsetMinutes) / 60);
     const offsetMinute = Math.abs(offsetMinutes) % 60;
 
@@ -676,7 +676,7 @@ export class NotificationDispatcher {
    * @returns Best-effort message string.
    */
   private resolveUnknownErrorMessage(error: unknown): string {
-    if (this.isRecord(error) && typeof error.message === "string") {
+    if (this.isRecord(error) && typeof error.message === 'string') {
       return error.message;
     }
 
@@ -689,7 +689,7 @@ export class NotificationDispatcher {
    * @returns Trimmed string when provided and non-empty.
    */
   private normalizeOptionalString(value: unknown): string | undefined {
-    if (typeof value !== "string") {
+    if (typeof value !== 'string') {
       return undefined;
     }
 
@@ -703,6 +703,6 @@ export class NotificationDispatcher {
    * @returns True when value is a non-array object.
    */
   private isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+    return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
   }
 }

@@ -1,27 +1,27 @@
-import { existsSync } from "node:fs";
-import { mkdtemp, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { existsSync } from 'node:fs';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
-import { MemoryManager, MemoryScope } from "@repo-ai-governor/core-memory";
-import { SessionStatus, SharedSessionManager } from "@repo-ai-governor/core-session";
-import { FsCsvMemoryStoreProvider } from "@repo-ai-governor/memory-provider-fs-csv";
-import { MemoryStoreAdapter } from "@repo-ai-governor/memory-store-adapter";
-import { GovernorErrorCode, standardizeError } from "@repo-ai-governor/shared";
+import { MemoryManager, MemoryScope } from '@repo-ai-governor/core-memory';
+import { SessionStatus, SharedSessionManager } from '@repo-ai-governor/core-session';
+import { FsCsvMemoryStoreProvider } from '@repo-ai-governor/memory-provider-fs-csv';
+import { MemoryStoreAdapter } from '@repo-ai-governor/memory-store-adapter';
+import { GovernorErrorCode, standardizeError } from '@repo-ai-governor/shared';
 
 /**
  * Creates one temporary root directory for memory/session smoke tests.
  * @returns Temporary absolute directory path.
  */
 async function createTemporaryRootDirectory(): Promise<string> {
-  return mkdtemp(join(tmpdir(), "repo-ai-governor-memory-smoke-"));
+  return mkdtemp(join(tmpdir(), 'repo-ai-governor-memory-smoke-'));
 }
 
-describe("Memory/Session/Store smoke", () => {
-  it("persists memory records through adapter and fs-csv provider", async () => {
+describe('Memory/Session/Store smoke', () => {
+  it('persists memory records through adapter and fs-csv provider', async () => {
     const temporaryRootDirectory = await createTemporaryRootDirectory();
     const provider = new FsCsvMemoryStoreProvider({
-      rootDirectory: join(temporaryRootDirectory, ".repo-ai-governor", "memory"),
+      rootDirectory: join(temporaryRootDirectory, '.repo-ai-governor', 'memory'),
     });
     const adapter = new MemoryStoreAdapter(provider);
     const memoryManager = new MemoryManager(adapter);
@@ -29,34 +29,34 @@ describe("Memory/Session/Store smoke", () => {
     try {
       await memoryManager.writeEntry({
         scope: MemoryScope.NORMATIVE,
-        key: "prd:brief",
-        payload: { version: "v1" },
-        tags: ["normative", "prd"],
+        key: 'prd:brief',
+        payload: { version: 'v1' },
+        tags: ['normative', 'prd'],
       });
       await memoryManager.writeEntry({
         scope: MemoryScope.EXECUTION,
-        key: "task:tk-015",
-        payload: { status: "in_progress" },
-        tags: ["execution", "task"],
+        key: 'task:tk-015',
+        payload: { status: 'in_progress' },
+        tags: ['execution', 'task'],
       });
       await memoryManager.writeEntry({
         scope: MemoryScope.NORMATIVE,
-        key: "shared-key",
-        payload: { lane: "normative" },
-        tags: ["normative", "shared"],
+        key: 'shared-key',
+        payload: { lane: 'normative' },
+        tags: ['normative', 'shared'],
       });
       await memoryManager.writeEntry({
         scope: MemoryScope.EXECUTION,
-        key: "shared-key",
-        payload: { lane: "execution" },
-        tags: ["execution", "shared"],
+        key: 'shared-key',
+        payload: { lane: 'execution' },
+        tags: ['execution', 'shared'],
       });
 
       const normativeRecord = await memoryManager.readEntry({
         scope: MemoryScope.NORMATIVE,
-        key: "prd:brief",
+        key: 'prd:brief',
       });
-      expect(normativeRecord?.value.version).toBe("v1");
+      expect(normativeRecord?.value.version).toBe('v1');
 
       const executionRecords = await memoryManager.queryEntries({
         scope: MemoryScope.EXECUTION,
@@ -64,29 +64,29 @@ describe("Memory/Session/Store smoke", () => {
       expect(executionRecords).toHaveLength(2);
 
       const snapshot = await memoryManager.snapshot({
-        reason: "smoke-test",
-        recordKeys: ["normative:shared-key"],
+        reason: 'smoke-test',
+        recordKeys: ['normative:shared-key'],
       });
       expect(snapshot.recordCount).toBe(1);
       expect(existsSync(snapshot.snapshotPath)).toBe(true);
 
       const archivedCount = await memoryManager.archiveEntries({
-        keys: ["normative:shared-key"],
+        keys: ['normative:shared-key'],
         updatedBefore: new Date(Date.now() + 1000).toISOString(),
       });
       expect(archivedCount).toBe(1);
 
       const normativeSharedRecord = await memoryManager.readEntry({
         scope: MemoryScope.NORMATIVE,
-        key: "shared-key",
+        key: 'shared-key',
       });
       expect(normativeSharedRecord).toBeUndefined();
 
       const executionSharedRecord = await memoryManager.readEntry({
         scope: MemoryScope.EXECUTION,
-        key: "shared-key",
+        key: 'shared-key',
       });
-      expect(executionSharedRecord?.value.lane).toBe("execution");
+      expect(executionSharedRecord?.value.lane).toBe('execution');
 
       const executionRecordsAfterArchive = await memoryManager.queryEntries({
         scope: MemoryScope.EXECUTION,
@@ -98,10 +98,10 @@ describe("Memory/Session/Store smoke", () => {
     }
   });
 
-  it("manages session lifecycle and blocks writes after session finalization", async () => {
+  it('manages session lifecycle and blocks writes after session finalization', async () => {
     const temporaryRootDirectory = await createTemporaryRootDirectory();
     const provider = new FsCsvMemoryStoreProvider({
-      rootDirectory: join(temporaryRootDirectory, ".repo-ai-governor", "memory"),
+      rootDirectory: join(temporaryRootDirectory, '.repo-ai-governor', 'memory'),
     });
     const adapter = new MemoryStoreAdapter(provider);
     const memoryManager = new MemoryManager(adapter);
@@ -109,25 +109,25 @@ describe("Memory/Session/Store smoke", () => {
 
     try {
       const openedSession = await sharedSessionManager.openSession({
-        sessionId: "session-tk-015",
-        processId: "process-015",
-        executionId: "exec-015",
-        initialContext: { lane: "memory" },
+        sessionId: 'session-tk-015',
+        processId: 'process-015',
+        executionId: 'exec-015',
+        initialContext: { lane: 'memory' },
       });
       expect(openedSession.status).toBe(SessionStatus.ACTIVE);
 
       const sessionWithEvent = await sharedSessionManager.appendEvent({
         sessionId: openedSession.sessionId,
-        type: "runtime.node.completed",
-        payload: { nodeId: "node-memory" },
+        type: 'runtime.node.completed',
+        payload: { nodeId: 'node-memory' },
       });
       expect(sessionWithEvent.events).toHaveLength(1);
 
       const sessionWithContext = await sharedSessionManager.updateContext({
         sessionId: openedSession.sessionId,
-        contextPatch: { checkpoint: "snapshot-created" },
+        contextPatch: { checkpoint: 'snapshot-created' },
       });
-      expect(sessionWithContext.context.checkpoint).toBe("snapshot-created");
+      expect(sessionWithContext.context.checkpoint).toBe('snapshot-created');
 
       const finalizedSession = await sharedSessionManager.finalizeSession({
         sessionId: openedSession.sessionId,
@@ -144,7 +144,7 @@ describe("Memory/Session/Store smoke", () => {
       await expect(
         sharedSessionManager.appendEvent({
           sessionId: openedSession.sessionId,
-          type: "runtime.node.failed",
+          type: 'runtime.node.failed',
         }),
       ).rejects.toSatisfy((error: unknown) => {
         const standardizedError = standardizeError(error);

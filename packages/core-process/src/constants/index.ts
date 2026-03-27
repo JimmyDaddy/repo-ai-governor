@@ -5,4 +5,4 @@ export {
   ProcessCompilerIssueCode,
   ProcessCompilerSeverity,
   ProcessNodeType,
-} from "./compiler-ir.constant.js";
+} from './compiler-ir.constant.js';

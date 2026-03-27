@@ -1,33 +1,33 @@
-import { DependencyResolutionStatus } from "@repo-ai-governor/shared";
+import { DependencyResolutionStatus } from '@repo-ai-governor/shared';
 
 /**
  * Defines full lifecycle statuses accepted by artifact registry records.
  */
 export enum ArtifactLifecycleStatus {
-  ACTIVE = "active",
-  FROZEN = "frozen",
-  DEPRECATED = "deprecated",
-  ARCHIVED = "archived",
-  RETIRED = "retired",
+  ACTIVE = 'active',
+  FROZEN = 'frozen',
+  DEPRECATED = 'deprecated',
+  ARCHIVED = 'archived',
+  RETIRED = 'retired',
 }
 
 /**
  * Defines dependency resolution policy levels.
  */
 export enum ArtifactDependencyResolutionPolicy {
-  STRICT = "strict",
-  COMPATIBLE = "compatible",
-  LATEST = "latest",
+  STRICT = 'strict',
+  COMPATIBLE = 'compatible',
+  LATEST = 'latest',
 }
 
 /**
  * Defines dependency resolution actions aligned with policy outcome semantics.
  */
 export enum ArtifactDependencyFailureAction {
-  ALLOW = "allow",
-  WARN = "warn",
-  ESCALATE = "escalate",
-  BLOCK = "block",
+  ALLOW = 'allow',
+  WARN = 'warn',
+  ESCALATE = 'escalate',
+  BLOCK = 'block',
 }
 
 export { DependencyResolutionStatus as ArtifactDependencyResolutionStatus };
@@ -36,10 +36,10 @@ export { DependencyResolutionStatus as ArtifactDependencyResolutionStatus };
  * Defines unresolved dependency reasons for deterministic diagnostics.
  */
 export enum ArtifactDependencyUnresolvedReason {
-  MISSING = "missing",
-  VERSION_INCOMPATIBLE = "version_incompatible",
-  STATUS_NOT_RESOLVABLE = "status_not_resolvable",
-  AMBIGUOUS_MATCH = "ambiguous_match",
+  MISSING = 'missing',
+  VERSION_INCOMPATIBLE = 'version_incompatible',
+  STATUS_NOT_RESOLVABLE = 'status_not_resolvable',
+  AMBIGUOUS_MATCH = 'ambiguous_match',
 }
 
 /**

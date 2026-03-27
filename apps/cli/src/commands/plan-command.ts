@@ -1,12 +1,12 @@
-import { resolve } from "node:path";
+import { resolve } from 'node:path';
 
-import { CliCommandName } from "../constants/cli-command.constant.js";
+import { CliCommandName } from '../constants/cli-command.constant.js';
 import {
   CLI_RUNTIME_OPERATION,
   CliGovernanceCheckStatus,
-} from "../constants/cli-governance-runtime.constant.js";
-import type { CliCommandExecutorContext } from "../types/index.js";
-import type { CliCommandExecutor } from "./cli-command-executor.interface.js";
+} from '../constants/cli-governance-runtime.constant.js';
+import type { CliCommandExecutorContext } from '../types/index.js';
+import type { CliCommandExecutor } from './cli-command-executor.interface.js';
 
 /**
  * Owns `plan` command execution outside the runtime facade.
@@ -18,8 +18,8 @@ export class CliPlanCommand implements CliCommandExecutor {
     const planId = `plan-${Date.now()}`;
     const planPath = resolve(
       context.options.workspace.workspaceRoot,
-      "context",
-      "plan",
+      'context',
+      'plan',
       `${planId}.json`,
     );
     await context.artifactWriter.writeJsonArtifact(planPath, {
@@ -31,8 +31,8 @@ export class CliPlanCommand implements CliCommandExecutor {
         workspaceMode: context.options.workspace.mode,
       },
       commandContract: {
-        stage9aHardExit: ["init", "doctor", "check"],
-        minimalRuntimeChain: ["compiler", "runtime", "policy", "audit", "report"],
+        stage9aHardExit: ['init', 'doctor', 'check'],
+        minimalRuntimeChain: ['compiler', 'runtime', 'policy', 'audit', 'report'],
       },
       profileId: context.options.profileId,
       locale: context.options.locale,
@@ -52,14 +52,14 @@ export class CliPlanCommand implements CliCommandExecutor {
         },
         checks: [
           {
-            id: "plan_snapshot",
+            id: 'plan_snapshot',
             status: CliGovernanceCheckStatus.PASS,
             detail: planId,
           },
         ],
         artifacts: [
           {
-            id: "plan_snapshot",
+            id: 'plan_snapshot',
             path: planPath,
           },
         ],

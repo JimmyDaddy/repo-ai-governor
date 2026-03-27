@@ -1,30 +1,30 @@
 #!/usr/bin/env node
 
-import { execFileSync, spawnSync } from "node:child_process";
+import { execFileSync, spawnSync } from 'node:child_process';
 
-const DEFAULT_OUTPUT_MODE = "pretty";
+const DEFAULT_OUTPUT_MODE = 'pretty';
 const DOC_ONLY_PREFIXES = [
-  ".repo-ai-governor/",
-  ".codex/",
-  "docs/",
-  "AGENTS.md",
-  "CLAUDE.md",
-  "README.md",
-  "README.zh-CN.md",
+  '.repo-ai-governor/',
+  '.codex/',
+  'docs/',
+  'AGENTS.md',
+  'CLAUDE.md',
+  'README.md',
+  'README.zh-CN.md',
 ];
 const PACKAGE_LOCAL_PILOT_PREFIXES = [
-  "packages/shared/",
-  "packages/memory-store-adapter/",
-  "packages/core-memory/",
-  "packages/core-memory-semantics/",
+  'packages/shared/',
+  'packages/memory-store-adapter/',
+  'packages/core-memory/',
+  'packages/core-memory-semantics/',
 ];
 const PACKAGE_LOCAL_PILOT_FILES = new Set([
-  "turbo.json",
-  "tsconfig.package-local-pilot.build.json",
-  "packages/shared/tsconfig.build.json",
-  "packages/memory-store-adapter/tsconfig.build.json",
-  "packages/core-memory/tsconfig.build.json",
-  "packages/core-memory-semantics/tsconfig.build.json",
+  'turbo.json',
+  'tsconfig.package-local-pilot.build.json',
+  'packages/shared/tsconfig.build.json',
+  'packages/memory-store-adapter/tsconfig.build.json',
+  'packages/core-memory/tsconfig.build.json',
+  'packages/core-memory-semantics/tsconfig.build.json',
 ]);
 
 /**
@@ -50,16 +50,16 @@ function parseArguments() {
 
   for (let index = 0; index < args.length; index += 1) {
     const argument = args[index];
-    if (argument === "--output") {
+    if (argument === '--output') {
       const candidateOutputMode = args[index + 1]?.trim();
-      if (candidateOutputMode !== "pretty" && candidateOutputMode !== "json") {
+      if (candidateOutputMode !== 'pretty' && candidateOutputMode !== 'json') {
         throw new Error('Expected "--output" to be followed by "pretty" or "json".');
       }
       outputMode = candidateOutputMode;
       index += 1;
       continue;
     }
-    if (argument === "--changed-file") {
+    if (argument === '--changed-file') {
       const changedFile = args[index + 1]?.trim();
       if (!changedFile) {
         throw new Error(
@@ -70,7 +70,7 @@ function parseArguments() {
       index += 1;
       continue;
     }
-    if (argument === "--base-ref") {
+    if (argument === '--base-ref') {
       baseRef = args[index + 1]?.trim() || null;
       if (!baseRef) {
         throw new Error('Expected "--base-ref" to be followed by one git ref.');
@@ -78,7 +78,7 @@ function parseArguments() {
       index += 1;
       continue;
     }
-    if (argument === "--head-ref") {
+    if (argument === '--head-ref') {
       headRef = args[index + 1]?.trim() || null;
       if (!headRef) {
         throw new Error('Expected "--head-ref" to be followed by one git ref.');
@@ -86,11 +86,11 @@ function parseArguments() {
       index += 1;
       continue;
     }
-    if (argument === "--dry-run") {
+    if (argument === '--dry-run') {
       dryRun = true;
       continue;
     }
-    if (argument === "--verbose") {
+    if (argument === '--verbose') {
       verbose = true;
     }
   }
@@ -111,10 +111,10 @@ function parseArguments() {
  * @returns {string[]}
  */
 function readGitLines(args) {
-  const stdout = execFileSync("git", args, {
+  const stdout = execFileSync('git', args, {
     cwd: process.cwd(),
-    encoding: "utf8",
-    stdio: ["ignore", "pipe", "pipe"],
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
   });
   return stdout
     .split(/\r?\n/u)
@@ -131,13 +131,13 @@ function resolveBaseRefCandidates(explicitBaseRef) {
   const candidates = [];
   const envBaseRef = process.env.REPO_AI_GOVERNOR_AFFECTED_BASE_REF ?? process.env.GITHUB_BASE_REF;
   const seedValues = [explicitBaseRef, envBaseRef].filter(
-    (value) => typeof value === "string" && value.trim().length > 0,
+    (value) => typeof value === 'string' && value.trim().length > 0,
   );
 
   for (const rawValue of seedValues) {
     const trimmedValue = rawValue.trim();
     candidates.push(trimmedValue);
-    if (!trimmedValue.startsWith("origin/")) {
+    if (!trimmedValue.startsWith('origin/')) {
       candidates.push(`origin/${trimmedValue}`);
     }
   }
@@ -151,9 +151,9 @@ function resolveBaseRefCandidates(explicitBaseRef) {
  * @returns {boolean}
  */
 function gitRefExists(gitRef) {
-  const result = spawnSync("git", ["rev-parse", "--verify", gitRef], {
+  const result = spawnSync('git', ['rev-parse', '--verify', gitRef], {
     cwd: process.cwd(),
-    stdio: "ignore",
+    stdio: 'ignore',
   });
   return result.status === 0;
 }
@@ -171,13 +171,13 @@ function resolveChangedFiles(options) {
   if (options.changedFiles.length > 0) {
     return {
       changedFiles: Array.from(new Set(options.changedFiles.map(normalizeRepositoryPath))).sort(),
-      source: "explicit",
+      source: 'explicit',
       baseRef: null,
       headRef: null,
     };
   }
 
-  const headRef = options.headRef ?? "HEAD";
+  const headRef = options.headRef ?? 'HEAD';
   const baseRefCandidates = resolveBaseRefCandidates(options.baseRef);
   for (const baseRef of baseRefCandidates) {
     if (!gitRefExists(baseRef)) {
@@ -185,28 +185,28 @@ function resolveChangedFiles(options) {
     }
 
     const changedFiles = readGitLines([
-      "diff",
-      "--name-only",
-      "--diff-filter=ACMR",
+      'diff',
+      '--name-only',
+      '--diff-filter=ACMR',
       `${baseRef}...${headRef}`,
     ]).map(normalizeRepositoryPath);
     return {
       changedFiles: Array.from(new Set(changedFiles)).sort(),
-      source: "git_range",
+      source: 'git_range',
       baseRef,
       headRef,
     };
   }
 
   const changedFiles = [
-    ...readGitLines(["diff", "--name-only", "--diff-filter=ACMR"]),
-    ...readGitLines(["diff", "--cached", "--name-only", "--diff-filter=ACMR"]),
-    ...readGitLines(["ls-files", "--others", "--exclude-standard"]),
+    ...readGitLines(['diff', '--name-only', '--diff-filter=ACMR']),
+    ...readGitLines(['diff', '--cached', '--name-only', '--diff-filter=ACMR']),
+    ...readGitLines(['ls-files', '--others', '--exclude-standard']),
   ].map(normalizeRepositoryPath);
 
   return {
     changedFiles: Array.from(new Set(changedFiles)).sort(),
-    source: "working_tree",
+    source: 'working_tree',
     baseRef: null,
     headRef: null,
   };
@@ -218,7 +218,7 @@ function resolveChangedFiles(options) {
  * @returns {string}
  */
 function normalizeRepositoryPath(filePath) {
-  return filePath.replace(/\\/gu, "/").replace(/^\.\//u, "");
+  return filePath.replace(/\\/gu, '/').replace(/^\.\//u, '');
 }
 
 /**
@@ -253,29 +253,29 @@ function isPackageLocalPilotPath(filePath) {
 function resolveSelectionMode(changedFiles) {
   if (changedFiles.length === 0) {
     return {
-      selectionMode: "fast_only",
-      reason: "no_changed_files_detected",
+      selectionMode: 'fast_only',
+      reason: 'no_changed_files_detected',
     };
   }
 
   const nonDocPaths = changedFiles.filter((filePath) => !isDocOnlyPath(filePath));
   if (nonDocPaths.length === 0) {
     return {
-      selectionMode: "fast_only",
-      reason: "docs_only_changes",
+      selectionMode: 'fast_only',
+      reason: 'docs_only_changes',
     };
   }
 
   if (nonDocPaths.every(isPackageLocalPilotPath)) {
     return {
-      selectionMode: "package_local_pilot",
-      reason: "package_local_pilot_scope_only",
+      selectionMode: 'package_local_pilot',
+      reason: 'package_local_pilot_scope_only',
     };
   }
 
   return {
-    selectionMode: "full_fallback",
-    reason: "changed_files_escape_package_local_pilot_scope",
+    selectionMode: 'full_fallback',
+    reason: 'changed_files_escape_package_local_pilot_scope',
   };
 }
 
@@ -286,10 +286,10 @@ function resolveSelectionMode(changedFiles) {
  * @returns {string[]}
  */
 function buildPnpmRunCommand(scriptName, verbose) {
-  if (!verbose || (scriptName !== "check:fast" && scriptName !== "check:full")) {
-    return ["pnpm", "run", scriptName];
+  if (!verbose || (scriptName !== 'check:fast' && scriptName !== 'check:full')) {
+    return ['pnpm', 'run', scriptName];
   }
-  return ["pnpm", "run", scriptName, "--", "--verbose"];
+  return ['pnpm', 'run', scriptName, '--', '--verbose'];
 }
 
 /**
@@ -299,19 +299,19 @@ function buildPnpmRunCommand(scriptName, verbose) {
  * @returns {string[][]}
  */
 function buildCommandPlan(selectionMode, verbose) {
-  if (selectionMode === "fast_only") {
-    return [buildPnpmRunCommand("check:fast", verbose)];
+  if (selectionMode === 'fast_only') {
+    return [buildPnpmRunCommand('check:fast', verbose)];
   }
 
-  if (selectionMode === "package_local_pilot") {
+  if (selectionMode === 'package_local_pilot') {
     return [
-      buildPnpmRunCommand("check:fast", verbose),
-      ["pnpm", "run", "check:package-local:pilot:incremental"],
-      ["pnpm", "run", "check:package-local:pilot"],
+      buildPnpmRunCommand('check:fast', verbose),
+      ['pnpm', 'run', 'check:package-local:pilot:incremental'],
+      ['pnpm', 'run', 'check:package-local:pilot'],
     ];
   }
 
-  return [buildPnpmRunCommand("check:full", verbose)];
+  return [buildPnpmRunCommand('check:full', verbose)];
 }
 
 /**
@@ -324,15 +324,15 @@ function runCommand(command, outputMode) {
   const [bin, ...args] = command;
   const result = spawnSync(bin, args, {
     cwd: process.cwd(),
-    encoding: "utf8",
-    stdio: outputMode === "pretty" ? "inherit" : ["ignore", "pipe", "pipe"],
+    encoding: 'utf8',
+    stdio: outputMode === 'pretty' ? 'inherit' : ['ignore', 'pipe', 'pipe'],
   });
 
   return {
     command,
     exitCode: result.status ?? 1,
-    stdout: typeof result.stdout === "string" ? result.stdout : "",
-    stderr: typeof result.stderr === "string" ? result.stderr : "",
+    stdout: typeof result.stdout === 'string' ? result.stdout : '',
+    stderr: typeof result.stderr === 'string' ? result.stderr : '',
   };
 }
 
@@ -344,7 +344,7 @@ function runCommand(command, outputMode) {
  * }} options Summary write options.
  */
 function writeSummary(options) {
-  if (options.outputMode === "json") {
+  if (options.outputMode === 'json') {
     process.stdout.write(`${JSON.stringify(options.summary, null, 2)}\n`);
     return;
   }
@@ -365,7 +365,7 @@ try {
   let exitCode = 0;
 
   if (!options.dryRun) {
-    if (options.outputMode === "pretty") {
+    if (options.outputMode === 'pretty') {
       console.info(
         `[affected-check] source=${changedFilesResolution.source} changed_files=${changedFilesResolution.changedFiles.length}`,
       );
@@ -375,8 +375,8 @@ try {
     }
 
     for (const command of commandPlan) {
-      if (options.outputMode === "pretty") {
-        console.info(`[affected-check] run=${command.join(" ")}`);
+      if (options.outputMode === 'pretty') {
+        console.info(`[affected-check] run=${command.join(' ')}`);
       }
       const commandResult = runCommand(command, options.outputMode);
       commandResults.push(commandResult);
@@ -390,7 +390,7 @@ try {
   writeSummary({
     outputMode: options.outputMode,
     summary: {
-      profile: "affected",
+      profile: 'affected',
       selection_mode: selection.selectionMode,
       reason: selection.reason,
       changed_files_source: changedFilesResolution.source,
@@ -398,17 +398,17 @@ try {
       head_ref: changedFilesResolution.headRef,
       changed_files: changedFilesResolution.changedFiles,
       dry_run: options.dryRun,
-      commands: commandPlan.map((command) => command.join(" ")),
+      commands: commandPlan.map((command) => command.join(' ')),
       command_results:
-        options.outputMode === "json"
+        options.outputMode === 'json'
           ? commandResults.map((commandResult) => ({
-              command: commandResult.command.join(" "),
+              command: commandResult.command.join(' '),
               exit_code: commandResult.exitCode,
               stdout: commandResult.stdout,
               stderr: commandResult.stderr,
             }))
           : commandResults.map((commandResult) => ({
-              command: commandResult.command.join(" "),
+              command: commandResult.command.join(' '),
               exit_code: commandResult.exitCode,
             })),
     },

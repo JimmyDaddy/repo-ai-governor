@@ -6,13 +6,13 @@
  * audit/report/replay contracts.
  */
 export enum AuditRecordStatus {
-  RUNNING = "running",
-  SUCCEEDED = "succeeded",
-  FAILED = "failed",
-  CANCELLED = "cancelled",
+  RUNNING = 'running',
+  SUCCEEDED = 'succeeded',
+  FAILED = 'failed',
+  CANCELLED = 'cancelled',
 }
 
-export { DependencyResolutionStatus } from "@repo-ai-governor/shared";
+export { DependencyResolutionStatus } from '@repo-ai-governor/shared';
 
 /**
  * Defines output modes tracked in audit records.
@@ -21,7 +21,7 @@ export { DependencyResolutionStatus } from "@repo-ai-governor/shared";
  * output mode values must align with CLI/rendering contracts for reliable replay.
  */
 export enum AuditOutputMode {
-  PRETTY = "pretty",
-  PLAIN = "plain",
-  JSON = "json",
+  PRETTY = 'pretty',
+  PLAIN = 'plain',
+  JSON = 'json',
 }

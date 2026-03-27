@@ -25,4 +25,4 @@ export {
   STANDARDS_UPGRADE_CONFLICT_LEVEL_VALUES,
   STANDARDS_UPGRADE_REQUIRED_ACTION_VALUES,
   STANDARDS_VERSION_PIN_MODE_VALUES,
-} from "./standards.constant.js";
+} from './standards.constant.js';

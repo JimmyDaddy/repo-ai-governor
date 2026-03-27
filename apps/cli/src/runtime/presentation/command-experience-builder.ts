@@ -1,27 +1,27 @@
-import type { ChangeRiskRequiredAction } from "@repo-ai-governor/core-change-risk";
-import type { RuntimeExecutionResult, RuntimeStageStatus } from "@repo-ai-governor/core-runtime";
-import { RuntimeExecutionStatus } from "@repo-ai-governor/core-runtime";
+import type { ChangeRiskRequiredAction } from '@repo-ai-governor/core-change-risk';
+import type { RuntimeExecutionResult, RuntimeStageStatus } from '@repo-ai-governor/core-runtime';
+import { RuntimeExecutionStatus } from '@repo-ai-governor/core-runtime';
 import {
   EXECUTION_PROGRESS_STATUS_LABELS,
   ExecutionInteractionCategory,
   ExecutionProgressStage,
   ExecutionProgressStatus,
-} from "@repo-ai-governor/shared";
-import { CLI_DIAGNOSTIC_ROOT_CAUSE } from "../../constants/cli-governance-runtime.constant.js";
+} from '@repo-ai-governor/shared';
+import { CLI_DIAGNOSTIC_ROOT_CAUSE } from '../../constants/cli-governance-runtime.constant.js';
 import {
   CLI_TASK_DRIVEN_RUN_NODE_DEFINITIONS,
   CliDeliveryRehearsalSkipReason,
   CliDeliveryRehearsalStatus,
   CliInlineReviewChainSkipReason,
   CliInlineReviewChainStatus,
-} from "../../constants/cli-task-driven-run.constant.js";
+} from '../../constants/cli-task-driven-run.constant.js';
 import type {
   CliCommandExperiencePayload,
   CliInteractionPrompt,
   CliLayeredLogs,
   CliRoleStageProgress,
-} from "../../types/index.js";
-import type { CliReplayExplainResolution } from "./replay-explain-builder.js";
+} from '../../types/index.js';
+import type { CliReplayExplainResolution } from './replay-explain-builder.js';
 
 /**
  * Owns CLI-local experience shaping so progress rows, prompts, and root-cause narration stay outside the facade.
@@ -54,11 +54,11 @@ export class CliCommandExperienceBuilder {
     policyOutcome: ChangeRiskRequiredAction;
     runtimeStatus: RuntimeExecutionStatus;
   }): string {
-    if (options.policyOutcome === "block") {
+    if (options.policyOutcome === 'block') {
       return CLI_DIAGNOSTIC_ROOT_CAUSE.POLICY_BLOCKED;
     }
 
-    if (options.policyOutcome === "confirm" || options.policyOutcome === "escalate") {
+    if (options.policyOutcome === 'confirm' || options.policyOutcome === 'escalate') {
       return CLI_DIAGNOSTIC_ROOT_CAUSE.POLICY_HITL_REQUIRED;
     }
 
@@ -81,42 +81,42 @@ export class CliCommandExperienceBuilder {
   }): string[] {
     if (options.rootCause === CLI_DIAGNOSTIC_ROOT_CAUSE.POLICY_BLOCKED) {
       return [
-        "Inspect matched policy rules and reduce high-risk changes before retrying run.",
-        "Re-run with --trace and review diagnostics trace for blocked rule evidence.",
+        'Inspect matched policy rules and reduce high-risk changes before retrying run.',
+        'Re-run with --trace and review diagnostics trace for blocked rule evidence.',
       ];
     }
 
     if (options.rootCause === CLI_DIAGNOSTIC_ROOT_CAUSE.POLICY_HITL_REQUIRED) {
       return [
-        "Trigger review/review-verify flow and complete required human confirmation.",
-        "Use diagnostics trace to explain why policy outcome is not allow.",
+        'Trigger review/review-verify flow and complete required human confirmation.',
+        'Use diagnostics trace to explain why policy outcome is not allow.',
       ];
     }
 
     if (options.rootCause === CLI_DIAGNOSTIC_ROOT_CAUSE.RUNTIME_FAILURE) {
       return [
-        "Inspect stage-level errorContext in diagnostics trace and fix runtime stage failures.",
-        "Replay diagnostics with --replay <report-or-replay-path> after fixes.",
+        'Inspect stage-level errorContext in diagnostics trace and fix runtime stage failures.',
+        'Replay diagnostics with --replay <report-or-replay-path> after fixes.',
       ];
     }
 
     if (options.rootCause === CLI_DIAGNOSTIC_ROOT_CAUSE.ENVIRONMENT_PRECONDITION) {
       return [
-        "Run doctor/check to verify local prerequisites before rerunning the command.",
-        "Compare workspace mode and memory provider diagnostics across environments.",
+        'Run doctor/check to verify local prerequisites before rerunning the command.',
+        'Compare workspace mode and memory provider diagnostics across environments.',
       ];
     }
 
     if (options.rootCause === CLI_DIAGNOSTIC_ROOT_CAUSE.PERMISSION_CONFIRMATION) {
       return [
-        "Complete the required permission/approval workflow before continuing execution.",
-        "Record confirmation evidence in review and ledger-backfill artifacts.",
+        'Complete the required permission/approval workflow before continuing execution.',
+        'Record confirmation evidence in review and ledger-backfill artifacts.',
       ];
     }
 
     const summary = [
-      "Persist replay diagnostics for reproducibility and share with follow-up tasks.",
-      "Keep using --trace in local debugging to preserve stage/policy attribution.",
+      'Persist replay diagnostics for reproducibility and share with follow-up tasks.',
+      'Keep using --trace in local debugging to preserve stage/policy attribution.',
     ];
     if (options.policyOutcome && options.runtimeStatus) {
       summary.push(
@@ -179,11 +179,11 @@ export class CliCommandExperienceBuilder {
     const interactionCategory = this.resolveInteractionCategoryFromRootCause(rootCause);
     const roleProgress: CliRoleStageProgress[] = [
       {
-        roleId: "compiler",
+        roleId: 'compiler',
         stage: ExecutionProgressStage.RUN_COMPILE,
         status: ExecutionProgressStatus.COMPLETED,
         category: ExecutionInteractionCategory.NONE,
-        summary: "Process IR compile completed.",
+        summary: 'Process IR compile completed.',
         detail: `execution_id=${options.executionId}`,
         backlink: {
           executionId: options.executionId,
@@ -194,20 +194,20 @@ export class CliCommandExperienceBuilder {
         const progressStatus = this.resolveRuntimeStageProgressStatus(stageResult.status);
         const reviewRequestPath = this.readStageOutputString(
           stageResult.output,
-          "reviewRequestPath",
+          'reviewRequestPath',
         );
-        const reviewVerifyPath = this.readStageOutputString(stageResult.output, "reviewVerifyPath");
+        const reviewVerifyPath = this.readStageOutputString(stageResult.output, 'reviewVerifyPath');
         const ledgerBackfillPath = this.readStageOutputString(
           stageResult.output,
-          "ledgerBackfillPath",
+          'ledgerBackfillPath',
         );
         const reviewChainStatus = this.readStageOutputString(
           stageResult.output,
-          "reviewChainStatus",
+          'reviewChainStatus',
         );
         const reviewChainSkipReason = this.readStageOutputString(
           stageResult.output,
-          "reviewChainSkipReason",
+          'reviewChainSkipReason',
         );
 
         if (stageResult.stageId === CLI_TASK_DRIVEN_RUN_NODE_DEFINITIONS.REVIEW.stageId) {
@@ -218,7 +218,7 @@ export class CliCommandExperienceBuilder {
           const reviewCategory = this.resolveInlineReviewInteractionCategory(reviewChainSkipReason);
           return [
             {
-              roleId: "reviewer",
+              roleId: 'reviewer',
               stage: ExecutionProgressStage.REVIEW,
               status: reviewProgressStatus,
               category:
@@ -227,12 +227,12 @@ export class CliCommandExperienceBuilder {
                   : reviewCategory,
               summary:
                 reviewChainStatus === CliInlineReviewChainStatus.DEFERRED
-                  ? "Inline review request deferred until policy outcome becomes allow."
+                  ? 'Inline review request deferred until policy outcome becomes allow.'
                   : reviewChainStatus === CliInlineReviewChainStatus.DRY_RUN
-                    ? "Inline review request skipped in dry-run mode."
+                    ? 'Inline review request skipped in dry-run mode.'
                     : reviewProgressStatus === ExecutionProgressStatus.COMPLETED
-                      ? "Inline review request persisted."
-                      : "Inline review request failed.",
+                      ? 'Inline review request persisted.'
+                      : 'Inline review request failed.',
               detail:
                 reviewRequestPath ??
                 reviewChainSkipReason ??
@@ -254,7 +254,7 @@ export class CliCommandExperienceBuilder {
           const verifyCategory = this.resolveInlineReviewInteractionCategory(reviewChainSkipReason);
           const roleProgress: CliRoleStageProgress[] = [
             {
-              roleId: "verifier",
+              roleId: 'verifier',
               stage: ExecutionProgressStage.REVIEW_VERIFY,
               status: verifyProgressStatus,
               category:
@@ -263,12 +263,12 @@ export class CliCommandExperienceBuilder {
                   : verifyCategory,
               summary:
                 reviewChainStatus === CliInlineReviewChainStatus.DEFERRED
-                  ? "Inline review verification deferred until policy approval."
+                  ? 'Inline review verification deferred until policy approval.'
                   : reviewChainStatus === CliInlineReviewChainStatus.DRY_RUN
-                    ? "Inline review verification skipped in dry-run mode."
+                    ? 'Inline review verification skipped in dry-run mode.'
                     : verifyProgressStatus === ExecutionProgressStatus.COMPLETED
-                      ? "Inline review verification persisted."
-                      : "Inline review verification failed.",
+                      ? 'Inline review verification persisted.'
+                      : 'Inline review verification failed.',
               detail:
                 reviewVerifyPath ??
                 reviewChainSkipReason ??
@@ -283,7 +283,7 @@ export class CliCommandExperienceBuilder {
 
           if (ledgerBackfillPath || reviewChainStatus === CliInlineReviewChainStatus.DRY_RUN) {
             roleProgress.push({
-              roleId: "ledger-backfill",
+              roleId: 'ledger-backfill',
               stage: ExecutionProgressStage.LEDGER_BACKFILL,
               status:
                 reviewChainStatus === CliInlineReviewChainStatus.DRY_RUN
@@ -295,11 +295,11 @@ export class CliCommandExperienceBuilder {
                   : verifyCategory,
               summary:
                 reviewChainStatus === CliInlineReviewChainStatus.DRY_RUN
-                  ? "Managed ledger backfill skipped in dry-run mode."
+                  ? 'Managed ledger backfill skipped in dry-run mode.'
                   : verifyProgressStatus === ExecutionProgressStatus.COMPLETED
-                    ? "Managed ledger backfill applied."
-                    : "Managed ledger backfill failed.",
-              detail: ledgerBackfillPath ?? reviewChainSkipReason ?? "dry_run",
+                    ? 'Managed ledger backfill applied.'
+                    : 'Managed ledger backfill failed.',
+              detail: ledgerBackfillPath ?? reviewChainSkipReason ?? 'dry_run',
               backlink: {
                 executionId: options.executionId,
                 stageId: ExecutionProgressStage.LEDGER_BACKFILL,
@@ -316,24 +316,24 @@ export class CliCommandExperienceBuilder {
         ) {
           const deliveryRehearsalStatus = this.readStageOutputString(
             stageResult.output,
-            "deliveryRehearsalStatus",
+            'deliveryRehearsalStatus',
           );
           const deliveryRehearsalPath = this.readStageOutputString(
             stageResult.output,
-            "deliveryRehearsalPath",
+            'deliveryRehearsalPath',
           );
           const deliveryRehearsalAction = this.readStageOutputString(
             stageResult.output,
-            "deliveryRehearsalAction",
+            'deliveryRehearsalAction',
           );
           const deliveryRehearsalSkipReason = this.readStageOutputString(
             stageResult.output,
-            "deliveryRehearsalSkipReason",
+            'deliveryRehearsalSkipReason',
           );
 
           return [
             {
-              roleId: "delivery-ops",
+              roleId: 'delivery-ops',
               stage: ExecutionProgressStage.DELIVERY_REHEARSAL,
               status: this.resolveDeliveryRehearsalProgressStatus(
                 deliveryRehearsalStatus,
@@ -344,12 +344,12 @@ export class CliCommandExperienceBuilder {
               ),
               summary:
                 deliveryRehearsalStatus === CliDeliveryRehearsalStatus.DEFERRED
-                  ? "Controlled delivery rehearsal deferred until policy outcome becomes allow."
+                  ? 'Controlled delivery rehearsal deferred until policy outcome becomes allow.'
                   : deliveryRehearsalStatus === CliDeliveryRehearsalStatus.DRY_RUN
-                    ? "Controlled delivery rehearsal skipped in dry-run mode."
+                    ? 'Controlled delivery rehearsal skipped in dry-run mode.'
                     : progressStatus === ExecutionProgressStatus.COMPLETED
-                      ? "Controlled delivery rehearsal artifact persisted."
-                      : "Controlled delivery rehearsal failed.",
+                      ? 'Controlled delivery rehearsal artifact persisted.'
+                      : 'Controlled delivery rehearsal failed.',
               detail:
                 deliveryRehearsalPath ??
                 deliveryRehearsalSkipReason ??
@@ -383,25 +383,25 @@ export class CliCommandExperienceBuilder {
         ];
       }),
       {
-        roleId: "policy-gate",
+        roleId: 'policy-gate',
         stage: ExecutionProgressStage.POLICY_WAITING,
         status: this.resolvePolicyProgressStatus(options.policyResult.policyOutcome),
         category: interactionCategory,
         summary: `Policy outcome resolved as ${options.policyResult.policyOutcome}.`,
-        detail: `matched_rules=${options.policyResult.matchedRuleIds.join("|") || "none"}`,
+        detail: `matched_rules=${options.policyResult.matchedRuleIds.join('|') || 'none'}`,
         backlink: {
           executionId: options.executionId,
-          stageId: "stage-policy-gate",
+          stageId: 'stage-policy-gate',
           reportPath: options.reportPath,
           replayPath: options.replayPath,
         },
       },
       {
-        roleId: "reporting",
+        roleId: 'reporting',
         stage: ExecutionProgressStage.REPORT,
         status: ExecutionProgressStatus.COMPLETED,
         category: ExecutionInteractionCategory.NONE,
-        summary: "Execution report artifact persisted.",
+        summary: 'Execution report artifact persisted.',
         detail: options.reportPath,
         backlink: {
           executionId: options.executionId,
@@ -410,11 +410,11 @@ export class CliCommandExperienceBuilder {
         },
       },
       {
-        roleId: "replay",
+        roleId: 'replay',
         stage: ExecutionProgressStage.REPLAY,
         status: ExecutionProgressStatus.COMPLETED,
         category: ExecutionInteractionCategory.NONE,
-        summary: "Replay explain artifact persisted.",
+        summary: 'Replay explain artifact persisted.',
         detail: options.replayPath,
         backlink: {
           executionId: options.executionId,
@@ -425,16 +425,16 @@ export class CliCommandExperienceBuilder {
     ];
 
     if (
-      options.policyResult.policyOutcome === "confirm" ||
-      options.policyResult.policyOutcome === "escalate"
+      options.policyResult.policyOutcome === 'confirm' ||
+      options.policyResult.policyOutcome === 'escalate'
     ) {
       roleProgress.push({
-        roleId: "human-reviewer",
+        roleId: 'human-reviewer',
         stage: ExecutionProgressStage.HUMAN_CONFIRMATION,
         status: ExecutionProgressStatus.WAITING,
         category: ExecutionInteractionCategory.HUMAN_CONFIRMATION,
-        summary: "Awaiting human confirmation before unattended chain can continue.",
-        detail: "Run review/review-verify and provide explicit confirmation decision.",
+        summary: 'Awaiting human confirmation before unattended chain can continue.',
+        detail: 'Run review/review-verify and provide explicit confirmation decision.',
         backlink: {
           executionId: options.executionId,
           stageId: ExecutionProgressStage.HUMAN_CONFIRMATION,
@@ -455,7 +455,7 @@ export class CliCommandExperienceBuilder {
         interactionCategory === ExecutionInteractionCategory.HUMAN_CONFIRMATION
           ? ExecutionProgressStage.HUMAN_CONFIRMATION
           : ExecutionProgressStage.POLICY_WAITING,
-      title: "Next action",
+      title: 'Next action',
       action: nextAction,
       blocking:
         interactionCategory === ExecutionInteractionCategory.POLICY_WAITING ||
@@ -472,9 +472,9 @@ export class CliCommandExperienceBuilder {
           `policy_outcome=${options.policyResult.policyOutcome}`,
           `root_cause=${rootCause}`,
           `inline_review_chain=${options.reviewChain.status}`,
-          `inline_review_skip_reason=${options.reviewChain.skipReason ?? "none"}`,
+          `inline_review_skip_reason=${options.reviewChain.skipReason ?? 'none'}`,
           `delivery_rehearsal=${options.deliveryRehearsal.status}`,
-          `delivery_rehearsal_action=${options.deliveryRehearsal.rehearsalAction ?? "none"}`,
+          `delivery_rehearsal_action=${options.deliveryRehearsal.rehearsalAction ?? 'none'}`,
           ...(options.memoryPolicy
             ? [
                 `memory_policy_action=${options.memoryPolicy.overallAction}`,
@@ -494,14 +494,14 @@ export class CliCommandExperienceBuilder {
         detailed: [
           `report_path=${options.reportPath}`,
           `replay_path=${options.replayPath}`,
-          `diagnostics_trace_path=${options.diagnosticsTracePath ?? "none"}`,
-          `inline_review_request_path=${options.reviewChain.reviewRequestPath ?? "none"}`,
-          `inline_review_verify_path=${options.reviewChain.reviewVerifyPath ?? "none"}`,
-          `inline_review_ledger_backfill_path=${options.reviewChain.ledgerBackfillPath ?? "none"}`,
-          `delivery_rehearsal_path=${options.deliveryRehearsal.rehearsalPath ?? "none"}`,
+          `diagnostics_trace_path=${options.diagnosticsTracePath ?? 'none'}`,
+          `inline_review_request_path=${options.reviewChain.reviewRequestPath ?? 'none'}`,
+          `inline_review_verify_path=${options.reviewChain.reviewVerifyPath ?? 'none'}`,
+          `inline_review_ledger_backfill_path=${options.reviewChain.ledgerBackfillPath ?? 'none'}`,
+          `delivery_rehearsal_path=${options.deliveryRehearsal.rehearsalPath ?? 'none'}`,
           ...(options.memoryPromotion
             ? [
-                `memory_session_projection_key=${options.memoryPromotion.sessionSummaryProjectionKey ?? "none"}`,
+                `memory_session_projection_key=${options.memoryPromotion.sessionSummaryProjectionKey ?? 'none'}`,
               ]
             : []),
         ],
@@ -517,8 +517,8 @@ export class CliCommandExperienceBuilder {
    */
   private readStageOutputString(output: unknown, fieldName: string): string | null {
     return output &&
-      typeof output === "object" &&
-      typeof (output as Record<string, unknown>)[fieldName] === "string" &&
+      typeof output === 'object' &&
+      typeof (output as Record<string, unknown>)[fieldName] === 'string' &&
       ((output as Record<string, unknown>)[fieldName] as string).trim().length > 0
       ? ((output as Record<string, unknown>)[fieldName] as string).trim()
       : null;
@@ -620,11 +620,11 @@ export class CliCommandExperienceBuilder {
     return this.buildExperiencePayload({
       roleProgress: [
         {
-          roleId: "replay",
+          roleId: 'replay',
           stage: ExecutionProgressStage.REPLAY,
           status: ExecutionProgressStatus.COMPLETED,
           category: ExecutionInteractionCategory.NONE,
-          summary: "Replay diagnostics resolved from source payload.",
+          summary: 'Replay diagnostics resolved from source payload.',
           detail: `source_type=${options.replayResolution.sourceType}`,
           backlink: {
             executionId: options.replayResolution.executionId,
@@ -637,7 +637,7 @@ export class CliCommandExperienceBuilder {
       interactionPrompts: nextActions.map((nextAction) => ({
         category: ExecutionInteractionCategory.NONE,
         stage: ExecutionProgressStage.REPLAY,
-        title: "Next action",
+        title: 'Next action',
         action: nextAction,
         blocking: false,
       })),
@@ -651,7 +651,7 @@ export class CliCommandExperienceBuilder {
                 `memory_policy_warn_count=${options.replayResolution.memorySemantics.warningRecordCount}`,
                 `memory_policy_redact_count=${options.replayResolution.memorySemantics.redactedRecordCount}`,
                 `memory_policy_block_count=${options.replayResolution.memorySemantics.blockedRecordCount}`,
-                `memory_promotion_outcome=${options.replayResolution.memorySemantics.promotionOutcome ?? "none"}`,
+                `memory_promotion_outcome=${options.replayResolution.memorySemantics.promotionOutcome ?? 'none'}`,
                 `memory_promotion_merged_count=${options.replayResolution.memorySemantics.mergedCount}`,
               ]
             : []),
@@ -661,7 +661,7 @@ export class CliCommandExperienceBuilder {
           `diagnostics_path=${options.diagnosticsPath}`,
           ...(options.replayResolution.memorySemantics
             ? [
-                `memory_session_projection_key=${options.replayResolution.memorySemantics.sessionSummaryProjectionKey ?? "none"}`,
+                `memory_session_projection_key=${options.replayResolution.memorySemantics.sessionSummaryProjectionKey ?? 'none'}`,
               ]
             : []),
         ],
@@ -675,7 +675,7 @@ export class CliCommandExperienceBuilder {
    * @returns Normalized progress status.
    */
   private resolveRuntimeStageProgressStatus(status: RuntimeStageStatus): ExecutionProgressStatus {
-    if (status === "succeeded") {
+    if (status === 'succeeded') {
       return ExecutionProgressStatus.COMPLETED;
     }
     return ExecutionProgressStatus.FAILED;
@@ -689,10 +689,10 @@ export class CliCommandExperienceBuilder {
   private resolvePolicyProgressStatus(
     policyOutcome: ChangeRiskRequiredAction,
   ): ExecutionProgressStatus {
-    if (policyOutcome === "allow") {
+    if (policyOutcome === 'allow') {
       return ExecutionProgressStatus.COMPLETED;
     }
-    if (policyOutcome === "block") {
+    if (policyOutcome === 'block') {
       return ExecutionProgressStatus.FAILED;
     }
     return ExecutionProgressStatus.WAITING;

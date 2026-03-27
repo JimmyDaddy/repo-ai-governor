@@ -1,4 +1,4 @@
-export type { ProcessDslGlobals } from "./aliases/index.js";
+export type { ProcessDslGlobals } from './aliases/index.js';
 export type {
   ProcessCompiledIr,
   ProcessCompiledIrSnapshot,
@@ -14,4 +14,4 @@ export type {
   ProcessIrNodeLimits,
   ProcessIrNodeLimitsSnapshot,
   ProcessIrNodeSnapshot,
-} from "./interfaces/index.js";
+} from './interfaces/index.js';

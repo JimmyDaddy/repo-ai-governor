@@ -1,16 +1,16 @@
-import { createHash } from "node:crypto";
-import { existsSync } from "node:fs";
-import { homedir } from "node:os";
-import { dirname, isAbsolute, resolve } from "node:path";
+import { createHash } from 'node:crypto';
+import { existsSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { dirname, isAbsolute, resolve } from 'node:path';
 
-import { WorkspaceMode } from "@repo-ai-governor/shared";
+import { WorkspaceMode } from '@repo-ai-governor/shared';
 import {
   GOVERNOR_CONFIG_FILE_NAME,
   GOVERNOR_WORKSPACE_DIRECTORY_NAME,
   TOOL_MANAGED_WORKSPACES_ROOT_SEGMENTS,
   WorkspaceModeSource,
-} from "./constants/index.js";
-import type { ResolvedWorkspace, WorkspaceResolverOptions } from "./types/interfaces/index.js";
+} from './constants/index.js';
+import type { ResolvedWorkspace, WorkspaceResolverOptions } from './types/interfaces/index.js';
 
 /**
  * Resolves effective workspace mode, root, and config path using deterministic precedence.
@@ -65,7 +65,7 @@ export class WorkspaceResolver {
     let cursor = resolve(currentWorkingDirectory);
 
     while (true) {
-      if (existsSync(resolve(cursor, ".git"))) {
+      if (existsSync(resolve(cursor, '.git'))) {
         return cursor;
       }
 
@@ -115,7 +115,7 @@ export class WorkspaceResolver {
    * @returns Stable workspace id string.
    */
   private buildWorkspaceId(repositoryRoot: string): string {
-    return createHash("sha256").update(repositoryRoot).digest("hex").slice(0, 12);
+    return createHash('sha256').update(repositoryRoot).digest('hex').slice(0, 12);
   }
 
   /**

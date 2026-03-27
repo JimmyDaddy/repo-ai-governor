@@ -1,4 +1,4 @@
-export { GovernorErrorCode } from "./error-code.constant.js";
+export { GovernorErrorCode } from './error-code.constant.js';
 export {
   BaseError,
   ConfigError,
@@ -6,5 +6,5 @@ export {
   I18nError,
   RuntimeError,
   standardizeError,
-} from "./governor-error.js";
-export type { StandardizedError } from "../types/interfaces/standardized-error.interface.js";
+} from './governor-error.js';
+export type { StandardizedError } from '../types/interfaces/standardized-error.interface.js';

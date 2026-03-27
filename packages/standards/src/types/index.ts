@@ -27,8 +27,8 @@ export type {
   StandardsRuleRendererReader,
   StandardsRuleDefinition,
   StandardsRuleResolveOptions,
-} from "./interfaces/index.js";
+} from './interfaces/index.js';
 export type {
   StandardsRenderInterpolation,
   StandardsRuleLocalizedTemplateMap,
-} from "./aliases/index.js";
+} from './aliases/index.js';

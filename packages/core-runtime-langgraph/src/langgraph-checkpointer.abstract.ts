@@ -1,19 +1,19 @@
-import { randomUUID } from "node:crypto";
+import { randomUUID } from 'node:crypto';
 
-import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
+import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import {
   LANGGRAPH_CHECKPOINT_SOURCES,
   LANGGRAPH_REDUCED_STATE_KEYS,
   LANGGRAPH_RUNTIME_INTERRUPT_KINDS,
   type LangGraphReducedStateKey,
-} from "./constants/index.js";
+} from './constants/index.js';
 import type {
   LangGraphCheckpointEnvelope,
   LangGraphCheckpointPendingInterrupt,
   LangGraphCheckpointer,
   LangGraphRecoveredExecution,
   LangGraphSaveCheckpointOptions,
-} from "./types/index.js";
+} from './types/index.js';
 
 /**
  * Shares envelope creation and fail-closed validation across checkpoint transports.
@@ -46,7 +46,7 @@ export abstract class LangGraphCheckpointerBase implements LangGraphCheckpointer
 
   protected createCheckpointEnvelope(
     options: LangGraphSaveCheckpointOptions,
-    checkpointSource: LangGraphCheckpointEnvelope["checkpointSource"],
+    checkpointSource: LangGraphCheckpointEnvelope['checkpointSource'],
     checkpointPath: string,
   ): LangGraphCheckpointEnvelope {
     this.assertReducedStateKeysAllowed(options.plan.reducedStateKeys, options.reducedState);
@@ -103,7 +103,7 @@ export abstract class LangGraphCheckpointerBase implements LangGraphCheckpointer
 
     throw new RuntimeError(
       GovernorErrorCode.PROCESS_RUNTIME_CHECKPOINT_PAYLOAD_INVALID,
-      "Checkpoint reduced state contains keys that are not allowed by the compiled graph plan.",
+      'Checkpoint reduced state contains keys that are not allowed by the compiled graph plan.',
       {
         disallowedKeys,
         allowedKeys,
@@ -124,7 +124,7 @@ export abstract class LangGraphCheckpointerBase implements LangGraphCheckpointer
     ) {
       throw new RuntimeError(
         GovernorErrorCode.PROCESS_RUNTIME_CHECKPOINT_PAYLOAD_INVALID,
-        "Checkpoint payload does not match the requested execution/session namespace.",
+        'Checkpoint payload does not match the requested execution/session namespace.',
         {
           checkpointPath,
           expectedExecutionId,
@@ -138,7 +138,7 @@ export abstract class LangGraphCheckpointerBase implements LangGraphCheckpointer
     if (envelope.processId !== expectedProcessId) {
       throw new RuntimeError(
         GovernorErrorCode.PROCESS_RUNTIME_CHECKPOINT_PAYLOAD_INVALID,
-        "Checkpoint payload does not match the requested process id.",
+        'Checkpoint payload does not match the requested process id.',
         {
           checkpointPath,
           expectedProcessId,
@@ -150,7 +150,7 @@ export abstract class LangGraphCheckpointerBase implements LangGraphCheckpointer
     if (!LANGGRAPH_CHECKPOINT_SOURCES.includes(envelope.checkpointSource)) {
       throw new RuntimeError(
         GovernorErrorCode.PROCESS_RUNTIME_CHECKPOINT_PAYLOAD_INVALID,
-        "Checkpoint payload uses an unsupported checkpoint source.",
+        'Checkpoint payload uses an unsupported checkpoint source.',
         {
           checkpointPath,
           checkpointSource: envelope.checkpointSource,
@@ -161,7 +161,7 @@ export abstract class LangGraphCheckpointerBase implements LangGraphCheckpointer
     if (envelope.checkpointPath !== checkpointPath) {
       throw new RuntimeError(
         GovernorErrorCode.PROCESS_RUNTIME_CHECKPOINT_PAYLOAD_INVALID,
-        "Checkpoint payload path does not match the resolved checkpoint path.",
+        'Checkpoint payload path does not match the resolved checkpoint path.',
         {
           checkpointPath,
           payloadCheckpointPath: envelope.checkpointPath,
@@ -169,8 +169,8 @@ export abstract class LangGraphCheckpointerBase implements LangGraphCheckpointer
       );
     }
 
-    this.assertStringArray(envelope.activeNodeIds, "activeNodeIds", checkpointPath);
-    this.assertStringArray(envelope.visitedNodeIds, "visitedNodeIds", checkpointPath);
+    this.assertStringArray(envelope.activeNodeIds, 'activeNodeIds', checkpointPath);
+    this.assertStringArray(envelope.visitedNodeIds, 'visitedNodeIds', checkpointPath);
     this.assertReducedStateKeysAllowed(LANGGRAPH_REDUCED_STATE_KEYS, envelope.reducedState);
     this.assertPendingInterruptShape(envelope.pendingInterrupt, checkpointPath);
   }
@@ -178,7 +178,7 @@ export abstract class LangGraphCheckpointerBase implements LangGraphCheckpointer
   protected assertStringArray(value: unknown, fieldName: string, checkpointPath: string): void {
     if (
       Array.isArray(value) &&
-      value.every((entry) => typeof entry === "string" && entry.trim().length > 0)
+      value.every((entry) => typeof entry === 'string' && entry.trim().length > 0)
     ) {
       return;
     }
@@ -202,15 +202,15 @@ export abstract class LangGraphCheckpointerBase implements LangGraphCheckpointer
     }
 
     if (
-      typeof value.kind !== "string" ||
+      typeof value.kind !== 'string' ||
       value.kind.trim().length === 0 ||
       !LANGGRAPH_RUNTIME_INTERRUPT_KINDS.includes(value.kind) ||
-      typeof value.recordedAt !== "string" ||
+      typeof value.recordedAt !== 'string' ||
       value.recordedAt.trim().length === 0
     ) {
       throw new RuntimeError(
         GovernorErrorCode.PROCESS_RUNTIME_CHECKPOINT_PAYLOAD_INVALID,
-        "Checkpoint pending interrupt payload is invalid.",
+        'Checkpoint pending interrupt payload is invalid.',
         {
           checkpointPath,
         },
@@ -219,11 +219,11 @@ export abstract class LangGraphCheckpointerBase implements LangGraphCheckpointer
 
     if (
       value.reason !== undefined &&
-      (typeof value.reason !== "string" || value.reason.length === 0)
+      (typeof value.reason !== 'string' || value.reason.length === 0)
     ) {
       throw new RuntimeError(
         GovernorErrorCode.PROCESS_RUNTIME_CHECKPOINT_PAYLOAD_INVALID,
-        "Checkpoint pending interrupt reason must be a non-empty string when present.",
+        'Checkpoint pending interrupt reason must be a non-empty string when present.',
         {
           checkpointPath,
         },
@@ -232,11 +232,11 @@ export abstract class LangGraphCheckpointerBase implements LangGraphCheckpointer
 
     if (
       value.payload !== undefined &&
-      (typeof value.payload !== "object" || value.payload === null)
+      (typeof value.payload !== 'object' || value.payload === null)
     ) {
       throw new RuntimeError(
         GovernorErrorCode.PROCESS_RUNTIME_CHECKPOINT_PAYLOAD_INVALID,
-        "Checkpoint pending interrupt payload must be an object when present.",
+        'Checkpoint pending interrupt payload must be an object when present.',
         {
           checkpointPath,
         },
@@ -245,6 +245,6 @@ export abstract class LangGraphCheckpointerBase implements LangGraphCheckpointer
   }
 
   protected formatRfc3339Seconds(date: Date): string {
-    return date.toISOString().replace(/\.\d{3}Z$/u, "Z");
+    return date.toISOString().replace(/\.\d{3}Z$/u, 'Z');
   }
 }

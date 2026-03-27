@@ -6,7 +6,7 @@ export {
   OrchestrationServiceHostKind,
   OrchestrationServiceEventType,
   OrchestrationServiceTransportKind,
-} from "./constants/index.js";
+} from './constants/index.js';
 export type {
   OrchestrationListExecutionsRequest,
   OrchestrationListExecutionsResponse,
@@ -23,4 +23,4 @@ export type {
   OrchestrationSubscribeExecutionResponse,
   OrchestrationSubmitHitlDecisionRequest,
   OrchestrationSubmitHitlDecisionResponse,
-} from "./types/index.js";
+} from './types/index.js';

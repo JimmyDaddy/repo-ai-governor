@@ -6,4 +6,4 @@ export {
   FS_CSV_SNAPSHOTS_DIRECTORY_NAME,
   FS_CSV_SNAPSHOTS_FILE_NAME,
   FS_CSV_SNAPSHOTS_HEADER,
-} from "./fs-csv-memory-store.constant.js";
+} from './fs-csv-memory-store.constant.js';

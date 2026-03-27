@@ -1,8 +1,8 @@
 import type {
   ChangeRiskRequiredAction,
   ChangeRiskReviewerRole,
-} from "@repo-ai-governor/core-change-risk";
-import type { PolicyGateRuleId } from "../../constants/index.js";
+} from '@repo-ai-governor/core-change-risk';
+import type { PolicyGateRuleId } from '../../constants/index.js';
 
 /**
  * Defines policy-gate outcomes; values align with change-risk required actions.

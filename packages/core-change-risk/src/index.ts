@@ -8,8 +8,8 @@ export {
   DEFAULT_HIGH_RISK_FILE_CATEGORIES,
   DEFAULT_HIGH_RISK_PERMISSION_PREFIXES,
   DEFAULT_SENSITIVE_PATH_SEGMENTS,
-} from "./constants/index.js";
-export { ChangeRiskEvaluator } from "./change-risk-evaluator.js";
+} from './constants/index.js';
+export { ChangeRiskEvaluator } from './change-risk-evaluator.js';
 export type {
   ChangeRiskEvaluationResult,
   ChangeRiskEvaluatorOptions,
@@ -18,4 +18,4 @@ export type {
   ChangeRiskReason,
   ChangeRiskReviewerRole,
   ChangeRiskReviewerRoleMatrix,
-} from "./types/index.js";
+} from './types/index.js';

@@ -1,61 +1,61 @@
-import { ChangeRiskRequiredAction } from "@repo-ai-governor/core-change-risk";
-import { ProcessNodeType } from "@repo-ai-governor/core-process";
-import { RuntimeExecutionStatus, RuntimeStageStatus } from "@repo-ai-governor/core-runtime";
-import type { RuntimeExecutionResult } from "@repo-ai-governor/core-runtime";
-import { ExecutionProgressStage } from "@repo-ai-governor/shared";
+import { ChangeRiskRequiredAction } from '@repo-ai-governor/core-change-risk';
+import { ProcessNodeType } from '@repo-ai-governor/core-process';
+import { RuntimeExecutionStatus, RuntimeStageStatus } from '@repo-ai-governor/core-runtime';
+import type { RuntimeExecutionResult } from '@repo-ai-governor/core-runtime';
+import { ExecutionProgressStage } from '@repo-ai-governor/shared';
 import {
   CliDeliveryRehearsalStatus,
   CliInlineReviewChainStatus,
-} from "../../src/constants/cli-task-driven-run.constant.js";
-import { CliCommandExperienceBuilder } from "../../src/runtime/presentation/command-experience-builder.js";
+} from '../../src/constants/cli-task-driven-run.constant.js';
+import { CliCommandExperienceBuilder } from '../../src/runtime/presentation/command-experience-builder.js';
 
 function createRuntimeResultFixture(): RuntimeExecutionResult {
   return {
-    processId: "cli-minimal-governance-run",
-    executionId: "exec-123",
+    processId: 'cli-minimal-governance-run',
+    executionId: 'exec-123',
     status: RuntimeExecutionStatus.SUCCEEDED,
-    startedAt: "2026-03-24T12:00:00Z",
-    endedAt: "2026-03-24T12:00:05Z",
+    startedAt: '2026-03-24T12:00:00Z',
+    endedAt: '2026-03-24T12:00:05Z',
     durationMs: 5000,
-    visitedNodeIds: ["node-prepare", "node-execute"],
+    visitedNodeIds: ['node-prepare', 'node-execute'],
     stageResults: [
       {
-        nodeId: "node-prepare",
-        stageId: "stage-prepare",
+        nodeId: 'node-prepare',
+        stageId: 'stage-prepare',
         nodeType: ProcessNodeType.SEQUENTIAL,
         status: RuntimeStageStatus.SUCCEEDED,
         attempt: 1,
-        startedAt: "2026-03-24T12:00:00Z",
-        endedAt: "2026-03-24T12:00:01Z",
+        startedAt: '2026-03-24T12:00:00Z',
+        endedAt: '2026-03-24T12:00:01Z',
         durationMs: 1000,
       },
       {
-        nodeId: "node-execute",
-        stageId: "stage-execute",
+        nodeId: 'node-execute',
+        stageId: 'stage-execute',
         nodeType: ProcessNodeType.SEQUENTIAL,
         status: RuntimeStageStatus.SUCCEEDED,
         attempt: 1,
-        startedAt: "2026-03-24T12:00:01Z",
-        endedAt: "2026-03-24T12:00:05Z",
+        startedAt: '2026-03-24T12:00:01Z',
+        endedAt: '2026-03-24T12:00:05Z',
         durationMs: 4000,
       },
     ],
   };
 }
 
-describe("Cli command experience builder", () => {
-  it("surfaces HITL follow-up and human confirmation progress for confirm outcomes", () => {
+describe('Cli command experience builder', () => {
+  it('surfaces HITL follow-up and human confirmation progress for confirm outcomes', () => {
     const builder = new CliCommandExperienceBuilder();
     const experience = builder.createRunCommandExperience({
-      executionId: "exec-123",
+      executionId: 'exec-123',
       runtimeResult: createRuntimeResultFixture(),
       policyResult: {
         policyOutcome: ChangeRiskRequiredAction.CONFIRM,
-        matchedRuleIds: ["POL-1"],
+        matchedRuleIds: ['POL-1'],
       },
-      reportPath: "/tmp/exec-123.report.json",
-      replayPath: "/tmp/exec-123.replay.json",
-      diagnosticsTracePath: "/tmp/exec-123.trace.json",
+      reportPath: '/tmp/exec-123.report.json',
+      replayPath: '/tmp/exec-123.replay.json',
+      diagnosticsTracePath: '/tmp/exec-123.trace.json',
       reviewChain: {
         enabled: false,
         status: CliInlineReviewChainStatus.DISABLED,
@@ -75,96 +75,96 @@ describe("Cli command experience builder", () => {
         stageStatus: null,
       },
       memoryPolicy: {
-        overallAction: "warn",
+        overallAction: 'warn',
         warningRecordCount: 1,
         redactedRecordCount: 0,
         blockedRecordCount: 0,
       },
       memoryPromotion: {
-        outcome: "session_summary_merged",
+        outcome: 'session_summary_merged',
         plannedMergeCount: 1,
         mergedCount: 1,
-        sessionSummaryProjectionKey: "session-123",
+        sessionSummaryProjectionKey: 'session-123',
       },
     });
 
     expect(
       experience.roleProgress.some(
         (row) =>
-          row.roleId === "human-reviewer" &&
+          row.roleId === 'human-reviewer' &&
           row.stage === ExecutionProgressStage.HUMAN_CONFIRMATION,
       ),
     ).toBe(true);
     expect(experience.interactionPrompts[0]?.blocking).toBe(true);
-    expect(experience.layeredLogs.summary).toContain("root_cause=policy_hitl_required");
-    expect(experience.layeredLogs.summary).toContain("memory_policy_action=warn");
+    expect(experience.layeredLogs.summary).toContain('root_cause=policy_hitl_required');
+    expect(experience.layeredLogs.summary).toContain('memory_policy_action=warn');
     expect(experience.layeredLogs.summary).toContain(
-      "memory_promotion_outcome=session_summary_merged",
+      'memory_promotion_outcome=session_summary_merged',
     );
   });
 
-  it("builds replay experience with diagnostics backlink and non-blocking prompts", () => {
+  it('builds replay experience with diagnostics backlink and non-blocking prompts', () => {
     const builder = new CliCommandExperienceBuilder();
     const experience = builder.createReplayCommandExperience({
-      replayPath: "/tmp/source.replay.json",
-      diagnosticsPath: "/tmp/replay-diagnostics.json",
+      replayPath: '/tmp/source.replay.json',
+      diagnosticsPath: '/tmp/replay-diagnostics.json',
       replayResolution: {
-        sourceType: "execution_report",
-        executionId: "exec-234",
+        sourceType: 'execution_report',
+        executionId: 'exec-234',
         explainResult: {
-          executionId: "exec-234",
+          executionId: 'exec-234',
           query: {
             limit: 1,
           },
           matchedCount: 1,
           pointers: [],
-          explainLines: ["line"],
+          explainLines: ['line'],
         },
         memorySemantics: {
           contextSelectedCount: 1,
-          contextAssemblyOutcome: "context_ready",
-          policyOverallAction: "redact",
+          contextAssemblyOutcome: 'context_ready',
+          policyOverallAction: 'redact',
           warningRecordCount: 0,
           redactedRecordCount: 1,
           blockedRecordCount: 0,
-          promotionOutcome: "session_summary_merged",
+          promotionOutcome: 'session_summary_merged',
           plannedMergeCount: 1,
           mergedCount: 1,
-          sessionSummaryProjectionKey: "session-234",
+          sessionSummaryProjectionKey: 'session-234',
         },
       },
     });
 
-    expect(experience.roleProgress[0]?.backlink?.artifactPath).toBe("/tmp/replay-diagnostics.json");
+    expect(experience.roleProgress[0]?.backlink?.artifactPath).toBe('/tmp/replay-diagnostics.json');
     expect(experience.interactionPrompts.every((prompt) => prompt.blocking === false)).toBe(true);
-    expect(experience.layeredLogs.summary).toContain("memory_policy_action=redact");
+    expect(experience.layeredLogs.summary).toContain('memory_policy_action=redact');
     expect(experience.layeredLogs.summary).toContain(
-      "memory_promotion_outcome=session_summary_merged",
+      'memory_promotion_outcome=session_summary_merged',
     );
-    expect(experience.layeredLogs.detailed).toContain("memory_session_projection_key=session-234");
+    expect(experience.layeredLogs.detailed).toContain('memory_session_projection_key=session-234');
   });
 
-  it("surfaces controlled delivery rehearsal progress and layered logs", () => {
+  it('surfaces controlled delivery rehearsal progress and layered logs', () => {
     const builder = new CliCommandExperienceBuilder();
     const experience = builder.createRunCommandExperience({
-      executionId: "exec-456",
+      executionId: 'exec-456',
       runtimeResult: {
         ...createRuntimeResultFixture(),
         stageResults: [
           ...createRuntimeResultFixture().stageResults,
           {
-            nodeId: "node-delivery-rehearsal",
-            stageId: "stage-delivery-rehearsal",
+            nodeId: 'node-delivery-rehearsal',
+            stageId: 'stage-delivery-rehearsal',
             nodeType: ProcessNodeType.SEQUENTIAL,
             status: RuntimeStageStatus.SUCCEEDED,
             attempt: 1,
-            startedAt: "2026-03-24T12:00:05Z",
-            endedAt: "2026-03-24T12:00:06Z",
+            startedAt: '2026-03-24T12:00:05Z',
+            endedAt: '2026-03-24T12:00:06Z',
             durationMs: 1000,
             output: {
-              deliveryRehearsalStatus: "applied",
-              deliveryRehearsalAction: "commit",
-              deliveryRehearsalPath: "/tmp/exec-456.commit.json",
+              deliveryRehearsalStatus: 'applied',
+              deliveryRehearsalAction: 'commit',
+              deliveryRehearsalPath: '/tmp/exec-456.commit.json',
             },
           },
         ],
@@ -173,8 +173,8 @@ describe("Cli command experience builder", () => {
         policyOutcome: ChangeRiskRequiredAction.ALLOW,
         matchedRuleIds: [],
       },
-      reportPath: "/tmp/exec-456.report.json",
-      replayPath: "/tmp/exec-456.replay.json",
+      reportPath: '/tmp/exec-456.report.json',
+      replayPath: '/tmp/exec-456.replay.json',
       diagnosticsTracePath: null,
       reviewChain: {
         enabled: false,
@@ -190,8 +190,8 @@ describe("Cli command experience builder", () => {
         enabled: true,
         status: CliDeliveryRehearsalStatus.APPLIED,
         skipReason: null,
-        rehearsalAction: "commit",
-        rehearsalPath: "/tmp/exec-456.commit.json",
+        rehearsalAction: 'commit',
+        rehearsalPath: '/tmp/exec-456.commit.json',
         stageStatus: RuntimeStageStatus.SUCCEEDED,
       },
       memoryPolicy: null,
@@ -201,12 +201,12 @@ describe("Cli command experience builder", () => {
     expect(
       experience.roleProgress.some(
         (row) =>
-          row.stage === ExecutionProgressStage.DELIVERY_REHEARSAL && row.status === "completed",
+          row.stage === ExecutionProgressStage.DELIVERY_REHEARSAL && row.status === 'completed',
       ),
     ).toBe(true);
-    expect(experience.layeredLogs.summary).toContain("delivery_rehearsal=applied");
+    expect(experience.layeredLogs.summary).toContain('delivery_rehearsal=applied');
     expect(experience.layeredLogs.detailed).toContain(
-      "delivery_rehearsal_path=/tmp/exec-456.commit.json",
+      'delivery_rehearsal_path=/tmp/exec-456.commit.json',
     );
   });
 });

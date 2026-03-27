@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { spawn } from 'node:child_process';
 
 import {
   AgentAvailabilityStatus,
@@ -21,27 +21,27 @@ import {
   type AgentStreamEventsRequest,
   DEFAULT_AGENT_CLI_EXEC_MAX_RETRY_ATTEMPTS,
   DEFAULT_AGENT_CLI_EXEC_RETRY_BACKOFF_MS,
-} from "@repo-ai-governor/adapter-sdk";
-import { GovernorErrorCode, RuntimeError, standardizeError } from "@repo-ai-governor/shared";
-import { ClaudeCodeAgentAdapterExecutionMode } from "./constants/claude-code-agent-adapter.constant.js";
+} from '@repo-ai-governor/adapter-sdk';
+import { GovernorErrorCode, RuntimeError, standardizeError } from '@repo-ai-governor/shared';
+import { ClaudeCodeAgentAdapterExecutionMode } from './constants/claude-code-agent-adapter.constant.js';
 import type {
   ClaudeCodeAgentAdapterOptions,
   ClaudeCodeExecRunner,
   ClaudeCodeExecRunnerRequest,
   ClaudeCodeExecRunnerResult,
-} from "./types/interfaces/claude-code-agent-adapter.interface.js";
+} from './types/interfaces/claude-code-agent-adapter.interface.js';
 
-const CLAUDE_CODE_DEFAULT_AGENT_ID = "claude-code-default-agent";
-const CLAUDE_CODE_DEFAULT_ROLE = "coder";
-const CLAUDE_CODE_DEFAULT_ROLE_PROFILE_ID = "coder-default";
-const CLAUDE_CODE_DEFAULT_ROLE_SOURCE = "default";
-const CLAUDE_CODE_SURFACE = "claude-code";
-const CLAUDE_CODE_DIRECT_COMMAND = "claude";
-const CLAUDE_CODE_FALLBACK_COMMAND = "claude-code";
+const CLAUDE_CODE_DEFAULT_AGENT_ID = 'claude-code-default-agent';
+const CLAUDE_CODE_DEFAULT_ROLE = 'coder';
+const CLAUDE_CODE_DEFAULT_ROLE_PROFILE_ID = 'coder-default';
+const CLAUDE_CODE_DEFAULT_ROLE_SOURCE = 'default';
+const CLAUDE_CODE_SURFACE = 'claude-code';
+const CLAUDE_CODE_DIRECT_COMMAND = 'claude';
+const CLAUDE_CODE_FALLBACK_COMMAND = 'claude-code';
 const CLAUDE_CODE_DEFAULT_TIMEOUT_MS = 30000;
 const CLAUDE_CODE_DEFAULT_PROBE_CACHE_TTL_MS = 30000;
-const CLAUDE_CODE_HEALTH_CHECK_PROMPT = "Respond with exactly OK.";
-const CLAUDE_CODE_HEALTH_CHECK_EXPECTED_RESPONSE = "OK";
+const CLAUDE_CODE_HEALTH_CHECK_PROMPT = 'Respond with exactly OK.';
+const CLAUDE_CODE_HEALTH_CHECK_EXPECTED_RESPONSE = 'OK';
 
 const CLAUDE_CODE_BASELINE_CAPABILITY_SUPPORT: Record<
   AgentCapability,
@@ -245,7 +245,7 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
       stageId: request.stageId,
       routeKey: request.routeKey,
       payload: {
-        status: "running",
+        status: 'running',
         surface: CLAUDE_CODE_SURFACE,
       },
     };
@@ -258,7 +258,7 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
       stageId: request.stageId,
       routeKey: request.routeKey,
       payload: {
-        status: "completed",
+        status: 'completed',
         surface: CLAUDE_CODE_SURFACE,
       },
     };
@@ -275,15 +275,15 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
     if (this.options.executionMode === ClaudeCodeAgentAdapterExecutionMode.CLI_EXEC) {
       return {
         decision: AgentConfirmationDecision.REVISE,
-        reason: "claude-code-cli-confirmation-gate-unsupported",
-        constraints: ["escalate_to_human_gate"],
+        reason: 'claude-code-cli-confirmation-gate-unsupported',
+        constraints: ['escalate_to_human_gate'],
         decidedAt: new Date().toISOString(),
       };
     }
 
     return {
       decision: AgentConfirmationDecision.APPROVE,
-      reason: "claude-code-adapter-baseline-approved",
+      reason: 'claude-code-adapter-baseline-approved',
       constraints: [],
       decidedAt: new Date().toISOString(),
     };
@@ -316,7 +316,7 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
    * Creates capability matrix aligned with the current execution mode.
    * @returns Capability matrix payload.
    */
-  private createCapabilityMatrix(): AgentProbeResult["capabilityMatrix"] {
+  private createCapabilityMatrix(): AgentProbeResult['capabilityMatrix'] {
     const capabilitySupport =
       this.options.executionMode === ClaudeCodeAgentAdapterExecutionMode.CLI_EXEC
         ? CLAUDE_CODE_REAL_CAPABILITY_SUPPORT
@@ -424,7 +424,7 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
    * @returns Raw CLI execution result.
    */
   private async runClaudeCodeOperation(
-    request: Pick<ClaudeCodeExecRunnerRequest, "prompt" | "timeoutMs" | "signal" | "operation">,
+    request: Pick<ClaudeCodeExecRunnerRequest, 'prompt' | 'timeoutMs' | 'signal' | 'operation'>,
   ): Promise<ClaudeCodeExecRunnerResult> {
     try {
       return await this.cliExecOperationsRuntime.executeWithRetry(
@@ -585,12 +585,12 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
   private renderInvokePrompt(request: AgentInvokeStageRequest): string {
     const renderedInput = JSON.stringify(request.input, null, 2);
     return [
-      "You are executing one Repo AI Governor stage through Claude Code CLI.",
+      'You are executing one Repo AI Governor stage through Claude Code CLI.',
       `Route Key: ${request.routeKey}`,
       `Stage ID: ${request.stageId}`,
-      "Treat the following JSON payload as the canonical stage input.",
+      'Treat the following JSON payload as the canonical stage input.',
       renderedInput,
-    ].join("\n\n");
+    ].join('\n\n');
   }
 
   /**
@@ -632,13 +632,13 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
    * @returns True when the failure indicates executable-not-found.
    */
   private isMissingCommandFailure(error: unknown, detail: string): boolean {
-    if (detail.includes("enoent")) {
+    if (detail.includes('enoent')) {
       return true;
     }
-    if (!error || typeof error !== "object") {
+    if (!error || typeof error !== 'object') {
       return false;
     }
-    return (error as { code?: unknown }).code === "ENOENT";
+    return (error as { code?: unknown }).code === 'ENOENT';
   }
 
   /**
@@ -708,12 +708,12 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
     const startedAt = Date.now();
     const args = [
       ...request.commandArgumentsPrefix,
-      "--print",
-      "--output-format",
-      "text",
-      "--no-session-persistence",
-      "--dangerously-skip-permissions",
-      "--add-dir",
+      '--print',
+      '--output-format',
+      'text',
+      '--no-session-persistence',
+      '--dangerously-skip-permissions',
+      '--add-dir',
       request.cwd,
       request.prompt,
     ];
@@ -722,11 +722,11 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
       const childProcess = spawn(request.command, args, {
         cwd: request.cwd,
         env: request.env,
-        stdio: ["ignore", "pipe", "pipe"],
+        stdio: ['ignore', 'pipe', 'pipe'],
         ...(request.signal ? { signal: request.signal } : {}),
       });
-      let stdout = "";
-      let stderr = "";
+      let stdout = '';
+      let stderr = '';
       let settled = false;
 
       const settle = (
@@ -748,7 +748,7 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
       };
 
       const timeoutHandle = setTimeout(() => {
-        childProcess.kill("SIGTERM");
+        childProcess.kill('SIGTERM');
         settle(
           new RuntimeError(
             request.operation === AgentCliExecOperation.PROBE
@@ -767,15 +767,15 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
         );
       }, request.timeoutMs);
 
-      childProcess.stdout.setEncoding("utf8");
-      childProcess.stderr.setEncoding("utf8");
-      childProcess.stdout.on("data", (chunk: string) => {
+      childProcess.stdout.setEncoding('utf8');
+      childProcess.stderr.setEncoding('utf8');
+      childProcess.stdout.on('data', (chunk: string) => {
         stdout += chunk;
       });
-      childProcess.stderr.on("data", (chunk: string) => {
+      childProcess.stderr.on('data', (chunk: string) => {
         stderr += chunk;
       });
-      childProcess.on("error", (error) => {
+      childProcess.on('error', (error) => {
         settle(
           new RuntimeError(
             request.operation === AgentCliExecOperation.PROBE
@@ -793,7 +793,7 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
           true,
         );
       });
-      childProcess.on("close", (exitCode, signal) => {
+      childProcess.on('close', (exitCode, signal) => {
         settle(
           {
             stdout,

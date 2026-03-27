@@ -1,8 +1,8 @@
-import { existsSync } from "node:fs";
-import { readdir } from "node:fs/promises";
-import { resolve } from "node:path";
+import { existsSync } from 'node:fs';
+import { readdir } from 'node:fs/promises';
+import { resolve } from 'node:path';
 
-import { CLI_REVIEW_REQUEST_STATUS } from "../../constants/cli-governance-runtime.constant.js";
+import { CLI_REVIEW_REQUEST_STATUS } from '../../constants/cli-governance-runtime.constant.js';
 
 export interface CliQueuedReviewRequestArtifact {
   fileName: string;
@@ -30,11 +30,11 @@ export class CliReviewQueueRuntime {
    * @returns Normalized review-queue directories.
    */
   public resolveReviewQueueDirectories(): CliReviewQueueDirectorySet {
-    const legacyQueueDirectoryPath = resolve(this.workspaceRoot, "context", "review-queue");
+    const legacyQueueDirectoryPath = resolve(this.workspaceRoot, 'context', 'review-queue');
 
     return {
-      requestDirectoryPath: resolve(legacyQueueDirectoryPath, "requests"),
-      resultDirectoryPath: resolve(legacyQueueDirectoryPath, "results"),
+      requestDirectoryPath: resolve(legacyQueueDirectoryPath, 'requests'),
+      resultDirectoryPath: resolve(legacyQueueDirectoryPath, 'results'),
       legacyQueueDirectoryPath,
     };
   }
@@ -61,9 +61,9 @@ export class CliReviewQueueRuntime {
       const fileNames = (await readdir(candidateDirectoryPath))
         .filter(
           (fileName) =>
-            fileName.startsWith("review-") &&
-            fileName.endsWith(".json") &&
-            !fileName.startsWith("review-verify-"),
+            fileName.startsWith('review-') &&
+            fileName.endsWith('.json') &&
+            !fileName.startsWith('review-verify-'),
         )
         .sort((left, right) => left.localeCompare(right));
 
@@ -75,9 +75,9 @@ export class CliReviewQueueRuntime {
         }
 
         const requestId =
-          typeof payload.requestId === "string" && payload.requestId.trim().length > 0
+          typeof payload.requestId === 'string' && payload.requestId.trim().length > 0
             ? payload.requestId.trim()
-            : fileName.replace(/\.json$/u, "");
+            : fileName.replace(/\.json$/u, '');
         queuedRequests.set(filePath, {
           fileName,
           filePath,

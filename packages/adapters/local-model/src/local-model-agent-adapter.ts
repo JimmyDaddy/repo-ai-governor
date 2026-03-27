@@ -15,21 +15,21 @@ import {
   type AgentStreamEvent,
   AgentStreamEventType,
   type AgentStreamEventsRequest,
-} from "@repo-ai-governor/adapter-sdk";
+} from '@repo-ai-governor/adapter-sdk';
 import {
   GovernorErrorCode,
   LocalModelProvider,
   RuntimeError,
   standardizeError,
-} from "@repo-ai-governor/shared";
+} from '@repo-ai-governor/shared';
 
-const LOCAL_MODEL_DEFAULT_AGENT_ID = "local-model-default-agent";
-const LOCAL_MODEL_DEFAULT_ROLE = "coder";
-const LOCAL_MODEL_DEFAULT_ROLE_PROFILE_ID = "coder-default";
-const LOCAL_MODEL_DEFAULT_ROLE_SOURCE = "default";
-const LOCAL_MODEL_SURFACE = "ollama";
-const OLLAMA_TAGS_PATH = "api/tags";
-const OLLAMA_GENERATE_PATH = "api/generate";
+const LOCAL_MODEL_DEFAULT_AGENT_ID = 'local-model-default-agent';
+const LOCAL_MODEL_DEFAULT_ROLE = 'coder';
+const LOCAL_MODEL_DEFAULT_ROLE_PROFILE_ID = 'coder-default';
+const LOCAL_MODEL_DEFAULT_ROLE_SOURCE = 'default';
+const LOCAL_MODEL_SURFACE = 'ollama';
+const OLLAMA_TAGS_PATH = 'api/tags';
+const OLLAMA_GENERATE_PATH = 'api/generate';
 const LOCAL_MODEL_DEFAULT_TIMEOUT_MS = 30000;
 const LOCAL_MODEL_RETRY_DELAY_MS = 150;
 
@@ -180,14 +180,14 @@ export class LocalModelAgentAdapter extends AgentProtocol {
     const generateResponse = await this.requestJson<OllamaGenerateResponse>({
       localModel: this.options.localModel,
       path: OLLAMA_GENERATE_PATH,
-      method: "POST",
+      method: 'POST',
       request,
       body: {
         model: this.options.localModel.model,
         prompt,
         stream: false,
       },
-      operation: "invoke",
+      operation: 'invoke',
     });
     const responseText = this.readGeneratedText(generateResponse, request);
     const usage = this.createTokenUsage(generateResponse);
@@ -225,7 +225,7 @@ export class LocalModelAgentAdapter extends AgentProtocol {
       stageId: request.stageId,
       routeKey: request.routeKey,
       payload: {
-        status: "running",
+        status: 'running',
         surface: LOCAL_MODEL_SURFACE,
       },
     };
@@ -238,7 +238,7 @@ export class LocalModelAgentAdapter extends AgentProtocol {
       stageId: request.stageId,
       routeKey: request.routeKey,
       payload: {
-        status: "completed",
+        status: 'completed',
         surface: LOCAL_MODEL_SURFACE,
       },
     };
@@ -254,8 +254,8 @@ export class LocalModelAgentAdapter extends AgentProtocol {
   ): Promise<AgentConfirmationResult> {
     return {
       decision: AgentConfirmationDecision.REVISE,
-      reason: "local-model-confirmation-gate-unsupported",
-      constraints: ["escalate_to_human_gate"],
+      reason: 'local-model-confirmation-gate-unsupported',
+      constraints: ['escalate_to_human_gate'],
       decidedAt: new Date().toISOString(),
     };
   }
@@ -278,7 +278,7 @@ export class LocalModelAgentAdapter extends AgentProtocol {
    * Creates capability matrix aligned with adapter-sdk contract.
    * @returns Capability matrix payload.
    */
-  private createCapabilityMatrix(): AgentProbeResult["capabilityMatrix"] {
+  private createCapabilityMatrix(): AgentProbeResult['capabilityMatrix'] {
     const capabilityStates = Object.values(AgentCapability).map((capability) => ({
       capability,
       supportLevel: LOCAL_MODEL_CAPABILITY_SUPPORT[capability],
@@ -330,8 +330,8 @@ export class LocalModelAgentAdapter extends AgentProtocol {
       const payload = await this.requestJson<OllamaTagsResponse>({
         localModel: this.options.localModel,
         path: OLLAMA_TAGS_PATH,
-        method: "GET",
-        operation: "probe",
+        method: 'GET',
+        operation: 'probe',
       });
       if (!this.isOllamaTagsResponse(payload)) {
         return {
@@ -371,8 +371,8 @@ export class LocalModelAgentAdapter extends AgentProtocol {
   private async requestJson<T>(options: {
     localModel: LocalModelRuntimeConfig;
     path: string;
-    method: "GET" | "POST";
-    operation: "probe" | "invoke";
+    method: 'GET' | 'POST';
+    operation: 'probe' | 'invoke';
     request?: AgentInvokeStageRequest;
     body?: Record<string, unknown>;
   }): Promise<T> {
@@ -428,7 +428,7 @@ export class LocalModelAgentAdapter extends AgentProtocol {
 
     throw new RuntimeError(
       GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
-      "Local model request exhausted retry budget without producing a result.",
+      'Local model request exhausted retry budget without producing a result.',
       {
         surface: LOCAL_MODEL_SURFACE,
         endpoint: options.localModel.endpoint,
@@ -445,7 +445,7 @@ export class LocalModelAgentAdapter extends AgentProtocol {
   private async fetchWithTimeout(options: {
     localModel: LocalModelRuntimeConfig;
     path: string;
-    method: "GET" | "POST";
+    method: 'GET' | 'POST';
     request?: AgentInvokeStageRequest;
     body?: Record<string, unknown>;
   }): Promise<Response> {
@@ -463,7 +463,7 @@ export class LocalModelAgentAdapter extends AgentProtocol {
         clearTimeout(timeoutHandle);
         abortController.abort(options.request.signal.reason);
       } else {
-        options.request.signal.addEventListener("abort", onAbort, { once: true });
+        options.request.signal.addEventListener('abort', onAbort, { once: true });
       }
     }
 
@@ -471,8 +471,8 @@ export class LocalModelAgentAdapter extends AgentProtocol {
       return await this.options.fetchFn(this.resolveEndpointUrl(options.localModel, options.path), {
         method: options.method,
         headers: {
-          accept: "application/json",
-          ...(options.method === "POST" ? { "content-type": "application/json" } : {}),
+          accept: 'application/json',
+          ...(options.method === 'POST' ? { 'content-type': 'application/json' } : {}),
         },
         ...(options.body ? { body: JSON.stringify(options.body) } : {}),
         signal: abortController.signal,
@@ -480,7 +480,7 @@ export class LocalModelAgentAdapter extends AgentProtocol {
     } finally {
       clearTimeout(timeoutHandle);
       if (options.request?.signal) {
-        options.request.signal.removeEventListener("abort", onAbort);
+        options.request.signal.removeEventListener('abort', onAbort);
       }
     }
   }
@@ -492,7 +492,7 @@ export class LocalModelAgentAdapter extends AgentProtocol {
    */
   private renderPrompt(input: Record<string, unknown>): string {
     const prompt = input.prompt;
-    if (typeof prompt === "string" && prompt.trim().length > 0) {
+    if (typeof prompt === 'string' && prompt.trim().length > 0) {
       return prompt.trim();
     }
     return JSON.stringify(input, null, 2);
@@ -508,7 +508,7 @@ export class LocalModelAgentAdapter extends AgentProtocol {
     payload: OllamaGenerateResponse,
     request: AgentInvokeStageRequest,
   ): string {
-    if (typeof payload.response === "string" && payload.response.trim().length > 0) {
+    if (typeof payload.response === 'string' && payload.response.trim().length > 0) {
       return payload.response.trim();
     }
     throw new RuntimeError(
@@ -529,7 +529,7 @@ export class LocalModelAgentAdapter extends AgentProtocol {
    */
   private createTokenUsage(
     payload: OllamaGenerateResponse,
-  ): AgentInvokeStageResult["usage"] | undefined {
+  ): AgentInvokeStageResult['usage'] | undefined {
     const inputTokens = this.readOptionalPositiveInteger(payload.prompt_eval_count);
     const outputTokens = this.readOptionalPositiveInteger(payload.eval_count);
     if (inputTokens === undefined && outputTokens === undefined) {
@@ -558,7 +558,7 @@ export class LocalModelAgentAdapter extends AgentProtocol {
       request?.agentInvocationTimeoutMs,
       request?.stageTimeoutMs,
       request?.flowTimeoutMs,
-    ].filter((candidate): candidate is number => typeof candidate === "number" && candidate > 0);
+    ].filter((candidate): candidate is number => typeof candidate === 'number' && candidate > 0);
 
     if (timeoutCandidates.length === 0) {
       return LOCAL_MODEL_DEFAULT_TIMEOUT_MS;
@@ -573,7 +573,7 @@ export class LocalModelAgentAdapter extends AgentProtocol {
    * @returns Absolute endpoint URL.
    */
   private resolveEndpointUrl(localModel: LocalModelRuntimeConfig, path: string): string {
-    const normalizedBase = localModel.endpoint.endsWith("/")
+    const normalizedBase = localModel.endpoint.endsWith('/')
       ? localModel.endpoint
       : `${localModel.endpoint}/`;
     return new URL(path, normalizedBase).toString();
@@ -628,7 +628,7 @@ export class LocalModelAgentAdapter extends AgentProtocol {
    * @returns True when payload contains model descriptor rows.
    */
   private isOllamaTagsResponse(payload: unknown): payload is OllamaTagsResponse {
-    if (!payload || typeof payload !== "object") {
+    if (!payload || typeof payload !== 'object') {
       return false;
     }
     const models = (payload as OllamaTagsResponse).models;
@@ -647,7 +647,7 @@ export class LocalModelAgentAdapter extends AgentProtocol {
   ): boolean {
     const normalizedConfiguredModel = configuredModel.trim().toLowerCase();
     return models.some((model) => {
-      if (typeof model.name !== "string") {
+      if (typeof model.name !== 'string') {
         return false;
       }
       return model.name.trim().toLowerCase() === normalizedConfiguredModel;
@@ -661,7 +661,7 @@ export class LocalModelAgentAdapter extends AgentProtocol {
    */
   private formatProbeFailureReason(error: unknown): string {
     const standardizedError = standardizeError(error);
-    const endpoint = this.options.localModel?.endpoint ?? "unknown";
+    const endpoint = this.options.localModel?.endpoint ?? 'unknown';
     return `local_model_endpoint_unreachable:${LOCAL_MODEL_SURFACE}:${encodeURIComponent(endpoint)}:${standardizedError.code}:${standardizedError.message}`;
   }
 
@@ -680,11 +680,11 @@ export class LocalModelAgentAdapter extends AgentProtocol {
    * @returns True when retry should be attempted.
    */
   private isRetryableRequestError(error: unknown): boolean {
-    if (!error || typeof error !== "object") {
+    if (!error || typeof error !== 'object') {
       return false;
     }
     const errorName = (error as { name?: unknown }).name;
-    if (errorName === "AbortError" || errorName === "TypeError") {
+    if (errorName === 'AbortError' || errorName === 'TypeError') {
       return true;
     }
     return false;
@@ -706,7 +706,7 @@ export class LocalModelAgentAdapter extends AgentProtocol {
    * @returns Positive integer when available.
    */
   private readOptionalPositiveInteger(value: unknown): number | undefined {
-    if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+    if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
       return undefined;
     }
     return Math.trunc(value);

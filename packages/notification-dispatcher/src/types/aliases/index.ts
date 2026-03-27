@@ -4,4 +4,4 @@ export type {
   NotificationPolicyOutcome,
   NotificationRiskLevelKey,
   NotificationRiskLevelPolicyMatrix,
-} from "./notification-dispatcher.type.js";
+} from './notification-dispatcher.type.js';

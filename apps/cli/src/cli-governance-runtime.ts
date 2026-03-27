@@ -1,30 +1,25 @@
-import { execFile } from "node:child_process";
-import { constants as FsConstants, existsSync } from "node:fs";
-import { access, mkdir, readFile } from "node:fs/promises";
-import { resolve } from "node:path";
-import { promisify } from "node:util";
-
-import { ClaudeCodeAgentAdapter } from "@repo-ai-governor/adapter-claude-code";
-import { CodexAgentAdapter } from "@repo-ai-governor/adapter-codex";
-import { GithubCopilotAgentAdapter } from "@repo-ai-governor/adapter-github-copilot";
-import { LocalModelAgentAdapter } from "@repo-ai-governor/adapter-local-model";
-import { AgentCapability, AgentNetworkMode, AgentRouteRunner } from "@repo-ai-governor/adapter-sdk";
-import type { AdaptersConfig, ResolvedWorkspace } from "@repo-ai-governor/config";
+import { execFile } from 'node:child_process';
+import { constants as FsConstants, existsSync } from 'node:fs';
+import { access, mkdir, readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import { promisify } from 'node:util';
+import { AgentCapability, AgentNetworkMode, AgentRouteRunner } from '@repo-ai-governor/adapter-sdk';
+import type { AdaptersConfig } from '@repo-ai-governor/config';
 import {
   ChangeRiskEvaluator,
   ChangeRiskFileCategory,
   type ChangeRiskFileCategoryValue,
   ChangeRiskRequiredAction,
-} from "@repo-ai-governor/core-change-risk";
-import { MemoryManager, MemoryScope } from "@repo-ai-governor/core-memory";
+} from '@repo-ai-governor/core-change-risk';
+import { MemoryManager, MemoryScope } from '@repo-ai-governor/core-memory';
 import {
   MemoryContextAssembler,
   type MemoryPromotionResult,
   MemoryPromotionService,
   MemoryRecallService,
-} from "@repo-ai-governor/core-memory-semantics";
-import { PolicyGateEngine } from "@repo-ai-governor/core-policy";
-import { ProcessCompiler, type ProcessIrNode } from "@repo-ai-governor/core-process";
+} from '@repo-ai-governor/core-memory-semantics';
+import { PolicyGateEngine } from '@repo-ai-governor/core-policy';
+import { ProcessCompiler, type ProcessIrNode } from '@repo-ai-governor/core-process';
 import {
   ProcessRuntimeEngine,
   ProcessRuntimeFacade,
@@ -34,61 +29,49 @@ import {
   type RuntimeStageInputMap,
   RuntimeStageStatus,
   RuntimeTimeoutScope,
-} from "@repo-ai-governor/core-runtime";
+} from '@repo-ai-governor/core-runtime';
 import {
   CompiledIrGraphAdapter,
   LangGraphRuntimeBackend,
-} from "@repo-ai-governor/core-runtime-langgraph";
-import { AuditOutputMode, AuditRecordStatus, AuditRecorder } from "@repo-ai-governor/core-session";
-import {
-  MemoryStoreAdapter,
-  type MemoryStoreProvider,
-} from "@repo-ai-governor/memory-store-adapter";
+} from '@repo-ai-governor/core-runtime-langgraph';
+import { AuditOutputMode, AuditRecordStatus, AuditRecorder } from '@repo-ai-governor/core-session';
+import { MemoryStoreAdapter } from '@repo-ai-governor/memory-store-adapter';
 import {
   OrchestrationClientSurface,
   OrchestrationExecutionKind,
   OrchestrationExecutionStatus,
   OrchestrationServiceEventType,
-} from "@repo-ai-governor/orchestration-service-client";
-import { ReportBuilder } from "@repo-ai-governor/reporting";
+} from '@repo-ai-governor/orchestration-service-client';
+import { ReportBuilder } from '@repo-ai-governor/reporting';
 import {
   AdapterAvailability,
   AdapterSurface,
-  DefaultRoleProfileId,
   ErrorOutputEnvironment,
-  ExecutionInteractionCategory,
   ExecutionProgressStage,
-  ExecutionProgressStatus,
   GovernorErrorCode,
-  type MemoryRuntimeConfig,
   RuntimeError,
   WorkspaceMigrationPolicy,
-} from "@repo-ai-governor/shared";
-import { CliCheckCommand } from "./commands/check-command.js";
-import { CliCommandRegistry } from "./commands/cli-command-registry.js";
-import { CliConnectCommand } from "./commands/connect-command.js";
-import { CliDoctorCommand } from "./commands/doctor-command.js";
-import { CliInitCommand } from "./commands/init-command.js";
-import { CliPlanCommand } from "./commands/plan-command.js";
-import { CliReviewCommand } from "./commands/review-command.js";
-import { CliReviewVerifyCommand } from "./commands/review-verify-command.js";
-import { CliRunCommand } from "./commands/run-command.js";
-import { CliUpgradeCommand } from "./commands/upgrade-command.js";
-import { CliVerifyCommand } from "./commands/verify-command.js";
-import { CliWorkspaceCommand } from "./commands/workspace-command.js";
-import { CliCommandName } from "./constants/cli-command.constant.js";
+} from '@repo-ai-governor/shared';
+import { CliCheckCommand } from './commands/check-command.js';
+import { CliCommandRegistry } from './commands/cli-command-registry.js';
+import { CliConnectCommand } from './commands/connect-command.js';
+import { CliDoctorCommand } from './commands/doctor-command.js';
+import { CliInitCommand } from './commands/init-command.js';
+import { CliPlanCommand } from './commands/plan-command.js';
+import { CliReviewCommand } from './commands/review-command.js';
+import { CliReviewVerifyCommand } from './commands/review-verify-command.js';
+import { CliRunCommand } from './commands/run-command.js';
+import { CliUpgradeCommand } from './commands/upgrade-command.js';
+import { CliVerifyCommand } from './commands/verify-command.js';
+import { CliWorkspaceCommand } from './commands/workspace-command.js';
+import { CliCommandName } from './constants/cli-command.constant.js';
 import {
-  CLI_ADAPTER_FAILURE_ATTRIBUTION,
-  CLI_BASELINE_DOC_PATHS,
   CLI_CHANGE_RISK_FILE_CATEGORY_PATTERNS,
   CLI_DIAGNOSTIC_ROOT_CAUSE,
-  CLI_DOCTOR_ATTACH_MODE,
   CLI_INIT_REQUIRED_DIRECTORY_SEGMENTS,
-  CLI_REVIEW_LEDGER_BACKFILL_STATUS,
-  CLI_REVIEW_REQUEST_STATUS,
   CLI_RUNTIME_OPERATION,
   CliGovernanceCheckStatus,
-} from "./constants/cli-governance-runtime.constant.js";
+} from './constants/cli-governance-runtime.constant.js';
 import {
   CLI_TASK_DRIVEN_RUN_NODE_DEFINITIONS,
   CliDeliveryRehearsalAction,
@@ -97,42 +80,37 @@ import {
   CliHitlResumeAction,
   CliInlineReviewChainSkipReason,
   CliInlineReviewChainStatus,
-} from "./constants/cli-task-driven-run.constant.js";
-import { CliAdapterDiagnosticsRuntime } from "./runtime/adapter-diagnostics-runtime.js";
-import { CliAdapterRoutingRuntime } from "./runtime/adapter-routing-runtime.js";
-import { CliAdapterVerificationRuntime } from "./runtime/adapter-verification-runtime.js";
-import { CliReviewQueueRuntime } from "./runtime/artifacts/review-queue-runtime.js";
-import { CliRuntimeArtifactWriter } from "./runtime/artifacts/runtime-artifact-writer.js";
-import { CliDeliveryRehearsalRuntime } from "./runtime/delivery-rehearsal-runtime.js";
-import { CliHitlRuntime } from "./runtime/hitl-runtime.js";
-import { CliLocalModelProbeRuntime } from "./runtime/local-model-probe-runtime.js";
-import { CliOrchestrationServiceRuntime } from "./runtime/orchestration-service-runtime.js";
-import { CliCommandExperienceBuilder } from "./runtime/presentation/command-experience-builder.js";
-import { CliReplayExplainBuilder } from "./runtime/presentation/replay-explain-builder.js";
-import { CliTaskDrivenRunRuntime } from "./runtime/task-driven-run-runtime.js";
+} from './constants/cli-task-driven-run.constant.js';
+import { CliAdapterDiagnosticsRuntime } from './runtime/adapter-diagnostics-runtime.js';
+import { CliAdapterRoutingRuntime } from './runtime/adapter-routing-runtime.js';
+import { CliAdapterVerificationRuntime } from './runtime/adapter-verification-runtime.js';
+import { CliReviewQueueRuntime } from './runtime/artifacts/review-queue-runtime.js';
+import { CliRuntimeArtifactWriter } from './runtime/artifacts/runtime-artifact-writer.js';
+import { CliDeliveryRehearsalRuntime } from './runtime/delivery-rehearsal-runtime.js';
+import { CliHitlRuntime } from './runtime/hitl-runtime.js';
+import { CliLocalModelProbeRuntime } from './runtime/local-model-probe-runtime.js';
+import { CliOrchestrationServiceRuntime } from './runtime/orchestration-service-runtime.js';
+import { CliCommandExperienceBuilder } from './runtime/presentation/command-experience-builder.js';
+import { CliReplayExplainBuilder } from './runtime/presentation/replay-explain-builder.js';
+import { CliTaskDrivenRunRuntime } from './runtime/task-driven-run-runtime.js';
 import type {
   CliAdapterVerificationResolution,
   CliCheckTotals,
-  CliCommandExecutionResultPayload,
   CliCommandResultArtifact,
   CliCommandResultCheck,
   CliExecutionStreamMetadata,
   CliGovernanceCommandResult,
   CliGovernanceRuntimeOptions,
-  CliInteractionPrompt,
-  CliLocalAdapterProbeOverride,
   CliNormalizedRuntimeDebugOptions,
-  CliRoleStageProgress,
-  CliRuntimeDebugOptions,
   CliTaskDrivenRunAssembly,
-} from "./types/index.js";
+} from './types/index.js';
 
 const execFileAsync = promisify(execFile);
 
 interface CliLangGraphCheckpointState {
   checkpointPath: string | null;
   checkpointSource: string | null;
-  recoveryState: "not_requested" | "recovered";
+  recoveryState: 'not_requested' | 'recovered';
   recoveredNextNodeIds: string[];
   pendingInterruptKind: string | null;
 }
@@ -305,7 +283,7 @@ export class CliGovernanceRuntime {
         execFileAsync(process.execPath, [scriptPath, ...args], {
           cwd: this.options.currentWorkingDirectory,
           maxBuffer: 5 * 1024 * 1024,
-          encoding: "utf8",
+          encoding: 'utf8',
         }),
     };
   }
@@ -343,7 +321,7 @@ export class CliGovernanceRuntime {
     if (compiledIr.compileErrors.length > 0) {
       throw new RuntimeError(
         GovernorErrorCode.PROCESS_RUNTIME_IR_CONTAINS_COMPILE_ERRORS,
-        "Run command failed because compile errors are present in generated process IR.",
+        'Run command failed because compile errors are present in generated process IR.',
         {
           executionId,
           compileErrorCount: compiledIr.compileErrors.length,
@@ -431,7 +409,7 @@ export class CliGovernanceRuntime {
       const node = nodeById.get(stageResult.nodeId);
       const recordedAt = stageResult.endedAt;
       const stageOutput = this.resolveStageOutputRecord(stageResult.output);
-      const stageArtifactId = this.readStageOutputString(stageOutput, "artifactId");
+      const stageArtifactId = this.readStageOutputString(stageOutput, 'artifactId');
       await orchestrationService.publishEvent({
         executionId,
         type: OrchestrationServiceEventType.STAGE_COMPLETED,
@@ -447,10 +425,10 @@ export class CliGovernanceRuntime {
           executionId,
           stageId: stageResult.stageId,
           routeKey: node?.routeKey ?? `route.${stageResult.nodeId}`,
-          surface: "cli",
-          agentRole: "governor_runtime",
-          roleProfileId: node?.roleProfileId ?? "role.default.runtime",
-          roleSource: "default",
+          surface: 'cli',
+          agentRole: 'governor_runtime',
+          roleProfileId: node?.roleProfileId ?? 'role.default.runtime',
+          roleSource: 'default',
           policyOutcome: effectivePolicyOutcome,
           status: this.resolveAuditRecordStatus(stageResult.status),
           startedAt: stageResult.startedAt,
@@ -492,12 +470,12 @@ export class CliGovernanceRuntime {
       recordedAt: this.toRfc3339SecondsTimestamp(new Date()),
       event: {
         executionId,
-        stageId: "stage-policy-gate",
-        routeKey: "policy.gate.cli.run",
-        surface: "cli",
-        agentRole: "governor_runtime",
-        roleProfileId: "role.default.runtime",
-        roleSource: "default",
+        stageId: 'stage-policy-gate',
+        routeKey: 'policy.gate.cli.run',
+        surface: 'cli',
+        agentRole: 'governor_runtime',
+        roleProfileId: 'role.default.runtime',
+        roleSource: 'default',
         policyOutcome: policyResult.policyOutcome,
         status: this.resolvePolicyAuditRecordStatus(policyResult.policyOutcome),
         startedAt: runtimeResult.startedAt,
@@ -560,7 +538,7 @@ export class CliGovernanceRuntime {
           executionSessionId,
           decision: hitlResolution.decision,
           resumeAction: hitlResolution.resumeAction,
-          actor: runtimeDebugOptions.hitlDecidedBy ?? "cli-runtime",
+          actor: runtimeDebugOptions.hitlDecidedBy ?? 'cli-runtime',
           ...(runtimeDebugOptions.hitlDecisionReason
             ? { reason: runtimeDebugOptions.hitlDecisionReason }
             : {}),
@@ -582,7 +560,7 @@ export class CliGovernanceRuntime {
             contextSummary: runAssembly.memoryContext.contractSafeSummary,
             sessionId: executionSessionId,
             persist: !runtimeDebugOptions.dryRun,
-            promotedBy: "cli-governance-runtime",
+            promotedBy: 'cli-governance-runtime',
           })
         : null;
 
@@ -609,51 +587,51 @@ export class CliGovernanceRuntime {
 
     const artifacts: CliCommandResultArtifact[] = [
       {
-        id: "compiled_ir_snapshot",
+        id: 'compiled_ir_snapshot',
         path: compiledIrSnapshotPath,
       },
       {
-        id: "execution_report",
+        id: 'execution_report',
         path: reportPath,
       },
       {
-        id: "replay_explain",
+        id: 'replay_explain',
         path: replayPath,
       },
     ];
     if (inlineReviewChainSummary.reviewRequestPath) {
       artifacts.push({
-        id: "inline_review_request",
+        id: 'inline_review_request',
         path: inlineReviewChainSummary.reviewRequestPath,
       });
     }
     if (inlineReviewChainSummary.reviewVerifyPath) {
       artifacts.push({
-        id: "inline_review_verify_result",
+        id: 'inline_review_verify_result',
         path: inlineReviewChainSummary.reviewVerifyPath,
       });
     }
     if (inlineReviewChainSummary.ledgerBackfillPath) {
       artifacts.push({
-        id: "inline_review_ledger_backfill",
+        id: 'inline_review_ledger_backfill',
         path: inlineReviewChainSummary.ledgerBackfillPath,
       });
     }
     if (deliveryRehearsalSummary.rehearsalPath) {
       artifacts.push({
-        id: "delivery_rehearsal",
+        id: 'delivery_rehearsal',
         path: deliveryRehearsalSummary.rehearsalPath,
       });
     }
     if (hitlResolution.notificationArtifactPath) {
       artifacts.push({
-        id: "hitl_notification",
+        id: 'hitl_notification',
         path: hitlResolution.notificationArtifactPath,
       });
     }
     if (hitlResolution.decisionReceiptPath) {
       artifacts.push({
-        id: "hitl_decision_receipt",
+        id: 'hitl_decision_receipt',
         path: hitlResolution.decisionReceiptPath,
       });
     }
@@ -670,7 +648,7 @@ export class CliGovernanceRuntime {
     });
     if (langGraphCheckpointState.checkpointPath) {
       artifacts.push({
-        id: "langgraph_checkpoint",
+        id: 'langgraph_checkpoint',
         path: langGraphCheckpointState.checkpointPath,
       });
     }
@@ -689,17 +667,17 @@ export class CliGovernanceRuntime {
       this.createRunAssemblyCheck(runAssembly, runtimeDebugOptions.taskId),
       this.createMemoryPolicyCheck(runAssembly),
       {
-        id: "runtime_backend",
+        id: 'runtime_backend',
         status: CliGovernanceCheckStatus.PASS,
-        detail: `primary=${runtimeExecution.selection.primaryBackend} comparison=${runtimeExecution.selection.comparisonBackend ?? "none"} parity_mode=${runtimeExecution.selection.parityMode}`,
+        detail: `primary=${runtimeExecution.selection.primaryBackend} comparison=${runtimeExecution.selection.comparisonBackend ?? 'none'} parity_mode=${runtimeExecution.selection.parityMode}`,
       },
       {
-        id: "compile",
+        id: 'compile',
         status: CliGovernanceCheckStatus.PASS,
         detail: `warnings=${compiledIr.compileWarnings.length} errors=${compiledIr.compileErrors.length}`,
       },
       {
-        id: "runtime",
+        id: 'runtime',
         status:
           runtimeResult.status === RuntimeExecutionStatus.SUCCEEDED
             ? CliGovernanceCheckStatus.PASS
@@ -707,62 +685,62 @@ export class CliGovernanceRuntime {
         detail: `status=${runtimeResult.status} stages=${runtimeResult.stageResults.length}`,
       },
       {
-        id: "policy",
+        id: 'policy',
         status: this.resolvePolicyCheckStatus(resolvedPolicyOutcome),
         detail: `outcome=${resolvedPolicyOutcome} matched_rules=${policyResult.matchedRuleIds.length}`,
       },
       {
-        id: "report",
+        id: 'report',
         status: CliGovernanceCheckStatus.PASS,
         detail: `records=${executionReport.totalRecords} stage_summaries=${executionReport.stageSummaries.length}`,
       },
     ];
     if (langGraphCheckpointState.checkpointPath) {
       checks.push({
-        id: "recovery",
+        id: 'recovery',
         status: CliGovernanceCheckStatus.PASS,
-        detail: `source=${langGraphCheckpointState.checkpointSource ?? "unknown"} state=${langGraphCheckpointState.recoveryState} next_nodes=${langGraphCheckpointState.recoveredNextNodeIds.join("|") || "none"} pending_interrupt=${langGraphCheckpointState.pendingInterruptKind ?? "none"}`,
+        detail: `source=${langGraphCheckpointState.checkpointSource ?? 'unknown'} state=${langGraphCheckpointState.recoveryState} next_nodes=${langGraphCheckpointState.recoveredNextNodeIds.join('|') || 'none'} pending_interrupt=${langGraphCheckpointState.pendingInterruptKind ?? 'none'}`,
       });
     }
     if (hitlResolution.required) {
       checks.push({
-        id: "hitl",
+        id: 'hitl',
         status:
           resolvedPolicyOutcome === ChangeRiskRequiredAction.ALLOW
             ? CliGovernanceCheckStatus.PASS
             : hitlResolution.awaitingDecision
               ? CliGovernanceCheckStatus.WARN
               : CliGovernanceCheckStatus.FAIL,
-        detail: `notification=${hitlResolution.notificationResult?.dispatchStatus ?? "none"} decision=${hitlResolution.decision ?? "pending"} resume_action=${hitlResolution.resumeAction ?? "none"} effective_outcome=${resolvedPolicyOutcome}`,
+        detail: `notification=${hitlResolution.notificationResult?.dispatchStatus ?? 'none'} decision=${hitlResolution.decision ?? 'pending'} resume_action=${hitlResolution.resumeAction ?? 'none'} effective_outcome=${resolvedPolicyOutcome}`,
       });
     }
     if (inlineReviewChainSummary.enabled) {
       checks.push({
-        id: "review_chain",
+        id: 'review_chain',
         status:
           inlineReviewChainSummary.status === CliInlineReviewChainStatus.APPLIED
             ? CliGovernanceCheckStatus.PASS
             : inlineReviewChainSummary.status === CliInlineReviewChainStatus.FAILED
               ? CliGovernanceCheckStatus.FAIL
               : CliGovernanceCheckStatus.WARN,
-        detail: `status=${inlineReviewChainSummary.status} skip_reason=${inlineReviewChainSummary.skipReason ?? "none"} request=${inlineReviewChainSummary.reviewRequestPath ? "present" : "missing"} verify=${inlineReviewChainSummary.reviewVerifyPath ? "present" : "missing"} ledger_backfill=${inlineReviewChainSummary.ledgerBackfillPath ? "present" : "missing"}`,
+        detail: `status=${inlineReviewChainSummary.status} skip_reason=${inlineReviewChainSummary.skipReason ?? 'none'} request=${inlineReviewChainSummary.reviewRequestPath ? 'present' : 'missing'} verify=${inlineReviewChainSummary.reviewVerifyPath ? 'present' : 'missing'} ledger_backfill=${inlineReviewChainSummary.ledgerBackfillPath ? 'present' : 'missing'}`,
       });
     }
     if (deliveryRehearsalSummary.enabled) {
       checks.push({
-        id: "delivery_rehearsal",
+        id: 'delivery_rehearsal',
         status:
           deliveryRehearsalSummary.status === CliDeliveryRehearsalStatus.APPLIED
             ? CliGovernanceCheckStatus.PASS
             : deliveryRehearsalSummary.status === CliDeliveryRehearsalStatus.FAILED
               ? CliGovernanceCheckStatus.FAIL
               : CliGovernanceCheckStatus.WARN,
-        detail: `status=${deliveryRehearsalSummary.status} action=${deliveryRehearsalSummary.rehearsalAction ?? "none"} skip_reason=${deliveryRehearsalSummary.skipReason ?? "none"} artifact=${deliveryRehearsalSummary.rehearsalPath ? "present" : "missing"}`,
+        detail: `status=${deliveryRehearsalSummary.status} action=${deliveryRehearsalSummary.rehearsalAction ?? 'none'} skip_reason=${deliveryRehearsalSummary.skipReason ?? 'none'} artifact=${deliveryRehearsalSummary.rehearsalPath ? 'present' : 'missing'}`,
       });
     }
     if (runtimeDebugOptions.dryRun || runtimeDebugOptions.trace) {
       checks.push({
-        id: "debug_mode",
+        id: 'debug_mode',
         status: CliGovernanceCheckStatus.PASS,
         detail: `dry_run=${runtimeDebugOptions.dryRun} trace=${runtimeDebugOptions.trace}`,
       });
@@ -796,7 +774,7 @@ export class CliGovernanceRuntime {
 
     if (diagnosticsTracePath) {
       artifacts.push({
-        id: "diagnostics_trace",
+        id: 'diagnostics_trace',
         path: diagnosticsTracePath,
       });
     }
@@ -868,7 +846,7 @@ export class CliGovernanceRuntime {
     });
     const orchestrationSummary = await orchestrationService.getExecution(executionId);
 
-    const message = `Run completed with execution_id=${executionId} and policy_outcome=${resolvedPolicyOutcome}${runtimeDebugOptions.dryRun ? " (dry_run=true)" : ""}${runAssembly.memoryContext ? ` memory_policy=${runAssembly.memoryContext.policySummary.overallAction} warn=${runAssembly.memoryContext.policySummary.warningRecordCount} redact=${runAssembly.memoryContext.policySummary.redactedRecordCount} block=${runAssembly.memoryContext.policySummary.blockedRecordCount}` : ""}${memoryPromotionResult ? ` memory_promotion=${memoryPromotionResult.outcome} merged=${memoryPromotionResult.summary.mergedCount} session_projection=${memoryPromotionResult.persistedRecord?.key ?? "none"}` : ""}.`;
+    const message = `Run completed with execution_id=${executionId} and policy_outcome=${resolvedPolicyOutcome}${runtimeDebugOptions.dryRun ? ' (dry_run=true)' : ''}${runAssembly.memoryContext ? ` memory_policy=${runAssembly.memoryContext.policySummary.overallAction} warn=${runAssembly.memoryContext.policySummary.warningRecordCount} redact=${runAssembly.memoryContext.policySummary.redactedRecordCount} block=${runAssembly.memoryContext.policySummary.blockedRecordCount}` : ''}${memoryPromotionResult ? ` memory_promotion=${memoryPromotionResult.outcome} merged=${memoryPromotionResult.summary.mergedCount} session_projection=${memoryPromotionResult.persistedRecord?.key ?? 'none'}` : ''}.`;
     return {
       message,
       commandResult: {
@@ -932,7 +910,7 @@ export class CliGovernanceRuntime {
           langgraph_checkpoint_source: langGraphCheckpointState.checkpointSource,
           langgraph_recovery_state: langGraphCheckpointState.recoveryState,
           langgraph_recovery_next_node_ids:
-            langGraphCheckpointState.recoveredNextNodeIds.join("|") || null,
+            langGraphCheckpointState.recoveredNextNodeIds.join('|') || null,
           langgraph_pending_interrupt_kind: langGraphCheckpointState.pendingInterruptKind,
           orchestration_event_stream_token: orchestrationExecution.eventStreamToken,
           orchestration_status: orchestrationSummary?.status ?? null,
@@ -950,20 +928,20 @@ export class CliGovernanceRuntime {
 
   private async captureLangGraphCheckpointState(options: {
     orchestrationService: CliOrchestrationServiceRuntime;
-    compiledIr: ReturnType<ProcessCompiler["compile"]>;
-    runtimeExecution: Awaited<ReturnType<ProcessRuntimeFacade["execute"]>>;
+    compiledIr: ReturnType<ProcessCompiler['compile']>;
+    runtimeExecution: Awaited<ReturnType<ProcessRuntimeFacade['execute']>>;
     runtimeResult: RuntimeExecutionResult;
     executionSessionId: string;
     taskId?: string;
     artifactReferenceIds: string[];
-    hitlResolution: Awaited<ReturnType<CliHitlRuntime["processRunHitl"]>>;
-    policyResult: ReturnType<PolicyGateEngine["evaluate"]>;
+    hitlResolution: Awaited<ReturnType<CliHitlRuntime['processRunHitl']>>;
+    policyResult: ReturnType<PolicyGateEngine['evaluate']>;
   }): Promise<CliLangGraphCheckpointState> {
-    if (options.runtimeExecution.selection.primaryBackend !== "langgraph") {
+    if (options.runtimeExecution.selection.primaryBackend !== 'langgraph') {
       return {
         checkpointPath: null,
         checkpointSource: null,
-        recoveryState: "not_requested",
+        recoveryState: 'not_requested',
         recoveredNextNodeIds: [],
         pendingInterruptKind: null,
       };
@@ -972,7 +950,7 @@ export class CliGovernanceRuntime {
     const graphPlan = new CompiledIrGraphAdapter().adapt(options.compiledIr);
     const pendingInterrupt = options.hitlResolution.awaitingDecision
       ? {
-          kind: "hitl" as const,
+          kind: 'hitl' as const,
           recordedAt: this.toRfc3339SecondsTimestamp(new Date()),
           reason: options.policyResult.reason,
           payload: {
@@ -984,16 +962,16 @@ export class CliGovernanceRuntime {
         }
       : undefined;
     const reducedState = {
-      "execution.cursor":
+      'execution.cursor':
         options.runtimeResult.visitedNodeIds.at(-1) ?? options.runtimeExecution.primary.entryNodeId,
-      "execution.visited_nodes": options.runtimeResult.visitedNodeIds,
-      "execution.stage_results": options.runtimeResult.stageResults.map((stageResult) => ({
+      'execution.visited_nodes': options.runtimeResult.visitedNodeIds,
+      'execution.stage_results': options.runtimeResult.stageResults.map((stageResult) => ({
         nodeId: stageResult.nodeId,
         stageId: stageResult.stageId,
         status: stageResult.status,
         attempt: stageResult.attempt,
       })),
-      ...(pendingInterrupt ? { "execution.pending_interrupt": pendingInterrupt } : {}),
+      ...(pendingInterrupt ? { 'execution.pending_interrupt': pendingInterrupt } : {}),
     };
     const activeNodeIds =
       pendingInterrupt && options.runtimeResult.visitedNodeIds.length > 0
@@ -1032,7 +1010,7 @@ export class CliGovernanceRuntime {
       checkpointPath: serviceExecution?.checkpointPath ?? null,
       checkpointSource: serviceExecution?.checkpointSource ?? null,
       recoveryState:
-        recoveryResult?.recovered || recoveredExecution ? "recovered" : "not_requested",
+        recoveryResult?.recovered || recoveredExecution ? 'recovered' : 'not_requested',
       recoveredNextNodeIds:
         recoveryResult?.nextNodeIds ??
         serviceExecution?.recoveredNextNodeIds ??
@@ -1084,7 +1062,7 @@ export class CliGovernanceRuntime {
     if (!replayPath) {
       throw new RuntimeError(
         GovernorErrorCode.REPORT_REPLAY_INPUT_INVALID,
-        "Replay mode requires a replay source path.",
+        'Replay mode requires a replay source path.',
       );
     }
 
@@ -1129,39 +1107,39 @@ export class CliGovernanceRuntime {
 
     const artifacts: CliCommandResultArtifact[] = [
       {
-        id: "replay_source",
+        id: 'replay_source',
         path: replayPath,
       },
       {
-        id: "replay_diagnostics",
+        id: 'replay_diagnostics',
         path: diagnosticsPath,
       },
     ];
 
     if (tracePath) {
       artifacts.push({
-        id: "diagnostics_trace",
+        id: 'diagnostics_trace',
         path: tracePath,
       });
     }
 
     const checks: CliCommandResultCheck[] = [
       {
-        id: "replay_source",
+        id: 'replay_source',
         status: CliGovernanceCheckStatus.PASS,
         detail: replayResolution.sourceType,
       },
       {
-        id: "replay_explain",
+        id: 'replay_explain',
         status: CliGovernanceCheckStatus.PASS,
         detail: `matched=${replayResolution.explainResult.matchedCount}`,
       },
       ...(replayResolution.memorySemantics
         ? [
             {
-              id: "memory_policy",
+              id: 'memory_policy',
               status:
-                replayResolution.memorySemantics.policyOverallAction === "allow"
+                replayResolution.memorySemantics.policyOverallAction === 'allow'
                   ? CliGovernanceCheckStatus.PASS
                   : CliGovernanceCheckStatus.WARN,
               detail: `action=${replayResolution.memorySemantics.policyOverallAction} warn=${replayResolution.memorySemantics.warningRecordCount} redact=${replayResolution.memorySemantics.redactedRecordCount} block=${replayResolution.memorySemantics.blockedRecordCount}`,
@@ -1172,9 +1150,9 @@ export class CliGovernanceRuntime {
 
     if (runtimeDebugOptions.trace) {
       checks.push({
-        id: "debug_mode",
+        id: 'debug_mode',
         status: CliGovernanceCheckStatus.PASS,
-        detail: "trace=true replay=true",
+        detail: 'trace=true replay=true',
       });
     }
 
@@ -1183,7 +1161,7 @@ export class CliGovernanceRuntime {
       diagnosticsPath,
       replayResolution,
     });
-    const message = `Replay diagnostics completed from ${replayPath}${replayResolution.memorySemantics ? ` memory_policy=${replayResolution.memorySemantics.policyOverallAction} warn=${replayResolution.memorySemantics.warningRecordCount} redact=${replayResolution.memorySemantics.redactedRecordCount} block=${replayResolution.memorySemantics.blockedRecordCount} memory_promotion=${replayResolution.memorySemantics.promotionOutcome ?? "none"} merged=${replayResolution.memorySemantics.mergedCount} session_projection=${replayResolution.memorySemantics.sessionSummaryProjectionKey ?? "none"}` : ""}.`;
+    const message = `Replay diagnostics completed from ${replayPath}${replayResolution.memorySemantics ? ` memory_policy=${replayResolution.memorySemantics.policyOverallAction} warn=${replayResolution.memorySemantics.warningRecordCount} redact=${replayResolution.memorySemantics.redactedRecordCount} block=${replayResolution.memorySemantics.blockedRecordCount} memory_promotion=${replayResolution.memorySemantics.promotionOutcome ?? 'none'} merged=${replayResolution.memorySemantics.mergedCount} session_projection=${replayResolution.memorySemantics.sessionSummaryProjectionKey ?? 'none'}` : ''}.`;
     return {
       message,
       commandResult: {
@@ -1225,95 +1203,95 @@ export class CliGovernanceRuntime {
   private buildDefaultConfigContent(): string {
     return [
       'schemaVersion: "1.1"',
-      "workspace:",
+      'workspace:',
       `  mode: ${this.options.workspace.mode}`,
       `  migrationPolicy: ${WorkspaceMigrationPolicy.COPY_VERIFY_SWITCH_ROLLBACK}`,
-      "i18n:",
-      "  runtimeEngine: i18next",
-      "  defaultLocale: zh-CN",
-      "  fallbackLocale: en-US",
-      "  supportedLocales:",
-      "    - zh-CN",
-      "    - en-US",
-      "memory:",
+      'i18n:',
+      '  runtimeEngine: i18next',
+      '  defaultLocale: zh-CN',
+      '  fallbackLocale: en-US',
+      '  supportedLocales:',
+      '    - zh-CN',
+      '    - en-US',
+      'memory:',
       `  storeEngine: ${this.options.memoryConfig.storeEngine}`,
       `  storeRoot: ${this.options.memoryConfig.storeRoot}`,
-      "adapters:",
-      "  roles:",
-      "    - roleId: planner",
-      "      roleProfileId: planner-default",
-      "      requiredCapabilities:",
+      'adapters:',
+      '  roles:',
+      '    - roleId: planner',
+      '      roleProfileId: planner-default',
+      '      requiredCapabilities:',
       `        - ${AgentCapability.STRUCTURED_OUTPUT}`,
-      "      required: true",
-      "    - roleId: architect",
-      "      roleProfileId: architect-default",
-      "      requiredCapabilities:",
+      '      required: true',
+      '    - roleId: architect',
+      '      roleProfileId: architect-default',
+      '      requiredCapabilities:',
       `        - ${AgentCapability.STRUCTURED_OUTPUT}`,
-      "      required: true",
-      "    - roleId: coder",
-      "      roleProfileId: coder-default",
-      "      requiredCapabilities:",
+      '      required: true',
+      '    - roleId: coder',
+      '      roleProfileId: coder-default',
+      '      requiredCapabilities:',
       `        - ${AgentCapability.TOOL_CALLING}`,
-      "      required: true",
-      "    - roleId: tester",
-      "      roleProfileId: tester-default",
-      "      requiredCapabilities:",
+      '      required: true',
+      '    - roleId: tester',
+      '      roleProfileId: tester-default',
+      '      requiredCapabilities:',
       `        - ${AgentCapability.TOOL_CALLING}`,
-      "      required: true",
-      "    - roleId: reviewer",
-      "      roleProfileId: reviewer-default",
-      "      requiredCapabilities:",
+      '      required: true',
+      '    - roleId: reviewer',
+      '      roleProfileId: reviewer-default',
+      '      requiredCapabilities:',
       `        - ${AgentCapability.STRUCTURED_OUTPUT}`,
-      "      required: true",
-      "    - roleId: verifier",
-      "      roleProfileId: verifier-default",
-      "      requiredCapabilities:",
+      '      required: true',
+      '    - roleId: verifier',
+      '      roleProfileId: verifier-default',
+      '      requiredCapabilities:',
       `        - ${AgentCapability.STRUCTURED_OUTPUT}`,
-      "      required: true",
-      "  routing:",
-      "    roleBindings:",
-      "      planner:",
+      '      required: true',
+      '  routing:',
+      '    roleBindings:',
+      '      planner:',
       `        primarySurface: ${AdapterSurface.CODEX}`,
-      "        fallbackSurfaces:",
+      '        fallbackSurfaces:',
       `          - ${AdapterSurface.CLAUDE_CODE}`,
       `          - ${AdapterSurface.GITHUB_COPILOT}`,
-      "      architect:",
+      '      architect:',
       `        primarySurface: ${AdapterSurface.CODEX}`,
-      "        fallbackSurfaces:",
+      '        fallbackSurfaces:',
       `          - ${AdapterSurface.CLAUDE_CODE}`,
       `          - ${AdapterSurface.GITHUB_COPILOT}`,
-      "      coder:",
+      '      coder:',
       `        primarySurface: ${AdapterSurface.CODEX}`,
-      "        fallbackSurfaces:",
+      '        fallbackSurfaces:',
       `          - ${AdapterSurface.GITHUB_COPILOT}`,
       `          - ${AdapterSurface.CLAUDE_CODE}`,
-      "      tester:",
+      '      tester:',
       `        primarySurface: ${AdapterSurface.GITHUB_COPILOT}`,
-      "        fallbackSurfaces:",
+      '        fallbackSurfaces:',
       `          - ${AdapterSurface.CODEX}`,
       `          - ${AdapterSurface.CLAUDE_CODE}`,
-      "      reviewer:",
+      '      reviewer:',
       `        primarySurface: ${AdapterSurface.CLAUDE_CODE}`,
-      "        fallbackSurfaces:",
+      '        fallbackSurfaces:',
       `          - ${AdapterSurface.CODEX}`,
       `          - ${AdapterSurface.GITHUB_COPILOT}`,
-      "      verifier:",
+      '      verifier:',
       `        primarySurface: ${AdapterSurface.CODEX}`,
-      "        fallbackSurfaces:",
+      '        fallbackSurfaces:',
       `          - ${AdapterSurface.CLAUDE_CODE}`,
       `          - ${AdapterSurface.GITHUB_COPILOT}`,
-      "  tools:",
+      '  tools:',
       `    - toolId: ${AdapterSurface.CODEX}`,
-      "      enabled: true",
+      '      enabled: true',
       `      availability: ${AdapterAvailability.AVAILABLE}`,
       `    - toolId: ${AdapterSurface.GITHUB_COPILOT}`,
-      "      enabled: true",
+      '      enabled: true',
       `      availability: ${AdapterAvailability.AVAILABLE}`,
       `    - toolId: ${AdapterSurface.CLAUDE_CODE}`,
-      "      enabled: true",
+      '      enabled: true',
       `      availability: ${AdapterAvailability.AVAILABLE}`,
-      "",
-    ].join("\n");
+      '',
+    ].join('\n');
   }
 
   /**
@@ -1339,15 +1317,15 @@ export class CliGovernanceRuntime {
   private async resolveExecutionStreamMetadata(): Promise<CliExecutionStreamMetadata> {
     const currentContextPath = resolve(
       this.options.workspace.workspaceRoot,
-      "context",
-      "current-context.md",
+      'context',
+      'current-context.md',
     );
     if (!existsSync(currentContextPath)) {
       return {};
     }
 
     try {
-      const currentContextContent = await readFile(currentContextPath, "utf8");
+      const currentContextContent = await readFile(currentContextPath, 'utf8');
       const projectId = currentContextContent.match(/^- Project:\s*`([^`]+)`/mu)?.[1]?.trim();
       const sprintId = currentContextContent.match(/^- Sprint:\s*`([^`]+)`/mu)?.[1]?.trim();
 
@@ -1369,7 +1347,7 @@ export class CliGovernanceRuntime {
       dryRun: this.options.runtimeDebugOptions?.dryRun === true,
       trace: this.options.runtimeDebugOptions?.trace === true,
       replayPath:
-        typeof this.options.runtimeDebugOptions?.replayPath === "string" &&
+        typeof this.options.runtimeDebugOptions?.replayPath === 'string' &&
         this.options.runtimeDebugOptions.replayPath.trim().length > 0
           ? this.options.runtimeDebugOptions.replayPath.trim()
           : null,
@@ -1377,24 +1355,24 @@ export class CliGovernanceRuntime {
       fix: this.options.runtimeDebugOptions?.fix === true,
       recordLedger: this.options.runtimeDebugOptions?.recordLedger === true,
       taskId:
-        typeof this.options.runtimeDebugOptions?.taskId === "string" &&
+        typeof this.options.runtimeDebugOptions?.taskId === 'string' &&
         this.options.runtimeDebugOptions.taskId.trim().length > 0
           ? this.options.runtimeDebugOptions.taskId.trim()
           : null,
       restrictedNetwork: this.options.runtimeDebugOptions?.restrictedNetwork === true,
       restrictedReason:
-        typeof this.options.runtimeDebugOptions?.restrictedReason === "string" &&
+        typeof this.options.runtimeDebugOptions?.restrictedReason === 'string' &&
         this.options.runtimeDebugOptions.restrictedReason.trim().length > 0
           ? this.options.runtimeDebugOptions.restrictedReason.trim()
           : null,
       allowLocalFallback: this.options.runtimeDebugOptions?.allowLocalFallback !== false,
       hitlDecision:
-        typeof this.options.runtimeDebugOptions?.hitlDecision === "string" &&
+        typeof this.options.runtimeDebugOptions?.hitlDecision === 'string' &&
         this.options.runtimeDebugOptions.hitlDecision.trim().length > 0
           ? this.options.runtimeDebugOptions.hitlDecision.trim()
           : null,
       hitlDecisionReason:
-        typeof this.options.runtimeDebugOptions?.hitlDecisionReason === "string" &&
+        typeof this.options.runtimeDebugOptions?.hitlDecisionReason === 'string' &&
         this.options.runtimeDebugOptions.hitlDecisionReason.trim().length > 0
           ? this.options.runtimeDebugOptions.hitlDecisionReason.trim()
           : null,
@@ -1405,14 +1383,14 @@ export class CliGovernanceRuntime {
           ? this.options.runtimeDebugOptions.hitlResumeAction
           : null,
       hitlDecidedBy:
-        typeof this.options.runtimeDebugOptions?.hitlDecidedBy === "string" &&
+        typeof this.options.runtimeDebugOptions?.hitlDecidedBy === 'string' &&
         this.options.runtimeDebugOptions.hitlDecidedBy.trim().length > 0
           ? this.options.runtimeDebugOptions.hitlDecidedBy.trim()
           : null,
       hitlConstraints: Array.isArray(this.options.runtimeDebugOptions?.hitlConstraints)
         ? this.options.runtimeDebugOptions.hitlConstraints.filter(
             (constraint): constraint is string =>
-              typeof constraint === "string" && constraint.trim().length > 0,
+              typeof constraint === 'string' && constraint.trim().length > 0,
           )
         : [],
     };
@@ -1433,7 +1411,7 @@ export class CliGovernanceRuntime {
    * @returns True when current locale starts with `zh`.
    */
   private isZhCnLocale(): boolean {
-    return this.options.locale.trim().toLowerCase().startsWith("zh");
+    return this.options.locale.trim().toLowerCase().startsWith('zh');
   }
 
   /**
@@ -1551,13 +1529,13 @@ export class CliGovernanceRuntime {
     });
 
     return {
-      handledBy: "adapter-route-runner",
+      handledBy: 'adapter-route-runner',
       nodeId: stageContext.nodeId,
       stageId: stageContext.stageId,
       routeKey: stageContext.routeKey,
       roleProfileId: stageContext.roleProfileId,
       selectedSurface: dispatchResult.selectedSurface,
-      selectedBy: dispatchResult.auditRecord.selectedBy ?? "unknown",
+      selectedBy: dispatchResult.auditRecord.selectedBy ?? 'unknown',
       fallbackTriggered: dispatchResult.auditRecord.fallbackTriggered,
       localFallbackActivated: dispatchResult.auditRecord.localFallbackActivated,
       restrictedNetworkTriggered: dispatchResult.auditRecord.restrictedNetworkTriggered,
@@ -1604,7 +1582,7 @@ export class CliGovernanceRuntime {
     },
   ): Promise<Record<string, unknown>> {
     const taskId =
-      typeof stageContext.input.taskId === "string" && stageContext.input.taskId.trim().length > 0
+      typeof stageContext.input.taskId === 'string' && stageContext.input.taskId.trim().length > 0
         ? stageContext.input.taskId.trim()
         : runtimeDebugOptions.taskId;
     const inlineRuntimeDebugOptions: CliNormalizedRuntimeDebugOptions = {
@@ -1618,7 +1596,7 @@ export class CliGovernanceRuntime {
     );
     if (!inlineReviewExecutionGuard.allowExecution) {
       return {
-        handledBy: "inline-review-subchain",
+        handledBy: 'inline-review-subchain',
         stageId: stageContext.stageId,
         taskId,
         managedLedgerBackfill: false,
@@ -1633,10 +1611,10 @@ export class CliGovernanceRuntime {
     if (stageContext.stageId === CLI_TASK_DRIVEN_RUN_NODE_DEFINITIONS.REVIEW.stageId) {
       const commandResult = await new CliReviewCommand().execute(commandContext);
       const reviewRequestPath =
-        commandResult.commandResult.artifacts?.find((artifact) => artifact.id === "review_request")
+        commandResult.commandResult.artifacts?.find((artifact) => artifact.id === 'review_request')
           ?.path ?? null;
       return {
-        handledBy: "inline-review-subchain",
+        handledBy: 'inline-review-subchain',
         stageId: stageContext.stageId,
         taskId,
         managedLedgerBackfill: inlineRuntimeDebugOptions.recordLedger,
@@ -1648,14 +1626,14 @@ export class CliGovernanceRuntime {
     const commandResult = await new CliReviewVerifyCommand().execute(commandContext);
     const verifyArtifactPath =
       commandResult.commandResult.artifacts?.find(
-        (artifact) => artifact.id === "review_verify_result",
+        (artifact) => artifact.id === 'review_verify_result',
       )?.path ?? null;
     const ledgerBackfillPath =
       commandResult.commandResult.artifacts?.find(
-        (artifact) => artifact.id === "review_ledger_backfill",
+        (artifact) => artifact.id === 'review_ledger_backfill',
       )?.path ?? null;
     return {
-      handledBy: "inline-review-subchain",
+      handledBy: 'inline-review-subchain',
       stageId: stageContext.stageId,
       taskId,
       managedLedgerBackfill: inlineRuntimeDebugOptions.recordLedger,
@@ -1685,7 +1663,7 @@ export class CliGovernanceRuntime {
     streamMetadata?: CliExecutionStreamMetadata,
   ): Promise<Record<string, unknown>> {
     const rehearsalActionValue =
-      typeof stageContext.input.deliveryRehearsalAction === "string"
+      typeof stageContext.input.deliveryRehearsalAction === 'string'
         ? stageContext.input.deliveryRehearsalAction
         : CliDeliveryRehearsalAction.COMMIT;
     const rehearsalAction =
@@ -1693,11 +1671,11 @@ export class CliGovernanceRuntime {
         ? CliDeliveryRehearsalAction.PR_DRAFT
         : CliDeliveryRehearsalAction.COMMIT;
     const taskId =
-      typeof stageContext.input.taskId === "string" && stageContext.input.taskId.trim().length > 0
+      typeof stageContext.input.taskId === 'string' && stageContext.input.taskId.trim().length > 0
         ? stageContext.input.taskId.trim()
         : runtimeDebugOptions.taskId;
     const taskTitle =
-      typeof stageContext.input.taskTitle === "string" && stageContext.input.taskTitle.length > 0
+      typeof stageContext.input.taskTitle === 'string' && stageContext.input.taskTitle.length > 0
         ? stageContext.input.taskTitle
         : null;
 
@@ -1809,9 +1787,9 @@ export class CliGovernanceRuntime {
       ) ?? null;
     const reviewOutput = this.resolveStageOutputRecord(reviewStageResult?.output);
     const reviewVerifyOutput = this.resolveStageOutputRecord(reviewVerifyStageResult?.output);
-    const reviewRequestPath = this.readStageOutputString(reviewOutput, "reviewRequestPath");
-    const reviewVerifyPath = this.readStageOutputString(reviewVerifyOutput, "reviewVerifyPath");
-    const ledgerBackfillPath = this.readStageOutputString(reviewVerifyOutput, "ledgerBackfillPath");
+    const reviewRequestPath = this.readStageOutputString(reviewOutput, 'reviewRequestPath');
+    const reviewVerifyPath = this.readStageOutputString(reviewVerifyOutput, 'reviewVerifyPath');
+    const ledgerBackfillPath = this.readStageOutputString(reviewVerifyOutput, 'ledgerBackfillPath');
     const enabled = reviewStageResult !== null || reviewVerifyStageResult !== null;
 
     if (!enabled) {
@@ -1881,10 +1859,10 @@ export class CliGovernanceRuntime {
       ) ?? null;
     const enabled = deliveryRehearsalStageResult !== null;
     const deliveryOutput = this.resolveStageOutputRecord(deliveryRehearsalStageResult?.output);
-    const rehearsalPath = this.readStageOutputString(deliveryOutput, "deliveryRehearsalPath");
+    const rehearsalPath = this.readStageOutputString(deliveryOutput, 'deliveryRehearsalPath');
     const rehearsalActionValue = this.readStageOutputString(
       deliveryOutput,
-      "deliveryRehearsalAction",
+      'deliveryRehearsalAction',
     );
     const rehearsalAction =
       rehearsalActionValue === CliDeliveryRehearsalAction.PR_DRAFT
@@ -1905,10 +1883,10 @@ export class CliGovernanceRuntime {
       };
     }
 
-    const statusValue = this.readStageOutputString(deliveryOutput, "deliveryRehearsalStatus");
+    const statusValue = this.readStageOutputString(deliveryOutput, 'deliveryRehearsalStatus');
     const skipReasonValue = this.readStageOutputString(
       deliveryOutput,
-      "deliveryRehearsalSkipReason",
+      'deliveryRehearsalSkipReason',
     );
     const skipReason =
       skipReasonValue === CliDeliveryRehearsalSkipReason.DRY_RUN
@@ -1953,8 +1931,8 @@ export class CliGovernanceRuntime {
     reviewVerifyOutput: Record<string, unknown> | null,
   ): CliInlineReviewChainStatus | null {
     const statusValue =
-      this.readStageOutputString(reviewVerifyOutput, "reviewChainStatus") ??
-      this.readStageOutputString(reviewOutput, "reviewChainStatus");
+      this.readStageOutputString(reviewVerifyOutput, 'reviewChainStatus') ??
+      this.readStageOutputString(reviewOutput, 'reviewChainStatus');
     if (!statusValue) {
       return null;
     }
@@ -1977,8 +1955,8 @@ export class CliGovernanceRuntime {
     reviewVerifyOutput: Record<string, unknown> | null,
   ): CliInlineReviewChainSkipReason | null {
     const skipReasonValue =
-      this.readStageOutputString(reviewVerifyOutput, "reviewChainSkipReason") ??
-      this.readStageOutputString(reviewOutput, "reviewChainSkipReason");
+      this.readStageOutputString(reviewVerifyOutput, 'reviewChainSkipReason') ??
+      this.readStageOutputString(reviewOutput, 'reviewChainSkipReason');
     if (!skipReasonValue) {
       return null;
     }
@@ -1996,7 +1974,7 @@ export class CliGovernanceRuntime {
    * @returns Output as record when possible.
    */
   private resolveStageOutputRecord(output: unknown): Record<string, unknown> | null {
-    return output && typeof output === "object" ? (output as Record<string, unknown>) : null;
+    return output && typeof output === 'object' ? (output as Record<string, unknown>) : null;
   }
 
   /**
@@ -2009,7 +1987,7 @@ export class CliGovernanceRuntime {
     output: Record<string, unknown> | null,
     fieldName: string,
   ): string | null {
-    return output && typeof output[fieldName] === "string" && output[fieldName].trim().length > 0
+    return output && typeof output[fieldName] === 'string' && output[fieldName].trim().length > 0
       ? output[fieldName].trim()
       : null;
   }
@@ -2020,8 +1998,8 @@ export class CliGovernanceRuntime {
    * @returns Matching role config when found.
    */
   private resolveRunRoleConfig(
-    node: Pick<ProcessIrNode, "routeKey" | "roleProfileId" | "stageId">,
-  ): AdaptersConfig["roles"][number] | undefined {
+    node: Pick<ProcessIrNode, 'routeKey' | 'roleProfileId' | 'stageId'>,
+  ): AdaptersConfig['roles'][number] | undefined {
     const byProfileId = this.options.adaptersConfig.roles.find(
       (role) => role.roleProfileId === node.roleProfileId,
     );
@@ -2039,25 +2017,25 @@ export class CliGovernanceRuntime {
    * @returns Role id candidate used by route-binding lookup.
    */
   private resolveFallbackRunRoleId(
-    node: Pick<ProcessIrNode, "routeKey" | "roleProfileId" | "stageId">,
+    node: Pick<ProcessIrNode, 'routeKey' | 'roleProfileId' | 'stageId'>,
   ): string {
-    const normalizedProfileRoleId = node.roleProfileId.endsWith("-default")
-      ? node.roleProfileId.slice(0, Math.max(0, node.roleProfileId.length - "-default".length))
-      : node.roleProfileId.includes(".")
-        ? (node.roleProfileId.split(".").pop() ?? node.roleProfileId)
+    const normalizedProfileRoleId = node.roleProfileId.endsWith('-default')
+      ? node.roleProfileId.slice(0, Math.max(0, node.roleProfileId.length - '-default'.length))
+      : node.roleProfileId.includes('.')
+        ? (node.roleProfileId.split('.').pop() ?? node.roleProfileId)
         : node.roleProfileId;
     if (this.options.adaptersConfig.routing.roleBindings[normalizedProfileRoleId]) {
       return normalizedProfileRoleId;
     }
 
-    if (node.routeKey === "route.prepare" || node.stageId === "stage-prepare") {
-      return "planner";
+    if (node.routeKey === 'route.prepare' || node.stageId === 'stage-prepare') {
+      return 'planner';
     }
-    if (node.routeKey === "route.execute" || node.stageId === "stage-execute") {
-      return "coder";
+    if (node.routeKey === 'route.execute' || node.stageId === 'stage-execute') {
+      return 'coder';
     }
-    if (node.routeKey === "route.report" || node.stageId === "stage-report") {
-      return "reviewer";
+    if (node.routeKey === 'route.report' || node.stageId === 'stage-report') {
+      return 'reviewer';
     }
 
     return normalizedProfileRoleId;
@@ -2117,10 +2095,10 @@ export class CliGovernanceRuntime {
    */
   private evaluateRunRiskAndPolicy(
     changedPaths: string[],
-    executionId = "cli-run-policy-evaluation",
+    executionId = 'cli-run-policy-evaluation',
   ): {
-    riskEvaluation: ReturnType<ChangeRiskEvaluator["evaluate"]>;
-    policyResult: ReturnType<PolicyGateEngine["evaluate"]>;
+    riskEvaluation: ReturnType<ChangeRiskEvaluator['evaluate']>;
+    policyResult: ReturnType<PolicyGateEngine['evaluate']>;
   } {
     const changeRiskEvaluator = new ChangeRiskEvaluator();
     const policyGateEngine = new PolicyGateEngine();
@@ -2129,20 +2107,20 @@ export class CliGovernanceRuntime {
       changedPaths,
       fileCategories,
       requestedPermissions: [],
-      commandClass: "code_edit",
-      lockfileDelta: changedPaths.some((path) => path.endsWith("pnpm-lock.yaml")),
+      commandClass: 'code_edit',
+      lockfileDelta: changedPaths.some((path) => path.endsWith('pnpm-lock.yaml')),
       migrationDetected: changedPaths.some(
-        (path) => path.includes("migration") || path.includes("migrations"),
+        (path) => path.includes('migration') || path.includes('migrations'),
       ),
-      ciWorkflowChanged: changedPaths.some((path) => path.includes(".github/workflows/")),
-      releaseScriptChanged: changedPaths.some((path) => path.includes("scripts/release")),
+      ciWorkflowChanged: changedPaths.some((path) => path.includes('.github/workflows/')),
+      releaseScriptChanged: changedPaths.some((path) => path.includes('scripts/release')),
     });
     const policyResult = policyGateEngine.evaluate({
       riskEvaluation,
       context: {
         executionId,
-        stageId: "stage-policy-gate",
-        routeKey: "policy.gate.cli.run",
+        stageId: 'stage-policy-gate',
+        routeKey: 'policy.gate.cli.run',
         proposalApproved: true,
         reviewVerifyConsecutiveFailures: 0,
       },
@@ -2251,10 +2229,10 @@ export class CliGovernanceRuntime {
    */
   private async collectGitChangedPaths(): Promise<string[]> {
     try {
-      const result = await execFileAsync("git", ["status", "--porcelain"], {
+      const result = await execFileAsync('git', ['status', '--porcelain'], {
         cwd: this.options.currentWorkingDirectory,
         maxBuffer: 2 * 1024 * 1024,
-        encoding: "utf8",
+        encoding: 'utf8',
       });
       const changedPaths = result.stdout
         .split(/\r?\n/u)
@@ -2262,7 +2240,7 @@ export class CliGovernanceRuntime {
         .filter((line) => line.length > 3)
         .map((line) => line.slice(3))
         .map((line) => {
-          const renameArrowIndex = line.indexOf(" -> ");
+          const renameArrowIndex = line.indexOf(' -> ');
           return renameArrowIndex >= 0 ? line.slice(renameArrowIndex + 4) : line;
         })
         .map((line) => line.trim())
@@ -2323,27 +2301,27 @@ export class CliGovernanceRuntime {
     runAssembly: CliTaskDrivenRunAssembly,
     requestedTaskId: string | null,
   ): CliCommandResultCheck {
-    const taskIdLabel = runAssembly.taskContext?.taskId ?? requestedTaskId ?? "none";
+    const taskIdLabel = runAssembly.taskContext?.taskId ?? requestedTaskId ?? 'none';
     const contractSafeSummary = runAssembly.memoryContext?.contractSafeSummary;
     return {
-      id: "assembly",
+      id: 'assembly',
       status:
-        runAssembly.assemblyMode === "task_id_fallback"
+        runAssembly.assemblyMode === 'task_id_fallback'
           ? CliGovernanceCheckStatus.WARN
           : CliGovernanceCheckStatus.PASS,
-      detail: `mode=${runAssembly.assemblyMode} reason=${runAssembly.assemblyReason} task_id=${taskIdLabel} nodes=${runAssembly.processDefinition.nodes.length} input_references=${runAssembly.taskContext?.inputReferences.length ?? 0} input_artifacts=${runAssembly.taskContext?.inputArtifacts.length ?? 0} memory_context_selected=${contractSafeSummary?.selectedRecordCount ?? 0} memory_context_execution=${contractSafeSummary?.layerCounts.execution ?? 0} memory_context_session=${contractSafeSummary?.layerCounts.session ?? 0} memory_context_outcome=${runAssembly.memoryContext?.assemblyOutcome ?? "none"}`,
+      detail: `mode=${runAssembly.assemblyMode} reason=${runAssembly.assemblyReason} task_id=${taskIdLabel} nodes=${runAssembly.processDefinition.nodes.length} input_references=${runAssembly.taskContext?.inputReferences.length ?? 0} input_artifacts=${runAssembly.taskContext?.inputArtifacts.length ?? 0} memory_context_selected=${contractSafeSummary?.selectedRecordCount ?? 0} memory_context_execution=${contractSafeSummary?.layerCounts.execution ?? 0} memory_context_session=${contractSafeSummary?.layerCounts.session ?? 0} memory_context_outcome=${runAssembly.memoryContext?.assemblyOutcome ?? 'none'}`,
     };
   }
 
   private createMemoryPolicyCheck(runAssembly: CliTaskDrivenRunAssembly): CliCommandResultCheck {
     const policySummary = runAssembly.memoryContext?.policySummary;
     return {
-      id: "memory_policy",
+      id: 'memory_policy',
       status:
-        !policySummary || policySummary.overallAction === "allow"
+        !policySummary || policySummary.overallAction === 'allow'
           ? CliGovernanceCheckStatus.PASS
           : CliGovernanceCheckStatus.WARN,
-      detail: `action=${policySummary?.overallAction ?? "allow"} warn=${policySummary?.warningRecordCount ?? 0} redact=${policySummary?.redactedRecordCount ?? 0} block=${policySummary?.blockedRecordCount ?? 0}`,
+      detail: `action=${policySummary?.overallAction ?? 'allow'} warn=${policySummary?.warningRecordCount ?? 0} redact=${policySummary?.redactedRecordCount ?? 0} block=${policySummary?.blockedRecordCount ?? 0}`,
     };
   }
 
@@ -2435,7 +2413,7 @@ export class CliGovernanceRuntime {
    * @returns RFC3339 timestamp.
    */
   private toRfc3339SecondsTimestamp(value: Date): string {
-    return value.toISOString().replace(/\.\d{3}Z$/u, "Z");
+    return value.toISOString().replace(/\.\d{3}Z$/u, 'Z');
   }
 
   /**
@@ -2445,8 +2423,8 @@ export class CliGovernanceRuntime {
    */
   private toDisplayTimestamp(timestamp: string): string {
     const normalizedTimestamp = timestamp.trim();
-    const datePart = normalizedTimestamp.slice(0, 19).replace("T", " ");
-    if (normalizedTimestamp.endsWith("Z")) {
+    const datePart = normalizedTimestamp.slice(0, 19).replace('T', ' ');
+    if (normalizedTimestamp.endsWith('Z')) {
       return `${datePart} UTC+00:00`;
     }
 
@@ -2489,8 +2467,8 @@ export class CliGovernanceRuntime {
    * @returns Compact failure detail.
    */
   private formatExecFailureDetail(error: unknown): string {
-    if (!error || typeof error !== "object") {
-      return "failed";
+    if (!error || typeof error !== 'object') {
+      return 'failed';
     }
 
     const candidate = error as {
@@ -2500,8 +2478,8 @@ export class CliGovernanceRuntime {
       message?: string;
     };
     const output = [candidate.stdout?.trim(), candidate.stderr?.trim()]
-      .filter((value): value is string => typeof value === "string" && value.length > 0)
-      .join(" | ");
+      .filter((value): value is string => typeof value === 'string' && value.length > 0)
+      .join(' | ');
     if (output.length > 0) {
       return output;
     }
@@ -2510,6 +2488,6 @@ export class CliGovernanceRuntime {
       return `exit_code=${candidate.code}`;
     }
 
-    return candidate.message?.trim() || "failed";
+    return candidate.message?.trim() || 'failed';
   }
 }

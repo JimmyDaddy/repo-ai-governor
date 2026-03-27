@@ -4,13 +4,13 @@ import {
   type ProcessIrEdge,
   type ProcessIrNode,
   ProcessNodeType,
-} from "@repo-ai-governor/core-process";
+} from '@repo-ai-governor/core-process';
 import {
   GovernorErrorCode,
   RuntimeError,
   type StandardizedError,
   standardizeError,
-} from "@repo-ai-governor/shared";
+} from '@repo-ai-governor/shared';
 import {
   DEFAULT_RUNTIME_FLOW_TIMEOUT_MS,
   DEFAULT_RUNTIME_MAX_TRANSITIONS,
@@ -18,8 +18,8 @@ import {
   RuntimeExecutionStatus,
   RuntimeStageStatus,
   RuntimeTimeoutScope,
-} from "./constants/index.js";
-import { DefaultRuntimeNowProvider, type RuntimeNowProvider } from "./providers/index.js";
+} from './constants/index.js';
+import { DefaultRuntimeNowProvider, type RuntimeNowProvider } from './providers/index.js';
 import type {
   RuntimeConditionResolver,
   RuntimeExecuteOptions,
@@ -29,13 +29,13 @@ import type {
   RuntimeStageHandler,
   RuntimeStageInputMap,
   RuntimeStageResult,
-} from "./types/index.js";
+} from './types/index.js';
 
 interface ResolvedRuntimeConfig {
   stageTimeoutMs: number;
   flowTimeoutMs: number;
   maxTransitions: number;
-  roleRegistry?: RuntimeExecuteOptions["roleRegistry"];
+  roleRegistry?: RuntimeExecuteOptions['roleRegistry'];
   signal?: AbortSignal;
   stageInputs: RuntimeStageInputMap;
   conditionResolver?: RuntimeConditionResolver;
@@ -153,7 +153,7 @@ export class ProcessRuntimeEngine {
 
     throw new RuntimeError(
       GovernorErrorCode.PROCESS_RUNTIME_IR_CONTAINS_COMPILE_ERRORS,
-      "Compiled IR contains blocking compile errors and cannot be executed.",
+      'Compiled IR contains blocking compile errors and cannot be executed.',
       {
         processId: compiledIr.processId,
         executionId: compiledIr.executionId,
@@ -527,7 +527,7 @@ export class ProcessRuntimeEngine {
     if (runtimeConfig.signal?.aborted) {
       throw new RuntimeError(
         GovernorErrorCode.PROCESS_RUNTIME_CANCELLED,
-        "Runtime execution was cancelled.",
+        'Runtime execution was cancelled.',
         {
           processId: compiledIr.processId,
           executionId: compiledIr.executionId,
@@ -575,7 +575,7 @@ export class ProcessRuntimeEngine {
   private resolveRole(
     node: ProcessIrNode,
     compiledIr: ProcessCompiledIr,
-    roleRegistry: RuntimeExecuteOptions["roleRegistry"],
+    roleRegistry: RuntimeExecuteOptions['roleRegistry'],
   ) {
     if (!roleRegistry) {
       return undefined;
@@ -713,5 +713,5 @@ export class ProcessRuntimeEngine {
  * @returns RFC3339 timestamp without milliseconds.
  */
 function formatRfc3339Seconds(value: Date): string {
-  return value.toISOString().replace(/\.\d{3}Z$/u, "Z");
+  return value.toISOString().replace(/\.\d{3}Z$/u, 'Z');
 }

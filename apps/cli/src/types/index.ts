@@ -1,4 +1,4 @@
-export type { IdeWrapperCommandName } from "./aliases/index.js";
+export type { IdeWrapperCommandName } from './aliases/index.js';
 export type {
   CliAdapterRoleEvaluation,
   CliAdapterToolProbeSnapshot,
@@ -39,4 +39,4 @@ export type {
   IdeCommandWrapperRequest,
   IdeStandardsInjectionPayload,
   IdeStandardsSourceDescriptor,
-} from "./interfaces/index.js";
+} from './interfaces/index.js';

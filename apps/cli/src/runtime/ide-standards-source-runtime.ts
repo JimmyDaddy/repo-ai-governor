@@ -1,13 +1,13 @@
-import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
+import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import {
   IDE_WRAPPER_DEFAULT_STANDARDS_SOURCE_IDS,
   IDE_WRAPPER_SELF_HOSTED_STANDARDS_SOURCE_REGISTRY,
   type IdeStandardsSourceId,
-} from "../constants/ide-standards-source.constant.js";
+} from '../constants/ide-standards-source.constant.js';
 import type {
   IdeResolvedStandardsSource,
   IdeStandardsSourceDescriptor,
-} from "../types/interfaces/ide-command-wrapper.interface.js";
+} from '../types/interfaces/ide-command-wrapper.interface.js';
 
 /**
  * Resolves stable standards source IDs into self-hosted file mappings for wrapper metadata.

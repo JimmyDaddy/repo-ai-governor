@@ -12,4 +12,4 @@ export type {
   MemoryProviderRegistryLoadRequest,
   MemoryProviderRegistryLoadResult,
   MemoryProviderRegistryOptions,
-} from "./memory-provider-registry.interface.js";
+} from './memory-provider-registry.interface.js';

@@ -1,4 +1,4 @@
-import type { ArtifactIndexStore, ArtifactRegistryRecord } from "./types/index.js";
+import type { ArtifactIndexStore, ArtifactRegistryRecord } from './types/index.js';
 
 /**
  * Provides an in-memory artifact index store for deterministic unit tests and local runtime.

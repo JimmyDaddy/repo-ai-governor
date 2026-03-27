@@ -1,4 +1,4 @@
-import type { AgentsProjectionNowProviderContract } from "../types/index.js";
+import type { AgentsProjectionNowProviderContract } from '../types/index.js';
 
 /**
  * Provides clock samples used by standards projection metadata.

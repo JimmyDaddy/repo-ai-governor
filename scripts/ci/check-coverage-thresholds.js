@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 
-import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
-import { gateFail, gateInfo, gatePass } from "../governance/gate-output.js";
+import { gateFail, gateInfo, gatePass } from '../governance/gate-output.js';
 
-const GATE_NAME = "coverage-thresholds";
-const COVERAGE_SUMMARY_PATH = "coverage/coverage-summary.json";
-const COVERAGE_THRESHOLD_CONFIG_PATH = "scripts/ci/coverage-thresholds.json";
-const COVERAGE_METRIC_NAMES = ["lines", "statements", "functions", "branches"];
+const GATE_NAME = 'coverage-thresholds';
+const COVERAGE_SUMMARY_PATH = 'coverage/coverage-summary.json';
+const COVERAGE_THRESHOLD_CONFIG_PATH = 'scripts/ci/coverage-thresholds.json';
+const COVERAGE_METRIC_NAMES = ['lines', 'statements', 'functions', 'branches'];
 
 /**
  * Reads one JSON file from repository root.
@@ -21,7 +21,7 @@ function readJsonFile(relativePath) {
     throw new Error(`Required JSON file is missing: ${relativePath}`);
   }
 
-  const rawContent = readFileSync(absolutePath, "utf8");
+  const rawContent = readFileSync(absolutePath, 'utf8');
   return JSON.parse(rawContent);
 }
 
@@ -31,12 +31,12 @@ function readJsonFile(relativePath) {
  */
 function readCoverageThresholds() {
   const parsedConfig = readJsonFile(COVERAGE_THRESHOLD_CONFIG_PATH);
-  if (!parsedConfig || typeof parsedConfig !== "object") {
-    throw new Error("Coverage threshold config must be a JSON object.");
+  if (!parsedConfig || typeof parsedConfig !== 'object') {
+    throw new Error('Coverage threshold config must be a JSON object.');
   }
 
   const minimum = parsedConfig.minimum;
-  if (!minimum || typeof minimum !== "object") {
+  if (!minimum || typeof minimum !== 'object') {
     throw new Error('Coverage threshold config must define object field "minimum".');
   }
 
@@ -44,7 +44,7 @@ function readCoverageThresholds() {
   const thresholds = {};
   for (const metricName of COVERAGE_METRIC_NAMES) {
     const thresholdValue = minimum[metricName];
-    if (typeof thresholdValue !== "number" || !Number.isFinite(thresholdValue)) {
+    if (typeof thresholdValue !== 'number' || !Number.isFinite(thresholdValue)) {
       throw new Error(`Coverage threshold "minimum.${metricName}" must be a finite number.`);
     }
 
@@ -60,12 +60,12 @@ function readCoverageThresholds() {
  */
 function readCoveragePercentages() {
   const summaryJson = readJsonFile(COVERAGE_SUMMARY_PATH);
-  if (!summaryJson || typeof summaryJson !== "object") {
-    throw new Error("Coverage summary payload is invalid.");
+  if (!summaryJson || typeof summaryJson !== 'object') {
+    throw new Error('Coverage summary payload is invalid.');
   }
 
   const total = summaryJson.total;
-  if (!total || typeof total !== "object") {
+  if (!total || typeof total !== 'object') {
     throw new Error('Coverage summary must define object field "total".');
   }
 
@@ -73,12 +73,12 @@ function readCoveragePercentages() {
   const percentages = {};
   for (const metricName of COVERAGE_METRIC_NAMES) {
     const metricObject = total[metricName];
-    if (!metricObject || typeof metricObject !== "object") {
+    if (!metricObject || typeof metricObject !== 'object') {
       throw new Error(`Coverage summary is missing total metric "${metricName}".`);
     }
 
     const percentage = metricObject.pct;
-    if (typeof percentage !== "number" || !Number.isFinite(percentage)) {
+    if (typeof percentage !== 'number' || !Number.isFinite(percentage)) {
       throw new Error(`Coverage metric "${metricName}.pct" must be a finite number.`);
     }
 
@@ -120,7 +120,7 @@ try {
     GATE_NAME,
     `coverage=${JSON.stringify(percentages)} thresholds=${JSON.stringify(thresholds)}`,
   );
-  gatePass(GATE_NAME, "coverage thresholds check passed.");
+  gatePass(GATE_NAME, 'coverage thresholds check passed.');
 } catch (error) {
   const errorMessage = error instanceof Error ? error.message : String(error);
   gateFail(GATE_NAME, errorMessage);

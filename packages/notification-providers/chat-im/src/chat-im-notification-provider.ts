@@ -1,19 +1,19 @@
-import { setTimeout as delay } from "node:timers/promises";
+import { setTimeout as delay } from 'node:timers/promises';
 
 import {
   NotificationChannel,
   type NotificationProvider,
   type NotificationProviderReceipt,
   type NotificationProviderRequest,
-} from "@repo-ai-governor/notification-dispatcher";
-import { GovernorErrorCode, RuntimeError, standardizeError } from "@repo-ai-governor/shared";
+} from '@repo-ai-governor/notification-dispatcher';
+import { GovernorErrorCode, RuntimeError, standardizeError } from '@repo-ai-governor/shared';
 import {
   CHAT_IM_NOTIFICATION_DEFAULT_BACKOFF_BASE_MS,
   CHAT_IM_NOTIFICATION_DEFAULT_PROVIDER_ID,
   CHAT_IM_NOTIFICATION_DEFAULT_TIMEOUT_MS,
   CHAT_IM_NOTIFICATION_MAX_RESPONSE_SNIPPET_LENGTH,
-} from "./constants/index.js";
-import type { ChatImNotificationProviderOptions } from "./types/index.js";
+} from './constants/index.js';
+import type { ChatImNotificationProviderOptions } from './types/index.js';
 
 interface ResolvedChatImNotificationProviderOptions {
   providerId: string;
@@ -51,7 +51,7 @@ export class ChatImNotificationProvider implements NotificationProvider {
 
     try {
       const response = await fetch(this.resolvedOptions.endpointUrl, {
-        method: "POST",
+        method: 'POST',
         headers: this.createRequestHeaders(),
         body: JSON.stringify(this.createRequestBody(request)),
         signal: controller.signal,
@@ -80,30 +80,30 @@ export class ChatImNotificationProvider implements NotificationProvider {
   private resolveOptions(
     options: ChatImNotificationProviderOptions,
   ): ResolvedChatImNotificationProviderOptions {
-    if (!options || typeof options !== "object") {
+    if (!options || typeof options !== 'object') {
       throw new RuntimeError(
         GovernorErrorCode.NOTIFICATION_DISPATCH_INPUT_INVALID,
-        "ChatImNotificationProvider requires one non-null options object.",
+        'ChatImNotificationProvider requires one non-null options object.',
       );
     }
 
     const providerId = this.readRequiredString(
       options.providerId ?? CHAT_IM_NOTIFICATION_DEFAULT_PROVIDER_ID,
-      "providerId",
+      'providerId',
     );
-    const endpointUrl = this.readUrl(options.endpointUrl, "endpointUrl");
+    const endpointUrl = this.readUrl(options.endpointUrl, 'endpointUrl');
     const authToken =
       options.authToken === undefined
         ? null
-        : this.readRequiredString(options.authToken, "authToken");
+        : this.readRequiredString(options.authToken, 'authToken');
     const headers = this.normalizeHeaders(options.headers);
     const timeoutMs = this.readPositiveInteger(
       options.timeoutMs ?? CHAT_IM_NOTIFICATION_DEFAULT_TIMEOUT_MS,
-      "timeoutMs",
+      'timeoutMs',
     );
     const backoffBaseMs = this.readNonNegativeInteger(
       options.backoffBaseMs ?? CHAT_IM_NOTIFICATION_DEFAULT_BACKOFF_BASE_MS,
-      "backoffBaseMs",
+      'backoffBaseMs',
     );
 
     return {
@@ -122,10 +122,10 @@ export class ChatImNotificationProvider implements NotificationProvider {
    * @returns Void.
    */
   private validateRequest(request: NotificationProviderRequest): void {
-    if (!request || typeof request !== "object") {
+    if (!request || typeof request !== 'object') {
       throw new RuntimeError(
         GovernorErrorCode.NOTIFICATION_DISPATCH_INPUT_INVALID,
-        "Chat-im notification request must be a non-null object.",
+        'Chat-im notification request must be a non-null object.',
       );
     }
 
@@ -170,7 +170,7 @@ export class ChatImNotificationProvider implements NotificationProvider {
    */
   private createRequestHeaders(): Record<string, string> {
     return {
-      "content-type": "application/json",
+      'content-type': 'application/json',
       ...(this.resolvedOptions.authToken
         ? {
             authorization: `Bearer ${this.resolvedOptions.authToken}`,
@@ -251,7 +251,7 @@ export class ChatImNotificationProvider implements NotificationProvider {
     responseBodyText: string,
   ): string | undefined {
     const headerMessageId =
-      response.headers.get("x-request-id") ?? response.headers.get("x-message-id");
+      response.headers.get('x-request-id') ?? response.headers.get('x-message-id');
     if (headerMessageId) {
       return headerMessageId;
     }
@@ -264,7 +264,7 @@ export class ChatImNotificationProvider implements NotificationProvider {
       const parsedBody = JSON.parse(responseBodyText) as Record<string, unknown>;
       const messageIdCandidate =
         parsedBody.id ?? parsedBody.messageId ?? parsedBody.notificationId ?? null;
-      return typeof messageIdCandidate === "string" && messageIdCandidate.trim().length > 0
+      return typeof messageIdCandidate === 'string' && messageIdCandidate.trim().length > 0
         ? messageIdCandidate.trim()
         : undefined;
     } catch {
@@ -279,7 +279,7 @@ export class ChatImNotificationProvider implements NotificationProvider {
    * @returns Trimmed string.
    */
   private readRequiredString(value: unknown, fieldName: string): string {
-    if (typeof value !== "string") {
+    if (typeof value !== 'string') {
       throw new RuntimeError(
         GovernorErrorCode.NOTIFICATION_DISPATCH_INPUT_INVALID,
         `Field "${fieldName}" must be a string.`,
@@ -368,7 +368,7 @@ export class ChatImNotificationProvider implements NotificationProvider {
       return {};
     }
 
-    if (!headers || typeof headers !== "object" || Array.isArray(headers)) {
+    if (!headers || typeof headers !== 'object' || Array.isArray(headers)) {
       throw new RuntimeError(
         GovernorErrorCode.NOTIFICATION_DISPATCH_INPUT_INVALID,
         'Field "headers" must be a string-record object when provided.',
@@ -377,7 +377,7 @@ export class ChatImNotificationProvider implements NotificationProvider {
 
     const normalizedHeaders: Record<string, string> = {};
     for (const [headerName, headerValue] of Object.entries(headers as Record<string, unknown>)) {
-      const normalizedHeaderName = this.readRequiredString(headerName, "headers.key");
+      const normalizedHeaderName = this.readRequiredString(headerName, 'headers.key');
       const normalizedHeaderValue = this.readRequiredString(headerValue, `headers.${headerName}`);
       normalizedHeaders[normalizedHeaderName] = normalizedHeaderValue;
     }

@@ -9,11 +9,11 @@ import type {
   StandardsUpgradeRequiredAction,
   StandardsUpgradeRollbackStrategy,
   StandardsVersionPinMode,
-} from "../../constants/index.js";
+} from '../../constants/index.js';
 import type {
   StandardsRenderInterpolation,
   StandardsRuleLocalizedTemplateMap,
-} from "../aliases/index.js";
+} from '../aliases/index.js';
 
 /**
  * Defines one standards rule with semantic identity and localized templates.

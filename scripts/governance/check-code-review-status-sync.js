@@ -1,24 +1,24 @@
 #!/usr/bin/env node
 
-import { existsSync, readFileSync, readdirSync } from "node:fs";
-import { join, relative, resolve } from "node:path";
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { join, relative, resolve } from 'node:path';
 
-import { gateFail, gateInfo, gatePass } from "./gate-output.js";
+import { gateFail, gateInfo, gatePass } from './gate-output.js';
 
-const GATE_NAME = "code-review-status-sync";
-const DEV_CONTEXT_ROOT = ".repo-ai-governor/context/dev";
+const GATE_NAME = 'code-review-status-sync';
+const DEV_CONTEXT_ROOT = '.repo-ai-governor/context/dev';
 const REVIEW_FILE_STATUS_RULES = [
   {
-    prefixes: ["resolved_code_review_", "resolved_review_"],
-    expectedStatus: "resolved",
+    prefixes: ['resolved_code_review_', 'resolved_review_'],
+    expectedStatus: 'resolved',
   },
   {
-    prefixes: ["verified_code_review_", "verified_review_"],
-    expectedStatus: "verified",
+    prefixes: ['verified_code_review_', 'verified_review_'],
+    expectedStatus: 'verified',
   },
   {
-    prefixes: ["code_review_", "review_"],
-    expectedStatus: "review_pending",
+    prefixes: ['code_review_', 'review_'],
+    expectedStatus: 'review_pending',
   },
 ];
 
@@ -38,7 +38,7 @@ function collectReviewDirectories(directoryPath) {
     }
 
     const entryPath = join(directoryPath, entry.name);
-    if (entry.name === "review") {
+    if (entry.name === 'review') {
       reviewDirectories.push(entryPath);
       continue;
     }
@@ -71,7 +71,7 @@ function resolveExpectedStatus(fileName) {
  * @returns {string | null}
  */
 function readReviewStatus(filePath) {
-  const content = readFileSync(filePath, "utf8");
+  const content = readFileSync(filePath, 'utf8');
   const lines = content.split(/\r?\n/);
   const headingIndex = lines.findIndex((line) => /^#\s+/.test(line.trim()));
   if (headingIndex < 0) {
@@ -97,7 +97,7 @@ function readReviewStatus(filePath) {
       continue;
     }
 
-    if (trimmedLine.startsWith("## ")) {
+    if (trimmedLine.startsWith('## ')) {
       break;
     }
 
@@ -108,7 +108,7 @@ function readReviewStatus(filePath) {
     }
 
     sawMetadataLine = true;
-    if (metadataMatch[1].trim().toLowerCase() === "status") {
+    if (metadataMatch[1].trim().toLowerCase() === 'status') {
       return metadataMatch[2].trim();
     }
   }
@@ -129,7 +129,7 @@ try {
 
   for (const reviewDirectory of reviewDirectories) {
     for (const entry of readdirSync(reviewDirectory, { withFileTypes: true })) {
-      if (!entry.isFile() || !entry.name.endsWith(".md")) {
+      if (!entry.isFile() || !entry.name.endsWith('.md')) {
         continue;
       }
 
@@ -144,7 +144,7 @@ try {
       const actualStatus = readReviewStatus(filePath);
       if (actualStatus !== expectedStatus) {
         mismatches.push(
-          `${relative(process.cwd(), filePath)} => expected \`${expectedStatus}\`, found \`${actualStatus ?? "<missing>"}\``,
+          `${relative(process.cwd(), filePath)} => expected \`${expectedStatus}\`, found \`${actualStatus ?? '<missing>'}\``,
         );
       }
     }
@@ -152,14 +152,14 @@ try {
 
   gateInfo(
     GATE_NAME,
-    `Scanned ${scannedReviewFileCount} lifecycle review artifact(s) across ${reviewDirectories.length} review director${reviewDirectories.length === 1 ? "y" : "ies"}.`,
+    `Scanned ${scannedReviewFileCount} lifecycle review artifact(s) across ${reviewDirectories.length} review director${reviewDirectories.length === 1 ? 'y' : 'ies'}.`,
   );
 
   if (mismatches.length > 0) {
-    throw new Error(`Status drift detected:\n- ${mismatches.join("\n- ")}`);
+    throw new Error(`Status drift detected:\n- ${mismatches.join('\n- ')}`);
   }
 
-  gatePass(GATE_NAME, "Review file prefixes and Status metadata are synchronized.");
+  gatePass(GATE_NAME, 'Review file prefixes and Status metadata are synchronized.');
 } catch (error) {
   const errorMessage = error instanceof Error ? error.message : String(error);
   gateFail(GATE_NAME, errorMessage);

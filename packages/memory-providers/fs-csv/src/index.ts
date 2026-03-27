@@ -1,7 +1,7 @@
-import { FsCsvMemoryStoreProvider } from "./fs-csv-memory-store-provider.js";
+import { FsCsvMemoryStoreProvider } from './fs-csv-memory-store-provider.js';
 
-export { FsCsvMemoryStoreProvider } from "./fs-csv-memory-store-provider.js";
-export type { FsCsvMemoryStoreProviderOptions } from "./types/index.js";
+export { FsCsvMemoryStoreProvider } from './fs-csv-memory-store-provider.js';
+export type { FsCsvMemoryStoreProviderOptions } from './types/index.js';
 
 /**
  * Creates one fs-csv memory provider instance through the plugin factory contract.

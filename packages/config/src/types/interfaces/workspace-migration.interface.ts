@@ -1,10 +1,10 @@
-import type { StandardizedError } from "@repo-ai-governor/shared";
+import type { StandardizedError } from '@repo-ai-governor/shared';
 import type {
   WorkspaceMigrationStep,
   WorkspaceMigrationStepStatus,
-} from "../../constants/index.js";
-import type { GovernorConfig, WorkspaceConfig } from "./governor.interface.js";
-import type { ResolvedWorkspace } from "./workspace.interface.js";
+} from '../../constants/index.js';
+import type { GovernorConfig, WorkspaceConfig } from './governor.interface.js';
+import type { ResolvedWorkspace } from './workspace.interface.js';
 
 /**
  * Defines one step result in workspace migration chain execution.

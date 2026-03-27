@@ -1,1 +1,1 @@
-export type { ChatImNotificationProviderOptions } from "./interfaces/index.js";
+export type { ChatImNotificationProviderOptions } from './interfaces/index.js';

@@ -1,4 +1,4 @@
-import { ConfigError, GovernorErrorCode } from "@repo-ai-governor/shared";
+import { ConfigError, GovernorErrorCode } from '@repo-ai-governor/shared';
 import {
   DEFAULT_WORKSPACE_MIGRATION_POLICY,
   GOVERNOR_LATEST_SCHEMA_VERSION,
@@ -8,8 +8,8 @@ import {
   UpgradeConfirmationReason,
   UpgradeMigrationSuggestionType,
   UpgradeSchemaDiffType,
-} from "./constants/index.js";
-import { SchemaValidator } from "./schema-validator.js";
+} from './constants/index.js';
+import { SchemaValidator } from './schema-validator.js';
 import type {
   GovernorConfig,
   GovernorProfile,
@@ -18,7 +18,7 @@ import type {
   UpgradeSchemaDiffItem,
   UpgradeSchemaDiffOptions,
   UpgradeSchemaDiffResult,
-} from "./types/interfaces/index.js";
+} from './types/interfaces/index.js';
 
 const SUPPORTED_FORWARD_UPGRADE_PATHS = new Set<string>([
   `${GovernorSchemaVersion.V1_0}->${GovernorSchemaVersion.V1_1}`,
@@ -98,26 +98,26 @@ export class UpgradeSchemaDiffService {
     }
 
     diffs.push({
-      path: "/schemaVersion",
+      path: '/schemaVersion',
       diffType: UpgradeSchemaDiffType.CHANGED,
-      reason: "schemaVersion controls downstream validator behavior and upgrade compatibility.",
+      reason: 'schemaVersion controls downstream validator behavior and upgrade compatibility.',
       fromValue: sourceVersion,
       toValue: targetVersion,
     });
     suggestions.push({
-      suggestionId: "schema-version-bump",
-      path: "/schemaVersion",
+      suggestionId: 'schema-version-bump',
+      path: '/schemaVersion',
       suggestionType: UpgradeMigrationSuggestionType.CONFIRM_REQUIRED,
       reason:
-        "Schema version update affects validator contract and should be explicitly acknowledged.",
+        'Schema version update affects validator contract and should be explicitly acknowledged.',
       fromValue: sourceVersion,
       toValue: targetVersion,
     });
     confirmationItems.push({
       reason: UpgradeConfirmationReason.SCHEMA_VERSION_BUMP,
       message:
-        "Confirm schemaVersion bump before writing back config, because downstream validators will switch to new contract.",
-      paths: ["/schemaVersion"],
+        'Confirm schemaVersion bump before writing back config, because downstream validators will switch to new contract.',
+      paths: ['/schemaVersion'],
       blocking: false,
     });
   }
@@ -144,18 +144,18 @@ export class UpgradeSchemaDiffService {
 
     if (!sourceConfig.workspace.migrationPolicy) {
       diffs.push({
-        path: "/workspace/migrationPolicy",
+        path: '/workspace/migrationPolicy',
         diffType: UpgradeSchemaDiffType.ADDED,
         reason:
-          "v1.1 workspace contract requires explicit migration policy for deterministic rollback behavior.",
+          'v1.1 workspace contract requires explicit migration policy for deterministic rollback behavior.',
         toValue: DEFAULT_WORKSPACE_MIGRATION_POLICY,
       });
       suggestions.push({
-        suggestionId: "workspace-migration-policy-default",
-        path: "/workspace/migrationPolicy",
+        suggestionId: 'workspace-migration-policy-default',
+        path: '/workspace/migrationPolicy',
         suggestionType: UpgradeMigrationSuggestionType.AUTO_APPLY,
         reason:
-          "Auto-fill migrationPolicy with repository baseline to keep migration semantics explicit.",
+          'Auto-fill migrationPolicy with repository baseline to keep migration semantics explicit.',
         toValue: DEFAULT_WORKSPACE_MIGRATION_POLICY,
       });
       autoMigratedConfig.workspace = {
@@ -177,7 +177,7 @@ export class UpgradeSchemaDiffService {
         path: `/profiles/${profileId}/workspace/migrationPolicy`,
         diffType: UpgradeSchemaDiffType.ADDED,
         reason:
-          "Profile-level workspace overrides should keep migration policy aligned with repository baseline.",
+          'Profile-level workspace overrides should keep migration policy aligned with repository baseline.',
         toValue: DEFAULT_WORKSPACE_MIGRATION_POLICY,
       });
       suggestions.push({
@@ -185,7 +185,7 @@ export class UpgradeSchemaDiffService {
         path: `/profiles/${profileId}/workspace/migrationPolicy`,
         suggestionType: UpgradeMigrationSuggestionType.AUTO_APPLY,
         reason:
-          "Auto-fill profile migrationPolicy to prevent profile-switch drift in workspace migration semantics.",
+          'Auto-fill profile migrationPolicy to prevent profile-switch drift in workspace migration semantics.',
         toValue: DEFAULT_WORKSPACE_MIGRATION_POLICY,
       });
 

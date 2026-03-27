@@ -2,7 +2,7 @@ import type {
   AgentAvailabilityStatus,
   AgentCliExecOperation,
   AgentCliExecutionMode,
-} from "../../constants/index.js";
+} from '../../constants/index.js';
 
 /**
  * Defines the shared request contract for CLI-backed adapter exec runners.

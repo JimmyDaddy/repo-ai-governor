@@ -2,7 +2,7 @@ import {
   GovernorErrorCode,
   WorkspaceMigrationPolicy,
   standardizeError,
-} from "@repo-ai-governor/shared";
+} from '@repo-ai-governor/shared';
 import {
   type GovernorConfig,
   GovernorSchemaVersion,
@@ -11,7 +11,7 @@ import {
   UpgradeSchemaDiffService,
   UpgradeSchemaDiffType,
   WorkspaceMode,
-} from "../src/index.js";
+} from '../src/index.js';
 
 /**
  * Creates a minimal config fixture for schema-upgrade smoke tests.
@@ -30,16 +30,16 @@ function createConfigFixture(schemaVersion: GovernorSchemaVersion): GovernorConf
         : {}),
     },
     i18n: {
-      runtimeEngine: "i18next",
-      defaultLocale: "zh-CN",
-      fallbackLocale: "en-US",
-      supportedLocales: ["zh-CN", "en-US"],
+      runtimeEngine: 'i18next',
+      defaultLocale: 'zh-CN',
+      fallbackLocale: 'en-US',
+      supportedLocales: ['zh-CN', 'en-US'],
     },
   };
 }
 
-describe("UpgradeSchemaDiffService smoke", () => {
-  it("produces schema diff with auto-migration suggestions and confirm decision", () => {
+describe('UpgradeSchemaDiffService smoke', () => {
+  it('produces schema diff with auto-migration suggestions and confirm decision', () => {
     const service = new UpgradeSchemaDiffService();
     const sourceConfig: GovernorConfig = {
       ...createConfigFixture(GovernorSchemaVersion.V1_0),
@@ -61,18 +61,18 @@ describe("UpgradeSchemaDiffService smoke", () => {
     expect(report.diffs).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          path: "/schemaVersion",
+          path: '/schemaVersion',
           diffType: UpgradeSchemaDiffType.CHANGED,
           fromValue: GovernorSchemaVersion.V1_0,
           toValue: GovernorSchemaVersion.V1_1,
         }),
         expect.objectContaining({
-          path: "/workspace/migrationPolicy",
+          path: '/workspace/migrationPolicy',
           diffType: UpgradeSchemaDiffType.ADDED,
           toValue: WorkspaceMigrationPolicy.COPY_VERIFY_SWITCH_ROLLBACK,
         }),
         expect.objectContaining({
-          path: "/profiles/ci/workspace/migrationPolicy",
+          path: '/profiles/ci/workspace/migrationPolicy',
           diffType: UpgradeSchemaDiffType.ADDED,
           toValue: WorkspaceMigrationPolicy.COPY_VERIFY_SWITCH_ROLLBACK,
         }),
@@ -81,15 +81,15 @@ describe("UpgradeSchemaDiffService smoke", () => {
     expect(report.suggestions).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          path: "/schemaVersion",
+          path: '/schemaVersion',
           suggestionType: UpgradeMigrationSuggestionType.CONFIRM_REQUIRED,
         }),
         expect.objectContaining({
-          path: "/workspace/migrationPolicy",
+          path: '/workspace/migrationPolicy',
           suggestionType: UpgradeMigrationSuggestionType.AUTO_APPLY,
         }),
         expect.objectContaining({
-          path: "/profiles/ci/workspace/migrationPolicy",
+          path: '/profiles/ci/workspace/migrationPolicy',
           suggestionType: UpgradeMigrationSuggestionType.AUTO_APPLY,
         }),
       ]),
@@ -102,7 +102,7 @@ describe("UpgradeSchemaDiffService smoke", () => {
     );
   });
 
-  it("returns allow decision when source config already matches latest schema baseline", () => {
+  it('returns allow decision when source config already matches latest schema baseline', () => {
     const service = new UpgradeSchemaDiffService();
 
     const report = service.analyze({
@@ -115,7 +115,7 @@ describe("UpgradeSchemaDiffService smoke", () => {
     expect(report.confirmationDecision).toBe(UpgradeConfirmationDecision.ALLOW);
   });
 
-  it("throws standardized error when upgrade path is unsupported", () => {
+  it('throws standardized error when upgrade path is unsupported', () => {
     const service = new UpgradeSchemaDiffService();
     let observedErrorCode = GovernorErrorCode.UNKNOWN;
 

@@ -21,4 +21,4 @@ export type {
   MemoryRecallResultSummary,
   MemoryRecalledRecord,
   MemorySourceRef,
-} from "./memory-semantics.interface.js";
+} from './memory-semantics.interface.js';

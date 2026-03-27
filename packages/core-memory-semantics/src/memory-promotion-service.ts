@@ -1,4 +1,4 @@
-import { type MemoryManager, MemoryScope } from "@repo-ai-governor/core-memory";
+import { type MemoryManager, MemoryScope } from '@repo-ai-governor/core-memory';
 import {
   MEMORY_PROMOTION_FORBIDDEN_SENSITIVITY_LABELS,
   MemoryContextAssemblyOutcome,
@@ -7,14 +7,14 @@ import {
   MemoryPromotionPhase,
   MemoryRecallKind,
   MemoryRecallLayer,
-} from "./constants/index.js";
+} from './constants/index.js';
 import type {
   MemoryContextContractSafeSummaryItem,
   MemoryPromotionCandidateDecision,
   MemoryPromotionPhaseResult,
   MemoryPromotionRequest,
   MemoryPromotionResult,
-} from "./types/index.js";
+} from './types/index.js';
 
 interface SessionPromotionProjectionItem {
   sourceRecordId: string;
@@ -58,7 +58,7 @@ export class MemoryPromotionService {
         ? await this.persistSessionSummary(
             request.sessionId,
             request.contextSummary.executionId,
-            request.promotedBy ?? "memory_promotion_service",
+            request.promotedBy ?? 'memory_promotion_service',
             candidates.filter((candidate) =>
               mergeCandidates.some(
                 (decision) => decision.sourceRecordId === candidate.sourceRecordId,
@@ -124,7 +124,7 @@ export class MemoryPromotionService {
    * @returns Promotion candidate decision.
    */
   private decideCandidate(
-    candidate: ReturnType<MemoryPromotionService["captureCandidates"]>[number],
+    candidate: ReturnType<MemoryPromotionService['captureCandidates']>[number],
     sessionId: string | null,
   ): MemoryPromotionCandidateDecision {
     const validation = this.validateCandidate(candidate);
@@ -138,7 +138,7 @@ export class MemoryPromotionService {
         targetScope: null,
         targetKey: null,
         mergeStrategy: null,
-        decisionReason: validation.failureReasons[0] ?? "promotion_validation_failed",
+        decisionReason: validation.failureReasons[0] ?? 'promotion_validation_failed',
         validation,
       };
     }
@@ -153,7 +153,7 @@ export class MemoryPromotionService {
         targetScope: MemoryScope.SESSION,
         targetKey: sessionId,
         mergeStrategy: null,
-        decisionReason: "already_within_session_layer",
+        decisionReason: 'already_within_session_layer',
         validation,
       };
     }
@@ -168,7 +168,7 @@ export class MemoryPromotionService {
         targetScope: null,
         targetKey: null,
         mergeStrategy: null,
-        decisionReason: "session_target_missing",
+        decisionReason: 'session_target_missing',
         validation,
       };
     }
@@ -183,7 +183,7 @@ export class MemoryPromotionService {
         targetScope: null,
         targetKey: null,
         mergeStrategy: null,
-        decisionReason: "target_layer_not_supported_in_baseline",
+        decisionReason: 'target_layer_not_supported_in_baseline',
         validation,
       };
     }
@@ -196,8 +196,8 @@ export class MemoryPromotionService {
       targetLayer: MemoryRecallLayer.SESSION,
       targetScope: MemoryScope.SESSION,
       targetKey: sessionId,
-      mergeStrategy: "session_summary_record",
-      decisionReason: "session_summary_projection_merge",
+      mergeStrategy: 'session_summary_record',
+      decisionReason: 'session_summary_projection_merge',
       validation,
     };
   }
@@ -208,7 +208,7 @@ export class MemoryPromotionService {
    * @returns Validation result.
    */
   private validateCandidate(
-    candidate: ReturnType<MemoryPromotionService["captureCandidates"]>[number],
+    candidate: ReturnType<MemoryPromotionService['captureCandidates']>[number],
   ) {
     const reusable = candidate.summary.trim().length > 0;
     const attributable = candidate.sourceRefCount > 0;
@@ -220,32 +220,32 @@ export class MemoryPromotionService {
         ),
     );
     const sensitivityLabeled = candidate.sensitivity.length > 0;
-    const policySafe = candidate.policyAction === "allow";
+    const policySafe = candidate.policyAction === 'allow';
     const canonicalSourceSafe =
       candidate.sourceLayer !== MemoryRecallLayer.NORMATIVE &&
       candidate.memoryKind !== MemoryRecallKind.NORMATIVE_PROJECTION;
     const failureReasons: string[] = [];
 
     if (!reusable) {
-      failureReasons.push("summary_missing");
+      failureReasons.push('summary_missing');
     }
     if (!attributable) {
-      failureReasons.push("source_refs_missing");
+      failureReasons.push('source_refs_missing');
     }
     if (!traceable) {
-      failureReasons.push("explicit_traceability_missing");
+      failureReasons.push('explicit_traceability_missing');
     }
     if (!sensitivityLabeled) {
-      failureReasons.push("sensitivity_labels_required");
+      failureReasons.push('sensitivity_labels_required');
     }
     if (!sensitivitySafe) {
-      failureReasons.push("sensitivity_requires_redaction");
+      failureReasons.push('sensitivity_requires_redaction');
     }
     if (!policySafe) {
-      failureReasons.push("context_policy_not_promotable");
+      failureReasons.push('context_policy_not_promotable');
     }
     if (!canonicalSourceSafe) {
-      failureReasons.push("canonical_projection_not_promotable");
+      failureReasons.push('canonical_projection_not_promotable');
     }
 
     return {
@@ -279,31 +279,31 @@ export class MemoryPromotionService {
     return [
       {
         phase: MemoryPromotionPhase.CAPTURE_CANDIDATES,
-        status: "completed",
+        status: 'completed',
         candidateCount,
         detail: `captured_candidates=${candidateCount}`,
       },
       {
         phase: MemoryPromotionPhase.CLASSIFY_CANDIDATES,
-        status: "completed",
+        status: 'completed',
         candidateCount,
         detail: `classified_candidates=${candidateCount}`,
       },
       {
         phase: MemoryPromotionPhase.VALIDATE_CANDIDATES,
-        status: "completed",
+        status: 'completed',
         candidateCount,
         detail: `validated_candidates=${candidateCount}`,
       },
       {
         phase: MemoryPromotionPhase.DECIDE_TARGET_LAYER,
-        status: "completed",
+        status: 'completed',
         candidateCount,
         detail: `merge_candidates=${plannedMergeCount}`,
       },
       {
         phase: MemoryPromotionPhase.MERGE_OR_PERSIST,
-        status: mergedCount > 0 ? "completed" : "skipped",
+        status: mergedCount > 0 ? 'completed' : 'skipped',
         candidateCount: plannedMergeCount,
         detail: this.createMergeOrPersistDetail({
           plannedMergeCount,
@@ -328,7 +328,7 @@ export class MemoryPromotionService {
       promotionBlockReason: string | null;
     },
   ) {
-    const targetLayerCounts: MemoryPromotionResult["summary"]["targetLayerCounts"] = {};
+    const targetLayerCounts: MemoryPromotionResult['summary']['targetLayerCounts'] = {};
     const failureReasonCounts: Record<string, number> = {};
     const { plannedMergeCount, mergedCount, promotionBlockReason } = options;
 
@@ -376,10 +376,10 @@ export class MemoryPromotionService {
    * @returns Null when persistence is allowed, otherwise one explicit block reason.
    */
   private getPromotionBlockReason(
-    request: MemoryPromotionRequest["contextSummary"],
+    request: MemoryPromotionRequest['contextSummary'],
   ): string | null {
     if (request.truncationReason) {
-      return "context_summary_truncated";
+      return 'context_summary_truncated';
     }
 
     if (request.assemblyOutcome !== MemoryContextAssemblyOutcome.CONTEXT_READY) {
@@ -407,7 +407,7 @@ export class MemoryPromotionService {
     }
 
     if (plannedMergeCount === 0) {
-      return "no_merge_candidates";
+      return 'no_merge_candidates';
     }
 
     if (promotionBlockReason) {
@@ -433,8 +433,8 @@ export class MemoryPromotionService {
     sessionId: string,
     executionId: string,
     promotedBy: string,
-    candidates: ReturnType<MemoryPromotionService["captureCandidates"]>,
-  ): Promise<MemoryPromotionResult["persistedRecord"]> {
+    candidates: ReturnType<MemoryPromotionService['captureCandidates']>,
+  ): Promise<MemoryPromotionResult['persistedRecord']> {
     const existingSessionRecord = await this.memoryManager.readEntry({
       scope: MemoryScope.SESSION,
       key: sessionId,
@@ -470,7 +470,7 @@ export class MemoryPromotionService {
           .concat(
             Array.isArray(existingSessionRecord?.value.sourceRefs)
               ? existingSessionRecord.value.sourceRefs.filter(
-                  (entry): entry is string => typeof entry === "string",
+                  (entry): entry is string => typeof entry === 'string',
                 )
               : [],
           ),
@@ -483,7 +483,7 @@ export class MemoryPromotionService {
       payload: {
         ...(existingSessionRecord?.value ?? {}),
         summary:
-          typeof existingSessionRecord?.value.summary === "string" &&
+          typeof existingSessionRecord?.value.summary === 'string' &&
           existingSessionRecord.value.summary.trim().length > 0
             ? existingSessionRecord.value.summary
             : `Promoted execution memory summary for session ${sessionId}.`,
@@ -499,7 +499,7 @@ export class MemoryPromotionService {
       tags: Array.from(
         new Set([
           ...(existingSessionRecord?.tags ?? []),
-          "memory-promotion",
+          'memory-promotion',
           `execution:${executionId}`,
         ]),
       ),

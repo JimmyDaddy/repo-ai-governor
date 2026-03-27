@@ -1,9 +1,9 @@
-import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
+import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import {
   AgentCapability,
   AgentCapabilityFallbackAction,
   AgentCapabilitySupportLevel,
-} from "./constants/index.js";
+} from './constants/index.js';
 import type {
   AgentCapabilityEvaluationResult,
   AgentCapabilityFallbackRule,
@@ -11,7 +11,7 @@ import type {
   AgentCapabilityMatrix,
   AgentCapabilityRequirement,
   AgentCapabilityState,
-} from "./types/index.js";
+} from './types/index.js';
 
 /**
  * Evaluates route-level capability requirements against adapter capability matrix.
@@ -39,8 +39,8 @@ export class AgentCapabilityEvaluator {
     this.assertCapabilityMatrix(capabilityMatrix);
     this.assertCapabilityRequirement(requirement);
 
-    const unsupportedCapabilities: AgentCapabilityEvaluationResult["unsupportedCapabilities"] = [];
-    const degradedCapabilities: AgentCapabilityEvaluationResult["degradedCapabilities"] = [];
+    const unsupportedCapabilities: AgentCapabilityEvaluationResult['unsupportedCapabilities'] = [];
+    const degradedCapabilities: AgentCapabilityEvaluationResult['degradedCapabilities'] = [];
     const capabilityGaps: AgentCapabilityGap[] = [];
     const requiredFallbackActionSet = new Set<AgentCapabilityFallbackAction>();
     const allowedDegradedSet = new Set(requirement.allowDegradedCapabilities ?? []);
@@ -92,7 +92,7 @@ export class AgentCapabilityEvaluator {
    */
   private resolveSupportLevel(
     capabilityStates: AgentCapabilityState[],
-    capability: AgentCapabilityState["capability"],
+    capability: AgentCapabilityState['capability'],
   ): AgentCapabilitySupportLevel {
     const matchedState = capabilityStates.find((state) => state.capability === capability);
     return matchedState?.supportLevel ?? AgentCapabilitySupportLevel.UNSUPPORTED;
@@ -106,7 +106,7 @@ export class AgentCapabilityEvaluator {
    * @returns Fallback action used by runtime route decisions.
    */
   private resolveFallbackAction(
-    capability: AgentCapabilityState["capability"],
+    capability: AgentCapabilityState['capability'],
     supportLevel: AgentCapabilitySupportLevel,
     fallbackRules: AgentCapabilityFallbackRule[],
   ): AgentCapabilityFallbackAction {
@@ -124,7 +124,7 @@ export class AgentCapabilityEvaluator {
    * @returns Optional fallback note.
    */
   private resolveFallbackNote(
-    capability: AgentCapabilityState["capability"],
+    capability: AgentCapabilityState['capability'],
     fallbackRules: AgentCapabilityFallbackRule[],
   ): string | undefined {
     const matchedRule = fallbackRules.find((rule) => rule.capability === capability);
@@ -136,34 +136,34 @@ export class AgentCapabilityEvaluator {
    * @param capabilityMatrix Adapter capability matrix.
    */
   private assertCapabilityMatrix(capabilityMatrix: AgentCapabilityMatrix): void {
-    if (!capabilityMatrix || typeof capabilityMatrix !== "object") {
+    if (!capabilityMatrix || typeof capabilityMatrix !== 'object') {
       throw new RuntimeError(
         GovernorErrorCode.AGENT_CAPABILITY_MATRIX_INVALID,
-        "Capability matrix must be an object.",
+        'Capability matrix must be an object.',
       );
     }
     if (!Array.isArray(capabilityMatrix.capabilityStates)) {
       throw new RuntimeError(
         GovernorErrorCode.AGENT_CAPABILITY_MATRIX_INVALID,
-        "Capability matrix must provide capabilityStates array.",
+        'Capability matrix must provide capabilityStates array.',
       );
     }
-    if (!capabilityMatrix.timeout || typeof capabilityMatrix.timeout !== "object") {
+    if (!capabilityMatrix.timeout || typeof capabilityMatrix.timeout !== 'object') {
       throw new RuntimeError(
         GovernorErrorCode.AGENT_CAPABILITY_MATRIX_INVALID,
-        "Capability matrix must provide timeout contract.",
+        'Capability matrix must provide timeout contract.',
       );
     }
-    if (!capabilityMatrix.cancellation || typeof capabilityMatrix.cancellation !== "object") {
+    if (!capabilityMatrix.cancellation || typeof capabilityMatrix.cancellation !== 'object') {
       throw new RuntimeError(
         GovernorErrorCode.AGENT_CAPABILITY_MATRIX_INVALID,
-        "Capability matrix must provide cancellation contract.",
+        'Capability matrix must provide cancellation contract.',
       );
     }
-    if (!capabilityMatrix.contextWindow || typeof capabilityMatrix.contextWindow !== "object") {
+    if (!capabilityMatrix.contextWindow || typeof capabilityMatrix.contextWindow !== 'object') {
       throw new RuntimeError(
         GovernorErrorCode.AGENT_CAPABILITY_MATRIX_INVALID,
-        "Capability matrix must provide contextWindow contract.",
+        'Capability matrix must provide contextWindow contract.',
       );
     }
   }
@@ -173,10 +173,10 @@ export class AgentCapabilityEvaluator {
    * @param requirement Route capability requirement.
    */
   private assertCapabilityRequirement(requirement: AgentCapabilityRequirement): void {
-    if (!requirement || typeof requirement !== "object") {
+    if (!requirement || typeof requirement !== 'object') {
       throw new RuntimeError(
         GovernorErrorCode.AGENT_CAPABILITY_REQUIREMENT_INVALID,
-        "Capability requirement must be an object.",
+        'Capability requirement must be an object.',
       );
     }
     if (
@@ -185,7 +185,7 @@ export class AgentCapabilityEvaluator {
     ) {
       throw new RuntimeError(
         GovernorErrorCode.AGENT_CAPABILITY_REQUIREMENT_INVALID,
-        "Capability requirement must define at least one required capability.",
+        'Capability requirement must define at least one required capability.',
       );
     }
     for (const [index, capability] of requirement.requiredCapabilities.entries()) {
@@ -196,7 +196,7 @@ export class AgentCapabilityEvaluator {
       if (!Array.isArray(requirement.allowDegradedCapabilities)) {
         throw new RuntimeError(
           GovernorErrorCode.AGENT_CAPABILITY_REQUIREMENT_INVALID,
-          "Capability requirement allowDegradedCapabilities must be an array.",
+          'Capability requirement allowDegradedCapabilities must be an array.',
         );
       }
       for (const [index, capability] of requirement.allowDegradedCapabilities.entries()) {
@@ -208,12 +208,12 @@ export class AgentCapabilityEvaluator {
       if (!Array.isArray(requirement.fallbackRules)) {
         throw new RuntimeError(
           GovernorErrorCode.AGENT_CAPABILITY_REQUIREMENT_INVALID,
-          "Capability requirement fallbackRules must be an array.",
+          'Capability requirement fallbackRules must be an array.',
         );
       }
 
       for (const [index, fallbackRule] of requirement.fallbackRules.entries()) {
-        if (!fallbackRule || typeof fallbackRule !== "object") {
+        if (!fallbackRule || typeof fallbackRule !== 'object') {
           throw new RuntimeError(
             GovernorErrorCode.AGENT_CAPABILITY_REQUIREMENT_INVALID,
             `Capability requirement fallbackRules[${index}] must be an object.`,
@@ -229,7 +229,7 @@ export class AgentCapabilityEvaluator {
           fallbackRule.onDegraded,
           `fallbackRules[${index}].onDegraded`,
         );
-        if (fallbackRule.note !== undefined && typeof fallbackRule.note !== "string") {
+        if (fallbackRule.note !== undefined && typeof fallbackRule.note !== 'string') {
           throw new RuntimeError(
             GovernorErrorCode.AGENT_CAPABILITY_REQUIREMENT_INVALID,
             `Capability requirement fallbackRules[${index}].note must be a string when provided.`,
@@ -245,7 +245,7 @@ export class AgentCapabilityEvaluator {
    * @param pointer Requirement pointer for diagnostics.
    */
   private assertCapabilityValue(value: unknown, pointer: string): void {
-    if (typeof value !== "string" || !this.capabilitySet.has(value)) {
+    if (typeof value !== 'string' || !this.capabilitySet.has(value)) {
       throw new RuntimeError(
         GovernorErrorCode.AGENT_CAPABILITY_REQUIREMENT_INVALID,
         `${pointer} must be one of AgentCapability values.`,
@@ -259,7 +259,7 @@ export class AgentCapabilityEvaluator {
    * @param pointer Requirement pointer for diagnostics.
    */
   private assertFallbackActionValue(value: unknown, pointer: string): void {
-    if (typeof value !== "string" || !this.fallbackActionSet.has(value)) {
+    if (typeof value !== 'string' || !this.fallbackActionSet.has(value)) {
       throw new RuntimeError(
         GovernorErrorCode.AGENT_CAPABILITY_REQUIREMENT_INVALID,
         `${pointer} must be one of AgentCapabilityFallbackAction values.`,

@@ -1,15 +1,15 @@
-import type { ErrorOutputEnvironment } from "@repo-ai-governor/shared";
+import type { ErrorOutputEnvironment } from '@repo-ai-governor/shared';
 import type {
   IdeEntrySurface,
   IdeSurfaceCapability,
   IdeSurfaceDegradeMode,
   IdeWrapperEnvironmentKey,
-} from "../../constants/ide-command-wrapper.constant.js";
+} from '../../constants/ide-command-wrapper.constant.js';
 import type {
   IdeStandardsSourceId,
   IdeStandardsSourceKind,
-} from "../../constants/ide-standards-source.constant.js";
-import type { IdeWrapperCommandName } from "../aliases/ide-command-wrapper.type.js";
+} from '../../constants/ide-standards-source.constant.js';
+import type { IdeWrapperCommandName } from '../aliases/ide-command-wrapper.type.js';
 
 /**
  * Defines one self-hosted standards source descriptor bound to a stable source ID.

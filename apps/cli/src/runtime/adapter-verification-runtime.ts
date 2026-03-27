@@ -2,20 +2,20 @@ import {
   AgentAvailabilityStatus,
   AgentCapabilitySupportLevel,
   type AgentProbeResult,
-} from "@repo-ai-governor/adapter-sdk";
-import type { AdaptersConfig } from "@repo-ai-governor/config";
-import { AdapterAvailability, AdapterSurface } from "@repo-ai-governor/shared";
+} from '@repo-ai-governor/adapter-sdk';
+import type { AdaptersConfig } from '@repo-ai-governor/config';
+import { AdapterAvailability, AdapterSurface } from '@repo-ai-governor/shared';
 import {
   CLI_ADAPTER_FAILURE_ATTRIBUTION,
   CliAdapterRoleSelectionSource,
   CliGovernanceCheckStatus,
-} from "../constants/cli-governance-runtime.constant.js";
+} from '../constants/cli-governance-runtime.constant.js';
 import type {
   CliAdapterToolProbeSnapshot,
   CliAdapterVerificationResolution,
-} from "../types/index.js";
-import type { CliAdapterRoutingRuntime } from "./adapter-routing-runtime.js";
-import type { CliLocalModelProbeRuntime } from "./local-model-probe-runtime.js";
+} from '../types/index.js';
+import type { CliAdapterRoutingRuntime } from './adapter-routing-runtime.js';
+import type { CliLocalModelProbeRuntime } from './local-model-probe-runtime.js';
 
 /**
  * Aggregates adapter probe snapshots into role-level verification and next-action diagnostics.
@@ -42,7 +42,7 @@ export class CliAdapterVerificationRuntime {
     const routingByRole = this.adaptersConfig.routing.roleBindings;
     const fallbackPrimarySurface = this.adaptersConfig.tools?.[0]?.toolId ?? AdapterSurface.CODEX;
     const roleEvaluations = this.adaptersConfig.roles.map<
-      CliAdapterVerificationResolution["roleEvaluations"][number]
+      CliAdapterVerificationResolution['roleEvaluations'][number]
     >((role) => {
       const roleBinding = routingByRole[role.roleId];
       if (!roleBinding) {
@@ -82,7 +82,7 @@ export class CliAdapterVerificationRuntime {
         }
         if (toolSnapshot.availabilityStatus === AgentAvailabilityStatus.UNAVAILABLE) {
           unavailableReasons.push(
-            `surface_unavailable:${candidateSurface}:${toolSnapshot.unavailableReasons.join("|") || "unavailable"}`,
+            `surface_unavailable:${candidateSurface}:${toolSnapshot.unavailableReasons.join('|') || 'unavailable'}`,
           );
           continue;
         }
@@ -103,7 +103,7 @@ export class CliAdapterVerificationRuntime {
         }
         if (unsupportedCapabilities.length > 0) {
           unavailableReasons.push(
-            `capability_gap:${candidateSurface}:${unsupportedCapabilities.join("|")}`,
+            `capability_gap:${candidateSurface}:${unsupportedCapabilities.join('|')}`,
           );
           continue;
         }
@@ -182,16 +182,16 @@ export class CliAdapterVerificationRuntime {
     if (requiredRoleCount === 0) {
       nextActions.push(
         this.localizeText(
-          "Define at least one adapters.roles item with required=true.",
-          "至少定义一个 adapters.roles 且 required=true 的角色。",
+          'Define at least one adapters.roles item with required=true.',
+          '至少定义一个 adapters.roles 且 required=true 的角色。',
         ),
       );
     }
     if (requiredRoleFailedCount > 0) {
       nextActions.push(
         this.localizeText(
-          "Check adapters.routing.roleBindings primary/fallback surfaces and ensure required roles have at least one available surface.",
-          "请检查 adapters.routing.roleBindings 的主备 surface，确保必需角色至少有一个可用 surface。",
+          'Check adapters.routing.roleBindings primary/fallback surfaces and ensure required roles have at least one available surface.',
+          '请检查 adapters.routing.roleBindings 的主备 surface，确保必需角色至少有一个可用 surface。',
         ),
       );
     }
@@ -200,11 +200,11 @@ export class CliAdapterVerificationRuntime {
       .map((tool) => tool.toolId);
     const missingCommands = this.collectMissingCommandsFromToolSnapshots(toolSnapshots);
     const failedProbeCommands = this.collectFailedProbeCommandsFromToolSnapshots(toolSnapshots);
-    const missingCredentials = this.collectToolReasonPayloads(toolSnapshots, "credential_missing:");
+    const missingCredentials = this.collectToolReasonPayloads(toolSnapshots, 'credential_missing:');
     const failedHealthChecks = [
-      ...this.collectToolReasonPayloads(toolSnapshots, "health_check_timeout:"),
-      ...this.collectToolReasonPayloads(toolSnapshots, "health_check_invalid_response:"),
-      ...this.collectToolReasonPayloads(toolSnapshots, "health_check_failed:"),
+      ...this.collectToolReasonPayloads(toolSnapshots, 'health_check_timeout:'),
+      ...this.collectToolReasonPayloads(toolSnapshots, 'health_check_invalid_response:'),
+      ...this.collectToolReasonPayloads(toolSnapshots, 'health_check_failed:'),
     ].filter((payload, index, list) => list.indexOf(payload) === index);
     if (
       unavailableToolIds.length > 0 &&
@@ -215,85 +215,85 @@ export class CliAdapterVerificationRuntime {
     ) {
       nextActions.push(
         this.localizeText(
-          `Probe/login dependencies are unavailable for: ${unavailableToolIds.join(", ")}.`,
-          `以下工具的探测或登录依赖不可用：${unavailableToolIds.join(", ")}。`,
+          `Probe/login dependencies are unavailable for: ${unavailableToolIds.join(', ')}.`,
+          `以下工具的探测或登录依赖不可用：${unavailableToolIds.join(', ')}。`,
         ),
       );
     }
     if (missingCommands.length > 0) {
       nextActions.push(
         this.localizeText(
-          `Install missing local commands before connect/verify: ${missingCommands.join(", ")}.`,
-          `请先安装缺失的本地命令后再执行 connect/verify：${missingCommands.join(", ")}。`,
+          `Install missing local commands before connect/verify: ${missingCommands.join(', ')}.`,
+          `请先安装缺失的本地命令后再执行 connect/verify：${missingCommands.join(', ')}。`,
         ),
       );
     }
     if (failedProbeCommands.length > 0) {
       nextActions.push(
         this.localizeText(
-          `Some commands exist but probe failed (${failedProbeCommands.join(", ")}). Run them manually to verify login/extension status.`,
-          `部分命令可执行但探测失败（${failedProbeCommands.join(", ")}），请手动执行命令确认登录/扩展状态。`,
+          `Some commands exist but probe failed (${failedProbeCommands.join(', ')}). Run them manually to verify login/extension status.`,
+          `部分命令可执行但探测失败（${failedProbeCommands.join(', ')}），请手动执行命令确认登录/扩展状态。`,
         ),
       );
     }
     if (missingCredentials.length > 0) {
       nextActions.push(
         this.localizeText(
-          `Authenticate or refresh login for remote adapters before connect/verify: ${missingCredentials.join(", ")}.`,
-          `请先为以下远端 adapter 完成认证或刷新登录状态，再执行 connect/verify：${missingCredentials.join(", ")}。`,
+          `Authenticate or refresh login for remote adapters before connect/verify: ${missingCredentials.join(', ')}.`,
+          `请先为以下远端 adapter 完成认证或刷新登录状态，再执行 connect/verify：${missingCredentials.join(', ')}。`,
         ),
       );
     }
     if (failedHealthChecks.length > 0) {
       nextActions.push(
         this.localizeText(
-          `Investigate remote adapter health checks before unattended execution: ${failedHealthChecks.join(", ")}.`,
-          `请先排查以下远端 adapter 的健康检查结果，再进行无人值守执行：${failedHealthChecks.join(", ")}。`,
+          `Investigate remote adapter health checks before unattended execution: ${failedHealthChecks.join(', ')}.`,
+          `请先排查以下远端 adapter 的健康检查结果，再进行无人值守执行：${failedHealthChecks.join(', ')}。`,
         ),
       );
     }
     const missingLocalModels = this.collectToolReasonPayloads(
       toolSnapshots,
-      "local_model_model_missing:",
+      'local_model_model_missing:',
     );
     if (missingLocalModels.length > 0) {
       nextActions.push(
         this.localizeText(
-          `Pull or configure the missing local models before unattended execution: ${missingLocalModels.join(", ")}.`,
-          `请先拉取或修正以下缺失的本地模型，再进行无人值守执行：${missingLocalModels.join(", ")}。`,
+          `Pull or configure the missing local models before unattended execution: ${missingLocalModels.join(', ')}.`,
+          `请先拉取或修正以下缺失的本地模型，再进行无人值守执行：${missingLocalModels.join(', ')}。`,
         ),
       );
     }
     const missingLocalModelConfigs = this.collectToolReasonPayloads(
       toolSnapshots,
-      "local_model_config_missing:",
+      'local_model_config_missing:',
     );
     if (missingLocalModelConfigs.length > 0) {
       nextActions.push(
         this.localizeText(
-          `Provide adapters.tools[].localModel { provider, endpoint, model } for: ${missingLocalModelConfigs.join(", ")}.`,
-          `请为以下工具补齐 adapters.tools[].localModel 的 provider、endpoint、model 配置：${missingLocalModelConfigs.join(", ")}。`,
+          `Provide adapters.tools[].localModel { provider, endpoint, model } for: ${missingLocalModelConfigs.join(', ')}.`,
+          `请为以下工具补齐 adapters.tools[].localModel 的 provider、endpoint、model 配置：${missingLocalModelConfigs.join(', ')}。`,
         ),
       );
     }
     if (
-      this.collectToolReasonPayloads(toolSnapshots, "local_model_endpoint_unreachable:").length >
+      this.collectToolReasonPayloads(toolSnapshots, 'local_model_endpoint_unreachable:').length >
         0 ||
-      this.collectToolReasonPayloads(toolSnapshots, "local_model_probe_invalid_response:").length >
+      this.collectToolReasonPayloads(toolSnapshots, 'local_model_probe_invalid_response:').length >
         0
     ) {
       nextActions.push(
         this.localizeText(
-          "Check local-model endpoint reachability and Ollama health before relying on fallback routing.",
-          "请先确认本地模型 endpoint 可达且 Ollama 服务健康，再依赖 fallback 路由。",
+          'Check local-model endpoint reachability and Ollama health before relying on fallback routing.',
+          '请先确认本地模型 endpoint 可达且 Ollama 服务健康，再依赖 fallback 路由。',
         ),
       );
     }
     if (fallbackRoleCount > 0 || degradedRoleCount > 0) {
       nextActions.push(
         this.localizeText(
-          "Primary surfaces are degraded or fallback is in use; review cost/latency/risk routing priorities before unattended execution.",
-          "当前使用降级或 fallback 路由，建议在无人值守执行前复核成本/时延/风险优先级。",
+          'Primary surfaces are degraded or fallback is in use; review cost/latency/risk routing priorities before unattended execution.',
+          '当前使用降级或 fallback 路由，建议在无人值守执行前复核成本/时延/风险优先级。',
         ),
       );
     }
@@ -334,7 +334,7 @@ export class CliAdapterVerificationRuntime {
    * @returns Tool-level probe snapshots.
    */
   private async collectAdapterToolSnapshotsBySurface(
-    toolConfigBySurface: Map<AdapterSurface, NonNullable<AdaptersConfig["tools"]>[number]>,
+    toolConfigBySurface: Map<AdapterSurface, NonNullable<AdaptersConfig['tools']>[number]>,
   ): Promise<CliAdapterToolProbeSnapshot[]> {
     const protocolBySurface =
       this.adapterRoutingRuntime.createProtocolBySurface(toolConfigBySurface);
@@ -424,10 +424,10 @@ export class CliAdapterVerificationRuntime {
     const commands: string[] = [];
     for (const snapshot of toolSnapshots) {
       for (const reason of snapshot.unavailableReasons) {
-        if (!reason.startsWith("command_missing:")) {
+        if (!reason.startsWith('command_missing:')) {
           continue;
         }
-        const [, , command] = reason.split(":", 3);
+        const [, , command] = reason.split(':', 3);
         if (command && !commands.includes(command)) {
           commands.push(command);
         }
@@ -447,10 +447,10 @@ export class CliAdapterVerificationRuntime {
     const failedCommands: string[] = [];
     for (const snapshot of toolSnapshots) {
       for (const reason of snapshot.unavailableReasons) {
-        if (!reason.startsWith("command_probe_failed:")) {
+        if (!reason.startsWith('command_probe_failed:')) {
           continue;
         }
-        const [, surface, command] = reason.split(":", 4);
+        const [, surface, command] = reason.split(':', 4);
         if (!surface || !command) {
           continue;
         }
@@ -515,33 +515,33 @@ export class CliAdapterVerificationRuntime {
 
     for (const reason of options.unavailableReasons) {
       if (
-        reason.startsWith("local_model_config_missing:") ||
-        reason.startsWith("missing_role_binding:") ||
-        reason.startsWith("disabled_by_config:") ||
-        reason.startsWith("tool_disabled:")
+        reason.startsWith('local_model_config_missing:') ||
+        reason.startsWith('missing_role_binding:') ||
+        reason.startsWith('disabled_by_config:') ||
+        reason.startsWith('tool_disabled:')
       ) {
         pushAttribution(CLI_ADAPTER_FAILURE_ATTRIBUTION.CONFIGURATION_MISSING);
         continue;
       }
 
-      if (reason.startsWith("local_model_model_missing:")) {
+      if (reason.startsWith('local_model_model_missing:')) {
         pushAttribution(CLI_ADAPTER_FAILURE_ATTRIBUTION.MODEL_UNAVAILABLE);
         continue;
       }
 
-      if (reason.startsWith("capability_gap:")) {
+      if (reason.startsWith('capability_gap:')) {
         pushAttribution(CLI_ADAPTER_FAILURE_ATTRIBUTION.CAPABILITY_GAP);
         continue;
       }
 
-      if (reason.startsWith("surface_unavailable:")) {
-        if (reason.includes("local_model_config_missing:")) {
+      if (reason.startsWith('surface_unavailable:')) {
+        if (reason.includes('local_model_config_missing:')) {
           pushAttribution(CLI_ADAPTER_FAILURE_ATTRIBUTION.CONFIGURATION_MISSING);
         }
-        if (reason.includes("local_model_model_missing:")) {
+        if (reason.includes('local_model_model_missing:')) {
           pushAttribution(CLI_ADAPTER_FAILURE_ATTRIBUTION.MODEL_UNAVAILABLE);
         }
-        if (reason.includes("capability_gap:")) {
+        if (reason.includes('capability_gap:')) {
           pushAttribution(CLI_ADAPTER_FAILURE_ATTRIBUTION.CAPABILITY_GAP);
         }
         pushAttribution(CLI_ADAPTER_FAILURE_ATTRIBUTION.ENVIRONMENT_PRECONDITION);
@@ -549,15 +549,15 @@ export class CliAdapterVerificationRuntime {
       }
 
       if (
-        reason.startsWith("command_missing:") ||
-        reason.startsWith("command_probe_failed:") ||
-        reason.startsWith("probe_failed:") ||
-        reason.startsWith("credential_missing:") ||
-        reason.startsWith("health_check_timeout:") ||
-        reason.startsWith("health_check_invalid_response:") ||
-        reason.startsWith("health_check_failed:") ||
-        reason.startsWith("local_model_endpoint_unreachable:") ||
-        reason.startsWith("local_model_probe_invalid_response:")
+        reason.startsWith('command_missing:') ||
+        reason.startsWith('command_probe_failed:') ||
+        reason.startsWith('probe_failed:') ||
+        reason.startsWith('credential_missing:') ||
+        reason.startsWith('health_check_timeout:') ||
+        reason.startsWith('health_check_invalid_response:') ||
+        reason.startsWith('health_check_failed:') ||
+        reason.startsWith('local_model_endpoint_unreachable:') ||
+        reason.startsWith('local_model_probe_invalid_response:')
       ) {
         pushAttribution(CLI_ADAPTER_FAILURE_ATTRIBUTION.ENVIRONMENT_PRECONDITION);
       }

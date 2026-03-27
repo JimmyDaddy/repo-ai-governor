@@ -12,7 +12,7 @@ export {
   MemoryPromotionPhase,
   MemoryRecallKind,
   MemoryRecallLayer,
-} from "./memory-semantics.constant.js";
+} from './memory-semantics.constant.js';
 export type {
   MemoryContextAssemblyOutcomeValue,
   MemoryContextPolicyActionValue,
@@ -22,4 +22,4 @@ export type {
   MemoryRecallKindValue,
   MemoryRecallLayerValue,
   MemoryRecallSelectionPolicyValue,
-} from "./memory-semantics.constant.js";
+} from './memory-semantics.constant.js';

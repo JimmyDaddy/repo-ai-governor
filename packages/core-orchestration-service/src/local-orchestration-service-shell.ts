@@ -1,17 +1,17 @@
-import { randomUUID } from "node:crypto";
-import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
-import { basename, dirname, resolve } from "node:path";
+import { randomUUID } from 'node:crypto';
+import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
+import { basename, dirname, resolve } from 'node:path';
 
 import type {
   LangGraphCheckpointer,
   LangGraphRecoveredExecution,
-} from "@repo-ai-governor/core-runtime-langgraph";
-import { LangGraphSqliteFsCheckpointer } from "@repo-ai-governor/core-runtime-langgraph/sqlite-fs-checkpointer";
+} from '@repo-ai-governor/core-runtime-langgraph';
+import { LangGraphSqliteFsCheckpointer } from '@repo-ai-governor/core-runtime-langgraph/sqlite-fs-checkpointer';
 import {
   MemoryProviderHostSurface,
   MemoryProviderRegistry,
   MemoryProviderRuntimeMode,
-} from "@repo-ai-governor/memory-provider-registry";
+} from '@repo-ai-governor/memory-provider-registry';
 import {
   OrchestrationExecutionStatus,
   type OrchestrationExecutionSummary,
@@ -33,15 +33,15 @@ import {
   type OrchestrationSubmitHitlDecisionResponse,
   type OrchestrationSubscribeExecutionRequest,
   type OrchestrationSubscribeExecutionResponse,
-} from "@repo-ai-governor/orchestration-service-client";
-import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
+} from '@repo-ai-governor/orchestration-service-client';
+import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import type {
   LocalOrchestrationServiceMemoryProviderState,
   LocalOrchestrationServicePublishEventRequest,
   LocalOrchestrationServiceSaveCheckpointRequest,
   LocalOrchestrationServiceShellDependencies,
   LocalOrchestrationServiceStartExecutionRuntimeContext,
-} from "./types/index.js";
+} from './types/index.js';
 
 interface LocalOrchestrationExecutionRecord {
   summary: OrchestrationExecutionSummary;
@@ -92,7 +92,7 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
       ((executionId, sequence) => `${executionId}-event-${String(sequence)}`);
     this.executionIdProvider =
       dependencies.executionIdProvider ??
-      (() => `orchestration-${randomUUID().replace(/-/gu, "")}`);
+      (() => `orchestration-${randomUUID().replace(/-/gu, '')}`);
     this.executionSessionIdProvider =
       dependencies.executionSessionIdProvider ?? ((executionId) => `session-${executionId}`);
     this.serviceHostKind = dependencies.serviceHostKind ?? OrchestrationServiceHostKind.EMBEDDED;
@@ -100,7 +100,7 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
       dependencies.serviceTransportKind ?? OrchestrationServiceTransportKind.IN_PROCESS;
     this.lifecycleStatusProvider =
       dependencies.lifecycleStatusProvider ?? (() => OrchestrationServiceLifecycleStatus.READY);
-    this.protocolVersion = dependencies.protocolVersion ?? "1";
+    this.protocolVersion = dependencies.protocolVersion ?? '1';
     this.pidProvider = dependencies.pidProvider ?? (() => process.pid);
     this.startedAt = this.toTimestamp();
     this.checkpointer =
@@ -256,7 +256,7 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
       .sort((left, right) => right.acceptedAt.localeCompare(left.acceptedAt))
       .map((summary) => this.cloneExecutionSummary(summary));
     const executions =
-      typeof request?.limit === "number"
+      typeof request?.limit === 'number'
         ? matchedExecutions.slice(0, Math.max(request.limit, 0))
         : matchedExecutions;
 
@@ -277,7 +277,7 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
     if (!record) {
       throw new RuntimeError(
         GovernorErrorCode.MEMORY_SESSION_NOT_FOUND,
-        "Local orchestration execution stream was not found.",
+        'Local orchestration execution stream was not found.',
         {
           executionId,
           eventStreamToken,
@@ -288,7 +288,7 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
       afterSequence === undefined ? true : event.sequence > afterSequence,
     );
     const limitedEvents =
-      typeof request.limit === "number"
+      typeof request.limit === 'number'
         ? filteredEvents.slice(0, Math.max(request.limit, 0))
         : filteredEvents;
     const nextCursorSequence = limitedEvents.at(-1)?.sequence ?? afterSequence ?? 0;
@@ -312,7 +312,7 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
     if (record.summary.executionSessionId !== request.executionSessionId) {
       throw new RuntimeError(
         GovernorErrorCode.MEMORY_SESSION_NOT_FOUND,
-        "Local orchestration execution session was not found.",
+        'Local orchestration execution session was not found.',
         {
           executionId: request.executionId,
           executionSessionId: request.executionSessionId,
@@ -322,7 +322,7 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
     if (!record.summary.pendingHitl) {
       throw new RuntimeError(
         GovernorErrorCode.MEMORY_SESSION_INVALID_STATUS,
-        "Local orchestration execution is not currently waiting for a HITL decision.",
+        'Local orchestration execution is not currently waiting for a HITL decision.',
         {
           executionId: request.executionId,
           status: record.summary.status,
@@ -331,9 +331,9 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
     }
 
     const nextStatus =
-      request.resumeAction === "terminate"
+      request.resumeAction === 'terminate'
         ? OrchestrationExecutionStatus.CANCELLED
-        : request.resumeAction === "degrade"
+        : request.resumeAction === 'degrade'
           ? OrchestrationExecutionStatus.HITL_REQUIRED
           : OrchestrationExecutionStatus.RUNNING;
     const decisionReceiptArtifactPath =
@@ -343,7 +343,7 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
       executionId: request.executionId,
       type: OrchestrationServiceEventType.ARTIFACT_READY,
       status: nextStatus,
-      artifactId: "hitl_decision_receipt",
+      artifactId: 'hitl_decision_receipt',
       artifactPath: decisionReceiptArtifactPath,
       message: `Persisted HITL decision receipt for resumeAction=${request.resumeAction}.`,
     });
@@ -374,7 +374,7 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
     if (this.isTerminalExecutionStatus(record.summary.status)) {
       throw new RuntimeError(
         GovernorErrorCode.MEMORY_SESSION_INVALID_STATUS,
-        "Local orchestration execution is already in a terminal status and cannot be recovered.",
+        'Local orchestration execution is already in a terminal status and cannot be recovered.',
         {
           executionId: request.executionId,
           status: record.summary.status,
@@ -485,7 +485,7 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
       executionId: request.executionId,
       type: OrchestrationServiceEventType.ARTIFACT_READY,
       status: record.summary.status,
-      artifactId: "langgraph_checkpoint",
+      artifactId: 'langgraph_checkpoint',
       artifactPath: checkpointEnvelope.checkpointPath,
       message: `Persisted ${checkpointEnvelope.checkpointSource} checkpoint.`,
     });
@@ -517,23 +517,23 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
     await mkdir(this.executionRecordsDirectory, { recursive: true });
     const entries = await readdir(this.executionRecordsDirectory, { withFileTypes: true });
     for (const entry of entries) {
-      if (!entry.isFile() || !entry.name.endsWith(".json")) {
+      if (!entry.isFile() || !entry.name.endsWith('.json')) {
         continue;
       }
       const filePath = resolve(this.executionRecordsDirectory, entry.name);
-      const parsed = JSON.parse(await readFile(filePath, "utf8")) as
+      const parsed = JSON.parse(await readFile(filePath, 'utf8')) as
         | LocalOrchestrationExecutionRecord
         | undefined;
       const summary = parsed?.summary;
       if (
         !summary ||
-        typeof summary.executionId !== "string" ||
-        typeof summary.eventStreamToken !== "string" ||
+        typeof summary.executionId !== 'string' ||
+        typeof summary.eventStreamToken !== 'string' ||
         !Array.isArray(parsed.events)
       ) {
         throw new RuntimeError(
           GovernorErrorCode.MEMORY_SESSION_PAYLOAD_INVALID,
-          "Persisted orchestration execution record is invalid.",
+          'Persisted orchestration execution record is invalid.',
           {
             filePath,
           },
@@ -559,7 +559,7 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
         null,
         2,
       )}\n`,
-      "utf8",
+      'utf8',
     );
   }
 
@@ -576,7 +576,7 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
       status: recoveredExecution.pendingInterrupt
         ? OrchestrationExecutionStatus.INTERRUPTED
         : record.summary.status,
-      pendingHitl: recoveredExecution.pendingInterrupt?.kind === "hitl",
+      pendingHitl: recoveredExecution.pendingInterrupt?.kind === 'hitl',
       updatedAt: this.toTimestamp(),
     };
   }
@@ -589,7 +589,7 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
 
     throw new RuntimeError(
       GovernorErrorCode.MEMORY_SESSION_NOT_FOUND,
-      "Local orchestration execution was not found.",
+      'Local orchestration execution was not found.',
       {
         executionId,
       },
@@ -709,7 +709,7 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
     if (!record) {
       throw new RuntimeError(
         GovernorErrorCode.MEMORY_SESSION_NOT_FOUND,
-        "Local orchestration execution stream lookup failed.",
+        'Local orchestration execution stream lookup failed.',
         {
           executionId: request.executionId,
           eventStreamToken: request.eventStreamToken,
@@ -721,7 +721,7 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
     if (request.eventStreamToken && request.eventStreamToken !== record.summary.eventStreamToken) {
       throw new RuntimeError(
         GovernorErrorCode.MEMORY_SESSION_PAYLOAD_INVALID,
-        "Local orchestration execution subscription request contains mismatched stream identity.",
+        'Local orchestration execution subscription request contains mismatched stream identity.',
         {
           executionId: record.summary.executionId,
           eventStreamToken: request.eventStreamToken,
@@ -732,7 +732,7 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
     if (parsedCursor && parsedCursor.eventStreamToken !== record.summary.eventStreamToken) {
       throw new RuntimeError(
         GovernorErrorCode.MEMORY_SESSION_PAYLOAD_INVALID,
-        "Local orchestration execution cursor does not match the resolved stream token.",
+        'Local orchestration execution cursor does not match the resolved stream token.',
         {
           executionId: record.summary.executionId,
           cursor: request.cursor,
@@ -753,20 +753,20 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
     sequence: number;
   } {
     try {
-      const decoded = Buffer.from(cursor, "base64url").toString("utf8");
+      const decoded = Buffer.from(cursor, 'base64url').toString('utf8');
       const parsed = JSON.parse(decoded) as {
         eventStreamToken?: unknown;
         sequence?: unknown;
       };
       if (
-        typeof parsed.eventStreamToken !== "string" ||
-        typeof parsed.sequence !== "number" ||
+        typeof parsed.eventStreamToken !== 'string' ||
+        typeof parsed.sequence !== 'number' ||
         !Number.isInteger(parsed.sequence) ||
         parsed.sequence < 0
       ) {
         throw new RuntimeError(
           GovernorErrorCode.MEMORY_SESSION_PAYLOAD_INVALID,
-          "Local orchestration execution cursor payload is invalid.",
+          'Local orchestration execution cursor payload is invalid.',
           {
             cursor,
           },
@@ -782,7 +782,7 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
       }
       throw new RuntimeError(
         GovernorErrorCode.MEMORY_SESSION_PAYLOAD_INVALID,
-        "Local orchestration execution cursor could not be parsed.",
+        'Local orchestration execution cursor could not be parsed.',
         {
           cursor,
         },
@@ -796,22 +796,22 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
         eventStreamToken,
         sequence,
       }),
-      "utf8",
-    ).toString("base64url");
+      'utf8',
+    ).toString('base64url');
   }
 
   private toTimestamp(): string {
     return this.nowProvider()
       .toISOString()
-      .replace(/\.\d{3}Z$/u, "Z");
+      .replace(/\.\d{3}Z$/u, 'Z');
   }
 
   private resolveExecutionRecordsDirectory(workspaceRoot: string): string {
     const governanceRoot =
-      basename(workspaceRoot) === ".repo-ai-governor"
+      basename(workspaceRoot) === '.repo-ai-governor'
         ? workspaceRoot
-        : resolve(workspaceRoot, ".repo-ai-governor");
-    return resolve(governanceRoot, "context", "runtime", "orchestration-service", "executions");
+        : resolve(workspaceRoot, '.repo-ai-governor');
+    return resolve(governanceRoot, 'context', 'runtime', 'orchestration-service', 'executions');
   }
 
   private resolveExecutionRecordPath(executionId: string): string {
@@ -826,9 +826,9 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
     const decisionId = `hitl-decision-${record.summary.executionId}-${this.toFileSafeTimestamp(recordedAt)}`;
     const artifactPath = resolve(
       this.dependencies.workspaceRoot,
-      "context",
-      "hitl",
-      "decisions",
+      'context',
+      'hitl',
+      'decisions',
       `${decisionId}.json`,
     );
 
@@ -853,13 +853,13 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
         null,
         2,
       )}\n`,
-      "utf8",
+      'utf8',
     );
 
     return artifactPath;
   }
 
   private toFileSafeTimestamp(value: string): string {
-    return value.replace(/[-:]/gu, "").replace(/T/gu, "-").replace(/Z$/u, "Z");
+    return value.replace(/[-:]/gu, '').replace(/T/gu, '-').replace(/Z$/u, 'Z');
   }
 }

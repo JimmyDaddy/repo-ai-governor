@@ -1,4 +1,4 @@
-import { resolve } from "node:path";
+import { resolve } from 'node:path';
 
 import {
   ExecutionInteractionCategory,
@@ -6,17 +6,17 @@ import {
   ExecutionProgressStatus,
   GovernorErrorCode,
   RuntimeError,
-} from "@repo-ai-governor/shared";
-import { CliCommandName } from "../constants/cli-command.constant.js";
-import { CliCommandResultCheckId } from "../constants/cli-command-result-check.constant.js";
+} from '@repo-ai-governor/shared';
+import { CliCommandName } from '../constants/cli-command.constant.js';
+import { CliCommandResultCheckId } from '../constants/cli-command-result-check.constant.js';
 import {
   CLI_REVIEW_LEDGER_BACKFILL_STATUS,
   CLI_RUNTIME_OPERATION,
   CliGovernanceCheckStatus,
-} from "../constants/cli-governance-runtime.constant.js";
-import type { CliCommandResultArtifact, CliCommandResultCheck } from "../types/index.js";
-import type { CliCommandExecutorContext } from "../types/interfaces/cli-governance-runtime.interface.js";
-import type { CliCommandExecutor } from "./cli-command-executor.interface.js";
+} from '../constants/cli-governance-runtime.constant.js';
+import type { CliCommandResultArtifact, CliCommandResultCheck } from '../types/index.js';
+import type { CliCommandExecutorContext } from '../types/interfaces/cli-governance-runtime.interface.js';
+import type { CliCommandExecutor } from './cli-command-executor.interface.js';
 
 /**
  * Owns `connect` command execution outside the runtime facade.
@@ -29,10 +29,10 @@ export class CliConnectCommand implements CliCommandExecutor {
     if (runtimeDebugOptions.recordLedger && !runtimeDebugOptions.taskId) {
       throw new RuntimeError(
         GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
-        "connect --record-ledger requires --task-id <id>.",
+        'connect --record-ledger requires --task-id <id>.',
         {
           command: CliCommandName.CONNECT,
-          option: "--task-id",
+          option: '--task-id',
         },
       );
     }
@@ -41,9 +41,9 @@ export class CliConnectCommand implements CliCommandExecutor {
     const connectId = `connect-${Date.now()}`;
     const diagnosticsArtifactPath = resolve(
       context.options.workspace.workspaceRoot,
-      "context",
-      "diagnostics",
-      "connect",
+      'context',
+      'diagnostics',
+      'connect',
       `${connectId}.json`,
     );
 
@@ -74,14 +74,14 @@ export class CliConnectCommand implements CliCommandExecutor {
         detail: `required_roles=${adapterVerification.requiredRoleCount} required_failures=${adapterVerification.requiredRoleFailedCount} degraded_roles=${adapterVerification.degradedRoleCount} fallback_roles=${adapterVerification.fallbackRoleCount}`,
       },
       {
-        id: "diagnostics_artifact",
+        id: 'diagnostics_artifact',
         status: CliGovernanceCheckStatus.PASS,
         detail: diagnosticsArtifactPath,
       },
     ];
     const artifacts: CliCommandResultArtifact[] = [
       {
-        id: "connect_diagnostics",
+        id: 'connect_diagnostics',
         path: diagnosticsArtifactPath,
       },
     ];
@@ -89,9 +89,9 @@ export class CliConnectCommand implements CliCommandExecutor {
     if (runtimeDebugOptions.recordLedger && runtimeDebugOptions.taskId) {
       const ledgerBackfillPath = resolve(
         context.options.workspace.workspaceRoot,
-        "context",
-        "ledger-backfill",
-        "connect",
+        'context',
+        'ledger-backfill',
+        'connect',
         `${connectId}.json`,
       );
       await context.artifactWriter.writeJsonArtifact(ledgerBackfillPath, {
@@ -102,24 +102,24 @@ export class CliConnectCommand implements CliCommandExecutor {
         connectId,
         diagnosticsArtifactPath,
         attribution: {
-          chain: "connect->doctor->verify",
-          chainStep: "connect",
+          chain: 'connect->doctor->verify',
+          chainStep: 'connect',
         },
       });
       checks.push({
-        id: "ledger_backfill",
+        id: 'ledger_backfill',
         status: CliGovernanceCheckStatus.PASS,
         detail: `task_id=${runtimeDebugOptions.taskId}`,
       });
       artifacts.push({
-        id: "connect_ledger_backfill",
+        id: 'connect_ledger_backfill',
         path: ledgerBackfillPath,
       });
     } else if (runtimeDebugOptions.taskId) {
       checks.push({
-        id: "ledger_backfill",
+        id: 'ledger_backfill',
         status: CliGovernanceCheckStatus.WARN,
-        detail: "--task-id ignored because --record-ledger is not set",
+        detail: '--task-id ignored because --record-ledger is not set',
       });
     }
 
@@ -131,11 +131,11 @@ export class CliConnectCommand implements CliCommandExecutor {
     });
     if (runtimeDebugOptions.recordLedger && runtimeDebugOptions.taskId) {
       roleProgress.push({
-        roleId: "ledger-backfill",
+        roleId: 'ledger-backfill',
         stage: ExecutionProgressStage.LEDGER_BACKFILL,
         status: ExecutionProgressStatus.WAITING,
         category: ExecutionInteractionCategory.NONE,
-        summary: "Ledger backfill artifact is ready for task-record consumption.",
+        summary: 'Ledger backfill artifact is ready for task-record consumption.',
         detail: `task_id=${runtimeDebugOptions.taskId}`,
         backlink: {
           executionId: connectId,
@@ -152,10 +152,10 @@ export class CliConnectCommand implements CliCommandExecutor {
       interactionPrompts.push({
         category: ExecutionInteractionCategory.NONE,
         stage: ExecutionProgressStage.LEDGER_BACKFILL,
-        title: context.localizeText("Consume ledger backfill", "处理台账回填产物"),
+        title: context.localizeText('Consume ledger backfill', '处理台账回填产物'),
         action: context.localizeText(
-          "Resolve context/ledger-backfill/connect artifact into tasks/checklist/tasks.csv.",
-          "将 context/ledger-backfill/connect 产物回填到 tasks/checklist/tasks.csv。",
+          'Resolve context/ledger-backfill/connect artifact into tasks/checklist/tasks.csv.',
+          '将 context/ledger-backfill/connect 产物回填到 tasks/checklist/tasks.csv。',
         ),
         blocking: false,
       });

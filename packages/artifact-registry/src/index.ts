@@ -11,10 +11,10 @@ export {
   ArtifactDependencyResolutionStatus,
   ArtifactDependencyUnresolvedReason,
   ArtifactLifecycleStatus,
-} from "./constants/index.js";
-export { ArtifactRegistry } from "./artifact-registry.js";
-export { ArtifactDependencyResolver } from "./dependency-resolver.js";
-export { InMemoryArtifactIndexStore } from "./in-memory-artifact-index-store.js";
+} from './constants/index.js';
+export { ArtifactRegistry } from './artifact-registry.js';
+export { ArtifactDependencyResolver } from './dependency-resolver.js';
+export { InMemoryArtifactIndexStore } from './in-memory-artifact-index-store.js';
 export type {
   ArtifactDependencyExpression,
   ArtifactDependencyResolutionAuditFields,
@@ -26,4 +26,4 @@ export type {
   ParsedArtifactDependency,
   RegisterArtifactOptions,
   ResolveArtifactDependenciesOptions,
-} from "./types/index.js";
+} from './types/index.js';

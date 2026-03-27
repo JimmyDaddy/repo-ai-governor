@@ -27,4 +27,4 @@ export type {
   StandardsRuleRendererReader,
   StandardsRuleDefinition,
   StandardsRuleResolveOptions,
-} from "./standards.interface.js";
+} from './standards.interface.js';

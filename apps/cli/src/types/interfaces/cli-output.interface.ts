@@ -4,17 +4,17 @@ import type {
   ExecutionProgressStage,
   ExecutionProgressStatus,
   GovernorErrorCode,
-} from "@repo-ai-governor/shared";
+} from '@repo-ai-governor/shared';
 import type {
   CliDoctorAttachMode,
   CliGovernanceCheckStatus,
   CliRuntimeOperation,
-} from "../../constants/cli-governance-runtime.constant.js";
+} from '../../constants/cli-governance-runtime.constant.js';
 import type {
   CliNextAction,
   CliOutputStatus,
   CliVerbosity,
-} from "../../constants/cli-output.constant.js";
+} from '../../constants/cli-output.constant.js';
 
 /**
  * Defines runtime output context resolved from CLI flags and terminal state.
@@ -33,7 +33,7 @@ export interface CliResolvedOutputContext {
  * Defines one command execution diagnostics snapshot rendered in CLI output.
  */
 export interface CliCommandDiagnostics {
-  configSource: "default" | "file";
+  configSource: 'default' | 'file';
   locale: string;
   profile: string;
   workspaceMode: string;

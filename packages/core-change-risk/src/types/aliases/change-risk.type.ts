@@ -1,5 +1,5 @@
-import type { GovernanceReviewerRole } from "@repo-ai-governor/shared";
-import type { ChangeRiskFileCategory, ChangeRiskRequiredAction } from "../../constants/index.js";
+import type { GovernanceReviewerRole } from '@repo-ai-governor/shared';
+import type { ChangeRiskFileCategory, ChangeRiskRequiredAction } from '../../constants/index.js';
 
 /**
  * Defines file-category identifiers consumed by risk evaluator.

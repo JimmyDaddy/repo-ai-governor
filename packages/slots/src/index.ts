@@ -8,8 +8,8 @@ export {
   SlotSource,
   SlotTrack,
   SlotValidationSeverity,
-} from "./constants/index.js";
-export { SlotEngine } from "./slot-engine.js";
+} from './constants/index.js';
+export { SlotEngine } from './slot-engine.js';
 export type {
   DeclarativeSlotDefinition,
   DeclarativeSlotRule,
@@ -36,4 +36,4 @@ export type {
   SlotSecurityEvaluationBySlotId,
   SlotSecurityIssue,
   SlotTriggerCondition,
-} from "./types/index.js";
+} from './types/index.js';

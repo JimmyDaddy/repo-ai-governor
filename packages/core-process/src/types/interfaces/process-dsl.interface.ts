@@ -1,5 +1,5 @@
-import type { ProcessNodeType } from "../../constants/compiler-ir.constant.js";
-import type { ProcessDslGlobals } from "../aliases/process-dsl-globals.type.js";
+import type { ProcessNodeType } from '../../constants/compiler-ir.constant.js';
+import type { ProcessDslGlobals } from '../aliases/process-dsl-globals.type.js';
 
 /**
  * Defines Loop node guardrails declared by process DSL.

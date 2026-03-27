@@ -1,20 +1,20 @@
-import { GovernanceReviewerRole, GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
+import { GovernanceReviewerRole, GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import {
   ChangeRiskEvaluator,
   ChangeRiskFileCategory,
   ChangeRiskLevel,
   ChangeRiskRequiredAction,
-} from "../src/index.js";
+} from '../src/index.js';
 
-describe("ChangeRiskEvaluator smoke", () => {
-  it("returns low risk allow decision for baseline code change", () => {
+describe('ChangeRiskEvaluator smoke', () => {
+  it('returns low risk allow decision for baseline code change', () => {
     const evaluator = new ChangeRiskEvaluator();
 
     const result = evaluator.evaluate({
-      changedPaths: ["packages/core-process/src/process-compiler.ts"],
+      changedPaths: ['packages/core-process/src/process-compiler.ts'],
       fileCategories: [ChangeRiskFileCategory.CODE],
       requestedPermissions: [],
-      commandClass: "code_edit",
+      commandClass: 'code_edit',
       lockfileDelta: false,
       migrationDetected: false,
       ciWorkflowChanged: false,
@@ -24,21 +24,21 @@ describe("ChangeRiskEvaluator smoke", () => {
     expect(result.riskLevel).toBe(ChangeRiskLevel.LOW);
     expect(result.requiredAction).toBe(ChangeRiskRequiredAction.ALLOW);
     expect(result.requiredReviewerRoles).toEqual([]);
-    expect(result.matchedPolicies).toContain("policy.risk.action.allow");
+    expect(result.matchedPolicies).toContain('policy.risk.action.allow');
   });
 
-  it("returns critical risk block decision for stacked high-risk facts", () => {
+  it('returns critical risk block decision for stacked high-risk facts', () => {
     const evaluator = new ChangeRiskEvaluator();
 
     const result = evaluator.evaluate({
-      changedPaths: [".github/workflows/release.yml", "infra/prod/main.tf"],
+      changedPaths: ['.github/workflows/release.yml', 'infra/prod/main.tf'],
       fileCategories: [
         ChangeRiskFileCategory.CI_WORKFLOW,
         ChangeRiskFileCategory.INFRA,
         ChangeRiskFileCategory.RELEASE,
       ],
-      requestedPermissions: ["filesystem.write.repo", "network.external.http"],
-      commandClass: "deployment",
+      requestedPermissions: ['filesystem.write.repo', 'network.external.http'],
+      commandClass: 'deployment',
       lockfileDelta: true,
       migrationDetected: true,
       ciWorkflowChanged: true,
@@ -52,18 +52,18 @@ describe("ChangeRiskEvaluator smoke", () => {
       GovernanceReviewerRole.SECURITY_REVIEWER,
     ]);
     expect(result.riskReasons.length).toBeGreaterThan(3);
-    expect(result.matchedPolicies).toContain("policy.risk.action.block");
+    expect(result.matchedPolicies).toContain('policy.risk.action.block');
   });
 
-  it("throws standardized error when commandClass is missing", () => {
+  it('throws standardized error when commandClass is missing', () => {
     const evaluator = new ChangeRiskEvaluator();
 
     expect(() =>
       evaluator.evaluate({
-        changedPaths: ["packages/config/src/schema-validator.ts"],
+        changedPaths: ['packages/config/src/schema-validator.ts'],
         fileCategories: [ChangeRiskFileCategory.CODE],
         requestedPermissions: [],
-        commandClass: "",
+        commandClass: '',
         lockfileDelta: false,
         migrationDetected: false,
         ciWorkflowChanged: false,
@@ -73,10 +73,10 @@ describe("ChangeRiskEvaluator smoke", () => {
 
     try {
       evaluator.evaluate({
-        changedPaths: ["packages/config/src/schema-validator.ts"],
+        changedPaths: ['packages/config/src/schema-validator.ts'],
         fileCategories: [ChangeRiskFileCategory.CODE],
         requestedPermissions: [],
-        commandClass: "",
+        commandClass: '',
         lockfileDelta: false,
         migrationDetected: false,
         ciWorkflowChanged: false,

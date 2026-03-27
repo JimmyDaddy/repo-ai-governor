@@ -1,32 +1,32 @@
 #!/usr/bin/env node
 
-import { existsSync, readFileSync, readdirSync } from "node:fs";
-import { resolve } from "node:path";
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { resolve } from 'node:path';
 
-import { gateFail, gateInfo, gatePass } from "./gate-output.js";
+import { gateFail, gateInfo, gatePass } from './gate-output.js';
 
-const GATE_NAME = "task-ledger-sync";
-const CURRENT_CONTEXT_PATH = ".repo-ai-governor/context/current-context.md";
+const GATE_NAME = 'task-ledger-sync';
+const CURRENT_CONTEXT_PATH = '.repo-ai-governor/context/current-context.md';
 const TASK_CARD_FILE_PATTERN = /^TK-\d{3}.*\.md$/;
-const REQUIRED_TASK_METADATA_KEYS = ["Status", "Date", "Owner", "Priority", "Project", "Sprint"];
+const REQUIRED_TASK_METADATA_KEYS = ['Status', 'Date', 'Owner', 'Priority', 'Project', 'Sprint'];
 const REQUIRED_CSV_HEADERS = [
-  "execution_id",
-  "task_id",
-  "title",
-  "owner",
-  "priority",
-  "due_date",
-  "status",
-  "project",
-  "sprint",
-  "plan",
-  "result",
-  "verify",
-  "review_delta",
-  "recorded_at",
+  'execution_id',
+  'task_id',
+  'title',
+  'owner',
+  'priority',
+  'due_date',
+  'status',
+  'project',
+  'sprint',
+  'plan',
+  'result',
+  'verify',
+  'review_delta',
+  'recorded_at',
 ];
-const PLACEHOLDER_VALUES = new Set(["待执行", "待验证"]);
-const ACTIVE_STREAM_STATUSES = new Set(["active", "in_progress", "running"]);
+const PLACEHOLDER_VALUES = new Set(['待执行', '待验证']);
+const ACTIVE_STREAM_STATUSES = new Set(['active', 'in_progress', 'running']);
 
 /**
  * Resolves the active stream document roots from the `## Active Streams` section in current context.
@@ -44,13 +44,13 @@ function resolveActiveStreams() {
     throw new Error(`Current context file not found: ${contextPath}`);
   }
 
-  const contextContent = readFileSync(contextPath, "utf8");
-  const activeStreamsSection = extractMarkdownSection(contextContent, "Active Streams");
+  const contextContent = readFileSync(contextPath, 'utf8');
+  const activeStreamsSection = extractMarkdownSection(contextContent, 'Active Streams');
   const streamDefinitions = [];
   const invalidStreamEntries = [];
 
   if (!activeStreamsSection.trim()) {
-    throw new Error("`## Active Streams` section not found in current-context.");
+    throw new Error('`## Active Streams` section not found in current-context.');
   }
 
   for (const line of activeStreamsSection.split(/\r?\n/)) {
@@ -61,13 +61,13 @@ function resolveActiveStreams() {
 
     const streamKey = streamMatch[1];
     const descriptor = streamMatch[2];
-    const tasksDirPath = extractBacktickField(descriptor, "tasks");
-    const checklistPath = extractBacktickField(descriptor, "checklist");
-    const csvPath = extractBacktickField(descriptor, "csv");
-    const normalizedStatus = normalizeStreamStatus(extractBacktickField(descriptor, "status"));
+    const tasksDirPath = extractBacktickField(descriptor, 'tasks');
+    const checklistPath = extractBacktickField(descriptor, 'checklist');
+    const csvPath = extractBacktickField(descriptor, 'csv');
+    const normalizedStatus = normalizeStreamStatus(extractBacktickField(descriptor, 'status'));
 
     if (!ACTIVE_STREAM_STATUSES.has(normalizedStatus)) {
-      invalidStreamEntries.push(`${streamKey} (status=${normalizedStatus || "missing"})`);
+      invalidStreamEntries.push(`${streamKey} (status=${normalizedStatus || 'missing'})`);
       continue;
     }
 
@@ -85,7 +85,7 @@ function resolveActiveStreams() {
 
   if (streamDefinitions.length === 0) {
     throw new Error(
-      "No active stream entry with `tasks/checklist/csv` paths was found under `## Active Streams` in current-context.",
+      'No active stream entry with `tasks/checklist/csv` paths was found under `## Active Streams` in current-context.',
     );
   }
 
@@ -105,9 +105,9 @@ function extractMarkdownSection(content, headingText) {
 
   for (let index = 0; index < headingMatches.length; index += 1) {
     const currentHeadingMatch = headingMatches[index];
-    const rawHeadingText = currentHeadingMatch[1]?.trim() ?? "";
+    const rawHeadingText = currentHeadingMatch[1]?.trim() ?? '';
     const currentHeadingIndex = currentHeadingMatch.index;
-    if (typeof currentHeadingIndex !== "number") {
+    if (typeof currentHeadingIndex !== 'number') {
       continue;
     }
 
@@ -120,7 +120,7 @@ function extractMarkdownSection(content, headingText) {
     return content.slice(sectionStart, sectionEnd).trim();
   }
 
-  return "";
+  return '';
 }
 
 /**
@@ -130,7 +130,7 @@ function extractMarkdownSection(content, headingText) {
  */
 function normalizeSectionHeading(headingText) {
   return headingText
-    .replace(/^\d+(?:\.\d+)*\.?\s*/u, "")
+    .replace(/^\d+(?:\.\d+)*\.?\s*/u, '')
     .trim()
     .toLowerCase();
 }
@@ -141,7 +141,7 @@ function normalizeSectionHeading(headingText) {
  * @returns {string}
  */
 function normalizeStreamStatus(status) {
-  return (status ?? "").trim().toLowerCase().replace(/\s+/gu, "_").replace(/-/gu, "_");
+  return (status ?? '').trim().toLowerCase().replace(/\s+/gu, '_').replace(/-/gu, '_');
 }
 
 /**
@@ -163,7 +163,7 @@ function extractBacktickField(descriptor, fieldName) {
  */
 function parseCsvLine(line) {
   const values = [];
-  let currentValue = "";
+  let currentValue = '';
   let inQuotes = false;
 
   for (let index = 0; index < line.length; index += 1) {
@@ -181,9 +181,9 @@ function parseCsvLine(line) {
       continue;
     }
 
-    if (character === "," && !inQuotes) {
+    if (character === ',' && !inQuotes) {
       values.push(currentValue);
-      currentValue = "";
+      currentValue = '';
       continue;
     }
 
@@ -204,7 +204,7 @@ function parseTasksCsv(csvPath) {
     throw new Error(`tasks.csv not found: ${csvPath}`);
   }
 
-  const csvContent = readFileSync(csvPath, "utf8");
+  const csvContent = readFileSync(csvPath, 'utf8');
   const csvLines = csvContent
     .split(/\r?\n/)
     .map((line) => line.trimEnd())
@@ -266,7 +266,7 @@ function parseCanonicalTaskCards(tasksDirPath) {
 
   for (const fileName of fileNames) {
     const filePath = resolve(tasksDirPath, fileName);
-    const content = readFileSync(filePath, "utf8");
+    const content = readFileSync(filePath, 'utf8');
     const card = parseCanonicalTaskCard(content, filePath);
 
     if (!card) {
@@ -329,12 +329,12 @@ function parseCanonicalTaskCard(content, filePath) {
   return {
     taskId: headingMatch[1].trim(),
     title: headingMatch[2].trim(),
-    status: normalizeStatus(readMetadataValue(metadata, "Status")),
-    date: readMetadataValue(metadata, "Date"),
-    owner: readMetadataValue(metadata, "Owner"),
-    priority: readMetadataValue(metadata, "Priority"),
-    project: readMetadataValue(metadata, "Project"),
-    sprint: readMetadataValue(metadata, "Sprint"),
+    status: normalizeStatus(readMetadataValue(metadata, 'Status')),
+    date: readMetadataValue(metadata, 'Date'),
+    owner: readMetadataValue(metadata, 'Owner'),
+    priority: readMetadataValue(metadata, 'Priority'),
+    project: readMetadataValue(metadata, 'Project'),
+    sprint: readMetadataValue(metadata, 'Sprint'),
     goal,
     filePath,
   };
@@ -349,7 +349,7 @@ function parseMetadataSection(content) {
   const metadata = new Map();
 
   for (const line of content.split(/\r?\n/)) {
-    if (line.startsWith("## ")) {
+    if (line.startsWith('## ')) {
       break;
     }
 
@@ -371,7 +371,7 @@ function parseMetadataSection(content) {
  * @returns {string}
  */
 function readMetadataValue(metadata, key) {
-  const rawValue = metadata.get(key) ?? "";
+  const rawValue = metadata.get(key) ?? '';
   return stripMarkdownWrappers(rawValue).trim();
 }
 
@@ -385,16 +385,16 @@ function parseTaskGoal(content) {
     /##\s*1\.\s*(?:任务目标|Task Goal)([\s\S]*?)(?:\n##\s|\n#\s|\s*$)/,
   );
   if (!goalSectionMatch) {
-    return "";
+    return '';
   }
 
   const goalLines = goalSectionMatch[1]
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter((line) => line.length > 0)
-    .map((line) => line.replace(/^[-*]\s+/, "").replace(/^\d+\.\s+/, ""));
+    .map((line) => line.replace(/^[-*]\s+/, '').replace(/^\d+\.\s+/, ''));
 
-  return stripMarkdownWrappers(goalLines.join(" ")).trim();
+  return stripMarkdownWrappers(goalLines.join(' ')).trim();
 }
 
 /**
@@ -407,7 +407,7 @@ function parseChecklist(checklistPath) {
     throw new Error(`checklist.md not found: ${checklistPath}`);
   }
 
-  const checklistContent = readFileSync(checklistPath, "utf8");
+  const checklistContent = readFileSync(checklistPath, 'utf8');
   const checklistMap = new Map();
 
   for (const line of checklistContent.split(/\r?\n/)) {
@@ -417,7 +417,7 @@ function parseChecklist(checklistPath) {
     }
 
     checklistMap.set(checklistMatch[2], {
-      checked: checklistMatch[1].toLowerCase() === "x",
+      checked: checklistMatch[1].toLowerCase() === 'x',
       title: checklistMatch[3].trim(),
     });
   }
@@ -431,17 +431,17 @@ function parseChecklist(checklistPath) {
  * @returns {string}
  */
 function normalizeStatus(status) {
-  const normalized = status.trim().toLowerCase().replace(/\s+/g, "-");
+  const normalized = status.trim().toLowerCase().replace(/\s+/g, '-');
 
-  if (normalized === "done") {
-    return "completed";
+  if (normalized === 'done') {
+    return 'completed';
   }
 
-  if (normalized === "in-progress" || normalized === "in_progress" || normalized === "active") {
-    return "in_progress";
+  if (normalized === 'in-progress' || normalized === 'in_progress' || normalized === 'active') {
+    return 'in_progress';
   }
 
-  return normalized.replace(/-/g, "_");
+  return normalized.replace(/-/g, '_');
 }
 
 /**
@@ -450,7 +450,7 @@ function normalizeStatus(status) {
  * @returns {string}
  */
 function stripMarkdownWrappers(value) {
-  return value.replace(/`/g, "").replace(/\*\*/g, "").replace(/\*/g, "").replace(/_/g, " ");
+  return value.replace(/`/g, '').replace(/\*\*/g, '').replace(/\*/g, '').replace(/_/g, ' ');
 }
 
 /**
@@ -461,8 +461,8 @@ function stripMarkdownWrappers(value) {
 function normalizeText(value) {
   return stripMarkdownWrappers(value)
     .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s]+/gu, " ")
-    .replace(/\s+/g, " ")
+    .replace(/[^\p{L}\p{N}\s]+/gu, ' ')
+    .replace(/\s+/g, ' ')
     .trim();
 }
 
@@ -475,7 +475,7 @@ function normalizeText(value) {
  */
 function findLatestCanonicalRow(rows, taskId, title) {
   const matchingRows = rows.filter(
-    (row) => row.task_id === taskId && normalizeText(row.title ?? "") === normalizeText(title),
+    (row) => row.task_id === taskId && normalizeText(row.title ?? '') === normalizeText(title),
   );
 
   if (matchingRows.length === 0) {
@@ -505,7 +505,7 @@ function collectDriftIssues(streamKey, taskCards, checklistMap, csvRows) {
 
     const canonicalRow = findLatestCanonicalRow(csvRows, taskId, taskCard.title);
     if (!canonicalRow) {
-      const rowTitles = taskRows.map((row) => row.title).join(" | ");
+      const rowTitles = taskRows.map((row) => row.title).join(' | ');
       issues.push(
         `[${streamKey}] ${taskId}: title drift. task card title="${taskCard.title}", tasks.csv titles="${rowTitles}"`,
       );
@@ -516,7 +516,7 @@ function collectDriftIssues(streamKey, taskCards, checklistMap, csvRows) {
       issues,
       streamKey,
       taskId,
-      "owner",
+      'owner',
       taskCard.owner,
       canonicalRow.owner,
       canonicalRow.__rowNumber,
@@ -525,7 +525,7 @@ function collectDriftIssues(streamKey, taskCards, checklistMap, csvRows) {
       issues,
       streamKey,
       taskId,
-      "priority",
+      'priority',
       taskCard.priority,
       canonicalRow.priority,
       canonicalRow.__rowNumber,
@@ -534,7 +534,7 @@ function collectDriftIssues(streamKey, taskCards, checklistMap, csvRows) {
       issues,
       streamKey,
       taskId,
-      "project",
+      'project',
       taskCard.project,
       canonicalRow.project,
       canonicalRow.__rowNumber,
@@ -543,7 +543,7 @@ function collectDriftIssues(streamKey, taskCards, checklistMap, csvRows) {
       issues,
       streamKey,
       taskId,
-      "sprint",
+      'sprint',
       taskCard.sprint,
       canonicalRow.sprint,
       canonicalRow.__rowNumber,
@@ -552,21 +552,21 @@ function collectDriftIssues(streamKey, taskCards, checklistMap, csvRows) {
       issues,
       streamKey,
       taskId,
-      "recorded_at",
+      'recorded_at',
       taskCard.date,
       canonicalRow.recorded_at,
       canonicalRow.__rowNumber,
     );
 
     const cardStatus = normalizeStatus(taskCard.status);
-    const csvStatus = normalizeStatus(canonicalRow.status ?? "");
+    const csvStatus = normalizeStatus(canonicalRow.status ?? '');
     if (cardStatus !== csvStatus) {
       issues.push(
         `[${streamKey}] ${taskId}: status mismatch at tasks.csv#L${canonicalRow.__rowNumber}. task card="${cardStatus}", tasks.csv="${csvStatus}"`,
       );
     }
 
-    if (!isPlanAligned(taskCard.goal, canonicalRow.plan ?? "")) {
+    if (!isPlanAligned(taskCard.goal, canonicalRow.plan ?? '')) {
       issues.push(
         `[${streamKey}] ${taskId}: plan mismatch at tasks.csv#L${canonicalRow.__rowNumber}. task goal and tasks.csv plan are not aligned`,
       );
@@ -584,38 +584,38 @@ function collectDriftIssues(streamKey, taskCards, checklistMap, csvRows) {
       );
     }
 
-    if (checklistItem.checked && csvStatus !== "completed") {
+    if (checklistItem.checked && csvStatus !== 'completed') {
       issues.push(
         `[${streamKey}] ${taskId}: checklist is checked but tasks.csv status is "${csvStatus}" at line ${canonicalRow.__rowNumber}`,
       );
     }
 
-    if (!checklistItem.checked && csvStatus === "completed") {
+    if (!checklistItem.checked && csvStatus === 'completed') {
       issues.push(
         `[${streamKey}] ${taskId}: checklist is unchecked but tasks.csv status is completed at line ${canonicalRow.__rowNumber}`,
       );
     }
 
-    if (csvStatus === "completed") {
-      if (normalizeText(canonicalRow.owner ?? "") === "tbd") {
+    if (csvStatus === 'completed') {
+      if (normalizeText(canonicalRow.owner ?? '') === 'tbd') {
         issues.push(
           `[${streamKey}] ${taskId}: completed row has owner=TBD at tasks.csv#L${canonicalRow.__rowNumber}`,
         );
       }
 
-      if (PLACEHOLDER_VALUES.has((canonicalRow.result ?? "").trim())) {
+      if (PLACEHOLDER_VALUES.has((canonicalRow.result ?? '').trim())) {
         issues.push(
           `[${streamKey}] ${taskId}: completed row has placeholder result at tasks.csv#L${canonicalRow.__rowNumber}`,
         );
       }
 
-      if (PLACEHOLDER_VALUES.has((canonicalRow.verify ?? "").trim())) {
+      if (PLACEHOLDER_VALUES.has((canonicalRow.verify ?? '').trim())) {
         issues.push(
           `[${streamKey}] ${taskId}: completed row has placeholder verify at tasks.csv#L${canonicalRow.__rowNumber}`,
         );
       }
 
-      if (PLACEHOLDER_VALUES.has((canonicalRow.review_delta ?? "").trim())) {
+      if (PLACEHOLDER_VALUES.has((canonicalRow.review_delta ?? '').trim())) {
         issues.push(
           `[${streamKey}] ${taskId}: completed row has placeholder review_delta at tasks.csv#L${canonicalRow.__rowNumber}`,
         );
@@ -749,7 +749,7 @@ try {
     process.exit(1);
   }
 
-  gatePass(GATE_NAME, "Task cards, checklist, and tasks.csv are synchronized.");
+  gatePass(GATE_NAME, 'Task cards, checklist, and tasks.csv are synchronized.');
 } catch (error) {
   const errorMessage = error instanceof Error ? error.message : String(error);
   gateFail(GATE_NAME, errorMessage);

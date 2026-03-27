@@ -1,11 +1,11 @@
-import { mkdtemp, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { resolve } from "node:path";
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { resolve } from 'node:path';
 
 import {
   MemoryProviderHostSurface,
   MemoryProviderRuntimeMode,
-} from "@repo-ai-governor/memory-provider-registry";
+} from '@repo-ai-governor/memory-provider-registry';
 import {
   OrchestrationClientSurface,
   OrchestrationExecutionKind,
@@ -13,47 +13,47 @@ import {
   OrchestrationServiceEventType,
   OrchestrationServiceHostKind,
   OrchestrationServiceTransportKind,
-} from "@repo-ai-governor/orchestration-service-client";
-import { MemoryStoreEngine } from "@repo-ai-governor/shared";
-import { CliOrchestrationServiceRuntimeMode } from "../apps/cli/src/constants/orchestration-service-runtime.constant.js";
-import { CliOrchestrationServiceRuntime } from "../apps/cli/src/runtime/orchestration-service-runtime.js";
+} from '@repo-ai-governor/orchestration-service-client';
+import { MemoryStoreEngine } from '@repo-ai-governor/shared';
+import { CliOrchestrationServiceRuntimeMode } from '../apps/cli/src/constants/orchestration-service-runtime.constant.js';
+import { CliOrchestrationServiceRuntime } from '../apps/cli/src/runtime/orchestration-service-runtime.js';
 
-describe("desktop entry smoke integration", () => {
+describe('desktop entry smoke integration', () => {
   it.each([
     {
-      distributionMode: "default",
+      distributionMode: 'default',
       memoryConfig: {
         storeEngine: MemoryStoreEngine.FS_CSV,
-        storeRoot: "context/memory/desktop-default",
+        storeRoot: 'context/memory/desktop-default',
       },
       expectedMemoryProvider: {
-        memoryStoreProviderId: "fs-csv",
-        memoryStoreDistributionMode: "default",
-        memoryStoreResolutionSource: "legacy_store_engine",
+        memoryStoreProviderId: 'fs-csv',
+        memoryStoreDistributionMode: 'default',
+        memoryStoreResolutionSource: 'legacy_store_engine',
       },
     },
     {
-      distributionMode: "plugin-enabled",
+      distributionMode: 'plugin-enabled',
       memoryConfig: {
         storeEngine: MemoryStoreEngine.SQLITE_FS,
-        storeRoot: "context/memory/desktop-plugin",
+        storeRoot: 'context/memory/desktop-plugin',
         provider: {
-          module: "@repo-ai-governor/memory-provider-sqlite-fs",
-          exportName: "createMemoryStoreProvider",
+          module: '@repo-ai-governor/memory-provider-sqlite-fs',
+          exportName: 'createMemoryStoreProvider',
         },
       },
       expectedMemoryProvider: {
-        memoryStoreProviderId: "@repo-ai-governor/memory-provider-sqlite-fs",
-        memoryStoreProviderModule: "@repo-ai-governor/memory-provider-sqlite-fs",
-        memoryStoreDistributionMode: "optional",
-        memoryStoreResolutionSource: "plugin_module",
+        memoryStoreProviderId: '@repo-ai-governor/memory-provider-sqlite-fs',
+        memoryStoreProviderModule: '@repo-ai-governor/memory-provider-sqlite-fs',
+        memoryStoreDistributionMode: 'optional',
+        memoryStoreResolutionSource: 'plugin_module',
       },
     },
   ])(
-    "runs desktop execution over the sidecar IPC runtime for $distributionMode distribution",
+    'runs desktop execution over the sidecar IPC runtime for $distributionMode distribution',
     async ({ memoryConfig, expectedMemoryProvider }) => {
-      const tempRoot = await mkdtemp(resolve(tmpdir(), "repo-ai-governor-desktop-entry-"));
-      const workspaceRoot = resolve(tempRoot, ".repo-ai-governor");
+      const tempRoot = await mkdtemp(resolve(tmpdir(), 'repo-ai-governor-desktop-entry-'));
+      const workspaceRoot = resolve(tempRoot, '.repo-ai-governor');
 
       try {
         const runtime = new CliOrchestrationServiceRuntime(workspaceRoot, {
@@ -64,15 +64,15 @@ describe("desktop entry smoke integration", () => {
         const health = await runtime.getHealth();
         const started = await runtime.startExecution(
           {
-            workspaceId: "desktop-workspace",
+            workspaceId: 'desktop-workspace',
             workspaceRoot,
             executionKind: OrchestrationExecutionKind.RUN,
             clientSurface: OrchestrationClientSurface.DESKTOP,
           },
           {
-            processId: "desktop-process",
-            executionId: "desktop-execution",
-            executionSessionId: "desktop-session",
+            processId: 'desktop-process',
+            executionId: 'desktop-execution',
+            executionSessionId: 'desktop-session',
           },
         );
 
@@ -80,21 +80,21 @@ describe("desktop entry smoke integration", () => {
           executionId: started.executionId,
           type: OrchestrationServiceEventType.ARTIFACT_READY,
           status: OrchestrationExecutionStatus.RUNNING,
-          artifactId: "artifact-desktop",
-          artifactPath: resolve(workspaceRoot, "artifact-desktop.json"),
-          message: "desktop artifact ready",
+          artifactId: 'artifact-desktop',
+          artifactPath: resolve(workspaceRoot, 'artifact-desktop.json'),
+          message: 'desktop artifact ready',
         });
         await runtime.publishEvent({
           executionId: started.executionId,
           type: OrchestrationServiceEventType.EXECUTION_COMPLETED,
           status: OrchestrationExecutionStatus.COMPLETED,
-          message: "desktop execution completed",
+          message: 'desktop execution completed',
         });
 
         const summary = await runtime.getExecution(started.executionId);
         const listed = await runtime.listExecutions({
           filter: {
-            workspaceId: "desktop-workspace",
+            workspaceId: 'desktop-workspace',
           },
         });
         const subscribed = await runtime.subscribeExecution({

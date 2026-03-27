@@ -1,4 +1,4 @@
-import { ErrorOutputEnvironment } from "@repo-ai-governor/shared";
+import { ErrorOutputEnvironment } from '@repo-ai-governor/shared';
 import {
   CLI_ADAPTER_TOOL_CHECK_ID_PREFIX,
   CLI_PRETTY_KEY_CHECK_IDS,
@@ -9,9 +9,9 @@ import {
   CliWorkspaceActionDetailField,
   CliWorkspaceScratchCleanupDetailField,
   CliWorkspaceTargetDetailField,
-} from "./constants/cli-command-result-check.constant.js";
-import { CliGovernanceCheckStatus } from "./constants/cli-governance-runtime.constant.js";
-import { CliVerbosity } from "./constants/cli-output.constant.js";
+} from './constants/cli-command-result-check.constant.js';
+import { CliGovernanceCheckStatus } from './constants/cli-governance-runtime.constant.js';
+import { CliVerbosity } from './constants/cli-output.constant.js';
 import type {
   CliCommandExecutionResultPayload,
   CliCommandExperiencePayload,
@@ -19,11 +19,11 @@ import type {
   CliErrorOutputPayload,
   CliRoleStageProgress,
   CliSuccessOutputPayload,
-} from "./types/interfaces/index.js";
+} from './types/interfaces/index.js';
 
-const ANSI_RESET = "\u001b[0m";
-const ANSI_SUCCESS = "\u001b[1;32m";
-const ANSI_ERROR = "\u001b[1;31m";
+const ANSI_RESET = '\u001b[0m';
+const ANSI_SUCCESS = '\u001b[1;32m';
+const ANSI_ERROR = '\u001b[1;31m';
 
 interface CliPrettyLabels {
   successTitle: string;
@@ -93,9 +93,7 @@ export class CliOutputPresenter {
    * Creates a presenter bound to runtime stdout/stderr writers.
    * @param io Output writer adapters from CLI runtime.
    */
-  public constructor(
-    private readonly io: CliOutputPresenterIo,
-  ) {}
+  public constructor(private readonly io: CliOutputPresenterIo) {}
 
   /**
    * Writes one successful payload to stdout using resolved output mode.
@@ -164,7 +162,7 @@ export class CliOutputPresenter {
     );
     const lines = [
       title,
-      "",
+      '',
       labels.summarySection,
       `  - ${payload.message}`,
       `  - ${labels.commandLabel}: ${payload.command}`,
@@ -180,7 +178,7 @@ export class CliOutputPresenter {
     }
 
     if (commandResult?.check_totals || commandResult?.checks || commandResult?.experience) {
-      lines.push("", labels.healthSection);
+      lines.push('', labels.healthSection);
       if (commandResult.check_totals) {
         lines.push(
           `  - ${labels.checksLabel}: ${commandResult.check_totals.pass} ${labels.passLabel} / ${commandResult.check_totals.warn} ${labels.warnLabel} / ${commandResult.check_totals.fail} ${labels.failLabel}`,
@@ -242,7 +240,7 @@ export class CliOutputPresenter {
 
     const nextActions = this.resolvePrettyNextActions(commandResult);
     if (nextActions.length > 0) {
-      lines.push("", labels.nextStepsSection);
+      lines.push('', labels.nextStepsSection);
       if (compactPretty) {
         const firstAction = nextActions[0];
         if (firstAction) {
@@ -259,7 +257,7 @@ export class CliOutputPresenter {
     }
 
     if (commandResult?.artifacts && commandResult.artifacts.length > 0) {
-      lines.push("", labels.artifactsSection);
+      lines.push('', labels.artifactsSection);
       if (compactPretty) {
         lines.push(`  - ${commandResult.artifacts.length} ${labels.artifactsGeneratedLabel}`);
         const primaryArtifact = commandResult.artifacts[0];
@@ -276,7 +274,7 @@ export class CliOutputPresenter {
     }
 
     if (payload.verbosity !== CliVerbosity.QUIET) {
-      lines.push("", labels.contextSection);
+      lines.push('', labels.contextSection);
       if (compactPretty) {
         lines.push(
           `  - ${labels.localeLabel}=${payload.diagnostics.locale} | ${labels.profileLabel}=${payload.diagnostics.profile} | ${labels.outputLabel}=${payload.output_mode}`,
@@ -286,13 +284,13 @@ export class CliOutputPresenter {
           `  - ${labels.localeLabel}: ${payload.diagnostics.locale}`,
           `  - ${labels.profileLabel}: ${payload.diagnostics.profile}`,
           `  - ${labels.outputModeLabel}: ${payload.output_mode}`,
-          `  - ${labels.downgradedFromLabel}: ${payload.runtime.downgraded_from ?? "none"}`,
+          `  - ${labels.downgradedFromLabel}: ${payload.runtime.downgraded_from ?? 'none'}`,
         );
       }
     }
 
     if (payload.verbosity === CliVerbosity.VERBOSE) {
-      lines.push("", labels.debugSection);
+      lines.push('', labels.debugSection);
       lines.push(
         `  - ${labels.configSourceLabel}: ${payload.diagnostics.configSource}`,
         `  - ${labels.workspaceModeLabel}: ${payload.diagnostics.workspaceMode}`,
@@ -307,19 +305,19 @@ export class CliOutputPresenter {
       if (commandResult?.checks) {
         const checkSummary = commandResult.checks
           .map((check) => `${check.id}:${check.status}`)
-          .join(", ");
+          .join(', ');
         lines.push(`  - ${labels.checkSummaryLabel}: ${checkSummary}`);
       }
       if (commandResult?.artifacts) {
         const artifactSummary = commandResult.artifacts
           .map((artifact) => `${artifact.id}=${artifact.path}`)
-          .join(", ");
+          .join(', ');
         lines.push(`  - ${labels.artifactSummaryLabel}: ${artifactSummary}`);
       }
       if (commandResult?.experience) {
         const roleProgressLines = commandResult.experience.roleProgress
           .map((entry) => this.formatRoleProgress(entry))
-          .join("; ");
+          .join('; ');
         if (roleProgressLines.length > 0) {
           lines.push(`  - ${labels.roleProgressLabel}: ${roleProgressLines}`);
         }
@@ -327,20 +325,20 @@ export class CliOutputPresenter {
           const promptLines = commandResult.experience.interactionPrompts
             .map(
               (prompt) =>
-                `${prompt.stage}:${prompt.category}:${prompt.blocking ? "blocking" : "non_blocking"}:${prompt.action}`,
+                `${prompt.stage}:${prompt.category}:${prompt.blocking ? 'blocking' : 'non_blocking'}:${prompt.action}`,
             )
-            .join("; ");
+            .join('; ');
           lines.push(`  - ${labels.interactionPromptsLabel}: ${promptLines}`);
         }
         if (commandResult.experience.layeredLogs.detailed.length > 0) {
           lines.push(
-            `  - ${labels.detailedLogsLabel}: ${commandResult.experience.layeredLogs.detailed.join(" | ")}`,
+            `  - ${labels.detailedLogsLabel}: ${commandResult.experience.layeredLogs.detailed.join(' | ')}`,
           );
         }
       }
     }
 
-    return lines.join("\n");
+    return lines.join('\n');
   }
 
   /**
@@ -352,17 +350,17 @@ export class CliOutputPresenter {
     const commandResult = payload.command_result;
     const progressSuffix = commandResult?.experience
       ? ` progress=${this.resolveProgressSummary(commandResult.experience)}`
-      : "";
+      : '';
 
     if (payload.verbosity === CliVerbosity.QUIET) {
-      return `${payload.message} outputMode=${payload.output_mode}${commandResult ? ` operation=${commandResult.operation}` : ""}${progressSuffix}`;
+      return `${payload.message} outputMode=${payload.output_mode}${commandResult ? ` operation=${commandResult.operation}` : ''}${progressSuffix}`;
     }
 
     if (payload.verbosity === CliVerbosity.VERBOSE) {
-      return `${payload.message} outputMode=${payload.output_mode} verbosity=${payload.verbosity} configSource=${payload.diagnostics.configSource} downgradedFrom=${payload.runtime.downgraded_from ?? "none"}${commandResult ? ` operation=${commandResult.operation}` : ""}${progressSuffix}`;
+      return `${payload.message} outputMode=${payload.output_mode} verbosity=${payload.verbosity} configSource=${payload.diagnostics.configSource} downgradedFrom=${payload.runtime.downgraded_from ?? 'none'}${commandResult ? ` operation=${commandResult.operation}` : ''}${progressSuffix}`;
     }
 
-    return `${payload.message} outputMode=${payload.output_mode} verbosity=${payload.verbosity}${commandResult ? ` operation=${commandResult.operation}` : ""}${progressSuffix}`;
+    return `${payload.message} outputMode=${payload.output_mode} verbosity=${payload.verbosity}${commandResult ? ` operation=${commandResult.operation}` : ''}${progressSuffix}`;
   }
 
   /**
@@ -372,7 +370,7 @@ export class CliOutputPresenter {
    */
   private renderPrettyError(payload: CliErrorOutputPayload): string {
     const title = this.decorateIfColorEnabled(
-      "repo-ai-governor: command failed",
+      'repo-ai-governor: command failed',
       ANSI_ERROR,
       payload.runtime.color_enabled,
     );
@@ -388,7 +386,7 @@ export class CliOutputPresenter {
       lines.push(
         `  command: ${payload.command}`,
         `  output_mode: ${payload.output_mode}`,
-        `  downgraded_from: ${payload.runtime.downgraded_from ?? "none"}`,
+        `  downgraded_from: ${payload.runtime.downgraded_from ?? 'none'}`,
       );
       if (payload.error_details?.report_path) {
         lines.push(`  report_path: ${payload.error_details.report_path}`);
@@ -401,7 +399,7 @@ export class CliOutputPresenter {
       }
     }
 
-    return lines.join("\n");
+    return lines.join('\n');
   }
 
   /**
@@ -411,14 +409,14 @@ export class CliOutputPresenter {
    */
   private renderPlainError(payload: CliErrorOutputPayload): string {
     const detailSegments = [
-      payload.error_details?.report_path ? `report_path=${payload.error_details.report_path}` : "",
-      payload.error_details?.replay_path ? `replay_path=${payload.error_details.replay_path}` : "",
+      payload.error_details?.report_path ? `report_path=${payload.error_details.report_path}` : '',
+      payload.error_details?.replay_path ? `replay_path=${payload.error_details.replay_path}` : '',
       payload.error_details?.pending_status
         ? `pending_status=${payload.error_details.pending_status}`
-        : "",
+        : '',
     ].filter((segment) => segment.length > 0);
 
-    return `${payload.message} error_code=${payload.error_code} hint=${payload.hint} next_action=${payload.next_action}${detailSegments.length > 0 ? ` ${detailSegments.join(" ")}` : ""}`;
+    return `${payload.message} error_code=${payload.error_code} hint=${payload.hint} next_action=${payload.next_action}${detailSegments.length > 0 ? ` ${detailSegments.join(' ')}` : ''}`;
   }
 
   /**
@@ -442,7 +440,7 @@ export class CliOutputPresenter {
    * @returns Output with normalized trailing newline.
    */
   private ensureTrailingNewLine(value: string): string {
-    return value.endsWith("\n") ? value : `${value}\n`;
+    return value.endsWith('\n') ? value : `${value}\n`;
   }
 
   /**
@@ -481,16 +479,16 @@ export class CliOutputPresenter {
     const statusLabels = this.resolveProgressStatusLabels(locale);
     const summary = this.resolveProgressSummary(experience);
     return summary
-      .split(" ")
+      .split(' ')
       .map((segment) => {
-        const [key, value] = segment.split("=");
+        const [key, value] = segment.split('=');
         const localizedLabel = statusLabels[key as keyof typeof statusLabels] ?? key;
         if (this.isZhCnLocale(locale)) {
           return `${localizedLabel} ${value}`;
         }
         return `${value} ${localizedLabel}`;
       })
-      .join(", ");
+      .join(', ');
   }
 
   /**
@@ -514,9 +512,12 @@ export class CliOutputPresenter {
    * @param commandResult Command result payload.
    * @returns Ordered key-check rows.
    */
-  private resolveKeyChecks(commandResult: CliCommandExecutionResultPayload): CliCommandResultCheck[] {
+  private resolveKeyChecks(
+    commandResult: CliCommandExecutionResultPayload,
+  ): CliCommandResultCheck[] {
     return (commandResult.checks ?? []).filter(
-      (check) => CLI_PRETTY_KEY_CHECK_IDS.has(check.id) && check.status === CliGovernanceCheckStatus.PASS,
+      (check) =>
+        CLI_PRETTY_KEY_CHECK_IDS.has(check.id) && check.status === CliGovernanceCheckStatus.PASS,
     );
   }
 
@@ -550,7 +551,7 @@ export class CliOutputPresenter {
       case CliCommandResultCheckId.WORKSPACE_SCRATCH_CLEANUP:
         return labels.workspaceScratchCleanupLabel;
       default:
-        return checkId.replaceAll("_", " ");
+        return checkId.replaceAll('_', ' ');
     }
   }
 
@@ -609,7 +610,7 @@ export class CliOutputPresenter {
         degradedRoles ? `降级 ${degradedRoles} 个` : null,
         fallbackRoles ? `fallback ${fallbackRoles} 个` : null,
       ].filter((part): part is string => Boolean(part));
-      return parts.join("，");
+      return parts.join('，');
     }
 
     const parts = [
@@ -618,7 +619,7 @@ export class CliOutputPresenter {
       degradedRoles ? `degraded ${degradedRoles}` : null,
       fallbackRoles ? `fallback ${fallbackRoles}` : null,
     ].filter((part): part is string => Boolean(part));
-    return parts.join(", ");
+    return parts.join(', ');
   }
 
   /**
@@ -628,8 +629,8 @@ export class CliOutputPresenter {
    * @returns Human-readable tool summary.
    */
   private humanizeAdapterToolDetail(detail: string, locale: string): string {
-    const availabilityPrefix = this.isZhCnLocale(locale) ? "可用性=" : "availability=";
-    const reasonsPrefix = this.isZhCnLocale(locale) ? "原因=" : "reasons=";
+    const availabilityPrefix = this.isZhCnLocale(locale) ? '可用性=' : 'availability=';
+    const reasonsPrefix = this.isZhCnLocale(locale) ? '原因=' : 'reasons=';
 
     const availabilityMatch = detail.match(/(?:availability|可用性)=([^\s]+)/u);
     const reasonsMatch = detail.match(/(?:reasons|原因)=(.*)$/u);
@@ -640,9 +641,9 @@ export class CliOutputPresenter {
     }
 
     if (this.isZhCnLocale(locale)) {
-      return `${availabilityPrefix}${availability ?? "unknown"} ${reasonsPrefix}${reasons ?? "无"}`;
+      return `${availabilityPrefix}${availability ?? 'unknown'} ${reasonsPrefix}${reasons ?? '无'}`;
     }
-    return `${availabilityPrefix}${availability ?? "unknown"} ${reasonsPrefix}${reasons ?? "none"}`;
+    return `${availabilityPrefix}${availability ?? 'unknown'} ${reasonsPrefix}${reasons ?? 'none'}`;
   }
 
   /**
@@ -653,15 +654,15 @@ export class CliOutputPresenter {
    */
   private humanizeUpgradeSchemaDiffDetail(detail: string, locale: string): string {
     const detailMap = this.parseSpaceSeparatedKeyValueDetail(detail);
-    const diffs = detailMap[CliUpgradeSchemaDiffDetailField.DIFFS] ?? "0";
-    const source = detailMap[CliUpgradeSchemaDiffDetailField.SOURCE] ?? "unknown";
-    const target = detailMap[CliUpgradeSchemaDiffDetailField.TARGET] ?? "unknown";
+    const diffs = detailMap[CliUpgradeSchemaDiffDetailField.DIFFS] ?? '0';
+    const source = detailMap[CliUpgradeSchemaDiffDetailField.SOURCE] ?? 'unknown';
+    const target = detailMap[CliUpgradeSchemaDiffDetailField.TARGET] ?? 'unknown';
 
     return this.translateText(
-      "cli.output.pretty.checkDetails.upgradeSchemaDiff",
+      'cli.output.pretty.checkDetails.upgradeSchemaDiff',
       locale,
-      "{{diffs}} diffs, {{source}} -> {{target}}",
-      "差异 {{diffs}} 项，{{source}} -> {{target}}",
+      '{{diffs}} diffs, {{source}} -> {{target}}',
+      '差异 {{diffs}} 项，{{source}} -> {{target}}',
       {
         diffs,
         source,
@@ -678,13 +679,13 @@ export class CliOutputPresenter {
    */
   private humanizeMigrationSuggestionDetail(detail: string, locale: string): string {
     const detailMap = this.parseSpaceSeparatedKeyValueDetail(detail);
-    const count = detailMap[CliMigrationSuggestionDetailField.COUNT] ?? "0";
+    const count = detailMap[CliMigrationSuggestionDetailField.COUNT] ?? '0';
 
     return this.translateText(
-      "cli.output.pretty.checkDetails.migrationSuggestions",
+      'cli.output.pretty.checkDetails.migrationSuggestions',
       locale,
-      "{{count}} suggestions",
-      "{{count}} 条建议",
+      '{{count}} suggestions',
+      '{{count}} 条建议',
       {
         count,
       },
@@ -699,15 +700,15 @@ export class CliOutputPresenter {
    */
   private humanizeConfirmationItemsDetail(detail: string, locale: string): string {
     const detailMap = this.parseSpaceSeparatedKeyValueDetail(detail);
-    const decision = detailMap[CliConfirmationItemsDetailField.DECISION] ?? "unknown";
-    const count = detailMap[CliConfirmationItemsDetailField.COUNT] ?? "0";
-    const blocking = detailMap[CliConfirmationItemsDetailField.BLOCKING] ?? "0";
+    const decision = detailMap[CliConfirmationItemsDetailField.DECISION] ?? 'unknown';
+    const count = detailMap[CliConfirmationItemsDetailField.COUNT] ?? '0';
+    const blocking = detailMap[CliConfirmationItemsDetailField.BLOCKING] ?? '0';
 
     return this.translateText(
-      "cli.output.pretty.checkDetails.confirmationItems",
+      'cli.output.pretty.checkDetails.confirmationItems',
       locale,
-      "decision {{decision}}, {{count}} items, {{blocking}} blocking",
-      "决策 {{decision}}，确认项 {{count}} 条，阻断 {{blocking}} 条",
+      'decision {{decision}}, {{count}} items, {{blocking}} blocking',
+      '决策 {{decision}}，确认项 {{count}} 条，阻断 {{blocking}} 条',
       {
         decision,
         count,
@@ -734,14 +735,14 @@ export class CliOutputPresenter {
    */
   private humanizeWorkspaceTargetDetail(detail: string, locale: string): string {
     const detailMap = this.parseJsonOrSpaceSeparatedKeyValueDetail(detail);
-    const mode = detailMap[CliWorkspaceTargetDetailField.MODE] ?? "unknown";
-    const root = detailMap[CliWorkspaceTargetDetailField.ROOT] ?? "unknown";
+    const mode = detailMap[CliWorkspaceTargetDetailField.MODE] ?? 'unknown';
+    const root = detailMap[CliWorkspaceTargetDetailField.ROOT] ?? 'unknown';
 
     return this.translateText(
-      "cli.output.pretty.checkDetails.workspaceTarget",
+      'cli.output.pretty.checkDetails.workspaceTarget',
       locale,
-      "mode {{mode}}, root {{root}}",
-      "模式 {{mode}}，根路径 {{root}}",
+      'mode {{mode}}, root {{root}}',
+      '模式 {{mode}}，根路径 {{root}}',
       {
         mode,
         root,
@@ -762,10 +763,10 @@ export class CliOutputPresenter {
 
     if (removedRoot) {
       return this.translateText(
-        "cli.output.pretty.checkDetails.workspaceScratchCleanupRemoved",
+        'cli.output.pretty.checkDetails.workspaceScratchCleanupRemoved',
         locale,
-        "scratch root removed: {{root}}",
-        "scratch 根目录已移除：{{root}}",
+        'scratch root removed: {{root}}',
+        'scratch 根目录已移除：{{root}}',
         {
           root: removedRoot,
         },
@@ -774,10 +775,10 @@ export class CliOutputPresenter {
 
     if (retainedRoot) {
       return this.translateText(
-        "cli.output.pretty.checkDetails.workspaceScratchCleanupRetained",
+        'cli.output.pretty.checkDetails.workspaceScratchCleanupRetained',
         locale,
-        "scratch root retained: {{root}}",
-        "scratch 根目录保留：{{root}}",
+        'scratch root retained: {{root}}',
+        'scratch 根目录保留：{{root}}',
         {
           root: retainedRoot,
         },
@@ -794,9 +795,9 @@ export class CliOutputPresenter {
    */
   private parseSpaceSeparatedKeyValueDetail(detail: string): Record<string, string> {
     const parsedDetail: Record<string, string> = {};
-    const segments = detail.split(" ").filter((segment) => segment.includes("="));
+    const segments = detail.split(' ').filter((segment) => segment.includes('='));
     for (const segment of segments) {
-      const separatorIndex = segment.indexOf("=");
+      const separatorIndex = segment.indexOf('=');
       if (separatorIndex <= 0) {
         continue;
       }
@@ -817,14 +818,14 @@ export class CliOutputPresenter {
    */
   private parseJsonOrSpaceSeparatedKeyValueDetail(detail: string): Record<string, string> {
     const normalizedDetail = detail.trim();
-    if (normalizedDetail.startsWith("{") && normalizedDetail.endsWith("}")) {
+    if (normalizedDetail.startsWith('{') && normalizedDetail.endsWith('}')) {
       try {
         const parsedDetail = JSON.parse(normalizedDetail) as Record<string, unknown>;
         return Object.fromEntries(
           Object.entries(parsedDetail)
             .filter((entry): entry is [string, string | number | boolean] => {
               const [, value] = entry;
-              return ["string", "number", "boolean"].includes(typeof value);
+              return ['string', 'number', 'boolean'].includes(typeof value);
             })
             .map(([key, value]) => [key, String(value)]),
         );
@@ -866,10 +867,7 @@ export class CliOutputPresenter {
    * @param interpolation Optional interpolation variables.
    * @returns Interpolated fallback text.
    */
-  private interpolateTemplate(
-    template: string,
-    interpolation?: Record<string, string>,
-  ): string {
+  private interpolateTemplate(template: string, interpolation?: Record<string, string>): string {
     if (!interpolation) {
       return template;
     }
@@ -911,22 +909,22 @@ export class CliOutputPresenter {
   private resolveProgressStatusLabels(locale: string): Record<string, string> {
     if (this.isZhCnLocale(locale)) {
       return {
-        queued: "待开始",
-        running: "进行中",
-        completed: "已完成",
-        waiting: "等待中",
-        warning: "告警",
-        failed: "失败",
+        queued: '待开始',
+        running: '进行中',
+        completed: '已完成',
+        waiting: '等待中',
+        warning: '告警',
+        failed: '失败',
       };
     }
 
     return {
-      queued: "queued",
-      running: "running",
-      completed: "completed",
-      waiting: "waiting",
-      warning: "warning",
-      failed: "failed",
+      queued: 'queued',
+      running: 'running',
+      completed: 'completed',
+      waiting: 'waiting',
+      warning: 'warning',
+      failed: 'failed',
     };
   }
 
@@ -938,173 +936,173 @@ export class CliOutputPresenter {
   private resolvePrettyLabels(locale: string): CliPrettyLabels {
     if (this.isZhCnLocale(locale)) {
       return {
-        successTitle: "repo-ai-governor：命令执行成功",
-        summarySection: "摘要",
-        commandLabel: "命令",
-        operationLabel: "操作",
-        attachModeLabel: "挂载模式",
-        healthSection: "健康状态",
-        checksLabel: "检查",
-        passLabel: "通过",
-        warnLabel: "告警",
-        failLabel: "失败",
-        progressLabel: "进度",
-        attentionLabel: "关注项",
-        keyDetailsLabel: "关键项",
-        nextStepsSection: "下一步",
-        moreHint: "条更多（去掉 --compact 查看完整内容）",
-        artifactsSection: "产物",
-        artifactsGeneratedLabel: "个产物已生成。",
-        primaryLabel: "主产物",
-        contextSection: "上下文",
-        localeLabel: "语言",
-        profileLabel: "配置档",
-        outputLabel: "输出",
-        outputModeLabel: "输出模式",
-        downgradedFromLabel: "降级来源",
-        debugSection: "调试",
-        configSourceLabel: "配置来源",
-        workspaceModeLabel: "工作区模式",
-        workspaceModeSourceLabel: "工作区模式来源",
-        workspaceIdLabel: "工作区 ID",
-        workspaceRootLabel: "工作区根路径",
-        memoryStoreEngineLabel: "记忆存储引擎",
-        memoryStoreRootLabel: "记忆存储根路径",
-        memoryStoreProviderLabel: "记忆存储 Provider",
-        checkSummaryLabel: "检查摘要",
-        artifactSummaryLabel: "产物摘要",
-        roleProgressLabel: "角色进度",
-        interactionPromptsLabel: "交互提示",
-        detailedLogsLabel: "详细日志",
-        adapterVerificationLabel: "Adapter 校验",
-        adapterToolLabelPrefix: "Adapter 工具",
+        successTitle: 'repo-ai-governor：命令执行成功',
+        summarySection: '摘要',
+        commandLabel: '命令',
+        operationLabel: '操作',
+        attachModeLabel: '挂载模式',
+        healthSection: '健康状态',
+        checksLabel: '检查',
+        passLabel: '通过',
+        warnLabel: '告警',
+        failLabel: '失败',
+        progressLabel: '进度',
+        attentionLabel: '关注项',
+        keyDetailsLabel: '关键项',
+        nextStepsSection: '下一步',
+        moreHint: '条更多（去掉 --compact 查看完整内容）',
+        artifactsSection: '产物',
+        artifactsGeneratedLabel: '个产物已生成。',
+        primaryLabel: '主产物',
+        contextSection: '上下文',
+        localeLabel: '语言',
+        profileLabel: '配置档',
+        outputLabel: '输出',
+        outputModeLabel: '输出模式',
+        downgradedFromLabel: '降级来源',
+        debugSection: '调试',
+        configSourceLabel: '配置来源',
+        workspaceModeLabel: '工作区模式',
+        workspaceModeSourceLabel: '工作区模式来源',
+        workspaceIdLabel: '工作区 ID',
+        workspaceRootLabel: '工作区根路径',
+        memoryStoreEngineLabel: '记忆存储引擎',
+        memoryStoreRootLabel: '记忆存储根路径',
+        memoryStoreProviderLabel: '记忆存储 Provider',
+        checkSummaryLabel: '检查摘要',
+        artifactSummaryLabel: '产物摘要',
+        roleProgressLabel: '角色进度',
+        interactionPromptsLabel: '交互提示',
+        detailedLogsLabel: '详细日志',
+        adapterVerificationLabel: 'Adapter 校验',
+        adapterToolLabelPrefix: 'Adapter 工具',
         upgradeSchemaDiffLabel: this.translateText(
-          "cli.output.pretty.checkLabels.upgradeSchemaDiff",
+          'cli.output.pretty.checkLabels.upgradeSchemaDiff',
           locale,
-          "Upgrade schema diff",
-          "升级 schema diff",
+          'Upgrade schema diff',
+          '升级 schema diff',
         ),
         migrationSuggestionsLabel: this.translateText(
-          "cli.output.pretty.checkLabels.migrationSuggestions",
+          'cli.output.pretty.checkLabels.migrationSuggestions',
           locale,
-          "Migration suggestions",
-          "迁移建议",
+          'Migration suggestions',
+          '迁移建议',
         ),
         confirmationItemsLabel: this.translateText(
-          "cli.output.pretty.checkLabels.confirmationItems",
+          'cli.output.pretty.checkLabels.confirmationItems',
           locale,
-          "Confirmation items",
-          "确认项",
+          'Confirmation items',
+          '确认项',
         ),
         rollbackReferenceLabel: this.translateText(
-          "cli.output.pretty.checkLabels.rollbackReference",
+          'cli.output.pretty.checkLabels.rollbackReference',
           locale,
-          "Rollback reference",
-          "回滚参考",
+          'Rollback reference',
+          '回滚参考',
         ),
         workspaceActionLabel: this.translateText(
-          "cli.output.pretty.checkLabels.workspaceAction",
+          'cli.output.pretty.checkLabels.workspaceAction',
           locale,
-          "Workspace action",
-          "工作区动作",
+          'Workspace action',
+          '工作区动作',
         ),
         workspaceTargetLabel: this.translateText(
-          "cli.output.pretty.checkLabels.workspaceTarget",
+          'cli.output.pretty.checkLabels.workspaceTarget',
           locale,
-          "Workspace target",
-          "工作区目标",
+          'Workspace target',
+          '工作区目标',
         ),
         workspaceScratchCleanupLabel: this.translateText(
-          "cli.output.pretty.checkLabels.workspaceScratchCleanup",
+          'cli.output.pretty.checkLabels.workspaceScratchCleanup',
           locale,
-          "Workspace scratch cleanup",
-          "工作区暂存清理",
+          'Workspace scratch cleanup',
+          '工作区暂存清理',
         ),
       };
     }
 
     return {
-      successTitle: "repo-ai-governor: command succeeded",
-      summarySection: "Summary",
-      commandLabel: "Command",
-      operationLabel: "Operation",
-      attachModeLabel: "Attach mode",
-      healthSection: "Health",
-      checksLabel: "Checks",
-      passLabel: "pass",
-      warnLabel: "warn",
-      failLabel: "fail",
-      progressLabel: "Progress",
-      attentionLabel: "Attention",
-      keyDetailsLabel: "Key Details",
-      nextStepsSection: "Next Steps",
-      moreHint: "more (rerun without --compact to expand).",
-      artifactsSection: "Artifacts",
-      artifactsGeneratedLabel: "artifact(s) generated.",
-      primaryLabel: "Primary",
-      contextSection: "Context",
-      localeLabel: "Locale",
-      profileLabel: "Profile",
-      outputLabel: "Output",
-      outputModeLabel: "Output mode",
-      downgradedFromLabel: "Downgraded from",
-      debugSection: "Debug",
-      configSourceLabel: "Config source",
-      workspaceModeLabel: "Workspace mode",
-      workspaceModeSourceLabel: "Workspace mode source",
-      workspaceIdLabel: "Workspace ID",
-      workspaceRootLabel: "Workspace root",
-      memoryStoreEngineLabel: "Memory store engine",
-      memoryStoreRootLabel: "Memory store root",
-      memoryStoreProviderLabel: "Memory store provider",
-      checkSummaryLabel: "Check summary",
-      artifactSummaryLabel: "Artifact summary",
-      roleProgressLabel: "Role progress",
-      interactionPromptsLabel: "Interaction prompts",
-      detailedLogsLabel: "Detailed logs",
-      adapterVerificationLabel: "Adapter verification",
-      adapterToolLabelPrefix: "Adapter tool",
+      successTitle: 'repo-ai-governor: command succeeded',
+      summarySection: 'Summary',
+      commandLabel: 'Command',
+      operationLabel: 'Operation',
+      attachModeLabel: 'Attach mode',
+      healthSection: 'Health',
+      checksLabel: 'Checks',
+      passLabel: 'pass',
+      warnLabel: 'warn',
+      failLabel: 'fail',
+      progressLabel: 'Progress',
+      attentionLabel: 'Attention',
+      keyDetailsLabel: 'Key Details',
+      nextStepsSection: 'Next Steps',
+      moreHint: 'more (rerun without --compact to expand).',
+      artifactsSection: 'Artifacts',
+      artifactsGeneratedLabel: 'artifact(s) generated.',
+      primaryLabel: 'Primary',
+      contextSection: 'Context',
+      localeLabel: 'Locale',
+      profileLabel: 'Profile',
+      outputLabel: 'Output',
+      outputModeLabel: 'Output mode',
+      downgradedFromLabel: 'Downgraded from',
+      debugSection: 'Debug',
+      configSourceLabel: 'Config source',
+      workspaceModeLabel: 'Workspace mode',
+      workspaceModeSourceLabel: 'Workspace mode source',
+      workspaceIdLabel: 'Workspace ID',
+      workspaceRootLabel: 'Workspace root',
+      memoryStoreEngineLabel: 'Memory store engine',
+      memoryStoreRootLabel: 'Memory store root',
+      memoryStoreProviderLabel: 'Memory store provider',
+      checkSummaryLabel: 'Check summary',
+      artifactSummaryLabel: 'Artifact summary',
+      roleProgressLabel: 'Role progress',
+      interactionPromptsLabel: 'Interaction prompts',
+      detailedLogsLabel: 'Detailed logs',
+      adapterVerificationLabel: 'Adapter verification',
+      adapterToolLabelPrefix: 'Adapter tool',
       upgradeSchemaDiffLabel: this.translateText(
-        "cli.output.pretty.checkLabels.upgradeSchemaDiff",
+        'cli.output.pretty.checkLabels.upgradeSchemaDiff',
         locale,
-        "Upgrade schema diff",
-        "升级 schema diff",
+        'Upgrade schema diff',
+        '升级 schema diff',
       ),
       migrationSuggestionsLabel: this.translateText(
-        "cli.output.pretty.checkLabels.migrationSuggestions",
+        'cli.output.pretty.checkLabels.migrationSuggestions',
         locale,
-        "Migration suggestions",
-        "迁移建议",
+        'Migration suggestions',
+        '迁移建议',
       ),
       confirmationItemsLabel: this.translateText(
-        "cli.output.pretty.checkLabels.confirmationItems",
+        'cli.output.pretty.checkLabels.confirmationItems',
         locale,
-        "Confirmation items",
-        "确认项",
+        'Confirmation items',
+        '确认项',
       ),
       rollbackReferenceLabel: this.translateText(
-        "cli.output.pretty.checkLabels.rollbackReference",
+        'cli.output.pretty.checkLabels.rollbackReference',
         locale,
-        "Rollback reference",
-        "回滚参考",
+        'Rollback reference',
+        '回滚参考',
       ),
       workspaceActionLabel: this.translateText(
-        "cli.output.pretty.checkLabels.workspaceAction",
+        'cli.output.pretty.checkLabels.workspaceAction',
         locale,
-        "Workspace action",
-        "工作区动作",
+        'Workspace action',
+        '工作区动作',
       ),
       workspaceTargetLabel: this.translateText(
-        "cli.output.pretty.checkLabels.workspaceTarget",
+        'cli.output.pretty.checkLabels.workspaceTarget',
         locale,
-        "Workspace target",
-        "工作区目标",
+        'Workspace target',
+        '工作区目标',
       ),
       workspaceScratchCleanupLabel: this.translateText(
-        "cli.output.pretty.checkLabels.workspaceScratchCleanup",
+        'cli.output.pretty.checkLabels.workspaceScratchCleanup',
         locale,
-        "Workspace scratch cleanup",
-        "工作区暂存清理",
+        'Workspace scratch cleanup',
+        '工作区暂存清理',
       ),
     };
   }
@@ -1115,7 +1113,7 @@ export class CliOutputPresenter {
    * @returns True when locale starts with `zh`.
    */
   private isZhCnLocale(locale: string): boolean {
-    return locale.trim().toLowerCase().startsWith("zh");
+    return locale.trim().toLowerCase().startsWith('zh');
   }
 
   /**
@@ -1126,8 +1124,8 @@ export class CliOutputPresenter {
   private formatRoleProgress(entry: CliRoleStageProgress): string {
     const backlink =
       entry.backlink && (entry.backlink.stageId || entry.backlink.executionId)
-        ? `execution=${entry.backlink.executionId ?? "n/a"},stage=${entry.backlink.stageId ?? "n/a"}`
-        : "execution=n/a,stage=n/a";
+        ? `execution=${entry.backlink.executionId ?? 'n/a'},stage=${entry.backlink.stageId ?? 'n/a'}`
+        : 'execution=n/a,stage=n/a';
     return `role=${entry.roleId},stage=${entry.stage},status=${entry.status},category=${entry.category},${backlink}`;
   }
 }

@@ -6,5 +6,5 @@
  * adapter implementation, and diagnostics use one finite vocabulary.
  */
 export enum LocalModelProvider {
-  OLLAMA = "ollama",
+  OLLAMA = 'ollama',
 }

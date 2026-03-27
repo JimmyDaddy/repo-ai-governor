@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
-import { resolve } from "node:path";
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { resolve } from 'node:path';
 
-import { gateFail, gateInfo, gatePass } from "./gate-output.js";
+import { gateFail, gateInfo, gatePass } from './gate-output.js';
 
-const GATE_NAME = "finite-literal-sets";
-const TARGET_DIRECTORIES = ["apps", "packages", "bin", "test"];
+const GATE_NAME = 'finite-literal-sets';
+const TARGET_DIRECTORIES = ['apps', 'packages', 'bin', 'test'];
 const TARGET_FILE_PATTERN = /\.(ts|tsx|js|mjs|cjs)$/;
-const IGNORED_DIRECTORY_NAMES = new Set(["node_modules", "dist", "coverage", ".turbo"]);
-const LITERAL_SET_ALLOW_MARKER = "literal-set-allowed:";
+const IGNORED_DIRECTORY_NAMES = new Set(['node_modules', 'dist', 'coverage', '.turbo']);
+const LITERAL_SET_ALLOW_MARKER = 'literal-set-allowed:';
 const FINITE_LITERAL_TYPE_PATTERN =
   /\btype\s+([A-Za-z][A-Za-z0-9_]*)\s*=\s*((?:"[^"]+"\s*\|\s*)+"[^"]+")\s*;/gm;
 
@@ -58,7 +58,7 @@ function resolveLineNumber(source, index) {
  * @returns {Array<{filePath: string, lineNumber: number, typeName: string, sourceLine: string}>}
  */
 function collectViolations(filePath) {
-  const source = readFileSync(filePath, "utf8");
+  const source = readFileSync(filePath, 'utf8');
   const lines = source.split(/\r?\n/);
   const violations = [];
   const matches = source.matchAll(FINITE_LITERAL_TYPE_PATTERN);
@@ -66,8 +66,8 @@ function collectViolations(filePath) {
   for (const match of matches) {
     const [declaration, typeName] = match;
     const lineNumber = resolveLineNumber(source, match.index ?? 0);
-    const previousLine = lines[lineNumber - 2] ?? "";
-    const currentLine = lines[lineNumber - 1] ?? "";
+    const previousLine = lines[lineNumber - 2] ?? '';
+    const currentLine = lines[lineNumber - 1] ?? '';
 
     if (
       declaration.includes(LITERAL_SET_ALLOW_MARKER) ||
@@ -81,7 +81,7 @@ function collectViolations(filePath) {
       filePath,
       lineNumber,
       typeName,
-      sourceLine: declaration.replace(/\s+/g, " ").trim(),
+      sourceLine: declaration.replace(/\s+/g, ' ').trim(),
     });
   }
 
@@ -114,4 +114,4 @@ if (allViolations.length > 0) {
   process.exit(1);
 }
 
-gatePass(GATE_NAME, "Finite literal sets are centrally managed.");
+gatePass(GATE_NAME, 'Finite literal sets are centrally managed.');

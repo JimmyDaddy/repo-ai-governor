@@ -7,65 +7,65 @@ import {
   AgentConfirmationDecision,
   AgentStreamEventType,
   type AgentStreamEventsRequest,
-} from "@repo-ai-governor/adapter-sdk";
-import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
+} from '@repo-ai-governor/adapter-sdk';
+import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import {
   ClaudeCodeAgentAdapter,
   ClaudeCodeAgentAdapterExecutionMode,
   type ClaudeCodeExecRunner,
-} from "../src/index.js";
+} from '../src/index.js';
 
 function createStreamRequest(): AgentStreamEventsRequest {
   return {
-    processId: "process-1",
-    executionId: "execution-1",
-    stageId: "stage-1",
-    routeKey: "codegen",
+    processId: 'process-1',
+    executionId: 'execution-1',
+    stageId: 'stage-1',
+    routeKey: 'codegen',
     input: {
-      prompt: "implement feature",
+      prompt: 'implement feature',
     },
   };
 }
 
-describe("claude-code-agent-adapter smoke", () => {
-  const createClaudeCodeExecRunner = (responseText = "OK"): ClaudeCodeExecRunner => {
+describe('claude-code-agent-adapter smoke', () => {
+  const createClaudeCodeExecRunner = (responseText = 'OK'): ClaudeCodeExecRunner => {
     return async ({ prompt, operation }) => ({
       stdout:
-        operation === AgentCliExecOperation.PROBE || prompt.includes("Respond with exactly OK.")
-          ? "OK\n"
+        operation === AgentCliExecOperation.PROBE || prompt.includes('Respond with exactly OK.')
+          ? 'OK\n'
           : `${responseText}\n`,
-      stderr: "",
+      stderr: '',
       exitCode: 0,
       signal: null,
       elapsedMs: 11,
     });
   };
 
-  it("returns Claude Code capability matrix via probe", async () => {
+  it('returns Claude Code capability matrix via probe', async () => {
     const adapter = new ClaudeCodeAgentAdapter();
 
     const probeResult = await adapter.probe({
-      routeKey: "codegen",
+      routeKey: 'codegen',
     });
     const parallelTaskCapability = probeResult.capabilityMatrix.capabilityStates.find(
       (state) => state.capability === AgentCapability.PARALLEL_TASK,
     );
 
-    expect(probeResult.identity.surface).toBe("claude-code");
+    expect(probeResult.identity.surface).toBe('claude-code');
     expect(probeResult.capabilityMatrix.capabilityStates).toHaveLength(
       Object.values(AgentCapability).length,
     );
     expect(parallelTaskCapability?.supportLevel).toBe(AgentCapabilitySupportLevel.DEGRADED);
   });
 
-  it("returns truthful capability matrix in cli_exec mode", async () => {
+  it('returns truthful capability matrix in cli_exec mode', async () => {
     const adapter = new ClaudeCodeAgentAdapter({
       executionMode: ClaudeCodeAgentAdapterExecutionMode.CLI_EXEC,
       execRunner: createClaudeCodeExecRunner(),
     });
 
     const probeResult = await adapter.probe({
-      routeKey: "codegen",
+      routeKey: 'codegen',
     });
     const confirmationGate = probeResult.capabilityMatrix.capabilityStates.find(
       (state) => state.capability === AgentCapability.CONFIRMATION_GATE,
@@ -77,64 +77,64 @@ describe("claude-code-agent-adapter smoke", () => {
       (state) => state.capability === AgentCapability.STRUCTURED_OUTPUT,
     );
 
-    expect(probeResult.availabilityStatus).toBe("available");
+    expect(probeResult.availabilityStatus).toBe('available');
     expect(structuredOutput?.supportLevel).toBe(AgentCapabilitySupportLevel.DEGRADED);
     expect(confirmationGate?.supportLevel).toBe(AgentCapabilitySupportLevel.UNSUPPORTED);
     expect(cancellation?.supportLevel).toBe(AgentCapabilitySupportLevel.UNSUPPORTED);
     expect(probeResult.capabilityMatrix.cancellation.supportsCancel).toBe(false);
   });
 
-  it("returns normalized invocation output shape", async () => {
+  it('returns normalized invocation output shape', async () => {
     const adapter = new ClaudeCodeAgentAdapter();
     const invokeResult = await adapter.invokeStage({
-      processId: "process-1",
-      executionId: "execution-1",
-      stageId: "stage-1",
-      routeKey: "codegen",
+      processId: 'process-1',
+      executionId: 'execution-1',
+      stageId: 'stage-1',
+      routeKey: 'codegen',
       input: {
-        prompt: "implement feature",
+        prompt: 'implement feature',
       },
     });
 
-    expect(invokeResult.output.adapterSurface).toBe("claude-code");
-    expect(invokeResult.output.routeKey).toBe("codegen");
+    expect(invokeResult.output.adapterSurface).toBe('claude-code');
+    expect(invokeResult.output.routeKey).toBe('codegen');
   });
 
-  it("returns normalized invocation output in cli_exec mode", async () => {
+  it('returns normalized invocation output in cli_exec mode', async () => {
     const adapter = new ClaudeCodeAgentAdapter({
       executionMode: ClaudeCodeAgentAdapterExecutionMode.CLI_EXEC,
-      execRunner: createClaudeCodeExecRunner("simulated claude code response"),
+      execRunner: createClaudeCodeExecRunner('simulated claude code response'),
     });
     const invokeResult = await adapter.invokeStage({
-      processId: "process-1",
-      executionId: "execution-1",
-      stageId: "stage-1",
-      routeKey: "codegen",
+      processId: 'process-1',
+      executionId: 'execution-1',
+      stageId: 'stage-1',
+      routeKey: 'codegen',
       input: {
-        prompt: "implement feature",
+        prompt: 'implement feature',
       },
     });
 
-    expect(invokeResult.output.adapterSurface).toBe("claude-code");
-    expect(invokeResult.output.responseText).toContain("simulated claude code response");
+    expect(invokeResult.output.adapterSurface).toBe('claude-code');
+    expect(invokeResult.output.responseText).toContain('simulated claude code response');
   });
 
-  it("degrades confirmation/cancel semantics in cli_exec mode", async () => {
+  it('degrades confirmation/cancel semantics in cli_exec mode', async () => {
     const adapter = new ClaudeCodeAgentAdapter({
       executionMode: ClaudeCodeAgentAdapterExecutionMode.CLI_EXEC,
       execRunner: createClaudeCodeExecRunner(),
     });
 
     const confirmationResult = await adapter.requestConfirmation({
-      processId: "process-1",
-      executionId: "execution-1",
-      stageId: "stage-1",
-      routeKey: "codegen",
-      prompt: "confirm",
+      processId: 'process-1',
+      executionId: 'execution-1',
+      stageId: 'stage-1',
+      routeKey: 'codegen',
+      prompt: 'confirm',
     });
     const cancelResult = await adapter.cancel({
-      processId: "process-1",
-      executionId: "execution-1",
+      processId: 'process-1',
+      executionId: 'execution-1',
       scope: AgentCancellationScope.STAGE,
       reason: AgentCancellationReason.USER_REQUESTED,
     });
@@ -143,45 +143,45 @@ describe("claude-code-agent-adapter smoke", () => {
     expect(cancelResult.acknowledged).toBe(false);
   });
 
-  it("maps credential failures into unavailable probe reasons", async () => {
+  it('maps credential failures into unavailable probe reasons', async () => {
     const adapter = new ClaudeCodeAgentAdapter({
       executionMode: ClaudeCodeAgentAdapterExecutionMode.CLI_EXEC,
       execRunner: async () => {
         throw new RuntimeError(
           GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED,
-          "Claude Code probe failed: login required",
+          'Claude Code probe failed: login required',
           {
-            surface: "claude-code",
+            surface: 'claude-code',
             operation: AgentCliExecOperation.PROBE,
-            stderr: "Authentication required. Run `claude auth login` first.",
+            stderr: 'Authentication required. Run `claude auth login` first.',
           },
         );
       },
     });
 
     const probeResult = await adapter.probe({
-      routeKey: "codegen",
+      routeKey: 'codegen',
     });
 
-    expect(probeResult.availabilityStatus).toBe("unavailable");
-    expect(probeResult.unavailableReasons).toContain("credential_missing:claude-code");
+    expect(probeResult.availabilityStatus).toBe('unavailable');
+    expect(probeResult.unavailableReasons).toContain('credential_missing:claude-code');
   });
 
-  it("retries transient cli_exec probe failures before surfacing availability", async () => {
+  it('retries transient cli_exec probe failures before surfacing availability', async () => {
     const execRunner = vi
       .fn<ClaudeCodeExecRunner>()
       .mockRejectedValueOnce(
         new RuntimeError(
           GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED,
-          "Claude Code probe failed: rate limited",
+          'Claude Code probe failed: rate limited',
           {
-            stderr: "429 rate limit exceeded",
+            stderr: '429 rate limit exceeded',
           },
         ),
       )
       .mockResolvedValueOnce({
-        stdout: "OK\n",
-        stderr: "",
+        stdout: 'OK\n',
+        stderr: '',
         exitCode: 0,
         signal: null,
         elapsedMs: 4,
@@ -192,19 +192,19 @@ describe("claude-code-agent-adapter smoke", () => {
     });
 
     const probeResult = await adapter.probe({
-      routeKey: "codegen",
+      routeKey: 'codegen',
     });
 
-    expect(probeResult.availabilityStatus).toBe("available");
+    expect(probeResult.availabilityStatus).toBe('available');
     expect(execRunner).toHaveBeenCalledTimes(2);
   });
 
-  it("treats non-zero process exit as protocol failure even when stdout is present", async () => {
+  it('treats non-zero process exit as protocol failure even when stdout is present', async () => {
     const adapter = new ClaudeCodeAgentAdapter({
       executionMode: ClaudeCodeAgentAdapterExecutionMode.CLI_EXEC,
       execRunner: async () => ({
-        stdout: "partial response\n",
-        stderr: "process failed",
+        stdout: 'partial response\n',
+        stderr: 'process failed',
         exitCode: 1,
         signal: null,
         elapsedMs: 6,
@@ -213,12 +213,12 @@ describe("claude-code-agent-adapter smoke", () => {
 
     await expect(
       adapter.invokeStage({
-        processId: "process-1",
-        executionId: "execution-1",
-        stageId: "stage-1",
-        routeKey: "codegen",
+        processId: 'process-1',
+        executionId: 'execution-1',
+        stageId: 'stage-1',
+        routeKey: 'codegen',
         input: {
-          prompt: "implement feature",
+          prompt: 'implement feature',
         },
       }),
     ).rejects.toMatchObject({
@@ -226,21 +226,21 @@ describe("claude-code-agent-adapter smoke", () => {
     });
   });
 
-  it("falls back from claude to claude-code when the primary binary is missing", async () => {
+  it('falls back from claude to claude-code when the primary binary is missing', async () => {
     const execRunner = vi.fn<ClaudeCodeExecRunner>(async (request) => {
-      if (request.command === "claude") {
+      if (request.command === 'claude') {
         throw new RuntimeError(
           GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED,
-          "spawn claude ENOENT",
+          'spawn claude ENOENT',
           {
-            stderr: "spawn claude ENOENT",
+            stderr: 'spawn claude ENOENT',
           },
         );
       }
 
       return {
-        stdout: "OK\n",
-        stderr: "",
+        stdout: 'OK\n',
+        stderr: '',
         exitCode: 0,
         signal: null,
         elapsedMs: 5,
@@ -252,25 +252,25 @@ describe("claude-code-agent-adapter smoke", () => {
     });
 
     const probeResult = await adapter.probe({
-      routeKey: "codegen",
+      routeKey: 'codegen',
     });
 
-    expect(probeResult.availabilityStatus).toBe("available");
+    expect(probeResult.availabilityStatus).toBe('available');
     expect(execRunner).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({
-        command: "claude",
+        command: 'claude',
       }),
     );
     expect(execRunner).toHaveBeenNthCalledWith(
       2,
       expect.objectContaining({
-        command: "claude-code",
+        command: 'claude-code',
       }),
     );
   });
 
-  it("streams status and completed events", async () => {
+  it('streams status and completed events', async () => {
     const adapter = new ClaudeCodeAgentAdapter();
     const events = [];
 

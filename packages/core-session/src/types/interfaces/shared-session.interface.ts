@@ -1,4 +1,4 @@
-import type { SessionStatus } from "../../constants/index.js";
+import type { SessionStatus } from '../../constants/index.js';
 
 /**
  * Defines one session event appended during execution.

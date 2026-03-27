@@ -4,8 +4,8 @@ import type {
   ArtifactDependencyResolutionStatus,
   ArtifactDependencyUnresolvedReason,
   ArtifactLifecycleStatus,
-} from "../../constants/index.js";
-import type { ArtifactDependencyExpression } from "../aliases/index.js";
+} from '../../constants/index.js';
+import type { ArtifactDependencyExpression } from '../aliases/index.js';
 
 /**
  * Defines one normalized artifact registry record.

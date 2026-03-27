@@ -1,16 +1,16 @@
-import { AgentCliExecOperation } from "@repo-ai-governor/adapter-sdk";
-import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
+import { AgentCliExecOperation } from '@repo-ai-governor/adapter-sdk';
+import { GovernorErrorCode } from '@repo-ai-governor/shared';
 import {
   CliGithubCopilotExecFixtureEnvironmentKey,
   CliGithubCopilotExecFixtureMode,
-} from "../../src/constants/github-copilot-exec-fixture.constant.js";
-import { CliGithubCopilotExecFixtureRuntime } from "../../src/runtime/github-copilot-exec-fixture-runtime.js";
+} from '../../src/constants/github-copilot-exec-fixture.constant.js';
+import { CliGithubCopilotExecFixtureRuntime } from '../../src/runtime/github-copilot-exec-fixture-runtime.js';
 
-describe("Cli github copilot exec fixture runtime", () => {
-  it("returns deterministic success runner when fixture gate is enabled", async () => {
+describe('Cli github copilot exec fixture runtime', () => {
+  it('returns deterministic success runner when fixture gate is enabled', async () => {
     const runtime = new CliGithubCopilotExecFixtureRuntime();
     const runner = runtime.resolveExecRunner({
-      [CliGithubCopilotExecFixtureEnvironmentKey.ENABLE_FIXTURES]: "1",
+      [CliGithubCopilotExecFixtureEnvironmentKey.ENABLE_FIXTURES]: '1',
       [CliGithubCopilotExecFixtureEnvironmentKey.EXEC_FIXTURE]:
         CliGithubCopilotExecFixtureMode.SUCCESS,
     });
@@ -20,18 +20,18 @@ describe("Cli github copilot exec fixture runtime", () => {
       return;
     }
     const result = await runner({
-      command: "copilot",
+      command: 'copilot',
       commandArgumentsPrefix: [],
       cwd: process.cwd(),
       env: process.env,
-      prompt: "Respond with exactly OK.",
+      prompt: 'Respond with exactly OK.',
       timeoutMs: 1000,
       operation: AgentCliExecOperation.PROBE,
     });
     expect(result.stdout).toContain('"content":"OK"');
   });
 
-  it("fails closed when fixture mode is configured without enable flag", () => {
+  it('fails closed when fixture mode is configured without enable flag', () => {
     const runtime = new CliGithubCopilotExecFixtureRuntime();
 
     expect(() =>
@@ -46,10 +46,10 @@ describe("Cli github copilot exec fixture runtime", () => {
     );
   });
 
-  it("returns credential failure runner", async () => {
+  it('returns credential failure runner', async () => {
     const runtime = new CliGithubCopilotExecFixtureRuntime();
     const runner = runtime.resolveExecRunner({
-      [CliGithubCopilotExecFixtureEnvironmentKey.ENABLE_FIXTURES]: "1",
+      [CliGithubCopilotExecFixtureEnvironmentKey.ENABLE_FIXTURES]: '1',
       [CliGithubCopilotExecFixtureEnvironmentKey.EXEC_FIXTURE]:
         CliGithubCopilotExecFixtureMode.CREDENTIAL_MISSING,
     });
@@ -60,11 +60,11 @@ describe("Cli github copilot exec fixture runtime", () => {
 
     await expect(
       runner({
-        command: "copilot",
+        command: 'copilot',
         commandArgumentsPrefix: [],
         cwd: process.cwd(),
         env: process.env,
-        prompt: "Respond with exactly OK.",
+        prompt: 'Respond with exactly OK.',
         timeoutMs: 1000,
         operation: AgentCliExecOperation.PROBE,
       }),

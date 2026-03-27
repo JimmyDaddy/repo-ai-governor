@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { spawn } from 'node:child_process';
 
 import {
   AgentAvailabilityStatus,
@@ -21,27 +21,27 @@ import {
   type AgentStreamEventsRequest,
   DEFAULT_AGENT_CLI_EXEC_MAX_RETRY_ATTEMPTS,
   DEFAULT_AGENT_CLI_EXEC_RETRY_BACKOFF_MS,
-} from "@repo-ai-governor/adapter-sdk";
-import { GovernorErrorCode, RuntimeError, standardizeError } from "@repo-ai-governor/shared";
-import { CodexAgentAdapterExecutionMode } from "./constants/codex-agent-adapter.constant.js";
+} from '@repo-ai-governor/adapter-sdk';
+import { GovernorErrorCode, RuntimeError, standardizeError } from '@repo-ai-governor/shared';
+import { CodexAgentAdapterExecutionMode } from './constants/codex-agent-adapter.constant.js';
 import type {
   CodexAgentAdapterOptions,
   CodexExecRunner,
   CodexExecRunnerRequest,
   CodexExecRunnerResult,
-} from "./types/interfaces/codex-agent-adapter.interface.js";
+} from './types/interfaces/codex-agent-adapter.interface.js';
 
-const CODEX_DEFAULT_AGENT_ID = "codex-default-agent";
-const CODEX_DEFAULT_ROLE = "coder";
-const CODEX_DEFAULT_ROLE_PROFILE_ID = "coder-default";
-const CODEX_DEFAULT_ROLE_SOURCE = "default";
-const CODEX_SURFACE = "codex";
-const CODEX_COMMAND = "codex";
+const CODEX_DEFAULT_AGENT_ID = 'codex-default-agent';
+const CODEX_DEFAULT_ROLE = 'coder';
+const CODEX_DEFAULT_ROLE_PROFILE_ID = 'coder-default';
+const CODEX_DEFAULT_ROLE_SOURCE = 'default';
+const CODEX_SURFACE = 'codex';
+const CODEX_COMMAND = 'codex';
 const CODEX_DEFAULT_TIMEOUT_MS = 30000;
 const CODEX_DEFAULT_PROBE_CACHE_TTL_MS = 30000;
-const CODEX_EXEC_ARGS = ["exec", "--skip-git-repo-check", "--json", "-"] as const;
-const CODEX_HEALTH_CHECK_PROMPT = "Respond with exactly OK.";
-const CODEX_HEALTH_CHECK_EXPECTED_RESPONSE = "OK";
+const CODEX_EXEC_ARGS = ['exec', '--skip-git-repo-check', '--json', '-'] as const;
+const CODEX_HEALTH_CHECK_PROMPT = 'Respond with exactly OK.';
+const CODEX_HEALTH_CHECK_EXPECTED_RESPONSE = 'OK';
 
 const CODEX_BASELINE_CAPABILITY_SUPPORT: Record<AgentCapability, AgentCapabilitySupportLevel> = {
   [AgentCapability.TOOL_CALLING]: AgentCapabilitySupportLevel.SUPPORTED,
@@ -86,7 +86,7 @@ interface CodexCliJsonEvent {
 interface CodexCliParsedOutput {
   responseText: string;
   threadId: string | null;
-  usage?: AgentInvokeStageResult["usage"];
+  usage?: AgentInvokeStageResult['usage'];
   warnings: string[];
 }
 
@@ -262,7 +262,7 @@ export class CodexAgentAdapter extends AgentProtocol {
       stageId: request.stageId,
       routeKey: request.routeKey,
       payload: {
-        status: "running",
+        status: 'running',
         surface: CODEX_SURFACE,
       },
     };
@@ -275,7 +275,7 @@ export class CodexAgentAdapter extends AgentProtocol {
       stageId: request.stageId,
       routeKey: request.routeKey,
       payload: {
-        status: "completed",
+        status: 'completed',
         surface: CODEX_SURFACE,
       },
     };
@@ -292,14 +292,14 @@ export class CodexAgentAdapter extends AgentProtocol {
     if (this.options.executionMode === CodexAgentAdapterExecutionMode.CLI_EXEC) {
       return {
         decision: AgentConfirmationDecision.REVISE,
-        reason: "codex-cli-confirmation-gate-unsupported",
-        constraints: ["escalate_to_human_gate"],
+        reason: 'codex-cli-confirmation-gate-unsupported',
+        constraints: ['escalate_to_human_gate'],
         decidedAt: new Date().toISOString(),
       };
     }
     return {
       decision: AgentConfirmationDecision.APPROVE,
-      reason: "codex-adapter-baseline-approved",
+      reason: 'codex-adapter-baseline-approved',
       constraints: [],
       decidedAt: new Date().toISOString(),
     };
@@ -331,7 +331,7 @@ export class CodexAgentAdapter extends AgentProtocol {
    * Creates capability matrix aligned with adapter-sdk contract.
    * @returns Capability matrix payload.
    */
-  private createCapabilityMatrix(): AgentProbeResult["capabilityMatrix"] {
+  private createCapabilityMatrix(): AgentProbeResult['capabilityMatrix'] {
     const capabilitySupport =
       this.options.executionMode === CodexAgentAdapterExecutionMode.CLI_EXEC
         ? CODEX_REAL_CAPABILITY_SUPPORT
@@ -436,7 +436,7 @@ export class CodexAgentAdapter extends AgentProtocol {
    * @returns Raw CLI execution result.
    */
   private async runCodexOperation(
-    request: Pick<CodexExecRunnerRequest, "prompt" | "timeoutMs" | "signal" | "operation">,
+    request: Pick<CodexExecRunnerRequest, 'prompt' | 'timeoutMs' | 'signal' | 'operation'>,
   ): Promise<CodexExecRunnerResult> {
     try {
       return await this.cliExecOperationsRuntime.executeWithRetry(
@@ -493,12 +493,12 @@ export class CodexAgentAdapter extends AgentProtocol {
     const jsonEvents: CodexCliJsonEvent[] = executionResult.stdout
       .split(/\r?\n/u)
       .map((line) => line.trim())
-      .filter((line) => line.startsWith("{"))
+      .filter((line) => line.startsWith('{'))
       .map((line) => JSON.parse(line) as CodexCliJsonEvent);
 
     const completedMessage = jsonEvents
-      .filter((event) => event.type === "item.completed" && event.item?.type === "agent_message")
-      .map((event) => event.item?.text ?? "")
+      .filter((event) => event.type === 'item.completed' && event.item?.type === 'agent_message')
+      .map((event) => event.item?.text ?? '')
       .filter((text) => text.trim().length > 0)
       .at(-1);
 
@@ -517,8 +517,8 @@ export class CodexAgentAdapter extends AgentProtocol {
       );
     }
 
-    const turnCompletedEvent = jsonEvents.find((event) => event.type === "turn.completed");
-    const threadStartedEvent = jsonEvents.find((event) => event.type === "thread.started");
+    const turnCompletedEvent = jsonEvents.find((event) => event.type === 'turn.completed');
+    const threadStartedEvent = jsonEvents.find((event) => event.type === 'thread.started');
     const usage = turnCompletedEvent?.usage
       ? {
           inputTokens: turnCompletedEvent.usage.input_tokens,
@@ -526,7 +526,7 @@ export class CodexAgentAdapter extends AgentProtocol {
           totalTokens:
             turnCompletedEvent.usage.total_tokens ??
             [turnCompletedEvent.usage.input_tokens, turnCompletedEvent.usage.output_tokens]
-              .filter((value): value is number => typeof value === "number")
+              .filter((value): value is number => typeof value === 'number')
               .reduce((sum, value) => sum + value, 0),
         }
       : undefined;
@@ -550,12 +550,12 @@ export class CodexAgentAdapter extends AgentProtocol {
   private renderInvokePrompt(request: AgentInvokeStageRequest): string {
     const renderedInput = JSON.stringify(request.input, null, 2);
     return [
-      "You are executing one Repo AI Governor stage through Codex CLI.",
+      'You are executing one Repo AI Governor stage through Codex CLI.',
       `Route Key: ${request.routeKey}`,
       `Stage ID: ${request.stageId}`,
-      "Treat the following JSON payload as the canonical stage input.",
+      'Treat the following JSON payload as the canonical stage input.',
       renderedInput,
-    ].join("\n\n");
+    ].join('\n\n');
   }
 
   /**
@@ -593,13 +593,13 @@ export class CodexAgentAdapter extends AgentProtocol {
    * @returns True when the failure indicates executable-not-found.
    */
   private isMissingCommandFailure(error: unknown, detail: string): boolean {
-    if (detail.includes("enoent")) {
+    if (detail.includes('enoent')) {
       return true;
     }
-    if (!error || typeof error !== "object") {
+    if (!error || typeof error !== 'object') {
       return false;
     }
-    return (error as { code?: unknown }).code === "ENOENT";
+    return (error as { code?: unknown }).code === 'ENOENT';
   }
 
   /**
@@ -656,18 +656,18 @@ export class CodexAgentAdapter extends AgentProtocol {
       const child = spawn(request.command, [...CODEX_EXEC_ARGS], {
         cwd: request.cwd,
         env: request.env,
-        stdio: ["pipe", "pipe", "pipe"],
+        stdio: ['pipe', 'pipe', 'pipe'],
         signal: request.signal,
       });
 
-      let stdout = "";
-      let stderr = "";
+      let stdout = '';
+      let stderr = '';
       let settled = false;
       let timedOut = false;
 
       const timeoutHandle = setTimeout(() => {
         timedOut = true;
-        child.kill("SIGTERM");
+        child.kill('SIGTERM');
       }, request.timeoutMs);
 
       const finishReject = (error: unknown) => {
@@ -679,21 +679,21 @@ export class CodexAgentAdapter extends AgentProtocol {
         reject(error);
       };
 
-      child.on("error", (error) => {
+      child.on('error', (error) => {
         finishReject(error);
       });
 
-      child.stdout.setEncoding("utf8");
-      child.stdout.on("data", (chunk: string) => {
+      child.stdout.setEncoding('utf8');
+      child.stdout.on('data', (chunk: string) => {
         stdout += chunk;
       });
 
-      child.stderr.setEncoding("utf8");
-      child.stderr.on("data", (chunk: string) => {
+      child.stderr.setEncoding('utf8');
+      child.stderr.on('data', (chunk: string) => {
         stderr += chunk;
       });
 
-      child.on("close", (exitCode, signal) => {
+      child.on('close', (exitCode, signal) => {
         if (settled) {
           return;
         }
@@ -727,7 +727,7 @@ export class CodexAgentAdapter extends AgentProtocol {
               request.operation === AgentCliExecOperation.PROBE
                 ? GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED
                 : GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
-              `Codex ${request.operation} exited with code ${exitCode ?? "null"}.`,
+              `Codex ${request.operation} exited with code ${exitCode ?? 'null'}.`,
               this.cliExecOperationsRuntime.createRedactedProcessDetails({
                 surface: CODEX_SURFACE,
                 operation: request.operation,

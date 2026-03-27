@@ -1,16 +1,16 @@
-import { ChangeRiskLevel, ChangeRiskRequiredAction } from "@repo-ai-governor/core-change-risk";
+import { ChangeRiskLevel, ChangeRiskRequiredAction } from '@repo-ai-governor/core-change-risk';
 import {
   PolicyDecisionSource,
   type PolicyGateEvaluationResult,
-} from "@repo-ai-governor/core-policy";
-import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
+} from '@repo-ai-governor/core-policy';
+import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import {
   NotificationChannel,
   NotificationDispatchStatus,
   NotificationDispatcher,
   type NotificationProvider,
   type NotificationProviderReceipt,
-} from "../src/index.js";
+} from '../src/index.js';
 
 interface ProviderOutcome {
   delivered?: boolean;
@@ -18,8 +18,8 @@ interface ProviderOutcome {
   throwMessage?: string;
 }
 
-type PolicyEvaluationFixtureOverrides = Omit<Partial<PolicyGateEvaluationResult>, "auditRecord"> & {
-  auditRecord?: Partial<PolicyGateEvaluationResult["auditRecord"]>;
+type PolicyEvaluationFixtureOverrides = Omit<Partial<PolicyGateEvaluationResult>, 'auditRecord'> & {
+  auditRecord?: Partial<PolicyGateEvaluationResult['auditRecord']>;
 };
 
 /**
@@ -33,27 +33,27 @@ function createPolicyEvaluationFixture(
   const baseFixture: PolicyGateEvaluationResult = {
     policyOutcome: ChangeRiskRequiredAction.CONFIRM,
     decisionSource: PolicyDecisionSource.POLICY_RULE,
-    reason: "manual confirmation required",
-    matchedPolicies: ["policy.risk.action.confirm"],
-    matchedRuleIds: ["policy.risk.action.confirm"],
-    requiredReviewerRoles: ["Maintainer"],
+    reason: 'manual confirmation required',
+    matchedPolicies: ['policy.risk.action.confirm'],
+    matchedRuleIds: ['policy.risk.action.confirm'],
+    requiredReviewerRoles: ['Maintainer'],
     shouldTriggerHitl: true,
     hitlFeedbackSchema: {
-      requiredFields: ["decision", "reason"],
-      optionalFields: ["constraints"],
+      requiredFields: ['decision', 'reason'],
+      optionalFields: ['constraints'],
     },
     auditRecord: {
-      executionId: "exec-notify-001",
-      stageId: "stage-policy",
-      routeKey: "policy.gate",
+      executionId: 'exec-notify-001',
+      stageId: 'stage-policy',
+      routeKey: 'policy.gate',
       policyOutcome: ChangeRiskRequiredAction.CONFIRM,
       decisionSource: PolicyDecisionSource.POLICY_RULE,
-      reason: "manual confirmation required",
+      reason: 'manual confirmation required',
       riskLevel: ChangeRiskLevel.LOW,
       requiredAction: ChangeRiskRequiredAction.CONFIRM,
-      matchedPolicies: ["policy.risk.action.confirm"],
-      matchedRuleIds: ["policy.risk.action.confirm"],
-      requiredReviewerRoles: ["Maintainer"],
+      matchedPolicies: ['policy.risk.action.confirm'],
+      matchedRuleIds: ['policy.risk.action.confirm'],
+      requiredReviewerRoles: ['Maintainer'],
     },
   };
 
@@ -104,8 +104,8 @@ function createProvider(
   };
 }
 
-describe("NotificationDispatcher smoke", () => {
-  it("skips dispatch when policy outcome does not require HITL notification", async () => {
+describe('NotificationDispatcher smoke', () => {
+  it('skips dispatch when policy outcome does not require HITL notification', async () => {
     const notificationDispatcher = new NotificationDispatcher();
 
     const result = await notificationDispatcher.dispatch({
@@ -124,10 +124,10 @@ describe("NotificationDispatcher smoke", () => {
     expect(result.selectedChannel).toBeNull();
   });
 
-  it("delivers on primary channel when primary provider succeeds", async () => {
+  it('delivers on primary channel when primary provider succeeds', async () => {
     const notificationDispatcher = new NotificationDispatcher({
       providers: [
-        createProvider(NotificationChannel.WEBHOOK, "provider-webhook", [
+        createProvider(NotificationChannel.WEBHOOK, 'provider-webhook', [
           {
             delivered: true,
           },
@@ -148,10 +148,10 @@ describe("NotificationDispatcher smoke", () => {
     );
   });
 
-  it("records provider-not-found diagnostics and falls back to backup channel", async () => {
+  it('records provider-not-found diagnostics and falls back to backup channel', async () => {
     const notificationDispatcher = new NotificationDispatcher({
       providers: [
-        createProvider(NotificationChannel.CHAT_IM, "provider-chat", [
+        createProvider(NotificationChannel.CHAT_IM, 'provider-chat', [
           {
             delivered: true,
           },
@@ -170,20 +170,20 @@ describe("NotificationDispatcher smoke", () => {
     );
   });
 
-  it("falls back to backup channel when primary channel keeps failing", async () => {
+  it('falls back to backup channel when primary channel keeps failing', async () => {
     const notificationDispatcher = new NotificationDispatcher({
       providers: [
-        createProvider(NotificationChannel.WEBHOOK, "provider-webhook", [
+        createProvider(NotificationChannel.WEBHOOK, 'provider-webhook', [
           {
             delivered: false,
-            errorMessage: "webhook timeout",
+            errorMessage: 'webhook timeout',
           },
           {
             delivered: false,
-            errorMessage: "webhook timeout",
+            errorMessage: 'webhook timeout',
           },
         ]),
-        createProvider(NotificationChannel.CHAT_IM, "provider-chat", [
+        createProvider(NotificationChannel.CHAT_IM, 'provider-chat', [
           {
             delivered: true,
           },
@@ -204,18 +204,18 @@ describe("NotificationDispatcher smoke", () => {
     ]);
   });
 
-  it("falls back to backup channel when primary provider throws exceptions", async () => {
+  it('falls back to backup channel when primary provider throws exceptions', async () => {
     const notificationDispatcher = new NotificationDispatcher({
       providers: [
-        createProvider(NotificationChannel.WEBHOOK, "provider-webhook", [
+        createProvider(NotificationChannel.WEBHOOK, 'provider-webhook', [
           {
-            throwMessage: "webhook provider crashed",
+            throwMessage: 'webhook provider crashed',
           },
           {
-            throwMessage: "webhook provider crashed",
+            throwMessage: 'webhook provider crashed',
           },
         ]),
-        createProvider(NotificationChannel.CHAT_IM, "provider-chat", [
+        createProvider(NotificationChannel.CHAT_IM, 'provider-chat', [
           {
             delivered: true,
           },
@@ -230,37 +230,37 @@ describe("NotificationDispatcher smoke", () => {
     expect(result.dispatchStatus).toBe(NotificationDispatchStatus.DELIVERED_FALLBACK);
     expect(result.selectedChannel).toBe(NotificationChannel.CHAT_IM);
     expect(result.attemptedChannels.slice(0, 2).map((attempt) => attempt.errorMessage)).toEqual([
-      "webhook provider crashed",
-      "webhook provider crashed",
+      'webhook provider crashed',
+      'webhook provider crashed',
     ]);
   });
 
-  it("escalates to escalation channel when primary and fallback channels all fail", async () => {
+  it('escalates to escalation channel when primary and fallback channels all fail', async () => {
     const notificationDispatcher = new NotificationDispatcher({
       providers: [
-        createProvider(NotificationChannel.CHAT_IM, "provider-chat", [
+        createProvider(NotificationChannel.CHAT_IM, 'provider-chat', [
           {
             delivered: false,
-            errorMessage: "chat provider unavailable",
+            errorMessage: 'chat provider unavailable',
           },
           {
             delivered: false,
-            errorMessage: "chat provider unavailable",
-          },
-        ]),
-        createProvider(NotificationChannel.WEBHOOK, "provider-webhook", [
-          {
-            delivered: false,
-            errorMessage: "webhook rejected payload",
+            errorMessage: 'chat provider unavailable',
           },
         ]),
-        createProvider(NotificationChannel.EMAIL, "provider-email", [
+        createProvider(NotificationChannel.WEBHOOK, 'provider-webhook', [
           {
             delivered: false,
-            errorMessage: "smtp unreachable",
+            errorMessage: 'webhook rejected payload',
           },
         ]),
-        createProvider(NotificationChannel.ISSUE_SYSTEM, "provider-issue", [
+        createProvider(NotificationChannel.EMAIL, 'provider-email', [
+          {
+            delivered: false,
+            errorMessage: 'smtp unreachable',
+          },
+        ]),
+        createProvider(NotificationChannel.ISSUE_SYSTEM, 'provider-issue', [
           {
             delivered: true,
           },
@@ -290,29 +290,29 @@ describe("NotificationDispatcher smoke", () => {
     ]);
   });
 
-  it("throws standardized error when all channels are exhausted without delivery", async () => {
+  it('throws standardized error when all channels are exhausted without delivery', async () => {
     const notificationDispatcher = new NotificationDispatcher({
       providers: [
-        createProvider(NotificationChannel.WEBHOOK, "provider-webhook", [
+        createProvider(NotificationChannel.WEBHOOK, 'provider-webhook', [
           {
             delivered: false,
-            errorMessage: "webhook failed",
+            errorMessage: 'webhook failed',
           },
           {
             delivered: false,
-            errorMessage: "webhook failed",
-          },
-        ]),
-        createProvider(NotificationChannel.CHAT_IM, "provider-chat", [
-          {
-            delivered: false,
-            errorMessage: "chat failed",
+            errorMessage: 'webhook failed',
           },
         ]),
-        createProvider(NotificationChannel.ISSUE_SYSTEM, "provider-issue", [
+        createProvider(NotificationChannel.CHAT_IM, 'provider-chat', [
           {
             delivered: false,
-            errorMessage: "issue system failed",
+            errorMessage: 'chat failed',
+          },
+        ]),
+        createProvider(NotificationChannel.ISSUE_SYSTEM, 'provider-issue', [
+          {
+            delivered: false,
+            errorMessage: 'issue system failed',
           },
         ]),
       ],
@@ -334,14 +334,14 @@ describe("NotificationDispatcher smoke", () => {
     }
   });
 
-  it("throws standardized error when riskLevel is unsupported", async () => {
+  it('throws standardized error when riskLevel is unsupported', async () => {
     const notificationDispatcher = new NotificationDispatcher();
 
     await expect(() =>
       notificationDispatcher.dispatch({
         policyEvaluation: createPolicyEvaluationFixture({
           auditRecord: {
-            riskLevel: "not-supported-risk-level" as ChangeRiskLevel,
+            riskLevel: 'not-supported-risk-level' as ChangeRiskLevel,
           },
         }),
       }),
@@ -351,7 +351,7 @@ describe("NotificationDispatcher smoke", () => {
       await notificationDispatcher.dispatch({
         policyEvaluation: createPolicyEvaluationFixture({
           auditRecord: {
-            riskLevel: "not-supported-risk-level" as ChangeRiskLevel,
+            riskLevel: 'not-supported-risk-level' as ChangeRiskLevel,
           },
         }),
       });

@@ -1,12 +1,12 @@
-import { AuditRecordStatus, type PersistedAuditRecord } from "@repo-ai-governor/core-session";
-import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
+import { AuditRecordStatus, type PersistedAuditRecord } from '@repo-ai-governor/core-session';
+import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import type {
   AuditRecordReader,
   BuildExecutionReportOptions,
   ExecutionReport,
   ReplayPointer,
   ReportStatusBreakdown,
-} from "./types/index.js";
+} from './types/index.js';
 
 interface MutableStageAggregate {
   stageId: string;
@@ -37,10 +37,10 @@ export class ReportBuilder {
   public async buildExecutionReport(
     options: BuildExecutionReportOptions,
   ): Promise<ExecutionReport> {
-    const executionId = this.readRequiredString(options.executionId, "executionId");
-    const stageId = this.readOptionalString(options.stageId, "stageId");
-    const limit = this.readOptionalPositiveInteger(options.limit, "limit");
-    const includeRecords = this.readOptionalBoolean(options.includeRecords, "includeRecords");
+    const executionId = this.readRequiredString(options.executionId, 'executionId');
+    const stageId = this.readOptionalString(options.stageId, 'stageId');
+    const limit = this.readOptionalPositiveInteger(options.limit, 'limit');
+    const includeRecords = this.readOptionalBoolean(options.includeRecords, 'includeRecords');
     const memorySemantics = options.memorySemantics ?? null;
 
     const records = await this.auditRecordReader.listEvents({
@@ -168,23 +168,23 @@ export class ReportBuilder {
     if (!Array.isArray(records)) {
       throw new RuntimeError(
         GovernorErrorCode.REPORT_BUILD_INPUT_INVALID,
-        "Audit record reader must return an array payload.",
+        'Audit record reader must return an array payload.',
       );
     }
 
     return records
       .filter((record) => {
-        if (!record || typeof record !== "object") {
+        if (!record || typeof record !== 'object') {
           throw new RuntimeError(
             GovernorErrorCode.REPORT_BUILD_INPUT_INVALID,
-            "Audit record row must be an object.",
+            'Audit record row must be an object.',
           );
         }
 
         if (record.event.executionId !== executionId) {
           throw new RuntimeError(
             GovernorErrorCode.REPORT_BUILD_INPUT_INVALID,
-            "Audit record executionId does not match report request.",
+            'Audit record executionId does not match report request.',
             {
               requestedExecutionId: executionId,
               actualExecutionId: record.event.executionId,
@@ -230,7 +230,7 @@ export class ReportBuilder {
     stageAggregates: Map<string, MutableStageAggregate>,
     record: PersistedAuditRecord,
   ): MutableStageAggregate {
-    const stageId = this.readRequiredString(record.event.stageId, "record.event.stageId");
+    const stageId = this.readRequiredString(record.event.stageId, 'record.event.stageId');
     const existing = stageAggregates.get(stageId);
     if (existing) {
       return existing;
@@ -258,12 +258,12 @@ export class ReportBuilder {
   private toReplayPointer(record: PersistedAuditRecord): ReplayPointer {
     const event = record.event;
     return {
-      recordId: this.readRequiredString(record.recordId, "record.recordId"),
-      recordedAt: this.readRequiredString(record.recordedAt, "record.recordedAt"),
-      stageId: this.readRequiredString(event.stageId, "record.event.stageId"),
-      routeKey: this.readRequiredString(event.routeKey, "record.event.routeKey"),
+      recordId: this.readRequiredString(record.recordId, 'record.recordId'),
+      recordedAt: this.readRequiredString(record.recordedAt, 'record.recordedAt'),
+      stageId: this.readRequiredString(event.stageId, 'record.event.stageId'),
+      routeKey: this.readRequiredString(event.routeKey, 'record.event.routeKey'),
       status: event.status,
-      policyOutcome: this.readRequiredString(event.policyOutcome, "record.event.policyOutcome"),
+      policyOutcome: this.readRequiredString(event.policyOutcome, 'record.event.policyOutcome'),
       ...(event.riskLevel ? { riskLevel: event.riskLevel } : {}),
       ...(event.artifactId ? { artifactId: event.artifactId } : {}),
       ...(event.dependencyResolutionStatus
@@ -310,7 +310,7 @@ export class ReportBuilder {
    * @returns Trimmed string.
    */
   private readRequiredString(candidate: unknown, fieldName: string): string {
-    if (typeof candidate !== "string" || candidate.trim().length === 0) {
+    if (typeof candidate !== 'string' || candidate.trim().length === 0) {
       throw new RuntimeError(
         GovernorErrorCode.REPORT_BUILD_INPUT_INVALID,
         `Field "${fieldName}" must be a non-empty string.`,
@@ -371,7 +371,7 @@ export class ReportBuilder {
       return false;
     }
 
-    if (typeof candidate !== "boolean") {
+    if (typeof candidate !== 'boolean') {
       throw new RuntimeError(
         GovernorErrorCode.REPORT_BUILD_INPUT_INVALID,
         `Field "${fieldName}" must be a boolean when provided.`,
@@ -391,6 +391,6 @@ export class ReportBuilder {
    * @returns Timestamp without milliseconds.
    */
   private toRfc3339SecondsTimestamp(date: Date): string {
-    return date.toISOString().replace(/\.\d{3}Z$/u, "Z");
+    return date.toISOString().replace(/\.\d{3}Z$/u, 'Z');
   }
 }

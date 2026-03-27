@@ -1,5 +1,5 @@
-import { defineConfig } from "vitest/config";
-import { createVitestInternalAliases } from "./vitest.internal-alias.js";
+import { defineConfig } from 'vitest/config';
+import { createVitestInternalAliases } from './vitest.internal-alias.js';
 
 export default defineConfig({
   resolve: {
@@ -7,9 +7,9 @@ export default defineConfig({
   },
   test: {
     globals: true,
-    environment: "node",
-    include: ["test/**/*.test.{js,ts}"],
-    exclude: ["test/contract/**", "test/e2e/**"],
+    environment: 'node',
+    include: ['test/**/*.test.{js,ts}'],
+    exclude: ['test/contract/**', 'test/e2e/**'],
     testTimeout: 60000,
     hookTimeout: 60000,
   },

@@ -1,18 +1,18 @@
 #!/usr/bin/env node
 
-import { existsSync, readFileSync, readdirSync } from "node:fs";
-import { resolve } from "node:path";
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { resolve } from 'node:path';
 
-import { gateFail, gateInfo, gatePass } from "./gate-output.js";
+import { gateFail, gateInfo, gatePass } from './gate-output.js';
 
-const GATE_NAME = "worktree-review-target";
-const CURRENT_CONTEXT_PATH = ".repo-ai-governor/context/current-context.md";
-const COMPLETED_STREAM_HISTORY_PATH = ".repo-ai-governor/context/completed-streams-history.md";
+const GATE_NAME = 'worktree-review-target';
+const CURRENT_CONTEXT_PATH = '.repo-ai-governor/context/current-context.md';
+const COMPLETED_STREAM_HISTORY_PATH = '.repo-ai-governor/context/completed-streams-history.md';
 const OPEN_REVIEW_FILE_PREFIXES = [
-  "code_review_",
-  "review_",
-  "verified_code_review_",
-  "verified_review_",
+  'code_review_',
+  'review_',
+  'verified_code_review_',
+  'verified_review_',
 ];
 
 /**
@@ -29,9 +29,9 @@ function extractMarkdownSections(content, headingText) {
 
   for (let index = 0; index < headingMatches.length; index += 1) {
     const headingMatch = headingMatches[index];
-    const rawHeadingText = headingMatch[1]?.trim() ?? "";
+    const rawHeadingText = headingMatch[1]?.trim() ?? '';
     const headingIndex = headingMatch.index;
-    if (typeof headingIndex !== "number") {
+    if (typeof headingIndex !== 'number') {
       continue;
     }
 
@@ -54,7 +54,7 @@ function extractMarkdownSections(content, headingText) {
  */
 function normalizeSectionHeading(headingText) {
   return headingText
-    .replace(/^\d+(?:\.\d+)*\.?\s*/u, "")
+    .replace(/^\d+(?:\.\d+)*\.?\s*/u, '')
     .trim()
     .toLowerCase();
 }
@@ -66,13 +66,13 @@ function normalizeSectionHeading(headingText) {
  * @returns {string | null}
  */
 function readSectionMetadataField(sectionContent, label) {
-  const labelPattern = label.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
-  const fieldMatch = sectionContent.match(new RegExp(`^- ${labelPattern}:\\s*(.+)$`, "mu"));
+  const labelPattern = label.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
+  const fieldMatch = sectionContent.match(new RegExp(`^- ${labelPattern}:\\s*(.+)$`, 'mu'));
   if (!fieldMatch) {
     return null;
   }
 
-  const rawValue = fieldMatch[1]?.trim() ?? "";
+  const rawValue = fieldMatch[1]?.trim() ?? '';
   const backtickMatch = rawValue.match(/^`([^`]+)`$/u);
   return backtickMatch ? backtickMatch[1].trim() : rawValue;
 }
@@ -83,7 +83,7 @@ function readSectionMetadataField(sectionContent, label) {
  * @returns {string}
  */
 function normalizeComparablePath(targetPath) {
-  return targetPath.replace(/[\\/]+$/u, "").replace(/\\/gu, "/");
+  return targetPath.replace(/[\\/]+$/u, '').replace(/\\/gu, '/');
 }
 
 /**
@@ -97,9 +97,9 @@ function matchesCompletedStreamHistoryLine(line, target) {
     line.includes(`project=\`${target.project}\``) &&
     line.includes(`sprint=\`${target.sprint}\``) &&
     normalizeComparablePath(
-      readDescriptorField(line, "review") ?? readDescriptorField(line, "reviewRecords") ?? "",
+      readDescriptorField(line, 'review') ?? readDescriptorField(line, 'reviewRecords') ?? '',
     ) === normalizeComparablePath(target.reviewRecords) &&
-    line.includes("status=`completed`")
+    line.includes('status=`completed`')
   );
 }
 
@@ -121,67 +121,67 @@ try {
     throw new Error(`Current context file not found: ${currentContextPath}`);
   }
 
-  const currentContextContent = readFileSync(currentContextPath, "utf8");
+  const currentContextContent = readFileSync(currentContextPath, 'utf8');
   const worktreeReviewTargetSections = extractMarkdownSections(
     currentContextContent,
-    "Worktree Review Target",
+    'Worktree Review Target',
   );
 
   if (worktreeReviewTargetSections.length > 1) {
     throw new Error(
-      "`current-context.md` contains more than one `## Worktree Review Target` section.",
+      '`current-context.md` contains more than one `## Worktree Review Target` section.',
     );
   }
 
-  const worktreeReviewTargetSection = worktreeReviewTargetSections[0] ?? "";
+  const worktreeReviewTargetSection = worktreeReviewTargetSections[0] ?? '';
   const target = {
-    project: readSectionMetadataField(worktreeReviewTargetSection, "Project"),
-    sprint: readSectionMetadataField(worktreeReviewTargetSection, "Sprint"),
-    reviewRecords: readSectionMetadataField(worktreeReviewTargetSection, "Review records"),
-    streamState: readSectionMetadataField(worktreeReviewTargetSection, "Stream State"),
-    reason: readSectionMetadataField(worktreeReviewTargetSection, "Reason"),
-    clearWhen: readSectionMetadataField(worktreeReviewTargetSection, "Clear when"),
+    project: readSectionMetadataField(worktreeReviewTargetSection, 'Project'),
+    sprint: readSectionMetadataField(worktreeReviewTargetSection, 'Sprint'),
+    reviewRecords: readSectionMetadataField(worktreeReviewTargetSection, 'Review records'),
+    streamState: readSectionMetadataField(worktreeReviewTargetSection, 'Stream State'),
+    reason: readSectionMetadataField(worktreeReviewTargetSection, 'Reason'),
+    clearWhen: readSectionMetadataField(worktreeReviewTargetSection, 'Clear when'),
   };
   const hasActiveOverride = Object.values(target).some(
-    (fieldValue) => typeof fieldValue === "string" && fieldValue.trim().length > 0,
+    (fieldValue) => typeof fieldValue === 'string' && fieldValue.trim().length > 0,
   );
 
   if (!hasActiveOverride) {
-    gateInfo(GATE_NAME, "No active Worktree Review Target override declared.");
-    gatePass(GATE_NAME, "Default CR routing remains on the active primary stream.");
+    gateInfo(GATE_NAME, 'No active Worktree Review Target override declared.');
+    gatePass(GATE_NAME, 'Default CR routing remains on the active primary stream.');
     process.exit(0);
   }
 
   const missingFields = [
-    ["Project", target.project],
-    ["Sprint", target.sprint],
-    ["Review records", target.reviewRecords],
-    ["Stream State", target.streamState],
-    ["Reason", target.reason],
-    ["Clear when", target.clearWhen],
+    ['Project', target.project],
+    ['Sprint', target.sprint],
+    ['Review records', target.reviewRecords],
+    ['Stream State', target.streamState],
+    ['Reason', target.reason],
+    ['Clear when', target.clearWhen],
   ]
-    .filter(([, fieldValue]) => typeof fieldValue !== "string" || fieldValue.trim().length === 0)
+    .filter(([, fieldValue]) => typeof fieldValue !== 'string' || fieldValue.trim().length === 0)
     .map(([label]) => label);
 
   if (missingFields.length > 0) {
     throw new Error(
-      `Worktree Review Target override is missing required field(s): ${missingFields.join(", ")}.`,
+      `Worktree Review Target override is missing required field(s): ${missingFields.join(', ')}.`,
     );
   }
 
-  if ((target.streamState ?? "").trim().toLowerCase() !== "completed") {
+  if ((target.streamState ?? '').trim().toLowerCase() !== 'completed') {
     throw new Error(
       `Worktree Review Target must reference a completed stream, found \`${target.streamState}\`.`,
     );
   }
 
-  const primaryReviewRecords = readSectionMetadataField(currentContextContent, "Review records");
+  const primaryReviewRecords = readSectionMetadataField(currentContextContent, 'Review records');
   if (
     primaryReviewRecords &&
     normalizeComparablePath(primaryReviewRecords) === normalizeComparablePath(target.reviewRecords)
   ) {
     throw new Error(
-      "Worktree Review Target is redundant because it points to the active primary stream review directory.",
+      'Worktree Review Target is redundant because it points to the active primary stream review directory.',
     );
   }
 
@@ -204,11 +204,11 @@ try {
     throw new Error(`Completed stream history file not found: ${completedHistoryPath}`);
   }
 
-  const completedHistoryContent = readFileSync(completedHistoryPath, "utf8");
+  const completedHistoryContent = readFileSync(completedHistoryPath, 'utf8');
   const completedStreamLines = completedHistoryContent
     .split(/\r?\n/u)
     .map((line) => line.trim())
-    .filter((line) => line.startsWith("- `"));
+    .filter((line) => line.startsWith('- `'));
 
   if (!completedStreamLines.some((line) => matchesCompletedStreamHistoryLine(line, target))) {
     throw new Error(
@@ -217,7 +217,7 @@ try {
   }
 
   const openLifecycleArtifacts = readdirSync(reviewDirectoryPath, { withFileTypes: true })
-    .filter((entry) => entry.isFile() && entry.name.endsWith(".md"))
+    .filter((entry) => entry.isFile() && entry.name.endsWith('.md'))
     .map((entry) => entry.name)
     .filter((fileName) => OPEN_REVIEW_FILE_PREFIXES.some((prefix) => fileName.startsWith(prefix)));
 
@@ -228,13 +228,13 @@ try {
 
   if (openLifecycleArtifacts.length === 0) {
     throw new Error(
-      "Worktree Review Target is stale: target review directory no longer contains `code_review_*` or `verified_code_review_*` lifecycle artifacts.",
+      'Worktree Review Target is stale: target review directory no longer contains `code_review_*` or `verified_code_review_*` lifecycle artifacts.',
     );
   }
 
   gatePass(
     GATE_NAME,
-    "Worktree Review Target override points to a completed stream with open review lifecycle artifacts.",
+    'Worktree Review Target override points to a completed stream with open review lifecycle artifacts.',
   );
 } catch (error) {
   const errorMessage = error instanceof Error ? error.message : String(error);

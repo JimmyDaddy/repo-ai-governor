@@ -6,5 +6,5 @@
  * to avoid string drift across packages.
  */
 export enum WorkspaceMigrationPolicy {
-  COPY_VERIFY_SWITCH_ROLLBACK = "copy_verify_switch_rollback",
+  COPY_VERIFY_SWITCH_ROLLBACK = 'copy_verify_switch_rollback',
 }

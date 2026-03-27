@@ -1,4 +1,4 @@
-import type { RoleProfileStatus, RoleSource } from "@repo-ai-governor/shared";
+import type { RoleProfileStatus, RoleSource } from '@repo-ai-governor/shared';
 
 /**
  * Describes lifecycle metadata attached to role profiles.

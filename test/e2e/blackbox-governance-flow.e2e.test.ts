@@ -1,16 +1,16 @@
-import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
-import { runUnattendedDeliveryScenario } from "../../scripts/ci/stage9-blackbox-ga-lib.js";
+import { spawnSync } from 'node:child_process';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
+import { runUnattendedDeliveryScenario } from '../../scripts/ci/stage9-blackbox-ga-lib.js';
 
-const CODEX_EXEC_FIXTURE_ENABLE_ENV_KEY = "REPO_AI_GOVERNOR_ENABLE_TEST_FIXTURES";
-const CODEX_EXEC_FIXTURE_ENV_KEY = "REPO_AI_GOVERNOR_CODEX_EXEC_FIXTURE";
-const CODEX_EXEC_FIXTURE_SUCCESS = "success";
-const CLAUDE_CODE_EXEC_FIXTURE_ENV_KEY = "REPO_AI_GOVERNOR_CLAUDE_CODE_EXEC_FIXTURE";
-const CLAUDE_CODE_EXEC_FIXTURE_SUCCESS = "success";
-const GITHUB_COPILOT_EXEC_FIXTURE_ENV_KEY = "REPO_AI_GOVERNOR_GITHUB_COPILOT_EXEC_FIXTURE";
-const GITHUB_COPILOT_EXEC_FIXTURE_SUCCESS = "success";
+const CODEX_EXEC_FIXTURE_ENABLE_ENV_KEY = 'REPO_AI_GOVERNOR_ENABLE_TEST_FIXTURES';
+const CODEX_EXEC_FIXTURE_ENV_KEY = 'REPO_AI_GOVERNOR_CODEX_EXEC_FIXTURE';
+const CODEX_EXEC_FIXTURE_SUCCESS = 'success';
+const CLAUDE_CODE_EXEC_FIXTURE_ENV_KEY = 'REPO_AI_GOVERNOR_CLAUDE_CODE_EXEC_FIXTURE';
+const CLAUDE_CODE_EXEC_FIXTURE_SUCCESS = 'success';
+const GITHUB_COPILOT_EXEC_FIXTURE_ENV_KEY = 'REPO_AI_GOVERNOR_GITHUB_COPILOT_EXEC_FIXTURE';
+const GITHUB_COPILOT_EXEC_FIXTURE_SUCCESS = 'success';
 
 interface CliSuccessPayload {
   status?: string;
@@ -33,18 +33,18 @@ interface BlackboxScenario {
   runtimeEnv: NodeJS.ProcessEnv;
 }
 
-let cliEntryPath = "";
+let cliEntryPath = '';
 
 /**
  * Resolves a runnable dist entry for blackbox CLI validation.
  * Why: e2e should execute the packaged runtime entrypoint rather than in-process mocks.
  */
 function resolveCliEntryPath(): string {
-  const distEntryPath = resolve(process.cwd(), "dist/bin/repo-ai-governor.js");
+  const distEntryPath = resolve(process.cwd(), 'dist/bin/repo-ai-governor.js');
   if (!existsSync(distEntryPath)) {
-    const build = spawnSync("pnpm", ["run", "build"], {
+    const build = spawnSync('pnpm', ['run', 'build'], {
       cwd: process.cwd(),
-      encoding: "utf8",
+      encoding: 'utf8',
     });
     expect(build.status).toBe(0);
   }
@@ -58,21 +58,21 @@ function resolveCliEntryPath(): string {
  */
 function createBlackboxScenario(prefix: string): BlackboxScenario {
   const scenarioRoot = mkdtempSync(join(tmpdir(), `repo-ai-governor-${prefix}-`));
-  const repositoryPath = resolve(scenarioRoot, "target-repo");
-  const homePath = resolve(scenarioRoot, "home");
+  const repositoryPath = resolve(scenarioRoot, 'target-repo');
+  const homePath = resolve(scenarioRoot, 'home');
   mkdirSync(repositoryPath, { recursive: true });
   mkdirSync(homePath, { recursive: true });
   writeFileSync(
-    resolve(repositoryPath, "package.json"),
+    resolve(repositoryPath, 'package.json'),
     `${JSON.stringify(
       {
-        name: "repo-ai-governor-blackbox-e2e",
+        name: 'repo-ai-governor-blackbox-e2e',
         private: true,
       },
       null,
       2,
     )}\n`,
-    "utf8",
+    'utf8',
   );
 
   return {
@@ -80,10 +80,10 @@ function createBlackboxScenario(prefix: string): BlackboxScenario {
     runtimeEnv: {
       ...process.env,
       HOME: homePath,
-      XDG_CONFIG_HOME: resolve(homePath, ".config"),
-      XDG_CACHE_HOME: resolve(homePath, ".cache"),
-      XDG_DATA_HOME: resolve(homePath, ".local", "share"),
-      [CODEX_EXEC_FIXTURE_ENABLE_ENV_KEY]: "1",
+      XDG_CONFIG_HOME: resolve(homePath, '.config'),
+      XDG_CACHE_HOME: resolve(homePath, '.cache'),
+      XDG_DATA_HOME: resolve(homePath, '.local', 'share'),
+      [CODEX_EXEC_FIXTURE_ENABLE_ENV_KEY]: '1',
       [CODEX_EXEC_FIXTURE_ENV_KEY]: CODEX_EXEC_FIXTURE_SUCCESS,
       [CLAUDE_CODE_EXEC_FIXTURE_ENV_KEY]: CLAUDE_CODE_EXEC_FIXTURE_SUCCESS,
       [GITHUB_COPILOT_EXEC_FIXTURE_ENV_KEY]: GITHUB_COPILOT_EXEC_FIXTURE_SUCCESS,
@@ -99,10 +99,10 @@ function executeCliJsonCommand(options: {
   scenario: BlackboxScenario;
   args: string[];
 }): CliSuccessPayload {
-  const result = spawnSync(process.execPath, [cliEntryPath, "--output", "json", ...options.args], {
+  const result = spawnSync(process.execPath, [cliEntryPath, '--output', 'json', ...options.args], {
     cwd: options.scenario.repositoryPath,
     env: options.scenario.runtimeEnv,
-    encoding: "utf8",
+    encoding: 'utf8',
   });
 
   expect(result.status).toBe(0);
@@ -118,98 +118,98 @@ function resolveArtifactPath(payload: CliSuccessPayload, artifactId: string): st
   return payload.command_result?.artifacts?.find((artifact) => artifact.id === artifactId)?.path;
 }
 
-describe("CLI blackbox governance flow e2e", () => {
+describe('CLI blackbox governance flow e2e', () => {
   beforeAll(() => {
     cliEntryPath = resolveCliEntryPath();
     expect(existsSync(cliEntryPath)).toBe(true);
   });
 
-  it("covers read-only-safe bootstrap path: init -> doctor -> check without mutating repo root", () => {
-    const scenario = createBlackboxScenario("blackbox-readonly-safe");
+  it('covers read-only-safe bootstrap path: init -> doctor -> check without mutating repo root', () => {
+    const scenario = createBlackboxScenario('blackbox-readonly-safe');
     const initialEntries = readdirSync(scenario.repositoryPath).sort();
 
     const initPayload = executeCliJsonCommand({
       scenario,
-      args: ["init"],
+      args: ['init'],
     });
     const doctorPayload = executeCliJsonCommand({
       scenario,
-      args: ["doctor"],
+      args: ['doctor'],
     });
     const checkPayload = executeCliJsonCommand({
       scenario,
-      args: ["check"],
+      args: ['check'],
     });
 
     const finalEntries = readdirSync(scenario.repositoryPath).sort();
 
-    expect(initPayload.status).toBe("success");
-    expect(initPayload.command_result?.operation).toBe("workspace_init");
-    expect(doctorPayload.status).toBe("success");
-    expect(doctorPayload.command_result?.operation).toBe("env_doctor");
-    expect(checkPayload.status).toBe("success");
-    expect(checkPayload.command_result?.operation).toBe("governance_check");
+    expect(initPayload.status).toBe('success');
+    expect(initPayload.command_result?.operation).toBe('workspace_init');
+    expect(doctorPayload.status).toBe('success');
+    expect(doctorPayload.command_result?.operation).toBe('env_doctor');
+    expect(checkPayload.status).toBe('success');
+    expect(checkPayload.command_result?.operation).toBe('governance_check');
     expect(checkPayload.command_result?.check_totals?.fail ?? 0).toBe(0);
     expect(finalEntries).toEqual(initialEntries);
   });
 
-  it("covers governance chain path: plan -> run -> review -> review-verify -> replay", () => {
-    const scenario = createBlackboxScenario("blackbox-governance-chain");
+  it('covers governance chain path: plan -> run -> review -> review-verify -> replay', () => {
+    const scenario = createBlackboxScenario('blackbox-governance-chain');
 
     const planPayload = executeCliJsonCommand({
       scenario,
-      args: ["plan"],
+      args: ['plan'],
     });
     const runPayload = executeCliJsonCommand({
       scenario,
-      args: ["--adapters", "--dry-run", "--trace", "run"],
+      args: ['--adapters', '--dry-run', '--trace', 'run'],
     });
     const reviewPayload = executeCliJsonCommand({
       scenario,
-      args: ["review"],
+      args: ['review'],
     });
     const reviewVerifyPayload = executeCliJsonCommand({
       scenario,
-      args: ["review-verify"],
+      args: ['review-verify'],
     });
 
-    const reportPath = resolveArtifactPath(runPayload, "execution_report");
-    const replayPath = resolveArtifactPath(runPayload, "replay_explain");
+    const reportPath = resolveArtifactPath(runPayload, 'execution_report');
+    const replayPath = resolveArtifactPath(runPayload, 'replay_explain');
 
-    expect(planPayload.status).toBe("success");
-    expect(planPayload.command_result?.operation).toBe("plan_snapshot");
-    expect(runPayload.status).toBe("success");
-    expect(runPayload.command_result?.operation).toBe("governance_run");
-    expect(typeof reportPath).toBe("string");
-    expect(typeof replayPath).toBe("string");
+    expect(planPayload.status).toBe('success');
+    expect(planPayload.command_result?.operation).toBe('plan_snapshot');
+    expect(runPayload.status).toBe('success');
+    expect(runPayload.command_result?.operation).toBe('governance_run');
+    expect(typeof reportPath).toBe('string');
+    expect(typeof replayPath).toBe('string');
     expect(existsSync(String(reportPath))).toBe(true);
     expect(existsSync(String(replayPath))).toBe(true);
-    expect(reviewPayload.status).toBe("success");
-    expect(reviewPayload.command_result?.operation).toBe("review_queue");
-    expect(reviewVerifyPayload.status).toBe("success");
-    expect(reviewVerifyPayload.command_result?.operation).toBe("review_verify");
+    expect(reviewPayload.status).toBe('success');
+    expect(reviewPayload.command_result?.operation).toBe('review_queue');
+    expect(reviewVerifyPayload.status).toBe('success');
+    expect(reviewVerifyPayload.command_result?.operation).toBe('review_verify');
 
     const replayPayload = executeCliJsonCommand({
       scenario,
-      args: ["--replay", String(replayPath), "run"],
+      args: ['--replay', String(replayPath), 'run'],
     });
-    expect(replayPayload.status).toBe("success");
-    expect(replayPayload.command_result?.operation).toBe("governance_run_replay");
+    expect(replayPayload.status).toBe('success');
+    expect(replayPayload.command_result?.operation).toBe('governance_run_replay');
   });
 
-  it("covers Stage 9 task-driven delivery path with replay-linked rehearsal artifacts", async () => {
+  it('covers Stage 9 task-driven delivery path with replay-linked rehearsal artifacts', async () => {
     const scenarioSummary = await runUnattendedDeliveryScenario({
       cliEntryPath,
     });
 
-    expect(scenarioSummary.status).toBe("passed");
-    expect(scenarioSummary.runtimeStatus).toBe("succeeded");
-    expect(scenarioSummary.assemblyMode).toBe("task_driven");
+    expect(scenarioSummary.status).toBe('passed');
+    expect(scenarioSummary.runtimeStatus).toBe('succeeded');
+    expect(scenarioSummary.assemblyMode).toBe('task_driven');
     expect(scenarioSummary.deliveryRehearsalEnabled).toBe(true);
-    expect(scenarioSummary.deliveryRehearsalStatus).toBe("applied");
-    expect(scenarioSummary.inlineReviewChainStatus).toBe("applied");
-    expect(typeof scenarioSummary.reportPath).toBe("string");
-    expect(typeof scenarioSummary.replayPath).toBe("string");
-    expect(typeof scenarioSummary.deliveryRehearsalPath).toBe("string");
+    expect(scenarioSummary.deliveryRehearsalStatus).toBe('applied');
+    expect(scenarioSummary.inlineReviewChainStatus).toBe('applied');
+    expect(typeof scenarioSummary.reportPath).toBe('string');
+    expect(typeof scenarioSummary.replayPath).toBe('string');
+    expect(typeof scenarioSummary.deliveryRehearsalPath).toBe('string');
   });
 });

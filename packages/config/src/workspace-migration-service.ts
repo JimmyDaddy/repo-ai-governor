@@ -1,27 +1,27 @@
-import { createHash } from "node:crypto";
-import { existsSync } from "node:fs";
-import { cp, mkdir, readFile, readdir, rename, rm } from "node:fs/promises";
-import { dirname, join, relative, resolve } from "node:path";
+import { createHash } from 'node:crypto';
+import { existsSync } from 'node:fs';
+import { cp, mkdir, readFile, readdir, rename, rm } from 'node:fs/promises';
+import { dirname, join, relative, resolve } from 'node:path';
 
-import type { WorkspaceMode } from "@repo-ai-governor/shared";
+import type { WorkspaceMode } from '@repo-ai-governor/shared';
 import {
   ConfigError,
   GovernorErrorCode,
   type StandardizedError,
   standardizeError,
-} from "@repo-ai-governor/shared";
+} from '@repo-ai-governor/shared';
 import {
   WORKSPACE_MIGRATION_ROOT_SEGMENTS,
   WorkspaceMigrationStep,
   WorkspaceMigrationStepStatus,
-} from "./constants/index.js";
+} from './constants/index.js';
 import type {
   WorkspaceMigrationExecutionResult,
   WorkspaceMigrationOptions,
   WorkspaceMigrationPlan,
   WorkspaceMigrationStepResult,
-} from "./types/interfaces/index.js";
-import { WorkspaceResolver } from "./workspace-resolver.js";
+} from './types/interfaces/index.js';
+import { WorkspaceResolver } from './workspace-resolver.js';
 
 /**
  * Implements the workspace migration baseline chain: copy -> verify -> switch -> rollback.
@@ -57,7 +57,7 @@ export class WorkspaceMigrationService {
     ) {
       throw new ConfigError(
         GovernorErrorCode.WORKSPACE_MIGRATION_NOOP,
-        "Workspace migration target is identical to source workspace.",
+        'Workspace migration target is identical to source workspace.',
         {
           mode: sourceWorkspace.mode,
           workspaceRoot: sourceWorkspace.workspaceRoot,
@@ -76,9 +76,9 @@ export class WorkspaceMigrationService {
       migrationId,
       sourceWorkspace,
       targetWorkspace,
-      stagingWorkspaceRoot: resolve(migrationRoot, "staging"),
-      backupWorkspaceRoot: resolve(migrationRoot, "backup"),
-      previousTargetBackupRoot: resolve(migrationRoot, "backup", "previous-target"),
+      stagingWorkspaceRoot: resolve(migrationRoot, 'staging'),
+      backupWorkspaceRoot: resolve(migrationRoot, 'backup'),
+      previousTargetBackupRoot: resolve(migrationRoot, 'backup', 'previous-target'),
     };
   }
 
@@ -120,7 +120,7 @@ export class WorkspaceMigrationService {
         steps.push({
           step: WorkspaceMigrationStep.ROLLBACK,
           status: WorkspaceMigrationStepStatus.SKIPPED,
-          message: "rollback skipped because switch step was not started",
+          message: 'rollback skipped because switch step was not started',
         });
       }
 
@@ -157,7 +157,7 @@ export class WorkspaceMigrationService {
       return {
         step: WorkspaceMigrationStep.ROLLBACK,
         status: WorkspaceMigrationStepStatus.SUCCEEDED,
-        message: "rollback completed",
+        message: 'rollback completed',
       };
     } catch (error) {
       const normalizedError = standardizeError(error);
@@ -199,7 +199,7 @@ export class WorkspaceMigrationService {
     } catch (error) {
       throw new ConfigError(
         GovernorErrorCode.WORKSPACE_MIGRATION_COPY_FAILED,
-        "Failed during workspace copy step.",
+        'Failed during workspace copy step.',
         {
           sourceWorkspaceRoot: plan.sourceWorkspace.workspaceRoot,
           stagingWorkspaceRoot: plan.stagingWorkspaceRoot,
@@ -222,7 +222,7 @@ export class WorkspaceMigrationService {
       if (sourceSnapshot.size !== stagingSnapshot.size) {
         throw new ConfigError(
           GovernorErrorCode.WORKSPACE_MIGRATION_VERIFY_FAILED,
-          "Workspace verification failed: file count mismatch between source and staging.",
+          'Workspace verification failed: file count mismatch between source and staging.',
           {
             sourceFileCount: sourceSnapshot.size,
             stagingFileCount: stagingSnapshot.size,
@@ -234,7 +234,7 @@ export class WorkspaceMigrationService {
         if (stagingSnapshot.get(relativePath) !== sourceHash) {
           throw new ConfigError(
             GovernorErrorCode.WORKSPACE_MIGRATION_VERIFY_FAILED,
-            "Workspace verification failed: file hash mismatch between source and staging.",
+            'Workspace verification failed: file hash mismatch between source and staging.',
             {
               relativePath,
             },
@@ -248,7 +248,7 @@ export class WorkspaceMigrationService {
 
       throw new ConfigError(
         GovernorErrorCode.WORKSPACE_MIGRATION_VERIFY_FAILED,
-        "Failed during workspace verification step.",
+        'Failed during workspace verification step.',
         {
           sourceWorkspaceRoot: plan.sourceWorkspace.workspaceRoot,
           stagingWorkspaceRoot: plan.stagingWorkspaceRoot,
@@ -277,7 +277,7 @@ export class WorkspaceMigrationService {
     } catch (error) {
       throw new ConfigError(
         GovernorErrorCode.WORKSPACE_MIGRATION_SWITCH_FAILED,
-        "Failed during workspace switch step.",
+        'Failed during workspace switch step.',
         {
           targetWorkspaceRoot: plan.targetWorkspace.workspaceRoot,
           previousTargetBackupRoot: plan.previousTargetBackupRoot,
@@ -328,7 +328,7 @@ export class WorkspaceMigrationService {
     const snapshotEntries = await Promise.all(
       filePaths.map(async (filePath) => {
         const content = await readFile(filePath);
-        const fileHash = createHash("sha256").update(content).digest("hex");
+        const fileHash = createHash('sha256').update(content).digest('hex');
         return [relative(rootDirectory, filePath), fileHash] as const;
       }),
     );
@@ -417,7 +417,7 @@ export class WorkspaceMigrationService {
    */
   private isCrossDeviceMoveError(error: unknown): boolean {
     const errorCode = (error as { code?: unknown }).code;
-    return errorCode === "EXDEV";
+    return errorCode === 'EXDEV';
   }
 
   /**
@@ -427,7 +427,7 @@ export class WorkspaceMigrationService {
    */
   private isStandardizedError(error: unknown): error is StandardizedError {
     const candidate = error as { code?: unknown; message?: unknown };
-    return typeof candidate.code === "string" && typeof candidate.message === "string";
+    return typeof candidate.code === 'string' && typeof candidate.message === 'string';
   }
 
   /**

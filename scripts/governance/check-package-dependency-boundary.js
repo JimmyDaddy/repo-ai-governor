@@ -1,24 +1,24 @@
 #!/usr/bin/env node
 
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
-import { dirname, relative, resolve } from "node:path";
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { dirname, relative, resolve } from 'node:path';
 
-import { gateFail, gateInfo, gatePass, gateWarn } from "./gate-output.js";
+import { gateFail, gateInfo, gatePass, gateWarn } from './gate-output.js';
 
-const GATE_NAME = "dependency-boundary";
-const DEFAULT_MODE = "warn";
-const DEFAULT_FORMAT = "text";
-const DEFAULT_WHITELIST_PATH = "scripts/governance/dependency-boundary-whitelist.json";
+const GATE_NAME = 'dependency-boundary';
+const DEFAULT_MODE = 'warn';
+const DEFAULT_FORMAT = 'text';
+const DEFAULT_WHITELIST_PATH = 'scripts/governance/dependency-boundary-whitelist.json';
 const SOURCE_FILE_PATTERN = /\.(ts|tsx|js|mjs|cjs)$/;
-const SKIP_DIRECTORY_NAMES = new Set(["node_modules", "dist", "coverage"]);
+const SKIP_DIRECTORY_NAMES = new Set(['node_modules', 'dist', 'coverage']);
 const STATIC_IMPORT_PATTERN =
   /\b(?:import|export)\s+(?:type\s+)?(?:[^"'`]*?\sfrom\s+)?["']([^"']+)["']/g;
 const DYNAMIC_IMPORT_PATTERN = /\bimport\(\s*["']([^"']+)["']\s*\)/g;
-const SUPPORTED_MODES = new Set(["warn", "block"]);
-const SUPPORTED_FORMATS = new Set(["text", "json"]);
+const SUPPORTED_MODES = new Set(['warn', 'block']);
+const SUPPORTED_FORMATS = new Set(['text', 'json']);
 const NOTIFICATION_DISPATCHER_ALLOWED_CORE_PACKAGE_IDS = new Set([
-  "packages/core-policy",
-  "packages/core-audit",
+  'packages/core-policy',
+  'packages/core-audit',
 ]);
 
 /**
@@ -27,19 +27,19 @@ const NOTIFICATION_DISPATCHER_ALLOWED_CORE_PACKAGE_IDS = new Set([
  * @returns {{mode: "warn" | "block", format: "text" | "json", whitelistPath: string}}
  */
 function resolveCliOptions(argv) {
-  const modeCandidate = readFlagValue(argv, "--mode") ?? DEFAULT_MODE;
-  const formatCandidate = readFlagValue(argv, "--format") ?? DEFAULT_FORMAT;
-  const whitelistCandidate = readFlagValue(argv, "--whitelist") ?? DEFAULT_WHITELIST_PATH;
+  const modeCandidate = readFlagValue(argv, '--mode') ?? DEFAULT_MODE;
+  const formatCandidate = readFlagValue(argv, '--format') ?? DEFAULT_FORMAT;
+  const whitelistCandidate = readFlagValue(argv, '--whitelist') ?? DEFAULT_WHITELIST_PATH;
 
   if (!SUPPORTED_MODES.has(modeCandidate)) {
     throw new Error(
-      `Unsupported --mode "${modeCandidate}". Expected one of: ${Array.from(SUPPORTED_MODES).join(", ")}`,
+      `Unsupported --mode "${modeCandidate}". Expected one of: ${Array.from(SUPPORTED_MODES).join(', ')}`,
     );
   }
 
   if (!SUPPORTED_FORMATS.has(formatCandidate)) {
     throw new Error(
-      `Unsupported --format "${formatCandidate}". Expected one of: ${Array.from(SUPPORTED_FORMATS).join(", ")}`,
+      `Unsupported --format "${formatCandidate}". Expected one of: ${Array.from(SUPPORTED_FORMATS).join(', ')}`,
     );
   }
 
@@ -63,7 +63,7 @@ function readFlagValue(argv, flagName) {
   }
 
   const nextValue = argv[flagIndex + 1];
-  if (!nextValue || nextValue.startsWith("--")) {
+  if (!nextValue || nextValue.startsWith('--')) {
     throw new Error(`Flag "${flagName}" requires a value.`);
   }
 
@@ -80,10 +80,10 @@ function loadWhitelist(whitelistPath) {
     return { allowEdges: [] };
   }
 
-  const rawWhitelist = readFileSync(whitelistPath, "utf8");
+  const rawWhitelist = readFileSync(whitelistPath, 'utf8');
   const parsedWhitelist = JSON.parse(rawWhitelist);
 
-  if (!parsedWhitelist || typeof parsedWhitelist !== "object") {
+  if (!parsedWhitelist || typeof parsedWhitelist !== 'object') {
     throw new Error(`Invalid whitelist payload: ${whitelistPath}`);
   }
 
@@ -91,13 +91,13 @@ function loadWhitelist(whitelistPath) {
   const sanitizedEdges = [];
 
   for (const allowEdge of allowEdges) {
-    if (!allowEdge || typeof allowEdge !== "object") {
+    if (!allowEdge || typeof allowEdge !== 'object') {
       continue;
     }
 
-    const from = normalizePathSeparators(String(allowEdge.from ?? "").trim());
-    const to = normalizePathSeparators(String(allowEdge.to ?? "").trim());
-    const reason = String(allowEdge.reason ?? "").trim();
+    const from = normalizePathSeparators(String(allowEdge.from ?? '').trim());
+    const to = normalizePathSeparators(String(allowEdge.to ?? '').trim());
+    const reason = String(allowEdge.reason ?? '').trim();
 
     if (!from || !to || !reason) {
       continue;
@@ -115,8 +115,8 @@ function loadWhitelist(whitelistPath) {
  */
 function collectWorkspacePackages() {
   const packageDescriptors = [];
-  const appsRootPath = resolve(process.cwd(), "apps");
-  const packagesRootPath = resolve(process.cwd(), "packages");
+  const appsRootPath = resolve(process.cwd(), 'apps');
+  const packagesRootPath = resolve(process.cwd(), 'packages');
 
   if (existsSync(appsRootPath)) {
     for (const entry of readdirSync(appsRootPath)) {
@@ -167,13 +167,13 @@ function collectWorkspacePackages() {
  * @returns {{id: string, name: string, rootPath: string, layer: string} | null}
  */
 function readPackageDescriptor(packageRootPath) {
-  const packageJsonPath = resolve(packageRootPath, "package.json");
+  const packageJsonPath = resolve(packageRootPath, 'package.json');
   if (!existsSync(packageJsonPath)) {
     return null;
   }
 
   const relativePackageRoot = normalizePathSeparators(relative(process.cwd(), packageRootPath));
-  const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf8"));
+  const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
   const packageName = String(packageJson.name ?? relativePackageRoot).trim();
 
   return {
@@ -190,71 +190,71 @@ function readPackageDescriptor(packageRootPath) {
  * @returns {string}
  */
 function classifyPackageLayer(packageId) {
-  if (packageId.startsWith("apps/")) {
-    return "app";
+  if (packageId.startsWith('apps/')) {
+    return 'app';
   }
 
-  if (packageId === "packages/shared") {
-    return "shared";
+  if (packageId === 'packages/shared') {
+    return 'shared';
   }
 
-  if (packageId === "packages/config") {
-    return "config";
+  if (packageId === 'packages/config') {
+    return 'config';
   }
 
-  if (packageId.startsWith("packages/core-")) {
-    return "core";
+  if (packageId.startsWith('packages/core-')) {
+    return 'core';
   }
 
-  if (packageId === "packages/memory-store-adapter") {
-    return "memory-store-adapter";
+  if (packageId === 'packages/memory-store-adapter') {
+    return 'memory-store-adapter';
   }
 
-  if (packageId.startsWith("packages/memory-providers/")) {
-    return "memory-provider";
+  if (packageId.startsWith('packages/memory-providers/')) {
+    return 'memory-provider';
   }
 
-  if (packageId === "packages/notification-dispatcher") {
-    return "notification-dispatcher";
+  if (packageId === 'packages/notification-dispatcher') {
+    return 'notification-dispatcher';
   }
 
-  if (packageId.startsWith("packages/notification-providers/")) {
-    return "notification-provider";
+  if (packageId.startsWith('packages/notification-providers/')) {
+    return 'notification-provider';
   }
 
-  if (packageId === "packages/artifact-registry") {
-    return "artifact-registry";
+  if (packageId === 'packages/artifact-registry') {
+    return 'artifact-registry';
   }
 
-  if (packageId === "packages/adapter-sdk") {
-    return "adapter-sdk";
+  if (packageId === 'packages/adapter-sdk') {
+    return 'adapter-sdk';
   }
 
-  if (packageId.startsWith("packages/adapters/")) {
-    return "adapter";
+  if (packageId.startsWith('packages/adapters/')) {
+    return 'adapter';
   }
 
-  if (packageId.startsWith("packages/standards")) {
-    return "standards";
+  if (packageId.startsWith('packages/standards')) {
+    return 'standards';
   }
 
-  if (packageId.startsWith("packages/slots")) {
-    return "slots";
+  if (packageId.startsWith('packages/slots')) {
+    return 'slots';
   }
 
-  if (packageId === "packages/spec-sync-guard") {
-    return "spec-sync-guard";
+  if (packageId === 'packages/spec-sync-guard') {
+    return 'spec-sync-guard';
   }
 
-  if (packageId === "packages/reporting") {
-    return "reporting";
+  if (packageId === 'packages/reporting') {
+    return 'reporting';
   }
 
-  if (packageId.startsWith("packages/")) {
-    return "package";
+  if (packageId.startsWith('packages/')) {
+    return 'package';
   }
 
-  return "unknown";
+  return 'unknown';
 }
 
 /**
@@ -293,7 +293,7 @@ function collectSourceFiles(directoryPath) {
  * @returns {Array<{specifier: string, lineNumber: number}>}
  */
 function collectImports(filePath) {
-  const source = readFileSync(filePath, "utf8");
+  const source = readFileSync(filePath, 'utf8');
   const imports = [];
 
   collectImportsByPattern(source, STATIC_IMPORT_PATTERN, imports);
@@ -314,7 +314,7 @@ function collectImports(filePath) {
  */
 function collectImportsByPattern(source, importPattern, output) {
   for (const match of source.matchAll(importPattern)) {
-    const specifier = String(match[1] ?? "").trim();
+    const specifier = String(match[1] ?? '').trim();
     if (!specifier) {
       continue;
     }
@@ -345,7 +345,7 @@ function resolveLineNumber(source, sourceIndex) {
  * @returns {{id: string, name: string, rootPath: string, layer: string} | null}
  */
 function resolveTargetPackage(sourceFilePath, specifier, packageByName, workspacePackages) {
-  if (specifier.startsWith(".")) {
+  if (specifier.startsWith('.')) {
     const sourceDirectoryPath = dirname(sourceFilePath);
     const targetPath = normalizePathSeparators(resolve(sourceDirectoryPath, specifier));
     return findPackageByFilePath(targetPath, workspacePackages);
@@ -384,178 +384,178 @@ function findPackageByFilePath(filePath, workspacePackages) {
  */
 function evaluateBoundary(sourcePackage, targetPackage) {
   if (sourcePackage.id === targetPackage.id) {
-    return { allowed: true, ruleId: "self-allowed", reason: "Self package imports are allowed." };
+    return { allowed: true, ruleId: 'self-allowed', reason: 'Self package imports are allowed.' };
   }
 
-  if (sourcePackage.layer === "app") {
-    if (targetPackage.layer === "app") {
+  if (sourcePackage.layer === 'app') {
+    if (targetPackage.layer === 'app') {
       return {
         allowed: false,
-        ruleId: "app-no-app-import",
-        reason: "apps should not form direct cross-app dependencies.",
+        ruleId: 'app-no-app-import',
+        reason: 'apps should not form direct cross-app dependencies.',
       };
     }
 
     return {
       allowed: true,
-      ruleId: "app-to-package-allowed",
-      reason: "apps may depend on workspace packages.",
+      ruleId: 'app-to-package-allowed',
+      reason: 'apps may depend on workspace packages.',
     };
   }
 
-  if (sourcePackage.layer === "shared") {
-    if (targetPackage.layer !== "shared") {
+  if (sourcePackage.layer === 'shared') {
+    if (targetPackage.layer !== 'shared') {
       return {
         allowed: false,
-        ruleId: "shared-must-be-leaf",
-        reason: "shared must not depend on business/domain modules.",
+        ruleId: 'shared-must-be-leaf',
+        reason: 'shared must not depend on business/domain modules.',
       };
     }
 
     return {
       allowed: true,
-      ruleId: "shared-self-allowed",
-      reason: "shared internal imports are allowed.",
+      ruleId: 'shared-self-allowed',
+      reason: 'shared internal imports are allowed.',
     };
   }
 
-  if (sourcePackage.layer === "config") {
-    if (targetPackage.layer === "shared" || targetPackage.layer === "config") {
+  if (sourcePackage.layer === 'config') {
+    if (targetPackage.layer === 'shared' || targetPackage.layer === 'config') {
       return {
         allowed: true,
-        ruleId: "config-to-shared-allowed",
-        reason: "config may depend on shared/config.",
+        ruleId: 'config-to-shared-allowed',
+        reason: 'config may depend on shared/config.',
       };
     }
 
     return {
       allowed: false,
-      ruleId: "config-dependency-restricted",
-      reason: "config may only depend on shared/config packages.",
+      ruleId: 'config-dependency-restricted',
+      reason: 'config may only depend on shared/config packages.',
     };
   }
 
-  if (sourcePackage.layer === "memory-provider") {
-    if (targetPackage.layer === "memory-store-adapter" || targetPackage.layer === "shared") {
+  if (sourcePackage.layer === 'memory-provider') {
+    if (targetPackage.layer === 'memory-store-adapter' || targetPackage.layer === 'shared') {
       return {
         allowed: true,
-        ruleId: "memory-provider-allowed",
-        reason: "memory providers may depend on memory-store-adapter/shared.",
+        ruleId: 'memory-provider-allowed',
+        reason: 'memory providers may depend on memory-store-adapter/shared.',
       };
     }
 
     return {
       allowed: false,
-      ruleId: "memory-provider-restricted",
-      reason: "memory providers must not depend on app/adapter or unrelated core modules.",
+      ruleId: 'memory-provider-restricted',
+      reason: 'memory providers must not depend on app/adapter or unrelated core modules.',
     };
   }
 
-  if (sourcePackage.layer === "notification-dispatcher") {
+  if (sourcePackage.layer === 'notification-dispatcher') {
     const isAllowedNotificationDispatcherCoreDependency =
-      targetPackage.layer === "core" &&
+      targetPackage.layer === 'core' &&
       NOTIFICATION_DISPATCHER_ALLOWED_CORE_PACKAGE_IDS.has(targetPackage.id);
 
     if (
-      targetPackage.layer === "notification-dispatcher" ||
+      targetPackage.layer === 'notification-dispatcher' ||
       isAllowedNotificationDispatcherCoreDependency ||
-      targetPackage.layer === "config" ||
-      targetPackage.layer === "shared"
+      targetPackage.layer === 'config' ||
+      targetPackage.layer === 'shared'
     ) {
       return {
         allowed: true,
-        ruleId: "notification-dispatcher-allowed",
-        reason: "notification-dispatcher may depend on core-policy/core-audit/config/shared.",
+        ruleId: 'notification-dispatcher-allowed',
+        reason: 'notification-dispatcher may depend on core-policy/core-audit/config/shared.',
       };
     }
 
     return {
       allowed: false,
-      ruleId: "notification-dispatcher-restricted",
+      ruleId: 'notification-dispatcher-restricted',
       reason:
-        "notification-dispatcher should not depend on apps/adapters/provider implementations.",
+        'notification-dispatcher should not depend on apps/adapters/provider implementations.',
     };
   }
 
-  if (sourcePackage.layer === "notification-provider") {
-    if (targetPackage.layer === "notification-dispatcher" || targetPackage.layer === "shared") {
+  if (sourcePackage.layer === 'notification-provider') {
+    if (targetPackage.layer === 'notification-dispatcher' || targetPackage.layer === 'shared') {
       return {
         allowed: true,
-        ruleId: "notification-provider-allowed",
-        reason: "notification providers may depend on dispatcher/shared.",
+        ruleId: 'notification-provider-allowed',
+        reason: 'notification providers may depend on dispatcher/shared.',
       };
     }
 
     return {
       allowed: false,
-      ruleId: "notification-provider-restricted",
-      reason: "notification providers must not depend on runtime/adapters.",
+      ruleId: 'notification-provider-restricted',
+      reason: 'notification providers must not depend on runtime/adapters.',
     };
   }
 
-  if (sourcePackage.layer === "adapter") {
-    if (targetPackage.layer === "adapter-sdk" || targetPackage.layer === "shared") {
+  if (sourcePackage.layer === 'adapter') {
+    if (targetPackage.layer === 'adapter-sdk' || targetPackage.layer === 'shared') {
       return {
         allowed: true,
-        ruleId: "adapter-allowed",
-        reason: "adapters may depend on adapter-sdk/shared.",
+        ruleId: 'adapter-allowed',
+        reason: 'adapters may depend on adapter-sdk/shared.',
       };
     }
 
     return {
       allowed: false,
-      ruleId: "adapter-restricted",
-      reason: "adapters must not depend on apps or domain packages directly.",
+      ruleId: 'adapter-restricted',
+      reason: 'adapters must not depend on apps or domain packages directly.',
     };
   }
 
-  if (sourcePackage.layer === "artifact-registry") {
-    if (targetPackage.layer === "app" || targetPackage.layer === "adapter") {
+  if (sourcePackage.layer === 'artifact-registry') {
+    if (targetPackage.layer === 'app' || targetPackage.layer === 'adapter') {
       return {
         allowed: false,
-        ruleId: "artifact-registry-restricted",
-        reason: "artifact-registry must not depend on apps or concrete adapters.",
+        ruleId: 'artifact-registry-restricted',
+        reason: 'artifact-registry must not depend on apps or concrete adapters.',
       };
     }
   }
 
-  if (sourcePackage.layer === "standards" || sourcePackage.layer === "slots") {
-    if (targetPackage.layer === "adapter") {
+  if (sourcePackage.layer === 'standards' || sourcePackage.layer === 'slots') {
+    if (targetPackage.layer === 'adapter') {
       return {
         allowed: false,
-        ruleId: "standards-no-adapter-dependency",
-        reason: "standards/slots should remain adapter-agnostic.",
+        ruleId: 'standards-no-adapter-dependency',
+        reason: 'standards/slots should remain adapter-agnostic.',
       };
     }
   }
 
-  if (sourcePackage.layer === "spec-sync-guard") {
+  if (sourcePackage.layer === 'spec-sync-guard') {
     if (
-      targetPackage.layer === "core" ||
-      targetPackage.layer === "adapter" ||
-      targetPackage.layer === "memory-provider" ||
-      targetPackage.layer === "notification-provider"
+      targetPackage.layer === 'core' ||
+      targetPackage.layer === 'adapter' ||
+      targetPackage.layer === 'memory-provider' ||
+      targetPackage.layer === 'notification-provider'
     ) {
       return {
         allowed: false,
-        ruleId: "spec-sync-guard-restricted",
-        reason: "spec-sync-guard should not depend on runtime/adapter/provider implementations.",
+        ruleId: 'spec-sync-guard-restricted',
+        reason: 'spec-sync-guard should not depend on runtime/adapter/provider implementations.',
       };
     }
   }
 
-  if (sourcePackage.layer !== "app" && targetPackage.layer === "app") {
+  if (sourcePackage.layer !== 'app' && targetPackage.layer === 'app') {
     return {
       allowed: false,
-      ruleId: "package-to-app-forbidden",
-      reason: "packages must not depend on apps.",
+      ruleId: 'package-to-app-forbidden',
+      reason: 'packages must not depend on apps.',
     };
   }
 
   return {
     allowed: true,
-    ruleId: "default-allowed",
-    reason: "No restrictive rule hit in current baseline.",
+    ruleId: 'default-allowed',
+    reason: 'No restrictive rule hit in current baseline.',
   };
 }
 
@@ -597,7 +597,7 @@ function printTextResult(result) {
   );
 
   if (result.violations.length === 0) {
-    gatePass(GATE_NAME, "No dependency boundary violations found.");
+    gatePass(GATE_NAME, 'No dependency boundary violations found.');
     return;
   }
 
@@ -611,10 +611,10 @@ function printTextResult(result) {
     );
   }
 
-  if (result.mode === "warn") {
+  if (result.mode === 'warn') {
     gateWarn(
       GATE_NAME,
-      "Warning mode is active: violations are reported but do not fail this gate.",
+      'Warning mode is active: violations are reported but do not fail this gate.',
     );
   }
 }
@@ -625,7 +625,7 @@ function printTextResult(result) {
  * @returns {string}
  */
 function normalizePathSeparators(value) {
-  return value.replace(/\\/g, "/");
+  return value.replace(/\\/g, '/');
 }
 
 /**
@@ -699,13 +699,13 @@ const result = {
   allowlistedViolations,
 };
 
-if (options.format === "json") {
+if (options.format === 'json') {
   console.info(JSON.stringify(result, null, 2));
 } else {
   printTextResult(result);
 }
 
-if (options.mode === "block" && violations.length > 0) {
-  gateFail(GATE_NAME, "Blocking mode detected dependency boundary violations.");
+if (options.mode === 'block' && violations.length > 0) {
+  gateFail(GATE_NAME, 'Blocking mode detected dependency boundary violations.');
   process.exit(1);
 }

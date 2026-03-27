@@ -1,8 +1,8 @@
-import { AGENT_LOCAL_FALLBACK_SURFACE } from "./constants/index.js";
+import { AGENT_LOCAL_FALLBACK_SURFACE } from './constants/index.js';
 import type {
   AgentRestrictedNetworkFallbackContext,
   AgentRestrictedNetworkFallbackHandlerContract,
-} from "./types/index.js";
+} from './types/index.js';
 
 /**
  * Provides deterministic local fallback output when restricted network blocks adapter routing.

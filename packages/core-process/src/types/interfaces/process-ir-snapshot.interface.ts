@@ -1,6 +1,6 @@
-import type { ProcessNodeType } from "../../constants/compiler-ir.constant.js";
-import type { ProcessDslGlobals } from "../aliases/process-dsl-globals.type.js";
-import type { ProcessCompilerIssueSnapshot } from "./process-compiler-issue.interface.js";
+import type { ProcessNodeType } from '../../constants/compiler-ir.constant.js';
+import type { ProcessDslGlobals } from '../aliases/process-dsl-globals.type.js';
+import type { ProcessCompilerIssueSnapshot } from './process-compiler-issue.interface.js';
 
 /**
  * Defines snake_case loop limits payload persisted in IR snapshot.

@@ -4,19 +4,19 @@ import {
   type ProcessIrEdge,
   type ProcessIrNode,
   ProcessNodeType,
-} from "@repo-ai-governor/core-process";
-import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
+} from '@repo-ai-governor/core-process';
+import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import {
   LANGGRAPH_CHECKPOINTER_STATE_KEYS,
   LANGGRAPH_REDUCED_STATE_KEYS,
   type LangGraphEdgeBehavior,
   type LangGraphNodeBehavior,
-} from "./constants/index.js";
+} from './constants/index.js';
 import type {
   LangGraphCompiledGraphEdge,
   LangGraphCompiledGraphNode,
   LangGraphCompiledGraphPlan,
-} from "./types/index.js";
+} from './types/index.js';
 
 export class CompiledIrGraphAdapter {
   constructor(private readonly processCompiler: ProcessCompiler = new ProcessCompiler()) {}
@@ -84,7 +84,7 @@ export class CompiledIrGraphAdapter {
 
     throw new RuntimeError(
       GovernorErrorCode.PROCESS_RUNTIME_IR_CONTAINS_COMPILE_ERRORS,
-      "Compiled IR contains blocking compile errors and cannot be adapted into a LangGraph plan.",
+      'Compiled IR contains blocking compile errors and cannot be adapted into a LangGraph plan.',
       {
         processId: compiledIr.processId,
         executionId: compiledIr.executionId,
@@ -161,18 +161,18 @@ export class CompiledIrGraphAdapter {
 
   private resolveNodeBehavior(nodeType: ProcessNodeType): LangGraphNodeBehavior {
     if (nodeType === ProcessNodeType.CONDITION) {
-      return "branch";
+      return 'branch';
     }
 
     if (nodeType === ProcessNodeType.PARALLEL) {
-      return "fan_out";
+      return 'fan_out';
     }
 
     if (nodeType === ProcessNodeType.LOOP) {
-      return "loop";
+      return 'loop';
     }
 
-    return "invoke_stage";
+    return 'invoke_stage';
   }
 
   private resolveEdgeBehavior(
@@ -180,17 +180,17 @@ export class CompiledIrGraphAdapter {
     edge: ProcessIrEdge,
   ): LangGraphEdgeBehavior {
     if (sourceNodeType === ProcessNodeType.CONDITION) {
-      return "conditional";
+      return 'conditional';
     }
 
     if (sourceNodeType === ProcessNodeType.PARALLEL) {
-      return "parallel";
+      return 'parallel';
     }
 
     if (sourceNodeType === ProcessNodeType.LOOP) {
-      return edge.toNodeId === edge.fromNodeId ? "loop_continue" : "loop_exit";
+      return edge.toNodeId === edge.fromNodeId ? 'loop_continue' : 'loop_exit';
     }
 
-    return "direct";
+    return 'direct';
   }
 }

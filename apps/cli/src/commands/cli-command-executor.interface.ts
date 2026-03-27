@@ -1,5 +1,5 @@
-import type { CliCommandName } from "../constants/cli-command.constant.js";
-import type { CliCommandExecutorContext, CliGovernanceCommandResult } from "../types/index.js";
+import type { CliCommandName } from '../constants/cli-command.constant.js';
+import type { CliCommandExecutorContext, CliGovernanceCommandResult } from '../types/index.js';
 
 /**
  * Defines one extracted command executor owned by the CLI package command surface layer.

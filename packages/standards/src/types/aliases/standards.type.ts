@@ -1,4 +1,4 @@
-import type { StandardsRenderTarget } from "../../constants/index.js";
+import type { StandardsRenderTarget } from '../../constants/index.js';
 
 /**
  * Defines one interpolation payload used by rule rendering.

@@ -1,14 +1,14 @@
-import { AgentAvailabilityStatus } from "@repo-ai-governor/adapter-sdk";
-import { ExecutionInteractionCategory, ExecutionProgressStatus } from "@repo-ai-governor/shared";
-import type { ExecutionProgressStage } from "@repo-ai-governor/shared";
-import { CliGovernanceCheckStatus } from "../constants/cli-governance-runtime.constant.js";
+import { AgentAvailabilityStatus } from '@repo-ai-governor/adapter-sdk';
+import { ExecutionInteractionCategory, ExecutionProgressStatus } from '@repo-ai-governor/shared';
+import type { ExecutionProgressStage } from '@repo-ai-governor/shared';
+import { CliGovernanceCheckStatus } from '../constants/cli-governance-runtime.constant.js';
 import type {
   CliAdapterRoleEvaluation,
   CliAdapterToolProbeSnapshot,
   CliAdapterVerificationResolution,
   CliInteractionPrompt,
   CliRoleStageProgress,
-} from "../types/index.js";
+} from '../types/index.js';
 
 /**
  * Owns CLI-local adapter diagnostics shaping so payload/progress/prompt builders stay outside the facade.
@@ -48,17 +48,17 @@ export class CliAdapterDiagnosticsRuntime {
    */
   public resolveToolProbeCheckDetail(snapshot: CliAdapterToolProbeSnapshot): string {
     if (!snapshot.enabled) {
-      return this.localizeText("disabled_by_config", "由配置禁用");
+      return this.localizeText('disabled_by_config', '由配置禁用');
     }
 
     const readableReasons =
       snapshot.unavailableReasons.length > 0
         ? this.humanizeToolUnavailableReasons(snapshot.unavailableReasons)
-        : ["none"];
-    const attributionLabel = this.localizeText("attribution", "归因");
-    const availabilityLabel = this.localizeText("availability", "可用性");
-    const reasonsLabel = this.localizeText("reasons", "原因");
-    return `${availabilityLabel}=${snapshot.availabilityStatus} ${attributionLabel}=${snapshot.failureAttributions.join("|") || "none"} ${reasonsLabel}=${readableReasons.join(" | ")}`;
+        : ['none'];
+    const attributionLabel = this.localizeText('attribution', '归因');
+    const availabilityLabel = this.localizeText('availability', '可用性');
+    const reasonsLabel = this.localizeText('reasons', '原因');
+    return `${availabilityLabel}=${snapshot.availabilityStatus} ${attributionLabel}=${snapshot.failureAttributions.join('|') || 'none'} ${reasonsLabel}=${readableReasons.join(' | ')}`;
   }
 
   /**
@@ -68,19 +68,19 @@ export class CliAdapterDiagnosticsRuntime {
    */
   public createSafeLocalBoundaryArtifactPayload(fixEnabled: boolean): Record<string, unknown> {
     return {
-      mode: "safe_local_only",
+      mode: 'safe_local_only',
       fixEnabled,
       allowedWrites: [
-        "workspace_root_directory",
-        "workspace_config_template",
-        "memory_store_root_directory",
+        'workspace_root_directory',
+        'workspace_config_template',
+        'memory_store_root_directory',
       ],
       blockedMutations: [
-        "adapter_credentials",
-        "adapter_login_state",
-        "local_model_endpoint",
-        "local_model_model_pull",
-        "remote_provider_installation",
+        'adapter_credentials',
+        'adapter_login_state',
+        'local_model_endpoint',
+        'local_model_model_pull',
+        'remote_provider_installation',
       ],
     };
   }
@@ -147,7 +147,7 @@ export class CliAdapterDiagnosticsRuntime {
         roleEvaluation.status === CliGovernanceCheckStatus.FAIL
           ? ExecutionInteractionCategory.RUNTIME_FAILURE
           : ExecutionInteractionCategory.NONE,
-      summary: `Role ${roleEvaluation.roleId} routed via ${roleEvaluation.selectedSurface ?? "none"} (${roleEvaluation.selectedBy}).`,
+      summary: `Role ${roleEvaluation.roleId} routed via ${roleEvaluation.selectedSurface ?? 'none'} (${roleEvaluation.selectedBy}).`,
       detail: this.formatRoleEvaluationDetail(roleEvaluation),
       backlink: {
         executionId: options.executionId,
@@ -174,8 +174,8 @@ export class CliAdapterDiagnosticsRuntime {
       stage: options.stage,
       title:
         options.verification.overallStatus === CliGovernanceCheckStatus.FAIL
-          ? this.localizeText("Adapter route blocked", "Adapter 路由已阻断")
-          : this.localizeText("Adapter route attention", "Adapter 路由需要关注"),
+          ? this.localizeText('Adapter route blocked', 'Adapter 路由已阻断')
+          : this.localizeText('Adapter route attention', 'Adapter 路由需要关注'),
       action: nextAction,
       blocking: options.verification.overallStatus === CliGovernanceCheckStatus.FAIL,
     }));
@@ -215,21 +215,21 @@ export class CliAdapterDiagnosticsRuntime {
   private formatRoleEvaluationDetail(roleEvaluation: CliAdapterRoleEvaluation): string {
     const unsupported =
       roleEvaluation.unsupportedCapabilities.length > 0
-        ? roleEvaluation.unsupportedCapabilities.join("|")
-        : "none";
+        ? roleEvaluation.unsupportedCapabilities.join('|')
+        : 'none';
     const degraded =
       roleEvaluation.degradedCapabilities.length > 0
-        ? roleEvaluation.degradedCapabilities.join("|")
-        : "none";
+        ? roleEvaluation.degradedCapabilities.join('|')
+        : 'none';
     const unavailableReasons =
       roleEvaluation.unavailableReasons.length > 0
-        ? roleEvaluation.unavailableReasons.join("|")
-        : "none";
+        ? roleEvaluation.unavailableReasons.join('|')
+        : 'none';
     const failureAttributions =
       roleEvaluation.failureAttributions.length > 0
-        ? roleEvaluation.failureAttributions.join("|")
-        : "none";
-    return `required=${roleEvaluation.required} selected=${roleEvaluation.selectedSurface ?? "none"} selected_by=${roleEvaluation.selectedBy} unsupported=${unsupported} degraded=${degraded} attribution=${failureAttributions} reasons=${unavailableReasons}`;
+        ? roleEvaluation.failureAttributions.join('|')
+        : 'none';
+    return `required=${roleEvaluation.required} selected=${roleEvaluation.selectedSurface ?? 'none'} selected_by=${roleEvaluation.selectedBy} unsupported=${unsupported} degraded=${degraded} attribution=${failureAttributions} reasons=${unavailableReasons}`;
   }
 
   /**
@@ -247,64 +247,64 @@ export class CliAdapterDiagnosticsRuntime {
    * @returns Human-friendly reason line.
    */
   private humanizeToolUnavailableReason(reason: string): string {
-    if (reason.startsWith("command_missing:")) {
-      const [, surface, command] = reason.split(":", 3);
+    if (reason.startsWith('command_missing:')) {
+      const [, surface, command] = reason.split(':', 3);
       return this.localizeText(
         `missing command "${command}" for surface "${surface}"`,
         `surface "${surface}" 缺少本地命令 "${command}"`,
       );
     }
 
-    if (reason.startsWith("command_probe_failed:")) {
-      const [, surface, command, ...detailParts] = reason.split(":");
-      const detail = detailParts.join(":");
+    if (reason.startsWith('command_probe_failed:')) {
+      const [, surface, command, ...detailParts] = reason.split(':');
+      const detail = detailParts.join(':');
       return this.localizeText(
         `command exists but check failed for surface "${surface}" via "${command}" (${detail})`,
         `surface "${surface}" 命令 "${command}" 可执行但探测失败（${detail}）`,
       );
     }
 
-    if (reason.startsWith("probe_failed:")) {
-      const [, ...detailParts] = reason.split(":");
-      const detail = detailParts.join(":");
+    if (reason.startsWith('probe_failed:')) {
+      const [, ...detailParts] = reason.split(':');
+      const detail = detailParts.join(':');
       return this.localizeText(`adapter probe failed (${detail})`, `adapter 探测失败（${detail}）`);
     }
 
-    if (reason.startsWith("credential_missing:")) {
-      const [, surface] = reason.split(":", 2);
+    if (reason.startsWith('credential_missing:')) {
+      const [, surface] = reason.split(':', 2);
       return this.localizeText(
         `surface "${surface}" is missing required credentials or login state`,
         `surface "${surface}" 缺少所需凭据或登录状态`,
       );
     }
 
-    if (reason.startsWith("health_check_timeout:")) {
-      const [, surface] = reason.split(":", 2);
+    if (reason.startsWith('health_check_timeout:')) {
+      const [, surface] = reason.split(':', 2);
       return this.localizeText(
         `surface "${surface}" health check timed out`,
         `surface "${surface}" 的健康检查超时`,
       );
     }
 
-    if (reason.startsWith("health_check_invalid_response:")) {
-      const [, surface, ...detailParts] = reason.split(":");
-      const detail = detailParts.join(":");
+    if (reason.startsWith('health_check_invalid_response:')) {
+      const [, surface, ...detailParts] = reason.split(':');
+      const detail = detailParts.join(':');
       return this.localizeText(
         `surface "${surface}" returned an invalid health-check response (${detail})`,
         `surface "${surface}" 返回了无效的健康检查响应（${detail}）`,
       );
     }
 
-    if (reason.startsWith("health_check_failed:")) {
-      const [, surface, ...detailParts] = reason.split(":");
-      const detail = detailParts.join(":");
-      if (detail === "rate_limited") {
+    if (reason.startsWith('health_check_failed:')) {
+      const [, surface, ...detailParts] = reason.split(':');
+      const detail = detailParts.join(':');
+      if (detail === 'rate_limited') {
         return this.localizeText(
           `surface "${surface}" health check is currently rate limited`,
           `surface "${surface}" 的健康检查当前触发了限流`,
         );
       }
-      if (detail === "quota_exhausted") {
+      if (detail === 'quota_exhausted') {
         return this.localizeText(
           `surface "${surface}" health check is blocked by exhausted quota`,
           `surface "${surface}" 的健康检查因额度耗尽而被阻断`,
@@ -316,44 +316,44 @@ export class CliAdapterDiagnosticsRuntime {
       );
     }
 
-    if (reason.startsWith("local_model_model_missing:")) {
-      const [, surface, ...modelParts] = reason.split(":");
-      const model = modelParts.join(":");
+    if (reason.startsWith('local_model_model_missing:')) {
+      const [, surface, ...modelParts] = reason.split(':');
+      const model = modelParts.join(':');
       return this.localizeText(
         `local-model surface "${surface}" is missing configured model "${model}"`,
         `本地模型 surface "${surface}" 缺少已配置模型 "${model}"`,
       );
     }
 
-    if (reason.startsWith("local_model_config_missing:")) {
-      const [, surface, missingKeys] = reason.split(":", 3);
+    if (reason.startsWith('local_model_config_missing:')) {
+      const [, surface, missingKeys] = reason.split(':', 3);
       return this.localizeText(
         `local-model surface "${surface}" is missing config fields "${missingKeys}"`,
         `本地模型 surface "${surface}" 缺少配置字段 "${missingKeys}"`,
       );
     }
 
-    if (reason.startsWith("local_model_endpoint_unreachable:")) {
-      const [, surface, encodedEndpoint, errorCode, ...messageParts] = reason.split(":");
-      const endpoint = decodeURIComponent(encodedEndpoint ?? "");
-      const message = messageParts.join(":");
+    if (reason.startsWith('local_model_endpoint_unreachable:')) {
+      const [, surface, encodedEndpoint, errorCode, ...messageParts] = reason.split(':');
+      const endpoint = decodeURIComponent(encodedEndpoint ?? '');
+      const message = messageParts.join(':');
       return this.localizeText(
         `local-model surface "${surface}" cannot reach endpoint "${endpoint}" (${errorCode}: ${message})`,
         `本地模型 surface "${surface}" 无法访问 endpoint "${endpoint}"（${errorCode}: ${message}）`,
       );
     }
 
-    if (reason.startsWith("local_model_probe_invalid_response:")) {
-      const [, surface, encodedEndpoint] = reason.split(":");
-      const endpoint = decodeURIComponent(encodedEndpoint ?? "");
+    if (reason.startsWith('local_model_probe_invalid_response:')) {
+      const [, surface, encodedEndpoint] = reason.split(':');
+      const endpoint = decodeURIComponent(encodedEndpoint ?? '');
       return this.localizeText(
         `local-model surface "${surface}" returned invalid probe payload from "${endpoint}"`,
         `本地模型 surface "${surface}" 从 "${endpoint}" 返回了无效探测结果`,
       );
     }
 
-    if (reason.startsWith("disabled_by_config:")) {
-      const [, surface] = reason.split(":", 2);
+    if (reason.startsWith('disabled_by_config:')) {
+      const [, surface] = reason.split(':', 2);
       return this.localizeText(
         `disabled by config for surface "${surface}"`,
         `surface "${surface}" 已被配置禁用`,

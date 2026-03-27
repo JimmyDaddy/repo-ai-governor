@@ -1,1 +1,1 @@
-export type { ArtifactDependencyExpression } from "./artifact-dependency-expression.type.js";
+export type { ArtifactDependencyExpression } from './artifact-dependency-expression.type.js';

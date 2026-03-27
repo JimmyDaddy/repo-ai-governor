@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { spawn } from 'node:child_process';
 
 import {
   AgentAvailabilityStatus,
@@ -21,27 +21,27 @@ import {
   type AgentStreamEventsRequest,
   DEFAULT_AGENT_CLI_EXEC_MAX_RETRY_ATTEMPTS,
   DEFAULT_AGENT_CLI_EXEC_RETRY_BACKOFF_MS,
-} from "@repo-ai-governor/adapter-sdk";
-import { GovernorErrorCode, RuntimeError, standardizeError } from "@repo-ai-governor/shared";
-import { GithubCopilotAgentAdapterExecutionMode } from "./constants/github-copilot-agent-adapter.constant.js";
+} from '@repo-ai-governor/adapter-sdk';
+import { GovernorErrorCode, RuntimeError, standardizeError } from '@repo-ai-governor/shared';
+import { GithubCopilotAgentAdapterExecutionMode } from './constants/github-copilot-agent-adapter.constant.js';
 import type {
   GithubCopilotAgentAdapterOptions,
   GithubCopilotExecRunner,
   GithubCopilotExecRunnerRequest,
   GithubCopilotExecRunnerResult,
-} from "./types/interfaces/github-copilot-agent-adapter.interface.js";
+} from './types/interfaces/github-copilot-agent-adapter.interface.js';
 
-const GITHUB_COPILOT_DEFAULT_AGENT_ID = "github-copilot-default-agent";
-const GITHUB_COPILOT_DEFAULT_ROLE = "coder";
-const GITHUB_COPILOT_DEFAULT_ROLE_PROFILE_ID = "coder-default";
-const GITHUB_COPILOT_DEFAULT_ROLE_SOURCE = "default";
-const GITHUB_COPILOT_SURFACE = "github-copilot";
-const GITHUB_COPILOT_DIRECT_COMMAND = "copilot";
-const GITHUB_COPILOT_GH_COMMAND = "gh";
+const GITHUB_COPILOT_DEFAULT_AGENT_ID = 'github-copilot-default-agent';
+const GITHUB_COPILOT_DEFAULT_ROLE = 'coder';
+const GITHUB_COPILOT_DEFAULT_ROLE_PROFILE_ID = 'coder-default';
+const GITHUB_COPILOT_DEFAULT_ROLE_SOURCE = 'default';
+const GITHUB_COPILOT_SURFACE = 'github-copilot';
+const GITHUB_COPILOT_DIRECT_COMMAND = 'copilot';
+const GITHUB_COPILOT_GH_COMMAND = 'gh';
 const GITHUB_COPILOT_DEFAULT_TIMEOUT_MS = 30000;
 const GITHUB_COPILOT_DEFAULT_PROBE_CACHE_TTL_MS = 30000;
-const GITHUB_COPILOT_HEALTH_CHECK_PROMPT = "Respond with exactly OK.";
-const GITHUB_COPILOT_HEALTH_CHECK_EXPECTED_RESPONSE = "OK";
+const GITHUB_COPILOT_HEALTH_CHECK_PROMPT = 'Respond with exactly OK.';
+const GITHUB_COPILOT_HEALTH_CHECK_EXPECTED_RESPONSE = 'OK';
 
 const GITHUB_COPILOT_BASELINE_CAPABILITY_SUPPORT: Record<
   AgentCapability,
@@ -84,7 +84,7 @@ interface GithubCopilotCliJsonEvent {
     statusCode?: number;
   };
   exitCode?: number;
-  usage?: AgentInvokeStageResult["usage"];
+  usage?: AgentInvokeStageResult['usage'];
 }
 
 interface GithubCopilotCliParsedOutput {
@@ -260,7 +260,7 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
       stageId: request.stageId,
       routeKey: request.routeKey,
       payload: {
-        status: "running",
+        status: 'running',
         surface: GITHUB_COPILOT_SURFACE,
       },
     };
@@ -273,7 +273,7 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
       stageId: request.stageId,
       routeKey: request.routeKey,
       payload: {
-        status: "completed",
+        status: 'completed',
         surface: GITHUB_COPILOT_SURFACE,
       },
     };
@@ -290,15 +290,15 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
     if (this.options.executionMode === GithubCopilotAgentAdapterExecutionMode.CLI_EXEC) {
       return {
         decision: AgentConfirmationDecision.REVISE,
-        reason: "github-copilot-cli-confirmation-gate-unsupported",
-        constraints: ["escalate_to_human_gate"],
+        reason: 'github-copilot-cli-confirmation-gate-unsupported',
+        constraints: ['escalate_to_human_gate'],
         decidedAt: new Date().toISOString(),
       };
     }
 
     return {
       decision: AgentConfirmationDecision.APPROVE,
-      reason: "github-copilot-adapter-baseline-approved",
+      reason: 'github-copilot-adapter-baseline-approved',
       constraints: [],
       decidedAt: new Date().toISOString(),
     };
@@ -331,7 +331,7 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
    * Creates capability matrix aligned with the current execution mode.
    * @returns Capability matrix payload.
    */
-  private createCapabilityMatrix(): AgentProbeResult["capabilityMatrix"] {
+  private createCapabilityMatrix(): AgentProbeResult['capabilityMatrix'] {
     const capabilitySupport =
       this.options.executionMode === GithubCopilotAgentAdapterExecutionMode.CLI_EXEC
         ? GITHUB_COPILOT_REAL_CAPABILITY_SUPPORT
@@ -439,7 +439,7 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
    * @returns Raw CLI execution result.
    */
   private async runGithubCopilotOperation(
-    request: Pick<GithubCopilotExecRunnerRequest, "prompt" | "timeoutMs" | "signal" | "operation">,
+    request: Pick<GithubCopilotExecRunnerRequest, 'prompt' | 'timeoutMs' | 'signal' | 'operation'>,
   ): Promise<GithubCopilotExecRunnerResult> {
     try {
       return await this.cliExecOperationsRuntime.executeWithRetry(
@@ -514,7 +514,7 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
         },
         {
           command: GITHUB_COPILOT_GH_COMMAND,
-          commandArgumentsPrefix: ["copilot", "--"],
+          commandArgumentsPrefix: ['copilot', '--'],
         },
       ];
     }
@@ -523,7 +523,7 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
       return [
         {
           command: GITHUB_COPILOT_GH_COMMAND,
-          commandArgumentsPrefix: ["copilot", "--"],
+          commandArgumentsPrefix: ['copilot', '--'],
         },
         {
           command: GITHUB_COPILOT_DIRECT_COMMAND,
@@ -553,16 +553,16 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
     const jsonEvents = executionResult.stdout
       .split(/\r?\n/u)
       .map((line) => line.trim())
-      .filter((line) => line.startsWith("{"))
+      .filter((line) => line.startsWith('{'))
       .map((line) => JSON.parse(line) as GithubCopilotCliJsonEvent);
 
-    const sessionErrorEvent = jsonEvents.find((event) => event.type === "session.error");
+    const sessionErrorEvent = jsonEvents.find((event) => event.type === 'session.error');
     if (sessionErrorEvent) {
       throw new RuntimeError(
         operation === AgentCliExecOperation.PROBE
           ? GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED
           : GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
-        `GitHub Copilot ${operation} failed: ${sessionErrorEvent.data?.message ?? "unknown session error"}`,
+        `GitHub Copilot ${operation} failed: ${sessionErrorEvent.data?.message ?? 'unknown session error'}`,
         this.cliExecOperationsRuntime.createRedactedProcessDetails({
           surface: GITHUB_COPILOT_SURFACE,
           operation,
@@ -575,8 +575,8 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
     }
 
     const resultExitCode =
-      jsonEvents.find((event) => event.type === "result")?.exitCode ?? executionResult.exitCode;
-    if (typeof resultExitCode === "number" && resultExitCode !== 0) {
+      jsonEvents.find((event) => event.type === 'result')?.exitCode ?? executionResult.exitCode;
+    if (typeof resultExitCode === 'number' && resultExitCode !== 0) {
       throw new RuntimeError(
         operation === AgentCliExecOperation.PROBE
           ? GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED
@@ -593,10 +593,10 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
     }
 
     const responseText = jsonEvents
-      .filter((event) => event.type?.startsWith("assistant."))
+      .filter((event) => event.type?.startsWith('assistant.'))
       .map((event) => this.extractAssistantText(event))
       .filter((value): value is string => Boolean(value && value.trim().length > 0))
-      .join("\n")
+      .join('\n')
       .trim();
 
     if (!responseText) {
@@ -631,7 +631,7 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
   private extractAssistantText(event: GithubCopilotCliJsonEvent): string | null {
     const candidates = [event.data?.content, event.data?.text, event.data?.delta];
     return (
-      candidates.find((candidate): candidate is string => typeof candidate === "string") ?? null
+      candidates.find((candidate): candidate is string => typeof candidate === 'string') ?? null
     );
   }
 
@@ -643,12 +643,12 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
   private renderInvokePrompt(request: AgentInvokeStageRequest): string {
     const renderedInput = JSON.stringify(request.input, null, 2);
     return [
-      "You are executing one Repo AI Governor stage through GitHub Copilot CLI.",
+      'You are executing one Repo AI Governor stage through GitHub Copilot CLI.',
       `Route Key: ${request.routeKey}`,
       `Stage ID: ${request.stageId}`,
-      "Treat the following JSON payload as the canonical stage input.",
+      'Treat the following JSON payload as the canonical stage input.',
       renderedInput,
-    ].join("\n\n");
+    ].join('\n\n');
   }
 
   /**
@@ -690,13 +690,13 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
    * @returns True when the failure indicates executable-not-found.
    */
   private isMissingCommandFailure(error: unknown, detail: string): boolean {
-    if (detail.includes("enoent")) {
+    if (detail.includes('enoent')) {
       return true;
     }
-    if (!error || typeof error !== "object") {
+    if (!error || typeof error !== 'object') {
       return false;
     }
-    return (error as { code?: unknown }).code === "ENOENT";
+    return (error as { code?: unknown }).code === 'ENOENT';
   }
 
   /**
@@ -762,15 +762,15 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
     const startedAt = Date.now();
     const args = [
       ...request.commandArgumentsPrefix,
-      "-p",
+      '-p',
       request.prompt,
-      "--allow-all-tools",
-      "--output-format",
-      "json",
-      "--silent",
-      "--no-custom-instructions",
-      "--no-auto-update",
-      "--add-dir",
+      '--allow-all-tools',
+      '--output-format',
+      'json',
+      '--silent',
+      '--no-custom-instructions',
+      '--no-auto-update',
+      '--add-dir',
       request.cwd,
     ];
 
@@ -778,11 +778,11 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
       const childProcess = spawn(request.command, args, {
         cwd: request.cwd,
         env: request.env,
-        stdio: ["ignore", "pipe", "pipe"],
+        stdio: ['ignore', 'pipe', 'pipe'],
         ...(request.signal ? { signal: request.signal } : {}),
       });
-      let stdout = "";
-      let stderr = "";
+      let stdout = '';
+      let stderr = '';
       let settled = false;
 
       const settle = (
@@ -804,7 +804,7 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
       };
 
       const timeoutHandle = setTimeout(() => {
-        childProcess.kill("SIGTERM");
+        childProcess.kill('SIGTERM');
         settle(
           new RuntimeError(
             request.operation === AgentCliExecOperation.PROBE
@@ -823,15 +823,15 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
         );
       }, request.timeoutMs);
 
-      childProcess.stdout.setEncoding("utf8");
-      childProcess.stderr.setEncoding("utf8");
-      childProcess.stdout.on("data", (chunk: string) => {
+      childProcess.stdout.setEncoding('utf8');
+      childProcess.stderr.setEncoding('utf8');
+      childProcess.stdout.on('data', (chunk: string) => {
         stdout += chunk;
       });
-      childProcess.stderr.on("data", (chunk: string) => {
+      childProcess.stderr.on('data', (chunk: string) => {
         stderr += chunk;
       });
-      childProcess.on("error", (error) => {
+      childProcess.on('error', (error) => {
         settle(
           new RuntimeError(
             request.operation === AgentCliExecOperation.PROBE
@@ -849,7 +849,7 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
           true,
         );
       });
-      childProcess.on("close", (exitCode, signal) => {
+      childProcess.on('close', (exitCode, signal) => {
         settle(
           {
             stdout,

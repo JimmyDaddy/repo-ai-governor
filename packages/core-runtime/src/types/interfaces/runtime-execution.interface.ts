@@ -1,9 +1,9 @@
-import type { GovernorErrorCode } from "@repo-ai-governor/shared";
+import type { GovernorErrorCode } from '@repo-ai-governor/shared';
 import type {
   RuntimeExecutionStatus,
   RuntimeTimeoutScope,
-} from "../../constants/runtime.constant.js";
-import type { RuntimeStageResult } from "./runtime-stage.interface.js";
+} from '../../constants/runtime.constant.js';
+import type { RuntimeStageResult } from './runtime-stage.interface.js';
 
 /**
  * Describes structured interruption metadata for timeout/cancelled execution.

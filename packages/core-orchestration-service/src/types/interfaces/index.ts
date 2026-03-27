@@ -4,7 +4,7 @@ export type {
   LocalOrchestrationServiceSaveCheckpointRequest,
   LocalOrchestrationServiceShellDependencies,
   LocalOrchestrationServiceStartExecutionRuntimeContext,
-} from "./local-orchestration-service-shell.interface.js";
+} from './local-orchestration-service-shell.interface.js';
 export type {
   LocalOrchestrationServiceSidecarDispatchTable,
   LocalOrchestrationServiceSidecarClientDependencies,
@@ -15,4 +15,4 @@ export type {
   LocalOrchestrationServiceSidecarSerializedError,
   LocalOrchestrationServiceSidecarShutdownResponse,
   LocalOrchestrationServiceSidecarStartExecutionPayload,
-} from "./local-orchestration-service-sidecar.interface.js";
+} from './local-orchestration-service-sidecar.interface.js';

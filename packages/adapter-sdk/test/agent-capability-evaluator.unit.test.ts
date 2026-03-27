@@ -1,4 +1,4 @@
-import { GovernorErrorCode, type RuntimeError } from "@repo-ai-governor/shared";
+import { GovernorErrorCode, type RuntimeError } from '@repo-ai-governor/shared';
 import {
   AgentAvailabilityStatus,
   type AgentCancelRequest,
@@ -16,7 +16,7 @@ import {
   AgentProtocol,
   AgentStreamEventType,
   type AgentStreamEventsRequest,
-} from "../src/index.js";
+} from '../src/index.js';
 
 function createCapabilityMatrix(): AgentCapabilityMatrix {
   return {
@@ -56,11 +56,11 @@ class FakeAgentProtocol extends AgentProtocol {
   public override async probe(_request: AgentProbeRequest) {
     return {
       identity: {
-        agentId: "fake-agent",
-        role: "coder",
-        surface: "fake-surface",
-        roleProfileId: "coder-default",
-        roleSource: "default",
+        agentId: 'fake-agent',
+        role: 'coder',
+        surface: 'fake-surface',
+        roleProfileId: 'coder-default',
+        roleSource: 'default',
       },
       availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
       capabilityMatrix: createCapabilityMatrix(),
@@ -71,7 +71,7 @@ class FakeAgentProtocol extends AgentProtocol {
   public override async invokeStage(_request: AgentInvokeStageRequest) {
     return {
       output: {
-        status: "ok",
+        status: 'ok',
       },
       elapsedMs: 1,
     };
@@ -81,12 +81,12 @@ class FakeAgentProtocol extends AgentProtocol {
     yield {
       eventType: AgentStreamEventType.STATUS,
       timestamp: new Date().toISOString(),
-      processId: "process-1",
-      executionId: "execution-1",
-      stageId: "stage-1",
-      routeKey: "route",
+      processId: 'process-1',
+      executionId: 'execution-1',
+      stageId: 'stage-1',
+      routeKey: 'route',
       payload: {
-        status: "running",
+        status: 'running',
       },
     };
   }
@@ -94,7 +94,7 @@ class FakeAgentProtocol extends AgentProtocol {
   public override async requestConfirmation(_request: AgentConfirmationRequest) {
     return {
       decision: AgentConfirmationDecision.APPROVE,
-      reason: "approved",
+      reason: 'approved',
       constraints: [],
       decidedAt: new Date().toISOString(),
     };
@@ -110,8 +110,8 @@ class FakeAgentProtocol extends AgentProtocol {
   }
 }
 
-describe("adapter-sdk unit", () => {
-  it("keeps capability requirement satisfied when all required capabilities are supported", () => {
+describe('adapter-sdk unit', () => {
+  it('keeps capability requirement satisfied when all required capabilities are supported', () => {
     const evaluator = new AgentCapabilityEvaluator();
     const result = evaluator.evaluate(createCapabilityMatrix(), {
       requiredCapabilities: [AgentCapability.TOOL_CALLING, AgentCapability.STRUCTURED_OUTPUT],
@@ -122,7 +122,7 @@ describe("adapter-sdk unit", () => {
     expect(result.degradedCapabilities).toEqual([]);
   });
 
-  it("marks unsupported capabilities and applies default escalate fallback", () => {
+  it('marks unsupported capabilities and applies default escalate fallback', () => {
     const evaluator = new AgentCapabilityEvaluator();
     const result = evaluator.evaluate(createCapabilityMatrix(), {
       requiredCapabilities: [AgentCapability.PARALLEL_TASK],
@@ -133,7 +133,7 @@ describe("adapter-sdk unit", () => {
     expect(result.requiredFallbackActions).toContain(AgentCapabilityFallbackAction.ESCALATE);
   });
 
-  it("marks degraded capabilities when they are not explicitly allowed", () => {
+  it('marks degraded capabilities when they are not explicitly allowed', () => {
     const evaluator = new AgentCapabilityEvaluator();
     const result = evaluator.evaluate(createCapabilityMatrix(), {
       requiredCapabilities: [AgentCapability.STREAMING],
@@ -146,7 +146,7 @@ describe("adapter-sdk unit", () => {
     );
   });
 
-  it("treats degraded capabilities as satisfied when allowDegradedCapabilities includes them", () => {
+  it('treats degraded capabilities as satisfied when allowDegradedCapabilities includes them', () => {
     const evaluator = new AgentCapabilityEvaluator();
     const result = evaluator.evaluate(createCapabilityMatrix(), {
       requiredCapabilities: [AgentCapability.STREAMING],
@@ -158,7 +158,7 @@ describe("adapter-sdk unit", () => {
     expect(result.requiredFallbackActions).toEqual([]);
   });
 
-  it("uses custom fallback rules for unsupported capabilities", () => {
+  it('uses custom fallback rules for unsupported capabilities', () => {
     const evaluator = new AgentCapabilityEvaluator();
     const result = evaluator.evaluate(createCapabilityMatrix(), {
       requiredCapabilities: [AgentCapability.CANCELLATION],
@@ -167,16 +167,16 @@ describe("adapter-sdk unit", () => {
           capability: AgentCapability.CANCELLATION,
           onUnsupported: AgentCapabilityFallbackAction.BLOCK,
           onDegraded: AgentCapabilityFallbackAction.REQUIRE_CONFIRMATION,
-          note: "cancellation is mandatory for this route",
+          note: 'cancellation is mandatory for this route',
         },
       ],
     });
 
     expect(result.requiredFallbackActions).toEqual([AgentCapabilityFallbackAction.BLOCK]);
-    expect(result.capabilityGaps[0]?.note).toBe("cancellation is mandatory for this route");
+    expect(result.capabilityGaps[0]?.note).toBe('cancellation is mandatory for this route');
   });
 
-  it("throws standardized error when requirement payload is invalid", () => {
+  it('throws standardized error when requirement payload is invalid', () => {
     const evaluator = new AgentCapabilityEvaluator();
     expect(() =>
       evaluator.evaluate(createCapabilityMatrix(), {
@@ -195,19 +195,19 @@ describe("adapter-sdk unit", () => {
     }
   });
 
-  it("throws standardized error when allowDegradedCapabilities is not an array", () => {
+  it('throws standardized error when allowDegradedCapabilities is not an array', () => {
     const evaluator = new AgentCapabilityEvaluator();
     expect(() =>
       evaluator.evaluate(createCapabilityMatrix(), {
         requiredCapabilities: [AgentCapability.STREAMING],
-        allowDegradedCapabilities: "streaming" as unknown as AgentCapability[],
+        allowDegradedCapabilities: 'streaming' as unknown as AgentCapability[],
       }),
     ).toThrowError();
 
     try {
       evaluator.evaluate(createCapabilityMatrix(), {
         requiredCapabilities: [AgentCapability.STREAMING],
-        allowDegradedCapabilities: "streaming" as unknown as AgentCapability[],
+        allowDegradedCapabilities: 'streaming' as unknown as AgentCapability[],
       });
     } catch (error) {
       expect((error as RuntimeError).code).toBe(
@@ -216,7 +216,7 @@ describe("adapter-sdk unit", () => {
     }
   });
 
-  it("throws standardized error when fallbackRules is not an array", () => {
+  it('throws standardized error when fallbackRules is not an array', () => {
     const evaluator = new AgentCapabilityEvaluator();
     expect(() =>
       evaluator.evaluate(createCapabilityMatrix(), {
@@ -237,33 +237,33 @@ describe("adapter-sdk unit", () => {
     }
   });
 
-  it("exposes class-based protocol contract for adapters", async () => {
+  it('exposes class-based protocol contract for adapters', async () => {
     const protocol = new FakeAgentProtocol();
     const probeResult = await protocol.probe({
-      routeKey: "route",
+      routeKey: 'route',
     });
     const invokeResult = await protocol.invokeStage({
-      processId: "process-1",
-      executionId: "execution-1",
-      stageId: "stage-1",
-      routeKey: "route",
+      processId: 'process-1',
+      executionId: 'execution-1',
+      stageId: 'stage-1',
+      routeKey: 'route',
       input: {
-        foo: "bar",
+        foo: 'bar',
       },
     });
     const eventIterator = protocol.streamEvents({
-      processId: "process-1",
-      executionId: "execution-1",
-      stageId: "stage-1",
-      routeKey: "route",
+      processId: 'process-1',
+      executionId: 'execution-1',
+      stageId: 'stage-1',
+      routeKey: 'route',
       input: {
-        foo: "bar",
+        foo: 'bar',
       },
     });
     const firstEvent = await eventIterator.next();
 
     expect(probeResult.availabilityStatus).toBe(AgentAvailabilityStatus.AVAILABLE);
-    expect(invokeResult.output.status).toBe("ok");
+    expect(invokeResult.output.status).toBe('ok');
     expect(firstEvent.value?.eventType).toBe(AgentStreamEventType.STATUS);
   });
 });

@@ -1,1 +1,1 @@
-export type { RoleProfileById, RoleProfileIdByAlias } from "./role-registry.type.js";
+export type { RoleProfileById, RoleProfileIdByAlias } from './role-registry.type.js';

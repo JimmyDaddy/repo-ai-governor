@@ -8,9 +8,9 @@ export {
   RuntimeExecutionStatus,
   RuntimeStageStatus,
   RuntimeTimeoutScope,
-} from "./runtime.constant.js";
+} from './runtime.constant.js';
 export type {
   ProcessRuntimeBackendKind,
   ProcessRuntimeParityMode,
   ProcessRuntimeParitySeverity,
-} from "./runtime.constant.js";
+} from './runtime.constant.js';

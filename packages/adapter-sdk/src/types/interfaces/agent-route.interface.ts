@@ -1,4 +1,4 @@
-import type { RuntimeError } from "@repo-ai-governor/shared";
+import type { RuntimeError } from '@repo-ai-governor/shared';
 import type {
   AgentAvailabilityStatus,
   AgentCapabilityFallbackAction,
@@ -6,7 +6,7 @@ import type {
   AgentRouteSelectionSource,
   AgentSurfaceNetworkRequirement,
   AgentSurfaceSkipReason,
-} from "../../constants/index.js";
+} from '../../constants/index.js';
 import type {
   AgentCancelRequest,
   AgentCapabilityEvaluationResult,
@@ -19,7 +19,7 @@ import type {
   AgentProbeResult,
   AgentProtocolContract,
   AgentStreamEventsRequest,
-} from "./agent-protocol.interface.js";
+} from './agent-protocol.interface.js';
 
 /**
  * Defines one routeKey policy row for adapter surface routing.
@@ -89,8 +89,8 @@ export interface AgentSurfaceEvaluationRecord {
   errorCode?: string;
   errorMessage?: string;
   capabilitySatisfied?: boolean;
-  unsupportedCapabilities: AgentCapabilityState["capability"][];
-  degradedCapabilities: AgentCapabilityState["capability"][];
+  unsupportedCapabilities: AgentCapabilityState['capability'][];
+  degradedCapabilities: AgentCapabilityState['capability'][];
   requiredFallbackActions: AgentCapabilityFallbackAction[];
   fallbackTriggered: boolean;
   skippedReason?: AgentSurfaceSkipReason;

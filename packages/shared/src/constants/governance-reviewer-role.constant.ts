@@ -5,6 +5,6 @@
  * a shared enum keeps default role identifiers consistent across core packages.
  */
 export enum GovernanceReviewerRole {
-  MAINTAINER = "maintainer",
-  SECURITY_REVIEWER = "security_reviewer",
+  MAINTAINER = 'maintainer',
+  SECURITY_REVIEWER = 'security_reviewer',
 }

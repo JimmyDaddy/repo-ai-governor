@@ -1,9 +1,9 @@
-import { existsSync } from "node:fs";
-import { isAbsolute, resolve } from "node:path";
+import { existsSync } from 'node:fs';
+import { isAbsolute, resolve } from 'node:path';
 
-import { Command, CommanderError } from "commander";
+import { Command, CommanderError } from 'commander';
 
-import { AgentAvailabilityStatus, AgentCapability } from "@repo-ai-governor/adapter-sdk";
+import { AgentAvailabilityStatus, AgentCapability } from '@repo-ai-governor/adapter-sdk';
 import {
   type AdaptersConfig,
   ConfigLoader,
@@ -11,11 +11,11 @@ import {
   ProfileResolver,
   type ResolvedWorkspace,
   WorkspaceResolver,
-} from "@repo-ai-governor/config";
+} from '@repo-ai-governor/config';
 import {
   MemoryProviderRegistry,
   type MemoryProviderRegistryLoadResult,
-} from "@repo-ai-governor/memory-provider-registry";
+} from '@repo-ai-governor/memory-provider-registry';
 import {
   AdapterAvailability,
   AdapterSurface,
@@ -30,10 +30,10 @@ import {
   RuntimeError,
   type StandardizedError,
   standardizeError,
-} from "@repo-ai-governor/shared";
-import { CliGovernanceRuntime } from "./cli-governance-runtime.js";
-import { CliOutputPresenter } from "./cli-output-presenter.js";
-import { CLI_COMMAND_DEFINITIONS } from "./constants/cli-command.constant.js";
+} from '@repo-ai-governor/shared';
+import { CliGovernanceRuntime } from './cli-governance-runtime.js';
+import { CliOutputPresenter } from './cli-output-presenter.js';
+import { CLI_COMMAND_DEFINITIONS } from './constants/cli-command.constant.js';
 import {
   CLI_OPTIONS_REQUIRING_VALUE,
   CLI_OUTPUT_MODE_VALUES,
@@ -45,21 +45,21 @@ import {
   DEFAULT_CLI_OUTPUT_MODE,
   DEFAULT_CLI_VERBOSITY,
   NON_TTY_FALLBACK_OUTPUT_MODE,
-} from "./constants/cli-output.constant.js";
-import { CliCodexExecFixtureEnvironmentKey } from "./constants/codex-exec-fixture.constant.js";
-import { CliGithubCopilotExecFixtureEnvironmentKey } from "./constants/github-copilot-exec-fixture.constant.js";
+} from './constants/cli-output.constant.js';
+import { CliCodexExecFixtureEnvironmentKey } from './constants/codex-exec-fixture.constant.js';
+import { CliGithubCopilotExecFixtureEnvironmentKey } from './constants/github-copilot-exec-fixture.constant.js';
 import {
   IDE_WRAPPER_DEFAULT_STANDARDS_PROFILE_ID,
   type IdeEntrySurface,
   IdeWrapperEnvironmentKey,
-} from "./constants/ide-command-wrapper.constant.js";
-import type { IdeStandardsSourceId } from "./constants/ide-standards-source.constant.js";
-import { CliClaudeCodeExecFixtureRuntime } from "./runtime/claude-code-exec-fixture-runtime.js";
-import { CliCodexExecFixtureRuntime } from "./runtime/codex-exec-fixture-runtime.js";
-import { CliGithubCopilotExecFixtureRuntime } from "./runtime/github-copilot-exec-fixture-runtime.js";
-import { IdeStandardsSourceRuntime } from "./runtime/ide-standards-source-runtime.js";
-import { IdeSurfaceRegistryRuntime } from "./runtime/ide-surface-registry-runtime.js";
-import { CliNotificationProviderRegistryRuntime } from "./runtime/notification-provider-registry-runtime.js";
+} from './constants/ide-command-wrapper.constant.js';
+import type { IdeStandardsSourceId } from './constants/ide-standards-source.constant.js';
+import { CliClaudeCodeExecFixtureRuntime } from './runtime/claude-code-exec-fixture-runtime.js';
+import { CliCodexExecFixtureRuntime } from './runtime/codex-exec-fixture-runtime.js';
+import { CliGithubCopilotExecFixtureRuntime } from './runtime/github-copilot-exec-fixture-runtime.js';
+import { IdeStandardsSourceRuntime } from './runtime/ide-standards-source-runtime.js';
+import { IdeSurfaceRegistryRuntime } from './runtime/ide-surface-registry-runtime.js';
+import { CliNotificationProviderRegistryRuntime } from './runtime/notification-provider-registry-runtime.js';
 export {
   IDE_SURFACE_REGISTRY,
   IDE_WRAPPER_DEFAULT_OUTPUT_MODE,
@@ -74,8 +74,8 @@ export {
   IdeSurfaceCapability,
   IdeSurfaceDegradeMode,
   IdeWrapperEnvironmentKey,
-} from "./constants/ide-command-wrapper.constant.js";
-export { IdeCommandWrapper, standardizeIdeWrapperError } from "./ide-command-wrapper.js";
+} from './constants/ide-command-wrapper.constant.js';
+export { IdeCommandWrapper, standardizeIdeWrapperError } from './ide-command-wrapper.js';
 export type {
   IdeCommandInvocationEnvelope,
   IdeResolvedStandardsSource,
@@ -85,7 +85,7 @@ export type {
   IdeStandardsInjectionPayload,
   IdeStandardsSourceDescriptor,
   IdeWrapperCommandName,
-} from "./types/index.js";
+} from './types/index.js';
 import type {
   CliCommandDiagnostics,
   CliCommandExecutionResultPayload,
@@ -95,7 +95,7 @@ import type {
   CliRuntimeDebugOptions,
   CliSuccessOutputPayload,
   CliWorkspaceCommandOptions,
-} from "./types/index.js";
+} from './types/index.js';
 
 const DEFAULT_I18N_CONFIG: I18nRuntimeConfig = {
   ...DEFAULT_I18N_RUNTIME_CONFIG,
@@ -108,37 +108,37 @@ const DEFAULT_MEMORY_PROVIDER_REGISTRY = new MemoryProviderRegistry();
 const DEFAULT_ADAPTERS_CONFIG: AdaptersConfig = {
   roles: [
     {
-      roleId: "planner",
+      roleId: 'planner',
       roleProfileId: DefaultRoleProfileId.PLANNER,
       requiredCapabilities: [AgentCapability.STRUCTURED_OUTPUT],
       required: true,
     },
     {
-      roleId: "architect",
+      roleId: 'architect',
       roleProfileId: DefaultRoleProfileId.ARCHITECT,
       requiredCapabilities: [AgentCapability.STRUCTURED_OUTPUT],
       required: true,
     },
     {
-      roleId: "coder",
+      roleId: 'coder',
       roleProfileId: DefaultRoleProfileId.CODER,
       requiredCapabilities: [AgentCapability.TOOL_CALLING],
       required: true,
     },
     {
-      roleId: "tester",
+      roleId: 'tester',
       roleProfileId: DefaultRoleProfileId.TESTER,
       requiredCapabilities: [AgentCapability.TOOL_CALLING],
       required: true,
     },
     {
-      roleId: "reviewer",
+      roleId: 'reviewer',
       roleProfileId: DefaultRoleProfileId.REVIEWER,
       requiredCapabilities: [AgentCapability.STRUCTURED_OUTPUT],
       required: true,
     },
     {
-      roleId: "verifier",
+      roleId: 'verifier',
       roleProfileId: DefaultRoleProfileId.VERIFIER,
       requiredCapabilities: [AgentCapability.STRUCTURED_OUTPUT],
       required: true,
@@ -222,7 +222,7 @@ interface ResolvedCliRuntimeContext {
   memory: MemoryRuntimeConfig;
   adapters: AdaptersConfig;
   profileId: string | null;
-  configSource: "default" | "file";
+  configSource: 'default' | 'file';
   workspace: ResolvedWorkspace;
 }
 
@@ -278,8 +278,8 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
       verbosity: resolveVerbosityOption(rawArgs),
     };
 
-    const requestedLocale = readOptionValue(rawArgs, "--locale");
-    const requestedProfileId = readOptionValue(rawArgs, "--profile");
+    const requestedLocale = readOptionValue(rawArgs, '--locale');
+    const requestedProfileId = readOptionValue(rawArgs, '--profile');
     const ideWrapperEnvironment = resolveIdeWrapperEnvironment(environment);
     const codexExecFixtureRuntime = new CliCodexExecFixtureRuntime();
     const codexExecRunner = codexExecFixtureRuntime.resolveExecRunner(environment);
@@ -306,7 +306,7 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
     i18nRuntime = new I18nRuntime();
     const runtimeI18n = i18nRuntime;
     const resolvedLocale = await runtimeI18n.initialize(runtimeContext.i18n, requestedLocale);
-    const profileLabel = runtimeContext.profileId ?? runtimeI18n.t("cli.skeleton.noProfile");
+    const profileLabel = runtimeContext.profileId ?? runtimeI18n.t('cli.skeleton.noProfile');
     const governanceRuntime = new CliGovernanceRuntime({
       currentWorkingDirectory: io.cwd(),
       workspace: runtimeContext.workspace,
@@ -353,47 +353,47 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
     });
 
     const program = new Command();
-    program.name("repo-ai-governor");
-    program.description(runtimeI18n.t("cli.app.description"));
-    program.option("--locale <locale>", runtimeI18n.t("cli.options.locale"));
-    program.option("--profile <profileId>", runtimeI18n.t("cli.options.profile"));
-    program.option("--output <mode>", runtimeI18n.t("cli.options.output"));
-    program.option("--verbosity <level>", runtimeI18n.t("cli.options.verbosity"));
-    program.option("--compact", runtimeI18n.t("cli.options.compact"));
-    program.option("--no-color", runtimeI18n.t("cli.options.noColor"));
-    program.option("--adapters", runtimeI18n.t("cli.options.adapters"));
-    program.option("--fix", runtimeI18n.t("cli.options.fix"));
-    program.option("--record-ledger", runtimeI18n.t("cli.options.recordLedger"));
-    program.option("--task-id <taskId>", runtimeI18n.t("cli.options.taskId"));
-    program.option("--dry-run", runtimeI18n.t("cli.options.dryRun"));
-    program.option("--trace", runtimeI18n.t("cli.options.trace"));
-    program.option("--replay <path>", runtimeI18n.t("cli.options.replay"));
-    program.option("--restricted-network", runtimeI18n.t("cli.options.restrictedNetwork"));
-    program.option("--restricted-reason <reason>", runtimeI18n.t("cli.options.restrictedReason"));
-    program.option("--no-local-fallback", runtimeI18n.t("cli.options.noLocalFallback"));
-    program.option("--workspace-action <action>", runtimeI18n.t("cli.options.workspaceAction"));
-    program.option("--workspace-mode <mode>", runtimeI18n.t("cli.options.workspaceMode"));
-    program.option("--workspace-root <path>", runtimeI18n.t("cli.options.workspaceRoot"));
-    program.option("--workspace-plan <path>", runtimeI18n.t("cli.options.workspacePlan"));
+    program.name('repo-ai-governor');
+    program.description(runtimeI18n.t('cli.app.description'));
+    program.option('--locale <locale>', runtimeI18n.t('cli.options.locale'));
+    program.option('--profile <profileId>', runtimeI18n.t('cli.options.profile'));
+    program.option('--output <mode>', runtimeI18n.t('cli.options.output'));
+    program.option('--verbosity <level>', runtimeI18n.t('cli.options.verbosity'));
+    program.option('--compact', runtimeI18n.t('cli.options.compact'));
+    program.option('--no-color', runtimeI18n.t('cli.options.noColor'));
+    program.option('--adapters', runtimeI18n.t('cli.options.adapters'));
+    program.option('--fix', runtimeI18n.t('cli.options.fix'));
+    program.option('--record-ledger', runtimeI18n.t('cli.options.recordLedger'));
+    program.option('--task-id <taskId>', runtimeI18n.t('cli.options.taskId'));
+    program.option('--dry-run', runtimeI18n.t('cli.options.dryRun'));
+    program.option('--trace', runtimeI18n.t('cli.options.trace'));
+    program.option('--replay <path>', runtimeI18n.t('cli.options.replay'));
+    program.option('--restricted-network', runtimeI18n.t('cli.options.restrictedNetwork'));
+    program.option('--restricted-reason <reason>', runtimeI18n.t('cli.options.restrictedReason'));
+    program.option('--no-local-fallback', runtimeI18n.t('cli.options.noLocalFallback'));
+    program.option('--workspace-action <action>', runtimeI18n.t('cli.options.workspaceAction'));
+    program.option('--workspace-mode <mode>', runtimeI18n.t('cli.options.workspaceMode'));
+    program.option('--workspace-root <path>', runtimeI18n.t('cli.options.workspaceRoot'));
+    program.option('--workspace-plan <path>', runtimeI18n.t('cli.options.workspacePlan'));
     program.option(
-      "--hitl-decision <decision>",
-      "HITL decision receipt (`approve`, `reject`, or `revise`).",
+      '--hitl-decision <decision>',
+      'HITL decision receipt (`approve`, `reject`, or `revise`).',
     );
     program.option(
-      "--hitl-decision-reason <reason>",
-      "Human-readable reason attached to the HITL decision receipt.",
+      '--hitl-decision-reason <reason>',
+      'Human-readable reason attached to the HITL decision receipt.',
     );
     program.option(
-      "--hitl-resume-action <action>",
-      "Resume action applied after HITL decision (`resume`, `terminate`, or `degrade`).",
+      '--hitl-resume-action <action>',
+      'Resume action applied after HITL decision (`resume`, `terminate`, or `degrade`).',
     );
     program.option(
-      "--hitl-decided-by <actor>",
-      "Actor identifier recorded in the HITL decision receipt.",
+      '--hitl-decided-by <actor>',
+      'Actor identifier recorded in the HITL decision receipt.',
     );
     program.option(
-      "--hitl-constraints <constraints>",
-      "Comma-separated constraints attached to the HITL decision receipt.",
+      '--hitl-constraints <constraints>',
+      'Comma-separated constraints attached to the HITL decision receipt.',
     );
     program.showHelpAfterError(false);
     program.configureOutput({
@@ -463,7 +463,7 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
       return 0;
     }
 
-    await program.parseAsync(argv, { from: "node" });
+    await program.parseAsync(argv, { from: 'node' });
     return 0;
   } catch (error) {
     if (isCommanderHelpDisplayed(error)) {
@@ -472,7 +472,7 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
 
     const { standardizedError, exitCode } = resolveCliFailure(error);
     const message = i18nRuntime
-      ? i18nRuntime.t("cli.errors.unexpected", {
+      ? i18nRuntime.t('cli.errors.unexpected', {
           code: standardizedError.code,
           message: standardizedError.message,
         })
@@ -501,7 +501,7 @@ function resolveRuntimeContext(
   const profileResolver = new ProfileResolver();
   const workspaceResolver = new WorkspaceResolver();
   const defaultWorkspace = workspaceResolver.resolve({ currentWorkingDirectory });
-  const repoLocalConfigPath = resolve(currentWorkingDirectory, ".repo-ai-governor/governor.yaml");
+  const repoLocalConfigPath = resolve(currentWorkingDirectory, '.repo-ai-governor/governor.yaml');
   const configPathCandidates = Array.from(
     new Set([repoLocalConfigPath, defaultWorkspace.configPath]),
   );
@@ -523,7 +523,7 @@ function resolveRuntimeContext(
       memory: resolveMemoryRuntimeConfig(resolvedConfig.config.memory),
       adapters: resolveAdaptersRuntimeConfig(resolvedConfig.config.adapters),
       profileId: resolvedConfig.profileId,
-      configSource: "file",
+      configSource: 'file',
       workspace: resolvedWorkspace,
     };
   }
@@ -533,7 +533,7 @@ function resolveRuntimeContext(
     memory: DEFAULT_MEMORY_CONFIG,
     adapters: resolveAdaptersRuntimeConfig(undefined),
     profileId: null,
-    configSource: "default",
+    configSource: 'default',
     workspace: defaultWorkspace,
   };
 }
@@ -653,7 +653,7 @@ function parseIdeStandardsSourceIds(
   standardsSourcesValue: string,
   ideStandardsSourceRuntime: IdeStandardsSourceRuntime,
 ): IdeStandardsSourceId[] {
-  const sourceTokens = standardsSourcesValue.split(",").map((sourceId) => sourceId.trim());
+  const sourceTokens = standardsSourcesValue.split(',').map((sourceId) => sourceId.trim());
   if (sourceTokens.some((sourceId) => sourceId.length === 0)) {
     throw new RuntimeError(
       GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
@@ -774,8 +774,8 @@ function resolveOutputModeContext(args: string[], io: CliIoAdapters): CliResolve
       ? ErrorOutputEnvironment.PRETTY
       : null;
   const outputMode = downgradedFrom ? NON_TTY_FALLBACK_OUTPUT_MODE : requestedOutputMode;
-  const noColor = hasFlag(args, "--no-color");
-  const compact = hasFlag(args, "--compact");
+  const noColor = hasFlag(args, '--no-color');
+  const compact = hasFlag(args, '--compact');
 
   return {
     outputMode,
@@ -794,7 +794,7 @@ function resolveOutputModeContext(args: string[], io: CliIoAdapters): CliResolve
  * @returns Validated output mode.
  */
 function resolveOutputModeOption(args: string[]): ErrorOutputEnvironment {
-  const option = readOptionInput(args, "--output");
+  const option = readOptionInput(args, '--output');
   if (!option.isPresent) {
     return DEFAULT_CLI_OUTPUT_MODE;
   }
@@ -802,8 +802,8 @@ function resolveOutputModeOption(args: string[]): ErrorOutputEnvironment {
   if (!option.value) {
     throw new RuntimeError(
       GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
-      "Option --output requires one value: pretty|plain|json.",
-      { option: "--output" },
+      'Option --output requires one value: pretty|plain|json.',
+      { option: '--output' },
     );
   }
 
@@ -811,7 +811,7 @@ function resolveOutputModeOption(args: string[]): ErrorOutputEnvironment {
     throw new RuntimeError(
       GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
       `Option --output must be one of pretty|plain|json; received '${option.value}'.`,
-      { option: "--output", value: option.value },
+      { option: '--output', value: option.value },
     );
   }
 
@@ -824,7 +824,7 @@ function resolveOutputModeOption(args: string[]): ErrorOutputEnvironment {
  * @returns Validated verbosity value.
  */
 function resolveVerbosityOption(args: string[]): CliVerbosity {
-  const option = readOptionInput(args, "--verbosity");
+  const option = readOptionInput(args, '--verbosity');
   if (!option.isPresent) {
     return DEFAULT_CLI_VERBOSITY;
   }
@@ -832,8 +832,8 @@ function resolveVerbosityOption(args: string[]): CliVerbosity {
   if (!option.value) {
     throw new RuntimeError(
       GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
-      "Option --verbosity requires one value: quiet|normal|verbose.",
-      { option: "--verbosity" },
+      'Option --verbosity requires one value: quiet|normal|verbose.',
+      { option: '--verbosity' },
     );
   }
 
@@ -841,7 +841,7 @@ function resolveVerbosityOption(args: string[]): CliVerbosity {
     throw new RuntimeError(
       GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
       `Option --verbosity must be one of quiet|normal|verbose; received '${option.value}'.`,
-      { option: "--verbosity", value: option.value },
+      { option: '--verbosity', value: option.value },
     );
   }
 
@@ -868,12 +868,12 @@ function resolveRuntimeDebugOptions(
 
     return option.value?.trim() || null;
   };
-  const replayOption = readOptionInput(args, "--replay");
+  const replayOption = readOptionInput(args, '--replay');
   if (replayOption.isPresent && !replayOption.value) {
     throw new RuntimeError(
       GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
-      "Option --replay requires one path value.",
-      { option: "--replay" },
+      'Option --replay requires one path value.',
+      { option: '--replay' },
     );
   }
 
@@ -881,66 +881,66 @@ function resolveRuntimeDebugOptions(
     replayOption.value && replayOption.value.trim().length > 0
       ? resolveReplayPath(currentWorkingDirectory, replayOption.value.trim())
       : null;
-  const taskIdOption = readOptionInput(args, "--task-id");
+  const taskIdOption = readOptionInput(args, '--task-id');
   if (taskIdOption.isPresent && !taskIdOption.value) {
     throw new RuntimeError(
       GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
-      "Option --task-id requires one value.",
-      { option: "--task-id" },
+      'Option --task-id requires one value.',
+      { option: '--task-id' },
     );
   }
-  const restrictedReasonOption = readOptionInput(args, "--restricted-reason");
+  const restrictedReasonOption = readOptionInput(args, '--restricted-reason');
   if (restrictedReasonOption.isPresent && !restrictedReasonOption.value) {
     throw new RuntimeError(
       GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
-      "Option --restricted-reason requires one value.",
-      { option: "--restricted-reason" },
+      'Option --restricted-reason requires one value.',
+      { option: '--restricted-reason' },
     );
   }
 
   const hitlDecision = readRequiredOption(
-    "--hitl-decision",
-    "Option --hitl-decision requires one value.",
+    '--hitl-decision',
+    'Option --hitl-decision requires one value.',
   );
   const hitlDecisionReason = readRequiredOption(
-    "--hitl-decision-reason",
-    "Option --hitl-decision-reason requires one value.",
+    '--hitl-decision-reason',
+    'Option --hitl-decision-reason requires one value.',
   );
   const hitlResumeAction = readRequiredOption(
-    "--hitl-resume-action",
-    "Option --hitl-resume-action requires one value.",
+    '--hitl-resume-action',
+    'Option --hitl-resume-action requires one value.',
   );
   const hitlDecidedBy = readRequiredOption(
-    "--hitl-decided-by",
-    "Option --hitl-decided-by requires one value.",
+    '--hitl-decided-by',
+    'Option --hitl-decided-by requires one value.',
   );
   const hitlConstraintsInput = readRequiredOption(
-    "--hitl-constraints",
-    "Option --hitl-constraints requires one value.",
+    '--hitl-constraints',
+    'Option --hitl-constraints requires one value.',
   );
   const hitlConstraints =
     hitlConstraintsInput
-      ?.split(",")
+      ?.split(',')
       .map((constraint) => constraint.trim())
       .filter(Boolean) ?? [];
 
-  if (hitlDecision && !["approve", "reject", "revise"].includes(hitlDecision)) {
+  if (hitlDecision && !['approve', 'reject', 'revise'].includes(hitlDecision)) {
     throw new RuntimeError(
       GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
-      "Option --hitl-decision must be one of: approve, reject, revise.",
+      'Option --hitl-decision must be one of: approve, reject, revise.',
       {
-        option: "--hitl-decision",
+        option: '--hitl-decision',
         value: hitlDecision,
       },
     );
   }
 
-  if (hitlResumeAction && !["resume", "terminate", "degrade"].includes(hitlResumeAction)) {
+  if (hitlResumeAction && !['resume', 'terminate', 'degrade'].includes(hitlResumeAction)) {
     throw new RuntimeError(
       GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
-      "Option --hitl-resume-action must be one of: resume, terminate, degrade.",
+      'Option --hitl-resume-action must be one of: resume, terminate, degrade.',
       {
-        option: "--hitl-resume-action",
+        option: '--hitl-resume-action',
         value: hitlResumeAction,
       },
     );
@@ -952,24 +952,24 @@ function resolveRuntimeDebugOptions(
   ) {
     throw new RuntimeError(
       GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
-      "HITL receipt companion options require --hitl-decision.",
+      'HITL receipt companion options require --hitl-decision.',
       {
-        option: "--hitl-decision",
+        option: '--hitl-decision',
       },
     );
   }
 
   return {
-    dryRun: hasFlag(args, "--dry-run"),
-    trace: hasFlag(args, "--trace"),
+    dryRun: hasFlag(args, '--dry-run'),
+    trace: hasFlag(args, '--trace'),
     replayPath,
-    adapters: hasFlag(args, "--adapters"),
-    fix: hasFlag(args, "--fix"),
-    recordLedger: hasFlag(args, "--record-ledger"),
+    adapters: hasFlag(args, '--adapters'),
+    fix: hasFlag(args, '--fix'),
+    recordLedger: hasFlag(args, '--record-ledger'),
     taskId: taskIdOption.value?.trim() || null,
-    restrictedNetwork: hasFlag(args, "--restricted-network"),
+    restrictedNetwork: hasFlag(args, '--restricted-network'),
     restrictedReason: restrictedReasonOption.value?.trim() || null,
-    allowLocalFallback: !hasFlag(args, "--no-local-fallback"),
+    allowLocalFallback: !hasFlag(args, '--no-local-fallback'),
     hitlDecision,
     hitlDecisionReason,
     hitlResumeAction,
@@ -1074,28 +1074,28 @@ function resolveErrorGuidance(code: GovernorErrorCode): {
 } {
   if (code === GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID) {
     return {
-      hint: "Command name or option values are invalid.",
+      hint: 'Command name or option values are invalid.',
       nextAction: CliNextAction.CHECK_COMMAND_USAGE,
     };
   }
 
-  if (code.startsWith("CONFIG_")) {
+  if (code.startsWith('CONFIG_')) {
     return {
-      hint: "governor.yaml might be invalid or incompatible.",
+      hint: 'governor.yaml might be invalid or incompatible.',
       nextAction: CliNextAction.INSPECT_GOVERNOR_CONFIG,
     };
   }
 
-  if (code.startsWith("I18N_")) {
+  if (code.startsWith('I18N_')) {
     return {
-      hint: "Locale setup is invalid or unsupported by current runtime.",
+      hint: 'Locale setup is invalid or unsupported by current runtime.',
       nextAction: CliNextAction.RETRY_WITH_VERBOSE,
     };
   }
 
-  if (code.startsWith("ADAPTER_")) {
+  if (code.startsWith('ADAPTER_')) {
     return {
-      hint: "Adapter routing or capability verification failed.",
+      hint: 'Adapter routing or capability verification failed.',
       nextAction: CliNextAction.INSPECT_GOVERNOR_CONFIG,
     };
   }
@@ -1105,20 +1105,20 @@ function resolveErrorGuidance(code: GovernorErrorCode): {
     code === GovernorErrorCode.POLICY_GATE_HITL_FEEDBACK_INVALID
   ) {
     return {
-      hint: "Policy gate did not allow this run; inspect report/replay diagnostics artifacts.",
+      hint: 'Policy gate did not allow this run; inspect report/replay diagnostics artifacts.',
       nextAction: CliNextAction.INSPECT_POLICY_DIAGNOSTICS,
     };
   }
 
   if (code === GovernorErrorCode.REPORT_REPLAY_INPUT_INVALID) {
     return {
-      hint: "Replay source path or payload is invalid for diagnostics replay.",
+      hint: 'Replay source path or payload is invalid for diagnostics replay.',
       nextAction: CliNextAction.CHECK_REPLAY_SOURCE,
     };
   }
 
   return {
-    hint: "Unexpected runtime failure occurred.",
+    hint: 'Unexpected runtime failure occurred.',
     nextAction: CliNextAction.REPORT_ISSUE,
   };
 }
@@ -1130,19 +1130,19 @@ function resolveErrorGuidance(code: GovernorErrorCode): {
  */
 function resolveCliErrorDetails(
   details: Record<string, unknown> | undefined,
-): CliErrorOutputPayload["error_details"] | null {
+): CliErrorOutputPayload['error_details'] | null {
   if (!details) {
     return null;
   }
 
-  const normalizedDetails: CliErrorOutputPayload["error_details"] = {};
-  if (typeof details.reportPath === "string") {
+  const normalizedDetails: CliErrorOutputPayload['error_details'] = {};
+  if (typeof details.reportPath === 'string') {
     normalizedDetails.report_path = details.reportPath;
   }
-  if (typeof details.replayPath === "string") {
+  if (typeof details.replayPath === 'string') {
     normalizedDetails.replay_path = details.replayPath;
   }
-  if (typeof details.pendingStatus === "string") {
+  if (typeof details.pendingStatus === 'string') {
     normalizedDetails.pending_status = details.pendingStatus;
   }
 
@@ -1189,7 +1189,7 @@ function isCommanderHelpDisplayed(error: unknown): boolean {
     return false;
   }
 
-  return error.code === "commander.helpDisplayed";
+  return error.code === 'commander.helpDisplayed';
 }
 
 /**
@@ -1212,7 +1212,7 @@ function readOptionInput(args: string[], flag: string): ReadOptionResult {
   const exactFlagIndex = args.indexOf(flag);
   if (exactFlagIndex >= 0) {
     const candidateValue = args[exactFlagIndex + 1];
-    if (!candidateValue || candidateValue.startsWith("-")) {
+    if (!candidateValue || candidateValue.startsWith('-')) {
       return { isPresent: true, value: undefined };
     }
 
@@ -1238,10 +1238,10 @@ function readOptionInput(args: string[], flag: string): ReadOptionResult {
  */
 function resolveWorkspaceCommandOptions(args: string[]): CliWorkspaceCommandOptions {
   return {
-    action: readOptionValue(args, "--workspace-action") ?? null,
-    targetMode: readOptionValue(args, "--workspace-mode") ?? null,
-    targetRoot: readOptionValue(args, "--workspace-root") ?? null,
-    planPath: readOptionValue(args, "--workspace-plan") ?? null,
+    action: readOptionValue(args, '--workspace-action') ?? null,
+    targetMode: readOptionValue(args, '--workspace-mode') ?? null,
+    targetRoot: readOptionValue(args, '--workspace-root') ?? null,
+    planPath: readOptionValue(args, '--workspace-plan') ?? null,
   };
 }
 
@@ -1267,28 +1267,28 @@ function resolveRequestedCommandName(args: string[]): string {
       continue;
     }
 
-    if (token === "--") {
-      return args[index + 1] ?? "help";
+    if (token === '--') {
+      return args[index + 1] ?? 'help';
     }
 
-    if (token.startsWith("--")) {
-      if (!token.includes("=") && CLI_OPTIONS_REQUIRING_VALUE.has(token)) {
+    if (token.startsWith('--')) {
+      if (!token.includes('=') && CLI_OPTIONS_REQUIRING_VALUE.has(token)) {
         const nextToken = args[index + 1];
-        if (nextToken && !nextToken.startsWith("-")) {
+        if (nextToken && !nextToken.startsWith('-')) {
           index += 1;
         }
       }
       continue;
     }
 
-    if (token.startsWith("-")) {
+    if (token.startsWith('-')) {
       continue;
     }
 
     return token;
   }
 
-  return "help";
+  return 'help';
 }
 
 /**

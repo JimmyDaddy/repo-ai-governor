@@ -1,34 +1,34 @@
-import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
-import { parse } from "yaml";
+import { parse } from 'yaml';
 
 export const DEFAULT_TECHNICAL_SOLUTION_DELIVERY_REGISTRY_PATH =
-  ".repo-ai-governor/context/technical-solution-delivery-registry.yaml";
+  '.repo-ai-governor/context/technical-solution-delivery-registry.yaml';
 export const SUPPORTED_TECHNICAL_SOLUTION_DELIVERY_MODES = [
-  "docs_only",
-  "existing_stream",
-  "followup_required",
+  'docs_only',
+  'existing_stream',
+  'followup_required',
 ];
 export const SUPPORTED_TECHNICAL_SOLUTION_CONSUMER_SURFACES = [
-  "internal_governance",
-  "adopter_cli",
-  "packaged_distribution",
-  "runtime_service",
-  "docs_playbook",
+  'internal_governance',
+  'adopter_cli',
+  'packaged_distribution',
+  'runtime_service',
+  'docs_playbook',
 ];
-export const SUPPORTED_TECHNICAL_SOLUTION_USER_IMPACT_LEVELS = ["none", "low", "medium", "high"];
+export const SUPPORTED_TECHNICAL_SOLUTION_USER_IMPACT_LEVELS = ['none', 'low', 'medium', 'high'];
 export const SUPPORTED_TECHNICAL_SOLUTION_EXECUTION_STATUSES = [
-  "not_required",
-  "planned",
-  "in_progress",
-  "completed",
+  'not_required',
+  'planned',
+  'in_progress',
+  'completed',
 ];
 export const SUPPORTED_TECHNICAL_SOLUTION_ROLLOUT_STATUSES = [
-  "not_required",
-  "planned",
-  "in_progress",
-  "completed",
+  'not_required',
+  'planned',
+  'in_progress',
+  'completed',
 ];
 
 /**
@@ -37,7 +37,7 @@ export const SUPPORTED_TECHNICAL_SOLUTION_ROLLOUT_STATUSES = [
  * @returns {string}
  */
 function normalizePathSeparators(value) {
-  return value.replace(/\\/gu, "/");
+  return value.replace(/\\/gu, '/');
 }
 
 /**
@@ -51,7 +51,7 @@ function toStringArray(value) {
   }
 
   return value
-    .map((entry) => String(entry ?? "").trim())
+    .map((entry) => String(entry ?? '').trim())
     .filter((entry) => entry.length > 0)
     .map((entry) => normalizePathSeparators(entry));
 }
@@ -95,15 +95,15 @@ export function loadTechnicalSolutionDeliveryRegistry(
     return null;
   }
 
-  const payload = parse(readFileSync(absoluteRegistryPath, "utf8"));
+  const payload = parse(readFileSync(absoluteRegistryPath, 'utf8'));
   const rootRecord =
-    payload && typeof payload === "object" ? /** @type {Record<string, unknown>} */ (payload) : {};
+    payload && typeof payload === 'object' ? /** @type {Record<string, unknown>} */ (payload) : {};
   const deliveries = Array.isArray(rootRecord.deliveries) ? rootRecord.deliveries : [];
 
   return {
     registry_path: normalizePathSeparators(registryPath),
     schema_version:
-      typeof rootRecord.schema_version === "number" || typeof rootRecord.schema_version === "string"
+      typeof rootRecord.schema_version === 'number' || typeof rootRecord.schema_version === 'string'
         ? rootRecord.schema_version
         : null,
     allowed_delivery_modes: toStringArray(rootRecord.allowed_delivery_modes),
@@ -113,27 +113,27 @@ export function loadTechnicalSolutionDeliveryRegistry(
     allowed_rollout_statuses: toStringArray(rootRecord.allowed_rollout_statuses),
     deliveries: deliveries.map((deliveryValue) => {
       const deliveryRecord =
-        deliveryValue && typeof deliveryValue === "object"
+        deliveryValue && typeof deliveryValue === 'object'
           ? /** @type {Record<string, unknown>} */ (deliveryValue)
           : {};
 
       return {
-        solution_id: String(deliveryRecord.solution_id ?? "").trim(),
-        delivery_mode: String(deliveryRecord.delivery_mode ?? "").trim(),
+        solution_id: String(deliveryRecord.solution_id ?? '').trim(),
+        delivery_mode: String(deliveryRecord.delivery_mode ?? '').trim(),
         consumer_surfaces: toStringArray(deliveryRecord.consumer_surfaces),
-        user_impact_level: String(deliveryRecord.user_impact_level ?? "").trim(),
-        execution_status: String(deliveryRecord.execution_status ?? "").trim(),
-        rollout_status: String(deliveryRecord.rollout_status ?? "").trim(),
-        owner: String(deliveryRecord.owner ?? "").trim(),
-        project_ref: String(deliveryRecord.project_ref ?? "").trim(),
-        sprint_ref: String(deliveryRecord.sprint_ref ?? "").trim(),
+        user_impact_level: String(deliveryRecord.user_impact_level ?? '').trim(),
+        execution_status: String(deliveryRecord.execution_status ?? '').trim(),
+        rollout_status: String(deliveryRecord.rollout_status ?? '').trim(),
+        owner: String(deliveryRecord.owner ?? '').trim(),
+        project_ref: String(deliveryRecord.project_ref ?? '').trim(),
+        sprint_ref: String(deliveryRecord.sprint_ref ?? '').trim(),
         task_ids: toStringArray(deliveryRecord.task_ids),
-        project_plan_path: String(deliveryRecord.project_plan_path ?? "").trim(),
-        sprint_plan_path: String(deliveryRecord.sprint_plan_path ?? "").trim(),
-        task_csv_path: String(deliveryRecord.task_csv_path ?? "").trim(),
-        handoff_artifact_path: String(deliveryRecord.handoff_artifact_path ?? "").trim(),
+        project_plan_path: String(deliveryRecord.project_plan_path ?? '').trim(),
+        sprint_plan_path: String(deliveryRecord.sprint_plan_path ?? '').trim(),
+        task_csv_path: String(deliveryRecord.task_csv_path ?? '').trim(),
+        handoff_artifact_path: String(deliveryRecord.handoff_artifact_path ?? '').trim(),
         rollout_artifacts: toStringArray(deliveryRecord.rollout_artifacts),
-        accepted_at: String(deliveryRecord.accepted_at ?? "").trim(),
+        accepted_at: String(deliveryRecord.accepted_at ?? '').trim(),
       };
     }),
   };

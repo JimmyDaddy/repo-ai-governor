@@ -1,1 +1,1 @@
-export type { WorkspaceMode } from "./workspace-mode.type.js";
+export type { WorkspaceMode } from './workspace-mode.type.js';

@@ -1,7 +1,7 @@
-import { randomUUID } from "node:crypto";
-import { existsSync } from "node:fs";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { randomUUID } from 'node:crypto';
+import { existsSync } from 'node:fs';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
 
 import type {
   MemoryArchiveOptions,
@@ -10,8 +10,8 @@ import type {
   MemorySnapshotOptions,
   MemorySnapshotRecord,
   MemoryStoreProvider,
-} from "@repo-ai-governor/memory-store-adapter";
-import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
+} from '@repo-ai-governor/memory-store-adapter';
+import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import {
   FS_CSV_ARCHIVE_FILE_NAME,
   FS_CSV_ARCHIVE_HEADER,
@@ -20,8 +20,8 @@ import {
   FS_CSV_SNAPSHOTS_DIRECTORY_NAME,
   FS_CSV_SNAPSHOTS_FILE_NAME,
   FS_CSV_SNAPSHOTS_HEADER,
-} from "./constants/index.js";
-import type { FsCsvMemoryStoreProviderOptions } from "./types/index.js";
+} from './constants/index.js';
+import type { FsCsvMemoryStoreProviderOptions } from './types/index.js';
 
 interface SnapshotCsvRow {
   snapshotId: string;
@@ -136,13 +136,13 @@ export class FsCsvMemoryStoreProvider implements MemoryStoreProvider {
     const snapshotPath = resolve(this.snapshotsDirectoryPath, `${snapshotId}.json`);
 
     await mkdir(this.snapshotsDirectoryPath, { recursive: true });
-    await writeFile(snapshotPath, JSON.stringify(snapshotRecords, null, 2), "utf8");
+    await writeFile(snapshotPath, JSON.stringify(snapshotRecords, null, 2), 'utf8');
 
     const snapshotRows = await this.readSnapshotRows();
     snapshotRows.push({
       snapshotId,
       createdAt,
-      reason: options.reason ?? "",
+      reason: options.reason ?? '',
       recordCount: snapshotRecords.length,
       snapshotPath,
     });
@@ -204,7 +204,7 @@ export class FsCsvMemoryStoreProvider implements MemoryStoreProvider {
    */
   private async readRecords(): Promise<MemoryRecord[]> {
     await this.ensureStorageInitialized();
-    const csvContent = await readFile(this.recordsFilePath, "utf8");
+    const csvContent = await readFile(this.recordsFilePath, 'utf8');
     const csvLines = csvContent
       .split(/\r?\n/u)
       .map((line) => line.trimEnd())
@@ -219,7 +219,7 @@ export class FsCsvMemoryStoreProvider implements MemoryStoreProvider {
       if (rowValues.length !== FS_CSV_RECORDS_HEADER.length) {
         throw new RuntimeError(
           GovernorErrorCode.MEMORY_STORE_READ_FAILED,
-          "Invalid memory-records.csv row width.",
+          'Invalid memory-records.csv row width.',
           {
             lineNumber: lineIndex + 2,
             expected: FS_CSV_RECORDS_HEADER.length,
@@ -229,13 +229,13 @@ export class FsCsvMemoryStoreProvider implements MemoryStoreProvider {
         );
       }
 
-      const parsedTags = this.parseJsonCell<string[]>(rowValues[3] ?? "[]");
+      const parsedTags = this.parseJsonCell<string[]>(rowValues[3] ?? '[]');
       return {
-        namespace: rowValues[0] ?? "",
-        key: rowValues[1] ?? "",
-        value: this.parseJsonCell<Record<string, unknown>>(rowValues[2] ?? "{}"),
+        namespace: rowValues[0] ?? '',
+        key: rowValues[1] ?? '',
+        value: this.parseJsonCell<Record<string, unknown>>(rowValues[2] ?? '{}'),
         tags: Array.isArray(parsedTags) ? parsedTags : [],
-        updatedAt: rowValues[4] ?? "",
+        updatedAt: rowValues[4] ?? '',
       };
     });
   }
@@ -248,7 +248,7 @@ export class FsCsvMemoryStoreProvider implements MemoryStoreProvider {
   private async writeRecords(records: MemoryRecord[]): Promise<void> {
     await this.ensureStorageInitialized();
     const csvRows = [
-      FS_CSV_RECORDS_HEADER.join(","),
+      FS_CSV_RECORDS_HEADER.join(','),
       ...records.map((record) =>
         this.buildCsvLine([
           record.namespace,
@@ -259,7 +259,7 @@ export class FsCsvMemoryStoreProvider implements MemoryStoreProvider {
         ]),
       ),
     ];
-    await writeFile(this.recordsFilePath, `${csvRows.join("\n")}\n`, "utf8");
+    await writeFile(this.recordsFilePath, `${csvRows.join('\n')}\n`, 'utf8');
   }
 
   /**
@@ -268,7 +268,7 @@ export class FsCsvMemoryStoreProvider implements MemoryStoreProvider {
    */
   private async readSnapshotRows(): Promise<SnapshotCsvRow[]> {
     await this.ensureStorageInitialized();
-    const csvContent = await readFile(this.snapshotsFilePath, "utf8");
+    const csvContent = await readFile(this.snapshotsFilePath, 'utf8');
     const csvLines = csvContent
       .split(/\r?\n/u)
       .map((line) => line.trimEnd())
@@ -281,11 +281,11 @@ export class FsCsvMemoryStoreProvider implements MemoryStoreProvider {
     return csvLines.slice(1).map((line) => {
       const rowValues = this.parseCsvLine(line);
       return {
-        snapshotId: rowValues[0] ?? "",
-        createdAt: rowValues[1] ?? "",
-        reason: rowValues[2] ?? "",
-        recordCount: Number.parseInt(rowValues[3] ?? "0", 10) || 0,
-        snapshotPath: rowValues[4] ?? "",
+        snapshotId: rowValues[0] ?? '',
+        createdAt: rowValues[1] ?? '',
+        reason: rowValues[2] ?? '',
+        recordCount: Number.parseInt(rowValues[3] ?? '0', 10) || 0,
+        snapshotPath: rowValues[4] ?? '',
       };
     });
   }
@@ -297,7 +297,7 @@ export class FsCsvMemoryStoreProvider implements MemoryStoreProvider {
    */
   private async writeSnapshotRows(rows: SnapshotCsvRow[]): Promise<void> {
     const csvRows = [
-      FS_CSV_SNAPSHOTS_HEADER.join(","),
+      FS_CSV_SNAPSHOTS_HEADER.join(','),
       ...rows.map((row) =>
         this.buildCsvLine([
           row.snapshotId,
@@ -308,7 +308,7 @@ export class FsCsvMemoryStoreProvider implements MemoryStoreProvider {
         ]),
       ),
     ];
-    await writeFile(this.snapshotsFilePath, `${csvRows.join("\n")}\n`, "utf8");
+    await writeFile(this.snapshotsFilePath, `${csvRows.join('\n')}\n`, 'utf8');
   }
 
   /**
@@ -317,7 +317,7 @@ export class FsCsvMemoryStoreProvider implements MemoryStoreProvider {
    */
   private async readArchiveRows(): Promise<ArchiveCsvRow[]> {
     await this.ensureStorageInitialized();
-    const csvContent = await readFile(this.archiveFilePath, "utf8");
+    const csvContent = await readFile(this.archiveFilePath, 'utf8');
     const csvLines = csvContent
       .split(/\r?\n/u)
       .map((line) => line.trimEnd())
@@ -330,12 +330,12 @@ export class FsCsvMemoryStoreProvider implements MemoryStoreProvider {
     return csvLines.slice(1).map((line) => {
       const rowValues = this.parseCsvLine(line);
       return {
-        namespace: rowValues[0] ?? "",
-        key: rowValues[1] ?? "",
-        valueJson: rowValues[2] ?? "{}",
-        tagsJson: rowValues[3] ?? "[]",
-        updatedAt: rowValues[4] ?? "",
-        archivedAt: rowValues[5] ?? "",
+        namespace: rowValues[0] ?? '',
+        key: rowValues[1] ?? '',
+        valueJson: rowValues[2] ?? '{}',
+        tagsJson: rowValues[3] ?? '[]',
+        updatedAt: rowValues[4] ?? '',
+        archivedAt: rowValues[5] ?? '',
       };
     });
   }
@@ -347,7 +347,7 @@ export class FsCsvMemoryStoreProvider implements MemoryStoreProvider {
    */
   private async writeArchiveRows(rows: ArchiveCsvRow[]): Promise<void> {
     const csvRows = [
-      FS_CSV_ARCHIVE_HEADER.join(","),
+      FS_CSV_ARCHIVE_HEADER.join(','),
       ...rows.map((row) =>
         this.buildCsvLine([
           row.namespace,
@@ -359,7 +359,7 @@ export class FsCsvMemoryStoreProvider implements MemoryStoreProvider {
         ]),
       ),
     ];
-    await writeFile(this.archiveFilePath, `${csvRows.join("\n")}\n`, "utf8");
+    await writeFile(this.archiveFilePath, `${csvRows.join('\n')}\n`, 'utf8');
   }
 
   /**
@@ -396,7 +396,7 @@ export class FsCsvMemoryStoreProvider implements MemoryStoreProvider {
     if (existsSync(filePath)) {
       return;
     }
-    await writeFile(filePath, `${headerColumns.join(",")}\n`, "utf8");
+    await writeFile(filePath, `${headerColumns.join(',')}\n`, 'utf8');
   }
 
   /**
@@ -482,12 +482,12 @@ export class FsCsvMemoryStoreProvider implements MemoryStoreProvider {
    */
   private parseCsvLine(line: string): string[] {
     const values: string[] = [];
-    let currentValue = "";
+    let currentValue = '';
     let inQuotes = false;
 
     for (let index = 0; index < line.length; index += 1) {
-      const character = line[index] ?? "";
-      const nextCharacter = line[index + 1] ?? "";
+      const character = line[index] ?? '';
+      const nextCharacter = line[index + 1] ?? '';
 
       if (character === '"') {
         if (inQuotes && nextCharacter === '"') {
@@ -500,9 +500,9 @@ export class FsCsvMemoryStoreProvider implements MemoryStoreProvider {
         continue;
       }
 
-      if (character === "," && !inQuotes) {
+      if (character === ',' && !inQuotes) {
         values.push(currentValue);
-        currentValue = "";
+        currentValue = '';
         continue;
       }
 
@@ -519,7 +519,7 @@ export class FsCsvMemoryStoreProvider implements MemoryStoreProvider {
    * @returns CSV row line.
    */
   private buildCsvLine(values: string[]): string {
-    return values.map((value) => this.escapeCsvCell(value)).join(",");
+    return values.map((value) => this.escapeCsvCell(value)).join(',');
   }
 
   /**
@@ -528,13 +528,13 @@ export class FsCsvMemoryStoreProvider implements MemoryStoreProvider {
    * @returns Escaped CSV cell.
    */
   private escapeCsvCell(value: string): string {
-    const normalizedValue = value ?? "";
+    const normalizedValue = value ?? '';
     const escapedValue = normalizedValue.replace(/"/gu, '""');
     const requiresQuotes =
-      escapedValue.includes(",") ||
+      escapedValue.includes(',') ||
       escapedValue.includes('"') ||
-      escapedValue.includes("\n") ||
-      escapedValue.includes("\r");
+      escapedValue.includes('\n') ||
+      escapedValue.includes('\r');
 
     if (!requiresQuotes) {
       return escapedValue;

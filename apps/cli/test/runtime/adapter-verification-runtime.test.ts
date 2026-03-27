@@ -3,8 +3,8 @@ import {
   AgentCapability,
   AgentCapabilitySupportLevel,
   type AgentProtocolContract,
-} from "@repo-ai-governor/adapter-sdk";
-import type { AdaptersConfig } from "@repo-ai-governor/config";
+} from '@repo-ai-governor/adapter-sdk';
+import type { AdaptersConfig } from '@repo-ai-governor/config';
 import {
   AdapterAvailability,
   AdapterSurface,
@@ -13,11 +13,11 @@ import {
   LocalModelProvider,
   RuntimeError,
   standardizeError,
-} from "@repo-ai-governor/shared";
-import { CliGovernanceCheckStatus } from "../../src/constants/cli-governance-runtime.constant.js";
-import { CliAdapterRoutingRuntime } from "../../src/runtime/adapter-routing-runtime.js";
-import { CliAdapterVerificationRuntime } from "../../src/runtime/adapter-verification-runtime.js";
-import { CliLocalModelProbeRuntime } from "../../src/runtime/local-model-probe-runtime.js";
+} from '@repo-ai-governor/shared';
+import { CliGovernanceCheckStatus } from '../../src/constants/cli-governance-runtime.constant.js';
+import { CliAdapterRoutingRuntime } from '../../src/runtime/adapter-routing-runtime.js';
+import { CliAdapterVerificationRuntime } from '../../src/runtime/adapter-verification-runtime.js';
+import { CliLocalModelProbeRuntime } from '../../src/runtime/local-model-probe-runtime.js';
 
 function createProbeResult(
   surface: AdapterSurface,
@@ -27,10 +27,10 @@ function createProbeResult(
   return {
     identity: {
       agentId: `${surface}-agent`,
-      role: "coder",
+      role: 'coder',
       surface,
       roleProfileId: DefaultRoleProfileId.CODER,
-      roleSource: "default",
+      roleSource: 'default',
     },
     availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
     capabilityMatrix: {
@@ -61,8 +61,8 @@ function createProbeResult(
   };
 }
 
-describe("Cli adapter verification runtime", () => {
-  it("prefers direct copilot CLI version probe before gh wrapper fallback", async () => {
+describe('Cli adapter verification runtime', () => {
+  it('prefers direct copilot CLI version probe before gh wrapper fallback', async () => {
     const commandProbeExecutor = vi.fn(async () => undefined);
     const runtime = new CliLocalModelProbeRuntime(
       undefined,
@@ -78,13 +78,13 @@ describe("Cli adapter verification runtime", () => {
 
     expect(resolution.availabilityStatus).toBe(AgentAvailabilityStatus.AVAILABLE);
     expect(commandProbeExecutor).toHaveBeenCalledTimes(1);
-    expect(commandProbeExecutor).toHaveBeenNthCalledWith(1, "copilot", ["--version"]);
+    expect(commandProbeExecutor).toHaveBeenNthCalledWith(1, 'copilot', ['--version']);
   });
 
-  it("falls back to gh copilot wrapper when direct copilot binary is missing", async () => {
+  it('falls back to gh copilot wrapper when direct copilot binary is missing', async () => {
     const commandProbeExecutor = vi.fn(async (command: string) => {
-      if (command === "copilot") {
-        throw new RuntimeError(GovernorErrorCode.UNKNOWN, "spawn copilot ENOENT");
+      if (command === 'copilot') {
+        throw new RuntimeError(GovernorErrorCode.UNKNOWN, 'spawn copilot ENOENT');
       }
     });
     const runtime = new CliLocalModelProbeRuntime(
@@ -100,13 +100,13 @@ describe("Cli adapter verification runtime", () => {
     });
 
     expect(resolution.availabilityStatus).toBe(AgentAvailabilityStatus.AVAILABLE);
-    expect(commandProbeExecutor).toHaveBeenNthCalledWith(1, "copilot", ["--version"]);
-    expect(commandProbeExecutor).toHaveBeenNthCalledWith(2, "gh", ["copilot", "--", "--version"]);
+    expect(commandProbeExecutor).toHaveBeenNthCalledWith(1, 'copilot', ['--version']);
+    expect(commandProbeExecutor).toHaveBeenNthCalledWith(2, 'gh', ['copilot', '--', '--version']);
   });
 
-  it("trusts endpoint-backed ollama config before local command probing", async () => {
+  it('trusts endpoint-backed ollama config before local command probing', async () => {
     const commandProbeExecutor = vi.fn(async () => {
-      throw new RuntimeError(GovernorErrorCode.UNKNOWN, "probe should not execute");
+      throw new RuntimeError(GovernorErrorCode.UNKNOWN, 'probe should not execute');
     });
     const runtime = new CliLocalModelProbeRuntime(
       undefined,
@@ -120,8 +120,8 @@ describe("Cli adapter verification runtime", () => {
       availability: AdapterAvailability.AVAILABLE,
       localModel: {
         provider: LocalModelProvider.OLLAMA,
-        endpoint: "http://127.0.0.1:11434",
-        model: "qwen2.5-coder:7b",
+        endpoint: 'http://127.0.0.1:11434',
+        model: 'qwen2.5-coder:7b',
         maxRetries: 0,
       },
     });
@@ -131,11 +131,11 @@ describe("Cli adapter verification runtime", () => {
     expect(commandProbeExecutor).not.toHaveBeenCalled();
   });
 
-  it("aggregates configuration_missing attribution from extracted verification runtime", async () => {
+  it('aggregates configuration_missing attribution from extracted verification runtime', async () => {
     const adaptersConfig: AdaptersConfig = {
       roles: [
         {
-          roleId: "coder",
+          roleId: 'coder',
           roleProfileId: DefaultRoleProfileId.CODER,
           requiredCapabilities: [AgentCapability.CONTEXT_WINDOW],
           required: true,
@@ -159,7 +159,7 @@ describe("Cli adapter verification runtime", () => {
     const ollamaToolConfig = adaptersConfig.tools?.[0];
     expect(ollamaToolConfig).toBeDefined();
     const toolConfigBySurface = new Map([
-      [AdapterSurface.OLLAMA, ollamaToolConfig as NonNullable<AdaptersConfig["tools"]>[number]],
+      [AdapterSurface.OLLAMA, ollamaToolConfig as NonNullable<AdaptersConfig['tools']>[number]],
     ]);
     const localProbeRuntime = new CliLocalModelProbeRuntime(
       undefined,
@@ -172,7 +172,7 @@ describe("Cli adapter verification runtime", () => {
       createToolConfigBySurfaceMap: () => typeof toolConfigBySurface;
       createProtocolBySurface: () => Record<string, AgentProtocolContract>;
       resolveRoleBindingCandidateSurfaces: (
-        roleBinding: AdaptersConfig["routing"]["roleBindings"][string],
+        roleBinding: AdaptersConfig['routing']['roleBindings'][string],
       ) => AdapterSurface[];
       resolveTrackedAdapterSurfaces: (
         trackedToolConfigBySurface?: typeof toolConfigBySurface,
@@ -196,20 +196,20 @@ describe("Cli adapter verification runtime", () => {
         invokeStage: async () => {
           throw new RuntimeError(
             GovernorErrorCode.UNKNOWN,
-            "invokeStage not used in verification unit test",
+            'invokeStage not used in verification unit test',
           );
         },
         streamEvents: async function* () {},
         requestConfirmation: async () => {
           throw new RuntimeError(
             GovernorErrorCode.UNKNOWN,
-            "requestConfirmation not used in verification unit test",
+            'requestConfirmation not used in verification unit test',
           );
         },
         cancel: async () => {
           throw new RuntimeError(
             GovernorErrorCode.UNKNOWN,
-            "cancel not used in verification unit test",
+            'cancel not used in verification unit test',
           );
         },
       },
@@ -225,10 +225,10 @@ describe("Cli adapter verification runtime", () => {
     const verification = await runtime.resolveAdapterVerification();
 
     expect(verification.overallStatus).toBe(CliGovernanceCheckStatus.FAIL);
-    expect(verification.tools[0]?.failureAttributions).toContain("configuration_missing");
+    expect(verification.tools[0]?.failureAttributions).toContain('configuration_missing');
     expect(
       verification.nextActions.some((action) =>
-        action.includes("Provide adapters.tools[].localModel"),
+        action.includes('Provide adapters.tools[].localModel'),
       ),
     ).toBe(true);
     expect(runtime.createFailureAttributionSummary(verification).configuration_missing).toBe(2);

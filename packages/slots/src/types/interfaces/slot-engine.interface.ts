@@ -7,7 +7,7 @@ import type {
   SlotSource,
   SlotTrack,
   SlotValidationSeverity,
-} from "../../constants/index.js";
+} from '../../constants/index.js';
 
 /**
  * Defines one reusable slot metadata block.

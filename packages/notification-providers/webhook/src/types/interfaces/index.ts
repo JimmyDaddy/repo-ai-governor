@@ -1,1 +1,1 @@
-export type { WebhookNotificationProviderOptions } from "./webhook-notification-provider.interface.js";
+export type { WebhookNotificationProviderOptions } from './webhook-notification-provider.interface.js';

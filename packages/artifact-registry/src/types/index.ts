@@ -1,4 +1,4 @@
-export type { ArtifactDependencyExpression } from "./aliases/index.js";
+export type { ArtifactDependencyExpression } from './aliases/index.js';
 export type {
   ArtifactDependencyResolutionAuditFields,
   ArtifactDependencyResolutionResult,
@@ -9,4 +9,4 @@ export type {
   ParsedArtifactDependency,
   RegisterArtifactOptions,
   ResolveArtifactDependenciesOptions,
-} from "./interfaces/index.js";
+} from './interfaces/index.js';

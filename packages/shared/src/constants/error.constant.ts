@@ -5,9 +5,9 @@
  * centralizing output modes prevents ad-hoc string literals from drifting across packages.
  */
 export enum ErrorOutputEnvironment {
-  PRETTY = "pretty",
-  PLAIN = "plain",
-  JSON = "json",
+  PRETTY = 'pretty',
+  PLAIN = 'plain',
+  JSON = 'json',
 }
 
 /**
@@ -17,7 +17,7 @@ export enum ErrorOutputEnvironment {
  * scenario values are consumed by multiple packages and should remain stable.
  */
 export enum ErrorScenario {
-  CONFIG = "config",
-  I18N = "i18n",
-  RUNTIME = "runtime",
+  CONFIG = 'config',
+  I18N = 'i18n',
+  RUNTIME = 'runtime',
 }

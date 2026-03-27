@@ -1,20 +1,20 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { dirname, resolve } from 'node:path';
 
-import type { ResolvedWorkspace } from "@repo-ai-governor/config";
-import type { ChangeRiskEvaluationResult } from "@repo-ai-governor/core-change-risk";
-import type { PolicyGateEvaluationResult } from "@repo-ai-governor/core-policy";
-import type { RuntimeExecutionResult } from "@repo-ai-governor/core-runtime";
-import type { ExecutionReport, ReplayExplainResult } from "@repo-ai-governor/reporting";
-import type { CliDeliveryRehearsalAction } from "../../constants/cli-task-driven-run.constant.js";
-import type { CliReplayExplainResolution } from "../presentation/replay-explain-builder.js";
+import type { ResolvedWorkspace } from '@repo-ai-governor/config';
+import type { ChangeRiskEvaluationResult } from '@repo-ai-governor/core-change-risk';
+import type { PolicyGateEvaluationResult } from '@repo-ai-governor/core-policy';
+import type { RuntimeExecutionResult } from '@repo-ai-governor/core-runtime';
+import type { ExecutionReport, ReplayExplainResult } from '@repo-ai-governor/reporting';
+import type { CliDeliveryRehearsalAction } from '../../constants/cli-task-driven-run.constant.js';
+import type { CliReplayExplainResolution } from '../presentation/replay-explain-builder.js';
 
 /**
  * Owns CLI-local artifact persistence so command orchestration no longer writes JSON/text payloads directly.
  */
 export class CliRuntimeArtifactWriter {
   public constructor(
-    private readonly workspace: Pick<ResolvedWorkspace, "workspaceId" | "workspaceRoot" | "mode">,
+    private readonly workspace: Pick<ResolvedWorkspace, 'workspaceId' | 'workspaceRoot' | 'mode'>,
     private readonly toRfc3339SecondsTimestamp: (value: Date) => string,
   ) {}
 
@@ -26,7 +26,7 @@ export class CliRuntimeArtifactWriter {
    */
   public async writeTextArtifact(filePath: string, content: string): Promise<void> {
     await mkdir(dirname(filePath), { recursive: true });
-    await writeFile(filePath, content, "utf8");
+    await writeFile(filePath, content, 'utf8');
   }
 
   /**
@@ -37,7 +37,7 @@ export class CliRuntimeArtifactWriter {
    */
   public async writeJsonArtifact(filePath: string, payload: unknown): Promise<void> {
     await mkdir(dirname(filePath), { recursive: true });
-    await writeFile(filePath, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
+    await writeFile(filePath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
   }
 
   /**
@@ -47,9 +47,9 @@ export class CliRuntimeArtifactWriter {
    */
   public async safeReadJson(filePath: string): Promise<Record<string, unknown> | null> {
     try {
-      const rawContent = await readFile(filePath, "utf8");
+      const rawContent = await readFile(filePath, 'utf8');
       const parsed = JSON.parse(rawContent) as unknown;
-      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
         return parsed as Record<string, unknown>;
       }
       return null;
@@ -73,14 +73,14 @@ export class CliRuntimeArtifactWriter {
   }> {
     const reportPath = resolve(
       this.workspace.workspaceRoot,
-      "context",
-      "reports",
+      'context',
+      'reports',
       `${options.executionId}.report.json`,
     );
     const replayPath = resolve(
       this.workspace.workspaceRoot,
-      "context",
-      "replay",
+      'context',
+      'replay',
       `${options.executionId}.replay.json`,
     );
 
@@ -105,9 +105,9 @@ export class CliRuntimeArtifactWriter {
   }): Promise<string> {
     const rehearsalPath = resolve(
       this.workspace.workspaceRoot,
-      "context",
-      "delivery",
-      "rehearsal",
+      'context',
+      'delivery',
+      'rehearsal',
       `${options.executionId}.${options.rehearsalAction}.json`,
     );
     await this.writeJsonArtifact(rehearsalPath, options.payload);
@@ -136,9 +136,9 @@ export class CliRuntimeArtifactWriter {
   }): Promise<string> {
     const tracePath = resolve(
       this.workspace.workspaceRoot,
-      "context",
-      "diagnostics",
-      "trace",
+      'context',
+      'diagnostics',
+      'trace',
       `${options.executionId}.trace.json`,
     );
     const errorContext = options.runtimeResult.stageResults
@@ -151,28 +151,28 @@ export class CliRuntimeArtifactWriter {
       }));
     const adapterInvocationSummary = options.runtimeResult.stageResults.map((stageResult) => {
       const output =
-        stageResult.output && typeof stageResult.output === "object" ? stageResult.output : null;
+        stageResult.output && typeof stageResult.output === 'object' ? stageResult.output : null;
 
       return {
         stageId: stageResult.stageId,
         nodeId: stageResult.nodeId,
         handledBy:
-          output && typeof output.handledBy === "string" ? output.handledBy : "unknown_handler",
-        routeKey: output && typeof output.routeKey === "string" ? output.routeKey : "unknown_route",
+          output && typeof output.handledBy === 'string' ? output.handledBy : 'unknown_handler',
+        routeKey: output && typeof output.routeKey === 'string' ? output.routeKey : 'unknown_route',
         selectedSurface:
-          output && typeof output.selectedSurface === "string"
+          output && typeof output.selectedSurface === 'string'
             ? output.selectedSurface
-            : "unknown_surface",
+            : 'unknown_surface',
         adapterSurface:
-          output && typeof output.adapterSurface === "string"
+          output && typeof output.adapterSurface === 'string'
             ? output.adapterSurface
-            : "unknown_surface",
+            : 'unknown_surface',
         localFallbackActivated:
-          output && typeof output.localFallbackActivated === "boolean"
+          output && typeof output.localFallbackActivated === 'boolean'
             ? output.localFallbackActivated
             : false,
         restrictedReason:
-          output && typeof output.restrictedReason === "string" ? output.restrictedReason : null,
+          output && typeof output.restrictedReason === 'string' ? output.restrictedReason : null,
       };
     });
 
@@ -199,9 +199,9 @@ export class CliRuntimeArtifactWriter {
       },
       keyEvents: [
         {
-          eventId: "compile",
-          status: "succeeded",
-          detail: "Compiled IR snapshot generated.",
+          eventId: 'compile',
+          status: 'succeeded',
+          detail: 'Compiled IR snapshot generated.',
         },
         ...options.runtimeResult.stageResults.map((stageResult) => ({
           eventId: stageResult.stageId,
@@ -209,13 +209,13 @@ export class CliRuntimeArtifactWriter {
           detail: `duration_ms=${stageResult.durationMs}`,
         })),
         {
-          eventId: "policy",
-          status: options.policyResult.policyOutcome === "allow" ? "allow" : "requires_attention",
-          detail: `matched_rules=${options.policyResult.matchedRuleIds.join("|") || "none"}`,
+          eventId: 'policy',
+          status: options.policyResult.policyOutcome === 'allow' ? 'allow' : 'requires_attention',
+          detail: `matched_rules=${options.policyResult.matchedRuleIds.join('|') || 'none'}`,
         },
         {
-          eventId: "report_replay_persisted",
-          status: "succeeded",
+          eventId: 'report_replay_persisted',
+          status: 'succeeded',
           detail: `report=${options.reportPath} replay=${options.replayPath}`,
         },
       ],
@@ -266,9 +266,9 @@ export class CliRuntimeArtifactWriter {
     const diagnosticsId = `replay-diagnostics-${Date.now()}`;
     const diagnosticsPath = resolve(
       this.workspace.workspaceRoot,
-      "context",
-      "diagnostics",
-      "replay",
+      'context',
+      'diagnostics',
+      'replay',
       `${diagnosticsId}.json`,
     );
 
@@ -315,9 +315,9 @@ export class CliRuntimeArtifactWriter {
     if (options.runtimeDebugOptions.trace) {
       tracePath = resolve(
         this.workspace.workspaceRoot,
-        "context",
-        "diagnostics",
-        "trace",
+        'context',
+        'diagnostics',
+        'trace',
         `${diagnosticsId}.trace.json`,
       );
       await this.writeJsonArtifact(tracePath, {
@@ -330,13 +330,13 @@ export class CliRuntimeArtifactWriter {
         },
         keyEvents: [
           {
-            eventId: "replay_input_resolved",
-            status: "succeeded",
+            eventId: 'replay_input_resolved',
+            status: 'succeeded',
             detail: `source_type=${options.replayResolution.sourceType}`,
           },
           {
-            eventId: "replay_explain_resolved",
-            status: "succeeded",
+            eventId: 'replay_explain_resolved',
+            status: 'succeeded',
             detail: `matched_count=${options.replayResolution.explainResult.matchedCount}`,
           },
         ],

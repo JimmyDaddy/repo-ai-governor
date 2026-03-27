@@ -2,12 +2,12 @@ import type {
   ChangeRiskLevel,
   ChangeRiskReasonCode,
   ChangeRiskRequiredAction,
-} from "../../constants/index.js";
+} from '../../constants/index.js';
 import type {
   ChangeRiskFileCategoryValue,
   ChangeRiskReviewerRole,
   ChangeRiskReviewerRoleMatrix,
-} from "../aliases/index.js";
+} from '../aliases/index.js';
 
 /**
  * Describes minimal change facts consumed by risk evaluator.

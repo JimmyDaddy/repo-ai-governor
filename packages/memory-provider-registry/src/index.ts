@@ -13,8 +13,8 @@ export {
   MemoryProviderPluginSpecifierKind,
   MemoryProviderResolutionSource,
   MemoryProviderRuntimeMode,
-} from "./constants/index.js";
-export { MemoryProviderRegistry } from "./memory-provider-registry.js";
+} from './constants/index.js';
+export { MemoryProviderRegistry } from './memory-provider-registry.js';
 export type {
   MemoryProviderBuiltInDescriptor,
   MemoryProviderCompositionSummary,
@@ -30,4 +30,4 @@ export type {
   MemoryProviderRegistryOptions,
   MemoryProviderRegistryResolutionResult,
   MemoryProviderResolvedDescriptor,
-} from "./types/index.js";
+} from './types/index.js';

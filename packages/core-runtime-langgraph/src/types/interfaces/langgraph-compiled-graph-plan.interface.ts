@@ -2,13 +2,13 @@ import type {
   ProcessCompilerIssue,
   ProcessIrNodeLimits,
   ProcessNodeType,
-} from "@repo-ai-governor/core-process";
+} from '@repo-ai-governor/core-process';
 import type {
   LangGraphCheckpointerStateKey,
   LangGraphEdgeBehavior,
   LangGraphNodeBehavior,
   LangGraphReducedStateKey,
-} from "../../constants/index.js";
+} from '../../constants/index.js';
 
 export interface LangGraphCompiledGraphNode {
   nodeId: string;

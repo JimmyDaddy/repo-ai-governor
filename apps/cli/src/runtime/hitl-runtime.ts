@@ -1,19 +1,19 @@
-import { resolve } from "node:path";
+import { resolve } from 'node:path';
 
-import type { ResolvedWorkspace } from "@repo-ai-governor/config";
-import { ChangeRiskRequiredAction } from "@repo-ai-governor/core-change-risk";
-import { MemoryScope } from "@repo-ai-governor/core-memory";
+import type { ResolvedWorkspace } from '@repo-ai-governor/config';
+import { ChangeRiskRequiredAction } from '@repo-ai-governor/core-change-risk';
+import { MemoryScope } from '@repo-ai-governor/core-memory';
 import {
   PolicyGateEngine,
   type PolicyGateEvaluationResult,
   type PolicyGateHitlResolutionResult,
   PolicyHitlDecision,
-} from "@repo-ai-governor/core-policy";
+} from '@repo-ai-governor/core-policy';
 import {
   type AuditOutputMode,
   AuditRecordStatus,
   type AuditRecorder,
-} from "@repo-ai-governor/core-session";
+} from '@repo-ai-governor/core-session';
 import {
   NotificationChannel,
   type NotificationChannelAttempt,
@@ -24,16 +24,16 @@ import {
   type NotificationProvider,
   NotificationRiskLevel,
   type NotificationRiskLevelPolicyMatrix,
-} from "@repo-ai-governor/notification-dispatcher";
-import { GovernorErrorCode, standardizeError } from "@repo-ai-governor/shared";
-import { CliHitlResumeAction } from "../constants/cli-task-driven-run.constant.js";
+} from '@repo-ai-governor/notification-dispatcher';
+import { GovernorErrorCode, standardizeError } from '@repo-ai-governor/shared';
+import { CliHitlResumeAction } from '../constants/cli-task-driven-run.constant.js';
 import type {
   CliArtifactWriter,
   CliNormalizedRuntimeDebugOptions,
-} from "../types/interfaces/cli-governance-runtime.interface.js";
+} from '../types/interfaces/cli-governance-runtime.interface.js';
 
 interface CliHitlRuntimeOptions {
-  workspace: Pick<ResolvedWorkspace, "workspaceId" | "workspaceRoot" | "mode">;
+  workspace: Pick<ResolvedWorkspace, 'workspaceId' | 'workspaceRoot' | 'mode'>;
   artifactWriter: CliArtifactWriter;
   toRfc3339SecondsTimestamp: (value: Date) => string;
   toDisplayTimestamp: (value: string) => string;
@@ -77,11 +77,11 @@ export class CliHitlRuntime {
     policyResult: PolicyGateEvaluationResult;
     runtimeDebugOptions: Pick<
       CliNormalizedRuntimeDebugOptions,
-      | "hitlDecision"
-      | "hitlDecisionReason"
-      | "hitlResumeAction"
-      | "hitlDecidedBy"
-      | "hitlConstraints"
+      | 'hitlDecision'
+      | 'hitlDecisionReason'
+      | 'hitlResumeAction'
+      | 'hitlDecidedBy'
+      | 'hitlConstraints'
     >;
   }): CliRunHitlPreview {
     if (!options.policyResult.shouldTriggerHitl) {
@@ -139,12 +139,12 @@ export class CliHitlRuntime {
     policyResult: PolicyGateEvaluationResult;
     runtimeDebugOptions: Pick<
       CliNormalizedRuntimeDebugOptions,
-      | "dryRun"
-      | "hitlDecision"
-      | "hitlDecisionReason"
-      | "hitlResumeAction"
-      | "hitlDecidedBy"
-      | "hitlConstraints"
+      | 'dryRun'
+      | 'hitlDecision'
+      | 'hitlDecisionReason'
+      | 'hitlResumeAction'
+      | 'hitlDecidedBy'
+      | 'hitlConstraints'
     >;
     preview: CliRunHitlPreview;
     auditRecorder: AuditRecorder;
@@ -266,7 +266,7 @@ export class CliHitlRuntime {
       reason: decisionReason,
       constraints: options.runtimeDebugOptions.hitlConstraints,
       resumeAction,
-      decidedBy: options.runtimeDebugOptions.hitlDecidedBy ?? "cli-runtime",
+      decidedBy: options.runtimeDebugOptions.hitlDecidedBy ?? 'cli-runtime',
       decidedAt,
       notificationArtifactPath,
       notificationStatus: notificationResult.dispatchStatus,
@@ -282,7 +282,7 @@ export class CliHitlRuntime {
       decisionReceiptPath,
       resumeAction,
       decidedAt,
-      decidedBy: options.runtimeDebugOptions.hitlDecidedBy ?? "cli-runtime",
+      decidedBy: options.runtimeDebugOptions.hitlDecidedBy ?? 'cli-runtime',
       auditRecorder: options.auditRecorder,
       outputMode: options.outputMode,
       outputLocale: options.outputLocale,
@@ -377,13 +377,13 @@ export class CliHitlRuntime {
 
   private createArtifactNotificationProvider(): NotificationProvider {
     return {
-      providerId: "cli-artifact-webhook",
+      providerId: 'cli-artifact-webhook',
       channel: NotificationChannel.WEBHOOK,
       send: async (request) => ({
         delivered: true,
         providerMessageId: `artifact-${request.payload.executionId}`,
         metadata: {
-          mode: "artifact_fallback",
+          mode: 'artifact_fallback',
           channel: request.channel,
         },
       }),
@@ -474,16 +474,16 @@ export class CliHitlRuntime {
     }
 
     return value.filter((attempt): attempt is NotificationChannelAttempt => {
-      if (!attempt || typeof attempt !== "object") {
+      if (!attempt || typeof attempt !== 'object') {
         return false;
       }
 
       const attemptRecord = attempt as Record<string, unknown>;
       return (
-        typeof attemptRecord.channel === "string" &&
+        typeof attemptRecord.channel === 'string' &&
         Object.values(NotificationChannel).includes(attemptRecord.channel as NotificationChannel) &&
-        typeof attemptRecord.attempt === "number" &&
-        typeof attemptRecord.delivered === "boolean"
+        typeof attemptRecord.attempt === 'number' &&
+        typeof attemptRecord.delivered === 'boolean'
       );
     });
   }
@@ -514,9 +514,9 @@ export class CliHitlRuntime {
   private resolveNotificationArtifactPath(executionId: string): string {
     return resolve(
       this.options.workspace.workspaceRoot,
-      "context",
-      "hitl",
-      "notifications",
+      'context',
+      'hitl',
+      'notifications',
       `${executionId}.notification.json`,
     );
   }
@@ -524,9 +524,9 @@ export class CliHitlRuntime {
   private resolveDecisionReceiptPath(decisionId: string): string {
     return resolve(
       this.options.workspace.workspaceRoot,
-      "context",
-      "hitl",
-      "decisions",
+      'context',
+      'hitl',
+      'decisions',
       `${decisionId}.json`,
     );
   }
@@ -575,12 +575,12 @@ export class CliHitlRuntime {
       recordedAt,
       event: {
         executionId: options.executionId,
-        stageId: "stage-hitl-notification",
-        routeKey: "policy.gate.cli.run.notification",
-        surface: "cli",
-        agentRole: "governor_runtime",
-        roleProfileId: "role.default.runtime",
-        roleSource: "default",
+        stageId: 'stage-hitl-notification',
+        routeKey: 'policy.gate.cli.run.notification',
+        surface: 'cli',
+        agentRole: 'governor_runtime',
+        roleProfileId: 'role.default.runtime',
+        roleSource: 'default',
         policyOutcome: options.policyResult.policyOutcome,
         riskLevel: options.policyResult.auditRecord.riskLevel,
         requiredAction: options.policyResult.auditRecord.requiredAction,
@@ -638,12 +638,12 @@ export class CliHitlRuntime {
       recordedAt: options.decidedAt,
       event: {
         executionId: options.executionId,
-        stageId: "stage-hitl-decision-receipt",
-        routeKey: "policy.gate.cli.run.hitl-decision",
-        surface: "cli",
-        agentRole: "governor_runtime",
-        roleProfileId: "role.default.runtime",
-        roleSource: "default",
+        stageId: 'stage-hitl-decision-receipt',
+        routeKey: 'policy.gate.cli.run.hitl-decision',
+        surface: 'cli',
+        agentRole: 'governor_runtime',
+        roleProfileId: 'role.default.runtime',
+        roleSource: 'default',
         policyOutcome: options.finalResolution.finalOutcome,
         riskLevel: options.policyResult.auditRecord.riskLevel,
         requiredAction: options.finalResolution.auditRecord.requiredAction,

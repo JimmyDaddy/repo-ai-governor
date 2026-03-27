@@ -7,7 +7,7 @@ import type {
   AgentCapabilitySupportLevel,
   AgentConfirmationDecision,
   AgentStreamEventType,
-} from "../../constants/index.js";
+} from '../../constants/index.js';
 
 /**
  * Describes one capability support row in the capability matrix.

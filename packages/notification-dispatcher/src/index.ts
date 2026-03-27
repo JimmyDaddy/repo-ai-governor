@@ -7,9 +7,9 @@ export {
   NotificationRiskLevel,
   NOTIFICATION_RISK_LEVEL_VALUES,
   NOTIFICATION_TRIGGER_OUTCOME_VALUES,
-} from "./constants/index.js";
-export { NotificationDispatcher } from "./notification-dispatcher.js";
-export { NotificationProviderRegistry } from "./notification-provider-registry.js";
+} from './constants/index.js';
+export { NotificationDispatcher } from './notification-dispatcher.js';
+export { NotificationProviderRegistry } from './notification-provider-registry.js';
 export type {
   NotificationAuditRecord,
   NotificationChannelAttempt,
@@ -27,4 +27,4 @@ export type {
   NotificationProviderRequest,
   NotificationRiskLevelKey,
   NotificationRiskLevelPolicyMatrix,
-} from "./types/index.js";
+} from './types/index.js';

@@ -1,11 +1,11 @@
-import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
+import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import {
   IDE_SURFACE_REGISTRY,
   IDE_WRAPPER_SUPPORTED_SURFACES,
   IdeEntrySurface,
   IdeSurfaceDegradeMode,
-} from "../constants/ide-command-wrapper.constant.js";
-import type { IdeSurfaceContract } from "../types/interfaces/ide-command-wrapper.interface.js";
+} from '../constants/ide-command-wrapper.constant.js';
+import type { IdeSurfaceContract } from '../types/interfaces/ide-command-wrapper.interface.js';
 
 /**
  * Resolves IDE surface contracts from one centralized registry.
@@ -41,7 +41,7 @@ export class IdeSurfaceRegistryRuntime {
           surface,
           supportedSurfaces: [...IDE_WRAPPER_SUPPORTED_SURFACES],
           nextAction:
-            "Retry with one of the supported surfaces or omit surface to use generic_ide.",
+            'Retry with one of the supported surfaces or omit surface to use generic_ide.',
         },
       );
     }

@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
 
-import { gateFail, gateInfo, gatePass } from "../governance/gate-output.js";
+import { gateFail, gateInfo, gatePass } from '../governance/gate-output.js';
 
-const GATE_NAME = "release-notes";
-const RELEASE_POLICY_CONFIG_PATH = "scripts/release/release-governance-policy.json";
-const PACKAGE_JSON_PATH = "package.json";
+const GATE_NAME = 'release-notes';
+const RELEASE_POLICY_CONFIG_PATH = 'scripts/release/release-governance-policy.json';
+const PACKAGE_JSON_PATH = 'package.json';
 
 /**
  * Reads one JSON file from repository root.
@@ -16,7 +16,7 @@ const PACKAGE_JSON_PATH = "package.json";
  */
 function readJsonFile(relativePath) {
   const absolutePath = resolve(process.cwd(), relativePath);
-  const rawContent = readFileSync(absolutePath, "utf8");
+  const rawContent = readFileSync(absolutePath, 'utf8');
   return JSON.parse(rawContent);
 }
 
@@ -26,13 +26,13 @@ function readJsonFile(relativePath) {
  */
 function parseCliArguments() {
   const rawArgs = process.argv.slice(2);
-  const outputIndex = rawArgs.findIndex((arg) => arg === "--output");
+  const outputIndex = rawArgs.findIndex((arg) => arg === '--output');
   if (outputIndex === -1) {
     return { outputPath: null };
   }
 
   const outputPath = rawArgs[outputIndex + 1];
-  if (typeof outputPath !== "string" || outputPath.trim().length === 0) {
+  if (typeof outputPath !== 'string' || outputPath.trim().length === 0) {
     throw new Error('Expected non-empty value after "--output".');
   }
 
@@ -46,7 +46,7 @@ function parseCliArguments() {
  * @returns {string[]}
  */
 function readRequiredStringArray(rawObject, fieldName) {
-  if (!rawObject || typeof rawObject !== "object") {
+  if (!rawObject || typeof rawObject !== 'object') {
     throw new Error(`Expected object to read "${fieldName}".`);
   }
 
@@ -57,7 +57,7 @@ function readRequiredStringArray(rawObject, fieldName) {
 
   const items = [];
   for (const item of value) {
-    if (typeof item !== "string" || item.trim().length === 0) {
+    if (typeof item !== 'string' || item.trim().length === 0) {
       throw new Error(`Field "${fieldName}" must contain non-empty strings.`);
     }
     items.push(item.trim());
@@ -72,7 +72,7 @@ function readRequiredStringArray(rawObject, fieldName) {
  * @returns {string}
  */
 function renderBulletList(values) {
-  return values.map((value) => `- ${value}`).join("\n");
+  return values.map((value) => `- ${value}`).join('\n');
 }
 
 /**
@@ -82,87 +82,87 @@ function renderBulletList(values) {
  * @returns {string}
  */
 function buildReleaseNotesMarkdown(packageJson, policyConfig) {
-  if (!packageJson || typeof packageJson !== "object") {
-    throw new Error("package.json payload is invalid.");
+  if (!packageJson || typeof packageJson !== 'object') {
+    throw new Error('package.json payload is invalid.');
   }
-  if (!policyConfig || typeof policyConfig !== "object") {
-    throw new Error("release-governance-policy payload is invalid.");
+  if (!policyConfig || typeof policyConfig !== 'object') {
+    throw new Error('release-governance-policy payload is invalid.');
   }
 
-  const version = typeof packageJson.version === "string" ? packageJson.version : "unknown";
+  const version = typeof packageJson.version === 'string' ? packageJson.version : 'unknown';
   const generatedAt = new Date().toISOString();
 
   const versioningStrategy = policyConfig.versioningStrategy;
-  const lockstepPackages = readRequiredStringArray(versioningStrategy, "lockstep");
-  const independentPackages = readRequiredStringArray(versioningStrategy, "independent");
-  const rollbackTriggers = readRequiredStringArray(policyConfig, "rollbackTriggers");
-  const minimumAuditEvidence = readRequiredStringArray(policyConfig, "minimumAuditEvidence");
+  const lockstepPackages = readRequiredStringArray(versioningStrategy, 'lockstep');
+  const independentPackages = readRequiredStringArray(versioningStrategy, 'independent');
+  const rollbackTriggers = readRequiredStringArray(policyConfig, 'rollbackTriggers');
+  const minimumAuditEvidence = readRequiredStringArray(policyConfig, 'minimumAuditEvidence');
 
   const channels = policyConfig.channels;
   if (!Array.isArray(channels) || channels.length === 0) {
-    throw new Error("release-governance-policy must define channels.");
+    throw new Error('release-governance-policy must define channels.');
   }
 
   const channelMarkdownBlocks = channels.map((channel) => {
-    if (!channel || typeof channel !== "object") {
-      throw new Error("channel entry must be an object.");
+    if (!channel || typeof channel !== 'object') {
+      throw new Error('channel entry must be an object.');
     }
 
-    const channelName = typeof channel.name === "string" ? channel.name.trim() : "";
+    const channelName = typeof channel.name === 'string' ? channel.name.trim() : '';
     if (channelName.length === 0) {
-      throw new Error("channel entry must define name.");
+      throw new Error('channel entry must define name.');
     }
 
-    const requiredChecks = readRequiredStringArray(channel, "requiredChecks");
-    const promotionCriteria = readRequiredStringArray(channel, "promotionCriteria");
+    const requiredChecks = readRequiredStringArray(channel, 'requiredChecks');
+    const promotionCriteria = readRequiredStringArray(channel, 'promotionCriteria');
 
     return [
       `### ${channelName}`,
-      "",
-      "**Required Checks**",
+      '',
+      '**Required Checks**',
       renderBulletList(requiredChecks),
-      "",
-      "**Promotion Criteria**",
+      '',
+      '**Promotion Criteria**',
       renderBulletList(promotionCriteria),
-    ].join("\n");
+    ].join('\n');
   });
 
   return [
-    "# Release Notes Draft",
-    "",
+    '# Release Notes Draft',
+    '',
     `- Version: ${version}`,
     `- Generated At: ${generatedAt}`,
-    "",
-    "## Versioning Strategy",
-    "",
-    "**Lockstep Packages**",
+    '',
+    '## Versioning Strategy',
+    '',
+    '**Lockstep Packages**',
     renderBulletList(lockstepPackages),
-    "",
-    "**Independent Packages**",
+    '',
+    '**Independent Packages**',
     renderBulletList(independentPackages),
-    "",
-    "## Channel Policy",
-    "",
-    channelMarkdownBlocks.join("\n\n"),
-    "",
-    "## Rollback Triggers",
-    "",
+    '',
+    '## Channel Policy',
+    '',
+    channelMarkdownBlocks.join('\n\n'),
+    '',
+    '## Rollback Triggers',
+    '',
     renderBulletList(rollbackTriggers),
-    "",
-    "## Minimum Audit Evidence",
-    "",
+    '',
+    '## Minimum Audit Evidence',
+    '',
     renderBulletList(minimumAuditEvidence),
-    "",
-    "## Verification Commands",
-    "",
-    "- `pnpm run release:check`",
-    "- `pnpm run release:verify-local`",
-    "- `pnpm run build:plugin-enabled && pnpm run release:verify-local:plugin-enabled`",
-    "- `pnpm run build:plugin-enabled && pnpm run release:verify-cleanroom-local-install:plugin-enabled`",
-    "- `pnpm run build:plugin-enabled && pnpm run release:verify-cleanroom-local-install:plugin-enabled:tgz`",
-    "- `pnpm run release:ga-check`",
-    "",
-  ].join("\n");
+    '',
+    '## Verification Commands',
+    '',
+    '- `pnpm run release:check`',
+    '- `pnpm run release:verify-local`',
+    '- `pnpm run build:plugin-enabled && pnpm run release:verify-local:plugin-enabled`',
+    '- `pnpm run build:plugin-enabled && pnpm run release:verify-cleanroom-local-install:plugin-enabled`',
+    '- `pnpm run build:plugin-enabled && pnpm run release:verify-cleanroom-local-install:plugin-enabled:tgz`',
+    '- `pnpm run release:ga-check`',
+    '',
+  ].join('\n');
 }
 
 try {
@@ -174,14 +174,14 @@ try {
   if (args.outputPath) {
     const absoluteOutputPath = resolve(process.cwd(), args.outputPath);
     mkdirSync(dirname(absoluteOutputPath), { recursive: true });
-    writeFileSync(absoluteOutputPath, markdown, "utf8");
+    writeFileSync(absoluteOutputPath, markdown, 'utf8');
     gateInfo(GATE_NAME, `release notes generated at ${args.outputPath}`);
   } else {
     process.stdout.write(`${markdown}\n`);
-    gateInfo(GATE_NAME, "release notes printed to stdout.");
+    gateInfo(GATE_NAME, 'release notes printed to stdout.');
   }
 
-  gatePass(GATE_NAME, "release notes rendering completed.");
+  gatePass(GATE_NAME, 'release notes rendering completed.');
 } catch (error) {
   const errorMessage = error instanceof Error ? error.message : String(error);
   gateFail(GATE_NAME, errorMessage);

@@ -1,16 +1,16 @@
-import { type ProcessCompiledIr, ProcessCompiler } from "@repo-ai-governor/core-process";
+import { type ProcessCompiledIr, ProcessCompiler } from '@repo-ai-governor/core-process';
 import type {
   LangGraphRuntimeBackend,
   LangGraphRuntimeExecutionResult,
   LangGraphRuntimeStageContext,
-} from "@repo-ai-governor/core-runtime-langgraph";
-import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
+} from '@repo-ai-governor/core-runtime-langgraph';
+import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import {
   RuntimeExecutionStatus,
   RuntimeStageStatus,
   RuntimeTimeoutScope,
-} from "./constants/index.js";
-import { ProcessRuntimeEngine } from "./process-runtime-engine.js";
+} from './constants/index.js';
+import { ProcessRuntimeEngine } from './process-runtime-engine.js';
 import type {
   ProcessRuntimeBackendAvailability,
   ProcessRuntimeBackendKind,
@@ -27,10 +27,10 @@ import type {
   RuntimeExecutionResult,
   RuntimeLoopController,
   RuntimeStageHandler,
-} from "./types/index.js";
+} from './types/index.js';
 
-const DEFAULT_PROCESS_RUNTIME_BACKEND: ProcessRuntimeBackendKind = "langgraph";
-const LEGACY_RUNTIME_INTERRUPT_KINDS = ["timeout", "cancelled"];
+const DEFAULT_PROCESS_RUNTIME_BACKEND: ProcessRuntimeBackendKind = 'langgraph';
+const LEGACY_RUNTIME_INTERRUPT_KINDS = ['timeout', 'cancelled'];
 const LEGACY_RUNTIME_TERMINAL_STATUSES = [
   RuntimeExecutionStatus.SUCCEEDED,
   RuntimeExecutionStatus.FAILED,
@@ -39,7 +39,7 @@ const LEGACY_RUNTIME_TERMINAL_STATUSES = [
 ];
 
 function formatRfc3339Seconds(date: Date): string {
-  return date.toISOString().replace(/\.\d{3}Z$/u, "Z");
+  return date.toISOString().replace(/\.\d{3}Z$/u, 'Z');
 }
 
 export class ProcessRuntimeFacade {
@@ -68,7 +68,7 @@ export class ProcessRuntimeFacade {
     let comparisonBackend: ProcessRuntimeBackendKind | undefined;
     if (options.enableParityHarness) {
       comparisonBackend =
-        options.comparisonBackend ?? (primaryBackend === "langgraph" ? "legacy" : "langgraph");
+        options.comparisonBackend ?? (primaryBackend === 'langgraph' ? 'legacy' : 'langgraph');
 
       if (comparisonBackend === primaryBackend) {
         comparisonBackend = undefined;
@@ -80,7 +80,7 @@ export class ProcessRuntimeFacade {
     return {
       primaryBackend,
       ...(comparisonBackend ? { comparisonBackend } : {}),
-      parityMode: comparisonBackend ? "comparison" : "disabled",
+      parityMode: comparisonBackend ? 'comparison' : 'disabled',
       availability,
       reason: this.buildSelectionReason(primaryBackend, comparisonBackend),
     };
@@ -168,7 +168,7 @@ export class ProcessRuntimeFacade {
 
     throw new RuntimeError(
       GovernorErrorCode.PROCESS_RUNTIME_IR_CONTAINS_COMPILE_ERRORS,
-      "Compiled IR contains blocking compile errors and cannot be prepared by the runtime facade.",
+      'Compiled IR contains blocking compile errors and cannot be prepared by the runtime facade.',
       {
         processId: compiledIr.processId,
         executionId: compiledIr.executionId,
@@ -181,7 +181,7 @@ export class ProcessRuntimeFacade {
     backend: ProcessRuntimeBackendKind,
     compiledIr: ProcessCompiledIr,
   ): ProcessRuntimePreparedExecutionProfile {
-    if (backend === "langgraph") {
+    if (backend === 'langgraph') {
       return this.prepareLangGraphProfile(compiledIr);
     }
 
@@ -194,7 +194,7 @@ export class ProcessRuntimeFacade {
     stageHandler: RuntimeStageHandler,
     options: ProcessRuntimeFacadeExecuteOptions,
   ): Promise<RuntimeExecutionResult> {
-    if (backend === "langgraph") {
+    if (backend === 'langgraph') {
       return this.executeLangGraphBackend(compiledIr, stageHandler, options);
     }
 
@@ -211,12 +211,12 @@ export class ProcessRuntimeFacade {
         GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
         'Selected runtime backend "langgraph" is not available in the current facade.',
         {
-          backend: "langgraph",
+          backend: 'langgraph',
         },
       );
     }
 
-    const langGraphExecuteOptions: Parameters<LangGraphRuntimeBackend["execute"]>[2] = {};
+    const langGraphExecuteOptions: Parameters<LangGraphRuntimeBackend['execute']>[2] = {};
     if (options.stageTimeoutMs !== undefined) {
       langGraphExecuteOptions.stageTimeoutMs = options.stageTimeoutMs;
     }
@@ -324,7 +324,7 @@ export class ProcessRuntimeFacade {
         ? {
             interruption: {
               reason:
-                runtimeResult.interruption.reason === "timeout"
+                runtimeResult.interruption.reason === 'timeout'
                   ? RuntimeExecutionStatus.TIMEOUT
                   : RuntimeExecutionStatus.CANCELLED,
               errorCode: runtimeResult.interruption.errorCode,
@@ -332,7 +332,7 @@ export class ProcessRuntimeFacade {
               ...(runtimeResult.interruption.timeoutScope
                 ? {
                     timeoutScope:
-                      runtimeResult.interruption.timeoutScope === "flow"
+                      runtimeResult.interruption.timeoutScope === 'flow'
                         ? RuntimeTimeoutScope.FLOW
                         : RuntimeTimeoutScope.STAGE,
                   }
@@ -344,31 +344,31 @@ export class ProcessRuntimeFacade {
   }
 
   private mapLangGraphExecutionStatus(
-    status: LangGraphRuntimeExecutionResult["status"],
+    status: LangGraphRuntimeExecutionResult['status'],
   ): RuntimeExecutionStatus {
     switch (status) {
-      case "succeeded":
+      case 'succeeded':
         return RuntimeExecutionStatus.SUCCEEDED;
-      case "failed":
+      case 'failed':
         return RuntimeExecutionStatus.FAILED;
-      case "timeout":
+      case 'timeout':
         return RuntimeExecutionStatus.TIMEOUT;
-      case "cancelled":
+      case 'cancelled':
         return RuntimeExecutionStatus.CANCELLED;
     }
   }
 
   private mapLangGraphStageStatus(
-    status: LangGraphRuntimeExecutionResult["stageResults"][number]["status"],
+    status: LangGraphRuntimeExecutionResult['stageResults'][number]['status'],
   ): RuntimeStageStatus {
     switch (status) {
-      case "succeeded":
+      case 'succeeded':
         return RuntimeStageStatus.SUCCEEDED;
-      case "failed":
+      case 'failed':
         return RuntimeStageStatus.FAILED;
-      case "timeout":
+      case 'timeout':
         return RuntimeStageStatus.TIMEOUT;
-      case "cancelled":
+      case 'cancelled':
         return RuntimeStageStatus.CANCELLED;
     }
   }
@@ -381,7 +381,7 @@ export class ProcessRuntimeFacade {
         GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
         'Selected runtime backend "langgraph" is not available in the current facade.',
         {
-          backend: "langgraph",
+          backend: 'langgraph',
         },
       );
     }
@@ -389,7 +389,7 @@ export class ProcessRuntimeFacade {
     const preparedExecution = this.langgraphRuntimeBackend.prepare(compiledIr);
 
     return {
-      backend: "langgraph",
+      backend: 'langgraph',
       processId: preparedExecution.plan.processId,
       executionId: preparedExecution.plan.executionId,
       entryNodeId: preparedExecution.plan.entryNodeId,
@@ -409,28 +409,28 @@ export class ProcessRuntimeFacade {
     const occurredAt = formatRfc3339Seconds(this.nowProvider());
     const lifecycleEvents: ProcessRuntimeLifecycleEvent[] = [
       {
-        type: "execution.ready",
+        type: 'execution.ready',
         processId: compiledIr.processId,
         executionId: compiledIr.executionId,
-        status: "pending",
+        status: 'pending',
         occurredAt,
         nodeId: compiledIr.entryNodeId,
-        message: "Legacy runtime execution envelope is ready for direct execution.",
+        message: 'Legacy runtime execution envelope is ready for direct execution.',
       },
       ...compiledIr.nodes.map<ProcessRuntimeLifecycleEvent>((node) => ({
-        type: "node.ready",
+        type: 'node.ready',
         processId: compiledIr.processId,
         executionId: compiledIr.executionId,
-        status: "pending",
+        status: 'pending',
         occurredAt,
         nodeId: node.nodeId,
         message: `Node "${node.nodeId}" is registered for legacy runtime dispatch.`,
       })),
       ...compiledIr.edges.map<ProcessRuntimeLifecycleEvent>((edge, index) => ({
-        type: "edge.ready",
+        type: 'edge.ready',
         processId: compiledIr.processId,
         executionId: compiledIr.executionId,
-        status: "pending",
+        status: 'pending',
         occurredAt,
         edgeId: `legacy-edge-${index + 1}`,
         message: `Edge "${edge.fromNodeId}" -> "${edge.toNodeId}" is registered for legacy runtime routing.`,
@@ -438,11 +438,11 @@ export class ProcessRuntimeFacade {
     ];
 
     return {
-      backend: "legacy",
+      backend: 'legacy',
       processId: compiledIr.processId,
       executionId: compiledIr.executionId,
       entryNodeId: compiledIr.entryNodeId,
-      currentStatus: "pending",
+      currentStatus: 'pending',
       nodeCount: compiledIr.nodes.length,
       edgeCount: compiledIr.edges.length,
       initialNodeIds: [compiledIr.entryNodeId],

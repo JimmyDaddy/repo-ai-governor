@@ -1,4 +1,4 @@
-import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
+import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import {
   SLOT_ACTION_SEVERITY,
   SLOT_PERMISSION_VALUES,
@@ -8,7 +8,7 @@ import {
   SlotSecurityCheckId,
   SlotTrack,
   SlotValidationSeverity,
-} from "./constants/index.js";
+} from './constants/index.js';
 import type {
   DeclarativeSlotDefinition,
   ResolvedScriptSlot,
@@ -22,7 +22,7 @@ import type {
   SlotResolveOptions,
   SlotSecurityEvaluation,
   SlotSecurityIssue,
-} from "./types/index.js";
+} from './types/index.js';
 
 interface IndexedSlotDefinition {
   slot: SlotDefinition;
@@ -172,7 +172,7 @@ export class SlotEngine {
     if (slotDefinition.track !== SlotTrack.SCRIPT) {
       throw new RuntimeError(
         GovernorErrorCode.SLOT_SCRIPT_SECURITY_INVALID,
-        "Script security evaluation only accepts script slot definitions.",
+        'Script security evaluation only accepts script slot definitions.',
         {
           slotId: slotDefinition.slotId,
           track: slotDefinition.track,
@@ -182,7 +182,7 @@ export class SlotEngine {
 
     const requestedPermissions = this.readPermissionListOrThrow(
       slotDefinition.scriptPolicy.requestedPermissions,
-      "scriptPolicy.requestedPermissions",
+      'scriptPolicy.requestedPermissions',
       GovernorErrorCode.SLOT_SCRIPT_SECURITY_INVALID,
     );
     const approvedPermissionSet = new Set(context.approvedPermissions ?? []);
@@ -195,7 +195,7 @@ export class SlotEngine {
       issues.push({
         checkId: SlotSecurityCheckId.SANDBOX_REQUIRED,
         severity: SlotValidationSeverity.ERROR,
-        message: "Script slot must run in sandbox mode.",
+        message: 'Script slot must run in sandbox mode.',
         recommendedAction: SlotRequiredAction.BLOCK,
       });
     }
@@ -207,7 +207,7 @@ export class SlotEngine {
       issues.push({
         checkId: SlotSecurityCheckId.PERMISSION_APPROVAL_REQUIRED,
         severity: SlotValidationSeverity.WARNING,
-        message: `Script slot requested unapproved permissions: ${unapprovedPermissions.join(", ")}`,
+        message: `Script slot requested unapproved permissions: ${unapprovedPermissions.join(', ')}`,
         recommendedAction: SlotRequiredAction.CONFIRM,
       });
     }
@@ -226,7 +226,7 @@ export class SlotEngine {
       issues.push({
         checkId: SlotSecurityCheckId.RESOURCE_LIMITS_REQUIRED,
         severity: SlotValidationSeverity.ERROR,
-        message: "Script slot must declare positive resource limits.",
+        message: 'Script slot must declare positive resource limits.',
         recommendedAction: SlotRequiredAction.BLOCK,
       });
     }
@@ -236,7 +236,7 @@ export class SlotEngine {
       issues.push({
         checkId: SlotSecurityCheckId.IO_CONTRACT_REQUIRED,
         severity: SlotValidationSeverity.ERROR,
-        message: "Script slot must declare non-empty input/output schema references.",
+        message: 'Script slot must declare non-empty input/output schema references.',
         recommendedAction: SlotRequiredAction.BLOCK,
       });
     }
@@ -245,7 +245,7 @@ export class SlotEngine {
       issues.push({
         checkId: SlotSecurityCheckId.SIDE_EFFECT_MANIFEST_REQUIRED,
         severity: SlotValidationSeverity.ERROR,
-        message: "Script slot must declare at least one side effect entry.",
+        message: 'Script slot must declare at least one side effect entry.',
         recommendedAction: SlotRequiredAction.BLOCK,
       });
     }
@@ -255,7 +255,7 @@ export class SlotEngine {
       issues.push({
         checkId: SlotSecurityCheckId.FAILURE_ISOLATION_REQUIRED,
         severity: SlotValidationSeverity.ERROR,
-        message: "Script slot must isolate failures from the main execution flow.",
+        message: 'Script slot must isolate failures from the main execution flow.',
         recommendedAction: SlotRequiredAction.BLOCK,
       });
     }
@@ -265,7 +265,7 @@ export class SlotEngine {
         checkId: SlotSecurityCheckId.FAILURE_ISOLATION_REQUIRED,
         severity: SlotValidationSeverity.WARNING,
         message:
-          "Failure isolation fallback action should require manual intervention instead of allow.",
+          'Failure isolation fallback action should require manual intervention instead of allow.',
         recommendedAction: SlotRequiredAction.ESCALATE,
       });
     }
@@ -462,7 +462,7 @@ export class SlotEngine {
       if (!stageIds.includes(context.stageId)) {
         return null;
       }
-      reasons.push("stage");
+      reasons.push('stage');
     }
 
     const routeKeys = slotDefinition.trigger.routeKeys ?? [];
@@ -470,7 +470,7 @@ export class SlotEngine {
       if (!routeKeys.includes(context.routeKey)) {
         return null;
       }
-      reasons.push("route");
+      reasons.push('route');
     }
 
     const changedPathPatterns = slotDefinition.trigger.changedPathPatterns ?? [];
@@ -482,7 +482,7 @@ export class SlotEngine {
       if (!patternMatched) {
         return null;
       }
-      reasons.push("changed-path");
+      reasons.push('changed-path');
     }
 
     const pathPrefixes = slotDefinition.applicability.pathPrefixes ?? [];
@@ -494,14 +494,14 @@ export class SlotEngine {
       if (!prefixMatched) {
         return null;
       }
-      reasons.push("path-prefix");
+      reasons.push('path-prefix');
     }
 
     if (reasons.length === 0) {
-      return "default";
+      return 'default';
     }
 
-    return reasons.join("+");
+    return reasons.join('+');
   }
 
   /**
@@ -511,16 +511,16 @@ export class SlotEngine {
    * @returns True when value matches pattern.
    */
   private matchSimplePattern(value: string, pattern: string): boolean {
-    if (pattern === "*") {
+    if (pattern === '*') {
       return true;
     }
 
-    if (!pattern.includes("*")) {
+    if (!pattern.includes('*')) {
       return value === pattern;
     }
 
-    const escapedPattern = pattern.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*");
-    return new RegExp(`^${escapedPattern}$`, "u").test(value);
+    const escapedPattern = pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*');
+    return new RegExp(`^${escapedPattern}$`, 'u').test(value);
   }
 
   /**
@@ -548,89 +548,89 @@ export class SlotEngine {
   private assertSlotDefinitionOrThrow(slotDefinition: SlotDefinition): void {
     this.readRequiredStringOrThrow(
       slotDefinition.slotId,
-      "slotId",
+      'slotId',
       GovernorErrorCode.SLOT_DEFINITION_INVALID,
     );
     this.readRequiredStringOrThrow(
       slotDefinition.slotVersion,
-      "slotVersion",
+      'slotVersion',
       GovernorErrorCode.SLOT_DEFINITION_INVALID,
     );
     this.assertFiniteNumberOrThrow(
       slotDefinition.priority,
-      "priority",
+      'priority',
       GovernorErrorCode.SLOT_DEFINITION_INVALID,
     );
     this.assertBooleanOrThrow(
       slotDefinition.enabled,
-      "enabled",
+      'enabled',
       GovernorErrorCode.SLOT_DEFINITION_INVALID,
     );
     this.assertBooleanOrThrow(
       slotDefinition.blockOnFailure,
-      "blockOnFailure",
+      'blockOnFailure',
       GovernorErrorCode.SLOT_DEFINITION_INVALID,
     );
     this.readRequiredStringOrThrow(
       slotDefinition.metadata.title,
-      "metadata.title",
+      'metadata.title',
       GovernorErrorCode.SLOT_DEFINITION_INVALID,
     );
     this.readRequiredStringOrThrow(
       slotDefinition.metadata.description,
-      "metadata.description",
+      'metadata.description',
       GovernorErrorCode.SLOT_DEFINITION_INVALID,
     );
     this.readStringListOrThrow(
       slotDefinition.metadata.tags,
-      "metadata.tags",
+      'metadata.tags',
       GovernorErrorCode.SLOT_DEFINITION_INVALID,
     );
     this.readStringListOrThrow(
       slotDefinition.promptInjections,
-      "promptInjections",
+      'promptInjections',
       GovernorErrorCode.SLOT_DEFINITION_INVALID,
     );
     this.readStringListOrThrow(
       slotDefinition.preChecks,
-      "preChecks",
+      'preChecks',
       GovernorErrorCode.SLOT_DEFINITION_INVALID,
     );
     this.readStringListOrThrow(
       slotDefinition.postChecks,
-      "postChecks",
+      'postChecks',
       GovernorErrorCode.SLOT_DEFINITION_INVALID,
     );
     this.readStringListOrThrow(
       slotDefinition.dependencySlotIds,
-      "dependencySlotIds",
+      'dependencySlotIds',
       GovernorErrorCode.SLOT_DEFINITION_INVALID,
     );
     this.readOptionalStringListOrThrow(
       slotDefinition.trigger.stageIds,
-      "trigger.stageIds",
+      'trigger.stageIds',
       GovernorErrorCode.SLOT_DEFINITION_INVALID,
     );
     this.readOptionalStringListOrThrow(
       slotDefinition.trigger.routeKeys,
-      "trigger.routeKeys",
+      'trigger.routeKeys',
       GovernorErrorCode.SLOT_DEFINITION_INVALID,
     );
     this.readOptionalStringListOrThrow(
       slotDefinition.trigger.changedPathPatterns,
-      "trigger.changedPathPatterns",
+      'trigger.changedPathPatterns',
       GovernorErrorCode.SLOT_DEFINITION_INVALID,
     );
     this.readOptionalStringListOrThrow(
       slotDefinition.applicability.pathPrefixes,
-      "applicability.pathPrefixes",
+      'applicability.pathPrefixes',
       GovernorErrorCode.SLOT_DEFINITION_INVALID,
     );
 
     if (slotDefinition.track === SlotTrack.DECLARATIVE) {
       this.readRequiredStringOrThrow(
         slotDefinition.declarativeRule.ruleKey,
-        "declarativeRule.ruleKey",
+        'declarativeRule.ruleKey',
         GovernorErrorCode.SLOT_DEFINITION_INVALID,
       );
       return;
@@ -647,82 +647,82 @@ export class SlotEngine {
   private assertScriptSlotStructureOrThrow(slotDefinition: ScriptSlotDefinition): void {
     this.readRequiredStringOrThrow(
       slotDefinition.script.slotScriptId,
-      "script.slotScriptId",
+      'script.slotScriptId',
       GovernorErrorCode.SLOT_SCRIPT_SECURITY_INVALID,
     );
     this.readRequiredStringOrThrow(
       slotDefinition.script.slotScriptVersion,
-      "script.slotScriptVersion",
+      'script.slotScriptVersion',
       GovernorErrorCode.SLOT_SCRIPT_SECURITY_INVALID,
     );
     this.readRequiredStringOrThrow(
       slotDefinition.script.slotScriptHash,
-      "script.slotScriptHash",
+      'script.slotScriptHash',
       GovernorErrorCode.SLOT_SCRIPT_SECURITY_INVALID,
     );
     this.readRequiredStringOrThrow(
       slotDefinition.script.entryCommand,
-      "script.entryCommand",
+      'script.entryCommand',
       GovernorErrorCode.SLOT_SCRIPT_SECURITY_INVALID,
     );
     this.readPermissionListOrThrow(
       slotDefinition.scriptPolicy.requestedPermissions,
-      "scriptPolicy.requestedPermissions",
+      'scriptPolicy.requestedPermissions',
       GovernorErrorCode.SLOT_SCRIPT_SECURITY_INVALID,
     );
     this.assertBooleanOrThrow(
       slotDefinition.scriptPolicy.sandbox.enabled,
-      "scriptPolicy.sandbox.enabled",
+      'scriptPolicy.sandbox.enabled',
       GovernorErrorCode.SLOT_SCRIPT_SECURITY_INVALID,
     );
     this.readRequiredStringOrThrow(
       slotDefinition.scriptPolicy.sandbox.profile,
-      "scriptPolicy.sandbox.profile",
+      'scriptPolicy.sandbox.profile',
       GovernorErrorCode.SLOT_SCRIPT_SECURITY_INVALID,
     );
     this.assertFiniteNumberOrThrow(
       slotDefinition.scriptPolicy.resourceLimits.maxCpu,
-      "scriptPolicy.resourceLimits.maxCpu",
+      'scriptPolicy.resourceLimits.maxCpu',
       GovernorErrorCode.SLOT_SCRIPT_SECURITY_INVALID,
     );
     this.assertFiniteNumberOrThrow(
       slotDefinition.scriptPolicy.resourceLimits.maxMemoryMb,
-      "scriptPolicy.resourceLimits.maxMemoryMb",
+      'scriptPolicy.resourceLimits.maxMemoryMb',
       GovernorErrorCode.SLOT_SCRIPT_SECURITY_INVALID,
     );
     this.assertFiniteNumberOrThrow(
       slotDefinition.scriptPolicy.resourceLimits.maxExecutionTimeSeconds,
-      "scriptPolicy.resourceLimits.maxExecutionTimeSeconds",
+      'scriptPolicy.resourceLimits.maxExecutionTimeSeconds',
       GovernorErrorCode.SLOT_SCRIPT_SECURITY_INVALID,
     );
     this.assertFiniteNumberOrThrow(
       slotDefinition.scriptPolicy.resourceLimits.maxOutputBytes,
-      "scriptPolicy.resourceLimits.maxOutputBytes",
+      'scriptPolicy.resourceLimits.maxOutputBytes',
       GovernorErrorCode.SLOT_SCRIPT_SECURITY_INVALID,
     );
     this.readRequiredStringOrThrow(
       slotDefinition.scriptPolicy.ioContract.inputSchema,
-      "scriptPolicy.ioContract.inputSchema",
+      'scriptPolicy.ioContract.inputSchema',
       GovernorErrorCode.SLOT_SCRIPT_SECURITY_INVALID,
     );
     this.readRequiredStringOrThrow(
       slotDefinition.scriptPolicy.ioContract.outputSchema,
-      "scriptPolicy.ioContract.outputSchema",
+      'scriptPolicy.ioContract.outputSchema',
       GovernorErrorCode.SLOT_SCRIPT_SECURITY_INVALID,
     );
     this.readStringListOrThrow(
       slotDefinition.scriptPolicy.ioContract.sideEffectManifest,
-      "scriptPolicy.ioContract.sideEffectManifest",
+      'scriptPolicy.ioContract.sideEffectManifest',
       GovernorErrorCode.SLOT_SCRIPT_SECURITY_INVALID,
     );
     this.assertBooleanOrThrow(
       slotDefinition.scriptPolicy.failureIsolation.isolateOnError,
-      "scriptPolicy.failureIsolation.isolateOnError",
+      'scriptPolicy.failureIsolation.isolateOnError',
       GovernorErrorCode.SLOT_SCRIPT_SECURITY_INVALID,
     );
     this.assertSlotRequiredActionOrThrow(
       slotDefinition.scriptPolicy.failureIsolation.fallbackAction,
-      "scriptPolicy.failureIsolation.fallbackAction",
+      'scriptPolicy.failureIsolation.fallbackAction',
       GovernorErrorCode.SLOT_SCRIPT_SECURITY_INVALID,
     );
   }
@@ -778,30 +778,30 @@ export class SlotEngine {
     return {
       executionId: this.readRequiredStringOrThrow(
         context.executionId,
-        "context.executionId",
+        'context.executionId',
         GovernorErrorCode.SLOT_DEFINITION_INVALID,
       ),
       stageId: this.readRequiredStringOrThrow(
         context.stageId,
-        "context.stageId",
+        'context.stageId',
         GovernorErrorCode.SLOT_DEFINITION_INVALID,
       ),
       routeKey: this.readRequiredStringOrThrow(
         context.routeKey,
-        "context.routeKey",
+        'context.routeKey',
         GovernorErrorCode.SLOT_DEFINITION_INVALID,
       ),
       changedPaths: context.changedPaths
         ? this.readStringListOrThrow(
             context.changedPaths,
-            "context.changedPaths",
+            'context.changedPaths',
             GovernorErrorCode.SLOT_DEFINITION_INVALID,
           )
         : undefined,
       approvedPermissions: context.approvedPermissions
         ? this.readPermissionListOrThrow(
             context.approvedPermissions,
-            "context.approvedPermissions",
+            'context.approvedPermissions',
             GovernorErrorCode.SLOT_DEFINITION_INVALID,
           )
         : undefined,
@@ -820,7 +820,7 @@ export class SlotEngine {
     fieldName: string,
     errorCode: GovernorErrorCode,
   ): string {
-    if (typeof value !== "string" || value.trim().length === 0) {
+    if (typeof value !== 'string' || value.trim().length === 0) {
       throw new RuntimeError(errorCode, `Field "${fieldName}" must be a non-empty string.`, {
         fieldName,
         receivedType: typeof value,
@@ -842,7 +842,7 @@ export class SlotEngine {
     fieldName: string,
     errorCode: GovernorErrorCode,
   ): void {
-    if (typeof value === "boolean") {
+    if (typeof value === 'boolean') {
       return;
     }
 
@@ -864,7 +864,7 @@ export class SlotEngine {
     fieldName: string,
     errorCode: GovernorErrorCode,
   ): number {
-    if (typeof value === "number" && Number.isFinite(value)) {
+    if (typeof value === 'number' && Number.isFinite(value)) {
       return value;
     }
 

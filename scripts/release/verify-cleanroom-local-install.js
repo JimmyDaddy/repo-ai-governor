@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { spawnSync } from "node:child_process";
+import { spawnSync } from 'node:child_process';
 import {
   existsSync,
   mkdirSync,
@@ -9,42 +9,42 @@ import {
   rmSync,
   unlinkSync,
   writeFileSync,
-} from "node:fs";
-import { tmpdir } from "node:os";
-import { dirname, resolve } from "node:path";
+} from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, resolve } from 'node:path';
 
-import { gateFail, gateInfo, gatePass } from "../governance/gate-output.js";
+import { gateFail, gateInfo, gatePass } from '../governance/gate-output.js';
 
-const GATE_NAME = "release-verify-cleanroom-install";
-const PACKAGE_BINARY = "repo-ai-governor";
-const DEFAULT_REPORT_PATH = resolve(tmpdir(), "repo-ai-governor-cleanroom-validation-report.json");
-const DEFAULT_MODE_LIST = ["path", "link"];
-const SUPPORTED_MODE_SET = new Set(["path", "tgz", "link"]);
+const GATE_NAME = 'release-verify-cleanroom-install';
+const PACKAGE_BINARY = 'repo-ai-governor';
+const DEFAULT_REPORT_PATH = resolve(tmpdir(), 'repo-ai-governor-cleanroom-validation-report.json');
+const DEFAULT_MODE_LIST = ['path', 'link'];
+const SUPPORTED_MODE_SET = new Set(['path', 'tgz', 'link']);
 const DEFAULT_ITERATIONS = 3;
-const DEFAULT_REQUIRED_CHAIN = ["--help", "init", "doctor", "check"];
-const DEFAULT_DISTRIBUTION_MODE = "default";
-const PLUGIN_ENABLED_DISTRIBUTION_MODE = "plugin-enabled";
-const PUBLISHED_PACKAGE_NAME = "@cjhdev/repo-ai-governor";
-const WORKSPACE_ROLLBACK_BASELINE_MODE = "path";
-const READ_ONLY_ATTACH_PRECHECK_MODE = "path";
+const DEFAULT_REQUIRED_CHAIN = ['--help', 'init', 'doctor', 'check'];
+const DEFAULT_DISTRIBUTION_MODE = 'default';
+const PLUGIN_ENABLED_DISTRIBUTION_MODE = 'plugin-enabled';
+const PUBLISHED_PACKAGE_NAME = '@cjhdev/repo-ai-governor';
+const WORKSPACE_ROLLBACK_BASELINE_MODE = 'path';
+const READ_ONLY_ATTACH_PRECHECK_MODE = 'path';
 
 const DEFAULT_REPO_LOCAL_CONFIG_CONTENT = [
   'schemaVersion: "1.1"',
-  "workspace:",
-  "  mode: repo_local",
-  "  migrationPolicy: copy_verify_switch_rollback",
-  "i18n:",
-  "  runtimeEngine: i18next",
-  "  defaultLocale: zh-CN",
-  "  fallbackLocale: en-US",
-  "  supportedLocales:",
-  "    - zh-CN",
-  "    - en-US",
-  "memory:",
-  "  storeEngine: fs_csv",
-  "  storeRoot: context/memory",
-  "",
-].join("\n");
+  'workspace:',
+  '  mode: repo_local',
+  '  migrationPolicy: copy_verify_switch_rollback',
+  'i18n:',
+  '  runtimeEngine: i18next',
+  '  defaultLocale: zh-CN',
+  '  fallbackLocale: en-US',
+  '  supportedLocales:',
+  '    - zh-CN',
+  '    - en-US',
+  'memory:',
+  '  storeEngine: fs_csv',
+  '  storeRoot: context/memory',
+  '',
+].join('\n');
 
 /**
  * Parses CLI options for clean-room verification.
@@ -66,20 +66,20 @@ function parseCliOptions() {
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
 
-    if (arg === "--modes") {
+    if (arg === '--modes') {
       const value = args[index + 1];
-      if (typeof value !== "string" || value.trim().length === 0) {
+      if (typeof value !== 'string' || value.trim().length === 0) {
         throw new Error('Expected a non-empty value after "--modes".');
       }
       modes = value
-        .split(",")
+        .split(',')
         .map((candidate) => candidate.trim().toLowerCase())
         .filter((candidate) => candidate.length > 0);
       index += 1;
       continue;
     }
 
-    if (arg === "--iterations") {
+    if (arg === '--iterations') {
       const value = args[index + 1];
       if (!value || !/^\d+$/u.test(value)) {
         throw new Error('Expected an integer value after "--iterations".');
@@ -89,9 +89,9 @@ function parseCliOptions() {
       continue;
     }
 
-    if (arg === "--output") {
+    if (arg === '--output') {
       const value = args[index + 1];
-      if (typeof value !== "string" || value.trim().length === 0) {
+      if (typeof value !== 'string' || value.trim().length === 0) {
         throw new Error('Expected a non-empty value after "--output".');
       }
       outputPath = value.trim();
@@ -99,12 +99,12 @@ function parseCliOptions() {
       continue;
     }
 
-    if (arg === "--keep-temp") {
+    if (arg === '--keep-temp') {
       keepTemp = true;
       continue;
     }
 
-    if (arg === "--distribution-mode") {
+    if (arg === '--distribution-mode') {
       const value = args[index + 1];
       if (value !== DEFAULT_DISTRIBUTION_MODE && value !== PLUGIN_ENABLED_DISTRIBUTION_MODE) {
         throw new Error('Expected "--distribution-mode" to be "default" or "plugin-enabled".');
@@ -122,14 +122,14 @@ function parseCliOptions() {
   }
 
   if (modes.length === 0) {
-    throw new Error("At least one install mode is required.");
+    throw new Error('At least one install mode is required.');
   }
 
   const dedupedModes = Array.from(new Set(modes));
   for (const mode of dedupedModes) {
     if (!SUPPORTED_MODE_SET.has(mode)) {
       throw new Error(
-        `Unsupported install mode "${mode}". expected=${Array.from(SUPPORTED_MODE_SET).join("|")}`,
+        `Unsupported install mode "${mode}". expected=${Array.from(SUPPORTED_MODE_SET).join('|')}`,
       );
     }
   }
@@ -161,8 +161,8 @@ function runCommand(command, args, options) {
   const result = spawnSync(command, args, {
     cwd: options.cwd,
     env: options.env ?? process.env,
-    encoding: "utf8",
-    stdio: ["ignore", "pipe", "pipe"],
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
   });
   const durationMs = Date.now() - startedAtMs;
 
@@ -170,10 +170,10 @@ function runCommand(command, args, options) {
     throw new Error(`${options.label} failed to execute: ${result.error.message}`);
   }
 
-  const exitCode = typeof result.status === "number" ? result.status : 1;
-  const stdout = result.stdout ?? "";
-  const stderr = result.stderr ?? "";
-  const commandLine = `${command} ${args.join(" ")}`;
+  const exitCode = typeof result.status === 'number' ? result.status : 1;
+  const stdout = result.stdout ?? '';
+  const stderr = result.stderr ?? '';
+  const commandLine = `${command} ${args.join(' ')}`;
 
   if (exitCode !== 0) {
     const compactStdout = compactOutput(stdout);
@@ -198,7 +198,7 @@ function runCommand(command, args, options) {
  * @returns {string}
  */
 function compactOutput(value) {
-  return value.replace(/\s+/gu, " ").trim().slice(0, 500);
+  return value.replace(/\s+/gu, ' ').trim().slice(0, 500);
 }
 
 /**
@@ -216,7 +216,7 @@ function parseJsonOutput(rawOutput, label) {
 
   try {
     const parsed = JSON.parse(normalizedOutput);
-    if (!parsed || typeof parsed !== "object") {
+    if (!parsed || typeof parsed !== 'object') {
       throw new Error(`${label} returned non-object JSON payload.`);
     }
     return parsed;
@@ -233,7 +233,7 @@ function parseJsonOutput(rawOutput, label) {
 
     try {
       const parsed = JSON.parse(trimmed);
-      if (!parsed || typeof parsed !== "object") {
+      if (!parsed || typeof parsed !== 'object') {
         continue;
       }
       return parsed;
@@ -251,7 +251,7 @@ function parseJsonOutput(rawOutput, label) {
  * @param {string} stepId Current step id.
  */
 function assertCliSuccessPayload(payload, stepId) {
-  if (payload.status !== "success") {
+  if (payload.status !== 'success') {
     throw new Error(`CLI step "${stepId}" returned non-success status: ${String(payload.status)}`);
   }
 }
@@ -262,7 +262,7 @@ function assertCliSuccessPayload(payload, stepId) {
  * @returns {NodeJS.ProcessEnv}
  */
 function buildIsolatedRuntimeEnv(homePath) {
-  const xdgConfigHomePath = resolve(homePath, ".config");
+  const xdgConfigHomePath = resolve(homePath, '.config');
   mkdirSync(xdgConfigHomePath, { recursive: true });
 
   return {
@@ -270,7 +270,7 @@ function buildIsolatedRuntimeEnv(homePath) {
     HOME: homePath,
     USERPROFILE: homePath,
     XDG_CONFIG_HOME: xdgConfigHomePath,
-    CI: "1",
+    CI: '1',
   };
 }
 
@@ -283,7 +283,7 @@ function buildIsolatedRuntimeEnv(homePath) {
 function assertExpectedMemoryProvider(actualMemoryProvider, expectedMemoryProvider, label) {
   if (
     !actualMemoryProvider ||
-    typeof actualMemoryProvider !== "object" ||
+    typeof actualMemoryProvider !== 'object' ||
     Array.isArray(actualMemoryProvider)
   ) {
     throw new Error(`${label} did not provide a memoryProvider payload.`);
@@ -306,25 +306,25 @@ function assertExpectedMemoryProvider(actualMemoryProvider, expectedMemoryProvid
 function resolveExpectedServiceHostMemoryProvider(distributionMode) {
   if (distributionMode === PLUGIN_ENABLED_DISTRIBUTION_MODE) {
     return {
-      memoryStoreEngine: "sqlite_fs",
-      memoryStoreProvider: "@repo-ai-governor/memory-provider-sqlite-fs",
-      memoryStoreProviderId: "@repo-ai-governor/memory-provider-sqlite-fs",
-      memoryStoreProviderModule: "@repo-ai-governor/memory-provider-sqlite-fs",
-      memoryStoreDistributionMode: "optional",
-      memoryStoreResolutionSource: "plugin_module",
-      memoryStoreHostSurface: "local_orchestration_service",
-      memoryStoreRuntimeMode: "daemon",
+      memoryStoreEngine: 'sqlite_fs',
+      memoryStoreProvider: '@repo-ai-governor/memory-provider-sqlite-fs',
+      memoryStoreProviderId: '@repo-ai-governor/memory-provider-sqlite-fs',
+      memoryStoreProviderModule: '@repo-ai-governor/memory-provider-sqlite-fs',
+      memoryStoreDistributionMode: 'optional',
+      memoryStoreResolutionSource: 'plugin_module',
+      memoryStoreHostSurface: 'local_orchestration_service',
+      memoryStoreRuntimeMode: 'daemon',
     };
   }
 
   return {
-    memoryStoreEngine: "fs_csv",
-    memoryStoreProvider: "FsCsvMemoryStoreProvider",
-    memoryStoreProviderId: "fs-csv",
-    memoryStoreDistributionMode: "default",
-    memoryStoreResolutionSource: "legacy_store_engine",
-    memoryStoreHostSurface: "local_orchestration_service",
-    memoryStoreRuntimeMode: "daemon",
+    memoryStoreEngine: 'fs_csv',
+    memoryStoreProvider: 'FsCsvMemoryStoreProvider',
+    memoryStoreProviderId: 'fs-csv',
+    memoryStoreDistributionMode: 'default',
+    memoryStoreResolutionSource: 'legacy_store_engine',
+    memoryStoreHostSurface: 'local_orchestration_service',
+    memoryStoreRuntimeMode: 'daemon',
   };
 }
 
@@ -336,18 +336,18 @@ function resolveExpectedServiceHostMemoryProvider(distributionMode) {
 function initializeCleanroomRepository(repositoryPath, repositoryName) {
   mkdirSync(repositoryPath, { recursive: true });
   writeFileSync(
-    resolve(repositoryPath, "package.json"),
+    resolve(repositoryPath, 'package.json'),
     `${JSON.stringify(
       {
         name: repositoryName,
         private: true,
-        version: "0.0.0",
-        type: "module",
+        version: '0.0.0',
+        type: 'module',
       },
       null,
       2,
     )}\n`,
-    "utf8",
+    'utf8',
   );
 }
 
@@ -358,17 +358,17 @@ function initializeCleanroomRepository(repositoryPath, repositoryName) {
  * @returns {string}
  */
 function resolveInstallSpecifier(mode, installAssets) {
-  if (mode === "path") {
+  if (mode === 'path') {
     return installAssets.repositoryRoot;
   }
 
-  if (mode === "link") {
+  if (mode === 'link') {
     return `link:${installAssets.repositoryRoot}`;
   }
 
-  if (mode === "tgz") {
+  if (mode === 'tgz') {
     if (!installAssets.tarballPath) {
-      throw new Error("tgz mode requested but tarball is unavailable.");
+      throw new Error('tgz mode requested but tarball is unavailable.');
     }
     return installAssets.tarballPath;
   }
@@ -388,7 +388,7 @@ function resolveInstallSpecifier(mode, installAssets) {
  */
 function installCleanroomPackage(options) {
   const installSpecifier = resolveInstallSpecifier(options.mode, options.installAssets);
-  const installResult = runCommand("pnpm", ["add", "--save-exact", installSpecifier], {
+  const installResult = runCommand('pnpm', ['add', '--save-exact', installSpecifier], {
     cwd: options.repositoryPath,
     env: options.runtimeEnv,
     label: `install(${options.mode})`,
@@ -416,7 +416,7 @@ function installCleanroomPackage(options) {
  * @returns {{command: string; durationMs: number; stdout: string; stderr: string}}
  */
 function runCleanroomCliCommand(options) {
-  const result = runCommand("pnpm", ["exec", PACKAGE_BINARY, ...options.args], {
+  const result = runCommand('pnpm', ['exec', PACKAGE_BINARY, ...options.args], {
     cwd: options.repositoryPath,
     env: options.runtimeEnv,
     label: options.label,
@@ -451,15 +451,15 @@ function runCleanroomCliCommand(options) {
 function runSmokeIteration(options) {
   const iterationRoot = resolve(
     options.workingRoot,
-    `iteration-${String(options.iteration).padStart(2, "0")}`,
+    `iteration-${String(options.iteration).padStart(2, '0')}`,
   );
-  const repositoryPath = resolve(iterationRoot, "target-repo");
-  const homePath = resolve(iterationRoot, "home");
+  const repositoryPath = resolve(iterationRoot, 'target-repo');
+  const homePath = resolve(iterationRoot, 'home');
   const runtimeEnv = buildIsolatedRuntimeEnv(homePath);
 
   initializeCleanroomRepository(
     repositoryPath,
-    `cleanroom-${options.mode}-${String(options.iteration).padStart(2, "0")}`,
+    `cleanroom-${options.mode}-${String(options.iteration).padStart(2, '0')}`,
   );
   const install = installCleanroomPackage({
     mode: options.mode,
@@ -474,21 +474,21 @@ function runSmokeIteration(options) {
   const helpStep = runCleanroomCliCommand({
     repositoryPath,
     runtimeEnv,
-    args: ["--help"],
+    args: ['--help'],
     label: `help(${options.mode}/${options.iteration})`,
   });
   steps.push({
-    stepId: "--help",
+    stepId: '--help',
     command: helpStep.command,
     durationMs: helpStep.durationMs,
     outputSample: compactOutput(helpStep.stdout),
   });
 
-  for (const commandName of ["init", "doctor", "check"]) {
+  for (const commandName of ['init', 'doctor', 'check']) {
     const commandStep = runCleanroomCliCommand({
       repositoryPath,
       runtimeEnv,
-      args: ["--output", "json", commandName],
+      args: ['--output', 'json', commandName],
       label: `${commandName}(${options.mode}/${options.iteration})`,
     });
     const payload = parseJsonOutput(commandStep.stdout, commandName);
@@ -506,7 +506,7 @@ function runSmokeIteration(options) {
   return {
     mode: options.mode,
     iteration: options.iteration,
-    status: "passed",
+    status: 'passed',
     repositoryPath,
     homePath,
     install,
@@ -554,11 +554,11 @@ function diffEntries(beforeEntries, afterEntries) {
  * @returns {Record<string, unknown>}
  */
 function runReadOnlyAttachPrecheck(options) {
-  const scenarioRoot = resolve(options.workingRoot, "readonly-attach-precheck");
-  const repositoryPath = resolve(scenarioRoot, "target-repo");
-  const homePath = resolve(scenarioRoot, "home");
+  const scenarioRoot = resolve(options.workingRoot, 'readonly-attach-precheck');
+  const repositoryPath = resolve(scenarioRoot, 'target-repo');
+  const homePath = resolve(scenarioRoot, 'home');
   const runtimeEnv = buildIsolatedRuntimeEnv(homePath);
-  initializeCleanroomRepository(repositoryPath, "cleanroom-readonly-attach");
+  initializeCleanroomRepository(repositoryPath, 'cleanroom-readonly-attach');
   const install = installCleanroomPackage({
     mode: options.mode,
     repositoryPath,
@@ -570,21 +570,21 @@ function runReadOnlyAttachPrecheck(options) {
   const doctorStep = runCleanroomCliCommand({
     repositoryPath,
     runtimeEnv,
-    args: ["--output", "json", "doctor"],
-    label: "doctor(readonly-attach)",
+    args: ['--output', 'json', 'doctor'],
+    label: 'doctor(readonly-attach)',
   });
-  const doctorPayload = parseJsonOutput(doctorStep.stdout, "doctor(readonly-attach)");
-  assertCliSuccessPayload(doctorPayload, "doctor(readonly-attach)");
+  const doctorPayload = parseJsonOutput(doctorStep.stdout, 'doctor(readonly-attach)');
+  assertCliSuccessPayload(doctorPayload, 'doctor(readonly-attach)');
   const afterDoctorEntries = listTopLevelEntries(repositoryPath);
 
   const initStep = runCleanroomCliCommand({
     repositoryPath,
     runtimeEnv,
-    args: ["--output", "json", "init"],
-    label: "init(readonly-attach)",
+    args: ['--output', 'json', 'init'],
+    label: 'init(readonly-attach)',
   });
-  const initPayload = parseJsonOutput(initStep.stdout, "init(readonly-attach)");
-  assertCliSuccessPayload(initPayload, "init(readonly-attach)");
+  const initPayload = parseJsonOutput(initStep.stdout, 'init(readonly-attach)');
+  assertCliSuccessPayload(initPayload, 'init(readonly-attach)');
   const afterInitEntries = listTopLevelEntries(repositoryPath);
 
   const doctorDiff = diffEntries(beforeEntries, afterDoctorEntries);
@@ -592,19 +592,19 @@ function runReadOnlyAttachPrecheck(options) {
 
   if (doctorDiff.added.length > 0 || doctorDiff.removed.length > 0) {
     throw new Error(
-      `doctor precheck wrote to target repository. added=${doctorDiff.added.join("|")} removed=${doctorDiff.removed.join("|")}`,
+      `doctor precheck wrote to target repository. added=${doctorDiff.added.join('|')} removed=${doctorDiff.removed.join('|')}`,
     );
   }
 
   if (initDiff.added.length > 0 || initDiff.removed.length > 0) {
     throw new Error(
-      `init precheck wrote to target repository under tool_managed mode. added=${initDiff.added.join("|")} removed=${initDiff.removed.join("|")}`,
+      `init precheck wrote to target repository under tool_managed mode. added=${initDiff.added.join('|')} removed=${initDiff.removed.join('|')}`,
     );
   }
 
   return {
     mode: options.mode,
-    status: "passed",
+    status: 'passed',
     repositoryPath,
     install,
     doctor: {
@@ -635,11 +635,11 @@ function runReadOnlyAttachPrecheck(options) {
  * @returns {Record<string, unknown>}
  */
 function runWorkspaceSwitchRollbackScenario(options) {
-  const scenarioRoot = resolve(options.workingRoot, "workspace-switch-rollback");
-  const repositoryPath = resolve(scenarioRoot, "target-repo");
-  const homePath = resolve(scenarioRoot, "home");
+  const scenarioRoot = resolve(options.workingRoot, 'workspace-switch-rollback');
+  const repositoryPath = resolve(scenarioRoot, 'target-repo');
+  const homePath = resolve(scenarioRoot, 'home');
   const runtimeEnv = buildIsolatedRuntimeEnv(homePath);
-  initializeCleanroomRepository(repositoryPath, "cleanroom-workspace-switch");
+  initializeCleanroomRepository(repositoryPath, 'cleanroom-workspace-switch');
   const install = installCleanroomPackage({
     mode: options.mode,
     repositoryPath,
@@ -650,40 +650,40 @@ function runWorkspaceSwitchRollbackScenario(options) {
   const defaultInit = runCleanroomCliCommand({
     repositoryPath,
     runtimeEnv,
-    args: ["--output", "json", "init"],
-    label: "init(workspace-switch/default)",
+    args: ['--output', 'json', 'init'],
+    label: 'init(workspace-switch/default)',
   });
-  const defaultInitPayload = parseJsonOutput(defaultInit.stdout, "init(workspace-switch/default)");
-  assertCliSuccessPayload(defaultInitPayload, "init(workspace-switch/default)");
+  const defaultInitPayload = parseJsonOutput(defaultInit.stdout, 'init(workspace-switch/default)');
+  assertCliSuccessPayload(defaultInitPayload, 'init(workspace-switch/default)');
   const defaultDiagnostics = defaultInitPayload.diagnostics ?? {};
-  if (defaultDiagnostics.workspaceMode !== "tool_managed") {
+  if (defaultDiagnostics.workspaceMode !== 'tool_managed') {
     throw new Error(
       `Expected tool_managed mode before switch. actual=${String(defaultDiagnostics.workspaceMode)}`,
     );
   }
   const toolManagedRoot = String(defaultDiagnostics.workspaceRoot);
-  const toolManagedConfigPath = resolve(toolManagedRoot, "governor.yaml");
+  const toolManagedConfigPath = resolve(toolManagedRoot, 'governor.yaml');
   if (!existsSync(toolManagedConfigPath)) {
     throw new Error(`Missing tool_managed config path after init: ${toolManagedConfigPath}`);
   }
 
-  const repoLocalConfigPath = resolve(repositoryPath, ".repo-ai-governor", "governor.yaml");
+  const repoLocalConfigPath = resolve(repositoryPath, '.repo-ai-governor', 'governor.yaml');
   mkdirSync(dirname(repoLocalConfigPath), { recursive: true });
-  writeFileSync(repoLocalConfigPath, DEFAULT_REPO_LOCAL_CONFIG_CONTENT, "utf8");
+  writeFileSync(repoLocalConfigPath, DEFAULT_REPO_LOCAL_CONFIG_CONTENT, 'utf8');
 
   const repoLocalDoctor = runCleanroomCliCommand({
     repositoryPath,
     runtimeEnv,
-    args: ["--output", "json", "doctor"],
-    label: "doctor(workspace-switch/repo-local)",
+    args: ['--output', 'json', 'doctor'],
+    label: 'doctor(workspace-switch/repo-local)',
   });
   const repoLocalDoctorPayload = parseJsonOutput(
     repoLocalDoctor.stdout,
-    "doctor(workspace-switch/repo-local)",
+    'doctor(workspace-switch/repo-local)',
   );
-  assertCliSuccessPayload(repoLocalDoctorPayload, "doctor(workspace-switch/repo-local)");
+  assertCliSuccessPayload(repoLocalDoctorPayload, 'doctor(workspace-switch/repo-local)');
   const repoLocalDiagnostics = repoLocalDoctorPayload.diagnostics ?? {};
-  if (repoLocalDiagnostics.workspaceMode !== "repo_local") {
+  if (repoLocalDiagnostics.workspaceMode !== 'repo_local') {
     throw new Error(
       `Expected repo_local mode after switch. actual=${String(repoLocalDiagnostics.workspaceMode)}`,
     );
@@ -692,16 +692,16 @@ function runWorkspaceSwitchRollbackScenario(options) {
   const repoLocalInit = runCleanroomCliCommand({
     repositoryPath,
     runtimeEnv,
-    args: ["--output", "json", "init"],
-    label: "init(workspace-switch/repo-local)",
+    args: ['--output', 'json', 'init'],
+    label: 'init(workspace-switch/repo-local)',
   });
   const repoLocalInitPayload = parseJsonOutput(
     repoLocalInit.stdout,
-    "init(workspace-switch/repo-local)",
+    'init(workspace-switch/repo-local)',
   );
-  assertCliSuccessPayload(repoLocalInitPayload, "init(workspace-switch/repo-local)");
-  const repoLocalRoot = String(repoLocalInitPayload.diagnostics?.workspaceRoot ?? "");
-  if (!repoLocalRoot.endsWith(".repo-ai-governor")) {
+  assertCliSuccessPayload(repoLocalInitPayload, 'init(workspace-switch/repo-local)');
+  const repoLocalRoot = String(repoLocalInitPayload.diagnostics?.workspaceRoot ?? '');
+  if (!repoLocalRoot.endsWith('.repo-ai-governor')) {
     throw new Error(`Unexpected repo_local workspace root: ${repoLocalRoot}`);
   }
   if (!existsSync(repoLocalConfigPath)) {
@@ -713,16 +713,16 @@ function runWorkspaceSwitchRollbackScenario(options) {
   const rollbackDoctor = runCleanroomCliCommand({
     repositoryPath,
     runtimeEnv,
-    args: ["--output", "json", "doctor"],
-    label: "doctor(workspace-switch/rollback)",
+    args: ['--output', 'json', 'doctor'],
+    label: 'doctor(workspace-switch/rollback)',
   });
   const rollbackDoctorPayload = parseJsonOutput(
     rollbackDoctor.stdout,
-    "doctor(workspace-switch/rollback)",
+    'doctor(workspace-switch/rollback)',
   );
-  assertCliSuccessPayload(rollbackDoctorPayload, "doctor(workspace-switch/rollback)");
+  assertCliSuccessPayload(rollbackDoctorPayload, 'doctor(workspace-switch/rollback)');
   const rollbackDiagnostics = rollbackDoctorPayload.diagnostics ?? {};
-  if (rollbackDiagnostics.workspaceMode !== "tool_managed") {
+  if (rollbackDiagnostics.workspaceMode !== 'tool_managed') {
     throw new Error(
       `Expected tool_managed mode after rollback. actual=${String(rollbackDiagnostics.workspaceMode)}`,
     );
@@ -740,7 +740,7 @@ function runWorkspaceSwitchRollbackScenario(options) {
 
   return {
     mode: options.mode,
-    status: "passed",
+    status: 'passed',
     repositoryPath,
     install,
     toolManagedInit: {
@@ -785,8 +785,8 @@ function runWorkspaceSwitchRollbackScenario(options) {
  */
 function runPluginEnabledMemoryProviderScenario(options) {
   const scenarioRoot = resolve(options.workingRoot, `plugin-memory-${options.mode}`);
-  const repositoryPath = resolve(scenarioRoot, "target-repo");
-  const homePath = resolve(scenarioRoot, "home");
+  const repositoryPath = resolve(scenarioRoot, 'target-repo');
+  const homePath = resolve(scenarioRoot, 'home');
   const runtimeEnv = buildIsolatedRuntimeEnv(homePath);
   initializeCleanroomRepository(repositoryPath, `cleanroom-plugin-memory-${options.mode}`);
   const install = installCleanroomPackage({
@@ -796,37 +796,37 @@ function runPluginEnabledMemoryProviderScenario(options) {
     installAssets: options.installAssets,
   });
 
-  const repoLocalConfigPath = resolve(repositoryPath, ".repo-ai-governor", "governor.yaml");
+  const repoLocalConfigPath = resolve(repositoryPath, '.repo-ai-governor', 'governor.yaml');
   mkdirSync(dirname(repoLocalConfigPath), { recursive: true });
   writeFileSync(
     repoLocalConfigPath,
     [
       'schemaVersion: "1.1"',
-      "workspace:",
-      "  mode: repo_local",
-      "  migrationPolicy: copy_verify_switch_rollback",
-      "i18n:",
-      "  runtimeEngine: i18next",
-      "  defaultLocale: zh-CN",
-      "  fallbackLocale: en-US",
-      "  supportedLocales:",
-      "    - zh-CN",
-      "    - en-US",
-      "memory:",
-      "  storeEngine: sqlite_fs",
-      "  storeRoot: context/memory/plugin-sqlite",
-      "  provider:",
+      'workspace:',
+      '  mode: repo_local',
+      '  migrationPolicy: copy_verify_switch_rollback',
+      'i18n:',
+      '  runtimeEngine: i18next',
+      '  defaultLocale: zh-CN',
+      '  fallbackLocale: en-US',
+      '  supportedLocales:',
+      '    - zh-CN',
+      '    - en-US',
+      'memory:',
+      '  storeEngine: sqlite_fs',
+      '  storeRoot: context/memory/plugin-sqlite',
+      '  provider:',
       '    module: "@repo-ai-governor/memory-provider-sqlite-fs"',
       '    exportName: "createMemoryStoreProvider"',
-      "",
-    ].join("\n"),
-    "utf8",
+      '',
+    ].join('\n'),
+    'utf8',
   );
 
   const initStep = runCleanroomCliCommand({
     repositoryPath,
     runtimeEnv,
-    args: ["--output", "json", "init"],
+    args: ['--output', 'json', 'init'],
     label: `init(plugin-memory/${options.mode})`,
   });
   const initPayload = parseJsonOutput(initStep.stdout, `init(plugin-memory/${options.mode})`);
@@ -835,22 +835,22 @@ function runPluginEnabledMemoryProviderScenario(options) {
   const checkStep = runCleanroomCliCommand({
     repositoryPath,
     runtimeEnv,
-    args: ["--output", "json", "check"],
+    args: ['--output', 'json', 'check'],
     label: `check(plugin-memory/${options.mode})`,
   });
   const checkPayload = parseJsonOutput(checkStep.stdout, `check(plugin-memory/${options.mode})`);
   assertCliSuccessPayload(checkPayload, `check(plugin-memory/${options.mode})`);
 
   const initDiagnostics =
-    initPayload.diagnostics && typeof initPayload.diagnostics === "object"
+    initPayload.diagnostics && typeof initPayload.diagnostics === 'object'
       ? initPayload.diagnostics
       : {};
-  if (initDiagnostics.memoryStoreResolutionSource !== "plugin_module") {
+  if (initDiagnostics.memoryStoreResolutionSource !== 'plugin_module') {
     throw new Error(
       `Expected plugin_module memory resolution in clean-room plugin scenario. actual=${String(initDiagnostics.memoryStoreResolutionSource)}`,
     );
   }
-  if (initDiagnostics.memoryStoreProviderModule !== "@repo-ai-governor/memory-provider-sqlite-fs") {
+  if (initDiagnostics.memoryStoreProviderModule !== '@repo-ai-governor/memory-provider-sqlite-fs') {
     throw new Error(
       `Expected sqlite plugin module diagnostics in clean-room plugin scenario. actual=${String(initDiagnostics.memoryStoreProviderModule)}`,
     );
@@ -858,7 +858,7 @@ function runPluginEnabledMemoryProviderScenario(options) {
 
   return {
     mode: options.mode,
-    status: "passed",
+    status: 'passed',
     repositoryPath,
     install,
     init: {
@@ -898,53 +898,53 @@ function createServiceHostMemoryProviderCheckScript(distributionMode) {
 
   return [
     'import { resolve } from "node:path";',
-    "import {",
-    "  LocalOrchestrationServiceSidecarClient,",
-    "  OrchestrationClientSurface,",
-    "  OrchestrationExecutionKind,",
+    'import {',
+    '  LocalOrchestrationServiceSidecarClient,',
+    '  OrchestrationClientSurface,',
+    '  OrchestrationExecutionKind,',
     `} from "${PUBLISHED_PACKAGE_NAME}/service-host";`,
-    "",
-    "const repositoryPath = process.cwd();",
+    '',
+    'const repositoryPath = process.cwd();',
     "const workspaceRoot = resolve(repositoryPath, '.repo-ai-governor');",
     `const memoryConfig = ${memoryConfigSource};`,
-    "const runtime = new LocalOrchestrationServiceSidecarClient(workspaceRoot, {",
-    "  memoryConfig,",
-    "});",
-    "",
-    "try {",
-    "  const health = await runtime.getHealth();",
-    "  const started = await runtime.startExecution(",
-    "    {",
+    'const runtime = new LocalOrchestrationServiceSidecarClient(workspaceRoot, {',
+    '  memoryConfig,',
+    '});',
+    '',
+    'try {',
+    '  const health = await runtime.getHealth();',
+    '  const started = await runtime.startExecution(',
+    '    {',
     '      workspaceId: "cleanroom-service-host",',
-    "      workspaceRoot,",
-    "      executionKind: OrchestrationExecutionKind.RUN,",
-    "      clientSurface: OrchestrationClientSurface.DESKTOP,",
-    "    },",
-    "    {",
+    '      workspaceRoot,',
+    '      executionKind: OrchestrationExecutionKind.RUN,',
+    '      clientSurface: OrchestrationClientSurface.DESKTOP,',
+    '    },',
+    '    {',
     '      processId: "cleanroom-service-host-process",',
     `      executionId: "cleanroom-service-host-${distributionMode}",`,
     `      executionSessionId: "cleanroom-service-host-session-${distributionMode}",`,
-    "    },",
-    "  );",
-    "  const summary = await runtime.getExecution(started.executionId);",
-    "  const listed = await runtime.listExecutions({",
-    "    filter: {",
+    '    },',
+    '  );',
+    '  const summary = await runtime.getExecution(started.executionId);',
+    '  const listed = await runtime.listExecutions({',
+    '    filter: {',
     '      workspaceId: "cleanroom-service-host",',
-    "    },",
-    "  });",
-    "  console.log(",
-    "    JSON.stringify({",
-    "      health,",
-    "      started,",
-    "      summary,",
-    "      listed,",
-    "    }),",
-    "  );",
-    "} finally {",
-    "  await runtime.dispose();",
-    "}",
-    "",
-  ].join("\n");
+    '    },',
+    '  });',
+    '  console.log(',
+    '    JSON.stringify({',
+    '      health,',
+    '      started,',
+    '      summary,',
+    '      listed,',
+    '    }),',
+    '  );',
+    '} finally {',
+    '  await runtime.dispose();',
+    '}',
+    '',
+  ].join('\n');
 }
 
 /**
@@ -959,8 +959,8 @@ function createServiceHostMemoryProviderCheckScript(distributionMode) {
  */
 function runServiceHostMemoryProviderScenario(options) {
   const scenarioRoot = resolve(options.workingRoot, `service-host-memory-${options.mode}`);
-  const repositoryPath = resolve(scenarioRoot, "target-repo");
-  const homePath = resolve(scenarioRoot, "home");
+  const repositoryPath = resolve(scenarioRoot, 'target-repo');
+  const homePath = resolve(scenarioRoot, 'home');
   const runtimeEnv = buildIsolatedRuntimeEnv(homePath);
   initializeCleanroomRepository(repositoryPath, `cleanroom-service-host-${options.mode}`);
   const install = installCleanroomPackage({
@@ -970,14 +970,14 @@ function runServiceHostMemoryProviderScenario(options) {
     installAssets: options.installAssets,
   });
 
-  const scriptPath = resolve(repositoryPath, "service-host-memory-check.mjs");
+  const scriptPath = resolve(repositoryPath, 'service-host-memory-check.mjs');
   writeFileSync(
     scriptPath,
     createServiceHostMemoryProviderCheckScript(options.distributionMode),
-    "utf8",
+    'utf8',
   );
 
-  const executionStep = runCommand("node", [scriptPath], {
+  const executionStep = runCommand('node', [scriptPath], {
     cwd: repositoryPath,
     env: runtimeEnv,
     label: `service-host-memory(${options.mode}/${options.distributionMode})`,
@@ -988,12 +988,12 @@ function runServiceHostMemoryProviderScenario(options) {
   );
   const expectedMemoryProvider = resolveExpectedServiceHostMemoryProvider(options.distributionMode);
 
-  if (executionPayload.health?.serviceHostKind !== "sidecar") {
+  if (executionPayload.health?.serviceHostKind !== 'sidecar') {
     throw new Error(
       `Expected service-host health host kind to be "sidecar". actual=${String(executionPayload.health?.serviceHostKind)}`,
     );
   }
-  if (executionPayload.health?.serviceTransportKind !== "ipc") {
+  if (executionPayload.health?.serviceTransportKind !== 'ipc') {
     throw new Error(
       `Expected service-host health transport kind to be "ipc". actual=${String(executionPayload.health?.serviceTransportKind)}`,
     );
@@ -1001,27 +1001,27 @@ function runServiceHostMemoryProviderScenario(options) {
   assertExpectedMemoryProvider(
     executionPayload.health?.memoryProvider,
     expectedMemoryProvider,
-    "service-host health",
+    'service-host health',
   );
   assertExpectedMemoryProvider(
     executionPayload.started?.memoryProvider,
     expectedMemoryProvider,
-    "service-host startExecution",
+    'service-host startExecution',
   );
   assertExpectedMemoryProvider(
     executionPayload.summary?.memoryProvider,
     expectedMemoryProvider,
-    "service-host getExecution",
+    'service-host getExecution',
   );
   assertExpectedMemoryProvider(
     executionPayload.listed?.executions?.[0]?.memoryProvider,
     expectedMemoryProvider,
-    "service-host listExecutions",
+    'service-host listExecutions',
   );
 
   return {
     mode: options.mode,
-    status: "passed",
+    status: 'passed',
     distributionMode: options.distributionMode,
     repositoryPath,
     install,
@@ -1041,7 +1041,7 @@ function runServiceHostMemoryProviderScenario(options) {
 function parsePackResult(rawOutput) {
   const normalizedOutput = rawOutput.trim();
   if (!normalizedOutput) {
-    throw new Error("pnpm pack --json returned empty stdout.");
+    throw new Error('pnpm pack --json returned empty stdout.');
   }
 
   /** @type {unknown} */
@@ -1065,17 +1065,17 @@ function parsePackResult(rawOutput) {
   }
 
   if (!parsed) {
-    throw new Error("Unable to parse pnpm pack --json output.");
+    throw new Error('Unable to parse pnpm pack --json output.');
   }
 
   const firstRecord = Array.isArray(parsed) ? parsed[0] : parsed;
-  if (!firstRecord || typeof firstRecord !== "object") {
-    throw new Error("pnpm pack --json payload is not an object.");
+  if (!firstRecord || typeof firstRecord !== 'object') {
+    throw new Error('pnpm pack --json payload is not an object.');
   }
 
   const filename = firstRecord.filename;
-  if (typeof filename !== "string" || filename.trim().length === 0) {
-    throw new Error("pnpm pack --json payload is missing filename.");
+  if (typeof filename !== 'string' || filename.trim().length === 0) {
+    throw new Error('pnpm pack --json payload is missing filename.');
   }
 
   return {
@@ -1092,26 +1092,26 @@ function parsePackResult(rawOutput) {
 function prepareInstallAssets(modes, distributionMode) {
   const repositoryRoot = process.cwd();
   const buildScriptName =
-    distributionMode === PLUGIN_ENABLED_DISTRIBUTION_MODE ? "build:plugin-enabled" : "build";
-  runCommand("pnpm", ["run", buildScriptName], {
+    distributionMode === PLUGIN_ENABLED_DISTRIBUTION_MODE ? 'build:plugin-enabled' : 'build';
+  runCommand('pnpm', ['run', buildScriptName], {
     cwd: repositoryRoot,
-    label: "build",
+    label: 'build',
   });
   gateInfo(
     GATE_NAME,
     `build completed for clean-room install validation. distribution_mode=${distributionMode}`,
   );
 
-  if (!modes.includes("tgz")) {
+  if (!modes.includes('tgz')) {
     return {
       repositoryRoot,
       tarballPath: null,
     };
   }
 
-  const packResult = runCommand("pnpm", ["pack", "--json"], {
+  const packResult = runCommand('pnpm', ['pack', '--json'], {
     cwd: repositoryRoot,
-    label: "pack",
+    label: 'pack',
   });
   const packPayload = parsePackResult(packResult.stdout);
   const tarballPath = resolve(repositoryRoot, packPayload.filename);
@@ -1134,14 +1134,14 @@ function prepareInstallAssets(modes, distributionMode) {
 function writeReport(reportPath, reportPayload) {
   const absolutePath = resolve(process.cwd(), reportPath);
   mkdirSync(dirname(absolutePath), { recursive: true });
-  writeFileSync(absolutePath, `${JSON.stringify(reportPayload, null, 2)}\n`, "utf8");
+  writeFileSync(absolutePath, `${JSON.stringify(reportPayload, null, 2)}\n`, 'utf8');
 }
 
 const options = parseCliOptions();
-const createdTempRoot = mkdtempSync(resolve(tmpdir(), "repo-ai-governor-cleanroom-"));
+const createdTempRoot = mkdtempSync(resolve(tmpdir(), 'repo-ai-governor-cleanroom-'));
 const installAssets = prepareInstallAssets(options.modes, options.distributionMode);
 
-let overallStatus = "passed";
+let overallStatus = 'passed';
 let overallFailure = null;
 /** @type {Array<Record<string, unknown>>} */
 const modeResults = [];
@@ -1172,14 +1172,14 @@ try {
       gateInfo(
         GATE_NAME,
         `mode=${mode} iteration=${iteration}/${options.iterations} passed chain=${DEFAULT_REQUIRED_CHAIN.join(
-          "->",
+          '->',
         )}`,
       );
     }
 
     modeResults.push({
       mode,
-      status: "passed",
+      status: 'passed',
       passedIterations: iterationResults.length,
       iterations: iterationResults,
     });
@@ -1192,7 +1192,7 @@ try {
     workingRoot: createdTempRoot,
     installAssets,
   });
-  gateInfo(GATE_NAME, "workspace switch rollback scenario passed.");
+  gateInfo(GATE_NAME, 'workspace switch rollback scenario passed.');
 
   readOnlyAttachPrecheck = runReadOnlyAttachPrecheck({
     mode: options.modes.includes(READ_ONLY_ATTACH_PRECHECK_MODE)
@@ -1201,7 +1201,7 @@ try {
     workingRoot: createdTempRoot,
     installAssets,
   });
-  gateInfo(GATE_NAME, "read-only attach precheck passed.");
+  gateInfo(GATE_NAME, 'read-only attach precheck passed.');
 
   serviceHostMemoryProviderScenarios = options.modes.map((mode) => {
     const scenario = runServiceHostMemoryProviderScenario({
@@ -1229,12 +1229,12 @@ try {
     });
   }
 } catch (error) {
-  overallStatus = "failed";
+  overallStatus = 'failed';
   overallFailure = error instanceof Error ? error.message : String(error);
 }
 
 const reportPayload = {
-  reportType: "cleanroom_local_install_verification_v1",
+  reportType: 'cleanroom_local_install_verification_v1',
   status: overallStatus,
   generatedAt: new Date().toISOString(),
   repositoryRoot: process.cwd(),
@@ -1254,12 +1254,12 @@ const reportPayload = {
     perModeIterationsMinimum: 3,
     configuredIterations: options.iterations,
     commandChain: DEFAULT_REQUIRED_CHAIN,
-    passed: overallStatus === "passed" && options.modes.length >= 2 && options.iterations >= 3,
+    passed: overallStatus === 'passed' && options.modes.length >= 2 && options.iterations >= 3,
   },
   notes: {
-    tgzModeSelected: options.modes.includes("tgz"),
+    tgzModeSelected: options.modes.includes('tgz'),
     pluginEnabledDistribution: options.distributionMode === PLUGIN_ENABLED_DISTRIBUTION_MODE,
-    cleanupPolicy: options.keepTemp || overallStatus === "failed" ? "keep_temp" : "remove_temp",
+    cleanupPolicy: options.keepTemp || overallStatus === 'failed' ? 'keep_temp' : 'remove_temp',
   },
 };
 
@@ -1276,7 +1276,7 @@ try {
   process.exit(1);
 }
 
-if (!options.keepTemp && overallStatus === "passed") {
+if (!options.keepTemp && overallStatus === 'passed') {
   rmSync(createdTempRoot, { recursive: true, force: true });
 }
 
@@ -1284,13 +1284,13 @@ if (installAssets.tarballPath && existsSync(installAssets.tarballPath)) {
   rmSync(installAssets.tarballPath, { force: true });
 }
 
-if (overallStatus === "passed") {
+if (overallStatus === 'passed') {
   gatePass(
     GATE_NAME,
-    `clean-room validation passed. modes=${options.modes.join(",")} iterations=${options.iterations}`,
+    `clean-room validation passed. modes=${options.modes.join(',')} iterations=${options.iterations}`,
   );
 } else {
-  gateFail(GATE_NAME, overallFailure ?? "clean-room validation failed.");
+  gateFail(GATE_NAME, overallFailure ?? 'clean-room validation failed.');
   gateInfo(GATE_NAME, `temp artifacts kept at ${createdTempRoot}`);
   process.exit(1);
 }

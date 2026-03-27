@@ -3,8 +3,8 @@ export {
   PolicyDecisionSource,
   PolicyGateRuleId,
   PolicyHitlDecision,
-} from "./constants/index.js";
-export { PolicyGateEngine } from "./policy-gate-engine.js";
+} from './constants/index.js';
+export { PolicyGateEngine } from './policy-gate-engine.js';
 export type {
   PolicyGateAuditRecord,
   PolicyGateEngineOptions,
@@ -18,4 +18,4 @@ export type {
   PolicyHitlFeedback,
   PolicyHitlFeedbackSchema,
   PolicyReviewerRole,
-} from "./types/index.js";
+} from './types/index.js';

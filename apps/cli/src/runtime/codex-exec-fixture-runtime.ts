@@ -1,16 +1,16 @@
-import type { CodexExecRunner } from "@repo-ai-governor/adapter-codex";
-import { AgentCliExecOperation } from "@repo-ai-governor/adapter-sdk";
-import { GovernorErrorCode, RuntimeError } from "@repo-ai-governor/shared";
+import type { CodexExecRunner } from '@repo-ai-governor/adapter-codex';
+import { AgentCliExecOperation } from '@repo-ai-governor/adapter-sdk';
+import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import {
   CliCodexExecFixtureEnvironmentKey,
   CliCodexExecFixtureMode,
-} from "../constants/codex-exec-fixture.constant.js";
+} from '../constants/codex-exec-fixture.constant.js';
 
 const CODEX_FIXTURE_SUCCESS_STDOUT = [
   '{"type":"thread.started","thread_id":"fixture-thread"}',
   '{"type":"item.completed","item":{"type":"agent_message","text":"OK"}}',
   '{"type":"turn.completed","usage":{"input_tokens":3,"output_tokens":1,"total_tokens":4}}',
-].join("\n");
+].join('\n');
 
 /**
  * Resolves deterministic Codex exec fixtures for gate and smoke execution paths.
@@ -27,7 +27,7 @@ export class CliCodexExecFixtureRuntime {
       return undefined;
     }
 
-    if (environment[CliCodexExecFixtureEnvironmentKey.ENABLE_FIXTURES]?.trim() !== "1") {
+    if (environment[CliCodexExecFixtureEnvironmentKey.ENABLE_FIXTURES]?.trim() !== '1') {
       throw new RuntimeError(
         GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
         `${CliCodexExecFixtureEnvironmentKey.EXEC_FIXTURE} requires ${CliCodexExecFixtureEnvironmentKey.ENABLE_FIXTURES}=1.`,
@@ -41,7 +41,7 @@ export class CliCodexExecFixtureRuntime {
     if (configuredMode === CliCodexExecFixtureMode.SUCCESS) {
       return async () => ({
         stdout: CODEX_FIXTURE_SUCCESS_STDOUT,
-        stderr: "",
+        stderr: '',
         exitCode: 0,
         signal: null,
         elapsedMs: 1,
@@ -54,11 +54,11 @@ export class CliCodexExecFixtureRuntime {
           request.operation === AgentCliExecOperation.PROBE
             ? GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED
             : GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
-          "Codex fixture simulated credential failure.",
+          'Codex fixture simulated credential failure.',
           {
-            surface: "codex",
+            surface: 'codex',
             operation: request.operation,
-            stderr: "Not logged in. Run `codex login` first.",
+            stderr: 'Not logged in. Run `codex login` first.',
           },
         );
       };

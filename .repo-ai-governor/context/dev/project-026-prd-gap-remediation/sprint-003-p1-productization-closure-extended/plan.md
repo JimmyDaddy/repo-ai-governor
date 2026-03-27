@@ -13,6 +13,8 @@
 1. `TK-298` Python/Go 最小治理模板实装（completed）
 2. `TK-299` upgrade/workspace lifecycle adopter UX 打磨（completed）
 3. `TK-300` sprint-003 出口验收与 sprint-004 输入约束（completed）
+4. `TK-301` unused var lint 规则接入（completed）
+5. `TK-302` unused import lint 规则接入（completed）
 
 ## 3. Exit Criteria
 
@@ -29,3 +31,5 @@
 1. `tasks/TK-298-python-go-minimal-governance-template-implementation.md`
 2. `tasks/TK-299-upgrade-workspace-lifecycle-adopter-ux-polish.md`
 3. `tasks/TK-300-sprint-003-exit-acceptance-and-sprint-004-input-constraints.md`
+4. `tasks/TK-301-biome-unused-var-lint-rule.md`
+5. `tasks/TK-302-biome-unused-import-lint-rule.md`

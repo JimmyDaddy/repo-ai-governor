@@ -1,1 +1,1 @@
-export type { FsCsvMemoryStoreProviderOptions } from "./interfaces/index.js";
+export type { FsCsvMemoryStoreProviderOptions } from './interfaces/index.js';

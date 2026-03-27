@@ -1,4 +1,4 @@
-import { GovernorErrorCode, type RuntimeError } from "@repo-ai-governor/shared";
+import { GovernorErrorCode, type RuntimeError } from '@repo-ai-governor/shared';
 import {
   AGENT_LOCAL_FALLBACK_SURFACE,
   AgentAvailabilityStatus,
@@ -22,7 +22,7 @@ import {
   type AgentStreamEventsRequest,
   AgentSurfaceNetworkRequirement,
   AgentSurfaceSkipReason,
-} from "../src/index.js";
+} from '../src/index.js';
 
 interface FakeAgentProtocolOptions {
   surface: string;
@@ -68,22 +68,22 @@ class FakeAgentProtocol extends AgentProtocol {
   public override async probe(_request: AgentProbeRequest) {
     if (this.options.throwOnProbe) {
       throw {
-        message: "probe failed",
+        message: 'probe failed',
       };
     }
     return {
       identity: {
         agentId: `${this.options.surface}-agent`,
-        role: "coder",
+        role: 'coder',
         surface: this.options.surface,
-        roleProfileId: "coder-default",
-        roleSource: "default",
+        roleProfileId: 'coder-default',
+        roleSource: 'default',
       },
       availabilityStatus: this.options.availabilityStatus,
       capabilityMatrix: createCapabilityMatrix(this.options.capabilitySupportById ?? {}),
       unavailableReasons:
         this.options.availabilityStatus === AgentAvailabilityStatus.UNAVAILABLE
-          ? ["surface unavailable"]
+          ? ['surface unavailable']
           : [],
     };
   }
@@ -91,7 +91,7 @@ class FakeAgentProtocol extends AgentProtocol {
   public override async invokeStage(_request: AgentInvokeStageRequest) {
     if (this.options.throwOnInvoke) {
       throw {
-        message: "invoke failed",
+        message: 'invoke failed',
       };
     }
     return {
@@ -105,13 +105,13 @@ class FakeAgentProtocol extends AgentProtocol {
   public override async *streamEvents(_request: AgentStreamEventsRequest) {
     yield {
       eventType: AgentStreamEventType.STATUS,
-      timestamp: "2026-03-21T00:00:00.000Z",
-      processId: "process-1",
-      executionId: "execution-1",
-      stageId: "stage-1",
-      routeKey: "codegen",
+      timestamp: '2026-03-21T00:00:00.000Z',
+      processId: 'process-1',
+      executionId: 'execution-1',
+      stageId: 'stage-1',
+      routeKey: 'codegen',
       payload: {
-        status: "running",
+        status: 'running',
       },
     };
   }
@@ -119,9 +119,9 @@ class FakeAgentProtocol extends AgentProtocol {
   public override async requestConfirmation(_request: AgentConfirmationRequest) {
     return {
       decision: AgentConfirmationDecision.APPROVE,
-      reason: "approved",
+      reason: 'approved',
       constraints: [],
-      decidedAt: "2026-03-21T00:00:00.000Z",
+      decidedAt: '2026-03-21T00:00:00.000Z',
     };
   }
 
@@ -130,19 +130,19 @@ class FakeAgentProtocol extends AgentProtocol {
       acknowledged: true,
       scope: AgentCancellationScope.STAGE,
       reason: AgentCancellationReason.USER_REQUESTED,
-      cancelledAt: "2026-03-21T00:00:00.000Z",
+      cancelledAt: '2026-03-21T00:00:00.000Z',
     };
   }
 }
 
-describe("adapter-route-runner smoke", () => {
-  it("selects primary surface when primary is available and capability requirement is satisfied", async () => {
+describe('adapter-route-runner smoke', () => {
+  it('selects primary surface when primary is available and capability requirement is satisfied', async () => {
     const routeRunner = new AgentRouteRunner({
       routePolicies: [
         {
-          routeKey: "codegen",
-          primarySurface: "codex",
-          fallbackSurfaces: ["claude"],
+          routeKey: 'codegen',
+          primarySurface: 'codex',
+          fallbackSurfaces: ['claude'],
           capabilityRequirement: {
             requiredCapabilities: [AgentCapability.TOOL_CALLING],
           },
@@ -150,14 +150,14 @@ describe("adapter-route-runner smoke", () => {
       ],
       protocolBySurface: {
         codex: new FakeAgentProtocol({
-          surface: "codex",
+          surface: 'codex',
           availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
           capabilitySupportById: {
             [AgentCapability.TOOL_CALLING]: AgentCapabilitySupportLevel.SUPPORTED,
           },
         }),
         claude: new FakeAgentProtocol({
-          surface: "claude",
+          surface: 'claude',
           availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
           capabilitySupportById: {
             [AgentCapability.TOOL_CALLING]: AgentCapabilitySupportLevel.SUPPORTED,
@@ -167,63 +167,63 @@ describe("adapter-route-runner smoke", () => {
     });
 
     const result = await routeRunner.dispatchStage({
-      processId: "process-1",
-      executionId: "execution-1",
-      stageId: "stage-1",
-      routeKey: "codegen",
+      processId: 'process-1',
+      executionId: 'execution-1',
+      stageId: 'stage-1',
+      routeKey: 'codegen',
       input: {
-        prompt: "implement feature",
+        prompt: 'implement feature',
       },
     });
 
-    expect(result.selectedSurface).toBe("codex");
+    expect(result.selectedSurface).toBe('codex');
     expect(result.auditRecord.selectedBy).toBe(AgentRouteSelectionSource.PRIMARY);
     expect(result.auditRecord.fallbackTriggered).toBe(false);
   });
 
-  it("falls back to secondary surface when primary surface is unavailable", async () => {
+  it('falls back to secondary surface when primary surface is unavailable', async () => {
     const routeRunner = new AgentRouteRunner({
       routePolicies: [
         {
-          routeKey: "codegen",
-          primarySurface: "codex",
-          fallbackSurfaces: ["claude"],
+          routeKey: 'codegen',
+          primarySurface: 'codex',
+          fallbackSurfaces: ['claude'],
         },
       ],
       protocolBySurface: {
         codex: new FakeAgentProtocol({
-          surface: "codex",
+          surface: 'codex',
           availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
         }),
         claude: new FakeAgentProtocol({
-          surface: "claude",
+          surface: 'claude',
           availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
         }),
       },
     });
 
     const result = await routeRunner.dispatchStage({
-      processId: "process-1",
-      executionId: "execution-1",
-      stageId: "stage-1",
-      routeKey: "codegen",
+      processId: 'process-1',
+      executionId: 'execution-1',
+      stageId: 'stage-1',
+      routeKey: 'codegen',
       input: {
-        prompt: "implement feature",
+        prompt: 'implement feature',
       },
     });
 
-    expect(result.selectedSurface).toBe("claude");
+    expect(result.selectedSurface).toBe('claude');
     expect(result.auditRecord.selectedBy).toBe(AgentRouteSelectionSource.FALLBACK);
     expect(result.auditRecord.fallbackTriggered).toBe(true);
   });
 
-  it("falls back when primary capability is unsupported and fallback rule requests fallback surface", async () => {
+  it('falls back when primary capability is unsupported and fallback rule requests fallback surface', async () => {
     const routeRunner = new AgentRouteRunner({
       routePolicies: [
         {
-          routeKey: "codegen",
-          primarySurface: "codex",
-          fallbackSurfaces: ["claude"],
+          routeKey: 'codegen',
+          primarySurface: 'codex',
+          fallbackSurfaces: ['claude'],
           capabilityRequirement: {
             requiredCapabilities: [AgentCapability.TOOL_CALLING],
             fallbackRules: [
@@ -238,14 +238,14 @@ describe("adapter-route-runner smoke", () => {
       ],
       protocolBySurface: {
         codex: new FakeAgentProtocol({
-          surface: "codex",
+          surface: 'codex',
           availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
           capabilitySupportById: {
             [AgentCapability.TOOL_CALLING]: AgentCapabilitySupportLevel.UNSUPPORTED,
           },
         }),
         claude: new FakeAgentProtocol({
-          surface: "claude",
+          surface: 'claude',
           availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
           capabilitySupportById: {
             [AgentCapability.TOOL_CALLING]: AgentCapabilitySupportLevel.SUPPORTED,
@@ -255,33 +255,33 @@ describe("adapter-route-runner smoke", () => {
     });
 
     const result = await routeRunner.dispatchStage({
-      processId: "process-1",
-      executionId: "execution-1",
-      stageId: "stage-1",
-      routeKey: "codegen",
+      processId: 'process-1',
+      executionId: 'execution-1',
+      stageId: 'stage-1',
+      routeKey: 'codegen',
       input: {
-        prompt: "implement feature",
+        prompt: 'implement feature',
       },
     });
 
-    expect(result.selectedSurface).toBe("claude");
+    expect(result.selectedSurface).toBe('claude');
     expect(result.auditRecord.requiredFallbackActions).toContain(
       AgentCapabilityFallbackAction.USE_FALLBACK_SURFACE,
     );
   });
 
-  it("throws standardized no-available-surface error when no candidate can run", async () => {
+  it('throws standardized no-available-surface error when no candidate can run', async () => {
     const routeRunner = new AgentRouteRunner({
       routePolicies: [
         {
-          routeKey: "codegen",
-          primarySurface: "codex",
-          fallbackSurfaces: ["claude"],
+          routeKey: 'codegen',
+          primarySurface: 'codex',
+          fallbackSurfaces: ['claude'],
         },
       ],
       protocolBySurface: {
         codex: new FakeAgentProtocol({
-          surface: "codex",
+          surface: 'codex',
           availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
         }),
       },
@@ -289,24 +289,24 @@ describe("adapter-route-runner smoke", () => {
 
     await expect(
       routeRunner.dispatchStage({
-        processId: "process-1",
-        executionId: "execution-1",
-        stageId: "stage-1",
-        routeKey: "codegen",
+        processId: 'process-1',
+        executionId: 'execution-1',
+        stageId: 'stage-1',
+        routeKey: 'codegen',
         input: {
-          prompt: "implement feature",
+          prompt: 'implement feature',
         },
       }),
     ).rejects.toThrowError();
 
     try {
       await routeRunner.dispatchStage({
-        processId: "process-1",
-        executionId: "execution-1",
-        stageId: "stage-1",
-        routeKey: "codegen",
+        processId: 'process-1',
+        executionId: 'execution-1',
+        stageId: 'stage-1',
+        routeKey: 'codegen',
         input: {
-          prompt: "implement feature",
+          prompt: 'implement feature',
         },
       });
     } catch (error) {
@@ -316,22 +316,22 @@ describe("adapter-route-runner smoke", () => {
     }
   });
 
-  it("activates local fallback when restricted network blocks all external surfaces", async () => {
+  it('activates local fallback when restricted network blocks all external surfaces', async () => {
     const routeRunner = new AgentRouteRunner({
       routePolicies: [
         {
-          routeKey: "codegen",
-          primarySurface: "codex",
-          fallbackSurfaces: ["claude"],
+          routeKey: 'codegen',
+          primarySurface: 'codex',
+          fallbackSurfaces: ['claude'],
         },
       ],
       protocolBySurface: {
         codex: new FakeAgentProtocol({
-          surface: "codex",
+          surface: 'codex',
           availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
         }),
         claude: new FakeAgentProtocol({
-          surface: "claude",
+          surface: 'claude',
           availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
         }),
       },
@@ -342,16 +342,16 @@ describe("adapter-route-runner smoke", () => {
     });
 
     const result = await routeRunner.dispatchStage({
-      processId: "process-1",
-      executionId: "execution-1",
-      stageId: "stage-1",
-      routeKey: "codegen",
+      processId: 'process-1',
+      executionId: 'execution-1',
+      stageId: 'stage-1',
+      routeKey: 'codegen',
       input: {
-        prompt: "implement feature",
+        prompt: 'implement feature',
       },
       runtimeContext: {
         networkMode: AgentNetworkMode.RESTRICTED,
-        restrictedReason: "ci-network-policy",
+        restrictedReason: 'ci-network-policy',
       },
     });
 
@@ -359,24 +359,24 @@ describe("adapter-route-runner smoke", () => {
     expect(result.auditRecord.selectedBy).toBe(AgentRouteSelectionSource.LOCAL_FALLBACK);
     expect(result.auditRecord.networkMode).toBe(AgentNetworkMode.RESTRICTED);
     expect(result.auditRecord.localFallbackActivated).toBe(true);
-    expect(result.auditRecord.restrictedReason).toBe("ci-network-policy");
+    expect(result.auditRecord.restrictedReason).toBe('ci-network-policy');
     expect(result.auditRecord.evaluatedSurfaces).toHaveLength(2);
     for (const record of result.auditRecord.evaluatedSurfaces) {
       expect(record.skippedReason).toBe(AgentSurfaceSkipReason.NETWORK_RESTRICTED);
     }
   });
 
-  it("throws restricted-network-blocked error when local fallback is disabled", async () => {
+  it('throws restricted-network-blocked error when local fallback is disabled', async () => {
     const routeRunner = new AgentRouteRunner({
       routePolicies: [
         {
-          routeKey: "codegen",
-          primarySurface: "codex",
+          routeKey: 'codegen',
+          primarySurface: 'codex',
         },
       ],
       protocolBySurface: {
         codex: new FakeAgentProtocol({
-          surface: "codex",
+          surface: 'codex',
           availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
         }),
       },
@@ -387,12 +387,12 @@ describe("adapter-route-runner smoke", () => {
 
     try {
       await routeRunner.dispatchStage({
-        processId: "process-1",
-        executionId: "execution-1",
-        stageId: "stage-1",
-        routeKey: "codegen",
+        processId: 'process-1',
+        executionId: 'execution-1',
+        stageId: 'stage-1',
+        routeKey: 'codegen',
         input: {
-          prompt: "implement feature",
+          prompt: 'implement feature',
         },
         runtimeContext: {
           networkMode: AgentNetworkMode.RESTRICTED,
@@ -406,17 +406,17 @@ describe("adapter-route-runner smoke", () => {
     }
   });
 
-  it("does not trigger local fallback when restricted mode failure is not network-related", async () => {
+  it('does not trigger local fallback when restricted mode failure is not network-related', async () => {
     const routeRunner = new AgentRouteRunner({
       routePolicies: [
         {
-          routeKey: "codegen",
-          primarySurface: "codex",
+          routeKey: 'codegen',
+          primarySurface: 'codex',
         },
       ],
       protocolBySurface: {
         codex: new FakeAgentProtocol({
-          surface: "codex",
+          surface: 'codex',
           availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
           throwOnProbe: true,
         }),
@@ -428,12 +428,12 @@ describe("adapter-route-runner smoke", () => {
 
     try {
       await routeRunner.dispatchStage({
-        processId: "process-1",
-        executionId: "execution-1",
-        stageId: "stage-1",
-        routeKey: "codegen",
+        processId: 'process-1',
+        executionId: 'execution-1',
+        stageId: 'stage-1',
+        routeKey: 'codegen',
         input: {
-          prompt: "implement feature",
+          prompt: 'implement feature',
         },
         runtimeContext: {
           networkMode: AgentNetworkMode.RESTRICTED,
@@ -446,17 +446,17 @@ describe("adapter-route-runner smoke", () => {
     }
   });
 
-  it("throws restricted-network-fallback-failed error when custom fallback handler fails", async () => {
+  it('throws restricted-network-fallback-failed error when custom fallback handler fails', async () => {
     const routeRunner = new AgentRouteRunner({
       routePolicies: [
         {
-          routeKey: "codegen",
-          primarySurface: "codex",
+          routeKey: 'codegen',
+          primarySurface: 'codex',
         },
       ],
       protocolBySurface: {
         codex: new FakeAgentProtocol({
-          surface: "codex",
+          surface: 'codex',
           availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
         }),
       },
@@ -466,7 +466,7 @@ describe("adapter-route-runner smoke", () => {
       restrictedNetworkFallbackHandler: {
         async invokeFallback(_context: AgentRestrictedNetworkFallbackContext) {
           throw {
-            message: "local fallback failed",
+            message: 'local fallback failed',
           };
         },
       },
@@ -474,12 +474,12 @@ describe("adapter-route-runner smoke", () => {
 
     try {
       await routeRunner.dispatchStage({
-        processId: "process-1",
-        executionId: "execution-1",
-        stageId: "stage-1",
-        routeKey: "codegen",
+        processId: 'process-1',
+        executionId: 'execution-1',
+        stageId: 'stage-1',
+        routeKey: 'codegen',
         input: {
-          prompt: "implement feature",
+          prompt: 'implement feature',
         },
         runtimeContext: {
           networkMode: AgentNetworkMode.RESTRICTED,
@@ -492,17 +492,17 @@ describe("adapter-route-runner smoke", () => {
     }
   });
 
-  it("maps invoke-stage failures to standardized adapter protocol error", async () => {
+  it('maps invoke-stage failures to standardized adapter protocol error', async () => {
     const routeRunner = new AgentRouteRunner({
       routePolicies: [
         {
-          routeKey: "codegen",
-          primarySurface: "codex",
+          routeKey: 'codegen',
+          primarySurface: 'codex',
         },
       ],
       protocolBySurface: {
         codex: new FakeAgentProtocol({
-          surface: "codex",
+          surface: 'codex',
           availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
           throwOnInvoke: true,
         }),
@@ -511,12 +511,12 @@ describe("adapter-route-runner smoke", () => {
 
     try {
       await routeRunner.dispatchStage({
-        processId: "process-1",
-        executionId: "execution-1",
-        stageId: "stage-1",
-        routeKey: "codegen",
+        processId: 'process-1',
+        executionId: 'execution-1',
+        stageId: 'stage-1',
+        routeKey: 'codegen',
         input: {
-          prompt: "implement feature",
+          prompt: 'implement feature',
         },
       });
     } catch (error) {
@@ -524,14 +524,14 @@ describe("adapter-route-runner smoke", () => {
     }
   });
 
-  it("throws standardized config error when capabilityRequirement nested shape is invalid", () => {
+  it('throws standardized config error when capabilityRequirement nested shape is invalid', () => {
     expect(
       () =>
         new AgentRouteRunner({
           routePolicies: [
             {
-              routeKey: "codegen",
-              primarySurface: "codex",
+              routeKey: 'codegen',
+              primarySurface: 'codex',
               capabilityRequirement: {
                 requiredCapabilities: [AgentCapability.TOOL_CALLING],
                 fallbackRules: {} as unknown as never[],
@@ -540,7 +540,7 @@ describe("adapter-route-runner smoke", () => {
           ],
           protocolBySurface: {
             codex: new FakeAgentProtocol({
-              surface: "codex",
+              surface: 'codex',
               availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
             }),
           },
@@ -551,8 +551,8 @@ describe("adapter-route-runner smoke", () => {
       new AgentRouteRunner({
         routePolicies: [
           {
-            routeKey: "codegen",
-            primarySurface: "codex",
+            routeKey: 'codegen',
+            primarySurface: 'codex',
             capabilityRequirement: {
               requiredCapabilities: [AgentCapability.TOOL_CALLING],
               fallbackRules: {} as unknown as never[],
@@ -561,7 +561,7 @@ describe("adapter-route-runner smoke", () => {
         ],
         protocolBySurface: {
           codex: new FakeAgentProtocol({
-            surface: "codex",
+            surface: 'codex',
             availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
           }),
         },

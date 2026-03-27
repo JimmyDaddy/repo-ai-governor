@@ -1,5 +1,5 @@
-import type { MemoryStoreProvider } from "@repo-ai-governor/memory-store-adapter";
-import type { MemoryRuntimeConfig, MemoryStoreEngine } from "@repo-ai-governor/shared";
+import type { MemoryStoreProvider } from '@repo-ai-governor/memory-store-adapter';
+import type { MemoryRuntimeConfig, MemoryStoreEngine } from '@repo-ai-governor/shared';
 import type {
   MemoryProviderBuiltInId,
   MemoryProviderDescriptorKind,
@@ -9,8 +9,8 @@ import type {
   MemoryProviderPluginSpecifierKind,
   MemoryProviderResolutionSource,
   MemoryProviderRuntimeMode,
-} from "../../constants/memory-provider-registry.constant.js";
-import type { MemoryProviderModuleLoader } from "../aliases/index.js";
+} from '../../constants/memory-provider-registry.constant.js';
+import type { MemoryProviderModuleLoader } from '../aliases/index.js';
 
 /**
  * Defines one built-in memory provider descriptor frozen by the registry.

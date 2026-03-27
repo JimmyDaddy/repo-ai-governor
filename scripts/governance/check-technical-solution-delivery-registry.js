@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
-import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
-import { gateFail, gateInfo, gatePass } from "./gate-output.js";
+import { gateFail, gateInfo, gatePass } from './gate-output.js';
 import {
   DEFAULT_TECHNICAL_SOLUTION_DELIVERY_REGISTRY_PATH,
   SUPPORTED_TECHNICAL_SOLUTION_CONSUMER_SURFACES,
@@ -13,24 +13,24 @@ import {
   SUPPORTED_TECHNICAL_SOLUTION_USER_IMPACT_LEVELS,
   buildTechnicalSolutionDeliveryIndex,
   loadTechnicalSolutionDeliveryRegistry,
-} from "./technical-solution-delivery-registry.js";
+} from './technical-solution-delivery-registry.js';
 import {
   DEFAULT_TECHNICAL_SOLUTION_LIFECYCLE_REGISTRY_PATH,
   buildTechnicalSolutionLifecycleIndex,
   loadTechnicalSolutionLifecycleRegistry,
-} from "./technical-solution-lifecycle-registry.js";
+} from './technical-solution-lifecycle-registry.js';
 
-const GATE_NAME = "technical-solution-delivery-registry";
-const DEFAULT_CURRENT_CONTEXT_PATH = ".repo-ai-governor/context/current-context.md";
+const GATE_NAME = 'technical-solution-delivery-registry';
+const DEFAULT_CURRENT_CONTEXT_PATH = '.repo-ai-governor/context/current-context.md';
 const USER_FACING_CONSUMER_SURFACES = new Set([
-  "adopter_cli",
-  "packaged_distribution",
-  "runtime_service",
-  "docs_playbook",
+  'adopter_cli',
+  'packaged_distribution',
+  'runtime_service',
+  'docs_playbook',
 ]);
-const FOLLOWUP_EXECUTION_STATUSES = new Set(["planned", "in_progress", "completed"]);
-const EXISTING_STREAM_EXECUTION_STATUSES = new Set(["in_progress", "completed"]);
-const ACTIVE_STREAM_CONTEXT_STATUSES = new Set(["planned", "in_progress"]);
+const FOLLOWUP_EXECUTION_STATUSES = new Set(['planned', 'in_progress', 'completed']);
+const EXISTING_STREAM_EXECUTION_STATUSES = new Set(['in_progress', 'completed']);
+const ACTIVE_STREAM_CONTEXT_STATUSES = new Set(['planned', 'in_progress']);
 
 /**
  * Resolves CLI options.
@@ -40,7 +40,7 @@ const ACTIVE_STREAM_CONTEXT_STATUSES = new Set(["planned", "in_progress"]);
 function resolveCliOptions(argv) {
   /** @type {{format: "text" | "json", registryPath: string, lifecycleRegistryPath: string, currentContextPath: string}} */
   const options = {
-    format: "text",
+    format: 'text',
     registryPath: DEFAULT_TECHNICAL_SOLUTION_DELIVERY_REGISTRY_PATH,
     lifecycleRegistryPath: DEFAULT_TECHNICAL_SOLUTION_LIFECYCLE_REGISTRY_PATH,
     currentContextPath: DEFAULT_CURRENT_CONTEXT_PATH,
@@ -49,7 +49,7 @@ function resolveCliOptions(argv) {
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
 
-    if (argument === "--format") {
+    if (argument === '--format') {
       const nextValue = argv[index + 1];
       if (!nextValue) {
         throw new Error('Missing value for "--format".');
@@ -59,12 +59,12 @@ function resolveCliOptions(argv) {
       continue;
     }
 
-    if (argument.startsWith("--format=")) {
-      options.format = readFormatValue(argument.slice("--format=".length));
+    if (argument.startsWith('--format=')) {
+      options.format = readFormatValue(argument.slice('--format='.length));
       continue;
     }
 
-    if (argument === "--registry") {
+    if (argument === '--registry') {
       const nextValue = argv[index + 1];
       if (!nextValue) {
         throw new Error('Missing value for "--registry".');
@@ -74,12 +74,12 @@ function resolveCliOptions(argv) {
       continue;
     }
 
-    if (argument.startsWith("--registry=")) {
-      options.registryPath = argument.slice("--registry=".length).trim();
+    if (argument.startsWith('--registry=')) {
+      options.registryPath = argument.slice('--registry='.length).trim();
       continue;
     }
 
-    if (argument === "--lifecycle") {
+    if (argument === '--lifecycle') {
       const nextValue = argv[index + 1];
       if (!nextValue) {
         throw new Error('Missing value for "--lifecycle".');
@@ -89,12 +89,12 @@ function resolveCliOptions(argv) {
       continue;
     }
 
-    if (argument.startsWith("--lifecycle=")) {
-      options.lifecycleRegistryPath = argument.slice("--lifecycle=".length).trim();
+    if (argument.startsWith('--lifecycle=')) {
+      options.lifecycleRegistryPath = argument.slice('--lifecycle='.length).trim();
       continue;
     }
 
-    if (argument === "--current-context") {
+    if (argument === '--current-context') {
       const nextValue = argv[index + 1];
       if (!nextValue) {
         throw new Error('Missing value for "--current-context".');
@@ -104,8 +104,8 @@ function resolveCliOptions(argv) {
       continue;
     }
 
-    if (argument.startsWith("--current-context=")) {
-      options.currentContextPath = argument.slice("--current-context=".length).trim();
+    if (argument.startsWith('--current-context=')) {
+      options.currentContextPath = argument.slice('--current-context='.length).trim();
       continue;
     }
 
@@ -122,7 +122,7 @@ function resolveCliOptions(argv) {
  */
 function readFormatValue(value) {
   const normalizedValue = value.trim().toLowerCase();
-  if (normalizedValue !== "text" && normalizedValue !== "json") {
+  if (normalizedValue !== 'text' && normalizedValue !== 'json') {
     throw new Error(`Unsupported format "${value}". Expected "text" or "json".`);
   }
 
@@ -151,7 +151,7 @@ function buildFailure(ruleId, message, details) {
  */
 function parseCsvLine(line) {
   const values = [];
-  let currentValue = "";
+  let currentValue = '';
   let inQuotes = false;
 
   for (let index = 0; index < line.length; index += 1) {
@@ -169,9 +169,9 @@ function parseCsvLine(line) {
       continue;
     }
 
-    if (character === "," && !inQuotes) {
+    if (character === ',' && !inQuotes) {
       values.push(currentValue);
-      currentValue = "";
+      currentValue = '';
       continue;
     }
 
@@ -193,7 +193,7 @@ function loadTaskRows(taskCsvPath) {
     return [];
   }
 
-  const csvContent = readFileSync(absoluteTaskCsvPath, "utf8");
+  const csvContent = readFileSync(absoluteTaskCsvPath, 'utf8');
   const csvLines = csvContent
     .split(/\r?\n/u)
     .map((line) => line.trimEnd())
@@ -209,7 +209,7 @@ function loadTaskRows(taskCsvPath) {
     /** @type {Record<string, string>} */
     const row = {};
     for (let index = 0; index < headers.length; index += 1) {
-      row[headers[index]] = String(rowValues[index] ?? "").trim();
+      row[headers[index]] = String(rowValues[index] ?? '').trim();
     }
     return row;
   });
@@ -226,7 +226,7 @@ function loadCurrentContextStreamRefs(currentContextPath) {
     return new Set();
   }
 
-  const content = readFileSync(absoluteCurrentContextPath, "utf8");
+  const content = readFileSync(absoluteCurrentContextPath, 'utf8');
   const refs = new Set();
   const pattern = /project=`([^`]+)`, sprint=`([^`]+)`/gmu;
 
@@ -255,15 +255,15 @@ function evaluateDeliveryRegistry(options) {
   if (!lifecycleRegistry) {
     failures.push(
       buildFailure(
-        "lifecycle_registry_missing",
-        "Technical solution lifecycle registry is missing.",
+        'lifecycle_registry_missing',
+        'Technical solution lifecycle registry is missing.',
         {
           registry_path: options.lifecycleRegistryPath,
         },
       ),
     );
     return {
-      status: "fail",
+      status: 'fail',
       failures,
       active_solutions_scanned: 0,
       deliveries_scanned: 0,
@@ -275,18 +275,18 @@ function evaluateDeliveryRegistry(options) {
   if (!deliveryRegistry) {
     failures.push(
       buildFailure(
-        "delivery_registry_missing",
-        "Technical solution delivery registry is missing.",
+        'delivery_registry_missing',
+        'Technical solution delivery registry is missing.',
         {
           registry_path: options.registryPath,
         },
       ),
     );
     return {
-      status: "fail",
+      status: 'fail',
       failures,
       active_solutions_scanned: lifecycleRegistry.solutions.filter(
-        (entry) => entry.status === "active",
+        (entry) => entry.status === 'active',
       ).length,
       deliveries_scanned: 0,
       registry_path: options.registryPath,
@@ -296,15 +296,15 @@ function evaluateDeliveryRegistry(options) {
   const lifecycleIndex = buildTechnicalSolutionLifecycleIndex(lifecycleRegistry);
   const deliveryIndex = buildTechnicalSolutionDeliveryIndex(deliveryRegistry);
   const currentContextStreamRefs = loadCurrentContextStreamRefs(options.currentContextPath);
-  const activeSolutions = lifecycleRegistry.solutions.filter((entry) => entry.status === "active");
+  const activeSolutions = lifecycleRegistry.solutions.filter((entry) => entry.status === 'active');
   const seenSolutionIds = new Set();
 
   for (const activeSolution of activeSolutions) {
     if (!deliveryIndex.delivery_by_solution_id.has(activeSolution.solution_id)) {
       failures.push(
         buildFailure(
-          "active_solution_missing_delivery",
-          "Every active technical solution must declare a delivery handoff entry.",
+          'active_solution_missing_delivery',
+          'Every active technical solution must declare a delivery handoff entry.',
           {
             solution_id: activeSolution.solution_id,
           },
@@ -316,7 +316,7 @@ function evaluateDeliveryRegistry(options) {
   for (const deliveryEntry of deliveryRegistry.deliveries) {
     if (!deliveryEntry.solution_id) {
       failures.push(
-        buildFailure("delivery_solution_id_missing", "Delivery entry is missing solution_id.", {
+        buildFailure('delivery_solution_id_missing', 'Delivery entry is missing solution_id.', {
           registry_path: deliveryRegistry.registry_path,
         }),
       );
@@ -325,7 +325,7 @@ function evaluateDeliveryRegistry(options) {
 
     if (seenSolutionIds.has(deliveryEntry.solution_id)) {
       failures.push(
-        buildFailure("duplicate_delivery_solution_id", "solution_id must be unique.", {
+        buildFailure('duplicate_delivery_solution_id', 'solution_id must be unique.', {
           solution_id: deliveryEntry.solution_id,
         }),
       );
@@ -336,8 +336,8 @@ function evaluateDeliveryRegistry(options) {
     if (!lifecycleEntry) {
       failures.push(
         buildFailure(
-          "delivery_solution_unresolved",
-          "Delivery entry must reference an existing technical solution lifecycle entry.",
+          'delivery_solution_unresolved',
+          'Delivery entry must reference an existing technical solution lifecycle entry.',
           {
             solution_id: deliveryEntry.solution_id,
           },
@@ -346,11 +346,11 @@ function evaluateDeliveryRegistry(options) {
       continue;
     }
 
-    if (lifecycleEntry.status !== "active") {
+    if (lifecycleEntry.status !== 'active') {
       failures.push(
         buildFailure(
-          "delivery_solution_not_active",
-          "Delivery entries may only target active technical solutions.",
+          'delivery_solution_not_active',
+          'Delivery entries may only target active technical solutions.',
           {
             solution_id: deliveryEntry.solution_id,
             lifecycle_status: lifecycleEntry.status,
@@ -365,7 +365,7 @@ function evaluateDeliveryRegistry(options) {
         !deliveryRegistry.allowed_delivery_modes.includes(deliveryEntry.delivery_mode))
     ) {
       failures.push(
-        buildFailure("delivery_mode_invalid", "Delivery mode is invalid.", {
+        buildFailure('delivery_mode_invalid', 'Delivery mode is invalid.', {
           solution_id: deliveryEntry.solution_id,
           delivery_mode: deliveryEntry.delivery_mode,
         }),
@@ -375,8 +375,8 @@ function evaluateDeliveryRegistry(options) {
     if (deliveryEntry.consumer_surfaces.length === 0) {
       failures.push(
         buildFailure(
-          "consumer_surfaces_missing",
-          "Delivery entries must declare at least one consumer surface.",
+          'consumer_surfaces_missing',
+          'Delivery entries must declare at least one consumer surface.',
           {
             solution_id: deliveryEntry.solution_id,
           },
@@ -391,7 +391,7 @@ function evaluateDeliveryRegistry(options) {
           !deliveryRegistry.allowed_consumer_surfaces.includes(consumerSurface))
       ) {
         failures.push(
-          buildFailure("consumer_surface_invalid", "Consumer surface is invalid.", {
+          buildFailure('consumer_surface_invalid', 'Consumer surface is invalid.', {
             solution_id: deliveryEntry.solution_id,
             consumer_surface: consumerSurface,
           }),
@@ -405,7 +405,7 @@ function evaluateDeliveryRegistry(options) {
         !deliveryRegistry.allowed_user_impact_levels.includes(deliveryEntry.user_impact_level))
     ) {
       failures.push(
-        buildFailure("user_impact_level_invalid", "user_impact_level is invalid.", {
+        buildFailure('user_impact_level_invalid', 'user_impact_level is invalid.', {
           solution_id: deliveryEntry.solution_id,
           user_impact_level: deliveryEntry.user_impact_level,
         }),
@@ -418,7 +418,7 @@ function evaluateDeliveryRegistry(options) {
         !deliveryRegistry.allowed_execution_statuses.includes(deliveryEntry.execution_status))
     ) {
       failures.push(
-        buildFailure("execution_status_invalid", "Execution status is invalid.", {
+        buildFailure('execution_status_invalid', 'Execution status is invalid.', {
           solution_id: deliveryEntry.solution_id,
           execution_status: deliveryEntry.execution_status,
         }),
@@ -431,7 +431,7 @@ function evaluateDeliveryRegistry(options) {
         !deliveryRegistry.allowed_rollout_statuses.includes(deliveryEntry.rollout_status))
     ) {
       failures.push(
-        buildFailure("rollout_status_invalid", "rollout_status is invalid.", {
+        buildFailure('rollout_status_invalid', 'rollout_status is invalid.', {
           solution_id: deliveryEntry.solution_id,
           rollout_status: deliveryEntry.rollout_status,
         }),
@@ -440,18 +440,18 @@ function evaluateDeliveryRegistry(options) {
 
     if (!deliveryEntry.accepted_at) {
       failures.push(
-        buildFailure("delivery_acceptance_missing", "accepted_at is required.", {
+        buildFailure('delivery_acceptance_missing', 'accepted_at is required.', {
           solution_id: deliveryEntry.solution_id,
         }),
       );
     }
 
-    if (deliveryEntry.delivery_mode === "docs_only") {
-      if (deliveryEntry.execution_status !== "not_required") {
+    if (deliveryEntry.delivery_mode === 'docs_only') {
+      if (deliveryEntry.execution_status !== 'not_required') {
         failures.push(
           buildFailure(
-            "docs_only_status_invalid",
-            "`docs_only` delivery entries must use `not_required` execution status.",
+            'docs_only_status_invalid',
+            '`docs_only` delivery entries must use `not_required` execution status.',
             {
               solution_id: deliveryEntry.solution_id,
               execution_status: deliveryEntry.execution_status,
@@ -459,11 +459,11 @@ function evaluateDeliveryRegistry(options) {
           ),
         );
       }
-      if (deliveryEntry.rollout_status !== "not_required") {
+      if (deliveryEntry.rollout_status !== 'not_required') {
         failures.push(
           buildFailure(
-            "docs_only_rollout_status_invalid",
-            "`docs_only` delivery entries must use `rollout_status=not_required`.",
+            'docs_only_rollout_status_invalid',
+            '`docs_only` delivery entries must use `rollout_status=not_required`.',
             {
               solution_id: deliveryEntry.solution_id,
               rollout_status: deliveryEntry.rollout_status,
@@ -478,11 +478,11 @@ function evaluateDeliveryRegistry(options) {
       USER_FACING_CONSUMER_SURFACES.has(consumerSurface),
     );
 
-    if (hasUserFacingSurface && deliveryEntry.rollout_status === "not_required") {
+    if (hasUserFacingSurface && deliveryEntry.rollout_status === 'not_required') {
       failures.push(
         buildFailure(
-          "user_facing_rollout_missing",
-          "User-facing delivery entries must track rollout ownership.",
+          'user_facing_rollout_missing',
+          'User-facing delivery entries must track rollout ownership.',
           {
             solution_id: deliveryEntry.solution_id,
             consumer_surfaces: deliveryEntry.consumer_surfaces,
@@ -493,13 +493,13 @@ function evaluateDeliveryRegistry(options) {
     }
 
     if (
-      deliveryEntry.user_impact_level === "none" &&
-      deliveryEntry.rollout_status !== "not_required"
+      deliveryEntry.user_impact_level === 'none' &&
+      deliveryEntry.rollout_status !== 'not_required'
     ) {
       failures.push(
         buildFailure(
-          "impact_rollout_mismatch",
-          "`user_impact_level=none` must not declare rollout work.",
+          'impact_rollout_mismatch',
+          '`user_impact_level=none` must not declare rollout work.',
           {
             solution_id: deliveryEntry.solution_id,
             user_impact_level: deliveryEntry.user_impact_level,
@@ -510,13 +510,13 @@ function evaluateDeliveryRegistry(options) {
     }
 
     if (
-      deliveryEntry.rollout_status === "not_required" &&
+      deliveryEntry.rollout_status === 'not_required' &&
       deliveryEntry.rollout_artifacts.length > 0
     ) {
       failures.push(
         buildFailure(
-          "rollout_artifacts_unexpected",
-          "`rollout_status=not_required` must not declare rollout_artifacts.",
+          'rollout_artifacts_unexpected',
+          '`rollout_status=not_required` must not declare rollout_artifacts.',
           {
             solution_id: deliveryEntry.solution_id,
             rollout_artifacts: deliveryEntry.rollout_artifacts,
@@ -526,13 +526,13 @@ function evaluateDeliveryRegistry(options) {
     }
 
     if (
-      deliveryEntry.rollout_status !== "not_required" &&
+      deliveryEntry.rollout_status !== 'not_required' &&
       deliveryEntry.rollout_artifacts.length === 0
     ) {
       failures.push(
         buildFailure(
-          "rollout_artifacts_missing",
-          "Rollout-tracked delivery entries must declare rollout_artifacts.",
+          'rollout_artifacts_missing',
+          'Rollout-tracked delivery entries must declare rollout_artifacts.',
           {
             solution_id: deliveryEntry.solution_id,
             rollout_status: deliveryEntry.rollout_status,
@@ -542,13 +542,13 @@ function evaluateDeliveryRegistry(options) {
     }
 
     if (
-      deliveryEntry.delivery_mode === "existing_stream" &&
+      deliveryEntry.delivery_mode === 'existing_stream' &&
       !EXISTING_STREAM_EXECUTION_STATUSES.has(deliveryEntry.execution_status)
     ) {
       failures.push(
         buildFailure(
-          "existing_stream_status_invalid",
-          "`existing_stream` entries must use `in_progress` or `completed`.",
+          'existing_stream_status_invalid',
+          '`existing_stream` entries must use `in_progress` or `completed`.',
           {
             solution_id: deliveryEntry.solution_id,
             execution_status: deliveryEntry.execution_status,
@@ -558,13 +558,13 @@ function evaluateDeliveryRegistry(options) {
     }
 
     if (
-      deliveryEntry.delivery_mode === "followup_required" &&
+      deliveryEntry.delivery_mode === 'followup_required' &&
       !FOLLOWUP_EXECUTION_STATUSES.has(deliveryEntry.execution_status)
     ) {
       failures.push(
         buildFailure(
-          "followup_required_status_invalid",
-          "`followup_required` entries must use `planned`, `in_progress`, or `completed`.",
+          'followup_required_status_invalid',
+          '`followup_required` entries must use `planned`, `in_progress`, or `completed`.',
           {
             solution_id: deliveryEntry.solution_id,
             execution_status: deliveryEntry.execution_status,
@@ -574,18 +574,18 @@ function evaluateDeliveryRegistry(options) {
     }
 
     const requiredStringFields = [
-      ["project_ref", deliveryEntry.project_ref],
-      ["sprint_ref", deliveryEntry.sprint_ref],
-      ["project_plan_path", deliveryEntry.project_plan_path],
-      ["sprint_plan_path", deliveryEntry.sprint_plan_path],
-      ["task_csv_path", deliveryEntry.task_csv_path],
-      ["handoff_artifact_path", deliveryEntry.handoff_artifact_path],
+      ['project_ref', deliveryEntry.project_ref],
+      ['sprint_ref', deliveryEntry.sprint_ref],
+      ['project_plan_path', deliveryEntry.project_plan_path],
+      ['sprint_plan_path', deliveryEntry.sprint_plan_path],
+      ['task_csv_path', deliveryEntry.task_csv_path],
+      ['handoff_artifact_path', deliveryEntry.handoff_artifact_path],
     ];
 
     for (const [fieldName, fieldValue] of requiredStringFields) {
       if (!fieldValue) {
         failures.push(
-          buildFailure("delivery_field_missing", "Delivery entry is missing a required field.", {
+          buildFailure('delivery_field_missing', 'Delivery entry is missing a required field.', {
             solution_id: deliveryEntry.solution_id,
             field: fieldName,
           }),
@@ -596,8 +596,8 @@ function evaluateDeliveryRegistry(options) {
     if (deliveryEntry.task_ids.length === 0) {
       failures.push(
         buildFailure(
-          "delivery_task_ids_missing",
-          "Delivery entries with execution ownership must declare task_ids.",
+          'delivery_task_ids_missing',
+          'Delivery entries with execution ownership must declare task_ids.',
           {
             solution_id: deliveryEntry.solution_id,
           },
@@ -620,7 +620,7 @@ function evaluateDeliveryRegistry(options) {
       const absolutePath = resolve(process.cwd(), pathValue);
       if (!existsSync(absolutePath)) {
         failures.push(
-          buildFailure("delivery_path_missing", "Delivery path does not exist.", {
+          buildFailure('delivery_path_missing', 'Delivery path does not exist.', {
             solution_id: deliveryEntry.solution_id,
             path: pathValue,
           }),
@@ -634,8 +634,8 @@ function evaluateDeliveryRegistry(options) {
       if (matchingRows.length === 0) {
         failures.push(
           buildFailure(
-            "delivery_task_unresolved",
-            "task_ids must resolve to at least one row in the referenced tasks.csv.",
+            'delivery_task_unresolved',
+            'task_ids must resolve to at least one row in the referenced tasks.csv.',
             {
               solution_id: deliveryEntry.solution_id,
               task_id: taskId,
@@ -650,8 +650,8 @@ function evaluateDeliveryRegistry(options) {
       if (lastRow.project !== deliveryEntry.project_ref) {
         failures.push(
           buildFailure(
-            "delivery_task_project_mismatch",
-            "tasks.csv project must match the delivery registry project_ref.",
+            'delivery_task_project_mismatch',
+            'tasks.csv project must match the delivery registry project_ref.',
             {
               solution_id: deliveryEntry.solution_id,
               task_id: taskId,
@@ -665,8 +665,8 @@ function evaluateDeliveryRegistry(options) {
       if (lastRow.sprint !== deliveryEntry.sprint_ref) {
         failures.push(
           buildFailure(
-            "delivery_task_sprint_mismatch",
-            "tasks.csv sprint must match the delivery registry sprint_ref.",
+            'delivery_task_sprint_mismatch',
+            'tasks.csv sprint must match the delivery registry sprint_ref.',
             {
               solution_id: deliveryEntry.solution_id,
               task_id: taskId,
@@ -684,8 +684,8 @@ function evaluateDeliveryRegistry(options) {
     ) {
       failures.push(
         buildFailure(
-          "followup_stream_not_registered",
-          "Planned or in-progress delivery handoff must be visible from current-context active/planned streams.",
+          'followup_stream_not_registered',
+          'Planned or in-progress delivery handoff must be visible from current-context active/planned streams.',
           {
             solution_id: deliveryEntry.solution_id,
             project_ref: deliveryEntry.project_ref,
@@ -698,7 +698,7 @@ function evaluateDeliveryRegistry(options) {
   }
 
   return {
-    status: failures.length > 0 ? "fail" : "pass",
+    status: failures.length > 0 ? 'fail' : 'pass',
     failures,
     active_solutions_scanned: activeSolutions.length,
     deliveries_scanned: deliveryRegistry.deliveries.length,
@@ -710,9 +710,9 @@ try {
   const options = resolveCliOptions(process.argv.slice(2));
   const evaluation = evaluateDeliveryRegistry(options);
 
-  if (options.format === "json") {
+  if (options.format === 'json') {
     process.stdout.write(`${JSON.stringify(evaluation, null, 2)}\n`);
-  } else if (evaluation.status === "pass") {
+  } else if (evaluation.status === 'pass') {
     gatePass(
       GATE_NAME,
       `Validated ${evaluation.deliveries_scanned} delivery handoff entries for ${evaluation.active_solutions_scanned} active solutions.`,
@@ -724,19 +724,19 @@ try {
     gateFail(GATE_NAME, `Detected ${evaluation.failures.length} delivery handoff issue(s).`);
   }
 
-  if (evaluation.status !== "pass") {
+  if (evaluation.status !== 'pass') {
     process.exit(1);
   }
 } catch (error) {
   const errorMessage = error instanceof Error ? error.message : String(error);
-  if (process.argv.includes("--format") && process.argv.includes("json")) {
+  if (process.argv.includes('--format') && process.argv.includes('json')) {
     process.stdout.write(
       `${JSON.stringify(
         {
-          status: "fail",
+          status: 'fail',
           failures: [
             {
-              rule_id: "runtime_error",
+              rule_id: 'runtime_error',
               message: errorMessage,
               details: {},
             },

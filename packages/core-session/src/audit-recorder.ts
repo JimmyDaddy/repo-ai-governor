@@ -1,11 +1,11 @@
-import { randomUUID } from "node:crypto";
+import { randomUUID } from 'node:crypto';
 
-import { type MemoryManager, MemoryScope } from "@repo-ai-governor/core-memory";
+import { type MemoryManager, MemoryScope } from '@repo-ai-governor/core-memory';
 import {
   ALL_DEPENDENCY_RESOLUTION_STATUSES,
   GovernorErrorCode,
   RuntimeError,
-} from "@repo-ai-governor/shared";
+} from '@repo-ai-governor/shared';
 import {
   AUDIT_NON_SENSITIVE_FIELD_NAME_EXCEPTIONS,
   AUDIT_SENSITIVE_FIELD_NAME_MARKERS,
@@ -16,7 +16,7 @@ import {
   DEFAULT_AUDIT_MASKING_ENABLED,
   DEFAULT_AUDIT_RETENTION_DAYS,
   MILLISECONDS_PER_DAY,
-} from "./constants/index.js";
+} from './constants/index.js';
 import type {
   ApplyAuditRetentionOptions,
   AuditEventRecord,
@@ -27,9 +27,9 @@ import type {
   ListAuditRecordsOptions,
   PersistedAuditRecord,
   RecordAuditEventOptions,
-} from "./types/index.js";
+} from './types/index.js';
 
-const AUDIT_RECORD_TAG = "audit-record";
+const AUDIT_RECORD_TAG = 'audit-record';
 const RFC3339_SECONDS_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})$/u;
 const DISPLAY_TIMESTAMP_PATTERN = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} UTC(?:\+|-)\d{2}:\d{2}$/u;
 const AUDIT_RECORD_STATUS_VALUES = new Set<string>(Object.values(AuditRecordStatus));
@@ -56,7 +56,7 @@ interface PersistedAuditStorageRow {
  * @returns Lowercase alphanumeric field key.
  */
 function normalizeAuditFieldName(value: string): string {
-  return value.replace(/[^a-z0-9]/giu, "").toLowerCase();
+  return value.replace(/[^a-z0-9]/giu, '').toLowerCase();
 }
 
 /**
@@ -90,7 +90,7 @@ export class AuditRecorder {
     const normalizedEvent = this.normalizeAuditEvent(options.event);
     const maskedEvent = this.applySensitiveDataMasking(normalizedEvent);
     const recordId = options.recordId ?? randomUUID();
-    const recordedAt = this.resolveRfc3339SecondsTimestamp(options.recordedAt, "recordedAt");
+    const recordedAt = this.resolveRfc3339SecondsTimestamp(options.recordedAt, 'recordedAt');
     const persistedRecord: PersistedAuditRecord = {
       recordId,
       recordedAt,
@@ -127,8 +127,8 @@ export class AuditRecorder {
    * @returns Matching audit records ordered by `recordedAt`, then `recordId`.
    */
   public async listEvents(options: ListAuditRecordsOptions): Promise<PersistedAuditRecord[]> {
-    const executionId = this.readRequiredString(options.executionId, "executionId");
-    const stageId = this.readOptionalString(options.stageId, "stageId");
+    const executionId = this.readRequiredString(options.executionId, 'executionId');
+    const stageId = this.readOptionalString(options.stageId, 'stageId');
     const records = await this.memoryManager.queryEntries({
       scope: MemoryScope.EXECUTION,
       keyPrefix: this.buildExecutionKeyPrefix(executionId),
@@ -182,12 +182,12 @@ export class AuditRecorder {
   ): Promise<AuditRetentionExecutionResult> {
     const retentionDays = this.readPositiveInteger(
       options.retentionDays ?? this.privacyGovernanceConfig.retentionDays,
-      "retentionDays",
+      'retentionDays',
     );
-    const nowTimestamp = this.resolveRfc3339SecondsTimestamp(options.now, "now");
+    const nowTimestamp = this.resolveRfc3339SecondsTimestamp(options.now, 'now');
     const archiveThreshold = this.toRfc3339SecondsTimestamp(
       new Date(
-        this.toTimestampMilliseconds(nowTimestamp, "now") - retentionDays * MILLISECONDS_PER_DAY,
+        this.toTimestampMilliseconds(nowTimestamp, 'now') - retentionDays * MILLISECONDS_PER_DAY,
       ),
     );
 
@@ -196,8 +196,8 @@ export class AuditRecorder {
     });
     const rowsToArchive = allRows.filter(
       (row) =>
-        this.toTimestampMilliseconds(row.record.recordedAt, "recordedAt") <
-        this.toTimestampMilliseconds(archiveThreshold, "archiveThreshold"),
+        this.toTimestampMilliseconds(row.record.recordedAt, 'recordedAt') <
+        this.toTimestampMilliseconds(archiveThreshold, 'archiveThreshold'),
     );
 
     if (rowsToArchive.length === 0) {
@@ -226,13 +226,13 @@ export class AuditRecorder {
    * @returns Normalized audit event payload.
    */
   private normalizeAuditEvent(event: AuditEventRecord): AuditEventRecord {
-    const status = this.readRequiredString(event.status, "status");
+    const status = this.readRequiredString(event.status, 'status');
     if (!AUDIT_RECORD_STATUS_VALUES.has(status)) {
       throw new RuntimeError(
         GovernorErrorCode.AUDIT_RECORD_INVALID,
-        `Audit event field "status" must be one of ${Array.from(AUDIT_RECORD_STATUS_VALUES).join(", ")}.`,
+        `Audit event field "status" must be one of ${Array.from(AUDIT_RECORD_STATUS_VALUES).join(', ')}.`,
         {
-          fieldName: "status",
+          fieldName: 'status',
           value: status,
         },
       );
@@ -242,162 +242,162 @@ export class AuditRecorder {
     );
 
     const normalizedRecord: AuditEventRecord = {
-      executionId: this.readRequiredString(event.executionId, "executionId"),
-      stageId: this.readRequiredString(event.stageId, "stageId"),
-      routeKey: this.readRequiredString(event.routeKey, "routeKey"),
-      surface: this.readRequiredString(event.surface, "surface"),
-      agentRole: this.readRequiredString(event.agentRole, "agentRole"),
-      roleProfileId: this.readRequiredString(event.roleProfileId, "roleProfileId"),
-      roleSource: this.readRequiredString(event.roleSource, "roleSource"),
-      policyOutcome: this.readRequiredString(event.policyOutcome, "policyOutcome"),
+      executionId: this.readRequiredString(event.executionId, 'executionId'),
+      stageId: this.readRequiredString(event.stageId, 'stageId'),
+      routeKey: this.readRequiredString(event.routeKey, 'routeKey'),
+      surface: this.readRequiredString(event.surface, 'surface'),
+      agentRole: this.readRequiredString(event.agentRole, 'agentRole'),
+      roleProfileId: this.readRequiredString(event.roleProfileId, 'roleProfileId'),
+      roleSource: this.readRequiredString(event.roleSource, 'roleSource'),
+      policyOutcome: this.readRequiredString(event.policyOutcome, 'policyOutcome'),
       status: status as AuditRecordStatus,
-      startedAt: this.resolveRfc3339SecondsTimestamp(event.startedAt, "startedAt"),
-      endedAt: this.resolveRfc3339SecondsTimestamp(event.endedAt, "endedAt"),
-      startedAtDisplay: this.readDisplayTimestamp(event.startedAtDisplay, "startedAtDisplay"),
-      endedAtDisplay: this.readDisplayTimestamp(event.endedAtDisplay, "endedAtDisplay"),
-      executionSessionId: this.readRequiredString(event.executionSessionId, "executionSessionId"),
-      memoryScope: this.readRequiredString(event.memoryScope, "memoryScope"),
-      memoryDelta: this.readRecord(event.memoryDelta, "memoryDelta"),
-      workspaceId: this.readRequiredString(event.workspaceId, "workspaceId"),
-      workspaceMode: this.readRequiredString(event.workspaceMode, "workspaceMode"),
-      workspaceRoot: this.readRequiredString(event.workspaceRoot, "workspaceRoot"),
-      ...(this.readOptionalString(event.projectId, "projectId")
-        ? { projectId: this.readOptionalString(event.projectId, "projectId") }
+      startedAt: this.resolveRfc3339SecondsTimestamp(event.startedAt, 'startedAt'),
+      endedAt: this.resolveRfc3339SecondsTimestamp(event.endedAt, 'endedAt'),
+      startedAtDisplay: this.readDisplayTimestamp(event.startedAtDisplay, 'startedAtDisplay'),
+      endedAtDisplay: this.readDisplayTimestamp(event.endedAtDisplay, 'endedAtDisplay'),
+      executionSessionId: this.readRequiredString(event.executionSessionId, 'executionSessionId'),
+      memoryScope: this.readRequiredString(event.memoryScope, 'memoryScope'),
+      memoryDelta: this.readRecord(event.memoryDelta, 'memoryDelta'),
+      workspaceId: this.readRequiredString(event.workspaceId, 'workspaceId'),
+      workspaceMode: this.readRequiredString(event.workspaceMode, 'workspaceMode'),
+      workspaceRoot: this.readRequiredString(event.workspaceRoot, 'workspaceRoot'),
+      ...(this.readOptionalString(event.projectId, 'projectId')
+        ? { projectId: this.readOptionalString(event.projectId, 'projectId') }
         : {}),
-      ...(this.readOptionalString(event.sprintId, "sprintId")
-        ? { sprintId: this.readOptionalString(event.sprintId, "sprintId") }
+      ...(this.readOptionalString(event.sprintId, 'sprintId')
+        ? { sprintId: this.readOptionalString(event.sprintId, 'sprintId') }
         : {}),
-      ...(this.readOptionalString(event.riskLevel, "riskLevel")
-        ? { riskLevel: this.readOptionalString(event.riskLevel, "riskLevel") }
+      ...(this.readOptionalString(event.riskLevel, 'riskLevel')
+        ? { riskLevel: this.readOptionalString(event.riskLevel, 'riskLevel') }
         : {}),
-      ...(this.readOptionalStringArray(event.riskReasons, "riskReasons")
-        ? { riskReasons: this.readOptionalStringArray(event.riskReasons, "riskReasons") }
+      ...(this.readOptionalStringArray(event.riskReasons, 'riskReasons')
+        ? { riskReasons: this.readOptionalStringArray(event.riskReasons, 'riskReasons') }
         : {}),
-      ...(this.readOptionalString(event.requiredAction, "requiredAction")
-        ? { requiredAction: this.readOptionalString(event.requiredAction, "requiredAction") }
+      ...(this.readOptionalString(event.requiredAction, 'requiredAction')
+        ? { requiredAction: this.readOptionalString(event.requiredAction, 'requiredAction') }
         : {}),
-      ...(this.readOptionalStringArray(event.matchedPolicies, "matchedPolicies")
+      ...(this.readOptionalStringArray(event.matchedPolicies, 'matchedPolicies')
         ? {
-            matchedPolicies: this.readOptionalStringArray(event.matchedPolicies, "matchedPolicies"),
+            matchedPolicies: this.readOptionalStringArray(event.matchedPolicies, 'matchedPolicies'),
           }
         : {}),
-      ...(this.readOptionalString(event.skillId, "skillId")
-        ? { skillId: this.readOptionalString(event.skillId, "skillId") }
+      ...(this.readOptionalString(event.skillId, 'skillId')
+        ? { skillId: this.readOptionalString(event.skillId, 'skillId') }
         : {}),
-      ...(this.readOptionalString(event.skillVersion, "skillVersion")
-        ? { skillVersion: this.readOptionalString(event.skillVersion, "skillVersion") }
+      ...(this.readOptionalString(event.skillVersion, 'skillVersion')
+        ? { skillVersion: this.readOptionalString(event.skillVersion, 'skillVersion') }
         : {}),
-      ...(this.readOptionalString(event.error, "error")
-        ? { error: this.readOptionalString(event.error, "error") }
+      ...(this.readOptionalString(event.error, 'error')
+        ? { error: this.readOptionalString(event.error, 'error') }
         : {}),
-      ...(this.readOptionalString(event.notificationChannel, "notificationChannel")
+      ...(this.readOptionalString(event.notificationChannel, 'notificationChannel')
         ? {
             notificationChannel: this.readOptionalString(
               event.notificationChannel,
-              "notificationChannel",
+              'notificationChannel',
             ),
           }
         : {}),
-      ...(this.readOptionalString(event.notificationStatus, "notificationStatus")
+      ...(this.readOptionalString(event.notificationStatus, 'notificationStatus')
         ? {
             notificationStatus: this.readOptionalString(
               event.notificationStatus,
-              "notificationStatus",
+              'notificationStatus',
             ),
           }
         : {}),
-      ...(this.readOptionalDisplayTimestamp(event.notifiedAtDisplay, "notifiedAtDisplay")
+      ...(this.readOptionalDisplayTimestamp(event.notifiedAtDisplay, 'notifiedAtDisplay')
         ? {
             notifiedAtDisplay: this.readOptionalDisplayTimestamp(
               event.notifiedAtDisplay,
-              "notifiedAtDisplay",
+              'notifiedAtDisplay',
             ),
           }
         : {}),
-      ...(this.readOptionalNumber(event.tokenBudget, "tokenBudget") !== undefined
-        ? { tokenBudget: this.readOptionalNumber(event.tokenBudget, "tokenBudget") }
+      ...(this.readOptionalNumber(event.tokenBudget, 'tokenBudget') !== undefined
+        ? { tokenBudget: this.readOptionalNumber(event.tokenBudget, 'tokenBudget') }
         : {}),
-      ...(this.readOptionalNumber(event.tokenUsed, "tokenUsed") !== undefined
-        ? { tokenUsed: this.readOptionalNumber(event.tokenUsed, "tokenUsed") }
+      ...(this.readOptionalNumber(event.tokenUsed, 'tokenUsed') !== undefined
+        ? { tokenUsed: this.readOptionalNumber(event.tokenUsed, 'tokenUsed') }
         : {}),
-      ...(this.readOptionalNumber(event.costBudget, "costBudget") !== undefined
-        ? { costBudget: this.readOptionalNumber(event.costBudget, "costBudget") }
+      ...(this.readOptionalNumber(event.costBudget, 'costBudget') !== undefined
+        ? { costBudget: this.readOptionalNumber(event.costBudget, 'costBudget') }
         : {}),
-      ...(this.readOptionalNumber(event.costUsed, "costUsed") !== undefined
-        ? { costUsed: this.readOptionalNumber(event.costUsed, "costUsed") }
+      ...(this.readOptionalNumber(event.costUsed, 'costUsed') !== undefined
+        ? { costUsed: this.readOptionalNumber(event.costUsed, 'costUsed') }
         : {}),
-      ...(this.readOptionalNumber(event.maxExecutionTimeSeconds, "maxExecutionTimeSeconds") !==
+      ...(this.readOptionalNumber(event.maxExecutionTimeSeconds, 'maxExecutionTimeSeconds') !==
       undefined
         ? {
             maxExecutionTimeSeconds: this.readOptionalNumber(
               event.maxExecutionTimeSeconds,
-              "maxExecutionTimeSeconds",
+              'maxExecutionTimeSeconds',
             ),
           }
         : {}),
-      ...(this.readOptionalNumber(event.executionTimeSeconds, "executionTimeSeconds") !== undefined
+      ...(this.readOptionalNumber(event.executionTimeSeconds, 'executionTimeSeconds') !== undefined
         ? {
             executionTimeSeconds: this.readOptionalNumber(
               event.executionTimeSeconds,
-              "executionTimeSeconds",
+              'executionTimeSeconds',
             ),
           }
         : {}),
-      ...(this.readOptionalString(event.cancellationReason, "cancellationReason")
+      ...(this.readOptionalString(event.cancellationReason, 'cancellationReason')
         ? {
             cancellationReason: this.readOptionalString(
               event.cancellationReason,
-              "cancellationReason",
+              'cancellationReason',
             ),
           }
         : {}),
-      ...(this.readOptionalBoolean(event.timeoutIndicator, "timeoutIndicator") !== undefined
+      ...(this.readOptionalBoolean(event.timeoutIndicator, 'timeoutIndicator') !== undefined
         ? {
-            timeoutIndicator: this.readOptionalBoolean(event.timeoutIndicator, "timeoutIndicator"),
+            timeoutIndicator: this.readOptionalBoolean(event.timeoutIndicator, 'timeoutIndicator'),
           }
         : {}),
-      ...(this.readOptionalString(event.timeoutScope, "timeoutScope")
-        ? { timeoutScope: this.readOptionalString(event.timeoutScope, "timeoutScope") }
+      ...(this.readOptionalString(event.timeoutScope, 'timeoutScope')
+        ? { timeoutScope: this.readOptionalString(event.timeoutScope, 'timeoutScope') }
         : {}),
-      ...(this.readOptionalString(event.artifactId, "artifactId")
-        ? { artifactId: this.readOptionalString(event.artifactId, "artifactId") }
+      ...(this.readOptionalString(event.artifactId, 'artifactId')
+        ? { artifactId: this.readOptionalString(event.artifactId, 'artifactId') }
         : {}),
-      ...(this.readOptionalString(event.artifactVersion, "artifactVersion")
-        ? { artifactVersion: this.readOptionalString(event.artifactVersion, "artifactVersion") }
+      ...(this.readOptionalString(event.artifactVersion, 'artifactVersion')
+        ? { artifactVersion: this.readOptionalString(event.artifactVersion, 'artifactVersion') }
         : {}),
-      ...(this.readOptionalString(event.producerTaskId, "producerTaskId")
-        ? { producerTaskId: this.readOptionalString(event.producerTaskId, "producerTaskId") }
+      ...(this.readOptionalString(event.producerTaskId, 'producerTaskId')
+        ? { producerTaskId: this.readOptionalString(event.producerTaskId, 'producerTaskId') }
         : {}),
-      ...(this.readOptionalString(event.consumerTaskId, "consumerTaskId")
-        ? { consumerTaskId: this.readOptionalString(event.consumerTaskId, "consumerTaskId") }
+      ...(this.readOptionalString(event.consumerTaskId, 'consumerTaskId')
+        ? { consumerTaskId: this.readOptionalString(event.consumerTaskId, 'consumerTaskId') }
         : {}),
       ...(dependencyResolutionStatus
         ? {
             dependencyResolutionStatus,
           }
         : {}),
-      ...(this.readOptionalString(event.outputMode, "outputMode")
+      ...(this.readOptionalString(event.outputMode, 'outputMode')
         ? {
             outputMode: this.readOptionalString(
               event.outputMode,
-              "outputMode",
-            ) as AuditEventRecord["outputMode"],
+              'outputMode',
+            ) as AuditEventRecord['outputMode'],
           }
         : {}),
-      ...(this.readOptionalBoolean(event.isTty, "isTty") !== undefined
-        ? { isTty: this.readOptionalBoolean(event.isTty, "isTty") }
+      ...(this.readOptionalBoolean(event.isTty, 'isTty') !== undefined
+        ? { isTty: this.readOptionalBoolean(event.isTty, 'isTty') }
         : {}),
-      ...(this.readOptionalString(event.outputLocale, "outputLocale")
-        ? { outputLocale: this.readOptionalString(event.outputLocale, "outputLocale") }
+      ...(this.readOptionalString(event.outputLocale, 'outputLocale')
+        ? { outputLocale: this.readOptionalString(event.outputLocale, 'outputLocale') }
         : {}),
-      ...(this.readOptionalString(event.specSyncStatus, "specSyncStatus")
-        ? { specSyncStatus: this.readOptionalString(event.specSyncStatus, "specSyncStatus") }
+      ...(this.readOptionalString(event.specSyncStatus, 'specSyncStatus')
+        ? { specSyncStatus: this.readOptionalString(event.specSyncStatus, 'specSyncStatus') }
         : {}),
-      ...(this.readOptionalStringArray(event.specSyncFailures, "specSyncFailures")
+      ...(this.readOptionalStringArray(event.specSyncFailures, 'specSyncFailures')
         ? {
             specSyncFailures: this.readOptionalStringArray(
               event.specSyncFailures,
-              "specSyncFailures",
+              'specSyncFailures',
             ),
           }
         : {}),
@@ -412,18 +412,18 @@ export class AuditRecorder {
    * @returns Parsed persisted audit record.
    */
   private parsePersistedAuditRecord(payload: Record<string, unknown>): PersistedAuditRecord {
-    if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
       throw new RuntimeError(
         GovernorErrorCode.AUDIT_RECORD_PAYLOAD_INVALID,
-        "Audit persisted payload must be an object.",
+        'Audit persisted payload must be an object.',
       );
     }
 
     const record = payload as Record<string, unknown>;
-    const eventCandidate = this.readRecord(record.event, "event");
+    const eventCandidate = this.readRecord(record.event, 'event');
     return {
-      recordId: this.readRequiredString(record.recordId, "recordId"),
-      recordedAt: this.resolveRfc3339SecondsTimestamp(record.recordedAt, "recordedAt"),
+      recordId: this.readRequiredString(record.recordId, 'recordId'),
+      recordedAt: this.resolveRfc3339SecondsTimestamp(record.recordedAt, 'recordedAt'),
       event: this.normalizeAuditEvent(eventCandidate as unknown as AuditEventRecord),
     };
   }
@@ -472,8 +472,8 @@ export class AuditRecorder {
    * @returns Void.
    */
   private validatePrivacyGovernanceConfig(config: AuditPrivacyGovernanceConfig): void {
-    this.readPositiveInteger(config.retentionDays, "retentionDays");
-    this.readRequiredString(config.maskedValue, "maskedValue");
+    this.readPositiveInteger(config.retentionDays, 'retentionDays');
+    this.readRequiredString(config.maskedValue, 'maskedValue');
   }
 
   /**
@@ -534,18 +534,18 @@ export class AuditRecorder {
   private async selectAuditStorageRows(
     options: ExportAuditRecordsOptions,
   ): Promise<PersistedAuditStorageRow[]> {
-    const executionId = this.readOptionalString(options.executionId, "executionId");
-    const projectId = this.readOptionalString(options.projectId, "projectId");
-    const sprintId = this.readOptionalString(options.sprintId, "sprintId");
+    const executionId = this.readOptionalString(options.executionId, 'executionId');
+    const projectId = this.readOptionalString(options.projectId, 'projectId');
+    const sprintId = this.readOptionalString(options.sprintId, 'sprintId');
     const fromRecordedAt = this.readOptionalRfc3339SecondsTimestamp(
       options.fromRecordedAt,
-      "fromRecordedAt",
+      'fromRecordedAt',
     );
     const toRecordedAt = this.readOptionalRfc3339SecondsTimestamp(
       options.toRecordedAt,
-      "toRecordedAt",
+      'toRecordedAt',
     );
-    const limit = this.readOptionalPositiveInteger(options.limit, "limit");
+    const limit = this.readOptionalPositiveInteger(options.limit, 'limit');
 
     const loadedRows = await this.loadAuditStorageRows({
       ...(executionId ? { executionId } : {}),
@@ -567,18 +567,18 @@ export class AuditRecorder {
 
         const recordedAtMilliseconds = this.toTimestampMilliseconds(
           row.record.recordedAt,
-          "recordedAt",
+          'recordedAt',
         );
         if (
           fromRecordedAt &&
-          recordedAtMilliseconds < this.toTimestampMilliseconds(fromRecordedAt, "fromRecordedAt")
+          recordedAtMilliseconds < this.toTimestampMilliseconds(fromRecordedAt, 'fromRecordedAt')
         ) {
           return false;
         }
 
         if (
           toRecordedAt &&
-          recordedAtMilliseconds > this.toTimestampMilliseconds(toRecordedAt, "toRecordedAt")
+          recordedAtMilliseconds > this.toTimestampMilliseconds(toRecordedAt, 'toRecordedAt')
         ) {
           return false;
         }
@@ -600,7 +600,7 @@ export class AuditRecorder {
    * @param fieldName Current field name for object traversal.
    * @returns Masked value.
    */
-  private maskSensitiveValue(candidate: unknown, fieldName = ""): unknown {
+  private maskSensitiveValue(candidate: unknown, fieldName = ''): unknown {
     if (candidate === undefined || candidate === null) {
       return candidate;
     }
@@ -609,7 +609,7 @@ export class AuditRecorder {
       return this.privacyGovernanceConfig.maskedValue;
     }
 
-    if (typeof candidate === "string") {
+    if (typeof candidate === 'string') {
       return this.maskSensitiveText(candidate);
     }
 
@@ -617,7 +617,7 @@ export class AuditRecorder {
       return candidate.map((item) => this.maskSensitiveValue(item, fieldName));
     }
 
-    if (typeof candidate === "object") {
+    if (typeof candidate === 'object') {
       const maskedRecord: Record<string, unknown> = {};
       for (const [key, value] of Object.entries(candidate)) {
         maskedRecord[key] = this.maskSensitiveValue(value, key);
@@ -638,8 +638,8 @@ export class AuditRecorder {
     let maskedText = value;
     for (const pattern of AUDIT_SENSITIVE_TEXT_PATTERNS) {
       maskedText = maskedText.replace(pattern, (...match) => {
-        const wholeMatch = typeof match[0] === "string" ? match[0] : "";
-        const prefix = typeof match[1] === "string" && match[1] !== wholeMatch ? match[1] : "";
+        const wholeMatch = typeof match[0] === 'string' ? match[0] : '';
+        const prefix = typeof match[1] === 'string' && match[1] !== wholeMatch ? match[1] : '';
         return `${prefix}${this.privacyGovernanceConfig.maskedValue}`;
       });
     }
@@ -701,7 +701,7 @@ export class AuditRecorder {
    * @returns Parsed string.
    */
   private readRequiredString(candidate: unknown, fieldName: string): string {
-    if (typeof candidate === "string" && candidate.length > 0) {
+    if (typeof candidate === 'string' && candidate.length > 0) {
       return candidate;
     }
 
@@ -723,7 +723,7 @@ export class AuditRecorder {
       return undefined;
     }
 
-    if (typeof candidate === "string" && candidate.length > 0) {
+    if (typeof candidate === 'string' && candidate.length > 0) {
       return candidate;
     }
 
@@ -741,8 +741,8 @@ export class AuditRecorder {
    */
   private readOptionalDependencyResolutionStatus(
     candidate: unknown,
-  ): AuditEventRecord["dependencyResolutionStatus"] | undefined {
-    const status = this.readOptionalString(candidate, "dependencyResolutionStatus");
+  ): AuditEventRecord['dependencyResolutionStatus'] | undefined {
+    const status = this.readOptionalString(candidate, 'dependencyResolutionStatus');
     if (status === undefined) {
       return undefined;
     }
@@ -752,15 +752,15 @@ export class AuditRecorder {
         GovernorErrorCode.AUDIT_RECORD_INVALID,
         `Audit event field "dependencyResolutionStatus" must be one of ${Array.from(
           DEPENDENCY_RESOLUTION_STATUS_VALUES,
-        ).join(", ")} when provided.`,
+        ).join(', ')} when provided.`,
         {
-          fieldName: "dependencyResolutionStatus",
+          fieldName: 'dependencyResolutionStatus',
           value: status,
         },
       );
     }
 
-    return status as AuditEventRecord["dependencyResolutionStatus"];
+    return status as AuditEventRecord['dependencyResolutionStatus'];
   }
 
   /**
@@ -774,7 +774,7 @@ export class AuditRecorder {
       return undefined;
     }
 
-    if (!Array.isArray(candidate) || candidate.some((value) => typeof value !== "string")) {
+    if (!Array.isArray(candidate) || candidate.some((value) => typeof value !== 'string')) {
       throw new RuntimeError(
         GovernorErrorCode.AUDIT_RECORD_INVALID,
         `Audit event field "${fieldName}" must be a string array when provided.`,
@@ -796,7 +796,7 @@ export class AuditRecorder {
       return undefined;
     }
 
-    if (typeof candidate === "number" && Number.isFinite(candidate)) {
+    if (typeof candidate === 'number' && Number.isFinite(candidate)) {
       return candidate;
     }
 
@@ -818,7 +818,7 @@ export class AuditRecorder {
       return undefined;
     }
 
-    if (typeof candidate === "boolean") {
+    if (typeof candidate === 'boolean') {
       return candidate;
     }
 
@@ -836,7 +836,7 @@ export class AuditRecorder {
    * @returns Parsed object.
    */
   private readRecord(candidate: unknown, fieldName: string): Record<string, unknown> {
-    if (candidate && typeof candidate === "object" && !Array.isArray(candidate)) {
+    if (candidate && typeof candidate === 'object' && !Array.isArray(candidate)) {
       return candidate as Record<string, unknown>;
     }
 
@@ -918,7 +918,7 @@ export class AuditRecorder {
    * @returns Positive integer.
    */
   private readPositiveInteger(candidate: unknown, fieldName: string): number {
-    if (typeof candidate !== "number" || !Number.isInteger(candidate) || candidate <= 0) {
+    if (typeof candidate !== 'number' || !Number.isInteger(candidate) || candidate <= 0) {
       throw new RuntimeError(
         GovernorErrorCode.AUDIT_RECORD_INVALID,
         `Audit event field "${fieldName}" must be a positive integer.`,
@@ -935,7 +935,7 @@ export class AuditRecorder {
    * @returns RFC3339 seconds timestamp.
    */
   private toRfc3339SecondsTimestamp(date: Date): string {
-    return date.toISOString().replace(/\.\d{3}Z$/u, "Z");
+    return date.toISOString().replace(/\.\d{3}Z$/u, 'Z');
   }
 
   /**
@@ -946,7 +946,7 @@ export class AuditRecorder {
    */
   private resolveRfc3339SecondsTimestamp(candidate: unknown, fieldName: string): string {
     if (candidate === undefined) {
-      return new Date().toISOString().replace(/\.\d{3}Z$/u, "Z");
+      return new Date().toISOString().replace(/\.\d{3}Z$/u, 'Z');
     }
 
     const timestamp = this.readRequiredString(candidate, fieldName);

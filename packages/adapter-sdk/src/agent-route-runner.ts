@@ -1,7 +1,7 @@
-import { GovernorErrorCode, RuntimeError, standardizeError } from "@repo-ai-governor/shared";
-import { AgentCapabilityEvaluator } from "./agent-capability-evaluator.js";
-import { AgentProtocolErrorMapper } from "./agent-protocol-error-mapper.js";
-import { AgentRouteRegistry } from "./agent-route-registry.js";
+import { GovernorErrorCode, RuntimeError, standardizeError } from '@repo-ai-governor/shared';
+import { AgentCapabilityEvaluator } from './agent-capability-evaluator.js';
+import { AgentProtocolErrorMapper } from './agent-protocol-error-mapper.js';
+import { AgentRouteRegistry } from './agent-route-registry.js';
 import {
   AGENT_LOCAL_FALLBACK_SURFACE,
   AgentAvailabilityStatus,
@@ -10,8 +10,8 @@ import {
   AgentRouteSelectionSource,
   AgentSurfaceNetworkRequirement,
   AgentSurfaceSkipReason,
-} from "./constants/index.js";
-import { DefaultRestrictedNetworkFallbackHandler } from "./restricted-network-fallback-handler.js";
+} from './constants/index.js';
+import { DefaultRestrictedNetworkFallbackHandler } from './restricted-network-fallback-handler.js';
 import type {
   AgentCapabilityEvaluationResult,
   AgentCapabilityEvaluatorContract,
@@ -26,9 +26,9 @@ import type {
   AgentRouteResolvedPolicy,
   AgentRouteRunnerOptions,
   AgentSurfaceEvaluationRecord,
-} from "./types/index.js";
+} from './types/index.js';
 
-const DEFAULT_RESTRICTED_REASON = "external-network-restricted";
+const DEFAULT_RESTRICTED_REASON = 'external-network-restricted';
 const SURFACE_NETWORK_REQUIREMENT_VALUES = new Set<string>(
   Object.values(AgentSurfaceNetworkRequirement),
 );
@@ -441,31 +441,31 @@ export class AgentRouteRunner {
    * @param options Route runner options.
    */
   private assertOptions(options: AgentRouteRunnerOptions): void {
-    if (!options || typeof options !== "object") {
+    if (!options || typeof options !== 'object') {
       throw new RuntimeError(
         GovernorErrorCode.ADAPTER_ROUTE_CONFIG_INVALID,
-        "Agent route runner options must be an object.",
+        'Agent route runner options must be an object.',
       );
     }
     if (!Array.isArray(options.routePolicies) || options.routePolicies.length === 0) {
       throw new RuntimeError(
         GovernorErrorCode.ADAPTER_ROUTE_CONFIG_INVALID,
-        "Agent route runner options must include non-empty routePolicies.",
+        'Agent route runner options must include non-empty routePolicies.',
       );
     }
-    if (!options.protocolBySurface || typeof options.protocolBySurface !== "object") {
+    if (!options.protocolBySurface || typeof options.protocolBySurface !== 'object') {
       throw new RuntimeError(
         GovernorErrorCode.ADAPTER_ROUTE_CONFIG_INVALID,
-        "Agent route runner options must include protocolBySurface map.",
+        'Agent route runner options must include protocolBySurface map.',
       );
     }
     if (
       options.surfaceNetworkRequirementBySurface !== undefined &&
-      typeof options.surfaceNetworkRequirementBySurface !== "object"
+      typeof options.surfaceNetworkRequirementBySurface !== 'object'
     ) {
       throw new RuntimeError(
         GovernorErrorCode.ADAPTER_ROUTE_CONFIG_INVALID,
-        "surfaceNetworkRequirementBySurface must be an object when provided.",
+        'surfaceNetworkRequirementBySurface must be an object when provided.',
       );
     }
     if (options.surfaceNetworkRequirementBySurface) {
@@ -473,7 +473,7 @@ export class AgentRouteRunner {
         options.surfaceNetworkRequirementBySurface,
       )) {
         if (
-          typeof networkRequirement !== "string" ||
+          typeof networkRequirement !== 'string' ||
           !SURFACE_NETWORK_REQUIREMENT_VALUES.has(networkRequirement)
         ) {
           throw new RuntimeError(
@@ -490,12 +490,12 @@ export class AgentRouteRunner {
     }
     if (
       options.restrictedNetworkFallbackHandler !== undefined &&
-      (typeof options.restrictedNetworkFallbackHandler !== "object" ||
-        typeof options.restrictedNetworkFallbackHandler.invokeFallback !== "function")
+      (typeof options.restrictedNetworkFallbackHandler !== 'object' ||
+        typeof options.restrictedNetworkFallbackHandler.invokeFallback !== 'function')
     ) {
       throw new RuntimeError(
         GovernorErrorCode.ADAPTER_ROUTE_CONFIG_INVALID,
-        "restrictedNetworkFallbackHandler must expose invokeFallback(context).",
+        'restrictedNetworkFallbackHandler must expose invokeFallback(context).',
       );
     }
   }

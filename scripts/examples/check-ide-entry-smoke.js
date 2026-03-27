@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { spawnSync } from "node:child_process";
+import { spawnSync } from 'node:child_process';
 import {
   existsSync,
   mkdirSync,
@@ -9,30 +9,30 @@ import {
   rmSync,
   symlinkSync,
   writeFileSync,
-} from "node:fs";
-import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+} from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 
-import { gateFail, gateInfo, gatePass } from "../governance/gate-output.js";
+import { gateFail, gateInfo, gatePass } from '../governance/gate-output.js';
 
-const GATE_NAME = "ide-entry-smoke";
-const DIST_CLI_ENTRY_PATH = "dist/bin/repo-ai-governor.js";
-const COMMAND_WRAPPER_CONTRACT_PATH = "integrations/ide/contracts/command-wrapper.contract.json";
+const GATE_NAME = 'ide-entry-smoke';
+const DIST_CLI_ENTRY_PATH = 'dist/bin/repo-ai-governor.js';
+const COMMAND_WRAPPER_CONTRACT_PATH = 'integrations/ide/contracts/command-wrapper.contract.json';
 const STANDARDS_INJECTION_CONTRACT_PATH =
-  "integrations/ide/contracts/standards-injection.contract.json";
-const IDE_EXAMPLES_README_PATH = "integrations/ide/examples/README.md";
-const VSCODE_TASK_SAMPLE_PATH = "integrations/ide/examples/vscode-task.sample.json";
-const VSCODE_LAUNCH_SAMPLE_PATH = "integrations/ide/examples/vscode-launch.sample.json";
+  'integrations/ide/contracts/standards-injection.contract.json';
+const IDE_EXAMPLES_README_PATH = 'integrations/ide/examples/README.md';
+const VSCODE_TASK_SAMPLE_PATH = 'integrations/ide/examples/vscode-task.sample.json';
+const VSCODE_LAUNCH_SAMPLE_PATH = 'integrations/ide/examples/vscode-launch.sample.json';
 const JETBRAINS_RUN_CONFIGURATION_SAMPLE_PATH =
-  "integrations/ide/examples/jetbrains-run-configuration.sample.xml";
-const CURSOR_TASK_SAMPLE_PATH = "integrations/ide/examples/cursor-task.sample.json";
+  'integrations/ide/examples/jetbrains-run-configuration.sample.xml';
+const CURSOR_TASK_SAMPLE_PATH = 'integrations/ide/examples/cursor-task.sample.json';
 const CLAUDE_CODE_COMMANDS_SAMPLE_PATH =
-  "integrations/ide/examples/claude-code-commands.sample.json";
-const REQUIRED_COMMAND_SEQUENCE = ["init", "doctor", "check"];
+  'integrations/ide/examples/claude-code-commands.sample.json';
+const REQUIRED_COMMAND_SEQUENCE = ['init', 'doctor', 'check'];
 const EXPECTED_OPERATION_BY_COMMAND = {
-  init: "workspace_init",
-  doctor: "env_doctor",
-  check: "governance_check",
+  init: 'workspace_init',
+  doctor: 'env_doctor',
+  check: 'governance_check',
 };
 
 /**
@@ -41,7 +41,7 @@ const EXPECTED_OPERATION_BY_COMMAND = {
  * @returns {string}
  */
 function readText(relativePath) {
-  return readFileSync(resolve(process.cwd(), relativePath), "utf8");
+  return readFileSync(resolve(process.cwd(), relativePath), 'utf8');
 }
 
 /**
@@ -59,7 +59,7 @@ function readJson(relativePath) {
  * @param {string} fieldName Field name for diagnostics.
  */
 function assertNonEmptyString(value, fieldName) {
-  if (typeof value !== "string" || value.trim().length === 0) {
+  if (typeof value !== 'string' || value.trim().length === 0) {
     throw new Error(`Field "${fieldName}" must be a non-empty string.`);
   }
 }
@@ -80,26 +80,26 @@ function ensureFileExists(relativePath) {
  * @returns {{environmentKeys: string[]; defaultStandardsProfileId: string; defaultSourceIds: string[]}}
  */
 function normalizeContracts(contractRaw, standardsContractRaw) {
-  if (!contractRaw || typeof contractRaw !== "object" || Array.isArray(contractRaw)) {
-    throw new Error("command-wrapper contract must be an object.");
+  if (!contractRaw || typeof contractRaw !== 'object' || Array.isArray(contractRaw)) {
+    throw new Error('command-wrapper contract must be an object.');
   }
   if (
     !standardsContractRaw ||
-    typeof standardsContractRaw !== "object" ||
+    typeof standardsContractRaw !== 'object' ||
     Array.isArray(standardsContractRaw)
   ) {
-    throw new Error("standards-injection contract must be an object.");
+    throw new Error('standards-injection contract must be an object.');
   }
   if (!Array.isArray(contractRaw.environmentKeys) || contractRaw.environmentKeys.length === 0) {
-    throw new Error("command-wrapper contract must declare environmentKeys.");
+    throw new Error('command-wrapper contract must declare environmentKeys.');
   }
   if (
     !Array.isArray(standardsContractRaw.defaultSourceIds) ||
     standardsContractRaw.defaultSourceIds.length === 0
   ) {
-    throw new Error("standards-injection contract must declare defaultSourceIds.");
+    throw new Error('standards-injection contract must declare defaultSourceIds.');
   }
-  assertNonEmptyString(standardsContractRaw.defaultStandardsProfileId, "defaultStandardsProfileId");
+  assertNonEmptyString(standardsContractRaw.defaultStandardsProfileId, 'defaultStandardsProfileId');
 
   return {
     environmentKeys: contractRaw.environmentKeys.map((entry, index) => {
@@ -120,16 +120,16 @@ function normalizeContracts(contractRaw, standardsContractRaw) {
  * @returns {Map<string, {command: string; args: string[]; env: Record<string, string>}>}
  */
 function normalizeVsCodeTasks(templateRaw) {
-  if (!templateRaw || typeof templateRaw !== "object" || Array.isArray(templateRaw)) {
-    throw new Error("VS Code task template must be an object.");
+  if (!templateRaw || typeof templateRaw !== 'object' || Array.isArray(templateRaw)) {
+    throw new Error('VS Code task template must be an object.');
   }
   if (!Array.isArray(templateRaw.tasks) || templateRaw.tasks.length === 0) {
-    throw new Error("VS Code task template must declare non-empty tasks array.");
+    throw new Error('VS Code task template must declare non-empty tasks array.');
   }
 
   const tasksByCommand = new Map();
   for (const [index, taskRaw] of templateRaw.tasks.entries()) {
-    if (!taskRaw || typeof taskRaw !== "object" || Array.isArray(taskRaw)) {
+    if (!taskRaw || typeof taskRaw !== 'object' || Array.isArray(taskRaw)) {
       throw new Error(`VS Code task[${index}] must be an object.`);
     }
 
@@ -139,7 +139,7 @@ function normalizeVsCodeTasks(templateRaw) {
       throw new Error(`tasks[${index}].args must be a non-empty array.`);
     }
 
-    const commandName = String(taskRaw.label).replace("repo-ai-governor: ", "").trim();
+    const commandName = String(taskRaw.label).replace('repo-ai-governor: ', '').trim();
     const args = taskRaw.args.map((arg, argIndex) => {
       assertNonEmptyString(arg, `tasks[${index}].args[${argIndex}]`);
       return arg.trim();
@@ -162,17 +162,17 @@ function normalizeVsCodeTasks(templateRaw) {
  * @returns {{surface: string; commandsByName: Map<string, {command: string; args: string[]; env: Record<string, string>; nextActionOnFailure: string}>}}
  */
 function normalizeClaudeCodeCommands(templateRaw) {
-  if (!templateRaw || typeof templateRaw !== "object" || Array.isArray(templateRaw)) {
-    throw new Error("Claude Code command template must be an object.");
+  if (!templateRaw || typeof templateRaw !== 'object' || Array.isArray(templateRaw)) {
+    throw new Error('Claude Code command template must be an object.');
   }
-  assertNonEmptyString(templateRaw.surface, "surface");
+  assertNonEmptyString(templateRaw.surface, 'surface');
   if (!Array.isArray(templateRaw.commands) || templateRaw.commands.length === 0) {
-    throw new Error("Claude Code command template must declare non-empty commands array.");
+    throw new Error('Claude Code command template must declare non-empty commands array.');
   }
 
   const commandsByName = new Map();
   for (const [index, commandRaw] of templateRaw.commands.entries()) {
-    if (!commandRaw || typeof commandRaw !== "object" || Array.isArray(commandRaw)) {
+    if (!commandRaw || typeof commandRaw !== 'object' || Array.isArray(commandRaw)) {
       throw new Error(`commands[${index}] must be an object.`);
     }
     assertNonEmptyString(commandRaw.label, `commands[${index}].label`);
@@ -182,7 +182,7 @@ function normalizeClaudeCodeCommands(templateRaw) {
       throw new Error(`commands[${index}].args must be a non-empty array.`);
     }
 
-    const commandName = String(commandRaw.label).replace("repo-ai-governor:", "").trim();
+    const commandName = String(commandRaw.label).replace('repo-ai-governor:', '').trim();
     const args = commandRaw.args.map((arg, argIndex) => {
       assertNonEmptyString(arg, `commands[${index}].args[${argIndex}]`);
       return arg.trim();
@@ -208,21 +208,21 @@ function normalizeClaudeCodeCommands(templateRaw) {
  * @returns {{program: string; args: string[]; env: Record<string, string>}}
  */
 function normalizeVsCodeLaunch(templateRaw) {
-  if (!templateRaw || typeof templateRaw !== "object" || Array.isArray(templateRaw)) {
-    throw new Error("VS Code launch template must be an object.");
+  if (!templateRaw || typeof templateRaw !== 'object' || Array.isArray(templateRaw)) {
+    throw new Error('VS Code launch template must be an object.');
   }
   if (
     !Array.isArray(templateRaw.configurations) ||
     templateRaw.configurations.length === 0 ||
     !templateRaw.configurations[0]
   ) {
-    throw new Error("VS Code launch template must declare one configuration.");
+    throw new Error('VS Code launch template must declare one configuration.');
   }
 
   const launchConfig = templateRaw.configurations[0];
-  assertNonEmptyString(launchConfig.program, "configurations[0].program");
+  assertNonEmptyString(launchConfig.program, 'configurations[0].program');
   if (!Array.isArray(launchConfig.args) || launchConfig.args.length === 0) {
-    throw new Error("configurations[0].args must be a non-empty array.");
+    throw new Error('configurations[0].args must be a non-empty array.');
   }
 
   return {
@@ -231,7 +231,7 @@ function normalizeVsCodeLaunch(templateRaw) {
       assertNonEmptyString(arg, `configurations[0].args[${index}]`);
       return arg.trim();
     }),
-    env: normalizeTemplateEnv(launchConfig.env, "configurations[0].env"),
+    env: normalizeTemplateEnv(launchConfig.env, 'configurations[0].env'),
   };
 }
 
@@ -246,9 +246,9 @@ function normalizeJetBrainsRunConfigurations(xmlText) {
   const configurationByCommand = new Map();
   let matchedConfiguration = configurationPattern.exec(xmlText);
   while (matchedConfiguration) {
-    const configurationName = matchedConfiguration[1]?.trim() ?? "";
-    const configurationBody = matchedConfiguration[2] ?? "";
-    const commandName = configurationName.replace("repo-ai-governor: ", "").trim();
+    const configurationName = matchedConfiguration[1]?.trim() ?? '';
+    const configurationBody = matchedConfiguration[2] ?? '';
+    const commandName = configurationName.replace('repo-ai-governor: ', '').trim();
     const scriptMatch = configurationBody.match(/<option name="SCRIPT_TEXT" value="([^"]+)" \/>/u);
     if (!scriptMatch) {
       throw new Error(`JetBrains configuration is missing SCRIPT_TEXT: ${configurationName}`);
@@ -280,7 +280,7 @@ function normalizeJetBrainsRunConfigurations(xmlText) {
 
   if (configurationByCommand.size === 0) {
     throw new Error(
-      "JetBrains run configuration template must declare at least one configuration.",
+      'JetBrains run configuration template must declare at least one configuration.',
     );
   }
 
@@ -294,7 +294,7 @@ function normalizeJetBrainsRunConfigurations(xmlText) {
  * @returns {Record<string, string>}
  */
 function normalizeTemplateEnv(envRaw, fieldName) {
-  if (!envRaw || typeof envRaw !== "object" || Array.isArray(envRaw)) {
+  if (!envRaw || typeof envRaw !== 'object' || Array.isArray(envRaw)) {
     throw new Error(`${fieldName} must be an object.`);
   }
 
@@ -318,16 +318,16 @@ function validateTemplateDefinition(definition, commandName, surface, contract) 
   if (!definition) {
     throw new Error(`template definition is missing for command "${commandName}"`);
   }
-  if (definition.command !== "node") {
+  if (definition.command !== 'node') {
     throw new Error(`template command "${commandName}" must use "node".`);
   }
 
   const expectedArgs = [
-    "./dist/bin/repo-ai-governor.js",
-    "--output",
-    "json",
-    "--locale",
-    "en-US",
+    './dist/bin/repo-ai-governor.js',
+    '--output',
+    'json',
+    '--locale',
+    'en-US',
     commandName,
   ];
   if (JSON.stringify(definition.args) !== JSON.stringify(expectedArgs)) {
@@ -342,7 +342,7 @@ function validateTemplateDefinition(definition, commandName, surface, contract) 
     }
   }
 
-  if (definition.env.REPO_AI_GOVERNOR_OUTPUT_MODE !== "json") {
+  if (definition.env.REPO_AI_GOVERNOR_OUTPUT_MODE !== 'json') {
     throw new Error(`template env for "${commandName}" must pin REPO_AI_GOVERNOR_OUTPUT_MODE=json`);
   }
   if (definition.env.REPO_AI_GOVERNOR_ENTRY_SURFACE !== surface) {
@@ -356,7 +356,7 @@ function validateTemplateDefinition(definition, commandName, surface, contract) 
     );
   }
 
-  const expectedStandardsSources = contract.defaultSourceIds.join(",");
+  const expectedStandardsSources = contract.defaultSourceIds.join(',');
   if (definition.env.REPO_AI_GOVERNOR_STANDARDS_SOURCES !== expectedStandardsSources) {
     throw new Error(
       `template env for "${commandName}" must pin REPO_AI_GOVERNOR_STANDARDS_SOURCES to the default source ID order.`,
@@ -371,30 +371,30 @@ function validateTemplateDefinition(definition, commandName, surface, contract) 
  */
 function runRuntimeSmoke(surface, definitions) {
   const repoRoot = mkdtempSync(join(tmpdir(), `repo-ai-governor-${surface}-smoke-`));
-  const linkedDistPath = resolve(repoRoot, "dist");
-  const sourceDistPath = resolve(process.cwd(), "dist");
-  const workspaceDirectoryPath = resolve(repoRoot, ".repo-ai-governor");
-  const governorConfigPath = resolve(workspaceDirectoryPath, "governor.yaml");
+  const linkedDistPath = resolve(repoRoot, 'dist');
+  const sourceDistPath = resolve(process.cwd(), 'dist');
+  const workspaceDirectoryPath = resolve(repoRoot, '.repo-ai-governor');
+  const governorConfigPath = resolve(workspaceDirectoryPath, 'governor.yaml');
 
   try {
-    symlinkSync(sourceDistPath, linkedDistPath, "dir");
+    symlinkSync(sourceDistPath, linkedDistPath, 'dir');
     mkdirSync(workspaceDirectoryPath, { recursive: true });
     writeFileSync(
       governorConfigPath,
       [
         'schemaVersion: "1.1"',
-        "workspace:",
-        "  mode: repo_local",
-        "  migrationPolicy: copy_verify_switch_rollback",
-        "i18n:",
-        "  runtimeEngine: i18next",
-        "  defaultLocale: zh-CN",
-        "  fallbackLocale: en-US",
-        "  supportedLocales:",
-        "    - zh-CN",
-        "    - en-US",
-        "",
-      ].join("\n"),
+        'workspace:',
+        '  mode: repo_local',
+        '  migrationPolicy: copy_verify_switch_rollback',
+        'i18n:',
+        '  runtimeEngine: i18next',
+        '  defaultLocale: zh-CN',
+        '  fallbackLocale: en-US',
+        '  supportedLocales:',
+        '    - zh-CN',
+        '    - en-US',
+        '',
+      ].join('\n'),
     );
 
     for (const commandName of REQUIRED_COMMAND_SEQUENCE) {
@@ -405,8 +405,8 @@ function runRuntimeSmoke(surface, definitions) {
 
       const result = spawnSync(definition.command, definition.args, {
         cwd: repoRoot,
-        encoding: "utf8",
-        stdio: ["ignore", "pipe", "pipe"],
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
         env: {
           ...process.env,
           ...definition.env,
@@ -418,13 +418,13 @@ function runRuntimeSmoke(surface, definitions) {
       }
       if (result.status !== 0) {
         throw new Error(
-          `${surface} ${commandName} exited with code ${result.status}. stdout="${result.stdout?.trim() ?? ""}" stderr="${result.stderr?.trim() ?? ""}"`,
+          `${surface} ${commandName} exited with code ${result.status}. stdout="${result.stdout?.trim() ?? ''}" stderr="${result.stderr?.trim() ?? ''}"`,
         );
       }
 
       let payload;
       try {
-        payload = JSON.parse(result.stdout ?? "");
+        payload = JSON.parse(result.stdout ?? '');
       } catch {
         throw new Error(`${surface} ${commandName} did not emit valid JSON stdout.`);
       }
@@ -460,23 +460,23 @@ try {
 
   const vscodeTasks = normalizeVsCodeTasks(readJson(VSCODE_TASK_SAMPLE_PATH));
   for (const commandName of REQUIRED_COMMAND_SEQUENCE) {
-    validateTemplateDefinition(vscodeTasks.get(commandName), commandName, "vscode", contract);
+    validateTemplateDefinition(vscodeTasks.get(commandName), commandName, 'vscode', contract);
   }
 
   const vscodeLaunch = normalizeVsCodeLaunch(readJson(VSCODE_LAUNCH_SAMPLE_PATH));
-  if (vscodeLaunch.program !== "${workspaceFolder}/dist/bin/repo-ai-governor.js") {
+  if (vscodeLaunch.program !== '${workspaceFolder}/dist/bin/repo-ai-governor.js') {
     throw new Error(
-      "VS Code launch template must point to ${workspaceFolder}/dist/bin/repo-ai-governor.js.",
+      'VS Code launch template must point to ${workspaceFolder}/dist/bin/repo-ai-governor.js.',
     );
   }
   validateTemplateDefinition(
     {
-      command: "node",
-      args: ["./dist/bin/repo-ai-governor.js", ...vscodeLaunch.args],
+      command: 'node',
+      args: ['./dist/bin/repo-ai-governor.js', ...vscodeLaunch.args],
       env: vscodeLaunch.env,
     },
-    "check",
-    "vscode",
+    'check',
+    'vscode',
     contract,
   );
 
@@ -487,39 +487,39 @@ try {
     validateTemplateDefinition(
       jetbrainsConfigurations.get(commandName),
       commandName,
-      "jetbrains",
+      'jetbrains',
       contract,
     );
   }
 
   const cursorTasks = normalizeVsCodeTasks(readJson(CURSOR_TASK_SAMPLE_PATH));
   for (const commandName of REQUIRED_COMMAND_SEQUENCE) {
-    validateTemplateDefinition(cursorTasks.get(commandName), commandName, "cursor", contract);
+    validateTemplateDefinition(cursorTasks.get(commandName), commandName, 'cursor', contract);
   }
 
   const claudeCodeCommands = normalizeClaudeCodeCommands(
     readJson(CLAUDE_CODE_COMMANDS_SAMPLE_PATH),
   );
-  if (claudeCodeCommands.surface !== "claude_code") {
+  if (claudeCodeCommands.surface !== 'claude_code') {
     throw new Error('Claude Code command template must declare surface="claude_code".');
   }
   for (const commandName of REQUIRED_COMMAND_SEQUENCE) {
     validateTemplateDefinition(
       claudeCodeCommands.commandsByName.get(commandName),
       commandName,
-      "claude_code",
+      'claude_code',
       contract,
     );
   }
 
-  runRuntimeSmoke("vscode", vscodeTasks);
-  runRuntimeSmoke("jetbrains", jetbrainsConfigurations);
-  runRuntimeSmoke("cursor", cursorTasks);
-  runRuntimeSmoke("claude_code", claudeCodeCommands.commandsByName);
+  runRuntimeSmoke('vscode', vscodeTasks);
+  runRuntimeSmoke('jetbrains', jetbrainsConfigurations);
+  runRuntimeSmoke('cursor', cursorTasks);
+  runRuntimeSmoke('claude_code', claudeCodeCommands.commandsByName);
 
   gatePass(
     GATE_NAME,
-    "VS Code, JetBrains, Cursor, and Claude Code official template smoke checks passed.",
+    'VS Code, JetBrains, Cursor, and Claude Code official template smoke checks passed.',
   );
 } catch (error) {
   gateFail(GATE_NAME, error instanceof Error ? error.message : String(error));

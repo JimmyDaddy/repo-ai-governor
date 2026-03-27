@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 
-import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { spawnSync } from 'node:child_process';
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
-import { gateFail, gateInfo } from "./gate-output.js";
+import { gateFail, gateInfo } from './gate-output.js';
 
-const GATE_NAME = "normative-loading-gate-runner";
-const DEFAULT_CONFIG_PATH = "scripts/governance/normative-loading-gate.config.json";
-const CHECK_SCRIPT_PATH = "scripts/governance/check-normative-loading-manifest.js";
-const SUPPORTED_MODES = new Set(["warn", "block"]);
+const GATE_NAME = 'normative-loading-gate-runner';
+const DEFAULT_CONFIG_PATH = 'scripts/governance/normative-loading-gate.config.json';
+const CHECK_SCRIPT_PATH = 'scripts/governance/check-normative-loading-manifest.js';
+const SUPPORTED_MODES = new Set(['warn', 'block']);
 
 /**
  * Resolves one flag value from argv.
@@ -24,7 +24,7 @@ function readFlagValue(argv, flagName) {
   }
 
   const nextValue = argv[flagIndex + 1];
-  if (!nextValue || nextValue.startsWith("--")) {
+  if (!nextValue || nextValue.startsWith('--')) {
     throw new Error(`Flag "${flagName}" requires a value.`);
   }
 
@@ -46,20 +46,20 @@ function loadRunnerConfig(configPath) {
     throw new Error(`Runner config not found: ${configPath}`);
   }
 
-  const configPayload = JSON.parse(readFileSync(configPath, "utf8"));
+  const configPayload = JSON.parse(readFileSync(configPath, 'utf8'));
 
-  const defaultMode = String(configPayload.defaultMode ?? "").trim();
+  const defaultMode = String(configPayload.defaultMode ?? '').trim();
   if (!SUPPORTED_MODES.has(defaultMode)) {
     throw new Error(
-      `Invalid defaultMode "${defaultMode}" in config. Expected one of: ${Array.from(SUPPORTED_MODES).join(", ")}`,
+      `Invalid defaultMode "${defaultMode}" in config. Expected one of: ${Array.from(SUPPORTED_MODES).join(', ')}`,
     );
   }
 
   const rollbackSwitch = configPayload.rollbackSwitch ?? {};
-  const rollbackMode = String(rollbackSwitch.mode ?? "warn").trim();
+  const rollbackMode = String(rollbackSwitch.mode ?? 'warn').trim();
   if (!SUPPORTED_MODES.has(rollbackMode)) {
     throw new Error(
-      `Invalid rollbackSwitch.mode "${rollbackMode}" in config. Expected one of: ${Array.from(SUPPORTED_MODES).join(", ")}`,
+      `Invalid rollbackSwitch.mode "${rollbackMode}" in config. Expected one of: ${Array.from(SUPPORTED_MODES).join(', ')}`,
     );
   }
 
@@ -71,14 +71,14 @@ function loadRunnerConfig(configPath) {
     rollbackSwitch: {
       enabled: Boolean(rollbackSwitch.enabled),
       mode: rollbackMode,
-      reason: String(rollbackSwitch.reason ?? "").trim(),
-      owner: String(rollbackSwitch.owner ?? "").trim(),
+      reason: String(rollbackSwitch.reason ?? '').trim(),
+      owner: String(rollbackSwitch.owner ?? '').trim(),
     },
     envOverrides: {
       forceMode: String(
-        configPayload.envOverrides?.forceMode ?? "NORMATIVE_LOADING_GATE_FORCE_MODE",
+        configPayload.envOverrides?.forceMode ?? 'NORMATIVE_LOADING_GATE_FORCE_MODE',
       ),
-      rollback: String(configPayload.envOverrides?.rollback ?? "NORMATIVE_LOADING_GATE_ROLLBACK"),
+      rollback: String(configPayload.envOverrides?.rollback ?? 'NORMATIVE_LOADING_GATE_ROLLBACK'),
     },
   };
 }
@@ -96,13 +96,13 @@ function resolveEffectiveMode(config) {
   const forceModeEnvName = config.envOverrides.forceMode;
   const rollbackEnvName = config.envOverrides.rollback;
 
-  const forceModeValue = String(process.env[forceModeEnvName] ?? "")
+  const forceModeValue = String(process.env[forceModeEnvName] ?? '')
     .trim()
     .toLowerCase();
   if (forceModeValue) {
     if (!SUPPORTED_MODES.has(forceModeValue)) {
       throw new Error(
-        `Invalid ${forceModeEnvName}="${forceModeValue}". Expected one of: ${Array.from(SUPPORTED_MODES).join(", ")}`,
+        `Invalid ${forceModeEnvName}="${forceModeValue}". Expected one of: ${Array.from(SUPPORTED_MODES).join(', ')}`,
       );
     }
 
@@ -112,8 +112,8 @@ function resolveEffectiveMode(config) {
     };
   }
 
-  const rollbackEnvEnabled = ["1", "true", "yes", "on"].includes(
-    String(process.env[rollbackEnvName] ?? "")
+  const rollbackEnvEnabled = ['1', 'true', 'yes', 'on'].includes(
+    String(process.env[rollbackEnvName] ?? '')
       .trim()
       .toLowerCase(),
   );
@@ -123,19 +123,19 @@ function resolveEffectiveMode(config) {
       mode: config.rollbackSwitch.mode,
       reason: rollbackEnvEnabled
         ? `rollback enabled by env ${rollbackEnvName}`
-        : "rollback enabled in config",
+        : 'rollback enabled in config',
     };
   }
 
   return {
     mode: config.defaultMode,
-    reason: "default mode",
+    reason: 'default mode',
   };
 }
 
 try {
   const argv = process.argv.slice(2);
-  const configCandidate = readFlagValue(argv, "--config") ?? DEFAULT_CONFIG_PATH;
+  const configCandidate = readFlagValue(argv, '--config') ?? DEFAULT_CONFIG_PATH;
   const configPath = resolve(process.cwd(), configCandidate);
   const checkScriptPath = resolve(process.cwd(), CHECK_SCRIPT_PATH);
 
@@ -151,11 +151,11 @@ try {
     `effective_mode=${effective.mode} reason="${effective.reason}" switch_conditions=${config.switchConditions.length}`,
   );
 
-  const child = spawnSync(process.execPath, [checkScriptPath, "--mode", effective.mode], {
-    stdio: "inherit",
+  const child = spawnSync(process.execPath, [checkScriptPath, '--mode', effective.mode], {
+    stdio: 'inherit',
   });
 
-  if (typeof child.status === "number") {
+  if (typeof child.status === 'number') {
     process.exit(child.status);
   }
 

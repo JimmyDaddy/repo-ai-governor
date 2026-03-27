@@ -1,13 +1,13 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
-import { ProcessCompiler, ProcessNodeType } from "@repo-ai-governor/core-process";
-import { CompiledIrGraphAdapter } from "@repo-ai-governor/core-runtime-langgraph";
+import { ProcessCompiler, ProcessNodeType } from '@repo-ai-governor/core-process';
+import { CompiledIrGraphAdapter } from '@repo-ai-governor/core-runtime-langgraph';
 import {
   MemoryProviderHostSurface,
   MemoryProviderRuntimeMode,
-} from "@repo-ai-governor/memory-provider-registry";
+} from '@repo-ai-governor/memory-provider-registry';
 import {
   OrchestrationClientSurface,
   OrchestrationExecutionKind,
@@ -16,51 +16,51 @@ import {
   OrchestrationServiceHostKind,
   OrchestrationServiceLifecycleStatus,
   OrchestrationServiceTransportKind,
-} from "@repo-ai-governor/orchestration-service-client";
+} from '@repo-ai-governor/orchestration-service-client';
 import {
   GovernorError,
   GovernorErrorCode,
   MemoryStoreEngine,
   standardizeError,
-} from "@repo-ai-governor/shared";
-import { LocalOrchestrationServiceShell } from "../src/index.js";
+} from '@repo-ai-governor/shared';
+import { LocalOrchestrationServiceShell } from '../src/index.js';
 
 function createGraphPlan() {
   const compiler = new ProcessCompiler();
   const compiledIr = compiler.compile({
-    processId: "process-orchestration-shell-unit",
-    executionId: "exec-orchestration-shell-unit",
-    entryNodeId: "node-entry",
+    processId: 'process-orchestration-shell-unit',
+    executionId: 'exec-orchestration-shell-unit',
+    entryNodeId: 'node-entry',
     nodes: [
       {
-        nodeId: "node-entry",
-        stageId: "stage-entry",
+        nodeId: 'node-entry',
+        stageId: 'stage-entry',
         nodeType: ProcessNodeType.SEQUENTIAL,
-        routeKey: "entry",
-        roleProfileId: "planner-default",
-        inputSchemaRef: "schemas/input.json",
-        outputSchemaRef: "schemas/output.json",
-        retryPolicyRef: "policy/retry-default",
-        timeoutPolicyRef: "policy/timeout-default",
-        budgetPolicyRef: "policy/budget-default",
+        routeKey: 'entry',
+        roleProfileId: 'planner-default',
+        inputSchemaRef: 'schemas/input.json',
+        outputSchemaRef: 'schemas/output.json',
+        retryPolicyRef: 'policy/retry-default',
+        timeoutPolicyRef: 'policy/timeout-default',
+        budgetPolicyRef: 'policy/budget-default',
       },
       {
-        nodeId: "node-review",
-        stageId: "stage-review",
+        nodeId: 'node-review',
+        stageId: 'stage-review',
         nodeType: ProcessNodeType.SEQUENTIAL,
-        routeKey: "review",
-        roleProfileId: "reviewer-default",
-        inputSchemaRef: "schemas/input.json",
-        outputSchemaRef: "schemas/output.json",
-        retryPolicyRef: "policy/retry-default",
-        timeoutPolicyRef: "policy/timeout-default",
-        budgetPolicyRef: "policy/budget-default",
+        routeKey: 'review',
+        roleProfileId: 'reviewer-default',
+        inputSchemaRef: 'schemas/input.json',
+        outputSchemaRef: 'schemas/output.json',
+        retryPolicyRef: 'policy/retry-default',
+        timeoutPolicyRef: 'policy/timeout-default',
+        budgetPolicyRef: 'policy/budget-default',
       },
     ],
     edges: [
       {
-        fromNodeId: "node-entry",
-        toNodeId: "node-review",
+        fromNodeId: 'node-entry',
+        toNodeId: 'node-review',
       },
     ],
   });
@@ -68,13 +68,13 @@ function createGraphPlan() {
   return new CompiledIrGraphAdapter().adapt(compiledIr);
 }
 
-describe("core-orchestration-service local shell", () => {
-  it("tracks execution state, event stream, and sqlite-fs checkpoint recovery", async () => {
-    const temporaryRoot = await mkdtemp(join(tmpdir(), "local-orchestration-shell-unit-"));
+describe('core-orchestration-service local shell', () => {
+  it('tracks execution state, event stream, and sqlite-fs checkpoint recovery', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-unit-'));
     const orchestrationService = new LocalOrchestrationServiceShell({
       workspaceRoot: temporaryRoot,
-      executionIdProvider: () => "exec-shell-001",
-      executionSessionIdProvider: () => "session-shell-001",
+      executionIdProvider: () => 'exec-shell-001',
+      executionSessionIdProvider: () => 'session-shell-001',
     });
 
     try {
@@ -82,13 +82,13 @@ describe("core-orchestration-service local shell", () => {
       const plan = createGraphPlan();
       const started = await orchestrationService.startExecution(
         {
-          workspaceId: "workspace-unit",
+          workspaceId: 'workspace-unit',
           workspaceRoot: temporaryRoot,
           executionKind: OrchestrationExecutionKind.RUN,
           clientSurface: OrchestrationClientSurface.CLI,
-          taskId: "TK-151",
-          projectId: "project-014",
-          sprintId: "sprint-002",
+          taskId: 'TK-151',
+          projectId: 'project-014',
+          sprintId: 'sprint-002',
         },
         {
           executionId: plan.executionId,
@@ -99,18 +99,18 @@ describe("core-orchestration-service local shell", () => {
         executionId: plan.executionId,
         type: OrchestrationServiceEventType.STAGE_COMPLETED,
         status: OrchestrationExecutionStatus.RUNNING,
-        stageId: "stage-entry",
-        message: "Stage entry completed.",
+        stageId: 'stage-entry',
+        message: 'Stage entry completed.',
       });
       const recovered = await orchestrationService.saveCheckpoint({
         executionId: plan.executionId,
         plan,
-        executionSessionId: "session-shell-001",
-        activeNodeIds: ["node-review"],
-        visitedNodeIds: ["node-entry"],
+        executionSessionId: 'session-shell-001',
+        activeNodeIds: ['node-review'],
+        visitedNodeIds: ['node-entry'],
         reducedState: {
-          "execution.cursor": "node-review",
-          "execution.visited_nodes": ["node-entry"],
+          'execution.cursor': 'node-review',
+          'execution.visited_nodes': ['node-entry'],
         },
       });
       const replayedOrchestrationService = new LocalOrchestrationServiceShell({
@@ -122,9 +122,9 @@ describe("core-orchestration-service local shell", () => {
       const executionSummary = await replayedOrchestrationService.getExecution(plan.executionId);
       const executionList = await replayedOrchestrationService.listExecutions({
         filter: {
-          workspaceId: "workspace-unit",
-          projectId: "project-014",
-          sprintId: "sprint-002",
+          workspaceId: 'workspace-unit',
+          projectId: 'project-014',
+          sprintId: 'sprint-002',
         },
       });
       const recoveryResult = await replayedOrchestrationService.recoverExecution({
@@ -135,7 +135,7 @@ describe("core-orchestration-service local shell", () => {
       expect(health.serviceHostKind).toBe(OrchestrationServiceHostKind.EMBEDDED);
       expect(health.serviceTransportKind).toBe(OrchestrationServiceTransportKind.IN_PROCESS);
       expect(health.checkpointCapable).toBe(true);
-      expect(health.protocolVersion).toBe("1");
+      expect(health.protocolVersion).toBe('1');
       expect(started.status).toBe(OrchestrationExecutionStatus.RUNNING);
       expect(started.serviceHostKind).toBe(OrchestrationServiceHostKind.EMBEDDED);
       expect(started.serviceTransportKind).toBe(OrchestrationServiceTransportKind.IN_PROCESS);
@@ -151,14 +151,14 @@ describe("core-orchestration-service local shell", () => {
       expect(subscription.nextCursor).toBe(subscription.events[2]?.streamCursor);
       expect(subscription.events.map((event) => event.sequence)).toEqual([1, 2, 3]);
       expect(subscription.events[0]?.eventId).toBe(`${plan.executionId}-event-1`);
-      expect(subscription.events[2]?.artifactId).toBe("langgraph_checkpoint");
-      expect(subscription.events[2]?.artifactPath).toContain("langgraph-checkpoints.sqlite#");
-      expect(executionSummary?.checkpointSource).toBe("sqlite-fs");
+      expect(subscription.events[2]?.artifactId).toBe('langgraph_checkpoint');
+      expect(subscription.events[2]?.artifactPath).toContain('langgraph-checkpoints.sqlite#');
+      expect(executionSummary?.checkpointSource).toBe('sqlite-fs');
       expect(executionSummary?.recoveryCapable).toBe(true);
       expect(executionSummary?.pendingHitl).toBe(false);
-      expect(executionSummary?.currentStageId).toBe("stage-entry");
-      expect(executionSummary?.latestArtifactId).toBe("langgraph_checkpoint");
-      expect(executionSummary?.latestArtifactPath).toContain("langgraph-checkpoints.sqlite#");
+      expect(executionSummary?.currentStageId).toBe('stage-entry');
+      expect(executionSummary?.latestArtifactId).toBe('langgraph_checkpoint');
+      expect(executionSummary?.latestArtifactPath).toContain('langgraph-checkpoints.sqlite#');
       expect(executionSummary?.latestEventType).toBe(OrchestrationServiceEventType.ARTIFACT_READY);
       expect(executionSummary?.serviceHostKind).toBe(OrchestrationServiceHostKind.EMBEDDED);
       expect(executionSummary?.serviceTransportKind).toBe(
@@ -169,12 +169,12 @@ describe("core-orchestration-service local shell", () => {
       expect(executionList.returnedCount).toBe(1);
       expect(executionList.totalMatchedCount).toBe(1);
       expect(executionList.executions[0]?.executionId).toBe(plan.executionId);
-      expect(recovered?.checkpointSource).toBe("sqlite-fs");
+      expect(recovered?.checkpointSource).toBe('sqlite-fs');
       expect(recoveryResult.recovered).toBe(true);
       expect(recoveryResult.recoveryCapable).toBe(true);
-      expect(recoveryResult.nextNodeIds).toEqual(["node-review"]);
+      expect(recoveryResult.nextNodeIds).toEqual(['node-review']);
       expect(recoveryResult.executionSummary.checkpointPath).toContain(
-        "langgraph-checkpoints.sqlite#",
+        'langgraph-checkpoints.sqlite#',
       );
       expect(recoveryResult.executionSummary.executionId).toBe(plan.executionId);
     } finally {
@@ -182,50 +182,50 @@ describe("core-orchestration-service local shell", () => {
     }
   });
 
-  it("persists a HITL decision receipt artifact and exposes the receipt path in the response", async () => {
-    const temporaryRoot = await mkdtemp(join(tmpdir(), "local-orchestration-shell-unit-"));
+  it('persists a HITL decision receipt artifact and exposes the receipt path in the response', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-unit-'));
     const orchestrationService = new LocalOrchestrationServiceShell({
       workspaceRoot: temporaryRoot,
-      executionIdProvider: () => "exec-shell-hitl-001",
-      executionSessionIdProvider: () => "session-shell-hitl-001",
-      nowProvider: () => new Date("2026-03-25T12:30:00Z"),
+      executionIdProvider: () => 'exec-shell-hitl-001',
+      executionSessionIdProvider: () => 'session-shell-hitl-001',
+      nowProvider: () => new Date('2026-03-25T12:30:00Z'),
     });
 
     try {
       const started = await orchestrationService.startExecution(
         {
-          workspaceId: "workspace-unit",
+          workspaceId: 'workspace-unit',
           workspaceRoot: temporaryRoot,
           executionKind: OrchestrationExecutionKind.RUN,
           clientSurface: OrchestrationClientSurface.CLI,
-          taskId: "TK-151",
-          projectId: "project-014",
-          sprintId: "sprint-002",
+          taskId: 'TK-151',
+          projectId: 'project-014',
+          sprintId: 'sprint-002',
         },
         {
-          processId: "process-orchestration-shell-hitl",
+          processId: 'process-orchestration-shell-hitl',
         },
       );
       await orchestrationService.publishEvent({
         executionId: started.executionId,
         type: OrchestrationServiceEventType.HITL_REQUIRED,
         status: OrchestrationExecutionStatus.HITL_REQUIRED,
-        message: "Awaiting HITL decision.",
+        message: 'Awaiting HITL decision.',
       });
 
       const decisionResult = await orchestrationService.submitHitlDecision({
         executionId: started.executionId,
         executionSessionId: started.executionSessionId,
-        decision: "approve",
-        resumeAction: "resume",
-        actor: "reviewer",
-        reason: "Approved for continuation.",
+        decision: 'approve',
+        resumeAction: 'resume',
+        actor: 'reviewer',
+        reason: 'Approved for continuation.',
       });
       const subscription = await orchestrationService.subscribeExecution({
         eventStreamToken: started.eventStreamToken,
       });
       const receiptPayload = JSON.parse(
-        await readFile(decisionResult.decisionReceiptArtifactPath as string, "utf8"),
+        await readFile(decisionResult.decisionReceiptArtifactPath as string, 'utf8'),
       ) as {
         executionId: string;
         decision: string;
@@ -234,11 +234,11 @@ describe("core-orchestration-service local shell", () => {
 
       expect(decisionResult.accepted).toBe(true);
       expect(decisionResult.decisionReceiptArtifactPath).toContain(
-        "context/hitl/decisions/hitl-decision-",
+        'context/hitl/decisions/hitl-decision-',
       );
       expect(receiptPayload.executionId).toBe(started.executionId);
-      expect(receiptPayload.decision).toBe("approve");
-      expect(receiptPayload.decidedBy).toBe("reviewer");
+      expect(receiptPayload.decision).toBe('approve');
+      expect(receiptPayload.decidedBy).toBe('reviewer');
       expect(decisionResult.executionSummary.latestArtifactPath).toBe(
         decisionResult.decisionReceiptArtifactPath,
       );
@@ -252,38 +252,38 @@ describe("core-orchestration-service local shell", () => {
     }
   });
 
-  it("resolves memory provider composition through the shared loader and exposes it in health and execution summaries", async () => {
-    const temporaryRoot = await mkdtemp(join(tmpdir(), "local-orchestration-shell-memory-"));
+  it('resolves memory provider composition through the shared loader and exposes it in health and execution summaries', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-memory-'));
     const orchestrationService = new LocalOrchestrationServiceShell({
       workspaceRoot: temporaryRoot,
       memoryConfig: {
         storeEngine: MemoryStoreEngine.FS_CSV,
-        storeRoot: "context/memory/service-shared-loader",
+        storeRoot: 'context/memory/service-shared-loader',
       },
-      executionIdProvider: () => "exec-shell-memory-001",
-      executionSessionIdProvider: () => "session-shell-memory-001",
+      executionIdProvider: () => 'exec-shell-memory-001',
+      executionSessionIdProvider: () => 'session-shell-memory-001',
     });
 
     try {
       const health = await orchestrationService.getHealth();
       const started = await orchestrationService.startExecution(
         {
-          workspaceId: "workspace-memory",
+          workspaceId: 'workspace-memory',
           workspaceRoot: temporaryRoot,
           executionKind: OrchestrationExecutionKind.RUN,
           clientSurface: OrchestrationClientSurface.DESKTOP,
         },
         {
-          processId: "process-orchestration-shell-memory",
+          processId: 'process-orchestration-shell-memory',
         },
       );
       const summary = await orchestrationService.getExecution(started.executionId);
 
       expect(health.memoryProvider).toEqual(
         expect.objectContaining({
-          memoryStoreProviderId: "fs-csv",
-          memoryStoreDistributionMode: "default",
-          memoryStoreResolutionSource: "legacy_store_engine",
+          memoryStoreProviderId: 'fs-csv',
+          memoryStoreDistributionMode: 'default',
+          memoryStoreResolutionSource: 'legacy_store_engine',
           memoryStoreHostSurface: MemoryProviderHostSurface.LOCAL_ORCHESTRATION_SERVICE,
           memoryStoreRuntimeMode: MemoryProviderRuntimeMode.EMBEDDED,
         }),
@@ -295,42 +295,42 @@ describe("core-orchestration-service local shell", () => {
     }
   });
 
-  it("keeps HITL pending when a degrade decision is supplied with a pre-existing receipt path", async () => {
-    const temporaryRoot = await mkdtemp(join(tmpdir(), "local-orchestration-shell-unit-"));
+  it('keeps HITL pending when a degrade decision is supplied with a pre-existing receipt path', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-unit-'));
     const orchestrationService = new LocalOrchestrationServiceShell({
       workspaceRoot: temporaryRoot,
-      executionIdProvider: () => "exec-shell-hitl-002",
-      executionSessionIdProvider: () => "session-shell-hitl-002",
-      nowProvider: () => new Date("2026-03-25T12:45:00Z"),
+      executionIdProvider: () => 'exec-shell-hitl-002',
+      executionSessionIdProvider: () => 'session-shell-hitl-002',
+      nowProvider: () => new Date('2026-03-25T12:45:00Z'),
     });
 
     try {
       const started = await orchestrationService.startExecution(
         {
-          workspaceId: "workspace-unit",
+          workspaceId: 'workspace-unit',
           workspaceRoot: temporaryRoot,
           executionKind: OrchestrationExecutionKind.RUN,
           clientSurface: OrchestrationClientSurface.CLI,
         },
         {
-          processId: "process-orchestration-shell-hitl-degrade",
+          processId: 'process-orchestration-shell-hitl-degrade',
         },
       );
       await orchestrationService.publishEvent({
         executionId: started.executionId,
         type: OrchestrationServiceEventType.HITL_REQUIRED,
         status: OrchestrationExecutionStatus.HITL_REQUIRED,
-        message: "Awaiting revised HITL decision.",
+        message: 'Awaiting revised HITL decision.',
       });
 
       const providedReceiptPath = join(
         temporaryRoot,
-        "context",
-        "hitl",
-        "decisions",
-        "provided.json",
+        'context',
+        'hitl',
+        'decisions',
+        'provided.json',
       );
-      await mkdir(join(temporaryRoot, "context", "hitl", "decisions"), {
+      await mkdir(join(temporaryRoot, 'context', 'hitl', 'decisions'), {
         recursive: true,
       });
       await writeFile(
@@ -338,21 +338,21 @@ describe("core-orchestration-service local shell", () => {
         JSON.stringify(
           {
             executionId: started.executionId,
-            decision: "revise",
-            resumeAction: "degrade",
+            decision: 'revise',
+            resumeAction: 'degrade',
           },
           null,
           2,
         ),
-        "utf8",
+        'utf8',
       );
 
       const decisionResult = await orchestrationService.submitHitlDecision({
         executionId: started.executionId,
         executionSessionId: started.executionSessionId,
-        decision: "revise",
-        resumeAction: "degrade",
-        actor: "reviewer",
+        decision: 'revise',
+        resumeAction: 'degrade',
+        actor: 'reviewer',
         decisionReceiptArtifactPath: providedReceiptPath,
       });
 
@@ -369,60 +369,60 @@ describe("core-orchestration-service local shell", () => {
     }
   });
 
-  it("lists execution summaries with filters and keeps service-owned summary fields stable", async () => {
-    const temporaryRoot = await mkdtemp(join(tmpdir(), "local-orchestration-shell-unit-"));
+  it('lists execution summaries with filters and keeps service-owned summary fields stable', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-unit-'));
     const orchestrationService = new LocalOrchestrationServiceShell({
       workspaceRoot: temporaryRoot,
       executionIdProvider: (() => {
-        const executionIds = ["exec-list-001", "exec-list-002"];
-        return () => executionIds.shift() ?? "exec-list-fallback";
+        const executionIds = ['exec-list-001', 'exec-list-002'];
+        return () => executionIds.shift() ?? 'exec-list-fallback';
       })(),
       executionSessionIdProvider: (executionId) => `session-${executionId}`,
       nowProvider: (() => {
         const timestamps = [
-          new Date("2026-03-25T10:00:00Z"),
-          new Date("2026-03-25T10:05:00Z"),
-          new Date("2026-03-25T10:10:00Z"),
-          new Date("2026-03-25T10:15:00Z"),
+          new Date('2026-03-25T10:00:00Z'),
+          new Date('2026-03-25T10:05:00Z'),
+          new Date('2026-03-25T10:10:00Z'),
+          new Date('2026-03-25T10:15:00Z'),
         ];
-        return () => timestamps.shift() ?? new Date("2026-03-25T10:20:00Z");
+        return () => timestamps.shift() ?? new Date('2026-03-25T10:20:00Z');
       })(),
     });
 
     try {
       const first = await orchestrationService.startExecution({
-        workspaceId: "workspace-a",
+        workspaceId: 'workspace-a',
         workspaceRoot: temporaryRoot,
         executionKind: OrchestrationExecutionKind.RUN,
         clientSurface: OrchestrationClientSurface.CLI,
-        taskId: "TK-153",
-        projectId: "project-014",
-        sprintId: "sprint-003",
+        taskId: 'TK-153',
+        projectId: 'project-014',
+        sprintId: 'sprint-003',
       });
       const second = await orchestrationService.startExecution({
-        workspaceId: "workspace-b",
+        workspaceId: 'workspace-b',
         workspaceRoot: temporaryRoot,
         executionKind: OrchestrationExecutionKind.RUN,
         clientSurface: OrchestrationClientSurface.DESKTOP,
-        taskId: "TK-other",
-        projectId: "project-other",
-        sprintId: "sprint-other",
+        taskId: 'TK-other',
+        projectId: 'project-other',
+        sprintId: 'sprint-other',
       });
       await orchestrationService.publishEvent({
         executionId: first.executionId,
         type: OrchestrationServiceEventType.HITL_REQUIRED,
         status: OrchestrationExecutionStatus.HITL_REQUIRED,
-        stageId: "stage-review",
-        message: "Awaiting review decision.",
+        stageId: 'stage-review',
+        message: 'Awaiting review decision.',
       });
 
       const filtered = await orchestrationService.listExecutions({
         filter: {
-          workspaceId: "workspace-a",
+          workspaceId: 'workspace-a',
           status: OrchestrationExecutionStatus.HITL_REQUIRED,
-          taskId: "TK-153",
-          projectId: "project-014",
-          sprintId: "sprint-003",
+          taskId: 'TK-153',
+          projectId: 'project-014',
+          sprintId: 'sprint-003',
         },
         limit: 1,
       });
@@ -440,7 +440,7 @@ describe("core-orchestration-service local shell", () => {
       expect(filtered.totalMatchedCount).toBe(1);
       expect(filtered.executions[0]?.executionId).toBe(first.executionId);
       expect(filtered.executions[0]?.pendingHitl).toBe(true);
-      expect(filtered.executions[0]?.currentStageId).toBe("stage-review");
+      expect(filtered.executions[0]?.currentStageId).toBe('stage-review');
       expect(all.returnedCount).toBe(2);
       expect(all.totalMatchedCount).toBe(2);
       expect(all.executions[0]?.executionId).toBe(second.executionId);
@@ -451,46 +451,46 @@ describe("core-orchestration-service local shell", () => {
     }
   });
 
-  it("fails closed when HITL decision or recovery is requested from an invalid execution state", async () => {
-    const temporaryRoot = await mkdtemp(join(tmpdir(), "local-orchestration-shell-unit-"));
+  it('fails closed when HITL decision or recovery is requested from an invalid execution state', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-unit-'));
     const orchestrationService = new LocalOrchestrationServiceShell({
       workspaceRoot: temporaryRoot,
-      executionIdProvider: () => "exec-invalid-state-001",
-      executionSessionIdProvider: () => "session-invalid-state-001",
+      executionIdProvider: () => 'exec-invalid-state-001',
+      executionSessionIdProvider: () => 'session-invalid-state-001',
     });
 
     try {
       const started = await orchestrationService.startExecution({
-        workspaceId: "workspace-invalid",
+        workspaceId: 'workspace-invalid',
         workspaceRoot: temporaryRoot,
         executionKind: OrchestrationExecutionKind.RUN,
         clientSurface: OrchestrationClientSurface.CLI,
-        taskId: "TK-155",
-        projectId: "project-014",
-        sprintId: "sprint-003",
+        taskId: 'TK-155',
+        projectId: 'project-014',
+        sprintId: 'sprint-003',
       });
       await orchestrationService.publishEvent({
         executionId: started.executionId,
         type: OrchestrationServiceEventType.EXECUTION_COMPLETED,
         status: OrchestrationExecutionStatus.COMPLETED,
-        message: "Execution completed.",
+        message: 'Execution completed.',
       });
 
-      let hitlError = standardizeError(new GovernorError(GovernorErrorCode.UNKNOWN, "unreachable"));
+      let hitlError = standardizeError(new GovernorError(GovernorErrorCode.UNKNOWN, 'unreachable'));
       try {
         await orchestrationService.submitHitlDecision({
           executionId: started.executionId,
           executionSessionId: started.executionSessionId,
-          decision: "approve",
-          resumeAction: "resume",
-          actor: "reviewer",
+          decision: 'approve',
+          resumeAction: 'resume',
+          actor: 'reviewer',
         });
       } catch (error) {
         hitlError = standardizeError(error);
       }
 
       let recoveryError = standardizeError(
-        new GovernorError(GovernorErrorCode.UNKNOWN, "unreachable"),
+        new GovernorError(GovernorErrorCode.UNKNOWN, 'unreachable'),
       );
       try {
         await orchestrationService.recoverExecution({
@@ -507,37 +507,37 @@ describe("core-orchestration-service local shell", () => {
     }
   });
 
-  it("supports cursor-based incremental subscription for desktop-ready streaming", async () => {
-    const temporaryRoot = await mkdtemp(join(tmpdir(), "local-orchestration-shell-unit-"));
+  it('supports cursor-based incremental subscription for desktop-ready streaming', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-unit-'));
     const orchestrationService = new LocalOrchestrationServiceShell({
       workspaceRoot: temporaryRoot,
-      executionIdProvider: () => "exec-cursor-001",
-      executionSessionIdProvider: () => "session-cursor-001",
+      executionIdProvider: () => 'exec-cursor-001',
+      executionSessionIdProvider: () => 'session-cursor-001',
     });
 
     try {
       const started = await orchestrationService.startExecution({
-        workspaceId: "workspace-cursor",
+        workspaceId: 'workspace-cursor',
         workspaceRoot: temporaryRoot,
         executionKind: OrchestrationExecutionKind.RUN,
         clientSurface: OrchestrationClientSurface.DESKTOP,
-        taskId: "TK-154",
-        projectId: "project-014",
-        sprintId: "sprint-003",
+        taskId: 'TK-154',
+        projectId: 'project-014',
+        sprintId: 'sprint-003',
       });
       await orchestrationService.publishEvent({
         executionId: started.executionId,
         type: OrchestrationServiceEventType.STAGE_PROGRESS,
         status: OrchestrationExecutionStatus.RUNNING,
-        stageId: "stage-entry",
-        message: "Stage entry is running.",
+        stageId: 'stage-entry',
+        message: 'Stage entry is running.',
       });
       await orchestrationService.publishEvent({
         executionId: started.executionId,
         type: OrchestrationServiceEventType.STAGE_COMPLETED,
         status: OrchestrationExecutionStatus.RUNNING,
-        stageId: "stage-entry",
-        message: "Stage entry completed.",
+        stageId: 'stage-entry',
+        message: 'Stage entry completed.',
       });
 
       const firstSubscription = await orchestrationService.subscribeExecution({
@@ -548,8 +548,8 @@ describe("core-orchestration-service local shell", () => {
         executionId: started.executionId,
         type: OrchestrationServiceEventType.ARTIFACT_READY,
         status: OrchestrationExecutionStatus.RUNNING,
-        artifactId: "draft_report",
-        message: "Draft report ready.",
+        artifactId: 'draft_report',
+        message: 'Draft report ready.',
       });
 
       const secondSubscription = await orchestrationService.subscribeExecution({
@@ -564,7 +564,7 @@ describe("core-orchestration-service local shell", () => {
       );
       expect(secondSubscription.events).toHaveLength(1);
       expect(secondSubscription.events[0]?.sequence).toBe(4);
-      expect(secondSubscription.events[0]?.artifactId).toBe("draft_report");
+      expect(secondSubscription.events[0]?.artifactId).toBe('draft_report');
       expect(secondSubscription.latestEventSequence).toBe(4);
       expect(secondSubscription.nextCursor).toBe(secondSubscription.events[0]?.streamCursor);
     } finally {

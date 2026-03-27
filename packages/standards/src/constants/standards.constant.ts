@@ -1,92 +1,92 @@
-import { DEFAULT_I18N_FALLBACK_LOCALE, DEFAULT_I18N_LOCALE } from "@repo-ai-governor/shared";
+import { DEFAULT_I18N_FALLBACK_LOCALE, DEFAULT_I18N_LOCALE } from '@repo-ai-governor/shared';
 
 /**
  * Defines supported standards-pack source categories.
  */
 export enum StandardsPackSource {
-  OFFICIAL = "official",
-  TEAM = "team",
-  REPOSITORY = "repository",
+  OFFICIAL = 'official',
+  TEAM = 'team',
+  REPOSITORY = 'repository',
 }
 
 /**
  * Defines supported standards-pack scope values.
  */
 export enum StandardsPackScope {
-  GLOBAL = "global",
-  TEAM = "team",
-  REPOSITORY = "repository",
+  GLOBAL = 'global',
+  TEAM = 'team',
+  REPOSITORY = 'repository',
 }
 
 /**
  * Defines lifecycle status values for standards packs.
  */
 export enum StandardsPackStatus {
-  ACTIVE = "active",
-  FROZEN = "frozen",
-  DEPRECATED = "deprecated",
+  ACTIVE = 'active',
+  FROZEN = 'frozen',
+  DEPRECATED = 'deprecated',
 }
 
 /**
  * Defines render targets for one semantic standards rule.
  */
 export enum StandardsRenderTarget {
-  HUMAN = "human",
-  AI = "ai",
-  AGENTS = "agents",
+  HUMAN = 'human',
+  AI = 'ai',
+  AGENTS = 'agents',
 }
 
 /**
  * Defines rule severity used by standards governance.
  */
 export enum StandardsRuleSeverity {
-  REQUIRED = "required",
-  RECOMMENDED = "recommended",
-  ADVISORY = "advisory",
+  REQUIRED = 'required',
+  RECOMMENDED = 'recommended',
+  ADVISORY = 'advisory',
 }
 
 /**
  * Defines conflict classes used by standards-upgrade UX.
  */
 export enum StandardsUpgradeConflictLevel {
-  BLOCK = "block",
-  AUTO_FIXABLE = "auto_fixable",
-  ADVISORY = "advisory",
+  BLOCK = 'block',
+  AUTO_FIXABLE = 'auto_fixable',
+  ADVISORY = 'advisory',
 }
 
 /**
  * Defines change types tracked during standards-pack upgrades.
  */
 export enum StandardsUpgradeChangeType {
-  ADDED = "added",
-  REMOVED = "removed",
-  VERSION_CHANGED = "version_changed",
-  SOURCE_CHANGED = "source_changed",
-  SCOPE_CHANGED = "scope_changed",
+  ADDED = 'added',
+  REMOVED = 'removed',
+  VERSION_CHANGED = 'version_changed',
+  SOURCE_CHANGED = 'source_changed',
+  SCOPE_CHANGED = 'scope_changed',
 }
 
 /**
  * Defines required-action summary for one upgrade plan.
  */
 export enum StandardsUpgradeRequiredAction {
-  ALLOW = "allow",
-  CONFIRM = "confirm",
-  BLOCK = "block",
+  ALLOW = 'allow',
+  CONFIRM = 'confirm',
+  BLOCK = 'block',
 }
 
 /**
  * Defines supported version pin modes for standards packs.
  */
 export enum StandardsVersionPinMode {
-  MAJOR_LOCKED = "major_locked",
-  EXACT_VERSION = "exact_version",
+  MAJOR_LOCKED = 'major_locked',
+  EXACT_VERSION = 'exact_version',
 }
 
 /**
  * Defines rollback strategies for failed upgrades.
  */
 export enum StandardsUpgradeRollbackStrategy {
-  RESTORE_PREVIOUS_SNAPSHOT = "restore_previous_snapshot",
+  RESTORE_PREVIOUS_SNAPSHOT = 'restore_previous_snapshot',
 }
 
 /**
@@ -94,7 +94,7 @@ export enum StandardsUpgradeRollbackStrategy {
  */
 export const DEFAULT_STANDARDS_RENDER_LOCALE = DEFAULT_I18N_LOCALE;
 export const DEFAULT_STANDARDS_FALLBACK_LOCALE = DEFAULT_I18N_FALLBACK_LOCALE;
-export const DEFAULT_AGENTS_PROJECTION_TARGET = "AGENTS.md";
+export const DEFAULT_AGENTS_PROJECTION_TARGET = 'AGENTS.md';
 export const DEFAULT_STANDARDS_VERSION_PIN_MODE = StandardsVersionPinMode.MAJOR_LOCKED;
 export const DEFAULT_STANDARDS_ALLOW_MINOR_AUTO_UPGRADE = true;
 export const DEFAULT_STANDARDS_ALLOW_PATCH_AUTO_UPGRADE = true;
@@ -103,11 +103,11 @@ export const DEFAULT_STANDARDS_ALLOW_PATCH_AUTO_UPGRADE = true;
  * Defines metadata keys rendered in AGENTS projection header.
  */
 export enum AgentsProjectionMetadataKey {
-  PROJECTION_TARGET = "projection_target",
-  PROJECTED_AT = "projected_at",
-  LOCALE = "locale",
-  SOURCE_PACK_REFS = "source_pack_refs",
-  PROJECTION_PARITY = "projection_parity",
+  PROJECTION_TARGET = 'projection_target',
+  PROJECTED_AT = 'projected_at',
+  LOCALE = 'locale',
+  SOURCE_PACK_REFS = 'source_pack_refs',
+  PROJECTION_PARITY = 'projection_parity',
 }
 
 /**
