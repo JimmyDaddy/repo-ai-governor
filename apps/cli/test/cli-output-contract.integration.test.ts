@@ -586,7 +586,10 @@ describe("CLI output contract integration", () => {
   it("keeps default adapter baseline when profile only overrides tools", async () => {
     const fixtureRepositoryRoot = await createProfileOnlyAdaptersFixtureRepo();
     try {
-      const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, fixtureRepositoryRoot);
+      const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, fixtureRepositoryRoot, {
+        PATH: "",
+        Path: "",
+      });
       const exitCode = await runCli(
         [
           "node",
@@ -600,10 +603,13 @@ describe("CLI output contract integration", () => {
         ],
         io,
       );
-      const payload = JSON.parse(stdoutBuffer.join(""));
+      const stdout = stdoutBuffer.join("");
+      const stderr = stderrBuffer.join("");
 
       expect(exitCode).toBe(0);
-      expect(stderrBuffer.join("")).toBe("");
+      expect(stderr).toBe("");
+      expect(stdout).not.toBe("");
+      const payload = JSON.parse(stdout);
       expect(payload.status).toBe("success");
       expect(payload.command_result.operation).toBe("adapter_verify");
       expect(payload.command_result.details.required_roles).toBeGreaterThan(0);

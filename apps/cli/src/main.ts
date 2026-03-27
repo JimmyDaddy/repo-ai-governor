@@ -3,7 +3,7 @@ import { isAbsolute, resolve } from "node:path";
 
 import { Command, CommanderError } from "commander";
 
-import { AgentCapability } from "@repo-ai-governor/adapter-sdk";
+import { AgentAvailabilityStatus, AgentCapability } from "@repo-ai-governor/adapter-sdk";
 import {
   type AdaptersConfig,
   ConfigLoader,
@@ -89,6 +89,7 @@ import type {
   CliCommandDiagnostics,
   CliCommandExecutionResultPayload,
   CliErrorOutputPayload,
+  CliLocalAdapterProbeOverride,
   CliResolvedOutputContext,
   CliRuntimeDebugOptions,
   CliSuccessOutputPayload,
@@ -284,6 +285,11 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
     const claudeCodeExecRunner = claudeCodeExecFixtureRuntime.resolveExecRunner(environment);
     const githubCopilotExecFixtureRuntime = new CliGithubCopilotExecFixtureRuntime();
     const githubCopilotExecRunner = githubCopilotExecFixtureRuntime.resolveExecRunner(environment);
+    const adapterLocalProbeOverrides = resolveFixtureBackedLocalProbeOverrides({
+      hasCodexExecFixture: Boolean(codexExecRunner),
+      hasClaudeCodeExecFixture: Boolean(claudeCodeExecRunner),
+      hasGithubCopilotExecFixture: Boolean(githubCopilotExecRunner),
+    });
     const runtimeDebugOptions = resolveRuntimeDebugOptions(rawArgs, io.cwd());
     const runtimeContext = resolveRuntimeContext(io.cwd(), requestedProfileId);
     const workspaceCommandOptions = resolveWorkspaceCommandOptions(rawArgs);
@@ -314,6 +320,11 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
         memoryConfig: runtimeContext.memory,
       },
       adaptersConfig: runtimeContext.adapters,
+      ...(adapterLocalProbeOverrides
+        ? {
+            adapterLocalProbeOverrides,
+          }
+        : {}),
       runtimeDebugOptions,
       ...(codexExecRunner
         ? {
@@ -516,6 +527,42 @@ function resolveRuntimeContext(
     configSource: "default",
     workspace: defaultWorkspace,
   };
+}
+
+/**
+ * Resolves local command-probe overrides for surfaces backed by deterministic exec fixtures.
+ * @param options Boolean flags describing which CLI exec fixtures are active.
+ * @returns Probe overrides that bypass host-binary checks for fixture-backed surfaces.
+ */
+function resolveFixtureBackedLocalProbeOverrides(options: {
+  hasCodexExecFixture: boolean;
+  hasClaudeCodeExecFixture: boolean;
+  hasGithubCopilotExecFixture: boolean;
+}): Partial<Record<AdapterSurface, CliLocalAdapterProbeOverride>> | undefined {
+  const overrides: Partial<Record<AdapterSurface, CliLocalAdapterProbeOverride>> = {};
+
+  if (options.hasCodexExecFixture) {
+    overrides[AdapterSurface.CODEX] = {
+      availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+      unavailableReasons: [],
+    };
+  }
+
+  if (options.hasClaudeCodeExecFixture) {
+    overrides[AdapterSurface.CLAUDE_CODE] = {
+      availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+      unavailableReasons: [],
+    };
+  }
+
+  if (options.hasGithubCopilotExecFixture) {
+    overrides[AdapterSurface.GITHUB_COPILOT] = {
+      availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+      unavailableReasons: [],
+    };
+  }
+
+  return Object.keys(overrides).length > 0 ? overrides : undefined;
 }
 
 /**
