@@ -1,7 +1,7 @@
 # Repo AI Governor Project 拆解总览
 
 - Status: active
-- Date: 2026-03-26
+- Date: 2026-03-27
 - Basis:
   - `.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-master-execution-plan.md`
   - `.repo-ai-governor/normative_knowledge_sources/product-requirements.md`
@@ -31,7 +31,7 @@
 | `project-017-technical-solution-modularization` | Cross-stage normative modularization follow-up | Normative Loading / Module Graph / Spec Sync Hardening | 已完成总技术方案模块化、lifecycle/promotion 治理，并补齐 repo-local promotion skill |
 | `project-018-technical-solution-promotion-pilots` | Cross-stage normative consumption follow-up | Technical Solution Promotion / Consumption Proof | 已完成 `memory-provider-pluginization` 与 LangGraph promotion/backfill，并补齐 `core-runtime-langgraph` hard dependency truthfulness follow-up；同时为 `memory-module` 保留 prepare-promotion readiness/blocker baseline |
 | `project-019-product-gap-assessment` | Cross-stage product alignment follow-up | PRD Gap Assessment / Priority Recalibration | 盘点当前工具对 PRD 的真实覆盖面，形成“现状 vs 目标”差距评估 draft，并为下一阶段优先级重排提供输入 |
-| `project-020-adoption-productization-and-upgrade-ux` | Post-Stage-9 external adoption closure | Packaging Truthfulness / Upgrade UX / Adopter Pilot | 正式承接 `project-019` 的 priority-1/2 delivery planning，先解决打包分发真值，再收敛 upgrade/workspace adopter UX，并用真实目标仓库试点做闭环 |
+| `project-020-adoption-productization-and-upgrade-ux` | Post-Stage-9 external adoption closure | Packaging Truthfulness / Upgrade UX / Adopter Pilot | 已完成打包分发真值、upgrade/workspace adopter UX 与双仓库真实 pilot；当前仅保留 closeout surface，等待下一条主执行流激活 |
 
 ## 2. 依赖顺序
 
@@ -56,7 +56,7 @@
 19. `project-019-product-gap-assessment`
 20. `project-020-adoption-productization-and-upgrade-ux`
 
-说明：Stage 主链按 001-007、009、010、013 推进；`project-008` 作为跨阶段治理优化轨可优先执行；`project-011` 作为 `project-010` 的工程支撑分解轨，为 CLI package 重构提供独立执行流；`project-012` 作为 `project-008` 的上下文效率 follow-up，负责收敛当前仓库的启动加载与台账上下文成本；`project-013` 已完成 Stage 9 最后业务阻断项收口；`project-014` 承接 post-Stage-9 的运行时现代化主线，但只完成了第一阶段 adoption/service-backed execution 收口；`project-015`、`project-016`、`project-017`、`project-018` 与 `project-019` 均已完成并进入完成态消费面；`project-020 / sprint-003` 已完成 `upgrade/workspace` adopter CLI 用户路径收口，当前仅保留为 closeout surface，下一条 planned stream 为 `sprint-004-adopter-pilot-and-documentation-closure`。
+说明：Stage 主链按 001-007、009、010、013 推进；`project-008` 作为跨阶段治理优化轨可优先执行；`project-011` 作为 `project-010` 的工程支撑分解轨，为 CLI package 重构提供独立执行流；`project-012` 作为 `project-008` 的上下文效率 follow-up，负责收敛当前仓库的启动加载与台账上下文成本；`project-013` 已完成 Stage 9 最后业务阻断项收口；`project-014` 承接 post-Stage-9 的运行时现代化主线，但只完成了第一阶段 adoption/service-backed execution 收口；`project-015`、`project-016`、`project-017`、`project-018`、`project-019` 与 `project-020` 均已完成并进入完成态消费面；当前 `current-context` 暂保留 `project-020` 作为 closeout surface，直到下一条主执行流显式激活。
 
 ## 3. 交付原则
 

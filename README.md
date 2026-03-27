@@ -13,7 +13,7 @@ Repository-local AI governance CLI for orchestrated workflows.
 ## 1.1 Prerequisites
 
 1. Node.js `>=18`
-2. `pnpm`
+2. `pnpm` for `path` / `link` / `tgz` package-based install modes
 3. A target repository where you want to run governance flows
 
 ## 1.2 Local Install Options
@@ -44,11 +44,22 @@ cd <target-repo>
 pnpm add --save-exact /absolute/path/to/cjhdev-repo-ai-governor-<version>.tgz
 ```
 
+### Option D: `dist` binary (no-install rehearsal for non-`pnpm` or dirty repositories)
+
+```bash
+cd <governor-repo>
+pnpm run build
+
+cd <target-repo>
+node <governor-repo>/dist/bin/repo-ai-governor.js --help
+```
+
 Support boundary (validated on 2026-03-26):
 
 1. `tgz` clean-room install is supported when `pnpm add` can reach the npm registry.
 2. The tarball is not offline/self-contained: external dependencies such as `commander`, `i18next`, and `yaml` are still resolved during `pnpm add`.
 3. For fully restricted or offline environments, use `path` or `link` with a pre-bootstrapped governor checkout.
+4. For existing Yarn/npm repos or dirty worktrees where you do not want to mutate the dependency graph yet, use the `dist` binary rehearsal path first. This validates CLI behavior, not packaged install surface.
 
 ## 1.3 Packaged Reference Surface
 
@@ -64,7 +75,9 @@ Repo-local skills under `.codex/skills/` are published as reference assets; they
 
 ## 1.4 Command Bootstrap Chain
 
-Run this chain from `<target-repo>`:
+Run this chain from `<target-repo>`.
+
+Package-based install path:
 
 ```bash
 pnpm exec repo-ai-governor --help
@@ -73,11 +86,18 @@ pnpm exec repo-ai-governor doctor --output json
 pnpm exec repo-ai-governor check --output json
 ```
 
+If you are using `dist` binary rehearsal, replace `pnpm exec repo-ai-governor` with:
+
+```bash
+node <governor-repo>/dist/bin/repo-ai-governor.js <command>
+```
+
 Expected baseline:
 
 1. All commands return JSON with `status=success`.
-2. `doctor` returns attach mode via `command_result.attach_mode`.
-3. `check` returns governance check summary in `command_result.check_totals`.
+2. `init` defaults to `tool_managed`, so fresh target repositories may not create `.repo-ai-governor/` immediately.
+3. `doctor` returns attach mode via `command_result.attach_mode`; fresh external repos may also warn with `baseline_docs missing=5/5`.
+4. `check` returns governance check summary in `command_result.check_totals`; non-self-host target repos may warn with governance `script_not_found`.
 
 ## 1.5 Read-only Attach Precheck
 
@@ -102,16 +122,19 @@ This chain is expected to produce review verification and ledger-backfill artifa
 
 ## 3. Workspace Mode And Rollback
 
-Default mode is `tool_managed`. You can switch to `repo_local` in `.repo-ai-governor/governor.yaml`:
+Default mode is `tool_managed`. Switch to `repo_local` with the CLI migration path:
 
-```yaml
-schemaVersion: "1.1"
-workspace:
-  mode: repo_local
-  migrationPolicy: copy_verify_switch_rollback
+```bash
+pnpm exec repo-ai-governor workspace --workspace-action dry-run --workspace-mode repo_local --output json
+pnpm exec repo-ai-governor workspace --workspace-action execute --workspace-mode repo_local --output json
+pnpm exec repo-ai-governor workspace --workspace-action rollback --workspace-plan <plan-path> --output json
 ```
 
-To rollback, set `workspace.mode` back to `tool_managed` and rerun `init` then `doctor`.
+Notes:
+
+1. `init` alone keeps the repository on `tool_managed`; repo-local files appear only after `workspace execute`.
+2. Current `workspace execute` / `rollback` artifacts remain under the source `tool_managed` workspace even when the target becomes `repo_local`.
+3. Current rollback may leave an empty `.repo-ai-governor-migration/<migration-id>/backup` directory in the target repository.
 
 ## 4. Examples And Validation Gates
 
@@ -132,9 +155,11 @@ pnpm run check
 
 1. `pnpm add <tarball>` fails with `ENOTFOUND` or registry-resolution errors: `tgz` install still requires npm registry access; use `path`/`link` or run in an online environment.
 2. `ERR_MODULE_NOT_FOUND` after source-based adoption: run `pnpm install` at governor repository root and rebuild.
-3. Runtime smoke fails on output parsing: force `--output json` in all automation calls.
-4. `review-verify` reports no queued request: run `review` once before `review-verify`.
-5. Unexpected workspace root: check `governor.yaml.workspace.mode` and current working directory.
+3. Fresh external repos may report `baseline_docs missing=5/5` in `doctor`: this is the current external-adopter baseline unless you explicitly vendor self-host governance docs into the target repo.
+4. External target repos may report governance `script_not_found` warnings in `check`: this is expected unless that repo also carries the self-host governance scripts.
+5. Existing Yarn/npm or dirty repositories: use the `dist` binary rehearsal path first if you want to validate behavior before mutating package-manager state.
+6. Workspace plan/execution/rollback artifacts may still point to the source `tool_managed` root after `repo_local` execute: keep the printed plan path and use it for rollback.
+7. Rollback may leave an empty `.repo-ai-governor-migration/<migration-id>/backup` directory: remove it manually if you need a spotless working tree before automated cleanup lands.
 
 ## 6. Next Steps
 

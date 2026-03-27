@@ -1,7 +1,7 @@
 # Repo AI Governor 从零到完成态总执行计划
 
 - Status: active
-- Date: 2026-03-26
+- Date: 2026-03-27
 - Role: execution master plan
 - Basis:
   - `.repo-ai-governor/normative_knowledge_sources/product-requirements.md`
@@ -36,11 +36,11 @@
 4. 在 triad 尚未引入新的正式 phase 前，所有投产类收口工作统一跟踪为：
    - `Phase E 收口 + GA Readiness overlay`
 
-## 3. 当前执行摘要（2026-03-26）
+## 3. 当前执行摘要（2026-03-27）
 
 ## 3.1 一句话结论
 
-1. Stage 0-9 的业务闭环能力已经完成，`project-013` 已补齐远端 provider 真实调用与 adapter 运维契约；`project-014` 已完成 LangGraph runtime modernization 第一阶段；`project-015` 已完成 memory provider pluginization 全量闭环；`project-016` 已完成 LangGraph runtime productization baseline；`project-017` 已完成 module registry、总纲瘦身、首批模块迁移、typed detail-doc gate cutover、`draft -> final` lifecycle registry / promotion gate 治理，并补齐 repo-local promotion skill；`project-018` 已完成 `memory-provider-pluginization` 与 LangGraph promotion/backfill，并补齐 `core-runtime-langgraph` hard dependency truthfulness follow-up，同时为 `memory-module` 形成 prepare-promotion readiness/blocker baseline；`project-019` 已完成当前工具“现状 vs PRD”差距评估 draft 与 priority-1/2 delivery planning；`project-020` 已完成 `sprint-001`、`sprint-002` 与 `sprint-003`，已把 `upgrade/workspace` 收敛为 adopter-facing CLI 用户路径，当前只剩 `sprint-004` 的真实 adopter pilot 与文档收口。
+1. Stage 0-9 的业务闭环能力已经完成，`project-013` 已补齐远端 provider 真实调用与 adapter 运维契约；`project-014` 已完成 LangGraph runtime modernization 第一阶段；`project-015` 已完成 memory provider pluginization 全量闭环；`project-016` 已完成 LangGraph runtime productization baseline；`project-017` 已完成 module registry、总纲瘦身、首批模块迁移、typed detail-doc gate cutover、`draft -> final` lifecycle registry / promotion gate 治理，并补齐 repo-local promotion skill；`project-018` 已完成 `memory-provider-pluginization` 与 LangGraph promotion/backfill，并补齐 `core-runtime-langgraph` hard dependency truthfulness follow-up，同时为 `memory-module` 形成 prepare-promotion readiness/blocker baseline；`project-019` 已完成当前工具“现状 vs PRD”差距评估 draft 与 priority-1/2 delivery planning；`project-020` 已完成 packaging truthfulness、upgrade/workspace CLI UX、双仓库 adopter pilot 与文档 truthfulness 收口，当前仅保留 closeout surface。
 
 ## 3.2 当前真实状态
 
@@ -51,10 +51,10 @@
    - `project-013` 已完成 Codex / GitHub Copilot / Claude Code 的远端 provider 真实调用、adapter 运维契约与 route-runner truthfulness 收口，Stage 9 最后业务阻断已关闭。
    - `LangGraph` Phase 0 backend、最小主链、checkpoint/recovery、service-backed execution 与 desktop-ready contract 已完成第一阶段收口。
    - `run/review/review-verify/HITL/recovery` 已通过 orchestration service client 进入统一 service-backed path，并形成 CLI / service summary / event stream 三层 parity 证据。
-   - `project-019` 已将 PRD 目标拆成能力域对照矩阵，并明确“内部治理成熟度高于外部产品化成熟度”是当前最核心的结构性偏差；`project-020` 则开始针对其中最高优先级的“打包分发真值”与“upgrade/workspace adopter UX”执行正式实现主线。
+   - `project-019` 已将 PRD 目标拆成能力域对照矩阵，并明确“内部治理成熟度高于外部产品化成熟度”是当前最核心的结构性偏差；`project-020` 已针对其中最高优先级的“打包分发真值”与“upgrade/workspace adopter UX”完成正式实现主线。
 2. 当前未完成的部分：
    - 当前主线未完成项不再停留在 `project-015`、`project-016`、`project-017` 或 `project-018`；四者均已完成并进入完成态消费面。
-   - 剩余距离主要集中在“外部仓库真实采用与发布真值”而不是“核心治理架构是否存在”：例如打包安装真值、外部 adopter upgrade/workspace UX、P2 平台化面板/云端能力仍未形成正式产品面。
+   - 当前 P0/P1 主线缺口已不再集中在“打包安装真值”或“adopter upgrade/workspace UX”本身，而是集中在后续体验型 polish：例如 workspace artifact locality、migration scratch cleanup、以及更广泛的 package-manager-neutral onboarding 仍可继续优化。
    - 技术方案模块化治理主线已具备 module registry、contract-first loading、module graph gate、Spec Sync impact gate、typed detail-doc cutover、lifecycle/promotion blocking gate 与 repo-local skillized promotion workflow。
    - `daemon + http` 仍保留为可选 follow-up option，但不属于当前执行承诺。
 
@@ -74,12 +74,12 @@
 | 已完成规范治理主线 | `project-017-technical-solution-modularization` | completed | 已完成总技术方案模块化、首批模块迁移、artifact handoff、typed detail-doc gate cutover、lifecycle/promotion 治理与 repo-local promotion skill |
 | 已完成 promotion pilot 主线 | `project-018-technical-solution-promotion-pilots` | completed | 已完成 `memory-provider-pluginization` 与 LangGraph promotion/backfill，并补齐 `core-runtime-langgraph` hard dependency truthfulness follow-up，同时为 `memory-module` 形成 prepare-promotion readiness/blocker baseline |
 | 已完成产品差距评估与优先级规划主线 | `project-019-product-gap-assessment` | completed | 已形成当前工具“现状 vs PRD”差距评估 draft，并将最高优先级的两条 gap 收敛为 delivery planning |
-| 当前外部 adoption/productization 收口主线 | `project-020-adoption-productization-and-upgrade-ux` | active | `sprint-003-upgrade-and-workspace-lifecycle-ux-baseline` 已完成并暂留为 closeout surface；下一条 planned sprint 为真实 adopter pilot 与文档收口 |
+| 当前外部 adoption/productization 收口主线 | `project-020-adoption-productization-and-upgrade-ux` | completed | 已完成 `sprint-004-adopter-pilot-and-documentation-closure`；当前仅在 `current-context` 中暂保留 closeout surface，等待下一条主执行流激活 |
 
 ## 3.4 当前推荐执行顺序
 
-1. `project-020 / sprint-003-upgrade-and-workspace-lifecycle-ux-baseline` 已完成，但在下一条执行流激活前暂留为 closeout surface。
-2. `project-020 / sprint-004-adopter-pilot-and-documentation-closure` 为已拆解但未激活的 follow-up sprint，用真实目标仓库验证接入、升级、回滚与 support matrix。
+1. `project-020 / sprint-004-adopter-pilot-and-documentation-closure` 已完成，并已基于 `/Users/jimmydaddy/study/playground` 与 `/Users/jimmydaddy/study/react-native-image-marker-1.1.x` 的真实 pilot 回灌文档真值。
+2. `project-020 / sprint-003-upgrade-and-workspace-lifecycle-ux-baseline` 已完成并迁入 completed history。
 3. `project-020 / sprint-002-packaged-runtime-cutover-and-release-gate-block` 已完成并迁入 completed history。
 4. `project-020 / sprint-001-packaging-truthfulness-failure-baseline` 已完成并迁入 completed history，作为 sprint-002 的 baseline 证据面保留。
 5. `project-019 / sprint-002-priority-1-and-2-delivery-planning` 已完成并迁入 completed history。
@@ -297,7 +297,7 @@
 | `project-017-technical-solution-modularization` | Cross-stage normative modularization follow-up | completed | 已完成 module registry、首批模块迁移、artifact handoff、typed detail-doc gate cutover、lifecycle/promotion 治理与 repo-local promotion skill；后续仅保留增量扩张空间 |
 | `project-018-technical-solution-promotion-pilots` | Cross-stage normative consumption follow-up | completed | 已完成 `memory-provider-pluginization` 与 LangGraph promotion/backfill，并补齐 `core-runtime-langgraph` hard dependency truthfulness follow-up；后续可按同一 cutover pattern 继续消费其他 draft |
 | `project-019-product-gap-assessment` | Cross-stage product alignment follow-up | completed | 已形成当前工具“现状 vs PRD”差距评估 draft，并将最高优先级两条 gap 收敛为 delivery planning |
-| `project-020-adoption-productization-and-upgrade-ux` | Post-Stage-9 external adoption closure | active | 已完成 sprint-003 的 `upgrade/workspace` adopter CLI 用户路径收口；下一步进入 sprint-004 adopter pilot 与文档闭环 |
+| `project-020-adoption-productization-and-upgrade-ux` | Post-Stage-9 external adoption closure | completed | 已完成 packaging truthfulness、upgrade/workspace CLI UX、双仓库 adopter pilot 与文档真值闭环；后续仅保留体验型 polish 空间 |
 
 ## 9. Sprint 与 Task 最小模板
 

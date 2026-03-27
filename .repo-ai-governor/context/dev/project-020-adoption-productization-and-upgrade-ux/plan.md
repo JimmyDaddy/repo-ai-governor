@@ -1,6 +1,6 @@
 # project-020-adoption-productization-and-upgrade-ux 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-03-26
 - Stage Mapping: Post-Stage-9 external adoption/productization closure
 - Phase Mapping: Packaging Truthfulness / Upgrade UX / Adopter Pilot
@@ -48,9 +48,9 @@
 
 ## 2.4 sprint-004-adopter-pilot-and-documentation-closure
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 用 1 到 2 个真实目标仓库试点验证分发真值与 upgrade/workspace UX，并完成 support matrix / playbook / troubleshooting closure。
-- Task Package: 激活时拆分。
+- Task Package: `TK-234`、`TK-235`、`TK-236`、`TK-237`。
 - Exit Criteria:
   1. 至少 1 个目标仓库可稳定完成接入与升级 rehearsal。
   2. 已形成正式 adopter playbook、support matrix 与 known limitations。
@@ -72,6 +72,10 @@
 | TK-231 | sprint-003 | upgrade command user path 与 confirmation/rollback reference baseline | cli/upgrade | TK-230,DA-229,apps/cli/src/commands/upgrade-command.ts,packages/config/src/upgrade-schema-diff-service.ts | completed |
 | TK-232 | sprint-003 | workspace lifecycle CLI dry-run/execute/rollback/failure-summary baseline | cli/workspace | TK-231,packages/config/src/workspace-migration-service.ts | completed |
 | TK-233 | sprint-003 | sprint-003 出口验收与 sprint-004 adopter pilot 输入约束 | acceptance/baseline | TK-230,TK-231,TK-232,DA-230 | completed |
+| TK-234 | sprint-004 | sprint-004 激活与 adopter pilot 仓库冻结 | bootstrap/governance | DA-233,sprint-003 completion | completed |
+| TK-235 | sprint-004 | `playground` adopter pilot baseline | pilot/simple | TK-234,DA-234 | completed |
+| TK-236 | sprint-004 | `react-native-image-marker-1.1.x` 复杂仓库 adopter pilot | pilot/complex | TK-234,TK-235 | completed |
+| TK-237 | sprint-004 | sprint-004 出口验收与文档闭环 | acceptance/docs | TK-235,TK-236,DA-234 | completed |
 
 ## 4. 依赖产物策略
 
@@ -109,3 +113,7 @@
 4. 2026-03-26：完成 `sprint-002-packaged-runtime-cutover-and-release-gate-block`，形成 `DA-227`、`DA-228`、`DA-229`，确认 `.codex/skills/` 为 canonical publish path、`tgz` 为 online-only clean-room 路径，并将下一条推荐执行流切换到 `sprint-003-upgrade-and-workspace-lifecycle-ux-baseline`。
 5. 2026-03-26：激活 `sprint-003-upgrade-and-workspace-lifecycle-ux-baseline`，将 `sprint-002` 迁入 completed history，并启动 `TK-231` 收敛 upgrade 命令的 adopter CLI 用户路径。
 6. 2026-03-26：完成 `sprint-003-upgrade-and-workspace-lifecycle-ux-baseline`，形成 `DA-231`、`DA-232`、`DA-233`，将 `upgrade/workspace` 收敛为正式 adopter CLI 用户路径，并冻结 `sprint-004-adopter-pilot-and-documentation-closure` 输入约束。
+7. 2026-03-27：激活 `sprint-004-adopter-pilot-and-documentation-closure`，冻结 pilot 仓库 `/Users/jimmydaddy/study/playground` 与 `/Users/jimmydaddy/study/react-native-image-marker-1.1.x`，并启动 `TK-235` 收敛真实 adopter 接入真值。
+8. 2026-03-27：完成 `TK-235` 简单仓库 pilot，形成 `DA-235`，确认 simple adopter 的 install/init/upgrade/workspace 路径可闭环，并冻结 `TK-236/TK-237` 需要回灌的 external-baseline warning、workspace help surface、artifact locality 与 migration scratch cleanup gap。
+9. 2026-03-27：完成 `TK-236` 复杂仓库 pilot，形成 `DA-236`，确认 dirty worktree 不会被 workspace lifecycle rehearsal 破坏，并补充冻结 non-pnpm rehearsal guidance、artifact locality 与 migration scratch cleanup 的文档收口输入。
+10. 2026-03-27：完成 `TK-237` 文档闭环与 sprint-004 出口验收，形成 [DA-237](./sprint-004-adopter-pilot-and-documentation-closure/tasks/DA-237-sprint-004-exit-acceptance-and-project-020-completion-recommendation.md) 与 [project-020 completion audit summary](./project-020-adoption-productization-and-upgrade-ux-completion-audit-summary.md)，`project-020` 切换为 `completed`；`current-context` 暂保留为 closeout surface，等待下一条主执行流显式激活。

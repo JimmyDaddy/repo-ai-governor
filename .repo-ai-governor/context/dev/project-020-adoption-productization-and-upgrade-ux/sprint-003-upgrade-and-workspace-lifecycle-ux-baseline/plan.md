@@ -25,4 +25,4 @@
 
 1. `sprint-003` 默认消费 `DA-229`，不再重复打包真值盘点。
 2. 第一条实质任务优先收敛 `upgrade` 用户路径，因为 `CliUpgradeCommand` 当前只输出 diff artifact，尚未形成清晰的 adopter-facing action surface。
-3. `sprint-004-adopter-pilot-and-documentation-closure` 尚未激活；当前仅保留 `sprint-003` 作为 completed closeout surface，等待显式选择 pilot 仓库后再切换主执行流。
+3. `sprint-004-adopter-pilot-and-documentation-closure` 已于 2026-03-27 激活，`sprint-003` 已迁入 completed history。

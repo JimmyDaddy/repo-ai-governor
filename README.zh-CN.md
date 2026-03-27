@@ -13,7 +13,7 @@
 ## 1.1 前置条件
 
 1. Node.js `>=18`
-2. `pnpm`
+2. `pnpm`，用于 `path` / `link` / `tgz` 等 package-based 安装方式
 3. 一个准备接入治理流程的目标仓库
 
 ## 1.2 本地安装方式
@@ -44,11 +44,22 @@ cd <target-repo>
 pnpm add --save-exact /绝对路径/cjhdev-repo-ai-governor-<version>.tgz
 ```
 
+### 方式 D：`dist` 二进制（适合非 `pnpm` 或已有脏工作树仓库的无侵入演练）
+
+```bash
+cd <governor-repo>
+pnpm run build
+
+cd <target-repo>
+node <governor-repo>/dist/bin/repo-ai-governor.js --help
+```
+
 适用边界（2026-03-26 实测）：
 
 1. `tgz` clean-room 安装在 `pnpm add` 可访问 npm registry 时可稳定通过。
 2. tarball 不是离线自包含安装：`commander`、`i18next`、`yaml` 等外部依赖仍会在 `pnpm add` 阶段解析。
 3. 完全受限网络或离线环境请优先使用已完成 bootstrap 的 governor checkout，并通过 `path` / `link` 接入。
+4. 对已有 Yarn/npm 依赖图或不希望先改依赖清单的仓库，可优先使用 `dist` 二进制演练；它验证的是 CLI 行为，不是 package install surface。
 
 ## 1.3 打包参考资产面
 
@@ -64,7 +75,9 @@ pnpm add --save-exact /绝对路径/cjhdev-repo-ai-governor-<version>.tgz
 
 ## 1.4 初始化命令链
 
-在 `<target-repo>` 下执行：
+在 `<target-repo>` 下执行。
+
+package-based 安装路径：
 
 ```bash
 pnpm exec repo-ai-governor --help
@@ -73,11 +86,18 @@ pnpm exec repo-ai-governor doctor --output json
 pnpm exec repo-ai-governor check --output json
 ```
 
+如果你使用 `dist` 二进制演练，请将 `pnpm exec repo-ai-governor` 替换为：
+
+```bash
+node <governor-repo>/dist/bin/repo-ai-governor.js <command>
+```
+
 预期结果：
 
 1. 全部命令返回 JSON，且 `status=success`。
-2. `doctor` 在 `command_result.attach_mode` 中返回 attach 模式。
-3. `check` 在 `command_result.check_totals` 中返回门禁统计。
+2. `init` 默认采用 `tool_managed`，所以全新目标仓库未必会立刻出现 `.repo-ai-governor/`。
+3. `doctor` 在 `command_result.attach_mode` 中返回 attach 模式；全新的外部 adopter 仓库还可能出现 `baseline_docs missing=5/5` warning。
+4. `check` 在 `command_result.check_totals` 中返回门禁统计；非 self-host 目标仓库可能出现 governance `script_not_found` warning。
 
 ## 1.5 只读接入预检
 
@@ -102,16 +122,19 @@ pnpm exec repo-ai-governor review-verify --output json
 
 ## 3. Workspace 模式与回滚
 
-默认模式为 `tool_managed`。如需切换到 `repo_local`，可在 `.repo-ai-governor/governor.yaml` 配置：
+默认模式为 `tool_managed`。如需切换到 `repo_local`，建议使用 CLI 迁移路径：
 
-```yaml
-schemaVersion: "1.1"
-workspace:
-  mode: repo_local
-  migrationPolicy: copy_verify_switch_rollback
+```bash
+pnpm exec repo-ai-governor workspace --workspace-action dry-run --workspace-mode repo_local --output json
+pnpm exec repo-ai-governor workspace --workspace-action execute --workspace-mode repo_local --output json
+pnpm exec repo-ai-governor workspace --workspace-action rollback --workspace-plan <plan-path> --output json
 ```
 
-回滚时，将 `workspace.mode` 改回 `tool_managed`，再执行 `init` 与 `doctor`。
+说明：
+
+1. 单独执行 `init` 仍会停留在 `tool_managed`；只有 `workspace execute` 后才会真正落 repo-local 工作区面。
+2. 当前 `workspace execute` / `rollback` 的 plan/execution/rollback 产物仍主要写回 source `tool_managed` workspace。
+3. 当前 rollback 之后，目标仓库里可能仍残留空的 `.repo-ai-governor-migration/<migration-id>/backup` 目录。
 
 ## 4. 示例与门禁
 
@@ -132,9 +155,11 @@ pnpm run check
 
 1. `pnpm add <tarball>` 报 `ENOTFOUND` 或 registry 解析失败：`tgz` 仍依赖 npm registry；请改用 `path` / `link` 或在联网环境安装。
 2. 源码接入后出现 `ERR_MODULE_NOT_FOUND`：在 governor 仓库执行 `pnpm install` 并重新构建。
-3. runtime smoke 解析失败：确保自动化调用统一使用 `--output json`。
-4. `review-verify` 无待消费请求：先执行一次 `review`。
-5. workspace 根路径异常：检查 `governor.yaml.workspace.mode` 与当前执行目录。
+3. 全新外部 adopter 仓库中 `doctor` 报 `baseline_docs missing=5/5`：这是当前 external-adopter 基线，除非你主动把 self-host 治理文档一起 vendoring 到目标仓库。
+4. 外部目标仓库里 `check` 报 governance `script_not_found`：这是当前预期，除非该仓库也携带 self-host 的治理脚本。
+5. 目标仓库本身是 Yarn/npm 或已有脏工作树：先走 `dist` 二进制演练路径，再决定是否落正式 package 安装。
+6. 执行 `repo_local` 切换后看到的 plan/execution/rollback 产物仍指向 home 下的 `tool_managed` 根：这是当前 artifact locality 行为，请保留输出中的 `plan-path` 用于回滚。
+7. rollback 后若仍看到空的 `.repo-ai-governor-migration/<migration-id>/backup` 目录：当前可手动删除，自动 cleanup 仍属 follow-up。
 
 ## 6. 下一步
 

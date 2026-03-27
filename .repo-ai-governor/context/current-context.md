@@ -4,18 +4,18 @@
 
 - Status: active
 - Project: `project-020-adoption-productization-and-upgrade-ux`
-- Sprint: `sprint-003-upgrade-and-workspace-lifecycle-ux-baseline`
+- Sprint: `sprint-004-adopter-pilot-and-documentation-closure`
 - Docs root: `.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux`
-- Task records: `.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux/sprint-003-upgrade-and-workspace-lifecycle-ux-baseline/tasks/`
-- Review records: `.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux/sprint-003-upgrade-and-workspace-lifecycle-ux-baseline/review/`
+- Task records: `.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux/sprint-004-adopter-pilot-and-documentation-closure/tasks/`
+- Review records: `.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux/sprint-004-adopter-pilot-and-documentation-closure/review/`
 
 ## Active Streams
 
-- `primary`: project=`project-020-adoption-productization-and-upgrade-ux`, sprint=`sprint-003-upgrade-and-workspace-lifecycle-ux-baseline`, docs=`.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux`, plan=`.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux/plan.md`, tasks=`.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux/sprint-003-upgrade-and-workspace-lifecycle-ux-baseline/tasks/`, checklist=`.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux/sprint-003-upgrade-and-workspace-lifecycle-ux-baseline/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux/sprint-003-upgrade-and-workspace-lifecycle-ux-baseline/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux/sprint-003-upgrade-and-workspace-lifecycle-ux-baseline/review/`, status=`active`
+- `primary`: project=`project-020-adoption-productization-and-upgrade-ux`, sprint=`sprint-004-adopter-pilot-and-documentation-closure`, docs=`.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux`, plan=`.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux/plan.md`, tasks=`.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux/sprint-004-adopter-pilot-and-documentation-closure/tasks/`, checklist=`.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux/sprint-004-adopter-pilot-and-documentation-closure/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux/sprint-004-adopter-pilot-and-documentation-closure/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux/sprint-004-adopter-pilot-and-documentation-closure/review/`, status=`active`
 
 ## Planned Follow-Up Streams
 
-1. `project-020-adoption-productization-and-upgrade-ux / sprint-004-adopter-pilot-and-documentation-closure`：等待显式选择 1 到 2 个 adopter pilot 仓库，并以 `DA-233` 冻结的输入约束为准后激活。
+1. 当前无已登记的 follow-up stream。
 
 ## Completed Stream History
 

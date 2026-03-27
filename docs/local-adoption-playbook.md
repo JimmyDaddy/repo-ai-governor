@@ -11,12 +11,14 @@ This playbook is for repository users who need to onboard, debug, and upgrade `r
 | `path` | Fast local iteration | `pnpm add --save-exact <governor-repo>` |
 | `link` | Source-linked development | `pnpm add --save-exact link:<governor-repo>` |
 | `tgz` | Candidate/GA rehearsal and reproducible package install | `pnpm pack --json` + `pnpm add --save-exact <tarball>` |
+| `dist-binary` | No-install rehearsal for Yarn/npm or dirty repositories | `node <governor-repo>/dist/bin/repo-ai-governor.js <command>` |
 
 Operational baseline:
 
 1. `path + link` remain the default local adoption paths.
 2. `tgz` is supported for clean-room and release-candidate rehearsal when the install environment can reach the npm registry.
 3. `tgz` is not offline/self-contained; external dependencies such as `commander`, `i18next`, and `yaml` are still resolved during `pnpm add`.
+4. `dist-binary` is the preferred rehearsal path when you need to validate CLI behavior before mutating an existing Yarn/npm repository dependency graph.
 
 ## 2.1 Published Package Surface
 
@@ -41,7 +43,19 @@ pnpm exec repo-ai-governor doctor --output json
 pnpm exec repo-ai-governor check --output json
 ```
 
+If you are using `dist-binary` rehearsal, replace `pnpm exec repo-ai-governor` with:
+
+```bash
+node <governor-repo>/dist/bin/repo-ai-governor.js <command>
+```
+
 When repository is non-writable, `doctor` should report read-only attach semantics.
+
+Bootstrap notes from pilot validation:
+
+1. `init` defaults to `tool_managed`, so fresh target repositories may not create `.repo-ai-governor/` immediately.
+2. Fresh external repos may see `doctor` warning `baseline_docs missing=5/5`; treat this as current external-adopter baseline, not bootstrap failure.
+3. External target repos may see `check` warnings such as `check-task-ledger-sync=script_not_found`; this is expected unless the target repo also vendors self-host governance scripts.
 
 ## 3.1 Multi-tool Onboarding (Codex / Claude Code / GitHub Copilot)
 
@@ -91,20 +105,24 @@ Notes:
 
 Default mode is `tool_managed`.
 
-Switch to `repo_local` via `.repo-ai-governor/governor.yaml`:
+Switch to `repo_local` with explicit migration commands:
 
-```yaml
-schemaVersion: "1.1"
-workspace:
-  mode: repo_local
-  migrationPolicy: copy_verify_switch_rollback
+```bash
+pnpm exec repo-ai-governor workspace --workspace-action dry-run --workspace-mode repo_local --output json
+pnpm exec repo-ai-governor workspace --workspace-action execute --workspace-mode repo_local --output json
+pnpm exec repo-ai-governor workspace --workspace-action rollback --workspace-plan <plan-path> --output json
 ```
 
 Rollback plan:
 
-1. Set `workspace.mode` back to `tool_managed`.
-2. Run `init` and then `doctor`.
-3. Verify `workspaceRoot` and attach mode in JSON output diagnostics.
+1. Keep the printed `plan-path` from `workspace dry-run` or `workspace execute`.
+2. Use that same `plan-path` for explicit rollback.
+3. Re-run `doctor` and verify `workspaceRoot` resolves back to `tool_managed`.
+
+Current known limitations from pilot validation:
+
+1. `workspace execute` / `rollback` artifacts remain under the source `tool_managed` workspace even when target becomes `repo_local`.
+2. `rollback` may leave an empty `.repo-ai-governor-migration/<migration-id>/backup` directory in the target repository.
 
 ## 5. Local Debug Path
 
@@ -188,3 +206,9 @@ pnpm run release:ga-check
 2. Re-run baseline bootstrap chain in one fresh target repo.
 3. Re-run examples smoke gates.
 4. Re-run clean-room verification before broader rollout.
+
+## 11. Known Limitations
+
+1. `dist-binary` validates CLI/runtime behavior but does not prove packaged install surface.
+2. `doctor` / `check` still emit external-baseline warnings in fresh target repos until self-host governance docs/scripts are explicitly vendored there.
+3. Workspace migration artifacts and cleanup semantics are truthful but not yet fully ergonomic: artifact locality stays on the source `tool_managed` side, and scratch cleanup is incomplete after rollback.

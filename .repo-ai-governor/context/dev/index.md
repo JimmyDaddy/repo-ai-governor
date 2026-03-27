@@ -9,7 +9,7 @@
 1. `projects-overview`: `.repo-ai-governor/context/dev/projects-overview.md`
 2. `dependency-artifact-registry-guide`: `.repo-ai-governor/context/dev/dependency-artifact-registry.md`
 3. `primary project plan`: `.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux/plan.md`
-4. `latest completed project plan`: `.repo-ai-governor/context/dev/project-019-product-gap-assessment/plan.md`
+4. `latest completed project plan`: `.repo-ai-governor/context/dev/project-020-adoption-productization-and-upgrade-ux/plan.md`
 
 ## 2. Artifact Retrieval Entry
 
