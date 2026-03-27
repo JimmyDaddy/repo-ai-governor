@@ -1,6 +1,6 @@
 # sprint-004-ga-evidence-and-support-matrix 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-03-28
 - Project: `project-026-prd-gap-remediation`
 
@@ -10,9 +10,9 @@
 
 ## 2. Task Package
 
-1. `TK-301` 正式支持矩阵文档与 clean-room smoke 记录（planned）
-2. `TK-302` GA Readiness §10.2 全量量化证据沉淀（planned）
-3. `TK-303` project-026 completion closeout 与 P2 staging 建议（planned）
+1. `TK-301` 正式支持矩阵文档与 clean-room smoke 记录（completed）
+2. `TK-302` GA Readiness §10.2 全量量化证据沉淀（completed）
+3. `TK-303` project-026 completion closeout 与 P2 staging 建议（completed）
 
 ## 3. Exit Criteria
 

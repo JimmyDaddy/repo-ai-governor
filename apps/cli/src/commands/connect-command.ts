@@ -7,8 +7,8 @@ import {
   GovernorErrorCode,
   RuntimeError,
 } from '@repo-ai-governor/shared';
-import { CliCommandName } from '../constants/cli-command.constant.js';
 import { CliCommandResultCheckId } from '../constants/cli-command-result-check.constant.js';
+import { CliCommandName } from '../constants/cli-command.constant.js';
 import {
   CLI_REVIEW_LEDGER_BACKFILL_STATUS,
   CLI_RUNTIME_OPERATION,

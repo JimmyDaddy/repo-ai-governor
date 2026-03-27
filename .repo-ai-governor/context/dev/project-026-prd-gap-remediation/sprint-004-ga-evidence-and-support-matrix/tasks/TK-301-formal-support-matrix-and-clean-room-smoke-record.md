@@ -1,6 +1,6 @@
 # TK-301 正式支持矩阵文档与 clean-room smoke 记录
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-28
 - Owner: AI-Agent
 - Priority: P1
@@ -87,3 +87,11 @@
 ## 8. 执行记录
 
 1. 2026-03-28：任务创建，状态初始化为 `planned`。
+2. 2026-03-28：状态切换为 `in_progress`，完成 `docs/support-matrix.md` 与 `docs/support-matrix.zh-CN.md` 首版结构设计，覆盖安装模式、适配器、语言模板、IDE surface、运行时基线。
+3. 2026-03-28：已完成 5 条 clean-room smoke 记录采集：
+   - `doctor --output pretty`（pass）
+   - `verify --output pretty --adapters`（warn，required role failures=0）
+   - `workspace --workspace-action dry-run --workspace-mode repo_local --output pretty`（pass）
+   - `node ./scripts/release/verify-local-distribution.js`（pass）
+   - `node ./scripts/examples/check-desktop-entry-smoke.js`（pass）
+4. 2026-03-28：`verify` 告警已标注为环境前置条件（`github-copilot` quota/probe）导致的 fallback，不影响当前支持矩阵发布与 clean-room smoke 通过判定。

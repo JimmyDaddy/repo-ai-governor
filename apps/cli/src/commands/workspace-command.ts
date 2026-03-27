@@ -24,13 +24,13 @@ import {
   standardizeError,
 } from '@repo-ai-governor/shared';
 import { stringify } from 'yaml';
-import { CliCommandName } from '../constants/cli-command.constant.js';
 import {
   CliCommandResultCheckId,
   CliWorkspaceScratchCleanupDetailField,
   CliWorkspaceScratchCleanupStatus,
   CliWorkspaceTargetDetailField,
 } from '../constants/cli-command-result-check.constant.js';
+import { CliCommandName } from '../constants/cli-command.constant.js';
 import {
   CLI_RUNTIME_OPERATION,
   CliGovernanceCheckStatus,

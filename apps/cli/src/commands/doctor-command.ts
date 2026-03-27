@@ -7,11 +7,11 @@ import {
   ExecutionProgressStage,
   ExecutionProgressStatus,
 } from '@repo-ai-governor/shared';
-import { CliCommandName } from '../constants/cli-command.constant.js';
 import {
   CLI_ADAPTER_TOOL_CHECK_ID_PREFIX,
   CliCommandResultCheckId,
 } from '../constants/cli-command-result-check.constant.js';
+import { CliCommandName } from '../constants/cli-command.constant.js';
 import {
   CLI_BASELINE_DOC_PATHS,
   CLI_DOCTOR_ATTACH_MODE,

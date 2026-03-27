@@ -101,7 +101,7 @@ function collectCliCommandNames() {
   const content = readText(CLI_COMMANDS_RELATIVE_PATH);
   const commandNames = new Set();
 
-  const pattern = /^\s+[A-Z_]+\s*=\s*"([a-z-]+)"/gmu;
+  const pattern = /^\s+[A-Z_]+\s*=\s*["']([a-z-]+)["']/gmu;
   let matched = pattern.exec(content);
   while (matched) {
     commandNames.add(matched[1]);

@@ -1,6 +1,6 @@
 # TK-302 GA Readiness §10.2 全量量化证据沉淀
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-28
 - Owner: AI-Agent
 - Priority: P1
@@ -73,3 +73,11 @@
 ## 8. 执行记录
 
 1. 2026-03-28：任务创建，状态初始化为 `planned`。
+2. 2026-03-28：状态切换为 `in_progress`，开始按主执行计划 §10.2 的 11 项最小量化信号逐条采集证据，并补跑 clean-room 与 blackbox 报告。
+3. 2026-03-28：已生成并归档以下关键证据：
+   - `.tmp/project-026-sprint-004/tk302-cleanroom-path-link-report.json`
+   - `.tmp/project-026-sprint-004/tk302-stage9-blackbox-ga-report.json`
+   - `docs/ga-readiness-evidence.md`
+   - `docs/ga-readiness-evidence.zh-CN.md`
+4. 2026-03-28：初始证据归档完成，11 项信号统计为 `Pass 9 / Conditional pass 2 / Fail 0`，条件项已登记（试点接入耗时统一量化、coverage/check 存量失败收敛）。
+5. 2026-03-28：后续复核中 `pnpm run check` 与 `pnpm run test:coverage` 均恢复全绿，11 项信号更新为 `Pass 10 / Conditional pass 1 / Fail 0`；仅保留“试点接入耗时统一量化”条件项。

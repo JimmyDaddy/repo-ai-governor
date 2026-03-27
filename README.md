@@ -4,6 +4,8 @@ Repository-local AI governance CLI for orchestrated workflows.
 
 - Chinese guide: `README.zh-CN.md`
 - Local adoption playbook: `docs/local-adoption-playbook.md`
+- Formal support matrix: `docs/support-matrix.md`
+- GA readiness evidence: `docs/ga-readiness-evidence.md`
 - Repo-local skill references: `.codex/skills/`
 - Examples assets: `examples/`
 - Changelog: `CHANGELOG.md`
@@ -187,3 +189,5 @@ pnpm run check
 3. Use `examples/` scenarios to bootstrap team-level onboarding and rehearsal.
 4. Track upgrades and migration notes in `CHANGELOG.md`.
 5. See `docs/local-adoption-playbook.md` for the publish-safe Python/Go minimal governance pack entry.
+6. See `docs/support-matrix.md` for the current formal support boundary and latest clean-room smoke snapshot.
+7. See `docs/ga-readiness-evidence.md` for the current 11-signal GA readiness evidence snapshot and conditional items.

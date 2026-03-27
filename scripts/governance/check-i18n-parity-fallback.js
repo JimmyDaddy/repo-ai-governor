@@ -178,7 +178,7 @@ function parseLocaleEnum(content) {
 
   /** @type {Record<string, string>} */
   const localeEnumMap = {};
-  const enumEntryPattern = /([A-Z0-9_]+)\s*=\s*"([^"]+)"/gu;
+  const enumEntryPattern = /([A-Z0-9_]+)\s*=\s*["']([^"']+)["']/gu;
   let matchedEntry = enumEntryPattern.exec(enumBlock[1]);
   while (matchedEntry) {
     localeEnumMap[matchedEntry[1]] = matchedEntry[2];
@@ -250,7 +250,10 @@ function parseSupportedLocales(content, localeEnumMap, constantMap) {
  * @returns {string}
  */
 function resolveLocaleToken(token, localeEnumMap, constantMap, ownerName) {
-  if (token.startsWith('"') && token.endsWith('"')) {
+  if (
+    (token.startsWith('"') && token.endsWith('"')) ||
+    (token.startsWith("'") && token.endsWith("'"))
+  ) {
     return token.slice(1, -1);
   }
 

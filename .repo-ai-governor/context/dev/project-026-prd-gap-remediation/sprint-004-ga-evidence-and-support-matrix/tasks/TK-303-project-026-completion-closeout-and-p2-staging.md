@@ -1,6 +1,6 @@
 # TK-303 project-026 completion closeout 与 P2 staging 建议
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-28
 - Owner: AI-Agent
 - Priority: P1
@@ -18,11 +18,10 @@
 
 ## 3. 预期产物
 
-1. project-026 DoD 核查表（逐项 pass/fail）
-2. project plan 状态更新为 `completed`
-3. sprint-004 stream 移入 `completed-streams-history.md`
-4. `current-context.md` 清理 project-026 active stream
-5. P2 staging 建议文档
+1. project-026 完成态审计摘要文档
+2. project-026 P2 staging 建议文档
+3. project plan / sprint-004 plan 状态与里程碑记录同步
+4. sprint-004 任务台账（checklist + tasks.csv + task cards）全部收口为 `completed`
 
 ## 4. DoD 核查项（来自 project plan §5）
 
@@ -43,8 +42,8 @@
 2. 更新 sprint-004 plan 状态为 `completed`
 3. 更新 sprint-004 checklist 全部标记完成
 4. 更新 tasks.csv 全部任务状态为 `completed`
-5. 将 sprint-004 stream 移入 `completed-streams-history.md`
-6. 清理 `current-context.md` 中 project-026 的 active stream
+5. `current-context.md` 保持 `project-026/sprint-004` 为 active closeout surface（符合 current-context.md `Update Rules` 第 4 条例外），待下一条主执行流显式激活后再迁移到 `completed-streams-history.md`
+6. 将 closeout 决策与残余风险写入项目级完成态审计摘要
 
 ## 6. P2 Staging 建议范围
 
@@ -69,3 +68,10 @@
 ## 8. 执行记录
 
 1. 2026-03-28：任务创建，状态初始化为 `planned`。
+2. 2026-03-28：状态切换为 `in_progress`，完成 project-026 DoD 全项复核并起草 closeout 产物。
+3. 2026-03-28：发布项目级收尾文档：
+   - `.repo-ai-governor/context/dev/project-026-prd-gap-remediation/project-026-prd-gap-remediation-completion-audit-summary.md`
+   - `.repo-ai-governor/context/dev/project-026-prd-gap-remediation/project-026-p2-staging-recommendations.md`
+4. 2026-03-28：完成台账收口与验证，`TK-303` 状态切换为 `completed`；当前未迁移 `sprint-004` 到 completed history 的原因已按 closeout surface 例外规则记录。
+5. 2026-03-28：补跑 `pnpm run check`，先后修复 `organizeImports` 漂移与 governance/example smoke 脚本的单引号解析兼容问题后，`check` 已恢复全绿。
+6. 2026-03-28：补跑 `pnpm run test:coverage` 全量通过（92 files / 404 tests），GA Readiness 证据已同步更新为 `Pass 10 / Conditional pass 1 / Fail 0`。

@@ -4,6 +4,8 @@
 
 - 英文指南：`README.md`
 - 本地接入手册：`docs/local-adoption-playbook.zh-CN.md`
+- 正式支持矩阵：`docs/support-matrix.zh-CN.md`
+- GA 就绪证据：`docs/ga-readiness-evidence.zh-CN.md`
 - 仓库本地 skill 参考：`.codex/skills/`
 - 示例资产：`examples/`
 - 变更日志：`CHANGELOG.zh-CN.md`
@@ -187,3 +189,5 @@ pnpm run check
 3. 使用 `examples/` 作为团队接入演练入口。
 4. 在 `CHANGELOG.zh-CN.md` 跟踪升级与迁移说明。
 5. Python / Go 最小治理模板入口见 `docs/local-adoption-playbook.zh-CN.md`，该路径会随发布包一并提供。
+6. 正式支持边界与最新 clean-room smoke 快照请见 `docs/support-matrix.zh-CN.md`。
+7. 11 项 GA 信号证据与条件项说明请见 `docs/ga-readiness-evidence.zh-CN.md`。

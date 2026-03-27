@@ -1,6 +1,6 @@
 # project-026-prd-gap-remediation 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-03-28
 - Stage Mapping: Post-Stage-9 PRD gap remediation & external productization closure
 - Phase Mapping: GA Blocker Fix / P1 Productization Closure / GA Evidence / P2 Staging
@@ -48,7 +48,7 @@
 
 ## 2.4 sprint-004-ga-evidence-and-support-matrix
 
-- Status: active
+- Status: completed
 - Sprint Goal: 沉淀 GA Readiness §10.2 全量运营证据并发布正式支持矩阵。
 - Task Package: `TK-301`、`TK-302`、`TK-303`。
 - Input Constraints:
@@ -71,9 +71,9 @@
 | TK-298 | sprint-003 | Python/Go 最小治理模板实装 | standards/template | TK-297 | completed |
 | TK-299 | sprint-003 | upgrade/workspace lifecycle adopter UX 打磨 | cli/ux | TK-297 | completed |
 | TK-300 | sprint-003 | sprint-003 出口验收与 sprint-004 输入约束 | acceptance/baseline | TK-298, TK-299 | completed |
-| TK-301 | sprint-004 | 正式支持矩阵文档与 clean-room smoke 记录 | docs/support | TK-300 | planned |
-| TK-302 | sprint-004 | GA Readiness §10.2 全量量化证据沉淀 | verification/ga | TK-300, TK-301 | planned |
-| TK-303 | sprint-004 | project-026 completion closeout 与 P2 staging 建议 | acceptance/closeout | TK-301, TK-302 | planned |
+| TK-301 | sprint-004 | 正式支持矩阵文档与 clean-room smoke 记录 | docs/support | TK-300 | completed |
+| TK-302 | sprint-004 | GA Readiness §10.2 全量量化证据沉淀 | verification/ga | TK-300, TK-301 | completed |
+| TK-303 | sprint-004 | project-026 completion closeout 与 P2 staging 建议 | acceptance/closeout | TK-301, TK-302 | completed |
 
 ## 4. 依赖产物策略
 
@@ -97,3 +97,9 @@
 6. upgrade/workspace lifecycle adopter UX 已打磨。
 7. 正式支持矩阵已发布。
 8. GA Readiness §10.2 全量量化证据已沉淀。
+
+## 6. 里程碑记录
+
+1. 2026-03-28：完成 `sprint-004` 的 `TK-301`，发布正式支持矩阵与 clean-room smoke 记录（`docs/support-matrix.*`）。
+2. 2026-03-28：完成 `sprint-004` 的 `TK-302`，发布 11 项 GA 信号证据快照（`docs/ga-readiness-evidence.*`），并显式登记条件项。
+3. 2026-03-28：完成 `TK-303` 与项目收口，产出 [project-026 completion audit summary](./project-026-prd-gap-remediation-completion-audit-summary.md) 与 [P2 staging recommendations](./project-026-p2-staging-recommendations.md)。
