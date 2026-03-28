@@ -7,6 +7,7 @@ export const ZH_CN_TRANSLATIONS = {
       locale: '指定人类可读输出的语言。',
       profile: '执行命令前应用的配置 profile 标识。',
       output: '指定输出模式：pretty|plain|json。',
+      ui: '指定交互式 UI 模式：none|classic|react|tui。',
       verbosity: '指定输出详细级别：quiet|normal|verbose。',
       compact: '启用更紧凑的 pretty 输出，优先人类快速阅读。',
       noColor: '在 pretty 模式下禁用 ANSI 颜色。',

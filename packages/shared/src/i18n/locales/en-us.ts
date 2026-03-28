@@ -7,6 +7,7 @@ export const EN_US_TRANSLATIONS = {
       locale: 'Locale for human-readable output.',
       profile: 'Config profile id applied before command execution.',
       output: 'Output mode: pretty|plain|json.',
+      ui: 'Interactive UI mode: none|classic|react|tui.',
       verbosity: 'Output verbosity: quiet|normal|verbose.',
       compact: 'Compact pretty output for human-first quick scanning.',
       noColor: 'Disable ANSI color decorations in pretty mode.',

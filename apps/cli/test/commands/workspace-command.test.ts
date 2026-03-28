@@ -17,6 +17,7 @@ import {
 } from '@repo-ai-governor/config';
 import { GovernorErrorCode, RuntimeError, standardizeError } from '@repo-ai-governor/shared';
 import { CliWorkspaceCommand } from '../../src/commands/workspace-command.js';
+import { CliInteractiveUiMode } from '../../src/constants/cli-interactive-shell.constant.js';
 import type {
   CliCommandExecutorContext,
   CliWorkspaceCommandOptions,
@@ -111,6 +112,12 @@ async function createWorkspaceCommandFixture(
     toRfc3339SecondsTimestamp: (value: Date) => value.toISOString().replace(/\.\d{3}Z$/u, 'Z'),
     formatExecFailureDetail: (error: unknown) => standardizeError(error).message,
     resolveRuntimeDebugOptions: () => ({
+      interactive: false,
+      requestedUiMode: null,
+      uiMode: CliInteractiveUiMode.NONE,
+      uiFallbackBehavior: null,
+      inputTty: false,
+      stderrTty: false,
       dryRun: false,
       trace: false,
       replayPath: null,

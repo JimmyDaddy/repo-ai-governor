@@ -35,6 +35,10 @@ import { CliGovernanceRuntime } from './cli-governance-runtime.js';
 import { CliOutputPresenter } from './cli-output-presenter.js';
 import { CLI_COMMAND_DEFINITIONS } from './constants/cli-command.constant.js';
 import {
+  CLI_INTERACTIVE_UI_MODE_VALUES,
+  type CliInteractiveUiMode,
+} from './constants/cli-interactive-shell.constant.js';
+import {
   CLI_OPTIONS_REQUIRING_VALUE,
   CLI_OUTPUT_MODE_VALUES,
   CLI_OUTPUT_SCHEMA_VERSION,
@@ -59,6 +63,7 @@ import { CliCodexExecFixtureRuntime } from './runtime/codex-exec-fixture-runtime
 import { CliGithubCopilotExecFixtureRuntime } from './runtime/github-copilot-exec-fixture-runtime.js';
 import { IdeStandardsSourceRuntime } from './runtime/ide-standards-source-runtime.js';
 import { IdeSurfaceRegistryRuntime } from './runtime/ide-surface-registry-runtime.js';
+import { CliInteractiveShellUiModeResolver } from './runtime/interactive-shell/interactive-shell-ui-mode-resolver.js';
 import { CliNotificationProviderRegistryRuntime } from './runtime/notification-provider-registry-runtime.js';
 export {
   IDE_SURFACE_REGISTRY,
@@ -200,6 +205,8 @@ const DEFAULT_IO: CliIoAdapters = {
   },
   cwd: (): string => process.cwd(),
   isStdoutTty: (): boolean => Boolean(process.stdout.isTTY),
+  isStdinTty: (): boolean => Boolean(process.stdin.isTTY),
+  isStderrTty: (): boolean => Boolean(process.stderr.isTTY),
   env: (): NodeJS.ProcessEnv => process.env,
 };
 
@@ -211,6 +218,8 @@ interface CliIoAdapters {
   stderr: (value: string) => void;
   cwd: () => string;
   isStdoutTty?: () => boolean;
+  isStdinTty?: () => boolean;
+  isStderrTty?: () => boolean;
   env?: () => NodeJS.ProcessEnv;
 }
 
@@ -294,7 +303,7 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
       hasClaudeCodeExecFixture: Boolean(claudeCodeExecRunner),
       hasGithubCopilotExecFixture: Boolean(githubCopilotExecRunner),
     });
-    const runtimeDebugOptions = resolveRuntimeDebugOptions(rawArgs, io.cwd());
+    const runtimeDebugOptions = resolveRuntimeDebugOptions(rawArgs, io.cwd(), outputContext, io);
     const runtimeContext = resolveRuntimeContext(io.cwd(), requestedProfileId);
     const workspaceCommandOptions = resolveWorkspaceCommandOptions(rawArgs);
     memoryStoreComposition = await DEFAULT_MEMORY_PROVIDER_REGISTRY.loadProvider({
@@ -358,6 +367,7 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
     program.option('--locale <locale>', runtimeI18n.t('cli.options.locale'));
     program.option('--profile <profileId>', runtimeI18n.t('cli.options.profile'));
     program.option('--output <mode>', runtimeI18n.t('cli.options.output'));
+    program.option('--ui <mode>', runtimeI18n.t('cli.options.ui'));
     program.option('--verbosity <level>', runtimeI18n.t('cli.options.verbosity'));
     program.option('--compact', runtimeI18n.t('cli.options.compact'));
     program.option('--no-color', runtimeI18n.t('cli.options.noColor'));
@@ -858,6 +868,8 @@ function resolveVerbosityOption(args: string[]): CliVerbosity {
 function resolveRuntimeDebugOptions(
   args: string[],
   currentWorkingDirectory: string,
+  outputContext: CliResolvedOutputContext,
+  io: CliIoAdapters,
 ): CliRuntimeDebugOptions {
   const readRequiredOption = (flag: string, errorMessage: string): string | null => {
     const option = readOptionInput(args, flag);
@@ -882,6 +894,35 @@ function resolveRuntimeDebugOptions(
     replayOption.value && replayOption.value.trim().length > 0
       ? resolveReplayPath(currentWorkingDirectory, replayOption.value.trim())
       : null;
+  const uiModeOption = readOptionInput(args, '--ui');
+  if (uiModeOption.isPresent && !uiModeOption.value) {
+    throw new RuntimeError(
+      GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+      'Option --ui requires one value: none|classic|react|tui.',
+      { option: '--ui' },
+    );
+  }
+
+  const requestedUiMode = uiModeOption.value?.trim().toLowerCase() ?? null;
+  if (requestedUiMode && !CLI_INTERACTIVE_UI_MODE_VALUES.has(requestedUiMode)) {
+    throw new RuntimeError(
+      GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+      `Option --ui must be one of none|classic|react|tui; received '${requestedUiMode}'.`,
+      { option: '--ui', value: requestedUiMode },
+    );
+  }
+
+  const uiModeResolver = new CliInteractiveShellUiModeResolver();
+  const inputTty = resolveIsStdinTty(io);
+  const stderrTty = resolveIsStderrTty(io);
+  const uiModeResolution = uiModeResolver.resolve({
+    interactiveRequested: !hasFlag(args, '--no-interactive'),
+    requestedUiMode: (requestedUiMode as CliInteractiveUiMode | null) ?? null,
+    outputMode: outputContext.outputMode,
+    isOutputTty: outputContext.isTty,
+    isInputTty: inputTty,
+    isStderrTty: stderrTty,
+  });
   const taskIdOption = readOptionInput(args, '--task-id');
   if (taskIdOption.isPresent && !taskIdOption.value) {
     throw new RuntimeError(
@@ -962,6 +1003,11 @@ function resolveRuntimeDebugOptions(
 
   return {
     interactive: !hasFlag(args, '--no-interactive'),
+    requestedUiMode: uiModeResolution.requestedUiMode,
+    uiMode: uiModeResolution.uiMode,
+    uiFallbackBehavior: uiModeResolution.fallbackBehavior,
+    inputTty,
+    stderrTty,
     dryRun: hasFlag(args, '--dry-run'),
     trace: hasFlag(args, '--trace'),
     replayPath,
@@ -1304,4 +1350,30 @@ function resolveIsStdoutTty(io: CliIoAdapters): boolean {
   }
 
   return io.isStdoutTty();
+}
+
+/**
+ * Resolves terminal stdin state from runtime adapters with safe defaults.
+ * @param io Runtime IO adapters.
+ * @returns Whether stdin is a TTY terminal.
+ */
+function resolveIsStdinTty(io: CliIoAdapters): boolean {
+  if (!io.isStdinTty) {
+    return false;
+  }
+
+  return io.isStdinTty();
+}
+
+/**
+ * Resolves terminal stderr state from runtime adapters with safe defaults.
+ * @param io Runtime IO adapters.
+ * @returns Whether stderr is a TTY terminal.
+ */
+function resolveIsStderrTty(io: CliIoAdapters): boolean {
+  if (!io.isStderrTty) {
+    return false;
+  }
+
+  return io.isStderrTty();
 }

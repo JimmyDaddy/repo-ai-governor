@@ -85,6 +85,7 @@ export const CLI_OPTIONS_REQUIRING_VALUE = new Set<string>([
   '--locale',
   '--profile',
   '--output',
+  '--ui',
   '--verbosity',
   '--replay',
   '--task-id',

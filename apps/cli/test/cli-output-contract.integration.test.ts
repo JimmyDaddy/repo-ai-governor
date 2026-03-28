@@ -50,6 +50,8 @@ function createBufferedIo(
     stderr: (value: string) => void;
     cwd: () => string;
     isStdoutTty: () => boolean;
+    isStdinTty: () => boolean;
+    isStderrTty: () => boolean;
     env: () => NodeJS.ProcessEnv;
   };
 } {
@@ -69,6 +71,8 @@ function createBufferedIo(
       },
       cwd: () => currentWorkingDirectory,
       isStdoutTty: () => isStdoutTty,
+      isStdinTty: () => isStdoutTty,
+      isStderrTty: () => isStdoutTty,
       env: () => environment,
     },
   };
@@ -325,6 +329,35 @@ describe('CLI output contract integration', () => {
     }
   });
 
+  it('accepts --ui react while preserving no-interactive fallback semantics', async () => {
+    const temporaryRepositoryRoot = await createFirstTimeInitFixtureRepo();
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(true, temporaryRepositoryRoot);
+
+    try {
+      const exitCode = await runCli(
+        [
+          'node',
+          'repo-ai-governor',
+          '--locale',
+          'en-US',
+          '--output',
+          'pretty',
+          '--ui',
+          'react',
+          '--no-interactive',
+          'init',
+        ],
+        io,
+      );
+
+      expect(exitCode).toBe(0);
+      expect(stderrBuffer.join('')).toBe('');
+      expect(stdoutBuffer.join('')).toContain('repo-ai-governor: command succeeded');
+    } finally {
+      await rm(temporaryRepositoryRoot, { recursive: true, force: true });
+    }
+  });
+
   it('does not trigger interactive bootstrap when pretty output is downgraded in non-TTY first-time init', async () => {
     const temporaryRepositoryRoot = await createFirstTimeInitFixtureRepo();
     const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, temporaryRepositoryRoot);
@@ -485,6 +518,24 @@ describe('CLI output contract integration', () => {
 
     const exitCode = await runCli(
       ['node', 'repo-ai-governor', '--output', 'json', '--verbosity', 'invalid', 'init'],
+      io,
+    );
+
+    const payload = JSON.parse(stderrBuffer.join(''));
+
+    expect(exitCode).toBe(1);
+    expect(stdoutBuffer.join('')).toBe('');
+    expect(payload.status).toBe('error');
+    expect(payload.output_mode).toBe('json');
+    expect(payload.error_code).toBe('ENTRYPOINT_COMMAND_WRAPPER_INVALID');
+    expect(payload.command).toBe('init');
+  });
+
+  it('keeps JSON error contract when --ui receives an invalid value', async () => {
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false);
+
+    const exitCode = await runCli(
+      ['node', 'repo-ai-governor', '--output', 'json', '--ui', 'invalid-ui', 'init'],
       io,
     );
 

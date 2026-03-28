@@ -24,6 +24,14 @@ export type {
 export type { CliRuntimeDebugOptions } from './cli-runtime-debug.interface.js';
 export type { CliWorkspaceCommandOptions } from './cli-workspace-command.interface.js';
 export type {
+  CliInteractiveShellFieldDescriptor,
+  CliInteractiveShellModeResolution,
+  CliInteractiveShellPromptAdapter,
+  CliInteractiveShellSessionState,
+  CliInitReactShellDescriptor,
+  CliInitReactShellSelection,
+} from './cli-interactive-shell.interface.js';
+export type {
   CliArtifactWriter,
   CliExecutionStreamMetadata,
   CliCheckTotals,

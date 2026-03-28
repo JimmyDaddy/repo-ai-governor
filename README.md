@@ -95,6 +95,7 @@ pnpm exec repo-ai-governor init --output pretty
 ```
 
 Interactive prompts are enabled by default in local TTY + `pretty` output. Use `--no-interactive` for CI/scripts.
+For the experimental shell foundation introduced in `project-027 / sprint-001`, you can also try `pnpm exec repo-ai-governor init --output pretty --ui react`; it renders a minimal stderr-only wizard and still falls back to `none` under `--no-interactive`, non-TTY, or `plain/json`.
 
 If you are using `dist` binary rehearsal, replace `pnpm exec repo-ai-governor` with:
 

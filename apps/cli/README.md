@@ -1,7 +1,7 @@
 # @repo-ai-governor/cli
 
 - Status: baseline
-- Date: 2026-03-22
+- Date: 2026-03-28
 - Scope: `project-009-production-readiness / TK-075,TK-076`
 
 ## Purpose
@@ -29,3 +29,4 @@
 6. 失败输出包含结构化字段：`error_code`、`hint`、`next_action`。
 7. `run` 支持 `--dry-run`、`--trace` 与 `--replay <path>`，并产出 `context/diagnostics/{trace,replay}` 诊断产物。
 8. `review-verify` 结果会同时生成 `context/ledger-backfill/review-verify/*.json`，用于后续台账回填与归因。
+9. `init` 新增实验性 `--ui react` 入口：最小向导只渲染到 `stderr`，并在 `--no-interactive`、非 TTY、`plain/json` 下自动回退到 `none`。

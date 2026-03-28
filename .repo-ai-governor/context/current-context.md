@@ -8,7 +8,7 @@
 - Docs root: `.repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation`
 - Task records: `.repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation/sprint-001-react-cli-shell-foundation/tasks/`
 - Review records: `.repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation/sprint-001-react-cli-shell-foundation/review/`
-- Note: `project-027 / sprint-001` 已激活，聚焦 `runtime.cli-interactive-shell` 的 M1 基线实现与 `--ui react` 实验入口落地。
+- Note: `project-027 / sprint-001` 的 M1 foundation 已完成，当前暂保留为 active closeout surface；待 `sprint-002` 激活前，默认执行面仍聚焦 `runtime.cli-interactive-shell` 的 `--ui react` 与 `init` baseline 收口。
 
 ## Active Streams
 

@@ -20,7 +20,7 @@
 
 ## 2.1 sprint-001-react-cli-shell-foundation
 
-- Status: active
+- Status: completed
 - Sprint Goal: 建立 React shell 的运行骨架、UI mode 解析、`stderr` 输出边界与 `init` 的最小可用交互闭环。
 - Task Package: `TK-304`、`TK-305`、`TK-306`、`TK-307`。
 - Exit Criteria:
@@ -53,10 +53,10 @@
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 |---|---|---|---|---|---|
-| TK-304 | sprint-001 | project-027 激活与 React shell implementation handoff | bootstrap/governance | runtime.cli-interactive-shell contract, project-018 completion audit | planned |
-| TK-305 | sprint-001 | shell runner、UI mode resolver 与 stderr/SIGINT baseline | runtime/shell-core | TK-304, contract.cli.interactive-shell.v1 | planned |
-| TK-306 | sprint-001 | `init` React shell 最小向导与 descriptor/state baseline | cli/init-shell | TK-305, init-command, descriptor registry | planned |
-| TK-307 | sprint-001 | M1 回归测试、fallback 与 non-interactive contract gate | verification/gates | TK-305, TK-306 | planned |
+| TK-304 | sprint-001 | project-027 激活与 React shell implementation handoff | bootstrap/governance | runtime.cli-interactive-shell contract, project-018 completion audit | completed |
+| TK-305 | sprint-001 | shell runner、UI mode resolver 与 stderr/SIGINT baseline | runtime/shell-core | TK-304, contract.cli.interactive-shell.v1 | completed |
+| TK-306 | sprint-001 | `init` React shell 最小向导与 descriptor/state baseline | cli/init-shell | TK-305, init-command, descriptor registry | completed |
+| TK-307 | sprint-001 | M1 回归测试、fallback 与 non-interactive contract gate | verification/gates | TK-305, TK-306 | completed |
 | TK-308 | sprint-002 | `connect/workspace` descriptor 化与表单映射扩展 | cli/connect-workspace | TK-307 | planned |
 | TK-309 | sprint-002 | `workflow` 命令树注册与 preview/edit 只读壳层 | cli/workflow | TK-308, workflow command contract | planned |
 | TK-310 | sprint-002 | locale / i18n 注入与异步校验策略 | shell/ux-infrastructure | TK-308, TK-309 | planned |
@@ -87,3 +87,4 @@
 ## 6. 里程碑记录
 
 1. 2026-03-28：创建 `project-027-cli-interactive-shell-implementation`，承接 `runtime.cli-interactive-shell` 的 M1/M2/M3 任务拆解。
+2. 2026-03-28：完成 `sprint-001-react-cli-shell-foundation`，落地 `--ui react` 实验入口、`ui_mode` resolver、stderr-only `init` minimal wizard 与回归测试基线。

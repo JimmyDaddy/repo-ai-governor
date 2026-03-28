@@ -5,9 +5,11 @@ import { stderr, stdin } from 'node:process';
 import { createInterface } from 'node:readline/promises';
 
 import {
+  BaseError,
   DEFAULT_I18N_FALLBACK_LOCALE,
   DEFAULT_I18N_LOCALE,
   ErrorOutputEnvironment,
+  GovernorErrorCode,
   WorkspaceMode,
 } from '@repo-ai-governor/shared';
 import type { Locale } from '@repo-ai-governor/shared';
@@ -17,6 +19,11 @@ import {
   CLI_RUNTIME_OPERATION,
   CliGovernanceCheckStatus,
 } from '../constants/cli-governance-runtime.constant.js';
+import {
+  CliInteractiveShellFallbackBehavior,
+  CliInteractiveUiMode,
+} from '../constants/cli-interactive-shell.constant.js';
+import { CliInitReactShellRunner } from '../runtime/interactive-shell/init-react-shell-runner.js';
 import type {
   CliCommandExecutorContext,
   CliCommandResultArtifact,
@@ -35,6 +42,10 @@ interface CliInteractiveBootstrapSelection {
  */
 export class CliInitCommand implements CliCommandExecutor {
   public readonly commandName = CliCommandName.INIT;
+
+  public constructor(
+    private readonly reactShellRunner: CliInitReactShellRunner = new CliInitReactShellRunner(),
+  ) {}
 
   public async execute(context: CliCommandExecutorContext) {
     const checks: CliCommandResultCheck[] = [];
@@ -61,18 +72,63 @@ export class CliInitCommand implements CliCommandExecutor {
     const configPath = context.options.workspace.configPath;
     const configCreated = !existsSync(configPath);
     let configContent = context.buildDefaultConfigContent();
-    const interactiveRequested =
-      context.options.runtimeDebugOptions?.interactive === true &&
+    const runtimeDebugOptions = context.resolveRuntimeDebugOptions();
+    const interactiveContractAllowed =
+      runtimeDebugOptions.interactive &&
       context.options.isTty &&
-      stdin.isTTY === true &&
+      runtimeDebugOptions.inputTty &&
+      runtimeDebugOptions.stderrTty &&
       context.options.outputMode === ErrorOutputEnvironment.PRETTY;
-    if (configCreated && interactiveRequested) {
-      const interactiveSelection = await this.collectInteractiveBootstrapSelection(context);
+    let interactiveSelection: CliInteractiveBootstrapSelection | null = null;
+    let resolvedUiMode = runtimeDebugOptions.uiMode;
+    let uiFallbackBehavior = runtimeDebugOptions.uiFallbackBehavior;
+
+    if (configCreated && interactiveContractAllowed) {
+      if (resolvedUiMode === CliInteractiveUiMode.REACT) {
+        try {
+          interactiveSelection = await this.reactShellRunner.run({
+            locale: context.options.locale as Locale,
+            outputMode: context.options.outputMode,
+            localizeText: (english, chinese) => context.localizeText(english, chinese),
+          });
+          checks.push({
+            id: 'interactive_shell',
+            status: CliGovernanceCheckStatus.PASS,
+            detail: `ui_mode=react fallback=${uiFallbackBehavior ?? 'none'}`,
+          });
+        } catch (error) {
+          if (
+            error instanceof BaseError &&
+            error.code === GovernorErrorCode.PROCESS_RUNTIME_CANCELLED
+          ) {
+            throw error;
+          }
+
+          resolvedUiMode = CliInteractiveUiMode.CLASSIC;
+          uiFallbackBehavior = CliInteractiveShellFallbackBehavior.SHELL_INIT_FAILED;
+          checks.push({
+            id: 'interactive_shell',
+            status: CliGovernanceCheckStatus.WARN,
+            detail: `requested=react resolved=classic fallback=${uiFallbackBehavior}`,
+          });
+          interactiveSelection = await this.collectInteractiveBootstrapSelection(context);
+        }
+      } else if (resolvedUiMode === CliInteractiveUiMode.CLASSIC) {
+        interactiveSelection = await this.collectInteractiveBootstrapSelection(context);
+        checks.push({
+          id: 'interactive_shell',
+          status: CliGovernanceCheckStatus.PASS,
+          detail: `ui_mode=classic fallback=${uiFallbackBehavior ?? 'none'}`,
+        });
+      }
+    }
+
+    if (interactiveSelection) {
       configContent = this.applyInteractiveBootstrapSelection(configContent, interactiveSelection);
       checks.push({
         id: 'interactive_bootstrap',
         status: CliGovernanceCheckStatus.PASS,
-        detail: `workspace_mode=${interactiveSelection.workspaceMode} default_locale=${interactiveSelection.defaultLocale}`,
+        detail: `ui_mode=${resolvedUiMode} workspace_mode=${interactiveSelection.workspaceMode} default_locale=${interactiveSelection.defaultLocale}`,
       });
     }
 
@@ -96,11 +152,13 @@ export class CliInitCommand implements CliCommandExecutor {
       'bootstrap',
       'init-manifest.json',
     );
+    const effectiveWorkspaceMode =
+      interactiveSelection?.workspaceMode ?? context.options.workspace.mode;
     await context.artifactWriter.writeJsonArtifact(initManifestPath, {
       initializedAt: context.toRfc3339SecondsTimestamp(new Date()),
       workspaceId: context.options.workspace.workspaceId,
       workspaceRoot: context.options.workspace.workspaceRoot,
-      workspaceMode: context.options.workspace.mode,
+      workspaceMode: effectiveWorkspaceMode,
       configPath,
       configSource: context.options.configSource,
       profileId: context.options.profileId,
@@ -123,8 +181,12 @@ export class CliInitCommand implements CliCommandExecutor {
         checks,
         artifacts,
         details: {
-          workspace_mode: context.options.workspace.mode,
-          workspace_mode_source: context.options.workspace.modeSource,
+          workspace_mode: effectiveWorkspaceMode,
+          workspace_mode_source: interactiveSelection
+            ? 'interactive_bootstrap'
+            : context.options.workspace.modeSource,
+          ui_mode: resolvedUiMode,
+          ui_fallback_behavior: uiFallbackBehavior,
         },
       },
     };

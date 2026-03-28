@@ -95,6 +95,7 @@ pnpm exec repo-ai-governor init --output pretty
 ```
 
 在本地 TTY + `pretty` 输出下，交互问答默认开启；CI/脚本场景可加 `--no-interactive` 关闭交互。
+对于 `project-027 / sprint-001` 新增的实验性 shell foundation，也可以尝试 `pnpm exec repo-ai-governor init --output pretty --ui react`；它会以仅写入 `stderr` 的最小向导运行，并在 `--no-interactive`、非 TTY 或 `plain/json` 下自动回退到 `none`。
 
 如果你使用 `dist` 二进制演练，请将 `pnpm exec repo-ai-governor` 替换为：
 

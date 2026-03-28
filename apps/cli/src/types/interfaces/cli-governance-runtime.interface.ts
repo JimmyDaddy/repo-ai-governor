@@ -9,6 +9,10 @@ import type {
 } from '@repo-ai-governor/notification-dispatcher';
 import type { AdapterSurface } from '@repo-ai-governor/shared';
 import type { ErrorOutputEnvironment, MemoryRuntimeConfig } from '@repo-ai-governor/shared';
+import type {
+  CliInteractiveShellFallbackBehavior,
+  CliInteractiveUiMode,
+} from '../../constants/cli-interactive-shell.constant.js';
 import type { CliHitlResumeAction } from '../../constants/cli-task-driven-run.constant.js';
 import type { CliAdapterDiagnosticsRuntime } from '../../runtime/adapter-diagnostics-runtime.js';
 import type { CliReviewQueueRuntime } from '../../runtime/artifacts/review-queue-runtime.js';
@@ -82,6 +86,11 @@ export interface CliExecutionStreamMetadata {
  */
 export interface CliNormalizedRuntimeDebugOptions {
   interactive: boolean;
+  requestedUiMode: CliInteractiveUiMode | null;
+  uiMode: CliInteractiveUiMode;
+  uiFallbackBehavior: CliInteractiveShellFallbackBehavior | null;
+  inputTty: boolean;
+  stderrTty: boolean;
   dryRun: boolean;
   trace: boolean;
   replayPath: string | null;

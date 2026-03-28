@@ -64,6 +64,13 @@ Prefer this repository-local skill over the generic `code-review-workflow` skill
 - contract and documentation drift
 - data consistency, rollback, and failure recovery
 - missing or weak tests
+- lifecycle and cleanup semantics on cancel / SIGINT / fallback / retry paths
+
+4.1 Apply a stricter default bar for “actionable”.
+- Do not downgrade a finding to “note only” when it affects fallback selection, retry loops, cancel/SIGINT cleanup, resource release ordering, or other behavior branches that are hard to observe manually.
+- Treat missing coverage on non-trivial branches as actionable by default when the branch changes user-visible control flow or runtime safety semantics. Typical examples: confirmation restart loops, downgrade/fallback branches, cancellation, rollback, and cleanup-after-failure.
+- Treat cleanup code as actionable when intent is not obvious in lifecycle-sensitive paths (`once` listeners, double-close, unmount/restore, teardown ordering) unless equivalent tests or nearby comments already make the safety argument clear.
+- Prefer fixing with the smallest safe patch: add the missing test, add the clarifying comment, or tighten the branch contract. Do not leave these as P3 observations unless you can point to existing coverage or an explicit contract reason.
 
 5. Write the report with this structure.
 - Use `code_review_<slug>.md` when findings still need verification or repair.
@@ -112,6 +119,7 @@ Prefer this repository-local skill over the generic `code-review-workflow` skill
 - Otherwise select the most recently updated `code_review_*.md` in the resolved review target directory.
 
 2. Re-read the current code and relevant docs for every finding.
+2.1 During recheck, re-evaluate prior “notes” under the stricter actionable bar above. If a previous report under-classified a real issue, append a new finding id instead of silently rewriting history.
 
 3. Append, do not rewrite, using:
 
@@ -150,6 +158,7 @@ Prefer this repository-local skill over the generic `code-review-workflow` skill
 
 5. Rename `verified_code_review_<slug>.md` to `resolved_code_review_<slug>.md` only when all actionable items are `已完成`, and update the top-level `Status` to `resolved`.
 6. If the resolved directory came from `Worktree Review Target`, and no `code_review_*` / `verified_code_review_*` file remains after this rename, remove `Worktree Review Target` from `current-context.md` in the same change window.
+7. If a later stricter recheck discovers a real actionable issue in an already `resolved` report, append a new dated recheck section plus a repair record in place, keep the filename/status synchronized, and only keep `resolved` after the newly discovered item is fixed and re-verified in the same workflow.
 
 ## Workflow D: Fix From Verified Report
 
@@ -168,3 +177,4 @@ Prefer this repository-local skill over the generic `code-review-workflow` skill
 7. Keep user-facing summaries short: findings first, then verification and follow-up actions.
 8. Never leave a CR file with mismatched filename/status pairs such as `resolved_code_review_*.md` + `Status: review_pending`.
 9. `Worktree Review Target` is optional and singular; use it only for completed streams with open CR tails, and clear it immediately after the last open review artifact is closed.
+10. Under the stricter review bar, “missing branch coverage” and “cleanup intent unclear” are not automatically low-priority notes; explicitly justify why they are non-actionable if you decide not to repair them.

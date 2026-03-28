@@ -1,8 +1,18 @@
+import type {
+  CliInteractiveShellFallbackBehavior,
+  CliInteractiveUiMode,
+} from '../../constants/cli-interactive-shell.constant.js';
+
 /**
  * Defines normalized runtime flags consumed by command execution paths.
  */
 export interface CliRuntimeDebugOptions {
   interactive?: boolean;
+  requestedUiMode?: CliInteractiveUiMode | null;
+  uiMode?: CliInteractiveUiMode;
+  uiFallbackBehavior?: CliInteractiveShellFallbackBehavior | null;
+  inputTty?: boolean;
+  stderrTty?: boolean;
   dryRun: boolean;
   trace: boolean;
   replayPath: string | null;

@@ -74,6 +74,7 @@ import {
   CLI_RUNTIME_OPERATION,
   CliGovernanceCheckStatus,
 } from './constants/cli-governance-runtime.constant.js';
+import { CliInteractiveUiMode } from './constants/cli-interactive-shell.constant.js';
 import {
   CLI_TASK_DRIVEN_RUN_NODE_DEFINITIONS,
   CliDeliveryRehearsalAction,
@@ -1347,6 +1348,11 @@ export class CliGovernanceRuntime {
   private resolveRuntimeDebugOptions(): CliNormalizedRuntimeDebugOptions {
     return {
       interactive: this.options.runtimeDebugOptions?.interactive === true,
+      requestedUiMode: this.options.runtimeDebugOptions?.requestedUiMode ?? null,
+      uiMode: this.options.runtimeDebugOptions?.uiMode ?? CliInteractiveUiMode.NONE,
+      uiFallbackBehavior: this.options.runtimeDebugOptions?.uiFallbackBehavior ?? null,
+      inputTty: this.options.runtimeDebugOptions?.inputTty === true,
+      stderrTty: this.options.runtimeDebugOptions?.stderrTty === true,
       dryRun: this.options.runtimeDebugOptions?.dryRun === true,
       trace: this.options.runtimeDebugOptions?.trace === true,
       replayPath:

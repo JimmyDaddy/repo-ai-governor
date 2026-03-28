@@ -11,6 +11,7 @@
 1. 结构化配置和标准文档是唯一事实来源。
 2. `AGENTS.md` 是仓库级 AI 执行入口，供 IDE 和 AI 代理使用。
 3. 当文档与 `AGENTS.md` 中的规则出现分歧时，以结构化文档为准更新 `AGENTS.md`。
+4. 根目录 `GEMINI.md` 与 `CLAUDE.md` 应仅作为薄引用入口，默认指向并复用 `AGENTS.md`，不再分别维护独立的长篇规则副本。
 
 ## 产品入口
 
@@ -35,6 +36,22 @@
 1. `.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md` 与 `.repo-ai-governor/normative_knowledge_sources/governance/long-term-maintenance-guide.md` 属于默认 `L0` 启动集合。
 2. 所有实现和评审输出必须遵循 `.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md` 中的不可协商规则和验证命令。
 3. 若 manifest 与本文件的加载说明出现分歧，以 manifest 为准并在同一变更窗口更新本文件。
+
+## 外部信息补充
+
+1. 当仓库内规范文档、上下文台账或本地代码无法独立支撑当前任务时，AI 代理可以进行必要的网络搜索，以补充外部事实、官方文档、生态方案或兼容性信息。
+2. 网络搜索只作为辅助输入，不得覆盖 `.repo-ai-governor/**` 下的结构化配置、规范文档和上下文台账这些仓库内事实来源。
+3. 若任务结论显著依赖外部搜索结果，AI 代理应在输出中明确说明这一点，并优先引用官方文档、主项目文档或一手资料。
+
+## Skill 入口
+
+1. 项目内 repository-local skills 位于 `.codex/skills/**/SKILL.md`。
+2. skill 不是默认启动集合；只有当任务明显命中对应工作流时，才按需读取相应 `SKILL.md`，避免上下文重复膨胀。
+3. 当前项目内可直接引用的 skill：
+   - 技术方案提升 / draft 转正式：`.codex/skills/technical-solution-promotion/SKILL.md`
+   - 当前工作区 code review / CR 复核 / CR 修复：`.codex/skills/workspace-code-review-workflow/SKILL.md`
+   - 当前工作区收尾 / 提交 / 推送：`.codex/skills/workspace-delivery-finisher/SKILL.md`
+4. 命中 skill 后，先遵循本文件和仓库规范入口，再读取对应 `SKILL.md` 执行其细化流程；若 `SKILL.md` 与仓库规范冲突，仍以 `.repo-ai-governor/**` 下结构化真值和本文件约束为准。
 
 ## 工作规则
 

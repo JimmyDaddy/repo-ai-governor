@@ -1,6 +1,6 @@
 # sprint-001-react-cli-shell-foundation 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-03-28
 - Project: `project-027-cli-interactive-shell-implementation`
 
@@ -10,10 +10,10 @@
 
 ## 2. Task Package
 
-1. `TK-304` project-027 激活与 React shell implementation handoff（planned）
-2. `TK-305` shell runner、UI mode resolver 与 stderr/SIGINT baseline（planned）
-3. `TK-306` `init` React shell 最小向导与 descriptor/state baseline（planned）
-4. `TK-307` M1 回归测试、fallback 与 non-interactive contract gate（planned）
+1. `TK-304` project-027 激活与 React shell implementation handoff（completed）
+2. `TK-305` shell runner、UI mode resolver 与 stderr/SIGINT baseline（completed）
+3. `TK-306` `init` React shell 最小向导与 descriptor/state baseline（completed）
+4. `TK-307` M1 回归测试、fallback 与 non-interactive contract gate（completed）
 
 ## 3. Exit Criteria
 
@@ -26,3 +26,4 @@
 
 1. 这个 sprint 只负责 shell foundation，不扩展 `connect/workspace/workflow/upgrade`。
 2. `descriptor` 与 `session` 先做最小可测试形态，避免业务逻辑回流到组件层。
+3. 2026-03-28：M1 foundation 已完成，`--ui react`、`ui_mode` resolver、stderr-only `init` minimal wizard、classic fallback 与回归测试基线均已落地。

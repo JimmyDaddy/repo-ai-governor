@@ -8,6 +8,7 @@ import {
   CLI_REVIEW_LEDGER_BACKFILL_STATUS,
   CLI_REVIEW_REQUEST_STATUS,
 } from '../../src/constants/cli-governance-runtime.constant.js';
+import { CliInteractiveUiMode } from '../../src/constants/cli-interactive-shell.constant.js';
 import { CliReviewQueueRuntime } from '../../src/runtime/artifacts/review-queue-runtime.js';
 import type { CliCommandExecutorContext } from '../../src/types/interfaces/cli-governance-runtime.interface.js';
 
@@ -104,6 +105,12 @@ async function createReviewVerifyFixture(
     toRfc3339SecondsTimestamp: (value: Date) => value.toISOString().replace(/\.\d{3}Z$/u, 'Z'),
     formatExecFailureDetail: (error: unknown) => standardizeError(error).message,
     resolveRuntimeDebugOptions: () => ({
+      interactive: false,
+      requestedUiMode: null,
+      uiMode: CliInteractiveUiMode.NONE,
+      uiFallbackBehavior: null,
+      inputTty: false,
+      stderrTty: false,
       dryRun: false,
       trace: false,
       replayPath: null,
