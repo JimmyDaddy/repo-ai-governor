@@ -8,8 +8,10 @@ import type { AdaptersConfig } from '@repo-ai-governor/config';
 import {
   AdapterAvailability,
   AdapterSurface,
+  DEFAULT_I18N_RUNTIME_CONFIG,
   DefaultRoleProfileId,
   GovernorErrorCode,
+  I18nRuntime,
   LocalModelProvider,
   RuntimeError,
   standardizeError,
@@ -132,6 +134,8 @@ describe('Cli adapter verification runtime', () => {
   });
 
   it('aggregates configuration_missing attribution from extracted verification runtime', async () => {
+    const i18nRuntime = new I18nRuntime();
+    await i18nRuntime.initialize(DEFAULT_I18N_RUNTIME_CONFIG, 'en-US');
     const adaptersConfig: AdaptersConfig = {
       roles: [
         {
@@ -216,7 +220,7 @@ describe('Cli adapter verification runtime', () => {
     };
     const runtime = new CliAdapterVerificationRuntime(
       adaptersConfig,
-      (english) => english,
+      (key, interpolation) => i18nRuntime.t(key, interpolation),
       (error) => standardizeError(error).message,
       adapterRoutingRuntime,
       localProbeRuntime,

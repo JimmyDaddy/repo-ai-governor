@@ -3,7 +3,7 @@
 - Status: active
 - Date: 2026-03-28
 - Stage Mapping: Post-promotion implementation of `runtime.cli-interactive-shell`
-- Phase Mapping: M1 Shell foundation / M2 Surface expansion / M3 Default cutover
+- Phase Mapping: M1 Shell foundation / M2 Shared shell expansion & preview / M3 Workflow editing, default expansion & closeout
 - Upstream:
   - `.repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/module-overview.md`
   - `.repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/contracts/cli-interactive-shell-contract.md`
@@ -13,7 +13,7 @@
 
 1. 将已正式化的 `runtime.cli-interactive-shell` contract 落地为可运行的 React 风格交互壳层。
 2. 保持 `pretty/plain/json`、`--no-interactive` 与现有命令语义不变。
-3. 先用 M1 建立 shell runner、mode resolver、`init` 基线，再逐步扩展到 `connect/workspace/workflow/upgrade`。
+3. 先用 M1 建立 shell runner、mode resolver、`init` 基线，再用 M2 完成共享 descriptor/shell 框架与 `workflow preview`，最后在 M3 收口 `workflow create/edit/save`、`upgrade` 显式 PoC 与默认扩面。
 4. 把交互层、descriptor、bridge 与 runtime 之间的边界做成可测试、可回退、可默认切换的结构。
 
 ## 2. Sprint 细化
@@ -31,23 +31,25 @@
 
 ## 2.2 sprint-002-react-cli-shell-surface-expansion
 
-- Status: planned
-- Sprint Goal: 将 React shell 扩展到 `connect/workspace/workflow`，补齐 descriptor、i18n 与异步校验能力。
+- Status: active
+- Sprint Goal: 固化共享 descriptor/shell 框架，接入 `connect/workspace`，让 `init` 默认走 React，并先把 `workflow` 做成只读预览。
 - Task Package: `TK-308`、`TK-309`、`TK-310`、`TK-311`。
 - Exit Criteria:
-  1. `connect` 与 `workspace` 的表单化路径接入 descriptor registry。
-  2. `workflow` 子命令树与只读预览/编辑入口遵循正式 shell contract。
-  3. i18n、locale 注入与异步校验行为有明确实现约束。
+  1. `init/connect/workspace` 共享同一套 descriptor registry、字段渲染器、步骤推进器与 help/error/footer。
+  2. `init` 在 `TTY + pretty + interactive` 下默认走 React，并保留明确的 classic fallback 与错误提示策略。
+  3. `workflow preview` 提供模板选择、流程摘要与 compiled IR 预览，但不改写流程文件。
+  4. M2 regression gate 锁定 `stderr-only`、`pretty/plain/json`、非 TTY 与 `--no-interactive` contract。
 
 ## 2.3 sprint-003-react-cli-shell-default-cutover
 
 - Status: planned
-- Sprint Goal: 完成默认切换策略、`upgrade` 收尾与文档/验证闭环，使 React shell 成为主要交互 surface。
+- Sprint Goal: 完成 `workflow create/edit/save`、DSL 编辑守护、`upgrade` 显式 React PoC 与对外帮助面收口，让 React shell 进入可默认扩面的完成态。
 - Task Package: `TK-312`、`TK-313`、`TK-314`、`TK-315`。
 - Exit Criteria:
-  1. `init` 的默认交互切换策略落地，且具备 classic fallback。
-  2. `upgrade` 的确认、回滚参考与失败提示进入正式路径。
-  3. 形成面向 adopter 的文档、playbook 与最终验收记录。
+  1. `workflow create/edit/preview` 三态完整，支持 workspace 内保存流程配置。
+  2. `Sequential / Parallel / Loop / Condition` 节点、连线与条件分支可编辑，Loop 强制守护 `maxCycles` / `maxWallTimeSeconds`。
+  3. 保存后的流程定义能被编译器接受并产出可预览的 compiled IR；`upgrade` React shell 仍保持显式启用。
+  4. `connect/workspace` 默认 React、docs/help surface、completion audit 与 exit acceptance 同步收口。
 
 ## 3. 任务拆解矩阵（WBS）
 
@@ -57,14 +59,14 @@
 | TK-305 | sprint-001 | shell runner、UI mode resolver 与 stderr/SIGINT baseline | runtime/shell-core | TK-304, contract.cli.interactive-shell.v1 | completed |
 | TK-306 | sprint-001 | `init` React shell 最小向导与 descriptor/state baseline | cli/init-shell | TK-305, init-command, descriptor registry | completed |
 | TK-307 | sprint-001 | M1 回归测试、fallback 与 non-interactive contract gate | verification/gates | TK-305, TK-306 | completed |
-| TK-308 | sprint-002 | `connect/workspace` descriptor 化与表单映射扩展 | cli/connect-workspace | TK-307 | planned |
-| TK-309 | sprint-002 | `workflow` 命令树注册与 preview/edit 只读壳层 | cli/workflow | TK-308, workflow command contract | planned |
-| TK-310 | sprint-002 | locale / i18n 注入与异步校验策略 | shell/ux-infrastructure | TK-308, TK-309 | planned |
-| TK-311 | sprint-002 | M2 回归测试与 surface-expansion gate | verification/gates | TK-308, TK-309, TK-310 | planned |
-| TK-312 | sprint-003 | 默认切换策略与 `init` React 默认启用 | cli/default-cutover | TK-311 | planned |
-| TK-313 | sprint-003 | `upgrade` 路径、确认层与 rollback reference polish | cli/upgrade | TK-312, upgrade command contract | planned |
-| TK-314 | sprint-003 | adopter 文档、playbook 与 help surface 收尾 | docs/playbook | TK-312, TK-313 | planned |
-| TK-315 | sprint-003 | project-027 出口验收与 completion audit | acceptance/closeout | TK-312, TK-313, TK-314 | planned |
+| TK-308 | sprint-002 | 共享 descriptor registry、字段渲染器与步骤引擎基线 | shell/shared-foundation | TK-307, contract.cli.interactive-shell.v1 | planned |
+| TK-309 | sprint-002 | connect/workspace 共享壳层接入与 help/error/footer 统一 | cli/connect-workspace | TK-308 | planned |
+| TK-310 | sprint-002 | `init` 默认 React 路由与 classic fallback 体验策略 | cli/init-default-routing | TK-308, TK-309 | planned |
+| TK-311 | sprint-002 | `workflow preview` 只读摘要与 M2 回归 gate | cli/workflow-preview | TK-309, TK-310 | planned |
+| TK-312 | sprint-003 | `workflow` 命令家族注册与 create/edit 入口流 | cli/workflow-command-family | TK-311 | planned |
+| TK-313 | sprint-003 | DSL 节点/连线/条件映射与 Loop guardrail 编辑 | cli/workflow-editor | TK-312 | planned |
+| TK-314 | sprint-003 | workflow 保存、compiled IR 验收与 `upgrade` 显式 React PoC | cli/workflow-save-upgrade | TK-312, TK-313 | planned |
+| TK-315 | sprint-003 | docs/help surface 收尾、project-027 出口验收与 completion audit | acceptance/docs-closeout | TK-314 | planned |
 
 ## 4. 依赖产物策略
 
@@ -73,18 +75,22 @@
    - `.repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/contracts/cli-interactive-shell-contract.md`
    - `.repo-ai-governor/draft/interactive-cli-react-style-technical-solution.md`
 2. `sprint-001` 先把 shell runtime 边界固定住，再推进 `init` shell 最小闭环。
-3. `sprint-002` 才扩展到 `connect/workspace/workflow` 与 locale/i18n。
-4. `sprint-003` 只在前两轮稳定后做默认切换和对外文档闭环。
+3. `sprint-002` 聚焦共享 descriptor registry、字段渲染器、help/error/footer、`init` 默认路由与 `workflow preview` 只读预览，并统一以 `ink@6.8.0 + @inkjs/ui@2.0.0` 作为 React CLI UI 底座。
+4. `sprint-003` 只在 M2 gate 稳定后推进 `workflow create/edit/save`、Loop guardrail、`upgrade` 显式 PoC 与对外文档闭环。
 
 ## 5. DoD（project-027）
 
 1. `runtime.cli-interactive-shell` 的 React shell 已有稳定运行骨架。
 2. `--no-interactive`、非 TTY、`json/plain` 的 automation contract 零回归。
-3. `init`、`connect`、`workspace`、`workflow`、`upgrade` 的交互 surface 按 M1/M2/M3 完成分层落地。
-4. 默认切换策略、fallback 语义与测试门禁保持一致。
-5. adopter 侧文档与最终 shell contract 不再漂移。
+3. `init` 默认路由、`connect/workspace` 共享壳层、`workflow preview/create/edit/save` 按 M1/M2/M3 完成分层落地。
+4. `workflow` DSL guardrail、compiled IR 验收、`upgrade` 显式 React PoC 与默认扩面策略保持一致，且交互壳层统一落在 `ink@6.8.0 + @inkjs/ui@2.0.0` 的受控依赖面上。
+5. adopter 侧文档、help surface、playbook 与最终 shell contract 不再漂移。
 
 ## 6. 里程碑记录
 
 1. 2026-03-28：创建 `project-027-cli-interactive-shell-implementation`，承接 `runtime.cli-interactive-shell` 的 M1/M2/M3 任务拆解。
 2. 2026-03-28：完成 `sprint-001-react-cli-shell-foundation`，落地 `--ui react` 实验入口、`ui_mode` resolver、stderr-only `init` minimal wizard 与回归测试基线。
+3. 2026-03-28：将剩余 M2/M3 重新对齐到 shared shell -> workflow preview -> workflow edit/save -> closeout 的拆解路径，并登记 `sprint-002` / `sprint-003` follow-up streams。
+4. 2026-03-28：联网核对 npm 最新可用版本后，将 React CLI UI 底座锁定为 `ink@6.8.0` 与 `@inkjs/ui@2.0.0`，后续任务默认按该组合落地。
+5. 2026-03-28：激活 `sprint-002-react-cli-shell-surface-expansion`，开始执行 `TK-308` 的依赖接入与共享壳层骨架。
+6. 2026-03-28：完成 `TK-309`，`connect/workspace` 已切入共享 descriptor/shell 基线，并统一了 help/error/footer 与 i18n runtime 接线。

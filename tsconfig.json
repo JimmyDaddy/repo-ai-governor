@@ -65,6 +65,7 @@
     "ignoreDeprecations": "6.0",
     "allowJs": true,
     "checkJs": false,
+    "jsx": "react-jsx",
     "noEmit": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,

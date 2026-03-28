@@ -36,12 +36,14 @@ import { OrchestrationServiceEventType } from '@repo-ai-governor/orchestration-s
 import {
   AdapterAvailability,
   AdapterSurface,
+  DEFAULT_I18N_RUNTIME_CONFIG,
   DEFAULT_MEMORY_RUNTIME_CONFIG,
   DefaultRoleProfileId,
   ErrorOutputEnvironment,
   ExecutionProgressStage,
   ExecutionProgressStatus,
   GovernorErrorCode,
+  I18nRuntime,
   LocalModelProvider,
   RuntimeError,
 } from '@repo-ai-governor/shared';
@@ -425,6 +427,8 @@ async function createRuntimeFixture(options: RuntimeFixtureOptions = {}): Promis
   const workspaceRoot = resolve(tempRoot, '.repo-ai-governor');
   const memoryStoreRoot = resolve(workspaceRoot, 'context', 'memory');
   await mkdir(memoryStoreRoot, { recursive: true });
+  const i18nRuntime = new I18nRuntime();
+  await i18nRuntime.initialize(DEFAULT_I18N_RUNTIME_CONFIG, 'en-US');
 
   const workspace: ResolvedWorkspace = {
     workspaceId: 'test-workspace',
@@ -452,6 +456,8 @@ async function createRuntimeFixture(options: RuntimeFixtureOptions = {}): Promis
     memoryStoreRoot,
     memoryStoreProviderName: provider.constructor.name,
     memoryStoreProvider: provider,
+    translate: (key: string, interpolation?: Record<string, string>) =>
+      i18nRuntime.t(key, interpolation),
     adaptersConfig: options.adaptersConfig ?? createAdaptersConfigFixture(),
     workspaceCommandOptions: options.workspaceCommandOptions,
     runtimeDebugOptions: options.runtimeDebugOptions,

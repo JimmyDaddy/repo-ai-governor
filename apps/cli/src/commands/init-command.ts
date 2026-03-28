@@ -89,7 +89,7 @@ export class CliInitCommand implements CliCommandExecutor {
           interactiveSelection = await this.reactShellRunner.run({
             locale: context.options.locale as Locale,
             outputMode: context.options.outputMode,
-            localizeText: (english, chinese) => context.localizeText(english, chinese),
+            translate: (key, interpolation) => context.translate?.(key, interpolation) ?? key,
           });
           checks.push({
             id: 'interactive_shell',
@@ -208,10 +208,8 @@ export class CliInitCommand implements CliCommandExecutor {
     try {
       const workspaceModeAnswer = (
         await interactiveConsole.question(
-          context.localizeText(
+          context.translate?.('cli.commandMessages.init.selectWorkspaceMode') ??
             'Select workspace mode [1=tool_managed, 2=repo_local] (default: 1): ',
-            '选择工作区模式 [1=tool_managed, 2=repo_local]（默认 1）: ',
-          ),
         )
       )
         .trim()
@@ -224,10 +222,8 @@ export class CliInitCommand implements CliCommandExecutor {
 
       const localeAnswer = (
         await interactiveConsole.question(
-          context.localizeText(
+          context.translate?.('cli.commandMessages.init.selectDefaultLocale') ??
             'Select default locale [1=zh-CN, 2=en-US] (default: 1): ',
-            '选择默认语言 [1=zh-CN, 2=en-US]（默认 1）: ',
-          ),
         )
       )
         .trim()
@@ -241,10 +237,11 @@ export class CliInitCommand implements CliCommandExecutor {
         defaultLocale === DEFAULT_I18N_LOCALE ? DEFAULT_I18N_FALLBACK_LOCALE : DEFAULT_I18N_LOCALE;
 
       stderr.write(
-        context.localizeText(
+        context.translate?.('cli.commandMessages.init.interactiveApplied', {
+          workspaceMode,
+          defaultLocale,
+        }) ??
           `\nInteractive setup applied: workspace=${workspaceMode}, defaultLocale=${defaultLocale}.\n`,
-          `\n已应用向导配置：workspace=${workspaceMode}，defaultLocale=${defaultLocale}。\n`,
-        ),
       );
 
       return {

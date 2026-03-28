@@ -14,15 +14,35 @@ import {
   CLI_RUNTIME_OPERATION,
   CliGovernanceCheckStatus,
 } from '../constants/cli-governance-runtime.constant.js';
+import { CliInteractiveUiMode } from '../constants/cli-interactive-shell.constant.js';
+import {
+  ReactCliCommandDescriptorCatalog,
+  ReactCliCommandViewModelBuilder,
+  type ReactCliViewModel,
+} from '../react-cli/index.js';
 import type { CliCommandResultArtifact, CliCommandResultCheck } from '../types/index.js';
 import type { CliCommandExecutorContext } from '../types/interfaces/cli-governance-runtime.interface.js';
 import type { CliCommandExecutor } from './cli-command-executor.interface.js';
+
+interface CliConnectCommandDependencies {
+  descriptorCatalog?: ReactCliCommandDescriptorCatalog;
+  viewModelBuilder?: ReactCliCommandViewModelBuilder;
+}
 
 /**
  * Owns `connect` command execution outside the runtime facade.
  */
 export class CliConnectCommand implements CliCommandExecutor {
   public readonly commandName = CliCommandName.CONNECT;
+
+  private readonly descriptorCatalog: ReactCliCommandDescriptorCatalog;
+  private readonly viewModelBuilder: ReactCliCommandViewModelBuilder;
+
+  public constructor(dependencies: CliConnectCommandDependencies = {}) {
+    this.descriptorCatalog =
+      dependencies.descriptorCatalog ?? new ReactCliCommandDescriptorCatalog();
+    this.viewModelBuilder = dependencies.viewModelBuilder ?? new ReactCliCommandViewModelBuilder();
+  }
 
   public async execute(context: CliCommandExecutorContext) {
     const runtimeDebugOptions = context.resolveRuntimeDebugOptions();
@@ -152,11 +172,8 @@ export class CliConnectCommand implements CliCommandExecutor {
       interactionPrompts.push({
         category: ExecutionInteractionCategory.NONE,
         stage: ExecutionProgressStage.LEDGER_BACKFILL,
-        title: context.localizeText('Consume ledger backfill', '处理台账回填产物'),
-        action: context.localizeText(
-          'Resolve context/ledger-backfill/connect artifact into tasks/checklist/tasks.csv.',
-          '将 context/ledger-backfill/connect 产物回填到 tasks/checklist/tasks.csv。',
-        ),
+        title: this.translate(context, 'cli.reactShell.connect.prompt.consumeLedgerBackfill'),
+        action: this.translate(context, 'cli.reactShell.connect.prompt.resolveLedgerBackfill'),
         blocking: false,
       });
     }
@@ -177,12 +194,21 @@ export class CliConnectCommand implements CliCommandExecutor {
         ],
       },
     });
-    const message = context.localizeText(
-      `Connect completed with adapter_status=${adapterVerification.overallStatus}; diagnostics=${diagnosticsArtifactPath}.`,
-      `连接已完成，adapter_status=${adapterVerification.overallStatus}；诊断文件=${diagnosticsArtifactPath}。`,
-    );
+    const message = this.translate(context, 'cli.reactShell.connect.message.completed', {
+      status: adapterVerification.overallStatus,
+      diagnosticsPath: diagnosticsArtifactPath,
+    });
+    const reactCliViewModel = this.buildReactCliViewModel(context, {
+      runtimeDebugOptions,
+      diagnosticsArtifactPath,
+      adapterVerification,
+      checks,
+      interactionPrompts,
+      message,
+    });
     return {
       message,
+      reactCliViewModel,
       commandResult: {
         operation: CLI_RUNTIME_OPERATION.ADAPTER_CONNECT,
         summary: message,
@@ -200,5 +226,96 @@ export class CliConnectCommand implements CliCommandExecutor {
         },
       },
     };
+  }
+
+  /**
+   * Builds the shared React CLI summary view for `connect` when React mode is active.
+   * @param context Command execution context.
+   * @param options Local execution facts used to populate the shared shell.
+   * @returns Shared shell view model or `undefined`.
+   */
+  private buildReactCliViewModel(
+    context: CliCommandExecutorContext,
+    options: {
+      runtimeDebugOptions: ReturnType<CliCommandExecutorContext['resolveRuntimeDebugOptions']>;
+      diagnosticsArtifactPath: string;
+      adapterVerification: Awaited<
+        ReturnType<CliCommandExecutorContext['resolveAdapterVerification']>
+      >;
+      checks: CliCommandResultCheck[];
+      interactionPrompts: ReturnType<
+        CliCommandExecutorContext['adapterDiagnosticsRuntime']['createAdapterInteractionPrompts']
+      >;
+      message: string;
+    },
+  ): ReactCliViewModel | undefined {
+    if (options.runtimeDebugOptions.uiMode !== CliInteractiveUiMode.REACT) {
+      return undefined;
+    }
+
+    const descriptor = this.descriptorCatalog
+      .createRegistry({
+        translate: context.translate,
+      })
+      .resolve(CliCommandName.CONNECT);
+
+    if (!descriptor) {
+      return undefined;
+    }
+
+    return this.viewModelBuilder.build({
+      commandName: CliCommandName.CONNECT,
+      descriptor,
+      subtitle: `ui=${options.runtimeDebugOptions.uiMode} stdout=${context.options.outputMode} workspace=${context.options.workspace.mode}`,
+      inputTitle: this.translate(context, 'cli.reactShell.shared.inputs'),
+      summaryTitle: this.translate(context, 'cli.reactShell.shared.summary'),
+      attentionTitle: this.translate(context, 'cli.reactShell.shared.attention'),
+      statusMessage: this.translate(context, 'cli.reactShell.connect.status.verification', {
+        status: options.adapterVerification.overallStatus,
+      }),
+      statusVariant: this.viewModelBuilder.resolveStatusVariantFromChecks(options.checks),
+      fieldValues: {
+        workspaceRoot: context.options.workspace.workspaceRoot,
+        recordLedger: this.translate(
+          context,
+          options.runtimeDebugOptions.recordLedger
+            ? 'cli.reactShell.shared.enabled'
+            : 'cli.reactShell.shared.disabled',
+        ),
+        taskId:
+          options.runtimeDebugOptions.taskId ??
+          this.translate(context, 'cli.reactShell.shared.notSet'),
+      },
+      summaryLines: [
+        options.message,
+        this.translate(context, 'cli.reactShell.connect.summary.diagnosticsArtifact', {
+          path: options.diagnosticsArtifactPath,
+        }),
+        this.translate(context, 'cli.reactShell.connect.summary.roleTotals', {
+          requiredRoles: String(options.adapterVerification.requiredRoleCount),
+          requiredFailures: String(options.adapterVerification.requiredRoleFailedCount),
+          degradedRoles: String(options.adapterVerification.degradedRoleCount),
+          fallbackRoles: String(options.adapterVerification.fallbackRoleCount),
+        }),
+      ],
+      footerShortcutsTitle: this.translate(context, 'cli.reactShell.shared.shortcuts'),
+      checks: options.checks,
+      interactionPrompts: options.interactionPrompts,
+    });
+  }
+
+  /**
+   * Resolves one localized React-shell string through i18n runtime.
+   * @param context Command execution context.
+   * @param key Translation key.
+   * @param interpolation Optional translation variables.
+   * @returns Localized string or the key when translation runtime is unavailable.
+   */
+  private translate(
+    context: Pick<CliCommandExecutorContext, 'translate'>,
+    key: string,
+    interpolation?: Record<string, string>,
+  ): string {
+    return context.translate?.(key, interpolation) ?? key;
   }
 }

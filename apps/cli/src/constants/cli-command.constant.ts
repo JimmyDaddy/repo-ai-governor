@@ -1,6 +1,8 @@
 /**
  * Defines finite command names exposed by the CLI runtime baseline.
  */
+export const CLI_PROGRAM_NAME = 'repo-ai-governor';
+
 export enum CliCommandName {
   INIT = 'init',
   CONNECT = 'connect',

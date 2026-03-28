@@ -15,7 +15,7 @@ import type {
  */
 export class CliAdapterDiagnosticsRuntime {
   public constructor(
-    private readonly localizeText: (english: string, chinese: string) => string,
+    private readonly translate: (key: string, interpolation?: Record<string, string>) => string,
     private readonly createFailureAttributionSummary: (
       verification: CliAdapterVerificationResolution,
     ) => Record<string, number>,
@@ -48,16 +48,16 @@ export class CliAdapterDiagnosticsRuntime {
    */
   public resolveToolProbeCheckDetail(snapshot: CliAdapterToolProbeSnapshot): string {
     if (!snapshot.enabled) {
-      return this.localizeText('disabled_by_config', '由配置禁用');
+      return this.translate('cli.adapterDiagnostics.disabledByConfig');
     }
 
     const readableReasons =
       snapshot.unavailableReasons.length > 0
         ? this.humanizeToolUnavailableReasons(snapshot.unavailableReasons)
         : ['none'];
-    const attributionLabel = this.localizeText('attribution', '归因');
-    const availabilityLabel = this.localizeText('availability', '可用性');
-    const reasonsLabel = this.localizeText('reasons', '原因');
+    const attributionLabel = this.translate('cli.adapterDiagnostics.attribution');
+    const availabilityLabel = this.translate('cli.adapterDiagnostics.availability');
+    const reasonsLabel = this.translate('cli.adapterDiagnostics.reasons');
     return `${availabilityLabel}=${snapshot.availabilityStatus} ${attributionLabel}=${snapshot.failureAttributions.join('|') || 'none'} ${reasonsLabel}=${readableReasons.join(' | ')}`;
   }
 
@@ -174,8 +174,8 @@ export class CliAdapterDiagnosticsRuntime {
       stage: options.stage,
       title:
         options.verification.overallStatus === CliGovernanceCheckStatus.FAIL
-          ? this.localizeText('Adapter route blocked', 'Adapter 路由已阻断')
-          : this.localizeText('Adapter route attention', 'Adapter 路由需要关注'),
+          ? this.translate('cli.adapterDiagnostics.routeBlocked')
+          : this.translate('cli.adapterDiagnostics.routeAttention'),
       action: nextAction,
       blocking: options.verification.overallStatus === CliGovernanceCheckStatus.FAIL,
     }));
@@ -249,115 +249,96 @@ export class CliAdapterDiagnosticsRuntime {
   private humanizeToolUnavailableReason(reason: string): string {
     if (reason.startsWith('command_missing:')) {
       const [, surface, command] = reason.split(':', 3);
-      return this.localizeText(
-        `missing command "${command}" for surface "${surface}"`,
-        `surface "${surface}" 缺少本地命令 "${command}"`,
-      );
+      return this.translate('cli.adapterDiagnostics.commandMissing', { surface, command });
     }
 
     if (reason.startsWith('command_probe_failed:')) {
       const [, surface, command, ...detailParts] = reason.split(':');
       const detail = detailParts.join(':');
-      return this.localizeText(
-        `command exists but check failed for surface "${surface}" via "${command}" (${detail})`,
-        `surface "${surface}" 命令 "${command}" 可执行但探测失败（${detail}）`,
-      );
+      return this.translate('cli.adapterDiagnostics.commandProbeFailed', {
+        surface,
+        command,
+        detail,
+      });
     }
 
     if (reason.startsWith('probe_failed:')) {
       const [, ...detailParts] = reason.split(':');
       const detail = detailParts.join(':');
-      return this.localizeText(`adapter probe failed (${detail})`, `adapter 探测失败（${detail}）`);
+      return this.translate('cli.adapterDiagnostics.probeFailed', { detail });
     }
 
     if (reason.startsWith('credential_missing:')) {
       const [, surface] = reason.split(':', 2);
-      return this.localizeText(
-        `surface "${surface}" is missing required credentials or login state`,
-        `surface "${surface}" 缺少所需凭据或登录状态`,
-      );
+      return this.translate('cli.adapterDiagnostics.credentialMissing', { surface });
     }
 
     if (reason.startsWith('health_check_timeout:')) {
       const [, surface] = reason.split(':', 2);
-      return this.localizeText(
-        `surface "${surface}" health check timed out`,
-        `surface "${surface}" 的健康检查超时`,
-      );
+      return this.translate('cli.adapterDiagnostics.healthCheckTimeout', { surface });
     }
 
     if (reason.startsWith('health_check_invalid_response:')) {
       const [, surface, ...detailParts] = reason.split(':');
       const detail = detailParts.join(':');
-      return this.localizeText(
-        `surface "${surface}" returned an invalid health-check response (${detail})`,
-        `surface "${surface}" 返回了无效的健康检查响应（${detail}）`,
-      );
+      return this.translate('cli.adapterDiagnostics.healthCheckInvalidResponse', {
+        surface,
+        detail,
+      });
     }
 
     if (reason.startsWith('health_check_failed:')) {
       const [, surface, ...detailParts] = reason.split(':');
       const detail = detailParts.join(':');
       if (detail === 'rate_limited') {
-        return this.localizeText(
-          `surface "${surface}" health check is currently rate limited`,
-          `surface "${surface}" 的健康检查当前触发了限流`,
-        );
+        return this.translate('cli.adapterDiagnostics.healthCheckFailedRateLimited', { surface });
       }
       if (detail === 'quota_exhausted') {
-        return this.localizeText(
-          `surface "${surface}" health check is blocked by exhausted quota`,
-          `surface "${surface}" 的健康检查因额度耗尽而被阻断`,
-        );
+        return this.translate('cli.adapterDiagnostics.healthCheckFailedQuotaExhausted', {
+          surface,
+        });
       }
-      return this.localizeText(
-        `surface "${surface}" health check failed (${detail})`,
-        `surface "${surface}" 的健康检查失败（${detail}）`,
-      );
+      return this.translate('cli.adapterDiagnostics.healthCheckFailed', { surface, detail });
     }
 
     if (reason.startsWith('local_model_model_missing:')) {
       const [, surface, ...modelParts] = reason.split(':');
       const model = modelParts.join(':');
-      return this.localizeText(
-        `local-model surface "${surface}" is missing configured model "${model}"`,
-        `本地模型 surface "${surface}" 缺少已配置模型 "${model}"`,
-      );
+      return this.translate('cli.adapterDiagnostics.localModelModelMissing', { surface, model });
     }
 
     if (reason.startsWith('local_model_config_missing:')) {
       const [, surface, missingKeys] = reason.split(':', 3);
-      return this.localizeText(
-        `local-model surface "${surface}" is missing config fields "${missingKeys}"`,
-        `本地模型 surface "${surface}" 缺少配置字段 "${missingKeys}"`,
-      );
+      return this.translate('cli.adapterDiagnostics.localModelConfigMissing', {
+        surface,
+        missingKeys,
+      });
     }
 
     if (reason.startsWith('local_model_endpoint_unreachable:')) {
       const [, surface, encodedEndpoint, errorCode, ...messageParts] = reason.split(':');
       const endpoint = decodeURIComponent(encodedEndpoint ?? '');
       const message = messageParts.join(':');
-      return this.localizeText(
-        `local-model surface "${surface}" cannot reach endpoint "${endpoint}" (${errorCode}: ${message})`,
-        `本地模型 surface "${surface}" 无法访问 endpoint "${endpoint}"（${errorCode}: ${message}）`,
-      );
+      return this.translate('cli.adapterDiagnostics.localModelEndpointUnreachable', {
+        surface,
+        endpoint,
+        errorCode,
+        message,
+      });
     }
 
     if (reason.startsWith('local_model_probe_invalid_response:')) {
       const [, surface, encodedEndpoint] = reason.split(':');
       const endpoint = decodeURIComponent(encodedEndpoint ?? '');
-      return this.localizeText(
-        `local-model surface "${surface}" returned invalid probe payload from "${endpoint}"`,
-        `本地模型 surface "${surface}" 从 "${endpoint}" 返回了无效探测结果`,
-      );
+      return this.translate('cli.adapterDiagnostics.localModelProbeInvalidResponse', {
+        surface,
+        endpoint,
+      });
     }
 
     if (reason.startsWith('disabled_by_config:')) {
       const [, surface] = reason.split(':', 2);
-      return this.localizeText(
-        `disabled by config for surface "${surface}"`,
-        `surface "${surface}" 已被配置禁用`,
-      );
+      return this.translate('cli.adapterDiagnostics.disabledByConfigForSurface', { surface });
     }
 
     return reason;

@@ -1,8 +1,12 @@
 import {
   DEFAULT_I18N_FALLBACK_LOCALE,
   DEFAULT_I18N_LOCALE,
+  DEFAULT_I18N_RUNTIME_CONFIG,
   ErrorOutputEnvironment,
+  GovernorErrorCode,
+  I18nRuntime,
   Locale,
+  RuntimeError,
   WorkspaceMode,
 } from '@repo-ai-governor/shared';
 import { CliInitReactShellRunner } from '../../src/runtime/interactive-shell/init-react-shell-runner.js';
@@ -24,9 +28,31 @@ function createPromptAdapter(answers: string[]): CliInteractiveShellPromptAdapte
   };
 }
 
+function createInterruptiblePromptAdapter(): CliInteractiveShellPromptAdapter {
+  let rejectQuestion: ((error: RuntimeError) => void) | null = null;
+
+  return {
+    async question(): Promise<string> {
+      return await new Promise<string>((_resolve, reject) => {
+        rejectQuestion = reject;
+      });
+    },
+    close(): void {
+      if (rejectQuestion) {
+        rejectQuestion(
+          new RuntimeError(GovernorErrorCode.PROCESS_RUNTIME_CANCELLED, 'prompt closed by test'),
+        );
+        rejectQuestion = null;
+      }
+    },
+  };
+}
+
 describe('CliInitReactShellRunner', () => {
   it('collects workspace mode, locale, confirmation, and renders only to stderr', async () => {
     const stderrBuffer: string[] = [];
+    const i18nRuntime = new I18nRuntime();
+    await i18nRuntime.initialize(DEFAULT_I18N_RUNTIME_CONFIG, 'en-US');
     const runner = new CliInitReactShellRunner(
       undefined,
       new CliInteractiveShellStderrRenderer((value) => {
@@ -38,7 +64,7 @@ describe('CliInitReactShellRunner', () => {
     const selection = await runner.run({
       locale: Locale.EN_US,
       outputMode: ErrorOutputEnvironment.PRETTY,
-      localizeText: (english) => english,
+      translate: (key, interpolation) => i18nRuntime.t(key, interpolation),
     });
 
     expect(selection).toEqual({
@@ -52,6 +78,8 @@ describe('CliInitReactShellRunner', () => {
 
   it('surfaces validation feedback before accepting corrected answers', async () => {
     const stderrBuffer: string[] = [];
+    const i18nRuntime = new I18nRuntime();
+    await i18nRuntime.initialize(DEFAULT_I18N_RUNTIME_CONFIG, 'zh-CN');
     const runner = new CliInitReactShellRunner(
       undefined,
       new CliInteractiveShellStderrRenderer((value) => {
@@ -63,7 +91,7 @@ describe('CliInitReactShellRunner', () => {
     const selection = await runner.run({
       locale: Locale.ZH_CN,
       outputMode: ErrorOutputEnvironment.PRETTY,
-      localizeText: (_english, chinese) => chinese,
+      translate: (key, interpolation) => i18nRuntime.t(key, interpolation),
     });
 
     expect(selection).toEqual({
@@ -77,6 +105,8 @@ describe('CliInitReactShellRunner', () => {
 
   it('restarts the wizard from step 1 when confirmation is rejected', async () => {
     const stderrBuffer: string[] = [];
+    const i18nRuntime = new I18nRuntime();
+    await i18nRuntime.initialize(DEFAULT_I18N_RUNTIME_CONFIG, 'en-US');
     const runner = new CliInitReactShellRunner(
       undefined,
       new CliInteractiveShellStderrRenderer((value) => {
@@ -88,7 +118,7 @@ describe('CliInitReactShellRunner', () => {
     const selection = await runner.run({
       locale: Locale.EN_US,
       outputMode: ErrorOutputEnvironment.PRETTY,
-      localizeText: (english) => english,
+      translate: (key, interpolation) => i18nRuntime.t(key, interpolation),
     });
 
     expect(selection).toEqual({
@@ -98,5 +128,33 @@ describe('CliInitReactShellRunner', () => {
     });
     expect(stderrBuffer.join('')).toContain('Selection updated; returning to the first step.');
     expect(stderrBuffer.join('')).toContain('Step 1 of 3: Workspace mode');
+  });
+
+  it('cancels cleanly when SIGINT arrives during prompting', async () => {
+    const stderrBuffer: string[] = [];
+    const i18nRuntime = new I18nRuntime();
+    await i18nRuntime.initialize(DEFAULT_I18N_RUNTIME_CONFIG, 'en-US');
+    const runner = new CliInitReactShellRunner(
+      undefined,
+      new CliInteractiveShellStderrRenderer((value) => {
+        stderrBuffer.push(value);
+      }),
+      () => createInterruptiblePromptAdapter(),
+    );
+
+    const runPromise = runner.run({
+      locale: Locale.EN_US,
+      outputMode: ErrorOutputEnvironment.PRETTY,
+      translate: (key, interpolation) => i18nRuntime.t(key, interpolation),
+    });
+
+    setImmediate(() => {
+      process.emit('SIGINT');
+    });
+
+    await expect(runPromise).rejects.toMatchObject({
+      code: GovernorErrorCode.PROCESS_RUNTIME_CANCELLED,
+    });
+    expect(stderrBuffer.join('')).toContain('[react-shell:init]');
   });
 });

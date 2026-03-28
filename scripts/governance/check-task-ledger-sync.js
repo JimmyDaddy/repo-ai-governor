@@ -382,7 +382,7 @@ function readMetadataValue(metadata, key) {
  */
 function parseTaskGoal(content) {
   const goalSectionMatch = content.match(
-    /##\s*1\.\s*(?:任务目标|Task Goal)([\s\S]*?)(?:\n##\s|\n#\s|\s*$)/,
+    /##\s*1\.\s*(?:任务目标|目标|Task Goal)([\s\S]*?)(?:\n##\s|\n#\s|\s*$)/,
   );
   if (!goalSectionMatch) {
     return '';

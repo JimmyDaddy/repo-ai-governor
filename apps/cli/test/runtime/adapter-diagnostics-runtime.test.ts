@@ -5,7 +5,9 @@ import {
 import {
   AdapterAvailability,
   AdapterSurface,
+  DEFAULT_I18N_RUNTIME_CONFIG,
   ExecutionProgressStage,
+  I18nRuntime,
 } from '@repo-ai-governor/shared';
 import {
   CliAdapterRoleSelectionSource,
@@ -56,9 +58,11 @@ function createVerificationFixture(): CliAdapterVerificationResolution {
 }
 
 describe('Cli adapter diagnostics runtime', () => {
-  it('renders human-friendly probe detail and safe_local boundary payload', () => {
+  it('renders human-friendly probe detail and safe_local boundary payload', async () => {
+    const i18nRuntime = new I18nRuntime();
+    await i18nRuntime.initialize(DEFAULT_I18N_RUNTIME_CONFIG, 'en-US');
     const runtime = new CliAdapterDiagnosticsRuntime(
-      (english) => english,
+      (key, interpolation) => i18nRuntime.t(key, interpolation),
       () => ({
         configuration_missing: 2,
       }),
@@ -81,9 +85,11 @@ describe('Cli adapter diagnostics runtime', () => {
     expect(safeLocalBoundary.fixEnabled).toBe(true);
   });
 
-  it('shapes verification payload, role progress, and prompts outside the facade', () => {
+  it('shapes verification payload, role progress, and prompts outside the facade', async () => {
+    const i18nRuntime = new I18nRuntime();
+    await i18nRuntime.initialize(DEFAULT_I18N_RUNTIME_CONFIG, 'en-US');
     const runtime = new CliAdapterDiagnosticsRuntime(
-      (english) => english,
+      (key, interpolation) => i18nRuntime.t(key, interpolation),
       () => ({
         configuration_missing: 2,
       }),
@@ -112,9 +118,11 @@ describe('Cli adapter diagnostics runtime', () => {
     expect(prompts[0]?.title).toBe('Adapter route attention');
   });
 
-  it('humanizes rate-limited and quota-exhausted remote health-check failures', () => {
+  it('humanizes rate-limited and quota-exhausted remote health-check failures', async () => {
+    const i18nRuntime = new I18nRuntime();
+    await i18nRuntime.initialize(DEFAULT_I18N_RUNTIME_CONFIG, 'en-US');
     const runtime = new CliAdapterDiagnosticsRuntime(
-      (english) => english,
+      (key, interpolation) => i18nRuntime.t(key, interpolation),
       () => ({
         environment_precondition: 1,
       }),

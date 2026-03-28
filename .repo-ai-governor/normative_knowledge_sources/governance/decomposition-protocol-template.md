@@ -1,7 +1,7 @@
 # Decomposition Protocol Template
 
 - Status: active
-- Date: 2026-03-21
+- Date: 2026-03-28
 - Scope: project/sprint/task decomposition
 - Owner: `project-008-workflow-optimization / TK-044`
 
@@ -44,6 +44,11 @@ plan 约束：
 
 ## 4. Task Card Minimum Template
 
+Concrete template source of truth:
+
+1. `.repo-ai-governor/normative_knowledge_sources/governance/task-card-template.md`
+2. 生成新的 `TK-xxx` 时，默认实例化 concrete template，而不是只参考本节的最小章节列表。
+
 1. 元数据：`Status/Date/Owner/Priority/Project/Sprint`
 2. `## 1. 任务目标`
 3. `## 2. Depends On`
@@ -62,6 +67,7 @@ plan 约束：
 2. 新任务默认采用 `Required Inputs + Traceback References`，把执行必需输入与追溯输入分开。
 3. `Required Inputs` 建议控制在 `3-5` 条；超出时优先把历史规划、handoff、completion audit 移到 `Traceback References`。
 4. `Development Verification` 默认写 Fast Gate 级验证；`Delivery Verification` 默认写 Release Gate 或切换为 `completed` 时必须补齐的交付验证。
+5. 若任务暂无 `Traceback References` 或 `产出` 实际路径，章节仍需保留，并显式写 `不适用` / `待执行后补齐`，避免生成结果再次出现结构漂移。
 
 ## 5. Ledger Rules
 

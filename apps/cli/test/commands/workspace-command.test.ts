@@ -15,7 +15,14 @@ import {
   WorkspaceMode,
   WorkspaceModeSource,
 } from '@repo-ai-governor/config';
-import { GovernorErrorCode, RuntimeError, standardizeError } from '@repo-ai-governor/shared';
+import {
+  DEFAULT_I18N_RUNTIME_CONFIG,
+  ErrorOutputEnvironment,
+  GovernorErrorCode,
+  I18nRuntime,
+  RuntimeError,
+  standardizeError,
+} from '@repo-ai-governor/shared';
 import { CliWorkspaceCommand } from '../../src/commands/workspace-command.js';
 import { CliInteractiveUiMode } from '../../src/constants/cli-interactive-shell.constant.js';
 import type {
@@ -78,6 +85,8 @@ async function createWorkspaceCommandFixture(
       }
     },
   };
+  const i18nRuntime = new I18nRuntime();
+  await i18nRuntime.initialize(DEFAULT_I18N_RUNTIME_CONFIG, 'en-US');
 
   const context = {
     options: {
@@ -142,6 +151,8 @@ async function createWorkspaceCommandFixture(
       tools: [],
     }),
     canWritePath: async () => true,
+    translate: (key: string, interpolation?: Record<string, string>) =>
+      i18nRuntime.t(key, interpolation),
     localizeText: (english: string) => english,
     adapterDiagnosticsRuntime: {} as CliCommandExecutorContext['adapterDiagnosticsRuntime'],
     runNodeScript: async () => ({
@@ -186,6 +197,67 @@ describe('CliWorkspaceCommand', () => {
       expect(result.commandResult.details?.action).toBe('dry_run');
       expect(typeof planPath).toBe('string');
       expect(existsSync(String(planPath))).toBe(true);
+    } finally {
+      await rm(fixture.tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('attaches a shared React shell view model when ui_mode=react', async () => {
+    const fixture = await createWorkspaceCommandFixture({
+      action: 'dry-run',
+      targetMode: WorkspaceMode.TOOL_MANAGED,
+      targetRoot: null,
+      planPath: null,
+    });
+
+    try {
+      fixture.context.resolveRuntimeDebugOptions = () => ({
+        interactive: true,
+        requestedUiMode: CliInteractiveUiMode.REACT,
+        uiMode: CliInteractiveUiMode.REACT,
+        uiFallbackBehavior: null,
+        inputTty: true,
+        stderrTty: true,
+        dryRun: false,
+        trace: false,
+        replayPath: null,
+        adapters: false,
+        fix: false,
+        recordLedger: false,
+        taskId: null,
+        restrictedNetwork: false,
+        restrictedReason: null,
+        allowLocalFallback: true,
+        hitlDecision: null,
+        hitlDecisionReason: null,
+        hitlResumeAction: null,
+        hitlDecidedBy: null,
+        hitlConstraints: [],
+      });
+      fixture.context.options.outputMode = ErrorOutputEnvironment.PRETTY;
+      fixture.context.options.workspaceCommandOptions = {
+        action: 'dry-run',
+        targetMode: WorkspaceMode.TOOL_MANAGED,
+        targetRoot: fixture.managedWorkspaceRoot,
+        planPath: null,
+      };
+      const command = new CliWorkspaceCommand();
+
+      const result = await command.execute(fixture.context);
+
+      expect(result.reactCliViewModel?.title).toContain('[react-shell:workspace]');
+      expect(result.reactCliViewModel?.sections[0]?.lines).toContain('Workspace action: dry-run');
+      expect(
+        result.reactCliViewModel?.sections[0]?.lines.some((line) =>
+          line.includes(fixture.managedWorkspaceRoot),
+        ),
+      ).toBe(true);
+      expect(
+        result.reactCliViewModel?.helpSection?.lines.some((line) => line.includes('Inspect')),
+      ).toBe(true);
+      expect(result.reactCliViewModel?.footerShortcuts).toContain(
+        '--workspace-action rollback restores prior state',
+      );
     } finally {
       await rm(fixture.tempRoot, { recursive: true, force: true });
     }

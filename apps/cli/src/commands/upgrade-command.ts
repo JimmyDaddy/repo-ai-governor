@@ -125,22 +125,16 @@ export class CliUpgradeCommand implements CliCommandExecutor {
       },
     ];
     const nextActions = [
-      context.localizeText(
-        `Inspect ${reportPath} and compare it with ${autoMigratedConfigPath} before applying any config change.`,
-        `先检查 ${reportPath}，并将其与 ${autoMigratedConfigPath} 对比后再决定是否写回配置。`,
-      ),
+      this.translateKey(context, 'cli.commandMessages.upgrade.inspectReport', {
+        reportPath,
+        autoMigratedConfigPath,
+      }),
       ...(confirmationCount > 0
-        ? [
-            context.localizeText(
-              'Confirm every listed confirmation item before replacing governor.yaml.',
-              '在替换 governor.yaml 之前，先逐条确认所有 confirmation item。',
-            ),
-          ]
+        ? [this.translateKey(context, 'cli.commandMessages.upgrade.confirmItems')]
         : []),
-      context.localizeText(
-        `Keep ${rollbackSnapshotPath} as the rollback source if you later write the migrated config back.`,
-        `如果后续要写回迁移后的配置，请保留 ${rollbackSnapshotPath} 作为回滚来源。`,
-      ),
+      this.translateKey(context, 'cli.commandMessages.upgrade.keepRollback', {
+        rollbackSnapshotPath,
+      }),
     ];
     const experience = context.commandExperienceBuilder.buildExperiencePayload({
       roleProgress: [
@@ -149,10 +143,7 @@ export class CliUpgradeCommand implements CliCommandExecutor {
           stage: ExecutionProgressStage.REPORT,
           status: ExecutionProgressStatus.COMPLETED,
           category: ExecutionInteractionCategory.NONE,
-          summary: context.localizeText(
-            'Upgrade analysis artifacts were generated.',
-            '升级分析产物已生成。',
-          ),
+          summary: this.translateKey(context, 'cli.commandMessages.upgrade.artifactsGenerated'),
           detail: reportPath,
           backlink: {
             artifactPath: reportPath,
@@ -171,14 +162,8 @@ export class CliUpgradeCommand implements CliCommandExecutor {
               : ExecutionInteractionCategory.NONE,
           summary:
             confirmationCount > 0
-              ? context.localizeText(
-                  'Manual confirmation is required before applying upgrade changes.',
-                  '写回升级变更前需要人工确认。',
-                )
-              : context.localizeText(
-                  'No manual confirmation is required for the analyzed upgrade path.',
-                  '当前分析的升级路径无需人工确认。',
-                ),
+              ? this.translateKey(context, 'cli.commandMessages.upgrade.manualConfirmationRequired')
+              : this.translateKey(context, 'cli.commandMessages.upgrade.noManualConfirmation'),
           detail: `confirmation_items=${confirmationCount}`,
         },
       ],
@@ -193,10 +178,10 @@ export class CliUpgradeCommand implements CliCommandExecutor {
             : ExecutionProgressStage.REPORT,
         title:
           index === 0
-            ? context.localizeText('Review upgrade artifacts', '检查升级产物')
+            ? this.translateKey(context, 'cli.commandMessages.upgrade.reviewUpgradeArtifacts')
             : index === 1 && confirmationCount > 0
-              ? context.localizeText('Confirm upgrade changes', '确认升级变更')
-              : context.localizeText('Retain rollback snapshot', '保留回滚快照'),
+              ? this.translateKey(context, 'cli.commandMessages.upgrade.confirmUpgradeChanges')
+              : this.translateKey(context, 'cli.commandMessages.upgrade.retainRollbackSnapshot'),
         action,
         blocking: index === 1 && confirmationCount > 0,
       })),
@@ -250,5 +235,20 @@ export class CliUpgradeCommand implements CliCommandExecutor {
         },
       },
     };
+  }
+
+  /**
+   * Resolves one localized string through i18n runtime.
+   * @param context Command execution context.
+   * @param key Translation key.
+   * @param interpolation Optional translation variables.
+   * @returns Localized string or the key when translation runtime is unavailable.
+   */
+  private translateKey(
+    context: Pick<CliCommandExecutorContext, 'translate'>,
+    key: string,
+    interpolation?: Record<string, string>,
+  ): string {
+    return context.translate?.(key, interpolation) ?? key;
   }
 }

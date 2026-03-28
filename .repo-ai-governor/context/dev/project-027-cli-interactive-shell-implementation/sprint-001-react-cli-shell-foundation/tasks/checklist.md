@@ -2,14 +2,21 @@
 
 - [x] TK-304 project-027 激活与 React shell implementation handoff
   - 2026-03-28：任务创建，状态切换为 `in_progress`，开始搭建 project-027 与 sprint-001 基线。
-  - 2026-03-28：已完成，project-027 / sprint-001 与 `current-context`、plan、task ledger 已完成 handoff 对齐。
+  - 2026-03-28：已完成 `project-027 / sprint-001` 激活、`current-context` 切换、project/sprint plan 建档与 task ledger 初始化。
+  - 2026-03-28：本轮实现继续沿用该 handoff surface，未回写 formal technical solution 文档，保持 implementation stream 边界稳定。
 - [x] TK-305 shell runner、UI mode resolver 与 stderr/SIGINT baseline
   - 2026-03-28：任务创建，状态切换为 `in_progress`，开始搭建 shell runner 与输出边界。
-  - 2026-03-28：已完成，新增 `--ui` 解析、`interactive-shell` mode resolver、stderr renderer 与 `SIGINT`/unmount baseline，并把 `plain/json`、非 TTY、`--no-interactive` 固化为 `ui_mode=none`。
+  - 2026-03-28：新增 `apps/cli/src/constants/cli-interactive-shell.constant.ts`、`interactive-shell-ui-mode-resolver.ts` 与 `interactive-shell-stderr-renderer.ts`，建立 `ui_mode`、fallback 行为和 stderr-only renderer 基线。
+  - 2026-03-28：`apps/cli/src/main.ts` 增加 `--ui <mode>` 解析，`CliRuntimeDebugOptions` 与 `CliNormalizedRuntimeDebugOptions` 扩展 `requestedUiMode/uiMode/uiFallbackBehavior`，并把 `--no-interactive`、非 TTY、`plain/json` 收敛到 `ui_mode=none`。
+  - 2026-03-28：`init` React shell lifecycle 增加 `SIGINT` cancel + unmount 路径；非 `SIGINT` 初始化异常会回退 classic path 并记录 fallback check。
 - [x] TK-306 `init` React shell 最小向导与 descriptor/state baseline
   - 2026-03-28：任务创建，状态切换为 `in_progress`，开始落地 init 最小向导闭环。
-  - 2026-03-28：已完成，`init` 接入 descriptor/state 驱动的最小 React 风格向导，并保留 classic fallback；`init-manifest` 的 `workspaceMode` 也改为回写实际交互选择。
+  - 2026-03-28：新增 `init-shell-descriptor-registry.ts` 与 `init-react-shell-runner.ts`，把 `init` 的 workspace mode、default locale、confirmation、submit 状态固化为 descriptor/state 驱动的最小向导。
+  - 2026-03-28：`apps/cli/src/commands/init-command.ts` 现在根据 `ui_mode` 在 `react/classic/none` 之间分流，React 路径只写 `stderr`，classic 路径作为稳定 fallback 保留。
+  - 2026-03-28：`init-manifest.json` 的 `workspaceMode` 改为记录真实交互选择，避免交互改写配置后 manifest 仍停留旧值。
 - [x] TK-307 M1 回归测试、fallback 与 non-interactive contract gate
   - 2026-03-28：任务创建，状态切换为 `in_progress`，开始补齐回归测试与门禁。
-  - 2026-03-28：已完成，新增 UI mode resolver 单测、`init` shell runner 单测、CLI output contract 集成测试，并通过 TypeScript 与 sprint ledger 相关门禁验证。
-  - 2026-03-28：按更严格的 CR 标准追加收口，补充 restart-loop 分支测试，并为 SIGINT / teardown 双保险路径增加意图注释，同时把 stricter-bar 规则写入 `workspace-code-review-workflow` skill。
+  - 2026-03-28：新增 `apps/cli/test/runtime/interactive-shell-ui-mode-resolver.test.ts`，覆盖 default classic、explicit react、`no-interactive`、`plain/json`、非 TTY 与 `tui -> classic` fallback。
+  - 2026-03-28：新增 `apps/cli/test/runtime/init-react-shell-runner.test.ts`，覆盖 descriptor/state 驱动的字段收集、validation feedback、confirmation 与 stderr unmount 边界。
+  - 2026-03-28：扩展 `apps/cli/test/cli-output-contract.integration.test.ts`，验证 `--ui react` + `--no-interactive` fallback 以及非法 `--ui` 在 JSON 模式下仍保持稳定错误契约。
+  - 2026-03-28：根据更严格的 CR 标准，追加 confirmation reject 后 restart-loop 测试，并把 SIGINT / teardown 双保险路径提升为需显式注释说明的 lifecycle-sensitive 实现。

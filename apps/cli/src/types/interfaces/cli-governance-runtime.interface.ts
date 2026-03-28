@@ -14,6 +14,7 @@ import type {
   CliInteractiveUiMode,
 } from '../../constants/cli-interactive-shell.constant.js';
 import type { CliHitlResumeAction } from '../../constants/cli-task-driven-run.constant.js';
+import type { ReactCliViewModel } from '../../react-cli/index.js';
 import type { CliAdapterDiagnosticsRuntime } from '../../runtime/adapter-diagnostics-runtime.js';
 import type { CliReviewQueueRuntime } from '../../runtime/artifacts/review-queue-runtime.js';
 import type { CliOrchestrationServiceRuntime } from '../../runtime/orchestration-service-runtime.js';
@@ -37,6 +38,7 @@ export interface CliGovernanceRuntimeOptions {
   configSource: 'default' | 'file';
   profileId: string | null;
   locale: string;
+  translate?: (key: string, interpolation?: Record<string, string>) => string;
   outputMode: ErrorOutputEnvironment;
   isTty: boolean;
   memoryConfig: MemoryRuntimeConfig;
@@ -62,6 +64,7 @@ export interface CliGovernanceRuntimeOptions {
 export interface CliGovernanceCommandResult {
   message: string;
   commandResult: CliCommandExecutionResultPayload;
+  reactCliViewModel?: ReactCliViewModel;
 }
 
 /**
@@ -136,7 +139,9 @@ export interface CliCommandExecutorContext {
   resolveExecutionStreamMetadata(): Promise<CliExecutionStreamMetadata>;
   resolveAdapterVerification(): Promise<CliAdapterVerificationResolution>;
   canWritePath(filePath: string): Promise<boolean>;
+  /** @deprecated Use translate instead. Retained for backward-compatibility during migration. */
   localizeText(english: string, chinese: string): string;
+  translate: (key: string, interpolation?: Record<string, string>) => string;
   runNodeScript(
     scriptPath: string,
     args?: string[],

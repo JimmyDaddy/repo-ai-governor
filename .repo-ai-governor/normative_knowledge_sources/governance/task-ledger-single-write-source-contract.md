@@ -1,7 +1,7 @@
 # Task Ledger Single Write Source Contract
 
 - Status: active
-- Date: 2026-03-24
+- Date: 2026-03-28
 - Scope: execution ledger governance (`TK/checklist/tasks.csv`)
 - Owner: `project-008-workflow-optimization / TK-042`
 
@@ -48,6 +48,7 @@
 2. `Required Inputs` 只放执行必需输入，建议控制在 `3-5` 条。
 3. `Traceback References` 只放追溯、审计、handoff 或历史规划类输入，不进入默认执行入口。
 4. 既有任务卡保留 `Input References` 兼容；迁移过程中以运行时与人工执行双兼容为准。
+5. 新任务卡的 concrete skeleton 以 `.repo-ai-governor/normative_knowledge_sources/governance/task-card-template.md` 为准；`decomposition-protocol-template.md` 只保留最小章节约束。
 
 ## 3.3 Sync Mechanism Boundary
 

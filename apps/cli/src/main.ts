@@ -33,7 +33,7 @@ import {
 } from '@repo-ai-governor/shared';
 import { CliGovernanceRuntime } from './cli-governance-runtime.js';
 import { CliOutputPresenter } from './cli-output-presenter.js';
-import { CLI_COMMAND_DEFINITIONS } from './constants/cli-command.constant.js';
+import { CLI_COMMAND_DEFINITIONS, CLI_PROGRAM_NAME } from './constants/cli-command.constant.js';
 import {
   CLI_INTERACTIVE_UI_MODE_VALUES,
   type CliInteractiveUiMode,
@@ -58,6 +58,7 @@ import {
   IdeWrapperEnvironmentKey,
 } from './constants/ide-command-wrapper.constant.js';
 import type { IdeStandardsSourceId } from './constants/ide-standards-source.constant.js';
+import { ReactCliStderrFramePresenter } from './react-cli/index.js';
 import { CliClaudeCodeExecFixtureRuntime } from './runtime/claude-code-exec-fixture-runtime.js';
 import { CliCodexExecFixtureRuntime } from './runtime/codex-exec-fixture-runtime.js';
 import { CliGithubCopilotExecFixtureRuntime } from './runtime/github-copilot-exec-fixture-runtime.js';
@@ -322,6 +323,8 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
       configSource: runtimeContext.configSource,
       profileId: runtimeContext.profileId,
       locale: resolvedLocale,
+      translate: (key: string, interpolation?: Record<string, string>) =>
+        runtimeI18n.t(key, interpolation),
       outputMode: outputContext.outputMode,
       isTty: outputContext.isTty,
       memoryConfig: runtimeContext.memory,
@@ -360,9 +363,10 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
           }
         : {}),
     });
+    const reactCliStderrFramePresenter = new ReactCliStderrFramePresenter(io.stderr);
 
     const program = new Command();
-    program.name('repo-ai-governor');
+    program.name(CLI_PROGRAM_NAME);
     program.description(runtimeI18n.t('cli.app.description'));
     program.option('--locale <locale>', runtimeI18n.t('cli.options.locale'));
     program.option('--profile <profileId>', runtimeI18n.t('cli.options.profile'));
@@ -456,6 +460,9 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
               : {}),
           };
           const executionResult = await governanceRuntime.execute(commandDefinition.name);
+          if (executionResult.reactCliViewModel) {
+            reactCliStderrFramePresenter.write(executionResult.reactCliViewModel);
+          }
 
           outputPresenter.writeSuccess(
             buildSuccessOutputPayload(

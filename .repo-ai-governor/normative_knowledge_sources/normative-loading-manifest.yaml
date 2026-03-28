@@ -495,6 +495,19 @@ documents:
     owner: delivery
     last_reviewed_at: 2026-03-21
 
+  - doc_id: task_card_template
+    path: .repo-ai-governor/normative_knowledge_sources/governance/task-card-template.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - planning_template_update
+      - project_sprint_task_generation
+      - task_recording_process_change
+    owner: delivery
+    last_reviewed_at: 2026-03-28
+    notes: concrete reusable template for canonical TK task-card generation
+
   - doc_id: workflow_optimization_execution_plan
     path: .repo-ai-governor/normative_knowledge_sources/archive/repo-ai-governor-workflow-optimization-recommendations.md
     tier: L3

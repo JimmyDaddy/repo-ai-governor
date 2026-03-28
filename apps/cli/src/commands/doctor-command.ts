@@ -148,10 +148,8 @@ export class CliDoctorCommand implements CliCommandExecutor {
           safeLocalFixCount > 0 ? `applied=${safeLocalFixCount}` : 'no_safe_local_changes_applied',
       });
       nextActions.push(
-        context.localizeText(
+        context.translate?.('cli.commandMessages.doctor.safeLocalFixHint') ??
           'safe_local fix only creates writable workspace/config/memory baseline paths; it never installs commands, logs in adapters, or pulls local models.',
-          'safe_local 仅会创建可写的 workspace/config/memory 基线路径；不会安装命令、处理 adapter 登录态，也不会拉取本地模型。',
-        ),
       );
     }
     if (nextActions.length > 0) {

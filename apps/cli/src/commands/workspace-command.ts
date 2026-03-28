@@ -30,27 +30,31 @@ import {
   CliWorkspaceScratchCleanupStatus,
   CliWorkspaceTargetDetailField,
 } from '../constants/cli-command-result-check.constant.js';
-import { CliCommandName } from '../constants/cli-command.constant.js';
+import { CLI_PROGRAM_NAME, CliCommandName } from '../constants/cli-command.constant.js';
 import {
   CLI_RUNTIME_OPERATION,
   CliGovernanceCheckStatus,
 } from '../constants/cli-governance-runtime.constant.js';
+import { CliInteractiveUiMode } from '../constants/cli-interactive-shell.constant.js';
+import { CliWorkspaceAction } from '../constants/cli-workspace.constant.js';
+import {
+  ReactCliCommandDescriptorCatalog,
+  ReactCliCommandViewModelBuilder,
+  type ReactCliViewModel,
+} from '../react-cli/index.js';
 import type {
   CliCommandExecutorContext,
+  CliCommandExperiencePayload,
   CliCommandResultArtifact,
   CliCommandResultCheck,
 } from '../types/index.js';
 import type { CliCommandExecutor } from './cli-command-executor.interface.js';
 
-enum CliWorkspaceAction {
-  DRY_RUN = 'dry-run',
-  EXECUTE = 'execute',
-  ROLLBACK = 'rollback',
-}
-
 interface CliWorkspaceCommandDependencies {
   configLoader?: Pick<ConfigLoader, 'loadFromFile'>;
   workspaceMigrationService?: Pick<WorkspaceMigrationService, 'plan' | 'execute' | 'rollback'>;
+  descriptorCatalog?: ReactCliCommandDescriptorCatalog;
+  viewModelBuilder?: ReactCliCommandViewModelBuilder;
 }
 
 interface WorkspaceCutoverPersistence {
@@ -69,11 +73,16 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
     WorkspaceMigrationService,
     'plan' | 'execute' | 'rollback'
   >;
+  private readonly descriptorCatalog: ReactCliCommandDescriptorCatalog;
+  private readonly viewModelBuilder: ReactCliCommandViewModelBuilder;
 
   public constructor(dependencies: CliWorkspaceCommandDependencies = {}) {
     this.configLoader = dependencies.configLoader ?? new ConfigLoader();
     this.workspaceMigrationService =
       dependencies.workspaceMigrationService ?? new WorkspaceMigrationService();
+    this.descriptorCatalog =
+      dependencies.descriptorCatalog ?? new ReactCliCommandDescriptorCatalog();
+    this.viewModelBuilder = dependencies.viewModelBuilder ?? new ReactCliCommandViewModelBuilder();
   }
 
   public async execute(context: CliCommandExecutorContext) {
@@ -277,7 +286,7 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
         migrationId: plan.migrationId,
         success: false,
         planPath: planArtifactPath,
-        rollbackCommand: `repo-ai-governor workspace --workspace-action rollback --workspace-plan ${planArtifactPath}`,
+        rollbackCommand: `${CLI_PROGRAM_NAME} workspace --workspace-action rollback --workspace-plan ${planArtifactPath}`,
         execution: {
           ...executionResult,
           success: false,
@@ -347,7 +356,7 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
       migrationId: plan.migrationId,
       success: executionResult.success,
       planPath: relocatedPlanArtifactPath,
-      rollbackCommand: `repo-ai-governor workspace --workspace-action rollback --workspace-plan ${relocatedPlanArtifactPath}`,
+      rollbackCommand: `${CLI_PROGRAM_NAME} workspace --workspace-action rollback --workspace-plan ${relocatedPlanArtifactPath}`,
       execution: executionResult,
     });
 
@@ -391,37 +400,41 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
         path: executionArtifactPath,
       },
     ];
-    const message = context.localizeText(
-      `Workspace migration executed successfully; plan=${relocatedPlanArtifactPath}.`,
-      `工作区迁移执行成功；计划文件=${relocatedPlanArtifactPath}。`,
-    );
+    const message = this.translate(context, 'cli.reactShell.workspace.message.executeCompleted', {
+      planPath: relocatedPlanArtifactPath,
+    });
+    const experience = this.buildWorkspaceExperience(context, {
+      blocking: false,
+      summary: this.translate(context, 'cli.reactShell.workspace.status.executionCompleted'),
+      artifactPath: executionArtifactPath,
+      nextActions: [
+        this.translate(context, 'cli.reactShell.workspace.nextActions.keepPlanRollback', {
+          planPath: relocatedPlanArtifactPath,
+        }),
+        this.translate(context, 'cli.reactShell.workspace.nextActions.rerunDoctorBeforeAdopt', {
+          workspaceRoot: plan.targetWorkspace.workspaceRoot,
+        }),
+      ],
+    });
 
     return {
       message,
+      reactCliViewModel: this.buildReactCliViewModel(context, {
+        action: CliWorkspaceAction.EXECUTE,
+        message,
+        checks,
+        experience,
+        plan,
+        primaryArtifactPath: executionArtifactPath,
+        planArtifactPath: relocatedPlanArtifactPath,
+      }),
       commandResult: {
         operation: CLI_RUNTIME_OPERATION.WORKSPACE_MIGRATION_EXECUTE,
         summary: message,
         check_totals: context.calculateCheckTotals(checks),
         checks,
         artifacts,
-        experience: this.buildWorkspaceExperience(context, {
-          blocking: false,
-          summary: context.localizeText(
-            'Workspace migration execution completed.',
-            '工作区迁移执行已完成。',
-          ),
-          artifactPath: executionArtifactPath,
-          nextActions: [
-            context.localizeText(
-              `Keep ${relocatedPlanArtifactPath} so you can run an explicit rollback if the new workspace surface is not acceptable.`,
-              `请保留 ${relocatedPlanArtifactPath}，如果新的工作区面不符合预期，可显式执行 rollback。`,
-            ),
-            context.localizeText(
-              `Re-run doctor/check against ${plan.targetWorkspace.workspaceRoot} before adopting it as the default workspace surface.`,
-              `在将 ${plan.targetWorkspace.workspaceRoot} 作为默认工作区面之前，请重新执行 doctor/check。`,
-            ),
-          ],
-        }),
+        experience,
         details: {
           action: CliWorkspaceAction.EXECUTE,
           migration_id: plan.migrationId,
@@ -566,30 +579,42 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
         path: rollbackArtifactPath,
       },
     ];
-    const message = context.localizeText(
-      `Workspace rollback completed; rollback=${rollbackArtifactPath}.`,
-      `工作区回滚已完成；回滚产物=${rollbackArtifactPath}。`,
-    );
+    const message = this.translate(context, 'cli.reactShell.workspace.message.rollbackCompleted', {
+      rollbackPath: rollbackArtifactPath,
+    });
+    const experience = this.buildWorkspaceExperience(context, {
+      blocking: false,
+      summary: this.translate(context, 'cli.reactShell.workspace.status.rollbackCompleted'),
+      artifactPath: rollbackArtifactPath,
+      nextActions: [
+        this.translate(
+          context,
+          'cli.reactShell.workspace.nextActions.verifyRollbackTargetCleared',
+          {
+            workspaceRoot: plan.targetWorkspace.workspaceRoot,
+          },
+        ),
+      ],
+    });
 
     return {
       message,
+      reactCliViewModel: this.buildReactCliViewModel(context, {
+        action: CliWorkspaceAction.ROLLBACK,
+        message,
+        checks,
+        experience,
+        plan,
+        primaryArtifactPath: rollbackArtifactPath,
+        planArtifactPath,
+      }),
       commandResult: {
         operation: CLI_RUNTIME_OPERATION.WORKSPACE_MIGRATION_ROLLBACK,
         summary: message,
         check_totals: context.calculateCheckTotals(checks),
         checks,
         artifacts,
-        experience: this.buildWorkspaceExperience(context, {
-          blocking: false,
-          summary: context.localizeText('Workspace rollback completed.', '工作区回滚已完成。'),
-          artifactPath: rollbackArtifactPath,
-          nextActions: [
-            context.localizeText(
-              `Verify that ${plan.targetWorkspace.workspaceRoot} is no longer the active target before rerunning workspace execute.`,
-              `请确认 ${plan.targetWorkspace.workspaceRoot} 不再作为活动目标后，再重新执行 workspace execute。`,
-            ),
-          ],
-        }),
+        experience,
         details: {
           action: CliWorkspaceAction.ROLLBACK,
           migration_id: plan.migrationId,
@@ -629,13 +654,32 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
         detail: planArtifactPath,
       },
     ];
-    const message = context.localizeText(
-      `Workspace migration plan generated; plan=${planArtifactPath}.`,
-      `工作区迁移计划已生成；计划文件=${planArtifactPath}。`,
-    );
+    const message = this.translate(context, 'cli.reactShell.workspace.message.dryRunCompleted', {
+      planPath: planArtifactPath,
+    });
+    const experience = this.buildWorkspaceExperience(context, {
+      blocking: false,
+      summary: this.translate(context, 'cli.reactShell.workspace.status.dryRunCompleted'),
+      artifactPath: planArtifactPath,
+      nextActions: [
+        this.translate(context, 'cli.reactShell.workspace.nextActions.inspectPlanBeforeExecute', {
+          planPath: planArtifactPath,
+        }),
+        this.translate(context, 'cli.reactShell.workspace.nextActions.useExecuteWhenReady'),
+      ],
+    });
 
     return {
       message,
+      reactCliViewModel: this.buildReactCliViewModel(context, {
+        action: CliWorkspaceAction.DRY_RUN,
+        message,
+        checks,
+        experience,
+        plan,
+        primaryArtifactPath: planArtifactPath,
+        planArtifactPath,
+      }),
       commandResult: {
         operation: CLI_RUNTIME_OPERATION.WORKSPACE_MIGRATION_PLAN,
         summary: message,
@@ -647,24 +691,7 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
             path: planArtifactPath,
           },
         ],
-        experience: this.buildWorkspaceExperience(context, {
-          blocking: false,
-          summary: context.localizeText(
-            'Workspace migration dry-run completed.',
-            '工作区迁移 dry-run 已完成。',
-          ),
-          artifactPath: planArtifactPath,
-          nextActions: [
-            context.localizeText(
-              `Inspect ${planArtifactPath} and confirm the target workspace root before executing the migration.`,
-              `先检查 ${planArtifactPath}，确认目标工作区根路径后再执行迁移。`,
-            ),
-            context.localizeText(
-              'Use --workspace-action execute with the same --workspace-mode/--workspace-root inputs when you are ready to cut over.',
-              '准备切换时，使用相同的 --workspace-mode/--workspace-root 参数执行 --workspace-action execute。',
-            ),
-          ],
-        }),
+        experience,
         details: {
           action: 'dry_run',
           migration_id: plan.migrationId,
@@ -695,7 +722,7 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
       requestedTargetWorkspace: targetWorkspace,
       rollbackReference: {
         planPath: planArtifactPath,
-        command: `repo-ai-governor workspace --workspace-action rollback --workspace-plan ${planArtifactPath}`,
+        command: `${CLI_PROGRAM_NAME} workspace --workspace-action rollback --workspace-plan ${planArtifactPath}`,
       },
       cutoverPersistence,
       plan,
@@ -732,7 +759,7 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
       interactionPrompts: options.nextActions.map((action) => ({
         category: ExecutionInteractionCategory.NONE,
         stage: ExecutionProgressStage.REPORT,
-        title: context.localizeText('Next step', '下一步'),
+        title: this.translate(context, 'cli.reactShell.workspace.nextStepTitle'),
         action,
         blocking: false,
       })),
@@ -741,6 +768,84 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
         detailed: [`artifact_path=${options.artifactPath}`],
       },
     });
+  }
+
+  /**
+   * Builds the shared React CLI summary view for `workspace` when React mode is active.
+   * @param context Command execution context.
+   * @param options Action-specific migration facts used to populate the shared shell.
+   * @returns Shared shell view model or `undefined`.
+   */
+  private buildReactCliViewModel(
+    context: CliCommandExecutorContext,
+    options: {
+      action: CliWorkspaceAction;
+      message: string;
+      checks: CliCommandResultCheck[];
+      experience: CliCommandExperiencePayload;
+      plan: WorkspaceMigrationPlan;
+      primaryArtifactPath: string;
+      planArtifactPath: string;
+    },
+  ): ReactCliViewModel | undefined {
+    const runtimeDebugOptions = context.resolveRuntimeDebugOptions();
+    if (runtimeDebugOptions.uiMode !== CliInteractiveUiMode.REACT) {
+      return undefined;
+    }
+
+    const descriptor = this.descriptorCatalog
+      .createRegistry({
+        translate: context.translate,
+      })
+      .resolve(CliCommandName.WORKSPACE);
+
+    if (!descriptor) {
+      return undefined;
+    }
+
+    return this.viewModelBuilder.build({
+      commandName: CliCommandName.WORKSPACE,
+      descriptor,
+      subtitle: `ui=${runtimeDebugOptions.uiMode} stdout=${context.options.outputMode} workspace=${context.options.workspace.mode}`,
+      inputTitle: this.translate(context, 'cli.reactShell.shared.inputs'),
+      summaryTitle: this.translate(context, 'cli.reactShell.shared.summary'),
+      attentionTitle: this.translate(context, 'cli.reactShell.shared.attention'),
+      statusMessage: options.experience.layeredLogs.summary[0],
+      statusVariant: this.viewModelBuilder.resolveStatusVariantFromChecks(options.checks),
+      fieldValues: {
+        action: options.action,
+        targetMode: options.plan.targetWorkspace.mode,
+        targetRoot: options.plan.targetWorkspace.workspaceRoot,
+        planPath: options.planArtifactPath,
+      },
+      summaryLines: [
+        options.message,
+        this.translate(context, 'cli.reactShell.workspace.summary.migrationId', {
+          migrationId: options.plan.migrationId,
+        }),
+        this.translate(context, 'cli.reactShell.workspace.summary.primaryArtifact', {
+          path: options.primaryArtifactPath,
+        }),
+      ],
+      footerShortcutsTitle: this.translate(context, 'cli.reactShell.shared.shortcuts'),
+      checks: options.checks,
+      interactionPrompts: options.experience.interactionPrompts,
+    });
+  }
+
+  /**
+   * Resolves one localized React-shell string through i18n runtime.
+   * @param context Command execution context.
+   * @param key Translation key.
+   * @param interpolation Optional translation variables.
+   * @returns Localized string or the key when translation runtime is unavailable.
+   */
+  private translate(
+    context: Pick<CliCommandExecutorContext, 'translate'>,
+    key: string,
+    interpolation?: Record<string, string>,
+  ): string {
+    return context.translate?.(key, interpolation) ?? key;
   }
 
   /**

@@ -23,7 +23,7 @@ import type { CliLocalModelProbeRuntime } from './local-model-probe-runtime.js';
 export class CliAdapterVerificationRuntime {
   public constructor(
     private readonly adaptersConfig: AdaptersConfig,
-    private readonly localizeText: (english: string, chinese: string) => string,
+    private readonly translate: (key: string, interpolation?: Record<string, string>) => string,
     private readonly formatExecFailureDetail: (error: unknown) => string,
     private readonly adapterRoutingRuntime: CliAdapterRoutingRuntime,
     private readonly localModelProbeRuntime: CliLocalModelProbeRuntime,
@@ -180,20 +180,10 @@ export class CliAdapterVerificationRuntime {
 
     const nextActions: string[] = [];
     if (requiredRoleCount === 0) {
-      nextActions.push(
-        this.localizeText(
-          'Define at least one adapters.roles item with required=true.',
-          '至少定义一个 adapters.roles 且 required=true 的角色。',
-        ),
-      );
+      nextActions.push(this.translate('cli.adapterVerification.defineRequiredRole'));
     }
     if (requiredRoleFailedCount > 0) {
-      nextActions.push(
-        this.localizeText(
-          'Check adapters.routing.roleBindings primary/fallback surfaces and ensure required roles have at least one available surface.',
-          '请检查 adapters.routing.roleBindings 的主备 surface，确保必需角色至少有一个可用 surface。',
-        ),
-      );
+      nextActions.push(this.translate('cli.adapterVerification.checkRoleBindings'));
     }
     const unavailableToolIds = toolSnapshots
       .filter((tool) => tool.availabilityStatus === AgentAvailabilityStatus.UNAVAILABLE)
@@ -214,42 +204,37 @@ export class CliAdapterVerificationRuntime {
       failedHealthChecks.length === 0
     ) {
       nextActions.push(
-        this.localizeText(
-          `Probe/login dependencies are unavailable for: ${unavailableToolIds.join(', ')}.`,
-          `以下工具的探测或登录依赖不可用：${unavailableToolIds.join(', ')}。`,
-        ),
+        this.translate('cli.adapterVerification.probeUnavailable', {
+          toolIds: unavailableToolIds.join(', '),
+        }),
       );
     }
     if (missingCommands.length > 0) {
       nextActions.push(
-        this.localizeText(
-          `Install missing local commands before connect/verify: ${missingCommands.join(', ')}.`,
-          `请先安装缺失的本地命令后再执行 connect/verify：${missingCommands.join(', ')}。`,
-        ),
+        this.translate('cli.adapterVerification.installMissingCommands', {
+          commands: missingCommands.join(', '),
+        }),
       );
     }
     if (failedProbeCommands.length > 0) {
       nextActions.push(
-        this.localizeText(
-          `Some commands exist but probe failed (${failedProbeCommands.join(', ')}). Run them manually to verify login/extension status.`,
-          `部分命令可执行但探测失败（${failedProbeCommands.join(', ')}），请手动执行命令确认登录/扩展状态。`,
-        ),
+        this.translate('cli.adapterVerification.probeFailedCommands', {
+          commands: failedProbeCommands.join(', '),
+        }),
       );
     }
     if (missingCredentials.length > 0) {
       nextActions.push(
-        this.localizeText(
-          `Authenticate or refresh login for remote adapters before connect/verify: ${missingCredentials.join(', ')}.`,
-          `请先为以下远端 adapter 完成认证或刷新登录状态，再执行 connect/verify：${missingCredentials.join(', ')}。`,
-        ),
+        this.translate('cli.adapterVerification.authenticateAdapters', {
+          credentials: missingCredentials.join(', '),
+        }),
       );
     }
     if (failedHealthChecks.length > 0) {
       nextActions.push(
-        this.localizeText(
-          `Investigate remote adapter health checks before unattended execution: ${failedHealthChecks.join(', ')}.`,
-          `请先排查以下远端 adapter 的健康检查结果，再进行无人值守执行：${failedHealthChecks.join(', ')}。`,
-        ),
+        this.translate('cli.adapterVerification.investigateHealthChecks', {
+          healthChecks: failedHealthChecks.join(', '),
+        }),
       );
     }
     const missingLocalModels = this.collectToolReasonPayloads(
@@ -258,10 +243,9 @@ export class CliAdapterVerificationRuntime {
     );
     if (missingLocalModels.length > 0) {
       nextActions.push(
-        this.localizeText(
-          `Pull or configure the missing local models before unattended execution: ${missingLocalModels.join(', ')}.`,
-          `请先拉取或修正以下缺失的本地模型，再进行无人值守执行：${missingLocalModels.join(', ')}。`,
-        ),
+        this.translate('cli.adapterVerification.pullLocalModels', {
+          models: missingLocalModels.join(', '),
+        }),
       );
     }
     const missingLocalModelConfigs = this.collectToolReasonPayloads(
@@ -270,10 +254,9 @@ export class CliAdapterVerificationRuntime {
     );
     if (missingLocalModelConfigs.length > 0) {
       nextActions.push(
-        this.localizeText(
-          `Provide adapters.tools[].localModel { provider, endpoint, model } for: ${missingLocalModelConfigs.join(', ')}.`,
-          `请为以下工具补齐 adapters.tools[].localModel 的 provider、endpoint、model 配置：${missingLocalModelConfigs.join(', ')}。`,
-        ),
+        this.translate('cli.adapterVerification.provideLocalModelConfig', {
+          configs: missingLocalModelConfigs.join(', '),
+        }),
       );
     }
     if (
@@ -282,20 +265,10 @@ export class CliAdapterVerificationRuntime {
       this.collectToolReasonPayloads(toolSnapshots, 'local_model_probe_invalid_response:').length >
         0
     ) {
-      nextActions.push(
-        this.localizeText(
-          'Check local-model endpoint reachability and Ollama health before relying on fallback routing.',
-          '请先确认本地模型 endpoint 可达且 Ollama 服务健康，再依赖 fallback 路由。',
-        ),
-      );
+      nextActions.push(this.translate('cli.adapterVerification.checkLocalModelEndpoint'));
     }
     if (fallbackRoleCount > 0 || degradedRoleCount > 0) {
-      nextActions.push(
-        this.localizeText(
-          'Primary surfaces are degraded or fallback is in use; review cost/latency/risk routing priorities before unattended execution.',
-          '当前使用降级或 fallback 路由，建议在无人值守执行前复核成本/时延/风险优先级。',
-        ),
-      );
+      nextActions.push(this.translate('cli.adapterVerification.reviewRoutingPriorities'));
     }
 
     return {

@@ -126,6 +126,7 @@ async function createInitCommandFixture(): Promise<{
         }),
         canWritePath: async () => true,
         localizeText: (english: string) => english,
+        translate: (key: string) => key,
         adapterDiagnosticsRuntime: {} as CliCommandExecutorContext['adapterDiagnosticsRuntime'],
         runNodeScript: async () => ({
           stdout: '',

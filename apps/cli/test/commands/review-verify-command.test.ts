@@ -136,6 +136,7 @@ async function createReviewVerifyFixture(
     }),
     canWritePath: async () => true,
     localizeText: (english: string) => english,
+    translate: (key: string) => key,
     adapterDiagnosticsRuntime: {} as CliCommandExecutorContext['adapterDiagnosticsRuntime'],
     runNodeScript:
       options.runNodeScript ??

@@ -157,13 +157,13 @@ export class CliGovernanceRuntime {
     });
     this.adapterVerificationRuntime = new CliAdapterVerificationRuntime(
       this.options.adaptersConfig,
-      (english, chinese) => this.localizeText(english, chinese),
+      (key, interpolation) => this.options.translate?.(key, interpolation) ?? key,
       (error) => this.formatExecFailureDetail(error),
       this.adapterRoutingRuntime,
       this.localModelProbeRuntime,
     );
     this.adapterDiagnosticsRuntime = new CliAdapterDiagnosticsRuntime(
-      (english, chinese) => this.localizeText(english, chinese),
+      (key, interpolation) => this.options.translate?.(key, interpolation) ?? key,
       (verification) =>
         this.adapterVerificationRuntime.createFailureAttributionSummary(verification),
     );
@@ -264,6 +264,7 @@ export class CliGovernanceRuntime {
   private createCommandExecutorContext(
     runtimeDebugOptionsOverride?: CliNormalizedRuntimeDebugOptions,
   ) {
+    const runtimeTranslate = this.options.translate;
     return {
       options: this.options,
       artifactWriter: this.artifactWriter,
@@ -281,7 +282,9 @@ export class CliGovernanceRuntime {
       resolveExecutionStreamMetadata: async () => this.resolveExecutionStreamMetadata(),
       resolveAdapterVerification: async () => this.resolveAdapterVerification(),
       canWritePath: async (filePath: string) => this.canWritePath(filePath),
-      localizeText: (english: string, chinese: string) => this.localizeText(english, chinese),
+      localizeText: (english: string, _chinese: string) => english,
+      translate: (key: string, interpolation?: Record<string, string>) =>
+        runtimeTranslate?.(key, interpolation) ?? key,
       runNodeScript: async (scriptPath: string, args: string[] = []) =>
         execFileAsync(process.execPath, [scriptPath, ...args], {
           cwd: this.options.currentWorkingDirectory,
@@ -1406,6 +1409,7 @@ export class CliGovernanceRuntime {
   }
 
   /**
+   * @deprecated Legacy localizeText bridge retained for backward-compatibility during migration.
    * Resolves locale-aware text from English/Chinese variants.
    * @param english English fallback text.
    * @param chinese Simplified-Chinese variant.

@@ -194,25 +194,29 @@ deliveries:
     accepted_at: 2026-03-26
 
   - solution_id: technical-solution.interactive-cli-react-style-cli
-    delivery_mode: docs_only
+    delivery_mode: followup_required
     consumer_surfaces:
-      - internal_governance
-    user_impact_level: none
-    execution_status: not_required
-    rollout_status: not_required
+      - adopter_cli
+      - docs_playbook
+    user_impact_level: medium
+    execution_status: in_progress
+    rollout_status: planned
     owner: runtime
-    project_ref: project-018-technical-solution-promotion-pilots
-    sprint_ref: sprint-006-interactive-cli-react-style-cli-promotion-cutover
+    project_ref: project-027-cli-interactive-shell-implementation
+    sprint_ref: sprint-002-react-cli-shell-surface-expansion
     task_ids:
-      - TK-242
-      - TK-243
-      - TK-244
-      - TK-245
-    project_plan_path: .repo-ai-governor/context/dev/project-018-technical-solution-promotion-pilots/plan.md
-    sprint_plan_path: .repo-ai-governor/context/dev/project-018-technical-solution-promotion-pilots/sprint-006-interactive-cli-react-style-cli-promotion-cutover/plan.md
-    task_csv_path: .repo-ai-governor/context/dev/project-018-technical-solution-promotion-pilots/sprint-006-interactive-cli-react-style-cli-promotion-cutover/tasks/tasks.csv
-    handoff_artifact_path: .repo-ai-governor/context/dev/project-018-technical-solution-promotion-pilots/sprint-006-interactive-cli-react-style-cli-promotion-cutover/tasks/DA-242-interactive-cli-react-style-cli-promotion-handoff.md
-    rollout_artifacts: []
+      - TK-308
+      - TK-309
+      - TK-310
+      - TK-311
+    project_plan_path: .repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation/plan.md
+    sprint_plan_path: .repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation/sprint-002-react-cli-shell-surface-expansion/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation/sprint-002-react-cli-shell-surface-expansion/tasks/tasks.csv
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation/sprint-002-react-cli-shell-surface-expansion/tasks/TK-308-shared-descriptor-registry-field-renderers-and-step-engine-baseline.md
+    rollout_artifacts:
+      - .repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation/plan.md
+      - .repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation/sprint-002-react-cli-shell-surface-expansion/plan.md
+      - .repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation/sprint-003-react-cli-shell-default-cutover/plan.md
     accepted_at: 2026-03-28
 
   - solution_id: technical-solution.multi-ai-tools-onboarding-role-agent-projection

@@ -48,10 +48,11 @@ export class CliInitReactShellRunner {
   public async run(options: {
     locale: Locale;
     outputMode: ErrorOutputEnvironment;
-    localizeText: (english: string, chinese: string) => string;
+    translate: (key: string, interpolation?: Record<string, string>) => string;
   }): Promise<CliInitReactShellSelection> {
-    const descriptor = this.descriptorRegistry.resolveBootstrapDescriptor(options.localizeText);
+    const descriptor = this.descriptorRegistry.resolveBootstrapDescriptor(options.translate);
     const promptAdapter = this.promptAdapterFactory();
+    const renderer = this.renderer.withTranslate(options.translate);
     const session = this.createSessionState(options.locale, options.outputMode, descriptor);
     let receivedSigint = false;
 
@@ -64,10 +65,10 @@ export class CliInitReactShellRunner {
       promptAdapter.close();
     };
 
-    process.once('SIGINT', sigintHandler);
+    process.on('SIGINT', sigintHandler);
 
     try {
-      this.renderer.renderFrame({
+      renderer.renderFrame({
         session,
         title: descriptor.title,
         lines: [descriptor.intro],
@@ -78,13 +79,15 @@ export class CliInitReactShellRunner {
           session,
           descriptor,
           promptAdapter,
-          options.localizeText,
+          renderer,
+          options.translate,
         );
         const defaultLocale = await this.collectDefaultLocaleSelection(
           session,
           descriptor,
           promptAdapter,
-          options.localizeText,
+          renderer,
+          options.translate,
         );
         const fallbackLocale =
           defaultLocale === DEFAULT_I18N_LOCALE
@@ -99,7 +102,7 @@ export class CliInitReactShellRunner {
           fallbackLocale,
         };
         session.validationErrors = {};
-        this.renderer.renderFrame({
+        renderer.renderFrame({
           session,
           title: descriptor.confirmationTitle,
           lines: [
@@ -113,19 +116,14 @@ export class CliInitReactShellRunner {
         if (confirmed) {
           session.runState = CliInteractiveShellRunState.SUBMITTING;
           session.currentStepTitle = descriptor.submitTitle;
-          this.renderer.renderFrame({
+          renderer.renderFrame({
             session,
             title: descriptor.submitTitle,
-            lines: [
-              options.localizeText(
-                'Submitting descriptor values to config template bridge.',
-                '正在将 descriptor 值提交给配置模板桥接层。',
-              ),
-            ],
+            lines: [options.translate('cli.initShell.submittingDescriptor')],
           });
 
           session.runState = CliInteractiveShellRunState.SUCCESS;
-          this.renderer.renderFrame({
+          renderer.renderFrame({
             session,
             title: descriptor.submitTitle,
             lines: [descriptor.successMessage],
@@ -138,7 +136,7 @@ export class CliInitReactShellRunner {
           };
         }
 
-        this.renderer.renderFrame({
+        renderer.renderFrame({
           session,
           title: descriptor.confirmationTitle,
           lines: [descriptor.confirmationRestartMessage],
@@ -148,10 +146,7 @@ export class CliInitReactShellRunner {
       if (receivedSigint) {
         throw new RuntimeError(
           GovernorErrorCode.PROCESS_RUNTIME_CANCELLED,
-          options.localizeText(
-            'Interactive shell cancelled by SIGINT.',
-            '交互式 shell 已因 SIGINT 取消。',
-          ),
+          options.translate('cli.initShell.cancelledBySigint'),
           {
             commandName: CliCommandName.INIT,
             uiMode: CliInteractiveUiMode.REACT,
@@ -165,21 +160,18 @@ export class CliInitReactShellRunner {
 
       throw new RuntimeError(
         GovernorErrorCode.UNKNOWN,
-        options.localizeText(
-          'Interactive shell failed before bootstrap values were applied.',
-          '交互式 shell 在应用初始化值前失败。',
-        ),
+        options.translate('cli.initShell.failedBeforeApply'),
         {
           commandName: CliCommandName.INIT,
           uiMode: CliInteractiveUiMode.REACT,
         },
       );
     } finally {
-      // `once` removes the fired listener, while this path cleans up normal exit and non-SIGINT failures.
-      process.removeListener('SIGINT', sigintHandler);
+      // `on` is paired with `off` here so both normal exit and non-SIGINT failures release the listener.
+      process.off('SIGINT', sigintHandler);
       // A second close is intentional: SIGINT uses it to break the prompt, finally uses it as teardown.
       promptAdapter.close();
-      this.renderer.renderUnmount(session);
+      renderer.renderUnmount(session);
     }
   }
 
@@ -216,6 +208,7 @@ export class CliInitReactShellRunner {
    * @param session Mutable shell session state.
    * @param descriptor Resolved `init` shell descriptor.
    * @param promptAdapter Prompt adapter bound to stderr/stdin.
+   * @param translate i18n translation function.
    * @returns Valid workspace mode selection.
    */
   private async collectWorkspaceModeSelection(
@@ -229,12 +222,13 @@ export class CliInitReactShellRunner {
       workspaceModeValidationMessage: string;
     },
     promptAdapter: CliInteractiveShellPromptAdapter,
-    localizeText: (english: string, chinese: string) => string,
+    renderer: CliInteractiveShellStderrRenderer,
+    translate: (key: string, interpolation?: Record<string, string>) => string,
   ): Promise<WorkspaceMode> {
     while (true) {
       session.runState = CliInteractiveShellRunState.EDITING;
       session.currentStepTitle = descriptor.workspaceModeField.title;
-      this.renderer.renderFrame({
+      renderer.renderFrame({
         session,
         title: descriptor.workspaceModeField.title,
         lines: [descriptor.workspaceModeField.description],
@@ -253,15 +247,10 @@ export class CliInitReactShellRunner {
       session.validationErrors = {
         workspaceMode: descriptor.workspaceModeValidationMessage,
       };
-      this.renderer.renderFrame({
+      renderer.renderFrame({
         session,
         title: descriptor.workspaceModeField.title,
-        lines: [
-          localizeText(
-            'Please correct the invalid workspace mode value and try again.',
-            '请修正无效的工作区模式后重新输入。',
-          ),
-        ],
+        lines: [translate('cli.initShell.correctWorkspaceMode')],
       });
     }
   }
@@ -271,6 +260,7 @@ export class CliInitReactShellRunner {
    * @param session Mutable shell session state.
    * @param descriptor Resolved `init` shell descriptor.
    * @param promptAdapter Prompt adapter bound to stderr/stdin.
+   * @param translate i18n translation function.
    * @returns Valid default locale selection.
    */
   private async collectDefaultLocaleSelection(
@@ -284,12 +274,13 @@ export class CliInitReactShellRunner {
       defaultLocaleValidationMessage: string;
     },
     promptAdapter: CliInteractiveShellPromptAdapter,
-    localizeText: (english: string, chinese: string) => string,
+    renderer: CliInteractiveShellStderrRenderer,
+    translate: (key: string, interpolation?: Record<string, string>) => string,
   ): Promise<Locale> {
     while (true) {
       session.runState = CliInteractiveShellRunState.EDITING;
       session.currentStepTitle = descriptor.defaultLocaleField.title;
-      this.renderer.renderFrame({
+      renderer.renderFrame({
         session,
         title: descriptor.defaultLocaleField.title,
         lines: [descriptor.defaultLocaleField.description],
@@ -308,15 +299,10 @@ export class CliInitReactShellRunner {
       session.validationErrors = {
         defaultLocale: descriptor.defaultLocaleValidationMessage,
       };
-      this.renderer.renderFrame({
+      renderer.renderFrame({
         session,
         title: descriptor.defaultLocaleField.title,
-        lines: [
-          localizeText(
-            'Please correct the invalid locale value and try again.',
-            '请修正无效的语言值后重新输入。',
-          ),
-        ],
+        lines: [translate('cli.initShell.correctLocale')],
       });
     }
   }

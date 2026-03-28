@@ -1,10 +1,20 @@
 # checklist
 
-- [ ] TK-308 `connect/workspace` descriptor 化与表单映射扩展
+- [ ] TK-308 共享 descriptor registry、字段渲染器与步骤引擎基线
   - 2026-03-28：任务创建，状态初始化为 `planned`。
-- [ ] TK-309 `workflow` 命令树注册与 preview/edit 只读壳层
+  - 2026-03-28：依据技术方案 draft 的 M2/M3 清单，重新收敛为共享壳层基础设施任务。
+  - 2026-03-28：联网核对 npm 最新可用版本，后续实现默认使用 `ink@6.8.0` 与 `@inkjs/ui@2.0.0`。
+  - 2026-03-28：任务切换为 `in_progress`，开始接入 `Ink` 依赖并搭建 `apps/cli/src/react-cli/` 共享壳层骨架。
+  - 2026-03-28：已在 `apps/cli/package.json` 引入 `ink@6.8.0`、`@inkjs/ui@2.0.0` 与 `react@19.2.4`，并在 `package.json` 根级补入 `@types/react@19.2.14`，同时新增 `apps/cli/src/react-cli/{app,bridge,session,state,views}` 骨架与 `tsconfig.json` 的 TSX 支持。
+  - 2026-03-28：`CliInteractiveShellStderrRenderer` 已改为通过 `ReactCliRunner.renderFrame()` 输出共享壳层，`init` React shell 现已走 `Ink` + `@inkjs/ui` 布局层；补充 `react-cli-runner.test.ts` 覆盖共享 frame 与 unmount 输出。
+- [x] TK-309 `connect/workspace` 共享壳层接入与 help/error/footer 统一
   - 2026-03-28：任务创建，状态初始化为 `planned`。
-- [ ] TK-310 locale / i18n 注入与异步校验策略
+  - 2026-03-28：依据技术方案 draft 的 M2 清单，改为收口 `connect/workspace` 共享壳层接入与统一帮助面。
+  - 2026-03-28：已完成 `connect/workspace` 共享 descriptor / shell 接入、help/error/footer 统一与 i18n runtime 改造，状态切换为 `completed`。
+  - 2026-03-28：验证通过 `pnpm -s tsc -p tsconfig.json --noEmit` 与定向 vitest。
+- [ ] TK-310 `init` 默认 React 路由与 classic fallback 体验策略
   - 2026-03-28：任务创建，状态初始化为 `planned`。
-- [ ] TK-311 M2 回归测试与 surface-expansion gate
+  - 2026-03-28：依据技术方案 draft 的 M2 清单，改为收口 `init` 默认 React 路由与 classic fallback 体验策略。
+- [ ] TK-311 `workflow preview` 只读摘要与 M2 回归 gate
   - 2026-03-28：任务创建，状态初始化为 `planned`。
+  - 2026-03-28：依据技术方案 draft 的 M2 清单，改为收口 `workflow preview` 与 M2 regression gate。
