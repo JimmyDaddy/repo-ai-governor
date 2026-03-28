@@ -80,7 +80,11 @@ export class CliInitCommand implements CliCommandExecutor {
       runtimeDebugOptions.stderrTty &&
       context.options.outputMode === ErrorOutputEnvironment.PRETTY;
     let interactiveSelection: CliInteractiveBootstrapSelection | null = null;
-    let resolvedUiMode = runtimeDebugOptions.uiMode;
+    let resolvedUiMode = this.resolveInitUiMode(
+      runtimeDebugOptions,
+      configCreated,
+      interactiveContractAllowed,
+    );
     let uiFallbackBehavior = runtimeDebugOptions.uiFallbackBehavior;
 
     if (configCreated && interactiveContractAllowed) {
@@ -106,6 +110,16 @@ export class CliInitCommand implements CliCommandExecutor {
 
           resolvedUiMode = CliInteractiveUiMode.CLASSIC;
           uiFallbackBehavior = CliInteractiveShellFallbackBehavior.SHELL_INIT_FAILED;
+          stderr.write(
+            `${this.translate(
+              context,
+              'cli.commandMessages.init.reactShellFallbackToClassic',
+              'React shell initialization failed; falling back to classic bootstrap. reason={{reason}}.',
+              {
+                reason: context.formatExecFailureDetail(error),
+              },
+            )}\n`,
+          );
           checks.push({
             id: 'interactive_shell',
             status: CliGovernanceCheckStatus.WARN,
@@ -208,8 +222,11 @@ export class CliInitCommand implements CliCommandExecutor {
     try {
       const workspaceModeAnswer = (
         await interactiveConsole.question(
-          context.translate?.('cli.commandMessages.init.selectWorkspaceMode') ??
+          this.translate(
+            context,
+            'cli.commandMessages.init.selectWorkspaceMode',
             'Select workspace mode [1=tool_managed, 2=repo_local] (default: 1): ',
+          ),
         )
       )
         .trim()
@@ -222,8 +239,11 @@ export class CliInitCommand implements CliCommandExecutor {
 
       const localeAnswer = (
         await interactiveConsole.question(
-          context.translate?.('cli.commandMessages.init.selectDefaultLocale') ??
+          this.translate(
+            context,
+            'cli.commandMessages.init.selectDefaultLocale',
             'Select default locale [1=zh-CN, 2=en-US] (default: 1): ',
+          ),
         )
       )
         .trim()
@@ -237,11 +257,15 @@ export class CliInitCommand implements CliCommandExecutor {
         defaultLocale === DEFAULT_I18N_LOCALE ? DEFAULT_I18N_FALLBACK_LOCALE : DEFAULT_I18N_LOCALE;
 
       stderr.write(
-        context.translate?.('cli.commandMessages.init.interactiveApplied', {
-          workspaceMode,
-          defaultLocale,
-        }) ??
-          `\nInteractive setup applied: workspace=${workspaceMode}, defaultLocale=${defaultLocale}.\n`,
+        this.translate(
+          context,
+          'cli.commandMessages.init.interactiveApplied',
+          '\nInteractive setup applied: workspace={{workspaceMode}}, defaultLocale={{defaultLocale}}.\n',
+          {
+            workspaceMode,
+            defaultLocale,
+          },
+        ),
       );
 
       return {
@@ -268,5 +292,46 @@ export class CliInitCommand implements CliCommandExecutor {
       .replace(/^ {2}mode:\s.+$/mu, `  mode: ${selection.workspaceMode}`)
       .replace(/^ {2}defaultLocale:\s.+$/mu, `  defaultLocale: ${selection.defaultLocale}`)
       .replace(/^ {2}fallbackLocale:\s.+$/mu, `  fallbackLocale: ${selection.fallbackLocale}`);
+  }
+
+  /**
+   * Resolves the effective UI mode for first-time init bootstrapping.
+   * @param runtimeDebugOptions Parsed runtime debug flags.
+   * @param configCreated Whether the workspace config file is newly created.
+   * @param interactiveContractAllowed Whether tty/output constraints allow interactive bootstrapping.
+   * @returns Effective UI mode for init execution.
+   */
+  private resolveInitUiMode(
+    runtimeDebugOptions: ReturnType<CliCommandExecutorContext['resolveRuntimeDebugOptions']>,
+    configCreated: boolean,
+    interactiveContractAllowed: boolean,
+  ): CliInteractiveUiMode {
+    if (
+      configCreated &&
+      interactiveContractAllowed &&
+      runtimeDebugOptions.requestedUiMode === null &&
+      runtimeDebugOptions.uiMode === CliInteractiveUiMode.CLASSIC
+    ) {
+      return CliInteractiveUiMode.REACT;
+    }
+
+    return runtimeDebugOptions.uiMode;
+  }
+
+  /**
+   * Resolves one localized init string through i18n runtime with a stable fallback.
+   * @param context Command execution context.
+   * @param key Translation key.
+   * @param fallback Fallback copy used when runtime translation is unavailable.
+   * @param interpolation Optional translation variables.
+   * @returns Localized string.
+   */
+  private translate(
+    context: Pick<CliCommandExecutorContext, 'translate'>,
+    key: string,
+    fallback: string,
+    interpolation?: Record<string, string>,
+  ): string {
+    return context.translate?.(key, interpolation) ?? fallback;
   }
 }

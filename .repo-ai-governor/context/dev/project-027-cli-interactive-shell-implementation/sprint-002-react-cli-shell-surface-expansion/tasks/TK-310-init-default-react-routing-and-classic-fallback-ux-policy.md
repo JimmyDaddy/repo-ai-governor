@@ -1,6 +1,6 @@
 # TK-310 `init` 默认 React 路由与 classic fallback 体验策略
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-28
 - Owner: AI-Agent
 - Priority: P0
@@ -56,6 +56,8 @@
 
 1. 2026-03-28：任务创建，状态初始化为 `planned`。
 2. 2026-03-28：依据技术方案 draft 的 M2 清单，改为收口 `init` 默认 React 路由与 classic fallback 体验策略。
+3. 2026-03-28：任务切换为 `in_progress`，开始实现默认 React 路由、classic fallback 体验与对应测试。
+4. 2026-03-28：实现完成并通过 `pnpm -s tsc -p tsconfig.json --noEmit`、定向 vitest 与 `pnpm run check` 验证。
 
 ## 10. 产出
 

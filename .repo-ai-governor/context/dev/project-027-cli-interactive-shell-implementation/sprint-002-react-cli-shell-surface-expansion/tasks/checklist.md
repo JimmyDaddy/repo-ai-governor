@@ -12,9 +12,11 @@
   - 2026-03-28：依据技术方案 draft 的 M2 清单，改为收口 `connect/workspace` 共享壳层接入与统一帮助面。
   - 2026-03-28：已完成 `connect/workspace` 共享 descriptor / shell 接入、help/error/footer 统一与 i18n runtime 改造，状态切换为 `completed`。
   - 2026-03-28：验证通过 `pnpm -s tsc -p tsconfig.json --noEmit` 与定向 vitest。
-- [ ] TK-310 `init` 默认 React 路由与 classic fallback 体验策略
+- [x] TK-310 `init` 默认 React 路由与 classic fallback 体验策略
   - 2026-03-28：任务创建，状态初始化为 `planned`。
   - 2026-03-28：依据技术方案 draft 的 M2 清单，改为收口 `init` 默认 React 路由与 classic fallback 体验策略。
+  - 2026-03-28：任务切换为 `in_progress`，开始实现默认 React 路由、classic fallback 体验与对应测试。
+  - 2026-03-28：实现完成，已通过 `pnpm -s tsc -p tsconfig.json --noEmit`、定向 vitest 与 `pnpm run check`。
 - [ ] TK-311 `workflow preview` 只读摘要与 M2 回归 gate
   - 2026-03-28：任务创建，状态初始化为 `planned`。
   - 2026-03-28：依据技术方案 draft 的 M2 清单，改为收口 `workflow preview` 与 M2 regression gate。

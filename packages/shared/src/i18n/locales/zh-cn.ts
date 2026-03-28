@@ -141,6 +141,7 @@ export const ZH_CN_TRANSLATIONS = {
         selectDefaultLocale: '选择默认语言 [1=zh-CN, 2=en-US]（默认 1）: ',
         interactiveApplied:
           '\n已应用向导配置：workspace={{workspaceMode}}，defaultLocale={{defaultLocale}}。\n',
+        reactShellFallbackToClassic: 'React shell 初始化失败，已回退到 classic。原因：{{reason}}。',
       },
       workspace: {
         migrationExecuted: '工作区迁移执行成功；计划文件={{planPath}}。',

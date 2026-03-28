@@ -157,6 +157,8 @@ export const EN_US_TRANSLATIONS = {
         selectDefaultLocale: 'Select default locale [1=zh-CN, 2=en-US] (default: 1): ',
         interactiveApplied:
           '\nInteractive setup applied: workspace={{workspaceMode}}, defaultLocale={{defaultLocale}}.\n',
+        reactShellFallbackToClassic:
+          'React shell initialization failed; falling back to classic bootstrap. reason={{reason}}.',
       },
       workspace: {
         migrationExecuted: 'Workspace migration executed successfully; plan={{planPath}}.',

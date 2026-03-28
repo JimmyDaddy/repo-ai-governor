@@ -2,10 +2,13 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, resolve } from 'node:path';
+import { stderr } from 'node:process';
 
 import {
+  DEFAULT_I18N_RUNTIME_CONFIG,
   ErrorOutputEnvironment,
   GovernorErrorCode,
+  I18nRuntime,
   Locale,
   RuntimeError,
   WorkspaceMode,
@@ -15,21 +18,44 @@ import { CliInteractiveUiMode } from '../../src/constants/cli-interactive-shell.
 import type { CliInitReactShellRunner } from '../../src/runtime/interactive-shell/init-react-shell-runner.js';
 import type { CliCommandExecutorContext } from '../../src/types/index.js';
 
+type RuntimeDebugOptions = ReturnType<CliCommandExecutorContext['resolveRuntimeDebugOptions']>;
+
+interface InitCommandFixtureOptions {
+  runtimeDebugOptions?: Partial<RuntimeDebugOptions>;
+  outputMode?: ErrorOutputEnvironment;
+  isTty?: boolean;
+  locale?: Locale;
+}
+
+interface CliInteractiveBootstrapSelection {
+  workspaceMode: WorkspaceMode;
+  defaultLocale: Locale;
+  fallbackLocale: Locale;
+}
+
+type CliInitCommandCollectorStub = {
+  collectInteractiveBootstrapSelection: (
+    context: CliCommandExecutorContext,
+  ) => Promise<CliInteractiveBootstrapSelection>;
+};
+
 async function createInitCommandFixture(): Promise<{
   tempRoot: string;
   workspaceRoot: string;
   configPath: string;
-  buildContext: () => CliCommandExecutorContext;
+  buildContext: (options?: InitCommandFixtureOptions) => CliCommandExecutorContext;
 }> {
   const tempRoot = await mkdtemp(resolve(tmpdir(), 'init-command-'));
   const workspaceRoot = resolve(tempRoot, '.repo-ai-governor');
   const configPath = resolve(workspaceRoot, 'governor.yaml');
+  const i18nRuntime = new I18nRuntime();
+  await i18nRuntime.initialize(DEFAULT_I18N_RUNTIME_CONFIG, 'en-US');
 
   return {
     tempRoot,
     workspaceRoot,
     configPath,
-    buildContext: () =>
+    buildContext: (options: InitCommandFixtureOptions = {}) =>
       ({
         options: {
           workspace: {
@@ -41,9 +67,9 @@ async function createInitCommandFixture(): Promise<{
           },
           configSource: 'default',
           profileId: null,
-          locale: Locale.EN_US,
-          outputMode: ErrorOutputEnvironment.PRETTY,
-          isTty: true,
+          locale: options.locale ?? Locale.EN_US,
+          outputMode: options.outputMode ?? ErrorOutputEnvironment.PRETTY,
+          isTty: options.isTty ?? true,
           memoryConfig: {
             storeEngine: 'fs_csv',
             storeRoot: 'context/memory',
@@ -116,6 +142,7 @@ async function createInitCommandFixture(): Promise<{
           hitlResumeAction: null,
           hitlDecidedBy: null,
           hitlConstraints: [],
+          ...(options.runtimeDebugOptions ?? {}),
         }),
         resolveExecutionStreamMetadata: async () => ({}),
         resolveAdapterVerification: async () => ({
@@ -126,7 +153,8 @@ async function createInitCommandFixture(): Promise<{
         }),
         canWritePath: async () => true,
         localizeText: (english: string) => english,
-        translate: (key: string) => key,
+        translate: (key: string, interpolation?: Record<string, string>) =>
+          i18nRuntime.t(key, interpolation),
         adapterDiagnosticsRuntime: {} as CliCommandExecutorContext['adapterDiagnosticsRuntime'],
         runNodeScript: async () => ({
           stdout: '',
@@ -137,7 +165,7 @@ async function createInitCommandFixture(): Promise<{
 }
 
 describe('CliInitCommand', () => {
-  it('uses normalized input/stderr tty flags for the react shell path', async () => {
+  it('defaults to react when no explicit ui mode is provided and init contract is interactive', async () => {
     const fixture = await createInitCommandFixture();
     const runnerInvocations = { count: 0 };
     const fakeReactRunner = {
@@ -153,7 +181,15 @@ describe('CliInitCommand', () => {
     const command = new CliInitCommand(fakeReactRunner);
 
     try {
-      const result = await command.execute(fixture.buildContext());
+      const result = await command.execute(
+        fixture.buildContext({
+          runtimeDebugOptions: {
+            requestedUiMode: null,
+            uiMode: CliInteractiveUiMode.CLASSIC,
+            uiFallbackBehavior: null,
+          },
+        }),
+      );
       const configContent = await readFile(fixture.configPath, 'utf8');
       const manifestPayload = JSON.parse(
         await readFile(
@@ -167,11 +203,158 @@ describe('CliInitCommand', () => {
       expect(runnerInvocations.count).toBe(1);
       expect(result.commandResult.details?.ui_mode).toBe(CliInteractiveUiMode.REACT);
       expect(result.commandResult.details?.workspace_mode_source).toBe('interactive_bootstrap');
+      expect(result.commandResult.details?.ui_fallback_behavior).toBeNull();
       expect(configContent).toContain(`mode: ${WorkspaceMode.REPO_LOCAL}`);
       expect(configContent).toContain(`defaultLocale: ${Locale.EN_US}`);
       expect(configContent).toContain(`fallbackLocale: ${Locale.ZH_CN}`);
       expect(manifestPayload.workspaceMode).toBe(WorkspaceMode.REPO_LOCAL);
     } finally {
+      await rm(fixture.tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('keeps explicit classic routing on the classic bootstrap path', async () => {
+    const fixture = await createInitCommandFixture();
+    const runnerInvocations = { count: 0 };
+    const fakeReactRunner = {
+      run: async () => {
+        runnerInvocations.count += 1;
+        return {
+          workspaceMode: WorkspaceMode.REPO_LOCAL,
+          defaultLocale: Locale.EN_US,
+          fallbackLocale: Locale.ZH_CN,
+        };
+      },
+    } as unknown as CliInitReactShellRunner;
+    const command = new CliInitCommand(fakeReactRunner);
+    const commandWithCollector = command as unknown as CliInitCommandCollectorStub;
+    const originalCollector = commandWithCollector.collectInteractiveBootstrapSelection;
+    const collectMock = vi.fn(async () => ({
+      workspaceMode: WorkspaceMode.REPO_LOCAL,
+      defaultLocale: Locale.EN_US,
+      fallbackLocale: Locale.ZH_CN,
+    }));
+    commandWithCollector.collectInteractiveBootstrapSelection = collectMock;
+
+    try {
+      const result = await command.execute(
+        fixture.buildContext({
+          runtimeDebugOptions: {
+            requestedUiMode: CliInteractiveUiMode.CLASSIC,
+            uiMode: CliInteractiveUiMode.CLASSIC,
+            uiFallbackBehavior: null,
+          },
+        }),
+      );
+      const configContent = await readFile(fixture.configPath, 'utf8');
+
+      expect(runnerInvocations.count).toBe(0);
+      expect(collectMock).toHaveBeenCalledTimes(1);
+      expect(result.commandResult.details?.ui_mode).toBe(CliInteractiveUiMode.CLASSIC);
+      expect(result.commandResult.details?.ui_fallback_behavior).toBeNull();
+      expect(configContent).toContain(`mode: ${WorkspaceMode.REPO_LOCAL}`);
+      expect(configContent).toContain(`defaultLocale: ${Locale.EN_US}`);
+      expect(configContent).toContain(`fallbackLocale: ${Locale.ZH_CN}`);
+    } finally {
+      commandWithCollector.collectInteractiveBootstrapSelection = originalCollector;
+      await rm(fixture.tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('keeps ui_mode=none when init is explicitly disabled', async () => {
+    const fixture = await createInitCommandFixture();
+    const runnerInvocations = { count: 0 };
+    const fakeReactRunner = {
+      run: async () => {
+        runnerInvocations.count += 1;
+        return {
+          workspaceMode: WorkspaceMode.REPO_LOCAL,
+          defaultLocale: Locale.EN_US,
+          fallbackLocale: Locale.ZH_CN,
+        };
+      },
+    } as unknown as CliInitReactShellRunner;
+    const command = new CliInitCommand(fakeReactRunner);
+
+    try {
+      const result = await command.execute(
+        fixture.buildContext({
+          runtimeDebugOptions: {
+            requestedUiMode: CliInteractiveUiMode.NONE,
+            uiMode: CliInteractiveUiMode.NONE,
+            uiFallbackBehavior: null,
+          },
+        }),
+      );
+      const configContent = await readFile(fixture.configPath, 'utf8');
+      const manifestPayload = JSON.parse(
+        await readFile(
+          resolve(fixture.workspaceRoot, 'context', 'bootstrap', 'init-manifest.json'),
+          'utf8',
+        ),
+      ) as {
+        workspaceMode?: string;
+      };
+
+      expect(runnerInvocations.count).toBe(0);
+      expect(result.commandResult.details?.ui_mode).toBe(CliInteractiveUiMode.NONE);
+      expect(result.commandResult.details?.workspace_mode_source).toBe('runtime');
+      expect(configContent).toContain(`mode: ${WorkspaceMode.TOOL_MANAGED}`);
+      expect(configContent).toContain(`defaultLocale: ${Locale.ZH_CN}`);
+      expect(configContent).toContain(`fallbackLocale: ${Locale.EN_US}`);
+      expect(manifestPayload.workspaceMode).toBe(WorkspaceMode.TOOL_MANAGED);
+    } finally {
+      await rm(fixture.tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('falls back to classic when react shell initialization fails', async () => {
+    const fixture = await createInitCommandFixture();
+    const runnerInvocations = { count: 0 };
+    const fakeReactRunner = {
+      run: async () => {
+        runnerInvocations.count += 1;
+        throw new RuntimeError(GovernorErrorCode.UNKNOWN, 'boom');
+      },
+    } as unknown as CliInitReactShellRunner;
+    const command = new CliInitCommand(fakeReactRunner);
+    const commandWithCollector = command as unknown as CliInitCommandCollectorStub;
+    const originalCollector = commandWithCollector.collectInteractiveBootstrapSelection;
+    const collectMock = vi.fn(async () => ({
+      workspaceMode: WorkspaceMode.REPO_LOCAL,
+      defaultLocale: Locale.EN_US,
+      fallbackLocale: Locale.ZH_CN,
+    }));
+    commandWithCollector.collectInteractiveBootstrapSelection = collectMock;
+    const stderrWriteSpy = vi.spyOn(stderr, 'write').mockImplementation(() => true);
+
+    try {
+      const result = await command.execute(
+        fixture.buildContext({
+          runtimeDebugOptions: {
+            requestedUiMode: null,
+            uiMode: CliInteractiveUiMode.CLASSIC,
+            uiFallbackBehavior: null,
+          },
+        }),
+      );
+      const configContent = await readFile(fixture.configPath, 'utf8');
+
+      expect(runnerInvocations.count).toBe(1);
+      expect(collectMock).toHaveBeenCalledTimes(1);
+      expect(result.commandResult.details?.ui_mode).toBe(CliInteractiveUiMode.CLASSIC);
+      expect(result.commandResult.details?.ui_fallback_behavior).toBe('shell_init_failed');
+      expect(result.commandResult.checks?.some((check) => check.status === 'warn')).toBe(true);
+      expect(stderrWriteSpy.mock.calls.map(([value]) => String(value)).join('')).toContain(
+        'React shell initialization failed; falling back to classic bootstrap.',
+      );
+      expect(stderrWriteSpy.mock.calls.map(([value]) => String(value)).join('')).toContain('boom');
+      expect(configContent).toContain(`mode: ${WorkspaceMode.REPO_LOCAL}`);
+      expect(configContent).toContain(`defaultLocale: ${Locale.EN_US}`);
+      expect(configContent).toContain(`fallbackLocale: ${Locale.ZH_CN}`);
+    } finally {
+      commandWithCollector.collectInteractiveBootstrapSelection = originalCollector;
+      stderrWriteSpy.mockRestore();
       await rm(fixture.tempRoot, { recursive: true, force: true });
     }
   });
