@@ -1,4 +1,4 @@
-# TK-312 expose agent view in CLI and report
+# TK-324 expose agent view in CLI and report
 
 - Status: planned
 - Date: 2026-03-28
@@ -13,8 +13,8 @@
 
 ## 2. Depends On
 
-1. `TK-309`
-2. `TK-311`
+1. `TK-321`
+2. `TK-323`
 
 ## 3. 预期产物
 

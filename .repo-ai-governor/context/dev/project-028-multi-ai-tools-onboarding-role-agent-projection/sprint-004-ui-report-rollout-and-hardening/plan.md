@@ -10,9 +10,9 @@
 
 ## 2. Task Package
 
-1. `TK-312` 让 CLI/report 输出 agent 视图。
-2. `TK-313` 增加集成测试与 smoke 门禁。
-3. `TK-314` 输出使用文档与 adoption 指南。
+1. `TK-324` 让 CLI/report 输出 agent 视图。
+2. `TK-325` 增加集成测试与 smoke 门禁。
+3. `TK-326` 输出使用文档与 adoption 指南。
 
 ## 3. Exit Criteria
 

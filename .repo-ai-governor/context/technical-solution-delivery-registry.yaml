@@ -228,14 +228,14 @@ deliveries:
     project_ref: project-028-multi-ai-tools-onboarding-role-agent-projection
     sprint_ref: sprint-001-contract-baseline-and-boundary-lock
     task_ids:
-      - TK-304
-      - TK-305
+      - TK-316
+      - TK-317
     project_plan_path: .repo-ai-governor/context/dev/project-028-multi-ai-tools-onboarding-role-agent-projection/plan.md
     sprint_plan_path: .repo-ai-governor/context/dev/project-028-multi-ai-tools-onboarding-role-agent-projection/sprint-001-contract-baseline-and-boundary-lock/plan.md
     task_csv_path: .repo-ai-governor/context/dev/project-028-multi-ai-tools-onboarding-role-agent-projection/sprint-001-contract-baseline-and-boundary-lock/tasks/tasks.csv
-    handoff_artifact_path: .repo-ai-governor/context/dev/project-028-multi-ai-tools-onboarding-role-agent-projection/sprint-001-contract-baseline-and-boundary-lock/tasks/DA-304-project-028-activation-and-contract-baseline-handoff.md
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-028-multi-ai-tools-onboarding-role-agent-projection/sprint-001-contract-baseline-and-boundary-lock/tasks/DA-316-project-028-activation-and-contract-baseline-handoff.md
     rollout_artifacts:
       - .repo-ai-governor/context/dev/project-028-multi-ai-tools-onboarding-role-agent-projection/plan.md
       - .repo-ai-governor/context/dev/project-028-multi-ai-tools-onboarding-role-agent-projection/sprint-001-contract-baseline-and-boundary-lock/plan.md
-      - .repo-ai-governor/context/dev/project-028-multi-ai-tools-onboarding-role-agent-projection/sprint-001-contract-baseline-and-boundary-lock/tasks/DA-304-project-028-activation-and-contract-baseline-handoff.md
+      - .repo-ai-governor/context/dev/project-028-multi-ai-tools-onboarding-role-agent-projection/sprint-001-contract-baseline-and-boundary-lock/tasks/DA-316-project-028-activation-and-contract-baseline-handoff.md
     accepted_at: 2026-03-28

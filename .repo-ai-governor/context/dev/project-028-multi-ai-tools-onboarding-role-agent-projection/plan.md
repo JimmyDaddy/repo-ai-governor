@@ -18,7 +18,7 @@
 
 - Status: planned
 - Sprint Goal: 完成 onboarding / projection / runtime 三层契约、module skeleton、delivery handoff 与 follow-up project skeleton。
-- Task Package: `TK-304`、`TK-305`。
+- Task Package: `TK-316`、`TK-317`。
 - Exit Criteria:
   1. `project-028` skeleton 已建立，`current-context.md` 已登记为 planned follow-up stream。
   2. `runtime.agent-projection` formal docs 已写入 `module-overview / onboarding contract / projection contract / ADR`。
@@ -29,7 +29,7 @@
 
 - Status: planned
 - Sprint Goal: 落实 `connect / doctor / verify` 三段式 onboarding 链路与最小支持矩阵。
-- Task Package: `TK-306`、`TK-307`、`TK-308`。
+- Task Package: `TK-318`、`TK-319`、`TK-320`。
 - Exit Criteria:
   1. `connect` 可生成 `single-tool-all-roles` 与 `multi-tool-default` 两类 preset，并输出可校验配置。
   2. `doctor --adapters` 至少覆盖 1 条可自动修复路径与 1 条仅输出 `nextAction` 的路径。
@@ -39,7 +39,7 @@
 
 - Status: planned
 - Sprint Goal: 落实 `AgentProjectionService`、`AgentSessionRegistry` 与 LangGraph supervisor 的 multi-agent 编排接线。
-- Task Package: `TK-309`、`TK-310`、`TK-311`。
+- Task Package: `TK-321`、`TK-322`、`TK-323`。
 - Exit Criteria:
   1. `AgentProjectionService` 能把 role / route / surface 投影为 JSON 可序列化的 `AgentDescriptor`。
   2. `AgentSessionRegistry` 仅作为共享 session 的投影层，不引入新的 canonical session source。
@@ -49,7 +49,7 @@
 
 - Status: planned
 - Sprint Goal: 把 agent 视图接入 CLI / report / diagnostics，并完成集成测试、smoke 门禁与 adoption 指南。
-- Task Package: `TK-312`、`TK-313`、`TK-314`。
+- Task Package: `TK-324`、`TK-325`、`TK-326`。
 - Exit Criteria:
   1. CLI/report 输出具备 agent 级视图和回放信息。
   2. onboarding / projection / LangGraph 编排与回退路径均有集成测试和 smoke 覆盖。
@@ -59,17 +59,17 @@
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 |---|---|---|---|---|---|
-| TK-304 | sprint-001 | 定义 onboarding / projection / runtime 三层契约并冻结 governor.yaml schema v2 | docs/module-baseline | `.repo-ai-governor/draft/multi-ai-tools-onboarding-with-role-agent-projection-technical-solution.md` | planned |
-| TK-305 | sprint-001 | 冻结 agent descriptor 最小字段集 | docs/contract-baseline | TK-304 | planned |
-| TK-306 | sprint-002 | 实现 connect 模板与路由基线生成 | runtime/onboarding | TK-304,TK-305 | planned |
-| TK-307 | sprint-002 | 实现 doctor --adapters 探测与 safe_local 修复 | runtime/onboarding | TK-306 | planned |
-| TK-308 | sprint-002 | 实现 verify --adapters 矩阵报告 | runtime/onboarding | TK-306,TK-307 | planned |
-| TK-309 | sprint-003 | 实现 AgentProjectionService | runtime/projection | TK-304,TK-305 | planned |
-| TK-310 | sprint-003 | 实现 AgentSessionRegistry | runtime/projection | TK-309 | planned |
-| TK-311 | sprint-003 | 接入 LangGraph supervisor | runtime/orchestration | TK-309,TK-310 | planned |
-| TK-312 | sprint-004 | 让 CLI/report 输出 agent 视图 | ui/report | TK-309,TK-311 | planned |
-| TK-313 | sprint-004 | 增加集成测试与 smoke 门禁 | quality/gates | TK-306,TK-309,TK-311 | planned |
-| TK-314 | sprint-004 | 输出使用文档与 adoption 指南 | docs/adoption | TK-312,TK-313 | planned |
+| TK-316 | sprint-001 | 定义 onboarding / projection / runtime 三层契约并冻结 governor.yaml schema v2 | docs/module-baseline | `.repo-ai-governor/draft/multi-ai-tools-onboarding-with-role-agent-projection-technical-solution.md` | planned |
+| TK-317 | sprint-001 | 冻结 agent descriptor 最小字段集 | docs/contract-baseline | TK-316 | planned |
+| TK-318 | sprint-002 | 实现 connect 模板与路由基线生成 | runtime/onboarding | TK-316,TK-317 | planned |
+| TK-319 | sprint-002 | 实现 doctor --adapters 探测与 safe_local 修复 | runtime/onboarding | TK-318 | planned |
+| TK-320 | sprint-002 | 实现 verify --adapters 矩阵报告 | runtime/onboarding | TK-318,TK-319 | planned |
+| TK-321 | sprint-003 | 实现 AgentProjectionService | runtime/projection | TK-316,TK-317 | planned |
+| TK-322 | sprint-003 | 实现 AgentSessionRegistry | runtime/projection | TK-321 | planned |
+| TK-323 | sprint-003 | 接入 LangGraph supervisor | runtime/orchestration | TK-321,TK-322 | planned |
+| TK-324 | sprint-004 | 让 CLI/report 输出 agent 视图 | ui/report | TK-321,TK-323 | planned |
+| TK-325 | sprint-004 | 增加集成测试与 smoke 门禁 | quality/gates | TK-318,TK-321,TK-323 | planned |
+| TK-326 | sprint-004 | 输出使用文档与 adoption 指南 | docs/adoption | TK-324,TK-325 | planned |
 
 ## 4. 依赖产物策略
 

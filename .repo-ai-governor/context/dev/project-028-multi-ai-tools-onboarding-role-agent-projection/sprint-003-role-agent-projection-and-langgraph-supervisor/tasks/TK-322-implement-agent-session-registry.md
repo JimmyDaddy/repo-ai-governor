@@ -1,4 +1,4 @@
-# TK-310 implement AgentSessionRegistry
+# TK-322 implement AgentSessionRegistry
 
 - Status: planned
 - Date: 2026-03-28
@@ -13,7 +13,7 @@
 
 ## 2. Depends On
 
-1. `TK-309`
+1. `TK-321`
 
 ## 3. 预期产物
 

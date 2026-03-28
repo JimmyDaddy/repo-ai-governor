@@ -1,4 +1,4 @@
-# TK-307 implement doctor adapters probe and safe_local repair
+# TK-319 implement doctor adapters probe and safe_local repair
 
 - Status: planned
 - Date: 2026-03-28
@@ -13,7 +13,7 @@
 
 ## 2. Depends On
 
-1. `TK-306`
+1. `TK-318`
 
 ## 3. 预期产物
 

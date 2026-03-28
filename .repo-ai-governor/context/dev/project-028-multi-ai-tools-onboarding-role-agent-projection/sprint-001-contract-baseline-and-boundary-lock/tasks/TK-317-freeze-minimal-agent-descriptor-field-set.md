@@ -1,4 +1,4 @@
-# TK-305 freeze minimal agent descriptor field set
+# TK-317 freeze minimal agent descriptor field set
 
 - Status: planned
 - Date: 2026-03-28
@@ -13,12 +13,12 @@
 
 ## 2. Depends On
 
-1. `TK-304`
+1. `TK-316`
 
 ## 3. 预期产物
 
 1. `runtime.agent-projection/contracts/agent-projection-contract.md`
-2. `DA-304`
+2. `DA-316`
 
 ## 4. 实施计划
 

@@ -1,4 +1,4 @@
-# TK-314 publish adoption guide
+# TK-326 publish adoption guide
 
 - Status: planned
 - Date: 2026-03-28
@@ -13,8 +13,8 @@
 
 ## 2. Depends On
 
-1. `TK-312`
-2. `TK-313`
+1. `TK-324`
+2. `TK-325`
 
 ## 3. 预期产物
 

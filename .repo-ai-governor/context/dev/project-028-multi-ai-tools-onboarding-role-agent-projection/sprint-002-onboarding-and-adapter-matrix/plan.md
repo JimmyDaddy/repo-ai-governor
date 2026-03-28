@@ -10,9 +10,9 @@
 
 ## 2. Task Package
 
-1. `TK-306` 实现 connect 模板与路由基线生成。
-2. `TK-307` 实现 doctor --adapters 探测与 safe_local 修复。
-3. `TK-308` 实现 verify --adapters 矩阵报告。
+1. `TK-318` 实现 connect 模板与路由基线生成。
+2. `TK-319` 实现 doctor --adapters 探测与 safe_local 修复。
+3. `TK-320` 实现 verify --adapters 矩阵报告。
 
 ## 3. Exit Criteria
 

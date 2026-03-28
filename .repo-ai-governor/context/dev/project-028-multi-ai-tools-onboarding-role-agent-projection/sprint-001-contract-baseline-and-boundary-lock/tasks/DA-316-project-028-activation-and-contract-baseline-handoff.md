@@ -1,9 +1,9 @@
-# DA-304 project-028 activation and contract baseline handoff
+# DA-316 project-028 activation and contract baseline handoff
 
 - Status: planned
 - Date: 2026-03-28
 - Owner: AI-Agent
-- Task: `TK-304`
+- Task: `TK-316`
 - Project: `project-028-multi-ai-tools-onboarding-role-agent-projection`
 - Sprint: `sprint-001-contract-baseline-and-boundary-lock`
 

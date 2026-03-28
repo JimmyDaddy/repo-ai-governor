@@ -1,4 +1,4 @@
-# TK-313 add integration tests and smoke gate
+# TK-325 add integration tests and smoke gate
 
 - Status: planned
 - Date: 2026-03-28
@@ -13,9 +13,9 @@
 
 ## 2. Depends On
 
-1. `TK-306`
-2. `TK-309`
-3. `TK-311`
+1. `TK-318`
+2. `TK-321`
+3. `TK-323`
 
 ## 3. 预期产物
 

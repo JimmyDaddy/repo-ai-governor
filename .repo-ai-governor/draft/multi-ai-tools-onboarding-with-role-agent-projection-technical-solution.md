@@ -512,17 +512,17 @@ flowchart LR
 
 | Task ID | 所属 Sprint | 依赖 | 任务标题 | 结果定义 |
 |---|---|---|---|---|
-| `TK-304` | `sprint-001-contract-baseline-and-boundary-lock` | n/a | 定义 onboarding / projection / runtime 三层契约并冻结 `governor.yaml` schema v2 | 明确 CLI、投影层、执行层的输入输出与边界，锁定 `adapters / routing` 配置结构 |
-| `TK-305` | `sprint-001-contract-baseline-and-boundary-lock` | `TK-304` | 冻结 agent descriptor 最小字段集 | 输出 `agentId / agentRole / roleProfileId / surface / status` 等核心字段 |
-| `TK-306` | `sprint-002-onboarding-and-adapter-matrix` | `TK-304`, `TK-305` | 实现 `connect` 模板与路由基线生成 | 能生成 `roles[] / adapters.tools / routing.roleBindings` |
-| `TK-307` | `sprint-002-onboarding-and-adapter-matrix` | `TK-306` | 实现 `doctor --adapters` 探测与 safe fix | 能输出工具可用性、登录态、降级建议与安全修复 |
-| `TK-308` | `sprint-002-onboarding-and-adapter-matrix` | `TK-306`, `TK-307` | 实现 `verify --adapters` 矩阵报告 | 能产出可回链 execution_id 的统一验证报告 |
-| `TK-309` | `sprint-003-role-agent-projection-and-langgraph-supervisor` | `TK-304`, `TK-305` | 实现 `AgentProjectionService` | 将 role/route/surface 投影成 agent descriptor |
-| `TK-310` | `sprint-003-role-agent-projection-and-langgraph-supervisor` | `TK-309` | 实现 `AgentSessionRegistry` | 将 agent descriptor 与 execution/session 绑定 |
-| `TK-311` | `sprint-003-role-agent-projection-and-langgraph-supervisor` | `TK-309`, `TK-310` | 接入 LangGraph supervisor | 用 graph-first runtime 协调多个 agent 节点 |
-| `TK-312` | `sprint-004-ui-report-rollout-and-hardening` | `TK-309`, `TK-311` | 让 CLI/report 输出 agent 视图 | 在 `run / review / verify` 输出 agent 级状态与回放信息 |
-| `TK-313` | `sprint-004-ui-report-rollout-and-hardening` | `TK-306`, `TK-309`, `TK-311` | 增加集成测试与 smoke 门禁 | 覆盖 onboarding、projection、LangGraph 编排和回退路径 |
-| `TK-314` | `sprint-004-ui-report-rollout-and-hardening` | `TK-312`, `TK-313` | 输出使用文档与 adoption 指南 | 给外部 adopter 一套可直接执行的接入说明 |
+| `TK-316` | `sprint-001-contract-baseline-and-boundary-lock` | n/a | 定义 onboarding / projection / runtime 三层契约并冻结 `governor.yaml` schema v2 | 明确 CLI、投影层、执行层的输入输出与边界，锁定 `adapters / routing` 配置结构 |
+| `TK-317` | `sprint-001-contract-baseline-and-boundary-lock` | `TK-316` | 冻结 agent descriptor 最小字段集 | 输出 `agentId / agentRole / roleProfileId / surface / status` 等核心字段 |
+| `TK-318` | `sprint-002-onboarding-and-adapter-matrix` | `TK-316`, `TK-317` | 实现 `connect` 模板与路由基线生成 | 能生成 `roles[] / adapters.tools / routing.roleBindings` |
+| `TK-319` | `sprint-002-onboarding-and-adapter-matrix` | `TK-318` | 实现 `doctor --adapters` 探测与 safe fix | 能输出工具可用性、登录态、降级建议与安全修复 |
+| `TK-320` | `sprint-002-onboarding-and-adapter-matrix` | `TK-318`, `TK-319` | 实现 `verify --adapters` 矩阵报告 | 能产出可回链 execution_id 的统一验证报告 |
+| `TK-321` | `sprint-003-role-agent-projection-and-langgraph-supervisor` | `TK-316`, `TK-317` | 实现 `AgentProjectionService` | 将 role/route/surface 投影成 agent descriptor |
+| `TK-322` | `sprint-003-role-agent-projection-and-langgraph-supervisor` | `TK-321` | 实现 `AgentSessionRegistry` | 将 agent descriptor 与 execution/session 绑定 |
+| `TK-323` | `sprint-003-role-agent-projection-and-langgraph-supervisor` | `TK-321`, `TK-322` | 接入 LangGraph supervisor | 用 graph-first runtime 协调多个 agent 节点 |
+| `TK-324` | `sprint-004-ui-report-rollout-and-hardening` | `TK-321`, `TK-323` | 让 CLI/report 输出 agent 视图 | 在 `run / review / verify` 输出 agent 级状态与回放信息 |
+| `TK-325` | `sprint-004-ui-report-rollout-and-hardening` | `TK-318`, `TK-321`, `TK-323` | 增加集成测试与 smoke 门禁 | 覆盖 onboarding、projection、LangGraph 编排和回退路径 |
+| `TK-326` | `sprint-004-ui-report-rollout-and-hardening` | `TK-324`, `TK-325` | 输出使用文档与 adoption 指南 | 给外部 adopter 一套可直接执行的接入说明 |
 
 ### 14.4 执行建议
 
@@ -544,22 +544,22 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-  TK304[TK-304 三层契约] --> TK305[TK-305 descriptor 最小字段集]
-  TK304 --> TK306[TK-306 connect 模板]
-  TK305 --> TK306
-  TK306 --> TK307[TK-307 doctor safe fix]
-  TK306 --> TK308[TK-308 verify 矩阵报告]
-  TK307 --> TK308
-  TK304 --> TK309[TK-309 AgentProjectionService]
-  TK305 --> TK309
-  TK309 --> TK310[TK-310 AgentSessionRegistry]
-  TK309 --> TK311[TK-311 LangGraph supervisor]
-  TK310 --> TK311
-  TK309 --> TK312[TK-312 CLI/report agent 视图]
-  TK311 --> TK312
-  TK306 --> TK313[TK-313 集成测试与 smoke]
-  TK309 --> TK313
-  TK311 --> TK313
-  TK312 --> TK314[TK-314 adoption 指南]
-  TK313 --> TK314
+  TK316[TK-316 三层契约] --> TK317[TK-317 descriptor 最小字段集]
+  TK316 --> TK318[TK-318 connect 模板]
+  TK317 --> TK318
+  TK318 --> TK319[TK-319 doctor safe fix]
+  TK318 --> TK320[TK-320 verify 矩阵报告]
+  TK319 --> TK320
+  TK316 --> TK321[TK-321 AgentProjectionService]
+  TK317 --> TK321
+  TK321 --> TK322[TK-322 AgentSessionRegistry]
+  TK321 --> TK323[TK-323 LangGraph supervisor]
+  TK322 --> TK323
+  TK321 --> TK324[TK-324 CLI/report agent 视图]
+  TK323 --> TK324
+  TK318 --> TK325[TK-325 集成测试与 smoke]
+  TK321 --> TK325
+  TK323 --> TK325
+  TK324 --> TK326[TK-326 adoption 指南]
+  TK325 --> TK326
 ```

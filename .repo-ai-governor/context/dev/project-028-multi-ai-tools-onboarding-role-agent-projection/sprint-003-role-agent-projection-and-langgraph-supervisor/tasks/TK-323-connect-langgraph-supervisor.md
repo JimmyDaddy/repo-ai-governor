@@ -1,4 +1,4 @@
-# TK-311 connect LangGraph supervisor
+# TK-323 connect LangGraph supervisor
 
 - Status: planned
 - Date: 2026-03-28
@@ -13,8 +13,8 @@
 
 ## 2. Depends On
 
-1. `TK-309`
-2. `TK-310`
+1. `TK-321`
+2. `TK-322`
 
 ## 3. 预期产物
 

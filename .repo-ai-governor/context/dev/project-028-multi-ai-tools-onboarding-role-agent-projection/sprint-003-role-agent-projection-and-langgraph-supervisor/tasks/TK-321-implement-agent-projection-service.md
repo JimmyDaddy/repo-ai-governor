@@ -1,4 +1,4 @@
-# TK-309 implement AgentProjectionService
+# TK-321 implement AgentProjectionService
 
 - Status: planned
 - Date: 2026-03-28
@@ -13,8 +13,8 @@
 
 ## 2. Depends On
 
-1. `TK-304`
-2. `TK-305`
+1. `TK-316`
+2. `TK-317`
 
 ## 3. 预期产物
 

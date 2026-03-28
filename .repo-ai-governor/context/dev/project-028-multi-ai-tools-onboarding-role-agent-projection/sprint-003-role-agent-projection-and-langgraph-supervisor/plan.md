@@ -10,9 +10,9 @@
 
 ## 2. Task Package
 
-1. `TK-309` 实现 AgentProjectionService。
-2. `TK-310` 实现 AgentSessionRegistry。
-3. `TK-311` 接入 LangGraph supervisor。
+1. `TK-321` 实现 AgentProjectionService。
+2. `TK-322` 实现 AgentSessionRegistry。
+3. `TK-323` 接入 LangGraph supervisor。
 
 ## 3. Exit Criteria
 

@@ -1,4 +1,4 @@
-# TK-306 implement connect template and routing baseline
+# TK-318 implement connect template and routing baseline
 
 - Status: planned
 - Date: 2026-03-28
@@ -13,8 +13,8 @@
 
 ## 2. Depends On
 
-1. `TK-304`
-2. `TK-305`
+1. `TK-316`
+2. `TK-317`
 
 ## 3. 预期产物
 

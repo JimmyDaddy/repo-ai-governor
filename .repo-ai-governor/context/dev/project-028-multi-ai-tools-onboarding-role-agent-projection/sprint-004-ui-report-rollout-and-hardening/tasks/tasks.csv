@@ -1,5 +1,5 @@
 execution_id,task_id,title,owner,priority,due_date,status,project,sprint,plan,result,verify,review_delta,recorded_at
-exec-20260328-312,TK-312,expose agent view in CLI and report,AI-Agent,P0,2026-04-01,planned,project-028-multi-ai-tools-onboarding-role-agent-projection,sprint-004-ui-report-rollout-and-hardening,让 CLI/report 输出 agent 级视图与回放信息,待执行,待验证,待执行,2026-03-28
-exec-20260328-313,TK-313,add integration tests and smoke gate,AI-Agent,P0,2026-04-01,planned,project-028-multi-ai-tools-onboarding-role-agent-projection,sprint-004-ui-report-rollout-and-hardening,为 onboarding/projection/supervisor 编排补充集成测试与 smoke 门禁,待执行,待验证,待执行,2026-03-28
-exec-20260328-314,TK-314,publish adoption guide,AI-Agent,P1,2026-04-01,planned,project-028-multi-ai-tools-onboarding-role-agent-projection,sprint-004-ui-report-rollout-and-hardening,输出外部 adopter 最小接入路径与 adoption 指南,待执行,待验证,待执行,2026-03-28
+exec-20260328-312,TK-324,expose agent view in CLI and report,AI-Agent,P0,2026-04-01,planned,project-028-multi-ai-tools-onboarding-role-agent-projection,sprint-004-ui-report-rollout-and-hardening,让 CLI/report 输出 agent 级视图与回放信息,待执行,待验证,待执行,2026-03-28
+exec-20260328-313,TK-325,add integration tests and smoke gate,AI-Agent,P0,2026-04-01,planned,project-028-multi-ai-tools-onboarding-role-agent-projection,sprint-004-ui-report-rollout-and-hardening,为 onboarding/projection/supervisor 编排补充集成测试与 smoke 门禁,待执行,待验证,待执行,2026-03-28
+exec-20260328-314,TK-326,publish adoption guide,AI-Agent,P1,2026-04-01,planned,project-028-multi-ai-tools-onboarding-role-agent-projection,sprint-004-ui-report-rollout-and-hardening,输出外部 adopter 最小接入路径与 adoption 指南,待执行,待验证,待执行,2026-03-28
 

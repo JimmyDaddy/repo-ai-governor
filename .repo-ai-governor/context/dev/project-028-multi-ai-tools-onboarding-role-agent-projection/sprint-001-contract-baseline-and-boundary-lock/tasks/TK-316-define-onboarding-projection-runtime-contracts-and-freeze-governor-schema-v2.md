@@ -1,4 +1,4 @@
-# TK-304 define onboarding / projection / runtime contracts and freeze governor schema v2
+# TK-316 define onboarding / projection / runtime contracts and freeze governor schema v2
 
 - Status: planned
 - Date: 2026-03-28
@@ -22,7 +22,7 @@
 2. `runtime.agent-projection/contracts/agent-onboarding-contract.md`
 3. `runtime.agent-projection/contracts/agent-projection-contract.md`
 4. `runtime.agent-projection/adrs/multi-tool-onboarding-and-role-agent-projection-cutover.md`
-5. `DA-304`
+5. `DA-316`
 
 ## 4. 实施计划
 

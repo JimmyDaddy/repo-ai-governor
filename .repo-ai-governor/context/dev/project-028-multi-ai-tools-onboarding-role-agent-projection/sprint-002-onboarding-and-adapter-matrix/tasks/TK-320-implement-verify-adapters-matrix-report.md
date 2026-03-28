@@ -1,4 +1,4 @@
-# TK-308 implement verify adapters matrix report
+# TK-320 implement verify adapters matrix report
 
 - Status: planned
 - Date: 2026-03-28
@@ -13,8 +13,8 @@
 
 ## 2. Depends On
 
-1. `TK-306`
-2. `TK-307`
+1. `TK-318`
+2. `TK-319`
 
 ## 3. 预期产物
 

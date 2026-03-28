@@ -10,8 +10,8 @@
 
 ## 2. Task Package
 
-1. `TK-304` 定义 onboarding / projection / runtime 三层契约并冻结 `governor.yaml` schema v2。
-2. `TK-305` 冻结 agent descriptor 最小字段集。
+1. `TK-316` 定义 onboarding / projection / runtime 三层契约并冻结 `governor.yaml` schema v2。
+2. `TK-317` 冻结 agent descriptor 最小字段集。
 
 ## 3. Exit Criteria
 
