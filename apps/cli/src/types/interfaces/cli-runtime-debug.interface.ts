@@ -2,6 +2,7 @@
  * Defines normalized runtime flags consumed by command execution paths.
  */
 export interface CliRuntimeDebugOptions {
+  interactive?: boolean;
   dryRun: boolean;
   trace: boolean;
   replayPath: string | null;

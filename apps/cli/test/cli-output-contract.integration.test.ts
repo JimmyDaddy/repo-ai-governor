@@ -195,6 +195,14 @@ async function createWorkspaceMigrationFixtureRepo(): Promise<string> {
   return temporaryRepositoryRoot;
 }
 
+/**
+ * Creates one empty temporary repository root for first-time `init` bootstrap tests.
+ * @returns Temporary repository absolute path.
+ */
+async function createFirstTimeInitFixtureRepo(): Promise<string> {
+  return mkdtemp(resolve(tmpdir(), 'cli-output-first-init-'));
+}
+
 describe('CLI output contract integration', () => {
   it('renders stable JSON schema in --output json mode', async () => {
     const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false);
@@ -286,6 +294,63 @@ describe('CLI output contract integration', () => {
     expect(stderrBuffer.join('')).toBe('');
     expect(stdout).toContain('repo-ai-governor: command succeeded');
     expect(stdout).not.toContain('\u001b[');
+  });
+
+  it('skips interactive bootstrap with --no-interactive in TTY pretty first-time init', async () => {
+    const temporaryRepositoryRoot = await createFirstTimeInitFixtureRepo();
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(true, temporaryRepositoryRoot);
+
+    try {
+      const exitCode = await runCli(
+        [
+          'node',
+          'repo-ai-governor',
+          '--locale',
+          'en-US',
+          '--output',
+          'pretty',
+          '--workspace-mode',
+          'repo_local',
+          '--no-interactive',
+          'init',
+        ],
+        io,
+      );
+
+      expect(exitCode).toBe(0);
+      expect(stderrBuffer.join('')).toBe('');
+      expect(stdoutBuffer.join('')).toContain('repo-ai-governor: command succeeded');
+    } finally {
+      await rm(temporaryRepositoryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('does not trigger interactive bootstrap when pretty output is downgraded in non-TTY first-time init', async () => {
+    const temporaryRepositoryRoot = await createFirstTimeInitFixtureRepo();
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, temporaryRepositoryRoot);
+
+    try {
+      const exitCode = await runCli(
+        [
+          'node',
+          'repo-ai-governor',
+          '--locale',
+          'en-US',
+          '--output',
+          'pretty',
+          '--workspace-mode',
+          'repo_local',
+          'init',
+        ],
+        io,
+      );
+
+      expect(exitCode).toBe(0);
+      expect(stderrBuffer.join('')).toBe('');
+      expect(stdoutBuffer.join('')).toContain('outputMode=plain');
+    } finally {
+      await rm(temporaryRepositoryRoot, { recursive: true, force: true });
+    }
   });
 
   it('renders workspace migration dry-run output in stable JSON shape', async () => {

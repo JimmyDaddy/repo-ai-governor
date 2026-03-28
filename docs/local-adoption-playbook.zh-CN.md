@@ -43,6 +43,14 @@ pnpm exec repo-ai-governor doctor --output json
 pnpm exec repo-ai-governor check --output json
 ```
 
+如果是首次接入并希望通过问答引导完成配置，可使用：
+
+```bash
+pnpm exec repo-ai-governor init --output pretty
+```
+
+在本地 TTY + `pretty` 输出下，交互问答默认开启；CI/脚本化 bootstrap 可加 `--no-interactive` 关闭交互。
+
 如果你使用 `dist-binary` 演练，请将 `pnpm exec repo-ai-governor` 替换为：
 
 ```bash

@@ -23,6 +23,8 @@ export const EN_US_TRANSLATIONS = {
         'Explicit restricted-network reason recorded in diagnostics and audit artifacts.',
       noLocalFallback:
         'Disable local fallback during restricted-network rehearsal to validate blocking semantics.',
+      noInteractive:
+        'Disable interactive setup prompts for first-time init and force non-interactive config bootstrap.',
       workspaceAction: 'Workspace command action: dry-run|execute|rollback.',
       workspaceMode:
         'Workspace target mode for migration planning/execution: repo_local|tool_managed.',

@@ -88,6 +88,14 @@ pnpm exec repo-ai-governor doctor --output json
 pnpm exec repo-ai-governor check --output json
 ```
 
+For first-time setup with prompts, you can use:
+
+```bash
+pnpm exec repo-ai-governor init --output pretty
+```
+
+Interactive prompts are enabled by default in local TTY + `pretty` output. Use `--no-interactive` for CI/scripts.
+
 If you are using `dist` binary rehearsal, replace `pnpm exec repo-ai-governor` with:
 
 ```bash

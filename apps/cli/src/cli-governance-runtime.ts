@@ -46,6 +46,8 @@ import { ReportBuilder } from '@repo-ai-governor/reporting';
 import {
   AdapterAvailability,
   AdapterSurface,
+  DEFAULT_I18N_FALLBACK_LOCALE,
+  DEFAULT_I18N_LOCALE,
   ErrorOutputEnvironment,
   ExecutionProgressStage,
   GovernorErrorCode,
@@ -1208,11 +1210,11 @@ export class CliGovernanceRuntime {
       `  migrationPolicy: ${WorkspaceMigrationPolicy.COPY_VERIFY_SWITCH_ROLLBACK}`,
       'i18n:',
       '  runtimeEngine: i18next',
-      '  defaultLocale: zh-CN',
-      '  fallbackLocale: en-US',
+      `  defaultLocale: ${DEFAULT_I18N_LOCALE}`,
+      `  fallbackLocale: ${DEFAULT_I18N_FALLBACK_LOCALE}`,
       '  supportedLocales:',
-      '    - zh-CN',
-      '    - en-US',
+      `    - ${DEFAULT_I18N_LOCALE}`,
+      `    - ${DEFAULT_I18N_FALLBACK_LOCALE}`,
       'memory:',
       `  storeEngine: ${this.options.memoryConfig.storeEngine}`,
       `  storeRoot: ${this.options.memoryConfig.storeRoot}`,
@@ -1344,6 +1346,7 @@ export class CliGovernanceRuntime {
    */
   private resolveRuntimeDebugOptions(): CliNormalizedRuntimeDebugOptions {
     return {
+      interactive: this.options.runtimeDebugOptions?.interactive === true,
       dryRun: this.options.runtimeDebugOptions?.dryRun === true,
       trace: this.options.runtimeDebugOptions?.trace === true,
       replayPath:

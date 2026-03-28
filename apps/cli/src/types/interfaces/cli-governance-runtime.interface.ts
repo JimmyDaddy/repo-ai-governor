@@ -81,6 +81,7 @@ export interface CliExecutionStreamMetadata {
  * Defines normalized runtime debug flags after deterministic defaulting.
  */
 export interface CliNormalizedRuntimeDebugOptions {
+  interactive: boolean;
   dryRun: boolean;
   trace: boolean;
   replayPath: string | null;

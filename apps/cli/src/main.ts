@@ -365,6 +365,7 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
     program.option('--fix', runtimeI18n.t('cli.options.fix'));
     program.option('--record-ledger', runtimeI18n.t('cli.options.recordLedger'));
     program.option('--task-id <taskId>', runtimeI18n.t('cli.options.taskId'));
+    program.option('--no-interactive', runtimeI18n.t('cli.options.noInteractive'));
     program.option('--dry-run', runtimeI18n.t('cli.options.dryRun'));
     program.option('--trace', runtimeI18n.t('cli.options.trace'));
     program.option('--replay <path>', runtimeI18n.t('cli.options.replay'));
@@ -960,6 +961,7 @@ function resolveRuntimeDebugOptions(
   }
 
   return {
+    interactive: !hasFlag(args, '--no-interactive'),
     dryRun: hasFlag(args, '--dry-run'),
     trace: hasFlag(args, '--trace'),
     replayPath,

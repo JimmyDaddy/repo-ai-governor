@@ -21,6 +21,7 @@ export {
   DefaultRoleProfileId,
   GovernanceReviewerRole,
   I18N_RUNTIME_ENGINE,
+  Locale,
   LocalModelProvider,
   MemoryStoreEngine,
   ROLE_PROFILE_ID_PATTERN,

@@ -20,6 +20,7 @@ export const ZH_CN_TRANSLATIONS = {
       restrictedNetwork: '模拟受限网络模式，在 run 演练中阻断外部 adapter surface。',
       restrictedReason: '为受限网络演练显式记录原因，并写入诊断与审计产物。',
       noLocalFallback: '在受限网络演练中禁用本地 fallback，用于验证阻断语义。',
+      noInteractive: '禁用首次 init 的交互式问答配置，强制使用非交互初始化。',
       workspaceAction: '指定 workspace 命令动作：dry-run|execute|rollback。',
       workspaceMode: '指定 workspace 迁移目标模式：repo_local|tool_managed。',
       workspaceRoot: '指定 workspace 迁移命令使用的目标根路径覆盖。',
