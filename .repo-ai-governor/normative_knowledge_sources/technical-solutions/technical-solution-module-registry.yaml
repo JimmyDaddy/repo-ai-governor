@@ -1,5 +1,5 @@
 schema_version: 2
-generated_at: 2026-03-27
+generated_at: 2026-03-28
 status: active
 owner: architecture
 
@@ -311,6 +311,47 @@ modules:
         requires_sync: []
         recommends_sync:
           - summary_doc
+      registry_change:
+        classification: module_registry_change
+        requires_sync: []
+        recommends_sync:
+          - overall_technical_solution
+          - architecture_and_repo_layering
+
+  - module_id: runtime.cli-interactive-shell
+    status: active
+    owner: runtime
+    layer: runtime-core
+    summary_doc: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/module-overview.md
+    detail_docs:
+      - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/contracts/cli-interactive-shell-contract.md
+        kind: contract
+    north_star_refs:
+      - overall.graph-first-runtime
+      - architecture.runtime-boundary
+      - architecture.governance-boundary
+    exports_contracts:
+      - contract.cli.interactive-shell.v1
+    imports_contracts: []
+    depends_on_modules: []
+    load_triggers:
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+      - cli_ui_change
+      - command_surface_change
+    change_impact_policy:
+      summary_doc_change:
+        classification: local_detail_change
+        requires_sync: []
+        recommends_sync: []
+      contract_doc_change:
+        classification: exported_contract_change
+        requires_sync:
+          - summary_doc
+        recommends_sync:
+          - module_registry
+          - overall_technical_solution
+          - architecture_and_repo_layering
       registry_change:
         classification: module_registry_change
         requires_sync: []

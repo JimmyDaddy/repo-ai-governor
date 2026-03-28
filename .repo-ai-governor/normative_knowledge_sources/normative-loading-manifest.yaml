@@ -1,5 +1,5 @@
 schema_version: 1
-generated_at: 2026-03-27
+generated_at: 2026-03-28
 status: active
 owner: repo-ai-governor
 
@@ -529,3 +529,29 @@ documents:
       - audit_backtracking
     owner: governance
     last_reviewed_at: 2026-03-19
+
+  - doc_id: runtime_cli_interactive_shell_module_overview
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/module-overview.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+      - cli_ui_change
+      - command_surface_change
+    owner: runtime
+    last_reviewed_at: 2026-03-28
+
+  - doc_id: runtime_cli_interactive_shell_contract
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/contracts/cli-interactive-shell-contract.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+      - cli_ui_change
+      - command_surface_change
+    owner: runtime
+    last_reviewed_at: 2026-03-28

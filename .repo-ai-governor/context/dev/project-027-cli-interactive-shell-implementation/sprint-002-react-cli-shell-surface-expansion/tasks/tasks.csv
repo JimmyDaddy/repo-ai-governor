@@ -1,0 +1,5 @@
+execution_id,task_id,title,owner,priority,due_date,status,project,sprint,plan,result,verify,review_delta,recorded_at
+exec-20260328-009,TK-308,connect/workspace descriptor 化与表单映射扩展,AI-Agent,P0,2026-03-28,planned,project-027-cli-interactive-shell-implementation,sprint-002-react-cli-shell-surface-expansion,扩展 connect/workspace 的 descriptor registry,待执行,待验证,待执行,2026-03-28
+exec-20260328-010,TK-309,workflow 命令树注册与 preview/edit 只读壳层,AI-Agent,P0,2026-03-28,planned,project-027-cli-interactive-shell-implementation,sprint-002-react-cli-shell-surface-expansion,落地 workflow 显式子命令树与只读预览,待执行,待验证,待执行,2026-03-28
+exec-20260328-011,TK-310,locale / i18n 注入与异步校验策略,AI-Agent,P0,2026-03-28,planned,project-027-cli-interactive-shell-implementation,sprint-002-react-cli-shell-surface-expansion,补齐 locale 与 async validation contract,待执行,待验证,待执行,2026-03-28
+exec-20260328-012,TK-311,M2 回归测试与 surface-expansion gate,AI-Agent,P0,2026-03-28,planned,project-027-cli-interactive-shell-implementation,sprint-002-react-cli-shell-surface-expansion,补齐 surface expansion 的回归与门禁,待执行,待验证,待执行,2026-03-28

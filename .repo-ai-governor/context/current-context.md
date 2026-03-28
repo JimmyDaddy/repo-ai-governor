@@ -3,16 +3,16 @@
 ## Primary Stream
 
 - Status: active
-- Project: `project-026-prd-gap-remediation`
-- Sprint: `sprint-004-ga-evidence-and-support-matrix`
-- Docs root: `.repo-ai-governor/context/dev/project-026-prd-gap-remediation`
-- Task records: `.repo-ai-governor/context/dev/project-026-prd-gap-remediation/sprint-004-ga-evidence-and-support-matrix/tasks/`
-- Review records: `.repo-ai-governor/context/dev/project-026-prd-gap-remediation/sprint-004-ga-evidence-and-support-matrix/review/`
-- Note: `project-026 / sprint-004` 已激活，聚焦 GA Readiness §10.2 全量量化证据沉淀与正式支持矩阵发布。
+- Project: `project-027-cli-interactive-shell-implementation`
+- Sprint: `sprint-001-react-cli-shell-foundation`
+- Docs root: `.repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation`
+- Task records: `.repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation/sprint-001-react-cli-shell-foundation/tasks/`
+- Review records: `.repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation/sprint-001-react-cli-shell-foundation/review/`
+- Note: `project-027 / sprint-001` 已激活，聚焦 `runtime.cli-interactive-shell` 的 M1 基线实现与 `--ui react` 实验入口落地。
 
 ## Active Streams
 
-- `primary`: project=`project-026-prd-gap-remediation`, sprint=`sprint-004-ga-evidence-and-support-matrix`, docs=`.repo-ai-governor/context/dev/project-026-prd-gap-remediation`, plan=`.repo-ai-governor/context/dev/project-026-prd-gap-remediation/plan.md`, tasks=`.repo-ai-governor/context/dev/project-026-prd-gap-remediation/sprint-004-ga-evidence-and-support-matrix/tasks/`, checklist=`.repo-ai-governor/context/dev/project-026-prd-gap-remediation/sprint-004-ga-evidence-and-support-matrix/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-026-prd-gap-remediation/sprint-004-ga-evidence-and-support-matrix/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-026-prd-gap-remediation/sprint-004-ga-evidence-and-support-matrix/review/`, status=`active`
+- `primary`: project=`project-027-cli-interactive-shell-implementation`, sprint=`sprint-001-react-cli-shell-foundation`, docs=`.repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation`, plan=`.repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation/plan.md`, tasks=`.repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation/sprint-001-react-cli-shell-foundation/tasks/`, checklist=`.repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation/sprint-001-react-cli-shell-foundation/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation/sprint-001-react-cli-shell-foundation/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation/sprint-001-react-cli-shell-foundation/review/`, status=`active`
 
 ## Planned Follow-Up Streams
 

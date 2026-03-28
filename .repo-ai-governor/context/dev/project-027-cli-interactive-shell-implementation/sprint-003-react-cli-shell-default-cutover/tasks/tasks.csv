@@ -1,0 +1,5 @@
+execution_id,task_id,title,owner,priority,due_date,status,project,sprint,plan,result,verify,review_delta,recorded_at
+exec-20260328-013,TK-312,默认切换策略与 init React 默认启用,AI-Agent,P0,2026-03-28,planned,project-027-cli-interactive-shell-implementation,sprint-003-react-cli-shell-default-cutover,制定默认启用与 fallback 切换策略,待执行,待验证,待执行,2026-03-28
+exec-20260328-014,TK-313,upgrade 路径、确认层与 rollback reference polish,AI-Agent,P0,2026-03-28,planned,project-027-cli-interactive-shell-implementation,sprint-003-react-cli-shell-default-cutover,打磨 upgrade 的交互和回滚参考,待执行,待验证,待执行,2026-03-28
+exec-20260328-015,TK-314,adopter 文档、playbook 与 help surface 收尾,AI-Agent,P0,2026-03-28,planned,project-027-cli-interactive-shell-implementation,sprint-003-react-cli-shell-default-cutover,补齐 adopter-facing 文档与帮助面,待执行,待验证,待执行,2026-03-28
+exec-20260328-016,TK-315,project-027 出口验收与 completion audit,AI-Agent,P0,2026-03-28,planned,project-027-cli-interactive-shell-implementation,sprint-003-react-cli-shell-default-cutover,完成项目收口与审计摘要,待执行,待验证,待执行,2026-03-28

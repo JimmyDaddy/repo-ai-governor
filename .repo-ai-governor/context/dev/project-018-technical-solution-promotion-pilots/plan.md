@@ -1,7 +1,7 @@
 # project-018-technical-solution-promotion-pilots 计划
 
 - Status: completed
-- Date: 2026-03-27
+- Date: 2026-03-28
 - Stage Mapping: Cross-stage normative consumption follow-up
 - Phase Mapping: Technical Solution Promotion / Consumption Proof
 
@@ -69,7 +69,18 @@
   1. `project-018` 已从 `project-020` closeout surface 切换回新的 `sprint-005` active stream，并将 `project-020 / sprint-004` 迁入 completed history。
   2. 已引入 `runtime.memory-semantics` 的 formal module docs、module registry wiring 与 manifest 登记。
   3. `technical-solution.memory-module` 已具备 review evidence、final paths、target module realignment 与 activation metadata，并切换到 `active`。
-  4. lifecycle/module/manifest/task/review/artifact gates 已通过，并生成新的 project-018 完成态审计摘要。
+4. lifecycle/module/manifest/task/review/artifact gates 已通过，并生成新的 project-018 完成态审计摘要。
+
+## 2.6 sprint-006-interactive-cli-react-style-cli-promotion-cutover
+
+- Status: completed
+- Sprint Goal: 将 `interactive-cli-react-style-technical-solution.md` 及其 review evidence 提升为 lifecycle-managed final solution，并同步落地 `runtime.cli-interactive-shell` 的正式模块文档与 registry 接线。
+- Task Package: `TK-242`、`TK-243`、`TK-244`、`TK-245`。
+- Exit Criteria:
+  1. `technical-solution.interactive-cli-react-style-cli` 已具备 review evidence、final paths 与 activation metadata，并切换到 `active`。
+  2. `runtime.cli-interactive-shell` 的 module overview 与 contract 已正式落地并登记到 module registry / manifest。
+  3. promotion 所需 lifecycle/module/manifest/task/review/artifact gates 已通过。
+  4. 生成新的 project-018 完成态审计摘要，记录这次 docs-only promotion cutover。
 
 ## 3. 任务拆解矩阵（WBS）
 
@@ -95,6 +106,10 @@
 | TK-239 | sprint-005 | runtime.memory-semantics 正式模块 skeleton 与 contract baseline | runtime/docs | TK-238,DA-203,DA-204,.repo-ai-governor/draft/memory-module-technical-solution.md | completed |
 | TK-240 | sprint-005 | memory-module technical solution lifecycle、module-registry 与 manifest promotion cutover | governance/docs | TK-239,resolved_code_review_tk-203-memory-module-bounded-context-assessment-and-target-module-realignment-recommendation.md | completed |
 | TK-241 | sprint-005 | sprint-005 出口验收与 project-018 re-closeout | acceptance/baseline | TK-238,TK-239,TK-240,DA-238,DA-239,DA-240 | completed |
+| TK-242 | sprint-006 | sprint-006 激活与 react-style CLI promotion handoff | bootstrap/governance | project-018 completion audit,interactive-cli draft review | completed |
+| TK-243 | sprint-006 | runtime.cli-interactive-shell 正式模块文档回填与 promotion doc cutover | runtime/docs | TK-242,.repo-ai-governor/draft/interactive-cli-react-style-technical-solution.md,review-interactive-cli-react-style-technical-solution.md | completed |
+| TK-244 | sprint-006 | interactive CLI technical solution lifecycle、module-registry 与 manifest promotion cutover | governance/docs | TK-243,DA-242 | completed |
+| TK-245 | sprint-006 | sprint-006 出口验收与 project-018 再次完成态审计 | acceptance/baseline | TK-242,TK-243,TK-244,DA-242 | completed |
 
 ## 4. 依赖产物策略
 
@@ -129,6 +144,10 @@
    - `DA-203`
    - `DA-204`
    - `DA-237`
+7. `sprint-006` reopen 额外消费：
+   - `.repo-ai-governor/draft/interactive-cli-react-style-technical-solution.md`
+   - `.repo-ai-governor/draft/review-interactive-cli-react-style-technical-solution.md`
+   - `DA-242`
 
 ## 5. DoD（project-018）
 
@@ -150,3 +169,4 @@
 6. 2026-03-26：reopen `project-018` 执行 `sprint-003-langgraph-orchestration-promotion-backfill`，完成 `DA-206` ~ `DA-209`、`technical-solution.langgraph-orchestration-direction` 的 lifecycle promotion cutover，并产出新的项目完成态审计摘要 `project-018-technical-solution-promotion-pilots-completion-audit-summary-sprint-003-langgraph-orchestration-promotion-backfill.md`。
 7. 2026-03-26：reopen `project-018` 执行 `sprint-004-langgraph-hard-dependency-truthfulness-cutover`，完成 `DA-210` ~ `DA-213`、`core-runtime-langgraph` 的 direct dependency cutover 与 truthfulness 对齐，并产出新的项目完成态审计摘要 `project-018-technical-solution-promotion-pilots-completion-audit-summary-sprint-004-langgraph-hard-dependency-truthfulness-cutover.md`。
 8. 2026-03-27：reopen `project-018` 执行 `sprint-005-memory-semantics-module-promotion-cutover`，完成 `DA-238` ~ `DA-241`、`runtime.memory-semantics` formal module baseline 与 `technical-solution.memory-module` lifecycle promotion cutover，并产出新的项目完成态审计摘要 `project-018-technical-solution-promotion-pilots-completion-audit-summary-sprint-005-memory-semantics-module-promotion-cutover.md`。
+9. 2026-03-28：reopen `project-018` 执行 `sprint-006-interactive-cli-react-style-cli-promotion-cutover`，完成 `DA-242` ~ `DA-245`、`runtime.cli-interactive-shell` formal module baseline 与 `technical-solution.interactive-cli-react-style-cli` lifecycle promotion cutover，并产出新的项目完成态审计摘要 `project-018-technical-solution-promotion-pilots-completion-audit-summary-sprint-006-interactive-cli-react-style-cli-promotion-cutover.md`。
