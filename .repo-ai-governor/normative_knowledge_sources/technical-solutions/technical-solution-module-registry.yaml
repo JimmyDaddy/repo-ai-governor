@@ -318,6 +318,64 @@ modules:
           - overall_technical_solution
           - architecture_and_repo_layering
 
+  - module_id: runtime.agent-projection
+    status: active
+    owner: runtime
+    layer: runtime-core
+    summary_doc: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/module-overview.md
+    detail_docs:
+      - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/contracts/agent-onboarding-contract.md
+        kind: contract
+      - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/contracts/agent-projection-contract.md
+        kind: contract
+      - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/multi-tool-onboarding-and-role-agent-projection-cutover.md
+        kind: adr
+    north_star_refs:
+      - prd.multi-agent-orchestration
+      - overall.graph-first-runtime
+      - architecture.runtime-boundary
+    exports_contracts:
+      - contract.runtime.agent-onboarding.v1
+      - contract.runtime.agent-projection.v1
+    imports_contracts:
+      - contract.runtime.graph-execution.v1
+      - contract.cli.interactive-shell.v1
+    depends_on_modules:
+      - runtime.orchestration
+      - runtime.cli-interactive-shell
+    load_triggers:
+      - runtime_contract_change
+      - adapter_change
+      - cli_ui_change
+      - command_surface_change
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+    change_impact_policy:
+      summary_doc_change:
+        classification: local_detail_change
+        requires_sync: []
+        recommends_sync: []
+      contract_doc_change:
+        classification: exported_contract_change
+        requires_sync:
+          - summary_doc
+        recommends_sync:
+          - module_registry
+          - direct_consumers
+          - overall_technical_solution
+          - architecture_and_repo_layering
+      adr_doc_change:
+        classification: local_detail_change
+        requires_sync: []
+        recommends_sync:
+          - summary_doc
+      registry_change:
+        classification: module_registry_change
+        requires_sync: []
+        recommends_sync:
+          - overall_technical_solution
+          - architecture_and_repo_layering
+
   - module_id: runtime.cli-interactive-shell
     status: active
     owner: runtime

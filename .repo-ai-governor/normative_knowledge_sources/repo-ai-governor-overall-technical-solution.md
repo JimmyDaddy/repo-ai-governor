@@ -43,6 +43,7 @@
 4. 审计、报告、任务台账与 CR 生命周期映射。
 5. 本地与 CI 质量门禁、发布前检查与运维流程。
 6. workspace 生命周期管理（创建、解析、迁移、归档）。
+7. CLI 交互壳层与向导式配置 surface（如 `runtime.cli-interactive-shell`），在不破坏自动化契约的前提下提供 human-first 入口。
 
 ## 3.2 Out Of Scope
 
@@ -71,7 +72,7 @@
 ## 4.1 分层视图
 
 1. `CLI & API Entry Layer`
-   - 命令入口、参数解析、执行模式切换与输出模式编排；CLI 与未来桌面端通过同一套本地 orchestration service 接入。
+   - 命令入口、参数解析、执行模式切换与输出模式编排；包括 `runtime.cli-interactive-shell` 这类交互壳层与向导式配置 surface。CLI 与未来桌面端通过同一套本地 orchestration service 接入。
 2. `Config & Schema Layer`
    - 配置加载、Schema 校验、版本兼容与 workspace 根目录解析。
 3. `Memory & Context Layer`
@@ -81,7 +82,7 @@
 5. `Notification & Escalation Layer`
    - HITL 通知分发、升级策略与渠道回退。
 6. `Agent Runtime & Adapter Layer`
-   - 多角色 Agent 运行时（默认角色 + 用户自定义角色）与 Skill 能力装配，结合跨工具适配、能力矩阵与降级。
+   - 多角色 Agent 运行时（默认角色 + 用户自定义角色）与 Skill 能力装配，结合跨工具适配、能力矩阵、multi-tool onboarding 与 role-agent projection；其中 `runtime.agent-projection` 负责把 `connect / doctor / verify` 的 onboarding 结果与 agent descriptor 投影收敛为正式 runtime seam。
 7. `Standards & Slot Layer`
    - 官方规范包、团队扩展包、声明式/脚本插槽机制。
 8. `Audit & Reporting Layer`
@@ -103,21 +104,25 @@
 4. `Policy Gate Engine`
    - 决策 `allow/confirm/block/escalate`。
 5. `Agent Coordinator`
-   - 路由角色 Agent 与 surface，处理降级和接管。
+   - 路由角色 Agent 与 surface，处理降级和接管；在 `connect / doctor / verify` 等入口上与 `runtime.agent-projection` 协同消费 onboarding / projection contract。
 6. `Role Registry`
    - 管理默认角色与用户自定义角色定义、约束与版本。
-7. `Shared Session Manager`
+7. `Agent Projection Service`
+   - 将 `roleProfileId`、`routeKey`、`execution_context` 与 adapter 能力投影为 `AgentDescriptor`，供 CLI / report / diagnostics 共享；这条能力由 `runtime.agent-projection` 正式承接。
+8. `Shared Session Manager`
    - 管理跨 Agent 共享 session 生命周期、快照与回放。
-8. `Notification Dispatcher`
+9. `Agent Session Registry`
+   - 以共享 session 为事实源生成可回放的 agent 视图，不引入新的 session canonical source。
+10. `Notification Dispatcher`
    - 在 HITL 触发与升级场景下统一分发通知，支持多渠道与重试策略。
-9. `Audit Recorder`
+11. `Audit Recorder`
    - 记录策略命中、人工介入、阶段结果与通知回执。
-10. `Memory Manager`
+12. `Memory Manager`
    - 统一管理永久记忆与执行记忆读写策略。
-11. `Artifact Registry & Dependency Resolver`
+13. `Artifact Registry & Dependency Resolver`
    - 统一登记关键产物元数据，解析任务依赖产物并在执行前注入上下文。
-12. `Spec Sync Guard`
-    - 校验“需求 -> 方案 -> 架构”三层文档与简版 PRD 的同步一致性，并输出可阻断结果。
+14. `Spec Sync Guard`
+   - 校验“需求 -> 方案 -> 架构”三层文档与简版 PRD 的同步一致性，并输出可阻断结果。
 
 ## 4.2.1 基础设施组件（Adapter/Provider）
 

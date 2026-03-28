@@ -530,6 +530,66 @@ documents:
     owner: governance
     last_reviewed_at: 2026-03-19
 
+  - doc_id: technical_solution_runtime_agent_projection_overview
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/module-overview.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - runtime_contract_change
+      - adapter_change
+      - cli_ui_change
+      - command_surface_change
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+    owner: runtime
+    last_reviewed_at: 2026-03-28
+
+  - doc_id: technical_solution_runtime_agent_projection_onboarding_contract
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/contracts/agent-onboarding-contract.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - runtime_contract_change
+      - adapter_change
+      - cli_ui_change
+      - command_surface_change
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+    owner: runtime
+    last_reviewed_at: 2026-03-28
+
+  - doc_id: technical_solution_runtime_agent_projection_projection_contract
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/contracts/agent-projection-contract.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - runtime_contract_change
+      - adapter_change
+      - cli_ui_change
+      - command_surface_change
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+    owner: runtime
+    last_reviewed_at: 2026-03-28
+
+  - doc_id: technical_solution_runtime_agent_projection_adr
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/multi-tool-onboarding-and-role-agent-projection-cutover.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - runtime_contract_change
+      - adapter_change
+      - cli_ui_change
+      - command_surface_change
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+    owner: runtime
+    last_reviewed_at: 2026-03-28
+
   - doc_id: runtime_cli_interactive_shell_module_overview
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/module-overview.md
     tier: L2

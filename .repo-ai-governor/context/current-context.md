@@ -16,6 +16,8 @@
 
 ## Planned Follow-Up Streams
 
+- `planned`: project=`project-028-multi-ai-tools-onboarding-role-agent-projection`, sprint=`sprint-001-contract-baseline-and-boundary-lock`, docs=`.repo-ai-governor/context/dev/project-028-multi-ai-tools-onboarding-role-agent-projection`, plan=`.repo-ai-governor/context/dev/project-028-multi-ai-tools-onboarding-role-agent-projection/plan.md`, tasks=`.repo-ai-governor/context/dev/project-028-multi-ai-tools-onboarding-role-agent-projection/sprint-001-contract-baseline-and-boundary-lock/tasks/`, checklist=`.repo-ai-governor/context/dev/project-028-multi-ai-tools-onboarding-role-agent-projection/sprint-001-contract-baseline-and-boundary-lock/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-028-multi-ai-tools-onboarding-role-agent-projection/sprint-001-contract-baseline-and-boundary-lock/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-028-multi-ai-tools-onboarding-role-agent-projection/sprint-001-contract-baseline-and-boundary-lock/review/`, status=`planned`, note=`follow-up stream for the approved multi-tool onboarding and role-agent projection technical solution; decomposed into sprint-001 through sprint-004`
+
 ## Completed Stream History
 
 - File: `.repo-ai-governor/context/completed-streams-history.md`

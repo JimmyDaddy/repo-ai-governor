@@ -21,6 +21,8 @@
 flowchart TB
   subgraph Entry[CLI & API Entry Layer]
     CLI[CLI Commands]
+    Onboarding[Onboarding Commands]
+    InteractiveShell[Interactive CLI Shell]
     Desktop[Desktop Client]
     IDE[IDE/Agent Surfaces]
     CI[CI/CD Invoker]
@@ -63,6 +65,7 @@ flowchart TB
 
   subgraph Agent[Agent Runtime & Adapter Layer]
     Coord[Agent Coordinator]
+    AgentProjection[Agent Projection Service]
     AdapterSDK[Adapter SDK]
     Adapters[Adapters Registry]
   end
@@ -94,6 +97,10 @@ flowchart TB
   end
 
   CLI --> Orchestrator
+  CLI --> Onboarding
+  CLI --> InteractiveShell
+  Onboarding --> Orchestrator
+  InteractiveShell --> Orchestrator
   Desktop --> Orchestrator
   IDE --> Orchestrator
   CI --> Orchestrator
@@ -107,7 +114,9 @@ flowchart TB
   MemoryManager --> SessionManager
   RoleRegistry --> Compiler
   RoleRegistry --> Coord
+  RoleRegistry --> AgentProjection
   SessionManager --> Compiler
+  SessionManager --> AgentProjection
   MemoryManager --> Compiler
   StoreAdapter --> NormSources
   StoreAdapter --> OpSources
@@ -121,6 +130,7 @@ flowchart TB
   NotifyDispatcher --> Audit
   Policy --> Coord
   Coord --> AdapterSDK --> Adapters
+  AgentProjection --> Report
   Runtime --> Slots
   Runtime --> StandardsPack
   StandardsPack --> PackRegistry --> RuleRenderer --> AgentsProjector
@@ -292,6 +302,10 @@ sequenceDiagram
    - 将 `DSL/IR` 映射到具体 graph runtime；当前默认目标是 `LangGraph`，但对上层暴露稳定的 runtime facade。
 19. `Local Orchestration Service`
    - 为 `CLI` 与未来桌面端提供统一执行入口，负责 runtime backend、checkpoint、streaming 状态与 HITL resume 接口编排。
+20. `Interactive CLI Shell`
+   - 负责 `runtime.cli-interactive-shell` 这类 human-first shell 的模式解析、状态机、stderr 渲染与 classic fallback，但不拥有业务真相或 runtime 主状态。
+21. `Agent Onboarding & Projection`
+   - 由 `runtime.agent-projection` 正式承接，把 `connect / doctor / verify` 的 onboarding 结果与 `AgentDescriptor` 投影统一收敛到同一条 runtime seam，避免 CLI、report、diagnostics 各自维护一套工具绑定语义。
 
 ## 5. 目标仓库分层结构（Monorepo）
 

@@ -64,7 +64,8 @@ Repo AI Governor 是一个可通过 npm 安装的 AI 开发治理工具，用于
 6. 支持多模型、多 IDE、多 Agent 工具接入。
 7. 支持多语言仓库与多自然语言使用场景。
 8. 支持多 Agent 编排执行（Planner/Architect/Coder/Tester/Reviewer/Verifier 等）并具备明确角色边界。
-9. 支持策略驱动的人机协同闸口，只在关键节点请求人工确认。
+9. 支持多工具 onboarding 与 role-agent projection，将 `connect / doctor / verify` 产物投影为可回放的 `AgentDescriptor` 供 CLI、report 与 diagnostics 共用。
+10. 支持策略驱动的人机协同闸口，只在关键节点请求人工确认。
 
 ### 4.2 成功指标
 
