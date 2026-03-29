@@ -13,6 +13,7 @@ import type {
   CliInteractiveShellFallbackBehavior,
   CliInteractiveUiMode,
 } from '../../constants/cli-interactive-shell.constant.js';
+import type { CliReactThemePreset } from '../../constants/cli-react-theme.constant.js';
 import type { CliHitlResumeAction } from '../../constants/cli-task-driven-run.constant.js';
 import type { ReactCliViewModel } from '../../react-cli/index.js';
 import type { CliAdapterDiagnosticsRuntime } from '../../runtime/adapter-diagnostics-runtime.js';
@@ -92,7 +93,9 @@ export interface CliExecutionStreamMetadata {
 export interface CliNormalizedRuntimeDebugOptions {
   interactive: boolean;
   requestedUiMode: CliInteractiveUiMode | null;
+  requestedUiTheme: CliReactThemePreset | null;
   uiMode: CliInteractiveUiMode;
+  uiTheme?: CliReactThemePreset;
   uiFallbackBehavior: CliInteractiveShellFallbackBehavior | null;
   inputTty: boolean;
   stderrTty: boolean;

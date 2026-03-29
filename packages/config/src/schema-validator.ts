@@ -1,6 +1,7 @@
 import {
   AdapterAvailability,
   AdapterSurface,
+  CLI_REACT_THEME_VALUES,
   I18N_RUNTIME_ENGINE,
   LocalModelProvider,
   MemoryStoreEngine,
@@ -11,6 +12,7 @@ import {
   WorkspaceMigrationPolicy,
   WorkspaceMode,
 } from '@repo-ai-governor/shared';
+import type { CliReactThemePreset } from '@repo-ai-governor/shared';
 import { ConfigError, GovernorErrorCode } from '@repo-ai-governor/shared';
 import { GovernorSchemaVersion, SUPPORTED_GOVERNOR_SCHEMA_VERSIONS } from './constants/index.js';
 import type {
@@ -24,6 +26,8 @@ import type {
   I18nConfig,
   MemoryConfig,
   RoleProfileConfig,
+  UiConfig,
+  UiReactConfig,
   WorkspaceConfig,
 } from './types/interfaces/index.js';
 
@@ -66,6 +70,7 @@ export class SchemaValidator {
     const memory = this.validateMemory(root.memory, '/memory', false) as
       | Partial<MemoryConfig>
       | undefined;
+    const ui = this.validateUi(root.ui, '/ui');
     const roles = this.validateRoles(root.roles, '/roles');
     const adapters = this.validateAdapters(root.adapters, '/adapters', false) as
       | AdaptersConfig
@@ -80,6 +85,7 @@ export class SchemaValidator {
         'workspace',
         'i18n',
         'memory',
+        'ui',
         'roles',
         'adapters',
         'activeProfile',
@@ -93,6 +99,7 @@ export class SchemaValidator {
       workspace,
       i18n,
       ...(memory ? { memory } : {}),
+      ...(ui ? { ui } : {}),
       ...(roles ? { roles } : {}),
       ...(adapters ? { adapters } : {}),
       ...(activeProfile ? { activeProfile } : {}),
@@ -123,7 +130,7 @@ export class SchemaValidator {
       const profile = this.expectRecord(profileValue, profilePointer);
       this.assertNoUnknownKeys(
         profile,
-        new Set(['workspace', 'i18n', 'memory', 'adapters']),
+        new Set(['workspace', 'i18n', 'memory', 'ui', 'adapters']),
         profilePointer,
       );
 
@@ -146,6 +153,11 @@ export class SchemaValidator {
         ...(profile.memory !== undefined
           ? {
               memory: this.validateMemory(profile.memory, `${profilePointer}/memory`, true),
+            }
+          : {}),
+        ...(profile.ui !== undefined
+          ? {
+              ui: this.validateUi(profile.ui, `${profilePointer}/ui`),
             }
           : {}),
         ...(profile.adapters !== undefined
@@ -215,6 +227,47 @@ export class SchemaValidator {
   }
 
   /**
+   * Validates optional UI config accepted by React-shell surfaces.
+   * @param candidate Raw UI object from config or profile override.
+   * @param pointer Error pointer path.
+   * @returns Typed UI config when provided.
+   */
+  private validateUi(candidate: unknown, pointer: string): UiConfig | undefined {
+    if (candidate === undefined) {
+      return undefined;
+    }
+
+    const ui = this.expectRecord(candidate, pointer);
+    this.assertNoUnknownKeys(ui, new Set(['react']), pointer);
+    const react = this.validateUiReact(ui.react, `${pointer}/react`);
+
+    return {
+      ...(react ? { react } : {}),
+    };
+  }
+
+  /**
+   * Validates React-shell specific UI preferences.
+   * @param candidate Raw React-shell config object.
+   * @param pointer Error pointer path.
+   * @returns Typed React-shell config when provided.
+   */
+  private validateUiReact(candidate: unknown, pointer: string): UiReactConfig | undefined {
+    if (candidate === undefined) {
+      return undefined;
+    }
+
+    const reactUi = this.expectRecord(candidate, pointer);
+    this.assertNoUnknownKeys(reactUi, new Set(['theme']), pointer);
+    const theme = this.expectOptionalString(reactUi.theme, `${pointer}/theme`);
+    const resolvedTheme = this.resolveReactCliThemePreset(theme, pointer);
+
+    return {
+      ...(resolvedTheme ? { theme: resolvedTheme } : {}),
+    };
+  }
+
+  /**
    * Resolves and validates schema version against supported baseline set.
    * @param schemaVersionCandidate Raw schema version value.
    * @param pointer Error pointer path.
@@ -261,6 +314,30 @@ export class SchemaValidator {
     }
 
     return mode as WorkspaceMode;
+  }
+
+  /**
+   * Converts optional React-shell theme value to enum and throws on unsupported presets.
+   * @param theme Optional raw theme string from config.
+   * @param pointer Error pointer path.
+   * @returns Theme preset when provided; otherwise undefined.
+   */
+  private resolveReactCliThemePreset(
+    theme: string | undefined,
+    pointer: string,
+  ): CliReactThemePreset | undefined {
+    if (theme === undefined) {
+      return undefined;
+    }
+
+    if (!CLI_REACT_THEME_VALUES.has(theme)) {
+      this.throwConfigSchemaValidationError(
+        `${pointer}/theme must be one of: ${Array.from(CLI_REACT_THEME_VALUES).join(', ')}.`,
+        pointer,
+      );
+    }
+
+    return theme as CliReactThemePreset;
   }
 
   /**

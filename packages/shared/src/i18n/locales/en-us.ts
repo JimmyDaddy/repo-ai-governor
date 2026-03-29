@@ -8,6 +8,10 @@ export const EN_US_TRANSLATIONS = {
       profile: 'Config profile id applied before command execution.',
       output: 'Output mode: pretty|plain|json.',
       ui: 'Interactive UI mode: none|classic|react|tui. Default is react in interactive TTY pretty mode.',
+      uiTheme:
+        'One-off React shell theme override: governor|catppuccin|calm. Default precedence is --ui-theme > workspace config > global CLI preference.',
+      themeScope:
+        'Theme persistence scope for set-ui-theme: workspace|global. Top-level set-ui-theme defaults to global; workspace set-ui-theme defaults to workspace.',
       verbosity: 'Output verbosity: quiet|normal|verbose.',
       compact: 'Compact pretty output for human-first quick scanning.',
       noColor: 'Disable ANSI color decorations in pretty mode.',
@@ -26,7 +30,8 @@ export const EN_US_TRANSLATIONS = {
         'Disable local fallback during restricted-network rehearsal to validate blocking semantics.',
       noInteractive:
         'Disable interactive setup prompts for first-time init and force non-interactive config bootstrap.',
-      workspaceAction: 'Workspace command action: dry-run|execute|rollback|clear-config.',
+      workspaceAction:
+        'Workspace command action: dry-run|execute|rollback|clear-config|set-ui-theme.',
       workspaceMode:
         'Workspace target mode for migration planning/execution: repo_local|tool_managed.',
       workspaceRoot: 'Workspace target root override used by the workspace migration command.',
@@ -45,9 +50,38 @@ export const EN_US_TRANSLATIONS = {
       verify: { description: 'Verify adapter routing pass/warn/fail baseline.' },
       plan: { description: 'Generate or update execution plan baseline.' },
       upgrade: { description: 'Run workspace/config upgrade baseline.' },
+      setUiTheme: {
+        description:
+          'Persist the React shell theme through a top-level shortcut, or open a selector in interactive pretty mode.',
+        themeArgument:
+          'Optional theme preset. Omit it in interactive TTY + pretty mode to open a selector.',
+        precedenceTitle: 'Theme precedence:',
+        precedenceDetail:
+          '--ui-theme override > workspace config > global CLI preference. Top-level set-ui-theme defaults to global scope; use --theme-scope workspace when you only want the current workspace.',
+        examplesTitle: 'Examples:',
+      },
       workspace: {
         description:
-          'Plan, execute, roll back workspace migration baseline, or clear the current workspace config.',
+          'Plan, execute, or roll back workspace migration baseline, clear the current workspace config, or persist a workspace/global React shell default theme.',
+        actionArgument:
+          'Workspace action shorthand. Equivalent to --workspace-action for human-driven runs.',
+        valueArgument:
+          'Optional action value. Use a plan path for rollback or a theme preset for set-ui-theme.',
+        actionGuideTitle: 'Action guide:',
+        actionGuideDryRun:
+          'Preview one migration plan only; requires --workspace-mode <repo_local|tool_managed>.',
+        actionGuideExecute:
+          'Apply the migration into the target workspace; requires --workspace-mode <repo_local|tool_managed>.',
+        actionGuideRollback:
+          'Restore the prior workspace surface from a saved --workspace-plan artifact.',
+        actionGuideClearConfig:
+          'Remove only the current selector/config files and keep diagnostics/workflow/review artifacts.',
+        actionGuideSetUiTheme:
+          'Persist the default React shell theme; pass [theme] or omit it in interactive pretty mode to open a selector. --theme-scope <workspace|global> stays optional.',
+        compatibilityTitle: 'Compatibility:',
+        compatibilityDetail:
+          'The older --workspace-action / --workspace-plan / --ui-theme form still works for scripts; [action] [value] is the shorter human-facing shorthand, and theme precedence remains command override > workspace config > global preference.',
+        examplesTitle: 'Examples:',
       },
       workflow: {
         description:
@@ -217,6 +251,36 @@ export const EN_US_TRANSLATIONS = {
         cancel: 'Ctrl+C cancel',
         unmountedState: 'unmounted state={{state}} fallback={{fallback}}',
       },
+      themePresets: {
+        governor: {
+          description: 'Cool slate-blue default with higher governance contrast.',
+        },
+        catppuccin: {
+          description: 'Vivid pastel palette for a more expressive shell surface.',
+        },
+        calm: {
+          description: 'Soft low-contrast palette for longer sessions.',
+        },
+      },
+      themeSelector: {
+        title: 'Choose a React shell theme',
+        workspaceDescription:
+          'Persist one default theme for the current workspace. The selected preset becomes the workspace-layer default.',
+        globalDescription:
+          'Persist one global theme shared by every workspace. The selected preset becomes the CLI-wide default.',
+        validation: 'The selected theme must be one of governor, catppuccin, or calm.',
+        submittingTitle: 'Applying theme selection',
+        submittingMessage: 'Persisting theme "{{theme}}" to {{scope}} scope.',
+        successMessage: 'Theme "{{theme}}" is now the {{scope}} default.',
+        cancelledBySigint: 'Theme selector cancelled by SIGINT.',
+        failedBeforeApply: 'Theme selector failed before the selected preset was applied.',
+        availableThemesTitle: 'Available themes:',
+        selectorTitle: 'Selector:',
+        selectorHint:
+          'Run set-ui-theme or workspace set-ui-theme without [theme] in interactive TTY + pretty mode to open the selector instead of typing a preset.',
+        nonInteractiveError:
+          'set-ui-theme needs a theme preset in non-interactive mode. Pass one of: {{themes}}. In interactive TTY + pretty mode you can omit [theme] to open the selector.',
+      },
       footer: {
         stdoutSummaryFollows: 'stdout summary follows',
         uiNoneDisablesShell: '--ui none disables shell',
@@ -277,6 +341,7 @@ export const EN_US_TRANSLATIONS = {
       },
       workspace: {
         clearConfigTitle: 'Clear current workspace config',
+        setThemeTitle: 'Persist current React shell theme',
         title: 'Plan or execute workspace migration',
         fields: {
           action: 'Workspace action',
@@ -286,12 +351,15 @@ export const EN_US_TRANSLATIONS = {
           currentMode: 'Current workspace mode',
           currentRoot: 'Current workspace root',
           activeConfigPaths: 'Active config paths',
+          themeScope: 'Theme scope',
+          themePreferencePaths: 'Theme preference paths',
         },
         actions: {
           dryRun: 'Dry run',
           execute: 'Execute',
           rollback: 'Rollback',
           clearConfig: 'Clear config',
+          setUiTheme: 'Set UI theme',
         },
         help: {
           stableOutputContract:
@@ -302,6 +370,10 @@ export const EN_US_TRANSLATIONS = {
             'clear-config removes the current selector/config files used to resolve the active workspace surface.',
           clearConfigKeepsArtifacts:
             'clear-config does not delete diagnostics, workflow definitions, review queue artifacts, or other workspace records.',
+          setThemePersistsToConfig:
+            'set-ui-theme persists the workspace config by default, or the global CLI preference file when --theme-scope global is used; repo-local selector config is kept in sync only when it already exists.',
+          setThemeFlagStillOverrides:
+            '--ui-theme still works as a one-off override for the current command even after the default theme is persisted.',
         },
         status: {
           executionCompleted: 'Workspace migration execution completed.',
@@ -309,6 +381,8 @@ export const EN_US_TRANSLATIONS = {
           dryRunCompleted: 'Workspace migration dry-run completed.',
           clearConfigCompleted: 'Current workspace config cleared.',
           clearConfigNoop: 'No current workspace config was present to clear.',
+          setThemeCompleted:
+            'Default React shell theme persisted as {{theme}} for {{scope}} scope.',
         },
         message: {
           executeCompleted: 'Workspace migration executed successfully; plan={{planPath}}.',
@@ -316,6 +390,8 @@ export const EN_US_TRANSLATIONS = {
           dryRunCompleted: 'Workspace migration plan generated; plan={{planPath}}.',
           clearConfigCompleted: 'Cleared {{count}} workspace config file(s): {{paths}}.',
           clearConfigNoop: 'No current workspace config file was found. Inspected: {{paths}}.',
+          setThemeCompleted:
+            'Persisted React shell theme {{theme}} for {{scope}} scope into {{count}} file(s): {{paths}}.',
         },
         nextStepTitle: 'Next step',
         nextActions: {
@@ -335,6 +411,10 @@ export const EN_US_TRANSLATIONS = {
             'Re-run workspace dry-run/execute if you want to recreate the workspace selector from scratch.',
           inspectExpectedConfigPaths:
             'Inspect {{paths}} if you expected an active workspace config to exist.',
+          rerunPrettyAfterThemeChange:
+            'Re-run one pretty-mode command to confirm the persisted {{theme}} theme is now the default React shell surface.',
+          useUiThemeFlagAsOverride:
+            'Keep using --ui-theme when you need a one-off shell override without changing the persisted default.',
         },
         summary: {
           migrationId: 'Migration ID: {{migrationId}}',
@@ -342,6 +422,9 @@ export const EN_US_TRANSLATIONS = {
           inspectedConfigPaths: 'Inspected config paths: {{paths}}',
           clearedConfigPath: 'Cleared config path: {{path}}',
           noConfigRemoved: 'No config paths were removed.',
+          appliedTheme: 'Applied theme: {{theme}}',
+          appliedThemeScope: 'Applied theme scope: {{scope}}',
+          persistedConfigPaths: 'Persisted config paths: {{paths}}',
         },
       },
       workflow: {

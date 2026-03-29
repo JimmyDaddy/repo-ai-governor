@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, resolve } from 'node:path';
+import { vi } from 'vitest';
 
 import type {
   GovernorConfig,
@@ -17,6 +18,7 @@ import {
   WorkspaceResolver,
 } from '@repo-ai-governor/config';
 import {
+  CliReactThemePreset,
   DEFAULT_I18N_RUNTIME_CONFIG,
   ErrorOutputEnvironment,
   GovernorErrorCode,
@@ -60,6 +62,9 @@ async function createWorkspaceCommandFixture(
       '  fallbackLocale: en-US',
       '  supportedLocales:',
       '    - en-US',
+      'ui:',
+      '  react:',
+      `    theme: ${CliReactThemePreset.GOVERNOR}`,
       'memory:',
       '  storeEngine: fs_csv',
       '  storeRoot: context/memory',
@@ -124,7 +129,9 @@ async function createWorkspaceCommandFixture(
     resolveRuntimeDebugOptions: () => ({
       interactive: false,
       requestedUiMode: null,
+      requestedUiTheme: null,
       uiMode: CliInteractiveUiMode.NONE,
+      uiTheme: CliReactThemePreset.GOVERNOR,
       uiFallbackBehavior: null,
       inputTty: false,
       stderrTty: false,
@@ -215,7 +222,9 @@ describe('CliWorkspaceCommand', () => {
       fixture.context.resolveRuntimeDebugOptions = () => ({
         interactive: true,
         requestedUiMode: CliInteractiveUiMode.REACT,
+        requestedUiTheme: null,
         uiMode: CliInteractiveUiMode.REACT,
+        uiTheme: CliReactThemePreset.GOVERNOR,
         uiFallbackBehavior: null,
         inputTty: true,
         stderrTty: true,
@@ -352,6 +361,343 @@ describe('CliWorkspaceCommand', () => {
       expect(result.commandResult.details?.cleared_path_count).toBe(0);
       expect(result.commandResult.details?.cleared_config_paths).toBe('');
       expect(result.message).toContain('No current workspace config file was found');
+    } finally {
+      await rm(fixture.tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('persists the requested React shell theme into selector and active workspace configs', async () => {
+    const fixture = await createWorkspaceCommandFixture({
+      action: 'set-ui-theme',
+      targetMode: null,
+      targetRoot: null,
+      planPath: null,
+    });
+
+    try {
+      const toolManagedConfigContent = [
+        'schemaVersion: "1.1"',
+        'workspace:',
+        '  mode: tool_managed',
+        `  toolManagedRoot: ${fixture.managedWorkspaceRoot}`,
+        '  migrationPolicy: copy_verify_switch_rollback',
+        'i18n:',
+        '  runtimeEngine: i18next',
+        '  defaultLocale: en-US',
+        '  fallbackLocale: en-US',
+        '  supportedLocales:',
+        '    - en-US',
+        'ui:',
+        '  react:',
+        `    theme: ${CliReactThemePreset.GOVERNOR}`,
+        'memory:',
+        '  storeEngine: fs_csv',
+        '  storeRoot: context/memory',
+        '',
+      ].join('\n');
+      await writeFile(fixture.configPath, toolManagedConfigContent, 'utf8');
+
+      const workspaceResolver = new WorkspaceResolver();
+      const resolvedWorkspace = workspaceResolver.resolve({
+        currentWorkingDirectory: fixture.tempRoot,
+        config: new ConfigLoader().loadFromFile(fixture.configPath),
+      });
+      await mkdir(resolvedWorkspace.workspaceRoot, { recursive: true });
+      await writeFile(resolvedWorkspace.configPath, toolManagedConfigContent, 'utf8');
+
+      fixture.context.options.workspace = resolvedWorkspace;
+      fixture.context.options.workspaceCommandOptions = {
+        action: 'set-ui-theme',
+        targetMode: null,
+        targetRoot: null,
+        planPath: null,
+      };
+      fixture.context.resolveRuntimeDebugOptions = () => ({
+        interactive: false,
+        requestedUiMode: null,
+        requestedUiTheme: CliReactThemePreset.CATPPUCCIN,
+        uiMode: CliInteractiveUiMode.NONE,
+        uiTheme: CliReactThemePreset.CATPPUCCIN,
+        uiFallbackBehavior: null,
+        inputTty: false,
+        stderrTty: false,
+        dryRun: false,
+        trace: false,
+        replayPath: null,
+        adapters: false,
+        fix: false,
+        recordLedger: false,
+        taskId: null,
+        restrictedNetwork: false,
+        restrictedReason: null,
+        allowLocalFallback: true,
+        hitlDecision: null,
+        hitlDecisionReason: null,
+        hitlResumeAction: null,
+        hitlDecidedBy: null,
+        hitlConstraints: [],
+      });
+
+      const command = new CliWorkspaceCommand();
+      const result = await command.execute(fixture.context);
+      const repoLocalConfig = new ConfigLoader().loadFromFile(fixture.configPath);
+      const activeWorkspaceConfig = new ConfigLoader().loadFromFile(resolvedWorkspace.configPath);
+
+      expect(result.commandResult.operation).toBe('workspace_ui_theme_set');
+      expect(result.commandResult.details?.action).toBe('set_ui_theme');
+      expect(result.commandResult.details?.ui_theme).toBe(CliReactThemePreset.CATPPUCCIN);
+      expect(result.commandResult.details?.persisted_path_count).toBe(2);
+      expect(repoLocalConfig.ui?.react?.theme).toBe(CliReactThemePreset.CATPPUCCIN);
+      expect(activeWorkspaceConfig.ui?.react?.theme).toBe(CliReactThemePreset.CATPPUCCIN);
+    } finally {
+      await rm(fixture.tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects set-ui-theme when no explicit --ui-theme override is provided', async () => {
+    const fixture = await createWorkspaceCommandFixture({
+      action: 'set-ui-theme',
+      targetMode: null,
+      targetRoot: null,
+      planPath: null,
+    });
+
+    try {
+      fixture.context.options.workspaceCommandOptions = {
+        action: 'set-ui-theme',
+        targetMode: null,
+        targetRoot: null,
+        planPath: null,
+      };
+
+      const command = new CliWorkspaceCommand();
+
+      await expect(command.execute(fixture.context)).rejects.toMatchObject({
+        code: GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+        message: expect.stringContaining('governor|catppuccin|calm'),
+      });
+    } finally {
+      await rm(fixture.tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('opens the React selector when set-ui-theme omits the preset in interactive pretty mode', async () => {
+    const fixture = await createWorkspaceCommandFixture({
+      action: 'set-ui-theme',
+      targetMode: null,
+      targetRoot: null,
+      planPath: null,
+    });
+
+    try {
+      fixture.context.options.outputMode = ErrorOutputEnvironment.PRETTY;
+      fixture.context.options.workspaceCommandOptions = {
+        action: 'set-ui-theme',
+        targetMode: null,
+        targetRoot: null,
+        planPath: null,
+      };
+      fixture.context.resolveRuntimeDebugOptions = () => ({
+        interactive: true,
+        requestedUiMode: CliInteractiveUiMode.REACT,
+        requestedUiTheme: null,
+        uiMode: CliInteractiveUiMode.REACT,
+        uiTheme: CliReactThemePreset.GOVERNOR,
+        uiFallbackBehavior: null,
+        inputTty: true,
+        stderrTty: true,
+        dryRun: false,
+        trace: false,
+        replayPath: null,
+        adapters: false,
+        fix: false,
+        recordLedger: false,
+        taskId: null,
+        restrictedNetwork: false,
+        restrictedReason: null,
+        allowLocalFallback: true,
+        hitlDecision: null,
+        hitlDecisionReason: null,
+        hitlResumeAction: null,
+        hitlDecidedBy: null,
+        hitlConstraints: [],
+      });
+      const selectorRun = vi.fn().mockResolvedValue(CliReactThemePreset.CALM);
+      const command = new CliWorkspaceCommand({
+        themeSelectRunner: {
+          run: selectorRun,
+        },
+      });
+
+      const result = await command.execute(fixture.context);
+      const updatedConfig = new ConfigLoader().loadFromFile(fixture.configPath);
+
+      expect(selectorRun).toHaveBeenCalledWith(
+        expect.objectContaining({
+          themeScope: 'workspace',
+          currentTheme: CliReactThemePreset.GOVERNOR,
+          uiTheme: CliReactThemePreset.GOVERNOR,
+          outputMode: ErrorOutputEnvironment.PRETTY,
+        }),
+      );
+      expect(result.commandResult.details?.ui_theme).toBe(CliReactThemePreset.CALM);
+      expect(updatedConfig.ui?.react?.theme).toBe(CliReactThemePreset.CALM);
+    } finally {
+      await rm(fixture.tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('does not create a repo-local selector config when set-ui-theme runs from tool-managed mode without one', async () => {
+    const fixture = await createWorkspaceCommandFixture({
+      action: 'set-ui-theme',
+      targetMode: null,
+      targetRoot: null,
+      planPath: null,
+    });
+
+    try {
+      const toolManagedConfigContent = [
+        'schemaVersion: "1.1"',
+        'workspace:',
+        '  mode: tool_managed',
+        `  toolManagedRoot: ${fixture.managedWorkspaceRoot}`,
+        '  migrationPolicy: copy_verify_switch_rollback',
+        'i18n:',
+        '  runtimeEngine: i18next',
+        '  defaultLocale: en-US',
+        '  fallbackLocale: en-US',
+        '  supportedLocales:',
+        '    - en-US',
+        'ui:',
+        '  react:',
+        `    theme: ${CliReactThemePreset.GOVERNOR}`,
+        'memory:',
+        '  storeEngine: fs_csv',
+        '  storeRoot: context/memory',
+        '',
+      ].join('\n');
+      const toolManagedSeedConfigPath = resolve(fixture.tempRoot, 'tool-managed-seed.yaml');
+      await writeFile(toolManagedSeedConfigPath, toolManagedConfigContent, 'utf8');
+
+      const workspaceResolver = new WorkspaceResolver();
+      const resolvedWorkspace = workspaceResolver.resolve({
+        currentWorkingDirectory: fixture.tempRoot,
+        config: new ConfigLoader().loadFromFile(toolManagedSeedConfigPath),
+      });
+      await mkdir(resolvedWorkspace.workspaceRoot, { recursive: true });
+      await writeFile(resolvedWorkspace.configPath, toolManagedConfigContent, 'utf8');
+      await rm(fixture.configPath, { force: true });
+
+      fixture.context.options.workspace = resolvedWorkspace;
+      fixture.context.options.workspaceCommandOptions = {
+        action: 'set-ui-theme',
+        targetMode: null,
+        targetRoot: null,
+        planPath: null,
+      };
+      fixture.context.resolveRuntimeDebugOptions = () => ({
+        interactive: false,
+        requestedUiMode: null,
+        requestedUiTheme: CliReactThemePreset.CALM,
+        uiMode: CliInteractiveUiMode.NONE,
+        uiTheme: CliReactThemePreset.CALM,
+        uiFallbackBehavior: null,
+        inputTty: false,
+        stderrTty: false,
+        dryRun: false,
+        trace: false,
+        replayPath: null,
+        adapters: false,
+        fix: false,
+        recordLedger: false,
+        taskId: null,
+        restrictedNetwork: false,
+        restrictedReason: null,
+        allowLocalFallback: true,
+        hitlDecision: null,
+        hitlDecisionReason: null,
+        hitlResumeAction: null,
+        hitlDecidedBy: null,
+        hitlConstraints: [],
+      });
+
+      const command = new CliWorkspaceCommand();
+      const result = await command.execute(fixture.context);
+      const activeWorkspaceConfig = new ConfigLoader().loadFromFile(resolvedWorkspace.configPath);
+
+      expect(result.commandResult.operation).toBe('workspace_ui_theme_set');
+      expect(result.commandResult.details?.persisted_path_count).toBe(1);
+      expect(result.commandResult.details?.persisted_config_paths).toBe(
+        resolvedWorkspace.configPath,
+      );
+      expect(activeWorkspaceConfig.ui?.react?.theme).toBe(CliReactThemePreset.CALM);
+      expect(existsSync(fixture.configPath)).toBe(false);
+    } finally {
+      await rm(fixture.tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('persists the requested React shell theme into the global CLI preference file when theme-scope=global', async () => {
+    const fixture = await createWorkspaceCommandFixture({
+      action: 'set-ui-theme',
+      targetMode: null,
+      targetRoot: null,
+      planPath: null,
+      themeScope: 'global',
+    });
+
+    try {
+      const globalPreferencePath = resolve(
+        fixture.tempRoot,
+        'home',
+        '.repo-ai-governor',
+        'cli-preferences.yaml',
+      );
+      await rm(fixture.configPath, { force: true });
+      fixture.context.options.workspaceCommandOptions = {
+        action: 'set-ui-theme',
+        targetMode: null,
+        targetRoot: null,
+        planPath: null,
+        themeScope: 'global',
+        themePreferencePath: globalPreferencePath,
+      };
+      fixture.context.resolveRuntimeDebugOptions = () => ({
+        interactive: false,
+        requestedUiMode: null,
+        requestedUiTheme: CliReactThemePreset.CALM,
+        uiMode: CliInteractiveUiMode.NONE,
+        uiTheme: CliReactThemePreset.CALM,
+        uiFallbackBehavior: null,
+        inputTty: false,
+        stderrTty: false,
+        dryRun: false,
+        trace: false,
+        replayPath: null,
+        adapters: false,
+        fix: false,
+        recordLedger: false,
+        taskId: null,
+        restrictedNetwork: false,
+        restrictedReason: null,
+        allowLocalFallback: true,
+        hitlDecision: null,
+        hitlDecisionReason: null,
+        hitlResumeAction: null,
+        hitlDecidedBy: null,
+        hitlConstraints: [],
+      });
+
+      const command = new CliWorkspaceCommand();
+      const result = await command.execute(fixture.context);
+      const globalPreferenceContent = await readFile(globalPreferencePath, 'utf8');
+
+      expect(result.commandResult.operation).toBe('workspace_ui_theme_set');
+      expect(result.commandResult.details?.theme_scope).toBe('global');
+      expect(result.commandResult.details?.persisted_path_count).toBe(1);
+      expect(result.commandResult.details?.persisted_config_paths).toBe(globalPreferencePath);
+      expect(globalPreferenceContent).toContain('theme: calm');
+      expect(existsSync(fixture.configPath)).toBe(false);
     } finally {
       await rm(fixture.tempRoot, { recursive: true, force: true });
     }

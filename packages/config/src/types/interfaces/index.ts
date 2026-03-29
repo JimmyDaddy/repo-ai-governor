@@ -12,6 +12,8 @@ export type {
   RoleProfileConfig,
   RoleProfileLifecycleConfig,
   ResolvedConfig,
+  UiConfig,
+  UiReactConfig,
   WorkspaceConfig,
   WorkspaceRuntimeOverrides,
 } from './governor.interface.js';

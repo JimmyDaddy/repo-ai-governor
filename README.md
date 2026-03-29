@@ -96,6 +96,12 @@ pnpm exec repo-ai-governor init --output pretty
 
 Interactive prompts are enabled by default in local TTY + `pretty` output. Use `--no-interactive` for CI/scripts.
 In local TTY + `pretty` output, the CLI now defaults to the React shell for supported interactive surfaces. It still falls back to `none` under `--no-interactive`, non-TTY, or `plain/json`, so CI and agent-style machine consumers keep the existing non-interactive contract.
+Use `--ui-theme governor|catppuccin|calm` when you want a different React shell look for just one run without changing the stdout contract.
+Theme precedence is `--ui-theme` override > workspace default > global CLI default.
+Run `pnpm exec repo-ai-governor set-ui-theme --help` when you want to inspect the supported theme presets.
+In interactive TTY + `pretty` mode, you can omit the preset to open a selector with `pnpm exec repo-ai-governor set-ui-theme --output pretty` or `pnpm exec repo-ai-governor workspace set-ui-theme --output pretty`.
+To persist a different workspace default, run `pnpm exec repo-ai-governor workspace set-ui-theme calm --output json`.
+To persist a global default shared by all workspaces, run `pnpm exec repo-ai-governor set-ui-theme calm --output json`.
 
 If you are using `dist` binary rehearsal, replace `pnpm exec repo-ai-governor` with:
 
@@ -136,9 +142,28 @@ This chain is expected to produce review verification and ledger-backfill artifa
 Default mode is `tool_managed`. Switch to `repo_local` with the CLI migration path:
 
 ```bash
-pnpm exec repo-ai-governor workspace --workspace-action dry-run --workspace-mode repo_local --output json
-pnpm exec repo-ai-governor workspace --workspace-action execute --workspace-mode repo_local --output json
-pnpm exec repo-ai-governor workspace --workspace-action rollback --workspace-plan <plan-path> --output json
+pnpm exec repo-ai-governor workspace dry-run --workspace-mode repo_local --output json
+pnpm exec repo-ai-governor workspace execute --workspace-mode repo_local --output json
+pnpm exec repo-ai-governor workspace rollback <plan-path> --output json
+```
+
+Persist a workspace default React shell theme when you do not want to pass `--ui-theme` every time:
+
+```bash
+pnpm exec repo-ai-governor workspace set-ui-theme calm --output json
+```
+
+Open the interactive selector instead of typing a preset:
+
+```bash
+pnpm exec repo-ai-governor workspace set-ui-theme --output pretty
+pnpm exec repo-ai-governor set-ui-theme --output pretty
+```
+
+Persist a global React shell theme for all workspaces:
+
+```bash
+pnpm exec repo-ai-governor set-ui-theme calm --output json
 ```
 
 Notes:
@@ -146,6 +171,13 @@ Notes:
 1. `init` alone keeps the repository on `tool_managed`; repo-local files appear only after `workspace execute`.
 2. `workspace dry-run` writes the plan artifact under the current active workspace root; a successful `workspace execute` rewrites the plan and execution artifacts under the target workspace root.
 3. `workspace rollback` writes the rollback artifact under the restored source workspace root and removes empty `.repo-ai-governor-migration/<migration-id>` scratch directories after a successful cleanup.
+4. Theme precedence is command override `--ui-theme` > workspace default > global CLI default.
+5. `workspace set-ui-theme <preset>` writes `ui.react.theme` into the active workspace config; when a repo-local selector config is also active, it is kept in sync only if that selector file already exists.
+6. Top-level `set-ui-theme <preset>` defaults to global scope and writes `~/.repo-ai-governor/cli-preferences.yaml` without modifying workspace configs; use `--theme-scope workspace` if you intentionally want the shortcut to target only the current workspace.
+7. `set-ui-theme --help` lists the supported presets, and interactive TTY + `pretty` mode lets you omit `[theme]` to open a selector.
+8. Generated configs start with `ui.react.theme: governor`; keep `--ui-theme governor|catppuccin|calm` for one-off per-command overrides.
+9. `workspace clear-config --output json` removes the current selector/config files for a clean debug reset without deleting other workspace artifacts.
+10. The older `--workspace-action ...` form is still supported for scripts; the positional `workspace <action> [value]` form is the shorter human-facing shorthand.
 
 ### Workflow Definition Preview, Save, And Explicit Upgrade Shell
 
@@ -162,6 +194,7 @@ Notes:
 2. `workflow create` and `workflow edit` save the active workflow definition under `<workspace_root>/context/workflow/active-workflow.definition.json` and persist one compiled IR snapshot under `<workspace_root>/context/compiled-ir/<execution_id>.json`.
 3. Loop nodes must carry both `maxCycles` and `maxWallTimeSeconds`, and condition-node branches must use non-empty unique `conditionKey` values before workflow persistence is accepted.
 4. In local TTY + `pretty` mode, `workflow` and `upgrade` default to the React shell on `stderr`; add `--ui none` or `--ui classic` when you need to suppress it while preserving the existing stdout output contract.
+5. React shell presets remain `governor|catppuccin|calm`; the persisted default comes from `ui.react.theme`, while `--ui-theme` is still a one-off override for the current command.
 
 ## 4. HITL Notification Providers
 

@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 
 import { type ProcessDslDefinition, ProcessNodeType } from '@repo-ai-governor/core-process';
 import {
+  CliReactThemePreset,
   DEFAULT_I18N_RUNTIME_CONFIG,
   ErrorOutputEnvironment,
   GovernorErrorCode,
@@ -101,7 +102,9 @@ async function createWorkflowCommandFixture(
       resolveRuntimeDebugOptions: () => ({
         interactive: true,
         requestedUiMode: CliInteractiveUiMode.REACT,
+        requestedUiTheme: null,
         uiMode: CliInteractiveUiMode.REACT,
+        uiTheme: CliReactThemePreset.GOVERNOR,
         uiFallbackBehavior: null,
         inputTty: true,
         stderrTty: true,

@@ -1,4 +1,5 @@
 import {
+  CliReactThemePreset,
   GovernorErrorCode,
   WorkspaceMigrationPolicy,
   standardizeError,
@@ -34,6 +35,11 @@ function createConfigFixture(schemaVersion: GovernorSchemaVersion): GovernorConf
       defaultLocale: 'zh-CN',
       fallbackLocale: 'en-US',
       supportedLocales: ['zh-CN', 'en-US'],
+    },
+    ui: {
+      react: {
+        theme: CliReactThemePreset.GOVERNOR,
+      },
     },
   };
 }
@@ -130,5 +136,36 @@ describe('UpgradeSchemaDiffService smoke', () => {
     }
 
     expect(observedErrorCode).toBe(GovernorErrorCode.CONFIG_SCHEMA_UPGRADE_PATH_UNSUPPORTED);
+  });
+
+  it('clones ui config so upgrade draft mutations do not leak into the source payload', () => {
+    const service = new UpgradeSchemaDiffService();
+    const sourceConfig: GovernorConfig = {
+      ...createConfigFixture(GovernorSchemaVersion.V1_0),
+      profiles: {
+        ci: {
+          ui: {
+            react: {
+              theme: CliReactThemePreset.CALM,
+            },
+          },
+        },
+      },
+    };
+
+    const report = service.analyze({
+      sourceConfig,
+      targetVersion: GovernorSchemaVersion.V1_1,
+    });
+
+    if (report.autoMigratedConfig.ui?.react) {
+      report.autoMigratedConfig.ui.react.theme = CliReactThemePreset.CATPPUCCIN;
+    }
+    if (report.autoMigratedConfig.profiles?.ci.ui?.react) {
+      report.autoMigratedConfig.profiles.ci.ui.react.theme = CliReactThemePreset.GOVERNOR;
+    }
+
+    expect(sourceConfig.ui?.react?.theme).toBe(CliReactThemePreset.GOVERNOR);
+    expect(sourceConfig.profiles?.ci.ui?.react?.theme).toBe(CliReactThemePreset.CALM);
   });
 });

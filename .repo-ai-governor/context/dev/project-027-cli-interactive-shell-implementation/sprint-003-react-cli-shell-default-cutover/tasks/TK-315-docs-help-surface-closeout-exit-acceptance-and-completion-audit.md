@@ -66,6 +66,7 @@
 9. 2026-03-29：复核并收口 `project-027` 全量 CR，确认过时或非缺陷项不进入修复清单，并完成 session clear 语义、descriptor 契约、stderr 宽度、schema version 守卫等已认可问题的最小安全补丁。
 10. 2026-03-29：根据真实终端验收反馈，补齐 `init --ui react` 的 live Ink 选择控件；工作区模式与默认语言步骤改为键盘选择式 `Select`，确认步骤改为 `ConfirmInput`，不再依赖 `readline` 文本输入 `1/2`。
 11. 2026-03-29：根据用户反馈把 CLI 默认 UI 策略切换为“交互式 TTY + pretty 默认 React、非交互/agent 风格调用保持普通模式”，并同步更新 workflow/upgrade 默认 React 路由回归与 adopter-facing 文档。
+12. 2026-03-29：根据用户反馈修复 `init` React shell 的 frame 堆叠问题；prompt adapter 改为复用同一个 Ink instance 并通过 `rerender()` 原地刷新，`submitting/success/restart` 状态也切入同一 live shell 区域，真实 TTY 中已确认 Step1 -> Step2 -> Confirm -> Submitting -> Success 不再逐屏追加。
 
 ## 10. 产出
 
@@ -79,3 +80,4 @@
 8. 已完成：`resolved_code_review_project-027-full-implementation.md`，含复核结论、修复记录与定向验证证据。
 9. 已完成：`init --ui react` 首次初始化向导的 live 选择式交互补齐，真实终端中已可通过方向键与回车完成工作区模式/默认语言选择。
 10. 已完成：CLI 默认 UI 路由切换；用户在本地 TTY + `pretty` 模式下默认进入 React shell，而 CI/非交互/agent 风格调用继续保持普通输出契约。
+11. 已完成：`init` React shell 的 live refresh 修复；状态切换与步骤推进已改为同一 Ink 渲染区原地重绘，不再像静态 stderr frame 一样持续堆叠。

@@ -66,7 +66,8 @@ export class CliInteractiveShellStderrRenderer {
     const fallbackBehavior = session.fallbackBehavior ?? 'none';
     this.stderrFramePresenter.write({
       title: `[react-shell:${session.commandName}] session closed`,
-      subtitle: `state=${session.runState} ui=${session.uiMode} stdout=${session.stdoutContract} stderr=${session.stderrRendering}`,
+      subtitle: `state=${session.runState} ui=${session.uiMode} theme=${session.uiTheme ?? 'governor'} stdout=${session.stdoutContract} stderr=${session.stderrRendering}`,
+      themePreset: session.uiTheme,
       statusMessage: this.translate('cli.reactShell.shared.unmountedState', {
         state: session.runState,
         fallback: fallbackBehavior,
@@ -105,7 +106,8 @@ export class CliInteractiveShellStderrRenderer {
 
     return {
       title: `[react-shell:${session.commandName}] ${title}`,
-      subtitle: `state=${session.runState} ui=${session.uiMode} stdout=${session.stdoutContract} stderr=${session.stderrRendering}`,
+      subtitle: `state=${session.runState} ui=${session.uiMode} theme=${session.uiTheme ?? 'governor'} stdout=${session.stdoutContract} stderr=${session.stderrRendering}`,
+      themePreset: session.uiTheme,
       statusMessage:
         session.runState === 'validating'
           ? this.translate('cli.reactShell.shared.validationFeedbackRequiresAnotherInputPass')

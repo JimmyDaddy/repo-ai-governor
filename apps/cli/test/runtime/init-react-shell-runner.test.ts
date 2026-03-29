@@ -9,12 +9,14 @@ import {
   RuntimeError,
   WorkspaceMode,
 } from '@repo-ai-governor/shared';
+import { CliReactThemePreset } from '../../src/constants/cli-react-theme.constant.js';
 import { CliInitReactShellRunner } from '../../src/runtime/interactive-shell/init-react-shell-runner.js';
 import { CliInteractiveShellStderrRenderer } from '../../src/runtime/interactive-shell/interactive-shell-stderr-renderer.js';
 import type {
   CliInteractiveShellConfirmPrompt,
   CliInteractiveShellPromptAdapter,
   CliInteractiveShellSelectPrompt,
+  CliInteractiveShellStatusFrame,
 } from '../../src/types/index.js';
 
 interface CliInteractiveShellPromptRecord {
@@ -27,6 +29,11 @@ interface CliInteractiveShellPromptRecord {
     title: string;
     promptLabel: string;
     summaryLines: string[];
+  }>;
+  statuses: Array<{
+    title: string;
+    runState: string;
+    lines: string[];
   }>;
 }
 
@@ -61,6 +68,13 @@ function createPromptAdapter(options: {
       confirmAnswerIndex += 1;
       return answer ?? true;
     },
+    renderStatus(frame: CliInteractiveShellStatusFrame): void {
+      options.record?.statuses.push({
+        title: frame.title,
+        runState: frame.session.runState,
+        lines: [...frame.lines],
+      });
+    },
     close(): void {
       return;
     },
@@ -78,6 +92,9 @@ function createInterruptiblePromptAdapter(): CliInteractiveShellPromptAdapter {
     },
     async confirm(): Promise<boolean> {
       return true;
+    },
+    renderStatus(): void {
+      return;
     },
     close(): void {
       if (rejectSelect) {
@@ -98,6 +115,7 @@ describe('CliInitReactShellRunner', () => {
     const promptRecord: CliInteractiveShellPromptRecord = {
       selects: [],
       confirms: [],
+      statuses: [],
     };
     const runner = new CliInitReactShellRunner(
       undefined,
@@ -115,6 +133,7 @@ describe('CliInitReactShellRunner', () => {
     const selection = await runner.run({
       locale: Locale.EN_US,
       outputMode: ErrorOutputEnvironment.PRETTY,
+      uiTheme: CliReactThemePreset.CATPPUCCIN,
       translate: (key, interpolation) => i18nRuntime.t(key, interpolation),
     });
 
@@ -125,12 +144,25 @@ describe('CliInitReactShellRunner', () => {
     });
     expect(promptRecord.selects).toHaveLength(2);
     expect(promptRecord.confirms).toHaveLength(1);
+    expect(promptRecord.statuses).toEqual([
+      {
+        title: i18nRuntime.t('cli.initShell.submitTitle'),
+        runState: 'submitting',
+        lines: [i18nRuntime.t('cli.initShell.submittingDescriptor')],
+      },
+      {
+        title: i18nRuntime.t('cli.initShell.submitTitle'),
+        runState: 'success',
+        lines: [i18nRuntime.t('cli.initShell.successMessage')],
+      },
+    ]);
     expect(promptRecord.confirms[0]?.summaryLines).toEqual([
       `workspaceMode=${WorkspaceMode.REPO_LOCAL}`,
       `defaultLocale=${DEFAULT_I18N_FALLBACK_LOCALE}`,
       `fallbackLocale=${DEFAULT_I18N_LOCALE}`,
     ]);
     expect(stderrBuffer.join('')).toContain('[react-shell:init]');
+    expect(stderrBuffer.join('')).toContain('theme=catppuccin');
     expect(stderrBuffer.join('')).toContain('unmounted state=success');
   });
 
@@ -141,6 +173,7 @@ describe('CliInitReactShellRunner', () => {
     const promptRecord: CliInteractiveShellPromptRecord = {
       selects: [],
       confirms: [],
+      statuses: [],
     };
     const runner = new CliInitReactShellRunner(
       undefined,
@@ -186,6 +219,7 @@ describe('CliInitReactShellRunner', () => {
     expect(promptRecord.selects[3]?.validationErrors).toEqual({
       defaultLocale: i18nRuntime.t('cli.initShell.defaultLocaleValidation'),
     });
+    expect(promptRecord.statuses).toHaveLength(2);
     expect(stderrBuffer.join('')).toContain('ui=react');
   });
 
@@ -196,6 +230,7 @@ describe('CliInitReactShellRunner', () => {
     const promptRecord: CliInteractiveShellPromptRecord = {
       selects: [],
       confirms: [],
+      statuses: [],
     };
     const runner = new CliInitReactShellRunner(
       undefined,
@@ -228,7 +263,11 @@ describe('CliInitReactShellRunner', () => {
     });
     expect(promptRecord.selects).toHaveLength(4);
     expect(promptRecord.confirms).toHaveLength(2);
-    expect(stderrBuffer.join('')).toContain('Selection updated; returning to the first step.');
+    expect(promptRecord.statuses[0]).toEqual({
+      title: i18nRuntime.t('cli.initShell.confirmationTitle'),
+      runState: 'confirming',
+      lines: [i18nRuntime.t('cli.initShell.confirmationRestartMessage')],
+    });
   });
 
   it('cancels cleanly when SIGINT arrives during prompting', async () => {

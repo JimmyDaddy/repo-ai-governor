@@ -6,6 +6,7 @@ import type {
   CliInteractiveShellStderrRenderingMode,
   CliInteractiveUiMode,
 } from '../../constants/cli-interactive-shell.constant.js';
+import type { CliReactThemePreset } from '../../constants/cli-react-theme.constant.js';
 
 /**
  * Defines one normalized UI mode resolution snapshot for the CLI interactive shell.
@@ -62,6 +63,7 @@ export interface CliInteractiveShellSessionState {
   uiMode: CliInteractiveUiMode;
   commandName: CliCommandName;
   descriptorId: string;
+  uiTheme?: CliReactThemePreset;
   runState: CliInteractiveShellRunState;
   currentStepTitle: string;
   totalSteps: number;
@@ -97,11 +99,22 @@ export interface CliInteractiveShellConfirmPrompt {
 }
 
 /**
+ * Defines one non-interactive status frame rendered through the live interactive shell.
+ */
+export interface CliInteractiveShellStatusFrame {
+  session: CliInteractiveShellSessionState;
+  title: string;
+  lines: string[];
+  translate: (key: string, interpolation?: Record<string, string>) => string;
+}
+
+/**
  * Defines the prompt adapter seam used by the interactive shell runner.
  */
 export interface CliInteractiveShellPromptAdapter {
   select(prompt: CliInteractiveShellSelectPrompt): Promise<string>;
   confirm(prompt: CliInteractiveShellConfirmPrompt): Promise<boolean>;
+  renderStatus?(frame: CliInteractiveShellStatusFrame): void;
   close(): void;
 }
 

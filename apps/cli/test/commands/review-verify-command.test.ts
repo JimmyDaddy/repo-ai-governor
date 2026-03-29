@@ -2,7 +2,12 @@ import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promis
 import { tmpdir } from 'node:os';
 import { dirname, resolve } from 'node:path';
 
-import { GovernorErrorCode, RuntimeError, standardizeError } from '@repo-ai-governor/shared';
+import {
+  CliReactThemePreset,
+  GovernorErrorCode,
+  RuntimeError,
+  standardizeError,
+} from '@repo-ai-governor/shared';
 import { CliReviewVerifyCommand } from '../../src/commands/review-verify-command.js';
 import {
   CLI_REVIEW_LEDGER_BACKFILL_STATUS,
@@ -107,7 +112,9 @@ async function createReviewVerifyFixture(
     resolveRuntimeDebugOptions: () => ({
       interactive: false,
       requestedUiMode: null,
+      requestedUiTheme: null,
       uiMode: CliInteractiveUiMode.NONE,
+      uiTheme: CliReactThemePreset.GOVERNOR,
       uiFallbackBehavior: null,
       inputTty: false,
       stderrTty: false,

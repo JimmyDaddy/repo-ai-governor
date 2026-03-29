@@ -2,6 +2,7 @@ import type {
   CliInteractiveShellFallbackBehavior,
   CliInteractiveUiMode,
 } from '../../constants/cli-interactive-shell.constant.js';
+import type { CliReactThemePreset } from '../../constants/cli-react-theme.constant.js';
 
 /**
  * Defines normalized runtime flags consumed by command execution paths.
@@ -9,7 +10,9 @@ import type {
 export interface CliRuntimeDebugOptions {
   interactive?: boolean;
   requestedUiMode?: CliInteractiveUiMode | null;
+  requestedUiTheme?: CliReactThemePreset | null;
   uiMode?: CliInteractiveUiMode;
+  uiTheme?: CliReactThemePreset;
   uiFallbackBehavior?: CliInteractiveShellFallbackBehavior | null;
   inputTty?: boolean;
   stderrTty?: boolean;

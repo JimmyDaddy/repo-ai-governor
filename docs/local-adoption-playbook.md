@@ -126,6 +126,7 @@ Interpret the output as follows:
 4. If output shows `confirmation_items` warnings or a non-zero blocking count, stop and manually confirm those items before writing any migrated config back.
 5. Keep the printed rollback reference until the upgraded config survives one `doctor` + `check` round in the target repository.
 6. In local TTY + `pretty` mode, `upgrade` defaults to the React shell on `stderr`; use `--ui none` or `--ui classic` when you need a quieter human-facing run while keeping stdout machine-readable.
+7. Use `--ui-theme governor|catppuccin|calm` to switch the React shell preset during local validation runs.
 
 ## 3.3 Workflow Definition Preview And Save
 
@@ -152,9 +153,9 @@ Default mode is `tool_managed`.
 Switch to `repo_local` with explicit migration commands:
 
 ```bash
-pnpm exec repo-ai-governor workspace --workspace-action dry-run --workspace-mode repo_local --output json
-pnpm exec repo-ai-governor workspace --workspace-action execute --workspace-mode repo_local --output json
-pnpm exec repo-ai-governor workspace --workspace-action rollback --workspace-plan <plan-path> --output json
+pnpm exec repo-ai-governor workspace dry-run --workspace-mode repo_local --output json
+pnpm exec repo-ai-governor workspace execute --workspace-mode repo_local --output json
+pnpm exec repo-ai-governor workspace rollback <plan-path> --output json
 ```
 
 Rollback plan:
@@ -162,6 +163,36 @@ Rollback plan:
 1. Keep the printed `plan-path` from `workspace dry-run` or `workspace execute`.
 2. Use that same `plan-path` for explicit rollback.
 3. Re-run `doctor` and verify `workspaceRoot` resolves back to `tool_managed`.
+
+Persist a workspace default React shell theme when you do not want to repeat `--ui-theme` on every run:
+
+```bash
+pnpm exec repo-ai-governor workspace set-ui-theme calm --output json
+```
+
+Open the interactive selector when you prefer choosing from the available presets:
+
+```bash
+pnpm exec repo-ai-governor workspace set-ui-theme --output pretty
+pnpm exec repo-ai-governor set-ui-theme --output pretty
+```
+
+Persist a global default React shell theme shared by every workspace:
+
+```bash
+pnpm exec repo-ai-governor set-ui-theme calm --output json
+```
+
+Theme and reset notes:
+
+1. Theme precedence is command override `--ui-theme` > workspace default > global CLI default.
+2. `set-ui-theme` writes `ui.react.theme` into the active `governor.yaml` by default; generated configs start with `ui.react.theme: governor`.
+3. If a repo-local selector config is also active, workspace-scoped `set-ui-theme` keeps that file in sync only when the selector file already exists.
+4. Top-level `set-ui-theme <preset>` defaults to global scope, writes `~/.repo-ai-governor/cli-preferences.yaml`, and does not modify workspace configs; use `--theme-scope workspace` only when you intentionally want the shortcut to target the current workspace.
+5. `pnpm exec repo-ai-governor set-ui-theme --help` lists the supported presets, and interactive TTY + `pretty` mode lets you omit `[theme]` to open a selector.
+6. Keep using `--ui-theme governor|catppuccin|calm` when you want a one-off shell override during validation.
+7. Use `pnpm exec repo-ai-governor workspace clear-config --output json` when you want to remove the current selector/config files without deleting workflow, diagnostics, or review artifacts.
+8. The legacy `--workspace-action ...` form still works; prefer `workspace <action> [value]` for shorter human-driven commands.
 
 Artifact locality contract:
 

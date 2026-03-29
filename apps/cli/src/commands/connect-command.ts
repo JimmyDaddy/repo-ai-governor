@@ -15,6 +15,7 @@ import {
   CliGovernanceCheckStatus,
 } from '../constants/cli-governance-runtime.constant.js';
 import { CliInteractiveUiMode } from '../constants/cli-interactive-shell.constant.js';
+import { DEFAULT_CLI_REACT_THEME_PRESET } from '../constants/cli-react-theme.constant.js';
 import {
   ReactCliCommandDescriptorCatalog,
   ReactCliCommandViewModelBuilder,
@@ -263,13 +264,16 @@ export class CliConnectCommand implements CliCommandExecutor {
       return undefined;
     }
 
+    const resolvedThemePreset =
+      options.runtimeDebugOptions.uiTheme ?? DEFAULT_CLI_REACT_THEME_PRESET;
     return this.viewModelBuilder.build({
       commandName: CliCommandName.CONNECT,
       descriptor,
-      subtitle: `ui=${options.runtimeDebugOptions.uiMode} stdout=${context.options.outputMode} workspace=${context.options.workspace.mode}`,
+      subtitle: `ui=${options.runtimeDebugOptions.uiMode} theme=${resolvedThemePreset} stdout=${context.options.outputMode} workspace=${context.options.workspace.mode}`,
       inputTitle: this.translate(context, 'cli.reactShell.shared.inputs'),
       summaryTitle: this.translate(context, 'cli.reactShell.shared.summary'),
       attentionTitle: this.translate(context, 'cli.reactShell.shared.attention'),
+      themePreset: resolvedThemePreset,
       statusMessage: this.translate(context, 'cli.reactShell.connect.status.verification', {
         status: options.adapterVerification.overallStatus,
       }),

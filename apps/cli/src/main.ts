@@ -54,7 +54,14 @@ import {
   DEFAULT_CLI_VERBOSITY,
   NON_TTY_FALLBACK_OUTPUT_MODE,
 } from './constants/cli-output.constant.js';
+import {
+  CLI_REACT_THEME_PRESET_ORDER,
+  CLI_REACT_THEME_VALUES,
+  type CliReactThemePreset,
+  DEFAULT_CLI_REACT_THEME_PRESET,
+} from './constants/cli-react-theme.constant.js';
 import { CliWorkflowAction } from './constants/cli-workflow.constant.js';
+import { CliWorkspaceAction, CliWorkspaceThemeScope } from './constants/cli-workspace.constant.js';
 import { CliCodexExecFixtureEnvironmentKey } from './constants/codex-exec-fixture.constant.js';
 import { CliGithubCopilotExecFixtureEnvironmentKey } from './constants/github-copilot-exec-fixture.constant.js';
 import {
@@ -67,6 +74,7 @@ import { ReactCliStderrFramePresenter } from './react-cli/index.js';
 import { CliClaudeCodeExecFixtureRuntime } from './runtime/claude-code-exec-fixture-runtime.js';
 import { CliCodexExecFixtureRuntime } from './runtime/codex-exec-fixture-runtime.js';
 import { CliGithubCopilotExecFixtureRuntime } from './runtime/github-copilot-exec-fixture-runtime.js';
+import { GlobalCliThemePreferenceService } from './runtime/global-cli-theme-preference-service.js';
 import { IdeStandardsSourceRuntime } from './runtime/ide-standards-source-runtime.js';
 import { IdeSurfaceRegistryRuntime } from './runtime/ide-surface-registry-runtime.js';
 import { CliInteractiveShellUiModeResolver } from './runtime/interactive-shell/interactive-shell-ui-mode-resolver.js';
@@ -237,6 +245,7 @@ interface ResolvedCliRuntimeContext {
   i18n: I18nRuntimeConfig;
   memory: MemoryRuntimeConfig;
   adapters: AdaptersConfig;
+  uiTheme: CliReactThemePreset;
   profileId: string | null;
   configSource: 'default' | 'file';
   workspace: ResolvedWorkspace;
@@ -303,6 +312,7 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
     const claudeCodeExecRunner = claudeCodeExecFixtureRuntime.resolveExecRunner(environment);
     const githubCopilotExecFixtureRuntime = new CliGithubCopilotExecFixtureRuntime();
     const githubCopilotExecRunner = githubCopilotExecFixtureRuntime.resolveExecRunner(environment);
+    const globalCliThemePreferenceService = new GlobalCliThemePreferenceService();
     const notificationProviderRegistryRuntime = new CliNotificationProviderRegistryRuntime();
     const notificationProviders = notificationProviderRegistryRuntime.resolveProviders(environment);
     const adapterLocalProbeOverrides = resolveFixtureBackedLocalProbeOverrides({
@@ -310,9 +320,24 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
       hasClaudeCodeExecFixture: Boolean(claudeCodeExecRunner),
       hasGithubCopilotExecFixture: Boolean(githubCopilotExecRunner),
     });
-    const runtimeDebugOptions = resolveRuntimeDebugOptions(rawArgs, io.cwd(), outputContext, io);
-    const runtimeContext = resolveRuntimeContext(io.cwd(), requestedProfileId);
-    const workspaceCommandOptions = resolveWorkspaceCommandOptions(rawArgs);
+    const runtimeContext = resolveRuntimeContext(
+      io.cwd(),
+      requestedProfileId,
+      environment,
+      globalCliThemePreferenceService,
+    );
+    const workspaceCommandOptions = resolveWorkspaceCommandOptions(
+      rawArgs,
+      globalCliThemePreferenceService.resolvePreferencePath(environment),
+    );
+    const runtimeDebugOptions = resolveRuntimeDebugOptions(
+      rawArgs,
+      io.cwd(),
+      outputContext,
+      io,
+      runtimeContext.uiTheme,
+      workspaceCommandOptions,
+    );
     const workflowCommandOptions = resolveWorkflowCommandOptions(rawArgs);
     memoryStoreComposition = await DEFAULT_MEMORY_PROVIDER_REGISTRY.loadProvider({
       workspaceRoot: runtimeContext.workspace.workspaceRoot,
@@ -380,6 +405,7 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
     program.option('--profile <profileId>', runtimeI18n.t('cli.options.profile'));
     program.option('--output <mode>', runtimeI18n.t('cli.options.output'));
     program.option('--ui <mode>', runtimeI18n.t('cli.options.ui'));
+    program.option('--ui-theme <theme>', runtimeI18n.t('cli.options.uiTheme'));
     program.option('--verbosity <level>', runtimeI18n.t('cli.options.verbosity'));
     program.option('--compact', runtimeI18n.t('cli.options.compact'));
     program.option('--no-color', runtimeI18n.t('cli.options.noColor'));
@@ -398,6 +424,7 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
     program.option('--workspace-mode <mode>', runtimeI18n.t('cli.options.workspaceMode'));
     program.option('--workspace-root <path>', runtimeI18n.t('cli.options.workspaceRoot'));
     program.option('--workspace-plan <path>', runtimeI18n.t('cli.options.workspacePlan'));
+    program.option('--theme-scope <scope>', runtimeI18n.t('cli.options.themeScope'));
     program.option(
       '--hitl-decision <decision>',
       'HITL decision receipt (`approve`, `reject`, or `revise`).',
@@ -425,7 +452,10 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
     });
     program.exitOverride();
 
-    const executeCliCommand = async (resolvedCommandName: CliCommandName) => {
+    const executeCliCommand = async (
+      resolvedCommandName: CliCommandName,
+      presentedCommandName: string = resolvedCommandName,
+    ) => {
       const diagnostics: CliCommandDiagnostics = {
         configSource: runtimeContext.configSource,
         locale: resolvedLocale,
@@ -469,7 +499,7 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
 
       outputPresenter.writeSuccess(
         buildSuccessOutputPayload(
-          resolvedCommandName,
+          presentedCommandName,
           executionResult.message,
           outputContext,
           diagnostics,
@@ -479,7 +509,10 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
     };
 
     for (const commandDefinition of CLI_COMMAND_DEFINITIONS) {
-      if (commandDefinition.name === CliCommandName.WORKFLOW) {
+      if (
+        commandDefinition.name === CliCommandName.WORKFLOW ||
+        commandDefinition.name === CliCommandName.WORKSPACE
+      ) {
         continue;
       }
 
@@ -490,6 +523,36 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
           await executeCliCommand(commandDefinition.name);
         });
     }
+
+    program
+      .command(CliCommandName.WORKSPACE)
+      .description(runtimeI18n.t('cli.commands.workspace.description'))
+      .argument('[action]', runtimeI18n.t('cli.commands.workspace.actionArgument'))
+      .argument('[value]', runtimeI18n.t('cli.commands.workspace.valueArgument'))
+      .option('--workspace-action <action>', runtimeI18n.t('cli.options.workspaceAction'))
+      .option('--workspace-mode <mode>', runtimeI18n.t('cli.options.workspaceMode'))
+      .option('--workspace-root <path>', runtimeI18n.t('cli.options.workspaceRoot'))
+      .option('--workspace-plan <path>', runtimeI18n.t('cli.options.workspacePlan'))
+      .option('--theme-scope <scope>', runtimeI18n.t('cli.options.themeScope'))
+      .option('--output <mode>', runtimeI18n.t('cli.options.output'))
+      .option('--ui <mode>', runtimeI18n.t('cli.options.ui'))
+      .option('--ui-theme <theme>', runtimeI18n.t('cli.options.uiTheme'))
+      .addHelpText('after', buildWorkspaceHelpText(runtimeI18n))
+      .action(async () => {
+        await executeCliCommand(CliCommandName.WORKSPACE);
+      });
+
+    program
+      .command(CliWorkspaceAction.SET_UI_THEME)
+      .description(runtimeI18n.t('cli.commands.setUiTheme.description'))
+      .argument('[theme]', runtimeI18n.t('cli.commands.setUiTheme.themeArgument'))
+      .option('--theme-scope <scope>', runtimeI18n.t('cli.options.themeScope'))
+      .option('--output <mode>', runtimeI18n.t('cli.options.output'))
+      .option('--ui <mode>', runtimeI18n.t('cli.options.ui'))
+      .addHelpText('after', buildSetUiThemeHelpText(runtimeI18n))
+      .action(async () => {
+        await executeCliCommand(CliCommandName.WORKSPACE, CliWorkspaceAction.SET_UI_THEME);
+      });
 
     const workflowCommand = program
       .command(CliCommandName.WORKFLOW)
@@ -555,6 +618,78 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
 }
 
 /**
+ * Builds one localized workspace-command help appendix with action guidance and copy-paste examples.
+ * @param i18n Initialized CLI i18n runtime.
+ * @returns Multi-line help text appended after Commander-generated options.
+ */
+function buildWorkspaceHelpText(i18n: I18nRuntime): string {
+  return [
+    '',
+    i18n.t('cli.commands.workspace.actionGuideTitle'),
+    `  ${CliWorkspaceAction.DRY_RUN.padEnd(12)} ${i18n.t('cli.commands.workspace.actionGuideDryRun')}`,
+    `  ${CliWorkspaceAction.EXECUTE.padEnd(12)} ${i18n.t('cli.commands.workspace.actionGuideExecute')}`,
+    `  ${CliWorkspaceAction.ROLLBACK.padEnd(12)} ${i18n.t('cli.commands.workspace.actionGuideRollback')}`,
+    `  ${CliWorkspaceAction.CLEAR_CONFIG.padEnd(12)} ${i18n.t('cli.commands.workspace.actionGuideClearConfig')}`,
+    `  ${CliWorkspaceAction.SET_UI_THEME.padEnd(12)} ${i18n.t('cli.commands.workspace.actionGuideSetUiTheme')}`,
+    '',
+    i18n.t('cli.commands.workspace.compatibilityTitle'),
+    `  ${i18n.t('cli.commands.workspace.compatibilityDetail')}`,
+    '',
+    ...buildThemeHelpTextBlock(i18n),
+    '',
+    i18n.t('cli.commands.workspace.examplesTitle'),
+    `  ${CLI_PROGRAM_NAME} workspace dry-run --workspace-mode repo_local --output json`,
+    `  ${CLI_PROGRAM_NAME} workspace execute --workspace-mode repo_local --output pretty`,
+    `  ${CLI_PROGRAM_NAME} workspace rollback <plan-path> --output json`,
+    `  ${CLI_PROGRAM_NAME} workspace clear-config --output pretty`,
+    `  ${CLI_PROGRAM_NAME} workspace set-ui-theme --output pretty`,
+    `  ${CLI_PROGRAM_NAME} set-ui-theme --output pretty`,
+    `  ${CLI_PROGRAM_NAME} set-ui-theme calm --output pretty`,
+    `  ${CLI_PROGRAM_NAME} set-ui-theme calm --theme-scope workspace --output pretty`,
+    `  ${CLI_PROGRAM_NAME} workspace set-ui-theme calm --output pretty`,
+  ].join('\n');
+}
+
+/**
+ * Builds one localized top-level set-ui-theme help appendix.
+ * @param i18n Initialized CLI i18n runtime.
+ * @returns Multi-line help text appended after Commander-generated options.
+ */
+function buildSetUiThemeHelpText(i18n: I18nRuntime): string {
+  return [
+    '',
+    i18n.t('cli.commands.setUiTheme.precedenceTitle'),
+    `  ${i18n.t('cli.commands.setUiTheme.precedenceDetail')}`,
+    '',
+    ...buildThemeHelpTextBlock(i18n),
+    '',
+    i18n.t('cli.commands.setUiTheme.examplesTitle'),
+    `  ${CLI_PROGRAM_NAME} set-ui-theme --output pretty`,
+    `  ${CLI_PROGRAM_NAME} set-ui-theme calm --output pretty`,
+    `  ${CLI_PROGRAM_NAME} set-ui-theme calm --theme-scope workspace --output pretty`,
+    `  ${CLI_PROGRAM_NAME} workspace set-ui-theme calm --output pretty`,
+  ].join('\n');
+}
+
+/**
+ * Builds one localized theme discoverability block reused by help appendices.
+ * @param i18n Initialized CLI i18n runtime.
+ * @returns Ordered help lines covering supported presets and selector behavior.
+ */
+function buildThemeHelpTextBlock(i18n: I18nRuntime): string[] {
+  return [
+    i18n.t('cli.reactShell.themeSelector.availableThemesTitle'),
+    ...CLI_REACT_THEME_PRESET_ORDER.map(
+      (themePreset) =>
+        `  ${themePreset.padEnd(12)} ${i18n.t(`cli.reactShell.themePresets.${themePreset}.description`)}`,
+    ),
+    '',
+    i18n.t('cli.reactShell.themeSelector.selectorTitle'),
+    `  ${i18n.t('cli.reactShell.themeSelector.selectorHint')}`,
+  ];
+}
+
+/**
  * Resolves runtime config from repository file when available, otherwise uses defaults.
  * @param currentWorkingDirectory Execution working directory.
  * @param requestedProfileId Optional requested profile id.
@@ -563,11 +698,16 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
 function resolveRuntimeContext(
   currentWorkingDirectory: string,
   requestedProfileId?: string,
+  environment: NodeJS.ProcessEnv = process.env,
+  globalCliThemePreferenceService = new GlobalCliThemePreferenceService(),
 ): ResolvedCliRuntimeContext {
   const configLoader = new ConfigLoader();
   const profileResolver = new ProfileResolver();
   const workspaceResolver = new WorkspaceResolver();
   const defaultWorkspace = workspaceResolver.resolve({ currentWorkingDirectory });
+  const globalThemePreference = globalCliThemePreferenceService.loadThemePreference({
+    environment,
+  });
   const repoLocalConfigPath = resolve(currentWorkingDirectory, '.repo-ai-governor/governor.yaml');
   const configPathCandidates = Array.from(
     new Set([repoLocalConfigPath, defaultWorkspace.configPath]),
@@ -584,11 +724,22 @@ function resolveRuntimeContext(
       currentWorkingDirectory,
       config: resolvedConfig.config,
     });
+    const workspaceThemePreference = resolveWorkspaceThemePreference({
+      configLoader,
+      profileResolver,
+      requestedProfileId,
+      activeWorkspaceConfigPath: resolvedWorkspace.configPath,
+      fallbackConfigPath: configPath,
+      fallbackThemePreference: resolvedConfig.config.ui?.react?.theme ?? null,
+    });
 
     return {
       i18n: resolvedConfig.config.i18n,
       memory: resolveMemoryRuntimeConfig(resolvedConfig.config.memory),
       adapters: resolveAdaptersRuntimeConfig(resolvedConfig.config.adapters),
+      uiTheme: resolveCliThemePreset(
+        workspaceThemePreference ?? globalThemePreference ?? undefined,
+      ),
       profileId: resolvedConfig.profileId,
       configSource: 'file',
       workspace: resolvedWorkspace,
@@ -599,10 +750,39 @@ function resolveRuntimeContext(
     i18n: DEFAULT_I18N_CONFIG,
     memory: DEFAULT_MEMORY_CONFIG,
     adapters: resolveAdaptersRuntimeConfig(undefined),
+    uiTheme: resolveCliThemePreset(globalThemePreference ?? undefined),
     profileId: null,
     configSource: 'default',
     workspace: defaultWorkspace,
   };
+}
+
+/**
+ * Resolves the effective workspace-layer theme by preferring the active workspace config.
+ * @param options Helper inputs used to inspect both selector and active workspace config files.
+ * @returns Workspace theme preference or `null` when no workspace file defines one.
+ */
+function resolveWorkspaceThemePreference(options: {
+  configLoader: ConfigLoader;
+  profileResolver: ProfileResolver;
+  requestedProfileId?: string;
+  activeWorkspaceConfigPath: string;
+  fallbackConfigPath: string;
+  fallbackThemePreference: CliReactThemePreset | null;
+}): CliReactThemePreset | null {
+  if (options.activeWorkspaceConfigPath === options.fallbackConfigPath) {
+    return options.fallbackThemePreference;
+  }
+
+  if (!existsSync(options.activeWorkspaceConfigPath)) {
+    return options.fallbackThemePreference;
+  }
+
+  const activeWorkspaceConfig = options.profileResolver.resolve(
+    options.configLoader.loadFromFile(options.activeWorkspaceConfigPath),
+    options.requestedProfileId,
+  );
+  return activeWorkspaceConfig.config.ui?.react?.theme ?? options.fallbackThemePreference;
 }
 
 /**
@@ -919,6 +1099,7 @@ function resolveVerbosityOption(args: string[]): CliVerbosity {
  * Resolves local debug/replay flags for `run` execution path.
  * @param args CLI args excluding node and binary.
  * @param currentWorkingDirectory Runtime current working directory.
+ * @param defaultUiTheme Effective repository-level React-shell theme preset.
  * @returns Normalized debug options.
  */
 function resolveRuntimeDebugOptions(
@@ -926,6 +1107,8 @@ function resolveRuntimeDebugOptions(
   currentWorkingDirectory: string,
   outputContext: CliResolvedOutputContext,
   io: CliIoAdapters,
+  defaultUiTheme: CliReactThemePreset,
+  workspaceCommandOptions: CliWorkspaceCommandOptions,
 ): CliRuntimeDebugOptions {
   const readRequiredOption = (flag: string, errorMessage: string): string | null => {
     const option = readOptionInput(args, flag);
@@ -965,6 +1148,27 @@ function resolveRuntimeDebugOptions(
       GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
       `Option --ui must be one of none|classic|react|tui; received '${requestedUiMode}'.`,
       { option: '--ui', value: requestedUiMode },
+    );
+  }
+  const uiThemeOption = readOptionInput(args, '--ui-theme');
+  if (uiThemeOption.isPresent && !uiThemeOption.value) {
+    throw new RuntimeError(
+      GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+      'Option --ui-theme requires one value: governor|catppuccin|calm.',
+      { option: '--ui-theme' },
+    );
+  }
+
+  const workspaceThemeShortcut =
+    workspaceCommandOptions.action === CliWorkspaceAction.SET_UI_THEME
+      ? (workspaceCommandOptions.actionValue?.trim().toLowerCase() ?? null)
+      : null;
+  const requestedUiTheme = uiThemeOption.value?.trim().toLowerCase() ?? workspaceThemeShortcut;
+  if (requestedUiTheme && !CLI_REACT_THEME_VALUES.has(requestedUiTheme)) {
+    throw new RuntimeError(
+      GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+      `Option --ui-theme must be one of governor|catppuccin|calm; received '${requestedUiTheme}'.`,
+      { option: '--ui-theme', value: requestedUiTheme },
     );
   }
 
@@ -1060,7 +1264,9 @@ function resolveRuntimeDebugOptions(
   return {
     interactive: !hasFlag(args, '--no-interactive'),
     requestedUiMode: uiModeResolution.requestedUiMode,
+    requestedUiTheme: (requestedUiTheme as CliReactThemePreset | null) ?? null,
     uiMode: uiModeResolution.uiMode,
+    uiTheme: (requestedUiTheme as CliReactThemePreset | null) ?? defaultUiTheme,
     uiFallbackBehavior: uiModeResolution.fallbackBehavior,
     inputTty,
     stderrTty,
@@ -1080,6 +1286,15 @@ function resolveRuntimeDebugOptions(
     hitlDecidedBy,
     hitlConstraints,
   };
+}
+
+/**
+ * Resolves one effective React-shell theme by falling back to the repository baseline.
+ * @param themePreset Optional config-defined preset.
+ * @returns Effective preset guaranteed to be supported.
+ */
+function resolveCliThemePreset(themePreset: CliReactThemePreset | undefined): CliReactThemePreset {
+  return themePreset ?? DEFAULT_CLI_REACT_THEME_PRESET;
 }
 
 /**
@@ -1340,12 +1555,33 @@ function readOptionInput(args: string[], flag: string): ReadOptionResult {
  * @param args CLI args excluding node and binary.
  * @returns Parsed workspace command options.
  */
-function resolveWorkspaceCommandOptions(args: string[]): CliWorkspaceCommandOptions {
+function resolveWorkspaceCommandOptions(
+  args: string[],
+  themePreferencePath: string | null = null,
+): CliWorkspaceCommandOptions {
+  const topLevelSetUiThemeRequested =
+    resolveRequestedCommandName(args) === CliWorkspaceAction.SET_UI_THEME;
+  const explicitThemeScope = readOptionValue(args, '--theme-scope');
+  const action =
+    readOptionValue(args, '--workspace-action') ??
+    resolveNestedSubcommandToken(args, CliCommandName.WORKSPACE) ??
+    (topLevelSetUiThemeRequested ? CliWorkspaceAction.SET_UI_THEME : null);
+  const actionValue =
+    resolvePositionalTokenAfterCommand(args, CliCommandName.WORKSPACE, 1) ??
+    (topLevelSetUiThemeRequested
+      ? resolvePositionalTokenAfterToken(args, CliWorkspaceAction.SET_UI_THEME, 0)
+      : null);
   return {
-    action: readOptionValue(args, '--workspace-action') ?? null,
+    action,
+    actionValue,
     targetMode: readOptionValue(args, '--workspace-mode') ?? null,
     targetRoot: readOptionValue(args, '--workspace-root') ?? null,
-    planPath: readOptionValue(args, '--workspace-plan') ?? null,
+    planPath:
+      readOptionValue(args, '--workspace-plan') ??
+      (action === CliWorkspaceAction.ROLLBACK ? actionValue : null),
+    themeScope:
+      explicitThemeScope ?? (topLevelSetUiThemeRequested ? CliWorkspaceThemeScope.GLOBAL : null),
+    themePreferencePath,
   };
 }
 
@@ -1414,11 +1650,42 @@ function resolveRequestedCommandName(args: string[]): string {
  * @returns Nested subcommand token or `null`.
  */
 function resolveNestedSubcommandToken(args: string[], commandName: CliCommandName): string | null {
-  const commandIndex = args.indexOf(commandName);
+  return resolvePositionalTokenAfterCommand(args, commandName, 0);
+}
+
+/**
+ * Resolves one positional token after a top-level command while skipping option values.
+ * @param args CLI args excluding node and binary.
+ * @param commandName Top-level command token.
+ * @param position Zero-based positional index after the command token.
+ * @returns Positional token or `null`.
+ */
+function resolvePositionalTokenAfterCommand(
+  args: string[],
+  commandName: CliCommandName,
+  position: number,
+): string | null {
+  return resolvePositionalTokenAfterToken(args, commandName, position);
+}
+
+/**
+ * Resolves one positional token after a top-level token while skipping option values.
+ * @param args CLI args excluding node and binary.
+ * @param commandToken Top-level token.
+ * @param position Zero-based positional index after the token.
+ * @returns Positional token or `null`.
+ */
+function resolvePositionalTokenAfterToken(
+  args: string[],
+  commandToken: string,
+  position: number,
+): string | null {
+  const commandIndex = args.indexOf(commandToken);
   if (commandIndex < 0) {
     return null;
   }
 
+  let positionalIndex = 0;
   for (let index = commandIndex + 1; index < args.length; index += 1) {
     const token = args[index];
     if (!token) {
@@ -1439,7 +1706,11 @@ function resolveNestedSubcommandToken(args: string[], commandName: CliCommandNam
       continue;
     }
 
-    return token;
+    if (positionalIndex === position) {
+      return token;
+    }
+
+    positionalIndex += 1;
   }
 
   return null;

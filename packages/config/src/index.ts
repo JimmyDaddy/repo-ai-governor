@@ -27,6 +27,8 @@ export type {
   RoleProfileConfig,
   RoleProfileLifecycleConfig,
   ResolvedConfig,
+  UiConfig,
+  UiReactConfig,
   ResolvedWorkspace,
   UpgradeConfirmationItem,
   UpgradeMigrationSuggestion,

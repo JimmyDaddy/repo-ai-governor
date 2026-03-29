@@ -23,6 +23,7 @@ import {
   CliInteractiveShellFallbackBehavior,
   CliInteractiveUiMode,
 } from '../constants/cli-interactive-shell.constant.js';
+import { DEFAULT_CLI_REACT_THEME_PRESET } from '../constants/cli-react-theme.constant.js';
 import { CliInitReactShellRunner } from '../runtime/interactive-shell/init-react-shell-runner.js';
 import type {
   CliCommandExecutorContext,
@@ -88,12 +89,13 @@ export class CliInitCommand implements CliCommandExecutor {
           interactiveSelection = await this.reactShellRunner.run({
             locale: context.options.locale as Locale,
             outputMode: context.options.outputMode,
+            uiTheme: runtimeDebugOptions.uiTheme ?? DEFAULT_CLI_REACT_THEME_PRESET,
             translate: (key, interpolation) => context.translate?.(key, interpolation) ?? key,
           });
           checks.push({
             id: 'interactive_shell',
             status: CliGovernanceCheckStatus.PASS,
-            detail: `ui_mode=react fallback=${uiFallbackBehavior ?? 'none'}`,
+            detail: `ui_mode=react theme=${runtimeDebugOptions.uiTheme ?? DEFAULT_CLI_REACT_THEME_PRESET} fallback=${uiFallbackBehavior ?? 'none'}`,
           });
         } catch (error) {
           if (
@@ -127,7 +129,7 @@ export class CliInitCommand implements CliCommandExecutor {
         checks.push({
           id: 'interactive_shell',
           status: CliGovernanceCheckStatus.PASS,
-          detail: `ui_mode=classic fallback=${uiFallbackBehavior ?? 'none'}`,
+          detail: `ui_mode=classic theme=${runtimeDebugOptions.uiTheme ?? DEFAULT_CLI_REACT_THEME_PRESET} fallback=${uiFallbackBehavior ?? 'none'}`,
         });
       }
     }
@@ -195,6 +197,7 @@ export class CliInitCommand implements CliCommandExecutor {
             ? 'interactive_bootstrap'
             : context.options.workspace.modeSource,
           ui_mode: resolvedUiMode,
+          ui_theme: runtimeDebugOptions.uiTheme ?? DEFAULT_CLI_REACT_THEME_PRESET,
           ui_fallback_behavior: uiFallbackBehavior,
         },
       },

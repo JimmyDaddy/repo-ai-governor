@@ -5,6 +5,7 @@ import { dirname, resolve } from 'node:path';
 
 import { WorkspaceMode } from '@repo-ai-governor/config';
 import {
+  CliReactThemePreset,
   DEFAULT_I18N_RUNTIME_CONFIG,
   ErrorOutputEnvironment,
   ExecutionInteractionCategory,
@@ -99,7 +100,9 @@ describe('CliConnectCommand', () => {
         resolveRuntimeDebugOptions: () => ({
           interactive: true,
           requestedUiMode: CliInteractiveUiMode.REACT,
+          requestedUiTheme: null,
           uiMode: CliInteractiveUiMode.REACT,
+          uiTheme: CliReactThemePreset.GOVERNOR,
           uiFallbackBehavior: null,
           inputTty: true,
           stderrTty: true,

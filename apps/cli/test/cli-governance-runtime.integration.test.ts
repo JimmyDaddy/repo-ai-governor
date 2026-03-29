@@ -2473,6 +2473,8 @@ describe('CliGovernanceRuntime policy/review safeguards', () => {
 
         expect(configContent).toContain('schemaVersion: "1.1"');
         expect(configContent).toContain('workspace:');
+        expect(configContent).toContain('ui:');
+        expect(configContent).toContain('theme: governor');
       },
       {
         runtimeDebugOptions: {

@@ -56,6 +56,7 @@ describe('CLI command integration', () => {
     expect(stdoutBuffer.join('')).toContain('review-verify');
     expect(stdoutBuffer.join('')).toContain('verify');
     expect(stdoutBuffer.join('')).toContain('upgrade');
+    expect(stdoutBuffer.join('')).toContain('set-ui-theme');
     expect(stdoutBuffer.join('')).toContain('workspace');
     expect(stdoutBuffer.join('')).toContain('workflow');
   });
@@ -70,5 +71,19 @@ describe('CLI command integration', () => {
     expect(stdoutBuffer.join('')).toContain('create');
     expect(stdoutBuffer.join('')).toContain('edit');
     expect(stdoutBuffer.join('')).toContain('preview');
+  });
+
+  it('shows workspace action shorthand in workspace help', async () => {
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo();
+
+    const exitCode = await runCli(['node', 'repo-ai-governor', 'workspace', '--help'], io);
+
+    expect(exitCode).toBe(0);
+    expect(stderrBuffer.join('')).toBe('');
+    expect(stdoutBuffer.join('')).toContain('[action]');
+    expect(stdoutBuffer.join('')).toContain('[value]');
+    expect(stdoutBuffer.join('')).toContain('--theme-scope <scope>');
+    expect(stdoutBuffer.join('')).toContain('workspace clear-config');
+    expect(stdoutBuffer.join('')).toContain('set-ui-theme calm');
   });
 });

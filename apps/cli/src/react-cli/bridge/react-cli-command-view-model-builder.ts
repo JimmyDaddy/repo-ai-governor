@@ -1,5 +1,6 @@
 import type { CliCommandName } from '../../constants/cli-command.constant.js';
 import { CliGovernanceCheckStatus } from '../../constants/cli-governance-runtime.constant.js';
+import type { CliReactThemePreset } from '../../constants/cli-react-theme.constant.js';
 import type { CliCommandResultCheck, CliInteractionPrompt } from '../../types/interfaces/index.js';
 import type {
   ReactCliSectionViewModel,
@@ -18,6 +19,7 @@ export interface ReactCliCommandViewModelBuildOptions {
   footerShortcutsTitle?: string;
   summaryLines: string[];
   fieldValues?: Record<string, string>;
+  themePreset?: CliReactThemePreset;
   statusMessage?: string;
   statusVariant?: ReactCliStatusVariant;
   checks?: CliCommandResultCheck[];
@@ -53,6 +55,7 @@ export class ReactCliCommandViewModelBuilder {
     return {
       title: `[react-shell:${options.commandName}] ${options.descriptor.title}`,
       subtitle: `${options.subtitle} descriptor=${options.descriptor.descriptorId}`,
+      themePreset: options.themePreset,
       statusMessage: options.statusMessage,
       statusVariant: options.statusVariant,
       attentionSection:

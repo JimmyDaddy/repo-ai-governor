@@ -24,6 +24,7 @@ import {
   type CliRuntimeOperation,
 } from '../constants/cli-governance-runtime.constant.js';
 import { CliInteractiveUiMode } from '../constants/cli-interactive-shell.constant.js';
+import { DEFAULT_CLI_REACT_THEME_PRESET } from '../constants/cli-react-theme.constant.js';
 import {
   CliWorkflowAction,
   CliWorkflowCompileStatus,
@@ -299,14 +300,16 @@ export class CliWorkflowCommand implements CliCommandExecutor {
       return undefined;
     }
 
+    const resolvedThemePreset = runtimeDebugOptions.uiTheme ?? DEFAULT_CLI_REACT_THEME_PRESET;
     return this.viewModelBuilder.build({
       commandName: CliCommandName.WORKFLOW,
       descriptor,
-      subtitle: `ui=${runtimeDebugOptions.uiMode} stdout=${context.options.outputMode} action=${options.action} entry=${options.entryMode}`,
+      subtitle: `ui=${runtimeDebugOptions.uiMode} theme=${resolvedThemePreset} stdout=${context.options.outputMode} action=${options.action} entry=${options.entryMode}`,
       inputTitle: this.translate(context, 'cli.reactShell.shared.inputs'),
       summaryTitle: this.translate(context, 'cli.reactShell.shared.summary'),
       attentionTitle: this.translate(context, 'cli.reactShell.shared.attention'),
       footerShortcutsTitle: this.translate(context, 'cli.reactShell.shared.shortcuts'),
+      themePreset: resolvedThemePreset,
       statusMessage: this.resolveStatusMessage(
         context,
         options.compileStatus,

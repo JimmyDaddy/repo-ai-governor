@@ -44,13 +44,19 @@
 
 - Status: completed
 - Sprint Goal: 完成 `workflow create/edit/save`、DSL 编辑守护、`upgrade` 显式 React PoC 与对外帮助面收口，让 React shell 进入可默认扩面的完成态。
-- Task Package: `TK-312`、`TK-313`、`TK-314`、`TK-315`、`TK-327`。
+- Task Package: `TK-312`、`TK-313`、`TK-314`、`TK-315`、`TK-327`、`TK-328`、`TK-329`、`TK-330`、`TK-331`、`TK-332`、`TK-333`、`TK-334`。
 - Exit Criteria:
   1. `workflow create/edit/preview` 三态完整，支持 workspace 内保存流程配置。
   2. `Sequential / Parallel / Loop / Condition` 节点、连线与条件分支可编辑，Loop 强制守护 `maxCycles` / `maxWallTimeSeconds`。
   3. 保存后的流程定义能被编译器接受并产出可预览的 compiled IR；`upgrade` React shell 仍保持显式启用。
-  4. `connect/workspace` 默认 React、docs/help surface、completion audit 与 exit acceptance 同步收口。
-  5. 真实仓库调试时可通过 `workspace --workspace-action clear-config` 清理当前 workspace 配置，不必手动定位 repo-local selector 与 active workspace config。
+4. `connect/workspace` 默认 React、docs/help surface、completion audit 与 exit acceptance 同步收口。
+5. 真实仓库调试时可通过 `workspace --workspace-action clear-config` 清理当前 workspace 配置，不必手动定位 repo-local selector 与 active workspace config。
+6. React shell 主题支持通过工作区配置持久化默认值，用户无需在每次执行时重复传入 `--ui-theme`。
+7. `workspace` 允许使用更短的人类友好命令面：`workspace <action> [value]`，同时保持 `--workspace-action` 兼容现有脚本。
+8. 在 `tool_managed` 模式下执行 `workspace set-ui-theme` 时，不得因为主题持久化而无端新建仓库内 repo-local selector config。
+9. React shell 主题解析必须固定为“命令 `--ui-theme` 强制覆盖 > workspace 持久化默认值 > 全局 CLI 默认值”，并通过 `workspace set-ui-theme <preset> --theme-scope global` 提供正式的全局入口。
+10. 顶层人类友好入口 `set-ui-theme <preset>` 应默认作用于全局 CLI 主题，而 `workspace set-ui-theme <preset>` 继续默认作用于当前 workspace。
+11. 用户必须能通过帮助面直接查看可用主题，并在交互式 TTY + `pretty` 模式下通过不带 `[theme]` 的 `set-ui-theme` / `workspace set-ui-theme` 打开 selector。
 
 ## 3. 任务拆解矩阵（WBS）
 
@@ -69,6 +75,13 @@
 | TK-314 | sprint-003 | workflow 保存、compiled IR 验收与 `upgrade` 显式 React PoC | cli/workflow-save-upgrade | TK-312, TK-313 | completed |
 | TK-315 | sprint-003 | docs/help surface 收尾、project-027 出口验收与 completion audit | acceptance/docs-closeout | TK-314 | completed |
 | TK-327 | sprint-003 | `workspace` clear-config 调试清理命令 | cli/workspace-debug-reset | TK-315 | completed |
+| TK-328 | sprint-003 | `workspace` React shell 主题持久化入口 | cli/workspace-theme-config | TK-315, TK-327 | completed |
+| TK-329 | sprint-003 | `workspace --help` 帮助面可发现性修复 | cli/help-surface | TK-327, TK-328 | completed |
+| TK-330 | sprint-003 | `workspace <action> [value]` 人类友好短写入口 | cli/workspace-command-ux | TK-327, TK-328, TK-329 | completed |
+| TK-331 | sprint-003 | `set-ui-theme` tool-managed selector 意外创建回归修复 | cli/workspace-theme-regression | TK-328, TK-330 | completed |
+| TK-332 | sprint-003 | React shell 主题全局/workspace/命令三层优先级 | cli/workspace-theme-layering | TK-328, TK-330, TK-331 | completed |
+| TK-333 | sprint-003 | 顶层 `set-ui-theme` 快捷入口默认全局语义 | cli/workspace-theme-top-level-shortcut | TK-330, TK-332 | completed |
+| TK-334 | sprint-003 | `set-ui-theme` 主题可发现性与 selector 入口 | cli/workspace-theme-selector-discovery | TK-329, TK-330, TK-333 | completed |
 
 ## 4. 依赖产物策略
 
@@ -103,3 +116,11 @@
 11. 2026-03-29：完成 `TK-315`，adopter-facing docs/help/playbook 已同步收口，并新增 `project-027-completion-audit-summary.md` 作为项目完成态审计摘要。
 12. 2026-03-29：项目完成态审计摘要回链：`.repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation/project-027-completion-audit-summary.md`。
 13. 2026-03-29：基于真实仓库调试反馈补充 `TK-327`，新增 `workspace --workspace-action clear-config` 用于一次性清理当前 repo-local selector config 与 active workspace config，降低重复验收/回放时的残留状态干扰。
+14. 2026-03-29：根据真实用户终端反馈补齐 `init` React shell 的 live rerender 收口；`CliInitReactShellInkPromptAdapter` 已切换为单实例 `Ink.rerender()` 驱动，真实 TTY 验收确认步骤与状态切换都在同一展示区刷新。
+15. 2026-03-30：根据用户“主题应可配置且要有正式入口”的反馈补充 `TK-328`，新增 `workspace --workspace-action set-ui-theme`、`ui.react.theme` 持久化默认值与 adopter-facing 文档入口。
+16. 2026-03-30：根据真实用户反馈补充 `TK-329`，修复 `workspace --help` 只显示空壳描述的问题，补齐子命令级选项、动作说明与可复制示例。
+17. 2026-03-30：根据用户“workspace 命令执行太繁琐”的反馈补充 `TK-330`，新增 `workspace <action> [value]` 短写入口，支持 `clear-config`、`set-ui-theme calm`、`rollback <plan-path>` 等更短的人类友好写法，并保留旧 flags 语法兼容脚本。
+18. 2026-03-30：根据真实用户反馈补充 `TK-331`，修复 `tool_managed` 模式下执行 `workspace set-ui-theme` 会错误在仓库内新建 `.repo-ai-governor/governor.yaml` 的回归；现在只会写 active workspace config，并仅在 repo-local selector 已存在时才同步它。
+19. 2026-03-30：根据用户“主题设置应为全局 + workspace + 命令强制三层”的反馈补充 `TK-332`，新增全局 CLI 主题偏好文件、`workspace set-ui-theme --theme-scope global` 入口，并将 React shell 主题优先级固定为命令覆盖 > workspace 默认值 > 全局默认值。
+20. 2026-03-30：根据用户“`pnpm exec repo-ai-governor set-ui-theme calm` 应默认设置全局主题”的反馈补充 `TK-333`，新增顶层 `set-ui-theme` 快捷入口并将其默认 scope 收敛为 global，同时保留 `workspace set-ui-theme` 的 workspace 默认语义。
+21. 2026-03-30：根据用户“如何查看可用 theme，以及能否做成 selector”的反馈补充 `TK-334`，帮助面已增加主题清单与 selector 提示，并让交互式 TTY + `pretty` 模式下省略 `[theme]` 直接进入 React shell selector。

@@ -1,3 +1,5 @@
+import type { CliReactThemePreset } from '../../constants/cli-react-theme.constant.js';
+
 export type ReactCliStatusVariant = 'info' | 'success' | 'warning' | 'error';
 
 export interface ReactCliSectionViewModel {
@@ -8,6 +10,7 @@ export interface ReactCliSectionViewModel {
 export interface ReactCliViewModel {
   title: string;
   subtitle?: string;
+  themePreset?: CliReactThemePreset;
   statusMessage?: string;
   statusVariant?: ReactCliStatusVariant;
   attentionSection?: ReactCliSectionViewModel;

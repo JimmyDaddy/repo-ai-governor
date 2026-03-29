@@ -8,6 +8,10 @@ export const ZH_CN_TRANSLATIONS = {
       profile: '执行命令前应用的配置 profile 标识。',
       output: '指定输出模式：pretty|plain|json。',
       ui: '指定交互式 UI 模式：none|classic|react|tui。交互式 TTY 且 pretty 模式下默认使用 react。',
+      uiTheme:
+        '指定当前命令的一次性 React shell 主题覆盖：governor|catppuccin|calm。默认优先级为 --ui-theme > workspace config > 全局 CLI 偏好。',
+      themeScope:
+        '指定 set-ui-theme 的主题持久化范围：workspace|global。顶层 set-ui-theme 默认 global，workspace set-ui-theme 默认 workspace。',
       verbosity: '指定输出详细级别：quiet|normal|verbose。',
       compact: '启用更紧凑的 pretty 输出，优先人类快速阅读。',
       noColor: '在 pretty 模式下禁用 ANSI 颜色。',
@@ -22,7 +26,8 @@ export const ZH_CN_TRANSLATIONS = {
       restrictedReason: '为受限网络演练显式记录原因，并写入诊断与审计产物。',
       noLocalFallback: '在受限网络演练中禁用本地 fallback，用于验证阻断语义。',
       noInteractive: '禁用首次 init 的交互式问答配置，强制使用非交互初始化。',
-      workspaceAction: '指定 workspace 命令动作：dry-run|execute|rollback|clear-config。',
+      workspaceAction:
+        '指定 workspace 命令动作：dry-run|execute|rollback|clear-config|set-ui-theme。',
       workspaceMode: '指定 workspace 迁移目标模式：repo_local|tool_managed。',
       workspaceRoot: '指定 workspace 迁移命令使用的目标根路径覆盖。',
       workspacePlan: '指定 rollback 动作使用的 workspace migration plan 产物路径。',
@@ -39,7 +44,34 @@ export const ZH_CN_TRANSLATIONS = {
       verify: { description: '校验适配器路由 pass/warn/fail 基线。' },
       plan: { description: '生成或更新执行计划基线。' },
       upgrade: { description: '执行工作区与配置升级基线。' },
-      workspace: { description: '规划、执行、回滚工作区迁移基线，或清除当前工作区配置。' },
+      setUiTheme: {
+        description:
+          '通过顶层快捷入口持久化 React shell 主题，或在交互式 pretty 模式中打开 selector。',
+        themeArgument: '可选主题预设。在交互式 TTY + pretty 模式下省略它即可打开 selector。',
+        precedenceTitle: '主题优先级：',
+        precedenceDetail:
+          '--ui-theme 单次覆盖 > workspace config > 全局 CLI 偏好。顶层 set-ui-theme 默认作用于 global；如果只想改当前 workspace，请传 --theme-scope workspace。',
+        examplesTitle: '示例：',
+      },
+      workspace: {
+        description:
+          '规划、执行、回滚工作区迁移基线，清除当前工作区配置，或持久化 workspace/global 默认 React shell 主题。',
+        actionArgument: 'workspace 动作短写。面向人工执行，等价于 --workspace-action。',
+        valueArgument: '可选动作值。`rollback` 时填写 plan 路径，`set-ui-theme` 时填写主题预设。',
+        actionGuideTitle: '动作说明：',
+        actionGuideDryRun: '仅预览迁移计划；需要 --workspace-mode <repo_local|tool_managed>。',
+        actionGuideExecute:
+          '把迁移动作真正应用到目标工作区；需要 --workspace-mode <repo_local|tool_managed>。',
+        actionGuideRollback: '根据已保存的 --workspace-plan 产物恢复之前的工作区面。',
+        actionGuideClearConfig:
+          '只移除当前 selector/config 文件，保留 diagnostics、workflow、review 等产物。',
+        actionGuideSetUiTheme:
+          '持久化默认 React shell 主题；可直接传 [theme]，也可在交互式 pretty 模式下省略它以打开 selector。--theme-scope <workspace|global> 仍是可选项。',
+        compatibilityTitle: '兼容性：',
+        compatibilityDetail:
+          '旧的 --workspace-action / --workspace-plan / --ui-theme 长写法仍可继续用于脚本；[action] [value] 是更短的人手执行写法，同时主题优先级保持为命令覆盖 > workspace config > 全局偏好。',
+        examplesTitle: '示例：',
+      },
       workflow: {
         description: '预览流程模板、创建已保存的 workflow 定义，或编辑当前已保存的 workflow。',
         createDescription: '从内置模板创建一份 workflow 定义，并保存到当前 workspace。',
@@ -190,6 +222,36 @@ export const ZH_CN_TRANSLATIONS = {
         cancel: 'Ctrl+C 取消',
         unmountedState: '已卸载 state={{state}} fallback={{fallback}}',
       },
+      themePresets: {
+        governor: {
+          description: '偏冷蓝灰的默认主题，对治理类信息有更高对比度。',
+        },
+        catppuccin: {
+          description: '更鲜明的粉彩主题，适合想要更有表现力的壳层外观。',
+        },
+        calm: {
+          description: '更柔和、低对比的主题，适合长时间会话。',
+        },
+      },
+      themeSelector: {
+        title: '选择 React shell 主题',
+        workspaceDescription:
+          '为当前 workspace 持久化一个默认主题。所选预设会成为 workspace 层默认值。',
+        globalDescription:
+          '为所有 workspace 持久化一个全局共享主题。所选预设会成为 CLI 全局默认值。',
+        validation: '主题只能是 governor、catppuccin 或 calm。',
+        submittingTitle: '正在应用主题选择',
+        submittingMessage: '正在把主题“{{theme}}”持久化到 {{scope}} 范围。',
+        successMessage: '主题“{{theme}}”已成为 {{scope}} 默认值。',
+        cancelledBySigint: '主题 selector 已因 SIGINT 取消。',
+        failedBeforeApply: '主题 selector 在应用所选预设前失败。',
+        availableThemesTitle: '可用主题：',
+        selectorTitle: 'Selector：',
+        selectorHint:
+          '在交互式 TTY + pretty 模式下执行不带 [theme] 的 set-ui-theme 或 workspace set-ui-theme，即可直接打开 selector，而不必手输预设。',
+        nonInteractiveError:
+          '非交互模式下，set-ui-theme 需要显式提供主题预设。可选值：{{themes}}。如果是在交互式 TTY + pretty 模式下，可省略 [theme] 直接打开 selector。',
+      },
       footer: {
         stdoutSummaryFollows: 'stdout 摘要紧随其后',
         uiNoneDisablesShell: '--ui none 可关闭壳层',
@@ -246,6 +308,7 @@ export const ZH_CN_TRANSLATIONS = {
       },
       workspace: {
         clearConfigTitle: '清除当前工作区配置',
+        setThemeTitle: '持久化当前 React shell 主题',
         title: '规划或执行工作区迁移',
         fields: {
           action: '工作区操作',
@@ -255,12 +318,15 @@ export const ZH_CN_TRANSLATIONS = {
           currentMode: '当前工作区模式',
           currentRoot: '当前工作区根路径',
           activeConfigPaths: '活动配置路径',
+          themeScope: '主题范围',
+          themePreferencePaths: '主题偏好路径',
         },
         actions: {
           dryRun: 'Dry run',
           execute: '执行',
           rollback: '回滚',
           clearConfig: '清除配置',
+          setUiTheme: '设置 UI 主题',
         },
         help: {
           stableOutputContract:
@@ -270,6 +336,10 @@ export const ZH_CN_TRANSLATIONS = {
             'clear-config 会移除当前用于解析活动工作区面的 selector/config 文件。',
           clearConfigKeepsArtifacts:
             'clear-config 不会删除 diagnostics、workflow definition、review queue 等其它工作区产物。',
+          setThemePersistsToConfig:
+            'set-ui-theme 默认持久化到当前活动工作区配置；使用 --theme-scope global 时则写入全局 CLI 偏好文件。repo-local selector config 只有在原本已存在时才会同步。',
+          setThemeFlagStillOverrides:
+            '即使默认主题已持久化，--ui-theme 仍可作为当前命令的一次性外观覆盖。',
         },
         status: {
           executionCompleted: '工作区迁移执行已完成。',
@@ -277,6 +347,7 @@ export const ZH_CN_TRANSLATIONS = {
           dryRunCompleted: '工作区迁移 dry-run 已完成。',
           clearConfigCompleted: '当前工作区配置已清除。',
           clearConfigNoop: '当前没有可清除的工作区配置。',
+          setThemeCompleted: '默认 React shell 主题已为 {{scope}} 范围持久化为 {{theme}}。',
         },
         message: {
           executeCompleted: '工作区迁移执行成功；计划文件={{planPath}}。',
@@ -284,6 +355,8 @@ export const ZH_CN_TRANSLATIONS = {
           dryRunCompleted: '工作区迁移计划已生成；计划文件={{planPath}}。',
           clearConfigCompleted: '已清除 {{count}} 个工作区配置文件：{{paths}}。',
           clearConfigNoop: '未发现可清除的当前工作区配置文件。已检查：{{paths}}。',
+          setThemeCompleted:
+            '已将 React shell 主题 {{theme}} 以 {{scope}} 范围持久化到 {{count}} 个文件：{{paths}}。',
         },
         nextStepTitle: '下一步',
         nextActions: {
@@ -301,6 +374,10 @@ export const ZH_CN_TRANSLATIONS = {
             '如果你想从零开始重新生成工作区 selector，请重新执行 workspace dry-run/execute。',
           inspectExpectedConfigPaths:
             '如果你原本预期存在活动工作区配置，请检查这些路径：{{paths}}。',
+          rerunPrettyAfterThemeChange:
+            '请重新执行一条 pretty 模式命令，确认持久化后的 {{theme}} 已成为默认 React shell 外观。',
+          useUiThemeFlagAsOverride:
+            '如果你只想临时切换一次外观而不改默认值，仍可继续使用 --ui-theme。',
         },
         summary: {
           migrationId: '迁移 ID：{{migrationId}}',
@@ -308,6 +385,9 @@ export const ZH_CN_TRANSLATIONS = {
           inspectedConfigPaths: '已检查配置路径：{{paths}}',
           clearedConfigPath: '已清除配置路径：{{path}}',
           noConfigRemoved: '没有移除任何配置路径。',
+          appliedTheme: '已应用主题：{{theme}}',
+          appliedThemeScope: '已应用主题范围：{{scope}}',
+          persistedConfigPaths: '已持久化配置路径：{{paths}}',
         },
       },
       workflow: {

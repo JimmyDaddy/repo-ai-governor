@@ -25,8 +25,47 @@
   - 2026-03-29：完成 `project-027` 全量 CR 复核与修复收口，确认 `2.2/2.4/2.9/2.10` 不纳入修复，完成 `2.1/2.3/2.5/2.6/2.7/2.8` 的最小安全补丁，并将报告收口为 `resolved_code_review_project-027-full-implementation.md`。
   - 2026-03-29：基于真实终端验收反馈，补齐 `init --ui react` 的 live Ink 选择控件，工作区模式/默认语言改为上下键选择 + 回车确认，不再要求手输 `1/2`。
   - 2026-03-29：将 CLI 默认 UI 策略切换为“用户交互式 TTY + pretty 默认进入 React shell，非交互/agent 风格调用继续走普通模式”，并同步更新 workflow/upgrade 默认行为回归与 adopter-facing 文档。
+  - 2026-03-29：根据用户反馈修复 `init` React shell 的 live refresh 行为；交互链路改为复用单个 Ink instance 做 `rerender()`，Step1 -> Step2 -> Confirm -> Submitting -> Success 在同一终端展示区内刷新，定向 vitest 与真实 TTY 验收均已通过。
 - [x] TK-327 `workspace` clear-config 调试清理命令
   - 2026-03-29：任务创建，状态初始化为 `planned`。
   - 2026-03-29：根据真实仓库调试反馈，新增 `workspace --workspace-action clear-config`，用于一键清理当前 repo-local selector config 与 active workspace config，而不是删除整个 workspace 目录。
   - 2026-03-29：实现完成，已补齐 workspace action/runtime/i18n/React shell/JSON 输出契约，并通过 `pnpm -s tsc -p tsconfig.json --noEmit`、`pnpm -s vitest run --config vitest.packages.config.ts apps/cli/test/commands/workspace-command.test.ts apps/cli/test/cli-output-contract.integration.test.ts`、`node ./scripts/governance/check-i18n-parity-fallback.js`。
   - 2026-03-29：任务台账同步验证通过，`check-task-ledger-sync` 与 `check-sprint-plan-status-sync` 已确认 `TK-327` 改号后的 plan/checklist/tasks.csv 保持一致。
+- [x] TK-328 `workspace` React shell 主题持久化入口
+  - 2026-03-30：任务创建，状态初始化为 `planned`。
+  - 2026-03-30：根据用户“主题不应每次都靠 --ui-theme”的反馈，新增 `workspace --workspace-action set-ui-theme --ui-theme <preset>`，把默认 React shell 主题持久化到 `ui.react.theme`。
+  - 2026-03-30：实现完成，shared theme 常量、config schema/profile merge、默认 `governor.yaml`、workspace action/runtime/i18n/JSON 输出契约与定向测试已同步收口。
+  - 2026-03-30：README / README.zh-CN / local adoption playbook 中英双语已补齐入口说明，明确 `set-ui-theme` 负责持久化默认值，`--ui-theme` 仅作为单次命令 override。
+  - 2026-03-30：治理校验通过：`node ./scripts/governance/check-i18n-parity-fallback.js`、`node ./scripts/governance/check-task-ledger-sync.js`、`node ./scripts/governance/check-sprint-plan-status-sync.js`。
+- [x] TK-329 `workspace --help` 帮助面可发现性修复
+  - 2026-03-30：任务创建，状态初始化为 `planned`。
+  - 2026-03-30：根据用户反馈确认 `workspace --help` 只显示描述和 `-h`，帮助面缺少关键参数、动作说明与示例。
+  - 2026-03-30：实现完成，`workspace` 已单独注册子命令级选项，并新增动作说明与示例附录；帮助输出现在可直接指导 `dry-run/execute/rollback/clear-config/set-ui-theme` 的使用。
+  - 2026-03-30：定向与治理验证通过：`pnpm -s tsc -p tsconfig.json --noEmit`、`pnpm -s vitest run --config vitest.packages.config.ts apps/cli/test/cli-output-contract.integration.test.ts`、`node ./scripts/governance/check-i18n-parity-fallback.js`、`node ./scripts/governance/check-task-ledger-sync.js`、`node ./scripts/governance/check-sprint-plan-status-sync.js`。
+- [x] TK-330 `workspace <action> [value]` 人类友好短写入口
+  - 2026-03-30：任务创建，状态初始化为 `planned`。
+  - 2026-03-30：根据用户“workspace 命令执行太繁琐”的反馈，新增 `workspace <action> [value]` 短写入口，减少 `--workspace-action` 带来的重复输入。
+  - 2026-03-30：实现完成，`workspace clear-config`、`workspace set-ui-theme calm`、`workspace rollback <plan-path>` 已可直接执行，同时保留旧的 `--workspace-action` / `--workspace-plan` / `--ui-theme` 长写法兼容脚本。
+  - 2026-03-30：README / README.zh-CN / local adoption playbook / help surface 已同步切换为短写示例，并明确长写法仍兼容。
+  - 2026-03-30：定向与治理验证通过：`pnpm -s tsc -p tsconfig.json --noEmit`、`pnpm -s vitest run --config vitest.packages.config.ts apps/cli/test/cli-output-contract.integration.test.ts apps/cli/test/cli-skeleton.integration.test.ts`、`node ./scripts/governance/check-i18n-parity-fallback.js`、`node ./scripts/governance/check-task-ledger-sync.js`、`node ./scripts/governance/check-sprint-plan-status-sync.js`。
+- [x] TK-331 `set-ui-theme` tool-managed selector 意外创建回归修复
+  - 2026-03-30：任务创建，状态初始化为 `planned`。
+  - 2026-03-30：根据用户反馈确认，在工作区模式为 `tool_managed` 时执行 `workspace set-ui-theme calm` 会错误在仓库内生成 `.repo-ai-governor/governor.yaml`。
+  - 2026-03-30：实现完成，`set-ui-theme` 现在永远只写 active workspace config；repo-local selector config 仅在原本已存在时才同步，不再主动新建。
+  - 2026-03-30：定向与治理验证通过：`pnpm -s tsc -p tsconfig.json --noEmit`、`pnpm -s vitest run --config vitest.packages.config.ts apps/cli/test/commands/workspace-command.test.ts apps/cli/test/cli-output-contract.integration.test.ts apps/cli/test/cli-skeleton.integration.test.ts`、`node ./scripts/governance/check-i18n-parity-fallback.js`、`node ./scripts/governance/check-task-ledger-sync.js`、`node ./scripts/governance/check-sprint-plan-status-sync.js`。
+- [x] TK-332 React shell 主题全局/workspace/命令三层优先级
+  - 2026-03-30：任务创建，状态初始化为 `planned`。
+  - 2026-03-30：根据用户反馈，主题设置需要支持“全局默认值 + workspace 默认值 + 命令 `--ui-theme` 强制覆盖”三层优先级，而不是只有 workspace 持久化入口。
+  - 2026-03-30：实现完成，CLI 已新增 `workspace set-ui-theme <preset> --theme-scope global`、全局主题偏好文件 `~/.repo-ai-governor/cli-preferences.yaml`、运行时三层优先级解析，以及 global scope 下不误建 workspace config 的保护。
+  - 2026-03-30：README / README.zh-CN / local adoption playbook 中英双语已同步补齐三层优先级、全局入口与 `--theme-scope global` 示例。
+  - 2026-03-30：定向与治理验证通过：`pnpm -s tsc -p tsconfig.json --noEmit`、`pnpm -s vitest run --config vitest.packages.config.ts apps/cli/test/commands/workspace-command.test.ts apps/cli/test/cli-output-contract.integration.test.ts apps/cli/test/cli-skeleton.integration.test.ts`、`node ./scripts/governance/check-i18n-parity-fallback.js`、`node ./scripts/governance/check-task-ledger-sync.js`、`node ./scripts/governance/check-sprint-plan-status-sync.js`、`pnpm run build`。
+- [x] TK-333 顶层 `set-ui-theme` 快捷入口默认全局语义
+  - 2026-03-30：任务创建，状态初始化为 `planned`。
+  - 2026-03-30：根据用户反馈，`pnpm exec repo-ai-governor set-ui-theme calm` 应默认设置全局主题，而不是继续要求额外传 `--theme-scope global`。
+  - 2026-03-30：实现完成，顶层 `set-ui-theme <preset>` 已成为正式入口并默认落到 global scope；`workspace set-ui-theme <preset>` 继续默认 workspace，若用户确实要让顶层快捷入口只改当前 workspace，可显式传 `--theme-scope workspace`。
+  - 2026-03-30：帮助面、README / README.zh-CN / local adoption playbook 以及定向输出契约测试已同步切换到“顶层默认 global”的语义。
+- [x] TK-334 `set-ui-theme` 主题可发现性与 selector 入口
+  - 2026-03-30：任务创建，状态初始化为 `planned`。
+  - 2026-03-30：根据用户反馈，需要明确“如何查看有哪些 theme 可用”，并支持在交互式终端里直接 selector 选择。
+  - 2026-03-30：实现完成，`set-ui-theme --help` / `workspace --help` 已展示可用主题清单，交互式 TTY + pretty 模式下省略 `[theme]` 会打开 React shell selector。
+  - 2026-03-30：README / README.zh-CN / local adoption playbook 中英双语已同步补齐可发现性与 selector 用法，非交互缺参时也会明确提示可选主题。

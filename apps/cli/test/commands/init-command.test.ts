@@ -5,6 +5,7 @@ import { dirname, resolve } from 'node:path';
 import { stderr } from 'node:process';
 
 import {
+  CliReactThemePreset,
   DEFAULT_I18N_RUNTIME_CONFIG,
   ErrorOutputEnvironment,
   GovernorErrorCode,
@@ -113,6 +114,9 @@ async function createInitCommandFixture(): Promise<{
             '  supportedLocales:',
             `    - ${Locale.ZH_CN}`,
             `    - ${Locale.EN_US}`,
+            'ui:',
+            '  react:',
+            `    theme: ${CliReactThemePreset.GOVERNOR}`,
             '',
           ].join('\n'),
         toRfc3339SecondsTimestamp: (value: Date) => value.toISOString().replace(/\.\d{3}Z$/u, 'Z'),
@@ -120,7 +124,9 @@ async function createInitCommandFixture(): Promise<{
         resolveRuntimeDebugOptions: () => ({
           interactive: true,
           requestedUiMode: CliInteractiveUiMode.REACT,
+          requestedUiTheme: null,
           uiMode: CliInteractiveUiMode.REACT,
+          uiTheme: CliReactThemePreset.GOVERNOR,
           uiFallbackBehavior: null,
           inputTty: true,
           stderrTty: true,

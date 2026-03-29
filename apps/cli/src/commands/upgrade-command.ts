@@ -21,6 +21,7 @@ import {
   CliGovernanceCheckStatus,
 } from '../constants/cli-governance-runtime.constant.js';
 import { CliInteractiveUiMode } from '../constants/cli-interactive-shell.constant.js';
+import { DEFAULT_CLI_REACT_THEME_PRESET } from '../constants/cli-react-theme.constant.js';
 import {
   ReactCliCommandDescriptorCatalog,
   ReactCliCommandViewModelBuilder,
@@ -308,14 +309,16 @@ export class CliUpgradeCommand implements CliCommandExecutor {
       return undefined;
     }
 
+    const resolvedThemePreset = runtimeDebugOptions.uiTheme ?? DEFAULT_CLI_REACT_THEME_PRESET;
     return this.viewModelBuilder.build({
       commandName: CliCommandName.UPGRADE,
       descriptor,
-      subtitle: `ui=${runtimeDebugOptions.uiMode} stdout=${context.options.outputMode} workspace=${context.options.workspace.mode}`,
+      subtitle: `ui=${runtimeDebugOptions.uiMode} theme=${resolvedThemePreset} stdout=${context.options.outputMode} workspace=${context.options.workspace.mode}`,
       inputTitle: this.translateKey(context, 'cli.reactShell.shared.inputs'),
       summaryTitle: this.translateKey(context, 'cli.reactShell.shared.summary'),
       attentionTitle: this.translateKey(context, 'cli.reactShell.shared.attention'),
       footerShortcutsTitle: this.translateKey(context, 'cli.reactShell.shared.shortcuts'),
+      themePreset: resolvedThemePreset,
       statusMessage:
         options.blockingConfirmationCount > 0
           ? this.translateKey(context, 'cli.reactShell.upgrade.status.manualConfirmation', {

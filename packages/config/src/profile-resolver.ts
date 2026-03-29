@@ -58,6 +58,7 @@ export class ProfileResolver {
           ...profile.memory,
         }
       : baseConfig.memory;
+    const mergedUi = this.mergeUi(baseConfig.ui, profile.ui);
     const mergedAdapters = this.mergeAdapters(baseConfig.adapters, profile.adapters);
 
     return {
@@ -71,7 +72,37 @@ export class ProfileResolver {
         ...(profile.i18n ?? {}),
       },
       ...(mergedMemory ? { memory: mergedMemory as GovernorConfig['memory'] } : {}),
+      ...(mergedUi ? { ui: mergedUi as GovernorConfig['ui'] } : {}),
       ...(mergedAdapters ? { adapters: mergedAdapters as GovernorConfig['adapters'] } : {}),
+    };
+  }
+
+  /**
+   * Merges optional UI profile overrides onto base UI config.
+   * @param baseUi Base UI config.
+   * @param profileUi Profile-level UI override config.
+   * @returns Merged UI config when base or profile defines UI preferences.
+   */
+  private mergeUi(
+    baseUi: GovernorConfig['ui'],
+    profileUi: GovernorProfile['ui'],
+  ): GovernorConfig['ui'] {
+    if (!baseUi && !profileUi) {
+      return undefined;
+    }
+
+    const mergedReact =
+      baseUi?.react || profileUi?.react
+        ? {
+            ...(baseUi?.react ?? {}),
+            ...(profileUi?.react ?? {}),
+          }
+        : undefined;
+
+    return {
+      ...(baseUi ?? {}),
+      ...(profileUi ?? {}),
+      ...(mergedReact ? { react: mergedReact } : {}),
     };
   }
 

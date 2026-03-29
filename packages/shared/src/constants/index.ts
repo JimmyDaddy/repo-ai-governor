@@ -30,6 +30,12 @@ export { WorkspaceMigrationPolicy } from './workspace-migration-policy.constant.
 export { WorkspaceMode } from './workspace-mode.constant.js';
 export { LocalModelProvider } from './local-model-runtime.constant.js';
 export {
+  CliReactThemePreset,
+  CLI_REACT_THEME_PRESET_ORDER,
+  CLI_REACT_THEME_VALUES,
+  DEFAULT_CLI_REACT_THEME_PRESET,
+} from './react-cli-theme.constant.js';
+export {
   DefaultRoleProfileId,
   ROLE_PROFILE_ID_PATTERN,
   ROLE_PROFILE_VERSION_PATTERN,

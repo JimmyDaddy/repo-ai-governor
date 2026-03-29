@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { mkdir, mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 
@@ -173,7 +173,11 @@ async function createBlockedMemoryProviderFixtureRepo(): Promise<string> {
  * Creates one temporary repo with explicit repo-local workspace config for workspace-command tests.
  * @returns Temporary repository absolute path.
  */
-async function createWorkspaceMigrationFixtureRepo(): Promise<string> {
+async function createWorkspaceMigrationFixtureRepo(
+  options: {
+    uiTheme?: 'governor' | 'catppuccin' | 'calm';
+  } = {},
+): Promise<string> {
   const temporaryRepositoryRoot = await mkdtemp(resolve(tmpdir(), 'cli-output-workspace-'));
   const workspaceRoot = resolve(temporaryRepositoryRoot, '.repo-ai-governor');
   await mkdir(resolve(workspaceRoot, 'context', 'memory'), { recursive: true });
@@ -190,6 +194,7 @@ async function createWorkspaceMigrationFixtureRepo(): Promise<string> {
       '  fallbackLocale: en-US',
       '  supportedLocales:',
       '    - en-US',
+      ...(options.uiTheme ? ['ui:', '  react:', `    theme: ${options.uiTheme}`] : []),
       'memory:',
       '  storeEngine: fs_csv',
       '  storeRoot: context/memory',
@@ -198,6 +203,24 @@ async function createWorkspaceMigrationFixtureRepo(): Promise<string> {
     'utf8',
   );
   return temporaryRepositoryRoot;
+}
+
+/**
+ * Creates one isolated HOME directory with a persisted global CLI theme preference file.
+ * @param themePreset Global React-shell theme preset to persist.
+ * @returns Absolute HOME directory used by the preference file.
+ */
+async function createGlobalThemePreferenceHome(
+  themePreset: 'governor' | 'catppuccin' | 'calm',
+): Promise<string> {
+  const temporaryHomeRoot = await mkdtemp(resolve(tmpdir(), 'cli-output-theme-home-'));
+  await mkdir(resolve(temporaryHomeRoot, '.repo-ai-governor'), { recursive: true });
+  await writeFile(
+    resolve(temporaryHomeRoot, '.repo-ai-governor', 'cli-preferences.yaml'),
+    ['ui:', '  react:', `    theme: ${themePreset}`, ''].join('\n'),
+    'utf8',
+  );
+  return temporaryHomeRoot;
 }
 
 /**
@@ -456,8 +479,108 @@ describe('CLI output contract integration', () => {
     }
   });
 
+  it('renders actionable workspace help instead of an empty command shell', async () => {
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false);
+
+    const exitCode = await runCli(
+      ['node', 'repo-ai-governor', '--locale', 'en-US', 'workspace', '--help'],
+      io,
+    );
+    const stdout = stdoutBuffer.join('');
+
+    expect(exitCode).toBe(0);
+    expect(stderrBuffer.join('')).toBe('');
+    expect(stdout).toContain('Usage: repo-ai-governor workspace [options]');
+    expect(stdout).toContain('--workspace-action <action>');
+    expect(stdout).toContain('--workspace-mode <mode>');
+    expect(stdout).toContain('--workspace-plan <path>');
+    expect(stdout).toContain('--theme-scope <scope>');
+    expect(stdout).toContain('--ui-theme <theme>');
+    expect(stdout).toContain('Action guide:');
+    expect(stdout).toContain('Available themes:');
+    expect(stdout).toContain('governor');
+    expect(stdout).toContain('catppuccin');
+    expect(stdout).toContain('calm');
+    expect(stdout).toContain('Run set-ui-theme or workspace set-ui-theme without [theme]');
+    expect(stdout).toContain('set-ui-theme');
+    expect(stdout).toContain('repo-ai-governor workspace clear-config --output pretty');
+    expect(stdout).toContain('repo-ai-governor workspace set-ui-theme --output pretty');
+    expect(stdout).toContain('repo-ai-governor set-ui-theme --output pretty');
+    expect(stdout).toContain('repo-ai-governor set-ui-theme calm --output pretty');
+    expect(stdout).toContain(
+      'repo-ai-governor set-ui-theme calm --theme-scope workspace --output pretty',
+    );
+  });
+
+  it('renders top-level set-ui-theme help with direct examples', async () => {
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false);
+
+    const exitCode = await runCli(
+      ['node', 'repo-ai-governor', '--locale', 'en-US', 'set-ui-theme', '--help'],
+      io,
+    );
+    const stdout = stdoutBuffer.join('');
+
+    expect(exitCode).toBe(0);
+    expect(stderrBuffer.join('')).toBe('');
+    expect(stdout).toContain('Usage: repo-ai-governor set-ui-theme [options] [theme]');
+    expect(stdout).toContain('--theme-scope <scope>');
+    expect(stdout).toContain('Theme precedence:');
+    expect(stdout).toContain('Available themes:');
+    expect(stdout).toContain('repo-ai-governor set-ui-theme --output pretty');
+    expect(stdout).toContain('repo-ai-governor set-ui-theme calm --output pretty');
+    expect(stdout).toContain(
+      'repo-ai-governor set-ui-theme calm --theme-scope workspace --output pretty',
+    );
+  });
+
   it('renders workspace migration dry-run key details in pretty mode', async () => {
     const temporaryRepositoryRoot = await createWorkspaceMigrationFixtureRepo();
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(true, temporaryRepositoryRoot);
+    const managedRoot = resolve(temporaryRepositoryRoot, 'managed root');
+
+    try {
+      const exitCode = await runCli(
+        [
+          'node',
+          'repo-ai-governor',
+          '--locale',
+          'en-US',
+          '--output',
+          'pretty',
+          '--no-color',
+          '--ui-theme',
+          'catppuccin',
+          '--workspace-action',
+          'dry-run',
+          '--workspace-mode',
+          'tool_managed',
+          '--workspace-root',
+          managedRoot,
+          'workspace',
+        ],
+        io,
+      );
+      const stdout = stdoutBuffer.join('');
+      const stderr = stderrBuffer.join('');
+
+      expect(exitCode).toBe(0);
+      expect(stderr).toContain('[react-shell:workspace]');
+      expect(stderr).toContain('theme=catppuccin');
+      expect(stderr).toContain('Plan or execute workspace migration');
+      expect(stdout).toContain('Key Details');
+      expect(stdout).toContain('Workspace action: dry_run');
+      expect(stdout).toContain(`Workspace target: mode tool_managed, root ${managedRoot}`);
+      expect(stdout).toContain('Rollback reference:');
+    } finally {
+      await rm(temporaryRepositoryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('uses governor.yaml ui.react.theme as the default React shell theme', async () => {
+    const temporaryRepositoryRoot = await createWorkspaceMigrationFixtureRepo({
+      uiTheme: 'calm',
+    });
     const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(true, temporaryRepositoryRoot);
     const managedRoot = resolve(temporaryRepositoryRoot, 'managed root');
 
@@ -481,18 +604,129 @@ describe('CLI output contract integration', () => {
         ],
         io,
       );
-      const stdout = stdoutBuffer.join('');
-      const stderr = stderrBuffer.join('');
 
       expect(exitCode).toBe(0);
-      expect(stderr).toContain('[react-shell:workspace]');
-      expect(stderr).toContain('Plan or execute workspace migration');
-      expect(stdout).toContain('Key Details');
-      expect(stdout).toContain('Workspace action: dry_run');
-      expect(stdout).toContain(`Workspace target: mode tool_managed, root ${managedRoot}`);
-      expect(stdout).toContain('Rollback reference:');
+      expect(stderrBuffer.join('')).toContain('theme=calm');
+      expect(stdoutBuffer.join('')).toContain('Workspace action: dry_run');
     } finally {
       await rm(temporaryRepositoryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('uses the global CLI theme preference when the workspace config does not define a theme', async () => {
+    const temporaryRepositoryRoot = await createWorkspaceMigrationFixtureRepo();
+    const temporaryHomeRoot = await createGlobalThemePreferenceHome('catppuccin');
+    const { stderrBuffer, io } = createBufferedIo(true, temporaryRepositoryRoot, {
+      HOME: temporaryHomeRoot,
+    });
+    const managedRoot = resolve(temporaryRepositoryRoot, 'managed root');
+
+    try {
+      const exitCode = await runCli(
+        [
+          'node',
+          'repo-ai-governor',
+          '--locale',
+          'en-US',
+          '--output',
+          'pretty',
+          '--no-color',
+          '--workspace-action',
+          'dry-run',
+          '--workspace-mode',
+          'tool_managed',
+          '--workspace-root',
+          managedRoot,
+          'workspace',
+        ],
+        io,
+      );
+
+      expect(exitCode).toBe(0);
+      expect(stderrBuffer.join('')).toContain('theme=catppuccin');
+    } finally {
+      await rm(temporaryRepositoryRoot, { recursive: true, force: true });
+      await rm(temporaryHomeRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('lets the workspace theme override the global CLI theme preference', async () => {
+    const temporaryRepositoryRoot = await createWorkspaceMigrationFixtureRepo({
+      uiTheme: 'calm',
+    });
+    const temporaryHomeRoot = await createGlobalThemePreferenceHome('catppuccin');
+    const { stderrBuffer, io } = createBufferedIo(true, temporaryRepositoryRoot, {
+      HOME: temporaryHomeRoot,
+    });
+    const managedRoot = resolve(temporaryRepositoryRoot, 'managed root');
+
+    try {
+      const exitCode = await runCli(
+        [
+          'node',
+          'repo-ai-governor',
+          '--locale',
+          'en-US',
+          '--output',
+          'pretty',
+          '--no-color',
+          '--workspace-action',
+          'dry-run',
+          '--workspace-mode',
+          'tool_managed',
+          '--workspace-root',
+          managedRoot,
+          'workspace',
+        ],
+        io,
+      );
+
+      expect(exitCode).toBe(0);
+      expect(stderrBuffer.join('')).toContain('theme=calm');
+    } finally {
+      await rm(temporaryRepositoryRoot, { recursive: true, force: true });
+      await rm(temporaryHomeRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('lets --ui-theme override workspace and global theme defaults for one command run', async () => {
+    const temporaryRepositoryRoot = await createWorkspaceMigrationFixtureRepo({
+      uiTheme: 'calm',
+    });
+    const temporaryHomeRoot = await createGlobalThemePreferenceHome('governor');
+    const { stderrBuffer, io } = createBufferedIo(true, temporaryRepositoryRoot, {
+      HOME: temporaryHomeRoot,
+    });
+    const managedRoot = resolve(temporaryRepositoryRoot, 'managed root');
+
+    try {
+      const exitCode = await runCli(
+        [
+          'node',
+          'repo-ai-governor',
+          '--locale',
+          'en-US',
+          '--output',
+          'pretty',
+          '--no-color',
+          '--ui-theme',
+          'catppuccin',
+          '--workspace-action',
+          'dry-run',
+          '--workspace-mode',
+          'tool_managed',
+          '--workspace-root',
+          managedRoot,
+          'workspace',
+        ],
+        io,
+      );
+
+      expect(exitCode).toBe(0);
+      expect(stderrBuffer.join('')).toContain('theme=catppuccin');
+    } finally {
+      await rm(temporaryRepositoryRoot, { recursive: true, force: true });
+      await rm(temporaryHomeRoot, { recursive: true, force: true });
     }
   });
 
@@ -526,6 +760,333 @@ describe('CLI output contract integration', () => {
       expect(payload.command_result.details.cleared_path_count).toBe(1);
       expect(payload.command_result.details.cleared_config_paths).toBe(configPath);
       expect(existsSync(configPath)).toBe(false);
+    } finally {
+      await rm(temporaryRepositoryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('accepts workspace clear-config shorthand without --workspace-action', async () => {
+    const temporaryRepositoryRoot = await createWorkspaceMigrationFixtureRepo();
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, temporaryRepositoryRoot);
+    const configPath = resolve(temporaryRepositoryRoot, '.repo-ai-governor', 'governor.yaml');
+
+    try {
+      const exitCode = await runCli(
+        [
+          'node',
+          'repo-ai-governor',
+          '--locale',
+          'en-US',
+          '--output',
+          'json',
+          'workspace',
+          'clear-config',
+        ],
+        io,
+      );
+      const payload = JSON.parse(stdoutBuffer.join(''));
+
+      expect(exitCode).toBe(0);
+      expect(stderrBuffer.join('')).toBe('');
+      expect(payload.command_result.operation).toBe('workspace_config_clear');
+      expect(payload.command_result.details.action).toBe('clear_config');
+      expect(payload.command_result.details.cleared_config_paths).toBe(configPath);
+      expect(existsSync(configPath)).toBe(false);
+    } finally {
+      await rm(temporaryRepositoryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('persists the requested React shell theme through workspace set-ui-theme in JSON mode', async () => {
+    const temporaryRepositoryRoot = await createWorkspaceMigrationFixtureRepo();
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, temporaryRepositoryRoot);
+    const configPath = resolve(temporaryRepositoryRoot, '.repo-ai-governor', 'governor.yaml');
+
+    try {
+      const exitCode = await runCli(
+        [
+          'node',
+          'repo-ai-governor',
+          '--locale',
+          'en-US',
+          '--output',
+          'json',
+          '--workspace-action',
+          'set-ui-theme',
+          '--ui-theme',
+          'calm',
+          'workspace',
+        ],
+        io,
+      );
+      const payload = JSON.parse(stdoutBuffer.join(''));
+      const configContent = await readFile(configPath, 'utf8');
+
+      expect(exitCode).toBe(0);
+      expect(stderrBuffer.join('')).toBe('');
+      expect(payload.command).toBe('workspace');
+      expect(payload.command_result.operation).toBe('workspace_ui_theme_set');
+      expect(payload.command_result.details.action).toBe('set_ui_theme');
+      expect(payload.command_result.details.ui_theme).toBe('calm');
+      expect(payload.command_result.details.persisted_path_count).toBe(1);
+      expect(configContent).toContain('ui:');
+      expect(configContent).toContain('theme: calm');
+    } finally {
+      await rm(temporaryRepositoryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('lists available themes when set-ui-theme omits the preset in non-interactive mode', async () => {
+    const temporaryRepositoryRoot = await createWorkspaceMigrationFixtureRepo();
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, temporaryRepositoryRoot);
+
+    try {
+      const exitCode = await runCli(
+        ['node', 'repo-ai-governor', '--locale', 'en-US', 'set-ui-theme'],
+        io,
+      );
+      const renderedOutput = `${stdoutBuffer.join('')}${stderrBuffer.join('')}`;
+
+      expect(exitCode).toBe(1);
+      expect(renderedOutput).toContain('governor|catppuccin|calm');
+      expect(renderedOutput).toContain('omit [theme] to open the selector');
+    } finally {
+      await rm(temporaryRepositoryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('persists the requested React shell theme into the global CLI preference file through top-level set-ui-theme by default', async () => {
+    const temporaryRepositoryRoot = await createWorkspaceMigrationFixtureRepo();
+    const temporaryHomeRoot = await mkdtemp(resolve(tmpdir(), 'cli-output-theme-default-global-'));
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, temporaryRepositoryRoot, {
+      HOME: temporaryHomeRoot,
+    });
+    const configPath = resolve(temporaryRepositoryRoot, '.repo-ai-governor', 'governor.yaml');
+    const globalPreferencePath = resolve(
+      temporaryHomeRoot,
+      '.repo-ai-governor',
+      'cli-preferences.yaml',
+    );
+    const originalConfigContent = await readFile(configPath, 'utf8');
+
+    try {
+      const exitCode = await runCli(
+        [
+          'node',
+          'repo-ai-governor',
+          '--locale',
+          'en-US',
+          '--output',
+          'json',
+          'set-ui-theme',
+          'calm',
+        ],
+        io,
+      );
+      const payload = JSON.parse(stdoutBuffer.join(''));
+      const globalPreferenceContent = await readFile(globalPreferencePath, 'utf8');
+      const updatedConfigContent = await readFile(configPath, 'utf8');
+
+      expect(exitCode).toBe(0);
+      expect(stderrBuffer.join('')).toBe('');
+      expect(payload.command).toBe('set-ui-theme');
+      expect(payload.command_result.operation).toBe('workspace_ui_theme_set');
+      expect(payload.command_result.details.action).toBe('set_ui_theme');
+      expect(payload.command_result.details.ui_theme).toBe('calm');
+      expect(payload.command_result.details.theme_scope).toBe('global');
+      expect(globalPreferenceContent).toContain('theme: calm');
+      expect(updatedConfigContent).toBe(originalConfigContent);
+    } finally {
+      await rm(temporaryRepositoryRoot, { recursive: true, force: true });
+      await rm(temporaryHomeRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('lets top-level set-ui-theme explicitly target workspace scope in JSON mode', async () => {
+    const temporaryRepositoryRoot = await createWorkspaceMigrationFixtureRepo();
+    const temporaryHomeRoot = await mkdtemp(resolve(tmpdir(), 'cli-output-theme-global-'));
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, temporaryRepositoryRoot, {
+      HOME: temporaryHomeRoot,
+    });
+    const configPath = resolve(temporaryRepositoryRoot, '.repo-ai-governor', 'governor.yaml');
+    const globalPreferencePath = resolve(
+      temporaryHomeRoot,
+      '.repo-ai-governor',
+      'cli-preferences.yaml',
+    );
+
+    try {
+      const exitCode = await runCli(
+        [
+          'node',
+          'repo-ai-governor',
+          '--locale',
+          'en-US',
+          '--output',
+          'json',
+          'set-ui-theme',
+          'catppuccin',
+          '--theme-scope',
+          'workspace',
+        ],
+        io,
+      );
+      const payload = JSON.parse(stdoutBuffer.join(''));
+      const updatedConfigContent = await readFile(configPath, 'utf8');
+
+      expect(exitCode).toBe(0);
+      expect(stderrBuffer.join('')).toBe('');
+      expect(payload.command_result.operation).toBe('workspace_ui_theme_set');
+      expect(payload.command_result.details.theme_scope).toBe('workspace');
+      expect(payload.command_result.details.persisted_path_count).toBe(1);
+      expect(payload.command_result.details.persisted_config_paths).toBe(configPath);
+      expect(updatedConfigContent).toContain('theme: catppuccin');
+      expect(existsSync(globalPreferencePath)).toBe(false);
+    } finally {
+      await rm(temporaryRepositoryRoot, { recursive: true, force: true });
+      await rm(temporaryHomeRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('does not auto-create a workspace config when set-ui-theme runs in global scope before init', async () => {
+    const temporaryRepositoryRoot = await createFirstTimeInitFixtureRepo();
+    const temporaryHomeRoot = await mkdtemp(resolve(tmpdir(), 'cli-output-theme-bootstrap-'));
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, temporaryRepositoryRoot, {
+      HOME: temporaryHomeRoot,
+    });
+    const repoLocalConfigPath = resolve(
+      temporaryRepositoryRoot,
+      '.repo-ai-governor',
+      'governor.yaml',
+    );
+    const globalPreferencePath = resolve(
+      temporaryHomeRoot,
+      '.repo-ai-governor',
+      'cli-preferences.yaml',
+    );
+
+    try {
+      const exitCode = await runCli(
+        [
+          'node',
+          'repo-ai-governor',
+          '--locale',
+          'en-US',
+          '--output',
+          'json',
+          'set-ui-theme',
+          'calm',
+        ],
+        io,
+      );
+      const payload = JSON.parse(stdoutBuffer.join(''));
+      const globalPreferenceContent = await readFile(globalPreferencePath, 'utf8');
+
+      expect(exitCode).toBe(0);
+      expect(stderrBuffer.join('')).toBe('');
+      expect(payload.command_result.details.theme_scope).toBe('global');
+      expect(globalPreferenceContent).toContain('theme: calm');
+      expect(existsSync(repoLocalConfigPath)).toBe(false);
+    } finally {
+      await rm(temporaryRepositoryRoot, { recursive: true, force: true });
+      await rm(temporaryHomeRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('accepts workspace set-ui-theme <theme> shorthand without explicit --workspace-action or --ui-theme', async () => {
+    const temporaryRepositoryRoot = await createWorkspaceMigrationFixtureRepo();
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, temporaryRepositoryRoot);
+    const configPath = resolve(temporaryRepositoryRoot, '.repo-ai-governor', 'governor.yaml');
+
+    try {
+      const exitCode = await runCli(
+        [
+          'node',
+          'repo-ai-governor',
+          '--locale',
+          'en-US',
+          '--output',
+          'json',
+          'workspace',
+          'set-ui-theme',
+          'calm',
+        ],
+        io,
+      );
+      const payload = JSON.parse(stdoutBuffer.join(''));
+      const configContent = await readFile(configPath, 'utf8');
+
+      expect(exitCode).toBe(0);
+      expect(stderrBuffer.join('')).toBe('');
+      expect(payload.command_result.operation).toBe('workspace_ui_theme_set');
+      expect(payload.command_result.details.action).toBe('set_ui_theme');
+      expect(payload.command_result.details.ui_theme).toBe('calm');
+      expect(configContent).toContain('theme: calm');
+    } finally {
+      await rm(temporaryRepositoryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('accepts workspace rollback <plan-path> shorthand without --workspace-plan', async () => {
+    const temporaryRepositoryRoot = await createWorkspaceMigrationFixtureRepo();
+    const managedRoot = resolve(temporaryRepositoryRoot, 'managed-root');
+
+    try {
+      {
+        const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, temporaryRepositoryRoot);
+        const executeExitCode = await runCli(
+          [
+            'node',
+            'repo-ai-governor',
+            '--locale',
+            'en-US',
+            '--output',
+            'json',
+            'workspace',
+            'execute',
+            '--workspace-mode',
+            'tool_managed',
+            '--workspace-root',
+            managedRoot,
+          ],
+          io,
+        );
+        const executePayload = JSON.parse(stdoutBuffer.join(''));
+        const planPath = String(
+          executePayload.command_result.artifacts.find(
+            (artifact: { id: string }) => artifact.id === 'workspace_migration_plan',
+          ).path,
+        );
+        const targetWorkspaceRoot = String(
+          executePayload.command_result.details.target_workspace_root,
+        );
+
+        expect(executeExitCode).toBe(0);
+        expect(stderrBuffer.join('')).toBe('');
+
+        const rollbackIo = createBufferedIo(false, temporaryRepositoryRoot);
+        const rollbackExitCode = await runCli(
+          [
+            'node',
+            'repo-ai-governor',
+            '--locale',
+            'en-US',
+            '--output',
+            'json',
+            'workspace',
+            'rollback',
+            planPath,
+          ],
+          rollbackIo.io,
+        );
+        const rollbackPayload = JSON.parse(rollbackIo.stdoutBuffer.join(''));
+
+        expect(rollbackExitCode).toBe(0);
+        expect(rollbackIo.stderrBuffer.join('')).toBe('');
+        expect(rollbackPayload.command_result.operation).toBe('workspace_migration_rollback');
+        expect(rollbackPayload.command_result.details.plan_path).toBe(planPath);
+        expect(existsSync(targetWorkspaceRoot)).toBe(false);
+      }
     } finally {
       await rm(temporaryRepositoryRoot, { recursive: true, force: true });
     }
@@ -797,6 +1358,24 @@ describe('CLI output contract integration', () => {
 
     const exitCode = await runCli(
       ['node', 'repo-ai-governor', '--output', 'json', '--ui', 'invalid-ui', 'init'],
+      io,
+    );
+
+    const payload = JSON.parse(stderrBuffer.join(''));
+
+    expect(exitCode).toBe(1);
+    expect(stdoutBuffer.join('')).toBe('');
+    expect(payload.status).toBe('error');
+    expect(payload.output_mode).toBe('json');
+    expect(payload.error_code).toBe('ENTRYPOINT_COMMAND_WRAPPER_INVALID');
+    expect(payload.command).toBe('init');
+  });
+
+  it('keeps JSON error contract when --ui-theme receives an invalid value', async () => {
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false);
+
+    const exitCode = await runCli(
+      ['node', 'repo-ai-governor', '--output', 'json', '--ui-theme', 'invalid-theme', 'init'],
       io,
     );
 

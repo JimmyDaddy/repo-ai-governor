@@ -76,6 +76,7 @@ import {
   CliGovernanceCheckStatus,
 } from './constants/cli-governance-runtime.constant.js';
 import { CliInteractiveUiMode } from './constants/cli-interactive-shell.constant.js';
+import { DEFAULT_CLI_REACT_THEME_PRESET } from './constants/cli-react-theme.constant.js';
 import {
   CLI_TASK_DRIVEN_RUN_NODE_DEFINITIONS,
   CliDeliveryRehearsalAction,
@@ -85,6 +86,7 @@ import {
   CliInlineReviewChainSkipReason,
   CliInlineReviewChainStatus,
 } from './constants/cli-task-driven-run.constant.js';
+import { CliWorkspaceAction, CliWorkspaceThemeScope } from './constants/cli-workspace.constant.js';
 import { CliAdapterDiagnosticsRuntime } from './runtime/adapter-diagnostics-runtime.js';
 import { CliAdapterRoutingRuntime } from './runtime/adapter-routing-runtime.js';
 import { CliAdapterVerificationRuntime } from './runtime/adapter-verification-runtime.js';
@@ -221,7 +223,7 @@ export class CliGovernanceRuntime {
    * @returns Command result message and structured output payload.
    */
   public async execute(commandName: CliCommandName): Promise<CliGovernanceCommandResult> {
-    if (commandName !== CliCommandName.INIT) {
+    if (commandName !== CliCommandName.INIT && this.shouldEnsureWorkspaceBootstrap(commandName)) {
       await this.ensureWorkspaceBootstrap();
     }
 
@@ -236,6 +238,28 @@ export class CliGovernanceRuntime {
       {
         commandName,
       },
+    );
+  }
+
+  /**
+   * Resolves whether the current command still needs workspace auto-bootstrap.
+   * @param commandName Parsed CLI command name.
+   * @returns True when baseline workspace files should be auto-created before execution.
+   */
+  private shouldEnsureWorkspaceBootstrap(commandName: CliCommandName): boolean {
+    if (commandName !== CliCommandName.WORKSPACE) {
+      return true;
+    }
+
+    const workspaceAction = this.options.workspaceCommandOptions?.action?.trim().toLowerCase();
+    if (workspaceAction === CliWorkspaceAction.CLEAR_CONFIG) {
+      return false;
+    }
+
+    const themeScope = this.options.workspaceCommandOptions?.themeScope?.trim().toLowerCase();
+    return !(
+      workspaceAction === CliWorkspaceAction.SET_UI_THEME &&
+      themeScope === CliWorkspaceThemeScope.GLOBAL
     );
   }
 
@@ -1221,6 +1245,9 @@ export class CliGovernanceRuntime {
       '  supportedLocales:',
       `    - ${DEFAULT_I18N_LOCALE}`,
       `    - ${DEFAULT_I18N_FALLBACK_LOCALE}`,
+      'ui:',
+      '  react:',
+      `    theme: ${DEFAULT_CLI_REACT_THEME_PRESET}`,
       'memory:',
       `  storeEngine: ${this.options.memoryConfig.storeEngine}`,
       `  storeRoot: ${this.options.memoryConfig.storeRoot}`,
@@ -1354,7 +1381,9 @@ export class CliGovernanceRuntime {
     return {
       interactive: this.options.runtimeDebugOptions?.interactive === true,
       requestedUiMode: this.options.runtimeDebugOptions?.requestedUiMode ?? null,
+      requestedUiTheme: this.options.runtimeDebugOptions?.requestedUiTheme ?? null,
       uiMode: this.options.runtimeDebugOptions?.uiMode ?? CliInteractiveUiMode.NONE,
+      uiTheme: this.options.runtimeDebugOptions?.uiTheme ?? DEFAULT_CLI_REACT_THEME_PRESET,
       uiFallbackBehavior: this.options.runtimeDebugOptions?.uiFallbackBehavior ?? null,
       inputTty: this.options.runtimeDebugOptions?.inputTty === true,
       stderrTty: this.options.runtimeDebugOptions?.stderrTty === true,

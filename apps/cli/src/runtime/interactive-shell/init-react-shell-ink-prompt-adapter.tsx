@@ -1,28 +1,27 @@
 import { stderr, stdin } from 'node:process';
-import { ThemeProvider, defaultTheme } from '@inkjs/ui';
+import { ThemeProvider } from '@inkjs/ui';
 import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import { type Instance, type RenderOptions, render } from 'ink';
 import type React from 'react';
+import { resolveReactCliTheme } from '../../react-cli/theme/react-cli-theme-registry.js';
 import type {
   CliInteractiveShellConfirmPrompt,
   CliInteractiveShellPromptAdapter,
   CliInteractiveShellSelectPrompt,
+  CliInteractiveShellStatusFrame,
 } from '../../types/index.js';
 import {
   CliInitReactShellConfirmPromptView,
   CliInitReactShellSelectPromptView,
+  CliInitReactShellStatusView,
 } from './init-react-shell-live-prompt.js';
-
-interface CliInteractiveShellActivePrompt {
-  instance: Instance;
-  reject: (error: RuntimeError) => void;
-}
 
 /**
  * Owns live Ink/@inkjs/ui prompt mounting for the `init` React shell.
  */
 export class CliInitReactShellInkPromptAdapter implements CliInteractiveShellPromptAdapter {
-  private activePrompt: CliInteractiveShellActivePrompt | null = null;
+  private activeInstance: Instance | null = null;
+  private activePromptReject: ((error: RuntimeError) => void) | null = null;
 
   public constructor(
     private readonly renderOptions: RenderOptions = {
@@ -40,8 +39,10 @@ export class CliInitReactShellInkPromptAdapter implements CliInteractiveShellPro
    * @returns Selected option value.
    */
   public async select(prompt: CliInteractiveShellSelectPrompt): Promise<string> {
+    const themeDefinition = resolveReactCliTheme(prompt.session.uiTheme);
+
     return await this.mountPrompt((finish) => (
-      <ThemeProvider theme={defaultTheme}>
+      <ThemeProvider theme={themeDefinition.inkTheme}>
         <CliInitReactShellSelectPromptView {...prompt} onSubmit={finish} />
       </ThemeProvider>
     ));
@@ -53,8 +54,10 @@ export class CliInitReactShellInkPromptAdapter implements CliInteractiveShellPro
    * @returns `true` on confirm, otherwise `false`.
    */
   public async confirm(prompt: CliInteractiveShellConfirmPrompt): Promise<boolean> {
+    const themeDefinition = resolveReactCliTheme(prompt.session.uiTheme);
+
     return await this.mountPrompt((finish) => (
-      <ThemeProvider theme={defaultTheme}>
+      <ThemeProvider theme={themeDefinition.inkTheme}>
         <CliInitReactShellConfirmPromptView
           {...prompt}
           onConfirm={() => finish(true)}
@@ -65,19 +68,38 @@ export class CliInitReactShellInkPromptAdapter implements CliInteractiveShellPro
   }
 
   /**
+   * Rerenders the active shell region with one non-interactive status frame.
+   * @param frame Status-only frame shown while the shell submits or finalizes.
+   * @returns Nothing.
+   */
+  public renderStatus(frame: CliInteractiveShellStatusFrame): void {
+    const themeDefinition = resolveReactCliTheme(frame.session.uiTheme);
+
+    this.renderNode(
+      <ThemeProvider theme={themeDefinition.inkTheme}>
+        <CliInitReactShellStatusView {...frame} />
+      </ThemeProvider>,
+    );
+  }
+
+  /**
    * Tears down the active prompt so SIGINT/finally cleanup can restore the terminal promptly.
    * @returns Nothing.
    */
   public close(): void {
-    if (!this.activePrompt) {
+    if (!this.activeInstance && !this.activePromptReject) {
       return;
     }
 
-    const activePrompt = this.activePrompt;
-    this.activePrompt = null;
-    activePrompt.instance.clear();
-    activePrompt.instance.unmount();
-    activePrompt.reject(
+    const activePromptReject = this.activePromptReject;
+    this.activePromptReject = null;
+    if (this.activeInstance) {
+      this.activeInstance.clear();
+      this.activeInstance.unmount();
+      this.activeInstance = null;
+    }
+
+    activePromptReject?.(
       new RuntimeError(
         GovernorErrorCode.PROCESS_RUNTIME_CANCELLED,
         'interactive shell prompt closed',
@@ -93,10 +115,6 @@ export class CliInitReactShellInkPromptAdapter implements CliInteractiveShellPro
   private async mountPrompt<Result>(
     renderPrompt: (finish: (value: Result) => void) => React.JSX.Element,
   ): Promise<Result> {
-    if (this.activePrompt) {
-      this.close();
-    }
-
     return await new Promise<Result>((resolve, reject) => {
       let settled = false;
 
@@ -106,23 +124,26 @@ export class CliInitReactShellInkPromptAdapter implements CliInteractiveShellPro
         }
 
         settled = true;
-        const activePrompt = this.activePrompt;
-        this.activePrompt = null;
-        if (activePrompt) {
-          activePrompt.instance.clear();
-          activePrompt.instance.unmount();
-        }
+        this.activePromptReject = null;
         callback();
       };
 
-      const instance = render(
-        renderPrompt((value) => finalize(() => resolve(value))),
-        this.renderOptions,
-      );
-      this.activePrompt = {
-        instance,
-        reject: (error) => finalize(() => reject(error)),
-      };
+      this.activePromptReject = (error) => finalize(() => reject(error));
+      this.renderNode(renderPrompt((value) => finalize(() => resolve(value))));
     });
+  }
+
+  /**
+   * Mounts the live shell once and reuses the same Ink instance for subsequent rerenders.
+   * @param node React tree representing the current shell state.
+   * @returns Nothing.
+   */
+  private renderNode(node: React.JSX.Element): void {
+    if (this.activeInstance) {
+      this.activeInstance.rerender(node);
+      return;
+    }
+
+    this.activeInstance = render(node, this.renderOptions);
   }
 }

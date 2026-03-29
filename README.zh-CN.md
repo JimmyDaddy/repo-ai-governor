@@ -96,6 +96,12 @@ pnpm exec repo-ai-governor init --output pretty
 
 在本地 TTY + `pretty` 输出下，交互问答默认开启；CI/脚本场景可加 `--no-interactive` 关闭交互。
 在本地 TTY + `pretty` 输出下，支持的交互式 surface 现在默认进入 React shell；在 `--no-interactive`、非 TTY 或 `plain/json` 场景下仍会自动回退到 `none`，因此 CI 与 agent 风格的机器消费路径继续保持原有非交互契约。
+如需只在当前命令切换 React shell 外观，可额外指定 `--ui-theme governor|catppuccin|calm`，不会改变 stdout 输出契约。
+主题优先级为 `--ui-theme` 单次覆盖 > workspace 默认值 > 全局 CLI 默认值。
+如果你想查看有哪些主题可用，可执行 `pnpm exec repo-ai-governor set-ui-theme --help`。
+在交互式 TTY + `pretty` 模式下，也可以省略预设，直接通过 `pnpm exec repo-ai-governor set-ui-theme --output pretty` 或 `pnpm exec repo-ai-governor workspace set-ui-theme --output pretty` 打开 selector。
+如果想持久化当前 workspace 的默认主题，可执行 `pnpm exec repo-ai-governor workspace set-ui-theme calm --output json`。
+如果想持久化所有 workspace 共享的全局默认主题，可执行 `pnpm exec repo-ai-governor set-ui-theme calm --output json`。
 
 如果你使用 `dist` 二进制演练，请将 `pnpm exec repo-ai-governor` 替换为：
 
@@ -136,9 +142,28 @@ pnpm exec repo-ai-governor review-verify --output json
 默认模式为 `tool_managed`。如需切换到 `repo_local`，建议使用 CLI 迁移路径：
 
 ```bash
-pnpm exec repo-ai-governor workspace --workspace-action dry-run --workspace-mode repo_local --output json
-pnpm exec repo-ai-governor workspace --workspace-action execute --workspace-mode repo_local --output json
-pnpm exec repo-ai-governor workspace --workspace-action rollback --workspace-plan <plan-path> --output json
+pnpm exec repo-ai-governor workspace dry-run --workspace-mode repo_local --output json
+pnpm exec repo-ai-governor workspace execute --workspace-mode repo_local --output json
+pnpm exec repo-ai-governor workspace rollback <plan-path> --output json
+```
+
+如果你不想每次都带 `--ui-theme`，可以用下面的命令持久化当前工作区默认主题：
+
+```bash
+pnpm exec repo-ai-governor workspace set-ui-theme calm --output json
+```
+
+如果你想直接打开交互式 selector，而不是手输预设：
+
+```bash
+pnpm exec repo-ai-governor workspace set-ui-theme --output pretty
+pnpm exec repo-ai-governor set-ui-theme --output pretty
+```
+
+如果你想给所有工作区统一设置一个全局默认主题，可执行：
+
+```bash
+pnpm exec repo-ai-governor set-ui-theme calm --output json
 ```
 
 说明：
@@ -146,6 +171,13 @@ pnpm exec repo-ai-governor workspace --workspace-action rollback --workspace-pla
 1. 单独执行 `init` 仍会停留在 `tool_managed`；只有 `workspace execute` 后才会真正落 repo-local 工作区面。
 2. `workspace dry-run` 会把计划产物写到当前活动 workspace 根；成功执行 `workspace execute` 后，plan/execution 产物会重写到目标 workspace 根。
 3. `workspace rollback` 会把 rollback 产物写到恢复后的 source workspace 根，并在 cleanup 成功后移除空的 `.repo-ai-governor-migration/<migration-id>` scratch 目录。
+4. 主题优先级固定为命令覆盖 `--ui-theme` > workspace 默认值 > 全局 CLI 默认值。
+5. `workspace set-ui-theme <preset>` 会写入当前活动工作区配置；如果 repo-local selector config 也在使用中，只有该 selector 文件原本已存在时才会同步。
+6. 顶层 `set-ui-theme <preset>` 默认作用于 global，会把全局 CLI 偏好写入 `~/.repo-ai-governor/cli-preferences.yaml`，不会改动 workspace 配置；如果你刻意想让这个快捷入口只改当前 workspace，可显式传 `--theme-scope workspace`。
+7. `set-ui-theme --help` 会列出可用主题，而在交互式 TTY + `pretty` 模式下省略 `[theme]` 则会直接打开 selector。
+8. 新生成的配置默认带有 `ui.react.theme: governor`；`--ui-theme governor|catppuccin|calm` 仍保留为单次命令覆盖。
+9. `workspace clear-config --output json` 可用于干净地重置当前 selector/config 文件，而不会删除其它工作区产物。
+10. 旧的 `--workspace-action ...` 长写法仍保留给脚本使用；`workspace <action> [value]` 是更短的人手执行写法。
 
 ### Workflow 定义预览、保存与显式 Upgrade Shell
 
@@ -162,6 +194,7 @@ pnpm exec repo-ai-governor upgrade --output pretty
 2. `workflow create` 与 `workflow edit` 会把当前活动 workflow definition 保存到 `<workspace_root>/context/workflow/active-workflow.definition.json`，并在 `<workspace_root>/context/compiled-ir/<execution_id>.json` 下持久化一份 compiled IR snapshot。
 3. Loop 节点在保存前必须同时带有 `maxCycles` 与 `maxWallTimeSeconds`；Condition 节点的分支必须使用非空且唯一的 `conditionKey`。
 4. 在本地 TTY + `pretty` 模式下，`workflow` 与 `upgrade` 会默认进入 React shell，并只占用 `stderr`；如果需要压制该壳层，可显式添加 `--ui none` 或 `--ui classic`，同时保持现有 stdout 输出契约不变。
+5. React shell 目前提供 `governor`、`catppuccin`、`calm` 三套预设；持久化默认值来自 `ui.react.theme`，而 `--ui-theme` 仍只覆盖当前命令。
 
 ## 4. HITL 通知 Provider
 

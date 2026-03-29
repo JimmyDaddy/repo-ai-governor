@@ -15,6 +15,10 @@ import {
   CliInteractiveShellStderrRenderingMode,
   CliInteractiveUiMode,
 } from '../../constants/cli-interactive-shell.constant.js';
+import {
+  type CliReactThemePreset,
+  DEFAULT_CLI_REACT_THEME_PRESET,
+} from '../../constants/cli-react-theme.constant.js';
 import type {
   CliInitReactShellDescriptor,
   CliInitReactShellSelection,
@@ -44,12 +48,18 @@ export class CliInitReactShellRunner {
   public async run(options: {
     locale: Locale;
     outputMode: ErrorOutputEnvironment;
+    uiTheme?: CliReactThemePreset;
     translate: (key: string, interpolation?: Record<string, string>) => string;
   }): Promise<CliInitReactShellSelection> {
     const descriptor = this.descriptorRegistry.resolveBootstrapDescriptor(options.translate);
     const promptAdapter = this.promptAdapterFactory();
     const renderer = this.renderer.withTranslate(options.translate);
-    const session = this.createSessionState(options.locale, options.outputMode, descriptor);
+    const session = this.createSessionState(
+      options.locale,
+      options.outputMode,
+      descriptor,
+      options.uiTheme ?? DEFAULT_CLI_REACT_THEME_PRESET,
+    );
     let receivedSigint = false;
 
     const sigintHandler = (): void => {
@@ -64,12 +74,6 @@ export class CliInitReactShellRunner {
     process.on('SIGINT', sigintHandler);
 
     try {
-      renderer.renderFrame({
-        session,
-        title: descriptor.title,
-        lines: [descriptor.intro],
-      });
-
       while (true) {
         const workspaceMode = await this.collectWorkspaceModeSelection(
           session,
@@ -114,17 +118,19 @@ export class CliInitReactShellRunner {
         if (confirmed) {
           session.runState = CliInteractiveShellRunState.SUBMITTING;
           session.currentStepTitle = descriptor.submitTitle;
-          renderer.renderFrame({
+          this.renderStatusFrame(promptAdapter, renderer, {
             session,
             title: descriptor.submitTitle,
             lines: [options.translate('cli.initShell.submittingDescriptor')],
+            translate: options.translate,
           });
 
           session.runState = CliInteractiveShellRunState.SUCCESS;
-          renderer.renderFrame({
+          this.renderStatusFrame(promptAdapter, renderer, {
             session,
             title: descriptor.submitTitle,
             lines: [descriptor.successMessage],
+            translate: options.translate,
           });
 
           return {
@@ -134,10 +140,11 @@ export class CliInitReactShellRunner {
           };
         }
 
-        renderer.renderFrame({
+        this.renderStatusFrame(promptAdapter, renderer, {
           session,
           title: descriptor.confirmationTitle,
           lines: [descriptor.confirmationRestartMessage],
+          translate: options.translate,
         });
       }
     } catch (error) {
@@ -184,11 +191,13 @@ export class CliInitReactShellRunner {
     locale: Locale,
     outputMode: ErrorOutputEnvironment,
     descriptor: CliInitReactShellDescriptor,
+    uiTheme: CliReactThemePreset,
   ): CliInteractiveShellSessionState {
     return {
       uiMode: CliInteractiveUiMode.REACT,
       commandName: CliCommandName.INIT,
       descriptorId: descriptor.descriptorId,
+      uiTheme,
       runState: CliInteractiveShellRunState.IDLE,
       currentStepTitle: descriptor.workspaceModeField.title,
       totalSteps: descriptor.totalSteps,
@@ -346,5 +355,35 @@ export class CliInitReactShellRunner {
     }
 
     return null;
+  }
+
+  /**
+   * Renders one status transition through the live prompt adapter when supported.
+   * Why: keeping submit/success states inside the same Ink instance avoids stacked stderr frames.
+   * @param promptAdapter Prompt adapter bound to the current live shell session.
+   * @param renderer Static stderr renderer used as a compatibility fallback.
+   * @param frame Status frame payload.
+   * @returns Nothing.
+   */
+  private renderStatusFrame(
+    promptAdapter: CliInteractiveShellPromptAdapter,
+    renderer: CliInteractiveShellStderrRenderer,
+    frame: {
+      session: CliInteractiveShellSessionState;
+      title: string;
+      lines: string[];
+      translate: (key: string, interpolation?: Record<string, string>) => string;
+    },
+  ): void {
+    if (promptAdapter.renderStatus) {
+      promptAdapter.renderStatus(frame);
+      return;
+    }
+
+    renderer.renderFrame({
+      session: frame.session,
+      title: frame.title,
+      lines: frame.lines,
+    });
   }
 }

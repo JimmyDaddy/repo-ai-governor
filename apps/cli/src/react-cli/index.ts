@@ -1,6 +1,7 @@
 export { ReactCliApp } from './app/react-cli-app.js';
 export { ReactCliRunner } from './app/react-cli-runner.js';
 export { ReactCliStderrFramePresenter } from './app/react-cli-stderr-frame-presenter.js';
+export { resolveReactCliTheme } from './theme/react-cli-theme-registry.js';
 export {
   ReactCliCommandDescriptorRegistry,
   ReactCliFieldKind,

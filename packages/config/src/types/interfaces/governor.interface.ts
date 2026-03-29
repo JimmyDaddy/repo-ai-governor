@@ -1,8 +1,9 @@
-import type { WorkspaceMigrationPolicy } from '@repo-ai-governor/shared';
 import type {
   AdapterAvailability,
   AdapterSurface,
+  CliReactThemePreset,
   LocalModelProvider,
+  WorkspaceMigrationPolicy,
 } from '@repo-ai-governor/shared';
 import type { I18nRuntimeConfig, MemoryRuntimeConfig } from '@repo-ai-governor/shared';
 import type { RoleProfileStatus, RoleSource } from '@repo-ai-governor/shared';
@@ -38,12 +39,27 @@ export interface WorkspaceRuntimeOverrides {
 }
 
 /**
+ * Defines React-shell UI preferences accepted from config.
+ */
+export interface UiReactConfig {
+  theme?: CliReactThemePreset;
+}
+
+/**
+ * Defines top-level UI preferences consumed by CLI/runtime surfaces.
+ */
+export interface UiConfig {
+  react?: UiReactConfig;
+}
+
+/**
  * Defines one profile payload that can override workspace/i18n fields.
  */
 export interface GovernorProfile {
   workspace?: Partial<WorkspaceConfig>;
   i18n?: Partial<I18nConfig>;
   memory?: Partial<MemoryConfig>;
+  ui?: UiConfig;
   adapters?: Partial<AdaptersConfig>;
 }
 
@@ -137,6 +153,7 @@ export interface GovernorConfig {
   workspace: WorkspaceConfig;
   i18n: I18nConfig;
   memory?: Partial<MemoryConfig>;
+  ui?: UiConfig;
   roles?: RoleProfileConfig[];
   adapters?: AdaptersConfig;
   activeProfile?: string;

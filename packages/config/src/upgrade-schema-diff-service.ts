@@ -282,6 +282,7 @@ export class UpgradeSchemaDiffService {
         supportedLocales: [...sourceConfig.i18n.supportedLocales],
       },
       ...(sourceConfig.memory ? { memory: { ...sourceConfig.memory } } : {}),
+      ...(sourceConfig.ui ? { ui: this.cloneUi(sourceConfig.ui) } : {}),
       ...(sourceConfig.profiles
         ? {
             profiles: Object.fromEntries(
@@ -314,6 +315,25 @@ export class UpgradeSchemaDiffService {
           }
         : {}),
       ...(profile.memory ? { memory: { ...profile.memory } } : {}),
+      ...(profile.ui ? { ui: this.cloneUi(profile.ui) } : {}),
+    };
+  }
+
+  /**
+   * Clones UI config so upgrade draft mutations cannot leak back into the source config.
+   * @param ui Source UI config.
+   * @returns Cloned UI config.
+   */
+  private cloneUi(ui: NonNullable<GovernorConfig['ui']>): NonNullable<GovernorConfig['ui']> {
+    return {
+      ...ui,
+      ...(ui.react
+        ? {
+            react: {
+              ...ui.react,
+            },
+          }
+        : {}),
     };
   }
 }

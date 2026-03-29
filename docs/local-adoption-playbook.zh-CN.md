@@ -126,6 +126,7 @@ pnpm exec repo-ai-governor upgrade --output json
 4. 如果输出出现 `confirmation_items` warning，或 blocking 数量非零，应先完成人工确认，再决定是否写回迁移后的配置。
 5. 只有升级后的配置至少通过一轮 `doctor` + `check` 后，才可以移除最近一次 rollback reference。
 6. 在本地 TTY + `pretty` 模式下，`upgrade` 会默认进入 React shell，并只把分析回执渲染到 `stderr`；如需更安静的人类可读运行，可显式指定 `--ui none` 或 `--ui classic`，stdout 机器可读契约保持不变。
+7. 如需切换 React shell 预设主题，可在本地验证命令上添加 `--ui-theme governor|catppuccin|calm`。
 
 ## 3.3 Workflow 定义预览与保存
 
@@ -152,9 +153,9 @@ pnpm exec repo-ai-governor workflow edit --output pretty
 如需切换 `repo_local`，建议使用显式迁移命令：
 
 ```bash
-pnpm exec repo-ai-governor workspace --workspace-action dry-run --workspace-mode repo_local --output json
-pnpm exec repo-ai-governor workspace --workspace-action execute --workspace-mode repo_local --output json
-pnpm exec repo-ai-governor workspace --workspace-action rollback --workspace-plan <plan-path> --output json
+pnpm exec repo-ai-governor workspace dry-run --workspace-mode repo_local --output json
+pnpm exec repo-ai-governor workspace execute --workspace-mode repo_local --output json
+pnpm exec repo-ai-governor workspace rollback <plan-path> --output json
 ```
 
 回滚步骤：
@@ -162,6 +163,36 @@ pnpm exec repo-ai-governor workspace --workspace-action rollback --workspace-pla
 1. 保留 `workspace dry-run` 或 `workspace execute` 输出中的 `plan-path`。
 2. 使用同一个 `plan-path` 执行显式 rollback。
 3. 重新执行 `doctor`，确认 `workspaceRoot` 已恢复到 `tool_managed`。
+
+如果你不想在每次命令上重复 `--ui-theme`，可以用下面的命令持久化当前工作区默认 React shell 主题：
+
+```bash
+pnpm exec repo-ai-governor workspace set-ui-theme calm --output json
+```
+
+如果你更想从可用预设里直接挑选，也可以打开交互式 selector：
+
+```bash
+pnpm exec repo-ai-governor workspace set-ui-theme --output pretty
+pnpm exec repo-ai-governor set-ui-theme --output pretty
+```
+
+如果你想给所有工作区统一设置一个全局默认 React shell 主题，可执行：
+
+```bash
+pnpm exec repo-ai-governor set-ui-theme calm --output json
+```
+
+主题与重置说明：
+
+1. 主题优先级固定为命令覆盖 `--ui-theme` > workspace 默认值 > 全局 CLI 默认值。
+2. `set-ui-theme` 默认会把 `ui.react.theme` 写入当前活动 `governor.yaml`；新生成的配置默认带有 `ui.react.theme: governor`。
+3. 如果当前同时存在 repo-local selector config，workspace 范围的 `set-ui-theme` 只会在该 selector 文件原本已存在时保持同步。
+4. 顶层 `set-ui-theme <preset>` 默认作用于 global，会写入 `~/.repo-ai-governor/cli-preferences.yaml`，不会改动 workspace 配置；只有你明确传 `--theme-scope workspace` 时，这个快捷入口才会落到当前 workspace。
+5. `pnpm exec repo-ai-governor set-ui-theme --help` 会列出可用预设，而在交互式 TTY + `pretty` 模式下省略 `[theme]` 则会直接打开 selector。
+6. 当你只想在验证时临时切换外观，继续使用 `--ui-theme governor|catppuccin|calm` 即可。
+7. 如需移除当前 selector/config 文件但保留 workflow、diagnostics、review 等产物，可执行 `pnpm exec repo-ai-governor workspace clear-config --output json`。
+8. 旧的 `--workspace-action ...` 长写法仍可继续使用；更推荐人工执行时使用 `workspace <action> [value]` 的短写。
 
 Artifact locality 合同：
 

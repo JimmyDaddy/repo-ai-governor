@@ -36,12 +36,19 @@ import {
   CliGovernanceCheckStatus,
 } from '../constants/cli-governance-runtime.constant.js';
 import { CliInteractiveUiMode } from '../constants/cli-interactive-shell.constant.js';
-import { CliWorkspaceAction } from '../constants/cli-workspace.constant.js';
+import {
+  CLI_REACT_THEME_PRESET_ORDER,
+  type CliReactThemePreset,
+  DEFAULT_CLI_REACT_THEME_PRESET,
+} from '../constants/cli-react-theme.constant.js';
+import { CliWorkspaceAction, CliWorkspaceThemeScope } from '../constants/cli-workspace.constant.js';
 import {
   ReactCliCommandDescriptorCatalog,
   ReactCliCommandViewModelBuilder,
   type ReactCliViewModel,
 } from '../react-cli/index.js';
+import { GlobalCliThemePreferenceService } from '../runtime/global-cli-theme-preference-service.js';
+import { CliThemeSelectReactShellRunner } from '../runtime/interactive-shell/theme-select-react-shell-runner.js';
 import type {
   CliCommandExecutorContext,
   CliCommandExperiencePayload,
@@ -56,6 +63,11 @@ interface CliWorkspaceCommandDependencies {
   workspaceMigrationService?: Pick<WorkspaceMigrationService, 'plan' | 'execute' | 'rollback'>;
   descriptorCatalog?: ReactCliCommandDescriptorCatalog;
   viewModelBuilder?: ReactCliCommandViewModelBuilder;
+  globalThemePreferenceService?: Pick<
+    GlobalCliThemePreferenceService,
+    'loadThemePreference' | 'renderPreferenceContent' | 'resolvePreferencePath'
+  >;
+  themeSelectRunner?: Pick<CliThemeSelectReactShellRunner, 'run'>;
 }
 
 interface WorkspaceCutoverPersistence {
@@ -76,6 +88,11 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
   >;
   private readonly descriptorCatalog: ReactCliCommandDescriptorCatalog;
   private readonly viewModelBuilder: ReactCliCommandViewModelBuilder;
+  private readonly globalThemePreferenceService: Pick<
+    GlobalCliThemePreferenceService,
+    'loadThemePreference' | 'renderPreferenceContent' | 'resolvePreferencePath'
+  >;
+  private readonly themeSelectRunner: Pick<CliThemeSelectReactShellRunner, 'run'>;
 
   public constructor(dependencies: CliWorkspaceCommandDependencies = {}) {
     this.configLoader = dependencies.configLoader ?? new ConfigLoader();
@@ -84,6 +101,9 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
     this.descriptorCatalog =
       dependencies.descriptorCatalog ?? new ReactCliCommandDescriptorCatalog();
     this.viewModelBuilder = dependencies.viewModelBuilder ?? new ReactCliCommandViewModelBuilder();
+    this.globalThemePreferenceService =
+      dependencies.globalThemePreferenceService ?? new GlobalCliThemePreferenceService();
+    this.themeSelectRunner = dependencies.themeSelectRunner ?? new CliThemeSelectReactShellRunner();
   }
 
   public async execute(context: CliCommandExecutorContext): Promise<CliGovernanceCommandResult> {
@@ -95,6 +115,13 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
 
     if (action === CliWorkspaceAction.CLEAR_CONFIG) {
       return this.executeClearConfig(context);
+    }
+
+    if (
+      action === CliWorkspaceAction.SET_UI_THEME &&
+      this.resolveThemeScope(context) === CliWorkspaceThemeScope.GLOBAL
+    ) {
+      return this.executeSetUiTheme(context, null);
     }
 
     if (!existsSync(context.options.workspace.configPath)) {
@@ -109,6 +136,9 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
     }
 
     const config = this.configLoader.loadFromFile(context.options.workspace.configPath);
+    if (action === CliWorkspaceAction.SET_UI_THEME) {
+      return this.executeSetUiTheme(context, config);
+    }
     const targetWorkspace = this.resolveTargetWorkspace(context, action);
     const plan = this.workspaceMigrationService.plan({
       currentWorkingDirectory: context.options.currentWorkingDirectory,
@@ -156,14 +186,15 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
       rawAction === CliWorkspaceAction.DRY_RUN ||
       rawAction === CliWorkspaceAction.EXECUTE ||
       rawAction === CliWorkspaceAction.ROLLBACK ||
-      rawAction === CliWorkspaceAction.CLEAR_CONFIG
+      rawAction === CliWorkspaceAction.CLEAR_CONFIG ||
+      rawAction === CliWorkspaceAction.SET_UI_THEME
     ) {
       return rawAction;
     }
 
     throw new RuntimeError(
       GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
-      'workspace requires --workspace-action dry-run|execute|rollback|clear-config.',
+      'workspace requires --workspace-action dry-run|execute|rollback|clear-config|set-ui-theme.',
       {
         command: CliCommandName.WORKSPACE,
         action: rawAction,
@@ -172,7 +203,7 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
   }
 
   private async executeClearConfig(context: CliCommandExecutorContext) {
-    const inspectedConfigPaths = this.resolveWorkspaceConfigClearPaths(context);
+    const inspectedConfigPaths = this.resolveWorkspaceConfigPersistencePaths(context);
     const clearedConfigPaths: string[] = [];
 
     for (const configPath of inspectedConfigPaths) {
@@ -312,6 +343,217 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
         },
       },
     };
+  }
+
+  private async executeSetUiTheme(
+    context: CliCommandExecutorContext,
+    config: GovernorConfig | null,
+  ): Promise<CliGovernanceCommandResult> {
+    const themeScope = this.resolveThemeScope(context);
+    const requestedUiTheme = await this.resolveRequestedUiTheme(context, config, themeScope);
+
+    const persistedConfigPaths =
+      themeScope === CliWorkspaceThemeScope.GLOBAL
+        ? await this.persistGlobalUiThemePreference(context, requestedUiTheme)
+        : await this.persistUiThemeConfig(context, config, requestedUiTheme);
+    const persistedPathCount = persistedConfigPaths.length;
+    const statusMessage = this.translate(
+      context,
+      'cli.reactShell.workspace.status.setThemeCompleted',
+      {
+        theme: requestedUiTheme,
+        scope: themeScope,
+      },
+    );
+    const message = this.translate(context, 'cli.reactShell.workspace.message.setThemeCompleted', {
+      theme: requestedUiTheme,
+      scope: themeScope,
+      count: String(persistedPathCount),
+      paths: persistedConfigPaths.join(', '),
+    });
+    const checks: CliCommandResultCheck[] = [
+      {
+        id: CliCommandResultCheckId.WORKSPACE_ACTION,
+        status: CliGovernanceCheckStatus.PASS,
+        detail: `action=set_ui_theme theme=${requestedUiTheme} scope=${themeScope}`,
+      },
+      {
+        id: CliCommandResultCheckId.WORKSPACE_TARGET,
+        status: CliGovernanceCheckStatus.PASS,
+        detail: this.createWorkspaceTargetDetail(
+          context.options.workspace.mode,
+          context.options.workspace.workspaceRoot,
+        ),
+      },
+    ];
+    const nextActions = [
+      this.translate(context, 'cli.reactShell.workspace.nextActions.rerunPrettyAfterThemeChange', {
+        theme: requestedUiTheme,
+      }),
+      this.translate(context, 'cli.reactShell.workspace.nextActions.useUiThemeFlagAsOverride'),
+    ];
+    const experience = context.commandExperienceBuilder.buildExperiencePayload({
+      roleProgress: [
+        {
+          roleId: 'workspace-ui-theme-set',
+          stage: ExecutionProgressStage.REPORT,
+          status: ExecutionProgressStatus.COMPLETED,
+          category: ExecutionInteractionCategory.NONE,
+          summary: statusMessage,
+          detail: `theme=${requestedUiTheme} scope=${themeScope} persisted_path_count=${persistedPathCount}`,
+        },
+      ],
+      interactionPrompts: nextActions.map((action) => ({
+        category: ExecutionInteractionCategory.NONE,
+        stage: ExecutionProgressStage.REPORT,
+        title: this.translate(context, 'cli.reactShell.workspace.nextStepTitle'),
+        action,
+        blocking: false,
+      })),
+      layeredLogs: {
+        summary: [statusMessage],
+        detailed: [
+          `theme=${requestedUiTheme}`,
+          `scope=${themeScope}`,
+          `persisted_path_count=${persistedPathCount}`,
+          ...persistedConfigPaths.map(
+            (configPath, index) => `persisted_config_path_${index}=${configPath}`,
+          ),
+        ],
+      },
+    });
+
+    return {
+      message,
+      reactCliViewModel: this.buildWorkspaceSetUiThemeViewModel(context, {
+        message,
+        statusMessage,
+        checks,
+        experience,
+        themePreset: requestedUiTheme,
+        themeScope,
+        persistedConfigPaths,
+      }),
+      commandResult: {
+        operation: CLI_RUNTIME_OPERATION.WORKSPACE_UI_THEME_SET,
+        summary: message,
+        check_totals: context.calculateCheckTotals(checks),
+        checks,
+        experience,
+        details: {
+          action: 'set_ui_theme',
+          config_source: context.options.configSource,
+          current_workspace_mode: context.options.workspace.mode,
+          current_workspace_root: context.options.workspace.workspaceRoot,
+          current_config_path: context.options.workspace.configPath,
+          repository_root: context.options.workspace.repositoryRoot,
+          ui_theme: requestedUiTheme,
+          theme_scope: themeScope,
+          persisted_config_paths: persistedConfigPaths.join(' | '),
+          persisted_path_count: persistedPathCount,
+        },
+      },
+    };
+  }
+
+  private resolveThemeScope(context: CliCommandExecutorContext): CliWorkspaceThemeScope {
+    const rawThemeScope =
+      context.options.workspaceCommandOptions?.themeScope?.trim().toLowerCase() ??
+      CliWorkspaceThemeScope.WORKSPACE;
+    if (
+      rawThemeScope === CliWorkspaceThemeScope.WORKSPACE ||
+      rawThemeScope === CliWorkspaceThemeScope.GLOBAL
+    ) {
+      return rawThemeScope;
+    }
+
+    throw new RuntimeError(
+      GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+      'workspace set-ui-theme requires --theme-scope workspace|global when the flag is present.',
+      {
+        command: CliCommandName.WORKSPACE,
+        action: CliWorkspaceAction.SET_UI_THEME,
+        option: '--theme-scope',
+        value: rawThemeScope,
+      },
+    );
+  }
+
+  /**
+   * Resolves the theme preset requested for `set-ui-theme`, falling back to the live selector.
+   * @param context Command execution context.
+   * @param config Active workspace config when the workspace scope is available.
+   * @param themeScope Target persistence scope.
+   * @returns One valid theme preset that should be persisted.
+   */
+  private async resolveRequestedUiTheme(
+    context: CliCommandExecutorContext,
+    config: GovernorConfig | null,
+    themeScope: CliWorkspaceThemeScope,
+  ): Promise<CliReactThemePreset> {
+    const runtimeDebugOptions = context.resolveRuntimeDebugOptions();
+    if (runtimeDebugOptions.requestedUiTheme) {
+      return runtimeDebugOptions.requestedUiTheme;
+    }
+
+    if (runtimeDebugOptions.uiMode !== CliInteractiveUiMode.REACT) {
+      throw new RuntimeError(
+        GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+        this.translate(context, 'cli.reactShell.themeSelector.nonInteractiveError', {
+          themes: this.formatAvailableThemeList(),
+        }),
+        {
+          command: CliCommandName.WORKSPACE,
+          action: CliWorkspaceAction.SET_UI_THEME,
+          option: '--ui-theme',
+        },
+      );
+    }
+
+    const currentTargetTheme = this.resolveCurrentTargetThemePreference(
+      context,
+      config,
+      themeScope,
+    );
+    return await this.themeSelectRunner.run({
+      locale: context.options.locale,
+      outputMode: context.options.outputMode,
+      uiTheme: runtimeDebugOptions.uiTheme ?? DEFAULT_CLI_REACT_THEME_PRESET,
+      currentTheme: currentTargetTheme,
+      themeScope,
+      translate: (key, interpolation) => this.translate(context, key, interpolation),
+    });
+  }
+
+  /**
+   * Resolves the currently persisted theme for the scope targeted by `set-ui-theme`.
+   * @param context Command execution context.
+   * @param config Active workspace config when loaded.
+   * @param themeScope Target persistence scope.
+   * @returns The current scope-specific theme preset, when one exists.
+   */
+  private resolveCurrentTargetThemePreference(
+    context: CliCommandExecutorContext,
+    config: GovernorConfig | null,
+    themeScope: CliWorkspaceThemeScope,
+  ): CliReactThemePreset | null {
+    if (themeScope === CliWorkspaceThemeScope.GLOBAL) {
+      return (
+        this.globalThemePreferenceService.loadThemePreference({
+          preferencePath: context.options.workspaceCommandOptions?.themePreferencePath ?? undefined,
+        }) ?? null
+      );
+    }
+
+    return config?.ui?.react?.theme ?? null;
+  }
+
+  /**
+   * Formats the supported theme preset identifiers into one stable inline list.
+   * @returns Pipe-delimited theme preset identifiers.
+   */
+  private formatAvailableThemeList(): string {
+    return CLI_REACT_THEME_PRESET_ORDER.join('|');
   }
 
   private resolveTargetWorkspace(
@@ -952,13 +1194,15 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
       return undefined;
     }
 
+    const resolvedThemePreset = runtimeDebugOptions.uiTheme ?? DEFAULT_CLI_REACT_THEME_PRESET;
     return this.viewModelBuilder.build({
       commandName: CliCommandName.WORKSPACE,
       descriptor,
-      subtitle: `ui=${runtimeDebugOptions.uiMode} stdout=${context.options.outputMode} workspace=${context.options.workspace.mode}`,
+      subtitle: `ui=${runtimeDebugOptions.uiMode} theme=${resolvedThemePreset} stdout=${context.options.outputMode} workspace=${context.options.workspace.mode}`,
       inputTitle: this.translate(context, 'cli.reactShell.shared.inputs'),
       summaryTitle: this.translate(context, 'cli.reactShell.shared.summary'),
       attentionTitle: this.translate(context, 'cli.reactShell.shared.attention'),
+      themePreset: resolvedThemePreset,
       statusMessage: options.experience.layeredLogs.summary[0],
       statusVariant: this.viewModelBuilder.resolveStatusVariantFromChecks(options.checks),
       fieldValues: {
@@ -1041,13 +1285,15 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
       ],
     };
 
+    const resolvedThemePreset = runtimeDebugOptions.uiTheme ?? DEFAULT_CLI_REACT_THEME_PRESET;
     return this.viewModelBuilder.build({
       commandName: CliCommandName.WORKSPACE,
       descriptor,
-      subtitle: `ui=${runtimeDebugOptions.uiMode} stdout=${context.options.outputMode} workspace=${context.options.workspace.mode}`,
+      subtitle: `ui=${runtimeDebugOptions.uiMode} theme=${resolvedThemePreset} stdout=${context.options.outputMode} workspace=${context.options.workspace.mode}`,
       inputTitle: this.translate(context, 'cli.reactShell.shared.inputs'),
       summaryTitle: this.translate(context, 'cli.reactShell.shared.summary'),
       attentionTitle: this.translate(context, 'cli.reactShell.shared.attention'),
+      themePreset: resolvedThemePreset,
       statusMessage: options.statusMessage,
       statusVariant: this.viewModelBuilder.resolveStatusVariantFromChecks(options.checks),
       fieldValues: {
@@ -1068,6 +1314,100 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
               }),
             )
           : [this.translate(context, 'cli.reactShell.workspace.summary.noConfigRemoved')]),
+      ],
+      footerShortcutsTitle: this.translate(context, 'cli.reactShell.shared.shortcuts'),
+      checks: options.checks,
+      interactionPrompts: options.experience.interactionPrompts,
+    });
+  }
+
+  private buildWorkspaceSetUiThemeViewModel(
+    context: CliCommandExecutorContext,
+    options: {
+      message: string;
+      statusMessage: string;
+      checks: CliCommandResultCheck[];
+      experience: CliCommandExperiencePayload;
+      themePreset: CliReactThemePreset;
+      themeScope: CliWorkspaceThemeScope;
+      persistedConfigPaths: string[];
+    },
+  ): ReactCliViewModel | undefined {
+    const runtimeDebugOptions = context.resolveRuntimeDebugOptions();
+    if (runtimeDebugOptions.uiMode !== CliInteractiveUiMode.REACT) {
+      return undefined;
+    }
+
+    const baseDescriptor = this.descriptorCatalog
+      .createRegistry({
+        translate: context.translate,
+      })
+      .resolve(CliCommandName.WORKSPACE);
+
+    if (!baseDescriptor) {
+      return undefined;
+    }
+
+    const descriptor = {
+      ...baseDescriptor,
+      title: this.translate(context, 'cli.reactShell.workspace.setThemeTitle'),
+      fields: baseDescriptor.fields.map((field) => {
+        if (field.fieldId === 'targetMode') {
+          return {
+            ...field,
+            label: this.translate(context, 'cli.reactShell.workspace.fields.themeScope'),
+          };
+        }
+
+        if (field.fieldId === 'targetRoot') {
+          return {
+            ...field,
+            label: this.translate(context, 'cli.reactShell.workspace.fields.currentRoot'),
+          };
+        }
+
+        if (field.fieldId === 'planPath') {
+          return {
+            ...field,
+            label: this.translate(context, 'cli.reactShell.workspace.fields.themePreferencePaths'),
+          };
+        }
+
+        return field;
+      }),
+      helpLines: [
+        this.translate(context, 'cli.reactShell.workspace.help.setThemePersistsToConfig'),
+        this.translate(context, 'cli.reactShell.workspace.help.setThemeFlagStillOverrides'),
+      ],
+    };
+
+    return this.viewModelBuilder.build({
+      commandName: CliCommandName.WORKSPACE,
+      descriptor,
+      subtitle: `ui=${runtimeDebugOptions.uiMode} theme=${options.themePreset} stdout=${context.options.outputMode} workspace=${context.options.workspace.mode}`,
+      inputTitle: this.translate(context, 'cli.reactShell.shared.inputs'),
+      summaryTitle: this.translate(context, 'cli.reactShell.shared.summary'),
+      attentionTitle: this.translate(context, 'cli.reactShell.shared.attention'),
+      themePreset: options.themePreset,
+      statusMessage: options.statusMessage,
+      statusVariant: this.viewModelBuilder.resolveStatusVariantFromChecks(options.checks),
+      fieldValues: {
+        action: CliWorkspaceAction.SET_UI_THEME,
+        targetMode: options.themeScope,
+        targetRoot: context.options.workspace.workspaceRoot,
+        planPath: options.persistedConfigPaths.join(' | '),
+      },
+      summaryLines: [
+        options.message,
+        this.translate(context, 'cli.reactShell.workspace.summary.appliedTheme', {
+          theme: options.themePreset,
+        }),
+        this.translate(context, 'cli.reactShell.workspace.summary.appliedThemeScope', {
+          scope: options.themeScope,
+        }),
+        this.translate(context, 'cli.reactShell.workspace.summary.persistedConfigPaths', {
+          paths: options.persistedConfigPaths.join(', '),
+        }),
       ],
       footerShortcutsTitle: this.translate(context, 'cli.reactShell.shared.shortcuts'),
       checks: options.checks,
@@ -1304,7 +1644,7 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
     return resolve(plan.stagingWorkspaceRoot, '..');
   }
 
-  private resolveWorkspaceConfigClearPaths(context: CliCommandExecutorContext): string[] {
+  private resolveWorkspaceConfigPersistencePaths(context: CliCommandExecutorContext): string[] {
     const repoLocalConfigPath = this.resolveRepositoryLocalConfigPath(
       context.options.workspace.repositoryRoot,
     );
@@ -1327,6 +1667,66 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
         ? await readFile(repoLocalConfigPath, 'utf8')
         : null,
     };
+  }
+
+  private async persistUiThemeConfig(
+    context: CliCommandExecutorContext,
+    config: GovernorConfig | null,
+    themePreset: CliReactThemePreset,
+  ): Promise<string[]> {
+    if (!config) {
+      throw new RuntimeError(
+        GovernorErrorCode.CONFIG_FILE_READ_FAILED,
+        `workspace requires config file at ${context.options.workspace.configPath}; run \`init\` first.`,
+        {
+          configPath: context.options.workspace.configPath,
+          command: CliCommandName.WORKSPACE,
+          action: CliWorkspaceAction.SET_UI_THEME,
+        },
+      );
+    }
+
+    const persistedConfigContent = this.renderUiThemeConfig(
+      config,
+      context.options.profileId ?? null,
+      themePreset,
+    );
+    const configPaths = this.resolveUiThemePersistencePaths(context);
+
+    for (const configPath of configPaths) {
+      await context.artifactWriter.writeTextArtifact(configPath, persistedConfigContent);
+    }
+
+    return configPaths;
+  }
+
+  private async persistGlobalUiThemePreference(
+    context: CliCommandExecutorContext,
+    themePreset: CliReactThemePreset,
+  ): Promise<string[]> {
+    const preferencePath =
+      context.options.workspaceCommandOptions?.themePreferencePath?.trim() ||
+      this.globalThemePreferenceService.resolvePreferencePath();
+    await context.artifactWriter.writeTextArtifact(
+      preferencePath,
+      this.globalThemePreferenceService.renderPreferenceContent(themePreset),
+    );
+    return [preferencePath];
+  }
+
+  private resolveUiThemePersistencePaths(context: CliCommandExecutorContext): string[] {
+    const activeConfigPath = context.options.workspace.configPath;
+    const repoLocalConfigPath = this.resolveRepositoryLocalConfigPath(
+      context.options.workspace.repositoryRoot,
+    );
+
+    if (repoLocalConfigPath === activeConfigPath) {
+      return [activeConfigPath];
+    }
+
+    return existsSync(repoLocalConfigPath)
+      ? [activeConfigPath, repoLocalConfigPath]
+      : [activeConfigPath];
   }
 
   private async persistCutoverConfig(
@@ -1404,6 +1804,36 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
     return `${stringify(nextConfig).trimEnd()}\n`;
   }
 
+  private renderUiThemeConfig(
+    config: GovernorConfig,
+    selectedProfileId: string | null,
+    themePreset: CliReactThemePreset,
+  ): string {
+    const nextConfig: GovernorConfig = {
+      ...config,
+      ui: {
+        ...(config.ui ?? {}),
+        react: {
+          ...(config.ui?.react ?? {}),
+          theme: themePreset,
+        },
+      },
+    };
+    const activeProfileId = selectedProfileId ?? null;
+    const selectedProfile = activeProfileId ? nextConfig.profiles?.[activeProfileId] : undefined;
+    if (activeProfileId && selectedProfile && nextConfig.profiles) {
+      nextConfig.profiles = {
+        ...nextConfig.profiles,
+        [activeProfileId]: {
+          ...selectedProfile,
+          ui: this.buildProfileUiShape(selectedProfile.ui, themePreset),
+        },
+      };
+    }
+
+    return `${stringify(nextConfig).trimEnd()}\n`;
+  }
+
   private buildProfileWorkspaceShape(
     currentWorkspace: GovernorProfile['workspace'],
     targetWorkspace: WorkspaceConfig,
@@ -1413,6 +1843,19 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
       targetWorkspace,
       currentWorkspace?.migrationPolicy ?? fallbackMigrationPolicy,
     );
+  }
+
+  private buildProfileUiShape(
+    currentUi: GovernorProfile['ui'],
+    themePreset: CliReactThemePreset,
+  ): GovernorProfile['ui'] {
+    return {
+      ...(currentUi ?? {}),
+      react: {
+        ...(currentUi?.react ?? {}),
+        theme: themePreset,
+      },
+    };
   }
 
   private buildWorkspaceShape(

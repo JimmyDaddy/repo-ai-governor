@@ -1,6 +1,7 @@
 import {
   AdapterAvailability,
   AdapterSurface,
+  CliReactThemePreset,
   ConfigError,
   DefaultRoleProfileId,
   GovernorErrorCode,
@@ -29,6 +30,11 @@ function createConfigFixture(): GovernorConfig {
       defaultLocale: 'zh-CN',
       fallbackLocale: 'en-US',
       supportedLocales: ['zh-CN', 'en-US'],
+    },
+    ui: {
+      react: {
+        theme: CliReactThemePreset.GOVERNOR,
+      },
     },
     roles: [
       {
@@ -82,6 +88,11 @@ function createConfigFixture(): GovernorConfig {
         workspace: {
           mode: WorkspaceMode.TOOL_MANAGED,
         },
+        ui: {
+          react: {
+            theme: CliReactThemePreset.CALM,
+          },
+        },
       },
       copilot: {
         adapters: {
@@ -123,6 +134,7 @@ describe('config unit', () => {
 
     expect(resolvedConfig.profileId).toBe('ci');
     expect(resolvedConfig.config.workspace.mode).toBe(WorkspaceMode.TOOL_MANAGED);
+    expect(resolvedConfig.config.ui?.react?.theme).toBe(CliReactThemePreset.CALM);
     expect(resolvedConfig.config.roles?.[0]?.roleProfileId).toBe('reviewer-custom');
   });
 
@@ -393,6 +405,20 @@ describe('config unit', () => {
           },
         },
       ],
+    };
+
+    expect(() => validator.validateOrThrow(invalidConfig)).toThrowError(ConfigError);
+  });
+
+  it('rejects unsupported React shell theme presets in ui config', () => {
+    const validator = new SchemaValidator();
+    const invalidConfig: GovernorConfig = {
+      ...createConfigFixture(),
+      ui: {
+        react: {
+          theme: 'aurora' as CliReactThemePreset,
+        },
+      },
     };
 
     expect(() => validator.validateOrThrow(invalidConfig)).toThrowError(ConfigError);
