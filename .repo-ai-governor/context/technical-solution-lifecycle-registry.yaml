@@ -1,5 +1,5 @@
 schema_version: 1
-generated_at: 2026-03-28
+generated_at: 2026-03-30
 status: active
 owner: architecture
 
@@ -186,27 +186,32 @@ solutions:
     supersedes: []
 
   - solution_id: technical-solution.interactive-cli-react-style-cli
-    title: Interactive CLI React-style technical solution
+    title: Interactive CLI shell technical solution
     status: active
     owner: runtime
-    version: v1
+    version: v2
     scope: cross-cutting
     draft_paths:
       - .repo-ai-governor/draft/interactive-cli-react-style-technical-solution.md
+      - .repo-ai-governor/draft/interactive-cli-session-first-agent-shell-technical-solution.md
     review_paths:
       - .repo-ai-governor/draft/review-interactive-cli-react-style-technical-solution.md
+      - .repo-ai-governor/draft/review-interactive-cli-session-first-agent-shell-technical-solution.md
     final_paths:
       - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/module-overview.md
       - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/contracts/cli-interactive-shell-contract.md
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/contracts/cli-session-shell-contract.md
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/adrs/session-first-shell-and-service-owned-session-state.md
     target_module_ids:
       - runtime.cli-interactive-shell
     north_star_refs:
+      - prd.multi-agent-orchestration
       - overall.graph-first-runtime
       - architecture.runtime-boundary
       - architecture.governance-boundary
-    approved_at: 2026-03-28
+    approved_at: 2026-03-30
     approved_by: AI-Agent
-    activated_at: 2026-03-28
+    activated_at: 2026-03-30
     supersedes: []
 
   - solution_id: technical-solution.run-live-react-session-shell

@@ -1,13 +1,13 @@
 # CLI Interactive Shell Contract
 
 - Status: active
-- Date: 2026-03-28
+- Date: 2026-03-30
 - Contract ID: `contract.cli.interactive-shell.v1`
 - Producer Module: `runtime.cli-interactive-shell`
 
 ## 1. 目标
 
-定义 CLI React 风格交互壳层的最小运行 contract，使 `init / connect / workspace / upgrade / workflow` 等配置 surface 能在不破坏自动化契约的前提下共享统一 shell。
+定义命令内 React 风格交互壳层的最小运行 contract，使 `init / connect / workspace / upgrade / workflow` 等配置 surface 能在不破坏自动化契约的前提下共享统一 shell。
 
 ## 2. Minimum Fields
 
@@ -54,6 +54,7 @@
 4. `workflow` 命令必须通过显式 Commander 子命令树注册，不允许隐藏字符串分支。
 5. Shell 生命周期必须在 `SIGINT`、退出和 fallback 场景下显式 `unmount` 与恢复终端状态。
 6. 表单 descriptor 负责字段定义与验证规则，组件只负责渲染与事件转发。
+7. 本 contract 只覆盖“显式子命令内部的交互壳层”；无子命令默认进入的 session-first shell 由 `contract.cli.session-shell.v1` 管理。
 
 ## 5. Error and Fallback Semantics
 
@@ -65,3 +66,8 @@
 
 1. 命中 `technical_solution_module_change`、`technical_solution_promotion_change`、`cli_ui_change`、`command_surface_change` 时加载。
 2. 当问题涉及 shell lifecycle、stderr 输出边界或 workflow 命令注册时，优先补载本 contract。
+
+## 7. Compatibility
+
+1. `v1` 只保证 command-scoped React shell 的最小字段与 machine-output 兼容约束稳定。
+2. `v1` 不覆盖 session transcript、resume pointer 或 slash command palette 的 presenter 语义；这些语义留给 session-shell contract。

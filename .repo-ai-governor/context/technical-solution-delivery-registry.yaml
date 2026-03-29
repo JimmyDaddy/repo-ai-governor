@@ -1,5 +1,5 @@
 schema_version: 1
-generated_at: 2026-03-29
+generated_at: 2026-03-30
 status: active
 owner: architecture
 
@@ -197,27 +197,29 @@ deliveries:
     delivery_mode: followup_required
     consumer_surfaces:
       - adopter_cli
+      - runtime_service
       - docs_playbook
-    user_impact_level: medium
-    execution_status: in_progress
+    user_impact_level: high
+    execution_status: planned
     rollout_status: planned
     owner: runtime
-    project_ref: project-027-cli-interactive-shell-implementation
-    sprint_ref: sprint-003-react-cli-shell-default-cutover
+    project_ref: project-029-cli-session-first-agent-shell
+    sprint_ref: sprint-001-entrypoint-session-shell-foundation
     task_ids:
-      - TK-312
-      - TK-313
-      - TK-314
-      - TK-315
-    project_plan_path: .repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation/plan.md
-    sprint_plan_path: .repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation/sprint-003-react-cli-shell-default-cutover/plan.md
-    task_csv_path: .repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation/sprint-003-react-cli-shell-default-cutover/tasks/tasks.csv
-    handoff_artifact_path: .repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation/sprint-003-react-cli-shell-default-cutover/tasks/TK-312-workflow-command-family-registration-and-create-edit-entry-flow.md
+      - TK-401
+      - TK-402
+      - TK-403
+      - TK-404
+    project_plan_path: .repo-ai-governor/context/dev/project-029-cli-session-first-agent-shell/plan.md
+    sprint_plan_path: .repo-ai-governor/context/dev/project-029-cli-session-first-agent-shell/sprint-001-entrypoint-session-shell-foundation/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-029-cli-session-first-agent-shell/sprint-001-entrypoint-session-shell-foundation/tasks/tasks.csv
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-029-cli-session-first-agent-shell/sprint-001-entrypoint-session-shell-foundation/tasks/DA-401-project-029-activation-and-session-first-shell-handoff.md
     rollout_artifacts:
       - .repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation/plan.md
-      - .repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation/sprint-002-react-cli-shell-surface-expansion/plan.md
-      - .repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation/sprint-003-react-cli-shell-default-cutover/plan.md
-    accepted_at: 2026-03-28
+      - .repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation/project-027-completion-audit-summary.md
+      - .repo-ai-governor/context/dev/project-029-cli-session-first-agent-shell/plan.md
+      - .repo-ai-governor/context/dev/project-029-cli-session-first-agent-shell/sprint-001-entrypoint-session-shell-foundation/tasks/DA-401-project-029-activation-and-session-first-shell-handoff.md
+    accepted_at: 2026-03-30
 
   - solution_id: technical-solution.multi-ai-tools-onboarding-role-agent-projection
     delivery_mode: followup_required

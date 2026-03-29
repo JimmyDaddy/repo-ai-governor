@@ -1,5 +1,5 @@
 schema_version: 1
-generated_at: 2026-03-28
+generated_at: 2026-03-30
 status: active
 owner: repo-ai-governor
 
@@ -627,4 +627,30 @@ documents:
       - cli_ui_change
       - command_surface_change
     owner: runtime
-    last_reviewed_at: 2026-03-28
+    last_reviewed_at: 2026-03-30
+
+  - doc_id: runtime_cli_session_shell_contract
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/contracts/cli-session-shell-contract.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+      - cli_ui_change
+      - command_surface_change
+    owner: runtime
+    last_reviewed_at: 2026-03-30
+
+  - doc_id: runtime_cli_session_shell_adr
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/adrs/session-first-shell-and-service-owned-session-state.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+      - cli_ui_change
+      - command_surface_change
+    owner: runtime
+    last_reviewed_at: 2026-03-30
