@@ -1,3 +1,8 @@
+import {
+  DEFAULT_I18N_FALLBACK_LOCALE,
+  DEFAULT_I18N_LOCALE,
+  WorkspaceMode,
+} from '@repo-ai-governor/shared';
 import { CliCommandName } from '../../constants/cli-command.constant.js';
 import { CLI_INIT_REACT_SHELL_DESCRIPTOR_ID } from '../../constants/cli-interactive-shell.constant.js';
 import type { CliInitReactShellDescriptor } from '../../types/index.js';
@@ -29,6 +34,16 @@ export class CliInitShellDescriptorRegistry {
         title: translate('cli.initShell.workspaceModeTitle'),
         description: translate('cli.initShell.workspaceModeDescription'),
         promptLabel: translate('cli.initShell.workspaceModePromptLabel'),
+        options: [
+          {
+            value: WorkspaceMode.TOOL_MANAGED,
+            label: translate('cli.initShell.workspaceModeToolManagedOption'),
+          },
+          {
+            value: WorkspaceMode.REPO_LOCAL,
+            label: translate('cli.initShell.workspaceModeRepoLocalOption'),
+          },
+        ],
       },
       workspaceModeValidationMessage: translate('cli.initShell.workspaceModeValidation'),
       defaultLocaleField: {
@@ -36,6 +51,16 @@ export class CliInitShellDescriptorRegistry {
         title: translate('cli.initShell.defaultLocaleTitle'),
         description: translate('cli.initShell.defaultLocaleDescription'),
         promptLabel: translate('cli.initShell.defaultLocalePromptLabel'),
+        options: [
+          {
+            value: DEFAULT_I18N_LOCALE,
+            label: translate('cli.initShell.defaultLocaleZhCnOption'),
+          },
+          {
+            value: DEFAULT_I18N_FALLBACK_LOCALE,
+            label: translate('cli.initShell.defaultLocaleEnUsOption'),
+          },
+        ],
       },
       defaultLocaleValidationMessage: translate('cli.initShell.defaultLocaleValidation'),
       totalSteps: 3,

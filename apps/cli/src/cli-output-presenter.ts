@@ -6,6 +6,9 @@ import {
   CliConfirmationItemsDetailField,
   CliMigrationSuggestionDetailField,
   CliUpgradeSchemaDiffDetailField,
+  CliWorkflowCompileStatusDetailField,
+  CliWorkflowPreviewModeDetailField,
+  CliWorkflowTemplateDetailField,
   CliWorkspaceActionDetailField,
   CliWorkspaceScratchCleanupDetailField,
   CliWorkspaceTargetDetailField,
@@ -73,6 +76,9 @@ interface CliPrettyLabels {
   workspaceActionLabel: string;
   workspaceTargetLabel: string;
   workspaceScratchCleanupLabel: string;
+  workflowTemplateLabel: string;
+  workflowPreviewModeLabel: string;
+  workflowCompileStatusLabel: string;
 }
 
 interface CliOutputPresenterIo {
@@ -80,6 +86,85 @@ interface CliOutputPresenterIo {
   stderr: (value: string) => void;
   translate?: (key: string, interpolation?: Record<string, string>) => string | undefined;
 }
+
+const CLI_OUTPUT_TRANSLATION_FALLBACKS = {
+  'cli.output.pretty.checkDetails.upgradeSchemaDiff': {
+    en: '{{diffs}} diffs, {{source}} -> {{target}}',
+    zh: '差异 {{diffs}} 项，{{source}} -> {{target}}',
+  },
+  'cli.output.pretty.checkDetails.migrationSuggestions': {
+    en: '{{count}} suggestions',
+    zh: '{{count}} 条建议',
+  },
+  'cli.output.pretty.checkDetails.confirmationItems': {
+    en: 'decision {{decision}}, {{count}} items, {{blocking}} blocking',
+    zh: '决策 {{decision}}，确认项 {{count}} 条，阻断 {{blocking}} 条',
+  },
+  'cli.output.pretty.checkDetails.workspaceTarget': {
+    en: 'mode {{mode}}, root {{root}}',
+    zh: '模式 {{mode}}，根路径 {{root}}',
+  },
+  'cli.output.pretty.checkDetails.workspaceScratchCleanupRemoved': {
+    en: 'scratch root removed: {{root}}',
+    zh: 'scratch 根目录已移除：{{root}}',
+  },
+  'cli.output.pretty.checkDetails.workspaceScratchCleanupRetained': {
+    en: 'scratch root retained: {{root}}',
+    zh: 'scratch 根目录保留：{{root}}',
+  },
+  'cli.output.pretty.checkDetails.workflowTemplate': {
+    en: 'template {{template}}',
+    zh: '模板 {{template}}',
+  },
+  'cli.output.pretty.checkDetails.workflowPreviewMode': {
+    en: 'mode {{mode}}',
+    zh: '模式 {{mode}}',
+  },
+  'cli.output.pretty.checkDetails.workflowCompileStatus': {
+    en: 'status {{status}}, {{warnings}} warnings, {{errors}} errors',
+    zh: '状态 {{status}}，{{warnings}} 条 warning，{{errors}} 条 error',
+  },
+  'cli.output.pretty.checkLabels.upgradeSchemaDiff': {
+    en: 'Upgrade schema diff',
+    zh: '升级 schema diff',
+  },
+  'cli.output.pretty.checkLabels.migrationSuggestions': {
+    en: 'Migration suggestions',
+    zh: '迁移建议',
+  },
+  'cli.output.pretty.checkLabels.confirmationItems': {
+    en: 'Confirmation items',
+    zh: '确认项',
+  },
+  'cli.output.pretty.checkLabels.rollbackReference': {
+    en: 'Rollback reference',
+    zh: '回滚参考',
+  },
+  'cli.output.pretty.checkLabels.workspaceAction': {
+    en: 'Workspace action',
+    zh: '工作区动作',
+  },
+  'cli.output.pretty.checkLabels.workspaceTarget': {
+    en: 'Workspace target',
+    zh: '工作区目标',
+  },
+  'cli.output.pretty.checkLabels.workspaceScratchCleanup': {
+    en: 'Workspace scratch cleanup',
+    zh: '工作区暂存清理',
+  },
+  'cli.output.pretty.checkLabels.workflowTemplate': {
+    en: 'Workflow template',
+    zh: '流程模板',
+  },
+  'cli.output.pretty.checkLabels.workflowPreviewMode': {
+    en: 'Workflow preview mode',
+    zh: '流程预览模式',
+  },
+  'cli.output.pretty.checkLabels.workflowCompileStatus': {
+    en: 'Workflow compile status',
+    zh: '流程编译状态',
+  },
+} as const;
 
 /**
  * Renders and writes CLI output payloads for success/error flows.
@@ -550,6 +635,12 @@ export class CliOutputPresenter {
         return labels.workspaceTargetLabel;
       case CliCommandResultCheckId.WORKSPACE_SCRATCH_CLEANUP:
         return labels.workspaceScratchCleanupLabel;
+      case CliCommandResultCheckId.WORKFLOW_TEMPLATE:
+        return labels.workflowTemplateLabel;
+      case CliCommandResultCheckId.WORKFLOW_PREVIEW_MODE:
+        return labels.workflowPreviewModeLabel;
+      case CliCommandResultCheckId.WORKFLOW_COMPILE_STATUS:
+        return labels.workflowCompileStatusLabel;
       default:
         return checkId.replaceAll('_', ' ');
     }
@@ -581,6 +672,12 @@ export class CliOutputPresenter {
         return this.humanizeWorkspaceTargetDetail(check.detail, locale);
       case CliCommandResultCheckId.WORKSPACE_SCRATCH_CLEANUP:
         return this.humanizeWorkspaceScratchCleanupDetail(check.detail, locale);
+      case CliCommandResultCheckId.WORKFLOW_TEMPLATE:
+        return this.humanizeWorkflowTemplateDetail(check.detail, locale);
+      case CliCommandResultCheckId.WORKFLOW_PREVIEW_MODE:
+        return this.humanizeWorkflowPreviewModeDetail(check.detail, locale);
+      case CliCommandResultCheckId.WORKFLOW_COMPILE_STATUS:
+        return this.humanizeWorkflowCompileStatusDetail(check.detail, locale);
       default:
         return check.detail;
     }
@@ -658,17 +755,11 @@ export class CliOutputPresenter {
     const source = detailMap[CliUpgradeSchemaDiffDetailField.SOURCE] ?? 'unknown';
     const target = detailMap[CliUpgradeSchemaDiffDetailField.TARGET] ?? 'unknown';
 
-    return this.translateText(
-      'cli.output.pretty.checkDetails.upgradeSchemaDiff',
-      locale,
-      '{{diffs}} diffs, {{source}} -> {{target}}',
-      '差异 {{diffs}} 项，{{source}} -> {{target}}',
-      {
-        diffs,
-        source,
-        target,
-      },
-    );
+    return this.translateText('cli.output.pretty.checkDetails.upgradeSchemaDiff', locale, {
+      diffs,
+      source,
+      target,
+    });
   }
 
   /**
@@ -681,15 +772,9 @@ export class CliOutputPresenter {
     const detailMap = this.parseSpaceSeparatedKeyValueDetail(detail);
     const count = detailMap[CliMigrationSuggestionDetailField.COUNT] ?? '0';
 
-    return this.translateText(
-      'cli.output.pretty.checkDetails.migrationSuggestions',
-      locale,
-      '{{count}} suggestions',
-      '{{count}} 条建议',
-      {
-        count,
-      },
-    );
+    return this.translateText('cli.output.pretty.checkDetails.migrationSuggestions', locale, {
+      count,
+    });
   }
 
   /**
@@ -704,17 +789,11 @@ export class CliOutputPresenter {
     const count = detailMap[CliConfirmationItemsDetailField.COUNT] ?? '0';
     const blocking = detailMap[CliConfirmationItemsDetailField.BLOCKING] ?? '0';
 
-    return this.translateText(
-      'cli.output.pretty.checkDetails.confirmationItems',
-      locale,
-      'decision {{decision}}, {{count}} items, {{blocking}} blocking',
-      '决策 {{decision}}，确认项 {{count}} 条，阻断 {{blocking}} 条',
-      {
-        decision,
-        count,
-        blocking,
-      },
-    );
+    return this.translateText('cli.output.pretty.checkDetails.confirmationItems', locale, {
+      decision,
+      count,
+      blocking,
+    });
   }
 
   /**
@@ -738,16 +817,10 @@ export class CliOutputPresenter {
     const mode = detailMap[CliWorkspaceTargetDetailField.MODE] ?? 'unknown';
     const root = detailMap[CliWorkspaceTargetDetailField.ROOT] ?? 'unknown';
 
-    return this.translateText(
-      'cli.output.pretty.checkDetails.workspaceTarget',
-      locale,
-      'mode {{mode}}, root {{root}}',
-      '模式 {{mode}}，根路径 {{root}}',
-      {
-        mode,
-        root,
-      },
-    );
+    return this.translateText('cli.output.pretty.checkDetails.workspaceTarget', locale, {
+      mode,
+      root,
+    });
   }
 
   /**
@@ -765,8 +838,6 @@ export class CliOutputPresenter {
       return this.translateText(
         'cli.output.pretty.checkDetails.workspaceScratchCleanupRemoved',
         locale,
-        'scratch root removed: {{root}}',
-        'scratch 根目录已移除：{{root}}',
         {
           root: removedRoot,
         },
@@ -777,8 +848,6 @@ export class CliOutputPresenter {
       return this.translateText(
         'cli.output.pretty.checkDetails.workspaceScratchCleanupRetained',
         locale,
-        'scratch root retained: {{root}}',
-        'scratch 根目录保留：{{root}}',
         {
           root: retainedRoot,
         },
@@ -786,6 +855,55 @@ export class CliOutputPresenter {
     }
 
     return detail;
+  }
+
+  /**
+   * Converts workflow template detail into readable text.
+   * @param detail Raw detail string.
+   * @param locale Active output locale.
+   * @returns Human-readable workflow-template summary.
+   */
+  private humanizeWorkflowTemplateDetail(detail: string, locale: string): string {
+    const detailMap = this.parseJsonOrSpaceSeparatedKeyValueDetail(detail);
+    const template = detailMap[CliWorkflowTemplateDetailField.TEMPLATE] ?? 'unknown';
+
+    return this.translateText('cli.output.pretty.checkDetails.workflowTemplate', locale, {
+      template,
+    });
+  }
+
+  /**
+   * Converts workflow preview-mode detail into readable text.
+   * @param detail Raw detail string.
+   * @param locale Active output locale.
+   * @returns Human-readable preview-mode summary.
+   */
+  private humanizeWorkflowPreviewModeDetail(detail: string, locale: string): string {
+    const detailMap = this.parseJsonOrSpaceSeparatedKeyValueDetail(detail);
+    const mode = detailMap[CliWorkflowPreviewModeDetailField.MODE] ?? 'unknown';
+
+    return this.translateText('cli.output.pretty.checkDetails.workflowPreviewMode', locale, {
+      mode,
+    });
+  }
+
+  /**
+   * Converts workflow compile-status detail into readable text.
+   * @param detail Raw detail string.
+   * @param locale Active output locale.
+   * @returns Human-readable compile-status summary.
+   */
+  private humanizeWorkflowCompileStatusDetail(detail: string, locale: string): string {
+    const detailMap = this.parseJsonOrSpaceSeparatedKeyValueDetail(detail);
+    const status = detailMap[CliWorkflowCompileStatusDetailField.STATUS] ?? 'unknown';
+    const warnings = detailMap[CliWorkflowCompileStatusDetailField.WARNINGS] ?? '0';
+    const errors = detailMap[CliWorkflowCompileStatusDetailField.ERRORS] ?? '0';
+
+    return this.translateText('cli.output.pretty.checkDetails.workflowCompileStatus', locale, {
+      status,
+      warnings,
+      errors,
+    });
   }
 
   /**
@@ -841,16 +959,12 @@ export class CliOutputPresenter {
    * Resolves one presenter translation through i18n runtime when available, otherwise falls back.
    * @param key Stable translation key.
    * @param locale Active output locale.
-   * @param english English fallback text.
-   * @param chinese Simplified-Chinese fallback text.
    * @param interpolation Optional interpolation variables.
    * @returns Resolved localized text.
    */
   private translateText(
     key: string,
     locale: string,
-    english: string,
-    chinese: string,
     interpolation?: Record<string, string>,
   ): string {
     const translated = this.io.translate?.(key, interpolation);
@@ -858,7 +972,16 @@ export class CliOutputPresenter {
       return translated;
     }
 
-    return this.interpolateTemplate(this.isZhCnLocale(locale) ? chinese : english, interpolation);
+    const fallback =
+      CLI_OUTPUT_TRANSLATION_FALLBACKS[key as keyof typeof CLI_OUTPUT_TRANSLATION_FALLBACKS];
+    if (fallback) {
+      return this.interpolateTemplate(
+        this.isZhCnLocale(locale) ? fallback.zh : fallback.en,
+        interpolation,
+      );
+    }
+
+    return this.interpolateTemplate(key, interpolation);
   }
 
   /**
@@ -979,44 +1102,42 @@ export class CliOutputPresenter {
         upgradeSchemaDiffLabel: this.translateText(
           'cli.output.pretty.checkLabels.upgradeSchemaDiff',
           locale,
-          'Upgrade schema diff',
-          '升级 schema diff',
         ),
         migrationSuggestionsLabel: this.translateText(
           'cli.output.pretty.checkLabels.migrationSuggestions',
           locale,
-          'Migration suggestions',
-          '迁移建议',
         ),
         confirmationItemsLabel: this.translateText(
           'cli.output.pretty.checkLabels.confirmationItems',
           locale,
-          'Confirmation items',
-          '确认项',
         ),
         rollbackReferenceLabel: this.translateText(
           'cli.output.pretty.checkLabels.rollbackReference',
           locale,
-          'Rollback reference',
-          '回滚参考',
         ),
         workspaceActionLabel: this.translateText(
           'cli.output.pretty.checkLabels.workspaceAction',
           locale,
-          'Workspace action',
-          '工作区动作',
         ),
         workspaceTargetLabel: this.translateText(
           'cli.output.pretty.checkLabels.workspaceTarget',
           locale,
-          'Workspace target',
-          '工作区目标',
         ),
         workspaceScratchCleanupLabel: this.translateText(
           'cli.output.pretty.checkLabels.workspaceScratchCleanup',
           locale,
-          'Workspace scratch cleanup',
-          '工作区暂存清理',
+        ),
+        workflowTemplateLabel: this.translateText(
+          'cli.output.pretty.checkLabels.workflowTemplate',
+          locale,
+        ),
+        workflowPreviewModeLabel: this.translateText(
+          'cli.output.pretty.checkLabels.workflowPreviewMode',
+          locale,
+        ),
+        workflowCompileStatusLabel: this.translateText(
+          'cli.output.pretty.checkLabels.workflowCompileStatus',
+          locale,
         ),
       };
     }
@@ -1065,44 +1186,42 @@ export class CliOutputPresenter {
       upgradeSchemaDiffLabel: this.translateText(
         'cli.output.pretty.checkLabels.upgradeSchemaDiff',
         locale,
-        'Upgrade schema diff',
-        '升级 schema diff',
       ),
       migrationSuggestionsLabel: this.translateText(
         'cli.output.pretty.checkLabels.migrationSuggestions',
         locale,
-        'Migration suggestions',
-        '迁移建议',
       ),
       confirmationItemsLabel: this.translateText(
         'cli.output.pretty.checkLabels.confirmationItems',
         locale,
-        'Confirmation items',
-        '确认项',
       ),
       rollbackReferenceLabel: this.translateText(
         'cli.output.pretty.checkLabels.rollbackReference',
         locale,
-        'Rollback reference',
-        '回滚参考',
       ),
       workspaceActionLabel: this.translateText(
         'cli.output.pretty.checkLabels.workspaceAction',
         locale,
-        'Workspace action',
-        '工作区动作',
       ),
       workspaceTargetLabel: this.translateText(
         'cli.output.pretty.checkLabels.workspaceTarget',
         locale,
-        'Workspace target',
-        '工作区目标',
       ),
       workspaceScratchCleanupLabel: this.translateText(
         'cli.output.pretty.checkLabels.workspaceScratchCleanup',
         locale,
-        'Workspace scratch cleanup',
-        '工作区暂存清理',
+      ),
+      workflowTemplateLabel: this.translateText(
+        'cli.output.pretty.checkLabels.workflowTemplate',
+        locale,
+      ),
+      workflowPreviewModeLabel: this.translateText(
+        'cli.output.pretty.checkLabels.workflowPreviewMode',
+        locale,
+      ),
+      workflowCompileStatusLabel: this.translateText(
+        'cli.output.pretty.checkLabels.workflowCompileStatus',
+        locale,
       ),
     };
   }

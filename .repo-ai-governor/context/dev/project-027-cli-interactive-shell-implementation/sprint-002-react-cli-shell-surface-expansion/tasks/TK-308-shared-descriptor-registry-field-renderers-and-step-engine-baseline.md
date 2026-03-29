@@ -1,6 +1,6 @@
 # TK-308 共享 descriptor registry、字段渲染器与步骤引擎基线
 
-- Status: in_progress
+- Status: completed
 - Date: 2026-03-28
 - Owner: AI-Agent
 - Priority: P0
@@ -64,6 +64,7 @@
 4. 2026-03-28：任务切换为 `in_progress`，开始接入 `Ink` 依赖并搭建 `apps/cli/src/react-cli/` 共享壳层骨架。
 5. 2026-03-28：已在 `apps/cli/package.json` 引入 `ink@6.8.0`、`@inkjs/ui@2.0.0` 与 `react@19.2.4`，并在 `package.json` 根级补入 `@types/react@19.2.14`，同时新增 `apps/cli/src/react-cli/{app,bridge,session,state,views}` 骨架与 `tsconfig.json` 的 TSX 支持。
 6. 2026-03-28：`CliInteractiveShellStderrRenderer` 已改为通过 `ReactCliRunner.renderFrame()` 输出共享壳层，`init` React shell 现已走 `Ink` + `@inkjs/ui` 布局层；补充 `react-cli-runner.test.ts` 覆盖共享 frame 与 unmount 输出。
+7. 2026-03-29：`connect/workspace/init/workflow preview` 已全部复用该共享壳层基线，并随 `TK-309/TK-310/TK-311` 的定向验证与 M2 gate 一并通过，任务状态切换为 `completed`。
 
 ## 10. 产出
 
@@ -78,4 +79,4 @@
 9. `apps/cli/src/react-cli/session/react-cli-session-controller.ts`
 10. `apps/cli/src/react-cli/state/react-cli-view-model.interface.ts`
 11. `apps/cli/src/react-cli/views/layout-shell.tsx`
-12. 待执行：统一步骤推进 / 返回 / 校验引擎的下一轮深化与复用接线。
+12. 已完成：统一步骤推进 / 返回 / 校验引擎已作为共享壳层基线被后续命令面复用；更深的 workflow 编辑交互留给 `sprint-003`。

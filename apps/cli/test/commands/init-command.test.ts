@@ -16,7 +16,10 @@ import {
 import { CliInitCommand } from '../../src/commands/init-command.js';
 import { CliInteractiveUiMode } from '../../src/constants/cli-interactive-shell.constant.js';
 import type { CliInitReactShellRunner } from '../../src/runtime/interactive-shell/init-react-shell-runner.js';
-import type { CliCommandExecutorContext } from '../../src/types/index.js';
+import type {
+  CliCommandExecutorContext,
+  CliInitReactShellSelection,
+} from '../../src/types/index.js';
 
 type RuntimeDebugOptions = ReturnType<CliCommandExecutorContext['resolveRuntimeDebugOptions']>;
 
@@ -27,16 +30,10 @@ interface InitCommandFixtureOptions {
   locale?: Locale;
 }
 
-interface CliInteractiveBootstrapSelection {
-  workspaceMode: WorkspaceMode;
-  defaultLocale: Locale;
-  fallbackLocale: Locale;
-}
-
 type CliInitCommandCollectorStub = {
   collectInteractiveBootstrapSelection: (
     context: CliCommandExecutorContext,
-  ) => Promise<CliInteractiveBootstrapSelection>;
+  ) => Promise<CliInitReactShellSelection>;
 };
 
 async function createInitCommandFixture(): Promise<{
@@ -308,6 +305,50 @@ describe('CliInitCommand', () => {
     }
   });
 
+  it('rethrows PROCESS_RUNTIME_CANCELLED from the React shell without falling back to classic', async () => {
+    const fixture = await createInitCommandFixture();
+    const runnerInvocations = { count: 0 };
+    const fakeReactRunner = {
+      run: async () => {
+        runnerInvocations.count += 1;
+        throw new RuntimeError(
+          GovernorErrorCode.PROCESS_RUNTIME_CANCELLED,
+          'prompt cancelled by test',
+        );
+      },
+    } as unknown as CliInitReactShellRunner;
+    const command = new CliInitCommand(fakeReactRunner);
+    const commandWithCollector = command as unknown as CliInitCommandCollectorStub;
+    const originalCollector = commandWithCollector.collectInteractiveBootstrapSelection;
+    const collectMock = vi.fn(async () => ({
+      workspaceMode: WorkspaceMode.REPO_LOCAL,
+      defaultLocale: Locale.EN_US,
+      fallbackLocale: Locale.ZH_CN,
+    }));
+    commandWithCollector.collectInteractiveBootstrapSelection = collectMock;
+
+    try {
+      await expect(
+        command.execute(
+          fixture.buildContext({
+            runtimeDebugOptions: {
+              requestedUiMode: null,
+              uiMode: CliInteractiveUiMode.CLASSIC,
+              uiFallbackBehavior: null,
+            },
+          }),
+        ),
+      ).rejects.toMatchObject({
+        code: GovernorErrorCode.PROCESS_RUNTIME_CANCELLED,
+      });
+
+      expect(runnerInvocations.count).toBe(1);
+      expect(collectMock).not.toHaveBeenCalled();
+    } finally {
+      commandWithCollector.collectInteractiveBootstrapSelection = originalCollector;
+      await rm(fixture.tempRoot, { recursive: true, force: true });
+    }
+  });
   it('falls back to classic when react shell initialization fails', async () => {
     const fixture = await createInitCommandFixture();
     const runnerInvocations = { count: 0 };

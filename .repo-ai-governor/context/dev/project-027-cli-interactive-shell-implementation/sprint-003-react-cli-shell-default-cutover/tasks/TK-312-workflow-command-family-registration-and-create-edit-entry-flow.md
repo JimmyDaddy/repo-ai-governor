@@ -1,7 +1,7 @@
 # TK-312 `workflow` 命令家族注册与 create/edit 入口流
 
-- Status: planned
-- Date: 2026-03-28
+- Status: completed
+- Date: 2026-03-29
 - Owner: AI-Agent
 - Priority: P0
 - Project: `project-027-cli-interactive-shell-implementation`
@@ -54,9 +54,17 @@
 
 1. 2026-03-28：任务创建，状态初始化为 `planned`。
 2. 2026-03-28：依据技术方案 draft 的 M3 清单，改为收口 `workflow` 命令家族注册与 create/edit 入口流。
+3. 2026-03-29：任务切换为 `in_progress`，开始把 preview-only 基线扩展到显式 `workflow create/edit/preview` 入口与最小编辑流起点。
+4. 2026-03-29：实现完成，已落地 `workflow create/edit/preview` 显式子命令树、共享 shell `entryMode`、create/edit 最小入口流与帮助面更新。
+5. 2026-03-29：验证通过 `pnpm -s tsc -p tsconfig.json --noEmit` 与 `pnpm -s vitest run --config vitest.packages.config.ts apps/cli/test/commands/workflow-command.test.ts apps/cli/test/cli-skeleton.integration.test.ts apps/cli/test/cli-output-contract.integration.test.ts apps/cli/test/cli-output-presenter.unit.test.ts`。
+6. 2026-03-29：`pnpm run check` 已尝试执行，但当前被仓库既有 artifact lifecycle backlog（`.repo-ai-governor/context/artifact-registry/artifacts.csv` rows 26-50）阻断，非本任务改动引入。
 
 ## 10. 产出
 
-1. 待执行：`CliCommandName.WORKFLOW` 与 Commander 子命令树。
-2. 待执行：`workflow create/edit/preview` 入口流与帮助面更新。
-3. 待执行：对应测试与命令路由证据。
+1. 已完成：`CliCommandName.WORKFLOW` 与显式 Commander 子命令树，覆盖 `workflow create/edit/preview`。
+2. 已完成：`workflow create/edit/preview` 入口流、共享 shell `entryMode` 与帮助面更新。
+3. 已完成：对应测试与命令路由证据
+   - `apps/cli/test/commands/workflow-command.test.ts`
+   - `apps/cli/test/cli-skeleton.integration.test.ts`
+   - `apps/cli/test/cli-output-contract.integration.test.ts`
+4. 已知阻断：仓库级 `pnpm run check` 当前失败于既有 `artifact-lifecycle` 治理积压，需单独窗口清理 rows 26-50 的旧 `active` artifact。

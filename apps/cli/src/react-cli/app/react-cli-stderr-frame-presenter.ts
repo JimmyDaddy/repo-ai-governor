@@ -11,6 +11,7 @@ export class ReactCliStderrFramePresenter {
       stderr.write(value);
     },
     private readonly reactCliRunner: ReactCliRunner = new ReactCliRunner(),
+    private readonly resolveColumns: () => number | undefined = () => stderr.columns,
   ) {}
 
   /**
@@ -20,7 +21,7 @@ export class ReactCliStderrFramePresenter {
    */
   public write(viewModel: ReactCliViewModel): void {
     const output = this.reactCliRunner.renderFrame(viewModel, {
-      columns: 80,
+      columns: this.resolveColumns() ?? 80,
     });
 
     this.writeStderr(`\n${output}\n`);

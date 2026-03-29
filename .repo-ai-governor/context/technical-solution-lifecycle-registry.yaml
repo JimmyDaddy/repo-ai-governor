@@ -209,6 +209,25 @@ solutions:
     activated_at: 2026-03-28
     supersedes: []
 
+  - solution_id: technical-solution.run-live-react-session-shell
+    title: Run live React session shell technical solution
+    status: draft
+    owner: runtime
+    version: v1
+    scope: cross-cutting
+    draft_paths:
+      - .repo-ai-governor/draft/runtime-cli-run-live-react-session-shell-technical-solution.md
+    review_paths: []
+    final_paths: []
+    target_module_ids:
+      - runtime.cli-interactive-shell
+      - runtime.orchestration
+    north_star_refs:
+      - prd.multi-agent-orchestration
+      - overall.graph-first-runtime
+      - architecture.runtime-boundary
+    supersedes: []
+
   - solution_id: technical-solution.multi-ai-tools-onboarding-role-agent-projection
     title: Multi AI Tools Onboarding and Role-Agent Projection
     status: active

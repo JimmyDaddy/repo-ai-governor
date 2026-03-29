@@ -1,6 +1,6 @@
 # sprint-002-react-cli-shell-surface-expansion 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-03-28
 - Project: `project-027-cli-interactive-shell-implementation`
 
@@ -10,10 +10,10 @@
 
 ## 2. Task Package
 
-1. `TK-308` 共享 descriptor registry、字段渲染器与步骤引擎基线（in_progress）
+1. `TK-308` 共享 descriptor registry、字段渲染器与步骤引擎基线（completed）
 2. `TK-309` `connect/workspace` 共享壳层接入与 help/error/footer 统一（completed）
-3. `TK-310` `init` 默认 React 路由与 classic fallback 体验策略（planned）
-4. `TK-311` `workflow preview` 只读摘要与 M2 回归 gate（planned）
+3. `TK-310` `init` 默认 React 路由与 classic fallback 体验策略（completed）
+4. `TK-311` `workflow preview` 只读摘要与 M2 回归 gate（completed）
 
 ## 3. Exit Criteria
 
@@ -28,3 +28,5 @@
 2. `workflow preview` 必须保持只读；`workflow create/edit/save` 与更深的 DSL 编辑能力留给 `sprint-003`。
 3. 版本基线固定为 `ink@6.8.0` 与 `@inkjs/ui@2.0.0`；字段控件优先复用 `@inkjs/ui`，shell 生命周期与布局优先落在 `Ink` 原生能力之上。
 4. 2026-03-28：完成 `TK-309`，`connect/workspace` 已切入共享 descriptor/shell 基线，并统一了 help/error/footer 与 i18n runtime 接线。
+5. 2026-03-29：`TK-308` 基线已被 `TK-309/TK-310/TK-311` 全量复用并通过 M2 gate，任务状态正式收口为 `completed`。
+6. 2026-03-29：完成 `TK-310` 与 `TK-311` 后，本 sprint 全部 exit criteria 已满足，状态切换为 `completed`。

@@ -1,5 +1,3 @@
-import { stderr, stdin } from 'node:process';
-import { createInterface } from 'node:readline/promises';
 import {
   BaseError,
   DEFAULT_I18N_FALLBACK_LOCALE,
@@ -23,6 +21,7 @@ import type {
   CliInteractiveShellPromptAdapter,
   CliInteractiveShellSessionState,
 } from '../../types/index.js';
+import { CliInitReactShellInkPromptAdapter } from './init-react-shell-ink-prompt-adapter.js';
 import { CliInitShellDescriptorRegistry } from './init-shell-descriptor-registry.js';
 import { CliInteractiveShellStderrRenderer } from './interactive-shell-stderr-renderer.js';
 
@@ -34,10 +33,7 @@ export class CliInitReactShellRunner {
     private readonly descriptorRegistry: CliInitShellDescriptorRegistry = new CliInitShellDescriptorRegistry(),
     private readonly renderer: CliInteractiveShellStderrRenderer = new CliInteractiveShellStderrRenderer(),
     private readonly promptAdapterFactory: () => CliInteractiveShellPromptAdapter = () =>
-      createInterface({
-        input: stdin,
-        output: stderr,
-      }),
+      new CliInitReactShellInkPromptAdapter(),
   ) {}
 
   /**
@@ -61,7 +57,7 @@ export class CliInitReactShellRunner {
       session.runState = CliInteractiveShellRunState.CANCELLED;
       session.currentStepTitle = descriptor.confirmationTitle;
       session.fallbackBehavior = CliInteractiveShellFallbackBehavior.SIGINT;
-      // Close immediately so a blocked readline question unwinds on SIGINT.
+      // Close immediately so a blocked Ink prompt resolves cleanup on SIGINT.
       promptAdapter.close();
     };
 
@@ -79,14 +75,12 @@ export class CliInitReactShellRunner {
           session,
           descriptor,
           promptAdapter,
-          renderer,
           options.translate,
         );
         const defaultLocale = await this.collectDefaultLocaleSelection(
           session,
           descriptor,
           promptAdapter,
-          renderer,
           options.translate,
         );
         const fallbackLocale =
@@ -102,17 +96,21 @@ export class CliInitReactShellRunner {
           fallbackLocale,
         };
         session.validationErrors = {};
-        renderer.renderFrame({
-          session,
-          title: descriptor.confirmationTitle,
-          lines: [
-            `workspaceMode=${workspaceMode}`,
-            `defaultLocale=${defaultLocale}`,
-            `fallbackLocale=${fallbackLocale}`,
-          ],
-        });
 
-        const confirmed = await this.confirmSelection(promptAdapter, descriptor.confirmationPrompt);
+        const confirmed = await this.confirmSelection(
+          session,
+          promptAdapter,
+          {
+            title: descriptor.confirmationTitle,
+            promptLabel: descriptor.confirmationPrompt,
+            summaryLines: [
+              `workspaceMode=${workspaceMode}`,
+              `defaultLocale=${defaultLocale}`,
+              `fallbackLocale=${fallbackLocale}`,
+            ],
+          },
+          options.translate,
+        );
         if (confirmed) {
           session.runState = CliInteractiveShellRunState.SUBMITTING;
           session.currentStepTitle = descriptor.submitTitle;
@@ -213,45 +211,37 @@ export class CliInitReactShellRunner {
    */
   private async collectWorkspaceModeSelection(
     session: CliInteractiveShellSessionState,
-    descriptor: {
-      workspaceModeField: {
-        title: string;
-        description: string;
-        promptLabel: string;
-      };
-      workspaceModeValidationMessage: string;
-    },
+    descriptor: Pick<
+      CliInitReactShellDescriptor,
+      'workspaceModeField' | 'workspaceModeValidationMessage'
+    >,
     promptAdapter: CliInteractiveShellPromptAdapter,
-    renderer: CliInteractiveShellStderrRenderer,
     translate: (key: string, interpolation?: Record<string, string>) => string,
   ): Promise<WorkspaceMode> {
     while (true) {
-      session.runState = CliInteractiveShellRunState.EDITING;
+      session.runState =
+        Object.keys(session.validationErrors).length > 0
+          ? CliInteractiveShellRunState.VALIDATING
+          : CliInteractiveShellRunState.EDITING;
       session.currentStepTitle = descriptor.workspaceModeField.title;
-      renderer.renderFrame({
+      const answer = await promptAdapter.select({
         session,
         title: descriptor.workspaceModeField.title,
-        lines: [descriptor.workspaceModeField.description],
+        description: descriptor.workspaceModeField.description,
+        options: descriptor.workspaceModeField.options ?? [],
+        defaultValue: WorkspaceMode.TOOL_MANAGED,
+        translate,
       });
-      const answer = (await promptAdapter.question(descriptor.workspaceModeField.promptLabel))
-        .trim()
-        .toLowerCase();
-      const resolvedWorkspaceMode = this.resolveWorkspaceMode(answer);
+      const resolvedWorkspaceMode = this.resolveWorkspaceMode(answer.trim().toLowerCase());
       if (resolvedWorkspaceMode) {
         session.validationErrors = {};
         session.formValues.workspaceMode = resolvedWorkspaceMode;
         return resolvedWorkspaceMode;
       }
 
-      session.runState = CliInteractiveShellRunState.VALIDATING;
       session.validationErrors = {
         workspaceMode: descriptor.workspaceModeValidationMessage,
       };
-      renderer.renderFrame({
-        session,
-        title: descriptor.workspaceModeField.title,
-        lines: [translate('cli.initShell.correctWorkspaceMode')],
-      });
     }
   }
 
@@ -265,45 +255,37 @@ export class CliInitReactShellRunner {
    */
   private async collectDefaultLocaleSelection(
     session: CliInteractiveShellSessionState,
-    descriptor: {
-      defaultLocaleField: {
-        title: string;
-        description: string;
-        promptLabel: string;
-      };
-      defaultLocaleValidationMessage: string;
-    },
+    descriptor: Pick<
+      CliInitReactShellDescriptor,
+      'defaultLocaleField' | 'defaultLocaleValidationMessage'
+    >,
     promptAdapter: CliInteractiveShellPromptAdapter,
-    renderer: CliInteractiveShellStderrRenderer,
     translate: (key: string, interpolation?: Record<string, string>) => string,
   ): Promise<Locale> {
     while (true) {
-      session.runState = CliInteractiveShellRunState.EDITING;
+      session.runState =
+        Object.keys(session.validationErrors).length > 0
+          ? CliInteractiveShellRunState.VALIDATING
+          : CliInteractiveShellRunState.EDITING;
       session.currentStepTitle = descriptor.defaultLocaleField.title;
-      renderer.renderFrame({
+      const answer = await promptAdapter.select({
         session,
         title: descriptor.defaultLocaleField.title,
-        lines: [descriptor.defaultLocaleField.description],
+        description: descriptor.defaultLocaleField.description,
+        options: descriptor.defaultLocaleField.options ?? [],
+        defaultValue: DEFAULT_I18N_LOCALE,
+        translate,
       });
-      const answer = (await promptAdapter.question(descriptor.defaultLocaleField.promptLabel))
-        .trim()
-        .toLowerCase();
-      const resolvedLocale = this.resolveDefaultLocale(answer);
+      const resolvedLocale = this.resolveDefaultLocale(answer.trim().toLowerCase());
       if (resolvedLocale) {
         session.validationErrors = {};
         session.formValues.defaultLocale = resolvedLocale;
         return resolvedLocale;
       }
 
-      session.runState = CliInteractiveShellRunState.VALIDATING;
       session.validationErrors = {
         defaultLocale: descriptor.defaultLocaleValidationMessage,
       };
-      renderer.renderFrame({
-        session,
-        title: descriptor.defaultLocaleField.title,
-        lines: [translate('cli.initShell.correctLocale')],
-      });
     }
   }
 
@@ -314,11 +296,22 @@ export class CliInitReactShellRunner {
    * @returns True when selection should be submitted.
    */
   private async confirmSelection(
+    session: CliInteractiveShellSessionState,
     promptAdapter: CliInteractiveShellPromptAdapter,
-    promptLabel: string,
+    options: {
+      title: string;
+      promptLabel: string;
+      summaryLines: string[];
+    },
+    translate: (key: string, interpolation?: Record<string, string>) => string,
   ): Promise<boolean> {
-    const answer = (await promptAdapter.question(promptLabel)).trim().toLowerCase();
-    return answer.length === 0 || answer === 'y' || answer === 'yes';
+    return await promptAdapter.confirm({
+      session,
+      title: options.title,
+      promptLabel: options.promptLabel,
+      summaryLines: options.summaryLines,
+      translate,
+    });
   }
 
   /**

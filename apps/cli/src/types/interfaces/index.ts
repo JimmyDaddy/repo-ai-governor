@@ -23,13 +23,25 @@ export type {
 } from './cli-output.interface.js';
 export type { CliRuntimeDebugOptions } from './cli-runtime-debug.interface.js';
 export type { CliWorkspaceCommandOptions } from './cli-workspace-command.interface.js';
+export type { CliWorkflowCommandOptions } from './cli-workflow-command.interface.js';
 export type {
+  CliWorkflowEditorConditionBranchSummary,
+  CliWorkflowEditorEdgeSummary,
+  CliWorkflowEditorNodeSummary,
+  CliWorkflowEditorPrepareOptions,
+  CliWorkflowEditorSession,
+  CliWorkflowEditorValidationIssue,
+} from './cli-workflow-editor.interface.js';
+export type {
+  CliInteractiveShellConfirmPrompt,
   CliInteractiveShellFieldDescriptor,
+  CliInteractiveShellFieldOption,
   CliInteractiveShellModeResolution,
   CliInteractiveShellPromptAdapter,
   CliInteractiveShellSessionState,
   CliInitReactShellDescriptor,
   CliInitReactShellSelection,
+  CliInteractiveShellSelectPrompt,
 } from './cli-interactive-shell.interface.js';
 export type {
   CliArtifactWriter,

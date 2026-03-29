@@ -11,16 +11,55 @@ import {
 } from '@repo-ai-governor/shared';
 import { CliInitReactShellRunner } from '../../src/runtime/interactive-shell/init-react-shell-runner.js';
 import { CliInteractiveShellStderrRenderer } from '../../src/runtime/interactive-shell/interactive-shell-stderr-renderer.js';
-import type { CliInteractiveShellPromptAdapter } from '../../src/types/index.js';
+import type {
+  CliInteractiveShellConfirmPrompt,
+  CliInteractiveShellPromptAdapter,
+  CliInteractiveShellSelectPrompt,
+} from '../../src/types/index.js';
 
-function createPromptAdapter(answers: string[]): CliInteractiveShellPromptAdapter {
-  let answerIndex = 0;
+interface CliInteractiveShellPromptRecord {
+  selects: Array<{
+    title: string;
+    runState: string;
+    validationErrors: Record<string, string>;
+  }>;
+  confirms: Array<{
+    title: string;
+    promptLabel: string;
+    summaryLines: string[];
+  }>;
+}
+
+function createPromptAdapter(options: {
+  selectAnswers: string[];
+  confirmAnswers: boolean[];
+  record?: CliInteractiveShellPromptRecord;
+}): CliInteractiveShellPromptAdapter {
+  let selectAnswerIndex = 0;
+  let confirmAnswerIndex = 0;
 
   return {
-    async question(): Promise<string> {
-      const answer = answers[answerIndex];
-      answerIndex += 1;
-      return answer ?? '';
+    async select(prompt: CliInteractiveShellSelectPrompt): Promise<string> {
+      options.record?.selects.push({
+        title: prompt.title,
+        runState: prompt.session.runState,
+        validationErrors: { ...prompt.session.validationErrors },
+      });
+
+      const answer = options.selectAnswers[selectAnswerIndex];
+      selectAnswerIndex += 1;
+      return answer ?? prompt.defaultValue;
+    },
+    async confirm(prompt: CliInteractiveShellConfirmPrompt): Promise<boolean> {
+      options.record?.confirms.push({
+        title: prompt.title,
+        promptLabel: prompt.promptLabel,
+        summaryLines: [...prompt.summaryLines],
+      });
+
+      const answer = options.confirmAnswers[confirmAnswerIndex];
+      confirmAnswerIndex += 1;
+      return answer ?? true;
     },
     close(): void {
       return;
@@ -29,36 +68,48 @@ function createPromptAdapter(answers: string[]): CliInteractiveShellPromptAdapte
 }
 
 function createInterruptiblePromptAdapter(): CliInteractiveShellPromptAdapter {
-  let rejectQuestion: ((error: RuntimeError) => void) | null = null;
+  let rejectSelect: ((error: RuntimeError) => void) | null = null;
 
   return {
-    async question(): Promise<string> {
+    async select(): Promise<string> {
       return await new Promise<string>((_resolve, reject) => {
-        rejectQuestion = reject;
+        rejectSelect = reject;
       });
     },
+    async confirm(): Promise<boolean> {
+      return true;
+    },
     close(): void {
-      if (rejectQuestion) {
-        rejectQuestion(
+      if (rejectSelect) {
+        rejectSelect(
           new RuntimeError(GovernorErrorCode.PROCESS_RUNTIME_CANCELLED, 'prompt closed by test'),
         );
-        rejectQuestion = null;
+        rejectSelect = null;
       }
     },
   };
 }
 
 describe('CliInitReactShellRunner', () => {
-  it('collects workspace mode, locale, confirmation, and renders only to stderr', async () => {
+  it('collects keyboard-selectable workspace defaults and renders only to stderr', async () => {
     const stderrBuffer: string[] = [];
     const i18nRuntime = new I18nRuntime();
     await i18nRuntime.initialize(DEFAULT_I18N_RUNTIME_CONFIG, 'en-US');
+    const promptRecord: CliInteractiveShellPromptRecord = {
+      selects: [],
+      confirms: [],
+    };
     const runner = new CliInitReactShellRunner(
       undefined,
       new CliInteractiveShellStderrRenderer((value) => {
         stderrBuffer.push(value);
       }),
-      () => createPromptAdapter(['2', '2', 'y']),
+      () =>
+        createPromptAdapter({
+          selectAnswers: [WorkspaceMode.REPO_LOCAL, DEFAULT_I18N_FALLBACK_LOCALE],
+          confirmAnswers: [true],
+          record: promptRecord,
+        }),
     );
 
     const selection = await runner.run({
@@ -72,20 +123,41 @@ describe('CliInitReactShellRunner', () => {
       defaultLocale: DEFAULT_I18N_FALLBACK_LOCALE,
       fallbackLocale: DEFAULT_I18N_LOCALE,
     });
+    expect(promptRecord.selects).toHaveLength(2);
+    expect(promptRecord.confirms).toHaveLength(1);
+    expect(promptRecord.confirms[0]?.summaryLines).toEqual([
+      `workspaceMode=${WorkspaceMode.REPO_LOCAL}`,
+      `defaultLocale=${DEFAULT_I18N_FALLBACK_LOCALE}`,
+      `fallbackLocale=${DEFAULT_I18N_LOCALE}`,
+    ]);
     expect(stderrBuffer.join('')).toContain('[react-shell:init]');
     expect(stderrBuffer.join('')).toContain('unmounted state=success');
   });
 
-  it('surfaces validation feedback before accepting corrected answers', async () => {
+  it('re-prompts through the same select surface when adapter answers are invalid', async () => {
     const stderrBuffer: string[] = [];
     const i18nRuntime = new I18nRuntime();
     await i18nRuntime.initialize(DEFAULT_I18N_RUNTIME_CONFIG, 'zh-CN');
+    const promptRecord: CliInteractiveShellPromptRecord = {
+      selects: [],
+      confirms: [],
+    };
     const runner = new CliInitReactShellRunner(
       undefined,
       new CliInteractiveShellStderrRenderer((value) => {
         stderrBuffer.push(value);
       }),
-      () => createPromptAdapter(['9', '1', 'bogus', '2', '']),
+      () =>
+        createPromptAdapter({
+          selectAnswers: [
+            'bogus',
+            WorkspaceMode.TOOL_MANAGED,
+            'invalid',
+            DEFAULT_I18N_FALLBACK_LOCALE,
+          ],
+          confirmAnswers: [true],
+          record: promptRecord,
+        }),
     );
 
     const selection = await runner.run({
@@ -99,7 +171,21 @@ describe('CliInitReactShellRunner', () => {
       defaultLocale: DEFAULT_I18N_FALLBACK_LOCALE,
       fallbackLocale: DEFAULT_I18N_LOCALE,
     });
-    expect(stderrBuffer.join('')).toContain('validation=');
+    expect(promptRecord.selects).toHaveLength(4);
+    expect(promptRecord.selects[1]).toMatchObject({
+      title: i18nRuntime.t('cli.initShell.workspaceModeTitle'),
+      runState: 'validating',
+    });
+    expect(promptRecord.selects[1]?.validationErrors).toEqual({
+      workspaceMode: i18nRuntime.t('cli.initShell.workspaceModeValidation'),
+    });
+    expect(promptRecord.selects[3]).toMatchObject({
+      title: i18nRuntime.t('cli.initShell.defaultLocaleTitle'),
+      runState: 'validating',
+    });
+    expect(promptRecord.selects[3]?.validationErrors).toEqual({
+      defaultLocale: i18nRuntime.t('cli.initShell.defaultLocaleValidation'),
+    });
     expect(stderrBuffer.join('')).toContain('ui=react');
   });
 
@@ -107,12 +193,26 @@ describe('CliInitReactShellRunner', () => {
     const stderrBuffer: string[] = [];
     const i18nRuntime = new I18nRuntime();
     await i18nRuntime.initialize(DEFAULT_I18N_RUNTIME_CONFIG, 'en-US');
+    const promptRecord: CliInteractiveShellPromptRecord = {
+      selects: [],
+      confirms: [],
+    };
     const runner = new CliInitReactShellRunner(
       undefined,
       new CliInteractiveShellStderrRenderer((value) => {
         stderrBuffer.push(value);
       }),
-      () => createPromptAdapter(['1', '1', 'n', '2', '2', 'y']),
+      () =>
+        createPromptAdapter({
+          selectAnswers: [
+            WorkspaceMode.TOOL_MANAGED,
+            DEFAULT_I18N_LOCALE,
+            WorkspaceMode.REPO_LOCAL,
+            DEFAULT_I18N_FALLBACK_LOCALE,
+          ],
+          confirmAnswers: [false, true],
+          record: promptRecord,
+        }),
     );
 
     const selection = await runner.run({
@@ -126,8 +226,9 @@ describe('CliInitReactShellRunner', () => {
       defaultLocale: DEFAULT_I18N_FALLBACK_LOCALE,
       fallbackLocale: DEFAULT_I18N_LOCALE,
     });
+    expect(promptRecord.selects).toHaveLength(4);
+    expect(promptRecord.confirms).toHaveLength(2);
     expect(stderrBuffer.join('')).toContain('Selection updated; returning to the first step.');
-    expect(stderrBuffer.join('')).toContain('Step 1 of 3: Workspace mode');
   });
 
   it('cancels cleanly when SIGINT arrives during prompting', async () => {

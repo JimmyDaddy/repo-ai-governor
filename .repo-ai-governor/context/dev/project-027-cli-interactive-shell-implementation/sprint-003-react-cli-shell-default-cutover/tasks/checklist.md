@@ -1,14 +1,32 @@
 # checklist
 
-- [ ] TK-312 `workflow` 命令家族注册与 create/edit 入口流
+- [x] TK-312 `workflow` 命令家族注册与 create/edit 入口流
   - 2026-03-28：任务创建，状态初始化为 `planned`。
   - 2026-03-28：依据技术方案 draft 的 M3 清单，改为收口 `workflow` 命令家族注册与 create/edit 入口流。
-- [ ] TK-313 DSL 节点/连线/条件映射与 Loop guardrail 编辑
+  - 2026-03-29：任务切换为 `in_progress`，开始把现有 preview-only 基线扩展为 `workflow create/edit/preview` 显式入口流与帮助面。
+  - 2026-03-29：实现完成，已落地 `workflow create/edit/preview` 显式子命令树、共享 shell entry mode 与 create JSON contract；验证通过 `pnpm -s tsc -p tsconfig.json --noEmit` 与定向 vitest；`pnpm run check` 尝试执行但被仓库既有 artifact lifecycle backlog（rows 26-50）阻断。
+- [x] TK-313 DSL 节点/连线/条件映射与 Loop guardrail 编辑
   - 2026-03-28：任务创建，状态初始化为 `planned`。
   - 2026-03-28：依据技术方案 draft 的 M3 清单，改为收口 DSL 节点/连线/条件映射与 Loop guardrail 编辑。
-- [ ] TK-314 workflow 保存、compiled IR 验收与 `upgrade` 显式 React PoC
+  - 2026-03-29：任务切换为 `in_progress`，开始抽离 workflow editor runtime，并把节点/连线/条件分支与 Loop guardrail 校验统一到同一条编辑链路。
+  - 2026-03-29：实现完成，已落地 workflow editor runtime、condition branch 语义校验、Loop guardrail 摘要/编译守护与对应 workflow/output 测试。
+- [x] TK-314 workflow 保存、compiled IR 验收与 `upgrade` 显式 React PoC
   - 2026-03-28：任务创建，状态初始化为 `planned`。
   - 2026-03-28：依据技术方案 draft 的 M3 清单，改为收口 workflow 保存/compiled IR 验收与 `upgrade` 显式 React PoC。
-- [ ] TK-315 docs/help surface 收尾、project-027 出口验收与 completion audit
+  - 2026-03-29：实现完成，`workflow create/edit` 已保存活动 workflow definition + compiled IR snapshot，`upgrade --ui react` 已接入共享 React shell，定向验证通过。
+- [x] TK-315 docs/help surface 收尾、project-027 出口验收与 completion audit
   - 2026-03-28：任务创建，状态初始化为 `planned`。
   - 2026-03-28：依据技术方案 draft 的 M3 清单，改为收口 docs/help surface、exit acceptance 与 completion audit。
+  - 2026-03-29：实现完成，README/playbook/help surface 已同步，已产出 sprint exit acceptance 与 `project-027` completion audit，并登记 milestone 回链。
+  - 2026-03-29：补充真实项目验收沉淀，新增 `.repo-ai-governor/draft/project-027-real-project-validation-playbook.md`，包含实施程度判断、验收顺序与可复用 bash 验收脚本模板。
+  - 2026-03-29：将真实项目验收流程压缩进 `docs/local-adoption-playbook.md` 与 `docs/local-adoption-playbook.zh-CN.md`，形成对外 adopter runbook。
+  - 2026-03-29：新增 `scripts/acceptance/run-project-027-real-project-validation.sh`，并同步修正 playbook/draft 中的自动化入口与 isolated `HOME` 执行口径。
+  - 2026-03-29：脚本已在临时 git 仓库中完成最小冒烟，`init -> workspace execute -> workflow create/edit -> upgrade -> rollback` 自动链路通过。
+  - 2026-03-29：完成 `project-027` 全量 CR 复核与修复收口，确认 `2.2/2.4/2.9/2.10` 不纳入修复，完成 `2.1/2.3/2.5/2.6/2.7/2.8` 的最小安全补丁，并将报告收口为 `resolved_code_review_project-027-full-implementation.md`。
+  - 2026-03-29：基于真实终端验收反馈，补齐 `init --ui react` 的 live Ink 选择控件，工作区模式/默认语言改为上下键选择 + 回车确认，不再要求手输 `1/2`。
+  - 2026-03-29：将 CLI 默认 UI 策略切换为“用户交互式 TTY + pretty 默认进入 React shell，非交互/agent 风格调用继续走普通模式”，并同步更新 workflow/upgrade 默认行为回归与 adopter-facing 文档。
+- [x] TK-327 `workspace` clear-config 调试清理命令
+  - 2026-03-29：任务创建，状态初始化为 `planned`。
+  - 2026-03-29：根据真实仓库调试反馈，新增 `workspace --workspace-action clear-config`，用于一键清理当前 repo-local selector config 与 active workspace config，而不是删除整个 workspace 目录。
+  - 2026-03-29：实现完成，已补齐 workspace action/runtime/i18n/React shell/JSON 输出契约，并通过 `pnpm -s tsc -p tsconfig.json --noEmit`、`pnpm -s vitest run --config vitest.packages.config.ts apps/cli/test/commands/workspace-command.test.ts apps/cli/test/cli-output-contract.integration.test.ts`、`node ./scripts/governance/check-i18n-parity-fallback.js`。
+  - 2026-03-29：任务台账同步验证通过，`check-task-ledger-sync` 与 `check-sprint-plan-status-sync` 已确认 `TK-327` 改号后的 plan/checklist/tasks.csv 保持一致。

@@ -1,6 +1,6 @@
 # project-027-cli-interactive-shell-implementation 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-03-28
 - Stage Mapping: Post-promotion implementation of `runtime.cli-interactive-shell`
 - Phase Mapping: M1 Shell foundation / M2 Shared shell expansion & preview / M3 Workflow editing, default expansion & closeout
@@ -31,7 +31,7 @@
 
 ## 2.2 sprint-002-react-cli-shell-surface-expansion
 
-- Status: active
+- Status: completed
 - Sprint Goal: 固化共享 descriptor/shell 框架，接入 `connect/workspace`，让 `init` 默认走 React，并先把 `workflow` 做成只读预览。
 - Task Package: `TK-308`、`TK-309`、`TK-310`、`TK-311`。
 - Exit Criteria:
@@ -42,14 +42,15 @@
 
 ## 2.3 sprint-003-react-cli-shell-default-cutover
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 完成 `workflow create/edit/save`、DSL 编辑守护、`upgrade` 显式 React PoC 与对外帮助面收口，让 React shell 进入可默认扩面的完成态。
-- Task Package: `TK-312`、`TK-313`、`TK-314`、`TK-315`。
+- Task Package: `TK-312`、`TK-313`、`TK-314`、`TK-315`、`TK-327`。
 - Exit Criteria:
   1. `workflow create/edit/preview` 三态完整，支持 workspace 内保存流程配置。
   2. `Sequential / Parallel / Loop / Condition` 节点、连线与条件分支可编辑，Loop 强制守护 `maxCycles` / `maxWallTimeSeconds`。
   3. 保存后的流程定义能被编译器接受并产出可预览的 compiled IR；`upgrade` React shell 仍保持显式启用。
   4. `connect/workspace` 默认 React、docs/help surface、completion audit 与 exit acceptance 同步收口。
+  5. 真实仓库调试时可通过 `workspace --workspace-action clear-config` 清理当前 workspace 配置，不必手动定位 repo-local selector 与 active workspace config。
 
 ## 3. 任务拆解矩阵（WBS）
 
@@ -59,14 +60,15 @@
 | TK-305 | sprint-001 | shell runner、UI mode resolver 与 stderr/SIGINT baseline | runtime/shell-core | TK-304, contract.cli.interactive-shell.v1 | completed |
 | TK-306 | sprint-001 | `init` React shell 最小向导与 descriptor/state baseline | cli/init-shell | TK-305, init-command, descriptor registry | completed |
 | TK-307 | sprint-001 | M1 回归测试、fallback 与 non-interactive contract gate | verification/gates | TK-305, TK-306 | completed |
-| TK-308 | sprint-002 | 共享 descriptor registry、字段渲染器与步骤引擎基线 | shell/shared-foundation | TK-307, contract.cli.interactive-shell.v1 | planned |
-| TK-309 | sprint-002 | connect/workspace 共享壳层接入与 help/error/footer 统一 | cli/connect-workspace | TK-308 | planned |
-| TK-310 | sprint-002 | `init` 默认 React 路由与 classic fallback 体验策略 | cli/init-default-routing | TK-308, TK-309 | planned |
-| TK-311 | sprint-002 | `workflow preview` 只读摘要与 M2 回归 gate | cli/workflow-preview | TK-309, TK-310 | planned |
-| TK-312 | sprint-003 | `workflow` 命令家族注册与 create/edit 入口流 | cli/workflow-command-family | TK-311 | planned |
-| TK-313 | sprint-003 | DSL 节点/连线/条件映射与 Loop guardrail 编辑 | cli/workflow-editor | TK-312 | planned |
-| TK-314 | sprint-003 | workflow 保存、compiled IR 验收与 `upgrade` 显式 React PoC | cli/workflow-save-upgrade | TK-312, TK-313 | planned |
-| TK-315 | sprint-003 | docs/help surface 收尾、project-027 出口验收与 completion audit | acceptance/docs-closeout | TK-314 | planned |
+| TK-308 | sprint-002 | 共享 descriptor registry、字段渲染器与步骤引擎基线 | shell/shared-foundation | TK-307, contract.cli.interactive-shell.v1 | completed |
+| TK-309 | sprint-002 | connect/workspace 共享壳层接入与 help/error/footer 统一 | cli/connect-workspace | TK-308 | completed |
+| TK-310 | sprint-002 | `init` 默认 React 路由与 classic fallback 体验策略 | cli/init-default-routing | TK-308, TK-309 | completed |
+| TK-311 | sprint-002 | `workflow preview` 只读摘要与 M2 回归 gate | cli/workflow-preview | TK-309, TK-310 | completed |
+| TK-312 | sprint-003 | `workflow` 命令家族注册与 create/edit 入口流 | cli/workflow-command-family | TK-311 | completed |
+| TK-313 | sprint-003 | DSL 节点/连线/条件映射与 Loop guardrail 编辑 | cli/workflow-editor | TK-312 | completed |
+| TK-314 | sprint-003 | workflow 保存、compiled IR 验收与 `upgrade` 显式 React PoC | cli/workflow-save-upgrade | TK-312, TK-313 | completed |
+| TK-315 | sprint-003 | docs/help surface 收尾、project-027 出口验收与 completion audit | acceptance/docs-closeout | TK-314 | completed |
+| TK-327 | sprint-003 | `workspace` clear-config 调试清理命令 | cli/workspace-debug-reset | TK-315 | completed |
 
 ## 4. 依赖产物策略
 
@@ -94,3 +96,10 @@
 4. 2026-03-28：联网核对 npm 最新可用版本后，将 React CLI UI 底座锁定为 `ink@6.8.0` 与 `@inkjs/ui@2.0.0`，后续任务默认按该组合落地。
 5. 2026-03-28：激活 `sprint-002-react-cli-shell-surface-expansion`，开始执行 `TK-308` 的依赖接入与共享壳层骨架。
 6. 2026-03-28：完成 `TK-309`，`connect/workspace` 已切入共享 descriptor/shell 基线，并统一了 help/error/footer 与 i18n runtime 接线。
+7. 2026-03-29：完成 `TK-311` 并关闭 `sprint-002`，M2 regression gate 已稳定覆盖 `workflow preview` 与共享壳层 contract。
+8. 2026-03-29：激活 `sprint-003-react-cli-shell-default-cutover`，开始执行 `TK-312` 的 `workflow create/edit/preview` 显式入口流。
+9. 2026-03-29：完成 `TK-313`，workflow editor runtime 已统一 node/edge/condition branch 映射与 Loop guardrail/conditionKey 语义守护。
+10. 2026-03-29：完成 `TK-314`，`workflow create/edit` 已支持 workspace-local persistence 与 compiled IR snapshot，`upgrade --ui react` 也已接入共享 React shell PoC。
+11. 2026-03-29：完成 `TK-315`，adopter-facing docs/help/playbook 已同步收口，并新增 `project-027-completion-audit-summary.md` 作为项目完成态审计摘要。
+12. 2026-03-29：项目完成态审计摘要回链：`.repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation/project-027-completion-audit-summary.md`。
+13. 2026-03-29：基于真实仓库调试反馈补充 `TK-327`，新增 `workspace --workspace-action clear-config` 用于一次性清理当前 repo-local selector config 与 active workspace config，降低重复验收/回放时的残留状态干扰。

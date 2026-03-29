@@ -61,6 +61,6 @@
 
 ## 10. 产出
 
-1. 待执行：`init` 默认路由判定与显式关闭入口。
-2. 待执行：classic fallback / error copy 约束。
-3. 待执行：对应测试与 M2 gate evidence。
+1. `apps/cli/src/commands/init-command.ts`：`init` 默认 React 路由、classic fallback 与 i18n 化 fallback 文案。
+2. `apps/cli/test/commands/init-command.test.ts`：默认 React、显式 classic/none、SIGINT 直通与 shell fallback 回归测试。
+3. `packages/shared/src/i18n/locales/en-US.ts` / `packages/shared/src/i18n/locales/zh-cn.ts`：`cli.commandMessages.init.reactShellFallbackToClassic` 文案对齐。

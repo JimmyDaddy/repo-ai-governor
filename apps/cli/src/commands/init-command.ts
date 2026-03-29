@@ -28,14 +28,9 @@ import type {
   CliCommandExecutorContext,
   CliCommandResultArtifact,
   CliCommandResultCheck,
+  CliInitReactShellSelection,
 } from '../types/index.js';
 import type { CliCommandExecutor } from './cli-command-executor.interface.js';
-
-interface CliInteractiveBootstrapSelection {
-  workspaceMode: WorkspaceMode;
-  defaultLocale: Locale;
-  fallbackLocale: Locale;
-}
 
 /**
  * Owns `init` command execution outside the runtime facade.
@@ -79,7 +74,7 @@ export class CliInitCommand implements CliCommandExecutor {
       runtimeDebugOptions.inputTty &&
       runtimeDebugOptions.stderrTty &&
       context.options.outputMode === ErrorOutputEnvironment.PRETTY;
-    let interactiveSelection: CliInteractiveBootstrapSelection | null = null;
+    let interactiveSelection: CliInitReactShellSelection | null = null;
     let resolvedUiMode = this.resolveInitUiMode(
       runtimeDebugOptions,
       configCreated,
@@ -213,7 +208,7 @@ export class CliInitCommand implements CliCommandExecutor {
    */
   private async collectInteractiveBootstrapSelection(
     context: CliCommandExecutorContext,
-  ): Promise<CliInteractiveBootstrapSelection> {
+  ): Promise<CliInitReactShellSelection> {
     const interactiveConsole = createInterface({
       input: stdin,
       output: stderr,
@@ -286,14 +281,13 @@ export class CliInitCommand implements CliCommandExecutor {
    */
   private applyInteractiveBootstrapSelection(
     configContent: string,
-    selection: CliInteractiveBootstrapSelection,
+    selection: CliInitReactShellSelection,
   ): string {
     return configContent
       .replace(/^ {2}mode:\s.+$/mu, `  mode: ${selection.workspaceMode}`)
       .replace(/^ {2}defaultLocale:\s.+$/mu, `  defaultLocale: ${selection.defaultLocale}`)
       .replace(/^ {2}fallbackLocale:\s.+$/mu, `  fallbackLocale: ${selection.fallbackLocale}`);
   }
-
   /**
    * Resolves the effective UI mode for first-time init bootstrapping.
    * @param runtimeDebugOptions Parsed runtime debug flags.

@@ -72,6 +72,38 @@ describe('ReactCliStderrFramePresenter', () => {
     );
     expect(buffer.join('')).toContain('stdout summary follows');
   });
+
+  it('uses the resolved terminal width when rendering stderr frames', () => {
+    const renderFrame = vi.fn(() => 'rendered frame');
+    const presenter = new ReactCliStderrFramePresenter(
+      () => undefined,
+      {
+        renderFrame,
+      } as unknown as ReactCliRunner,
+      () => 132,
+    );
+
+    presenter.write({
+      title: '[react-shell:connect] Connect adapters and capture diagnostics',
+      sections: [
+        {
+          title: 'Summary',
+          lines: ['Connect completed.'],
+        },
+      ],
+      footerShortcutsTitle: 'Shortcuts',
+      footerShortcuts: ['stdout summary follows'],
+    });
+
+    expect(renderFrame).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: '[react-shell:connect] Connect adapters and capture diagnostics',
+      }),
+      {
+        columns: 132,
+      },
+    );
+  });
 });
 
 describe('CliInteractiveShellStderrRenderer', () => {

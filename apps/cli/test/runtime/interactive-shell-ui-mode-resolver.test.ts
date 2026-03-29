@@ -6,7 +6,7 @@ import {
 import { CliInteractiveShellUiModeResolver } from '../../src/runtime/interactive-shell/interactive-shell-ui-mode-resolver.js';
 
 describe('CliInteractiveShellUiModeResolver', () => {
-  it('defaults to classic when interactive pretty-mode TTY constraints are satisfied', () => {
+  it('defaults to react when interactive pretty-mode TTY constraints are satisfied', () => {
     const resolver = new CliInteractiveShellUiModeResolver();
     const resolution = resolver.resolve({
       interactiveRequested: true,
@@ -17,7 +17,7 @@ describe('CliInteractiveShellUiModeResolver', () => {
       isStderrTty: true,
     });
 
-    expect(resolution.uiMode).toBe(CliInteractiveUiMode.CLASSIC);
+    expect(resolution.uiMode).toBe(CliInteractiveUiMode.REACT);
     expect(resolution.fallbackBehavior).toBeNull();
   });
 

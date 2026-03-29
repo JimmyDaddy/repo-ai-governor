@@ -33,7 +33,11 @@ import {
 } from '@repo-ai-governor/shared';
 import { CliGovernanceRuntime } from './cli-governance-runtime.js';
 import { CliOutputPresenter } from './cli-output-presenter.js';
-import { CLI_COMMAND_DEFINITIONS, CLI_PROGRAM_NAME } from './constants/cli-command.constant.js';
+import {
+  CLI_COMMAND_DEFINITIONS,
+  CLI_PROGRAM_NAME,
+  CliCommandName,
+} from './constants/cli-command.constant.js';
 import {
   CLI_INTERACTIVE_UI_MODE_VALUES,
   type CliInteractiveUiMode,
@@ -50,6 +54,7 @@ import {
   DEFAULT_CLI_VERBOSITY,
   NON_TTY_FALLBACK_OUTPUT_MODE,
 } from './constants/cli-output.constant.js';
+import { CliWorkflowAction } from './constants/cli-workflow.constant.js';
 import { CliCodexExecFixtureEnvironmentKey } from './constants/codex-exec-fixture.constant.js';
 import { CliGithubCopilotExecFixtureEnvironmentKey } from './constants/github-copilot-exec-fixture.constant.js';
 import {
@@ -100,6 +105,7 @@ import type {
   CliResolvedOutputContext,
   CliRuntimeDebugOptions,
   CliSuccessOutputPayload,
+  CliWorkflowCommandOptions,
   CliWorkspaceCommandOptions,
 } from './types/index.js';
 
@@ -307,6 +313,7 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
     const runtimeDebugOptions = resolveRuntimeDebugOptions(rawArgs, io.cwd(), outputContext, io);
     const runtimeContext = resolveRuntimeContext(io.cwd(), requestedProfileId);
     const workspaceCommandOptions = resolveWorkspaceCommandOptions(rawArgs);
+    const workflowCommandOptions = resolveWorkflowCommandOptions(rawArgs);
     memoryStoreComposition = await DEFAULT_MEMORY_PROVIDER_REGISTRY.loadProvider({
       workspaceRoot: runtimeContext.workspace.workspaceRoot,
       memoryConfig: runtimeContext.memory,
@@ -332,6 +339,7 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
       memoryStoreProviderName: activeMemoryStoreComposition.providerName,
       memoryStoreProvider: activeMemoryStoreComposition.provider,
       workspaceCommandOptions,
+      workflowCommandOptions,
       orchestrationServiceRuntimeDependencies: {
         memoryConfig: runtimeContext.memory,
       },
@@ -417,64 +425,105 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
     });
     program.exitOverride();
 
+    const executeCliCommand = async (resolvedCommandName: CliCommandName) => {
+      const diagnostics: CliCommandDiagnostics = {
+        configSource: runtimeContext.configSource,
+        locale: resolvedLocale,
+        profile: profileLabel,
+        workspaceMode: runtimeContext.workspace.mode,
+        workspaceModeSource: runtimeContext.workspace.modeSource,
+        workspaceId: runtimeContext.workspace.workspaceId,
+        workspaceRoot: runtimeContext.workspace.workspaceRoot,
+        ...activeMemoryStoreComposition.summary,
+        ...(ideWrapperEnvironment.entrySurface
+          ? {
+              entrySurface: ideWrapperEnvironment.entrySurface,
+            }
+          : {}),
+        ...(ideWrapperEnvironment.standardsProfileId
+          ? {
+              standardsProfileId: ideWrapperEnvironment.standardsProfileId,
+            }
+          : {}),
+        ...(ideWrapperEnvironment.standardsSourceIds.length > 0
+          ? {
+              standardsSourceIds: [...ideWrapperEnvironment.standardsSourceIds],
+            }
+          : {}),
+        ...(environment[CliCodexExecFixtureEnvironmentKey.EXEC_FIXTURE]
+          ? {
+              codexExecFixture: environment[CliCodexExecFixtureEnvironmentKey.EXEC_FIXTURE] ?? null,
+            }
+          : {}),
+        ...(environment[CliGithubCopilotExecFixtureEnvironmentKey.EXEC_FIXTURE]
+          ? {
+              githubCopilotExecFixture:
+                environment[CliGithubCopilotExecFixtureEnvironmentKey.EXEC_FIXTURE] ?? null,
+            }
+          : {}),
+      };
+      const executionResult = await governanceRuntime.execute(resolvedCommandName);
+      if (executionResult.reactCliViewModel) {
+        reactCliStderrFramePresenter.write(executionResult.reactCliViewModel);
+      }
+
+      outputPresenter.writeSuccess(
+        buildSuccessOutputPayload(
+          resolvedCommandName,
+          executionResult.message,
+          outputContext,
+          diagnostics,
+          executionResult.commandResult,
+        ),
+      );
+    };
+
     for (const commandDefinition of CLI_COMMAND_DEFINITIONS) {
+      if (commandDefinition.name === CliCommandName.WORKFLOW) {
+        continue;
+      }
+
       program
         .command(commandDefinition.name)
         .description(runtimeI18n.t(commandDefinition.descriptionKey))
         .action(async () => {
-          const diagnostics: CliCommandDiagnostics = {
-            configSource: runtimeContext.configSource,
-            locale: resolvedLocale,
-            profile: profileLabel,
-            workspaceMode: runtimeContext.workspace.mode,
-            workspaceModeSource: runtimeContext.workspace.modeSource,
-            workspaceId: runtimeContext.workspace.workspaceId,
-            workspaceRoot: runtimeContext.workspace.workspaceRoot,
-            ...activeMemoryStoreComposition.summary,
-            ...(ideWrapperEnvironment.entrySurface
-              ? {
-                  entrySurface: ideWrapperEnvironment.entrySurface,
-                }
-              : {}),
-            ...(ideWrapperEnvironment.standardsProfileId
-              ? {
-                  standardsProfileId: ideWrapperEnvironment.standardsProfileId,
-                }
-              : {}),
-            ...(ideWrapperEnvironment.standardsSourceIds.length > 0
-              ? {
-                  standardsSourceIds: [...ideWrapperEnvironment.standardsSourceIds],
-                }
-              : {}),
-            ...(environment[CliCodexExecFixtureEnvironmentKey.EXEC_FIXTURE]
-              ? {
-                  codexExecFixture:
-                    environment[CliCodexExecFixtureEnvironmentKey.EXEC_FIXTURE] ?? null,
-                }
-              : {}),
-            ...(environment[CliGithubCopilotExecFixtureEnvironmentKey.EXEC_FIXTURE]
-              ? {
-                  githubCopilotExecFixture:
-                    environment[CliGithubCopilotExecFixtureEnvironmentKey.EXEC_FIXTURE] ?? null,
-                }
-              : {}),
-          };
-          const executionResult = await governanceRuntime.execute(commandDefinition.name);
-          if (executionResult.reactCliViewModel) {
-            reactCliStderrFramePresenter.write(executionResult.reactCliViewModel);
-          }
-
-          outputPresenter.writeSuccess(
-            buildSuccessOutputPayload(
-              commandDefinition.name,
-              executionResult.message,
-              outputContext,
-              diagnostics,
-              executionResult.commandResult,
-            ),
-          );
+          await executeCliCommand(commandDefinition.name);
         });
     }
+
+    const workflowCommand = program
+      .command(CliCommandName.WORKFLOW)
+      .description(runtimeI18n.t('cli.commands.workflow.description'))
+      .action(async () => {
+        throw new RuntimeError(
+          GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+          runtimeI18n.t('cli.commands.workflow.subcommandRequired'),
+          {
+            command: CliCommandName.WORKFLOW,
+          },
+        );
+      });
+    workflowCommand
+      .command(CliWorkflowAction.CREATE)
+      .description(runtimeI18n.t('cli.commands.workflow.createDescription'))
+      .option('--workflow-template <template>', runtimeI18n.t('cli.options.workflowTemplate'))
+      .action(async () => {
+        await executeCliCommand(CliCommandName.WORKFLOW);
+      });
+    workflowCommand
+      .command(CliWorkflowAction.EDIT)
+      .description(runtimeI18n.t('cli.commands.workflow.editDescription'))
+      .option('--workflow-template <template>', runtimeI18n.t('cli.options.workflowTemplate'))
+      .action(async () => {
+        await executeCliCommand(CliCommandName.WORKFLOW);
+      });
+    workflowCommand
+      .command(CliWorkflowAction.PREVIEW)
+      .description(runtimeI18n.t('cli.commands.workflow.previewDescription'))
+      .option('--workflow-template <template>', runtimeI18n.t('cli.options.workflowTemplate'))
+      .action(async () => {
+        await executeCliCommand(CliCommandName.WORKFLOW);
+      });
 
     if (rawArgs.length === 0) {
       program.outputHelp();
@@ -1301,6 +1350,18 @@ function resolveWorkspaceCommandOptions(args: string[]): CliWorkspaceCommandOpti
 }
 
 /**
+ * Resolves raw workflow-command option values from CLI args.
+ * @param args CLI args excluding node and binary.
+ * @returns Parsed workflow command options.
+ */
+function resolveWorkflowCommandOptions(args: string[]): CliWorkflowCommandOptions {
+  return {
+    action: resolveNestedSubcommandToken(args, CliCommandName.WORKFLOW),
+    templateId: readOptionValue(args, '--workflow-template') ?? null,
+  };
+}
+
+/**
  * Checks whether one boolean flag appears in raw args.
  * @param args CLI args excluding node and binary.
  * @param flag Long option flag.
@@ -1344,6 +1405,44 @@ function resolveRequestedCommandName(args: string[]): string {
   }
 
   return 'help';
+}
+
+/**
+ * Resolves one nested subcommand token beneath a top-level command name.
+ * @param args CLI args excluding node and binary.
+ * @param commandName Top-level command token.
+ * @returns Nested subcommand token or `null`.
+ */
+function resolveNestedSubcommandToken(args: string[], commandName: CliCommandName): string | null {
+  const commandIndex = args.indexOf(commandName);
+  if (commandIndex < 0) {
+    return null;
+  }
+
+  for (let index = commandIndex + 1; index < args.length; index += 1) {
+    const token = args[index];
+    if (!token) {
+      continue;
+    }
+
+    if (token.startsWith('--')) {
+      if (!token.includes('=') && CLI_OPTIONS_REQUIRING_VALUE.has(token)) {
+        const nextToken = args[index + 1];
+        if (nextToken && !nextToken.startsWith('-')) {
+          index += 1;
+        }
+      }
+      continue;
+    }
+
+    if (token.startsWith('-')) {
+      continue;
+    }
+
+    return token;
+  }
+
+  return null;
 }
 
 /**

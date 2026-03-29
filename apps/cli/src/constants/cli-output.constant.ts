@@ -93,6 +93,7 @@ export const CLI_OPTIONS_REQUIRING_VALUE = new Set<string>([
   '--workspace-mode',
   '--workspace-root',
   '--workspace-plan',
+  '--workflow-template',
   '--hitl-decision',
   '--hitl-decision-reason',
   '--hitl-resume-action',

@@ -125,6 +125,25 @@ pnpm exec repo-ai-governor upgrade --output json
 3. `upgrade_rollback_snapshot` 是 canonical rollback source；建议与本次配置变更一起保存。
 4. 如果输出出现 `confirmation_items` warning，或 blocking 数量非零，应先完成人工确认，再决定是否写回迁移后的配置。
 5. 只有升级后的配置至少通过一轮 `doctor` + `check` 后，才可以移除最近一次 rollback reference。
+6. 在本地 TTY + `pretty` 模式下，`upgrade` 会默认进入 React shell，并只把分析回执渲染到 `stderr`；如需更安静的人类可读运行，可显式指定 `--ui none` 或 `--ui classic`，stdout 机器可读契约保持不变。
+
+## 3.3 Workflow 定义预览与保存
+
+使用 workflow surface 先预览内置拓扑，再保存一份通过校验的活动定义：
+
+```bash
+pnpm exec repo-ai-governor workflow preview --workflow-template loop-guarded --output json
+pnpm exec repo-ai-governor workflow create --workflow-template condition-route --output json
+pnpm exec repo-ai-governor workflow edit --output pretty
+```
+
+输出解释：
+
+1. `workflow preview` 始终保持只读，不会写入 workflow 相关产物。
+2. `workflow create` 与 `workflow edit` 会把当前活动 workflow definition 保存到 `<workspace_root>/context/workflow/active-workflow.definition.json`。
+3. 成功的 create/edit 还会额外写入一份通过编译器接受的快照到 `<workspace_root>/context/compiled-ir/<execution_id>.json`。
+4. Loop 节点必须同时声明 `maxCycles` 与 `maxWallTimeSeconds`；Condition 节点分支必须使用非空且唯一的 `conditionKey`，否则会阻断持久化。
+5. 若当前 workspace 已存在保存过的 workflow，`workflow edit` 会优先载入该定义；如需从内置模板重新生成活动定义，可显式传入 `--workflow-template`。
 
 ## 4. Workspace 模式切换与回滚
 
@@ -151,6 +170,103 @@ Artifact locality 合同：
 3. `workspace rollback` 会把 rollback 产物写到恢复后的 source workspace 根，并在 cleanup 成功后移除空的 `.repo-ai-governor-migration/<migration-id>` scratch 目录。
 4. 如果 `workspace execute` 失败，请先查看 stderr 或 JSON `error_details.report_path` 给出的 failure summary 产物，再决定是否重试。
 5. 如果 rollback 结束时出现 `workspace_scratch_cleanup` warning，应先确认回滚状态稳定，再手工清理保留的 scratch 根目录。
+
+## 4.1 真实项目验收 Runbook
+
+如果你想在一个真实目标仓库中先完整验证 `project-027` 的 interactive-shell 交付，再决定是否更大范围采用，建议按下面这条 runbook 执行。
+
+自动化脚本入口：
+
+```bash
+TARGET_REPO=/absolute/path/to/real-target-repo \
+bash "$GOVERNOR_REPO/scripts/acceptance/run-project-027-real-project-validation.sh"
+```
+
+推荐顺序：
+
+1. 先在 governor 仓库里构建 `dist`，然后优先用 `dist` 二进制演练，而不是一开始就改目标仓库依赖。
+2. 第一轮先走低侵入的 `tool_managed` 沙箱 bootstrap 验证，脚本内部会通过隔离 `HOME` 来避免污染宿主默认 workspace。
+3. 只有在准备好观察持久化产物与 rollback reference 时，再切到 `repo_local`。
+4. React shell 要在真实 TTY 中观察，但同一批 surface 还要再用 `json` 或 `--no-interactive` 跑一轮，确认 stdout contract 没有回归。
+
+建议环境：
+
+```bash
+export GOVERNOR_REPO=/absolute/path/to/repo-ai-governor
+export TARGET_REPO=/absolute/path/to/real-target-repo
+export CLI_BIN="$GOVERNOR_REPO/dist/bin/repo-ai-governor.js"
+export ACCEPTANCE_HOME="$TARGET_REPO/.project-027-acceptance/home"
+export REPO_LOCAL_ROOT="$TARGET_REPO/.repo-ai-governor"
+
+cd "$GOVERNOR_REPO"
+pnpm run build
+
+cd "$TARGET_REPO"
+```
+
+低侵入 bootstrap 演练：
+
+```bash
+HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output json init
+HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output json doctor
+HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output json check
+```
+
+说明：
+
+1. 全新外部仓库可能会出现 `baseline_docs missing=5/5` 或 `script_not_found` warning；除非目标仓库本来就应该 vendoring self-host 治理脚本，否则这更像 external-adopter baseline 信号，而不是功能失败。
+2. 这一轮的目标是验证命令稳定性与机器可读输出，而不是证明目标仓库已经满足所有 self-host 治理门禁。
+
+Workspace 切换与回滚演练：
+
+```bash
+HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output json --workspace-action dry-run --workspace-mode repo_local --workspace-root "$REPO_LOCAL_ROOT" workspace
+HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output json --workspace-action execute --workspace-mode repo_local --workspace-root "$REPO_LOCAL_ROOT" workspace
+HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output json --workspace-action rollback --workspace-plan <plan-path> workspace
+```
+
+Workflow 与 upgrade 验证：
+
+```bash
+HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output json workflow preview --workflow-template loop-guarded
+HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output json workflow create --workflow-template condition-route
+HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output json workflow edit
+HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output json upgrade
+HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output json connect
+```
+
+真实 TTY 中的 React shell 手工检查：
+
+```bash
+HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output pretty --ui react workflow preview --workflow-template condition-route > workflow-preview.stdout.txt
+HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output pretty --ui react workflow create --workflow-template condition-route > workflow-create.stdout.txt
+HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output pretty --ui react upgrade > upgrade.stdout.txt
+HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output pretty --ui react connect > connect.stdout.txt
+HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output pretty --ui react --no-interactive workflow preview --workflow-template parallel-review > workflow-preview.no-interactive.stdout.txt
+```
+
+期望观察结果：
+
+1. React shell 文本只在终端 `stderr` 中可见，不应出现在重定向的 stdout 文件里。
+2. `workflow preview` 必须保持只读，不创建 workflow definition 或 compiled IR 产物。
+3. `workflow create` 与 `workflow edit` 必须持久化：
+   - `<workspace_root>/context/workflow/active-workflow.definition.json`
+   - `<workspace_root>/context/compiled-ir/<execution_id>.json`
+4. `upgrade` 必须写出：
+   - `context/upgrade/<upgrade_id>.report.json`
+   - `context/upgrade/<upgrade_id>.auto-migrated-config.json`
+   - `context/upgrade/<upgrade_id>.rollback-snapshot.yaml`
+5. 在本地 TTY + `pretty` 模式下，`upgrade` 默认进入 React shell；`--ui none` 与 `--ui classic` 仍是关闭该壳层的路径。
+6. `--no-interactive` 运行时应正常回退，不渲染 React shell。
+
+当下面这些条件同时满足时，可视为本次真实项目验收通过：
+
+1. `dist` 二进制能在真实目标仓库中直接运行。
+2. React shell 只占用 `stderr`。
+3. `json` 与 `--no-interactive` 流程保持既有 stdout contract。
+4. `workspace` 的 plan / execution / rollback 产物都可追踪。
+5. `workflow create/edit` 会落盘 definition 与 compiled IR，而 `workflow preview` 始终保持只读。
+6. 无论通过默认路由还是显式 `--ui react` 进入 React shell，`upgrade` 都必须完整产出三类 artifact。
 
 ## 5. 本地调试路径
 

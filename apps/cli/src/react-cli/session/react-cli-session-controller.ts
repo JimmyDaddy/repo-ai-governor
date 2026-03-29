@@ -44,16 +44,22 @@ export class ReactCliSessionController {
    */
   public update(update: Partial<ReactCliViewModel>): ReactCliViewModel {
     const sections = this.cloneSections(update.sections ?? this.viewModel.sections);
-    const attentionSection = update.attentionSection
-      ? this.cloneSection(update.attentionSection)
-      : this.viewModel.attentionSection
-        ? this.cloneSection(this.viewModel.attentionSection)
-        : undefined;
-    const helpSection = update.helpSection
-      ? this.cloneSection(update.helpSection)
-      : this.viewModel.helpSection
-        ? this.cloneSection(this.viewModel.helpSection)
-        : undefined;
+    const attentionSection =
+      'attentionSection' in update
+        ? update.attentionSection
+          ? this.cloneSection(update.attentionSection)
+          : undefined
+        : this.viewModel.attentionSection
+          ? this.cloneSection(this.viewModel.attentionSection)
+          : undefined;
+    const helpSection =
+      'helpSection' in update
+        ? update.helpSection
+          ? this.cloneSection(update.helpSection)
+          : undefined
+        : this.viewModel.helpSection
+          ? this.cloneSection(this.viewModel.helpSection)
+          : undefined;
     this.viewModel = {
       ...this.viewModel,
       ...update,

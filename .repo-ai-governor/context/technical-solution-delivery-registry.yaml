@@ -1,5 +1,5 @@
 schema_version: 1
-generated_at: 2026-03-28
+generated_at: 2026-03-29
 status: active
 owner: architecture
 
@@ -203,16 +203,16 @@ deliveries:
     rollout_status: planned
     owner: runtime
     project_ref: project-027-cli-interactive-shell-implementation
-    sprint_ref: sprint-002-react-cli-shell-surface-expansion
+    sprint_ref: sprint-003-react-cli-shell-default-cutover
     task_ids:
-      - TK-308
-      - TK-309
-      - TK-310
-      - TK-311
+      - TK-312
+      - TK-313
+      - TK-314
+      - TK-315
     project_plan_path: .repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation/plan.md
-    sprint_plan_path: .repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation/sprint-002-react-cli-shell-surface-expansion/plan.md
-    task_csv_path: .repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation/sprint-002-react-cli-shell-surface-expansion/tasks/tasks.csv
-    handoff_artifact_path: .repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation/sprint-002-react-cli-shell-surface-expansion/tasks/TK-308-shared-descriptor-registry-field-renderers-and-step-engine-baseline.md
+    sprint_plan_path: .repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation/sprint-003-react-cli-shell-default-cutover/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation/sprint-003-react-cli-shell-default-cutover/tasks/tasks.csv
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation/sprint-003-react-cli-shell-default-cutover/tasks/TK-312-workflow-command-family-registration-and-create-edit-entry-flow.md
     rollout_artifacts:
       - .repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation/plan.md
       - .repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation/sprint-002-react-cli-shell-surface-expansion/plan.md

@@ -16,7 +16,7 @@ export const CLI_INTERACTIVE_UI_MODE_VALUES = new Set<string>(Object.values(CliI
 /**
  * Defines the default interactive UI mode when no explicit `--ui` option is provided.
  */
-export const DEFAULT_CLI_INTERACTIVE_UI_MODE = CliInteractiveUiMode.CLASSIC;
+export const DEFAULT_CLI_INTERACTIVE_UI_MODE = CliInteractiveUiMode.REACT;
 
 /**
  * Defines lifecycle run states exposed by the minimal interactive-shell session.

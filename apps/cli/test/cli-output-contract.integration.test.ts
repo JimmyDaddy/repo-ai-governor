@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process';
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import { mkdir, mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 
@@ -176,6 +177,38 @@ async function createWorkspaceMigrationFixtureRepo(): Promise<string> {
   const temporaryRepositoryRoot = await mkdtemp(resolve(tmpdir(), 'cli-output-workspace-'));
   const workspaceRoot = resolve(temporaryRepositoryRoot, '.repo-ai-governor');
   await mkdir(resolve(workspaceRoot, 'context', 'memory'), { recursive: true });
+  await writeFile(
+    resolve(workspaceRoot, 'governor.yaml'),
+    [
+      'schemaVersion: "1.1"',
+      'workspace:',
+      '  mode: repo_local',
+      '  migrationPolicy: copy_verify_switch_rollback',
+      'i18n:',
+      '  runtimeEngine: i18next',
+      '  defaultLocale: en-US',
+      '  fallbackLocale: en-US',
+      '  supportedLocales:',
+      '    - en-US',
+      'memory:',
+      '  storeEngine: fs_csv',
+      '  storeRoot: context/memory',
+      '',
+    ].join('\n'),
+    'utf8',
+  );
+  return temporaryRepositoryRoot;
+}
+
+/**
+ * Creates one temporary repo with initialized workspace baseline for workflow preview tests.
+ * @returns Temporary repository absolute path.
+ */
+async function createWorkflowPreviewFixtureRepo(): Promise<string> {
+  const temporaryRepositoryRoot = await mkdtemp(resolve(tmpdir(), 'cli-output-workflow-'));
+  const workspaceRoot = resolve(temporaryRepositoryRoot, '.repo-ai-governor');
+  await mkdir(resolve(workspaceRoot, 'context', 'memory'), { recursive: true });
+  await mkdir(resolve(workspaceRoot, 'context', 'compiled-ir'), { recursive: true });
   await writeFile(
     resolve(workspaceRoot, 'governor.yaml'),
     [
@@ -449,13 +482,241 @@ describe('CLI output contract integration', () => {
         io,
       );
       const stdout = stdoutBuffer.join('');
+      const stderr = stderrBuffer.join('');
 
       expect(exitCode).toBe(0);
-      expect(stderrBuffer.join('')).toBe('');
+      expect(stderr).toContain('[react-shell:workspace]');
+      expect(stderr).toContain('Plan or execute workspace migration');
       expect(stdout).toContain('Key Details');
       expect(stdout).toContain('Workspace action: dry_run');
       expect(stdout).toContain(`Workspace target: mode tool_managed, root ${managedRoot}`);
       expect(stdout).toContain('Rollback reference:');
+    } finally {
+      await rm(temporaryRepositoryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('renders workspace clear-config output in stable JSON shape', async () => {
+    const temporaryRepositoryRoot = await createWorkspaceMigrationFixtureRepo();
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, temporaryRepositoryRoot);
+    const configPath = resolve(temporaryRepositoryRoot, '.repo-ai-governor', 'governor.yaml');
+
+    try {
+      const exitCode = await runCli(
+        [
+          'node',
+          'repo-ai-governor',
+          '--locale',
+          'en-US',
+          '--output',
+          'json',
+          '--workspace-action',
+          'clear-config',
+          'workspace',
+        ],
+        io,
+      );
+      const payload = JSON.parse(stdoutBuffer.join(''));
+
+      expect(exitCode).toBe(0);
+      expect(stderrBuffer.join('')).toBe('');
+      expect(payload.command).toBe('workspace');
+      expect(payload.command_result.operation).toBe('workspace_config_clear');
+      expect(payload.command_result.details.action).toBe('clear_config');
+      expect(payload.command_result.details.cleared_path_count).toBe(1);
+      expect(payload.command_result.details.cleared_config_paths).toBe(configPath);
+      expect(existsSync(configPath)).toBe(false);
+    } finally {
+      await rm(temporaryRepositoryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('renders workflow preview JSON without stderr noise or preview file writes', async () => {
+    const temporaryRepositoryRoot = await createWorkflowPreviewFixtureRepo();
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, temporaryRepositoryRoot);
+    const compiledIrDirectory = resolve(
+      temporaryRepositoryRoot,
+      '.repo-ai-governor',
+      'context',
+      'compiled-ir',
+    );
+
+    try {
+      const beforeEntries = await readdir(compiledIrDirectory);
+      const exitCode = await runCli(
+        [
+          'node',
+          'repo-ai-governor',
+          '--locale',
+          'en-US',
+          '--output',
+          'json',
+          'workflow',
+          'preview',
+          '--workflow-template',
+          'loop-guarded',
+        ],
+        io,
+      );
+      const payload = JSON.parse(stdoutBuffer.join(''));
+      const afterEntries = await readdir(compiledIrDirectory);
+
+      expect(exitCode).toBe(0);
+      expect(stderrBuffer.join('')).toBe('');
+      expect(payload.command).toBe('workflow');
+      expect(payload.command_result.operation).toBe('workflow_preview');
+      expect(payload.command_result.details.action).toBe('preview');
+      expect(payload.command_result.details.template_id).toBe('loop-guarded');
+      expect(payload.command_result.details.preview_mode).toBe('read_only');
+      expect(payload.command_result.details.compile_error_count).toBe(0);
+      expect(payload.command_result.artifacts ?? []).toEqual([]);
+      expect(afterEntries).toEqual(beforeEntries);
+    } finally {
+      await rm(temporaryRepositoryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('renders workflow create JSON and persists workflow definition artifacts', async () => {
+    const temporaryRepositoryRoot = await createWorkflowPreviewFixtureRepo();
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, temporaryRepositoryRoot);
+    const compiledIrDirectory = resolve(
+      temporaryRepositoryRoot,
+      '.repo-ai-governor',
+      'context',
+      'compiled-ir',
+    );
+    const workflowDirectory = resolve(
+      temporaryRepositoryRoot,
+      '.repo-ai-governor',
+      'context',
+      'workflow',
+    );
+
+    try {
+      const beforeEntries = await readdir(compiledIrDirectory);
+      const exitCode = await runCli(
+        [
+          'node',
+          'repo-ai-governor',
+          '--locale',
+          'en-US',
+          '--output',
+          'json',
+          'workflow',
+          'create',
+          '--workflow-template',
+          'condition-route',
+        ],
+        io,
+      );
+      const payload = JSON.parse(stdoutBuffer.join(''));
+      const afterEntries = await readdir(compiledIrDirectory);
+
+      expect(exitCode).toBe(0);
+      expect(stderrBuffer.join('')).toBe('');
+      expect(payload.command).toBe('workflow');
+      expect(payload.command_result.operation).toBe('workflow_create_entry');
+      expect(payload.command_result.details.action).toBe('create');
+      expect(payload.command_result.details.entry_mode).toBe('create_seed');
+      expect(payload.command_result.details.template_id).toBe('condition-route');
+      expect(payload.command_result.details.preview_mode).toBeUndefined();
+      expect(payload.command_result.details.definition_source).toBe('template_seed');
+      expect(payload.command_result.details.definition_path).toContain(
+        'active-workflow.definition.json',
+      );
+      expect(payload.command_result.details.compiled_ir_path).toContain('workflow-create-');
+      expect(
+        payload.command_result.artifacts?.map((artifact: { id: string }) => artifact.id),
+      ).toEqual(['workflow_definition', 'workflow_compiled_ir']);
+      expect(afterEntries.length).toBe(beforeEntries.length + 1);
+      expect(await readdir(workflowDirectory)).toContain('active-workflow.definition.json');
+    } finally {
+      await rm(temporaryRepositoryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('defaults workflow preview to React shell on stderr in TTY pretty mode', async () => {
+    const temporaryRepositoryRoot = await createWorkflowPreviewFixtureRepo();
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(true, temporaryRepositoryRoot);
+
+    try {
+      const exitCode = await runCli(
+        [
+          'node',
+          'repo-ai-governor',
+          '--locale',
+          'en-US',
+          '--output',
+          'pretty',
+          'workflow',
+          'preview',
+          '--workflow-template',
+          'condition-route',
+        ],
+        io,
+      );
+      const stdout = stdoutBuffer.join('');
+      const stderr = stderrBuffer.join('');
+
+      expect(exitCode).toBe(0);
+      expect(stderr).toContain('[react-shell:workflow]');
+      expect(stderr).toContain('Preview workflow templates or seed workflow editor');
+      expect(stdout).toContain('repo-ai-governor: command succeeded');
+      expect(stdout).not.toContain('[react-shell:workflow]');
+    } finally {
+      await rm(temporaryRepositoryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('preserves no-interactive fallback semantics for workflow preview even when ui=react is requested', async () => {
+    const temporaryRepositoryRoot = await createWorkflowPreviewFixtureRepo();
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(true, temporaryRepositoryRoot);
+
+    try {
+      const exitCode = await runCli(
+        [
+          'node',
+          'repo-ai-governor',
+          '--locale',
+          'en-US',
+          '--output',
+          'pretty',
+          '--ui',
+          'react',
+          '--no-interactive',
+          'workflow',
+          'preview',
+          '--workflow-template',
+          'parallel-review',
+        ],
+        io,
+      );
+
+      expect(exitCode).toBe(0);
+      expect(stderrBuffer.join('')).toBe('');
+      expect(stdoutBuffer.join('')).toContain('repo-ai-governor: command succeeded');
+    } finally {
+      await rm(temporaryRepositoryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('defaults upgrade to React shell on stderr in TTY pretty mode', async () => {
+    const temporaryRepositoryRoot = await createWorkflowPreviewFixtureRepo();
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(true, temporaryRepositoryRoot);
+
+    try {
+      const exitCode = await runCli(
+        ['node', 'repo-ai-governor', '--locale', 'en-US', '--output', 'pretty', 'upgrade'],
+        io,
+      );
+      const stdout = stdoutBuffer.join('');
+      const stderr = stderrBuffer.join('');
+
+      expect(exitCode).toBe(0);
+      expect(stderr).toContain('[react-shell:upgrade]');
+      expect(stderr).toContain('Review analyzed upgrade artifacts');
+      expect(stdout).toContain('repo-ai-governor: command succeeded');
+      expect(stdout).not.toContain('[react-shell:upgrade]');
     } finally {
       await rm(temporaryRepositoryRoot, { recursive: true, force: true });
     }

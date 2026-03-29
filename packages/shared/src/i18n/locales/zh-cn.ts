@@ -7,7 +7,7 @@ export const ZH_CN_TRANSLATIONS = {
       locale: '指定人类可读输出的语言。',
       profile: '执行命令前应用的配置 profile 标识。',
       output: '指定输出模式：pretty|plain|json。',
-      ui: '指定交互式 UI 模式：none|classic|react|tui。',
+      ui: '指定交互式 UI 模式：none|classic|react|tui。交互式 TTY 且 pretty 模式下默认使用 react。',
       verbosity: '指定输出详细级别：quiet|normal|verbose。',
       compact: '启用更紧凑的 pretty 输出，优先人类快速阅读。',
       noColor: '在 pretty 模式下禁用 ANSI 颜色。',
@@ -22,10 +22,11 @@ export const ZH_CN_TRANSLATIONS = {
       restrictedReason: '为受限网络演练显式记录原因，并写入诊断与审计产物。',
       noLocalFallback: '在受限网络演练中禁用本地 fallback，用于验证阻断语义。',
       noInteractive: '禁用首次 init 的交互式问答配置，强制使用非交互初始化。',
-      workspaceAction: '指定 workspace 命令动作：dry-run|execute|rollback。',
+      workspaceAction: '指定 workspace 命令动作：dry-run|execute|rollback|clear-config。',
       workspaceMode: '指定 workspace 迁移目标模式：repo_local|tool_managed。',
       workspaceRoot: '指定 workspace 迁移命令使用的目标根路径覆盖。',
       workspacePlan: '指定 rollback 动作使用的 workspace migration plan 产物路径。',
+      workflowTemplate: '指定 workflow create/edit/preview 子命令使用的流程模板标识。',
     },
     commands: {
       init: { description: '初始化治理工作区基线。' },
@@ -38,7 +39,16 @@ export const ZH_CN_TRANSLATIONS = {
       verify: { description: '校验适配器路由 pass/warn/fail 基线。' },
       plan: { description: '生成或更新执行计划基线。' },
       upgrade: { description: '执行工作区与配置升级基线。' },
-      workspace: { description: '规划、执行或回滚工作区迁移基线。' },
+      workspace: { description: '规划、执行、回滚工作区迁移基线，或清除当前工作区配置。' },
+      workflow: {
+        description: '预览流程模板、创建已保存的 workflow 定义，或编辑当前已保存的 workflow。',
+        createDescription: '从内置模板创建一份 workflow 定义，并保存到当前 workspace。',
+        editDescription:
+          '优先编辑当前已保存的 workflow 定义；若不存在则从模板生成并保存到当前 workspace。',
+        previewDescription: '预览一个流程模板且不写入 workflow 文件。',
+        subcommandRequired:
+          'workflow 需要显式子命令；请使用 `workflow create`、`workflow edit` 或 `workflow preview`。',
+      },
     },
     skeleton: {
       noProfile: '未设置',
@@ -102,10 +112,14 @@ export const ZH_CN_TRANSLATIONS = {
       workspaceModeTitle: '第 1 / 3 步：工作区模式',
       workspaceModeDescription: '选择 Repo AI Governor 托管工作区元数据的存放位置。',
       workspaceModePromptLabel: '工作区模式 [1=tool_managed, 2=repo_local]（默认 1）: ',
+      workspaceModeToolManagedOption: 'tool_managed：把元数据放在工具托管工作区根目录下',
+      workspaceModeRepoLocalOption: 'repo_local：把元数据保存在当前仓库工作区内',
       workspaceModeValidation: '工作区模式只能填写 1、2、tool_managed 或 repo_local。',
       defaultLocaleTitle: '第 2 / 3 步：默认语言',
       defaultLocaleDescription: '选择 CLI 人类可读文案默认使用的语言。',
       defaultLocalePromptLabel: '默认语言 [1=zh-CN, 2=en-US]（默认 1）: ',
+      defaultLocaleZhCnOption: 'zh-CN：默认输出简体中文文案',
+      defaultLocaleEnUsOption: 'en-US：默认输出英文文案',
       defaultLocaleValidation: '默认语言只能填写 1、2、zh-CN 或 en-US。',
       submittingDescriptor: '正在将 descriptor 值提交给配置模板桥接层。',
       cancelledBySigint: '交互式 shell 已因 SIGINT 取消。',
@@ -143,6 +157,9 @@ export const ZH_CN_TRANSLATIONS = {
           '\n已应用向导配置：workspace={{workspaceMode}}，defaultLocale={{defaultLocale}}。\n',
         reactShellFallbackToClassic: 'React shell 初始化失败，已回退到 classic。原因：{{reason}}。',
       },
+      workflow: {
+        invalidTemplate: '不支持的 workflow 模板 "{{template}}"。支持的模板：{{supported}}。',
+      },
       workspace: {
         migrationExecuted: '工作区迁移执行成功；计划文件={{planPath}}。',
         rollbackCompleted: '工作区回滚已完成；回滚产物={{rollbackPath}}。',
@@ -159,11 +176,14 @@ export const ZH_CN_TRANSLATIONS = {
         disabled: '已关闭',
         notSet: '未设置',
         shortcuts: '快捷键',
+        selection: '选择',
         session: '会话',
         details: '详情',
         lifecycle: '生命周期',
         validationFeedbackRequiresAnotherInputPass: '验证反馈需要再输入一轮。',
         rendersOnStderrOnly: 'React shell 仅渲染到 stderr。',
+        moveFocus: '上下选择',
+        confirm: 'Y 确认',
         enterConfirm: '回车确认',
         restart: 'N 重新开始',
         submit: '回车提交',
@@ -199,33 +219,71 @@ export const ZH_CN_TRANSLATIONS = {
             '必需角色={{requiredRoles}}；失败={{requiredFailures}}；降级={{degradedRoles}}；fallback={{fallbackRoles}}。',
         },
       },
+      upgrade: {
+        title: '检查升级分析产物',
+        fields: {
+          workspaceRoot: '工作区根路径',
+          sourceVersion: '源版本',
+          targetVersion: '目标版本',
+          confirmationDecision: '确认决策',
+        },
+        help: {
+          analyzeOnly:
+            'upgrade 目前仍保持 analyze-only；React shell 只预览 report、migrated-config 与 rollback reference，不会直接改写 governor.yaml。',
+          rollbackReference:
+            '如果后续应用迁移结果，请保留 rollback snapshot，便于显式恢复当前分析前的配置。',
+        },
+        status: {
+          manualConfirmation: '在应用 {{count}} 个阻断性升级变更前，仍需人工确认。',
+          analysisReady: '升级分析已就绪，目标版本={{targetVersion}}。',
+        },
+        summary: {
+          reportPath: '升级报告：{{path}}',
+          autoMigratedConfigPath: '自动迁移配置：{{path}}',
+          rollbackSnapshotPath: '回滚快照：{{path}}',
+          counts: '建议={{suggestions}}；确认项={{confirmations}}；阻断={{blocking}}。',
+        },
+      },
       workspace: {
+        clearConfigTitle: '清除当前工作区配置',
         title: '规划或执行工作区迁移',
         fields: {
           action: '工作区操作',
           targetMode: '目标工作区模式',
           targetRoot: '目标工作区根路径',
           planPath: '回滚计划路径',
+          currentMode: '当前工作区模式',
+          currentRoot: '当前工作区根路径',
+          activeConfigPaths: '活动配置路径',
         },
         actions: {
           dryRun: 'Dry run',
           execute: '执行',
           rollback: '回滚',
+          clearConfig: '清除配置',
         },
         help: {
           stableOutputContract:
             'workspace 会保持机器可读输出契约稳定，同时在共享 React shell 中预览迁移意图。',
           persistPlan: '请保留生成的计划产物，以便需要时通过 rollback 恢复先前的 selector 状态。',
+          clearConfigRemovesSelectorState:
+            'clear-config 会移除当前用于解析活动工作区面的 selector/config 文件。',
+          clearConfigKeepsArtifacts:
+            'clear-config 不会删除 diagnostics、workflow definition、review queue 等其它工作区产物。',
         },
         status: {
           executionCompleted: '工作区迁移执行已完成。',
           rollbackCompleted: '工作区回滚已完成。',
           dryRunCompleted: '工作区迁移 dry-run 已完成。',
+          clearConfigCompleted: '当前工作区配置已清除。',
+          clearConfigNoop: '当前没有可清除的工作区配置。',
         },
         message: {
           executeCompleted: '工作区迁移执行成功；计划文件={{planPath}}。',
           rollbackCompleted: '工作区回滚已完成；回滚产物={{rollbackPath}}。',
           dryRunCompleted: '工作区迁移计划已生成；计划文件={{planPath}}。',
+          clearConfigCompleted: '已清除 {{count}} 个工作区配置文件：{{paths}}。',
+          clearConfigNoop: '未发现可清除的当前工作区配置文件。已检查：{{paths}}。',
         },
         nextStepTitle: '下一步',
         nextActions: {
@@ -238,10 +296,118 @@ export const ZH_CN_TRANSLATIONS = {
           inspectPlanBeforeExecute: '先检查 {{planPath}}，确认目标工作区根路径后再执行迁移。',
           useExecuteWhenReady:
             '准备切换时，使用相同的 --workspace-mode/--workspace-root 参数执行 --workspace-action execute。',
+          reRunInitAfterClear: '当你需要重新引导一份全新的工作区配置时，请重新执行 init。',
+          rerunWorkspaceAfterClear:
+            '如果你想从零开始重新生成工作区 selector，请重新执行 workspace dry-run/execute。',
+          inspectExpectedConfigPaths:
+            '如果你原本预期存在活动工作区配置，请检查这些路径：{{paths}}。',
         },
         summary: {
           migrationId: '迁移 ID：{{migrationId}}',
           primaryArtifact: '主产物：{{path}}',
+          inspectedConfigPaths: '已检查配置路径：{{paths}}',
+          clearedConfigPath: '已清除配置路径：{{path}}',
+          noConfigRemoved: '没有移除任何配置路径。',
+        },
+      },
+      workflow: {
+        title: '预览流程模板或为 workflow 编辑器准备入口种子',
+        fields: {
+          action: '流程操作',
+          templateId: '流程模板',
+          entryMode: '流程入口模式',
+          definitionSource: '流程定义来源',
+        },
+        actions: {
+          create: '创建',
+          edit: '编辑',
+          preview: '预览',
+        },
+        entryModes: {
+          readOnly: 'read_only',
+          createSeed: 'create_seed',
+          editSeed: 'edit_seed',
+        },
+        previewModes: {
+          readOnly: 'read_only',
+        },
+        definitionSources: {
+          previewTemplate: '预览模板',
+          templateSeed: '模板种子',
+          workspaceSaved: '工作区已保存定义',
+        },
+        templates: {
+          parallelReview: '并行评审',
+          loopGuarded: '带守护的循环',
+          conditionRoute: '条件路由',
+        },
+        help: {
+          sharedEntrySurface:
+            'workflow preview 保持只读；workflow create/edit 会先统一节点、连线、条件分支与 loop guardrail 语义，再将通过校验的 workflow definition 与 compiled IR snapshot 持久化到 workspace。',
+          templateSeedSelection:
+            '可通过 --workflow-template 为 workflow preview/create/edit 选择起始拓扑。',
+          editLoadBehavior:
+            'workflow edit 在有已保存 workflow 时会优先载入该定义；传入 --workflow-template 则会用内置模板重新生成当前活动 workflow。',
+        },
+        progress: {
+          compileCompleted: 'workflow topology 编译成功。',
+          compileFallback: 'workflow topology 遇到 contract 错误，已保持在摘要壳层。',
+        },
+        status: {
+          compilable: 'compiled IR 预览已就绪；warnings={{warningCount}}。',
+          warning: 'compiled IR 预览已完成，但 warnings={{warningCount}}。',
+          contractFallback:
+            'compiled IR 预览遇到 contract errors={{errorCount}}；当前展示只读 fallback 摘要。',
+        },
+        message: {
+          previewCompleted:
+            'workflow preview 已就绪，template={{template}}；warnings={{warningCount}}，errors={{errorCount}}。',
+          createSaved:
+            'workflow create 已保存定义={{definitionPath}}；warnings={{warningCount}}，errors={{errorCount}}。',
+          createEntryReady:
+            'workflow create 入口已就绪，template={{template}}；warnings={{warningCount}}，errors={{errorCount}}。',
+          editSaved:
+            'workflow edit 已保存定义={{definitionPath}}；warnings={{warningCount}}，errors={{errorCount}}。',
+          editEntryReady:
+            'workflow edit 入口已就绪，template={{template}}；warnings={{warningCount}}，errors={{errorCount}}。',
+        },
+        prompt: {
+          reviewCompileErrors: '检查编译错误',
+          fixBeforePersist:
+            '在将该预览提升为持久化 workflow definition 之前，请先修复 loop/edge contract 问题。',
+          compareAnotherTemplate: '比较其他模板',
+          rerunWithActionTemplate:
+            '重新执行 `workflow {{action}} --workflow-template <template>`，比较另一种模板结构。',
+          inspectSavedDefinition: '检查已保存 workflow 定义',
+          inspectSavedDefinitionPath: '在下一轮 edit 前，请先检查 {{path}}。',
+          inspectCompiledIr: '检查 compiled IR 快照',
+          inspectCompiledIrPath: '请确认 {{path}} 仍能反映当前保存 workflow 的编译结果。',
+        },
+        editorIssues: {
+          conditionBranchRequired: 'Condition 节点在持久化前必须至少暴露一条出边分支。',
+          conditionBranchKeyRequired: 'Condition 节点的每条出边都必须声明非空 condition key。',
+          conditionBranchDuplicated: '同一个 Condition 节点的出边必须使用唯一 condition key。',
+        },
+        summary: {
+          definitionSource: '定义来源：{{source}}',
+          definitionPath: '流程定义：{{path}}',
+          compiledIrPath: 'Compiled IR 快照：{{path}}',
+          template: '模板：{{template}}',
+          processId: '流程 ID：{{processId}}',
+          entryNode: '入口节点：{{entryNodeId}}',
+          graphTotals:
+            '图摘要：nodes={{nodeCount}} edges={{edgeCount}} warnings={{warningCount}} errors={{errorCount}}。',
+          conditionBranches: '{{nodeId}} 的条件分支：{{branches}}',
+          noBranches: '无',
+          nodeLine:
+            'IR 节点 {{nodeId}} [{{nodeType}}] stage={{stageId}} route={{routeKey}} role={{roleProfileId}}',
+          loopLimits:
+            '{{nodeId}} 的 loop guardrail：maxCycles={{maxCycles}} maxWallTimeSeconds={{maxWallTimeSeconds}}',
+          edgeLine: '连线 {{fromNodeId}} -> {{toNodeId}} condition={{conditionKey}}',
+          defaultRoute: '默认',
+          compileIssue: '{{severity}} {{errorCode}} @ {{location}}：{{message}}',
+          errorSeverity: '错误',
+          warningSeverity: '警告',
         },
       },
     },
@@ -255,6 +421,9 @@ export const ZH_CN_TRANSLATIONS = {
           workspaceAction: '工作区动作',
           workspaceTarget: '工作区目标',
           workspaceScratchCleanup: '工作区暂存清理',
+          workflowTemplate: '流程模板',
+          workflowPreviewMode: '流程预览模式',
+          workflowCompileStatus: '流程编译状态',
         },
         checkDetails: {
           upgradeSchemaDiff: '差异 {{diffs}} 项，{{source}} -> {{target}}',
@@ -263,6 +432,9 @@ export const ZH_CN_TRANSLATIONS = {
           workspaceTarget: '模式 {{mode}}，根路径 {{root}}',
           workspaceScratchCleanupRemoved: 'scratch 根目录已移除：{{root}}',
           workspaceScratchCleanupRetained: 'scratch 根目录保留：{{root}}',
+          workflowTemplate: '模板 {{template}}',
+          workflowPreviewMode: '模式 {{mode}}',
+          workflowCompileStatus: '状态 {{status}}，{{warnings}} 条 warning，{{errors}} 条 error',
         },
       },
     },

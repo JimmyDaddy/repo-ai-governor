@@ -13,6 +13,9 @@ export enum CliCommandResultCheckId {
   WORKSPACE_ACTION = 'workspace_action',
   WORKSPACE_TARGET = 'workspace_target',
   WORKSPACE_SCRATCH_CLEANUP = 'workspace_scratch_cleanup',
+  WORKFLOW_TEMPLATE = 'workflow_template',
+  WORKFLOW_PREVIEW_MODE = 'workflow_preview_mode',
+  WORKFLOW_COMPILE_STATUS = 'workflow_compile_status',
 }
 
 /**
@@ -27,6 +30,9 @@ export const CLI_PRETTY_KEY_CHECK_IDS = new Set<string>([
   CliCommandResultCheckId.WORKSPACE_ACTION,
   CliCommandResultCheckId.WORKSPACE_TARGET,
   CliCommandResultCheckId.ROLLBACK_REFERENCE,
+  CliCommandResultCheckId.WORKFLOW_TEMPLATE,
+  CliCommandResultCheckId.WORKFLOW_PREVIEW_MODE,
+  CliCommandResultCheckId.WORKFLOW_COMPILE_STATUS,
 ]);
 
 /**
@@ -83,4 +89,27 @@ export enum CliWorkspaceScratchCleanupStatus {
 export enum CliWorkspaceScratchCleanupDetailField {
   ROOT_REMOVED = 'scratch_root_removed',
   ROOT_RETAINED = 'scratch_root_retained',
+}
+
+/**
+ * Defines workflow-template detail fields used by machine/human-readable rendering.
+ */
+export enum CliWorkflowTemplateDetailField {
+  TEMPLATE = 'template',
+}
+
+/**
+ * Defines workflow preview-mode detail fields used by machine/human-readable rendering.
+ */
+export enum CliWorkflowPreviewModeDetailField {
+  MODE = 'mode',
+}
+
+/**
+ * Defines workflow compile-status detail fields used by machine/human-readable rendering.
+ */
+export enum CliWorkflowCompileStatusDetailField {
+  STATUS = 'status',
+  WARNINGS = 'warnings',
+  ERRORS = 'errors',
 }

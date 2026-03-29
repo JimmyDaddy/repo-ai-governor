@@ -1,7 +1,7 @@
 # TK-311 `workflow preview` 只读摘要与 M2 回归 gate
 
-- Status: planned
-- Date: 2026-03-28
+- Status: completed
+- Date: 2026-03-29
 - Owner: AI-Agent
 - Priority: P0
 - Project: `project-027-cli-interactive-shell-implementation`
@@ -57,9 +57,16 @@
 
 1. 2026-03-28：任务创建，状态初始化为 `planned`。
 2. 2026-03-28：依据技术方案 draft 的 M2 清单，改为收口 `workflow preview` 与 M2 regression gate。
+3. 2026-03-29：任务切换为 `in_progress`，按 contract 要求补齐显式 `workflow preview` 子命令树、只读模板预览与 M2 回归门禁。
+4. 2026-03-29：实现完成，已落地显式 `workflow preview` Commander 子命令、只读模板/compiled IR 预览、React shell 摘要与 stdout/stderr contract 回归覆盖。
+5. 2026-03-29：验证通过 `pnpm -s tsc -p tsconfig.json --noEmit`、定向 vitest 与 `pnpm run check`，任务状态切换为 `completed`。
 
 ## 10. 产出
 
-1. 待执行：`workflow preview` 只读摘要与 compiled IR 预览。
-2. 待执行：M2 regression suite / gate 与 fallback checklist。
-3. 待执行：定向验证结果与交付证据。
+1. 已完成：显式 `workflow preview` Commander 子命令、模板选择、流程摘要与 compiled IR 只读预览。
+2. 已完成：M2 regression suite / gate，覆盖 `stderr-only`、`pretty/plain/json`、`--no-interactive` 与“不写 workflow/compiled-ir 文件”约束。
+3. 已完成：验证证据
+   - `pnpm -s tsc -p tsconfig.json --noEmit`
+   - `pnpm -s vitest run --config vitest.packages.config.ts apps/cli/test/commands/cli-command-registry.test.ts apps/cli/test/commands/workflow-command.test.ts apps/cli/test/cli-skeleton.integration.test.ts apps/cli/test/cli-output-contract.integration.test.ts`
+   - `pnpm -s vitest run --config vitest.packages.config.ts apps/cli/test/commands/connect-command.test.ts apps/cli/test/commands/workspace-command.test.ts apps/cli/test/commands/init-command.test.ts apps/cli/test/runtime/react-cli-runner.test.ts apps/cli/test/runtime/init-react-shell-runner.test.ts apps/cli/test/runtime/interactive-shell-ui-mode-resolver.test.ts`
+   - `pnpm run check`

@@ -35,8 +35,8 @@ export function ReactCliLayoutShell({ viewModel }: ReactCliLayoutShellProps): Re
           ))}
         </Box>
       ) : null}
-      {viewModel.sections.map((section) => (
-        <Box key={section.title} flexDirection='column' marginTop={1}>
+      {viewModel.sections.map((section, index) => (
+        <Box key={`${section.title}:${index}`} flexDirection='column' marginTop={1}>
           <Text bold>{section.title}</Text>
           {section.lines.map((line, index) => (
             <Text key={`${section.title}:${index}`}>{line}</Text>

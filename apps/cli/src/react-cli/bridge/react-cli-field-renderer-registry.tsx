@@ -29,6 +29,10 @@ const renderComponent = (
 
 /**
  * Owns shared `@inkjs/ui` field renderers used by the React CLI shell.
+ *
+ * Current project-027 consumers only render static summaries through `renderToString()`.
+ * These adapters therefore remain read-only previews until a future interactive session
+ * controller wires value callbacks into the mounted Ink lifecycle.
  */
 export class ReactCliFieldRendererRegistry {
   private readonly renderers = new Map<ReactCliFieldKind, ReactCliFieldRenderer>([

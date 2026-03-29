@@ -27,6 +27,7 @@ import type {
   CliCommandResultCheck,
 } from './cli-output.interface.js';
 import type { CliRuntimeDebugOptions } from './cli-runtime-debug.interface.js';
+import type { CliWorkflowCommandOptions } from './cli-workflow-command.interface.js';
 import type { CliWorkspaceCommandOptions } from './cli-workspace-command.interface.js';
 
 /**
@@ -47,6 +48,7 @@ export interface CliGovernanceRuntimeOptions {
   memoryStoreProvider: MemoryStoreProvider;
   adaptersConfig: AdaptersConfig;
   workspaceCommandOptions?: CliWorkspaceCommandOptions;
+  workflowCommandOptions?: CliWorkflowCommandOptions;
   runtimeDebugOptions?: CliRuntimeDebugOptions;
   adapterLocalProbeOverrides?: Partial<Record<AdapterSurface, CliLocalAdapterProbeOverride>>;
   commandProbeExecutor?: (command: string, args: readonly string[]) => Promise<void>;

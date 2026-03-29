@@ -95,7 +95,7 @@ pnpm exec repo-ai-governor init --output pretty
 ```
 
 在本地 TTY + `pretty` 输出下，交互问答默认开启；CI/脚本场景可加 `--no-interactive` 关闭交互。
-对于 `project-027 / sprint-001` 新增的实验性 shell foundation，也可以尝试 `pnpm exec repo-ai-governor init --output pretty --ui react`；它会以仅写入 `stderr` 的最小向导运行，并在 `--no-interactive`、非 TTY 或 `plain/json` 下自动回退到 `none`。
+在本地 TTY + `pretty` 输出下，支持的交互式 surface 现在默认进入 React shell；在 `--no-interactive`、非 TTY 或 `plain/json` 场景下仍会自动回退到 `none`，因此 CI 与 agent 风格的机器消费路径继续保持原有非交互契约。
 
 如果你使用 `dist` 二进制演练，请将 `pnpm exec repo-ai-governor` 替换为：
 
@@ -146,6 +146,22 @@ pnpm exec repo-ai-governor workspace --workspace-action rollback --workspace-pla
 1. 单独执行 `init` 仍会停留在 `tool_managed`；只有 `workspace execute` 后才会真正落 repo-local 工作区面。
 2. `workspace dry-run` 会把计划产物写到当前活动 workspace 根；成功执行 `workspace execute` 后，plan/execution 产物会重写到目标 workspace 根。
 3. `workspace rollback` 会把 rollback 产物写到恢复后的 source workspace 根，并在 cleanup 成功后移除空的 `.repo-ai-governor-migration/<migration-id>` scratch 目录。
+
+### Workflow 定义预览、保存与显式 Upgrade Shell
+
+```bash
+pnpm exec repo-ai-governor workflow preview --workflow-template loop-guarded --output json
+pnpm exec repo-ai-governor workflow create --workflow-template condition-route --output json
+pnpm exec repo-ai-governor workflow edit --output pretty
+pnpm exec repo-ai-governor upgrade --output pretty
+```
+
+说明：
+
+1. `workflow preview` 始终保持只读，不会写入 workflow 相关产物。
+2. `workflow create` 与 `workflow edit` 会把当前活动 workflow definition 保存到 `<workspace_root>/context/workflow/active-workflow.definition.json`，并在 `<workspace_root>/context/compiled-ir/<execution_id>.json` 下持久化一份 compiled IR snapshot。
+3. Loop 节点在保存前必须同时带有 `maxCycles` 与 `maxWallTimeSeconds`；Condition 节点的分支必须使用非空且唯一的 `conditionKey`。
+4. 在本地 TTY + `pretty` 模式下，`workflow` 与 `upgrade` 会默认进入 React shell，并只占用 `stderr`；如果需要压制该壳层，可显式添加 `--ui none` 或 `--ui classic`，同时保持现有 stdout 输出契约不变。
 
 ## 4. HITL 通知 Provider
 

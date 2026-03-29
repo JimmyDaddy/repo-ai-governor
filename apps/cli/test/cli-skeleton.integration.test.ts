@@ -57,5 +57,18 @@ describe('CLI command integration', () => {
     expect(stdoutBuffer.join('')).toContain('verify');
     expect(stdoutBuffer.join('')).toContain('upgrade');
     expect(stdoutBuffer.join('')).toContain('workspace');
+    expect(stdoutBuffer.join('')).toContain('workflow');
+  });
+
+  it('shows explicit workflow create/edit/preview subcommands in workflow help', async () => {
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo();
+
+    const exitCode = await runCli(['node', 'repo-ai-governor', 'workflow', '--help'], io);
+
+    expect(exitCode).toBe(0);
+    expect(stderrBuffer.join('')).toBe('');
+    expect(stdoutBuffer.join('')).toContain('create');
+    expect(stdoutBuffer.join('')).toContain('edit');
+    expect(stdoutBuffer.join('')).toContain('preview');
   });
 });

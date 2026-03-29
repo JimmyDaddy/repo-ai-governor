@@ -47,6 +47,7 @@ import type {
   CliCommandExperiencePayload,
   CliCommandResultArtifact,
   CliCommandResultCheck,
+  CliGovernanceCommandResult,
 } from '../types/index.js';
 import type { CliCommandExecutor } from './cli-command-executor.interface.js';
 
@@ -85,11 +86,15 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
     this.viewModelBuilder = dependencies.viewModelBuilder ?? new ReactCliCommandViewModelBuilder();
   }
 
-  public async execute(context: CliCommandExecutorContext) {
+  public async execute(context: CliCommandExecutorContext): Promise<CliGovernanceCommandResult> {
     const action = this.resolveAction(context);
 
     if (action === CliWorkspaceAction.ROLLBACK) {
       return this.executeRollback(context);
+    }
+
+    if (action === CliWorkspaceAction.CLEAR_CONFIG) {
+      return this.executeClearConfig(context);
     }
 
     if (!existsSync(context.options.workspace.configPath)) {
@@ -150,19 +155,163 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
     if (
       rawAction === CliWorkspaceAction.DRY_RUN ||
       rawAction === CliWorkspaceAction.EXECUTE ||
-      rawAction === CliWorkspaceAction.ROLLBACK
+      rawAction === CliWorkspaceAction.ROLLBACK ||
+      rawAction === CliWorkspaceAction.CLEAR_CONFIG
     ) {
       return rawAction;
     }
 
     throw new RuntimeError(
       GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
-      'workspace requires --workspace-action dry-run|execute|rollback.',
+      'workspace requires --workspace-action dry-run|execute|rollback|clear-config.',
       {
         command: CliCommandName.WORKSPACE,
         action: rawAction,
       },
     );
+  }
+
+  private async executeClearConfig(context: CliCommandExecutorContext) {
+    const inspectedConfigPaths = this.resolveWorkspaceConfigClearPaths(context);
+    const clearedConfigPaths: string[] = [];
+
+    for (const configPath of inspectedConfigPaths) {
+      if (!existsSync(configPath)) {
+        continue;
+      }
+
+      try {
+        await rm(configPath, { force: true });
+        clearedConfigPaths.push(configPath);
+      } catch (error) {
+        throw new RuntimeError(
+          GovernorErrorCode.UNKNOWN,
+          `Failed to clear workspace config file at ${configPath}.`,
+          {
+            command: CliCommandName.WORKSPACE,
+            action: CliWorkspaceAction.CLEAR_CONFIG,
+            configPath,
+          },
+          error,
+        );
+      }
+    }
+
+    const clearedPathCount = clearedConfigPaths.length;
+    const clearedAnyConfig = clearedPathCount > 0;
+    const message = this.translate(
+      context,
+      clearedAnyConfig
+        ? 'cli.reactShell.workspace.message.clearConfigCompleted'
+        : 'cli.reactShell.workspace.message.clearConfigNoop',
+      {
+        count: String(clearedPathCount),
+        paths: (clearedAnyConfig ? clearedConfigPaths : inspectedConfigPaths).join(', '),
+      },
+    );
+    const statusMessage = this.translate(
+      context,
+      clearedAnyConfig
+        ? 'cli.reactShell.workspace.status.clearConfigCompleted'
+        : 'cli.reactShell.workspace.status.clearConfigNoop',
+    );
+    const checks: CliCommandResultCheck[] = [
+      {
+        id: CliCommandResultCheckId.WORKSPACE_ACTION,
+        status: clearedAnyConfig ? CliGovernanceCheckStatus.PASS : CliGovernanceCheckStatus.WARN,
+        detail: 'action=clear_config',
+      },
+      {
+        id: CliCommandResultCheckId.WORKSPACE_TARGET,
+        status: CliGovernanceCheckStatus.PASS,
+        detail: this.createWorkspaceTargetDetail(
+          context.options.workspace.mode,
+          context.options.workspace.workspaceRoot,
+        ),
+      },
+    ];
+    const nextActions = clearedAnyConfig
+      ? [
+          this.translate(context, 'cli.reactShell.workspace.nextActions.reRunInitAfterClear'),
+          this.translate(context, 'cli.reactShell.workspace.nextActions.rerunWorkspaceAfterClear'),
+        ]
+      : [
+          this.translate(
+            context,
+            'cli.reactShell.workspace.nextActions.inspectExpectedConfigPaths',
+            {
+              paths: inspectedConfigPaths.join(', '),
+            },
+          ),
+        ];
+    const experience = context.commandExperienceBuilder.buildExperiencePayload({
+      roleProgress: [
+        {
+          roleId: 'workspace-config-clear',
+          stage: ExecutionProgressStage.REPORT,
+          status: clearedAnyConfig
+            ? ExecutionProgressStatus.COMPLETED
+            : ExecutionProgressStatus.WARNING,
+          category: ExecutionInteractionCategory.NONE,
+          summary: statusMessage,
+          detail: [
+            `cleared_path_count=${clearedPathCount}`,
+            `inspected_path_count=${inspectedConfigPaths.length}`,
+          ].join(' '),
+        },
+      ],
+      interactionPrompts: nextActions.map((action) => ({
+        category: ExecutionInteractionCategory.NONE,
+        stage: ExecutionProgressStage.REPORT,
+        title: this.translate(context, 'cli.reactShell.workspace.nextStepTitle'),
+        action,
+        blocking: false,
+      })),
+      layeredLogs: {
+        summary: [statusMessage],
+        detailed: [
+          `cleared_path_count=${clearedPathCount}`,
+          `inspected_path_count=${inspectedConfigPaths.length}`,
+          ...inspectedConfigPaths.map(
+            (configPath, index) => `inspected_config_path_${index}=${configPath}`,
+          ),
+          ...clearedConfigPaths.map(
+            (configPath, index) => `cleared_config_path_${index}=${configPath}`,
+          ),
+        ],
+      },
+    });
+
+    return {
+      message,
+      reactCliViewModel: this.buildWorkspaceClearConfigViewModel(context, {
+        message,
+        statusMessage,
+        checks,
+        experience,
+        inspectedConfigPaths,
+        clearedConfigPaths,
+      }),
+      commandResult: {
+        operation: CLI_RUNTIME_OPERATION.WORKSPACE_CONFIG_CLEAR,
+        summary: message,
+        check_totals: context.calculateCheckTotals(checks),
+        checks,
+        experience,
+        details: {
+          action: 'clear_config',
+          config_source: context.options.configSource,
+          current_workspace_mode: context.options.workspace.mode,
+          current_workspace_root: context.options.workspace.workspaceRoot,
+          current_config_path: context.options.workspace.configPath,
+          repository_root: context.options.workspace.repositoryRoot,
+          inspected_config_paths: inspectedConfigPaths.join(' | '),
+          cleared_config_paths: clearedConfigPaths.join(' | '),
+          cleared_path_count: clearedPathCount,
+          inspected_path_count: inspectedConfigPaths.length,
+        },
+      },
+    };
   }
 
   private resolveTargetWorkspace(
@@ -833,6 +982,99 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
     });
   }
 
+  private buildWorkspaceClearConfigViewModel(
+    context: CliCommandExecutorContext,
+    options: {
+      message: string;
+      statusMessage: string;
+      checks: CliCommandResultCheck[];
+      experience: CliCommandExperiencePayload;
+      inspectedConfigPaths: string[];
+      clearedConfigPaths: string[];
+    },
+  ): ReactCliViewModel | undefined {
+    const runtimeDebugOptions = context.resolveRuntimeDebugOptions();
+    if (runtimeDebugOptions.uiMode !== CliInteractiveUiMode.REACT) {
+      return undefined;
+    }
+
+    const baseDescriptor = this.descriptorCatalog
+      .createRegistry({
+        translate: context.translate,
+      })
+      .resolve(CliCommandName.WORKSPACE);
+
+    if (!baseDescriptor) {
+      return undefined;
+    }
+
+    const descriptor = {
+      ...baseDescriptor,
+      title: this.translate(context, 'cli.reactShell.workspace.clearConfigTitle'),
+      fields: baseDescriptor.fields.map((field) => {
+        if (field.fieldId === 'targetMode') {
+          return {
+            ...field,
+            label: this.translate(context, 'cli.reactShell.workspace.fields.currentMode'),
+          };
+        }
+
+        if (field.fieldId === 'targetRoot') {
+          return {
+            ...field,
+            label: this.translate(context, 'cli.reactShell.workspace.fields.currentRoot'),
+          };
+        }
+
+        if (field.fieldId === 'planPath') {
+          return {
+            ...field,
+            label: this.translate(context, 'cli.reactShell.workspace.fields.activeConfigPaths'),
+          };
+        }
+
+        return field;
+      }),
+      helpLines: [
+        this.translate(context, 'cli.reactShell.workspace.help.clearConfigRemovesSelectorState'),
+        this.translate(context, 'cli.reactShell.workspace.help.clearConfigKeepsArtifacts'),
+      ],
+    };
+
+    return this.viewModelBuilder.build({
+      commandName: CliCommandName.WORKSPACE,
+      descriptor,
+      subtitle: `ui=${runtimeDebugOptions.uiMode} stdout=${context.options.outputMode} workspace=${context.options.workspace.mode}`,
+      inputTitle: this.translate(context, 'cli.reactShell.shared.inputs'),
+      summaryTitle: this.translate(context, 'cli.reactShell.shared.summary'),
+      attentionTitle: this.translate(context, 'cli.reactShell.shared.attention'),
+      statusMessage: options.statusMessage,
+      statusVariant: this.viewModelBuilder.resolveStatusVariantFromChecks(options.checks),
+      fieldValues: {
+        action: CliWorkspaceAction.CLEAR_CONFIG,
+        targetMode: context.options.workspace.mode,
+        targetRoot: context.options.workspace.workspaceRoot,
+        planPath: options.inspectedConfigPaths.join(' | '),
+      },
+      summaryLines: [
+        options.message,
+        this.translate(context, 'cli.reactShell.workspace.summary.inspectedConfigPaths', {
+          paths: options.inspectedConfigPaths.join(', '),
+        }),
+        ...(options.clearedConfigPaths.length > 0
+          ? options.clearedConfigPaths.map((configPath) =>
+              this.translate(context, 'cli.reactShell.workspace.summary.clearedConfigPath', {
+                path: configPath,
+              }),
+            )
+          : [this.translate(context, 'cli.reactShell.workspace.summary.noConfigRemoved')]),
+      ],
+      footerShortcutsTitle: this.translate(context, 'cli.reactShell.shared.shortcuts'),
+      checks: options.checks,
+      interactionPrompts: options.experience.interactionPrompts,
+    });
+  }
+
   /**
    * Resolves one localized React-shell string through i18n runtime.
    * @param context Command execution context.
@@ -1062,13 +1304,22 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
     return resolve(plan.stagingWorkspaceRoot, '..');
   }
 
+  private resolveWorkspaceConfigClearPaths(context: CliCommandExecutorContext): string[] {
+    const repoLocalConfigPath = this.resolveRepositoryLocalConfigPath(
+      context.options.workspace.repositoryRoot,
+    );
+    return [...new Set([repoLocalConfigPath, context.options.workspace.configPath])];
+  }
+
+  private resolveRepositoryLocalConfigPath(repositoryRoot: string): string {
+    return resolve(repositoryRoot, '.repo-ai-governor', 'governor.yaml');
+  }
+
   private async captureCutoverPersistence(
     plan: WorkspaceMigrationPlan,
   ): Promise<WorkspaceCutoverPersistence> {
-    const repoLocalConfigPath = resolve(
+    const repoLocalConfigPath = this.resolveRepositoryLocalConfigPath(
       plan.sourceWorkspace.repositoryRoot,
-      '.repo-ai-governor',
-      'governor.yaml',
     );
     return {
       repoLocalConfigPath,
@@ -1089,10 +1340,8 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
       targetWorkspace,
       context.options.profileId,
     );
-    const repoLocalConfigPath = resolve(
+    const repoLocalConfigPath = this.resolveRepositoryLocalConfigPath(
       plan.sourceWorkspace.repositoryRoot,
-      '.repo-ai-governor',
-      'governor.yaml',
     );
 
     await context.artifactWriter.writeTextArtifact(

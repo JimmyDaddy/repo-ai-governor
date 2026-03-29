@@ -1,7 +1,7 @@
 # TK-314 workflow 保存、compiled IR 验收与 `upgrade` 显式 React PoC
 
-- Status: planned
-- Date: 2026-03-28
+- Status: completed
+- Date: 2026-03-29
 - Owner: AI-Agent
 - Priority: P0
 - Project: `project-027-cli-interactive-shell-implementation`
@@ -55,9 +55,10 @@
 
 1. 2026-03-28：任务创建，状态初始化为 `planned`。
 2. 2026-03-28：依据技术方案 draft 的 M3 清单，改为收口 workflow 保存/compiled IR 验收与 `upgrade` 显式 React PoC。
+3. 2026-03-29：实现完成，`workflow create/edit` 已把活动 workflow definition 保存到 workspace，并同步写入 compiled IR snapshot；`upgrade --ui react` 已接入共享 React shell PoC。
 
 ## 10. 产出
 
-1. 待执行：workflow 保存路径与 workspace 持久化配置。
-2. 待执行：compiled IR 接受性测试与预览证据。
-3. 待执行：`upgrade` 显式 React shell PoC 与对应验证结果。
+1. 已完成：workflow 保存路径与 workspace 持久化配置，落在 `context/workflow/active-workflow.definition.json`。
+2. 已完成：compiled IR 接受性测试与预览证据，successful create/edit 会写入 `context/compiled-ir/<execution_id>.json`。
+3. 已完成：`upgrade` 显式 React shell PoC 与 stdout/stderr contract 验证。

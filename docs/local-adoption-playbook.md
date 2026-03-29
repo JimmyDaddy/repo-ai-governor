@@ -125,6 +125,25 @@ Interpret the output as follows:
 3. `upgrade_rollback_snapshot` is the canonical rollback source; keep it together with the config change you are reviewing.
 4. If output shows `confirmation_items` warnings or a non-zero blocking count, stop and manually confirm those items before writing any migrated config back.
 5. Keep the printed rollback reference until the upgraded config survives one `doctor` + `check` round in the target repository.
+6. In local TTY + `pretty` mode, `upgrade` defaults to the React shell on `stderr`; use `--ui none` or `--ui classic` when you need a quieter human-facing run while keeping stdout machine-readable.
+
+## 3.3 Workflow Definition Preview And Save
+
+Use the workflow surface to preview built-in topologies, then persist one validated active definition:
+
+```bash
+pnpm exec repo-ai-governor workflow preview --workflow-template loop-guarded --output json
+pnpm exec repo-ai-governor workflow create --workflow-template condition-route --output json
+pnpm exec repo-ai-governor workflow edit --output pretty
+```
+
+Interpret the output as follows:
+
+1. `workflow preview` is read-only and does not write workflow artifacts.
+2. `workflow create` and `workflow edit` persist the active workflow definition to `<workspace_root>/context/workflow/active-workflow.definition.json`.
+3. Successful create/edit runs also persist one compiler-accepted snapshot to `<workspace_root>/context/compiled-ir/<execution_id>.json`.
+4. Loop nodes must declare both `maxCycles` and `maxWallTimeSeconds`; condition-node branches must use non-empty unique `conditionKey` values or persistence is blocked.
+5. `workflow edit` loads the saved workspace definition when present; pass `--workflow-template` if you intentionally want to reseed the active definition from a built-in starter topology.
 
 ## 4. Workspace Mode Switch And Rollback
 
@@ -151,6 +170,103 @@ Artifact locality contract:
 3. `workspace rollback` writes the rollback artifact under the restored source workspace root and removes empty `.repo-ai-governor-migration/<migration-id>` scratch directories after cleanup.
 4. If `workspace execute` fails, inspect the failure-summary artifact path returned in stderr or JSON `error_details.report_path` before retrying.
 5. If rollback completes with `workspace_scratch_cleanup` warning, inspect the retained scratch root and clean it up manually only after confirming rollback state is stable.
+
+## 4.1 Real-project Validation Runbook
+
+Use this sequence when you want to validate the `project-027` interactive-shell delivery in one real target repository before adopting it more broadly.
+
+Automation wrapper:
+
+```bash
+TARGET_REPO=/absolute/path/to/real-target-repo \
+bash "$GOVERNOR_REPO/scripts/acceptance/run-project-027-real-project-validation.sh"
+```
+
+Recommended approach:
+
+1. Build the governor repository first, then rehearse with the `dist` binary before changing package dependencies in the target repository.
+2. Start with a low-impact bootstrap pass under an isolated `tool_managed` sandbox by overriding `HOME` inside the validation wrapper.
+3. Switch to `repo_local` only when you are ready to inspect persisted artifacts and explicit rollback references.
+4. Validate React-shell behavior in a real TTY, but re-check the same surfaces in `json` or `--no-interactive` mode to confirm the stdout contract stays stable.
+
+Suggested environment:
+
+```bash
+export GOVERNOR_REPO=/absolute/path/to/repo-ai-governor
+export TARGET_REPO=/absolute/path/to/real-target-repo
+export CLI_BIN="$GOVERNOR_REPO/dist/bin/repo-ai-governor.js"
+export ACCEPTANCE_HOME="$TARGET_REPO/.project-027-acceptance/home"
+export REPO_LOCAL_ROOT="$TARGET_REPO/.repo-ai-governor"
+
+cd "$GOVERNOR_REPO"
+pnpm run build
+
+cd "$TARGET_REPO"
+```
+
+Low-impact bootstrap rehearsal:
+
+```bash
+HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output json init
+HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output json doctor
+HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output json check
+```
+
+Notes:
+
+1. Fresh external repositories may report `baseline_docs missing=5/5` or `script_not_found` warnings; treat those as external-adopter baseline signals unless the target repository is expected to vendor self-host governance scripts.
+2. This first pass is meant to confirm command stability and machine-readable output, not to prove that the target repository already satisfies every self-host governance gate.
+
+Workspace cutover and rollback rehearsal:
+
+```bash
+HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output json --workspace-action dry-run --workspace-mode repo_local --workspace-root "$REPO_LOCAL_ROOT" workspace
+HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output json --workspace-action execute --workspace-mode repo_local --workspace-root "$REPO_LOCAL_ROOT" workspace
+HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output json --workspace-action rollback --workspace-plan <plan-path> workspace
+```
+
+Workflow and upgrade validation:
+
+```bash
+HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output json workflow preview --workflow-template loop-guarded
+HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output json workflow create --workflow-template condition-route
+HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output json workflow edit
+HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output json upgrade
+HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output json connect
+```
+
+React-shell manual checks in a real TTY:
+
+```bash
+HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output pretty --ui react workflow preview --workflow-template condition-route > workflow-preview.stdout.txt
+HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output pretty --ui react workflow create --workflow-template condition-route > workflow-create.stdout.txt
+HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output pretty --ui react upgrade > upgrade.stdout.txt
+HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output pretty --ui react connect > connect.stdout.txt
+HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output pretty --ui react --no-interactive workflow preview --workflow-template parallel-review > workflow-preview.no-interactive.stdout.txt
+```
+
+Expected observations:
+
+1. React shell text appears in the terminal on `stderr`, not in the redirected stdout files.
+2. `workflow preview` stays read-only and does not create workflow definition or compiled IR artifacts.
+3. `workflow create` and `workflow edit` persist:
+   - `<workspace_root>/context/workflow/active-workflow.definition.json`
+   - `<workspace_root>/context/compiled-ir/<execution_id>.json`
+4. `upgrade` persists:
+   - `context/upgrade/<upgrade_id>.report.json`
+   - `context/upgrade/<upgrade_id>.auto-migrated-config.json`
+   - `context/upgrade/<upgrade_id>.rollback-snapshot.yaml`
+5. In local TTY + `pretty` mode, `upgrade` defaults to the React shell; `--ui none` and `--ui classic` remain the suppression path.
+6. The `--no-interactive` command falls back without rendering React shell.
+
+Treat the run as passed when all of the following are true:
+
+1. The `dist` binary runs successfully in the real target repository.
+2. React shell rendering is visible only on `stderr`.
+3. `json` and `--no-interactive` flows preserve the existing stdout contract.
+4. `workspace` plan / execution / rollback artifacts are all traceable.
+5. `workflow create/edit` persist definition and compiled IR, while `workflow preview` remains read-only.
+6. `upgrade` emits all three upgrade artifacts whether the React shell is reached by default or explicitly requested.
 
 ## 5. Local Debug Path
 

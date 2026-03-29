@@ -20,14 +20,34 @@ import {
   CLI_RUNTIME_OPERATION,
   CliGovernanceCheckStatus,
 } from '../constants/cli-governance-runtime.constant.js';
-import type { CliCommandExecutorContext } from '../types/index.js';
+import { CliInteractiveUiMode } from '../constants/cli-interactive-shell.constant.js';
+import {
+  ReactCliCommandDescriptorCatalog,
+  ReactCliCommandViewModelBuilder,
+  type ReactCliViewModel,
+} from '../react-cli/index.js';
+import type { CliCommandExecutorContext, CliCommandResultCheck } from '../types/index.js';
 import type { CliCommandExecutor } from './cli-command-executor.interface.js';
+
+interface CliUpgradeCommandDependencies {
+  descriptorCatalog?: ReactCliCommandDescriptorCatalog;
+  viewModelBuilder?: ReactCliCommandViewModelBuilder;
+}
 
 /**
  * Owns `upgrade` command execution outside the runtime facade.
  */
 export class CliUpgradeCommand implements CliCommandExecutor {
   public readonly commandName = CliCommandName.UPGRADE;
+
+  private readonly descriptorCatalog: ReactCliCommandDescriptorCatalog;
+  private readonly viewModelBuilder: ReactCliCommandViewModelBuilder;
+
+  public constructor(dependencies: CliUpgradeCommandDependencies = {}) {
+    this.descriptorCatalog =
+      dependencies.descriptorCatalog ?? new ReactCliCommandDescriptorCatalog();
+    this.viewModelBuilder = dependencies.viewModelBuilder ?? new ReactCliCommandViewModelBuilder();
+  }
 
   public async execute(context: CliCommandExecutorContext) {
     if (!existsSync(context.options.workspace.configPath)) {
@@ -201,6 +221,20 @@ export class CliUpgradeCommand implements CliCommandExecutor {
     });
     return {
       message,
+      reactCliViewModel: this.buildReactCliViewModel(context, {
+        checks,
+        message,
+        nextActions,
+        reportPath,
+        autoMigratedConfigPath,
+        rollbackSnapshotPath,
+        suggestionCount,
+        confirmationCount,
+        blockingConfirmationCount,
+        sourceVersion: upgradeDiffResult.sourceVersion,
+        targetVersion: upgradeDiffResult.targetVersion,
+        confirmationDecision: upgradeDiffResult.confirmationDecision,
+      }),
       commandResult: {
         operation: CLI_RUNTIME_OPERATION.SCHEMA_UPGRADE_ANALYZE,
         summary: message,
@@ -235,6 +269,120 @@ export class CliUpgradeCommand implements CliCommandExecutor {
         },
       },
     };
+  }
+
+  /**
+   * Builds the shared React CLI summary view for `upgrade` when React mode is active.
+   * @param context Command execution context.
+   * @param options Local upgrade facts used to populate the shared shell.
+   * @returns Shared shell view model or `undefined`.
+   */
+  private buildReactCliViewModel(
+    context: CliCommandExecutorContext,
+    options: {
+      checks: CliCommandResultCheck[];
+      message: string;
+      nextActions: string[];
+      reportPath: string;
+      autoMigratedConfigPath: string;
+      rollbackSnapshotPath: string;
+      suggestionCount: number;
+      confirmationCount: number;
+      blockingConfirmationCount: number;
+      sourceVersion: string;
+      targetVersion: string;
+      confirmationDecision: string;
+    },
+  ): ReactCliViewModel | undefined {
+    const runtimeDebugOptions = context.resolveRuntimeDebugOptions();
+    if (runtimeDebugOptions.uiMode !== CliInteractiveUiMode.REACT) {
+      return undefined;
+    }
+
+    const descriptor = this.descriptorCatalog
+      .createRegistry({
+        translate: context.translate,
+      })
+      .resolve(CliCommandName.UPGRADE);
+    if (!descriptor) {
+      return undefined;
+    }
+
+    return this.viewModelBuilder.build({
+      commandName: CliCommandName.UPGRADE,
+      descriptor,
+      subtitle: `ui=${runtimeDebugOptions.uiMode} stdout=${context.options.outputMode} workspace=${context.options.workspace.mode}`,
+      inputTitle: this.translateKey(context, 'cli.reactShell.shared.inputs'),
+      summaryTitle: this.translateKey(context, 'cli.reactShell.shared.summary'),
+      attentionTitle: this.translateKey(context, 'cli.reactShell.shared.attention'),
+      footerShortcutsTitle: this.translateKey(context, 'cli.reactShell.shared.shortcuts'),
+      statusMessage:
+        options.blockingConfirmationCount > 0
+          ? this.translateKey(context, 'cli.reactShell.upgrade.status.manualConfirmation', {
+              count: String(options.blockingConfirmationCount),
+            })
+          : this.translateKey(context, 'cli.reactShell.upgrade.status.analysisReady', {
+              targetVersion: options.targetVersion,
+            }),
+      statusVariant: this.viewModelBuilder.resolveStatusVariantFromChecks(options.checks),
+      fieldValues: {
+        workspaceRoot: context.options.workspace.workspaceRoot,
+        sourceVersion: options.sourceVersion,
+        targetVersion: options.targetVersion,
+        confirmationDecision: options.confirmationDecision,
+      },
+      summaryLines: [
+        options.message,
+        this.translateKey(context, 'cli.reactShell.upgrade.summary.reportPath', {
+          path: options.reportPath,
+        }),
+        this.translateKey(context, 'cli.reactShell.upgrade.summary.autoMigratedConfigPath', {
+          path: options.autoMigratedConfigPath,
+        }),
+        this.translateKey(context, 'cli.reactShell.upgrade.summary.rollbackSnapshotPath', {
+          path: options.rollbackSnapshotPath,
+        }),
+        this.translateKey(context, 'cli.reactShell.upgrade.summary.counts', {
+          suggestions: String(options.suggestionCount),
+          confirmations: String(options.confirmationCount),
+          blocking: String(options.blockingConfirmationCount),
+        }),
+      ],
+      checks: options.checks,
+      interactionPrompts: [
+        {
+          category: ExecutionInteractionCategory.NONE,
+          stage: ExecutionProgressStage.REPORT,
+          title: this.translateKey(context, 'cli.commandMessages.upgrade.reviewUpgradeArtifacts'),
+          action: options.nextActions[0] ?? options.reportPath,
+          blocking: false,
+        },
+        ...(options.confirmationCount > 0
+          ? [
+              {
+                category: ExecutionInteractionCategory.HUMAN_CONFIRMATION,
+                stage: ExecutionProgressStage.HUMAN_CONFIRMATION,
+                title: this.translateKey(
+                  context,
+                  'cli.commandMessages.upgrade.confirmUpgradeChanges',
+                ),
+                action:
+                  options.nextActions[1] ??
+                  this.translateKey(context, 'cli.commandMessages.upgrade.confirmItems'),
+                blocking: true,
+              },
+            ]
+          : []),
+        {
+          category: ExecutionInteractionCategory.NONE,
+          stage: ExecutionProgressStage.REPORT,
+          title: this.translateKey(context, 'cli.commandMessages.upgrade.retainRollbackSnapshot'),
+          action:
+            options.nextActions[options.nextActions.length - 1] ?? options.rollbackSnapshotPath,
+          blocking: false,
+        },
+      ],
+    });
   }
 
   /**

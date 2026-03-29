@@ -7,7 +7,7 @@ export const EN_US_TRANSLATIONS = {
       locale: 'Locale for human-readable output.',
       profile: 'Config profile id applied before command execution.',
       output: 'Output mode: pretty|plain|json.',
-      ui: 'Interactive UI mode: none|classic|react|tui.',
+      ui: 'Interactive UI mode: none|classic|react|tui. Default is react in interactive TTY pretty mode.',
       verbosity: 'Output verbosity: quiet|normal|verbose.',
       compact: 'Compact pretty output for human-first quick scanning.',
       noColor: 'Disable ANSI color decorations in pretty mode.',
@@ -26,11 +26,13 @@ export const EN_US_TRANSLATIONS = {
         'Disable local fallback during restricted-network rehearsal to validate blocking semantics.',
       noInteractive:
         'Disable interactive setup prompts for first-time init and force non-interactive config bootstrap.',
-      workspaceAction: 'Workspace command action: dry-run|execute|rollback.',
+      workspaceAction: 'Workspace command action: dry-run|execute|rollback|clear-config.',
       workspaceMode:
         'Workspace target mode for migration planning/execution: repo_local|tool_managed.',
       workspaceRoot: 'Workspace target root override used by the workspace migration command.',
       workspacePlan: 'Workspace migration plan artifact path used by the rollback action.',
+      workflowTemplate:
+        'Workflow template id used by the workflow create/edit/preview subcommands.',
     },
     commands: {
       init: { description: 'Initialize governor workspace baseline.' },
@@ -43,7 +45,21 @@ export const EN_US_TRANSLATIONS = {
       verify: { description: 'Verify adapter routing pass/warn/fail baseline.' },
       plan: { description: 'Generate or update execution plan baseline.' },
       upgrade: { description: 'Run workspace/config upgrade baseline.' },
-      workspace: { description: 'Plan, execute, or roll back workspace migration baseline.' },
+      workspace: {
+        description:
+          'Plan, execute, roll back workspace migration baseline, or clear the current workspace config.',
+      },
+      workflow: {
+        description:
+          'Preview workflow templates, create a saved workflow definition, or edit the saved workflow.',
+        createDescription:
+          'Create a workflow definition from a built-in template and save it into the workspace.',
+        editDescription:
+          'Edit the saved workflow definition when present, or seed one from a template and save it into the workspace.',
+        previewDescription: 'Preview one workflow template without writing workflow files.',
+        subcommandRequired:
+          'workflow requires an explicit subcommand; use `workflow create`, `workflow edit`, or `workflow preview`.',
+      },
     },
     skeleton: {
       noProfile: 'none',
@@ -115,10 +131,16 @@ export const EN_US_TRANSLATIONS = {
       workspaceModeDescription:
         'Choose where Repo AI Governor should keep its managed workspace metadata.',
       workspaceModePromptLabel: 'Workspace mode [1=tool_managed, 2=repo_local] (default: 1): ',
+      workspaceModeToolManagedOption:
+        'tool_managed: keep metadata under the tool-managed workspace root',
+      workspaceModeRepoLocalOption:
+        'repo_local: keep metadata inside the current repository workspace',
       workspaceModeValidation: 'Workspace mode must be 1, 2, tool_managed, or repo_local.',
       defaultLocaleTitle: 'Step 2 of 3: Default locale',
       defaultLocaleDescription: 'Choose the default locale used for human-readable CLI copy.',
       defaultLocalePromptLabel: 'Default locale [1=zh-CN, 2=en-US] (default: 1): ',
+      defaultLocaleZhCnOption: 'zh-CN: default to Simplified Chinese output',
+      defaultLocaleEnUsOption: 'en-US: default to English output',
       defaultLocaleValidation: 'Default locale must be 1, 2, zh-CN, or en-US.',
       submittingDescriptor: 'Submitting descriptor values to config template bridge.',
       cancelledBySigint: 'Interactive shell cancelled by SIGINT.',
@@ -160,6 +182,10 @@ export const EN_US_TRANSLATIONS = {
         reactShellFallbackToClassic:
           'React shell initialization failed; falling back to classic bootstrap. reason={{reason}}.',
       },
+      workflow: {
+        invalidTemplate:
+          'Unsupported workflow template "{{template}}". Supported templates: {{supported}}.',
+      },
       workspace: {
         migrationExecuted: 'Workspace migration executed successfully; plan={{planPath}}.',
         rollbackCompleted: 'Workspace rollback completed; rollback={{rollbackPath}}.',
@@ -176,12 +202,15 @@ export const EN_US_TRANSLATIONS = {
         disabled: 'disabled',
         notSet: 'not set',
         shortcuts: 'Shortcuts',
+        selection: 'Selection',
         session: 'Session',
         details: 'Details',
         lifecycle: 'Lifecycle',
         validationFeedbackRequiresAnotherInputPass:
           'Validation feedback requires another input pass.',
         rendersOnStderrOnly: 'React shell renders on stderr only.',
+        moveFocus: 'Up/Down choose',
+        confirm: 'Y confirm',
         enterConfirm: 'Enter confirm',
         restart: 'N restart',
         submit: 'Enter submit',
@@ -219,34 +248,74 @@ export const EN_US_TRANSLATIONS = {
             'Required roles={{requiredRoles}}; failures={{requiredFailures}}; degraded={{degradedRoles}}; fallback={{fallbackRoles}}.',
         },
       },
+      upgrade: {
+        title: 'Review analyzed upgrade artifacts',
+        fields: {
+          workspaceRoot: 'Workspace root',
+          sourceVersion: 'Source version',
+          targetVersion: 'Target version',
+          confirmationDecision: 'Confirmation decision',
+        },
+        help: {
+          analyzeOnly:
+            'Upgrade remains analyze-only; the React shell previews report, migrated-config, and rollback references without mutating governor.yaml.',
+          rollbackReference:
+            'Keep the rollback snapshot so the analyzed config can be reverted explicitly if you later apply the migration.',
+        },
+        status: {
+          manualConfirmation:
+            'Manual confirmation remains required before applying {{count}} blocking upgrade change(s).',
+          analysisReady: 'Upgrade analysis is ready for targetVersion={{targetVersion}}.',
+        },
+        summary: {
+          reportPath: 'Upgrade report: {{path}}',
+          autoMigratedConfigPath: 'Auto-migrated config: {{path}}',
+          rollbackSnapshotPath: 'Rollback snapshot: {{path}}',
+          counts:
+            'Suggestions={{suggestions}} confirmations={{confirmations}} blocking={{blocking}}.',
+        },
+      },
       workspace: {
+        clearConfigTitle: 'Clear current workspace config',
         title: 'Plan or execute workspace migration',
         fields: {
           action: 'Workspace action',
           targetMode: 'Target workspace mode',
           targetRoot: 'Target workspace root',
           planPath: 'Rollback plan path',
+          currentMode: 'Current workspace mode',
+          currentRoot: 'Current workspace root',
+          activeConfigPaths: 'Active config paths',
         },
         actions: {
           dryRun: 'Dry run',
           execute: 'Execute',
           rollback: 'Rollback',
+          clearConfig: 'Clear config',
         },
         help: {
           stableOutputContract:
             'Workspace keeps the machine-readable output contract stable while previewing migration intent in the shared React shell.',
           persistPlan:
             'Persist the generated plan artifact so rollback can restore the previous selector state when needed.',
+          clearConfigRemovesSelectorState:
+            'clear-config removes the current selector/config files used to resolve the active workspace surface.',
+          clearConfigKeepsArtifacts:
+            'clear-config does not delete diagnostics, workflow definitions, review queue artifacts, or other workspace records.',
         },
         status: {
           executionCompleted: 'Workspace migration execution completed.',
           rollbackCompleted: 'Workspace rollback completed.',
           dryRunCompleted: 'Workspace migration dry-run completed.',
+          clearConfigCompleted: 'Current workspace config cleared.',
+          clearConfigNoop: 'No current workspace config was present to clear.',
         },
         message: {
           executeCompleted: 'Workspace migration executed successfully; plan={{planPath}}.',
           rollbackCompleted: 'Workspace rollback completed; rollback={{rollbackPath}}.',
           dryRunCompleted: 'Workspace migration plan generated; plan={{planPath}}.',
+          clearConfigCompleted: 'Cleared {{count}} workspace config file(s): {{paths}}.',
+          clearConfigNoop: 'No current workspace config file was found. Inspected: {{paths}}.',
         },
         nextStepTitle: 'Next step',
         nextActions: {
@@ -260,10 +329,124 @@ export const EN_US_TRANSLATIONS = {
             'Inspect {{planPath}} and confirm the target workspace root before executing the migration.',
           useExecuteWhenReady:
             'Use --workspace-action execute with the same --workspace-mode/--workspace-root inputs when you are ready to cut over.',
+          reRunInitAfterClear:
+            'Re-run init when you want to bootstrap a fresh workspace config in this repository.',
+          rerunWorkspaceAfterClear:
+            'Re-run workspace dry-run/execute if you want to recreate the workspace selector from scratch.',
+          inspectExpectedConfigPaths:
+            'Inspect {{paths}} if you expected an active workspace config to exist.',
         },
         summary: {
           migrationId: 'Migration ID: {{migrationId}}',
           primaryArtifact: 'Primary artifact: {{path}}',
+          inspectedConfigPaths: 'Inspected config paths: {{paths}}',
+          clearedConfigPath: 'Cleared config path: {{path}}',
+          noConfigRemoved: 'No config paths were removed.',
+        },
+      },
+      workflow: {
+        title: 'Preview workflow templates or seed workflow editor entries',
+        fields: {
+          action: 'Workflow action',
+          templateId: 'Workflow template',
+          entryMode: 'Workflow entry mode',
+          definitionSource: 'Workflow definition source',
+        },
+        actions: {
+          create: 'Create',
+          edit: 'Edit',
+          preview: 'Preview',
+        },
+        entryModes: {
+          readOnly: 'read_only',
+          createSeed: 'create_seed',
+          editSeed: 'edit_seed',
+        },
+        previewModes: {
+          readOnly: 'read_only',
+        },
+        definitionSources: {
+          previewTemplate: 'preview template',
+          templateSeed: 'template seed',
+          workspaceSaved: 'saved workspace definition',
+        },
+        templates: {
+          parallelReview: 'Parallel review',
+          loopGuarded: 'Loop guarded',
+          conditionRoute: 'Condition route',
+        },
+        help: {
+          sharedEntrySurface:
+            'Workflow preview stays read-only while workflow create/edit normalize node, edge, condition-branch, and loop-guardrail semantics before persisting a validated workflow definition and compiled IR snapshot.',
+          templateSeedSelection:
+            'Use --workflow-template to choose the starter topology for workflow preview/create/edit.',
+          editLoadBehavior:
+            'workflow edit loads the saved workspace definition when present; passing --workflow-template reseeds the active workflow from a built-in starter topology.',
+        },
+        progress: {
+          compileCompleted: 'Workflow topology compiled successfully.',
+          compileFallback:
+            'Workflow topology encountered contract errors and stayed on the summary shell.',
+        },
+        status: {
+          compilable: 'Compiled IR preview is ready; warnings={{warningCount}}.',
+          warning: 'Compiled IR preview completed with warnings={{warningCount}}.',
+          contractFallback:
+            'Compiled IR preview hit contract errors={{errorCount}}; showing the read-only fallback summary.',
+        },
+        message: {
+          previewCompleted:
+            'Workflow preview ready for template={{template}}; warnings={{warningCount}} errors={{errorCount}}.',
+          createSaved:
+            'Workflow create saved definition={{definitionPath}}; warnings={{warningCount}} errors={{errorCount}}.',
+          createEntryReady:
+            'Workflow create entry is ready for template={{template}}; warnings={{warningCount}} errors={{errorCount}}.',
+          editSaved:
+            'Workflow edit saved definition={{definitionPath}}; warnings={{warningCount}} errors={{errorCount}}.',
+          editEntryReady:
+            'Workflow edit entry is ready for template={{template}}; warnings={{warningCount}} errors={{errorCount}}.',
+        },
+        prompt: {
+          reviewCompileErrors: 'Review compile errors',
+          fixBeforePersist:
+            'Fix loop/edge contract issues before promoting this preview into a persisted workflow definition.',
+          compareAnotherTemplate: 'Compare another template',
+          rerunWithActionTemplate:
+            'Re-run `workflow {{action}} --workflow-template <template>` to compare a different template shape.',
+          inspectSavedDefinition: 'Inspect saved workflow definition',
+          inspectSavedDefinitionPath: 'Review {{path}} before the next edit pass.',
+          inspectCompiledIr: 'Inspect compiled IR snapshot',
+          inspectCompiledIrPath:
+            'Review {{path}} to confirm the saved workflow remains compiler-acceptable.',
+        },
+        editorIssues: {
+          conditionBranchRequired:
+            'Condition nodes must expose at least one outgoing branch before persistence.',
+          conditionBranchKeyRequired:
+            'Each outgoing branch from a condition node must declare a non-empty condition key.',
+          conditionBranchDuplicated:
+            'Outgoing branches from the same condition node must use unique condition keys.',
+        },
+        summary: {
+          definitionSource: 'Definition source: {{source}}',
+          definitionPath: 'Workflow definition: {{path}}',
+          compiledIrPath: 'Compiled IR snapshot: {{path}}',
+          template: 'Template: {{template}}',
+          processId: 'Process ID: {{processId}}',
+          entryNode: 'Entry node: {{entryNodeId}}',
+          graphTotals:
+            'Graph totals: nodes={{nodeCount}} edges={{edgeCount}} warnings={{warningCount}} errors={{errorCount}}.',
+          conditionBranches: 'Condition branches for {{nodeId}}: {{branches}}',
+          noBranches: 'none',
+          nodeLine:
+            'IR node {{nodeId}} [{{nodeType}}] stage={{stageId}} route={{routeKey}} role={{roleProfileId}}',
+          loopLimits:
+            'Loop limits for {{nodeId}}: maxCycles={{maxCycles}} maxWallTimeSeconds={{maxWallTimeSeconds}}',
+          edgeLine: 'Edge {{fromNodeId}} -> {{toNodeId}} condition={{conditionKey}}',
+          defaultRoute: 'default',
+          compileIssue: '{{severity}} {{errorCode}} at {{location}}: {{message}}',
+          errorSeverity: 'error',
+          warningSeverity: 'warning',
         },
       },
     },
@@ -277,6 +460,9 @@ export const EN_US_TRANSLATIONS = {
           workspaceAction: 'Workspace action',
           workspaceTarget: 'Workspace target',
           workspaceScratchCleanup: 'Workspace scratch cleanup',
+          workflowTemplate: 'Workflow template',
+          workflowPreviewMode: 'Workflow preview mode',
+          workflowCompileStatus: 'Workflow compile status',
         },
         checkDetails: {
           upgradeSchemaDiff: '{{diffs}} diffs, {{source}} -> {{target}}',
@@ -285,6 +471,9 @@ export const EN_US_TRANSLATIONS = {
           workspaceTarget: 'mode {{mode}}, root {{root}}',
           workspaceScratchCleanupRemoved: 'scratch root removed: {{root}}',
           workspaceScratchCleanupRetained: 'scratch root retained: {{root}}',
+          workflowTemplate: 'template {{template}}',
+          workflowPreviewMode: 'mode {{mode}}',
+          workflowCompileStatus: 'status {{status}}, {{warnings}} warnings, {{errors}} errors',
         },
       },
     },

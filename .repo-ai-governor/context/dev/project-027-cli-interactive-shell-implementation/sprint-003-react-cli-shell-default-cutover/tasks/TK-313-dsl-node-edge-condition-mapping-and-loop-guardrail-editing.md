@@ -1,7 +1,7 @@
 # TK-313 DSL 节点/连线/条件映射与 Loop guardrail 编辑
 
-- Status: planned
-- Date: 2026-03-28
+- Status: completed
+- Date: 2026-03-29
 - Owner: AI-Agent
 - Priority: P0
 - Project: `project-027-cli-interactive-shell-implementation`
@@ -54,9 +54,11 @@
 
 1. 2026-03-28：任务创建，状态初始化为 `planned`。
 2. 2026-03-28：依据技术方案 draft 的 M3 清单，改为收口 DSL 节点/连线/条件映射与 Loop guardrail 编辑。
+3. 2026-03-29：任务切换为 `in_progress`，开始抽离独立 workflow editor runtime，补齐节点/连线/条件分支语义与 Loop guardrail 编辑守护。
+4. 2026-03-29：实现完成，已落地 workflow editor runtime、condition branch 语义校验、node/edge summary 映射与 Loop guardrail 摘要/编译守护；定向验证通过 `pnpm -s tsc -p tsconfig.json --noEmit` 与 workflow/output 相关 vitest。
 
 ## 10. 产出
 
-1. 待执行：`Sequential / Parallel / Loop / Condition` 节点编辑映射。
-2. 待执行：连线 / 条件分支编辑与 Loop guardrail 校验。
-3. 待执行：对应测试与编译器兼容性证据。
+1. 已完成：`Sequential / Parallel / Loop / Condition` 节点摘要与 editor 映射已统一到 workflow editor runtime。
+2. 已完成：连线 / 条件分支语义与 Loop guardrail 编译守护已接入 `workflow create/edit`。
+3. 已完成：workflow command unit/integration 测试覆盖 condition branch 校验阻断路径与编译器兼容性证据。

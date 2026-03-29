@@ -54,6 +54,10 @@ export enum CliRuntimeOperation {
   WORKSPACE_MIGRATION_PLAN = 'workspace_migration_plan',
   WORKSPACE_MIGRATION_EXECUTE = 'workspace_migration_execute',
   WORKSPACE_MIGRATION_ROLLBACK = 'workspace_migration_rollback',
+  WORKSPACE_CONFIG_CLEAR = 'workspace_config_clear',
+  WORKFLOW_CREATE_ENTRY = 'workflow_create_entry',
+  WORKFLOW_EDIT_ENTRY = 'workflow_edit_entry',
+  WORKFLOW_PREVIEW = 'workflow_preview',
 }
 
 /**
@@ -158,6 +162,7 @@ export const CLI_INIT_REQUIRED_DIRECTORY_SEGMENTS = [
   ['context', 'reports'],
   ['context', 'replay'],
   ['context', 'upgrade'],
+  ['context', 'workflow'],
   ['context', 'workspace'],
 ] as const;
 

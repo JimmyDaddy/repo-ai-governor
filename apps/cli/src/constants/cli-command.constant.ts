@@ -15,6 +15,7 @@ export enum CliCommandName {
   PLAN = 'plan',
   UPGRADE = 'upgrade',
   WORKSPACE = 'workspace',
+  WORKFLOW = 'workflow',
 }
 
 export const CLI_COMMAND_DEFINITIONS = [
@@ -29,6 +30,7 @@ export const CLI_COMMAND_DEFINITIONS = [
   { name: CliCommandName.PLAN, descriptionKey: 'cli.commands.plan.description' },
   { name: CliCommandName.UPGRADE, descriptionKey: 'cli.commands.upgrade.description' },
   { name: CliCommandName.WORKSPACE, descriptionKey: 'cli.commands.workspace.description' },
+  { name: CliCommandName.WORKFLOW, descriptionKey: 'cli.commands.workflow.description' },
 ] as const;
 
 /**
@@ -46,4 +48,5 @@ export const CLI_COMMAND_NAMES = [
   CliCommandName.PLAN,
   CliCommandName.UPGRADE,
   CliCommandName.WORKSPACE,
+  CliCommandName.WORKFLOW,
 ] as const;

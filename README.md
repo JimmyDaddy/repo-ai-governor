@@ -95,7 +95,7 @@ pnpm exec repo-ai-governor init --output pretty
 ```
 
 Interactive prompts are enabled by default in local TTY + `pretty` output. Use `--no-interactive` for CI/scripts.
-For the experimental shell foundation introduced in `project-027 / sprint-001`, you can also try `pnpm exec repo-ai-governor init --output pretty --ui react`; it renders a minimal stderr-only wizard and still falls back to `none` under `--no-interactive`, non-TTY, or `plain/json`.
+In local TTY + `pretty` output, the CLI now defaults to the React shell for supported interactive surfaces. It still falls back to `none` under `--no-interactive`, non-TTY, or `plain/json`, so CI and agent-style machine consumers keep the existing non-interactive contract.
 
 If you are using `dist` binary rehearsal, replace `pnpm exec repo-ai-governor` with:
 
@@ -146,6 +146,22 @@ Notes:
 1. `init` alone keeps the repository on `tool_managed`; repo-local files appear only after `workspace execute`.
 2. `workspace dry-run` writes the plan artifact under the current active workspace root; a successful `workspace execute` rewrites the plan and execution artifacts under the target workspace root.
 3. `workspace rollback` writes the rollback artifact under the restored source workspace root and removes empty `.repo-ai-governor-migration/<migration-id>` scratch directories after a successful cleanup.
+
+### Workflow Definition Preview, Save, And Explicit Upgrade Shell
+
+```bash
+pnpm exec repo-ai-governor workflow preview --workflow-template loop-guarded --output json
+pnpm exec repo-ai-governor workflow create --workflow-template condition-route --output json
+pnpm exec repo-ai-governor workflow edit --output pretty
+pnpm exec repo-ai-governor upgrade --output pretty
+```
+
+Notes:
+
+1. `workflow preview` stays read-only and does not write workflow artifacts.
+2. `workflow create` and `workflow edit` save the active workflow definition under `<workspace_root>/context/workflow/active-workflow.definition.json` and persist one compiled IR snapshot under `<workspace_root>/context/compiled-ir/<execution_id>.json`.
+3. Loop nodes must carry both `maxCycles` and `maxWallTimeSeconds`, and condition-node branches must use non-empty unique `conditionKey` values before workflow persistence is accepted.
+4. In local TTY + `pretty` mode, `workflow` and `upgrade` default to the React shell on `stderr`; add `--ui none` or `--ui classic` when you need to suppress it while preserving the existing stdout output contract.
 
 ## 4. HITL Notification Providers
 

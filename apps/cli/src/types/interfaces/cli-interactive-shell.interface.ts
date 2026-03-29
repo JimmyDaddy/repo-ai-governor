@@ -19,11 +19,20 @@ export interface CliInteractiveShellModeResolution {
 /**
  * Defines one prompt-field descriptor rendered by the minimal interactive shell.
  */
+export interface CliInteractiveShellFieldOption {
+  value: string;
+  label: string;
+}
+
+/**
+ * Defines one prompt-field descriptor rendered by the minimal interactive shell.
+ */
 export interface CliInteractiveShellFieldDescriptor {
   fieldId: string;
   title: string;
   description: string;
   promptLabel: string;
+  options?: CliInteractiveShellFieldOption[];
 }
 
 /**
@@ -67,8 +76,32 @@ export interface CliInteractiveShellSessionState {
 /**
  * Defines the prompt adapter seam used by the interactive shell runner.
  */
+export interface CliInteractiveShellSelectPrompt {
+  session: CliInteractiveShellSessionState;
+  title: string;
+  description: string;
+  options: CliInteractiveShellFieldOption[];
+  defaultValue: string;
+  translate: (key: string, interpolation?: Record<string, string>) => string;
+}
+
+/**
+ * Defines one confirmation prompt rendered through the interactive shell.
+ */
+export interface CliInteractiveShellConfirmPrompt {
+  session: CliInteractiveShellSessionState;
+  title: string;
+  promptLabel: string;
+  summaryLines: string[];
+  translate: (key: string, interpolation?: Record<string, string>) => string;
+}
+
+/**
+ * Defines the prompt adapter seam used by the interactive shell runner.
+ */
 export interface CliInteractiveShellPromptAdapter {
-  question(prompt: string): Promise<string>;
+  select(prompt: CliInteractiveShellSelectPrompt): Promise<string>;
+  confirm(prompt: CliInteractiveShellConfirmPrompt): Promise<boolean>;
   close(): void;
 }
 

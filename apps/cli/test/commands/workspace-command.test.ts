@@ -14,6 +14,7 @@ import {
   WorkspaceMigrationStepStatus,
   WorkspaceMode,
   WorkspaceModeSource,
+  WorkspaceResolver,
 } from '@repo-ai-governor/config';
 import {
   DEFAULT_I18N_RUNTIME_CONFIG,
@@ -258,6 +259,99 @@ describe('CliWorkspaceCommand', () => {
       expect(result.reactCliViewModel?.footerShortcuts).toContain(
         '--workspace-action rollback restores prior state',
       );
+    } finally {
+      await rm(fixture.tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('clears both the repo-local selector config and the active tool-managed workspace config', async () => {
+    const fixture = await createWorkspaceCommandFixture({
+      action: 'clear-config',
+      targetMode: null,
+      targetRoot: null,
+      planPath: null,
+    });
+
+    try {
+      const toolManagedConfigContent = [
+        'schemaVersion: "1.1"',
+        'workspace:',
+        '  mode: tool_managed',
+        `  toolManagedRoot: ${fixture.managedWorkspaceRoot}`,
+        '  migrationPolicy: copy_verify_switch_rollback',
+        'i18n:',
+        '  runtimeEngine: i18next',
+        '  defaultLocale: en-US',
+        '  fallbackLocale: en-US',
+        '  supportedLocales:',
+        '    - en-US',
+        'memory:',
+        '  storeEngine: fs_csv',
+        '  storeRoot: context/memory',
+        '',
+      ].join('\n');
+      await writeFile(fixture.configPath, toolManagedConfigContent, 'utf8');
+
+      const workspaceResolver = new WorkspaceResolver();
+      const resolvedWorkspace = workspaceResolver.resolve({
+        currentWorkingDirectory: fixture.tempRoot,
+        config: new ConfigLoader().loadFromFile(fixture.configPath),
+      });
+      await mkdir(resolvedWorkspace.workspaceRoot, { recursive: true });
+      await writeFile(resolvedWorkspace.configPath, toolManagedConfigContent, 'utf8');
+
+      fixture.context.options.workspace = resolvedWorkspace;
+      fixture.context.options.workspaceCommandOptions = {
+        action: 'clear-config',
+        targetMode: null,
+        targetRoot: null,
+        planPath: null,
+      };
+
+      const command = new CliWorkspaceCommand();
+      const result = await command.execute(fixture.context);
+      const clearedConfigPaths = String(
+        result.commandResult.details?.cleared_config_paths ?? '',
+      ).split(' | ');
+
+      expect(result.commandResult.operation).toBe('workspace_config_clear');
+      expect(result.commandResult.details?.action).toBe('clear_config');
+      expect(result.commandResult.details?.cleared_path_count).toBe(2);
+      expect(clearedConfigPaths).toEqual(
+        expect.arrayContaining([fixture.configPath, resolvedWorkspace.configPath]),
+      );
+      expect(existsSync(fixture.configPath)).toBe(false);
+      expect(existsSync(resolvedWorkspace.configPath)).toBe(false);
+    } finally {
+      await rm(fixture.tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('returns a warning summary when no current workspace config files are present', async () => {
+    const fixture = await createWorkspaceCommandFixture({
+      action: 'clear-config',
+      targetMode: null,
+      targetRoot: null,
+      planPath: null,
+    });
+
+    try {
+      await rm(fixture.configPath, { force: true });
+      fixture.context.options.workspaceCommandOptions = {
+        action: 'clear-config',
+        targetMode: null,
+        targetRoot: null,
+        planPath: null,
+      };
+
+      const command = new CliWorkspaceCommand();
+      const result = await command.execute(fixture.context);
+
+      expect(result.commandResult.operation).toBe('workspace_config_clear');
+      expect(result.commandResult.check_totals?.warn).toBe(1);
+      expect(result.commandResult.details?.cleared_path_count).toBe(0);
+      expect(result.commandResult.details?.cleared_config_paths).toBe('');
+      expect(result.message).toContain('No current workspace config file was found');
     } finally {
       await rm(fixture.tempRoot, { recursive: true, force: true });
     }
