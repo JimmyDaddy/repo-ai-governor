@@ -170,23 +170,7 @@ export class CliSessionShellTranscriptStore {
       return null;
     }
 
-    if (event.type !== OrchestrationSessionEventType.SESSION_STARTED) {
-      return null;
-    }
-
-    return {
-      id: `${event.sessionId}:${String(event.sequence)}`,
-      role: CliSessionTranscriptRole.SYSTEM,
-      label: translate('cli.sessionShell.transcript.systemLabel'),
-      lines: [
-        translate('cli.sessionShell.responses.welcome'),
-        translate('cli.sessionShell.responses.stderrOnly'),
-        translate('cli.sessionShell.responses.sessionStarted', {
-          sessionId: event.sessionId,
-          routeId: this.readOptionalString(event.payload.routeId) ?? 'session.main',
-        }),
-      ],
-    };
+    return null;
   }
 
   private mapTranscriptRole(role: OrchestrationSessionTranscriptRole): CliSessionTranscriptRole {

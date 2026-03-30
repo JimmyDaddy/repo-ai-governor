@@ -1,6 +1,9 @@
 import { Box, Text } from 'ink';
 import type React from 'react';
-import type { CliSessionShellInputMode } from '../../constants/cli-session-shell.constant.js';
+import {
+  CLI_SESSION_SHELL_PROMPT,
+  CliSessionShellInputMode,
+} from '../../constants/cli-session-shell.constant.js';
 import type { ReactCliShellPalette } from '../../types/index.js';
 
 export interface ReactCliComposerInputProps {
@@ -21,13 +24,39 @@ export function ReactCliComposerInput({
   inputMode,
   shellPalette,
 }: ReactCliComposerInputProps): React.JSX.Element {
+  const promptLabel = CLI_SESSION_SHELL_PROMPT.trim();
+  const isSlashMode = inputMode === CliSessionShellInputMode.SLASH_COMMAND;
+  const composerTitleColor = isSlashMode ? shellPalette.promptTitleColor : shellPalette.footerColor;
+
   return (
-    <Box flexDirection='column' marginTop={1}>
-      <Text bold color={shellPalette.sectionTitleColor}>
+    <Box flexDirection='column' marginTop={2}>
+      <Text bold color={composerTitleColor}>
         {title}
       </Text>
-      <Text color={shellPalette.subtitleColor}>{`input_mode=${inputMode}`}</Text>
-      {value.length > 0 ? <Text>{value}</Text> : <Text dimColor>{placeholder}</Text>}
+      <Box
+        borderStyle='round'
+        borderColor={composerTitleColor}
+        paddingX={1}
+        marginTop={1}
+        flexDirection='column'
+      >
+        <Box>
+          <Text bold color={shellPalette.promptTitleColor}>
+            {promptLabel}
+          </Text>
+          {value.length > 0 ? (
+            <>
+              <Text> </Text>
+              <Text color={shellPalette.sectionTitleColor}>{value}</Text>
+            </>
+          ) : null}
+        </Box>
+        {value.length === 0 ? (
+          <Text dimColor color={shellPalette.helpColor}>
+            {placeholder}
+          </Text>
+        ) : null}
+      </Box>
     </Box>
   );
 }

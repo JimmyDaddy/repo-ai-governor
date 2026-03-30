@@ -3,6 +3,18 @@
 - [x] TK-439 switch default foreground input owner from readline to Ink
   - 2026-03-30：任务创建，状态初始化为 `planned`。
   - 2026-03-30：已完成 default TTY path cutover，`shouldUseInkInput()` 现在默认在 live session-shell path 启用 Ink foreground input owner。
+  - 2026-03-30：根据手工安装反馈修复了 submit 后 Ink tree teardown 导致的终端追加渲染，并把 composer / slash palette 调整为更突出的 prompt + dropdown 视觉；clean temp repo TTY smoke 已验证 `/workspace` 输入与提交后持续原位刷新。
+  - 2026-03-30：继续根据手工体验反馈把 `Prompt Bar` 收缩为单行状态栏，仅保留 mode / route / session 简写和动态快捷键，减少对主输入区的干扰。
+  - 2026-03-30：把 `/help` 改成前台 palette 帮助视图而非 transcript 持久化输出；连续两次 `/help` 现在只会刷新同一帮助面板，不再重复堆叠命令列表正文。
+  - 2026-03-30：继续对照 Claude 的 launcher 体验，把 bare `/` 改成 shortlist palette，去掉 `query=/` 行并按显示宽度裁剪摘要；空输入时的 placeholder 也收成更轻的 idle hint。
+  - 2026-03-30：继续根据手工体验反馈收起默认首屏的 session/runtime 调试信息，改为通过 `/status` 显式查看；startup transcript 也不再默认回放 service-backed session 元数据。
+  - 2026-03-30：真实 PTY smoke 已确认默认首屏只保留标题、输入区与轻量快捷键，而 `/status` 才会展开 session/runtime 详情。
+  - 2026-03-30：把 `?` 做成真正的 shortcuts/help alias，并把空态 placeholder 与状态栏改成可发现提示；真实 PTY smoke 已确认输入 `?` 会即时打开完整帮助 palette。
+  - 2026-03-30：修复 Slash Palette 中上下选择后的 `Enter` 语义；真实 PTY smoke 已确认第一次 `Enter` 会先接收高亮命令，第二次 `Enter` 才提交执行。
+  - 2026-03-30：修复 Ink live tree 与旧 stderr string renderer 混用导致的顶边框残影叠加；command execution 期间现在只复用活动 Ink rerender。
+  - 2026-03-30：继续根据手工体验反馈把历史区与输入区做成弱历史、强输入的层级；标题收口为 `会话记录 / 当前输入`，并通过弱化 transcript 标题、强化输入框标题与分隔线提升区分度。
+  - 2026-03-30：根据手工反馈继续收口命令选择时的闪动问题；把 Ink live rerender 的 viewport clear 从“每次 rerender”降到“仅显式清屏请求触发”，避免 palette 上下移动时整屏闪烁。
+  - 2026-03-30：根据手工复测继续收口残影回归；live Ink rerender 现在会在 frame 结构变更时自动执行一次 viewport clear，但纯高亮移动仍不 clear，以兼顾残影与闪动。
 - [x] TK-440 update docs help and adoption guidance for Ink-owned session shell
   - 2026-03-30：任务创建，状态初始化为 `planned`。
   - 2026-03-30：已完成 README / README.zh-CN / local adoption playbook / module overview 的 Ink-owned input 口径同步。

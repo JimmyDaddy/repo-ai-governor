@@ -66,6 +66,8 @@ interface CliSessionShellRuntimeState {
  * Owns the service-backed session-shell lifecycle for the CLI presenter.
  */
 export class CliSessionShellRunner {
+  private activeInkRunner: CliSessionShellInkRunner | null = null;
+
   public constructor(
     private readonly slashCommandRegistry: CliSessionSlashCommandRegistry = new CliSessionSlashCommandRegistry(),
     private readonly renderer: CliSessionShellStderrRenderer = new CliSessionShellStderrRenderer(),
@@ -219,6 +221,7 @@ export class CliSessionShellRunner {
     options: CliSessionShellRunOptions,
     runtimeState: CliSessionShellRuntimeState,
   ): Promise<CliSessionShellRunResult> {
+    this.activeInkRunner = inkRunner;
     try {
       while (true) {
         const action = await inkRunner.readAction(viewModel);
@@ -254,7 +257,12 @@ export class CliSessionShellRunner {
           continue;
         }
 
-        inkRunner.close();
+        const requiresPromptAdapterTakeover =
+          this.requiresPromptAdapterTakeover(trimmedComposerValue);
+        if (requiresPromptAdapterTakeover) {
+          inkRunner.close();
+        }
+
         const exitResult = await this.submitComposerValue(
           trimmedComposerValue,
           fallbackPromptAdapter,
@@ -282,9 +290,15 @@ export class CliSessionShellRunner {
 
       throw error;
     } finally {
+      this.activeInkRunner = null;
       inkRunner.close();
       fallbackPromptAdapter.close();
     }
+  }
+
+  private requiresPromptAdapterTakeover(inputLine: string): boolean {
+    const normalizedInput = inputLine.trim().toLowerCase();
+    return normalizedInput === '/multiline' || normalizedInput.startsWith('/multiline ');
   }
 
   private async submitComposerValue(
@@ -296,6 +310,17 @@ export class CliSessionShellRunner {
     runtimeState: CliSessionShellRuntimeState,
   ): Promise<CliSessionShellRunResult | null> {
     viewModel.composerValue = inputLine;
+
+    if (this.isShortcutHelpAlias(inputLine)) {
+      return await this.handleSlashCommand(
+        inputLine,
+        promptAdapter,
+        viewModel,
+        transcriptStore,
+        options,
+        runtimeState,
+      );
+    }
 
     if (inputLine.startsWith('!')) {
       await this.handleShellPassthrough(
@@ -322,6 +347,10 @@ export class CliSessionShellRunner {
     await this.handlePlainTextTurn(inputLine, viewModel, transcriptStore, options, runtimeState);
     this.resetPromptState(viewModel, options, runtimeState);
     return null;
+  }
+
+  private isShortcutHelpAlias(inputLine: string): boolean {
+    return inputLine.trim() === '?';
   }
 
   private async bootstrapSession(options: CliSessionShellRunOptions): Promise<{
@@ -476,6 +505,12 @@ export class CliSessionShellRunner {
   ): Promise<CliSessionShellRunResult | null> {
     this.recordHistory(query, runtimeState);
     viewModel.inputMode = CliSessionShellInputMode.SLASH_COMMAND;
+
+    if (query.trim() === '?') {
+      this.showShortcutHelpPalette(viewModel, options, runtimeState);
+      return null;
+    }
+
     viewModel.slashQuery = query;
     viewModel.slashSuggestions = this.slashCommandRegistry.suggest(query, options.translate);
     viewModel.highlightedCommand = viewModel.slashSuggestions[0]?.command ?? null;
@@ -483,16 +518,23 @@ export class CliSessionShellRunner {
       viewModel.slashSuggestions.length > 0
         ? CliSessionShellForegroundFocusTarget.PALETTE
         : CliSessionShellForegroundFocusTarget.COMPOSER;
-    await this.appendServiceTranscriptItem(
-      viewModel,
-      transcriptStore,
-      options,
-      runtimeState,
-      OrchestrationSessionTranscriptRole.SLASH_COMMAND,
-      [query],
-    );
+    if (query.trim() === '/') {
+      this.showSlashLauncherPalette(viewModel, options, runtimeState);
+      return null;
+    }
 
     const exactCommand = this.slashCommandRegistry.resolveAction(query);
+    if (exactCommand?.command !== '/help') {
+      await this.appendServiceTranscriptItem(
+        viewModel,
+        transcriptStore,
+        options,
+        runtimeState,
+        OrchestrationSessionTranscriptRole.SLASH_COMMAND,
+        [query],
+      );
+    }
+
     if (!exactCommand) {
       await this.handleUnknownSlashCommand(
         query,
@@ -505,17 +547,7 @@ export class CliSessionShellRunner {
     }
 
     if (exactCommand.command === '/help') {
-      await this.appendServiceTranscriptItem(
-        viewModel,
-        transcriptStore,
-        options,
-        runtimeState,
-        OrchestrationSessionTranscriptRole.ASSISTANT,
-        this.slashCommandRegistry
-          .listCommands(options.translate)
-          .map((command) => `${command.command} - ${command.summary}`),
-      );
-      this.resetPromptState(viewModel, options, runtimeState);
+      this.showSlashHelpPalette(viewModel, options, runtimeState);
       return null;
     }
 
@@ -577,6 +609,19 @@ export class CliSessionShellRunner {
         runtimeState,
         OrchestrationSessionTranscriptRole.ASSISTANT,
         this.buildHistoryLines(runtimeState, options),
+      );
+      this.resetPromptState(viewModel, options, runtimeState);
+      return null;
+    }
+
+    if (exactCommand.command === '/status') {
+      await this.appendServiceTranscriptItem(
+        viewModel,
+        transcriptStore,
+        options,
+        runtimeState,
+        OrchestrationSessionTranscriptRole.ASSISTANT,
+        this.buildStatusLines(viewModel, options, runtimeState),
       );
       this.resetPromptState(viewModel, options, runtimeState);
       return null;
@@ -952,7 +997,7 @@ export class CliSessionShellRunner {
     viewModel.shellMode = CliSessionShellMode.COMMAND_RUNNING;
     viewModel.handoffState = CliSessionShellHandoffState.RUNNING;
     viewModel.promptBarLines = this.buildPromptBarLines(viewModel, options, runtimeState);
-    this.renderer.render(viewModel);
+    this.renderActiveSurface(viewModel);
 
     const executionResult = await options.commandExecutor(pendingCommand.argv).catch((error) => {
       const standardizedError = standardizeError(error);
@@ -1106,36 +1151,101 @@ export class CliSessionShellRunner {
   private buildPromptBarLines(
     viewModel: CliSessionShellViewModel,
     options: CliSessionShellRunOptions,
-    runtimeState: CliSessionShellRuntimeState,
+    _runtimeState: CliSessionShellRuntimeState,
   ): string[] {
-    const lines = [
-      options.translate('cli.sessionShell.promptBar.modeLine', {
-        shellMode: viewModel.shellMode,
-        inputMode: viewModel.inputMode,
-        handoffState: viewModel.handoffState,
-      }),
-      options.translate('cli.sessionShell.promptBar.persistenceLine', {
-        sessionId: viewModel.sessionId,
-        persistenceOwner: viewModel.persistenceOwner,
-        resumeSelector: viewModel.resumeSelector,
-      }),
-      options.translate('cli.sessionShell.promptBar.routeLine', {
-        routeId: runtimeState.currentRouteId,
-        theme: viewModel.themePreset ?? DEFAULT_CLI_REACT_THEME_PRESET,
-        historyCount: String(runtimeState.inputHistory.length),
-      }),
-      options.translate('cli.sessionShell.promptBar.workspaceLine', {
-        cwd: viewModel.cwd,
-        workspace: viewModel.workspaceSummary,
-      }),
-      options.translate('cli.sessionShell.promptBar.shortcuts'),
-    ];
+    return [this.buildPromptBarShortcutSummary(viewModel, options)];
+  }
 
-    if (viewModel.commandPreview) {
-      lines.push(viewModel.commandPreview);
+  private buildPromptBarShortcutSummary(
+    viewModel: CliSessionShellViewModel,
+    options: CliSessionShellRunOptions,
+  ): string {
+    if (
+      viewModel.handoffState === CliSessionShellHandoffState.PREVIEWING ||
+      viewModel.handoffState === CliSessionShellHandoffState.AWAITING_CONFIRMATION
+    ) {
+      return options.translate('cli.sessionShell.promptBar.previewShortcuts');
     }
 
-    return lines;
+    if (viewModel.shellMode === CliSessionShellMode.COMMAND_PALETTE) {
+      return options.translate('cli.sessionShell.promptBar.paletteShortcuts');
+    }
+
+    return options.translate('cli.sessionShell.promptBar.idleShortcuts');
+  }
+
+  private showSlashHelpPalette(
+    viewModel: CliSessionShellViewModel,
+    options: CliSessionShellRunOptions,
+    runtimeState: CliSessionShellRuntimeState,
+  ): void {
+    viewModel.shellMode = CliSessionShellMode.COMMAND_PALETTE;
+    viewModel.inputMode = CliSessionShellInputMode.SLASH_COMMAND;
+    viewModel.slashQuery = '';
+    viewModel.slashPaletteVisible = true;
+    viewModel.slashSuggestions = this.slashCommandRegistry.suggest('/', options.translate, {
+      surface: 'full',
+    });
+    viewModel.highlightedCommand = viewModel.slashSuggestions[0]?.command ?? null;
+    viewModel.composerValue = '';
+    viewModel.foregroundFocusTarget = CliSessionShellForegroundFocusTarget.PALETTE;
+    viewModel.promptBarLines = this.buildPromptBarLines(viewModel, options, runtimeState);
+  }
+
+  private showShortcutHelpPalette(
+    viewModel: CliSessionShellViewModel,
+    options: CliSessionShellRunOptions,
+    runtimeState: CliSessionShellRuntimeState,
+  ): void {
+    viewModel.shellMode = CliSessionShellMode.COMMAND_PALETTE;
+    viewModel.inputMode = CliSessionShellInputMode.SLASH_COMMAND;
+    viewModel.slashQuery = '?';
+    viewModel.slashPaletteVisible = true;
+    viewModel.slashSuggestions = this.slashCommandRegistry.suggest('/', options.translate, {
+      surface: 'full',
+    });
+    viewModel.highlightedCommand = viewModel.slashSuggestions[0]?.command ?? null;
+    viewModel.composerValue = '?';
+    viewModel.foregroundFocusTarget = CliSessionShellForegroundFocusTarget.PALETTE;
+    viewModel.promptBarLines = this.buildPromptBarLines(viewModel, options, runtimeState);
+  }
+
+  private showSlashLauncherPalette(
+    viewModel: CliSessionShellViewModel,
+    options: CliSessionShellRunOptions,
+    runtimeState: CliSessionShellRuntimeState,
+  ): void {
+    viewModel.shellMode = CliSessionShellMode.COMMAND_PALETTE;
+    viewModel.inputMode = CliSessionShellInputMode.SLASH_COMMAND;
+    viewModel.slashQuery = '/';
+    viewModel.slashPaletteVisible = true;
+    viewModel.slashSuggestions = this.slashCommandRegistry.suggest('/', options.translate);
+    viewModel.highlightedCommand = viewModel.slashSuggestions[0]?.command ?? null;
+    viewModel.composerValue = '/';
+    viewModel.foregroundFocusTarget = CliSessionShellForegroundFocusTarget.PALETTE;
+    viewModel.promptBarLines = this.buildPromptBarLines(viewModel, options, runtimeState);
+  }
+
+  private buildStatusLines(
+    viewModel: CliSessionShellViewModel,
+    options: CliSessionShellRunOptions,
+    runtimeState: CliSessionShellRuntimeState,
+  ): string[] {
+    return [
+      options.translate('cli.sessionShell.responses.statusAttached', {
+        sessionId: viewModel.sessionId,
+        routeId: runtimeState.currentRouteId,
+      }),
+      options.translate('cli.sessionShell.responses.statusRuntime', {
+        resumeSelector: viewModel.resumeSelector,
+        persistenceOwner: viewModel.persistenceOwner,
+        theme: viewModel.themePreset ?? DEFAULT_CLI_REACT_THEME_PRESET,
+        output: viewModel.outputContract,
+      }),
+      options.translate('cli.sessionShell.responses.statusWorkspace', {
+        workspace: viewModel.workspaceSummary,
+      }),
+    ];
   }
 
   private resetPromptState(
@@ -1162,6 +1272,7 @@ export class CliSessionShellRunner {
     options: CliSessionShellRunOptions,
     runtimeState: CliSessionShellRuntimeState,
   ): Promise<void> {
+    this.activeInkRunner?.requestViewportClear();
     transcriptStore.clearView();
     viewModel.transcriptItems = [];
     this.appendLocalTranscriptItem(viewModel, {
@@ -1253,6 +1364,15 @@ export class CliSessionShellRunner {
     return runtimeState.inputHistory
       .slice(-10)
       .map((entry, index) => `${index + 1}. [${entry.recordedAt}] ${entry.value}`);
+  }
+
+  private renderActiveSurface(viewModel: CliSessionShellViewModel): void {
+    if (this.activeInkRunner) {
+      this.activeInkRunner.render(viewModel);
+      return;
+    }
+
+    this.renderer.render(viewModel);
   }
 
   private buildSearchLines(

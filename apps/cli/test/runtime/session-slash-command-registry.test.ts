@@ -10,6 +10,8 @@ const TRANSLATIONS: Record<string, string> = {
   'cli.sessionShell.commands.history.summary': 'Show recent shell input history.',
   'cli.sessionShell.commands.search.summary': 'Search transcript and history.',
   'cli.sessionShell.commands.multiline.summary': 'Capture one multi-line turn.',
+  'cli.sessionShell.commands.status.summary':
+    'Show session-shell status and hidden runtime details.',
   'cli.sessionShell.commands.theme.summary': 'Inspect or update the theme.',
   'cli.sessionShell.commands.agent.summary': 'Inspect the current foreground route.',
   'cli.commands.init.description': 'Initialize governor workspace baseline.',
@@ -27,6 +29,22 @@ function translate(key: string): string {
 }
 
 describe('CliSessionSlashCommandRegistry', () => {
+  it('returns a capped launcher shortlist for bare slash input', () => {
+    const registry = new CliSessionSlashCommandRegistry();
+
+    const suggestions = registry.suggest('/', translate);
+
+    expect(suggestions.map((suggestion) => suggestion.command)).toEqual([
+      '/workspace',
+      '/doctor',
+      '/connect',
+      '/review',
+      '/plan',
+      '/run',
+      '/help',
+    ]);
+  });
+
   it('filters the MVP command set by slash-command prefix', () => {
     const registry = new CliSessionSlashCommandRegistry();
 
@@ -43,6 +61,18 @@ describe('CliSessionSlashCommandRegistry', () => {
     ]);
   });
 
+  it('can expand empty-prefix help into the full command catalog', () => {
+    const registry = new CliSessionSlashCommandRegistry();
+
+    const suggestions = registry.suggest('/', translate, {
+      surface: 'full',
+    });
+
+    expect(suggestions.map((suggestion) => suggestion.command)).toContain('/confirm');
+    expect(suggestions.map((suggestion) => suggestion.command)).toContain('/workflow');
+    expect(suggestions[0]?.command).toBe('/help');
+  });
+
   it('resolves one exact slash command with localized summary text', () => {
     const registry = new CliSessionSlashCommandRegistry();
 
@@ -56,6 +86,11 @@ describe('CliSessionSlashCommandRegistry', () => {
   it('normalizes aliases and resolves bridge argv for review verify handoff', () => {
     const registry = new CliSessionSlashCommandRegistry();
 
+    expect(registry.resolveAction('?')).toEqual({
+      command: '/help',
+      kind: 'builtin',
+      summaryKey: 'cli.sessionShell.commands.help.summary',
+    });
     expect(registry.resolveAction('/routing main')).toEqual({
       command: '/agent',
       kind: 'builtin',

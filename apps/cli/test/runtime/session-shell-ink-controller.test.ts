@@ -18,10 +18,10 @@ function createViewModel(): CliSessionShellViewModel {
     shellMode: CliSessionShellMode.SESSION_SHELL,
     inputMode: CliSessionShellInputMode.PLAIN_TEXT,
     transcriptItems: [],
-    transcriptTitle: 'Transcript',
+    transcriptTitle: 'History',
     composerValue: '',
-    composerTitle: 'Composer',
-    composerPlaceholder: 'Type a message or /help.',
+    composerTitle: 'Current input',
+    composerPlaceholder: 'Type a message, / for commands, or ? for shortcuts.',
     slashQuery: '',
     slashPaletteVisible: false,
     slashSuggestions: [],
@@ -77,6 +77,59 @@ describe('CliSessionShellInkController', () => {
     expect(viewModel.slashPaletteVisible).toBe(true);
     expect(viewModel.highlightedCommand).toBe('/workspace');
     expect(viewModel.foregroundFocusTarget).toBe(CliSessionShellForegroundFocusTarget.PALETTE);
+  });
+
+  it('treats bare slash as a launcher shortlist instead of exposing the full command catalog', () => {
+    const controller = new CliSessionShellInkController();
+    const viewModel = createViewModel();
+
+    controller.primeViewModel(viewModel);
+    controller.applyAction(
+      viewModel,
+      {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: '/',
+      },
+      (key) => key,
+    );
+
+    expect(viewModel.slashSuggestions.map((suggestion) => suggestion.command)).toEqual([
+      '/workspace',
+      '/doctor',
+      '/connect',
+      '/review',
+      '/plan',
+      '/run',
+      '/help',
+    ]);
+    expect(viewModel.highlightedCommand).toBe('/workspace');
+  });
+
+  it('treats bare question mark as a shortcuts alias and opens the full help palette', () => {
+    const controller = new CliSessionShellInkController();
+    const viewModel = createViewModel();
+
+    controller.primeViewModel(viewModel);
+    controller.applyAction(
+      viewModel,
+      {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: '?',
+      },
+      (key) => key,
+    );
+
+    expect(viewModel.shellMode).toBe(CliSessionShellMode.COMMAND_PALETTE);
+    expect(viewModel.inputMode).toBe(CliSessionShellInputMode.SLASH_COMMAND);
+    expect(viewModel.slashQuery).toBe('?');
+    expect(viewModel.slashPaletteVisible).toBe(true);
+    expect(viewModel.highlightedCommand).toBe('/help');
+    expect(viewModel.slashSuggestions.some((suggestion) => suggestion.command === '/confirm')).toBe(
+      true,
+    );
+    expect(
+      viewModel.slashSuggestions.some((suggestion) => suggestion.command === '/workflow'),
+    ).toBe(true);
   });
 
   it('returns follow-up effects for submit, clear-screen, and exit actions', () => {

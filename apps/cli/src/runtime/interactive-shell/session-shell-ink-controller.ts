@@ -102,6 +102,11 @@ export class CliSessionShellInkController {
     viewModel.commandPreview = null;
     viewModel.handoffState = CliSessionShellHandoffState.IDLE;
 
+    if (nextValue === '?') {
+      this.showShortcutsPalette(viewModel, translate);
+      return;
+    }
+
     if (!nextValue.startsWith('/')) {
       this.resetPalette(viewModel, translate);
       return;
@@ -111,6 +116,25 @@ export class CliSessionShellInkController {
     viewModel.shellMode = CliSessionShellMode.COMMAND_PALETTE;
     viewModel.inputMode = CliSessionShellInputMode.SLASH_COMMAND;
     viewModel.slashQuery = nextValue;
+    viewModel.slashPaletteVisible = true;
+    viewModel.slashSuggestions = suggestions;
+    viewModel.highlightedCommand = suggestions[0]?.command ?? null;
+    viewModel.foregroundFocusTarget =
+      suggestions.length > 0
+        ? CliSessionShellForegroundFocusTarget.PALETTE
+        : CliSessionShellForegroundFocusTarget.COMPOSER;
+  }
+
+  private showShortcutsPalette(
+    viewModel: CliSessionShellViewModel,
+    translate: (key: string, interpolation?: Record<string, string>) => string,
+  ): void {
+    const suggestions = this.slashCommandRegistry.suggest('/', translate, {
+      surface: 'full',
+    });
+    viewModel.shellMode = CliSessionShellMode.COMMAND_PALETTE;
+    viewModel.inputMode = CliSessionShellInputMode.SLASH_COMMAND;
+    viewModel.slashQuery = '?';
     viewModel.slashPaletteVisible = true;
     viewModel.slashSuggestions = suggestions;
     viewModel.highlightedCommand = suggestions[0]?.command ?? null;

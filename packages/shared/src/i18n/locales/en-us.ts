@@ -224,14 +224,13 @@ export const EN_US_TRANSLATIONS = {
       workspaceSummary:
         'workspace_id={{workspaceId}} mode={{workspaceMode}} root={{workspaceRoot}}',
       sections: {
-        transcript: 'Transcript',
-        composer: 'Composer',
+        transcript: 'History',
+        composer: 'Current input',
         slashPalette: 'Slash palette',
         promptBar: 'Prompt bar',
       },
       composer: {
-        placeholder:
-          'Type plain text for the future main agent, or enter /help for slash commands.',
+        placeholder: 'Type a message, / for commands, or ? for shortcuts.',
       },
       palette: {
         emptyState: 'No matching slash commands. Type /help to view the MVP command set.',
@@ -253,6 +252,9 @@ export const EN_US_TRANSLATIONS = {
         workspaceLine: 'cwd={{cwd}} workspace={{workspace}}',
         shortcuts:
           'Shortcuts: /help, /confirm, /cancel, /history, /search, /multiline, !command, Ctrl+C exit, Ctrl+D close.',
+        idleShortcuts: '? shortcuts · /status · Ctrl+D',
+        paletteShortcuts: '↑↓ · Tab/Enter · Esc',
+        previewShortcuts: '/confirm · /cancel · Esc',
       },
       commands: {
         help: {
@@ -282,6 +284,9 @@ export const EN_US_TRANSLATIONS = {
         multiline: {
           summary: 'Capture one multi-line user message before sending it as a single turn.',
         },
+        status: {
+          summary: 'Show session-shell status and hidden runtime details.',
+        },
         theme: {
           summary: 'Inspect or change the current session-shell theme preset.',
         },
@@ -299,7 +304,7 @@ export const EN_US_TRANSLATIONS = {
         unknownSlashCommand:
           'Unknown slash command "{{command}}". The session shell only exposes the documented command surface.',
         trySlashHelp: 'Use /help to inspect the currently exposed slash command set.',
-        commandPreview: 'preview={{command}} state=awaiting_confirmation',
+        commandPreview: 'Ready: {{command}}',
         commandHandoffPending: 'Command handoff preview is ready for {{command}}.',
         commandConfirmHint:
           'Run /confirm to execute this handoff, or /cancel to discard the preview.',
@@ -338,6 +343,10 @@ export const EN_US_TRANSLATIONS = {
         searchRequiresQuery: 'Pass a search term after /search.',
         searchNoMatch: 'No transcript or history lines matched {{query}}.',
         searchMatches: 'Matched transcript/history lines for {{query}}:',
+        statusAttached: 'Attached to session {{sessionId}} on {{routeId}}.',
+        statusRuntime:
+          'Resume={{resumeSelector}} persistence={{persistenceOwner}} theme={{theme}} output={{output}}.',
+        statusWorkspace: 'Workspace: {{workspace}}',
         themeCurrent: 'Current session theme={{theme}}.',
         themeAvailable: 'Available themes: {{themes}}.',
         themeUnknown: 'Unknown theme {{theme}}. Choose one of: {{themes}}.',

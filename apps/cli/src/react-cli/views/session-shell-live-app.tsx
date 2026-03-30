@@ -87,6 +87,16 @@ export function mapSessionShellKeypressToAction(
   }
 
   if (context.key.return || context.input === '\r' || context.input === '\n') {
+    if (shouldAcceptHighlightedCommandOnEnter(context)) {
+      return {
+        kind: 'action',
+        action: {
+          type: CliSessionShellInputActionType.PALETTE_ACCEPT_HIGHLIGHTED,
+        },
+        nextComposerValue: context.highlightedCommand ?? undefined,
+      };
+    }
+
     return {
       kind: 'action',
       action: {
@@ -131,6 +141,31 @@ export function mapSessionShellKeypressToAction(
   return {
     kind: 'ignore',
   };
+}
+
+function shouldAcceptHighlightedCommandOnEnter(
+  context: ReactCliSessionShellKeypressContext,
+): boolean {
+  if (!context.highlightedCommand) {
+    return false;
+  }
+
+  const trimmedComposerValue = context.composerValue.trim();
+  if (trimmedComposerValue === '?') {
+    return true;
+  }
+
+  if (!trimmedComposerValue.startsWith('/')) {
+    return false;
+  }
+
+  const commandToken = trimmedComposerValue.split(/\s+/u)[0] ?? '';
+  const hasArgumentTokens = trimmedComposerValue.includes(' ');
+  if (hasArgumentTokens) {
+    return false;
+  }
+
+  return commandToken !== context.highlightedCommand;
 }
 
 /**

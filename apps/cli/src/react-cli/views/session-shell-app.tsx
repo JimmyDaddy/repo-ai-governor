@@ -33,18 +33,20 @@ export function ReactCliSessionShellApp({
         <Text bold color={shellPalette.titleColor}>
           {viewModel.title}
         </Text>
-        <Text color={shellPalette.subtitleColor}>{viewModel.subtitle}</Text>
-        <Text color={shellPalette.helpColor}>
-          {`session_id=${viewModel.sessionId} persistence=${viewModel.persistenceOwner} resume=${viewModel.resumeSelector}`}
-        </Text>
-        <Text color={shellPalette.helpColor}>
-          {`shell_mode=${viewModel.shellMode} handoff=${viewModel.handoffState} output=${viewModel.outputContract}`}
-        </Text>
-        <ReactCliTranscriptPane
-          title={viewModel.transcriptTitle}
-          items={viewModel.transcriptItems}
-          shellPalette={shellPalette}
-        />
+        {viewModel.transcriptItems.length > 0 ? (
+          <>
+            <ReactCliTranscriptPane
+              title={viewModel.transcriptTitle}
+              items={viewModel.transcriptItems}
+              shellPalette={shellPalette}
+            />
+            <Box marginTop={1}>
+              <Text color={shellPalette.borderColor} dimColor>
+                {'─'.repeat(23)}
+              </Text>
+            </Box>
+          </>
+        ) : null}
         <ReactCliComposerInput
           title={viewModel.composerTitle}
           value={viewModel.composerValue}
@@ -61,6 +63,11 @@ export function ReactCliSessionShellApp({
             emptyState={viewModel.commandPreview ?? viewModel.slashPaletteEmptyState}
             shellPalette={shellPalette}
           />
+        ) : null}
+        {viewModel.commandPreview && !viewModel.slashPaletteVisible ? (
+          <Box marginTop={1}>
+            <Text color={shellPalette.subtitleColor}>{viewModel.commandPreview}</Text>
+          </Box>
         ) : null}
         <ReactCliPromptBar
           title={viewModel.promptBarTitle}

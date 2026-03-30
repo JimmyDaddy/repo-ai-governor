@@ -18,10 +18,10 @@ function createViewModel(): CliSessionShellViewModel {
     shellMode: CliSessionShellMode.SESSION_SHELL,
     inputMode: CliSessionShellInputMode.PLAIN_TEXT,
     transcriptItems: [],
-    transcriptTitle: 'Transcript',
+    transcriptTitle: 'History',
     composerValue: '',
-    composerTitle: 'Composer',
-    composerPlaceholder: 'Type a message or /help.',
+    composerTitle: 'Current input',
+    composerPlaceholder: 'Type a message, / for commands, or ? for shortcuts.',
     slashQuery: '',
     slashPaletteVisible: false,
     slashSuggestions: [],
@@ -109,6 +109,137 @@ describe('CliSessionShellInkRunner', () => {
     expect(rerenderLiveSessionShell).toHaveBeenCalledTimes(1);
     expect(fakeInstance.clear).toHaveBeenCalledTimes(1);
     expect(fakeInstance.unmount).toHaveBeenCalledTimes(1);
+  });
+
+  it('clears the viewport only when one explicit clear was requested', async () => {
+    const fakeInstance = {
+      rerender: vi.fn(),
+      clear: vi.fn(),
+      unmount: vi.fn(),
+    };
+    let liveHandlers:
+      | {
+          onAction: (action: {
+            type: CliSessionShellInputActionType;
+            value?: string;
+          }) => void;
+          onInterrupt: () => void;
+          onEndOfInput: () => void;
+        }
+      | undefined;
+    const mountLiveSessionShell = vi.fn((_viewModel, interactionHandlers) => {
+      liveHandlers = interactionHandlers;
+      return fakeInstance;
+    });
+    const rerenderLiveSessionShell = vi.fn((_instance, _viewModel, interactionHandlers) => {
+      liveHandlers = interactionHandlers;
+    });
+    const runner = new CliSessionShellInkRunner(
+      {
+        mountLiveSessionShell,
+        rerenderLiveSessionShell,
+      } as never,
+      {
+        stdout: process.stderr,
+      },
+    );
+
+    const firstActionPromise = runner.readAction(createViewModel());
+    liveHandlers?.onAction({
+      type: CliSessionShellInputActionType.PALETTE_HIGHLIGHT_NEXT,
+    });
+    await expect(firstActionPromise).resolves.toEqual({
+      type: CliSessionShellInputActionType.PALETTE_HIGHLIGHT_NEXT,
+    });
+
+    expect(fakeInstance.clear).not.toHaveBeenCalled();
+
+    runner.requestViewportClear();
+    liveHandlers?.onAction({
+      type: CliSessionShellInputActionType.SESSION_CLEAR_SCREEN,
+    });
+    await expect(runner.readAction(createViewModel())).resolves.toEqual({
+      type: CliSessionShellInputActionType.SESSION_CLEAR_SCREEN,
+    });
+
+    expect(fakeInstance.clear).toHaveBeenCalledTimes(1);
+
+    liveHandlers?.onAction({
+      type: CliSessionShellInputActionType.PALETTE_HIGHLIGHT_PREVIOUS,
+    });
+    await expect(runner.readAction(createViewModel())).resolves.toEqual({
+      type: CliSessionShellInputActionType.PALETTE_HIGHLIGHT_PREVIOUS,
+    });
+
+    expect(fakeInstance.clear).toHaveBeenCalledTimes(1);
+  });
+
+  it('clears before rerender when the frame layout changes, but not for highlight-only movement', async () => {
+    const fakeInstance = {
+      rerender: vi.fn(),
+      clear: vi.fn(),
+      unmount: vi.fn(),
+    };
+    let liveHandlers:
+      | {
+          onAction: (action: {
+            type: CliSessionShellInputActionType;
+            value?: string;
+          }) => void;
+          onInterrupt: () => void;
+          onEndOfInput: () => void;
+        }
+      | undefined;
+    const runner = new CliSessionShellInkRunner(
+      {
+        mountLiveSessionShell: vi.fn((_viewModel, interactionHandlers) => {
+          liveHandlers = interactionHandlers;
+          return fakeInstance;
+        }),
+        rerenderLiveSessionShell: vi.fn((_instance, _viewModel, interactionHandlers) => {
+          liveHandlers = interactionHandlers;
+        }),
+      } as never,
+      {
+        stdout: process.stderr,
+      },
+    );
+    const initialViewModel = createViewModel();
+
+    const firstActionPromise = runner.readAction(initialViewModel);
+    liveHandlers?.onAction({
+      type: CliSessionShellInputActionType.PALETTE_HIGHLIGHT_NEXT,
+    });
+    await expect(firstActionPromise).resolves.toEqual({
+      type: CliSessionShellInputActionType.PALETTE_HIGHLIGHT_NEXT,
+    });
+
+    expect(fakeInstance.clear).not.toHaveBeenCalled();
+
+    const layoutChangedViewModel = {
+      ...initialViewModel,
+      shellMode: CliSessionShellMode.COMMAND_PALETTE,
+      inputMode: CliSessionShellInputMode.SLASH_COMMAND,
+      composerValue: '/',
+      slashPaletteVisible: true,
+      slashSuggestions: [
+        {
+          command: '/workspace',
+          summary: 'Plan or execute workspace migration baseline.',
+          highlightSegments: [{ text: '/workspace', highlighted: false }],
+        },
+      ],
+      highlightedCommand: '/workspace',
+    };
+    const secondActionPromise = runner.readAction(layoutChangedViewModel);
+    liveHandlers?.onAction({
+      type: CliSessionShellInputActionType.PALETTE_HIGHLIGHT_PREVIOUS,
+    });
+    await expect(secondActionPromise).resolves.toEqual({
+      type: CliSessionShellInputActionType.PALETTE_HIGHLIGHT_PREVIOUS,
+    });
+
+    expect(fakeInstance.clear).toHaveBeenCalledTimes(1);
   });
 
   it('surfaces Ctrl+C as a standardized interrupt error', async () => {

@@ -19,6 +19,8 @@ export class CliSessionShellInkRunner {
   private pendingReject: ((error: RuntimeError) => void) | null = null;
   private queuedActions: Array<CliSessionShellInputAction | null> = [];
   private queuedInterrupt: RuntimeError | null = null;
+  private clearViewportOnNextRender = false;
+  private lastLayoutSignature: string | null = null;
 
   public constructor(
     private readonly reactCliRunner: ReactCliRunner = new ReactCliRunner(),
@@ -64,12 +66,22 @@ export class CliSessionShellInkRunner {
    * @returns Nothing.
    */
   public render(viewModel: CliSessionShellViewModel): void {
+    const nextLayoutSignature = this.buildLayoutSignature(viewModel);
+
     if (this.activeInstance) {
+      if (
+        this.clearViewportOnNextRender ||
+        (this.lastLayoutSignature !== null && nextLayoutSignature !== this.lastLayoutSignature)
+      ) {
+        this.activeInstance.clear();
+        this.clearViewportOnNextRender = false;
+      }
       this.reactCliRunner.rerenderLiveSessionShell(
         this.activeInstance,
         viewModel,
         this.createInteractionHandlers(),
       );
+      this.lastLayoutSignature = nextLayoutSignature;
       return;
     }
 
@@ -78,6 +90,16 @@ export class CliSessionShellInkRunner {
       this.createInteractionHandlers(),
       this.renderOptions,
     );
+    this.clearViewportOnNextRender = false;
+    this.lastLayoutSignature = nextLayoutSignature;
+  }
+
+  /**
+   * Requests one viewport clear before the next live rerender.
+   * @returns Nothing.
+   */
+  public requestViewportClear(): void {
+    this.clearViewportOnNextRender = true;
   }
 
   /**
@@ -90,6 +112,8 @@ export class CliSessionShellInkRunner {
     this.pendingReject = null;
     this.queuedActions = [];
     this.queuedInterrupt = null;
+    this.clearViewportOnNextRender = false;
+    this.lastLayoutSignature = null;
 
     if (!this.activeInstance) {
       return;
@@ -142,5 +166,27 @@ export class CliSessionShellInkRunner {
     }
 
     this.queuedInterrupt = interruptError;
+  }
+
+  private buildLayoutSignature(viewModel: CliSessionShellViewModel): string {
+    const transcriptLineCount = viewModel.transcriptItems.reduce(
+      (lineCount, item) => lineCount + item.lines.length,
+      0,
+    );
+    const slashSuggestionCount = viewModel.slashSuggestions.length;
+    const promptBarLineCount = viewModel.promptBarLines.length;
+    const previewOccupancy = viewModel.commandPreview === null ? 'none' : 'present';
+
+    return [
+      viewModel.shellMode,
+      viewModel.inputMode,
+      viewModel.handoffState,
+      String(viewModel.transcriptItems.length),
+      String(transcriptLineCount),
+      viewModel.slashPaletteVisible ? 'palette-open' : 'palette-closed',
+      String(slashSuggestionCount),
+      previewOccupancy,
+      String(promptBarLineCount),
+    ].join('|');
   }
 }

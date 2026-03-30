@@ -23,6 +23,10 @@ interface SessionSlashCommandResolution {
   executionMode?: SessionSlashCommandExecutionMode;
 }
 
+interface SessionSlashCommandSuggestOptions {
+  surface?: 'launcher' | 'full';
+}
+
 const SESSION_SLASH_COMMAND_DEFINITIONS: SessionSlashCommandDefinition[] = [
   { command: '/help', summaryKey: 'cli.sessionShell.commands.help.summary', kind: 'builtin' },
   { command: '/confirm', summaryKey: 'cli.sessionShell.commands.confirm.summary', kind: 'builtin' },
@@ -41,6 +45,7 @@ const SESSION_SLASH_COMMAND_DEFINITIONS: SessionSlashCommandDefinition[] = [
     summaryKey: 'cli.sessionShell.commands.multiline.summary',
     kind: 'builtin',
   },
+  { command: '/status', summaryKey: 'cli.sessionShell.commands.status.summary', kind: 'builtin' },
   { command: '/theme', summaryKey: 'cli.sessionShell.commands.theme.summary', kind: 'builtin' },
   { command: '/agent', summaryKey: 'cli.sessionShell.commands.agent.summary', kind: 'builtin' },
   {
@@ -94,8 +99,19 @@ const SESSION_SLASH_COMMAND_DEFINITIONS: SessionSlashCommandDefinition[] = [
 ];
 
 const SESSION_SLASH_COMMAND_ALIASES: Record<string, string> = {
+  '?': '/help',
   '/routing': '/agent',
 };
+
+const SESSION_SLASH_COMMAND_LAUNCHER_ORDER = [
+  '/workspace',
+  '/doctor',
+  '/connect',
+  '/review',
+  '/plan',
+  '/run',
+  '/help',
+] as const;
 
 /**
  * Owns slash-command metadata, prefix filtering, and handoff argv resolution for the session shell.
@@ -177,21 +193,36 @@ export class CliSessionSlashCommandRegistry {
   public suggest(
     query: string,
     translate: (key: string, interpolation?: Record<string, string>) => string,
+    options: SessionSlashCommandSuggestOptions = {},
   ): CliSessionSlashCommandSuggestion[] {
     const normalizedPrefix = this.normalizePrefix(this.resolveCommandToken(query));
-    return this.listCommands(translate)
-      .filter((definition) => {
-        if (normalizedPrefix.length === 0) {
-          return true;
-        }
+    const commandList =
+      normalizedPrefix.length === 0 && options.surface !== 'full'
+        ? this.listLauncherCommands(translate)
+        : this.listCommands(translate);
 
-        return definition.command.slice(1).startsWith(normalizedPrefix);
-      })
+    return commandList
+      .filter(
+        (definition) =>
+          normalizedPrefix.length === 0 || definition.command.slice(1).startsWith(normalizedPrefix),
+      )
       .map((definition) => ({
         command: definition.command,
         summary: definition.summary,
         highlightSegments: this.buildHighlightSegments(definition.command, normalizedPrefix),
       }));
+  }
+
+  private listLauncherCommands(
+    translate: (key: string, interpolation?: Record<string, string>) => string,
+  ): CliSessionSlashCommandMetadata[] {
+    const commandMap = new Map(
+      this.listCommands(translate).map((definition) => [definition.command, definition]),
+    );
+
+    return SESSION_SLASH_COMMAND_LAUNCHER_ORDER.map((command) => commandMap.get(command)).filter(
+      (definition): definition is CliSessionSlashCommandMetadata => definition !== undefined,
+    );
   }
 
   private resolveBridgeArgv(command: string, argumentTokens: string[]): string[] {

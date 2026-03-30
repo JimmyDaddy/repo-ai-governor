@@ -77,10 +77,10 @@ describe('ReactCliRunner', () => {
           lines: ['hello governor'],
         },
       ],
-      transcriptTitle: 'Transcript',
-      composerTitle: 'Composer',
+      transcriptTitle: 'History',
+      composerTitle: 'Current input',
       composerValue: '',
-      composerPlaceholder: 'Type a message or /help.',
+      composerPlaceholder: 'Type a message, / for commands, or ? for shortcuts.',
       slashQuery: '/wo',
       slashPaletteVisible: true,
       slashSuggestions: [
@@ -110,16 +110,22 @@ describe('ReactCliRunner', () => {
       title: 'Repo AI Governor session shell',
       subtitle: 'Session-first preview baseline.',
       promptBarTitle: 'Prompt bar',
-      promptBarLines: [
-        'Shortcuts: /help, /exit, Ctrl+C, Ctrl+D.',
-        'preview=/workspace state=preview_only',
-      ],
+      promptBarLines: ['/confirm · /cancel · Esc'],
     });
 
     expect(output).toContain('Repo AI Governor session shell');
     expect(output).toContain('Session shell foundation is active.');
+    expect(output).toContain('History');
+    expect(output).toContain('Current input');
+    expect(output).toContain('governor>');
     expect(output).toContain('/workspace');
-    expect(output).toContain('preview=/workspace state=preview_only');
+    expect(output).toContain('› ');
+    expect(output).not.toContain('Prompt bar');
+    expect(output).not.toContain('Session-first preview baseline.');
+    expect(output).not.toContain('session_id=');
+    expect(output).not.toContain('shell_mode=');
+    expect(output).not.toContain('query=');
+    expect(output).toContain('/confirm · /cancel · Esc');
   });
 
   it('mounts the session-shell tree through Ink for live stderr rendering', () => {
@@ -135,10 +141,10 @@ describe('ReactCliRunner', () => {
         shellMode: CliSessionShellMode.SESSION_SHELL,
         inputMode: CliSessionShellInputMode.PLAIN_TEXT,
         transcriptItems: [],
-        transcriptTitle: 'Transcript',
-        composerTitle: 'Composer',
+        transcriptTitle: 'History',
+        composerTitle: 'Current input',
         composerValue: '',
-        composerPlaceholder: 'Type a message or /help.',
+        composerPlaceholder: 'Type a message, / for commands, or ? for shortcuts.',
         slashQuery: '',
         slashPaletteVisible: false,
         slashSuggestions: [],
@@ -158,7 +164,7 @@ describe('ReactCliRunner', () => {
         title: 'Repo AI Governor session shell',
         subtitle: 'Session-first preview baseline.',
         promptBarTitle: 'Prompt bar',
-        promptBarLines: ['Shortcuts: /help, /exit, Ctrl+C, Ctrl+D.'],
+        promptBarLines: ['? shortcuts · /status · Ctrl+D'],
       },
       {
         stdout: process.stderr,
@@ -187,10 +193,10 @@ describe('ReactCliRunner', () => {
         shellMode: CliSessionShellMode.SESSION_SHELL,
         inputMode: CliSessionShellInputMode.PLAIN_TEXT,
         transcriptItems: [],
-        transcriptTitle: 'Transcript',
-        composerTitle: 'Composer',
+        transcriptTitle: 'History',
+        composerTitle: 'Current input',
         composerValue: '',
-        composerPlaceholder: 'Type a message or /help.',
+        composerPlaceholder: 'Type a message, / for commands, or ? for shortcuts.',
         slashQuery: '',
         slashPaletteVisible: false,
         slashSuggestions: [],
@@ -210,7 +216,7 @@ describe('ReactCliRunner', () => {
         title: 'Repo AI Governor session shell',
         subtitle: 'Session-first preview baseline.',
         promptBarTitle: 'Prompt bar',
-        promptBarLines: ['Shortcuts: /help, /exit, Ctrl+C, Ctrl+D.'],
+        promptBarLines: ['? shortcuts · /status · Ctrl+D'],
       },
       interactionHandlers,
       {
@@ -229,10 +235,10 @@ describe('ReactCliRunner', () => {
       shellMode: CliSessionShellMode.SESSION_SHELL,
       inputMode: CliSessionShellInputMode.SLASH_COMMAND,
       transcriptItems: [],
-      transcriptTitle: 'Transcript',
-      composerTitle: 'Composer',
+      transcriptTitle: 'History',
+      composerTitle: 'Current input',
       composerValue: '/wo',
-      composerPlaceholder: 'Type a message or /help.',
+      composerPlaceholder: 'Type a message, / for commands, or ? for shortcuts.',
       slashQuery: '',
       slashPaletteVisible: false,
       slashSuggestions: [],
@@ -411,10 +417,10 @@ describe('CliSessionShellStderrRenderer', () => {
       shellMode: CliSessionShellMode.SESSION_SHELL,
       inputMode: CliSessionShellInputMode.PLAIN_TEXT,
       transcriptItems: [],
-      transcriptTitle: 'Transcript',
-      composerTitle: 'Composer',
+      transcriptTitle: 'History',
+      composerTitle: 'Current input',
       composerValue: '',
-      composerPlaceholder: 'Type a message or /help.',
+      composerPlaceholder: 'Type a message, / for commands, or ? for shortcuts.',
       slashQuery: '',
       slashPaletteVisible: false,
       slashSuggestions: [],

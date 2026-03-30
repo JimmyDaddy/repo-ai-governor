@@ -21,6 +21,22 @@ describe('mapSessionShellKeypressToAction', () => {
 
     expect(
       mapSessionShellKeypressToAction({
+        input: '?',
+        key: {} as never,
+        composerValue: '',
+        highlightedCommand: null,
+      }),
+    ).toEqual({
+      kind: 'action',
+      action: {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: '?',
+      },
+      nextComposerValue: '?',
+    });
+
+    expect(
+      mapSessionShellKeypressToAction({
         input: 'workspace dry-run',
         key: {} as never,
         composerValue: '/',
@@ -120,6 +136,39 @@ describe('mapSessionShellKeypressToAction', () => {
         type: CliSessionShellInputActionType.PALETTE_ACCEPT_HIGHLIGHTED,
       },
       nextComposerValue: '/workspace',
+    });
+
+    expect(
+      mapSessionShellKeypressToAction({
+        input: '\r',
+        key: {
+          return: true,
+        } as never,
+        composerValue: '/wo',
+        highlightedCommand: '/workspace',
+      }),
+    ).toEqual({
+      kind: 'action',
+      action: {
+        type: CliSessionShellInputActionType.PALETTE_ACCEPT_HIGHLIGHTED,
+      },
+      nextComposerValue: '/workspace',
+    });
+
+    expect(
+      mapSessionShellKeypressToAction({
+        input: '\r',
+        key: {
+          return: true,
+        } as never,
+        composerValue: '/workspace dry-run',
+        highlightedCommand: '/workspace',
+      }),
+    ).toEqual({
+      kind: 'action',
+      action: {
+        type: CliSessionShellInputActionType.COMPOSER_SUBMITTED,
+      },
     });
 
     expect(

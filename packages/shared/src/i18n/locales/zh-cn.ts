@@ -192,13 +192,13 @@ export const ZH_CN_TRANSLATIONS = {
       workspaceSummary:
         'workspace_id={{workspaceId}} mode={{workspaceMode}} root={{workspaceRoot}}',
       sections: {
-        transcript: 'Transcript',
-        composer: 'Composer',
+        transcript: '会话记录',
+        composer: '当前输入',
         slashPalette: 'Slash Palette',
         promptBar: 'Prompt Bar',
       },
       composer: {
-        placeholder: '输入普通文本可预演未来主 agent 对话，或输入 /help 查看 slash commands。',
+        placeholder: '输入消息，/ 打开命令，? 查看快捷帮助。',
       },
       palette: {
         emptyState: '没有匹配的 slash command。可输入 /help 查看当前 MVP 命令集合。',
@@ -220,6 +220,9 @@ export const ZH_CN_TRANSLATIONS = {
         workspaceLine: 'cwd={{cwd}} workspace={{workspace}}',
         shortcuts:
           '快捷键：/help、/confirm、/cancel、/history、/search、/multiline、!command、Ctrl+C 退出、Ctrl+D 关闭。',
+        idleShortcuts: '? 快捷帮助 · /status · Ctrl+D',
+        paletteShortcuts: '↑↓ · Tab/Enter · Esc',
+        previewShortcuts: '/confirm · /cancel · Esc',
       },
       commands: {
         help: {
@@ -249,6 +252,9 @@ export const ZH_CN_TRANSLATIONS = {
         multiline: {
           summary: '先采集一段多行消息，再作为单个 user turn 发送。',
         },
+        status: {
+          summary: '查看当前 session shell 状态与隐藏运行时详情。',
+        },
         theme: {
           summary: '查看或切换当前 session-shell 的主题预设。',
         },
@@ -265,7 +271,7 @@ export const ZH_CN_TRANSLATIONS = {
         unknownSlashCommand:
           '未知 slash command "{{command}}"。当前 session shell 只暴露文档化命令面。',
         trySlashHelp: '可输入 /help 查看当前已暴露的 slash command 集合。',
-        commandPreview: 'preview={{command}} state=awaiting_confirmation',
+        commandPreview: '就绪：{{command}}',
         commandHandoffPending: '{{command}} 的 command handoff 预览已经就绪。',
         commandConfirmHint: '输入 /confirm 执行当前 handoff，或输入 /cancel 放弃本次预览。',
         commandNotExecutable: '该 slash command 当前没有可执行的 handoff 目标。',
@@ -297,6 +303,10 @@ export const ZH_CN_TRANSLATIONS = {
         searchRequiresQuery: '请在 /search 后面传入检索词。',
         searchNoMatch: '没有 transcript 或 history 内容命中 {{query}}。',
         searchMatches: '{{query}} 的 transcript/history 命中如下：',
+        statusAttached: '当前已附着到 {{routeId}} 上的 session {{sessionId}}。',
+        statusRuntime:
+          'resume={{resumeSelector}} persistence={{persistenceOwner}} theme={{theme}} output={{output}}。',
+        statusWorkspace: '当前工作区：{{workspace}}',
         themeCurrent: '当前会话主题={{theme}}。',
         themeAvailable: '可用主题：{{themes}}。',
         themeUnknown: '未知主题 {{theme}}。可选值：{{themes}}。',

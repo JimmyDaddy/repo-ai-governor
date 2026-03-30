@@ -89,34 +89,51 @@ class StubSessionShellPromptAdapter implements CliSessionShellPromptAdapter {
 class StubSessionShellInkRunner {
   private cursor = 0;
   public readonly snapshots: CliSessionShellViewModel[] = [];
+  public closeCount = 0;
+  public clearRequestCount = 0;
 
   public constructor(private readonly actions: Array<CliSessionShellInputAction | null>) {}
 
   public async readAction(
     viewModel?: CliSessionShellViewModel,
   ): Promise<CliSessionShellInputAction | null> {
-    if (viewModel) {
-      this.snapshots.push({
-        ...viewModel,
-        transcriptItems: viewModel.transcriptItems.map((item) => ({
-          ...item,
-          lines: [...item.lines],
-        })),
-        slashSuggestions: viewModel.slashSuggestions.map((suggestion) => ({
-          ...suggestion,
-          highlightSegments: suggestion.highlightSegments.map((segment) => ({ ...segment })),
-        })),
-        promptBarLines: [...viewModel.promptBarLines],
-      });
-    }
+    this.recordSnapshot(viewModel);
 
     const action = this.actions[this.cursor] ?? null;
     this.cursor += 1;
     return action;
   }
 
+  public render(viewModel: CliSessionShellViewModel): void {
+    this.recordSnapshot(viewModel);
+  }
+
+  public requestViewportClear(): void {
+    this.clearRequestCount += 1;
+  }
+
   public close(): void {
+    this.closeCount += 1;
     return;
+  }
+
+  private recordSnapshot(viewModel?: CliSessionShellViewModel): void {
+    if (!viewModel) {
+      return;
+    }
+
+    this.snapshots.push({
+      ...viewModel,
+      transcriptItems: viewModel.transcriptItems.map((item) => ({
+        ...item,
+        lines: [...item.lines],
+      })),
+      slashSuggestions: viewModel.slashSuggestions.map((suggestion) => ({
+        ...suggestion,
+        highlightSegments: suggestion.highlightSegments.map((segment) => ({ ...segment })),
+      })),
+      promptBarLines: [...viewModel.promptBarLines],
+    });
   }
 }
 
@@ -332,11 +349,11 @@ const DEFAULT_TRANSLATIONS: Record<string, string> = {
   'cli.sessionShell.subtitle': 'Session shell baseline.',
   'cli.sessionShell.workspaceSummary':
     'workspace_id={{workspaceId}} mode={{workspaceMode}} root={{workspaceRoot}}',
-  'cli.sessionShell.sections.transcript': 'Transcript',
-  'cli.sessionShell.sections.composer': 'Composer',
+  'cli.sessionShell.sections.transcript': 'History',
+  'cli.sessionShell.sections.composer': 'Current input',
   'cli.sessionShell.sections.slashPalette': 'Slash palette',
   'cli.sessionShell.sections.promptBar': 'Prompt bar',
-  'cli.sessionShell.composer.placeholder': 'Type a message or /help.',
+  'cli.sessionShell.composer.placeholder': 'Type a message, / for commands, or ? for shortcuts.',
   'cli.sessionShell.palette.emptyState': 'No slash commands matched.',
   'cli.sessionShell.resumeSelector.latest': 'latest',
   'cli.sessionShell.transcript.systemLabel': 'System',
@@ -351,6 +368,9 @@ const DEFAULT_TRANSLATIONS: Record<string, string> = {
     'route={{routeId}} theme={{theme}} history={{historyCount}}',
   'cli.sessionShell.promptBar.workspaceLine': 'cwd={{cwd}} workspace={{workspace}}',
   'cli.sessionShell.promptBar.shortcuts': 'Shortcuts: /help, /confirm, /cancel.',
+  'cli.sessionShell.promptBar.idleShortcuts': '? shortcuts · /status · Ctrl+D',
+  'cli.sessionShell.promptBar.paletteShortcuts': '↑↓ · Tab/Enter · Esc',
+  'cli.sessionShell.promptBar.previewShortcuts': '/confirm · /cancel · Esc',
   'cli.sessionShell.commands.help.summary': 'List exposed session-shell commands.',
   'cli.sessionShell.commands.confirm.summary': 'Confirm the current command handoff.',
   'cli.sessionShell.commands.cancel.summary': 'Cancel the current command handoff.',
@@ -360,6 +380,8 @@ const DEFAULT_TRANSLATIONS: Record<string, string> = {
   'cli.sessionShell.commands.history.summary': 'Show recent shell input history.',
   'cli.sessionShell.commands.search.summary': 'Search transcript and history.',
   'cli.sessionShell.commands.multiline.summary': 'Capture one multi-line turn.',
+  'cli.sessionShell.commands.status.summary':
+    'Show session-shell status and hidden runtime details.',
   'cli.sessionShell.commands.theme.summary': 'Inspect or update the theme.',
   'cli.sessionShell.commands.agent.summary': 'Inspect the current foreground route.',
   'cli.commands.init.description': 'Initialize governor workspace baseline.',
@@ -378,7 +400,7 @@ const DEFAULT_TRANSLATIONS: Record<string, string> = {
   'cli.sessionShell.responses.partialSlashMatch': 'Matched commands for prefix {{query}}.',
   'cli.sessionShell.responses.unknownSlashCommand': 'Unknown slash command {{command}}.',
   'cli.sessionShell.responses.trySlashHelp': 'Use /help to inspect commands.',
-  'cli.sessionShell.responses.commandPreview': 'preview={{command}} state=awaiting_confirmation',
+  'cli.sessionShell.responses.commandPreview': 'Ready: {{command}}',
   'cli.sessionShell.responses.commandHandoffPending':
     'Command handoff preview is ready for {{command}}.',
   'cli.sessionShell.responses.commandConfirmHint': 'Run /confirm or /cancel.',
@@ -392,6 +414,10 @@ const DEFAULT_TRANSLATIONS: Record<string, string> = {
   'cli.sessionShell.responses.searchRequiresQuery': 'Pass a search term after /search.',
   'cli.sessionShell.responses.searchMatches': 'Matched transcript/history lines for {{query}}:',
   'cli.sessionShell.responses.searchNoMatch': 'No transcript or history lines matched {{query}}.',
+  'cli.sessionShell.responses.statusAttached': 'Attached to session {{sessionId}} on {{routeId}}.',
+  'cli.sessionShell.responses.statusRuntime':
+    'Resume={{resumeSelector}} persistence={{persistenceOwner}} theme={{theme}} output={{output}}.',
+  'cli.sessionShell.responses.statusWorkspace': 'Workspace: {{workspace}}',
   'cli.sessionShell.responses.themeCurrent': 'Current session theme={{theme}}.',
   'cli.sessionShell.responses.themeAvailable': 'Available themes: {{themes}}.',
   'cli.sessionShell.responses.themeUnknown': 'Unknown theme {{theme}}. Choose one of: {{themes}}.',
@@ -486,8 +512,10 @@ describe('CliSessionShellRunner', () => {
       ),
     ).toBe(true);
     expect(
-      renderer.frames.some((frame) =>
-        frame.promptBarLines.includes('preview=workspace dry-run state=awaiting_confirmation'),
+      renderer.frames.some(
+        (frame) =>
+          frame.commandPreview === 'Ready: workspace dry-run' &&
+          frame.promptBarLines.includes('/confirm · /cancel · Esc'),
       ),
     ).toBe(true);
     expect(
@@ -552,9 +580,104 @@ describe('CliSessionShellRunner', () => {
         ),
       ),
     ).toBe(true);
-    expect(renderer.frames.at(-1)?.promptBarLines.some((line) => line.includes('history='))).toBe(
-      true,
+    expect(renderer.frames.at(-1)?.promptBarLines).toEqual(['? shortcuts · /status · Ctrl+D']);
+  });
+
+  it('treats repeated /help as one ephemeral palette surface instead of transcript growth', async () => {
+    const renderer = new RecordingSessionShellRenderer();
+    const runner = new CliSessionShellRunner(
+      undefined,
+      renderer as never,
+      () => new StubSessionShellPromptAdapter(['/help', '/help', '/exit']),
+      undefined,
+      undefined,
+      () => false,
+      () => new Date('2026-03-30T12:00:00Z'),
     );
+
+    const result = await runner.run(DEFAULT_RUN_OPTIONS());
+
+    expect(result.exitReason).toBe(CliSessionShellExitReason.SLASH_EXIT);
+    expect(result.transcriptItems.some((item) => item.lines.includes('/help'))).toBe(false);
+    expect(
+      result.transcriptItems.some((item) => item.lines.some((line) => line.startsWith('/help - '))),
+    ).toBe(false);
+    expect(
+      renderer.frames.some(
+        (frame) =>
+          frame.shellMode === CliSessionShellMode.COMMAND_PALETTE &&
+          frame.slashPaletteVisible &&
+          frame.slashSuggestions.some((suggestion) => suggestion.command === '/confirm') &&
+          frame.slashSuggestions.some((suggestion) => suggestion.command === '/workflow') &&
+          frame.promptBarLines.includes('↑↓ · Tab/Enter · Esc'),
+      ),
+    ).toBe(true);
+  });
+
+  it('treats ? as a real shortcuts alias and opens the same help palette surface', async () => {
+    const renderer = new RecordingSessionShellRenderer();
+    const runner = new CliSessionShellRunner(
+      undefined,
+      renderer as never,
+      () => new StubSessionShellPromptAdapter(['?', '/exit']),
+      undefined,
+      undefined,
+      () => false,
+      () => new Date('2026-03-30T12:00:00Z'),
+    );
+
+    const result = await runner.run(DEFAULT_RUN_OPTIONS());
+
+    expect(result.exitReason).toBe(CliSessionShellExitReason.SLASH_EXIT);
+    expect(result.transcriptItems.some((item) => item.lines.includes('?'))).toBe(false);
+    expect(
+      renderer.frames.some(
+        (frame) =>
+          frame.shellMode === CliSessionShellMode.COMMAND_PALETTE &&
+          frame.slashPaletteVisible &&
+          frame.composerValue === '?' &&
+          frame.slashSuggestions.some((suggestion) => suggestion.command === '/confirm') &&
+          frame.slashSuggestions.some((suggestion) => suggestion.command === '/workflow') &&
+          frame.promptBarLines.includes('↑↓ · Tab/Enter · Esc'),
+      ),
+    ).toBe(true);
+  });
+
+  it('reveals hidden runtime details only when /status is explicitly requested', async () => {
+    const renderer = new RecordingSessionShellRenderer();
+    const runner = new CliSessionShellRunner(
+      undefined,
+      renderer as never,
+      () => new StubSessionShellPromptAdapter(['/status', '/exit']),
+      undefined,
+      undefined,
+      () => false,
+      () => new Date('2026-03-30T12:00:00Z'),
+    );
+
+    const result = await runner.run(DEFAULT_RUN_OPTIONS());
+
+    expect(renderer.frames[0]?.transcriptItems.length).toBe(0);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes('Attached to session session-shell-001 on session.main.'),
+      ),
+    ).toBe(true);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes(
+          'Resume=latest persistence=local_orchestration_service theme=governor output=pretty.',
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes(
+          'Workspace: workspace_id=repo mode=repo_local root=/workspace/repo/.repo-ai-governor',
+        ),
+      ),
+    ).toBe(true);
+    expect(renderer.frames.at(-1)?.promptBarLines).toEqual(['? shortcuts · /status · Ctrl+D']);
   });
 
   it('executes safe bridge commands like /doctor without requiring /confirm', async () => {
@@ -585,11 +708,7 @@ describe('CliSessionShellRunner', () => {
     );
 
     expect(commandExecutor).toHaveBeenCalledWith(['doctor']);
-    expect(
-      renderer.frames.some((frame) =>
-        frame.promptBarLines.some((line) => line.includes('preview=doctor')),
-      ),
-    ).toBe(false);
+    expect(renderer.frames.some((frame) => frame.commandPreview === 'Ready: doctor')).toBe(false);
     expect(
       result.transcriptItems.some((item) => item.lines.includes('summary=doctor completed')),
     ).toBe(true);
@@ -628,9 +747,7 @@ describe('CliSessionShellRunner', () => {
     expect(commandExecutor).not.toHaveBeenCalled();
     expect(renderer.frames.at(-1)?.shellMode).toBe(CliSessionShellMode.SESSION_SHELL);
     expect(renderer.frames.at(-1)?.handoffState).toBe(CliSessionShellHandoffState.IDLE);
-    expect(renderer.frames.at(-1)?.promptBarLines.some((line) => line.includes('preview='))).toBe(
-      false,
-    );
+    expect(renderer.frames.at(-1)?.commandPreview).toBeNull();
     expect(result.transcriptItems.at(-1)?.lines[0]).toBe('Closed after /exit.');
   });
 
@@ -667,7 +784,8 @@ describe('CliSessionShellRunner', () => {
       renderer.frames.some(
         (frame) =>
           frame.transcriptItems.at(-1)?.lines[0] === 'Local transcript viewport cleared.' &&
-          frame.promptBarLines.includes('preview=workspace dry-run state=awaiting_confirmation'),
+          frame.commandPreview === 'Ready: workspace dry-run' &&
+          frame.promptBarLines.includes('/confirm · /cancel · Esc'),
       ),
     ).toBe(true);
     expect(
@@ -761,9 +879,15 @@ describe('CliSessionShellRunner', () => {
     ).toBe(true);
     expect(
       inkRunner.snapshots.some((frame) =>
-        frame.promptBarLines.some((line) =>
-          line.includes('shell_mode=command_palette input_mode=slash_command handoff=idle'),
-        ),
+        frame.promptBarLines.some((line) => line.includes('↑↓ · Tab/Enter · Esc')),
+      ),
+    ).toBe(true);
+    expect(
+      inkRunner.snapshots.some(
+        (frame) =>
+          frame.composerValue === '/' &&
+          frame.slashSuggestions.map((suggestion) => suggestion.command).join(',') ===
+            '/workspace,/doctor,/connect,/review,/plan,/run,/help',
       ),
     ).toBe(true);
     expect(
@@ -771,6 +895,7 @@ describe('CliSessionShellRunner', () => {
         frame.slashSuggestions.some((suggestion) => suggestion.command === '/workspace'),
       ),
     ).toBe(true);
+    expect(inkRunner.closeCount).toBe(1);
     expect(result.transcriptItems.at(-1)?.lines[0]).toBe('Closed after /exit.');
   });
 
@@ -828,11 +953,13 @@ describe('CliSessionShellRunner', () => {
     );
 
     expect(commandExecutor).toHaveBeenCalledWith(['workspace', 'dry-run']);
+    expect(renderer.frames).toHaveLength(0);
     expect(
       inkRunner.snapshots.some(
         (frame) =>
           frame.transcriptItems.at(-1)?.lines[0] === 'Local transcript viewport cleared.' &&
-          frame.promptBarLines.includes('preview=workspace dry-run state=awaiting_confirmation'),
+          frame.commandPreview === 'Ready: workspace dry-run' &&
+          frame.promptBarLines.includes('/confirm · /cancel · Esc'),
       ),
     ).toBe(true);
     expect(

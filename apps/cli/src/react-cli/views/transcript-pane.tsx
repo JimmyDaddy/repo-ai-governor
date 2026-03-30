@@ -20,16 +20,18 @@ export function ReactCliTranscriptPane({
 }: ReactCliTranscriptPaneProps): React.JSX.Element {
   return (
     <Box flexDirection='column' marginTop={1}>
-      <Text bold color={shellPalette.sectionTitleColor}>
+      <Text color={shellPalette.helpColor} dimColor>
         {title}
       </Text>
       {items.map((item) => (
-        <Box key={item.id} flexDirection='column' marginTop={1}>
+        <Box key={item.id} flexDirection='column' marginTop={1} paddingLeft={1}>
           <Text bold color={resolveTranscriptColor(item.role, shellPalette)}>
             {item.label}
           </Text>
           {item.lines.map((line, index) => (
-            <Text key={`${item.id}:${index}`}>{line}</Text>
+            <Text key={`${item.id}:${index}`} color={shellPalette.sectionTitleColor}>
+              {line}
+            </Text>
           ))}
         </Box>
       ))}
