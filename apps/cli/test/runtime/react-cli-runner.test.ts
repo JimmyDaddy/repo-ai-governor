@@ -14,6 +14,7 @@ import {
 } from '../../src/constants/cli-session-shell.constant.js';
 import { ReactCliRunner, ReactCliStderrFramePresenter } from '../../src/react-cli/index.js';
 import { CliInteractiveShellStderrRenderer } from '../../src/runtime/interactive-shell/interactive-shell-stderr-renderer.js';
+import { CliSessionShellStderrRenderer } from '../../src/runtime/interactive-shell/session-shell-stderr-renderer.js';
 import type { CliInteractiveShellSessionState } from '../../src/types/index.js';
 
 describe('ReactCliRunner', () => {
@@ -239,5 +240,65 @@ describe('CliInteractiveShellStderrRenderer', () => {
       'Choose where Repo AI Governor should keep its managed workspace metadata.',
     );
     expect(output).toContain('unmounted state=success fallback=none');
+  });
+});
+
+describe('CliSessionShellStderrRenderer', () => {
+  it('clears the viewport before re-rendering interactive session-shell frames', () => {
+    const buffer: string[] = [];
+    const clearViewport = vi.fn(() => {
+      buffer.push('[clear]');
+    });
+    const renderSessionShellFrame = vi.fn(() => 'rendered session frame');
+    const renderer = new CliSessionShellStderrRenderer(
+      (value) => {
+        buffer.push(value);
+      },
+      {
+        renderSessionShellFrame,
+      } as unknown as ReactCliRunner,
+      () => 120,
+      () => true,
+      clearViewport,
+    );
+
+    renderer.render({
+      sessionId: 'session-shell-preview-456',
+      shellMode: CliSessionShellMode.SESSION_SHELL,
+      inputMode: CliSessionShellInputMode.PLAIN_TEXT,
+      transcriptItems: [],
+      transcriptTitle: 'Transcript',
+      composerTitle: 'Composer',
+      composerValue: '',
+      composerPlaceholder: 'Type a message or /help.',
+      slashQuery: '',
+      slashSuggestions: [],
+      highlightedCommand: null,
+      slashPaletteTitle: 'Slash palette',
+      slashPaletteEmptyState: 'No slash commands matched.',
+      commandPreview: null,
+      handoffState: CliSessionShellHandoffState.IDLE,
+      cwd: '/workspace/repo',
+      workspaceSummary: 'workspace_id=repo mode=repo_local',
+      outputContract: ErrorOutputEnvironment.PRETTY,
+      persistenceOwner: CliSessionShellPersistenceOwner.LOCAL_ORCHESTRATION_SERVICE,
+      resumeSelector: 'latest',
+      title: 'Repo AI Governor session shell',
+      subtitle: 'Session-first preview baseline.',
+      promptBarTitle: 'Prompt bar',
+      promptBarLines: ['Shortcuts: /help, /exit, Ctrl+C, Ctrl+D.'],
+    });
+
+    expect(clearViewport).toHaveBeenCalledTimes(1);
+    expect(renderSessionShellFrame).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sessionId: 'session-shell-preview-456',
+      }),
+      {
+        columns: 120,
+      },
+    );
+    expect(buffer).toContain('[clear]');
+    expect(buffer.at(-1)).toBe('rendered session frame\n');
   });
 });

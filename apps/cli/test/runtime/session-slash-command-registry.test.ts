@@ -64,8 +64,16 @@ describe('CliSessionSlashCommandRegistry', () => {
     expect(registry.resolveAction('/review verify latest')).toEqual({
       bridgeArgv: ['review-verify', 'latest'],
       command: '/review',
+      executionMode: 'confirm',
       kind: 'bridge',
       summaryKey: 'cli.commands.review.description',
+    });
+    expect(registry.resolveAction('/doctor')).toEqual({
+      bridgeArgv: ['doctor'],
+      command: '/doctor',
+      executionMode: 'direct',
+      kind: 'bridge',
+      summaryKey: 'cli.commands.doctor.description',
     });
   });
 });

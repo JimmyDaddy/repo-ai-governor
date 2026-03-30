@@ -6,11 +6,13 @@ import type {
 } from '../../types/index.js';
 
 type SessionSlashCommandKind = 'builtin' | 'bridge';
+type SessionSlashCommandExecutionMode = 'direct' | 'confirm';
 
 interface SessionSlashCommandDefinition {
   command: string;
   summaryKey: string;
   kind: SessionSlashCommandKind;
+  executionMode?: SessionSlashCommandExecutionMode;
 }
 
 interface SessionSlashCommandResolution {
@@ -18,6 +20,7 @@ interface SessionSlashCommandResolution {
   summaryKey: string;
   kind: SessionSlashCommandKind;
   bridgeArgv?: string[];
+  executionMode?: SessionSlashCommandExecutionMode;
 }
 
 const SESSION_SLASH_COMMAND_DEFINITIONS: SessionSlashCommandDefinition[] = [
@@ -40,14 +43,54 @@ const SESSION_SLASH_COMMAND_DEFINITIONS: SessionSlashCommandDefinition[] = [
   },
   { command: '/theme', summaryKey: 'cli.sessionShell.commands.theme.summary', kind: 'builtin' },
   { command: '/agent', summaryKey: 'cli.sessionShell.commands.agent.summary', kind: 'builtin' },
-  { command: '/init', summaryKey: 'cli.commands.init.description', kind: 'bridge' },
-  { command: '/connect', summaryKey: 'cli.commands.connect.description', kind: 'bridge' },
-  { command: '/doctor', summaryKey: 'cli.commands.doctor.description', kind: 'bridge' },
-  { command: '/workspace', summaryKey: 'cli.commands.workspace.description', kind: 'bridge' },
-  { command: '/workflow', summaryKey: 'cli.commands.workflow.description', kind: 'bridge' },
-  { command: '/run', summaryKey: 'cli.commands.run.description', kind: 'bridge' },
-  { command: '/plan', summaryKey: 'cli.commands.plan.description', kind: 'bridge' },
-  { command: '/review', summaryKey: 'cli.commands.review.description', kind: 'bridge' },
+  {
+    command: '/init',
+    summaryKey: 'cli.commands.init.description',
+    kind: 'bridge',
+    executionMode: 'direct',
+  },
+  {
+    command: '/connect',
+    summaryKey: 'cli.commands.connect.description',
+    kind: 'bridge',
+    executionMode: 'direct',
+  },
+  {
+    command: '/doctor',
+    summaryKey: 'cli.commands.doctor.description',
+    kind: 'bridge',
+    executionMode: 'direct',
+  },
+  {
+    command: '/workspace',
+    summaryKey: 'cli.commands.workspace.description',
+    kind: 'bridge',
+    executionMode: 'confirm',
+  },
+  {
+    command: '/workflow',
+    summaryKey: 'cli.commands.workflow.description',
+    kind: 'bridge',
+    executionMode: 'confirm',
+  },
+  {
+    command: '/run',
+    summaryKey: 'cli.commands.run.description',
+    kind: 'bridge',
+    executionMode: 'confirm',
+  },
+  {
+    command: '/plan',
+    summaryKey: 'cli.commands.plan.description',
+    kind: 'bridge',
+    executionMode: 'confirm',
+  },
+  {
+    command: '/review',
+    summaryKey: 'cli.commands.review.description',
+    kind: 'bridge',
+    executionMode: 'confirm',
+  },
 ];
 
 const SESSION_SLASH_COMMAND_ALIASES: Record<string, string> = {
@@ -118,6 +161,7 @@ export class CliSessionSlashCommandRegistry {
       kind: match.kind,
       ...(match.kind === 'bridge'
         ? {
+            executionMode: match.executionMode ?? 'confirm',
             bridgeArgv: this.resolveBridgeArgv(match.command, this.resolveArgumentTokens(query)),
           }
         : {}),

@@ -115,7 +115,12 @@ export class CliSessionShellRunner {
         const inputLine = await promptAdapter.readLine(CLI_SESSION_SHELL_PROMPT);
 
         if (inputLine === null) {
-          const exitResult = this.completeExit(viewModel, options, CliSessionShellExitReason.EOF);
+          const exitResult = this.completeExit(
+            viewModel,
+            options,
+            runtimeState,
+            CliSessionShellExitReason.EOF,
+          );
           this.renderer.render(viewModel);
           return exitResult;
         }
@@ -171,7 +176,12 @@ export class CliSessionShellRunner {
         error instanceof BaseError &&
         error.code === GovernorErrorCode.PROCESS_RUNTIME_CANCELLED
       ) {
-        const exitResult = this.completeExit(viewModel, options, CliSessionShellExitReason.SIGINT);
+        const exitResult = this.completeExit(
+          viewModel,
+          options,
+          runtimeState,
+          CliSessionShellExitReason.SIGINT,
+        );
         this.renderer.render(viewModel);
         return exitResult;
       }
@@ -380,7 +390,12 @@ export class CliSessionShellRunner {
     }
 
     if (exactCommand.command === '/exit') {
-      return this.completeExit(viewModel, options, CliSessionShellExitReason.SLASH_EXIT);
+      return this.completeExit(
+        viewModel,
+        options,
+        runtimeState,
+        CliSessionShellExitReason.SLASH_EXIT,
+      );
     }
 
     if (exactCommand.command === '/clear') {
@@ -486,12 +501,19 @@ export class CliSessionShellRunner {
       return null;
     }
 
-    runtimeState.pendingCommand = {
+    const nextPendingCommand = {
       argv: exactCommand.bridgeArgv,
       previewCommandLine: exactCommand.bridgeArgv.join(' '),
     };
+    runtimeState.pendingCommand = nextPendingCommand;
+
+    if (exactCommand.executionMode === 'direct') {
+      await this.executePendingCommand(viewModel, transcriptStore, options, runtimeState);
+      return null;
+    }
+
     viewModel.commandPreview = options.translate('cli.sessionShell.responses.commandPreview', {
-      command: runtimeState.pendingCommand.previewCommandLine,
+      command: nextPendingCommand.previewCommandLine,
     });
     viewModel.shellMode = CliSessionShellMode.COMMAND_HANDOFF_PREVIEW;
     viewModel.handoffState = CliSessionShellHandoffState.PREVIEWING;
@@ -505,7 +527,7 @@ export class CliSessionShellRunner {
       OrchestrationSessionTranscriptRole.ASSISTANT,
       [
         options.translate('cli.sessionShell.responses.commandHandoffPending', {
-          command: runtimeState.pendingCommand.previewCommandLine,
+          command: nextPendingCommand.previewCommandLine,
         }),
         options.translate('cli.sessionShell.responses.commandConfirmHint'),
       ],
@@ -846,8 +868,19 @@ export class CliSessionShellRunner {
   private completeExit(
     viewModel: CliSessionShellViewModel,
     options: CliSessionShellRunOptions,
+    runtimeState: CliSessionShellRuntimeState,
     exitReason: CliSessionShellExitReason,
   ): CliSessionShellRunResult {
+    runtimeState.pendingCommand = null;
+    viewModel.shellMode = CliSessionShellMode.SESSION_SHELL;
+    viewModel.inputMode = CliSessionShellInputMode.PLAIN_TEXT;
+    viewModel.slashQuery = '';
+    viewModel.slashSuggestions = this.slashCommandRegistry.suggest('', options.translate);
+    viewModel.highlightedCommand = viewModel.slashSuggestions[0]?.command ?? null;
+    viewModel.commandPreview = null;
+    viewModel.handoffState = CliSessionShellHandoffState.IDLE;
+    viewModel.composerValue = '';
+    viewModel.promptBarLines = this.buildPromptBarLines(viewModel, options, runtimeState);
     const exitMessage =
       exitReason === CliSessionShellExitReason.SLASH_EXIT
         ? options.translate('cli.sessionShell.responses.exitBySlash')
@@ -859,8 +892,6 @@ export class CliSessionShellRunner {
       label: options.translate('cli.sessionShell.transcript.systemLabel'),
       lines: [exitMessage, options.translate('cli.sessionShell.responses.exitKeepsTranscript')],
     });
-    viewModel.commandPreview = null;
-    viewModel.composerValue = '';
 
     return {
       exitReason,

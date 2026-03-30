@@ -21,3 +21,9 @@
 - [x] TK-419 project-029 delivery registry completion status sync
   - 2026-03-30：任务创建，状态初始化为 `planned`。
   - 2026-03-30：收尾 gate 发现 `technical-solution-delivery-registry` 中 project-029 的 follow-up delivery entry 仍为 `planned`；已同步修正为 completed closeout truth，并补跑 delivery registry gate。
+- [x] TK-420 session-shell redraw remediation and Ink-owned input proposal
+  - 2026-03-30：任务创建，状态初始化为 `planned`。
+  - 2026-03-30：已将 session-shell renderer 改为 interactive 原地重绘，修复 `/doctor` 额外 `/confirm` 与 `/exit` 未清理 pending preview 的问题，并形成 Ink-owned input 方案评审文档。
+- [x] TK-421 session-shell Ink input takeover solution drafting record
+  - 2026-03-30：任务创建，状态初始化为 `planned`。
+  - 2026-03-30：已完成 draft 正文 `session-shell-ink-input-takeover-technical-solution.md`，结合官方 Ink / Ink UI / Ink Testing Library 资料，把 Ink 输入接管正式整理为可评审的 focused technical solution；`tasks/` 下仅保留台账记录与入口回链。

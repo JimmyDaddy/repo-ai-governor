@@ -15,7 +15,11 @@ import {
 } from '@repo-ai-governor/orchestration-service-client';
 import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import { ErrorOutputEnvironment } from '@repo-ai-governor/shared';
-import { CliSessionShellExitReason } from '../../src/constants/cli-session-shell.constant.js';
+import {
+  CliSessionShellExitReason,
+  CliSessionShellHandoffState,
+  CliSessionShellMode,
+} from '../../src/constants/cli-session-shell.constant.js';
 import { CliSessionShellRunner } from '../../src/runtime/interactive-shell/session-shell-runner.js';
 import type {
   CliSessionShellCommandExecutionResult,
@@ -508,6 +512,77 @@ describe('CliSessionShellRunner', () => {
     expect(renderer.frames.at(-1)?.promptBarLines.some((line) => line.includes('history='))).toBe(
       true,
     );
+  });
+
+  it('executes safe bridge commands like /doctor without requiring /confirm', async () => {
+    const renderer = new RecordingSessionShellRenderer();
+    const commandExecutor = vi.fn<
+      (argv: string[]) => Promise<CliSessionShellCommandExecutionResult>
+    >(async (argv) => ({
+      artifactPaths: [],
+      commandLine: argv.join(' '),
+      message: 'doctor completed',
+      status: 'success',
+      summaryLines: ['summary=doctor completed'],
+    }));
+    const runner = new CliSessionShellRunner(
+      undefined,
+      renderer as never,
+      () => new StubSessionShellPromptAdapter(['/doctor', '/exit']),
+      () => new Date('2026-03-30T12:00:00Z'),
+    );
+
+    const result = await runner.run(
+      DEFAULT_RUN_OPTIONS({
+        commandExecutor,
+      }),
+    );
+
+    expect(commandExecutor).toHaveBeenCalledWith(['doctor']);
+    expect(
+      renderer.frames.some((frame) =>
+        frame.promptBarLines.some((line) => line.includes('preview=doctor')),
+      ),
+    ).toBe(false);
+    expect(
+      result.transcriptItems.some((item) => item.lines.includes('summary=doctor completed')),
+    ).toBe(true);
+    expect(
+      result.transcriptItems.some((item) => item.lines.includes('Run /confirm or /cancel.')),
+    ).toBe(false);
+  });
+
+  it('clears pending preview state when /exit closes the shell before confirmation', async () => {
+    const renderer = new RecordingSessionShellRenderer();
+    const commandExecutor = vi.fn<
+      (argv: string[]) => Promise<CliSessionShellCommandExecutionResult>
+    >(async (argv) => ({
+      artifactPaths: [],
+      commandLine: argv.join(' '),
+      message: 'workspace dry-run completed',
+      status: 'success',
+      summaryLines: ['summary=workspace dry-run completed'],
+    }));
+    const runner = new CliSessionShellRunner(
+      undefined,
+      renderer as never,
+      () => new StubSessionShellPromptAdapter(['/workspace dry-run', '/exit']),
+      () => new Date('2026-03-30T12:00:00Z'),
+    );
+
+    const result = await runner.run(
+      DEFAULT_RUN_OPTIONS({
+        commandExecutor,
+      }),
+    );
+
+    expect(commandExecutor).not.toHaveBeenCalled();
+    expect(renderer.frames.at(-1)?.shellMode).toBe(CliSessionShellMode.SESSION_SHELL);
+    expect(renderer.frames.at(-1)?.handoffState).toBe(CliSessionShellHandoffState.IDLE);
+    expect(renderer.frames.at(-1)?.promptBarLines.some((line) => line.includes('preview='))).toBe(
+      false,
+    );
+    expect(result.transcriptItems.at(-1)?.lines[0]).toBe('Closed after /exit.');
   });
 
   it('closes cleanly on Ctrl+D and keeps the transcript note intact', async () => {
