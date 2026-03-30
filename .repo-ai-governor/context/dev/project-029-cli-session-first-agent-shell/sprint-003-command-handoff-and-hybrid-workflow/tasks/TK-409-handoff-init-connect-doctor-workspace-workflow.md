@@ -1,6 +1,6 @@
 # TK-409 handoff init connect doctor workspace workflow
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-30
 - Owner: AI-Agent
 - Priority: P0
@@ -33,3 +33,4 @@
 ## 6. 执行记录
 
 1. 2026-03-30：任务创建，状态初始化为 `planned`。
+2. 2026-03-30：已完成 `/init / connect / doctor / workspace / workflow` 的 slash handoff bridge，session shell 现在可在 transcript 中预览并执行这些命令。

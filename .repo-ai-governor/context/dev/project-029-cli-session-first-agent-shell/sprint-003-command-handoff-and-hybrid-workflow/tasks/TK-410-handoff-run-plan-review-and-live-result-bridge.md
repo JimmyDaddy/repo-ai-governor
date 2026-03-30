@@ -1,6 +1,6 @@
 # TK-410 handoff run plan review and live-result bridge
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-30
 - Owner: AI-Agent
 - Priority: P0
@@ -33,3 +33,4 @@
 ## 6. 执行记录
 
 1. 2026-03-30：任务创建，状态初始化为 `planned`。
+2. 2026-03-30：已完成 `/run / plan / review` handoff 与 `/review verify` bridge resolution，session shell 可复用顶层 CLI runtime 并把执行结果回灌到当前会话。

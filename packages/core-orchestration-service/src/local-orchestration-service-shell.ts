@@ -13,13 +13,21 @@ import {
   MemoryProviderRuntimeMode,
 } from '@repo-ai-governor/memory-provider-registry';
 import {
+  type OrchestrationAppendSessionMessageRequest,
+  type OrchestrationAppendSessionMessageResponse,
   OrchestrationExecutionStatus,
   type OrchestrationExecutionSummary,
   type OrchestrationListExecutionsFilter,
   type OrchestrationListExecutionsRequest,
   type OrchestrationListExecutionsResponse,
+  type OrchestrationListSessionsRequest,
+  type OrchestrationListSessionsResponse,
   type OrchestrationRecoverExecutionRequest,
   type OrchestrationRecoverExecutionResponse,
+  type OrchestrationResumeSessionRequest,
+  type OrchestrationResumeSessionResponse,
+  type OrchestrationSendSessionTurnRequest,
+  type OrchestrationSendSessionTurnResponse,
   type OrchestrationServiceClient,
   type OrchestrationServiceEvent,
   OrchestrationServiceEventType,
@@ -27,14 +35,20 @@ import {
   OrchestrationServiceHostKind,
   OrchestrationServiceLifecycleStatus,
   OrchestrationServiceTransportKind,
+  type OrchestrationSessionSummary,
   type OrchestrationStartExecutionRequest,
   type OrchestrationStartExecutionResponse,
+  type OrchestrationStartSessionRequest,
+  type OrchestrationStartSessionResponse,
   type OrchestrationSubmitHitlDecisionRequest,
   type OrchestrationSubmitHitlDecisionResponse,
   type OrchestrationSubscribeExecutionRequest,
   type OrchestrationSubscribeExecutionResponse,
+  type OrchestrationSubscribeSessionRequest,
+  type OrchestrationSubscribeSessionResponse,
 } from '@repo-ai-governor/orchestration-service-client';
 import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
+import { LocalOrchestrationServiceSessionRuntime } from './local-orchestration-service-session-runtime.js';
 import type {
   LocalOrchestrationServiceMemoryProviderState,
   LocalOrchestrationServicePublishEventRequest,
@@ -72,6 +86,7 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
   private readonly pidProvider: () => number | undefined;
   private readonly startedAt: string;
   private readonly memoryProviderRegistry: MemoryProviderRegistry;
+  private readonly sessionRuntime: LocalOrchestrationServiceSessionRuntime;
   private executionRecordsLoadedPromise: Promise<void> | null = null;
   private memoryProviderStatePromise: Promise<LocalOrchestrationServiceMemoryProviderState | null> | null =
     null;
@@ -110,6 +125,17 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
       });
     this.memoryProviderRegistry =
       dependencies.memoryProviderRegistry ?? new MemoryProviderRegistry();
+    this.sessionRuntime = new LocalOrchestrationServiceSessionRuntime({
+      workspaceRoot: dependencies.workspaceRoot,
+      ...(dependencies.memoryConfig
+        ? {
+            memoryConfig: dependencies.memoryConfig,
+          }
+        : {}),
+      memoryProviderRegistry: this.memoryProviderRegistry,
+      memoryProviderRuntimeMode: this.resolveMemoryProviderRuntimeMode(),
+      nowProvider: this.nowProvider,
+    });
   }
 
   public async getHealth(): Promise<OrchestrationServiceHealthResponse> {
@@ -427,6 +453,46 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
       executionSummary: this.cloneExecutionSummary(record.summary),
       nextNodeIds: [...recoveredExecution.nextNodeIds],
     };
+  }
+
+  public async startSession(
+    request: OrchestrationStartSessionRequest,
+  ): Promise<OrchestrationStartSessionResponse> {
+    return this.sessionRuntime.startSession(request);
+  }
+
+  public async sendSessionTurn(
+    request: OrchestrationSendSessionTurnRequest,
+  ): Promise<OrchestrationSendSessionTurnResponse> {
+    return this.sessionRuntime.sendSessionTurn(request);
+  }
+
+  public async appendSessionMessage(
+    request: OrchestrationAppendSessionMessageRequest,
+  ): Promise<OrchestrationAppendSessionMessageResponse> {
+    return this.sessionRuntime.appendSessionMessage(request);
+  }
+
+  public async getSession(sessionId: string): Promise<OrchestrationSessionSummary | undefined> {
+    return this.sessionRuntime.getSession(sessionId);
+  }
+
+  public async listSessions(
+    request?: OrchestrationListSessionsRequest,
+  ): Promise<OrchestrationListSessionsResponse> {
+    return this.sessionRuntime.listSessions(request);
+  }
+
+  public async subscribeSession(
+    request: OrchestrationSubscribeSessionRequest,
+  ): Promise<OrchestrationSubscribeSessionResponse> {
+    return this.sessionRuntime.subscribeSession(request);
+  }
+
+  public async resumeSession(
+    request?: OrchestrationResumeSessionRequest,
+  ): Promise<OrchestrationResumeSessionResponse> {
+    return this.sessionRuntime.resumeSession(request);
   }
 
   public async publishEvent(request: LocalOrchestrationServicePublishEventRequest): Promise<void> {

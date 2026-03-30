@@ -49,6 +49,10 @@ export const EN_US_TRANSLATIONS = {
       reviewVerify: { description: 'Verify code review baseline output.' },
       verify: { description: 'Verify adapter routing pass/warn/fail baseline.' },
       plan: { description: 'Generate or update execution plan baseline.' },
+      resume: {
+        description: 'Resume the latest or one explicit session-shell conversation.',
+        sessionIdArgument: 'Optional session id to resume instead of the latest shell session.',
+      },
       upgrade: { description: 'Run workspace/config upgrade baseline.' },
       setUiTheme: {
         description:
@@ -181,6 +185,147 @@ export const EN_US_TRANSLATIONS = {
       failedBeforeApply: 'Interactive shell failed before bootstrap values were applied.',
       correctWorkspaceMode: 'Please correct the invalid workspace mode value and try again.',
       correctLocale: 'Please correct the invalid locale value and try again.',
+    },
+    sessionShell: {
+      title: 'Repo AI Governor session shell',
+      subtitle:
+        'Session-first local shell with service-backed transcript, command handoff, and resume continuity.',
+      fallbackToHelp:
+        'Session shell failed before startup completed, so the CLI fell back to help output. reason={{reason}}',
+      resumeRequiresInteractive:
+        'The top-level resume command requires interactive TTY + pretty output so the live session shell can attach.',
+      workspaceSummary:
+        'workspace_id={{workspaceId}} mode={{workspaceMode}} root={{workspaceRoot}}',
+      sections: {
+        transcript: 'Transcript',
+        composer: 'Composer',
+        slashPalette: 'Slash palette',
+        promptBar: 'Prompt bar',
+      },
+      composer: {
+        placeholder:
+          'Type plain text for the future main agent, or enter /help for slash commands.',
+      },
+      palette: {
+        emptyState: 'No matching slash commands. Type /help to view the MVP command set.',
+      },
+      resumeSelector: {
+        latest: 'latest',
+      },
+      transcript: {
+        systemLabel: 'System',
+        userLabel: 'You',
+        assistantLabel: 'Governor',
+        slashLabel: 'Slash command',
+      },
+      promptBar: {
+        modeLine: 'shell_mode={{shellMode}} input_mode={{inputMode}} handoff={{handoffState}}',
+        persistenceLine:
+          'session_id={{sessionId}} persistence={{persistenceOwner}} resume={{resumeSelector}}',
+        routeLine: 'route={{routeId}} theme={{theme}} history={{historyCount}}',
+        workspaceLine: 'cwd={{cwd}} workspace={{workspace}}',
+        shortcuts:
+          'Shortcuts: /help, /confirm, /cancel, /history, /search, /multiline, !command, Ctrl+C exit, Ctrl+D close.',
+      },
+      commands: {
+        help: {
+          summary: 'List the currently exposed session-shell slash commands.',
+        },
+        confirm: {
+          summary: 'Confirm the currently previewed command handoff and execute it.',
+        },
+        cancel: {
+          summary: 'Cancel the currently previewed command handoff.',
+        },
+        clear: {
+          summary: 'Clear the local transcript viewport without deleting the persisted session.',
+        },
+        exit: {
+          summary: 'Exit the foreground session shell without deleting transcript state.',
+        },
+        resume: {
+          summary: 'Resume the latest or explicitly requested session transcript.',
+        },
+        history: {
+          summary: 'Show recent shell inputs collected in this foreground attachment.',
+        },
+        search: {
+          summary: 'Search the current transcript view and recent shell inputs.',
+        },
+        multiline: {
+          summary: 'Capture one multi-line user message before sending it as a single turn.',
+        },
+        theme: {
+          summary: 'Inspect or change the current session-shell theme preset.',
+        },
+        agent: {
+          summary: 'Inspect or pin the current foreground session route naming baseline.',
+        },
+      },
+      responses: {
+        welcome:
+          'Session shell is active. Plain text, slash commands, and service-backed transcript replay now share one foreground surface.',
+        stderrOnly:
+          'Live UI renders only to stderr so stdout remains reserved for machine-readable command output.',
+        partialSlashMatch:
+          'Matched commands for prefix {{query}}. Type a full slash command or press Tab-style completion in your terminal history.',
+        unknownSlashCommand:
+          'Unknown slash command "{{command}}". The session shell only exposes the documented command surface.',
+        trySlashHelp: 'Use /help to inspect the currently exposed slash command set.',
+        commandPreview: 'preview={{command}} state=awaiting_confirmation',
+        commandHandoffPending: 'Command handoff preview is ready for {{command}}.',
+        commandConfirmHint:
+          'Run /confirm to execute this handoff, or /cancel to discard the preview.',
+        commandNotExecutable: 'This slash command has no executable handoff target.',
+        commandExecutionSucceeded: 'Command handoff completed for {{command}}.',
+        commandExecutionFailed: 'Command handoff failed for {{command}}. reason={{reason}}',
+        commandBridgeUnavailable:
+          'The current session shell attachment does not have a command-execution bridge.',
+        commandArtifact: 'artifact={{artifactPath}}',
+        commandCancelled: 'The pending command preview was cancelled.',
+        cancelWithoutPendingCommand:
+          'There is no pending command preview to cancel in the current shell.',
+        confirmWithoutPendingCommand:
+          'There is no pending command preview to confirm in the current shell.',
+        exitBySlash: 'The foreground shell closed after /exit.',
+        exitBySigint: 'The foreground shell closed after Ctrl+C.',
+        exitByEof: 'The foreground shell closed after Ctrl+D.',
+        exitKeepsTranscript:
+          'Exit only closes the live shell surface. Persisted transcript state remains resumable.',
+        turnFailed: 'The main session turn failed. reason={{reason}}',
+        turnRecoverableHint: 'You can keep chatting, retry the turn, or switch to /resume.',
+        mainTurnAccepted:
+          'route={{routeId}} turn={{turnIndex}} accepted by the shared session runtime.',
+        mainTurnEcho: 'echo={{userMessage}}',
+        sessionStarted: 'Started service-backed session {{sessionId}} on {{routeId}}.',
+        sessionResumed: 'Resumed session {{sessionId}} via selector={{resumeSelector}}.',
+        resumeFailed: 'Failed to resume {{resumeSelector}}. reason={{reason}}',
+        resumeAvailableSessions: 'Known resumable sessions: {{sessionIds}}',
+        resumeRecoverableHint:
+          'No recent resumable session index was available; keep chatting to create a new session.',
+        resumeRecoveredWithNewSession:
+          'A new session was created so the foreground shell can stay attached.',
+        localTranscriptCleared:
+          'The local transcript viewport was cleared. Persisted session history is still resumable.',
+        historyEmpty: 'No shell inputs have been recorded in this foreground attachment yet.',
+        searchRequiresQuery: 'Pass a search term after /search.',
+        searchNoMatch: 'No transcript or history lines matched {{query}}.',
+        searchMatches: 'Matched transcript/history lines for {{query}}:',
+        themeCurrent: 'Current session theme={{theme}}.',
+        themeAvailable: 'Available themes: {{themes}}.',
+        themeUnknown: 'Unknown theme {{theme}}. Choose one of: {{themes}}.',
+        themeUpdated: 'Updated the current foreground session theme to {{theme}}.',
+        agentCurrent: 'Current foreground session route={{routeId}}.',
+        agentUnsupported:
+          'Route {{routeId}} is not supported yet. The session shell currently routes foreground turns to session.main only.',
+        agentUpdated: 'Foreground route remains pinned to {{routeId}}.',
+        multilineCancelled: 'Multi-line capture finished without any message body.',
+        passthroughRequiresCommand: 'Pass a shell command after ! to enable passthrough.',
+        passthroughFailed: 'Shell passthrough failed. reason={{reason}}',
+        passthroughCompleted:
+          'Shell passthrough finished for {{command}} with exit_code={{exitCode}}.',
+      },
+      multilinePrompt: 'multiline> finish with {{terminator}} on its own line',
     },
     commandMessages: {
       connect: {

@@ -1,6 +1,6 @@
 # TK-403 slash command registry and suggestion filter
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-30
 - Owner: AI-Agent
 - Priority: P0
@@ -34,3 +34,6 @@
 ## 6. 执行记录
 
 1. 2026-03-30：任务创建，状态初始化为 `planned`。
+2. 2026-03-30：实现完成，已新增 `CliSessionSlashCommandRegistry`，输出 `/help /exit /init /connect /doctor /workspace /workflow` 的 MVP metadata 集合。
+3. 2026-03-30：已为 slash palette 增加前缀过滤与高亮 segment 策略，支持 `/wo -> /workspace /workflow` 这类 skeleton recommendation 流。
+4. 2026-03-30：验证通过：`pnpm run typecheck`、`pnpm exec vitest run apps/cli/test/runtime/session-slash-command-registry.test.ts apps/cli/test/runtime/session-shell-runner.test.ts`。

@@ -1,6 +1,6 @@
 # TK-401 no-subcommand entry routing and session-shell runner baseline
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-30
 - Owner: AI-Agent
 - Priority: P0
@@ -35,3 +35,6 @@
 ## 6. 执行记录
 
 1. 2026-03-30：任务创建，状态初始化为 `planned`。
+2. 2026-03-30：已激活 `project-029 / sprint-001`，并将 `current-context.md` primary stream 切换到 session-first shell foundation；`DA-401` 也已更新为实际 handoff 状态。
+3. 2026-03-30：实现完成，已落地 `apps/cli/src/main.ts` 的 no-subcommand 分流、`CliSessionShellRunner`、`CliSessionShellReadlinePromptAdapter` 与 `CliSessionShellStderrRenderer`。
+4. 2026-03-30：验证通过：`pnpm run typecheck`、`pnpm exec vitest run apps/cli/test/runtime/session-shell-runner.test.ts apps/cli/test/cli-output-contract.integration.test.ts`。

@@ -4,10 +4,12 @@ import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promis
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 
+import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import {
   CliClaudeCodeExecFixtureEnvironmentKey,
   CliClaudeCodeExecFixtureMode,
 } from '../src/constants/claude-code-exec-fixture.constant.js';
+import { CliSessionShellExitReason } from '../src/constants/cli-session-shell.constant.js';
 import {
   CliCodexExecFixtureEnvironmentKey,
   CliCodexExecFixtureMode,
@@ -17,6 +19,7 @@ import {
   CliGithubCopilotExecFixtureMode,
 } from '../src/constants/github-copilot-exec-fixture.constant.js';
 import { runCli } from '../src/main.js';
+import type { CliSessionShellRunResult } from '../src/types/index.js';
 
 function createDeterministicCliEnvironment(overrides: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
   return {
@@ -76,6 +79,17 @@ function createBufferedIo(
       isStderrTty: () => isStdoutTty,
       env: () => environment,
     },
+  };
+}
+
+/**
+ * Creates one stub session-shell runner result used by no-subcommand entrypoint tests.
+ * @returns Minimal clean exit result for the injected session-shell runner.
+ */
+function createStubSessionShellResult(): CliSessionShellRunResult {
+  return {
+    exitReason: CliSessionShellExitReason.SLASH_EXIT,
+    transcriptItems: [],
   };
 }
 
@@ -412,6 +426,68 @@ describe('CLI output contract integration', () => {
     } finally {
       await rm(temporaryRepositoryRoot, { recursive: true, force: true });
     }
+  });
+
+  it('routes a no-subcommand TTY pretty entry into the default session shell', async () => {
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(true);
+    const sessionShellRunner = {
+      run: vi.fn(async () => createStubSessionShellResult()),
+    };
+
+    const exitCode = await runCli(['node', 'repo-ai-governor', '--locale', 'en-US'], io, {
+      sessionShellRunner: sessionShellRunner as never,
+    });
+
+    expect(exitCode).toBe(0);
+    expect(sessionShellRunner.run).toHaveBeenCalledWith(
+      expect.objectContaining({
+        currentWorkingDirectory: process.cwd(),
+        outputMode: 'pretty',
+      }),
+    );
+    expect(stdoutBuffer.join('')).toBe('');
+    expect(stderrBuffer.join('')).toBe('');
+  });
+
+  it('keeps no-subcommand help fallback when interactive entry is disabled', async () => {
+    const { stdoutBuffer, io } = createBufferedIo(true);
+    const sessionShellRunner = {
+      run: vi.fn(async () => createStubSessionShellResult()),
+    };
+
+    const exitCode = await runCli(
+      ['node', 'repo-ai-governor', '--locale', 'en-US', '--no-interactive'],
+      io,
+      {
+        sessionShellRunner: sessionShellRunner as never,
+      },
+    );
+
+    expect(exitCode).toBe(0);
+    expect(sessionShellRunner.run).not.toHaveBeenCalled();
+    expect(stdoutBuffer.join('')).toContain('set-ui-theme');
+    expect(stdoutBuffer.join('')).toContain('workflow');
+  });
+
+  it('falls back to help output when the default session shell fails before startup', async () => {
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(true);
+    const sessionShellRunner = {
+      run: vi.fn(async () => {
+        throw new RuntimeError(
+          GovernorErrorCode.UNKNOWN,
+          'session shell failed in a preflight test fixture',
+        );
+      }),
+    };
+
+    const exitCode = await runCli(['node', 'repo-ai-governor', '--locale', 'en-US'], io, {
+      sessionShellRunner: sessionShellRunner as never,
+    });
+
+    expect(exitCode).toBe(0);
+    expect(stderrBuffer.join('')).toContain('fell back to help output');
+    expect(stdoutBuffer.join('')).toContain('workspace');
+    expect(stdoutBuffer.join('')).toContain('workflow');
   });
 
   it('does not trigger interactive bootstrap when pretty output is downgraded in non-TTY first-time init', async () => {

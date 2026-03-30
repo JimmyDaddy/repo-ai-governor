@@ -5,6 +5,13 @@ import {
   CliInteractiveShellStderrRenderingMode,
   CliInteractiveUiMode,
 } from '../../src/constants/cli-interactive-shell.constant.js';
+import {
+  CliSessionShellHandoffState,
+  CliSessionShellInputMode,
+  CliSessionShellMode,
+  CliSessionShellPersistenceOwner,
+  CliSessionTranscriptRole,
+} from '../../src/constants/cli-session-shell.constant.js';
 import { ReactCliRunner, ReactCliStderrFramePresenter } from '../../src/react-cli/index.js';
 import { CliInteractiveShellStderrRenderer } from '../../src/runtime/interactive-shell/interactive-shell-stderr-renderer.js';
 import type { CliInteractiveShellSessionState } from '../../src/types/index.js';
@@ -44,6 +51,67 @@ describe('ReactCliRunner', () => {
     expect(output).toContain('Attention');
     expect(output).toContain('Help');
     expect(output).toContain('Shortcuts');
+  });
+
+  it('renders the session-shell frame through the shared Ink runner', () => {
+    const runner = new ReactCliRunner();
+    const output = runner.renderSessionShellFrame({
+      sessionId: 'session-shell-preview-123',
+      shellMode: CliSessionShellMode.SESSION_SHELL,
+      inputMode: CliSessionShellInputMode.PLAIN_TEXT,
+      transcriptItems: [
+        {
+          id: 'system:1',
+          role: CliSessionTranscriptRole.SYSTEM,
+          label: 'System',
+          lines: ['Session shell foundation is active.'],
+        },
+        {
+          id: 'user:2',
+          role: CliSessionTranscriptRole.USER,
+          label: 'You',
+          lines: ['hello governor'],
+        },
+      ],
+      transcriptTitle: 'Transcript',
+      composerTitle: 'Composer',
+      composerValue: '',
+      composerPlaceholder: 'Type a message or /help.',
+      slashQuery: '/wo',
+      slashSuggestions: [
+        {
+          command: '/workspace',
+          summary: 'Plan or execute workspace migration baseline.',
+          highlightSegments: [
+            { text: '/', highlighted: false },
+            { text: 'wo', highlighted: true },
+            { text: 'rkspace', highlighted: false },
+          ],
+        },
+      ],
+      highlightedCommand: '/workspace',
+      slashPaletteTitle: 'Slash palette',
+      slashPaletteEmptyState: 'No slash commands matched.',
+      commandPreview: 'preview=/workspace state=preview_only',
+      handoffState: CliSessionShellHandoffState.PREVIEWING,
+      cwd: '/workspace/repo',
+      workspaceSummary: 'workspace_id=repo mode=repo_local',
+      outputContract: ErrorOutputEnvironment.PRETTY,
+      persistenceOwner: CliSessionShellPersistenceOwner.LOCAL_ORCHESTRATION_SERVICE,
+      resumeSelector: 'latest',
+      title: 'Repo AI Governor session shell',
+      subtitle: 'Session-first preview baseline.',
+      promptBarTitle: 'Prompt bar',
+      promptBarLines: [
+        'Shortcuts: /help, /exit, Ctrl+C, Ctrl+D.',
+        'preview=/workspace state=preview_only',
+      ],
+    });
+
+    expect(output).toContain('Repo AI Governor session shell');
+    expect(output).toContain('Session shell foundation is active.');
+    expect(output).toContain('/workspace');
+    expect(output).toContain('preview=/workspace state=preview_only');
   });
 });
 

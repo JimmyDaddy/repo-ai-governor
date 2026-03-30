@@ -95,7 +95,9 @@ pnpm exec repo-ai-governor init --output pretty
 ```
 
 Interactive prompts are enabled by default in local TTY + `pretty` output. Use `--no-interactive` for CI/scripts.
-In local TTY + `pretty` output, the CLI now defaults to the React shell for supported interactive surfaces. It still falls back to `none` under `--no-interactive`, non-TTY, or `plain/json`, so CI and agent-style machine consumers keep the existing non-interactive contract.
+In local TTY + `pretty` output, `repo-ai-governor` with no subcommand now opens the session-first shell on `stderr`; reattach with `pnpm exec repo-ai-governor resume [session-id]` when you want the latest or a specific persisted session.
+The session shell accepts natural-language turns plus `/help`, `/resume`, `/clear`, `/theme`, `/agent`, `/history`, `/search`, `/multiline`, and `!<shell-command>` passthrough. You can also seed the first turn directly with `pnpm exec repo-ai-governor --output pretty "summarize this repository"`.
+Command-scoped interactive surfaces such as `workflow` and `upgrade` continue to default to the React shell. Under `--no-interactive`, non-TTY, or `plain/json`, both shells still fall back to `none`, so CI and agent-style machine consumers keep the existing non-interactive contract.
 Use `--ui-theme governor|catppuccin|calm` when you want a different React shell look for just one run without changing the stdout contract.
 Theme precedence is `--ui-theme` override > workspace default > global CLI default.
 Run `pnpm exec repo-ai-governor set-ui-theme --help` when you want to inspect the supported theme presets.
@@ -115,6 +117,7 @@ Expected baseline:
 2. `init` defaults to `tool_managed`, so fresh target repositories may not create `.repo-ai-governor/` immediately.
 3. `doctor` returns attach mode via `command_result.attach_mode`; fresh external repos may also warn with `baseline_docs missing=5/5`.
 4. `check` returns governance check summary in `command_result.check_totals`; non-self-host target repos may warn with governance `script_not_found`.
+5. In local TTY + `pretty`, no-subcommand entry attaches to the session shell, while `resume [session-id]` can reattach the latest or a named persisted session.
 
 ## 1.5 Read-only Attach Precheck
 

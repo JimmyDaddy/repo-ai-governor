@@ -1,20 +1,57 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, resolve as resolvePath } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const WORKSPACE_PACKAGE_DIRECTORY_BY_NAME: Record<string, string> = {
-  'core-orchestration-service': 'packages/core-orchestration-service',
-  'core-runtime-langgraph': 'packages/core-runtime-langgraph',
-  'memory-provider-fs-csv': 'packages/memory-providers/fs-csv',
-  'memory-provider-registry': 'packages/memory-provider-registry',
-  'memory-provider-sqlite-fs': 'packages/memory-providers/sqlite-fs',
-  'memory-store-adapter': 'packages/memory-store-adapter',
-  'orchestration-service-client': 'packages/orchestration-service-client',
-  shared: 'packages/shared',
-};
-
 const loaderDirectory = dirname(fileURLToPath(import.meta.url));
 const workspaceRoot = resolvePath(loaderDirectory, '..', '..', '..');
+const WORKSPACE_PACKAGE_DIRECTORY_BY_NAME = resolveWorkspacePackageDirectoryMap();
+
+function resolveWorkspacePackageDirectoryMap(): Record<string, string> {
+  const packageRoots = [
+    resolvePath(workspaceRoot, 'packages'),
+    resolvePath(workspaceRoot, 'packages', 'memory-providers'),
+  ];
+  const packageDirectoryByName: Record<string, string> = {};
+
+  for (const packageRoot of packageRoots) {
+    if (!existsSync(packageRoot)) {
+      continue;
+    }
+
+    for (const entry of readdirSync(packageRoot, { withFileTypes: true })) {
+      if (!entry.isDirectory()) {
+        continue;
+      }
+
+      const packageDirectory = resolvePath(packageRoot, entry.name);
+      const packageManifestPath = resolvePath(packageDirectory, 'package.json');
+      if (!existsSync(packageManifestPath)) {
+        continue;
+      }
+
+      const packageName = readWorkspacePackageName(packageManifestPath);
+      if (!packageName?.startsWith('@repo-ai-governor/')) {
+        continue;
+      }
+
+      packageDirectoryByName[packageName.replace('@repo-ai-governor/', '')] =
+        packageDirectory.replace(`${workspaceRoot}/`, '');
+    }
+  }
+
+  return packageDirectoryByName;
+}
+
+function readWorkspacePackageName(packageManifestPath: string): string | undefined {
+  try {
+    const parsedManifest = JSON.parse(readFileSync(packageManifestPath, 'utf8')) as {
+      name?: unknown;
+    };
+    return typeof parsedManifest.name === 'string' ? parsedManifest.name : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 export async function resolve(
   specifier: string,

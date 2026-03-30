@@ -200,8 +200,8 @@ deliveries:
       - runtime_service
       - docs_playbook
     user_impact_level: high
-    execution_status: planned
-    rollout_status: planned
+    execution_status: completed
+    rollout_status: completed
     owner: runtime
     project_ref: project-029-cli-session-first-agent-shell
     sprint_ref: sprint-001-entrypoint-session-shell-foundation
@@ -218,6 +218,7 @@ deliveries:
       - .repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation/plan.md
       - .repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation/project-027-completion-audit-summary.md
       - .repo-ai-governor/context/dev/project-029-cli-session-first-agent-shell/plan.md
+      - .repo-ai-governor/context/dev/project-029-cli-session-first-agent-shell/project-029-cli-session-first-agent-shell-completion-audit-summary.md
       - .repo-ai-governor/context/dev/project-029-cli-session-first-agent-shell/sprint-001-entrypoint-session-shell-foundation/tasks/DA-401-project-029-activation-and-session-first-shell-handoff.md
     accepted_at: 2026-03-30
 

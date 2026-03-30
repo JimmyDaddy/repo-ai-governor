@@ -100,6 +100,46 @@ export class LocalOrchestrationServiceSidecarHost
     return this.shell.recoverExecution(request);
   }
 
+  public startSession(
+    request: Parameters<LocalOrchestrationServiceSidecarDispatchTable['startSession']>[0],
+  ) {
+    return this.shell.startSession(request);
+  }
+
+  public sendSessionTurn(
+    request: Parameters<LocalOrchestrationServiceSidecarDispatchTable['sendSessionTurn']>[0],
+  ) {
+    return this.shell.sendSessionTurn(request);
+  }
+
+  public appendSessionMessage(
+    request: Parameters<LocalOrchestrationServiceSidecarDispatchTable['appendSessionMessage']>[0],
+  ) {
+    return this.shell.appendSessionMessage(request);
+  }
+
+  public getSession(sessionId: string) {
+    return this.shell.getSession(sessionId);
+  }
+
+  public listSessions(
+    request?: Parameters<LocalOrchestrationServiceSidecarDispatchTable['listSessions']>[0],
+  ) {
+    return this.shell.listSessions(request);
+  }
+
+  public subscribeSession(
+    request: Parameters<LocalOrchestrationServiceSidecarDispatchTable['subscribeSession']>[0],
+  ) {
+    return this.shell.subscribeSession(request);
+  }
+
+  public resumeSession(
+    request?: Parameters<LocalOrchestrationServiceSidecarDispatchTable['resumeSession']>[0],
+  ) {
+    return this.shell.resumeSession(request);
+  }
+
   public publishEvent(
     request: Parameters<LocalOrchestrationServiceSidecarDispatchTable['publishEvent']>[0],
   ) {
@@ -180,6 +220,40 @@ export class LocalOrchestrationServiceSidecarHost
           this.assertPayload<
             Parameters<LocalOrchestrationServiceSidecarDispatchTable['recoverExecution']>[0]
           >(payload, operation),
+        );
+      case LocalOrchestrationServiceSidecarOperation.START_SESSION:
+        return this.startSession(
+          this.assertPayload<
+            Parameters<LocalOrchestrationServiceSidecarDispatchTable['startSession']>[0]
+          >(payload, operation),
+        );
+      case LocalOrchestrationServiceSidecarOperation.SEND_SESSION_TURN:
+        return this.sendSessionTurn(
+          this.assertPayload<
+            Parameters<LocalOrchestrationServiceSidecarDispatchTable['sendSessionTurn']>[0]
+          >(payload, operation),
+        );
+      case LocalOrchestrationServiceSidecarOperation.APPEND_SESSION_MESSAGE:
+        return this.appendSessionMessage(
+          this.assertPayload<
+            Parameters<LocalOrchestrationServiceSidecarDispatchTable['appendSessionMessage']>[0]
+          >(payload, operation),
+        );
+      case LocalOrchestrationServiceSidecarOperation.GET_SESSION:
+        return this.getSession(this.assertPayload<string>(payload, operation));
+      case LocalOrchestrationServiceSidecarOperation.LIST_SESSIONS:
+        return this.listSessions(
+          payload as Parameters<LocalOrchestrationServiceSidecarDispatchTable['listSessions']>[0],
+        );
+      case LocalOrchestrationServiceSidecarOperation.SUBSCRIBE_SESSION:
+        return this.subscribeSession(
+          this.assertPayload<
+            Parameters<LocalOrchestrationServiceSidecarDispatchTable['subscribeSession']>[0]
+          >(payload, operation),
+        );
+      case LocalOrchestrationServiceSidecarOperation.RESUME_SESSION:
+        return this.resumeSession(
+          payload as Parameters<LocalOrchestrationServiceSidecarDispatchTable['resumeSession']>[0],
         );
       case LocalOrchestrationServiceSidecarOperation.PUBLISH_EVENT:
         return this.publishEvent(

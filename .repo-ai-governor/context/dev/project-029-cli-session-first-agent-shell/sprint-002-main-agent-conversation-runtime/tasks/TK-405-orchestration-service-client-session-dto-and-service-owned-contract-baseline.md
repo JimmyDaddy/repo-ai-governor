@@ -1,6 +1,6 @@
 # TK-405 orchestration-service-client session DTO and service-owned contract baseline
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-30
 - Owner: AI-Agent
 - Priority: P0
@@ -32,3 +32,5 @@
 ## 6. 执行记录
 
 1. 2026-03-30：任务创建，状态初始化为 `planned`。
+2. 2026-03-30：`sprint-002` 已激活，开始实现 session DTO、service-owned session state 与 CLI presenter ownership 边界。
+3. 2026-03-30：已完成 session DTO/export surface 扩展，补齐 `appendSessionMessage` request/response、session transcript role/event 常量、client interface/export barrel 与 packaged README 中的 service-owned session 生命周期说明。

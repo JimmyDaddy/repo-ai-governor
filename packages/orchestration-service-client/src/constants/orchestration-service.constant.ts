@@ -69,3 +69,42 @@ export enum OrchestrationServiceEventType {
   EXECUTION_COMPLETED = 'execution.completed',
   EXECUTION_FAILED = 'execution.failed',
 }
+
+/**
+ * Defines shared session lifecycle states exposed by the orchestration service.
+ */
+export enum OrchestrationSessionStatus {
+  ACTIVE = 'active',
+  COMPLETED = 'completed',
+  CANCELLED = 'cancelled',
+  FAILED = 'failed',
+}
+
+/**
+ * Defines stable session routes that can accept conversation turns.
+ */
+export enum OrchestrationSessionRouteId {
+  MAIN = 'session.main',
+}
+
+/**
+ * Defines transport-neutral session event kinds emitted by the orchestration service.
+ */
+export enum OrchestrationSessionEventType {
+  SESSION_STARTED = 'session.started',
+  SESSION_MESSAGE_APPENDED = 'session.message.appended',
+  SESSION_RESUMED = 'session.resumed',
+  TURN_SUBMITTED = 'session.turn.submitted',
+  TURN_STREAM_DELTA = 'session.turn.stream_delta',
+  TURN_COMPLETED = 'session.turn.completed',
+}
+
+/**
+ * Defines transcript roles shared by CLI and future desktop session presenters.
+ */
+export enum OrchestrationSessionTranscriptRole {
+  SYSTEM = 'system',
+  USER = 'user',
+  ASSISTANT = 'assistant',
+  SLASH_COMMAND = 'slash_command',
+}

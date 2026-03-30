@@ -1,6 +1,6 @@
-# TK-414 multiline history and search UX
+# TK-414 multiline history search UX plus passthrough and query startup
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-30
 - Owner: AI-Agent
 - Priority: P1
@@ -35,3 +35,4 @@
 ## 6. 执行记录
 
 1. 2026-03-30：任务创建，状态初始化为 `planned`。
+2. 2026-03-30：已完成 multiline/history/search UX、`!` shell passthrough 与 `repo-ai-governor "query"` 首轮 prompt 启动入口，并补齐对应 transcript/恢复语义。

@@ -2,18 +2,31 @@ import type { ChildProcess } from 'node:child_process';
 
 import type { LangGraphRecoveredExecution } from '@repo-ai-governor/core-runtime-langgraph';
 import type {
+  OrchestrationAppendSessionMessageRequest,
+  OrchestrationAppendSessionMessageResponse,
   OrchestrationExecutionSummary,
   OrchestrationListExecutionsRequest,
   OrchestrationListExecutionsResponse,
+  OrchestrationListSessionsRequest,
+  OrchestrationListSessionsResponse,
   OrchestrationRecoverExecutionRequest,
   OrchestrationRecoverExecutionResponse,
+  OrchestrationResumeSessionRequest,
+  OrchestrationResumeSessionResponse,
+  OrchestrationSendSessionTurnRequest,
+  OrchestrationSendSessionTurnResponse,
   OrchestrationServiceHealthResponse,
+  OrchestrationSessionSummary,
   OrchestrationStartExecutionRequest,
   OrchestrationStartExecutionResponse,
+  OrchestrationStartSessionRequest,
+  OrchestrationStartSessionResponse,
   OrchestrationSubmitHitlDecisionRequest,
   OrchestrationSubmitHitlDecisionResponse,
   OrchestrationSubscribeExecutionRequest,
   OrchestrationSubscribeExecutionResponse,
+  OrchestrationSubscribeSessionRequest,
+  OrchestrationSubscribeSessionResponse,
 } from '@repo-ai-governor/orchestration-service-client';
 import type { GovernorErrorCode, MemoryRuntimeConfig } from '@repo-ai-governor/shared';
 import type { LocalOrchestrationServiceSidecarOperation } from '../../constants/index.js';
@@ -70,6 +83,25 @@ export interface LocalOrchestrationServiceSidecarDispatchTable {
   recoverExecution(
     request: OrchestrationRecoverExecutionRequest,
   ): Promise<OrchestrationRecoverExecutionResponse>;
+  startSession(
+    request: OrchestrationStartSessionRequest,
+  ): Promise<OrchestrationStartSessionResponse>;
+  sendSessionTurn(
+    request: OrchestrationSendSessionTurnRequest,
+  ): Promise<OrchestrationSendSessionTurnResponse>;
+  appendSessionMessage(
+    request: OrchestrationAppendSessionMessageRequest,
+  ): Promise<OrchestrationAppendSessionMessageResponse>;
+  getSession(sessionId: string): Promise<OrchestrationSessionSummary | undefined>;
+  listSessions(
+    request?: OrchestrationListSessionsRequest,
+  ): Promise<OrchestrationListSessionsResponse>;
+  subscribeSession(
+    request: OrchestrationSubscribeSessionRequest,
+  ): Promise<OrchestrationSubscribeSessionResponse>;
+  resumeSession(
+    request?: OrchestrationResumeSessionRequest,
+  ): Promise<OrchestrationResumeSessionResponse>;
   publishEvent(request: LocalOrchestrationServicePublishEventRequest): Promise<void>;
   saveCheckpoint(
     request: LocalOrchestrationServiceSaveCheckpointRequest,

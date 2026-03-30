@@ -1,6 +1,6 @@
-# TK-402 transcript composer and prompt-bar React components
+# TK-402 transcript / composer / prompt-bar React components
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-30
 - Owner: AI-Agent
 - Priority: P0
@@ -34,3 +34,6 @@
 ## 6. 执行记录
 
 1. 2026-03-30：任务创建，状态初始化为 `planned`。
+2. 2026-03-30：实现完成，已新增 `session-shell-app.tsx`、`transcript-pane.tsx`、`composer-input.tsx` 与 `prompt-bar.tsx`，并通过 `ReactCliRunner.renderSessionShellFrame()` 接入共享 Ink 渲染底座。
+3. 2026-03-30：组件层已固定为 presenter-only 视图，不持有 canonical session truth；session metadata 继续由 runner/view model 驱动。
+4. 2026-03-30：验证通过：`pnpm run typecheck`、`pnpm exec vitest run apps/cli/test/runtime/react-cli-runner.test.ts apps/cli/test/runtime/session-shell-runner.test.ts`。

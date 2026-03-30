@@ -46,6 +46,21 @@ export type {
   CliInteractiveShellSelectPrompt,
 } from './cli-interactive-shell.interface.js';
 export type {
+  CliSessionShellCommandExecutionResult,
+  CliSessionShellCommandExecutor,
+  CliSessionShellPassthroughExecutor,
+  CliSessionShellPassthroughResult,
+  CliSessionShellPromptAdapter,
+  CliSessionShellRunOptions,
+  CliSessionShellRunResult,
+  CliSessionShellServiceClientLike,
+  CliSessionShellTranscriptItem,
+  CliSessionShellViewModel,
+  CliSessionSlashCommandHighlightSegment,
+  CliSessionSlashCommandMetadata,
+  CliSessionSlashCommandSuggestion,
+} from './cli-session-shell.interface.js';
+export type {
   CliArtifactWriter,
   CliExecutionStreamMetadata,
   CliCheckTotals,

@@ -1,6 +1,8 @@
 import { type Instance, type RenderOptions, render, renderToString } from 'ink';
 import React from 'react';
+import type { CliSessionShellViewModel } from '../../types/index.js';
 import type { ReactCliViewModel } from '../state/react-cli-view-model.interface.js';
+import { ReactCliSessionShellApp } from '../views/session-shell-app.js';
 import { ReactCliApp } from './react-cli-app.js';
 
 /**
@@ -30,5 +32,20 @@ export class ReactCliRunner {
    */
   public mount(viewModel: ReactCliViewModel, options?: RenderOptions): Instance {
     return render(React.createElement(ReactCliApp, { viewModel }), options);
+  }
+
+  /**
+   * Renders one session-shell frame to a string without attaching a live terminal session.
+   * @param viewModel Session-shell presenter view model.
+   * @param options Optional Ink string-render options.
+   * @returns Rendered session-shell frame.
+   */
+  public renderSessionShellFrame(
+    viewModel: CliSessionShellViewModel,
+    options?: {
+      columns?: number;
+    },
+  ): string {
+    return renderToString(React.createElement(ReactCliSessionShellApp, { viewModel }), options);
   }
 }

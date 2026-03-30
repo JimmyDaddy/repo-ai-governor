@@ -6,7 +6,7 @@
 
 ## Source Hierarchy
 
-1. Normative rules: `.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md` (`CS-001` to `CS-031`)
+1. Normative rules: `.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md` (`CS-001` to `CS-034`)
 2. Operational baseline: this guide (`.repo-ai-governor/normative_knowledge_sources/governance/long-term-maintenance-guide.md`)
 3. Sprint execution records: `.repo-ai-governor/docs/dev/<project>/<sprint>/`
 4. Release channel governance: `.repo-ai-governor/normative_knowledge_sources/governance/release-governance-spec.md`
@@ -49,6 +49,9 @@ Current default startup baseline therefore resolves to:
 15. Technical solution module graph governance baseline: `CS-029`
 16. Technical solution lifecycle and promotion governance baseline: `CS-030`
 17. Technical solution delivery handoff governance baseline: `CS-031`
+18. Magic literal extraction baseline: `CS-032`
+19. User-facing i18n baseline: `CS-033`
+20. Completion/build evidence baseline: `CS-034`
 
 For command-level enforcement, always use `.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md -> Verification Commands` as the single source of truth.
 
@@ -132,6 +135,13 @@ Any non-empty entry must include task-level traceability in `tasks/checklist.md`
 5. 一个 worktree 同一时刻最多只能保留一个 `Worktree Review Target`；其余 completed stream 若仍需 CR，必须显式指定 report 路径，或在前一个 target 收口后再切换。
 6. 当目标 `review/` 目录下已不存在 `code_review_*` / `verified_code_review_*` 生命周期文件时，必须自动清除 `Worktree Review Target`；阻塞性 gate 应视残留 override 为失败。
 
+## Completion Claim And Review Closure Build Protocol
+
+1. 当同一变更窗口修改了 `apps/**`、`packages/**`、`bin/**` 或 `test/**` 下的可执行代码或 typed surface 时，任何最终对外结论写出“完成 / 全绿 / completed / resolved”都必须附带一次同窗口真实执行的 `pnpm run build` 结果。
+2. targeted tests、局部 smoke、单项 gate 只能补强证据，不能替代 build evidence。
+3. CR lifecycle 从 `verified -> resolved` 的修复闭环，只要涉及上述代码范围，也必须把 `pnpm run build` 记入验证命令后才能宣称 `resolved`。
+4. docs-only、ledger-only 或纯规范文本变更可不跑 build，但 closeout 必须明确写明“未修改可执行代码，因此 build not required”。
+
 ## Project Closure Milestone Protocol
 
 1. 每个 `project-xxx` 在状态切换为 `completed` 前，必须产出项目级完成态审计摘要文档：
@@ -143,6 +153,7 @@ Any non-empty entry must include task-level traceability in `tasks/checklist.md`
    - 任务完成统计（基于 `tasks.csv` 最新记录）
    - 关键证据路径（plan/checklist/tasks.csv/review/artifact-registry）
    - 遗留风险与后续输入建议（如有）
+   - 若 closeout 窗口包含代码变更，至少一条同窗口真实 `pnpm run build` 验证证据
 3. 项目 `plan.md` 必须新增或更新“里程碑记录”入口，显式回链到该审计摘要文档。
 4. 若项目后续重新打开（`completed -> active`），再次收尾时必须新增一条新的里程碑记录，禁止覆盖历史审计结论。
 

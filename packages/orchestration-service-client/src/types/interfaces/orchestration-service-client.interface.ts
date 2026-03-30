@@ -7,6 +7,10 @@ import type {
   OrchestrationServiceHostKind,
   OrchestrationServiceLifecycleStatus,
   OrchestrationServiceTransportKind,
+  OrchestrationSessionEventType,
+  OrchestrationSessionRouteId,
+  OrchestrationSessionStatus,
+  OrchestrationSessionTranscriptRole,
 } from '../../constants/index.js';
 
 export interface OrchestrationServiceHealthResponse {
@@ -171,6 +175,122 @@ export interface OrchestrationRecoverExecutionResponse {
   nextNodeIds?: string[];
 }
 
+export interface OrchestrationSessionEvent {
+  eventId: string;
+  sequence: number;
+  streamCursor: string;
+  sessionId: string;
+  type: OrchestrationSessionEventType;
+  createdAt: string;
+  payload: Record<string, unknown>;
+}
+
+export interface OrchestrationSessionSummary {
+  sessionId: string;
+  status: OrchestrationSessionStatus;
+  openedAt: string;
+  closedAt?: string;
+  processId?: string;
+  executionId?: string;
+  currentRouteId?: string;
+  latestTurnId?: string;
+  latestEventSequence: number;
+  nextCursor: string;
+  eventCount: number;
+  context: Record<string, unknown>;
+}
+
+export interface OrchestrationStartSessionRequest {
+  sessionId?: string;
+  processId?: string;
+  executionId?: string;
+  initialContext?: Record<string, unknown>;
+  routeId?: OrchestrationSessionRouteId | string;
+}
+
+export interface OrchestrationStartSessionResponse {
+  created: boolean;
+  session: OrchestrationSessionSummary;
+  latestEventSequence: number;
+  nextCursor: string;
+}
+
+export interface OrchestrationSendSessionTurnRequest {
+  sessionId: string;
+  routeId?: OrchestrationSessionRouteId | string;
+  userMessage: string;
+  turnId?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface OrchestrationSendSessionTurnResponse {
+  session: OrchestrationSessionSummary;
+  turnId: string;
+  routeId: string;
+  acceptedAt: string;
+  latestEventSequence: number;
+  nextCursor: string;
+}
+
+export interface OrchestrationAppendSessionMessageRequest {
+  sessionId: string;
+  role: OrchestrationSessionTranscriptRole | string;
+  routeId?: OrchestrationSessionRouteId | string;
+  lines: string[];
+  metadata?: Record<string, unknown>;
+}
+
+export interface OrchestrationAppendSessionMessageResponse {
+  session: OrchestrationSessionSummary;
+  latestEventSequence: number;
+  nextCursor: string;
+  event: OrchestrationSessionEvent;
+}
+
+export interface OrchestrationListSessionsFilter {
+  status?: OrchestrationSessionStatus;
+  executionId?: string;
+  processId?: string;
+  routeId?: string;
+}
+
+export interface OrchestrationListSessionsRequest {
+  filter?: OrchestrationListSessionsFilter;
+  limit?: number;
+}
+
+export interface OrchestrationListSessionsResponse {
+  sessions: OrchestrationSessionSummary[];
+  returnedCount: number;
+  totalMatchedCount: number;
+}
+
+export interface OrchestrationSubscribeSessionRequest {
+  sessionId: string;
+  cursor?: string;
+  afterSequence?: number;
+  limit?: number;
+}
+
+export interface OrchestrationSubscribeSessionResponse {
+  session: OrchestrationSessionSummary;
+  latestEventSequence: number;
+  nextCursor: string;
+  events: OrchestrationSessionEvent[];
+}
+
+export interface OrchestrationResumeSessionRequest {
+  sessionId?: string;
+  preferLatest?: boolean;
+}
+
+export interface OrchestrationResumeSessionResponse {
+  session: OrchestrationSessionSummary;
+  resumeSelector: string;
+  latestEventSequence: number;
+  nextCursor: string;
+}
+
 export interface OrchestrationServiceClient {
   getHealth(): Promise<OrchestrationServiceHealthResponse>;
   startExecution(
@@ -189,4 +309,23 @@ export interface OrchestrationServiceClient {
   recoverExecution(
     request: OrchestrationRecoverExecutionRequest,
   ): Promise<OrchestrationRecoverExecutionResponse>;
+  startSession(
+    request: OrchestrationStartSessionRequest,
+  ): Promise<OrchestrationStartSessionResponse>;
+  sendSessionTurn(
+    request: OrchestrationSendSessionTurnRequest,
+  ): Promise<OrchestrationSendSessionTurnResponse>;
+  appendSessionMessage(
+    request: OrchestrationAppendSessionMessageRequest,
+  ): Promise<OrchestrationAppendSessionMessageResponse>;
+  getSession(sessionId: string): Promise<OrchestrationSessionSummary | undefined>;
+  listSessions(
+    request?: OrchestrationListSessionsRequest,
+  ): Promise<OrchestrationListSessionsResponse>;
+  subscribeSession(
+    request: OrchestrationSubscribeSessionRequest,
+  ): Promise<OrchestrationSubscribeSessionResponse>;
+  resumeSession(
+    request?: OrchestrationResumeSessionRequest,
+  ): Promise<OrchestrationResumeSessionResponse>;
 }

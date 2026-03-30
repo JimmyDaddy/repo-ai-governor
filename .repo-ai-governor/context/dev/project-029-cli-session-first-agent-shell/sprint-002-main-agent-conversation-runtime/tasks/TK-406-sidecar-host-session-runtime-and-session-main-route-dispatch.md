@@ -1,6 +1,6 @@
 # TK-406 sidecar host session runtime and session.main route dispatch
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-30
 - Owner: AI-Agent
 - Priority: P0
@@ -33,3 +33,5 @@
 ## 6. 执行记录
 
 1. 2026-03-30：任务创建，状态初始化为 `planned`。
+2. 2026-03-30：`sprint-002` 已激活，开始实现 `session.main` route dispatch 与 sidecar session runtime。
+3. 2026-03-30：已完成 local orchestration service session runtime、shell/sidecar host/client `appendSessionMessage` dispatch、`session.main` foreground route 基线，并把 sidecar TS loader 改为自动发现工作区 package 映射，恢复 desktop/sidecar 启动稳定性。

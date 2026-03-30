@@ -1,10 +1,23 @@
 # checklist
 
-- [ ] TK-413 session settings commands and deferred command naming closure
+- [x] TK-413 session settings commands and deferred command naming closure
   - 2026-03-30：任务创建，状态初始化为 `planned`。
-- [ ] TK-414 multiline history search UX plus passthrough and query startup
+  - 2026-03-30：同一执行窗口内完成 `/theme` 与 `/agent` 正式命名收口，并把 foreground route/theme introspection 固定到 session shell 命令面。
+- [x] TK-414 multiline history search UX plus passthrough and query startup
   - 2026-03-30：任务创建，状态初始化为 `planned`。
-- [ ] TK-415 i18n help docs adoption playbook and capability discoverability
+  - 2026-03-30：同一执行窗口内完成 multiline/history/search、`!` passthrough 与 `repo-ai-governor "query"` 首轮 prompt 启动入口。
+- [x] TK-415 i18n help docs adoption playbook and capability discoverability
   - 2026-03-30：任务创建，状态初始化为 `planned`。
-- [ ] TK-416 desktop sidecar smoke baseline and session DTO packaged-surface validation
+  - 2026-03-30：同一执行窗口内完成 session-shell i18n/help 收口，并更新 `README*` 与 `docs/local-adoption-playbook*` 的 adopter-facing 说明。
+- [x] TK-416 desktop sidecar smoke baseline and session DTO packaged-surface validation
   - 2026-03-30：任务创建，状态初始化为 `planned`。
+  - 2026-03-30：同一执行窗口内完成 desktop sidecar smoke、public exports/session DTO 校验，以及项目级 resolved review 与 completion audit。
+- [x] TK-417 main.ts session-shell entrypoint decomposition remediation
+  - 2026-03-30：任务创建，状态初始化为 `planned`。
+  - 2026-03-30：stricter CR recheck 认可 `main.ts` session-shell wiring 触发 `CS-027` actionable finding；已抽离 `session-shell-entrypoint-runtime.ts`、补充入口测试，并把复核/修复记录追加回同一份 `resolved` review。
+- [x] TK-418 completion and closeout build evidence governance
+  - 2026-03-30：任务创建，状态初始化为 `planned`。
+  - 2026-03-30：已将“代码变更下的完成/全绿默认必须包含同窗口真实 `pnpm run build`”固化到治理标准、长期维护指南与 workspace CR workflow 文档，并补充验证命令真值。
+- [x] TK-419 project-029 delivery registry completion status sync
+  - 2026-03-30：任务创建，状态初始化为 `planned`。
+  - 2026-03-30：收尾 gate 发现 `technical-solution-delivery-registry` 中 project-029 的 follow-up delivery entry 仍为 `planned`；已同步修正为 completed closeout truth，并补跑 delivery registry gate。

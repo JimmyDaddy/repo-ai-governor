@@ -78,7 +78,12 @@ import { GlobalCliThemePreferenceService } from './runtime/global-cli-theme-pref
 import { IdeStandardsSourceRuntime } from './runtime/ide-standards-source-runtime.js';
 import { IdeSurfaceRegistryRuntime } from './runtime/ide-surface-registry-runtime.js';
 import { CliInteractiveShellUiModeResolver } from './runtime/interactive-shell/interactive-shell-ui-mode-resolver.js';
+import { CliSessionShellEntrypointRuntime } from './runtime/interactive-shell/session-shell-entrypoint-runtime.js';
+import { CliSessionShellRunner } from './runtime/interactive-shell/session-shell-runner.js';
+import { CliSessionShellServiceClient } from './runtime/interactive-shell/session-shell-service-client.js';
+import { CliSessionShellStderrRenderer } from './runtime/interactive-shell/session-shell-stderr-renderer.js';
 import { CliNotificationProviderRegistryRuntime } from './runtime/notification-provider-registry-runtime.js';
+import { CliOrchestrationServiceRuntime } from './runtime/orchestration-service-runtime.js';
 export {
   IDE_SURFACE_REGISTRY,
   IDE_WRAPPER_DEFAULT_OUTPUT_MODE,
@@ -125,6 +130,20 @@ const DEFAULT_MEMORY_CONFIG: MemoryRuntimeConfig = {
   ...DEFAULT_MEMORY_RUNTIME_CONFIG,
 };
 const DEFAULT_MEMORY_PROVIDER_REGISTRY = new MemoryProviderRegistry();
+const CLI_TOP_LEVEL_BOOLEAN_OPTIONS = new Set<string>([
+  '--compact',
+  '--no-color',
+  '--adapters',
+  '--fix',
+  '--record-ledger',
+  '--no-interactive',
+  '--dry-run',
+  '--trace',
+  '--restricted-network',
+  '--no-local-fallback',
+  '--help',
+  '-h',
+]);
 const DEFAULT_ADAPTERS_CONFIG: AdaptersConfig = {
   roles: [
     {
@@ -277,12 +296,23 @@ interface ResolvedIdeWrapperEnvironment {
 }
 
 /**
+ * Defines replaceable runtime dependencies for entrypoint-specific integration tests.
+ */
+interface CliEntrypointDependencies {
+  sessionShellRunner?: CliSessionShellRunner;
+}
+
+/**
  * Runs the Stage-6 CLI output-contract baseline with TTY-aware fallback semantics.
  * @param argv Raw process argv from Node runtime.
  * @param io Runtime I/O adapters for stdout/stderr/cwd.
  * @returns CLI exit code where `0` means command handled successfully.
  */
-export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Promise<number> {
+export async function runCli(
+  argv: string[],
+  io: CliIoAdapters = DEFAULT_IO,
+  dependencies: CliEntrypointDependencies = {},
+): Promise<number> {
   const rawArgs = argv.slice(2);
   const commandName = resolveRequestedCommandName(rawArgs);
   const environment = io.env?.() ?? process.env;
@@ -295,6 +325,7 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
   let outputContext = resolveFallbackOutputContext(io);
   let i18nRuntime: I18nRuntime | undefined;
   let memoryStoreComposition: MemoryProviderRegistryLoadResult | undefined;
+  let sessionShellOrchestrationServiceRuntime: CliOrchestrationServiceRuntime | undefined;
 
   try {
     outputContext = resolveOutputModeContext(rawArgs, io);
@@ -315,6 +346,9 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
     const globalCliThemePreferenceService = new GlobalCliThemePreferenceService();
     const notificationProviderRegistryRuntime = new CliNotificationProviderRegistryRuntime();
     const notificationProviders = notificationProviderRegistryRuntime.resolveProviders(environment);
+    const sessionShellRunner =
+      dependencies.sessionShellRunner ??
+      new CliSessionShellRunner(undefined, new CliSessionShellStderrRenderer(io.stderr));
     const adapterLocalProbeOverrides = resolveFixtureBackedLocalProbeOverrides({
       hasCodexExecFixture: Boolean(codexExecRunner),
       hasClaudeCodeExecFixture: Boolean(claudeCodeExecRunner),
@@ -349,6 +383,34 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
     const runtimeI18n = i18nRuntime;
     const resolvedLocale = await runtimeI18n.initialize(runtimeContext.i18n, requestedLocale);
     const profileLabel = runtimeContext.profileId ?? runtimeI18n.t('cli.skeleton.noProfile');
+    sessionShellOrchestrationServiceRuntime = new CliOrchestrationServiceRuntime(
+      runtimeContext.workspace.workspaceRoot,
+      {
+        memoryConfig: runtimeContext.memory,
+      },
+    );
+    const sessionShellServiceClient = new CliSessionShellServiceClient(
+      sessionShellOrchestrationServiceRuntime,
+    );
+    const sessionShellEntrypointRuntime = new CliSessionShellEntrypointRuntime({
+      sessionClient: sessionShellServiceClient,
+      commandExecutor: CliSessionShellEntrypointRuntime.createNestedCommandExecutor({
+        locale: resolvedLocale,
+        currentWorkingDirectory: io.cwd(),
+        environment,
+        executeCli: (nestedArgv, nestedIo) => runCli(nestedArgv, nestedIo, dependencies),
+      }),
+      currentWorkingDirectory: io.cwd(),
+      workspaceSummary: runtimeI18n.t('cli.sessionShell.workspaceSummary', {
+        workspaceId: runtimeContext.workspace.workspaceId,
+        workspaceMode: runtimeContext.workspace.mode,
+        workspaceRoot: runtimeContext.workspace.workspaceRoot,
+      }),
+      outputMode: outputContext.outputMode,
+      uiTheme: runtimeDebugOptions.uiTheme,
+      translate: (key: string, interpolation?: Record<string, string>) =>
+        runtimeI18n.t(key, interpolation),
+    });
     const governanceRuntime = new CliGovernanceRuntime({
       currentWorkingDirectory: io.cwd(),
       workspace: runtimeContext.workspace,
@@ -511,7 +573,8 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
     for (const commandDefinition of CLI_COMMAND_DEFINITIONS) {
       if (
         commandDefinition.name === CliCommandName.WORKFLOW ||
-        commandDefinition.name === CliCommandName.WORKSPACE
+        commandDefinition.name === CliCommandName.WORKSPACE ||
+        commandDefinition.name === CliCommandName.RESUME
       ) {
         continue;
       }
@@ -523,6 +586,31 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
           await executeCliCommand(commandDefinition.name);
         });
     }
+
+    program
+      .command(CliCommandName.RESUME)
+      .description(runtimeI18n.t('cli.commands.resume.description'))
+      .argument('[sessionId]', runtimeI18n.t('cli.commands.resume.sessionIdArgument'))
+      .action(async (sessionId?: string) => {
+        if (!sessionShellEntrypointRuntime.isInteractiveSessionShellAllowed(runtimeDebugOptions)) {
+          throw new RuntimeError(
+            GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+            runtimeI18n.t('cli.sessionShell.resumeRequiresInteractive'),
+            {
+              command: CliCommandName.RESUME,
+              outputMode: outputContext.outputMode,
+              uiMode: runtimeDebugOptions.uiMode,
+            },
+          );
+        }
+
+        await sessionShellRunner.run(
+          sessionShellEntrypointRuntime.createRunOptions({
+            resumeOnStartup: true,
+            requestedSessionId: sessionId ?? null,
+          }),
+        );
+      });
 
     program
       .command(CliCommandName.WORKSPACE)
@@ -588,7 +676,33 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
         await executeCliCommand(CliCommandName.WORKFLOW);
       });
 
-    if (rawArgs.length === 0) {
+    const sessionStartupQuery = sessionShellEntrypointRuntime.resolveSessionStartupQuery(rawArgs);
+    if (
+      sessionShellEntrypointRuntime.shouldEnterDefaultSessionShell(
+        rawArgs,
+        runtimeDebugOptions,
+        sessionStartupQuery,
+      )
+    ) {
+      try {
+        await sessionShellRunner.run(
+          sessionShellEntrypointRuntime.createRunOptions({
+            initialPrompt: sessionStartupQuery,
+          }),
+        );
+        return 0;
+      } catch (error) {
+        io.stderr(
+          `${runtimeI18n.t('cli.sessionShell.fallbackToHelp', {
+            reason: standardizeError(error).message,
+          })}\n`,
+        );
+        program.outputHelp();
+        return 0;
+      }
+    }
+
+    if (hasOnlyKnownTopLevelOptions(rawArgs)) {
       program.outputHelp();
       return 0;
     }
@@ -613,10 +727,16 @@ export async function runCli(argv: string[], io: CliIoAdapters = DEFAULT_IO): Pr
     );
     return exitCode;
   } finally {
+    await sessionShellOrchestrationServiceRuntime?.dispose();
     await memoryStoreComposition?.provider.dispose?.();
   }
 }
 
+/**
+ * Summarizes one nested CLI handoff run so the session shell can append a stable transcript recap.
+ * @param options Nested command execution payloads captured from `runCli`.
+ * @returns Session-shell command execution summary.
+ */
 /**
  * Builds one localized workspace-command help appendix with action guidance and copy-paste examples.
  * @param i18n Initialized CLI i18n runtime.
@@ -1608,11 +1728,15 @@ function hasFlag(args: string[], flag: string): boolean {
 }
 
 /**
- * Resolves requested command token from raw args for fallback error payloads.
+ * Detects whether raw argv contains only recognized top-level option tokens and no command token.
  * @param args CLI args excluding node and binary.
- * @returns Requested command token, or `help` when no command token exists.
+ * @returns True when the entrypoint should fall back to help instead of parsing a command.
  */
-function resolveRequestedCommandName(args: string[]): string {
+function hasOnlyKnownTopLevelOptions(args: string[]): boolean {
+  if (args.length === 0) {
+    return true;
+  }
+
   for (let index = 0; index < args.length; index += 1) {
     const token = args[index];
     if (!token) {
@@ -1620,7 +1744,77 @@ function resolveRequestedCommandName(args: string[]): string {
     }
 
     if (token === '--') {
-      return args[index + 1] ?? 'help';
+      return false;
+    }
+
+    if (token.startsWith('--')) {
+      const [flag] = token.split('=', 1);
+      if (CLI_OPTIONS_REQUIRING_VALUE.has(flag)) {
+        if (!token.includes('=')) {
+          index += 1;
+        }
+        continue;
+      }
+
+      if (CLI_TOP_LEVEL_BOOLEAN_OPTIONS.has(flag)) {
+        continue;
+      }
+
+      return false;
+    }
+
+    if (token.startsWith('-')) {
+      if (CLI_TOP_LEVEL_BOOLEAN_OPTIONS.has(token)) {
+        continue;
+      }
+
+      return false;
+    }
+
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Resolves requested command token from raw args for fallback error payloads.
+ * @param args CLI args excluding node and binary.
+ * @returns Requested command token, or `help` when no command token exists.
+ */
+function resolveRequestedCommandName(args: string[]): string {
+  const positionalToken = resolveFirstPositionalToken(args);
+  return positionalToken ?? 'help';
+}
+
+/**
+ * Resolves the first positional token while skipping option values.
+ * @param args CLI args excluding node and binary.
+ * @returns First positional token or `null` when no command token exists.
+ */
+function resolveFirstPositionalToken(args: string[]): string | null {
+  return resolvePositionalTokens(args)[0] ?? null;
+}
+
+/**
+ * Resolves all positional tokens while skipping option values.
+ * @param args CLI args excluding node and binary.
+ * @returns Ordered positional token list.
+ */
+function resolvePositionalTokens(args: string[]): string[] {
+  const positionalTokens: string[] = [];
+
+  for (let index = 0; index < args.length; index += 1) {
+    const token = args[index];
+    if (!token) {
+      continue;
+    }
+
+    if (token === '--') {
+      if (args[index + 1]) {
+        positionalTokens.push(args[index + 1] as string);
+      }
+      break;
     }
 
     if (token.startsWith('--')) {
@@ -1637,10 +1831,10 @@ function resolveRequestedCommandName(args: string[]): string {
       continue;
     }
 
-    return token;
+    positionalTokens.push(token);
   }
 
-  return 'help';
+  return positionalTokens;
 }
 
 /**

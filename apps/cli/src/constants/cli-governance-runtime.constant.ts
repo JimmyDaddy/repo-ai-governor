@@ -47,6 +47,7 @@ export enum CliRuntimeOperation {
   GOVERNANCE_CHECK = 'governance_check',
   GOVERNANCE_RUN = 'governance_run',
   GOVERNANCE_RUN_REPLAY = 'governance_run_replay',
+  SESSION_RESUME = 'session_resume',
   REVIEW_QUEUE = 'review_queue',
   REVIEW_VERIFY = 'review_verify',
   PLAN_SNAPSHOT = 'plan_snapshot',

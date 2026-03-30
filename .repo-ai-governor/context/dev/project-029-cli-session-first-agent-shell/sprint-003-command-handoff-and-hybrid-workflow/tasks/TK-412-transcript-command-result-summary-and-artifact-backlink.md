@@ -1,6 +1,6 @@
 # TK-412 transcript command result summary and artifact backlink
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-30
 - Owner: AI-Agent
 - Priority: P1
@@ -34,3 +34,4 @@
 ## 6. 执行记录
 
 1. 2026-03-30：任务创建，状态初始化为 `planned`。
+2. 2026-03-30：已完成 command result summary / artifact backlink 回灌，session transcript 现在可追加 slash/system 摘要，并为 review/report/artifact 路径保留可回链入口。

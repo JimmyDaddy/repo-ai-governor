@@ -43,6 +43,10 @@ export const ZH_CN_TRANSLATIONS = {
       reviewVerify: { description: '验证代码评审基线输出。' },
       verify: { description: '校验适配器路由 pass/warn/fail 基线。' },
       plan: { description: '生成或更新执行计划基线。' },
+      resume: {
+        description: '恢复最近一次或指定的 session-shell 会话。',
+        sessionIdArgument: '可选 session id；不传时默认恢复最近一次 shell 会话。',
+      },
       upgrade: { description: '执行工作区与配置升级基线。' },
       setUiTheme: {
         description:
@@ -158,6 +162,136 @@ export const ZH_CN_TRANSLATIONS = {
       failedBeforeApply: '交互式 shell 在应用初始化值前失败。',
       correctWorkspaceMode: '请修正无效的工作区模式后重新输入。',
       correctLocale: '请修正无效的语言值后重新输入。',
+    },
+    sessionShell: {
+      title: 'Repo AI Governor 会话壳层',
+      subtitle:
+        'session-first 本地壳层已启用，transcript、command handoff 与 resume continuity 现在统一走 service-backed 语义。',
+      fallbackToHelp: 'session shell 在完成启动前失败，CLI 已回退到 help 输出。原因：{{reason}}',
+      resumeRequiresInteractive:
+        '顶层 resume 命令需要 interactive TTY + pretty 输出，才能附着到 live session shell。',
+      workspaceSummary:
+        'workspace_id={{workspaceId}} mode={{workspaceMode}} root={{workspaceRoot}}',
+      sections: {
+        transcript: 'Transcript',
+        composer: 'Composer',
+        slashPalette: 'Slash Palette',
+        promptBar: 'Prompt Bar',
+      },
+      composer: {
+        placeholder: '输入普通文本可预演未来主 agent 对话，或输入 /help 查看 slash commands。',
+      },
+      palette: {
+        emptyState: '没有匹配的 slash command。可输入 /help 查看当前 MVP 命令集合。',
+      },
+      resumeSelector: {
+        latest: 'latest',
+      },
+      transcript: {
+        systemLabel: '系统',
+        userLabel: '你',
+        assistantLabel: 'Governor',
+        slashLabel: 'Slash Command',
+      },
+      promptBar: {
+        modeLine: 'shell_mode={{shellMode}} input_mode={{inputMode}} handoff={{handoffState}}',
+        persistenceLine:
+          'session_id={{sessionId}} persistence={{persistenceOwner}} resume={{resumeSelector}}',
+        routeLine: 'route={{routeId}} theme={{theme}} history={{historyCount}}',
+        workspaceLine: 'cwd={{cwd}} workspace={{workspace}}',
+        shortcuts:
+          '快捷键：/help、/confirm、/cancel、/history、/search、/multiline、!command、Ctrl+C 退出、Ctrl+D 关闭。',
+      },
+      commands: {
+        help: {
+          summary: '列出当前 session-shell 已暴露的 slash commands。',
+        },
+        confirm: {
+          summary: '确认当前 preview 中的 command handoff 并执行它。',
+        },
+        cancel: {
+          summary: '取消当前 preview 中的 command handoff。',
+        },
+        clear: {
+          summary: '清空本地 transcript 视口，但不删除已持久化的 session。',
+        },
+        exit: {
+          summary: '退出前台 session shell，但不删除 transcript 状态。',
+        },
+        resume: {
+          summary: '恢复最近一次或指定的 session transcript。',
+        },
+        history: {
+          summary: '查看当前前台附着过程中记录的最近输入历史。',
+        },
+        search: {
+          summary: '搜索当前 transcript 视图和最近输入历史。',
+        },
+        multiline: {
+          summary: '先采集一段多行消息，再作为单个 user turn 发送。',
+        },
+        theme: {
+          summary: '查看或切换当前 session-shell 的主题预设。',
+        },
+        agent: {
+          summary: '查看或固定当前前台 session route 的正式命名。',
+        },
+      },
+      responses: {
+        welcome:
+          'session shell 已启用。普通文本、slash command 与 service-backed transcript 现在共用同一前台交互面。',
+        stderrOnly: 'live UI 只会渲染到 stderr，因此 stdout 仍保留给机器可读命令输出。',
+        partialSlashMatch:
+          '前缀 {{query}} 命中了若干命令；输入完整 slash command，或结合终端历史继续补全。',
+        unknownSlashCommand:
+          '未知 slash command "{{command}}"。当前 session shell 只暴露文档化命令面。',
+        trySlashHelp: '可输入 /help 查看当前已暴露的 slash command 集合。',
+        commandPreview: 'preview={{command}} state=awaiting_confirmation',
+        commandHandoffPending: '{{command}} 的 command handoff 预览已经就绪。',
+        commandConfirmHint: '输入 /confirm 执行当前 handoff，或输入 /cancel 放弃本次预览。',
+        commandNotExecutable: '该 slash command 当前没有可执行的 handoff 目标。',
+        commandExecutionSucceeded: '{{command}} 的 command handoff 已完成。',
+        commandExecutionFailed: '{{command}} 的 command handoff 失败。原因：{{reason}}',
+        commandBridgeUnavailable: '当前 session shell 附着面没有可用的 command execution bridge。',
+        commandArtifact: 'artifact={{artifactPath}}',
+        commandCancelled: '待执行的 command preview 已取消。',
+        cancelWithoutPendingCommand: '当前没有待取消的 command preview。',
+        confirmWithoutPendingCommand: '当前没有待确认的 command preview。',
+        exitBySlash: '前台 shell 已在 /exit 后关闭。',
+        exitBySigint: '前台 shell 已在 Ctrl+C 后关闭。',
+        exitByEof: '前台 shell 已在 Ctrl+D 后关闭。',
+        exitKeepsTranscript: '退出只会关闭 live shell surface；已持久化 transcript 仍可继续恢复。',
+        turnFailed: '主会话 turn 执行失败。原因：{{reason}}',
+        turnRecoverableHint: '你可以继续对话、重试这一轮，或切到 /resume。',
+        mainTurnAccepted: 'route={{routeId}} turn={{turnIndex}} 已被共享 session runtime 接收。',
+        mainTurnEcho: 'echo={{userMessage}}',
+        sessionStarted: '已在 {{routeId}} 上启动 service-backed session {{sessionId}}。',
+        sessionResumed: '已通过 selector={{resumeSelector}} 恢复 session {{sessionId}}。',
+        resumeFailed: '恢复 {{resumeSelector}} 失败。原因：{{reason}}',
+        resumeAvailableSessions: '当前可恢复的已知 sessions：{{sessionIds}}',
+        resumeRecoverableHint:
+          '当前没有可用的最近 session 索引；你可以继续对话并立即创建新 session。',
+        resumeRecoveredWithNewSession: '已自动创建一个新 session，确保前台 shell 能继续附着。',
+        localTranscriptCleared:
+          '本地 transcript 视口已清空；但已持久化的 session 历史仍然可以恢复。',
+        historyEmpty: '当前前台附着中还没有记录任何输入历史。',
+        searchRequiresQuery: '请在 /search 后面传入检索词。',
+        searchNoMatch: '没有 transcript 或 history 内容命中 {{query}}。',
+        searchMatches: '{{query}} 的 transcript/history 命中如下：',
+        themeCurrent: '当前会话主题={{theme}}。',
+        themeAvailable: '可用主题：{{themes}}。',
+        themeUnknown: '未知主题 {{theme}}。可选值：{{themes}}。',
+        themeUpdated: '当前前台 session 主题已切换为 {{theme}}。',
+        agentCurrent: '当前前台 session route={{routeId}}。',
+        agentUnsupported:
+          '当前尚未支持 route {{routeId}}；session shell 目前只会把前台 turns 路由到 session.main。',
+        agentUpdated: '前台 route 仍固定为 {{routeId}}。',
+        multilineCancelled: '多行采集结束时没有拿到可发送的消息内容。',
+        passthroughRequiresCommand: '请在 ! 后面跟上要透传执行的 shell 命令。',
+        passthroughFailed: 'Shell passthrough 执行失败。原因：{{reason}}',
+        passthroughCompleted: '{{command}} 的 shell passthrough 已结束，exit_code={{exitCode}}。',
+      },
+      multilinePrompt: 'multiline> 以单独一行 {{terminator}} 结束输入',
     },
     commandMessages: {
       connect: {

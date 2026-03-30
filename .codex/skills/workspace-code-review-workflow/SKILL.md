@@ -66,6 +66,11 @@ Prefer this repository-local skill over the generic `code-review-workflow` skill
 - missing or weak tests
 - lifecycle and cleanup semantics on cancel / SIGINT / fallback / retry paths
 
+4.2 Build evidence is part of a green closeout, not an optional extra.
+- When the reviewed or repaired scope touches executable or typed surfaces under `apps/**`, `packages/**`, `bin/**`, or `test/**`, do not say “完成 / 全绿 / resolved” without one real `pnpm run build` from the same change window.
+- Targeted tests and focused gates should still run, but they do not replace the build.
+- If the change is docs-only or ledger-only, say explicitly that build was not required because no executable code changed.
+
 4.1 Apply a stricter default bar for “actionable”.
 - Do not downgrade a finding to “note only” when it affects fallback selection, retry loops, cancel/SIGINT cleanup, resource release ordering, or other behavior branches that are hard to observe manually.
 - Treat missing coverage on non-trivial branches as actionable by default when the branch changes user-visible control flow or runtime safety semantics. Typical examples: confirmation restart loops, downgrade/fallback branches, cancellation, rollback, and cleanup-after-failure.
@@ -159,6 +164,7 @@ Prefer this repository-local skill over the generic `code-review-workflow` skill
 5. Rename `verified_code_review_<slug>.md` to `resolved_code_review_<slug>.md` only when all actionable items are `已完成`, and update the top-level `Status` to `resolved`.
 6. If the resolved directory came from `Worktree Review Target`, and no `code_review_*` / `verified_code_review_*` file remains after this rename, remove `Worktree Review Target` from `current-context.md` in the same change window.
 7. If a later stricter recheck discovers a real actionable issue in an already `resolved` report, append a new dated recheck section plus a repair record in place, keep the filename/status synchronized, and only keep `resolved` after the newly discovered item is fixed and re-verified in the same workflow.
+8. For code-affecting fixes under `apps/**`, `packages/**`, `bin/**`, or `test/**`, include `pnpm run build` in the verification commands before keeping the report at `resolved`.
 
 ## Workflow D: Fix From Verified Report
 
@@ -178,3 +184,4 @@ Prefer this repository-local skill over the generic `code-review-workflow` skill
 8. Never leave a CR file with mismatched filename/status pairs such as `resolved_code_review_*.md` + `Status: review_pending`.
 9. `Worktree Review Target` is optional and singular; use it only for completed streams with open CR tails, and clear it immediately after the last open review artifact is closed.
 10. Under the stricter review bar, “missing branch coverage” and “cleanup intent unclear” are not automatically low-priority notes; explicitly justify why they are non-actionable if you decide not to repair them.
+11. Never tell the user a code-affecting review or repair is “全绿” without a real `pnpm run build` result from the same change window.

@@ -65,6 +65,20 @@ Bootstrap notes from pilot validation:
 2. Fresh external repos may see `doctor` warning `baseline_docs missing=5/5`; treat this as current external-adopter baseline, not bootstrap failure.
 3. External target repos may see `check` warnings such as `check-task-ledger-sync=script_not_found`; this is expected unless the target repo also vendors self-host governance scripts.
 
+Session-first shell quick rehearsal:
+
+```bash
+pnpm exec repo-ai-governor --output pretty
+pnpm exec repo-ai-governor --output pretty "summarize this repository"
+pnpm exec repo-ai-governor resume --help
+```
+
+Quick expectations:
+
+1. In local TTY + `pretty`, the no-subcommand entry should attach to the session shell on `stderr`.
+2. Manual validation should cover `/help`, `/theme calm`, `/agent main`, `/history`, `/search <term>`, `/multiline`, `!pwd`, `/exit`, and then `resume [session-id]`.
+3. `--no-interactive`, non-TTY, and `plain/json` must not enter the session shell.
+
 ## 3.1 Multi-tool Onboarding (Codex / Claude Code / GitHub Copilot)
 
 Use a three-step path: tool readiness -> Governor wiring -> diagnostics verification.
@@ -204,7 +218,7 @@ Artifact locality contract:
 
 ## 4.1 Real-project Validation Runbook
 
-Use this sequence when you want to validate the `project-027` interactive-shell delivery in one real target repository before adopting it more broadly.
+Use this sequence when you want to validate the current interactive-shell delivery in one real target repository before adopting it more broadly. The automation wrapper still covers the command-scoped React shell baseline from `project-027`; session-first shell checks from `project-029` remain part of the same manual rehearsal window.
 
 Automation wrapper:
 
@@ -276,6 +290,14 @@ HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output pretty --ui react connect > con
 HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output pretty --ui react --no-interactive workflow preview --workflow-template parallel-review > workflow-preview.no-interactive.stdout.txt
 ```
 
+Session-shell manual checks in a real TTY:
+
+```bash
+HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output pretty
+HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output pretty "summarize the repository layout"
+HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" resume
+```
+
 Expected observations:
 
 1. React shell text appears in the terminal on `stderr`, not in the redirected stdout files.
@@ -289,6 +311,8 @@ Expected observations:
    - `context/upgrade/<upgrade_id>.rollback-snapshot.yaml`
 5. In local TTY + `pretty` mode, `upgrade` defaults to the React shell; `--ui none` and `--ui classic` remain the suppression path.
 6. The `--no-interactive` command falls back without rendering React shell.
+7. In local TTY + `pretty`, the no-subcommand entry attaches to the session shell, the quoted startup prompt is sent as the first turn, and `resume` can reattach the latest persisted session.
+8. Session-shell manual checks should confirm slash discoverability (`/help`), foreground route/theme introspection (`/agent`, `/theme`), history/search recall, multi-line capture, and `!` passthrough without polluting redirected stdout.
 
 Treat the run as passed when all of the following are true:
 
@@ -298,6 +322,7 @@ Treat the run as passed when all of the following are true:
 4. `workspace` plan / execution / rollback artifacts are all traceable.
 5. `workflow create/edit` persist definition and compiled IR, while `workflow preview` remains read-only.
 6. `upgrade` emits all three upgrade artifacts whether the React shell is reached by default or explicitly requested.
+7. Session-shell entry, quoted startup prompts, and `resume` all behave consistently in a real TTY while keeping `json` and `--no-interactive` untouched.
 
 ## 5. Local Debug Path
 

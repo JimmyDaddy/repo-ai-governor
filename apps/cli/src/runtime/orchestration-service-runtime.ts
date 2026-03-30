@@ -5,18 +5,31 @@ import type {
 } from '@repo-ai-governor/core-orchestration-service';
 import type { LangGraphRecoveredExecution } from '@repo-ai-governor/core-runtime-langgraph';
 import type {
+  OrchestrationAppendSessionMessageRequest,
+  OrchestrationAppendSessionMessageResponse,
   OrchestrationExecutionSummary,
   OrchestrationListExecutionsRequest,
   OrchestrationListExecutionsResponse,
+  OrchestrationListSessionsRequest,
+  OrchestrationListSessionsResponse,
   OrchestrationRecoverExecutionRequest,
   OrchestrationRecoverExecutionResponse,
+  OrchestrationResumeSessionRequest,
+  OrchestrationResumeSessionResponse,
+  OrchestrationSendSessionTurnRequest,
+  OrchestrationSendSessionTurnResponse,
   OrchestrationServiceHealthResponse,
+  OrchestrationSessionSummary,
   OrchestrationStartExecutionRequest,
   OrchestrationStartExecutionResponse,
+  OrchestrationStartSessionRequest,
+  OrchestrationStartSessionResponse,
   OrchestrationSubmitHitlDecisionRequest,
   OrchestrationSubmitHitlDecisionResponse,
   OrchestrationSubscribeExecutionRequest,
   OrchestrationSubscribeExecutionResponse,
+  OrchestrationSubscribeSessionRequest,
+  OrchestrationSubscribeSessionResponse,
 } from '@repo-ai-governor/orchestration-service-client';
 import { CliOrchestrationServiceRuntimeMode } from '../constants/orchestration-service-runtime.constant.js';
 import type {
@@ -86,6 +99,53 @@ export class CliOrchestrationServiceRuntime {
   ): Promise<OrchestrationRecoverExecutionResponse> {
     const service = await this.resolveServiceOwner();
     return service.recoverExecution(request);
+  }
+
+  public async startSession(
+    request: OrchestrationStartSessionRequest,
+  ): Promise<OrchestrationStartSessionResponse> {
+    const service = await this.resolveServiceOwner();
+    return service.startSession(request);
+  }
+
+  public async sendSessionTurn(
+    request: OrchestrationSendSessionTurnRequest,
+  ): Promise<OrchestrationSendSessionTurnResponse> {
+    const service = await this.resolveServiceOwner();
+    return service.sendSessionTurn(request);
+  }
+
+  public async appendSessionMessage(
+    request: OrchestrationAppendSessionMessageRequest,
+  ): Promise<OrchestrationAppendSessionMessageResponse> {
+    const service = await this.resolveServiceOwner();
+    return service.appendSessionMessage(request);
+  }
+
+  public async getSession(sessionId: string): Promise<OrchestrationSessionSummary | undefined> {
+    const service = await this.resolveServiceOwner();
+    return service.getSession(sessionId);
+  }
+
+  public async listSessions(
+    request?: OrchestrationListSessionsRequest,
+  ): Promise<OrchestrationListSessionsResponse> {
+    const service = await this.resolveServiceOwner();
+    return service.listSessions(request);
+  }
+
+  public async subscribeSession(
+    request: OrchestrationSubscribeSessionRequest,
+  ): Promise<OrchestrationSubscribeSessionResponse> {
+    const service = await this.resolveServiceOwner();
+    return service.subscribeSession(request);
+  }
+
+  public async resumeSession(
+    request?: OrchestrationResumeSessionRequest,
+  ): Promise<OrchestrationResumeSessionResponse> {
+    const service = await this.resolveServiceOwner();
+    return service.resumeSession(request);
   }
 
   public async publishEvent(request: LocalOrchestrationServicePublishEventRequest): Promise<void> {

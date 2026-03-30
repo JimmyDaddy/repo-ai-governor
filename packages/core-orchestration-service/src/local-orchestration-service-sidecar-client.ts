@@ -5,18 +5,31 @@ import { fileURLToPath } from 'node:url';
 
 import type { LangGraphRecoveredExecution } from '@repo-ai-governor/core-runtime-langgraph';
 import type {
+  OrchestrationAppendSessionMessageRequest,
+  OrchestrationAppendSessionMessageResponse,
   OrchestrationExecutionSummary,
   OrchestrationListExecutionsRequest,
   OrchestrationListExecutionsResponse,
+  OrchestrationListSessionsRequest,
+  OrchestrationListSessionsResponse,
   OrchestrationRecoverExecutionRequest,
   OrchestrationRecoverExecutionResponse,
+  OrchestrationResumeSessionRequest,
+  OrchestrationResumeSessionResponse,
+  OrchestrationSendSessionTurnRequest,
+  OrchestrationSendSessionTurnResponse,
   OrchestrationServiceHealthResponse,
+  OrchestrationSessionSummary,
   OrchestrationStartExecutionRequest,
   OrchestrationStartExecutionResponse,
+  OrchestrationStartSessionRequest,
+  OrchestrationStartSessionResponse,
   OrchestrationSubmitHitlDecisionRequest,
   OrchestrationSubmitHitlDecisionResponse,
   OrchestrationSubscribeExecutionRequest,
   OrchestrationSubscribeExecutionResponse,
+  OrchestrationSubscribeSessionRequest,
+  OrchestrationSubscribeSessionResponse,
 } from '@repo-ai-governor/orchestration-service-client';
 import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import {
@@ -117,6 +130,67 @@ export class LocalOrchestrationServiceSidecarClient {
   ): Promise<OrchestrationRecoverExecutionResponse> {
     return this.sendRequest<OrchestrationRecoverExecutionResponse>(
       LocalOrchestrationServiceSidecarOperation.RECOVER_EXECUTION,
+      request,
+    );
+  }
+
+  public async startSession(
+    request: OrchestrationStartSessionRequest,
+  ): Promise<OrchestrationStartSessionResponse> {
+    return this.sendRequest<OrchestrationStartSessionResponse>(
+      LocalOrchestrationServiceSidecarOperation.START_SESSION,
+      request,
+    );
+  }
+
+  public async sendSessionTurn(
+    request: OrchestrationSendSessionTurnRequest,
+  ): Promise<OrchestrationSendSessionTurnResponse> {
+    return this.sendRequest<OrchestrationSendSessionTurnResponse>(
+      LocalOrchestrationServiceSidecarOperation.SEND_SESSION_TURN,
+      request,
+    );
+  }
+
+  public async appendSessionMessage(
+    request: OrchestrationAppendSessionMessageRequest,
+  ): Promise<OrchestrationAppendSessionMessageResponse> {
+    return this.sendRequest<OrchestrationAppendSessionMessageResponse>(
+      LocalOrchestrationServiceSidecarOperation.APPEND_SESSION_MESSAGE,
+      request,
+    );
+  }
+
+  public async getSession(sessionId: string): Promise<OrchestrationSessionSummary | undefined> {
+    return this.sendRequest<OrchestrationSessionSummary | undefined>(
+      LocalOrchestrationServiceSidecarOperation.GET_SESSION,
+      sessionId,
+    );
+  }
+
+  public async listSessions(
+    request?: OrchestrationListSessionsRequest,
+  ): Promise<OrchestrationListSessionsResponse> {
+    return this.sendRequest<OrchestrationListSessionsResponse>(
+      LocalOrchestrationServiceSidecarOperation.LIST_SESSIONS,
+      request,
+    );
+  }
+
+  public async subscribeSession(
+    request: OrchestrationSubscribeSessionRequest,
+  ): Promise<OrchestrationSubscribeSessionResponse> {
+    return this.sendRequest<OrchestrationSubscribeSessionResponse>(
+      LocalOrchestrationServiceSidecarOperation.SUBSCRIBE_SESSION,
+      request,
+    );
+  }
+
+  public async resumeSession(
+    request?: OrchestrationResumeSessionRequest,
+  ): Promise<OrchestrationResumeSessionResponse> {
+    return this.sendRequest<OrchestrationResumeSessionResponse>(
+      LocalOrchestrationServiceSidecarOperation.RESUME_SESSION,
       request,
     );
   }

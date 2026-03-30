@@ -1,6 +1,6 @@
-# TK-415 i18n help docs and adoption playbook
+# TK-415 i18n help docs adoption playbook and capability discoverability
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-30
 - Owner: AI-Agent
 - Priority: P1
@@ -36,3 +36,4 @@
 ## 6. 执行记录
 
 1. 2026-03-30：任务创建，状态初始化为 `planned`。
+2. 2026-03-30：已完成 session-shell i18n/help 收口，并同步更新 `README*` 与 `docs/local-adoption-playbook*`，把 session-first 默认入口、resume、slash surface 与 passthrough 行为纳入 adopter-facing 文档。

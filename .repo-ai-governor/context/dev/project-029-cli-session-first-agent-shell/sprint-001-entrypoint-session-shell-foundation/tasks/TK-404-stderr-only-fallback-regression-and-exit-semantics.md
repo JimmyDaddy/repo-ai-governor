@@ -1,6 +1,6 @@
-# TK-404 stderr-only fallback regression and exit semantics
+# TK-404 stderr-only / fallback / non-interactive regression and exit semantics
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-30
 - Owner: AI-Agent
 - Priority: P0
@@ -36,3 +36,6 @@
 ## 6. 执行记录
 
 1. 2026-03-30：任务创建，状态初始化为 `planned`。
+2. 2026-03-30：实现完成，已将 session shell live UI 固定为 `stderr-only`，并通过 no-subcommand route 把 `stdout` 保留给帮助面或未来机器输出契约。
+3. 2026-03-30：已用 runner/unit/integration tests 固定 `/exit`、`Ctrl+C`、`Ctrl+D` 的退出语义，并明确 session exit 不等于 transcript deletion。
+4. 2026-03-30：验证通过：`pnpm run typecheck`、`pnpm exec vitest run apps/cli/test/runtime/session-shell-runner.test.ts apps/cli/test/runtime/react-cli-runner.test.ts`、`pnpm exec vitest run apps/cli/test/cli-output-contract.integration.test.ts`。

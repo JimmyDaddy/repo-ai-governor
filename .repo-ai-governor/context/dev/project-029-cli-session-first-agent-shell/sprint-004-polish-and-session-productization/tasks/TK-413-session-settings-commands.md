@@ -1,6 +1,6 @@
-# TK-413 session settings commands
+# TK-413 session settings commands and deferred command naming closure
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-30
 - Owner: AI-Agent
 - Priority: P1
@@ -34,3 +34,4 @@
 ## 6. 执行记录
 
 1. 2026-03-30：任务创建，状态初始化为 `planned`。
+2. 2026-03-30：已完成 `/theme` 与 `/agent` 收口，theme preset introspection/update 与 foreground route pinning 都统一到 session shell 的正式命名面。

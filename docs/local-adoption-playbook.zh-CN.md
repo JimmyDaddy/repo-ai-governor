@@ -65,6 +65,20 @@ node <governor-repo>/dist/bin/repo-ai-governor.js <command>
 2. 全新外部仓库中，`doctor` 可能出现 `baseline_docs missing=5/5` warning；当前应视为 external-adopter baseline，而不是 bootstrap failure。
 3. 外部目标仓库中，`check` 可能出现 `check-task-ledger-sync=script_not_found` 等 warning；除非该仓库也同时 vendoring 了 self-host 治理脚本，否则这是当前预期。
 
+session-first shell 快速演练：
+
+```bash
+pnpm exec repo-ai-governor --output pretty
+pnpm exec repo-ai-governor --output pretty "summarize this repository"
+pnpm exec repo-ai-governor resume --help
+```
+
+快速验收点：
+
+1. 在本地 TTY + `pretty` 模式下，无子命令入口应附着到 `stderr` 上的 session shell。
+2. 手工验证建议覆盖 `/help`、`/theme calm`、`/agent main`、`/history`、`/search <term>`、`/multiline`、`!pwd`、`/exit`，然后再执行 `resume [session-id]`。
+3. `--no-interactive`、非 TTY 与 `plain/json` 不应进入 session shell。
+
 ## 3.1 多 AI 工具接入（Codex / Claude Code / GitHub Copilot）
 
 建议按“工具可用性 -> Governor 治理接线 -> 诊断验证”三步执行：
@@ -204,7 +218,7 @@ Artifact locality 合同：
 
 ## 4.1 真实项目验收 Runbook
 
-如果你想在一个真实目标仓库中先完整验证 `project-027` 的 interactive-shell 交付，再决定是否更大范围采用，建议按下面这条 runbook 执行。
+如果你想在一个真实目标仓库中先完整验证当前 interactive-shell 交付，再决定是否更大范围采用，建议按下面这条 runbook 执行。自动化 wrapper 仍覆盖 `project-027` 的命令内 React shell 基线；`project-029` 的 session-first shell 则继续放在同一轮手工演练窗口里验收。
 
 自动化脚本入口：
 
@@ -276,6 +290,14 @@ HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output pretty --ui react connect > con
 HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output pretty --ui react --no-interactive workflow preview --workflow-template parallel-review > workflow-preview.no-interactive.stdout.txt
 ```
 
+真实 TTY 中的 session shell 手工检查：
+
+```bash
+HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output pretty
+HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output pretty "summarize the repository layout"
+HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" resume
+```
+
 期望观察结果：
 
 1. React shell 文本只在终端 `stderr` 中可见，不应出现在重定向的 stdout 文件里。
@@ -289,6 +311,8 @@ HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output pretty --ui react --no-interact
    - `context/upgrade/<upgrade_id>.rollback-snapshot.yaml`
 5. 在本地 TTY + `pretty` 模式下，`upgrade` 默认进入 React shell；`--ui none` 与 `--ui classic` 仍是关闭该壳层的路径。
 6. `--no-interactive` 运行时应正常回退，不渲染 React shell。
+7. 在本地 TTY + `pretty` 模式下，无子命令入口应附着到 session shell，带引号的启动 prompt 会作为首轮消息发送，而 `resume` 可以重新附着最近一次持久化会话。
+8. session shell 的手工检查应确认 slash command 可发现性（`/help`）、route/theme 自检（`/agent`、`/theme`）、history/search recall、多行输入与 `!` passthrough 都成立，且不会污染重定向的 stdout。
 
 当下面这些条件同时满足时，可视为本次真实项目验收通过：
 
@@ -298,6 +322,7 @@ HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output pretty --ui react --no-interact
 4. `workspace` 的 plan / execution / rollback 产物都可追踪。
 5. `workflow create/edit` 会落盘 definition 与 compiled IR，而 `workflow preview` 始终保持只读。
 6. 无论通过默认路由还是显式 `--ui react` 进入 React shell，`upgrade` 都必须完整产出三类 artifact。
+7. session-shell 默认入口、带引号的首轮 prompt 与 `resume` 在真实 TTY 中表现一致，同时不影响 `json` 与 `--no-interactive` 契约。
 
 ## 5. 本地调试路径
 

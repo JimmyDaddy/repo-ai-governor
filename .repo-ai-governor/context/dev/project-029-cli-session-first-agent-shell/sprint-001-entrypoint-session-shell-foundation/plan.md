@@ -1,6 +1,6 @@
 # sprint-001-entrypoint-session-shell-foundation 计划
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-30
 - Project: `project-029-cli-session-first-agent-shell`
 
@@ -25,3 +25,5 @@
 
 1. 本 sprint 只建立 entrypoint / shell foundation，不在本轮承诺主 agent 多轮对话能力。
 2. 当前 sprint 继续复用新号段 `TK-401 ~ TK-404`，避免与仓库内既有任务编号冲突。
+3. 2026-03-30：已实现 `apps/cli/src/main.ts` 的 no-subcommand 入口分流、`CliSessionShellRunner` / readline prompt adapter / stderr renderer，以及 presenter-only transcript/composer/prompt-bar/slash palette React 组件骨架。
+4. 2026-03-30：已完成定向验证：`pnpm run typecheck`、`pnpm exec vitest run apps/cli/test/runtime/session-slash-command-registry.test.ts apps/cli/test/runtime/session-shell-runner.test.ts apps/cli/test/runtime/react-cli-runner.test.ts`、`pnpm exec vitest run apps/cli/test/cli-output-contract.integration.test.ts`。

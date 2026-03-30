@@ -1,6 +1,6 @@
 # TK-416 desktop sidecar smoke baseline and session DTO packaged-surface validation
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-30
 - Owner: AI-Agent
 - Priority: P1
@@ -35,3 +35,4 @@
 ## 6. 执行记录
 
 1. 2026-03-30：任务创建，状态初始化为 `planned`。
+2. 2026-03-30：已完成 desktop sidecar smoke、session DTO packaged-surface 与 public export 校验，并把项目级 resolved review 与 completion audit 收口到 `sprint-004` closeout surface。

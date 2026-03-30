@@ -1,6 +1,6 @@
 # TK-407 cli-session-client transcript store and resume entrypoints
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-30
 - Owner: AI-Agent
 - Priority: P0
@@ -34,3 +34,5 @@
 ## 6. 执行记录
 
 1. 2026-03-30：任务创建，状态初始化为 `planned`。
+2. 2026-03-30：`sprint-002` 已激活，开始实现 service-backed transcript store、`/resume` 与顶层 `resume` 入口。
+3. 2026-03-30：已完成 CLI session service client、service-backed transcript store、top-level `resume [session-id]`、会话内 `/resume [session-id]`、resume selector 回退与 quoted startup prompt 的会话附着入口。

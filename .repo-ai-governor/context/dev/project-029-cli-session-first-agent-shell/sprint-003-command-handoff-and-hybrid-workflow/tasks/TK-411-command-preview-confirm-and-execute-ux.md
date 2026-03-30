@@ -1,6 +1,6 @@
 # TK-411 command preview confirm and execute UX
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-30
 - Owner: AI-Agent
 - Priority: P1
@@ -34,3 +34,4 @@
 ## 6. 执行记录
 
 1. 2026-03-30：任务创建，状态初始化为 `planned`。
+2. 2026-03-30：已完成 preview / confirm / cancel / execute UX；高副作用 handoff 先展示规范化命令，再由 `/confirm` 或 `/cancel` 驱动执行状态流。

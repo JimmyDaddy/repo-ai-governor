@@ -1,0 +1,106 @@
+import { OrchestrationSessionRouteId } from '@repo-ai-governor/orchestration-service-client';
+import type {
+  OrchestrationAppendSessionMessageResponse,
+  OrchestrationListSessionsRequest,
+  OrchestrationListSessionsResponse,
+  OrchestrationResumeSessionResponse,
+  OrchestrationSessionTranscriptRole,
+  OrchestrationStartSessionResponse,
+  OrchestrationSubscribeSessionRequest,
+  OrchestrationSubscribeSessionResponse,
+} from '@repo-ai-governor/orchestration-service-client';
+import type { CliOrchestrationServiceRuntime } from '../orchestration-service-runtime.js';
+
+/**
+ * Owns the CLI-facing session client surface layered on top of orchestration runtime calls.
+ *
+ * Why this exists:
+ * the session shell should depend on one small client tailored to conversation flows instead of
+ * spreading raw orchestration method wiring across the presenter loop.
+ */
+export class CliSessionShellServiceClient {
+  public constructor(
+    private readonly orchestrationServiceRuntime: CliOrchestrationServiceRuntime,
+  ) {}
+
+  /**
+   * Starts a brand-new canonical session owned by the orchestration service.
+   * @returns Newly-opened session response.
+   */
+  public async startSession(): Promise<OrchestrationStartSessionResponse> {
+    return this.orchestrationServiceRuntime.startSession({
+      routeId: OrchestrationSessionRouteId.MAIN,
+    });
+  }
+
+  /**
+   * Resumes the latest or explicitly requested session through the shared service contract.
+   * @param sessionId Optional explicit session id.
+   * @returns Resolved session response.
+   */
+  public async resumeSession(sessionId?: string): Promise<OrchestrationResumeSessionResponse> {
+    return this.orchestrationServiceRuntime.resumeSession({
+      ...(sessionId ? { sessionId } : {}),
+      preferLatest: true,
+    });
+  }
+
+  /**
+   * Sends one plain-text user turn into the main session route.
+   * @param sessionId Canonical session identifier.
+   * @param userMessage User-authored message.
+   * @returns Turn completion response.
+   */
+  public async sendMainTurn(sessionId: string, userMessage: string) {
+    return this.orchestrationServiceRuntime.sendSessionTurn({
+      sessionId,
+      routeId: OrchestrationSessionRouteId.MAIN,
+      userMessage,
+    });
+  }
+
+  /**
+   * Persists one non-turn transcript item so CLI and future desktop can resume the same shell notes.
+   * @param sessionId Canonical session identifier.
+   * @param role Shared transcript role.
+   * @param lines Ordered transcript lines.
+   * @param metadata Optional structured metadata for later consumers.
+   * @returns Append response with the persisted event cursor.
+   */
+  public async appendMessage(
+    sessionId: string,
+    role: OrchestrationSessionTranscriptRole,
+    lines: string[],
+    metadata?: Record<string, unknown>,
+  ): Promise<OrchestrationAppendSessionMessageResponse> {
+    return this.orchestrationServiceRuntime.appendSessionMessage({
+      sessionId,
+      role,
+      routeId: OrchestrationSessionRouteId.MAIN,
+      lines,
+      ...(metadata ? { metadata } : {}),
+    });
+  }
+
+  /**
+   * Streams one incremental session delta using the shared subscribe cursor contract.
+   * @param request Session-subscribe request.
+   * @returns Incremental transcript events.
+   */
+  public async subscribeSession(
+    request: OrchestrationSubscribeSessionRequest,
+  ): Promise<OrchestrationSubscribeSessionResponse> {
+    return this.orchestrationServiceRuntime.subscribeSession(request);
+  }
+
+  /**
+   * Lists resumable sessions for palette or command-level selectors.
+   * @param request Optional filter/limit request.
+   * @returns Session summary list.
+   */
+  public async listSessions(
+    request?: OrchestrationListSessionsRequest,
+  ): Promise<OrchestrationListSessionsResponse> {
+    return this.orchestrationServiceRuntime.listSessions(request);
+  }
+}
