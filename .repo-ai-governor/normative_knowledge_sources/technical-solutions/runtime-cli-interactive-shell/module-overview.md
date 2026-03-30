@@ -8,16 +8,17 @@
 
 ## 1. 作用
 
-负责把 CLI 的命令内 React 壳层与 session-first 终端壳层收敛为统一的本地交互模块，确保默认人类入口、slash command、resume continuity、`stderr` 输出边界与运行时回退都服从同一条可治理 contract。
+负责把 CLI 的命令内 React 壳层、长时命令运行中 React shell 与 session-first 终端壳层收敛为统一的本地交互模块，确保默认人类入口、运行中进度反馈、slash command、resume continuity、`stderr` 输出边界与运行时回退都服从同一条可治理 contract。
 
 ## 2. 职责边界
 
 1. 解析并落实 `none / classic / react / tui / session-shell` 等本地 UI 选择规则。
-2. 管理命令内 React shell 与 session-first shell 的生命周期、`SIGINT` 清理与 classic fallback。
+2. 管理命令内 React shell、长时命令 running shell 与 session-first shell 的生命周期、`SIGINT` 清理与 classic fallback。
 3. 承载 transcript、composer、slash command palette、Ink-owned foreground input 与 command handoff preview 的 presenter 语义，但不拥有 canonical session truth。
 4. 约束所有 live shell 只向 `stderr` 渲染，保持 `stdout` 机器输出稳定。
-5. 为 `init / connect / workspace / upgrade / workflow` 等命令 surface 提供统一交互 seam。
+5. 为 `init / connect / workspace / upgrade / workflow` 等命令 surface 提供统一交互 seam，并为长时命令定义 running-state / elapsed / progress-panel 的共享 presenter 语义。
 6. 为 `repo-ai-governor` 无子命令默认进入的本地 session shell 定义入口 contract 与 resume baseline。
+7. 为命令执行期的 progress sink、AbortSignal cancel seam 与 React shell running panel 定义统一产品边界，但不让命令 executor 直接持有 Ink/React 实例。
 
 ## 3. 非目标
 
@@ -26,6 +27,7 @@
 3. 不让 CLI 进程成为 canonical session state owner。
 4. 不复制 `CliGovernanceRuntime`、输出 presenter 或 i18n runtime 的业务逻辑。
 5. 不引入跨语言 UI 子系统。
+6. 不把 progress event / cancel seam 设计成绑定某个具体 UI 实现的专有协议。
 
 ## 4. North Star References
 
@@ -57,6 +59,7 @@
 4. future desktop 应消费同一份 service-backed session DTO，而不是复制第二套 session state。
 5. focused Ink-owned input formalization 规定 session shell 的默认 foreground input owner 为 Ink；`readline` 只保留为 fallback seam。
 6. 截至 `2026-03-30`，默认 session-shell TTY path 已完成 Ink-owned input cutover，live `/` palette、`Tab` completion、`Up/Down` highlight、`Esc` close 与 `Ctrl+L` clear-screen 已进入正式实现与测试闭环。
+7. 截至 `2026-03-30`，`v3` formal direction 已接受“长时命令 running shell + structured progress events + AbortSignal cancel seam”；该方向已进入正式 module docs，但代码实现由 `project-032-command-live-progress-react-shell-productization` 承接，不应误解为已经交付完成。
 
 ## 9. Detail Docs
 
@@ -66,3 +69,4 @@
 2. ADR:
    - `adrs/session-first-shell-and-service-owned-session-state.md`
    - `adrs/ink-owned-input-and-action-driven-session-shell.md`
+   - `adrs/live-command-progress-and-running-react-shell.md`

@@ -200,20 +200,18 @@ deliveries:
       - runtime_service
       - docs_playbook
     user_impact_level: high
-    execution_status: completed
-    rollout_status: completed
+    execution_status: planned
+    rollout_status: planned
     owner: runtime
-    project_ref: project-029-cli-session-first-agent-shell
-    sprint_ref: sprint-001-entrypoint-session-shell-foundation
+    project_ref: project-032-command-live-progress-react-shell-productization
+    sprint_ref: sprint-002-live-command-shell-contract-and-connect-progress
     task_ids:
-      - TK-401
-      - TK-402
-      - TK-403
-      - TK-404
-    project_plan_path: .repo-ai-governor/context/dev/project-029-cli-session-first-agent-shell/plan.md
-    sprint_plan_path: .repo-ai-governor/context/dev/project-029-cli-session-first-agent-shell/sprint-001-entrypoint-session-shell-foundation/plan.md
-    task_csv_path: .repo-ai-governor/context/dev/project-029-cli-session-first-agent-shell/sprint-001-entrypoint-session-shell-foundation/tasks/tasks.csv
-    handoff_artifact_path: .repo-ai-governor/context/dev/project-029-cli-session-first-agent-shell/sprint-001-entrypoint-session-shell-foundation/tasks/DA-401-project-029-activation-and-session-first-shell-handoff.md
+      - TK-445
+      - TK-446
+    project_plan_path: .repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/plan.md
+    sprint_plan_path: .repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/sprint-002-live-command-shell-contract-and-connect-progress/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/sprint-002-live-command-shell-contract-and-connect-progress/tasks/tasks.csv
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/sprint-001-activation-and-technical-solution-promotion/tasks/DA-444-command-live-progress-react-shell-technical-solution-promotion-cutover.md
     rollout_artifacts:
       - .repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation/plan.md
       - .repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation/project-027-completion-audit-summary.md
@@ -226,6 +224,11 @@ deliveries:
       - .repo-ai-governor/context/dev/project-031-session-shell-ink-input-productization/project-031-session-shell-ink-input-productization-completion-audit-summary.md
       - .repo-ai-governor/context/dev/project-031-session-shell-ink-input-productization/sprint-004-default-cutover-and-rollout-closeout/review/resolved_code_review_project-031-full-implementation.md
       - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/adrs/ink-owned-input-and-action-driven-session-shell.md
+      - .repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/plan.md
+      - .repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/sprint-001-activation-and-technical-solution-promotion/plan.md
+      - .repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/sprint-001-activation-and-technical-solution-promotion/review/resolved_code_review_tk-444-command-live-progress-react-shell-technical-solution-promotion-cutover.md
+      - .repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/sprint-001-activation-and-technical-solution-promotion/tasks/DA-444-command-live-progress-react-shell-technical-solution-promotion-cutover.md
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/adrs/live-command-progress-and-running-react-shell.md
     accepted_at: 2026-03-30
 
   - solution_id: technical-solution.multi-ai-tools-onboarding-role-agent-projection

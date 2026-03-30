@@ -3,20 +3,20 @@
 ## Primary Stream
 
 - Status: active
-- Project: `project-030-runtime-agent-projection-phase-2-productization`
-- Sprint: `sprint-004-ui-consumer-and-rollout-closeout`
-- Docs root: `.repo-ai-governor/context/dev/project-030-runtime-agent-projection-phase-2-productization`
-- Task records: `.repo-ai-governor/context/dev/project-030-runtime-agent-projection-phase-2-productization/sprint-004-ui-consumer-and-rollout-closeout/tasks/`
-- Review records: `.repo-ai-governor/context/dev/project-030-runtime-agent-projection-phase-2-productization/sprint-004-ui-consumer-and-rollout-closeout/review/`
-- Note: `project-030` 的 `sprint-002 ~ sprint-003` 已完成，当前激活 `sprint-004` 承接 formal UI consumer baseline 与 rollout closeout；`project-031` 已迁入 completed history。
+- Project: `project-032-command-live-progress-react-shell-productization`
+- Sprint: `sprint-001-activation-and-technical-solution-promotion`
+- Docs root: `.repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization`
+- Task records: `.repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/sprint-001-activation-and-technical-solution-promotion/tasks/`
+- Review records: `.repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/sprint-001-activation-and-technical-solution-promotion/review/`
+- Note: `project-032` 已激活用于 command live progress React shell technical solution promotion 与 phase-map 建立；`sprint-001` 保留为 active closeout surface，后续实现默认切入 `sprint-002`。
 
 ## Active Streams
 
-- `primary`: project=`project-030-runtime-agent-projection-phase-2-productization`, sprint=`sprint-004-ui-consumer-and-rollout-closeout`, docs=`.repo-ai-governor/context/dev/project-030-runtime-agent-projection-phase-2-productization`, plan=`.repo-ai-governor/context/dev/project-030-runtime-agent-projection-phase-2-productization/plan.md`, tasks=`.repo-ai-governor/context/dev/project-030-runtime-agent-projection-phase-2-productization/sprint-004-ui-consumer-and-rollout-closeout/tasks/`, checklist=`.repo-ai-governor/context/dev/project-030-runtime-agent-projection-phase-2-productization/sprint-004-ui-consumer-and-rollout-closeout/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-030-runtime-agent-projection-phase-2-productization/sprint-004-ui-consumer-and-rollout-closeout/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-030-runtime-agent-projection-phase-2-productization/sprint-004-ui-consumer-and-rollout-closeout/review/`, status=`active`, note=`project-030 sprint-004 activated for formal UI consumer baseline and rollout closeout`
+- `primary`: project=`project-032-command-live-progress-react-shell-productization`, sprint=`sprint-001-activation-and-technical-solution-promotion`, docs=`.repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization`, plan=`.repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/plan.md`, tasks=`.repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/sprint-001-activation-and-technical-solution-promotion/tasks/`, checklist=`.repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/sprint-001-activation-and-technical-solution-promotion/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/sprint-001-activation-and-technical-solution-promotion/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/sprint-001-activation-and-technical-solution-promotion/review/`, status=`active`, note=`project-032 sprint-001 retained as active closeout surface for technical-solution promotion and follow-up phase-map sync`
 
 ## Planned Follow-Up Streams
 
-- None at this time.
+- `followup-project-032-sprint-002`: project=`project-032-command-live-progress-react-shell-productization`, sprint=`sprint-002-live-command-shell-contract-and-connect-progress`, docs=`.repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization`, plan=`.repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/plan.md`, tasks=`.repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/sprint-002-live-command-shell-contract-and-connect-progress/tasks/`, checklist=`.repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/sprint-002-live-command-shell-contract-and-connect-progress/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/sprint-002-live-command-shell-contract-and-connect-progress/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/sprint-002-live-command-shell-contract-and-connect-progress/review/`, status=`planned`, note=`accepted solution delivery follow-up for live command shell contract, running progress panel, and connect progress events`
 
 ## Completed Stream History
 

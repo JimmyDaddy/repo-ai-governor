@@ -682,3 +682,16 @@ documents:
       - command_surface_change
     owner: runtime
     last_reviewed_at: 2026-03-30
+
+  - doc_id: runtime_cli_command_live_progress_adr
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/adrs/live-command-progress-and-running-react-shell.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+      - cli_ui_change
+      - command_surface_change
+    owner: runtime
+    last_reviewed_at: 2026-03-30
