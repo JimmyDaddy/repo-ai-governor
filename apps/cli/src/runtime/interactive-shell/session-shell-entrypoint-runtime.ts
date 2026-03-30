@@ -29,6 +29,7 @@ interface CliSessionShellNestedCommandExecutorOptions {
   locale: string;
   currentWorkingDirectory: string;
   environment: NodeJS.ProcessEnv;
+  translate: (key: string, interpolation?: Record<string, string>) => string;
   executeCli: (argv: string[], io: CliSessionShellNestedCliIoAdapters) => Promise<number>;
 }
 
@@ -100,8 +101,10 @@ export class CliSessionShellEntrypointRuntime {
       return CliSessionShellEntrypointRuntime.summarizeCommandResult({
         commandLine: argvTokens.join(' '),
         exitCode: nestedExitCode,
+        locale: options.locale,
         stdoutText: nestedStdout.join('').trim(),
         stderrText: nestedStderr.join('').trim(),
+        translate: options.translate,
       });
     };
   }
@@ -257,8 +260,10 @@ export class CliSessionShellEntrypointRuntime {
   private static summarizeCommandResult(options: {
     commandLine: string;
     exitCode: number;
+    locale: string;
     stdoutText: string;
     stderrText: string;
+    translate: (key: string, interpolation?: Record<string, string>) => string;
   }): CliSessionShellCommandExecutionResult {
     const parsedPayload = CliSessionShellEntrypointRuntime.parseCliJsonOutput(options.stdoutText);
     if (!parsedPayload) {
@@ -285,44 +290,162 @@ export class CliSessionShellEntrypointRuntime {
         status: 'error',
         summaryLines: [
           parsedPayload.message,
-          parsedPayload.hint,
-          `next_action=${parsedPayload.next_action}`,
-        ],
+          options.translate('cli.sessionShell.responses.commandErrorHint', {
+            hint: parsedPayload.hint,
+          }),
+          options.translate('cli.sessionShell.responses.commandErrorNextAction', {
+            nextAction: parsedPayload.next_action,
+          }),
+        ].filter((line) => line.length > 0),
       };
     }
 
-    const experienceLines = parsedPayload.command_result?.experience?.layeredLogs.summary ?? [];
     const artifactPaths =
       parsedPayload.command_result?.artifacts
         ?.map((artifact) => artifact.path)
         .filter((path) => typeof path === 'string' && path.length > 0) ?? [];
+    const summaryLocale = parsedPayload.diagnostics?.locale ?? options.locale;
+    const primarySummary = CliSessionShellEntrypointRuntime.resolvePrimarySummaryLine(
+      parsedPayload,
+      artifactPaths,
+    );
     const agentViewSummary = parsedPayload.command_result?.agentView
-      ? CliSessionShellEntrypointRuntime.agentProjectionPresenter.buildSummaryLine(
+      ? options.translate('cli.sessionShell.responses.commandAgentSummary', {
+          summary: CliSessionShellEntrypointRuntime.agentProjectionPresenter.buildSummaryLine(
+            parsedPayload.command_result.agentView,
+            summaryLocale,
+          ),
+        })
+      : null;
+    const agentAttentionLine = parsedPayload.command_result?.agentView
+      ? CliSessionShellEntrypointRuntime.resolveAgentAttentionLine(
           parsedPayload.command_result.agentView,
-          parsedPayload.diagnostics.locale,
+          summaryLocale,
+          options.translate,
         )
       : null;
-    const agentViewHighlights = parsedPayload.command_result?.agentView
-      ? CliSessionShellEntrypointRuntime.agentProjectionPresenter.buildHighlightLines(
-          parsedPayload.command_result.agentView,
-          parsedPayload.diagnostics.locale,
-          2,
-        )
-      : [];
+    const keyStatusSummary = CliSessionShellEntrypointRuntime.resolveKeyStatusSummaryLine(
+      parsedPayload.command_result?.experience?.layeredLogs.summary ?? [],
+      artifactPaths,
+    );
 
     return {
       artifactPaths,
       commandLine: options.commandLine,
       message: parsedPayload.message,
       status: 'success',
-      summaryLines: [
-        parsedPayload.message,
-        ...(parsedPayload.command_result?.summary ? [parsedPayload.command_result.summary] : []),
-        ...(agentViewSummary ? [`agent_view=${agentViewSummary}`] : []),
-        ...agentViewHighlights,
-        ...experienceLines.slice(0, 2),
-      ],
+      summaryLines: CliSessionShellEntrypointRuntime.dedupeSummaryLines([
+        primarySummary
+          ? options.translate('cli.sessionShell.responses.commandSummary', {
+              summary: primarySummary,
+            })
+          : null,
+        agentViewSummary,
+        agentAttentionLine,
+        keyStatusSummary
+          ? options.translate('cli.sessionShell.responses.commandStatusSummary', {
+              summary: keyStatusSummary,
+            })
+          : null,
+      ]),
     };
+  }
+
+  private static resolvePrimarySummaryLine(
+    parsedPayload: CliSuccessOutputPayload,
+    artifactPaths: string[],
+  ): string | null {
+    const summaryCandidate =
+      parsedPayload.command_result?.summary?.trim() || parsedPayload.message.trim();
+    if (summaryCandidate.length === 0) {
+      return null;
+    }
+
+    return CliSessionShellEntrypointRuntime.replaceArtifactPathsWithShortForms(
+      summaryCandidate,
+      artifactPaths,
+    );
+  }
+
+  private static resolveKeyStatusSummaryLine(
+    experienceLines: string[],
+    artifactPaths: string[],
+  ): string | null {
+    const compactSegments = experienceLines
+      .slice(0, 2)
+      .map((line) =>
+        CliSessionShellEntrypointRuntime.replaceArtifactPathsWithShortForms(line, artifactPaths),
+      )
+      .filter((line) => line.length > 0);
+    if (compactSegments.length === 0) {
+      return null;
+    }
+
+    return compactSegments.join(' · ');
+  }
+
+  private static resolveAgentAttentionLine(
+    agentView: NonNullable<CliSuccessOutputPayload['command_result']>['agentView'],
+    locale: string,
+    translate: (key: string, interpolation?: Record<string, string>) => string,
+  ): string | null {
+    if (!agentView) {
+      return null;
+    }
+
+    const firstHighlight =
+      CliSessionShellEntrypointRuntime.agentProjectionPresenter.buildHighlightLines(
+        agentView,
+        locale,
+        1,
+      )[0] ?? null;
+    if (!firstHighlight) {
+      return null;
+    }
+
+    return translate('cli.sessionShell.responses.commandAttentionSummary', {
+      summary: CliSessionShellEntrypointRuntime.truncateLine(firstHighlight, 120),
+    });
+  }
+
+  private static dedupeSummaryLines(lines: Array<string | null | undefined>): string[] {
+    const dedupedLines: string[] = [];
+    for (const candidate of lines) {
+      const normalizedCandidate = candidate?.trim();
+      if (!normalizedCandidate || dedupedLines.includes(normalizedCandidate)) {
+        continue;
+      }
+      dedupedLines.push(normalizedCandidate);
+    }
+
+    return dedupedLines;
+  }
+
+  private static replaceArtifactPathsWithShortForms(text: string, artifactPaths: string[]): string {
+    let nextText = text;
+    for (const artifactPath of artifactPaths) {
+      nextText = nextText
+        .split(artifactPath)
+        .join(CliSessionShellEntrypointRuntime.shortenArtifactPath(artifactPath));
+    }
+    return nextText;
+  }
+
+  private static shortenArtifactPath(artifactPath: string): string {
+    const segments = artifactPath.split(/[\\/]/u).filter((segment) => segment.length > 0);
+    if (segments.length <= 4) {
+      return artifactPath;
+    }
+
+    return `.../${segments.slice(-4).join('/')}`;
+  }
+
+  private static truncateLine(line: string, maxLength: number): string {
+    if (line.length <= maxLength) {
+      return line;
+    }
+
+    return `${line.slice(0, Math.max(0, maxLength - 1)).trimEnd()}…`;
   }
 
   private static parseCliJsonOutput(

@@ -102,6 +102,36 @@ describe('codex-agent-adapter smoke', () => {
     expect(execRunner).toHaveBeenCalledTimes(2);
   });
 
+  it('passes probe abort signal into the codex exec runner', async () => {
+    const abortController = new AbortController();
+    const execRunner = vi.fn<CodexExecRunner>().mockImplementation(async (request) => {
+      expect(request.signal).toBe(abortController.signal);
+      return {
+        stdout: [
+          '{"type":"thread.started","thread_id":"thread-1"}',
+          '{"type":"item.completed","item":{"id":"item-1","type":"agent_message","text":"OK"}}',
+          '{"type":"turn.completed","usage":{"input_tokens":3,"output_tokens":1}}',
+        ].join('\n'),
+        stderr: '',
+        exitCode: 0,
+        signal: null,
+        elapsedMs: 4,
+      };
+    });
+    const adapter = new CodexAgentAdapter({
+      executionMode: CodexAgentAdapterExecutionMode.CLI_EXEC,
+      execRunner,
+    });
+
+    const probeResult = await adapter.probe({
+      routeKey: 'codegen',
+      signal: abortController.signal,
+    });
+
+    expect(probeResult.availabilityStatus).toBe('available');
+    expect(execRunner).toHaveBeenCalledTimes(1);
+  });
+
   it('degrades confirmation/cancel semantics in cli_exec mode', async () => {
     const adapter = new CodexAgentAdapter({
       executionMode: CodexAgentAdapterExecutionMode.CLI_EXEC,

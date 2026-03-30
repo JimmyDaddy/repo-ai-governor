@@ -1,4 +1,5 @@
 export { ReactCliApp } from './app/react-cli-app.js';
+export { ReactCliLiveProgressPresenter } from './app/react-cli-live-progress-presenter.js';
 export { ReactCliRunner } from './app/react-cli-runner.js';
 export { ReactCliStderrFramePresenter } from './app/react-cli-stderr-frame-presenter.js';
 export { resolveReactCliTheme } from './theme/react-cli-theme-registry.js';
@@ -20,12 +21,14 @@ export {
   type ReactCliFieldRenderer,
 } from './bridge/react-cli-field-renderer-registry.js';
 export { ReactCliSessionController } from './session/react-cli-session-controller.js';
+export { ReactCliCommandProgressController } from './session/react-cli-command-progress-controller.js';
 export type {
   ReactCliSectionViewModel,
   ReactCliStatusVariant,
   ReactCliViewModel,
 } from './state/react-cli-view-model.interface.js';
 export { ReactCliAgentProjectionPanel } from './views/agent-projection-panel.js';
+export { ReactCliCommandProgressPanel } from './views/command-progress-panel.js';
 export { ReactCliLayoutShell } from './views/layout-shell.js';
 export { ReactCliComposerInput } from './views/composer-input.js';
 export { ReactCliPromptBar } from './views/prompt-bar.js';

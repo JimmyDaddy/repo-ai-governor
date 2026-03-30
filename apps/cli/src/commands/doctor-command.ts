@@ -125,7 +125,7 @@ export class CliDoctorCommand implements CliCommandExecutor {
       `${doctorId}.json`,
     );
     if (runtimeDebugOptions.adapters) {
-      const adapterVerification = await context.resolveAdapterVerification();
+      const adapterVerification = await context.resolveAdapterVerification(context.abortSignal);
       adapterVerificationSnapshot = adapterVerification;
       adapterStatus = adapterVerification.overallStatus;
       agentView = context.agentProjectionRuntime.createCliAgentView({

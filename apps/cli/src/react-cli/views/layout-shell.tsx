@@ -4,6 +4,7 @@ import type React from 'react';
 import type { ReactCliShellPalette } from '../../types/index.js';
 import type { ReactCliViewModel } from '../state/react-cli-view-model.interface.js';
 import { ReactCliAgentProjectionPanel } from './agent-projection-panel.js';
+import { ReactCliCommandProgressPanel } from './command-progress-panel.js';
 
 export interface ReactCliLayoutShellProps {
   viewModel: ReactCliViewModel;
@@ -50,6 +51,12 @@ export function ReactCliLayoutShell({
             </Text>
           ))}
         </Box>
+      ) : null}
+      {viewModel.commandProgressPanel ? (
+        <ReactCliCommandProgressPanel
+          panel={viewModel.commandProgressPanel}
+          shellPalette={shellPalette}
+        />
       ) : null}
       {viewModel.sections.map((section, index) => (
         <Box key={`${section.title}:${index}`} flexDirection='column' marginTop={1}>

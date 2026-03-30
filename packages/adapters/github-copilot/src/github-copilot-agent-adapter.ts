@@ -178,8 +178,8 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
    * @param _request Probe request payload.
    * @returns Probe result payload.
    */
-  public override async probe(_request: AgentProbeRequest): Promise<AgentProbeResult> {
-    const runtimeProbe = await this.resolveProbeResolution();
+  public override async probe(request: AgentProbeRequest): Promise<AgentProbeResult> {
+    const runtimeProbe = await this.resolveProbeResolution(request.signal);
     return {
       identity: {
         agentId: this.options.agentId,
@@ -369,7 +369,9 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
    * Resolves probe result for the current execution mode with short-lived caching.
    * @returns Probe availability resolution.
    */
-  private async resolveProbeResolution(): Promise<GithubCopilotProbeResolution> {
+  private async resolveProbeResolution(
+    signal?: AbortSignal,
+  ): Promise<GithubCopilotProbeResolution> {
     if (this.options.executionMode === GithubCopilotAgentAdapterExecutionMode.BASELINE) {
       return {
         availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
@@ -389,7 +391,7 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
       return this.probeCache.resolution;
     }
 
-    const resolution = await this.executeHealthProbe();
+    const resolution = await this.executeHealthProbe(signal);
     this.probeCache = {
       expiresAt: now + this.options.probeCacheTtlMs,
       resolution,
@@ -401,11 +403,12 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
    * Executes one real GitHub Copilot health probe using non-interactive CLI mode.
    * @returns Probe availability resolution.
    */
-  private async executeHealthProbe(): Promise<GithubCopilotProbeResolution> {
+  private async executeHealthProbe(signal?: AbortSignal): Promise<GithubCopilotProbeResolution> {
     try {
       const executionResult = await this.runGithubCopilotOperation({
         prompt: GITHUB_COPILOT_HEALTH_CHECK_PROMPT,
         timeoutMs: this.options.requestTimeoutMs,
+        signal,
         operation: AgentCliExecOperation.PROBE,
       });
       const parsedOutput = this.parseGithubCopilotCliOutput(

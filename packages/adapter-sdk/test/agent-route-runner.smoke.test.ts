@@ -30,6 +30,7 @@ interface FakeAgentProtocolOptions {
   capabilitySupportById?: Partial<Record<AgentCapability, AgentCapabilitySupportLevel>>;
   throwOnProbe?: boolean;
   throwOnInvoke?: boolean;
+  onProbeRequest?: (request: AgentProbeRequest) => void;
 }
 
 function createCapabilityMatrix(
@@ -65,7 +66,8 @@ class FakeAgentProtocol extends AgentProtocol {
     super();
   }
 
-  public override async probe(_request: AgentProbeRequest) {
+  public override async probe(request: AgentProbeRequest) {
+    this.options.onProbeRequest?.(request);
     if (this.options.throwOnProbe) {
       throw {
         message: 'probe failed',
@@ -569,5 +571,39 @@ describe('adapter-route-runner smoke', () => {
     } catch (error) {
       expect((error as RuntimeError).code).toBe(GovernorErrorCode.ADAPTER_ROUTE_CONFIG_INVALID);
     }
+  });
+
+  it('passes dispatch abort signal into protocol probe requests', async () => {
+    const abortController = new AbortController();
+    const onProbeRequest = vi.fn();
+    const routeRunner = new AgentRouteRunner({
+      routePolicies: [
+        {
+          routeKey: 'codegen',
+          primarySurface: 'codex',
+        },
+      ],
+      protocolBySurface: {
+        codex: new FakeAgentProtocol({
+          surface: 'codex',
+          availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+          onProbeRequest,
+        }),
+      },
+    });
+
+    await routeRunner.dispatchStage({
+      processId: 'process-1',
+      executionId: 'execution-1',
+      stageId: 'stage-1',
+      routeKey: 'codegen',
+      input: {
+        prompt: 'implement feature',
+      },
+      signal: abortController.signal,
+    });
+
+    expect(onProbeRequest).toHaveBeenCalledTimes(1);
+    expect(onProbeRequest.mock.calls[0]?.[0]?.signal).toBe(abortController.signal);
   });
 });

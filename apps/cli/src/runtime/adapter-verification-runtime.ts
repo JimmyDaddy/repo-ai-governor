@@ -4,7 +4,13 @@ import {
   type AgentProbeResult,
 } from '@repo-ai-governor/adapter-sdk';
 import type { AdaptersConfig } from '@repo-ai-governor/config';
-import { AdapterAvailability, AdapterSurface } from '@repo-ai-governor/shared';
+import {
+  AdapterAvailability,
+  AdapterSurface,
+  GovernorErrorCode,
+  RuntimeError,
+  standardizeError,
+} from '@repo-ai-governor/shared';
 import {
   CLI_ADAPTER_FAILURE_ATTRIBUTION,
   CliAdapterRoleSelectionSource,
@@ -33,9 +39,14 @@ export class CliAdapterVerificationRuntime {
    * Resolves adapters/routing verification summary used by connect/doctor/verify commands.
    * @returns Adapter verification resolution.
    */
-  public async resolveAdapterVerification(): Promise<CliAdapterVerificationResolution> {
+  public async resolveAdapterVerification(
+    abortSignal?: AbortSignal,
+  ): Promise<CliAdapterVerificationResolution> {
     const toolConfigBySurface = this.adapterRoutingRuntime.createToolConfigBySurfaceMap();
-    const toolSnapshots = await this.collectAdapterToolSnapshotsBySurface(toolConfigBySurface);
+    const toolSnapshots = await this.collectAdapterToolSnapshotsBySurface(
+      toolConfigBySurface,
+      abortSignal,
+    );
     const toolSnapshotBySurface = new Map<AdapterSurface, CliAdapterToolProbeSnapshot>(
       toolSnapshots.map((snapshot) => [snapshot.toolId, snapshot]),
     );
@@ -308,6 +319,7 @@ export class CliAdapterVerificationRuntime {
    */
   private async collectAdapterToolSnapshotsBySurface(
     toolConfigBySurface: Map<AdapterSurface, NonNullable<AdaptersConfig['tools']>[number]>,
+    abortSignal?: AbortSignal,
   ): Promise<CliAdapterToolProbeSnapshot[]> {
     const protocolBySurface =
       this.adapterRoutingRuntime.createProtocolBySurface(toolConfigBySurface);
@@ -315,6 +327,7 @@ export class CliAdapterVerificationRuntime {
     const snapshots: CliAdapterToolProbeSnapshot[] = [];
     const surfaces = this.adapterRoutingRuntime.resolveTrackedAdapterSurfaces(toolConfigBySurface);
     for (const surface of surfaces) {
+      this.throwIfAborted(abortSignal);
       const toolConfig = toolConfigBySurface.get(surface);
       const enabled = toolConfig?.enabled ?? true;
       const configuredAvailability = enabled
@@ -333,15 +346,21 @@ export class CliAdapterVerificationRuntime {
           ? localModelConfigResolution
           : await this.localModelProbeRuntime.mergeLocalProbeResolutions(
               localModelConfigResolution,
-              this.localModelProbeRuntime.probeLocalAdapterAvailability(surface, toolConfig),
+              this.localModelProbeRuntime.probeLocalAdapterAvailability(
+                surface,
+                toolConfig,
+                abortSignal,
+              ),
             )
         : {
             availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
             unavailableReasons: [`disabled_by_config:${surface}`],
           };
       try {
+        this.throwIfAborted(abortSignal);
         const probeResult = await protocol.probe({
           routeKey: `cli.adapter.probe.${surface}`,
+          ...(abortSignal ? { signal: abortSignal } : {}),
           requiredCapabilities: [],
         });
         const unavailableReasons = [
@@ -364,6 +383,9 @@ export class CliAdapterVerificationRuntime {
           }),
         });
       } catch (error) {
+        if (standardizeError(error).code === GovernorErrorCode.PROCESS_RUNTIME_CANCELLED) {
+          throw error;
+        }
         const unavailableReasons = [
           ...configuredUnavailableReasons,
           ...(enabled ? [] : [`disabled_by_config:${surface}`]),
@@ -384,6 +406,20 @@ export class CliAdapterVerificationRuntime {
     }
 
     return snapshots;
+  }
+
+  /**
+   * Raises a standardized cancellation error when verification was already aborted.
+   * @param abortSignal Optional runtime abort signal.
+   */
+  private throwIfAborted(abortSignal?: AbortSignal): void {
+    if (!abortSignal?.aborted) {
+      return;
+    }
+    throw new RuntimeError(
+      GovernorErrorCode.PROCESS_RUNTIME_CANCELLED,
+      'Adapter verification cancelled before probe completion.',
+    );
   }
 
   /**

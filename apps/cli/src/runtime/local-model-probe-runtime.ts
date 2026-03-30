@@ -3,7 +3,12 @@ import { promisify } from 'node:util';
 
 import { AgentAvailabilityStatus } from '@repo-ai-governor/adapter-sdk';
 import type { AdaptersConfig } from '@repo-ai-governor/config';
-import { AdapterSurface, LocalModelProvider } from '@repo-ai-governor/shared';
+import {
+  AdapterSurface,
+  GovernorErrorCode,
+  LocalModelProvider,
+  RuntimeError,
+} from '@repo-ai-governor/shared';
 import type {
   CliLocalAdapterProbeOverride,
   CliLocalAdapterProbeResolution,
@@ -42,7 +47,7 @@ export class CliLocalModelProbeRuntime {
       | Partial<Record<AdapterSurface, CliLocalAdapterProbeOverride>>
       | undefined,
     private readonly commandProbeExecutor:
-      | ((command: string, args: readonly string[]) => Promise<void>)
+      | ((command: string, args: readonly string[], abortSignal?: AbortSignal) => Promise<void>)
       | undefined,
     private readonly formatExecFailureDetail: (error: unknown) => string,
   ) {}
@@ -56,6 +61,7 @@ export class CliLocalModelProbeRuntime {
   public async probeLocalAdapterAvailability(
     surface: AdapterSurface,
     toolConfig?: NonNullable<AdaptersConfig['tools']>[number],
+    abortSignal?: AbortSignal,
   ): Promise<CliLocalAdapterProbeResolution> {
     const overrideResolution = this.adapterLocalProbeOverrides?.[surface];
     if (overrideResolution) {
@@ -66,7 +72,7 @@ export class CliLocalModelProbeRuntime {
     }
 
     if (surface === AdapterSurface.CODEX) {
-      return this.probeSingleCommandAvailability(surface, 'codex', ['--version']);
+      return this.probeSingleCommandAvailability(surface, 'codex', ['--version'], abortSignal);
     }
 
     if (surface === AdapterSurface.CLAUDE_CODE) {
@@ -76,6 +82,7 @@ export class CliLocalModelProbeRuntime {
           surface,
           candidate.command,
           candidate.args,
+          abortSignal,
         );
         if (probeResult.availabilityStatus === AgentAvailabilityStatus.AVAILABLE) {
           return probeResult;
@@ -97,7 +104,7 @@ export class CliLocalModelProbeRuntime {
           unavailableReasons: [],
         };
       }
-      return this.probeSingleCommandAvailability(surface, 'ollama', ['--version']);
+      return this.probeSingleCommandAvailability(surface, 'ollama', ['--version'], abortSignal);
     }
 
     const unavailableReasons: string[] = [];
@@ -106,6 +113,7 @@ export class CliLocalModelProbeRuntime {
         surface,
         candidate.command,
         candidate.args,
+        abortSignal,
       );
       if (probeResult.availabilityStatus === AgentAvailabilityStatus.AVAILABLE) {
         return probeResult;
@@ -228,21 +236,39 @@ export class CliLocalModelProbeRuntime {
     surface: AdapterSurface,
     command: string,
     args: readonly string[],
+    abortSignal?: AbortSignal,
   ): Promise<CliLocalAdapterProbeResolution> {
     try {
+      this.throwIfAborted(abortSignal, surface, command);
       if (this.commandProbeExecutor) {
-        await this.commandProbeExecutor(command, args);
+        if (abortSignal) {
+          await this.commandProbeExecutor(command, args, abortSignal);
+        } else {
+          await this.commandProbeExecutor(command, args);
+        }
       } else {
         await execFileAsync(command, [...args], {
           timeout: CLI_ADAPTER_LOCAL_PROBE_TIMEOUT_MS,
           maxBuffer: CLI_ADAPTER_LOCAL_PROBE_MAX_BUFFER_BYTES,
+          signal: abortSignal,
         });
       }
+      this.throwIfAborted(abortSignal, surface, command);
       return {
         availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
         unavailableReasons: [],
       };
     } catch (error) {
+      if (this.isAbortFailure(error)) {
+        throw new RuntimeError(
+          GovernorErrorCode.PROCESS_RUNTIME_CANCELLED,
+          `Local adapter probe cancelled while checking ${surface}:${command}.`,
+          {
+            surface,
+            command,
+          },
+        );
+      }
       if (this.isMissingCommandFailure(error)) {
         return {
           availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
@@ -288,5 +314,43 @@ export class CliLocalModelProbeRuntime {
     }
     const errorCode = (error as { code?: unknown }).code;
     return errorCode === 'ENOENT';
+  }
+
+  /**
+   * Checks whether one probe failure was caused by abort/cancel semantics.
+   * @param error Unknown probe failure.
+   * @returns True when execution was aborted.
+   */
+  private isAbortFailure(error: unknown): boolean {
+    if (!error || typeof error !== 'object') {
+      return false;
+    }
+    const errorName = (error as { name?: unknown }).name;
+    const errorCode = (error as { code?: unknown }).code;
+    return errorName === 'AbortError' || errorCode === 'ABORT_ERR';
+  }
+
+  /**
+   * Raises a standardized cancellation error when probe execution was already aborted.
+   * @param abortSignal Optional runtime abort signal.
+   * @param surface Adapter surface under inspection.
+   * @param command Probe command name.
+   */
+  private throwIfAborted(
+    abortSignal: AbortSignal | undefined,
+    surface: AdapterSurface,
+    command: string,
+  ): void {
+    if (!abortSignal?.aborted) {
+      return;
+    }
+    throw new RuntimeError(
+      GovernorErrorCode.PROCESS_RUNTIME_CANCELLED,
+      `Local adapter probe cancelled while checking ${surface}:${command}.`,
+      {
+        surface,
+        command,
+      },
+    );
   }
 }

@@ -29,6 +29,7 @@ import type { CliOrchestrationServiceRuntime } from '../../runtime/orchestration
 import type { CliCommandExperienceBuilder } from '../../runtime/presentation/command-experience-builder.js';
 import type { CliLocalAdapterProbeOverride } from './cli-adapter-verification.interface.js';
 import type { CliAdapterVerificationResolution } from './cli-adapter-verification.interface.js';
+import type { CliCommandProgressSink } from './cli-command-progress.interface.js';
 import type { CliOrchestrationServiceRuntimeDependencies } from './cli-orchestration-service-runtime.interface.js';
 import type {
   CliCommandExecutionResultPayload,
@@ -63,7 +64,11 @@ export interface CliGovernanceRuntimeOptions {
   workflowCommandOptions?: CliWorkflowCommandOptions;
   runtimeDebugOptions?: CliRuntimeDebugOptions;
   adapterLocalProbeOverrides?: Partial<Record<AdapterSurface, CliLocalAdapterProbeOverride>>;
-  commandProbeExecutor?: (command: string, args: readonly string[]) => Promise<void>;
+  commandProbeExecutor?: (
+    command: string,
+    args: readonly string[],
+    abortSignal?: AbortSignal,
+  ) => Promise<void>;
   claudeCodeExecRunner?: ClaudeCodeExecRunner;
   codexExecRunner?: CodexExecRunner;
   githubCopilotExecRunner?: GithubCopilotExecRunner;
@@ -152,6 +157,8 @@ export interface CliArtifactWriter {
  */
 export interface CliCommandExecutorContext {
   options: CliGovernanceRuntimeOptions;
+  progressSink?: CliCommandProgressSink;
+  abortSignal?: AbortSignal;
   artifactWriter: CliArtifactWriter;
   onboardingRuntime: CliAgentOnboardingRuntime;
   agentProjectionRuntime: CliAgentProjectionRuntime;
@@ -166,9 +173,10 @@ export interface CliCommandExecutorContext {
   formatExecFailureDetail(error: unknown): string;
   resolveRuntimeDebugOptions(): CliNormalizedRuntimeDebugOptions;
   resolveExecutionStreamMetadata(): Promise<CliExecutionStreamMetadata>;
-  resolveAdapterVerification(): Promise<CliAdapterVerificationResolution>;
+  resolveAdapterVerification(abortSignal?: AbortSignal): Promise<CliAdapterVerificationResolution>;
   resolveAdapterVerificationForConfig(
     adaptersConfig: AdaptersConfig,
+    abortSignal?: AbortSignal,
   ): Promise<CliAdapterVerificationResolution>;
   validateGovernorConfig(candidate: unknown): GovernorConfig;
   canWritePath(filePath: string): Promise<boolean>;

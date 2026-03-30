@@ -19,7 +19,7 @@ export class CliVerifyCommand implements CliCommandExecutor {
 
   public async execute(context: CliCommandExecutorContext) {
     const runtimeDebugOptions = context.resolveRuntimeDebugOptions();
-    const adapterVerification = await context.resolveAdapterVerification();
+    const adapterVerification = await context.resolveAdapterVerification(context.abortSignal);
     const verifyId = `verify-${Date.now()}`;
     const matrixPayload = context.onboardingRuntime.createVerifyMatrixPayload({
       executionId: verifyId,

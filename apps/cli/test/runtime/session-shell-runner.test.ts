@@ -409,6 +409,14 @@ const DEFAULT_TRANSLATIONS: Record<string, string> = {
   'cli.sessionShell.responses.commandExecutionFailed':
     'Command handoff failed for {{command}}. reason={{reason}}',
   'cli.sessionShell.responses.commandArtifact': 'artifact={{artifactPath}}',
+  'cli.sessionShell.responses.commandArtifactsMore':
+    '+{{count}} more related artifacts were written.',
+  'cli.sessionShell.responses.commandSummary': 'Summary: {{summary}}',
+  'cli.sessionShell.responses.commandStatusSummary': 'Key status: {{summary}}',
+  'cli.sessionShell.responses.commandAgentSummary': 'Agent routing: {{summary}}',
+  'cli.sessionShell.responses.commandAttentionSummary': 'Attention: {{summary}}',
+  'cli.sessionShell.responses.commandErrorHint': 'Hint: {{hint}}',
+  'cli.sessionShell.responses.commandErrorNextAction': 'Next step: {{nextAction}}',
   'cli.sessionShell.responses.localTranscriptCleared': 'Local transcript viewport cleared.',
   'cli.sessionShell.responses.historyEmpty': 'No shell inputs recorded yet.',
   'cli.sessionShell.responses.searchRequiresQuery': 'Pass a search term after /search.',
@@ -477,7 +485,7 @@ describe('CliSessionShellRunner', () => {
       commandLine: argv.join(' '),
       message: 'workspace dry-run succeeded',
       status: 'success',
-      summaryLines: ['summary=workspace migration preview'],
+      summaryLines: ['Summary: workspace migration preview'],
     }));
     const runner = new CliSessionShellRunner(
       undefined,
@@ -520,12 +528,12 @@ describe('CliSessionShellRunner', () => {
     ).toBe(true);
     expect(
       result.transcriptItems.some((item) =>
-        item.lines.includes('summary=workspace migration preview'),
+        item.lines.includes('Summary: workspace migration preview'),
       ),
     ).toBe(true);
     expect(
       result.transcriptItems.some((item) =>
-        item.lines.includes('artifact=/workspace/repo/context/review/code-review.md'),
+        item.lines.includes('artifact=.../repo/context/review/code-review.md'),
       ),
     ).toBe(true);
     expect(result.transcriptItems[result.transcriptItems.length - 1]?.lines).toContain(
@@ -689,7 +697,7 @@ describe('CliSessionShellRunner', () => {
       commandLine: argv.join(' '),
       message: 'doctor completed',
       status: 'success',
-      summaryLines: ['summary=doctor completed'],
+      summaryLines: ['Summary: doctor completed'],
     }));
     const runner = new CliSessionShellRunner(
       undefined,
@@ -710,7 +718,7 @@ describe('CliSessionShellRunner', () => {
     expect(commandExecutor).toHaveBeenCalledWith(['doctor']);
     expect(renderer.frames.some((frame) => frame.commandPreview === 'Ready: doctor')).toBe(false);
     expect(
-      result.transcriptItems.some((item) => item.lines.includes('summary=doctor completed')),
+      result.transcriptItems.some((item) => item.lines.includes('Summary: doctor completed')),
     ).toBe(true);
     expect(
       result.transcriptItems.some((item) => item.lines.includes('Run /confirm or /cancel.')),
@@ -726,7 +734,7 @@ describe('CliSessionShellRunner', () => {
       commandLine: argv.join(' '),
       message: 'workspace dry-run completed',
       status: 'success',
-      summaryLines: ['summary=workspace dry-run completed'],
+      summaryLines: ['Summary: workspace dry-run completed'],
     }));
     const runner = new CliSessionShellRunner(
       undefined,
@@ -760,7 +768,7 @@ describe('CliSessionShellRunner', () => {
       commandLine: argv.join(' '),
       message: 'workspace dry-run completed',
       status: 'success',
-      summaryLines: ['summary=workspace dry-run completed'],
+      summaryLines: ['Summary: workspace dry-run completed'],
     }));
     const runner = new CliSessionShellRunner(
       undefined,
@@ -790,7 +798,7 @@ describe('CliSessionShellRunner', () => {
     ).toBe(true);
     expect(
       result.transcriptItems.some((item) =>
-        item.lines.includes('summary=workspace dry-run completed'),
+        item.lines.includes('Summary: workspace dry-run completed'),
       ),
     ).toBe(true);
   });
@@ -934,7 +942,7 @@ describe('CliSessionShellRunner', () => {
       commandLine: argv.join(' '),
       message: 'workspace dry-run completed',
       status: 'success',
-      summaryLines: ['summary=workspace dry-run completed'],
+      summaryLines: ['Summary: workspace dry-run completed'],
     }));
     const runner = new CliSessionShellRunner(
       undefined,
@@ -964,7 +972,7 @@ describe('CliSessionShellRunner', () => {
     ).toBe(true);
     expect(
       result.transcriptItems.some((item) =>
-        item.lines.includes('summary=workspace dry-run completed'),
+        item.lines.includes('Summary: workspace dry-run completed'),
       ),
     ).toBe(true);
   });

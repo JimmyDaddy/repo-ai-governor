@@ -1418,12 +1418,6 @@ export class CliSessionShellRunner {
     result: CliSessionShellCommandExecutionResult,
     options: CliSessionShellRunOptions,
   ): string[] {
-    const artifactLines = result.artifactPaths.map((artifactPath) =>
-      options.translate('cli.sessionShell.responses.commandArtifact', {
-        artifactPath,
-      }),
-    );
-
     return [
       result.status === 'success'
         ? options.translate('cli.sessionShell.responses.commandExecutionSucceeded', {
@@ -1434,8 +1428,40 @@ export class CliSessionShellRunner {
             reason: result.message,
           }),
       ...result.summaryLines,
-      ...artifactLines,
+      ...this.buildCommandArtifactLines(result.artifactPaths, options),
     ];
+  }
+
+  private buildCommandArtifactLines(
+    artifactPaths: string[],
+    options: CliSessionShellRunOptions,
+  ): string[] {
+    if (artifactPaths.length === 0) {
+      return [];
+    }
+
+    const primaryArtifactLine = options.translate('cli.sessionShell.responses.commandArtifact', {
+      artifactPath: this.shortenArtifactPath(artifactPaths[0] ?? ''),
+    });
+    if (artifactPaths.length === 1) {
+      return [primaryArtifactLine];
+    }
+
+    return [
+      primaryArtifactLine,
+      options.translate('cli.sessionShell.responses.commandArtifactsMore', {
+        count: String(artifactPaths.length - 1),
+      }),
+    ];
+  }
+
+  private shortenArtifactPath(artifactPath: string): string {
+    const segments = artifactPath.split(/[\\/]/u).filter((segment) => segment.length > 0);
+    if (segments.length <= 4) {
+      return artifactPath;
+    }
+
+    return `.../${segments.slice(-4).join('/')}`;
   }
 
   private buildPassthroughSummaryLines(

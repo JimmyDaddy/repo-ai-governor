@@ -132,8 +132,8 @@ export class LocalModelAgentAdapter extends AgentProtocol {
    * @param _request Probe request payload.
    * @returns Probe result payload.
    */
-  public override async probe(_request: AgentProbeRequest): Promise<AgentProbeResult> {
-    const localModelProbe = await this.probeLocalModelReadiness();
+  public override async probe(request: AgentProbeRequest): Promise<AgentProbeResult> {
+    const localModelProbe = await this.probeLocalModelReadiness(request.signal);
     return {
       identity: {
         agentId: this.options.agentId,
@@ -310,7 +310,7 @@ export class LocalModelAgentAdapter extends AgentProtocol {
    * Probes the configured local-model endpoint/model when runtime config exists.
    * @returns Availability resolution for local-model readiness.
    */
-  private async probeLocalModelReadiness(): Promise<LocalModelProbeResolution> {
+  private async probeLocalModelReadiness(signal?: AbortSignal): Promise<LocalModelProbeResolution> {
     if (this.options.availabilityStatus === AgentAvailabilityStatus.UNAVAILABLE) {
       return {
         availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
@@ -332,6 +332,7 @@ export class LocalModelAgentAdapter extends AgentProtocol {
         path: OLLAMA_TAGS_PATH,
         method: 'GET',
         operation: 'probe',
+        signal,
       });
       if (!this.isOllamaTagsResponse(payload)) {
         return {
@@ -356,6 +357,7 @@ export class LocalModelAgentAdapter extends AgentProtocol {
         unavailableReasons: [],
       };
     } catch (error) {
+      this.throwIfCancelled(error, signal, 'probe');
       return {
         availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
         unavailableReasons: [this.formatProbeFailureReason(error)],
@@ -374,6 +376,7 @@ export class LocalModelAgentAdapter extends AgentProtocol {
     method: 'GET' | 'POST';
     operation: 'probe' | 'invoke';
     request?: AgentInvokeStageRequest;
+    signal?: AbortSignal;
     body?: Record<string, unknown>;
   }): Promise<T> {
     const maxRetries = Math.max(0, options.localModel.maxRetries ?? 0);
@@ -418,6 +421,7 @@ export class LocalModelAgentAdapter extends AgentProtocol {
           );
         }
       } catch (error) {
+        this.throwIfCancelled(error, options.signal ?? options.request?.signal, options.operation);
         if (attempt + 1 < totalAttempts && this.isRetryableRequestError(error)) {
           await this.delayRetry(attempt);
           continue;
@@ -447,6 +451,7 @@ export class LocalModelAgentAdapter extends AgentProtocol {
     path: string;
     method: 'GET' | 'POST';
     request?: AgentInvokeStageRequest;
+    signal?: AbortSignal;
     body?: Record<string, unknown>;
   }): Promise<Response> {
     const timeoutMs = this.resolveRequestTimeoutMs(options.localModel, options.request);
@@ -454,16 +459,17 @@ export class LocalModelAgentAdapter extends AgentProtocol {
     const timeoutHandle = setTimeout(() => {
       abortController.abort(`timeout:${String(timeoutMs)}`);
     }, timeoutMs);
+    const upstreamSignal = options.signal ?? options.request?.signal;
     const onAbort = (): void => {
-      abortController.abort(options.request?.signal?.reason);
+      abortController.abort(upstreamSignal?.reason);
     };
 
-    if (options.request?.signal) {
-      if (options.request.signal.aborted) {
+    if (upstreamSignal) {
+      if (upstreamSignal.aborted) {
         clearTimeout(timeoutHandle);
-        abortController.abort(options.request.signal.reason);
+        abortController.abort(upstreamSignal.reason);
       } else {
-        options.request.signal.addEventListener('abort', onAbort, { once: true });
+        upstreamSignal.addEventListener('abort', onAbort, { once: true });
       }
     }
 
@@ -479,8 +485,8 @@ export class LocalModelAgentAdapter extends AgentProtocol {
       });
     } finally {
       clearTimeout(timeoutHandle);
-      if (options.request?.signal) {
-        options.request.signal.removeEventListener('abort', onAbort);
+      if (upstreamSignal) {
+        upstreamSignal.removeEventListener('abort', onAbort);
       }
     }
   }
@@ -684,10 +690,55 @@ export class LocalModelAgentAdapter extends AgentProtocol {
       return false;
     }
     const errorName = (error as { name?: unknown }).name;
-    if (errorName === 'AbortError' || errorName === 'TypeError') {
+    if (errorName === 'TypeError') {
       return true;
     }
+    if (errorName === 'AbortError') {
+      return false;
+    }
     return false;
+  }
+
+  /**
+   * Rethrows upstream aborts as standardized cancellation errors before probe fallback logic runs.
+   * @param error Unknown request/probe failure.
+   * @param signal Optional caller abort signal.
+   * @param operation Current local-model operation.
+   */
+  private throwIfCancelled(
+    error: unknown,
+    signal: AbortSignal | undefined,
+    operation: 'probe' | 'invoke',
+  ): void {
+    if (
+      standardizeError(error).code !== GovernorErrorCode.PROCESS_RUNTIME_CANCELLED &&
+      !(signal?.aborted && this.isAbortError(error))
+    ) {
+      return;
+    }
+
+    throw new RuntimeError(
+      GovernorErrorCode.PROCESS_RUNTIME_CANCELLED,
+      `Local model ${operation} cancelled before completion.`,
+      {
+        surface: LOCAL_MODEL_SURFACE,
+        endpoint: this.options.localModel?.endpoint ?? 'unknown',
+        operation,
+      },
+      error,
+    );
+  }
+
+  /**
+   * Checks whether one unknown failure came from fetch abort semantics.
+   * @param error Unknown thrown value from fetch/request execution.
+   * @returns True when the error shape matches abort semantics.
+   */
+  private isAbortError(error: unknown): boolean {
+    if (!error || typeof error !== 'object') {
+      return false;
+    }
+    return (error as { name?: unknown }).name === 'AbortError';
   }
 
   /**

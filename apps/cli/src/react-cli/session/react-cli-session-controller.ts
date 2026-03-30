@@ -21,6 +21,13 @@ export class ReactCliSessionController {
             },
           }
         : {}),
+      ...(this.viewModel.commandProgressPanel
+        ? {
+            commandProgressPanel: this.cloneCommandProgressPanel(
+              this.viewModel.commandProgressPanel,
+            ),
+          }
+        : {}),
       sections: this.viewModel.sections.map((section) => ({
         ...section,
         lines: [...section.lines],
@@ -59,6 +66,14 @@ export class ReactCliSessionController {
         : this.viewModel.attentionSection
           ? this.cloneSection(this.viewModel.attentionSection)
           : undefined;
+    const commandProgressPanel =
+      'commandProgressPanel' in update
+        ? update.commandProgressPanel
+          ? this.cloneCommandProgressPanel(update.commandProgressPanel)
+          : undefined
+        : this.viewModel.commandProgressPanel
+          ? this.cloneCommandProgressPanel(this.viewModel.commandProgressPanel)
+          : undefined;
     const helpSection =
       'helpSection' in update
         ? update.helpSection
@@ -79,6 +94,7 @@ export class ReactCliSessionController {
       ...this.viewModel,
       ...update,
       attentionSection,
+      commandProgressPanel,
       sections,
       agentProjectionPanel,
       helpSection,
@@ -122,6 +138,24 @@ export class ReactCliSessionController {
         ...row,
         detailLines: [...row.detailLines],
       })),
+    };
+  }
+
+  /**
+   * Clones the running-progress panel to preserve array ownership in session state.
+   * @param panel Shared running-progress panel view-model.
+   * @returns Defensive shallow clone.
+   */
+  private cloneCommandProgressPanel(panel: NonNullable<ReactCliViewModel['commandProgressPanel']>) {
+    return {
+      ...panel,
+      rows: panel.rows.map((row) => ({
+        ...row,
+      })),
+      artifacts: panel.artifacts.map((artifact) => ({
+        ...artifact,
+      })),
+      logLines: [...panel.logLines],
     };
   }
 }

@@ -26,7 +26,11 @@ import {
 } from '../react-cli/index.js';
 import { CliConnectWorkflowRuntime } from '../runtime/connect-workflow-runtime.js';
 import { CliAgentProjectionPanelViewModelBuilder } from '../runtime/presentation/agent-projection-panel-view-model-builder.js';
-import type { CliCommandResultArtifact, CliCommandResultCheck } from '../types/index.js';
+import type {
+  CliCommandProgressEvent,
+  CliCommandResultArtifact,
+  CliCommandResultCheck,
+} from '../types/index.js';
 import type { CliCommandExecutorContext } from '../types/interfaces/cli-governance-runtime.interface.js';
 import type { CliCommandExecutor } from './cli-command-executor.interface.js';
 
@@ -83,6 +87,12 @@ export class CliConnectCommand implements CliCommandExecutor {
         },
       );
     }
+    const descriptor = this.descriptorCatalog
+      .createRegistry({
+        translate: context.translate,
+      })
+      .resolve(CliCommandName.CONNECT);
+    const resolvedThemePreset = runtimeDebugOptions.uiTheme ?? DEFAULT_CLI_REACT_THEME_PRESET;
 
     const connectId = `connect-${Date.now()}`;
     const diagnosticsArtifactPath = resolve(
@@ -120,6 +130,25 @@ export class CliConnectCommand implements CliCommandExecutor {
       'connect',
       `${connectId}.merge-explain.json`,
     );
+    this.emitProgress(context, {
+      commandName: CliCommandName.CONNECT,
+      title: descriptor?.title ?? this.translate(context, 'cli.reactShell.connect.title'),
+      subtitle: `ui=${runtimeDebugOptions.uiMode} theme=${resolvedThemePreset} stdout=${context.options.outputMode} workspace=${context.options.workspace.mode}`,
+      themePreset: resolvedThemePreset,
+      runState: 'running',
+      statusLine: this.translate(context, 'cli.reactShell.progress.connect.starting'),
+      currentStepTitle: this.translate(context, 'cli.reactShell.progress.connect.buildCandidate'),
+      totalSteps: 4,
+      completedSteps: 0,
+      cancelCapability: context.abortSignal ? 'supported' : 'none',
+      row: {
+        id: 'candidate-config',
+        title: this.translate(context, 'cli.reactShell.progress.connect.buildCandidate'),
+        status: ExecutionProgressStatus.RUNNING,
+        detail: candidateConfigArtifactPath,
+      },
+    });
+    this.throwIfAborted(context);
     const candidateConfigResolution = context.onboardingRuntime.buildConnectCandidateConfig({
       sourceConfig: context.options.config,
       presetId: runtimeDebugOptions.presetId,
@@ -143,10 +172,59 @@ export class CliConnectCommand implements CliCommandExecutor {
       candidateConfigArtifactPath,
       `${stringify(effectiveCandidateConfig).trimEnd()}\n`,
     );
+    this.throwIfAborted(context);
+    this.emitProgress(context, {
+      commandName: CliCommandName.CONNECT,
+      statusLine: this.translate(context, 'cli.reactShell.progress.connect.verifyingAdapters'),
+      currentStepTitle: this.translate(
+        context,
+        'cli.reactShell.progress.connect.verifyingAdapters',
+      ),
+      completedSteps: 1,
+      row: {
+        id: 'candidate-config',
+        title: this.translate(context, 'cli.reactShell.progress.connect.buildCandidate'),
+        status:
+          candidateConfigValidationError === null
+            ? ExecutionProgressStatus.COMPLETED
+            : ExecutionProgressStatus.WARNING,
+        detail: candidateConfigArtifactPath,
+      },
+      artifact: {
+        id: 'candidate-config',
+        label: this.translate(context, 'cli.reactShell.progress.connect.buildCandidate'),
+        path: candidateConfigArtifactPath,
+      },
+    });
 
+    this.emitProgress(context, {
+      commandName: CliCommandName.CONNECT,
+      row: {
+        id: 'adapter-verification',
+        title: this.translate(context, 'cli.reactShell.progress.connect.verifyingAdapters'),
+        status: ExecutionProgressStatus.RUNNING,
+      },
+    });
     const adapterVerification = await context.resolveAdapterVerificationForConfig(
       effectiveCandidateConfig.adapters ?? context.options.adaptersConfig,
+      context.abortSignal,
     );
+    this.throwIfAborted(context);
+    this.emitProgress(context, {
+      commandName: CliCommandName.CONNECT,
+      statusLine: this.translate(context, 'cli.reactShell.progress.connect.buildingProjection'),
+      currentStepTitle: this.translate(
+        context,
+        'cli.reactShell.progress.connect.buildingProjection',
+      ),
+      completedSteps: 2,
+      row: {
+        id: 'adapter-verification',
+        title: this.translate(context, 'cli.reactShell.progress.connect.verifyingAdapters'),
+        status: this.resolveProgressStatus(adapterVerification.overallStatus),
+        detail: `status=${adapterVerification.overallStatus} fallback_roles=${adapterVerification.fallbackRoleCount} degraded_roles=${adapterVerification.degradedRoleCount}`,
+      },
+    });
     const candidateArtifacts = this.connectWorkflowRuntime.buildCandidateArtifacts({
       sourceConfig: context.options.config,
       candidateConfig: effectiveCandidateConfig,
@@ -187,6 +265,14 @@ export class CliConnectCommand implements CliCommandExecutor {
       presetId: runtimeDebugOptions.presetId,
       diagnosticSummary,
     });
+    this.emitProgress(context, {
+      commandName: CliCommandName.CONNECT,
+      row: {
+        id: 'agent-projection',
+        title: this.translate(context, 'cli.reactShell.progress.connect.buildingProjection'),
+        status: ExecutionProgressStatus.RUNNING,
+      },
+    });
     const agentView = context.agentProjectionRuntime.createCliAgentView({
       descriptors: context.agentProjectionRuntime.createDescriptorsFromRoleEvaluations({
         adaptersConfig: effectiveCandidateConfig.adapters ?? context.options.adaptersConfig,
@@ -194,6 +280,19 @@ export class CliConnectCommand implements CliCommandExecutor {
         workspace: context.options.workspace,
         executionId: connectId,
       }),
+    });
+    this.throwIfAborted(context);
+    this.emitProgress(context, {
+      commandName: CliCommandName.CONNECT,
+      statusLine: this.translate(context, 'cli.reactShell.progress.connect.writingArtifacts'),
+      currentStepTitle: this.translate(context, 'cli.reactShell.progress.connect.writingArtifacts'),
+      completedSteps: 3,
+      row: {
+        id: 'agent-projection',
+        title: this.translate(context, 'cli.reactShell.progress.connect.buildingProjection'),
+        status: ExecutionProgressStatus.COMPLETED,
+        detail: `descriptors=${agentView.descriptors.length}`,
+      },
     });
 
     await context.artifactWriter.writeJsonArtifact(diagnosticsArtifactPath, {
@@ -235,6 +334,28 @@ export class CliConnectCommand implements CliCommandExecutor {
         recordLedger: runtimeDebugOptions.recordLedger,
         taskId: runtimeDebugOptions.taskId,
       },
+    });
+    this.throwIfAborted(context);
+    this.emitProgress(context, {
+      commandName: CliCommandName.CONNECT,
+      runState: 'success',
+      statusLine: this.translate(context, 'cli.reactShell.progress.connect.completed'),
+      currentStepTitle: undefined,
+      completedSteps: 4,
+      row: {
+        id: 'artifact-write',
+        title: this.translate(context, 'cli.reactShell.progress.connect.writingArtifacts'),
+        status: ExecutionProgressStatus.COMPLETED,
+        detail: diagnosticsArtifactPath,
+      },
+      artifact: {
+        id: 'diagnostics',
+        label: this.translate(context, 'cli.reactShell.connect.summary.diagnosticsArtifact', {
+          path: diagnosticsArtifactPath,
+        }),
+        path: diagnosticsArtifactPath,
+      },
+      logLine: `connect_id=${connectId} adapter_status=${adapterVerification.overallStatus}`,
     });
 
     const checks: CliCommandResultCheck[] = [
@@ -459,7 +580,10 @@ export class CliConnectCommand implements CliCommandExecutor {
       validateGovernorConfig: (candidate) => context.validateGovernorConfig(candidate),
       fallbackAdaptersConfig: context.options.adaptersConfig,
       resolveAdapterVerificationForConfig: async (adaptersConfig) => {
-        const verification = await context.resolveAdapterVerificationForConfig(adaptersConfig);
+        const verification = await context.resolveAdapterVerificationForConfig(
+          adaptersConfig,
+          context.abortSignal,
+        );
         return {
           overallStatus: verification.overallStatus,
           requiredRoleFailedCount: verification.requiredRoleFailedCount,
@@ -629,7 +753,10 @@ export class CliConnectCommand implements CliCommandExecutor {
       validateGovernorConfig: (candidate) => context.validateGovernorConfig(candidate),
       fallbackAdaptersConfig: context.options.adaptersConfig,
       resolveAdapterVerificationForConfig: async (adaptersConfig) => {
-        const verification = await context.resolveAdapterVerificationForConfig(adaptersConfig);
+        const verification = await context.resolveAdapterVerificationForConfig(
+          adaptersConfig,
+          context.abortSignal,
+        );
         return {
           overallStatus: verification.overallStatus,
           requiredRoleFailedCount: verification.requiredRoleFailedCount,
@@ -916,5 +1043,48 @@ export class CliConnectCommand implements CliCommandExecutor {
     interpolation?: Record<string, string>,
   ): string {
     return context.translate?.(key, interpolation) ?? key;
+  }
+
+  private emitProgress(
+    context: Pick<CliCommandExecutorContext, 'progressSink'>,
+    event: CliCommandProgressEvent,
+  ): void {
+    context.progressSink?.publish(event);
+  }
+
+  private resolveProgressStatus(status: CliGovernanceCheckStatus): ExecutionProgressStatus {
+    if (status === CliGovernanceCheckStatus.PASS) {
+      return ExecutionProgressStatus.COMPLETED;
+    }
+
+    if (status === CliGovernanceCheckStatus.WARN) {
+      return ExecutionProgressStatus.WARNING;
+    }
+
+    return ExecutionProgressStatus.FAILED;
+  }
+
+  private throwIfAborted(
+    context: Pick<CliCommandExecutorContext, 'abortSignal' | 'progressSink' | 'translate'>,
+  ): void {
+    if (!context.abortSignal?.aborted) {
+      return;
+    }
+
+    this.emitProgress(context, {
+      commandName: CliCommandName.CONNECT,
+      runState: 'cancelled',
+      cancelCapability: 'cancel_requested',
+      statusLine: this.translate(context, 'cli.reactShell.progress.connect.cancelled'),
+      currentStepTitle: undefined,
+      logLine: this.translate(context, 'cli.reactShell.progress.connect.cancelled'),
+    });
+    throw new RuntimeError(
+      GovernorErrorCode.PROCESS_RUNTIME_CANCELLED,
+      this.translate(context, 'cli.reactShell.progress.connect.cancelled'),
+      {
+        command: CliCommandName.CONNECT,
+      },
+    );
   }
 }

@@ -314,6 +314,13 @@ export const EN_US_TRANSLATIONS = {
         commandBridgeUnavailable:
           'The current session shell attachment does not have a command-execution bridge.',
         commandArtifact: 'artifact={{artifactPath}}',
+        commandArtifactsMore: '+{{count}} more related artifacts were written.',
+        commandSummary: 'Summary: {{summary}}',
+        commandStatusSummary: 'Key status: {{summary}}',
+        commandAgentSummary: 'Agent routing: {{summary}}',
+        commandAttentionSummary: 'Attention: {{summary}}',
+        commandErrorHint: 'Hint: {{hint}}',
+        commandErrorNextAction: 'Next step: {{nextAction}}',
         commandCancelled: 'The pending command preview was cancelled.',
         cancelWithoutPendingCommand:
           'There is no pending command preview to cancel in the current shell.',
@@ -467,6 +474,35 @@ export const EN_US_TRANSLATIONS = {
         stdoutSummaryFollows: 'stdout summary follows',
         uiNoneDisablesShell: '--ui none disables shell',
         workspaceRollbackRestoresPriorState: '--workspace-action rollback restores prior state',
+      },
+      progress: {
+        title: 'Running progress',
+        elapsed: 'Elapsed: {{elapsed}}',
+        steps: 'Step {{completed}}/{{total}}',
+        artifactsTitle: 'Artifacts',
+        logsTitle: 'Recent logs',
+        shortcut: {
+          exit: 'Ctrl+C exit',
+          cancel: 'Ctrl+C cancel',
+        },
+        cancel: {
+          none: 'Cancellation is not available for this command yet.',
+          supported: 'Press Ctrl+C to request cancellation.',
+          requested: 'Cancellation requested. Waiting for command shutdown.',
+          forced: 'Second Ctrl+C received. Stopping command immediately.',
+        },
+        status: {
+          running: 'Running {{command}}…',
+        },
+        connect: {
+          starting: 'Preparing connect execution…',
+          buildCandidate: 'Build candidate config',
+          verifyingAdapters: 'Verify adapters',
+          buildingProjection: 'Build agent projection',
+          writingArtifacts: 'Write diagnostics artifacts',
+          completed: 'Connect diagnostics are ready.',
+          cancelled: 'Connect execution was cancelled.',
+        },
       },
       connect: {
         title: 'Connect adapters and capture diagnostics',

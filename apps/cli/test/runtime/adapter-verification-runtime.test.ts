@@ -133,6 +133,49 @@ describe('Cli adapter verification runtime', () => {
     expect(commandProbeExecutor).not.toHaveBeenCalled();
   });
 
+  it('passes abort signal into local probe execution and rethrows standardized cancellation', async () => {
+    const commandProbeExecutor = vi.fn(
+      async (_command: string, _args: readonly string[], abortSignal?: AbortSignal) =>
+        await new Promise<void>((_resolve, reject) => {
+          if (abortSignal?.aborted) {
+            reject(new DOMException('aborted', 'AbortError'));
+            return;
+          }
+          abortSignal?.addEventListener(
+            'abort',
+            () => reject(new DOMException('aborted', 'AbortError')),
+            { once: true },
+          );
+        }),
+    );
+    const runtime = new CliLocalModelProbeRuntime(
+      undefined,
+      commandProbeExecutor,
+      (error) => standardizeError(error).message,
+    );
+    const abortController = new AbortController();
+
+    const probePromise = runtime.probeLocalAdapterAvailability(
+      AdapterSurface.CODEX,
+      {
+        toolId: AdapterSurface.CODEX,
+        enabled: true,
+        availability: AdapterAvailability.AVAILABLE,
+      },
+      abortController.signal,
+    );
+    abortController.abort();
+
+    await expect(probePromise).rejects.toMatchObject({
+      code: GovernorErrorCode.PROCESS_RUNTIME_CANCELLED,
+    });
+    expect(commandProbeExecutor).toHaveBeenCalledWith(
+      'codex',
+      ['--version'],
+      abortController.signal,
+    );
+  });
+
   it('aggregates configuration_missing attribution from extracted verification runtime', async () => {
     const i18nRuntime = new I18nRuntime();
     await i18nRuntime.initialize(DEFAULT_I18N_RUNTIME_CONFIG, 'en-US');

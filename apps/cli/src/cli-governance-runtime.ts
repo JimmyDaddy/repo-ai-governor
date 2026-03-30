@@ -117,6 +117,7 @@ import type {
   CliCommandResultArtifact,
   CliCommandResultCheck,
   CliExecutionStreamMetadata,
+  CliGovernanceCommandExecutionOptions,
   CliGovernanceCommandResult,
   CliGovernanceRuntimeOptions,
   CliNormalizedRuntimeDebugOptions,
@@ -246,14 +247,19 @@ export class CliGovernanceRuntime {
    * @param commandName Command name selected by CLI parser.
    * @returns Command result message and structured output payload.
    */
-  public async execute(commandName: CliCommandName): Promise<CliGovernanceCommandResult> {
+  public async execute(
+    commandName: CliCommandName,
+    executionOptions?: CliGovernanceCommandExecutionOptions,
+  ): Promise<CliGovernanceCommandResult> {
     if (commandName !== CliCommandName.INIT && this.shouldEnsureWorkspaceBootstrap(commandName)) {
       await this.ensureWorkspaceBootstrap();
     }
 
     const extractedCommandExecutor = this.commandRegistry.resolve(commandName);
     if (extractedCommandExecutor) {
-      return extractedCommandExecutor.execute(this.createCommandExecutorContext());
+      return extractedCommandExecutor.execute(
+        this.createCommandExecutorContext(undefined, executionOptions),
+      );
     }
 
     throw new RuntimeError(
@@ -313,10 +319,13 @@ export class CliGovernanceRuntime {
    */
   private createCommandExecutorContext(
     runtimeDebugOptionsOverride?: CliNormalizedRuntimeDebugOptions,
+    executionOptions?: CliGovernanceCommandExecutionOptions,
   ) {
     const runtimeTranslate = this.options.translate;
     return {
       options: this.options,
+      progressSink: executionOptions?.progressSink,
+      abortSignal: executionOptions?.abortSignal,
       artifactWriter: this.artifactWriter,
       onboardingRuntime: this.onboardingRuntime,
       agentProjectionRuntime: this.agentProjectionRuntime,
@@ -332,9 +341,12 @@ export class CliGovernanceRuntime {
       resolveRuntimeDebugOptions: () =>
         runtimeDebugOptionsOverride ?? this.resolveRuntimeDebugOptions(),
       resolveExecutionStreamMetadata: async () => this.resolveExecutionStreamMetadata(),
-      resolveAdapterVerification: async () => this.resolveAdapterVerification(),
-      resolveAdapterVerificationForConfig: async (adaptersConfig: AdaptersConfig) =>
-        this.resolveAdapterVerificationForConfig(adaptersConfig),
+      resolveAdapterVerification: async (abortSignal?: AbortSignal) =>
+        this.resolveAdapterVerification(abortSignal),
+      resolveAdapterVerificationForConfig: async (
+        adaptersConfig: AdaptersConfig,
+        abortSignal?: AbortSignal,
+      ) => this.resolveAdapterVerificationForConfig(adaptersConfig, abortSignal),
       validateGovernorConfig: (candidate: unknown) =>
         this.schemaValidator.validateOrThrow(candidate),
       canWritePath: async (filePath: string) => this.canWritePath(filePath),
@@ -2253,12 +2265,15 @@ export class CliGovernanceRuntime {
    * Resolves adapters/routing verification summary used by connect/doctor/verify commands.
    * @returns Adapter verification resolution.
    */
-  private async resolveAdapterVerification(): Promise<CliAdapterVerificationResolution> {
-    return this.adapterVerificationRuntime.resolveAdapterVerification();
+  private async resolveAdapterVerification(
+    abortSignal?: AbortSignal,
+  ): Promise<CliAdapterVerificationResolution> {
+    return this.adapterVerificationRuntime.resolveAdapterVerification(abortSignal);
   }
 
   private async resolveAdapterVerificationForConfig(
     adaptersConfig: AdaptersConfig,
+    abortSignal?: AbortSignal,
   ): Promise<CliAdapterVerificationResolution> {
     const adapterRoutingRuntime = new CliAdapterRoutingRuntime(adaptersConfig, {
       claudeCodeExecRunner: this.options.claudeCodeExecRunner,
@@ -2273,7 +2288,7 @@ export class CliGovernanceRuntime {
       this.localModelProbeRuntime,
     );
 
-    return adapterVerificationRuntime.resolveAdapterVerification();
+    return adapterVerificationRuntime.resolveAdapterVerification(abortSignal);
   }
 
   /**

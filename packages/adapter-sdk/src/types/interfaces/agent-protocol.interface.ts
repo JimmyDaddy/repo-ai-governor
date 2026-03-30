@@ -74,6 +74,7 @@ export interface AgentProtocolIdentity {
 export interface AgentProbeRequest {
   routeKey: string;
   requiredCapabilities?: AgentCapability[];
+  signal?: AbortSignal;
 }
 
 /**

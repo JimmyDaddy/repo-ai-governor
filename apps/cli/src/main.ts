@@ -52,7 +52,7 @@ import {
 } from './constants/cli-connect.constant.js';
 import {
   CLI_INTERACTIVE_UI_MODE_VALUES,
-  type CliInteractiveUiMode,
+  CliInteractiveUiMode,
 } from './constants/cli-interactive-shell.constant.js';
 import {
   CLI_OPTIONS_REQUIRING_VALUE,
@@ -82,7 +82,11 @@ import {
   IdeWrapperEnvironmentKey,
 } from './constants/ide-command-wrapper.constant.js';
 import type { IdeStandardsSourceId } from './constants/ide-standards-source.constant.js';
-import { ReactCliStderrFramePresenter } from './react-cli/index.js';
+import {
+  ReactCliCommandProgressController,
+  ReactCliLiveProgressPresenter,
+  ReactCliStderrFramePresenter,
+} from './react-cli/index.js';
 import { CliClaudeCodeExecFixtureRuntime } from './runtime/claude-code-exec-fixture-runtime.js';
 import { CliCodexExecFixtureRuntime } from './runtime/codex-exec-fixture-runtime.js';
 import { CliGithubCopilotExecFixtureRuntime } from './runtime/github-copilot-exec-fixture-runtime.js';
@@ -94,6 +98,8 @@ import { CliSessionShellEntrypointRuntime } from './runtime/interactive-shell/se
 import { CliSessionShellRunner } from './runtime/interactive-shell/session-shell-runner.js';
 import { CliSessionShellServiceClient } from './runtime/interactive-shell/session-shell-service-client.js';
 import { CliSessionShellStderrRenderer } from './runtime/interactive-shell/session-shell-stderr-renderer.js';
+import { CliLiveCommandCancelController } from './runtime/live-command-cancel-controller.js';
+import { CliLiveCommandCancellationPolicy } from './runtime/live-command-cancellation-policy.js';
 import { CliNotificationProviderRegistryRuntime } from './runtime/notification-provider-registry-runtime.js';
 import { CliOrchestrationServiceRuntime } from './runtime/orchestration-service-runtime.js';
 export {
@@ -127,6 +133,7 @@ import type {
   CliCommandExecutionResultPayload,
   CliConnectRoleBindingOverride,
   CliErrorOutputPayload,
+  CliGovernanceCommandExecutionOptions,
   CliLocalAdapterProbeOverride,
   CliResolvedOutputContext,
   CliRuntimeDebugOptions,
@@ -143,6 +150,7 @@ const DEFAULT_MEMORY_CONFIG: MemoryRuntimeConfig = {
   ...DEFAULT_MEMORY_RUNTIME_CONFIG,
 };
 const DEFAULT_MEMORY_PROVIDER_REGISTRY = new MemoryProviderRegistry();
+const LIVE_COMMAND_CANCELLATION_POLICY = new CliLiveCommandCancellationPolicy();
 const CLI_TOP_LEVEL_BOOLEAN_OPTIONS = new Set<string>([
   '--compact',
   '--no-color',
@@ -419,6 +427,8 @@ export async function runCli(
         locale: resolvedLocale,
         currentWorkingDirectory: io.cwd(),
         environment,
+        translate: (key: string, interpolation?: Record<string, string>) =>
+          runtimeI18n.t(key, interpolation),
         executeCli: (nestedArgv, nestedIo) => runCli(nestedArgv, nestedIo, dependencies),
       }),
       currentWorkingDirectory: io.cwd(),
@@ -587,20 +597,66 @@ export async function runCli(
             }
           : {}),
       };
-      const executionResult = await governanceRuntime.execute(resolvedCommandName);
-      if (executionResult.reactCliViewModel) {
-        reactCliStderrFramePresenter.write(executionResult.reactCliViewModel);
-      }
+      const progressController =
+        runtimeDebugOptions.uiMode === CliInteractiveUiMode.REACT
+          ? new ReactCliCommandProgressController({
+              commandName: resolvedCommandName,
+              initialTitle: `[react-shell:${resolvedCommandName}] ${presentedCommandName}`,
+              initialSubtitle: `ui=${runtimeDebugOptions.uiMode} theme=${runtimeDebugOptions.uiTheme ?? DEFAULT_CLI_REACT_THEME_PRESET} stdout=${outputContext.outputMode} workspace=${runtimeContext.workspace.mode}`,
+              themePreset: runtimeDebugOptions.uiTheme ?? DEFAULT_CLI_REACT_THEME_PRESET,
+              translate: (key, interpolation) => runtimeI18n.t(key, interpolation),
+            })
+          : null;
+      const liveProgressPresenter = progressController ? new ReactCliLiveProgressPresenter() : null;
+      const cancelController =
+        progressController &&
+        LIVE_COMMAND_CANCELLATION_POLICY.supportsLiveCancellation(resolvedCommandName)
+          ? new CliLiveCommandCancelController({
+              commandName: resolvedCommandName,
+              progressSink: {
+                publish: (event) => {
+                  liveProgressPresenter?.render(progressController.apply(event));
+                },
+              },
+              translate: (key, interpolation) => runtimeI18n.t(key, interpolation),
+            })
+          : null;
+      const sigintHandler = (): void => {
+        cancelController?.handleSigint();
+      };
+      const executionOptions: CliGovernanceCommandExecutionOptions | undefined = cancelController
+        ? cancelController.createExecutionOptions()
+        : undefined;
 
-      outputPresenter.writeSuccess(
-        buildSuccessOutputPayload(
-          presentedCommandName,
-          executionResult.message,
-          outputContext,
-          diagnostics,
-          executionResult.commandResult,
-        ),
-      );
+      try {
+        if (cancelController) {
+          process.on('SIGINT', sigintHandler);
+        }
+        const executionResult = cancelController
+          ? await cancelController.raceExecution(
+              governanceRuntime.execute(resolvedCommandName, executionOptions),
+            )
+          : await governanceRuntime.execute(resolvedCommandName, executionOptions);
+        liveProgressPresenter?.close();
+        if (executionResult.reactCliViewModel) {
+          reactCliStderrFramePresenter.write(executionResult.reactCliViewModel);
+        }
+
+        outputPresenter.writeSuccess(
+          buildSuccessOutputPayload(
+            presentedCommandName,
+            executionResult.message,
+            outputContext,
+            diagnostics,
+            executionResult.commandResult,
+          ),
+        );
+      } finally {
+        if (cancelController) {
+          process.off('SIGINT', sigintHandler);
+        }
+        liveProgressPresenter?.close();
+      }
     };
 
     for (const commandDefinition of CLI_COMMAND_DEFINITIONS) {

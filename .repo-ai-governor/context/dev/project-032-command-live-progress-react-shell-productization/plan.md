@@ -1,7 +1,7 @@
 # project-032-command-live-progress-react-shell-productization 计划
 
 - Status: active
-- Date: 2026-03-30
+- Date: 2026-03-31
 - Stage Mapping: Command live progress React shell productization follow-up
 - Phase Mapping: activation and technical solution promotion / live command shell contract and connect progress / cancellation and multi-command rollout / adoption and closeout
 - Upstream:
@@ -28,7 +28,7 @@
 
 ## 2.2 sprint-002-live-command-shell-contract-and-connect-progress
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 落地 live command shell contract、running panel baseline 与 `connect` progress events。
 - Task Package: `TK-445`、`TK-446`。
 
@@ -38,8 +38,8 @@
 |---|---|---|---|---|---|
 | TK-443 | sprint-001 | activate project-032 and sync command-live-progress phase map | planning/governance | `.repo-ai-governor/draft/command-live-progress-react-shell-technical-solution.md` | completed |
 | TK-444 | sprint-001 | promote command-live-progress React shell technical solution into formal module docs | docs/promotion | TK-443 | completed |
-| TK-445 | sprint-002 | add live command shell contract and running progress panel baseline | cli/runtime-contract | TK-444 | planned |
-| TK-446 | sprint-002 | instrument connect with progress events and cancellable running shell baseline | cli/connect-progress | TK-445 | planned |
+| TK-445 | sprint-002 | add live command shell contract and running progress panel baseline | cli/runtime-contract | TK-444 | completed |
+| TK-446 | sprint-002 | instrument connect with progress events and cancellable running shell baseline | cli/connect-progress | TK-445 | completed |
 
 ## 4. 依赖产物策略
 
@@ -61,3 +61,7 @@
 1. 2026-03-30：创建 `project-032-command-live-progress-react-shell-productization`，作为 `runtime.cli-interactive-shell` command live progress direction 的 follow-up stream。
 2. 2026-03-30：完成 `TK-443`，将 `current-context.md` primary stream 切换到 `project-032 / sprint-001`，并把 `project-030 / sprint-004` 迁入 completed history。
 3. 2026-03-30：完成 `TK-444`，将 command live progress technical solution 正式提升到 `runtime.cli-interactive-shell` 的 module overview / contract / ADR，并同步 lifecycle / delivery / module-registry / manifest / artifact / review。
+4. 2026-03-30：激活 `sprint-002-live-command-shell-contract-and-connect-progress`，将 `current-context.md` primary stream 切换到 implementation surface，并开始落地 live running shell contract seam。
+5. 2026-03-30：完成 `sprint-002`，收口 live command shell contract / running progress panel / connect progress baseline，并新增 `resolved_code_review_tk-445-tk-446-live-command-shell-connect-progress-baseline.md`；在未激活下一轮 sprint 前，将该 stream 暂保留为 active closeout surface。
+6. 2026-03-30：完成 `code_review_tk-445-tk-446-live-command-shell-connect-progress-baseline-followup.md` 复核与修复，补齐 `doctor/verify` abort 透传、live cancel allow-list 与 local-model probe cancel semantics，并收口为 `resolved_code_review_tk-445-tk-446-live-command-shell-connect-progress-baseline-followup.md`。
+7. 2026-03-31：完成 closeout surface 可读性 follow-up；session shell 现在会把 nested command recap 收敛为“摘要 / Agent 路由 / 关注项 / 关键状态 + 精简 artifact”格式，并补齐 `en-us/zh-cn` locale、定向 Vitest、Biome、i18n parity 与 `pnpm run build` 证据。

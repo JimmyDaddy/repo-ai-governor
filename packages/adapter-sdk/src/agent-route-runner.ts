@@ -132,6 +132,7 @@ export class AgentRouteRunner {
       try {
         probeResult = await protocol.probe({
           routeKey: request.routeKey,
+          ...(request.signal ? { signal: request.signal } : {}),
           ...(capabilityRequirement
             ? {
                 requiredCapabilities: capabilityRequirement.requiredCapabilities,

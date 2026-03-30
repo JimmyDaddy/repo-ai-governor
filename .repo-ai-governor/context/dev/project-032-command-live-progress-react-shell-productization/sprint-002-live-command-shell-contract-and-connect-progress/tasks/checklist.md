@@ -1,6 +1,20 @@
 # checklist
 
-- [ ] TK-445 add live command shell contract and running progress panel baseline
+- [x] TK-445 add live command shell contract and running progress panel baseline
   - 2026-03-30：任务创建，状态初始化为 `planned`。
-- [ ] TK-446 instrument connect with progress events and cancellable running shell baseline
+  - 2026-03-30：状态切换为 `in_progress`；开始落地 `CliGovernanceRuntime.execute(...)` additive execution options seam、running panel view-model 与 live presenter 基线。
+  - 2026-03-30：真实 TTY smoke 已验证 `connect --ui react --output pretty` 会即时进入 running shell，并在 candidate/verification 阶段 live 更新 progress panel。
+  - 2026-03-30：已完成第二轮稳定性收口；`pnpm run build`、定向 Vitest、Biome 与 governance checks 通过，running shell 在取消路径下仍保持 live progress 展示和标准化取消收口。
+  - 2026-03-30：已补齐协议层 `probe(signal)` seam；`AgentProbeRequest`、route runner、CLI adapter verification 与 adapter probe 执行路径均可复用同一条 cancel 语义。
+  - 2026-03-30：任务完成；running progress panel baseline、shared cancel seam 与 `AgentProbeRequest.signal` contract 已收口，并通过 `pnpm run build`、定向 Vitest、task/sprint/i18n/biome/code-review sync 检查；新增 `resolved_code_review_tk-445-tk-446-live-command-shell-connect-progress-baseline.md`。
+  - 2026-03-30：follow-up CR 修复已完成；两段式 `Ctrl+C` 现仅对 `connect/doctor/verify` 暴露，并补齐 `doctor/verify` 的 `abortSignal` 透传与回归测试；新增 `resolved_code_review_tk-445-tk-446-live-command-shell-connect-progress-baseline-followup.md`。
+  - 2026-03-31：closeout surface 可读性 follow-up 已完成；session shell 现在把 nested command recap 统一收敛为“摘要 / Agent 路由 / 关注项 / 关键状态”结构，并压缩 artifact 路径与冗余 recap；`pnpm exec vitest run apps/cli/test/runtime/session-shell-entrypoint-runtime.test.ts apps/cli/test/runtime/session-shell-runner.test.ts`、`node ./scripts/governance/check-i18n-parity-fallback.js`、`pnpm exec biome check ...` 与 `pnpm run build` 已通过。
+- [x] TK-446 instrument connect with progress events and cancellable running shell baseline
   - 2026-03-30：任务创建，状态初始化为 `planned`。
+  - 2026-03-30：状态切换为 `in_progress`；开始落地 progressSink + abortSignal seam、running progress panel baseline 与 connect live progress events。
+  - 2026-03-30：已补齐 first-ctrl+c cancel-request baseline；真实 TTY smoke 已验证第一次 `Ctrl+C` 会先进入“已请求取消”，随后收口为 `PROCESS_RUNTIME_CANCELLED`。
+  - 2026-03-30：已将 `AbortSignal` 深入到 adapter verification / local command probe；真实 TTY smoke 再次验证 `connect` 在 `校验适配器` 阶段内即可收口为 `PROCESS_RUNTIME_CANCELLED`，不再只依赖阶段边界检查。
+  - 2026-03-30：已补齐两段式 `Ctrl+C` 语义；新增 `CliLiveCommandCancelController` 后，第一次按键请求优雅取消，第二次按键会强制把命令收口为 `PROCESS_RUNTIME_CANCELLED`，并已由单测覆盖。
+  - 2026-03-30：任务完成；`connect` live progress、adapter-stage abort 传播与两段式 `Ctrl+C` cancel baseline 已收口，并通过 `pnpm run build`、定向 Vitest、task/sprint/i18n/biome/code-review sync 检查；新增 `resolved_code_review_tk-445-tk-446-live-command-shell-connect-progress-baseline.md`。
+  - 2026-03-30：follow-up CR 修复已完成；local-model probe 取消现在会立即收口为 `PROCESS_RUNTIME_CANCELLED` 且不再消耗 retry budget，并新增 smoke test；follow-up review 已收口为 `resolved_code_review_tk-445-tk-446-live-command-shell-connect-progress-baseline-followup.md`。
+  - 2026-03-31：connect/doctor 等命令的 session-shell handoff recap 已完成格式化 follow-up；主摘要、agent 路由、关键状态与 artifact 展示改为紧凑可读格式，长路径收敛为尾段显示，并补齐 `en-us/zh-cn` locale、定向 Vitest、Biome、i18n parity 与 `pnpm run build` 证据。

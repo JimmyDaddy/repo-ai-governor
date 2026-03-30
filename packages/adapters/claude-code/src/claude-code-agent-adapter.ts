@@ -163,8 +163,8 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
    * @param _request Probe request payload.
    * @returns Probe result payload.
    */
-  public override async probe(_request: AgentProbeRequest): Promise<AgentProbeResult> {
-    const runtimeProbe = await this.resolveProbeResolution();
+  public override async probe(request: AgentProbeRequest): Promise<AgentProbeResult> {
+    const runtimeProbe = await this.resolveProbeResolution(request.signal);
     return {
       identity: {
         agentId: this.options.agentId,
@@ -354,7 +354,7 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
    * Resolves probe result for the current execution mode with short-lived caching.
    * @returns Probe availability resolution.
    */
-  private async resolveProbeResolution(): Promise<ClaudeCodeProbeResolution> {
+  private async resolveProbeResolution(signal?: AbortSignal): Promise<ClaudeCodeProbeResolution> {
     if (this.options.executionMode === ClaudeCodeAgentAdapterExecutionMode.BASELINE) {
       return {
         availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
@@ -374,7 +374,7 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
       return this.probeCache.resolution;
     }
 
-    const resolution = await this.executeHealthProbe();
+    const resolution = await this.executeHealthProbe(signal);
     this.probeCache = {
       expiresAt: now + this.options.probeCacheTtlMs,
       resolution,
@@ -386,11 +386,12 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
    * Executes one real Claude Code health probe using non-interactive print mode.
    * @returns Probe availability resolution.
    */
-  private async executeHealthProbe(): Promise<ClaudeCodeProbeResolution> {
+  private async executeHealthProbe(signal?: AbortSignal): Promise<ClaudeCodeProbeResolution> {
     try {
       const executionResult = await this.runClaudeCodeOperation({
         prompt: CLAUDE_CODE_HEALTH_CHECK_PROMPT,
         timeoutMs: this.options.requestTimeoutMs,
+        signal,
         operation: AgentCliExecOperation.PROBE,
       });
       const parsedOutput = this.parseClaudeCodeCliOutput(

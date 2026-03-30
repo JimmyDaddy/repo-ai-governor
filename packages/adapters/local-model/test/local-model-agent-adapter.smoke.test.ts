@@ -7,7 +7,7 @@ import {
   AgentStreamEventType,
   type AgentStreamEventsRequest,
 } from '@repo-ai-governor/adapter-sdk';
-import { LocalModelProvider } from '@repo-ai-governor/shared';
+import { GovernorErrorCode, LocalModelProvider } from '@repo-ai-governor/shared';
 import { LocalModelAgentAdapter } from '../src/index.js';
 
 function createStreamRequest(): AgentStreamEventsRequest {
@@ -258,6 +258,45 @@ describe('local-model-agent-adapter smoke', () => {
 
     expect(invokeResult.output.responseText).toBe('retry success');
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('rethrows probe aborts as standardized cancellation without consuming retry budget', async () => {
+    const abortController = new AbortController();
+    const fetchMock = vi.fn(
+      async (_input: string | URL | Request, init?: RequestInit) =>
+        await new Promise<Response>((_resolve, reject) => {
+          const signal = init?.signal;
+          if (signal?.aborted) {
+            reject(new DOMException('aborted', 'AbortError'));
+            return;
+          }
+          signal?.addEventListener(
+            'abort',
+            () => reject(new DOMException('aborted', 'AbortError')),
+            { once: true },
+          );
+        }),
+    );
+    const adapter = new LocalModelAgentAdapter({
+      localModel: {
+        provider: LocalModelProvider.OLLAMA,
+        endpoint: 'http://127.0.0.1:11434',
+        model: 'qwen2.5-coder:7b',
+        maxRetries: 2,
+      },
+      fetchFn: fetchMock as typeof fetch,
+    });
+
+    const probePromise = adapter.probe({
+      routeKey: 'codegen',
+      signal: abortController.signal,
+    });
+    abortController.abort('user-requested');
+
+    await expect(probePromise).rejects.toMatchObject({
+      code: GovernorErrorCode.PROCESS_RUNTIME_CANCELLED,
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it('streams status and completed events', async () => {

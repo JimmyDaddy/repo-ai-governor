@@ -224,6 +224,7 @@ export class CliAdapterRoutingRuntime {
           context.routePolicy.capabilityRequirement;
         const probeResult = await localModelProtocol.probe({
           routeKey: context.request.routeKey,
+          ...(context.request.signal ? { signal: context.request.signal } : {}),
           ...(capabilityRequirement
             ? {
                 requiredCapabilities: capabilityRequirement.requiredCapabilities,

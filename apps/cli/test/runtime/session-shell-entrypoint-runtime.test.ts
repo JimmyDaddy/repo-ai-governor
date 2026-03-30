@@ -122,6 +122,7 @@ describe('CliSessionShellEntrypointRuntime', () => {
       locale: 'en-US',
       currentWorkingDirectory: '/workspace',
       environment: {},
+      translate: translateSessionShellResponse,
       executeCli,
     });
 
@@ -148,7 +149,7 @@ describe('CliSessionShellEntrypointRuntime', () => {
       commandLine: 'check',
       message: 'command succeeded',
       status: 'success',
-      summaryLines: ['command succeeded', 'summary line', 'first detail', 'second detail'],
+      summaryLines: ['Summary: summary line', 'Key status: first detail · second detail'],
     });
   });
 
@@ -157,6 +158,7 @@ describe('CliSessionShellEntrypointRuntime', () => {
       locale: 'en-US',
       currentWorkingDirectory: '/workspace',
       environment: {},
+      translate: translateSessionShellResponse,
       executeCli: async (_argv, io) => {
         io.stdout(
           JSON.stringify({
@@ -218,11 +220,12 @@ describe('CliSessionShellEntrypointRuntime', () => {
     const result = await commandExecutor(['connect']);
 
     expect(result.summaryLines).toEqual([
-      'connect succeeded',
-      'adapter candidate generated',
-      'agent_view=agents=1, surfaces=1, fallback=1, degraded=1, blocked=0, gaps=1, session=none',
-      'coder: surface=github-copilot selected_by=fallback status=warn gap=degraded:tool_calling reasons=primary_surface_unavailable',
-      'connect_id=123',
+      'Summary: adapter candidate generated',
+      'Agent routing: agents=1, surfaces=1, fallback=1, degraded=1, blocked=0, gaps=1, session=none',
+      expect.stringContaining(
+        'Attention: coder: surface=github-copilot selected_by=fallback status=warn gap=degraded:tool_calling',
+      ),
+      'Key status: connect_id=123',
     ]);
   });
 
@@ -231,6 +234,7 @@ describe('CliSessionShellEntrypointRuntime', () => {
       locale: 'en-US',
       currentWorkingDirectory: '/workspace',
       environment: {},
+      translate: translateSessionShellResponse,
       executeCli: async (_argv, io) => {
         io.stderr('command failed');
         return 1;
@@ -258,4 +262,23 @@ function createRuntime(
     translate: (key: string) => key,
     ...overrides,
   });
+}
+
+const SESSION_SHELL_RESPONSE_TRANSLATIONS: Record<string, string> = {
+  'cli.sessionShell.responses.commandSummary': 'Summary: {{summary}}',
+  'cli.sessionShell.responses.commandStatusSummary': 'Key status: {{summary}}',
+  'cli.sessionShell.responses.commandAgentSummary': 'Agent routing: {{summary}}',
+  'cli.sessionShell.responses.commandAttentionSummary': 'Attention: {{summary}}',
+  'cli.sessionShell.responses.commandErrorHint': 'Hint: {{hint}}',
+  'cli.sessionShell.responses.commandErrorNextAction': 'Next step: {{nextAction}}',
+};
+
+function translateSessionShellResponse(
+  key: string,
+  interpolation?: Record<string, string>,
+): string {
+  return (SESSION_SHELL_RESPONSE_TRANSLATIONS[key] ?? key).replace(
+    /\{\{(\w+)\}\}/gu,
+    (_match, placeholder: string) => interpolation?.[placeholder] ?? '',
+  );
 }

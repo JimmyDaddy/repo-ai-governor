@@ -40,7 +40,17 @@ export class ReactCliRunner {
    * @returns Active Ink render instance.
    */
   public mount(viewModel: ReactCliViewModel, options?: RenderOptions): Instance {
-    return this.inkRender(React.createElement(ReactCliApp, { viewModel }), options);
+    return this.inkRender(this.createAppElement(viewModel), options);
+  }
+
+  /**
+   * Rerenders one mounted React CLI tree with the latest shell view model.
+   * @param instance Active Ink render instance.
+   * @param viewModel Latest shared shell view model.
+   * @returns Nothing.
+   */
+  public rerender(instance: Instance, viewModel: ReactCliViewModel): void {
+    instance.rerender(this.createAppElement(viewModel));
   }
 
   /**
@@ -113,6 +123,10 @@ export class ReactCliRunner {
 
   private createSessionShellElement(viewModel: CliSessionShellViewModel): React.ReactElement {
     return React.createElement(ReactCliSessionShellApp, { viewModel });
+  }
+
+  private createAppElement(viewModel: ReactCliViewModel): React.ReactElement {
+    return React.createElement(ReactCliApp, { viewModel });
   }
 
   private createLiveSessionShellElement(

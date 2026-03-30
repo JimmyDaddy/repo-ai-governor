@@ -1,5 +1,6 @@
 import type { CliReactThemePreset } from '../../constants/cli-react-theme.constant.js';
 import type { CliAgentProjectionPanelViewModel } from '../../types/interfaces/cli-agent-projection-panel.interface.js';
+import type { CliCommandProgressPanelViewModel } from '../../types/interfaces/cli-command-progress-panel.interface.js';
 
 export type ReactCliStatusVariant = 'info' | 'success' | 'warning' | 'error';
 
@@ -15,6 +16,7 @@ export interface ReactCliViewModel {
   statusMessage?: string;
   statusVariant?: ReactCliStatusVariant;
   attentionSection?: ReactCliSectionViewModel;
+  commandProgressPanel?: CliCommandProgressPanelViewModel;
   sections: ReactCliSectionViewModel[];
   agentProjectionPanel?: CliAgentProjectionPanelViewModel;
   helpSection?: ReactCliSectionViewModel;

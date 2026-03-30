@@ -27,6 +27,20 @@ export type {
 } from './cli-runtime-debug.interface.js';
 export type { ReactCliShellPalette, ReactCliThemeDefinition } from './react-cli-theme.interface.js';
 export type {
+  CliCommandCancelCapability,
+  CliCommandProgressArtifactPatch,
+  CliCommandProgressEvent,
+  CliCommandProgressRowPatch,
+  CliCommandProgressSink,
+  CliCommandRunState,
+  CliGovernanceCommandExecutionOptions,
+} from './cli-command-progress.interface.js';
+export type {
+  CliCommandProgressPanelArtifactViewModel,
+  CliCommandProgressPanelRowViewModel,
+  CliCommandProgressPanelViewModel,
+} from './cli-command-progress-panel.interface.js';
+export type {
   CliAgentProjectionPanelStatusVariant,
   CliAgentProjectionPanelRowViewModel,
   CliAgentProjectionPanelViewModel,

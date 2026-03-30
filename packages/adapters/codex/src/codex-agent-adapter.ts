@@ -180,8 +180,8 @@ export class CodexAgentAdapter extends AgentProtocol {
    * @param _request Probe request payload.
    * @returns Probe result payload.
    */
-  public override async probe(_request: AgentProbeRequest): Promise<AgentProbeResult> {
-    const runtimeProbe = await this.resolveProbeResolution();
+  public override async probe(request: AgentProbeRequest): Promise<AgentProbeResult> {
+    const runtimeProbe = await this.resolveProbeResolution(request.signal);
     return {
       identity: {
         agentId: this.options.agentId,
@@ -369,7 +369,7 @@ export class CodexAgentAdapter extends AgentProtocol {
    * Resolves probe result for the current execution mode with short-lived caching.
    * @returns Probe availability resolution.
    */
-  private async resolveProbeResolution(): Promise<CodexProbeResolution> {
+  private async resolveProbeResolution(signal?: AbortSignal): Promise<CodexProbeResolution> {
     if (this.options.executionMode === CodexAgentAdapterExecutionMode.BASELINE) {
       return {
         availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
@@ -389,7 +389,7 @@ export class CodexAgentAdapter extends AgentProtocol {
       return this.probeCache.resolution;
     }
 
-    const resolution = await this.executeHealthProbe();
+    const resolution = await this.executeHealthProbe(signal);
     this.probeCache = {
       expiresAt: now + this.options.probeCacheTtlMs,
       resolution,
@@ -401,11 +401,12 @@ export class CodexAgentAdapter extends AgentProtocol {
    * Executes one real Codex health probe using non-interactive CLI mode.
    * @returns Probe availability resolution.
    */
-  private async executeHealthProbe(): Promise<CodexProbeResolution> {
+  private async executeHealthProbe(signal?: AbortSignal): Promise<CodexProbeResolution> {
     try {
       const executionResult = await this.runCodexOperation({
         prompt: CODEX_HEALTH_CHECK_PROMPT,
         timeoutMs: this.options.requestTimeoutMs,
+        signal,
         operation: AgentCliExecOperation.PROBE,
       });
       const parsedOutput = this.parseCodexCliOutput(executionResult, AgentCliExecOperation.PROBE);
