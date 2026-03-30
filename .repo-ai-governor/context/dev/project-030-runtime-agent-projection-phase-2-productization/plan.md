@@ -90,3 +90,4 @@
 4. 2026-03-30：完成 `project-030` 与 `project-031` 的跨项目优先级复核，锁定推荐执行顺序为 `project-030 sprint-002/003 -> project-031 -> project-030 sprint-004`。
 5. 2026-03-30：激活 `sprint-002-connect-apply-and-diagnostics-contract`，建立 `sprint-002` / `sprint-003` task ledger，开始执行 `TK-424 ~ TK-427`。
 6. 2026-03-30：完成 `sprint-002` 与 `sprint-003`，落地 `connect diff/apply`、candidate diff/merge explain、adopter smoke automation 与 shared agentView presenter；`project-030` 下一条待执行流切换为 `sprint-004-ui-consumer-and-rollout-closeout`。
+7. 2026-03-30：`project-031 / sprint-001` 已激活；`project-030 / sprint-003` closeout surface 从 `current-context.md` 移除并迁入 completed history，保留 `sprint-004` 为 planned follow-up。

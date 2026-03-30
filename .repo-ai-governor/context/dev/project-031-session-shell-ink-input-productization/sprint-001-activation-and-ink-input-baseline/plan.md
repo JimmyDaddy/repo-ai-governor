@@ -1,6 +1,6 @@
 # sprint-001-activation-and-ink-input-baseline 计划
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-30
 - Project: `project-031-session-shell-ink-input-productization`
 - Sprint Goal: 激活 Ink-owned input follow-up stream，并完成默认 cutover 前所需的 Ink runner/controller/live tree baseline。
@@ -20,3 +20,5 @@
 ## 3. Milestones
 
 1. 2026-03-30：创建 `project-031` 与 `sprint-001`，锁定 `TK-430 ~ TK-432`。
+2. 2026-03-30：激活 `project-031 / sprint-001`，开始实现 Ink runner/controller baseline 与 live session-shell mount seam。
+3. 2026-03-30：完成 `CliSessionShellInkController` / `CliSessionShellInkRunner` / `ReactCliRunner.mountLiveSessionShell()` 基线，并通过 targeted tests 与 `pnpm run build`。

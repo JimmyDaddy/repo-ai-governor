@@ -37,6 +37,37 @@ export enum CliSessionShellPersistenceOwner {
 }
 
 /**
+ * Defines foreground input ownership variants exposed by the session-shell contract.
+ */
+export enum CliSessionShellForegroundInputOwner {
+  INK = 'ink',
+  READLINE_FALLBACK = 'readline_fallback',
+}
+
+/**
+ * Defines the currently focused foreground region for the session-shell presenter.
+ */
+export enum CliSessionShellForegroundFocusTarget {
+  COMPOSER = 'composer',
+  PALETTE = 'palette',
+  HANDOFF_PREVIEW = 'handoff_preview',
+}
+
+/**
+ * Defines the minimal action vocabulary used by the Ink-owned session-shell baseline.
+ */
+export enum CliSessionShellInputActionType {
+  COMPOSER_CHANGED = 'composer_changed',
+  COMPOSER_SUBMITTED = 'composer_submitted',
+  PALETTE_HIGHLIGHT_NEXT = 'palette_highlight_next',
+  PALETTE_HIGHLIGHT_PREVIOUS = 'palette_highlight_previous',
+  PALETTE_ACCEPT_HIGHLIGHTED = 'palette_accept_highlighted',
+  PALETTE_CLOSED = 'palette_closed',
+  SESSION_CLEAR_SCREEN = 'session_clear_screen',
+  SESSION_EXIT_REQUESTED = 'session_exit_requested',
+}
+
+/**
  * Defines transcript roles rendered inside the session-shell transcript pane.
  */
 export enum CliSessionTranscriptRole {
@@ -64,3 +95,17 @@ export const CLI_SESSION_SHELL_PREVIEW_SESSION_ID_PREFIX = 'session-shell-previe
  * Defines the default prompt label rendered by the readline-backed session shell.
  */
 export const CLI_SESSION_SHELL_PROMPT = 'governor> ';
+
+/**
+ * Defines the stable action-contract order exposed by the Ink-owned session-shell baseline.
+ */
+export const CLI_SESSION_SHELL_INPUT_ACTION_CONTRACT = [
+  CliSessionShellInputActionType.COMPOSER_CHANGED,
+  CliSessionShellInputActionType.COMPOSER_SUBMITTED,
+  CliSessionShellInputActionType.PALETTE_HIGHLIGHT_NEXT,
+  CliSessionShellInputActionType.PALETTE_HIGHLIGHT_PREVIOUS,
+  CliSessionShellInputActionType.PALETTE_ACCEPT_HIGHLIGHTED,
+  CliSessionShellInputActionType.PALETTE_CLOSED,
+  CliSessionShellInputActionType.SESSION_CLEAR_SCREEN,
+  CliSessionShellInputActionType.SESSION_EXIT_REQUESTED,
+] as const;

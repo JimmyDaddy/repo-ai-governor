@@ -317,6 +317,7 @@ HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" resume
 6. `--no-interactive` 运行时应正常回退，不渲染 React shell。
 7. 在本地 TTY + `pretty` 模式下，无子命令入口应附着到 session shell，带引号的启动 prompt 会作为首轮消息发送，而 `resume` 可以重新附着最近一次持久化会话。
 8. session shell 的手工检查应确认 slash command 可发现性（`/help`）、route/theme 自检（`/agent`、`/theme`）、history/search recall、多行输入与 `!` passthrough 都成立，且不会污染重定向的 stdout。
+9. session shell 的手工检查还应确认 live Ink 输入行为：输入 `/` 会即时打开 palette，`Up/Down` 可切换高亮，`Tab` 会补全高亮命令，`Esc` 会关闭 palette，`Ctrl+L` 只清理本地 live surface，paste / CJK 输入保持完整。
 
 当下面这些条件同时满足时，可视为本次真实项目验收通过：
 
@@ -327,6 +328,7 @@ HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" resume
 5. `workflow create/edit` 会落盘 definition 与 compiled IR，而 `workflow preview` 始终保持只读。
 6. 无论通过默认路由还是显式 `--ui react` 进入 React shell，`upgrade` 都必须完整产出三类 artifact。
 7. session-shell 默认入口、带引号的首轮 prompt 与 `resume` 在真实 TTY 中表现一致，同时不影响 `json` 与 `--no-interactive` 契约。
+8. live slash palette 与键盘行为（`/`、`Up/Down`、`Tab`、`Esc`、`Ctrl+L`）在真实 TTY 烟雾验证中表现一致。
 
 ## 5. 本地调试路径
 

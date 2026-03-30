@@ -6,6 +6,9 @@ import {
   CliInteractiveUiMode,
 } from '../../src/constants/cli-interactive-shell.constant.js';
 import {
+  CLI_SESSION_SHELL_INPUT_ACTION_CONTRACT,
+  CliSessionShellForegroundFocusTarget,
+  CliSessionShellForegroundInputOwner,
   CliSessionShellHandoffState,
   CliSessionShellInputMode,
   CliSessionShellMode,
@@ -79,6 +82,7 @@ describe('ReactCliRunner', () => {
       composerValue: '',
       composerPlaceholder: 'Type a message or /help.',
       slashQuery: '/wo',
+      slashPaletteVisible: true,
       slashSuggestions: [
         {
           command: '/workspace',
@@ -100,6 +104,9 @@ describe('ReactCliRunner', () => {
       outputContract: ErrorOutputEnvironment.PRETTY,
       persistenceOwner: CliSessionShellPersistenceOwner.LOCAL_ORCHESTRATION_SERVICE,
       resumeSelector: 'latest',
+      foregroundInputOwner: CliSessionShellForegroundInputOwner.READLINE_FALLBACK,
+      foregroundFocusTarget: CliSessionShellForegroundFocusTarget.COMPOSER,
+      inputActionContract: [...CLI_SESSION_SHELL_INPUT_ACTION_CONTRACT],
       title: 'Repo AI Governor session shell',
       subtitle: 'Session-first preview baseline.',
       promptBarTitle: 'Prompt bar',
@@ -113,6 +120,143 @@ describe('ReactCliRunner', () => {
     expect(output).toContain('Session shell foundation is active.');
     expect(output).toContain('/workspace');
     expect(output).toContain('preview=/workspace state=preview_only');
+  });
+
+  it('mounts the session-shell tree through Ink for live stderr rendering', () => {
+    const fakeInstance = {
+      rerender: vi.fn(),
+    };
+    const renderLiveTree = vi.fn(() => fakeInstance);
+    const runner = new ReactCliRunner(renderLiveTree as never);
+
+    const instance = runner.mountSessionShell(
+      {
+        sessionId: 'session-shell-preview-ink',
+        shellMode: CliSessionShellMode.SESSION_SHELL,
+        inputMode: CliSessionShellInputMode.PLAIN_TEXT,
+        transcriptItems: [],
+        transcriptTitle: 'Transcript',
+        composerTitle: 'Composer',
+        composerValue: '',
+        composerPlaceholder: 'Type a message or /help.',
+        slashQuery: '',
+        slashPaletteVisible: false,
+        slashSuggestions: [],
+        highlightedCommand: null,
+        slashPaletteTitle: 'Slash palette',
+        slashPaletteEmptyState: 'No slash commands matched.',
+        commandPreview: null,
+        handoffState: CliSessionShellHandoffState.IDLE,
+        cwd: '/workspace/repo',
+        workspaceSummary: 'workspace_id=repo mode=repo_local',
+        outputContract: ErrorOutputEnvironment.PRETTY,
+        persistenceOwner: CliSessionShellPersistenceOwner.LOCAL_ORCHESTRATION_SERVICE,
+        resumeSelector: 'latest',
+        foregroundInputOwner: CliSessionShellForegroundInputOwner.INK,
+        foregroundFocusTarget: CliSessionShellForegroundFocusTarget.COMPOSER,
+        inputActionContract: [...CLI_SESSION_SHELL_INPUT_ACTION_CONTRACT],
+        title: 'Repo AI Governor session shell',
+        subtitle: 'Session-first preview baseline.',
+        promptBarTitle: 'Prompt bar',
+        promptBarLines: ['Shortcuts: /help, /exit, Ctrl+C, Ctrl+D.'],
+      },
+      {
+        stdout: process.stderr,
+      },
+    );
+
+    expect(renderLiveTree).toHaveBeenCalledTimes(1);
+    expect(instance).toBe(fakeInstance);
+  });
+
+  it('mounts the live session-shell tree with interaction handlers', () => {
+    const fakeInstance = {
+      rerender: vi.fn(),
+    };
+    const renderLiveTree = vi.fn(() => fakeInstance);
+    const runner = new ReactCliRunner(renderLiveTree as never);
+    const interactionHandlers = {
+      onAction: vi.fn(),
+      onInterrupt: vi.fn(),
+      onEndOfInput: vi.fn(),
+    };
+
+    const instance = runner.mountLiveSessionShell(
+      {
+        sessionId: 'session-shell-live-ink',
+        shellMode: CliSessionShellMode.SESSION_SHELL,
+        inputMode: CliSessionShellInputMode.PLAIN_TEXT,
+        transcriptItems: [],
+        transcriptTitle: 'Transcript',
+        composerTitle: 'Composer',
+        composerValue: '',
+        composerPlaceholder: 'Type a message or /help.',
+        slashQuery: '',
+        slashPaletteVisible: false,
+        slashSuggestions: [],
+        highlightedCommand: null,
+        slashPaletteTitle: 'Slash palette',
+        slashPaletteEmptyState: 'No slash commands matched.',
+        commandPreview: null,
+        handoffState: CliSessionShellHandoffState.IDLE,
+        cwd: '/workspace/repo',
+        workspaceSummary: 'workspace_id=repo mode=repo_local',
+        outputContract: ErrorOutputEnvironment.PRETTY,
+        persistenceOwner: CliSessionShellPersistenceOwner.LOCAL_ORCHESTRATION_SERVICE,
+        resumeSelector: 'latest',
+        foregroundInputOwner: CliSessionShellForegroundInputOwner.INK,
+        foregroundFocusTarget: CliSessionShellForegroundFocusTarget.COMPOSER,
+        inputActionContract: [...CLI_SESSION_SHELL_INPUT_ACTION_CONTRACT],
+        title: 'Repo AI Governor session shell',
+        subtitle: 'Session-first preview baseline.',
+        promptBarTitle: 'Prompt bar',
+        promptBarLines: ['Shortcuts: /help, /exit, Ctrl+C, Ctrl+D.'],
+      },
+      interactionHandlers,
+      {
+        stdout: process.stderr,
+      },
+    );
+
+    expect(renderLiveTree).toHaveBeenCalledTimes(1);
+    expect(instance).toBe(fakeInstance);
+  });
+
+  it('hides the slash palette section when the presenter marks it closed', () => {
+    const runner = new ReactCliRunner();
+    const output = runner.renderSessionShellFrame({
+      sessionId: 'session-shell-hidden-palette',
+      shellMode: CliSessionShellMode.SESSION_SHELL,
+      inputMode: CliSessionShellInputMode.SLASH_COMMAND,
+      transcriptItems: [],
+      transcriptTitle: 'Transcript',
+      composerTitle: 'Composer',
+      composerValue: '/wo',
+      composerPlaceholder: 'Type a message or /help.',
+      slashQuery: '',
+      slashPaletteVisible: false,
+      slashSuggestions: [],
+      highlightedCommand: null,
+      slashPaletteTitle: 'Slash palette',
+      slashPaletteEmptyState: 'No slash commands matched.',
+      commandPreview: null,
+      handoffState: CliSessionShellHandoffState.IDLE,
+      cwd: '/workspace/repo',
+      workspaceSummary: 'workspace_id=repo mode=repo_local',
+      outputContract: ErrorOutputEnvironment.PRETTY,
+      persistenceOwner: CliSessionShellPersistenceOwner.LOCAL_ORCHESTRATION_SERVICE,
+      resumeSelector: 'latest',
+      foregroundInputOwner: CliSessionShellForegroundInputOwner.INK,
+      foregroundFocusTarget: CliSessionShellForegroundFocusTarget.COMPOSER,
+      inputActionContract: [...CLI_SESSION_SHELL_INPUT_ACTION_CONTRACT],
+      title: 'Repo AI Governor session shell',
+      subtitle: 'Session-first preview baseline.',
+      promptBarTitle: 'Prompt bar',
+      promptBarLines: ['Shortcuts: /help, /exit, Ctrl+C, Ctrl+D.'],
+    });
+
+    expect(output).not.toContain('Slash palette');
+    expect(output).toContain('/wo');
   });
 });
 
@@ -272,6 +416,7 @@ describe('CliSessionShellStderrRenderer', () => {
       composerValue: '',
       composerPlaceholder: 'Type a message or /help.',
       slashQuery: '',
+      slashPaletteVisible: false,
       slashSuggestions: [],
       highlightedCommand: null,
       slashPaletteTitle: 'Slash palette',
@@ -283,6 +428,9 @@ describe('CliSessionShellStderrRenderer', () => {
       outputContract: ErrorOutputEnvironment.PRETTY,
       persistenceOwner: CliSessionShellPersistenceOwner.LOCAL_ORCHESTRATION_SERVICE,
       resumeSelector: 'latest',
+      foregroundInputOwner: CliSessionShellForegroundInputOwner.READLINE_FALLBACK,
+      foregroundFocusTarget: CliSessionShellForegroundFocusTarget.COMPOSER,
+      inputActionContract: [...CLI_SESSION_SHELL_INPUT_ACTION_CONTRACT],
       title: 'Repo AI Governor session shell',
       subtitle: 'Session-first preview baseline.',
       promptBarTitle: 'Prompt bar',

@@ -52,14 +52,16 @@ export function ReactCliSessionShellApp({
           inputMode={viewModel.inputMode}
           shellPalette={shellPalette}
         />
-        <ReactCliSlashCommandPalette
-          title={viewModel.slashPaletteTitle}
-          query={viewModel.slashQuery}
-          highlightedCommand={viewModel.highlightedCommand}
-          suggestions={viewModel.slashSuggestions}
-          emptyState={viewModel.commandPreview ?? viewModel.slashPaletteEmptyState}
-          shellPalette={shellPalette}
-        />
+        {viewModel.slashPaletteVisible ? (
+          <ReactCliSlashCommandPalette
+            title={viewModel.slashPaletteTitle}
+            query={viewModel.slashQuery}
+            highlightedCommand={viewModel.highlightedCommand}
+            suggestions={viewModel.slashSuggestions}
+            emptyState={viewModel.commandPreview ?? viewModel.slashPaletteEmptyState}
+            shellPalette={shellPalette}
+          />
+        ) : null}
         <ReactCliPromptBar
           title={viewModel.promptBarTitle}
           lines={viewModel.promptBarLines}

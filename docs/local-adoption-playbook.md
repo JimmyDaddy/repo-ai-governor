@@ -317,6 +317,7 @@ Expected observations:
 6. The `--no-interactive` command falls back without rendering React shell.
 7. In local TTY + `pretty`, the no-subcommand entry attaches to the session shell, the quoted startup prompt is sent as the first turn, and `resume` can reattach the latest persisted session.
 8. Session-shell manual checks should confirm slash discoverability (`/help`), foreground route/theme introspection (`/agent`, `/theme`), history/search recall, multi-line capture, and `!` passthrough without polluting redirected stdout.
+9. Session-shell manual checks should also confirm live Ink input behavior: typing `/` opens the palette immediately, `Up/Down` changes the highlight, `Tab` completes the highlighted command, `Esc` closes the palette, `Ctrl+L` clears only the local live surface, and paste / CJK input stay intact in the composer.
 
 Treat the run as passed when all of the following are true:
 
@@ -327,6 +328,7 @@ Treat the run as passed when all of the following are true:
 5. `workflow create/edit` persist definition and compiled IR, while `workflow preview` remains read-only.
 6. `upgrade` emits all three upgrade artifacts whether the React shell is reached by default or explicitly requested.
 7. Session-shell entry, quoted startup prompts, and `resume` all behave consistently in a real TTY while keeping `json` and `--no-interactive` untouched.
+8. Live slash palette and keyboard affordances (`/`, `Up/Down`, `Tab`, `Esc`, `Ctrl+L`) behave the same way in the real TTY smoke path.
 
 ## 5. Local Debug Path
 

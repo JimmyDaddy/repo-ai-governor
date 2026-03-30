@@ -12,7 +12,10 @@ import type { ErrorOutputEnvironment } from '@repo-ai-governor/shared';
 import type { CliReactThemePreset } from '../../constants/cli-react-theme.constant.js';
 import type {
   CliSessionShellExitReason,
+  CliSessionShellForegroundFocusTarget,
+  CliSessionShellForegroundInputOwner,
   CliSessionShellHandoffState,
+  CliSessionShellInputActionType,
   CliSessionShellInputMode,
   CliSessionShellMode,
   CliSessionShellPersistenceOwner,
@@ -67,6 +70,7 @@ export interface CliSessionShellViewModel {
   composerTitle: string;
   composerPlaceholder: string;
   slashQuery: string;
+  slashPaletteVisible: boolean;
   slashSuggestions: CliSessionSlashCommandSuggestion[];
   highlightedCommand: string | null;
   slashPaletteTitle: string;
@@ -78,11 +82,31 @@ export interface CliSessionShellViewModel {
   outputContract: ErrorOutputEnvironment;
   persistenceOwner: CliSessionShellPersistenceOwner;
   resumeSelector: string;
+  foregroundInputOwner: CliSessionShellForegroundInputOwner;
+  foregroundFocusTarget: CliSessionShellForegroundFocusTarget;
+  inputActionContract: CliSessionShellInputActionType[];
   title: string;
   subtitle: string;
   promptBarTitle: string;
   promptBarLines: string[];
   themePreset?: CliReactThemePreset;
+}
+
+/**
+ * Defines one foreground input action routed through the Ink-owned controller seam.
+ */
+export interface CliSessionShellInputAction {
+  type: CliSessionShellInputActionType;
+  value?: string;
+}
+
+/**
+ * Defines the presenter-local effects returned after one Ink-owned input action is applied.
+ */
+export interface CliSessionShellInputActionResult {
+  submitComposer: boolean;
+  clearScreenRequested: boolean;
+  exitRequested: boolean;
 }
 
 /**

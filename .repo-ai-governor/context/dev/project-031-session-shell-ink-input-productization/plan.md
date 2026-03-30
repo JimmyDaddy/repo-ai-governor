@@ -1,6 +1,6 @@
 # project-031-session-shell-ink-input-productization 计划
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-30
 - Stage Mapping: Session-shell Ink-owned input productization follow-up
 - Phase Mapping: activation and input baseline / action-driven runner / keyboard behaviors and live-input validation / default cutover and rollout closeout
@@ -22,25 +22,25 @@
 
 ## 2.1 sprint-001-activation-and-ink-input-baseline
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 激活 follow-up stream，并落地 Ink input baseline 所需的 runner/controller/live mount 骨架。
 - Task Package: `TK-430`、`TK-431`、`TK-432`。
 
 ## 2.2 sprint-002-action-driven-runner-and-palette-state
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 将 session shell 收口为 action-driven runner，并完成 composer / palette / handoff preview 的统一状态机。
 - Task Package: `TK-433`、`TK-434`、`TK-435`。
 
 ## 2.3 sprint-003-keyboard-behaviors-and-live-input-validation
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 收口 palette keyboard 行为、live input 边界条件与 Ink 测试 seam。
 - Task Package: `TK-436`、`TK-437`、`TK-438`。
 
 ## 2.4 sprint-004-default-cutover-and-rollout-closeout
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 完成默认 foreground input owner cutover，并收口文档、adoption、review 与 rollout 证据。
 - Task Package: `TK-439`、`TK-440`、`TK-441`。
 
@@ -48,18 +48,18 @@
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 |---|---|---|---|---|---|
-| TK-430 | sprint-001 | activate project-031 and sync Ink-input phase map | planning/governance | `DA-421-session-shell-ink-input-technical-solution-promotion-cutover.md` | planned |
-| TK-431 | sprint-001 | add Ink runner and controller baseline for session shell | cli/session-shell-runtime | TK-430 | planned |
-| TK-432 | sprint-001 | mount session-shell app as live Ink tree and preserve stderr-only contract | cli/session-shell-ui | TK-431 | planned |
-| TK-433 | sprint-002 | refactor session-shell runner to consume action-driven input stream | runtime/session-shell-runner | TK-432 | planned |
-| TK-434 | sprint-002 | unify composer palette and handoff preview state under controller actions | cli/session-shell-state | TK-433 | planned |
-| TK-435 | sprint-002 | demote readline adapter to fallback seam and harden lifecycle cleanup | cli/fallback-lifecycle | TK-433,TK-434 | planned |
-| TK-436 | sprint-003 | implement palette keyboard navigation completion and clear-screen semantics | cli/keyboard-behavior | TK-435 | planned |
-| TK-437 | sprint-003 | add Ink live-input tests for paste long-input and CJK scenarios | verification/ink-input-tests | TK-436 | planned |
-| TK-438 | sprint-003 | lock stderr-only fallback and output-contract regressions for live session shell | verification/output-contract | TK-436,TK-437 | planned |
-| TK-439 | sprint-004 | switch default foreground input owner from readline to Ink | cli/cutover | TK-438 | planned |
-| TK-440 | sprint-004 | update docs help and adoption guidance for Ink-owned session shell | docs/adoption | TK-439 | planned |
-| TK-441 | sprint-004 | close review rollout evidence and completion audit for project-031 | docs/rollout | TK-439,TK-440 | planned |
+| TK-430 | sprint-001 | activate project-031 and sync Ink-input phase map | planning/governance | `DA-421-session-shell-ink-input-technical-solution-promotion-cutover.md` | completed |
+| TK-431 | sprint-001 | add Ink runner and controller baseline for session shell | cli/session-shell-runtime | TK-430 | completed |
+| TK-432 | sprint-001 | mount session-shell app as live Ink tree and preserve stderr-only contract | cli/session-shell-ui | TK-431 | completed |
+| TK-433 | sprint-002 | refactor session-shell runner to consume action-driven input stream | runtime/session-shell-runner | TK-432 | completed |
+| TK-434 | sprint-002 | unify composer palette and handoff preview state under controller actions | cli/session-shell-state | TK-433 | completed |
+| TK-435 | sprint-002 | demote readline adapter to fallback seam and harden lifecycle cleanup | cli/fallback-lifecycle | TK-433,TK-434 | completed |
+| TK-436 | sprint-003 | implement palette keyboard navigation completion and clear-screen semantics | cli/keyboard-behavior | TK-435 | completed |
+| TK-437 | sprint-003 | add Ink live-input tests for paste long-input and CJK scenarios | verification/ink-input-tests | TK-436 | completed |
+| TK-438 | sprint-003 | lock stderr-only fallback and output-contract regressions for live session shell | verification/output-contract | TK-436,TK-437 | completed |
+| TK-439 | sprint-004 | switch default foreground input owner from readline to Ink | cli/cutover | TK-438 | completed |
+| TK-440 | sprint-004 | update docs help and adoption guidance for Ink-owned session shell | docs/adoption | TK-439 | completed |
+| TK-441 | sprint-004 | close review rollout evidence and completion audit for project-031 | docs/rollout | TK-439,TK-440 | completed |
 
 ## 4. 依赖产物策略
 
@@ -86,3 +86,6 @@
 
 1. 2026-03-30：基于已正式提升的 Ink-owned input ADR 创建 `project-031-session-shell-ink-input-productization` 作为新的 planned follow-up stream。
 2. 2026-03-30：完成与 `project-030` 的跨项目排序复核，结论为 `project-031` 在 `project-030 sprint-002/003` 之后激活，并在其 cutover 稳定后再回到 `project-030 sprint-004`。
+3. 2026-03-30：切换 `current-context.md` primary stream 到 `project-031 / sprint-001`，开始落 Ink runner/controller baseline 与 live session-shell mount seam。
+4. 2026-03-30：完成 `sprint-001 ~ sprint-004` 实现闭环，默认 foreground input owner 已切换为 Ink，`readline` 退化为 fallback seam，keyboard/live-input 行为完成测试闭环。
+5. 2026-03-30：项目完成态审计已落地到 `.repo-ai-governor/context/dev/project-031-session-shell-ink-input-productization/project-031-session-shell-ink-input-productization-completion-audit-summary.md`。

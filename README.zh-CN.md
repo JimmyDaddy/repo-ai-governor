@@ -97,6 +97,7 @@ pnpm exec repo-ai-governor init --output pretty
 在本地 TTY + `pretty` 输出下，交互问答默认开启；CI/脚本场景可加 `--no-interactive` 关闭交互。
 在本地 TTY + `pretty` 输出下，`repo-ai-governor` 无子命令入口现在会默认附着到 `stderr` 上的 session-first shell；如果你要恢复最近一次或指定的持久化会话，可执行 `pnpm exec repo-ai-governor resume [session-id]`。
 session shell 支持自然语言对话，以及 `/help`、`/resume`、`/clear`、`/theme`、`/agent`、`/history`、`/search`、`/multiline` 和 `!<shell-command>` passthrough。也可以直接用 `pnpm exec repo-ai-governor --output pretty "summarize this repository"` 带首轮 prompt 启动。
+现在输入 `/` 会即时打开 live slash palette，`Up/Down`、`Tab`、`Esc` 与 `Ctrl+L` 也都留在同一条 Ink-owned input loop 内，不再退回 frame 外的 line editor。
 `workflow`、`upgrade` 这类命令内交互 surface 仍然默认进入 React shell；在 `--no-interactive`、非 TTY 或 `plain/json` 场景下，两类壳层都会自动回退到 `none`，因此 CI 与 agent 风格的机器消费路径继续保持原有非交互契约。
 如需只在当前命令切换 React shell 外观，可额外指定 `--ui-theme governor|catppuccin|calm`，不会改变 stdout 输出契约。
 主题优先级为 `--ui-theme` 单次覆盖 > workspace 默认值 > 全局 CLI 默认值。
@@ -118,6 +119,7 @@ node <governor-repo>/dist/bin/repo-ai-governor.js <command>
 3. `doctor` 在 `command_result.attach_mode` 中返回 attach 模式；全新的外部 adopter 仓库还可能出现 `baseline_docs missing=5/5` warning。
 4. `check` 在 `command_result.check_totals` 中返回门禁统计；非 self-host 目标仓库可能出现 governance `script_not_found` warning。
 5. 在本地 TTY + `pretty` 模式下，无子命令入口会附着到 session shell；`resume [session-id]` 可恢复最近一次或指定的持久化会话。
+6. 在 session shell 内，输入 `/` 应即时出现 live slash palette；`Tab` 可补全当前高亮命令，`Ctrl+L` 只清理本地 live surface。
 
 ## 1.5 只读接入预检
 

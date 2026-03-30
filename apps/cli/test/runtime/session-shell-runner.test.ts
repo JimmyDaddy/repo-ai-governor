@@ -18,11 +18,14 @@ import { ErrorOutputEnvironment } from '@repo-ai-governor/shared';
 import {
   CliSessionShellExitReason,
   CliSessionShellHandoffState,
+  CliSessionShellInputActionType,
   CliSessionShellMode,
 } from '../../src/constants/cli-session-shell.constant.js';
+import { CliSessionShellInkController } from '../../src/runtime/interactive-shell/session-shell-ink-controller.js';
 import { CliSessionShellRunner } from '../../src/runtime/interactive-shell/session-shell-runner.js';
 import type {
   CliSessionShellCommandExecutionResult,
+  CliSessionShellInputAction,
   CliSessionShellPromptAdapter,
   CliSessionShellRunOptions,
   CliSessionShellViewModel,
@@ -76,6 +79,40 @@ class StubSessionShellPromptAdapter implements CliSessionShellPromptAdapter {
     const answer = this.multilineAnswers[this.multilineCursor] ?? null;
     this.multilineCursor += 1;
     return answer;
+  }
+
+  public close(): void {
+    return;
+  }
+}
+
+class StubSessionShellInkRunner {
+  private cursor = 0;
+  public readonly snapshots: CliSessionShellViewModel[] = [];
+
+  public constructor(private readonly actions: Array<CliSessionShellInputAction | null>) {}
+
+  public async readAction(
+    viewModel?: CliSessionShellViewModel,
+  ): Promise<CliSessionShellInputAction | null> {
+    if (viewModel) {
+      this.snapshots.push({
+        ...viewModel,
+        transcriptItems: viewModel.transcriptItems.map((item) => ({
+          ...item,
+          lines: [...item.lines],
+        })),
+        slashSuggestions: viewModel.slashSuggestions.map((suggestion) => ({
+          ...suggestion,
+          highlightSegments: suggestion.highlightSegments.map((segment) => ({ ...segment })),
+        })),
+        promptBarLines: [...viewModel.promptBarLines],
+      });
+    }
+
+    const action = this.actions[this.cursor] ?? null;
+    this.cursor += 1;
+    return action;
   }
 
   public close(): void {
@@ -427,6 +464,9 @@ describe('CliSessionShellRunner', () => {
           '/confirm',
           '/exit',
         ]),
+      undefined,
+      undefined,
+      () => false,
       () => new Date('2026-03-30T12:00:00Z'),
     );
 
@@ -475,6 +515,9 @@ describe('CliSessionShellRunner', () => {
           ['/multiline', '/history', '/search governor', '!printf "shell-output"', '/exit'],
           ['governor line one\ngovernor line two'],
         ),
+      undefined,
+      undefined,
+      () => false,
       () => new Date('2026-03-30T12:00:00Z'),
     );
 
@@ -529,6 +572,9 @@ describe('CliSessionShellRunner', () => {
       undefined,
       renderer as never,
       () => new StubSessionShellPromptAdapter(['/doctor', '/exit']),
+      undefined,
+      undefined,
+      () => false,
       () => new Date('2026-03-30T12:00:00Z'),
     );
 
@@ -567,6 +613,9 @@ describe('CliSessionShellRunner', () => {
       undefined,
       renderer as never,
       () => new StubSessionShellPromptAdapter(['/workspace dry-run', '/exit']),
+      undefined,
+      undefined,
+      () => false,
       () => new Date('2026-03-30T12:00:00Z'),
     );
 
@@ -585,12 +634,58 @@ describe('CliSessionShellRunner', () => {
     expect(result.transcriptItems.at(-1)?.lines[0]).toBe('Closed after /exit.');
   });
 
+  it('keeps a pending preview visible across /clear until /confirm executes it', async () => {
+    const renderer = new RecordingSessionShellRenderer();
+    const commandExecutor = vi.fn<
+      (argv: string[]) => Promise<CliSessionShellCommandExecutionResult>
+    >(async (argv) => ({
+      artifactPaths: [],
+      commandLine: argv.join(' '),
+      message: 'workspace dry-run completed',
+      status: 'success',
+      summaryLines: ['summary=workspace dry-run completed'],
+    }));
+    const runner = new CliSessionShellRunner(
+      undefined,
+      renderer as never,
+      () =>
+        new StubSessionShellPromptAdapter(['/workspace dry-run', '/clear', '/confirm', '/exit']),
+      undefined,
+      undefined,
+      () => false,
+      () => new Date('2026-03-30T12:00:00Z'),
+    );
+
+    const result = await runner.run(
+      DEFAULT_RUN_OPTIONS({
+        commandExecutor,
+      }),
+    );
+
+    expect(commandExecutor).toHaveBeenCalledWith(['workspace', 'dry-run']);
+    expect(
+      renderer.frames.some(
+        (frame) =>
+          frame.transcriptItems.at(-1)?.lines[0] === 'Local transcript viewport cleared.' &&
+          frame.promptBarLines.includes('preview=workspace dry-run state=awaiting_confirmation'),
+      ),
+    ).toBe(true);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes('summary=workspace dry-run completed'),
+      ),
+    ).toBe(true);
+  });
+
   it('closes cleanly on Ctrl+D and keeps the transcript note intact', async () => {
     const renderer = new RecordingSessionShellRenderer();
     const runner = new CliSessionShellRunner(
       undefined,
       renderer as never,
       () => new StubSessionShellPromptAdapter([null]),
+      undefined,
+      undefined,
+      () => false,
       () => new Date('2026-03-30T12:00:00Z'),
     );
 
@@ -612,6 +707,9 @@ describe('CliSessionShellRunner', () => {
         new StubSessionShellPromptAdapter([
           new RuntimeError(GovernorErrorCode.PROCESS_RUNTIME_CANCELLED, 'cancelled by test'),
         ]),
+      undefined,
+      undefined,
+      () => false,
       () => new Date('2026-03-30T12:00:00Z'),
     );
 
@@ -619,5 +717,128 @@ describe('CliSessionShellRunner', () => {
 
     expect(result.exitReason).toBe(CliSessionShellExitReason.SIGINT);
     expect(renderer.frames.at(-1)?.transcriptItems.at(-1)?.lines[0]).toBe('Closed after Ctrl+C.');
+  });
+
+  it('consumes live Ink actions and shows slash palette suggestions before submit', async () => {
+    const renderer = new RecordingSessionShellRenderer();
+    const inkRunner = new StubSessionShellInkRunner([
+      {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: '/',
+      },
+      {
+        type: CliSessionShellInputActionType.PALETTE_HIGHLIGHT_NEXT,
+      },
+      {
+        type: CliSessionShellInputActionType.PALETTE_ACCEPT_HIGHLIGHTED,
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_SUBMITTED,
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: '/exit',
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_SUBMITTED,
+      },
+    ]);
+    const runner = new CliSessionShellRunner(
+      undefined,
+      renderer as never,
+      () => new StubSessionShellPromptAdapter([]),
+      () => new CliSessionShellInkController(),
+      () => inkRunner as never,
+      () => true,
+      () => new Date('2026-03-30T12:00:00Z'),
+    );
+
+    const result = await runner.run(DEFAULT_RUN_OPTIONS());
+
+    expect(result.exitReason).toBe(CliSessionShellExitReason.SLASH_EXIT);
+    expect(
+      inkRunner.snapshots.some((frame) => frame.shellMode === CliSessionShellMode.COMMAND_PALETTE),
+    ).toBe(true);
+    expect(
+      inkRunner.snapshots.some((frame) =>
+        frame.promptBarLines.some((line) =>
+          line.includes('shell_mode=command_palette input_mode=slash_command handoff=idle'),
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      inkRunner.snapshots.some((frame) =>
+        frame.slashSuggestions.some((suggestion) => suggestion.command === '/workspace'),
+      ),
+    ).toBe(true);
+    expect(result.transcriptItems.at(-1)?.lines[0]).toBe('Closed after /exit.');
+  });
+
+  it('keeps a pending preview visible across Ctrl+L until /confirm executes it', async () => {
+    const renderer = new RecordingSessionShellRenderer();
+    const inkRunner = new StubSessionShellInkRunner([
+      {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: '/workspace dry-run',
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_SUBMITTED,
+      },
+      {
+        type: CliSessionShellInputActionType.SESSION_CLEAR_SCREEN,
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: '/confirm',
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_SUBMITTED,
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: '/exit',
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_SUBMITTED,
+      },
+    ]);
+    const commandExecutor = vi.fn<
+      (argv: string[]) => Promise<CliSessionShellCommandExecutionResult>
+    >(async (argv) => ({
+      artifactPaths: [],
+      commandLine: argv.join(' '),
+      message: 'workspace dry-run completed',
+      status: 'success',
+      summaryLines: ['summary=workspace dry-run completed'],
+    }));
+    const runner = new CliSessionShellRunner(
+      undefined,
+      renderer as never,
+      () => new StubSessionShellPromptAdapter([]),
+      () => new CliSessionShellInkController(),
+      () => inkRunner as never,
+      () => true,
+      () => new Date('2026-03-30T12:00:00Z'),
+    );
+
+    const result = await runner.run(
+      DEFAULT_RUN_OPTIONS({
+        commandExecutor,
+      }),
+    );
+
+    expect(commandExecutor).toHaveBeenCalledWith(['workspace', 'dry-run']);
+    expect(
+      inkRunner.snapshots.some(
+        (frame) =>
+          frame.transcriptItems.at(-1)?.lines[0] === 'Local transcript viewport cleared.' &&
+          frame.promptBarLines.includes('preview=workspace dry-run state=awaiting_confirmation'),
+      ),
+    ).toBe(true);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes('summary=workspace dry-run completed'),
+      ),
+    ).toBe(true);
   });
 });

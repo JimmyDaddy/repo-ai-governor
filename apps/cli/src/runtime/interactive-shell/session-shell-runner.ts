@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import { stderr, stdin } from 'node:process';
 
 import {
   OrchestrationSessionRouteId,
@@ -18,8 +19,11 @@ import {
   DEFAULT_CLI_REACT_THEME_PRESET,
 } from '../../constants/cli-react-theme.constant.js';
 import {
+  CLI_SESSION_SHELL_INPUT_ACTION_CONTRACT,
   CLI_SESSION_SHELL_PROMPT,
   CliSessionShellExitReason,
+  CliSessionShellForegroundFocusTarget,
+  CliSessionShellForegroundInputOwner,
   CliSessionShellHandoffState,
   CliSessionShellInputMode,
   CliSessionShellMode,
@@ -35,6 +39,8 @@ import type {
   CliSessionShellTranscriptItem,
   CliSessionShellViewModel,
 } from '../../types/index.js';
+import { CliSessionShellInkController } from './session-shell-ink-controller.js';
+import { CliSessionShellInkRunner } from './session-shell-ink-runner.js';
 import { CliSessionShellReadlinePromptAdapter } from './session-shell-readline-prompt-adapter.js';
 import { CliSessionShellStderrRenderer } from './session-shell-stderr-renderer.js';
 import { CliSessionShellTranscriptStore } from './session-shell-transcript-store.js';
@@ -65,6 +71,12 @@ export class CliSessionShellRunner {
     private readonly renderer: CliSessionShellStderrRenderer = new CliSessionShellStderrRenderer(),
     private readonly promptAdapterFactory: () => CliSessionShellPromptAdapter = () =>
       new CliSessionShellReadlinePromptAdapter(),
+    private readonly inkControllerFactory: () => CliSessionShellInkController = () =>
+      new CliSessionShellInkController(),
+    private readonly inkRunnerFactory: () => CliSessionShellInkRunner = () =>
+      new CliSessionShellInkRunner(),
+    private readonly shouldUseInkInput: () => boolean = () =>
+      stdin.isTTY === true && stderr.isTTY === true,
     private readonly nowProvider: () => Date = () => new Date(),
   ) {}
 
@@ -74,7 +86,6 @@ export class CliSessionShellRunner {
    * @returns Exit reason plus the final presenter transcript snapshot.
    */
   public async run(options: CliSessionShellRunOptions): Promise<CliSessionShellRunResult> {
-    const promptAdapter = this.promptAdapterFactory();
     const transcriptStore = new CliSessionShellTranscriptStore();
     const bootstrapped = await this.bootstrapSession(options);
     const runtimeState: CliSessionShellRuntimeState = {
@@ -106,10 +117,43 @@ export class CliSessionShellRunner {
         options,
         runtimeState,
       );
+      this.resetPromptState(viewModel, options, runtimeState);
     }
 
-    this.renderer.render(viewModel);
+    if (this.shouldUseInkInput()) {
+      const fallbackPromptAdapter = this.promptAdapterFactory();
+      const inkController = this.inkControllerFactory();
+      const inkRunner = this.inkRunnerFactory();
+      inkController.primeViewModel(viewModel);
+      return await this.runWithInkInput(
+        inkController,
+        inkRunner,
+        fallbackPromptAdapter,
+        viewModel,
+        transcriptStore,
+        options,
+        runtimeState,
+      );
+    }
 
+    const promptAdapter = this.promptAdapterFactory();
+    return await this.runWithReadlineFallback(
+      promptAdapter,
+      viewModel,
+      transcriptStore,
+      options,
+      runtimeState,
+    );
+  }
+
+  private async runWithReadlineFallback(
+    promptAdapter: CliSessionShellPromptAdapter,
+    viewModel: CliSessionShellViewModel,
+    transcriptStore: CliSessionShellTranscriptStore,
+    options: CliSessionShellRunOptions,
+    runtimeState: CliSessionShellRuntimeState,
+  ): Promise<CliSessionShellRunResult> {
+    this.renderer.render(viewModel);
     try {
       while (true) {
         const inputLine = await promptAdapter.readLine(CLI_SESSION_SHELL_PROMPT);
@@ -132,44 +176,18 @@ export class CliSessionShellRunner {
           continue;
         }
 
-        viewModel.composerValue = trimmedLine;
-
-        if (trimmedLine.startsWith('!')) {
-          await this.handleShellPassthrough(
-            trimmedLine,
-            viewModel,
-            transcriptStore,
-            options,
-            runtimeState,
-          );
-          this.renderer.render(viewModel);
-          continue;
-        }
-
-        if (trimmedLine.startsWith('/')) {
-          const exitResult = await this.handleSlashCommand(
-            trimmedLine,
-            promptAdapter,
-            viewModel,
-            transcriptStore,
-            options,
-            runtimeState,
-          );
-          this.renderer.render(viewModel);
-          if (exitResult) {
-            return exitResult;
-          }
-          continue;
-        }
-
-        await this.handlePlainTextTurn(
+        const exitResult = await this.submitComposerValue(
           trimmedLine,
+          promptAdapter,
           viewModel,
           transcriptStore,
           options,
           runtimeState,
         );
         this.renderer.render(viewModel);
+        if (exitResult) {
+          return exitResult;
+        }
       }
     } catch (error) {
       if (
@@ -190,6 +208,120 @@ export class CliSessionShellRunner {
     } finally {
       promptAdapter.close();
     }
+  }
+
+  private async runWithInkInput(
+    inkController: CliSessionShellInkController,
+    inkRunner: CliSessionShellInkRunner,
+    fallbackPromptAdapter: CliSessionShellPromptAdapter,
+    viewModel: CliSessionShellViewModel,
+    transcriptStore: CliSessionShellTranscriptStore,
+    options: CliSessionShellRunOptions,
+    runtimeState: CliSessionShellRuntimeState,
+  ): Promise<CliSessionShellRunResult> {
+    try {
+      while (true) {
+        const action = await inkRunner.readAction(viewModel);
+
+        if (action === null) {
+          return this.completeExit(viewModel, options, runtimeState, CliSessionShellExitReason.EOF);
+        }
+
+        const effects = inkController.applyAction(viewModel, action, options.translate);
+        viewModel.promptBarLines = this.buildPromptBarLines(viewModel, options, runtimeState);
+
+        if (effects.clearScreenRequested) {
+          await this.clearLocalTranscriptView(viewModel, transcriptStore, options, runtimeState);
+          continue;
+        }
+
+        if (effects.exitRequested) {
+          return this.completeExit(
+            viewModel,
+            options,
+            runtimeState,
+            CliSessionShellExitReason.SLASH_EXIT,
+          );
+        }
+
+        if (!effects.submitComposer) {
+          continue;
+        }
+
+        const trimmedComposerValue = viewModel.composerValue.trim();
+        if (trimmedComposerValue.length === 0) {
+          this.resetPromptState(viewModel, options, runtimeState);
+          continue;
+        }
+
+        inkRunner.close();
+        const exitResult = await this.submitComposerValue(
+          trimmedComposerValue,
+          fallbackPromptAdapter,
+          viewModel,
+          transcriptStore,
+          options,
+          runtimeState,
+        );
+        if (exitResult) {
+          return exitResult;
+        }
+      }
+    } catch (error) {
+      if (
+        error instanceof BaseError &&
+        error.code === GovernorErrorCode.PROCESS_RUNTIME_CANCELLED
+      ) {
+        return this.completeExit(
+          viewModel,
+          options,
+          runtimeState,
+          CliSessionShellExitReason.SIGINT,
+        );
+      }
+
+      throw error;
+    } finally {
+      inkRunner.close();
+      fallbackPromptAdapter.close();
+    }
+  }
+
+  private async submitComposerValue(
+    inputLine: string,
+    promptAdapter: CliSessionShellPromptAdapter,
+    viewModel: CliSessionShellViewModel,
+    transcriptStore: CliSessionShellTranscriptStore,
+    options: CliSessionShellRunOptions,
+    runtimeState: CliSessionShellRuntimeState,
+  ): Promise<CliSessionShellRunResult | null> {
+    viewModel.composerValue = inputLine;
+
+    if (inputLine.startsWith('!')) {
+      await this.handleShellPassthrough(
+        inputLine,
+        viewModel,
+        transcriptStore,
+        options,
+        runtimeState,
+      );
+      return null;
+    }
+
+    if (inputLine.startsWith('/')) {
+      return await this.handleSlashCommand(
+        inputLine,
+        promptAdapter,
+        viewModel,
+        transcriptStore,
+        options,
+        runtimeState,
+      );
+    }
+
+    await this.handlePlainTextTurn(inputLine, viewModel, transcriptStore, options, runtimeState);
+    this.resetPromptState(viewModel, options, runtimeState);
+    return null;
   }
 
   private async bootstrapSession(options: CliSessionShellRunOptions): Promise<{
@@ -347,6 +479,10 @@ export class CliSessionShellRunner {
     viewModel.slashQuery = query;
     viewModel.slashSuggestions = this.slashCommandRegistry.suggest(query, options.translate);
     viewModel.highlightedCommand = viewModel.slashSuggestions[0]?.command ?? null;
+    viewModel.foregroundFocusTarget =
+      viewModel.slashSuggestions.length > 0
+        ? CliSessionShellForegroundFocusTarget.PALETTE
+        : CliSessionShellForegroundFocusTarget.COMPOSER;
     await this.appendServiceTranscriptItem(
       viewModel,
       transcriptStore,
@@ -399,14 +535,7 @@ export class CliSessionShellRunner {
     }
 
     if (exactCommand.command === '/clear') {
-      transcriptStore.clearView();
-      viewModel.transcriptItems = [];
-      this.appendLocalTranscriptItem(viewModel, {
-        role: CliSessionTranscriptRole.SYSTEM,
-        label: options.translate('cli.sessionShell.transcript.systemLabel'),
-        lines: [options.translate('cli.sessionShell.responses.localTranscriptCleared')],
-      });
-      this.resetPromptState(viewModel, options, runtimeState);
+      await this.clearLocalTranscriptView(viewModel, transcriptStore, options, runtimeState);
       return null;
     }
 
@@ -516,8 +645,11 @@ export class CliSessionShellRunner {
       command: nextPendingCommand.previewCommandLine,
     });
     viewModel.shellMode = CliSessionShellMode.COMMAND_HANDOFF_PREVIEW;
+    viewModel.inputMode = CliSessionShellInputMode.SLASH_COMMAND;
     viewModel.handoffState = CliSessionShellHandoffState.PREVIEWING;
     viewModel.composerValue = '';
+    viewModel.slashPaletteVisible = false;
+    viewModel.foregroundFocusTarget = CliSessionShellForegroundFocusTarget.HANDOFF_PREVIEW;
     viewModel.promptBarLines = this.buildPromptBarLines(viewModel, options, runtimeState);
     await this.appendServiceTranscriptItem(
       viewModel,
@@ -875,6 +1007,7 @@ export class CliSessionShellRunner {
     viewModel.shellMode = CliSessionShellMode.SESSION_SHELL;
     viewModel.inputMode = CliSessionShellInputMode.PLAIN_TEXT;
     viewModel.slashQuery = '';
+    viewModel.slashPaletteVisible = false;
     viewModel.slashSuggestions = this.slashCommandRegistry.suggest('', options.translate);
     viewModel.highlightedCommand = viewModel.slashSuggestions[0]?.command ?? null;
     viewModel.commandPreview = null;
@@ -915,6 +1048,7 @@ export class CliSessionShellRunner {
       composerTitle: options.translate('cli.sessionShell.sections.composer'),
       composerPlaceholder: options.translate('cli.sessionShell.composer.placeholder'),
       slashQuery: '',
+      slashPaletteVisible: false,
       slashSuggestions,
       highlightedCommand: slashSuggestions[0]?.command ?? null,
       slashPaletteTitle: options.translate('cli.sessionShell.sections.slashPalette'),
@@ -926,6 +1060,9 @@ export class CliSessionShellRunner {
       outputContract: options.outputMode,
       persistenceOwner: CliSessionShellPersistenceOwner.LOCAL_ORCHESTRATION_SERVICE,
       resumeSelector,
+      foregroundInputOwner: CliSessionShellForegroundInputOwner.READLINE_FALLBACK,
+      foregroundFocusTarget: CliSessionShellForegroundFocusTarget.COMPOSER,
+      inputActionContract: [...CLI_SESSION_SHELL_INPUT_ACTION_CONTRACT],
       title: options.translate('cli.sessionShell.title'),
       subtitle: options.translate('cli.sessionShell.subtitle'),
       promptBarTitle: options.translate('cli.sessionShell.sections.promptBar'),
@@ -1009,11 +1146,60 @@ export class CliSessionShellRunner {
     viewModel.shellMode = CliSessionShellMode.SESSION_SHELL;
     viewModel.inputMode = CliSessionShellInputMode.PLAIN_TEXT;
     viewModel.slashQuery = '';
+    viewModel.slashPaletteVisible = false;
     viewModel.slashSuggestions = this.slashCommandRegistry.suggest('', options.translate);
     viewModel.highlightedCommand = viewModel.slashSuggestions[0]?.command ?? null;
     viewModel.commandPreview = null;
     viewModel.handoffState = CliSessionShellHandoffState.IDLE;
     viewModel.composerValue = '';
+    viewModel.foregroundFocusTarget = CliSessionShellForegroundFocusTarget.COMPOSER;
+    viewModel.promptBarLines = this.buildPromptBarLines(viewModel, options, runtimeState);
+  }
+
+  private async clearLocalTranscriptView(
+    viewModel: CliSessionShellViewModel,
+    transcriptStore: CliSessionShellTranscriptStore,
+    options: CliSessionShellRunOptions,
+    runtimeState: CliSessionShellRuntimeState,
+  ): Promise<void> {
+    transcriptStore.clearView();
+    viewModel.transcriptItems = [];
+    this.appendLocalTranscriptItem(viewModel, {
+      role: CliSessionTranscriptRole.SYSTEM,
+      label: options.translate('cli.sessionShell.transcript.systemLabel'),
+      lines: [options.translate('cli.sessionShell.responses.localTranscriptCleared')],
+    });
+    if (runtimeState.pendingCommand) {
+      this.restorePendingCommandPreviewState(viewModel, options, runtimeState);
+      return;
+    }
+
+    this.resetPromptState(viewModel, options, runtimeState);
+  }
+
+  private restorePendingCommandPreviewState(
+    viewModel: CliSessionShellViewModel,
+    options: CliSessionShellRunOptions,
+    runtimeState: CliSessionShellRuntimeState,
+  ): void {
+    const pendingCommand = runtimeState.pendingCommand;
+    if (!pendingCommand) {
+      this.resetPromptState(viewModel, options, runtimeState);
+      return;
+    }
+
+    viewModel.shellMode = CliSessionShellMode.COMMAND_HANDOFF_PREVIEW;
+    viewModel.inputMode = CliSessionShellInputMode.SLASH_COMMAND;
+    viewModel.slashQuery = '';
+    viewModel.slashPaletteVisible = false;
+    viewModel.slashSuggestions = this.slashCommandRegistry.suggest('', options.translate);
+    viewModel.highlightedCommand = viewModel.slashSuggestions[0]?.command ?? null;
+    viewModel.commandPreview = options.translate('cli.sessionShell.responses.commandPreview', {
+      command: pendingCommand.previewCommandLine,
+    });
+    viewModel.handoffState = CliSessionShellHandoffState.PREVIEWING;
+    viewModel.composerValue = '';
+    viewModel.foregroundFocusTarget = CliSessionShellForegroundFocusTarget.HANDOFF_PREVIEW;
     viewModel.promptBarLines = this.buildPromptBarLines(viewModel, options, runtimeState);
   }
 

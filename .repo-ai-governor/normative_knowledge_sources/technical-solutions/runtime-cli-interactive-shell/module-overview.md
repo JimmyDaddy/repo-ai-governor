@@ -56,6 +56,7 @@
 3. session transcript、resume pointer 与 command handoff summary 必须由 local orchestration service 托管；CLI 只做 client + presenter。
 4. future desktop 应消费同一份 service-backed session DTO，而不是复制第二套 session state。
 5. focused Ink-owned input formalization 规定 session shell 的默认 foreground input owner 为 Ink；`readline` 只保留为 fallback seam。
+6. 截至 `2026-03-30`，默认 session-shell TTY path 已完成 Ink-owned input cutover，live `/` palette、`Tab` completion、`Up/Down` highlight、`Esc` close 与 `Ctrl+L` clear-screen 已进入正式实现与测试闭环。
 
 ## 9. Detail Docs
 

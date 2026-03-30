@@ -3,21 +3,20 @@
 ## Primary Stream
 
 - Status: active
-- Project: `project-030-runtime-agent-projection-phase-2-productization`
-- Sprint: `sprint-003-smoke-gate-and-agent-view-presentation`
-- Docs root: `.repo-ai-governor/context/dev/project-030-runtime-agent-projection-phase-2-productization`
-- Task records: `.repo-ai-governor/context/dev/project-030-runtime-agent-projection-phase-2-productization/sprint-003-smoke-gate-and-agent-view-presentation/tasks/`
-- Review records: `.repo-ai-governor/context/dev/project-030-runtime-agent-projection-phase-2-productization/sprint-003-smoke-gate-and-agent-view-presentation/review/`
-- Note: `project-030-runtime-agent-projection-phase-2-productization` 已于 2026-03-30 激活，用于承接 `runtime.agent-projection` phase-2 productization follow-up。`sprint-001-technical-solution-and-phase-map` 已完成 draft、formal promotion cutover 与 phase map 产出并进入 closeout history；`sprint-002-connect-apply-and-diagnostics-contract` 与 `sprint-003-smoke-gate-and-agent-view-presentation` 已于 2026-03-30 完成 `connect diff/apply`、candidate diff / merge explain、adopter smoke automation 与 shared presenter 落地。当前保留 `sprint-003` 作为 active closeout surface，直到下一条主执行流显式激活；项目下一条待执行流为 `sprint-004-ui-consumer-and-rollout-closeout`。经 2026-03-30 跨项目排序复核，推荐执行顺序锁定为 `project-030 / sprint-002 -> project-030 / sprint-003 -> project-031 / sprint-001~004 -> project-030 / sprint-004`。`project-028 / sprint-004` 已迁入 completed history。
+- Project: `project-031-session-shell-ink-input-productization`
+- Sprint: `sprint-004-default-cutover-and-rollout-closeout`
+- Docs root: `.repo-ai-governor/context/dev/project-031-session-shell-ink-input-productization`
+- Task records: `.repo-ai-governor/context/dev/project-031-session-shell-ink-input-productization/sprint-004-default-cutover-and-rollout-closeout/tasks/`
+- Review records: `.repo-ai-governor/context/dev/project-031-session-shell-ink-input-productization/sprint-004-default-cutover-and-rollout-closeout/review/`
+- Note: `project-031-session-shell-ink-input-productization` 的 `sprint-001 ~ sprint-004` 已于 2026-03-30 全部完成；当前仅保留 `sprint-004-default-cutover-and-rollout-closeout` 作为 active closeout surface，承接 project-level review、completion audit 与文档收尾。下一条主执行流激活后，应将本 stream 迁入 completed history，并回切 `project-030 / sprint-004`。
 
 ## Active Streams
 
-- `primary`: project=`project-030-runtime-agent-projection-phase-2-productization`, sprint=`sprint-003-smoke-gate-and-agent-view-presentation`, docs=`.repo-ai-governor/context/dev/project-030-runtime-agent-projection-phase-2-productization`, plan=`.repo-ai-governor/context/dev/project-030-runtime-agent-projection-phase-2-productization/plan.md`, tasks=`.repo-ai-governor/context/dev/project-030-runtime-agent-projection-phase-2-productization/sprint-003-smoke-gate-and-agent-view-presentation/tasks/`, checklist=`.repo-ai-governor/context/dev/project-030-runtime-agent-projection-phase-2-productization/sprint-003-smoke-gate-and-agent-view-presentation/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-030-runtime-agent-projection-phase-2-productization/sprint-003-smoke-gate-and-agent-view-presentation/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-030-runtime-agent-projection-phase-2-productization/sprint-003-smoke-gate-and-agent-view-presentation/review/`, status=`active`, note=`sprint-002 and sprint-003 completed; sprint-003 retained as active closeout surface until sprint-004 or project-031 activation`
+- `primary`: project=`project-031-session-shell-ink-input-productization`, sprint=`sprint-004-default-cutover-and-rollout-closeout`, docs=`.repo-ai-governor/context/dev/project-031-session-shell-ink-input-productization`, plan=`.repo-ai-governor/context/dev/project-031-session-shell-ink-input-productization/plan.md`, tasks=`.repo-ai-governor/context/dev/project-031-session-shell-ink-input-productization/sprint-004-default-cutover-and-rollout-closeout/tasks/`, checklist=`.repo-ai-governor/context/dev/project-031-session-shell-ink-input-productization/sprint-004-default-cutover-and-rollout-closeout/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-031-session-shell-ink-input-productization/sprint-004-default-cutover-and-rollout-closeout/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-031-session-shell-ink-input-productization/sprint-004-default-cutover-and-rollout-closeout/review/`, status=`active`, note=`project-031 completed; sprint-004 retained as active closeout surface for review and audit evidence`
 
 ## Planned Follow-Up Streams
 
 - `project-030-runtime-agent-projection-phase-2-productization`: next planned sprint=`sprint-004-ui-consumer-and-rollout-closeout`, note=`sprint-002 and sprint-003 are complete; activate sprint-004 after project-031 or when the team wants to land the formal UI consumer baseline and rollout closeout`
-- `project-031-session-shell-ink-input-productization`: next planned sprint=`sprint-001-activation-and-ink-input-baseline`, note=`activate after project-030 sprint-003 lands adopter smoke gate and agentView presenter semantics; once Ink-owned input cutover settles, return to project-030 sprint-004 for formal UI consumer closeout`
 
 ## Completed Stream History
 
