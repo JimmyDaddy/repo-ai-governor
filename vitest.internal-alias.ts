@@ -12,6 +12,7 @@ const INTERNAL_PACKAGE_ENTRY_ALIASES = [
   ['@repo-ai-governor/artifact-registry', 'packages/artifact-registry/src/index.ts'],
   ['@repo-ai-governor/cli', 'apps/cli/src/main.ts'],
   ['@repo-ai-governor/config', 'packages/config/src/index.ts'],
+  ['@repo-ai-governor/core-agent-projection', 'packages/core-agent-projection/src/index.ts'],
   ['@repo-ai-governor/core-change-risk', 'packages/core-change-risk/src/index.ts'],
   ['@repo-ai-governor/core-memory', 'packages/core-memory/src/index.ts'],
   ['@repo-ai-governor/core-memory-semantics', 'packages/core-memory-semantics/src/index.ts'],

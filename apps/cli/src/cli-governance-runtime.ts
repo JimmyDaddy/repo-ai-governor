@@ -4,7 +4,8 @@ import { access, mkdir, readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { promisify } from 'node:util';
 import { AgentCapability, AgentNetworkMode, AgentRouteRunner } from '@repo-ai-governor/adapter-sdk';
-import type { AdaptersConfig } from '@repo-ai-governor/config';
+import { type AdaptersConfig, SchemaValidator } from '@repo-ai-governor/config';
+import { AgentSessionRegistry } from '@repo-ai-governor/core-agent-projection';
 import {
   ChangeRiskEvaluator,
   ChangeRiskFileCategory,
@@ -32,9 +33,16 @@ import {
 } from '@repo-ai-governor/core-runtime';
 import {
   CompiledIrGraphAdapter,
+  LangGraphAgentDescriptorSupervisor,
   LangGraphRuntimeBackend,
 } from '@repo-ai-governor/core-runtime-langgraph';
-import { AuditOutputMode, AuditRecordStatus, AuditRecorder } from '@repo-ai-governor/core-session';
+import {
+  AuditOutputMode,
+  AuditRecordStatus,
+  AuditRecorder,
+  SessionStatus,
+  SharedSessionManager,
+} from '@repo-ai-governor/core-session';
 import { MemoryStoreAdapter } from '@repo-ai-governor/memory-store-adapter';
 import {
   OrchestrationClientSurface,
@@ -67,6 +75,7 @@ import { CliUpgradeCommand } from './commands/upgrade-command.js';
 import { CliVerifyCommand } from './commands/verify-command.js';
 import { CliWorkflowCommand } from './commands/workflow-command.js';
 import { CliWorkspaceCommand } from './commands/workspace-command.js';
+import { CliAgentOnboardingPreset } from './constants/cli-agent-onboarding.constant.js';
 import { CliCommandName } from './constants/cli-command.constant.js';
 import {
   CLI_CHANGE_RISK_FILE_CATEGORY_PATTERNS,
@@ -90,6 +99,8 @@ import { CliWorkspaceAction, CliWorkspaceThemeScope } from './constants/cli-work
 import { CliAdapterDiagnosticsRuntime } from './runtime/adapter-diagnostics-runtime.js';
 import { CliAdapterRoutingRuntime } from './runtime/adapter-routing-runtime.js';
 import { CliAdapterVerificationRuntime } from './runtime/adapter-verification-runtime.js';
+import { CliAgentOnboardingRuntime } from './runtime/agent-onboarding-runtime.js';
+import { CliAgentProjectionRuntime } from './runtime/agent-projection-runtime.js';
 import { CliReviewQueueRuntime } from './runtime/artifacts/review-queue-runtime.js';
 import { CliRuntimeArtifactWriter } from './runtime/artifacts/runtime-artifact-writer.js';
 import { CliDeliveryRehearsalRuntime } from './runtime/delivery-rehearsal-runtime.js';
@@ -130,8 +141,14 @@ interface CliLangGraphCheckpointState {
  */
 export class CliGovernanceRuntime {
   private readonly commandRegistry: CliCommandRegistry;
+  private readonly schemaValidator: SchemaValidator;
   private readonly memoryManager: MemoryManager;
+  private readonly sharedSessionManager: SharedSessionManager;
   private readonly localModelProbeRuntime: CliLocalModelProbeRuntime;
+  private readonly onboardingRuntime: CliAgentOnboardingRuntime;
+  private readonly agentProjectionRuntime: CliAgentProjectionRuntime;
+  private readonly agentSessionRegistry: AgentSessionRegistry;
+  private readonly langGraphAgentDescriptorSupervisor: LangGraphAgentDescriptorSupervisor;
   private readonly adapterRoutingRuntime: CliAdapterRoutingRuntime;
   private readonly adapterVerificationRuntime: CliAdapterVerificationRuntime;
   private readonly adapterDiagnosticsRuntime: CliAdapterDiagnosticsRuntime;
@@ -145,9 +162,15 @@ export class CliGovernanceRuntime {
   private readonly taskDrivenRunRuntime: CliTaskDrivenRunRuntime;
 
   public constructor(private readonly options: CliGovernanceRuntimeOptions) {
+    this.schemaValidator = new SchemaValidator();
     this.memoryManager = new MemoryManager(
       new MemoryStoreAdapter(this.options.memoryStoreProvider),
     );
+    this.sharedSessionManager = new SharedSessionManager(this.memoryManager);
+    this.onboardingRuntime = new CliAgentOnboardingRuntime();
+    this.agentProjectionRuntime = new CliAgentProjectionRuntime();
+    this.agentSessionRegistry = new AgentSessionRegistry(this.sharedSessionManager);
+    this.langGraphAgentDescriptorSupervisor = new LangGraphAgentDescriptorSupervisor();
     this.localModelProbeRuntime = new CliLocalModelProbeRuntime(
       this.options.adapterLocalProbeOverrides,
       this.options.commandProbeExecutor,
@@ -294,6 +317,8 @@ export class CliGovernanceRuntime {
     return {
       options: this.options,
       artifactWriter: this.artifactWriter,
+      onboardingRuntime: this.onboardingRuntime,
+      agentProjectionRuntime: this.agentProjectionRuntime,
       adapterDiagnosticsRuntime: this.adapterDiagnosticsRuntime,
       reviewQueueRuntime: this.reviewQueueRuntime,
       orchestrationServiceRuntime: this.orchestrationServiceRuntime,
@@ -307,6 +332,10 @@ export class CliGovernanceRuntime {
         runtimeDebugOptionsOverride ?? this.resolveRuntimeDebugOptions(),
       resolveExecutionStreamMetadata: async () => this.resolveExecutionStreamMetadata(),
       resolveAdapterVerification: async () => this.resolveAdapterVerification(),
+      resolveAdapterVerificationForConfig: async (adaptersConfig: AdaptersConfig) =>
+        this.resolveAdapterVerificationForConfig(adaptersConfig),
+      validateGovernorConfig: (candidate: unknown) =>
+        this.schemaValidator.validateOrThrow(candidate),
       canWritePath: async (filePath: string) => this.canWritePath(filePath),
       localizeText: (english: string, _chinese: string) => english,
       translate: (key: string, interpolation?: Record<string, string>) =>
@@ -332,6 +361,7 @@ export class CliGovernanceRuntime {
 
     const executionId = `cli-run-${Date.now()}`;
     const executionSessionId = `session-${executionId}`;
+    const sharedSessionId = `shared-${executionId}`;
     const processCompiler = new ProcessCompiler();
     const processRuntimeEngine = new ProcessRuntimeEngine(processCompiler);
     const langGraphRuntimeBackend = new LangGraphRuntimeBackend();
@@ -360,6 +390,48 @@ export class CliGovernanceRuntime {
         },
       );
     }
+
+    const agentDescriptors = this.agentProjectionRuntime.createDescriptorsFromProcessNodes({
+      nodes: compiledIr.nodes,
+      adaptersConfig: this.options.adaptersConfig,
+      workspace: this.options.workspace,
+      executionId,
+      sessionId: sharedSessionId,
+    });
+    const graphPlan = new CompiledIrGraphAdapter().adapt(compiledIr);
+    const langGraphSupervisorPlan = this.langGraphAgentDescriptorSupervisor.createPlan({
+      graphPlan,
+      agentDescriptors,
+    });
+    const langGraphSupervisorPath = resolve(
+      this.options.workspace.workspaceRoot,
+      'context',
+      'diagnostics',
+      'run',
+      'agent-supervisor',
+      `${executionId}.json`,
+    );
+    await this.artifactWriter.writeJsonArtifact(langGraphSupervisorPath, langGraphSupervisorPlan);
+    await this.sharedSessionManager.openSession({
+      sessionId: sharedSessionId,
+      executionId,
+      processId: compiledIr.processId,
+      initialContext: {
+        workspace_id: this.options.workspace.workspaceId,
+        process_id: compiledIr.processId,
+        task_id: runAssembly.taskContext?.taskId ?? runtimeDebugOptions.taskId ?? null,
+        agent_ids: agentDescriptors.map((descriptor) => descriptor.agentId),
+      },
+    });
+    await this.sharedSessionManager.appendEvent({
+      sessionId: sharedSessionId,
+      type: 'execution.started',
+      payload: {
+        executionId,
+        processId: compiledIr.processId,
+        agentDescriptorCount: agentDescriptors.length,
+      },
+    });
 
     const orchestrationExecution = await orchestrationService.startExecution(
       {
@@ -596,10 +668,47 @@ export class CliGovernanceRuntime {
           })
         : null;
 
+    await this.sharedSessionManager.updateContext({
+      sessionId: sharedSessionId,
+      contextPatch: {
+        runtime_status: runtimeResult.status,
+        policy_outcome: resolvedPolicyOutcome,
+        visited_node_ids: runtimeResult.visitedNodeIds,
+      },
+    });
+    await this.sharedSessionManager.appendEvent({
+      sessionId: sharedSessionId,
+      type: 'execution.completed',
+      payload: {
+        runtimeStatus: runtimeResult.status,
+        policyOutcome: resolvedPolicyOutcome,
+        stageResultCount: runtimeResult.stageResults.length,
+      },
+    });
+    if (!hitlResolution.awaitingDecision) {
+      await this.sharedSessionManager.finalizeSession({
+        sessionId: sharedSessionId,
+        status:
+          runtimeResult.status === RuntimeExecutionStatus.SUCCEEDED
+            ? SessionStatus.COMPLETED
+            : runtimeResult.status === RuntimeExecutionStatus.CANCELLED
+              ? SessionStatus.CANCELLED
+              : SessionStatus.FAILED,
+      });
+    }
+    const agentView = this.agentProjectionRuntime.createCliAgentView({
+      descriptors: agentDescriptors,
+      sessionProjection: await this.agentSessionRegistry.project({
+        sessionId: sharedSessionId,
+        descriptors: agentDescriptors,
+      }),
+    });
+
     const reportBuilder = new ReportBuilder(auditRecorder);
     const executionReport = await reportBuilder.buildExecutionReport({
       executionId,
       includeRecords: false,
+      agentView,
       memorySemantics: this.createExecutionReportMemorySemanticsSummary(
         runAssembly,
         memoryPromotionResult,
@@ -621,6 +730,10 @@ export class CliGovernanceRuntime {
       {
         id: 'compiled_ir_snapshot',
         path: compiledIrSnapshotPath,
+      },
+      {
+        id: 'langgraph_supervisor',
+        path: langGraphSupervisorPath,
       },
       {
         id: 'execution_report',
@@ -725,6 +838,11 @@ export class CliGovernanceRuntime {
         id: 'report',
         status: CliGovernanceCheckStatus.PASS,
         detail: `records=${executionReport.totalRecords} stage_summaries=${executionReport.stageSummaries.length}`,
+      },
+      {
+        id: 'agent_projection',
+        status: CliGovernanceCheckStatus.PASS,
+        detail: `descriptors=${agentDescriptors.length} session_status=${agentView.sessionProjection?.sessionStatus ?? 'none'} supervisor=${langGraphSupervisorPath}`,
       },
     ];
     if (langGraphCheckpointState.checkpointPath) {
@@ -888,6 +1006,7 @@ export class CliGovernanceRuntime {
         checks,
         artifacts,
         experience,
+        agentView,
         details: {
           execution_id: executionId,
           runtime_status: runtimeResult.status,
@@ -950,6 +1069,9 @@ export class CliGovernanceRuntime {
           orchestration_service_transport_kind: orchestrationSummary?.serviceTransportKind ?? null,
           orchestration_latest_event_sequence: orchestrationSummary?.latestEventSequence ?? null,
           orchestration_next_cursor: orchestrationSummary?.nextCursor ?? null,
+          agent_descriptor_count: agentDescriptors.length,
+          agent_session_status: agentView.sessionProjection?.sessionStatus ?? null,
+          langgraph_supervisor_path: langGraphSupervisorPath,
           dry_run: runtimeDebugOptions.dryRun,
           trace_enabled: runtimeDebugOptions.trace,
           diagnostics_trace_path: diagnosticsTracePath,
@@ -1396,6 +1518,30 @@ export class CliGovernanceRuntime {
           : null,
       adapters: this.options.runtimeDebugOptions?.adapters === true,
       fix: this.options.runtimeDebugOptions?.fix === true,
+      presetId:
+        typeof this.options.runtimeDebugOptions?.presetId === 'string' &&
+        this.options.runtimeDebugOptions.presetId.trim().length > 0
+          ? (this.options.runtimeDebugOptions.presetId.trim() as CliNormalizedRuntimeDebugOptions['presetId'])
+          : CliAgentOnboardingPreset.MULTI_TOOL_DEFAULT,
+      requestedTools: Array.isArray(this.options.runtimeDebugOptions?.requestedTools)
+        ? this.options.runtimeDebugOptions.requestedTools.filter(
+            (surface): surface is AdapterSurface =>
+              typeof surface === 'string' && surface.trim().length > 0,
+          )
+        : [],
+      overwrite: this.options.runtimeDebugOptions?.overwrite === true,
+      singleToolAllRoles: this.options.runtimeDebugOptions?.singleToolAllRoles === true,
+      roleBindingOverrides: Array.isArray(this.options.runtimeDebugOptions?.roleBindingOverrides)
+        ? this.options.runtimeDebugOptions.roleBindingOverrides.filter(
+            (
+              override,
+            ): override is CliNormalizedRuntimeDebugOptions['roleBindingOverrides'][number] =>
+              typeof override?.roleId === 'string' &&
+              override.roleId.trim().length > 0 &&
+              typeof override.primarySurface === 'string' &&
+              override.primarySurface.trim().length > 0,
+          )
+        : [],
       recordLedger: this.options.runtimeDebugOptions?.recordLedger === true,
       taskId:
         typeof this.options.runtimeDebugOptions?.taskId === 'string' &&
@@ -2091,6 +2237,25 @@ export class CliGovernanceRuntime {
    */
   private async resolveAdapterVerification(): Promise<CliAdapterVerificationResolution> {
     return this.adapterVerificationRuntime.resolveAdapterVerification();
+  }
+
+  private async resolveAdapterVerificationForConfig(
+    adaptersConfig: AdaptersConfig,
+  ): Promise<CliAdapterVerificationResolution> {
+    const adapterRoutingRuntime = new CliAdapterRoutingRuntime(adaptersConfig, {
+      claudeCodeExecRunner: this.options.claudeCodeExecRunner,
+      codexExecRunner: this.options.codexExecRunner,
+      githubCopilotExecRunner: this.options.githubCopilotExecRunner,
+    });
+    const adapterVerificationRuntime = new CliAdapterVerificationRuntime(
+      adaptersConfig,
+      (key, interpolation) => this.options.translate?.(key, interpolation) ?? key,
+      (error) => this.formatExecFailureDetail(error),
+      adapterRoutingRuntime,
+      this.localModelProbeRuntime,
+    );
+
+    return adapterVerificationRuntime.resolveAdapterVerification();
   }
 
   /**

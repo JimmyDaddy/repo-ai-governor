@@ -7,6 +7,7 @@ import { AgentAvailabilityStatus, AgentCapability } from '@repo-ai-governor/adap
 import {
   type AdaptersConfig,
   ConfigLoader,
+  type GovernorConfig,
   type MemoryConfig,
   ProfileResolver,
   type ResolvedWorkspace,
@@ -29,10 +30,16 @@ import {
   type MemoryRuntimeConfig,
   RuntimeError,
   type StandardizedError,
+  WorkspaceMigrationPolicy,
   standardizeError,
 } from '@repo-ai-governor/shared';
 import { CliGovernanceRuntime } from './cli-governance-runtime.js';
 import { CliOutputPresenter } from './cli-output-presenter.js';
+import {
+  CLI_AGENT_ONBOARDING_PRESET_ORDER,
+  CLI_AGENT_ONBOARDING_PRESET_VALUES,
+  CliAgentOnboardingPreset,
+} from './constants/cli-agent-onboarding.constant.js';
 import {
   CLI_COMMAND_DEFINITIONS,
   CLI_PROGRAM_NAME,
@@ -113,6 +120,7 @@ export type {
 import type {
   CliCommandDiagnostics,
   CliCommandExecutionResultPayload,
+  CliConnectRoleBindingOverride,
   CliErrorOutputPayload,
   CliLocalAdapterProbeOverride,
   CliResolvedOutputContext,
@@ -135,6 +143,7 @@ const CLI_TOP_LEVEL_BOOLEAN_OPTIONS = new Set<string>([
   '--no-color',
   '--adapters',
   '--fix',
+  '--overwrite',
   '--record-ledger',
   '--no-interactive',
   '--dry-run',
@@ -261,6 +270,7 @@ interface CliIoAdapters {
  * Defines one runtime context merged from defaults and repository configuration.
  */
 interface ResolvedCliRuntimeContext {
+  config: GovernorConfig;
   i18n: I18nRuntimeConfig;
   memory: MemoryRuntimeConfig;
   adapters: AdaptersConfig;
@@ -301,6 +311,8 @@ interface ResolvedIdeWrapperEnvironment {
 interface CliEntrypointDependencies {
   sessionShellRunner?: CliSessionShellRunner;
 }
+
+const ADAPTER_SURFACE_VALUES = new Set<string>(Object.values(AdapterSurface));
 
 /**
  * Runs the Stage-6 CLI output-contract baseline with TTY-aware fallback semantics.
@@ -370,6 +382,7 @@ export async function runCli(
       outputContext,
       io,
       runtimeContext.uiTheme,
+      runtimeContext.adapters,
       workspaceCommandOptions,
     );
     const workflowCommandOptions = resolveWorkflowCommandOptions(rawArgs);
@@ -414,6 +427,7 @@ export async function runCli(
     const governanceRuntime = new CliGovernanceRuntime({
       currentWorkingDirectory: io.cwd(),
       workspace: runtimeContext.workspace,
+      config: runtimeContext.config,
       configSource: runtimeContext.configSource,
       profileId: runtimeContext.profileId,
       locale: resolvedLocale,
@@ -473,6 +487,14 @@ export async function runCli(
     program.option('--no-color', runtimeI18n.t('cli.options.noColor'));
     program.option('--adapters', runtimeI18n.t('cli.options.adapters'));
     program.option('--fix', runtimeI18n.t('cli.options.fix'));
+    program.option('--preset <presetId>', runtimeI18n.t('cli.options.preset'));
+    program.option('--tools <tools>', runtimeI18n.t('cli.options.tools'));
+    program.option('--overwrite', runtimeI18n.t('cli.options.overwrite'));
+    program.option(
+      '--single-tool-all-roles <tool>',
+      runtimeI18n.t('cli.options.singleToolAllRoles'),
+    );
+    program.option('--role-binding <binding>', runtimeI18n.t('cli.options.roleBinding'));
     program.option('--record-ledger', runtimeI18n.t('cli.options.recordLedger'));
     program.option('--task-id <taskId>', runtimeI18n.t('cli.options.taskId'));
     program.option('--no-interactive', runtimeI18n.t('cli.options.noInteractive'));
@@ -854,6 +876,7 @@ function resolveRuntimeContext(
     });
 
     return {
+      config: resolvedConfig.config,
       i18n: resolvedConfig.config.i18n,
       memory: resolveMemoryRuntimeConfig(resolvedConfig.config.memory),
       adapters: resolveAdaptersRuntimeConfig(resolvedConfig.config.adapters),
@@ -867,6 +890,7 @@ function resolveRuntimeContext(
   }
 
   return {
+    config: buildDefaultGovernorConfig(defaultWorkspace.mode),
     i18n: DEFAULT_I18N_CONFIG,
     memory: DEFAULT_MEMORY_CONFIG,
     adapters: resolveAdaptersRuntimeConfig(undefined),
@@ -874,6 +898,32 @@ function resolveRuntimeContext(
     profileId: null,
     configSource: 'default',
     workspace: defaultWorkspace,
+  };
+}
+
+function buildDefaultGovernorConfig(workspaceMode: ResolvedWorkspace['mode']): GovernorConfig {
+  return {
+    schemaVersion: '1.1',
+    workspace: {
+      mode: workspaceMode,
+      migrationPolicy: WorkspaceMigrationPolicy.COPY_VERIFY_SWITCH_ROLLBACK,
+    },
+    i18n: {
+      runtimeEngine: DEFAULT_I18N_CONFIG.runtimeEngine,
+      defaultLocale: DEFAULT_I18N_CONFIG.defaultLocale,
+      fallbackLocale: DEFAULT_I18N_CONFIG.fallbackLocale,
+      supportedLocales: [...DEFAULT_I18N_CONFIG.supportedLocales],
+    },
+    memory: {
+      storeEngine: DEFAULT_MEMORY_CONFIG.storeEngine,
+      storeRoot: DEFAULT_MEMORY_CONFIG.storeRoot,
+    },
+    ui: {
+      react: {
+        theme: DEFAULT_CLI_REACT_THEME_PRESET,
+      },
+    },
+    adapters: resolveAdaptersRuntimeConfig(undefined),
   };
 }
 
@@ -1228,6 +1278,7 @@ function resolveRuntimeDebugOptions(
   outputContext: CliResolvedOutputContext,
   io: CliIoAdapters,
   defaultUiTheme: CliReactThemePreset,
+  adaptersConfig: AdaptersConfig,
   workspaceCommandOptions: CliWorkspaceCommandOptions,
 ): CliRuntimeDebugOptions {
   const readRequiredOption = (flag: string, errorMessage: string): string | null => {
@@ -1253,6 +1304,47 @@ function resolveRuntimeDebugOptions(
     replayOption.value && replayOption.value.trim().length > 0
       ? resolveReplayPath(currentWorkingDirectory, replayOption.value.trim())
       : null;
+  const presetOption = readOptionInput(args, '--preset');
+  if (presetOption.isPresent && !presetOption.value) {
+    throw new RuntimeError(
+      GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+      `Option --preset requires one value: ${CLI_AGENT_ONBOARDING_PRESET_ORDER.join('|')}.`,
+      { option: '--preset' },
+    );
+  }
+
+  const presetId = presetOption.value?.trim().toLowerCase() ?? null;
+  if (presetId && !CLI_AGENT_ONBOARDING_PRESET_VALUES.has(presetId)) {
+    throw new RuntimeError(
+      GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+      `Option --preset must be one of ${CLI_AGENT_ONBOARDING_PRESET_ORDER.join('|')}; received '${presetId}'.`,
+      { option: '--preset', value: presetId },
+    );
+  }
+
+  const toolsOption = readOptionInput(args, '--tools');
+  if (toolsOption.isPresent && !toolsOption.value) {
+    throw new RuntimeError(
+      GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+      'Option --tools requires one comma-separated tool list.',
+      { option: '--tools' },
+    );
+  }
+  const requestedTools = resolveAdapterSurfaceListOption(toolsOption.value ?? null, '--tools');
+
+  const singleToolAllRolesOption = readOptionInput(args, '--single-tool-all-roles');
+  if (singleToolAllRolesOption.isPresent && !singleToolAllRolesOption.value) {
+    throw new RuntimeError(
+      GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+      'Option --single-tool-all-roles requires one tool id value.',
+      { option: '--single-tool-all-roles' },
+    );
+  }
+  const singleToolAllRolesSurface = resolveSingleAdapterSurfaceOption(
+    singleToolAllRolesOption.value ?? null,
+    '--single-tool-all-roles',
+  );
+  const roleBindingOverrides = resolveRoleBindingOverrides(args, adaptersConfig);
   const uiModeOption = readOptionInput(args, '--ui');
   if (uiModeOption.isPresent && !uiModeOption.value) {
     throw new RuntimeError(
@@ -1393,6 +1485,13 @@ function resolveRuntimeDebugOptions(
     dryRun: hasFlag(args, '--dry-run'),
     trace: hasFlag(args, '--trace'),
     replayPath,
+    presetId:
+      (presetId as CliAgentOnboardingPreset | null) ?? CliAgentOnboardingPreset.MULTI_TOOL_DEFAULT,
+    requestedTools:
+      singleToolAllRolesSurface !== null ? [singleToolAllRolesSurface] : requestedTools,
+    overwrite: hasFlag(args, '--overwrite'),
+    singleToolAllRoles: singleToolAllRolesSurface !== null,
+    roleBindingOverrides,
     adapters: hasFlag(args, '--adapters'),
     fix: hasFlag(args, '--fix'),
     recordLedger: hasFlag(args, '--record-ledger'),
@@ -1406,6 +1505,117 @@ function resolveRuntimeDebugOptions(
     hitlDecidedBy,
     hitlConstraints,
   };
+}
+
+function resolveAdapterSurfaceListOption(rawValue: string | null, flag: string): AdapterSurface[] {
+  if (!rawValue) {
+    return [];
+  }
+
+  const values = rawValue
+    .split(',')
+    .map((value) => value.trim().toLowerCase())
+    .filter(Boolean);
+
+  if (values.length === 0) {
+    throw new RuntimeError(
+      GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+      `Option ${flag} requires at least one non-empty tool id.`,
+      { option: flag },
+    );
+  }
+
+  for (const value of values) {
+    if (!ADAPTER_SURFACE_VALUES.has(value)) {
+      throw new RuntimeError(
+        GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+        `Option ${flag} contains unsupported tool id '${value}'.`,
+        {
+          option: flag,
+          value,
+        },
+      );
+    }
+  }
+
+  return Array.from(new Set(values)) as AdapterSurface[];
+}
+
+function resolveSingleAdapterSurfaceOption(
+  rawValue: string | null,
+  flag: string,
+): AdapterSurface | null {
+  if (!rawValue) {
+    return null;
+  }
+
+  const [surface] = resolveAdapterSurfaceListOption(rawValue, flag);
+  return surface ?? null;
+}
+
+function resolveRoleBindingOverrides(
+  args: string[],
+  adaptersConfig: AdaptersConfig,
+): CliConnectRoleBindingOverride[] {
+  const rawBindings = readRepeatedOptionValues(args, '--role-binding');
+  if (rawBindings.length === 0) {
+    return [];
+  }
+
+  const roleIdByToken = new Map<string, string>();
+  for (const role of adaptersConfig.roles) {
+    roleIdByToken.set(role.roleId, role.roleId);
+    roleIdByToken.set(role.roleProfileId, role.roleId);
+  }
+
+  return rawBindings.map((rawBinding) => {
+    const separatorIndex = rawBinding.indexOf('=');
+    if (separatorIndex <= 0 || separatorIndex === rawBinding.length - 1) {
+      throw new RuntimeError(
+        GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+        'Option --role-binding must use roleId=tool[,fallbackTool...] syntax.',
+        {
+          option: '--role-binding',
+          value: rawBinding,
+        },
+      );
+    }
+
+    const roleToken = rawBinding.slice(0, separatorIndex).trim();
+    const surfaceToken = rawBinding.slice(separatorIndex + 1).trim();
+    const roleId = roleIdByToken.get(roleToken);
+    if (!roleId) {
+      throw new RuntimeError(
+        GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+        `Option --role-binding references unsupported role '${roleToken}'.`,
+        {
+          option: '--role-binding',
+          value: rawBinding,
+        },
+      );
+    }
+
+    const [primarySurface, ...fallbackSurfaces] = resolveAdapterSurfaceListOption(
+      surfaceToken,
+      '--role-binding',
+    );
+    if (!primarySurface) {
+      throw new RuntimeError(
+        GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+        'Option --role-binding requires at least one target tool id.',
+        {
+          option: '--role-binding',
+          value: rawBinding,
+        },
+      );
+    }
+
+    return {
+      roleId,
+      primarySurface,
+      fallbackSurfaces,
+    };
+  });
 }
 
 /**
@@ -1668,6 +1878,45 @@ function readOptionInput(args: string[], flag: string): ReadOptionResult {
     isPresent: true,
     value: value.length > 0 ? value : undefined,
   };
+}
+
+function readRepeatedOptionValues(args: string[], flag: string): string[] {
+  const values: string[] = [];
+
+  for (let index = 0; index < args.length; index += 1) {
+    const token = args[index];
+    if (!token) {
+      continue;
+    }
+
+    if (token === flag) {
+      const nextValue = args[index + 1];
+      if (!nextValue || nextValue.startsWith('-')) {
+        throw new RuntimeError(
+          GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+          `Option ${flag} requires one value.`,
+          { option: flag },
+        );
+      }
+      values.push(nextValue);
+      index += 1;
+      continue;
+    }
+
+    if (token.startsWith(`${flag}=`)) {
+      const value = token.slice(flag.length + 1).trim();
+      if (!value) {
+        throw new RuntimeError(
+          GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+          `Option ${flag} requires one value.`,
+          { option: flag },
+        );
+      }
+      values.push(value);
+    }
+  }
+
+  return values;
 }
 
 /**

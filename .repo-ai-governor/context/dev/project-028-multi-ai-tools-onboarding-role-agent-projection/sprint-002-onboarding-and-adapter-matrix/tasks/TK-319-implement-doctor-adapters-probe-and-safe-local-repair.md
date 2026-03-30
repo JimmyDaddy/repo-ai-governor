@@ -1,6 +1,6 @@
 # TK-319 implement doctor adapters probe and safe_local repair
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-28
 - Owner: AI-Agent
 - Priority: P0
@@ -34,3 +34,4 @@
 ## 6. 执行记录
 
 1. 2026-03-28：任务创建，状态初始化为 `planned`。
+2. 2026-03-30：已完成 `doctor --adapters` tool/role verification、safe-local repair 边界、diagnostics artifact 与 `nextAction` 明示语义；认证、网络、CLI 安装和模型下载继续保持 manual-only。

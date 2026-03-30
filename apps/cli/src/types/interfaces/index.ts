@@ -21,7 +21,10 @@ export type {
   CliRoleStageProgress,
   CliSuccessOutputPayload,
 } from './cli-output.interface.js';
-export type { CliRuntimeDebugOptions } from './cli-runtime-debug.interface.js';
+export type {
+  CliConnectRoleBindingOverride,
+  CliRuntimeDebugOptions,
+} from './cli-runtime-debug.interface.js';
 export type { ReactCliShellPalette, ReactCliThemeDefinition } from './react-cli-theme.interface.js';
 export type { CliWorkspaceCommandOptions } from './cli-workspace-command.interface.js';
 export type { CliWorkflowCommandOptions } from './cli-workflow-command.interface.js';

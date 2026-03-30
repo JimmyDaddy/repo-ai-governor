@@ -20,6 +20,39 @@ export class CliVerifyCommand implements CliCommandExecutor {
   public async execute(context: CliCommandExecutorContext) {
     const runtimeDebugOptions = context.resolveRuntimeDebugOptions();
     const adapterVerification = await context.resolveAdapterVerification();
+    const verifyId = `verify-${Date.now()}`;
+    const matrixPayload = context.onboardingRuntime.createVerifyMatrixPayload({
+      executionId: verifyId,
+      verification: adapterVerification,
+      adaptersConfig: context.options.adaptersConfig,
+    });
+    const agentView = context.agentProjectionRuntime.createCliAgentView({
+      descriptors: context.agentProjectionRuntime.createDescriptorsFromRoleEvaluations({
+        adaptersConfig: context.options.adaptersConfig,
+        verification: adapterVerification,
+        workspace: context.options.workspace,
+        executionId: verifyId,
+      }),
+    });
+    const diagnosticsSummary = `status=${adapterVerification.overallStatus} required_failures=${adapterVerification.requiredRoleFailedCount} degraded_roles=${adapterVerification.degradedRoleCount}`;
+    const onboardingContract = context.onboardingRuntime.createOnboardingContractPayload({
+      commandName: 'verify',
+      executionId: verifyId,
+      workspaceId: context.options.workspace.workspaceId,
+      verificationStatus: adapterVerification.overallStatus,
+      nextActions: adapterVerification.nextActions,
+      enabledTools: context.onboardingRuntime.resolveSelectedTools({
+        requestedTools: runtimeDebugOptions.requestedTools,
+        currentAdaptersConfig: context.options.adaptersConfig,
+      }),
+      adaptersConfig: context.options.adaptersConfig,
+      dryRun: runtimeDebugOptions.dryRun,
+      overwrite: runtimeDebugOptions.overwrite,
+      singleToolAllRoles: runtimeDebugOptions.singleToolAllRoles,
+      presetId: runtimeDebugOptions.presetId,
+      repairScope: runtimeDebugOptions.fix ? 'safe_local' : 'manual_only',
+      diagnosticSummary: diagnosticsSummary,
+    });
     const checks: CliCommandResultCheck[] = [];
 
     if (!runtimeDebugOptions.adapters) {
@@ -41,8 +74,11 @@ export class CliVerifyCommand implements CliCommandExecutor {
         detail: context.adapterDiagnosticsRuntime.resolveRoleEvaluationDetail(roleEvaluation),
       });
     }
-
-    const verifyId = `verify-${Date.now()}`;
+    checks.push({
+      id: 'agent_projection',
+      status: CliGovernanceCheckStatus.PASS,
+      detail: `descriptors=${agentView.descriptors.length} execution_id=${verifyId}`,
+    });
     const diagnosticsArtifactPath = resolve(
       context.options.workspace.workspaceRoot,
       'context',
@@ -58,6 +94,9 @@ export class CliVerifyCommand implements CliCommandExecutor {
         workspaceMode: context.options.workspace.mode,
       },
       adapters: context.options.adaptersConfig,
+      onboardingContract,
+      matrix: matrixPayload,
+      agentView,
       verification:
         context.adapterDiagnosticsRuntime.createAdapterVerificationArtifactPayload(
           adapterVerification,
@@ -123,12 +162,14 @@ export class CliVerifyCommand implements CliCommandExecutor {
         checks,
         artifacts,
         experience,
+        agentView,
         details: {
           adapters_status: adapterVerification.overallStatus,
           required_roles: adapterVerification.requiredRoleCount,
           required_role_failures: adapterVerification.requiredRoleFailedCount,
           degraded_roles: adapterVerification.degradedRoleCount,
           fallback_roles: adapterVerification.fallbackRoleCount,
+          agent_descriptor_count: agentView.descriptors.length,
           diagnostics_path: diagnosticsArtifactPath,
         },
       },

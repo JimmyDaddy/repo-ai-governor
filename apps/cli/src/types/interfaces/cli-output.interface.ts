@@ -1,3 +1,4 @@
+import type { ExecutionReportAgentView } from '@repo-ai-governor/reporting';
 import type {
   ErrorOutputEnvironment,
   ExecutionInteractionCategory,
@@ -142,6 +143,7 @@ export interface CliCommandExecutionResultPayload {
   checks?: CliCommandResultCheck[];
   artifacts?: CliCommandResultArtifact[];
   experience?: CliCommandExperiencePayload;
+  agentView?: ExecutionReportAgentView;
   details?: Record<string, boolean | number | string | null>;
 }
 

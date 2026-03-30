@@ -227,4 +227,83 @@ describe('report-builder unit', () => {
       }),
     );
   });
+
+  it('carries optional agent-view summary into the execution report', async () => {
+    const reader = new StubAuditRecordReader([
+      createPersistedRecord('record-001', '2026-03-21T10:00:05Z'),
+    ]);
+    const builder = new ReportBuilder(reader);
+
+    const report = await builder.buildExecutionReport({
+      executionId: 'exec-report-001',
+      agentView: {
+        descriptors: [
+          {
+            agentId: 'stage-review:reviewer:review',
+            agentRole: 'reviewer',
+            roleProfileId: 'reviewer-default',
+            roleSource: 'default',
+            primarySurface: 'claude-code',
+            fallbackSurfaces: ['codex'],
+            capabilities: ['structured_output'],
+            permissionLevel: 'read',
+            inputSchemaRef: null,
+            outputSchemaRef: null,
+            errorContractRef: null,
+            maxExecutionTimeSeconds: 300,
+            stageTimeoutSeconds: 300,
+            tokenBudget: null,
+            costBudget: null,
+            timeBudgetSeconds: null,
+            retryPolicyRef: null,
+            timeoutPolicyRef: null,
+            budgetPolicyRef: null,
+            workspaceId: 'workspace-report-001',
+            workspaceMode: 'tool_managed',
+            executionId: 'exec-report-001',
+            sessionId: 'shared-exec-001',
+            selectedBy: 'primary',
+            selectedSurface: 'claude-code',
+            projectionStatus: 'completed',
+            failureReasons: [],
+          },
+        ],
+        sessionProjection: {
+          sessionId: 'shared-exec-001',
+          executionId: 'exec-report-001',
+          sessionStatus: 'completed',
+          openedAt: '2026-03-21T10:00:00Z',
+          closedAt: '2026-03-21T10:00:05Z',
+          totalEventCount: 2,
+          agentEntries: [
+            {
+              agentId: 'stage-review:reviewer:review',
+              agentRole: 'reviewer',
+              roleProfileId: 'reviewer-default',
+              sessionId: 'shared-exec-001',
+              executionId: 'exec-report-001',
+              sessionStatus: 'completed',
+              sessionEventCount: 2,
+              lastEventAt: '2026-03-21T10:00:05Z',
+              contextKeys: ['workspace_id'],
+            },
+          ],
+        },
+      },
+    });
+
+    expect(report.agentView).toEqual(
+      expect.objectContaining({
+        descriptors: [
+          expect.objectContaining({
+            agentId: 'stage-review:reviewer:review',
+          }),
+        ],
+        sessionProjection: expect.objectContaining({
+          sessionId: 'shared-exec-001',
+          totalEventCount: 2,
+        }),
+      }),
+    );
+  });
 });

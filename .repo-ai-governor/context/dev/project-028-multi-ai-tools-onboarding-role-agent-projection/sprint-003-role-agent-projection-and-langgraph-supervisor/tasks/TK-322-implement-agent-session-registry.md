@@ -1,6 +1,6 @@
 # TK-322 implement AgentSessionRegistry
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-28
 - Owner: AI-Agent
 - Priority: P0
@@ -34,3 +34,4 @@
 ## 6. 执行记录
 
 1. 2026-03-28：任务创建，状态初始化为 `planned`。
+2. 2026-03-30：已实现 `AgentSessionRegistry`，把 shared session / execution metadata 投影为 agent-view session projection，而不引入新的 canonical session source。

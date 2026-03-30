@@ -81,47 +81,51 @@ pnpm exec repo-ai-governor resume --help
 
 ## 3.1 多 AI 工具接入（Codex / Claude Code / GitHub Copilot）
 
-建议按“工具可用性 -> Governor 治理接线 -> 诊断验证”三步执行：
+建议按“工具可用性 -> 候选配置生成 -> adapter 诊断 -> traced dry-run”四步执行：
 
-1. 先确认你要接入的 AI 工具在目标仓库内可独立工作（按实际入口任选）：
+1. 先确认你要接入的 AI 工具在目标仓库内可独立工作：
    - Codex CLI：`codex --help`
    - Claude Code CLI：`claude --help`
-   - GitHub Copilot：在 IDE 中打开该仓库并确认 Copilot 对话可用（CLI 场景可先确认 `gh auth status` 已登录）。
-2. 在 `.repo-ai-governor/governor.yaml` 注册角色契约（当前配置层以 `roles` 为入口，无需单独 `adapters` 段）：
-
-```yaml
-roles:
-  - roleProfileId: coder-codex
-    roleProfileVersion: "1.0.0"
-    displayName: Codex Coder
-    responsibilities:
-      - implement task cards
-    capabilities:
-      - code generation
-      - unit test update
-    permissionCeiling:
-      - repo.read
-      - repo.write
-    roleSource: custom
-    status: active
-```
-
-3. 执行治理链路并验证接线结果：
+   - GitHub Copilot：确认 IDE 对话可用；CLI 偏重场景建议先确认 `gh auth status`。
+2. 先生成一份 candidate adapters baseline：
 
 ```bash
+pnpm exec repo-ai-governor connect --tools codex,claude-code --preset multi-tool-default --output json
+```
+
+如需显式覆盖角色路由：
+
+```bash
+pnpm exec repo-ai-governor connect \
+  --tools codex,claude-code,github-copilot \
+  --preset multi-tool-default \
+  --role-binding planner=codex,claude-code \
+  --role-binding reviewer=claude-code,codex \
+  --output json
+```
+
+3. 在应用到活动配置前先审阅生成结果：
+   - 候选 YAML：`<workspace_root>/context/diagnostics/connect/<connect-id>.governor.yaml`
+   - 诊断 JSON：`<workspace_root>/context/diagnostics/connect/<connect-id>.json`
+   - `connect` 不会原地改写活动 `governor.yaml`；它只生成可审阅的 candidate artifact。
+   - 如果你希望 candidate `adapters` block 完整替换当前配置，而不是 merge，可显式传 `--overwrite`。
+   - 当前可用 preset 为 `single-tool-minimal`、`multi-tool-default`、`single-tool-all-roles`、`restricted-network-safe`。
+4. 运行 adapter 诊断与 traced dry-run 验证：
+
+```bash
+pnpm exec repo-ai-governor doctor --adapters --output json
+pnpm exec repo-ai-governor doctor --adapters --fix --output json
+pnpm exec repo-ai-governor verify --adapters --output json
 pnpm exec repo-ai-governor run --output json --dry-run --trace
 ```
 
-重点查看 `context/diagnostics/trace/<execution_id>.trace.json` 中：
+重点检查：
 
-1. `adapterInvocationSummary[].routeKey`：路由语义是否符合预期。
-2. `adapterInvocationSummary[].handledBy`：当前由哪个执行面处理。
-3. `summary.policyOutcome`：策略闸口是否按风险事实触发。
-
-说明：
-
-1. Stage 9A 基线下，`handledBy=cli-governance-runtime` 属于预期（治理链路先闭环）。
-2. Stage 9B（`TK-082`）会继续收敛 Codex/Claude Code/Copilot 的真实调用路径，届时沿用同一诊断字段进行验证。
+1. `connect` 的 JSON 应返回 `candidate_config_path`、`candidate_config_valid`、`selected_tools`、`onboardingContract` 与 `agentView`。
+2. 如果当前 workspace 还带着不完整的 local-model 基线，`connect` 可能返回 `candidateConfigValidationError`，但仍应继续写出 candidate artifact 和 diagnostics payload。
+3. `doctor --adapters --fix` 只做 safe-local repair，例如补可写工作区/配置/内存目录；认证、CLI 安装、代理设置和本地模型下载仍保留在 `nextAction`。
+4. `verify --adapters` 会输出 onboarding contract、role/tool matrix 与 `agentView`；若状态为 `fail`，应视为真实执行前的硬阻断。
+5. `run --dry-run --trace` 还会输出 agent projection 细节，以及一个位于 `<workspace_root>/context/diagnostics/run/agent-supervisor/<execution_id>.json` 的 LangGraph supervisor artifact。
 
 ## 3.2 升级分析与回滚准备
 

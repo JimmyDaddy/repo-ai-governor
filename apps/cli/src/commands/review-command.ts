@@ -96,6 +96,16 @@ export class CliReviewCommand implements CliCommandExecutor {
     );
 
     const message = `Review request queued at ${requestPath}.`;
+    const agentView = context.agentProjectionRuntime.createCliAgentView({
+      descriptors: context.agentProjectionRuntime.createDescriptorsFromRoleIds({
+        roleIds: ['reviewer', 'verifier'],
+        adaptersConfig: context.options.adaptersConfig,
+        workspace: context.options.workspace,
+        executionId: requestId,
+        sessionId: executionSessionId,
+        projectionStatus: 'queued',
+      }),
+    });
     const experience = context.commandExperienceBuilder.buildExperiencePayload({
       roleProgress: [
         {
@@ -169,6 +179,7 @@ export class CliReviewCommand implements CliCommandExecutor {
           },
         ],
         experience,
+        agentView,
         details: {
           orchestration_execution_id: orchestrationExecution.executionId,
           orchestration_event_stream_token: orchestrationExecution.eventStreamToken,

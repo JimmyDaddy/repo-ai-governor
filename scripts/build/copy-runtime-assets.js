@@ -60,6 +60,12 @@ const DISTRIBUTION_PACKAGES = [
     packageDistDirectory: resolve(PROJECT_ROOT, "packages/config/dist"),
   },
   {
+    packageName: "core-agent-projection",
+    packageRoot: resolve(PROJECT_ROOT, "packages/core-agent-projection"),
+    compiledDirectory: resolve(PROJECT_ROOT, "dist/packages/core-agent-projection"),
+    packageDistDirectory: resolve(PROJECT_ROOT, "packages/core-agent-projection/dist"),
+  },
+  {
     packageName: "core-change-risk",
     packageRoot: resolve(PROJECT_ROOT, "packages/core-change-risk"),
     compiledDirectory: resolve(PROJECT_ROOT, "dist/packages/core-change-risk"),

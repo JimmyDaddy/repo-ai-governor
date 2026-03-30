@@ -1,4 +1,5 @@
 import { resolve } from 'node:path';
+import { stringify } from 'yaml';
 
 import {
   ExecutionInteractionCategory,
@@ -58,7 +59,6 @@ export class CliConnectCommand implements CliCommandExecutor {
       );
     }
 
-    const adapterVerification = await context.resolveAdapterVerification();
     const connectId = `connect-${Date.now()}`;
     const diagnosticsArtifactPath = resolve(
       context.options.workspace.workspaceRoot,
@@ -67,6 +67,63 @@ export class CliConnectCommand implements CliCommandExecutor {
       'connect',
       `${connectId}.json`,
     );
+    const candidateConfigArtifactPath = resolve(
+      context.options.workspace.workspaceRoot,
+      'context',
+      'diagnostics',
+      'connect',
+      `${connectId}.governor.yaml`,
+    );
+    const candidateConfigResolution = context.onboardingRuntime.buildConnectCandidateConfig({
+      sourceConfig: context.options.config,
+      presetId: runtimeDebugOptions.presetId,
+      requestedTools: runtimeDebugOptions.requestedTools,
+      overwrite: runtimeDebugOptions.overwrite,
+      singleToolAllRoles: runtimeDebugOptions.singleToolAllRoles,
+      roleBindingOverrides: runtimeDebugOptions.roleBindingOverrides,
+    });
+    let validatedCandidateConfig: typeof candidateConfigResolution.candidateConfig | null = null;
+    let candidateConfigValidationError: string | null = null;
+    try {
+      validatedCandidateConfig = context.validateGovernorConfig(
+        candidateConfigResolution.candidateConfig,
+      );
+    } catch (error) {
+      candidateConfigValidationError = context.formatExecFailureDetail(error);
+    }
+    const effectiveCandidateConfig =
+      validatedCandidateConfig ?? candidateConfigResolution.candidateConfig;
+    await context.artifactWriter.writeTextArtifact(
+      candidateConfigArtifactPath,
+      `${stringify(effectiveCandidateConfig).trimEnd()}\n`,
+    );
+
+    const adapterVerification = await context.resolveAdapterVerificationForConfig(
+      effectiveCandidateConfig.adapters ?? context.options.adaptersConfig,
+    );
+    const diagnosticSummary = `status=${adapterVerification.overallStatus} required_failures=${adapterVerification.requiredRoleFailedCount} fallback_roles=${adapterVerification.fallbackRoleCount} degraded_roles=${adapterVerification.degradedRoleCount}`;
+    const onboardingContract = context.onboardingRuntime.createOnboardingContractPayload({
+      commandName: 'connect',
+      executionId: connectId,
+      workspaceId: context.options.workspace.workspaceId,
+      verificationStatus: adapterVerification.overallStatus,
+      nextActions: adapterVerification.nextActions,
+      enabledTools: candidateConfigResolution.selectedTools,
+      adaptersConfig: effectiveCandidateConfig.adapters ?? context.options.adaptersConfig,
+      dryRun: runtimeDebugOptions.dryRun,
+      overwrite: runtimeDebugOptions.overwrite,
+      singleToolAllRoles: runtimeDebugOptions.singleToolAllRoles,
+      presetId: runtimeDebugOptions.presetId,
+      diagnosticSummary,
+    });
+    const agentView = context.agentProjectionRuntime.createCliAgentView({
+      descriptors: context.agentProjectionRuntime.createDescriptorsFromRoleEvaluations({
+        adaptersConfig: effectiveCandidateConfig.adapters ?? context.options.adaptersConfig,
+        verification: adapterVerification,
+        workspace: context.options.workspace,
+        executionId: connectId,
+      }),
+    });
 
     await context.artifactWriter.writeJsonArtifact(diagnosticsArtifactPath, {
       connectId,
@@ -76,7 +133,12 @@ export class CliConnectCommand implements CliCommandExecutor {
         workspaceRoot: context.options.workspace.workspaceRoot,
         workspaceMode: context.options.workspace.mode,
       },
-      adapters: context.options.adaptersConfig,
+      sourceAdapters: context.options.adaptersConfig,
+      candidateConfigPath: candidateConfigArtifactPath,
+      candidateConfig: effectiveCandidateConfig,
+      candidateConfigValidationError,
+      onboardingContract,
+      agentView,
       verification:
         context.adapterDiagnosticsRuntime.createAdapterVerificationArtifactPayload(
           adapterVerification,
@@ -95,6 +157,19 @@ export class CliConnectCommand implements CliCommandExecutor {
         detail: `required_roles=${adapterVerification.requiredRoleCount} required_failures=${adapterVerification.requiredRoleFailedCount} degraded_roles=${adapterVerification.degradedRoleCount} fallback_roles=${adapterVerification.fallbackRoleCount}`,
       },
       {
+        id: 'candidate_config',
+        status:
+          candidateConfigValidationError === null
+            ? CliGovernanceCheckStatus.PASS
+            : CliGovernanceCheckStatus.WARN,
+        detail: candidateConfigArtifactPath,
+      },
+      {
+        id: 'agent_projection',
+        status: CliGovernanceCheckStatus.PASS,
+        detail: `descriptors=${agentView.descriptors.length} preset=${runtimeDebugOptions.presetId ?? 'none'}`,
+      },
+      {
         id: 'diagnostics_artifact',
         status: CliGovernanceCheckStatus.PASS,
         detail: diagnosticsArtifactPath,
@@ -104,6 +179,10 @@ export class CliConnectCommand implements CliCommandExecutor {
       {
         id: 'connect_diagnostics',
         path: diagnosticsArtifactPath,
+      },
+      {
+        id: 'connect_candidate_config',
+        path: candidateConfigArtifactPath,
       },
     ];
 
@@ -122,6 +201,7 @@ export class CliConnectCommand implements CliCommandExecutor {
         taskId: runtimeDebugOptions.taskId,
         connectId,
         diagnosticsArtifactPath,
+        candidateConfigArtifactPath,
         attribution: {
           chain: 'connect->doctor->verify',
           chainStep: 'connect',
@@ -185,10 +265,12 @@ export class CliConnectCommand implements CliCommandExecutor {
         summary: [
           `connect_id=${connectId}`,
           `adapter_status=${adapterVerification.overallStatus}`,
+          `preset=${runtimeDebugOptions.presetId ?? 'none'}`,
           `required_failures=${adapterVerification.requiredRoleFailedCount}`,
         ],
         detailed: [
           `diagnostics_path=${diagnosticsArtifactPath}`,
+          `candidate_config_path=${candidateConfigArtifactPath}`,
           `fallback_roles=${adapterVerification.fallbackRoleCount}`,
           `degraded_roles=${adapterVerification.degradedRoleCount}`,
           `record_ledger=${runtimeDebugOptions.recordLedger}`,
@@ -217,11 +299,16 @@ export class CliConnectCommand implements CliCommandExecutor {
         checks,
         artifacts,
         experience,
+        agentView,
         details: {
           adapter_status: adapterVerification.overallStatus,
           required_roles: adapterVerification.requiredRoleCount,
           required_role_failures: adapterVerification.requiredRoleFailedCount,
           diagnostics_path: diagnosticsArtifactPath,
+          candidate_config_path: candidateConfigArtifactPath,
+          candidate_config_valid: candidateConfigValidationError === null,
+          selected_tools: candidateConfigResolution.selectedTools.join('|'),
+          preset_id: runtimeDebugOptions.presetId,
           record_ledger: runtimeDebugOptions.recordLedger,
           task_id: runtimeDebugOptions.taskId,
         },

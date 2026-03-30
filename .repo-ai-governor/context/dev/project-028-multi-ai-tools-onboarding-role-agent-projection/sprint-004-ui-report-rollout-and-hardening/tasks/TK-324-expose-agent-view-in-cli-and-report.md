@@ -1,7 +1,7 @@
 # TK-324 expose agent view in CLI and report
 
-- Status: planned
-- Date: 2026-03-28
+- Status: completed
+- Date: 2026-03-30
 - Owner: AI-Agent
 - Priority: P0
 - Project: `project-028-multi-ai-tools-onboarding-role-agent-projection`
@@ -35,3 +35,4 @@
 ## 6. 执行记录
 
 1. 2026-03-28：任务创建，状态初始化为 `planned`。
+2. 2026-03-30：已将 `agentView` 接入 CLI success payload、pretty/plain presenter、execution report 与 review 命令输出，并保持 presenter 只消费投影结果。

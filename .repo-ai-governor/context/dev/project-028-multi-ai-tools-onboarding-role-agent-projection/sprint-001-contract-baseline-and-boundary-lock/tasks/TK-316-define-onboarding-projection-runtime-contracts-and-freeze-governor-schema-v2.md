@@ -1,6 +1,6 @@
 # TK-316 define onboarding / projection / runtime contracts and freeze governor schema v2
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-28
 - Owner: AI-Agent
 - Priority: P0
@@ -38,3 +38,4 @@
 ## 6. 执行记录
 
 1. 2026-03-28：任务创建，状态初始化为 `planned`。
+2. 2026-03-30：已完成 `runtime.agent-projection` formal module overview、onboarding contract、projection contract 与 ADR 收口，并通过 `DA-316` 将 project activation / delivery handoff 固定为 completed 真值。

@@ -17,6 +17,15 @@ export const EN_US_TRANSLATIONS = {
       noColor: 'Disable ANSI color decorations in pretty mode.',
       adapters: 'Enable adapter diagnostics and routing verification scope.',
       fix: 'Apply safe_local fixes (directories/config templates/writable checks) only.',
+      preset:
+        'Connect preset id for agent onboarding: single-tool-minimal|multi-tool-default|single-tool-all-roles|restricted-network-safe.',
+      tools: 'Comma-separated adapter tool ids used by connect/doctor/verify onboarding views.',
+      overwrite:
+        'Allow connect candidate config to replace existing role/routing fragments instead of merge-only output.',
+      singleToolAllRoles:
+        'Shortcut tool id that binds every enabled onboarding role to one surface during connect candidate generation.',
+      roleBinding:
+        'Repeatable role binding override in roleId=tool[,fallbackTool...] form. roleProfileId is also accepted.',
       recordLedger: 'Write optional ledger-backfill artifact for task traceability.',
       taskId: 'Task id used with --record-ledger for explicit ledger backfill records.',
       dryRun: 'Execute run pipeline without external side-effect actions.',

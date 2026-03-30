@@ -1,12 +1,12 @@
 # sprint-001-contract-baseline-and-boundary-lock 计划
 
-- Status: planned
-- Date: 2026-03-28
+- Status: completed
+- Date: 2026-03-30
 - Project: `project-028-multi-ai-tools-onboarding-role-agent-projection`
 
 ## 1. Sprint Goal
 
-完成 multi-tool onboarding 与 role-agent projection 的正式化契约、module skeleton 与 follow-up handoff。
+固定 `runtime.agent-projection` 的 formal contract、delivery handoff 与 project activation baseline。
 
 ## 2. Task Package
 
@@ -15,11 +15,12 @@
 
 ## 3. Exit Criteria
 
-1. `runtime.agent-projection` formal docs 已建立。
-2. `technical-solution.multi-ai-tools-onboarding-role-agent-projection` 已进入 active 生命周期并完成 registry/manifest 接线。
-3. follow-up project skeleton 已登记到 current-context 并可继续承接后续 implementation。
+1. `runtime.agent-projection` formal docs 已建立并登记到 module registry / manifest。
+2. `technical-solution.multi-ai-tools-onboarding-role-agent-projection` 已进入 active 生命周期并具备 delivery handoff。
+3. `AgentDescriptor` 的最小字段集、shared-session projection 边界与 future runtime 接线约束已固定。
 
 ## 4. Execution Notes
 
-1. 本 sprint 只 formalize 技术方案与治理真值，不直接实现 draft 里的后续代码改造 phases。
-2. 当前 sprint 的 delivery ownership 采用 `followup_required`，以便明确后续 implementation 仍需独立承接。
+1. 2026-03-30：已完成 `runtime.agent-projection` module overview、onboarding contract、projection contract 与 ADR 的 formal baseline，并保持 `technical-solution` / delivery / module registry 对齐。
+2. 2026-03-30：`DA-316` 已升级为 completed handoff，project skeleton 和后续四段式 implementation stream 全部可回链。
+3. 2026-03-30：contract baseline 没有停留在 docs-only；同一项目后续 sprint 已直接消费这些契约完成真实 CLI/runtime 实现。

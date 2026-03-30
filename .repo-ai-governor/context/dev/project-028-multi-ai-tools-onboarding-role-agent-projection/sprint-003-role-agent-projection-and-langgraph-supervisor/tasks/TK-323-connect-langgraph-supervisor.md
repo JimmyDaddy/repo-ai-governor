@@ -1,6 +1,6 @@
 # TK-323 connect LangGraph supervisor
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-28
 - Owner: AI-Agent
 - Priority: P0
@@ -35,3 +35,4 @@
 ## 6. 执行记录
 
 1. 2026-03-28：任务创建，状态初始化为 `planned`。
+2. 2026-03-30：已在 `packages/core-runtime-langgraph` 中接入 agent descriptor supervisor planner，并由 `run` 命令输出 LangGraph supervisor diagnostics artifact。

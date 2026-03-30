@@ -25,6 +25,7 @@ export type {
   LangGraphRuntimeTerminalStatus,
 } from './constants/index.js';
 export { CompiledIrGraphAdapter } from './compiled-ir-graph-adapter.js';
+export { LangGraphAgentDescriptorSupervisor } from './agent-descriptor-supervisor.js';
 export { LangGraphFileCheckpointer } from './file-backed-checkpointer.js';
 export { LangGraphCommunityVendorBinding } from './langgraph-community-vendor-binding.js';
 export { LangGraphRuntimeBackend } from './langgraph-runtime-backend.js';
@@ -43,6 +44,8 @@ export type {
   LangGraphCompiledGraphEdge,
   LangGraphCompiledGraphNode,
   LangGraphCompiledGraphPlan,
+  LangGraphSupervisorNodeBinding,
+  LangGraphSupervisorPlan,
   LangGraphFileCheckpointerOptions,
   LangGraphPreparedExecution,
   LangGraphRecoveredExecution,

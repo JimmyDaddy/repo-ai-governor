@@ -59,6 +59,7 @@ export type {
   CliWorkflowEditorValidationIssue,
   CliLocalAdapterProbeOverride,
   CliLocalAdapterProbeResolution,
+  CliConnectRoleBindingOverride,
   CliNormalizedRuntimeDebugOptions,
   CliRuntimeDebugOptions,
   ReactCliShellPalette,

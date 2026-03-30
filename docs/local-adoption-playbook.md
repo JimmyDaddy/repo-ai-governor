@@ -81,47 +81,51 @@ Quick expectations:
 
 ## 3.1 Multi-tool Onboarding (Codex / Claude Code / GitHub Copilot)
 
-Use a three-step path: tool readiness -> Governor wiring -> diagnostics verification.
+Use a four-step path: tool readiness -> candidate config generation -> adapter diagnostics -> traced dry run.
 
-1. First make sure each target AI tool can run independently in the target repository (pick only what you use):
+1. First make sure each target AI tool can run independently in the target repository:
    - Codex CLI: `codex --help`
    - Claude Code CLI: `claude --help`
-   - GitHub Copilot: open this repository in IDE and confirm Copilot chat is available (for CLI-oriented setup, validate `gh auth status` first).
-2. Register role contracts in `.repo-ai-governor/governor.yaml` (current config entry is `roles`; no separate `adapters` block required):
-
-```yaml
-roles:
-  - roleProfileId: coder-codex
-    roleProfileVersion: "1.0.0"
-    displayName: Codex Coder
-    responsibilities:
-      - implement task cards
-    capabilities:
-      - code generation
-      - unit test update
-    permissionCeiling:
-      - repo.read
-      - repo.write
-    roleSource: custom
-    status: active
-```
-
-3. Run governance flow and verify routing/handling signals:
+   - GitHub Copilot: confirm IDE chat is available; for CLI-heavy setups validate `gh auth status` first.
+2. Generate one candidate adapters baseline:
 
 ```bash
+pnpm exec repo-ai-governor connect --tools codex,claude-code --preset multi-tool-default --output json
+```
+
+Optional routing overrides:
+
+```bash
+pnpm exec repo-ai-governor connect \
+  --tools codex,claude-code,github-copilot \
+  --preset multi-tool-default \
+  --role-binding planner=codex,claude-code \
+  --role-binding reviewer=claude-code,codex \
+  --output json
+```
+
+3. Inspect the generated candidate before applying it to your active config:
+   - Candidate YAML: `<workspace_root>/context/diagnostics/connect/<connect-id>.governor.yaml`
+   - Diagnostics JSON: `<workspace_root>/context/diagnostics/connect/<connect-id>.json`
+   - `connect` does not rewrite the active `governor.yaml`; it produces a reviewable candidate artifact.
+   - Use `--overwrite` when you want the candidate `adapters` block to fully replace the current one instead of merging on top.
+   - Available presets are `single-tool-minimal`, `multi-tool-default`, `single-tool-all-roles`, and `restricted-network-safe`.
+4. Run diagnostics and traced dry-run validation:
+
+```bash
+pnpm exec repo-ai-governor doctor --adapters --output json
+pnpm exec repo-ai-governor doctor --adapters --fix --output json
+pnpm exec repo-ai-governor verify --adapters --output json
 pnpm exec repo-ai-governor run --output json --dry-run --trace
 ```
 
-Check `context/diagnostics/trace/<execution_id>.trace.json`:
+What to check:
 
-1. `adapterInvocationSummary[].routeKey` for expected route semantics.
-2. `adapterInvocationSummary[].handledBy` for current execution surface.
-3. `summary.policyOutcome` for risk/policy gate behavior.
-
-Notes:
-
-1. In Stage 9A baseline, `handledBy=cli-governance-runtime` is expected (governance chain first).
-2. Stage 9B (`TK-082`) continues with real Codex/Claude Code/Copilot invocation paths while keeping the same diagnostics contract.
+1. `connect` JSON should expose `candidate_config_path`, `candidate_config_valid`, `selected_tools`, `onboardingContract`, and `agentView`.
+2. If the current workspace still carries an incomplete local-model baseline, `connect` may report `candidateConfigValidationError`, but it should still emit the candidate artifact and diagnostics payload.
+3. `doctor --adapters --fix` only performs safe-local repairs such as creating writable workspace/config/memory roots. Authentication, CLI install, proxy setup, and local-model download stay in `nextAction`.
+4. `verify --adapters` emits onboarding contract, role/tool matrix, and `agentView`; a `fail` status should be treated as a hard block before real execution.
+5. `run --dry-run --trace` should emit agent projection details plus one LangGraph supervisor artifact under `<workspace_root>/context/diagnostics/run/agent-supervisor/<execution_id>.json`.
 
 ## 3.2 Upgrade Analysis And Rollback Preparation
 

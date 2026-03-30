@@ -129,6 +129,24 @@ pnpm exec repo-ai-governor doctor --output json
 
 当仓库不可写时，应返回只读 attach 语义，而不是直接崩溃。
 
+## 1.6 多工具接入基线
+
+如果你想把 Codex / Claude Code / GitHub Copilot 风格的 adapter 角色接到同一个仓库基线上，建议按下面这条命令链执行：
+
+```bash
+pnpm exec repo-ai-governor connect --tools codex,claude-code --preset multi-tool-default --output json
+pnpm exec repo-ai-governor doctor --adapters --fix --output json
+pnpm exec repo-ai-governor verify --adapters --output json
+pnpm exec repo-ai-governor run --output json --dry-run --trace
+```
+
+说明：
+
+1. `connect` 不会原地改写活动 `governor.yaml`；它会把候选配置写到 `<workspace_root>/context/diagnostics/connect/<connect-id>.governor.yaml`，并在 JSON 中返回 `candidate_config_path` / `candidate_config_valid`。
+2. 当前可用 preset 包括 `single-tool-minimal`、`multi-tool-default`、`single-tool-all-roles`、`restricted-network-safe`。如需显式覆盖路由，可使用 `--single-tool-all-roles <tool>` 或重复 `--role-binding role=tool[,fallback]`。
+3. `doctor --adapters --fix` 只会执行 safe-local 修复，例如补可写工作区/配置/内存目录；登录、CLI 安装、代理设置和本地模型下载仍然只会落到 `nextAction`。
+4. `verify --adapters` 会返回 onboarding contract、role/tool matrix 与 `agent_view`；`run --dry-run --trace` 则会在不进入真实发布执行的前提下演练 projected descriptors 与 LangGraph supervisor diagnostics。
+
 ## 2. 完整治理闭环（Stage 9A/9B 基线）
 
 ```bash

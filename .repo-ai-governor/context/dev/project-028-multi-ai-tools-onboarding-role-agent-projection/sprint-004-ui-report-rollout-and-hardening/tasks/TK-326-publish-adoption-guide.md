@@ -1,7 +1,7 @@
 # TK-326 publish adoption guide
 
-- Status: planned
-- Date: 2026-03-28
+- Status: completed
+- Date: 2026-03-30
 - Owner: AI-Agent
 - Priority: P1
 - Project: `project-028-multi-ai-tools-onboarding-role-agent-projection`
@@ -35,3 +35,4 @@
 ## 6. 执行记录
 
 1. 2026-03-28：任务创建，状态初始化为 `planned`。
+2. 2026-03-30：已完成 README、`README.zh-CN.md`、`docs/local-adoption-playbook.md` 与 `docs/local-adoption-playbook.zh-CN.md` 的 onboarding 口径同步，并补 project-level resolved review / completion audit。

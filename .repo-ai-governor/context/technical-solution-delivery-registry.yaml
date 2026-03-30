@@ -229,20 +229,27 @@ deliveries:
       - runtime_service
       - docs_playbook
     user_impact_level: medium
-    execution_status: planned
-    rollout_status: planned
+    execution_status: completed
+    rollout_status: completed
     owner: runtime
     project_ref: project-028-multi-ai-tools-onboarding-role-agent-projection
-    sprint_ref: sprint-001-contract-baseline-and-boundary-lock
+    sprint_ref: sprint-004-ui-report-rollout-and-hardening
     task_ids:
-      - TK-316
-      - TK-317
+      - TK-324
+      - TK-325
+      - TK-326
     project_plan_path: .repo-ai-governor/context/dev/project-028-multi-ai-tools-onboarding-role-agent-projection/plan.md
-    sprint_plan_path: .repo-ai-governor/context/dev/project-028-multi-ai-tools-onboarding-role-agent-projection/sprint-001-contract-baseline-and-boundary-lock/plan.md
-    task_csv_path: .repo-ai-governor/context/dev/project-028-multi-ai-tools-onboarding-role-agent-projection/sprint-001-contract-baseline-and-boundary-lock/tasks/tasks.csv
+    sprint_plan_path: .repo-ai-governor/context/dev/project-028-multi-ai-tools-onboarding-role-agent-projection/sprint-004-ui-report-rollout-and-hardening/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-028-multi-ai-tools-onboarding-role-agent-projection/sprint-004-ui-report-rollout-and-hardening/tasks/tasks.csv
     handoff_artifact_path: .repo-ai-governor/context/dev/project-028-multi-ai-tools-onboarding-role-agent-projection/sprint-001-contract-baseline-and-boundary-lock/tasks/DA-316-project-028-activation-and-contract-baseline-handoff.md
     rollout_artifacts:
       - .repo-ai-governor/context/dev/project-028-multi-ai-tools-onboarding-role-agent-projection/plan.md
-      - .repo-ai-governor/context/dev/project-028-multi-ai-tools-onboarding-role-agent-projection/sprint-001-contract-baseline-and-boundary-lock/plan.md
+      - .repo-ai-governor/context/dev/project-028-multi-ai-tools-onboarding-role-agent-projection/project-028-multi-ai-tools-onboarding-role-agent-projection-completion-audit-summary.md
+      - .repo-ai-governor/context/dev/project-028-multi-ai-tools-onboarding-role-agent-projection/sprint-004-ui-report-rollout-and-hardening/plan.md
+      - .repo-ai-governor/context/dev/project-028-multi-ai-tools-onboarding-role-agent-projection/sprint-004-ui-report-rollout-and-hardening/review/resolved_code_review_project-028-full-implementation.md
       - .repo-ai-governor/context/dev/project-028-multi-ai-tools-onboarding-role-agent-projection/sprint-001-contract-baseline-and-boundary-lock/tasks/DA-316-project-028-activation-and-contract-baseline-handoff.md
+      - README.md
+      - README.zh-CN.md
+      - docs/local-adoption-playbook.md
+      - docs/local-adoption-playbook.zh-CN.md
     accepted_at: 2026-03-28

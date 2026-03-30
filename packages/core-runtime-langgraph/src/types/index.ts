@@ -13,6 +13,8 @@ export type {
   LangGraphCompiledGraphEdge,
   LangGraphCompiledGraphNode,
   LangGraphCompiledGraphPlan,
+  LangGraphSupervisorNodeBinding,
+  LangGraphSupervisorPlan,
   LangGraphFileCheckpointerOptions,
   LangGraphPreparedExecution,
   LangGraphRecoveredExecution,

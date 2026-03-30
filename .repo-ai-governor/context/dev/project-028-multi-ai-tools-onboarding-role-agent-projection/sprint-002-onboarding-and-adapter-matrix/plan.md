@@ -1,7 +1,7 @@
 # sprint-002-onboarding-and-adapter-matrix 计划
 
-- Status: planned
-- Date: 2026-03-28
+- Status: completed
+- Date: 2026-03-30
 - Project: `project-028-multi-ai-tools-onboarding-role-agent-projection`
 
 ## 1. Sprint Goal
@@ -16,11 +16,12 @@
 
 ## 3. Exit Criteria
 
-1. `connect` 可生成 `single-tool-all-roles` 与 `multi-tool-default` 两类 preset，并输出可校验配置。
-2. `doctor --adapters` 至少覆盖 1 条可自动修复路径与 1 条仅输出 `nextAction` 的路径。
-3. `verify --adapters` 可输出 `pass / warn / fail` 三档判定并回链 `execution_id`。
+1. `connect` 已支持 `single-tool-minimal`、`multi-tool-default`、`single-tool-all-roles`、`restricted-network-safe` preset，并生成候选配置产物。
+2. `doctor --adapters` 已区分 safe-local repair 与 manual-only nextAction 边界。
+3. `verify --adapters` 已输出 `pass / warn / fail` 三档判定、role/tool matrix、onboarding contract 与 agent view。
 
 ## 4. Execution Notes
 
-1. 本 sprint 只收敛 onboarding 行为与 adapter 矩阵，不触碰 projection 语义。
-2. 所有不能自动修复的诊断都必须显式落到 `nextAction`，避免 silent failure。
+1. 2026-03-30：`connect` 已支持 `--preset`、`--tools`、`--overwrite`、`--single-tool-all-roles` 与重复 `--role-binding`，并把候选配置写入 `context/diagnostics/connect/*.governor.yaml`。
+2. 2026-03-30：`doctor --adapters --fix` 仅执行 safe-local repair；认证、网络、CLI 安装与本地模型下载全部继续落为 `nextAction`。
+3. 2026-03-30：`verify` 即使未显式传 `--adapters` 也会按 adapters baseline 执行，但 adopter-facing 文档已统一推荐显式带上 `--adapters`。

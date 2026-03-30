@@ -1,6 +1,6 @@
 # TK-321 implement AgentProjectionService
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-28
 - Owner: AI-Agent
 - Priority: P0
@@ -35,3 +35,4 @@
 ## 6. 执行记录
 
 1. 2026-03-28：任务创建，状态初始化为 `planned`。
+2. 2026-03-30：已新增 `packages/core-agent-projection`，实现 `AgentProjectionService`、统一类型导出与 descriptor 序列化单测。

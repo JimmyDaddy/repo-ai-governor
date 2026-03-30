@@ -1,7 +1,7 @@
 import type { ClaudeCodeExecRunner } from '@repo-ai-governor/adapter-claude-code';
 import type { CodexExecRunner } from '@repo-ai-governor/adapter-codex';
 import type { GithubCopilotExecRunner } from '@repo-ai-governor/adapter-github-copilot';
-import type { AdaptersConfig, ResolvedWorkspace } from '@repo-ai-governor/config';
+import type { AdaptersConfig, GovernorConfig, ResolvedWorkspace } from '@repo-ai-governor/config';
 import type { MemoryStoreProvider } from '@repo-ai-governor/memory-store-adapter';
 import type {
   NotificationProvider,
@@ -9,6 +9,7 @@ import type {
 } from '@repo-ai-governor/notification-dispatcher';
 import type { AdapterSurface } from '@repo-ai-governor/shared';
 import type { ErrorOutputEnvironment, MemoryRuntimeConfig } from '@repo-ai-governor/shared';
+import type { CliAgentOnboardingPreset } from '../../constants/cli-agent-onboarding.constant.js';
 import type {
   CliInteractiveShellFallbackBehavior,
   CliInteractiveUiMode,
@@ -17,6 +18,8 @@ import type { CliReactThemePreset } from '../../constants/cli-react-theme.consta
 import type { CliHitlResumeAction } from '../../constants/cli-task-driven-run.constant.js';
 import type { ReactCliViewModel } from '../../react-cli/index.js';
 import type { CliAdapterDiagnosticsRuntime } from '../../runtime/adapter-diagnostics-runtime.js';
+import type { CliAgentOnboardingRuntime } from '../../runtime/agent-onboarding-runtime.js';
+import type { CliAgentProjectionRuntime } from '../../runtime/agent-projection-runtime.js';
 import type { CliReviewQueueRuntime } from '../../runtime/artifacts/review-queue-runtime.js';
 import type { CliOrchestrationServiceRuntime } from '../../runtime/orchestration-service-runtime.js';
 import type { CliCommandExperienceBuilder } from '../../runtime/presentation/command-experience-builder.js';
@@ -27,7 +30,10 @@ import type {
   CliCommandExecutionResultPayload,
   CliCommandResultCheck,
 } from './cli-output.interface.js';
-import type { CliRuntimeDebugOptions } from './cli-runtime-debug.interface.js';
+import type {
+  CliConnectRoleBindingOverride,
+  CliRuntimeDebugOptions,
+} from './cli-runtime-debug.interface.js';
 import type { CliWorkflowCommandOptions } from './cli-workflow-command.interface.js';
 import type { CliWorkspaceCommandOptions } from './cli-workspace-command.interface.js';
 
@@ -37,6 +43,7 @@ import type { CliWorkspaceCommandOptions } from './cli-workspace-command.interfa
 export interface CliGovernanceRuntimeOptions {
   currentWorkingDirectory: string;
   workspace: ResolvedWorkspace;
+  config: GovernorConfig;
   configSource: 'default' | 'file';
   profileId: string | null;
   locale: string;
@@ -104,6 +111,11 @@ export interface CliNormalizedRuntimeDebugOptions {
   replayPath: string | null;
   adapters: boolean;
   fix: boolean;
+  presetId: CliAgentOnboardingPreset;
+  requestedTools: AdapterSurface[];
+  overwrite: boolean;
+  singleToolAllRoles: boolean;
+  roleBindingOverrides: CliConnectRoleBindingOverride[];
   recordLedger: boolean;
   taskId: string | null;
   restrictedNetwork: boolean;
@@ -131,6 +143,8 @@ export interface CliArtifactWriter {
 export interface CliCommandExecutorContext {
   options: CliGovernanceRuntimeOptions;
   artifactWriter: CliArtifactWriter;
+  onboardingRuntime: CliAgentOnboardingRuntime;
+  agentProjectionRuntime: CliAgentProjectionRuntime;
   adapterDiagnosticsRuntime: CliAdapterDiagnosticsRuntime;
   reviewQueueRuntime: CliReviewQueueRuntime;
   orchestrationServiceRuntime: CliOrchestrationServiceRuntime;
@@ -143,6 +157,10 @@ export interface CliCommandExecutorContext {
   resolveRuntimeDebugOptions(): CliNormalizedRuntimeDebugOptions;
   resolveExecutionStreamMetadata(): Promise<CliExecutionStreamMetadata>;
   resolveAdapterVerification(): Promise<CliAdapterVerificationResolution>;
+  resolveAdapterVerificationForConfig(
+    adaptersConfig: AdaptersConfig,
+  ): Promise<CliAdapterVerificationResolution>;
+  validateGovernorConfig(candidate: unknown): GovernorConfig;
   canWritePath(filePath: string): Promise<boolean>;
   /** @deprecated Use translate instead. Retained for backward-compatibility during migration. */
   localizeText(english: string, chinese: string): string;

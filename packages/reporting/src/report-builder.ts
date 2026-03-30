@@ -148,6 +148,7 @@ export class ReportBuilder {
         timeoutRecordIds,
       },
       replayPointers,
+      ...(options.agentView ? { agentView: options.agentView } : {}),
       ...(memorySemantics ? { memorySemantics } : {}),
       ...(includeRecords ? { records: filteredRecords } : {}),
     };

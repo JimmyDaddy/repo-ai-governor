@@ -1,6 +1,6 @@
 # TK-317 freeze minimal agent descriptor field set
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-28
 - Owner: AI-Agent
 - Priority: P0
@@ -34,3 +34,4 @@
 ## 6. 执行记录
 
 1. 2026-03-28：任务创建，状态初始化为 `planned`。
+2. 2026-03-30：已冻结 `AgentDescriptor` 的 `agentId / agentRole / primarySurface / fallbackSurfaces / capabilities / policies / sessionProjection` 基线，并在 formal contract 与 runtime 实现中保持一致。

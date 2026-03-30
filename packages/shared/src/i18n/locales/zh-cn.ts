@@ -17,6 +17,13 @@ export const ZH_CN_TRANSLATIONS = {
       noColor: '在 pretty 模式下禁用 ANSI 颜色。',
       adapters: '启用适配器诊断与路由校验范围。',
       fix: '仅执行 safe_local 自动修复（目录/模板配置/本地可写性）。',
+      preset:
+        '指定 connect 的 onboarding 模板：single-tool-minimal|multi-tool-default|single-tool-all-roles|restricted-network-safe。',
+      tools: '指定 connect/doctor/verify onboarding 视图使用的逗号分隔工具列表。',
+      overwrite: '允许 connect 候选配置覆盖现有角色/路由片段，而不是只做合并输出。',
+      singleToolAllRoles: '指定一个工具，把全部启用 onboarding 角色临时绑定到同一 surface。',
+      roleBinding:
+        '可重复传入的角色绑定覆盖，格式为 roleId=tool[,fallbackTool...]；也接受 roleProfileId。',
       recordLedger: '按显式参数写入任务台账回填产物。',
       taskId: '与 --record-ledger 搭配使用的任务标识。',
       dryRun: '以本地调试模式执行 run 链路，不触发外部副作用动作。',

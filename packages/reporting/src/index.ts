@@ -10,6 +10,7 @@ export type {
   BuildExecutionReportOptions,
   CreateReplaySnapshotOptions,
   ExecutionReport,
+  ExecutionReportAgentView,
   ExecutionReportFailureSummary,
   ExecutionReportMemoryContextSummary,
   ExecutionReportMemorySemanticsSummary,

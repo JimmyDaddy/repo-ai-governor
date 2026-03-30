@@ -1,8 +1,16 @@
+import type { AdapterSurface } from '@repo-ai-governor/shared';
+import type { CliAgentOnboardingPreset } from '../../constants/cli-agent-onboarding.constant.js';
 import type {
   CliInteractiveShellFallbackBehavior,
   CliInteractiveUiMode,
 } from '../../constants/cli-interactive-shell.constant.js';
 import type { CliReactThemePreset } from '../../constants/cli-react-theme.constant.js';
+
+export interface CliConnectRoleBindingOverride {
+  roleId: string;
+  primarySurface: AdapterSurface;
+  fallbackSurfaces: AdapterSurface[];
+}
 
 /**
  * Defines normalized runtime flags consumed by command execution paths.
@@ -21,6 +29,11 @@ export interface CliRuntimeDebugOptions {
   replayPath: string | null;
   adapters?: boolean;
   fix?: boolean;
+  presetId?: CliAgentOnboardingPreset | null;
+  requestedTools?: AdapterSurface[];
+  overwrite?: boolean;
+  singleToolAllRoles?: boolean;
+  roleBindingOverrides?: CliConnectRoleBindingOverride[];
   recordLedger?: boolean;
   taskId?: string | null;
   restrictedNetwork?: boolean;

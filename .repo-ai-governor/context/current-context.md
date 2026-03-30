@@ -3,20 +3,20 @@
 ## Primary Stream
 
 - Status: active
-- Project: `project-029-cli-session-first-agent-shell`
-- Sprint: `sprint-004-polish-and-session-productization`
-- Docs root: `.repo-ai-governor/context/dev/project-029-cli-session-first-agent-shell`
-- Task records: `.repo-ai-governor/context/dev/project-029-cli-session-first-agent-shell/sprint-004-polish-and-session-productization/tasks/`
-- Review records: `.repo-ai-governor/context/dev/project-029-cli-session-first-agent-shell/sprint-004-polish-and-session-productization/review/`
-- Note: `project-029-cli-session-first-agent-shell` 已于 2026-03-30 完成实现、评审与 completion audit；当前仅暂时保留 `sprint-004` 作为 active closeout surface，直到下一条主执行流显式激活。`sprint-001 ~ sprint-003` 已迁入 completed history。
+- Project: `project-028-multi-ai-tools-onboarding-role-agent-projection`
+- Sprint: `sprint-004-ui-report-rollout-and-hardening`
+- Docs root: `.repo-ai-governor/context/dev/project-028-multi-ai-tools-onboarding-role-agent-projection`
+- Task records: `.repo-ai-governor/context/dev/project-028-multi-ai-tools-onboarding-role-agent-projection/sprint-004-ui-report-rollout-and-hardening/tasks/`
+- Review records: `.repo-ai-governor/context/dev/project-028-multi-ai-tools-onboarding-role-agent-projection/sprint-004-ui-report-rollout-and-hardening/review/`
+- Note: `project-028-multi-ai-tools-onboarding-role-agent-projection` 已于 2026-03-30 完成实现、评审与 completion audit；当前暂时保留 `sprint-004` 作为 active closeout surface，直到下一条主执行流显式激活。`sprint-001 ~ sprint-003` 已迁入 completed history；`project-029-cli-session-first-agent-shell / sprint-004` 也已迁入 completed history。
 
 ## Active Streams
 
-- `primary`: project=`project-029-cli-session-first-agent-shell`, sprint=`sprint-004-polish-and-session-productization`, docs=`.repo-ai-governor/context/dev/project-029-cli-session-first-agent-shell`, plan=`.repo-ai-governor/context/dev/project-029-cli-session-first-agent-shell/plan.md`, tasks=`.repo-ai-governor/context/dev/project-029-cli-session-first-agent-shell/sprint-004-polish-and-session-productization/tasks/`, checklist=`.repo-ai-governor/context/dev/project-029-cli-session-first-agent-shell/sprint-004-polish-and-session-productization/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-029-cli-session-first-agent-shell/sprint-004-polish-and-session-productization/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-029-cli-session-first-agent-shell/sprint-004-polish-and-session-productization/review/`, status=`active`, note=`completed closeout surface retained until the next primary stream is explicitly activated`
+- `primary`: project=`project-028-multi-ai-tools-onboarding-role-agent-projection`, sprint=`sprint-004-ui-report-rollout-and-hardening`, docs=`.repo-ai-governor/context/dev/project-028-multi-ai-tools-onboarding-role-agent-projection`, plan=`.repo-ai-governor/context/dev/project-028-multi-ai-tools-onboarding-role-agent-projection/plan.md`, tasks=`.repo-ai-governor/context/dev/project-028-multi-ai-tools-onboarding-role-agent-projection/sprint-004-ui-report-rollout-and-hardening/tasks/`, checklist=`.repo-ai-governor/context/dev/project-028-multi-ai-tools-onboarding-role-agent-projection/sprint-004-ui-report-rollout-and-hardening/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-028-multi-ai-tools-onboarding-role-agent-projection/sprint-004-ui-report-rollout-and-hardening/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-028-multi-ai-tools-onboarding-role-agent-projection/sprint-004-ui-report-rollout-and-hardening/review/`, status=`active`, note=`completed closeout surface retained until the next primary stream is explicitly activated`
 
 ## Planned Follow-Up Streams
 
-- `planned`: project=`project-028-multi-ai-tools-onboarding-role-agent-projection`, sprint=`sprint-001-contract-baseline-and-boundary-lock`, docs=`.repo-ai-governor/context/dev/project-028-multi-ai-tools-onboarding-role-agent-projection`, plan=`.repo-ai-governor/context/dev/project-028-multi-ai-tools-onboarding-role-agent-projection/plan.md`, tasks=`.repo-ai-governor/context/dev/project-028-multi-ai-tools-onboarding-role-agent-projection/sprint-001-contract-baseline-and-boundary-lock/tasks/`, checklist=`.repo-ai-governor/context/dev/project-028-multi-ai-tools-onboarding-role-agent-projection/sprint-001-contract-baseline-and-boundary-lock/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-028-multi-ai-tools-onboarding-role-agent-projection/sprint-001-contract-baseline-and-boundary-lock/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-028-multi-ai-tools-onboarding-role-agent-projection/sprint-001-contract-baseline-and-boundary-lock/review/`, status=`planned`, note=`follow-up stream for the approved multi-tool onboarding and role-agent projection technical solution; decomposed into sprint-001 through sprint-004`
+- None.
 
 ## Completed Stream History
 

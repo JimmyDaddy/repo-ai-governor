@@ -15,6 +15,7 @@ import {
 } from '@repo-ai-governor/adapter-sdk';
 import {
   type AdaptersConfig,
+  type GovernorConfig,
   type ResolvedWorkspace,
   WorkspaceMode,
   WorkspaceModeSource,
@@ -307,6 +308,27 @@ function createAdaptersConfigFixture(): AdaptersConfig {
   };
 }
 
+function createGovernorConfigFixture(adaptersConfig: AdaptersConfig): GovernorConfig {
+  return {
+    schemaVersion: '1.1',
+    workspace: {
+      mode: WorkspaceMode.REPO_LOCAL,
+      migrationPolicy: 'copy_verify_switch_rollback',
+    },
+    i18n: {
+      runtimeEngine: 'i18next',
+      defaultLocale: 'en-US',
+      fallbackLocale: 'zh-CN',
+      supportedLocales: ['en-US', 'zh-CN'],
+    },
+    memory: {
+      ...DEFAULT_MEMORY_RUNTIME_CONFIG,
+      storeRoot: 'context/memory',
+    },
+    adapters: structuredClone(adaptersConfig),
+  };
+}
+
 /**
  * Creates deterministic local-probe override map for CLI adapter tests.
  * @returns Surface availability map with all tools marked available.
@@ -441,9 +463,11 @@ async function createRuntimeFixture(options: RuntimeFixtureOptions = {}): Promis
   const provider = new FsCsvMemoryStoreProvider({
     rootDirectory: memoryStoreRoot,
   });
+  const adaptersConfig = options.adaptersConfig ?? createAdaptersConfigFixture();
   const runtime = new CliGovernanceRuntime({
     currentWorkingDirectory: tempRoot,
     workspace,
+    config: createGovernorConfigFixture(adaptersConfig),
     configSource: 'default',
     profileId: null,
     locale: 'en-US',
@@ -458,7 +482,7 @@ async function createRuntimeFixture(options: RuntimeFixtureOptions = {}): Promis
     memoryStoreProvider: provider,
     translate: (key: string, interpolation?: Record<string, string>) =>
       i18nRuntime.t(key, interpolation),
-    adaptersConfig: options.adaptersConfig ?? createAdaptersConfigFixture(),
+    adaptersConfig,
     workspaceCommandOptions: options.workspaceCommandOptions,
     runtimeDebugOptions: options.runtimeDebugOptions,
     adapterLocalProbeOverrides:
@@ -1819,6 +1843,7 @@ describe('CliGovernanceRuntime policy/review safeguards', () => {
         const replayRuntime = new CliGovernanceRuntime({
           currentWorkingDirectory: fixture.tempRoot,
           workspace: fixture.workspace,
+          config: createGovernorConfigFixture(createAdaptersConfigFixture()),
           configSource: 'default',
           profileId: null,
           locale: 'en-US',

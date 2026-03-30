@@ -260,6 +260,12 @@ export class CliOutputPresenter {
       if (commandResult.attach_mode) {
         lines.push(`  - ${labels.attachModeLabel}: ${commandResult.attach_mode}`);
       }
+
+      if (commandResult.agentView) {
+        lines.push(
+          `  - agent view: ${this.resolveAgentViewSummary(commandResult.agentView, payload.diagnostics.locale)}`,
+        );
+      }
     }
 
     if (commandResult?.check_totals || commandResult?.checks || commandResult?.experience) {
@@ -436,16 +442,19 @@ export class CliOutputPresenter {
     const progressSuffix = commandResult?.experience
       ? ` progress=${this.resolveProgressSummary(commandResult.experience)}`
       : '';
+    const agentViewSuffix = commandResult?.agentView
+      ? ` agent_view=${this.resolveAgentViewSummary(commandResult.agentView, payload.diagnostics.locale)}`
+      : '';
 
     if (payload.verbosity === CliVerbosity.QUIET) {
-      return `${payload.message} outputMode=${payload.output_mode}${commandResult ? ` operation=${commandResult.operation}` : ''}${progressSuffix}`;
+      return `${payload.message} outputMode=${payload.output_mode}${commandResult ? ` operation=${commandResult.operation}` : ''}${progressSuffix}${agentViewSuffix}`;
     }
 
     if (payload.verbosity === CliVerbosity.VERBOSE) {
-      return `${payload.message} outputMode=${payload.output_mode} verbosity=${payload.verbosity} configSource=${payload.diagnostics.configSource} downgradedFrom=${payload.runtime.downgraded_from ?? 'none'}${commandResult ? ` operation=${commandResult.operation}` : ''}${progressSuffix}`;
+      return `${payload.message} outputMode=${payload.output_mode} verbosity=${payload.verbosity} configSource=${payload.diagnostics.configSource} downgradedFrom=${payload.runtime.downgraded_from ?? 'none'}${commandResult ? ` operation=${commandResult.operation}` : ''}${progressSuffix}${agentViewSuffix}`;
     }
 
-    return `${payload.message} outputMode=${payload.output_mode} verbosity=${payload.verbosity}${commandResult ? ` operation=${commandResult.operation}` : ''}${progressSuffix}`;
+    return `${payload.message} outputMode=${payload.output_mode} verbosity=${payload.verbosity}${commandResult ? ` operation=${commandResult.operation}` : ''}${progressSuffix}${agentViewSuffix}`;
   }
 
   /**
@@ -550,6 +559,25 @@ export class CliOutputPresenter {
     }
 
     return `queued=${counts.queued} running=${counts.running} completed=${counts.completed} waiting=${counts.waiting} warning=${counts.warning} failed=${counts.failed}`;
+  }
+
+  private resolveAgentViewSummary(
+    agentView: NonNullable<CliCommandExecutionResultPayload['agentView']>,
+    locale: string,
+  ): string {
+    const descriptorCount = agentView.descriptors.length;
+    const activeSurfaceCount = new Set(
+      agentView.descriptors.map(
+        (descriptor) => descriptor.selectedSurface ?? descriptor.primarySurface,
+      ),
+    ).size;
+    const sessionStatus = agentView.sessionProjection?.sessionStatus ?? 'none';
+
+    if (this.isZhCnLocale(locale)) {
+      return `agent ${descriptorCount} 个，surface ${activeSurfaceCount} 个，session=${sessionStatus}`;
+    }
+
+    return `agents=${descriptorCount}, surfaces=${activeSurfaceCount}, session=${sessionStatus}`;
   }
 
   /**

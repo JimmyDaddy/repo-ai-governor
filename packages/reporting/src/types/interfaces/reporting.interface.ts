@@ -1,4 +1,8 @@
 import type {
+  AgentDescriptor,
+  AgentSessionProjection,
+} from '@repo-ai-governor/core-agent-projection';
+import type {
   AuditOutputMode,
   AuditRecordStatus,
   DependencyResolutionStatus,
@@ -23,6 +27,7 @@ export interface BuildExecutionReportOptions {
   limit?: number;
   includeRecords?: boolean;
   memorySemantics?: ExecutionReportMemorySemanticsSummary | null;
+  agentView?: ExecutionReportAgentView | null;
 }
 
 /**
@@ -121,6 +126,11 @@ export interface ExecutionReportMemorySemanticsSummary {
   promotion: ExecutionReportPromotionSummary | null;
 }
 
+export interface ExecutionReportAgentView {
+  descriptors: AgentDescriptor[];
+  sessionProjection: AgentSessionProjection | null;
+}
+
 /**
  * Defines one replay pointer row derived from audit records.
  */
@@ -150,6 +160,7 @@ export interface ExecutionReport {
   failureSummary: ExecutionReportFailureSummary;
   replayPointers: ReplayPointer[];
   memorySemantics?: ExecutionReportMemorySemanticsSummary;
+  agentView?: ExecutionReportAgentView;
   records?: PersistedAuditRecord[];
 }
 

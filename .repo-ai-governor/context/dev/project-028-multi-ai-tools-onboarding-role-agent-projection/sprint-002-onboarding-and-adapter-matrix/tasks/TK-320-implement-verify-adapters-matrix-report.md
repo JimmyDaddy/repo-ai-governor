@@ -1,6 +1,6 @@
 # TK-320 implement verify adapters matrix report
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-28
 - Owner: AI-Agent
 - Priority: P0
@@ -35,3 +35,4 @@
 ## 6. 执行记录
 
 1. 2026-03-28：任务创建，状态初始化为 `planned`。
+2. 2026-03-30：已完成 `verify --adapters` matrix payload、onboarding contract、agent-view 回链与 fail/warn/pass 判定；失败场景会以 diagnostics artifact 形式稳定抛出。

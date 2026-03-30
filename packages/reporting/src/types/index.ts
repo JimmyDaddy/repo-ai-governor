@@ -5,6 +5,7 @@ export type {
   CreateReplaySnapshotOptions,
   ExecutionReport,
   ExecutionReportFailureSummary,
+  ExecutionReportAgentView,
   ExecutionReportMemoryContextSummary,
   ExecutionReportMemorySemanticsSummary,
   ExecutionReportPromotionSummary,

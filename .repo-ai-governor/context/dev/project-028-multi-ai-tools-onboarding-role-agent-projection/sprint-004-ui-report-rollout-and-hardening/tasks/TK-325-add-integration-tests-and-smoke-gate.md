@@ -1,7 +1,7 @@
 # TK-325 add integration tests and smoke gate
 
-- Status: planned
-- Date: 2026-03-28
+- Status: completed
+- Date: 2026-03-30
 - Owner: AI-Agent
 - Priority: P0
 - Project: `project-028-multi-ai-tools-onboarding-role-agent-projection`
@@ -36,3 +36,4 @@
 ## 6. 执行记录
 
 1. 2026-03-28：任务创建，状态初始化为 `planned`。
+2. 2026-03-30：已补齐 `core-agent-projection`、LangGraph supervisor、report builder、CLI runtime/connect command 的目标测试，并以真实 `pnpm run build` 作为 completed gate。

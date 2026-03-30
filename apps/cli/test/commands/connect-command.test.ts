@@ -3,7 +3,7 @@ import { mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, resolve } from 'node:path';
 
-import { WorkspaceMode } from '@repo-ai-governor/config';
+import { SchemaValidator, WorkspaceMode } from '@repo-ai-governor/config';
 import {
   CliReactThemePreset,
   DEFAULT_I18N_RUNTIME_CONFIG,
@@ -16,11 +16,14 @@ import {
   RuntimeError,
 } from '@repo-ai-governor/shared';
 import { CliConnectCommand } from '../../src/commands/connect-command.js';
+import { CliAgentOnboardingPreset } from '../../src/constants/cli-agent-onboarding.constant.js';
 import {
   CLI_REVIEW_LEDGER_BACKFILL_STATUS,
   CliGovernanceCheckStatus,
 } from '../../src/constants/cli-governance-runtime.constant.js';
 import { CliInteractiveUiMode } from '../../src/constants/cli-interactive-shell.constant.js';
+import { CliAgentOnboardingRuntime } from '../../src/runtime/agent-onboarding-runtime.js';
+import { CliAgentProjectionRuntime } from '../../src/runtime/agent-projection-runtime.js';
 import type { CliCommandExecutorContext } from '../../src/types/index.js';
 
 describe('CliConnectCommand', () => {
@@ -34,6 +37,106 @@ describe('CliConnectCommand', () => {
       const context = {
         options: {
           currentWorkingDirectory: tempRoot,
+          configSource: 'file',
+          config: {
+            schemaVersion: '1.1',
+            workspace: {
+              mode: WorkspaceMode.REPO_LOCAL,
+              migrationPolicy: 'copy_verify_switch_rollback',
+            },
+            i18n: {
+              runtimeEngine: 'i18next',
+              defaultLocale: 'en-US',
+              fallbackLocale: 'zh-CN',
+              supportedLocales: ['en-US', 'zh-CN'],
+            },
+            adapters: {
+              roles: [
+                {
+                  roleId: 'planner',
+                  roleProfileId: 'planner-default',
+                  requiredCapabilities: ['structured_output'],
+                  required: true,
+                },
+                {
+                  roleId: 'coder',
+                  roleProfileId: 'coder-default',
+                  requiredCapabilities: ['tool_calling'],
+                  required: true,
+                },
+                {
+                  roleId: 'reviewer',
+                  roleProfileId: 'reviewer-default',
+                  requiredCapabilities: ['structured_output'],
+                  required: true,
+                },
+              ],
+              routing: {
+                roleBindings: {
+                  planner: {
+                    primarySurface: 'codex',
+                    fallbackSurfaces: ['claude-code'],
+                  },
+                  coder: {
+                    primarySurface: 'codex',
+                    fallbackSurfaces: ['github-copilot'],
+                  },
+                  reviewer: {
+                    primarySurface: 'claude-code',
+                    fallbackSurfaces: ['codex'],
+                  },
+                },
+              },
+              tools: [
+                { toolId: 'codex', enabled: true, availability: 'available' },
+                { toolId: 'claude-code', enabled: true, availability: 'available' },
+                { toolId: 'github-copilot', enabled: true, availability: 'available' },
+              ],
+            },
+          },
+          adaptersConfig: {
+            roles: [
+              {
+                roleId: 'planner',
+                roleProfileId: 'planner-default',
+                requiredCapabilities: ['structured_output'],
+                required: true,
+              },
+              {
+                roleId: 'coder',
+                roleProfileId: 'coder-default',
+                requiredCapabilities: ['tool_calling'],
+                required: true,
+              },
+              {
+                roleId: 'reviewer',
+                roleProfileId: 'reviewer-default',
+                requiredCapabilities: ['structured_output'],
+                required: true,
+              },
+            ],
+            routing: {
+              roleBindings: {
+                planner: {
+                  primarySurface: 'codex',
+                  fallbackSurfaces: ['claude-code'],
+                },
+                coder: {
+                  primarySurface: 'codex',
+                  fallbackSurfaces: ['github-copilot'],
+                },
+                reviewer: {
+                  primarySurface: 'claude-code',
+                  fallbackSurfaces: ['codex'],
+                },
+              },
+            },
+            tools: [
+              { toolId: 'codex', enabled: true, availability: 'available' },
+              { toolId: 'claude-code', enabled: true, availability: 'available' },
+              { toolId: 'github-copilot', enabled: true, availability: 'available' },
+            ],
+          },
           workspace: {
             workspaceId: 'test-workspace',
             repositoryRoot: tempRoot,
@@ -57,6 +160,8 @@ describe('CliConnectCommand', () => {
           safeReadJson: async (filePath: string) =>
             JSON.parse(await readFile(filePath, 'utf8')) as Record<string, unknown>,
         },
+        onboardingRuntime: new CliAgentOnboardingRuntime(),
+        agentProjectionRuntime: new CliAgentProjectionRuntime(),
         adapterDiagnosticsRuntime: {
           createAdapterVerificationArtifactPayload: (verification: unknown) => verification,
           createAdapterRoleProgressRows: () => [
@@ -111,6 +216,11 @@ describe('CliConnectCommand', () => {
           replayPath: null,
           adapters: true,
           fix: false,
+          presetId: CliAgentOnboardingPreset.MULTI_TOOL_DEFAULT,
+          requestedTools: [],
+          overwrite: false,
+          singleToolAllRoles: false,
+          roleBindingOverrides: [],
           recordLedger: true,
           taskId: 'TK-309',
           restrictedNetwork: false,
@@ -130,7 +240,66 @@ describe('CliConnectCommand', () => {
           degradedRoleCount: 1,
           fallbackRoleCount: 1,
           nextActions: ['Install missing local command.'],
+          roleEvaluations: [
+            {
+              roleId: 'planner',
+              roleProfileId: 'planner-default',
+              primarySurface: 'codex',
+              selectedSurface: 'codex',
+              selectedBy: 'primary',
+              status: CliGovernanceCheckStatus.PASS,
+              unavailableReasons: [],
+              degradedCapabilities: [],
+              unsupportedCapabilities: [],
+            },
+            {
+              roleId: 'coder',
+              roleProfileId: 'coder-default',
+              primarySurface: 'codex',
+              selectedSurface: 'github-copilot',
+              selectedBy: 'fallback',
+              status: CliGovernanceCheckStatus.WARN,
+              unavailableReasons: [],
+              degradedCapabilities: [],
+              unsupportedCapabilities: [],
+            },
+          ],
         }),
+        resolveAdapterVerificationForConfig: async () =>
+          ({
+            overallStatus: CliGovernanceCheckStatus.WARN,
+            requiredRoleCount: 3,
+            requiredRoleFailedCount: 0,
+            degradedRoleCount: 1,
+            fallbackRoleCount: 1,
+            nextActions: ['Install missing local command.'],
+            roleEvaluations: [
+              {
+                roleId: 'planner',
+                roleProfileId: 'planner-default',
+                primarySurface: 'codex',
+                selectedSurface: 'codex',
+                selectedBy: 'primary',
+                status: CliGovernanceCheckStatus.PASS,
+                unavailableReasons: [],
+                degradedCapabilities: [],
+                unsupportedCapabilities: [],
+              },
+              {
+                roleId: 'coder',
+                roleProfileId: 'coder-default',
+                primarySurface: 'codex',
+                selectedSurface: 'github-copilot',
+                selectedBy: 'fallback',
+                status: CliGovernanceCheckStatus.WARN,
+                unavailableReasons: [],
+                degradedCapabilities: [],
+                unsupportedCapabilities: [],
+              },
+            ],
+          }) as Awaited<ReturnType<CliCommandExecutorContext['resolveAdapterVerification']>>,
+        validateGovernorConfig: (candidate: unknown) =>
+          new SchemaValidator().validateOrThrow(candidate),
         canWritePath: async () => true,
         translate: (key: string, interpolation?: Record<string, string>) =>
           i18nRuntime.t(key, interpolation),

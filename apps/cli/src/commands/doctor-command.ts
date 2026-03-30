@@ -40,6 +40,12 @@ export class CliDoctorCommand implements CliCommandExecutor {
     const artifacts: CliCommandResultArtifact[] = [];
     const nextActions: string[] = [];
     let safeLocalFixCount = 0;
+    let agentView:
+      | ReturnType<CliCommandExecutorContext['agentProjectionRuntime']['createCliAgentView']>
+      | undefined;
+    let onboardingContract: ReturnType<
+      CliCommandExecutorContext['onboardingRuntime']['createOnboardingContractPayload']
+    > | null = null;
 
     let workspaceRootExists = existsSync(context.options.workspace.workspaceRoot);
     if (!workspaceRootExists && runtimeDebugOptions.fix) {
@@ -122,6 +128,14 @@ export class CliDoctorCommand implements CliCommandExecutor {
       const adapterVerification = await context.resolveAdapterVerification();
       adapterVerificationSnapshot = adapterVerification;
       adapterStatus = adapterVerification.overallStatus;
+      agentView = context.agentProjectionRuntime.createCliAgentView({
+        descriptors: context.agentProjectionRuntime.createDescriptorsFromRoleEvaluations({
+          adaptersConfig: context.options.adaptersConfig,
+          verification: adapterVerification,
+          workspace: context.options.workspace,
+          executionId: doctorId,
+        }),
+      });
       checks.push({
         id: CliCommandResultCheckId.ADAPTER_VERIFICATION,
         status: adapterStatus,
@@ -137,6 +151,24 @@ export class CliDoctorCommand implements CliCommandExecutor {
       if (adapterVerification.nextActions.length > 0) {
         nextActions.push(...adapterVerification.nextActions);
       }
+      onboardingContract = context.onboardingRuntime.createOnboardingContractPayload({
+        commandName: 'doctor',
+        executionId: doctorId,
+        workspaceId: context.options.workspace.workspaceId,
+        verificationStatus: adapterVerification.overallStatus,
+        nextActions: adapterVerification.nextActions,
+        enabledTools: context.onboardingRuntime.resolveSelectedTools({
+          requestedTools: runtimeDebugOptions.requestedTools,
+          currentAdaptersConfig: context.options.adaptersConfig,
+        }),
+        adaptersConfig: context.options.adaptersConfig,
+        dryRun: runtimeDebugOptions.dryRun,
+        overwrite: runtimeDebugOptions.overwrite,
+        singleToolAllRoles: runtimeDebugOptions.singleToolAllRoles,
+        presetId: runtimeDebugOptions.presetId,
+        repairScope: runtimeDebugOptions.fix ? 'safe_local' : 'manual_only',
+        diagnosticSummary: `status=${adapterVerification.overallStatus} safe_local_fix=${safeLocalFixCount}`,
+      });
     }
 
     if (runtimeDebugOptions.fix) {
@@ -159,6 +191,13 @@ export class CliDoctorCommand implements CliCommandExecutor {
         detail: nextActions[0] ?? 'review adapter diagnostics for next action',
       });
     }
+    if (agentView) {
+      checks.push({
+        id: 'agent_projection',
+        status: CliGovernanceCheckStatus.PASS,
+        detail: `descriptors=${agentView.descriptors.length} repair_scope=${runtimeDebugOptions.fix ? 'safe_local' : 'manual_only'}`,
+      });
+    }
     await context.artifactWriter.writeJsonArtifact(doctorDiagnosticsArtifactPath, {
       generatedAt: context.toRfc3339SecondsTimestamp(new Date()),
       workspace: {
@@ -174,6 +213,8 @@ export class CliDoctorCommand implements CliCommandExecutor {
       safeLocalBoundary: context.adapterDiagnosticsRuntime.createSafeLocalBoundaryArtifactPayload(
         runtimeDebugOptions.fix,
       ),
+      ...(onboardingContract ? { onboardingContract } : {}),
+      ...(agentView ? { agentView } : {}),
       checks,
       ...(adapterVerificationSnapshot
         ? {
@@ -268,12 +309,14 @@ export class CliDoctorCommand implements CliCommandExecutor {
         checks,
         ...(artifacts.length > 0 ? { artifacts } : {}),
         experience,
+        ...(agentView ? { agentView } : {}),
         details: {
           config_source: context.options.configSource,
           profile: context.options.profileId ?? 'none',
           memory_store_provider: context.options.memoryStoreProviderName,
           adapters_enabled: runtimeDebugOptions.adapters,
           safe_local_fix_applied: safeLocalFixCount,
+          repair_scope: runtimeDebugOptions.fix ? 'safe_local' : 'manual_only',
           adapter_status: adapterStatus,
         },
       },

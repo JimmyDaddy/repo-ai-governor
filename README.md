@@ -129,6 +129,24 @@ pnpm exec repo-ai-governor doctor --output json
 
 When write access is unavailable, `doctor` should return `read_only` semantics instead of crashing.
 
+## 1.6 Multi-tool Onboarding Baseline
+
+Use this sequence when you want to wire Codex / Claude Code / GitHub Copilot style adapter roles into one repository-local baseline:
+
+```bash
+pnpm exec repo-ai-governor connect --tools codex,claude-code --preset multi-tool-default --output json
+pnpm exec repo-ai-governor doctor --adapters --fix --output json
+pnpm exec repo-ai-governor verify --adapters --output json
+pnpm exec repo-ai-governor run --output json --dry-run --trace
+```
+
+Notes:
+
+1. `connect` does not mutate the active `governor.yaml`; it writes a candidate config artifact to `<workspace_root>/context/diagnostics/connect/<connect-id>.governor.yaml` and reports `candidate_config_path` / `candidate_config_valid` in JSON.
+2. Available presets are `single-tool-minimal`, `multi-tool-default`, `single-tool-all-roles`, and `restricted-network-safe`. Use `--single-tool-all-roles <tool>` or repeated `--role-binding role=tool[,fallback]` when you need explicit routing overrides.
+3. `doctor --adapters --fix` only applies safe-local repairs such as writable workspace/config/memory paths. Login, CLI install, proxy setup, and local-model download remain `nextAction`.
+4. `verify --adapters` returns onboarding contract, role/tool matrix, and `agent_view`; `run --dry-run --trace` exercises projected descriptors and LangGraph supervisor diagnostics without requiring a real release run.
+
 ## 2. Full Governance Loop (Stage 9A/9B baseline)
 
 ```bash

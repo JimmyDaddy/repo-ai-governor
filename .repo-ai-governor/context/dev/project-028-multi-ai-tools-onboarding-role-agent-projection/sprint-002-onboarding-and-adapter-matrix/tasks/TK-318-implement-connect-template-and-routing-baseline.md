@@ -1,6 +1,6 @@
 # TK-318 implement connect template and routing baseline
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-28
 - Owner: AI-Agent
 - Priority: P0
@@ -35,3 +35,4 @@
 ## 6. 执行记录
 
 1. 2026-03-28：任务创建，状态初始化为 `planned`。
+2. 2026-03-30：已支持 `single-tool-minimal`、`multi-tool-default`、`single-tool-all-roles`、`restricted-network-safe` 四类 preset，并收口 `--tools`、`--overwrite`、`--single-tool-all-roles`、重复 `--role-binding` 与 candidate config artifact 输出。

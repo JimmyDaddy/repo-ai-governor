@@ -4,6 +4,10 @@ export type {
   LangGraphCompiledGraphPlan,
 } from './langgraph-compiled-graph-plan.interface.js';
 export type {
+  LangGraphSupervisorNodeBinding,
+  LangGraphSupervisorPlan,
+} from './langgraph-agent-supervisor.interface.js';
+export type {
   LangGraphCheckpointer,
   LangGraphCheckpointEnvelope,
   LangGraphCheckpointPendingInterrupt,
