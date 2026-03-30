@@ -1,7 +1,11 @@
 import type { CliCommandName } from '../../constants/cli-command.constant.js';
 import { CliGovernanceCheckStatus } from '../../constants/cli-governance-runtime.constant.js';
 import type { CliReactThemePreset } from '../../constants/cli-react-theme.constant.js';
-import type { CliCommandResultCheck, CliInteractionPrompt } from '../../types/interfaces/index.js';
+import type {
+  CliAgentProjectionPanelViewModel,
+  CliCommandResultCheck,
+  CliInteractionPrompt,
+} from '../../types/interfaces/index.js';
 import type {
   ReactCliSectionViewModel,
   ReactCliStatusVariant,
@@ -24,6 +28,7 @@ export interface ReactCliCommandViewModelBuildOptions {
   statusVariant?: ReactCliStatusVariant;
   checks?: CliCommandResultCheck[];
   interactionPrompts?: CliInteractionPrompt[];
+  agentProjectionPanel?: CliAgentProjectionPanelViewModel;
   footerShortcuts?: string[];
 }
 
@@ -66,6 +71,7 @@ export class ReactCliCommandViewModelBuilder {
             }
           : undefined,
       sections,
+      agentProjectionPanel: options.agentProjectionPanel,
       helpSection:
         helpLines.length > 0
           ? {

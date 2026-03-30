@@ -336,6 +336,19 @@ describe('CliConnectCommand', () => {
           line.includes('Adapter route attention'),
         ),
       ).toBe(true);
+      expect(result.reactCliViewModel?.agentProjectionPanel?.title).toBe('Agent projection');
+      expect(result.reactCliViewModel?.agentProjectionPanel?.summaryBadges).toEqual([
+        'fallback=1',
+        'degraded=1',
+        'blocked=0',
+        'session=none',
+      ]);
+      expect(result.reactCliViewModel?.agentProjectionPanel?.rows[0]?.title).toBe(
+        'coder -> github-copilot',
+      );
+      expect(result.reactCliViewModel?.agentProjectionPanel?.rows[0]?.detailLines).toContain(
+        'profile=coder-default selected_by=fallback status=warn',
+      );
       expect(ledgerPayload.status).toBe(CLI_REVIEW_LEDGER_BACKFILL_STATUS.PENDING);
       expect(ledgerPayload.taskId).toBe('TK-309');
     } finally {

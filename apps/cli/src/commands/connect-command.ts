@@ -25,6 +25,7 @@ import {
   type ReactCliViewModel,
 } from '../react-cli/index.js';
 import { CliConnectWorkflowRuntime } from '../runtime/connect-workflow-runtime.js';
+import { CliAgentProjectionPanelViewModelBuilder } from '../runtime/presentation/agent-projection-panel-view-model-builder.js';
 import type { CliCommandResultArtifact, CliCommandResultCheck } from '../types/index.js';
 import type { CliCommandExecutorContext } from '../types/interfaces/cli-governance-runtime.interface.js';
 import type { CliCommandExecutor } from './cli-command-executor.interface.js';
@@ -33,6 +34,7 @@ interface CliConnectCommandDependencies {
   descriptorCatalog?: ReactCliCommandDescriptorCatalog;
   viewModelBuilder?: ReactCliCommandViewModelBuilder;
   connectWorkflowRuntime?: CliConnectWorkflowRuntime;
+  agentProjectionPanelBuilder?: CliAgentProjectionPanelViewModelBuilder;
 }
 
 /**
@@ -44,6 +46,7 @@ export class CliConnectCommand implements CliCommandExecutor {
   private readonly descriptorCatalog: ReactCliCommandDescriptorCatalog;
   private readonly viewModelBuilder: ReactCliCommandViewModelBuilder;
   private readonly connectWorkflowRuntime: CliConnectWorkflowRuntime;
+  private readonly agentProjectionPanelBuilder: CliAgentProjectionPanelViewModelBuilder;
 
   public constructor(dependencies: CliConnectCommandDependencies = {}) {
     this.descriptorCatalog =
@@ -51,6 +54,8 @@ export class CliConnectCommand implements CliCommandExecutor {
     this.viewModelBuilder = dependencies.viewModelBuilder ?? new ReactCliCommandViewModelBuilder();
     this.connectWorkflowRuntime =
       dependencies.connectWorkflowRuntime ?? new CliConnectWorkflowRuntime();
+    this.agentProjectionPanelBuilder =
+      dependencies.agentProjectionPanelBuilder ?? new CliAgentProjectionPanelViewModelBuilder();
   }
 
   public async execute(context: CliCommandExecutorContext) {
@@ -401,6 +406,7 @@ export class CliConnectCommand implements CliCommandExecutor {
       runtimeDebugOptions,
       diagnosticsArtifactPath,
       adapterVerification,
+      agentView,
       checks,
       interactionPrompts,
       message,
@@ -824,6 +830,9 @@ export class CliConnectCommand implements CliCommandExecutor {
       adapterVerification: Awaited<
         ReturnType<CliCommandExecutorContext['resolveAdapterVerification']>
       >;
+      agentView: ReturnType<
+        CliCommandExecutorContext['agentProjectionRuntime']['createCliAgentView']
+      >;
       checks: CliCommandResultCheck[];
       interactionPrompts: ReturnType<
         CliCommandExecutorContext['adapterDiagnosticsRuntime']['createAdapterInteractionPrompts']
@@ -859,6 +868,11 @@ export class CliConnectCommand implements CliCommandExecutor {
         status: options.adapterVerification.overallStatus,
       }),
       statusVariant: this.viewModelBuilder.resolveStatusVariantFromChecks(options.checks),
+      agentProjectionPanel: this.agentProjectionPanelBuilder.build({
+        agentView: options.agentView,
+        locale: context.options.locale,
+        title: this.translate(context, 'cli.reactShell.shared.agentProjection'),
+      }),
       fieldValues: {
         workspaceRoot: context.options.workspace.workspaceRoot,
         recordLedger: this.translate(

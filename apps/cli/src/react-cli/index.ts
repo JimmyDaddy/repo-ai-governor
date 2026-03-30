@@ -25,6 +25,7 @@ export type {
   ReactCliStatusVariant,
   ReactCliViewModel,
 } from './state/react-cli-view-model.interface.js';
+export { ReactCliAgentProjectionPanel } from './views/agent-projection-panel.js';
 export { ReactCliLayoutShell } from './views/layout-shell.js';
 export { ReactCliComposerInput } from './views/composer-input.js';
 export { ReactCliPromptBar } from './views/prompt-bar.js';

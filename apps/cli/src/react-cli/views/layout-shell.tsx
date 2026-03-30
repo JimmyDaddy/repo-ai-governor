@@ -3,6 +3,7 @@ import { Box, Text } from 'ink';
 import type React from 'react';
 import type { ReactCliShellPalette } from '../../types/index.js';
 import type { ReactCliViewModel } from '../state/react-cli-view-model.interface.js';
+import { ReactCliAgentProjectionPanel } from './agent-projection-panel.js';
 
 export interface ReactCliLayoutShellProps {
   viewModel: ReactCliViewModel;
@@ -60,6 +61,12 @@ export function ReactCliLayoutShell({
           ))}
         </Box>
       ))}
+      {viewModel.agentProjectionPanel ? (
+        <ReactCliAgentProjectionPanel
+          panel={viewModel.agentProjectionPanel}
+          shellPalette={shellPalette}
+        />
+      ) : null}
       {helpSection ? (
         <Box flexDirection='column' marginTop={1}>
           <Text color={shellPalette.helpColor}>{helpSection.title}</Text>

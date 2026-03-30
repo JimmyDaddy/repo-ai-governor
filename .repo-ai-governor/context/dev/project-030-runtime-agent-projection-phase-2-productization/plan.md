@@ -1,6 +1,6 @@
 # project-030-runtime-agent-projection-phase-2-productization 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-03-30
 - Stage Mapping: Runtime agent projection phase-2 productization follow-up
 - Phase Mapping: technical solution / connect apply / smoke gate and presenters / UI consumer
@@ -41,7 +41,7 @@
 
 ## 2.4 sprint-004-ui-consumer-and-rollout-closeout
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 增加一个正式 UI consumer baseline，并完成 docs / review / rollout closeout。
 - Task Package: `TK-428`、`TK-429`。
 
@@ -56,8 +56,8 @@
 | TK-425 | sprint-002 | emit candidate diff and merge explain artifacts | runtime/diagnostics | TK-424 | completed |
 | TK-426 | sprint-003 | strengthen adopter onboarding smoke gate and external repo rehearsal automation | verification/adoption | TK-424,TK-425 | completed |
 | TK-427 | sprint-003 | enrich agentView presenter in pretty and session-shell surfaces | cli/presenter | TK-425 | completed |
-| TK-428 | sprint-004 | add formal UI consumer baseline for desktop and richer UI surfaces | ui/consumer | TK-427 | planned |
-| TK-429 | sprint-004 | close docs, review, and rollout evidence for phase-2 productization | docs/rollout | TK-426,TK-427,TK-428 | planned |
+| TK-428 | sprint-004 | add formal UI consumer baseline for desktop and richer UI surfaces | ui/consumer | TK-427 | completed |
+| TK-429 | sprint-004 | close docs, review, and rollout evidence for phase-2 productization | docs/rollout | TK-426,TK-427,TK-428 | completed |
 
 ## 4. 依赖产物策略
 
@@ -91,3 +91,6 @@
 5. 2026-03-30：激活 `sprint-002-connect-apply-and-diagnostics-contract`，建立 `sprint-002` / `sprint-003` task ledger，开始执行 `TK-424 ~ TK-427`。
 6. 2026-03-30：完成 `sprint-002` 与 `sprint-003`，落地 `connect diff/apply`、candidate diff/merge explain、adopter smoke automation 与 shared agentView presenter；`project-030` 下一条待执行流切换为 `sprint-004-ui-consumer-and-rollout-closeout`。
 7. 2026-03-30：`project-031 / sprint-001` 已激活；`project-030 / sprint-003` closeout surface 从 `current-context.md` 移除并迁入 completed history，保留 `sprint-004` 为 planned follow-up。
+8. 2026-03-30：激活 `sprint-004-ui-consumer-and-rollout-closeout`，补齐 sprint planning/task surface，并开始执行 `TK-428 ~ TK-429`。
+9. 2026-03-30：完成 `sprint-004-ui-consumer-and-rollout-closeout`，新增 transport-neutral `AgentProjectionPanelViewModel` seam 与 `connect` React shell 正式 consumer，并补齐 project-level review / completion audit。
+10. 2026-03-30：完成项目级收口，审计摘要见 `.repo-ai-governor/context/dev/project-030-runtime-agent-projection-phase-2-productization/project-030-runtime-agent-projection-phase-2-productization-completion-audit-summary.md`。

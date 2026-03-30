@@ -42,6 +42,23 @@ describe('ReactCliRunner', () => {
           lines: ['Choose where Repo AI Governor should keep its managed workspace metadata.'],
         },
       ],
+      agentProjectionPanel: {
+        title: 'Agent projection',
+        summaryLine:
+          'agents=2, surfaces=2, fallback=1, degraded=1, blocked=0, gaps=1, session=none',
+        summaryBadges: ['fallback=1', 'degraded=1', 'blocked=0', 'session=none'],
+        rows: [
+          {
+            id: 'coder:coder-default',
+            title: 'coder -> github-copilot',
+            detailLines: [
+              'profile=coder-default selected_by=fallback status=warn',
+              'capability_gap=degraded:tool_calling',
+            ],
+            statusVariant: 'warning',
+          },
+        ],
+      },
       helpSection: {
         title: 'Help',
         lines: ['Use --ui none to disable the shared shell.'],
@@ -53,6 +70,8 @@ describe('ReactCliRunner', () => {
     expect(output).toContain('[react-shell:init] Bootstrap workspace defaults');
     expect(output).toContain('Validation feedback requires another input pass.');
     expect(output).toContain('Attention');
+    expect(output).toContain('Agent projection');
+    expect(output).toContain('coder -> github-copilot');
     expect(output).toContain('Help');
     expect(output).toContain('Shortcuts');
   });

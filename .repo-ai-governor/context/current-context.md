@@ -3,20 +3,20 @@
 ## Primary Stream
 
 - Status: active
-- Project: `project-031-session-shell-ink-input-productization`
-- Sprint: `sprint-004-default-cutover-and-rollout-closeout`
-- Docs root: `.repo-ai-governor/context/dev/project-031-session-shell-ink-input-productization`
-- Task records: `.repo-ai-governor/context/dev/project-031-session-shell-ink-input-productization/sprint-004-default-cutover-and-rollout-closeout/tasks/`
-- Review records: `.repo-ai-governor/context/dev/project-031-session-shell-ink-input-productization/sprint-004-default-cutover-and-rollout-closeout/review/`
-- Note: `project-031-session-shell-ink-input-productization` 的 `sprint-001 ~ sprint-004` 已于 2026-03-30 全部完成；当前仅保留 `sprint-004-default-cutover-and-rollout-closeout` 作为 active closeout surface，承接 project-level review、completion audit 与文档收尾。下一条主执行流激活后，应将本 stream 迁入 completed history，并回切 `project-030 / sprint-004`。
+- Project: `project-030-runtime-agent-projection-phase-2-productization`
+- Sprint: `sprint-004-ui-consumer-and-rollout-closeout`
+- Docs root: `.repo-ai-governor/context/dev/project-030-runtime-agent-projection-phase-2-productization`
+- Task records: `.repo-ai-governor/context/dev/project-030-runtime-agent-projection-phase-2-productization/sprint-004-ui-consumer-and-rollout-closeout/tasks/`
+- Review records: `.repo-ai-governor/context/dev/project-030-runtime-agent-projection-phase-2-productization/sprint-004-ui-consumer-and-rollout-closeout/review/`
+- Note: `project-030` 的 `sprint-002 ~ sprint-003` 已完成，当前激活 `sprint-004` 承接 formal UI consumer baseline 与 rollout closeout；`project-031` 已迁入 completed history。
 
 ## Active Streams
 
-- `primary`: project=`project-031-session-shell-ink-input-productization`, sprint=`sprint-004-default-cutover-and-rollout-closeout`, docs=`.repo-ai-governor/context/dev/project-031-session-shell-ink-input-productization`, plan=`.repo-ai-governor/context/dev/project-031-session-shell-ink-input-productization/plan.md`, tasks=`.repo-ai-governor/context/dev/project-031-session-shell-ink-input-productization/sprint-004-default-cutover-and-rollout-closeout/tasks/`, checklist=`.repo-ai-governor/context/dev/project-031-session-shell-ink-input-productization/sprint-004-default-cutover-and-rollout-closeout/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-031-session-shell-ink-input-productization/sprint-004-default-cutover-and-rollout-closeout/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-031-session-shell-ink-input-productization/sprint-004-default-cutover-and-rollout-closeout/review/`, status=`active`, note=`project-031 completed; sprint-004 retained as active closeout surface for review and audit evidence`
+- `primary`: project=`project-030-runtime-agent-projection-phase-2-productization`, sprint=`sprint-004-ui-consumer-and-rollout-closeout`, docs=`.repo-ai-governor/context/dev/project-030-runtime-agent-projection-phase-2-productization`, plan=`.repo-ai-governor/context/dev/project-030-runtime-agent-projection-phase-2-productization/plan.md`, tasks=`.repo-ai-governor/context/dev/project-030-runtime-agent-projection-phase-2-productization/sprint-004-ui-consumer-and-rollout-closeout/tasks/`, checklist=`.repo-ai-governor/context/dev/project-030-runtime-agent-projection-phase-2-productization/sprint-004-ui-consumer-and-rollout-closeout/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-030-runtime-agent-projection-phase-2-productization/sprint-004-ui-consumer-and-rollout-closeout/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-030-runtime-agent-projection-phase-2-productization/sprint-004-ui-consumer-and-rollout-closeout/review/`, status=`active`, note=`project-030 sprint-004 activated for formal UI consumer baseline and rollout closeout`
 
 ## Planned Follow-Up Streams
 
-- `project-030-runtime-agent-projection-phase-2-productization`: next planned sprint=`sprint-004-ui-consumer-and-rollout-closeout`, note=`sprint-002 and sprint-003 are complete; activate sprint-004 after project-031 or when the team wants to land the formal UI consumer baseline and rollout closeout`
+- None at this time.
 
 ## Completed Stream History
 

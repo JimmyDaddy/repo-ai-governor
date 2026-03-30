@@ -413,6 +413,7 @@ export const EN_US_TRANSLATIONS = {
         summary: 'Summary',
         attention: 'Attention',
         help: 'Help',
+        agentProjection: 'Agent projection',
         enabled: 'enabled',
         disabled: 'disabled',
         notSet: 'not set',

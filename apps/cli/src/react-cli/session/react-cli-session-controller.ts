@@ -25,6 +25,13 @@ export class ReactCliSessionController {
         ...section,
         lines: [...section.lines],
       })),
+      ...(this.viewModel.agentProjectionPanel
+        ? {
+            agentProjectionPanel: this.cloneAgentProjectionPanel(
+              this.viewModel.agentProjectionPanel,
+            ),
+          }
+        : {}),
       ...(this.viewModel.helpSection
         ? {
             helpSection: {
@@ -60,11 +67,20 @@ export class ReactCliSessionController {
         : this.viewModel.helpSection
           ? this.cloneSection(this.viewModel.helpSection)
           : undefined;
+    const agentProjectionPanel =
+      'agentProjectionPanel' in update
+        ? update.agentProjectionPanel
+          ? this.cloneAgentProjectionPanel(update.agentProjectionPanel)
+          : undefined
+        : this.viewModel.agentProjectionPanel
+          ? this.cloneAgentProjectionPanel(this.viewModel.agentProjectionPanel)
+          : undefined;
     this.viewModel = {
       ...this.viewModel,
       ...update,
       attentionSection,
       sections,
+      agentProjectionPanel,
       helpSection,
       footerShortcuts: update.footerShortcuts ?? this.viewModel.footerShortcuts,
     };
@@ -91,5 +107,21 @@ export class ReactCliSessionController {
    */
   private cloneSections(sections: ReactCliViewModel['sections']) {
     return sections.map((section) => this.cloneSection(section));
+  }
+
+  /**
+   * Clones the shared agent-projection panel to preserve array ownership in session state.
+   * @param panel Shared agent-projection panel view-model.
+   * @returns Defensive shallow clone.
+   */
+  private cloneAgentProjectionPanel(panel: NonNullable<ReactCliViewModel['agentProjectionPanel']>) {
+    return {
+      ...panel,
+      summaryBadges: [...panel.summaryBadges],
+      rows: panel.rows.map((row) => ({
+        ...row,
+        detailLines: [...row.detailLines],
+      })),
+    };
   }
 }

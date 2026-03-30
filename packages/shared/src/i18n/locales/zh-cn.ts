@@ -367,6 +367,7 @@ export const ZH_CN_TRANSLATIONS = {
         summary: '摘要',
         attention: '注意事项',
         help: '帮助',
+        agentProjection: 'Agent 投影',
         enabled: '已启用',
         disabled: '已关闭',
         notSet: '未设置',

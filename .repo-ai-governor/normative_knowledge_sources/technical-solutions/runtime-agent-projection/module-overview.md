@@ -15,7 +15,7 @@
 1. 统一 `connect / doctor / verify` 的 onboarding contract、诊断语义和最小支持矩阵。
 2. 将 `connect` 默认保持为 analyze-first candidate 生成面，并通过显式 `diff/apply` follow-up surface 承接 reviewable write-back。
 3. 将 role、surface、session、capability、budget 与 timeout 组合成 agent descriptor 视图。
-4. 为 CLI、report、diagnostics 与后续 UI 提供同一份 agent projection 数据与 presenter-safe view model。
+4. 为 CLI、report、diagnostics 与后续 UI 提供同一份 agent projection 数据与 presenter-safe / panel-safe view model；phase-2 formal UI consumer baseline 通过 transport-neutral `AgentProjectionPanelViewModel` seam 落地。
 5. 将 `AgentSessionRegistry` 作为共享 session 的投影层，而不是新的会话事实源。
 6. 允许 LangGraph supervisor 消费 agent descriptor，但不把 supervisor 升格为新的 canonical runtime。
 
@@ -48,7 +48,7 @@
 1. 命中 `runtime_contract_change`、`adapter_change`、`cli_ui_change`、`command_surface_change`、`technical_solution_module_change` 时加载。
 2. 默认只加载 overview 与 direct contracts，不递归展开 onboarding 命令实现或 projection presenter。
 3. 当问题涉及 `connect / doctor / verify`、agent descriptor、session projection 或 LangGraph multi-agent 消费时，优先补载本模块 contract。
-4. 当问题涉及 candidate config apply、diff/merge explain、agent projection presenter 或 desktop-ready projection consumer 时，也应优先补载本模块。
+4. 当问题涉及 candidate config apply、diff/merge explain、agent projection presenter、`AgentProjectionPanelViewModel` seam 或 desktop-ready projection consumer 时，也应优先补载本模块。
 
 ## 8. Detail Docs
 

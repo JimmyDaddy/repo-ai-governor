@@ -1,6 +1,6 @@
 import type { ExecutionReportAgentView } from '@repo-ai-governor/reporting';
 
-interface CliAgentProjectionSummary {
+export interface CliAgentProjectionSummary {
   descriptorCount: number;
   activeSurfaceCount: number;
   sessionStatus: string;
@@ -10,7 +10,7 @@ interface CliAgentProjectionSummary {
   capabilityGapCount: number;
 }
 
-interface CliAgentProjectionRow {
+export interface CliAgentProjectionRow {
   agentRole: string;
   roleProfileId: string;
   selectedSurface: string;
