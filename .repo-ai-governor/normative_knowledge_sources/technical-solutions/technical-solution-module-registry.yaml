@@ -330,6 +330,8 @@ modules:
         kind: contract
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/multi-tool-onboarding-and-role-agent-projection-cutover.md
         kind: adr
+      - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/connect-apply-and-projection-consumer-productization.md
+        kind: adr
     north_star_refs:
       - prd.multi-agent-orchestration
       - overall.graph-first-runtime
@@ -387,6 +389,8 @@ modules:
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/contracts/cli-session-shell-contract.md
         kind: contract
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/adrs/session-first-shell-and-service-owned-session-state.md
+        kind: adr
+      - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/adrs/ink-owned-input-and-action-driven-session-shell.md
         kind: adr
     north_star_refs:
       - prd.multi-agent-orchestration

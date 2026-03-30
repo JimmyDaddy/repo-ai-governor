@@ -46,6 +46,11 @@ import {
   CliCommandName,
 } from './constants/cli-command.constant.js';
 import {
+  CLI_CONNECT_ACTION_VALUES,
+  CliConnectAction,
+  CliConnectWriteMode,
+} from './constants/cli-connect.constant.js';
+import {
   CLI_INTERACTIVE_UI_MODE_VALUES,
   type CliInteractiveUiMode,
 } from './constants/cli-interactive-shell.constant.js';
@@ -144,6 +149,9 @@ const CLI_TOP_LEVEL_BOOLEAN_OPTIONS = new Set<string>([
   '--adapters',
   '--fix',
   '--overwrite',
+  '--latest',
+  '--force',
+  '--no-rollback',
   '--record-ledger',
   '--no-interactive',
   '--dry-run',
@@ -490,6 +498,9 @@ export async function runCli(
     program.option('--preset <presetId>', runtimeI18n.t('cli.options.preset'));
     program.option('--tools <tools>', runtimeI18n.t('cli.options.tools'));
     program.option('--overwrite', runtimeI18n.t('cli.options.overwrite'));
+    program.option('--latest', runtimeI18n.t('cli.options.latest'));
+    program.option('--force', runtimeI18n.t('cli.options.force'));
+    program.option('--no-rollback', runtimeI18n.t('cli.options.noRollback'));
     program.option(
       '--single-tool-all-roles <tool>',
       runtimeI18n.t('cli.options.singleToolAllRoles'),
@@ -594,6 +605,7 @@ export async function runCli(
 
     for (const commandDefinition of CLI_COMMAND_DEFINITIONS) {
       if (
+        commandDefinition.name === CliCommandName.CONNECT ||
         commandDefinition.name === CliCommandName.WORKFLOW ||
         commandDefinition.name === CliCommandName.WORKSPACE ||
         commandDefinition.name === CliCommandName.RESUME
@@ -608,6 +620,19 @@ export async function runCli(
           await executeCliCommand(commandDefinition.name);
         });
     }
+
+    program
+      .command(CliCommandName.CONNECT)
+      .description(runtimeI18n.t('cli.commands.connect.description'))
+      .argument('[action]', runtimeI18n.t('cli.commands.connect.actionArgument'))
+      .argument('[candidate]', runtimeI18n.t('cli.commands.connect.candidateArgument'))
+      .option('--latest', runtimeI18n.t('cli.options.latest'))
+      .option('--force', runtimeI18n.t('cli.options.force'))
+      .option('--no-rollback', runtimeI18n.t('cli.options.noRollback'))
+      .addHelpText('after', buildConnectHelpText(runtimeI18n))
+      .action(async () => {
+        await executeCliCommand(CliCommandName.CONNECT);
+      });
 
     program
       .command(CliCommandName.RESUME)
@@ -810,6 +835,27 @@ function buildSetUiThemeHelpText(i18n: I18nRuntime): string {
     `  ${CLI_PROGRAM_NAME} set-ui-theme calm --output pretty`,
     `  ${CLI_PROGRAM_NAME} set-ui-theme calm --theme-scope workspace --output pretty`,
     `  ${CLI_PROGRAM_NAME} workspace set-ui-theme calm --output pretty`,
+  ].join('\n');
+}
+
+/**
+ * Builds one localized connect-command help appendix covering generate/diff/apply flows.
+ * @param i18n Initialized CLI i18n runtime.
+ * @returns Multi-line help text appended after Commander-generated options.
+ */
+function buildConnectHelpText(i18n: I18nRuntime): string {
+  return [
+    '',
+    i18n.t('cli.commands.connect.actionGuideTitle'),
+    `  ${CliConnectAction.GENERATE.padEnd(12)} ${i18n.t('cli.commands.connect.actionGuideGenerate')}`,
+    `  ${CliConnectAction.DIFF.padEnd(12)} ${i18n.t('cli.commands.connect.actionGuideDiff')}`,
+    `  ${CliConnectAction.APPLY.padEnd(12)} ${i18n.t('cli.commands.connect.actionGuideApply')}`,
+    '',
+    i18n.t('cli.commands.connect.examplesTitle'),
+    `  ${CLI_PROGRAM_NAME} connect --preset multi-tool-default --output pretty`,
+    `  ${CLI_PROGRAM_NAME} connect diff --latest --output json`,
+    `  ${CLI_PROGRAM_NAME} connect apply --latest --output pretty`,
+    `  ${CLI_PROGRAM_NAME} connect apply ./context/diagnostics/connect/connect-1234567890.governor.yaml --force`,
   ].join('\n');
 }
 
@@ -1281,6 +1327,7 @@ function resolveRuntimeDebugOptions(
   adaptersConfig: AdaptersConfig,
   workspaceCommandOptions: CliWorkspaceCommandOptions,
 ): CliRuntimeDebugOptions {
+  const requestedCommandName = resolveRequestedCommandName(args);
   const readRequiredOption = (flag: string, errorMessage: string): string | null => {
     const option = readOptionInput(args, flag);
     if (option.isPresent && !option.value) {
@@ -1411,6 +1458,59 @@ function resolveRuntimeDebugOptions(
       { option: '--restricted-reason' },
     );
   }
+  const rawConnectAction =
+    requestedCommandName === CliCommandName.CONNECT
+      ? (resolveNestedSubcommandToken(args, CliCommandName.CONNECT)?.trim().toLowerCase() ?? null)
+      : null;
+  if (rawConnectAction && !CLI_CONNECT_ACTION_VALUES.has(rawConnectAction)) {
+    throw new RuntimeError(
+      GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+      `connect action must be one of ${Array.from(CLI_CONNECT_ACTION_VALUES).join('|')}; received '${rawConnectAction}'.`,
+      {
+        command: CliCommandName.CONNECT,
+        value: rawConnectAction,
+      },
+    );
+  }
+  const connectAction =
+    rawConnectAction === CliConnectAction.DIFF || rawConnectAction === CliConnectAction.APPLY
+      ? rawConnectAction
+      : CliConnectAction.GENERATE;
+  const connectCandidatePath =
+    requestedCommandName === CliCommandName.CONNECT
+      ? resolvePositionalTokenAfterCommand(args, CliCommandName.CONNECT, 1)
+      : null;
+  const connectLatest = hasFlag(args, '--latest');
+  if (
+    requestedCommandName === CliCommandName.CONNECT &&
+    connectAction === CliConnectAction.GENERATE &&
+    connectCandidatePath
+  ) {
+    throw new RuntimeError(
+      GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+      'connect generate does not accept one candidate positional path; use `connect diff <candidate>` or `connect apply <candidate>` instead.',
+      {
+        command: CliCommandName.CONNECT,
+        candidatePath: connectCandidatePath,
+      },
+    );
+  }
+  if (
+    requestedCommandName === CliCommandName.CONNECT &&
+    connectAction !== CliConnectAction.GENERATE &&
+    connectCandidatePath &&
+    connectLatest
+  ) {
+    throw new RuntimeError(
+      GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+      'connect diff/apply accepts either one candidate path or --latest, but not both.',
+      {
+        command: CliCommandName.CONNECT,
+        candidatePath: connectCandidatePath,
+        option: '--latest',
+      },
+    );
+  }
 
   const hitlDecision = readRequiredOption(
     '--hitl-decision',
@@ -1485,6 +1585,14 @@ function resolveRuntimeDebugOptions(
     dryRun: hasFlag(args, '--dry-run'),
     trace: hasFlag(args, '--trace'),
     replayPath,
+    connectAction,
+    connectCandidatePath,
+    connectLatest,
+    connectForce: hasFlag(args, '--force'),
+    connectRollbackEnabled: !hasFlag(args, '--no-rollback'),
+    connectWriteMode: hasFlag(args, '--overwrite')
+      ? CliConnectWriteMode.OVERWRITE
+      : CliConnectWriteMode.MERGE,
     presetId:
       (presetId as CliAgentOnboardingPreset | null) ?? CliAgentOnboardingPreset.MULTI_TOOL_DEFAULT,
     requestedTools:

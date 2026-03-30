@@ -14,7 +14,7 @@
 
 1. 解析并落实 `none / classic / react / tui / session-shell` 等本地 UI 选择规则。
 2. 管理命令内 React shell 与 session-first shell 的生命周期、`SIGINT` 清理与 classic fallback。
-3. 承载 transcript、composer、slash command palette 与 command handoff preview 的 presenter 语义，但不拥有 canonical session truth。
+3. 承载 transcript、composer、slash command palette、Ink-owned foreground input 与 command handoff preview 的 presenter 语义，但不拥有 canonical session truth。
 4. 约束所有 live shell 只向 `stderr` 渲染，保持 `stdout` 机器输出稳定。
 5. 为 `init / connect / workspace / upgrade / workflow` 等命令 surface 提供统一交互 seam。
 6. 为 `repo-ai-governor` 无子命令默认进入的本地 session shell 定义入口 contract 与 resume baseline。
@@ -55,6 +55,7 @@
 2. `v2` 起，本模块额外承载“无子命令进入常驻会话”的本地人类入口语义，但不破坏显式子命令和自动化路径。
 3. session transcript、resume pointer 与 command handoff summary 必须由 local orchestration service 托管；CLI 只做 client + presenter。
 4. future desktop 应消费同一份 service-backed session DTO，而不是复制第二套 session state。
+5. focused Ink-owned input formalization 规定 session shell 的默认 foreground input owner 为 Ink；`readline` 只保留为 fallback seam。
 
 ## 9. Detail Docs
 
@@ -63,3 +64,4 @@
    - `contracts/cli-session-shell-contract.md`
 2. ADR:
    - `adrs/session-first-shell-and-service-owned-session-state.md`
+   - `adrs/ink-owned-input-and-action-driven-session-shell.md`

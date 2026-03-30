@@ -20,6 +20,7 @@
 1. `.repo-ai-governor/draft/session-shell-ink-input-takeover-technical-solution.md`
 2. 与现有 session-shell contract 对齐的架构决策
 3. 基于官方资料的外部参考结论
+4. 审批通过后对应的正式 ADR / contract 补充与 promotion 台账
 
 ## 4. 实施计划
 
@@ -31,10 +32,18 @@
 
 1. `node ./scripts/governance/check-task-ledger-sync.js`
 2. `node ./scripts/governance/check-sprint-plan-status-sync.js`
-3. docs-only，本任务未修改可执行代码，因此 `build not required`
+3. `node ./scripts/governance/check-technical-solution-lifecycle-registry.js`
+4. `node ./scripts/governance/check-technical-solution-delivery-registry.js`
+5. `node ./scripts/governance/check-technical-solution-module-graph.js`
+6. `node ./scripts/governance/check-normative-loading-manifest.js --mode block`
+7. `node ./scripts/governance/check-docs-triad-sync.js`
+8. `node ./scripts/governance/check-code-review-status-sync.js`
+9. `node ./scripts/governance/check-artifact-registry-lifecycle.js`
+10. docs-only，本任务未修改可执行代码，因此 `build not required`
 
 ## 6. 执行记录
 
 1. 2026-03-30：任务创建，状态初始化为 `planned`。
 2. 2026-03-30：已完成 draft 正文 [session-shell-ink-input-takeover-technical-solution.md](/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/draft/session-shell-ink-input-takeover-technical-solution.md)，明确 Ink 输入接管的组件边界、action model、迁移步骤、风险与验证建议，并补充官方参考链接。
 3. 2026-03-30：本文件仅保留台账记录与 draft 入口，不再承载方案正文，避免在 `tasks/` 下形成第二份技术方案文本。
+4. 2026-03-30：在用户明确批准后，已将该 focused draft 正式提升到 `runtime.cli-interactive-shell` 模块：新增 ADR `ink-owned-input-and-action-driven-session-shell.md`，并把默认 foreground input owner / action-driven keyboard contract 补入 `cli-session-shell-contract.md`，同时完成 lifecycle / delivery / module-registry / manifest 同步。

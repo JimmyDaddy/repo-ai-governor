@@ -1,7 +1,7 @@
 # Agent Projection Contract
 
 - Status: active
-- Date: 2026-03-28
+- Date: 2026-03-30
 - Contract ID: `contract.runtime.agent-projection.v1`
 - Producer Module: `runtime.agent-projection`
 
@@ -35,6 +35,9 @@
 22. `execution_id`
 23. `session_id`
 24. `selected_by`
+25. `selected_surface`
+26. `projection_status`
+27. `failure_reasons[]`
 
 ## 3. Allowed Values
 
@@ -63,3 +66,4 @@
 
 1. `v1` 允许 `AgentDescriptor` 由 CLI、report 与 diagnostics 共用。
 2. `v1` 允许在不引入 UI 事实源的前提下，为后续桌面端提供同一份投影数据。
+3. `v1` 允许 shared presenter/view-model 对 `selected_by`、`selected_surface`、`projection_status` 与 `failure_reasons` 做派生渲染，但不得把 presenter 结果反向写回 runtime truth。

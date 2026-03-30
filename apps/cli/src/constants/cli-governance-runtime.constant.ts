@@ -42,6 +42,8 @@ export enum CliDoctorAttachMode {
 export enum CliRuntimeOperation {
   WORKSPACE_INIT = 'workspace_init',
   ADAPTER_CONNECT = 'adapter_connect',
+  ADAPTER_CONNECT_DIFF = 'adapter_connect_diff',
+  ADAPTER_CONNECT_APPLY = 'adapter_connect_apply',
   ENV_DOCTOR = 'env_doctor',
   ADAPTER_VERIFY = 'adapter_verify',
   GOVERNANCE_CHECK = 'governance_check',

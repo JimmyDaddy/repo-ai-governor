@@ -37,3 +37,4 @@
 6. 2026-03-30：收尾 gate 发现 `technical-solution-delivery-registry` 中 project-029 的 follow-up delivery entry 仍停留在 `planned`；已通过 `TK-419` 将其与 completion audit / current-context closeout truth 同步回 `completed`。
 7. 2026-03-30：真实手工验收发现 session shell 仍存在 append-only 刷新、`/doctor` 额外 `/confirm`、`/exit` 残留 pending preview 等 UX 偏差；已通过 `TK-420` 修复前两类 runtime 问题，并形成 `session-shell-ink-owned-input-solution-review-20260330.md` 作为 live slash palette / composer 的正式后续方案。
 8. 2026-03-30：根据后续评审需要，新增 `TK-421` 形成 focused draft `session-shell-ink-input-takeover-technical-solution.md`；该文档基于官方 Ink / Ink UI / Ink Testing Library 资料，将 Ink 输入接管的组件边界、action model、迁移步骤与验证建议正式化，供实现前评审。
+9. 2026-03-30：在 focused draft 获批后，已将 Ink 输入接管正式提升为 `runtime.cli-interactive-shell` 模块 ADR，并把默认 foreground input owner / action-driven keyboard contract 补入 `cli-session-shell-contract.md`，同时完成 lifecycle / delivery / module-registry / manifest 同步。

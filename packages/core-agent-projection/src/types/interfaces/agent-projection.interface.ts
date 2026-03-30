@@ -18,6 +18,8 @@ export interface AgentProjectionInput {
   selectedBy?: string | null;
   projectionStatus?: string | null;
   failureReasons?: string[];
+  unsupportedCapabilities?: string[];
+  degradedCapabilities?: string[];
   inputSchemaRef?: string | null;
   outputSchemaRef?: string | null;
   errorContractRef?: string | null;
@@ -59,6 +61,8 @@ export interface AgentDescriptor {
   selectedSurface: AdapterSurface | string | null;
   projectionStatus: string | null;
   failureReasons: string[];
+  unsupportedCapabilities: string[];
+  degradedCapabilities: string[];
 }
 
 export interface AgentSessionProjectionEntry {

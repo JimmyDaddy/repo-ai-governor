@@ -556,7 +556,7 @@ documents:
       - technical_solution_module_change
       - technical_solution_promotion_change
     owner: runtime
-    last_reviewed_at: 2026-03-28
+    last_reviewed_at: 2026-03-30
 
   - doc_id: technical_solution_runtime_agent_projection_onboarding_contract
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/contracts/agent-onboarding-contract.md
@@ -571,7 +571,7 @@ documents:
       - technical_solution_module_change
       - technical_solution_promotion_change
     owner: runtime
-    last_reviewed_at: 2026-03-28
+    last_reviewed_at: 2026-03-30
 
   - doc_id: technical_solution_runtime_agent_projection_projection_contract
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/contracts/agent-projection-contract.md
@@ -586,7 +586,7 @@ documents:
       - technical_solution_module_change
       - technical_solution_promotion_change
     owner: runtime
-    last_reviewed_at: 2026-03-28
+    last_reviewed_at: 2026-03-30
 
   - doc_id: technical_solution_runtime_agent_projection_adr
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/multi-tool-onboarding-and-role-agent-projection-cutover.md
@@ -601,7 +601,22 @@ documents:
       - technical_solution_module_change
       - technical_solution_promotion_change
     owner: runtime
-    last_reviewed_at: 2026-03-28
+    last_reviewed_at: 2026-03-30
+
+  - doc_id: technical_solution_runtime_agent_projection_phase2_adr
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/connect-apply-and-projection-consumer-productization.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - runtime_contract_change
+      - adapter_change
+      - cli_ui_change
+      - command_surface_change
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+    owner: runtime
+    last_reviewed_at: 2026-03-30
 
   - doc_id: runtime_cli_interactive_shell_module_overview
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/module-overview.md
@@ -644,6 +659,19 @@ documents:
 
   - doc_id: runtime_cli_session_shell_adr
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/adrs/session-first-shell-and-service-owned-session-state.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+      - cli_ui_change
+      - command_surface_change
+    owner: runtime
+    last_reviewed_at: 2026-03-30
+
+  - doc_id: runtime_cli_session_shell_ink_input_adr
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/adrs/ink-owned-input-and-action-driven-session-shell.md
     tier: L2
     status: active
     default_load: false

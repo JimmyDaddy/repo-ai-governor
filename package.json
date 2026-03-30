@@ -69,6 +69,7 @@
     "check:examples-runtime-smoke": "node ./scripts/examples/check-examples-runtime.js",
     "check:examples-runtime-smoke:plugin-enabled": "node ./scripts/examples/check-examples-runtime.js --distribution-mode plugin-enabled",
     "check:examples-smoke": "pnpm run check:examples-doc-smoke && pnpm run check:examples-runtime-smoke",
+    "check:project-030-adopter-smoke": "node ./scripts/acceptance/run-project-030-agent-projection-phase-2-smoke.js",
     "check:ide-entry-smoke": "node ./scripts/examples/check-ide-entry-smoke.js",
     "check:desktop-entry-smoke": "node ./scripts/examples/check-desktop-entry-smoke.js",
     "check:ide-docs-parity": "node ./scripts/examples/check-ide-docs-parity.js",

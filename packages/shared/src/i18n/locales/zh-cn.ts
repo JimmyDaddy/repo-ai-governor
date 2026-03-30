@@ -21,6 +21,9 @@ export const ZH_CN_TRANSLATIONS = {
         '指定 connect 的 onboarding 模板：single-tool-minimal|multi-tool-default|single-tool-all-roles|restricted-network-safe。',
       tools: '指定 connect/doctor/verify onboarding 视图使用的逗号分隔工具列表。',
       overwrite: '允许 connect 候选配置覆盖现有角色/路由片段，而不是只做合并输出。',
+      latest: '在 diff/apply 中直接使用最近一次生成的 connect 候选产物。',
+      force: '在 connect diff/apply 中绕过 source fingerprint 漂移或 apply-ready blocker 等保护。',
+      noRollback: '在 connect apply 中禁用 rollback snapshot，只写 apply receipt。',
       singleToolAllRoles: '指定一个工具，把全部启用 onboarding 角色临时绑定到同一 surface。',
       roleBinding:
         '可重复传入的角色绑定覆盖，格式为 roleId=tool[,fallbackTool...]；也接受 roleProfileId。',
@@ -42,7 +45,16 @@ export const ZH_CN_TRANSLATIONS = {
     },
     commands: {
       init: { description: '初始化治理工作区基线。' },
-      connect: { description: '生成适配器接入诊断基线。' },
+      connect: {
+        description: '生成适配器接入诊断基线。',
+        actionArgument: '可选 connect 动作：generate|diff|apply。',
+        candidateArgument: '可选候选产物路径，支持 diagnostics JSON 或 candidate governor.yaml。',
+        actionGuideTitle: '动作说明：',
+        actionGuideGenerate: '生成候选配置，以及 diagnostics/diff/merge-explain 配套产物。',
+        actionGuideDiff: '基于已有 connect 候选重新刷新 diff 与 merge-explain 产物。',
+        actionGuideApply: '把候选配置应用到当前 governor.yaml，并输出 receipt/rollback 产物。',
+        examplesTitle: '示例：',
+      },
       doctor: { description: '执行环境诊断基线。' },
       check: { description: '执行治理质量检查基线。' },
       run: { description: '执行流程运行时基线。' },

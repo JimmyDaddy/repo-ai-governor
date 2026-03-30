@@ -77,6 +77,7 @@ import { CliWorkflowCommand } from './commands/workflow-command.js';
 import { CliWorkspaceCommand } from './commands/workspace-command.js';
 import { CliAgentOnboardingPreset } from './constants/cli-agent-onboarding.constant.js';
 import { CliCommandName } from './constants/cli-command.constant.js';
+import { CliConnectAction, CliConnectWriteMode } from './constants/cli-connect.constant.js';
 import {
   CLI_CHANGE_RISK_FILE_CATEGORY_PATTERNS,
   CLI_DIAGNOSTIC_ROOT_CAUSE,
@@ -1518,6 +1519,23 @@ export class CliGovernanceRuntime {
           : null,
       adapters: this.options.runtimeDebugOptions?.adapters === true,
       fix: this.options.runtimeDebugOptions?.fix === true,
+      connectAction:
+        this.options.runtimeDebugOptions?.connectAction === CliConnectAction.DIFF ||
+        this.options.runtimeDebugOptions?.connectAction === CliConnectAction.APPLY
+          ? this.options.runtimeDebugOptions.connectAction
+          : CliConnectAction.GENERATE,
+      connectCandidatePath:
+        typeof this.options.runtimeDebugOptions?.connectCandidatePath === 'string' &&
+        this.options.runtimeDebugOptions.connectCandidatePath.trim().length > 0
+          ? this.options.runtimeDebugOptions.connectCandidatePath.trim()
+          : null,
+      connectLatest: this.options.runtimeDebugOptions?.connectLatest === true,
+      connectForce: this.options.runtimeDebugOptions?.connectForce === true,
+      connectRollbackEnabled: this.options.runtimeDebugOptions?.connectRollbackEnabled !== false,
+      connectWriteMode:
+        this.options.runtimeDebugOptions?.connectWriteMode === CliConnectWriteMode.OVERWRITE
+          ? CliConnectWriteMode.OVERWRITE
+          : CliConnectWriteMode.MERGE,
       presetId:
         typeof this.options.runtimeDebugOptions?.presetId === 'string' &&
         this.options.runtimeDebugOptions.presetId.trim().length > 0

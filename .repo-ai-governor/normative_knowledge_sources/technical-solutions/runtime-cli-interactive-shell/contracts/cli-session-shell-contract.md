@@ -26,6 +26,9 @@
 13. `output_contract`
 14. `persistence_owner`
 15. `resume_selector`
+16. `foreground_input_owner`
+17. `foreground_focus_target`
+18. `input_action_contract`
 
 ## 3. Allowed Values
 
@@ -51,6 +54,13 @@
    - `json`
 5. `persistence_owner`
    - `local_orchestration_service`
+6. `foreground_input_owner`
+   - `ink`
+   - `readline_fallback`
+7. `foreground_focus_target`
+   - `composer`
+   - `palette`
+   - `handoff_preview`
 
 ## 4. Required Constraints
 
@@ -58,11 +68,13 @@
 2. `--help`、显式子命令、`--output json`、`--output plain`、`--no-interactive` 与非 TTY 场景必须不进入 session shell。
 3. session shell 的 live UI 只能渲染到 `stderr`，不得污染 `stdout`。
 4. 普通文本与 slash command 必须走显式语法分流；普通文本进入主 agent turn，`/command` 进入 slash router。
-5. CLI 只允许持有 presenter 级本地 view state；canonical session state、resume pointer、transcript 与 command handoff summary 必须由 local orchestration service 托管。
-6. `/exit` 只退出当前前台会话界面，不删除已保存 transcript；`/resume [session-id]` 负责恢复最近一次或指定 session。
-7. 会话外允许提供 `repo-ai-governor resume [session-id]` 入口；不建议提供顶层 `repo-ai-governor exit`。
-8. `cli_handoff` 类型的高副作用命令必须先展示规范化命令预览并得到显式确认，再进入执行。
-9. CLI 与 future desktop 必须共享同一套 session DTO 语义；差异只能存在于 presenter 层，不得复制第二套 session state owner。
+5. `foreground_input_owner` 在默认 live session-shell 路径中必须为 `ink`；`readline_fallback` 只能用于 non-TTY、debug 或 Ink/raw-mode 不可用的保底路径。
+6. `Up/Down`、`Tab`、`Esc`、`Ctrl+L` 等前台键盘语义必须通过同一条 action-driven input contract 收口，不允许再依赖 frame 外 line editor 隐式处理。
+7. CLI 只允许持有 presenter 级本地 view state；canonical session state、resume pointer、transcript 与 command handoff summary 必须由 local orchestration service 托管。
+8. `/exit` 只退出当前前台会话界面，不删除已保存 transcript；`/resume [session-id]` 负责恢复最近一次或指定 session。
+9. 会话外允许提供 `repo-ai-governor resume [session-id]` 入口；不建议提供顶层 `repo-ai-governor exit`。
+10. `cli_handoff` 类型的高副作用命令必须先展示规范化命令预览并得到显式确认，再进入执行。
+11. CLI 与 future desktop 必须共享同一套 session DTO 语义；差异只能存在于 presenter 层，不得复制第二套 session state owner。
 
 ## 5. Consumers
 
@@ -75,3 +87,4 @@
 1. `v1` 只约束 session-first local shell 的最小字段与行为边界，不要求首轮实现已经覆盖所有 deferred commands。
 2. `v1` 保留现有显式子命令树的自动化兼容性；session-first 是新增默认人类入口，不是替换机器入口。
 3. `v1` 允许把 session routing setting command 暂时保留为 future command，并在真正落地时以 `/model`、`/agent` 或 `/routing` 中的一种命名收口。
+4. `v1` 允许 session shell 从 `readline` foreground input 迁移到 Ink-owned input，只要上述字段与治理边界保持稳定。

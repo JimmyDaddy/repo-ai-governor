@@ -27,6 +27,7 @@
    - `.repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/module-overview.md`
    - `.repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/contracts/cli-session-shell-contract.md`
    - `.repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/adrs/session-first-shell-and-service-owned-session-state.md`
+   - `.repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/adrs/ink-owned-input-and-action-driven-session-shell.md`
 
 ## 4. Delivered Capability Summary
 
@@ -36,6 +37,7 @@
 4. `/theme`、`/agent`、multiline/history/search、`!` passthrough 与 recoverable error/cancellation hint 已进入正式 session shell 能力面。
 5. README、`README.zh-CN.md`、`docs/local-adoption-playbook.md` 与 `docs/local-adoption-playbook.zh-CN.md` 已同步更新为 session-first adopter-facing 真值。
 6. sidecar/desktop smoke、public package exports 与 session/runtime 目标测试集已通过，future desktop presenter 只需替换前台呈现层而不是重做协议。
+7. focused follow-up 方案 `session-shell-ink-input-takeover-technical-solution.md` 已在用户审批后正式提升为 `runtime.cli-interactive-shell` 模块 ADR，用于锁定下一阶段 Ink-owned input / action-driven runner 的正式演进方向。
 
 ## 5. Residual Risk And Follow-Up
 

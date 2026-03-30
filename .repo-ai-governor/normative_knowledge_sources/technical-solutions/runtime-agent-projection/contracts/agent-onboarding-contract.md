@@ -1,7 +1,7 @@
 # Agent Onboarding Contract
 
 - Status: active
-- Date: 2026-03-28
+- Date: 2026-03-30
 - Contract ID: `contract.runtime.agent-onboarding.v1`
 - Producer Module: `runtime.agent-projection`
 
@@ -25,6 +25,7 @@
 12. `next_action`
 13. `execution_id`
 14. `workspace_id`
+15. `next_actions[]`
 
 ## 3. Allowed Values
 
@@ -47,14 +48,18 @@
 3. `verify` 必须能回链 `execution_id`，并输出可用于 CI 的稳定诊断结果。
 4. `dry_run=true` 时不得落盘修改。
 5. `single_tool_all_roles=true` 只表示路由模板，不表示能力假设已被验证。
+6. `connect` 可以输出 candidate config、fingerprint、diff summary 与 merge explain companion artifacts，但默认仍是 non-mutating analyze-first surface。
+7. 若存在显式 candidate-application surface，它只能消费已生成的 candidate artifact，不得在写回前静默重算 candidate。
 
 ## 5. Output Semantics
 
 1. `diagnostic_summary` 应能压缩为可读摘要，同时保留 machine 可消费字段。
 2. `next_action` 必须是可执行建议，而不是泛化说明。
 3. `verification_status=fail` 时，必须给出明确的修复方向或阻断原因。
+4. `connect` 相关输出应允许 companion artifact 提供 `source_config_hash`、`candidate_config_hash`、`diff_summary` 与 `merge_explain`，但不得改变 contract payload 的稳定 machine shape。
 
 ## 6. Compatibility
 
 1. `v1` 允许 onboarding 结果被 presenter 渲染为 `pretty/plain/json`，但不得改变 machine schema。
 2. `v1` 允许 CLI 非交互场景直接输出 `plain` 或 `json`。
+3. `v1` 允许 candidate diff / merge explain / apply receipt 作为 companion artifact 存在，只要默认 `connect` contract 仍保持 non-mutating。

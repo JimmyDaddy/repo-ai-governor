@@ -11,6 +11,10 @@ import type { AdapterSurface } from '@repo-ai-governor/shared';
 import type { ErrorOutputEnvironment, MemoryRuntimeConfig } from '@repo-ai-governor/shared';
 import type { CliAgentOnboardingPreset } from '../../constants/cli-agent-onboarding.constant.js';
 import type {
+  CliConnectAction,
+  CliConnectWriteMode,
+} from '../../constants/cli-connect.constant.js';
+import type {
   CliInteractiveShellFallbackBehavior,
   CliInteractiveUiMode,
 } from '../../constants/cli-interactive-shell.constant.js';
@@ -111,6 +115,12 @@ export interface CliNormalizedRuntimeDebugOptions {
   replayPath: string | null;
   adapters: boolean;
   fix: boolean;
+  connectAction: CliConnectAction;
+  connectCandidatePath: string | null;
+  connectLatest: boolean;
+  connectForce: boolean;
+  connectRollbackEnabled: boolean;
+  connectWriteMode: CliConnectWriteMode | null;
   presetId: CliAgentOnboardingPreset;
   requestedTools: AdapterSurface[];
   overwrite: boolean;

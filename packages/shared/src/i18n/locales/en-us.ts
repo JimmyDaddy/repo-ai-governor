@@ -22,6 +22,11 @@ export const EN_US_TRANSLATIONS = {
       tools: 'Comma-separated adapter tool ids used by connect/doctor/verify onboarding views.',
       overwrite:
         'Allow connect candidate config to replace existing role/routing fragments instead of merge-only output.',
+      latest: 'Use the latest generated connect candidate artifact for diff/apply.',
+      force:
+        'Bypass connect diff/apply guards such as source-fingerprint drift or apply-ready blockers.',
+      noRollback:
+        'Disable rollback snapshot generation during connect apply and write only the apply receipt.',
       singleToolAllRoles:
         'Shortcut tool id that binds every enabled onboarding role to one surface during connect candidate generation.',
       roleBinding:
@@ -50,7 +55,20 @@ export const EN_US_TRANSLATIONS = {
     },
     commands: {
       init: { description: 'Initialize governor workspace baseline.' },
-      connect: { description: 'Generate adapter onboarding diagnostics baseline.' },
+      connect: {
+        description: 'Generate adapter onboarding diagnostics baseline.',
+        actionArgument: 'Optional connect action: generate|diff|apply.',
+        candidateArgument:
+          'Optional candidate diagnostics JSON or candidate governor.yaml path used by diff/apply.',
+        actionGuideTitle: 'Action guide:',
+        actionGuideGenerate:
+          'Create one candidate config plus diagnostics/diff/merge-explain companion artifacts.',
+        actionGuideDiff:
+          'Rebuild the candidate diff and merge-explain artifacts from one existing connect candidate.',
+        actionGuideApply:
+          'Apply one candidate config into the active governor.yaml and emit receipt/rollback artifacts.',
+        examplesTitle: 'Examples:',
+      },
       doctor: { description: 'Run environment diagnostics baseline.' },
       check: { description: 'Run governance quality checks baseline.' },
       run: { description: 'Execute process runtime baseline.' },

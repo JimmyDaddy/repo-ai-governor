@@ -152,6 +152,80 @@ describe('CliSessionShellEntrypointRuntime', () => {
     });
   });
 
+  it('includes projected agentView highlights in nested command summaries', async () => {
+    const commandExecutor = CliSessionShellEntrypointRuntime.createNestedCommandExecutor({
+      locale: 'en-US',
+      currentWorkingDirectory: '/workspace',
+      environment: {},
+      executeCli: async (_argv, io) => {
+        io.stdout(
+          JSON.stringify({
+            message: 'connect succeeded',
+            diagnostics: {
+              locale: 'en-US',
+            },
+            command_result: {
+              summary: 'adapter candidate generated',
+              agentView: {
+                descriptors: [
+                  {
+                    agentId: 'coder:coder:coder',
+                    agentRole: 'coder',
+                    roleProfileId: 'coder-default',
+                    roleSource: 'default',
+                    primarySurface: 'codex',
+                    fallbackSurfaces: ['github-copilot'],
+                    capabilities: ['tool_calling'],
+                    permissionLevel: 'edit',
+                    inputSchemaRef: null,
+                    outputSchemaRef: null,
+                    errorContractRef: null,
+                    maxExecutionTimeSeconds: 300,
+                    stageTimeoutSeconds: 300,
+                    tokenBudget: null,
+                    costBudget: null,
+                    timeBudgetSeconds: null,
+                    retryPolicyRef: null,
+                    timeoutPolicyRef: null,
+                    budgetPolicyRef: null,
+                    workspaceId: 'workspace-1',
+                    workspaceMode: 'repo_local',
+                    executionId: 'execution-1',
+                    sessionId: null,
+                    selectedBy: 'fallback',
+                    selectedSurface: 'github-copilot',
+                    projectionStatus: 'warn',
+                    failureReasons: ['primary_surface_unavailable'],
+                    unsupportedCapabilities: [],
+                    degradedCapabilities: ['tool_calling'],
+                  },
+                ],
+                sessionProjection: null,
+              },
+              experience: {
+                layeredLogs: {
+                  summary: ['connect_id=123'],
+                },
+              },
+              artifacts: [],
+            },
+          }),
+        );
+        return 0;
+      },
+    });
+
+    const result = await commandExecutor(['connect']);
+
+    expect(result.summaryLines).toEqual([
+      'connect succeeded',
+      'adapter candidate generated',
+      'agent_view=agents=1, surfaces=1, fallback=1, degraded=1, blocked=0, gaps=1, session=none',
+      'coder: surface=github-copilot selected_by=fallback status=warn gap=degraded:tool_calling reasons=primary_surface_unavailable',
+      'connect_id=123',
+    ]);
+  });
+
   it('falls back to captured stderr when nested command output is not valid JSON', async () => {
     const commandExecutor = CliSessionShellEntrypointRuntime.createNestedCommandExecutor({
       locale: 'en-US',

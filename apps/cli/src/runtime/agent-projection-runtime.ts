@@ -45,6 +45,8 @@ export class CliAgentProjectionRuntime {
           selectedBy: roleEvaluation.selectedBy,
           projectionStatus: roleEvaluation.status,
           failureReasons: [...roleEvaluation.unavailableReasons],
+          unsupportedCapabilities: [...roleEvaluation.unsupportedCapabilities],
+          degradedCapabilities: [...roleEvaluation.degradedCapabilities],
         });
       })
       .filter((descriptor): descriptor is AgentDescriptor => descriptor !== null);

@@ -13,6 +13,7 @@ import type {
   CliSessionShellServiceClientLike,
   CliSuccessOutputPayload,
 } from '../../types/index.js';
+import { CliAgentProjectionPresenter } from '../presentation/agent-projection-presenter.js';
 
 interface CliSessionShellNestedCliIoAdapters {
   stdout: (value: string) => void;
@@ -55,6 +56,8 @@ interface CliSessionShellRunOptionOverrides {
  * should delegate to one focused runtime instead of absorbing more shell-only responsibilities.
  */
 export class CliSessionShellEntrypointRuntime {
+  private static readonly agentProjectionPresenter = new CliAgentProjectionPresenter();
+
   public constructor(private readonly options: CliSessionShellEntrypointRuntimeOptions) {}
 
   /**
@@ -293,6 +296,19 @@ export class CliSessionShellEntrypointRuntime {
       parsedPayload.command_result?.artifacts
         ?.map((artifact) => artifact.path)
         .filter((path) => typeof path === 'string' && path.length > 0) ?? [];
+    const agentViewSummary = parsedPayload.command_result?.agentView
+      ? CliSessionShellEntrypointRuntime.agentProjectionPresenter.buildSummaryLine(
+          parsedPayload.command_result.agentView,
+          parsedPayload.diagnostics.locale,
+        )
+      : null;
+    const agentViewHighlights = parsedPayload.command_result?.agentView
+      ? CliSessionShellEntrypointRuntime.agentProjectionPresenter.buildHighlightLines(
+          parsedPayload.command_result.agentView,
+          parsedPayload.diagnostics.locale,
+          2,
+        )
+      : [];
 
     return {
       artifactPaths,
@@ -302,7 +318,9 @@ export class CliSessionShellEntrypointRuntime {
       summaryLines: [
         parsedPayload.message,
         ...(parsedPayload.command_result?.summary ? [parsedPayload.command_result.summary] : []),
-        ...experienceLines.slice(0, 3),
+        ...(agentViewSummary ? [`agent_view=${agentViewSummary}`] : []),
+        ...agentViewHighlights,
+        ...experienceLines.slice(0, 2),
       ],
     };
   }

@@ -15,6 +15,7 @@ import {
 } from './constants/cli-command-result-check.constant.js';
 import { CliGovernanceCheckStatus } from './constants/cli-governance-runtime.constant.js';
 import { CliVerbosity } from './constants/cli-output.constant.js';
+import { CliAgentProjectionPresenter } from './runtime/presentation/agent-projection-presenter.js';
 import type {
   CliCommandExecutionResultPayload,
   CliCommandExperiencePayload,
@@ -174,6 +175,8 @@ const CLI_OUTPUT_TRANSLATION_FALLBACKS = {
  * and ensures non-TTY fallback still emits a stable output contract.
  */
 export class CliOutputPresenter {
+  private readonly agentProjectionPresenter = new CliAgentProjectionPresenter();
+
   /**
    * Creates a presenter bound to runtime stdout/stderr writers.
    * @param io Output writer adapters from CLI runtime.
@@ -265,6 +268,26 @@ export class CliOutputPresenter {
         lines.push(
           `  - agent view: ${this.resolveAgentViewSummary(commandResult.agentView, payload.diagnostics.locale)}`,
         );
+        const agentHighlights = this.resolveAgentViewHighlights(
+          commandResult.agentView,
+          payload.diagnostics.locale,
+        );
+        if (agentHighlights.length > 0) {
+          if (compactPretty) {
+            const [firstHighlight, ...remainingHighlights] = agentHighlights;
+            if (firstHighlight) {
+              lines.push(`  - agent highlights: ${firstHighlight}`);
+            }
+            if (remainingHighlights.length > 0) {
+              lines.push(`  - agent highlights: +${remainingHighlights.length} ${labels.moreHint}`);
+            }
+          } else {
+            lines.push('  - agent highlights:');
+            for (const highlight of agentHighlights) {
+              lines.push(`    - ${highlight}`);
+            }
+          }
+        }
       }
     }
 
@@ -565,19 +588,14 @@ export class CliOutputPresenter {
     agentView: NonNullable<CliCommandExecutionResultPayload['agentView']>,
     locale: string,
   ): string {
-    const descriptorCount = agentView.descriptors.length;
-    const activeSurfaceCount = new Set(
-      agentView.descriptors.map(
-        (descriptor) => descriptor.selectedSurface ?? descriptor.primarySurface,
-      ),
-    ).size;
-    const sessionStatus = agentView.sessionProjection?.sessionStatus ?? 'none';
+    return this.agentProjectionPresenter.buildSummaryLine(agentView, locale);
+  }
 
-    if (this.isZhCnLocale(locale)) {
-      return `agent ${descriptorCount} 个，surface ${activeSurfaceCount} 个，session=${sessionStatus}`;
-    }
-
-    return `agents=${descriptorCount}, surfaces=${activeSurfaceCount}, session=${sessionStatus}`;
+  private resolveAgentViewHighlights(
+    agentView: NonNullable<CliCommandExecutionResultPayload['agentView']>,
+    locale: string,
+  ): string[] {
+    return this.agentProjectionPresenter.buildHighlightLines(agentView, locale, 2);
   }
 
   /**

@@ -27,3 +27,4 @@
 - [x] TK-421 session-shell Ink input takeover solution drafting record
   - 2026-03-30：任务创建，状态初始化为 `planned`。
   - 2026-03-30：已完成 draft 正文 `session-shell-ink-input-takeover-technical-solution.md`，结合官方 Ink / Ink UI / Ink Testing Library 资料，把 Ink 输入接管正式整理为可评审的 focused technical solution；`tasks/` 下仅保留台账记录与入口回链。
+  - 2026-03-30：用户确认方案通过后，已将该 focused draft 正式提升到 `runtime.cli-interactive-shell` 模块 ADR/contract，并同步 lifecycle / delivery / module-registry / manifest / artifact registry。

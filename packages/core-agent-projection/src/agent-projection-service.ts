@@ -67,6 +67,8 @@ export class AgentProjectionService {
       selectedSurface: input.selectedSurface ?? roleBinding.primarySurface,
       projectionStatus: input.projectionStatus ?? null,
       failureReasons: [...(input.failureReasons ?? [])],
+      unsupportedCapabilities: [...(input.unsupportedCapabilities ?? [])],
+      degradedCapabilities: [...(input.degradedCapabilities ?? [])],
     };
   }
 
