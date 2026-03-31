@@ -1,6 +1,6 @@
 # TK-467 stabilize serial role collaboration and interaction-mode routing
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-31
 - Owner: AI-Agent
 - Priority: P0
@@ -32,3 +32,5 @@
 ## 5. Execution Notes
 
 1. 2026-03-31：任务创建，状态初始化为 `planned`；优先锁定一条稳定 serial path，而不是一开始就把所有 roles 都做成自由组合。
+2. 2026-03-31：任务切换为 `active`；当前先把 `planner -> reviewer` 一类串行协作路径收敛成最小可审计实现，并同步稳定 `interactionMode` 路由与 shared session metadata。
+3. 2026-03-31：已完成显式双 role mention 的最小串行协作实现；`session.main` 现在会把 `@planner @reviewer` 收敛到受治理的 serial collaboration path，并回灌 `routerDecisionReason / interactionMode / invokedRoleIds / subagentCount`，同时补齐 shared-session 与 resume parity 回归。

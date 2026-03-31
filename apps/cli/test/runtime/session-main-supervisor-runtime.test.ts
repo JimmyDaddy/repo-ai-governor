@@ -145,10 +145,20 @@ describe('Cli session-main supervisor runtime', () => {
         requiredCapabilities: [AgentCapability.STRUCTURED_OUTPUT],
         required: true,
       },
+      {
+        roleId: 'reviewer',
+        roleProfileId: 'reviewer-default',
+        requiredCapabilities: [AgentCapability.STRUCTURED_OUTPUT],
+        required: true,
+      },
     ],
     routing: {
       roleBindings: {
         planner: {
+          primarySurface: AdapterSurface.CODEX,
+          fallbackSurfaces: [AdapterSurface.CLAUDE_CODE],
+        },
+        reviewer: {
           primarySurface: AdapterSurface.CODEX,
           fallbackSurfaces: [AdapterSurface.CLAUDE_CODE],
         },
@@ -380,6 +390,95 @@ describe('Cli session-main supervisor runtime', () => {
     expect(outcome.selectedBy).toBe('session.main.role_delegate.safe_fallback');
     expect(outcome.invokedRoleIds).toEqual(['planner']);
     expect(outcome.subagentCount).toBe(1);
+  });
+
+  it('routes explicit @planner @reviewer turns through one serial collaboration path', async () => {
+    const serialInvokeStage = vi.fn(async (request: Record<string, unknown>) => {
+      if (request.stageId === 'stage-session-main-role-planner') {
+        return {
+          output: {
+            responseText: '## Planner perspective\n\n- milestone 1\n- milestone 2',
+          },
+          elapsedMs: 1,
+        };
+      }
+
+      expect(request.stageId).toBe('stage-session-main-role-reviewer');
+      expect(request.routeKey).toBe('session.main.role.reviewer');
+      expect(request.input).toEqual(
+        expect.objectContaining({
+          interactionMode: 'serial_role_collaboration',
+          collaborationRoleOrder: ['planner', 'reviewer'],
+          priorRoleOutputs: [
+            {
+              roleId: 'planner',
+              assistantMessage: '## Planner perspective\n\n- milestone 1\n- milestone 2',
+            },
+          ],
+        }),
+      );
+      return {
+        output: {
+          responseText: '## Reviewer perspective\n\n- sequencing looks safe',
+        },
+        elapsedMs: 1,
+      };
+    });
+    const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
+      adaptersConfig,
+    ) as CliAdapterRoutingRuntime & {
+      createProtocolBySurface: () => Record<string, AgentProtocolContract>;
+    };
+    adapterRoutingRuntime.createProtocolBySurface = () => ({
+      [AdapterSurface.CODEX]: createAvailableProtocol(
+        AdapterSurface.CODEX,
+        'unsafe collaborative answer',
+      ),
+      [AdapterSurface.CLAUDE_CODE]: createAvailableProtocol(
+        AdapterSurface.CLAUDE_CODE,
+        'unsafe fallback answer',
+      ),
+      [AdapterSurface.OLLAMA]: createAvailableProtocol(AdapterSurface.OLLAMA, 'unused', {
+        invokeStageSpy: serialInvokeStage,
+        toolCallingSupportLevel: AgentCapabilitySupportLevel.UNSUPPORTED,
+      }),
+    });
+
+    const runtime = new CliSessionMainSupervisorRuntime({
+      workspaceRoot: '/workspace/repo/.repo-ai-governor',
+      currentWorkingDirectory: '/workspace/repo',
+      workspace,
+      locale: 'en-US',
+      adaptersConfig,
+      adapterRoutingRuntime,
+    });
+    const outcome = await runtime.resolveTurn({
+      sessionId: 'session-004-serial',
+      routeId: 'session.main',
+      turnId: 'turn-004-serial',
+      turnIndex: 4,
+      userMessage: '@planner @reviewer collaborate on this rollout plan',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+    });
+
+    expect(serialInvokeStage).toHaveBeenCalledTimes(2);
+    expect(outcome.responseMode).toBe('role_collaboration');
+    expect(outcome.interactionMode).toBe('serial_role_collaboration');
+    expect(outcome.routerDecisionReason).toBe(
+      'session.main.router.serial_role_collaboration.explicit_roles',
+    );
+    expect(outcome.executionIntent).toBe('session.role_delegate.planner.reviewer');
+    expect(outcome.assistantMessage).toContain('## Planner -> Reviewer Collaboration');
+    expect(outcome.assistantMessage).toContain('### Planner');
+    expect(outcome.assistantMessage).toContain('### Reviewer');
+    expect(outcome.selectedSurface).toBe('planner:ollama -> reviewer:ollama');
+    expect(outcome.selectedBy).toBe(
+      'planner:session.main.role_delegate.safe_fallback -> reviewer:session.main.role_delegate.safe_fallback',
+    );
+    expect(outcome.invokedRoleIds).toEqual(['planner', 'reviewer']);
+    expect(outcome.subagentCount).toBe(2);
   });
 
   it('blocks explicit @planner delegation when the only no-tool fallback misses one required capability', async () => {

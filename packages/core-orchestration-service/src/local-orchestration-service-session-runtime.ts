@@ -204,6 +204,9 @@ export class LocalOrchestrationServiceSessionRuntime {
           ...(dispatchResult.assistantMessage
             ? { assistantMessage: dispatchResult.assistantMessage }
             : {}),
+          ...(dispatchResult.routerDecisionReason
+            ? { routerDecisionReason: dispatchResult.routerDecisionReason }
+            : {}),
           ...(dispatchResult.suggestedSlashCommand
             ? { suggestedSlashCommand: dispatchResult.suggestedSlashCommand }
             : {}),

@@ -34,6 +34,33 @@ const SESSION_MAIN_FALLBACK_DELTA_MAX_LENGTH = 80;
 const SESSION_MAIN_GUARDED_DIRECT_ANSWER_SURFACE = 'guarded-direct-answer';
 const SESSION_MAIN_GUARDED_ROLE_DELEGATE_SURFACE = 'guarded-role-delegate';
 const SESSION_MAIN_ROLE_EXECUTION_INTENT_PREFIX = 'session.role_delegate.';
+const SESSION_MAIN_ROUTER_REASON_DIRECT_ANSWER = 'session.main.router.direct_answer.default';
+const SESSION_MAIN_ROUTER_REASON_DIRECT_ANSWER_GUARD = 'session.main.router.direct_answer.guard';
+const SESSION_MAIN_ROUTER_REASON_SINGLE_ROLE_DELEGATE =
+  'session.main.router.single_role_delegate.explicit_role';
+const SESSION_MAIN_ROUTER_REASON_SINGLE_ROLE_GUARD =
+  'session.main.router.single_role_delegate.guard';
+const SESSION_MAIN_ROUTER_REASON_SINGLE_ROLE_UNRESOLVED =
+  'session.main.router.single_role_delegate.unresolved';
+const SESSION_MAIN_ROUTER_REASON_SERIAL_ROLE_COLLABORATION =
+  'session.main.router.serial_role_collaboration.explicit_roles';
+const SESSION_MAIN_ROUTER_REASON_SERIAL_ROLE_GUARD =
+  'session.main.router.serial_role_collaboration.guard';
+const SESSION_MAIN_ROUTER_REASON_SERIAL_ROLE_UNRESOLVED =
+  'session.main.router.serial_role_collaboration.unresolved';
+
+interface PreparedRoleDispatch {
+  descriptor: SessionMainSubagentDescriptor;
+  capabilityRequirement?: AgentCapabilityRequirement;
+  safeCandidateSurfaces: AdapterSurface[];
+}
+
+interface ExecutedRoleDispatch {
+  descriptor: SessionMainSubagentDescriptor;
+  assistantMessage: string;
+  selectedSurface: string;
+  selectedBy: string;
+}
 
 /**
  * Owns the CLI-side direct-answer runtime used by the service-owned `session.main` supervisor.
@@ -87,7 +114,16 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     const toolConfigBySurface = this.adapterRoutingRuntime.createToolConfigBySurfaceMap();
     const protocolBySurface =
       this.adapterRoutingRuntime.createProtocolBySurface(toolConfigBySurface);
-    const mentionedRoleId = this.subagentRegistry.resolveMentionedRoleId(context.userMessage);
+    const mentionedRoleIds = this.subagentRegistry.resolveMentionedRoleIds(context.userMessage);
+    if (mentionedRoleIds.length >= 2) {
+      return this.resolveSerialRoleCollaborationTurn(
+        context,
+        mentionedRoleIds.slice(0, 2),
+        protocolBySurface,
+        toolConfigBySurface,
+      );
+    }
+    const mentionedRoleId = mentionedRoleIds[0] ?? null;
     if (mentionedRoleId) {
       return this.resolveSingleRoleDelegateTurn(
         context,
@@ -131,6 +167,7 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       interactionMode: SESSION_MAIN_INTERACTION_MODE.DIRECT_ANSWER,
       assistantDelta: this.createAssistantDelta(assistantMessage),
       assistantMessage,
+      routerDecisionReason: SESSION_MAIN_ROUTER_REASON_DIRECT_ANSWER,
       executionIntent: 'session.answer',
       requiresConfirmation: false,
       selectedSurface: dispatchResult.selectedSurface,
@@ -230,69 +267,103 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     protocolBySurface: Record<string, AgentProtocolContract>,
     toolConfigBySurface: Map<AdapterSurface, NonNullable<AdaptersConfig['tools']>[number]>,
   ): Promise<SessionMainSupervisorTurnOutcome> {
-    const subagentDescriptor = this.subagentRegistry.resolveSubagentDescriptor({
+    const preparedDispatch = await this.prepareRoleDispatch(
+      context,
       roleId,
-      turnContext: context,
-    });
-    if (!subagentDescriptor) {
+      protocolBySurface,
+      toolConfigBySurface,
+    );
+    if (!preparedDispatch) {
       return this.createUnknownRoleDelegateOutcome(context, roleId);
     }
-    const capabilityRequirement = this.resolveCapabilityRequirement(
-      subagentDescriptor.requiredCapabilities,
-    );
-
-    const safeCandidateSurfaces = await this.resolveSafeCandidateSurfaces(
-      this.resolveRoleDelegateCandidateSurfaces(
-        context.selectedSurface,
-        subagentDescriptor,
-        toolConfigBySurface,
-      ),
-      subagentDescriptor.routeKey,
-      protocolBySurface,
-      capabilityRequirement,
-    );
-    if (safeCandidateSurfaces.length === 0) {
-      return this.createGuardedRoleDelegateOutcome(context, subagentDescriptor);
+    if (preparedDispatch.safeCandidateSurfaces.length === 0) {
+      return this.createGuardedRoleDelegateOutcome(context, preparedDispatch.descriptor);
     }
 
-    const routeRunner = this.createRouteRunner({
-      routeKey: subagentDescriptor.routeKey,
-      protocolBySurface,
-      safeCandidateSurfaces,
-      toolConfigBySurface,
-      capabilityRequirement,
-    });
-    const dispatchResult = await routeRunner.dispatchStage({
-      processId: context.sessionId,
-      executionId: context.turnId,
-      stageId: subagentDescriptor.stageId,
-      routeKey: subagentDescriptor.routeKey,
-      input: this.createRoleDelegateInput(context, subagentDescriptor),
-      runtimeContext: {
-        networkMode: AgentNetworkMode.STANDARD,
-      },
-    });
-    const assistantMessage = this.resolveRoleAssistantMessage(
-      dispatchResult.invokeResult.output,
+    const executedDispatch = await this.executeRoleDispatch(
       context,
-      subagentDescriptor,
+      preparedDispatch,
+      protocolBySurface,
+      toolConfigBySurface,
     );
     return {
       responseMode: SESSION_MAIN_RESPONSE_MODE.ROLE_COLLABORATION,
       interactionMode: SESSION_MAIN_INTERACTION_MODE.SINGLE_ROLE_DELEGATE,
+      assistantDelta: this.createAssistantDelta(executedDispatch.assistantMessage),
+      assistantMessage: executedDispatch.assistantMessage,
+      routerDecisionReason: SESSION_MAIN_ROUTER_REASON_SINGLE_ROLE_DELEGATE,
+      executionIntent: `${SESSION_MAIN_ROLE_EXECUTION_INTENT_PREFIX}${executedDispatch.descriptor.roleId}`,
+      requiresConfirmation: false,
+      selectedSurface: executedDispatch.selectedSurface,
+      selectedBy: executedDispatch.selectedBy,
+      sessionRoutingPreferenceApplied: context.sessionRoutingPreferenceApplied,
+      invokedRoleIds: [executedDispatch.descriptor.roleId],
+      subagentCount: 1,
+    };
+  }
+
+  private async resolveSerialRoleCollaborationTurn(
+    context: SessionMainSupervisorTurnContext,
+    roleIds: string[],
+    protocolBySurface: Record<string, AgentProtocolContract>,
+    toolConfigBySurface: Map<AdapterSurface, NonNullable<AdaptersConfig['tools']>[number]>,
+  ): Promise<SessionMainSupervisorTurnOutcome> {
+    const preparedDispatches: PreparedRoleDispatch[] = [];
+    for (const roleId of roleIds) {
+      const preparedDispatch = await this.prepareRoleDispatch(
+        context,
+        roleId,
+        protocolBySurface,
+        toolConfigBySurface,
+      );
+      if (!preparedDispatch) {
+        return this.createUnknownSerialRoleCollaborationOutcome(context, roleId);
+      }
+      if (preparedDispatch.safeCandidateSurfaces.length === 0) {
+        return this.createGuardedSerialRoleCollaborationOutcome(
+          context,
+          preparedDispatch.descriptor,
+        );
+      }
+      preparedDispatches.push(preparedDispatch);
+    }
+
+    const executedDispatches: ExecutedRoleDispatch[] = [];
+    for (const preparedDispatch of preparedDispatches) {
+      const executedDispatch = await this.executeRoleDispatch(
+        context,
+        preparedDispatch,
+        protocolBySurface,
+        toolConfigBySurface,
+        {
+          priorRoleOutputs: executedDispatches.map((candidate) => ({
+            roleId: candidate.descriptor.roleId,
+            assistantMessage: candidate.assistantMessage,
+          })),
+          roleOrder: preparedDispatches.map((candidate) => candidate.descriptor.roleId),
+        },
+      );
+      executedDispatches.push(executedDispatch);
+    }
+
+    const assistantMessage = this.createSerialRoleCollaborationAssistantMessage(executedDispatches);
+    return {
+      responseMode: SESSION_MAIN_RESPONSE_MODE.ROLE_COLLABORATION,
+      interactionMode: SESSION_MAIN_INTERACTION_MODE.SERIAL_ROLE_COLLABORATION,
       assistantDelta: this.createAssistantDelta(assistantMessage),
       assistantMessage,
-      executionIntent: `${SESSION_MAIN_ROLE_EXECUTION_INTENT_PREFIX}${subagentDescriptor.roleId}`,
+      routerDecisionReason: SESSION_MAIN_ROUTER_REASON_SERIAL_ROLE_COLLABORATION,
+      executionIntent: `${SESSION_MAIN_ROLE_EXECUTION_INTENT_PREFIX}${executedDispatches.map((candidate) => candidate.descriptor.roleId).join('.')}`,
       requiresConfirmation: false,
-      selectedSurface: dispatchResult.selectedSurface,
-      selectedBy: this.resolveRoleDelegateSelectedBy(
-        dispatchResult.auditRecord.selectedBy,
-        context.sessionRoutingPreferenceApplied,
-        !safeCandidateSurfaces.includes(context.selectedSurface as AdapterSurface),
-      ),
+      selectedSurface: executedDispatches
+        .map((candidate) => `${candidate.descriptor.roleId}:${candidate.selectedSurface}`)
+        .join(' -> '),
+      selectedBy: executedDispatches
+        .map((candidate) => `${candidate.descriptor.roleId}:${candidate.selectedBy}`)
+        .join(' -> '),
       sessionRoutingPreferenceApplied: context.sessionRoutingPreferenceApplied,
-      invokedRoleIds: [subagentDescriptor.roleId],
-      subagentCount: 1,
+      invokedRoleIds: executedDispatches.map((candidate) => candidate.descriptor.roleId),
+      subagentCount: executedDispatches.length,
     };
   }
 
@@ -352,6 +423,91 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       }
     }
     return candidateSurfaces;
+  }
+
+  private async prepareRoleDispatch(
+    context: SessionMainSupervisorTurnContext,
+    roleId: string,
+    protocolBySurface: Record<string, AgentProtocolContract>,
+    toolConfigBySurface: Map<AdapterSurface, NonNullable<AdaptersConfig['tools']>[number]>,
+  ): Promise<PreparedRoleDispatch | null> {
+    const descriptor = this.subagentRegistry.resolveSubagentDescriptor({
+      roleId,
+      turnContext: context,
+    });
+    if (!descriptor) {
+      return null;
+    }
+    const capabilityRequirement = this.resolveCapabilityRequirement(
+      descriptor.requiredCapabilities,
+    );
+    const safeCandidateSurfaces = await this.resolveSafeCandidateSurfaces(
+      this.resolveRoleDelegateCandidateSurfaces(
+        context.selectedSurface,
+        descriptor,
+        toolConfigBySurface,
+      ),
+      descriptor.routeKey,
+      protocolBySurface,
+      capabilityRequirement,
+    );
+    return {
+      descriptor,
+      capabilityRequirement,
+      safeCandidateSurfaces,
+    };
+  }
+
+  private async executeRoleDispatch(
+    context: SessionMainSupervisorTurnContext,
+    preparedDispatch: PreparedRoleDispatch,
+    protocolBySurface: Record<string, AgentProtocolContract>,
+    toolConfigBySurface: Map<AdapterSurface, NonNullable<AdaptersConfig['tools']>[number]>,
+    options?: {
+      priorRoleOutputs?: Array<{ roleId: string; assistantMessage: string }>;
+      roleOrder?: string[];
+    },
+  ): Promise<ExecutedRoleDispatch> {
+    const routeRunner = this.createRouteRunner({
+      routeKey: preparedDispatch.descriptor.routeKey,
+      protocolBySurface,
+      safeCandidateSurfaces: preparedDispatch.safeCandidateSurfaces,
+      toolConfigBySurface,
+      capabilityRequirement: preparedDispatch.capabilityRequirement,
+    });
+    const dispatchResult = await routeRunner.dispatchStage({
+      processId: context.sessionId,
+      executionId: context.turnId,
+      stageId: preparedDispatch.descriptor.stageId,
+      routeKey: preparedDispatch.descriptor.routeKey,
+      input:
+        options?.priorRoleOutputs && options.priorRoleOutputs.length > 0
+          ? this.createSerialRoleInput(
+              context,
+              preparedDispatch.descriptor,
+              options.priorRoleOutputs,
+              options.roleOrder ?? [preparedDispatch.descriptor.roleId],
+            )
+          : this.createRoleDelegateInput(context, preparedDispatch.descriptor),
+      runtimeContext: {
+        networkMode: AgentNetworkMode.STANDARD,
+      },
+    });
+    const assistantMessage = this.resolveRoleAssistantMessage(
+      dispatchResult.invokeResult.output,
+      context,
+      preparedDispatch.descriptor,
+    );
+    return {
+      descriptor: preparedDispatch.descriptor,
+      assistantMessage,
+      selectedSurface: dispatchResult.selectedSurface,
+      selectedBy: this.resolveRoleDelegateSelectedBy(
+        dispatchResult.auditRecord.selectedBy,
+        context.sessionRoutingPreferenceApplied,
+        !preparedDispatch.safeCandidateSurfaces.includes(context.selectedSurface as AdapterSurface),
+      ),
+    };
   }
 
   private resolveCapabilityRequirement(
@@ -424,6 +580,27 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     };
   }
 
+  private createSerialRoleInput(
+    context: SessionMainSupervisorTurnContext,
+    descriptor: SessionMainSubagentDescriptor,
+    priorRoleOutputs: Array<{ roleId: string; assistantMessage: string }>,
+    roleOrder: string[],
+  ): Record<string, unknown> {
+    return {
+      ...this.createRoleDelegateInput(context, descriptor),
+      interactionMode: SESSION_MAIN_INTERACTION_MODE.SERIAL_ROLE_COLLABORATION,
+      collaborationRoleOrder: [...roleOrder],
+      priorRoleOutputs: priorRoleOutputs.map((candidate) => ({
+        roleId: candidate.roleId,
+        assistantMessage: candidate.assistantMessage,
+      })),
+      governorInstructions: this.localizeText(
+        `You are the ${descriptor.roleId} role subagent in a serial collaboration for Repo AI Governor. Read the upstream role outputs carefully, then continue the collaboration from this role's perspective in concise markdown. Do not execute commands, modify files, or claim that governed commands already ran.`,
+        `你现在是 Repo AI Governor 串行协作中的 ${descriptor.roleId} 角色子代理。请认真阅读上游角色输出，再从当前角色视角继续协作，并输出简洁的 Markdown。不要执行命令、不要修改文件，也不要声称受治理命令已经执行。`,
+      ),
+    };
+  }
+
   private resolveAssistantMessage(
     output: Record<string, unknown>,
     context: SessionMainSupervisorTurnContext,
@@ -480,6 +657,24 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
         '选中的 surface 没有返回可渲染的文本内容，因此 supervisor 保留了这次 delegate 的元数据供后续排查。',
       ),
     ].join('\n');
+  }
+
+  private createSerialRoleCollaborationAssistantMessage(
+    executedDispatches: ExecutedRoleDispatch[],
+  ): string {
+    const lines: string[] = [
+      this.localizeText(
+        `## ${executedDispatches.map((candidate) => this.formatRoleHeading(candidate.descriptor.roleId)).join(' -> ')} Collaboration`,
+        `## ${executedDispatches.map((candidate) => `${candidate.descriptor.roleId} 角色`).join(' -> ')} 协作`,
+      ),
+    ];
+    for (const executedDispatch of executedDispatches) {
+      lines.push('');
+      lines.push(`### ${this.formatRoleHeading(executedDispatch.descriptor.roleId)}`);
+      lines.push('');
+      lines.push(executedDispatch.assistantMessage);
+    }
+    return lines.join('\n');
   }
 
   private resolveSelectedBy(
@@ -552,6 +747,7 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       interactionMode: SESSION_MAIN_INTERACTION_MODE.DIRECT_ANSWER,
       assistantDelta: this.createAssistantDelta(assistantMessage),
       assistantMessage,
+      routerDecisionReason: SESSION_MAIN_ROUTER_REASON_DIRECT_ANSWER_GUARD,
       executionIntent: 'session.answer',
       requiresConfirmation: false,
       selectedSurface: SESSION_MAIN_GUARDED_DIRECT_ANSWER_SURFACE,
@@ -587,10 +783,47 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       interactionMode: SESSION_MAIN_INTERACTION_MODE.SINGLE_ROLE_DELEGATE,
       assistantDelta: this.createAssistantDelta(assistantMessage),
       assistantMessage,
+      routerDecisionReason: SESSION_MAIN_ROUTER_REASON_SINGLE_ROLE_GUARD,
       executionIntent: `${SESSION_MAIN_ROLE_EXECUTION_INTENT_PREFIX}${descriptor.roleId}`,
       requiresConfirmation: false,
       selectedSurface: SESSION_MAIN_GUARDED_ROLE_DELEGATE_SURFACE,
       selectedBy: 'session.main.role_delegate.guard',
+      sessionRoutingPreferenceApplied: context.sessionRoutingPreferenceApplied,
+      invokedRoleIds: [],
+      subagentCount: 0,
+    };
+  }
+
+  private createGuardedSerialRoleCollaborationOutcome(
+    context: SessionMainSupervisorTurnContext,
+    descriptor: SessionMainSubagentDescriptor,
+  ): SessionMainSupervisorTurnOutcome {
+    const assistantMessage = [
+      this.localizeText(
+        `## ${this.formatRoleHeading(descriptor.roleId)} Collaboration Blocked`,
+        `## ${descriptor.roleId} 协作已阻断`,
+      ),
+      '',
+      this.localizeText(
+        `I did not start serial collaboration for "${context.userMessage}" because the ${descriptor.roleId} role has no currently safe surface that satisfies the collaboration guard and capability contract.`,
+        `我没有为「${context.userMessage}」启动串行协作，因为 ${descriptor.roleId} 角色当前没有同时满足协作 guard 与能力契约的安全 surface。`,
+      ),
+      '',
+      this.localizeText(
+        'Serial role collaboration currently requires every role in the chain to have one safe no-tool surface that also satisfies its required capabilities before the supervisor starts invoking any stage.',
+        '当前串行角色协作要求链路中的每个角色都先具备一个同时满足 required capabilities 的安全无工具 surface，supervisor 才会开始实际调用。',
+      ),
+    ].join('\n');
+    return {
+      responseMode: SESSION_MAIN_RESPONSE_MODE.ROLE_COLLABORATION,
+      interactionMode: SESSION_MAIN_INTERACTION_MODE.SERIAL_ROLE_COLLABORATION,
+      assistantDelta: this.createAssistantDelta(assistantMessage),
+      assistantMessage,
+      routerDecisionReason: SESSION_MAIN_ROUTER_REASON_SERIAL_ROLE_GUARD,
+      executionIntent: `${SESSION_MAIN_ROLE_EXECUTION_INTENT_PREFIX}${descriptor.roleId}`,
+      requiresConfirmation: false,
+      selectedSurface: SESSION_MAIN_GUARDED_ROLE_DELEGATE_SURFACE,
+      selectedBy: 'session.main.serial_role_collaboration.guard',
       sessionRoutingPreferenceApplied: context.sessionRoutingPreferenceApplied,
       invokedRoleIds: [],
       subagentCount: 0,
@@ -619,10 +852,44 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       interactionMode: SESSION_MAIN_INTERACTION_MODE.SINGLE_ROLE_DELEGATE,
       assistantDelta: this.createAssistantDelta(assistantMessage),
       assistantMessage,
+      routerDecisionReason: SESSION_MAIN_ROUTER_REASON_SINGLE_ROLE_UNRESOLVED,
       executionIntent: `${SESSION_MAIN_ROLE_EXECUTION_INTENT_PREFIX}${roleId}`,
       requiresConfirmation: false,
       selectedSurface: SESSION_MAIN_GUARDED_ROLE_DELEGATE_SURFACE,
       selectedBy: 'session.main.role_delegate.unresolved',
+      sessionRoutingPreferenceApplied: context.sessionRoutingPreferenceApplied,
+      invokedRoleIds: [],
+      subagentCount: 0,
+    };
+  }
+
+  private createUnknownSerialRoleCollaborationOutcome(
+    context: SessionMainSupervisorTurnContext,
+    roleId: string,
+  ): SessionMainSupervisorTurnOutcome {
+    const assistantMessage = [
+      this.localizeText('## Serial Collaboration', '## 串行协作'),
+      '',
+      this.localizeText(
+        `The supervisor could not resolve one configured role named "${roleId}" while building the serial collaboration chain.`,
+        `supervisor 在构建串行协作链时，无法解析名为「${roleId}」的已配置角色。`,
+      ),
+      '',
+      this.localizeText(
+        'Check the active role bindings first, then retry with explicit configured roles such as `@planner @reviewer`.',
+        '请先检查当前激活的角色绑定，再使用例如 `@planner @reviewer` 这样的已配置角色重试。',
+      ),
+    ].join('\n');
+    return {
+      responseMode: SESSION_MAIN_RESPONSE_MODE.ROLE_COLLABORATION,
+      interactionMode: SESSION_MAIN_INTERACTION_MODE.SERIAL_ROLE_COLLABORATION,
+      assistantDelta: this.createAssistantDelta(assistantMessage),
+      assistantMessage,
+      routerDecisionReason: SESSION_MAIN_ROUTER_REASON_SERIAL_ROLE_UNRESOLVED,
+      executionIntent: `${SESSION_MAIN_ROLE_EXECUTION_INTENT_PREFIX}${roleId}`,
+      requiresConfirmation: false,
+      selectedSurface: SESSION_MAIN_GUARDED_ROLE_DELEGATE_SURFACE,
+      selectedBy: 'session.main.serial_role_collaboration.unresolved',
       sessionRoutingPreferenceApplied: context.sessionRoutingPreferenceApplied,
       invokedRoleIds: [],
       subagentCount: 0,

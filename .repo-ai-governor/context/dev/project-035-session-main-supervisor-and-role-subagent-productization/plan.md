@@ -35,7 +35,7 @@
 
 ## 2.3 sprint-003-role-collaboration-and-handoff-productization
 
-- Status: planned
+- Status: active
 - Sprint Goal: 将 `session.main` 从单条试点 subagent 扩展到可审计的多 role collaboration，并稳定 natural-language command handoff 的协作与 recap 语义。
 - Task Package: `TK-467`、`TK-468`。
 
@@ -52,7 +52,7 @@
 | TK-464 | sprint-001 | promote session.main supervisor and role-subagent solution into formal module docs | docs/promotion | `.repo-ai-governor/draft/session-main-agent-answer-and-command-handoff-technical-solution.md` | completed |
 | TK-465 | sprint-002 | bootstrap service-owned session.main supervisor and direct answer path | runtime/session-main | TK-464 | completed |
 | TK-466 | sprint-002 | productize role-subagent collaboration and command handoff governance baseline | runtime/session-main | TK-465 | completed |
-| TK-467 | sprint-003 | stabilize serial role collaboration and interaction-mode routing | runtime/session-main | TK-466 | planned |
+| TK-467 | sprint-003 | stabilize serial role collaboration and interaction-mode routing | runtime/session-main | TK-466 | completed |
 | TK-468 | sprint-003 | expand parallel role fan-out and collaboration recap presentation semantics | runtime/session-main | TK-467 | planned |
 | TK-469 | sprint-004 | map supervisor streaming events into shared session deltas and running presentation | runtime/session-events | TK-468 | planned |
 | TK-470 | sprint-004 | align supervisor runtime across embedded sidecar and desktop consumer hosts | runtime/host-parity | TK-469 | planned |
@@ -124,3 +124,5 @@
 6. 2026-03-31：显式激活 `sprint-002-answer-supervisor-and-role-subagent-bootstrap`，将 `project-035` 的主执行面从 promotion closeout 切换到 Phase A bootstrap implementation。
 7. 2026-03-31：完成 `TK-465`；`session.main` bootstrap 现已具备真实 direct answer、shared session `interactionMode` 元数据回灌，以及 CLI/resume direct-answer parity 证据。
 8. 2026-03-31：完成 `TK-466`；`session.main` bootstrap 现已具备 `@planner` single-role delegate 试点、`AgentDescriptor -> SessionMainSubagentDescriptor` seam、`subagentCount` payload，以及 role mention 不绕过 connect-like handoff preview 的治理基线。
+9. 2026-03-31：`sprint-002` 已完成并推送到 `origin/main`；执行面切换到 `sprint-003-role-collaboration-and-handoff-productization`，由 `TK-467` 接手 serial collaboration 与 interaction-mode routing 的 Phase B 前线。
+10. 2026-03-31：完成 `TK-467`；`session.main` 当前已具备一条真实 `@planner -> @reviewer` 串行协作路径、`routerDecisionReason` 回灌，以及 serial collaboration 的 shared-session/resume parity 回归覆盖。

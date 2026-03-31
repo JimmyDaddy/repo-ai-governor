@@ -30,18 +30,28 @@ export class CliSessionMainSubagentRegistry {
   }
 
   /**
+   * Resolves all configured explicit `@role` or `@roleProfileId` mentions from one user message.
+   * @param userMessage Raw session.main user text.
+   * @returns Normalized role ids in first-seen order, deduplicated by canonical role id.
+   */
+  public resolveMentionedRoleIds(userMessage: string): string[] {
+    const roleIds: string[] = [];
+    for (const match of userMessage.matchAll(SESSION_MAIN_SUBAGENT_MENTION_PATTERN)) {
+      const roleId = this.roleIdByToken.get((match[1] ?? '').toLowerCase());
+      if (roleId && !roleIds.includes(roleId)) {
+        roleIds.push(roleId);
+      }
+    }
+    return roleIds;
+  }
+
+  /**
    * Resolves the first explicit `@role` or `@roleProfileId` mention from one user message.
    * @param userMessage Raw session.main user text.
    * @returns Normalized role id when one explicit role mention is present.
    */
   public resolveMentionedRoleId(userMessage: string): string | null {
-    for (const match of userMessage.matchAll(SESSION_MAIN_SUBAGENT_MENTION_PATTERN)) {
-      const roleId = this.roleIdByToken.get((match[1] ?? '').toLowerCase());
-      if (roleId) {
-        return roleId;
-      }
-    }
-    return null;
+    return this.resolveMentionedRoleIds(userMessage)[0] ?? null;
   }
 
   /**

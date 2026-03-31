@@ -349,6 +349,90 @@ describe('session.main parity integration', () => {
       await rm(temporaryRoot, { recursive: true, force: true });
     }
   });
+
+  it('replays the same serial-collaboration markdown transcript when the CLI resumes the latest session shell', async () => {
+    const temporaryRoot = await mkdtemp(resolve(tmpdir(), 'session-main-parity-serial-'));
+    const workspaceRoot = resolve(temporaryRoot, '.repo-ai-governor');
+    await mkdir(workspaceRoot, { recursive: true });
+    const runtime = createRuntime(workspaceRoot, {
+      sessionMainSupervisorRuntime: {
+        resolveMentionedRoleId: () => 'planner',
+        resolveTurn: async () => ({
+          responseMode: 'role_collaboration',
+          interactionMode: 'serial_role_collaboration',
+          assistantDelta: '## Planner -> Reviewer Collaboration',
+          assistantMessage: [
+            '## Planner -> Reviewer Collaboration',
+            '',
+            '### Planner',
+            '',
+            '## Planner perspective\n\n- checkpoint 1\n- checkpoint 2',
+            '',
+            '### Reviewer',
+            '',
+            '## Reviewer perspective\n\n- sequencing looks safe',
+          ].join('\n'),
+          routerDecisionReason: 'session.main.router.serial_role_collaboration.explicit_roles',
+          executionIntent: 'session.role_delegate.planner.reviewer',
+          requiresConfirmation: false,
+          selectedSurface: 'planner:ollama -> reviewer:ollama',
+          selectedBy:
+            'planner:session.main.role_delegate.safe_fallback -> reviewer:session.main.role_delegate.safe_fallback',
+          sessionRoutingPreferenceApplied: false,
+          invokedRoleIds: ['planner', 'reviewer'],
+          subagentCount: 2,
+        }),
+      },
+    });
+    const sessionClient = new CliSessionShellServiceClient(runtime);
+
+    try {
+      const firstRenderer = new RecordingSessionShellRenderer();
+      const firstRunner = createRunner(firstRenderer, [
+        '@planner @reviewer collaborate on this rollout plan',
+        '/exit',
+      ]);
+      const firstResult = await firstRunner.run(createRunOptions(sessionClient));
+      const firstSessionId = firstRenderer.frames[0]?.sessionId;
+      const firstAnswer = firstResult.transcriptItems.find(
+        (item) => item.renderKind === 'markdown',
+      );
+
+      expect(firstResult.exitReason).toBe(CliSessionShellExitReason.SLASH_EXIT);
+      expect(firstAnswer).toEqual(
+        expect.objectContaining({
+          markdownSource: [
+            '## Planner -> Reviewer Collaboration',
+            '',
+            '### Planner',
+            '',
+            '## Planner perspective\n\n- checkpoint 1\n- checkpoint 2',
+            '',
+            '### Reviewer',
+            '',
+            '## Reviewer perspective\n\n- sequencing looks safe',
+          ].join('\n'),
+        }),
+      );
+
+      const resumedRenderer = new RecordingSessionShellRenderer();
+      const resumedRunner = createRunner(resumedRenderer, ['/exit']);
+      const resumedResult = await resumedRunner.run(
+        createRunOptions(sessionClient, {
+          resumeOnStartup: true,
+        }),
+      );
+      const resumedAnswer = resumedResult.transcriptItems.find(
+        (item) => item.renderKind === 'markdown',
+      );
+
+      expect(resumedRenderer.frames[0]?.sessionId).toBe(firstSessionId);
+      expect(resumedAnswer).toEqual(firstAnswer);
+    } finally {
+      await runtime.dispose();
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
 });
 
 function createRuntime(

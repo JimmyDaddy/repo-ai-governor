@@ -1,6 +1,6 @@
 # sprint-003-role-collaboration-and-handoff-productization 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-03-31
 - Project: `project-035-session-main-supervisor-and-role-subagent-productization`
 - Sprint Goal: 将 `session.main` 从 single-role bootstrap 扩展到可审计的 serial/parallel role collaboration，并收口自然语言 command handoff 的协作与 recap 语义。
@@ -21,3 +21,5 @@
 
 1. 2026-03-31：创建 `sprint-003`，将 multi-role collaboration 与 collaboration recap presenter 明确拆出，避免和 bootstrap sprint 混写。
 2. 2026-03-31：冻结 `TK-467 ~ TK-468`，分别承接 serial collaboration/router stabilization 与 parallel fan-out/presenter semantics。
+3. 2026-03-31：正式激活 `sprint-003` 作为 `project-035` 当前 primary execution surface；先从 `TK-467` 开始收敛 serial collaboration path 与 interaction-mode routing。
+4. 2026-03-31：完成 `TK-467`；当前已把显式双 role mention 收敛到一条受审计的 `planner -> reviewer` 串行协作路径，并将 `routerDecisionReason` / `interactionMode` / `invokedRoleIds` / `subagentCount` 写回 shared session truth。

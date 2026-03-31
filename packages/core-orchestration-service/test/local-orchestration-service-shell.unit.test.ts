@@ -675,6 +675,7 @@ describe('core-orchestration-service local shell', () => {
           interactionMode: 'single_role_delegate',
           assistantDelta: '## Planner perspective',
           assistantMessage: '## Planner perspective\n\n- checkpoint 1\n- checkpoint 2',
+          routerDecisionReason: 'session.main.router.single_role_delegate.explicit_role',
           executionIntent: 'session.role_delegate.planner',
           requiresConfirmation: false,
           selectedSurface: 'ollama',
@@ -706,6 +707,9 @@ describe('core-orchestration-service local shell', () => {
       expect(completedEvent?.payload.interactionMode).toBe('single_role_delegate');
       expect(completedEvent?.payload.assistantMessage).toBe(
         '## Planner perspective\n\n- checkpoint 1\n- checkpoint 2',
+      );
+      expect(completedEvent?.payload.routerDecisionReason).toBe(
+        'session.main.router.single_role_delegate.explicit_role',
       );
       expect(completedEvent?.payload.executionIntent).toBe('session.role_delegate.planner');
       expect(completedEvent?.payload.selectedSurface).toBe('ollama');
@@ -766,6 +770,72 @@ describe('core-orchestration-service local shell', () => {
             'repo-ai-governor connect --preset multi-tool-default --output pretty --single-tool-all-roles claude-code',
         },
       ]);
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('writes serial collaboration metadata for multi-role session.main turns', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot: temporaryRoot,
+      sessionMainSupervisorRuntime: {
+        resolveMentionedRoleId: () => 'planner',
+        resolveTurn: async () => ({
+          responseMode: 'role_collaboration',
+          interactionMode: 'serial_role_collaboration',
+          assistantDelta: '## Planner -> Reviewer Collaboration',
+          assistantMessage: [
+            '## Planner -> Reviewer Collaboration',
+            '',
+            '### Planner',
+            '',
+            '## Planner perspective\n\n- checkpoint 1\n- checkpoint 2',
+            '',
+            '### Reviewer',
+            '',
+            '## Reviewer perspective\n\n- sequencing looks safe',
+          ].join('\n'),
+          routerDecisionReason: 'session.main.router.serial_role_collaboration.explicit_roles',
+          executionIntent: 'session.role_delegate.planner.reviewer',
+          requiresConfirmation: false,
+          selectedSurface: 'planner:ollama -> reviewer:ollama',
+          selectedBy:
+            'planner:session.main.role_delegate.safe_fallback -> reviewer:session.main.role_delegate.safe_fallback',
+          sessionRoutingPreferenceApplied: false,
+          invokedRoleIds: ['planner', 'reviewer'],
+          subagentCount: 2,
+        }),
+      },
+    });
+
+    try {
+      const started = await orchestrationService.startSession({
+        routeId: OrchestrationSessionRouteId.MAIN,
+      });
+      await orchestrationService.sendSessionTurn({
+        sessionId: started.session.sessionId,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        userMessage: '@planner @reviewer collaborate on this rollout plan',
+      });
+      const subscription = await orchestrationService.subscribeSession({
+        sessionId: started.session.sessionId,
+      });
+      const completedEvent = subscription.events.find(
+        (event) => event.type === OrchestrationSessionEventType.TURN_COMPLETED,
+      );
+
+      expect(completedEvent?.payload.responseMode).toBe('role_collaboration');
+      expect(completedEvent?.payload.interactionMode).toBe('serial_role_collaboration');
+      expect(completedEvent?.payload.routerDecisionReason).toBe(
+        'session.main.router.serial_role_collaboration.explicit_roles',
+      );
+      expect(completedEvent?.payload.executionIntent).toBe(
+        'session.role_delegate.planner.reviewer',
+      );
+      expect(completedEvent?.payload.selectedSurface).toBe('planner:ollama -> reviewer:ollama');
+      expect(completedEvent?.payload.invokedRoleIds).toEqual(['planner', 'reviewer']);
+      expect(completedEvent?.payload.subagentCount).toBe(2);
     } finally {
       await rm(temporaryRoot, { recursive: true, force: true });
     }

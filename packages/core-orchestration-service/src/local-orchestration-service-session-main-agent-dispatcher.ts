@@ -92,6 +92,7 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
       return this.createCommandSuggestionResult({
         suggestedSlashCommand: '/connect',
         executionIntent: 'connect.adapters.bootstrap',
+        routerDecisionReason: 'session.main.router.command_handoff_preview.connect',
         handoffCommandPreview: this.createCommandPreview(
           'repo-ai-governor connect --preset multi-tool-default --output pretty',
           preferredSurface,
@@ -109,6 +110,7 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
       return this.createCommandSuggestionResult({
         suggestedSlashCommand: '/doctor',
         executionIntent: 'doctor.adapters',
+        routerDecisionReason: 'session.main.router.command_handoff_preview.doctor',
         handoffCommandPreview: this.createCommandPreview(
           'repo-ai-governor doctor --adapters --output pretty',
           preferredSurface,
@@ -126,6 +128,7 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
       return this.createCommandSuggestionResult({
         suggestedSlashCommand: '/verify',
         executionIntent: 'verify.adapters',
+        routerDecisionReason: 'session.main.router.command_handoff_preview.verify',
         handoffCommandPreview: this.createCommandPreview(
           'repo-ai-governor verify --adapters --output pretty',
           preferredSurface,
@@ -141,6 +144,7 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
       return this.createCommandSuggestionResult({
         suggestedSlashCommand: '/plan',
         executionIntent: 'plan.generate',
+        routerDecisionReason: 'session.main.router.command_handoff_preview.plan',
         handoffCommandPreview: this.createCommandPreview(
           'repo-ai-governor plan --output pretty',
           preferredSurface,
@@ -159,6 +163,7 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
       return this.createCommandSuggestionResult({
         suggestedSlashCommand: '/review',
         executionIntent: 'review.start',
+        routerDecisionReason: 'session.main.router.command_handoff_preview.review',
         handoffCommandPreview: this.createCommandPreview(
           'repo-ai-governor review --output pretty',
           preferredSurface,
@@ -173,6 +178,7 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
       return this.createCommandSuggestionResult({
         suggestedSlashCommand: '/run',
         executionIntent: 'run.task',
+        routerDecisionReason: 'session.main.router.command_handoff_preview.run',
         handoffCommandPreview: this.createCommandPreview(
           'repo-ai-governor run --dry-run --trace',
           preferredSurface,
@@ -189,6 +195,7 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
         responseMode: SESSION_MAIN_RESPONSE_MODE.FOLLOW_UP_QUESTION,
         interactionMode: SESSION_MAIN_INTERACTION_MODE.DIRECT_ANSWER,
         assistantDelta: '?',
+        routerDecisionReason: 'session.main.router.follow_up.short_input',
         followUpQuestion:
           'Tell me the next action you want, for example connect tools, review code, or run a task.',
         requiresConfirmation: false,
@@ -217,6 +224,7 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
   private createCommandSuggestionResult(options: {
     suggestedSlashCommand: string;
     executionIntent: string;
+    routerDecisionReason: string;
     handoffCommandPreview: string;
     selectedSurface: string;
     selectedBy: string;
@@ -226,6 +234,7 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
       responseMode: SESSION_MAIN_RESPONSE_MODE.COMMAND_HANDOFF_PREVIEW,
       interactionMode: SESSION_MAIN_INTERACTION_MODE.COMMAND_HANDOFF,
       assistantDelta: options.suggestedSlashCommand,
+      routerDecisionReason: options.routerDecisionReason,
       suggestedSlashCommand: options.suggestedSlashCommand,
       executionIntent: options.executionIntent,
       requiresConfirmation: true,
@@ -275,6 +284,7 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
       interactionMode: SESSION_MAIN_INTERACTION_MODE.DIRECT_ANSWER,
       assistantDelta: this.createAssistantDelta(assistantMessage),
       assistantMessage,
+      routerDecisionReason: 'session.main.router.direct_answer.fallback',
       executionIntent: 'session.answer',
       requiresConfirmation: false,
       selectedSurface: selectionMetadata.selectedSurface,
