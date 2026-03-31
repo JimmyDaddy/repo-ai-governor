@@ -1,6 +1,7 @@
 # TK-457 verify CLI session shell resume and desktop consumer parity for real main-agent turns
 
-- Status: planned
+- Status: completed
+- Date: 2026-03-31
 - Owner: AI-Agent
 - Priority: P0
 - Due: 2026-04-10
@@ -24,3 +25,5 @@
 ## 4. 执行记录
 
 1. 2026-03-31：任务创建，状态初始化为 `planned`。
+2. 2026-03-31：`sprint-004` 已激活，开始核对 CLI session shell、resume flow 与 desktop consumer baseline 的 shared-session parity seam，并收集 rollout evidence。
+3. 2026-03-31：新增 `apps/cli/test/runtime/session-main-parity.integration.test.ts`，通过真实 service-backed `session.main` turn 验证 desktop-ready payload contract，以及 CLI 首次附着与 `resume` 再附着对同一份 canonical session truth 的 recap/backlink parity。

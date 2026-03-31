@@ -3,20 +3,18 @@
 ## Primary Stream
 
 - Status: active
-- Project: `project-032-command-live-progress-react-shell-productization`
-- Sprint: `sprint-005-session-shell-output-presentation-and-markdown-productization`
-- Docs root: `.repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization`
-- Task records: `.repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/sprint-005-session-shell-output-presentation-and-markdown-productization/tasks/`
-- Review records: `.repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/sprint-005-session-shell-output-presentation-and-markdown-productization/review/`
-- Note: `project-032 sprint-005` 已完成 transcript render-kind、assistant markdown rendering 与 transcript presentation rollout；当前 stream 暂保留为 active closeout surface，待下一条主执行流显式激活。
+- Project: `project-033-session-main-agent-runtime-productization`
+- Sprint: `sprint-004-rollout-and-parity-closeout`
+- Docs root: `.repo-ai-governor/context/dev/project-033-session-main-agent-runtime-productization`
+- Task records: `.repo-ai-governor/context/dev/project-033-session-main-agent-runtime-productization/sprint-004-rollout-and-parity-closeout/tasks/`
+- Review records: `.repo-ai-governor/context/dev/project-033-session-main-agent-runtime-productization/sprint-004-rollout-and-parity-closeout/review/`
+- Note: `project-033` 已完成 path-A productization closeout；当前仍暂保留 `sprint-004` 作为 active closeout surface，承接 review / audit 回链，直至下一条主执行流显式激活。
 
 ## Active Streams
 
-- `primary`: project=`project-032-command-live-progress-react-shell-productization`, sprint=`sprint-005-session-shell-output-presentation-and-markdown-productization`, docs=`.repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization`, plan=`.repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/sprint-005-session-shell-output-presentation-and-markdown-productization/plan.md`, tasks=`.repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/sprint-005-session-shell-output-presentation-and-markdown-productization/tasks/`, checklist=`.repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/sprint-005-session-shell-output-presentation-and-markdown-productization/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/sprint-005-session-shell-output-presentation-and-markdown-productization/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/sprint-005-session-shell-output-presentation-and-markdown-productization/review/`, status=`active`, note=`project-032 is completed; sprint-005 remains as the active closeout surface until the next primary stream is activated`
+- `primary`: project=`project-033-session-main-agent-runtime-productization`, sprint=`sprint-004-rollout-and-parity-closeout`, docs=`.repo-ai-governor/context/dev/project-033-session-main-agent-runtime-productization`, plan=`.repo-ai-governor/context/dev/project-033-session-main-agent-runtime-productization/sprint-004-rollout-and-parity-closeout/plan.md`, tasks=`.repo-ai-governor/context/dev/project-033-session-main-agent-runtime-productization/sprint-004-rollout-and-parity-closeout/tasks/`, checklist=`.repo-ai-governor/context/dev/project-033-session-main-agent-runtime-productization/sprint-004-rollout-and-parity-closeout/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-033-session-main-agent-runtime-productization/sprint-004-rollout-and-parity-closeout/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-033-session-main-agent-runtime-productization/sprint-004-rollout-and-parity-closeout/review/`, status=`active`, note=`project-033 is completed; sprint-004 remains mounted as the temporary active closeout surface for review, DA, and completion-audit traceability`
 
 ## Planned Follow-Up Streams
-
-- `planned-002`: project=`project-033-session-main-agent-runtime-productization`, sprint=`sprint-004-rollout-and-parity-closeout`, docs=`.repo-ai-governor/context/dev/project-033-session-main-agent-runtime-productization`, plan=`.repo-ai-governor/context/dev/project-033-session-main-agent-runtime-productization/sprint-004-rollout-and-parity-closeout/plan.md`, tasks=`.repo-ai-governor/context/dev/project-033-session-main-agent-runtime-productization/sprint-004-rollout-and-parity-closeout/tasks/`, checklist=`.repo-ai-governor/context/dev/project-033-session-main-agent-runtime-productization/sprint-004-rollout-and-parity-closeout/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-033-session-main-agent-runtime-productization/sprint-004-rollout-and-parity-closeout/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-033-session-main-agent-runtime-productization/sprint-004-rollout-and-parity-closeout/review/`, status=`planned`, note=`path A sprint-003 与 working-tree CR 都已收口；下一步只剩 rollout/parity verification 和 final evidence in sprint-004`
 
 ## Completed Stream History
 

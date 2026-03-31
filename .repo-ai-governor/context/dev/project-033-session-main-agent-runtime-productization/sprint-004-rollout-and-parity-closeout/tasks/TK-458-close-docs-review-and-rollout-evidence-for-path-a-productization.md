@@ -1,6 +1,7 @@
 # TK-458 close docs review and rollout evidence for path-A productization
 
-- Status: planned
+- Status: completed
+- Date: 2026-03-31
 - Owner: AI-Agent
 - Priority: P0
 - Due: 2026-04-10
@@ -24,3 +25,4 @@
 ## 4. 执行记录
 
 1. 2026-03-31：任务创建，状态初始化为 `planned`。
+2. 2026-03-31：已补齐 `resolved_code_review_tk-457-tk-458-session-main-runtime-rollout-closeout.md`、`DA-458-session-main-runtime-rollout-closeout.md` 与 `project-033-session-main-agent-runtime-productization-completion-audit-summary.md`，并将 project / sprint / current-context 台账同步为 closeout 一致状态。

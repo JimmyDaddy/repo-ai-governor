@@ -1,6 +1,6 @@
 # project-033-session-main-agent-runtime-productization 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-03-31
 - Stage Mapping: Session-first shell path-A follow-up
 - Phase Mapping: Activation and contract delta / Service-owned dispatcher / Intent and adapter routing / Rollout and parity
@@ -41,7 +41,7 @@
 
 ## 2.4 sprint-004-rollout-and-parity-closeout
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 完成 CLI session shell / resume / desktop consumer parity 验证、docs/review/rollout closeout。
 - Task Package: `TK-457`、`TK-458`。
 
@@ -55,8 +55,8 @@
 | TK-454 | sprint-002 | stream assistant delta completion and failure metadata through session events | runtime/session-events | TK-453 | completed |
 | TK-455 | sprint-003 | integrate session.main with adapter routing and session-level routing preference | runtime/adapter-routing | TK-454 | completed |
 | TK-456 | sprint-003 | emit command-intent suggestion handoff metadata and transcript backlinks | runtime/handoff-metadata | TK-455 | completed |
-| TK-457 | sprint-004 | verify CLI session shell resume and desktop consumer parity for real main-agent turns | verification/parity | TK-456 | planned |
-| TK-458 | sprint-004 | close docs review and rollout evidence for path-A productization | docs/rollout | TK-457 | planned |
+| TK-457 | sprint-004 | verify CLI session shell resume and desktop consumer parity for real main-agent turns | verification/parity | TK-456 | completed |
+| TK-458 | sprint-004 | close docs review and rollout evidence for path-A productization | docs/rollout | TK-457 | completed |
 
 ## 4. 依赖产物策略
 
@@ -88,3 +88,5 @@
 6. 2026-03-31：完成 `TK-455`，让 `session.main` 正式消费 `sessionRoutingPreference`，并将 adapter-surface selection reason 回灌到 transcript-visible metadata。
 7. 2026-03-31：完成 `TK-456`，为 `session.main` completed payload 补齐 `handoffBacklinks` 结构化元数据，并让 transcript 渲染 backlink lines。
 8. 2026-03-31：完成 `project-033 / sprint-003` working-tree CR 复核与修复，恢复 plain completed turn 的兼容式 transcript recap，并修正 failed/cancelled 后 `turnIndex` 的单调递增语义；同时将 follow-up planning surface 正式推进到 `sprint-004-rollout-and-parity-closeout`。
+9. 2026-03-31：激活 `sprint-004-rollout-and-parity-closeout`，将 `current-context.md` primary stream 切换到 path-A 的 parity / rollout closeout surface，并开始执行 `TK-457`。
+10. 2026-03-31：完成 `TK-457 ~ TK-458`，新增真实 `session.main` parity integration regression、resolved review、DA closeout 与 [project-033-session-main-agent-runtime-productization-completion-audit-summary.md](./project-033-session-main-agent-runtime-productization-completion-audit-summary.md)，`project-033` 进入 completed 状态。
