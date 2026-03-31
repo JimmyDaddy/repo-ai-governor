@@ -1,7 +1,7 @@
 # CLI Session Shell Contract
 
 - Status: active
-- Date: 2026-03-30
+- Date: 2026-03-31
 - Contract ID: `contract.cli.session-shell.v1`
 - Producer Module: `runtime.cli-interactive-shell`
 
@@ -29,6 +29,9 @@
 16. `foreground_input_owner`
 17. `foreground_focus_target`
 18. `input_action_contract`
+19. `transcript_render_kind`
+20. `message_tone`
+21. `artifact_backlinks`
 
 ## 3. Allowed Values
 
@@ -61,6 +64,11 @@
    - `composer`
    - `palette`
    - `handoff_preview`
+8. `transcript_render_kind`
+   - `plain_text`
+   - `markdown`
+   - `system_notice`
+   - `command_recap`
 
 ## 4. Required Constraints
 
@@ -75,6 +83,10 @@
 9. 会话外允许提供 `repo-ai-governor resume [session-id]` 入口；不建议提供顶层 `repo-ai-governor exit`。
 10. `cli_handoff` 类型的高副作用命令必须先展示规范化命令预览并得到显式确认，再进入执行。
 11. CLI 与 future desktop 必须共享同一套 session DTO 语义；差异只能存在于 presenter 层，不得复制第二套 session state owner。
+12. `transcript_items` 必须允许 presenter 区分至少 `plain_text / markdown / system_notice / command_recap` 四类 render-kind；不得再假设所有消息都只能退化成单一 `label + lines[]` 视觉模型。
+13. 正在运行中的 progress、heartbeat、elapsed 与 cancel affordance 必须停留在 session-shell running dock 或等价动态区域，不得通过无限追加 transcript 项目来伪装 live 状态。
+14. assistant 完成态消息、帮助文本和 command recap 允许进入 Markdown content-block presenter path，但 `json/plain` 与 non-interactive contract 不得因该 presenter 能力发生 schema 变化。
+15. `artifact_backlinks` 只能表示用户可回看的路径摘要；不得把机器输出 payload 自身嵌入 transcript 富文本中。
 
 ## 5. Consumers
 
@@ -88,3 +100,4 @@
 2. `v1` 保留现有显式子命令树的自动化兼容性；session-first 是新增默认人类入口，不是替换机器入口。
 3. `v1` 允许把 session routing setting command 暂时保留为 future command，并在真正落地时以 `/model`、`/agent` 或 `/routing` 中的一种命名收口。
 4. `v1` 允许 session shell 从 `readline` foreground input 迁移到 Ink-owned input，只要上述字段与治理边界保持稳定。
+5. `v1` 现正式接受“结构化壳层 + Markdown 内容块”方向，但这只定义 presenter/contract 边界，不等于 renderer 已在代码面全面交付；真实 rollout follow-up 由 `project-032-command-live-progress-react-shell-productization` 的 output-presentation sprint 承接。

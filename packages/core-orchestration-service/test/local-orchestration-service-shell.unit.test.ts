@@ -16,6 +16,8 @@ import {
   OrchestrationServiceHostKind,
   OrchestrationServiceLifecycleStatus,
   OrchestrationServiceTransportKind,
+  OrchestrationSessionEventType,
+  OrchestrationSessionRouteId,
 } from '@repo-ai-governor/orchestration-service-client';
 import {
   GovernorError,
@@ -567,6 +569,190 @@ describe('core-orchestration-service local shell', () => {
       expect(secondSubscription.events[0]?.artifactId).toBe('draft_report');
       expect(secondSubscription.latestEventSequence).toBe(4);
       expect(secondSubscription.nextCursor).toBe(secondSubscription.events[0]?.streamCursor);
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('dispatches session.main turns through a real structured main-agent result instead of baseline ack', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot: temporaryRoot,
+    });
+
+    try {
+      const started = await orchestrationService.startSession({
+        routeId: OrchestrationSessionRouteId.MAIN,
+      });
+      const turnResult = await orchestrationService.sendSessionTurn({
+        sessionId: started.session.sessionId,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        userMessage: 'Please connect the adapters for this repository',
+      });
+      const subscription = await orchestrationService.subscribeSession({
+        sessionId: started.session.sessionId,
+      });
+      const completedEvent = subscription.events.find(
+        (event) => event.type === OrchestrationSessionEventType.TURN_COMPLETED,
+      );
+      const deltaEvent = subscription.events.find(
+        (event) => event.type === OrchestrationSessionEventType.TURN_STREAM_DELTA,
+      );
+
+      expect(turnResult.routeId).toBe(OrchestrationSessionRouteId.MAIN);
+      expect(deltaEvent?.payload.delta).toBe('/connect');
+      expect(completedEvent?.payload.responseMode).toBe('command_handoff_preview');
+      expect(completedEvent?.payload.suggestedSlashCommand).toBe('/connect');
+      expect(completedEvent?.payload.executionIntent).toBe('connect.adapters.bootstrap');
+      expect(completedEvent?.payload.handoffCommandPreview).toBe(
+        'repo-ai-governor connect --preset multi-tool-default --output pretty',
+      );
+      expect(completedEvent?.payload.selectedBy).toBe('session.main.intent_router');
+      expect(completedEvent?.payload.requiresConfirmation).toBe(true);
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('applies session routing preference to selected surface and command preview metadata', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot: temporaryRoot,
+    });
+
+    try {
+      const started = await orchestrationService.startSession({
+        routeId: OrchestrationSessionRouteId.MAIN,
+      });
+      await orchestrationService.sendSessionTurn({
+        sessionId: started.session.sessionId,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        userMessage: 'connect the tools for this workspace',
+        metadata: {
+          sessionRoutingPreference: 'claude-code',
+        },
+      });
+      const subscription = await orchestrationService.subscribeSession({
+        sessionId: started.session.sessionId,
+      });
+      const completedEvent = subscription.events.find(
+        (event) => event.type === OrchestrationSessionEventType.TURN_COMPLETED,
+      );
+
+      expect(completedEvent?.payload.selectedSurface).toBe('claude-code');
+      expect(completedEvent?.payload.selectedBy).toBe('session.main.preference');
+      expect(completedEvent?.payload.sessionRoutingPreferenceApplied).toBe(true);
+      expect(completedEvent?.payload.handoffCommandPreview).toContain(
+        '--single-tool-all-roles claude-code',
+      );
+      expect(completedEvent?.payload.handoffBacklinks).toEqual([
+        {
+          kind: 'slash_command',
+          label: 'slash:/connect',
+          target: '/connect',
+        },
+        {
+          kind: 'execution_intent',
+          label: 'intent:connect.adapters.bootstrap',
+          target: 'connect.adapters.bootstrap',
+        },
+        {
+          kind: 'command_preview',
+          label: 'preview',
+          target:
+            'repo-ai-governor connect --preset multi-tool-default --output pretty --single-tool-all-roles claude-code',
+        },
+      ]);
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('emits failed and cancelled session-turn events for main-agent dispatcher interruptions', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot: temporaryRoot,
+    });
+
+    try {
+      const started = await orchestrationService.startSession({
+        routeId: OrchestrationSessionRouteId.MAIN,
+      });
+
+      await orchestrationService.sendSessionTurn({
+        sessionId: started.session.sessionId,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        userMessage: 'simulate failure for this turn',
+      });
+      await orchestrationService.sendSessionTurn({
+        sessionId: started.session.sessionId,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        userMessage: 'please simulate cancel for this turn',
+      });
+
+      const subscription = await orchestrationService.subscribeSession({
+        sessionId: started.session.sessionId,
+      });
+      const eventTypes = subscription.events.map((event) => event.type);
+      const failedEvent = subscription.events.find(
+        (event) => event.type === OrchestrationSessionEventType.TURN_FAILED,
+      );
+      const cancelledEvent = subscription.events.find(
+        (event) => event.type === OrchestrationSessionEventType.TURN_CANCELLED,
+      );
+
+      expect(eventTypes).toContain(OrchestrationSessionEventType.TURN_FAILED);
+      expect(eventTypes).toContain(OrchestrationSessionEventType.TURN_CANCELLED);
+      expect(failedEvent?.payload.errorCode).toBe('ADAPTER_PROTOCOL_INVOKE_FAILED');
+      expect(cancelledEvent?.payload.errorCode).toBe('PROCESS_RUNTIME_CANCELLED');
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('keeps turnIndex monotonic after failed and cancelled turns', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot: temporaryRoot,
+    });
+
+    try {
+      const started = await orchestrationService.startSession({
+        routeId: OrchestrationSessionRouteId.MAIN,
+      });
+
+      await orchestrationService.sendSessionTurn({
+        sessionId: started.session.sessionId,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        userMessage: 'simulate failure for this turn',
+      });
+      await orchestrationService.sendSessionTurn({
+        sessionId: started.session.sessionId,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        userMessage: 'please simulate cancel for this turn',
+      });
+      await orchestrationService.sendSessionTurn({
+        sessionId: started.session.sessionId,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        userMessage: 'Please connect the adapters for this repository',
+      });
+
+      const subscription = await orchestrationService.subscribeSession({
+        sessionId: started.session.sessionId,
+      });
+      const failedEvent = subscription.events.find(
+        (event) => event.type === OrchestrationSessionEventType.TURN_FAILED,
+      );
+      const cancelledEvent = subscription.events.find(
+        (event) => event.type === OrchestrationSessionEventType.TURN_CANCELLED,
+      );
+      const completedEvents = subscription.events.filter(
+        (event) => event.type === OrchestrationSessionEventType.TURN_COMPLETED,
+      );
+
+      expect(failedEvent?.payload.turnIndex).toBe(1);
+      expect(cancelledEvent?.payload.turnIndex).toBe(2);
+      expect(completedEvents[0]?.payload.turnIndex).toBe(3);
     } finally {
       await rm(temporaryRoot, { recursive: true, force: true });
     }

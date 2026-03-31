@@ -1,6 +1,6 @@
 # TK-452 formalize session.main contract delta and structured turn semantics
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-31
 - Owner: AI-Agent
 - Priority: P0
@@ -31,3 +31,4 @@
 ## 5. Execution Notes
 
 1. 2026-03-31：任务创建，状态初始化为 `planned`。
+2. 2026-03-31：已在 session-first shell draft 中新增 `session.main contract delta（Path A）`、责任边界与推荐实现顺序，明确后续 `TK-453 ~ TK-456` 的输入契约。

@@ -332,10 +332,17 @@ export const EN_US_TRANSLATIONS = {
         exitKeepsTranscript:
           'Exit only closes the live shell surface. Persisted transcript state remains resumable.',
         turnFailed: 'The main session turn failed. reason={{reason}}',
+        turnCancelled: 'The main session turn was cancelled before completion.',
         turnRecoverableHint: 'You can keep chatting, retry the turn, or switch to /resume.',
         mainTurnAccepted:
           'route={{routeId}} turn={{turnIndex}} accepted by the shared session runtime.',
         mainTurnEcho: 'echo={{userMessage}}',
+        mainTurnSuggestedSlash: 'Suggested next step: {{command}}',
+        mainTurnHandoffPreview: 'Preview: {{preview}}',
+        mainTurnExecutionIntent: 'Intent: {{executionIntent}}',
+        mainTurnRoutingSelection: 'Routing: surface={{selectedSurface}} selected_by={{selectedBy}}',
+        mainTurnBacklink: 'Backlink: kind={{kind}} label={{label}} target={{target}}',
+        mainTurnFollowUpPrompt: 'The main agent needs one clarification before handoff:',
         sessionStarted: 'Started service-backed session {{sessionId}} on {{routeId}}.',
         sessionResumed: 'Resumed session {{sessionId}} via selector={{resumeSelector}}.',
         resumeFailed: 'Failed to resume {{resumeSelector}}. reason={{reason}}',

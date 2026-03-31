@@ -97,6 +97,8 @@ export enum OrchestrationSessionEventType {
   TURN_SUBMITTED = 'session.turn.submitted',
   TURN_STREAM_DELTA = 'session.turn.stream_delta',
   TURN_COMPLETED = 'session.turn.completed',
+  TURN_FAILED = 'session.turn.failed',
+  TURN_CANCELLED = 'session.turn.cancelled',
 }
 
 /**

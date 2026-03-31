@@ -45,6 +45,7 @@ import {
   type StandardizedError,
   standardizeError,
 } from '@repo-ai-governor/shared';
+import { LocalOrchestrationServiceSessionMainAgentDispatcher } from './local-orchestration-service-session-main-agent-dispatcher.js';
 
 interface LocalOrchestrationServiceSessionMemoryProviderState {
   composition: MemoryProviderCompositionSummary;
@@ -74,6 +75,7 @@ const SESSION_CURSOR_VERSION = 1;
 export class LocalOrchestrationServiceSessionRuntime {
   private readonly nowProvider: () => Date;
   private readonly memoryProviderRegistry: MemoryProviderRegistry;
+  private readonly mainAgentDispatcher: LocalOrchestrationServiceSessionMainAgentDispatcher;
   private memoryProviderStatePromise: Promise<LocalOrchestrationServiceSessionMemoryProviderState> | null =
     null;
   private sharedSessionManagerPromise: Promise<SharedSessionManager> | null = null;
@@ -84,6 +86,7 @@ export class LocalOrchestrationServiceSessionRuntime {
     this.nowProvider = dependencies.nowProvider ?? (() => new Date());
     this.memoryProviderRegistry =
       dependencies.memoryProviderRegistry ?? new MemoryProviderRegistry();
+    this.mainAgentDispatcher = new LocalOrchestrationServiceSessionMainAgentDispatcher();
   }
 
   /**
@@ -133,7 +136,7 @@ export class LocalOrchestrationServiceSessionRuntime {
   }
 
   /**
-   * Appends one `session.main` user turn and the synthesized assistant baseline response.
+   * Appends one `session.main` user turn and resolves it through the service-owned main agent.
    * @param request Session-turn request.
    * @returns Updated session summary plus stream cursor after the turn completes.
    */
@@ -147,8 +150,7 @@ export class LocalOrchestrationServiceSessionRuntime {
     const existingSession = await sessionManager.getSession(request.sessionId);
     const acceptedAt = this.toTimestamp();
     const turnId = request.turnId ?? `turn-${randomUUID().replace(/-/gu, '')}`;
-    const turnIndex = this.countCompletedTurns(existingSession) + 1;
-
+    const turnIndex = this.resolveNextTurnIndex(existingSession);
     await sessionManager.appendEvent({
       sessionId: request.sessionId,
       type: OrchestrationSessionEventType.TURN_SUBMITTED,
@@ -161,30 +163,81 @@ export class LocalOrchestrationServiceSessionRuntime {
         ...(request.metadata ? { metadata: { ...request.metadata } } : {}),
       },
     });
-    await sessionManager.appendEvent({
-      sessionId: request.sessionId,
-      type: OrchestrationSessionEventType.TURN_STREAM_DELTA,
-      createdAt: this.toTimestamp(),
-      payload: {
-        role: OrchestrationSessionTranscriptRole.ASSISTANT,
-        routeId: currentRouteId,
-        turnId,
-        delta: `turn:${turnIndex}:ack`,
-      },
-    });
-    await sessionManager.appendEvent({
-      sessionId: request.sessionId,
-      type: OrchestrationSessionEventType.TURN_COMPLETED,
-      createdAt: this.toTimestamp(),
-      payload: {
-        role: OrchestrationSessionTranscriptRole.ASSISTANT,
-        routeId: currentRouteId,
-        turnId,
-        turnIndex,
-        responseMode: 'baseline_ack',
-        latestUserMessage: request.userMessage,
-      },
-    });
+    try {
+      const dispatchResult = this.mainAgentDispatcher.dispatch(
+        request.userMessage,
+        request.metadata,
+      );
+      await sessionManager.appendEvent({
+        sessionId: request.sessionId,
+        type: OrchestrationSessionEventType.TURN_STREAM_DELTA,
+        createdAt: this.toTimestamp(),
+        payload: {
+          role: OrchestrationSessionTranscriptRole.ASSISTANT,
+          routeId: currentRouteId,
+          turnId,
+          delta: dispatchResult.assistantDelta,
+        },
+      });
+      await sessionManager.appendEvent({
+        sessionId: request.sessionId,
+        type: OrchestrationSessionEventType.TURN_COMPLETED,
+        createdAt: this.toTimestamp(),
+        payload: {
+          role: OrchestrationSessionTranscriptRole.ASSISTANT,
+          routeId: currentRouteId,
+          turnId,
+          turnIndex,
+          responseMode: dispatchResult.responseMode,
+          latestUserMessage: request.userMessage,
+          ...(dispatchResult.assistantMessage
+            ? { assistantMessage: dispatchResult.assistantMessage }
+            : {}),
+          ...(dispatchResult.suggestedSlashCommand
+            ? { suggestedSlashCommand: dispatchResult.suggestedSlashCommand }
+            : {}),
+          ...(dispatchResult.executionIntent
+            ? { executionIntent: dispatchResult.executionIntent }
+            : {}),
+          ...(dispatchResult.followUpQuestion
+            ? { followUpQuestion: dispatchResult.followUpQuestion }
+            : {}),
+          requiresConfirmation: dispatchResult.requiresConfirmation,
+          selectedSurface: dispatchResult.selectedSurface,
+          selectedBy: dispatchResult.selectedBy,
+          sessionRoutingPreferenceApplied: dispatchResult.sessionRoutingPreferenceApplied,
+          ...(dispatchResult.handoffCommandPreview
+            ? { handoffCommandPreview: dispatchResult.handoffCommandPreview }
+            : {}),
+          ...(dispatchResult.handoffBacklinks
+            ? {
+                handoffBacklinks: dispatchResult.handoffBacklinks.map((backlink) => ({
+                  ...backlink,
+                })),
+              }
+            : {}),
+        },
+      });
+    } catch (error) {
+      const standardizedError = standardizeError(error);
+      const failureEventType =
+        standardizedError.code === GovernorErrorCode.PROCESS_RUNTIME_CANCELLED
+          ? OrchestrationSessionEventType.TURN_CANCELLED
+          : OrchestrationSessionEventType.TURN_FAILED;
+      await sessionManager.appendEvent({
+        sessionId: request.sessionId,
+        type: failureEventType,
+        createdAt: this.toTimestamp(),
+        payload: {
+          role: OrchestrationSessionTranscriptRole.SYSTEM,
+          routeId: currentRouteId,
+          turnId,
+          turnIndex,
+          errorCode: standardizedError.code,
+          errorMessage: standardizedError.message,
+        },
+      });
+    }
     await sessionManager.updateContext({
       sessionId: request.sessionId,
       contextPatch: {
@@ -519,10 +572,16 @@ export class LocalOrchestrationServiceSessionRuntime {
     });
   }
 
-  private countCompletedTurns(session: SharedSession): number {
-    return session.events.filter(
-      (event) => event.type === OrchestrationSessionEventType.TURN_COMPLETED,
-    ).length;
+  private resolveNextTurnIndex(session: SharedSession): number {
+    const persistedTurnCount = session.context[SESSION_CONTEXT_TURN_COUNT_KEY];
+    if (typeof persistedTurnCount === 'number' && Number.isFinite(persistedTurnCount)) {
+      return persistedTurnCount + 1;
+    }
+
+    return (
+      session.events.filter((event) => event.type === OrchestrationSessionEventType.TURN_SUBMITTED)
+        .length + 1
+    );
   }
 
   private assertSupportedRouteId(routeId: string): void {

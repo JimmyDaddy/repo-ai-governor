@@ -135,7 +135,82 @@ export class CliSessionShellTranscriptStore {
     if (event.type === OrchestrationSessionEventType.TURN_COMPLETED) {
       const routeId = this.readOptionalString(event.payload.routeId) ?? 'session.main';
       const turnIndex = this.readOptionalNumber(event.payload.turnIndex);
-      const latestUserMessage = this.readOptionalString(event.payload.latestUserMessage) ?? '';
+      const assistantMessage = this.readOptionalString(event.payload.assistantMessage);
+      const suggestedSlashCommand = this.readOptionalString(event.payload.suggestedSlashCommand);
+      const executionIntent = this.readOptionalString(event.payload.executionIntent);
+      const followUpQuestion = this.readOptionalString(event.payload.followUpQuestion);
+      const handoffCommandPreview = this.readOptionalString(event.payload.handoffCommandPreview);
+      const latestUserMessage = this.readOptionalString(event.payload.latestUserMessage);
+      const responseMode = this.readOptionalString(event.payload.responseMode);
+      const selectedSurface = this.readOptionalString(event.payload.selectedSurface);
+      const selectedBy = this.readOptionalString(event.payload.selectedBy);
+      const handoffBacklinks = this.readBacklinkLines(event.payload.handoffBacklinks, translate);
+      if (assistantMessage) {
+        return {
+          id: `${event.sessionId}:${String(event.sequence)}`,
+          role: CliSessionTranscriptRole.ASSISTANT,
+          label: translate('cli.sessionShell.transcript.assistantLabel'),
+          lines: [assistantMessage],
+        };
+      }
+
+      if (responseMode === 'command_handoff_preview' && suggestedSlashCommand) {
+        return {
+          id: `${event.sessionId}:${String(event.sequence)}`,
+          role: CliSessionTranscriptRole.ASSISTANT,
+          label: translate('cli.sessionShell.transcript.assistantLabel'),
+          lines: [
+            translate('cli.sessionShell.responses.mainTurnSuggestedSlash', {
+              command: suggestedSlashCommand,
+            }),
+            ...(handoffCommandPreview
+              ? [
+                  translate('cli.sessionShell.responses.mainTurnHandoffPreview', {
+                    preview: handoffCommandPreview,
+                  }),
+                ]
+              : []),
+            ...(executionIntent
+              ? [
+                  translate('cli.sessionShell.responses.mainTurnExecutionIntent', {
+                    executionIntent,
+                  }),
+                ]
+              : []),
+            ...(selectedSurface && selectedBy
+              ? [
+                  translate('cli.sessionShell.responses.mainTurnRoutingSelection', {
+                    selectedSurface,
+                    selectedBy,
+                  }),
+                ]
+              : []),
+            ...handoffBacklinks,
+          ],
+        };
+      }
+
+      if (responseMode === 'follow_up_question' && followUpQuestion) {
+        return {
+          id: `${event.sessionId}:${String(event.sequence)}`,
+          role: CliSessionTranscriptRole.ASSISTANT,
+          label: translate('cli.sessionShell.transcript.assistantLabel'),
+          lines: [
+            translate('cli.sessionShell.responses.mainTurnFollowUpPrompt'),
+            followUpQuestion,
+            ...(selectedSurface && selectedBy
+              ? [
+                  translate('cli.sessionShell.responses.mainTurnRoutingSelection', {
+                    selectedSurface,
+                    selectedBy,
+                  }),
+                ]
+              : []),
+            ...handoffBacklinks,
+          ],
+        };
+      }
+
       return {
         id: `${event.sessionId}:${String(event.sequence)}`,
         role: CliSessionTranscriptRole.ASSISTANT,
@@ -145,9 +220,29 @@ export class CliSessionShellTranscriptStore {
             routeId,
             turnIndex: String(turnIndex ?? event.sequence),
           }),
-          translate('cli.sessionShell.responses.mainTurnEcho', {
-            userMessage: latestUserMessage,
-          }),
+          ...(latestUserMessage
+            ? [
+                translate('cli.sessionShell.responses.mainTurnEcho', {
+                  userMessage: latestUserMessage,
+                }),
+              ]
+            : []),
+          ...(executionIntent
+            ? [
+                translate('cli.sessionShell.responses.mainTurnExecutionIntent', {
+                  executionIntent,
+                }),
+              ]
+            : []),
+          ...(selectedSurface && selectedBy
+            ? [
+                translate('cli.sessionShell.responses.mainTurnRoutingSelection', {
+                  selectedSurface,
+                  selectedBy,
+                }),
+              ]
+            : []),
+          ...handoffBacklinks,
         ],
       };
     }
@@ -162,6 +257,32 @@ export class CliSessionShellTranscriptStore {
             sessionId: event.sessionId,
             resumeSelector: this.readOptionalString(event.payload.resumeSelector) ?? 'latest',
           }),
+        ],
+      };
+    }
+
+    if (event.type === OrchestrationSessionEventType.TURN_FAILED) {
+      return {
+        id: `${event.sessionId}:${String(event.sequence)}`,
+        role: CliSessionTranscriptRole.SYSTEM,
+        label: translate('cli.sessionShell.transcript.systemLabel'),
+        lines: [
+          translate('cli.sessionShell.responses.turnFailed', {
+            reason: this.readOptionalString(event.payload.errorMessage) ?? 'unknown',
+          }),
+          translate('cli.sessionShell.responses.turnRecoverableHint'),
+        ],
+      };
+    }
+
+    if (event.type === OrchestrationSessionEventType.TURN_CANCELLED) {
+      return {
+        id: `${event.sessionId}:${String(event.sequence)}`,
+        role: CliSessionTranscriptRole.SYSTEM,
+        label: translate('cli.sessionShell.transcript.systemLabel'),
+        lines: [
+          translate('cli.sessionShell.responses.turnCancelled'),
+          translate('cli.sessionShell.responses.turnRecoverableHint'),
         ],
       };
     }
@@ -226,5 +347,40 @@ export class CliSessionShellTranscriptStore {
     return candidate.filter(
       (value): value is string => typeof value === 'string' && value.length > 0,
     );
+  }
+
+  private readBacklinkLines(
+    candidate: unknown,
+    translate: (key: string, interpolation?: Record<string, string>) => string,
+  ): string[] {
+    if (!Array.isArray(candidate)) {
+      return [];
+    }
+
+    return candidate
+      .map((value) => {
+        if (!value || typeof value !== 'object') {
+          return null;
+        }
+        const backlink = value as {
+          kind?: unknown;
+          label?: unknown;
+          target?: unknown;
+        };
+        if (
+          typeof backlink.kind !== 'string' ||
+          typeof backlink.label !== 'string' ||
+          typeof backlink.target !== 'string'
+        ) {
+          return null;
+        }
+
+        return translate('cli.sessionShell.responses.mainTurnBacklink', {
+          kind: backlink.kind,
+          label: backlink.label,
+          target: backlink.target,
+        });
+      })
+      .filter((line): line is string => typeof line === 'string' && line.length > 0);
   }
 }

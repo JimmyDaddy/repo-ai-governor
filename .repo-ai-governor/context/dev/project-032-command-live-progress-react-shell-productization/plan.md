@@ -3,7 +3,7 @@
 - Status: active
 - Date: 2026-03-31
 - Stage Mapping: Command live progress React shell productization follow-up
-- Phase Mapping: activation and technical solution promotion / live command shell contract and connect progress / session-shell progress relay and tick refresh / cancellation and multi-command rollout / adoption and closeout
+- Phase Mapping: activation and technical solution promotion / live command shell contract and connect progress / session-shell progress relay and tick refresh / session-shell output presentation promotion / session-shell output presentation implementation / adoption and closeout
 - Upstream:
   - `.repo-ai-governor/draft/command-live-progress-react-shell-technical-solution.md`
   - `.repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/module-overview.md`
@@ -38,6 +38,18 @@
 - Sprint Goal: 按方案 C 收口 session-shell nested command live progress，落实 `single renderer owner + progress relay + timer tick`。
 - Task Package: `TK-447`、`TK-448`、`TK-449`、`TK-450`。
 
+## 2.4 sprint-004-session-shell-output-presentation-and-markdown-promotion
+
+- Status: completed
+- Sprint Goal: 将 session-shell output presentation / markdown rendering draft 正式提升到 `runtime.cli-interactive-shell` module docs，并同步 lifecycle / delivery / module-registry / manifest。
+- Task Package: `TK-459`。
+
+## 2.5 sprint-005-session-shell-output-presentation-and-markdown-productization
+
+- Status: planned
+- Sprint Goal: 落地 transcript render-kind、assistant markdown renderer 与 command recap / system notice presentation 分层。
+- Task Package: `TK-460`、`TK-461`。
+
 ## 3. 任务拆解矩阵（WBS）
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
@@ -50,13 +62,18 @@
 | TK-448 | sprint-003 | add session-shell running progress dock and shared controller reuse | cli/session-shell-ui | TK-447 | completed |
 | TK-449 | sprint-003 | implement timer-driven tick refresh and heartbeat lifecycle | cli/live-refresh | TK-448 | completed |
 | TK-450 | sprint-003 | roll out connect doctor verify session-shell live progress and regression coverage | cli/multi-command-rollout | TK-449 | completed |
+| TK-459 | sprint-004 | promote session-shell output presentation and markdown rendering solution into formal module docs | docs/promotion | TK-450 | completed |
+| TK-460 | sprint-005 | implement structured transcript render-kind and session-shell message renderer split | cli/session-shell-ui | TK-459 | planned |
+| TK-461 | sprint-005 | integrate assistant markdown rendering and transcript presentation verification | cli/markdown-rendering | TK-460 | planned |
 
 ## 4. 依赖产物策略
 
 1. `project-032` 消费已正式化的 `runtime.cli-interactive-shell` module docs，而不是继续让 draft 充当唯一真值。
 2. `project-031` 的 completed truth 保持不变；本项目只承接 command-scoped running shell follow-up，不回写 session-shell completed 结论。
-3. 当前真实执行面已完成 `sprint-003` 全量任务；`TK-447 ~ TK-450` 现已收口 single-renderer ownership、progress relay、session-shell running dock、timer-driven tick refresh 与 `connect / doctor / verify` live progress rollout，stream 暂保留为 active closeout surface，待下一条主执行流显式激活。
-4. 任务编号固定保留在 `TK-443 ~ TK-450`，避免与 `project-030 / project-031` 已占用号段冲突。
+3. `sprint-004` 负责将 session-shell output presentation / markdown rendering direction 正式写回 `runtime.cli-interactive-shell` module docs；该 sprint 只做 formal cutover，不声称 renderer / markdown consumer 已在代码面交付完成。
+4. `sprint-005` 预留为 output presentation implementation follow-up，承接 transcript render-kind、markdown renderer 与 presentation verification 的真实代码交付。
+5. 当前真实执行面已完成 `sprint-004` promotion cutover，stream 暂保留为 active closeout surface，待下一条主执行流显式激活。
+6. 任务编号固定保留在 `TK-443 ~ TK-461`，避免与 `project-030 / project-031 / project-033` 已占用号段冲突。
 
 ## 5. DoD（project-032）
 
@@ -65,6 +82,7 @@
 3. `progressSink + AbortSignal` seam 已进入 CLI runtime contract，但不破坏 `plain/json` 输出稳定性。
 4. `stderr-only` live UI 与最终 `stdout` machine contract 继续保持。
 5. docs、review、delivery registry 与 follow-up stream 台账同步闭环。
+6. session-shell output presentation / markdown rendering 方向已正式进入 module docs，并以 planned rollout 状态保留后续实现窗口。
 
 ## 6. 里程碑记录
 
@@ -81,3 +99,6 @@
 11. 2026-03-31：完成 `TK-448`；session shell view-model 与 Ink layout 已接入 `commandProgressPanel`，并通过新建 `CliSessionShellCommandProgressDock` 复用 shared `ReactCliCommandProgressController`，让 direct/nested bridge progress 在当前 shell 内真正可见。
 12. 2026-03-31：完成 `TK-449`；shared progress controller 与 session-shell progress dock 现支持 `1s` timer-driven refresh，长命令期间可持续刷新 elapsed / heartbeat，而不再依赖用户额外按键触发重绘。
 13. 2026-03-31：完成 `TK-450`；`doctor / verify` 已补齐 progress lifecycle，`connect / doctor / verify` 现统一接入 session-shell live progress consumer path，并补齐命令级、nested `runCli(...)` 与 session-shell regression coverage。
+14. 2026-03-31：创建 `sprint-004-session-shell-output-presentation-and-markdown-promotion`，将“结构化壳层 + Markdown 内容块”方向正式并入 `runtime.cli-interactive-shell` module docs，并同步 lifecycle / delivery / module-registry / manifest / review / artifact。
+15. 2026-03-31：完成 `TK-459`，新增 session-shell output presentation ADR，并扩展 `cli-session-shell-contract` 的 transcript render-kind / running dock separation 约束。
+16. 2026-03-31：创建 planned `sprint-005-session-shell-output-presentation-and-markdown-productization`，为 transcript renderer split 与 assistant markdown rendering rollout 预留真实执行面。

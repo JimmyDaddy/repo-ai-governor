@@ -1,7 +1,7 @@
 # Runtime CLI Interactive Shell Module Overview
 
 - Status: active
-- Date: 2026-03-30
+- Date: 2026-03-31
 - Module ID: `runtime.cli-interactive-shell`
 - Owner: runtime
 - Layer: `runtime-core`
@@ -19,6 +19,7 @@
 5. 为 `init / connect / workspace / upgrade / workflow` 等命令 surface 提供统一交互 seam，并为长时命令定义 running-state / elapsed / progress-panel 的共享 presenter 语义。
 6. 为 `repo-ai-governor` 无子命令默认进入的本地 session shell 定义入口 contract 与 resume baseline。
 7. 为命令执行期的 progress sink、AbortSignal cancel seam 与 React shell running panel 定义统一产品边界，但不让命令 executor 直接持有 Ink/React 实例。
+8. 为 session-shell transcript 的 render-kind、command recap / system notice 分层，以及 assistant Markdown 内容块定义正式 presenter 方向，但不把 live running dock 退化为 append-only transcript 日志。
 
 ## 3. 非目标
 
@@ -60,6 +61,7 @@
 5. focused Ink-owned input formalization 规定 session shell 的默认 foreground input owner 为 Ink；`readline` 只保留为 fallback seam。
 6. 截至 `2026-03-30`，默认 session-shell TTY path 已完成 Ink-owned input cutover，live `/` palette、`Tab` completion、`Up/Down` highlight、`Esc` close 与 `Ctrl+L` clear-screen 已进入正式实现与测试闭环。
 7. 截至 `2026-03-30`，`v3` formal direction 已接受“长时命令 running shell + structured progress events + AbortSignal cancel seam”；该方向已进入正式 module docs，但代码实现由 `project-032-command-live-progress-react-shell-productization` 承接，不应误解为已经交付完成。
+8. 截至 `2026-03-31`，`v4` formal direction 已接受“structured session shell + markdown content blocks”；该方向正式要求把 running progress 与历史 transcript 分层，并允许 assistant 完成态消息、帮助文本和 command recap 进入 Markdown 呈现，但真实 renderer / batching rollout 仍由 `project-032` follow-up sprint 承接。
 
 ## 9. Detail Docs
 
@@ -70,3 +72,4 @@
    - `adrs/session-first-shell-and-service-owned-session-state.md`
    - `adrs/ink-owned-input-and-action-driven-session-shell.md`
    - `adrs/live-command-progress-and-running-react-shell.md`
+   - `adrs/structured-session-output-and-markdown-content-blocks.md`

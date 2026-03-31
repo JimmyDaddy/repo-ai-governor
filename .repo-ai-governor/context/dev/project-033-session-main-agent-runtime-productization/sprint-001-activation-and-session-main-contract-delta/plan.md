@@ -1,6 +1,6 @@
 # sprint-001-activation-and-session-main-contract-delta 计划
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-31
 - Project: `project-033-session-main-agent-runtime-productization`
 - Sprint Goal: 按路径 A 激活 follow-up project，并把 `session.main` 的 contract delta、turn result semantics 与 path-A phase map 固化为正式执行输入。
@@ -26,3 +26,4 @@
 ## 3. Milestones
 
 1. 2026-03-31：创建 `sprint-001` planning surface，并将 `TK-451 ~ TK-452` 写入 sprint task package。
+2. 2026-03-31：完成 `TK-451 ~ TK-452`，建立 `project-033` planning surface，并把 `session.main` contract delta、structured turn semantics 与 path-A implementation ordering 写回 draft。

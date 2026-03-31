@@ -12,6 +12,7 @@
   - `.repo-ai-governor/draft/interactive-cli-react-style-technical-solution.md`
   - `.repo-ai-governor/draft/runtime-cli-run-live-react-session-shell-technical-solution.md`
   - `.repo-ai-governor/draft/command-live-progress-react-shell-technical-solution.md`
+  - `.repo-ai-governor/draft/session-shell-output-presentation-and-markdown-rendering-technical-solution.md`
   - `.repo-ai-governor/draft/session-shell-ink-input-takeover-technical-solution.md`
   - `apps/cli/src/main.ts`
   - `apps/cli/src/cli-governance-runtime.ts`
@@ -521,6 +522,138 @@ flowchart LR
    - `suggestedSlashCommand?`
    - `executionIntent?`
    - `followUpQuestion?`
+
+### 9.4.1 `session.main` contract delta（Path A）
+
+为避免后续实现重新退化成“只有 transcript，没有真实主 agent 语义”，这里需要显式定义 `session.main` 相对当前 `baseline_ack` 的 contract delta。
+
+当前基线缺口：
+
+1. 当前 `sendSessionTurn()` 只会写入 `TURN_SUBMITTED -> TURN_STREAM_DELTA(turn:N:ack) -> TURN_COMPLETED(responseMode=baseline_ack)`。
+2. 它没有真实 assistant message。
+3. 它没有 command-intent / slash suggestion / follow-up question 语义。
+4. 它没有 adapter selection、routing preference、handoff backlink 等主 agent 元数据。
+
+因此，Path A 推荐把 `session.main` turn contract 明确扩成下面四层。
+
+#### A. Turn Request
+
+最小 request 语义建议覆盖：
+
+1. `sessionId`
+2. `routeId=session.main`
+3. `turnId`
+4. `userMessage`
+5. `cwd`
+6. `workspaceId`
+7. `workspaceRoot`
+8. `locale`
+9. `sessionRoutingPreference?`
+10. `metadata.currentContextSummary?`
+11. `metadata.visibleTranscriptWindow?`
+
+约束：
+
+1. request 仍然通过 shared `orchestration-service-client` 进入 service，不允许 CLI 私自拼装第二套会话协议。
+2. `sessionRoutingPreference` 只表达前台主 agent 的 route bias，不直接改写 repository-level adapters config。
+3. `visibleTranscriptWindow` 只作为主 agent turn 的局部上下文，不替代 canonical transcript。
+
+#### B. Turn Event Stream
+
+推荐把 `session.main` turn lifecycle 扩展成下面这些稳定事件语义：
+
+1. `session.turn.submitted`
+   - 用户消息被 service 接受。
+2. `session.turn.stream_delta`
+   - assistant 的增量输出。
+3. `session.turn.completed`
+   - assistant 最终完成，附带 structured result。
+4. `session.turn.failed`
+   - 主 agent turn 失败，附带可显示错误摘要与 retry hint。
+5. `session.turn.cancelled`
+   - 主 agent turn 被用户或 runtime 取消。
+
+其中：
+
+1. `failed / cancelled` 当前还不在 shared enum 中，需要在 follow-up contract 里补齐。
+2. `stream_delta` 不应再是 `turn:N:ack` 这种占位字串，而应承载真实 assistant 输出片段。
+3. `completed` 事件必须允许 transcript presenter 和 desktop consumer 在不读 runtime internals 的前提下还原最终 assistant turn。
+
+#### C. Structured Turn Result
+
+`session.turn.completed` 的 payload 建议至少允许以下 shape：
+
+1. `assistantMessage`
+   - 最终 assistant 文本。
+2. `responseMode`
+   - `answer`
+   - `follow_up_question`
+   - `slash_suggestion`
+   - `command_handoff_preview`
+   - `execution_intent`
+3. `suggestedSlashCommand?`
+   - 例如 `/connect`、`/doctor`、`/review`
+4. `executionIntent?`
+   - 例如 `connect.adapters.bootstrap`、`review.start`、`run.task`
+5. `followUpQuestion?`
+   - assistant 在信息不足时要求用户补充的下一问
+6. `requiresConfirmation`
+   - 当结果会引导到高副作用 handoff 时必须显式标记
+
+约束：
+
+1. `assistantMessage` 仍然是 transcript 的第一可见真相。
+2. `suggestedSlashCommand` 和 `executionIntent` 只是结构化建议，不直接等于执行。
+3. 高副作用动作仍需经过 session shell 的 command preview / confirm 流程。
+
+#### D. Adapter Selection And Handoff Metadata
+
+Path A 的关键不是“让前台主 agent 直接变成后台编排角色”，而是让它能说明自己为什么给出这个建议。
+
+因此建议最少补齐：
+
+1. `selectedSurface`
+2. `selectedBy`
+3. `sessionRoutingPreferenceApplied`
+4. `fallbackReason?`
+5. `capabilityGapSummary?`
+6. `handoffCommandPreview?`
+7. `handoffArtifactBacklinks[]?`
+
+这样 CLI / desktop consumer 才能解释：
+
+1. 这次主 agent 更偏向走哪个 adapter
+2. 是用户 session 偏好驱动，还是 runtime auto-selection 驱动
+3. 为什么没有直接执行，而是只给出 slash suggestion 或 follow-up question
+
+### 9.4.2 `session.main` 的责任边界
+
+为了避免与 `planner/coder/reviewer/verifier` 混淆，这里还需要把主 agent 的边界写死。
+
+`session.main` 应负责：
+
+1. 理解用户当前输入是问答、澄清、命令建议，还是需要进入 handoff
+2. 输出结构化建议与 transcript-friendly assistant message
+3. 在需要时生成 command preview / execution intent
+4. 维护前台 turn 级 routing preference 与 selection metadata
+
+`session.main` 不应负责：
+
+1. 直接替代后台 workflow runtime
+2. 直接成为新的 canonical role registry
+3. 绕过既有 `run/review/workflow` contract 私自执行高副作用动作
+4. 让 CLI presenter 持有独立于 service 的 session truth
+
+### 9.4.3 推荐实现顺序
+
+为降低风险，推荐按以下顺序落地：
+
+1. 先把 `session.turn.completed` 的 structured result shape 补齐
+2. 再把 `failed / cancelled` 事件补进 shared session event contract
+3. 然后替换当前 `baseline_ack` 为真实 assistant delta / completed payload
+4. 最后接入 adapter selection metadata、slash suggestion 与 command handoff preview
+
+这样 `TK-453` 可以先解决“主 agent 真能说话”，`TK-454` 再解决“事件和元数据稳定可消费”，`TK-455 ~ TK-456` 再进入 intent routing 与 handoff 语义。
 
 ### 9.5 与桌面端结合的设计原则
 
