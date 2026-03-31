@@ -1,13 +1,13 @@
 # CLI Session Shell Contract
 
 - Status: active
-- Date: 2026-03-31
+- Date: 2026-04-01
 - Contract ID: `contract.cli.session-shell.v1`
 - Producer Module: `runtime.cli-interactive-shell`
 
 ## 1. 目标
 
-定义 `repo-ai-governor` 作为本地人类入口时的 session-first terminal shell contract，使自然语言对话、slash command、resume continuity 与 command handoff 可以在不破坏既有显式子命令和 machine-readable output 的前提下共存。
+定义 `repo-ai-governor` 作为本地人类入口时的 session-first terminal shell contract，使自然语言对话、slash command、resume continuity、risk-tiered governed skill execution 与 command handoff 可以在不破坏既有显式子命令和 machine-readable output 的前提下共存。
 
 ## 2. Minimum Fields
 
@@ -37,6 +37,11 @@
 24. `turn_selected_surface`
 25. `turn_selected_by`
 26. `turn_invoked_role_ids`
+27. `turn_skill_id`
+28. `turn_skill_version`
+29. `turn_skill_risk_tier`
+30. `turn_confirmation_mode`
+31. `turn_execution_path`
 
 ## 3. Allowed Values
 
@@ -79,12 +84,27 @@
    - `answer`
    - `follow_up_question`
    - `command_handoff_preview`
+   - `role_collaboration`
 10. `turn_interaction_mode`
    - `direct_answer`
    - `single_role_delegate`
    - `serial_role_collaboration`
    - `parallel_role_fanout`
    - `command_handoff`
+11. `turn_skill_risk_tier`
+   - `not_applicable`
+   - `low`
+   - `elevated`
+   - `high`
+12. `turn_confirmation_mode`
+   - `not_applicable`
+   - `not_required`
+   - `required`
+13. `turn_execution_path`
+   - `answer_only`
+   - `preview_confirm`
+   - `direct_execute`
+   - `role_collaboration`
 
 ## 4. Required Constraints
 
@@ -107,7 +127,10 @@
 17. `turn_interaction_mode`、`turn_selected_surface`、`turn_selected_by` 与 `turn_invoked_role_ids` 只能来自 shared session event payload；CLI shell 只能消费这些字段，不得在 presenter 层本地推断或重写 supervisor/runtime 决策。
 18. connected roles 如需呈现在 session shell 中，必须通过 service-owned `session.main` outcome 以 delegate/collaboration metadata 的形式暴露；CLI 不得直接把 projection descriptor 当作本地执行 truth 使用。
 19. role collaboration 的最终 recap 可以进入 `command_recap` 或等价结构化 transcript presenter path，但运行中的 progress、heartbeat、elapsed 与 cancel affordance 仍必须停留在 running dock，而不是无限追加 transcript。
-20. `command_handoff_preview` 即使由自然语言 supervisor 提议，也必须继续走 preview + explicit confirmation；不得绕过高副作用命令的既有治理边界。
+20. 自然语言 skill turn 必须先经过 service-owned risk/policy gate；CLI 必须只消费 `turn_skill_*`、`turn_confirmation_mode` 与 `turn_execution_path` 字段，不得在 presenter 层本地重算“是否需要确认”。
+21. 当 `turn_execution_path=direct_execute` 且 `turn_confirmation_mode=not_required` 时，shell 必须允许受治理执行直接继续，不得额外插入 synthetic preview；但 transcript / resume / audit continuity 仍必须保留“这是 skill execution 而不是普通闲聊回答”的事实。
+22. 当 `turn_execution_path=preview_confirm` 时，shell 必须继续保持现有 preview + explicit confirmation 行为，并保证 `/clear` 与 `resume` 后仍可恢复 pending handoff。
+23. 零副作用能力发现 turn（例如 `help`）可根据 service-owned outcome 走 `answer` 或 `direct_execute`；两条路径都不得强制多余确认，也不得绕过 shared session truth。
 
 ## 5. Consumers
 
@@ -123,3 +146,4 @@
 4. `v1` 允许 session shell 从 `readline` foreground input 迁移到 Ink-owned input，只要上述字段与治理边界保持稳定。
 5. `v1` 现正式接受“结构化壳层 + Markdown 内容块”方向，但这只定义 presenter/contract 边界，不等于 renderer 已在代码面全面交付；真实 rollout follow-up 由 `project-032-command-live-progress-react-shell-productization` 的 output-presentation sprint 承接。
 6. `v1` 现正式接受“service-owned session.main supervisor + role subagents / handoffs”方向；第一阶段 rollout 允许只交付 direct answer、command handoff preview 与 `1` 条 role-subagent bootstrap path，再逐步扩展 richer collaboration/streaming/sidecar parity。
+7. `v1` 现进一步接受“conversation-first chatability + risk-tiered natural-language skill handoff”补充方向；低风险、只读、scope-resolved skill 可走 governed `direct_execute`，但 state-mutating、高成本或高歧义 skill 仍保留 `preview_confirm`。

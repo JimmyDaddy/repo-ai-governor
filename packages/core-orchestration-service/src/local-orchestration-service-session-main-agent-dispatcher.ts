@@ -17,6 +17,8 @@ const SESSION_MAIN_CANCEL_KEYWORDS = ['cancel this turn', 'simulate cancel'];
 const SESSION_MAIN_MIN_FOLLOW_UP_LENGTH = 10;
 const SESSION_MAIN_FALLBACK_ANSWER_DELTA_MAX_LENGTH = 80;
 const SESSION_MAIN_ROLE_MENTION_PATTERN = /@[a-z0-9_.-]+/giu;
+const SESSION_MAIN_GREETING_PATTERN =
+  /^(?:(?:hi|hello|hey|greetings)(?:\s+(?:governor|agent|there))?|你好|您好|哈喽|嗨|早上好|下午好|晚上好)[!,.? ]*$/iu;
 const SESSION_MAIN_ROUTING_PREFERENCE_ALIASES: Record<string, AdapterSurface> = {
   claude: AdapterSurface.CLAUDE_CODE,
   'claude-code': AdapterSurface.CLAUDE_CODE,
@@ -189,6 +191,7 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
 
     if (
       normalizedLowerMessageWithoutRoleMentions.length < SESSION_MAIN_MIN_FOLLOW_UP_LENGTH &&
+      !this.isConversationalGreeting(normalizedLowerMessageWithoutRoleMentions) &&
       !configuredRoleMentionPresent
     ) {
       return {
@@ -362,5 +365,9 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
 
   private stripRoleMentions(message: string): string {
     return message.replaceAll(SESSION_MAIN_ROLE_MENTION_PATTERN, '').trim();
+  }
+
+  private isConversationalGreeting(message: string): boolean {
+    return SESSION_MAIN_GREETING_PATTERN.test(message.trim());
   }
 }

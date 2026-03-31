@@ -188,13 +188,13 @@ describe('ReactCliRunner', () => {
           label: 'Governor',
           lines: [
             'Parallel role fan-out completed.',
-            'Roles: planner · reviewer (count=2)',
+            'Roles: architect · reviewer · verifier (count=3)',
             'Synthesis: parallel_analysis',
-            'Intent: session.role_delegate.parallel.planner.reviewer',
+            'Intent: session.role_delegate.parallel.architect.reviewer.verifier',
           ],
           renderKind: 'collaboration_recap',
           markdownSource:
-            '## Planner + Reviewer Parallel Analysis\n\n### Planner\n\n- plan risk\n\n### Reviewer\n\n- review risk',
+            '## Architect + Reviewer + Verifier Parallel Analysis\n\n### Architect\n\n- architecture risk\n\n### Reviewer\n\n- review risk\n\n### Verifier\n\n- verification risk',
         },
       ],
       transcriptTitle: 'History',
@@ -232,11 +232,12 @@ describe('ReactCliRunner', () => {
     expect(output).toContain('connect.adapters.bootstrap');
     expect(output).toContain('role collaboration');
     expect(output).toContain('[Roles]');
-    expect(output).toContain('- planner');
-    expect(output).toContain('- reviewer (count=2)');
+    expect(output).toContain('- architect');
+    expect(output).toContain('- reviewer');
+    expect(output).toContain('- verifier (count=3)');
     expect(output).toContain('[Synthesis]');
     expect(output).toContain('parallel_analysis');
-    expect(output).toContain('Planner + Reviewer Parallel Analysis');
+    expect(output).toContain('Architect + Reviewer + Verifier Parallel Analysis');
     expect(output).toContain('Related');
     expect(output).toContain('- slash:/connect -> /connect');
   });

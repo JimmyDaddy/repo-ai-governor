@@ -1,7 +1,7 @@
 # Session Main Supervisor And Role Subagent Collaboration ADR
 
 - Status: active
-- Date: 2026-03-31
+- Date: 2026-04-01
 - Module ID: `runtime.orchestration`
 - ADR ID: `adr.runtime.orchestration.session-main-supervisor-role-subagents.v1`
 
@@ -11,6 +11,7 @@
 
 1. 普通问句虽然已经进入 `session.main`，但不一定能稳定得到真实 assistant 回答。
 2. `connect` 后拿到的 role / surface / fallback 结果仍主要停留在 projection descriptor，connected roles 之间缺少前台可协作的 runtime 语义。
+3. 即便自然语言已经明显命中一个前台动作意图，当前产品也仍容易停留在“只会展示 preview recap”的阶段，低风险 skill 缺少可治理的 direct-execute continuity。
 
 同时，`runtime.cli-interactive-shell` 已正式接受：
 
@@ -28,26 +29,34 @@
 ## 2. Decision
 
 1. `runtime.orchestration` 正式接受 `session.main` 的目标架构为 `service-owned supervisor`，而不是继续停留在单一路由回执或单 agent answer executor。
-2. supervisor 必须在统一 turn pipeline 中显式区分至少四类结果：
-   - `answer`
-   - `follow_up_question`
-   - `command_handoff_preview`
-   - `role_collaboration`
+2. supervisor 前台 turn pipeline 必须先在统一入口中区分至少六类语义：
+   - `greeting / social chat`
+   - `repo question`
+   - `follow_up continuation`
+   - `skill intent`
+   - `explicit role collaboration`
+   - `slash-command-adjacent command handoff`
 3. connected roles 不再只被视为静态 onboarding 结果；它们应被映射为 `session.main` 可调度的 role subagents / handoff targets，但该映射只能消费 projection truth，不能反向改写 projection truth。
-4. natural-language command execution 继续服从 `preview + confirm + execute` 治理链路；高副作用动作不得因 supervisor 引入而绕过既有 policy / risk gate。
+4. natural-language skill routing 必须先经过 service-owned risk/policy gate，而不是默认一刀切 `preview + confirm` 或无限制自动执行：
+   - `help`、`doctor`、`verify` 与 scope-resolved `review.code` 等低风险只读 skill 可以被判定为 `direct_execute`
+   - `connect`、`run`、`review verify`、多步 bundle，以及高成本/高歧义场景继续走 `preview + confirm`
 5. supervisor 的第一阶段实现允许采用 `C-target, phased bootstrap`：
    - 先交付真实 direct answer
    - 再补 `1` 条可工作的 role subagent path
+   - 再补 conversation-first chatability + risk-tiered skill handoff
    - 最后扩展多 role collaboration、streaming 与 sidecar parity
 6. `runtime.orchestration` 只拥有 supervisor lifecycle、turn outcome projection 与 shared session event contract；具体 route runner / protocol map 组装应沿 package-level seam 收口，不允许 `core-orchestration-service` 反向依赖 `apps/cli/**` 私有 runtime。
 
 ## 3. Consequences
 
-1. `TURN_COMPLETED.payload` 需要允许 service-owned runtime 回灌 richer turn metadata，例如 `interactionMode`、`invokedRoleIds[]`、`routerDecisionReason` 与 `selectedSurface`，但 presenter 只做选择性呈现。
-2. `runtime.cli-interactive-shell` 继续只是 consumer：它可以呈现 answer / handoff / collaboration recap，但不得在本地选择 subagent、拼装 role truth 或模拟 supervisor 决策。
-3. `runtime.agent-projection` 继续负责 `AgentDescriptor` truth；projection descriptor 可被 supervisor 派生成 subagent descriptor，但 projection module 不能被误用成第二套 execution runtime。
-4. 为了避免 embedded-only 临时路径长期固化，后续需要把 route runner / protocol map 组装继续抽离到 runtime-neutral package，并让 sidecar host 复用同一条 supervisor seam。
-5. 该 ADR 定义的是正式方向，不等于代码已全面完成；`project-035-session-main-supervisor-and-role-subagent-productization` 负责把 direct answer、role subagent bootstrap 与 command handoff governance 真正产品化。
+1. `TURN_COMPLETED.payload` 需要允许 service-owned runtime 回灌 richer turn metadata，例如 `interactionMode`、`invokedRoleIds[]`、`routerDecisionReason`、`selectedSurface`、`skillId`、`skillVersion`、`riskTier`、`confirmationMode` 与 `executionPath`，但 presenter 只做选择性呈现。
+2. `runtime.cli-interactive-shell` 继续只是 consumer：它可以呈现 answer / preview-confirm handoff / direct-execute skill recap / collaboration recap，但不得在本地选择 subagent、拼装 role truth、重算 risk tier 或模拟 supervisor 决策。
+3. shared session truth 需要同时保留两类 continuity：
+   - `preview_confirm` 的 pending handoff 恢复链
+   - `direct_execute` 的 executed-state / result-presentation 恢复链
+4. `runtime.agent-projection` 继续负责 `AgentDescriptor` truth；projection descriptor 可被 supervisor 派生成 subagent descriptor，但 projection module 不能被误用成第二套 execution runtime。
+5. 为了避免 embedded-only 临时路径长期固化，后续需要把 route runner / protocol map 组装继续抽离到 runtime-neutral package，并让 sidecar host 复用同一条 supervisor seam。
+6. 该 ADR 定义的是正式方向，不等于代码已全面完成；`project-035-session-main-supervisor-and-role-subagent-productization` 负责把 direct answer、role subagent bootstrap、risk-tiered skill handoff 与 command-handoff governance 真正产品化。
 
 ## 4. Boundary Clarifications
 
@@ -98,9 +107,22 @@ flowchart TD
   W --> N["workflow planner node"]
 ```
 
+### 4.4 `review`、`review verify` 与 `help` 不是同一确认等级
+
+1. `review.code`
+   - 属于只读分析型 skill。
+   - 当 scope 已明确，且只需单轮/轻量 profile 时，可以被 risk gate 判为 `direct_execute`。
+2. `review verify`
+   - 属于正式 CR 生命周期动作。
+   - 默认仍保留 `preview + confirm`。
+3. `help`
+   - 属于零副作用能力发现动作。
+   - 可被判为 `answer` 或 `direct_execute`，不应强制额外确认。
+
 ## 5. Source Anchors
 
 1. `.repo-ai-governor/draft/session-main-agent-answer-and-command-handoff-technical-solution.md`
-2. `.repo-ai-governor/context/dev/project-033-session-main-agent-runtime-productization/project-033-session-main-agent-runtime-productization-completion-audit-summary.md`
-3. `.repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/contracts/cli-session-shell-contract.md`
-4. `.repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/contracts/agent-projection-contract.md`
+2. `.repo-ai-governor/draft/session-main-conversational-chat-and-skill-intent-handoff-technical-solution.md`
+3. `.repo-ai-governor/context/dev/project-033-session-main-agent-runtime-productization/project-033-session-main-agent-runtime-productization-completion-audit-summary.md`
+4. `.repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/contracts/cli-session-shell-contract.md`
+5. `.repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/contracts/agent-projection-contract.md`

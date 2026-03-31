@@ -140,6 +140,12 @@ describe('Cli session-main supervisor runtime', () => {
   const adaptersConfig: AdaptersConfig = {
     roles: [
       {
+        roleId: 'architect',
+        roleProfileId: 'architect-default',
+        requiredCapabilities: [AgentCapability.STRUCTURED_OUTPUT],
+        required: true,
+      },
+      {
         roleId: 'planner',
         roleProfileId: 'planner-default',
         requiredCapabilities: [AgentCapability.STRUCTURED_OUTPUT],
@@ -151,14 +157,28 @@ describe('Cli session-main supervisor runtime', () => {
         requiredCapabilities: [AgentCapability.STRUCTURED_OUTPUT],
         required: true,
       },
+      {
+        roleId: 'verifier',
+        roleProfileId: 'verifier-default',
+        requiredCapabilities: [AgentCapability.STRUCTURED_OUTPUT],
+        required: true,
+      },
     ],
     routing: {
       roleBindings: {
+        architect: {
+          primarySurface: AdapterSurface.CODEX,
+          fallbackSurfaces: [AdapterSurface.CLAUDE_CODE],
+        },
         planner: {
           primarySurface: AdapterSurface.CODEX,
           fallbackSurfaces: [AdapterSurface.CLAUDE_CODE],
         },
         reviewer: {
+          primarySurface: AdapterSurface.CODEX,
+          fallbackSurfaces: [AdapterSurface.CLAUDE_CODE],
+        },
+        verifier: {
           primarySurface: AdapterSurface.CODEX,
           fallbackSurfaces: [AdapterSurface.CLAUDE_CODE],
         },
@@ -568,6 +588,221 @@ describe('Cli session-main supervisor runtime', () => {
     );
     expect(outcome.invokedRoleIds).toEqual(['planner', 'reviewer']);
     expect(outcome.subagentCount).toBe(2);
+  });
+
+  it('routes explicit three-role parallel requests through one three-role fan-out pilot', async () => {
+    const parallelInvokeStage = vi.fn(async (request: Record<string, unknown>) => {
+      expect(request.input).toEqual(
+        expect.objectContaining({
+          interactionMode: 'parallel_role_fanout',
+          collaborationRoleOrder: ['architect', 'reviewer', 'verifier'],
+          synthesisMode: 'parallel_analysis',
+        }),
+      );
+
+      if (request.stageId === 'stage-session-main-role-architect') {
+        return {
+          output: {
+            responseText: '## Architect perspective\n\n- architecture risk',
+          },
+          elapsedMs: 1,
+        };
+      }
+      if (request.stageId === 'stage-session-main-role-reviewer') {
+        return {
+          output: {
+            responseText: '## Reviewer perspective\n\n- review risk',
+          },
+          elapsedMs: 1,
+        };
+      }
+
+      expect(request.stageId).toBe('stage-session-main-role-verifier');
+      return {
+        output: {
+          responseText: '## Verifier perspective\n\n- verification risk',
+        },
+        elapsedMs: 1,
+      };
+    });
+    const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
+      adaptersConfig,
+    ) as CliAdapterRoutingRuntime & {
+      createProtocolBySurface: () => Record<string, AgentProtocolContract>;
+    };
+    adapterRoutingRuntime.createProtocolBySurface = () => ({
+      [AdapterSurface.CODEX]: createAvailableProtocol(
+        AdapterSurface.CODEX,
+        'unsafe collaborative answer',
+      ),
+      [AdapterSurface.CLAUDE_CODE]: createAvailableProtocol(
+        AdapterSurface.CLAUDE_CODE,
+        'unsafe fallback answer',
+      ),
+      [AdapterSurface.OLLAMA]: createAvailableProtocol(AdapterSurface.OLLAMA, 'unused', {
+        invokeStageSpy: parallelInvokeStage,
+        toolCallingSupportLevel: AgentCapabilitySupportLevel.UNSUPPORTED,
+      }),
+    });
+
+    const runtime = new CliSessionMainSupervisorRuntime({
+      workspaceRoot: '/workspace/repo/.repo-ai-governor',
+      currentWorkingDirectory: '/workspace/repo',
+      workspace,
+      locale: 'en-US',
+      adaptersConfig,
+      adapterRoutingRuntime,
+    });
+    const outcome = await runtime.resolveTurn({
+      sessionId: 'session-004-parallel-three-role',
+      routeId: 'session.main',
+      turnId: 'turn-004-parallel-three-role',
+      turnIndex: 6,
+      userMessage: '@architect @reviewer @verifier parallel assess this rollout risk',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+    });
+
+    expect(parallelInvokeStage).toHaveBeenCalledTimes(3);
+    expect(outcome.responseMode).toBe('role_collaboration');
+    expect(outcome.interactionMode).toBe('parallel_role_fanout');
+    expect(outcome.routerDecisionReason).toBe(
+      'session.main.router.parallel_role_fanout.explicit_roles',
+    );
+    expect(outcome.synthesisMode).toBe('parallel_analysis');
+    expect(outcome.executionIntent).toBe(
+      'session.role_delegate.parallel.architect.reviewer.verifier',
+    );
+    expect(outcome.assistantMessage).toContain('Architect + Reviewer + Verifier Parallel Analysis');
+    expect(outcome.assistantMessage).toContain('### Architect');
+    expect(outcome.assistantMessage).toContain('### Reviewer');
+    expect(outcome.assistantMessage).toContain('### Verifier');
+    expect(outcome.selectedSurface).toBe('architect:ollama | reviewer:ollama | verifier:ollama');
+    expect(outcome.selectedBy).toBe(
+      'architect:session.main.role_delegate.safe_fallback | reviewer:session.main.role_delegate.safe_fallback | verifier:session.main.role_delegate.safe_fallback',
+    );
+    expect(outcome.invokedRoleIds).toEqual(['architect', 'reviewer', 'verifier']);
+    expect(outcome.subagentCount).toBe(3);
+  });
+
+  it('fails closed when explicit serial collaboration mentions exceed the pilot limit', async () => {
+    const serialInvokeStage = vi.fn(async () => ({
+      output: {
+        responseText: 'this should not run',
+      },
+      elapsedMs: 1,
+    }));
+    const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
+      adaptersConfig,
+    ) as CliAdapterRoutingRuntime & {
+      createProtocolBySurface: () => Record<string, AgentProtocolContract>;
+    };
+    adapterRoutingRuntime.createProtocolBySurface = () => ({
+      [AdapterSurface.CODEX]: createAvailableProtocol(
+        AdapterSurface.CODEX,
+        'unsafe collaborative answer',
+      ),
+      [AdapterSurface.CLAUDE_CODE]: createAvailableProtocol(
+        AdapterSurface.CLAUDE_CODE,
+        'unsafe fallback answer',
+      ),
+      [AdapterSurface.OLLAMA]: createAvailableProtocol(AdapterSurface.OLLAMA, 'unused', {
+        invokeStageSpy: serialInvokeStage,
+        toolCallingSupportLevel: AgentCapabilitySupportLevel.UNSUPPORTED,
+      }),
+    });
+
+    const runtime = new CliSessionMainSupervisorRuntime({
+      workspaceRoot: '/workspace/repo/.repo-ai-governor',
+      currentWorkingDirectory: '/workspace/repo',
+      workspace,
+      locale: 'en-US',
+      adaptersConfig,
+      adapterRoutingRuntime,
+    });
+    const outcome = await runtime.resolveTurn({
+      sessionId: 'session-004-serial-overflow',
+      routeId: 'session.main',
+      turnId: 'turn-004-serial-overflow',
+      turnIndex: 7,
+      userMessage: '@planner @reviewer @verifier collaborate on this rollout plan',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+    });
+
+    expect(serialInvokeStage).not.toHaveBeenCalled();
+    expect(outcome.responseMode).toBe('role_collaboration');
+    expect(outcome.interactionMode).toBe('serial_role_collaboration');
+    expect(outcome.routerDecisionReason).toBe(
+      'session.main.router.serial_role_collaboration.overflow',
+    );
+    expect(outcome.selectedSurface).toBe('guarded-role-delegate');
+    expect(outcome.selectedBy).toBe('session.main.serial_role_collaboration.overflow');
+    expect(outcome.invokedRoleIds).toEqual([]);
+    expect(outcome.subagentCount).toBe(0);
+    expect(outcome.assistantMessage).toContain('supports at most 2 explicit roles');
+    expect(outcome.assistantMessage).toContain('@planner @reviewer @verifier');
+  });
+
+  it('fails closed when explicit parallel collaboration mentions exceed the pilot limit', async () => {
+    const parallelInvokeStage = vi.fn(async () => ({
+      output: {
+        responseText: 'this should not run',
+      },
+      elapsedMs: 1,
+    }));
+    const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
+      adaptersConfig,
+    ) as CliAdapterRoutingRuntime & {
+      createProtocolBySurface: () => Record<string, AgentProtocolContract>;
+    };
+    adapterRoutingRuntime.createProtocolBySurface = () => ({
+      [AdapterSurface.CODEX]: createAvailableProtocol(
+        AdapterSurface.CODEX,
+        'unsafe collaborative answer',
+      ),
+      [AdapterSurface.CLAUDE_CODE]: createAvailableProtocol(
+        AdapterSurface.CLAUDE_CODE,
+        'unsafe fallback answer',
+      ),
+      [AdapterSurface.OLLAMA]: createAvailableProtocol(AdapterSurface.OLLAMA, 'unused', {
+        invokeStageSpy: parallelInvokeStage,
+        toolCallingSupportLevel: AgentCapabilitySupportLevel.UNSUPPORTED,
+      }),
+    });
+
+    const runtime = new CliSessionMainSupervisorRuntime({
+      workspaceRoot: '/workspace/repo/.repo-ai-governor',
+      currentWorkingDirectory: '/workspace/repo',
+      workspace,
+      locale: 'en-US',
+      adaptersConfig,
+      adapterRoutingRuntime,
+    });
+    const outcome = await runtime.resolveTurn({
+      sessionId: 'session-004-parallel-overflow',
+      routeId: 'session.main',
+      turnId: 'turn-004-parallel-overflow',
+      turnIndex: 8,
+      userMessage: '@planner @architect @reviewer @verifier parallel analyze this change',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+    });
+
+    expect(parallelInvokeStage).not.toHaveBeenCalled();
+    expect(outcome.responseMode).toBe('role_collaboration');
+    expect(outcome.interactionMode).toBe('parallel_role_fanout');
+    expect(outcome.routerDecisionReason).toBe('session.main.router.parallel_role_fanout.overflow');
+    expect(outcome.synthesisMode).toBe('parallel_analysis');
+    expect(outcome.selectedSurface).toBe('guarded-role-delegate');
+    expect(outcome.selectedBy).toBe('session.main.parallel_role_fanout.overflow');
+    expect(outcome.invokedRoleIds).toEqual([]);
+    expect(outcome.subagentCount).toBe(0);
+    expect(outcome.assistantMessage).toContain('supports at most 3 explicit roles');
+    expect(outcome.assistantMessage).toContain('@planner @architect @reviewer @verifier');
   });
 
   it('blocks explicit @planner delegation when the only no-tool fallback misses one required capability', async () => {

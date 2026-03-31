@@ -46,15 +46,21 @@ const SESSION_MAIN_ROUTER_REASON_SERIAL_ROLE_COLLABORATION =
   'session.main.router.serial_role_collaboration.explicit_roles';
 const SESSION_MAIN_ROUTER_REASON_SERIAL_ROLE_GUARD =
   'session.main.router.serial_role_collaboration.guard';
+const SESSION_MAIN_ROUTER_REASON_SERIAL_ROLE_OVERFLOW =
+  'session.main.router.serial_role_collaboration.overflow';
 const SESSION_MAIN_ROUTER_REASON_SERIAL_ROLE_UNRESOLVED =
   'session.main.router.serial_role_collaboration.unresolved';
 const SESSION_MAIN_ROUTER_REASON_PARALLEL_ROLE_FANOUT =
   'session.main.router.parallel_role_fanout.explicit_roles';
 const SESSION_MAIN_ROUTER_REASON_PARALLEL_ROLE_GUARD =
   'session.main.router.parallel_role_fanout.guard';
+const SESSION_MAIN_ROUTER_REASON_PARALLEL_ROLE_OVERFLOW =
+  'session.main.router.parallel_role_fanout.overflow';
 const SESSION_MAIN_ROUTER_REASON_PARALLEL_ROLE_UNRESOLVED =
   'session.main.router.parallel_role_fanout.unresolved';
 const SESSION_MAIN_PARALLEL_ANALYSIS_SYNTHESIS_MODE = 'parallel_analysis';
+const SESSION_MAIN_SERIAL_ROLE_COLLABORATION_LIMIT = 2;
+const SESSION_MAIN_PARALLEL_ROLE_FANOUT_LIMIT = 3;
 
 interface PreparedRoleDispatch {
   descriptor: SessionMainSubagentDescriptor;
@@ -122,18 +128,28 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     const protocolBySurface =
       this.adapterRoutingRuntime.createProtocolBySurface(toolConfigBySurface);
     const mentionedRoleIds = this.subagentRegistry.resolveMentionedRoleIds(context.userMessage);
+    const parallelAnalysisRequest = this.isParallelAnalysisRequest(context.userMessage);
     if (mentionedRoleIds.length >= 2) {
-      if (this.isParallelAnalysisRequest(context.userMessage)) {
+      if (
+        parallelAnalysisRequest &&
+        mentionedRoleIds.length > SESSION_MAIN_PARALLEL_ROLE_FANOUT_LIMIT
+      ) {
+        return this.createOverflowParallelRoleFanoutOutcome(context, mentionedRoleIds);
+      }
+      if (parallelAnalysisRequest) {
         return this.resolveParallelRoleFanoutTurn(
           context,
-          mentionedRoleIds.slice(0, 2),
+          mentionedRoleIds.slice(0, SESSION_MAIN_PARALLEL_ROLE_FANOUT_LIMIT),
           protocolBySurface,
           toolConfigBySurface,
         );
       }
+      if (mentionedRoleIds.length > SESSION_MAIN_SERIAL_ROLE_COLLABORATION_LIMIT) {
+        return this.createOverflowSerialRoleCollaborationOutcome(context, mentionedRoleIds);
+      }
       return this.resolveSerialRoleCollaborationTurn(
         context,
-        mentionedRoleIds.slice(0, 2),
+        mentionedRoleIds.slice(0, SESSION_MAIN_SERIAL_ROLE_COLLABORATION_LIMIT),
         protocolBySurface,
         toolConfigBySurface,
       );
@@ -987,6 +1003,73 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     };
   }
 
+  private createOverflowSerialRoleCollaborationOutcome(
+    context: SessionMainSupervisorTurnContext,
+    roleIds: string[],
+  ): SessionMainSupervisorTurnOutcome {
+    const assistantMessage = [
+      this.localizeText('## Serial Collaboration', '## 串行协作'),
+      '',
+      this.localizeText(
+        `I did not start serial collaboration for "${context.userMessage}" because the current pilot supports at most ${String(SESSION_MAIN_SERIAL_ROLE_COLLABORATION_LIMIT)} explicit roles per turn, but you mentioned ${String(roleIds.length)} roles: ${this.formatRoleMentionList(roleIds)}.`,
+        `我没有为「${context.userMessage}」启动串行协作，因为当前试点每个 turn 最多只支持 ${String(SESSION_MAIN_SERIAL_ROLE_COLLABORATION_LIMIT)} 个显式角色，但你这次提到了 ${String(roleIds.length)} 个角色：${this.formatRoleMentionList(roleIds)}。`,
+      ),
+      '',
+      this.localizeText(
+        'Retry with up to two explicit roles for serial collaboration, or switch to an explicit parallel analysis request when you want up to three independent role viewpoints.',
+        '如果你想走串行协作，请把显式角色限制在两个以内；如果你想要最多三个独立角色并行给出视角，请改成显式 parallel analysis 请求。',
+      ),
+    ].join('\n');
+    return {
+      responseMode: SESSION_MAIN_RESPONSE_MODE.ROLE_COLLABORATION,
+      interactionMode: SESSION_MAIN_INTERACTION_MODE.SERIAL_ROLE_COLLABORATION,
+      assistantDelta: this.createAssistantDelta(assistantMessage),
+      assistantMessage,
+      routerDecisionReason: SESSION_MAIN_ROUTER_REASON_SERIAL_ROLE_OVERFLOW,
+      executionIntent: `${SESSION_MAIN_ROLE_EXECUTION_INTENT_PREFIX}${roleIds.join('.')}`,
+      requiresConfirmation: false,
+      selectedSurface: SESSION_MAIN_GUARDED_ROLE_DELEGATE_SURFACE,
+      selectedBy: 'session.main.serial_role_collaboration.overflow',
+      sessionRoutingPreferenceApplied: context.sessionRoutingPreferenceApplied,
+      invokedRoleIds: [],
+      subagentCount: 0,
+    };
+  }
+
+  private createOverflowParallelRoleFanoutOutcome(
+    context: SessionMainSupervisorTurnContext,
+    roleIds: string[],
+  ): SessionMainSupervisorTurnOutcome {
+    const assistantMessage = [
+      this.localizeText('## Parallel Analysis', '## 并行分析'),
+      '',
+      this.localizeText(
+        `I did not start parallel role fan-out for "${context.userMessage}" because the current pilot supports at most ${String(SESSION_MAIN_PARALLEL_ROLE_FANOUT_LIMIT)} explicit roles per turn, but you mentioned ${String(roleIds.length)} roles: ${this.formatRoleMentionList(roleIds)}.`,
+        `我没有为「${context.userMessage}」启动并行角色分析，因为当前试点每个 turn 最多只支持 ${String(SESSION_MAIN_PARALLEL_ROLE_FANOUT_LIMIT)} 个显式角色，但你这次提到了 ${String(roleIds.length)} 个角色：${this.formatRoleMentionList(roleIds)}。`,
+      ),
+      '',
+      this.localizeText(
+        'Retry with up to three explicit roles for parallel analysis so the supervisor can preserve every requested role in the fan-out set.',
+        '如果你要并行分析，请把显式角色限制在三个以内，这样 supervisor 才能在 fan-out 集合里完整保留你请求的每个角色。',
+      ),
+    ].join('\n');
+    return {
+      responseMode: SESSION_MAIN_RESPONSE_MODE.ROLE_COLLABORATION,
+      interactionMode: SESSION_MAIN_INTERACTION_MODE.PARALLEL_ROLE_FANOUT,
+      assistantDelta: this.createAssistantDelta(assistantMessage),
+      assistantMessage,
+      routerDecisionReason: SESSION_MAIN_ROUTER_REASON_PARALLEL_ROLE_OVERFLOW,
+      synthesisMode: SESSION_MAIN_PARALLEL_ANALYSIS_SYNTHESIS_MODE,
+      executionIntent: `${SESSION_MAIN_ROLE_EXECUTION_INTENT_PREFIX}parallel.${roleIds.join('.')}`,
+      requiresConfirmation: false,
+      selectedSurface: SESSION_MAIN_GUARDED_ROLE_DELEGATE_SURFACE,
+      selectedBy: 'session.main.parallel_role_fanout.overflow',
+      sessionRoutingPreferenceApplied: context.sessionRoutingPreferenceApplied,
+      invokedRoleIds: [],
+      subagentCount: 0,
+    };
+  }
+
   private createUnknownRoleDelegateOutcome(
     context: SessionMainSupervisorTurnContext,
     roleId: string,
@@ -1066,8 +1149,8 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       ),
       '',
       this.localizeText(
-        'Check the active role bindings first, then retry with explicit configured roles such as `@planner @reviewer parallel analyze this change`.',
-        '请先检查当前激活的角色绑定，再使用例如 `@planner @reviewer parallel analyze this change` 这样的已配置角色重试。',
+        'Check the active role bindings first, then retry with explicit configured roles such as `@architect @reviewer @verifier parallel analyze this change`.',
+        '请先检查当前激活的角色绑定，再使用例如 `@architect @reviewer @verifier parallel analyze this change` 这样的已配置角色重试。',
       ),
     ].join('\n');
     return {
@@ -1117,6 +1200,10 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     return roleId
       .replaceAll(/[-_]/gu, ' ')
       .replace(/\b\w/gu, (character) => character.toUpperCase());
+  }
+
+  private formatRoleMentionList(roleIds: string[]): string {
+    return roleIds.map((roleId) => `@${roleId}`).join(' ');
   }
 
   private localizeText(english: string, chinese: string): string {

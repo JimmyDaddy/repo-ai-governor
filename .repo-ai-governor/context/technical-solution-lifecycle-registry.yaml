@@ -1,5 +1,5 @@
 schema_version: 1
-generated_at: 2026-03-31
+generated_at: 2026-04-01
 status: active
 owner: architecture
 
@@ -189,7 +189,7 @@ solutions:
     title: Interactive CLI shell technical solution
     status: active
     owner: runtime
-    version: v5
+    version: v6
     scope: cross-cutting
     draft_paths:
       - .repo-ai-governor/draft/interactive-cli-react-style-technical-solution.md
@@ -198,6 +198,7 @@ solutions:
       - .repo-ai-governor/draft/command-live-progress-react-shell-technical-solution.md
       - .repo-ai-governor/draft/session-shell-output-presentation-and-markdown-rendering-technical-solution.md
       - .repo-ai-governor/draft/session-main-agent-answer-and-command-handoff-technical-solution.md
+      - .repo-ai-governor/draft/session-main-conversational-chat-and-skill-intent-handoff-technical-solution.md
     review_paths:
       - .repo-ai-governor/draft/review-interactive-cli-react-style-technical-solution.md
       - .repo-ai-governor/draft/review-interactive-cli-session-first-agent-shell-technical-solution.md
@@ -206,6 +207,7 @@ solutions:
       - .repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/sprint-004-session-shell-output-presentation-and-markdown-promotion/review/resolved_code_review_tk-459-session-shell-output-presentation-and-markdown-promotion-cutover.md
       - .repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/sprint-005-session-shell-output-presentation-and-markdown-productization/review/resolved_code_review_tk-460-tk-461-session-shell-transcript-markdown-rollout.md
       - .repo-ai-governor/context/dev/project-035-session-main-supervisor-and-role-subagent-productization/sprint-001-technical-solution-promotion-and-phase-map/review/resolved_code_review_tk-464-session-main-supervisor-promotion-cutover.md
+      - .repo-ai-governor/context/dev/project-035-session-main-supervisor-and-role-subagent-productization/sprint-003-role-collaboration-and-handoff-productization/review/resolved_code_review_tk-468-session-main-conversational-chat-and-skill-intent-promotion-cutover.md
     final_paths:
       - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/module-overview.md
       - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/contracts/cli-interactive-shell-contract.md
@@ -223,9 +225,9 @@ solutions:
       - overall.graph-first-runtime
       - architecture.runtime-boundary
       - architecture.governance-boundary
-    approved_at: 2026-03-31
+    approved_at: 2026-04-01
     approved_by: User
-    activated_at: 2026-03-31
+    activated_at: 2026-04-01
     supersedes: []
 
   - solution_id: technical-solution.run-live-react-session-shell

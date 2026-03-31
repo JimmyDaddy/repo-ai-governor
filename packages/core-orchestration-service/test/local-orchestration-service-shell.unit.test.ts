@@ -850,28 +850,32 @@ describe('core-orchestration-service local shell', () => {
         resolveTurn: async () => ({
           responseMode: 'role_collaboration',
           interactionMode: 'parallel_role_fanout',
-          assistantDelta: '## Planner + Reviewer Parallel Analysis',
+          assistantDelta: '## Architect + Reviewer + Verifier Parallel Analysis',
           assistantMessage: [
-            '## Planner + Reviewer Parallel Analysis',
+            '## Architect + Reviewer + Verifier Parallel Analysis',
             '',
-            '### Planner',
+            '### Architect',
             '',
-            '## Planner perspective\n\n- planning risk',
+            '## Architect perspective\n\n- architecture risk',
             '',
             '### Reviewer',
             '',
             '## Reviewer perspective\n\n- review risk',
+            '',
+            '### Verifier',
+            '',
+            '## Verifier perspective\n\n- verification risk',
           ].join('\n'),
           routerDecisionReason: 'session.main.router.parallel_role_fanout.explicit_roles',
           synthesisMode: 'parallel_analysis',
-          executionIntent: 'session.role_delegate.parallel.planner.reviewer',
+          executionIntent: 'session.role_delegate.parallel.architect.reviewer.verifier',
           requiresConfirmation: false,
-          selectedSurface: 'planner:ollama | reviewer:ollama',
+          selectedSurface: 'architect:ollama | reviewer:ollama | verifier:ollama',
           selectedBy:
-            'planner:session.main.role_delegate.safe_fallback | reviewer:session.main.role_delegate.safe_fallback',
+            'architect:session.main.role_delegate.safe_fallback | reviewer:session.main.role_delegate.safe_fallback | verifier:session.main.role_delegate.safe_fallback',
           sessionRoutingPreferenceApplied: false,
-          invokedRoleIds: ['planner', 'reviewer'],
-          subagentCount: 2,
+          invokedRoleIds: ['architect', 'reviewer', 'verifier'],
+          subagentCount: 3,
         }),
       },
     });
@@ -883,7 +887,7 @@ describe('core-orchestration-service local shell', () => {
       await orchestrationService.sendSessionTurn({
         sessionId: started.session.sessionId,
         routeId: OrchestrationSessionRouteId.MAIN,
-        userMessage: '@planner @reviewer parallel assess this rollout risk',
+        userMessage: '@architect @reviewer @verifier parallel assess this rollout risk',
       });
       const subscription = await orchestrationService.subscribeSession({
         sessionId: started.session.sessionId,
@@ -899,11 +903,13 @@ describe('core-orchestration-service local shell', () => {
       );
       expect(completedEvent?.payload.synthesisMode).toBe('parallel_analysis');
       expect(completedEvent?.payload.executionIntent).toBe(
-        'session.role_delegate.parallel.planner.reviewer',
+        'session.role_delegate.parallel.architect.reviewer.verifier',
       );
-      expect(completedEvent?.payload.selectedSurface).toBe('planner:ollama | reviewer:ollama');
-      expect(completedEvent?.payload.invokedRoleIds).toEqual(['planner', 'reviewer']);
-      expect(completedEvent?.payload.subagentCount).toBe(2);
+      expect(completedEvent?.payload.selectedSurface).toBe(
+        'architect:ollama | reviewer:ollama | verifier:ollama',
+      );
+      expect(completedEvent?.payload.invokedRoleIds).toEqual(['architect', 'reviewer', 'verifier']);
+      expect(completedEvent?.payload.subagentCount).toBe(3);
     } finally {
       await rm(temporaryRoot, { recursive: true, force: true });
     }

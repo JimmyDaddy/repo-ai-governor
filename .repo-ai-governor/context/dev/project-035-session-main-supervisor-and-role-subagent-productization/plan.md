@@ -1,9 +1,9 @@
 # project-035-session-main-supervisor-and-role-subagent-productization 计划
 
 - Status: active
-- Date: 2026-03-31
+- Date: 2026-04-01
 - Stage Mapping: Session.main supervisor path-C follow-up
-- Phase Mapping: Technical solution promotion / answer supervisor bootstrap / role-subagent collaboration / streaming and host parity
+- Phase Mapping: Technical solution promotion / answer supervisor bootstrap / role-subagent collaboration / streaming and host parity / conversational chat and skill handoff productization
 - Upstream:
   - `.repo-ai-governor/draft/session-main-agent-answer-and-command-handoff-technical-solution.md`
   - `.repo-ai-governor/context/dev/project-033-session-main-agent-runtime-productization/project-033-session-main-agent-runtime-productization-completion-audit-summary.md`
@@ -35,7 +35,7 @@
 
 ## 2.3 sprint-003-role-collaboration-and-handoff-productization
 
-- Status: active
+- Status: completed
 - Sprint Goal: 将 `session.main` 从单条试点 subagent 扩展到可审计的多 role collaboration，并稳定 natural-language command handoff 的协作与 recap 语义。
 - Task Package: `TK-467`、`TK-468`。
 
@@ -45,6 +45,12 @@
 - Sprint Goal: 为 supervisor runtime 补齐 streaming、sidecar/desktop host parity 与 remote-role seam 预留。
 - Task Package: `TK-469`、`TK-470`。
 
+## 2.5 sprint-005-conversational-chat-and-skill-handoff-productization
+
+- Status: planned
+- Sprint Goal: 让 `session.main` 具备真实可闲聊入口、foreground skill registry 与按风险分层的自然语言 handoff/continuity 语义。
+- Task Package: `TK-471`、`TK-472`、`TK-473`。
+
 ## 3. 任务拆解矩阵（WBS）
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
@@ -53,9 +59,12 @@
 | TK-465 | sprint-002 | bootstrap service-owned session.main supervisor and direct answer path | runtime/session-main | TK-464 | completed |
 | TK-466 | sprint-002 | productize role-subagent collaboration and command handoff governance baseline | runtime/session-main | TK-465 | completed |
 | TK-467 | sprint-003 | stabilize serial role collaboration and interaction-mode routing | runtime/session-main | TK-466 | completed |
-| TK-468 | sprint-003 | expand parallel role fan-out and collaboration recap presentation semantics | runtime/session-main | TK-467 | active |
+| TK-468 | sprint-003 | expand parallel role fan-out and collaboration recap presentation semantics | runtime/session-main | TK-467 | completed |
 | TK-469 | sprint-004 | map supervisor streaming events into shared session deltas and running presentation | runtime/session-events | TK-468 | planned |
 | TK-470 | sprint-004 | align supervisor runtime across embedded sidecar and desktop consumer hosts | runtime/host-parity | TK-469 | planned |
+| TK-471 | sprint-005 | harden conversational routing and direct-answer chatability | runtime/session-main | TK-468 | planned |
+| TK-472 | sprint-005 | introduce foreground skill registry and risk-tiered governed handoff | runtime/session-main | TK-471 | planned |
+| TK-473 | sprint-005 | align direct-execute and preview-confirm continuity with resume and command bundles | runtime/session-main | TK-472 | planned |
 
 ## 4. 依赖产物策略
 
@@ -67,6 +76,7 @@
    - Phase A：direct answer + single-role bootstrap
    - Phase B：serial/parallel role collaboration + handoff productization
    - Phase C：streaming + embedded/sidecar/desktop parity
+   - Phase D：conversation-first chatability + risk-tiered skill handoff
 
 ## 4.1 激活分层说明
 
@@ -110,7 +120,7 @@
 
 1. `session.main supervisor` 方向已在 formal module docs 中明确分配到 `runtime.orchestration` 与 `runtime.cli-interactive-shell`。
 2. technical-solution lifecycle / delivery / module-registry / manifest / review / artifact / sprint ledger 已与这次 promotion 保持同步。
-3. `project-035` 已明确拆成 4 个 sprint，分别覆盖 promotion、bootstrap、multi-role collaboration 与 streaming/host parity。
+3. `project-035` 已明确拆成 5 个 sprint，分别覆盖 promotion、bootstrap、multi-role collaboration、streaming/host parity 与 conversational chat/skill handoff productization。
 4. 至少一条 direct answer path、一条 single-role delegate path、一条 multi-role collaboration path 与一条 host parity path 都已在任务层有明确承接面。
 5. delivery registry 不再把这条正式方向误报为“已 rollout 完成”。
 
@@ -127,3 +137,8 @@
 9. 2026-03-31：`sprint-002` 已完成并推送到 `origin/main`；执行面切换到 `sprint-003-role-collaboration-and-handoff-productization`，由 `TK-467` 接手 serial collaboration 与 interaction-mode routing 的 Phase B 前线。
 10. 2026-03-31：完成 `TK-467`；`session.main` 当前已具备一条真实 `@planner -> @reviewer` 串行协作路径、`routerDecisionReason` 回灌，以及 serial collaboration 的 shared-session/resume parity 回归覆盖。
 11. 2026-03-31：`TK-468` 已切为当前执行前线；当前 sprint 继续承接受控 parallel role fan-out 与 collaboration recap/handoff semantics 分层。
+12. 2026-03-31：`TK-468` 已完成第一阶段启动并推送 baseline；`session.main` 当前已具备一条受治理 `@planner @reviewer` parallel analysis fan-out 路径、`synthesisMode / invokedRoleIds / subagentCount` 投影，以及 `collaboration_recap`/`command_recap` presenter 分层与回归覆盖。
+13. 2026-03-31：完成 `TK-468` 并收口 `sprint-003`；`session.main` 当前已具备 `@architect @reviewer @verifier` 三角色 parallel analysis 试点，且 shared session truth、service event payload、CLI transcript presenter 与 resume parity 已完成一致性验证。
+14. 2026-03-31：新增 follow-up draft `.repo-ai-governor/draft/session-main-conversational-chat-and-skill-intent-handoff-technical-solution.md`，专门承接“主 agent 可闲聊 + 自然语言 skill/命令组合受治理交接”的产品化补口，作为后续实现窗口输入。
+15. 2026-04-01：用户已明确批准 conversational follow-up draft，并将其正式并入 active solution `technical-solution.interactive-cli-react-style-cli` 的 formal module docs；`runtime.orchestration` 与 `runtime.cli-interactive-shell` 现正式接受 risk-tiered natural-language skill handoff / low-risk direct-execute direction，promotion 证据收口到 `TK-468` closeout 台账。
+16. 2026-04-01：新增 planned `sprint-005-conversational-chat-and-skill-handoff-productization`，将 approved technical solution 拆为 conversation routing/chatability、foreground skill registry + risk gate，以及 preview/direct-execute continuity 三个实现任务包。

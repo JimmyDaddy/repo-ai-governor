@@ -1,7 +1,7 @@
 # Runtime CLI Interactive Shell Module Overview
 
 - Status: active
-- Date: 2026-03-31
+- Date: 2026-04-01
 - Module ID: `runtime.cli-interactive-shell`
 - Owner: runtime
 - Layer: `runtime-core`
@@ -20,7 +20,7 @@
 6. 为 `repo-ai-governor` 无子命令默认进入的本地 session shell 定义入口 contract 与 resume baseline。
 7. 为命令执行期的 progress sink、AbortSignal cancel seam 与 React shell running panel 定义统一产品边界，但不让命令 executor 直接持有 Ink/React 实例。
 8. 为 session-shell transcript 的 render-kind、command recap / collaboration recap / system notice 分层，以及 assistant Markdown 内容块定义正式 presenter 方向，但不把 live running dock 退化为 append-only transcript 日志。
-9. 为 service-owned `session.main` supervisor 的 answer / follow-up / command handoff / role-collaboration 结果提供统一 transcript 与 recap presenter seam，但不在 CLI 侧重新拥有 supervisor runtime 决策逻辑。
+9. 为 service-owned `session.main` supervisor 的 answer / follow-up / command handoff / low-risk direct-execute skill / role-collaboration 结果提供统一 transcript 与 recap presenter seam，并在 `preview_confirm` 与 `direct_execute` continuity 之间保持一致的 shell surface，但不在 CLI 侧重新拥有 supervisor runtime 决策逻辑。
 
 ## 3. 非目标
 
@@ -65,6 +65,7 @@
 8. 截至 `2026-03-31`，`v4` formal direction 已接受“structured session shell + markdown content blocks”；该方向正式要求把 running progress 与历史 transcript 分层，并允许 assistant 完成态消息、帮助文本和 command recap 进入 Markdown 呈现，但真实 renderer / batching rollout 仍由 `project-032` follow-up sprint 承接。
 9. 截至 `2026-03-31`，`v5` formal direction 已接受“service-owned session.main supervisor + role subagents / handoffs”；CLI shell 继续只消费 service-backed turn outcome，并负责把 direct answer、follow-up、command handoff preview 与 collaboration recap 渲染为统一 transcript/presenter 语义，真实 supervisor runtime productization follow-up 由 `project-035-session-main-supervisor-and-role-subagent-productization` 承接。
 10. 截至 `2026-03-31`，`v5.1` presenter semantics 已补充 `collaboration_recap` render-kind；role-based parallel/serial collaboration 的 recap、worker summary 与 handoff context 必须通过独立 transcript kind 呈现，避免继续挤占通用 `markdown` 或 `command_recap` 语义槽位。
+11. 截至 `2026-04-01`，在既有 `v5` supervisor formal direction 基础上，已进一步接受“conversation-first chatability + risk-tiered natural-language skill handoff”；session shell 现需同时消费 `preview_confirm` 与 `direct_execute` 两类受治理 continuity，并以同一份 shared session truth 呈现 `help`、`doctor`、`verify` 与 scope-resolved `review` 等低风险 skill 的执行/回放语义。
 
 ## 9. Detail Docs
 

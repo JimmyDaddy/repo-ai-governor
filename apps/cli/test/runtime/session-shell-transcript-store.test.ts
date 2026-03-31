@@ -247,14 +247,14 @@ describe('CliSessionShellTranscriptStore', () => {
             responseMode: 'role_collaboration',
             interactionMode: 'parallel_role_fanout',
             assistantMessage:
-              '## Planner + Reviewer Parallel Analysis\n\n### Planner\n\n- plan risk\n\n### Reviewer\n\n- review risk',
+              '## Architect + Reviewer + Verifier Parallel Analysis\n\n### Architect\n\n- architecture risk\n\n### Reviewer\n\n- review risk\n\n### Verifier\n\n- verification risk',
             synthesisMode: 'parallel_analysis',
-            executionIntent: 'session.role_delegate.parallel.planner.reviewer',
-            selectedSurface: 'planner:ollama | reviewer:ollama',
+            executionIntent: 'session.role_delegate.parallel.architect.reviewer.verifier',
+            selectedSurface: 'architect:ollama | reviewer:ollama | verifier:ollama',
             selectedBy:
-              'planner:session.main.role_delegate.safe_fallback | reviewer:session.main.role_delegate.safe_fallback',
-            invokedRoleIds: ['planner', 'reviewer'],
-            subagentCount: 2,
+              'architect:session.main.role_delegate.safe_fallback | reviewer:session.main.role_delegate.safe_fallback | verifier:session.main.role_delegate.safe_fallback',
+            invokedRoleIds: ['architect', 'reviewer', 'verifier'],
+            subagentCount: 3,
           },
         },
       ],
@@ -286,13 +286,13 @@ describe('CliSessionShellTranscriptStore', () => {
 
     expect(items).toHaveLength(1);
     expect(items[0]?.renderKind).toBe('collaboration_recap');
-    expect(items[0]?.markdownSource).toContain('Planner + Reviewer Parallel Analysis');
+    expect(items[0]?.markdownSource).toContain('Architect + Reviewer + Verifier Parallel Analysis');
     expect(items[0]?.lines).toEqual([
       'Parallel role fan-out completed.',
-      'Roles: planner · reviewer (count=2)',
+      'Roles: architect · reviewer · verifier (count=3)',
       'Synthesis: parallel_analysis',
-      'Intent: session.role_delegate.parallel.planner.reviewer',
-      'Routing: surface=planner:ollama | reviewer:ollama selected_by=planner:session.main.role_delegate.safe_fallback | reviewer:session.main.role_delegate.safe_fallback',
+      'Intent: session.role_delegate.parallel.architect.reviewer.verifier',
+      'Routing: surface=architect:ollama | reviewer:ollama | verifier:ollama selected_by=architect:session.main.role_delegate.safe_fallback | reviewer:session.main.role_delegate.safe_fallback | verifier:session.main.role_delegate.safe_fallback',
     ]);
   });
 

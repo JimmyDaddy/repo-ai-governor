@@ -463,28 +463,32 @@ describe('session.main parity integration', () => {
         resolveTurn: async () => ({
           responseMode: 'role_collaboration',
           interactionMode: 'parallel_role_fanout',
-          assistantDelta: '## Planner + Reviewer Parallel Analysis',
+          assistantDelta: '## Architect + Reviewer + Verifier Parallel Analysis',
           assistantMessage: [
-            '## Planner + Reviewer Parallel Analysis',
+            '## Architect + Reviewer + Verifier Parallel Analysis',
             '',
-            '### Planner',
+            '### Architect',
             '',
-            '## Planner perspective\n\n- planning risk',
+            '## Architect perspective\n\n- architecture risk',
             '',
             '### Reviewer',
             '',
             '## Reviewer perspective\n\n- review risk',
+            '',
+            '### Verifier',
+            '',
+            '## Verifier perspective\n\n- verification risk',
           ].join('\n'),
           routerDecisionReason: 'session.main.router.parallel_role_fanout.explicit_roles',
           synthesisMode: 'parallel_analysis',
-          executionIntent: 'session.role_delegate.parallel.planner.reviewer',
+          executionIntent: 'session.role_delegate.parallel.architect.reviewer.verifier',
           requiresConfirmation: false,
-          selectedSurface: 'planner:ollama | reviewer:ollama',
+          selectedSurface: 'architect:ollama | reviewer:ollama | verifier:ollama',
           selectedBy:
-            'planner:session.main.role_delegate.safe_fallback | reviewer:session.main.role_delegate.safe_fallback',
+            'architect:session.main.role_delegate.safe_fallback | reviewer:session.main.role_delegate.safe_fallback | verifier:session.main.role_delegate.safe_fallback',
           sessionRoutingPreferenceApplied: false,
-          invokedRoleIds: ['planner', 'reviewer'],
-          subagentCount: 2,
+          invokedRoleIds: ['architect', 'reviewer', 'verifier'],
+          subagentCount: 3,
         }),
       },
     });
@@ -493,7 +497,7 @@ describe('session.main parity integration', () => {
     try {
       const firstRenderer = new RecordingSessionShellRenderer();
       const firstRunner = createRunner(firstRenderer, [
-        '@planner @reviewer parallel assess this rollout risk',
+        '@architect @reviewer @verifier parallel assess this rollout risk',
         '/exit',
       ]);
       const firstResult = await firstRunner.run(createRunOptions(sessionClient));
@@ -507,22 +511,26 @@ describe('session.main parity integration', () => {
         expect.objectContaining({
           renderKind: 'collaboration_recap',
           markdownSource: [
-            '## Planner + Reviewer Parallel Analysis',
+            '## Architect + Reviewer + Verifier Parallel Analysis',
             '',
-            '### Planner',
+            '### Architect',
             '',
-            '## Planner perspective\n\n- planning risk',
+            '## Architect perspective\n\n- architecture risk',
             '',
             '### Reviewer',
             '',
             '## Reviewer perspective\n\n- review risk',
+            '',
+            '### Verifier',
+            '',
+            '## Verifier perspective\n\n- verification risk',
           ].join('\n'),
           lines: [
             'Parallel role fan-out completed.',
-            'Roles: planner · reviewer (count=2)',
+            'Roles: architect · reviewer · verifier (count=3)',
             'Synthesis: parallel_analysis',
-            'Intent: session.role_delegate.parallel.planner.reviewer',
-            'Routing: surface=planner:ollama | reviewer:ollama selected_by=planner:session.main.role_delegate.safe_fallback | reviewer:session.main.role_delegate.safe_fallback',
+            'Intent: session.role_delegate.parallel.architect.reviewer.verifier',
+            'Routing: surface=architect:ollama | reviewer:ollama | verifier:ollama selected_by=architect:session.main.role_delegate.safe_fallback | reviewer:session.main.role_delegate.safe_fallback | verifier:session.main.role_delegate.safe_fallback',
           ],
         }),
       );

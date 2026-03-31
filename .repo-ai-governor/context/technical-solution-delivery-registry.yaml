@@ -1,5 +1,5 @@
 schema_version: 1
-generated_at: 2026-03-31
+generated_at: 2026-04-01
 status: active
 owner: architecture
 
@@ -211,7 +211,7 @@ deliveries:
     project_plan_path: .repo-ai-governor/context/dev/project-035-session-main-supervisor-and-role-subagent-productization/plan.md
     sprint_plan_path: .repo-ai-governor/context/dev/project-035-session-main-supervisor-and-role-subagent-productization/sprint-003-role-collaboration-and-handoff-productization/plan.md
     task_csv_path: .repo-ai-governor/context/dev/project-035-session-main-supervisor-and-role-subagent-productization/sprint-003-role-collaboration-and-handoff-productization/tasks/tasks.csv
-    handoff_artifact_path: .repo-ai-governor/context/dev/project-035-session-main-supervisor-and-role-subagent-productization/sprint-001-technical-solution-promotion-and-phase-map/tasks/DA-464-session-main-supervisor-promotion-cutover.md
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-035-session-main-supervisor-and-role-subagent-productization/sprint-003-role-collaboration-and-handoff-productization/tasks/DA-468-session-main-conversational-chat-and-skill-intent-promotion-cutover.md
     rollout_artifacts:
       - .repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation/plan.md
       - .repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation/project-027-completion-audit-summary.md
@@ -249,9 +249,12 @@ deliveries:
       - .repo-ai-governor/context/dev/project-035-session-main-supervisor-and-role-subagent-productization/sprint-001-technical-solution-promotion-and-phase-map/tasks/DA-464-session-main-supervisor-promotion-cutover.md
       - .repo-ai-governor/context/dev/project-035-session-main-supervisor-and-role-subagent-productization/sprint-002-answer-supervisor-and-role-subagent-bootstrap/plan.md
       - .repo-ai-governor/context/dev/project-035-session-main-supervisor-and-role-subagent-productization/sprint-003-role-collaboration-and-handoff-productization/plan.md
+      - .repo-ai-governor/context/dev/project-035-session-main-supervisor-and-role-subagent-productization/sprint-003-role-collaboration-and-handoff-productization/review/resolved_code_review_tk-468-session-main-conversational-chat-and-skill-intent-promotion-cutover.md
+      - .repo-ai-governor/context/dev/project-035-session-main-supervisor-and-role-subagent-productization/sprint-003-role-collaboration-and-handoff-productization/tasks/DA-468-session-main-conversational-chat-and-skill-intent-promotion-cutover.md
       - .repo-ai-governor/context/dev/project-035-session-main-supervisor-and-role-subagent-productization/sprint-004-streaming-and-host-parity/plan.md
+      - .repo-ai-governor/context/dev/project-035-session-main-supervisor-and-role-subagent-productization/sprint-005-conversational-chat-and-skill-handoff-productization/plan.md
       - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/adrs/session-main-supervisor-and-role-subagent-collaboration.md
-    accepted_at: 2026-03-31
+    accepted_at: 2026-04-01
 
   - solution_id: technical-solution.multi-ai-tools-onboarding-role-agent-projection
     delivery_mode: followup_required
