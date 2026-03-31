@@ -614,6 +614,56 @@ describe('core-orchestration-service local shell', () => {
     }
   });
 
+  it('writes assistantMessage and interactionMode for direct-answer session.main turns when supervisor runtime is injected', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot: temporaryRoot,
+      sessionMainSupervisorRuntime: {
+        resolveTurn: async (context) => ({
+          responseMode: 'answer',
+          interactionMode: 'direct_answer',
+          assistantDelta: '## Workspace status',
+          assistantMessage: '## Workspace status\n\n- clean\n- ready for next step',
+          executionIntent: 'session.answer',
+          requiresConfirmation: false,
+          selectedSurface: context.selectedSurface,
+          selectedBy: 'session.main.answer.primary',
+          sessionRoutingPreferenceApplied: context.sessionRoutingPreferenceApplied,
+          invokedRoleIds: [],
+        }),
+      },
+    });
+
+    try {
+      const started = await orchestrationService.startSession({
+        routeId: OrchestrationSessionRouteId.MAIN,
+      });
+      await orchestrationService.sendSessionTurn({
+        sessionId: started.session.sessionId,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        userMessage: 'Help me inspect the current workspace state',
+      });
+      const subscription = await orchestrationService.subscribeSession({
+        sessionId: started.session.sessionId,
+      });
+      const completedEvent = subscription.events.find(
+        (event) => event.type === OrchestrationSessionEventType.TURN_COMPLETED,
+      );
+
+      expect(completedEvent?.payload.responseMode).toBe('answer');
+      expect(completedEvent?.payload.interactionMode).toBe('direct_answer');
+      expect(completedEvent?.payload.assistantMessage).toBe(
+        '## Workspace status\n\n- clean\n- ready for next step',
+      );
+      expect(completedEvent?.payload.executionIntent).toBe('session.answer');
+      expect(completedEvent?.payload.selectedSurface).toBe('codex');
+      expect(completedEvent?.payload.selectedBy).toBe('session.main.answer.primary');
+      expect(completedEvent?.payload.invokedRoleIds).toEqual([]);
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
   it('applies session routing preference to selected surface and command preview metadata', async () => {
     const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
     const orchestrationService = new LocalOrchestrationServiceShell({

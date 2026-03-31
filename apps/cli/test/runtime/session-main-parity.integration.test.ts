@@ -2,7 +2,10 @@ import { mkdir, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 
-import { LocalOrchestrationServiceShell } from '@repo-ai-governor/core-orchestration-service';
+import {
+  LocalOrchestrationServiceShell,
+  type LocalOrchestrationServiceShellDependencies,
+} from '@repo-ai-governor/core-orchestration-service';
 import {
   OrchestrationSessionEventType,
   OrchestrationSessionRouteId,
@@ -228,13 +231,75 @@ describe('session.main parity integration', () => {
       await rm(temporaryRoot, { recursive: true, force: true });
     }
   });
+
+  it('replays the same direct-answer markdown transcript when the CLI resumes the latest session shell', async () => {
+    const temporaryRoot = await mkdtemp(resolve(tmpdir(), 'session-main-parity-answer-'));
+    const workspaceRoot = resolve(temporaryRoot, '.repo-ai-governor');
+    await mkdir(workspaceRoot, { recursive: true });
+    const runtime = createRuntime(workspaceRoot, {
+      sessionMainSupervisorRuntime: {
+        resolveTurn: async (context) => ({
+          responseMode: 'answer',
+          interactionMode: 'direct_answer',
+          assistantDelta: '## Workspace status',
+          assistantMessage: `## Workspace status\n\n- user_message: ${context.userMessage}`,
+          executionIntent: 'session.answer',
+          requiresConfirmation: false,
+          selectedSurface: context.selectedSurface,
+          selectedBy: 'session.main.answer.primary',
+          sessionRoutingPreferenceApplied: context.sessionRoutingPreferenceApplied,
+          invokedRoleIds: [],
+        }),
+      },
+    });
+    const sessionClient = new CliSessionShellServiceClient(runtime);
+
+    try {
+      const firstRenderer = new RecordingSessionShellRenderer();
+      const firstRunner = createRunner(firstRenderer, ['帮我检查当前工作区状态', '/exit']);
+      const firstResult = await firstRunner.run(createRunOptions(sessionClient));
+      const firstSessionId = firstRenderer.frames[0]?.sessionId;
+      const firstAnswer = firstResult.transcriptItems.find(
+        (item) => item.renderKind === 'markdown',
+      );
+
+      expect(firstResult.exitReason).toBe(CliSessionShellExitReason.SLASH_EXIT);
+      expect(firstAnswer).toEqual(
+        expect.objectContaining({
+          markdownSource: '## Workspace status\n\n- user_message: 帮我检查当前工作区状态',
+          lines: ['## Workspace status\n\n- user_message: 帮我检查当前工作区状态'],
+        }),
+      );
+
+      const resumedRenderer = new RecordingSessionShellRenderer();
+      const resumedRunner = createRunner(resumedRenderer, ['/exit']);
+      const resumedResult = await resumedRunner.run(
+        createRunOptions(sessionClient, {
+          resumeOnStartup: true,
+        }),
+      );
+      const resumedAnswer = resumedResult.transcriptItems.find(
+        (item) => item.renderKind === 'markdown',
+      );
+
+      expect(resumedRenderer.frames[0]?.sessionId).toBe(firstSessionId);
+      expect(resumedAnswer).toEqual(firstAnswer);
+    } finally {
+      await runtime.dispose();
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
 });
 
-function createRuntime(workspaceRoot: string): CliOrchestrationServiceRuntime {
+function createRuntime(
+  workspaceRoot: string,
+  shellDependencies: Omit<LocalOrchestrationServiceShellDependencies, 'memoryConfig'> = {},
+): CliOrchestrationServiceRuntime {
   return new CliOrchestrationServiceRuntime(workspaceRoot, {
     serviceOwnerProvider: async (root) =>
       new LocalOrchestrationServiceShell({
         workspaceRoot: root,
+        ...shellDependencies,
       }),
   });
 }

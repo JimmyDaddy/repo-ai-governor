@@ -46,6 +46,7 @@ import {
   standardizeError,
 } from '@repo-ai-governor/shared';
 import { LocalOrchestrationServiceSessionMainAgentDispatcher } from './local-orchestration-service-session-main-agent-dispatcher.js';
+import type { SessionMainSupervisorRuntimeContract } from './types/index.js';
 
 interface LocalOrchestrationServiceSessionMemoryProviderState {
   composition: MemoryProviderCompositionSummary;
@@ -57,6 +58,7 @@ interface LocalOrchestrationServiceSessionRuntimeDependencies {
   memoryConfig?: MemoryRuntimeConfig;
   memoryProviderRegistry?: MemoryProviderRegistry;
   memoryProviderRuntimeMode?: MemoryProviderRuntimeMode;
+  sessionMainSupervisorRuntime?: SessionMainSupervisorRuntimeContract;
   nowProvider?: () => Date;
 }
 
@@ -86,7 +88,9 @@ export class LocalOrchestrationServiceSessionRuntime {
     this.nowProvider = dependencies.nowProvider ?? (() => new Date());
     this.memoryProviderRegistry =
       dependencies.memoryProviderRegistry ?? new MemoryProviderRegistry();
-    this.mainAgentDispatcher = new LocalOrchestrationServiceSessionMainAgentDispatcher();
+    this.mainAgentDispatcher = new LocalOrchestrationServiceSessionMainAgentDispatcher(
+      dependencies.sessionMainSupervisorRuntime,
+    );
   }
 
   /**
@@ -164,10 +168,17 @@ export class LocalOrchestrationServiceSessionRuntime {
       },
     });
     try {
-      const dispatchResult = this.mainAgentDispatcher.dispatch(
-        request.userMessage,
-        request.metadata,
-      );
+      const dispatchResult = await this.mainAgentDispatcher.dispatch({
+        sessionId: request.sessionId,
+        routeId: currentRouteId,
+        turnId,
+        turnIndex,
+        userMessage: request.userMessage,
+        metadata: request.metadata,
+        selectedSurface: '',
+        selectedBy: '',
+        sessionRoutingPreferenceApplied: false,
+      });
       await sessionManager.appendEvent({
         sessionId: request.sessionId,
         type: OrchestrationSessionEventType.TURN_STREAM_DELTA,
@@ -206,6 +217,12 @@ export class LocalOrchestrationServiceSessionRuntime {
           selectedSurface: dispatchResult.selectedSurface,
           selectedBy: dispatchResult.selectedBy,
           sessionRoutingPreferenceApplied: dispatchResult.sessionRoutingPreferenceApplied,
+          interactionMode: dispatchResult.interactionMode,
+          ...(dispatchResult.invokedRoleIds
+            ? {
+                invokedRoleIds: [...dispatchResult.invokedRoleIds],
+              }
+            : {}),
           ...(dispatchResult.handoffCommandPreview
             ? { handoffCommandPreview: dispatchResult.handoffCommandPreview }
             : {}),

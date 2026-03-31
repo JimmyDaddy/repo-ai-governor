@@ -1,6 +1,6 @@
 # sprint-002-answer-supervisor-and-role-subagent-bootstrap 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-03-31
 - Project: `project-035-session-main-supervisor-and-role-subagent-productization`
 - Sprint Goal: 为 `session.main` 建立 direct answer bootstrap、single-role subagent path 与 command handoff governance baseline。
@@ -23,3 +23,5 @@
 1. 2026-03-31：基于 `TK-464` promotion cutover，创建 `sprint-002` 作为 bootstrap implementation surface。
 2. 2026-03-31：冻结 `TK-465 ~ TK-466`，将 direct answer、single-role subagent path 与 command handoff governance 收敛为后续 task package。
 3. 2026-03-31：同步将 serial/parallel collaboration 与 streaming/host parity 拆到 `sprint-003 ~ sprint-004`，避免 `sprint-002` 范围继续膨胀。
+4. 2026-03-31：显式激活 `sprint-002` 作为 `project-035` 当前 primary execution surface；先从 `TK-465` 开始实现 direct answer bootstrap 与最小 shared session metadata seam。
+5. 2026-03-31：完成 `TK-465`；`session.main` 现已支持 service-owned direct answer path、最小 supervisor metadata 回灌，以及 CLI/resume 的 markdown answer parity regression。

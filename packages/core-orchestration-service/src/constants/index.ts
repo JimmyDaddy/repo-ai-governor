@@ -3,3 +3,7 @@ export {
   LOCAL_ORCHESTRATION_SERVICE_SIDECAR_PROTOCOL_VERSION,
   LocalOrchestrationServiceSidecarOperation,
 } from './local-orchestration-service-sidecar.constant.js';
+export {
+  SESSION_MAIN_INTERACTION_MODE,
+  SESSION_MAIN_RESPONSE_MODE,
+} from './session-main-supervisor.constant.js';

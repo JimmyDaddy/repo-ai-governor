@@ -1,4 +1,10 @@
 import { AdapterSurface, GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
+import { SESSION_MAIN_INTERACTION_MODE, SESSION_MAIN_RESPONSE_MODE } from './constants/index.js';
+import type {
+  SessionMainSupervisorRuntimeContract,
+  SessionMainSupervisorTurnContext,
+  SessionMainSupervisorTurnOutcome,
+} from './types/index.js';
 
 const SESSION_MAIN_CONNECT_KEYWORDS = ['connect', 'adapter', 'adapters', 'tool', 'tools'];
 const SESSION_MAIN_DOCTOR_KEYWORDS = ['doctor', 'diagnose', 'health', 'check environment'];
@@ -9,6 +15,7 @@ const SESSION_MAIN_RUN_KEYWORDS = ['run', 'execute', 'ship', 'implement'];
 const SESSION_MAIN_FAILURE_KEYWORDS = ['simulate failure', 'force failure'];
 const SESSION_MAIN_CANCEL_KEYWORDS = ['cancel this turn', 'simulate cancel'];
 const SESSION_MAIN_MIN_FOLLOW_UP_LENGTH = 10;
+const SESSION_MAIN_FALLBACK_ANSWER_DELTA_MAX_LENGTH = 80;
 const SESSION_MAIN_ROUTING_PREFERENCE_ALIASES: Record<string, AdapterSurface> = {
   claude: AdapterSurface.CLAUDE_CODE,
   'claude-code': AdapterSurface.CLAUDE_CODE,
@@ -18,35 +25,6 @@ const SESSION_MAIN_ROUTING_PREFERENCE_ALIASES: Record<string, AdapterSurface> = 
   ollama: AdapterSurface.OLLAMA,
 };
 
-export const SESSION_MAIN_RESPONSE_MODE = {
-  ANSWER: 'answer',
-  FOLLOW_UP_QUESTION: 'follow_up_question',
-  SLASH_SUGGESTION: 'slash_suggestion',
-  COMMAND_HANDOFF_PREVIEW: 'command_handoff_preview',
-} as const;
-
-export type SessionMainResponseMode =
-  (typeof SESSION_MAIN_RESPONSE_MODE)[keyof typeof SESSION_MAIN_RESPONSE_MODE];
-
-export interface SessionMainAgentDispatchResult {
-  responseMode: SessionMainResponseMode;
-  assistantDelta: string;
-  assistantMessage?: string;
-  suggestedSlashCommand?: string;
-  executionIntent?: string;
-  followUpQuestion?: string;
-  requiresConfirmation: boolean;
-  selectedSurface: string;
-  selectedBy: string;
-  sessionRoutingPreferenceApplied: boolean;
-  handoffCommandPreview?: string;
-  handoffBacklinks?: Array<{
-    kind: 'slash_command' | 'execution_intent' | 'command_preview';
-    label: string;
-    target: string;
-  }>;
-}
-
 /**
  * Resolves one foreground `session.main` user turn into structured assistant semantics.
  *
@@ -55,19 +33,23 @@ export interface SessionMainAgentDispatchResult {
  * `baseline_ack`, while keeping the implementation local, deterministic, and presenter-friendly.
  */
 export class LocalOrchestrationServiceSessionMainAgentDispatcher {
+  public constructor(
+    private readonly sessionMainSupervisorRuntime?: SessionMainSupervisorRuntimeContract,
+  ) {}
+
   /**
    * Resolves one plain-text user turn into structured assistant output and handoff metadata.
-   * @param userMessage User-authored text submitted through `session.main`.
-   * @param metadata Optional session-turn metadata.
+   * @param turnContext Service-owned turn context.
    * @returns Structured main-agent dispatch result.
    */
-  public dispatch(
-    userMessage: string,
-    metadata?: Record<string, unknown>,
-  ): SessionMainAgentDispatchResult {
-    const normalizedMessage = userMessage.trim();
+  public async dispatch(
+    turnContext: SessionMainSupervisorTurnContext,
+  ): Promise<SessionMainSupervisorTurnOutcome> {
+    const normalizedMessage = turnContext.userMessage.trim();
     const normalizedLowerMessage = normalizedMessage.toLowerCase();
-    const sessionRoutingPreference = this.readOptionalString(metadata?.sessionRoutingPreference);
+    const sessionRoutingPreference = this.readOptionalString(
+      turnContext.metadata?.sessionRoutingPreference,
+    );
     const preferredSurface = this.resolvePreferredSurface(sessionRoutingPreference);
     const selectionMetadata = this.resolveSelectionMetadata(preferredSurface);
 
@@ -160,6 +142,7 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
     if (normalizedMessage.length < SESSION_MAIN_MIN_FOLLOW_UP_LENGTH) {
       return {
         responseMode: SESSION_MAIN_RESPONSE_MODE.FOLLOW_UP_QUESTION,
+        interactionMode: SESSION_MAIN_INTERACTION_MODE.DIRECT_ANSWER,
         assistantDelta: '?',
         followUpQuestion:
           'Tell me the next action you want, for example connect tools, review code, or run a task.',
@@ -172,17 +155,18 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
       };
     }
 
-    return {
-      responseMode: SESSION_MAIN_RESPONSE_MODE.ANSWER,
-      assistantDelta: 'ok',
-      executionIntent: 'session.answer',
-      requiresConfirmation: false,
-      selectedSurface: selectionMetadata.selectedSurface,
-      selectedBy: selectionMetadata.sessionRoutingPreferenceApplied
-        ? 'session.main.preference.default'
-        : 'session.main.default',
-      sessionRoutingPreferenceApplied: selectionMetadata.sessionRoutingPreferenceApplied,
-    };
+    if (this.sessionMainSupervisorRuntime) {
+      return this.sessionMainSupervisorRuntime.resolveTurn({
+        ...turnContext,
+        selectedSurface: selectionMetadata.selectedSurface,
+        selectedBy: selectionMetadata.sessionRoutingPreferenceApplied
+          ? 'session.main.preference.default'
+          : 'session.main.default',
+        sessionRoutingPreferenceApplied: selectionMetadata.sessionRoutingPreferenceApplied,
+      });
+    }
+
+    return this.createFallbackAnswerResult(normalizedMessage, selectionMetadata);
   }
 
   private createCommandSuggestionResult(options: {
@@ -192,9 +176,10 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
     selectedSurface: string;
     selectedBy: string;
     sessionRoutingPreferenceApplied: boolean;
-  }): SessionMainAgentDispatchResult {
+  }): SessionMainSupervisorTurnOutcome {
     return {
       responseMode: SESSION_MAIN_RESPONSE_MODE.COMMAND_HANDOFF_PREVIEW,
+      interactionMode: SESSION_MAIN_INTERACTION_MODE.COMMAND_HANDOFF,
       assistantDelta: options.suggestedSlashCommand,
       suggestedSlashCommand: options.suggestedSlashCommand,
       executionIntent: options.executionIntent,
@@ -220,6 +205,39 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
           target: options.handoffCommandPreview,
         },
       ],
+    };
+  }
+
+  private createFallbackAnswerResult(
+    normalizedMessage: string,
+    selectionMetadata: {
+      selectedSurface: string;
+      selectedBy: string;
+      sessionRoutingPreferenceApplied: boolean;
+    },
+  ): SessionMainSupervisorTurnOutcome {
+    const assistantMessage = [
+      '## Session Main Answer',
+      '',
+      `I received your request: "${normalizedMessage}".`,
+      '',
+      `Selected surface: \`${selectionMetadata.selectedSurface}\`.`,
+      '',
+      'The direct-answer supervisor seam is active. Ask a specific repo question to continue, or request a governed command such as connect, doctor, verify, review, or run.',
+    ].join('\n');
+    return {
+      responseMode: SESSION_MAIN_RESPONSE_MODE.ANSWER,
+      interactionMode: SESSION_MAIN_INTERACTION_MODE.DIRECT_ANSWER,
+      assistantDelta: this.createAssistantDelta(assistantMessage),
+      assistantMessage,
+      executionIntent: 'session.answer',
+      requiresConfirmation: false,
+      selectedSurface: selectionMetadata.selectedSurface,
+      selectedBy: selectionMetadata.sessionRoutingPreferenceApplied
+        ? 'session.main.preference.default'
+        : 'session.main.default',
+      sessionRoutingPreferenceApplied: selectionMetadata.sessionRoutingPreferenceApplied,
+      invokedRoleIds: [],
     };
   }
 
@@ -266,6 +284,17 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
 
   private includesAnyKeyword(message: string, keywords: string[]): boolean {
     return keywords.some((keyword) => message.includes(keyword));
+  }
+
+  private createAssistantDelta(assistantMessage: string): string {
+    const firstNonEmptyLine = assistantMessage
+      .split(/\r?\n/u)
+      .map((line) => line.trim())
+      .find((line) => line.length > 0);
+    if (!firstNonEmptyLine) {
+      return 'answer';
+    }
+    return firstNonEmptyLine.slice(0, SESSION_MAIN_FALLBACK_ANSWER_DELTA_MAX_LENGTH);
   }
 
   private readOptionalString(candidate: unknown): string | undefined {

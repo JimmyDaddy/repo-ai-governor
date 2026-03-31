@@ -1,6 +1,8 @@
 export {
   LOCAL_ORCHESTRATION_SERVICE_SIDECAR_PROTOCOL_VERSION,
   LocalOrchestrationServiceSidecarOperation,
+  SESSION_MAIN_INTERACTION_MODE,
+  SESSION_MAIN_RESPONSE_MODE,
 } from './constants/index.js';
 export { LocalOrchestrationServiceShell } from './local-orchestration-service-shell.js';
 export { LocalOrchestrationServiceSidecarClient } from './local-orchestration-service-sidecar-client.js';
@@ -19,4 +21,10 @@ export type {
   LocalOrchestrationServiceSidecarStartExecutionPayload,
   LocalOrchestrationServiceShellDependencies,
   LocalOrchestrationServiceStartExecutionRuntimeContext,
+  SessionMainInteractionMode,
+  SessionMainResponseMode,
+  SessionMainSupervisorRuntimeContract,
+  SessionMainSupervisorTurnBacklink,
+  SessionMainSupervisorTurnContext,
+  SessionMainSupervisorTurnOutcome,
 } from './types/index.js';

@@ -6,6 +6,12 @@ export type {
   LocalOrchestrationServiceStartExecutionRuntimeContext,
 } from './local-orchestration-service-shell.interface.js';
 export type {
+  SessionMainSupervisorRuntimeContract,
+  SessionMainSupervisorTurnBacklink,
+  SessionMainSupervisorTurnContext,
+  SessionMainSupervisorTurnOutcome,
+} from './session-main-supervisor-runtime.interface.js';
+export type {
   LocalOrchestrationServiceSidecarDispatchTable,
   LocalOrchestrationServiceSidecarClientDependencies,
   LocalOrchestrationServiceSidecarClientLike,

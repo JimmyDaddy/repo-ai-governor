@@ -134,6 +134,11 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
         : {}),
       memoryProviderRegistry: this.memoryProviderRegistry,
       memoryProviderRuntimeMode: this.resolveMemoryProviderRuntimeMode(),
+      ...(dependencies.sessionMainSupervisorRuntime
+        ? {
+            sessionMainSupervisorRuntime: dependencies.sessionMainSupervisorRuntime,
+          }
+        : {}),
       nowProvider: this.nowProvider,
     });
   }

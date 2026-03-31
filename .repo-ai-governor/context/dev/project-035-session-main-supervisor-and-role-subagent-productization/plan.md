@@ -29,7 +29,7 @@
 
 ## 2.2 sprint-002-answer-supervisor-and-role-subagent-bootstrap
 
-- Status: planned
+- Status: active
 - Sprint Goal: productize `session.main` supervisor 的 direct answer bootstrap、single-role subagent path 与 command handoff governance baseline。
 - Task Package: `TK-465`、`TK-466`。
 
@@ -121,3 +121,5 @@
 3. 2026-03-31：创建 planned `sprint-002-answer-supervisor-and-role-subagent-bootstrap`，冻结 `TK-465 ~ TK-466` 作为 direct answer bootstrap 与 role-subagent collaboration follow-up package。
 4. 2026-03-31：根据“项目不应只停留在前台接入”的范围校准，新增 planned `sprint-003-role-collaboration-and-handoff-productization` 与 `sprint-004-streaming-and-host-parity`，将 serial/parallel collaboration、streaming 与 host parity 正式写入 roadmap。
 5. 2026-03-31：补充激活分层与角色边界说明，明确 `connect apply` 负责激活配置/后台执行真值，而 `session.main` 前台直接使用 connected roles 则从 `sprint-002` 起逐步 productize；同时明确 `main agent`、`planner` role 与 backend workflow planner 的职责分层。
+6. 2026-03-31：显式激活 `sprint-002-answer-supervisor-and-role-subagent-bootstrap`，将 `project-035` 的主执行面从 promotion closeout 切换到 Phase A bootstrap implementation。
+7. 2026-03-31：完成 `TK-465`；`session.main` bootstrap 现已具备真实 direct answer、shared session `interactionMode` 元数据回灌，以及 CLI/resume direct-answer parity 证据。

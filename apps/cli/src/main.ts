@@ -102,6 +102,7 @@ import { CliLiveCommandCancelController } from './runtime/live-command-cancel-co
 import { CliLiveCommandCancellationPolicy } from './runtime/live-command-cancellation-policy.js';
 import { CliNotificationProviderRegistryRuntime } from './runtime/notification-provider-registry-runtime.js';
 import { CliOrchestrationServiceRuntime } from './runtime/orchestration-service-runtime.js';
+import { CliSessionMainSupervisorRuntime } from './runtime/session-main-supervisor-runtime.js';
 export {
   IDE_SURFACE_REGISTRY,
   IDE_WRAPPER_DEFAULT_OUTPUT_MODE,
@@ -418,6 +419,29 @@ export async function runCli(
       runtimeContext.workspace.workspaceRoot,
       {
         memoryConfig: runtimeContext.memory,
+        embeddedShellDependencies: {
+          sessionMainSupervisorRuntime: new CliSessionMainSupervisorRuntime({
+            workspaceRoot: runtimeContext.workspace.workspaceRoot,
+            currentWorkingDirectory: io.cwd(),
+            locale: resolvedLocale,
+            adaptersConfig: runtimeContext.adapters,
+            ...(codexExecRunner
+              ? {
+                  codexExecRunner,
+                }
+              : {}),
+            ...(claudeCodeExecRunner
+              ? {
+                  claudeCodeExecRunner,
+                }
+              : {}),
+            ...(githubCopilotExecRunner
+              ? {
+                  githubCopilotExecRunner,
+                }
+              : {}),
+          }),
+        },
       },
     );
     const sessionShellServiceClient = new CliSessionShellServiceClient(

@@ -15,12 +15,14 @@ import type {
   OrchestrationServiceTransportKind,
 } from '@repo-ai-governor/orchestration-service-client';
 import type { MemoryRuntimeConfig } from '@repo-ai-governor/shared';
+import type { SessionMainSupervisorRuntimeContract } from './session-main-supervisor-runtime.interface.js';
 
 export interface LocalOrchestrationServiceShellDependencies {
   checkpointer?: LangGraphCheckpointer;
   memoryConfig?: MemoryRuntimeConfig;
   memoryProviderRegistry?: MemoryProviderRegistry;
   memoryProviderRuntimeMode?: MemoryProviderRuntimeMode;
+  sessionMainSupervisorRuntime?: SessionMainSupervisorRuntimeContract;
   nowProvider?: () => Date;
   eventStreamTokenProvider?: (executionId: string) => string;
   eventIdProvider?: (executionId: string, sequence: number) => string;
