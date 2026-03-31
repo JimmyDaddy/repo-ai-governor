@@ -212,9 +212,12 @@ describe('ReactCliRunner', () => {
     expect(output).toContain('Delivery plan');
     expect(output).toContain('- inspect current stream');
     expect(output).toContain('Suggested next step: /connect');
-    expect(output).toContain('- Preview: repo-ai-governor connect --output pretty');
-    expect(output).toContain('- Intent: connect.adapters.bootstrap');
-    expect(output).toContain('- slash_command: slash:/connect -> /connect');
+    expect(output).toContain('[Preview]');
+    expect(output).toContain('repo-ai-governor connect --output pretty');
+    expect(output).toContain('[Intent]');
+    expect(output).toContain('connect.adapters.bootstrap');
+    expect(output).toContain('Related');
+    expect(output).toContain('- slash:/connect -> /connect');
   });
 
   it('mounts the session-shell tree through Ink for live stderr rendering', () => {

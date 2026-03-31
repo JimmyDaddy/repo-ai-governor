@@ -3,16 +3,16 @@
 ## Primary Stream
 
 - Status: active
-- Project: `project-033-session-main-agent-runtime-productization`
-- Sprint: `sprint-004-rollout-and-parity-closeout`
-- Docs root: `.repo-ai-governor/context/dev/project-033-session-main-agent-runtime-productization`
-- Task records: `.repo-ai-governor/context/dev/project-033-session-main-agent-runtime-productization/sprint-004-rollout-and-parity-closeout/tasks/`
-- Review records: `.repo-ai-governor/context/dev/project-033-session-main-agent-runtime-productization/sprint-004-rollout-and-parity-closeout/review/`
-- Note: `project-033` 已完成 path-A productization closeout；当前仍暂保留 `sprint-004` 作为 active closeout surface，承接 review / audit 回链，直至下一条主执行流显式激活。
+- Project: `project-034-session-shell-doctor-progress-first-frame-followup`
+- Sprint: `sprint-002-session-shell-command-recap-presentation-polish`
+- Docs root: `.repo-ai-governor/context/dev/project-034-session-shell-doctor-progress-first-frame-followup`
+- Task records: `.repo-ai-governor/context/dev/project-034-session-shell-doctor-progress-first-frame-followup/sprint-002-session-shell-command-recap-presentation-polish/tasks/`
+- Review records: `.repo-ai-governor/context/dev/project-034-session-shell-doctor-progress-first-frame-followup/sprint-002-session-shell-command-recap-presentation-polish/review/`
+- Note: `project-034` 当前承接 Governor transcript 可读性 polish；`sprint-002` 代码与验证已完成，当前 stream 暂保留为 active closeout surface，直至下一条主执行流显式激活。
 
 ## Active Streams
 
-- `primary`: project=`project-033-session-main-agent-runtime-productization`, sprint=`sprint-004-rollout-and-parity-closeout`, docs=`.repo-ai-governor/context/dev/project-033-session-main-agent-runtime-productization`, plan=`.repo-ai-governor/context/dev/project-033-session-main-agent-runtime-productization/sprint-004-rollout-and-parity-closeout/plan.md`, tasks=`.repo-ai-governor/context/dev/project-033-session-main-agent-runtime-productization/sprint-004-rollout-and-parity-closeout/tasks/`, checklist=`.repo-ai-governor/context/dev/project-033-session-main-agent-runtime-productization/sprint-004-rollout-and-parity-closeout/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-033-session-main-agent-runtime-productization/sprint-004-rollout-and-parity-closeout/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-033-session-main-agent-runtime-productization/sprint-004-rollout-and-parity-closeout/review/`, status=`active`, note=`project-033 is completed; sprint-004 remains mounted as the temporary active closeout surface for review, DA, and completion-audit traceability`
+- `primary`: project=`project-034-session-shell-doctor-progress-first-frame-followup`, sprint=`sprint-002-session-shell-command-recap-presentation-polish`, docs=`.repo-ai-governor/context/dev/project-034-session-shell-doctor-progress-first-frame-followup`, plan=`.repo-ai-governor/context/dev/project-034-session-shell-doctor-progress-first-frame-followup/sprint-002-session-shell-command-recap-presentation-polish/plan.md`, tasks=`.repo-ai-governor/context/dev/project-034-session-shell-doctor-progress-first-frame-followup/sprint-002-session-shell-command-recap-presentation-polish/tasks/`, checklist=`.repo-ai-governor/context/dev/project-034-session-shell-doctor-progress-first-frame-followup/sprint-002-session-shell-command-recap-presentation-polish/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-034-session-shell-doctor-progress-first-frame-followup/sprint-002-session-shell-command-recap-presentation-polish/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-034-session-shell-doctor-progress-first-frame-followup/sprint-002-session-shell-command-recap-presentation-polish/review/`, status=`active`, note=`sprint truth is completed; stream remains mounted as the active closeout surface for the transcript readability polish follow-up`
 
 ## Planned Follow-Up Streams
 

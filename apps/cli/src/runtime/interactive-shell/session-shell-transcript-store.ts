@@ -113,6 +113,7 @@ export class CliSessionShellTranscriptStore {
       if (lines.length === 0) {
         return null;
       }
+      const requestedRenderKind = this.readTranscriptRenderKind(event.payload.metadata);
 
       return {
         id: `${event.sessionId}:${String(event.sequence)}`,
@@ -120,7 +121,8 @@ export class CliSessionShellTranscriptStore {
         label: this.resolveTranscriptLabel(role, translate),
         lines,
         renderKind:
-          role === OrchestrationSessionTranscriptRole.SYSTEM ? 'system_notice' : 'plain_text',
+          requestedRenderKind ??
+          (role === OrchestrationSessionTranscriptRole.SYSTEM ? 'system_notice' : 'plain_text'),
       };
     }
 
@@ -362,6 +364,26 @@ export class CliSessionShellTranscriptStore {
     return candidate.filter(
       (value): value is string => typeof value === 'string' && value.length > 0,
     );
+  }
+
+  private readTranscriptRenderKind(
+    candidate: unknown,
+  ): CliSessionShellTranscriptItem['renderKind'] | undefined {
+    if (!candidate || typeof candidate !== 'object') {
+      return undefined;
+    }
+
+    const renderKind = (candidate as Record<string, unknown>).renderKind;
+    if (
+      renderKind === 'plain_text' ||
+      renderKind === 'markdown' ||
+      renderKind === 'system_notice' ||
+      renderKind === 'command_recap'
+    ) {
+      return renderKind;
+    }
+
+    return undefined;
   }
 
   private readBacklinks(candidate: unknown): CliSessionShellTranscriptBacklink[] {

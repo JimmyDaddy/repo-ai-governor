@@ -96,30 +96,78 @@ function ReactCliCommandRecapTranscriptItem({
   item,
   shellPalette,
 }: ReactCliTranscriptItemRendererProps): React.JSX.Element {
+  const recap = parseCommandRecap(item.lines);
+  const backlinks = item.backlinks ?? [];
+  const hasRelatedLinks = backlinks.length > 0;
+
   return (
-    <>
-      <Text bold color={shellPalette.titleColor}>
-        {item.label}
-      </Text>
-      {item.lines.map((line, index) => (
-        <Text
-          key={`${item.id}:recap:${index}`}
-          color={resolveRecapLineColor(line, shellPalette)}
-          bold={index === 0}
-        >
-          {index === 0 ? line : `- ${line}`}
-        </Text>
-      ))}
-      {item.backlinks && item.backlinks.length > 0 ? (
-        <Box flexDirection='column' marginTop={1}>
-          {item.backlinks.map((backlink, index) => (
-            <Text key={`${item.id}:backlink:${index}`} color={shellPalette.helpColor}>
-              {`- ${backlink.kind}: ${backlink.label} -> ${backlink.target}`}
-            </Text>
-          ))}
+    <Box flexDirection='column' marginTop={1}>
+      <Box
+        flexDirection='column'
+        borderStyle='round'
+        borderColor={shellPalette.promptTitleColor}
+        paddingX={1}
+      >
+        <Box flexDirection='column'>
+          <Text bold color={shellPalette.titleColor}>
+            {item.label}
+          </Text>
+          <Text color={shellPalette.helpColor} dimColor>
+            command recap
+          </Text>
         </Box>
-      ) : null}
-    </>
+        <Box marginTop={1}>
+          <Text color={shellPalette.borderColor} dimColor>
+            {'─'.repeat(18)}
+          </Text>
+        </Box>
+        <Text bold color={shellPalette.sectionTitleColor}>
+          {recap.headline}
+        </Text>
+        {recap.sections.map((section, index) => (
+          <Box
+            key={`${item.id}:section:${index}`}
+            flexDirection='column'
+            marginTop={1}
+            paddingLeft={1}
+          >
+            {'label' in section ? (
+              <Text bold color={resolveRecapSectionLabelColor(section.kind, shellPalette)}>
+                {formatRecapSectionLabel(section.label)}
+              </Text>
+            ) : null}
+            {'values' in section ? (
+              section.values.map((value, valueIndex) => (
+                <Text
+                  key={`${item.id}:section:${index}:value:${valueIndex}`}
+                  color={resolveRecapSectionValueColor(section.kind, shellPalette)}
+                >
+                  {section.kind === 'artifact' || section.values.length > 1
+                    ? `- ${formatRecapValue(value)}`
+                    : formatRecapValue(value)}
+                </Text>
+              ))
+            ) : (
+              <Text color={resolveRecapLineColor(section.line, shellPalette)}>
+                {`- ${formatRecapValue(section.line)}`}
+              </Text>
+            )}
+          </Box>
+        ))}
+        {hasRelatedLinks ? (
+          <Box flexDirection='column' marginTop={1} paddingLeft={1}>
+            <Text bold color={shellPalette.helpColor}>
+              Related
+            </Text>
+            {backlinks.map((backlink, index) => (
+              <Text key={`${item.id}:backlink:${index}`} color={shellPalette.helpColor}>
+                {`- ${backlink.label} -> ${backlink.target}`}
+              </Text>
+            ))}
+          </Box>
+        ) : null}
+      </Box>
+    </Box>
   );
 }
 
@@ -284,6 +332,161 @@ function resolveRecapLineColor(line: string, shellPalette: ReactCliShellPalette)
   }
   if (line.startsWith('Intent:') || line.startsWith('Preview:')) {
     return shellPalette.footerColor;
+  }
+  return shellPalette.sectionTitleColor;
+}
+
+type CommandRecapSection =
+  | {
+      kind: 'field' | 'status' | 'artifact';
+      label: string;
+      values: string[];
+    }
+  | {
+      kind: 'note';
+      line: string;
+    };
+
+function parseCommandRecap(lines: string[]): {
+  headline: string;
+  sections: CommandRecapSection[];
+} {
+  const [headline = '', ...detailLines] = lines;
+  const sections: CommandRecapSection[] = [];
+
+  for (const line of detailLines) {
+    if (appendArtifactContinuationLine(sections, line)) {
+      continue;
+    }
+
+    const parsedField = parseCommandRecapField(line);
+    if (!parsedField) {
+      sections.push({
+        kind: 'note',
+        line,
+      });
+      continue;
+    }
+
+    if (parsedField.kind === 'artifact') {
+      sections.push({
+        kind: 'artifact',
+        label: parsedField.label,
+        values: [parsedField.value],
+      });
+      continue;
+    }
+
+    const groupedValues = parsedField.value
+      .split(/\s+·\s+/u)
+      .map((value) => value.trim())
+      .filter((value) => value.length > 0);
+    sections.push({
+      kind: groupedValues.length > 1 ? 'status' : 'field',
+      label: parsedField.label,
+      values: groupedValues.length > 0 ? groupedValues : [parsedField.value],
+    });
+  }
+
+  return {
+    headline,
+    sections,
+  };
+}
+
+function parseCommandRecapField(line: string): {
+  kind: 'field' | 'artifact';
+  label: string;
+  value: string;
+} | null {
+  const match = /^([^:=：]+?)\s*([=:：])\s*(.+)$/u.exec(line);
+  if (!match) {
+    return null;
+  }
+
+  const label = match[1].trim();
+  const value = match[3].trim();
+  if (!label || !value) {
+    return null;
+  }
+
+  return {
+    kind: label.toLowerCase() === 'artifact' ? 'artifact' : 'field',
+    label,
+    value,
+  };
+}
+
+function formatRecapSectionLabel(label: string): string {
+  return `[${label.trim()}]`;
+}
+
+function formatRecapValue(value: string): string {
+  const normalizedValue = value.trim();
+  const keyValueMatch = /^([a-z0-9_]+)=(.+)$/iu.exec(normalizedValue);
+  if (!keyValueMatch) {
+    return normalizedValue;
+  }
+
+  return `${humanizeRecapToken(keyValueMatch[1])}: ${keyValueMatch[2].trim()}`;
+}
+
+function humanizeRecapToken(token: string): string {
+  const words = token
+    .trim()
+    .split(/[_-]+/u)
+    .filter((word) => word.length > 0);
+  if (words.length === 0) {
+    return token;
+  }
+
+  return `${words[0][0]?.toUpperCase() ?? ''}${words[0].slice(1)}${words
+    .slice(1)
+    .map((word) => ` ${word}`)
+    .join('')}`;
+}
+
+function appendArtifactContinuationLine(sections: CommandRecapSection[], line: string): boolean {
+  const lastSection = sections.at(-1);
+  if (!lastSection || !('values' in lastSection) || lastSection.kind !== 'artifact') {
+    return false;
+  }
+
+  const trimmedLine = line.trim();
+  if (
+    !trimmedLine.startsWith('+') &&
+    !/^其余\s+\d+/u.test(trimmedLine) &&
+    !/more related artifacts/i.test(trimmedLine)
+  ) {
+    return false;
+  }
+
+  lastSection.values.push(trimmedLine);
+  return true;
+}
+
+function resolveRecapSectionLabelColor(
+  kind: CommandRecapSection['kind'],
+  shellPalette: ReactCliShellPalette,
+): string {
+  if (kind === 'artifact') {
+    return shellPalette.promptTitleColor;
+  }
+  if (kind === 'status') {
+    return shellPalette.subtitleColor;
+  }
+  return shellPalette.helpColor;
+}
+
+function resolveRecapSectionValueColor(
+  kind: Extract<CommandRecapSection, { values: string[] }>['kind'],
+  shellPalette: ReactCliShellPalette,
+): string {
+  if (kind === 'artifact') {
+    return shellPalette.promptTitleColor;
+  }
+  if (kind === 'status') {
+    return shellPalette.sectionTitleColor;
   }
   return shellPalette.sectionTitleColor;
 }

@@ -1015,9 +1015,7 @@ export class CliSessionShellRunner {
     });
     progressDock.seedRunningState();
     progressDock.startTicking();
-    if (!viewModel.commandProgressPanel) {
-      this.renderActiveSurface(viewModel);
-    }
+    this.renderActiveSurface(viewModel);
 
     const executionResult = await options
       .commandExecutor(pendingCommand.argv, progressDock.createExecutionOptions())
@@ -1049,12 +1047,22 @@ export class CliSessionShellRunner {
       this.buildCommandExecutionLines(executionResult, options),
       executionResult.artifactPaths.length > 0
         ? {
+            commandLine: executionResult.commandLine,
             artifactPaths: executionResult.artifactPaths,
-            commandLine: executionResult.commandLine,
+            ...(executionResult.status === 'success'
+              ? {
+                  renderKind: 'command_recap',
+                }
+              : {}),
           }
-        : {
-            commandLine: executionResult.commandLine,
-          },
+        : executionResult.status === 'success'
+          ? {
+              commandLine: executionResult.commandLine,
+              renderKind: 'command_recap',
+            }
+          : {
+              commandLine: executionResult.commandLine,
+            },
     );
 
     runtimeState.pendingCommand = null;

@@ -227,4 +227,42 @@ describe('CliSessionShellTranscriptStore', () => {
     expect(items[0]?.markdownSource).toBe('# Plan\n- inspect repo\n- summarize risks');
     expect(items[0]?.lines).toEqual(['# Plan\n- inspect repo\n- summarize risks']);
   });
+
+  it('uses metadata renderKind for appended assistant recap messages', () => {
+    const store = new CliSessionShellTranscriptStore();
+    const items = store.applyEvents(
+      'session-005',
+      [
+        {
+          eventId: 'event-1',
+          sequence: 1,
+          streamCursor: 'cursor-1',
+          sessionId: 'session-005',
+          type: OrchestrationSessionEventType.SESSION_MESSAGE_APPENDED,
+          createdAt: '2026-03-31T12:20:00Z',
+          payload: {
+            role: OrchestrationSessionTranscriptRole.ASSISTANT,
+            routeId: 'main',
+            lines: [
+              'doctor 的 command handoff 已完成。',
+              '摘要：Doctor completed with attach_mode=read_write.',
+              '关键状态：attach_mode=read_write · adapter_probe=false',
+            ],
+            metadata: {
+              renderKind: 'command_recap',
+            },
+          },
+        },
+      ],
+      (key) => (key === 'cli.sessionShell.transcript.assistantLabel' ? 'Governor' : key),
+    );
+
+    expect(items).toHaveLength(1);
+    expect(items[0]?.renderKind).toBe('command_recap');
+    expect(items[0]?.lines).toEqual([
+      'doctor 的 command handoff 已完成。',
+      '摘要：Doctor completed with attach_mode=read_write.',
+      '关键状态：attach_mode=read_write · adapter_probe=false',
+    ]);
+  });
 });

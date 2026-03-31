@@ -248,6 +248,7 @@ class FakeSessionShellServiceClient {
     sessionId: string,
     role: OrchestrationSessionTranscriptRole,
     lines: string[],
+    metadata?: Record<string, unknown>,
   ): Promise<OrchestrationAppendSessionMessageResponse> {
     const session = this.requireSession(sessionId);
     const event = this.appendEvent(sessionId, {
@@ -256,6 +257,7 @@ class FakeSessionShellServiceClient {
         role,
         routeId: OrchestrationSessionRouteId.MAIN,
         lines,
+        ...(metadata ? { metadata: { ...metadata } } : {}),
       },
     });
     session.summary = this.rebuildSummary(sessionId);
@@ -576,8 +578,10 @@ describe('CliSessionShellRunner', () => {
       ),
     ).toBe(true);
     expect(
-      result.transcriptItems.some((item) =>
-        item.lines.includes('Summary: workspace migration preview'),
+      result.transcriptItems.some(
+        (item) =>
+          item.renderKind === 'command_recap' &&
+          item.lines.includes('Summary: workspace migration preview'),
       ),
     ).toBe(true);
     expect(
@@ -1110,6 +1114,66 @@ describe('CliSessionShellRunner', () => {
     );
     expect(
       result.transcriptItems.some((item) => item.lines.includes('Summary: doctor completed')),
+    ).toBe(true);
+  });
+
+  it('renders the seeded running-progress dock before a direct bridge command emits any progress events', async () => {
+    const inkRunner = new StubSessionShellInkRunner([
+      {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: '/doctor',
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_SUBMITTED,
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: '/exit',
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_SUBMITTED,
+      },
+    ]);
+    const commandExecutor = vi.fn<
+      (argv: string[]) => Promise<CliSessionShellCommandExecutionResult>
+    >(async (argv) => ({
+      artifactPaths: [],
+      commandLine: argv.join(' '),
+      message: 'doctor completed without nested progress',
+      status: 'success',
+      summaryLines: ['Summary: doctor completed without nested progress'],
+    }));
+    const runner = new CliSessionShellRunner(
+      undefined,
+      new RecordingSessionShellRenderer() as never,
+      () => new StubSessionShellPromptAdapter([]),
+      () => new CliSessionShellInkController(),
+      () => inkRunner as never,
+      () => true,
+      () => new Date('2026-03-30T12:00:00Z'),
+    );
+
+    const result = await runner.run(
+      DEFAULT_RUN_OPTIONS({
+        commandExecutor,
+      }),
+    );
+
+    expect(result.exitReason).toBe(CliSessionShellExitReason.SLASH_EXIT);
+    expect(
+      inkRunner.snapshots.some(
+        (frame) =>
+          frame.commandProgressPanel?.title === 'Running progress' &&
+          frame.commandProgressPanel.runState === 'running' &&
+          frame.commandProgressPanel.statusLine === 'doctor is running.' &&
+          frame.commandProgressPanel.elapsedLabel === 'Elapsed 0s' &&
+          frame.commandProgressPanel.rows.length === 0,
+      ),
+    ).toBe(true);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes('Summary: doctor completed without nested progress'),
+      ),
     ).toBe(true);
   });
 
