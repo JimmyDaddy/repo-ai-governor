@@ -53,7 +53,7 @@
 | TK-465 | sprint-002 | bootstrap service-owned session.main supervisor and direct answer path | runtime/session-main | TK-464 | completed |
 | TK-466 | sprint-002 | productize role-subagent collaboration and command handoff governance baseline | runtime/session-main | TK-465 | completed |
 | TK-467 | sprint-003 | stabilize serial role collaboration and interaction-mode routing | runtime/session-main | TK-466 | completed |
-| TK-468 | sprint-003 | expand parallel role fan-out and collaboration recap presentation semantics | runtime/session-main | TK-467 | planned |
+| TK-468 | sprint-003 | expand parallel role fan-out and collaboration recap presentation semantics | runtime/session-main | TK-467 | active |
 | TK-469 | sprint-004 | map supervisor streaming events into shared session deltas and running presentation | runtime/session-events | TK-468 | planned |
 | TK-470 | sprint-004 | align supervisor runtime across embedded sidecar and desktop consumer hosts | runtime/host-parity | TK-469 | planned |
 
@@ -126,3 +126,4 @@
 8. 2026-03-31：完成 `TK-466`；`session.main` bootstrap 现已具备 `@planner` single-role delegate 试点、`AgentDescriptor -> SessionMainSubagentDescriptor` seam、`subagentCount` payload，以及 role mention 不绕过 connect-like handoff preview 的治理基线。
 9. 2026-03-31：`sprint-002` 已完成并推送到 `origin/main`；执行面切换到 `sprint-003-role-collaboration-and-handoff-productization`，由 `TK-467` 接手 serial collaboration 与 interaction-mode routing 的 Phase B 前线。
 10. 2026-03-31：完成 `TK-467`；`session.main` 当前已具备一条真实 `@planner -> @reviewer` 串行协作路径、`routerDecisionReason` 回灌，以及 serial collaboration 的 shared-session/resume parity 回归覆盖。
+11. 2026-03-31：`TK-468` 已切为当前执行前线；当前 sprint 继续承接受控 parallel role fan-out 与 collaboration recap/handoff semantics 分层。

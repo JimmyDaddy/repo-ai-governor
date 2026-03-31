@@ -33,6 +33,7 @@ export interface SessionMainSupervisorTurnOutcome {
   assistantDelta: string;
   assistantMessage?: string;
   routerDecisionReason?: string;
+  synthesisMode?: string;
   suggestedSlashCommand?: string;
   executionIntent?: string;
   followUpQuestion?: string;

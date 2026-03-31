@@ -151,9 +151,33 @@ export class CliSessionShellTranscriptStore {
       const handoffCommandPreview = this.readOptionalString(event.payload.handoffCommandPreview);
       const latestUserMessage = this.readOptionalString(event.payload.latestUserMessage);
       const responseMode = this.readOptionalString(event.payload.responseMode);
+      const interactionMode = this.readOptionalString(event.payload.interactionMode);
       const selectedSurface = this.readOptionalString(event.payload.selectedSurface);
       const selectedBy = this.readOptionalString(event.payload.selectedBy);
+      const synthesisMode = this.readOptionalString(event.payload.synthesisMode);
+      const invokedRoleIds = this.readStringArray(event.payload.invokedRoleIds);
+      const subagentCount = this.readOptionalNumber(event.payload.subagentCount);
       const handoffBacklinks = this.readBacklinks(event.payload.handoffBacklinks);
+      if (assistantMessage && responseMode === 'role_collaboration') {
+        return {
+          id: `${event.sessionId}:${String(event.sequence)}`,
+          role: CliSessionTranscriptRole.ASSISTANT,
+          label: translate('cli.sessionShell.transcript.assistantLabel'),
+          lines: this.buildCollaborationRecapLines({
+            interactionMode,
+            invokedRoleIds,
+            subagentCount,
+            synthesisMode,
+            executionIntent,
+            selectedSurface,
+            selectedBy,
+            translate,
+          }),
+          renderKind: 'collaboration_recap',
+          markdownSource: assistantMessage,
+        };
+      }
+
       if (assistantMessage) {
         return {
           id: `${event.sessionId}:${String(event.sequence)}`,
@@ -311,6 +335,74 @@ export class CliSessionShellTranscriptStore {
     return null;
   }
 
+  private buildCollaborationRecapLines(options: {
+    interactionMode?: string;
+    invokedRoleIds: string[];
+    subagentCount?: number;
+    synthesisMode?: string;
+    executionIntent?: string;
+    selectedSurface?: string;
+    selectedBy?: string;
+    translate: (key: string, interpolation?: Record<string, string>) => string;
+  }): string[] {
+    const modeLabel = this.resolveCollaborationModeLabel(
+      options.interactionMode,
+      options.translate,
+    );
+    const lines = [
+      options.translate('cli.sessionShell.responses.mainTurnCollaborationAccepted', {
+        mode: modeLabel,
+      }),
+    ];
+    if (options.invokedRoleIds.length > 0) {
+      lines.push(
+        options.translate('cli.sessionShell.responses.mainTurnCollaborationRoles', {
+          roles: options.invokedRoleIds.join(' · '),
+          count: String(options.subagentCount ?? options.invokedRoleIds.length),
+        }),
+      );
+    }
+    if (options.synthesisMode) {
+      lines.push(
+        options.translate('cli.sessionShell.responses.mainTurnCollaborationSynthesis', {
+          synthesisMode: options.synthesisMode,
+        }),
+      );
+    }
+    if (options.executionIntent) {
+      lines.push(
+        options.translate('cli.sessionShell.responses.mainTurnExecutionIntent', {
+          executionIntent: options.executionIntent,
+        }),
+      );
+    }
+    if (options.selectedSurface && options.selectedBy) {
+      lines.push(
+        options.translate('cli.sessionShell.responses.mainTurnRoutingSelection', {
+          selectedSurface: options.selectedSurface,
+          selectedBy: options.selectedBy,
+        }),
+      );
+    }
+    return lines;
+  }
+
+  private resolveCollaborationModeLabel(
+    interactionMode: string | undefined,
+    translate: (key: string, interpolation?: Record<string, string>) => string,
+  ): string {
+    switch (interactionMode) {
+      case 'single_role_delegate':
+        return translate('cli.sessionShell.responses.mainTurnCollaborationModeSingleRole');
+      case 'serial_role_collaboration':
+        return translate('cli.sessionShell.responses.mainTurnCollaborationModeSerial');
+      case 'parallel_role_fanout':
+        return translate('cli.sessionShell.responses.mainTurnCollaborationModeParallel');
+      default:
+        return interactionMode ?? 'role collaboration';
+    }
+  }
+
   private mapTranscriptRole(role: OrchestrationSessionTranscriptRole): CliSessionTranscriptRole {
     if (role === OrchestrationSessionTranscriptRole.USER) {
       return CliSessionTranscriptRole.USER;
@@ -378,7 +470,8 @@ export class CliSessionShellTranscriptStore {
       renderKind === 'plain_text' ||
       renderKind === 'markdown' ||
       renderKind === 'system_notice' ||
-      renderKind === 'command_recap'
+      renderKind === 'command_recap' ||
+      renderKind === 'collaboration_recap'
     ) {
       return renderKind;
     }

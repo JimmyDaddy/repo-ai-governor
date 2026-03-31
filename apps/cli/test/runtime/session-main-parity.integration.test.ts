@@ -80,6 +80,12 @@ const SESSION_SHELL_TRANSLATIONS: Record<string, string> = {
   'cli.sessionShell.commands.exit.summary': 'Exit the foreground shell.',
   'cli.sessionShell.responses.mainTurnSuggestedSlash': 'Suggested next step: {{command}}',
   'cli.sessionShell.responses.mainTurnHandoffPreview': 'Preview: {{preview}}',
+  'cli.sessionShell.responses.mainTurnCollaborationAccepted': '{{mode}} completed.',
+  'cli.sessionShell.responses.mainTurnCollaborationRoles': 'Roles: {{roles}} (count={{count}})',
+  'cli.sessionShell.responses.mainTurnCollaborationSynthesis': 'Synthesis: {{synthesisMode}}',
+  'cli.sessionShell.responses.mainTurnCollaborationModeSingleRole': 'Single-role delegate',
+  'cli.sessionShell.responses.mainTurnCollaborationModeSerial': 'Serial role collaboration',
+  'cli.sessionShell.responses.mainTurnCollaborationModeParallel': 'Parallel role fan-out',
   'cli.sessionShell.responses.mainTurnExecutionIntent': 'Intent: {{executionIntent}}',
   'cli.sessionShell.responses.mainTurnRoutingSelection':
     'Routing: surface={{selectedSurface}} selected_by={{selectedBy}}',
@@ -290,7 +296,7 @@ describe('session.main parity integration', () => {
     }
   });
 
-  it('replays the same role-collaboration markdown transcript when the CLI resumes the latest session shell', async () => {
+  it('replays the same role-collaboration recap transcript when the CLI resumes the latest session shell', async () => {
     const temporaryRoot = await mkdtemp(resolve(tmpdir(), 'session-main-parity-role-'));
     const workspaceRoot = resolve(temporaryRoot, '.repo-ai-governor');
     await mkdir(workspaceRoot, { recursive: true });
@@ -320,14 +326,20 @@ describe('session.main parity integration', () => {
       const firstResult = await firstRunner.run(createRunOptions(sessionClient));
       const firstSessionId = firstRenderer.frames[0]?.sessionId;
       const firstAnswer = firstResult.transcriptItems.find(
-        (item) => item.renderKind === 'markdown',
+        (item) => item.renderKind === 'collaboration_recap',
       );
 
       expect(firstResult.exitReason).toBe(CliSessionShellExitReason.SLASH_EXIT);
       expect(firstAnswer).toEqual(
         expect.objectContaining({
+          renderKind: 'collaboration_recap',
           markdownSource: '## Planner perspective\n\n- checkpoint 1\n- checkpoint 2',
-          lines: ['## Planner perspective\n\n- checkpoint 1\n- checkpoint 2'],
+          lines: [
+            'Single-role delegate completed.',
+            'Roles: planner (count=1)',
+            'Intent: session.role_delegate.planner',
+            'Routing: surface=ollama selected_by=session.main.role_delegate.safe_fallback',
+          ],
         }),
       );
 
@@ -339,7 +351,7 @@ describe('session.main parity integration', () => {
         }),
       );
       const resumedAnswer = resumedResult.transcriptItems.find(
-        (item) => item.renderKind === 'markdown',
+        (item) => item.renderKind === 'collaboration_recap',
       );
 
       expect(resumedRenderer.frames[0]?.sessionId).toBe(firstSessionId);
@@ -350,7 +362,7 @@ describe('session.main parity integration', () => {
     }
   });
 
-  it('replays the same serial-collaboration markdown transcript when the CLI resumes the latest session shell', async () => {
+  it('replays the same serial-collaboration recap transcript when the CLI resumes the latest session shell', async () => {
     const temporaryRoot = await mkdtemp(resolve(tmpdir(), 'session-main-parity-serial-'));
     const workspaceRoot = resolve(temporaryRoot, '.repo-ai-governor');
     await mkdir(workspaceRoot, { recursive: true });
@@ -395,12 +407,13 @@ describe('session.main parity integration', () => {
       const firstResult = await firstRunner.run(createRunOptions(sessionClient));
       const firstSessionId = firstRenderer.frames[0]?.sessionId;
       const firstAnswer = firstResult.transcriptItems.find(
-        (item) => item.renderKind === 'markdown',
+        (item) => item.renderKind === 'collaboration_recap',
       );
 
       expect(firstResult.exitReason).toBe(CliSessionShellExitReason.SLASH_EXIT);
       expect(firstAnswer).toEqual(
         expect.objectContaining({
+          renderKind: 'collaboration_recap',
           markdownSource: [
             '## Planner -> Reviewer Collaboration',
             '',
@@ -412,6 +425,12 @@ describe('session.main parity integration', () => {
             '',
             '## Reviewer perspective\n\n- sequencing looks safe',
           ].join('\n'),
+          lines: [
+            'Serial role collaboration completed.',
+            'Roles: planner · reviewer (count=2)',
+            'Intent: session.role_delegate.planner.reviewer',
+            'Routing: surface=planner:ollama -> reviewer:ollama selected_by=planner:session.main.role_delegate.safe_fallback -> reviewer:session.main.role_delegate.safe_fallback',
+          ],
         }),
       );
 
@@ -423,7 +442,100 @@ describe('session.main parity integration', () => {
         }),
       );
       const resumedAnswer = resumedResult.transcriptItems.find(
-        (item) => item.renderKind === 'markdown',
+        (item) => item.renderKind === 'collaboration_recap',
+      );
+
+      expect(resumedRenderer.frames[0]?.sessionId).toBe(firstSessionId);
+      expect(resumedAnswer).toEqual(firstAnswer);
+    } finally {
+      await runtime.dispose();
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('replays the same parallel-collaboration recap transcript when the CLI resumes the latest session shell', async () => {
+    const temporaryRoot = await mkdtemp(resolve(tmpdir(), 'session-main-parity-parallel-'));
+    const workspaceRoot = resolve(temporaryRoot, '.repo-ai-governor');
+    await mkdir(workspaceRoot, { recursive: true });
+    const runtime = createRuntime(workspaceRoot, {
+      sessionMainSupervisorRuntime: {
+        resolveMentionedRoleId: () => 'planner',
+        resolveTurn: async () => ({
+          responseMode: 'role_collaboration',
+          interactionMode: 'parallel_role_fanout',
+          assistantDelta: '## Planner + Reviewer Parallel Analysis',
+          assistantMessage: [
+            '## Planner + Reviewer Parallel Analysis',
+            '',
+            '### Planner',
+            '',
+            '## Planner perspective\n\n- planning risk',
+            '',
+            '### Reviewer',
+            '',
+            '## Reviewer perspective\n\n- review risk',
+          ].join('\n'),
+          routerDecisionReason: 'session.main.router.parallel_role_fanout.explicit_roles',
+          synthesisMode: 'parallel_analysis',
+          executionIntent: 'session.role_delegate.parallel.planner.reviewer',
+          requiresConfirmation: false,
+          selectedSurface: 'planner:ollama | reviewer:ollama',
+          selectedBy:
+            'planner:session.main.role_delegate.safe_fallback | reviewer:session.main.role_delegate.safe_fallback',
+          sessionRoutingPreferenceApplied: false,
+          invokedRoleIds: ['planner', 'reviewer'],
+          subagentCount: 2,
+        }),
+      },
+    });
+    const sessionClient = new CliSessionShellServiceClient(runtime);
+
+    try {
+      const firstRenderer = new RecordingSessionShellRenderer();
+      const firstRunner = createRunner(firstRenderer, [
+        '@planner @reviewer parallel assess this rollout risk',
+        '/exit',
+      ]);
+      const firstResult = await firstRunner.run(createRunOptions(sessionClient));
+      const firstSessionId = firstRenderer.frames[0]?.sessionId;
+      const firstAnswer = firstResult.transcriptItems.find(
+        (item) => item.renderKind === 'collaboration_recap',
+      );
+
+      expect(firstResult.exitReason).toBe(CliSessionShellExitReason.SLASH_EXIT);
+      expect(firstAnswer).toEqual(
+        expect.objectContaining({
+          renderKind: 'collaboration_recap',
+          markdownSource: [
+            '## Planner + Reviewer Parallel Analysis',
+            '',
+            '### Planner',
+            '',
+            '## Planner perspective\n\n- planning risk',
+            '',
+            '### Reviewer',
+            '',
+            '## Reviewer perspective\n\n- review risk',
+          ].join('\n'),
+          lines: [
+            'Parallel role fan-out completed.',
+            'Roles: planner · reviewer (count=2)',
+            'Synthesis: parallel_analysis',
+            'Intent: session.role_delegate.parallel.planner.reviewer',
+            'Routing: surface=planner:ollama | reviewer:ollama selected_by=planner:session.main.role_delegate.safe_fallback | reviewer:session.main.role_delegate.safe_fallback',
+          ],
+        }),
+      );
+
+      const resumedRenderer = new RecordingSessionShellRenderer();
+      const resumedRunner = createRunner(resumedRenderer, ['/exit']);
+      const resumedResult = await resumedRunner.run(
+        createRunOptions(sessionClient, {
+          resumeOnStartup: true,
+        }),
+      );
+      const resumedAnswer = resumedResult.transcriptItems.find(
+        (item) => item.renderKind === 'collaboration_recap',
       );
 
       expect(resumedRenderer.frames[0]?.sessionId).toBe(firstSessionId);

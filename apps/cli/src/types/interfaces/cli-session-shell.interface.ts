@@ -31,7 +31,8 @@ export type CliSessionShellTranscriptRenderKind =
   | 'plain_text'
   | 'markdown'
   | 'system_notice'
-  | 'command_recap';
+  | 'command_recap'
+  | 'collaboration_recap';
 
 /**
  * Defines one structured backlink rendered from canonical session metadata.

@@ -149,7 +149,7 @@ describe('ReactCliRunner', () => {
     expect(output).toContain('/confirm · /cancel · Esc');
   });
 
-  it('renders markdown answers and structured command recap transcript items', () => {
+  it('renders markdown answers, structured command recap, and collaboration recap transcript items', () => {
     const runner = new ReactCliRunner();
     const output = runner.renderSessionShellFrame({
       sessionId: 'session-shell-markdown-456',
@@ -181,6 +181,20 @@ describe('ReactCliRunner', () => {
               target: '/connect',
             },
           ],
+        },
+        {
+          id: 'assistant:3',
+          role: CliSessionTranscriptRole.ASSISTANT,
+          label: 'Governor',
+          lines: [
+            'Parallel role fan-out completed.',
+            'Roles: planner · reviewer (count=2)',
+            'Synthesis: parallel_analysis',
+            'Intent: session.role_delegate.parallel.planner.reviewer',
+          ],
+          renderKind: 'collaboration_recap',
+          markdownSource:
+            '## Planner + Reviewer Parallel Analysis\n\n### Planner\n\n- plan risk\n\n### Reviewer\n\n- review risk',
         },
       ],
       transcriptTitle: 'History',
@@ -216,6 +230,13 @@ describe('ReactCliRunner', () => {
     expect(output).toContain('repo-ai-governor connect --output pretty');
     expect(output).toContain('[Intent]');
     expect(output).toContain('connect.adapters.bootstrap');
+    expect(output).toContain('role collaboration');
+    expect(output).toContain('[Roles]');
+    expect(output).toContain('- planner');
+    expect(output).toContain('- reviewer (count=2)');
+    expect(output).toContain('[Synthesis]');
+    expect(output).toContain('parallel_analysis');
+    expect(output).toContain('Planner + Reviewer Parallel Analysis');
     expect(output).toContain('Related');
     expect(output).toContain('- slash:/connect -> /connect');
   });

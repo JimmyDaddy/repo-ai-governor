@@ -841,6 +841,74 @@ describe('core-orchestration-service local shell', () => {
     }
   });
 
+  it('writes parallel collaboration metadata for multi-role session.main turns', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot: temporaryRoot,
+      sessionMainSupervisorRuntime: {
+        resolveMentionedRoleId: () => 'planner',
+        resolveTurn: async () => ({
+          responseMode: 'role_collaboration',
+          interactionMode: 'parallel_role_fanout',
+          assistantDelta: '## Planner + Reviewer Parallel Analysis',
+          assistantMessage: [
+            '## Planner + Reviewer Parallel Analysis',
+            '',
+            '### Planner',
+            '',
+            '## Planner perspective\n\n- planning risk',
+            '',
+            '### Reviewer',
+            '',
+            '## Reviewer perspective\n\n- review risk',
+          ].join('\n'),
+          routerDecisionReason: 'session.main.router.parallel_role_fanout.explicit_roles',
+          synthesisMode: 'parallel_analysis',
+          executionIntent: 'session.role_delegate.parallel.planner.reviewer',
+          requiresConfirmation: false,
+          selectedSurface: 'planner:ollama | reviewer:ollama',
+          selectedBy:
+            'planner:session.main.role_delegate.safe_fallback | reviewer:session.main.role_delegate.safe_fallback',
+          sessionRoutingPreferenceApplied: false,
+          invokedRoleIds: ['planner', 'reviewer'],
+          subagentCount: 2,
+        }),
+      },
+    });
+
+    try {
+      const started = await orchestrationService.startSession({
+        routeId: OrchestrationSessionRouteId.MAIN,
+      });
+      await orchestrationService.sendSessionTurn({
+        sessionId: started.session.sessionId,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        userMessage: '@planner @reviewer parallel assess this rollout risk',
+      });
+      const subscription = await orchestrationService.subscribeSession({
+        sessionId: started.session.sessionId,
+      });
+      const completedEvent = subscription.events.find(
+        (event) => event.type === OrchestrationSessionEventType.TURN_COMPLETED,
+      );
+
+      expect(completedEvent?.payload.responseMode).toBe('role_collaboration');
+      expect(completedEvent?.payload.interactionMode).toBe('parallel_role_fanout');
+      expect(completedEvent?.payload.routerDecisionReason).toBe(
+        'session.main.router.parallel_role_fanout.explicit_roles',
+      );
+      expect(completedEvent?.payload.synthesisMode).toBe('parallel_analysis');
+      expect(completedEvent?.payload.executionIntent).toBe(
+        'session.role_delegate.parallel.planner.reviewer',
+      );
+      expect(completedEvent?.payload.selectedSurface).toBe('planner:ollama | reviewer:ollama');
+      expect(completedEvent?.payload.invokedRoleIds).toEqual(['planner', 'reviewer']);
+      expect(completedEvent?.payload.subagentCount).toBe(2);
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
   it('keeps command handoff governance ahead of explicit role mentions for connect-like turns', async () => {
     const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
     const resolveTurn = vi.fn(async () => ({

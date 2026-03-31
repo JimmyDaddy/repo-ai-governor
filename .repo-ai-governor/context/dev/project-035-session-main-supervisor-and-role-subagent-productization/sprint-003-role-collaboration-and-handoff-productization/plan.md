@@ -23,3 +23,4 @@
 2. 2026-03-31：冻结 `TK-467 ~ TK-468`，分别承接 serial collaboration/router stabilization 与 parallel fan-out/presenter semantics。
 3. 2026-03-31：正式激活 `sprint-003` 作为 `project-035` 当前 primary execution surface；先从 `TK-467` 开始收敛 serial collaboration path 与 interaction-mode routing。
 4. 2026-03-31：完成 `TK-467`；当前已把显式双 role mention 收敛到一条受审计的 `planner -> reviewer` 串行协作路径，并将 `routerDecisionReason` / `interactionMode` / `invokedRoleIds` / `subagentCount` 写回 shared session truth。
+5. 2026-03-31：`TK-468` 已切为当前执行前线；接下来在同一 sprint 内承接 `parallel analysis` fan-out 与 collaboration recap presenter semantics 分层。

@@ -48,6 +48,8 @@ function ReactCliTranscriptItemRenderer({
       return <ReactCliSystemNoticeTranscriptItem item={item} shellPalette={shellPalette} />;
     case 'command_recap':
       return <ReactCliCommandRecapTranscriptItem item={item} shellPalette={shellPalette} />;
+    case 'collaboration_recap':
+      return <ReactCliCollaborationRecapTranscriptItem item={item} shellPalette={shellPalette} />;
     default:
       return <ReactCliPlainTranscriptItem item={item} shellPalette={shellPalette} />;
   }
@@ -96,7 +98,7 @@ function ReactCliCommandRecapTranscriptItem({
   item,
   shellPalette,
 }: ReactCliTranscriptItemRendererProps): React.JSX.Element {
-  const recap = parseCommandRecap(item.lines);
+  const recap = parseStructuredRecap(item.lines);
   const backlinks = item.backlinks ?? [];
   const hasRelatedLinks = backlinks.length > 0;
 
@@ -171,6 +173,78 @@ function ReactCliCommandRecapTranscriptItem({
   );
 }
 
+function ReactCliCollaborationRecapTranscriptItem({
+  item,
+  shellPalette,
+}: ReactCliTranscriptItemRendererProps): React.JSX.Element {
+  const recap = parseStructuredRecap(item.lines);
+  const responseBlocks = parseMarkdownBlocks(item.markdownSource ?? item.lines.join('\n'));
+
+  return (
+    <Box flexDirection='column' marginTop={1}>
+      <Box
+        flexDirection='column'
+        borderStyle='round'
+        borderColor={shellPalette.subtitleColor}
+        paddingX={1}
+      >
+        <Box flexDirection='column'>
+          <Text bold color={shellPalette.titleColor}>
+            {item.label}
+          </Text>
+          <Text color={shellPalette.helpColor} dimColor>
+            role collaboration
+          </Text>
+        </Box>
+        <Box marginTop={1}>
+          <Text color={shellPalette.borderColor} dimColor>
+            {'═'.repeat(18)}
+          </Text>
+        </Box>
+        <Text bold color={shellPalette.sectionTitleColor}>
+          {recap.headline}
+        </Text>
+        {recap.sections.map((section, index) => (
+          <Box
+            key={`${item.id}:collaboration:section:${index}`}
+            flexDirection='column'
+            marginTop={1}
+            paddingLeft={1}
+          >
+            {'label' in section ? (
+              <Text bold color={resolveRecapSectionLabelColor(section.kind, shellPalette)}>
+                {formatRecapSectionLabel(section.label)}
+              </Text>
+            ) : null}
+            {'values' in section ? (
+              section.values.map((value, valueIndex) => (
+                <Text
+                  key={`${item.id}:collaboration:section:${index}:value:${valueIndex}`}
+                  color={resolveRecapSectionValueColor(section.kind, shellPalette)}
+                >
+                  {section.kind === 'artifact' || section.values.length > 1
+                    ? `- ${formatRecapValue(value)}`
+                    : formatRecapValue(value)}
+                </Text>
+              ))
+            ) : (
+              <Text color={resolveRecapLineColor(section.line, shellPalette)}>
+                {`- ${formatRecapValue(section.line)}`}
+              </Text>
+            )}
+          </Box>
+        ))}
+        <Box flexDirection='column' marginTop={1} paddingLeft={1}>
+          <Text bold color={shellPalette.promptTitleColor}>
+            Response
+          </Text>
+          {renderMarkdownBlocks(item.id, responseBlocks, shellPalette)}
+        </Box>
+      </Box>
+    </Box>
+  );
+}
+
 function ReactCliMarkdownTranscriptItem({
   item,
   shellPalette,
@@ -182,50 +256,93 @@ function ReactCliMarkdownTranscriptItem({
       <Text bold color={resolveTranscriptColor(item.role, shellPalette)}>
         {item.label}
       </Text>
-      {blocks.map((block, index) => {
-        if (block.type === 'heading') {
-          return (
-            <Text key={`${item.id}:heading:${index}`} bold color={shellPalette.titleColor}>
-              {block.text}
-            </Text>
-          );
-        }
-        if (block.type === 'paragraph') {
-          return (
-            <Text key={`${item.id}:paragraph:${index}`} color={shellPalette.sectionTitleColor}>
-              {block.text}
-            </Text>
-          );
-        }
-        if (block.type === 'list_item') {
-          return (
-            <Text key={`${item.id}:list:${index}`} color={shellPalette.sectionTitleColor}>
-              {`${block.marker} ${block.text}`}
-            </Text>
-          );
-        }
-        if (block.type === 'quote') {
-          return (
-            <Text key={`${item.id}:quote:${index}`} color={shellPalette.subtitleColor}>
-              {`> ${block.text}`}
-            </Text>
-          );
-        }
-        return (
-          <Box key={`${item.id}:code:${index}`} flexDirection='column'>
-            {block.lines.map((line, lineIndex) => (
-              <Text
-                key={`${item.id}:code:${index}:${lineIndex}`}
-                color={shellPalette.promptTitleColor}
-              >
-                {`| ${line}`}
-              </Text>
-            ))}
-          </Box>
-        );
-      })}
+      {renderMarkdownBlocks(item.id, blocks, shellPalette)}
     </>
   );
+}
+
+function renderMarkdownBlocks(
+  itemId: string,
+  blocks: MarkdownBlock[],
+  shellPalette: ReactCliShellPalette,
+): React.JSX.Element[] {
+  const blockKeyRegistry = new Map<string, number>();
+  return blocks.map((block) => {
+    const blockKey = claimDuplicateAwareRenderKey(
+      blockKeyRegistry,
+      createMarkdownBlockRenderKey(itemId, block),
+    );
+    if (block.type === 'heading') {
+      return (
+        <Text key={blockKey} bold color={shellPalette.titleColor}>
+          {block.text}
+        </Text>
+      );
+    }
+    if (block.type === 'paragraph') {
+      return (
+        <Text key={blockKey} color={shellPalette.sectionTitleColor}>
+          {block.text}
+        </Text>
+      );
+    }
+    if (block.type === 'list_item') {
+      return (
+        <Text key={blockKey} color={shellPalette.sectionTitleColor}>
+          {`${block.marker} ${block.text}`}
+        </Text>
+      );
+    }
+    if (block.type === 'quote') {
+      return (
+        <Text key={blockKey} color={shellPalette.subtitleColor}>
+          {`> ${block.text}`}
+        </Text>
+      );
+    }
+    return (
+      <Box key={blockKey} flexDirection='column'>
+        {renderMarkdownCodeBlockLines(blockKey, block.lines, shellPalette)}
+      </Box>
+    );
+  });
+}
+
+function renderMarkdownCodeBlockLines(
+  blockKey: string,
+  lines: string[],
+  shellPalette: ReactCliShellPalette,
+): React.JSX.Element[] {
+  const lineKeyRegistry = new Map<string, number>();
+  return lines.map((line) => {
+    const lineKey = claimDuplicateAwareRenderKey(lineKeyRegistry, `${blockKey}:line:${line}`);
+    return (
+      <Text key={lineKey} color={shellPalette.promptTitleColor}>
+        {`| ${line}`}
+      </Text>
+    );
+  });
+}
+
+function createMarkdownBlockRenderKey(itemId: string, block: MarkdownBlock): string {
+  switch (block.type) {
+    case 'heading':
+      return `${itemId}:heading:${block.text}`;
+    case 'paragraph':
+      return `${itemId}:paragraph:${block.text}`;
+    case 'list_item':
+      return `${itemId}:list:${block.marker}:${block.text}`;
+    case 'quote':
+      return `${itemId}:quote:${block.text}`;
+    case 'code_block':
+      return `${itemId}:code:${block.lines.join('\n')}`;
+  }
+}
+
+function claimDuplicateAwareRenderKey(registry: Map<string, number>, baseKey: string): string {
+  const duplicateCount = registry.get(baseKey) ?? 0;
+  registry.set(baseKey, duplicateCount + 1);
+  return duplicateCount === 0 ? baseKey : `${baseKey}:${String(duplicateCount)}`;
 }
 
 type MarkdownBlock =
@@ -336,7 +453,7 @@ function resolveRecapLineColor(line: string, shellPalette: ReactCliShellPalette)
   return shellPalette.sectionTitleColor;
 }
 
-type CommandRecapSection =
+type StructuredRecapSection =
   | {
       kind: 'field' | 'status' | 'artifact';
       label: string;
@@ -347,12 +464,12 @@ type CommandRecapSection =
       line: string;
     };
 
-function parseCommandRecap(lines: string[]): {
+function parseStructuredRecap(lines: string[]): {
   headline: string;
-  sections: CommandRecapSection[];
+  sections: StructuredRecapSection[];
 } {
   const [headline = '', ...detailLines] = lines;
-  const sections: CommandRecapSection[] = [];
+  const sections: StructuredRecapSection[] = [];
 
   for (const line of detailLines) {
     if (appendArtifactContinuationLine(sections, line)) {
@@ -446,7 +563,7 @@ function humanizeRecapToken(token: string): string {
     .join('')}`;
 }
 
-function appendArtifactContinuationLine(sections: CommandRecapSection[], line: string): boolean {
+function appendArtifactContinuationLine(sections: StructuredRecapSection[], line: string): boolean {
   const lastSection = sections.at(-1);
   if (!lastSection || !('values' in lastSection) || lastSection.kind !== 'artifact') {
     return false;
@@ -466,7 +583,7 @@ function appendArtifactContinuationLine(sections: CommandRecapSection[], line: s
 }
 
 function resolveRecapSectionLabelColor(
-  kind: CommandRecapSection['kind'],
+  kind: StructuredRecapSection['kind'],
   shellPalette: ReactCliShellPalette,
 ): string {
   if (kind === 'artifact') {
@@ -479,7 +596,7 @@ function resolveRecapSectionLabelColor(
 }
 
 function resolveRecapSectionValueColor(
-  kind: Extract<CommandRecapSection, { values: string[] }>['kind'],
+  kind: Extract<StructuredRecapSection, { values: string[] }>['kind'],
   shellPalette: ReactCliShellPalette,
 ): string {
   if (kind === 'artifact') {

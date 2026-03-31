@@ -228,6 +228,74 @@ describe('CliSessionShellTranscriptStore', () => {
     expect(items[0]?.lines).toEqual(['# Plan\n- inspect repo\n- summarize risks']);
   });
 
+  it('maps role-collaboration turns into structured collaboration recap items', () => {
+    const store = new CliSessionShellTranscriptStore();
+    const items = store.applyEvents(
+      'session-004-role-collaboration',
+      [
+        {
+          eventId: 'event-1',
+          sequence: 1,
+          streamCursor: 'cursor-1',
+          sessionId: 'session-004-role-collaboration',
+          type: OrchestrationSessionEventType.TURN_COMPLETED,
+          createdAt: '2026-03-31T12:16:00Z',
+          payload: {
+            role: OrchestrationSessionTranscriptRole.ASSISTANT,
+            routeId: 'session.main',
+            turnIndex: 1,
+            responseMode: 'role_collaboration',
+            interactionMode: 'parallel_role_fanout',
+            assistantMessage:
+              '## Planner + Reviewer Parallel Analysis\n\n### Planner\n\n- plan risk\n\n### Reviewer\n\n- review risk',
+            synthesisMode: 'parallel_analysis',
+            executionIntent: 'session.role_delegate.parallel.planner.reviewer',
+            selectedSurface: 'planner:ollama | reviewer:ollama',
+            selectedBy:
+              'planner:session.main.role_delegate.safe_fallback | reviewer:session.main.role_delegate.safe_fallback',
+            invokedRoleIds: ['planner', 'reviewer'],
+            subagentCount: 2,
+          },
+        },
+      ],
+      (key, interpolation) => {
+        if (key === 'cli.sessionShell.transcript.assistantLabel') {
+          return 'Governor';
+        }
+        if (key === 'cli.sessionShell.responses.mainTurnCollaborationAccepted') {
+          return `${interpolation?.mode ?? ''} completed.`;
+        }
+        if (key === 'cli.sessionShell.responses.mainTurnCollaborationRoles') {
+          return `Roles: ${interpolation?.roles ?? ''} (count=${interpolation?.count ?? ''})`;
+        }
+        if (key === 'cli.sessionShell.responses.mainTurnCollaborationSynthesis') {
+          return `Synthesis: ${interpolation?.synthesisMode ?? ''}`;
+        }
+        if (key === 'cli.sessionShell.responses.mainTurnCollaborationModeParallel') {
+          return 'Parallel role fan-out';
+        }
+        if (key === 'cli.sessionShell.responses.mainTurnExecutionIntent') {
+          return `Intent: ${interpolation?.executionIntent ?? ''}`;
+        }
+        if (key === 'cli.sessionShell.responses.mainTurnRoutingSelection') {
+          return `Routing: surface=${interpolation?.selectedSurface ?? ''} selected_by=${interpolation?.selectedBy ?? ''}`;
+        }
+        return key;
+      },
+    );
+
+    expect(items).toHaveLength(1);
+    expect(items[0]?.renderKind).toBe('collaboration_recap');
+    expect(items[0]?.markdownSource).toContain('Planner + Reviewer Parallel Analysis');
+    expect(items[0]?.lines).toEqual([
+      'Parallel role fan-out completed.',
+      'Roles: planner · reviewer (count=2)',
+      'Synthesis: parallel_analysis',
+      'Intent: session.role_delegate.parallel.planner.reviewer',
+      'Routing: surface=planner:ollama | reviewer:ollama selected_by=planner:session.main.role_delegate.safe_fallback | reviewer:session.main.role_delegate.safe_fallback',
+    ]);
+  });
+
   it('uses metadata renderKind for appended assistant recap messages', () => {
     const store = new CliSessionShellTranscriptStore();
     const items = store.applyEvents(

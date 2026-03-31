@@ -481,6 +481,95 @@ describe('Cli session-main supervisor runtime', () => {
     expect(outcome.subagentCount).toBe(2);
   });
 
+  it('routes explicit @planner @reviewer parallel requests through one parallel fan-out path', async () => {
+    const parallelInvokeStage = vi.fn(async (request: Record<string, unknown>) => {
+      if (request.stageId === 'stage-session-main-role-planner') {
+        expect(request.input).toEqual(
+          expect.objectContaining({
+            interactionMode: 'parallel_role_fanout',
+            collaborationRoleOrder: ['planner', 'reviewer'],
+            synthesisMode: 'parallel_analysis',
+          }),
+        );
+        return {
+          output: {
+            responseText: '## Planner perspective\n\n- planning risk',
+          },
+          elapsedMs: 1,
+        };
+      }
+
+      expect(request.stageId).toBe('stage-session-main-role-reviewer');
+      expect(request.input).toEqual(
+        expect.objectContaining({
+          interactionMode: 'parallel_role_fanout',
+          collaborationRoleOrder: ['planner', 'reviewer'],
+          synthesisMode: 'parallel_analysis',
+        }),
+      );
+      return {
+        output: {
+          responseText: '## Reviewer perspective\n\n- review risk',
+        },
+        elapsedMs: 1,
+      };
+    });
+    const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
+      adaptersConfig,
+    ) as CliAdapterRoutingRuntime & {
+      createProtocolBySurface: () => Record<string, AgentProtocolContract>;
+    };
+    adapterRoutingRuntime.createProtocolBySurface = () => ({
+      [AdapterSurface.CODEX]: createAvailableProtocol(
+        AdapterSurface.CODEX,
+        'unsafe collaborative answer',
+      ),
+      [AdapterSurface.CLAUDE_CODE]: createAvailableProtocol(
+        AdapterSurface.CLAUDE_CODE,
+        'unsafe fallback answer',
+      ),
+      [AdapterSurface.OLLAMA]: createAvailableProtocol(AdapterSurface.OLLAMA, 'unused', {
+        invokeStageSpy: parallelInvokeStage,
+        toolCallingSupportLevel: AgentCapabilitySupportLevel.UNSUPPORTED,
+      }),
+    });
+
+    const runtime = new CliSessionMainSupervisorRuntime({
+      workspaceRoot: '/workspace/repo/.repo-ai-governor',
+      currentWorkingDirectory: '/workspace/repo',
+      workspace,
+      locale: 'en-US',
+      adaptersConfig,
+      adapterRoutingRuntime,
+    });
+    const outcome = await runtime.resolveTurn({
+      sessionId: 'session-004-parallel',
+      routeId: 'session.main',
+      turnId: 'turn-004-parallel',
+      turnIndex: 5,
+      userMessage: '@planner @reviewer parallel assess this rollout risk',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+    });
+
+    expect(parallelInvokeStage).toHaveBeenCalledTimes(2);
+    expect(outcome.responseMode).toBe('role_collaboration');
+    expect(outcome.interactionMode).toBe('parallel_role_fanout');
+    expect(outcome.routerDecisionReason).toBe(
+      'session.main.router.parallel_role_fanout.explicit_roles',
+    );
+    expect(outcome.synthesisMode).toBe('parallel_analysis');
+    expect(outcome.executionIntent).toBe('session.role_delegate.parallel.planner.reviewer');
+    expect(outcome.assistantMessage).toContain('Planner + Reviewer Parallel Analysis');
+    expect(outcome.selectedSurface).toBe('planner:ollama | reviewer:ollama');
+    expect(outcome.selectedBy).toBe(
+      'planner:session.main.role_delegate.safe_fallback | reviewer:session.main.role_delegate.safe_fallback',
+    );
+    expect(outcome.invokedRoleIds).toEqual(['planner', 'reviewer']);
+    expect(outcome.subagentCount).toBe(2);
+  });
+
   it('blocks explicit @planner delegation when the only no-tool fallback misses one required capability', async () => {
     const ollamaInvokeStage = vi.fn(async () => ({
       output: {

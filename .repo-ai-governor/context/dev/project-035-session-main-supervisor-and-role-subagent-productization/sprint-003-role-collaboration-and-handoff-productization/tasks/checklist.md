@@ -7,3 +7,4 @@
 
 - [ ] TK-468 expand parallel role fan-out and collaboration recap presentation semantics
   - 2026-03-31：任务创建，状态初始化为 `planned`；在 serial collaboration 后补 parallel analysis 与 collaboration recap presenter 分层。
+  - 2026-03-31：`TK-468` 已切换为 `active`；当前先收敛一条受治理的 parallel analysis path，并让 collaboration recap 与 command handoff recap 的 transcript 语义显式区分。

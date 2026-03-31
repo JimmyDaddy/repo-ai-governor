@@ -207,6 +207,7 @@ export class LocalOrchestrationServiceSessionRuntime {
           ...(dispatchResult.routerDecisionReason
             ? { routerDecisionReason: dispatchResult.routerDecisionReason }
             : {}),
+          ...(dispatchResult.synthesisMode ? { synthesisMode: dispatchResult.synthesisMode } : {}),
           ...(dispatchResult.suggestedSlashCommand
             ? { suggestedSlashCommand: dispatchResult.suggestedSlashCommand }
             : {}),

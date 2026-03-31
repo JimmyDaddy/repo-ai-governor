@@ -48,6 +48,13 @@ const SESSION_MAIN_ROUTER_REASON_SERIAL_ROLE_GUARD =
   'session.main.router.serial_role_collaboration.guard';
 const SESSION_MAIN_ROUTER_REASON_SERIAL_ROLE_UNRESOLVED =
   'session.main.router.serial_role_collaboration.unresolved';
+const SESSION_MAIN_ROUTER_REASON_PARALLEL_ROLE_FANOUT =
+  'session.main.router.parallel_role_fanout.explicit_roles';
+const SESSION_MAIN_ROUTER_REASON_PARALLEL_ROLE_GUARD =
+  'session.main.router.parallel_role_fanout.guard';
+const SESSION_MAIN_ROUTER_REASON_PARALLEL_ROLE_UNRESOLVED =
+  'session.main.router.parallel_role_fanout.unresolved';
+const SESSION_MAIN_PARALLEL_ANALYSIS_SYNTHESIS_MODE = 'parallel_analysis';
 
 interface PreparedRoleDispatch {
   descriptor: SessionMainSubagentDescriptor;
@@ -116,6 +123,14 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       this.adapterRoutingRuntime.createProtocolBySurface(toolConfigBySurface);
     const mentionedRoleIds = this.subagentRegistry.resolveMentionedRoleIds(context.userMessage);
     if (mentionedRoleIds.length >= 2) {
+      if (this.isParallelAnalysisRequest(context.userMessage)) {
+        return this.resolveParallelRoleFanoutTurn(
+          context,
+          mentionedRoleIds.slice(0, 2),
+          protocolBySurface,
+          toolConfigBySurface,
+        );
+      }
       return this.resolveSerialRoleCollaborationTurn(
         context,
         mentionedRoleIds.slice(0, 2),
@@ -367,6 +382,69 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     };
   }
 
+  private async resolveParallelRoleFanoutTurn(
+    context: SessionMainSupervisorTurnContext,
+    roleIds: string[],
+    protocolBySurface: Record<string, AgentProtocolContract>,
+    toolConfigBySurface: Map<AdapterSurface, NonNullable<AdaptersConfig['tools']>[number]>,
+  ): Promise<SessionMainSupervisorTurnOutcome> {
+    const preparedDispatches: PreparedRoleDispatch[] = [];
+    for (const roleId of roleIds) {
+      const preparedDispatch = await this.prepareRoleDispatch(
+        context,
+        roleId,
+        protocolBySurface,
+        toolConfigBySurface,
+      );
+      if (!preparedDispatch) {
+        return this.createUnknownParallelRoleFanoutOutcome(context, roleId);
+      }
+      if (preparedDispatch.safeCandidateSurfaces.length === 0) {
+        return this.createGuardedParallelRoleFanoutOutcome(context, preparedDispatch.descriptor);
+      }
+      preparedDispatches.push(preparedDispatch);
+    }
+
+    const executedDispatches = await Promise.all(
+      preparedDispatches.map((preparedDispatch) =>
+        this.executeRoleDispatch(
+          context,
+          preparedDispatch,
+          protocolBySurface,
+          toolConfigBySurface,
+          {
+            customInput: this.createParallelRoleInput(
+              context,
+              preparedDispatch.descriptor,
+              preparedDispatches.map((candidate) => candidate.descriptor.roleId),
+            ),
+          },
+        ),
+      ),
+    );
+
+    const assistantMessage = this.createParallelRoleFanoutAssistantMessage(executedDispatches);
+    return {
+      responseMode: SESSION_MAIN_RESPONSE_MODE.ROLE_COLLABORATION,
+      interactionMode: SESSION_MAIN_INTERACTION_MODE.PARALLEL_ROLE_FANOUT,
+      assistantDelta: this.createAssistantDelta(assistantMessage),
+      assistantMessage,
+      routerDecisionReason: SESSION_MAIN_ROUTER_REASON_PARALLEL_ROLE_FANOUT,
+      synthesisMode: SESSION_MAIN_PARALLEL_ANALYSIS_SYNTHESIS_MODE,
+      executionIntent: `${SESSION_MAIN_ROLE_EXECUTION_INTENT_PREFIX}parallel.${executedDispatches.map((candidate) => candidate.descriptor.roleId).join('.')}`,
+      requiresConfirmation: false,
+      selectedSurface: executedDispatches
+        .map((candidate) => `${candidate.descriptor.roleId}:${candidate.selectedSurface}`)
+        .join(' | '),
+      selectedBy: executedDispatches
+        .map((candidate) => `${candidate.descriptor.roleId}:${candidate.selectedBy}`)
+        .join(' | '),
+      sessionRoutingPreferenceApplied: context.sessionRoutingPreferenceApplied,
+      invokedRoleIds: executedDispatches.map((candidate) => candidate.descriptor.roleId),
+      subagentCount: executedDispatches.length,
+    };
+  }
+
   private resolveCandidateSurfaces(
     preferredSurface: string,
     trackedSurfaces: AdapterSurface[],
@@ -466,6 +544,7 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     options?: {
       priorRoleOutputs?: Array<{ roleId: string; assistantMessage: string }>;
       roleOrder?: string[];
+      customInput?: Record<string, unknown>;
     },
   ): Promise<ExecutedRoleDispatch> {
     const routeRunner = this.createRouteRunner({
@@ -480,8 +559,9 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       executionId: context.turnId,
       stageId: preparedDispatch.descriptor.stageId,
       routeKey: preparedDispatch.descriptor.routeKey,
-      input:
-        options?.priorRoleOutputs && options.priorRoleOutputs.length > 0
+      input: options?.customInput
+        ? options.customInput
+        : options?.priorRoleOutputs && options.priorRoleOutputs.length > 0
           ? this.createSerialRoleInput(
               context,
               preparedDispatch.descriptor,
@@ -601,6 +681,23 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     };
   }
 
+  private createParallelRoleInput(
+    context: SessionMainSupervisorTurnContext,
+    descriptor: SessionMainSubagentDescriptor,
+    roleOrder: string[],
+  ): Record<string, unknown> {
+    return {
+      ...this.createRoleDelegateInput(context, descriptor),
+      interactionMode: SESSION_MAIN_INTERACTION_MODE.PARALLEL_ROLE_FANOUT,
+      collaborationRoleOrder: [...roleOrder],
+      synthesisMode: SESSION_MAIN_PARALLEL_ANALYSIS_SYNTHESIS_MODE,
+      governorInstructions: this.localizeText(
+        `You are the ${descriptor.roleId} role subagent in a parallel analysis for Repo AI Governor. Work independently from the other roles and contribute one concise markdown analysis from this role's perspective. Do not execute commands, modify files, or claim that governed commands already ran.`,
+        `你现在是 Repo AI Governor 并行分析中的 ${descriptor.roleId} 角色子代理。请独立工作，并从当前角色视角输出一份简洁的 Markdown 分析。不要执行命令、不要修改文件，也不要声称受治理命令已经执行。`,
+      ),
+    };
+  }
+
   private resolveAssistantMessage(
     output: Record<string, unknown>,
     context: SessionMainSupervisorTurnContext,
@@ -666,6 +763,29 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       this.localizeText(
         `## ${executedDispatches.map((candidate) => this.formatRoleHeading(candidate.descriptor.roleId)).join(' -> ')} Collaboration`,
         `## ${executedDispatches.map((candidate) => `${candidate.descriptor.roleId} 角色`).join(' -> ')} 协作`,
+      ),
+    ];
+    for (const executedDispatch of executedDispatches) {
+      lines.push('');
+      lines.push(`### ${this.formatRoleHeading(executedDispatch.descriptor.roleId)}`);
+      lines.push('');
+      lines.push(executedDispatch.assistantMessage);
+    }
+    return lines.join('\n');
+  }
+
+  private createParallelRoleFanoutAssistantMessage(
+    executedDispatches: ExecutedRoleDispatch[],
+  ): string {
+    const lines: string[] = [
+      this.localizeText(
+        `## ${executedDispatches.map((candidate) => this.formatRoleHeading(candidate.descriptor.roleId)).join(' + ')} Parallel Analysis`,
+        `## ${executedDispatches.map((candidate) => `${candidate.descriptor.roleId} 角色`).join(' + ')} 并行分析`,
+      ),
+      '',
+      this.localizeText(
+        'The supervisor fanned out this analysis in parallel and then synthesized the role outputs into one foreground answer.',
+        'supervisor 已将这次分析并行分发给多个角色，并把各角色输出综合为一条前台回答。',
       ),
     ];
     for (const executedDispatch of executedDispatches) {
@@ -830,6 +950,43 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     };
   }
 
+  private createGuardedParallelRoleFanoutOutcome(
+    context: SessionMainSupervisorTurnContext,
+    descriptor: SessionMainSubagentDescriptor,
+  ): SessionMainSupervisorTurnOutcome {
+    const assistantMessage = [
+      this.localizeText(
+        `## ${this.formatRoleHeading(descriptor.roleId)} Parallel Analysis Blocked`,
+        `## ${descriptor.roleId} 并行分析已阻断`,
+      ),
+      '',
+      this.localizeText(
+        `I did not start parallel role fan-out for "${context.userMessage}" because the ${descriptor.roleId} role has no currently safe surface that satisfies the collaboration guard and capability contract.`,
+        `我没有为「${context.userMessage}」启动并行角色分析，因为 ${descriptor.roleId} 角色当前没有同时满足协作 guard 与能力契约的安全 surface。`,
+      ),
+      '',
+      this.localizeText(
+        'Parallel role analysis currently requires every role in the fan-out set to have one safe no-tool surface that also satisfies its required capabilities before the supervisor starts any parallel dispatch.',
+        '当前并行角色分析要求 fan-out 集合中的每个角色都先具备一个同时满足 required capabilities 的安全无工具 surface，supervisor 才会开始任何并行分发。',
+      ),
+    ].join('\n');
+    return {
+      responseMode: SESSION_MAIN_RESPONSE_MODE.ROLE_COLLABORATION,
+      interactionMode: SESSION_MAIN_INTERACTION_MODE.PARALLEL_ROLE_FANOUT,
+      assistantDelta: this.createAssistantDelta(assistantMessage),
+      assistantMessage,
+      routerDecisionReason: SESSION_MAIN_ROUTER_REASON_PARALLEL_ROLE_GUARD,
+      synthesisMode: SESSION_MAIN_PARALLEL_ANALYSIS_SYNTHESIS_MODE,
+      executionIntent: `${SESSION_MAIN_ROLE_EXECUTION_INTENT_PREFIX}parallel.${descriptor.roleId}`,
+      requiresConfirmation: false,
+      selectedSurface: SESSION_MAIN_GUARDED_ROLE_DELEGATE_SURFACE,
+      selectedBy: 'session.main.parallel_role_fanout.guard',
+      sessionRoutingPreferenceApplied: context.sessionRoutingPreferenceApplied,
+      invokedRoleIds: [],
+      subagentCount: 0,
+    };
+  }
+
   private createUnknownRoleDelegateOutcome(
     context: SessionMainSupervisorTurnContext,
     roleId: string,
@@ -896,6 +1053,40 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     };
   }
 
+  private createUnknownParallelRoleFanoutOutcome(
+    context: SessionMainSupervisorTurnContext,
+    roleId: string,
+  ): SessionMainSupervisorTurnOutcome {
+    const assistantMessage = [
+      this.localizeText('## Parallel Analysis', '## 并行分析'),
+      '',
+      this.localizeText(
+        `The supervisor could not resolve one configured role named "${roleId}" while building the parallel fan-out set.`,
+        `supervisor 在构建并行 fan-out 集合时，无法解析名为「${roleId}」的已配置角色。`,
+      ),
+      '',
+      this.localizeText(
+        'Check the active role bindings first, then retry with explicit configured roles such as `@planner @reviewer parallel analyze this change`.',
+        '请先检查当前激活的角色绑定，再使用例如 `@planner @reviewer parallel analyze this change` 这样的已配置角色重试。',
+      ),
+    ].join('\n');
+    return {
+      responseMode: SESSION_MAIN_RESPONSE_MODE.ROLE_COLLABORATION,
+      interactionMode: SESSION_MAIN_INTERACTION_MODE.PARALLEL_ROLE_FANOUT,
+      assistantDelta: this.createAssistantDelta(assistantMessage),
+      assistantMessage,
+      routerDecisionReason: SESSION_MAIN_ROUTER_REASON_PARALLEL_ROLE_UNRESOLVED,
+      synthesisMode: SESSION_MAIN_PARALLEL_ANALYSIS_SYNTHESIS_MODE,
+      executionIntent: `${SESSION_MAIN_ROLE_EXECUTION_INTENT_PREFIX}parallel.${roleId}`,
+      requiresConfirmation: false,
+      selectedSurface: SESSION_MAIN_GUARDED_ROLE_DELEGATE_SURFACE,
+      selectedBy: 'session.main.parallel_role_fanout.unresolved',
+      sessionRoutingPreferenceApplied: context.sessionRoutingPreferenceApplied,
+      invokedRoleIds: [],
+      subagentCount: 0,
+    };
+  }
+
   private createAssistantDelta(assistantMessage: string): string {
     const firstNonEmptyLine = assistantMessage
       .split(/\r?\n/u)
@@ -914,6 +1105,12 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
   private stripRoleMentions(userMessage: string): string {
     const sanitizedMessage = userMessage.replaceAll(/@[a-z0-9_.-]+/giu, '').trim();
     return sanitizedMessage.length > 0 ? sanitizedMessage : userMessage.trim();
+  }
+
+  private isParallelAnalysisRequest(userMessage: string): boolean {
+    return /(?:\bparallel\b|\bcompare\b|\bindependent\b|并行|分别|不同视角|同时分析)/iu.test(
+      userMessage,
+    );
   }
 
   private formatRoleHeading(roleId: string): string {

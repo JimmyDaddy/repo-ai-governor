@@ -1,6 +1,6 @@
 # TK-468 expand parallel role fan-out and collaboration recap presentation semantics
 
-- Status: planned
+- Status: active
 - Date: 2026-03-31
 - Owner: AI-Agent
 - Priority: P0
@@ -32,3 +32,4 @@
 ## 5. Execution Notes
 
 1. 2026-03-31：任务创建，状态初始化为 `planned`；parallel fan-out 第一阶段只面向分析/建议类场景，不直接放开高副作用执行。
+2. 2026-03-31：任务切换为 `active`；当前先收敛一条受治理的 `parallel analysis` path，并把 collaboration recap 与 command handoff recap 的 presenter 语义显式分层。
