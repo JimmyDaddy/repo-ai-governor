@@ -200,18 +200,18 @@ deliveries:
       - runtime_service
       - docs_playbook
     user_impact_level: high
-    execution_status: completed
-    rollout_status: completed
+    execution_status: planned
+    rollout_status: planned
     owner: runtime
-    project_ref: project-032-command-live-progress-react-shell-productization
-    sprint_ref: sprint-005-session-shell-output-presentation-and-markdown-productization
+    project_ref: project-035-session-main-supervisor-and-role-subagent-productization
+    sprint_ref: sprint-002-answer-supervisor-and-role-subagent-bootstrap
     task_ids:
-      - TK-460
-      - TK-461
-    project_plan_path: .repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/plan.md
-    sprint_plan_path: .repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/sprint-005-session-shell-output-presentation-and-markdown-productization/plan.md
-    task_csv_path: .repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/sprint-005-session-shell-output-presentation-and-markdown-productization/tasks/tasks.csv
-    handoff_artifact_path: .repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/sprint-005-session-shell-output-presentation-and-markdown-productization/tasks/DA-461-session-shell-output-presentation-and-markdown-rollout-closeout.md
+      - TK-465
+      - TK-466
+    project_plan_path: .repo-ai-governor/context/dev/project-035-session-main-supervisor-and-role-subagent-productization/plan.md
+    sprint_plan_path: .repo-ai-governor/context/dev/project-035-session-main-supervisor-and-role-subagent-productization/sprint-002-answer-supervisor-and-role-subagent-bootstrap/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-035-session-main-supervisor-and-role-subagent-productization/sprint-002-answer-supervisor-and-role-subagent-bootstrap/tasks/tasks.csv
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-035-session-main-supervisor-and-role-subagent-productization/sprint-001-technical-solution-promotion-and-phase-map/tasks/DA-464-session-main-supervisor-promotion-cutover.md
     rollout_artifacts:
       - .repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation/plan.md
       - .repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation/project-027-completion-audit-summary.md
@@ -242,6 +242,13 @@ deliveries:
       - .repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/sprint-005-session-shell-output-presentation-and-markdown-productization/tasks/DA-461-session-shell-output-presentation-and-markdown-rollout-closeout.md
       - .repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/project-032-command-live-progress-react-shell-productization-completion-audit-summary.md
       - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/adrs/structured-session-output-and-markdown-content-blocks.md
+      - .repo-ai-governor/context/dev/project-033-session-main-agent-runtime-productization/project-033-session-main-agent-runtime-productization-completion-audit-summary.md
+      - .repo-ai-governor/context/dev/project-035-session-main-supervisor-and-role-subagent-productization/plan.md
+      - .repo-ai-governor/context/dev/project-035-session-main-supervisor-and-role-subagent-productization/sprint-001-technical-solution-promotion-and-phase-map/plan.md
+      - .repo-ai-governor/context/dev/project-035-session-main-supervisor-and-role-subagent-productization/sprint-001-technical-solution-promotion-and-phase-map/review/resolved_code_review_tk-464-session-main-supervisor-promotion-cutover.md
+      - .repo-ai-governor/context/dev/project-035-session-main-supervisor-and-role-subagent-productization/sprint-001-technical-solution-promotion-and-phase-map/tasks/DA-464-session-main-supervisor-promotion-cutover.md
+      - .repo-ai-governor/context/dev/project-035-session-main-supervisor-and-role-subagent-productization/sprint-002-answer-supervisor-and-role-subagent-bootstrap/plan.md
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/adrs/session-main-supervisor-and-role-subagent-collaboration.md
     accepted_at: 2026-03-31
 
   - solution_id: technical-solution.multi-ai-tools-onboarding-role-agent-projection

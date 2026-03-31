@@ -1,0 +1,8 @@
+# checklist
+
+- [x] TK-464 promote session.main supervisor and role-subagent solution into formal module docs
+  - 2026-03-31：任务创建，状态初始化为 `planned`；目标是把 `session.main supervisor + role subagents / handoffs` draft 正式并入 `runtime.orchestration + runtime.cli-interactive-shell`。
+  - 2026-03-31：完成 formal cutover；新增 `session-main-supervisor-and-role-subagent-collaboration.md` ADR，并同步更新 `runtime-orchestration/module-overview.md`、`runtime-cli-interactive-shell/module-overview.md`、`cli-session-shell-contract.md`、technical-solution lifecycle / delivery registry、module registry、normative manifest、review artifact 与 `DA-464` handoff。
+  - 2026-03-31：同时创建 planned `sprint-002-answer-supervisor-and-role-subagent-bootstrap`，将 direct answer bootstrap、role-subagent collaboration 与 command handoff governance 保留为后续真实执行面。
+  - 2026-03-31：补充激活分层与角色边界说明，明确 `connect apply` 与 `session.main` 前台 subagent 调度不是同一步，并固定 `main agent / planner role / backend workflow planner` 的职责边界。
+  - 2026-03-31：验证通过 `node ./scripts/governance/check-technical-solution-lifecycle-registry.js`、`node ./scripts/governance/check-technical-solution-delivery-registry.js`、`node ./scripts/governance/check-technical-solution-module-graph.js`、`node ./scripts/governance/check-normative-loading-manifest.js --mode block`、`node ./scripts/governance/check-docs-triad-sync.js`、`node ./scripts/governance/check-task-ledger-sync.js`、`node ./scripts/governance/check-sprint-plan-status-sync.js`、`node ./scripts/governance/check-code-review-status-sync.js` 与 `node ./scripts/governance/check-artifact-registry-lifecycle.js`；docs-only，因此 build not required。

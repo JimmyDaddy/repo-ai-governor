@@ -32,6 +32,11 @@
 19. `transcript_render_kind`
 20. `message_tone`
 21. `artifact_backlinks`
+22. `turn_response_mode`
+23. `turn_interaction_mode`
+24. `turn_selected_surface`
+25. `turn_selected_by`
+26. `turn_invoked_role_ids`
 
 ## 3. Allowed Values
 
@@ -69,6 +74,16 @@
    - `markdown`
    - `system_notice`
    - `command_recap`
+9. `turn_response_mode`
+   - `answer`
+   - `follow_up_question`
+   - `command_handoff_preview`
+10. `turn_interaction_mode`
+   - `direct_answer`
+   - `single_role_delegate`
+   - `serial_role_collaboration`
+   - `parallel_role_fanout`
+   - `command_handoff`
 
 ## 4. Required Constraints
 
@@ -87,6 +102,11 @@
 13. 正在运行中的 progress、heartbeat、elapsed 与 cancel affordance 必须停留在 session-shell running dock 或等价动态区域，不得通过无限追加 transcript 项目来伪装 live 状态。
 14. assistant 完成态消息、帮助文本和 command recap 允许进入 Markdown content-block presenter path，但 `json/plain` 与 non-interactive contract 不得因该 presenter 能力发生 schema 变化。
 15. `artifact_backlinks` 只能表示用户可回看的路径摘要；不得把机器输出 payload 自身嵌入 transcript 富文本中。
+16. 当 `turn_response_mode=answer` 时，service-owned turn payload 必须带真实 `assistantMessage`；session shell 不得再把 metadata-only recap 伪装成回答完成态。
+17. `turn_interaction_mode`、`turn_selected_surface`、`turn_selected_by` 与 `turn_invoked_role_ids` 只能来自 shared session event payload；CLI shell 只能消费这些字段，不得在 presenter 层本地推断或重写 supervisor/runtime 决策。
+18. connected roles 如需呈现在 session shell 中，必须通过 service-owned `session.main` outcome 以 delegate/collaboration metadata 的形式暴露；CLI 不得直接把 projection descriptor 当作本地执行 truth 使用。
+19. role collaboration 的最终 recap 可以进入 `command_recap` 或等价结构化 transcript presenter path，但运行中的 progress、heartbeat、elapsed 与 cancel affordance 仍必须停留在 running dock，而不是无限追加 transcript。
+20. `command_handoff_preview` 即使由自然语言 supervisor 提议，也必须继续走 preview + explicit confirmation；不得绕过高副作用命令的既有治理边界。
 
 ## 5. Consumers
 
@@ -101,3 +121,4 @@
 3. `v1` 允许把 session routing setting command 暂时保留为 future command，并在真正落地时以 `/model`、`/agent` 或 `/routing` 中的一种命名收口。
 4. `v1` 允许 session shell 从 `readline` foreground input 迁移到 Ink-owned input，只要上述字段与治理边界保持稳定。
 5. `v1` 现正式接受“结构化壳层 + Markdown 内容块”方向，但这只定义 presenter/contract 边界，不等于 renderer 已在代码面全面交付；真实 rollout follow-up 由 `project-032-command-live-progress-react-shell-productization` 的 output-presentation sprint 承接。
+6. `v1` 现正式接受“service-owned session.main supervisor + role subagents / handoffs”方向；第一阶段 rollout 允许只交付 direct answer、command handoff preview 与 `1` 条 role-subagent bootstrap path，再逐步扩展 richer collaboration/streaming/sidecar parity。

@@ -13,6 +13,7 @@
   - `.repo-ai-governor/draft/runtime-cli-run-live-react-session-shell-technical-solution.md`
   - `.repo-ai-governor/draft/command-live-progress-react-shell-technical-solution.md`
   - `.repo-ai-governor/draft/session-shell-output-presentation-and-markdown-rendering-technical-solution.md`
+  - `.repo-ai-governor/draft/session-main-agent-answer-and-command-handoff-technical-solution.md`
   - `.repo-ai-governor/draft/session-shell-ink-input-takeover-technical-solution.md`
   - `apps/cli/src/main.ts`
   - `apps/cli/src/cli-governance-runtime.ts`

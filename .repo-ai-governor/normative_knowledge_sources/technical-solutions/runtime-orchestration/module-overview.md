@@ -1,7 +1,7 @@
 # Runtime Orchestration Module Overview
 
 - Status: active
-- Date: 2026-03-27
+- Date: 2026-03-31
 - Module ID: `runtime.orchestration`
 - Owner: runtime
 - Layer: `runtime-core`
@@ -16,6 +16,7 @@
 2. 协调 provider loading、policy、artifact、notification 与 memory/session。
 3. 为 CLI 与未来 desktop / service host 提供统一 orchestration seam。
 4. 维持 `embedded / service-backed / sidecar_ipc` 三种 host surface 的一致执行约束。
+5. 承载 service-owned `session.main` supervisor runtime 的 turn lifecycle、interaction mode 决策与 role-subagent orchestration boundary，但不把 presenter 或 projection 层升格为新的 runtime owner。
 
 ## 3. 非目标
 
@@ -40,7 +41,7 @@
 
 ## 7. Loading Guidance
 
-1. 命中 `runtime_contract_change`、`governance_engine_change`、`module_dependency_change` 时加载。
+1. 命中 `runtime_contract_change`、`governance_engine_change`、`module_dependency_change`、`technical_solution_module_change` 或 `technical_solution_promotion_change` 时加载。
 2. 默认只加载 overview 与 direct imported contracts，不递归展开 transitive full docs。
 
 ## 8. Runtime Cutover Notes
@@ -49,6 +50,7 @@
 2. `sidecar + ipc` orchestration host 已形成正式 baseline；`daemon + http` 仍只保留为可选 follow-up，不属于当前 contract baseline。
 3. vendor checkpoint / thread state 只作为 runtime owner 的恢复机制，不得升格为替代 `DSL / IR / policy / audit / ledger` 的 canonical source。
 4. `runtime.memory-provider-loading` 与 `runtime.memory-semantics` 仍通过 contract 引入，不允许 runtime 模块直接耦合 provider 实现包或 recall policy internals。
+5. 截至 `2026-03-31`，`v2` formal direction 已接受“service-owned session.main supervisor + role subagents / handoffs”作为前台自然语言入口的目标架构；该方向要求 runtime 在 answer / follow-up / command handoff / role collaboration 之间做正式 turn routing，但当前代码仍只完成 path-A productization，supervisor productization follow-up 由 `project-035-session-main-supervisor-and-role-subagent-productization` 承接。
 
 ## 9. Detail Docs
 
@@ -56,3 +58,4 @@
    - `contracts/runtime-graph-execution-contract.md`
 2. ADR:
    - `adrs/graph-first-runtime-and-service-backed-execution-cutover.md`
+   - `adrs/session-main-supervisor-and-role-subagent-collaboration.md`

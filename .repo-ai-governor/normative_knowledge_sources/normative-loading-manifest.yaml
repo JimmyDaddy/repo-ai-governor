@@ -377,8 +377,10 @@ documents:
       - runtime_contract_change
       - governance_engine_change
       - module_dependency_change
+      - technical_solution_module_change
+      - technical_solution_promotion_change
     owner: architecture
-    last_reviewed_at: 2026-03-27
+    last_reviewed_at: 2026-03-31
 
   - doc_id: technical_solution_runtime_orchestration_contract
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/contracts/runtime-graph-execution-contract.md
@@ -401,8 +403,24 @@ documents:
       - runtime_contract_change
       - governance_engine_change
       - module_dependency_change
+      - technical_solution_module_change
+      - technical_solution_promotion_change
     owner: architecture
     last_reviewed_at: 2026-03-26
+
+  - doc_id: technical_solution_runtime_orchestration_session_main_supervisor_adr
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/adrs/session-main-supervisor-and-role-subagent-collaboration.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - runtime_contract_change
+      - governance_engine_change
+      - module_dependency_change
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+    owner: architecture
+    last_reviewed_at: 2026-03-31
 
   - doc_id: master_execution_plan
     path: .repo-ai-governor/normative_knowledge_sources/repo-ai-governor-master-execution-plan.md

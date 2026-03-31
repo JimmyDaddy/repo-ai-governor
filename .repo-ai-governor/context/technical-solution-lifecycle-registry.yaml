@@ -189,7 +189,7 @@ solutions:
     title: Interactive CLI shell technical solution
     status: active
     owner: runtime
-    version: v4
+    version: v5
     scope: cross-cutting
     draft_paths:
       - .repo-ai-governor/draft/interactive-cli-react-style-technical-solution.md
@@ -197,6 +197,7 @@ solutions:
       - .repo-ai-governor/draft/session-shell-ink-input-takeover-technical-solution.md
       - .repo-ai-governor/draft/command-live-progress-react-shell-technical-solution.md
       - .repo-ai-governor/draft/session-shell-output-presentation-and-markdown-rendering-technical-solution.md
+      - .repo-ai-governor/draft/session-main-agent-answer-and-command-handoff-technical-solution.md
     review_paths:
       - .repo-ai-governor/draft/review-interactive-cli-react-style-technical-solution.md
       - .repo-ai-governor/draft/review-interactive-cli-session-first-agent-shell-technical-solution.md
@@ -204,6 +205,7 @@ solutions:
       - .repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/sprint-001-activation-and-technical-solution-promotion/review/resolved_code_review_tk-444-command-live-progress-react-shell-technical-solution-promotion-cutover.md
       - .repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/sprint-004-session-shell-output-presentation-and-markdown-promotion/review/resolved_code_review_tk-459-session-shell-output-presentation-and-markdown-promotion-cutover.md
       - .repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/sprint-005-session-shell-output-presentation-and-markdown-productization/review/resolved_code_review_tk-460-tk-461-session-shell-transcript-markdown-rollout.md
+      - .repo-ai-governor/context/dev/project-035-session-main-supervisor-and-role-subagent-productization/sprint-001-technical-solution-promotion-and-phase-map/review/resolved_code_review_tk-464-session-main-supervisor-promotion-cutover.md
     final_paths:
       - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/module-overview.md
       - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/contracts/cli-interactive-shell-contract.md
@@ -212,8 +214,10 @@ solutions:
       - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/adrs/ink-owned-input-and-action-driven-session-shell.md
       - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/adrs/live-command-progress-and-running-react-shell.md
       - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/adrs/structured-session-output-and-markdown-content-blocks.md
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/adrs/session-main-supervisor-and-role-subagent-collaboration.md
     target_module_ids:
       - runtime.cli-interactive-shell
+      - runtime.orchestration
     north_star_refs:
       - prd.multi-agent-orchestration
       - overall.graph-first-runtime
