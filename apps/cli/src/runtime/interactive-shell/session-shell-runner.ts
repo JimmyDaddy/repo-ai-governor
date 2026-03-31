@@ -39,6 +39,7 @@ import type {
   CliSessionShellTranscriptItem,
   CliSessionShellViewModel,
 } from '../../types/index.js';
+import { CliSessionShellCommandProgressDock } from './session-shell-command-progress-dock.js';
 import { CliSessionShellInkController } from './session-shell-ink-controller.js';
 import { CliSessionShellInkRunner } from './session-shell-ink-runner.js';
 import { CliSessionShellReadlinePromptAdapter } from './session-shell-readline-prompt-adapter.js';
@@ -997,23 +998,44 @@ export class CliSessionShellRunner {
     viewModel.shellMode = CliSessionShellMode.COMMAND_RUNNING;
     viewModel.handoffState = CliSessionShellHandoffState.RUNNING;
     viewModel.promptBarLines = this.buildPromptBarLines(viewModel, options, runtimeState);
-    this.renderActiveSurface(viewModel);
-
-    const executionResult = await options.commandExecutor(pendingCommand.argv).catch((error) => {
-      const standardizedError = standardizeError(error);
-      return {
-        artifactPaths: [],
-        commandLine: pendingCommand.previewCommandLine,
-        message: standardizedError.message,
-        status: 'error',
-        summaryLines: [
-          options.translate('cli.sessionShell.responses.commandExecutionFailed', {
-            command: pendingCommand.previewCommandLine,
-            reason: standardizedError.message,
-          }),
-        ],
-      } satisfies CliSessionShellCommandExecutionResult;
+    const progressDock = new CliSessionShellCommandProgressDock({
+      argv: pendingCommand.argv,
+      previewCommandLine: pendingCommand.previewCommandLine,
+      themePreset: viewModel.themePreset,
+      translate: options.translate,
+      relayProgressSink: options.commandExecutionOptions?.progressSink,
+      abortSignal: options.commandExecutionOptions?.abortSignal,
+      onPanelUpdate: (panel) => {
+        viewModel.commandProgressPanel = panel;
+      },
+      onRenderRequested: () => {
+        this.renderActiveSurface(viewModel);
+      },
     });
+    progressDock.seedRunningState();
+    progressDock.startTicking();
+    if (!viewModel.commandProgressPanel) {
+      this.renderActiveSurface(viewModel);
+    }
+
+    const executionResult = await options
+      .commandExecutor(pendingCommand.argv, progressDock.createExecutionOptions())
+      .catch((error) => {
+        const standardizedError = standardizeError(error);
+        return {
+          artifactPaths: [],
+          commandLine: pendingCommand.previewCommandLine,
+          message: standardizedError.message,
+          status: 'error',
+          summaryLines: [
+            options.translate('cli.sessionShell.responses.commandExecutionFailed', {
+              command: pendingCommand.previewCommandLine,
+              reason: standardizedError.message,
+            }),
+          ],
+        } satisfies CliSessionShellCommandExecutionResult;
+      });
+    progressDock.clear();
 
     await this.appendServiceTranscriptItem(
       viewModel,
@@ -1057,6 +1079,7 @@ export class CliSessionShellRunner {
     viewModel.highlightedCommand = viewModel.slashSuggestions[0]?.command ?? null;
     viewModel.commandPreview = null;
     viewModel.handoffState = CliSessionShellHandoffState.IDLE;
+    viewModel.commandProgressPanel = undefined;
     viewModel.composerValue = '';
     viewModel.promptBarLines = this.buildPromptBarLines(viewModel, options, runtimeState);
     const exitMessage =
@@ -1100,6 +1123,7 @@ export class CliSessionShellRunner {
       slashPaletteEmptyState: options.translate('cli.sessionShell.palette.emptyState'),
       commandPreview: null,
       handoffState: CliSessionShellHandoffState.IDLE,
+      commandProgressPanel: undefined,
       cwd: options.currentWorkingDirectory,
       workspaceSummary: options.workspaceSummary,
       outputContract: options.outputMode,
@@ -1261,6 +1285,7 @@ export class CliSessionShellRunner {
     viewModel.highlightedCommand = viewModel.slashSuggestions[0]?.command ?? null;
     viewModel.commandPreview = null;
     viewModel.handoffState = CliSessionShellHandoffState.IDLE;
+    viewModel.commandProgressPanel = undefined;
     viewModel.composerValue = '';
     viewModel.foregroundFocusTarget = CliSessionShellForegroundFocusTarget.COMPOSER;
     viewModel.promptBarLines = this.buildPromptBarLines(viewModel, options, runtimeState);
@@ -1309,6 +1334,7 @@ export class CliSessionShellRunner {
       command: pendingCommand.previewCommandLine,
     });
     viewModel.handoffState = CliSessionShellHandoffState.PREVIEWING;
+    viewModel.commandProgressPanel = undefined;
     viewModel.composerValue = '';
     viewModel.foregroundFocusTarget = CliSessionShellForegroundFocusTarget.HANDOFF_PREVIEW;
     viewModel.promptBarLines = this.buildPromptBarLines(viewModel, options, runtimeState);

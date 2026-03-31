@@ -6,6 +6,8 @@ import type { CliReactThemePreset } from '../../constants/cli-react-theme.consta
 import { CliWorkspaceAction } from '../../constants/cli-workspace.constant.js';
 import type {
   CliErrorOutputPayload,
+  CliGovernanceCommandExecutionOptions,
+  CliNestedCommandExecutionOptions,
   CliRuntimeDebugOptions,
   CliSessionShellCommandExecutionResult,
   CliSessionShellCommandExecutor,
@@ -30,12 +32,17 @@ interface CliSessionShellNestedCommandExecutorOptions {
   currentWorkingDirectory: string;
   environment: NodeJS.ProcessEnv;
   translate: (key: string, interpolation?: Record<string, string>) => string;
-  executeCli: (argv: string[], io: CliSessionShellNestedCliIoAdapters) => Promise<number>;
+  executeCli: (
+    argv: string[],
+    io: CliSessionShellNestedCliIoAdapters,
+    executionOptions?: CliNestedCommandExecutionOptions,
+  ) => Promise<number>;
 }
 
 interface CliSessionShellEntrypointRuntimeOptions {
   sessionClient: CliSessionShellServiceClientLike;
   commandExecutor?: CliSessionShellCommandExecutor;
+  commandExecutionOptions?: CliGovernanceCommandExecutionOptions;
   currentWorkingDirectory: string;
   workspaceSummary: string;
   outputMode: ErrorOutputEnvironment;
@@ -69,7 +76,17 @@ export class CliSessionShellEntrypointRuntime {
   public static createNestedCommandExecutor(
     options: CliSessionShellNestedCommandExecutorOptions,
   ): CliSessionShellCommandExecutor {
-    return async (argvTokens: string[]): Promise<CliSessionShellCommandExecutionResult> => {
+    return async (
+      argvTokens: string[],
+      executionOptions?: CliGovernanceCommandExecutionOptions,
+    ): Promise<CliSessionShellCommandExecutionResult> => {
+      const nestedExecutionOptions =
+        executionOptions?.progressSink || executionOptions?.abortSignal
+          ? {
+              ...executionOptions,
+              suppressLiveProgressPresenter: executionOptions.progressSink !== undefined,
+            }
+          : undefined;
       const nestedStdout: string[] = [];
       const nestedStderr: string[] = [];
       const nestedExitCode = await options.executeCli(
@@ -96,6 +113,7 @@ export class CliSessionShellEntrypointRuntime {
           isStderrTty: () => false,
           env: () => options.environment,
         },
+        nestedExecutionOptions,
       );
 
       return CliSessionShellEntrypointRuntime.summarizeCommandResult({
@@ -122,6 +140,11 @@ export class CliSessionShellEntrypointRuntime {
       ...(this.options.commandExecutor
         ? {
             commandExecutor: this.options.commandExecutor,
+          }
+        : {}),
+      ...(this.options.commandExecutionOptions
+        ? {
+            commandExecutionOptions: this.options.commandExecutionOptions,
           }
         : {}),
       currentWorkingDirectory: this.options.currentWorkingDirectory,

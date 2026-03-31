@@ -3,6 +3,7 @@ import { Box, Text } from 'ink';
 import type React from 'react';
 import type { CliSessionShellViewModel } from '../../types/index.js';
 import { resolveReactCliTheme } from '../theme/react-cli-theme-registry.js';
+import { ReactCliCommandProgressPanel } from './command-progress-panel.js';
 import { ReactCliComposerInput } from './composer-input.js';
 import { ReactCliPromptBar } from './prompt-bar.js';
 import { ReactCliSlashCommandPalette } from './slash-command-palette.js';
@@ -46,6 +47,12 @@ export function ReactCliSessionShellApp({
               </Text>
             </Box>
           </>
+        ) : null}
+        {viewModel.commandProgressPanel ? (
+          <ReactCliCommandProgressPanel
+            panel={viewModel.commandProgressPanel}
+            shellPalette={shellPalette}
+          />
         ) : null}
         <ReactCliComposerInput
           title={viewModel.composerTitle}

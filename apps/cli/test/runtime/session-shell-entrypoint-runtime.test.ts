@@ -1,6 +1,7 @@
 import { ErrorOutputEnvironment } from '@repo-ai-governor/shared';
 import { CliInteractiveUiMode } from '../../src/constants/cli-interactive-shell.constant.js';
 import { CliSessionShellEntrypointRuntime } from '../../src/runtime/interactive-shell/session-shell-entrypoint-runtime.js';
+import type { CliCommandProgressEvent } from '../../src/types/index.js';
 
 describe('CliSessionShellEntrypointRuntime', () => {
   it('treats free-form positional input as one startup query and skips top-level commands', () => {
@@ -80,7 +81,17 @@ describe('CliSessionShellEntrypointRuntime', () => {
 
   it('creates runner options from the shared entrypoint context', () => {
     const translate = vi.fn((key: string) => key);
-    const runtime = createRuntime({ translate });
+    const progressSink = {
+      publish: vi.fn(),
+    };
+    const abortController = new AbortController();
+    const runtime = createRuntime({
+      translate,
+      commandExecutionOptions: {
+        progressSink,
+        abortSignal: abortController.signal,
+      },
+    });
     const runOptions = runtime.createRunOptions({
       resumeOnStartup: true,
       requestedSessionId: 'session-123',
@@ -95,6 +106,10 @@ describe('CliSessionShellEntrypointRuntime', () => {
         resumeOnStartup: true,
         requestedSessionId: 'session-123',
         initialPrompt: 'summarize the plan',
+        commandExecutionOptions: {
+          progressSink,
+          abortSignal: abortController.signal,
+        },
         translate,
       }),
     );
@@ -143,6 +158,7 @@ describe('CliSessionShellEntrypointRuntime', () => {
         cwd: expect.any(Function),
         env: expect.any(Function),
       }),
+      undefined,
     );
     expect(result).toEqual({
       artifactPaths: ['/tmp/report.md'],
@@ -151,6 +167,57 @@ describe('CliSessionShellEntrypointRuntime', () => {
       status: 'success',
       summaryLines: ['Summary: summary line', 'Key status: first detail · second detail'],
     });
+  });
+
+  it('forwards nested progress relay ownership into re-entered runCli execution options', async () => {
+    const progressEvents: CliCommandProgressEvent[] = [];
+    const executeCli = vi.fn(async (_argv, io, executionOptions) => {
+      executionOptions?.progressSink?.publish({
+        commandName: 'connect',
+        runState: 'running',
+      });
+      io.stdout(
+        JSON.stringify({
+          message: 'command succeeded',
+          command_result: {
+            summary: 'summary line',
+          },
+        }),
+      );
+      return 0;
+    });
+    const commandExecutor = CliSessionShellEntrypointRuntime.createNestedCommandExecutor({
+      locale: 'en-US',
+      currentWorkingDirectory: '/workspace',
+      environment: {},
+      translate: translateSessionShellResponse,
+      executeCli,
+    });
+
+    await commandExecutor(['connect'], {
+      progressSink: {
+        publish: (event) => {
+          progressEvents.push(event);
+        },
+      },
+    });
+
+    expect(executeCli).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.any(Object),
+      expect.objectContaining({
+        progressSink: expect.objectContaining({
+          publish: expect.any(Function),
+        }),
+        suppressLiveProgressPresenter: true,
+      }),
+    );
+    expect(progressEvents).toEqual([
+      expect.objectContaining({
+        commandName: 'connect',
+        runState: 'running',
+      }),
+    ]);
   });
 
   it('includes projected agentView highlights in nested command summaries', async () => {

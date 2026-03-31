@@ -24,3 +24,4 @@
 3. 2026-03-30：完成 `TK-445 ~ TK-446` 并新增 `resolved_code_review_tk-445-tk-446-live-command-shell-connect-progress-baseline.md`；当前 sprint 转入 completed truth，并暂以 active closeout surface 挂载等待下一轮 follow-up planning。
 4. 2026-03-30：完成 follow-up CR 复核与修复，收口 React-mode cancel policy、`doctor/verify` abort 传播与 local-model probe cancel semantics，并新增 `resolved_code_review_tk-445-tk-446-live-command-shell-connect-progress-baseline-followup.md`。
 5. 2026-03-31：完成 closeout surface recap 格式化 follow-up；session shell command handoff 输出改为结构化摘要、压缩 artifact 路径并去除重复信息，同时补齐 locale、测试与 build evidence。
+6. 2026-03-31：完成社区参考方案 follow-up；已在 session-first shell draft 中补充长命令 live progress 路线对比图，并收敛推荐方向为 `single renderer owner + progress relay + timer tick`，用于指导后续 nested command refresh 修复。

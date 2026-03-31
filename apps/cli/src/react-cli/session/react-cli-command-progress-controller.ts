@@ -12,6 +12,7 @@ import type {
 import { ReactCliSessionController } from './react-cli-session-controller.js';
 
 const LOG_TAIL_LIMIT = 5;
+const HEARTBEAT_TICK_CYCLE = 4;
 
 export interface ReactCliCommandProgressControllerOptions {
   commandName: string;
@@ -110,11 +111,25 @@ export class ReactCliCommandProgressController {
     return this.commit();
   }
 
+  /**
+   * Recomputes the running-shell snapshot without requiring a new transport event.
+   * @returns Latest shared React CLI view model with refreshed elapsed/heartbeat labels.
+   */
+  public refresh(): ReactCliViewModel {
+    return this.commit();
+  }
+
   private commit(): ReactCliViewModel {
     const elapsedSeconds = Math.max(0, Math.floor((Date.now() - this.startedAtMs) / 1000));
     const elapsedLabel = this.options.translate('cli.reactShell.progress.elapsed', {
       elapsed: `${elapsedSeconds}s`,
     });
+    const heartbeatLabel =
+      this.runState === 'running'
+        ? this.options.translate('cli.reactShell.progress.heartbeat', {
+            tick: String((elapsedSeconds % HEARTBEAT_TICK_CYCLE) + 1),
+          })
+        : undefined;
     const stepsLabel =
       this.totalSteps !== undefined
         ? this.options.translate('cli.reactShell.progress.steps', {
@@ -140,6 +155,7 @@ export class ReactCliCommandProgressController {
         statusLine: this.statusLine,
         currentStepTitle: this.currentStepTitle,
         elapsedLabel,
+        heartbeatLabel,
         stepsLabel,
         artifactsTitle: this.options.translate('cli.reactShell.progress.artifactsTitle'),
         logsTitle: this.options.translate('cli.reactShell.progress.logsTitle'),

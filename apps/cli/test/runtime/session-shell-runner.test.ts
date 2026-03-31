@@ -13,8 +13,12 @@ import {
   type OrchestrationSubscribeSessionRequest,
   type OrchestrationSubscribeSessionResponse,
 } from '@repo-ai-governor/orchestration-service-client';
-import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
-import { ErrorOutputEnvironment } from '@repo-ai-governor/shared';
+import {
+  ErrorOutputEnvironment,
+  ExecutionProgressStatus,
+  GovernorErrorCode,
+  RuntimeError,
+} from '@repo-ai-governor/shared';
 import {
   CliSessionShellExitReason,
   CliSessionShellHandoffState,
@@ -24,6 +28,7 @@ import {
 import { CliSessionShellInkController } from '../../src/runtime/interactive-shell/session-shell-ink-controller.js';
 import { CliSessionShellRunner } from '../../src/runtime/interactive-shell/session-shell-runner.js';
 import type {
+  CliCommandProgressEvent,
   CliSessionShellCommandExecutionResult,
   CliSessionShellInputAction,
   CliSessionShellPromptAdapter,
@@ -42,6 +47,18 @@ class RecordingSessionShellRenderer {
   public render(viewModel: CliSessionShellViewModel): void {
     this.frames.push({
       ...viewModel,
+      ...(viewModel.commandProgressPanel
+        ? {
+            commandProgressPanel: {
+              ...viewModel.commandProgressPanel,
+              rows: viewModel.commandProgressPanel.rows.map((row) => ({ ...row })),
+              artifacts: viewModel.commandProgressPanel.artifacts.map((artifact) => ({
+                ...artifact,
+              })),
+              logLines: [...viewModel.commandProgressPanel.logLines],
+            },
+          }
+        : {}),
       transcriptItems: viewModel.transcriptItems.map((item) => ({
         ...item,
         lines: [...item.lines],
@@ -124,6 +141,18 @@ class StubSessionShellInkRunner {
 
     this.snapshots.push({
       ...viewModel,
+      ...(viewModel.commandProgressPanel
+        ? {
+            commandProgressPanel: {
+              ...viewModel.commandProgressPanel,
+              rows: viewModel.commandProgressPanel.rows.map((row) => ({ ...row })),
+              artifacts: viewModel.commandProgressPanel.artifacts.map((artifact) => ({
+                ...artifact,
+              })),
+              logLines: [...viewModel.commandProgressPanel.logLines],
+            },
+          }
+        : {}),
       transcriptItems: viewModel.transcriptItems.map((item) => ({
         ...item,
         lines: [...item.lines],
@@ -417,6 +446,19 @@ const DEFAULT_TRANSLATIONS: Record<string, string> = {
   'cli.sessionShell.responses.commandAttentionSummary': 'Attention: {{summary}}',
   'cli.sessionShell.responses.commandErrorHint': 'Hint: {{hint}}',
   'cli.sessionShell.responses.commandErrorNextAction': 'Next step: {{nextAction}}',
+  'cli.reactShell.shared.shortcuts': 'Shortcuts',
+  'cli.reactShell.progress.title': 'Running progress',
+  'cli.reactShell.progress.status.running': '{{command}} is running.',
+  'cli.reactShell.progress.elapsed': 'Elapsed {{elapsed}}',
+  'cli.reactShell.progress.heartbeat': 'Heartbeat {{tick}}',
+  'cli.reactShell.progress.steps': 'Step {{completed}}/{{total}}',
+  'cli.reactShell.progress.cancel.none': 'Cancellation unavailable.',
+  'cli.reactShell.progress.cancel.supported': 'Press Ctrl+C to request cancellation.',
+  'cli.reactShell.progress.cancel.requested': 'Cancellation requested.',
+  'cli.reactShell.progress.shortcut.exit': 'Esc exit',
+  'cli.reactShell.progress.shortcut.cancel': 'Ctrl+C cancel',
+  'cli.reactShell.progress.artifactsTitle': 'Artifacts',
+  'cli.reactShell.progress.logsTitle': 'Recent logs',
   'cli.sessionShell.responses.localTranscriptCleared': 'Local transcript viewport cleared.',
   'cli.sessionShell.responses.historyEmpty': 'No shell inputs recorded yet.',
   'cli.sessionShell.responses.searchRequiresQuery': 'Pass a search term after /search.',
@@ -511,7 +553,14 @@ describe('CliSessionShellRunner', () => {
     );
 
     expect(result.exitReason).toBe(CliSessionShellExitReason.SLASH_EXIT);
-    expect(commandExecutor).toHaveBeenCalledWith(['workspace', 'dry-run']);
+    expect(commandExecutor).toHaveBeenCalledWith(
+      ['workspace', 'dry-run'],
+      expect.objectContaining({
+        progressSink: expect.objectContaining({
+          publish: expect.any(Function),
+        }),
+      }),
+    );
     expect(
       renderer.frames.some((frame) =>
         frame.transcriptItems.some((item) =>
@@ -715,7 +764,14 @@ describe('CliSessionShellRunner', () => {
       }),
     );
 
-    expect(commandExecutor).toHaveBeenCalledWith(['doctor']);
+    expect(commandExecutor).toHaveBeenCalledWith(
+      ['doctor'],
+      expect.objectContaining({
+        progressSink: expect.objectContaining({
+          publish: expect.any(Function),
+        }),
+      }),
+    );
     expect(renderer.frames.some((frame) => frame.commandPreview === 'Ready: doctor')).toBe(false);
     expect(
       result.transcriptItems.some((item) => item.lines.includes('Summary: doctor completed')),
@@ -723,6 +779,63 @@ describe('CliSessionShellRunner', () => {
     expect(
       result.transcriptItems.some((item) => item.lines.includes('Run /confirm or /cancel.')),
     ).toBe(false);
+  });
+
+  it('forwards shared command execution options into direct bridge runs', async () => {
+    const publishedEvents: CliCommandProgressEvent[] = [];
+    const executionOptions = {
+      progressSink: {
+        publish: (event: CliCommandProgressEvent) => {
+          publishedEvents.push(event);
+        },
+      },
+    };
+    const commandExecutor = vi.fn<
+      (argv: string[]) => Promise<CliSessionShellCommandExecutionResult>
+    >(async (argv, nestedExecutionOptions) => {
+      nestedExecutionOptions?.progressSink?.publish({
+        commandName: 'doctor',
+        runState: 'running',
+      });
+      return {
+        artifactPaths: [],
+        commandLine: argv.join(' '),
+        message: 'doctor completed',
+        status: 'success',
+        summaryLines: ['Summary: doctor completed'],
+      };
+    });
+    const runner = new CliSessionShellRunner(
+      undefined,
+      new RecordingSessionShellRenderer() as never,
+      () => new StubSessionShellPromptAdapter(['/doctor', '/exit']),
+      undefined,
+      undefined,
+      () => false,
+      () => new Date('2026-03-30T12:00:00Z'),
+    );
+
+    await runner.run(
+      DEFAULT_RUN_OPTIONS({
+        commandExecutor,
+        commandExecutionOptions: executionOptions,
+      }),
+    );
+
+    expect(commandExecutor).toHaveBeenCalledWith(
+      ['doctor'],
+      expect.objectContaining({
+        progressSink: expect.objectContaining({
+          publish: expect.any(Function),
+        }),
+      }),
+    );
+    expect(publishedEvents).toEqual([
+      expect.objectContaining({
+        commandName: 'doctor',
+        runState: 'running',
+      }),
+    ]);
   });
 
   it('clears pending preview state when /exit closes the shell before confirmation', async () => {
@@ -787,7 +900,14 @@ describe('CliSessionShellRunner', () => {
       }),
     );
 
-    expect(commandExecutor).toHaveBeenCalledWith(['workspace', 'dry-run']);
+    expect(commandExecutor).toHaveBeenCalledWith(
+      ['workspace', 'dry-run'],
+      expect.objectContaining({
+        progressSink: expect.objectContaining({
+          publish: expect.any(Function),
+        }),
+      }),
+    );
     expect(
       renderer.frames.some(
         (frame) =>
@@ -907,6 +1027,92 @@ describe('CliSessionShellRunner', () => {
     expect(result.transcriptItems.at(-1)?.lines[0]).toBe('Closed after /exit.');
   });
 
+  it('renders the shared running-progress dock inside the session shell while a direct bridge command is running', async () => {
+    const inkRunner = new StubSessionShellInkRunner([
+      {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: '/doctor',
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_SUBMITTED,
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: '/exit',
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_SUBMITTED,
+      },
+    ]);
+    const commandExecutor = vi.fn<
+      (argv: string[]) => Promise<CliSessionShellCommandExecutionResult>
+    >(async (argv, executionOptions) => {
+      executionOptions?.progressSink?.publish({
+        commandName: 'doctor',
+        row: {
+          id: 'doctor-preflight',
+          title: 'Doctor preflight',
+          status: ExecutionProgressStatus.RUNNING,
+          detail: 'Collecting environment diagnostics.',
+        },
+        logLine: 'doctor preflight running',
+      });
+      executionOptions?.progressSink?.publish({
+        commandName: 'doctor',
+        runState: 'success',
+        row: {
+          id: 'doctor-preflight',
+          title: 'Doctor preflight',
+          status: ExecutionProgressStatus.COMPLETED,
+          detail: 'Environment diagnostics are complete.',
+        },
+      });
+      return {
+        artifactPaths: [],
+        commandLine: argv.join(' '),
+        message: 'doctor completed',
+        status: 'success',
+        summaryLines: ['Summary: doctor completed'],
+      };
+    });
+    const runner = new CliSessionShellRunner(
+      undefined,
+      new RecordingSessionShellRenderer() as never,
+      () => new StubSessionShellPromptAdapter([]),
+      () => new CliSessionShellInkController(),
+      () => inkRunner as never,
+      () => true,
+      () => new Date('2026-03-30T12:00:00Z'),
+    );
+
+    const result = await runner.run(
+      DEFAULT_RUN_OPTIONS({
+        commandExecutor,
+      }),
+    );
+
+    expect(result.exitReason).toBe(CliSessionShellExitReason.SLASH_EXIT);
+    expect(
+      inkRunner.snapshots.some(
+        (frame) =>
+          frame.commandProgressPanel?.title === 'Running progress' &&
+          frame.commandProgressPanel.rows.some(
+            (row) =>
+              row.id === 'doctor-preflight' &&
+              row.status === ExecutionProgressStatus.RUNNING &&
+              row.detail === 'Collecting environment diagnostics.',
+          ) &&
+          frame.commandProgressPanel.logLines.includes('doctor preflight running'),
+      ),
+    ).toBe(true);
+    expect(inkRunner.snapshots.some((frame) => frame.commandProgressPanel === undefined)).toBe(
+      true,
+    );
+    expect(
+      result.transcriptItems.some((item) => item.lines.includes('Summary: doctor completed')),
+    ).toBe(true);
+  });
+
   it('keeps a pending preview visible across Ctrl+L until /confirm executes it', async () => {
     const renderer = new RecordingSessionShellRenderer();
     const inkRunner = new StubSessionShellInkRunner([
@@ -960,7 +1166,14 @@ describe('CliSessionShellRunner', () => {
       }),
     );
 
-    expect(commandExecutor).toHaveBeenCalledWith(['workspace', 'dry-run']);
+    expect(commandExecutor).toHaveBeenCalledWith(
+      ['workspace', 'dry-run'],
+      expect.objectContaining({
+        progressSink: expect.objectContaining({
+          publish: expect.any(Function),
+        }),
+      }),
+    );
     expect(renderer.frames).toHaveLength(0);
     expect(
       inkRunner.snapshots.some(

@@ -53,3 +53,10 @@ export interface CliGovernanceCommandExecutionOptions {
   progressSink?: CliCommandProgressSink;
   abortSignal?: AbortSignal;
 }
+
+/**
+ * Defines additive nested-entry execution options used when the session shell re-enters `runCli`.
+ */
+export interface CliNestedCommandExecutionOptions extends CliGovernanceCommandExecutionOptions {
+  suppressLiveProgressPresenter?: boolean;
+}

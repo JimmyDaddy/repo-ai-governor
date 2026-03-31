@@ -21,6 +21,8 @@ import type {
   CliSessionShellPersistenceOwner,
   CliSessionTranscriptRole,
 } from '../../constants/cli-session-shell.constant.js';
+import type { CliCommandProgressPanelViewModel } from './cli-command-progress-panel.interface.js';
+import type { CliGovernanceCommandExecutionOptions } from './cli-command-progress.interface.js';
 
 /**
  * Defines one transcript item rendered inside the session-shell transcript pane.
@@ -87,6 +89,7 @@ export interface CliSessionShellViewModel {
   inputActionContract: CliSessionShellInputActionType[];
   title: string;
   subtitle: string;
+  commandProgressPanel?: CliCommandProgressPanelViewModel;
   promptBarTitle: string;
   promptBarLines: string[];
   themePreset?: CliReactThemePreset;
@@ -128,6 +131,7 @@ export interface CliSessionShellCommandExecutionResult {
 
 export type CliSessionShellCommandExecutor = (
   argv: string[],
+  executionOptions?: CliGovernanceCommandExecutionOptions,
 ) => Promise<CliSessionShellCommandExecutionResult>;
 
 export interface CliSessionShellPassthroughResult {
@@ -168,6 +172,7 @@ export interface CliSessionShellServiceClientLike {
 export interface CliSessionShellRunOptions {
   sessionClient: CliSessionShellServiceClientLike;
   commandExecutor?: CliSessionShellCommandExecutor;
+  commandExecutionOptions?: CliGovernanceCommandExecutionOptions;
   passthroughExecutor?: CliSessionShellPassthroughExecutor;
   currentWorkingDirectory: string;
   workspaceSummary: string;

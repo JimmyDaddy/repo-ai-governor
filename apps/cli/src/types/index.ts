@@ -9,6 +9,7 @@ export type {
   CliAgentProjectionPanelViewModel,
   CliCommandCancelCapability,
   CliExecutionStreamMetadata,
+  CliNestedCommandExecutionOptions,
   CliCommandProgressArtifactPatch,
   CliCommandProgressEvent,
   CliCommandProgressPanelArtifactViewModel,

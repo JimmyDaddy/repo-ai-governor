@@ -1,7 +1,7 @@
 # Repo AI Governor Session-First 主 Agent 终端壳层技术方案（Draft）
 
 - Status: draft
-- Date: 2026-03-29
+- Date: 2026-03-31
 - Scope: CLI entry UX / session-first terminal shell / main-agent conversation / slash command palette
 - Target Modules:
   - `runtime.cli-interactive-shell`
@@ -11,6 +11,8 @@
 - Related:
   - `.repo-ai-governor/draft/interactive-cli-react-style-technical-solution.md`
   - `.repo-ai-governor/draft/runtime-cli-run-live-react-session-shell-technical-solution.md`
+  - `.repo-ai-governor/draft/command-live-progress-react-shell-technical-solution.md`
+  - `.repo-ai-governor/draft/session-shell-ink-input-takeover-technical-solution.md`
   - `apps/cli/src/main.ts`
   - `apps/cli/src/cli-governance-runtime.ts`
   - `apps/cli/src/react-cli/**`
@@ -99,6 +101,112 @@ aider 的 in-chat commands 文档提供了更完整的“会话内命令面板�
 2. slash command 应该是会话内控制面，不应散落在外层 CLI 子命令之外。
 3. 普通文本与命令文本必须有明确语法分流。
 4. 交互模式与脚本模式必须严格分离，避免污染机器可读输出。
+
+### 2.5 现成技术路径对比
+
+仅参考 CLI 交互形态还不够，`repo-ai-governor` 还需要决定“主 agent”到底落在哪一层。基于联网检索与当前仓库约束，可以归纳出三条主路径。
+
+#### 路径 A：service-owned `session.main` + 本地 adapter routing
+
+含义：
+
+1. `repo-ai-governor` 默认进入 session shell。
+2. 普通文本通过 shared service contract 发到 `session.main`。
+3. `session.main` 在本地 orchestration service 内做 intent resolution、session memory、slash command 建议和命令 handoff。
+4. 真正需要执行重型编排时，再转交已有 `run/review/workflow` 链路。
+
+优势：
+
+1. 与当前仓库已存在的 `orchestration-service-client`、sidecar + ipc、resume/session DTO 完全一致。
+2. CLI 和 future desktop 可以共用同一份 session truth。
+3. 可先实现“前台主 agent”，而不把所有后台编排角色都提前暴露给用户。
+
+代价：
+
+1. 需要补一个真正的 `session.main` dispatcher，而不是继续用 baseline ack。
+2. 需要明确 conversation turn、command handoff、agent metadata 的 service event contract。
+
+#### 路径 B：让 LangGraph 直接充当前台主 agent runtime
+
+含义：
+
+1. 前台每条自然语言输入都直接进入一个 LangGraph agent/workflow。
+2. LangGraph 同时承担对话管理、状态机、工具调用、角色切换和执行回放。
+
+优势：
+
+1. LangGraph 天然擅长 long-running、stateful orchestration。
+2. 如果后续要把主 agent 演进成真正的多 agent supervisor，这条路的扩展性很好。
+
+代价：
+
+1. 会把“前台会话引导”与“后台任务编排”耦得过早。
+2. 当前仓库已经明确要求 descriptor 是 projection，LangGraph supervisor 只能消费 descriptor，不能反向成为新的 canonical source。
+3. 如果太早把前台 shell 做成 graph-first，CLI/desktop 更容易被 runtime 细节绑死。
+
+#### 路径 C：协议优先，直接把主 agent 建成 A2A / MCP 风格外部 agent
+
+含义：
+
+1. 主 agent 本身是一个远端或独立进程 agent。
+2. CLI session shell 更像协议 client。
+3. 工具、context、agent 通讯大量依赖 MCP 或 A2A。
+
+优势：
+
+1. 长期看更利于跨语言、跨进程、跨团队 agent 互操作。
+2. 如果未来主 agent 不只服务 CLI/desktop，而是服务多个 host，这条路会更标准化。
+
+代价：
+
+1. 对当前仓库阶段来说过重。
+2. MCP 主要解决 tool/resource exposure，不直接替代 session runtime。
+3. A2A 更偏 remote agent-to-agent collaboration，当前仓库还没有必须远端化 `session.main` 的约束。
+
+### 2.6 方案对比图
+
+```mermaid
+flowchart TD
+  User["User Input"] --> A["方案 A\nservice-owned session.main"]
+  User --> B["方案 B\nLangGraph-first foreground runtime"]
+  User --> C["方案 C\nprotocol-first remote agent"]
+
+  A --> A1["local orchestration service owns session truth"]
+  A --> A2["adapter routing handles local tool execution"]
+  A --> A3["CLI / desktop share DTO + transcript"]
+
+  B --> B1["foreground turn enters graph runtime directly"]
+  B --> B2["dialog + orchestration coupled early"]
+  B --> B3["good long-term multi-agent expansion"]
+
+  C --> C1["MCP for tools/resources"]
+  C --> C2["A2A for remote agent communication"]
+  C --> C3["highest interoperability, highest immediate cost"]
+```
+
+### 2.7 推荐结论
+
+推荐采用路径 A，并显式保留路径 B/C 的后续兼容位。
+
+推荐理由：
+
+1. 它最符合当前仓库已冻结的约束：
+   - desktop 只能消费 `orchestration-service-client`
+   - canonical session state 必须 service-owned
+   - CLI 与 desktop 必须共享同一份 DTO / transcript / resume 语义
+2. 它能最小成本把“主 agent”从 today 的 baseline ack 升级成真实对话入口，而不提前重构整个任务编排后端。
+3. 它允许 LangGraph 继续在正确的层工作：
+   - 作为 workflow / orchestration backend
+   - 作为 `run/review` 等重型链路的执行后端
+   - 而不是一上来就吞掉前台 session shell 的全部语义
+4. 它也不排斥未来演进：
+   - 需要 remote delegation 时，可以在 `session.main` 内新增 A2A adapter
+   - 需要更标准的 tool exposure 时，可以把 `session.main` 可用工具逐步 MCP 化
+
+一句话收敛：
+
+1. 当前阶段最优解不是“让 LangGraph 直接变前台聊天壳”，也不是“现在就做 remote A2A agent 平台”。
+2. 当前阶段最优解是“先把 `session.main` 做成 service-owned 主 agent，并通过现有 adapter routing / command handoff 驱动执行”。
 
 ## 3. 当前仓库的现成接缝
 
@@ -872,12 +980,186 @@ integrations/desktop/
 1. 当前仓库已经有“命令内 React shell”的底座。
 2. 下一阶段应该演进到“产品级 session shell”。
 3. 默认入口、主 agent、`resume`、slash command palette 和 desktop convergence，应该一起设计，而不是分散补丁式接入。
+4. 推荐实现路径是：
+   - `service-owned session.main`
+   - `CLI / desktop shared DTO`
+   - `local adapter routing + command handoff`
+   - `LangGraph 继续承接后台 orchestration，而非直接吞掉前台主 agent`
 
-## 19. 外部参考链接
+## 19. 会话内长命令 Live Progress 路线对比与推荐
+
+### 19.1 问题重述
+
+当前 session shell 在 handoff 长命令时，已经具备：
+
+1. `COMMAND_RUNNING` 状态切换
+2. 最终 command recap transcript
+3. direct CLI path 下的 command-scoped live progress baseline
+
+但仍缺一条真正产品级的链路：
+
+1. nested command 的中间 progress 如何持续回灌到当前 session shell
+2. 为什么长阶段会看起来“卡住不动”
+3. 为什么界面刷新不应该依赖用户再按一次 `Enter`
+
+根因可以归结为三个点：
+
+1. renderer ownership 还没有完全收敛
+2. nested command progress 还没有正式 relay 回 session shell
+3. elapsed / heartbeat / spinner 缺少 timer-driven tick
+
+### 19.2 多方案对比图
+
+| 方案 | 核心思路 | 社区方案对齐度 | 优点 | 主要风险 | 结论 |
+|---|---|---|---|---|---|
+| 方案 A：双 renderer 叠加 | session shell 保持外层 Ink，nested command 继续自己挂 `ReactCliLiveProgressPresenter` | 低 | 改动最小，能复用现有 direct CLI path | stderr ownership 冲突、刷新可能仍依赖输入、难以 desktop 复用、终端行为不稳定 | 不推荐 |
+| 方案 B：单 renderer + progress relay | session shell 成为唯一前台 renderer；nested command 只发 progress events，但不补 timer tick | 中 | 去掉双 renderer 冲突，结构开始正确 | 遇到沉默长阶段时仍像“卡住”，elapsed 不会自己跳 | 可作过渡方案 |
+| 方案 C：单 renderer + progress relay + timer tick | session shell 成为唯一前台 renderer；nested command 只发 progress events；session shell 自己做 1s tick/heartbeat | 高 | 最符合社区成熟做法；无需按 `Enter` 也持续刷新；便于 desktop convergence | 需要补一层 relay、tick lifecycle 和 shared progress dock | 推荐 |
+
+### 19.3 社区参考如何映射到本问题
+
+#### 19.3.1 Ink
+
+`Ink` 官方 README 展示的推荐模式是：
+
+1. 挂载一个持续存在的 render tree
+2. 通过 state / `rerender()` 驱动 live 更新
+3. 用 `<Static>` 维护 append-only 历史，用动态区域显示当前仍在变化的状态
+
+这意味着 session shell 更适合：
+
+1. transcript 走 append-only 历史区
+2. command progress 走 live dock
+3. 不再让 nested command 自己抢第二个前台 renderer
+
+#### 19.3.2 Bubble Tea
+
+`Bubble Tea` 官方提供：
+
+1. `Program.Send(msg)`：从外部把事件注入当前唯一事件循环
+2. `Every` / `Tick`：让时间本身成为正式消息
+3. spinner 组件自己的 `Tick()`：确保无输入也持续刷新
+
+这和我们的问题几乎一一对应：
+
+1. progress relay 对应 `Send(msg)` 思路
+2. elapsed / heartbeat 对应 `Tick`
+3. session shell 应该像唯一 event loop 一样接住所有前台更新
+
+#### 19.3.3 Textual
+
+`Textual` 的 workers / message pump 也采用类似原则：
+
+1. 后台 worker 不直接持有整套 UI
+2. worker 更适合发 message
+3. UI 由前台主循环统一消费消息并刷新
+
+因此三条社区路线虽然技术栈不同，但结论一致：
+
+1. 前台 renderer owner 应唯一
+2. 后台长任务应发送 message / event，而不是直接控制 UI
+3. timer tick 是长任务 UX 的正式一部分，不是附属优化
+
+### 19.4 推荐方案
+
+我推荐采用方案 C：
+
+1. session shell 成为 nested command 的唯一前台 renderer owner
+2. nested `runCli(...)` 增加可选 progress relay 注入能力
+3. 当 relay 存在时，inner command 不再创建 `ReactCliLiveProgressPresenter`
+4. session shell 直接复用 shared `CliCommandProgressEvent -> ReactCliCommandProgressController` reduce seam
+5. 当 `handoffState === RUNNING` 时，session shell 启动 `1s` tick，用于刷新 elapsed / spinner / heartbeat
+
+推荐架构如下：
+
+```mermaid
+flowchart LR
+  A["Session Shell Ink Tree"] --> B["Session Shell Runner"]
+  B --> C["Nested runCli(argv, io, progressRelay)"]
+  C --> D["CliGovernanceRuntime.execute(command, executionOptions)"]
+  D --> E["publish(CliCommandProgressEvent)"]
+  E --> F["Shared Progress Controller"]
+  F --> A
+  G["1s Tick / Heartbeat"] --> F
+  D --> H["Final JSON Payload"]
+  H --> B
+  B --> I["Transcript Recap + Artifact Backlinks"]
+```
+
+### 19.5 推荐方案的工程落点
+
+#### 19.5.1 renderer ownership
+
+明确区分两条路径：
+
+1. direct CLI path
+   - 保留现有 `ReactCliLiveProgressPresenter`
+2. session-shell nested path
+   - session shell 是唯一 live renderer
+   - inner command 只负责发 progress event 和 final payload
+
+#### 19.5.2 session shell view-model
+
+建议为 session shell 新增正式的 running-state dock：
+
+1. `commandProgressPanel`
+2. `commandRunningStartedAt`
+3. `lastProgressAt`
+
+这样 session shell 不再只依赖：
+
+1. `handoffState`
+2. `commandPreview`
+3. 最终 transcript recap
+
+#### 19.5.3 tick refresh
+
+建议：
+
+1. running 开始时启动 `1s` interval
+2. success / failure / cancelled 时立刻停止
+3. tick 不写 transcript，只触发：
+   - elapsed label 更新
+   - spinner/heartbeat 更新
+   - 当前 shell rerender
+
+#### 19.5.4 rollout 顺序
+
+首批 consumer 继续聚焦：
+
+1. `connect`
+2. `doctor`
+3. `verify`
+
+后续再扩展到：
+
+1. `run`
+2. `plan`
+3. `review`
+
+### 19.6 推荐方案的验收标准
+
+1. 用户在 session shell 中执行长命令时，不需要额外按 `Enter`，界面也会每秒刷新一次 elapsed / heartbeat。
+2. `connect / doctor / verify` 的阶段 progress 会直接显示在当前 session shell，而不是沉默等待最终结果。
+3. session shell nested path 下不存在第二个 live Ink renderer owner。
+4. 命令结束后，running dock 收口为 transcript summary，保留最终 artifact / status / agent routing 摘要。
+5. `stderr-only` live contract 与最终 `stdout` machine-readable payload 保持兼容。
+6. 这条路径从 Day 1 就与 future desktop convergence 不冲突。
+
+## 20. 外部参考链接
 
 1. [OpenAI Codex README](https://github.com/openai/codex/blob/main/README.md)
 2. [Claude Code CLI reference](https://code.claude.com/docs/en/cli-reference)
 3. [Claude Code built-in commands](https://code.claude.com/docs/en/commands)
 4. [aider in-chat commands](https://aider.chat/docs/usage/commands.html)
-5. [Desktop execution surface baseline](https://github.com/JimmyDaddy/repo-ai-governor/blob/main/integrations/desktop/README.md)
-6. [Orchestration service client README](https://github.com/JimmyDaddy/repo-ai-governor/blob/main/packages/orchestration-service-client/README.md)
+5. [LangGraph overview](https://docs.langchain.com/oss/python/langgraph/overview)
+6. [Model Context Protocol introduction](https://modelcontextprotocol.io/introduction)
+7. [A2A protocol](https://a2a-protocol.org/latest/)
+8. [Google ADK A2A quickstart: exposing a remote agent](https://google.github.io/adk-docs/a2a/quickstart-exposing/)
+9. [Desktop execution surface baseline](https://github.com/JimmyDaddy/repo-ai-governor/blob/main/integrations/desktop/README.md)
+10. [Orchestration service client README](https://github.com/JimmyDaddy/repo-ai-governor/blob/main/packages/orchestration-service-client/README.md)
+11. [Ink README](https://github.com/vadimdemedes/ink)
+12. [Bubble Tea package docs](https://pkg.go.dev/github.com/charmbracelet/bubbletea)
+13. [Bubbles spinner package docs](https://pkg.go.dev/github.com/charmbracelet/bubbles/spinner)
+14. [Textual workers guide](https://textual.textualize.io/guide/workers/)
+15. [Textual message pump API](https://textual.textualize.io/api/message_pump/)

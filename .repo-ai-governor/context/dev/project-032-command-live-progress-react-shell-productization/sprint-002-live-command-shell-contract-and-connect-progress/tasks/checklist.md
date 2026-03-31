@@ -9,6 +9,7 @@
   - 2026-03-30：任务完成；running progress panel baseline、shared cancel seam 与 `AgentProbeRequest.signal` contract 已收口，并通过 `pnpm run build`、定向 Vitest、task/sprint/i18n/biome/code-review sync 检查；新增 `resolved_code_review_tk-445-tk-446-live-command-shell-connect-progress-baseline.md`。
   - 2026-03-30：follow-up CR 修复已完成；两段式 `Ctrl+C` 现仅对 `connect/doctor/verify` 暴露，并补齐 `doctor/verify` 的 `abortSignal` 透传与回归测试；新增 `resolved_code_review_tk-445-tk-446-live-command-shell-connect-progress-baseline-followup.md`。
   - 2026-03-31：closeout surface 可读性 follow-up 已完成；session shell 现在把 nested command recap 统一收敛为“摘要 / Agent 路由 / 关注项 / 关键状态”结构，并压缩 artifact 路径与冗余 recap；`pnpm exec vitest run apps/cli/test/runtime/session-shell-entrypoint-runtime.test.ts apps/cli/test/runtime/session-shell-runner.test.ts`、`node ./scripts/governance/check-i18n-parity-fallback.js`、`pnpm exec biome check ...` 与 `pnpm run build` 已通过。
+  - 2026-03-31：社区参考技术方案 follow-up 已完成；已在 `interactive-cli-session-first-agent-shell-technical-solution.md` 中补充长命令 live progress 多方案对比图，并推荐 `single renderer owner + progress relay + timer tick` 作为后续 nested command refresh 修复方向；`node ./scripts/governance/check-task-ledger-sync.js` 与 `node ./scripts/governance/check-sprint-plan-status-sync.js` 通过，docs-only 因此 build not required。
 - [x] TK-446 instrument connect with progress events and cancellable running shell baseline
   - 2026-03-30：任务创建，状态初始化为 `planned`。
   - 2026-03-30：状态切换为 `in_progress`；开始落地 progressSink + abortSignal seam、running progress panel baseline 与 connect live progress events。

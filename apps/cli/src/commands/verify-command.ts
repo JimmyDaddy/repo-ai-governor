@@ -1,15 +1,28 @@
 import { resolve } from 'node:path';
 
-import { ExecutionProgressStage, GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
+import {
+  ExecutionProgressStage,
+  ExecutionProgressStatus,
+  GovernorErrorCode,
+  RuntimeError,
+} from '@repo-ai-governor/shared';
 import { CliCommandResultCheckId } from '../constants/cli-command-result-check.constant.js';
 import { CliCommandName } from '../constants/cli-command.constant.js';
 import {
   CLI_RUNTIME_OPERATION,
   CliGovernanceCheckStatus,
 } from '../constants/cli-governance-runtime.constant.js';
-import type { CliCommandResultArtifact, CliCommandResultCheck } from '../types/index.js';
+import type {
+  CliCommandProgressEvent,
+  CliCommandResultArtifact,
+  CliCommandResultCheck,
+} from '../types/index.js';
 import type { CliCommandExecutorContext } from '../types/interfaces/cli-governance-runtime.interface.js';
 import type { CliCommandExecutor } from './cli-command-executor.interface.js';
+
+const VERIFY_PROGRESS_TOTAL_STEPS = 2;
+const VERIFY_PROGRESS_ROW_ADAPTER_VERIFICATION = 'adapter-verification';
+const VERIFY_PROGRESS_ROW_DIAGNOSTICS = 'verify-diagnostics';
 
 /**
  * Owns `verify` command execution outside the runtime facade.
@@ -19,8 +32,33 @@ export class CliVerifyCommand implements CliCommandExecutor {
 
   public async execute(context: CliCommandExecutorContext) {
     const runtimeDebugOptions = context.resolveRuntimeDebugOptions();
-    const adapterVerification = await context.resolveAdapterVerification(context.abortSignal);
     const verifyId = `verify-${Date.now()}`;
+    const diagnosticsArtifactPath = resolve(
+      context.options.workspace.workspaceRoot,
+      'context',
+      'diagnostics',
+      'verify',
+      `${verifyId}.json`,
+    );
+
+    this.emitProgress(context, {
+      commandName: CliCommandName.VERIFY,
+      runState: 'running',
+      statusLine: this.translate(context, 'cli.reactShell.progress.verify.starting'),
+      currentStepTitle: this.translate(context, 'cli.reactShell.progress.verify.verifyingAdapters'),
+      totalSteps: VERIFY_PROGRESS_TOTAL_STEPS,
+      completedSteps: 0,
+      cancelCapability: context.abortSignal ? 'supported' : 'none',
+      row: {
+        id: VERIFY_PROGRESS_ROW_ADAPTER_VERIFICATION,
+        title: this.translate(context, 'cli.reactShell.progress.verify.verifyingAdapters'),
+        status: ExecutionProgressStatus.RUNNING,
+      },
+    });
+    this.throwIfAborted(context);
+
+    const adapterVerification = await context.resolveAdapterVerification(context.abortSignal);
+    this.throwIfAborted(context);
     const matrixPayload = context.onboardingRuntime.createVerifyMatrixPayload({
       executionId: verifyId,
       verification: adapterVerification,
@@ -79,13 +117,28 @@ export class CliVerifyCommand implements CliCommandExecutor {
       status: CliGovernanceCheckStatus.PASS,
       detail: `descriptors=${agentView.descriptors.length} execution_id=${verifyId}`,
     });
-    const diagnosticsArtifactPath = resolve(
-      context.options.workspace.workspaceRoot,
-      'context',
-      'diagnostics',
-      'verify',
-      `${verifyId}.json`,
-    );
+    this.emitProgress(context, {
+      commandName: CliCommandName.VERIFY,
+      statusLine: this.translate(context, 'cli.reactShell.progress.verify.writingArtifacts'),
+      currentStepTitle: this.translate(context, 'cli.reactShell.progress.verify.writingArtifacts'),
+      completedSteps: 1,
+      row: {
+        id: VERIFY_PROGRESS_ROW_ADAPTER_VERIFICATION,
+        title: this.translate(context, 'cli.reactShell.progress.verify.verifyingAdapters'),
+        status: this.resolveProgressStatus(adapterVerification.overallStatus),
+        detail: `status=${adapterVerification.overallStatus} fallback_roles=${adapterVerification.fallbackRoleCount} degraded_roles=${adapterVerification.degradedRoleCount}`,
+      },
+    });
+    this.emitProgress(context, {
+      commandName: CliCommandName.VERIFY,
+      row: {
+        id: VERIFY_PROGRESS_ROW_DIAGNOSTICS,
+        title: this.translate(context, 'cli.reactShell.progress.verify.writingArtifacts'),
+        status: ExecutionProgressStatus.RUNNING,
+        detail: diagnosticsArtifactPath,
+      },
+    });
+    this.throwIfAborted(context);
     await context.artifactWriter.writeJsonArtifact(diagnosticsArtifactPath, {
       generatedAt: context.toRfc3339SecondsTimestamp(new Date()),
       workspace: {
@@ -138,6 +191,25 @@ export class CliVerifyCommand implements CliCommandExecutor {
     const message = `Verify completed with adapters_status=${adapterVerification.overallStatus}.`;
 
     if (adapterVerification.overallStatus === CliGovernanceCheckStatus.FAIL) {
+      this.emitProgress(context, {
+        commandName: CliCommandName.VERIFY,
+        runState: 'failure',
+        statusLine: this.translate(context, 'cli.reactShell.progress.verify.failed'),
+        currentStepTitle: undefined,
+        completedSteps: VERIFY_PROGRESS_TOTAL_STEPS,
+        row: {
+          id: VERIFY_PROGRESS_ROW_DIAGNOSTICS,
+          title: this.translate(context, 'cli.reactShell.progress.verify.writingArtifacts'),
+          status: ExecutionProgressStatus.COMPLETED,
+          detail: diagnosticsArtifactPath,
+        },
+        artifact: {
+          id: VERIFY_PROGRESS_ROW_DIAGNOSTICS,
+          label: this.translate(context, 'cli.reactShell.progress.verify.writingArtifacts'),
+          path: diagnosticsArtifactPath,
+        },
+        logLine: `adapter_status=${adapterVerification.overallStatus} required_failures=${adapterVerification.requiredRoleFailedCount}`,
+      });
       throw new RuntimeError(
         GovernorErrorCode.ADAPTER_ROUTE_NO_AVAILABLE_SURFACE,
         `verify failed because required adapter roles are unavailable or capability gaps exist. diagnostics=${diagnosticsArtifactPath}`,
@@ -152,6 +224,26 @@ export class CliVerifyCommand implements CliCommandExecutor {
         },
       );
     }
+
+    this.emitProgress(context, {
+      commandName: CliCommandName.VERIFY,
+      runState: 'success',
+      statusLine: this.translate(context, 'cli.reactShell.progress.verify.completed'),
+      currentStepTitle: undefined,
+      completedSteps: VERIFY_PROGRESS_TOTAL_STEPS,
+      row: {
+        id: VERIFY_PROGRESS_ROW_DIAGNOSTICS,
+        title: this.translate(context, 'cli.reactShell.progress.verify.writingArtifacts'),
+        status: ExecutionProgressStatus.COMPLETED,
+        detail: diagnosticsArtifactPath,
+      },
+      artifact: {
+        id: VERIFY_PROGRESS_ROW_DIAGNOSTICS,
+        label: this.translate(context, 'cli.reactShell.progress.verify.writingArtifacts'),
+        path: diagnosticsArtifactPath,
+      },
+      logLine: `adapter_status=${adapterVerification.overallStatus} required_failures=${adapterVerification.requiredRoleFailedCount}`,
+    });
 
     return {
       message,
@@ -174,5 +266,56 @@ export class CliVerifyCommand implements CliCommandExecutor {
         },
       },
     };
+  }
+
+  private translate(
+    context: Pick<CliCommandExecutorContext, 'translate'>,
+    key: string,
+    interpolation?: Record<string, string>,
+  ): string {
+    return context.translate?.(key, interpolation) ?? key;
+  }
+
+  private emitProgress(
+    context: Pick<CliCommandExecutorContext, 'progressSink'>,
+    event: CliCommandProgressEvent,
+  ): void {
+    context.progressSink?.publish(event);
+  }
+
+  private resolveProgressStatus(status: CliGovernanceCheckStatus): ExecutionProgressStatus {
+    if (status === CliGovernanceCheckStatus.PASS) {
+      return ExecutionProgressStatus.COMPLETED;
+    }
+
+    if (status === CliGovernanceCheckStatus.WARN) {
+      return ExecutionProgressStatus.WARNING;
+    }
+
+    return ExecutionProgressStatus.FAILED;
+  }
+
+  private throwIfAborted(
+    context: Pick<CliCommandExecutorContext, 'abortSignal' | 'progressSink' | 'translate'>,
+  ): void {
+    if (!context.abortSignal?.aborted) {
+      return;
+    }
+
+    this.emitProgress(context, {
+      commandName: CliCommandName.VERIFY,
+      runState: 'cancelled',
+      cancelCapability: 'cancel_requested',
+      statusLine: this.translate(context, 'cli.reactShell.progress.verify.cancelled'),
+      currentStepTitle: undefined,
+      logLine: this.translate(context, 'cli.reactShell.progress.verify.cancelled'),
+    });
+    throw new RuntimeError(
+      GovernorErrorCode.PROCESS_RUNTIME_CANCELLED,
+      this.translate(context, 'cli.reactShell.progress.verify.cancelled'),
+      {
+        command: CliCommandName.VERIFY,
+      },
+    );
   }
 }

@@ -28,6 +28,7 @@ export type {
 export type { ReactCliShellPalette, ReactCliThemeDefinition } from './react-cli-theme.interface.js';
 export type {
   CliCommandCancelCapability,
+  CliNestedCommandExecutionOptions,
   CliCommandProgressArtifactPatch,
   CliCommandProgressEvent,
   CliCommandProgressRowPatch,

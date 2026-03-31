@@ -431,6 +431,7 @@ export const ZH_CN_TRANSLATIONS = {
       progress: {
         title: '运行进度',
         elapsed: '已耗时：{{elapsed}}',
+        heartbeat: '心跳：{{tick}}',
         steps: '步骤 {{completed}}/{{total}}',
         artifactsTitle: '产物',
         logsTitle: '最近日志',
@@ -455,6 +456,22 @@ export const ZH_CN_TRANSLATIONS = {
           writingArtifacts: '写入诊断产物',
           completed: 'connect 诊断结果已就绪。',
           cancelled: 'connect 执行已取消。',
+        },
+        doctor: {
+          starting: '正在准备 doctor 执行…',
+          workspaceChecks: '检查工作区基线',
+          verifyingAdapters: '校验适配器',
+          writingArtifacts: '写入诊断产物',
+          completed: 'doctor 诊断结果已就绪。',
+          cancelled: 'doctor 执行已取消。',
+        },
+        verify: {
+          starting: '正在准备 verify 执行…',
+          verifyingAdapters: '校验适配器',
+          writingArtifacts: '写入诊断产物',
+          completed: 'verify 诊断结果已就绪。',
+          failed: 'verify 发现必需适配器角色失败。',
+          cancelled: 'verify 执行已取消。',
         },
       },
       connect: {

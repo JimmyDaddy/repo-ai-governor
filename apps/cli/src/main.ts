@@ -135,6 +135,7 @@ import type {
   CliErrorOutputPayload,
   CliGovernanceCommandExecutionOptions,
   CliLocalAdapterProbeOverride,
+  CliNestedCommandExecutionOptions,
   CliResolvedOutputContext,
   CliRuntimeDebugOptions,
   CliSuccessOutputPayload,
@@ -326,6 +327,7 @@ interface ResolvedIdeWrapperEnvironment {
  */
 interface CliEntrypointDependencies {
   sessionShellRunner?: CliSessionShellRunner;
+  nestedCommandExecutionOptions?: CliNestedCommandExecutionOptions;
 }
 
 const ADAPTER_SURFACE_VALUES = new Set<string>(Object.values(AdapterSurface));
@@ -429,8 +431,21 @@ export async function runCli(
         environment,
         translate: (key: string, interpolation?: Record<string, string>) =>
           runtimeI18n.t(key, interpolation),
-        executeCli: (nestedArgv, nestedIo) => runCli(nestedArgv, nestedIo, dependencies),
+        executeCli: (nestedArgv, nestedIo, nestedExecutionOptions) =>
+          runCli(nestedArgv, nestedIo, {
+            ...dependencies,
+            ...(nestedExecutionOptions
+              ? {
+                  nestedCommandExecutionOptions: nestedExecutionOptions,
+                }
+              : {}),
+          }),
       }),
+      ...(dependencies.nestedCommandExecutionOptions
+        ? {
+            commandExecutionOptions: dependencies.nestedCommandExecutionOptions,
+          }
+        : {}),
       currentWorkingDirectory: io.cwd(),
       workspaceSummary: runtimeI18n.t('cli.sessionShell.workspaceSummary', {
         workspaceId: runtimeContext.workspace.workspaceId,
@@ -561,6 +576,8 @@ export async function runCli(
       resolvedCommandName: CliCommandName,
       presentedCommandName: string = resolvedCommandName,
     ) => {
+      const nestedCommandExecutionOptions = dependencies.nestedCommandExecutionOptions;
+      const relayProgressSink = nestedCommandExecutionOptions?.progressSink;
       const diagnostics: CliCommandDiagnostics = {
         configSource: runtimeContext.configSource,
         locale: resolvedLocale,
@@ -597,27 +614,39 @@ export async function runCli(
             }
           : {}),
       };
-      const progressController =
-        runtimeDebugOptions.uiMode === CliInteractiveUiMode.REACT
-          ? new ReactCliCommandProgressController({
-              commandName: resolvedCommandName,
-              initialTitle: `[react-shell:${resolvedCommandName}] ${presentedCommandName}`,
-              initialSubtitle: `ui=${runtimeDebugOptions.uiMode} theme=${runtimeDebugOptions.uiTheme ?? DEFAULT_CLI_REACT_THEME_PRESET} stdout=${outputContext.outputMode} workspace=${runtimeContext.workspace.mode}`,
-              themePreset: runtimeDebugOptions.uiTheme ?? DEFAULT_CLI_REACT_THEME_PRESET,
-              translate: (key, interpolation) => runtimeI18n.t(key, interpolation),
-            })
-          : null;
+      const shouldOwnLiveProgressPresenter =
+        runtimeDebugOptions.uiMode === CliInteractiveUiMode.REACT &&
+        !nestedCommandExecutionOptions?.suppressLiveProgressPresenter &&
+        relayProgressSink === undefined;
+      const progressController = shouldOwnLiveProgressPresenter
+        ? new ReactCliCommandProgressController({
+            commandName: resolvedCommandName,
+            initialTitle: `[react-shell:${resolvedCommandName}] ${presentedCommandName}`,
+            initialSubtitle: `ui=${runtimeDebugOptions.uiMode} theme=${runtimeDebugOptions.uiTheme ?? DEFAULT_CLI_REACT_THEME_PRESET} stdout=${outputContext.outputMode} workspace=${runtimeContext.workspace.mode}`,
+            themePreset: runtimeDebugOptions.uiTheme ?? DEFAULT_CLI_REACT_THEME_PRESET,
+            translate: (key, interpolation) => runtimeI18n.t(key, interpolation),
+          })
+        : null;
       const liveProgressPresenter = progressController ? new ReactCliLiveProgressPresenter() : null;
+      const localProgressSink =
+        progressController && liveProgressPresenter
+          ? {
+              publish: (
+                event: Parameters<
+                  NonNullable<CliGovernanceCommandExecutionOptions['progressSink']>['publish']
+                >[0],
+              ) => {
+                liveProgressPresenter.render(progressController.apply(event));
+              },
+            }
+          : undefined;
+      const progressSink = relayProgressSink ?? localProgressSink;
       const cancelController =
-        progressController &&
+        progressSink &&
         LIVE_COMMAND_CANCELLATION_POLICY.supportsLiveCancellation(resolvedCommandName)
           ? new CliLiveCommandCancelController({
               commandName: resolvedCommandName,
-              progressSink: {
-                publish: (event) => {
-                  liveProgressPresenter?.render(progressController.apply(event));
-                },
-              },
+              progressSink,
               translate: (key, interpolation) => runtimeI18n.t(key, interpolation),
             })
           : null;
@@ -626,7 +655,11 @@ export async function runCli(
       };
       const executionOptions: CliGovernanceCommandExecutionOptions | undefined = cancelController
         ? cancelController.createExecutionOptions()
-        : undefined;
+        : progressSink
+          ? {
+              progressSink,
+            }
+          : undefined;
 
       try {
         if (cancelController) {

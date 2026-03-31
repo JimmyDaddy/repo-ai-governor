@@ -18,6 +18,13 @@ export function ReactCliCommandProgressPanel({
   panel,
   shellPalette,
 }: ReactCliCommandProgressPanelProps): React.JSX.Element {
+  const summaryParts = [
+    panel.currentStepTitle,
+    panel.elapsedLabel,
+    panel.stepsLabel,
+    panel.heartbeatLabel,
+  ].filter((value) => Boolean(value)) as string[];
+
   return (
     <Box
       flexDirection='column'
@@ -30,12 +37,8 @@ export function ReactCliCommandProgressPanel({
         {panel.title}
       </Text>
       <Text color={shellPalette.subtitleColor}>{panel.statusLine}</Text>
-      {panel.currentStepTitle || panel.elapsedLabel || panel.stepsLabel ? (
-        <Text color={shellPalette.footerColor}>
-          {[panel.currentStepTitle, panel.elapsedLabel, panel.stepsLabel]
-            .filter((value): value is string => Boolean(value))
-            .join(' · ')}
-        </Text>
+      {summaryParts.length > 0 ? (
+        <Text color={shellPalette.footerColor}>{summaryParts.join(' · ')}</Text>
       ) : null}
       {panel.cancelLabel ? (
         <Text color={shellPalette.helpColor} dimColor>

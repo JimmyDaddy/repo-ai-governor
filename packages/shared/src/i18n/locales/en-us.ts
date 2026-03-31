@@ -478,6 +478,7 @@ export const EN_US_TRANSLATIONS = {
       progress: {
         title: 'Running progress',
         elapsed: 'Elapsed: {{elapsed}}',
+        heartbeat: 'Heartbeat: {{tick}}',
         steps: 'Step {{completed}}/{{total}}',
         artifactsTitle: 'Artifacts',
         logsTitle: 'Recent logs',
@@ -502,6 +503,22 @@ export const EN_US_TRANSLATIONS = {
           writingArtifacts: 'Write diagnostics artifacts',
           completed: 'Connect diagnostics are ready.',
           cancelled: 'Connect execution was cancelled.',
+        },
+        doctor: {
+          starting: 'Preparing doctor execution…',
+          workspaceChecks: 'Inspect workspace baseline',
+          verifyingAdapters: 'Verify adapters',
+          writingArtifacts: 'Write diagnostics artifacts',
+          completed: 'Doctor diagnostics are ready.',
+          cancelled: 'Doctor execution was cancelled.',
+        },
+        verify: {
+          starting: 'Preparing verify execution…',
+          verifyingAdapters: 'Verify adapters',
+          writingArtifacts: 'Write diagnostics artifacts',
+          completed: 'Verify diagnostics are ready.',
+          failed: 'Verify found required adapter failures.',
+          cancelled: 'Verify execution was cancelled.',
         },
       },
       connect: {

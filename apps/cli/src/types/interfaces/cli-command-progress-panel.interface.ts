@@ -26,6 +26,7 @@ export interface CliCommandProgressPanelViewModel {
   statusLine: string;
   currentStepTitle?: string;
   elapsedLabel?: string;
+  heartbeatLabel?: string;
   stepsLabel?: string;
   artifactsTitle?: string;
   logsTitle?: string;

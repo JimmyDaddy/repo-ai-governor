@@ -6,6 +6,8 @@ import {
   ExecutionInteractionCategory,
   ExecutionProgressStage,
   ExecutionProgressStatus,
+  GovernorErrorCode,
+  RuntimeError,
 } from '@repo-ai-governor/shared';
 import {
   CLI_ADAPTER_TOOL_CHECK_ID_PREFIX,
@@ -20,6 +22,7 @@ import {
 } from '../constants/cli-governance-runtime.constant.js';
 import type {
   CliAdapterVerificationResolution,
+  CliCommandProgressEvent,
   CliCommandResultArtifact,
   CliCommandResultCheck,
   CliInteractionPrompt,
@@ -27,6 +30,12 @@ import type {
 } from '../types/index.js';
 import type { CliCommandExecutorContext } from '../types/interfaces/cli-governance-runtime.interface.js';
 import type { CliCommandExecutor } from './cli-command-executor.interface.js';
+
+const DOCTOR_PROGRESS_STEPS_BASELINE_ONLY = 2;
+const DOCTOR_PROGRESS_STEPS_WITH_ADAPTERS = 3;
+const DOCTOR_PROGRESS_ROW_WORKSPACE_BASELINE = 'workspace-baseline';
+const DOCTOR_PROGRESS_ROW_ADAPTER_VERIFICATION = 'adapter-verification';
+const DOCTOR_PROGRESS_ROW_DIAGNOSTICS = 'doctor-diagnostics';
 
 /**
  * Owns `doctor` command execution outside the runtime facade.
@@ -36,6 +45,9 @@ export class CliDoctorCommand implements CliCommandExecutor {
 
   public async execute(context: CliCommandExecutorContext) {
     const runtimeDebugOptions = context.resolveRuntimeDebugOptions();
+    const totalSteps = runtimeDebugOptions.adapters
+      ? DOCTOR_PROGRESS_STEPS_WITH_ADAPTERS
+      : DOCTOR_PROGRESS_STEPS_BASELINE_ONLY;
     const checks: CliCommandResultCheck[] = [];
     const artifacts: CliCommandResultArtifact[] = [];
     const nextActions: string[] = [];
@@ -46,6 +58,33 @@ export class CliDoctorCommand implements CliCommandExecutor {
     let onboardingContract: ReturnType<
       CliCommandExecutorContext['onboardingRuntime']['createOnboardingContractPayload']
     > | null = null;
+    let adapterStatus: CliGovernanceCheckStatus | null = null;
+    let adapterVerificationSnapshot: CliAdapterVerificationResolution | null = null;
+    const doctorId = `doctor-${Date.now()}`;
+    const doctorDiagnosticsArtifactPath = resolve(
+      context.options.workspace.workspaceRoot,
+      'context',
+      'diagnostics',
+      'doctor',
+      `${doctorId}.json`,
+    );
+
+    this.emitProgress(context, {
+      commandName: CliCommandName.DOCTOR,
+      runState: 'running',
+      statusLine: this.translate(context, 'cli.reactShell.progress.doctor.starting'),
+      currentStepTitle: this.translate(context, 'cli.reactShell.progress.doctor.workspaceChecks'),
+      totalSteps,
+      completedSteps: 0,
+      cancelCapability: context.abortSignal ? 'supported' : 'none',
+      row: {
+        id: DOCTOR_PROGRESS_ROW_WORKSPACE_BASELINE,
+        title: this.translate(context, 'cli.reactShell.progress.doctor.workspaceChecks'),
+        status: ExecutionProgressStatus.RUNNING,
+        detail: context.options.workspace.workspaceRoot,
+      },
+    });
+    this.throwIfAborted(context);
 
     let workspaceRootExists = existsSync(context.options.workspace.workspaceRoot);
     if (!workspaceRootExists && runtimeDebugOptions.fix) {
@@ -113,17 +152,50 @@ export class CliDoctorCommand implements CliCommandExecutor {
         ? context.options.memoryStoreRoot
         : `missing=${context.options.memoryStoreRoot}`,
     });
-
-    let adapterStatus: CliGovernanceCheckStatus | null = null;
-    let adapterVerificationSnapshot: CliAdapterVerificationResolution | null = null;
-    const doctorId = `doctor-${Date.now()}`;
-    const doctorDiagnosticsArtifactPath = resolve(
-      context.options.workspace.workspaceRoot,
-      'context',
-      'diagnostics',
-      'doctor',
-      `${doctorId}.json`,
-    );
+    const doctorStatus = this.resolveDoctorBaselineStatus({
+      workspaceRootExists,
+      configExists,
+      workspaceWritable,
+      memoryRootExists,
+    });
+    this.emitProgress(context, {
+      commandName: CliCommandName.DOCTOR,
+      statusLine: runtimeDebugOptions.adapters
+        ? this.translate(context, 'cli.reactShell.progress.doctor.verifyingAdapters')
+        : this.translate(context, 'cli.reactShell.progress.doctor.writingArtifacts'),
+      currentStepTitle: runtimeDebugOptions.adapters
+        ? this.translate(context, 'cli.reactShell.progress.doctor.verifyingAdapters')
+        : this.translate(context, 'cli.reactShell.progress.doctor.writingArtifacts'),
+      completedSteps: 1,
+      row: {
+        id: DOCTOR_PROGRESS_ROW_WORKSPACE_BASELINE,
+        title: this.translate(context, 'cli.reactShell.progress.doctor.workspaceChecks'),
+        status: doctorStatus,
+        detail: `workspace=${workspaceRootExists ? 'ready' : 'missing'} config=${configExists ? 'ready' : 'missing'} memory=${memoryRootExists ? 'ready' : 'missing'}`,
+      },
+    });
+    if (runtimeDebugOptions.adapters) {
+      this.emitProgress(context, {
+        commandName: CliCommandName.DOCTOR,
+        row: {
+          id: DOCTOR_PROGRESS_ROW_ADAPTER_VERIFICATION,
+          title: this.translate(context, 'cli.reactShell.progress.doctor.verifyingAdapters'),
+          status: ExecutionProgressStatus.RUNNING,
+        },
+      });
+    }
+    if (!runtimeDebugOptions.adapters) {
+      this.emitProgress(context, {
+        commandName: CliCommandName.DOCTOR,
+        row: {
+          id: DOCTOR_PROGRESS_ROW_DIAGNOSTICS,
+          title: this.translate(context, 'cli.reactShell.progress.doctor.writingArtifacts'),
+          status: ExecutionProgressStatus.RUNNING,
+          detail: doctorDiagnosticsArtifactPath,
+        },
+      });
+    }
+    this.throwIfAborted(context);
     if (runtimeDebugOptions.adapters) {
       const adapterVerification = await context.resolveAdapterVerification(context.abortSignal);
       adapterVerificationSnapshot = adapterVerification;
@@ -169,6 +241,31 @@ export class CliDoctorCommand implements CliCommandExecutor {
         repairScope: runtimeDebugOptions.fix ? 'safe_local' : 'manual_only',
         diagnosticSummary: `status=${adapterVerification.overallStatus} safe_local_fix=${safeLocalFixCount}`,
       });
+      this.emitProgress(context, {
+        commandName: CliCommandName.DOCTOR,
+        statusLine: this.translate(context, 'cli.reactShell.progress.doctor.writingArtifacts'),
+        currentStepTitle: this.translate(
+          context,
+          'cli.reactShell.progress.doctor.writingArtifacts',
+        ),
+        completedSteps: 2,
+        row: {
+          id: DOCTOR_PROGRESS_ROW_ADAPTER_VERIFICATION,
+          title: this.translate(context, 'cli.reactShell.progress.doctor.verifyingAdapters'),
+          status: this.resolveProgressStatus(adapterVerification.overallStatus),
+          detail: `status=${adapterVerification.overallStatus} fallback_roles=${adapterVerification.fallbackRoleCount} degraded_roles=${adapterVerification.degradedRoleCount}`,
+        },
+      });
+      this.emitProgress(context, {
+        commandName: CliCommandName.DOCTOR,
+        row: {
+          id: DOCTOR_PROGRESS_ROW_DIAGNOSTICS,
+          title: this.translate(context, 'cli.reactShell.progress.doctor.writingArtifacts'),
+          status: ExecutionProgressStatus.RUNNING,
+          detail: doctorDiagnosticsArtifactPath,
+        },
+      });
+      this.throwIfAborted(context);
     }
 
     if (runtimeDebugOptions.fix) {
@@ -198,6 +295,7 @@ export class CliDoctorCommand implements CliCommandExecutor {
         detail: `descriptors=${agentView.descriptors.length} repair_scope=${runtimeDebugOptions.fix ? 'safe_local' : 'manual_only'}`,
       });
     }
+    this.throwIfAborted(context);
     await context.artifactWriter.writeJsonArtifact(doctorDiagnosticsArtifactPath, {
       generatedAt: context.toRfc3339SecondsTimestamp(new Date()),
       workspace: {
@@ -230,13 +328,26 @@ export class CliDoctorCommand implements CliCommandExecutor {
       id: 'doctor_diagnostics',
       path: doctorDiagnosticsArtifactPath,
     });
+    this.emitProgress(context, {
+      commandName: CliCommandName.DOCTOR,
+      runState: 'success',
+      statusLine: this.translate(context, 'cli.reactShell.progress.doctor.completed'),
+      currentStepTitle: undefined,
+      completedSteps: totalSteps,
+      row: {
+        id: DOCTOR_PROGRESS_ROW_DIAGNOSTICS,
+        title: this.translate(context, 'cli.reactShell.progress.doctor.writingArtifacts'),
+        status: ExecutionProgressStatus.COMPLETED,
+        detail: doctorDiagnosticsArtifactPath,
+      },
+      artifact: {
+        id: DOCTOR_PROGRESS_ROW_DIAGNOSTICS,
+        label: this.translate(context, 'cli.reactShell.progress.doctor.writingArtifacts'),
+        path: doctorDiagnosticsArtifactPath,
+      },
+      logLine: `attach_mode=${attachMode} adapters=${runtimeDebugOptions.adapters}`,
+    });
 
-    const doctorStatus =
-      !workspaceRootExists || !configExists
-        ? ExecutionProgressStatus.FAILED
-        : workspaceWritable && memoryRootExists
-          ? ExecutionProgressStatus.COMPLETED
-          : ExecutionProgressStatus.WARNING;
     const roleProgress: CliRoleStageProgress[] = [
       {
         roleId: 'workspace',
@@ -321,5 +432,73 @@ export class CliDoctorCommand implements CliCommandExecutor {
         },
       },
     };
+  }
+
+  private translate(
+    context: Pick<CliCommandExecutorContext, 'translate'>,
+    key: string,
+    interpolation?: Record<string, string>,
+  ): string {
+    return context.translate?.(key, interpolation) ?? key;
+  }
+
+  private emitProgress(
+    context: Pick<CliCommandExecutorContext, 'progressSink'>,
+    event: CliCommandProgressEvent,
+  ): void {
+    context.progressSink?.publish(event);
+  }
+
+  private resolveProgressStatus(status: CliGovernanceCheckStatus): ExecutionProgressStatus {
+    if (status === CliGovernanceCheckStatus.PASS) {
+      return ExecutionProgressStatus.COMPLETED;
+    }
+
+    if (status === CliGovernanceCheckStatus.WARN) {
+      return ExecutionProgressStatus.WARNING;
+    }
+
+    return ExecutionProgressStatus.FAILED;
+  }
+
+  private resolveDoctorBaselineStatus(options: {
+    workspaceRootExists: boolean;
+    configExists: boolean;
+    workspaceWritable: boolean;
+    memoryRootExists: boolean;
+  }): ExecutionProgressStatus {
+    if (!options.workspaceRootExists || !options.configExists) {
+      return ExecutionProgressStatus.FAILED;
+    }
+
+    if (options.workspaceWritable && options.memoryRootExists) {
+      return ExecutionProgressStatus.COMPLETED;
+    }
+
+    return ExecutionProgressStatus.WARNING;
+  }
+
+  private throwIfAborted(
+    context: Pick<CliCommandExecutorContext, 'abortSignal' | 'progressSink' | 'translate'>,
+  ): void {
+    if (!context.abortSignal?.aborted) {
+      return;
+    }
+
+    this.emitProgress(context, {
+      commandName: CliCommandName.DOCTOR,
+      runState: 'cancelled',
+      cancelCapability: 'cancel_requested',
+      statusLine: this.translate(context, 'cli.reactShell.progress.doctor.cancelled'),
+      currentStepTitle: undefined,
+      logLine: this.translate(context, 'cli.reactShell.progress.doctor.cancelled'),
+    });
+    throw new RuntimeError(
+      GovernorErrorCode.PROCESS_RUNTIME_CANCELLED,
+      this.translate(context, 'cli.reactShell.progress.doctor.cancelled'),
+      {
+        command: CliCommandName.DOCTOR,
+      },
+    );
   }
 }

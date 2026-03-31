@@ -19,7 +19,7 @@ import {
   CliGithubCopilotExecFixtureMode,
 } from '../src/constants/github-copilot-exec-fixture.constant.js';
 import { runCli } from '../src/main.js';
-import type { CliSessionShellRunResult } from '../src/types/index.js';
+import type { CliCommandProgressEvent, CliSessionShellRunResult } from '../src/types/index.js';
 
 function createDeterministicCliEnvironment(overrides: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
   return {
@@ -430,12 +430,20 @@ describe('CLI output contract integration', () => {
 
   it('routes a no-subcommand TTY pretty entry into the default session shell', async () => {
     const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(true);
+    const progressSink = {
+      publish: vi.fn(),
+    };
+    const abortController = new AbortController();
     const sessionShellRunner = {
       run: vi.fn(async () => createStubSessionShellResult()),
     };
 
     const exitCode = await runCli(['node', 'repo-ai-governor', '--locale', 'en-US'], io, {
       sessionShellRunner: sessionShellRunner as never,
+      nestedCommandExecutionOptions: {
+        progressSink,
+        abortSignal: abortController.signal,
+      },
     });
 
     expect(exitCode).toBe(0);
@@ -443,6 +451,47 @@ describe('CLI output contract integration', () => {
       expect.objectContaining({
         currentWorkingDirectory: process.cwd(),
         outputMode: 'pretty',
+        commandExecutionOptions: {
+          progressSink,
+          abortSignal: abortController.signal,
+        },
+      }),
+    );
+    expect(stdoutBuffer.join('')).toBe('');
+    expect(stderrBuffer.join('')).toBe('');
+  });
+
+  it('forwards nested command execution options into the interactive resume entrypoint', async () => {
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(true);
+    const progressSink = {
+      publish: vi.fn(),
+    };
+    const abortController = new AbortController();
+    const sessionShellRunner = {
+      run: vi.fn(async () => createStubSessionShellResult()),
+    };
+
+    const exitCode = await runCli(
+      ['node', 'repo-ai-governor', '--locale', 'en-US', 'resume', 'session-123'],
+      io,
+      {
+        sessionShellRunner: sessionShellRunner as never,
+        nestedCommandExecutionOptions: {
+          progressSink,
+          abortSignal: abortController.signal,
+        },
+      },
+    );
+
+    expect(exitCode).toBe(0);
+    expect(sessionShellRunner.run).toHaveBeenCalledWith(
+      expect.objectContaining({
+        resumeOnStartup: true,
+        requestedSessionId: 'session-123',
+        commandExecutionOptions: {
+          progressSink,
+          abortSignal: abortController.signal,
+        },
       }),
     );
     expect(stdoutBuffer.join('')).toBe('');
@@ -488,6 +537,149 @@ describe('CLI output contract integration', () => {
     expect(stderrBuffer.join('')).toContain('fell back to help output');
     expect(stdoutBuffer.join('')).toContain('workspace');
     expect(stdoutBuffer.join('')).toContain('workflow');
+  });
+
+  it('forwards nested command progress relays even when the re-entered CLI runs in json no-interactive mode', async () => {
+    const temporaryRepositoryRoot = await createFirstTimeInitFixtureRepo();
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, temporaryRepositoryRoot);
+    const progressEvents: CliCommandProgressEvent[] = [];
+
+    try {
+      const exitCode = await runCli(
+        ['node', 'repo-ai-governor', '--locale', 'en-US', '--output', 'json', 'connect'],
+        io,
+        {
+          nestedCommandExecutionOptions: {
+            progressSink: {
+              publish: (event) => {
+                progressEvents.push(event);
+              },
+            },
+            suppressLiveProgressPresenter: true,
+          },
+        },
+      );
+      const payload = JSON.parse(stdoutBuffer.join(''));
+
+      expect(exitCode).toBe(0);
+      expect(stderrBuffer.join('')).toBe('');
+      expect(payload.command).toBe('connect');
+      expect(progressEvents[0]).toEqual(
+        expect.objectContaining({
+          commandName: 'connect',
+          runState: 'running',
+        }),
+      );
+      expect(progressEvents.some((event) => event.row?.id === 'candidate-config')).toBe(true);
+      expect(progressEvents.at(-1)).toEqual(
+        expect.objectContaining({
+          commandName: 'connect',
+          runState: 'success',
+        }),
+      );
+    } finally {
+      await rm(temporaryRepositoryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('emits doctor nested progress relays in json no-interactive mode', async () => {
+    const temporaryRepositoryRoot = await createFirstTimeInitFixtureRepo();
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, temporaryRepositoryRoot);
+    const progressEvents: CliCommandProgressEvent[] = [];
+
+    try {
+      const exitCode = await runCli(
+        ['node', 'repo-ai-governor', '--locale', 'en-US', '--output', 'json', 'doctor'],
+        io,
+        {
+          nestedCommandExecutionOptions: {
+            progressSink: {
+              publish: (event) => {
+                progressEvents.push(event);
+              },
+            },
+            suppressLiveProgressPresenter: true,
+          },
+        },
+      );
+      const payload = JSON.parse(stdoutBuffer.join(''));
+
+      expect(exitCode).toBe(0);
+      expect(stderrBuffer.join('')).toBe('');
+      expect(payload.command).toBe('doctor');
+      expect(progressEvents[0]).toEqual(
+        expect.objectContaining({
+          commandName: 'doctor',
+          runState: 'running',
+        }),
+      );
+      expect(progressEvents.some((event) => event.row?.id === 'workspace-baseline')).toBe(true);
+      expect(progressEvents.at(-1)).toEqual(
+        expect.objectContaining({
+          commandName: 'doctor',
+          runState: 'success',
+        }),
+      );
+    } finally {
+      await rm(temporaryRepositoryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('emits verify nested progress relays in json no-interactive mode', async () => {
+    const fixtureRepositoryRoot = await createProfileOnlyAdaptersFixtureRepo();
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, fixtureRepositoryRoot, {
+      PATH: '',
+      Path: '',
+    });
+    const progressEvents: CliCommandProgressEvent[] = [];
+
+    try {
+      const exitCode = await runCli(
+        [
+          'node',
+          'repo-ai-governor',
+          '--locale',
+          'en-US',
+          '--output',
+          'json',
+          '--profile',
+          'tool-only',
+          'verify',
+          '--adapters',
+        ],
+        io,
+        {
+          nestedCommandExecutionOptions: {
+            progressSink: {
+              publish: (event) => {
+                progressEvents.push(event);
+              },
+            },
+            suppressLiveProgressPresenter: true,
+          },
+        },
+      );
+      const payload = JSON.parse(stdoutBuffer.join(''));
+
+      expect(exitCode).toBe(0);
+      expect(stderrBuffer.join('')).toBe('');
+      expect(payload.command).toBe('verify');
+      expect(progressEvents[0]).toEqual(
+        expect.objectContaining({
+          commandName: 'verify',
+          runState: 'running',
+        }),
+      );
+      expect(progressEvents.some((event) => event.row?.id === 'adapter-verification')).toBe(true);
+      expect(progressEvents.at(-1)).toEqual(
+        expect.objectContaining({
+          commandName: 'verify',
+          runState: 'success',
+        }),
+      );
+    } finally {
+      await rm(fixtureRepositoryRoot, { recursive: true, force: true });
+    }
   });
 
   it('does not trigger interactive bootstrap when pretty output is downgraded in non-TTY first-time init', async () => {
