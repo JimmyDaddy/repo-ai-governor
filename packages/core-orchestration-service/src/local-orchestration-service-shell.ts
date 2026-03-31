@@ -127,6 +127,8 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
       dependencies.memoryProviderRegistry ?? new MemoryProviderRegistry();
     this.sessionRuntime = new LocalOrchestrationServiceSessionRuntime({
       workspaceRoot: dependencies.workspaceRoot,
+      serviceHostKind: this.serviceHostKind,
+      serviceTransportKind: this.serviceTransportKind,
       ...(dependencies.memoryConfig
         ? {
             memoryConfig: dependencies.memoryConfig,

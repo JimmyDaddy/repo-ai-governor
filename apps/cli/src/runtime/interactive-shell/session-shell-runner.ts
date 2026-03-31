@@ -48,6 +48,7 @@ import { CliSessionShellInkRunner } from './session-shell-ink-runner.js';
 import { CliSessionShellReadlinePromptAdapter } from './session-shell-readline-prompt-adapter.js';
 import { CliSessionShellStderrRenderer } from './session-shell-stderr-renderer.js';
 import { CliSessionShellTranscriptStore } from './session-shell-transcript-store.js';
+import { CliSessionShellTurnProgressDock } from './session-shell-turn-progress-dock.js';
 import { CliSessionSlashCommandRegistry } from './session-slash-command-registry.js';
 
 interface CliSessionShellHistoryEntry {
@@ -75,6 +76,7 @@ interface SessionMainHandoffResolutionRecord {
 }
 
 const SESSION_MAIN_HANDOFF_RESOLUTION_METADATA_KEY = 'sessionMainHandoffResolution';
+const SESSION_MAIN_TURN_POLL_INTERVAL_MS = 25;
 
 interface CliSessionShellRuntimeState {
   currentRouteId: string;
@@ -121,9 +123,32 @@ export class CliSessionShellRunner {
       bootstrapped.session.session.sessionId,
       bootstrapped.resumeSelector,
     );
-    await this.syncTranscript(viewModel, transcriptStore, options, runtimeState, true);
+    const turnProgressDock = new CliSessionShellTurnProgressDock({
+      themePreset: viewModel.themePreset,
+      translate: options.translate,
+      onPanelUpdate: (panel) => {
+        viewModel.commandProgressPanel = panel;
+      },
+      onRenderRequested: () => {
+        this.renderActiveSurface(viewModel);
+      },
+    });
+    await this.syncTranscript(
+      viewModel,
+      transcriptStore,
+      options,
+      runtimeState,
+      turnProgressDock,
+      true,
+    );
     if (runtimeState.pendingCommand) {
-      await this.recoverPendingCommandState(viewModel, transcriptStore, options, runtimeState);
+      await this.recoverPendingCommandState(
+        viewModel,
+        transcriptStore,
+        options,
+        runtimeState,
+        turnProgressDock,
+      );
     }
 
     if (bootstrapped.startupNoticeLines.length > 0) {
@@ -142,6 +167,7 @@ export class CliSessionShellRunner {
         transcriptStore,
         options,
         runtimeState,
+        turnProgressDock,
       );
       this.resetPromptState(viewModel, options, runtimeState);
     }
@@ -159,6 +185,7 @@ export class CliSessionShellRunner {
         transcriptStore,
         options,
         runtimeState,
+        turnProgressDock,
       );
     }
 
@@ -169,6 +196,7 @@ export class CliSessionShellRunner {
       transcriptStore,
       options,
       runtimeState,
+      turnProgressDock,
     );
   }
 
@@ -178,6 +206,7 @@ export class CliSessionShellRunner {
     transcriptStore: CliSessionShellTranscriptStore,
     options: CliSessionShellRunOptions,
     runtimeState: CliSessionShellRuntimeState,
+    turnProgressDock: CliSessionShellTurnProgressDock,
   ): Promise<CliSessionShellRunResult> {
     this.renderer.render(viewModel);
     try {
@@ -209,6 +238,7 @@ export class CliSessionShellRunner {
           transcriptStore,
           options,
           runtimeState,
+          turnProgressDock,
         );
         this.renderer.render(viewModel);
         if (exitResult) {
@@ -244,6 +274,7 @@ export class CliSessionShellRunner {
     transcriptStore: CliSessionShellTranscriptStore,
     options: CliSessionShellRunOptions,
     runtimeState: CliSessionShellRuntimeState,
+    turnProgressDock: CliSessionShellTurnProgressDock,
   ): Promise<CliSessionShellRunResult> {
     this.activeInkRunner = inkRunner;
     try {
@@ -258,7 +289,13 @@ export class CliSessionShellRunner {
         viewModel.promptBarLines = this.buildPromptBarLines(viewModel, options, runtimeState);
 
         if (effects.clearScreenRequested) {
-          await this.clearLocalTranscriptView(viewModel, transcriptStore, options, runtimeState);
+          await this.clearLocalTranscriptView(
+            viewModel,
+            transcriptStore,
+            options,
+            runtimeState,
+            turnProgressDock,
+          );
           continue;
         }
 
@@ -294,6 +331,7 @@ export class CliSessionShellRunner {
           transcriptStore,
           options,
           runtimeState,
+          turnProgressDock,
         );
         if (exitResult) {
           return exitResult;
@@ -332,6 +370,7 @@ export class CliSessionShellRunner {
     transcriptStore: CliSessionShellTranscriptStore,
     options: CliSessionShellRunOptions,
     runtimeState: CliSessionShellRuntimeState,
+    turnProgressDock: CliSessionShellTurnProgressDock,
   ): Promise<CliSessionShellRunResult | null> {
     viewModel.composerValue = inputLine;
 
@@ -343,6 +382,7 @@ export class CliSessionShellRunner {
         transcriptStore,
         options,
         runtimeState,
+        turnProgressDock,
       );
     }
 
@@ -353,6 +393,7 @@ export class CliSessionShellRunner {
         transcriptStore,
         options,
         runtimeState,
+        turnProgressDock,
       );
       return null;
     }
@@ -365,10 +406,18 @@ export class CliSessionShellRunner {
         transcriptStore,
         options,
         runtimeState,
+        turnProgressDock,
       );
     }
 
-    await this.handlePlainTextTurn(inputLine, viewModel, transcriptStore, options, runtimeState);
+    await this.handlePlainTextTurn(
+      inputLine,
+      viewModel,
+      transcriptStore,
+      options,
+      runtimeState,
+      turnProgressDock,
+    );
     this.resetPromptState(viewModel, options, runtimeState);
     return null;
   }
@@ -430,15 +479,49 @@ export class CliSessionShellRunner {
     transcriptStore: CliSessionShellTranscriptStore,
     options: CliSessionShellRunOptions,
     runtimeState: CliSessionShellRuntimeState,
+    turnProgressDock: CliSessionShellTurnProgressDock,
   ): Promise<void> {
     this.recordHistory(inputLine, runtimeState);
     try {
-      await options.sessionClient.sendMainTurn(viewModel.sessionId, inputLine);
+      let turnError: unknown;
+      let turnCompleted = false;
+      const pendingTurn = options.sessionClient
+        .sendMainTurn(viewModel.sessionId, inputLine)
+        .catch((error) => {
+          turnError = error;
+        })
+        .finally(() => {
+          turnCompleted = true;
+        });
+
+      while (!turnCompleted) {
+        await Promise.race([
+          pendingTurn,
+          new Promise<void>((resolve) => {
+            setTimeout(resolve, SESSION_MAIN_TURN_POLL_INTERVAL_MS);
+          }),
+        ]);
+        if (!turnCompleted) {
+          await this.syncTranscript(
+            viewModel,
+            transcriptStore,
+            options,
+            runtimeState,
+            turnProgressDock,
+          );
+          turnProgressDock.refresh();
+        }
+      }
+      await pendingTurn;
+      if (turnError) {
+        throw turnError;
+      }
       const subscription = await this.syncTranscript(
         viewModel,
         transcriptStore,
         options,
         runtimeState,
+        turnProgressDock,
       );
       const pendingCommand = runtimeState.pendingCommand;
       if (
@@ -478,6 +561,7 @@ export class CliSessionShellRunner {
     transcriptStore: CliSessionShellTranscriptStore,
     options: CliSessionShellRunOptions,
     runtimeState: CliSessionShellRuntimeState,
+    _turnProgressDock?: CliSessionShellTurnProgressDock,
   ): Promise<void> {
     const commandLine = inputLine.slice(1).trim();
     if (commandLine.length === 0) {
@@ -543,6 +627,7 @@ export class CliSessionShellRunner {
     transcriptStore: CliSessionShellTranscriptStore,
     options: CliSessionShellRunOptions,
     runtimeState: CliSessionShellRuntimeState,
+    turnProgressDock: CliSessionShellTurnProgressDock,
   ): Promise<CliSessionShellRunResult | null> {
     this.recordHistory(query, runtimeState);
     viewModel.inputMode = CliSessionShellInputMode.SLASH_COMMAND;
@@ -599,6 +684,7 @@ export class CliSessionShellRunner {
         transcriptStore,
         options,
         runtimeState,
+        turnProgressDock,
       );
       if (!recoveredPendingCommand) {
         this.resetPromptState(viewModel, options, runtimeState);
@@ -616,7 +702,13 @@ export class CliSessionShellRunner {
     }
 
     if (exactCommand.command === '/clear') {
-      await this.clearLocalTranscriptView(viewModel, transcriptStore, options, runtimeState);
+      await this.clearLocalTranscriptView(
+        viewModel,
+        transcriptStore,
+        options,
+        runtimeState,
+        turnProgressDock,
+      );
       return null;
     }
 
@@ -699,6 +791,7 @@ export class CliSessionShellRunner {
         transcriptStore,
         options,
         runtimeState,
+        turnProgressDock,
       );
       return null;
     }
@@ -819,6 +912,7 @@ export class CliSessionShellRunner {
     transcriptStore: CliSessionShellTranscriptStore,
     options: CliSessionShellRunOptions,
     runtimeState: CliSessionShellRuntimeState,
+    turnProgressDock: CliSessionShellTurnProgressDock,
   ): Promise<boolean> {
     const requestedSessionId = this.resolveSlashCommandArgument(query);
 
@@ -829,13 +923,21 @@ export class CliSessionShellRunner {
       runtimeState.currentRouteId =
         resumedSession.session.currentRouteId ?? OrchestrationSessionRouteId.MAIN;
       runtimeState.pendingCommand = null;
-      await this.syncTranscript(viewModel, transcriptStore, options, runtimeState, true);
+      await this.syncTranscript(
+        viewModel,
+        transcriptStore,
+        options,
+        runtimeState,
+        turnProgressDock,
+        true,
+      );
       if (runtimeState.pendingCommand) {
         return await this.recoverPendingCommandState(
           viewModel,
           transcriptStore,
           options,
           runtimeState,
+          turnProgressDock,
         );
       }
       return false;
@@ -875,6 +977,7 @@ export class CliSessionShellRunner {
     transcriptStore: CliSessionShellTranscriptStore,
     options: CliSessionShellRunOptions,
     runtimeState: CliSessionShellRuntimeState,
+    turnProgressDock: CliSessionShellTurnProgressDock,
   ): Promise<void> {
     const terminator = '.';
     const multilineValue = promptAdapter.readMultiline
@@ -907,6 +1010,7 @@ export class CliSessionShellRunner {
       transcriptStore,
       options,
       runtimeState,
+      turnProgressDock,
     );
   }
 
@@ -1240,11 +1344,13 @@ export class CliSessionShellRunner {
     transcriptStore: CliSessionShellTranscriptStore,
     options: CliSessionShellRunOptions,
     runtimeState: CliSessionShellRuntimeState,
+    turnProgressDock?: CliSessionShellTurnProgressDock,
     reset = false,
   ): Promise<OrchestrationSubscribeSessionResponse> {
     if (reset) {
       transcriptStore.reset(viewModel.sessionId);
       runtimeState.pendingCommand = null;
+      turnProgressDock?.clear();
     }
 
     const nextCursor = transcriptStore.getNextCursor();
@@ -1263,6 +1369,7 @@ export class CliSessionShellRunner {
       subscription.events,
       options.translate,
     );
+    turnProgressDock?.applySessionEvents(subscription.events);
     this.reconcilePendingCommandFromEvents(subscription.events, runtimeState);
     runtimeState.currentRouteId =
       subscription.session.currentRouteId ?? OrchestrationSessionRouteId.MAIN;
@@ -1394,9 +1501,11 @@ export class CliSessionShellRunner {
     transcriptStore: CliSessionShellTranscriptStore,
     options: CliSessionShellRunOptions,
     runtimeState: CliSessionShellRuntimeState,
+    turnProgressDock?: CliSessionShellTurnProgressDock,
   ): Promise<void> {
     this.activeInkRunner?.requestViewportClear();
     transcriptStore.clearView();
+    turnProgressDock?.clear();
     viewModel.transcriptItems = [];
     this.appendLocalTranscriptItem(viewModel, {
       role: CliSessionTranscriptRole.SYSTEM,
@@ -1405,7 +1514,13 @@ export class CliSessionShellRunner {
       renderKind: 'system_notice',
     });
     if (runtimeState.pendingCommand) {
-      await this.recoverPendingCommandState(viewModel, transcriptStore, options, runtimeState);
+      await this.recoverPendingCommandState(
+        viewModel,
+        transcriptStore,
+        options,
+        runtimeState,
+        turnProgressDock,
+      );
       return;
     }
 
@@ -1417,6 +1532,7 @@ export class CliSessionShellRunner {
     transcriptStore: CliSessionShellTranscriptStore,
     options: CliSessionShellRunOptions,
     runtimeState: CliSessionShellRuntimeState,
+    turnProgressDock?: CliSessionShellTurnProgressDock,
   ): Promise<boolean> {
     const pendingCommand = runtimeState.pendingCommand;
     if (!pendingCommand) {
@@ -1424,6 +1540,7 @@ export class CliSessionShellRunner {
     }
 
     if (pendingCommand.executionMode === 'direct_execute') {
+      turnProgressDock?.clear();
       await this.executePendingCommand(viewModel, transcriptStore, options, runtimeState);
       return true;
     }

@@ -26,6 +26,8 @@ import {
   type OrchestrationResumeSessionResponse,
   type OrchestrationSendSessionTurnRequest,
   type OrchestrationSendSessionTurnResponse,
+  type OrchestrationServiceHostKind,
+  type OrchestrationServiceTransportKind,
   type OrchestrationSessionEvent,
   OrchestrationSessionEventType,
   OrchestrationSessionRouteId,
@@ -46,7 +48,10 @@ import {
   standardizeError,
 } from '@repo-ai-governor/shared';
 import { LocalOrchestrationServiceSessionMainAgentDispatcher } from './local-orchestration-service-session-main-agent-dispatcher.js';
-import type { SessionMainSupervisorRuntimeContract } from './types/index.js';
+import type {
+  SessionMainSupervisorRuntimeContract,
+  SessionMainSupervisorStreamEvent,
+} from './types/index.js';
 
 interface LocalOrchestrationServiceSessionMemoryProviderState {
   composition: MemoryProviderCompositionSummary;
@@ -55,6 +60,8 @@ interface LocalOrchestrationServiceSessionMemoryProviderState {
 
 interface LocalOrchestrationServiceSessionRuntimeDependencies {
   workspaceRoot: string;
+  serviceHostKind?: OrchestrationServiceHostKind;
+  serviceTransportKind?: OrchestrationServiceTransportKind;
   memoryConfig?: MemoryRuntimeConfig;
   memoryProviderRegistry?: MemoryProviderRegistry;
   memoryProviderRuntimeMode?: MemoryProviderRuntimeMode;
@@ -155,6 +162,7 @@ export class LocalOrchestrationServiceSessionRuntime {
     const acceptedAt = this.toTimestamp();
     const turnId = request.turnId ?? `turn-${randomUUID().replace(/-/gu, '')}`;
     const turnIndex = this.resolveNextTurnIndex(existingSession);
+    let emittedStreamDeltaCount = 0;
     await sessionManager.appendEvent({
       sessionId: request.sessionId,
       type: OrchestrationSessionEventType.TURN_SUBMITTED,
@@ -178,18 +186,33 @@ export class LocalOrchestrationServiceSessionRuntime {
         selectedSurface: '',
         selectedBy: '',
         sessionRoutingPreferenceApplied: false,
-      });
-      await sessionManager.appendEvent({
-        sessionId: request.sessionId,
-        type: OrchestrationSessionEventType.TURN_STREAM_DELTA,
-        createdAt: this.toTimestamp(),
-        payload: {
-          role: OrchestrationSessionTranscriptRole.ASSISTANT,
-          routeId: currentRouteId,
-          turnId,
-          delta: dispatchResult.assistantDelta,
+        publishStreamEvent: async (streamEvent) => {
+          emittedStreamDeltaCount += 1;
+          await sessionManager.appendEvent({
+            sessionId: request.sessionId,
+            type: OrchestrationSessionEventType.TURN_STREAM_DELTA,
+            createdAt: this.toTimestamp(),
+            payload: this.createTurnStreamDeltaPayload({
+              routeId: currentRouteId,
+              turnId,
+              streamEvent,
+            }),
+          });
         },
       });
+      if (emittedStreamDeltaCount === 0) {
+        await sessionManager.appendEvent({
+          sessionId: request.sessionId,
+          type: OrchestrationSessionEventType.TURN_STREAM_DELTA,
+          createdAt: this.toTimestamp(),
+          payload: {
+            role: OrchestrationSessionTranscriptRole.ASSISTANT,
+            routeId: currentRouteId,
+            turnId,
+            delta: dispatchResult.assistantDelta,
+          },
+        });
+      }
       await sessionManager.appendEvent({
         sessionId: request.sessionId,
         type: OrchestrationSessionEventType.TURN_COMPLETED,
@@ -230,6 +253,13 @@ export class LocalOrchestrationServiceSessionRuntime {
           ...(dispatchResult.invokedRoleIds
             ? {
                 invokedRoleIds: [...dispatchResult.invokedRoleIds],
+              }
+            : {}),
+          ...(dispatchResult.invokedRoles
+            ? {
+                invokedRoles: dispatchResult.invokedRoles.map((invokedRole) => ({
+                  ...invokedRole,
+                })),
               }
             : {}),
           subagentCount:
@@ -581,6 +611,12 @@ export class LocalOrchestrationServiceSessionRuntime {
       status: this.mapSessionStatus(session.status),
       openedAt: session.openedAt,
       ...(session.closedAt ? { closedAt: session.closedAt } : {}),
+      ...(this.dependencies.serviceHostKind
+        ? { serviceHostKind: this.dependencies.serviceHostKind }
+        : {}),
+      ...(this.dependencies.serviceTransportKind
+        ? { serviceTransportKind: this.dependencies.serviceTransportKind }
+        : {}),
       ...(session.processId ? { processId: session.processId } : {}),
       ...(session.executionId ? { executionId: session.executionId } : {}),
       ...(currentRouteId ? { currentRouteId } : {}),
@@ -591,6 +627,42 @@ export class LocalOrchestrationServiceSessionRuntime {
       context: {
         ...session.context,
       },
+    };
+  }
+
+  private createTurnStreamDeltaPayload(options: {
+    routeId: string;
+    turnId: string;
+    streamEvent: SessionMainSupervisorStreamEvent;
+  }): Record<string, unknown> {
+    return {
+      role: OrchestrationSessionTranscriptRole.ASSISTANT,
+      routeId: options.routeId,
+      turnId: options.turnId,
+      delta:
+        options.streamEvent.chunkText ??
+        options.streamEvent.accumulatedText ??
+        options.streamEvent.detail ??
+        options.streamEvent.title ??
+        options.streamEvent.toolName ??
+        options.streamEvent.kind,
+      streamKind: options.streamEvent.kind,
+      ...(options.streamEvent.state ? { streamState: options.streamEvent.state } : {}),
+      ...(options.streamEvent.title ? { title: options.streamEvent.title } : {}),
+      ...(options.streamEvent.detail ? { detail: options.streamEvent.detail } : {}),
+      ...(options.streamEvent.chunkText ? { chunkText: options.streamEvent.chunkText } : {}),
+      ...(options.streamEvent.accumulatedText
+        ? { accumulatedText: options.streamEvent.accumulatedText }
+        : {}),
+      ...(options.streamEvent.roleId ? { roleId: options.streamEvent.roleId } : {}),
+      ...(options.streamEvent.stageId ? { stageId: options.streamEvent.stageId } : {}),
+      ...(options.streamEvent.routeKey ? { routeKey: options.streamEvent.routeKey } : {}),
+      ...(options.streamEvent.selectedSurface
+        ? { selectedSurface: options.streamEvent.selectedSurface }
+        : {}),
+      ...(options.streamEvent.selectedBy ? { selectedBy: options.streamEvent.selectedBy } : {}),
+      ...(options.streamEvent.toolName ? { toolName: options.streamEvent.toolName } : {}),
+      ...(options.streamEvent.toolCallId ? { toolCallId: options.streamEvent.toolCallId } : {}),
     };
   }
 

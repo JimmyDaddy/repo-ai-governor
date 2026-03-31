@@ -3,6 +3,7 @@ import {
   AgentCapability,
   AgentCapabilitySupportLevel,
   type AgentProtocolContract,
+  AgentStreamEventType,
 } from '@repo-ai-governor/adapter-sdk';
 import { type AdaptersConfig, WorkspaceMode } from '@repo-ai-governor/config';
 import { AdapterAvailability, AdapterSurface, LocalModelProvider } from '@repo-ai-governor/shared';
@@ -16,6 +17,10 @@ function createAvailableProtocol(
     capabilitySupportOverrides?: Partial<Record<AgentCapability, AgentCapabilitySupportLevel>>;
     toolCallingSupportLevel?: AgentCapabilitySupportLevel;
     invokeStageSpy?: ReturnType<typeof vi.fn>;
+    streamEvents?: Array<{
+      eventType: AgentStreamEventType;
+      payload: Record<string, unknown>;
+    }>;
   } = {},
 ): AgentProtocolContract {
   const toolCallingSupportLevel =
@@ -68,7 +73,11 @@ function createAvailableProtocol(
         },
         elapsedMs: 1,
       })),
-    streamEvents: async function* () {},
+    streamEvents: async function* () {
+      for (const event of options.streamEvents ?? []) {
+        yield event;
+      }
+    },
     requestConfirmation: async () => ({
       decision: 'approve',
       reason: 'unused',
@@ -259,6 +268,109 @@ describe('Cli session-main supervisor runtime', () => {
     expect(outcome.selectedSurface).toBe(AdapterSurface.OLLAMA);
     expect(outcome.selectedBy).toBe('session.main.answer.primary');
     expect(outcome.invokedRoleIds).toEqual([]);
+    expect(outcome.invokedRoles).toEqual([]);
+  });
+
+  it('publishes mapped direct-answer stream events while preserving empty invoked-role truth', async () => {
+    const publishedStreamEvents: Array<Record<string, unknown>> = [];
+    const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
+      adaptersConfig,
+    ) as CliAdapterRoutingRuntime & {
+      createProtocolBySurface: () => Record<string, AgentProtocolContract>;
+    };
+    adapterRoutingRuntime.createProtocolBySurface = () => ({
+      [AdapterSurface.CODEX]: createAvailableProtocol(
+        AdapterSurface.CODEX,
+        '## Workspace status\n\n- clean',
+        {
+          streamEvents: [
+            {
+              eventType: AgentStreamEventType.STATUS,
+              payload: {
+                title: 'Session Main Answer',
+                detail: 'Planning current workspace answer.',
+                surface: 'codex',
+              },
+            },
+            {
+              eventType: AgentStreamEventType.TOKEN,
+              payload: {
+                title: 'Assistant Draft',
+                text: '## Workspace status',
+                accumulatedText: '## Workspace status\n\n- clean',
+                surface: 'codex',
+              },
+            },
+          ],
+        },
+      ),
+      [AdapterSurface.CLAUDE_CODE]: createAvailableProtocol(
+        AdapterSurface.CLAUDE_CODE,
+        'Fallback answer from Claude Code',
+      ),
+      [AdapterSurface.OLLAMA]: createAvailableProtocol(
+        AdapterSurface.OLLAMA,
+        'Fallback answer from local model',
+        {
+          toolCallingSupportLevel: AgentCapabilitySupportLevel.UNSUPPORTED,
+        },
+      ),
+    });
+
+    const runtime = new CliSessionMainSupervisorRuntime({
+      workspaceRoot: '/workspace/repo/.repo-ai-governor',
+      currentWorkingDirectory: '/workspace/repo',
+      workspace,
+      locale: 'en-US',
+      adaptersConfig,
+      adapterRoutingRuntime,
+    });
+    const outcome = await runtime.resolveTurn({
+      sessionId: 'session-002-stream',
+      routeId: 'session.main',
+      turnId: 'turn-002-stream',
+      turnIndex: 2,
+      userMessage: 'Summarize the workspace state',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+      publishStreamEvent: async (event) => {
+        publishedStreamEvents.push(event as Record<string, unknown>);
+      },
+    });
+
+    expect(outcome.assistantMessage).toBe('## Workspace status\n\n- clean');
+    expect(outcome.invokedRoleIds).toEqual([]);
+    expect(outcome.invokedRoles).toEqual([]);
+    expect(publishedStreamEvents).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'lifecycle',
+          state: 'started',
+          title: 'Session Main Answer',
+        }),
+        expect.objectContaining({
+          kind: 'lifecycle',
+          state: 'running',
+          title: 'Session Main Answer',
+          detail: 'Planning current workspace answer.',
+          selectedSurface: 'codex',
+        }),
+        expect.objectContaining({
+          kind: 'token',
+          state: 'running',
+          title: 'Assistant Draft',
+          accumulatedText: '## Workspace status\n\n- clean',
+          selectedSurface: 'codex',
+        }),
+        expect.objectContaining({
+          kind: 'lifecycle',
+          state: 'completed',
+          title: 'Session Main Answer',
+          selectedSurface: 'codex',
+        }),
+      ]),
+    );
   });
 
   it('allows direct-answer turns to stay on the preferred tool-capable surface', async () => {
@@ -404,6 +516,14 @@ describe('Cli session-main supervisor runtime', () => {
     expect(outcome.selectedSurface).toBe(AdapterSurface.OLLAMA);
     expect(outcome.selectedBy).toBe('session.main.role_delegate.safe_fallback');
     expect(outcome.invokedRoleIds).toEqual(['planner']);
+    expect(outcome.invokedRoles).toEqual([
+      expect.objectContaining({
+        roleId: 'planner',
+        roleProfileId: 'planner-default',
+        dispatchBoundary: 'local_projection',
+        transportKind: 'local_protocol',
+      }),
+    ]);
     expect(outcome.subagentCount).toBe(1);
   });
 
@@ -493,6 +613,20 @@ describe('Cli session-main supervisor runtime', () => {
       'planner:session.main.role_delegate.safe_fallback -> reviewer:session.main.role_delegate.safe_fallback',
     );
     expect(outcome.invokedRoleIds).toEqual(['planner', 'reviewer']);
+    expect(outcome.invokedRoles).toEqual([
+      expect.objectContaining({
+        roleId: 'planner',
+        roleProfileId: 'planner-default',
+        dispatchBoundary: 'local_projection',
+        transportKind: 'local_protocol',
+      }),
+      expect.objectContaining({
+        roleId: 'reviewer',
+        roleProfileId: 'reviewer-default',
+        dispatchBoundary: 'local_projection',
+        transportKind: 'local_protocol',
+      }),
+    ]);
     expect(outcome.subagentCount).toBe(2);
   });
 
@@ -582,6 +716,20 @@ describe('Cli session-main supervisor runtime', () => {
       'planner:session.main.role_delegate.safe_fallback | reviewer:session.main.role_delegate.safe_fallback',
     );
     expect(outcome.invokedRoleIds).toEqual(['planner', 'reviewer']);
+    expect(outcome.invokedRoles).toEqual([
+      expect.objectContaining({
+        roleId: 'planner',
+        roleProfileId: 'planner-default',
+        dispatchBoundary: 'local_projection',
+        transportKind: 'local_protocol',
+      }),
+      expect.objectContaining({
+        roleId: 'reviewer',
+        roleProfileId: 'reviewer-default',
+        dispatchBoundary: 'local_projection',
+        transportKind: 'local_protocol',
+      }),
+    ]);
     expect(outcome.subagentCount).toBe(2);
   });
 
@@ -678,6 +826,26 @@ describe('Cli session-main supervisor runtime', () => {
       'architect:session.main.role_delegate.safe_fallback | reviewer:session.main.role_delegate.safe_fallback | verifier:session.main.role_delegate.safe_fallback',
     );
     expect(outcome.invokedRoleIds).toEqual(['architect', 'reviewer', 'verifier']);
+    expect(outcome.invokedRoles).toEqual([
+      expect.objectContaining({
+        roleId: 'architect',
+        roleProfileId: 'architect-default',
+        dispatchBoundary: 'local_projection',
+        transportKind: 'local_protocol',
+      }),
+      expect.objectContaining({
+        roleId: 'reviewer',
+        roleProfileId: 'reviewer-default',
+        dispatchBoundary: 'local_projection',
+        transportKind: 'local_protocol',
+      }),
+      expect.objectContaining({
+        roleId: 'verifier',
+        roleProfileId: 'verifier-default',
+        dispatchBoundary: 'local_projection',
+        transportKind: 'local_protocol',
+      }),
+    ]);
     expect(outcome.subagentCount).toBe(3);
   });
 

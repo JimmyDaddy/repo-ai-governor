@@ -102,6 +102,8 @@ export class CliSessionMainSubagentRegistry {
         selectedSurface:
           descriptor.selectedSurface === null ? null : String(descriptor.selectedSurface),
         selectedBy: descriptor.selectedBy,
+        dispatchBoundary: 'local_projection',
+        transportKind: 'local_protocol',
       };
     } catch {
       return null;

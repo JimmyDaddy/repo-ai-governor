@@ -614,6 +614,100 @@ describe('core-orchestration-service local shell', () => {
     }
   });
 
+  it('maps supervisor stream events into shared session turn deltas for running presentation consumers', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot: temporaryRoot,
+      sessionMainSupervisorRuntime: {
+        resolveTurn: async (context) => {
+          await context.publishStreamEvent?.({
+            kind: 'lifecycle',
+            state: 'running',
+            title: 'Session Main Answer',
+            detail: 'Planning current workspace answer.',
+            selectedSurface: 'codex',
+            stageId: 'stage-session-main-answer',
+            routeKey: 'session.main.answer',
+          });
+          await context.publishStreamEvent?.({
+            kind: 'token',
+            state: 'running',
+            title: 'Assistant Draft',
+            chunkText: '## Workspace status',
+            accumulatedText: '## Workspace status\n\n- clean',
+            selectedSurface: 'codex',
+            stageId: 'stage-session-main-answer',
+            routeKey: 'session.main.answer',
+          });
+          return {
+            responseMode: 'answer',
+            interactionMode: 'direct_answer',
+            assistantDelta: '## Workspace status',
+            assistantMessage: '## Workspace status\n\n- clean',
+            executionIntent: 'session.answer',
+            requiresConfirmation: false,
+            selectedSurface: 'codex',
+            selectedBy: 'session.main.answer.primary',
+            sessionRoutingPreferenceApplied: false,
+            invokedRoleIds: [],
+            invokedRoles: [],
+            subagentCount: 0,
+          };
+        },
+      },
+    });
+
+    try {
+      const started = await orchestrationService.startSession({
+        routeId: OrchestrationSessionRouteId.MAIN,
+      });
+      await orchestrationService.sendSessionTurn({
+        sessionId: started.session.sessionId,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        userMessage: '帮我总结一下当前工作区状态',
+      });
+      const subscription = await orchestrationService.subscribeSession({
+        sessionId: started.session.sessionId,
+      });
+      const deltaEvents = subscription.events.filter(
+        (event) => event.type === OrchestrationSessionEventType.TURN_STREAM_DELTA,
+      );
+      const completedEvent = subscription.events.find(
+        (event) => event.type === OrchestrationSessionEventType.TURN_COMPLETED,
+      );
+
+      expect(deltaEvents).toHaveLength(2);
+      expect(deltaEvents[0]?.payload).toEqual(
+        expect.objectContaining({
+          streamKind: 'lifecycle',
+          streamState: 'running',
+          title: 'Session Main Answer',
+          detail: 'Planning current workspace answer.',
+          selectedSurface: 'codex',
+          stageId: 'stage-session-main-answer',
+          routeKey: 'session.main.answer',
+          delta: 'Planning current workspace answer.',
+        }),
+      );
+      expect(deltaEvents[1]?.payload).toEqual(
+        expect.objectContaining({
+          streamKind: 'token',
+          streamState: 'running',
+          title: 'Assistant Draft',
+          chunkText: '## Workspace status',
+          accumulatedText: '## Workspace status\n\n- clean',
+          selectedSurface: 'codex',
+          stageId: 'stage-session-main-answer',
+          routeKey: 'session.main.answer',
+          delta: '## Workspace status',
+        }),
+      );
+      expect(completedEvent?.payload.invokedRoles).toEqual([]);
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
   it('projects low-risk natural-language verify skills into direct-execute turn metadata', async () => {
     const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
     const orchestrationService = new LocalOrchestrationServiceShell({
@@ -713,6 +807,7 @@ describe('core-orchestration-service local shell', () => {
           selectedBy: 'session.main.answer.primary',
           sessionRoutingPreferenceApplied: context.sessionRoutingPreferenceApplied,
           invokedRoleIds: [],
+          invokedRoles: [],
         }),
       },
     });
@@ -742,6 +837,7 @@ describe('core-orchestration-service local shell', () => {
       expect(completedEvent?.payload.selectedSurface).toBe('codex');
       expect(completedEvent?.payload.selectedBy).toBe('session.main.answer.primary');
       expect(completedEvent?.payload.invokedRoleIds).toEqual([]);
+      expect(completedEvent?.payload.invokedRoles).toEqual([]);
       expect(completedEvent?.payload.subagentCount).toBe(0);
     } finally {
       await rm(temporaryRoot, { recursive: true, force: true });
@@ -765,6 +861,17 @@ describe('core-orchestration-service local shell', () => {
           selectedBy: 'session.main.role_delegate.safe_fallback',
           sessionRoutingPreferenceApplied: false,
           invokedRoleIds: ['planner'],
+          invokedRoles: [
+            {
+              roleId: 'planner',
+              roleProfileId: 'planner-default',
+              agentId: 'agent-planner',
+              selectedSurface: 'ollama',
+              selectedBy: 'session.main.role_delegate.safe_fallback',
+              dispatchBoundary: 'local_projection',
+              transportKind: 'local_protocol',
+            },
+          ],
           subagentCount: 1,
         }),
       },
@@ -798,6 +905,17 @@ describe('core-orchestration-service local shell', () => {
       expect(completedEvent?.payload.selectedSurface).toBe('ollama');
       expect(completedEvent?.payload.selectedBy).toBe('session.main.role_delegate.safe_fallback');
       expect(completedEvent?.payload.invokedRoleIds).toEqual(['planner']);
+      expect(completedEvent?.payload.invokedRoles).toEqual([
+        {
+          roleId: 'planner',
+          roleProfileId: 'planner-default',
+          agentId: 'agent-planner',
+          selectedSurface: 'ollama',
+          selectedBy: 'session.main.role_delegate.safe_fallback',
+          dispatchBoundary: 'local_projection',
+          transportKind: 'local_protocol',
+        },
+      ]);
       expect(completedEvent?.payload.subagentCount).toBe(1);
     } finally {
       await rm(temporaryRoot, { recursive: true, force: true });
@@ -887,6 +1005,26 @@ describe('core-orchestration-service local shell', () => {
             'planner:session.main.role_delegate.safe_fallback -> reviewer:session.main.role_delegate.safe_fallback',
           sessionRoutingPreferenceApplied: false,
           invokedRoleIds: ['planner', 'reviewer'],
+          invokedRoles: [
+            {
+              roleId: 'planner',
+              roleProfileId: 'planner-default',
+              agentId: 'agent-planner',
+              selectedSurface: 'ollama',
+              selectedBy: 'session.main.role_delegate.safe_fallback',
+              dispatchBoundary: 'local_projection',
+              transportKind: 'local_protocol',
+            },
+            {
+              roleId: 'reviewer',
+              roleProfileId: 'reviewer-default',
+              agentId: 'agent-reviewer',
+              selectedSurface: 'ollama',
+              selectedBy: 'session.main.role_delegate.safe_fallback',
+              dispatchBoundary: 'local_projection',
+              transportKind: 'local_protocol',
+            },
+          ],
           subagentCount: 2,
         }),
       },
@@ -918,6 +1056,26 @@ describe('core-orchestration-service local shell', () => {
       );
       expect(completedEvent?.payload.selectedSurface).toBe('planner:ollama -> reviewer:ollama');
       expect(completedEvent?.payload.invokedRoleIds).toEqual(['planner', 'reviewer']);
+      expect(completedEvent?.payload.invokedRoles).toEqual([
+        {
+          roleId: 'planner',
+          roleProfileId: 'planner-default',
+          agentId: 'agent-planner',
+          selectedSurface: 'ollama',
+          selectedBy: 'session.main.role_delegate.safe_fallback',
+          dispatchBoundary: 'local_projection',
+          transportKind: 'local_protocol',
+        },
+        {
+          roleId: 'reviewer',
+          roleProfileId: 'reviewer-default',
+          agentId: 'agent-reviewer',
+          selectedSurface: 'ollama',
+          selectedBy: 'session.main.role_delegate.safe_fallback',
+          dispatchBoundary: 'local_projection',
+          transportKind: 'local_protocol',
+        },
+      ]);
       expect(completedEvent?.payload.subagentCount).toBe(2);
     } finally {
       await rm(temporaryRoot, { recursive: true, force: true });
@@ -958,6 +1116,35 @@ describe('core-orchestration-service local shell', () => {
             'architect:session.main.role_delegate.safe_fallback | reviewer:session.main.role_delegate.safe_fallback | verifier:session.main.role_delegate.safe_fallback',
           sessionRoutingPreferenceApplied: false,
           invokedRoleIds: ['architect', 'reviewer', 'verifier'],
+          invokedRoles: [
+            {
+              roleId: 'architect',
+              roleProfileId: 'architect-default',
+              agentId: 'agent-architect',
+              selectedSurface: 'ollama',
+              selectedBy: 'session.main.role_delegate.safe_fallback',
+              dispatchBoundary: 'local_projection',
+              transportKind: 'local_protocol',
+            },
+            {
+              roleId: 'reviewer',
+              roleProfileId: 'reviewer-default',
+              agentId: 'agent-reviewer',
+              selectedSurface: 'ollama',
+              selectedBy: 'session.main.role_delegate.safe_fallback',
+              dispatchBoundary: 'local_projection',
+              transportKind: 'local_protocol',
+            },
+            {
+              roleId: 'verifier',
+              roleProfileId: 'verifier-default',
+              agentId: 'agent-verifier',
+              selectedSurface: 'ollama',
+              selectedBy: 'session.main.role_delegate.safe_fallback',
+              dispatchBoundary: 'local_projection',
+              transportKind: 'local_protocol',
+            },
+          ],
           subagentCount: 3,
         }),
       },
@@ -992,6 +1179,35 @@ describe('core-orchestration-service local shell', () => {
         'architect:ollama | reviewer:ollama | verifier:ollama',
       );
       expect(completedEvent?.payload.invokedRoleIds).toEqual(['architect', 'reviewer', 'verifier']);
+      expect(completedEvent?.payload.invokedRoles).toEqual([
+        {
+          roleId: 'architect',
+          roleProfileId: 'architect-default',
+          agentId: 'agent-architect',
+          selectedSurface: 'ollama',
+          selectedBy: 'session.main.role_delegate.safe_fallback',
+          dispatchBoundary: 'local_projection',
+          transportKind: 'local_protocol',
+        },
+        {
+          roleId: 'reviewer',
+          roleProfileId: 'reviewer-default',
+          agentId: 'agent-reviewer',
+          selectedSurface: 'ollama',
+          selectedBy: 'session.main.role_delegate.safe_fallback',
+          dispatchBoundary: 'local_projection',
+          transportKind: 'local_protocol',
+        },
+        {
+          roleId: 'verifier',
+          roleProfileId: 'verifier-default',
+          agentId: 'agent-verifier',
+          selectedSurface: 'ollama',
+          selectedBy: 'session.main.role_delegate.safe_fallback',
+          dispatchBoundary: 'local_projection',
+          transportKind: 'local_protocol',
+        },
+      ]);
       expect(completedEvent?.payload.subagentCount).toBe(3);
     } finally {
       await rm(temporaryRoot, { recursive: true, force: true });

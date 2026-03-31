@@ -23,6 +23,38 @@ export interface SessionMainSupervisorCommandBatch {
 }
 
 /**
+ * Defines one progressive stream event emitted while the supervisor is still resolving a turn.
+ */
+export interface SessionMainSupervisorStreamEvent {
+  kind: 'lifecycle' | 'token' | 'tool_call';
+  state?: 'started' | 'running' | 'completed' | 'failed';
+  title?: string;
+  detail?: string;
+  chunkText?: string;
+  accumulatedText?: string;
+  roleId?: string;
+  stageId?: string;
+  routeKey?: string;
+  selectedSurface?: string;
+  selectedBy?: string;
+  toolName?: string;
+  toolCallId?: string;
+}
+
+/**
+ * Defines one invoked role descriptor preserved in shared session truth for future remote bridges.
+ */
+export interface SessionMainSupervisorInvokedRole {
+  roleId: string;
+  roleProfileId: string;
+  agentId: string;
+  selectedSurface?: string;
+  selectedBy?: string;
+  dispatchBoundary: 'local_projection' | 'remote_bridge_reserved';
+  transportKind: 'local_protocol' | 'a2a_reserved';
+}
+
+/**
  * Defines the service-owned turn context handed to the `session.main` supervisor runtime.
  */
 export interface SessionMainSupervisorTurnContext {
@@ -35,6 +67,7 @@ export interface SessionMainSupervisorTurnContext {
   selectedBy: string;
   sessionRoutingPreferenceApplied: boolean;
   metadata?: Record<string, unknown>;
+  publishStreamEvent?: (event: SessionMainSupervisorStreamEvent) => Promise<void>;
 }
 
 /**
@@ -55,6 +88,7 @@ export interface SessionMainSupervisorTurnOutcome {
   selectedBy: string;
   sessionRoutingPreferenceApplied: boolean;
   invokedRoleIds?: string[];
+  invokedRoles?: SessionMainSupervisorInvokedRole[];
   subagentCount?: number;
   skillId?: string;
   skillVersion?: string;

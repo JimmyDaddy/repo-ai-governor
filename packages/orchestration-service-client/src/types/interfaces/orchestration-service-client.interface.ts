@@ -190,6 +190,8 @@ export interface OrchestrationSessionSummary {
   status: OrchestrationSessionStatus;
   openedAt: string;
   closedAt?: string;
+  serviceHostKind?: OrchestrationServiceHostKind;
+  serviceTransportKind?: OrchestrationServiceTransportKind;
   processId?: string;
   executionId?: string;
   currentRouteId?: string;

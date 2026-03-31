@@ -1,7 +1,7 @@
 # sprint-004-streaming-and-host-parity 计划
 
-- Status: planned
-- Date: 2026-03-31
+- Status: completed
+- Date: 2026-04-01
 - Project: `project-035-session-main-supervisor-and-role-subagent-productization`
 - Sprint Goal: 为 `session.main` supervisor runtime 补齐 streaming、embedded/sidecar/desktop host parity 与 remote-role seam 预留。
 
@@ -21,3 +21,5 @@
 
 1. 2026-03-31：创建 `sprint-004`，将 streaming 与 host parity 从 collaboration sprint 中独立拆出。
 2. 2026-03-31：冻结 `TK-469 ~ TK-470`，分别承接 shared delta streaming 与 host/transport parity。
+3. 2026-04-01：正式激活 `sprint-004`，将 `project-035` 的主执行面从 `sprint-005` closeout 切回 Phase C streaming/host parity implementation。
+4. 2026-04-01：完成 `sprint-004`；`session.main` 已形成 shared `TURN_STREAM_DELTA` running presentation、embedded/sidecar/desktop host parity 与 `invokedRoles` remote seam 预留，见 `sprint-004-completion-summary.md`。

@@ -23,7 +23,7 @@ export interface CliCommandProgressArtifactPatch {
  * Defines one transport-neutral progress patch emitted by long-running CLI commands.
  */
 export interface CliCommandProgressEvent {
-  commandName: CliCommandName;
+  commandName: CliCommandName | string;
   title?: string;
   subtitle?: string;
   themePreset?: CliReactThemePreset;

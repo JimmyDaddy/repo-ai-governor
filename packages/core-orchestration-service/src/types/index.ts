@@ -12,7 +12,9 @@ export type {
 } from './aliases/index.js';
 export type {
   SessionMainSupervisorCommandBatch,
+  SessionMainSupervisorInvokedRole,
   SessionMainSupervisorRuntimeContract,
+  SessionMainSupervisorStreamEvent,
   SessionMainSupervisorTurnBacklink,
   SessionMainSupervisorTurnContext,
   SessionMainSupervisorTurnOutcome,

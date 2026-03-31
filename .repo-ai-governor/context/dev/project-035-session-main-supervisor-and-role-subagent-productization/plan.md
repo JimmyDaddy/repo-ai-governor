@@ -1,6 +1,6 @@
 # project-035-session-main-supervisor-and-role-subagent-productization 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-01
 - Stage Mapping: Session.main supervisor path-C follow-up
 - Phase Mapping: Technical solution promotion / answer supervisor bootstrap / role-subagent collaboration / streaming and host parity / conversational chat and skill handoff productization
@@ -41,7 +41,7 @@
 
 ## 2.4 sprint-004-streaming-and-host-parity
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 为 supervisor runtime 补齐 streaming、sidecar/desktop host parity 与 remote-role seam 预留。
 - Task Package: `TK-469`、`TK-470`。
 
@@ -60,8 +60,8 @@
 | TK-466 | sprint-002 | productize role-subagent collaboration and command handoff governance baseline | runtime/session-main | TK-465 | completed |
 | TK-467 | sprint-003 | stabilize serial role collaboration and interaction-mode routing | runtime/session-main | TK-466 | completed |
 | TK-468 | sprint-003 | expand parallel role fan-out and collaboration recap presentation semantics | runtime/session-main | TK-467 | completed |
-| TK-469 | sprint-004 | map supervisor streaming events into shared session deltas and running presentation | runtime/session-events | TK-468 | planned |
-| TK-470 | sprint-004 | align supervisor runtime across embedded sidecar and desktop consumer hosts | runtime/host-parity | TK-469 | planned |
+| TK-469 | sprint-004 | map supervisor streaming events into shared session deltas and running presentation | runtime/session-events | TK-468 | completed |
+| TK-470 | sprint-004 | align supervisor runtime across embedded sidecar and desktop consumer hosts | runtime/host-parity | TK-469 | completed |
 | TK-471 | sprint-005 | harden conversational routing and direct-answer chatability | runtime/session-main | TK-468 | completed |
 | TK-472 | sprint-005 | introduce foreground skill registry and risk-tiered governed handoff | runtime/session-main | TK-471 | completed |
 | TK-473 | sprint-005 | align direct-execute and preview-confirm continuity with resume and command bundles | runtime/session-main | TK-472 | completed |
@@ -144,3 +144,6 @@
 16. 2026-04-01：新增 planned `sprint-005-conversational-chat-and-skill-handoff-productization`，将 approved technical solution 拆为 conversation routing/chatability、foreground skill registry + risk gate，以及 preview/direct-execute continuity 三个实现任务包。
 17. 2026-04-01：正式执行 `sprint-005`；`session.main` 当前已把 follow-up 从短输入兜底收紧为 continuation whitelist，并允许 direct answer 运行在 tool-capable surface 上。
 18. 2026-04-01：完成 `sprint-005`；`session.main` 当前已具备 deterministic foreground skill registry、risk-tiered `direct_execute / preview_confirm` handoff、`help / doctor / verify / scope-resolved review` 低风险直跑，以及 command-bundle preview/resume/stop-on-failure continuity parity，详见 `sprint-005-conversational-chat-and-skill-handoff-productization/sprint-005-completion-summary.md`。
+19. 2026-04-01：正式激活 `sprint-004-streaming-and-host-parity`；当前主执行面已切回 Phase C，开始收口 supervisor streaming delta、running presentation 与 embedded/sidecar/desktop host parity。
+20. 2026-04-01：完成 `sprint-004`；`session.main` 当前已形成 shared `TURN_STREAM_DELTA` running presentation、host parity summary truth 与 `invokedRoles` remote seam 预留，详见 `sprint-004-streaming-and-host-parity/sprint-004-completion-summary.md`。
+21. 2026-04-01：完成 `project-035-session-main-supervisor-and-role-subagent-productization`；5 个 sprint 均已收口，formal solution、supervisor bootstrap、multi-role collaboration、streaming/host parity 与 conversational skill handoff 已形成一体化 productization truth，见 `project-035-session-main-supervisor-and-role-subagent-productization-completion-audit-summary.md`。

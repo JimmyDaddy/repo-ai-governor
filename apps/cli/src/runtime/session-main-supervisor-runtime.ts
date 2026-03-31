@@ -12,6 +12,7 @@ import {
   type AgentProtocolContract,
   AgentRouteRunner,
   AgentRouteSelectionSource,
+  AgentStreamEventType,
 } from '@repo-ai-governor/adapter-sdk';
 import type { AdaptersConfig, ResolvedWorkspace } from '@repo-ai-governor/config';
 import {
@@ -19,7 +20,9 @@ import {
   SESSION_MAIN_RESPONSE_MODE,
 } from '@repo-ai-governor/core-orchestration-service/constants';
 import type {
+  SessionMainSupervisorInvokedRole,
   SessionMainSupervisorRuntimeContract,
+  SessionMainSupervisorStreamEvent,
   SessionMainSupervisorTurnContext,
   SessionMainSupervisorTurnOutcome,
 } from '@repo-ai-governor/core-orchestration-service/types';
@@ -73,6 +76,13 @@ interface ExecutedRoleDispatch {
   assistantMessage: string;
   selectedSurface: string;
   selectedBy: string;
+}
+
+interface ProtocolStreamRelayState {
+  emittedCount: number;
+  sawLifecycle: boolean;
+  sawToken: boolean;
+  sawToolCall: boolean;
 }
 
 /**
@@ -183,19 +193,91 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       safeCandidateSurfaces,
       toolConfigBySurface,
     });
-    const dispatchResult = await routeRunner.dispatchStage({
-      processId: context.sessionId,
-      executionId: context.turnId,
+    const answerInput = this.createAnswerInput(context);
+    const primaryAnswerSurface = safeCandidateSurfaces[0] ?? AdapterSurface.CODEX;
+    const relayState = this.createProtocolStreamRelayState();
+    await this.publishStreamEvent(context, {
+      kind: 'lifecycle',
+      state: 'started',
+      title: this.localizeText('Session Main Answer', '主会话回答'),
+      detail: this.localizeText(
+        'The supervisor is preparing a direct answer.',
+        'supervisor 正在准备 direct answer。',
+      ),
       stageId: SESSION_MAIN_ANSWER_STAGE_ID,
       routeKey: SESSION_MAIN_ANSWER_ROUTE_KEY,
-      input: this.createAnswerInput(context),
-      runtimeContext: {
-        networkMode: AgentNetworkMode.STANDARD,
-      },
+      selectedSurface: primaryAnswerSurface,
     });
+    const relayPromise = this.relayProtocolStreamEvents(
+      context,
+      protocolBySurface[primaryAnswerSurface],
+      {
+        processId: context.sessionId,
+        executionId: context.turnId,
+        stageId: SESSION_MAIN_ANSWER_STAGE_ID,
+        routeKey: SESSION_MAIN_ANSWER_ROUTE_KEY,
+        input: answerInput,
+      },
+      relayState,
+    );
+    let dispatchResult: Awaited<ReturnType<typeof routeRunner.dispatchStage>>;
+    try {
+      dispatchResult = await routeRunner.dispatchStage({
+        processId: context.sessionId,
+        executionId: context.turnId,
+        stageId: SESSION_MAIN_ANSWER_STAGE_ID,
+        routeKey: SESSION_MAIN_ANSWER_ROUTE_KEY,
+        input: answerInput,
+        runtimeContext: {
+          networkMode: AgentNetworkMode.STANDARD,
+        },
+      });
+    } catch (error) {
+      await relayPromise;
+      await this.publishStreamEvent(context, {
+        kind: 'lifecycle',
+        state: 'failed',
+        title: this.localizeText('Session Main Answer', '主会话回答'),
+        detail: this.localizeText(
+          'The direct-answer stage failed before completion.',
+          'direct-answer 阶段在完成前失败。',
+        ),
+        stageId: SESSION_MAIN_ANSWER_STAGE_ID,
+        routeKey: SESSION_MAIN_ANSWER_ROUTE_KEY,
+      });
+      throw error;
+    }
+    await relayPromise;
     const assistantMessage = this.resolveAssistantMessage(
       dispatchResult.invokeResult.output,
       context,
+    );
+    if (!relayState.sawToken) {
+      await this.publishAssistantTokenStream(context, assistantMessage, {
+        title: this.localizeText('Assistant Draft', '回答草稿'),
+        stageId: SESSION_MAIN_ANSWER_STAGE_ID,
+        routeKey: SESSION_MAIN_ANSWER_ROUTE_KEY,
+        selectedSurface: dispatchResult.selectedSurface,
+        selectedBy: this.resolveSelectedBy(
+          dispatchResult.auditRecord.selectedBy,
+          context.sessionRoutingPreferenceApplied,
+          !safeCandidateSurfaces.includes(context.selectedSurface as AdapterSurface),
+        ),
+      });
+    }
+    await this.publishStreamEvent(context, {
+      kind: 'lifecycle',
+      state: 'completed',
+      title: this.localizeText('Session Main Answer', '主会话回答'),
+      detail: this.localizeText('The direct-answer stage is ready.', 'direct-answer 阶段已完成。'),
+      stageId: SESSION_MAIN_ANSWER_STAGE_ID,
+      routeKey: SESSION_MAIN_ANSWER_ROUTE_KEY,
+      selectedSurface: dispatchResult.selectedSurface,
+    });
+    const resolvedSelectedBy = this.resolveSelectedBy(
+      dispatchResult.auditRecord.selectedBy,
+      context.sessionRoutingPreferenceApplied,
+      !safeCandidateSurfaces.includes(context.selectedSurface as AdapterSurface),
     );
     return {
       responseMode: SESSION_MAIN_RESPONSE_MODE.ANSWER,
@@ -206,13 +288,10 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       executionIntent: 'session.answer',
       requiresConfirmation: false,
       selectedSurface: dispatchResult.selectedSurface,
-      selectedBy: this.resolveSelectedBy(
-        dispatchResult.auditRecord.selectedBy,
-        context.sessionRoutingPreferenceApplied,
-        !safeCandidateSurfaces.includes(context.selectedSurface as AdapterSurface),
-      ),
+      selectedBy: resolvedSelectedBy,
       sessionRoutingPreferenceApplied: context.sessionRoutingPreferenceApplied,
       invokedRoleIds: [],
+      invokedRoles: [],
       subagentCount: 0,
     };
   }
@@ -336,6 +415,7 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       selectedBy: executedDispatch.selectedBy,
       sessionRoutingPreferenceApplied: context.sessionRoutingPreferenceApplied,
       invokedRoleIds: [executedDispatch.descriptor.roleId],
+      invokedRoles: [this.createInvokedRoleDescriptor(executedDispatch)],
       subagentCount: 1,
     };
   }
@@ -401,6 +481,9 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
         .join(' -> '),
       sessionRoutingPreferenceApplied: context.sessionRoutingPreferenceApplied,
       invokedRoleIds: executedDispatches.map((candidate) => candidate.descriptor.roleId),
+      invokedRoles: executedDispatches.map((candidate) =>
+        this.createInvokedRoleDescriptor(candidate),
+      ),
       subagentCount: executedDispatches.length,
     };
   }
@@ -464,6 +547,9 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
         .join(' | '),
       sessionRoutingPreferenceApplied: context.sessionRoutingPreferenceApplied,
       invokedRoleIds: executedDispatches.map((candidate) => candidate.descriptor.roleId),
+      invokedRoles: executedDispatches.map((candidate) =>
+        this.createInvokedRoleDescriptor(candidate),
+      ),
       subagentCount: executedDispatches.length,
     };
   }
@@ -570,6 +656,16 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       customInput?: Record<string, unknown>;
     },
   ): Promise<ExecutedRoleDispatch> {
+    const dispatchInput = options?.customInput
+      ? options.customInput
+      : options?.priorRoleOutputs && options.priorRoleOutputs.length > 0
+        ? this.createSerialRoleInput(
+            context,
+            preparedDispatch.descriptor,
+            options.priorRoleOutputs,
+            options.roleOrder ?? [preparedDispatch.descriptor.roleId],
+          )
+        : this.createRoleDelegateInput(context, preparedDispatch.descriptor);
     const routeRunner = this.createRouteRunner({
       routeKey: preparedDispatch.descriptor.routeKey,
       protocolBySurface,
@@ -577,39 +673,257 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       toolConfigBySurface,
       capabilityRequirement: preparedDispatch.capabilityRequirement,
     });
-    const dispatchResult = await routeRunner.dispatchStage({
-      processId: context.sessionId,
-      executionId: context.turnId,
+    const relayState = this.createProtocolStreamRelayState();
+    const primaryRoleSurface = preparedDispatch.safeCandidateSurfaces[0] ?? AdapterSurface.CODEX;
+    await this.publishStreamEvent(context, {
+      kind: 'lifecycle',
+      state: 'started',
+      title: this.localizeText(
+        `${this.formatRoleHeading(preparedDispatch.descriptor.roleId)} Delegate`,
+        `${preparedDispatch.descriptor.roleId} 角色委派`,
+      ),
+      detail: this.localizeText(
+        `Dispatching the ${preparedDispatch.descriptor.roleId} role.`,
+        `正在调度 ${preparedDispatch.descriptor.roleId} 角色。`,
+      ),
+      roleId: preparedDispatch.descriptor.roleId,
       stageId: preparedDispatch.descriptor.stageId,
       routeKey: preparedDispatch.descriptor.routeKey,
-      input: options?.customInput
-        ? options.customInput
-        : options?.priorRoleOutputs && options.priorRoleOutputs.length > 0
-          ? this.createSerialRoleInput(
-              context,
-              preparedDispatch.descriptor,
-              options.priorRoleOutputs,
-              options.roleOrder ?? [preparedDispatch.descriptor.roleId],
-            )
-          : this.createRoleDelegateInput(context, preparedDispatch.descriptor),
-      runtimeContext: {
-        networkMode: AgentNetworkMode.STANDARD,
-      },
+      selectedSurface: primaryRoleSurface,
     });
+    const relayPromise = this.relayProtocolStreamEvents(
+      context,
+      protocolBySurface[primaryRoleSurface],
+      {
+        processId: context.sessionId,
+        executionId: context.turnId,
+        stageId: preparedDispatch.descriptor.stageId,
+        routeKey: preparedDispatch.descriptor.routeKey,
+        input: dispatchInput,
+      },
+      relayState,
+      {
+        roleId: preparedDispatch.descriptor.roleId,
+      },
+    );
+    let dispatchResult: Awaited<ReturnType<typeof routeRunner.dispatchStage>>;
+    try {
+      dispatchResult = await routeRunner.dispatchStage({
+        processId: context.sessionId,
+        executionId: context.turnId,
+        stageId: preparedDispatch.descriptor.stageId,
+        routeKey: preparedDispatch.descriptor.routeKey,
+        input: dispatchInput,
+        runtimeContext: {
+          networkMode: AgentNetworkMode.STANDARD,
+        },
+      });
+    } catch (error) {
+      await relayPromise;
+      await this.publishStreamEvent(context, {
+        kind: 'lifecycle',
+        state: 'failed',
+        title: this.localizeText(
+          `${this.formatRoleHeading(preparedDispatch.descriptor.roleId)} Delegate`,
+          `${preparedDispatch.descriptor.roleId} 角色委派`,
+        ),
+        detail: this.localizeText(
+          `The ${preparedDispatch.descriptor.roleId} role failed before completion.`,
+          `${preparedDispatch.descriptor.roleId} 角色在完成前失败。`,
+        ),
+        roleId: preparedDispatch.descriptor.roleId,
+        stageId: preparedDispatch.descriptor.stageId,
+        routeKey: preparedDispatch.descriptor.routeKey,
+      });
+      throw error;
+    }
+    await relayPromise;
     const assistantMessage = this.resolveRoleAssistantMessage(
       dispatchResult.invokeResult.output,
       context,
       preparedDispatch.descriptor,
     );
+    const selectedBy = this.resolveRoleDelegateSelectedBy(
+      dispatchResult.auditRecord.selectedBy,
+      context.sessionRoutingPreferenceApplied,
+      !preparedDispatch.safeCandidateSurfaces.includes(context.selectedSurface as AdapterSurface),
+    );
+    if (!relayState.sawToken) {
+      await this.publishAssistantTokenStream(context, assistantMessage, {
+        title: this.localizeText(
+          `${this.formatRoleHeading(preparedDispatch.descriptor.roleId)} Draft`,
+          `${preparedDispatch.descriptor.roleId} 草稿`,
+        ),
+        roleId: preparedDispatch.descriptor.roleId,
+        stageId: preparedDispatch.descriptor.stageId,
+        routeKey: preparedDispatch.descriptor.routeKey,
+        selectedSurface: dispatchResult.selectedSurface,
+        selectedBy,
+      });
+    }
+    await this.publishStreamEvent(context, {
+      kind: 'lifecycle',
+      state: 'completed',
+      title: this.localizeText(
+        `${this.formatRoleHeading(preparedDispatch.descriptor.roleId)} Delegate`,
+        `${preparedDispatch.descriptor.roleId} 角色委派`,
+      ),
+      detail: this.localizeText(
+        `The ${preparedDispatch.descriptor.roleId} role finished responding.`,
+        `${preparedDispatch.descriptor.roleId} 角色已完成回复。`,
+      ),
+      roleId: preparedDispatch.descriptor.roleId,
+      stageId: preparedDispatch.descriptor.stageId,
+      routeKey: preparedDispatch.descriptor.routeKey,
+      selectedSurface: dispatchResult.selectedSurface,
+      selectedBy,
+    });
     return {
       descriptor: preparedDispatch.descriptor,
       assistantMessage,
       selectedSurface: dispatchResult.selectedSurface,
-      selectedBy: this.resolveRoleDelegateSelectedBy(
-        dispatchResult.auditRecord.selectedBy,
-        context.sessionRoutingPreferenceApplied,
-        !preparedDispatch.safeCandidateSurfaces.includes(context.selectedSurface as AdapterSurface),
-      ),
+      selectedBy,
+    };
+  }
+
+  private createProtocolStreamRelayState(): ProtocolStreamRelayState {
+    return {
+      emittedCount: 0,
+      sawLifecycle: false,
+      sawToken: false,
+      sawToolCall: false,
+    };
+  }
+
+  private async relayProtocolStreamEvents(
+    context: SessionMainSupervisorTurnContext,
+    protocol: AgentProtocolContract | undefined,
+    request: {
+      processId: string;
+      executionId: string;
+      stageId: string;
+      routeKey: string;
+      input: Record<string, unknown>;
+    },
+    relayState: ProtocolStreamRelayState,
+    metadata: {
+      roleId?: string;
+    } = {},
+  ): Promise<void> {
+    if (!protocol || !context.publishStreamEvent) {
+      return;
+    }
+
+    try {
+      for await (const event of protocol.streamEvents(request)) {
+        relayState.emittedCount += 1;
+        if (
+          event.eventType === AgentStreamEventType.STATUS ||
+          event.eventType === AgentStreamEventType.COMPLETED ||
+          event.eventType === AgentStreamEventType.FAILED
+        ) {
+          relayState.sawLifecycle = true;
+        }
+        if (event.eventType === AgentStreamEventType.TOKEN) {
+          relayState.sawToken = true;
+        }
+        if (event.eventType === AgentStreamEventType.TOOL_CALL) {
+          relayState.sawToolCall = true;
+        }
+        await this.publishStreamEvent(context, {
+          kind:
+            event.eventType === AgentStreamEventType.TOKEN
+              ? 'token'
+              : event.eventType === AgentStreamEventType.TOOL_CALL
+                ? 'tool_call'
+                : 'lifecycle',
+          state:
+            event.eventType === AgentStreamEventType.COMPLETED
+              ? 'completed'
+              : event.eventType === AgentStreamEventType.FAILED
+                ? 'failed'
+                : 'running',
+          title: this.readOptionalString(event.payload.title),
+          detail:
+            this.readOptionalString(event.payload.detail) ??
+            this.readOptionalString(event.payload.status) ??
+            this.readOptionalString(event.payload.message),
+          chunkText:
+            this.readOptionalString(event.payload.chunkText) ??
+            this.readOptionalString(event.payload.text) ??
+            this.readOptionalString(event.payload.delta),
+          accumulatedText:
+            this.readOptionalString(event.payload.accumulatedText) ??
+            this.readOptionalString(event.payload.responseText),
+          roleId: metadata.roleId,
+          stageId: request.stageId,
+          routeKey: request.routeKey,
+          selectedSurface: this.readOptionalString(event.payload.surface),
+          toolName:
+            this.readOptionalString(event.payload.toolName) ??
+            this.readOptionalString(event.payload.name),
+          toolCallId: this.readOptionalString(event.payload.toolCallId),
+        });
+      }
+    } catch {
+      return;
+    }
+  }
+
+  private async publishAssistantTokenStream(
+    context: SessionMainSupervisorTurnContext,
+    assistantMessage: string,
+    metadata: {
+      title: string;
+      roleId?: string;
+      stageId: string;
+      routeKey: string;
+      selectedSurface?: string;
+      selectedBy?: string;
+    },
+  ): Promise<void> {
+    if (!context.publishStreamEvent) {
+      return;
+    }
+
+    const normalizedMessage = assistantMessage.trim();
+    if (normalizedMessage.length === 0) {
+      return;
+    }
+
+    await this.publishStreamEvent(context, {
+      kind: 'token',
+      state: 'running',
+      title: metadata.title,
+      detail: normalizedMessage.split(/\r?\n/u)[0] ?? normalizedMessage,
+      chunkText: normalizedMessage.slice(0, 240),
+      accumulatedText: normalizedMessage.slice(0, 240),
+      ...(metadata.roleId ? { roleId: metadata.roleId } : {}),
+      stageId: metadata.stageId,
+      routeKey: metadata.routeKey,
+      ...(metadata.selectedSurface ? { selectedSurface: metadata.selectedSurface } : {}),
+      ...(metadata.selectedBy ? { selectedBy: metadata.selectedBy } : {}),
+    });
+  }
+
+  private async publishStreamEvent(
+    context: SessionMainSupervisorTurnContext,
+    event: SessionMainSupervisorStreamEvent,
+  ): Promise<void> {
+    await context.publishStreamEvent?.(event);
+  }
+
+  private createInvokedRoleDescriptor(
+    executedDispatch: ExecutedRoleDispatch,
+  ): SessionMainSupervisorInvokedRole {
+    return {
+      roleId: executedDispatch.descriptor.roleId,
+      roleProfileId: executedDispatch.descriptor.roleProfileId,
+      agentId: executedDispatch.descriptor.agentId,
+      selectedSurface: executedDispatch.selectedSurface,
+      selectedBy: executedDispatch.selectedBy,
+      dispatchBoundary: executedDispatch.descriptor.dispatchBoundary,
+      transportKind: executedDispatch.descriptor.transportKind,
     };
   }
 
@@ -1226,5 +1540,11 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
 
   private localizeText(english: string, chinese: string): string {
     return this.options.locale.toLowerCase().startsWith('zh') ? chinese : english;
+  }
+
+  private readOptionalString(candidate: unknown): string | undefined {
+    return typeof candidate === 'string' && candidate.trim().length > 0
+      ? candidate.trim()
+      : undefined;
   }
 }

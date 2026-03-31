@@ -167,11 +167,11 @@ class StubSessionShellInkRunner {
 }
 
 class FakeSessionShellServiceClient {
-  private readonly sessions = new Map<
+  protected readonly sessions = new Map<
     string,
     { summary: OrchestrationSessionSummary; events: OrchestrationSessionEvent[] }
   >();
-  private sessionSequence = 0;
+  protected sessionSequence = 0;
 
   public constructor(seedSessionId = 'session-shell-001') {
     this.createSession(seedSessionId);
@@ -331,7 +331,7 @@ class FakeSessionShellServiceClient {
     session.summary = this.rebuildSummary(options.sessionId);
   }
 
-  private createSession(sessionId: string): OrchestrationStartSessionResponse {
+  protected createSession(sessionId: string): OrchestrationStartSessionResponse {
     const summary: OrchestrationSessionSummary = {
       sessionId,
       status: OrchestrationSessionStatus.ACTIVE,
@@ -362,7 +362,7 @@ class FakeSessionShellServiceClient {
     };
   }
 
-  private appendEvent(
+  protected appendEvent(
     sessionId: string,
     options: {
       type: OrchestrationSessionEventType;
@@ -384,7 +384,7 @@ class FakeSessionShellServiceClient {
     return event;
   }
 
-  private rebuildSummary(sessionId: string): OrchestrationSessionSummary {
+  protected rebuildSummary(sessionId: string): OrchestrationSessionSummary {
     const session = this.requireSession(sessionId);
     return {
       ...session.summary,
@@ -394,7 +394,7 @@ class FakeSessionShellServiceClient {
     };
   }
 
-  private requireSession(sessionId: string) {
+  protected requireSession(sessionId: string) {
     const session = this.sessions.get(sessionId);
     if (!session) {
       throw new RuntimeError(
@@ -405,8 +405,82 @@ class FakeSessionShellServiceClient {
     return session;
   }
 
-  private createCursor(sessionId: string, sequence: number): string {
+  protected createCursor(sessionId: string, sequence: number): string {
     return `cursor:${sessionId}:${String(sequence)}`;
+  }
+}
+
+class StreamingTurnSessionShellServiceClient extends FakeSessionShellServiceClient {
+  public override async sendMainTurn(sessionId: string, userMessage: string): Promise<void> {
+    const session = this.requireSession(sessionId);
+    const turnIndex =
+      session.events.filter((event) => event.type === OrchestrationSessionEventType.TURN_COMPLETED)
+        .length + 1;
+    const turnId = `turn-stream-${String(turnIndex)}`;
+
+    this.appendEvent(sessionId, {
+      type: OrchestrationSessionEventType.TURN_SUBMITTED,
+      payload: {
+        role: OrchestrationSessionTranscriptRole.USER,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        content: userMessage,
+      },
+    });
+    this.appendEvent(sessionId, {
+      type: OrchestrationSessionEventType.TURN_STREAM_DELTA,
+      payload: {
+        role: OrchestrationSessionTranscriptRole.ASSISTANT,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        turnId,
+        delta: 'Planning current workspace answer.',
+        streamKind: 'lifecycle',
+        streamState: 'running',
+        title: 'Session Main Answer',
+        detail: 'Planning current workspace answer.',
+        selectedSurface: 'codex',
+      },
+    });
+    session.summary = this.rebuildSummary(sessionId);
+
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 40);
+    });
+
+    this.appendEvent(sessionId, {
+      type: OrchestrationSessionEventType.TURN_STREAM_DELTA,
+      payload: {
+        role: OrchestrationSessionTranscriptRole.ASSISTANT,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        turnId,
+        delta: '## Workspace status',
+        streamKind: 'token',
+        streamState: 'running',
+        title: 'Assistant Draft',
+        chunkText: '## Workspace status',
+        accumulatedText: '## Workspace status\n\n- clean',
+        selectedSurface: 'codex',
+      },
+    });
+    this.appendEvent(sessionId, {
+      type: OrchestrationSessionEventType.TURN_COMPLETED,
+      payload: {
+        role: OrchestrationSessionTranscriptRole.ASSISTANT,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        turnId,
+        turnIndex,
+        responseMode: 'answer',
+        interactionMode: 'direct_answer',
+        assistantMessage: '## Workspace status\n\n- clean',
+        assistantDelta: '## Workspace status',
+        executionIntent: 'session.answer',
+        requiresConfirmation: false,
+        selectedSurface: 'codex',
+        selectedBy: 'session.main.answer.primary',
+        invokedRoleIds: [],
+        subagentCount: 0,
+      },
+    });
+    session.summary = this.rebuildSummary(sessionId);
   }
 }
 
@@ -1122,6 +1196,75 @@ describe('CliSessionShellRunner', () => {
     ).toBe(true);
     expect(inkRunner.closeCount).toBe(1);
     expect(result.transcriptItems.at(-1)?.lines[0]).toBe('Closed after /exit.');
+  });
+
+  it('renders session.main stream deltas inside the shared running-progress dock before the turn completes', async () => {
+    const inkRunner = new StubSessionShellInkRunner([
+      {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: 'summarize the current workspace',
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_SUBMITTED,
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: '/exit',
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_SUBMITTED,
+      },
+    ]);
+    const runner = new CliSessionShellRunner(
+      undefined,
+      new RecordingSessionShellRenderer() as never,
+      () => new StubSessionShellPromptAdapter([]),
+      () => new CliSessionShellInkController(),
+      () => inkRunner as never,
+      () => true,
+      () => new Date('2026-03-30T12:00:00Z'),
+    );
+
+    const result = await runner.run(
+      DEFAULT_RUN_OPTIONS({
+        sessionClient: new StreamingTurnSessionShellServiceClient(),
+      }),
+    );
+
+    expect(result.exitReason).toBe(CliSessionShellExitReason.SLASH_EXIT);
+    expect(
+      inkRunner.snapshots.some(
+        (frame) =>
+          frame.commandProgressPanel?.title === 'Running progress' &&
+          frame.commandProgressPanel.runState === 'running' &&
+          frame.commandProgressPanel.statusLine ===
+            'Planning current workspace answer. [surface=codex]' &&
+          frame.commandProgressPanel.rows.some(
+            (row) =>
+              row.id === 'lifecycle:session.main' &&
+              row.status === ExecutionProgressStatus.RUNNING &&
+              row.detail === 'Planning current workspace answer.',
+          ),
+      ),
+    ).toBe(true);
+    expect(
+      inkRunner.snapshots.some((frame) =>
+        frame.commandProgressPanel?.rows.some(
+          (row) =>
+            row.id === 'draft:assistant' &&
+            row.status === ExecutionProgressStatus.RUNNING &&
+            row.detail === '## Workspace status\n\n- clean',
+        ),
+      ),
+    ).toBe(true);
+    expect(inkRunner.snapshots.some((frame) => frame.commandProgressPanel === undefined)).toBe(
+      true,
+    );
+    expect(
+      result.transcriptItems.some(
+        (item) => item.markdownSource === '## Workspace status\n\n- clean',
+      ),
+    ).toBe(true);
   });
 
   it('renders the shared running-progress dock inside the session shell while a direct bridge command is running', async () => {

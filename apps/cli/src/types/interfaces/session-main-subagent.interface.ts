@@ -14,4 +14,6 @@ export interface SessionMainSubagentDescriptor {
   projectionStatus: string | null;
   selectedSurface: string | null;
   selectedBy: string | null;
+  dispatchBoundary: 'local_projection' | 'remote_bridge_reserved';
+  transportKind: 'local_protocol' | 'a2a_reserved';
 }

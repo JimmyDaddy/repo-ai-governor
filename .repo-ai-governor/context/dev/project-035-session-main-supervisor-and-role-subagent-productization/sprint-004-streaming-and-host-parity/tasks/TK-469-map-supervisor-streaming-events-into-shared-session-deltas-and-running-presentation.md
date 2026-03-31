@@ -1,7 +1,7 @@
 # TK-469 map supervisor streaming events into shared session deltas and running presentation
 
-- Status: planned
-- Date: 2026-03-31
+- Status: completed
+- Date: 2026-04-01
 - Owner: AI-Agent
 - Priority: P0
 - Project: `project-035-session-main-supervisor-and-role-subagent-productization`
@@ -32,3 +32,5 @@
 ## 5. Execution Notes
 
 1. 2026-03-31：任务创建，状态初始化为 `planned`；streaming 优先围绕 shared session delta contract 收口，不先发明第二套前台私有协议。
+2. 2026-04-01：任务激活；开始核对 supervisor answer/subagent path 的 `TURN_STREAM_DELTA` 发射链路、running presentation 消费链路与 transcript 分层缺口。
+3. 2026-04-01：任务完成；`session.main` answer/role-subagent path 现已将 lifecycle/token/tool-call 映射进 shared `TURN_STREAM_DELTA`，session shell 的 running dock 可在 turn 未完成前稳定消费这些流式更新。

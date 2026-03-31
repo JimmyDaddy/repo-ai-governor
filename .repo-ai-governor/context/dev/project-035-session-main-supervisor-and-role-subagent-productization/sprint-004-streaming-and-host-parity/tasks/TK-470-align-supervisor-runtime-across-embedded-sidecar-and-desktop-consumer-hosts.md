@@ -1,7 +1,7 @@
 # TK-470 align supervisor runtime across embedded sidecar and desktop consumer hosts
 
-- Status: planned
-- Date: 2026-03-31
+- Status: completed
+- Date: 2026-04-01
 - Owner: AI-Agent
 - Priority: P0
 - Project: `project-035-session-main-supervisor-and-role-subagent-productization`
@@ -32,3 +32,5 @@
 ## 5. Execution Notes
 
 1. 2026-03-31：任务创建，状态初始化为 `planned`；目标是避免 `session.main supervisor` 最终被固化成 CLI embedded-only 特例。
+2. 2026-04-01：任务激活；开始核对 orchestration host seam、embedded/sidecar/desktop consumer parity 现状，以及 remote role / A2A bridge contract-level 预留缺口。
+3. 2026-04-01：任务完成；session summary 已对齐 `serviceHostKind/serviceTransportKind` host truth，`invokedRoles` 已为 remote role / A2A bridge 预留 dispatch/transport seam，embedded/sidecar/desktop consumer contract parity 已完成基线收口。
