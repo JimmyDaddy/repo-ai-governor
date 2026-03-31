@@ -1,6 +1,6 @@
 # project-034-session-shell-doctor-progress-first-frame-followup 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-03-31
 - Stage Mapping: Session-shell live progress follow-up hardening
 - Phase Mapping: Activation and first-frame visibility fix / command recap presentation polish
@@ -49,3 +49,4 @@
 2. 2026-03-31：完成 `TK-462` 实现与验证；`CliSessionShellRunner` 现会在 `seedRunningState()` 后立即刷新 active surface，并新增 direct bridge seeded-progress regression coverage。
 3. 2026-03-31：完成 `TK-463`；`command_recap` presenter 现以 recap card 渲染摘要、状态和 artifact 分区，并通过 `react-cli-runner` / `session-shell-runner` regression 与 `pnpm run build` 验证。
 4. 2026-03-31：补齐 slash handoff recap metadata seam；`/doctor`、`/connect`、`/verify` 这类 `SESSION_MESSAGE_APPENDED` 成功结果现在会显式标记 `renderKind=command_recap`，不再回退成 plain-text transcript。
+5. 2026-03-31：完成项目级收口审计并将 `project-034` 切换为 `completed`；审计摘要见 `.repo-ai-governor/context/dev/project-034-session-shell-doctor-progress-first-frame-followup/project-034-session-shell-doctor-progress-first-frame-followup-completion-audit-summary.md`。
