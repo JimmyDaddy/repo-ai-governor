@@ -13,6 +13,18 @@ export const SESSION_MAIN_RESPONSE_MODE = {
 } as const;
 
 /**
+ * Defines stable handoff execution-mode values for natural-language skill routing.
+ *
+ * Why this exists:
+ * session.main must preserve one deterministic distinction between `preview + confirm` and
+ * low-risk `direct_execute` paths across dispatcher, shell runner, and resume continuity.
+ */
+export const SESSION_MAIN_HANDOFF_EXECUTION_MODE = {
+  PREVIEW_CONFIRM: 'preview_confirm',
+  DIRECT_EXECUTE: 'direct_execute',
+} as const;
+
+/**
  * Defines stable interaction-mode values returned by the service-owned supervisor.
  *
  * Why this exists:

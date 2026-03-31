@@ -47,7 +47,7 @@
 
 ## 2.5 sprint-005-conversational-chat-and-skill-handoff-productization
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 让 `session.main` 具备真实可闲聊入口、foreground skill registry 与按风险分层的自然语言 handoff/continuity 语义。
 - Task Package: `TK-471`、`TK-472`、`TK-473`。
 
@@ -62,9 +62,9 @@
 | TK-468 | sprint-003 | expand parallel role fan-out and collaboration recap presentation semantics | runtime/session-main | TK-467 | completed |
 | TK-469 | sprint-004 | map supervisor streaming events into shared session deltas and running presentation | runtime/session-events | TK-468 | planned |
 | TK-470 | sprint-004 | align supervisor runtime across embedded sidecar and desktop consumer hosts | runtime/host-parity | TK-469 | planned |
-| TK-471 | sprint-005 | harden conversational routing and direct-answer chatability | runtime/session-main | TK-468 | planned |
-| TK-472 | sprint-005 | introduce foreground skill registry and risk-tiered governed handoff | runtime/session-main | TK-471 | planned |
-| TK-473 | sprint-005 | align direct-execute and preview-confirm continuity with resume and command bundles | runtime/session-main | TK-472 | planned |
+| TK-471 | sprint-005 | harden conversational routing and direct-answer chatability | runtime/session-main | TK-468 | completed |
+| TK-472 | sprint-005 | introduce foreground skill registry and risk-tiered governed handoff | runtime/session-main | TK-471 | completed |
+| TK-473 | sprint-005 | align direct-execute and preview-confirm continuity with resume and command bundles | runtime/session-main | TK-472 | completed |
 
 ## 4. 依赖产物策略
 
@@ -142,3 +142,5 @@
 14. 2026-03-31：新增 follow-up draft `.repo-ai-governor/draft/session-main-conversational-chat-and-skill-intent-handoff-technical-solution.md`，专门承接“主 agent 可闲聊 + 自然语言 skill/命令组合受治理交接”的产品化补口，作为后续实现窗口输入。
 15. 2026-04-01：用户已明确批准 conversational follow-up draft，并将其正式并入 active solution `technical-solution.interactive-cli-react-style-cli` 的 formal module docs；`runtime.orchestration` 与 `runtime.cli-interactive-shell` 现正式接受 risk-tiered natural-language skill handoff / low-risk direct-execute direction，promotion 证据收口到 `TK-468` closeout 台账。
 16. 2026-04-01：新增 planned `sprint-005-conversational-chat-and-skill-handoff-productization`，将 approved technical solution 拆为 conversation routing/chatability、foreground skill registry + risk gate，以及 preview/direct-execute continuity 三个实现任务包。
+17. 2026-04-01：正式执行 `sprint-005`；`session.main` 当前已把 follow-up 从短输入兜底收紧为 continuation whitelist，并允许 direct answer 运行在 tool-capable surface 上。
+18. 2026-04-01：完成 `sprint-005`；`session.main` 当前已具备 deterministic foreground skill registry、risk-tiered `direct_execute / preview_confirm` handoff、`help / doctor / verify / scope-resolved review` 低风险直跑，以及 command-bundle preview/resume/stop-on-failure continuity parity，详见 `sprint-005-conversational-chat-and-skill-handoff-productization/sprint-005-completion-summary.md`。

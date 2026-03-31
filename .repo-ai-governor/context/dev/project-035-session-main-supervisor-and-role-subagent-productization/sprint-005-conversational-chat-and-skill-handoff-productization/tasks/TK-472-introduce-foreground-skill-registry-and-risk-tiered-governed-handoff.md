@@ -1,6 +1,6 @@
 # TK-472 introduce foreground skill registry and risk-tiered governed handoff
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-01
 - Owner: AI-Agent
 - Priority: P0
@@ -32,3 +32,5 @@
 ## 5. Execution Notes
 
 1. 2026-04-01：任务创建，状态初始化为 `planned`；skill registry 首轮只接受 deterministic 单命令 skill 与明确的 risk gate，不引入开放式 planner。
+2. 2026-04-01：任务切换为 `active`；已开始引入 service-owned foreground skill registry，并把自然语言 skill 命中映射到显式 `handoffExecutionMode + commandBatches`。
+3. 2026-04-01：任务完成；`session.main` 现已支持 deterministic skill registry、`help / doctor / verify / review` 低风险直跑，以及 `connect / plan / run / review verify / onboarding bundle` 的 preview-confirm 治理边界。

@@ -169,6 +169,10 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       this.resolveCandidateSurfaces(context.selectedSurface, trackedSurfaces),
       SESSION_MAIN_ANSWER_ROUTE_KEY,
       protocolBySurface,
+      undefined,
+      {
+        allowToolCapableSurfaces: true,
+      },
     );
     if (safeCandidateSurfaces.length === 0) {
       return this.createGuardedFallbackOutcome(context);
@@ -257,6 +261,9 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     routeKey: string,
     protocolBySurface: Record<string, AgentProtocolContract>,
     capabilityRequirement?: AgentCapabilityRequirement,
+    options: {
+      allowToolCapableSurfaces?: boolean;
+    } = {},
   ): Promise<AdapterSurface[]> {
     const safeCandidateSurfaces: AdapterSurface[] = [];
     for (const surface of candidateSurfaces) {
@@ -274,7 +281,7 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       });
       if (
         probeResult.availabilityStatus === AgentAvailabilityStatus.UNAVAILABLE ||
-        !this.isSafeDirectAnswerSurface(probeResult)
+        !this.isSafeDirectAnswerSurface(probeResult, options)
       ) {
         continue;
       }
@@ -620,10 +627,21 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     };
   }
 
-  private isSafeDirectAnswerSurface(probeResult: AgentProbeResult): boolean {
+  private isSafeDirectAnswerSurface(
+    probeResult: AgentProbeResult,
+    options: {
+      allowToolCapableSurfaces?: boolean;
+    },
+  ): boolean {
     const toolCallingState = probeResult.capabilityMatrix.capabilityStates.find(
       (capabilityState) => capabilityState.capability === AgentCapability.TOOL_CALLING,
     );
+    if (options.allowToolCapableSurfaces) {
+      return (
+        toolCallingState?.supportLevel === AgentCapabilitySupportLevel.SUPPORTED ||
+        toolCallingState?.supportLevel === AgentCapabilitySupportLevel.UNSUPPORTED
+      );
+    }
     return toolCallingState?.supportLevel === AgentCapabilitySupportLevel.UNSUPPORTED;
   }
 
@@ -864,18 +882,18 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       this.localizeText('## Session Main Answer', '## 主会话回答'),
       '',
       this.localizeText(
-        'Direct-answer bootstrap is currently restricted to no-tool surfaces.',
-        '当前 direct-answer bootstrap 只允许走无工具调用的 surface。',
+        'No eligible direct-answer surface is currently available for this turn.',
+        '当前没有可用于这次 direct-answer 的合格 surface。',
       ),
       '',
       this.localizeText(
-        `I did not dispatch "${context.userMessage}" to a tool-capable adapter because that would bypass the governed preview + confirm handoff boundary.`,
-        `我没有把「${context.userMessage}」派发给支持工具调用的 adapter，因为那会绕过受治理的 preview + confirm handoff 边界。`,
+        `I could not dispatch "${context.userMessage}" because every candidate surface is unavailable or failed route eligibility checks.`,
+        `我无法派发「${context.userMessage}」，因为所有候选 surface 要么不可用，要么没有通过当前路由资格检查。`,
       ),
       '',
       this.localizeText(
-        'Use a governed command such as `/connect`, `/doctor`, `/verify`, `/review`, or `/run`, or activate a no-tool local-model surface before retrying a free-form direct answer.',
-        '请改用 `/connect`、`/doctor`、`/verify`、`/review`、`/run` 等受治理命令，或先启用一个无工具调用的本地模型 surface，再重试自由对话回答。',
+        'Reconnect or verify an eligible surface, then retry the free-form answer or switch to a governed command such as `/connect`, `/doctor`, `/verify`, `/review`, or `/run`.',
+        '请先恢复或校验可用 surface，然后再重试自由对话回答，或者改用 `/connect`、`/doctor`、`/verify`、`/review`、`/run` 等受治理命令。',
       ),
     ].join('\n');
     return {

@@ -6,6 +6,7 @@ export type {
   LocalOrchestrationServiceStartExecutionRuntimeContext,
 } from './local-orchestration-service-shell.interface.js';
 export type {
+  SessionMainSupervisorCommandBatch,
   SessionMainSupervisorRuntimeContract,
   SessionMainSupervisorTurnBacklink,
   SessionMainSupervisorTurnContext,

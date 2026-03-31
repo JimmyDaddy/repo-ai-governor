@@ -67,6 +67,12 @@ const SESSION_SLASH_COMMAND_DEFINITIONS: SessionSlashCommandDefinition[] = [
     executionMode: 'direct',
   },
   {
+    command: '/verify',
+    summaryKey: 'cli.commands.verify.description',
+    kind: 'bridge',
+    executionMode: 'direct',
+  },
+  {
     command: '/workspace',
     summaryKey: 'cli.commands.workspace.description',
     kind: 'bridge',
@@ -106,6 +112,7 @@ const SESSION_SLASH_COMMAND_ALIASES: Record<string, string> = {
 const SESSION_SLASH_COMMAND_LAUNCHER_ORDER = [
   '/workspace',
   '/doctor',
+  '/verify',
   '/connect',
   '/review',
   '/plan',

@@ -1,6 +1,6 @@
 # TK-473 align direct-execute and preview-confirm continuity with resume and command bundles
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-01
 - Owner: AI-Agent
 - Priority: P0
@@ -32,3 +32,6 @@
 ## 5. Execution Notes
 
 1. 2026-04-01：任务创建，状态初始化为 `planned`；先保证 direct-execute 与 preview-confirm 的恢复链不分叉，再考虑 richer bundle auto-execute 或更复杂 planner graph。
+2. 2026-04-01：任务切换为 `active`；已开始把 natural-language handoff 元数据写回 shared session truth，并统一 `/confirm`、`/cancel`、`/resume` 与 transcript presenter 的恢复来源。
+3. 2026-04-01：任务完成；`direct_execute` 与 `preview_confirm` 现已共享 canonical pending-handoff continuity，`connect -> verify` 这类小型 command bundle 支持 preview、resume、单次确认后顺序执行与 stop-on-failure。
+4. 2026-04-01：已完成 sprint-005 working-tree CR 接受项修补；startup、显式 `/resume` 与 `/clear` 恢复 unresolved `direct_execute` handoff 时，现会按原始 execution mode 自动继续执行，不再错误降级为 `/confirm` preview。

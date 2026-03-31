@@ -80,6 +80,7 @@ const SESSION_SHELL_TRANSLATIONS: Record<string, string> = {
   'cli.sessionShell.commands.exit.summary': 'Exit the foreground shell.',
   'cli.sessionShell.responses.mainTurnSuggestedSlash': 'Suggested next step: {{command}}',
   'cli.sessionShell.responses.mainTurnHandoffPreview': 'Preview: {{preview}}',
+  'cli.sessionShell.responses.commandPreview': 'Ready: {{command}}',
   'cli.sessionShell.responses.mainTurnCollaborationAccepted': '{{mode}} completed.',
   'cli.sessionShell.responses.mainTurnCollaborationRoles': 'Roles: {{roles}} (count={{count}})',
   'cli.sessionShell.responses.mainTurnCollaborationSynthesis': 'Synthesis: {{synthesisMode}}',
@@ -130,6 +131,9 @@ describe('session.main parity integration', () => {
         responseMode: 'command_handoff_preview',
         suggestedSlashCommand: '/connect',
         executionIntent: 'connect.adapters.bootstrap',
+        skillId: 'skill.connect.adapters',
+        skillVersion: '2026-04-01',
+        handoffExecutionMode: 'preview_confirm',
         selectedSurface: 'claude-code',
         selectedBy: 'session.main.preference',
         sessionRoutingPreferenceApplied: true,
@@ -153,6 +157,22 @@ describe('session.main parity integration', () => {
           kind: 'command_preview',
           label: 'preview',
           target:
+            'repo-ai-governor connect --preset multi-tool-default --output pretty --single-tool-all-roles claude-code',
+        },
+      ]);
+      expect(completedEvent?.payload.commandBatches).toEqual([
+        {
+          slashQuery: '/connect',
+          bridgeArgv: [
+            'connect',
+            '--preset',
+            'multi-tool-default',
+            '--output',
+            'pretty',
+            '--single-tool-all-roles',
+            'claude-code',
+          ],
+          previewCommandLine:
             'repo-ai-governor connect --preset multi-tool-default --output pretty --single-tool-all-roles claude-code',
         },
       ]);
@@ -290,6 +310,200 @@ describe('session.main parity integration', () => {
 
       expect(resumedRenderer.frames[0]?.sessionId).toBe(firstSessionId);
       expect(resumedAnswer).toEqual(firstAnswer);
+    } finally {
+      await runtime.dispose();
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('auto-executes low-risk verify skills without requiring /confirm', async () => {
+    const temporaryRoot = await mkdtemp(resolve(tmpdir(), 'session-main-parity-verify-'));
+    const workspaceRoot = resolve(temporaryRoot, '.repo-ai-governor');
+    await mkdir(workspaceRoot, { recursive: true });
+    const runtime = createRuntime(workspaceRoot);
+    const sessionClient = new CliSessionShellServiceClient(runtime);
+    const commandExecutor = vi.fn(async (argv: string[]) => ({
+      artifactPaths: [],
+      commandLine: argv.join(' '),
+      message: 'verify completed',
+      status: 'success' as const,
+      summaryLines: ['Summary: verify completed'],
+    }));
+
+    try {
+      const renderer = new RecordingSessionShellRenderer();
+      const runner = createRunner(renderer, ['帮我验证一下 adapter 状态', '/exit']);
+      const result = await runner.run(
+        createRunOptions(sessionClient, {
+          commandExecutor,
+        }),
+      );
+
+      expect(result.exitReason).toBe(CliSessionShellExitReason.SLASH_EXIT);
+      expect(commandExecutor).toHaveBeenCalledWith(
+        ['verify', '--adapters', '--output', 'pretty'],
+        expect.objectContaining({
+          progressSink: expect.objectContaining({
+            publish: expect.any(Function),
+          }),
+        }),
+      );
+      expect(
+        renderer.frames.some((frame) => frame.promptBarLines.includes('/confirm · /cancel · Esc')),
+      ).toBe(false);
+      expect(
+        result.transcriptItems.some((item) => item.lines.includes('Summary: verify completed')),
+      ).toBe(true);
+    } finally {
+      await runtime.dispose();
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('auto-resumes unresolved low-risk verify skills without downgrading them into /confirm preview state', async () => {
+    const temporaryRoot = await mkdtemp(resolve(tmpdir(), 'session-main-parity-verify-resume-'));
+    const workspaceRoot = resolve(temporaryRoot, '.repo-ai-governor');
+    await mkdir(workspaceRoot, { recursive: true });
+    const runtime = createRuntime(workspaceRoot);
+    const sessionClient = new CliSessionShellServiceClient(runtime);
+    const commandExecutor = vi.fn(async (argv: string[]) => ({
+      artifactPaths: [],
+      commandLine: argv.join(' '),
+      message: `${argv.join(' ')} completed`,
+      status: 'success' as const,
+      summaryLines: [`Summary: ${argv.join(' ')} completed`],
+    }));
+
+    try {
+      const started = await runtime.startSession({
+        routeId: OrchestrationSessionRouteId.MAIN,
+      });
+      await runtime.sendSessionTurn({
+        sessionId: started.session.sessionId,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        userMessage: '帮我验证一下 adapter 状态',
+      });
+
+      const resumedRenderer = new RecordingSessionShellRenderer();
+      const resumedRunner = createRunner(resumedRenderer, ['/exit']);
+      const resumedResult = await resumedRunner.run(
+        createRunOptions(sessionClient, {
+          commandExecutor,
+          requestedSessionId: started.session.sessionId,
+          resumeOnStartup: true,
+        }),
+      );
+
+      expect(resumedRenderer.frames[0]?.sessionId).toBe(started.session.sessionId);
+      expect(commandExecutor).toHaveBeenCalledWith(
+        ['verify', '--adapters', '--output', 'pretty'],
+        expect.objectContaining({
+          progressSink: expect.objectContaining({
+            publish: expect.any(Function),
+          }),
+        }),
+      );
+      expect(
+        resumedRenderer.frames.some((frame) =>
+          frame.promptBarLines.includes('/confirm · /cancel · Esc'),
+        ),
+      ).toBe(false);
+      expect(
+        resumedResult.transcriptItems.some((item) =>
+          item.lines.includes('Summary: verify --adapters --output pretty completed'),
+        ),
+      ).toBe(true);
+    } finally {
+      await runtime.dispose();
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('restores pending onboarding bundle previews across resume before /confirm executes each step in order', async () => {
+    const temporaryRoot = await mkdtemp(resolve(tmpdir(), 'session-main-parity-bundle-'));
+    const workspaceRoot = resolve(temporaryRoot, '.repo-ai-governor');
+    await mkdir(workspaceRoot, { recursive: true });
+    const runtime = createRuntime(workspaceRoot);
+    const sessionClient = new CliSessionShellServiceClient(runtime);
+    const commandExecutor = vi.fn(async (argv: string[]) => ({
+      artifactPaths: [],
+      commandLine: argv.join(' '),
+      message: `${argv.join(' ')} completed`,
+      status: 'success' as const,
+      summaryLines: [`Summary: ${argv.join(' ')} completed`],
+    }));
+
+    try {
+      const firstRenderer = new RecordingSessionShellRenderer();
+      const firstRunner = createRunner(firstRenderer, ['把 adapter onboarding 全走一遍', '/exit']);
+      const firstResult = await firstRunner.run(createRunOptions(sessionClient));
+      const firstSessionId = firstRenderer.frames[0]?.sessionId;
+
+      expect(firstResult.exitReason).toBe(CliSessionShellExitReason.SLASH_EXIT);
+      expect(
+        firstResult.transcriptItems.some(
+          (item) =>
+            item.lines.includes('Suggested next step: adapter onboarding bundle') &&
+            item.lines.includes(
+              'Preview: 1. repo-ai-governor connect --preset multi-tool-default --output pretty\n2. repo-ai-governor verify --adapters --output pretty',
+            ),
+        ),
+      ).toBe(true);
+
+      const resumedRenderer = new RecordingSessionShellRenderer();
+      const resumedRunner = createRunner(resumedRenderer, ['/confirm', '/exit']);
+      const resumedResult = await resumedRunner.run(
+        createRunOptions(sessionClient, {
+          commandExecutor,
+          resumeOnStartup: true,
+        }),
+      );
+
+      expect(resumedRenderer.frames[0]?.sessionId).toBe(firstSessionId);
+      expect(
+        resumedRenderer.frames.some(
+          (frame) =>
+            frame.commandPreview?.includes(
+              'repo-ai-governor connect --preset multi-tool-default --output pretty',
+            ) &&
+            frame.commandPreview?.includes('repo-ai-governor verify --adapters --output pretty') &&
+            frame.promptBarLines.includes('/confirm · /cancel · Esc'),
+        ),
+      ).toBe(true);
+      expect(commandExecutor).toHaveBeenNthCalledWith(
+        1,
+        ['connect', '--preset', 'multi-tool-default', '--output', 'pretty'],
+        expect.objectContaining({
+          progressSink: expect.objectContaining({
+            publish: expect.any(Function),
+          }),
+        }),
+      );
+      expect(commandExecutor).toHaveBeenNthCalledWith(
+        2,
+        ['verify', '--adapters', '--output', 'pretty'],
+        expect.objectContaining({
+          progressSink: expect.objectContaining({
+            publish: expect.any(Function),
+          }),
+        }),
+      );
+      expect(
+        resumedResult.transcriptItems.filter((item) =>
+          item.lines.some((line) => line.startsWith('Summary:')),
+        ),
+      ).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            lines: expect.arrayContaining([
+              'Summary: connect --preset multi-tool-default --output pretty completed',
+            ]),
+          }),
+          expect.objectContaining({
+            lines: expect.arrayContaining(['Summary: verify --adapters --output pretty completed']),
+          }),
+        ]),
+      );
     } finally {
       await runtime.dispose();
       await rm(temporaryRoot, { recursive: true, force: true });

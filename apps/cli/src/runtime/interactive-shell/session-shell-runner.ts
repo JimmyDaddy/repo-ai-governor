@@ -2,9 +2,12 @@ import { spawn } from 'node:child_process';
 import { stderr, stdin } from 'node:process';
 
 import {
+  type OrchestrationSessionEvent,
+  OrchestrationSessionEventType,
   OrchestrationSessionRouteId,
   OrchestrationSessionTranscriptRole,
   type OrchestrationStartSessionResponse,
+  type OrchestrationSubscribeSessionResponse,
 } from '@repo-ai-governor/orchestration-service-client';
 import {
   BaseError,
@@ -52,10 +55,26 @@ interface CliSessionShellHistoryEntry {
   value: string;
 }
 
-interface PendingCommandExecution {
+interface PendingCommandExecutionStep {
   argv: string[];
+  slashQuery: string;
   previewCommandLine: string;
 }
+
+interface PendingCommandExecution {
+  handoffTurnId: string;
+  executionMode: 'preview_confirm' | 'direct_execute';
+  sourceEventSequence: number;
+  steps: PendingCommandExecutionStep[];
+  previewCommandLine: string;
+}
+
+interface SessionMainHandoffResolutionRecord {
+  turnId: string;
+  state: 'cancelled' | 'executed' | 'failed';
+}
+
+const SESSION_MAIN_HANDOFF_RESOLUTION_METADATA_KEY = 'sessionMainHandoffResolution';
 
 interface CliSessionShellRuntimeState {
   currentRouteId: string;
@@ -103,6 +122,9 @@ export class CliSessionShellRunner {
       bootstrapped.resumeSelector,
     );
     await this.syncTranscript(viewModel, transcriptStore, options, runtimeState, true);
+    if (runtimeState.pendingCommand) {
+      await this.recoverPendingCommandState(viewModel, transcriptStore, options, runtimeState);
+    }
 
     if (bootstrapped.startupNoticeLines.length > 0) {
       this.appendLocalTranscriptItem(viewModel, {
@@ -412,7 +434,24 @@ export class CliSessionShellRunner {
     this.recordHistory(inputLine, runtimeState);
     try {
       await options.sessionClient.sendMainTurn(viewModel.sessionId, inputLine);
-      await this.syncTranscript(viewModel, transcriptStore, options, runtimeState);
+      const subscription = await this.syncTranscript(
+        viewModel,
+        transcriptStore,
+        options,
+        runtimeState,
+      );
+      const pendingCommand = runtimeState.pendingCommand;
+      if (
+        pendingCommand &&
+        subscription.events.some((event) => event.sequence === pendingCommand.sourceEventSequence)
+      ) {
+        if (pendingCommand.executionMode === 'direct_execute') {
+          await this.executePendingCommand(viewModel, transcriptStore, options, runtimeState);
+          return;
+        }
+        this.restorePendingCommandPreviewState(viewModel, options, runtimeState);
+        return;
+      }
     } catch (error) {
       const standardizedError = standardizeError(error);
       await this.appendServiceTranscriptItem(
@@ -554,8 +593,16 @@ export class CliSessionShellRunner {
     }
 
     if (exactCommand.command === '/resume') {
-      await this.handleResumeCommand(query, viewModel, transcriptStore, options, runtimeState);
-      this.resetPromptState(viewModel, options, runtimeState);
+      const recoveredPendingCommand = await this.handleResumeCommand(
+        query,
+        viewModel,
+        transcriptStore,
+        options,
+        runtimeState,
+      );
+      if (!recoveredPendingCommand) {
+        this.resetPromptState(viewModel, options, runtimeState);
+      }
       return null;
     }
 
@@ -589,6 +636,7 @@ export class CliSessionShellRunner {
           [options.translate('cli.sessionShell.responses.cancelWithoutPendingCommand')],
         );
       } else {
+        const pendingCommand = runtimeState.pendingCommand;
         runtimeState.pendingCommand = null;
         await this.appendServiceTranscriptItem(
           viewModel,
@@ -597,6 +645,7 @@ export class CliSessionShellRunner {
           runtimeState,
           OrchestrationSessionTranscriptRole.SYSTEM,
           [options.translate('cli.sessionShell.responses.commandCancelled')],
+          this.createHandoffResolutionMetadata(pendingCommand, 'cancelled'),
         );
       }
       this.resetPromptState(viewModel, options, runtimeState);
@@ -677,9 +726,19 @@ export class CliSessionShellRunner {
       return null;
     }
 
-    const nextPendingCommand = {
-      argv: exactCommand.bridgeArgv,
-      previewCommandLine: exactCommand.bridgeArgv.join(' '),
+    const previewCommandLine = exactCommand.bridgeArgv.join(' ');
+    const nextPendingCommand: PendingCommandExecution = {
+      handoffTurnId: `local-slash:${exactCommand.command}:${this.nowProvider().toISOString()}`,
+      executionMode: exactCommand.executionMode === 'direct' ? 'direct_execute' : 'preview_confirm',
+      sourceEventSequence: Number.MAX_SAFE_INTEGER,
+      steps: [
+        {
+          argv: [...exactCommand.bridgeArgv],
+          slashQuery: exactCommand.command,
+          previewCommandLine,
+        },
+      ],
+      previewCommandLine,
     };
     runtimeState.pendingCommand = nextPendingCommand;
 
@@ -760,7 +819,7 @@ export class CliSessionShellRunner {
     transcriptStore: CliSessionShellTranscriptStore,
     options: CliSessionShellRunOptions,
     runtimeState: CliSessionShellRuntimeState,
-  ): Promise<void> {
+  ): Promise<boolean> {
     const requestedSessionId = this.resolveSlashCommandArgument(query);
 
     try {
@@ -771,6 +830,15 @@ export class CliSessionShellRunner {
         resumedSession.session.currentRouteId ?? OrchestrationSessionRouteId.MAIN;
       runtimeState.pendingCommand = null;
       await this.syncTranscript(viewModel, transcriptStore, options, runtimeState, true);
+      if (runtimeState.pendingCommand) {
+        return await this.recoverPendingCommandState(
+          viewModel,
+          transcriptStore,
+          options,
+          runtimeState,
+        );
+      }
+      return false;
     } catch (error) {
       const standardizedError = standardizeError(error);
       const knownSessions = await options.sessionClient
@@ -797,6 +865,7 @@ export class CliSessionShellRunner {
             : options.translate('cli.sessionShell.responses.resumeRecoverableHint'),
         ],
       );
+      return false;
     }
   }
 
@@ -996,78 +1065,94 @@ export class CliSessionShellRunner {
     }
 
     const pendingCommand = runtimeState.pendingCommand;
-    viewModel.shellMode = CliSessionShellMode.COMMAND_RUNNING;
-    viewModel.handoffState = CliSessionShellHandoffState.RUNNING;
-    viewModel.promptBarLines = this.buildPromptBarLines(viewModel, options, runtimeState);
-    const progressDock = new CliSessionShellCommandProgressDock({
-      argv: pendingCommand.argv,
-      previewCommandLine: pendingCommand.previewCommandLine,
-      themePreset: viewModel.themePreset,
-      translate: options.translate,
-      relayProgressSink: options.commandExecutionOptions?.progressSink,
-      abortSignal: options.commandExecutionOptions?.abortSignal,
-      onPanelUpdate: (panel) => {
-        viewModel.commandProgressPanel = panel;
-      },
-      onRenderRequested: () => {
-        this.renderActiveSurface(viewModel);
-      },
-    });
-    progressDock.seedRunningState();
-    progressDock.startTicking();
-    this.renderActiveSurface(viewModel);
-
-    const executionResult = await options
-      .commandExecutor(pendingCommand.argv, progressDock.createExecutionOptions())
-      .catch((error) => {
-        const standardizedError = standardizeError(error);
-        return {
-          artifactPaths: [],
-          commandLine: pendingCommand.previewCommandLine,
-          message: standardizedError.message,
-          status: 'error',
-          summaryLines: [
-            options.translate('cli.sessionShell.responses.commandExecutionFailed', {
-              command: pendingCommand.previewCommandLine,
-              reason: standardizedError.message,
-            }),
-          ],
-        } satisfies CliSessionShellCommandExecutionResult;
+    let finalStatus: 'success' | 'error' = 'success';
+    for (let index = 0; index < pendingCommand.steps.length; index += 1) {
+      const pendingStep = pendingCommand.steps[index];
+      if (!pendingStep) {
+        continue;
+      }
+      viewModel.shellMode = CliSessionShellMode.COMMAND_RUNNING;
+      viewModel.handoffState = CliSessionShellHandoffState.RUNNING;
+      viewModel.promptBarLines = this.buildPromptBarLines(viewModel, options, runtimeState);
+      const progressDock = new CliSessionShellCommandProgressDock({
+        argv: pendingStep.argv,
+        previewCommandLine: pendingStep.previewCommandLine,
+        themePreset: viewModel.themePreset,
+        translate: options.translate,
+        relayProgressSink: options.commandExecutionOptions?.progressSink,
+        abortSignal: options.commandExecutionOptions?.abortSignal,
+        onPanelUpdate: (panel) => {
+          viewModel.commandProgressPanel = panel;
+        },
+        onRenderRequested: () => {
+          this.renderActiveSurface(viewModel);
+        },
       });
-    progressDock.clear();
+      progressDock.seedRunningState();
+      progressDock.startTicking();
+      this.renderActiveSurface(viewModel);
 
-    await this.appendServiceTranscriptItem(
-      viewModel,
-      transcriptStore,
-      options,
-      runtimeState,
-      executionResult.status === 'success'
-        ? OrchestrationSessionTranscriptRole.ASSISTANT
-        : OrchestrationSessionTranscriptRole.SYSTEM,
-      this.buildCommandExecutionLines(executionResult, options),
-      executionResult.artifactPaths.length > 0
-        ? {
-            commandLine: executionResult.commandLine,
-            artifactPaths: executionResult.artifactPaths,
-            ...(executionResult.status === 'success'
-              ? {
-                  renderKind: 'command_recap',
-                }
-              : {}),
-          }
-        : executionResult.status === 'success'
-          ? {
-              commandLine: executionResult.commandLine,
-              renderKind: 'command_recap',
-            }
-          : {
-              commandLine: executionResult.commandLine,
-            },
-    );
+      const executionResult = await options
+        .commandExecutor(pendingStep.argv, progressDock.createExecutionOptions())
+        .catch((error) => {
+          const standardizedError = standardizeError(error);
+          return {
+            artifactPaths: [],
+            commandLine: pendingStep.previewCommandLine,
+            message: standardizedError.message,
+            status: 'error',
+            summaryLines: [
+              options.translate('cli.sessionShell.responses.commandExecutionFailed', {
+                command: pendingStep.previewCommandLine,
+                reason: standardizedError.message,
+              }),
+            ],
+          } satisfies CliSessionShellCommandExecutionResult;
+        });
+      progressDock.clear();
+
+      const isLastStep = index === pendingCommand.steps.length - 1;
+      const shouldResolve =
+        executionResult.status !== 'success' || isLastStep || pendingCommand.steps.length === 1;
+      await this.appendServiceTranscriptItem(
+        viewModel,
+        transcriptStore,
+        options,
+        runtimeState,
+        executionResult.status === 'success'
+          ? OrchestrationSessionTranscriptRole.ASSISTANT
+          : OrchestrationSessionTranscriptRole.SYSTEM,
+        this.buildCommandExecutionLines(executionResult, options),
+        {
+          commandLine: executionResult.commandLine,
+          ...(executionResult.artifactPaths.length > 0
+            ? {
+                artifactPaths: executionResult.artifactPaths,
+              }
+            : {}),
+          ...(executionResult.status === 'success'
+            ? {
+                renderKind: 'command_recap',
+              }
+            : {}),
+          ...(shouldResolve
+            ? this.createHandoffResolutionMetadata(
+                pendingCommand,
+                executionResult.status === 'success' ? 'executed' : 'failed',
+              )
+            : {}),
+        },
+      );
+
+      if (executionResult.status !== 'success') {
+        finalStatus = 'error';
+        break;
+      }
+    }
 
     runtimeState.pendingCommand = null;
     viewModel.handoffState =
-      executionResult.status === 'success'
+      finalStatus === 'success'
         ? CliSessionShellHandoffState.SUCCESS
         : CliSessionShellHandoffState.FAILURE;
     this.resetPromptState(viewModel, options, runtimeState);
@@ -1156,9 +1241,10 @@ export class CliSessionShellRunner {
     options: CliSessionShellRunOptions,
     runtimeState: CliSessionShellRuntimeState,
     reset = false,
-  ): Promise<void> {
+  ): Promise<OrchestrationSubscribeSessionResponse> {
     if (reset) {
       transcriptStore.reset(viewModel.sessionId);
+      runtimeState.pendingCommand = null;
     }
 
     const nextCursor = transcriptStore.getNextCursor();
@@ -1177,9 +1263,11 @@ export class CliSessionShellRunner {
       subscription.events,
       options.translate,
     );
+    this.reconcilePendingCommandFromEvents(subscription.events, runtimeState);
     runtimeState.currentRouteId =
       subscription.session.currentRouteId ?? OrchestrationSessionRouteId.MAIN;
     viewModel.promptBarLines = this.buildPromptBarLines(viewModel, options, runtimeState);
+    return subscription;
   }
 
   private buildPromptBarLines(
@@ -1317,11 +1405,31 @@ export class CliSessionShellRunner {
       renderKind: 'system_notice',
     });
     if (runtimeState.pendingCommand) {
-      this.restorePendingCommandPreviewState(viewModel, options, runtimeState);
+      await this.recoverPendingCommandState(viewModel, transcriptStore, options, runtimeState);
       return;
     }
 
     this.resetPromptState(viewModel, options, runtimeState);
+  }
+
+  private async recoverPendingCommandState(
+    viewModel: CliSessionShellViewModel,
+    transcriptStore: CliSessionShellTranscriptStore,
+    options: CliSessionShellRunOptions,
+    runtimeState: CliSessionShellRuntimeState,
+  ): Promise<boolean> {
+    const pendingCommand = runtimeState.pendingCommand;
+    if (!pendingCommand) {
+      return false;
+    }
+
+    if (pendingCommand.executionMode === 'direct_execute') {
+      await this.executePendingCommand(viewModel, transcriptStore, options, runtimeState);
+      return true;
+    }
+
+    this.restorePendingCommandPreviewState(viewModel, options, runtimeState);
+    return true;
   }
 
   private restorePendingCommandPreviewState(
@@ -1388,6 +1496,178 @@ export class CliSessionShellRunner {
     if (runtimeState.inputHistory.length > 20) {
       runtimeState.inputHistory.splice(0, runtimeState.inputHistory.length - 20);
     }
+  }
+
+  private reconcilePendingCommandFromEvents(
+    events: OrchestrationSessionEvent[],
+    runtimeState: CliSessionShellRuntimeState,
+  ): void {
+    for (const event of events) {
+      const pendingCommand = this.resolvePendingCommandFromEvent(event);
+      if (pendingCommand) {
+        runtimeState.pendingCommand = pendingCommand;
+        continue;
+      }
+      const handoffResolution = this.readHandoffResolutionRecord(event);
+      if (
+        handoffResolution &&
+        runtimeState.pendingCommand?.handoffTurnId === handoffResolution.turnId
+      ) {
+        runtimeState.pendingCommand = null;
+      }
+    }
+  }
+
+  private resolvePendingCommandFromEvent(
+    event: OrchestrationSessionEvent,
+  ): PendingCommandExecution | null {
+    if (event.type !== OrchestrationSessionEventType.TURN_COMPLETED) {
+      return null;
+    }
+    if (this.readOptionalString(event.payload.responseMode) !== 'command_handoff_preview') {
+      return null;
+    }
+    const handoffTurnId = this.readOptionalString(event.payload.turnId);
+    if (!handoffTurnId) {
+      return null;
+    }
+    const commandBatches = this.readCommandBatches(event.payload.commandBatches);
+    const fallbackSuggestedSlashCommand = this.readOptionalString(
+      event.payload.suggestedSlashCommand,
+    );
+    const fallbackCommandPreview = this.readOptionalString(event.payload.handoffCommandPreview);
+    const resolvedSteps =
+      commandBatches.length > 0
+        ? commandBatches
+        : this.resolveLegacySingleCommandStep(
+            fallbackSuggestedSlashCommand,
+            fallbackCommandPreview,
+          );
+    if (resolvedSteps.length === 0) {
+      return null;
+    }
+    const requiresConfirmation = this.readOptionalBoolean(event.payload.requiresConfirmation);
+    const handoffExecutionMode = this.readOptionalString(event.payload.handoffExecutionMode);
+    return {
+      handoffTurnId,
+      executionMode:
+        handoffExecutionMode === 'direct_execute' || handoffExecutionMode === 'preview_confirm'
+          ? handoffExecutionMode
+          : requiresConfirmation === false
+            ? 'direct_execute'
+            : 'preview_confirm',
+      sourceEventSequence: event.sequence,
+      steps: resolvedSteps,
+      previewCommandLine:
+        resolvedSteps.length === 1
+          ? (resolvedSteps[0]?.previewCommandLine ?? '')
+          : resolvedSteps.map((step) => step.previewCommandLine).join(' -> '),
+    };
+  }
+
+  private resolveLegacySingleCommandStep(
+    suggestedSlashCommand?: string,
+    handoffCommandPreview?: string,
+  ): PendingCommandExecutionStep[] {
+    if (!suggestedSlashCommand) {
+      return [];
+    }
+    const action = this.slashCommandRegistry.resolveAction(suggestedSlashCommand);
+    if (!action?.bridgeArgv) {
+      return [];
+    }
+    return [
+      {
+        argv: [...action.bridgeArgv],
+        slashQuery: suggestedSlashCommand,
+        previewCommandLine: handoffCommandPreview ?? action.bridgeArgv.join(' '),
+      },
+    ];
+  }
+
+  private readCommandBatches(candidate: unknown): PendingCommandExecutionStep[] {
+    if (!Array.isArray(candidate)) {
+      return [];
+    }
+    return candidate
+      .map((entry) => {
+        if (typeof entry !== 'object' || entry === null) {
+          return null;
+        }
+        const record = entry as Record<string, unknown>;
+        const slashQuery = this.readOptionalString(record.slashQuery);
+        const previewCommandLine = this.readOptionalString(record.previewCommandLine);
+        const bridgeArgv = this.readStringArray(record.bridgeArgv);
+        if (!slashQuery || !previewCommandLine || bridgeArgv.length === 0) {
+          return null;
+        }
+        return {
+          argv: bridgeArgv,
+          slashQuery,
+          previewCommandLine,
+        } satisfies PendingCommandExecutionStep;
+      })
+      .filter((entry): entry is PendingCommandExecutionStep => entry !== null);
+  }
+
+  private readHandoffResolutionRecord(
+    event: OrchestrationSessionEvent,
+  ): SessionMainHandoffResolutionRecord | null {
+    if (event.type !== OrchestrationSessionEventType.SESSION_MESSAGE_APPENDED) {
+      return null;
+    }
+    const payloadMetadata =
+      typeof event.payload.metadata === 'object' && event.payload.metadata !== null
+        ? (event.payload.metadata as Record<string, unknown>)
+        : null;
+    const resolution =
+      payloadMetadata &&
+      typeof payloadMetadata[SESSION_MAIN_HANDOFF_RESOLUTION_METADATA_KEY] === 'object' &&
+      payloadMetadata[SESSION_MAIN_HANDOFF_RESOLUTION_METADATA_KEY] !== null
+        ? (payloadMetadata[SESSION_MAIN_HANDOFF_RESOLUTION_METADATA_KEY] as Record<string, unknown>)
+        : null;
+    const turnId = resolution ? this.readOptionalString(resolution.turnId) : undefined;
+    const state = resolution ? this.readOptionalString(resolution.state) : undefined;
+    if (!turnId || (state !== 'cancelled' && state !== 'executed' && state !== 'failed')) {
+      return null;
+    }
+    return {
+      turnId,
+      state,
+    };
+  }
+
+  private createHandoffResolutionMetadata(
+    pendingCommand: PendingCommandExecution | null,
+    state: SessionMainHandoffResolutionRecord['state'],
+  ): Record<string, unknown> | undefined {
+    if (!pendingCommand) {
+      return undefined;
+    }
+    return {
+      [SESSION_MAIN_HANDOFF_RESOLUTION_METADATA_KEY]: {
+        turnId: pendingCommand.handoffTurnId,
+        state,
+      },
+    };
+  }
+
+  private readOptionalString(candidate: unknown): string | undefined {
+    if (typeof candidate === 'string' && candidate.trim().length > 0) {
+      return candidate.trim();
+    }
+    return undefined;
+  }
+
+  private readOptionalBoolean(candidate: unknown): boolean | undefined {
+    return typeof candidate === 'boolean' ? candidate : undefined;
+  }
+
+  private readStringArray(candidate: unknown): string[] {
+    if (!Array.isArray(candidate)) {
+      return [];
+    }
+    return candidate.filter((entry): entry is string => typeof entry === 'string');
   }
 
   private buildHistoryLines(

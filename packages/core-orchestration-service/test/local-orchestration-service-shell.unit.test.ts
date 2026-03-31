@@ -614,6 +614,89 @@ describe('core-orchestration-service local shell', () => {
     }
   });
 
+  it('projects low-risk natural-language verify skills into direct-execute turn metadata', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot: temporaryRoot,
+    });
+
+    try {
+      const started = await orchestrationService.startSession({
+        routeId: OrchestrationSessionRouteId.MAIN,
+      });
+      await orchestrationService.sendSessionTurn({
+        sessionId: started.session.sessionId,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        userMessage: '帮我验证一下 adapter 状态',
+      });
+      const subscription = await orchestrationService.subscribeSession({
+        sessionId: started.session.sessionId,
+      });
+      const completedEvent = subscription.events.find(
+        (event) => event.type === OrchestrationSessionEventType.TURN_COMPLETED,
+      );
+
+      expect(completedEvent?.payload.responseMode).toBe('command_handoff_preview');
+      expect(completedEvent?.payload.suggestedSlashCommand).toBe('/verify');
+      expect(completedEvent?.payload.requiresConfirmation).toBe(false);
+      expect(completedEvent?.payload.skillId).toBe('skill.verify.adapters');
+      expect(completedEvent?.payload.handoffExecutionMode).toBe('direct_execute');
+      expect(completedEvent?.payload.commandBatches).toEqual([
+        {
+          slashQuery: '/verify',
+          bridgeArgv: ['verify', '--adapters', '--output', 'pretty'],
+          previewCommandLine: 'repo-ai-governor verify --adapters --output pretty',
+        },
+      ]);
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('projects onboarding bundle previews into shared command-batch truth', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot: temporaryRoot,
+    });
+
+    try {
+      const started = await orchestrationService.startSession({
+        routeId: OrchestrationSessionRouteId.MAIN,
+      });
+      await orchestrationService.sendSessionTurn({
+        sessionId: started.session.sessionId,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        userMessage: '把 adapter onboarding 全走一遍',
+      });
+      const subscription = await orchestrationService.subscribeSession({
+        sessionId: started.session.sessionId,
+      });
+      const completedEvent = subscription.events.find(
+        (event) => event.type === OrchestrationSessionEventType.TURN_COMPLETED,
+      );
+
+      expect(completedEvent?.payload.responseMode).toBe('command_handoff_preview');
+      expect(completedEvent?.payload.requiresConfirmation).toBe(true);
+      expect(completedEvent?.payload.skillId).toBe('skill.onboard.adapters');
+      expect(completedEvent?.payload.handoffExecutionMode).toBe('preview_confirm');
+      expect(completedEvent?.payload.commandBatches).toEqual([
+        {
+          slashQuery: '/connect',
+          bridgeArgv: ['connect', '--preset', 'multi-tool-default', '--output', 'pretty'],
+          previewCommandLine:
+            'repo-ai-governor connect --preset multi-tool-default --output pretty',
+        },
+        {
+          slashQuery: '/verify',
+          bridgeArgv: ['verify', '--adapters', '--output', 'pretty'],
+          previewCommandLine: 'repo-ai-governor verify --adapters --output pretty',
+        },
+      ]);
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
   it('writes assistantMessage and interactionMode for direct-answer session.main turns when supervisor runtime is injected', async () => {
     const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
     const orchestrationService = new LocalOrchestrationServiceShell({
@@ -962,7 +1045,7 @@ describe('core-orchestration-service local shell', () => {
     }
   });
 
-  it('preserves review handoff preview when one unknown @mention is not a configured role', async () => {
+  it('preserves direct-execute review handoff when one unknown @mention is not a configured role', async () => {
     const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
     const resolveTurn = vi.fn(async () => ({
       responseMode: 'role_collaboration',
@@ -1004,7 +1087,7 @@ describe('core-orchestration-service local shell', () => {
       expect(resolveTurn).not.toHaveBeenCalled();
       expect(completedEvent?.payload.responseMode).toBe('command_handoff_preview');
       expect(completedEvent?.payload.suggestedSlashCommand).toBe('/review');
-      expect(completedEvent?.payload.requiresConfirmation).toBe(true);
+      expect(completedEvent?.payload.requiresConfirmation).toBe(false);
     } finally {
       await rm(temporaryRoot, { recursive: true, force: true });
     }

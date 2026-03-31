@@ -96,6 +96,7 @@ describe('CliSessionShellInkController', () => {
     expect(viewModel.slashSuggestions.map((suggestion) => suggestion.command)).toEqual([
       '/workspace',
       '/doctor',
+      '/verify',
       '/connect',
       '/review',
       '/plan',

@@ -261,7 +261,7 @@ describe('Cli session-main supervisor runtime', () => {
     expect(outcome.invokedRoleIds).toEqual([]);
   });
 
-  it('falls back to the next safe no-tool surface when the preferred surface is tool-capable', async () => {
+  it('allows direct-answer turns to stay on the preferred tool-capable surface', async () => {
     const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
       adaptersConfig,
     ) as CliAdapterRoutingRuntime & {
@@ -301,12 +301,12 @@ describe('Cli session-main supervisor runtime', () => {
       sessionRoutingPreferenceApplied: false,
     });
 
-    expect(outcome.assistantMessage).toBe('Fallback answer from local model');
-    expect(outcome.selectedSurface).toBe(AdapterSurface.OLLAMA);
-    expect(outcome.selectedBy).toBe('session.main.answer.safe_fallback');
+    expect(outcome.assistantMessage).toBe('unsafe codex answer');
+    expect(outcome.selectedSurface).toBe(AdapterSurface.CODEX);
+    expect(outcome.selectedBy).toBe('session.main.answer.primary');
   });
 
-  it('returns a governed fallback answer and does not invoke tool-capable adapters when no safe surface is active', async () => {
+  it('returns a guarded fallback answer when no eligible direct-answer surface is available', async () => {
     const codexInvokeStage = vi.fn(async () => ({
       output: {
         responseText: 'unsafe codex answer',
@@ -320,13 +320,8 @@ describe('Cli session-main supervisor runtime', () => {
       createProtocolBySurface: () => Record<string, AgentProtocolContract>;
     };
     adapterRoutingRuntime.createProtocolBySurface = () => ({
-      [AdapterSurface.CODEX]: createAvailableProtocol(AdapterSurface.CODEX, 'unsafe codex answer', {
-        invokeStageSpy: codexInvokeStage,
-      }),
-      [AdapterSurface.CLAUDE_CODE]: createAvailableProtocol(
-        AdapterSurface.CLAUDE_CODE,
-        'unsafe claude answer',
-      ),
+      [AdapterSurface.CODEX]: createUnavailableProtocol(AdapterSurface.CODEX),
+      [AdapterSurface.CLAUDE_CODE]: createUnavailableProtocol(AdapterSurface.CLAUDE_CODE),
     });
 
     const runtime = new CliSessionMainSupervisorRuntime({
@@ -354,7 +349,7 @@ describe('Cli session-main supervisor runtime', () => {
     expect(codexInvokeStage).not.toHaveBeenCalled();
     expect(outcome.selectedSurface).toBe('guarded-direct-answer');
     expect(outcome.selectedBy).toBe('session.main.answer.guard');
-    expect(outcome.assistantMessage).toContain('restricted to no-tool surfaces');
+    expect(outcome.assistantMessage).toContain('No eligible direct-answer surface');
   });
 
   it('delegates explicit @planner turns through a single-role safe fallback path', async () => {

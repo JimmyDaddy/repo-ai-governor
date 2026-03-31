@@ -1,6 +1,6 @@
 # TK-471 harden conversational routing and direct-answer chatability
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-01
 - Owner: AI-Agent
 - Priority: P0
@@ -32,3 +32,5 @@
 ## 5. Execution Notes
 
 1. 2026-04-01：任务创建，状态初始化为 `planned`；优先收敛 conversation routing 与 tool-capable direct-answer seam，避免后续 skill routing 建在不稳定的入口判定上。
+2. 2026-04-01：任务切换为 `active`；已开始收敛 continuation whitelist、greeting/repo question 分类，以及 direct-answer 对 tool-capable surface 的可用性。
+3. 2026-04-01：任务完成；`follow_up` 已收紧为 continuation whitelist，`你好 / hello / 今天天气如何` 这类输入可进入真实 direct-answer seam，且 direct answer 不再被 no-tool bootstrap guard 卡死。

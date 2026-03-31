@@ -1,24 +1,20 @@
 import { AdapterSurface, GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import { SESSION_MAIN_INTERACTION_MODE, SESSION_MAIN_RESPONSE_MODE } from './constants/index.js';
+import { LocalOrchestrationServiceSessionMainSkillRegistry } from './local-orchestration-service-session-main-skill-registry.js';
 import type {
   SessionMainSupervisorRuntimeContract,
   SessionMainSupervisorTurnContext,
   SessionMainSupervisorTurnOutcome,
 } from './types/index.js';
 
-const SESSION_MAIN_CONNECT_KEYWORDS = ['connect', 'adapter', 'adapters', 'tool', 'tools'];
-const SESSION_MAIN_DOCTOR_KEYWORDS = ['doctor', 'diagnose', 'health', 'check environment'];
-const SESSION_MAIN_VERIFY_KEYWORDS = ['verify', 'validation', 'validate'];
-const SESSION_MAIN_PLAN_KEYWORDS = ['plan', 'planning', 'break down', 'task breakdown'];
-const SESSION_MAIN_REVIEW_KEYWORDS = ['review', 'cr', 'code review'];
-const SESSION_MAIN_RUN_KEYWORDS = ['run', 'execute', 'ship', 'implement'];
 const SESSION_MAIN_FAILURE_KEYWORDS = ['simulate failure', 'force failure'];
 const SESSION_MAIN_CANCEL_KEYWORDS = ['cancel this turn', 'simulate cancel'];
-const SESSION_MAIN_MIN_FOLLOW_UP_LENGTH = 10;
 const SESSION_MAIN_FALLBACK_ANSWER_DELTA_MAX_LENGTH = 80;
 const SESSION_MAIN_ROLE_MENTION_PATTERN = /@[a-z0-9_.-]+/giu;
 const SESSION_MAIN_GREETING_PATTERN =
   /^(?:(?:hi|hello|hey|greetings)(?:\s+(?:governor|agent|there))?|你好|您好|哈喽|嗨|早上好|下午好|晚上好)[!,.? ]*$/iu;
+const SESSION_MAIN_FOLLOW_UP_PATTERN =
+  /^(?:(?:继续|然后呢|下一步|接下来呢)|(?:next|what next|and then)\??)$|^(?:继续说|再继续一下)$|^(?:那然后呢)$|^(?:next step\??)$/iu;
 const SESSION_MAIN_ROUTING_PREFERENCE_ALIASES: Record<string, AdapterSurface> = {
   claude: AdapterSurface.CLAUDE_CODE,
   'claude-code': AdapterSurface.CLAUDE_CODE,
@@ -36,6 +32,8 @@ const SESSION_MAIN_ROUTING_PREFERENCE_ALIASES: Record<string, AdapterSurface> = 
  * `baseline_ack`, while keeping the implementation local, deterministic, and presenter-friendly.
  */
 export class LocalOrchestrationServiceSessionMainAgentDispatcher {
+  private readonly skillRegistry = new LocalOrchestrationServiceSessionMainSkillRegistry();
+
   public constructor(
     private readonly sessionMainSupervisorRuntime?: SessionMainSupervisorRuntimeContract,
   ) {}
@@ -85,113 +83,28 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
       );
     }
 
-    if (
-      this.includesAnyKeyword(
-        normalizedLowerMessageWithoutRoleMentions,
-        SESSION_MAIN_CONNECT_KEYWORDS,
-      )
-    ) {
+    const skillPlan = this.skillRegistry.resolvePlan(normalizedLowerMessageWithoutRoleMentions, {
+      preferredSurface,
+      configuredRoleMentionPresent,
+    });
+    if (skillPlan) {
       return this.createCommandSuggestionResult({
-        suggestedSlashCommand: '/connect',
-        executionIntent: 'connect.adapters.bootstrap',
-        routerDecisionReason: 'session.main.router.command_handoff_preview.connect',
-        handoffCommandPreview: this.createCommandPreview(
-          'repo-ai-governor connect --preset multi-tool-default --output pretty',
-          preferredSurface,
-        ),
+        suggestedSlashCommand: skillPlan.suggestedSlashCommand,
+        executionIntent: skillPlan.executionIntent,
+        routerDecisionReason: skillPlan.routerDecisionReason,
+        handoffCommandPreview: skillPlan.handoffCommandPreview,
+        requiresConfirmation: skillPlan.handoffExecutionMode === 'preview_confirm',
+        skillId: skillPlan.skillId,
+        skillVersion: skillPlan.skillVersion,
+        handoffExecutionMode: skillPlan.handoffExecutionMode,
+        commandBatches: skillPlan.commandBatches,
+        handoffBacklinks: skillPlan.handoffBacklinks,
         ...selectionMetadata,
       });
     }
 
     if (
-      this.includesAnyKeyword(
-        normalizedLowerMessageWithoutRoleMentions,
-        SESSION_MAIN_DOCTOR_KEYWORDS,
-      )
-    ) {
-      return this.createCommandSuggestionResult({
-        suggestedSlashCommand: '/doctor',
-        executionIntent: 'doctor.adapters',
-        routerDecisionReason: 'session.main.router.command_handoff_preview.doctor',
-        handoffCommandPreview: this.createCommandPreview(
-          'repo-ai-governor doctor --adapters --output pretty',
-          preferredSurface,
-        ),
-        ...selectionMetadata,
-      });
-    }
-
-    if (
-      this.includesAnyKeyword(
-        normalizedLowerMessageWithoutRoleMentions,
-        SESSION_MAIN_VERIFY_KEYWORDS,
-      )
-    ) {
-      return this.createCommandSuggestionResult({
-        suggestedSlashCommand: '/verify',
-        executionIntent: 'verify.adapters',
-        routerDecisionReason: 'session.main.router.command_handoff_preview.verify',
-        handoffCommandPreview: this.createCommandPreview(
-          'repo-ai-governor verify --adapters --output pretty',
-          preferredSurface,
-        ),
-        ...selectionMetadata,
-      });
-    }
-
-    if (
-      !configuredRoleMentionPresent &&
-      this.includesAnyKeyword(normalizedLowerMessageWithoutRoleMentions, SESSION_MAIN_PLAN_KEYWORDS)
-    ) {
-      return this.createCommandSuggestionResult({
-        suggestedSlashCommand: '/plan',
-        executionIntent: 'plan.generate',
-        routerDecisionReason: 'session.main.router.command_handoff_preview.plan',
-        handoffCommandPreview: this.createCommandPreview(
-          'repo-ai-governor plan --output pretty',
-          preferredSurface,
-        ),
-        ...selectionMetadata,
-      });
-    }
-
-    if (
-      !configuredRoleMentionPresent &&
-      this.includesAnyKeyword(
-        normalizedLowerMessageWithoutRoleMentions,
-        SESSION_MAIN_REVIEW_KEYWORDS,
-      )
-    ) {
-      return this.createCommandSuggestionResult({
-        suggestedSlashCommand: '/review',
-        executionIntent: 'review.start',
-        routerDecisionReason: 'session.main.router.command_handoff_preview.review',
-        handoffCommandPreview: this.createCommandPreview(
-          'repo-ai-governor review --output pretty',
-          preferredSurface,
-        ),
-        ...selectionMetadata,
-      });
-    }
-
-    if (
-      this.includesAnyKeyword(normalizedLowerMessageWithoutRoleMentions, SESSION_MAIN_RUN_KEYWORDS)
-    ) {
-      return this.createCommandSuggestionResult({
-        suggestedSlashCommand: '/run',
-        executionIntent: 'run.task',
-        routerDecisionReason: 'session.main.router.command_handoff_preview.run',
-        handoffCommandPreview: this.createCommandPreview(
-          'repo-ai-governor run --dry-run --trace',
-          preferredSurface,
-        ),
-        ...selectionMetadata,
-      });
-    }
-
-    if (
-      normalizedLowerMessageWithoutRoleMentions.length < SESSION_MAIN_MIN_FOLLOW_UP_LENGTH &&
-      !this.isConversationalGreeting(normalizedLowerMessageWithoutRoleMentions) &&
+      this.isFollowUpContinuation(normalizedLowerMessageWithoutRoleMentions) &&
       !configuredRoleMentionPresent
     ) {
       return {
@@ -229,6 +142,20 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
     executionIntent: string;
     routerDecisionReason: string;
     handoffCommandPreview: string;
+    requiresConfirmation: boolean;
+    skillId?: string;
+    skillVersion?: string;
+    handoffExecutionMode?: 'preview_confirm' | 'direct_execute';
+    commandBatches?: Array<{
+      slashQuery: string;
+      bridgeArgv: string[];
+      previewCommandLine: string;
+    }>;
+    handoffBacklinks?: Array<{
+      kind: 'slash_command' | 'execution_intent' | 'command_preview' | 'artifact';
+      label: string;
+      target: string;
+    }>;
     selectedSurface: string;
     selectedBy: string;
     sessionRoutingPreferenceApplied: boolean;
@@ -240,12 +167,25 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
       routerDecisionReason: options.routerDecisionReason,
       suggestedSlashCommand: options.suggestedSlashCommand,
       executionIntent: options.executionIntent,
-      requiresConfirmation: true,
+      requiresConfirmation: options.requiresConfirmation,
       selectedSurface: options.selectedSurface,
       selectedBy: options.selectedBy,
       sessionRoutingPreferenceApplied: options.sessionRoutingPreferenceApplied,
+      ...(options.skillId ? { skillId: options.skillId } : {}),
+      ...(options.skillVersion ? { skillVersion: options.skillVersion } : {}),
+      ...(options.handoffExecutionMode
+        ? { handoffExecutionMode: options.handoffExecutionMode }
+        : {}),
+      ...(options.commandBatches
+        ? {
+            commandBatches: options.commandBatches.map((commandBatch) => ({
+              ...commandBatch,
+              bridgeArgv: [...commandBatch.bridgeArgv],
+            })),
+          }
+        : {}),
       handoffCommandPreview: options.handoffCommandPreview,
-      handoffBacklinks: [
+      handoffBacklinks: options.handoffBacklinks ?? [
         {
           kind: 'slash_command',
           label: `slash:${options.suggestedSlashCommand}`,
@@ -329,17 +269,6 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
     return SESSION_MAIN_ROUTING_PREFERENCE_ALIASES[sessionRoutingPreference.toLowerCase()] ?? null;
   }
 
-  private createCommandPreview(
-    baseCommand: string,
-    preferredSurface: AdapterSurface | null,
-  ): string {
-    if (!preferredSurface) {
-      return baseCommand;
-    }
-
-    return `${baseCommand} --single-tool-all-roles ${preferredSurface}`;
-  }
-
   private includesAnyKeyword(message: string, keywords: string[]): boolean {
     return keywords.some((keyword) => message.includes(keyword));
   }
@@ -369,5 +298,9 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
 
   private isConversationalGreeting(message: string): boolean {
     return SESSION_MAIN_GREETING_PATTERN.test(message.trim());
+  }
+
+  private isFollowUpContinuation(message: string): boolean {
+    return SESSION_MAIN_FOLLOW_UP_PATTERN.test(message.trim());
   }
 }

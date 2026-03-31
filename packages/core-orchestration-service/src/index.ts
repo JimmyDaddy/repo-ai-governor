@@ -1,6 +1,7 @@
 export {
   LOCAL_ORCHESTRATION_SERVICE_SIDECAR_PROTOCOL_VERSION,
   LocalOrchestrationServiceSidecarOperation,
+  SESSION_MAIN_HANDOFF_EXECUTION_MODE,
   SESSION_MAIN_INTERACTION_MODE,
   SESSION_MAIN_RESPONSE_MODE,
 } from './constants/index.js';
@@ -21,8 +22,10 @@ export type {
   LocalOrchestrationServiceSidecarStartExecutionPayload,
   LocalOrchestrationServiceShellDependencies,
   LocalOrchestrationServiceStartExecutionRuntimeContext,
+  SessionMainHandoffExecutionMode,
   SessionMainInteractionMode,
   SessionMainResponseMode,
+  SessionMainSupervisorCommandBatch,
   SessionMainSupervisorRuntimeContract,
   SessionMainSupervisorTurnBacklink,
   SessionMainSupervisorTurnContext,

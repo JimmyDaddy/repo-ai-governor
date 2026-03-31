@@ -1,4 +1,8 @@
-import type { SessionMainInteractionMode, SessionMainResponseMode } from '../aliases/index.js';
+import type {
+  SessionMainHandoffExecutionMode,
+  SessionMainInteractionMode,
+  SessionMainResponseMode,
+} from '../aliases/index.js';
 
 /**
  * Defines one structured backlink returned by the `session.main` supervisor.
@@ -7,6 +11,15 @@ export interface SessionMainSupervisorTurnBacklink {
   kind: 'slash_command' | 'execution_intent' | 'command_preview' | 'artifact';
   label: string;
   target: string;
+}
+
+/**
+ * Defines one executable step projected from a natural-language foreground skill plan.
+ */
+export interface SessionMainSupervisorCommandBatch {
+  slashQuery: string;
+  bridgeArgv: string[];
+  previewCommandLine: string;
 }
 
 /**
@@ -43,6 +56,10 @@ export interface SessionMainSupervisorTurnOutcome {
   sessionRoutingPreferenceApplied: boolean;
   invokedRoleIds?: string[];
   subagentCount?: number;
+  skillId?: string;
+  skillVersion?: string;
+  handoffExecutionMode?: SessionMainHandoffExecutionMode;
+  commandBatches?: SessionMainSupervisorCommandBatch[];
   handoffCommandPreview?: string;
   handoffBacklinks?: SessionMainSupervisorTurnBacklink[];
 }

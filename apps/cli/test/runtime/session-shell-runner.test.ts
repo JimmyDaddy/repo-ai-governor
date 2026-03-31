@@ -296,6 +296,41 @@ class FakeSessionShellServiceClient {
     };
   }
 
+  public seedPendingCommandTurn(options: {
+    sessionId: string;
+    slashQuery: string;
+    bridgeArgv: string[];
+    previewCommandLine: string;
+    executionMode: 'preview_confirm' | 'direct_execute';
+  }): void {
+    const session = this.requireSession(options.sessionId);
+    const turnIndex =
+      session.events.filter((event) => event.type === OrchestrationSessionEventType.TURN_COMPLETED)
+        .length + 1;
+    this.appendEvent(options.sessionId, {
+      type: OrchestrationSessionEventType.TURN_COMPLETED,
+      payload: {
+        role: OrchestrationSessionTranscriptRole.ASSISTANT,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        turnId: `${options.sessionId}:pending:${String(turnIndex)}`,
+        turnIndex,
+        responseMode: 'command_handoff_preview',
+        suggestedSlashCommand: options.slashQuery,
+        handoffCommandPreview: options.previewCommandLine,
+        requiresConfirmation: options.executionMode !== 'direct_execute',
+        handoffExecutionMode: options.executionMode,
+        commandBatches: [
+          {
+            slashQuery: options.slashQuery,
+            bridgeArgv: [...options.bridgeArgv],
+            previewCommandLine: options.previewCommandLine,
+          },
+        ],
+      },
+    });
+    session.summary = this.rebuildSummary(options.sessionId);
+  }
+
   private createSession(sessionId: string): OrchestrationStartSessionResponse {
     const summary: OrchestrationSessionSummary = {
       sessionId,
@@ -418,6 +453,7 @@ const DEFAULT_TRANSLATIONS: Record<string, string> = {
   'cli.commands.init.description': 'Initialize governor workspace baseline.',
   'cli.commands.connect.description': 'Generate adapter onboarding diagnostics baseline.',
   'cli.commands.doctor.description': 'Run environment diagnostics baseline.',
+  'cli.commands.verify.description': 'Verify adapter routing pass/warn/fail baseline.',
   'cli.commands.workspace.description': 'Plan or execute workspace migration baseline.',
   'cli.commands.workflow.description': 'Preview or edit workflow definitions.',
   'cli.commands.run.description': 'Execute process runtime baseline.',
@@ -927,6 +963,63 @@ describe('CliSessionShellRunner', () => {
     ).toBe(true);
   });
 
+  it('auto-executes direct_execute pending handoffs after an explicit /resume instead of resetting them into /confirm preview', async () => {
+    const renderer = new RecordingSessionShellRenderer();
+    const sessionClient = new FakeSessionShellServiceClient('session-shell-001');
+    await sessionClient.startSession();
+    await sessionClient.startSession();
+    const commandExecutor = vi.fn<
+      (argv: string[]) => Promise<CliSessionShellCommandExecutionResult>
+    >(async (argv) => ({
+      artifactPaths: [],
+      commandLine: argv.join(' '),
+      message: `${argv.join(' ')} completed`,
+      status: 'success',
+      summaryLines: [`Summary: ${argv.join(' ')} completed`],
+    }));
+    sessionClient.seedPendingCommandTurn({
+      sessionId: 'session-shell-002',
+      slashQuery: '/verify',
+      bridgeArgv: ['verify', '--adapters', '--output', 'pretty'],
+      previewCommandLine: 'verify --adapters --output pretty',
+      executionMode: 'direct_execute',
+    });
+    const runner = new CliSessionShellRunner(
+      undefined,
+      renderer as never,
+      () => new StubSessionShellPromptAdapter(['/resume session-shell-002', '/exit']),
+      undefined,
+      undefined,
+      () => false,
+      () => new Date('2026-03-30T12:00:00Z'),
+    );
+
+    const result = await runner.run(
+      DEFAULT_RUN_OPTIONS({
+        commandExecutor,
+        sessionClient,
+      }),
+    );
+
+    expect(result.exitReason).toBe(CliSessionShellExitReason.SLASH_EXIT);
+    expect(commandExecutor).toHaveBeenCalledWith(
+      ['verify', '--adapters', '--output', 'pretty'],
+      expect.objectContaining({
+        progressSink: expect.objectContaining({
+          publish: expect.any(Function),
+        }),
+      }),
+    );
+    expect(
+      renderer.frames.some((frame) => frame.promptBarLines.includes('/confirm · /cancel · Esc')),
+    ).toBe(false);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes('Summary: verify --adapters --output pretty completed'),
+      ),
+    ).toBe(true);
+  });
+
   it('closes cleanly on Ctrl+D and keeps the transcript note intact', async () => {
     const renderer = new RecordingSessionShellRenderer();
     const runner = new CliSessionShellRunner(
@@ -1019,7 +1112,7 @@ describe('CliSessionShellRunner', () => {
         (frame) =>
           frame.composerValue === '/' &&
           frame.slashSuggestions.map((suggestion) => suggestion.command).join(',') ===
-            '/workspace,/doctor,/connect,/review,/plan,/run,/help',
+            '/workspace,/doctor,/verify,/connect,/review,/plan,/run,/help',
       ),
     ).toBe(true);
     expect(

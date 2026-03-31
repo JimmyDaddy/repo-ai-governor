@@ -222,6 +222,11 @@ export class LocalOrchestrationServiceSessionRuntime {
           selectedBy: dispatchResult.selectedBy,
           sessionRoutingPreferenceApplied: dispatchResult.sessionRoutingPreferenceApplied,
           interactionMode: dispatchResult.interactionMode,
+          ...(dispatchResult.skillId ? { skillId: dispatchResult.skillId } : {}),
+          ...(dispatchResult.skillVersion ? { skillVersion: dispatchResult.skillVersion } : {}),
+          ...(dispatchResult.handoffExecutionMode
+            ? { handoffExecutionMode: dispatchResult.handoffExecutionMode }
+            : {}),
           ...(dispatchResult.invokedRoleIds
             ? {
                 invokedRoleIds: [...dispatchResult.invokedRoleIds],
@@ -233,6 +238,15 @@ export class LocalOrchestrationServiceSessionRuntime {
               : (dispatchResult.invokedRoleIds?.length ?? 0),
           ...(dispatchResult.handoffCommandPreview
             ? { handoffCommandPreview: dispatchResult.handoffCommandPreview }
+            : {}),
+          ...(dispatchResult.commandBatches
+            ? {
+                commandBatches: dispatchResult.commandBatches.map((commandBatch) => ({
+                  slashQuery: commandBatch.slashQuery,
+                  bridgeArgv: [...commandBatch.bridgeArgv],
+                  previewCommandLine: commandBatch.previewCommandLine,
+                })),
+              }
             : {}),
           ...(dispatchResult.handoffBacklinks
             ? {

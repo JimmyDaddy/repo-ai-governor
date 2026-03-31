@@ -17,6 +17,7 @@ const TRANSLATIONS: Record<string, string> = {
   'cli.commands.init.description': 'Initialize governor workspace baseline.',
   'cli.commands.connect.description': 'Generate adapter onboarding diagnostics baseline.',
   'cli.commands.doctor.description': 'Run environment diagnostics baseline.',
+  'cli.commands.verify.description': 'Verify adapter routing pass/warn/fail baseline.',
   'cli.commands.workspace.description': 'Plan or execute workspace migration baseline.',
   'cli.commands.workflow.description': 'Preview or edit workflow definitions.',
   'cli.commands.run.description': 'Execute process runtime baseline.',
@@ -37,6 +38,7 @@ describe('CliSessionSlashCommandRegistry', () => {
     expect(suggestions.map((suggestion) => suggestion.command)).toEqual([
       '/workspace',
       '/doctor',
+      '/verify',
       '/connect',
       '/review',
       '/plan',
@@ -109,6 +111,13 @@ describe('CliSessionSlashCommandRegistry', () => {
       executionMode: 'direct',
       kind: 'bridge',
       summaryKey: 'cli.commands.doctor.description',
+    });
+    expect(registry.resolveAction('/verify')).toEqual({
+      bridgeArgv: ['verify'],
+      command: '/verify',
+      executionMode: 'direct',
+      kind: 'bridge',
+      summaryKey: 'cli.commands.verify.description',
     });
   });
 });
