@@ -423,6 +423,7 @@ export async function runCli(
           sessionMainSupervisorRuntime: new CliSessionMainSupervisorRuntime({
             workspaceRoot: runtimeContext.workspace.workspaceRoot,
             currentWorkingDirectory: io.cwd(),
+            workspace: runtimeContext.workspace,
             locale: resolvedLocale,
             adaptersConfig: runtimeContext.adapters,
             ...(codexExecRunner

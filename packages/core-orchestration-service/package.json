@@ -7,6 +7,14 @@
     ".": {
       "types": "./src/index.ts",
       "default": "./dist/src/index.js"
+    },
+    "./constants": {
+      "types": "./src/constants/index.ts",
+      "default": "./dist/src/constants/index.js"
+    },
+    "./types": {
+      "types": "./src/types/index.ts",
+      "default": "./dist/src/types/index.js"
     }
   },
   "dependencies": {

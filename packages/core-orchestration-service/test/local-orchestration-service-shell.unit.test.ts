@@ -659,6 +659,59 @@ describe('core-orchestration-service local shell', () => {
       expect(completedEvent?.payload.selectedSurface).toBe('codex');
       expect(completedEvent?.payload.selectedBy).toBe('session.main.answer.primary');
       expect(completedEvent?.payload.invokedRoleIds).toEqual([]);
+      expect(completedEvent?.payload.subagentCount).toBe(0);
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('writes role-collaboration metadata for single-role delegated session.main turns', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot: temporaryRoot,
+      sessionMainSupervisorRuntime: {
+        resolveTurn: async () => ({
+          responseMode: 'role_collaboration',
+          interactionMode: 'single_role_delegate',
+          assistantDelta: '## Planner perspective',
+          assistantMessage: '## Planner perspective\n\n- checkpoint 1\n- checkpoint 2',
+          executionIntent: 'session.role_delegate.planner',
+          requiresConfirmation: false,
+          selectedSurface: 'ollama',
+          selectedBy: 'session.main.role_delegate.safe_fallback',
+          sessionRoutingPreferenceApplied: false,
+          invokedRoleIds: ['planner'],
+          subagentCount: 1,
+        }),
+      },
+    });
+
+    try {
+      const started = await orchestrationService.startSession({
+        routeId: OrchestrationSessionRouteId.MAIN,
+      });
+      await orchestrationService.sendSessionTurn({
+        sessionId: started.session.sessionId,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        userMessage: '@planner break this task into milestones',
+      });
+      const subscription = await orchestrationService.subscribeSession({
+        sessionId: started.session.sessionId,
+      });
+      const completedEvent = subscription.events.find(
+        (event) => event.type === OrchestrationSessionEventType.TURN_COMPLETED,
+      );
+
+      expect(completedEvent?.payload.responseMode).toBe('role_collaboration');
+      expect(completedEvent?.payload.interactionMode).toBe('single_role_delegate');
+      expect(completedEvent?.payload.assistantMessage).toBe(
+        '## Planner perspective\n\n- checkpoint 1\n- checkpoint 2',
+      );
+      expect(completedEvent?.payload.executionIntent).toBe('session.role_delegate.planner');
+      expect(completedEvent?.payload.selectedSurface).toBe('ollama');
+      expect(completedEvent?.payload.selectedBy).toBe('session.main.role_delegate.safe_fallback');
+      expect(completedEvent?.payload.invokedRoleIds).toEqual(['planner']);
+      expect(completedEvent?.payload.subagentCount).toBe(1);
     } finally {
       await rm(temporaryRoot, { recursive: true, force: true });
     }
@@ -713,6 +766,101 @@ describe('core-orchestration-service local shell', () => {
             'repo-ai-governor connect --preset multi-tool-default --output pretty --single-tool-all-roles claude-code',
         },
       ]);
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('keeps command handoff governance ahead of explicit role mentions for connect-like turns', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
+    const resolveTurn = vi.fn(async () => ({
+      responseMode: 'role_collaboration',
+      interactionMode: 'single_role_delegate',
+      assistantDelta: '## Planner perspective',
+      assistantMessage: '## Planner perspective\n\n- this should not be emitted',
+      executionIntent: 'session.role_delegate.planner',
+      requiresConfirmation: false,
+      selectedSurface: 'ollama',
+      selectedBy: 'session.main.role_delegate.safe_fallback',
+      sessionRoutingPreferenceApplied: false,
+      invokedRoleIds: ['planner'],
+      subagentCount: 1,
+    }));
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot: temporaryRoot,
+      sessionMainSupervisorRuntime: {
+        resolveTurn,
+      },
+    });
+
+    try {
+      const started = await orchestrationService.startSession({
+        routeId: OrchestrationSessionRouteId.MAIN,
+      });
+      await orchestrationService.sendSessionTurn({
+        sessionId: started.session.sessionId,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        userMessage: '@planner connect the tools for this workspace',
+      });
+      const subscription = await orchestrationService.subscribeSession({
+        sessionId: started.session.sessionId,
+      });
+      const completedEvent = subscription.events.find(
+        (event) => event.type === OrchestrationSessionEventType.TURN_COMPLETED,
+      );
+
+      expect(resolveTurn).not.toHaveBeenCalled();
+      expect(completedEvent?.payload.responseMode).toBe('command_handoff_preview');
+      expect(completedEvent?.payload.suggestedSlashCommand).toBe('/connect');
+      expect(completedEvent?.payload.requiresConfirmation).toBe(true);
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('preserves review handoff preview when one unknown @mention is not a configured role', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
+    const resolveTurn = vi.fn(async () => ({
+      responseMode: 'role_collaboration',
+      interactionMode: 'single_role_delegate',
+      assistantDelta: '## Planner perspective',
+      assistantMessage: '## Planner perspective\n\n- this should not be emitted',
+      executionIntent: 'session.role_delegate.planner',
+      requiresConfirmation: false,
+      selectedSurface: 'ollama',
+      selectedBy: 'session.main.role_delegate.safe_fallback',
+      sessionRoutingPreferenceApplied: false,
+      invokedRoleIds: ['planner'],
+      subagentCount: 1,
+    }));
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot: temporaryRoot,
+      sessionMainSupervisorRuntime: {
+        resolveMentionedRoleId: () => null,
+        resolveTurn,
+      },
+    });
+
+    try {
+      const started = await orchestrationService.startSession({
+        routeId: OrchestrationSessionRouteId.MAIN,
+      });
+      await orchestrationService.sendSessionTurn({
+        sessionId: started.session.sessionId,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        userMessage: '@alice review this diff',
+      });
+      const subscription = await orchestrationService.subscribeSession({
+        sessionId: started.session.sessionId,
+      });
+      const completedEvent = subscription.events.find(
+        (event) => event.type === OrchestrationSessionEventType.TURN_COMPLETED,
+      );
+
+      expect(resolveTurn).not.toHaveBeenCalled();
+      expect(completedEvent?.payload.responseMode).toBe('command_handoff_preview');
+      expect(completedEvent?.payload.suggestedSlashCommand).toBe('/review');
+      expect(completedEvent?.payload.requiresConfirmation).toBe(true);
     } finally {
       await rm(temporaryRoot, { recursive: true, force: true });
     }

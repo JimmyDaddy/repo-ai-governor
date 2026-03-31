@@ -66,6 +66,7 @@ export type {
   CliTaskDrivenRunAssembly,
   CliTaskInputArtifactReference,
   CliTaskInputReference,
+  SessionMainSubagentDescriptor,
   CliWorkspaceCommandOptions,
   CliWorkflowCommandOptions,
   CliWorkflowEditorConditionBranchSummary,

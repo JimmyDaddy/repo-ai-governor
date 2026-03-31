@@ -289,6 +289,66 @@ describe('session.main parity integration', () => {
       await rm(temporaryRoot, { recursive: true, force: true });
     }
   });
+
+  it('replays the same role-collaboration markdown transcript when the CLI resumes the latest session shell', async () => {
+    const temporaryRoot = await mkdtemp(resolve(tmpdir(), 'session-main-parity-role-'));
+    const workspaceRoot = resolve(temporaryRoot, '.repo-ai-governor');
+    await mkdir(workspaceRoot, { recursive: true });
+    const runtime = createRuntime(workspaceRoot, {
+      sessionMainSupervisorRuntime: {
+        resolveMentionedRoleId: () => 'planner',
+        resolveTurn: async () => ({
+          responseMode: 'role_collaboration',
+          interactionMode: 'single_role_delegate',
+          assistantDelta: '## Planner perspective',
+          assistantMessage: '## Planner perspective\n\n- checkpoint 1\n- checkpoint 2',
+          executionIntent: 'session.role_delegate.planner',
+          requiresConfirmation: false,
+          selectedSurface: 'ollama',
+          selectedBy: 'session.main.role_delegate.safe_fallback',
+          sessionRoutingPreferenceApplied: false,
+          invokedRoleIds: ['planner'],
+          subagentCount: 1,
+        }),
+      },
+    });
+    const sessionClient = new CliSessionShellServiceClient(runtime);
+
+    try {
+      const firstRenderer = new RecordingSessionShellRenderer();
+      const firstRunner = createRunner(firstRenderer, ['@planner 帮我拆成两个里程碑', '/exit']);
+      const firstResult = await firstRunner.run(createRunOptions(sessionClient));
+      const firstSessionId = firstRenderer.frames[0]?.sessionId;
+      const firstAnswer = firstResult.transcriptItems.find(
+        (item) => item.renderKind === 'markdown',
+      );
+
+      expect(firstResult.exitReason).toBe(CliSessionShellExitReason.SLASH_EXIT);
+      expect(firstAnswer).toEqual(
+        expect.objectContaining({
+          markdownSource: '## Planner perspective\n\n- checkpoint 1\n- checkpoint 2',
+          lines: ['## Planner perspective\n\n- checkpoint 1\n- checkpoint 2'],
+        }),
+      );
+
+      const resumedRenderer = new RecordingSessionShellRenderer();
+      const resumedRunner = createRunner(resumedRenderer, ['/exit']);
+      const resumedResult = await resumedRunner.run(
+        createRunOptions(sessionClient, {
+          resumeOnStartup: true,
+        }),
+      );
+      const resumedAnswer = resumedResult.transcriptItems.find(
+        (item) => item.renderKind === 'markdown',
+      );
+
+      expect(resumedRenderer.frames[0]?.sessionId).toBe(firstSessionId);
+      expect(resumedAnswer).toEqual(firstAnswer);
+    } finally {
+      await runtime.dispose();
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
 });
 
 function createRuntime(

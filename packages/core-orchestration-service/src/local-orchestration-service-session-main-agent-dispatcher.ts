@@ -16,6 +16,7 @@ const SESSION_MAIN_FAILURE_KEYWORDS = ['simulate failure', 'force failure'];
 const SESSION_MAIN_CANCEL_KEYWORDS = ['cancel this turn', 'simulate cancel'];
 const SESSION_MAIN_MIN_FOLLOW_UP_LENGTH = 10;
 const SESSION_MAIN_FALLBACK_ANSWER_DELTA_MAX_LENGTH = 80;
+const SESSION_MAIN_ROLE_MENTION_PATTERN = /@[a-z0-9_.-]+/giu;
 const SESSION_MAIN_ROUTING_PREFERENCE_ALIASES: Record<string, AdapterSurface> = {
   claude: AdapterSurface.CLAUDE_CODE,
   'claude-code': AdapterSurface.CLAUDE_CODE,
@@ -47,27 +48,47 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
   ): Promise<SessionMainSupervisorTurnOutcome> {
     const normalizedMessage = turnContext.userMessage.trim();
     const normalizedLowerMessage = normalizedMessage.toLowerCase();
+    const normalizedLowerMessageWithoutRoleMentions =
+      this.stripRoleMentions(normalizedLowerMessage);
+    const resolvedRoleMentionId =
+      this.sessionMainSupervisorRuntime?.resolveMentionedRoleId?.(turnContext.userMessage) ?? null;
+    const configuredRoleMentionPresent = typeof resolvedRoleMentionId === 'string';
     const sessionRoutingPreference = this.readOptionalString(
       turnContext.metadata?.sessionRoutingPreference,
     );
     const preferredSurface = this.resolvePreferredSurface(sessionRoutingPreference);
     const selectionMetadata = this.resolveSelectionMetadata(preferredSurface);
 
-    if (this.includesAnyKeyword(normalizedLowerMessage, SESSION_MAIN_CANCEL_KEYWORDS)) {
+    if (
+      this.includesAnyKeyword(
+        normalizedLowerMessageWithoutRoleMentions,
+        SESSION_MAIN_CANCEL_KEYWORDS,
+      )
+    ) {
       throw new RuntimeError(
         GovernorErrorCode.PROCESS_RUNTIME_CANCELLED,
         'The main-agent turn was cancelled before completion.',
       );
     }
 
-    if (this.includesAnyKeyword(normalizedLowerMessage, SESSION_MAIN_FAILURE_KEYWORDS)) {
+    if (
+      this.includesAnyKeyword(
+        normalizedLowerMessageWithoutRoleMentions,
+        SESSION_MAIN_FAILURE_KEYWORDS,
+      )
+    ) {
       throw new RuntimeError(
         GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
         'The main-agent dispatcher rejected the turn during intent resolution.',
       );
     }
 
-    if (this.includesAnyKeyword(normalizedLowerMessage, SESSION_MAIN_CONNECT_KEYWORDS)) {
+    if (
+      this.includesAnyKeyword(
+        normalizedLowerMessageWithoutRoleMentions,
+        SESSION_MAIN_CONNECT_KEYWORDS,
+      )
+    ) {
       return this.createCommandSuggestionResult({
         suggestedSlashCommand: '/connect',
         executionIntent: 'connect.adapters.bootstrap',
@@ -79,7 +100,12 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
       });
     }
 
-    if (this.includesAnyKeyword(normalizedLowerMessage, SESSION_MAIN_DOCTOR_KEYWORDS)) {
+    if (
+      this.includesAnyKeyword(
+        normalizedLowerMessageWithoutRoleMentions,
+        SESSION_MAIN_DOCTOR_KEYWORDS,
+      )
+    ) {
       return this.createCommandSuggestionResult({
         suggestedSlashCommand: '/doctor',
         executionIntent: 'doctor.adapters',
@@ -91,7 +117,12 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
       });
     }
 
-    if (this.includesAnyKeyword(normalizedLowerMessage, SESSION_MAIN_VERIFY_KEYWORDS)) {
+    if (
+      this.includesAnyKeyword(
+        normalizedLowerMessageWithoutRoleMentions,
+        SESSION_MAIN_VERIFY_KEYWORDS,
+      )
+    ) {
       return this.createCommandSuggestionResult({
         suggestedSlashCommand: '/verify',
         executionIntent: 'verify.adapters',
@@ -103,7 +134,10 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
       });
     }
 
-    if (this.includesAnyKeyword(normalizedLowerMessage, SESSION_MAIN_PLAN_KEYWORDS)) {
+    if (
+      !configuredRoleMentionPresent &&
+      this.includesAnyKeyword(normalizedLowerMessageWithoutRoleMentions, SESSION_MAIN_PLAN_KEYWORDS)
+    ) {
       return this.createCommandSuggestionResult({
         suggestedSlashCommand: '/plan',
         executionIntent: 'plan.generate',
@@ -115,7 +149,13 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
       });
     }
 
-    if (this.includesAnyKeyword(normalizedLowerMessage, SESSION_MAIN_REVIEW_KEYWORDS)) {
+    if (
+      !configuredRoleMentionPresent &&
+      this.includesAnyKeyword(
+        normalizedLowerMessageWithoutRoleMentions,
+        SESSION_MAIN_REVIEW_KEYWORDS,
+      )
+    ) {
       return this.createCommandSuggestionResult({
         suggestedSlashCommand: '/review',
         executionIntent: 'review.start',
@@ -127,7 +167,9 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
       });
     }
 
-    if (this.includesAnyKeyword(normalizedLowerMessage, SESSION_MAIN_RUN_KEYWORDS)) {
+    if (
+      this.includesAnyKeyword(normalizedLowerMessageWithoutRoleMentions, SESSION_MAIN_RUN_KEYWORDS)
+    ) {
       return this.createCommandSuggestionResult({
         suggestedSlashCommand: '/run',
         executionIntent: 'run.task',
@@ -139,7 +181,10 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
       });
     }
 
-    if (normalizedMessage.length < SESSION_MAIN_MIN_FOLLOW_UP_LENGTH) {
+    if (
+      normalizedLowerMessageWithoutRoleMentions.length < SESSION_MAIN_MIN_FOLLOW_UP_LENGTH &&
+      !configuredRoleMentionPresent
+    ) {
       return {
         responseMode: SESSION_MAIN_RESPONSE_MODE.FOLLOW_UP_QUESTION,
         interactionMode: SESSION_MAIN_INTERACTION_MODE.DIRECT_ANSWER,
@@ -303,5 +348,9 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
     }
 
     return undefined;
+  }
+
+  private stripRoleMentions(message: string): string {
+    return message.replaceAll(SESSION_MAIN_ROLE_MENTION_PATTERN, '').trim();
   }
 }

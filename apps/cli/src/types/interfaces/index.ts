@@ -113,3 +113,4 @@ export type {
   CliTaskInputArtifactReference,
   CliTaskInputReference,
 } from './cli-task-driven-run.interface.js';
+export type { SessionMainSubagentDescriptor } from './session-main-subagent.interface.js';

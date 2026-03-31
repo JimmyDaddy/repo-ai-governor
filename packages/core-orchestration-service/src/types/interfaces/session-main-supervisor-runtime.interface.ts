@@ -40,6 +40,7 @@ export interface SessionMainSupervisorTurnOutcome {
   selectedBy: string;
   sessionRoutingPreferenceApplied: boolean;
   invokedRoleIds?: string[];
+  subagentCount?: number;
   handoffCommandPreview?: string;
   handoffBacklinks?: SessionMainSupervisorTurnBacklink[];
 }
@@ -48,6 +49,13 @@ export interface SessionMainSupervisorTurnOutcome {
  * Defines the optional service-side runtime seam used by `session.main` supervisor bootstrap.
  */
 export interface SessionMainSupervisorRuntimeContract {
+  /**
+   * Resolves one configured explicit role mention from the raw user message when supported.
+   * @param userMessage Raw session.main user text.
+   * @returns Normalized role id when one configured role mention is present.
+   */
+  resolveMentionedRoleId?(userMessage: string): string | null;
+
   /**
    * Resolves one foreground `session.main` turn into a structured supervisor outcome.
    * @param context Service-owned turn context.

@@ -1,6 +1,6 @@
 # TK-466 productize role-subagent collaboration and command handoff governance baseline
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-31
 - Owner: AI-Agent
 - Priority: P0
@@ -32,3 +32,8 @@
 ## 5. Execution Notes
 
 1. 2026-03-31：任务创建，状态初始化为 `planned`；第一阶段优先选择 single-role delegate 试点，不强行一次性交付 full multi-agent fan-out。
+2. 2026-03-31：任务切换为 `active`；当前先收敛一条低风险、可显式触发的 role-subagent delegate path，优先保证 natural-language command handoff 继续服从 preview + confirm 治理边界。
+3. 2026-03-31：已完成 `AgentDescriptor -> SessionMainSubagentDescriptor` 最小派生 seam、`@planner` single-role delegate 试点 path、`subagentCount` payload 回灌，以及“显式 role mention + connect-like intent 仍优先 handoff preview”的治理回归。
+4. 2026-03-31：已通过 `pnpm exec vitest run packages/core-orchestration-service/test/local-orchestration-service-shell.unit.test.ts apps/cli/test/runtime/session-main-supervisor-runtime.test.ts apps/cli/test/runtime/session-main-parity.integration.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm run build`、`node ./scripts/governance/check-task-ledger-sync.js`、`node ./scripts/governance/check-sprint-plan-status-sync.js` 验证。
+5. 2026-03-31：为通过 full gate，补充拆分 `@repo-ai-governor/core-orchestration-service` 的 `constants/types` 子入口，避免 CLI help entrypoint 因根入口重导出 `LocalOrchestrationServiceShell` 而提前触发 `node:sqlite` experimental warning；随后已通过 `pnpm exec vitest run test/e2e/cli-help.e2e.test.ts --config vitest.e2e.config.ts` 与 `pnpm run check` 全量验证。
+6. 2026-03-31：working-tree CR 已复核并收口；已修复 role delegate capability enforcement 缺口与 unknown `@mention` 误伤 `/plan` / `/review` handoff 的路由回归，并通过 targeted vitest、`pnpm run build`、`pnpm run check`。

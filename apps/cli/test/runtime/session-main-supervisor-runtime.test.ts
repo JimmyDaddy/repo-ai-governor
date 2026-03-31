@@ -4,7 +4,7 @@ import {
   AgentCapabilitySupportLevel,
   type AgentProtocolContract,
 } from '@repo-ai-governor/adapter-sdk';
-import type { AdaptersConfig } from '@repo-ai-governor/config';
+import { type AdaptersConfig, WorkspaceMode } from '@repo-ai-governor/config';
 import { AdapterAvailability, AdapterSurface, LocalModelProvider } from '@repo-ai-governor/shared';
 import { CliAdapterRoutingRuntime } from '../../src/runtime/adapter-routing-runtime.js';
 import { CliSessionMainSupervisorRuntime } from '../../src/runtime/session-main-supervisor-runtime.js';
@@ -13,6 +13,7 @@ function createAvailableProtocol(
   surface: AdapterSurface,
   responseText: string,
   options: {
+    capabilitySupportOverrides?: Partial<Record<AgentCapability, AgentCapabilitySupportLevel>>;
     toolCallingSupportLevel?: AgentCapabilitySupportLevel;
     invokeStageSpy?: ReturnType<typeof vi.fn>;
   } = {},
@@ -33,9 +34,10 @@ function createAvailableProtocol(
         capabilityStates: Object.values(AgentCapability).map((capability) => ({
           capability,
           supportLevel:
-            capability === AgentCapability.TOOL_CALLING
+            options.capabilitySupportOverrides?.[capability] ??
+            (capability === AgentCapability.TOOL_CALLING
               ? toolCallingSupportLevel
-              : AgentCapabilitySupportLevel.SUPPORTED,
+              : AgentCapabilitySupportLevel.SUPPORTED),
         })),
         timeout: {
           supportsAgentInvocationTimeout: true,
@@ -136,9 +138,21 @@ function createUnavailableProtocol(surface: AdapterSurface): AgentProtocolContra
 
 describe('Cli session-main supervisor runtime', () => {
   const adaptersConfig: AdaptersConfig = {
-    roles: [],
+    roles: [
+      {
+        roleId: 'planner',
+        roleProfileId: 'planner-default',
+        requiredCapabilities: [AgentCapability.STRUCTURED_OUTPUT],
+        required: true,
+      },
+    ],
     routing: {
-      roleBindings: {},
+      roleBindings: {
+        planner: {
+          primarySurface: AdapterSurface.CODEX,
+          fallbackSurfaces: [AdapterSurface.CLAUDE_CODE],
+        },
+      },
     },
     tools: [
       {
@@ -164,6 +178,10 @@ describe('Cli session-main supervisor runtime', () => {
       },
     ],
   };
+  const workspace = {
+    workspaceId: 'workspace-001',
+    mode: WorkspaceMode.REPO_LOCAL,
+  } as const;
 
   it('returns direct-answer outcome from a safe no-tool surface', async () => {
     const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
@@ -189,6 +207,7 @@ describe('Cli session-main supervisor runtime', () => {
     const runtime = new CliSessionMainSupervisorRuntime({
       workspaceRoot: '/workspace/repo/.repo-ai-governor',
       currentWorkingDirectory: '/workspace/repo',
+      workspace,
       locale: 'zh-CN',
       adaptersConfig,
       adapterRoutingRuntime,
@@ -236,6 +255,7 @@ describe('Cli session-main supervisor runtime', () => {
     const runtime = new CliSessionMainSupervisorRuntime({
       workspaceRoot: '/workspace/repo/.repo-ai-governor',
       currentWorkingDirectory: '/workspace/repo',
+      workspace,
       locale: 'en-US',
       adaptersConfig,
       adapterRoutingRuntime,
@@ -282,6 +302,7 @@ describe('Cli session-main supervisor runtime', () => {
     const runtime = new CliSessionMainSupervisorRuntime({
       workspaceRoot: '/workspace/repo/.repo-ai-governor',
       currentWorkingDirectory: '/workspace/repo',
+      workspace,
       locale: 'en-US',
       adaptersConfig: {
         ...adaptersConfig,
@@ -303,6 +324,183 @@ describe('Cli session-main supervisor runtime', () => {
     expect(codexInvokeStage).not.toHaveBeenCalled();
     expect(outcome.selectedSurface).toBe('guarded-direct-answer');
     expect(outcome.selectedBy).toBe('session.main.answer.guard');
+    expect(outcome.assistantMessage).toContain('restricted to no-tool surfaces');
+  });
+
+  it('delegates explicit @planner turns through a single-role safe fallback path', async () => {
+    const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
+      adaptersConfig,
+    ) as CliAdapterRoutingRuntime & {
+      createProtocolBySurface: () => Record<string, AgentProtocolContract>;
+    };
+    adapterRoutingRuntime.createProtocolBySurface = () => ({
+      [AdapterSurface.CODEX]: createAvailableProtocol(
+        AdapterSurface.CODEX,
+        'unsafe planner answer',
+      ),
+      [AdapterSurface.CLAUDE_CODE]: createAvailableProtocol(
+        AdapterSurface.CLAUDE_CODE,
+        'unsafe fallback answer',
+      ),
+      [AdapterSurface.OLLAMA]: createAvailableProtocol(
+        AdapterSurface.OLLAMA,
+        '## Planner perspective\n\n- break work into two checkpoints',
+        {
+          toolCallingSupportLevel: AgentCapabilitySupportLevel.UNSUPPORTED,
+        },
+      ),
+    });
+
+    const runtime = new CliSessionMainSupervisorRuntime({
+      workspaceRoot: '/workspace/repo/.repo-ai-governor',
+      currentWorkingDirectory: '/workspace/repo',
+      workspace,
+      locale: 'en-US',
+      adaptersConfig,
+      adapterRoutingRuntime,
+    });
+    const outcome = await runtime.resolveTurn({
+      sessionId: 'session-004',
+      routeId: 'session.main',
+      turnId: 'turn-004',
+      turnIndex: 4,
+      userMessage: '@planner help me break this delivery into milestones',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+    });
+
+    expect(outcome.responseMode).toBe('role_collaboration');
+    expect(outcome.interactionMode).toBe('single_role_delegate');
+    expect(outcome.executionIntent).toBe('session.role_delegate.planner');
+    expect(outcome.assistantMessage).toBe(
+      '## Planner perspective\n\n- break work into two checkpoints',
+    );
+    expect(outcome.selectedSurface).toBe(AdapterSurface.OLLAMA);
+    expect(outcome.selectedBy).toBe('session.main.role_delegate.safe_fallback');
+    expect(outcome.invokedRoleIds).toEqual(['planner']);
+    expect(outcome.subagentCount).toBe(1);
+  });
+
+  it('blocks explicit @planner delegation when the only no-tool fallback misses one required capability', async () => {
+    const ollamaInvokeStage = vi.fn(async () => ({
+      output: {
+        responseText: '## Planner perspective\n\n- this should not run',
+      },
+      elapsedMs: 1,
+    }));
+    const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
+      adaptersConfig,
+    ) as CliAdapterRoutingRuntime & {
+      createProtocolBySurface: () => Record<string, AgentProtocolContract>;
+    };
+    adapterRoutingRuntime.createProtocolBySurface = () => ({
+      [AdapterSurface.CODEX]: createAvailableProtocol(
+        AdapterSurface.CODEX,
+        'unsafe planner answer',
+      ),
+      [AdapterSurface.CLAUDE_CODE]: createAvailableProtocol(
+        AdapterSurface.CLAUDE_CODE,
+        'unsafe fallback answer',
+      ),
+      [AdapterSurface.OLLAMA]: createAvailableProtocol(
+        AdapterSurface.OLLAMA,
+        '## Planner perspective\n\n- this should not run',
+        {
+          capabilitySupportOverrides: {
+            [AgentCapability.STRUCTURED_OUTPUT]: AgentCapabilitySupportLevel.UNSUPPORTED,
+          },
+          invokeStageSpy: ollamaInvokeStage,
+          toolCallingSupportLevel: AgentCapabilitySupportLevel.UNSUPPORTED,
+        },
+      ),
+    });
+
+    const runtime = new CliSessionMainSupervisorRuntime({
+      workspaceRoot: '/workspace/repo/.repo-ai-governor',
+      currentWorkingDirectory: '/workspace/repo',
+      workspace,
+      locale: 'en-US',
+      adaptersConfig,
+      adapterRoutingRuntime,
+    });
+    const outcome = await runtime.resolveTurn({
+      sessionId: 'session-004b',
+      routeId: 'session.main',
+      turnId: 'turn-004b',
+      turnIndex: 4,
+      userMessage: '@planner help me break this delivery into milestones',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+    });
+
+    expect(ollamaInvokeStage).not.toHaveBeenCalled();
+    expect(outcome.responseMode).toBe('role_collaboration');
+    expect(outcome.interactionMode).toBe('single_role_delegate');
+    expect(outcome.selectedSurface).toBe('guarded-role-delegate');
+    expect(outcome.selectedBy).toBe('session.main.role_delegate.guard');
+    expect(outcome.invokedRoleIds).toEqual([]);
+    expect(outcome.subagentCount).toBe(0);
+    expect(outcome.assistantMessage).toContain('missing one required capability');
+  });
+
+  it('keeps explicit @planner turns on the governed side when only tool-capable role surfaces are active', async () => {
+    const codexInvokeStage = vi.fn(async () => ({
+      output: {
+        responseText: 'unsafe planner answer',
+      },
+      elapsedMs: 1,
+    }));
+    const adapterRoutingRuntime = new CliAdapterRoutingRuntime({
+      ...adaptersConfig,
+      tools: adaptersConfig.tools?.filter((tool) => tool.toolId !== AdapterSurface.OLLAMA),
+    }) as CliAdapterRoutingRuntime & {
+      createProtocolBySurface: () => Record<string, AgentProtocolContract>;
+    };
+    adapterRoutingRuntime.createProtocolBySurface = () => ({
+      [AdapterSurface.CODEX]: createAvailableProtocol(
+        AdapterSurface.CODEX,
+        'unsafe planner answer',
+        {
+          invokeStageSpy: codexInvokeStage,
+        },
+      ),
+      [AdapterSurface.CLAUDE_CODE]: createAvailableProtocol(
+        AdapterSurface.CLAUDE_CODE,
+        'unsafe fallback answer',
+      ),
+    });
+
+    const runtime = new CliSessionMainSupervisorRuntime({
+      workspaceRoot: '/workspace/repo/.repo-ai-governor',
+      currentWorkingDirectory: '/workspace/repo',
+      workspace,
+      locale: 'en-US',
+      adaptersConfig: {
+        ...adaptersConfig,
+        tools: adaptersConfig.tools?.filter((tool) => tool.toolId !== AdapterSurface.OLLAMA),
+      },
+      adapterRoutingRuntime,
+    });
+    const outcome = await runtime.resolveTurn({
+      sessionId: 'session-005',
+      routeId: 'session.main',
+      turnId: 'turn-005',
+      turnIndex: 5,
+      userMessage: '@planner break this release into milestones',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+    });
+
+    expect(codexInvokeStage).not.toHaveBeenCalled();
+    expect(outcome.responseMode).toBe('role_collaboration');
+    expect(outcome.interactionMode).toBe('single_role_delegate');
+    expect(outcome.selectedSurface).toBe('guarded-role-delegate');
+    expect(outcome.selectedBy).toBe('session.main.role_delegate.guard');
+    expect(outcome.invokedRoleIds).toEqual([]);
+    expect(outcome.subagentCount).toBe(0);
     expect(outcome.assistantMessage).toContain('restricted to no-tool surfaces');
   });
 });

@@ -223,6 +223,10 @@ export class LocalOrchestrationServiceSessionRuntime {
                 invokedRoleIds: [...dispatchResult.invokedRoleIds],
               }
             : {}),
+          subagentCount:
+            typeof dispatchResult.subagentCount === 'number'
+              ? dispatchResult.subagentCount
+              : (dispatchResult.invokedRoleIds?.length ?? 0),
           ...(dispatchResult.handoffCommandPreview
             ? { handoffCommandPreview: dispatchResult.handoffCommandPreview }
             : {}),
