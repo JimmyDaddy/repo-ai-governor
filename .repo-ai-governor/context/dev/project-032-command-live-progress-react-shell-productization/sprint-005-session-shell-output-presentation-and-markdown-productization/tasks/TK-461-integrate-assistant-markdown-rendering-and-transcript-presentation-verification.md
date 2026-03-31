@@ -1,6 +1,6 @@
 # TK-461 integrate assistant markdown rendering and transcript presentation verification
 
-- Status: planned
+- Status: completed
 - Date: 2026-03-31
 - Owner: AI-Agent
 - Priority: P0
@@ -27,3 +27,11 @@
 2. targeted Vitest for session-shell presentation and output contract
 3. `node ./scripts/governance/check-task-ledger-sync.js`
 4. `node ./scripts/governance/check-sprint-plan-status-sync.js`
+
+## 5. Execution Notes
+
+1. 2026-03-31：任务创建，状态初始化为 `planned`。
+2. 2026-03-31：为 assistant 完成态消息接入轻量 Markdown block renderer，支持 heading / paragraph / list / quote / fenced code 基础呈现，同时明确 live running dock 不进入 markdown renderer。
+3. 2026-03-31：补齐 transcript store、React CLI runner、session-shell runner 与 output contract regression coverage，验证 render-kind / markdown rollout 不破坏现有 `stderr-only` live UI 与最终 `stdout` machine-readable contract。
+4. 2026-03-31：新增 `resolved_code_review_tk-460-tk-461-session-shell-transcript-markdown-rollout.md` 与 `DA-461-session-shell-output-presentation-and-markdown-rollout-closeout.md`，并通过 targeted Vitest、`pnpm run build`、task/sprint/code-review sync 与 technical-solution delivery/lifecycle checks。
+5. 2026-03-31：working-tree CR 修复后重新通过 transcript/store、session-shell runner、output contract 与 `pnpm run build` 验证，确认 recap/backlink presenter 修正没有破坏 markdown path 或 `stderr-only` / `stdout` contract。

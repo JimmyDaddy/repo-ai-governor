@@ -88,12 +88,14 @@ describe('ReactCliRunner', () => {
           role: CliSessionTranscriptRole.SYSTEM,
           label: 'System',
           lines: ['Session shell foundation is active.'],
+          renderKind: 'system_notice',
         },
         {
           id: 'user:2',
           role: CliSessionTranscriptRole.USER,
           label: 'You',
           lines: ['hello governor'],
+          renderKind: 'plain_text',
         },
       ],
       transcriptTitle: 'History',
@@ -145,6 +147,74 @@ describe('ReactCliRunner', () => {
     expect(output).not.toContain('shell_mode=');
     expect(output).not.toContain('query=');
     expect(output).toContain('/confirm · /cancel · Esc');
+  });
+
+  it('renders markdown answers and structured command recap transcript items', () => {
+    const runner = new ReactCliRunner();
+    const output = runner.renderSessionShellFrame({
+      sessionId: 'session-shell-markdown-456',
+      shellMode: CliSessionShellMode.SESSION_SHELL,
+      inputMode: CliSessionShellInputMode.PLAIN_TEXT,
+      transcriptItems: [
+        {
+          id: 'assistant:1',
+          role: CliSessionTranscriptRole.ASSISTANT,
+          label: 'Governor',
+          lines: ['# Delivery plan\n- inspect current stream\n- run build'],
+          renderKind: 'markdown',
+          markdownSource: '# Delivery plan\n- inspect current stream\n- run build',
+        },
+        {
+          id: 'assistant:2',
+          role: CliSessionTranscriptRole.ASSISTANT,
+          label: 'Governor',
+          lines: [
+            'Suggested next step: /connect',
+            'Preview: repo-ai-governor connect --output pretty',
+            'Intent: connect.adapters.bootstrap',
+          ],
+          renderKind: 'command_recap',
+          backlinks: [
+            {
+              kind: 'slash_command',
+              label: 'slash:/connect',
+              target: '/connect',
+            },
+          ],
+        },
+      ],
+      transcriptTitle: 'History',
+      composerTitle: 'Current input',
+      composerValue: '',
+      composerPlaceholder: 'Type a message, / for commands, or ? for shortcuts.',
+      slashQuery: '',
+      slashPaletteVisible: false,
+      slashSuggestions: [],
+      highlightedCommand: null,
+      slashPaletteTitle: 'Slash palette',
+      slashPaletteEmptyState: 'No slash commands matched.',
+      commandPreview: null,
+      handoffState: CliSessionShellHandoffState.IDLE,
+      cwd: '/workspace/repo',
+      workspaceSummary: 'workspace_id=repo mode=repo_local',
+      outputContract: ErrorOutputEnvironment.PRETTY,
+      persistenceOwner: CliSessionShellPersistenceOwner.LOCAL_ORCHESTRATION_SERVICE,
+      resumeSelector: 'latest',
+      foregroundInputOwner: CliSessionShellForegroundInputOwner.INK,
+      foregroundFocusTarget: CliSessionShellForegroundFocusTarget.COMPOSER,
+      inputActionContract: [...CLI_SESSION_SHELL_INPUT_ACTION_CONTRACT],
+      title: 'Repo AI Governor session shell',
+      subtitle: 'Session-first preview baseline.',
+      promptBarTitle: 'Prompt bar',
+      promptBarLines: ['? shortcuts · /status · Ctrl+D'],
+    });
+
+    expect(output).toContain('Delivery plan');
+    expect(output).toContain('- inspect current stream');
+    expect(output).toContain('Suggested next step: /connect');
+    expect(output).toContain('- Preview: repo-ai-governor connect --output pretty');
+    expect(output).toContain('- Intent: connect.adapters.bootstrap');
+    expect(output).toContain('- slash_command: slash:/connect -> /connect');
   });
 
   it('mounts the session-shell tree through Ink for live stderr rendering', () => {

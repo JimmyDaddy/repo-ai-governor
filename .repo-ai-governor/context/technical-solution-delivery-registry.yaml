@@ -201,16 +201,17 @@ deliveries:
       - docs_playbook
     user_impact_level: high
     execution_status: completed
-    rollout_status: planned
+    rollout_status: completed
     owner: runtime
     project_ref: project-032-command-live-progress-react-shell-productization
-    sprint_ref: sprint-004-session-shell-output-presentation-and-markdown-promotion
+    sprint_ref: sprint-005-session-shell-output-presentation-and-markdown-productization
     task_ids:
-      - TK-459
+      - TK-460
+      - TK-461
     project_plan_path: .repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/plan.md
-    sprint_plan_path: .repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/sprint-004-session-shell-output-presentation-and-markdown-promotion/plan.md
-    task_csv_path: .repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/sprint-004-session-shell-output-presentation-and-markdown-promotion/tasks/tasks.csv
-    handoff_artifact_path: .repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/sprint-004-session-shell-output-presentation-and-markdown-promotion/tasks/DA-459-session-shell-output-presentation-and-markdown-promotion-cutover.md
+    sprint_plan_path: .repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/sprint-005-session-shell-output-presentation-and-markdown-productization/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/sprint-005-session-shell-output-presentation-and-markdown-productization/tasks/tasks.csv
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/sprint-005-session-shell-output-presentation-and-markdown-productization/tasks/DA-461-session-shell-output-presentation-and-markdown-rollout-closeout.md
     rollout_artifacts:
       - .repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation/plan.md
       - .repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation/project-027-completion-audit-summary.md
@@ -237,6 +238,9 @@ deliveries:
       - .repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/sprint-004-session-shell-output-presentation-and-markdown-promotion/review/resolved_code_review_tk-459-session-shell-output-presentation-and-markdown-promotion-cutover.md
       - .repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/sprint-004-session-shell-output-presentation-and-markdown-promotion/tasks/DA-459-session-shell-output-presentation-and-markdown-promotion-cutover.md
       - .repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/sprint-005-session-shell-output-presentation-and-markdown-productization/plan.md
+      - .repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/sprint-005-session-shell-output-presentation-and-markdown-productization/review/resolved_code_review_tk-460-tk-461-session-shell-transcript-markdown-rollout.md
+      - .repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/sprint-005-session-shell-output-presentation-and-markdown-productization/tasks/DA-461-session-shell-output-presentation-and-markdown-rollout-closeout.md
+      - .repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/project-032-command-live-progress-react-shell-productization-completion-audit-summary.md
       - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/adrs/structured-session-output-and-markdown-content-blocks.md
     accepted_at: 2026-03-31
 

@@ -203,6 +203,7 @@ solutions:
       - .repo-ai-governor/context/dev/project-029-cli-session-first-agent-shell/sprint-004-polish-and-session-productization/session-shell-ink-owned-input-solution-review-20260330.md
       - .repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/sprint-001-activation-and-technical-solution-promotion/review/resolved_code_review_tk-444-command-live-progress-react-shell-technical-solution-promotion-cutover.md
       - .repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/sprint-004-session-shell-output-presentation-and-markdown-promotion/review/resolved_code_review_tk-459-session-shell-output-presentation-and-markdown-promotion-cutover.md
+      - .repo-ai-governor/context/dev/project-032-command-live-progress-react-shell-productization/sprint-005-session-shell-output-presentation-and-markdown-productization/review/resolved_code_review_tk-460-tk-461-session-shell-transcript-markdown-rollout.md
     final_paths:
       - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/module-overview.md
       - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/contracts/cli-interactive-shell-contract.md

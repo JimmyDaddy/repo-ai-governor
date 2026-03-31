@@ -109,6 +109,7 @@ export class CliSessionShellRunner {
         role: CliSessionTranscriptRole.SYSTEM,
         label: options.translate('cli.sessionShell.transcript.systemLabel'),
         lines: bootstrapped.startupNoticeLines,
+        renderKind: 'system_notice',
       });
     }
 
@@ -1092,6 +1093,7 @@ export class CliSessionShellRunner {
       role: CliSessionTranscriptRole.SYSTEM,
       label: options.translate('cli.sessionShell.transcript.systemLabel'),
       lines: [exitMessage, options.translate('cli.sessionShell.responses.exitKeepsTranscript')],
+      renderKind: 'system_notice',
     });
 
     return {
@@ -1304,6 +1306,7 @@ export class CliSessionShellRunner {
       role: CliSessionTranscriptRole.SYSTEM,
       label: options.translate('cli.sessionShell.transcript.systemLabel'),
       lines: [options.translate('cli.sessionShell.responses.localTranscriptCleared')],
+      renderKind: 'system_notice',
     });
     if (runtimeState.pendingCommand) {
       this.restorePendingCommandPreviewState(viewModel, options, runtimeState);

@@ -27,11 +27,32 @@ import type { CliGovernanceCommandExecutionOptions } from './cli-command-progres
 /**
  * Defines one transcript item rendered inside the session-shell transcript pane.
  */
+export type CliSessionShellTranscriptRenderKind =
+  | 'plain_text'
+  | 'markdown'
+  | 'system_notice'
+  | 'command_recap';
+
+/**
+ * Defines one structured backlink rendered from canonical session metadata.
+ */
+export interface CliSessionShellTranscriptBacklink {
+  kind: string;
+  label: string;
+  target: string;
+}
+
+/**
+ * Defines one transcript item rendered inside the session-shell transcript pane.
+ */
 export interface CliSessionShellTranscriptItem {
   id: string;
   role: CliSessionTranscriptRole;
   label: string;
   lines: string[];
+  renderKind: CliSessionShellTranscriptRenderKind;
+  markdownSource?: string;
+  backlinks?: CliSessionShellTranscriptBacklink[];
 }
 
 /**

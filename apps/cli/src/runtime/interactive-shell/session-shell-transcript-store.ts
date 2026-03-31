@@ -4,7 +4,10 @@ import {
   OrchestrationSessionTranscriptRole,
 } from '@repo-ai-governor/orchestration-service-client';
 import { CliSessionTranscriptRole } from '../../constants/cli-session-shell.constant.js';
-import type { CliSessionShellTranscriptItem } from '../../types/index.js';
+import type {
+  CliSessionShellTranscriptBacklink,
+  CliSessionShellTranscriptItem,
+} from '../../types/index.js';
 
 /**
  * Owns the presenter-side transcript cache derived from service-backed session events.
@@ -87,6 +90,7 @@ export class CliSessionShellTranscriptStore {
     return this.transcriptItems.map((item) => ({
       ...item,
       lines: [...item.lines],
+      ...(item.backlinks ? { backlinks: item.backlinks.map((backlink) => ({ ...backlink })) } : {}),
     }));
   }
 
@@ -115,6 +119,8 @@ export class CliSessionShellTranscriptStore {
         role: this.mapTranscriptRole(role),
         label: this.resolveTranscriptLabel(role, translate),
         lines,
+        renderKind:
+          role === OrchestrationSessionTranscriptRole.SYSTEM ? 'system_notice' : 'plain_text',
       };
     }
 
@@ -129,6 +135,7 @@ export class CliSessionShellTranscriptStore {
         role: CliSessionTranscriptRole.USER,
         label: translate('cli.sessionShell.transcript.userLabel'),
         lines: [content],
+        renderKind: 'plain_text',
       };
     }
 
@@ -144,13 +151,15 @@ export class CliSessionShellTranscriptStore {
       const responseMode = this.readOptionalString(event.payload.responseMode);
       const selectedSurface = this.readOptionalString(event.payload.selectedSurface);
       const selectedBy = this.readOptionalString(event.payload.selectedBy);
-      const handoffBacklinks = this.readBacklinkLines(event.payload.handoffBacklinks, translate);
+      const handoffBacklinks = this.readBacklinks(event.payload.handoffBacklinks);
       if (assistantMessage) {
         return {
           id: `${event.sessionId}:${String(event.sequence)}`,
           role: CliSessionTranscriptRole.ASSISTANT,
           label: translate('cli.sessionShell.transcript.assistantLabel'),
           lines: [assistantMessage],
+          renderKind: 'markdown',
+          markdownSource: assistantMessage,
         };
       }
 
@@ -185,8 +194,9 @@ export class CliSessionShellTranscriptStore {
                   }),
                 ]
               : []),
-            ...handoffBacklinks,
           ],
+          renderKind: 'command_recap',
+          backlinks: handoffBacklinks,
         };
       }
 
@@ -206,8 +216,9 @@ export class CliSessionShellTranscriptStore {
                   }),
                 ]
               : []),
-            ...handoffBacklinks,
           ],
+          renderKind: 'system_notice',
+          backlinks: handoffBacklinks,
         };
       }
 
@@ -242,8 +253,9 @@ export class CliSessionShellTranscriptStore {
                 }),
               ]
             : []),
-          ...handoffBacklinks,
         ],
+        renderKind: 'command_recap',
+        backlinks: handoffBacklinks,
       };
     }
 
@@ -258,6 +270,7 @@ export class CliSessionShellTranscriptStore {
             resumeSelector: this.readOptionalString(event.payload.resumeSelector) ?? 'latest',
           }),
         ],
+        renderKind: 'system_notice',
       };
     }
 
@@ -272,6 +285,7 @@ export class CliSessionShellTranscriptStore {
           }),
           translate('cli.sessionShell.responses.turnRecoverableHint'),
         ],
+        renderKind: 'system_notice',
       };
     }
 
@@ -284,6 +298,7 @@ export class CliSessionShellTranscriptStore {
           translate('cli.sessionShell.responses.turnCancelled'),
           translate('cli.sessionShell.responses.turnRecoverableHint'),
         ],
+        renderKind: 'system_notice',
       };
     }
 
@@ -349,10 +364,7 @@ export class CliSessionShellTranscriptStore {
     );
   }
 
-  private readBacklinkLines(
-    candidate: unknown,
-    translate: (key: string, interpolation?: Record<string, string>) => string,
-  ): string[] {
+  private readBacklinks(candidate: unknown): CliSessionShellTranscriptBacklink[] {
     if (!Array.isArray(candidate)) {
       return [];
     }
@@ -375,12 +387,12 @@ export class CliSessionShellTranscriptStore {
           return null;
         }
 
-        return translate('cli.sessionShell.responses.mainTurnBacklink', {
+        return {
           kind: backlink.kind,
           label: backlink.label,
           target: backlink.target,
-        });
+        };
       })
-      .filter((line): line is string => typeof line === 'string' && line.length > 0);
+      .filter((backlink): backlink is CliSessionShellTranscriptBacklink => backlink !== null);
   }
 }

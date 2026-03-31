@@ -59,21 +59,29 @@ describe('CliSessionShellTranscriptStore', () => {
         if (key === 'cli.sessionShell.responses.mainTurnRoutingSelection') {
           return `Routing: surface=${interpolation?.selectedSurface ?? ''} selected_by=${interpolation?.selectedBy ?? ''}`;
         }
-        if (key === 'cli.sessionShell.responses.mainTurnBacklink') {
-          return `Backlink: kind=${interpolation?.kind ?? ''} label=${interpolation?.label ?? ''} target=${interpolation?.target ?? ''}`;
-        }
         return key;
       },
     );
 
     expect(items).toHaveLength(1);
+    expect(items[0]?.renderKind).toBe('command_recap');
+    expect(items[0]?.backlinks).toEqual([
+      {
+        kind: 'slash_command',
+        label: 'slash:/connect',
+        target: '/connect',
+      },
+      {
+        kind: 'execution_intent',
+        label: 'intent:connect.adapters.bootstrap',
+        target: 'connect.adapters.bootstrap',
+      },
+    ]);
     expect(items[0]?.lines).toEqual([
       'Suggested next step: /connect',
       'Preview: repo-ai-governor connect --output pretty',
       'Intent: connect.adapters.bootstrap',
       'Routing: surface=claude-code selected_by=session.main.preference',
-      'Backlink: kind=slash_command label=slash:/connect target=/connect',
-      'Backlink: kind=execution_intent label=intent:connect.adapters.bootstrap target=connect.adapters.bootstrap',
     ]);
   });
 
@@ -124,6 +132,8 @@ describe('CliSessionShellTranscriptStore', () => {
     );
 
     expect(items).toHaveLength(2);
+    expect(items[0]?.renderKind).toBe('system_notice');
+    expect(items[1]?.renderKind).toBe('system_notice');
     expect(items[0]?.lines).toEqual([
       'The main session turn failed. reason=dispatcher failure',
       'You can keep chatting, retry the turn, or switch to /resume.',
@@ -179,11 +189,42 @@ describe('CliSessionShellTranscriptStore', () => {
     );
 
     expect(items).toHaveLength(1);
+    expect(items[0]?.renderKind).toBe('command_recap');
     expect(items[0]?.lines).toEqual([
       'route=session.main turn=1 accepted',
       'echo=governor line one\ngovernor line two',
       'Intent: session.answer',
       'Routing: surface=codex selected_by=session.main.default',
     ]);
+  });
+
+  it('marks assistant completed answers as markdown transcript items', () => {
+    const store = new CliSessionShellTranscriptStore();
+    const items = store.applyEvents(
+      'session-004',
+      [
+        {
+          eventId: 'event-1',
+          sequence: 1,
+          streamCursor: 'cursor-1',
+          sessionId: 'session-004',
+          type: OrchestrationSessionEventType.TURN_COMPLETED,
+          createdAt: '2026-03-31T12:15:00Z',
+          payload: {
+            role: OrchestrationSessionTranscriptRole.ASSISTANT,
+            routeId: 'session.main',
+            turnIndex: 1,
+            responseMode: 'answer',
+            assistantMessage: '# Plan\n- inspect repo\n- summarize risks',
+          },
+        },
+      ],
+      (key) => (key === 'cli.sessionShell.transcript.assistantLabel' ? 'Governor' : key),
+    );
+
+    expect(items).toHaveLength(1);
+    expect(items[0]?.renderKind).toBe('markdown');
+    expect(items[0]?.markdownSource).toBe('# Plan\n- inspect repo\n- summarize risks');
+    expect(items[0]?.lines).toEqual(['# Plan\n- inspect repo\n- summarize risks']);
   });
 });

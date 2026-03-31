@@ -69,6 +69,8 @@ export type {
   CliInteractiveShellSelectPrompt,
 } from './cli-interactive-shell.interface.js';
 export type {
+  CliSessionShellTranscriptBacklink,
+  CliSessionShellTranscriptRenderKind,
   CliSessionShellInputAction,
   CliSessionShellInputActionResult,
   CliSessionShellCommandExecutionResult,
