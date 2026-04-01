@@ -330,7 +330,7 @@ describe('CliSessionShellTranscriptStore', () => {
           return `${interpolation?.mode ?? ''} completed.`;
         }
         if (key === 'cli.sessionShell.responses.mainTurnCollaborationRoles') {
-          return `Roles: ${interpolation?.roles ?? ''} (count=${interpolation?.count ?? ''})`;
+          return `Active role: ${interpolation?.roles ?? ''} (count=${interpolation?.count ?? ''})`;
         }
         if (key === 'cli.sessionShell.responses.mainTurnCollaborationSynthesis') {
           return `Synthesis: ${interpolation?.synthesisMode ?? ''}`;
@@ -338,11 +338,11 @@ describe('CliSessionShellTranscriptStore', () => {
         if (key === 'cli.sessionShell.responses.mainTurnCollaborationModeParallel') {
           return 'Parallel role fan-out';
         }
-        if (key === 'cli.sessionShell.responses.mainTurnExecutionIntent') {
-          return `Intent: ${interpolation?.executionIntent ?? ''}`;
+        if (key === 'cli.sessionShell.responses.mainTurnExecutionSurface') {
+          return `Execution surface: ${interpolation?.selectedSurface ?? ''}`;
         }
-        if (key === 'cli.sessionShell.responses.mainTurnRoutingSelection') {
-          return `Routing: surface=${interpolation?.selectedSurface ?? ''} selected_by=${interpolation?.selectedBy ?? ''}`;
+        if (key === 'cli.sessionShell.responses.mainTurnExecutionSurfaceFallback') {
+          return 'Execution surface selection: switched to a fallback automatically.';
         }
         return key;
       },
@@ -353,10 +353,10 @@ describe('CliSessionShellTranscriptStore', () => {
     expect(items[0]?.markdownSource).toContain('Architect + Reviewer + Verifier Parallel Analysis');
     expect(items[0]?.lines).toEqual([
       'Parallel role fan-out completed.',
-      'Roles: architect · reviewer · verifier (count=3)',
+      'Active role: architect · reviewer · verifier (count=3)',
       'Synthesis: parallel_analysis',
-      'Intent: session.role_delegate.parallel.architect.reviewer.verifier',
-      'Routing: surface=architect:ollama | reviewer:ollama | verifier:ollama selected_by=architect:session.main.role_delegate.safe_fallback | reviewer:session.main.role_delegate.safe_fallback | verifier:session.main.role_delegate.safe_fallback',
+      'Execution surface: architect:ollama | reviewer:ollama | verifier:ollama',
+      'Execution surface selection: switched to a fallback automatically.',
     ]);
   });
 

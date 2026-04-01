@@ -169,7 +169,6 @@ export class CliSessionShellTranscriptStore {
             invokedRoleIds,
             subagentCount,
             synthesisMode,
-            executionIntent,
             selectedSurface,
             selectedBy,
             translate,
@@ -354,7 +353,6 @@ export class CliSessionShellTranscriptStore {
     invokedRoleIds: string[];
     subagentCount?: number;
     synthesisMode?: string;
-    executionIntent?: string;
     selectedSurface?: string;
     selectedBy?: string;
     translate: (key: string, interpolation?: Record<string, string>) => string;
@@ -383,22 +381,24 @@ export class CliSessionShellTranscriptStore {
         }),
       );
     }
-    if (options.executionIntent) {
+    if (options.selectedSurface) {
       lines.push(
-        options.translate('cli.sessionShell.responses.mainTurnExecutionIntent', {
-          executionIntent: options.executionIntent,
+        options.translate('cli.sessionShell.responses.mainTurnExecutionSurface', {
+          selectedSurface: options.selectedSurface,
         }),
       );
     }
-    if (options.selectedSurface && options.selectedBy) {
-      lines.push(
-        options.translate('cli.sessionShell.responses.mainTurnRoutingSelection', {
-          selectedSurface: options.selectedSurface,
-          selectedBy: options.selectedBy,
-        }),
-      );
+    if (this.isFallbackSurfaceSelection(options.selectedBy)) {
+      lines.push(options.translate('cli.sessionShell.responses.mainTurnExecutionSurfaceFallback'));
     }
     return lines;
+  }
+
+  private isFallbackSurfaceSelection(selectedBy: string | undefined): boolean {
+    if (!selectedBy) {
+      return false;
+    }
+    return /(?:^|[.:| >_-])(?:safe_)?fallback(?:$|[.:| >_-])/iu.test(selectedBy);
   }
 
   private resolveCollaborationModeLabel(

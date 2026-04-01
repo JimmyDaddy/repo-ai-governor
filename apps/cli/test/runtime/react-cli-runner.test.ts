@@ -202,9 +202,10 @@ describe('ReactCliRunner', () => {
           label: 'Governor',
           lines: [
             'Parallel role fan-out completed.',
-            'Roles: architect · reviewer · verifier (count=3)',
+            'Active role: architect · reviewer · verifier (count=3)',
             'Synthesis: parallel_analysis',
-            'Intent: session.role_delegate.parallel.architect.reviewer.verifier',
+            'Execution surface: architect:ollama | reviewer:ollama | verifier:ollama',
+            'Execution surface selection switched to a fallback automatically.',
           ],
           renderKind: 'collaboration_recap',
           markdownSource:
@@ -245,12 +246,15 @@ describe('ReactCliRunner', () => {
     expect(output).toContain('[Intent]');
     expect(output).toContain('connect.adapters.bootstrap');
     expect(output).toContain('role collaboration');
-    expect(output).toContain('[Roles]');
+    expect(output).toContain('[Active role]');
     expect(output).toContain('- architect');
     expect(output).toContain('- reviewer');
     expect(output).toContain('- verifier (count=3)');
     expect(output).toContain('[Synthesis]');
     expect(output).toContain('parallel_analysis');
+    expect(output).toContain('[Execution surface]');
+    expect(output).toContain('architect:ollama | reviewer:ollama | verifier:ollama');
+    expect(output).toContain('Execution surface selection switched to a fallback automatically.');
     expect(output).toContain('Architect + Reviewer + Verifier Parallel Analysis');
     expect(output).toContain('Related');
     expect(output).toContain('- slash:/connect -> /connect');

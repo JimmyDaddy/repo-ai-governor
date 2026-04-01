@@ -86,11 +86,15 @@ const SESSION_SHELL_TRANSLATIONS: Record<string, string> = {
   'cli.sessionShell.responses.mainTurnAutoExecuteCommand': 'Running: {{preview}}',
   'cli.sessionShell.responses.commandPreview': 'Ready: {{command}}',
   'cli.sessionShell.responses.mainTurnCollaborationAccepted': '{{mode}} completed.',
-  'cli.sessionShell.responses.mainTurnCollaborationRoles': 'Roles: {{roles}} (count={{count}})',
+  'cli.sessionShell.responses.mainTurnCollaborationRoles':
+    'Active role: {{roles}} (count={{count}})',
   'cli.sessionShell.responses.mainTurnCollaborationSynthesis': 'Synthesis: {{synthesisMode}}',
   'cli.sessionShell.responses.mainTurnCollaborationModeSingleRole': 'Single-role delegate',
   'cli.sessionShell.responses.mainTurnCollaborationModeSerial': 'Serial role collaboration',
   'cli.sessionShell.responses.mainTurnCollaborationModeParallel': 'Parallel role fan-out',
+  'cli.sessionShell.responses.mainTurnExecutionSurface': 'Execution surface: {{selectedSurface}}',
+  'cli.sessionShell.responses.mainTurnExecutionSurfaceFallback':
+    'Execution surface selection switched to a fallback automatically.',
   'cli.sessionShell.responses.mainTurnExecutionIntent': 'Intent: {{executionIntent}}',
   'cli.sessionShell.responses.mainTurnRoutingSelection':
     'Routing: surface={{selectedSurface}} selected_by={{selectedBy}}',
@@ -460,7 +464,7 @@ describe('session.main parity integration', () => {
           (item) =>
             item.renderKind === 'collaboration_recap' &&
             item.lines.includes('Single-role delegate completed.') &&
-            item.lines.includes('Intent: session.role_delegate.reviewer'),
+            item.lines.includes('Execution surface: codex'),
         ),
       ).toBe(true);
     } finally {
@@ -659,9 +663,9 @@ describe('session.main parity integration', () => {
           markdownSource: '## Planner perspective\n\n- checkpoint 1\n- checkpoint 2',
           lines: [
             'Single-role delegate completed.',
-            'Roles: planner (count=1)',
-            'Intent: session.role_delegate.planner',
-            'Routing: surface=ollama selected_by=session.main.role_delegate.safe_fallback',
+            'Active role: planner (count=1)',
+            'Execution surface: ollama',
+            'Execution surface selection switched to a fallback automatically.',
           ],
         }),
       );
@@ -750,9 +754,9 @@ describe('session.main parity integration', () => {
           ].join('\n'),
           lines: [
             'Serial role collaboration completed.',
-            'Roles: planner · reviewer (count=2)',
-            'Intent: session.role_delegate.planner.reviewer',
-            'Routing: surface=planner:ollama -> reviewer:ollama selected_by=planner:session.main.role_delegate.safe_fallback -> reviewer:session.main.role_delegate.safe_fallback',
+            'Active role: planner · reviewer (count=2)',
+            'Execution surface: planner:ollama -> reviewer:ollama',
+            'Execution surface selection switched to a fallback automatically.',
           ],
         }),
       );
@@ -850,10 +854,10 @@ describe('session.main parity integration', () => {
           ].join('\n'),
           lines: [
             'Parallel role fan-out completed.',
-            'Roles: architect · reviewer · verifier (count=3)',
+            'Active role: architect · reviewer · verifier (count=3)',
             'Synthesis: parallel_analysis',
-            'Intent: session.role_delegate.parallel.architect.reviewer.verifier',
-            'Routing: surface=architect:ollama | reviewer:ollama | verifier:ollama selected_by=architect:session.main.role_delegate.safe_fallback | reviewer:session.main.role_delegate.safe_fallback | verifier:session.main.role_delegate.safe_fallback',
+            'Execution surface: architect:ollama | reviewer:ollama | verifier:ollama',
+            'Execution surface selection switched to a fallback automatically.',
           ],
         }),
       );
