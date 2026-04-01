@@ -1,8 +1,11 @@
 import {
+  AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY,
   AgentAvailabilityStatus,
   AgentCapability,
   AgentCapabilitySupportLevel,
   type AgentProtocolContract,
+  AgentStageExecutionMode,
+  AgentStageToolUsePolicy,
   AgentStreamEventType,
 } from '@repo-ai-governor/adapter-sdk';
 import { type AdaptersConfig, WorkspaceMode } from '@repo-ai-governor/config';
@@ -271,6 +274,66 @@ describe('Cli session-main supervisor runtime', () => {
     expect(outcome.invokedRoles).toEqual([]);
   });
 
+  it('allows tool-capable direct-answer surfaces when the turn is constrained to chat-only policy', async () => {
+    const codexInvokeStage = vi.fn(async (request: Record<string, unknown>) => {
+      expect(request.input).toEqual(
+        expect.objectContaining({
+          [AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY]: {
+            interactionMode: AgentStageExecutionMode.CHAT_ONLY,
+            toolUsePolicy: AgentStageToolUsePolicy.FORBIDDEN,
+          },
+        }),
+      );
+      return {
+        output: {
+          responseText: '你好，我可以继续帮你处理仓库里的事情。',
+        },
+        elapsedMs: 1,
+      };
+    });
+    const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
+      adaptersConfig,
+    ) as CliAdapterRoutingRuntime & {
+      createProtocolBySurface: () => Record<string, AgentProtocolContract>;
+    };
+    adapterRoutingRuntime.createProtocolBySurface = () => ({
+      [AdapterSurface.CODEX]: createAvailableProtocol(AdapterSurface.CODEX, 'unused', {
+        invokeStageSpy: codexInvokeStage,
+      }),
+      [AdapterSurface.CLAUDE_CODE]: createAvailableProtocol(
+        AdapterSurface.CLAUDE_CODE,
+        'fallback answer',
+      ),
+      [AdapterSurface.OLLAMA]: createUnavailableProtocol(AdapterSurface.OLLAMA),
+    });
+
+    const runtime = new CliSessionMainSupervisorRuntime({
+      workspaceRoot: '/workspace/repo/.repo-ai-governor',
+      currentWorkingDirectory: '/workspace/repo',
+      workspace,
+      locale: 'zh-CN',
+      adaptersConfig,
+      adapterRoutingRuntime,
+    });
+    const outcome = await runtime.resolveTurn({
+      sessionId: 'session-001-tool-capable',
+      routeId: 'session.main',
+      turnId: 'turn-001-tool-capable',
+      turnIndex: 2,
+      userMessage: '你好',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+    });
+
+    expect(codexInvokeStage).toHaveBeenCalledTimes(1);
+    expect(outcome.responseMode).toBe('answer');
+    expect(outcome.interactionMode).toBe('direct_answer');
+    expect(outcome.assistantMessage).toBe('你好，我可以继续帮你处理仓库里的事情。');
+    expect(outcome.selectedSurface).toBe(AdapterSurface.CODEX);
+    expect(outcome.selectedBy).toBe('session.main.answer.primary');
+  });
+
   it('publishes mapped direct-answer stream events while preserving empty invoked-role truth', async () => {
     const publishedStreamEvents: Array<Record<string, unknown>> = [];
     const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
@@ -368,14 +431,14 @@ describe('Cli session-main supervisor runtime', () => {
     );
   });
 
-  it('falls back to a no-tool surface when the preferred direct-answer surface is tool-capable', async () => {
+  it('falls back to the next available direct-answer surface when the preferred surface is unavailable', async () => {
     const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
       adaptersConfig,
     ) as CliAdapterRoutingRuntime & {
       createProtocolBySurface: () => Record<string, AgentProtocolContract>;
     };
     adapterRoutingRuntime.createProtocolBySurface = () => ({
-      [AdapterSurface.CODEX]: createAvailableProtocol(AdapterSurface.CODEX, 'unsafe codex answer'),
+      [AdapterSurface.CODEX]: createUnavailableProtocol(AdapterSurface.CODEX),
       [AdapterSurface.CLAUDE_CODE]: createAvailableProtocol(
         AdapterSurface.CLAUDE_CODE,
         'Fallback answer from Claude Code',
@@ -408,8 +471,8 @@ describe('Cli session-main supervisor runtime', () => {
       sessionRoutingPreferenceApplied: false,
     });
 
-    expect(outcome.assistantMessage).toBe('Fallback answer from local model');
-    expect(outcome.selectedSurface).toBe(AdapterSurface.OLLAMA);
+    expect(outcome.assistantMessage).toBe('Fallback answer from Claude Code');
+    expect(outcome.selectedSurface).toBe(AdapterSurface.CLAUDE_CODE);
     expect(outcome.selectedBy).toBe('session.main.answer.safe_fallback');
   });
 

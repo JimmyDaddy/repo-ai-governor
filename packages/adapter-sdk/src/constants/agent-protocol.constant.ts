@@ -123,6 +123,27 @@ export enum AgentSurfaceNetworkRequirement {
 }
 
 /**
+ * Defines the input key used to carry stage-level execution policy hints.
+ */
+export const AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY = 'governorExecutionPolicy';
+
+/**
+ * Defines high-level interaction modes enforced by stage-level execution policy.
+ */
+export enum AgentStageExecutionMode {
+  DEFAULT = 'default',
+  CHAT_ONLY = 'chat_only',
+}
+
+/**
+ * Defines whether one stage is allowed to invoke tool-capable behavior.
+ */
+export enum AgentStageToolUsePolicy {
+  ALLOWED = 'allowed',
+  FORBIDDEN = 'forbidden',
+}
+
+/**
  * Defines the synthetic surface id used by local restricted-network fallback execution.
  */
 export const AGENT_LOCAL_FALLBACK_SURFACE = 'local-governance-fallback';

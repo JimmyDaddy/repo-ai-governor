@@ -37,6 +37,7 @@ export type {
   AgentProbeResult,
   AgentProtocolContract,
   AgentProtocolIdentity,
+  AgentStageExecutionPolicy,
   AgentStreamEvent,
   AgentStreamEventsRequest,
   AgentTimeoutCapability,

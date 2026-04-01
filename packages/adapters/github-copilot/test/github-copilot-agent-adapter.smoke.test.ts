@@ -1,7 +1,10 @@
 import {
+  AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY,
   AgentCapability,
   AgentCapabilitySupportLevel,
   AgentCliExecOperation,
+  AgentStageExecutionMode,
+  AgentStageToolUsePolicy,
   AgentStreamEventType,
   type AgentStreamEventsRequest,
 } from '@repo-ai-governor/adapter-sdk';
@@ -115,6 +118,45 @@ describe('github-copilot-agent-adapter smoke', () => {
 
     expect(invokeResult.output.adapterSurface).toBe('github-copilot');
     expect(invokeResult.output.responseText).toContain('simulated github copilot response');
+  });
+
+  it('passes no-tool command arguments when chat-only policy forbids tool use', async () => {
+    const execRunner = vi
+      .fn<GithubCopilotExecRunner>()
+      .mockImplementationOnce(createGithubCopilotExecRunnerFixture())
+      .mockImplementationOnce(async (request) => {
+        expect(request.commandArgumentsPrefix).toEqual(
+          expect.arrayContaining(['--available-tools', '']),
+        );
+        return createGithubCopilotExecRunnerFixture()({
+          ...request,
+          operation: AgentCliExecOperation.INVOKE,
+        });
+      });
+    const adapter = new GithubCopilotAgentAdapter({
+      executionMode: GithubCopilotAgentAdapterExecutionMode.CLI_EXEC,
+      execRunner,
+    });
+
+    await adapter.probe({
+      routeKey: 'codegen',
+    });
+    const invokeResult = await adapter.invokeStage({
+      processId: 'process-1',
+      executionId: 'execution-1',
+      stageId: 'stage-1',
+      routeKey: 'session.main.answer',
+      input: {
+        userMessage: '你好',
+        [AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY]: {
+          interactionMode: AgentStageExecutionMode.CHAT_ONLY,
+          toolUsePolicy: AgentStageToolUsePolicy.FORBIDDEN,
+        },
+      },
+    });
+
+    expect(invokeResult.output.responseText).toContain('simulated github copilot response');
+    expect(execRunner).toHaveBeenCalledTimes(2);
   });
 
   it('treats non-zero process exit as protocol failure even when assistant output is present', async () => {

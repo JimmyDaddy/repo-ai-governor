@@ -16,11 +16,14 @@ import {
   type AgentProbeRequest,
   type AgentProbeResult,
   AgentProtocol,
+  AgentStageExecutionMode,
+  AgentStageToolUsePolicy,
   type AgentStreamEvent,
   AgentStreamEventType,
   type AgentStreamEventsRequest,
   DEFAULT_AGENT_CLI_EXEC_MAX_RETRY_ATTEMPTS,
   DEFAULT_AGENT_CLI_EXEC_RETRY_BACKOFF_MS,
+  resolveAgentStageExecutionPolicy,
 } from '@repo-ai-governor/adapter-sdk';
 import { GovernorErrorCode, RuntimeError, standardizeError } from '@repo-ai-governor/shared';
 import { ClaudeCodeAgentAdapterExecutionMode } from './constants/claude-code-agent-adapter.constant.js';
@@ -40,6 +43,7 @@ const CLAUDE_CODE_DIRECT_COMMAND = 'claude';
 const CLAUDE_CODE_FALLBACK_COMMAND = 'claude-code';
 const CLAUDE_CODE_DEFAULT_TIMEOUT_MS = 30000;
 const CLAUDE_CODE_DEFAULT_PROBE_CACHE_TTL_MS = 30000;
+const CLAUDE_CODE_CHAT_ONLY_ARGS = ['--tools', ''] as const;
 const CLAUDE_CODE_HEALTH_CHECK_PROMPT = 'Respond with exactly OK.';
 const CLAUDE_CODE_HEALTH_CHECK_EXPECTED_RESPONSE = 'OK';
 
@@ -210,6 +214,7 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
       timeoutMs: request.agentInvocationTimeoutMs ?? this.options.requestTimeoutMs,
       signal: request.signal,
       operation: AgentCliExecOperation.INVOKE,
+      executionPolicy: resolveAgentStageExecutionPolicy(request.input),
     });
     const parsedOutput = this.parseClaudeCodeCliOutput(
       executionResult,
@@ -425,7 +430,9 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
    * @returns Raw CLI execution result.
    */
   private async runClaudeCodeOperation(
-    request: Pick<ClaudeCodeExecRunnerRequest, 'prompt' | 'timeoutMs' | 'signal' | 'operation'>,
+    request: Pick<ClaudeCodeExecRunnerRequest, 'prompt' | 'timeoutMs' | 'signal' | 'operation'> & {
+      executionPolicy?: ReturnType<typeof resolveAgentStageExecutionPolicy>;
+    },
   ): Promise<ClaudeCodeExecRunnerResult> {
     try {
       return await this.cliExecOperationsRuntime.executeWithRetry(
@@ -436,7 +443,10 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
             try {
               return await this.execRunner({
                 command: commandSpec.command,
-                commandArgumentsPrefix: [...commandSpec.commandArgumentsPrefix],
+                commandArgumentsPrefix: this.resolveCommandArgumentsPrefix(
+                  commandSpec.commandArgumentsPrefix,
+                  request.executionPolicy,
+                ),
                 cwd: this.options.currentWorkingDirectory,
                 env: this.resolveEnvironment(),
                 prompt: request.prompt,
@@ -807,5 +817,18 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
         );
       });
     });
+  }
+
+  private resolveCommandArgumentsPrefix(
+    commandArgumentsPrefix: string[],
+    executionPolicy?: ReturnType<typeof resolveAgentStageExecutionPolicy>,
+  ): string[] {
+    return [
+      ...commandArgumentsPrefix,
+      ...(executionPolicy?.interactionMode === AgentStageExecutionMode.CHAT_ONLY &&
+      executionPolicy?.toolUsePolicy === AgentStageToolUsePolicy.FORBIDDEN
+        ? CLAUDE_CODE_CHAT_ONLY_ARGS
+        : []),
+    ];
   }
 }

@@ -147,6 +147,38 @@ describe('LocalOrchestrationServiceSessionMainAgentDispatcher', () => {
     ]);
   });
 
+  it('routes current-project diagnosis requests into direct-execute doctor command batches', async () => {
+    const resolveTurn = vi.fn();
+    const dispatcher = new LocalOrchestrationServiceSessionMainAgentDispatcher({
+      resolveTurn,
+      resolveMentionedRoleId: () => null,
+    });
+
+    const result = await dispatcher.dispatch({
+      sessionId: 'session-skill-003',
+      routeId: 'session.main',
+      turnId: 'turn-skill-003',
+      turnIndex: 6,
+      userMessage: '帮我诊断当前项目',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+    });
+
+    expect(resolveTurn).not.toHaveBeenCalled();
+    expect(result.responseMode).toBe('command_handoff_preview');
+    expect(result.requiresConfirmation).toBe(false);
+    expect(result.skillId).toBe('skill.doctor.environment');
+    expect(result.handoffExecutionMode).toBe('direct_execute');
+    expect(result.commandBatches).toEqual([
+      {
+        slashQuery: '/doctor',
+        bridgeArgv: ['doctor', '--adapters', '--output', 'pretty'],
+        previewCommandLine: 'repo-ai-governor doctor --adapters --output pretty',
+      },
+    ]);
+  });
+
   it('projects bundle onboarding intents into preview-confirm command batches', async () => {
     const resolveTurn = vi.fn();
     const dispatcher = new LocalOrchestrationServiceSessionMainAgentDispatcher({

@@ -819,7 +819,7 @@ describe('core-orchestration-service local shell', () => {
       await orchestrationService.sendSessionTurn({
         sessionId: started.session.sessionId,
         routeId: OrchestrationSessionRouteId.MAIN,
-        userMessage: 'Help me inspect the current workspace state',
+        userMessage: 'What is this repository responsible for?',
       });
       const subscription = await orchestrationService.subscribeSession({
         sessionId: started.session.sessionId,

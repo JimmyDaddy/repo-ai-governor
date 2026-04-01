@@ -6,6 +6,8 @@ import type {
   AgentCapabilityFallbackAction,
   AgentCapabilitySupportLevel,
   AgentConfirmationDecision,
+  AgentStageExecutionMode,
+  AgentStageToolUsePolicy,
   AgentStreamEventType,
 } from '../../constants/index.js';
 
@@ -85,6 +87,14 @@ export interface AgentProbeResult {
   availabilityStatus: AgentAvailabilityStatus;
   capabilityMatrix: AgentCapabilityMatrix;
   unavailableReasons: string[];
+}
+
+/**
+ * Defines runtime execution constraints for one stage invocation.
+ */
+export interface AgentStageExecutionPolicy {
+  interactionMode?: AgentStageExecutionMode;
+  toolUsePolicy?: AgentStageToolUsePolicy;
 }
 
 /**

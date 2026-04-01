@@ -1,8 +1,11 @@
 import {
+  AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY,
   AgentCancellationReason,
   AgentCancellationScope,
   AgentCapability,
   AgentConfirmationDecision,
+  AgentStageExecutionMode,
+  AgentStageToolUsePolicy,
   AgentStreamEventType,
   type AgentStreamEventsRequest,
 } from '@repo-ai-governor/adapter-sdk';
@@ -111,6 +114,52 @@ describe('codex-agent-adapter smoke', () => {
     expect(invokeResult.output.responseText).toBe('implemented feature');
     expect(invokeResult.output.threadId).toBe('thread-1');
     expect(invokeResult.usage?.totalTokens).toBe(18);
+    expect(execRunner).toHaveBeenCalledTimes(2);
+  });
+
+  it('passes chat-only sandbox arguments into codex exec when direct-answer policy forbids tools', async () => {
+    const execRunner = vi
+      .fn<CodexExecRunner>()
+      .mockImplementationOnce(createExecRunner('OK'))
+      .mockImplementationOnce(async (request) => {
+        expect(request.commandArguments).toEqual(
+          expect.arrayContaining([
+            'exec',
+            '--skip-git-repo-check',
+            '--json',
+            '-',
+            '--sandbox',
+            'read-only',
+            '--ask-for-approval',
+            'untrusted',
+          ]),
+        );
+        return createExecRunner('chat-only response')();
+      });
+    const adapter = new CodexAgentAdapter({
+      executionMode: CodexAgentAdapterExecutionMode.CLI_EXEC,
+      execRunner,
+      currentWorkingDirectory: process.cwd(),
+    });
+
+    await adapter.probe({
+      routeKey: 'cli.adapter.probe.codex',
+    });
+    const invokeResult = await adapter.invokeStage({
+      processId: 'process-1',
+      executionId: 'execution-1',
+      stageId: 'stage-1',
+      routeKey: 'session.main.answer',
+      input: {
+        userMessage: '你好',
+        [AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY]: {
+          interactionMode: AgentStageExecutionMode.CHAT_ONLY,
+          toolUsePolicy: AgentStageToolUsePolicy.FORBIDDEN,
+        },
+      },
+    });
+
+    expect(invokeResult.output.responseText).toBe('chat-only response');
     expect(execRunner).toHaveBeenCalledTimes(2);
   });
 

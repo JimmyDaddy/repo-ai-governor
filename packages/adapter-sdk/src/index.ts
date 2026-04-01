@@ -1,5 +1,6 @@
 export {
   AGENT_LOCAL_FALLBACK_SURFACE,
+  AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY,
   AgentAvailabilityStatus,
   DEFAULT_AGENT_CLI_EXEC_MAX_RETRY_ATTEMPTS,
   DEFAULT_AGENT_CLI_EXEC_RETRY_BACKOFF_MS,
@@ -13,12 +14,15 @@ export {
   AgentConfirmationDecision,
   AgentNetworkMode,
   AgentRouteSelectionSource,
+  AgentStageExecutionMode,
+  AgentStageToolUsePolicy,
   AgentSurfaceNetworkRequirement,
   AgentSurfaceSkipReason,
   AgentStreamEventType,
 } from './constants/index.js';
 export { AgentCapabilityEvaluator } from './agent-capability-evaluator.js';
 export { AgentCliExecOperationsRuntime } from './agent-cli-exec-operations-runtime.js';
+export { resolveAgentStageExecutionPolicy } from './agent-stage-execution-policy.js';
 export { DefaultRestrictedNetworkFallbackHandler } from './restricted-network-fallback-handler.js';
 export { AgentProtocolErrorMapper } from './agent-protocol-error-mapper.js';
 export { AgentProtocol } from './agent-protocol.abstract.js';
@@ -60,6 +64,7 @@ export type {
   AgentRouteRegistryOptions,
   AgentRouteResolvedPolicy,
   AgentRouteRunnerOptions,
+  AgentStageExecutionPolicy,
   AgentSurfaceEvaluationRecord,
   AgentStreamEvent,
   AgentStreamEventsRequest,

@@ -16,6 +16,10 @@ const SESSION_MAIN_DOCTOR_KEYWORDS = [
   '体检',
   '诊断',
 ];
+const SESSION_MAIN_DOCTOR_PATTERNS = [
+  /(?:帮我|请)?(?:诊断|检查|体检|排查)(?:一下)?(?:当前|这个)?(?:项目|仓库|workspace|repo)(?:环境|状态|接入|配置)?/iu,
+  /(?:diagnose|health check|inspect|troubleshoot|check)\s+(?:the\s+)?(?:current\s+)?(?:project|repo|repository|workspace)(?:\s+(?:health|environment|setup|adapters?))?/iu,
+];
 const SESSION_MAIN_VERIFY_KEYWORDS = ['verify', 'validation', 'validate', '验证', '校验'];
 const SESSION_MAIN_PLAN_KEYWORDS = ['plan', 'planning', 'break down', 'task breakdown', '拆任务'];
 const SESSION_MAIN_REVIEW_KEYWORDS = ['review', 'cr', 'code review', '审查'];
@@ -98,6 +102,26 @@ export class LocalOrchestrationServiceSessionMainSkillRegistry {
       });
     }
 
+    if (
+      this.matchesAnyPattern(normalizedMessage, SESSION_MAIN_DOCTOR_PATTERNS) ||
+      this.includesAnyKeyword(normalizedMessage, SESSION_MAIN_DOCTOR_KEYWORDS)
+    ) {
+      return this.createPlan({
+        skillId: 'skill.doctor.environment',
+        executionIntent: 'doctor.adapters',
+        suggestedSlashCommand: '/doctor',
+        routerDecisionReason: 'session.main.router.direct_execute.doctor',
+        handoffExecutionMode: SESSION_MAIN_HANDOFF_EXECUTION_MODE.DIRECT_EXECUTE,
+        commandBatches: [
+          this.createCommandBatch(
+            '/doctor',
+            ['doctor', '--adapters', '--output', 'pretty'],
+            options.preferredSurface,
+          ),
+        ],
+      });
+    }
+
     if (this.includesAnyKeyword(normalizedMessage, SESSION_MAIN_CONNECT_KEYWORDS)) {
       return this.createPlan({
         skillId: 'skill.connect.adapters',
@@ -109,23 +133,6 @@ export class LocalOrchestrationServiceSessionMainSkillRegistry {
           this.createCommandBatch(
             '/connect',
             ['connect', '--preset', 'multi-tool-default', '--output', 'pretty'],
-            options.preferredSurface,
-          ),
-        ],
-      });
-    }
-
-    if (this.includesAnyKeyword(normalizedMessage, SESSION_MAIN_DOCTOR_KEYWORDS)) {
-      return this.createPlan({
-        skillId: 'skill.doctor.environment',
-        executionIntent: 'doctor.adapters',
-        suggestedSlashCommand: '/doctor',
-        routerDecisionReason: 'session.main.router.direct_execute.doctor',
-        handoffExecutionMode: SESSION_MAIN_HANDOFF_EXECUTION_MODE.DIRECT_EXECUTE,
-        commandBatches: [
-          this.createCommandBatch(
-            '/doctor',
-            ['doctor', '--adapters', '--output', 'pretty'],
             options.preferredSurface,
           ),
         ],

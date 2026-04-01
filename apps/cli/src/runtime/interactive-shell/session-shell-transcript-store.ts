@@ -152,6 +152,7 @@ export class CliSessionShellTranscriptStore {
       const latestUserMessage = this.readOptionalString(event.payload.latestUserMessage);
       const responseMode = this.readOptionalString(event.payload.responseMode);
       const interactionMode = this.readOptionalString(event.payload.interactionMode);
+      const handoffExecutionMode = this.readOptionalString(event.payload.handoffExecutionMode);
       const selectedSurface = this.readOptionalString(event.payload.selectedSurface);
       const selectedBy = this.readOptionalString(event.payload.selectedBy);
       const synthesisMode = this.readOptionalString(event.payload.synthesisMode);
@@ -190,19 +191,30 @@ export class CliSessionShellTranscriptStore {
       }
 
       if (responseMode === 'command_handoff_preview' && suggestedSlashCommand) {
+        const executesImmediately = handoffExecutionMode === 'direct_execute';
         return {
           id: `${event.sessionId}:${String(event.sequence)}`,
           role: CliSessionTranscriptRole.ASSISTANT,
           label: translate('cli.sessionShell.transcript.assistantLabel'),
           lines: [
-            translate('cli.sessionShell.responses.mainTurnSuggestedSlash', {
-              command: suggestedSlashCommand,
-            }),
+            translate(
+              executesImmediately
+                ? 'cli.sessionShell.responses.mainTurnAutoExecuteSlash'
+                : 'cli.sessionShell.responses.mainTurnSuggestedSlash',
+              {
+                command: suggestedSlashCommand,
+              },
+            ),
             ...(handoffCommandPreview
               ? [
-                  translate('cli.sessionShell.responses.mainTurnHandoffPreview', {
-                    preview: handoffCommandPreview,
-                  }),
+                  translate(
+                    executesImmediately
+                      ? 'cli.sessionShell.responses.mainTurnAutoExecuteCommand'
+                      : 'cli.sessionShell.responses.mainTurnHandoffPreview',
+                    {
+                      preview: handoffCommandPreview,
+                    },
+                  ),
                 ]
               : []),
             ...(executionIntent

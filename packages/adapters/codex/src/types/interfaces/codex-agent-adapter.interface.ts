@@ -5,7 +5,9 @@ import type {
   AgentCliExecRunnerResult,
 } from '@repo-ai-governor/adapter-sdk';
 
-export type CodexExecRunnerRequest = AgentCliExecRunnerRequest;
+export interface CodexExecRunnerRequest extends AgentCliExecRunnerRequest {
+  commandArguments: string[];
+}
 
 export type CodexExecRunnerResult = AgentCliExecRunnerResult;
 

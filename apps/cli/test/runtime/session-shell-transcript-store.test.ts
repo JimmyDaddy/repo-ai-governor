@@ -85,6 +85,68 @@ describe('CliSessionShellTranscriptStore', () => {
     ]);
   });
 
+  it('renders direct-execute handoffs as auto-running command recap items', () => {
+    const store = new CliSessionShellTranscriptStore();
+    const items = store.applyEvents(
+      'session-001',
+      [
+        {
+          eventId: 'event-2',
+          sequence: 2,
+          streamCursor: 'cursor-2',
+          sessionId: 'session-001',
+          type: OrchestrationSessionEventType.TURN_COMPLETED,
+          createdAt: '2026-03-31T12:00:01Z',
+          payload: {
+            role: OrchestrationSessionTranscriptRole.ASSISTANT,
+            routeId: 'session.main',
+            turnIndex: 2,
+            responseMode: 'command_handoff_preview',
+            suggestedSlashCommand: '/doctor',
+            executionIntent: 'doctor.adapters',
+            handoffExecutionMode: 'direct_execute',
+            handoffCommandPreview: 'repo-ai-governor doctor --adapters --output pretty',
+            selectedSurface: 'codex',
+            selectedBy: 'session.main.intent_router',
+          },
+        },
+      ],
+      (key, interpolation) => {
+        if (key === 'cli.sessionShell.transcript.assistantLabel') {
+          return 'Governor';
+        }
+        if (key === 'cli.sessionShell.responses.mainTurnSuggestedSlash') {
+          return `Suggested next step: ${interpolation?.command ?? ''}`;
+        }
+        if (key === 'cli.sessionShell.responses.mainTurnAutoExecuteSlash') {
+          return `Auto-running: ${interpolation?.command ?? ''}`;
+        }
+        if (key === 'cli.sessionShell.responses.mainTurnHandoffPreview') {
+          return `Preview: ${interpolation?.preview ?? ''}`;
+        }
+        if (key === 'cli.sessionShell.responses.mainTurnAutoExecuteCommand') {
+          return `Running: ${interpolation?.preview ?? ''}`;
+        }
+        if (key === 'cli.sessionShell.responses.mainTurnExecutionIntent') {
+          return `Intent: ${interpolation?.executionIntent ?? ''}`;
+        }
+        if (key === 'cli.sessionShell.responses.mainTurnRoutingSelection') {
+          return `Routing: surface=${interpolation?.selectedSurface ?? ''} selected_by=${interpolation?.selectedBy ?? ''}`;
+        }
+        return key;
+      },
+    );
+
+    expect(items).toHaveLength(1);
+    expect(items[0]?.renderKind).toBe('command_recap');
+    expect(items[0]?.lines).toEqual([
+      'Auto-running: /doctor',
+      'Running: repo-ai-governor doctor --adapters --output pretty',
+      'Intent: doctor.adapters',
+      'Routing: surface=codex selected_by=session.main.intent_router',
+    ]);
+  });
+
   it('renders failed and cancelled main-agent turn events as system transcript items', () => {
     const store = new CliSessionShellTranscriptStore();
     const items = store.applyEvents(

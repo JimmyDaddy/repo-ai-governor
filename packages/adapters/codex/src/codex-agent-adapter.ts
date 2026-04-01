@@ -16,11 +16,14 @@ import {
   type AgentProbeRequest,
   type AgentProbeResult,
   AgentProtocol,
+  AgentStageExecutionMode,
+  AgentStageToolUsePolicy,
   type AgentStreamEvent,
   AgentStreamEventType,
   type AgentStreamEventsRequest,
   DEFAULT_AGENT_CLI_EXEC_MAX_RETRY_ATTEMPTS,
   DEFAULT_AGENT_CLI_EXEC_RETRY_BACKOFF_MS,
+  resolveAgentStageExecutionPolicy,
 } from '@repo-ai-governor/adapter-sdk';
 import { GovernorErrorCode, RuntimeError, standardizeError } from '@repo-ai-governor/shared';
 import { CodexAgentAdapterExecutionMode } from './constants/codex-agent-adapter.constant.js';
@@ -41,6 +44,12 @@ const CODEX_DEFAULT_TIMEOUT_MS = 30000;
 const CODEX_DEFAULT_PROBE_CACHE_TTL_MS = 30000;
 const CODEX_CLI_EXECUTION_CACHE_TTL_MS = 30000;
 const CODEX_EXEC_ARGS = ['exec', '--skip-git-repo-check', '--json', '-'] as const;
+const CODEX_CHAT_ONLY_EXEC_ARGS = [
+  '--sandbox',
+  'read-only',
+  '--ask-for-approval',
+  'untrusted',
+] as const;
 const CODEX_HEALTH_CHECK_PROMPT = 'Respond with exactly OK.';
 const CODEX_HEALTH_CHECK_EXPECTED_RESPONSE = 'OK';
 
@@ -480,7 +489,9 @@ export class CodexAgentAdapter extends AgentProtocol {
    * @returns Raw CLI execution result.
    */
   private async runCodexOperation(
-    request: Pick<CodexExecRunnerRequest, 'prompt' | 'timeoutMs' | 'signal' | 'operation'>,
+    request: Pick<CodexExecRunnerRequest, 'prompt' | 'timeoutMs' | 'signal' | 'operation'> & {
+      executionPolicy?: ReturnType<typeof resolveAgentStageExecutionPolicy>;
+    },
   ): Promise<CodexExecRunnerResult> {
     try {
       return await this.cliExecOperationsRuntime.executeWithRetry(
@@ -488,6 +499,7 @@ export class CodexAgentAdapter extends AgentProtocol {
         async (remainingTimeoutMs) => {
           return await this.execRunner({
             command: this.options.command,
+            commandArguments: this.resolveCommandArguments(request.executionPolicy),
             cwd: this.options.currentWorkingDirectory,
             env: this.resolveEnvironment(),
             prompt: request.prompt,
@@ -647,6 +659,7 @@ export class CodexAgentAdapter extends AgentProtocol {
           timeoutMs: request.timeoutMs,
           signal: request.signal,
           operation: AgentCliExecOperation.INVOKE,
+          executionPolicy: resolveAgentStageExecutionPolicy(request.input),
         });
         state.stdout = executionResult.stdout;
         state.stderr = executionResult.stderr;
@@ -946,7 +959,7 @@ export class CodexAgentAdapter extends AgentProtocol {
   private async executeCodexCli(request: CodexExecRunnerRequest): Promise<CodexExecRunnerResult> {
     return new Promise<CodexExecRunnerResult>((resolve, reject) => {
       const startedAt = Date.now();
-      const child = spawn(request.command, [...CODEX_EXEC_ARGS], {
+      const child = spawn(request.command, [...request.commandArguments], {
         cwd: request.cwd,
         env: request.env,
         stdio: ['pipe', 'pipe', 'pipe'],
@@ -1053,12 +1066,16 @@ export class CodexAgentAdapter extends AgentProtocol {
   ): Promise<CodexExecRunnerResult> {
     return await new Promise<CodexExecRunnerResult>((resolve, reject) => {
       const startedAt = Date.now();
-      const child = spawn(this.options.command, [...CODEX_EXEC_ARGS], {
-        cwd: this.options.currentWorkingDirectory,
-        env: this.resolveEnvironment(),
-        stdio: ['pipe', 'pipe', 'pipe'],
-        ...(request.signal ? { signal: request.signal } : {}),
-      });
+      const child = spawn(
+        this.options.command,
+        [...this.resolveCommandArguments(resolveAgentStageExecutionPolicy(request.input))],
+        {
+          cwd: this.options.currentWorkingDirectory,
+          env: this.resolveEnvironment(),
+          stdio: ['pipe', 'pipe', 'pipe'],
+          ...(request.signal ? { signal: request.signal } : {}),
+        },
+      );
 
       let settled = false;
       let timedOut = false;
@@ -1148,5 +1165,17 @@ export class CodexAgentAdapter extends AgentProtocol {
 
       child.stdin.end(this.renderInvokePrompt(request));
     });
+  }
+
+  private resolveCommandArguments(
+    executionPolicy?: ReturnType<typeof resolveAgentStageExecutionPolicy>,
+  ): string[] {
+    return [
+      ...CODEX_EXEC_ARGS,
+      ...(executionPolicy?.interactionMode === AgentStageExecutionMode.CHAT_ONLY &&
+      executionPolicy?.toolUsePolicy === AgentStageToolUsePolicy.FORBIDDEN
+        ? CODEX_CHAT_ONLY_EXEC_ARGS
+        : []),
+    ];
   }
 }

@@ -1,5 +1,6 @@
 export {
   AGENT_LOCAL_FALLBACK_SURFACE,
+  AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY,
   AgentAvailabilityStatus,
   AgentCancellationReason,
   AgentCancellationScope,
@@ -9,6 +10,8 @@ export {
   AgentConfirmationDecision,
   AgentNetworkMode,
   AgentRouteSelectionSource,
+  AgentStageExecutionMode,
+  AgentStageToolUsePolicy,
   AgentSurfaceNetworkRequirement,
   AgentSurfaceSkipReason,
   AgentStreamEventType,

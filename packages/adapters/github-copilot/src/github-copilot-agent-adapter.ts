@@ -16,11 +16,14 @@ import {
   type AgentProbeRequest,
   type AgentProbeResult,
   AgentProtocol,
+  AgentStageExecutionMode,
+  AgentStageToolUsePolicy,
   type AgentStreamEvent,
   AgentStreamEventType,
   type AgentStreamEventsRequest,
   DEFAULT_AGENT_CLI_EXEC_MAX_RETRY_ATTEMPTS,
   DEFAULT_AGENT_CLI_EXEC_RETRY_BACKOFF_MS,
+  resolveAgentStageExecutionPolicy,
 } from '@repo-ai-governor/adapter-sdk';
 import { GovernorErrorCode, RuntimeError, standardizeError } from '@repo-ai-governor/shared';
 import { GithubCopilotAgentAdapterExecutionMode } from './constants/github-copilot-agent-adapter.constant.js';
@@ -40,6 +43,7 @@ const GITHUB_COPILOT_DIRECT_COMMAND = 'copilot';
 const GITHUB_COPILOT_GH_COMMAND = 'gh';
 const GITHUB_COPILOT_DEFAULT_TIMEOUT_MS = 30000;
 const GITHUB_COPILOT_DEFAULT_PROBE_CACHE_TTL_MS = 30000;
+const GITHUB_COPILOT_CHAT_ONLY_ARGS = ['--available-tools', ''] as const;
 const GITHUB_COPILOT_HEALTH_CHECK_PROMPT = 'Respond with exactly OK.';
 const GITHUB_COPILOT_HEALTH_CHECK_EXPECTED_RESPONSE = 'OK';
 
@@ -225,6 +229,7 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
       timeoutMs: request.agentInvocationTimeoutMs ?? this.options.requestTimeoutMs,
       signal: request.signal,
       operation: AgentCliExecOperation.INVOKE,
+      executionPolicy: resolveAgentStageExecutionPolicy(request.input),
     });
     const parsedOutput = this.parseGithubCopilotCliOutput(
       executionResult,
@@ -442,7 +447,12 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
    * @returns Raw CLI execution result.
    */
   private async runGithubCopilotOperation(
-    request: Pick<GithubCopilotExecRunnerRequest, 'prompt' | 'timeoutMs' | 'signal' | 'operation'>,
+    request: Pick<
+      GithubCopilotExecRunnerRequest,
+      'prompt' | 'timeoutMs' | 'signal' | 'operation'
+    > & {
+      executionPolicy?: ReturnType<typeof resolveAgentStageExecutionPolicy>;
+    },
   ): Promise<GithubCopilotExecRunnerResult> {
     try {
       return await this.cliExecOperationsRuntime.executeWithRetry(
@@ -453,7 +463,10 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
             try {
               return await this.execRunner({
                 command: commandSpec.command,
-                commandArgumentsPrefix: [...commandSpec.commandArgumentsPrefix],
+                commandArgumentsPrefix: this.resolveCommandArgumentsPrefix(
+                  commandSpec.commandArgumentsPrefix,
+                  request.executionPolicy,
+                ),
                 cwd: this.options.currentWorkingDirectory,
                 env: this.resolveEnvironment(),
                 prompt: request.prompt,
@@ -865,5 +878,18 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
         );
       });
     });
+  }
+
+  private resolveCommandArgumentsPrefix(
+    commandArgumentsPrefix: string[],
+    executionPolicy?: ReturnType<typeof resolveAgentStageExecutionPolicy>,
+  ): string[] {
+    return [
+      ...commandArgumentsPrefix,
+      ...(executionPolicy?.interactionMode === AgentStageExecutionMode.CHAT_ONLY &&
+      executionPolicy?.toolUsePolicy === AgentStageToolUsePolicy.FORBIDDEN
+        ? GITHUB_COPILOT_CHAT_ONLY_ARGS
+        : []),
+    ];
   }
 }

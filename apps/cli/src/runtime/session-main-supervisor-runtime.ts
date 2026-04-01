@@ -2,6 +2,7 @@ import type { ClaudeCodeExecRunner } from '@repo-ai-governor/adapter-claude-code
 import type { CodexExecRunner } from '@repo-ai-governor/adapter-codex';
 import type { GithubCopilotExecRunner } from '@repo-ai-governor/adapter-github-copilot';
 import {
+  AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY,
   AgentAvailabilityStatus,
   AgentCapability,
   AgentCapabilityEvaluator,
@@ -12,6 +13,8 @@ import {
   type AgentProtocolContract,
   AgentRouteRunner,
   AgentRouteSelectionSource,
+  AgentStageExecutionMode,
+  AgentStageToolUsePolicy,
   AgentStreamEventType,
 } from '@repo-ai-governor/adapter-sdk';
 import type { AdaptersConfig, ResolvedWorkspace } from '@repo-ai-governor/config';
@@ -180,6 +183,9 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       SESSION_MAIN_ANSWER_ROUTE_KEY,
       protocolBySurface,
       undefined,
+      {
+        allowToolCapableSurfaces: true,
+      },
     );
     if (safeCandidateSurfaces.length === 0) {
       return this.createGuardedFallbackOutcome(context);
@@ -337,6 +343,9 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     routeKey: string,
     protocolBySurface: Record<string, AgentProtocolContract>,
     capabilityRequirement?: AgentCapabilityRequirement,
+    options?: {
+      allowToolCapableSurfaces?: boolean;
+    },
   ): Promise<AdapterSurface[]> {
     const safeCandidateSurfaces: AdapterSurface[] = [];
     for (const surface of candidateSurfaces) {
@@ -354,7 +363,7 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       });
       if (
         probeResult.availabilityStatus === AgentAvailabilityStatus.UNAVAILABLE ||
-        !this.isSafeDirectAnswerSurface(probeResult)
+        !this.isSafeDirectAnswerSurface(probeResult, options)
       ) {
         continue;
       }
@@ -935,10 +944,18 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     };
   }
 
-  private isSafeDirectAnswerSurface(probeResult: AgentProbeResult): boolean {
+  private isSafeDirectAnswerSurface(
+    probeResult: AgentProbeResult,
+    options?: {
+      allowToolCapableSurfaces?: boolean;
+    },
+  ): boolean {
     const toolCallingState = probeResult.capabilityMatrix.capabilityStates.find(
       (capabilityState) => capabilityState.capability === AgentCapability.TOOL_CALLING,
     );
+    if (options?.allowToolCapableSurfaces) {
+      return toolCallingState?.supportLevel !== undefined;
+    }
     return toolCallingState?.supportLevel === AgentCapabilitySupportLevel.UNSUPPORTED;
   }
 
@@ -960,6 +977,10 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
         'Answer the user directly in concise markdown. Do not execute commands or pretend a command already ran. If the input is ambiguous, ask one short clarifying question.',
         '请直接用简洁的 Markdown 回复用户。不要执行命令，也不要假装命令已经运行完成；如果输入有歧义，只问一个简短的澄清问题。',
       ),
+      [AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY]: {
+        interactionMode: AgentStageExecutionMode.CHAT_ONLY,
+        toolUsePolicy: AgentStageToolUsePolicy.FORBIDDEN,
+      },
       ...(context.metadata ? { metadata: { ...context.metadata } } : {}),
     };
   }
