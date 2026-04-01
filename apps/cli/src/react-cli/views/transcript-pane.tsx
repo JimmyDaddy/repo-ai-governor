@@ -64,7 +64,7 @@ function ReactCliPlainTranscriptItem({
   shellPalette,
 }: ReactCliTranscriptItemRendererProps): React.JSX.Element {
   return (
-    <>
+    <Box flexDirection='column'>
       <Text bold color={resolveTranscriptColor(item.role, shellPalette)}>
         {item.label}
       </Text>
@@ -73,7 +73,8 @@ function ReactCliPlainTranscriptItem({
           {line}
         </Text>
       ))}
-    </>
+      {renderTranscriptDetailsBlock(item, shellPalette)}
+    </Box>
   );
 }
 
@@ -82,7 +83,7 @@ function ReactCliSystemNoticeTranscriptItem({
   shellPalette,
 }: ReactCliTranscriptItemRendererProps): React.JSX.Element {
   return (
-    <>
+    <Box flexDirection='column'>
       <Text bold color={shellPalette.attentionColor}>
         {item.label}
       </Text>
@@ -94,7 +95,8 @@ function ReactCliSystemNoticeTranscriptItem({
           {index === 0 ? `! ${line}` : `  ${line}`}
         </Text>
       ))}
-    </>
+      {renderTranscriptDetailsBlock(item, shellPalette)}
+    </Box>
   );
 }
 
@@ -160,6 +162,10 @@ function ReactCliCommandRecapTranscriptItem({
             )}
           </Box>
         ))}
+        {renderTranscriptDetailsBlock(item, shellPalette, {
+          marginTop: 1,
+          paddingLeft: 1,
+        })}
         {hasRelatedLinks ? (
           <Box flexDirection='column' marginTop={1} paddingLeft={1}>
             <Text bold color={shellPalette.helpColor}>
@@ -238,6 +244,10 @@ function ReactCliCollaborationRecapTranscriptItem({
             )}
           </Box>
         ))}
+        {renderTranscriptDetailsBlock(item, shellPalette, {
+          marginTop: 1,
+          paddingLeft: 1,
+        })}
         <Box flexDirection='column' marginTop={1} paddingLeft={1}>
           <Text bold color={shellPalette.promptTitleColor}>
             Response
@@ -256,12 +266,13 @@ function ReactCliMarkdownTranscriptItem({
   const blocks = parseMarkdownBlocks(item.markdownSource ?? item.lines.join('\n'));
 
   return (
-    <>
+    <Box flexDirection='column'>
       <Text bold color={resolveTranscriptColor(item.role, shellPalette)}>
         {item.label}
       </Text>
+      {renderTranscriptDetailsBlock(item, shellPalette)}
       {renderMarkdownBlocks(item.id, blocks, shellPalette)}
-    </>
+    </Box>
   );
 }
 
@@ -312,6 +323,43 @@ function ReactCliLiveActivityTranscriptItem({
           {`- ${line}`}
         </Text>
       ))}
+    </Box>
+  );
+}
+
+function renderTranscriptDetailsBlock(
+  item: CliSessionShellTranscriptItem,
+  shellPalette: ReactCliShellPalette,
+  options?: {
+    marginTop?: number;
+    paddingLeft?: number;
+  },
+): React.JSX.Element | null {
+  const details = item.details;
+  if (!details || details.lines.length === 0) {
+    return null;
+  }
+
+  return (
+    <Box
+      flexDirection='column'
+      marginTop={options?.marginTop ?? 1}
+      paddingLeft={options?.paddingLeft ?? 0}
+    >
+      <Text bold color={shellPalette.helpColor}>
+        {details.title}
+      </Text>
+      <Text color={shellPalette.helpColor}>{details.summaryLine}</Text>
+      {details.expanded
+        ? details.lines.map((line, index) => (
+            <Text
+              key={`${item.id}:details:${index}`}
+              color={index === 0 ? shellPalette.sectionTitleColor : shellPalette.helpColor}
+            >
+              {`- ${line}`}
+            </Text>
+          ))
+        : null}
     </Box>
   );
 }

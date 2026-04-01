@@ -343,9 +343,11 @@ describe('codex-agent-adapter smoke', () => {
   });
 
   it('reuses one repository-review cli_exec invocation across streamEvents and invokeStage with the elevated timeout budget', async () => {
+    const abortController = new AbortController();
     const execRunner = vi.fn<CodexExecRunner>().mockImplementation(async (request) => {
       expect(request.commandArguments).toEqual(['exec', 'review', '--json', '--uncommitted']);
-      expect(request.timeoutMs).toBe(600000);
+      expect(request.timeoutMs).toBe(321000);
+      expect(request.signal).toBe(abortController.signal);
       return {
         stdout: [
           '{"type":"thread.started","thread_id":"thread-1"}',
@@ -369,6 +371,8 @@ describe('codex-agent-adapter smoke', () => {
       executionId: 'execution-review-1',
       stageId: 'stage-session-main-role-reviewer',
       routeKey: 'session.main.role.reviewer',
+      agentInvocationTimeoutMs: 321000,
+      signal: abortController.signal,
       input: {
         roleId: 'reviewer',
         reviewScope: 'uncommitted_changes',
@@ -400,6 +404,112 @@ describe('codex-agent-adapter smoke', () => {
       AgentStreamEventType.COMPLETED,
     ]);
     expect(invokeResult.output.responseText).toBe('review findings');
+  });
+
+  it('emits incremental token events when codex json output updates one agent message progressively', async () => {
+    const execRunner = vi.fn<CodexExecRunner>().mockResolvedValue({
+      stdout: [
+        '{"type":"thread.started","thread_id":"thread-1"}',
+        '{"type":"turn.started"}',
+        '{"type":"item.updated","item":{"id":"item-1","type":"agent_message","text":"Review"}}',
+        '{"type":"item.updated","item":{"id":"item-1","type":"agent_message","text":"Review findings"}}',
+        '{"type":"item.completed","item":{"id":"item-1","type":"agent_message","text":"Review findings complete"}}',
+        '{"type":"turn.completed","usage":{"input_tokens":11,"output_tokens":7}}',
+      ].join('\n'),
+      stderr: '',
+      exitCode: 0,
+      signal: null,
+      elapsedMs: 12,
+    });
+    const adapter = new CodexAgentAdapter({
+      executionMode: CodexAgentAdapterExecutionMode.CLI_EXEC,
+      execRunner,
+      currentWorkingDirectory: process.cwd(),
+    });
+
+    const tokenPayloads: Array<{ text?: unknown; accumulatedText?: unknown }> = [];
+    for await (const event of adapter.streamEvents(createInvokeRequest())) {
+      if (event.eventType === AgentStreamEventType.TOKEN) {
+        tokenPayloads.push({
+          text: event.payload.text,
+          accumulatedText: event.payload.accumulatedText,
+        });
+      }
+    }
+
+    expect(tokenPayloads).toEqual([
+      {
+        text: 'Review',
+        accumulatedText: 'Review',
+      },
+      {
+        text: ' findings',
+        accumulatedText: 'Review findings',
+      },
+      {
+        text: ' complete',
+        accumulatedText: 'Review findings complete',
+      },
+    ]);
+  });
+
+  it('relays repository review command and todo events as running activity details', async () => {
+    const execRunner = vi
+      .fn<CodexExecRunner>()
+      .mockImplementationOnce(createExecRunner('OK'))
+      .mockImplementationOnce(async () => ({
+        stdout: [
+          '{"type":"thread.started","thread_id":"thread-1"}',
+          '{"type":"turn.started"}',
+          '{"type":"item.started","item":{"id":"item-0","type":"command_execution","command":"/bin/zsh -lc \\"git diff -- packages/adapters/codex/src/codex-agent-adapter.ts\\"","aggregated_output":"","exit_code":null,"status":"in_progress"}}',
+          '{"type":"item.completed","item":{"id":"item-0","type":"command_execution","command":"/bin/zsh -lc \\"git diff -- packages/adapters/codex/src/codex-agent-adapter.ts\\"","aggregated_output":"diff output omitted","exit_code":0,"status":"completed"}}',
+          '{"type":"item.started","item":{"id":"item-1","type":"todo_list","items":[{"text":"Inspect the working-tree diff","completed":false},{"text":"Produce prioritized findings","completed":false}]}}',
+          '{"type":"item.updated","item":{"id":"item-1","type":"todo_list","items":[{"text":"Inspect the working-tree diff","completed":true},{"text":"Produce prioritized findings","completed":false}]}}',
+          '{"type":"item.completed","item":{"id":"item-2","type":"agent_message","text":"review findings"}}',
+          '{"type":"turn.completed","usage":{"input_tokens":11,"output_tokens":7}}',
+        ].join('\n'),
+        stderr: '',
+        exitCode: 0,
+        signal: null,
+        elapsedMs: 18,
+      }));
+    const adapter = new CodexAgentAdapter({
+      executionMode: CodexAgentAdapterExecutionMode.CLI_EXEC,
+      execRunner,
+      currentWorkingDirectory: process.cwd(),
+    });
+    const reviewRequest = {
+      processId: 'process-1',
+      executionId: 'execution-review-activity-1',
+      stageId: 'stage-session-main-role-reviewer',
+      routeKey: 'session.main.role.reviewer',
+      input: {
+        roleId: 'reviewer',
+        reviewScope: 'uncommitted_changes',
+        userMessage: '帮我 review 一下代码',
+      },
+    };
+
+    await adapter.probe({
+      routeKey: 'cli.adapter.probe.codex',
+    });
+    const details: string[] = [];
+
+    for await (const event of adapter.streamEvents(reviewRequest)) {
+      if (typeof event.payload.detail === 'string') {
+        details.push(event.payload.detail);
+      }
+    }
+
+    expect(details).toContain(
+      'Running command: git diff -- packages/adapters/codex/src/codex-agent-adapter.ts',
+    );
+    expect(details).toContain(
+      'Completed command (exit 0): git diff -- packages/adapters/codex/src/codex-agent-adapter.ts',
+    );
+    expect(details).toContain('Todo: Inspect the working-tree diff');
+    expect(details).toContain('Completed todo: Inspect the working-tree diff');
+    expect(details).toContain('Todo: Produce prioritized findings');
   });
 
   it('emits repository-review progress statuses while codex is still silent', async () => {

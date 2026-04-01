@@ -30,6 +30,8 @@ export class CliSessionShellTurnProgressDock {
   private currentAssistantDraft: string | null = null;
   private liveTurnStartedAtMs: number | null = null;
   private readonly liveActivityEntries = new Map<string, LiveTurnActivityEntry>();
+  private readonly activityHistoryLines: string[] = [];
+  private readonly completedTurnDetails = new Map<string, string[]>();
 
   public constructor(private readonly options: CliSessionShellTurnProgressDockOptions) {}
 
@@ -43,6 +45,7 @@ export class CliSessionShellTurnProgressDock {
     this.currentAssistantDraft = null;
     this.liveTurnStartedAtMs = Date.now();
     this.liveActivityEntries.clear();
+    this.activityHistoryLines.splice(0, this.activityHistoryLines.length);
     this.nextActivityOrder = 0;
   }
 
@@ -69,6 +72,7 @@ export class CliSessionShellTurnProgressDock {
       const turnId = this.readOptionalString(event.payload.turnId);
       if (this.activeTurnId) {
         if (turnId === this.activeTurnId) {
+          this.captureCompletedTurnDetails(turnId);
           this.clear();
         }
         continue;
@@ -134,7 +138,23 @@ export class CliSessionShellTurnProgressDock {
     this.currentAssistantDraft = null;
     this.liveTurnStartedAtMs = null;
     this.liveActivityEntries.clear();
+    this.activityHistoryLines.splice(0, this.activityHistoryLines.length);
     this.nextActivityOrder = 0;
+  }
+
+  /**
+   * Consumes saved execution details captured for one completed turn.
+   * @param turnId Terminal turn id.
+   * @returns Saved detail lines, if any.
+   */
+  public consumeCompletedTurnDetails(turnId: string): string[] {
+    const details = this.completedTurnDetails.get(turnId);
+    if (!details) {
+      return [];
+    }
+
+    this.completedTurnDetails.delete(turnId);
+    return [...details];
   }
 
   /**
@@ -243,6 +263,7 @@ export class CliSessionShellTurnProgressDock {
   }
 
   private upsertActivityEntry(activityId: string, text: string): void {
+    this.recordActivityHistory(text);
     const existingEntry = this.liveActivityEntries.get(activityId);
     this.liveActivityEntries.set(activityId, {
       order: existingEntry?.order ?? this.nextActivityOrder++,
@@ -279,5 +300,44 @@ export class CliSessionShellTurnProgressDock {
     return typeof candidate === 'string' && candidate.trim().length > 0
       ? candidate.trim()
       : undefined;
+  }
+
+  private captureCompletedTurnDetails(turnId: string | undefined): void {
+    if (!turnId) {
+      return;
+    }
+
+    const detailLines =
+      this.activityHistoryLines.length > 0
+        ? [...this.activityHistoryLines]
+        : [...this.liveActivityEntries.values()]
+            .sort((left, right) => left.order - right.order)
+            .map((entry) => entry.text.trim())
+            .filter((line) => line.length > 0);
+    if (detailLines.length === 0) {
+      return;
+    }
+
+    this.completedTurnDetails.set(turnId, detailLines);
+  }
+
+  private recordActivityHistory(text: string): void {
+    const normalizedText = text.trim();
+    if (!normalizedText) {
+      return;
+    }
+
+    const latestRecordedText = this.activityHistoryLines.at(-1);
+    if (latestRecordedText === normalizedText) {
+      return;
+    }
+
+    this.activityHistoryLines.push(normalizedText);
+    if (this.activityHistoryLines.length > LIVE_ACTIVITY_MAX_ENTRIES * 8) {
+      this.activityHistoryLines.splice(
+        0,
+        this.activityHistoryLines.length - LIVE_ACTIVITY_MAX_ENTRIES * 8,
+      );
+    }
   }
 }

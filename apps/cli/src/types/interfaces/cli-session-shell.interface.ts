@@ -46,6 +46,16 @@ export interface CliSessionShellTranscriptBacklink {
 }
 
 /**
+ * Defines one collapsible execution-details block attached to a final transcript item.
+ */
+export interface CliSessionShellTranscriptDetailsBlock {
+  title: string;
+  summaryLine: string;
+  lines: string[];
+  expanded: boolean;
+}
+
+/**
  * Defines one transcript item rendered inside the session-shell transcript pane.
  */
 export interface CliSessionShellTranscriptItem {
@@ -57,6 +67,7 @@ export interface CliSessionShellTranscriptItem {
   summaryLine?: string;
   markdownSource?: string;
   backlinks?: CliSessionShellTranscriptBacklink[];
+  details?: CliSessionShellTranscriptDetailsBlock;
 }
 
 /**

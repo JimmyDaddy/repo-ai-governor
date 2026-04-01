@@ -360,6 +360,85 @@ describe('CliSessionShellTranscriptStore', () => {
     ]);
   });
 
+  it('attaches collapsed execution details to the final turn item and can toggle them open', () => {
+    const store = new CliSessionShellTranscriptStore();
+    const translate = (key: string, interpolation?: Record<string, string>) => {
+      if (key === 'cli.sessionShell.transcript.assistantLabel') {
+        return 'Governor';
+      }
+      if (key === 'cli.sessionShell.responses.mainTurnCollaborationAccepted') {
+        return `${interpolation?.mode ?? ''} completed.`;
+      }
+      if (key === 'cli.sessionShell.responses.mainTurnCollaborationRoles') {
+        return `Active role: ${interpolation?.roles ?? ''} (count=${interpolation?.count ?? ''})`;
+      }
+      if (key === 'cli.sessionShell.responses.mainTurnCollaborationModeSingleRole') {
+        return 'Single-role delegate';
+      }
+      if (key === 'cli.sessionShell.responses.executionDetailsTitle') {
+        return 'Execution details';
+      }
+      if (key === 'cli.sessionShell.responses.executionDetailsCollapsed') {
+        return `▶ Collapsed · ${interpolation?.count ?? '0'} entries · Ctrl+O to open`;
+      }
+      if (key === 'cli.sessionShell.responses.executionDetailsExpanded') {
+        return `▼ Expanded · ${interpolation?.count ?? '0'} entries · Ctrl+O to hide`;
+      }
+      return key;
+    };
+
+    const items = store.applyEvents(
+      'session-005-details',
+      [
+        {
+          eventId: 'event-1',
+          sequence: 1,
+          streamCursor: 'cursor-1',
+          sessionId: 'session-005-details',
+          type: OrchestrationSessionEventType.TURN_COMPLETED,
+          createdAt: '2026-04-01T08:16:00Z',
+          payload: {
+            role: OrchestrationSessionTranscriptRole.ASSISTANT,
+            routeId: 'session.main',
+            turnId: 'turn-1',
+            turnIndex: 1,
+            responseMode: 'role_collaboration',
+            interactionMode: 'single_role_delegate',
+            assistantMessage: 'Review result body',
+            invokedRoleIds: ['reviewer'],
+            subagentCount: 1,
+          },
+        },
+      ],
+      translate,
+      () => [
+        'reviewer: Running command: git diff --stat',
+        'reviewer: Completed todo: inspect patch',
+      ],
+    );
+
+    expect(items[0]?.details).toEqual({
+      title: 'Execution details',
+      summaryLine: '▶ Collapsed · 2 entries · Ctrl+O to open',
+      lines: [
+        'reviewer: Running command: git diff --stat',
+        'reviewer: Completed todo: inspect patch',
+      ],
+      expanded: false,
+    });
+
+    expect(store.toggleLatestExecutionDetails(translate)).toBe(true);
+    expect(store.listItems()[0]?.details).toEqual({
+      title: 'Execution details',
+      summaryLine: '▼ Expanded · 2 entries · Ctrl+O to hide',
+      lines: [
+        'reviewer: Running command: git diff --stat',
+        'reviewer: Completed todo: inspect patch',
+      ],
+      expanded: true,
+    });
+  });
+
   it('uses metadata renderKind for appended assistant recap messages', () => {
     const store = new CliSessionShellTranscriptStore();
     const items = store.applyEvents(

@@ -32,6 +32,7 @@ const OLLAMA_TAGS_PATH = 'api/tags';
 const OLLAMA_GENERATE_PATH = 'api/generate';
 const LOCAL_MODEL_DEFAULT_TIMEOUT_MS = 30000;
 const LOCAL_MODEL_RETRY_DELAY_MS = 150;
+const LOCAL_MODEL_EXECUTION_CACHE_TTL_MS = 30000;
 
 const LOCAL_MODEL_CAPABILITY_SUPPORT: Record<AgentCapability, AgentCapabilitySupportLevel> = {
   [AgentCapability.TOOL_CALLING]: AgentCapabilitySupportLevel.UNSUPPORTED,
@@ -67,6 +68,33 @@ interface OllamaGenerateResponse {
   done?: boolean;
   prompt_eval_count?: number;
   eval_count?: number;
+}
+
+interface LocalModelExecutionRequest {
+  processId: string;
+  executionId: string;
+  stageId: string;
+  routeKey: string;
+  input: Record<string, unknown>;
+  timeoutMs: number;
+  signal?: AbortSignal;
+}
+
+interface LocalModelExecutionResult {
+  responseText: string;
+  usage?: AgentInvokeStageResult['usage'];
+  elapsedMs: number;
+}
+
+interface LocalModelExecutionState {
+  key: string;
+  events: AgentStreamEvent[];
+  waiters: Set<() => void>;
+  lineBuffer: string;
+  accumulatedText: string;
+  settled: boolean;
+  cleanupTimer: NodeJS.Timeout | null;
+  resultPromise: Promise<LocalModelExecutionResult>;
 }
 
 interface LocalModelProbeResolution {
@@ -108,6 +136,7 @@ export interface LocalModelAgentAdapterOptions {
  */
 export class LocalModelAgentAdapter extends AgentProtocol {
   private readonly options: ResolvedLocalModelAgentAdapterOptions;
+  private readonly inflightExecutions = new Map<string, LocalModelExecutionState>();
 
   /**
    * Creates local-model adapter with optional identity and status overrides.
@@ -175,22 +204,16 @@ export class LocalModelAgentAdapter extends AgentProtocol {
     }
 
     this.assertSupportedLocalModelProvider(this.options.localModel);
-    const startedAt = Date.now();
-    const prompt = this.renderPrompt(request.input);
-    const generateResponse = await this.requestJson<OllamaGenerateResponse>({
-      localModel: this.options.localModel,
-      path: OLLAMA_GENERATE_PATH,
-      method: 'POST',
-      request,
-      body: {
-        model: this.options.localModel.model,
-        prompt,
-        stream: false,
-      },
-      operation: 'invoke',
+    const execution = this.ensureExecution({
+      processId: request.processId,
+      executionId: request.executionId,
+      stageId: request.stageId,
+      routeKey: request.routeKey,
+      input: request.input,
+      timeoutMs: this.resolveRequestTimeoutMs(this.options.localModel, request),
+      ...(request.signal ? { signal: request.signal } : {}),
     });
-    const responseText = this.readGeneratedText(generateResponse, request);
-    const usage = this.createTokenUsage(generateResponse);
+    const executionResult = await execution.resultPromise;
 
     return {
       output: {
@@ -200,11 +223,11 @@ export class LocalModelAgentAdapter extends AgentProtocol {
         provider: this.options.localModel.provider,
         endpoint: this.options.localModel.endpoint,
         model: this.options.localModel.model,
-        responseText,
+        responseText: executionResult.responseText,
         echoedInput: request.input,
       },
-      ...(usage ? { usage } : {}),
-      elapsedMs: Date.now() - startedAt,
+      ...(executionResult.usage ? { usage: executionResult.usage } : {}),
+      elapsedMs: executionResult.elapsedMs,
     };
   }
 
@@ -216,32 +239,340 @@ export class LocalModelAgentAdapter extends AgentProtocol {
   public override async *streamEvents(
     request: AgentStreamEventsRequest,
   ): AsyncIterable<AgentStreamEvent> {
-    const timestamp = new Date().toISOString();
-    yield {
-      eventType: AgentStreamEventType.STATUS,
-      timestamp,
-      processId: request.processId,
-      executionId: request.executionId,
-      stageId: request.stageId,
-      routeKey: request.routeKey,
-      payload: {
-        status: 'running',
-        surface: LOCAL_MODEL_SURFACE,
-      },
-    };
+    if (!this.options.localModel) {
+      const timestamp = new Date().toISOString();
+      yield {
+        eventType: AgentStreamEventType.STATUS,
+        timestamp,
+        processId: request.processId,
+        executionId: request.executionId,
+        stageId: request.stageId,
+        routeKey: request.routeKey,
+        payload: {
+          status: 'running',
+          surface: LOCAL_MODEL_SURFACE,
+        },
+      };
 
-    yield {
-      eventType: AgentStreamEventType.COMPLETED,
-      timestamp: new Date().toISOString(),
+      yield {
+        eventType: AgentStreamEventType.COMPLETED,
+        timestamp: new Date().toISOString(),
+        processId: request.processId,
+        executionId: request.executionId,
+        stageId: request.stageId,
+        routeKey: request.routeKey,
+        payload: {
+          status: 'completed',
+          surface: LOCAL_MODEL_SURFACE,
+        },
+      };
+      return;
+    }
+
+    const execution = this.ensureExecution({
       processId: request.processId,
       executionId: request.executionId,
       stageId: request.stageId,
       routeKey: request.routeKey,
-      payload: {
-        status: 'completed',
-        surface: LOCAL_MODEL_SURFACE,
-      },
+      input: request.input,
+      timeoutMs: this.resolveRequestTimeoutMs(this.options.localModel, request),
+      ...(request.signal ? { signal: request.signal } : {}),
+    });
+    yield* this.consumeExecutionEvents(execution);
+  }
+
+  private ensureExecution(request: LocalModelExecutionRequest): LocalModelExecutionState {
+    const key = [request.processId, request.executionId, request.stageId, request.routeKey].join(
+      ':',
+    );
+    const existingExecution = this.inflightExecutions.get(key);
+    if (existingExecution) {
+      return existingExecution;
+    }
+
+    const state: LocalModelExecutionState = {
+      key,
+      events: [],
+      waiters: new Set(),
+      lineBuffer: '',
+      accumulatedText: '',
+      settled: false,
+      cleanupTimer: null,
+      resultPromise: Promise.resolve({
+        responseText: '',
+        elapsedMs: 0,
+      }),
     };
+    state.resultPromise = this.startExecution(state, request);
+    this.inflightExecutions.set(key, state);
+    return state;
+  }
+
+  private async startExecution(
+    state: LocalModelExecutionState,
+    request: LocalModelExecutionRequest,
+  ): Promise<LocalModelExecutionResult> {
+    if (!this.options.localModel) {
+      const result = {
+        responseText: '',
+        elapsedMs: 0,
+      };
+      this.finishExecution(state);
+      return result;
+    }
+
+    try {
+      const startedAt = Date.now();
+      this.pushExecutionEvent(state, {
+        eventType: AgentStreamEventType.STATUS,
+        timestamp: new Date().toISOString(),
+        processId: request.processId,
+        executionId: request.executionId,
+        stageId: request.stageId,
+        routeKey: request.routeKey,
+        payload: {
+          status: 'running',
+          surface: LOCAL_MODEL_SURFACE,
+          detail: 'Ollama turn started.',
+        },
+      });
+
+      const prompt = this.renderPrompt(request.input);
+      const response = await this.requestResponse({
+        localModel: this.options.localModel,
+        path: OLLAMA_GENERATE_PATH,
+        method: 'POST',
+        request: {
+          processId: request.processId,
+          executionId: request.executionId,
+          stageId: request.stageId,
+          routeKey: request.routeKey,
+          input: request.input,
+          agentInvocationTimeoutMs: request.timeoutMs,
+          ...(request.signal ? { signal: request.signal } : {}),
+        },
+        body: {
+          model: this.options.localModel.model,
+          prompt,
+          stream: true,
+        },
+        operation: 'invoke',
+      });
+      const usage = await this.consumeGenerateStream(state, request, response);
+      const responseText = state.accumulatedText.trim();
+      if (responseText.length === 0) {
+        throw new RuntimeError(
+          GovernorErrorCode.AGENT_PROTOCOL_INVALID,
+          `Local model response for stage "${request.stageId}" did not include textual output.`,
+          {
+            surface: LOCAL_MODEL_SURFACE,
+            routeKey: request.routeKey,
+            stageId: request.stageId,
+          },
+        );
+      }
+
+      this.pushExecutionEvent(state, {
+        eventType: AgentStreamEventType.COMPLETED,
+        timestamp: new Date().toISOString(),
+        processId: request.processId,
+        executionId: request.executionId,
+        stageId: request.stageId,
+        routeKey: request.routeKey,
+        payload: {
+          status: 'completed',
+          surface: LOCAL_MODEL_SURFACE,
+          responseText,
+        },
+      });
+      this.finishExecution(state);
+      return {
+        responseText,
+        ...(usage ? { usage } : {}),
+        elapsedMs: Date.now() - startedAt,
+      };
+    } catch (error) {
+      const standardizedError = standardizeError(error);
+      this.pushExecutionEvent(state, {
+        eventType: AgentStreamEventType.FAILED,
+        timestamp: new Date().toISOString(),
+        processId: request.processId,
+        executionId: request.executionId,
+        stageId: request.stageId,
+        routeKey: request.routeKey,
+        payload: {
+          status: 'failed',
+          surface: LOCAL_MODEL_SURFACE,
+          message: standardizedError.message,
+        },
+      });
+      this.finishExecution(state);
+      throw error;
+    }
+  }
+
+  private async *consumeExecutionEvents(
+    state: LocalModelExecutionState,
+  ): AsyncIterable<AgentStreamEvent> {
+    let cursor = 0;
+    while (true) {
+      while (cursor < state.events.length) {
+        const event = state.events[cursor];
+        cursor += 1;
+        if (event) {
+          yield event;
+        }
+      }
+
+      if (state.settled) {
+        return;
+      }
+
+      await new Promise<void>((resolve) => {
+        state.waiters.add(resolve);
+      });
+    }
+  }
+
+  private pushExecutionEvent(state: LocalModelExecutionState, event: AgentStreamEvent): void {
+    state.events.push(event);
+    for (const waiter of state.waiters) {
+      waiter();
+    }
+    state.waiters.clear();
+  }
+
+  private finishExecution(state: LocalModelExecutionState): void {
+    state.settled = true;
+    for (const waiter of state.waiters) {
+      waiter();
+    }
+    state.waiters.clear();
+    if (state.cleanupTimer) {
+      clearTimeout(state.cleanupTimer);
+    }
+    state.cleanupTimer = setTimeout(() => {
+      this.inflightExecutions.delete(state.key);
+    }, LOCAL_MODEL_EXECUTION_CACHE_TTL_MS);
+    state.cleanupTimer.unref?.();
+  }
+
+  private async consumeGenerateStream(
+    state: LocalModelExecutionState,
+    request: LocalModelExecutionRequest,
+    response: Response,
+  ): Promise<AgentInvokeStageResult['usage'] | undefined> {
+    if (!response.body) {
+      const payload = (await response.json()) as OllamaGenerateResponse;
+      this.processGenerateChunk(state, request, payload);
+      return this.createTokenUsage(payload);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let usage: AgentInvokeStageResult['usage'] | undefined;
+    while (true) {
+      const { value, done } = await reader.read();
+      if (value) {
+        state.lineBuffer += decoder.decode(value, { stream: !done });
+        usage = this.processGenerateBuffer(state, request, usage);
+      }
+      if (done) {
+        state.lineBuffer += decoder.decode();
+        usage = this.processGenerateBuffer(state, request, usage, true);
+        return usage;
+      }
+    }
+  }
+
+  private processGenerateBuffer(
+    state: LocalModelExecutionState,
+    request: LocalModelExecutionRequest,
+    currentUsage?: AgentInvokeStageResult['usage'],
+    flushPartial = false,
+  ): AgentInvokeStageResult['usage'] | undefined {
+    const lines = state.lineBuffer.split(/\r?\n/u);
+    state.lineBuffer = lines.pop() ?? '';
+    let usage = currentUsage;
+    for (const line of lines) {
+      usage = this.processGenerateLine(state, request, line, usage);
+    }
+    if (flushPartial && state.lineBuffer.trim().length > 0) {
+      usage = this.processGenerateLine(state, request, state.lineBuffer, usage);
+      state.lineBuffer = '';
+    }
+    return usage;
+  }
+
+  private processGenerateLine(
+    state: LocalModelExecutionState,
+    request: LocalModelExecutionRequest,
+    line: string,
+    currentUsage?: AgentInvokeStageResult['usage'],
+  ): AgentInvokeStageResult['usage'] | undefined {
+    const trimmedLine = line.trim();
+    if (trimmedLine.length === 0) {
+      return currentUsage;
+    }
+
+    let payload: OllamaGenerateResponse;
+    try {
+      payload = JSON.parse(trimmedLine) as OllamaGenerateResponse;
+    } catch (error) {
+      throw new RuntimeError(
+        GovernorErrorCode.AGENT_PROTOCOL_INVALID,
+        `Local model invoke returned invalid streaming JSON payload for stage "${request.stageId}".`,
+        {
+          surface: LOCAL_MODEL_SURFACE,
+          routeKey: request.routeKey,
+          stageId: request.stageId,
+        },
+        error,
+      );
+    }
+
+    this.processGenerateChunk(state, request, payload);
+    return this.createTokenUsage(payload) ?? currentUsage;
+  }
+
+  private processGenerateChunk(
+    state: LocalModelExecutionState,
+    request: LocalModelExecutionRequest,
+    payload: OllamaGenerateResponse,
+  ): void {
+    if (typeof payload.response === 'string' && payload.response.length > 0) {
+      state.accumulatedText += payload.response;
+      this.pushExecutionEvent(state, {
+        eventType: AgentStreamEventType.TOKEN,
+        timestamp: new Date().toISOString(),
+        processId: request.processId,
+        executionId: request.executionId,
+        stageId: request.stageId,
+        routeKey: request.routeKey,
+        payload: {
+          surface: LOCAL_MODEL_SURFACE,
+          text: payload.response,
+          accumulatedText: state.accumulatedText,
+        },
+      });
+    }
+
+    const timestamp = new Date().toISOString();
+    if (payload.done) {
+      this.pushExecutionEvent(state, {
+        eventType: AgentStreamEventType.STATUS,
+        timestamp,
+        processId: request.processId,
+        executionId: request.executionId,
+        stageId: request.stageId,
+        routeKey: request.routeKey,
+        payload: {
+          status: 'running',
+          surface: LOCAL_MODEL_SURFACE,
+          detail: 'Ollama stream completed; finalizing response.',
+        },
+      });
+    }
   }
 
   /**
@@ -379,6 +710,37 @@ export class LocalModelAgentAdapter extends AgentProtocol {
     signal?: AbortSignal;
     body?: Record<string, unknown>;
   }): Promise<T> {
+    const response = await this.requestResponse(options);
+    try {
+      return (await response.json()) as T;
+    } catch (error) {
+      throw new RuntimeError(
+        GovernorErrorCode.AGENT_PROTOCOL_INVALID,
+        `Local model ${options.operation} returned invalid JSON payload.`,
+        {
+          surface: LOCAL_MODEL_SURFACE,
+          endpoint: options.localModel.endpoint,
+          path: options.path,
+        },
+        error,
+      );
+    }
+  }
+
+  /**
+   * Executes one HTTP request against the configured local-model endpoint with retry semantics.
+   * @param options Request execution options.
+   * @returns Raw successful response.
+   */
+  private async requestResponse(options: {
+    localModel: LocalModelRuntimeConfig;
+    path: string;
+    method: 'GET' | 'POST';
+    operation: 'probe' | 'invoke';
+    request?: AgentInvokeStageRequest;
+    signal?: AbortSignal;
+    body?: Record<string, unknown>;
+  }): Promise<Response> {
     const maxRetries = Math.max(0, options.localModel.maxRetries ?? 0);
     const totalAttempts = maxRetries + 1;
 
@@ -403,23 +765,7 @@ export class LocalModelAgentAdapter extends AgentProtocol {
             },
           );
         }
-
-        try {
-          return (await response.json()) as T;
-        } catch (error) {
-          throw new RuntimeError(
-            GovernorErrorCode.AGENT_PROTOCOL_INVALID,
-            `Local model ${options.operation} returned invalid JSON payload.`,
-            {
-              surface: LOCAL_MODEL_SURFACE,
-              endpoint: options.localModel.endpoint,
-              path: options.path,
-              attempt: attempt + 1,
-              maxAttempts: totalAttempts,
-            },
-            error,
-          );
-        }
+        return response;
       } catch (error) {
         this.throwIfCancelled(error, options.signal ?? options.request?.signal, options.operation);
         if (attempt + 1 < totalAttempts && this.isRetryableRequestError(error)) {
@@ -502,30 +848,6 @@ export class LocalModelAgentAdapter extends AgentProtocol {
       return prompt.trim();
     }
     return JSON.stringify(input, null, 2);
-  }
-
-  /**
-   * Reads generated text from Ollama response payload.
-   * @param payload Generate response payload.
-   * @param request Invocation request metadata.
-   * @returns Non-empty response text.
-   */
-  private readGeneratedText(
-    payload: OllamaGenerateResponse,
-    request: AgentInvokeStageRequest,
-  ): string {
-    if (typeof payload.response === 'string' && payload.response.trim().length > 0) {
-      return payload.response.trim();
-    }
-    throw new RuntimeError(
-      GovernorErrorCode.AGENT_PROTOCOL_INVALID,
-      `Local model response for stage "${request.stageId}" did not include textual output.`,
-      {
-        surface: LOCAL_MODEL_SURFACE,
-        routeKey: request.routeKey,
-        stageId: request.stageId,
-      },
-    );
   }
 
   /**

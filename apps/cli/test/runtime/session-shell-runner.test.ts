@@ -62,6 +62,14 @@ class RecordingSessionShellRenderer {
       transcriptItems: viewModel.transcriptItems.map((item) => ({
         ...item,
         lines: [...item.lines],
+        ...(item.details
+          ? {
+              details: {
+                ...item.details,
+                lines: [...item.details.lines],
+              },
+            }
+          : {}),
       })),
       slashSuggestions: viewModel.slashSuggestions.map((suggestion) => ({
         ...suggestion,
@@ -156,6 +164,14 @@ class StubSessionShellInkRunner {
       transcriptItems: viewModel.transcriptItems.map((item) => ({
         ...item,
         lines: [...item.lines],
+        ...(item.details
+          ? {
+              details: {
+                ...item.details,
+                lines: [...item.details.lines],
+              },
+            }
+          : {}),
       })),
       slashSuggestions: viewModel.slashSuggestions.map((suggestion) => ({
         ...suggestion,
@@ -611,6 +627,8 @@ const DEFAULT_TRANSLATIONS: Record<string, string> = {
   'cli.sessionShell.promptBar.idleShortcuts': '? shortcuts · /status · Ctrl+D',
   'cli.sessionShell.promptBar.paletteShortcuts': '↑↓ · Tab/Enter · Esc',
   'cli.sessionShell.promptBar.previewShortcuts': '/confirm · /cancel · Esc',
+  'cli.sessionShell.promptBar.showExecutionDetailsShortcut': 'Ctrl+O details',
+  'cli.sessionShell.promptBar.hideExecutionDetailsShortcut': 'Ctrl+O hide details',
   'cli.sessionShell.commands.help.summary': 'List exposed session-shell commands.',
   'cli.sessionShell.commands.confirm.summary': 'Confirm the current command handoff.',
   'cli.sessionShell.commands.cancel.summary': 'Cancel the current command handoff.',
@@ -643,6 +661,11 @@ const DEFAULT_TRANSLATIONS: Record<string, string> = {
   'cli.sessionShell.responses.liveTurnRoleActivity': '{{role}}: {{detail}}',
   'cli.sessionShell.responses.liveTurnToolCall': 'Tool: {{toolName}} - {{detail}}',
   'cli.sessionShell.responses.liveTurnActivityTitle': 'Live activity',
+  'cli.sessionShell.responses.executionDetailsTitle': 'Execution details',
+  'cli.sessionShell.responses.executionDetailsCollapsed':
+    '▶ Collapsed · {{count}} entries · Ctrl+O to open',
+  'cli.sessionShell.responses.executionDetailsExpanded':
+    '▼ Expanded · {{count}} entries · Ctrl+O to hide',
   'cli.sessionShell.responses.mainTurnAccepted':
     'route={{routeId}} turn={{turnIndex}} accepted by the shared session runtime.',
   'cli.sessionShell.responses.mainTurnEcho': 'echo={{userMessage}}',
@@ -1444,6 +1467,7 @@ describe('CliSessionShellRunner', () => {
       inkRunner.snapshots.some(
         (frame) =>
           frame.commandProgressPanel === undefined &&
+          frame.composerValue === '' &&
           frame.transcriptItems.some(
             (item) =>
               item.renderKind === 'live_activity' &&
@@ -1526,6 +1550,7 @@ describe('CliSessionShellRunner', () => {
       inkRunner.snapshots.some(
         (frame) =>
           frame.commandProgressPanel === undefined &&
+          frame.composerValue === '' &&
           frame.transcriptItems.some(
             (item) =>
               item.renderKind === 'live_activity' &&
@@ -1555,6 +1580,52 @@ describe('CliSessionShellRunner', () => {
         (item) => item.markdownSource === 'Hello back from delayed turn.',
       ),
     ).toBe(true);
+  });
+
+  it('recalls prior composer inputs with ArrowUp and restores the draft with ArrowDown in Ink mode', async () => {
+    const inkRunner = new StubSessionShellInkRunner([
+      {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: 'hello governor',
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_SUBMITTED,
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: 'hel',
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_HISTORY_PREVIOUS,
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_HISTORY_NEXT,
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: '/exit',
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_SUBMITTED,
+      },
+    ]);
+    const runner = new CliSessionShellRunner(
+      undefined,
+      new RecordingSessionShellRenderer() as never,
+      () => new StubSessionShellPromptAdapter([]),
+      () => new CliSessionShellInkController(),
+      () => inkRunner as never,
+      () => true,
+      () => new Date('2026-03-30T12:00:00Z'),
+    );
+
+    const result = await runner.run(DEFAULT_RUN_OPTIONS());
+
+    expect(result.exitReason).toBe(CliSessionShellExitReason.SLASH_EXIT);
+    expect(inkRunner.snapshots.some((frame) => frame.composerValue === 'hello governor')).toBe(
+      true,
+    );
+    expect(inkRunner.snapshots.some((frame) => frame.composerValue === 'hel')).toBe(true);
   });
 
   it('renders the shared running-progress dock inside the session shell while a direct bridge command is running', async () => {

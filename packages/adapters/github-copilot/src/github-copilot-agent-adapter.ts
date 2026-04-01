@@ -42,7 +42,10 @@ const GITHUB_COPILOT_SURFACE = 'github-copilot';
 const GITHUB_COPILOT_DIRECT_COMMAND = 'copilot';
 const GITHUB_COPILOT_GH_COMMAND = 'gh';
 const GITHUB_COPILOT_DEFAULT_TIMEOUT_MS = 30000;
+const GITHUB_COPILOT_REPOSITORY_REVIEW_TIMEOUT_MS = 600000;
+const GITHUB_COPILOT_REPOSITORY_REVIEW_PROGRESS_INTERVAL_MS = 15000;
 const GITHUB_COPILOT_DEFAULT_PROBE_CACHE_TTL_MS = 30000;
+const GITHUB_COPILOT_CLI_EXECUTION_CACHE_TTL_MS = 30000;
 const GITHUB_COPILOT_CHAT_ONLY_ARGS = ['--available-tools', ''] as const;
 const GITHUB_COPILOT_REPOSITORY_REVIEW_SCOPE = 'uncommitted_changes';
 const GITHUB_COPILOT_REPOSITORY_REVIEW_ARGS = [
@@ -113,6 +116,33 @@ interface GithubCopilotCliParsedOutput {
   warnings: string[];
 }
 
+interface GithubCopilotCliExecutionRequest {
+  processId: string;
+  executionId: string;
+  stageId: string;
+  routeKey: string;
+  input: Record<string, unknown>;
+  timeoutMs: number;
+  signal?: AbortSignal;
+}
+
+interface GithubCopilotCliExecutionState {
+  key: string;
+  events: AgentStreamEvent[];
+  waiters: Set<() => void>;
+  stdoutLineBuffer: string;
+  stderrLineBuffer: string;
+  stdoutChunkObserved: boolean;
+  stderrChunkObserved: boolean;
+  settled: boolean;
+  accumulatedAssistantText: string;
+  cliOutputSequence: number;
+  startedAtMs: number | null;
+  resultPromise: Promise<GithubCopilotExecRunnerResult>;
+  cleanupTimer: NodeJS.Timeout | null;
+  progressTimer: NodeJS.Timeout | null;
+}
+
 interface GithubCopilotProbeResolution {
   availabilityStatus: AgentAvailabilityStatus;
   unavailableReasons: string[];
@@ -147,6 +177,8 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
   private readonly options: ResolvedGithubCopilotAgentAdapterOptions;
   private readonly execRunner: GithubCopilotExecRunner;
   private readonly cliExecOperationsRuntime: AgentCliExecOperationsRuntime;
+  private readonly usesInjectedExecRunner: boolean;
+  private readonly inflightCliExecutions = new Map<string, GithubCopilotCliExecutionState>();
   private probeCache: GithubCopilotProbeCacheEntry | null = null;
 
   /**
@@ -181,6 +213,7 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
       ((request) => {
         return this.executeGithubCopilotCli(request);
       });
+    this.usesInjectedExecRunner = options.execRunner !== undefined;
   }
 
   /**
@@ -241,18 +274,16 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
       };
     }
 
-    const executionPolicy = resolveAgentStageExecutionPolicy(request.input);
-    const executionResult = await this.runGithubCopilotOperation({
-      prompt: this.shouldUseRepositoryReviewMode(request)
-        ? this.renderRepositoryReviewPrompt(request)
-        : this.renderInvokePrompt(request),
-      timeoutMs: request.agentInvocationTimeoutMs ?? this.options.requestTimeoutMs,
-      signal: request.signal,
-      operation: AgentCliExecOperation.INVOKE,
-      executionPolicy,
-      commandArgumentsPrefixResolver: (basePrefix, resolvedExecutionPolicy) =>
-        this.resolveInvokeCommandArgumentsPrefix(request, basePrefix, resolvedExecutionPolicy),
+    const execution = this.ensureCliExecution({
+      processId: request.processId,
+      executionId: request.executionId,
+      stageId: request.stageId,
+      routeKey: request.routeKey,
+      input: request.input,
+      timeoutMs: this.resolveInvokeTimeoutMs(request),
+      ...(request.signal ? { signal: request.signal } : {}),
     });
+    const executionResult = await execution.resultPromise;
     const parsedOutput = this.parseGithubCopilotCliOutput(
       executionResult,
       AgentCliExecOperation.INVOKE,
@@ -278,10 +309,419 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
   public override async *streamEvents(
     request: AgentStreamEventsRequest,
   ): AsyncIterable<AgentStreamEvent> {
-    const timestamp = new Date().toISOString();
-    yield {
+    if (this.options.executionMode === GithubCopilotAgentAdapterExecutionMode.BASELINE) {
+      const timestamp = new Date().toISOString();
+      yield {
+        eventType: AgentStreamEventType.STATUS,
+        timestamp,
+        processId: request.processId,
+        executionId: request.executionId,
+        stageId: request.stageId,
+        routeKey: request.routeKey,
+        payload: {
+          status: 'running',
+          surface: GITHUB_COPILOT_SURFACE,
+        },
+      };
+
+      yield {
+        eventType: AgentStreamEventType.COMPLETED,
+        timestamp: new Date().toISOString(),
+        processId: request.processId,
+        executionId: request.executionId,
+        stageId: request.stageId,
+        routeKey: request.routeKey,
+        payload: {
+          status: 'completed',
+          surface: GITHUB_COPILOT_SURFACE,
+        },
+      };
+      return;
+    }
+
+    const execution = this.ensureCliExecution({
+      processId: request.processId,
+      executionId: request.executionId,
+      stageId: request.stageId,
+      routeKey: request.routeKey,
+      input: request.input,
+      timeoutMs: this.resolveStreamTimeoutMs(request),
+      ...(request.signal ? { signal: request.signal } : {}),
+    });
+    yield* this.consumeCliExecutionEvents(execution);
+  }
+
+  private ensureCliExecution(
+    request: GithubCopilotCliExecutionRequest,
+  ): GithubCopilotCliExecutionState {
+    const key = this.createCliExecutionKey(request);
+    const existingExecution = this.inflightCliExecutions.get(key);
+    if (existingExecution) {
+      return existingExecution;
+    }
+
+    const executionState: GithubCopilotCliExecutionState = {
+      key,
+      events: [],
+      waiters: new Set(),
+      stdoutLineBuffer: '',
+      stderrLineBuffer: '',
+      stdoutChunkObserved: false,
+      stderrChunkObserved: false,
+      settled: false,
+      accumulatedAssistantText: '',
+      cliOutputSequence: 0,
+      startedAtMs: null,
+      resultPromise: Promise.resolve({
+        stdout: '',
+        stderr: '',
+        exitCode: null,
+        signal: null,
+        elapsedMs: 0,
+      }),
+      cleanupTimer: null,
+      progressTimer: null,
+    };
+    executionState.resultPromise = this.startCliExecution(executionState, request);
+    this.inflightCliExecutions.set(key, executionState);
+    return executionState;
+  }
+
+  private createCliExecutionKey(request: GithubCopilotCliExecutionRequest): string {
+    return [request.processId, request.executionId, request.stageId, request.routeKey].join(':');
+  }
+
+  private async startCliExecution(
+    state: GithubCopilotCliExecutionState,
+    request: GithubCopilotCliExecutionRequest,
+  ): Promise<GithubCopilotExecRunnerResult> {
+    try {
+      state.startedAtMs = Date.now();
+      this.pushCliExecutionEvent(state, {
+        eventType: AgentStreamEventType.STATUS,
+        timestamp: new Date().toISOString(),
+        processId: request.processId,
+        executionId: request.executionId,
+        stageId: request.stageId,
+        routeKey: request.routeKey,
+        payload: {
+          status: 'running',
+          surface: GITHUB_COPILOT_SURFACE,
+          detail: this.shouldUseRepositoryReviewMode(request)
+            ? 'GitHub Copilot repository review started; waiting for CLI output.'
+            : 'GitHub Copilot turn started.',
+        },
+      });
+      if (this.shouldUseRepositoryReviewMode(request)) {
+        this.startRepositoryReviewProgress(state, request);
+      }
+
+      const executionPolicy = resolveAgentStageExecutionPolicy(request.input);
+      const executionResult = await this.runGithubCopilotOperation({
+        prompt: this.shouldUseRepositoryReviewMode(request)
+          ? this.renderRepositoryReviewPrompt(request)
+          : this.renderInvokePrompt(request),
+        timeoutMs: request.timeoutMs,
+        signal: request.signal,
+        operation: AgentCliExecOperation.INVOKE,
+        executionPolicy,
+        commandArgumentsPrefixResolver: (basePrefix, resolvedExecutionPolicy) =>
+          this.resolveInvokeCommandArgumentsPrefix(
+            {
+              processId: request.processId,
+              executionId: request.executionId,
+              stageId: request.stageId,
+              routeKey: request.routeKey,
+              input: request.input,
+            },
+            basePrefix,
+            resolvedExecutionPolicy,
+          ),
+        onStdoutChunk: (chunk) => {
+          this.ingestGithubCopilotStdout(state, request, chunk);
+        },
+        onStderrChunk: (chunk) => {
+          this.ingestGithubCopilotStderr(state, request, chunk);
+        },
+      });
+
+      if (this.usesInjectedExecRunner) {
+        if (!state.stdoutChunkObserved && executionResult.stdout.length > 0) {
+          this.ingestGithubCopilotStdout(state, request, executionResult.stdout, true);
+        }
+        if (!state.stderrChunkObserved && executionResult.stderr.length > 0) {
+          this.ingestGithubCopilotStderr(state, request, executionResult.stderr, true);
+        }
+      } else {
+        this.ingestGithubCopilotStdout(state, request, '', true);
+        this.ingestGithubCopilotStderr(state, request, '', true);
+      }
+
+      this.pushCliExecutionEvent(state, {
+        eventType: AgentStreamEventType.COMPLETED,
+        timestamp: new Date().toISOString(),
+        processId: request.processId,
+        executionId: request.executionId,
+        stageId: request.stageId,
+        routeKey: request.routeKey,
+        payload: {
+          status: 'completed',
+          surface: GITHUB_COPILOT_SURFACE,
+          ...(state.accumulatedAssistantText.length > 0
+            ? { responseText: state.accumulatedAssistantText }
+            : {}),
+        },
+      });
+      this.finishCliExecution(state);
+      return executionResult;
+    } catch (error) {
+      const standardizedError = standardizeError(error);
+      this.pushCliExecutionEvent(state, {
+        eventType: AgentStreamEventType.FAILED,
+        timestamp: new Date().toISOString(),
+        processId: request.processId,
+        executionId: request.executionId,
+        stageId: request.stageId,
+        routeKey: request.routeKey,
+        payload: {
+          status: 'failed',
+          surface: GITHUB_COPILOT_SURFACE,
+          message: standardizedError.message,
+        },
+      });
+      this.finishCliExecution(state);
+      throw error;
+    }
+  }
+
+  private async *consumeCliExecutionEvents(
+    state: GithubCopilotCliExecutionState,
+  ): AsyncIterable<AgentStreamEvent> {
+    let cursor = 0;
+    while (true) {
+      while (cursor < state.events.length) {
+        const event = state.events[cursor];
+        cursor += 1;
+        if (event) {
+          yield event;
+        }
+      }
+
+      if (state.settled) {
+        return;
+      }
+
+      await new Promise<void>((resolve) => {
+        state.waiters.add(resolve);
+      });
+    }
+  }
+
+  private pushCliExecutionEvent(
+    state: GithubCopilotCliExecutionState,
+    event: AgentStreamEvent,
+  ): void {
+    state.events.push(event);
+    for (const waiter of state.waiters) {
+      waiter();
+    }
+    state.waiters.clear();
+  }
+
+  private finishCliExecution(state: GithubCopilotCliExecutionState): void {
+    state.settled = true;
+    if (state.progressTimer) {
+      clearInterval(state.progressTimer);
+      state.progressTimer = null;
+    }
+    for (const waiter of state.waiters) {
+      waiter();
+    }
+    state.waiters.clear();
+    if (state.cleanupTimer) {
+      clearTimeout(state.cleanupTimer);
+    }
+    state.cleanupTimer = setTimeout(() => {
+      this.inflightCliExecutions.delete(state.key);
+    }, GITHUB_COPILOT_CLI_EXECUTION_CACHE_TTL_MS);
+    state.cleanupTimer.unref?.();
+  }
+
+  private ingestGithubCopilotStdout(
+    state: GithubCopilotCliExecutionState,
+    request: GithubCopilotCliExecutionRequest,
+    chunk: string,
+    flushPartial = false,
+  ): void {
+    if (chunk.length > 0) {
+      state.stdoutChunkObserved = true;
+    }
+    state.stdoutLineBuffer += chunk;
+    const lines = state.stdoutLineBuffer.split(/\r?\n/u);
+    state.stdoutLineBuffer = lines.pop() ?? '';
+    for (const line of lines) {
+      this.processGithubCopilotJsonLine(state, request, line);
+    }
+    if (flushPartial && state.stdoutLineBuffer.trim().length > 0) {
+      this.processGithubCopilotJsonLine(state, request, state.stdoutLineBuffer);
+      state.stdoutLineBuffer = '';
+    }
+  }
+
+  private ingestGithubCopilotStderr(
+    state: GithubCopilotCliExecutionState,
+    request: GithubCopilotCliExecutionRequest,
+    chunk: string,
+    flushPartial = false,
+  ): void {
+    if (chunk.length > 0) {
+      state.stderrChunkObserved = true;
+    }
+    state.stderrLineBuffer += chunk;
+    const lines = state.stderrLineBuffer.split(/\r?\n/u);
+    state.stderrLineBuffer = lines.pop() ?? '';
+    for (const line of lines) {
+      this.pushGithubCopilotOutputLineEvent(state, request, 'stderr', line);
+    }
+    if (flushPartial && state.stderrLineBuffer.trim().length > 0) {
+      this.pushGithubCopilotOutputLineEvent(state, request, 'stderr', state.stderrLineBuffer);
+      state.stderrLineBuffer = '';
+    }
+  }
+
+  private processGithubCopilotJsonLine(
+    state: GithubCopilotCliExecutionState,
+    request: GithubCopilotCliExecutionRequest,
+    line: string,
+  ): void {
+    const trimmedLine = line.trim();
+    if (!trimmedLine.startsWith('{')) {
+      this.pushGithubCopilotOutputLineEvent(state, request, 'stdout', trimmedLine);
+      return;
+    }
+
+    let parsedEvent: GithubCopilotCliJsonEvent;
+    try {
+      parsedEvent = JSON.parse(trimmedLine) as GithubCopilotCliJsonEvent;
+    } catch {
+      return;
+    }
+
+    if (parsedEvent.type?.startsWith('assistant.')) {
+      this.maybePushAssistantTokenDelta(state, request, parsedEvent);
+      return;
+    }
+
+    if (parsedEvent.type === 'result' && parsedEvent.exitCode === 0) {
+      this.pushCliExecutionEvent(state, {
+        eventType: AgentStreamEventType.STATUS,
+        timestamp: new Date().toISOString(),
+        processId: request.processId,
+        executionId: request.executionId,
+        stageId: request.stageId,
+        routeKey: request.routeKey,
+        payload: {
+          status: 'running',
+          surface: GITHUB_COPILOT_SURFACE,
+          detail: 'GitHub Copilot CLI result received.',
+        },
+      });
+    }
+  }
+
+  private maybePushAssistantTokenDelta(
+    state: GithubCopilotCliExecutionState,
+    request: GithubCopilotCliExecutionRequest,
+    parsedEvent: GithubCopilotCliJsonEvent,
+  ): void {
+    const candidateText = this.extractAssistantText(parsedEvent);
+    if (!candidateText) {
+      return;
+    }
+
+    const nextTokenState = this.resolveAssistantTokenState(
+      state.accumulatedAssistantText,
+      candidateText,
+      parsedEvent.type === 'assistant.message',
+      parsedEvent.data?.delta === candidateText,
+    );
+    if (!nextTokenState) {
+      return;
+    }
+
+    state.accumulatedAssistantText = nextTokenState.accumulatedText;
+    this.pushCliExecutionEvent(state, {
+      eventType: AgentStreamEventType.TOKEN,
+      timestamp: new Date().toISOString(),
+      processId: request.processId,
+      executionId: request.executionId,
+      stageId: request.stageId,
+      routeKey: request.routeKey,
+      payload: {
+        surface: GITHUB_COPILOT_SURFACE,
+        text: nextTokenState.chunkText,
+        accumulatedText: nextTokenState.accumulatedText,
+      },
+    });
+  }
+
+  private resolveAssistantTokenState(
+    previousAccumulatedText: string,
+    candidateText: string,
+    isTerminalEvent: boolean,
+    isDeltaEvent: boolean,
+  ): { chunkText: string; accumulatedText: string } | null {
+    if (candidateText === previousAccumulatedText) {
+      return null;
+    }
+
+    if (isDeltaEvent) {
+      return {
+        chunkText: candidateText,
+        accumulatedText: `${previousAccumulatedText}${candidateText}`,
+      };
+    }
+
+    if (candidateText.startsWith(previousAccumulatedText)) {
+      const chunkText = candidateText.slice(previousAccumulatedText.length);
+      return chunkText.length > 0
+        ? {
+            chunkText,
+            accumulatedText: candidateText,
+          }
+        : null;
+    }
+
+    if (previousAccumulatedText.startsWith(candidateText) && !isTerminalEvent) {
+      return null;
+    }
+
+    if (!isTerminalEvent) {
+      return {
+        chunkText: candidateText,
+        accumulatedText: `${previousAccumulatedText}${candidateText}`,
+      };
+    }
+
+    return {
+      chunkText: candidateText,
+      accumulatedText: candidateText,
+    };
+  }
+
+  private pushGithubCopilotOutputLineEvent(
+    state: GithubCopilotCliExecutionState,
+    request: GithubCopilotCliExecutionRequest,
+    source: 'stderr' | 'stdout',
+    line: string,
+  ): void {
+    const normalizedLine = this.normalizeCliOutputLine(line);
+    if (!normalizedLine) {
+      return;
+    }
+    this.pushCliExecutionEvent(state, {
       eventType: AgentStreamEventType.STATUS,
-      timestamp,
+      timestamp: new Date().toISOString(),
       processId: request.processId,
       executionId: request.executionId,
       stageId: request.stageId,
@@ -289,21 +729,58 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
       payload: {
         status: 'running',
         surface: GITHUB_COPILOT_SURFACE,
+        detail: `${GITHUB_COPILOT_SURFACE} ${source}: ${normalizedLine}`,
+        activityKey: `${GITHUB_COPILOT_SURFACE}:${source}:${String(state.cliOutputSequence++)}`,
       },
-    };
+    });
+  }
 
-    yield {
-      eventType: AgentStreamEventType.COMPLETED,
+  private startRepositoryReviewProgress(
+    state: GithubCopilotCliExecutionState,
+    request: GithubCopilotCliExecutionRequest,
+  ): void {
+    this.pushRepositoryReviewProgressEvent(state, request);
+    state.progressTimer = setInterval(() => {
+      if (state.settled) {
+        return;
+      }
+      this.pushRepositoryReviewProgressEvent(state, request);
+    }, GITHUB_COPILOT_REPOSITORY_REVIEW_PROGRESS_INTERVAL_MS);
+    state.progressTimer.unref?.();
+  }
+
+  private pushRepositoryReviewProgressEvent(
+    state: GithubCopilotCliExecutionState,
+    request: GithubCopilotCliExecutionRequest,
+  ): void {
+    const elapsedSeconds =
+      state.startedAtMs === null
+        ? 0
+        : Math.max(0, Math.floor((Date.now() - state.startedAtMs) / 1000));
+    this.pushCliExecutionEvent(state, {
+      eventType: AgentStreamEventType.STATUS,
       timestamp: new Date().toISOString(),
       processId: request.processId,
       executionId: request.executionId,
       stageId: request.stageId,
       routeKey: request.routeKey,
       payload: {
-        status: 'completed',
+        status: 'running',
         surface: GITHUB_COPILOT_SURFACE,
+        detail:
+          elapsedSeconds === 0
+            ? 'GitHub Copilot repository review is running; waiting for CLI output.'
+            : `GitHub Copilot repository review is still running (${elapsedSeconds}s elapsed); waiting for CLI output.`,
       },
-    };
+    });
+  }
+
+  private normalizeCliOutputLine(line: string): string | undefined {
+    const normalizedLine = line.replace(/\s+/gu, ' ').trim();
+    if (normalizedLine.length === 0) {
+      return undefined;
+    }
+    return normalizedLine.length > 240 ? `${normalizedLine.slice(0, 237)}...` : normalizedLine;
   }
 
   /**
@@ -478,6 +955,8 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
         executionPolicy?: ReturnType<typeof resolveAgentStageExecutionPolicy>,
       ) => string[];
       executionPolicy?: ReturnType<typeof resolveAgentStageExecutionPolicy>;
+      onStdoutChunk?: (chunk: string) => void;
+      onStderrChunk?: (chunk: string) => void;
     },
   ): Promise<GithubCopilotExecRunnerResult> {
     try {
@@ -504,6 +983,8 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
                 timeoutMs: remainingTimeoutMs ?? request.timeoutMs,
                 signal: request.signal,
                 operation: request.operation,
+                onStdoutChunk: request.onStdoutChunk,
+                onStderrChunk: request.onStderrChunk,
               });
             } catch (error) {
               lastError = error;
@@ -639,12 +1120,26 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
       );
     }
 
-    const responseText = jsonEvents
-      .filter((event) => event.type?.startsWith('assistant.'))
-      .map((event) => this.extractAssistantText(event))
-      .filter((value): value is string => Boolean(value && value.trim().length > 0))
-      .join('\n')
-      .trim();
+    let accumulatedAssistantText = '';
+    for (const event of jsonEvents.filter((candidate) =>
+      candidate.type?.startsWith('assistant.'),
+    )) {
+      const candidateText = this.extractAssistantText(event);
+      if (!candidateText) {
+        continue;
+      }
+      const nextTokenState = this.resolveAssistantTokenState(
+        accumulatedAssistantText,
+        candidateText,
+        event.type === 'assistant.message',
+        event.data?.delta === candidateText,
+      );
+      if (!nextTokenState) {
+        continue;
+      }
+      accumulatedAssistantText = nextTokenState.accumulatedText;
+    }
+    const responseText = accumulatedAssistantText.trim();
 
     if (!responseText) {
       throw new RuntimeError(
@@ -898,9 +1393,11 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
       childProcess.stderr.setEncoding('utf8');
       childProcess.stdout.on('data', (chunk: string) => {
         stdout += chunk;
+        request.onStdoutChunk?.(chunk);
       });
       childProcess.stderr.on('data', (chunk: string) => {
         stderr += chunk;
+        request.onStderrChunk?.(chunk);
       });
       childProcess.on('error', (error) => {
         settle(
@@ -960,11 +1457,38 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
     return this.resolveCommandArgumentsPrefix(commandArgumentsPrefix, executionPolicy);
   }
 
-  private shouldUseRepositoryReviewMode(request: AgentInvokeStageRequest): boolean {
+  private shouldUseRepositoryReviewMode(request: {
+    routeKey: string;
+    input: Record<string, unknown>;
+  }): boolean {
     return (
       request.routeKey === 'session.main.role.reviewer' &&
       request.input.roleId === 'reviewer' &&
       request.input.reviewScope === GITHUB_COPILOT_REPOSITORY_REVIEW_SCOPE
     );
+  }
+
+  private resolveInvokeTimeoutMs(request: AgentInvokeStageRequest): number {
+    if (typeof request.agentInvocationTimeoutMs === 'number') {
+      return request.agentInvocationTimeoutMs;
+    }
+
+    if (this.shouldUseRepositoryReviewMode(request)) {
+      return GITHUB_COPILOT_REPOSITORY_REVIEW_TIMEOUT_MS;
+    }
+
+    return this.options.requestTimeoutMs;
+  }
+
+  private resolveStreamTimeoutMs(request: AgentStreamEventsRequest): number {
+    if (typeof request.agentInvocationTimeoutMs === 'number') {
+      return request.agentInvocationTimeoutMs;
+    }
+
+    if (this.shouldUseRepositoryReviewMode(request)) {
+      return GITHUB_COPILOT_REPOSITORY_REVIEW_TIMEOUT_MS;
+    }
+
+    return this.options.requestTimeoutMs;
   }
 }

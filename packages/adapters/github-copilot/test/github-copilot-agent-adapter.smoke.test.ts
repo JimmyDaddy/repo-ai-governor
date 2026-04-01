@@ -379,6 +379,108 @@ describe('github-copilot-agent-adapter smoke', () => {
     );
   });
 
+  it('reuses one cli_exec invocation across streamEvents and invokeStage and relays token/status output incrementally', async () => {
+    const abortController = new AbortController();
+    const execRunner = vi.fn<GithubCopilotExecRunner>().mockImplementation(async (request) => {
+      expect(request.timeoutMs).toBe(234000);
+      expect(request.signal).toBe(abortController.signal);
+      request.onStdoutChunk?.(
+        `${[
+          '{"type":"assistant.delta","data":{"delta":"Review"}}',
+          '{"type":"assistant.delta","data":{"delta":" findings"}}',
+          '{"type":"assistant.message","data":{"content":"Review findings complete"}}',
+          '{"type":"result","exitCode":0}',
+        ].join('\n')}\n`,
+      );
+      request.onStderrChunk?.('stderr progress line\n');
+      return {
+        stdout: [
+          '{"type":"assistant.delta","data":{"delta":"Review"}}',
+          '{"type":"assistant.delta","data":{"delta":" findings"}}',
+          '{"type":"assistant.message","data":{"content":"Review findings complete"}}',
+          '{"type":"result","exitCode":0}',
+        ].join('\n'),
+        stderr: 'stderr progress line\n',
+        exitCode: 0,
+        signal: null,
+        elapsedMs: 9,
+      };
+    });
+    const adapter = new GithubCopilotAgentAdapter({
+      executionMode: GithubCopilotAgentAdapterExecutionMode.CLI_EXEC,
+      execRunner,
+    });
+    const invokeRequest = {
+      processId: 'process-1',
+      executionId: 'execution-stream-1',
+      stageId: 'stage-1',
+      routeKey: 'codegen',
+      agentInvocationTimeoutMs: 234000,
+      signal: abortController.signal,
+      input: {
+        prompt: 'implement feature',
+      },
+    };
+
+    const streamPayloadsPromise = (async () => {
+      const payloads: Array<{ type: AgentStreamEventType; detail?: unknown; text?: unknown }> = [];
+      for await (const event of adapter.streamEvents(invokeRequest)) {
+        payloads.push({
+          type: event.eventType,
+          detail: event.payload.detail,
+          text: event.payload.text,
+        });
+      }
+      return payloads;
+    })();
+    const invokeResultPromise = adapter.invokeStage(invokeRequest);
+
+    const [streamPayloads, invokeResult] = await Promise.all([
+      streamPayloadsPromise,
+      invokeResultPromise,
+    ]);
+
+    expect(execRunner).toHaveBeenCalledTimes(1);
+    expect(streamPayloads).toEqual([
+      {
+        type: AgentStreamEventType.STATUS,
+        detail: 'GitHub Copilot turn started.',
+        text: undefined,
+      },
+      {
+        type: AgentStreamEventType.TOKEN,
+        detail: undefined,
+        text: 'Review',
+      },
+      {
+        type: AgentStreamEventType.TOKEN,
+        detail: undefined,
+        text: ' findings',
+      },
+      {
+        type: AgentStreamEventType.TOKEN,
+        detail: undefined,
+        text: ' complete',
+      },
+      {
+        type: AgentStreamEventType.STATUS,
+        detail: 'GitHub Copilot CLI result received.',
+        text: undefined,
+      },
+      {
+        type: AgentStreamEventType.STATUS,
+        detail: 'github-copilot stderr: stderr progress line',
+        text: undefined,
+      },
+      {
+        type: AgentStreamEventType.COMPLETED,
+        detail: undefined,
+        text: undefined,
+      },
+    ]);
+    expect(invokeResult.output.responseText).toBe('Review findings complete');
+  });
+
   it('streams status and completed events', async () => {
     const adapter = new GithubCopilotAgentAdapter();
     const events = [];

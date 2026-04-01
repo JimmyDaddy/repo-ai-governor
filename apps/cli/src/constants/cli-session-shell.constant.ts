@@ -59,10 +59,13 @@ export enum CliSessionShellForegroundFocusTarget {
 export enum CliSessionShellInputActionType {
   COMPOSER_CHANGED = 'composer_changed',
   COMPOSER_SUBMITTED = 'composer_submitted',
+  COMPOSER_HISTORY_PREVIOUS = 'composer_history_previous',
+  COMPOSER_HISTORY_NEXT = 'composer_history_next',
   PALETTE_HIGHLIGHT_NEXT = 'palette_highlight_next',
   PALETTE_HIGHLIGHT_PREVIOUS = 'palette_highlight_previous',
   PALETTE_ACCEPT_HIGHLIGHTED = 'palette_accept_highlighted',
   PALETTE_CLOSED = 'palette_closed',
+  SESSION_TOGGLE_LATEST_DETAILS = 'session_toggle_latest_details',
   SESSION_CLEAR_SCREEN = 'session_clear_screen',
   SESSION_EXIT_REQUESTED = 'session_exit_requested',
 }
@@ -102,10 +105,13 @@ export const CLI_SESSION_SHELL_PROMPT = 'governor> ';
 export const CLI_SESSION_SHELL_INPUT_ACTION_CONTRACT = [
   CliSessionShellInputActionType.COMPOSER_CHANGED,
   CliSessionShellInputActionType.COMPOSER_SUBMITTED,
+  CliSessionShellInputActionType.COMPOSER_HISTORY_PREVIOUS,
+  CliSessionShellInputActionType.COMPOSER_HISTORY_NEXT,
   CliSessionShellInputActionType.PALETTE_HIGHLIGHT_NEXT,
   CliSessionShellInputActionType.PALETTE_HIGHLIGHT_PREVIOUS,
   CliSessionShellInputActionType.PALETTE_ACCEPT_HIGHLIGHTED,
   CliSessionShellInputActionType.PALETTE_CLOSED,
+  CliSessionShellInputActionType.SESSION_TOGGLE_LATEST_DETAILS,
   CliSessionShellInputActionType.SESSION_CLEAR_SCREEN,
   CliSessionShellInputActionType.SESSION_EXIT_REQUESTED,
 ] as const;

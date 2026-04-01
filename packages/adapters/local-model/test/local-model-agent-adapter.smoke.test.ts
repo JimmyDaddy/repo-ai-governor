@@ -260,6 +260,175 @@ describe('local-model-agent-adapter smoke', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
+  it('reuses one streaming local-model invocation across streamEvents and invokeStage', async () => {
+    const encoder = new TextEncoder();
+    const fetchMock = vi.fn(async (_input: string | URL | Request, init?: RequestInit) => {
+      expect(init?.method).toBe('POST');
+      expect(init?.body).toBeDefined();
+      expect(JSON.parse(String(init?.body))).toMatchObject({
+        model: 'qwen2.5-coder:7b',
+        stream: true,
+      });
+
+      return new Response(
+        new ReadableStream({
+          start(controller) {
+            controller.enqueue(
+              encoder.encode(`${JSON.stringify({ response: 'Hello', done: false })}\n`),
+            );
+            controller.enqueue(
+              encoder.encode(`${JSON.stringify({ response: ' world', done: false })}\n`),
+            );
+            controller.enqueue(
+              encoder.encode(
+                `${JSON.stringify({ done: true, prompt_eval_count: 12, eval_count: 34 })}\n`,
+              ),
+            );
+            controller.close();
+          },
+        }),
+        {
+          status: 200,
+          headers: {
+            'content-type': 'application/x-ndjson',
+          },
+        },
+      );
+    });
+    const adapter = new LocalModelAgentAdapter({
+      localModel: {
+        provider: LocalModelProvider.OLLAMA,
+        endpoint: 'http://127.0.0.1:11434',
+        model: 'qwen2.5-coder:7b',
+      },
+      fetchFn: fetchMock as typeof fetch,
+    });
+    const request = {
+      processId: 'process-1',
+      executionId: 'execution-stream-1',
+      stageId: 'stage-1',
+      routeKey: 'codegen',
+      input: {
+        prompt: 'implement feature',
+      },
+    };
+
+    const streamPayloadsPromise = (async () => {
+      const payloads: Array<{ type: AgentStreamEventType; detail?: unknown; text?: unknown }> = [];
+      for await (const event of adapter.streamEvents(request)) {
+        payloads.push({
+          type: event.eventType,
+          detail: event.payload.detail,
+          text: event.payload.text,
+        });
+      }
+      return payloads;
+    })();
+    const invokeResultPromise = adapter.invokeStage(request);
+
+    const [streamPayloads, invokeResult] = await Promise.all([
+      streamPayloadsPromise,
+      invokeResultPromise,
+    ]);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(streamPayloads).toEqual([
+      {
+        type: AgentStreamEventType.STATUS,
+        detail: 'Ollama turn started.',
+        text: undefined,
+      },
+      {
+        type: AgentStreamEventType.TOKEN,
+        detail: undefined,
+        text: 'Hello',
+      },
+      {
+        type: AgentStreamEventType.TOKEN,
+        detail: undefined,
+        text: ' world',
+      },
+      {
+        type: AgentStreamEventType.STATUS,
+        detail: 'Ollama stream completed; finalizing response.',
+        text: undefined,
+      },
+      {
+        type: AgentStreamEventType.COMPLETED,
+        detail: undefined,
+        text: undefined,
+      },
+    ]);
+    expect(invokeResult.output.responseText).toBe('Hello world');
+    expect(invokeResult.usage).toEqual({
+      inputTokens: 12,
+      outputTokens: 34,
+      totalTokens: 46,
+    });
+  });
+
+  it('propagates the shared abort signal when streamEvents starts the local-model execution first', async () => {
+    const abortController = new AbortController();
+    const fetchMock = vi.fn(
+      async (_input: string | URL | Request, init?: RequestInit) =>
+        await new Promise<Response>((_resolve, reject) => {
+          const signal = init?.signal;
+          signal?.addEventListener(
+            'abort',
+            () => reject(new DOMException('aborted', 'AbortError')),
+            { once: true },
+          );
+        }),
+    );
+    const adapter = new LocalModelAgentAdapter({
+      localModel: {
+        provider: LocalModelProvider.OLLAMA,
+        endpoint: 'http://127.0.0.1:11434',
+        model: 'qwen2.5-coder:7b',
+      },
+      fetchFn: fetchMock as typeof fetch,
+    });
+    const request = {
+      processId: 'process-1',
+      executionId: 'execution-stream-abort-1',
+      stageId: 'stage-1',
+      routeKey: 'codegen',
+      agentInvocationTimeoutMs: 4321,
+      signal: abortController.signal,
+      input: {
+        prompt: 'implement feature',
+      },
+    };
+
+    const streamPayloadsPromise = (async () => {
+      const payloads: Array<{ type: AgentStreamEventType; detail?: unknown }> = [];
+      for await (const event of adapter.streamEvents(request)) {
+        payloads.push({
+          type: event.eventType,
+          detail: event.payload.detail ?? event.payload.message,
+        });
+      }
+      return payloads;
+    })();
+    const invokeResultPromise = adapter.invokeStage(request);
+    abortController.abort('user-requested');
+
+    await expect(invokeResultPromise).rejects.toMatchObject({
+      code: GovernorErrorCode.PROCESS_RUNTIME_CANCELLED,
+    });
+    await expect(streamPayloadsPromise).resolves.toEqual([
+      {
+        type: AgentStreamEventType.STATUS,
+        detail: 'Ollama turn started.',
+      },
+      {
+        type: AgentStreamEventType.FAILED,
+        detail: 'Local model invoke cancelled before completion.',
+      },
+    ]);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   it('rethrows probe aborts as standardized cancellation without consuming retry budget', async () => {
     const abortController = new AbortController();
     const fetchMock = vi.fn(

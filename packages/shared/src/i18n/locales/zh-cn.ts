@@ -223,6 +223,8 @@ export const ZH_CN_TRANSLATIONS = {
         idleShortcuts: '? 快捷帮助 · /status · Ctrl+D',
         paletteShortcuts: '↑↓ · Tab/Enter · Esc',
         previewShortcuts: '/confirm · /cancel · Esc',
+        showExecutionDetailsShortcut: 'Ctrl+O 过程详情',
+        hideExecutionDetailsShortcut: 'Ctrl+O 收起详情',
       },
       commands: {
         help: {
@@ -305,6 +307,9 @@ export const ZH_CN_TRANSLATIONS = {
         liveTurnRoleActivity: '{{role}}：{{detail}}',
         liveTurnToolCall: '工具：{{toolName}} - {{detail}}',
         liveTurnActivityTitle: '实时活动',
+        executionDetailsTitle: '执行过程',
+        executionDetailsCollapsed: '▶ 已折叠 · {{count}} 条记录 · Ctrl+O 打开',
+        executionDetailsExpanded: '▼ 已展开 · {{count}} 条记录 · Ctrl+O 收起',
         mainTurnAccepted: 'route={{routeId}} turn={{turnIndex}} 已被共享 session runtime 接收。',
         mainTurnEcho: 'echo={{userMessage}}',
         mainTurnSuggestedSlash: '建议下一步：{{command}}',

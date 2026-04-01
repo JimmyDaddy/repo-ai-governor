@@ -53,6 +53,7 @@ export type {
   CliSessionShellRunResult,
   CliSessionShellServiceClientLike,
   CliSessionShellTranscriptBacklink,
+  CliSessionShellTranscriptDetailsBlock,
   CliSessionShellTranscriptItem,
   CliSessionShellTranscriptRenderKind,
   CliSessionShellViewModel,

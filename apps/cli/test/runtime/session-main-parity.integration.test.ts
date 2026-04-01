@@ -36,6 +36,14 @@ class RecordingSessionShellRenderer {
         ...(item.backlinks
           ? { backlinks: item.backlinks.map((backlink) => ({ ...backlink })) }
           : {}),
+        ...(item.details
+          ? {
+              details: {
+                ...item.details,
+                lines: [...item.details.lines],
+              },
+            }
+          : {}),
       })),
       slashSuggestions: viewModel.slashSuggestions.map((suggestion) => ({
         ...suggestion,
@@ -79,12 +87,19 @@ const SESSION_SHELL_TRANSLATIONS: Record<string, string> = {
   'cli.sessionShell.promptBar.idleShortcuts': '? shortcuts · /status · Ctrl+D',
   'cli.sessionShell.promptBar.previewShortcuts': '/confirm · /cancel · Esc',
   'cli.sessionShell.promptBar.paletteShortcuts': '↑↓ · Tab/Enter · Esc',
+  'cli.sessionShell.promptBar.showExecutionDetailsShortcut': 'Ctrl+O details',
+  'cli.sessionShell.promptBar.hideExecutionDetailsShortcut': 'Ctrl+O hide details',
   'cli.sessionShell.commands.exit.summary': 'Exit the foreground shell.',
   'cli.sessionShell.responses.mainTurnSuggestedSlash': 'Suggested next step: {{command}}',
   'cli.sessionShell.responses.mainTurnAutoExecuteSlash': 'Auto-running: {{command}}',
   'cli.sessionShell.responses.mainTurnHandoffPreview': 'Preview: {{preview}}',
   'cli.sessionShell.responses.mainTurnAutoExecuteCommand': 'Running: {{preview}}',
   'cli.sessionShell.responses.commandPreview': 'Ready: {{command}}',
+  'cli.sessionShell.responses.executionDetailsTitle': 'Execution details',
+  'cli.sessionShell.responses.executionDetailsCollapsed':
+    '▶ Collapsed · {{count}} entries · Ctrl+O to open',
+  'cli.sessionShell.responses.executionDetailsExpanded':
+    '▼ Expanded · {{count}} entries · Ctrl+O to hide',
   'cli.sessionShell.responses.mainTurnCollaborationAccepted': '{{mode}} completed.',
   'cli.sessionShell.responses.mainTurnCollaborationRoles':
     'Active role: {{roles}} (count={{count}})',

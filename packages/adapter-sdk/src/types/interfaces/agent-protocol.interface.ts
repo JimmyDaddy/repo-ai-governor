@@ -140,6 +140,10 @@ export interface AgentStreamEventsRequest {
   stageId: string;
   routeKey: string;
   input: Record<string, unknown>;
+  agentInvocationTimeoutMs?: number;
+  stageTimeoutMs?: number;
+  flowTimeoutMs?: number;
+  signal?: AbortSignal;
 }
 
 /**

@@ -235,30 +235,25 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       routeKey: SESSION_MAIN_ANSWER_ROUTE_KEY,
       selectedSurface: primaryAnswerSurface,
     });
+    const dispatchRequest = {
+      processId: context.sessionId,
+      executionId: context.turnId,
+      stageId: SESSION_MAIN_ANSWER_STAGE_ID,
+      routeKey: SESSION_MAIN_ANSWER_ROUTE_KEY,
+      input: answerInput,
+      runtimeContext: {
+        networkMode: AgentNetworkMode.STANDARD,
+      },
+    };
     const relayPromise = this.relayProtocolStreamEvents(
       context,
       protocolBySurface[primaryAnswerSurface],
-      {
-        processId: context.sessionId,
-        executionId: context.turnId,
-        stageId: SESSION_MAIN_ANSWER_STAGE_ID,
-        routeKey: SESSION_MAIN_ANSWER_ROUTE_KEY,
-        input: answerInput,
-      },
+      dispatchRequest,
       relayState,
     );
     let dispatchResult: Awaited<ReturnType<typeof routeRunner.dispatchStage>>;
     try {
-      dispatchResult = await routeRunner.dispatchStage({
-        processId: context.sessionId,
-        executionId: context.turnId,
-        stageId: SESSION_MAIN_ANSWER_STAGE_ID,
-        routeKey: SESSION_MAIN_ANSWER_ROUTE_KEY,
-        input: answerInput,
-        runtimeContext: {
-          networkMode: AgentNetworkMode.STANDARD,
-        },
-      });
+      dispatchResult = await routeRunner.dispatchStage(dispatchRequest);
     } catch (error) {
       await relayPromise;
       await this.publishStreamEvent(context, {
@@ -777,16 +772,20 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       routeKey: preparedDispatch.descriptor.routeKey,
       selectedSurface: primaryRoleSurface,
     });
+    const dispatchRequest = {
+      processId: context.sessionId,
+      executionId: context.turnId,
+      stageId: preparedDispatch.descriptor.stageId,
+      routeKey: preparedDispatch.descriptor.routeKey,
+      input: dispatchInput,
+      runtimeContext: {
+        networkMode: AgentNetworkMode.STANDARD,
+      },
+    };
     const relayPromise = this.relayProtocolStreamEvents(
       context,
       protocolBySurface[primaryRoleSurface],
-      {
-        processId: context.sessionId,
-        executionId: context.turnId,
-        stageId: preparedDispatch.descriptor.stageId,
-        routeKey: preparedDispatch.descriptor.routeKey,
-        input: dispatchInput,
-      },
+      dispatchRequest,
       relayState,
       {
         roleId: preparedDispatch.descriptor.roleId,
@@ -794,16 +793,7 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     );
     let dispatchResult: Awaited<ReturnType<typeof routeRunner.dispatchStage>>;
     try {
-      dispatchResult = await routeRunner.dispatchStage({
-        processId: context.sessionId,
-        executionId: context.turnId,
-        stageId: preparedDispatch.descriptor.stageId,
-        routeKey: preparedDispatch.descriptor.routeKey,
-        input: dispatchInput,
-        runtimeContext: {
-          networkMode: AgentNetworkMode.STANDARD,
-        },
-      });
+      dispatchResult = await routeRunner.dispatchStage(dispatchRequest);
     } catch (error) {
       await relayPromise;
       await this.publishStreamEvent(context, {
@@ -890,6 +880,10 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       stageId: string;
       routeKey: string;
       input: Record<string, unknown>;
+      agentInvocationTimeoutMs?: number;
+      stageTimeoutMs?: number;
+      flowTimeoutMs?: number;
+      signal?: AbortSignal;
     },
     relayState: ProtocolStreamRelayState,
     metadata: {

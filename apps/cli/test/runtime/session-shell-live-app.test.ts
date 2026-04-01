@@ -9,6 +9,7 @@ describe('mapSessionShellKeypressToAction', () => {
         key: {} as never,
         composerValue: '',
         highlightedCommand: null,
+        slashPaletteVisible: false,
       }),
     ).toEqual({
       kind: 'action',
@@ -25,6 +26,7 @@ describe('mapSessionShellKeypressToAction', () => {
         key: {} as never,
         composerValue: '',
         highlightedCommand: null,
+        slashPaletteVisible: false,
       }),
     ).toEqual({
       kind: 'action',
@@ -41,6 +43,7 @@ describe('mapSessionShellKeypressToAction', () => {
         key: {} as never,
         composerValue: '/',
         highlightedCommand: null,
+        slashPaletteVisible: false,
       }),
     ).toEqual({
       kind: 'action',
@@ -57,6 +60,7 @@ describe('mapSessionShellKeypressToAction', () => {
         key: {} as never,
         composerValue: '',
         highlightedCommand: null,
+        slashPaletteVisible: false,
       }),
     ).toEqual({
       kind: 'action',
@@ -68,7 +72,7 @@ describe('mapSessionShellKeypressToAction', () => {
     });
   });
 
-  it('removes one Unicode code point on backspace and maps Ctrl+L to clear-screen', () => {
+  it('removes one Unicode code point on backspace and maps session control shortcuts', () => {
     expect(
       mapSessionShellKeypressToAction({
         input: '',
@@ -77,6 +81,7 @@ describe('mapSessionShellKeypressToAction', () => {
         } as never,
         composerValue: '原地刷新',
         highlightedCommand: null,
+        slashPaletteVisible: false,
       }),
     ).toEqual({
       kind: 'action',
@@ -95,11 +100,29 @@ describe('mapSessionShellKeypressToAction', () => {
         } as never,
         composerValue: '',
         highlightedCommand: null,
+        slashPaletteVisible: false,
       }),
     ).toEqual({
       kind: 'action',
       action: {
         type: CliSessionShellInputActionType.SESSION_CLEAR_SCREEN,
+      },
+    });
+
+    expect(
+      mapSessionShellKeypressToAction({
+        input: 'o',
+        key: {
+          ctrl: true,
+        } as never,
+        composerValue: '',
+        highlightedCommand: null,
+        slashPaletteVisible: false,
+      }),
+    ).toEqual({
+      kind: 'action',
+      action: {
+        type: CliSessionShellInputActionType.SESSION_TOGGLE_LATEST_DETAILS,
       },
     });
   });
@@ -113,6 +136,7 @@ describe('mapSessionShellKeypressToAction', () => {
         } as never,
         composerValue: '/',
         highlightedCommand: '/workspace',
+        slashPaletteVisible: true,
       }),
     ).toEqual({
       kind: 'action',
@@ -129,6 +153,7 @@ describe('mapSessionShellKeypressToAction', () => {
         } as never,
         composerValue: '/wo',
         highlightedCommand: '/workspace',
+        slashPaletteVisible: true,
       }),
     ).toEqual({
       kind: 'action',
@@ -146,6 +171,7 @@ describe('mapSessionShellKeypressToAction', () => {
         } as never,
         composerValue: '/wo',
         highlightedCommand: '/workspace',
+        slashPaletteVisible: true,
       }),
     ).toEqual({
       kind: 'action',
@@ -163,6 +189,7 @@ describe('mapSessionShellKeypressToAction', () => {
         } as never,
         composerValue: '/workspace dry-run',
         highlightedCommand: '/workspace',
+        slashPaletteVisible: true,
       }),
     ).toEqual({
       kind: 'action',
@@ -179,6 +206,7 @@ describe('mapSessionShellKeypressToAction', () => {
         } as never,
         composerValue: '',
         highlightedCommand: null,
+        slashPaletteVisible: false,
       }),
     ).toEqual({
       kind: 'interrupt',
@@ -192,9 +220,82 @@ describe('mapSessionShellKeypressToAction', () => {
         } as never,
         composerValue: '',
         highlightedCommand: null,
+        slashPaletteVisible: false,
       }),
     ).toEqual({
       kind: 'eof',
+    });
+  });
+
+  it('maps Up/Down to composer history when the slash palette is not active', () => {
+    expect(
+      mapSessionShellKeypressToAction({
+        input: '',
+        key: {
+          upArrow: true,
+        } as never,
+        composerValue: 'hel',
+        highlightedCommand: null,
+        slashPaletteVisible: false,
+      }),
+    ).toEqual({
+      kind: 'action',
+      action: {
+        type: CliSessionShellInputActionType.COMPOSER_HISTORY_PREVIOUS,
+      },
+    });
+
+    expect(
+      mapSessionShellKeypressToAction({
+        input: '',
+        key: {
+          downArrow: true,
+        } as never,
+        composerValue: 'hel',
+        highlightedCommand: null,
+        slashPaletteVisible: false,
+      }),
+    ).toEqual({
+      kind: 'action',
+      action: {
+        type: CliSessionShellInputActionType.COMPOSER_HISTORY_NEXT,
+      },
+    });
+  });
+
+  it('keeps arrow navigation inside the slash palette even when no suggestion is highlighted', () => {
+    expect(
+      mapSessionShellKeypressToAction({
+        input: '',
+        key: {
+          upArrow: true,
+        } as never,
+        composerValue: '/workspce',
+        highlightedCommand: null,
+        slashPaletteVisible: true,
+      }),
+    ).toEqual({
+      kind: 'action',
+      action: {
+        type: CliSessionShellInputActionType.PALETTE_HIGHLIGHT_PREVIOUS,
+      },
+    });
+
+    expect(
+      mapSessionShellKeypressToAction({
+        input: '',
+        key: {
+          downArrow: true,
+        } as never,
+        composerValue: '/workspce',
+        highlightedCommand: null,
+        slashPaletteVisible: true,
+      }),
+    ).toEqual({
+      kind: 'action',
+      action: {
+        type: CliSessionShellInputActionType.PALETTE_HIGHLIGHT_NEXT,
+      },
     });
   });
 });

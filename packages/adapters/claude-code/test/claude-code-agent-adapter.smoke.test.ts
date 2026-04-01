@@ -353,6 +353,91 @@ describe('claude-code-agent-adapter smoke', () => {
     );
   });
 
+  it('reuses one cli_exec invocation across streamEvents and invokeStage and relays stdout/stderr incrementally', async () => {
+    const abortController = new AbortController();
+    const execRunner = vi.fn<ClaudeCodeExecRunner>().mockImplementation(async (request) => {
+      expect(request.timeoutMs).toBe(123000);
+      expect(request.signal).toBe(abortController.signal);
+      if (request.onStdoutChunk) {
+        request.onStdoutChunk('Review');
+        request.onStdoutChunk(' findings');
+      }
+      if (request.onStderrChunk) {
+        request.onStderrChunk('stderr progress line\n');
+      }
+      return {
+        stdout: 'Review findings',
+        stderr: 'stderr progress line\n',
+        exitCode: 0,
+        signal: null,
+        elapsedMs: 8,
+      };
+    });
+    const adapter = new ClaudeCodeAgentAdapter({
+      executionMode: ClaudeCodeAgentAdapterExecutionMode.CLI_EXEC,
+      execRunner,
+    });
+    const invokeRequest = {
+      processId: 'process-1',
+      executionId: 'execution-stream-1',
+      stageId: 'stage-1',
+      routeKey: 'codegen',
+      agentInvocationTimeoutMs: 123000,
+      signal: abortController.signal,
+      input: {
+        prompt: 'implement feature',
+      },
+    };
+
+    const streamPayloadsPromise = (async () => {
+      const payloads: Array<{ type: AgentStreamEventType; detail?: unknown; text?: unknown }> = [];
+      for await (const event of adapter.streamEvents(invokeRequest)) {
+        payloads.push({
+          type: event.eventType,
+          detail: event.payload.detail,
+          text: event.payload.text,
+        });
+      }
+      return payloads;
+    })();
+    const invokeResultPromise = adapter.invokeStage(invokeRequest);
+
+    const [streamPayloads, invokeResult] = await Promise.all([
+      streamPayloadsPromise,
+      invokeResultPromise,
+    ]);
+
+    expect(execRunner).toHaveBeenCalledTimes(1);
+    expect(streamPayloads).toEqual([
+      {
+        type: AgentStreamEventType.STATUS,
+        detail: 'Claude Code turn started.',
+        text: undefined,
+      },
+      {
+        type: AgentStreamEventType.TOKEN,
+        detail: undefined,
+        text: 'Review',
+      },
+      {
+        type: AgentStreamEventType.TOKEN,
+        detail: undefined,
+        text: ' findings',
+      },
+      {
+        type: AgentStreamEventType.STATUS,
+        detail: 'claude-code stderr: stderr progress line',
+        text: undefined,
+      },
+      {
+        type: AgentStreamEventType.COMPLETED,
+        detail: undefined,
+        text: undefined,
+      },
+    ]);
+    expect(invokeResult.output.responseText).toBe('Review findings');
+  });
+
   it('streams status and completed events', async () => {
     const adapter = new ClaudeCodeAgentAdapter();
     const events = [];

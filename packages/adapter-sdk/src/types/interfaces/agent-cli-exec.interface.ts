@@ -15,6 +15,8 @@ export interface AgentCliExecRunnerRequest {
   timeoutMs: number;
   signal?: AbortSignal;
   operation: AgentCliExecOperation;
+  onStdoutChunk?: (chunk: string) => void;
+  onStderrChunk?: (chunk: string) => void;
 }
 
 /**

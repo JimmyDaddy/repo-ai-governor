@@ -255,6 +255,8 @@ export const EN_US_TRANSLATIONS = {
         idleShortcuts: '? shortcuts · /status · Ctrl+D',
         paletteShortcuts: '↑↓ · Tab/Enter · Esc',
         previewShortcuts: '/confirm · /cancel · Esc',
+        showExecutionDetailsShortcut: 'Ctrl+O details',
+        hideExecutionDetailsShortcut: 'Ctrl+O hide details',
       },
       commands: {
         help: {
@@ -344,6 +346,9 @@ export const EN_US_TRANSLATIONS = {
         liveTurnRoleActivity: '{{role}}: {{detail}}',
         liveTurnToolCall: 'Tool: {{toolName}} - {{detail}}',
         liveTurnActivityTitle: 'Live activity',
+        executionDetailsTitle: 'Execution details',
+        executionDetailsCollapsed: '▶ Collapsed · {{count}} entries · Ctrl+O to open',
+        executionDetailsExpanded: '▼ Expanded · {{count}} entries · Ctrl+O to hide',
         mainTurnAccepted:
           'route={{routeId}} turn={{turnIndex}} accepted by the shared session runtime.',
         mainTurnEcho: 'echo={{userMessage}}',

@@ -78,6 +78,8 @@ export class CliSessionShellInkController {
       case CliSessionShellInputActionType.PALETTE_CLOSED:
         this.closePalette(viewModel, translate);
         return DEFAULT_ACTION_RESULT;
+      case CliSessionShellInputActionType.SESSION_TOGGLE_LATEST_DETAILS:
+        return DEFAULT_ACTION_RESULT;
       case CliSessionShellInputActionType.SESSION_CLEAR_SCREEN:
         return {
           ...DEFAULT_ACTION_RESULT,

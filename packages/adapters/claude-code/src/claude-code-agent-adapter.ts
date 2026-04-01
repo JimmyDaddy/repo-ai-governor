@@ -42,7 +42,10 @@ const CLAUDE_CODE_SURFACE = 'claude-code';
 const CLAUDE_CODE_DIRECT_COMMAND = 'claude';
 const CLAUDE_CODE_FALLBACK_COMMAND = 'claude-code';
 const CLAUDE_CODE_DEFAULT_TIMEOUT_MS = 30000;
+const CLAUDE_CODE_REPOSITORY_REVIEW_TIMEOUT_MS = 600000;
+const CLAUDE_CODE_REPOSITORY_REVIEW_PROGRESS_INTERVAL_MS = 15000;
 const CLAUDE_CODE_DEFAULT_PROBE_CACHE_TTL_MS = 30000;
+const CLAUDE_CODE_CLI_EXECUTION_CACHE_TTL_MS = 30000;
 const CLAUDE_CODE_CHAT_ONLY_ARGS = ['--tools', ''] as const;
 const CLAUDE_CODE_REPOSITORY_REVIEW_SCOPE = 'uncommitted_changes';
 const CLAUDE_CODE_REPOSITORY_REVIEW_ARGS = [
@@ -86,6 +89,32 @@ interface ClaudeCodeCliParsedOutput {
   warnings: string[];
 }
 
+interface ClaudeCodeCliExecutionRequest {
+  processId: string;
+  executionId: string;
+  stageId: string;
+  routeKey: string;
+  input: Record<string, unknown>;
+  timeoutMs: number;
+  signal?: AbortSignal;
+}
+
+interface ClaudeCodeCliExecutionState {
+  key: string;
+  events: AgentStreamEvent[];
+  waiters: Set<() => void>;
+  stderrLineBuffer: string;
+  stdoutChunkObserved: boolean;
+  stderrChunkObserved: boolean;
+  settled: boolean;
+  accumulatedAssistantText: string;
+  cliOutputSequence: number;
+  startedAtMs: number | null;
+  resultPromise: Promise<ClaudeCodeExecRunnerResult>;
+  cleanupTimer: NodeJS.Timeout | null;
+  progressTimer: NodeJS.Timeout | null;
+}
+
 interface ClaudeCodeProbeResolution {
   availabilityStatus: AgentAvailabilityStatus;
   unavailableReasons: string[];
@@ -120,6 +149,8 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
   private readonly options: ResolvedClaudeCodeAgentAdapterOptions;
   private readonly execRunner: ClaudeCodeExecRunner;
   private readonly cliExecOperationsRuntime: AgentCliExecOperationsRuntime;
+  private readonly usesInjectedExecRunner: boolean;
+  private readonly inflightCliExecutions = new Map<string, ClaudeCodeCliExecutionState>();
   private probeCache: ClaudeCodeProbeCacheEntry | null = null;
 
   /**
@@ -154,6 +185,7 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
       ((request) => {
         return this.executeClaudeCodeCli(request);
       });
+    this.usesInjectedExecRunner = options.execRunner !== undefined;
   }
 
   /**
@@ -214,18 +246,16 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
       };
     }
 
-    const executionPolicy = resolveAgentStageExecutionPolicy(request.input);
-    const executionResult = await this.runClaudeCodeOperation({
-      prompt: this.shouldUseRepositoryReviewMode(request)
-        ? this.renderRepositoryReviewPrompt(request)
-        : this.renderInvokePrompt(request),
-      timeoutMs: request.agentInvocationTimeoutMs ?? this.options.requestTimeoutMs,
-      signal: request.signal,
-      operation: AgentCliExecOperation.INVOKE,
-      executionPolicy,
-      commandArgumentsPrefixResolver: (basePrefix, resolvedExecutionPolicy) =>
-        this.resolveInvokeCommandArgumentsPrefix(request, basePrefix, resolvedExecutionPolicy),
+    const execution = this.ensureCliExecution({
+      processId: request.processId,
+      executionId: request.executionId,
+      stageId: request.stageId,
+      routeKey: request.routeKey,
+      input: request.input,
+      timeoutMs: this.resolveInvokeTimeoutMs(request),
+      ...(request.signal ? { signal: request.signal } : {}),
     });
+    const executionResult = await execution.resultPromise;
     const parsedOutput = this.parseClaudeCodeCliOutput(
       executionResult,
       AgentCliExecOperation.INVOKE,
@@ -251,10 +281,299 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
   public override async *streamEvents(
     request: AgentStreamEventsRequest,
   ): AsyncIterable<AgentStreamEvent> {
-    const timestamp = new Date().toISOString();
-    yield {
+    if (this.options.executionMode === ClaudeCodeAgentAdapterExecutionMode.BASELINE) {
+      const timestamp = new Date().toISOString();
+      yield {
+        eventType: AgentStreamEventType.STATUS,
+        timestamp,
+        processId: request.processId,
+        executionId: request.executionId,
+        stageId: request.stageId,
+        routeKey: request.routeKey,
+        payload: {
+          status: 'running',
+          surface: CLAUDE_CODE_SURFACE,
+        },
+      };
+
+      yield {
+        eventType: AgentStreamEventType.COMPLETED,
+        timestamp: new Date().toISOString(),
+        processId: request.processId,
+        executionId: request.executionId,
+        stageId: request.stageId,
+        routeKey: request.routeKey,
+        payload: {
+          status: 'completed',
+          surface: CLAUDE_CODE_SURFACE,
+        },
+      };
+      return;
+    }
+
+    const execution = this.ensureCliExecution({
+      processId: request.processId,
+      executionId: request.executionId,
+      stageId: request.stageId,
+      routeKey: request.routeKey,
+      input: request.input,
+      timeoutMs: this.resolveStreamTimeoutMs(request),
+      ...(request.signal ? { signal: request.signal } : {}),
+    });
+    yield* this.consumeCliExecutionEvents(execution);
+  }
+
+  private ensureCliExecution(request: ClaudeCodeCliExecutionRequest): ClaudeCodeCliExecutionState {
+    const key = this.createCliExecutionKey(request);
+    const existingExecution = this.inflightCliExecutions.get(key);
+    if (existingExecution) {
+      return existingExecution;
+    }
+
+    const executionState: ClaudeCodeCliExecutionState = {
+      key,
+      events: [],
+      waiters: new Set(),
+      stderrLineBuffer: '',
+      stdoutChunkObserved: false,
+      stderrChunkObserved: false,
+      settled: false,
+      accumulatedAssistantText: '',
+      cliOutputSequence: 0,
+      startedAtMs: null,
+      resultPromise: Promise.resolve({
+        stdout: '',
+        stderr: '',
+        exitCode: null,
+        signal: null,
+        elapsedMs: 0,
+      }),
+      cleanupTimer: null,
+      progressTimer: null,
+    };
+    executionState.resultPromise = this.startCliExecution(executionState, request);
+    this.inflightCliExecutions.set(key, executionState);
+    return executionState;
+  }
+
+  private createCliExecutionKey(request: ClaudeCodeCliExecutionRequest): string {
+    return [request.processId, request.executionId, request.stageId, request.routeKey].join(':');
+  }
+
+  private async startCliExecution(
+    state: ClaudeCodeCliExecutionState,
+    request: ClaudeCodeCliExecutionRequest,
+  ): Promise<ClaudeCodeExecRunnerResult> {
+    try {
+      state.startedAtMs = Date.now();
+      this.pushCliExecutionEvent(state, {
+        eventType: AgentStreamEventType.STATUS,
+        timestamp: new Date().toISOString(),
+        processId: request.processId,
+        executionId: request.executionId,
+        stageId: request.stageId,
+        routeKey: request.routeKey,
+        payload: {
+          status: 'running',
+          surface: CLAUDE_CODE_SURFACE,
+          detail: this.shouldUseRepositoryReviewMode(request)
+            ? 'Claude Code repository review started; waiting for CLI output.'
+            : 'Claude Code turn started.',
+        },
+      });
+      if (this.shouldUseRepositoryReviewMode(request)) {
+        this.startRepositoryReviewProgress(state, request);
+      }
+
+      const executionPolicy = resolveAgentStageExecutionPolicy(request.input);
+      const executionResult = await this.runClaudeCodeOperation({
+        prompt: this.shouldUseRepositoryReviewMode(request)
+          ? this.renderRepositoryReviewPrompt(request)
+          : this.renderInvokePrompt(request),
+        timeoutMs: request.timeoutMs,
+        signal: request.signal,
+        operation: AgentCliExecOperation.INVOKE,
+        executionPolicy,
+        commandArgumentsPrefixResolver: (basePrefix, resolvedExecutionPolicy) =>
+          this.resolveInvokeCommandArgumentsPrefix(
+            {
+              processId: request.processId,
+              executionId: request.executionId,
+              stageId: request.stageId,
+              routeKey: request.routeKey,
+              input: request.input,
+            },
+            basePrefix,
+            resolvedExecutionPolicy,
+          ),
+        onStdoutChunk: (chunk) => {
+          this.ingestClaudeStdout(state, request, chunk);
+        },
+        onStderrChunk: (chunk) => {
+          this.ingestClaudeStderr(state, request, chunk);
+        },
+      });
+
+      if (this.usesInjectedExecRunner) {
+        if (!state.stdoutChunkObserved && executionResult.stdout.length > 0) {
+          this.ingestClaudeStdout(state, request, executionResult.stdout, true);
+        }
+        if (!state.stderrChunkObserved && executionResult.stderr.length > 0) {
+          this.ingestClaudeStderr(state, request, executionResult.stderr, true);
+        }
+      } else {
+        this.ingestClaudeStderr(state, request, '', true);
+      }
+
+      const completedResponseText =
+        state.accumulatedAssistantText.length > 0
+          ? state.accumulatedAssistantText
+          : executionResult.stdout.trim();
+      this.pushCliExecutionEvent(state, {
+        eventType: AgentStreamEventType.COMPLETED,
+        timestamp: new Date().toISOString(),
+        processId: request.processId,
+        executionId: request.executionId,
+        stageId: request.stageId,
+        routeKey: request.routeKey,
+        payload: {
+          status: 'completed',
+          surface: CLAUDE_CODE_SURFACE,
+          ...(completedResponseText.length > 0 ? { responseText: completedResponseText } : {}),
+        },
+      });
+      this.finishCliExecution(state);
+      return executionResult;
+    } catch (error) {
+      const standardizedError = standardizeError(error);
+      this.pushCliExecutionEvent(state, {
+        eventType: AgentStreamEventType.FAILED,
+        timestamp: new Date().toISOString(),
+        processId: request.processId,
+        executionId: request.executionId,
+        stageId: request.stageId,
+        routeKey: request.routeKey,
+        payload: {
+          status: 'failed',
+          surface: CLAUDE_CODE_SURFACE,
+          message: standardizedError.message,
+        },
+      });
+      this.finishCliExecution(state);
+      throw error;
+    }
+  }
+
+  private async *consumeCliExecutionEvents(
+    state: ClaudeCodeCliExecutionState,
+  ): AsyncIterable<AgentStreamEvent> {
+    let cursor = 0;
+    while (true) {
+      while (cursor < state.events.length) {
+        const event = state.events[cursor];
+        cursor += 1;
+        if (event) {
+          yield event;
+        }
+      }
+
+      if (state.settled) {
+        return;
+      }
+
+      await new Promise<void>((resolve) => {
+        state.waiters.add(resolve);
+      });
+    }
+  }
+
+  private pushCliExecutionEvent(state: ClaudeCodeCliExecutionState, event: AgentStreamEvent): void {
+    state.events.push(event);
+    for (const waiter of state.waiters) {
+      waiter();
+    }
+    state.waiters.clear();
+  }
+
+  private finishCliExecution(state: ClaudeCodeCliExecutionState): void {
+    state.settled = true;
+    if (state.progressTimer) {
+      clearInterval(state.progressTimer);
+      state.progressTimer = null;
+    }
+    for (const waiter of state.waiters) {
+      waiter();
+    }
+    state.waiters.clear();
+    if (state.cleanupTimer) {
+      clearTimeout(state.cleanupTimer);
+    }
+    state.cleanupTimer = setTimeout(() => {
+      this.inflightCliExecutions.delete(state.key);
+    }, CLAUDE_CODE_CLI_EXECUTION_CACHE_TTL_MS);
+    state.cleanupTimer.unref?.();
+  }
+
+  private ingestClaudeStdout(
+    state: ClaudeCodeCliExecutionState,
+    request: ClaudeCodeCliExecutionRequest,
+    chunk: string,
+    _flushPartial = false,
+  ): void {
+    if (chunk.length === 0) {
+      return;
+    }
+
+    state.stdoutChunkObserved = true;
+    state.accumulatedAssistantText += chunk;
+    this.pushCliExecutionEvent(state, {
+      eventType: AgentStreamEventType.TOKEN,
+      timestamp: new Date().toISOString(),
+      processId: request.processId,
+      executionId: request.executionId,
+      stageId: request.stageId,
+      routeKey: request.routeKey,
+      payload: {
+        surface: CLAUDE_CODE_SURFACE,
+        text: chunk,
+        accumulatedText: state.accumulatedAssistantText,
+      },
+    });
+  }
+
+  private ingestClaudeStderr(
+    state: ClaudeCodeCliExecutionState,
+    request: ClaudeCodeCliExecutionRequest,
+    chunk: string,
+    flushPartial = false,
+  ): void {
+    if (chunk.length > 0) {
+      state.stderrChunkObserved = true;
+    }
+    state.stderrLineBuffer += chunk;
+    const lines = state.stderrLineBuffer.split(/\r?\n/u);
+    state.stderrLineBuffer = lines.pop() ?? '';
+    for (const line of lines) {
+      this.pushClaudeCliOutputLineEvent(state, request, line);
+    }
+    if (flushPartial && state.stderrLineBuffer.trim().length > 0) {
+      this.pushClaudeCliOutputLineEvent(state, request, state.stderrLineBuffer);
+      state.stderrLineBuffer = '';
+    }
+  }
+
+  private pushClaudeCliOutputLineEvent(
+    state: ClaudeCodeCliExecutionState,
+    request: ClaudeCodeCliExecutionRequest,
+    line: string,
+  ): void {
+    const normalizedLine = this.normalizeCliOutputLine(line);
+    if (!normalizedLine) {
+      return;
+    }
+    this.pushCliExecutionEvent(state, {
       eventType: AgentStreamEventType.STATUS,
-      timestamp,
+      timestamp: new Date().toISOString(),
       processId: request.processId,
       executionId: request.executionId,
       stageId: request.stageId,
@@ -262,21 +581,58 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
       payload: {
         status: 'running',
         surface: CLAUDE_CODE_SURFACE,
+        detail: `${CLAUDE_CODE_SURFACE} stderr: ${normalizedLine}`,
+        activityKey: `${CLAUDE_CODE_SURFACE}:stderr:${String(state.cliOutputSequence++)}`,
       },
-    };
+    });
+  }
 
-    yield {
-      eventType: AgentStreamEventType.COMPLETED,
+  private startRepositoryReviewProgress(
+    state: ClaudeCodeCliExecutionState,
+    request: ClaudeCodeCliExecutionRequest,
+  ): void {
+    this.pushRepositoryReviewProgressEvent(state, request);
+    state.progressTimer = setInterval(() => {
+      if (state.settled) {
+        return;
+      }
+      this.pushRepositoryReviewProgressEvent(state, request);
+    }, CLAUDE_CODE_REPOSITORY_REVIEW_PROGRESS_INTERVAL_MS);
+    state.progressTimer.unref?.();
+  }
+
+  private pushRepositoryReviewProgressEvent(
+    state: ClaudeCodeCliExecutionState,
+    request: ClaudeCodeCliExecutionRequest,
+  ): void {
+    const elapsedSeconds =
+      state.startedAtMs === null
+        ? 0
+        : Math.max(0, Math.floor((Date.now() - state.startedAtMs) / 1000));
+    this.pushCliExecutionEvent(state, {
+      eventType: AgentStreamEventType.STATUS,
       timestamp: new Date().toISOString(),
       processId: request.processId,
       executionId: request.executionId,
       stageId: request.stageId,
       routeKey: request.routeKey,
       payload: {
-        status: 'completed',
+        status: 'running',
         surface: CLAUDE_CODE_SURFACE,
+        detail:
+          elapsedSeconds === 0
+            ? 'Claude Code repository review is running; waiting for CLI output.'
+            : `Claude Code repository review is still running (${elapsedSeconds}s elapsed); waiting for CLI output.`,
       },
-    };
+    });
+  }
+
+  private normalizeCliOutputLine(line: string): string | undefined {
+    const normalizedLine = line.replace(/\s+/gu, ' ').trim();
+    if (normalizedLine.length === 0) {
+      return undefined;
+    }
+    return normalizedLine.length > 240 ? `${normalizedLine.slice(0, 237)}...` : normalizedLine;
   }
 
   /**
@@ -446,6 +802,8 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
         executionPolicy?: ReturnType<typeof resolveAgentStageExecutionPolicy>,
       ) => string[];
       executionPolicy?: ReturnType<typeof resolveAgentStageExecutionPolicy>;
+      onStdoutChunk?: (chunk: string) => void;
+      onStderrChunk?: (chunk: string) => void;
     },
   ): Promise<ClaudeCodeExecRunnerResult> {
     try {
@@ -472,6 +830,8 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
                 timeoutMs: remainingTimeoutMs ?? request.timeoutMs,
                 signal: request.signal,
                 operation: request.operation,
+                onStdoutChunk: request.onStdoutChunk,
+                onStderrChunk: request.onStderrChunk,
               });
             } catch (error) {
               lastError = error;
@@ -822,9 +1182,11 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
       childProcess.stderr.setEncoding('utf8');
       childProcess.stdout.on('data', (chunk: string) => {
         stdout += chunk;
+        request.onStdoutChunk?.(chunk);
       });
       childProcess.stderr.on('data', (chunk: string) => {
         stderr += chunk;
+        request.onStderrChunk?.(chunk);
       });
       childProcess.on('error', (error) => {
         settle(
@@ -884,11 +1246,38 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
     return this.resolveCommandArgumentsPrefix(commandArgumentsPrefix, executionPolicy);
   }
 
-  private shouldUseRepositoryReviewMode(request: AgentInvokeStageRequest): boolean {
+  private shouldUseRepositoryReviewMode(request: {
+    routeKey: string;
+    input: Record<string, unknown>;
+  }): boolean {
     return (
       request.routeKey === 'session.main.role.reviewer' &&
       request.input.roleId === 'reviewer' &&
       request.input.reviewScope === CLAUDE_CODE_REPOSITORY_REVIEW_SCOPE
     );
+  }
+
+  private resolveInvokeTimeoutMs(request: AgentInvokeStageRequest): number {
+    if (typeof request.agentInvocationTimeoutMs === 'number') {
+      return request.agentInvocationTimeoutMs;
+    }
+
+    if (this.shouldUseRepositoryReviewMode(request)) {
+      return CLAUDE_CODE_REPOSITORY_REVIEW_TIMEOUT_MS;
+    }
+
+    return this.options.requestTimeoutMs;
+  }
+
+  private resolveStreamTimeoutMs(request: AgentStreamEventsRequest): number {
+    if (typeof request.agentInvocationTimeoutMs === 'number') {
+      return request.agentInvocationTimeoutMs;
+    }
+
+    if (this.shouldUseRepositoryReviewMode(request)) {
+      return CLAUDE_CODE_REPOSITORY_REVIEW_TIMEOUT_MS;
+    }
+
+    return this.options.requestTimeoutMs;
   }
 }

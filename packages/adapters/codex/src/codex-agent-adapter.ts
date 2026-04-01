@@ -81,14 +81,28 @@ const CODEX_REAL_CAPABILITY_SUPPORT: Record<AgentCapability, AgentCapabilitySupp
 interface CodexCliJsonEvent {
   type?: string;
   thread_id?: string;
+  text?: string;
+  delta?: string;
+  content?: unknown;
   usage?: {
     input_tokens?: number;
     output_tokens?: number;
     total_tokens?: number;
   };
   item?: {
+    id?: string;
     type?: string;
     text?: string;
+    delta?: string;
+    content?: unknown;
+    command?: string;
+    aggregated_output?: string;
+    exit_code?: number | null;
+    status?: string;
+    items?: Array<{
+      text?: string;
+      completed?: boolean;
+    }>;
   };
 }
 
@@ -332,6 +346,7 @@ export class CodexAgentAdapter extends AgentProtocol {
       routeKey: request.routeKey,
       input: request.input,
       timeoutMs: this.resolveStreamTimeoutMs(request),
+      ...(request.signal ? { signal: request.signal } : {}),
     });
     yield* this.consumeCliExecutionEvents(execution);
   }
@@ -891,25 +906,20 @@ export class CodexAgentAdapter extends AgentProtocol {
       return;
     }
 
-    if (parsedEvent.type === 'item.completed' && parsedEvent.item?.type === 'agent_message') {
-      const assistantText = parsedEvent.item.text?.trim() ?? '';
-      if (assistantText.length === 0) {
-        return;
-      }
-      state.accumulatedAssistantText = assistantText;
-      this.pushCliExecutionEvent(state, {
-        eventType: AgentStreamEventType.TOKEN,
-        timestamp: new Date().toISOString(),
-        processId: request.processId,
-        executionId: request.executionId,
-        stageId: request.stageId,
-        routeKey: request.routeKey,
-        payload: {
-          surface: CODEX_SURFACE,
-          text: assistantText,
-          accumulatedText: assistantText,
-        },
-      });
+    if (
+      parsedEvent.item?.type === 'agent_message' &&
+      this.maybePushAssistantTokenDelta(state, request, parsedEvent)
+    ) {
+      return;
+    }
+
+    if (parsedEvent.item?.type === 'command_execution') {
+      this.pushCommandExecutionEvent(state, request, parsedEvent);
+      return;
+    }
+
+    if (parsedEvent.item?.type === 'todo_list') {
+      this.pushTodoListEvents(state, request, parsedEvent);
       return;
     }
 
@@ -927,6 +937,70 @@ export class CodexAgentAdapter extends AgentProtocol {
           ...(state.accumulatedAssistantText
             ? { responseText: state.accumulatedAssistantText }
             : {}),
+        },
+      });
+    }
+  }
+
+  private pushCommandExecutionEvent(
+    state: CodexCliExecutionState,
+    request: CodexCliExecutionRequest,
+    parsedEvent: CodexCliJsonEvent,
+  ): void {
+    const commandSummary = this.summarizeCommand(parsedEvent.item?.command);
+    if (!commandSummary) {
+      return;
+    }
+
+    const activityKey = parsedEvent.item?.id
+      ? `${CODEX_SURFACE}:command:${parsedEvent.item.id}`
+      : `${CODEX_SURFACE}:command:${String(state.cliOutputSequence++)}`;
+    const detail =
+      parsedEvent.type === 'item.completed'
+        ? `Completed command${this.formatExitCodeSuffix(parsedEvent.item?.exit_code)}: ${commandSummary}`
+        : `Running command: ${commandSummary}`;
+    this.pushCliExecutionEvent(state, {
+      eventType: AgentStreamEventType.STATUS,
+      timestamp: new Date().toISOString(),
+      processId: request.processId,
+      executionId: request.executionId,
+      stageId: request.stageId,
+      routeKey: request.routeKey,
+      payload: {
+        status: 'running',
+        surface: CODEX_SURFACE,
+        detail,
+        activityKey,
+      },
+    });
+  }
+
+  private pushTodoListEvents(
+    state: CodexCliExecutionState,
+    request: CodexCliExecutionRequest,
+    parsedEvent: CodexCliJsonEvent,
+  ): void {
+    for (const [index, todoItem] of (parsedEvent.item?.items ?? []).entries()) {
+      const todoText = this.normalizeCliOutputLine(todoItem.text ?? '');
+      if (!todoText) {
+        continue;
+      }
+      const activityKey = parsedEvent.item?.id
+        ? `${CODEX_SURFACE}:todo:${parsedEvent.item.id}:${String(index)}`
+        : `${CODEX_SURFACE}:todo:${String(index)}`;
+      const detail = todoItem.completed ? `Completed todo: ${todoText}` : `Todo: ${todoText}`;
+      this.pushCliExecutionEvent(state, {
+        eventType: AgentStreamEventType.STATUS,
+        timestamp: new Date().toISOString(),
+        processId: request.processId,
+        executionId: request.executionId,
+        stageId: request.stageId,
+        routeKey: request.routeKey,
+        payload: {
+          status: 'running',
+          surface: CODEX_SURFACE,
+          detail,
+          activityKey,
         },
       });
     }
@@ -1006,6 +1080,134 @@ export class CodexAgentAdapter extends AgentProtocol {
       return undefined;
     }
     return normalizedLine.length > 240 ? `${normalizedLine.slice(0, 237)}...` : normalizedLine;
+  }
+
+  private summarizeCommand(command: string | undefined): string | undefined {
+    if (!command) {
+      return undefined;
+    }
+
+    const shellWrappedCommand = command.match(/^\/bin\/zsh -lc ['"]([\s\S]+)['"]$/u)?.[1];
+    return this.normalizeCliOutputLine(shellWrappedCommand ?? command);
+  }
+
+  private formatExitCodeSuffix(exitCode: number | null | undefined): string {
+    if (typeof exitCode !== 'number') {
+      return '';
+    }
+    return exitCode === 0 ? ' (exit 0)' : ` (exit ${String(exitCode)})`;
+  }
+
+  private maybePushAssistantTokenDelta(
+    state: CodexCliExecutionState,
+    request: CodexCliExecutionRequest,
+    parsedEvent: CodexCliJsonEvent,
+  ): boolean {
+    const candidateText = this.extractAssistantTextCandidate(parsedEvent);
+    if (!candidateText) {
+      return false;
+    }
+
+    const nextTokenState = this.resolveAssistantTokenState(
+      state.accumulatedAssistantText,
+      candidateText,
+      parsedEvent.type === 'item.completed',
+    );
+    if (!nextTokenState) {
+      return false;
+    }
+
+    state.accumulatedAssistantText = nextTokenState.accumulatedText;
+    this.pushCliExecutionEvent(state, {
+      eventType: AgentStreamEventType.TOKEN,
+      timestamp: new Date().toISOString(),
+      processId: request.processId,
+      executionId: request.executionId,
+      stageId: request.stageId,
+      routeKey: request.routeKey,
+      payload: {
+        surface: CODEX_SURFACE,
+        text: nextTokenState.chunkText,
+        accumulatedText: nextTokenState.accumulatedText,
+      },
+    });
+    return true;
+  }
+
+  private extractAssistantTextCandidate(parsedEvent: CodexCliJsonEvent): string | undefined {
+    return (
+      this.readOptionalRawString(parsedEvent.item?.delta) ??
+      this.readOptionalRawString(parsedEvent.delta) ??
+      this.readOptionalRawString(parsedEvent.item?.text) ??
+      this.readOptionalRawString(parsedEvent.text) ??
+      this.extractRawTextFromUnknown(parsedEvent.item?.content) ??
+      this.extractRawTextFromUnknown(parsedEvent.content)
+    );
+  }
+
+  private resolveAssistantTokenState(
+    previousAccumulatedText: string,
+    candidateText: string,
+    isTerminalEvent: boolean,
+  ): { chunkText: string; accumulatedText: string } | null {
+    if (candidateText === previousAccumulatedText) {
+      return null;
+    }
+
+    if (candidateText.startsWith(previousAccumulatedText)) {
+      const chunkText = candidateText.slice(previousAccumulatedText.length);
+      return chunkText.length > 0
+        ? {
+            chunkText,
+            accumulatedText: candidateText,
+          }
+        : null;
+    }
+
+    if (previousAccumulatedText.startsWith(candidateText) && !isTerminalEvent) {
+      return null;
+    }
+
+    if (!isTerminalEvent) {
+      return {
+        chunkText: candidateText,
+        accumulatedText: `${previousAccumulatedText}${candidateText}`,
+      };
+    }
+
+    return {
+      chunkText: candidateText,
+      accumulatedText: candidateText,
+    };
+  }
+
+  private extractRawTextFromUnknown(candidate: unknown): string | undefined {
+    if (typeof candidate === 'string') {
+      return this.readOptionalRawString(candidate);
+    }
+
+    if (Array.isArray(candidate)) {
+      const flattenedText = candidate
+        .map((item) => this.extractRawTextFromUnknown(item))
+        .filter((item): item is string => typeof item === 'string')
+        .join('');
+      return this.readOptionalRawString(flattenedText);
+    }
+
+    if (!candidate || typeof candidate !== 'object') {
+      return undefined;
+    }
+
+    const recordCandidate = candidate as Record<string, unknown>;
+    return (
+      this.readOptionalRawString(recordCandidate.text) ??
+      this.readOptionalRawString(recordCandidate.delta) ??
+      this.extractRawTextFromUnknown(recordCandidate.content)
+    );
+  }
+
+  private readOptionalRawString(candidate: unknown): string | undefined {
+    return typeof candidate === 'string' && candidate.length > 0 ? candidate : undefined;
   }
 
   /**
@@ -1364,6 +1566,10 @@ export class CodexAgentAdapter extends AgentProtocol {
   }
 
   private resolveStreamTimeoutMs(request: AgentStreamEventsRequest): number {
+    if (typeof request.agentInvocationTimeoutMs === 'number') {
+      return request.agentInvocationTimeoutMs;
+    }
+
     if (this.shouldUseRepositoryReviewCommand(request)) {
       return CODEX_REPOSITORY_REVIEW_TIMEOUT_MS;
     }

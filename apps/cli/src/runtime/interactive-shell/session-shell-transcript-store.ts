@@ -6,6 +6,7 @@ import {
 import { CliSessionTranscriptRole } from '../../constants/cli-session-shell.constant.js';
 import type {
   CliSessionShellTranscriptBacklink,
+  CliSessionShellTranscriptDetailsBlock,
   CliSessionShellTranscriptItem,
 } from '../../types/index.js';
 
@@ -45,6 +46,7 @@ export class CliSessionShellTranscriptStore {
     sessionId: string,
     events: OrchestrationSessionEvent[],
     translate: (key: string, interpolation?: Record<string, string>) => string,
+    resolveTurnDetails?: (turnId: string) => string[],
   ): CliSessionShellTranscriptItem[] {
     if (this.currentSessionId !== sessionId) {
       this.reset(sessionId);
@@ -55,7 +57,7 @@ export class CliSessionShellTranscriptStore {
         continue;
       }
 
-      const transcriptItem = this.mapEventToTranscriptItem(event, translate);
+      const transcriptItem = this.mapEventToTranscriptItem(event, translate, resolveTurnDetails);
       if (transcriptItem) {
         this.transcriptItems.push(transcriptItem);
       }
@@ -91,12 +93,43 @@ export class CliSessionShellTranscriptStore {
       ...item,
       lines: [...item.lines],
       ...(item.backlinks ? { backlinks: item.backlinks.map((backlink) => ({ ...backlink })) } : {}),
+      ...(item.details
+        ? {
+            details: {
+              ...item.details,
+              lines: [...item.details.lines],
+            },
+          }
+        : {}),
     }));
+  }
+
+  /**
+   * Toggles the newest transcript execution-details block in-place.
+   * @param translate CLI i18n translation function.
+   * @returns `true` when one item was toggled.
+   */
+  public toggleLatestExecutionDetails(
+    translate: (key: string, interpolation?: Record<string, string>) => string,
+  ): boolean {
+    for (let index = this.transcriptItems.length - 1; index >= 0; index -= 1) {
+      const item = this.transcriptItems[index];
+      if (!item?.details) {
+        continue;
+      }
+
+      item.details.expanded = !item.details.expanded;
+      item.details.summaryLine = this.renderExecutionDetailsSummaryLine(item.details, translate);
+      return true;
+    }
+
+    return false;
   }
 
   private mapEventToTranscriptItem(
     event: OrchestrationSessionEvent,
     translate: (key: string, interpolation?: Record<string, string>) => string,
+    resolveTurnDetails?: (turnId: string) => string[],
   ): CliSessionShellTranscriptItem | null {
     const role = event.payload.role;
     if (
@@ -142,6 +175,11 @@ export class CliSessionShellTranscriptStore {
     }
 
     if (event.type === OrchestrationSessionEventType.TURN_COMPLETED) {
+      const turnId = this.readOptionalString(event.payload.turnId);
+      const details = this.buildExecutionDetailsBlock(
+        turnId ? (resolveTurnDetails?.(turnId) ?? []) : [],
+        translate,
+      );
       const routeId = this.readOptionalString(event.payload.routeId) ?? 'session.main';
       const turnIndex = this.readOptionalNumber(event.payload.turnIndex);
       const assistantMessage = this.readOptionalString(event.payload.assistantMessage);
@@ -175,6 +213,7 @@ export class CliSessionShellTranscriptStore {
           }),
           renderKind: 'collaboration_recap',
           markdownSource: assistantMessage,
+          ...(details ? { details } : {}),
         };
       }
 
@@ -186,6 +225,7 @@ export class CliSessionShellTranscriptStore {
           lines: [assistantMessage],
           renderKind: 'markdown',
           markdownSource: assistantMessage,
+          ...(details ? { details } : {}),
         };
       }
 
@@ -234,6 +274,7 @@ export class CliSessionShellTranscriptStore {
           ],
           renderKind: 'command_recap',
           backlinks: handoffBacklinks,
+          ...(details ? { details } : {}),
         };
       }
 
@@ -293,6 +334,7 @@ export class CliSessionShellTranscriptStore {
         ],
         renderKind: 'command_recap',
         backlinks: handoffBacklinks,
+        ...(details ? { details } : {}),
       };
     }
 
@@ -312,6 +354,11 @@ export class CliSessionShellTranscriptStore {
     }
 
     if (event.type === OrchestrationSessionEventType.TURN_FAILED) {
+      const turnId = this.readOptionalString(event.payload.turnId);
+      const details = this.buildExecutionDetailsBlock(
+        turnId ? (resolveTurnDetails?.(turnId) ?? []) : [],
+        translate,
+      );
       const errorDetail = this.readOptionalString(event.payload.errorDetail);
       return {
         id: `${event.sessionId}:${String(event.sequence)}`,
@@ -325,10 +372,16 @@ export class CliSessionShellTranscriptStore {
           translate('cli.sessionShell.responses.turnRecoverableHint'),
         ],
         renderKind: 'system_notice',
+        ...(details ? { details } : {}),
       };
     }
 
     if (event.type === OrchestrationSessionEventType.TURN_CANCELLED) {
+      const turnId = this.readOptionalString(event.payload.turnId);
+      const details = this.buildExecutionDetailsBlock(
+        turnId ? (resolveTurnDetails?.(turnId) ?? []) : [],
+        translate,
+      );
       return {
         id: `${event.sessionId}:${String(event.sequence)}`,
         role: CliSessionTranscriptRole.SYSTEM,
@@ -338,6 +391,7 @@ export class CliSessionShellTranscriptStore {
           translate('cli.sessionShell.responses.turnRecoverableHint'),
         ],
         renderKind: 'system_notice',
+        ...(details ? { details } : {}),
       };
     }
 
@@ -415,6 +469,39 @@ export class CliSessionShellTranscriptStore {
       default:
         return interactionMode ?? 'role collaboration';
     }
+  }
+
+  private buildExecutionDetailsBlock(
+    lines: string[],
+    translate: (key: string, interpolation?: Record<string, string>) => string,
+  ): CliSessionShellTranscriptDetailsBlock | undefined {
+    const normalizedLines = lines.map((line) => line.trim()).filter((line) => line.length > 0);
+    if (normalizedLines.length === 0) {
+      return undefined;
+    }
+
+    const details: CliSessionShellTranscriptDetailsBlock = {
+      title: translate('cli.sessionShell.responses.executionDetailsTitle'),
+      summaryLine: '',
+      lines: normalizedLines,
+      expanded: false,
+    };
+    details.summaryLine = this.renderExecutionDetailsSummaryLine(details, translate);
+    return details;
+  }
+
+  private renderExecutionDetailsSummaryLine(
+    details: CliSessionShellTranscriptDetailsBlock,
+    translate: (key: string, interpolation?: Record<string, string>) => string,
+  ): string {
+    return translate(
+      details.expanded
+        ? 'cli.sessionShell.responses.executionDetailsExpanded'
+        : 'cli.sessionShell.responses.executionDetailsCollapsed',
+      {
+        count: String(details.lines.length),
+      },
+    );
   }
 
   private mapTranscriptRole(role: OrchestrationSessionTranscriptRole): CliSessionTranscriptRole {

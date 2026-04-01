@@ -29,6 +29,7 @@ import {
   CliSessionShellForegroundFocusTarget,
   CliSessionShellForegroundInputOwner,
   CliSessionShellHandoffState,
+  CliSessionShellInputActionType,
   CliSessionShellInputMode,
   CliSessionShellMode,
   CliSessionShellPersistenceOwner,
@@ -84,6 +85,8 @@ interface CliSessionShellRuntimeState {
   currentRouteId: string;
   inputHistory: CliSessionShellHistoryEntry[];
   pendingCommand: PendingCommandExecution | null;
+  historyNavigationCursor: number | null;
+  historyNavigationDraftValue: string | null;
 }
 
 /**
@@ -119,6 +122,8 @@ export class CliSessionShellRunner {
         bootstrapped.session.session.currentRouteId ?? OrchestrationSessionRouteId.MAIN,
       inputHistory: [],
       pendingCommand: null,
+      historyNavigationCursor: null,
+      historyNavigationDraftValue: null,
     };
     const viewModel = this.createInitialViewModel(
       options,
@@ -303,10 +308,38 @@ export class CliSessionShellRunner {
           );
         }
 
+        if (action.type === CliSessionShellInputActionType.SESSION_TOGGLE_LATEST_DETAILS) {
+          if (transcriptStore.toggleLatestExecutionDetails(options.translate)) {
+            this.refreshRenderedTranscript(viewModel, transcriptStore, turnProgressDock);
+            viewModel.promptBarLines = this.buildPromptBarLines(viewModel, options, runtimeState);
+            this.renderActiveSurface(viewModel);
+          }
+          continue;
+        }
+
+        if (
+          action.type === CliSessionShellInputActionType.COMPOSER_HISTORY_PREVIOUS ||
+          action.type === CliSessionShellInputActionType.COMPOSER_HISTORY_NEXT
+        ) {
+          this.applyHistoryNavigationAction(
+            action.type,
+            inkController,
+            viewModel,
+            options,
+            runtimeState,
+          );
+          continue;
+        }
+
+        if (action.type === CliSessionShellInputActionType.COMPOSER_CHANGED) {
+          this.resetHistoryNavigation(runtimeState);
+        }
+
         if (!effects.submitComposer) {
           continue;
         }
 
+        this.resetHistoryNavigation(runtimeState);
         const trimmedComposerValue = viewModel.composerValue.trim();
         if (trimmedComposerValue.length === 0) {
           this.resetPromptState(viewModel, options, runtimeState);
@@ -367,7 +400,9 @@ export class CliSessionShellRunner {
     runtimeState: CliSessionShellRuntimeState,
     turnProgressDock: CliSessionShellTurnProgressDock,
   ): Promise<CliSessionShellRunResult | null> {
-    viewModel.composerValue = inputLine;
+    viewModel.composerValue = '';
+    viewModel.promptBarLines = this.buildPromptBarLines(viewModel, options, runtimeState);
+    this.renderActiveSurface(viewModel);
 
     if (this.isShortcutHelpAlias(inputLine)) {
       return await this.handleSlashCommand(
@@ -1411,12 +1446,13 @@ export class CliSessionShellRunner {
             sessionId: viewModel.sessionId,
           },
     );
+    turnProgressDock?.applySessionEvents(subscription.events);
     const baseTranscriptItems = transcriptStore.applyEvents(
       viewModel.sessionId,
       subscription.events,
       options.translate,
+      (turnId) => turnProgressDock?.consumeCompletedTurnDetails(turnId) ?? [],
     );
-    turnProgressDock?.applySessionEvents(subscription.events);
     viewModel.transcriptItems = this.projectTranscriptItems(
       viewModel.sessionId,
       baseTranscriptItems,
@@ -1441,18 +1477,45 @@ export class CliSessionShellRunner {
     viewModel: CliSessionShellViewModel,
     options: CliSessionShellRunOptions,
   ): string {
+    const executionDetailsShortcut = this.buildExecutionDetailsShortcut(viewModel, options);
     if (
       viewModel.handoffState === CliSessionShellHandoffState.PREVIEWING ||
       viewModel.handoffState === CliSessionShellHandoffState.AWAITING_CONFIRMATION
     ) {
-      return options.translate('cli.sessionShell.promptBar.previewShortcuts');
+      return executionDetailsShortcut
+        ? `${options.translate('cli.sessionShell.promptBar.previewShortcuts')} · ${executionDetailsShortcut}`
+        : options.translate('cli.sessionShell.promptBar.previewShortcuts');
     }
 
     if (viewModel.shellMode === CliSessionShellMode.COMMAND_PALETTE) {
-      return options.translate('cli.sessionShell.promptBar.paletteShortcuts');
+      return executionDetailsShortcut
+        ? `${options.translate('cli.sessionShell.promptBar.paletteShortcuts')} · ${executionDetailsShortcut}`
+        : options.translate('cli.sessionShell.promptBar.paletteShortcuts');
     }
 
-    return options.translate('cli.sessionShell.promptBar.idleShortcuts');
+    return executionDetailsShortcut
+      ? `${options.translate('cli.sessionShell.promptBar.idleShortcuts')} · ${executionDetailsShortcut}`
+      : options.translate('cli.sessionShell.promptBar.idleShortcuts');
+  }
+
+  private buildExecutionDetailsShortcut(
+    viewModel: CliSessionShellViewModel,
+    options: CliSessionShellRunOptions,
+  ): string | null {
+    for (let index = viewModel.transcriptItems.length - 1; index >= 0; index -= 1) {
+      const details = viewModel.transcriptItems[index]?.details;
+      if (!details) {
+        continue;
+      }
+
+      return options.translate(
+        details.expanded
+          ? 'cli.sessionShell.promptBar.hideExecutionDetailsShortcut'
+          : 'cli.sessionShell.promptBar.showExecutionDetailsShortcut',
+      );
+    }
+
+    return null;
   }
 
   private showSlashHelpPalette(
@@ -1534,6 +1597,7 @@ export class CliSessionShellRunner {
     options: CliSessionShellRunOptions,
     runtimeState: CliSessionShellRuntimeState,
   ): void {
+    this.resetHistoryNavigation(runtimeState);
     viewModel.shellMode = CliSessionShellMode.SESSION_SHELL;
     viewModel.inputMode = CliSessionShellInputMode.PLAIN_TEXT;
     viewModel.slashQuery = '';
@@ -1546,6 +1610,79 @@ export class CliSessionShellRunner {
     viewModel.composerValue = '';
     viewModel.foregroundFocusTarget = CliSessionShellForegroundFocusTarget.COMPOSER;
     viewModel.promptBarLines = this.buildPromptBarLines(viewModel, options, runtimeState);
+  }
+
+  private applyHistoryNavigationAction(
+    actionType:
+      | CliSessionShellInputActionType.COMPOSER_HISTORY_PREVIOUS
+      | CliSessionShellInputActionType.COMPOSER_HISTORY_NEXT,
+    inkController: CliSessionShellInkController,
+    viewModel: CliSessionShellViewModel,
+    options: CliSessionShellRunOptions,
+    runtimeState: CliSessionShellRuntimeState,
+  ): void {
+    const nextComposerValue = this.resolveHistoryNavigationValue(
+      actionType,
+      viewModel.composerValue,
+      runtimeState,
+    );
+    if (nextComposerValue === null) {
+      return;
+    }
+
+    inkController.applyAction(
+      viewModel,
+      {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: nextComposerValue,
+      },
+      options.translate,
+    );
+    viewModel.promptBarLines = this.buildPromptBarLines(viewModel, options, runtimeState);
+    this.renderActiveSurface(viewModel);
+  }
+
+  private resolveHistoryNavigationValue(
+    actionType:
+      | CliSessionShellInputActionType.COMPOSER_HISTORY_PREVIOUS
+      | CliSessionShellInputActionType.COMPOSER_HISTORY_NEXT,
+    composerValue: string,
+    runtimeState: CliSessionShellRuntimeState,
+  ): string | null {
+    if (runtimeState.inputHistory.length === 0) {
+      return null;
+    }
+
+    if (actionType === CliSessionShellInputActionType.COMPOSER_HISTORY_PREVIOUS) {
+      if (runtimeState.historyNavigationCursor === null) {
+        runtimeState.historyNavigationDraftValue = composerValue;
+        runtimeState.historyNavigationCursor = runtimeState.inputHistory.length - 1;
+      } else if (runtimeState.historyNavigationCursor > 0) {
+        runtimeState.historyNavigationCursor -= 1;
+      }
+
+      return runtimeState.inputHistory[runtimeState.historyNavigationCursor]?.value ?? '';
+    }
+
+    if (runtimeState.historyNavigationCursor === null) {
+      return composerValue;
+    }
+
+    const nextCursor = runtimeState.historyNavigationCursor + 1;
+    if (nextCursor >= runtimeState.inputHistory.length) {
+      runtimeState.historyNavigationCursor = null;
+      const draftValue = runtimeState.historyNavigationDraftValue ?? '';
+      runtimeState.historyNavigationDraftValue = null;
+      return draftValue;
+    }
+
+    runtimeState.historyNavigationCursor = nextCursor;
+    return runtimeState.inputHistory[nextCursor]?.value ?? '';
+  }
+
+  private resetHistoryNavigation(runtimeState: CliSessionShellRuntimeState): void {
+    runtimeState.historyNavigationCursor = null;
+    runtimeState.historyNavigationDraftValue = null;
   }
 
   private async clearLocalTranscriptView(

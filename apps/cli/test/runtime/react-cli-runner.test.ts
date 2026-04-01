@@ -210,6 +210,15 @@ describe('ReactCliRunner', () => {
           renderKind: 'collaboration_recap',
           markdownSource:
             '## Architect + Reviewer + Verifier Parallel Analysis\n\n### Architect\n\n- architecture risk\n\n### Reviewer\n\n- review risk\n\n### Verifier\n\n- verification risk',
+          details: {
+            title: 'Execution details',
+            summaryLine: '▶ Collapsed · 2 entries · Ctrl+O to open',
+            lines: [
+              'reviewer: Running command: git diff --stat',
+              'reviewer: Completed todo: inspect patch',
+            ],
+            expanded: false,
+          },
         },
       ],
       transcriptTitle: 'History',
@@ -255,6 +264,8 @@ describe('ReactCliRunner', () => {
     expect(output).toContain('[Execution surface]');
     expect(output).toContain('architect:ollama | reviewer:ollama | verifier:ollama');
     expect(output).toContain('Execution surface selection switched to a fallback automatically.');
+    expect(output).toContain('Execution details');
+    expect(output).toContain('Collapsed · 2 entries · Ctrl+O to open');
     expect(output).toContain('Architect + Reviewer + Verifier Parallel Analysis');
     expect(output).toContain('Related');
     expect(output).toContain('- slash:/connect -> /connect');

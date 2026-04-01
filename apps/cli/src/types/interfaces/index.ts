@@ -70,6 +70,7 @@ export type {
 } from './cli-interactive-shell.interface.js';
 export type {
   CliSessionShellTranscriptBacklink,
+  CliSessionShellTranscriptDetailsBlock,
   CliSessionShellTranscriptRenderKind,
   CliSessionShellInputAction,
   CliSessionShellInputActionResult,

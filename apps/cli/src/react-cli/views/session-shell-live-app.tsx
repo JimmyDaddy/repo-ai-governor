@@ -1,5 +1,5 @@
 import { type Key, useInput } from 'ink';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { CliSessionShellInputActionType } from '../../constants/cli-session-shell.constant.js';
 import type { CliSessionShellInputAction, CliSessionShellViewModel } from '../../types/index.js';
 import { ReactCliSessionShellApp } from './session-shell-app.js';
@@ -15,6 +15,7 @@ interface ReactCliSessionShellKeypressContext {
   key: Key;
   composerValue: string;
   highlightedCommand: string | null;
+  slashPaletteVisible: boolean;
 }
 
 interface ReactCliSessionShellKeypressResolution {
@@ -49,7 +50,9 @@ export function mapSessionShellKeypressToAction(
     return {
       kind: 'action',
       action: {
-        type: CliSessionShellInputActionType.PALETTE_HIGHLIGHT_PREVIOUS,
+        type: shouldNavigatePalette(context)
+          ? CliSessionShellInputActionType.PALETTE_HIGHLIGHT_PREVIOUS
+          : CliSessionShellInputActionType.COMPOSER_HISTORY_PREVIOUS,
       },
     };
   }
@@ -58,7 +61,9 @@ export function mapSessionShellKeypressToAction(
     return {
       kind: 'action',
       action: {
-        type: CliSessionShellInputActionType.PALETTE_HIGHLIGHT_NEXT,
+        type: shouldNavigatePalette(context)
+          ? CliSessionShellInputActionType.PALETTE_HIGHLIGHT_NEXT
+          : CliSessionShellInputActionType.COMPOSER_HISTORY_NEXT,
       },
     };
   }
@@ -114,6 +119,15 @@ export function mapSessionShellKeypressToAction(
     };
   }
 
+  if ((context.key.ctrl && normalizedInput === 'o') || context.input === '\u000f') {
+    return {
+      kind: 'action',
+      action: {
+        type: CliSessionShellInputActionType.SESSION_TOGGLE_LATEST_DETAILS,
+      },
+    };
+  }
+
   if (context.key.backspace || context.key.delete) {
     const nextComposerValue = Array.from(context.composerValue).slice(0, -1).join('');
     return {
@@ -141,6 +155,15 @@ export function mapSessionShellKeypressToAction(
   return {
     kind: 'ignore',
   };
+}
+
+function shouldNavigatePalette(context: ReactCliSessionShellKeypressContext): boolean {
+  if (!context.slashPaletteVisible) {
+    return false;
+  }
+
+  const trimmedComposerValue = context.composerValue.trim();
+  return trimmedComposerValue === '?' || trimmedComposerValue.startsWith('/');
 }
 
 function shouldAcceptHighlightedCommandOnEnter(
@@ -178,10 +201,17 @@ export function ReactCliLiveSessionShellApp({
   viewModel: CliSessionShellViewModel;
   interactionHandlers: ReactCliSessionShellInteractionHandlers;
 }): React.JSX.Element {
+  const [displayComposerValue, setDisplayComposerValue] = useState(viewModel.composerValue);
   const composerValueRef = useRef(viewModel.composerValue);
+  const authoritativeComposerValueRef = useRef(viewModel.composerValue);
 
   useEffect(() => {
+    if (viewModel.composerValue === authoritativeComposerValueRef.current) {
+      return;
+    }
+    authoritativeComposerValueRef.current = viewModel.composerValue;
     composerValueRef.current = viewModel.composerValue;
+    setDisplayComposerValue(viewModel.composerValue);
   }, [viewModel.composerValue]);
 
   useInput((input, key) => {
@@ -190,10 +220,18 @@ export function ReactCliLiveSessionShellApp({
       key,
       composerValue: composerValueRef.current,
       highlightedCommand: viewModel.highlightedCommand,
+      slashPaletteVisible: viewModel.slashPaletteVisible,
     });
 
     if (resolution.nextComposerValue !== undefined) {
       composerValueRef.current = resolution.nextComposerValue;
+      setDisplayComposerValue(resolution.nextComposerValue);
+    } else if (
+      resolution.kind === 'action' &&
+      resolution.action?.type === CliSessionShellInputActionType.COMPOSER_SUBMITTED
+    ) {
+      composerValueRef.current = '';
+      setDisplayComposerValue('');
     }
 
     if (resolution.kind === 'interrupt') {
@@ -211,5 +249,12 @@ export function ReactCliLiveSessionShellApp({
     }
   });
 
-  return <ReactCliSessionShellApp viewModel={viewModel} />;
+  return (
+    <ReactCliSessionShellApp
+      viewModel={{
+        ...viewModel,
+        composerValue: displayComposerValue,
+      }}
+    />
+  );
 }
