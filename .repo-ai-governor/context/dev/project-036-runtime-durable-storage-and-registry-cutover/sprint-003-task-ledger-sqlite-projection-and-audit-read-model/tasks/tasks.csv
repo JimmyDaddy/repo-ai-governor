@@ -1,0 +1,2 @@
+execution_id,task_id,title,owner,priority,due_date,status,project,sprint,plan,result,verify,review_delta,recorded_at
+exec-20260402-311,TK-478,build tasks.csv sqlite projection and route audit-query consumers through it,AI-Agent,P1,2026-04-24,planned,project-036-runtime-durable-storage-and-registry-cutover,sprint-003-task-ledger-sqlite-projection-and-audit-read-model,为 tasks.csv 建立 sqlite projection read-model 并让 audit query UI consumer 优先读取它,任务创建 待执行,待执行,待执行,2026-04-02

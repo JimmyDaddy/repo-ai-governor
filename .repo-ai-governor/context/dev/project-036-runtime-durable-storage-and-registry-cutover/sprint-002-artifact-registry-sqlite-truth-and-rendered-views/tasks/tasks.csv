@@ -1,0 +1,2 @@
+execution_id,task_id,title,owner,priority,due_date,status,project,sprint,plan,result,verify,review_delta,recorded_at
+exec-20260402-310,TK-477,implement sqlite-backed artifact registry canonical truth and rendered CSV compatibility views,AI-Agent,P0,2026-04-22,planned,project-036-runtime-durable-storage-and-registry-cutover,sprint-002-artifact-registry-sqlite-truth-and-rendered-views,将 artifact registry archive registry 切到 sqlite canonical truth 并保留 rendered CSV compatibility/export view,任务创建 待执行,待执行,待执行,2026-04-02

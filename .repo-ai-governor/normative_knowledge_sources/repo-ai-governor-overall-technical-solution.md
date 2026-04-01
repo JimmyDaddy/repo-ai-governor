@@ -1,7 +1,7 @@
 # Repo AI Governor 工具级总技术方案
 
 - Status: active
-- Date: 2026-03-26
+- Date: 2026-04-02
 - Scope: whole product (tool-level)
 - Basis:
   - `.repo-ai-governor/normative_knowledge_sources/product-requirements-brief.md`
@@ -170,8 +170,8 @@
 4. 失败策略
    - 解析失败按策略触发 `block/escalate/warn`，并写入审计事件。
 5. 默认落盘
-   - 建议索引路径：`<workspace_root>/context/artifact-registry/artifacts.csv`（或等价后端）。
-   - 建议归档路径：`<workspace_root>/context/artifact-registry/archive/artifacts.archive.csv`（或等价后端）。
+   - machine-readable canonical registry 建议使用 sqlite 等等价 durable backend 承担。
+   - rendered compatibility/export view 可继续暴露为 `<workspace_root>/context/artifact-registry/artifacts.csv` 与 `<workspace_root>/context/artifact-registry/archive/artifacts.archive.csv`。
    - 人类可读视图若存在，必须由 canonical registry 动态渲染，不得作为独立事实源手工维护。
 6. 生命周期退出策略（最小）
    - 主注册表仅保留 `active/frozen/deprecated`。
@@ -569,9 +569,10 @@
 4. `tasks/TK-xxx.md`
 5. `review/review_*.md -> verified_*.md -> resolved_*.md`
    - 默认 review 输出目录跟随 active primary stream；若 `current-context.md` 声明单值 `Worktree Review Target`，则在该 override 存活期间优先写入其 `review/` 目录，直到最后一个 open CR 生命周期文件收口。
-6. `context/artifact-registry/artifacts.csv`（主注册表，canonical source）
-7. `context/artifact-registry/archive/artifacts.archive.csv`（归档产物索引，canonical source）
-8. Artifact Registry 人类可读视图（可选渲染产物或命令输出，但不承担独立状态维护）
+6. Artifact Registry machine-readable canonical registry（默认目标为 sqlite-backed main registry）
+7. Artifact Registry machine-readable archive registry（默认目标为 sqlite-backed archive registry）
+8. `context/artifact-registry/artifacts.csv` 与 `context/artifact-registry/archive/artifacts.archive.csv`（兼容/导出渲染视图）
+9. Artifact Registry 人类可读视图（可选渲染产物或命令输出，但不承担独立状态维护）
 
 ## 9.3 审计事件最小字段
 

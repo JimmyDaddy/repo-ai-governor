@@ -1,7 +1,7 @@
 # Repo AI Governor 可扩展架构图与仓库分层结构
 
 - Status: active
-- Date: 2026-03-26
+- Date: 2026-04-02
 - Role: implementation blueprint
 - Basis:
   - `.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-overall-technical-solution.md`
@@ -432,12 +432,13 @@ ai-governor/
     governor.yaml
     context/current-context.md
     context/artifact-registry/
+      # machine-readable canonical registry may be sqlite-backed
       artifacts.csv
       archive/artifacts.archive.csv
     normative_knowledge_sources/
 ```
 
-说明：若需要人类可读的 Artifact Registry 视图，应从 `context/artifact-registry/*.csv` 动态渲染，而不是在 workspace 中再维护手工镜像台账。
+说明：`context/artifact-registry/*.csv` 可以继续作为 rendered compatibility/human-readable view 暴露；machine-readable canonical registry 可由 sqlite 等等价 durable backend 承担，但不得再维护第二份手工 truth。
 
 `context/current-context.md` 除 primary/active stream 元数据外，还可在极少数已完成 stream 的 CR 收口场景下声明单值 `Worktree Review Target`；该 override 只负责默认 `review/` 路由，不改变 active task ledger 的 project/sprint 归属。
 

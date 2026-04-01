@@ -2,7 +2,7 @@
 
 - 文档版本：v0.3
 - 状态：执行中（MVP 已完成，P1 深化中）
-- 日期：2026-03-26
+- 日期：2026-04-02
 - 暂定产品名：Repo AI Governor
 
 ## 0. v0.3 更新说明
@@ -17,7 +17,7 @@
 8. 新增 CLI 输出体验基线：终端人类可读美化 + 机器可读稳定输出双模式并存。
 9. 新增“需求->方案->架构”三层文档同步机制，并要求工具内置可执行校验能力。
 10. 明确共享层收敛方向：统一采用 `packages/shared` 承接共享类型、通用工具与 i18n 基础能力。
-11. 明确 Artifact Registry 单一事实源：canonical registry 固定为 machine-readable main/archive registry，human-readable 入口统一由 canonical source 渲染，不再维护手工镜像台账。
+11. 明确 Artifact Registry 单一事实源：canonical registry 固定为 machine-readable main/archive registry，可由 sqlite 等等价 durable backend 承担；human-readable 入口统一由 canonical source 渲染，不再维护手工镜像台账。
 12. 明确当前 Stage 9 follow-up 属于工具级投产与自治收口 overlay：重点收敛真实调用、任务驱动编排、HITL 决策回灌、受控交付演练与黑盒稳定性，不改变产品仍以目标仓库本地治理为主的边界。
 13. 明确编排运行时演进方向：采用 graph-first orchestration backend，CLI 与未来桌面端共用本地 orchestration service，且 `workspace` 下治理产物继续作为 canonical source。
 14. 明确方案层模块化方向：总技术方案保持北极星索引，模块细节以下钻 `module registry + module overview + contract` 结构按需加载，并通过 impact classification 维持同步约束。
@@ -479,7 +479,7 @@ AI 先完成方案与实现，再进入评审 Agent 与复核 Agent 的循环；
    - 主注册表仅保留可消费或短期过渡产物（`active/frozen/deprecated`），历史产物迁移到归档注册表。
    - 依赖解析命中 `deprecated/archived/retired` 时，默认不自动注入上下文，按策略触发 `warn/block/HITL`。
 7. 单一事实源约束
-   - canonical registry 固定为 machine-readable main/archive registry，不得并行维护第二份手工 registry 台账作为事实源。
+   - canonical registry 固定为 machine-readable main/archive registry，可由 sqlite 等等价 durable backend 承担，不得并行维护第二份手工 registry 台账作为事实源。
    - human-readable artifact view 仅允许由 canonical registry 动态渲染或查询生成，不得承担独立状态维护职责。
 
 ### 8.10.3 三层文档同步机制（需求 -> 方案 -> 架构）

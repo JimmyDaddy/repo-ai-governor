@@ -1,0 +1,2 @@
+execution_id,task_id,title,owner,priority,due_date,status,project,sprint,plan,result,verify,review_delta,recorded_at
+exec-20260402-312,TK-479,deliver migration verification rebuild and cutover governance for durable storage surfaces,AI-Agent,P0,2026-04-28,planned,project-036-runtime-durable-storage-and-registry-cutover,sprint-004-migration-verification-and-cutover-governance,为 session truth artifact registry truth tasks projection 收口 migration verify rebuild render reconcile cutover governance,任务创建 待执行,待执行,待执行,2026-04-02

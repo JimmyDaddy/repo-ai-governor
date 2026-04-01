@@ -1,7 +1,7 @@
 # project-035-session-main-supervisor-and-role-subagent-productization 计划
 
 - Status: completed
-- Date: 2026-04-01
+- Date: 2026-04-02
 - Stage Mapping: Session.main supervisor path-C follow-up
 - Phase Mapping: Technical solution promotion / answer supervisor bootstrap / role-subagent collaboration / streaming and host parity / conversational chat and skill handoff productization
 - Upstream:
@@ -42,8 +42,8 @@
 ## 2.4 sprint-004-streaming-and-host-parity
 
 - Status: completed
-- Sprint Goal: 为 supervisor runtime 补齐 streaming、sidecar/desktop host parity 与 remote-role seam 预留。
-- Task Package: `TK-469`、`TK-470`。
+- Sprint Goal: 为 supervisor runtime 补齐 streaming、sidecar/desktop host parity 与 remote-role seam 预留，并承接 runtime durable storage/sqlite-fs cutover technical-solution promotion closeout。
+- Task Package: `TK-469`、`TK-470`、`TK-474`。
 
 ## 2.5 sprint-005-conversational-chat-and-skill-handoff-productization
 
@@ -65,6 +65,7 @@
 | TK-471 | sprint-005 | harden conversational routing and direct-answer chatability | runtime/session-main | TK-468 | completed |
 | TK-472 | sprint-005 | introduce foreground skill registry and risk-tiered governed handoff | runtime/session-main | TK-471 | completed |
 | TK-473 | sprint-005 | align direct-execute and preview-confirm continuity with resume and command bundles | runtime/session-main | TK-472 | completed |
+| TK-474 | sprint-004 | promote runtime durable storage and sqlite-fs cutover solution into formal module docs | docs/promotion | `.repo-ai-governor/draft/runtime-session-durable-memory-and-sqlite-fs-cutover-technical-solution.md` | completed |
 
 ## 4. 依赖产物策略
 
@@ -138,6 +139,7 @@
 10. 2026-03-31：完成 `TK-467`；`session.main` 当前已具备一条真实 `@planner -> @reviewer` 串行协作路径、`routerDecisionReason` 回灌，以及 serial collaboration 的 shared-session/resume parity 回归覆盖。
 11. 2026-03-31：`TK-468` 已切为当前执行前线；当前 sprint 继续承接受控 parallel role fan-out 与 collaboration recap/handoff semantics 分层。
 12. 2026-03-31：`TK-468` 已完成第一阶段启动并推送 baseline；`session.main` 当前已具备一条受治理 `@planner @reviewer` parallel analysis fan-out 路径、`synthesisMode / invokedRoleIds / subagentCount` 投影，以及 `collaboration_recap`/`command_recap` presenter 分层与回归覆盖。
+13. 2026-04-02：利用 `sprint-004` closeout surface 完成 `TK-474`；`runtime-session-durable-memory-and-sqlite-fs-cutover` 已正式提升为 `runtime.durable-storage` module docs，并同步 lifecycle / delivery / module-registry / manifest / triad。
 13. 2026-03-31：完成 `TK-468` 并收口 `sprint-003`；`session.main` 当前已具备 `@architect @reviewer @verifier` 三角色 parallel analysis 试点，且 shared session truth、service event payload、CLI transcript presenter 与 resume parity 已完成一致性验证。
 14. 2026-03-31：新增 follow-up draft `.repo-ai-governor/draft/session-main-conversational-chat-and-skill-intent-handoff-technical-solution.md`，专门承接“主 agent 可闲聊 + 自然语言 skill/命令组合受治理交接”的产品化补口，作为后续实现窗口输入。
 15. 2026-04-01：用户已明确批准 conversational follow-up draft，并将其正式并入 active solution `technical-solution.interactive-cli-react-style-cli` 的 formal module docs；`runtime.orchestration` 与 `runtime.cli-interactive-shell` 现正式接受 risk-tiered natural-language skill handoff / low-risk direct-execute direction，promotion 证据收口到 `TK-468` closeout 台账。

@@ -1,5 +1,5 @@
 schema_version: 2
-generated_at: 2026-03-31
+generated_at: 2026-04-02
 status: active
 owner: architecture
 
@@ -264,6 +264,62 @@ modules:
         requires_sync: []
         recommends_sync:
           - overall_technical_solution
+
+  - module_id: runtime.durable-storage
+    status: active
+    owner: runtime
+    layer: runtime-core
+    summary_doc: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-durable-storage/module-overview.md
+    detail_docs:
+      - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-durable-storage/contracts/session-durable-storage-contract.md
+        kind: contract
+      - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-durable-storage/contracts/registry-and-ledger-projection-contract.md
+        kind: contract
+      - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-durable-storage/adrs/sqlite-fs-default-runtime-truth-and-rendered-csv-views.md
+        kind: adr
+    north_star_refs:
+      - prd.multi-agent-orchestration
+      - overall.graph-first-runtime
+      - architecture.runtime-boundary
+      - architecture.governance-boundary
+    exports_contracts:
+      - contract.runtime.session-durable-storage.v1
+      - contract.runtime.registry-projection.v1
+    imports_contracts:
+      - contract.memory-provider.loading.v1
+    depends_on_modules:
+      - runtime.memory-provider-loading
+    load_triggers:
+      - runtime_contract_change
+      - memory_provider_change
+      - artifact_registry_change
+      - ledger_sync_issue
+      - governance_engine_change
+    change_impact_policy:
+      summary_doc_change:
+        classification: local_detail_change
+        requires_sync: []
+        recommends_sync: []
+      contract_doc_change:
+        classification: exported_contract_change
+        requires_sync:
+          - summary_doc
+        recommends_sync:
+          - module_registry
+          - direct_consumers
+          - overall_technical_solution
+          - architecture_and_repo_layering
+      adr_doc_change:
+        classification: local_detail_change
+        requires_sync: []
+        recommends_sync:
+          - summary_doc
+      registry_change:
+        classification: module_registry_change
+        requires_sync: []
+        recommends_sync:
+          - overall_technical_solution
+          - architecture_and_repo_layering
           - architecture_and_repo_layering
 
   - module_id: runtime.orchestration

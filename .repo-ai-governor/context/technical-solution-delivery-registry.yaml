@@ -1,5 +1,5 @@
 schema_version: 1
-generated_at: 2026-04-01
+generated_at: 2026-04-02
 status: active
 owner: architecture
 
@@ -171,6 +171,25 @@ deliveries:
       - .repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/sprint-003-seam-follow-through-or-project-closeout/tasks/DA-269-sprint-003-exit-acceptance-and-project-022-completion-closeout.md
       - .repo-ai-governor/context/dev/project-022-memory-semantics-safety-and-consumer-hardening/project-022-memory-semantics-safety-and-consumer-hardening-completion-audit-summary.md
     accepted_at: 2026-03-27
+
+  - solution_id: technical-solution.runtime-durable-storage-and-sqlite-fs-cutover
+    delivery_mode: docs_only
+    consumer_surfaces:
+      - internal_governance
+    user_impact_level: none
+    execution_status: not_required
+    rollout_status: not_required
+    owner: runtime
+    project_ref: project-035-session-main-supervisor-and-role-subagent-productization
+    sprint_ref: sprint-004-streaming-and-host-parity
+    task_ids:
+      - TK-474
+    project_plan_path: .repo-ai-governor/context/dev/project-035-session-main-supervisor-and-role-subagent-productization/plan.md
+    sprint_plan_path: .repo-ai-governor/context/dev/project-035-session-main-supervisor-and-role-subagent-productization/sprint-004-streaming-and-host-parity/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-035-session-main-supervisor-and-role-subagent-productization/sprint-004-streaming-and-host-parity/tasks/tasks.csv
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-035-session-main-supervisor-and-role-subagent-productization/sprint-004-streaming-and-host-parity/tasks/DA-474-runtime-durable-storage-and-sqlite-fs-cutover-technical-solution-promotion.md
+    rollout_artifacts: []
+    accepted_at: 2026-04-02
 
   - solution_id: technical-solution.langgraph-orchestration-direction
     delivery_mode: existing_stream
