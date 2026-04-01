@@ -147,6 +147,14 @@ export class CliSessionShellTranscriptStore {
         return null;
       }
       const requestedRenderKind = this.readTranscriptRenderKind(event.payload.metadata);
+      const metadata =
+        event.payload.metadata && typeof event.payload.metadata === 'object'
+          ? (event.payload.metadata as Record<string, unknown>)
+          : null;
+      const details = this.buildExecutionDetailsBlock(
+        this.readStringArray(metadata?.executionDetailsLines),
+        translate,
+      );
 
       return {
         id: `${event.sessionId}:${String(event.sequence)}`,
@@ -156,6 +164,7 @@ export class CliSessionShellTranscriptStore {
         renderKind:
           requestedRenderKind ??
           (role === OrchestrationSessionTranscriptRole.SYSTEM ? 'system_notice' : 'plain_text'),
+        ...(details ? { details } : {}),
       };
     }
 
@@ -176,8 +185,14 @@ export class CliSessionShellTranscriptStore {
 
     if (event.type === OrchestrationSessionEventType.TURN_COMPLETED) {
       const turnId = this.readOptionalString(event.payload.turnId);
+      const payloadExecutionDetailsLines = this.readStringArray(
+        event.payload.executionDetailsLines,
+      );
       const details = this.buildExecutionDetailsBlock(
-        turnId ? (resolveTurnDetails?.(turnId) ?? []) : [],
+        this.mergeExecutionDetailsLines(
+          payloadExecutionDetailsLines,
+          turnId ? (resolveTurnDetails?.(turnId) ?? []) : [],
+        ),
         translate,
       );
       const routeId = this.readOptionalString(event.payload.routeId) ?? 'session.main';
@@ -355,8 +370,14 @@ export class CliSessionShellTranscriptStore {
 
     if (event.type === OrchestrationSessionEventType.TURN_FAILED) {
       const turnId = this.readOptionalString(event.payload.turnId);
+      const payloadExecutionDetailsLines = this.readStringArray(
+        event.payload.executionDetailsLines,
+      );
       const details = this.buildExecutionDetailsBlock(
-        turnId ? (resolveTurnDetails?.(turnId) ?? []) : [],
+        this.mergeExecutionDetailsLines(
+          payloadExecutionDetailsLines,
+          turnId ? (resolveTurnDetails?.(turnId) ?? []) : [],
+        ),
         translate,
       );
       const errorDetail = this.readOptionalString(event.payload.errorDetail);
@@ -378,8 +399,14 @@ export class CliSessionShellTranscriptStore {
 
     if (event.type === OrchestrationSessionEventType.TURN_CANCELLED) {
       const turnId = this.readOptionalString(event.payload.turnId);
+      const payloadExecutionDetailsLines = this.readStringArray(
+        event.payload.executionDetailsLines,
+      );
       const details = this.buildExecutionDetailsBlock(
-        turnId ? (resolveTurnDetails?.(turnId) ?? []) : [],
+        this.mergeExecutionDetailsLines(
+          payloadExecutionDetailsLines,
+          turnId ? (resolveTurnDetails?.(turnId) ?? []) : [],
+        ),
         translate,
       );
       return {
@@ -488,6 +515,18 @@ export class CliSessionShellTranscriptStore {
     };
     details.summaryLine = this.renderExecutionDetailsSummaryLine(details, translate);
     return details;
+  }
+
+  private mergeExecutionDetailsLines(primaryLines: string[], secondaryLines: string[]): string[] {
+    const mergedLines: string[] = [];
+    for (const line of [...primaryLines, ...secondaryLines]) {
+      const normalizedLine = line.trim();
+      if (normalizedLine.length === 0 || mergedLines.includes(line)) {
+        continue;
+      }
+      mergedLines.push(line);
+    }
+    return mergedLines;
   }
 
   private renderExecutionDetailsSummaryLine(

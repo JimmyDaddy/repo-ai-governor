@@ -8,6 +8,7 @@ import {
   CliSessionShellInputMode,
   CliSessionShellMode,
   CliSessionShellPersistenceOwner,
+  CliSessionTranscriptRole,
 } from '../../src/constants/cli-session-shell.constant.js';
 import { CliSessionShellInkRunner } from '../../src/runtime/interactive-shell/session-shell-ink-runner.js';
 import type { CliSessionShellViewModel } from '../../src/types/index.js';
@@ -240,6 +241,144 @@ describe('CliSessionShellInkRunner', () => {
     });
 
     expect(fakeInstance.clear).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not clear the viewport when transcript content grows during live updates', async () => {
+    const fakeInstance = {
+      rerender: vi.fn(),
+      clear: vi.fn(),
+      unmount: vi.fn(),
+    };
+    let liveHandlers:
+      | {
+          onAction: (action: {
+            type: CliSessionShellInputActionType;
+            value?: string;
+          }) => void;
+          onInterrupt: () => void;
+          onEndOfInput: () => void;
+        }
+      | undefined;
+    const runner = new CliSessionShellInkRunner(
+      {
+        mountLiveSessionShell: vi.fn((_viewModel, interactionHandlers) => {
+          liveHandlers = interactionHandlers;
+          return fakeInstance;
+        }),
+        rerenderLiveSessionShell: vi.fn((_instance, _viewModel, interactionHandlers) => {
+          liveHandlers = interactionHandlers;
+        }),
+      } as never,
+      {
+        stdout: process.stderr,
+      },
+    );
+    const initialViewModel = createViewModel();
+
+    const firstActionPromise = runner.readAction(initialViewModel);
+    liveHandlers?.onAction({
+      type: CliSessionShellInputActionType.COMPOSER_SUBMITTED,
+    });
+    await expect(firstActionPromise).resolves.toEqual({
+      type: CliSessionShellInputActionType.COMPOSER_SUBMITTED,
+    });
+
+    const transcriptExpandedViewModel = {
+      ...initialViewModel,
+      transcriptItems: [
+        {
+          id: 'user:1',
+          role: CliSessionTranscriptRole.USER,
+          label: 'You',
+          lines: ['帮我 cr 代码'],
+          renderKind: 'plain_text' as const,
+        },
+        {
+          id: 'assistant:2',
+          role: CliSessionTranscriptRole.ASSISTANT,
+          label: 'Governor',
+          lines: ['reviewer：Codex repository review is running; waiting for CLI output.'],
+          renderKind: 'plain_text' as const,
+        },
+      ],
+    };
+    const secondActionPromise = runner.readAction(transcriptExpandedViewModel);
+    liveHandlers?.onAction({
+      type: CliSessionShellInputActionType.COMPOSER_HISTORY_PREVIOUS,
+    });
+    await expect(secondActionPromise).resolves.toEqual({
+      type: CliSessionShellInputActionType.COMPOSER_HISTORY_PREVIOUS,
+    });
+
+    expect(fakeInstance.clear).not.toHaveBeenCalled();
+  });
+
+  it('does not clear the viewport when live activity lines expand within the same shell chrome', async () => {
+    const fakeInstance = {
+      rerender: vi.fn(),
+      clear: vi.fn(),
+      unmount: vi.fn(),
+    };
+    let liveHandlers:
+      | {
+          onAction: (action: {
+            type: CliSessionShellInputActionType;
+            value?: string;
+          }) => void;
+          onInterrupt: () => void;
+          onEndOfInput: () => void;
+        }
+      | undefined;
+    const runner = new CliSessionShellInkRunner(
+      {
+        mountLiveSessionShell: vi.fn((_viewModel, interactionHandlers) => {
+          liveHandlers = interactionHandlers;
+          return fakeInstance;
+        }),
+        rerenderLiveSessionShell: vi.fn((_instance, _viewModel, interactionHandlers) => {
+          liveHandlers = interactionHandlers;
+        }),
+      } as never,
+      {
+        stdout: process.stderr,
+      },
+    );
+    const initialViewModel = createViewModel();
+
+    const firstActionPromise = runner.readAction(initialViewModel);
+    liveHandlers?.onAction({
+      type: CliSessionShellInputActionType.COMPOSER_SUBMITTED,
+    });
+    await expect(firstActionPromise).resolves.toEqual({
+      type: CliSessionShellInputActionType.COMPOSER_SUBMITTED,
+    });
+
+    const liveActivityExpandedViewModel = {
+      ...initialViewModel,
+      transcriptItems: [
+        {
+          id: 'activity:1',
+          role: CliSessionTranscriptRole.ASSISTANT,
+          label: 'Live activity',
+          lines: [
+            'Running · 3s',
+            'reviewer：Codex repository review is running; waiting for CLI output.',
+            'reviewer：Running command: git diff --stat',
+          ],
+          renderKind: 'live_activity' as const,
+          summaryLine: 'Running · 3s',
+        },
+      ],
+    };
+    const secondActionPromise = runner.readAction(liveActivityExpandedViewModel);
+    liveHandlers?.onAction({
+      type: CliSessionShellInputActionType.COMPOSER_HISTORY_NEXT,
+    });
+    await expect(secondActionPromise).resolves.toEqual({
+      type: CliSessionShellInputActionType.COMPOSER_HISTORY_NEXT,
+    });
+
+    expect(fakeInstance.clear).not.toHaveBeenCalled();
   });
 
   it('surfaces Ctrl+C as a standardized interrupt error', async () => {

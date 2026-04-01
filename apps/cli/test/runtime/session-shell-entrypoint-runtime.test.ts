@@ -296,6 +296,76 @@ describe('CliSessionShellEntrypointRuntime', () => {
     ]);
   });
 
+  it('treats logical run failures as error bridge results and preserves failure guidance', async () => {
+    const commandExecutor = CliSessionShellEntrypointRuntime.createNestedCommandExecutor({
+      locale: 'en-US',
+      currentWorkingDirectory: '/workspace',
+      environment: {},
+      translate: translateSessionShellResponse,
+      executeCli: async (_argv, io) => {
+        io.stdout(
+          JSON.stringify({
+            command: 'run',
+            message: 'Run completed with execution_id=cli-run-1 and policy_outcome=allow.',
+            command_result: {
+              summary: 'Run completed with execution_id=cli-run-1 and policy_outcome=allow.',
+              details: {
+                runtime_status: 'failed',
+              },
+              experience: {
+                roleProgress: [
+                  {
+                    roleId: 'stage-review',
+                    stage: 'run_runtime',
+                    status: 'failed',
+                    category: 'runtime_failure',
+                    summary: 'Stage stage-review finished with failed.',
+                    detail: 'codex exited with code 1',
+                    backlink: {
+                      executionId: 'cli-run-1',
+                      stageId: 'stage-review',
+                    },
+                  },
+                ],
+                layeredLogs: {
+                  summary: ['runtime_status=failed', 'root_cause=runtime_failure'],
+                  detailed: ['failed_reason=codex exited with code 1'],
+                },
+                interactionPrompts: [
+                  {
+                    category: 'runtime_failure',
+                    stage: 'run_runtime',
+                    title: 'Next action',
+                    action:
+                      'Inspect stage-level errorContext in diagnostics trace and fix runtime stage failures.',
+                    blocking: true,
+                  },
+                ],
+              },
+              artifacts: [{ path: '/tmp/run-report.md' }],
+            },
+          }),
+        );
+        return 0;
+      },
+    });
+
+    const result = await commandExecutor(['run']);
+
+    expect(result).toEqual({
+      artifactPaths: ['/tmp/run-report.md'],
+      commandLine: 'run',
+      message: 'Stage stage-review finished with failed. · codex exited with code 1',
+      status: 'error',
+      summaryLines: [
+        'Summary: Run completed with execution_id=cli-run-1 and policy_outcome=allow.',
+        'Key status: runtime_status=failed · root_cause=runtime_failure',
+        'Failure: Stage stage-review finished with failed. · codex exited with code 1',
+        'Next step: Inspect stage-level errorContext in diagnostics trace and fix runtime stage failures.',
+      ],
+    });
+  });
+
   it('falls back to captured stderr when nested command output is not valid JSON', async () => {
     const commandExecutor = CliSessionShellEntrypointRuntime.createNestedCommandExecutor({
       locale: 'en-US',
@@ -334,6 +404,7 @@ function createRuntime(
 const SESSION_SHELL_RESPONSE_TRANSLATIONS: Record<string, string> = {
   'cli.sessionShell.responses.commandSummary': 'Summary: {{summary}}',
   'cli.sessionShell.responses.commandStatusSummary': 'Key status: {{summary}}',
+  'cli.sessionShell.responses.commandFailureSummary': 'Failure: {{summary}}',
   'cli.sessionShell.responses.commandAgentSummary': 'Agent routing: {{summary}}',
   'cli.sessionShell.responses.commandAttentionSummary': 'Attention: {{summary}}',
   'cli.sessionShell.responses.commandErrorHint': 'Hint: {{hint}}',

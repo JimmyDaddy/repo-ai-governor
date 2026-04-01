@@ -595,7 +595,7 @@ describe('session.main parity integration', () => {
               'repo-ai-governor connect --preset multi-tool-default --output pretty',
             ) &&
             frame.commandPreview?.includes('repo-ai-governor verify --adapters --output pretty') &&
-            frame.promptBarLines.includes('/confirm · /cancel · Esc'),
+            frame.promptBarLines.some((line) => line.includes('/confirm · /cancel · Esc')),
         ),
       ).toBe(true);
       expect(commandExecutor).toHaveBeenNthCalledWith(

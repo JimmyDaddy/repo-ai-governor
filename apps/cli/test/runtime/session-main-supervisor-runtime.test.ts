@@ -9,7 +9,13 @@ import {
   AgentStreamEventType,
 } from '@repo-ai-governor/adapter-sdk';
 import { type AdaptersConfig, WorkspaceMode } from '@repo-ai-governor/config';
-import { AdapterAvailability, AdapterSurface, LocalModelProvider } from '@repo-ai-governor/shared';
+import {
+  AdapterAvailability,
+  AdapterSurface,
+  GovernorErrorCode,
+  LocalModelProvider,
+  RuntimeError,
+} from '@repo-ai-governor/shared';
 import { CliAdapterRoutingRuntime } from '../../src/runtime/adapter-routing-runtime.js';
 import { CliSessionMainSupervisorRuntime } from '../../src/runtime/session-main-supervisor-runtime.js';
 
@@ -154,6 +160,36 @@ function createUnavailableProtocol(surface: AdapterSurface): AgentProtocolContra
   };
 }
 
+function createProbeThrowingProtocol(
+  surface: AdapterSurface,
+  errorMessage = 'probe exploded for test',
+): AgentProtocolContract {
+  return {
+    probe: async () => {
+      throw new RuntimeError(GovernorErrorCode.PROCESS_RUNTIME_FAILED, errorMessage, {
+        surface,
+      });
+    },
+    invokeStage: async () => ({
+      output: {},
+      elapsedMs: 1,
+    }),
+    streamEvents: async function* () {},
+    requestConfirmation: async () => ({
+      decision: 'approve',
+      reason: 'unused',
+      constraints: [],
+      decidedAt: new Date('2026-03-31T12:00:00Z').toISOString(),
+    }),
+    cancel: async (request) => ({
+      acknowledged: true,
+      scope: request.scope,
+      reason: request.reason,
+      cancelledAt: new Date('2026-03-31T12:00:00Z').toISOString(),
+    }),
+  };
+}
+
 describe('Cli session-main supervisor runtime', () => {
   const adaptersConfig: AdaptersConfig = {
     roles: [
@@ -276,6 +312,13 @@ describe('Cli session-main supervisor runtime', () => {
     expect(outcome.assistantMessage).toBe('## Workspace status\n\n- clean');
     expect(outcome.selectedSurface).toBe(AdapterSurface.OLLAMA);
     expect(outcome.selectedBy).toBe('session.main.answer.primary');
+    expect(outcome.executionDetailsLines).toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(/preflight probes finished in|预检探针耗时/u),
+        '本轮 turn 的 surface 探针诊断：',
+        expect.stringMatching(/invoke completed in|调用在/u),
+      ]),
+    );
     expect(outcome.invokedRoleIds).toEqual([]);
     expect(outcome.invokedRoles).toEqual([]);
   });
@@ -472,6 +515,24 @@ describe('Cli session-main supervisor runtime', () => {
           kind: 'lifecycle',
           state: 'started',
           title: 'Session Main Answer',
+          detail: 'The supervisor is checking available direct-answer surfaces.',
+          activityKey: 'session.main.answer.preflight',
+        }),
+        expect.objectContaining({
+          kind: 'lifecycle',
+          state: 'running',
+          title: 'Session Main Answer',
+          detail: 'ollama is eligible for this turn.',
+          activityKey: 'surface-probe:session.main.answer:session.main:ollama',
+          selectedSurface: 'ollama',
+        }),
+        expect.objectContaining({
+          kind: 'lifecycle',
+          state: 'running',
+          title: 'Session Main Answer',
+          detail: 'The supervisor is preparing a direct answer.',
+          activityKey: 'session.main.answer.preflight',
+          selectedSurface: 'ollama',
         }),
         expect.objectContaining({
           kind: 'lifecycle',
@@ -559,6 +620,7 @@ describe('Cli session-main supervisor runtime', () => {
   });
 
   it('returns a guarded fallback answer when no eligible direct-answer surface is available', async () => {
+    const publishedStreamEvents: Array<Record<string, unknown>> = [];
     const codexInvokeStage = vi.fn(async () => ({
       output: {
         responseText: 'unsafe codex answer',
@@ -596,12 +658,127 @@ describe('Cli session-main supervisor runtime', () => {
       selectedSurface: AdapterSurface.CODEX,
       selectedBy: 'session.main.default',
       sessionRoutingPreferenceApplied: false,
+      publishStreamEvent: async (event) => {
+        publishedStreamEvents.push(event as Record<string, unknown>);
+      },
     });
 
     expect(codexInvokeStage).not.toHaveBeenCalled();
     expect(outcome.selectedSurface).toBe('guarded-direct-answer');
     expect(outcome.selectedBy).toBe('session.main.answer.guard');
     expect(outcome.assistantMessage).toContain('No eligible direct-answer surface');
+    expect(outcome.executionDetailsLines).toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(/preflight probes finished in/u),
+        'Surface probe diagnostics for this turn:',
+        'codex · not eligible · unavailable-for-test',
+        'claude-code · not eligible · unavailable-for-test',
+      ]),
+    );
+    expect(publishedStreamEvents).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'lifecycle',
+          state: 'started',
+          title: 'Session Main Answer',
+          detail: 'The supervisor is checking available direct-answer surfaces.',
+          activityKey: 'session.main.answer.preflight',
+        }),
+        expect.objectContaining({
+          kind: 'lifecycle',
+          state: 'running',
+          title: 'Session Main Answer',
+          detail: 'Probing codex availability and route eligibility.',
+          activityKey: 'surface-probe:session.main.answer:session.main:codex',
+          selectedSurface: 'codex',
+        }),
+        expect.objectContaining({
+          kind: 'lifecycle',
+          state: 'running',
+          title: 'Session Main Answer',
+          detail: 'codex is unavailable for this turn: unavailable-for-test',
+          activityKey: 'surface-probe:session.main.answer:session.main:codex',
+          selectedSurface: 'codex',
+        }),
+        expect.objectContaining({
+          kind: 'lifecycle',
+          state: 'failed',
+          title: 'Session Main Answer',
+          detail: 'No eligible direct-answer surface passed preflight checks.',
+          activityKey: 'session.main.answer.preflight',
+        }),
+      ]),
+    );
+  });
+
+  it('continues direct-answer preflight when one surface probe throws and falls back to the next eligible surface', async () => {
+    const claudeInvokeStage = vi.fn(async () => ({
+      output: {
+        responseText: 'Fallback answer from Claude Code',
+      },
+      elapsedMs: 7,
+    }));
+    const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
+      adaptersConfig,
+    ) as CliAdapterRoutingRuntime & {
+      createProtocolBySurface: () => Record<string, AgentProtocolContract>;
+    };
+    adapterRoutingRuntime.createProtocolBySurface = () => ({
+      [AdapterSurface.CODEX]: createProbeThrowingProtocol(
+        AdapterSurface.CODEX,
+        'codex probe crashed',
+      ),
+      [AdapterSurface.CLAUDE_CODE]: createAvailableProtocol(AdapterSurface.CLAUDE_CODE, 'unused', {
+        invokeStageSpy: claudeInvokeStage,
+      }),
+      [AdapterSurface.OLLAMA]: createUnavailableProtocol(AdapterSurface.OLLAMA),
+    });
+
+    const runtime = new CliSessionMainSupervisorRuntime({
+      workspaceRoot: '/workspace/repo/.repo-ai-governor',
+      currentWorkingDirectory: '/workspace/repo',
+      workspace,
+      locale: 'en-US',
+      adaptersConfig,
+      adapterRoutingRuntime,
+    });
+    const publishedStreamEvents: Array<Record<string, unknown>> = [];
+    const outcome = await runtime.resolveTurn({
+      sessionId: 'session-003-probe-throw',
+      routeId: 'session.main',
+      turnId: 'turn-003-probe-throw',
+      turnIndex: 3,
+      userMessage: 'hello',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+      publishStreamEvent: async (event) => {
+        publishedStreamEvents.push(event as Record<string, unknown>);
+      },
+    });
+
+    expect(claudeInvokeStage).toHaveBeenCalledTimes(1);
+    expect(outcome.responseMode).toBe('answer');
+    expect(outcome.assistantMessage).toBe('Fallback answer from Claude Code');
+    expect(outcome.selectedSurface).toBe(AdapterSurface.CLAUDE_CODE);
+    expect(outcome.selectedBy).toBe('session.main.answer.safe_fallback');
+    expect(outcome.executionDetailsLines).toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(/preflight probes finished in/u),
+        'Surface probe diagnostics for this turn:',
+        'codex · not eligible · codex probe crashed',
+      ]),
+    );
+    expect(publishedStreamEvents).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'lifecycle',
+          state: 'running',
+          detail: 'codex probe failed for this turn: codex probe crashed',
+          selectedSurface: 'codex',
+        }),
+      ]),
+    );
   });
 
   it('delegates explicit @planner turns through a single-role safe fallback path', async () => {

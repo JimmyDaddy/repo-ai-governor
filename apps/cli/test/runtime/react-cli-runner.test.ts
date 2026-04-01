@@ -151,7 +151,7 @@ describe('ReactCliRunner', () => {
     expect(output).toContain('Current input');
     expect(output).toContain('Live activity');
     expect(output).toContain('Running · 0s');
-    expect(output).toContain('Current: Inspecting workspace state.');
+    expect(output).toContain('[Current] Inspecting workspace state.');
     expect(output).toContain('governor>');
     expect(output).toContain('/workspace');
     expect(output).toContain('› ');
@@ -269,6 +269,138 @@ describe('ReactCliRunner', () => {
     expect(output).toContain('Architect + Reviewer + Verifier Parallel Analysis');
     expect(output).toContain('Related');
     expect(output).toContain('- slash:/connect -> /connect');
+  });
+
+  it('right-aligns user-authored transcript items, keeps assistant output on the left, and hides speaker labels', () => {
+    const runner = new ReactCliRunner();
+    const output = runner.renderSessionShellFrame(
+      {
+        sessionId: 'session-shell-alignment-789',
+        shellMode: CliSessionShellMode.SESSION_SHELL,
+        inputMode: CliSessionShellInputMode.PLAIN_TEXT,
+        transcriptItems: [
+          {
+            id: 'assistant:1',
+            role: CliSessionTranscriptRole.ASSISTANT,
+            label: 'Assistant label should stay hidden',
+            lines: ['assistant output anchor'],
+            renderKind: 'plain_text',
+          },
+          {
+            id: 'user:2',
+            role: CliSessionTranscriptRole.USER,
+            label: 'User label should stay hidden',
+            lines: ['user message anchor'],
+            renderKind: 'plain_text',
+          },
+          {
+            id: 'slash:3',
+            role: CliSessionTranscriptRole.SLASH_COMMAND,
+            label: 'Slash Command',
+            lines: ['/workspace migrate anchor'],
+            renderKind: 'plain_text',
+          },
+        ],
+        transcriptTitle: 'History',
+        composerTitle: 'Current input',
+        composerValue: '',
+        composerPlaceholder: 'Type a message, / for commands, or ? for shortcuts.',
+        slashQuery: '',
+        slashPaletteVisible: false,
+        slashSuggestions: [],
+        highlightedCommand: null,
+        slashPaletteTitle: 'Slash palette',
+        slashPaletteEmptyState: 'No slash commands matched.',
+        commandPreview: null,
+        handoffState: CliSessionShellHandoffState.IDLE,
+        cwd: '/workspace/repo',
+        workspaceSummary: 'workspace_id=repo mode=repo_local',
+        outputContract: ErrorOutputEnvironment.PRETTY,
+        persistenceOwner: CliSessionShellPersistenceOwner.LOCAL_ORCHESTRATION_SERVICE,
+        resumeSelector: 'latest',
+        foregroundInputOwner: CliSessionShellForegroundInputOwner.INK,
+        foregroundFocusTarget: CliSessionShellForegroundFocusTarget.COMPOSER,
+        inputActionContract: [...CLI_SESSION_SHELL_INPUT_ACTION_CONTRACT],
+        title: 'Repo AI Governor session shell',
+        subtitle: 'Session-first preview baseline.',
+        promptBarTitle: 'Prompt bar',
+        promptBarLines: ['? shortcuts · /status · Ctrl+D'],
+      },
+      {
+        columns: 120,
+      },
+    );
+
+    const lines = output.split('\n');
+    const assistantLine = lines.find((line) => line.includes('assistant output anchor'));
+    const userLine = lines.find((line) => line.includes('user message anchor'));
+    const slashLine = lines.find((line) => line.includes('/workspace migrate anchor'));
+
+    expect(output).not.toContain('Assistant label should stay hidden');
+    expect(output).not.toContain('User label should stay hidden');
+    expect(assistantLine).toBeDefined();
+    expect(userLine).toBeDefined();
+    expect(slashLine).toBeDefined();
+    expect(userLine?.indexOf('user message anchor') ?? -1).toBeGreaterThan(
+      assistantLine?.indexOf('assistant output anchor') ?? -1,
+    );
+    expect(slashLine?.indexOf('/workspace migrate anchor') ?? -1).toBeGreaterThan(
+      assistantLine?.indexOf('assistant output anchor') ?? -1,
+    );
+  });
+
+  it('renders live activity lines with compact source tags instead of raw log prefixes', () => {
+    const runner = new ReactCliRunner();
+    const output = runner.renderSessionShellFrame({
+      sessionId: 'session-shell-live-activity-compact',
+      shellMode: CliSessionShellMode.SESSION_SHELL,
+      inputMode: CliSessionShellInputMode.PLAIN_TEXT,
+      transcriptItems: [
+        {
+          id: 'system:activity',
+          role: CliSessionTranscriptRole.SYSTEM,
+          label: 'Live activity',
+          lines: [
+            'reviewer: Codex repository review is running; waiting for CLI output.',
+            'Tool: git - Reading diff summary.',
+            'codex stderr: Not inside a trusted directory.',
+          ],
+          renderKind: 'live_activity',
+          summaryLine: 'Running · 12s',
+        },
+      ],
+      transcriptTitle: 'History',
+      composerTitle: 'Current input',
+      composerValue: '',
+      composerPlaceholder: 'Type a message, / for commands, or ? for shortcuts.',
+      slashQuery: '',
+      slashPaletteVisible: false,
+      slashSuggestions: [],
+      highlightedCommand: null,
+      slashPaletteTitle: 'Slash palette',
+      slashPaletteEmptyState: 'No slash commands matched.',
+      commandPreview: null,
+      handoffState: CliSessionShellHandoffState.IDLE,
+      cwd: '/workspace/repo',
+      workspaceSummary: 'workspace_id=repo mode=repo_local',
+      outputContract: ErrorOutputEnvironment.PRETTY,
+      persistenceOwner: CliSessionShellPersistenceOwner.LOCAL_ORCHESTRATION_SERVICE,
+      resumeSelector: 'latest',
+      foregroundInputOwner: CliSessionShellForegroundInputOwner.INK,
+      foregroundFocusTarget: CliSessionShellForegroundFocusTarget.COMPOSER,
+      inputActionContract: [...CLI_SESSION_SHELL_INPUT_ACTION_CONTRACT],
+      title: 'Repo AI Governor session shell',
+      subtitle: 'Session-first preview baseline.',
+      promptBarTitle: 'Prompt bar',
+      promptBarLines: ['? shortcuts · /status · Ctrl+D'],
+    });
+
+    expect(output).toContain('[reviewer]');
+    expect(output).toContain('Codex repository review is running; waiting for CLI output.');
+    expect(output).toContain('[git]');
+    expect(output).toContain('Reading diff summary.');
+    expect(output).toContain('[codex stderr]');
+    expect(output).toContain('Not inside a trusted directory.');
   });
 
   it('mounts the session-shell tree through Ink for live stderr rendering', () => {

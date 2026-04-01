@@ -1,6 +1,7 @@
 import { Box, Text } from 'ink';
 import type React from 'react';
 import { CliSessionTranscriptRole } from '../../constants/cli-session-shell.constant.js';
+import { parseTimestampedExecutionDetailLine } from '../../runtime/interactive-shell/session-shell-execution-detail-line.js';
 import type { ReactCliShellPalette } from '../../types/index.js';
 import type { CliSessionShellTranscriptItem } from '../../types/index.js';
 
@@ -23,11 +24,28 @@ export function ReactCliTranscriptPane({
       <Text color={shellPalette.helpColor} dimColor>
         {title}
       </Text>
-      {items.map((item) => (
-        <Box key={item.id} flexDirection='column' marginTop={1} paddingLeft={1}>
-          <ReactCliTranscriptItemRenderer item={item} shellPalette={shellPalette} />
-        </Box>
-      ))}
+      {items.map((item) => {
+        const itemHorizontalAlignment = resolveTranscriptHorizontalAlignment(item.role);
+        const rightAligned = itemHorizontalAlignment === 'flex-end';
+
+        return (
+          <Box
+            key={item.id}
+            flexDirection='column'
+            marginTop={1}
+            width='100%'
+            alignItems={itemHorizontalAlignment}
+          >
+            <Box
+              flexDirection='column'
+              paddingLeft={rightAligned ? 0 : 1}
+              paddingRight={rightAligned ? 1 : 0}
+            >
+              <ReactCliTranscriptItemRenderer item={item} shellPalette={shellPalette} />
+            </Box>
+          </Box>
+        );
+      })}
     </Box>
   );
 }
@@ -65,14 +83,19 @@ function ReactCliPlainTranscriptItem({
 }: ReactCliTranscriptItemRendererProps): React.JSX.Element {
   return (
     <Box flexDirection='column'>
-      <Text bold color={resolveTranscriptColor(item.role, shellPalette)}>
-        {item.label}
-      </Text>
-      {item.lines.map((line, index) => (
-        <Text key={`${item.id}:plain:${index}`} color={shellPalette.sectionTitleColor}>
-          {line}
-        </Text>
-      ))}
+      {renderTranscriptLabel(item, shellPalette)}
+      {renderTranscriptMessageSurface(
+        item,
+        shellPalette,
+        item.lines.map((line, index) => (
+          <Text
+            key={`${item.id}:plain:${index}`}
+            color={resolveConversationBodyColor(item.role, shellPalette)}
+          >
+            {line}
+          </Text>
+        )),
+      )}
       {renderTranscriptDetailsBlock(item, shellPalette)}
     </Box>
   );
@@ -107,6 +130,7 @@ function ReactCliCommandRecapTranscriptItem({
   const recap = parseStructuredRecap(item.lines);
   const backlinks = item.backlinks ?? [];
   const hasRelatedLinks = backlinks.length > 0;
+  const transcriptLabelHidden = shouldHideTranscriptLabel(item.role);
 
   return (
     <Box flexDirection='column' marginTop={1}>
@@ -117,10 +141,15 @@ function ReactCliCommandRecapTranscriptItem({
         paddingX={1}
       >
         <Box flexDirection='column'>
-          <Text bold color={shellPalette.titleColor}>
-            {item.label}
-          </Text>
-          <Text color={shellPalette.helpColor} dimColor>
+          {!transcriptLabelHidden ? (
+            <Text bold color={shellPalette.titleColor}>
+              {item.label}
+            </Text>
+          ) : null}
+          <Text
+            color={transcriptLabelHidden ? shellPalette.titleColor : shellPalette.helpColor}
+            dimColor={!transcriptLabelHidden}
+          >
             command recap
           </Text>
         </Box>
@@ -189,6 +218,7 @@ function ReactCliCollaborationRecapTranscriptItem({
 }: ReactCliTranscriptItemRendererProps): React.JSX.Element {
   const recap = parseStructuredRecap(item.lines);
   const responseBlocks = parseMarkdownBlocks(item.markdownSource ?? item.lines.join('\n'));
+  const transcriptLabelHidden = shouldHideTranscriptLabel(item.role);
 
   return (
     <Box flexDirection='column' marginTop={1}>
@@ -199,10 +229,15 @@ function ReactCliCollaborationRecapTranscriptItem({
         paddingX={1}
       >
         <Box flexDirection='column'>
-          <Text bold color={shellPalette.titleColor}>
-            {item.label}
-          </Text>
-          <Text color={shellPalette.helpColor} dimColor>
+          {!transcriptLabelHidden ? (
+            <Text bold color={shellPalette.titleColor}>
+              {item.label}
+            </Text>
+          ) : null}
+          <Text
+            color={transcriptLabelHidden ? shellPalette.titleColor : shellPalette.helpColor}
+            dimColor={!transcriptLabelHidden}
+          >
             role collaboration
           </Text>
         </Box>
@@ -267,11 +302,13 @@ function ReactCliMarkdownTranscriptItem({
 
   return (
     <Box flexDirection='column'>
-      <Text bold color={resolveTranscriptColor(item.role, shellPalette)}>
-        {item.label}
-      </Text>
+      {renderTranscriptLabel(item, shellPalette)}
+      {renderTranscriptMessageSurface(
+        item,
+        shellPalette,
+        renderMarkdownBlocks(item.id, blocks, shellPalette, item.role),
+      )}
       {renderTranscriptDetailsBlock(item, shellPalette)}
-      {renderMarkdownBlocks(item.id, blocks, shellPalette)}
     </Box>
   );
 }
@@ -284,10 +321,12 @@ function ReactCliLiveMarkdownTranscriptItem({
 
   return (
     <Box flexDirection='column'>
-      <Text bold color={resolveTranscriptColor(item.role, shellPalette)}>
-        {item.label}
-      </Text>
-      {renderMarkdownBlocks(item.id, blocks, shellPalette)}
+      {renderTranscriptLabel(item, shellPalette)}
+      {renderTranscriptMessageSurface(
+        item,
+        shellPalette,
+        renderMarkdownBlocks(item.id, blocks, shellPalette, item.role),
+      )}
     </Box>
   );
 }
@@ -304,24 +343,22 @@ function ReactCliLiveActivityTranscriptItem({
       flexDirection='column'
       marginTop={1}
       borderStyle='round'
-      borderColor={shellPalette.borderColor}
+      borderColor={shellPalette.liveActivityPalette.borderColor}
       paddingX={1}
     >
-      <Text bold color={shellPalette.helpColor}>
+      <Text bold color={shellPalette.liveActivityPalette.titleColor}>
         {item.label}
       </Text>
       {summaryLine ? (
-        <Text bold color={shellPalette.titleColor}>
+        <Text bold color={shellPalette.liveActivityPalette.summaryColor}>
           {summaryLine}
         </Text>
       ) : null}
       {detailLines.map((line, index) => (
-        <Text
-          key={`${item.id}:activity:${index}`}
-          color={index === 0 ? shellPalette.sectionTitleColor : shellPalette.helpColor}
-        >
-          {`- ${line}`}
-        </Text>
+        <Box key={`${item.id}:activity:${index}`} flexDirection='row'>
+          <Text color={shellPalette.liveActivityPalette.bulletColor}>- </Text>
+          {renderLiveActivityLine(line, index, shellPalette)}
+        </Box>
       ))}
     </Box>
   );
@@ -351,14 +388,22 @@ function renderTranscriptDetailsBlock(
       </Text>
       <Text color={shellPalette.helpColor}>{details.summaryLine}</Text>
       {details.expanded
-        ? details.lines.map((line, index) => (
-            <Text
-              key={`${item.id}:details:${index}`}
-              color={index === 0 ? shellPalette.sectionTitleColor : shellPalette.helpColor}
-            >
-              {`- ${line}`}
-            </Text>
-          ))
+        ? details.lines.map((line, index) => {
+            const parsedLine = parseTimestampedExecutionDetailLine(line);
+            return (
+              <Text
+                key={`${item.id}:details:${index}`}
+                color={index === 0 ? shellPalette.sectionTitleColor : shellPalette.helpColor}
+              >
+                {'- '}
+                {parsedLine.timestamp ? (
+                  <Text color={shellPalette.subtitleColor}>{parsedLine.timestamp}</Text>
+                ) : null}
+                {parsedLine.timestamp ? '  ' : ''}
+                {parsedLine.content}
+              </Text>
+            );
+          })
         : null}
     </Box>
   );
@@ -368,6 +413,7 @@ function renderMarkdownBlocks(
   itemId: string,
   blocks: MarkdownBlock[],
   shellPalette: ReactCliShellPalette,
+  role?: CliSessionTranscriptRole,
 ): React.JSX.Element[] {
   const blockKeyRegistry = new Map<string, number>();
   return blocks.map((block) => {
@@ -377,50 +423,114 @@ function renderMarkdownBlocks(
     );
     if (block.type === 'heading') {
       return (
-        <Text key={blockKey} bold color={shellPalette.titleColor}>
+        <Text key={blockKey} bold color={resolveConversationHeadingColor(role, shellPalette)}>
           {block.text}
         </Text>
       );
     }
     if (block.type === 'paragraph') {
       return (
-        <Text key={blockKey} color={shellPalette.sectionTitleColor}>
+        <Text key={blockKey} color={resolveConversationBodyColor(role, shellPalette)}>
           {block.text}
         </Text>
       );
     }
     if (block.type === 'list_item') {
       return (
-        <Text key={blockKey} color={shellPalette.sectionTitleColor}>
+        <Text key={blockKey} color={resolveConversationBodyColor(role, shellPalette)}>
           {`${block.marker} ${block.text}`}
         </Text>
       );
     }
     if (block.type === 'quote') {
       return (
-        <Text key={blockKey} color={shellPalette.subtitleColor}>
+        <Text key={blockKey} color={resolveConversationQuoteColor(role, shellPalette)}>
           {`> ${block.text}`}
         </Text>
       );
     }
     return (
       <Box key={blockKey} flexDirection='column'>
-        {renderMarkdownCodeBlockLines(blockKey, block.lines, shellPalette)}
+        {renderMarkdownCodeBlockLines(blockKey, block.lines, shellPalette, role)}
       </Box>
     );
   });
+}
+
+function renderTranscriptLabel(
+  item: CliSessionShellTranscriptItem,
+  shellPalette: ReactCliShellPalette,
+): React.JSX.Element | null {
+  if (shouldHideTranscriptLabel(item.role)) {
+    return null;
+  }
+
+  return (
+    <Text bold color={resolveTranscriptColor(item.role, shellPalette)}>
+      {item.label}
+    </Text>
+  );
+}
+
+function renderTranscriptMessageSurface(
+  item: CliSessionShellTranscriptItem,
+  shellPalette: ReactCliShellPalette,
+  content: React.JSX.Element[],
+): React.JSX.Element {
+  if (item.role !== CliSessionTranscriptRole.USER) {
+    return <Box flexDirection='column'>{content}</Box>;
+  }
+
+  return (
+    <Box
+      flexDirection='column'
+      borderStyle='round'
+      borderColor={shellPalette.conversationPalette.userBubbleBorderColor}
+      paddingX={1}
+    >
+      {content}
+    </Box>
+  );
+}
+
+function renderLiveActivityLine(
+  line: string,
+  index: number,
+  shellPalette: ReactCliShellPalette,
+): React.JSX.Element {
+  const parsedLine = parseLiveActivityLine(line);
+  const tagKind = classifyLiveActivityTagKind(line, parsedLine);
+  const tagColor = resolveLiveActivityTagColor(tagKind, shellPalette);
+  const contentColor =
+    tagKind === 'error'
+      ? shellPalette.liveActivityPalette.errorTextColor
+      : index === 0
+        ? shellPalette.liveActivityPalette.primaryTextColor
+        : shellPalette.liveActivityPalette.secondaryTextColor;
+
+  return (
+    <Text color={contentColor}>
+      {parsedLine.prefix ? (
+        <>
+          <Text color={tagColor}>[{parsedLine.prefix}]</Text>{' '}
+        </>
+      ) : null}
+      {parsedLine.content}
+    </Text>
+  );
 }
 
 function renderMarkdownCodeBlockLines(
   blockKey: string,
   lines: string[],
   shellPalette: ReactCliShellPalette,
+  role?: CliSessionTranscriptRole,
 ): React.JSX.Element[] {
   const lineKeyRegistry = new Map<string, number>();
   return lines.map((line) => {
     const lineKey = claimDuplicateAwareRenderKey(lineKeyRegistry, `${blockKey}:line:${line}`);
     return (
-      <Text key={lineKey} color={shellPalette.promptTitleColor}>
+      <Text key={lineKey} color={resolveConversationCodeColor(role, shellPalette)}>
         {`| ${line}`}
       </Text>
     );
@@ -725,4 +835,166 @@ function resolveTranscriptColor(
     default:
       return shellPalette.titleColor;
   }
+}
+
+function resolveTranscriptHorizontalAlignment(
+  role: CliSessionTranscriptRole,
+): 'flex-start' | 'flex-end' {
+  switch (role) {
+    case CliSessionTranscriptRole.USER:
+    case CliSessionTranscriptRole.SLASH_COMMAND:
+      return 'flex-end';
+    default:
+      return 'flex-start';
+  }
+}
+
+function shouldHideTranscriptLabel(role: CliSessionTranscriptRole): boolean {
+  return role === CliSessionTranscriptRole.USER || role === CliSessionTranscriptRole.ASSISTANT;
+}
+
+type LiveActivityTagKind = 'neutral' | 'role' | 'running' | 'completed' | 'todo' | 'error';
+
+function parseLiveActivityLine(line: string): {
+  prefix: string | null;
+  content: string;
+} {
+  const normalizedLine = line.trim();
+  const toolMatch = /^(Tool|工具)[:：]\s*(.+?)\s+-\s+(.+)$/u.exec(normalizedLine);
+  if (toolMatch) {
+    return {
+      prefix: toolMatch[2]?.trim() ?? toolMatch[1] ?? null,
+      content: toolMatch[3]?.trim() ?? normalizedLine,
+    };
+  }
+
+  const prefixedLineMatch = /^([^:：]{1,40})[:：]\s*(.+)$/u.exec(normalizedLine);
+  if (!prefixedLineMatch) {
+    return {
+      prefix: null,
+      content: normalizedLine,
+    };
+  }
+
+  return {
+    prefix: prefixedLineMatch[1]?.trim() ?? null,
+    content: prefixedLineMatch[2]?.trim() ?? normalizedLine,
+  };
+}
+
+function classifyLiveActivityTagKind(
+  rawLine: string,
+  parsedLine: {
+    prefix: string | null;
+    content: string;
+  },
+): LiveActivityTagKind {
+  const normalizedRawLine = rawLine.trim();
+  const normalizedPrefix = parsedLine.prefix?.trim().toLowerCase() ?? '';
+  const normalizedContent = parsedLine.content.trim().toLowerCase();
+
+  if (
+    /stderr|failed|error/iu.test(normalizedPrefix) ||
+    /failed|error|timed out|cancelled|canceled/iu.test(normalizedContent)
+  ) {
+    return 'error';
+  }
+
+  if (/^(completed|done|finished)\b/iu.test(normalizedContent)) {
+    return 'completed';
+  }
+
+  if (/^(todo|pending|queued)\b/iu.test(normalizedContent)) {
+    return 'todo';
+  }
+
+  if (/^(running|reading|inspecting|checking|preparing)\b/iu.test(normalizedContent)) {
+    return 'running';
+  }
+
+  if (/^(tool|工具)[:：]/u.test(normalizedRawLine)) {
+    return 'running';
+  }
+
+  if (
+    normalizedPrefix.length > 0 &&
+    normalizedPrefix !== 'current' &&
+    normalizedPrefix !== '当前'
+  ) {
+    return 'role';
+  }
+
+  return 'neutral';
+}
+
+function resolveLiveActivityTagColor(
+  tagKind: LiveActivityTagKind,
+  shellPalette: ReactCliShellPalette,
+): string {
+  switch (tagKind) {
+    case 'role':
+      return shellPalette.liveActivityPalette.tagPalette.role;
+    case 'running':
+      return shellPalette.liveActivityPalette.tagPalette.running;
+    case 'completed':
+      return shellPalette.liveActivityPalette.tagPalette.completed;
+    case 'todo':
+      return shellPalette.liveActivityPalette.tagPalette.todo;
+    case 'error':
+      return shellPalette.liveActivityPalette.tagPalette.error;
+    default:
+      return shellPalette.liveActivityPalette.tagPalette.neutral;
+  }
+}
+
+function resolveConversationBodyColor(
+  role: CliSessionTranscriptRole | undefined,
+  shellPalette: ReactCliShellPalette,
+): string {
+  if (role === CliSessionTranscriptRole.USER) {
+    return shellPalette.conversationPalette.userTextColor;
+  }
+
+  if (role === CliSessionTranscriptRole.ASSISTANT) {
+    return shellPalette.conversationPalette.assistantTextColor;
+  }
+
+  return shellPalette.sectionTitleColor;
+}
+
+function resolveConversationHeadingColor(
+  role: CliSessionTranscriptRole | undefined,
+  shellPalette: ReactCliShellPalette,
+): string {
+  if (role === CliSessionTranscriptRole.ASSISTANT) {
+    return shellPalette.conversationPalette.assistantHeadingColor;
+  }
+
+  return shellPalette.titleColor;
+}
+
+function resolveConversationQuoteColor(
+  role: CliSessionTranscriptRole | undefined,
+  shellPalette: ReactCliShellPalette,
+): string {
+  if (role === CliSessionTranscriptRole.ASSISTANT) {
+    return shellPalette.conversationPalette.assistantQuoteColor;
+  }
+
+  return shellPalette.subtitleColor;
+}
+
+function resolveConversationCodeColor(
+  role: CliSessionTranscriptRole | undefined,
+  shellPalette: ReactCliShellPalette,
+): string {
+  if (role === CliSessionTranscriptRole.ASSISTANT) {
+    return shellPalette.conversationPalette.assistantCodeColor;
+  }
+
+  if (role === CliSessionTranscriptRole.USER) {
+    return shellPalette.conversationPalette.userTextColor;
+  }
+
+  return shellPalette.promptTitleColor;
 }

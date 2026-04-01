@@ -600,6 +600,23 @@ class MissingSessionOnFirstTwoTurnsSessionShellServiceClient extends FakeSession
   }
 }
 
+class MissingSessionThenDelayedTurnWithoutStreamSessionShellServiceClient extends DelayedTurnWithoutStreamSessionShellServiceClient {
+  private failedOnce = false;
+
+  public override async sendMainTurn(sessionId: string, userMessage: string): Promise<void> {
+    if (!this.failedOnce) {
+      this.failedOnce = true;
+      this.sessions.delete(sessionId);
+      throw new RuntimeError(
+        GovernorErrorCode.MEMORY_SESSION_NOT_FOUND,
+        `Session "${sessionId}" was not found in memory store.`,
+      );
+    }
+
+    return super.sendMainTurn(sessionId, userMessage);
+  }
+}
+
 const DEFAULT_TRANSLATIONS: Record<string, string> = {
   'cli.sessionShell.title': 'Repo AI Governor session shell',
   'cli.sessionShell.subtitle': 'Session shell baseline.',
@@ -678,6 +695,8 @@ const DEFAULT_TRANSLATIONS: Record<string, string> = {
   'cli.sessionShell.responses.commandConfirmHint': 'Run /confirm or /cancel.',
   'cli.sessionShell.responses.commandExecutionSucceeded':
     'Command handoff completed for {{command}}.',
+  'cli.sessionShell.responses.commandDirectExecutionNotice':
+    'This slash command ran immediately, so /confirm is not required.',
   'cli.sessionShell.responses.commandExecutionFailed':
     'Command handoff failed for {{command}}. reason={{reason}}',
   'cli.sessionShell.responses.commandArtifact': 'artifact={{artifactPath}}',
@@ -685,6 +704,7 @@ const DEFAULT_TRANSLATIONS: Record<string, string> = {
     '+{{count}} more related artifacts were written.',
   'cli.sessionShell.responses.commandSummary': 'Summary: {{summary}}',
   'cli.sessionShell.responses.commandStatusSummary': 'Key status: {{summary}}',
+  'cli.sessionShell.responses.commandFailureSummary': 'Failure: {{summary}}',
   'cli.sessionShell.responses.commandAgentSummary': 'Agent routing: {{summary}}',
   'cli.sessionShell.responses.commandAttentionSummary': 'Attention: {{summary}}',
   'cli.sessionShell.responses.commandErrorHint': 'Hint: {{hint}}',
@@ -702,6 +722,13 @@ const DEFAULT_TRANSLATIONS: Record<string, string> = {
   'cli.reactShell.progress.shortcut.cancel': 'Ctrl+C cancel',
   'cli.reactShell.progress.artifactsTitle': 'Artifacts',
   'cli.reactShell.progress.logsTitle': 'Recent logs',
+  'cli.reactShell.progress.run.starting': 'Preparing run execution…',
+  'cli.reactShell.progress.run.assembling': 'Assemble task-driven run',
+  'cli.reactShell.progress.run.compiling': 'Compile process IR',
+  'cli.reactShell.progress.run.executingRuntime': 'Execute runtime graph',
+  'cli.reactShell.progress.run.writingArtifacts': 'Write execution artifacts',
+  'cli.reactShell.progress.run.completed': 'Run execution finished.',
+  'cli.reactShell.progress.run.failed': 'Run execution ended with a failure.',
   'cli.sessionShell.responses.localTranscriptCleared': 'Local transcript viewport cleared.',
   'cli.sessionShell.responses.historyEmpty': 'No shell inputs recorded yet.',
   'cli.sessionShell.responses.searchRequiresQuery': 'Pass a search term after /search.',
@@ -739,7 +766,7 @@ const DEFAULT_TRANSLATIONS: Record<string, string> = {
     'There is no pending command preview to cancel.',
   'cli.sessionShell.responses.commandCancelled': 'The pending command preview was cancelled.',
   'cli.sessionShell.responses.confirmWithoutPendingCommand':
-    'There is no pending command preview to confirm.',
+    'There is no pending command preview to confirm. Direct slash commands such as /review may already have executed.',
   'cli.sessionShell.responses.commandBridgeUnavailable':
     'The session shell does not have a command bridge.',
   'cli.sessionShell.responses.commandNotExecutable': 'This slash command has no executable target.',
@@ -1582,6 +1609,73 @@ describe('CliSessionShellRunner', () => {
     ).toBe(true);
   });
 
+  it('keeps showing live running feedback after auto-recovering into a new session before delayed output arrives', async () => {
+    const inkRunner = new StubSessionShellInkRunner([
+      {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: '帮我 cr',
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_SUBMITTED,
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: '/exit',
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_SUBMITTED,
+      },
+    ]);
+    const renderer = new RecordingSessionShellRenderer();
+    const runner = new CliSessionShellRunner(
+      undefined,
+      renderer as never,
+      () => new StubSessionShellPromptAdapter([]),
+      () => new CliSessionShellInkController(),
+      () => inkRunner as never,
+      () => true,
+      () => new Date('2026-03-30T12:00:00Z'),
+    );
+
+    const result = await runner.run(
+      DEFAULT_RUN_OPTIONS({
+        sessionClient: new MissingSessionThenDelayedTurnWithoutStreamSessionShellServiceClient(),
+      }),
+    );
+
+    expect(result.exitReason).toBe(CliSessionShellExitReason.SLASH_EXIT);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes('A new session was created so the shell can stay attached.'),
+      ),
+    ).toBe(true);
+    expect(
+      inkRunner.snapshots.some((frame) =>
+        frame.transcriptItems.some(
+          (item) =>
+            item.renderKind === 'live_activity' &&
+            item.label === 'Live activity' &&
+            item.summaryLine === 'Running · 0s' &&
+            item.lines.includes(
+              'Current: The shell is retrying your latest message in a new attached session.',
+            ),
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      inkRunner.snapshots.some((frame) =>
+        frame.transcriptItems.some(
+          (item) => item.label === 'You' && item.lines.includes('帮我 cr'),
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      result.transcriptItems.some(
+        (item) => item.markdownSource === 'Hello back from delayed turn.',
+      ),
+    ).toBe(true);
+  });
+
   it('recalls prior composer inputs with ArrowUp and restores the draft with ArrowDown in Ink mode', async () => {
     const inkRunner = new StubSessionShellInkRunner([
       {
@@ -1711,6 +1805,14 @@ describe('CliSessionShellRunner', () => {
     );
     expect(
       result.transcriptItems.some((item) => item.lines.includes('Summary: doctor completed')),
+    ).toBe(true);
+    expect(
+      result.transcriptItems.some(
+        (item) =>
+          item.renderKind === 'command_recap' &&
+          item.details?.lines.some((line) => line.endsWith('doctor preflight running')) &&
+          item.details.lines.some((line) => line.endsWith('Summary: doctor completed')),
+      ),
     ).toBe(true);
   });
 

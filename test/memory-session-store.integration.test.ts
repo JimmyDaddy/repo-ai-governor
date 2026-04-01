@@ -155,4 +155,44 @@ describe('Memory/Session/Store smoke', () => {
       await rm(temporaryRootDirectory, { recursive: true, force: true });
     }
   });
+
+  it('preserves events when two shared-session managers append to the same fs-csv-backed session', async () => {
+    const temporaryRootDirectory = await createTemporaryRootDirectory();
+    const provider = new FsCsvMemoryStoreProvider({
+      rootDirectory: join(temporaryRootDirectory, '.repo-ai-governor', 'memory'),
+    });
+    const adapter = new MemoryStoreAdapter(provider);
+    const memoryManager = new MemoryManager(adapter);
+    const firstSessionManager = new SharedSessionManager(memoryManager);
+    const secondSessionManager = new SharedSessionManager(memoryManager);
+
+    try {
+      const openedSession = await firstSessionManager.openSession({
+        sessionId: 'session-shared-smoke',
+        processId: 'process-shared',
+        executionId: 'exec-shared',
+      });
+
+      await firstSessionManager.getSession(openedSession.sessionId);
+      await secondSessionManager.appendEvent({
+        sessionId: openedSession.sessionId,
+        type: 'runtime.node.started',
+        payload: { nodeId: 'node-shared' },
+      });
+      await firstSessionManager.appendEvent({
+        sessionId: openedSession.sessionId,
+        type: 'runtime.node.completed',
+        payload: { nodeId: 'node-shared' },
+      });
+
+      const refreshedSession = await secondSessionManager.getSession(openedSession.sessionId);
+      expect(refreshedSession.events.map((event) => event.type)).toEqual([
+        'runtime.node.started',
+        'runtime.node.completed',
+      ]);
+    } finally {
+      await provider.dispose?.();
+      await rm(temporaryRootDirectory, { recursive: true, force: true });
+    }
+  });
 });

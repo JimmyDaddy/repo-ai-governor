@@ -4,6 +4,7 @@ import {
 } from '@repo-ai-governor/orchestration-service-client';
 import { CliSessionTranscriptRole } from '../../constants/cli-session-shell.constant.js';
 import type { CliSessionShellTranscriptItem } from '../../types/index.js';
+import { createTimestampedExecutionDetailLine } from './session-shell-execution-detail-line.js';
 
 interface CliSessionShellTurnProgressDockOptions {
   translate: (key: string, interpolation?: Record<string, string>) => string;
@@ -47,6 +48,25 @@ export class CliSessionShellTurnProgressDock {
     this.liveActivityEntries.clear();
     this.activityHistoryLines.splice(0, this.activityHistoryLines.length);
     this.nextActivityOrder = 0;
+  }
+
+  /**
+   * Seeds one immediate optimistic activity row for recovery-retry visibility before the next
+   * streamed lifecycle delta arrives.
+   * @param detail Human-readable recovery detail.
+   * @returns Nothing.
+   */
+  public seedRecoveryRetryDetail(detail: string): void {
+    if (!this.liveTurnActive) {
+      this.seedRunningState();
+    }
+
+    this.upsertActivityEntry(
+      'lifecycle:session.main.recovery-retry',
+      this.options.translate('cli.sessionShell.responses.liveTurnCurrentDetail', {
+        detail,
+      }),
+    );
   }
 
   /**
@@ -233,6 +253,7 @@ export class CliSessionShellTurnProgressDock {
         toolName,
         detail,
       }),
+      event.createdAt,
     );
   }
 
@@ -259,11 +280,11 @@ export class CliSessionShellTurnProgressDock {
           detail,
         });
 
-    this.upsertActivityEntry(entryKey, text);
+    this.upsertActivityEntry(entryKey, text, event.createdAt);
   }
 
-  private upsertActivityEntry(activityId: string, text: string): void {
-    this.recordActivityHistory(text);
+  private upsertActivityEntry(activityId: string, text: string, occurredAt?: string): void {
+    this.recordActivityHistory(text, occurredAt);
     const existingEntry = this.liveActivityEntries.get(activityId);
     this.liveActivityEntries.set(activityId, {
       order: existingEntry?.order ?? this.nextActivityOrder++,
@@ -321,18 +342,19 @@ export class CliSessionShellTurnProgressDock {
     this.completedTurnDetails.set(turnId, detailLines);
   }
 
-  private recordActivityHistory(text: string): void {
+  private recordActivityHistory(text: string, occurredAt?: string): void {
     const normalizedText = text.trim();
     if (!normalizedText) {
       return;
     }
 
+    const timestampedLine = createTimestampedExecutionDetailLine(normalizedText, occurredAt);
     const latestRecordedText = this.activityHistoryLines.at(-1);
-    if (latestRecordedText === normalizedText) {
+    if (latestRecordedText === timestampedLine) {
       return;
     }
 
-    this.activityHistoryLines.push(normalizedText);
+    this.activityHistoryLines.push(timestampedLine);
     if (this.activityHistoryLines.length > LIVE_ACTIVITY_MAX_ENTRIES * 8) {
       this.activityHistoryLines.splice(
         0,

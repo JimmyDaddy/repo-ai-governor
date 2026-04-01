@@ -135,6 +135,8 @@
     "release:verify-cleanroom-local-install:plugin-enabled": "node ./scripts/release/verify-cleanroom-local-install.js --distribution-mode plugin-enabled",
     "release:verify-cleanroom-local-install:tgz": "node ./scripts/release/verify-cleanroom-local-install.js --modes tgz --iterations 1 --output .tmp/release-cleanroom-tgz-validation-report.json",
     "release:verify-cleanroom-local-install:plugin-enabled:tgz": "node ./scripts/release/verify-cleanroom-local-install.js --distribution-mode plugin-enabled --modes tgz --iterations 1 --output .tmp/release-cleanroom-plugin-enabled-tgz-validation-report.json",
+    "debug:cleanroom-session-shell": "node ./scripts/dev/debug-cleanroom-session-shell.js",
+    "debug:cleanroom-session-shell:path": "node ./scripts/dev/debug-cleanroom-session-shell.js --mode path",
     "release:rollback-rehearsal": "node ./scripts/release/run-rollback-rehearsal.js",
     "release:candidate": "pnpm run ci:quality && pnpm run release:check && pnpm run release:verify-local && pnpm run release:verify-cleanroom-local-install --output .tmp/release-cleanroom-validation-report.json && pnpm run release:verify-cleanroom-local-install:tgz && pnpm run build:plugin-enabled && pnpm run release:verify-local:plugin-enabled && pnpm run release:verify-cleanroom-local-install:plugin-enabled --output .tmp/release-cleanroom-plugin-enabled-validation-report.json && pnpm run release:verify-cleanroom-local-install:plugin-enabled:tgz",
     "release:ga-check": "pnpm run release:candidate",

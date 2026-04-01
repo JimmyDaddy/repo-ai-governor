@@ -21,6 +21,7 @@ import {
   WorkspaceModeSource,
 } from '@repo-ai-governor/config';
 import { MemoryManager, MemoryScope } from '@repo-ai-governor/core-memory';
+import { ProcessRuntimeFacade } from '@repo-ai-governor/core-runtime';
 import { AuditRecorder } from '@repo-ai-governor/core-session';
 import { FsCsvMemoryStoreProvider } from '@repo-ai-governor/memory-provider-fs-csv';
 import { MemoryStoreAdapter } from '@repo-ai-governor/memory-store-adapter';
@@ -51,6 +52,7 @@ import {
 import { CliGovernanceRuntime } from '../src/cli-governance-runtime.js';
 import { CliCommandName } from '../src/constants/cli-command.constant.js';
 import type {
+  CliCommandProgressEvent,
   CliOrchestrationServiceRuntimeDependencies,
   CliRuntimeDebugOptions,
   CliWorkspaceCommandOptions,
@@ -1163,6 +1165,99 @@ describe('CliGovernanceRuntime policy/review safeguards', () => {
         },
       },
     );
+  });
+
+  it('emits staged progress events while run executes inside the shared command runtime', async () => {
+    await withRuntimeFixture(
+      async (fixture) => {
+        await writeTaskCardFixture(fixture.workspaceRoot, 'TK-099');
+        const runtimeWithOverrides = fixture.runtime as unknown as {
+          collectGitChangedPaths: () => Promise<string[]>;
+        };
+        runtimeWithOverrides.collectGitChangedPaths = async () => [];
+        const progressEvents: CliCommandProgressEvent[] = [];
+
+        await fixture.runtime.execute(CliCommandName.RUN, {
+          progressSink: {
+            publish: (event) => {
+              progressEvents.push(event);
+            },
+          },
+        });
+
+        expect(progressEvents[0]).toMatchObject({
+          commandName: CliCommandName.RUN,
+          runState: 'running',
+          row: {
+            id: 'run-assembly',
+            status: ExecutionProgressStatus.RUNNING,
+          },
+        });
+        expect(
+          progressEvents.some(
+            (event) =>
+              event.row?.id === 'run-runtime' &&
+              (event.row.status === ExecutionProgressStatus.RUNNING ||
+                event.row.status === ExecutionProgressStatus.COMPLETED),
+          ),
+        ).toBe(true);
+        expect(
+          progressEvents.some(
+            (event) =>
+              event.row?.id === 'run-artifacts' &&
+              event.row.status === ExecutionProgressStatus.COMPLETED,
+          ),
+        ).toBe(true);
+        expect(progressEvents.at(-1)).toMatchObject({
+          commandName: CliCommandName.RUN,
+          runState: 'success',
+        });
+      },
+      {
+        runtimeDebugOptions: {
+          dryRun: true,
+          trace: false,
+          replayPath: null,
+          adapters: true,
+          taskId: 'TK-099',
+        },
+      },
+    );
+  });
+
+  it('passes run-specific stage and flow timeout budgets instead of generic runtime defaults', async () => {
+    const executeSpy = vi.spyOn(ProcessRuntimeFacade.prototype, 'execute');
+
+    await withRuntimeFixture(
+      async (fixture) => {
+        const runtimeWithOverrides = fixture.runtime as unknown as {
+          collectGitChangedPaths: () => Promise<string[]>;
+        };
+        runtimeWithOverrides.collectGitChangedPaths = async () => [];
+
+        await fixture.runtime.execute(CliCommandName.RUN, {
+          progressSink: {
+            publish: () => {},
+          },
+        });
+      },
+      {
+        runtimeDebugOptions: {
+          dryRun: true,
+          trace: false,
+          replayPath: null,
+          adapters: true,
+          taskId: null,
+        },
+      },
+    );
+
+    expect(executeSpy).toHaveBeenCalled();
+    expect(executeSpy.mock.calls.at(-1)?.[2]).toMatchObject({
+      stageTimeoutMs: 300000,
+      flowTimeoutMs: 900000,
+    });
+    executeSpy.mockRestore();
   });
 
   it('resumes task-driven review subchain when an approve HITL decision receipt is supplied', async () => {

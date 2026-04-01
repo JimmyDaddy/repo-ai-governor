@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, open, readFile, rename, stat, unlink, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
 import type {
@@ -40,6 +40,11 @@ interface ArchiveCsvRow {
   archivedAt: string;
 }
 
+const FS_CSV_PROVIDER_LOCK_FILE_NAME = '.memory-store.lock';
+const FS_CSV_PROVIDER_LOCK_RETRY_DELAY_MS = 25;
+const FS_CSV_PROVIDER_LOCK_STALE_AFTER_MS = 30_000;
+const FS_CSV_PROVIDER_LOCK_WAIT_TIMEOUT_MS = 15_000;
+
 /**
  * Implements a file-system CSV-backed memory provider baseline.
  *
@@ -53,6 +58,7 @@ export class FsCsvMemoryStoreProvider implements MemoryStoreProvider {
   private readonly snapshotsFilePath: string;
   private readonly archiveFilePath: string;
   private readonly snapshotsDirectoryPath: string;
+  private readonly lockFilePath: string;
   private initializationPromise: Promise<void> | null = null;
 
   constructor(options: FsCsvMemoryStoreProviderOptions) {
@@ -73,6 +79,7 @@ export class FsCsvMemoryStoreProvider implements MemoryStoreProvider {
       this.rootDirectoryPath,
       options.snapshotsDirectoryName ?? FS_CSV_SNAPSHOTS_DIRECTORY_NAME,
     );
+    this.lockFilePath = resolve(this.rootDirectoryPath, FS_CSV_PROVIDER_LOCK_FILE_NAME);
   }
 
   /**
@@ -92,19 +99,21 @@ export class FsCsvMemoryStoreProvider implements MemoryStoreProvider {
    * @returns Void.
    */
   public async write(record: MemoryRecord): Promise<void> {
-    const records = await this.readRecords();
-    const existingRecordIndex = records.findIndex(
-      (currentRecord) =>
-        currentRecord.namespace === record.namespace && currentRecord.key === record.key,
-    );
+    await this.withExclusiveMutationLock(async () => {
+      const records = await this.readRecords();
+      const existingRecordIndex = records.findIndex(
+        (currentRecord) =>
+          currentRecord.namespace === record.namespace && currentRecord.key === record.key,
+      );
 
-    if (existingRecordIndex === -1) {
-      records.push(record);
-    } else {
-      records[existingRecordIndex] = record;
-    }
+      if (existingRecordIndex === -1) {
+        records.push(record);
+      } else {
+        records[existingRecordIndex] = record;
+      }
 
-    await this.writeRecords(records);
+      await this.writeRecords(records);
+    });
   }
 
   /**
@@ -129,32 +138,34 @@ export class FsCsvMemoryStoreProvider implements MemoryStoreProvider {
    * @returns Snapshot metadata.
    */
   public async snapshot(options: MemorySnapshotOptions = {}): Promise<MemorySnapshotRecord> {
-    const records = await this.readRecords();
-    const snapshotRecords = this.selectSnapshotRecords(records, options.recordKeys ?? []);
-    const snapshotId = randomUUID();
-    const createdAt = new Date().toISOString();
-    const snapshotPath = resolve(this.snapshotsDirectoryPath, `${snapshotId}.json`);
+    return await this.withExclusiveMutationLock(async () => {
+      const records = await this.readRecords();
+      const snapshotRecords = this.selectSnapshotRecords(records, options.recordKeys ?? []);
+      const snapshotId = randomUUID();
+      const createdAt = new Date().toISOString();
+      const snapshotPath = resolve(this.snapshotsDirectoryPath, `${snapshotId}.json`);
 
-    await mkdir(this.snapshotsDirectoryPath, { recursive: true });
-    await writeFile(snapshotPath, JSON.stringify(snapshotRecords, null, 2), 'utf8');
+      await mkdir(this.snapshotsDirectoryPath, { recursive: true });
+      await this.writeTextFileAtomically(snapshotPath, JSON.stringify(snapshotRecords, null, 2));
 
-    const snapshotRows = await this.readSnapshotRows();
-    snapshotRows.push({
-      snapshotId,
-      createdAt,
-      reason: options.reason ?? '',
-      recordCount: snapshotRecords.length,
-      snapshotPath,
+      const snapshotRows = await this.readSnapshotRows();
+      snapshotRows.push({
+        snapshotId,
+        createdAt,
+        reason: options.reason ?? '',
+        recordCount: snapshotRecords.length,
+        snapshotPath,
+      });
+      await this.writeSnapshotRows(snapshotRows);
+
+      return {
+        snapshotId,
+        createdAt,
+        ...(options.reason ? { reason: options.reason } : {}),
+        recordCount: snapshotRecords.length,
+        snapshotPath,
+      };
     });
-    await this.writeSnapshotRows(snapshotRows);
-
-    return {
-      snapshotId,
-      createdAt,
-      ...(options.reason ? { reason: options.reason } : {}),
-      recordCount: snapshotRecords.length,
-      snapshotPath,
-    };
   }
 
   /**
@@ -163,31 +174,35 @@ export class FsCsvMemoryStoreProvider implements MemoryStoreProvider {
    * @returns Archived record count.
    */
   public async archive(options: MemoryArchiveOptions = {}): Promise<number> {
-    const records = await this.readRecords();
-    const archivedAt = new Date().toISOString();
+    return await this.withExclusiveMutationLock(async () => {
+      const records = await this.readRecords();
+      const archivedAt = new Date().toISOString();
 
-    const recordsToArchive = records.filter((record) => this.shouldArchiveRecord(record, options));
-    if (recordsToArchive.length === 0) {
-      return 0;
-    }
+      const recordsToArchive = records.filter((record) =>
+        this.shouldArchiveRecord(record, options),
+      );
+      if (recordsToArchive.length === 0) {
+        return 0;
+      }
 
-    const activeRecords = records.filter((record) => !this.shouldArchiveRecord(record, options));
-    await this.writeRecords(activeRecords);
+      const activeRecords = records.filter((record) => !this.shouldArchiveRecord(record, options));
+      await this.writeRecords(activeRecords);
 
-    const archiveRows = await this.readArchiveRows();
-    archiveRows.push(
-      ...recordsToArchive.map((record) => ({
-        namespace: record.namespace,
-        key: record.key,
-        valueJson: JSON.stringify(record.value),
-        tagsJson: JSON.stringify(record.tags),
-        updatedAt: record.updatedAt,
-        archivedAt,
-      })),
-    );
-    await this.writeArchiveRows(archiveRows);
+      const archiveRows = await this.readArchiveRows();
+      archiveRows.push(
+        ...recordsToArchive.map((record) => ({
+          namespace: record.namespace,
+          key: record.key,
+          valueJson: JSON.stringify(record.value),
+          tagsJson: JSON.stringify(record.tags),
+          updatedAt: record.updatedAt,
+          archivedAt,
+        })),
+      );
+      await this.writeArchiveRows(archiveRows);
 
-    return recordsToArchive.length;
+      return recordsToArchive.length;
+    });
   }
 
   /**
@@ -259,7 +274,7 @@ export class FsCsvMemoryStoreProvider implements MemoryStoreProvider {
         ]),
       ),
     ];
-    await writeFile(this.recordsFilePath, `${csvRows.join('\n')}\n`, 'utf8');
+    await this.writeTextFileAtomically(this.recordsFilePath, `${csvRows.join('\n')}\n`);
   }
 
   /**
@@ -308,7 +323,7 @@ export class FsCsvMemoryStoreProvider implements MemoryStoreProvider {
         ]),
       ),
     ];
-    await writeFile(this.snapshotsFilePath, `${csvRows.join('\n')}\n`, 'utf8');
+    await this.writeTextFileAtomically(this.snapshotsFilePath, `${csvRows.join('\n')}\n`);
   }
 
   /**
@@ -359,7 +374,7 @@ export class FsCsvMemoryStoreProvider implements MemoryStoreProvider {
         ]),
       ),
     ];
-    await writeFile(this.archiveFilePath, `${csvRows.join('\n')}\n`, 'utf8');
+    await this.writeTextFileAtomically(this.archiveFilePath, `${csvRows.join('\n')}\n`);
   }
 
   /**
@@ -396,7 +411,101 @@ export class FsCsvMemoryStoreProvider implements MemoryStoreProvider {
     if (existsSync(filePath)) {
       return;
     }
-    await writeFile(filePath, `${headerColumns.join(',')}\n`, 'utf8');
+    try {
+      await writeFile(filePath, `${headerColumns.join(',')}\n`, {
+        encoding: 'utf8',
+        flag: 'wx',
+      });
+    } catch (error) {
+      if (!this.isAlreadyExistsError(error)) {
+        throw error;
+      }
+    }
+  }
+
+  private async writeTextFileAtomically(filePath: string, content: string): Promise<void> {
+    const temporaryFilePath = `${filePath}.${process.pid}.${randomUUID()}.tmp`;
+    await writeFile(temporaryFilePath, content, 'utf8');
+    try {
+      await rename(temporaryFilePath, filePath);
+    } catch (error) {
+      await unlink(temporaryFilePath).catch(() => undefined);
+      throw error;
+    }
+  }
+
+  private async withExclusiveMutationLock<T>(operation: () => Promise<T>): Promise<T> {
+    await this.ensureStorageInitialized();
+    const releaseLock = await this.acquireExclusiveMutationLock();
+    try {
+      return await operation();
+    } finally {
+      await releaseLock();
+    }
+  }
+
+  private async acquireExclusiveMutationLock(): Promise<() => Promise<void>> {
+    const waitStartedAtMs = Date.now();
+
+    while (true) {
+      try {
+        const lockHandle = await open(this.lockFilePath, 'wx');
+        await lockHandle.writeFile(
+          JSON.stringify({
+            pid: process.pid,
+            acquiredAt: new Date().toISOString(),
+          }),
+          'utf8',
+        );
+        return async () => {
+          await lockHandle.close().catch(() => undefined);
+          await unlink(this.lockFilePath).catch(() => undefined);
+        };
+      } catch (error) {
+        if (!this.isAlreadyExistsError(error)) {
+          throw error;
+        }
+
+        await this.clearStaleMutationLockIfNeeded();
+        if (Date.now() - waitStartedAtMs >= FS_CSV_PROVIDER_LOCK_WAIT_TIMEOUT_MS) {
+          throw new RuntimeError(
+            GovernorErrorCode.MEMORY_STORE_WRITE_FAILED,
+            'Timed out while waiting for exclusive fs-csv memory-store mutation lock.',
+            {
+              lockFilePath: this.lockFilePath,
+              waitTimeoutMs: FS_CSV_PROVIDER_LOCK_WAIT_TIMEOUT_MS,
+            },
+          );
+        }
+
+        await this.sleep(FS_CSV_PROVIDER_LOCK_RETRY_DELAY_MS);
+      }
+    }
+  }
+
+  private async clearStaleMutationLockIfNeeded(): Promise<void> {
+    try {
+      const lockStats = await stat(this.lockFilePath);
+      if (Date.now() - lockStats.mtimeMs <= FS_CSV_PROVIDER_LOCK_STALE_AFTER_MS) {
+        return;
+      }
+
+      await unlink(this.lockFilePath).catch(() => undefined);
+    } catch {
+      return;
+    }
+  }
+
+  private isAlreadyExistsError(error: unknown): boolean {
+    return (
+      typeof error === 'object' && error !== null && 'code' in error && error.code === 'EEXIST'
+    );
+  }
+
+  private async sleep(milliseconds: number): Promise<void> {
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, milliseconds);
+    });
   }
 
   /**

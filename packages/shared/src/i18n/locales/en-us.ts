@@ -312,6 +312,8 @@ export const EN_US_TRANSLATIONS = {
           'Run /confirm to execute this handoff, or /cancel to discard the preview.',
         commandNotExecutable: 'This slash command has no executable handoff target.',
         commandExecutionSucceeded: 'Command handoff completed for {{command}}.',
+        commandDirectExecutionNotice:
+          'This slash command ran immediately, so /confirm is not required.',
         commandExecutionFailed: 'Command handoff failed for {{command}}. reason={{reason}}',
         commandBridgeUnavailable:
           'The current session shell attachment does not have a command-execution bridge.',
@@ -319,6 +321,7 @@ export const EN_US_TRANSLATIONS = {
         commandArtifactsMore: '+{{count}} more related artifacts were written.',
         commandSummary: 'Summary: {{summary}}',
         commandStatusSummary: 'Key status: {{summary}}',
+        commandFailureSummary: 'Failure: {{summary}}',
         commandAgentSummary: 'Agent routing: {{summary}}',
         commandAttentionSummary: 'Attention: {{summary}}',
         commandErrorHint: 'Hint: {{hint}}',
@@ -327,7 +330,7 @@ export const EN_US_TRANSLATIONS = {
         cancelWithoutPendingCommand:
           'There is no pending command preview to cancel in the current shell.',
         confirmWithoutPendingCommand:
-          'There is no pending command preview to confirm in the current shell.',
+          'There is no pending command preview to confirm in the current shell. Direct slash commands such as /review may already have executed.',
         exitBySlash: 'The foreground shell closed after /exit.',
         exitBySigint: 'The foreground shell closed after Ctrl+C.',
         exitByEof: 'The foreground shell closed after Ctrl+D.',
@@ -554,6 +557,15 @@ export const EN_US_TRANSLATIONS = {
           completed: 'Verify diagnostics are ready.',
           failed: 'Verify found required adapter failures.',
           cancelled: 'Verify execution was cancelled.',
+        },
+        run: {
+          starting: 'Preparing run execution…',
+          assembling: 'Assemble task-driven run',
+          compiling: 'Compile process IR',
+          executingRuntime: 'Execute runtime graph',
+          writingArtifacts: 'Write execution artifacts',
+          completed: 'Run execution finished.',
+          failed: 'Run execution ended with a failure.',
         },
       },
       connect: {

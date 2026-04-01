@@ -20,10 +20,16 @@ import {
   MemoryRecallService,
 } from '@repo-ai-governor/core-memory-semantics';
 import { PolicyGateEngine } from '@repo-ai-governor/core-policy';
-import { ProcessCompiler, type ProcessIrNode } from '@repo-ai-governor/core-process';
 import {
+  type ProcessCompiledIr,
+  ProcessCompiler,
+  type ProcessIrNode,
+} from '@repo-ai-governor/core-process';
+import {
+  DEFAULT_RUNTIME_FLOW_TIMEOUT_MS,
   ProcessRuntimeEngine,
   ProcessRuntimeFacade,
+  type ProcessRuntimeFacadeExecuteOptions,
   type RuntimeExecutionResult,
   RuntimeExecutionStatus,
   type RuntimeStageContext,
@@ -58,6 +64,7 @@ import {
   DEFAULT_I18N_LOCALE,
   ErrorOutputEnvironment,
   ExecutionProgressStage,
+  ExecutionProgressStatus,
   GovernorErrorCode,
   RuntimeError,
   WorkspaceMigrationPolicy,
@@ -114,6 +121,7 @@ import { CliTaskDrivenRunRuntime } from './runtime/task-driven-run-runtime.js';
 import type {
   CliAdapterVerificationResolution,
   CliCheckTotals,
+  CliCommandProgressEvent,
   CliCommandResultArtifact,
   CliCommandResultCheck,
   CliExecutionStreamMetadata,
@@ -125,6 +133,14 @@ import type {
 } from './types/index.js';
 
 const execFileAsync = promisify(execFile);
+const RUN_PROGRESS_TOTAL_STEPS = 4;
+const RUN_DEFAULT_STAGE_TIMEOUT_MS = 300_000;
+const RUN_PROGRESS_ROW_ID = {
+  ASSEMBLY: 'run-assembly',
+  COMPILE: 'run-compile',
+  RUNTIME: 'run-runtime',
+  ARTIFACTS: 'run-artifacts',
+} as const;
 
 interface CliLangGraphCheckpointState {
   checkpointPath: string | null;
@@ -333,7 +349,7 @@ export class CliGovernanceRuntime {
       reviewQueueRuntime: this.reviewQueueRuntime,
       orchestrationServiceRuntime: this.orchestrationServiceRuntime,
       commandExperienceBuilder: this.commandExperienceBuilder,
-      executeRunCommand: async () => this.executeRunCommand(),
+      executeRunCommand: async () => this.executeRunCommand(executionOptions),
       calculateCheckTotals: (checks: CliCommandResultCheck[]) => this.calculateCheckTotals(checks),
       buildDefaultConfigContent: () => this.buildDefaultConfigContent(),
       toRfc3339SecondsTimestamp: (value: Date) => this.toRfc3339SecondsTimestamp(value),
@@ -366,13 +382,37 @@ export class CliGovernanceRuntime {
    * Executes compiler -> runtime -> policy -> audit/report minimal chain.
    * @returns Runtime command result.
    */
-  private async executeRunCommand(): Promise<CliGovernanceCommandResult> {
+  private async executeRunCommand(
+    executionOptions?: CliGovernanceCommandExecutionOptions,
+  ): Promise<CliGovernanceCommandResult> {
     const runtimeDebugOptions = this.resolveRuntimeDebugOptions();
     if (runtimeDebugOptions.replayPath) {
       return this.executeRunReplayCommand(runtimeDebugOptions);
     }
 
     const executionId = `cli-run-${Date.now()}`;
+    const translateProgress = (key: string, interpolation?: Record<string, string>) =>
+      this.options.translate?.(key, interpolation) ?? key;
+    const publishRunProgress = (event: Omit<CliCommandProgressEvent, 'commandName'>) => {
+      executionOptions?.progressSink?.publish({
+        commandName: CliCommandName.RUN,
+        cancelCapability: executionOptions?.abortSignal ? 'supported' : 'none',
+        totalSteps: RUN_PROGRESS_TOTAL_STEPS,
+        ...event,
+      });
+    };
+    publishRunProgress({
+      runState: 'running',
+      completedSteps: 0,
+      statusLine: translateProgress('cli.reactShell.progress.run.starting'),
+      currentStepTitle: translateProgress('cli.reactShell.progress.run.assembling'),
+      row: {
+        id: RUN_PROGRESS_ROW_ID.ASSEMBLY,
+        title: translateProgress('cli.reactShell.progress.run.assembling'),
+        status: ExecutionProgressStatus.RUNNING,
+        detail: `execution_id=${executionId}`,
+      },
+    });
     const executionSessionId = `session-${executionId}`;
     const sharedSessionId = `shared-${executionId}`;
     const processCompiler = new ProcessCompiler();
@@ -389,11 +429,48 @@ export class CliGovernanceRuntime {
       adaptersConfig: this.options.adaptersConfig,
       streamMetadata,
     });
+    const assemblyDetail = `execution_id=${executionId} assembly_mode=${runAssembly.assemblyMode} node_count=${runAssembly.processDefinition.nodes.length}`;
+    publishRunProgress({
+      completedSteps: 1,
+      statusLine: translateProgress('cli.reactShell.progress.run.compiling'),
+      currentStepTitle: translateProgress('cli.reactShell.progress.run.compiling'),
+      row: {
+        id: RUN_PROGRESS_ROW_ID.ASSEMBLY,
+        title: translateProgress('cli.reactShell.progress.run.assembling'),
+        status: ExecutionProgressStatus.COMPLETED,
+        detail: assemblyDetail,
+      },
+      logLine: assemblyDetail,
+    });
+    publishRunProgress({
+      completedSteps: 1,
+      currentStepTitle: translateProgress('cli.reactShell.progress.run.compiling'),
+      row: {
+        id: RUN_PROGRESS_ROW_ID.COMPILE,
+        title: translateProgress('cli.reactShell.progress.run.compiling'),
+        status: ExecutionProgressStatus.RUNNING,
+        detail: `task_id=${runAssembly.taskContext?.taskId ?? runtimeDebugOptions.taskId ?? 'none'}`,
+      },
+    });
     const processDefinition = runAssembly.processDefinition;
     const compiledIr = processCompiler.compile(processDefinition);
     const orchestrationService = this.orchestrationServiceRuntime;
 
     if (compiledIr.compileErrors.length > 0) {
+      const compileFailureDetail = `compile_errors=${compiledIr.compileErrors.length}`;
+      publishRunProgress({
+        runState: 'failure',
+        completedSteps: 1,
+        statusLine: translateProgress('cli.reactShell.progress.run.failed'),
+        currentStepTitle: translateProgress('cli.reactShell.progress.run.compiling'),
+        row: {
+          id: RUN_PROGRESS_ROW_ID.COMPILE,
+          title: translateProgress('cli.reactShell.progress.run.compiling'),
+          status: ExecutionProgressStatus.FAILED,
+          detail: compileFailureDetail,
+        },
+        logLine: compileFailureDetail,
+      });
       throw new RuntimeError(
         GovernorErrorCode.PROCESS_RUNTIME_IR_CONTAINS_COMPILE_ERRORS,
         'Run command failed because compile errors are present in generated process IR.',
@@ -403,6 +480,29 @@ export class CliGovernanceRuntime {
         },
       );
     }
+    const compileDetail = `compiled_nodes=${compiledIr.nodes.length} process_id=${compiledIr.processId}`;
+    publishRunProgress({
+      completedSteps: 2,
+      statusLine: translateProgress('cli.reactShell.progress.run.executingRuntime'),
+      currentStepTitle: translateProgress('cli.reactShell.progress.run.executingRuntime'),
+      row: {
+        id: RUN_PROGRESS_ROW_ID.COMPILE,
+        title: translateProgress('cli.reactShell.progress.run.compiling'),
+        status: ExecutionProgressStatus.COMPLETED,
+        detail: compileDetail,
+      },
+      logLine: compileDetail,
+    });
+    publishRunProgress({
+      completedSteps: 2,
+      currentStepTitle: translateProgress('cli.reactShell.progress.run.executingRuntime'),
+      row: {
+        id: RUN_PROGRESS_ROW_ID.RUNTIME,
+        title: translateProgress('cli.reactShell.progress.run.executingRuntime'),
+        status: ExecutionProgressStatus.RUNNING,
+        detail: `execution_id=${executionId}`,
+      },
+    });
 
     const agentDescriptors = this.agentProjectionRuntime.createDescriptorsFromProcessNodes({
       nodes: compiledIr.nodes,
@@ -488,6 +588,7 @@ export class CliGovernanceRuntime {
     const routeRunner = this.createRunRouteRunner(compiledIr.nodes, {
       includeLocalModelFallbackCandidate: !runtimeDebugOptions.restrictedNetwork,
     });
+    const runtimeTimeoutOptions = this.resolveRunRuntimeTimeoutOptions(compiledIr);
     const runtimeExecution = await processRuntimeFacade.execute(
       compiledIr,
       async (stageContext) =>
@@ -516,9 +617,40 @@ export class CliGovernanceRuntime {
               },
       {
         stageInputs: runAssembly.stageInputs as RuntimeStageInputMap,
+        ...runtimeTimeoutOptions,
       },
     );
     const runtimeResult = runtimeExecution.runtimeResult;
+    const runtimeFailureSummary = this.resolveRunRuntimeFailureSummary(runtimeResult);
+    publishRunProgress({
+      completedSteps: 3,
+      statusLine: translateProgress('cli.reactShell.progress.run.writingArtifacts'),
+      currentStepTitle: translateProgress('cli.reactShell.progress.run.writingArtifacts'),
+      row: {
+        id: RUN_PROGRESS_ROW_ID.RUNTIME,
+        title: translateProgress('cli.reactShell.progress.run.executingRuntime'),
+        status:
+          runtimeResult.status === RuntimeExecutionStatus.SUCCEEDED
+            ? ExecutionProgressStatus.COMPLETED
+            : ExecutionProgressStatus.FAILED,
+        detail: runtimeFailureSummary ?? `runtime_status=${runtimeResult.status}`,
+      },
+      ...(runtimeFailureSummary
+        ? {
+            logLine: runtimeFailureSummary,
+          }
+        : {}),
+    });
+    publishRunProgress({
+      completedSteps: 3,
+      currentStepTitle: translateProgress('cli.reactShell.progress.run.writingArtifacts'),
+      row: {
+        id: RUN_PROGRESS_ROW_ID.ARTIFACTS,
+        title: translateProgress('cli.reactShell.progress.run.writingArtifacts'),
+        status: ExecutionProgressStatus.RUNNING,
+        detail: `execution_id=${executionId}`,
+      },
+    });
 
     const auditRecorder = new AuditRecorder(this.memoryManager);
 
@@ -972,7 +1104,55 @@ export class CliGovernanceRuntime {
           }
         : null,
     });
+    publishRunProgress({
+      completedSteps: 4,
+      row: {
+        id: RUN_PROGRESS_ROW_ID.ARTIFACTS,
+        title: translateProgress('cli.reactShell.progress.run.writingArtifacts'),
+        status: ExecutionProgressStatus.COMPLETED,
+        detail: reportPath,
+      },
+      artifact: {
+        id: 'compiled_ir_snapshot',
+        label: 'compiled_ir_snapshot',
+        path: compiledIrSnapshotPath,
+      },
+      logLine: `report_path=${reportPath}`,
+    });
+    publishRunProgress({
+      completedSteps: 4,
+      artifact: {
+        id: 'execution_report',
+        label: 'execution_report',
+        path: reportPath,
+      },
+    });
+    publishRunProgress({
+      completedSteps: 4,
+      artifact: {
+        id: 'replay_explain',
+        label: 'replay_explain',
+        path: replayPath,
+      },
+    });
+    if (diagnosticsTracePath) {
+      publishRunProgress({
+        completedSteps: 4,
+        artifact: {
+          id: 'diagnostics_trace',
+          label: 'diagnostics_trace',
+          path: diagnosticsTracePath,
+        },
+      });
+    }
     if (resolvedPolicyOutcome !== ChangeRiskRequiredAction.ALLOW) {
+      publishRunProgress({
+        runState: 'failure',
+        completedSteps: 4,
+        statusLine: translateProgress('cli.reactShell.progress.run.failed'),
+        currentStepTitle: translateProgress('cli.reactShell.progress.run.writingArtifacts'),
+        logLine: `policy_outcome=${resolvedPolicyOutcome}`,
+      });
       await orchestrationService.publishEvent({
         executionId,
         type: OrchestrationServiceEventType.EXECUTION_INTERRUPTED,
@@ -1008,6 +1188,23 @@ export class CliGovernanceRuntime {
       message: `Execution completed with runtime_status=${runtimeResult.status}.`,
     });
     const orchestrationSummary = await orchestrationService.getExecution(executionId);
+    publishRunProgress({
+      runState: runtimeResult.status === RuntimeExecutionStatus.SUCCEEDED ? 'success' : 'failure',
+      completedSteps: 4,
+      statusLine: translateProgress(
+        runtimeResult.status === RuntimeExecutionStatus.SUCCEEDED
+          ? 'cli.reactShell.progress.run.completed'
+          : 'cli.reactShell.progress.run.failed',
+      ),
+      currentStepTitle: translateProgress('cli.reactShell.progress.run.writingArtifacts'),
+      ...(runtimeFailureSummary
+        ? {
+            logLine: runtimeFailureSummary,
+          }
+        : {
+            logLine: `runtime_status=${runtimeResult.status} policy_outcome=${resolvedPolicyOutcome}`,
+          }),
+    });
 
     const message = `Run completed with execution_id=${executionId} and policy_outcome=${resolvedPolicyOutcome}${runtimeDebugOptions.dryRun ? ' (dry_run=true)' : ''}${runAssembly.memoryContext ? ` memory_policy=${runAssembly.memoryContext.policySummary.overallAction} warn=${runAssembly.memoryContext.policySummary.warningRecordCount} redact=${runAssembly.memoryContext.policySummary.redactedRecordCount} block=${runAssembly.memoryContext.policySummary.blockedRecordCount}` : ''}${memoryPromotionResult ? ` memory_promotion=${memoryPromotionResult.outcome} merged=${memoryPromotionResult.summary.mergedCount} session_projection=${memoryPromotionResult.persistedRecord?.key ?? 'none'}` : ''}.`;
     return {
@@ -2731,5 +2928,43 @@ export class CliGovernanceRuntime {
     }
 
     return candidate.message?.trim() || 'failed';
+  }
+
+  private resolveRunRuntimeFailureSummary(runtimeResult: RuntimeExecutionResult): string | null {
+    const failedStageResult =
+      runtimeResult.stageResults.find(
+        (stageResult) =>
+          stageResult.status === RuntimeStageStatus.FAILED ||
+          stageResult.status === RuntimeStageStatus.TIMEOUT,
+      ) ?? null;
+    if (!failedStageResult) {
+      return runtimeResult.status === RuntimeExecutionStatus.SUCCEEDED
+        ? null
+        : `runtime_status=${runtimeResult.status}`;
+    }
+
+    return [
+      `stage=${failedStageResult.stageId}`,
+      failedStageResult.errorMessage?.trim() || `status=${failedStageResult.status}`,
+    ].join(' reason=');
+  }
+
+  private resolveRunRuntimeTimeoutOptions(
+    compiledIr: ProcessCompiledIr,
+  ): Pick<ProcessRuntimeFacadeExecuteOptions, 'stageTimeoutMs' | 'flowTimeoutMs'> {
+    const perStageTimeoutBudgets = compiledIr.nodes.map(
+      (node) =>
+        Math.max(1, node.limits?.maxWallTimeSeconds ?? RUN_DEFAULT_STAGE_TIMEOUT_MS / 1000) * 1000,
+    );
+    const stageTimeoutMs = Math.max(...perStageTimeoutBudgets, RUN_DEFAULT_STAGE_TIMEOUT_MS);
+    const flowTimeoutMs = Math.max(
+      DEFAULT_RUNTIME_FLOW_TIMEOUT_MS,
+      perStageTimeoutBudgets.reduce((total, budget) => total + budget, 0),
+    );
+
+    return {
+      stageTimeoutMs,
+      flowTimeoutMs,
+    };
   }
 }

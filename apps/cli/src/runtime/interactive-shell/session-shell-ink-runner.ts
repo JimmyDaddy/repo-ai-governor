@@ -169,23 +169,19 @@ export class CliSessionShellInkRunner {
   }
 
   private buildLayoutSignature(viewModel: CliSessionShellViewModel): string {
-    const transcriptLineCount = viewModel.transcriptItems.reduce(
-      (lineCount, item) => lineCount + item.lines.length,
-      0,
-    );
     const slashSuggestionCount = viewModel.slashSuggestions.length;
     const promptBarLineCount = viewModel.promptBarLines.length;
     const previewOccupancy = viewModel.commandPreview === null ? 'none' : 'present';
+    const commandProgressOccupancy = viewModel.commandProgressPanel ? 'present' : 'none';
 
     return [
       viewModel.shellMode,
       viewModel.inputMode,
       viewModel.handoffState,
-      String(viewModel.transcriptItems.length),
-      String(transcriptLineCount),
       viewModel.slashPaletteVisible ? 'palette-open' : 'palette-closed',
       String(slashSuggestionCount),
       previewOccupancy,
+      commandProgressOccupancy,
       String(promptBarLineCount),
     ].join('|');
   }

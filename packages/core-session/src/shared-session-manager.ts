@@ -54,7 +54,7 @@ export class SharedSessionManager {
         );
       }
 
-      return existingSession;
+      return this.cloneSession(existingSession);
     }
 
     const openedAt = options.openedAt ?? new Date().toISOString();
@@ -78,20 +78,7 @@ export class SharedSessionManager {
    * @returns Session payload.
    */
   public async getSession(sessionId: string): Promise<SharedSession> {
-    const sessionRecord = await this.memoryManager.readEntry({
-      scope: MemoryScope.SESSION,
-      key: sessionId,
-    });
-
-    if (!sessionRecord) {
-      throw new RuntimeError(
-        GovernorErrorCode.MEMORY_SESSION_NOT_FOUND,
-        `Session "${sessionId}" was not found in memory store.`,
-        { sessionId },
-      );
-    }
-
-    return this.parseSharedSessionPayload(sessionRecord.value, sessionId);
+    return this.readPersistedSession(sessionId);
   }
 
   /**
@@ -100,7 +87,7 @@ export class SharedSessionManager {
    * @returns Updated shared session payload.
    */
   public async appendEvent(options: AppendSessionEventOptions): Promise<SharedSession> {
-    const session = await this.getSession(options.sessionId);
+    const session = await this.readPersistedSession(options.sessionId);
     this.assertSessionActiveOrThrow(session);
 
     const appendedEvent: SessionEvent = {
@@ -125,7 +112,7 @@ export class SharedSessionManager {
    * @returns Updated shared session payload.
    */
   public async updateContext(options: UpdateSessionContextOptions): Promise<SharedSession> {
-    const session = await this.getSession(options.sessionId);
+    const session = await this.readPersistedSession(options.sessionId);
     this.assertSessionActiveOrThrow(session);
 
     const updatedSession: SharedSession = {
@@ -146,7 +133,7 @@ export class SharedSessionManager {
    * @returns Finalized shared session payload.
    */
   public async finalizeSession(options: FinalizeSessionOptions): Promise<SharedSession> {
-    const session = await this.getSession(options.sessionId);
+    const session = await this.readPersistedSession(options.sessionId);
     this.assertSessionActiveOrThrow(session);
 
     const nextStatus = options.status ?? SessionStatus.COMPLETED;
@@ -182,14 +169,17 @@ export class SharedSessionManager {
       limit: options.limit,
     });
 
-    const sessions = records.map((record) =>
-      this.parseSharedSessionPayload(record.value, record.key),
-    );
+    const sessions = records.map((record) => {
+      const parsedSession = this.parseSharedSessionPayload(record.value, record.key);
+      return parsedSession;
+    });
     if (!options.status) {
-      return sessions;
+      return sessions.map((session) => this.cloneSession(session));
     }
 
-    return sessions.filter((session) => session.status === options.status);
+    return sessions
+      .filter((session) => session.status === options.status)
+      .map((session) => this.cloneSession(session));
   }
 
   /**
@@ -209,6 +199,39 @@ export class SharedSessionManager {
         ...(session.processId ? [`process:${session.processId}`] : []),
       ],
     });
+  }
+
+  private async readPersistedSession(sessionId: string): Promise<SharedSession> {
+    const sessionRecord = await this.memoryManager.readEntry({
+      scope: MemoryScope.SESSION,
+      key: sessionId,
+    });
+
+    if (!sessionRecord) {
+      throw new RuntimeError(
+        GovernorErrorCode.MEMORY_SESSION_NOT_FOUND,
+        `Session "${sessionId}" was not found in memory store.`,
+        { sessionId },
+      );
+    }
+
+    const parsedSession = this.parseSharedSessionPayload(sessionRecord.value, sessionId);
+    return this.cloneSession(parsedSession);
+  }
+
+  private cloneSession(session: SharedSession): SharedSession {
+    return {
+      ...session,
+      context: {
+        ...session.context,
+      },
+      events: session.events.map((event) => ({
+        ...event,
+        payload: {
+          ...event.payload,
+        },
+      })),
+    };
   }
 
   /**

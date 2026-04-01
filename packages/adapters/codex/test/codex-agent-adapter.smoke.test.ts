@@ -166,7 +166,13 @@ describe('codex-agent-adapter smoke', () => {
       .fn<CodexExecRunner>()
       .mockImplementationOnce(createExecRunner('OK'))
       .mockImplementationOnce(async (request) => {
-        expect(request.commandArguments).toEqual(['exec', 'review', '--json', '--uncommitted']);
+        expect(request.commandArguments).toEqual([
+          'exec',
+          'review',
+          '--skip-git-repo-check',
+          '--json',
+          '--uncommitted',
+        ]);
         expect(request.timeoutMs).toBe(600000);
         expect(request.prompt).toContain('repository review stage');
         expect(request.prompt).toContain('帮我 review 一下代码');
@@ -345,7 +351,13 @@ describe('codex-agent-adapter smoke', () => {
   it('reuses one repository-review cli_exec invocation across streamEvents and invokeStage with the elevated timeout budget', async () => {
     const abortController = new AbortController();
     const execRunner = vi.fn<CodexExecRunner>().mockImplementation(async (request) => {
-      expect(request.commandArguments).toEqual(['exec', 'review', '--json', '--uncommitted']);
+      expect(request.commandArguments).toEqual([
+        'exec',
+        'review',
+        '--skip-git-repo-check',
+        '--json',
+        '--uncommitted',
+      ]);
       expect(request.timeoutMs).toBe(321000);
       expect(request.signal).toBe(abortController.signal);
       return {

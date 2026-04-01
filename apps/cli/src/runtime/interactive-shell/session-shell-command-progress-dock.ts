@@ -7,6 +7,7 @@ import type {
   CliCommandProgressSink,
   CliGovernanceCommandExecutionOptions,
 } from '../../types/index.js';
+import { createTimestampedExecutionDetailLine } from './session-shell-execution-detail-line.js';
 
 interface CliSessionShellCommandProgressDockOptions {
   argv: string[];
@@ -34,6 +35,7 @@ export class CliSessionShellCommandProgressDock {
   private readonly commandName: CliCommandName | null;
   private readonly controller: ReactCliCommandProgressController | null;
   private activeTickHandle: NodeJS.Timeout | null = null;
+  private readonly detailHistoryLines: string[] = [];
 
   public constructor(private readonly options: CliSessionShellCommandProgressDockOptions) {
     this.commandName = this.resolveCommandName(options.argv[0]);
@@ -59,6 +61,7 @@ export class CliSessionShellCommandProgressDock {
       return;
     }
 
+    this.detailHistoryLines.splice(0, this.detailHistoryLines.length);
     this.commitLocalProgress({
       commandName: this.commandName,
       runState: 'running',
@@ -132,12 +135,21 @@ export class CliSessionShellCommandProgressDock {
     this.options.onPanelUpdate(undefined);
   }
 
+  /**
+   * Returns timestamped detail history collected while the command was running.
+   * @returns Captured detail lines.
+   */
+  public consumeDetailHistoryLines(): string[] {
+    return [...this.detailHistoryLines];
+  }
+
   private publish(event: CliCommandProgressEvent): void {
     this.options.relayProgressSink?.publish(event);
     if (!this.controller) {
       return;
     }
 
+    this.recordDetailHistory(event);
     if (event.runState && event.runState !== 'running') {
       this.stopTicking();
     }
@@ -164,5 +176,39 @@ export class CliSessionShellCommandProgressDock {
     return CLI_COMMAND_NAMES.includes(rawCommandName as CliCommandName)
       ? (rawCommandName as CliCommandName)
       : null;
+  }
+
+  private recordDetailHistory(event: CliCommandProgressEvent): void {
+    const occurredAt = event.occurredAt;
+    this.pushDetailHistoryLine(event.statusLine, occurredAt);
+    this.pushDetailHistoryLine(event.currentStepTitle, occurredAt);
+    if (event.row) {
+      this.pushDetailHistoryLine(
+        [event.row.title, event.row.detail ?? String(event.row.status)]
+          .filter((segment) => segment)
+          .join(' · '),
+        occurredAt,
+      );
+    }
+    if (event.artifact) {
+      this.pushDetailHistoryLine(
+        [event.artifact.label, event.artifact.path].join(' · '),
+        occurredAt,
+      );
+    }
+    this.pushDetailHistoryLine(event.logLine, occurredAt);
+  }
+
+  private pushDetailHistoryLine(line: string | undefined, occurredAt?: string): void {
+    if (!line?.trim()) {
+      return;
+    }
+
+    const timestampedLine = createTimestampedExecutionDetailLine(line, occurredAt);
+    if (this.detailHistoryLines.at(-1) === timestampedLine) {
+      return;
+    }
+
+    this.detailHistoryLines.push(timestampedLine);
   }
 }

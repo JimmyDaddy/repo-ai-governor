@@ -1,10 +1,12 @@
-import type { ErrorOutputEnvironment } from '@repo-ai-governor/shared';
+import { RuntimeExecutionStatus } from '@repo-ai-governor/core-runtime';
+import { type ErrorOutputEnvironment, ExecutionProgressStatus } from '@repo-ai-governor/shared';
 import { CLI_COMMAND_NAMES, CLI_PROGRAM_NAME } from '../../constants/cli-command.constant.js';
 import { CliInteractiveUiMode } from '../../constants/cli-interactive-shell.constant.js';
 import { CLI_OPTIONS_REQUIRING_VALUE } from '../../constants/cli-output.constant.js';
 import type { CliReactThemePreset } from '../../constants/cli-react-theme.constant.js';
 import { CliWorkspaceAction } from '../../constants/cli-workspace.constant.js';
 import type {
+  CliCommandExperiencePayload,
   CliErrorOutputPayload,
   CliGovernanceCommandExecutionOptions,
   CliNestedCommandExecutionOptions,
@@ -351,12 +353,16 @@ export class CliSessionShellEntrypointRuntime {
       parsedPayload.command_result?.experience?.layeredLogs.summary ?? [],
       artifactPaths,
     );
+    const logicalFailure = CliSessionShellEntrypointRuntime.resolveLogicalFailure(
+      parsedPayload,
+      artifactPaths,
+    );
 
     return {
       artifactPaths,
       commandLine: options.commandLine,
-      message: parsedPayload.message,
-      status: 'success',
+      message: logicalFailure.failureReason ?? parsedPayload.message,
+      status: logicalFailure.status,
       summaryLines: CliSessionShellEntrypointRuntime.dedupeSummaryLines([
         primarySummary
           ? options.translate('cli.sessionShell.responses.commandSummary', {
@@ -368,6 +374,16 @@ export class CliSessionShellEntrypointRuntime {
         keyStatusSummary
           ? options.translate('cli.sessionShell.responses.commandStatusSummary', {
               summary: keyStatusSummary,
+            })
+          : null,
+        logicalFailure.failureReason
+          ? options.translate('cli.sessionShell.responses.commandFailureSummary', {
+              summary: logicalFailure.failureReason,
+            })
+          : null,
+        logicalFailure.nextAction
+          ? options.translate('cli.sessionShell.responses.commandErrorNextAction', {
+              nextAction: logicalFailure.nextAction,
             })
           : null,
       ]),
@@ -405,6 +421,78 @@ export class CliSessionShellEntrypointRuntime {
     }
 
     return compactSegments.join(' · ');
+  }
+
+  private static resolveLogicalFailure(
+    parsedPayload: CliSuccessOutputPayload,
+    artifactPaths: string[],
+  ): {
+    status: CliSessionShellCommandExecutionResult['status'];
+    failureReason: string | null;
+    nextAction: string | null;
+  } {
+    const runtimeStatus =
+      typeof parsedPayload.command_result?.details?.runtime_status === 'string'
+        ? parsedPayload.command_result.details.runtime_status
+        : null;
+    const runtimeFailed =
+      parsedPayload.command === 'run' &&
+      runtimeStatus !== null &&
+      runtimeStatus !== RuntimeExecutionStatus.SUCCEEDED;
+    if (!runtimeFailed) {
+      return {
+        status: 'success',
+        failureReason: null,
+        nextAction: null,
+      };
+    }
+
+    const failureReason =
+      CliSessionShellEntrypointRuntime.resolveExperienceFailureSummary(
+        parsedPayload.command_result?.experience,
+        artifactPaths,
+      ) ??
+      CliSessionShellEntrypointRuntime.replaceArtifactPathsWithShortForms(
+        `runtime_status=${runtimeStatus}`,
+        artifactPaths,
+      );
+    const nextAction =
+      parsedPayload.command_result?.experience?.interactionPrompts.find((prompt) => prompt.blocking)
+        ?.action ??
+      parsedPayload.command_result?.experience?.interactionPrompts[0]?.action ??
+      null;
+    return {
+      status: 'error',
+      failureReason,
+      nextAction,
+    };
+  }
+
+  private static resolveExperienceFailureSummary(
+    experience: CliCommandExperiencePayload | undefined,
+    artifactPaths: string[],
+  ): string | null {
+    const failedProgressEntry = experience?.roleProgress.find(
+      (entry) => entry.status === ExecutionProgressStatus.FAILED,
+    );
+    if (failedProgressEntry) {
+      return CliSessionShellEntrypointRuntime.replaceArtifactPathsWithShortForms(
+        [failedProgressEntry.summary, failedProgressEntry.detail]
+          .filter((segment): segment is string => typeof segment === 'string' && segment.length > 0)
+          .join(' · '),
+        artifactPaths,
+      );
+    }
+
+    const failureDetail = experience?.layeredLogs.detailed.find((line) =>
+      line.startsWith('failed_reason='),
+    );
+    return failureDetail
+      ? CliSessionShellEntrypointRuntime.replaceArtifactPathsWithShortForms(
+          failureDetail,
+          artifactPaths,
+        )
+      : null;
   }
 
   private static resolveAgentAttentionLine(

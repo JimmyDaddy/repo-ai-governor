@@ -45,6 +45,7 @@ import type {
   CliSessionShellViewModel,
 } from '../../types/index.js';
 import { CliSessionShellCommandProgressDock } from './session-shell-command-progress-dock.js';
+import { createTimestampedExecutionDetailLine } from './session-shell-execution-detail-line.js';
 import { CliSessionShellInkController } from './session-shell-ink-controller.js';
 import { CliSessionShellInkRunner } from './session-shell-ink-runner.js';
 import { CliSessionShellReadlinePromptAdapter } from './session-shell-readline-prompt-adapter.js';
@@ -87,6 +88,7 @@ interface CliSessionShellRuntimeState {
   pendingCommand: PendingCommandExecution | null;
   historyNavigationCursor: number | null;
   historyNavigationDraftValue: string | null;
+  recoveredTurnRetryPending: boolean;
 }
 
 /**
@@ -124,6 +126,7 @@ export class CliSessionShellRunner {
       pendingCommand: null,
       historyNavigationCursor: null,
       historyNavigationDraftValue: null,
+      recoveredTurnRetryPending: false,
     };
     const viewModel = this.createInitialViewModel(
       options,
@@ -587,6 +590,12 @@ export class CliSessionShellRunner {
         turnCompleted = true;
       });
     turnProgressDock.seedRunningState();
+    if (runtimeState.recoveredTurnRetryPending) {
+      turnProgressDock.seedRecoveryRetryDetail(
+        options.translate('cli.sessionShell.responses.turnRetryingAfterSessionRecovery'),
+      );
+      runtimeState.recoveredTurnRetryPending = false;
+    }
     this.refreshRenderedTranscript(viewModel, transcriptStore, turnProgressDock);
     this.renderActiveSurface(viewModel);
 
@@ -1295,6 +1304,11 @@ export class CliSessionShellRunner {
             ],
           } satisfies CliSessionShellCommandExecutionResult;
         });
+      const executionDetailsLines = this.buildCommandExecutionDetailsLines(
+        progressDock.consumeDetailHistoryLines(),
+        viewModel.commandProgressPanel,
+        executionResult,
+      );
       progressDock.clear();
 
       const isLastStep = index === pendingCommand.steps.length - 1;
@@ -1308,12 +1322,17 @@ export class CliSessionShellRunner {
         executionResult.status === 'success'
           ? OrchestrationSessionTranscriptRole.ASSISTANT
           : OrchestrationSessionTranscriptRole.SYSTEM,
-        this.buildCommandExecutionLines(executionResult, options),
+        this.buildCommandExecutionLines(executionResult, pendingCommand.executionMode, options),
         {
           commandLine: executionResult.commandLine,
           ...(executionResult.artifactPaths.length > 0
             ? {
                 artifactPaths: executionResult.artifactPaths,
+              }
+            : {}),
+          ...(executionDetailsLines.length > 0
+            ? {
+                executionDetailsLines,
               }
             : {}),
           ...(executionResult.status === 'success'
@@ -1857,6 +1876,7 @@ export class CliSessionShellRunner {
       runtimeState.currentRouteId =
         startedSession.session.currentRouteId ?? OrchestrationSessionRouteId.MAIN;
       runtimeState.pendingCommand = null;
+      runtimeState.recoveredTurnRetryPending = recoveryOptions.retryCurrentTurn;
       transcriptStore.reset(viewModel.sessionId);
       turnProgressDock?.clear();
       viewModel.transcriptItems = [];
@@ -2147,6 +2167,7 @@ export class CliSessionShellRunner {
 
   private buildCommandExecutionLines(
     result: CliSessionShellCommandExecutionResult,
+    executionMode: PendingCommandExecution['executionMode'],
     options: CliSessionShellRunOptions,
   ): string[] {
     return [
@@ -2158,9 +2179,50 @@ export class CliSessionShellRunner {
             command: result.commandLine,
             reason: result.message,
           }),
+      ...(result.status === 'success' && executionMode === 'direct_execute'
+        ? [options.translate('cli.sessionShell.responses.commandDirectExecutionNotice')]
+        : []),
       ...result.summaryLines,
       ...this.buildCommandArtifactLines(result.artifactPaths, options),
     ];
+  }
+
+  private buildCommandExecutionDetailsLines(
+    historyLines: string[],
+    panel: CliSessionShellViewModel['commandProgressPanel'],
+    result: CliSessionShellCommandExecutionResult,
+  ): string[] {
+    if (historyLines.length > 0) {
+      return [
+        ...historyLines,
+        ...result.summaryLines.map((line) => createTimestampedExecutionDetailLine(line)),
+      ].filter((line, index, collection) => line.length > 0 && collection.indexOf(line) === index);
+    }
+
+    const lines: string[] = [];
+    if (panel?.statusLine) {
+      lines.push(createTimestampedExecutionDetailLine(panel.statusLine));
+    }
+    if (panel?.currentStepTitle) {
+      lines.push(createTimestampedExecutionDetailLine(panel.currentStepTitle));
+    }
+    for (const row of panel?.rows ?? []) {
+      lines.push(
+        createTimestampedExecutionDetailLine(
+          [row.title, row.detail ?? String(row.status)].filter((segment) => segment).join(' · '),
+        ),
+      );
+    }
+    for (const artifact of panel?.artifacts ?? []) {
+      lines.push(createTimestampedExecutionDetailLine([artifact.label, artifact.path].join(' · ')));
+    }
+    lines.push(
+      ...(panel?.logLines ?? []).map((line) => createTimestampedExecutionDetailLine(line)),
+    );
+    lines.push(...result.summaryLines.map((line) => createTimestampedExecutionDetailLine(line)));
+    return lines.filter(
+      (line, index, collection) => line.length > 0 && collection.indexOf(line) === index,
+    );
   }
 
   private buildCommandArtifactLines(

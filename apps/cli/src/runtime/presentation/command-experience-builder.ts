@@ -1,6 +1,9 @@
 import type { ChangeRiskRequiredAction } from '@repo-ai-governor/core-change-risk';
-import type { RuntimeExecutionResult, RuntimeStageStatus } from '@repo-ai-governor/core-runtime';
-import { RuntimeExecutionStatus } from '@repo-ai-governor/core-runtime';
+import {
+  type RuntimeExecutionResult,
+  RuntimeExecutionStatus,
+  RuntimeStageStatus,
+} from '@repo-ai-governor/core-runtime';
 import {
   EXECUTION_PROGRESS_STATUS_LABELS,
   ExecutionInteractionCategory,
@@ -172,6 +175,7 @@ export class CliCommandExperienceBuilder {
       blockedRecordCount: number;
     } | null;
   }): CliCommandExperiencePayload {
+    const firstFailedStageResult = this.findFirstFailedStageResult(options.runtimeResult);
     const rootCause = this.resolveRunDiagnosticRootCause({
       policyOutcome: options.policyResult.policyOutcome,
       runtimeStatus: options.runtimeResult.status,
@@ -374,7 +378,9 @@ export class CliCommandExperienceBuilder {
                 ? ExecutionInteractionCategory.RUNTIME_FAILURE
                 : ExecutionInteractionCategory.NONE,
             summary: `Stage ${stageResult.stageId} finished with ${stageResult.status}.`,
-            detail: `duration_ms=${stageResult.durationMs}`,
+            detail: stageResult.errorMessage?.trim().length
+              ? stageResult.errorMessage.trim()
+              : `duration_ms=${stageResult.durationMs}`,
             backlink: {
               executionId: options.executionId,
               stageId: stageResult.stageId,
@@ -471,6 +477,7 @@ export class CliCommandExperienceBuilder {
           `runtime_status=${options.runtimeResult.status}`,
           `policy_outcome=${options.policyResult.policyOutcome}`,
           `root_cause=${rootCause}`,
+          ...(firstFailedStageResult ? [`failed_stage=${firstFailedStageResult.stageId}`] : []),
           `inline_review_chain=${options.reviewChain.status}`,
           `inline_review_skip_reason=${options.reviewChain.skipReason ?? 'none'}`,
           `delivery_rehearsal=${options.deliveryRehearsal.status}`,
@@ -495,6 +502,9 @@ export class CliCommandExperienceBuilder {
           `report_path=${options.reportPath}`,
           `replay_path=${options.replayPath}`,
           `diagnostics_trace_path=${options.diagnosticsTracePath ?? 'none'}`,
+          ...(firstFailedStageResult?.errorMessage?.trim().length
+            ? [`failed_reason=${firstFailedStageResult.errorMessage.trim()}`]
+            : []),
           `inline_review_request_path=${options.reviewChain.reviewRequestPath ?? 'none'}`,
           `inline_review_verify_path=${options.reviewChain.reviewVerifyPath ?? 'none'}`,
           `inline_review_ledger_backfill_path=${options.reviewChain.ledgerBackfillPath ?? 'none'}`,
@@ -507,6 +517,18 @@ export class CliCommandExperienceBuilder {
         ],
       },
     });
+  }
+
+  private findFirstFailedStageResult(
+    runtimeResult: RuntimeExecutionResult,
+  ): RuntimeExecutionResult['stageResults'][number] | null {
+    return (
+      runtimeResult.stageResults.find(
+        (stageResult) =>
+          stageResult.status === RuntimeStageStatus.FAILED ||
+          stageResult.status === RuntimeStageStatus.TIMEOUT,
+      ) ?? null
+    );
   }
 
   /**

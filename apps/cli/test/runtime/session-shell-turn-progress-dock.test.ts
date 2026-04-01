@@ -118,7 +118,9 @@ describe('session-shell-turn-progress-dock', () => {
     ]);
 
     expect(dock.projectTranscriptItems('session-1', [])).toEqual([]);
-    expect(dock.consumeCompletedTurnDetails('turn-1')).toEqual(['Current: codex review started']);
+    expect(dock.consumeCompletedTurnDetails('turn-1')).toEqual([
+      expect.stringMatching(/^\[\d{2}:\d{2}:\d{2}\] Current: codex review started$/u),
+    ]);
     expect(dock.consumeCompletedTurnDetails('turn-1')).toEqual([]);
   });
 });

@@ -79,6 +79,7 @@ export interface SessionMainSupervisorTurnOutcome {
   interactionMode: SessionMainInteractionMode;
   assistantDelta: string;
   assistantMessage?: string;
+  executionDetailsLines?: string[];
   routerDecisionReason?: string;
   synthesisMode?: string;
   suggestedSlashCommand?: string;

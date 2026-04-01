@@ -46,7 +46,13 @@ const CODEX_REPOSITORY_REVIEW_PROGRESS_INTERVAL_MS = 15000;
 const CODEX_DEFAULT_PROBE_CACHE_TTL_MS = 30000;
 const CODEX_CLI_EXECUTION_CACHE_TTL_MS = 30000;
 const CODEX_EXEC_ARGS = ['exec', '--skip-git-repo-check', '--json', '-'] as const;
-const CODEX_REVIEW_EXEC_ARGS = ['exec', 'review', '--json', '--uncommitted'] as const;
+const CODEX_REVIEW_EXEC_ARGS = [
+  'exec',
+  'review',
+  '--skip-git-repo-check',
+  '--json',
+  '--uncommitted',
+] as const;
 const CODEX_CHAT_ONLY_EXEC_ARGS = ['--sandbox', 'read-only'] as const;
 const CODEX_HEALTH_CHECK_PROMPT = 'Respond with exactly OK.';
 const CODEX_HEALTH_CHECK_EXPECTED_RESPONSE = 'OK';

@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 import { MemoryManager } from '@repo-ai-governor/core-memory';
 import {
+  type AppendSessionEventOptions,
   SessionStatus,
   type SharedSession,
   SharedSessionManager,
@@ -162,8 +163,25 @@ export class LocalOrchestrationServiceSessionRuntime {
     const acceptedAt = this.toTimestamp();
     const turnId = request.turnId ?? `turn-${randomUUID().replace(/-/gu, '')}`;
     const turnIndex = this.resolveNextTurnIndex(existingSession);
+    const turnStartedAtMs = this.currentTimeMs();
+    const sessionPersistenceMetrics = {
+      totalElapsedMs: 0,
+      writeCount: 0,
+    };
+    const appendSessionEvent = async (
+      options: AppendSessionEventOptions,
+    ): Promise<SharedSession> => {
+      const persistStartedAtMs = this.currentTimeMs();
+      const updatedSession = await sessionManager.appendEvent(options);
+      sessionPersistenceMetrics.totalElapsedMs += Math.max(
+        this.currentTimeMs() - persistStartedAtMs,
+        0,
+      );
+      sessionPersistenceMetrics.writeCount += 1;
+      return updatedSession;
+    };
     let emittedStreamDeltaCount = 0;
-    await sessionManager.appendEvent({
+    await appendSessionEvent({
       sessionId: request.sessionId,
       type: OrchestrationSessionEventType.TURN_SUBMITTED,
       createdAt: acceptedAt,
@@ -176,6 +194,7 @@ export class LocalOrchestrationServiceSessionRuntime {
       },
     });
     try {
+      const dispatchStartedAtMs = this.currentTimeMs();
       const dispatchResult = await this.mainAgentDispatcher.dispatch({
         sessionId: request.sessionId,
         routeId: currentRouteId,
@@ -188,7 +207,7 @@ export class LocalOrchestrationServiceSessionRuntime {
         sessionRoutingPreferenceApplied: false,
         publishStreamEvent: async (streamEvent) => {
           emittedStreamDeltaCount += 1;
-          await sessionManager.appendEvent({
+          await appendSessionEvent({
             sessionId: request.sessionId,
             type: OrchestrationSessionEventType.TURN_STREAM_DELTA,
             createdAt: this.toTimestamp(),
@@ -201,7 +220,7 @@ export class LocalOrchestrationServiceSessionRuntime {
         },
       });
       if (emittedStreamDeltaCount === 0) {
-        await sessionManager.appendEvent({
+        await appendSessionEvent({
           sessionId: request.sessionId,
           type: OrchestrationSessionEventType.TURN_STREAM_DELTA,
           createdAt: this.toTimestamp(),
@@ -212,8 +231,16 @@ export class LocalOrchestrationServiceSessionRuntime {
             delta: dispatchResult.assistantDelta,
           },
         });
+        emittedStreamDeltaCount += 1;
       }
-      await sessionManager.appendEvent({
+      const runtimePerformanceDetailLines = this.buildRuntimePerformanceDetailLines({
+        dispatchElapsedMs: Math.max(this.currentTimeMs() - dispatchStartedAtMs, 0),
+        persistenceElapsedMs: sessionPersistenceMetrics.totalElapsedMs,
+        persistenceWriteCount: sessionPersistenceMetrics.writeCount,
+        streamDeltaCount: emittedStreamDeltaCount,
+        turnElapsedMs: Math.max(this.currentTimeMs() - turnStartedAtMs, 0),
+      });
+      await appendSessionEvent({
         sessionId: request.sessionId,
         type: OrchestrationSessionEventType.TURN_COMPLETED,
         createdAt: this.toTimestamp(),
@@ -226,6 +253,19 @@ export class LocalOrchestrationServiceSessionRuntime {
           latestUserMessage: request.userMessage,
           ...(dispatchResult.assistantMessage
             ? { assistantMessage: dispatchResult.assistantMessage }
+            : {}),
+          ...(dispatchResult.executionDetailsLines
+            ? {
+                executionDetailsLines: this.mergeExecutionDetailsLines(
+                  dispatchResult.executionDetailsLines,
+                  runtimePerformanceDetailLines,
+                ),
+              }
+            : {}),
+          ...(!dispatchResult.executionDetailsLines && runtimePerformanceDetailLines.length > 0
+            ? {
+                executionDetailsLines: [...runtimePerformanceDetailLines],
+              }
             : {}),
           ...(dispatchResult.routerDecisionReason
             ? { routerDecisionReason: dispatchResult.routerDecisionReason }
@@ -290,11 +330,18 @@ export class LocalOrchestrationServiceSessionRuntime {
     } catch (error) {
       const standardizedError = standardizeError(error);
       const formattedFailure = this.formatTurnFailure(error, standardizedError);
+      const runtimePerformanceDetailLines = this.buildRuntimePerformanceDetailLines({
+        dispatchElapsedMs: Math.max(this.currentTimeMs() - turnStartedAtMs, 0),
+        persistenceElapsedMs: sessionPersistenceMetrics.totalElapsedMs,
+        persistenceWriteCount: sessionPersistenceMetrics.writeCount,
+        streamDeltaCount: emittedStreamDeltaCount,
+        turnElapsedMs: Math.max(this.currentTimeMs() - turnStartedAtMs, 0),
+      });
       const failureEventType =
         standardizedError.code === GovernorErrorCode.PROCESS_RUNTIME_CANCELLED
           ? OrchestrationSessionEventType.TURN_CANCELLED
           : OrchestrationSessionEventType.TURN_FAILED;
-      await sessionManager.appendEvent({
+      await appendSessionEvent({
         sessionId: request.sessionId,
         type: failureEventType,
         createdAt: this.toTimestamp(),
@@ -306,6 +353,9 @@ export class LocalOrchestrationServiceSessionRuntime {
           errorCode: standardizedError.code,
           errorMessage: formattedFailure.message,
           ...(formattedFailure.detail ? { errorDetail: formattedFailure.detail } : {}),
+          ...(runtimePerformanceDetailLines.length > 0
+            ? { executionDetailsLines: [...runtimePerformanceDetailLines] }
+            : {}),
         },
       });
     }
@@ -828,6 +878,37 @@ export class LocalOrchestrationServiceSessionRuntime {
 
   private toTimestamp(): string {
     return this.nowProvider().toISOString();
+  }
+
+  private currentTimeMs(): number {
+    return this.nowProvider().getTime();
+  }
+
+  private buildRuntimePerformanceDetailLines(options: {
+    dispatchElapsedMs: number;
+    persistenceElapsedMs: number;
+    persistenceWriteCount: number;
+    streamDeltaCount: number;
+    turnElapsedMs: number;
+  }): string[] {
+    return [
+      `performance.turn_elapsed_pre_terminal_ms=${String(options.turnElapsedMs)}`,
+      `performance.dispatch_ms=${String(options.dispatchElapsedMs)}`,
+      `performance.session_persist_pre_terminal_ms=${String(options.persistenceElapsedMs)} writes=${String(options.persistenceWriteCount)}`,
+      `performance.stream_delta_count=${String(options.streamDeltaCount)}`,
+    ];
+  }
+
+  private mergeExecutionDetailsLines(primaryLines: string[], secondaryLines: string[]): string[] {
+    const mergedLines: string[] = [];
+    for (const line of [...primaryLines, ...secondaryLines]) {
+      const normalizedLine = line.trim();
+      if (normalizedLine.length === 0 || mergedLines.includes(line)) {
+        continue;
+      }
+      mergedLines.push(line);
+    }
+    return mergedLines;
   }
 
   private formatTurnFailure(

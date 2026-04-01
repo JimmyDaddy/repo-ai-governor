@@ -147,6 +147,62 @@ describe('CliSessionShellTranscriptStore', () => {
     ]);
   });
 
+  it('attaches execution details blocks to command recap session messages when metadata includes them', () => {
+    const store = new CliSessionShellTranscriptStore();
+    const items = store.applyEvents(
+      'session-001',
+      [
+        {
+          eventId: 'event-3',
+          sequence: 3,
+          streamCursor: 'cursor-3',
+          sessionId: 'session-001',
+          type: OrchestrationSessionEventType.SESSION_MESSAGE_APPENDED,
+          createdAt: '2026-03-31T12:00:02Z',
+          payload: {
+            role: OrchestrationSessionTranscriptRole.ASSISTANT,
+            lines: [
+              'Command handoff completed for run.',
+              'Failure: stage=stage-review reason=timeout',
+            ],
+            metadata: {
+              renderKind: 'command_recap',
+              executionDetailsLines: [
+                'Running run…',
+                'Execute runtime graph · stage=stage-review',
+                'stage=stage-review reason=timeout',
+              ],
+            },
+          },
+        },
+      ],
+      (key, interpolation) => {
+        if (key === 'cli.sessionShell.transcript.assistantLabel') {
+          return 'Governor';
+        }
+        if (key === 'cli.sessionShell.responses.executionDetailsTitle') {
+          return 'Execution details';
+        }
+        if (key === 'cli.sessionShell.responses.executionDetailsCollapsed') {
+          return `▶ Collapsed · ${interpolation?.count ?? '0'} entries · Ctrl+O to open`;
+        }
+        return key;
+      },
+    );
+
+    expect(items[0]?.renderKind).toBe('command_recap');
+    expect(items[0]?.details).toEqual({
+      title: 'Execution details',
+      summaryLine: '▶ Collapsed · 3 entries · Ctrl+O to open',
+      lines: [
+        'Running run…',
+        'Execute runtime graph · stage=stage-review',
+        'stage=stage-review reason=timeout',
+      ],
+      expanded: false,
+    });
+  });
+
   it('renders failed and cancelled main-agent turn events as system transcript items', () => {
     const store = new CliSessionShellTranscriptStore();
     const items = store.applyEvents(
@@ -161,8 +217,10 @@ describe('CliSessionShellTranscriptStore', () => {
           createdAt: '2026-03-31T12:05:00Z',
           payload: {
             role: OrchestrationSessionTranscriptRole.SYSTEM,
+            turnId: 'turn-failed',
             errorMessage: 'dispatcher failure',
             errorDetail: 'codex stderr: authentication required',
+            executionDetailsLines: ['performance.dispatch_ms=47'],
           },
         },
         {
@@ -174,6 +232,8 @@ describe('CliSessionShellTranscriptStore', () => {
           createdAt: '2026-03-31T12:05:01Z',
           payload: {
             role: OrchestrationSessionTranscriptRole.SYSTEM,
+            turnId: 'turn-cancelled',
+            executionDetailsLines: ['performance.dispatch_ms=12'],
           },
         },
       ],
@@ -190,7 +250,22 @@ describe('CliSessionShellTranscriptStore', () => {
         if (key === 'cli.sessionShell.responses.turnRecoverableHint') {
           return 'You can keep chatting, retry the turn, or switch to /resume.';
         }
+        if (key === 'cli.sessionShell.responses.executionDetailsTitle') {
+          return 'Execution details';
+        }
+        if (key === 'cli.sessionShell.responses.executionDetailsCollapsed') {
+          return `Collapsed count=${interpolation?.count ?? ''}`;
+        }
         return key;
+      },
+      (turnId) => {
+        if (turnId === 'turn-failed') {
+          return ['stage=probe reason=unavailable'];
+        }
+        if (turnId === 'turn-cancelled') {
+          return ['stage=dispatch reason=cancelled'];
+        }
+        return [];
       },
     );
 
@@ -206,6 +281,18 @@ describe('CliSessionShellTranscriptStore', () => {
       'The main session turn was cancelled before completion.',
       'You can keep chatting, retry the turn, or switch to /resume.',
     ]);
+    expect(items[0]?.details).toEqual({
+      title: 'Execution details',
+      summaryLine: 'Collapsed count=2',
+      lines: ['performance.dispatch_ms=47', 'stage=probe reason=unavailable'],
+      expanded: false,
+    });
+    expect(items[1]?.details).toEqual({
+      title: 'Execution details',
+      summaryLine: 'Collapsed count=2',
+      lines: ['performance.dispatch_ms=12', 'stage=dispatch reason=cancelled'],
+      expanded: false,
+    });
   });
 
   it('keeps an echo recap for plain completed session.main answers', () => {
@@ -290,6 +377,64 @@ describe('CliSessionShellTranscriptStore', () => {
     expect(items[0]?.renderKind).toBe('markdown');
     expect(items[0]?.markdownSource).toBe('# Plan\n- inspect repo\n- summarize risks');
     expect(items[0]?.lines).toEqual(['# Plan\n- inspect repo\n- summarize risks']);
+  });
+
+  it('attaches completed-turn execution details carried directly on the payload', () => {
+    const store = new CliSessionShellTranscriptStore();
+    const items = store.applyEvents(
+      'session-004-guarded-answer',
+      [
+        {
+          eventId: 'event-1',
+          sequence: 1,
+          streamCursor: 'cursor-1',
+          sessionId: 'session-004-guarded-answer',
+          type: OrchestrationSessionEventType.TURN_COMPLETED,
+          createdAt: '2026-04-01T12:15:30Z',
+          payload: {
+            role: OrchestrationSessionTranscriptRole.ASSISTANT,
+            routeId: 'session.main',
+            turnId: 'turn-guarded-1',
+            turnIndex: 1,
+            responseMode: 'answer',
+            assistantMessage: [
+              '## Session Main Answer',
+              '',
+              'No eligible direct-answer surface is currently available for this turn.',
+            ].join('\n'),
+            executionDetailsLines: [
+              'Surface probe diagnostics for this turn:',
+              'codex · not eligible · Codex probe exited with code 1.',
+              'claude-code · not eligible · Claude Code probe failed with exit code 1.',
+            ],
+          },
+        },
+      ],
+      (key, interpolation) => {
+        if (key === 'cli.sessionShell.transcript.assistantLabel') {
+          return 'Governor';
+        }
+        if (key === 'cli.sessionShell.responses.executionDetailsTitle') {
+          return 'Execution details';
+        }
+        if (key === 'cli.sessionShell.responses.executionDetailsCollapsed') {
+          return `▶ Collapsed · ${interpolation?.count ?? '0'} entries · Ctrl+O to open`;
+        }
+        return key;
+      },
+    );
+
+    expect(items[0]?.renderKind).toBe('markdown');
+    expect(items[0]?.details).toEqual({
+      title: 'Execution details',
+      summaryLine: '▶ Collapsed · 3 entries · Ctrl+O to open',
+      lines: [
+        'Surface probe diagnostics for this turn:',
+        'codex · not eligible · Codex probe exited with code 1.',
+        'claude-code · not eligible · Claude Code probe failed with exit code 1.',
+      ],
+      expanded: false,
+    });
   });
 
   it('maps role-collaboration turns into structured collaboration recap items', () => {
@@ -417,26 +562,24 @@ describe('CliSessionShellTranscriptStore', () => {
       ],
     );
 
-    expect(items[0]?.details).toEqual({
-      title: 'Execution details',
-      summaryLine: '▶ Collapsed · 2 entries · Ctrl+O to open',
-      lines: [
-        'reviewer: Running command: git diff --stat',
-        'reviewer: Completed todo: inspect patch',
-      ],
-      expanded: false,
-    });
+    expect(items[0]?.details?.title).toBe('Execution details');
+    expect(items[0]?.details?.summaryLine).toBe('▶ Collapsed · 2 entries · Ctrl+O to open');
+    expect(items[0]?.details?.expanded).toBe(false);
+    expect(items[0]?.details?.lines).toEqual([
+      'reviewer: Running command: git diff --stat',
+      'reviewer: Completed todo: inspect patch',
+    ]);
 
     expect(store.toggleLatestExecutionDetails(translate)).toBe(true);
-    expect(store.listItems()[0]?.details).toEqual({
-      title: 'Execution details',
-      summaryLine: '▼ Expanded · 2 entries · Ctrl+O to hide',
-      lines: [
-        'reviewer: Running command: git diff --stat',
-        'reviewer: Completed todo: inspect patch',
-      ],
-      expanded: true,
-    });
+    expect(store.listItems()[0]?.details?.title).toBe('Execution details');
+    expect(store.listItems()[0]?.details?.summaryLine).toBe(
+      '▼ Expanded · 2 entries · Ctrl+O to hide',
+    );
+    expect(store.listItems()[0]?.details?.expanded).toBe(true);
+    expect(store.listItems()[0]?.details?.lines).toEqual([
+      'reviewer: Running command: git diff --stat',
+      'reviewer: Completed todo: inspect patch',
+    ]);
   });
 
   it('uses metadata renderKind for appended assistant recap messages', () => {

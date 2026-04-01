@@ -1493,4 +1493,63 @@ describe('core-orchestration-service local shell', () => {
       await rm(temporaryRoot, { recursive: true, force: true });
     }
   });
+
+  it('persists supervisor execution details lines on completed turns', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
+    const resolveTurn = vi.fn(async () => ({
+      responseMode: 'answer',
+      interactionMode: 'direct_answer',
+      assistantDelta: '## Session Main Answer',
+      assistantMessage: '## Session Main Answer\n\nNo eligible direct-answer surface.',
+      executionDetailsLines: [
+        'Surface probe diagnostics for this turn:',
+        'codex · not eligible · Codex probe exited with code 1.',
+      ],
+      executionIntent: 'session.answer',
+      requiresConfirmation: false,
+      selectedSurface: 'guarded-direct-answer',
+      selectedBy: 'session.main.answer.guard',
+      sessionRoutingPreferenceApplied: false,
+      invokedRoleIds: [],
+      subagentCount: 0,
+    }));
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot: temporaryRoot,
+      sessionMainSupervisorRuntime: {
+        resolveTurn,
+      },
+    });
+
+    try {
+      const started = await orchestrationService.startSession({
+        routeId: OrchestrationSessionRouteId.MAIN,
+      });
+      await orchestrationService.sendSessionTurn({
+        sessionId: started.session.sessionId,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        userMessage: '你好',
+      });
+
+      const subscription = await orchestrationService.subscribeSession({
+        sessionId: started.session.sessionId,
+      });
+      const completedEvent = subscription.events.find(
+        (event) => event.type === OrchestrationSessionEventType.TURN_COMPLETED,
+      );
+
+      expect(resolveTurn).toHaveBeenCalledTimes(1);
+      expect(completedEvent?.payload.executionDetailsLines).toEqual(
+        expect.arrayContaining([
+          'Surface probe diagnostics for this turn:',
+          'codex · not eligible · Codex probe exited with code 1.',
+          expect.stringMatching(/^performance\.turn_elapsed_pre_terminal_ms=/u),
+          expect.stringMatching(/^performance\.dispatch_ms=/u),
+          expect.stringMatching(/^performance\.session_persist_pre_terminal_ms=/u),
+          'performance.stream_delta_count=1',
+        ]),
+      );
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
 });
