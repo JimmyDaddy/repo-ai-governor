@@ -25,6 +25,12 @@ export const SESSION_MAIN_HANDOFF_EXECUTION_MODE = {
 } as const;
 
 /**
+ * Defines the metadata key used when dispatcher-level intent routing injects one implicit
+ * single-role delegate into the supervisor path without rewriting user-visible text.
+ */
+export const SESSION_MAIN_IMPLICIT_ROLE_DELEGATE_METADATA_KEY = 'implicitRoleDelegateRoleId';
+
+/**
  * Defines stable interaction-mode values returned by the service-owned supervisor.
  *
  * Why this exists:

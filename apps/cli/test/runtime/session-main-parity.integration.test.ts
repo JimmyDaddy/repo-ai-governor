@@ -22,6 +22,8 @@ import type {
   CliSessionShellViewModel,
 } from '../../src/types/index.js';
 
+const SESSION_MAIN_IMPLICIT_ROLE_DELEGATE_METADATA_KEY = 'implicitRoleDelegateRoleId';
+
 class RecordingSessionShellRenderer {
   public readonly frames: CliSessionShellViewModel[] = [];
 
@@ -355,6 +357,111 @@ describe('session.main parity integration', () => {
       ).toBe(false);
       expect(
         result.transcriptItems.some((item) => item.lines.includes('Summary: verify completed')),
+      ).toBe(true);
+    } finally {
+      await runtime.dispose();
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('auto-executes low-risk plan skills without requiring /confirm', async () => {
+    const temporaryRoot = await mkdtemp(resolve(tmpdir(), 'session-main-parity-plan-'));
+    const workspaceRoot = resolve(temporaryRoot, '.repo-ai-governor');
+    await mkdir(workspaceRoot, { recursive: true });
+    const runtime = createRuntime(workspaceRoot);
+    const sessionClient = new CliSessionShellServiceClient(runtime);
+    const commandExecutor = vi.fn(async (argv: string[]) => ({
+      artifactPaths: [],
+      commandLine: argv.join(' '),
+      message: 'plan completed',
+      status: 'success' as const,
+      summaryLines: ['Summary: plan completed'],
+    }));
+
+    try {
+      const renderer = new RecordingSessionShellRenderer();
+      const runner = createRunner(renderer, ['帮我拆一下任务计划', '/exit']);
+      const result = await runner.run(
+        createRunOptions(sessionClient, {
+          commandExecutor,
+        }),
+      );
+
+      expect(result.exitReason).toBe(CliSessionShellExitReason.SLASH_EXIT);
+      expect(commandExecutor).toHaveBeenCalledWith(
+        ['plan', '--output', 'pretty'],
+        expect.objectContaining({
+          progressSink: expect.objectContaining({
+            publish: expect.any(Function),
+          }),
+        }),
+      );
+      expect(
+        renderer.frames.some((frame) => frame.promptBarLines.includes('/confirm · /cancel · Esc')),
+      ).toBe(false);
+      expect(
+        result.transcriptItems.some((item) => item.lines.includes('Summary: plan completed')),
+      ).toBe(true);
+    } finally {
+      await runtime.dispose();
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('routes natural-language review requests into a reviewer collaboration recap instead of /review command handoff', async () => {
+    const temporaryRoot = await mkdtemp(resolve(tmpdir(), 'session-main-parity-review-'));
+    const workspaceRoot = resolve(temporaryRoot, '.repo-ai-governor');
+    await mkdir(workspaceRoot, { recursive: true });
+    const resolveTurn = vi.fn(async () => ({
+      responseMode: 'role_collaboration' as const,
+      interactionMode: 'single_role_delegate' as const,
+      assistantDelta: '## Reviewer perspective',
+      assistantMessage: '## Reviewer perspective\n\n- direct review flow is active',
+      executionIntent: 'session.role_delegate.reviewer',
+      requiresConfirmation: false,
+      selectedSurface: 'codex',
+      selectedBy: 'session.main.router.single_role_delegate.implicit_role',
+      sessionRoutingPreferenceApplied: false,
+      invokedRoleIds: ['reviewer'],
+      subagentCount: 1,
+    }));
+    const runtime = createRuntime(workspaceRoot, {
+      sessionMainSupervisorRuntime: {
+        resolveMentionedRoleId: () => null,
+        resolveTurn,
+      },
+    });
+    const sessionClient = new CliSessionShellServiceClient(runtime);
+    const commandExecutor = vi.fn();
+
+    try {
+      const renderer = new RecordingSessionShellRenderer();
+      const runner = createRunner(renderer, ['很好,帮我 review 一下代码', '/exit']);
+      const result = await runner.run(
+        createRunOptions(sessionClient, {
+          commandExecutor,
+        }),
+      );
+
+      expect(resolveTurn).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userMessage: '很好,帮我 review 一下代码',
+          metadata: {
+            [SESSION_MAIN_IMPLICIT_ROLE_DELEGATE_METADATA_KEY]: 'reviewer',
+          },
+        }),
+      );
+      expect(commandExecutor).not.toHaveBeenCalled();
+      expect(result.transcriptItems.some((item) => item.renderKind === 'command_recap')).toBe(
+        false,
+      );
+      expect(
+        result.transcriptItems.some(
+          (item) =>
+            item.renderKind === 'collaboration_recap' &&
+            item.lines.includes('Single-role delegate completed.') &&
+            item.lines.includes('Intent: session.role_delegate.reviewer'),
+        ),
       ).toBe(true);
     } finally {
       await runtime.dispose();

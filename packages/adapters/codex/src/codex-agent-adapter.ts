@@ -41,17 +41,16 @@ const CODEX_DEFAULT_ROLE_SOURCE = 'default';
 const CODEX_SURFACE = 'codex';
 const CODEX_COMMAND = 'codex';
 const CODEX_DEFAULT_TIMEOUT_MS = 30000;
+const CODEX_REPOSITORY_REVIEW_TIMEOUT_MS = 600000;
+const CODEX_REPOSITORY_REVIEW_PROGRESS_INTERVAL_MS = 15000;
 const CODEX_DEFAULT_PROBE_CACHE_TTL_MS = 30000;
 const CODEX_CLI_EXECUTION_CACHE_TTL_MS = 30000;
 const CODEX_EXEC_ARGS = ['exec', '--skip-git-repo-check', '--json', '-'] as const;
-const CODEX_CHAT_ONLY_EXEC_ARGS = [
-  '--sandbox',
-  'read-only',
-  '--ask-for-approval',
-  'untrusted',
-] as const;
+const CODEX_REVIEW_EXEC_ARGS = ['exec', 'review', '--json', '--uncommitted'] as const;
+const CODEX_CHAT_ONLY_EXEC_ARGS = ['--sandbox', 'read-only'] as const;
 const CODEX_HEALTH_CHECK_PROMPT = 'Respond with exactly OK.';
 const CODEX_HEALTH_CHECK_EXPECTED_RESPONSE = 'OK';
+const CODEX_REPOSITORY_REVIEW_SCOPE = 'uncommitted_changes';
 
 const CODEX_BASELINE_CAPABILITY_SUPPORT: Record<AgentCapability, AgentCapabilitySupportLevel> = {
   [AgentCapability.TOOL_CALLING]: AgentCapabilitySupportLevel.SUPPORTED,
@@ -117,10 +116,14 @@ interface CodexCliExecutionState {
   stdout: string;
   stderr: string;
   stdoutLineBuffer: string;
+  stderrLineBuffer: string;
   settled: boolean;
   accumulatedAssistantText: string;
+  cliOutputSequence: number;
+  startedAtMs: number | null;
   resultPromise: Promise<CodexExecRunnerResult>;
   cleanupTimer: NodeJS.Timeout | null;
+  progressTimer: NodeJS.Timeout | null;
 }
 
 interface CodexProbeResolution {
@@ -264,7 +267,7 @@ export class CodexAgentAdapter extends AgentProtocol {
       stageId: request.stageId,
       routeKey: request.routeKey,
       input: request.input,
-      timeoutMs: request.agentInvocationTimeoutMs ?? this.options.requestTimeoutMs,
+      timeoutMs: this.resolveInvokeTimeoutMs(request),
       ...(request.signal ? { signal: request.signal } : {}),
     });
     const executionResult = await execution.resultPromise;
@@ -328,7 +331,7 @@ export class CodexAgentAdapter extends AgentProtocol {
       stageId: request.stageId,
       routeKey: request.routeKey,
       input: request.input,
-      timeoutMs: this.options.requestTimeoutMs,
+      timeoutMs: this.resolveStreamTimeoutMs(request),
     });
     yield* this.consumeCliExecutionEvents(execution);
   }
@@ -402,7 +405,7 @@ export class CodexAgentAdapter extends AgentProtocol {
         supportsStageTimeoutSignal: true,
         supportsFlowTimeoutSignal: true,
         minTimeoutMs: 500,
-        maxTimeoutMs: 120000,
+        maxTimeoutMs: CODEX_REPOSITORY_REVIEW_TIMEOUT_MS,
       },
       cancellation: {
         supportsCancel: supportsCancellation,
@@ -490,6 +493,7 @@ export class CodexAgentAdapter extends AgentProtocol {
    */
   private async runCodexOperation(
     request: Pick<CodexExecRunnerRequest, 'prompt' | 'timeoutMs' | 'signal' | 'operation'> & {
+      commandArguments?: string[];
       executionPolicy?: ReturnType<typeof resolveAgentStageExecutionPolicy>;
     },
   ): Promise<CodexExecRunnerResult> {
@@ -499,7 +503,8 @@ export class CodexAgentAdapter extends AgentProtocol {
         async (remainingTimeoutMs) => {
           return await this.execRunner({
             command: this.options.command,
-            commandArguments: this.resolveCommandArguments(request.executionPolicy),
+            commandArguments:
+              request.commandArguments ?? this.resolveCommandArguments(request.executionPolicy),
             cwd: this.options.currentWorkingDirectory,
             env: this.resolveEnvironment(),
             prompt: request.prompt,
@@ -614,6 +619,27 @@ export class CodexAgentAdapter extends AgentProtocol {
     ].join('\n\n');
   }
 
+  private renderRepositoryReviewPrompt(request: AgentInvokeStageRequest): string {
+    const userMessage =
+      typeof request.input.userMessage === 'string' && request.input.userMessage.trim().length > 0
+        ? request.input.userMessage.trim()
+        : 'Review the current repository changes.';
+    const governorInstructions =
+      typeof request.input.governorInstructions === 'string' &&
+      request.input.governorInstructions.trim().length > 0
+        ? request.input.governorInstructions.trim()
+        : null;
+
+    return [
+      'You are executing one Repo AI Governor repository review stage through Codex CLI.',
+      `Original user request: ${userMessage}`,
+      'Review the current repository uncommitted changes and produce findings-first concise markdown with concrete file references when possible.',
+      ...(governorInstructions
+        ? [`Additional Governor instructions:\n${governorInstructions}`]
+        : []),
+    ].join('\n\n');
+  }
+
   private ensureCliExecution(request: CodexCliExecutionRequest): CodexCliExecutionState {
     const key = this.createCliExecutionKey(request);
     const existingExecution = this.inflightCliExecutions.get(key);
@@ -628,8 +654,11 @@ export class CodexAgentAdapter extends AgentProtocol {
       stdout: '',
       stderr: '',
       stdoutLineBuffer: '',
+      stderrLineBuffer: '',
       settled: false,
       accumulatedAssistantText: '',
+      cliOutputSequence: 0,
+      startedAtMs: null,
       resultPromise: Promise.resolve({
         stdout: '',
         stderr: '',
@@ -638,6 +667,7 @@ export class CodexAgentAdapter extends AgentProtocol {
         elapsedMs: 0,
       }),
       cleanupTimer: null,
+      progressTimer: null,
     };
     executionState.resultPromise = this.startCliExecution(executionState, request);
     this.inflightCliExecutions.set(key, executionState);
@@ -653,17 +683,28 @@ export class CodexAgentAdapter extends AgentProtocol {
     request: CodexCliExecutionRequest,
   ): Promise<CodexExecRunnerResult> {
     try {
+      state.startedAtMs = Date.now();
+      if (this.shouldUseRepositoryReviewCommand(request)) {
+        this.startRepositoryReviewProgress(state, request);
+      }
+      const executionPolicy = resolveAgentStageExecutionPolicy(request.input);
+      const prompt = this.shouldUseRepositoryReviewCommand(request)
+        ? this.renderRepositoryReviewPrompt(request)
+        : this.renderInvokePrompt(request);
+      const commandArguments = this.resolveInvokeCommandArguments(request, executionPolicy);
       if (this.usesInjectedExecRunner) {
         const executionResult = await this.runCodexOperation({
-          prompt: this.renderInvokePrompt(request),
+          prompt,
           timeoutMs: request.timeoutMs,
           signal: request.signal,
           operation: AgentCliExecOperation.INVOKE,
-          executionPolicy: resolveAgentStageExecutionPolicy(request.input),
+          executionPolicy,
+          commandArguments,
         });
         state.stdout = executionResult.stdout;
         state.stderr = executionResult.stderr;
         this.ingestCodexStdout(state, request, executionResult.stdout, true);
+        this.ingestCodexStderr(state, request, executionResult.stderr, true);
         if (!state.events.some((event) => event.eventType === AgentStreamEventType.COMPLETED)) {
           this.pushCliExecutionEvent(state, {
             eventType: AgentStreamEventType.COMPLETED,
@@ -741,6 +782,10 @@ export class CodexAgentAdapter extends AgentProtocol {
 
   private finishCliExecution(state: CodexCliExecutionState): void {
     state.settled = true;
+    if (state.progressTimer) {
+      clearInterval(state.progressTimer);
+      state.progressTimer = null;
+    }
     for (const waiter of state.waiters) {
       waiter();
     }
@@ -772,6 +817,24 @@ export class CodexAgentAdapter extends AgentProtocol {
     }
   }
 
+  private ingestCodexStderr(
+    state: CodexCliExecutionState,
+    request: CodexCliExecutionRequest,
+    chunk: string,
+    flushPartial = false,
+  ): void {
+    state.stderrLineBuffer += chunk;
+    const lines = state.stderrLineBuffer.split(/\r?\n/u);
+    state.stderrLineBuffer = lines.pop() ?? '';
+    for (const line of lines) {
+      this.pushCliOutputLineEvent(state, request, 'stderr', line);
+    }
+    if (flushPartial && state.stderrLineBuffer.trim().length > 0) {
+      this.pushCliOutputLineEvent(state, request, 'stderr', state.stderrLineBuffer);
+      state.stderrLineBuffer = '';
+    }
+  }
+
   private processCodexJsonLine(
     state: CodexCliExecutionState,
     request: CodexCliExecutionRequest,
@@ -779,6 +842,7 @@ export class CodexAgentAdapter extends AgentProtocol {
   ): void {
     const trimmedLine = line.trim();
     if (!trimmedLine.startsWith('{')) {
+      this.pushCliOutputLineEvent(state, request, 'stdout', trimmedLine);
       return;
     }
 
@@ -800,7 +864,9 @@ export class CodexAgentAdapter extends AgentProtocol {
         payload: {
           status: 'running',
           surface: CODEX_SURFACE,
-          detail: 'Codex thread started.',
+          detail: this.shouldUseRepositoryReviewCommand(request)
+            ? 'Codex repository review thread started.'
+            : 'Codex thread started.',
         },
       });
       return;
@@ -817,7 +883,9 @@ export class CodexAgentAdapter extends AgentProtocol {
         payload: {
           status: 'running',
           surface: CODEX_SURFACE,
-          detail: 'Codex turn started.',
+          detail: this.shouldUseRepositoryReviewCommand(request)
+            ? 'Codex repository review started; waiting for CLI output.'
+            : 'Codex turn started.',
         },
       });
       return;
@@ -862,6 +930,82 @@ export class CodexAgentAdapter extends AgentProtocol {
         },
       });
     }
+  }
+
+  private pushCliOutputLineEvent(
+    state: CodexCliExecutionState,
+    request: CodexCliExecutionRequest,
+    source: 'stderr' | 'stdout',
+    line: string,
+  ): void {
+    const sanitizedLine = this.normalizeCliOutputLine(line);
+    if (!sanitizedLine) {
+      return;
+    }
+    const detail = `${CODEX_SURFACE} ${source}: ${sanitizedLine}`;
+    const activityKey = `${CODEX_SURFACE}:${source}:${String(state.cliOutputSequence++)}`;
+    this.pushCliExecutionEvent(state, {
+      eventType: AgentStreamEventType.STATUS,
+      timestamp: new Date().toISOString(),
+      processId: request.processId,
+      executionId: request.executionId,
+      stageId: request.stageId,
+      routeKey: request.routeKey,
+      payload: {
+        status: 'running',
+        surface: CODEX_SURFACE,
+        detail,
+        activityKey,
+      },
+    });
+  }
+
+  private startRepositoryReviewProgress(
+    state: CodexCliExecutionState,
+    request: CodexCliExecutionRequest,
+  ): void {
+    this.pushRepositoryReviewProgressEvent(state, request);
+    state.progressTimer = setInterval(() => {
+      if (state.settled) {
+        return;
+      }
+      this.pushRepositoryReviewProgressEvent(state, request);
+    }, CODEX_REPOSITORY_REVIEW_PROGRESS_INTERVAL_MS);
+    state.progressTimer.unref?.();
+  }
+
+  private pushRepositoryReviewProgressEvent(
+    state: CodexCliExecutionState,
+    request: CodexCliExecutionRequest,
+  ): void {
+    const elapsedSeconds =
+      state.startedAtMs === null
+        ? 0
+        : Math.max(0, Math.floor((Date.now() - state.startedAtMs) / 1000));
+    this.pushCliExecutionEvent(state, {
+      eventType: AgentStreamEventType.STATUS,
+      timestamp: new Date().toISOString(),
+      processId: request.processId,
+      executionId: request.executionId,
+      stageId: request.stageId,
+      routeKey: request.routeKey,
+      payload: {
+        status: 'running',
+        surface: CODEX_SURFACE,
+        detail:
+          elapsedSeconds === 0
+            ? 'Codex repository review is running; waiting for CLI output.'
+            : `Codex repository review is still running (${elapsedSeconds}s elapsed); waiting for CLI output.`,
+      },
+    });
+  }
+
+  private normalizeCliOutputLine(line: string): string | undefined {
+    const normalizedLine = line.replace(/\s+/gu, ' ').trim();
+    if (normalizedLine.length === 0) {
+      return undefined;
+    }
+    return normalizedLine.length > 240 ? `${normalizedLine.slice(0, 237)}...` : normalizedLine;
   }
 
   /**
@@ -1066,9 +1210,13 @@ export class CodexAgentAdapter extends AgentProtocol {
   ): Promise<CodexExecRunnerResult> {
     return await new Promise<CodexExecRunnerResult>((resolve, reject) => {
       const startedAt = Date.now();
+      const executionPolicy = resolveAgentStageExecutionPolicy(request.input);
+      const prompt = this.shouldUseRepositoryReviewCommand(request)
+        ? this.renderRepositoryReviewPrompt(request)
+        : this.renderInvokePrompt(request);
       const child = spawn(
         this.options.command,
-        [...this.resolveCommandArguments(resolveAgentStageExecutionPolicy(request.input))],
+        [...this.resolveInvokeCommandArguments(request, executionPolicy)],
         {
           cwd: this.options.currentWorkingDirectory,
           env: this.resolveEnvironment(),
@@ -1107,6 +1255,7 @@ export class CodexAgentAdapter extends AgentProtocol {
       child.stderr.setEncoding('utf8');
       child.stderr.on('data', (chunk: string) => {
         state.stderr += chunk;
+        this.ingestCodexStderr(state, request, chunk);
       });
 
       child.on('close', (exitCode, signal) => {
@@ -1116,6 +1265,7 @@ export class CodexAgentAdapter extends AgentProtocol {
         settled = true;
         clearTimeout(timeoutHandle);
         this.ingestCodexStdout(state, request, '', true);
+        this.ingestCodexStderr(state, request, '', true);
 
         if (timedOut) {
           reject(
@@ -1163,7 +1313,7 @@ export class CodexAgentAdapter extends AgentProtocol {
         });
       });
 
-      child.stdin.end(this.renderInvokePrompt(request));
+      child.stdin.end(prompt);
     });
   }
 
@@ -1177,5 +1327,47 @@ export class CodexAgentAdapter extends AgentProtocol {
         ? CODEX_CHAT_ONLY_EXEC_ARGS
         : []),
     ];
+  }
+
+  private resolveInvokeCommandArguments(
+    request: AgentInvokeStageRequest,
+    executionPolicy?: ReturnType<typeof resolveAgentStageExecutionPolicy>,
+  ): string[] {
+    if (this.shouldUseRepositoryReviewCommand(request)) {
+      return [...CODEX_REVIEW_EXEC_ARGS];
+    }
+
+    return this.resolveCommandArguments(executionPolicy);
+  }
+
+  private shouldUseRepositoryReviewCommand(request: {
+    routeKey: string;
+    input: Record<string, unknown>;
+  }): boolean {
+    return (
+      request.routeKey === 'session.main.role.reviewer' &&
+      request.input.roleId === 'reviewer' &&
+      request.input.reviewScope === CODEX_REPOSITORY_REVIEW_SCOPE
+    );
+  }
+
+  private resolveInvokeTimeoutMs(request: AgentInvokeStageRequest): number {
+    if (typeof request.agentInvocationTimeoutMs === 'number') {
+      return request.agentInvocationTimeoutMs;
+    }
+
+    if (this.shouldUseRepositoryReviewCommand(request)) {
+      return CODEX_REPOSITORY_REVIEW_TIMEOUT_MS;
+    }
+
+    return this.options.requestTimeoutMs;
+  }
+
+  private resolveStreamTimeoutMs(request: AgentStreamEventsRequest): number {
+    if (this.shouldUseRepositoryReviewCommand(request)) {
+      return CODEX_REPOSITORY_REVIEW_TIMEOUT_MS;
+    }
+
+    return this.options.requestTimeoutMs;
   }
 }

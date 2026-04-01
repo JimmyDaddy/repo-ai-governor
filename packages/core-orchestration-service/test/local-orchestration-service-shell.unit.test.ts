@@ -791,6 +791,45 @@ describe('core-orchestration-service local shell', () => {
     }
   });
 
+  it('projects low-risk natural-language plan skills into direct-execute turn metadata', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot: temporaryRoot,
+    });
+
+    try {
+      const started = await orchestrationService.startSession({
+        routeId: OrchestrationSessionRouteId.MAIN,
+      });
+      await orchestrationService.sendSessionTurn({
+        sessionId: started.session.sessionId,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        userMessage: '帮我拆一下任务计划',
+      });
+      const subscription = await orchestrationService.subscribeSession({
+        sessionId: started.session.sessionId,
+      });
+      const completedEvent = subscription.events.find(
+        (event) => event.type === OrchestrationSessionEventType.TURN_COMPLETED,
+      );
+
+      expect(completedEvent?.payload.responseMode).toBe('command_handoff_preview');
+      expect(completedEvent?.payload.suggestedSlashCommand).toBe('/plan');
+      expect(completedEvent?.payload.requiresConfirmation).toBe(false);
+      expect(completedEvent?.payload.skillId).toBe('skill.plan.task');
+      expect(completedEvent?.payload.handoffExecutionMode).toBe('direct_execute');
+      expect(completedEvent?.payload.commandBatches).toEqual([
+        {
+          slashQuery: '/plan',
+          bridgeArgv: ['plan', '--output', 'pretty'],
+          previewCommandLine: 'repo-ai-governor plan --output pretty',
+        },
+      ]);
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
   it('writes assistantMessage and interactionMode for direct-answer session.main turns when supervisor runtime is injected', async () => {
     const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
     const orchestrationService = new LocalOrchestrationServiceShell({
@@ -1346,6 +1385,62 @@ describe('core-orchestration-service local shell', () => {
       expect(eventTypes).toContain(OrchestrationSessionEventType.TURN_CANCELLED);
       expect(failedEvent?.payload.errorCode).toBe('ADAPTER_PROTOCOL_INVOKE_FAILED');
       expect(cancelledEvent?.payload.errorCode).toBe('PROCESS_RUNTIME_CANCELLED');
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('preserves nested adapter stderr details on failed session turns', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot: temporaryRoot,
+      sessionMainSupervisorRuntime: {
+        resolveMentionedRoleId: () => null,
+        resolveTurn: async () => {
+          throw new GovernorError(
+            GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
+            'Failed to invoke stage "stage-session-main-role-reviewer" on adapter surface "codex".',
+            {
+              surface: 'codex',
+            },
+            new GovernorError(
+              GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
+              'Codex invoke exited with code 2.',
+              {
+                stderr: "error: the argument '--uncommitted' cannot be used with '[PROMPT]'",
+              },
+            ),
+          );
+        },
+      },
+    });
+
+    try {
+      const started = await orchestrationService.startSession({
+        routeId: OrchestrationSessionRouteId.MAIN,
+      });
+
+      await orchestrationService.sendSessionTurn({
+        sessionId: started.session.sessionId,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        userMessage: '帮我 review 一下代码',
+      });
+
+      const subscription = await orchestrationService.subscribeSession({
+        sessionId: started.session.sessionId,
+      });
+      const failedEvent = subscription.events.find(
+        (event) => event.type === OrchestrationSessionEventType.TURN_FAILED,
+      );
+
+      expect(failedEvent?.payload.errorCode).toBe('ADAPTER_PROTOCOL_INVOKE_FAILED');
+      expect(failedEvent?.payload.errorMessage).toBe(
+        'Failed to invoke stage "stage-session-main-role-reviewer" on adapter surface "codex".',
+      );
+      expect(failedEvent?.payload.errorDetail).toContain('Codex invoke exited with code 2.');
+      expect(failedEvent?.payload.errorDetail).toContain(
+        "error: the argument '--uncommitted' cannot be used with '[PROMPT]'",
+      );
     } finally {
       await rm(temporaryRoot, { recursive: true, force: true });
     }

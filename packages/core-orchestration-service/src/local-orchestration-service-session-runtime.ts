@@ -289,6 +289,7 @@ export class LocalOrchestrationServiceSessionRuntime {
       });
     } catch (error) {
       const standardizedError = standardizeError(error);
+      const formattedFailure = this.formatTurnFailure(error, standardizedError);
       const failureEventType =
         standardizedError.code === GovernorErrorCode.PROCESS_RUNTIME_CANCELLED
           ? OrchestrationSessionEventType.TURN_CANCELLED
@@ -303,7 +304,8 @@ export class LocalOrchestrationServiceSessionRuntime {
           turnId,
           turnIndex,
           errorCode: standardizedError.code,
-          errorMessage: standardizedError.message,
+          errorMessage: formattedFailure.message,
+          ...(formattedFailure.detail ? { errorDetail: formattedFailure.detail } : {}),
         },
       });
     }
@@ -650,6 +652,7 @@ export class LocalOrchestrationServiceSessionRuntime {
       ...(options.streamEvent.state ? { streamState: options.streamEvent.state } : {}),
       ...(options.streamEvent.title ? { title: options.streamEvent.title } : {}),
       ...(options.streamEvent.detail ? { detail: options.streamEvent.detail } : {}),
+      ...(options.streamEvent.activityKey ? { activityKey: options.streamEvent.activityKey } : {}),
       ...(options.streamEvent.chunkText ? { chunkText: options.streamEvent.chunkText } : {}),
       ...(options.streamEvent.accumulatedText
         ? { accumulatedText: options.streamEvent.accumulatedText }
@@ -825,5 +828,77 @@ export class LocalOrchestrationServiceSessionRuntime {
 
   private toTimestamp(): string {
     return this.nowProvider().toISOString();
+  }
+
+  private formatTurnFailure(
+    error: unknown,
+    standardizedError: StandardizedError,
+  ): {
+    message: string;
+    detail?: string;
+  } {
+    const detailCandidates = this.collectTurnFailureDetailCandidates(error)
+      .map((candidate) => this.normalizeTurnFailureDetail(candidate))
+      .filter((candidate): candidate is string => Boolean(candidate))
+      .filter((candidate) => candidate !== standardizedError.message)
+      .filter((candidate, index, list) => list.indexOf(candidate) === index);
+    if (detailCandidates.length === 0) {
+      return {
+        message: standardizedError.message,
+      };
+    }
+
+    return {
+      message: standardizedError.message,
+      detail: detailCandidates.join(' | '),
+    };
+  }
+
+  private collectTurnFailureDetailCandidates(error: unknown): string[] {
+    if (!error || typeof error !== 'object') {
+      return [];
+    }
+
+    const candidateMessages: string[] = [];
+    const visited = new Set<unknown>();
+    let cursor: unknown = error;
+    while (cursor && typeof cursor === 'object' && !visited.has(cursor)) {
+      visited.add(cursor);
+      const errorLike = cursor as {
+        message?: unknown;
+        details?: unknown;
+        cause?: unknown;
+      };
+      const details = this.readErrorDetails(errorLike.details);
+      const stderr = typeof details?.stderr === 'string' ? details.stderr : null;
+      const stdout = typeof details?.stdout === 'string' ? details.stdout : null;
+      const nestedMessage = typeof errorLike.message === 'string' ? errorLike.message : null;
+      if (stderr) {
+        candidateMessages.push(stderr);
+      }
+      if (stdout?.trimStart().startsWith('error:')) {
+        candidateMessages.push(stdout);
+      }
+      if (nestedMessage) {
+        candidateMessages.push(nestedMessage);
+      }
+      cursor = errorLike.cause;
+    }
+    return candidateMessages;
+  }
+
+  private readErrorDetails(candidate: unknown): Record<string, unknown> | undefined {
+    if (!candidate || typeof candidate !== 'object') {
+      return undefined;
+    }
+    return candidate as Record<string, unknown>;
+  }
+
+  private normalizeTurnFailureDetail(candidate: string): string | undefined {
+    const normalized = candidate.replace(/\s+/gu, ' ').trim();
+    if (normalized.length === 0) {
+      return undefined;
+    }
+    return normalized.length > 240 ? `${normalized.slice(0, 237)}...` : normalized;
   }
 }

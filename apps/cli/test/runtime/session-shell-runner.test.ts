@@ -567,6 +567,23 @@ class MissingSessionOnFirstTurnSessionShellServiceClient extends FakeSessionShel
   }
 }
 
+class MissingSessionOnFirstTwoTurnsSessionShellServiceClient extends FakeSessionShellServiceClient {
+  private failureCount = 0;
+
+  public override async sendMainTurn(sessionId: string, userMessage: string): Promise<void> {
+    if (this.failureCount < 2) {
+      this.failureCount += 1;
+      this.sessions.delete(sessionId);
+      throw new RuntimeError(
+        GovernorErrorCode.MEMORY_SESSION_NOT_FOUND,
+        `Session "${sessionId}" was not found in memory store.`,
+      );
+    }
+
+    return super.sendMainTurn(sessionId, userMessage);
+  }
+}
+
 const DEFAULT_TRANSLATIONS: Record<string, string> = {
   'cli.sessionShell.title': 'Repo AI Governor session shell',
   'cli.sessionShell.subtitle': 'Session shell baseline.',
@@ -618,9 +635,11 @@ const DEFAULT_TRANSLATIONS: Record<string, string> = {
   'cli.commands.review.description': 'Generate code review baseline output.',
   'cli.sessionShell.responses.welcome': 'Session shell is active.',
   'cli.sessionShell.responses.stderrOnly': 'Live UI renders only to stderr.',
+  'cli.sessionShell.responses.liveTurnRunningSummary': 'Running · {{elapsed}}',
   'cli.sessionShell.responses.liveTurnThinking': 'Thinking...',
   'cli.sessionShell.responses.liveTurnThinkingPulse': 'Thinking{{suffix}}',
   'cli.sessionShell.responses.liveTurnThinkingDetail': 'Thinking: {{detail}}',
+  'cli.sessionShell.responses.liveTurnCurrentDetail': 'Current: {{detail}}',
   'cli.sessionShell.responses.liveTurnRoleActivity': '{{role}}: {{detail}}',
   'cli.sessionShell.responses.liveTurnToolCall': 'Tool: {{toolName}} - {{detail}}',
   'cli.sessionShell.responses.liveTurnActivityTitle': 'Live activity',
@@ -976,6 +995,54 @@ describe('CliSessionShellRunner', () => {
     expect(result.transcriptItems.some((item) => item.lines.includes('echo=hello governor'))).toBe(
       true,
     );
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.some((line) => line.includes('was not found in memory store')),
+      ),
+    ).toBe(false);
+    expect(
+      renderer.frames.some((frame) =>
+        frame.transcriptItems.some((item) =>
+          item.lines.includes(
+            'The shell is retrying your latest message in a new attached session.',
+          ),
+        ),
+      ),
+    ).toBe(true);
+  });
+
+  it('retries through multiple missing-session recoveries before surfacing a turn failure', async () => {
+    const renderer = new RecordingSessionShellRenderer();
+    const runner = new CliSessionShellRunner(
+      undefined,
+      renderer as never,
+      () => new StubSessionShellPromptAdapter(['帮我 review 代码', '/exit']),
+      undefined,
+      undefined,
+      () => false,
+      () => new Date('2026-03-30T12:00:00Z'),
+    );
+
+    const result = await runner.run(
+      DEFAULT_RUN_OPTIONS({
+        sessionClient: new MissingSessionOnFirstTwoTurnsSessionShellServiceClient(),
+      }),
+    );
+
+    expect(result.exitReason).toBe(CliSessionShellExitReason.SLASH_EXIT);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes('A new session was created so the shell can stay attached.'),
+      ),
+    ).toBe(true);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes('The shell is retrying your latest message in a new attached session.'),
+      ),
+    ).toBe(true);
+    expect(
+      result.transcriptItems.some((item) => item.lines.includes('echo=帮我 review 代码')),
+    ).toBe(true);
     expect(
       result.transcriptItems.some((item) =>
         item.lines.some((line) => line.includes('was not found in memory store')),
@@ -1381,7 +1448,8 @@ describe('CliSessionShellRunner', () => {
             (item) =>
               item.renderKind === 'live_activity' &&
               item.label === 'Live activity' &&
-              item.lines.includes('Thinking: Planning current workspace answer.'),
+              item.summaryLine === 'Running · 0s' &&
+              item.lines.includes('Current: Planning current workspace answer.'),
           ),
       ),
     ).toBe(true);
@@ -1403,14 +1471,16 @@ describe('CliSessionShellRunner', () => {
         ),
       ),
     ).toBe(true);
-    const streamingHeartbeatFrames = new Set(
-      inkRunner.snapshots.flatMap((frame) =>
-        frame.transcriptItems
-          .filter((item) => item.renderKind === 'live_activity' && item.label === 'Live activity')
-          .flatMap((item) => item.lines.filter((line) => line.startsWith('Thinking'))),
-      ),
-    );
-    expect(streamingHeartbeatFrames.size).toBeGreaterThan(1);
+    expect(
+      inkRunner.snapshots.filter((frame) =>
+        frame.transcriptItems.some(
+          (item) =>
+            item.renderKind === 'live_activity' &&
+            item.label === 'Live activity' &&
+            item.summaryLine === 'Running · 0s',
+        ),
+      ).length,
+    ).toBeGreaterThan(1);
     expect(
       result.transcriptItems.some(
         (item) => item.markdownSource === '## Workspace status\n\n- clean',
@@ -1460,7 +1530,8 @@ describe('CliSessionShellRunner', () => {
             (item) =>
               item.renderKind === 'live_activity' &&
               item.label === 'Live activity' &&
-              item.lines.includes('Thinking...'),
+              item.summaryLine === 'Running · 0s' &&
+              item.lines.length === 0,
           ),
       ),
     ).toBe(true);
@@ -1469,14 +1540,16 @@ describe('CliSessionShellRunner', () => {
         frame.transcriptItems.some((item) => item.label === 'You' && item.lines.includes('hello')),
       ),
     ).toBe(true);
-    const delayedHeartbeatFrames = new Set(
-      inkRunner.snapshots.flatMap((frame) =>
-        frame.transcriptItems
-          .filter((item) => item.renderKind === 'live_activity' && item.label === 'Live activity')
-          .flatMap((item) => item.lines.filter((line) => line.startsWith('Thinking'))),
-      ),
-    );
-    expect(delayedHeartbeatFrames.size).toBeGreaterThan(1);
+    expect(
+      inkRunner.snapshots.filter((frame) =>
+        frame.transcriptItems.some(
+          (item) =>
+            item.renderKind === 'live_activity' &&
+            item.label === 'Live activity' &&
+            item.summaryLine === 'Running · 0s',
+        ),
+      ).length,
+    ).toBeGreaterThan(1);
     expect(
       result.transcriptItems.some(
         (item) => item.markdownSource === 'Hello back from delayed turn.',

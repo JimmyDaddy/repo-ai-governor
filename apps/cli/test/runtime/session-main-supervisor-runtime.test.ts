@@ -13,11 +13,14 @@ import { AdapterAvailability, AdapterSurface, LocalModelProvider } from '@repo-a
 import { CliAdapterRoutingRuntime } from '../../src/runtime/adapter-routing-runtime.js';
 import { CliSessionMainSupervisorRuntime } from '../../src/runtime/session-main-supervisor-runtime.js';
 
+const SESSION_MAIN_IMPLICIT_ROLE_DELEGATE_METADATA_KEY = 'implicitRoleDelegateRoleId';
+
 function createAvailableProtocol(
   surface: AdapterSurface,
   responseText: string,
   options: {
     capabilitySupportOverrides?: Partial<Record<AgentCapability, AgentCapabilitySupportLevel>>;
+    omittedCapabilities?: AgentCapability[];
     toolCallingSupportLevel?: AgentCapabilitySupportLevel;
     invokeStageSpy?: ReturnType<typeof vi.fn>;
     streamEvents?: Array<{
@@ -28,6 +31,7 @@ function createAvailableProtocol(
 ): AgentProtocolContract {
   const toolCallingSupportLevel =
     options.toolCallingSupportLevel ?? AgentCapabilitySupportLevel.SUPPORTED;
+  const omittedCapabilities = new Set(options.omittedCapabilities ?? []);
   return {
     probe: async () => ({
       identity: {
@@ -39,14 +43,16 @@ function createAvailableProtocol(
       },
       availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
       capabilityMatrix: {
-        capabilityStates: Object.values(AgentCapability).map((capability) => ({
-          capability,
-          supportLevel:
-            options.capabilitySupportOverrides?.[capability] ??
-            (capability === AgentCapability.TOOL_CALLING
-              ? toolCallingSupportLevel
-              : AgentCapabilitySupportLevel.SUPPORTED),
-        })),
+        capabilityStates: Object.values(AgentCapability)
+          .filter((capability) => !omittedCapabilities.has(capability))
+          .map((capability) => ({
+            capability,
+            supportLevel:
+              options.capabilitySupportOverrides?.[capability] ??
+              (capability === AgentCapability.TOOL_CALLING
+                ? toolCallingSupportLevel
+                : AgentCapabilitySupportLevel.SUPPORTED),
+          })),
         timeout: {
           supportsAgentInvocationTimeout: true,
           supportsStageTimeoutSignal: true,
@@ -274,7 +280,7 @@ describe('Cli session-main supervisor runtime', () => {
     expect(outcome.invokedRoles).toEqual([]);
   });
 
-  it('allows tool-capable direct-answer surfaces when the turn is constrained to chat-only policy', async () => {
+  it('allows free-form direct answers on tool-capable surfaces when chat-only policy forbids tool use', async () => {
     const codexInvokeStage = vi.fn(async (request: Record<string, unknown>) => {
       expect(request.input).toEqual(
         expect.objectContaining({
@@ -332,6 +338,66 @@ describe('Cli session-main supervisor runtime', () => {
     expect(outcome.assistantMessage).toBe('你好，我可以继续帮你处理仓库里的事情。');
     expect(outcome.selectedSurface).toBe(AdapterSurface.CODEX);
     expect(outcome.selectedBy).toBe('session.main.answer.primary');
+    expect(outcome.routerDecisionReason).toBe('session.main.router.direct_answer.default');
+  });
+
+  it('keeps free-form direct answers available when surface metadata omits tool-calling capability', async () => {
+    const codexInvokeStage = vi.fn(async (request: Record<string, unknown>) => {
+      expect(request.input).toEqual(
+        expect.objectContaining({
+          [AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY]: {
+            interactionMode: AgentStageExecutionMode.CHAT_ONLY,
+            toolUsePolicy: AgentStageToolUsePolicy.FORBIDDEN,
+          },
+        }),
+      );
+      return {
+        output: {
+          responseText: '你好，我仍然可以先陪你对话，再帮你衔接后续任务。',
+        },
+        elapsedMs: 1,
+      };
+    });
+    const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
+      adaptersConfig,
+    ) as CliAdapterRoutingRuntime & {
+      createProtocolBySurface: () => Record<string, AgentProtocolContract>;
+    };
+    adapterRoutingRuntime.createProtocolBySurface = () => ({
+      [AdapterSurface.CODEX]: createAvailableProtocol(AdapterSurface.CODEX, 'unused', {
+        omittedCapabilities: [AgentCapability.TOOL_CALLING],
+        invokeStageSpy: codexInvokeStage,
+      }),
+      [AdapterSurface.CLAUDE_CODE]: createUnavailableProtocol(AdapterSurface.CLAUDE_CODE),
+      [AdapterSurface.OLLAMA]: createUnavailableProtocol(AdapterSurface.OLLAMA),
+    });
+
+    const runtime = new CliSessionMainSupervisorRuntime({
+      workspaceRoot: '/workspace/repo/.repo-ai-governor',
+      currentWorkingDirectory: '/workspace/repo',
+      workspace,
+      locale: 'zh-CN',
+      adaptersConfig,
+      adapterRoutingRuntime,
+    });
+    const outcome = await runtime.resolveTurn({
+      sessionId: 'session-001-missing-tool-capability',
+      routeId: 'session.main',
+      turnId: 'turn-001-missing-tool-capability',
+      turnIndex: 3,
+      userMessage: '你好',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+    });
+
+    expect(codexInvokeStage).toHaveBeenCalledTimes(1);
+    expect(outcome.responseMode).toBe('answer');
+    expect(outcome.interactionMode).toBe('direct_answer');
+    expect(outcome.assistantMessage).toBe('你好，我仍然可以先陪你对话，再帮你衔接后续任务。');
+    expect(outcome.selectedSurface).toBe(AdapterSurface.CODEX);
+    expect(outcome.selectedBy).toBe('session.main.answer.primary');
+    expect(outcome.routerDecisionReason).toBe('session.main.router.direct_answer.default');
   });
 
   it('publishes mapped direct-answer stream events while preserving empty invoked-role truth', async () => {
@@ -431,7 +497,23 @@ describe('Cli session-main supervisor runtime', () => {
     );
   });
 
-  it('falls back to the next available direct-answer surface when the preferred surface is unavailable', async () => {
+  it('falls back to the next available direct-answer surface while preserving chat-only governance', async () => {
+    const claudeInvokeStage = vi.fn(async (request: Record<string, unknown>) => {
+      expect(request.input).toEqual(
+        expect.objectContaining({
+          [AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY]: {
+            interactionMode: AgentStageExecutionMode.CHAT_ONLY,
+            toolUsePolicy: AgentStageToolUsePolicy.FORBIDDEN,
+          },
+        }),
+      );
+      return {
+        output: {
+          responseText: 'Fallback answer from Claude Code',
+        },
+        elapsedMs: 1,
+      };
+    });
     const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
       adaptersConfig,
     ) as CliAdapterRoutingRuntime & {
@@ -439,10 +521,9 @@ describe('Cli session-main supervisor runtime', () => {
     };
     adapterRoutingRuntime.createProtocolBySurface = () => ({
       [AdapterSurface.CODEX]: createUnavailableProtocol(AdapterSurface.CODEX),
-      [AdapterSurface.CLAUDE_CODE]: createAvailableProtocol(
-        AdapterSurface.CLAUDE_CODE,
-        'Fallback answer from Claude Code',
-      ),
+      [AdapterSurface.CLAUDE_CODE]: createAvailableProtocol(AdapterSurface.CLAUDE_CODE, 'unused', {
+        invokeStageSpy: claudeInvokeStage,
+      }),
       [AdapterSurface.OLLAMA]: createAvailableProtocol(
         AdapterSurface.OLLAMA,
         'Fallback answer from local model',
@@ -471,6 +552,7 @@ describe('Cli session-main supervisor runtime', () => {
       sessionRoutingPreferenceApplied: false,
     });
 
+    expect(claudeInvokeStage).toHaveBeenCalledTimes(1);
     expect(outcome.assistantMessage).toBe('Fallback answer from Claude Code');
     expect(outcome.selectedSurface).toBe(AdapterSurface.CLAUDE_CODE);
     expect(outcome.selectedBy).toBe('session.main.answer.safe_fallback');
@@ -686,6 +768,194 @@ describe('Cli session-main supervisor runtime', () => {
       }),
     ]);
     expect(outcome.subagentCount).toBe(2);
+  });
+
+  it('routes implicit reviewer delegation through one single-role collaboration path for natural-language review requests', async () => {
+    const reviewerInvokeStage = vi.fn(async (request: Record<string, unknown>) => {
+      expect(request.stageId).toBe('stage-session-main-role-reviewer');
+      expect(request.routeKey).toBe('session.main.role.reviewer');
+      expect(request.input).toEqual(
+        expect.objectContaining({
+          userMessage: '很好,帮我 review 一下代码',
+          interactionMode: 'single_role_delegate',
+          roleId: 'reviewer',
+          reviewScope: 'uncommitted_changes',
+          governorInstructions: expect.stringContaining(
+            'inspect the repository in a read-only manner',
+          ),
+        }),
+      );
+      return {
+        output: {
+          responseText: '## Reviewer perspective\n\n- review current worktree changes directly',
+        },
+        elapsedMs: 1,
+      };
+    });
+    const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
+      adaptersConfig,
+    ) as CliAdapterRoutingRuntime & {
+      createProtocolBySurface: () => Record<string, AgentProtocolContract>;
+    };
+    adapterRoutingRuntime.createProtocolBySurface = () => ({
+      [AdapterSurface.CODEX]: createAvailableProtocol(AdapterSurface.CODEX, 'unused', {
+        invokeStageSpy: reviewerInvokeStage,
+      }),
+      [AdapterSurface.CLAUDE_CODE]: createAvailableProtocol(AdapterSurface.CLAUDE_CODE, 'unused', {
+        invokeStageSpy: reviewerInvokeStage,
+      }),
+      [AdapterSurface.OLLAMA]: createAvailableProtocol(AdapterSurface.OLLAMA, 'unused local', {
+        toolCallingSupportLevel: AgentCapabilitySupportLevel.UNSUPPORTED,
+      }),
+    });
+
+    const runtime = new CliSessionMainSupervisorRuntime({
+      workspaceRoot: '/workspace/repo/.repo-ai-governor',
+      currentWorkingDirectory: '/workspace/repo',
+      workspace,
+      locale: 'en-US',
+      adaptersConfig,
+      adapterRoutingRuntime,
+    });
+    const outcome = await runtime.resolveTurn({
+      sessionId: 'session-implicit-reviewer-001',
+      routeId: 'session.main',
+      turnId: 'turn-implicit-reviewer-001',
+      turnIndex: 5,
+      userMessage: '很好,帮我 review 一下代码',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+      metadata: {
+        [SESSION_MAIN_IMPLICIT_ROLE_DELEGATE_METADATA_KEY]: 'reviewer',
+      },
+    });
+
+    expect(reviewerInvokeStage).toHaveBeenCalledTimes(1);
+    expect(outcome.responseMode).toBe('role_collaboration');
+    expect(outcome.interactionMode).toBe('single_role_delegate');
+    expect(outcome.routerDecisionReason).toBe(
+      'session.main.router.single_role_delegate.implicit_role',
+    );
+    expect(outcome.executionIntent).toBe('session.role_delegate.reviewer');
+    expect(outcome.assistantMessage).toContain('Reviewer perspective');
+    expect(outcome.invokedRoleIds).toEqual(['reviewer']);
+  });
+
+  it('keeps repository-review reviewer delegation dispatchable when an available fallback surface omits tool capability metadata', async () => {
+    const reviewerInvokeStage = vi.fn(async (request: Record<string, unknown>) => {
+      expect(request.stageId).toBe('stage-session-main-role-reviewer');
+      expect(request.routeKey).toBe('session.main.role.reviewer');
+      expect(request.input).toEqual(
+        expect.objectContaining({
+          userMessage: '帮我 review 一下代码',
+          roleId: 'reviewer',
+          reviewScope: 'uncommitted_changes',
+        }),
+      );
+      return {
+        output: {
+          responseText: '## Reviewer fallback\n\n- review current worktree changes directly',
+        },
+        elapsedMs: 1,
+      };
+    });
+    const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
+      adaptersConfig,
+    ) as CliAdapterRoutingRuntime & {
+      createProtocolBySurface: () => Record<string, AgentProtocolContract>;
+    };
+    adapterRoutingRuntime.createProtocolBySurface = () => ({
+      [AdapterSurface.CODEX]: createUnavailableProtocol(AdapterSurface.CODEX),
+      [AdapterSurface.CLAUDE_CODE]: createAvailableProtocol(AdapterSurface.CLAUDE_CODE, 'unused', {
+        omittedCapabilities: [AgentCapability.TOOL_CALLING],
+        invokeStageSpy: reviewerInvokeStage,
+      }),
+      [AdapterSurface.OLLAMA]: createAvailableProtocol(AdapterSurface.OLLAMA, 'unused local', {
+        toolCallingSupportLevel: AgentCapabilitySupportLevel.UNSUPPORTED,
+      }),
+    });
+
+    const runtime = new CliSessionMainSupervisorRuntime({
+      workspaceRoot: '/workspace/repo/.repo-ai-governor',
+      currentWorkingDirectory: '/workspace/repo',
+      workspace,
+      locale: 'en-US',
+      adaptersConfig,
+      adapterRoutingRuntime,
+    });
+    const outcome = await runtime.resolveTurn({
+      sessionId: 'session-implicit-reviewer-fallback-001',
+      routeId: 'session.main',
+      turnId: 'turn-implicit-reviewer-fallback-001',
+      turnIndex: 6,
+      userMessage: '帮我 review 一下代码',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+      metadata: {
+        [SESSION_MAIN_IMPLICIT_ROLE_DELEGATE_METADATA_KEY]: 'reviewer',
+      },
+    });
+
+    expect(reviewerInvokeStage).toHaveBeenCalledTimes(1);
+    expect(outcome.selectedSurface).toBe(AdapterSurface.CLAUDE_CODE);
+    expect(outcome.selectedBy).toContain('session.main.role_delegate.safe_fallback');
+    expect(outcome.assistantMessage).toContain('Reviewer fallback');
+    expect(outcome.invokedRoleIds).toEqual(['reviewer']);
+  });
+
+  it('guards repository-review reviewer delegation when only local-model fallback remains', async () => {
+    const localReviewInvokeStage = vi.fn(async () => ({
+      output: {
+        responseText: 'unsafe local reviewer answer',
+      },
+      elapsedMs: 1,
+    }));
+    const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
+      adaptersConfig,
+    ) as CliAdapterRoutingRuntime & {
+      createProtocolBySurface: () => Record<string, AgentProtocolContract>;
+    };
+    adapterRoutingRuntime.createProtocolBySurface = () => ({
+      [AdapterSurface.CODEX]: createUnavailableProtocol(AdapterSurface.CODEX),
+      [AdapterSurface.CLAUDE_CODE]: createUnavailableProtocol(AdapterSurface.CLAUDE_CODE),
+      [AdapterSurface.OLLAMA]: createAvailableProtocol(AdapterSurface.OLLAMA, 'unused local', {
+        invokeStageSpy: localReviewInvokeStage,
+        toolCallingSupportLevel: AgentCapabilitySupportLevel.UNSUPPORTED,
+      }),
+    });
+
+    const runtime = new CliSessionMainSupervisorRuntime({
+      workspaceRoot: '/workspace/repo/.repo-ai-governor',
+      currentWorkingDirectory: '/workspace/repo',
+      workspace,
+      locale: 'en-US',
+      adaptersConfig,
+      adapterRoutingRuntime,
+    });
+    const outcome = await runtime.resolveTurn({
+      sessionId: 'session-implicit-reviewer-local-guard-001',
+      routeId: 'session.main',
+      turnId: 'turn-implicit-reviewer-local-guard-001',
+      turnIndex: 7,
+      userMessage: '帮我 review 一下代码',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+      metadata: {
+        [SESSION_MAIN_IMPLICIT_ROLE_DELEGATE_METADATA_KEY]: 'reviewer',
+      },
+    });
+
+    expect(localReviewInvokeStage).not.toHaveBeenCalled();
+    expect(outcome.responseMode).toBe('role_collaboration');
+    expect(outcome.interactionMode).toBe('single_role_delegate');
+    expect(outcome.routerDecisionReason).toBe('session.main.router.single_role_delegate.guard');
+    expect(outcome.selectedSurface).toBe('guarded-role-delegate');
+    expect(outcome.selectedBy).toBe('session.main.role_delegate.guard');
+    expect(outcome.assistantMessage).toContain('repository-review preflight checks');
+    expect(outcome.invokedRoleIds).toEqual([]);
   });
 
   it('routes explicit @planner @reviewer parallel requests through one parallel fan-out path', async () => {

@@ -336,9 +336,11 @@ export const EN_US_TRANSLATIONS = {
         turnRecoverableHint: 'You can keep chatting, retry the turn, or switch to /resume.',
         turnRetryingAfterSessionRecovery:
           'The shell is retrying your latest message in a new attached session.',
+        liveTurnRunningSummary: 'Running · {{elapsed}}',
         liveTurnThinking: 'Thinking...',
         liveTurnThinkingPulse: 'Thinking{{suffix}}',
         liveTurnThinkingDetail: 'Thinking: {{detail}}',
+        liveTurnCurrentDetail: 'Current: {{detail}}',
         liveTurnRoleActivity: '{{role}}: {{detail}}',
         liveTurnToolCall: 'Tool: {{toolName}} - {{detail}}',
         liveTurnActivityTitle: 'Live activity',

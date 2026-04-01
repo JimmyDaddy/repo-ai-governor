@@ -40,6 +40,9 @@
 4. natural-language skill routing 必须先经过 service-owned risk/policy gate，而不是默认一刀切 `preview + confirm` 或无限制自动执行：
    - `help`、`doctor`、`verify` 与 scope-resolved `review.code` 等低风险只读 skill 可以被判定为 `direct_execute`
    - `connect`、`run`、`review verify`、多步 bundle，以及高成本/高歧义场景继续走 `preview + confirm`
+   - `session.main` 的自由对话不是可选 fallback；普通闲聊、寒暄、轻量问答与未成形需求默认都应先走 `direct answer`
+   - 当用户在自由对话里自然表达出可执行意图时，`session.main` 应在同一对话面里把该输入升级为 `skill handoff`、`command handoff` 或 `role delegate`，而不是要求用户先离开自由对话模式
+   - `direct answer` 可以落到 tool-capable surface，但前提是 runtime 必须向 adapter 下发正式的 `chat-only / tool-forbidden` 执行策略，并由 adapter 在宿主层真正收紧到 no-tool 或 read-only 行为
 5. supervisor 的第一阶段实现允许采用 `C-target, phased bootstrap`：
    - 先交付真实 direct answer
    - 再补 `1` 条可工作的 role subagent path
@@ -94,7 +97,21 @@
 2. `planner` role 只能作为 subagent 被调用，不能直接替代 supervisor。
 3. 后台 workflow planner 继续属于流程编排语义，不能因为前台 supervisor 引入而绕过既有 policy / audit / ledger。
 
-### 4.3 推荐关系图
+### 4.3 `session.main` main agent 的正式特性
+
+`session.main` 不是“只能 handoff 的治理路由器”，也不是“只能闲聊的聊天助手”。正式特性固定如下：
+
+1. 它必须能够承接自由对话，包括寒暄、开放式提问、模糊需求和轻量追问。
+2. 它必须能够从自由对话中识别出可执行任务，并把这些任务收敛为：
+   - 自己直接回答
+   - 低风险 direct-execute skill
+   - governed command handoff
+   - 单角色或多角色 delegate / collaboration
+3. “自由对话”与“任务执行/分派”是同一主 agent 的连续能力，不允许在产品语义上被拆成互斥模式。
+4. 若实现为了治理原因限制 direct answer，必须限制的是 `tool use` 与 `mutation capability`，而不是取消主 agent 的自由对话能力本身。
+5. `session.main` 的自由对话资格必须是 `availability-first`：只要某个 surface 可用，且宿主/runtime 能对该 turn 强制执行正式的 `chat-only / tool-forbidden` 策略，它就仍然可以承接主 agent 的自由对话；缺失或退化的 `TOOL_CALLING` capability 元数据本身，不得成为取消自由对话的理由。
+
+### 4.4 推荐关系图
 
 ```mermaid
 flowchart TD
@@ -107,7 +124,7 @@ flowchart TD
   W --> N["workflow planner node"]
 ```
 
-### 4.4 `review`、`review verify` 与 `help` 不是同一确认等级
+### 4.5 `review`、`review verify` 与 `help` 不是同一确认等级
 
 1. `review.code`
    - 属于只读分析型 skill。

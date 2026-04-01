@@ -105,6 +105,27 @@ describe('CliSessionSlashCommandRegistry', () => {
       kind: 'bridge',
       summaryKey: 'cli.commands.review.description',
     });
+    expect(registry.resolveAction('/plan')).toEqual({
+      bridgeArgv: ['plan'],
+      command: '/plan',
+      executionMode: 'direct',
+      kind: 'bridge',
+      summaryKey: 'cli.commands.plan.description',
+    });
+    expect(registry.resolveAction('/workflow preview')).toEqual({
+      bridgeArgv: ['workflow', 'preview'],
+      command: '/workflow',
+      executionMode: 'direct',
+      kind: 'bridge',
+      summaryKey: 'cli.commands.workflow.description',
+    });
+    expect(registry.resolveAction('/workflow create')).toEqual({
+      bridgeArgv: ['workflow', 'create'],
+      command: '/workflow',
+      executionMode: 'confirm',
+      kind: 'bridge',
+      summaryKey: 'cli.commands.workflow.description',
+    });
     expect(registry.resolveAction('/doctor')).toEqual({
       bridgeArgv: ['doctor'],
       command: '/doctor',

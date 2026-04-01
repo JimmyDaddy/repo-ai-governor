@@ -159,6 +159,61 @@ describe('github-copilot-agent-adapter smoke', () => {
     expect(execRunner).toHaveBeenCalledTimes(2);
   });
 
+  it('uses reviewer-specific shell allow-list for repository review stages', async () => {
+    const execRunner = vi
+      .fn<GithubCopilotExecRunner>()
+      .mockImplementationOnce(createGithubCopilotExecRunnerFixture())
+      .mockImplementationOnce(async (request) => {
+        expect(request.commandArgumentsPrefix).toEqual(
+          expect.arrayContaining([
+            '--available-tools',
+            'shell',
+            '--allow-tool',
+            'shell(git:*)',
+            '--allow-tool',
+            'shell(rg:*)',
+            '--allow-tool',
+            'shell(sed:*)',
+            '--allow-tool',
+            'shell(cat:*)',
+            '--allow-tool',
+            'shell(ls:*)',
+            '--allow-tool',
+            'shell(find:*)',
+          ]),
+        );
+        expect(request.prompt).toContain('repository review stage');
+        expect(request.prompt).toContain('帮我 review 一下代码');
+        return createGithubCopilotExecRunnerFixture()({
+          ...request,
+          operation: AgentCliExecOperation.INVOKE,
+        });
+      });
+    const adapter = new GithubCopilotAgentAdapter({
+      executionMode: GithubCopilotAgentAdapterExecutionMode.CLI_EXEC,
+      execRunner,
+    });
+
+    await adapter.probe({
+      routeKey: 'codegen',
+    });
+    const invokeResult = await adapter.invokeStage({
+      processId: 'process-1',
+      executionId: 'execution-1',
+      stageId: 'stage-session-main-role-reviewer',
+      routeKey: 'session.main.role.reviewer',
+      input: {
+        roleId: 'reviewer',
+        reviewScope: 'uncommitted_changes',
+        userMessage: '帮我 review 一下代码',
+        governorInstructions: 'inspect the repository in a read-only manner',
+      },
+    });
+
+    expect(invokeResult.output.responseText).toContain('simulated github copilot response');
+    expect(execRunner).toHaveBeenCalledTimes(2);
+  });
+
   it('treats non-zero process exit as protocol failure even when assistant output is present', async () => {
     const adapter = new GithubCopilotAgentAdapter({
       executionMode: GithubCopilotAgentAdapterExecutionMode.CLI_EXEC,

@@ -44,6 +44,11 @@ const CLAUDE_CODE_FALLBACK_COMMAND = 'claude-code';
 const CLAUDE_CODE_DEFAULT_TIMEOUT_MS = 30000;
 const CLAUDE_CODE_DEFAULT_PROBE_CACHE_TTL_MS = 30000;
 const CLAUDE_CODE_CHAT_ONLY_ARGS = ['--tools', ''] as const;
+const CLAUDE_CODE_REPOSITORY_REVIEW_SCOPE = 'uncommitted_changes';
+const CLAUDE_CODE_REPOSITORY_REVIEW_ARGS = [
+  '--allowedTools',
+  'Bash(git:*) Bash(rg:*) Bash(sed:*) Bash(cat:*) Bash(ls:*) Bash(find:*) Read Grep Glob LS',
+] as const;
 const CLAUDE_CODE_HEALTH_CHECK_PROMPT = 'Respond with exactly OK.';
 const CLAUDE_CODE_HEALTH_CHECK_EXPECTED_RESPONSE = 'OK';
 
@@ -209,12 +214,17 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
       };
     }
 
+    const executionPolicy = resolveAgentStageExecutionPolicy(request.input);
     const executionResult = await this.runClaudeCodeOperation({
-      prompt: this.renderInvokePrompt(request),
+      prompt: this.shouldUseRepositoryReviewMode(request)
+        ? this.renderRepositoryReviewPrompt(request)
+        : this.renderInvokePrompt(request),
       timeoutMs: request.agentInvocationTimeoutMs ?? this.options.requestTimeoutMs,
       signal: request.signal,
       operation: AgentCliExecOperation.INVOKE,
-      executionPolicy: resolveAgentStageExecutionPolicy(request.input),
+      executionPolicy,
+      commandArgumentsPrefixResolver: (basePrefix, resolvedExecutionPolicy) =>
+        this.resolveInvokeCommandArgumentsPrefix(request, basePrefix, resolvedExecutionPolicy),
     });
     const parsedOutput = this.parseClaudeCodeCliOutput(
       executionResult,
@@ -431,6 +441,10 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
    */
   private async runClaudeCodeOperation(
     request: Pick<ClaudeCodeExecRunnerRequest, 'prompt' | 'timeoutMs' | 'signal' | 'operation'> & {
+      commandArgumentsPrefixResolver?: (
+        basePrefix: string[],
+        executionPolicy?: ReturnType<typeof resolveAgentStageExecutionPolicy>,
+      ) => string[];
       executionPolicy?: ReturnType<typeof resolveAgentStageExecutionPolicy>;
     },
   ): Promise<ClaudeCodeExecRunnerResult> {
@@ -443,10 +457,15 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
             try {
               return await this.execRunner({
                 command: commandSpec.command,
-                commandArgumentsPrefix: this.resolveCommandArgumentsPrefix(
-                  commandSpec.commandArgumentsPrefix,
-                  request.executionPolicy,
-                ),
+                commandArgumentsPrefix:
+                  request.commandArgumentsPrefixResolver?.(
+                    commandSpec.commandArgumentsPrefix,
+                    request.executionPolicy,
+                  ) ??
+                  this.resolveCommandArgumentsPrefix(
+                    commandSpec.commandArgumentsPrefix,
+                    request.executionPolicy,
+                  ),
                 cwd: this.options.currentWorkingDirectory,
                 env: this.resolveEnvironment(),
                 prompt: request.prompt,
@@ -601,6 +620,27 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
       `Stage ID: ${request.stageId}`,
       'Treat the following JSON payload as the canonical stage input.',
       renderedInput,
+    ].join('\n\n');
+  }
+
+  private renderRepositoryReviewPrompt(request: AgentInvokeStageRequest): string {
+    const userMessage =
+      typeof request.input.userMessage === 'string' && request.input.userMessage.trim().length > 0
+        ? request.input.userMessage.trim()
+        : 'Review the current repository changes.';
+    const governorInstructions =
+      typeof request.input.governorInstructions === 'string' &&
+      request.input.governorInstructions.trim().length > 0
+        ? request.input.governorInstructions.trim()
+        : null;
+
+    return [
+      'You are executing one Repo AI Governor repository review stage through Claude Code.',
+      `Original user request: ${userMessage}`,
+      'Review the current repository uncommitted changes and produce findings-first concise markdown with concrete file references when possible.',
+      ...(governorInstructions
+        ? [`Additional Governor instructions:\n${governorInstructions}`]
+        : []),
     ].join('\n\n');
   }
 
@@ -830,5 +870,25 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
         ? CLAUDE_CODE_CHAT_ONLY_ARGS
         : []),
     ];
+  }
+
+  private resolveInvokeCommandArgumentsPrefix(
+    request: AgentInvokeStageRequest,
+    commandArgumentsPrefix: string[],
+    executionPolicy?: ReturnType<typeof resolveAgentStageExecutionPolicy>,
+  ): string[] {
+    if (this.shouldUseRepositoryReviewMode(request)) {
+      return [...commandArgumentsPrefix, ...CLAUDE_CODE_REPOSITORY_REVIEW_ARGS];
+    }
+
+    return this.resolveCommandArgumentsPrefix(commandArgumentsPrefix, executionPolicy);
+  }
+
+  private shouldUseRepositoryReviewMode(request: AgentInvokeStageRequest): boolean {
+    return (
+      request.routeKey === 'session.main.role.reviewer' &&
+      request.input.roleId === 'reviewer' &&
+      request.input.reviewScope === CLAUDE_CODE_REPOSITORY_REVIEW_SCOPE
+    );
   }
 }

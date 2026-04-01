@@ -162,6 +162,7 @@ describe('CliSessionShellTranscriptStore', () => {
           payload: {
             role: OrchestrationSessionTranscriptRole.SYSTEM,
             errorMessage: 'dispatcher failure',
+            errorDetail: 'codex stderr: authentication required',
           },
         },
         {
@@ -198,6 +199,7 @@ describe('CliSessionShellTranscriptStore', () => {
     expect(items[1]?.renderKind).toBe('system_notice');
     expect(items[0]?.lines).toEqual([
       'The main session turn failed. reason=dispatcher failure',
+      'codex stderr: authentication required',
       'You can keep chatting, retry the turn, or switch to /resume.',
     ]);
     expect(items[1]?.lines).toEqual([

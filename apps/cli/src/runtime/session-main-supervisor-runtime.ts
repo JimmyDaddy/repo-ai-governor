@@ -36,6 +36,8 @@ import { CliSessionMainSubagentRegistry } from './session-main-subagent-registry
 
 const SESSION_MAIN_ANSWER_ROUTE_KEY = 'session.main.answer';
 const SESSION_MAIN_ANSWER_STAGE_ID = 'stage-session-main-answer';
+const SESSION_MAIN_IMPLICIT_ROLE_DELEGATE_METADATA_KEY = 'implicitRoleDelegateRoleId';
+const SESSION_MAIN_REPOSITORY_REVIEW_SCOPE = 'uncommitted_changes';
 const SESSION_MAIN_FALLBACK_DELTA_MAX_LENGTH = 80;
 const SESSION_MAIN_GUARDED_DIRECT_ANSWER_SURFACE = 'guarded-direct-answer';
 const SESSION_MAIN_GUARDED_ROLE_DELEGATE_SURFACE = 'guarded-role-delegate';
@@ -44,6 +46,8 @@ const SESSION_MAIN_ROUTER_REASON_DIRECT_ANSWER = 'session.main.router.direct_ans
 const SESSION_MAIN_ROUTER_REASON_DIRECT_ANSWER_GUARD = 'session.main.router.direct_answer.guard';
 const SESSION_MAIN_ROUTER_REASON_SINGLE_ROLE_DELEGATE =
   'session.main.router.single_role_delegate.explicit_role';
+const SESSION_MAIN_ROUTER_REASON_SINGLE_ROLE_DELEGATE_IMPLICIT =
+  'session.main.router.single_role_delegate.implicit_role';
 const SESSION_MAIN_ROUTER_REASON_SINGLE_ROLE_GUARD =
   'session.main.router.single_role_delegate.guard';
 const SESSION_MAIN_ROUTER_REASON_SINGLE_ROLE_UNRESOLVED =
@@ -67,6 +71,11 @@ const SESSION_MAIN_ROUTER_REASON_PARALLEL_ROLE_UNRESOLVED =
 const SESSION_MAIN_PARALLEL_ANALYSIS_SYNTHESIS_MODE = 'parallel_analysis';
 const SESSION_MAIN_SERIAL_ROLE_COLLABORATION_LIMIT = 2;
 const SESSION_MAIN_PARALLEL_ROLE_FANOUT_LIMIT = 3;
+const SESSION_MAIN_REPOSITORY_REVIEW_CAPABLE_SURFACES = new Set<AdapterSurface>([
+  AdapterSurface.CODEX,
+  AdapterSurface.CLAUDE_CODE,
+  AdapterSurface.GITHUB_COPILOT,
+]);
 
 interface PreparedRoleDispatch {
   descriptor: SessionMainSubagentDescriptor;
@@ -141,6 +150,9 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     const protocolBySurface =
       this.adapterRoutingRuntime.createProtocolBySurface(toolConfigBySurface);
     const mentionedRoleIds = this.subagentRegistry.resolveMentionedRoleIds(context.userMessage);
+    const implicitRoleDelegateId = this.readOptionalString(
+      context.metadata?.[SESSION_MAIN_IMPLICIT_ROLE_DELEGATE_METADATA_KEY],
+    );
     const parallelAnalysisRequest = this.isParallelAnalysisRequest(context.userMessage);
     if (mentionedRoleIds.length >= 2) {
       if (
@@ -174,6 +186,18 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
         mentionedRoleId,
         protocolBySurface,
         toolConfigBySurface,
+      );
+    }
+    if (implicitRoleDelegateId) {
+      return this.resolveSingleRoleDelegateTurn(
+        context,
+        implicitRoleDelegateId,
+        protocolBySurface,
+        toolConfigBySurface,
+        {
+          allowToolCapableSurfaces: true,
+          routerDecisionReason: SESSION_MAIN_ROUTER_REASON_SINGLE_ROLE_DELEGATE_IMPLICIT,
+        },
       );
     }
     const trackedSurfaces =
@@ -381,17 +405,46 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     return safeCandidateSurfaces;
   }
 
+  private async resolveAvailableCandidateSurfaces(
+    candidateSurfaces: AdapterSurface[],
+    routeKey: string,
+    protocolBySurface: Record<string, AgentProtocolContract>,
+  ): Promise<AdapterSurface[]> {
+    const availableCandidateSurfaces: AdapterSurface[] = [];
+    for (const surface of candidateSurfaces) {
+      const protocol = protocolBySurface[surface];
+      if (!protocol) {
+        continue;
+      }
+      const probeResult = await protocol.probe({
+        routeKey,
+      });
+      if (probeResult.availabilityStatus === AgentAvailabilityStatus.UNAVAILABLE) {
+        continue;
+      }
+      availableCandidateSurfaces.push(surface);
+    }
+    return availableCandidateSurfaces;
+  }
+
   private async resolveSingleRoleDelegateTurn(
     context: SessionMainSupervisorTurnContext,
     roleId: string,
     protocolBySurface: Record<string, AgentProtocolContract>,
     toolConfigBySurface: Map<AdapterSurface, NonNullable<AdaptersConfig['tools']>[number]>,
+    options?: {
+      allowToolCapableSurfaces?: boolean;
+      routerDecisionReason?: string;
+    },
   ): Promise<SessionMainSupervisorTurnOutcome> {
     const preparedDispatch = await this.prepareRoleDispatch(
       context,
       roleId,
       protocolBySurface,
       toolConfigBySurface,
+      {
+        allowToolCapableSurfaces: options?.allowToolCapableSurfaces,
+      },
     );
     if (!preparedDispatch) {
       return this.createUnknownRoleDelegateOutcome(context, roleId);
@@ -411,7 +464,8 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       interactionMode: SESSION_MAIN_INTERACTION_MODE.SINGLE_ROLE_DELEGATE,
       assistantDelta: this.createAssistantDelta(executedDispatch.assistantMessage),
       assistantMessage: executedDispatch.assistantMessage,
-      routerDecisionReason: SESSION_MAIN_ROUTER_REASON_SINGLE_ROLE_DELEGATE,
+      routerDecisionReason:
+        options?.routerDecisionReason ?? SESSION_MAIN_ROUTER_REASON_SINGLE_ROLE_DELEGATE,
       executionIntent: `${SESSION_MAIN_ROLE_EXECUTION_INTENT_PREFIX}${executedDispatch.descriptor.roleId}`,
       requiresConfirmation: false,
       selectedSurface: executedDispatch.selectedSurface,
@@ -580,6 +634,9 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     preferredSurface: string,
     descriptor: SessionMainSubagentDescriptor,
     toolConfigBySurface: Map<AdapterSurface, NonNullable<AdaptersConfig['tools']>[number]>,
+    options?: {
+      includeLocalModelFallbackCandidate?: boolean;
+    },
   ): AdapterSurface[] {
     const candidateSurfaces = this.resolveKnownCandidateSurfaces([
       descriptor.primarySurface,
@@ -598,7 +655,9 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       }
     }
     const localFallbackSurface =
-      this.adapterRoutingRuntime.resolveLocalModelFallbackSurface(toolConfigBySurface);
+      options?.includeLocalModelFallbackCandidate === false
+        ? null
+        : this.adapterRoutingRuntime.resolveLocalModelFallbackSurface(toolConfigBySurface);
     if (localFallbackSurface && !orderedCandidateSurfaces.includes(localFallbackSurface)) {
       orderedCandidateSurfaces.push(localFallbackSurface);
     }
@@ -620,6 +679,9 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     roleId: string,
     protocolBySurface: Record<string, AgentProtocolContract>,
     toolConfigBySurface: Map<AdapterSurface, NonNullable<AdaptersConfig['tools']>[number]>,
+    options?: {
+      allowToolCapableSurfaces?: boolean;
+    },
   ): Promise<PreparedRoleDispatch | null> {
     const descriptor = this.subagentRegistry.resolveSubagentDescriptor({
       roleId,
@@ -628,19 +690,40 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     if (!descriptor) {
       return null;
     }
-    const capabilityRequirement = this.resolveCapabilityRequirement(
-      descriptor.requiredCapabilities,
+    const capabilityRequirement = this.resolveRoleDelegateCapabilityRequirement(
+      context,
+      descriptor,
     );
-    const safeCandidateSurfaces = await this.resolveSafeCandidateSurfaces(
-      this.resolveRoleDelegateCandidateSurfaces(
-        context.selectedSurface,
-        descriptor,
-        toolConfigBySurface,
-      ),
+    const repositoryReviewRoleDispatch = this.isRepositoryReviewRoleDispatch(context, descriptor);
+    const roleDelegateCandidateSurfaces = this.resolveRoleDelegateCandidateSurfaces(
+      context.selectedSurface,
+      descriptor,
+      toolConfigBySurface,
+      {
+        includeLocalModelFallbackCandidate: !repositoryReviewRoleDispatch,
+      },
+    );
+    const eligibleRoleDelegateCandidateSurfaces = repositoryReviewRoleDispatch
+      ? roleDelegateCandidateSurfaces.filter((surface) =>
+          SESSION_MAIN_REPOSITORY_REVIEW_CAPABLE_SURFACES.has(surface),
+        )
+      : roleDelegateCandidateSurfaces;
+    let safeCandidateSurfaces = await this.resolveSafeCandidateSurfaces(
+      eligibleRoleDelegateCandidateSurfaces,
       descriptor.routeKey,
       protocolBySurface,
       capabilityRequirement,
+      {
+        allowToolCapableSurfaces: options?.allowToolCapableSurfaces,
+      },
     );
+    if (repositoryReviewRoleDispatch && safeCandidateSurfaces.length === 0) {
+      safeCandidateSurfaces = await this.resolveAvailableCandidateSurfaces(
+        eligibleRoleDelegateCandidateSurfaces,
+        descriptor.routeKey,
+        protocolBySurface,
+      );
+    }
     return {
       descriptor,
       capabilityRequirement,
@@ -851,6 +934,7 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
             this.readOptionalString(event.payload.detail) ??
             this.readOptionalString(event.payload.status) ??
             this.readOptionalString(event.payload.message),
+          activityKey: this.readOptionalString(event.payload.activityKey),
           chunkText:
             this.readOptionalString(event.payload.chunkText) ??
             this.readOptionalString(event.payload.text) ??
@@ -944,17 +1028,36 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     };
   }
 
+  private resolveRoleDelegateCapabilityRequirement(
+    context: SessionMainSupervisorTurnContext,
+    descriptor: SessionMainSubagentDescriptor,
+  ): AgentCapabilityRequirement | undefined {
+    if (this.isRepositoryReviewRoleDispatch(context, descriptor)) {
+      return undefined;
+    }
+    return this.resolveCapabilityRequirement(descriptor.requiredCapabilities);
+  }
+
+  private isRepositoryReviewRoleDispatch(
+    context: SessionMainSupervisorTurnContext,
+    descriptor: SessionMainSubagentDescriptor,
+  ): boolean {
+    return descriptor.roleId === 'reviewer' && this.isRepositoryReviewRequest(context.userMessage);
+  }
+
   private isSafeDirectAnswerSurface(
     probeResult: AgentProbeResult,
     options?: {
       allowToolCapableSurfaces?: boolean;
     },
   ): boolean {
+    // Free-form chatability is guarded by the shared chat-only/tool-forbidden execution
+    // policy, not by whether the probe returned a TOOL_CALLING capability row.
     const toolCallingState = probeResult.capabilityMatrix.capabilityStates.find(
       (capabilityState) => capabilityState.capability === AgentCapability.TOOL_CALLING,
     );
     if (options?.allowToolCapableSurfaces) {
-      return toolCallingState?.supportLevel !== undefined;
+      return true;
     }
     return toolCallingState?.supportLevel === AgentCapabilitySupportLevel.UNSUPPORTED;
   }
@@ -989,6 +1092,9 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     context: SessionMainSupervisorTurnContext,
     descriptor: SessionMainSubagentDescriptor,
   ): Record<string, unknown> {
+    const repositoryReviewScope = this.isRepositoryReviewRoleDispatch(context, descriptor)
+      ? SESSION_MAIN_REPOSITORY_REVIEW_SCOPE
+      : null;
     return {
       userMessage: this.stripRoleMentions(context.userMessage),
       locale: this.options.locale,
@@ -1004,12 +1110,33 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       roleProfileId: descriptor.roleProfileId,
       permissionLevel: descriptor.permissionLevel,
       interactionMode: SESSION_MAIN_INTERACTION_MODE.SINGLE_ROLE_DELEGATE,
-      governorInstructions: this.localizeText(
-        `You are the ${descriptor.roleId} role subagent for Repo AI Governor. Respond from this role's perspective in concise markdown. Do not execute commands, modify files, or claim that governed commands already ran. If the user is really asking to run connect, doctor, verify, review, or run, keep the response advisory and tell the supervisor to use preview plus confirm handoff instead.`,
-        `你现在是 Repo AI Governor 的 ${descriptor.roleId} 角色子代理。请用这个角色的视角输出简洁的 Markdown。不要执行命令、不要修改文件，也不要声称受治理命令已经执行。如果用户真正想运行 connect、doctor、verify、review 或 run，请仅给出建议，并明确需要由 supervisor 走 preview + confirm 交接。`,
-      ),
+      governorInstructions: this.createRoleDelegateGovernorInstructions(context, descriptor),
+      ...(repositoryReviewScope ? { reviewScope: repositoryReviewScope } : {}),
       ...(context.metadata ? { metadata: { ...context.metadata } } : {}),
     };
+  }
+
+  private isRepositoryReviewRequest(userMessage: string): boolean {
+    return /(?:\breview\b|\bcr\b|code review|worktree|diff|changes?|审查|评审|复核|改动|代码)/iu.test(
+      userMessage,
+    );
+  }
+
+  private createRoleDelegateGovernorInstructions(
+    _context: SessionMainSupervisorTurnContext,
+    descriptor: SessionMainSubagentDescriptor,
+  ): string {
+    if (descriptor.roleId === 'reviewer') {
+      return this.localizeText(
+        'You are the reviewer role subagent for Repo AI Governor. When the user asks for a code review of the current worktree, diff, or repository changes, inspect the repository in a read-only manner and produce findings-first concise markdown with concrete file references when possible. Do not modify files, do not run governed CLI commands, and do not claim that commands already ran. If the user is really asking to run connect, doctor, verify, or run, keep the response advisory and tell the supervisor to use governed handoff instead.',
+        '你现在是 Repo AI Governor 的 reviewer 角色子代理。当用户请求审查当前 worktree、diff 或仓库改动时，请以只读方式检查仓库，并优先输出 findings-first 的简洁 Markdown；在可能时给出具体文件引用。不要修改文件，不要执行受治理的 CLI 命令，也不要声称命令已经执行完成。如果用户真正想运行 connect、doctor、verify 或 run，请仅给出建议，并明确需要由 supervisor 走受治理交接。',
+      );
+    }
+
+    return this.localizeText(
+      `You are the ${descriptor.roleId} role subagent for Repo AI Governor. Respond from this role's perspective in concise markdown. Do not execute commands, modify files, or claim that governed commands already ran. If the user is really asking to run connect, doctor, verify, review, or run, keep the response advisory and tell the supervisor to use preview plus confirm handoff instead.`,
+      `你现在是 Repo AI Governor 的 ${descriptor.roleId} 角色子代理。请用这个角色的视角输出简洁的 Markdown。不要执行命令、不要修改文件，也不要声称受治理命令已经执行。如果用户真正想运行 connect、doctor、verify、review 或 run，请仅给出建议，并明确需要由 supervisor 走 preview + confirm 交接。`,
+    );
   }
 
   private createSerialRoleInput(
@@ -1234,21 +1361,32 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     context: SessionMainSupervisorTurnContext,
     descriptor: SessionMainSubagentDescriptor,
   ): SessionMainSupervisorTurnOutcome {
+    const repositoryReviewRequest = this.isRepositoryReviewRoleDispatch(context, descriptor);
     const assistantMessage = [
       this.localizeText(
         `## ${this.formatRoleHeading(descriptor.roleId)} Delegate`,
         `## ${descriptor.roleId} 委派`,
       ),
       '',
-      this.localizeText(
-        `I did not delegate "${context.userMessage}" to the ${descriptor.roleId} role because every currently configured surface for that role is tool-capable, unavailable, or missing one required capability.`,
-        `我没有把「${context.userMessage}」委派给 ${descriptor.roleId} 角色，因为这个角色当前配置的 surface 要么支持工具调用、要么不可用、要么缺少必需能力。`,
-      ),
+      repositoryReviewRequest
+        ? this.localizeText(
+            `I did not delegate "${context.userMessage}" to the ${descriptor.roleId} role because every currently configured reviewer surface is either unavailable or failed repository-review preflight checks.`,
+            `我没有把「${context.userMessage}」委派给 ${descriptor.roleId} 角色，因为当前配置的 reviewer surface 要么不可用、要么没有通过仓库评审所需的预检。`,
+          )
+        : this.localizeText(
+            `I did not delegate "${context.userMessage}" to the ${descriptor.roleId} role because every currently configured surface for that role is tool-capable, unavailable, or missing one required capability.`,
+            `我没有把「${context.userMessage}」委派给 ${descriptor.roleId} 角色，因为这个角色当前配置的 surface 要么支持工具调用、要么不可用、要么缺少必需能力。`,
+          ),
       '',
-      this.localizeText(
-        'The bootstrap collaboration path is currently restricted to no-tool surfaces so that front-stage role delegation does not bypass the governed handoff boundary.',
-        '当前 bootstrap 协作路径只允许走无工具调用的 surface，这样前台 role delegate 才不会绕过受治理的 handoff 边界。',
-      ),
+      repositoryReviewRequest
+        ? this.localizeText(
+            'No currently available reviewer surface passed the active availability and governance checks for repository review. Restore one usable reviewer surface or rerun adapter diagnostics, then try again.',
+            '当前没有可用的 reviewer surface 通过仓库评审所需的 availability 与治理检查。请先恢复一个可用的 reviewer surface，或重新执行适配器诊断后再试。',
+          )
+        : this.localizeText(
+            'The bootstrap collaboration path is currently restricted to no-tool surfaces so that front-stage role delegation does not bypass the governed handoff boundary.',
+            '当前 bootstrap 协作路径只允许走无工具调用的 surface，这样前台 role delegate 才不会绕过受治理的 handoff 边界。',
+          ),
     ].join('\n');
     return {
       responseMode: SESSION_MAIN_RESPONSE_MODE.ROLE_COLLABORATION,

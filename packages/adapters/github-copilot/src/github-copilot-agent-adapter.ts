@@ -44,6 +44,23 @@ const GITHUB_COPILOT_GH_COMMAND = 'gh';
 const GITHUB_COPILOT_DEFAULT_TIMEOUT_MS = 30000;
 const GITHUB_COPILOT_DEFAULT_PROBE_CACHE_TTL_MS = 30000;
 const GITHUB_COPILOT_CHAT_ONLY_ARGS = ['--available-tools', ''] as const;
+const GITHUB_COPILOT_REPOSITORY_REVIEW_SCOPE = 'uncommitted_changes';
+const GITHUB_COPILOT_REPOSITORY_REVIEW_ARGS = [
+  '--available-tools',
+  'shell',
+  '--allow-tool',
+  'shell(git:*)',
+  '--allow-tool',
+  'shell(rg:*)',
+  '--allow-tool',
+  'shell(sed:*)',
+  '--allow-tool',
+  'shell(cat:*)',
+  '--allow-tool',
+  'shell(ls:*)',
+  '--allow-tool',
+  'shell(find:*)',
+] as const;
 const GITHUB_COPILOT_HEALTH_CHECK_PROMPT = 'Respond with exactly OK.';
 const GITHUB_COPILOT_HEALTH_CHECK_EXPECTED_RESPONSE = 'OK';
 
@@ -224,12 +241,17 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
       };
     }
 
+    const executionPolicy = resolveAgentStageExecutionPolicy(request.input);
     const executionResult = await this.runGithubCopilotOperation({
-      prompt: this.renderInvokePrompt(request),
+      prompt: this.shouldUseRepositoryReviewMode(request)
+        ? this.renderRepositoryReviewPrompt(request)
+        : this.renderInvokePrompt(request),
       timeoutMs: request.agentInvocationTimeoutMs ?? this.options.requestTimeoutMs,
       signal: request.signal,
       operation: AgentCliExecOperation.INVOKE,
-      executionPolicy: resolveAgentStageExecutionPolicy(request.input),
+      executionPolicy,
+      commandArgumentsPrefixResolver: (basePrefix, resolvedExecutionPolicy) =>
+        this.resolveInvokeCommandArgumentsPrefix(request, basePrefix, resolvedExecutionPolicy),
     });
     const parsedOutput = this.parseGithubCopilotCliOutput(
       executionResult,
@@ -451,6 +473,10 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
       GithubCopilotExecRunnerRequest,
       'prompt' | 'timeoutMs' | 'signal' | 'operation'
     > & {
+      commandArgumentsPrefixResolver?: (
+        basePrefix: string[],
+        executionPolicy?: ReturnType<typeof resolveAgentStageExecutionPolicy>,
+      ) => string[];
       executionPolicy?: ReturnType<typeof resolveAgentStageExecutionPolicy>;
     },
   ): Promise<GithubCopilotExecRunnerResult> {
@@ -463,10 +489,15 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
             try {
               return await this.execRunner({
                 command: commandSpec.command,
-                commandArgumentsPrefix: this.resolveCommandArgumentsPrefix(
-                  commandSpec.commandArgumentsPrefix,
-                  request.executionPolicy,
-                ),
+                commandArgumentsPrefix:
+                  request.commandArgumentsPrefixResolver?.(
+                    commandSpec.commandArgumentsPrefix,
+                    request.executionPolicy,
+                  ) ??
+                  this.resolveCommandArgumentsPrefix(
+                    commandSpec.commandArgumentsPrefix,
+                    request.executionPolicy,
+                  ),
                 cwd: this.options.currentWorkingDirectory,
                 env: this.resolveEnvironment(),
                 prompt: request.prompt,
@@ -667,6 +698,27 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
     ].join('\n\n');
   }
 
+  private renderRepositoryReviewPrompt(request: AgentInvokeStageRequest): string {
+    const userMessage =
+      typeof request.input.userMessage === 'string' && request.input.userMessage.trim().length > 0
+        ? request.input.userMessage.trim()
+        : 'Review the current repository changes.';
+    const governorInstructions =
+      typeof request.input.governorInstructions === 'string' &&
+      request.input.governorInstructions.trim().length > 0
+        ? request.input.governorInstructions.trim()
+        : null;
+
+    return [
+      'You are executing one Repo AI Governor repository review stage through GitHub Copilot CLI.',
+      `Original user request: ${userMessage}`,
+      'Review the current repository uncommitted changes using read-only shell inspection and produce findings-first concise markdown with concrete file references when possible.',
+      ...(governorInstructions
+        ? [`Additional Governor instructions:\n${governorInstructions}`]
+        : []),
+    ].join('\n\n');
+  }
+
   /**
    * Maps one probe failure into unavailable reason codes consumed by CLI diagnostics.
    * @param error Unknown probe failure.
@@ -776,11 +828,14 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
     request: GithubCopilotExecRunnerRequest,
   ): Promise<GithubCopilotExecRunnerResult> {
     const startedAt = Date.now();
+    const hasExplicitToolPermissions =
+      request.commandArgumentsPrefix.includes('--allow-tool') ||
+      request.commandArgumentsPrefix.includes('--deny-tool');
     const args = [
       ...request.commandArgumentsPrefix,
       '-p',
       request.prompt,
-      '--allow-all-tools',
+      ...(hasExplicitToolPermissions ? [] : ['--allow-all-tools']),
       '--output-format',
       'json',
       '--silent',
@@ -891,5 +946,25 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
         ? GITHUB_COPILOT_CHAT_ONLY_ARGS
         : []),
     ];
+  }
+
+  private resolveInvokeCommandArgumentsPrefix(
+    request: AgentInvokeStageRequest,
+    commandArgumentsPrefix: string[],
+    executionPolicy?: ReturnType<typeof resolveAgentStageExecutionPolicy>,
+  ): string[] {
+    if (this.shouldUseRepositoryReviewMode(request)) {
+      return [...commandArgumentsPrefix, ...GITHUB_COPILOT_REPOSITORY_REVIEW_ARGS];
+    }
+
+    return this.resolveCommandArgumentsPrefix(commandArgumentsPrefix, executionPolicy);
+  }
+
+  private shouldUseRepositoryReviewMode(request: AgentInvokeStageRequest): boolean {
+    return (
+      request.routeKey === 'session.main.role.reviewer' &&
+      request.input.roleId === 'reviewer' &&
+      request.input.reviewScope === GITHUB_COPILOT_REPOSITORY_REVIEW_SCOPE
+    );
   }
 }

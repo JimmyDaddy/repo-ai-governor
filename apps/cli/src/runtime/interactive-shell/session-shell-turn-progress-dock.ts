@@ -14,8 +14,7 @@ interface LiveTurnActivityEntry {
   text: string;
 }
 
-const LIVE_TURN_HEARTBEAT_ENTRY_ID = 'heartbeat:session.main';
-const LIVE_TURN_HEARTBEAT_SUFFIX_FRAMES = ['...', '.', '..'] as const;
+const LIVE_ACTIVITY_MAX_ENTRIES = 8;
 
 /**
  * Owns presenter-local streaming projection for service-backed `session.main` turns.
@@ -29,7 +28,7 @@ export class CliSessionShellTurnProgressDock {
   private liveTurnActive = false;
   private nextActivityOrder = 0;
   private currentAssistantDraft: string | null = null;
-  private heartbeatFrameIndex = 0;
+  private liveTurnStartedAtMs: number | null = null;
   private readonly liveActivityEntries = new Map<string, LiveTurnActivityEntry>();
 
   public constructor(private readonly options: CliSessionShellTurnProgressDockOptions) {}
@@ -42,10 +41,9 @@ export class CliSessionShellTurnProgressDock {
     this.liveTurnActive = true;
     this.activeTurnId = null;
     this.currentAssistantDraft = null;
+    this.liveTurnStartedAtMs = Date.now();
     this.liveActivityEntries.clear();
     this.nextActivityOrder = 0;
-    this.heartbeatFrameIndex = 0;
-    this.upsertActivityEntry(LIVE_TURN_HEARTBEAT_ENTRY_ID, this.renderHeartbeatText());
   }
 
   /**
@@ -111,13 +109,15 @@ export class CliSessionShellTurnProgressDock {
     const activityLines = [...this.liveActivityEntries.values()]
       .sort((left, right) => left.order - right.order)
       .map((entry) => entry.text);
-    if (activityLines.length > 0) {
+    const summaryLine = this.renderHeartbeatText();
+    if (summaryLine || activityLines.length > 0) {
       projectedItems.push({
         id: `${sessionId}:live:activity`,
         role: CliSessionTranscriptRole.SYSTEM,
         label: this.options.translate('cli.sessionShell.responses.liveTurnActivityTitle'),
         lines: activityLines,
         renderKind: 'live_activity',
+        summaryLine,
       });
     }
 
@@ -132,9 +132,9 @@ export class CliSessionShellTurnProgressDock {
     this.activeTurnId = null;
     this.liveTurnActive = false;
     this.currentAssistantDraft = null;
+    this.liveTurnStartedAtMs = null;
     this.liveActivityEntries.clear();
     this.nextActivityOrder = 0;
-    this.heartbeatFrameIndex = 0;
   }
 
   /**
@@ -142,11 +142,7 @@ export class CliSessionShellTurnProgressDock {
    * @returns Nothing.
    */
   public refresh(): void {
-    if (!this.liveTurnActive) {
-      return;
-    }
-
-    this.upsertActivityEntry(LIVE_TURN_HEARTBEAT_ENTRY_ID, this.renderHeartbeatText());
+    return;
   }
 
   private applyStreamDelta(event: OrchestrationSessionEvent): void {
@@ -231,13 +227,15 @@ export class CliSessionShellTurnProgressDock {
     }
 
     const roleId = this.readOptionalString(event.payload.roleId);
-    const entryKey = roleId ? `lifecycle:${roleId}` : 'lifecycle:session.main.detail';
+    const entryKey =
+      this.readOptionalString(event.payload.activityKey) ??
+      (roleId ? `lifecycle:${roleId}` : 'lifecycle:session.main.detail');
     const text = roleId
       ? this.options.translate('cli.sessionShell.responses.liveTurnRoleActivity', {
           role: roleId,
           detail,
         })
-      : this.options.translate('cli.sessionShell.responses.liveTurnThinkingDetail', {
+      : this.options.translate('cli.sessionShell.responses.liveTurnCurrentDetail', {
           detail,
         });
 
@@ -250,14 +248,30 @@ export class CliSessionShellTurnProgressDock {
       order: existingEntry?.order ?? this.nextActivityOrder++,
       text,
     });
+    if (this.liveActivityEntries.size <= LIVE_ACTIVITY_MAX_ENTRIES) {
+      return;
+    }
+
+    const oldestEntry = [...this.liveActivityEntries.entries()].sort(
+      (left, right) => left[1].order - right[1].order,
+    )[0];
+    if (!oldestEntry || oldestEntry[0] === activityId) {
+      return;
+    }
+    this.liveActivityEntries.delete(oldestEntry[0]);
   }
 
-  private renderHeartbeatText(): string {
-    const suffix = LIVE_TURN_HEARTBEAT_SUFFIX_FRAMES[this.heartbeatFrameIndex] ?? '...';
-    this.heartbeatFrameIndex =
-      (this.heartbeatFrameIndex + 1) % LIVE_TURN_HEARTBEAT_SUFFIX_FRAMES.length;
-    return this.options.translate('cli.sessionShell.responses.liveTurnThinkingPulse', {
-      suffix,
+  private renderHeartbeatText(): string | undefined {
+    if (!this.liveTurnActive) {
+      return undefined;
+    }
+
+    const elapsedSeconds =
+      this.liveTurnStartedAtMs === null
+        ? 0
+        : Math.max(0, Math.floor((Date.now() - this.liveTurnStartedAtMs) / 1000));
+    return this.options.translate('cli.sessionShell.responses.liveTurnRunningSummary', {
+      elapsed: `${elapsedSeconds}s`,
     });
   }
 

@@ -285,15 +285,29 @@ function ReactCliLiveActivityTranscriptItem({
   item,
   shellPalette,
 }: ReactCliTranscriptItemRendererProps): React.JSX.Element {
+  const summaryLine = item.summaryLine ?? item.lines[0] ?? null;
+  const detailLines = item.summaryLine ? item.lines : item.lines.slice(1);
+
   return (
-    <Box flexDirection='column' marginTop={1}>
+    <Box
+      flexDirection='column'
+      marginTop={1}
+      borderStyle='round'
+      borderColor={shellPalette.borderColor}
+      paddingX={1}
+    >
       <Text bold color={shellPalette.helpColor}>
         {item.label}
       </Text>
-      {item.lines.map((line, index) => (
+      {summaryLine ? (
+        <Text bold color={shellPalette.titleColor}>
+          {summaryLine}
+        </Text>
+      ) : null}
+      {detailLines.map((line, index) => (
         <Text
           key={`${item.id}:activity:${index}`}
-          color={index === 0 ? shellPalette.subtitleColor : shellPalette.helpColor}
+          color={index === 0 ? shellPalette.sectionTitleColor : shellPalette.helpColor}
         >
           {`- ${line}`}
         </Text>

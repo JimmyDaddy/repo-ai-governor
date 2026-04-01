@@ -159,6 +159,49 @@ describe('claude-code-agent-adapter smoke', () => {
     expect(execRunner).toHaveBeenCalledTimes(2);
   });
 
+  it('uses reviewer-specific read-only tool constraints for repository review stages', async () => {
+    const execRunner = vi
+      .fn<ClaudeCodeExecRunner>()
+      .mockImplementationOnce(createClaudeCodeExecRunner())
+      .mockImplementationOnce(async (request) => {
+        expect(request.commandArgumentsPrefix).toEqual(
+          expect.arrayContaining([
+            '--allowedTools',
+            'Bash(git:*) Bash(rg:*) Bash(sed:*) Bash(cat:*) Bash(ls:*) Bash(find:*) Read Grep Glob LS',
+          ]),
+        );
+        expect(request.prompt).toContain('repository review stage');
+        expect(request.prompt).toContain('帮我 review 一下代码');
+        return createClaudeCodeExecRunner('claude review findings')({
+          ...request,
+          operation: AgentCliExecOperation.INVOKE,
+        });
+      });
+    const adapter = new ClaudeCodeAgentAdapter({
+      executionMode: ClaudeCodeAgentAdapterExecutionMode.CLI_EXEC,
+      execRunner,
+    });
+
+    await adapter.probe({
+      routeKey: 'codegen',
+    });
+    const invokeResult = await adapter.invokeStage({
+      processId: 'process-1',
+      executionId: 'execution-1',
+      stageId: 'stage-session-main-role-reviewer',
+      routeKey: 'session.main.role.reviewer',
+      input: {
+        roleId: 'reviewer',
+        reviewScope: 'uncommitted_changes',
+        userMessage: '帮我 review 一下代码',
+        governorInstructions: 'inspect the repository in a read-only manner',
+      },
+    });
+
+    expect(invokeResult.output.responseText).toContain('claude review findings');
+    expect(execRunner).toHaveBeenCalledTimes(2);
+  });
+
   it('degrades confirmation/cancel semantics in cli_exec mode', async () => {
     const adapter = new ClaudeCodeAgentAdapter({
       executionMode: ClaudeCodeAgentAdapterExecutionMode.CLI_EXEC,

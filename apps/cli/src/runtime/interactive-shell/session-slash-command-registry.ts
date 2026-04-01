@@ -94,13 +94,13 @@ const SESSION_SLASH_COMMAND_DEFINITIONS: SessionSlashCommandDefinition[] = [
     command: '/plan',
     summaryKey: 'cli.commands.plan.description',
     kind: 'bridge',
-    executionMode: 'confirm',
+    executionMode: 'direct',
   },
   {
     command: '/review',
     summaryKey: 'cli.commands.review.description',
     kind: 'bridge',
-    executionMode: 'confirm',
+    executionMode: 'direct',
   },
 ];
 
@@ -170,6 +170,7 @@ export class CliSessionSlashCommandRegistry {
    */
   public resolveAction(query: string): SessionSlashCommandResolution | null {
     const normalizedCommand = this.resolveCommandToken(query);
+    const argumentTokens = this.resolveArgumentTokens(query);
     const match = SESSION_SLASH_COMMAND_DEFINITIONS.find(
       (definition) => definition.command === normalizedCommand,
     );
@@ -184,11 +185,33 @@ export class CliSessionSlashCommandRegistry {
       kind: match.kind,
       ...(match.kind === 'bridge'
         ? {
-            executionMode: match.executionMode ?? 'confirm',
-            bridgeArgv: this.resolveBridgeArgv(match.command, this.resolveArgumentTokens(query)),
+            executionMode: this.resolveExecutionMode(
+              match.command,
+              argumentTokens,
+              match.executionMode ?? 'confirm',
+            ),
+            bridgeArgv: this.resolveBridgeArgv(match.command, argumentTokens),
           }
         : {}),
     };
+  }
+
+  private resolveExecutionMode(
+    command: string,
+    argumentTokens: string[],
+    defaultMode: SessionSlashCommandExecutionMode,
+  ): SessionSlashCommandExecutionMode {
+    if (command === '/review') {
+      const reviewAction = argumentTokens[0]?.toLowerCase() ?? 'start';
+      return reviewAction === 'verify' ? 'confirm' : defaultMode;
+    }
+
+    if (command === '/workflow') {
+      const workflowAction = argumentTokens[0]?.toLowerCase() ?? 'preview';
+      return workflowAction === 'preview' ? 'direct' : 'confirm';
+    }
+
+    return defaultMode;
   }
 
   /**

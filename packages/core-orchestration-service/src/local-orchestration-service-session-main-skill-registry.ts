@@ -22,6 +22,11 @@ const SESSION_MAIN_DOCTOR_PATTERNS = [
 ];
 const SESSION_MAIN_VERIFY_KEYWORDS = ['verify', 'validation', 'validate', '验证', '校验'];
 const SESSION_MAIN_PLAN_KEYWORDS = ['plan', 'planning', 'break down', 'task breakdown', '拆任务'];
+const SESSION_MAIN_PLAN_PATTERNS = [
+  /(?:帮我|请)?(?:拆|做|生成|整理)?(?:一下)?(?:任务|执行)?计划/iu,
+  /(?:帮我|请)?拆一下任务/iu,
+  /(?:帮我|请)?规划(?:一下)?(?:任务|执行)?/iu,
+];
 const SESSION_MAIN_REVIEW_KEYWORDS = ['review', 'cr', 'code review', '审查'];
 const SESSION_MAIN_REVIEW_VERIFY_KEYWORDS = ['review verify', 'verify review', '复核', 'cr verify'];
 const SESSION_MAIN_RUN_KEYWORDS = ['run', 'execute', 'ship', 'implement', '开始做', '实现'];
@@ -158,14 +163,15 @@ export class LocalOrchestrationServiceSessionMainSkillRegistry {
 
     if (
       !options.configuredRoleMentionPresent &&
-      this.includesAnyKeyword(normalizedMessage, SESSION_MAIN_PLAN_KEYWORDS)
+      (this.includesAnyKeyword(normalizedMessage, SESSION_MAIN_PLAN_KEYWORDS) ||
+        this.matchesAnyPattern(normalizedMessage, SESSION_MAIN_PLAN_PATTERNS))
     ) {
       return this.createPlan({
         skillId: 'skill.plan.task',
         executionIntent: 'plan.generate',
         suggestedSlashCommand: '/plan',
-        routerDecisionReason: 'session.main.router.command_handoff_preview.plan',
-        handoffExecutionMode: SESSION_MAIN_HANDOFF_EXECUTION_MODE.PREVIEW_CONFIRM,
+        routerDecisionReason: 'session.main.router.direct_execute.plan',
+        handoffExecutionMode: SESSION_MAIN_HANDOFF_EXECUTION_MODE.DIRECT_EXECUTE,
         commandBatches: [
           this.createCommandBatch(
             '/plan',

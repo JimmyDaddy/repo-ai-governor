@@ -78,6 +78,7 @@ interface SessionMainHandoffResolutionRecord {
 
 const SESSION_MAIN_HANDOFF_RESOLUTION_METADATA_KEY = 'sessionMainHandoffResolution';
 const SESSION_MAIN_TURN_POLL_INTERVAL_MS = 25;
+const SESSION_MAIN_MISSING_SESSION_RECOVERY_MAX_ATTEMPTS = 3;
 
 interface CliSessionShellRuntimeState {
   currentRouteId: string;
@@ -476,7 +477,8 @@ export class CliSessionShellRunner {
     turnProgressDock: CliSessionShellTurnProgressDock,
   ): Promise<void> {
     this.recordHistory(inputLine, runtimeState);
-    for (let attempt = 0; attempt < 2; attempt += 1) {
+    let recoveryAttempts = 0;
+    while (recoveryAttempts <= SESSION_MAIN_MISSING_SESSION_RECOVERY_MAX_ATTEMPTS) {
       try {
         const turnHandled = await this.performPlainTextTurnAttempt(
           inputLine,
@@ -494,8 +496,8 @@ export class CliSessionShellRunner {
         turnProgressDock.clear();
         const standardizedError = standardizeError(error);
         if (
-          attempt === 0 &&
           this.isMissingSessionError(standardizedError) &&
+          recoveryAttempts < SESSION_MAIN_MISSING_SESSION_RECOVERY_MAX_ATTEMPTS &&
           (await this.recoverMissingSessionAttachment(
             viewModel,
             transcriptStore,
@@ -507,6 +509,7 @@ export class CliSessionShellRunner {
             },
           ))
         ) {
+          recoveryAttempts += 1;
           continue;
         }
         await this.appendServiceTranscriptItem(

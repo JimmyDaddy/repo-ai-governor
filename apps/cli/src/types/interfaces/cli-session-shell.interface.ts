@@ -54,6 +54,7 @@ export interface CliSessionShellTranscriptItem {
   label: string;
   lines: string[];
   renderKind: CliSessionShellTranscriptRenderKind;
+  summaryLine?: string;
   markdownSource?: string;
   backlinks?: CliSessionShellTranscriptBacklink[];
 }

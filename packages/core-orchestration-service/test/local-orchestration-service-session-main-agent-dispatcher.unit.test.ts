@@ -1,4 +1,5 @@
 import { AdapterSurface } from '@repo-ai-governor/shared';
+import { SESSION_MAIN_IMPLICIT_ROLE_DELEGATE_METADATA_KEY } from '../src/constants/index.js';
 import { LocalOrchestrationServiceSessionMainAgentDispatcher } from '../src/local-orchestration-service-session-main-agent-dispatcher.js';
 
 describe('LocalOrchestrationServiceSessionMainAgentDispatcher', () => {
@@ -177,6 +178,81 @@ describe('LocalOrchestrationServiceSessionMainAgentDispatcher', () => {
         previewCommandLine: 'repo-ai-governor doctor --adapters --output pretty',
       },
     ]);
+  });
+
+  it('routes natural-language planning requests into direct-execute plan command batches', async () => {
+    const resolveTurn = vi.fn();
+    const dispatcher = new LocalOrchestrationServiceSessionMainAgentDispatcher({
+      resolveTurn,
+      resolveMentionedRoleId: () => null,
+    });
+
+    const result = await dispatcher.dispatch({
+      sessionId: 'session-skill-plan-001',
+      routeId: 'session.main',
+      turnId: 'turn-skill-plan-001',
+      turnIndex: 7,
+      userMessage: '帮我拆一下任务计划',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+    });
+
+    expect(resolveTurn).not.toHaveBeenCalled();
+    expect(result.responseMode).toBe('command_handoff_preview');
+    expect(result.requiresConfirmation).toBe(false);
+    expect(result.skillId).toBe('skill.plan.task');
+    expect(result.handoffExecutionMode).toBe('direct_execute');
+    expect(result.commandBatches).toEqual([
+      {
+        slashQuery: '/plan',
+        bridgeArgv: ['plan', '--output', 'pretty'],
+        previewCommandLine: 'repo-ai-governor plan --output pretty',
+      },
+    ]);
+  });
+
+  it('routes natural-language code-review requests into the supervisor with an implicit reviewer delegate', async () => {
+    const resolveTurn = vi.fn(async () => ({
+      responseMode: 'role_collaboration' as const,
+      interactionMode: 'single_role_delegate' as const,
+      assistantDelta: '## Reviewer perspective',
+      assistantMessage: '## Reviewer perspective\n\n- one actionable finding',
+      executionIntent: 'session.role_delegate.reviewer',
+      requiresConfirmation: false,
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.router.single_role_delegate.implicit_role',
+      sessionRoutingPreferenceApplied: false,
+      invokedRoleIds: ['reviewer'],
+      subagentCount: 1,
+    }));
+    const dispatcher = new LocalOrchestrationServiceSessionMainAgentDispatcher({
+      resolveTurn,
+      resolveMentionedRoleId: () => null,
+    });
+
+    const result = await dispatcher.dispatch({
+      sessionId: 'session-skill-review-001',
+      routeId: 'session.main',
+      turnId: 'turn-skill-review-001',
+      turnIndex: 7,
+      userMessage: '很好,帮我 review 一下代码',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+    });
+
+    expect(resolveTurn).toHaveBeenCalledTimes(1);
+    expect(resolveTurn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userMessage: '很好,帮我 review 一下代码',
+        metadata: {
+          [SESSION_MAIN_IMPLICIT_ROLE_DELEGATE_METADATA_KEY]: 'reviewer',
+        },
+      }),
+    );
+    expect(result.responseMode).toBe('role_collaboration');
+    expect(result.executionIntent).toBe('session.role_delegate.reviewer');
   });
 
   it('projects bundle onboarding intents into preview-confirm command batches', async () => {

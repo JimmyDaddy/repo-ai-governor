@@ -5,6 +5,7 @@ export {
 } from './local-orchestration-service-sidecar.constant.js';
 export {
   SESSION_MAIN_HANDOFF_EXECUTION_MODE,
+  SESSION_MAIN_IMPLICIT_ROLE_DELEGATE_METADATA_KEY,
   SESSION_MAIN_INTERACTION_MODE,
   SESSION_MAIN_RESPONSE_MODE,
 } from './session-main-supervisor.constant.js';

@@ -97,6 +97,17 @@ describe('ReactCliRunner', () => {
           lines: ['hello governor'],
           renderKind: 'plain_text',
         },
+        {
+          id: 'system:3',
+          role: CliSessionTranscriptRole.SYSTEM,
+          label: 'Live activity',
+          lines: [
+            'Current: Inspecting workspace state.',
+            'Tool: repo_status - Reading git status.',
+          ],
+          renderKind: 'live_activity',
+          summaryLine: 'Running · 0s',
+        },
       ],
       transcriptTitle: 'History',
       composerTitle: 'Current input',
@@ -138,6 +149,9 @@ describe('ReactCliRunner', () => {
     expect(output).toContain('Session shell foundation is active.');
     expect(output).toContain('History');
     expect(output).toContain('Current input');
+    expect(output).toContain('Live activity');
+    expect(output).toContain('Running · 0s');
+    expect(output).toContain('Current: Inspecting workspace state.');
     expect(output).toContain('governor>');
     expect(output).toContain('/workspace');
     expect(output).toContain('› ');

@@ -1,5 +1,9 @@
 import { AdapterSurface, GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
-import { SESSION_MAIN_INTERACTION_MODE, SESSION_MAIN_RESPONSE_MODE } from './constants/index.js';
+import {
+  SESSION_MAIN_IMPLICIT_ROLE_DELEGATE_METADATA_KEY,
+  SESSION_MAIN_INTERACTION_MODE,
+  SESSION_MAIN_RESPONSE_MODE,
+} from './constants/index.js';
 import { LocalOrchestrationServiceSessionMainSkillRegistry } from './local-orchestration-service-session-main-skill-registry.js';
 import type {
   SessionMainSupervisorRuntimeContract,
@@ -11,6 +15,8 @@ const SESSION_MAIN_FAILURE_KEYWORDS = ['simulate failure', 'force failure'];
 const SESSION_MAIN_CANCEL_KEYWORDS = ['cancel this turn', 'simulate cancel'];
 const SESSION_MAIN_FALLBACK_ANSWER_DELTA_MAX_LENGTH = 80;
 const SESSION_MAIN_ROLE_MENTION_PATTERN = /@[a-z0-9_.-]+/giu;
+const SESSION_MAIN_ROLE_MENTION_PRESENCE_PATTERN = /@[a-z0-9_.-]+/iu;
+const SESSION_MAIN_IMPLICIT_REVIEW_ROLE_ID = 'reviewer';
 const SESSION_MAIN_GREETING_PATTERN =
   /^(?:(?:hi|hello|hey|greetings)(?:\s+(?:governor|agent|there))?|你好|您好|哈喽|嗨|早上好|下午好|晚上好)[!,.? ]*$/iu;
 const SESSION_MAIN_FOLLOW_UP_PATTERN =
@@ -50,6 +56,9 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
     const normalizedLowerMessage = normalizedMessage.toLowerCase();
     const normalizedLowerMessageWithoutRoleMentions =
       this.stripRoleMentions(normalizedLowerMessage);
+    const hasAnyRoleMention = SESSION_MAIN_ROLE_MENTION_PRESENCE_PATTERN.test(
+      turnContext.userMessage,
+    );
     const resolvedRoleMentionId =
       this.sessionMainSupervisorRuntime?.resolveMentionedRoleId?.(turnContext.userMessage) ?? null;
     const configuredRoleMentionPresent = typeof resolvedRoleMentionId === 'string';
@@ -87,6 +96,24 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
       preferredSurface,
       configuredRoleMentionPresent,
     });
+    if (
+      skillPlan?.executionIntent === 'review.start' &&
+      this.sessionMainSupervisorRuntime &&
+      !hasAnyRoleMention
+    ) {
+      return this.sessionMainSupervisorRuntime.resolveTurn({
+        ...turnContext,
+        selectedSurface: selectionMetadata.selectedSurface,
+        selectedBy: selectionMetadata.sessionRoutingPreferenceApplied
+          ? 'session.main.preference.default'
+          : 'session.main.default',
+        sessionRoutingPreferenceApplied: selectionMetadata.sessionRoutingPreferenceApplied,
+        metadata: {
+          ...(turnContext.metadata ? { ...turnContext.metadata } : {}),
+          [SESSION_MAIN_IMPLICIT_ROLE_DELEGATE_METADATA_KEY]: SESSION_MAIN_IMPLICIT_REVIEW_ROLE_ID,
+        },
+      });
+    }
     if (skillPlan) {
       return this.createCommandSuggestionResult({
         suggestedSlashCommand: skillPlan.suggestedSlashCommand,

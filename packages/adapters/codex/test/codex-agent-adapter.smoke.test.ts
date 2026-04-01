@@ -130,8 +130,6 @@ describe('codex-agent-adapter smoke', () => {
             '-',
             '--sandbox',
             'read-only',
-            '--ask-for-approval',
-            'untrusted',
           ]),
         );
         return createExecRunner('chat-only response')();
@@ -160,6 +158,43 @@ describe('codex-agent-adapter smoke', () => {
     });
 
     expect(invokeResult.output.responseText).toBe('chat-only response');
+    expect(execRunner).toHaveBeenCalledTimes(2);
+  });
+
+  it('uses codex exec review for reviewer stages that target current repository changes', async () => {
+    const execRunner = vi
+      .fn<CodexExecRunner>()
+      .mockImplementationOnce(createExecRunner('OK'))
+      .mockImplementationOnce(async (request) => {
+        expect(request.commandArguments).toEqual(['exec', 'review', '--json', '--uncommitted']);
+        expect(request.timeoutMs).toBe(600000);
+        expect(request.prompt).toContain('repository review stage');
+        expect(request.prompt).toContain('帮我 review 一下代码');
+        return createExecRunner('review findings')();
+      });
+    const adapter = new CodexAgentAdapter({
+      executionMode: CodexAgentAdapterExecutionMode.CLI_EXEC,
+      execRunner,
+      currentWorkingDirectory: process.cwd(),
+    });
+
+    await adapter.probe({
+      routeKey: 'cli.adapter.probe.codex',
+    });
+    const invokeResult = await adapter.invokeStage({
+      processId: 'process-1',
+      executionId: 'execution-1',
+      stageId: 'stage-session-main-role-reviewer',
+      routeKey: 'session.main.role.reviewer',
+      input: {
+        roleId: 'reviewer',
+        reviewScope: 'uncommitted_changes',
+        userMessage: '帮我 review 一下代码',
+        governorInstructions: 'inspect the repository in a read-only manner',
+      },
+    });
+
+    expect(invokeResult.output.responseText).toBe('review findings');
     expect(execRunner).toHaveBeenCalledTimes(2);
   });
 
@@ -305,5 +340,167 @@ describe('codex-agent-adapter smoke', () => {
       AgentStreamEventType.COMPLETED,
     ]);
     expect(invokeResult.output.responseText).toBe('shared response');
+  });
+
+  it('reuses one repository-review cli_exec invocation across streamEvents and invokeStage with the elevated timeout budget', async () => {
+    const execRunner = vi.fn<CodexExecRunner>().mockImplementation(async (request) => {
+      expect(request.commandArguments).toEqual(['exec', 'review', '--json', '--uncommitted']);
+      expect(request.timeoutMs).toBe(600000);
+      return {
+        stdout: [
+          '{"type":"thread.started","thread_id":"thread-1"}',
+          '{"type":"turn.started"}',
+          '{"type":"item.completed","item":{"id":"item-1","type":"agent_message","text":"review findings"}}',
+          '{"type":"turn.completed","usage":{"input_tokens":11,"output_tokens":7}}',
+        ].join('\n'),
+        stderr: '',
+        exitCode: 0,
+        signal: null,
+        elapsedMs: 12,
+      };
+    });
+    const adapter = new CodexAgentAdapter({
+      executionMode: CodexAgentAdapterExecutionMode.CLI_EXEC,
+      execRunner,
+      currentWorkingDirectory: process.cwd(),
+    });
+    const reviewRequest = {
+      processId: 'process-1',
+      executionId: 'execution-review-1',
+      stageId: 'stage-session-main-role-reviewer',
+      routeKey: 'session.main.role.reviewer',
+      input: {
+        roleId: 'reviewer',
+        reviewScope: 'uncommitted_changes',
+        userMessage: '帮我 review 代码',
+        governorInstructions: 'inspect the repository in a read-only manner',
+      },
+    };
+
+    const streamEventTypesPromise = (async () => {
+      const eventTypes: AgentStreamEventType[] = [];
+      for await (const event of adapter.streamEvents(reviewRequest)) {
+        eventTypes.push(event.eventType);
+      }
+      return eventTypes;
+    })();
+    const invokeResultPromise = adapter.invokeStage(reviewRequest);
+
+    const [streamEventTypes, invokeResult] = await Promise.all([
+      streamEventTypesPromise,
+      invokeResultPromise,
+    ]);
+
+    expect(execRunner).toHaveBeenCalledTimes(1);
+    expect(streamEventTypes).toEqual([
+      AgentStreamEventType.STATUS,
+      AgentStreamEventType.STATUS,
+      AgentStreamEventType.STATUS,
+      AgentStreamEventType.TOKEN,
+      AgentStreamEventType.COMPLETED,
+    ]);
+    expect(invokeResult.output.responseText).toBe('review findings');
+  });
+
+  it('emits repository-review progress statuses while codex is still silent', async () => {
+    vi.useFakeTimers();
+    let resolveExecution: ((result: Awaited<ReturnType<CodexExecRunner>>) => void) | null = null;
+    const execRunner = vi.fn<CodexExecRunner>().mockImplementation(
+      async () =>
+        await new Promise((resolve) => {
+          resolveExecution = resolve;
+        }),
+    );
+    const adapter = new CodexAgentAdapter({
+      executionMode: CodexAgentAdapterExecutionMode.CLI_EXEC,
+      execRunner,
+      currentWorkingDirectory: process.cwd(),
+    });
+    const reviewRequest = {
+      processId: 'process-1',
+      executionId: 'execution-review-progress-1',
+      stageId: 'stage-session-main-role-reviewer',
+      routeKey: 'session.main.role.reviewer',
+      input: {
+        roleId: 'reviewer',
+        reviewScope: 'uncommitted_changes',
+        userMessage: '帮我 review 代码',
+        governorInstructions: 'inspect the repository in a read-only manner',
+      },
+    };
+
+    const detailsPromise = (async () => {
+      const details: string[] = [];
+      for await (const event of adapter.streamEvents(reviewRequest)) {
+        if (
+          event.eventType === AgentStreamEventType.STATUS &&
+          typeof event.payload.detail === 'string'
+        ) {
+          details.push(event.payload.detail);
+        }
+      }
+      return details;
+    })();
+
+    await vi.advanceTimersByTimeAsync(31000);
+    resolveExecution?.({
+      stdout: [
+        '{"type":"thread.started","thread_id":"thread-1"}',
+        '{"type":"turn.started"}',
+        '{"type":"item.completed","item":{"id":"item-1","type":"agent_message","text":"review findings"}}',
+        '{"type":"turn.completed","usage":{"input_tokens":11,"output_tokens":7}}',
+      ].join('\n'),
+      stderr: '',
+      exitCode: 0,
+      signal: null,
+      elapsedMs: 31000,
+    });
+
+    const details = await detailsPromise;
+    vi.useRealTimers();
+
+    expect(details).toContain('Codex repository review is running; waiting for CLI output.');
+    expect(details).toContain(
+      'Codex repository review is still running (15s elapsed); waiting for CLI output.',
+    );
+    expect(details).toContain(
+      'Codex repository review is still running (30s elapsed); waiting for CLI output.',
+    );
+  });
+
+  it('forwards codex raw stdout warnings and stderr lines through stream events', async () => {
+    const execRunner = vi.fn<CodexExecRunner>().mockResolvedValue({
+      stdout: [
+        '2026-04-01T00:00:00Z WARN codex_state::runtime: failed to open state db',
+        '{"type":"thread.started","thread_id":"thread-1"}',
+        '{"type":"turn.started"}',
+        '{"type":"item.completed","item":{"id":"item-1","type":"agent_message","text":"shared response"}}',
+        '{"type":"turn.completed","usage":{"input_tokens":11,"output_tokens":7}}',
+      ].join('\n'),
+      stderr: 'stderr progress line\n',
+      exitCode: 0,
+      signal: null,
+      elapsedMs: 12,
+    });
+    const adapter = new CodexAgentAdapter({
+      executionMode: CodexAgentAdapterExecutionMode.CLI_EXEC,
+      execRunner,
+      currentWorkingDirectory: process.cwd(),
+    });
+
+    const details: string[] = [];
+    for await (const event of adapter.streamEvents(createInvokeRequest())) {
+      if (
+        event.eventType === AgentStreamEventType.STATUS &&
+        typeof event.payload.detail === 'string'
+      ) {
+        details.push(event.payload.detail);
+      }
+    }
+
+    expect(details).toContain(
+      'codex stdout: 2026-04-01T00:00:00Z WARN codex_state::runtime: failed to open state db',
+    );
+    expect(details).toContain('codex stderr: stderr progress line');
   });
 });

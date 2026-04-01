@@ -63,3 +63,28 @@
    - 变更文件：`apps/cli/test/runtime/session-main-supervisor-runtime.test.ts`
    - 验证：`pnpm run build`（通过）
    - 说明：已把原先允许 tool-capable direct answer 的断言改成 safe fallback/no-tool 语义，并同步修正 direct-answer stream-event 覆盖用例。
+
+## 复核结论（2026-04-01）
+
+- 整体结论：**认可**
+
+### 逐条复核
+1. `2.1 [P1] session.main direct-answer path again permits tool-capable agent execution`
+   - 判定：**认可**
+   - 证据：当前 working tree 中 `resolveTurn()` 再次把 direct-answer 分支接回了 `allowToolCapableSurfaces: true`，会重新放行 `TOOL_CALLING=SUPPORTED` 的 surface；这与前一轮已收口的 no-tool guard 结论冲突。
+   - 处理：已在同窗口重新收紧 direct-answer 分支，只允许 no-tool safe surface；同时把 happy-path 测试改为 guard regression。
+
+### 验证命令
+1. `/opt/homebrew/bin/node ./node_modules/vitest/vitest.mjs run packages/core-orchestration-service/test/local-orchestration-service-session-main-agent-dispatcher.unit.test.ts packages/core-orchestration-service/test/local-orchestration-service-shell.unit.test.ts apps/cli/test/runtime/session-main-supervisor-runtime.test.ts apps/cli/test/runtime/session-main-parity.integration.test.ts --maxWorkers=1 --maxConcurrency=1`（通过）
+2. `pnpm run build`（通过）
+
+## 修复执行记录（2026-04-01）
+
+1. `2.1`：已完成
+   - 变更文件：`apps/cli/src/runtime/session-main-supervisor-runtime.ts`
+   - 验证：`/opt/homebrew/bin/node ./node_modules/vitest/vitest.mjs run packages/core-orchestration-service/test/local-orchestration-service-session-main-agent-dispatcher.unit.test.ts packages/core-orchestration-service/test/local-orchestration-service-shell.unit.test.ts apps/cli/test/runtime/session-main-supervisor-runtime.test.ts apps/cli/test/runtime/session-main-parity.integration.test.ts --maxWorkers=1 --maxConcurrency=1`（通过）
+   - 说明：direct-answer 再次恢复为 no-tool only；tool-capable surface 不再被视为 direct-answer 的合格候选。
+2. `2.1`：已完成
+   - 变更文件：`apps/cli/test/runtime/session-main-supervisor-runtime.test.ts`
+   - 验证：`pnpm run build`（通过）
+   - 说明：新增回归保护，确保“只有 tool-capable surface 可用”时直接返回 governed guard outcome，而不是继续 dispatch。

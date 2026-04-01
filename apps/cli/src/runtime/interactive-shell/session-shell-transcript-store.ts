@@ -313,6 +313,7 @@ export class CliSessionShellTranscriptStore {
     }
 
     if (event.type === OrchestrationSessionEventType.TURN_FAILED) {
+      const errorDetail = this.readOptionalString(event.payload.errorDetail);
       return {
         id: `${event.sessionId}:${String(event.sequence)}`,
         role: CliSessionTranscriptRole.SYSTEM,
@@ -321,6 +322,7 @@ export class CliSessionShellTranscriptStore {
           translate('cli.sessionShell.responses.turnFailed', {
             reason: this.readOptionalString(event.payload.errorMessage) ?? 'unknown',
           }),
+          ...(errorDetail ? [errorDetail] : []),
           translate('cli.sessionShell.responses.turnRecoverableHint'),
         ],
         renderKind: 'system_notice',
