@@ -279,17 +279,23 @@ describe('Cli session-main supervisor runtime', () => {
       createProtocolBySurface: () => Record<string, AgentProtocolContract>;
     };
     adapterRoutingRuntime.createProtocolBySurface = () => ({
-      [AdapterSurface.CODEX]: createAvailableProtocol(
-        AdapterSurface.CODEX,
+      [AdapterSurface.CODEX]: createUnavailableProtocol(AdapterSurface.CODEX),
+      [AdapterSurface.CLAUDE_CODE]: createAvailableProtocol(
+        AdapterSurface.CLAUDE_CODE,
+        'Fallback answer from Claude Code',
+      ),
+      [AdapterSurface.OLLAMA]: createAvailableProtocol(
+        AdapterSurface.OLLAMA,
         '## Workspace status\n\n- clean',
         {
+          toolCallingSupportLevel: AgentCapabilitySupportLevel.UNSUPPORTED,
           streamEvents: [
             {
               eventType: AgentStreamEventType.STATUS,
               payload: {
                 title: 'Session Main Answer',
                 detail: 'Planning current workspace answer.',
-                surface: 'codex',
+                surface: 'ollama',
               },
             },
             {
@@ -298,21 +304,10 @@ describe('Cli session-main supervisor runtime', () => {
                 title: 'Assistant Draft',
                 text: '## Workspace status',
                 accumulatedText: '## Workspace status\n\n- clean',
-                surface: 'codex',
+                surface: 'ollama',
               },
             },
           ],
-        },
-      ),
-      [AdapterSurface.CLAUDE_CODE]: createAvailableProtocol(
-        AdapterSurface.CLAUDE_CODE,
-        'Fallback answer from Claude Code',
-      ),
-      [AdapterSurface.OLLAMA]: createAvailableProtocol(
-        AdapterSurface.OLLAMA,
-        'Fallback answer from local model',
-        {
-          toolCallingSupportLevel: AgentCapabilitySupportLevel.UNSUPPORTED,
         },
       ),
     });
@@ -331,7 +326,7 @@ describe('Cli session-main supervisor runtime', () => {
       turnId: 'turn-002-stream',
       turnIndex: 2,
       userMessage: 'Summarize the workspace state',
-      selectedSurface: AdapterSurface.CODEX,
+      selectedSurface: AdapterSurface.OLLAMA,
       selectedBy: 'session.main.default',
       sessionRoutingPreferenceApplied: false,
       publishStreamEvent: async (event) => {
@@ -354,26 +349,26 @@ describe('Cli session-main supervisor runtime', () => {
           state: 'running',
           title: 'Session Main Answer',
           detail: 'Planning current workspace answer.',
-          selectedSurface: 'codex',
+          selectedSurface: 'ollama',
         }),
         expect.objectContaining({
           kind: 'token',
           state: 'running',
           title: 'Assistant Draft',
           accumulatedText: '## Workspace status\n\n- clean',
-          selectedSurface: 'codex',
+          selectedSurface: 'ollama',
         }),
         expect.objectContaining({
           kind: 'lifecycle',
           state: 'completed',
           title: 'Session Main Answer',
-          selectedSurface: 'codex',
+          selectedSurface: 'ollama',
         }),
       ]),
     );
   });
 
-  it('allows direct-answer turns to stay on the preferred tool-capable surface', async () => {
+  it('falls back to a no-tool surface when the preferred direct-answer surface is tool-capable', async () => {
     const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
       adaptersConfig,
     ) as CliAdapterRoutingRuntime & {
@@ -413,9 +408,9 @@ describe('Cli session-main supervisor runtime', () => {
       sessionRoutingPreferenceApplied: false,
     });
 
-    expect(outcome.assistantMessage).toBe('unsafe codex answer');
-    expect(outcome.selectedSurface).toBe(AdapterSurface.CODEX);
-    expect(outcome.selectedBy).toBe('session.main.answer.primary');
+    expect(outcome.assistantMessage).toBe('Fallback answer from local model');
+    expect(outcome.selectedSurface).toBe(AdapterSurface.OLLAMA);
+    expect(outcome.selectedBy).toBe('session.main.answer.safe_fallback');
   });
 
   it('returns a guarded fallback answer when no eligible direct-answer surface is available', async () => {

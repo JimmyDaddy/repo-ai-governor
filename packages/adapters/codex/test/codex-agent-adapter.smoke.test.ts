@@ -25,6 +25,18 @@ function createStreamRequest(): AgentStreamEventsRequest {
   };
 }
 
+function createInvokeRequest() {
+  return {
+    processId: 'process-1',
+    executionId: 'execution-1',
+    stageId: 'stage-1',
+    routeKey: 'codegen',
+    input: {
+      prompt: 'implement feature',
+    },
+  };
+}
+
 describe('codex-agent-adapter smoke', () => {
   const createExecRunner = (responseText = 'OK'): CodexExecRunner => {
     return async () => ({
@@ -201,5 +213,48 @@ describe('codex-agent-adapter smoke', () => {
     }
 
     expect(events).toEqual([AgentStreamEventType.STATUS, AgentStreamEventType.COMPLETED]);
+  });
+
+  it('reuses one cli_exec invocation across streamEvents and invokeStage for the same stage', async () => {
+    const execRunner = vi.fn<CodexExecRunner>().mockResolvedValue({
+      stdout: [
+        '{"type":"thread.started","thread_id":"thread-1"}',
+        '{"type":"turn.started"}',
+        '{"type":"item.completed","item":{"id":"item-1","type":"agent_message","text":"shared response"}}',
+        '{"type":"turn.completed","usage":{"input_tokens":11,"output_tokens":7}}',
+      ].join('\n'),
+      stderr: '',
+      exitCode: 0,
+      signal: null,
+      elapsedMs: 12,
+    });
+    const adapter = new CodexAgentAdapter({
+      executionMode: CodexAgentAdapterExecutionMode.CLI_EXEC,
+      execRunner,
+      currentWorkingDirectory: process.cwd(),
+    });
+
+    const streamEventTypesPromise = (async () => {
+      const eventTypes: AgentStreamEventType[] = [];
+      for await (const event of adapter.streamEvents(createStreamRequest())) {
+        eventTypes.push(event.eventType);
+      }
+      return eventTypes;
+    })();
+    const invokeResultPromise = adapter.invokeStage(createInvokeRequest());
+
+    const [streamEventTypes, invokeResult] = await Promise.all([
+      streamEventTypesPromise,
+      invokeResultPromise,
+    ]);
+
+    expect(execRunner).toHaveBeenCalledTimes(1);
+    expect(streamEventTypes).toEqual([
+      AgentStreamEventType.STATUS,
+      AgentStreamEventType.STATUS,
+      AgentStreamEventType.TOKEN,
+      AgentStreamEventType.COMPLETED,
+    ]);
+    expect(invokeResult.output.responseText).toBe('shared response');
   });
 });

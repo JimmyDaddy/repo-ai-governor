@@ -19,7 +19,7 @@
 5. 为 `init / connect / workspace / upgrade / workflow` 等命令 surface 提供统一交互 seam，并为长时命令定义 running-state / elapsed / progress-panel 的共享 presenter 语义。
 6. 为 `repo-ai-governor` 无子命令默认进入的本地 session shell 定义入口 contract 与 resume baseline。
 7. 为命令执行期的 progress sink、AbortSignal cancel seam 与 React shell running panel 定义统一产品边界，但不让命令 executor 直接持有 Ink/React 实例。
-8. 为 session-shell transcript 的 render-kind、command recap / collaboration recap / system notice 分层，以及 assistant Markdown 内容块定义正式 presenter 方向，但不把 live running dock 退化为 append-only transcript 日志。
+8. 为 session-shell transcript 的 render-kind、command recap / collaboration recap / system notice 分层、assistant Markdown 内容块，以及 `session.main` live draft / thinking / tool-use 的 transcript-native 呈现定义正式 presenter 方向，但不把真正的命令 running dock 退化为 append-only transcript 日志。
 9. 为 service-owned `session.main` supervisor 的 answer / follow-up / command handoff / low-risk direct-execute skill / role-collaboration 结果提供统一 transcript 与 recap presenter seam，并在 `preview_confirm` 与 `direct_execute` continuity 之间保持一致的 shell surface，但不在 CLI 侧重新拥有 supervisor runtime 决策逻辑。
 
 ## 3. 非目标
@@ -66,6 +66,7 @@
 9. 截至 `2026-03-31`，`v5` formal direction 已接受“service-owned session.main supervisor + role subagents / handoffs”；CLI shell 继续只消费 service-backed turn outcome，并负责把 direct answer、follow-up、command handoff preview 与 collaboration recap 渲染为统一 transcript/presenter 语义，真实 supervisor runtime productization follow-up 由 `project-035-session-main-supervisor-and-role-subagent-productization` 承接。
 10. 截至 `2026-03-31`，`v5.1` presenter semantics 已补充 `collaboration_recap` render-kind；role-based parallel/serial collaboration 的 recap、worker summary 与 handoff context 必须通过独立 transcript kind 呈现，避免继续挤占通用 `markdown` 或 `command_recap` 语义槽位。
 11. 截至 `2026-04-01`，在既有 `v5` supervisor formal direction 基础上，已进一步接受“conversation-first chatability + risk-tiered natural-language skill handoff”；session shell 现需同时消费 `preview_confirm` 与 `direct_execute` 两类受治理 continuity，并以同一份 shared session truth 呈现 `help`、`doctor`、`verify` 与 scope-resolved `review` 等低风险 skill 的执行/回放语义。
+12. 截至 `2026-04-01`，`session.main` streaming presenter 已接受“transcript-first live conversation”补充方向：对话流的 draft/thinking/tool-use 应优先进入 transcript 主画布，只有真正的命令执行进度继续停留在 progress panel / running dock。
 
 ## 9. Detail Docs
 

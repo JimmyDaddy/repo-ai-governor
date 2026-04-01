@@ -44,6 +44,10 @@ function ReactCliTranscriptItemRenderer({
   switch (item.renderKind) {
     case 'markdown':
       return <ReactCliMarkdownTranscriptItem item={item} shellPalette={shellPalette} />;
+    case 'live_markdown':
+      return <ReactCliLiveMarkdownTranscriptItem item={item} shellPalette={shellPalette} />;
+    case 'live_activity':
+      return <ReactCliLiveActivityTranscriptItem item={item} shellPalette={shellPalette} />;
     case 'system_notice':
       return <ReactCliSystemNoticeTranscriptItem item={item} shellPalette={shellPalette} />;
     case 'command_recap':
@@ -258,6 +262,43 @@ function ReactCliMarkdownTranscriptItem({
       </Text>
       {renderMarkdownBlocks(item.id, blocks, shellPalette)}
     </>
+  );
+}
+
+function ReactCliLiveMarkdownTranscriptItem({
+  item,
+  shellPalette,
+}: ReactCliTranscriptItemRendererProps): React.JSX.Element {
+  const blocks = parseMarkdownBlocks(item.markdownSource ?? item.lines.join('\n'));
+
+  return (
+    <Box flexDirection='column'>
+      <Text bold color={resolveTranscriptColor(item.role, shellPalette)}>
+        {item.label}
+      </Text>
+      {renderMarkdownBlocks(item.id, blocks, shellPalette)}
+    </Box>
+  );
+}
+
+function ReactCliLiveActivityTranscriptItem({
+  item,
+  shellPalette,
+}: ReactCliTranscriptItemRendererProps): React.JSX.Element {
+  return (
+    <Box flexDirection='column' marginTop={1}>
+      <Text bold color={shellPalette.helpColor}>
+        {item.label}
+      </Text>
+      {item.lines.map((line, index) => (
+        <Text
+          key={`${item.id}:activity:${index}`}
+          color={index === 0 ? shellPalette.subtitleColor : shellPalette.helpColor}
+        >
+          {`- ${line}`}
+        </Text>
+      ))}
+    </Box>
   );
 }
 

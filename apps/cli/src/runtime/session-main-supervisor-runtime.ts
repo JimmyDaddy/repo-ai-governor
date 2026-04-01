@@ -180,9 +180,6 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       SESSION_MAIN_ANSWER_ROUTE_KEY,
       protocolBySurface,
       undefined,
-      {
-        allowToolCapableSurfaces: true,
-      },
     );
     if (safeCandidateSurfaces.length === 0) {
       return this.createGuardedFallbackOutcome(context);
@@ -340,9 +337,6 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     routeKey: string,
     protocolBySurface: Record<string, AgentProtocolContract>,
     capabilityRequirement?: AgentCapabilityRequirement,
-    options: {
-      allowToolCapableSurfaces?: boolean;
-    } = {},
   ): Promise<AdapterSurface[]> {
     const safeCandidateSurfaces: AdapterSurface[] = [];
     for (const surface of candidateSurfaces) {
@@ -360,7 +354,7 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       });
       if (
         probeResult.availabilityStatus === AgentAvailabilityStatus.UNAVAILABLE ||
-        !this.isSafeDirectAnswerSurface(probeResult, options)
+        !this.isSafeDirectAnswerSurface(probeResult)
       ) {
         continue;
       }
@@ -941,21 +935,10 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     };
   }
 
-  private isSafeDirectAnswerSurface(
-    probeResult: AgentProbeResult,
-    options: {
-      allowToolCapableSurfaces?: boolean;
-    },
-  ): boolean {
+  private isSafeDirectAnswerSurface(probeResult: AgentProbeResult): boolean {
     const toolCallingState = probeResult.capabilityMatrix.capabilityStates.find(
       (capabilityState) => capabilityState.capability === AgentCapability.TOOL_CALLING,
     );
-    if (options.allowToolCapableSurfaces) {
-      return (
-        toolCallingState?.supportLevel === AgentCapabilitySupportLevel.SUPPORTED ||
-        toolCallingState?.supportLevel === AgentCapabilitySupportLevel.UNSUPPORTED
-      );
-    }
     return toolCallingState?.supportLevel === AgentCapabilitySupportLevel.UNSUPPORTED;
   }
 

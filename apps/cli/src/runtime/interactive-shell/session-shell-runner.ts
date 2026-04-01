@@ -13,6 +13,7 @@ import {
   BaseError,
   GovernorErrorCode,
   RuntimeError,
+  type StandardizedError,
   standardizeError,
 } from '@repo-ai-governor/shared';
 import {
@@ -124,14 +125,7 @@ export class CliSessionShellRunner {
       bootstrapped.resumeSelector,
     );
     const turnProgressDock = new CliSessionShellTurnProgressDock({
-      themePreset: viewModel.themePreset,
       translate: options.translate,
-      onPanelUpdate: (panel) => {
-        viewModel.commandProgressPanel = panel;
-      },
-      onRenderRequested: () => {
-        this.renderActiveSurface(viewModel);
-      },
     });
     await this.syncTranscript(
       viewModel,
@@ -482,77 +476,127 @@ export class CliSessionShellRunner {
     turnProgressDock: CliSessionShellTurnProgressDock,
   ): Promise<void> {
     this.recordHistory(inputLine, runtimeState);
-    try {
-      let turnError: unknown;
-      let turnCompleted = false;
-      const pendingTurn = options.sessionClient
-        .sendMainTurn(viewModel.sessionId, inputLine)
-        .catch((error) => {
-          turnError = error;
-        })
-        .finally(() => {
-          turnCompleted = true;
-        });
-
-      while (!turnCompleted) {
-        await Promise.race([
-          pendingTurn,
-          new Promise<void>((resolve) => {
-            setTimeout(resolve, SESSION_MAIN_TURN_POLL_INTERVAL_MS);
-          }),
-        ]);
-        if (!turnCompleted) {
-          await this.syncTranscript(
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      try {
+        const turnHandled = await this.performPlainTextTurnAttempt(
+          inputLine,
+          viewModel,
+          transcriptStore,
+          options,
+          runtimeState,
+          turnProgressDock,
+        );
+        if (turnHandled) {
+          return;
+        }
+        break;
+      } catch (error) {
+        turnProgressDock.clear();
+        const standardizedError = standardizeError(error);
+        if (
+          attempt === 0 &&
+          this.isMissingSessionError(standardizedError) &&
+          (await this.recoverMissingSessionAttachment(
             viewModel,
             transcriptStore,
             options,
             runtimeState,
             turnProgressDock,
-          );
-          turnProgressDock.refresh();
+            {
+              retryCurrentTurn: true,
+            },
+          ))
+        ) {
+          continue;
         }
+        await this.appendServiceTranscriptItem(
+          viewModel,
+          transcriptStore,
+          options,
+          runtimeState,
+          OrchestrationSessionTranscriptRole.SYSTEM,
+          [
+            options.translate('cli.sessionShell.responses.turnFailed', {
+              reason: standardizedError.message,
+            }),
+            options.translate('cli.sessionShell.responses.turnRecoverableHint'),
+          ],
+        );
+        break;
       }
-      await pendingTurn;
-      if (turnError) {
-        throw turnError;
-      }
-      const subscription = await this.syncTranscript(
-        viewModel,
-        transcriptStore,
-        options,
-        runtimeState,
-        turnProgressDock,
-      );
-      const pendingCommand = runtimeState.pendingCommand;
-      if (
-        pendingCommand &&
-        subscription.events.some((event) => event.sequence === pendingCommand.sourceEventSequence)
-      ) {
-        if (pendingCommand.executionMode === 'direct_execute') {
-          await this.executePendingCommand(viewModel, transcriptStore, options, runtimeState);
-          return;
-        }
-        this.restorePendingCommandPreviewState(viewModel, options, runtimeState);
-        return;
-      }
-    } catch (error) {
-      const standardizedError = standardizeError(error);
-      await this.appendServiceTranscriptItem(
-        viewModel,
-        transcriptStore,
-        options,
-        runtimeState,
-        OrchestrationSessionTranscriptRole.SYSTEM,
-        [
-          options.translate('cli.sessionShell.responses.turnFailed', {
-            reason: standardizedError.message,
-          }),
-          options.translate('cli.sessionShell.responses.turnRecoverableHint'),
-        ],
-      );
     }
 
     this.resetPromptState(viewModel, options, runtimeState);
+    this.renderActiveSurface(viewModel);
+  }
+
+  private async performPlainTextTurnAttempt(
+    inputLine: string,
+    viewModel: CliSessionShellViewModel,
+    transcriptStore: CliSessionShellTranscriptStore,
+    options: CliSessionShellRunOptions,
+    runtimeState: CliSessionShellRuntimeState,
+    turnProgressDock: CliSessionShellTurnProgressDock,
+  ): Promise<boolean> {
+    let turnError: unknown;
+    let turnCompleted = false;
+    const pendingTurn = options.sessionClient
+      .sendMainTurn(viewModel.sessionId, inputLine)
+      .catch((error) => {
+        turnError = error;
+      })
+      .finally(() => {
+        turnCompleted = true;
+      });
+    turnProgressDock.seedRunningState();
+    this.refreshRenderedTranscript(viewModel, transcriptStore, turnProgressDock);
+    this.renderActiveSurface(viewModel);
+
+    while (!turnCompleted) {
+      await Promise.race([
+        pendingTurn,
+        new Promise<void>((resolve) => {
+          setTimeout(resolve, SESSION_MAIN_TURN_POLL_INTERVAL_MS);
+        }),
+      ]);
+      if (!turnCompleted) {
+        turnProgressDock.refresh();
+        await this.syncTranscript(
+          viewModel,
+          transcriptStore,
+          options,
+          runtimeState,
+          turnProgressDock,
+        );
+        this.renderActiveSurface(viewModel);
+      }
+    }
+    await pendingTurn;
+    if (turnError) {
+      throw turnError;
+    }
+    const subscription = await this.syncTranscript(
+      viewModel,
+      transcriptStore,
+      options,
+      runtimeState,
+      turnProgressDock,
+    );
+    const pendingCommand = runtimeState.pendingCommand;
+    if (
+      pendingCommand &&
+      subscription.events.some((event) => event.sequence === pendingCommand.sourceEventSequence)
+    ) {
+      if (pendingCommand.executionMode === 'direct_execute') {
+        await this.executePendingCommand(viewModel, transcriptStore, options, runtimeState);
+        return true;
+      }
+      this.restorePendingCommandPreviewState(viewModel, options, runtimeState);
+      this.renderActiveSurface(viewModel);
+      return true;
+    }
+
+    return false;
   }
 
   private async handleShellPassthrough(
@@ -1364,12 +1408,17 @@ export class CliSessionShellRunner {
             sessionId: viewModel.sessionId,
           },
     );
-    viewModel.transcriptItems = transcriptStore.applyEvents(
+    const baseTranscriptItems = transcriptStore.applyEvents(
       viewModel.sessionId,
       subscription.events,
       options.translate,
     );
     turnProgressDock?.applySessionEvents(subscription.events);
+    viewModel.transcriptItems = this.projectTranscriptItems(
+      viewModel.sessionId,
+      baseTranscriptItems,
+      turnProgressDock,
+    );
     this.reconcilePendingCommandFromEvents(subscription.events, runtimeState);
     runtimeState.currentRouteId =
       subscription.session.currentRouteId ?? OrchestrationSessionRouteId.MAIN;
@@ -1592,6 +1641,28 @@ export class CliSessionShellRunner {
     });
   }
 
+  private refreshRenderedTranscript(
+    viewModel: CliSessionShellViewModel,
+    transcriptStore: CliSessionShellTranscriptStore,
+    turnProgressDock?: CliSessionShellTurnProgressDock,
+  ): void {
+    viewModel.transcriptItems = this.projectTranscriptItems(
+      viewModel.sessionId,
+      transcriptStore.listItems(),
+      turnProgressDock,
+    );
+  }
+
+  private projectTranscriptItems(
+    sessionId: string,
+    baseTranscriptItems: CliSessionShellTranscriptItem[],
+    turnProgressDock?: CliSessionShellTurnProgressDock,
+  ): CliSessionShellTranscriptItem[] {
+    return turnProgressDock
+      ? turnProgressDock.projectTranscriptItems(sessionId, baseTranscriptItems)
+      : [...baseTranscriptItems];
+  }
+
   private async appendServiceTranscriptItem(
     viewModel: CliSessionShellViewModel,
     transcriptStore: CliSessionShellTranscriptStore,
@@ -1601,8 +1672,90 @@ export class CliSessionShellRunner {
     lines: string[],
     metadata?: Record<string, unknown>,
   ): Promise<void> {
-    await options.sessionClient.appendMessage(viewModel.sessionId, role, lines, metadata);
-    await this.syncTranscript(viewModel, transcriptStore, options, runtimeState);
+    try {
+      await options.sessionClient.appendMessage(viewModel.sessionId, role, lines, metadata);
+      await this.syncTranscript(viewModel, transcriptStore, options, runtimeState);
+    } catch (error) {
+      const standardizedError = standardizeError(error);
+      if (
+        this.isMissingSessionError(standardizedError) &&
+        (await this.recoverMissingSessionAttachment(
+          viewModel,
+          transcriptStore,
+          options,
+          runtimeState,
+          undefined,
+          {
+            retryCurrentTurn: false,
+          },
+        ))
+      ) {
+        await options.sessionClient.appendMessage(viewModel.sessionId, role, lines, metadata);
+        await this.syncTranscript(viewModel, transcriptStore, options, runtimeState);
+        return;
+      }
+      throw error;
+    }
+  }
+
+  private async recoverMissingSessionAttachment(
+    viewModel: CliSessionShellViewModel,
+    transcriptStore: CliSessionShellTranscriptStore,
+    options: CliSessionShellRunOptions,
+    runtimeState: CliSessionShellRuntimeState,
+    turnProgressDock?: CliSessionShellTurnProgressDock,
+    recoveryOptions: {
+      retryCurrentTurn: boolean;
+    } = {
+      retryCurrentTurn: false,
+    },
+  ): Promise<boolean> {
+    try {
+      const startedSession = await options.sessionClient.startSession();
+      viewModel.sessionId = startedSession.session.sessionId;
+      viewModel.resumeSelector = options.translate('cli.sessionShell.resumeSelector.latest');
+      runtimeState.currentRouteId =
+        startedSession.session.currentRouteId ?? OrchestrationSessionRouteId.MAIN;
+      runtimeState.pendingCommand = null;
+      transcriptStore.reset(viewModel.sessionId);
+      turnProgressDock?.clear();
+      viewModel.transcriptItems = [];
+      this.resetPromptState(viewModel, options, runtimeState);
+      const recoveryLines = [
+        options.translate('cli.sessionShell.responses.resumeRecoveredWithNewSession'),
+        recoveryOptions.retryCurrentTurn
+          ? options.translate('cli.sessionShell.responses.turnRetryingAfterSessionRecovery')
+          : options.translate('cli.sessionShell.responses.sessionRecoveredContinueHint'),
+      ];
+      try {
+        await options.sessionClient.appendMessage(
+          viewModel.sessionId,
+          OrchestrationSessionTranscriptRole.SYSTEM,
+          recoveryLines,
+          {
+            renderKind: 'system_notice',
+          },
+        );
+        await this.syncTranscript(
+          viewModel,
+          transcriptStore,
+          options,
+          runtimeState,
+          turnProgressDock,
+        );
+      } catch {
+        this.appendLocalTranscriptItem(viewModel, {
+          role: CliSessionTranscriptRole.SYSTEM,
+          label: options.translate('cli.sessionShell.transcript.systemLabel'),
+          lines: recoveryLines,
+          renderKind: 'system_notice',
+        });
+      }
+      this.renderActiveSurface(viewModel);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   private recordHistory(value: string, runtimeState: CliSessionShellRuntimeState): void {
@@ -1807,6 +1960,10 @@ export class CliSessionShellRunner {
     }
 
     this.renderer.render(viewModel);
+  }
+
+  private isMissingSessionError(error: StandardizedError): boolean {
+    return error.code === GovernorErrorCode.MEMORY_SESSION_NOT_FOUND;
   }
 
   private buildSearchLines(

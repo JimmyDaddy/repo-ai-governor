@@ -452,6 +452,22 @@ class StreamingTurnSessionShellServiceClient extends FakeSessionShellServiceClie
         role: OrchestrationSessionTranscriptRole.ASSISTANT,
         routeId: OrchestrationSessionRouteId.MAIN,
         turnId,
+        delta: 'Inspecting workspace status.',
+        streamKind: 'tool_call',
+        streamState: 'running',
+        title: 'Workspace inspection',
+        detail: 'Inspecting workspace status.',
+        toolName: 'repo_status',
+        toolCallId: 'tool-call-1',
+        selectedSurface: 'codex',
+      },
+    });
+    this.appendEvent(sessionId, {
+      type: OrchestrationSessionEventType.TURN_STREAM_DELTA,
+      payload: {
+        role: OrchestrationSessionTranscriptRole.ASSISTANT,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        turnId,
         delta: '## Workspace status',
         streamKind: 'token',
         streamState: 'running',
@@ -461,6 +477,12 @@ class StreamingTurnSessionShellServiceClient extends FakeSessionShellServiceClie
         selectedSurface: 'codex',
       },
     });
+    session.summary = this.rebuildSummary(sessionId);
+
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 40);
+    });
+
     this.appendEvent(sessionId, {
       type: OrchestrationSessionEventType.TURN_COMPLETED,
       payload: {
@@ -481,6 +503,67 @@ class StreamingTurnSessionShellServiceClient extends FakeSessionShellServiceClie
       },
     });
     session.summary = this.rebuildSummary(sessionId);
+  }
+}
+
+class DelayedTurnWithoutStreamSessionShellServiceClient extends FakeSessionShellServiceClient {
+  public override async sendMainTurn(sessionId: string, userMessage: string): Promise<void> {
+    const session = this.requireSession(sessionId);
+    const turnIndex =
+      session.events.filter((event) => event.type === OrchestrationSessionEventType.TURN_COMPLETED)
+        .length + 1;
+    const turnId = `turn-delayed-${String(turnIndex)}`;
+
+    this.appendEvent(sessionId, {
+      type: OrchestrationSessionEventType.TURN_SUBMITTED,
+      payload: {
+        role: OrchestrationSessionTranscriptRole.USER,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        content: userMessage,
+      },
+    });
+    session.summary = this.rebuildSummary(sessionId);
+
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 40);
+    });
+
+    this.appendEvent(sessionId, {
+      type: OrchestrationSessionEventType.TURN_COMPLETED,
+      payload: {
+        role: OrchestrationSessionTranscriptRole.ASSISTANT,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        turnId,
+        turnIndex,
+        responseMode: 'answer',
+        interactionMode: 'direct_answer',
+        assistantMessage: 'Hello back from delayed turn.',
+        executionIntent: 'session.answer',
+        requiresConfirmation: false,
+        selectedSurface: 'codex',
+        selectedBy: 'session.main.answer.primary',
+        invokedRoleIds: [],
+        subagentCount: 0,
+      },
+    });
+    session.summary = this.rebuildSummary(sessionId);
+  }
+}
+
+class MissingSessionOnFirstTurnSessionShellServiceClient extends FakeSessionShellServiceClient {
+  private failedOnce = false;
+
+  public override async sendMainTurn(sessionId: string, userMessage: string): Promise<void> {
+    if (!this.failedOnce) {
+      this.failedOnce = true;
+      this.sessions.delete(sessionId);
+      throw new RuntimeError(
+        GovernorErrorCode.MEMORY_SESSION_NOT_FOUND,
+        `Session "${sessionId}" was not found in memory store.`,
+      );
+    }
+
+    return super.sendMainTurn(sessionId, userMessage);
   }
 }
 
@@ -535,6 +618,12 @@ const DEFAULT_TRANSLATIONS: Record<string, string> = {
   'cli.commands.review.description': 'Generate code review baseline output.',
   'cli.sessionShell.responses.welcome': 'Session shell is active.',
   'cli.sessionShell.responses.stderrOnly': 'Live UI renders only to stderr.',
+  'cli.sessionShell.responses.liveTurnThinking': 'Thinking...',
+  'cli.sessionShell.responses.liveTurnThinkingPulse': 'Thinking{{suffix}}',
+  'cli.sessionShell.responses.liveTurnThinkingDetail': 'Thinking: {{detail}}',
+  'cli.sessionShell.responses.liveTurnRoleActivity': '{{role}}: {{detail}}',
+  'cli.sessionShell.responses.liveTurnToolCall': 'Tool: {{toolName}} - {{detail}}',
+  'cli.sessionShell.responses.liveTurnActivityTitle': 'Live activity',
   'cli.sessionShell.responses.mainTurnAccepted':
     'route={{routeId}} turn={{turnIndex}} accepted by the shared session runtime.',
   'cli.sessionShell.responses.mainTurnEcho': 'echo={{userMessage}}',
@@ -595,6 +684,10 @@ const DEFAULT_TRANSLATIONS: Record<string, string> = {
   'cli.sessionShell.responses.resumeRecoverableHint': 'Resume is recoverable.',
   'cli.sessionShell.responses.resumeRecoveredWithNewSession':
     'A new session was created so the shell can stay attached.',
+  'cli.sessionShell.responses.turnRetryingAfterSessionRecovery':
+    'The shell is retrying your latest message in a new attached session.',
+  'cli.sessionShell.responses.sessionRecoveredContinueHint':
+    'The shell reattached to a new session so foreground actions can continue.',
   'cli.sessionShell.responses.multilineCancelled': 'Multi-line capture finished without a message.',
   'cli.sessionShell.responses.passthroughRequiresCommand': 'Pass a shell command after !.',
   'cli.sessionShell.responses.passthroughCompleted':
@@ -849,6 +942,54 @@ describe('CliSessionShellRunner', () => {
       ),
     ).toBe(true);
     expect(renderer.frames.at(-1)?.promptBarLines).toEqual(['? shortcuts · /status · Ctrl+D']);
+  });
+
+  it('starts a fresh session and retries the turn when the attached session disappears', async () => {
+    const renderer = new RecordingSessionShellRenderer();
+    const runner = new CliSessionShellRunner(
+      undefined,
+      renderer as never,
+      () => new StubSessionShellPromptAdapter(['hello governor', '/exit']),
+      undefined,
+      undefined,
+      () => false,
+      () => new Date('2026-03-30T12:00:00Z'),
+    );
+
+    const result = await runner.run(
+      DEFAULT_RUN_OPTIONS({
+        sessionClient: new MissingSessionOnFirstTurnSessionShellServiceClient(),
+      }),
+    );
+
+    expect(result.exitReason).toBe(CliSessionShellExitReason.SLASH_EXIT);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes('A new session was created so the shell can stay attached.'),
+      ),
+    ).toBe(true);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes('The shell is retrying your latest message in a new attached session.'),
+      ),
+    ).toBe(true);
+    expect(result.transcriptItems.some((item) => item.lines.includes('echo=hello governor'))).toBe(
+      true,
+    );
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.some((line) => line.includes('was not found in memory store')),
+      ),
+    ).toBe(false);
+    expect(
+      renderer.frames.some((frame) =>
+        frame.transcriptItems.some((item) =>
+          item.lines.includes(
+            'The shell is retrying your latest message in a new attached session.',
+          ),
+        ),
+      ),
+    ).toBe(true);
   });
 
   it('executes safe bridge commands like /doctor without requiring /confirm', async () => {
@@ -1198,7 +1339,7 @@ describe('CliSessionShellRunner', () => {
     expect(result.transcriptItems.at(-1)?.lines[0]).toBe('Closed after /exit.');
   });
 
-  it('renders session.main stream deltas inside the shared running-progress dock before the turn completes', async () => {
+  it('renders session.main stream deltas inside the transcript surface before the turn completes', async () => {
     const inkRunner = new StubSessionShellInkRunner([
       {
         type: CliSessionShellInputActionType.COMPOSER_CHANGED,
@@ -1235,34 +1376,110 @@ describe('CliSessionShellRunner', () => {
     expect(
       inkRunner.snapshots.some(
         (frame) =>
-          frame.commandProgressPanel?.title === 'Running progress' &&
-          frame.commandProgressPanel.runState === 'running' &&
-          frame.commandProgressPanel.statusLine ===
-            'Planning current workspace answer. [surface=codex]' &&
-          frame.commandProgressPanel.rows.some(
-            (row) =>
-              row.id === 'lifecycle:session.main' &&
-              row.status === ExecutionProgressStatus.RUNNING &&
-              row.detail === 'Planning current workspace answer.',
+          frame.commandProgressPanel === undefined &&
+          frame.transcriptItems.some(
+            (item) =>
+              item.renderKind === 'live_activity' &&
+              item.label === 'Live activity' &&
+              item.lines.includes('Thinking: Planning current workspace answer.'),
           ),
       ),
     ).toBe(true);
     expect(
       inkRunner.snapshots.some((frame) =>
-        frame.commandProgressPanel?.rows.some(
-          (row) =>
-            row.id === 'draft:assistant' &&
-            row.status === ExecutionProgressStatus.RUNNING &&
-            row.detail === '## Workspace status\n\n- clean',
+        frame.transcriptItems.some(
+          (item) =>
+            item.renderKind === 'live_activity' &&
+            item.lines.includes('Tool: repo_status - Inspecting workspace status.'),
         ),
       ),
     ).toBe(true);
-    expect(inkRunner.snapshots.some((frame) => frame.commandProgressPanel === undefined)).toBe(
-      true,
+    expect(
+      inkRunner.snapshots.some((frame) =>
+        frame.transcriptItems.some(
+          (item) =>
+            item.renderKind === 'live_markdown' &&
+            item.markdownSource === '## Workspace status\n\n- clean',
+        ),
+      ),
+    ).toBe(true);
+    const streamingHeartbeatFrames = new Set(
+      inkRunner.snapshots.flatMap((frame) =>
+        frame.transcriptItems
+          .filter((item) => item.renderKind === 'live_activity' && item.label === 'Live activity')
+          .flatMap((item) => item.lines.filter((line) => line.startsWith('Thinking'))),
+      ),
     );
+    expect(streamingHeartbeatFrames.size).toBeGreaterThan(1);
     expect(
       result.transcriptItems.some(
         (item) => item.markdownSource === '## Workspace status\n\n- clean',
+      ),
+    ).toBe(true);
+  });
+
+  it('shows immediate running feedback for delayed session.main turns before assistant output arrives', async () => {
+    const inkRunner = new StubSessionShellInkRunner([
+      {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: 'hello',
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_SUBMITTED,
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: '/exit',
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_SUBMITTED,
+      },
+    ]);
+    const runner = new CliSessionShellRunner(
+      undefined,
+      new RecordingSessionShellRenderer() as never,
+      () => new StubSessionShellPromptAdapter([]),
+      () => new CliSessionShellInkController(),
+      () => inkRunner as never,
+      () => true,
+      () => new Date('2026-03-30T12:00:00Z'),
+    );
+
+    const result = await runner.run(
+      DEFAULT_RUN_OPTIONS({
+        sessionClient: new DelayedTurnWithoutStreamSessionShellServiceClient(),
+      }),
+    );
+
+    expect(result.exitReason).toBe(CliSessionShellExitReason.SLASH_EXIT);
+    expect(
+      inkRunner.snapshots.some(
+        (frame) =>
+          frame.commandProgressPanel === undefined &&
+          frame.transcriptItems.some(
+            (item) =>
+              item.renderKind === 'live_activity' &&
+              item.label === 'Live activity' &&
+              item.lines.includes('Thinking...'),
+          ),
+      ),
+    ).toBe(true);
+    expect(
+      inkRunner.snapshots.some((frame) =>
+        frame.transcriptItems.some((item) => item.label === 'You' && item.lines.includes('hello')),
+      ),
+    ).toBe(true);
+    const delayedHeartbeatFrames = new Set(
+      inkRunner.snapshots.flatMap((frame) =>
+        frame.transcriptItems
+          .filter((item) => item.renderKind === 'live_activity' && item.label === 'Live activity')
+          .flatMap((item) => item.lines.filter((line) => line.startsWith('Thinking'))),
+      ),
+    );
+    expect(delayedHeartbeatFrames.size).toBeGreaterThan(1);
+    expect(
+      result.transcriptItems.some(
+        (item) => item.markdownSource === 'Hello back from delayed turn.',
       ),
     ).toBe(true);
   });

@@ -334,6 +334,14 @@ export const EN_US_TRANSLATIONS = {
         turnFailed: 'The main session turn failed. reason={{reason}}',
         turnCancelled: 'The main session turn was cancelled before completion.',
         turnRecoverableHint: 'You can keep chatting, retry the turn, or switch to /resume.',
+        turnRetryingAfterSessionRecovery:
+          'The shell is retrying your latest message in a new attached session.',
+        liveTurnThinking: 'Thinking...',
+        liveTurnThinkingPulse: 'Thinking{{suffix}}',
+        liveTurnThinkingDetail: 'Thinking: {{detail}}',
+        liveTurnRoleActivity: '{{role}}: {{detail}}',
+        liveTurnToolCall: 'Tool: {{toolName}} - {{detail}}',
+        liveTurnActivityTitle: 'Live activity',
         mainTurnAccepted:
           'route={{routeId}} turn={{turnIndex}} accepted by the shared session runtime.',
         mainTurnEcho: 'echo={{userMessage}}',
@@ -357,6 +365,8 @@ export const EN_US_TRANSLATIONS = {
           'No recent resumable session index was available; keep chatting to create a new session.',
         resumeRecoveredWithNewSession:
           'A new session was created so the foreground shell can stay attached.',
+        sessionRecoveredContinueHint:
+          'The shell reattached to a new session so foreground actions can continue.',
         localTranscriptCleared:
           'The local transcript viewport was cleared. Persisted session history is still resumable.',
         historyEmpty: 'No shell inputs have been recorded in this foreground attachment yet.',

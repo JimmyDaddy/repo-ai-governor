@@ -30,6 +30,8 @@ import type { CliGovernanceCommandExecutionOptions } from './cli-command-progres
 export type CliSessionShellTranscriptRenderKind =
   | 'plain_text'
   | 'markdown'
+  | 'live_markdown'
+  | 'live_activity'
   | 'system_notice'
   | 'command_recap'
   | 'collaboration_recap';

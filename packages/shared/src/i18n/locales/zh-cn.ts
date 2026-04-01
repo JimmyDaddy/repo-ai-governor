@@ -296,6 +296,13 @@ export const ZH_CN_TRANSLATIONS = {
         turnFailed: '主会话 turn 执行失败。原因：{{reason}}',
         turnCancelled: '主会话 turn 在完成前已被取消。',
         turnRecoverableHint: '你可以继续对话、重试这一轮，或切到 /resume。',
+        turnRetryingAfterSessionRecovery: 'session 已自动重建，当前这条消息会在新 session 中重试。',
+        liveTurnThinking: '思考中...',
+        liveTurnThinkingPulse: '思考中{{suffix}}',
+        liveTurnThinkingDetail: '思考中：{{detail}}',
+        liveTurnRoleActivity: '{{role}}：{{detail}}',
+        liveTurnToolCall: '工具：{{toolName}} - {{detail}}',
+        liveTurnActivityTitle: '实时活动',
         mainTurnAccepted: 'route={{routeId}} turn={{turnIndex}} 已被共享 session runtime 接收。',
         mainTurnEcho: 'echo={{userMessage}}',
         mainTurnSuggestedSlash: '建议下一步：{{command}}',
@@ -317,6 +324,7 @@ export const ZH_CN_TRANSLATIONS = {
         resumeRecoverableHint:
           '当前没有可用的最近 session 索引；你可以继续对话并立即创建新 session。',
         resumeRecoveredWithNewSession: '已自动创建一个新 session，确保前台 shell 能继续附着。',
+        sessionRecoveredContinueHint: '前台 shell 已重新附着到一个新 session，可继续后续操作。',
         localTranscriptCleared:
           '本地 transcript 视口已清空；但已持久化的 session 历史仍然可以恢复。',
         historyEmpty: '当前前台附着中还没有记录任何输入历史。',

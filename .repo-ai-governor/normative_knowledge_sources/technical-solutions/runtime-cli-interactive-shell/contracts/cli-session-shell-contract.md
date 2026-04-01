@@ -77,6 +77,8 @@
 8. `transcript_render_kind`
    - `plain_text`
    - `markdown`
+   - `live_markdown`
+   - `live_activity`
    - `system_notice`
    - `command_recap`
    - `collaboration_recap`
@@ -119,8 +121,8 @@
 9. 会话外允许提供 `repo-ai-governor resume [session-id]` 入口；不建议提供顶层 `repo-ai-governor exit`。
 10. `cli_handoff` 类型的高副作用命令必须先展示规范化命令预览并得到显式确认，再进入执行。
 11. CLI 与 future desktop 必须共享同一套 session DTO 语义；差异只能存在于 presenter 层，不得复制第二套 session state owner。
-12. `transcript_items` 必须允许 presenter 区分至少 `plain_text / markdown / system_notice / command_recap / collaboration_recap` 五类 render-kind；不得再假设所有消息都只能退化成单一 `label + lines[]` 视觉模型。
-13. 正在运行中的 progress、heartbeat、elapsed 与 cancel affordance 必须停留在 session-shell running dock 或等价动态区域，不得通过无限追加 transcript 项目来伪装 live 状态。
+12. `transcript_items` 必须允许 presenter 区分至少 `plain_text / markdown / live_markdown / live_activity / system_notice / command_recap / collaboration_recap` 七类 render-kind；不得再假设所有消息都只能退化成单一 `label + lines[]` 视觉模型。
+13. `session.main` 对话流的 live draft、thinking 与 tool-use 可以通过 `live_markdown / live_activity` 进入 transcript 主画布；但真正的命令执行 progress、heartbeat、elapsed 与 cancel affordance 仍必须停留在 session-shell running dock 或等价动态区域，不能把长时命令运行态退化成无限追加 transcript。
 14. assistant 完成态消息、帮助文本和 command recap 允许进入 Markdown content-block presenter path，但 `json/plain` 与 non-interactive contract 不得因该 presenter 能力发生 schema 变化。
 15. `artifact_backlinks` 只能表示用户可回看的路径摘要；不得把机器输出 payload 自身嵌入 transcript 富文本中。
 16. 当 `turn_response_mode=answer` 时，service-owned turn payload 必须带真实 `assistantMessage`；session shell 不得再把 metadata-only recap 伪装成回答完成态。

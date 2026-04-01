@@ -2,45 +2,54 @@ import {
   type OrchestrationSessionEvent,
   OrchestrationSessionEventType,
 } from '@repo-ai-governor/orchestration-service-client';
-import { ExecutionProgressStatus } from '@repo-ai-governor/shared';
-import type { CliReactThemePreset } from '../../constants/cli-react-theme.constant.js';
-import { ReactCliCommandProgressController } from '../../react-cli/index.js';
-import type { CliCommandProgressPanelViewModel } from '../../types/index.js';
+import { CliSessionTranscriptRole } from '../../constants/cli-session-shell.constant.js';
+import type { CliSessionShellTranscriptItem } from '../../types/index.js';
 
 interface CliSessionShellTurnProgressDockOptions {
-  themePreset?: CliReactThemePreset;
   translate: (key: string, interpolation?: Record<string, string>) => string;
-  onPanelUpdate: (panel: CliCommandProgressPanelViewModel | undefined) => void;
-  onRenderRequested: () => void;
 }
 
-const SESSION_MAIN_STREAM_COMMAND_NAME = 'session.main';
-const SESSION_MAIN_STREAM_TITLE = '[session-shell:session.main] session.main turn';
-const SESSION_MAIN_STREAM_SUBTITLE = 'service-owned streaming turn progress';
+interface LiveTurnActivityEntry {
+  order: number;
+  text: string;
+}
+
+const LIVE_TURN_HEARTBEAT_ENTRY_ID = 'heartbeat:session.main';
+const LIVE_TURN_HEARTBEAT_SUFFIX_FRAMES = ['...', '.', '..'] as const;
 
 /**
- * Owns running-panel projection for service-backed `session.main` stream deltas.
+ * Owns presenter-local streaming projection for service-backed `session.main` turns.
  *
  * Why this exists:
- * supervisor streaming should light up the foreground running presenter instead of degrading
- * into append-only transcript noise.
+ * the session shell should present `session.main` as one live conversation surface instead of
+ * forcing the user to watch a detached progress panel before the final answer lands.
  */
 export class CliSessionShellTurnProgressDock {
-  private readonly controller: ReactCliCommandProgressController;
   private activeTurnId: string | null = null;
+  private liveTurnActive = false;
+  private nextActivityOrder = 0;
+  private currentAssistantDraft: string | null = null;
+  private heartbeatFrameIndex = 0;
+  private readonly liveActivityEntries = new Map<string, LiveTurnActivityEntry>();
 
-  public constructor(private readonly options: CliSessionShellTurnProgressDockOptions) {
-    this.controller = new ReactCliCommandProgressController({
-      commandName: SESSION_MAIN_STREAM_COMMAND_NAME,
-      initialTitle: SESSION_MAIN_STREAM_TITLE,
-      initialSubtitle: SESSION_MAIN_STREAM_SUBTITLE,
-      themePreset: options.themePreset,
-      translate: options.translate,
-    });
+  public constructor(private readonly options: CliSessionShellTurnProgressDockOptions) {}
+
+  /**
+   * Seeds one optimistic streaming state before the first service delta arrives.
+   * @returns Nothing.
+   */
+  public seedRunningState(): void {
+    this.liveTurnActive = true;
+    this.activeTurnId = null;
+    this.currentAssistantDraft = null;
+    this.liveActivityEntries.clear();
+    this.nextActivityOrder = 0;
+    this.heartbeatFrameIndex = 0;
+    this.upsertActivityEntry(LIVE_TURN_HEARTBEAT_ENTRY_ID, this.renderHeartbeatText());
   }
 
   /**
-   * Applies session events to the running-progress panel when they belong to one active turn.
+   * Applies incremental session events into the presenter-local live turn state.
    * @param events Incremental session events.
    * @returns Nothing.
    */
@@ -51,46 +60,93 @@ export class CliSessionShellTurnProgressDock {
         continue;
       }
 
-      const turnId = this.readOptionalString(event.payload.turnId);
-      if (!turnId || turnId !== this.activeTurnId) {
+      if (
+        event.type !== OrchestrationSessionEventType.TURN_COMPLETED &&
+        event.type !== OrchestrationSessionEventType.TURN_FAILED &&
+        event.type !== OrchestrationSessionEventType.TURN_CANCELLED
+      ) {
         continue;
       }
 
-      if (
-        event.type === OrchestrationSessionEventType.TURN_COMPLETED ||
-        event.type === OrchestrationSessionEventType.TURN_FAILED ||
-        event.type === OrchestrationSessionEventType.TURN_CANCELLED
-      ) {
+      const turnId = this.readOptionalString(event.payload.turnId);
+      if (this.activeTurnId) {
+        if (turnId === this.activeTurnId) {
+          this.clear();
+        }
+        continue;
+      }
+
+      if (this.liveTurnActive) {
         this.clear();
       }
     }
   }
 
   /**
-   * Refreshes elapsed/heartbeat state while one turn is still active.
-   * @returns Nothing.
+   * Projects the current live state into transcript items layered on top of canonical transcript.
+   * @param sessionId Current foreground session id.
+   * @param baseItems Canonical transcript items from the service-backed store.
+   * @returns Render-ready transcript items.
    */
-  public refresh(): void {
-    if (!this.activeTurnId) {
-      return;
+  public projectTranscriptItems(
+    sessionId: string,
+    baseItems: CliSessionShellTranscriptItem[],
+  ): CliSessionShellTranscriptItem[] {
+    if (!this.liveTurnActive) {
+      return [...baseItems];
     }
 
-    const snapshot = this.controller.refresh();
-    this.options.onPanelUpdate(snapshot.commandProgressPanel);
-    this.options.onRenderRequested();
+    const projectedItems = [...baseItems];
+    if (this.currentAssistantDraft && this.currentAssistantDraft.trim().length > 0) {
+      projectedItems.push({
+        id: `${sessionId}:live:assistant`,
+        role: CliSessionTranscriptRole.ASSISTANT,
+        label: this.options.translate('cli.sessionShell.transcript.assistantLabel'),
+        lines: [this.currentAssistantDraft],
+        renderKind: 'live_markdown',
+        markdownSource: this.currentAssistantDraft,
+      });
+    }
+
+    const activityLines = [...this.liveActivityEntries.values()]
+      .sort((left, right) => left.order - right.order)
+      .map((entry) => entry.text);
+    if (activityLines.length > 0) {
+      projectedItems.push({
+        id: `${sessionId}:live:activity`,
+        role: CliSessionTranscriptRole.SYSTEM,
+        label: this.options.translate('cli.sessionShell.responses.liveTurnActivityTitle'),
+        lines: activityLines,
+        renderKind: 'live_activity',
+      });
+    }
+
+    return projectedItems;
   }
 
   /**
-   * Clears the current turn-running panel.
+   * Clears the active live turn state after terminal events or local recovery paths.
    * @returns Nothing.
    */
   public clear(): void {
-    if (!this.activeTurnId) {
+    this.activeTurnId = null;
+    this.liveTurnActive = false;
+    this.currentAssistantDraft = null;
+    this.liveActivityEntries.clear();
+    this.nextActivityOrder = 0;
+    this.heartbeatFrameIndex = 0;
+  }
+
+  /**
+   * Refresh is intentionally a no-op for transcript-owned live streaming.
+   * @returns Nothing.
+   */
+  public refresh(): void {
+    if (!this.liveTurnActive) {
       return;
     }
-    this.activeTurnId = null;
-    this.options.onPanelUpdate(undefined);
-    this.options.onRenderRequested();
+
+    this.upsertActivityEntry(LIVE_TURN_HEARTBEAT_ENTRY_ID, this.renderHeartbeatText());
   }
 
   private applyStreamDelta(event: OrchestrationSessionEvent): void {
@@ -98,65 +154,111 @@ export class CliSessionShellTurnProgressDock {
     if (!turnId) {
       return;
     }
+
     if (this.activeTurnId && this.activeTurnId !== turnId) {
       return;
     }
+
     this.activeTurnId = turnId;
+    this.liveTurnActive = true;
 
     const streamKind = this.readOptionalString(event.payload.streamKind) ?? 'lifecycle';
-    const streamState = this.readOptionalString(event.payload.streamState) ?? 'running';
-    const roleId = this.readOptionalString(event.payload.roleId);
-    const title =
+    if (streamKind === 'token') {
+      this.applyTokenDelta(event);
+      return;
+    }
+
+    if (streamKind === 'tool_call') {
+      this.applyToolCallDelta(event);
+      return;
+    }
+
+    this.applyLifecycleDelta(event);
+  }
+
+  private applyTokenDelta(event: OrchestrationSessionEvent): void {
+    const accumulatedText = this.readOptionalString(event.payload.accumulatedText);
+    if (accumulatedText) {
+      this.currentAssistantDraft = accumulatedText;
+      return;
+    }
+
+    const chunkText =
+      this.readOptionalString(event.payload.chunkText) ??
+      this.readOptionalString(event.payload.delta);
+    if (!chunkText) {
+      return;
+    }
+
+    this.currentAssistantDraft =
+      this.currentAssistantDraft && this.currentAssistantDraft.length > 0
+        ? `${this.currentAssistantDraft}${chunkText}`
+        : chunkText;
+  }
+
+  private applyToolCallDelta(event: OrchestrationSessionEvent): void {
+    const toolName =
+      this.readOptionalString(event.payload.toolName) ??
       this.readOptionalString(event.payload.title) ??
-      (roleId ? `${roleId} streaming` : 'Session main');
+      'tool';
     const detail =
+      this.readOptionalString(event.payload.detail) ??
+      this.readOptionalString(event.payload.chunkText) ??
+      this.readOptionalString(event.payload.accumulatedText) ??
+      toolName;
+    const toolCallId =
+      this.readOptionalString(event.payload.toolCallId) ??
+      this.readOptionalString(event.payload.toolName) ??
+      toolName;
+
+    this.upsertActivityEntry(
+      `tool:${toolCallId}`,
+      this.options.translate('cli.sessionShell.responses.liveTurnToolCall', {
+        toolName,
+        detail,
+      }),
+    );
+  }
+
+  private applyLifecycleDelta(event: OrchestrationSessionEvent): void {
+    const detail =
+      this.readOptionalString(event.payload.detail) ??
       this.readOptionalString(event.payload.accumulatedText) ??
       this.readOptionalString(event.payload.chunkText) ??
-      this.readOptionalString(event.payload.detail) ??
-      this.readOptionalString(event.payload.delta) ??
-      title;
-    const selectedSurface = this.readOptionalString(event.payload.selectedSurface);
-    const toolName = this.readOptionalString(event.payload.toolName);
-    const toolCallId = this.readOptionalString(event.payload.toolCallId);
-    const rowId =
-      streamKind === 'tool_call'
-        ? `tool:${toolCallId ?? toolName ?? roleId ?? 'call'}`
-        : streamKind === 'token'
-          ? `draft:${roleId ?? 'assistant'}`
-          : `lifecycle:${roleId ?? 'session.main'}`;
+      this.readOptionalString(event.payload.title);
+    if (!detail) {
+      return;
+    }
 
-    const snapshot = this.controller.apply({
-      commandName: SESSION_MAIN_STREAM_COMMAND_NAME,
-      title:
-        selectedSurface && selectedSurface.length > 0 ? `${title} (${selectedSurface})` : title,
-      subtitle: SESSION_MAIN_STREAM_SUBTITLE,
-      runState:
-        streamState === 'completed' ? 'success' : streamState === 'failed' ? 'failure' : 'running',
-      statusLine:
-        selectedSurface && selectedSurface.length > 0
-          ? `${detail} [surface=${selectedSurface}]`
-          : detail,
-      currentStepTitle: title,
-      row: {
-        id: rowId,
-        title: streamKind === 'tool_call' && toolName ? `Tool: ${toolName}` : title,
-        status:
-          streamState === 'completed'
-            ? ExecutionProgressStatus.COMPLETED
-            : streamState === 'failed'
-              ? ExecutionProgressStatus.FAILED
-              : ExecutionProgressStatus.RUNNING,
-        detail,
-      },
-      ...(streamKind === 'tool_call' && toolName
-        ? {
-            logLine: `${toolName}: ${detail}`,
-          }
-        : {}),
-      occurredAt: event.createdAt,
+    const roleId = this.readOptionalString(event.payload.roleId);
+    const entryKey = roleId ? `lifecycle:${roleId}` : 'lifecycle:session.main.detail';
+    const text = roleId
+      ? this.options.translate('cli.sessionShell.responses.liveTurnRoleActivity', {
+          role: roleId,
+          detail,
+        })
+      : this.options.translate('cli.sessionShell.responses.liveTurnThinkingDetail', {
+          detail,
+        });
+
+    this.upsertActivityEntry(entryKey, text);
+  }
+
+  private upsertActivityEntry(activityId: string, text: string): void {
+    const existingEntry = this.liveActivityEntries.get(activityId);
+    this.liveActivityEntries.set(activityId, {
+      order: existingEntry?.order ?? this.nextActivityOrder++,
+      text,
     });
-    this.options.onPanelUpdate(snapshot.commandProgressPanel);
-    this.options.onRenderRequested();
+  }
+
+  private renderHeartbeatText(): string {
+    const suffix = LIVE_TURN_HEARTBEAT_SUFFIX_FRAMES[this.heartbeatFrameIndex] ?? '...';
+    this.heartbeatFrameIndex =
+      (this.heartbeatFrameIndex + 1) % LIVE_TURN_HEARTBEAT_SUFFIX_FRAMES.length;
+    return this.options.translate('cli.sessionShell.responses.liveTurnThinkingPulse', {
+      suffix,
+    });
   }
 
   private readOptionalString(candidate: unknown): string | undefined {

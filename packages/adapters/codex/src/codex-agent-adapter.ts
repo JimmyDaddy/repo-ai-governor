@@ -39,6 +39,7 @@ const CODEX_SURFACE = 'codex';
 const CODEX_COMMAND = 'codex';
 const CODEX_DEFAULT_TIMEOUT_MS = 30000;
 const CODEX_DEFAULT_PROBE_CACHE_TTL_MS = 30000;
+const CODEX_CLI_EXECUTION_CACHE_TTL_MS = 30000;
 const CODEX_EXEC_ARGS = ['exec', '--skip-git-repo-check', '--json', '-'] as const;
 const CODEX_HEALTH_CHECK_PROMPT = 'Respond with exactly OK.';
 const CODEX_HEALTH_CHECK_EXPECTED_RESPONSE = 'OK';
@@ -90,6 +91,29 @@ interface CodexCliParsedOutput {
   warnings: string[];
 }
 
+interface CodexCliExecutionRequest {
+  processId: string;
+  executionId: string;
+  stageId: string;
+  routeKey: string;
+  input: Record<string, unknown>;
+  timeoutMs: number;
+  signal?: AbortSignal;
+}
+
+interface CodexCliExecutionState {
+  key: string;
+  events: AgentStreamEvent[];
+  waiters: Set<() => void>;
+  stdout: string;
+  stderr: string;
+  stdoutLineBuffer: string;
+  settled: boolean;
+  accumulatedAssistantText: string;
+  resultPromise: Promise<CodexExecRunnerResult>;
+  cleanupTimer: NodeJS.Timeout | null;
+}
+
 interface CodexProbeResolution {
   availabilityStatus: AgentAvailabilityStatus;
   unavailableReasons: string[];
@@ -128,6 +152,8 @@ export class CodexAgentAdapter extends AgentProtocol {
   private readonly options: ResolvedCodexAgentAdapterOptions;
   private readonly execRunner: CodexExecRunner;
   private readonly cliExecOperationsRuntime: AgentCliExecOperationsRuntime;
+  private readonly usesInjectedExecRunner: boolean;
+  private readonly inflightCliExecutions = new Map<string, CodexCliExecutionState>();
   private probeCache: CodexProbeCacheEntry | null = null;
 
   /**
@@ -157,6 +183,7 @@ export class CodexAgentAdapter extends AgentProtocol {
       this.options.maxRetryAttempts,
       this.options.retryBackoffMs,
     );
+    this.usesInjectedExecRunner = options.execRunner !== undefined;
     this.execRunner =
       options.execRunner ??
       ((request) => {
@@ -222,13 +249,16 @@ export class CodexAgentAdapter extends AgentProtocol {
       };
     }
 
-    const prompt = this.renderInvokePrompt(request);
-    const executionResult = await this.runCodexOperation({
-      prompt,
+    const execution = this.ensureCliExecution({
+      processId: request.processId,
+      executionId: request.executionId,
+      stageId: request.stageId,
+      routeKey: request.routeKey,
+      input: request.input,
       timeoutMs: request.agentInvocationTimeoutMs ?? this.options.requestTimeoutMs,
-      signal: request.signal,
-      operation: AgentCliExecOperation.INVOKE,
+      ...(request.signal ? { signal: request.signal } : {}),
     });
+    const executionResult = await execution.resultPromise;
     const parsedOutput = this.parseCodexCliOutput(executionResult, AgentCliExecOperation.INVOKE);
     return {
       output: {
@@ -253,32 +283,45 @@ export class CodexAgentAdapter extends AgentProtocol {
   public override async *streamEvents(
     request: AgentStreamEventsRequest,
   ): AsyncIterable<AgentStreamEvent> {
-    const timestamp = new Date().toISOString();
-    yield {
-      eventType: AgentStreamEventType.STATUS,
-      timestamp,
-      processId: request.processId,
-      executionId: request.executionId,
-      stageId: request.stageId,
-      routeKey: request.routeKey,
-      payload: {
-        status: 'running',
-        surface: CODEX_SURFACE,
-      },
-    };
+    if (this.options.executionMode === CodexAgentAdapterExecutionMode.BASELINE) {
+      const timestamp = new Date().toISOString();
+      yield {
+        eventType: AgentStreamEventType.STATUS,
+        timestamp,
+        processId: request.processId,
+        executionId: request.executionId,
+        stageId: request.stageId,
+        routeKey: request.routeKey,
+        payload: {
+          status: 'running',
+          surface: CODEX_SURFACE,
+        },
+      };
 
-    yield {
-      eventType: AgentStreamEventType.COMPLETED,
-      timestamp: new Date().toISOString(),
+      yield {
+        eventType: AgentStreamEventType.COMPLETED,
+        timestamp: new Date().toISOString(),
+        processId: request.processId,
+        executionId: request.executionId,
+        stageId: request.stageId,
+        routeKey: request.routeKey,
+        payload: {
+          status: 'completed',
+          surface: CODEX_SURFACE,
+        },
+      };
+      return;
+    }
+
+    const execution = this.ensureCliExecution({
       processId: request.processId,
       executionId: request.executionId,
       stageId: request.stageId,
       routeKey: request.routeKey,
-      payload: {
-        status: 'completed',
-        surface: CODEX_SURFACE,
-      },
-    };
+      input: request.input,
+      timeoutMs: this.options.requestTimeoutMs,
+    });
+    yield* this.consumeCliExecutionEvents(execution);
   }
 
   /**
@@ -559,6 +602,255 @@ export class CodexAgentAdapter extends AgentProtocol {
     ].join('\n\n');
   }
 
+  private ensureCliExecution(request: CodexCliExecutionRequest): CodexCliExecutionState {
+    const key = this.createCliExecutionKey(request);
+    const existingExecution = this.inflightCliExecutions.get(key);
+    if (existingExecution) {
+      return existingExecution;
+    }
+
+    const executionState: CodexCliExecutionState = {
+      key,
+      events: [],
+      waiters: new Set(),
+      stdout: '',
+      stderr: '',
+      stdoutLineBuffer: '',
+      settled: false,
+      accumulatedAssistantText: '',
+      resultPromise: Promise.resolve({
+        stdout: '',
+        stderr: '',
+        exitCode: null,
+        signal: null,
+        elapsedMs: 0,
+      }),
+      cleanupTimer: null,
+    };
+    executionState.resultPromise = this.startCliExecution(executionState, request);
+    this.inflightCliExecutions.set(key, executionState);
+    return executionState;
+  }
+
+  private createCliExecutionKey(request: CodexCliExecutionRequest): string {
+    return [request.processId, request.executionId, request.stageId, request.routeKey].join(':');
+  }
+
+  private async startCliExecution(
+    state: CodexCliExecutionState,
+    request: CodexCliExecutionRequest,
+  ): Promise<CodexExecRunnerResult> {
+    try {
+      if (this.usesInjectedExecRunner) {
+        const executionResult = await this.runCodexOperation({
+          prompt: this.renderInvokePrompt(request),
+          timeoutMs: request.timeoutMs,
+          signal: request.signal,
+          operation: AgentCliExecOperation.INVOKE,
+        });
+        state.stdout = executionResult.stdout;
+        state.stderr = executionResult.stderr;
+        this.ingestCodexStdout(state, request, executionResult.stdout, true);
+        if (!state.events.some((event) => event.eventType === AgentStreamEventType.COMPLETED)) {
+          this.pushCliExecutionEvent(state, {
+            eventType: AgentStreamEventType.COMPLETED,
+            timestamp: new Date().toISOString(),
+            processId: request.processId,
+            executionId: request.executionId,
+            stageId: request.stageId,
+            routeKey: request.routeKey,
+            payload: {
+              status: 'completed',
+              surface: CODEX_SURFACE,
+              ...(state.accumulatedAssistantText
+                ? { responseText: state.accumulatedAssistantText }
+                : {}),
+            },
+          });
+        }
+        this.finishCliExecution(state);
+        return executionResult;
+      }
+
+      const executionResult = await this.executeCodexCliStreaming(request, state);
+      this.finishCliExecution(state);
+      return executionResult;
+    } catch (error) {
+      const standardizedError = standardizeError(error);
+      this.pushCliExecutionEvent(state, {
+        eventType: AgentStreamEventType.FAILED,
+        timestamp: new Date().toISOString(),
+        processId: request.processId,
+        executionId: request.executionId,
+        stageId: request.stageId,
+        routeKey: request.routeKey,
+        payload: {
+          status: 'failed',
+          surface: CODEX_SURFACE,
+          message: standardizedError.message,
+        },
+      });
+      this.finishCliExecution(state);
+      throw error;
+    }
+  }
+
+  private async *consumeCliExecutionEvents(
+    state: CodexCliExecutionState,
+  ): AsyncIterable<AgentStreamEvent> {
+    let cursor = 0;
+    while (true) {
+      while (cursor < state.events.length) {
+        const event = state.events[cursor];
+        cursor += 1;
+        if (event) {
+          yield event;
+        }
+      }
+
+      if (state.settled) {
+        return;
+      }
+
+      await new Promise<void>((resolve) => {
+        state.waiters.add(resolve);
+      });
+    }
+  }
+
+  private pushCliExecutionEvent(state: CodexCliExecutionState, event: AgentStreamEvent): void {
+    state.events.push(event);
+    for (const waiter of state.waiters) {
+      waiter();
+    }
+    state.waiters.clear();
+  }
+
+  private finishCliExecution(state: CodexCliExecutionState): void {
+    state.settled = true;
+    for (const waiter of state.waiters) {
+      waiter();
+    }
+    state.waiters.clear();
+    if (state.cleanupTimer) {
+      clearTimeout(state.cleanupTimer);
+    }
+    state.cleanupTimer = setTimeout(() => {
+      this.inflightCliExecutions.delete(state.key);
+    }, CODEX_CLI_EXECUTION_CACHE_TTL_MS);
+    state.cleanupTimer.unref?.();
+  }
+
+  private ingestCodexStdout(
+    state: CodexCliExecutionState,
+    request: CodexCliExecutionRequest,
+    chunk: string,
+    flushPartial = false,
+  ): void {
+    state.stdoutLineBuffer += chunk;
+    const lines = state.stdoutLineBuffer.split(/\r?\n/u);
+    state.stdoutLineBuffer = lines.pop() ?? '';
+    for (const line of lines) {
+      this.processCodexJsonLine(state, request, line);
+    }
+    if (flushPartial && state.stdoutLineBuffer.trim().length > 0) {
+      this.processCodexJsonLine(state, request, state.stdoutLineBuffer);
+      state.stdoutLineBuffer = '';
+    }
+  }
+
+  private processCodexJsonLine(
+    state: CodexCliExecutionState,
+    request: CodexCliExecutionRequest,
+    line: string,
+  ): void {
+    const trimmedLine = line.trim();
+    if (!trimmedLine.startsWith('{')) {
+      return;
+    }
+
+    let parsedEvent: CodexCliJsonEvent;
+    try {
+      parsedEvent = JSON.parse(trimmedLine) as CodexCliJsonEvent;
+    } catch {
+      return;
+    }
+
+    if (parsedEvent.type === 'thread.started') {
+      this.pushCliExecutionEvent(state, {
+        eventType: AgentStreamEventType.STATUS,
+        timestamp: new Date().toISOString(),
+        processId: request.processId,
+        executionId: request.executionId,
+        stageId: request.stageId,
+        routeKey: request.routeKey,
+        payload: {
+          status: 'running',
+          surface: CODEX_SURFACE,
+          detail: 'Codex thread started.',
+        },
+      });
+      return;
+    }
+
+    if (parsedEvent.type === 'turn.started') {
+      this.pushCliExecutionEvent(state, {
+        eventType: AgentStreamEventType.STATUS,
+        timestamp: new Date().toISOString(),
+        processId: request.processId,
+        executionId: request.executionId,
+        stageId: request.stageId,
+        routeKey: request.routeKey,
+        payload: {
+          status: 'running',
+          surface: CODEX_SURFACE,
+          detail: 'Codex turn started.',
+        },
+      });
+      return;
+    }
+
+    if (parsedEvent.type === 'item.completed' && parsedEvent.item?.type === 'agent_message') {
+      const assistantText = parsedEvent.item.text?.trim() ?? '';
+      if (assistantText.length === 0) {
+        return;
+      }
+      state.accumulatedAssistantText = assistantText;
+      this.pushCliExecutionEvent(state, {
+        eventType: AgentStreamEventType.TOKEN,
+        timestamp: new Date().toISOString(),
+        processId: request.processId,
+        executionId: request.executionId,
+        stageId: request.stageId,
+        routeKey: request.routeKey,
+        payload: {
+          surface: CODEX_SURFACE,
+          text: assistantText,
+          accumulatedText: assistantText,
+        },
+      });
+      return;
+    }
+
+    if (parsedEvent.type === 'turn.completed') {
+      this.pushCliExecutionEvent(state, {
+        eventType: AgentStreamEventType.COMPLETED,
+        timestamp: new Date().toISOString(),
+        processId: request.processId,
+        executionId: request.executionId,
+        stageId: request.stageId,
+        routeKey: request.routeKey,
+        payload: {
+          status: 'completed',
+          surface: CODEX_SURFACE,
+          ...(state.accumulatedAssistantText
+            ? { responseText: state.accumulatedAssistantText }
+            : {}),
+        },
+      });
+    }
+  }
+
   /**
    * Maps one probe failure into unavailable reason codes consumed by CLI diagnostics.
    * @param error Unknown probe failure.
@@ -752,6 +1044,109 @@ export class CodexAgentAdapter extends AgentProtocol {
       });
 
       child.stdin.end(request.prompt);
+    });
+  }
+
+  private async executeCodexCliStreaming(
+    request: CodexCliExecutionRequest,
+    state: CodexCliExecutionState,
+  ): Promise<CodexExecRunnerResult> {
+    return await new Promise<CodexExecRunnerResult>((resolve, reject) => {
+      const startedAt = Date.now();
+      const child = spawn(this.options.command, [...CODEX_EXEC_ARGS], {
+        cwd: this.options.currentWorkingDirectory,
+        env: this.resolveEnvironment(),
+        stdio: ['pipe', 'pipe', 'pipe'],
+        ...(request.signal ? { signal: request.signal } : {}),
+      });
+
+      let settled = false;
+      let timedOut = false;
+
+      const timeoutHandle = setTimeout(() => {
+        timedOut = true;
+        child.kill('SIGTERM');
+      }, request.timeoutMs);
+
+      const finishReject = (error: unknown): void => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        clearTimeout(timeoutHandle);
+        reject(error);
+      };
+
+      child.on('error', (error) => {
+        finishReject(error);
+      });
+
+      child.stdout.setEncoding('utf8');
+      child.stdout.on('data', (chunk: string) => {
+        state.stdout += chunk;
+        this.ingestCodexStdout(state, request, chunk);
+      });
+
+      child.stderr.setEncoding('utf8');
+      child.stderr.on('data', (chunk: string) => {
+        state.stderr += chunk;
+      });
+
+      child.on('close', (exitCode, signal) => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        clearTimeout(timeoutHandle);
+        this.ingestCodexStdout(state, request, '', true);
+
+        if (timedOut) {
+          reject(
+            new RuntimeError(
+              GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
+              `Codex invoke timed out after ${request.timeoutMs}ms.`,
+              this.cliExecOperationsRuntime.createRedactedProcessDetails({
+                surface: CODEX_SURFACE,
+                operation: AgentCliExecOperation.INVOKE,
+                timeoutMs: request.timeoutMs,
+                stdout: state.stdout,
+                stderr: state.stderr,
+                exitCode,
+                signal,
+              }),
+            ),
+          );
+          return;
+        }
+
+        if (exitCode !== 0) {
+          reject(
+            new RuntimeError(
+              GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
+              `Codex invoke exited with code ${exitCode ?? 'null'}.`,
+              this.cliExecOperationsRuntime.createRedactedProcessDetails({
+                surface: CODEX_SURFACE,
+                operation: AgentCliExecOperation.INVOKE,
+                stdout: state.stdout,
+                stderr: state.stderr,
+                exitCode,
+                signal,
+              }),
+            ),
+          );
+          return;
+        }
+
+        resolve({
+          stdout: state.stdout,
+          stderr: state.stderr,
+          exitCode,
+          signal,
+          elapsedMs: Date.now() - startedAt,
+        });
+      });
+
+      child.stdin.end(this.renderInvokePrompt(request));
     });
   }
 }
