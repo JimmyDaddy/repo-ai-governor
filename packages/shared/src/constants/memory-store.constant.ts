@@ -8,7 +8,7 @@ export enum MemoryStoreEngine {
   SQLITE_FS = 'sqlite_fs',
 }
 
-export const DEFAULT_MEMORY_STORE_ENGINE = MemoryStoreEngine.FS_CSV;
+export const DEFAULT_MEMORY_STORE_ENGINE = MemoryStoreEngine.SQLITE_FS;
 export const DEFAULT_MEMORY_STORE_ROOT_SEGMENTS = ['context', 'memory'] as const;
 export const DEFAULT_MEMORY_STORE_ROOT = DEFAULT_MEMORY_STORE_ROOT_SEGMENTS.join('/');
 

@@ -4,7 +4,10 @@ export type {
   ListSharedSessionsOptions,
   OpenSharedSessionOptions,
   SessionEvent,
+  SharedSessionDiagnosticRecord,
+  SharedSessionEventRecord,
   SharedSession,
+  SharedSessionSummaryRecord,
   UpdateSessionContextOptions,
 } from './shared-session.interface.js';
 export type {

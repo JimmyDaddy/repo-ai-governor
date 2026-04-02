@@ -23,13 +23,13 @@
 
 ## 2.1 sprint-001-session-durable-storage-foundation
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 建立 sqlite-fs 默认 session durable truth、schema baseline 与 append-only session event log 消费迁移面。
 - Task Package: `TK-475`、`TK-476`。
 
 ## 2.2 sprint-002-artifact-registry-sqlite-truth-and-rendered-views
 
-- Status: planned
+- Status: active
 - Sprint Goal: 将 Artifact Registry / Archive Registry 切为 sqlite canonical truth，并保留 rendered CSV 兼容视图。
 - Task Package: `TK-477`。
 
@@ -49,8 +49,8 @@
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 |---|---|---|---|---|---|
-| TK-475 | sprint-001 | cut over runtime session durable truth to sqlite-fs default and durable schema baseline | runtime/session-storage | `runtime.durable-storage` formal module docs | planned |
-| TK-476 | sprint-001 | migrate shared session manager and runtime consumers to append-only session event log semantics | runtime/session-runtime | TK-475 | planned |
+| TK-475 | sprint-001 | cut over runtime session durable truth to sqlite-fs default and durable schema baseline | runtime/session-storage | `runtime.durable-storage` formal module docs | completed |
+| TK-476 | sprint-001 | migrate shared session manager and runtime consumers to append-only session event log semantics | runtime/session-runtime | TK-475 | completed |
 | TK-477 | sprint-002 | implement sqlite-backed artifact registry canonical truth and rendered CSV compatibility views | runtime/artifact-registry | TK-475 | planned |
 | TK-478 | sprint-003 | build tasks.csv sqlite projection and route audit/query consumers through it | runtime/ledger-read-model | TK-477 | planned |
 | TK-479 | sprint-004 | deliver migration, verification, rebuild and cutover governance for durable storage surfaces | governance/cutover | TK-476、TK-477、TK-478 | planned |
@@ -76,3 +76,5 @@
 1. 2026-04-02：`runtime.durable-storage` 技术方案已正式提升完成，形成 `project-036` 的实施输入。
 2. 2026-04-02：创建 `project-036-runtime-durable-storage-and-registry-cutover`，将 approved solution 拆为 session truth、artifact registry truth、ledger projection 与 cutover governance 四个实施阶段。
 3. 2026-04-02：将 `sprint-001-session-durable-storage-foundation` 设为当前 primary planning surface，开始承接 sqlite-fs default cutover 与 append-only session event log 的任务拆解与后续实现基线。
+4. 2026-04-02：正式激活 `sprint-001`，`TK-475` 已切换为 `active`，开始收敛 memory provider 默认值、distribution truth 与 session durable schema baseline 的第一阶段实现。
+5. 2026-04-02：`sprint-001-session-durable-storage-foundation` 已完成，`TK-475/TK-476` 全部收口；当前 primary planning surface 前移至 `sprint-002-artifact-registry-sqlite-truth-and-rendered-views`。

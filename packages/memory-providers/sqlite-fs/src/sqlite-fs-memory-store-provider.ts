@@ -127,7 +127,7 @@ export class SqliteFsMemoryStoreProvider implements MemoryStoreProvider {
     }
 
     if (request.keyPrefix) {
-      conditions.push("key LIKE ? ESCAPE '\\\\'");
+      conditions.push("key LIKE ? ESCAPE '\\'");
       parameters.push(this.toLikePrefixPattern(request.keyPrefix));
     }
 

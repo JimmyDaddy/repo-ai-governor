@@ -35,8 +35,10 @@ const DEFAULT_REPO_LOCAL_CONFIG_CONTENT = [
   '    - zh-CN',
   '    - en-US',
   'memory:',
-  '  storeEngine: fs_csv',
-  '  storeRoot: context/memory',
+  '  storeEngine: sqlite_fs',
+  '  storeRoot: context/memory/sqlite',
+  '  provider:',
+  '    id: sqlite-fs',
   '',
 ].join('\n');
 

@@ -1485,10 +1485,14 @@ describe('core-orchestration-service local shell', () => {
       const completedEvents = subscription.events.filter(
         (event) => event.type === OrchestrationSessionEventType.TURN_COMPLETED,
       );
+      const submittedEvents = subscription.events.filter(
+        (event) => event.type === OrchestrationSessionEventType.TURN_SUBMITTED,
+      );
 
       expect(failedEvent?.payload.turnIndex).toBe(1);
       expect(cancelledEvent?.payload.turnIndex).toBe(2);
       expect(completedEvents[0]?.payload.turnIndex).toBe(3);
+      expect(submittedEvents.map((event) => event.payload.turnIndex)).toEqual([1, 2, 3]);
     } finally {
       await rm(temporaryRoot, { recursive: true, force: true });
     }

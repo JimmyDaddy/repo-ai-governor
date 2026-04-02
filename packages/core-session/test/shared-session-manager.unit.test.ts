@@ -12,6 +12,20 @@ function createInMemoryStoreProvider(): {
     writeCount: number;
     queryCount: number;
   };
+  seedRecord(record: {
+    namespace: string;
+    key: string;
+    value: Record<string, unknown>;
+    tags?: string[];
+    updatedAt?: string;
+  }): void;
+  listRecords(): Array<{
+    namespace: string;
+    key: string;
+    value: Record<string, unknown>;
+    tags: string[];
+    updatedAt: string;
+  }>;
 } {
   const records = new Map<
     string,
@@ -25,6 +39,25 @@ function createInMemoryStoreProvider(): {
 
   return {
     counters,
+    seedRecord(record) {
+      records.set(`${record.namespace}:${record.key}`, {
+        value: record.value,
+        tags: record.tags ?? [],
+        updatedAt: record.updatedAt ?? '2026-04-02T00:00:00Z',
+      });
+    },
+    listRecords() {
+      return Array.from(records.entries()).map(([compoundKey, record]) => {
+        const delimiterIndex = compoundKey.indexOf(':');
+        return {
+          namespace: compoundKey.slice(0, delimiterIndex),
+          key: compoundKey.slice(delimiterIndex + 1),
+          value: record.value,
+          tags: record.tags,
+          updatedAt: record.updatedAt,
+        };
+      });
+    },
     provider: {
       async read(namespace, key) {
         counters.readCount += 1;
@@ -49,18 +82,38 @@ function createInMemoryStoreProvider(): {
           updatedAt: record.updatedAt,
         });
       },
-      async query() {
+      async query(request) {
         counters.queryCount += 1;
-        return Array.from(records.entries()).map(([compoundKey, record]) => {
-          const delimiterIndex = compoundKey.indexOf(':');
-          return {
-            namespace: compoundKey.slice(0, delimiterIndex),
-            key: compoundKey.slice(delimiterIndex + 1),
-            value: record.value,
-            tags: record.tags,
-            updatedAt: record.updatedAt,
-          };
-        });
+        const filteredRecords = Array.from(records.entries())
+          .map(([compoundKey, record]) => {
+            const delimiterIndex = compoundKey.indexOf(':');
+            return {
+              namespace: compoundKey.slice(0, delimiterIndex),
+              key: compoundKey.slice(delimiterIndex + 1),
+              value: record.value,
+              tags: record.tags,
+              updatedAt: record.updatedAt,
+            };
+          })
+          .filter((record) => {
+            if (request.namespace && record.namespace !== request.namespace) {
+              return false;
+            }
+            if (request.keyPrefix && !record.key.startsWith(request.keyPrefix)) {
+              return false;
+            }
+            if (request.tag && !record.tags.includes(request.tag)) {
+              return false;
+            }
+
+            return true;
+          });
+
+        if (!request.limit || request.limit <= 0) {
+          return filteredRecords;
+        }
+
+        return filteredRecords.slice(0, request.limit);
       },
       async snapshot() {
         return {
@@ -130,5 +183,189 @@ describe('core-session unit', () => {
       'runtime.node.started',
       'runtime.node.completed',
     ]);
+  });
+
+  it('migrates legacy blob payloads into summary and append-only event records on first read', async () => {
+    const inMemoryStore = createInMemoryStoreProvider();
+    inMemoryStore.seedRecord({
+      namespace: 'session',
+      key: 'session-legacy-001',
+      tags: ['session', 'status:active', 'execution:exec-legacy-001'],
+      value: {
+        sessionId: 'session-legacy-001',
+        status: SessionStatus.ACTIVE,
+        openedAt: '2026-04-02T00:00:00Z',
+        executionId: 'exec-legacy-001',
+        context: {
+          currentRouteId: 'session.main',
+        },
+        events: [
+          {
+            eventId: 'legacy-event-001',
+            type: 'session.turn.submitted',
+            createdAt: '2026-04-02T00:00:01Z',
+            payload: {
+              turnId: 'turn-001',
+              turnIndex: 1,
+              content: '你好',
+            },
+          },
+        ],
+      },
+    });
+    const memoryManager = new MemoryManager(new MemoryStoreAdapter(inMemoryStore.provider));
+    const sessionManager = new SharedSessionManager(memoryManager);
+
+    const session = await sessionManager.getSession('session-legacy-001');
+    const appendedSession = await sessionManager.appendEvent({
+      sessionId: 'session-legacy-001',
+      type: 'session.turn.completed',
+      payload: {
+        turnId: 'turn-001',
+        turnIndex: 1,
+        assistantMessage: '你好，有什么我可以帮你的？',
+      },
+    });
+
+    expect(session.eventCount).toBe(1);
+    expect(session.turnCount).toBe(1);
+    expect(session.events[0]?.eventIndex).toBe(1);
+    expect(appendedSession.events).toHaveLength(2);
+    expect(appendedSession.lastEventId).toBe(appendedSession.events[1]?.eventId);
+    expect(inMemoryStore.counters.writeCount).toBeGreaterThanOrEqual(3);
+  });
+
+  it('replays missing legacy events when a prior migration attempt only wrote a prefix of the event log', async () => {
+    const inMemoryStore = createInMemoryStoreProvider();
+    inMemoryStore.seedRecord({
+      namespace: 'session',
+      key: 'session-legacy-partial-001',
+      tags: ['session', 'status:active', 'execution:exec-legacy-partial-001'],
+      value: {
+        sessionId: 'session-legacy-partial-001',
+        status: SessionStatus.ACTIVE,
+        openedAt: '2026-04-02T00:00:00Z',
+        executionId: 'exec-legacy-partial-001',
+        context: {
+          currentRouteId: 'session.main',
+        },
+        events: [
+          {
+            eventId: 'legacy-partial-event-001',
+            type: 'session.turn.submitted',
+            createdAt: '2026-04-02T00:00:01Z',
+            payload: {
+              turnId: 'turn-001',
+              turnIndex: 1,
+              content: '你好',
+            },
+          },
+          {
+            eventId: 'legacy-partial-event-002',
+            type: 'session.turn.completed',
+            createdAt: '2026-04-02T00:00:02Z',
+            payload: {
+              turnId: 'turn-001',
+              turnIndex: 1,
+              assistantMessage: '你好，有什么我可以帮你的？',
+            },
+          },
+        ],
+      },
+    });
+    inMemoryStore.seedRecord({
+      namespace: 'session',
+      key: 'session-legacy-partial-001:event:000000000001:legacy-partial-event-001',
+      tags: ['session-event', 'session:session-legacy-partial-001', 'type:session.turn.submitted'],
+      value: {
+        schemaVersion: 'shared-session-event.v1',
+        sessionId: 'session-legacy-partial-001',
+        eventId: 'legacy-partial-event-001',
+        eventIndex: 1,
+        type: 'session.turn.submitted',
+        createdAt: '2026-04-02T00:00:01Z',
+        turnIndex: 1,
+        payload: {
+          turnId: 'turn-001',
+          turnIndex: 1,
+          content: '你好',
+        },
+      },
+    });
+    const memoryManager = new MemoryManager(new MemoryStoreAdapter(inMemoryStore.provider));
+    const sessionManager = new SharedSessionManager(memoryManager);
+
+    const migratedSession = await sessionManager.getSession('session-legacy-partial-001');
+    const persistedEventRecords = inMemoryStore
+      .listRecords()
+      .filter(
+        (record) =>
+          record.namespace === 'session' &&
+          record.key.startsWith('session-legacy-partial-001:event:'),
+      );
+
+    expect(migratedSession.events).toHaveLength(2);
+    expect(migratedSession.eventCount).toBe(2);
+    expect(migratedSession.turnCount).toBe(1);
+    expect(persistedEventRecords).toHaveLength(2);
+  });
+
+  it('serializes concurrent appenders so eventIndex and turnIndex stay unique across managers', async () => {
+    const baseStore = createInMemoryStoreProvider();
+    let markFirstEventWriteStarted: (() => void) | undefined;
+    const firstEventWriteStarted = new Promise<void>((resolve) => {
+      markFirstEventWriteStarted = resolve;
+    });
+    let releaseFirstEventWrite: (() => void) | undefined;
+    const firstEventWritePending = new Promise<void>((resolve) => {
+      releaseFirstEventWrite = resolve;
+    });
+    let eventWriteCount = 0;
+    const provider: MemoryStoreProvider = {
+      ...baseStore.provider,
+      async write(record) {
+        if (record.namespace === 'session' && record.key.includes(':event:')) {
+          eventWriteCount += 1;
+          if (eventWriteCount === 1) {
+            markFirstEventWriteStarted?.();
+            await firstEventWritePending;
+          }
+        }
+        await baseStore.provider.write(record);
+      },
+    };
+    const memoryManager = new MemoryManager(new MemoryStoreAdapter(provider));
+    const firstManager = new SharedSessionManager(memoryManager);
+    const secondManager = new SharedSessionManager(memoryManager);
+
+    const openedSession = await firstManager.openSession({
+      sessionId: 'session-concurrent-append-001',
+      executionId: 'exec-concurrent-append-001',
+    });
+
+    const firstAppendPromise = firstManager.appendEvent({
+      sessionId: openedSession.sessionId,
+      type: 'session.turn.submitted',
+      payload: {
+        turnId: 'turn-001',
+      },
+    });
+    await firstEventWriteStarted;
+    const secondAppendPromise = secondManager.appendEvent({
+      sessionId: openedSession.sessionId,
+      type: 'session.turn.submitted',
+      payload: {
+        turnId: 'turn-002',
+      },
+    });
+
+    releaseFirstEventWrite?.();
+    await Promise.all([firstAppendPromise, secondAppendPromise]);
+
+    const refreshedSession = await firstManager.getSession(openedSession.sessionId);
+    expect(refreshedSession.events.map((event) => event.eventIndex)).toEqual([1, 2]);
+    expect(refreshedSession.events.map((event) => event.turnIndex)).toEqual([1, 2]);
+    expect(refreshedSession.eventCount).toBe(2);
+    expect(refreshedSession.turnCount).toBe(2);
   });
 });

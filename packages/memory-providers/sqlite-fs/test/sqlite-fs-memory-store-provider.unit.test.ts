@@ -36,4 +36,40 @@ describe('memory-providers/sqlite-fs unit', () => {
       await rm(temporaryRoot, { recursive: true, force: true });
     }
   });
+
+  it('supports key-prefix queries with sqlite LIKE escaping enabled', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'sqlite-fs-provider-unit-'));
+    const provider = new SqliteFsMemoryStoreProvider({
+      rootDirectory: join(temporaryRoot, 'memory'),
+    });
+
+    try {
+      await provider.write({
+        namespace: 'execution',
+        key: 'cli-run-001:stage-task-prepare:record-1',
+        value: { status: 'succeeded' },
+        tags: ['audit-record'],
+        updatedAt: '2026-04-02T00:00:00Z',
+      });
+      await provider.write({
+        namespace: 'execution',
+        key: 'other-run-001:stage-task-report:record-1',
+        value: { status: 'succeeded' },
+        tags: ['audit-record'],
+        updatedAt: '2026-04-02T00:00:01Z',
+      });
+
+      const queriedRecords = await provider.query({
+        namespace: 'execution',
+        keyPrefix: 'cli-run-001:',
+        tag: 'audit-record',
+      });
+
+      expect(queriedRecords).toHaveLength(1);
+      expect(queriedRecords[0]?.key).toBe('cli-run-001:stage-task-prepare:record-1');
+    } finally {
+      await provider.dispose();
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
 });

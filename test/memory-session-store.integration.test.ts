@@ -195,4 +195,49 @@ describe('Memory/Session/Store smoke', () => {
       await rm(temporaryRootDirectory, { recursive: true, force: true });
     }
   });
+
+  it('keeps eventIndex and turnIndex unique when two shared-session managers append concurrently', async () => {
+    const temporaryRootDirectory = await createTemporaryRootDirectory();
+    const provider = new FsCsvMemoryStoreProvider({
+      rootDirectory: join(temporaryRootDirectory, '.repo-ai-governor', 'memory'),
+    });
+    const adapter = new MemoryStoreAdapter(provider);
+    const memoryManager = new MemoryManager(adapter);
+    const firstSessionManager = new SharedSessionManager(memoryManager);
+    const secondSessionManager = new SharedSessionManager(memoryManager);
+
+    try {
+      const openedSession = await firstSessionManager.openSession({
+        sessionId: 'session-shared-concurrent',
+        processId: 'process-shared-concurrent',
+        executionId: 'exec-shared-concurrent',
+      });
+
+      await Promise.all([
+        firstSessionManager.appendEvent({
+          sessionId: openedSession.sessionId,
+          type: 'session.turn.submitted',
+          payload: {
+            turnId: 'turn-001',
+          },
+        }),
+        secondSessionManager.appendEvent({
+          sessionId: openedSession.sessionId,
+          type: 'session.turn.submitted',
+          payload: {
+            turnId: 'turn-002',
+          },
+        }),
+      ]);
+
+      const refreshedSession = await secondSessionManager.getSession(openedSession.sessionId);
+      expect(refreshedSession.events.map((event) => event.eventIndex)).toEqual([1, 2]);
+      expect(refreshedSession.events.map((event) => event.turnIndex)).toEqual([1, 2]);
+      expect(refreshedSession.eventCount).toBe(2);
+      expect(refreshedSession.turnCount).toBe(2);
+    } finally {
+      await provider.dispose?.();
+      await rm(temporaryRootDirectory, { recursive: true, force: true });
+    }
+  });
 });

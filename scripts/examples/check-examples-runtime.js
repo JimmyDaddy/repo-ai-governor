@@ -19,6 +19,24 @@ const CLAUDE_CODE_EXEC_FIXTURE_ENV_KEY = 'REPO_AI_GOVERNOR_CLAUDE_CODE_EXEC_FIXT
 const CLAUDE_CODE_EXEC_FIXTURE_SUCCESS = 'success';
 const GITHUB_COPILOT_EXEC_FIXTURE_ENV_KEY = 'REPO_AI_GOVERNOR_GITHUB_COPILOT_EXEC_FIXTURE';
 const GITHUB_COPILOT_EXEC_FIXTURE_SUCCESS = 'success';
+const DEFAULT_EXAMPLE_GOVERNOR_CONFIG = [
+  'schemaVersion: "1.0"',
+  'workspace:',
+  '  mode: repo_local',
+  'i18n:',
+  '  runtimeEngine: i18next',
+  '  defaultLocale: zh-CN',
+  '  fallbackLocale: en-US',
+  '  supportedLocales:',
+  '    - zh-CN',
+  '    - en-US',
+  'memory:',
+  '  storeEngine: sqlite_fs',
+  '  storeRoot: context/memory/sqlite',
+  '  provider:',
+  '    id: sqlite-fs',
+  '',
+].join('\n');
 
 /**
  * Reads UTF-8 text content from one repository-relative path.
@@ -341,6 +359,22 @@ function materializeScenarioFiles(workspacePath, files) {
 }
 
 /**
+ * Seeds one deterministic repo-local governor config for example workspaces.
+ * Why: runtime smoke should stay self-contained and not depend on per-user global workspace state.
+ * @param {string} workspacePath Temp workspace path.
+ * @returns Void.
+ */
+function ensureExampleGovernorConfig(workspacePath) {
+  const governorConfigPath = resolve(workspacePath, '.repo-ai-governor', 'governor.yaml');
+  if (existsSync(governorConfigPath)) {
+    return;
+  }
+
+  mkdirSync(dirname(governorConfigPath), { recursive: true });
+  writeFileSync(governorConfigPath, DEFAULT_EXAMPLE_GOVERNOR_CONFIG, 'utf8');
+}
+
+/**
  * Executes one CLI step and returns parsed JSON output.
  * Why: runtime smoke should validate behavior-level contract rather than README text only.
  * @param {string} cliEntryAbsolutePath Absolute CLI entry path.
@@ -535,6 +569,7 @@ try {
 
     try {
       materializeScenarioFiles(workspacePath, scenario.files);
+      ensureExampleGovernorConfig(workspacePath);
       for (const step of scenario.commands) {
         const commandName = step.args[0];
         const baselineOperation = expectedBaseline.expectedCommandOperations[commandName];

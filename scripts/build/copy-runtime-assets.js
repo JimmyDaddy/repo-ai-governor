@@ -131,7 +131,7 @@ const DISTRIBUTION_PACKAGES = [
     packageRoot: resolve(PROJECT_ROOT, "packages/memory-providers/sqlite-fs"),
     compiledDirectory: resolve(PROJECT_ROOT, "dist/packages/memory-providers/sqlite-fs"),
     packageDistDirectory: resolve(PROJECT_ROOT, "packages/memory-providers/sqlite-fs/dist"),
-    runtimeDistributionMode: "optional",
+    runtimeDistributionMode: "default",
   },
   {
     packageName: "memory-provider-registry",

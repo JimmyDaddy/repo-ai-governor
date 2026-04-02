@@ -63,6 +63,14 @@ describe('Sqlite+fs memory provider smoke', () => {
       });
       expect(executionRecords).toHaveLength(2);
 
+      const scopedExecutionRecords = await memoryManager.queryEntries({
+        scope: MemoryScope.EXECUTION,
+        keyPrefix: 'task:',
+        tag: 'task',
+      });
+      expect(scopedExecutionRecords).toHaveLength(1);
+      expect(scopedExecutionRecords[0]?.key).toBe('task:tk-022');
+
       const snapshot = await memoryManager.snapshot({
         reason: 'sqlite-smoke-test',
         recordKeys: ['normative:shared-key'],

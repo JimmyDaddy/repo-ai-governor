@@ -41,8 +41,10 @@ const DEFAULT_REPO_LOCAL_CONFIG_CONTENT = [
   '    - zh-CN',
   '    - en-US',
   'memory:',
-  '  storeEngine: fs_csv',
-  '  storeRoot: context/memory',
+  '  storeEngine: sqlite_fs',
+  '  storeRoot: context/memory/sqlite',
+  '  provider:',
+  '    id: sqlite-fs',
   '',
 ].join('\n');
 
@@ -318,9 +320,9 @@ function resolveExpectedServiceHostMemoryProvider(distributionMode) {
   }
 
   return {
-    memoryStoreEngine: 'fs_csv',
-    memoryStoreProvider: 'FsCsvMemoryStoreProvider',
-    memoryStoreProviderId: 'fs-csv',
+    memoryStoreEngine: 'sqlite_fs',
+    memoryStoreProvider: 'SqliteFsMemoryStoreProvider',
+    memoryStoreProviderId: 'sqlite-fs',
     memoryStoreDistributionMode: 'default',
     memoryStoreResolutionSource: 'legacy_store_engine',
     memoryStoreHostSurface: 'local_orchestration_service',
@@ -892,7 +894,7 @@ function createServiceHostMemoryProviderCheckScript(distributionMode) {
   },
 }`
       : `{
-  storeEngine: "fs_csv",
+  storeEngine: "sqlite_fs",
   storeRoot: "context/memory/service-host-default",
 }`;
 

@@ -18,7 +18,7 @@ import {
 } from '../src/index.js';
 
 describe('MemoryProviderRegistry', () => {
-  it('freezes built-in descriptors with default and optional distribution modes', () => {
+  it('freezes built-in descriptors with default distribution mode for built-in providers', () => {
     expect(BUILT_IN_MEMORY_PROVIDER_DESCRIPTORS).toEqual([
       expect.objectContaining({
         id: MemoryProviderBuiltInId.FS_CSV,
@@ -26,31 +26,31 @@ describe('MemoryProviderRegistry', () => {
       }),
       expect.objectContaining({
         id: MemoryProviderBuiltInId.SQLITE_FS,
-        distributionMode: MemoryProviderDistributionMode.OPTIONAL,
+        distributionMode: MemoryProviderDistributionMode.DEFAULT,
       }),
     ]);
   });
 
-  it('loads the built-in fs-csv provider from legacy storeEngine config', async () => {
+  it('loads the built-in sqlite-fs provider from legacy storeEngine config', async () => {
     const registry = new MemoryProviderRegistry();
     const result = await registry.loadProvider({
       workspaceRoot: '/tmp/repo-ai-governor-memory-provider-registry',
       memoryConfig: {
-        storeEngine: MemoryStoreEngine.FS_CSV,
+        storeEngine: MemoryStoreEngine.SQLITE_FS,
         storeRoot: 'context/memory',
       },
     });
 
-    expect(result.descriptor.id).toBe(MemoryProviderBuiltInId.FS_CSV);
-    expect(result.providerName).toBe('FsCsvMemoryStoreProvider');
+    expect(result.descriptor.id).toBe(MemoryProviderBuiltInId.SQLITE_FS);
+    expect(result.providerName).toBe('SqliteFsMemoryStoreProvider');
     expect(result.memoryStoreRoot).toBe(
       join('/tmp/repo-ai-governor-memory-provider-registry', 'context/memory'),
     );
     expect(result.summary).toEqual(
       expect.objectContaining({
-        memoryStoreEngine: MemoryStoreEngine.FS_CSV,
-        memoryStoreProvider: 'FsCsvMemoryStoreProvider',
-        memoryStoreProviderId: MemoryProviderBuiltInId.FS_CSV,
+        memoryStoreEngine: MemoryStoreEngine.SQLITE_FS,
+        memoryStoreProvider: 'SqliteFsMemoryStoreProvider',
+        memoryStoreProviderId: MemoryProviderBuiltInId.SQLITE_FS,
         memoryStoreDistributionMode: MemoryProviderDistributionMode.DEFAULT,
         memoryStoreResolutionSource: MemoryProviderResolutionSource.LEGACY_STORE_ENGINE,
         memoryStoreHostSurface: MemoryProviderHostSurface.CLI,
@@ -242,7 +242,7 @@ describe('MemoryProviderRegistry', () => {
     ).toThrowError(RuntimeError);
   });
 
-  it('fails closed with explicit default-distribution guidance when an optional built-in provider package is unavailable', async () => {
+  it('fails closed when a built-in provider package is unavailable', async () => {
     const registry = new MemoryProviderRegistry({
       moduleLoader: async (specifier) => {
         throw new RuntimeError(
@@ -262,7 +262,7 @@ describe('MemoryProviderRegistry', () => {
       }),
     ).rejects.toMatchObject({
       code: GovernorErrorCode.MEMORY_STORE_PROVIDER_INIT_FAILED,
-      message: expect.stringContaining('not bundled in the default distribution baseline'),
+      message: expect.stringContaining('Failed to load memory provider module'),
     });
   });
 

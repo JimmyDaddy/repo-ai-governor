@@ -72,7 +72,6 @@ interface LocalOrchestrationServiceSessionRuntimeDependencies {
 
 const SESSION_CONTEXT_CURRENT_ROUTE_KEY = 'currentRouteId';
 const SESSION_CONTEXT_LATEST_TURN_ID_KEY = 'latestTurnId';
-const SESSION_CONTEXT_TURN_COUNT_KEY = 'turnCount';
 const SESSION_CURSOR_VERSION = 1;
 
 /**
@@ -189,6 +188,7 @@ export class LocalOrchestrationServiceSessionRuntime {
         role: OrchestrationSessionTranscriptRole.USER,
         routeId: currentRouteId,
         turnId,
+        turnIndex,
         content: request.userMessage,
         ...(request.metadata ? { metadata: { ...request.metadata } } : {}),
       },
@@ -364,7 +364,6 @@ export class LocalOrchestrationServiceSessionRuntime {
       contextPatch: {
         [SESSION_CONTEXT_CURRENT_ROUTE_KEY]: currentRouteId,
         [SESSION_CONTEXT_LATEST_TURN_ID_KEY]: turnId,
-        [SESSION_CONTEXT_TURN_COUNT_KEY]: turnIndex,
       },
     });
 
@@ -673,9 +672,12 @@ export class LocalOrchestrationServiceSessionRuntime {
       ...(session.executionId ? { executionId: session.executionId } : {}),
       ...(currentRouteId ? { currentRouteId } : {}),
       ...(latestTurnId ? { latestTurnId } : {}),
-      latestEventSequence: session.events.length,
-      nextCursor: this.createSessionCursor(session.sessionId, session.events.length),
-      eventCount: session.events.length,
+      latestEventSequence: session.eventCount ?? session.events.length,
+      nextCursor: this.createSessionCursor(
+        session.sessionId,
+        session.eventCount ?? session.events.length,
+      ),
+      eventCount: session.eventCount ?? session.events.length,
       context: {
         ...session.context,
       },
@@ -721,7 +723,7 @@ export class LocalOrchestrationServiceSessionRuntime {
 
   private toSessionEvents(session: SharedSession): OrchestrationSessionEvent[] {
     return session.events.map((event, index) => {
-      const sequence = index + 1;
+      const sequence = event.eventIndex ?? index + 1;
       return {
         eventId: event.eventId,
         sequence,
@@ -737,9 +739,8 @@ export class LocalOrchestrationServiceSessionRuntime {
   }
 
   private resolveNextTurnIndex(session: SharedSession): number {
-    const persistedTurnCount = session.context[SESSION_CONTEXT_TURN_COUNT_KEY];
-    if (typeof persistedTurnCount === 'number' && Number.isFinite(persistedTurnCount)) {
-      return persistedTurnCount + 1;
+    if (typeof session.turnCount === 'number' && Number.isFinite(session.turnCount)) {
+      return session.turnCount + 1;
     }
 
     return (

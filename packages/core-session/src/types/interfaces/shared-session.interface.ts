@@ -8,6 +8,8 @@ export interface SessionEvent {
   type: string;
   createdAt: string;
   payload: Record<string, unknown>;
+  eventIndex?: number;
+  turnIndex?: number;
 }
 
 /**
@@ -22,6 +24,54 @@ export interface SharedSession {
   executionId?: string;
   context: Record<string, unknown>;
   events: SessionEvent[];
+  eventCount?: number;
+  turnCount?: number;
+  lastEventId?: string;
+}
+
+/**
+ * Defines one summary record persisted for session durable truth.
+ */
+export interface SharedSessionSummaryRecord {
+  schemaVersion: 'shared-session-summary.v1';
+  sessionId: string;
+  status: SessionStatus;
+  openedAt: string;
+  closedAt?: string;
+  processId?: string;
+  executionId?: string;
+  context: Record<string, unknown>;
+  eventCount: number;
+  turnCount: number;
+  lastEventId?: string;
+}
+
+/**
+ * Defines one append-only event record persisted for session replay.
+ */
+export interface SharedSessionEventRecord {
+  schemaVersion: 'shared-session-event.v1';
+  sessionId: string;
+  eventId: string;
+  eventIndex: number;
+  type: string;
+  createdAt: string;
+  payload: Record<string, unknown>;
+  turnIndex?: number;
+}
+
+/**
+ * Defines one persisted diagnostic/projection record derived from terminal session events.
+ */
+export interface SharedSessionDiagnosticRecord {
+  schemaVersion: 'shared-session-diagnostic.v1';
+  sessionId: string;
+  diagnosticId: string;
+  eventIndex: number;
+  turnIndex?: number;
+  category: string;
+  createdAt: string;
+  detail: Record<string, unknown>;
 }
 
 /**

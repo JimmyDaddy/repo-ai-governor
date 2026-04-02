@@ -1,6 +1,6 @@
 # TK-477 implement sqlite-backed artifact registry canonical truth and rendered CSV compatibility views
 
-- Status: planned
+- Status: active
 - Date: 2026-04-02
 - Owner: AI-Agent
 - Priority: P0
@@ -40,3 +40,4 @@
 ## 6. 执行记录
 
 1. 2026-04-02：任务创建，状态初始化为 `planned`。
+2. 2026-04-02：状态切换为 `active`，随 `sprint-002` 成为当前 primary planning surface；开始承接 artifact registry / archive registry 的 sqlite canonical truth 与 rendered CSV compatibility/export cutover。

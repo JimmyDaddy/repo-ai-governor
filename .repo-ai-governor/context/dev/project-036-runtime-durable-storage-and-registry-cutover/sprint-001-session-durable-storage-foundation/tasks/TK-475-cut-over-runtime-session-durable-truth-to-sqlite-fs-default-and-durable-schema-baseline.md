@@ -1,6 +1,6 @@
 # TK-475 cut over runtime session durable truth to sqlite-fs default and durable schema baseline
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-02
 - Owner: AI-Agent
 - Priority: P0
@@ -42,3 +42,9 @@
 ## 6. 执行记录
 
 1. 2026-04-02：任务创建，状态初始化为 `planned`。
+2. 2026-04-02：状态切换为 `active`，开始梳理 `sqlite_fs` 默认切换、provider distribution truth、doctor/verify expectation 与 session durable schema baseline 的第一阶段实现边界。
+3. 2026-04-02：完成第一批默认切换实现：`packages/shared` 默认 memory engine 改为 `sqlite_fs`，`memory-provider-registry` 与 runtime asset copy 将 `sqlite-fs` built-in distribution mode 提升为 `default`，release/cleanroom/examples 验证脚本的默认 repo-local config 与 expectation 也一并切到 `sqlite-fs`。
+4. 2026-04-02：定位并修复 `sqlite-fs` provider 的 key-prefix query 回归；根因是 sqlite `LIKE ... ESCAPE` 子句写入了两个字符的 escape expression，导致 `run` 结束后读取 execution audit records 时抛出 `MEMORY_STORE_QUERY_FAILED`。已修复 provider SQL，并补上 unit/integration coverage。
+5. 2026-04-02：本轮验证通过：`pnpm exec biome check packages/memory-providers/sqlite-fs/src/sqlite-fs-memory-store-provider.ts packages/memory-providers/sqlite-fs/test/sqlite-fs-memory-store-provider.unit.test.ts test/memory-sqlite-fs-provider.integration.test.ts scripts/examples/check-examples-runtime.js scripts/release/verify-cleanroom-local-install.js scripts/dev/debug-cleanroom-session-shell.js`；`/opt/homebrew/bin/node ./node_modules/vitest/vitest.mjs run packages/memory-providers/sqlite-fs/test/sqlite-fs-memory-store-provider.unit.test.ts test/memory-sqlite-fs-provider.integration.test.ts --maxWorkers=1 --maxConcurrency=1`；`pnpm run build`；`node ./scripts/examples/check-examples-runtime.js`；`node ./scripts/release/verify-local-distribution.js`；`node ./scripts/release/verify-cleanroom-local-install.js --modes path --iterations 1`。
+6. 2026-04-02：补齐最终验证闭环：`node ./scripts/governance/check-docs-triad-sync.js`、`node ./scripts/governance/check-normative-loading-manifest.js --mode block`、`node ./scripts/governance/check-task-ledger-sync.js`、`/opt/homebrew/bin/node ./node_modules/vitest/vitest.mjs run packages/memory-providers/sqlite-fs/test/sqlite-fs-memory-store-provider.unit.test.ts test/memory-sqlite-fs-provider.integration.test.ts packages/core-session/test/shared-session-manager.unit.test.ts test/memory-session-store.integration.test.ts packages/core-orchestration-service/test/local-orchestration-service-shell.unit.test.ts apps/cli/test/runtime/session-shell-transcript-store.test.ts apps/cli/test/runtime/session-shell-runner.test.ts apps/cli/test/runtime/react-cli-runner.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm run build`、`node ./scripts/examples/check-examples-runtime.js`、`node ./scripts/release/verify-local-distribution.js`、`node ./scripts/release/verify-cleanroom-local-install.js --modes path --iterations 1` 全部通过。
+7. 2026-04-02：任务切换为 `completed`；`sqlite-fs` 已成为 runtime session durable truth 的默认 engine，distribution/doctor/verify/examples/cleanroom 语义已对齐，且当前 `SharedSessionManager` 提供的 `session summary + append-only event records + diagnostic projection` 已满足 contract 所要求的等价 `sessions + session_events + session_diagnostics` schema/transaction baseline。

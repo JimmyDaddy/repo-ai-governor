@@ -30,6 +30,9 @@ const REQUIRED_PACKED_PATH_SUFFIXES = [
   'dist/node_modules/@repo-ai-governor/core-runtime-langgraph/dist/src/index.js',
   'dist/node_modules/@repo-ai-governor/memory-provider-registry/package.json',
   'dist/node_modules/@repo-ai-governor/memory-provider-registry/dist/src/index.js',
+  'dist/packages/memory-providers/sqlite-fs/src/index.js',
+  'dist/node_modules/@repo-ai-governor/memory-provider-sqlite-fs/package.json',
+  'dist/node_modules/@repo-ai-governor/memory-provider-sqlite-fs/dist/src/index.js',
   'dist/node_modules/@repo-ai-governor/notification-provider-chat-im/package.json',
   'dist/node_modules/@repo-ai-governor/notification-provider-chat-im/dist/src/index.js',
   'dist/node_modules/@repo-ai-governor/notification-provider-webhook/package.json',
@@ -60,15 +63,8 @@ const REQUIRED_PACKED_PATH_SUFFIXES = [
   '.codex/skills/workspace-delivery-finisher/SKILL.md',
   '.codex/skills/workspace-delivery-finisher/agents/openai.yaml',
 ];
-const PLUGIN_ENABLED_REQUIRED_PACKED_PATH_SUFFIXES = [
-  'dist/packages/memory-providers/sqlite-fs/src/index.js',
-  'dist/node_modules/@repo-ai-governor/memory-provider-sqlite-fs/package.json',
-  'dist/node_modules/@repo-ai-governor/memory-provider-sqlite-fs/dist/src/index.js',
-];
-const FORBIDDEN_DEFAULT_PACKED_PATH_FRAGMENTS = [
-  'dist/packages/memory-providers/sqlite-fs/',
-  'dist/node_modules/@repo-ai-governor/memory-provider-sqlite-fs/',
-];
+const PLUGIN_ENABLED_REQUIRED_PACKED_PATH_SUFFIXES = [];
+const FORBIDDEN_DEFAULT_PACKED_PATH_FRAGMENTS = [];
 const DOCUMENT_TRUTHFULNESS_ASSERTIONS = [
   {
     filePath: 'README.md',

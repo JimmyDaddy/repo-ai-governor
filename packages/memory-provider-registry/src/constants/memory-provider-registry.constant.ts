@@ -95,7 +95,7 @@ export const BUILT_IN_MEMORY_PROVIDER_DESCRIPTORS: readonly MemoryProviderBuiltI
   {
     id: MemoryProviderBuiltInId.SQLITE_FS,
     kind: MemoryProviderDescriptorKind.BUILT_IN,
-    distributionMode: MemoryProviderDistributionMode.OPTIONAL,
+    distributionMode: MemoryProviderDistributionMode.DEFAULT,
     packageName: '@repo-ai-governor/memory-provider-sqlite-fs',
     exportName: 'SqliteFsMemoryStoreProvider',
     providerName: 'SqliteFsMemoryStoreProvider',

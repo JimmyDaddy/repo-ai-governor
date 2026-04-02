@@ -13,6 +13,9 @@ export type {
   PersistedAuditRecord,
   RecordAuditEventOptions,
   SessionEvent,
+  SharedSessionDiagnosticRecord,
+  SharedSessionEventRecord,
   SharedSession,
+  SharedSessionSummaryRecord,
   UpdateSessionContextOptions,
 } from './interfaces/index.js';

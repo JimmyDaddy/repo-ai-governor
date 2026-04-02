@@ -99,10 +99,32 @@ function createStubSessionShellResult(): CliSessionShellRunResult {
  */
 async function createPolicyGateFixtureRepo(): Promise<string> {
   const temporaryRepositoryRoot = await mkdtemp(resolve(tmpdir(), 'cli-output-policy-'));
+  const workspaceRoot = resolve(temporaryRepositoryRoot, '.repo-ai-governor');
   execFileSync('git', ['init'], {
     cwd: temporaryRepositoryRoot,
     stdio: 'ignore',
   });
+  await mkdir(resolve(workspaceRoot, 'context', 'memory'), { recursive: true });
+  await writeFile(
+    resolve(workspaceRoot, 'governor.yaml'),
+    [
+      'schemaVersion: "1.1"',
+      'workspace:',
+      '  mode: repo_local',
+      '  migrationPolicy: copy_verify_switch_rollback',
+      'i18n:',
+      '  runtimeEngine: i18next',
+      '  defaultLocale: en-US',
+      '  fallbackLocale: en-US',
+      '  supportedLocales:',
+      '    - en-US',
+      'memory:',
+      '  storeEngine: fs_csv',
+      '  storeRoot: context/memory',
+      '',
+    ].join('\n'),
+    'utf8',
+  );
   await mkdir(resolve(temporaryRepositoryRoot, 'migrations'), { recursive: true });
   await writeFile(
     resolve(temporaryRepositoryRoot, 'migrations', '001.sql'),
