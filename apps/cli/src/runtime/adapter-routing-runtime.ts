@@ -33,12 +33,32 @@ import {
  * Owns CLI-local adapter surface resolution, protocol construction, and restricted fallback wiring.
  */
 export class CliAdapterRoutingRuntime {
+  private static readonly sharedProtocolCacheByNamespace = new Map<
+    string,
+    Map<
+      AdapterSurface,
+      {
+        fingerprint: string;
+        protocol: AgentProtocolContract;
+      }
+    >
+  >();
+
+  private readonly protocolCacheBySurface = new Map<
+    AdapterSurface,
+    {
+      fingerprint: string;
+      protocol: AgentProtocolContract;
+    }
+  >();
+
   public constructor(
     private readonly adaptersConfig: AdaptersConfig,
     private readonly options: {
       claudeCodeExecRunner?: ClaudeCodeExecRunner;
       codexExecRunner?: CodexExecRunner;
       githubCopilotExecRunner?: GithubCopilotExecRunner;
+      sharedProtocolCacheNamespace?: string;
     } = {},
   ) {}
 
@@ -55,6 +75,7 @@ export class CliAdapterRoutingRuntime {
   ): Record<string, AgentProtocolContract> {
     const protocolBySurface: Record<string, AgentProtocolContract> = {};
     const surfaces = this.resolveTrackedAdapterSurfaces(toolConfigBySurface);
+    const protocolCache = this.resolveProtocolCache();
     for (const surface of surfaces) {
       const toolConfig = toolConfigBySurface.get(surface);
       const enabled = toolConfig?.enabled ?? true;
@@ -72,45 +93,19 @@ export class CliAdapterRoutingRuntime {
         availabilityStatus,
         unavailableReasons,
       };
-      protocolBySurface[surface] =
-        surface === AdapterSurface.CODEX
-          ? new CodexAgentAdapter({
-              ...adapterOptions,
-              executionMode: CodexAgentAdapterExecutionMode.CLI_EXEC,
-              ...(this.options.codexExecRunner
-                ? {
-                    execRunner: this.options.codexExecRunner,
-                  }
-                : {}),
-            })
-          : surface === AdapterSurface.GITHUB_COPILOT
-            ? new GithubCopilotAgentAdapter({
-                ...adapterOptions,
-                executionMode: GithubCopilotAgentAdapterExecutionMode.CLI_EXEC,
-                ...(this.options.githubCopilotExecRunner
-                  ? {
-                      execRunner: this.options.githubCopilotExecRunner,
-                    }
-                  : {}),
-              })
-            : surface === AdapterSurface.CLAUDE_CODE
-              ? new ClaudeCodeAgentAdapter({
-                  ...adapterOptions,
-                  executionMode: ClaudeCodeAgentAdapterExecutionMode.CLI_EXEC,
-                  ...(this.options.claudeCodeExecRunner
-                    ? {
-                        execRunner: this.options.claudeCodeExecRunner,
-                      }
-                    : {}),
-                })
-              : new LocalModelAgentAdapter({
-                  ...adapterOptions,
-                  ...(toolConfig?.localModel
-                    ? {
-                        localModel: toolConfig.localModel,
-                      }
-                    : {}),
-                });
+      const fingerprint = this.createProtocolCacheFingerprint(surface, toolConfig, adapterOptions);
+      const cachedProtocolEntry = protocolCache.get(surface);
+      if (cachedProtocolEntry?.fingerprint === fingerprint) {
+        protocolBySurface[surface] = cachedProtocolEntry.protocol;
+        continue;
+      }
+
+      const protocol = this.createProtocolForSurface(surface, toolConfig, adapterOptions);
+      protocolCache.set(surface, {
+        fingerprint,
+        protocol,
+      });
+      protocolBySurface[surface] = protocol;
     }
 
     return protocolBySurface;
@@ -314,5 +309,97 @@ export class CliAdapterRoutingRuntime {
       return AgentAvailabilityStatus.UNAVAILABLE;
     }
     return AgentAvailabilityStatus.AVAILABLE;
+  }
+
+  private createProtocolForSurface(
+    surface: AdapterSurface,
+    toolConfig: NonNullable<AdaptersConfig['tools']>[number] | undefined,
+    adapterOptions: {
+      availabilityStatus: AgentAvailabilityStatus;
+      unavailableReasons: string[];
+    },
+  ): AgentProtocolContract {
+    if (surface === AdapterSurface.CODEX) {
+      return new CodexAgentAdapter({
+        ...adapterOptions,
+        executionMode: CodexAgentAdapterExecutionMode.CLI_EXEC,
+        ...(this.options.codexExecRunner
+          ? {
+              execRunner: this.options.codexExecRunner,
+            }
+          : {}),
+      });
+    }
+
+    if (surface === AdapterSurface.GITHUB_COPILOT) {
+      return new GithubCopilotAgentAdapter({
+        ...adapterOptions,
+        executionMode: GithubCopilotAgentAdapterExecutionMode.CLI_EXEC,
+        ...(this.options.githubCopilotExecRunner
+          ? {
+              execRunner: this.options.githubCopilotExecRunner,
+            }
+          : {}),
+      });
+    }
+
+    if (surface === AdapterSurface.CLAUDE_CODE) {
+      return new ClaudeCodeAgentAdapter({
+        ...adapterOptions,
+        executionMode: ClaudeCodeAgentAdapterExecutionMode.CLI_EXEC,
+        ...(this.options.claudeCodeExecRunner
+          ? {
+              execRunner: this.options.claudeCodeExecRunner,
+            }
+          : {}),
+      });
+    }
+
+    return new LocalModelAgentAdapter({
+      ...adapterOptions,
+      ...(toolConfig?.localModel
+        ? {
+            localModel: toolConfig.localModel,
+          }
+        : {}),
+    });
+  }
+
+  private createProtocolCacheFingerprint(
+    surface: AdapterSurface,
+    toolConfig: NonNullable<AdaptersConfig['tools']>[number] | undefined,
+    adapterOptions: {
+      availabilityStatus: AgentAvailabilityStatus;
+      unavailableReasons: string[];
+    },
+  ): string {
+    return JSON.stringify({
+      surface,
+      enabled: toolConfig?.enabled ?? true,
+      configuredAvailability: toolConfig?.availability ?? null,
+      availabilityStatus: adapterOptions.availabilityStatus,
+      unavailableReasons: [...adapterOptions.unavailableReasons].sort(),
+      localModel: toolConfig?.localModel ?? null,
+    });
+  }
+
+  private resolveProtocolCache(): Map<
+    AdapterSurface,
+    {
+      fingerprint: string;
+      protocol: AgentProtocolContract;
+    }
+  > {
+    const namespace = this.options.sharedProtocolCacheNamespace?.trim();
+    if (!namespace) {
+      return this.protocolCacheBySurface;
+    }
+
+    let sharedCache = CliAdapterRoutingRuntime.sharedProtocolCacheByNamespace.get(namespace);
+    if (!sharedCache) {
+      sharedCache = new Map();
+      CliAdapterRoutingRuntime.sharedProtocolCacheByNamespace.set(namespace, sharedCache);
+    }
+    return sharedCache;
   }
 }

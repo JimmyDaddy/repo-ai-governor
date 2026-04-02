@@ -1,6 +1,6 @@
 # TK-480 automate artifact lifecycle maintenance and auto-archive from sqlite canonical truth
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-02
 - Owner: AI-Agent
 - Priority: P1
@@ -39,3 +39,4 @@
 ## 6. 执行记录
 
 1. 2026-04-02：任务创建，状态初始化为 `planned`；承接 artifact registry sqlite canonical truth 后续的自动维护与 auto-archive 能力建设。
+2. 2026-04-02：完成 artifact lifecycle automation 收口：`reconcile-artifact-dependencies` 与 `compact-artifact-registry` 已抽离为可复用 runtime，`run-artifact-lifecycle-maintenance` 现在会在同一批次中完成 reconcile/compact/render，并支持输出 batch summary/audit file；同时补齐 temp-workspace integration test、artifact lifecycle dry-run 与完整 build 验证，任务收口为 `completed`。

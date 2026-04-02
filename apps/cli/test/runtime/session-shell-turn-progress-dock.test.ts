@@ -12,10 +12,13 @@ describe('session-shell-turn-progress-dock', () => {
           return `Running · ${interpolation?.elapsed ?? '0s'}`;
         }
         if (key === 'cli.sessionShell.responses.liveTurnCurrentDetail') {
-          return `Current: ${interpolation?.detail ?? ''}`;
+          return `${interpolation?.detail ?? ''}`;
         }
         if (key === 'cli.sessionShell.responses.liveTurnRoleActivity') {
           return `${interpolation?.role ?? ''}: ${interpolation?.detail ?? ''}`;
+        }
+        if (key === 'cli.sessionShell.responses.liveTurnRoleReply') {
+          return `${interpolation?.role ?? ''} reply: ${interpolation?.detail ?? ''}`;
         }
         if (key === 'cli.sessionShell.responses.liveTurnToolCall') {
           return `Tool: ${interpolation?.toolName ?? ''} - ${interpolation?.detail ?? ''}`;
@@ -65,8 +68,8 @@ describe('session-shell-turn-progress-dock', () => {
     const liveActivityItem = items.find((item) => item.renderKind === 'live_activity');
 
     expect(liveActivityItem?.lines).toEqual([
-      'Current: codex stdout: warn one',
-      'Current: codex stderr: progress two',
+      'codex stdout: warn one',
+      'codex stderr: progress two',
     ]);
   });
 
@@ -77,7 +80,10 @@ describe('session-shell-turn-progress-dock', () => {
           return `Running · ${interpolation?.elapsed ?? '0s'}`;
         }
         if (key === 'cli.sessionShell.responses.liveTurnCurrentDetail') {
-          return `Current: ${interpolation?.detail ?? ''}`;
+          return `${interpolation?.detail ?? ''}`;
+        }
+        if (key === 'cli.sessionShell.responses.liveTurnRoleReply') {
+          return `${interpolation?.role ?? ''} reply: ${interpolation?.detail ?? ''}`;
         }
         if (key === 'cli.sessionShell.responses.liveTurnActivityTitle') {
           return 'Live activity';
@@ -119,7 +125,7 @@ describe('session-shell-turn-progress-dock', () => {
 
     expect(dock.projectTranscriptItems('session-1', [])).toEqual([]);
     expect(dock.consumeCompletedTurnDetails('turn-1')).toEqual([
-      expect.stringMatching(/^\[\d{2}:\d{2}:\d{2}\] Current: codex review started$/u),
+      expect.stringMatching(/^\[\d{2}:\d{2}:\d{2}\] codex review started$/u),
     ]);
     expect(dock.consumeCompletedTurnDetails('turn-1')).toEqual([]);
   });
@@ -131,7 +137,10 @@ describe('session-shell-turn-progress-dock', () => {
           return `Running · ${interpolation?.elapsed ?? '0s'}`;
         }
         if (key === 'cli.sessionShell.responses.liveTurnCurrentDetail') {
-          return `Current: ${interpolation?.detail ?? ''}`;
+          return `${interpolation?.detail ?? ''}`;
+        }
+        if (key === 'cli.sessionShell.responses.liveTurnRoleReply') {
+          return `${interpolation?.role ?? ''} reply: ${interpolation?.detail ?? ''}`;
         }
         if (key === 'cli.sessionShell.responses.liveTurnActivityTitle') {
           return 'Live activity';
@@ -163,8 +172,8 @@ describe('session-shell-turn-progress-dock', () => {
     const liveActivityItem = items.find((item) => item.renderKind === 'live_activity');
 
     expect(liveActivityItem?.lines).toHaveLength(10);
-    expect(liveActivityItem?.lines[0]).toBe('Current: log line 1');
-    expect(liveActivityItem?.lines[9]).toBe('Current: log line 10');
+    expect(liveActivityItem?.lines[0]).toBe('log line 1');
+    expect(liveActivityItem?.lines[9]).toBe('log line 10');
   });
 
   it('marks system-origin role activity separately from AI-authored role detail lines', () => {
@@ -174,10 +183,13 @@ describe('session-shell-turn-progress-dock', () => {
           return `Running · ${interpolation?.elapsed ?? '0s'}`;
         }
         if (key === 'cli.sessionShell.responses.liveTurnCurrentDetail') {
-          return `Current: ${interpolation?.detail ?? ''}`;
+          return `${interpolation?.detail ?? ''}`;
         }
         if (key === 'cli.sessionShell.responses.liveTurnRoleActivity') {
           return `${interpolation?.role ?? ''}: ${interpolation?.detail ?? ''}`;
+        }
+        if (key === 'cli.sessionShell.responses.liveTurnRoleReply') {
+          return `${interpolation?.role ?? ''} reply: ${interpolation?.detail ?? ''}`;
         }
         if (key === 'cli.sessionShell.responses.liveTurnActivityTitle') {
           return 'Live activity';
@@ -229,6 +241,80 @@ describe('session-shell-turn-progress-dock', () => {
     expect(liveActivityItem?.lines).toEqual([
       'reviewer system: Codex repository review is still running (15s elapsed); waiting for CLI output.',
       'reviewer: Inspecting changed files before drafting findings',
+    ]);
+  });
+
+  it('surfaces the latest agent reply draft in live activity and completed execution details', () => {
+    const dock = new CliSessionShellTurnProgressDock({
+      translate: (key, interpolation) => {
+        if (key === 'cli.sessionShell.responses.liveTurnRunningSummary') {
+          return `Running · ${interpolation?.elapsed ?? '0s'}`;
+        }
+        if (key === 'cli.sessionShell.responses.liveTurnCurrentDetail') {
+          return `${interpolation?.detail ?? ''}`;
+        }
+        if (key === 'cli.sessionShell.responses.liveTurnRoleReply') {
+          return `${interpolation?.role ?? ''} reply: ${interpolation?.detail ?? ''}`;
+        }
+        if (key === 'cli.sessionShell.responses.liveTurnActivityTitle') {
+          return 'Live activity';
+        }
+        if (key === 'cli.sessionShell.transcript.assistantLabel') {
+          return 'Governor';
+        }
+        return key;
+      },
+    });
+
+    dock.seedRunningState();
+    dock.applySessionEvents([
+      {
+        eventId: 'event-1',
+        sequence: 1,
+        streamCursor: 'cursor-1',
+        sessionId: 'session-1',
+        type: OrchestrationSessionEventType.TURN_STREAM_DELTA,
+        createdAt: '2026-04-01T07:00:00Z',
+        payload: {
+          role: OrchestrationSessionTranscriptRole.ASSISTANT,
+          turnId: 'turn-1',
+          roleId: 'reviewer',
+          streamKind: 'token',
+          chunkText: 'Review',
+        },
+      },
+      {
+        eventId: 'event-2',
+        sequence: 2,
+        streamCursor: 'cursor-2',
+        sessionId: 'session-1',
+        type: OrchestrationSessionEventType.TURN_STREAM_DELTA,
+        createdAt: '2026-04-01T07:00:01Z',
+        payload: {
+          role: OrchestrationSessionTranscriptRole.ASSISTANT,
+          turnId: 'turn-1',
+          roleId: 'reviewer',
+          streamKind: 'token',
+          accumulatedText: 'Review findings complete',
+        },
+      },
+      {
+        eventId: 'event-3',
+        sequence: 3,
+        streamCursor: 'cursor-3',
+        sessionId: 'session-1',
+        type: OrchestrationSessionEventType.TURN_FAILED,
+        createdAt: '2026-04-01T07:00:02Z',
+        payload: {
+          role: OrchestrationSessionTranscriptRole.ASSISTANT,
+          turnId: 'turn-1',
+        },
+      },
+    ]);
+
+    expect(dock.projectTranscriptItems('session-1', [])).toEqual([]);
+    expect(dock.consumeCompletedTurnDetails('turn-1')).toEqual([
+      expect.stringMatching(/^\[\d{2}:\d{2}:\d{2}\] reviewer reply: Review findings complete$/u),
     ]);
   });
 });

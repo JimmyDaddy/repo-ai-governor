@@ -28,6 +28,7 @@ function createAvailableProtocol(
     capabilitySupportOverrides?: Partial<Record<AgentCapability, AgentCapabilitySupportLevel>>;
     omittedCapabilities?: AgentCapability[];
     toolCallingSupportLevel?: AgentCapabilitySupportLevel;
+    probeSpy?: ReturnType<typeof vi.fn>;
     invokeStageSpy?: ReturnType<typeof vi.fn>;
     streamEvents?: Array<{
       eventType: AgentStreamEventType;
@@ -39,44 +40,46 @@ function createAvailableProtocol(
     options.toolCallingSupportLevel ?? AgentCapabilitySupportLevel.SUPPORTED;
   const omittedCapabilities = new Set(options.omittedCapabilities ?? []);
   return {
-    probe: async () => ({
-      identity: {
-        agentId: `${surface}-agent`,
-        role: 'session-main',
-        surface,
-        roleProfileId: 'session-main',
-        roleSource: 'test',
-      },
-      availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
-      capabilityMatrix: {
-        capabilityStates: Object.values(AgentCapability)
-          .filter((capability) => !omittedCapabilities.has(capability))
-          .map((capability) => ({
-            capability,
-            supportLevel:
-              options.capabilitySupportOverrides?.[capability] ??
-              (capability === AgentCapability.TOOL_CALLING
-                ? toolCallingSupportLevel
-                : AgentCapabilitySupportLevel.SUPPORTED),
-          })),
-        timeout: {
-          supportsAgentInvocationTimeout: true,
-          supportsStageTimeoutSignal: true,
-          supportsFlowTimeoutSignal: true,
+    probe:
+      options.probeSpy ??
+      (async () => ({
+        identity: {
+          agentId: `${surface}-agent`,
+          role: 'session-main',
+          surface,
+          roleProfileId: 'session-main',
+          roleSource: 'test',
         },
-        cancellation: {
-          supportsCancel: true,
-          supportsReasonPropagation: true,
-          supportsAbortSignal: true,
+        availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+        capabilityMatrix: {
+          capabilityStates: Object.values(AgentCapability)
+            .filter((capability) => !omittedCapabilities.has(capability))
+            .map((capability) => ({
+              capability,
+              supportLevel:
+                options.capabilitySupportOverrides?.[capability] ??
+                (capability === AgentCapability.TOOL_CALLING
+                  ? toolCallingSupportLevel
+                  : AgentCapabilitySupportLevel.SUPPORTED),
+            })),
+          timeout: {
+            supportsAgentInvocationTimeout: true,
+            supportsStageTimeoutSignal: true,
+            supportsFlowTimeoutSignal: true,
+          },
+          cancellation: {
+            supportsCancel: true,
+            supportsReasonPropagation: true,
+            supportsAbortSignal: true,
+          },
+          contextWindow: {
+            maxInputTokens: 8000,
+            maxOutputTokens: 4000,
+            supportsAutoTruncation: true,
+          },
         },
-        contextWindow: {
-          maxInputTokens: 8000,
-          maxOutputTokens: 4000,
-          supportsAutoTruncation: true,
-        },
-      },
-      unavailableReasons: [],
-    }),
+        unavailableReasons: [],
+      })),
     invokeStage:
       options.invokeStageSpy ??
       (async (request) => ({
@@ -558,6 +561,97 @@ describe('Cli session-main supervisor runtime', () => {
     );
   });
 
+  it('answers targeted surface availability questions from the local probe path without invoking codex', async () => {
+    const codexInvokeStageSpy = vi.fn(async () => ({
+      output: {
+        adapterSurface: AdapterSurface.CODEX,
+        responseText: 'should not run',
+      },
+      elapsedMs: 1,
+    }));
+    const githubCopilotProbeSpy = vi.fn(async () => ({
+      identity: {
+        agentId: `${AdapterSurface.GITHUB_COPILOT}-agent`,
+        role: 'session-main',
+        surface: AdapterSurface.GITHUB_COPILOT,
+        roleProfileId: 'session-main',
+        roleSource: 'test',
+      },
+      availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+      capabilityMatrix: {
+        capabilityStates: Object.values(AgentCapability).map((capability) => ({
+          capability,
+          supportLevel: AgentCapabilitySupportLevel.SUPPORTED,
+        })),
+        timeout: {
+          supportsAgentInvocationTimeout: true,
+          supportsStageTimeoutSignal: true,
+          supportsFlowTimeoutSignal: true,
+        },
+        cancellation: {
+          supportsCancel: true,
+          supportsReasonPropagation: true,
+          supportsAbortSignal: true,
+        },
+        contextWindow: {
+          maxInputTokens: 8000,
+          maxOutputTokens: 4000,
+          supportsAutoTruncation: true,
+        },
+      },
+      unavailableReasons: [],
+    }));
+    const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
+      adaptersConfig,
+    ) as CliAdapterRoutingRuntime & {
+      createProtocolBySurface: () => Record<string, AgentProtocolContract>;
+    };
+    adapterRoutingRuntime.createProtocolBySurface = () => ({
+      [AdapterSurface.CODEX]: createAvailableProtocol(AdapterSurface.CODEX, 'should not run', {
+        invokeStageSpy: codexInvokeStageSpy,
+      }),
+      [AdapterSurface.GITHUB_COPILOT]: createAvailableProtocol(
+        AdapterSurface.GITHUB_COPILOT,
+        'unused',
+        {
+          probeSpy: githubCopilotProbeSpy,
+        },
+      ),
+      [AdapterSurface.CLAUDE_CODE]: createUnavailableProtocol(AdapterSurface.CLAUDE_CODE),
+    });
+
+    const runtime = new CliSessionMainSupervisorRuntime({
+      workspaceRoot: '/workspace/repo/.repo-ai-governor',
+      currentWorkingDirectory: '/workspace/repo',
+      workspace,
+      locale: 'zh-CN',
+      adaptersConfig,
+      adapterRoutingRuntime,
+    });
+    const outcome = await runtime.resolveTurn({
+      sessionId: 'session-availability-001',
+      routeId: 'session.main',
+      turnId: 'turn-availability-001',
+      turnIndex: 1,
+      userMessage: '当前我的电脑上 github copilot cli 是否可用?',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+    });
+
+    expect(outcome.responseMode).toBe('answer');
+    expect(outcome.interactionMode).toBe('direct_answer');
+    expect(outcome.assistantMessage).toContain('GitHub Copilot CLI');
+    expect(outcome.assistantMessage).toContain('`available`');
+    expect(outcome.selectedSurface).toBe(AdapterSurface.GITHUB_COPILOT);
+    expect(outcome.selectedBy).toBe('session.main.answer.surface_availability_probe');
+    expect(outcome.routerDecisionReason).toBe(
+      'session.main.router.direct_answer.surface_availability_probe',
+    );
+    expect(githubCopilotProbeSpy).toHaveBeenCalledTimes(1);
+    expect(codexInvokeStageSpy).not.toHaveBeenCalled();
+  });
+
   it('falls back to the next available direct-answer surface while preserving chat-only governance', async () => {
     const claudeInvokeStage = vi.fn(async (request: Record<string, unknown>) => {
       expect(request.input).toEqual(
@@ -948,6 +1042,7 @@ describe('Cli session-main supervisor runtime', () => {
   });
 
   it('routes implicit reviewer delegation through one single-role collaboration path for natural-language review requests', async () => {
+    const publishedStreamEvents: Array<Record<string, unknown>> = [];
     const reviewerInvokeStage = vi.fn(async (request: Record<string, unknown>) => {
       expect(request.stageId).toBe('stage-session-main-role-reviewer');
       expect(request.routeKey).toBe('session.main.role.reviewer');
@@ -1006,6 +1101,9 @@ describe('Cli session-main supervisor runtime', () => {
       metadata: {
         [SESSION_MAIN_IMPLICIT_ROLE_DELEGATE_METADATA_KEY]: 'reviewer',
       },
+      publishStreamEvent: async (event) => {
+        publishedStreamEvents.push(event as Record<string, unknown>);
+      },
     });
 
     expect(reviewerInvokeStage).toHaveBeenCalledTimes(1);
@@ -1017,6 +1115,33 @@ describe('Cli session-main supervisor runtime', () => {
     expect(outcome.executionIntent).toBe('session.role_delegate.reviewer');
     expect(outcome.assistantMessage).toContain('Reviewer perspective');
     expect(outcome.invokedRoleIds).toEqual(['reviewer']);
+    const preflightStartedIndex = publishedStreamEvents.findIndex(
+      (event) =>
+        event.state === 'started' &&
+        event.activityKey === 'role-preflight:session.main.role.reviewer:reviewer',
+    );
+    const probeStartedIndex = publishedStreamEvents.findIndex(
+      (event) =>
+        event.state === 'running' &&
+        event.activityKey === 'surface-probe:session.main.role.reviewer:reviewer:codex' &&
+        event.detail === 'Probing codex availability and route eligibility.',
+    );
+    const preflightCompletedIndex = publishedStreamEvents.findIndex(
+      (event) =>
+        event.state === 'completed' &&
+        event.activityKey === 'role-preflight:session.main.role.reviewer:reviewer',
+    );
+    const dispatchStartedIndex = publishedStreamEvents.findIndex(
+      (event) =>
+        event.state === 'started' &&
+        event.roleId === 'reviewer' &&
+        event.stageId === 'stage-session-main-role-reviewer' &&
+        event.detail === 'Dispatching the reviewer role.',
+    );
+    expect(preflightStartedIndex).toBeGreaterThanOrEqual(0);
+    expect(probeStartedIndex).toBeGreaterThan(preflightStartedIndex);
+    expect(preflightCompletedIndex).toBeGreaterThan(probeStartedIndex);
+    expect(dispatchStartedIndex).toBeGreaterThan(preflightCompletedIndex);
   });
 
   it('keeps repository-review reviewer delegation dispatchable when an available fallback surface omits tool capability metadata', async () => {
@@ -1079,6 +1204,65 @@ describe('Cli session-main supervisor runtime', () => {
     expect(outcome.selectedSurface).toBe(AdapterSurface.CLAUDE_CODE);
     expect(outcome.selectedBy).toContain('session.main.role_delegate.safe_fallback');
     expect(outcome.assistantMessage).toContain('Reviewer fallback');
+    expect(outcome.invokedRoleIds).toEqual(['reviewer']);
+  });
+
+  it('keeps repository-review reviewer delegation dispatchable when the primary probe throws before fallback recovery', async () => {
+    const reviewerInvokeStage = vi.fn(async (request: Record<string, unknown>) => {
+      expect(request.stageId).toBe('stage-session-main-role-reviewer');
+      expect(request.routeKey).toBe('session.main.role.reviewer');
+      return {
+        output: {
+          responseText:
+            '## Reviewer fallback after probe error\n\n- review current worktree changes directly',
+        },
+        elapsedMs: 1,
+      };
+    });
+    const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
+      adaptersConfig,
+    ) as CliAdapterRoutingRuntime & {
+      createProtocolBySurface: () => Record<string, AgentProtocolContract>;
+    };
+    adapterRoutingRuntime.createProtocolBySurface = () => ({
+      [AdapterSurface.CODEX]: createProbeThrowingProtocol(
+        AdapterSurface.CODEX,
+        'codex reviewer probe crashed',
+      ),
+      [AdapterSurface.CLAUDE_CODE]: createAvailableProtocol(AdapterSurface.CLAUDE_CODE, 'unused', {
+        invokeStageSpy: reviewerInvokeStage,
+      }),
+      [AdapterSurface.OLLAMA]: createAvailableProtocol(AdapterSurface.OLLAMA, 'unused local', {
+        toolCallingSupportLevel: AgentCapabilitySupportLevel.UNSUPPORTED,
+      }),
+    });
+
+    const runtime = new CliSessionMainSupervisorRuntime({
+      workspaceRoot: '/workspace/repo/.repo-ai-governor',
+      currentWorkingDirectory: '/workspace/repo',
+      workspace,
+      locale: 'en-US',
+      adaptersConfig,
+      adapterRoutingRuntime,
+    });
+    const outcome = await runtime.resolveTurn({
+      sessionId: 'session-implicit-reviewer-probe-throw-001',
+      routeId: 'session.main',
+      turnId: 'turn-implicit-reviewer-probe-throw-001',
+      turnIndex: 7,
+      userMessage: '帮我 review 一下代码',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+      metadata: {
+        [SESSION_MAIN_IMPLICIT_ROLE_DELEGATE_METADATA_KEY]: 'reviewer',
+      },
+    });
+
+    expect(reviewerInvokeStage).toHaveBeenCalledTimes(1);
+    expect(outcome.selectedSurface).toBe(AdapterSurface.CLAUDE_CODE);
+    expect(outcome.selectedBy).toContain('session.main.role_delegate.safe_fallback');
+    expect(outcome.assistantMessage).toContain('Reviewer fallback after probe error');
     expect(outcome.invokedRoleIds).toEqual(['reviewer']);
   });
 

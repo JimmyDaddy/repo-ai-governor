@@ -1,6 +1,6 @@
 # checklist
 
-- [ ] TK-479 deliver migration, verification, rebuild and cutover governance for durable storage surfaces
+- [x] TK-479 deliver migration, verification, rebuild and cutover governance for durable storage surfaces
   - 2026-04-02：任务创建，状态初始化为 `planned`；承接 durable storage surfaces 的 migration、doctor/verify、rebuild/render 与 cutover governance 收口。
   - 2026-04-02：`TK-479` 已切换为 `active`；随着 `sprint-003 / TK-478` 收口完成，当前 primary planning surface 前移到 `sprint-004`。
   - 2026-04-02：已完成第一段 doctor/verify 收口：新增 durable-storage diagnostics runtime，`doctor`/`verify` 现在会输出 session truth、artifact registry canonical/rendered views、task-ledger projection 的结构化检查结果，并已有 CLI 集成回归锁住该输出面。
@@ -15,14 +15,26 @@
   - 2026-04-02：已新增 adapter health check 分层方案 draft，明确 install/auth/protocol/semantic/route-capability 四层探测模型，并把 Codex、GitHub Copilot、Claude Code、Ollama 的收敛方向整理到统一技术方案中。
   - 2026-04-02：已完成 health-check Phase A 止血实现；shared `health-check-response` helper 已接入 `Codex`、`GitHub Copilot`、`Claude Code` probe，`OK.` 等 trivial 变体不再被误判 unavailable，并已补 shared/adapter smoke 回归。
   - 2026-04-02：用户已批准 layered health-check / route-probe 方案，当前 sprint 已补入 `TK-481` promotion 与 `TK-482~TK-484` 实施拆分；`TK-479` 保留为 governance 主收口面，继续承接 Phase A 之后的 verify/doctor/route hardening 协调。
-- [ ] TK-480 automate artifact lifecycle maintenance and auto-archive from sqlite canonical truth
+  - 2026-04-02：已完成 sprint-004 总收口：durable-storage governance、artifact lifecycle maintenance、layered adapter health-check rollout 与 doctor/verify/route diagnostics 全部完成，并已通过 biome、71 条定向测试、artifact lifecycle dry-run/gate、task/sprint/code-review/worktree gate 与完整 build。
+  - 2026-04-02：已完成 post-closeout reviewer preflight UX 修补；`reviewer` 角色在真正 dispatch 前会先把 role preflight 与 surface probe 明确打到实时活动里，candidate surface probe 也改为并发收集，并补齐 reviewer probe throw -> fallback recovery 回归与 build 验证。
+  - 2026-04-02：已完成 post-closeout direct-answer probe hardening；adapter protocol 现在跨 turn 复用，probe cache 不再每轮失效，同时“某个工具是否可用”会直接走目标 surface 的本地 availability probe，避免这类问题再先探测全部 direct-answer surface 后调起 Codex。
+  - 2026-04-02：已完成 post-closeout shared probe-cache hardening；同一 workspace 下新建 runtime 现在也会继续复用 shared protocol cache namespace，避免上一轮刚探测过的 surface 在下一轮又被立即重新探测。
+  - 2026-04-02：已完成 post-closeout live activity 中性标签清理；普通实时活动与 execution details 不再渲染 `Current/当前` 前缀，session shell 会直接展示 `supervisor 正在准备 direct answer。` 这类内容本身，并已通过 transcript/rendering 定向回归与 build。
+  - 2026-04-02：已完成 post-closeout live activity viewport hardening；运行中的 `live_activity` 现在只渲染一个受控明细窗口，完整历史仍保留且可用 `PgUp/PgDn/Home/End` 浏览，避免长日志继续把 live shell 无限制撑高并在输出期间拖坏滚动体验。
+  - 2026-04-02：已完成 post-closeout agent reply history fix；`agent_message/token` 草稿现在会以可更新的 role reply 条目进入 live activity 与 completed/failed execution details，reviewer 等角色的文本输出不再只在草稿区短暂可见，失败后也能从执行过程里回看最新 AI 回复快照。
+  - 2026-04-02：已新增 timeout/liveness 技术方案 draft；`agent-invoke-liveness-and-timeout-governance-technical-solution.md` 已把“timeout 只做最后保险丝、主判定改为多信号 liveness + semantic progress + graceful interrupt”正式收口为可评审方案，并引用 Node、OpenAI、Claude Code、Ollama、GitHub Copilot、systemd 的官方资料作为外部依据。
+- [x] TK-480 automate artifact lifecycle maintenance and auto-archive from sqlite canonical truth
   - 2026-04-02：任务创建，状态初始化为 `planned`；承接 artifact registry sqlite canonical truth 后续的自动维护、auto-deprecate 与 auto-archive 收口。
+  - 2026-04-02：已完成 artifact lifecycle automation：`reconcile`/`compact` 脚本已重构为可复用 runtime，maintenance runner 可在单次批次内完成 reconcile/compact/render，并输出 batch summary/audit file；temp-workspace integration test、artifact lifecycle dry-run、build 与 gate 均通过。
 - [x] TK-481 promote layered adapter health check and route probe solution into runtime-agent-projection formal docs
   - 2026-04-02：任务创建，状态初始化为 `planned`；承接用户已批准的 adapter health-check 技术方案 promotion。
   - 2026-04-02：已完成 formal docs promotion、review evidence、delivery ownership 与 follow-up task decomposition；`runtime.agent-projection` 现已拥有正式的 layered health-check contract 与 route-probe ADR。
-- [ ] TK-482 implement layered adapter health check contract and shared probe runtime baseline
+- [x] TK-482 implement layered adapter health check contract and shared probe runtime baseline
   - 2026-04-02：任务创建，状态初始化为 `planned`；承接 shared/runtime 层的 layered probe orchestration 与稳定 reason-code 基线。
-- [ ] TK-483 align codex copilot claude and ollama probes with layered auth protocol route semantics
+  - 2026-04-02：已完成 shared layered health-check contract：`adapter-sdk` 新增分层状态、reason code 与 legacy reason projection helper，并补齐 unit test 与 build 验证。
+- [x] TK-483 align codex copilot claude and ollama probes with layered auth protocol route semantics
   - 2026-04-02：任务创建，状态初始化为 `planned`；承接四类 adapter 的 auth/protocol/route-capability probe rollout。
-- [ ] TK-484 route doctor verify and role fallback through layered health check diagnostics
+  - 2026-04-02：已完成 adapter rollout：Codex / GitHub Copilot / Claude Code / Ollama probe 现在都会返回统一 `healthCheck` payload，并已通过四类 adapter smoke 回归与 build。
+- [x] TK-484 route doctor verify and role fallback through layered health check diagnostics
   - 2026-04-02：任务创建，状态初始化为 `planned`；承接 doctor/verify presenter 与 role fallback 的 layered diagnostics 切换。
+  - 2026-04-02：已完成 CLI consumer 切换：tool snapshot、role evaluation、diagnostics artifact 与 session-main probe message 已接入 layered health-check，并通过 adapter verification/runtime tests、artifact lifecycle gate 与完整 build 验证。

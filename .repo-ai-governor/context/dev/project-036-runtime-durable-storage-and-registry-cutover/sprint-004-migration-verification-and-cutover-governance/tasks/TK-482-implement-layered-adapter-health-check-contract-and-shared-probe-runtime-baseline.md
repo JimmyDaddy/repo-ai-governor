@@ -1,6 +1,6 @@
 # TK-482 implement layered adapter health check contract and shared probe runtime baseline
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-02
 - Owner: AI-Agent
 - Priority: P0
@@ -41,3 +41,4 @@
 ## 6. 执行记录
 
 1. 2026-04-02：任务创建，状态初始化为 `planned`；承接 Phase B shared probe runtime baseline。
+2. 2026-04-02：完成 layered health-check shared baseline：在 `adapter-sdk` 中新增 `install / auth / protocol / semantic / route_capability` 分层 contract、stable reason-code taxonomy 与 legacy-reason projection helper，并补齐 unit test；该 contract 已可被 adapter probe、CLI diagnostics 与 route consumer 统一消费，任务收口为 `completed`。

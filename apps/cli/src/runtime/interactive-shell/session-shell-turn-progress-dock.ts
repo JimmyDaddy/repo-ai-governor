@@ -16,6 +16,7 @@ interface LiveTurnActivityEntry {
 }
 
 interface LiveTurnActivityHistoryEntry {
+  activityId?: string;
   detailLine: string;
   text: string;
 }
@@ -222,22 +223,36 @@ export class CliSessionShellTurnProgressDock {
 
   private applyTokenDelta(event: OrchestrationSessionEvent): void {
     const accumulatedText = this.readOptionalString(event.payload.accumulatedText);
-    if (accumulatedText) {
-      this.currentAssistantDraft = accumulatedText;
-      return;
-    }
-
     const chunkText =
       this.readOptionalString(event.payload.chunkText) ??
       this.readOptionalString(event.payload.delta);
-    if (!chunkText) {
+    const nextDraft =
+      accumulatedText ??
+      (chunkText
+        ? this.currentAssistantDraft && this.currentAssistantDraft.length > 0
+          ? `${this.currentAssistantDraft}${chunkText}`
+          : chunkText
+        : undefined);
+    if (!nextDraft) {
       return;
     }
 
-    this.currentAssistantDraft =
-      this.currentAssistantDraft && this.currentAssistantDraft.length > 0
-        ? `${this.currentAssistantDraft}${chunkText}`
-        : chunkText;
+    this.currentAssistantDraft = nextDraft;
+
+    const roleId = this.readOptionalString(event.payload.roleId);
+    const activityText = this.formatAssistantDraftText(nextDraft, roleId);
+    if (!activityText) {
+      return;
+    }
+
+    this.upsertActivityEntry(
+      roleId ? `assistant-draft:${roleId}` : 'assistant-draft',
+      activityText,
+      event.createdAt,
+      {
+        replaceLatestHistoryEntry: true,
+      },
+    );
   }
 
   private applyToolCallDelta(event: OrchestrationSessionEvent): void {
@@ -308,8 +323,29 @@ export class CliSessionShellTurnProgressDock {
         });
   }
 
-  private upsertActivityEntry(activityId: string, text: string, occurredAt?: string): void {
-    this.recordActivityHistory(text, occurredAt);
+  private formatAssistantDraftText(draft: string, roleId?: string): string | undefined {
+    const normalizedDetail = draft.replace(/\s+/gu, ' ').trim();
+    if (!normalizedDetail) {
+      return undefined;
+    }
+
+    return roleId
+      ? this.options.translate('cli.sessionShell.responses.liveTurnRoleReply', {
+          role: roleId,
+          detail: normalizedDetail,
+        })
+      : this.options.translate('cli.sessionShell.responses.liveTurnCurrentDetail', {
+          detail: normalizedDetail,
+        });
+  }
+
+  private upsertActivityEntry(
+    activityId: string,
+    text: string,
+    occurredAt?: string,
+    options?: { replaceLatestHistoryEntry?: boolean },
+  ): void {
+    this.recordActivityHistory(text, occurredAt, activityId, options);
     const existingEntry = this.liveActivityEntries.get(activityId);
     this.liveActivityEntries.set(activityId, {
       order: existingEntry?.order ?? this.nextActivityOrder++,
@@ -367,7 +403,12 @@ export class CliSessionShellTurnProgressDock {
     this.completedTurnDetails.set(turnId, detailLines);
   }
 
-  private recordActivityHistory(text: string, occurredAt?: string): void {
+  private recordActivityHistory(
+    text: string,
+    occurredAt?: string,
+    activityId?: string,
+    options?: { replaceLatestHistoryEntry?: boolean },
+  ): void {
     const normalizedText = text.trim();
     if (!normalizedText) {
       return;
@@ -375,11 +416,22 @@ export class CliSessionShellTurnProgressDock {
 
     const timestampedLine = createTimestampedExecutionDetailLine(normalizedText, occurredAt);
     const latestRecordedEntry = this.activityHistoryEntries.at(-1);
+    if (
+      options?.replaceLatestHistoryEntry &&
+      latestRecordedEntry &&
+      latestRecordedEntry.activityId === activityId
+    ) {
+      latestRecordedEntry.detailLine = timestampedLine;
+      latestRecordedEntry.text = normalizedText;
+      return;
+    }
+
     if (latestRecordedEntry?.detailLine === timestampedLine) {
       return;
     }
 
     this.activityHistoryEntries.push({
+      activityId,
       detailLine: timestampedLine,
       text: normalizedText,
     });

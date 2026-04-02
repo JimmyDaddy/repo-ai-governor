@@ -1,5 +1,10 @@
 import { CliSessionShellInputActionType } from '../../src/constants/cli-session-shell.constant.js';
-import { mapSessionShellKeypressToAction } from '../../src/react-cli/views/session-shell-live-app.js';
+import {
+  applyLiveActivityViewport,
+  mapSessionShellKeypressToAction,
+  mapSessionShellKeypressToViewportCommand,
+  resolveLiveActivityViewportCapacity,
+} from '../../src/react-cli/views/session-shell-live-app.js';
 
 describe('mapSessionShellKeypressToAction', () => {
   it('maps slash typing, long paste, and CJK input into composer changes', () => {
@@ -297,5 +302,112 @@ describe('mapSessionShellKeypressToAction', () => {
         type: CliSessionShellInputActionType.PALETTE_HIGHLIGHT_NEXT,
       },
     });
+  });
+});
+
+describe('mapSessionShellKeypressToViewportCommand', () => {
+  it('maps paging keys into local transcript viewport commands', () => {
+    expect(
+      mapSessionShellKeypressToViewportCommand({
+        pageUp: true,
+      } as never),
+    ).toBe('page_up');
+    expect(
+      mapSessionShellKeypressToViewportCommand({
+        pageDown: true,
+      } as never),
+    ).toBe('page_down');
+    expect(
+      mapSessionShellKeypressToViewportCommand({
+        home: true,
+      } as never),
+    ).toBe('jump_oldest');
+    expect(
+      mapSessionShellKeypressToViewportCommand({
+        end: true,
+      } as never),
+    ).toBe('jump_latest');
+    expect(mapSessionShellKeypressToViewportCommand({} as never)).toBeNull();
+  });
+});
+
+describe('live activity viewport helpers', () => {
+  it('derives one bounded line budget from terminal rows and shell chrome occupancy', () => {
+    expect(
+      resolveLiveActivityViewportCapacity({
+        terminalRows: 36,
+        promptBarLineCount: 2,
+        slashPaletteVisible: false,
+        slashSuggestionCount: 0,
+        commandPreviewPresent: false,
+        commandProgressPanelPresent: false,
+      }),
+    ).toBe(23);
+    expect(
+      resolveLiveActivityViewportCapacity({
+        terminalRows: 12,
+        promptBarLineCount: 4,
+        slashPaletteVisible: true,
+        slashSuggestionCount: 8,
+        commandPreviewPresent: true,
+        commandProgressPanelPresent: true,
+      }),
+    ).toBe(6);
+  });
+
+  it('keeps the full live activity history while rendering only the requested window slice', () => {
+    const nextViewModel = applyLiveActivityViewport(
+      {
+        sessionId: 'session-shell-live-viewport',
+        shellMode: 'session_shell',
+        inputMode: 'plain_text',
+        transcriptItems: [
+          {
+            id: 'activity:1',
+            role: 'system',
+            label: 'Live activity',
+            lines: Array.from({ length: 10 }, (_, index) => `log line ${String(index + 1)}`),
+            renderKind: 'live_activity',
+            summaryLine: 'Running · 9s',
+          },
+        ],
+        transcriptTitle: 'History',
+        composerValue: '',
+        composerTitle: 'Current input',
+        composerPlaceholder: 'Type a message, / for commands, or ? for shortcuts.',
+        slashQuery: '',
+        slashPaletteVisible: false,
+        slashSuggestions: [],
+        highlightedCommand: null,
+        slashPaletteTitle: 'Slash palette',
+        slashPaletteEmptyState: 'No slash commands matched.',
+        commandPreview: null,
+        handoffState: 'idle',
+        cwd: '/workspace/repo',
+        workspaceSummary: 'workspace_id=repo mode=repo_local',
+        outputContract: 'pretty',
+        persistenceOwner: 'local_orchestration_service',
+        resumeSelector: 'latest',
+        foregroundInputOwner: 'ink',
+        foregroundFocusTarget: 'composer',
+        inputActionContract: [],
+        title: 'Repo AI Governor session shell',
+        subtitle: 'Session-first preview baseline.',
+        promptBarTitle: 'Prompt bar',
+        promptBarLines: [],
+      } as never,
+      {
+        maxVisibleDetailLines: 4,
+        detailOffsetFromBottom: 3,
+      },
+    );
+
+    expect(nextViewModel.transcriptItems[0]?.lines).toEqual([
+      'log line 4',
+      'log line 5',
+      'log line 6',
+      'log line 7',
+    ]);
+    expect(nextViewModel.transcriptItems[0]?.summaryLine).toBe('Running · 9s · 4-7/10');
   });
 });

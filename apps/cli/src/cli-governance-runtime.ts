@@ -198,6 +198,7 @@ export class CliGovernanceRuntime {
       claudeCodeExecRunner: this.options.claudeCodeExecRunner,
       codexExecRunner: this.options.codexExecRunner,
       githubCopilotExecRunner: this.options.githubCopilotExecRunner,
+      sharedProtocolCacheNamespace: `cli-governance:${this.options.workspace.workspaceRoot}`,
     });
     this.adapterVerificationRuntime = new CliAdapterVerificationRuntime(
       this.options.adaptersConfig,
@@ -2476,6 +2477,7 @@ export class CliGovernanceRuntime {
       claudeCodeExecRunner: this.options.claudeCodeExecRunner,
       codexExecRunner: this.options.codexExecRunner,
       githubCopilotExecRunner: this.options.githubCopilotExecRunner,
+      sharedProtocolCacheNamespace: `cli-governance:${this.options.workspace.workspaceRoot}`,
     });
     const adapterVerificationRuntime = new CliAdapterVerificationRuntime(
       adaptersConfig,

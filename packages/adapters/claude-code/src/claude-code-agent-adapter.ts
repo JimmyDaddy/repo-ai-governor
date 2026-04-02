@@ -23,6 +23,7 @@ import {
   type AgentStreamEventsRequest,
   DEFAULT_AGENT_CLI_EXEC_MAX_RETRY_ATTEMPTS,
   DEFAULT_AGENT_CLI_EXEC_RETRY_BACKOFF_MS,
+  createLayeredHealthCheckFromLegacyReasons,
   resolveAgentStageExecutionPolicy,
 } from '@repo-ai-governor/adapter-sdk';
 import {
@@ -211,6 +212,27 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
    */
   public override async probe(request: AgentProbeRequest): Promise<AgentProbeResult> {
     const runtimeProbe = await this.resolveProbeResolution(request.signal);
+    const capabilityMatrix = this.createCapabilityMatrix();
+    const availabilityStatus = this.mergeAvailabilityStatus(
+      this.options.availabilityStatus,
+      runtimeProbe.availabilityStatus,
+    );
+    const unavailableReasons = [
+      ...this.options.unavailableReasons,
+      ...runtimeProbe.unavailableReasons,
+    ].filter((reason, index, list) => list.indexOf(reason) === index);
+    const unsupportedCapabilities = (request.requiredCapabilities ?? []).filter((capability) => {
+      const capabilityState = capabilityMatrix.capabilityStates.find(
+        (candidateCapabilityState) => candidateCapabilityState.capability === capability,
+      );
+      return capabilityState?.supportLevel === AgentCapabilitySupportLevel.UNSUPPORTED;
+    });
+    const degradedCapabilities = (request.requiredCapabilities ?? []).filter((capability) => {
+      const capabilityState = capabilityMatrix.capabilityStates.find(
+        (candidateCapabilityState) => candidateCapabilityState.capability === capability,
+      );
+      return capabilityState?.supportLevel === AgentCapabilitySupportLevel.DEGRADED;
+    });
     return {
       identity: {
         agentId: this.options.agentId,
@@ -219,15 +241,21 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
         roleProfileId: this.options.roleProfileId,
         roleSource: this.options.roleSource,
       },
-      availabilityStatus: this.mergeAvailabilityStatus(
-        this.options.availabilityStatus,
-        runtimeProbe.availabilityStatus,
-      ),
-      capabilityMatrix: this.createCapabilityMatrix(),
-      unavailableReasons: [
-        ...this.options.unavailableReasons,
-        ...runtimeProbe.unavailableReasons,
-      ].filter((reason, index, list) => list.indexOf(reason) === index),
+      availabilityStatus,
+      capabilityMatrix,
+      unavailableReasons,
+      healthCheck: createLayeredHealthCheckFromLegacyReasons({
+        adapterId: this.options.agentId,
+        surfaceId: CLAUDE_CODE_SURFACE,
+        availabilityStatus,
+        selectedEntrypoint: this.options.command,
+        routeKey: request.routeKey,
+        routeRequirements: (request.requiredCapabilities ?? []).map(String),
+        fallbackAllowed: true,
+        unavailableReasons,
+        unsupportedCapabilities: unsupportedCapabilities.map(String),
+        degradedCapabilities: degradedCapabilities.map(String),
+      }),
     };
   }
 

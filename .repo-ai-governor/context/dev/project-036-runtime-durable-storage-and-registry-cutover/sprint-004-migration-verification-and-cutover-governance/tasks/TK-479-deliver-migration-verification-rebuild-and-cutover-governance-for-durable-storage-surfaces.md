@@ -1,6 +1,6 @@
 # TK-479 deliver migration verification rebuild and cutover governance for durable storage surfaces
 
-- Status: active
+- Status: completed
 - Date: 2026-04-02
 - Owner: AI-Agent
 - Priority: P0
@@ -58,3 +58,11 @@
 13. 2026-04-02：沉淀 adapter health check 分层方案 draft：在 `.repo-ai-governor/draft/layered-adapter-health-check-and-route-probe-technical-solution.md` 中正式记录 install/auth/protocol/semantic/route-capability 分层模型，并结合 GitHub Copilot、Claude Code、Codex、Ollama 的官方资料明确后续 probe 收敛方向。
 14. 2026-04-02：完成 health-check Phase A 止血实现：新增 shared `health-check-response` 归一化 helper，并将 `Codex`、`GitHub Copilot`、`Claude Code` 的 probe 从“精确等于 OK”切换为“接受 `OK.` / 引号 / 大小写 / 空白等 trivial 变体”的宽松语义比较，同时补齐 shared 与三类 adapter smoke 回归。
 15. 2026-04-02：在用户批准 draft 后，当前 sprint 已将 layered adapter health-check / route-probe 方案正式提升为 `runtime.agent-projection` formal solution，并拆分出 `TK-482~TK-484` 承接 Phase B/C/D；`TK-479` 继续作为 cutover governance 总收口面协调 doctor/verify、routing fallback 与 rollout evidence。
+16. 2026-04-02：完成 sprint-004 总收口：durable-storage governance、artifact lifecycle maintenance、layered adapter health-check rollout 与 doctor/verify/route diagnostics 已全部通过定向测试、artifact lifecycle gate、task/sprint sync 与完整 build，`TK-479` 收口为 `completed`。
+17. 2026-04-02：完成 post-closeout reviewer preflight UX 修补：`session.main` 在 `reviewer` 角色调度前现在会先显式展示 role-level preflight 与 surface probe 进度，不再在 probe 期间无声等待；candidate surface probe 同时改为并发收集，并补齐“主 reviewer probe 抛错时仍可回退到可用 fallback surface”的回归测试与 build 验证。
+18. 2026-04-02：完成 post-closeout direct-answer probe hardening：`CliAdapterRoutingRuntime` 现在会跨 turn 复用 surface protocol 实例，使 adapter 内部 probe cache 不再每轮清空；同时 `session.main` 新增“目标工具可用性问句”本地短路路径，像“GitHub Copilot CLI 是否可用”这类请求会直接返回 probe 结果，不再先探测全部 direct-answer surface 再调用 Codex。
+19. 2026-04-02：完成 post-closeout shared probe-cache hardening：`CliAdapterRoutingRuntime` 新增 workspace-scoped shared protocol cache namespace，同一工作区内即便重新构造 runtime，也会继续复用 surface protocol 与 adapter probe cache；这样“刚做过工具可用性检查，下一轮普通对话又重新探测一遍”的概率会显著下降。
+20. 2026-04-02：完成 post-closeout live activity 中性标签清理：`liveTurnCurrentDetail` 已从 `Current/当前` 前缀改为直接渲染 detail 本身，session shell 的实时活动与 execution details 不再给普通进度消息套伪标签；React transcript 与对应回归测试也已同步更新。
+21. 2026-04-02：完成 post-closeout live activity viewport hardening：`ReactCliLiveSessionShellApp` 现在会为运行中的 `live_activity` 维持受控明细窗口，保留完整日志历史但只渲染当前可见切片；`PgUp/PgDn/Home/End` 可在运行中浏览旧日志，新的流式输出也不会再把整个 live shell 无限制撑高并干扰终端滚动体验。
+22. 2026-04-02：完成 post-closeout agent reply history fix：`session-shell-turn-progress-dock` 现在会把 `agent_message/token` 草稿同步成可更新的 role reply activity 条目，并把最新快照保留到 completed/failed turn execution details；这样 reviewer/Codex 在命令之外已经说出的内容也能进入执行过程历史，不会只剩 command output。
+23. 2026-04-02：新增 timeout/liveness 技术方案 draft：在 `.repo-ai-governor/draft/agent-invoke-liveness-and-timeout-governance-technical-solution.md` 中正式收口“hard timeout 只做最后保险丝、主判定改为 process liveness + transport activity + semantic progress + graceful interrupt”的多信号模型，并结合 Node child_process、OpenAI streaming、Claude Code、Ollama、GitHub Copilot、systemd watchdog 的官方资料给出后续实施方向。

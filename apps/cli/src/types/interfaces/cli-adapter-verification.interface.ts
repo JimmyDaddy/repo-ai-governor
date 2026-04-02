@@ -1,6 +1,7 @@
 import type {
   AgentAvailabilityStatus,
   AgentCapabilitySupportLevel,
+  AgentLayeredHealthCheckResult,
 } from '@repo-ai-governor/adapter-sdk';
 import type { AdapterAvailability, AdapterSurface } from '@repo-ai-governor/shared';
 import type {
@@ -25,6 +26,7 @@ export interface CliAdapterToolProbeSnapshot {
   configuredAvailability: AdapterAvailability | null;
   availabilityStatus: AgentAvailabilityStatus;
   unavailableReasons: string[];
+  healthCheck?: AgentLayeredHealthCheckResult;
   capabilitySupportByCapability: Map<string, AgentCapabilitySupportLevel>;
   failureAttributions: string[];
 }
@@ -42,6 +44,7 @@ export interface CliAdapterRoleEvaluation {
   unsupportedCapabilities: string[];
   degradedCapabilities: string[];
   unavailableReasons: string[];
+  healthCheck?: AgentLayeredHealthCheckResult;
   failureAttributions: string[];
   status: CliGovernanceCheckStatus;
 }

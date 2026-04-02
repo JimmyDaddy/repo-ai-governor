@@ -44,6 +44,8 @@ const SESSION_MAIN_GUARDED_DIRECT_ANSWER_SURFACE = 'guarded-direct-answer';
 const SESSION_MAIN_GUARDED_ROLE_DELEGATE_SURFACE = 'guarded-role-delegate';
 const SESSION_MAIN_ROLE_EXECUTION_INTENT_PREFIX = 'session.role_delegate.';
 const SESSION_MAIN_ROUTER_REASON_DIRECT_ANSWER = 'session.main.router.direct_answer.default';
+const SESSION_MAIN_ROUTER_REASON_DIRECT_ANSWER_SURFACE_AVAILABILITY =
+  'session.main.router.direct_answer.surface_availability_probe';
 const SESSION_MAIN_ROUTER_REASON_DIRECT_ANSWER_GUARD = 'session.main.router.direct_answer.guard';
 const SESSION_MAIN_ROUTER_REASON_SINGLE_ROLE_DELEGATE =
   'session.main.router.single_role_delegate.explicit_role';
@@ -72,6 +74,9 @@ const SESSION_MAIN_ROUTER_REASON_PARALLEL_ROLE_UNRESOLVED =
 const SESSION_MAIN_PARALLEL_ANALYSIS_SYNTHESIS_MODE = 'parallel_analysis';
 const SESSION_MAIN_SERIAL_ROLE_COLLABORATION_LIMIT = 2;
 const SESSION_MAIN_PARALLEL_ROLE_FANOUT_LIMIT = 3;
+const SESSION_MAIN_SURFACE_AVAILABILITY_SELECTED_BY =
+  'session.main.answer.surface_availability_probe';
+const SESSION_MAIN_SURFACE_AVAILABILITY_EXECUTION_INTENT = 'session.answer.surface_availability';
 const SESSION_MAIN_REPOSITORY_REVIEW_CAPABLE_SURFACES = new Set<AdapterSurface>([
   AdapterSurface.CODEX,
   AdapterSurface.CLAUDE_CODE,
@@ -98,6 +103,25 @@ interface ProtocolStreamRelayState {
   sawToolCall: boolean;
 }
 
+interface SurfaceProbeStreamContext {
+  context: SessionMainSupervisorTurnContext;
+  title: string;
+  stageId: string;
+  routeKey: string;
+  roleId?: string;
+}
+
+interface CandidateSurfaceEvaluation {
+  surface: AdapterSurface;
+  safe: boolean;
+  executionDetailsLine?: string;
+}
+
+interface SurfaceAvailabilityInspectionIntent {
+  surface: AdapterSurface;
+  displayName: string;
+}
+
 /**
  * Owns the CLI-side direct-answer runtime used by the service-owned `session.main` supervisor.
  *
@@ -118,6 +142,7 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       locale: string;
       adaptersConfig: AdaptersConfig;
       adapterRoutingRuntime?: CliAdapterRoutingRuntime;
+      adapterRoutingRuntimeCacheNamespace?: string;
       subagentRegistry?: CliSessionMainSubagentRegistry;
       claudeCodeExecRunner?: ClaudeCodeExecRunner;
       codexExecRunner?: CodexExecRunner;
@@ -130,6 +155,7 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
         claudeCodeExecRunner: options.claudeCodeExecRunner,
         codexExecRunner: options.codexExecRunner,
         githubCopilotExecRunner: options.githubCopilotExecRunner,
+        sharedProtocolCacheNamespace: options.adapterRoutingRuntimeCacheNamespace,
       });
     this.subagentRegistry =
       options.subagentRegistry ??
@@ -199,6 +225,17 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
           allowToolCapableSurfaces: true,
           routerDecisionReason: SESSION_MAIN_ROUTER_REASON_SINGLE_ROLE_DELEGATE_IMPLICIT,
         },
+      );
+    }
+    const surfaceAvailabilityInspectionIntent = this.resolveSurfaceAvailabilityInspectionIntent(
+      context.userMessage,
+    );
+    if (surfaceAvailabilityInspectionIntent) {
+      return this.resolveSurfaceAvailabilityInspectionTurn(
+        context,
+        surfaceAvailabilityInspectionIntent,
+        protocolBySurface,
+        toolConfigBySurface,
       );
     }
     const trackedSurfaces =
@@ -427,6 +464,7 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     capabilityRequirement?: AgentCapabilityRequirement,
     options?: {
       allowToolCapableSurfaces?: boolean;
+      streamContext?: SurfaceProbeStreamContext;
     },
   ): Promise<AdapterSurface[]> {
     return (
@@ -447,129 +485,37 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     capabilityRequirement?: AgentCapabilityRequirement,
     options?: {
       allowToolCapableSurfaces?: boolean;
-      streamContext?: {
-        context: SessionMainSupervisorTurnContext;
-        title: string;
-        stageId: string;
-        routeKey: string;
-        roleId?: string;
-      };
+      streamContext?: SurfaceProbeStreamContext;
     },
   ): Promise<{
     safeCandidateSurfaces: AdapterSurface[];
     executionDetailsLines: string[];
   }> {
-    const safeCandidateSurfaces: AdapterSurface[] = [];
     const executionDetailsLines: string[] = [
       this.localizeText(
         'Surface probe diagnostics for this turn:',
         '本轮 turn 的 surface 探针诊断：',
       ),
     ];
-    for (const surface of candidateSurfaces) {
-      const protocol = protocolBySurface[surface];
-      if (!protocol) {
-        await this.publishSurfaceProbeEvent(options?.streamContext, surface, {
-          detail: this.localizeText(
-            `${surface} skipped because no protocol implementation is registered.`,
-            `${surface} 已跳过，因为当前没有注册协议实现。`,
-          ),
-        });
-        executionDetailsLines.push(
-          this.localizeText(
-            `${surface} · skipped · no protocol implementation is registered.`,
-            `${surface} · 已跳过 · 当前没有注册协议实现。`,
-          ),
-        );
-        continue;
-      }
-      await this.publishSurfaceProbeEvent(options?.streamContext, surface, {
-        detail: this.localizeText(
-          `Probing ${surface} availability and route eligibility.`,
-          `正在探测 ${surface} 的可用性与路由资格。`,
-        ),
-      });
-      let probeResult: AgentProbeResult;
-      try {
-        probeResult = await protocol.probe({
+    const evaluations = await Promise.all(
+      candidateSurfaces.map((surface) =>
+        this.evaluateCandidateSurface(
+          surface,
           routeKey,
-          ...(capabilityRequirement
-            ? {
-                requiredCapabilities: capabilityRequirement.requiredCapabilities,
-              }
-            : {}),
-        });
-      } catch (error) {
-        const probeFailureReason = this.readProbeFailureReason(error);
-        await this.publishSurfaceProbeEvent(options?.streamContext, surface, {
-          detail: this.localizeText(
-            `${surface} probe failed for this turn: ${probeFailureReason}`,
-            `${surface} 在本轮 turn 中的 probe 执行失败：${probeFailureReason}`,
-          ),
-        });
-        executionDetailsLines.push(
-          this.formatSurfaceEligibilityFailureLine(surface, probeFailureReason),
-        );
-        continue;
-      }
-      if (probeResult.availabilityStatus === AgentAvailabilityStatus.UNAVAILABLE) {
-        const unavailableReason = this.readProbeUnavailableReason(probeResult);
-        await this.publishSurfaceProbeEvent(options?.streamContext, surface, {
-          detail: this.localizeText(
-            `${surface} is unavailable for this turn: ${unavailableReason}`,
-            `${surface} 在本轮 turn 中不可用：${unavailableReason}`,
-          ),
-        });
-        executionDetailsLines.push(
-          this.formatSurfaceEligibilityFailureLine(surface, unavailableReason),
-        );
-        continue;
-      }
-      if (!this.isSafeDirectAnswerSurface(probeResult, options)) {
-        const rejectionReason = this.localizeText(
-          'route eligibility rejected this surface for the current turn.',
-          '当前 turn 的路由资格检查拒绝了这个 surface。',
-        );
-        await this.publishSurfaceProbeEvent(options?.streamContext, surface, {
-          detail: this.localizeText(
-            `${surface} failed the current route eligibility checks.`,
-            `${surface} 没有通过当前路由资格检查。`,
-          ),
-        });
-        executionDetailsLines.push(
-          this.formatSurfaceEligibilityFailureLine(surface, rejectionReason),
-        );
-        continue;
-      }
-      if (capabilityRequirement) {
-        const capabilityEvaluation = this.capabilityEvaluator.evaluate(
-          probeResult.capabilityMatrix,
+          protocolBySurface,
           capabilityRequirement,
-        );
-        if (!capabilityEvaluation.isSatisfied) {
-          const capabilityGapReason = this.localizeText(
-            `missing required capabilities: ${capabilityEvaluation.capabilityGaps.map((gap) => gap.capability).join(', ')}`,
-            `缺少必需能力：${capabilityEvaluation.capabilityGaps.map((gap) => gap.capability).join('、')}`,
-          );
-          await this.publishSurfaceProbeEvent(options?.streamContext, surface, {
-            detail: this.localizeText(
-              `${surface} is missing required capabilities for this turn.`,
-              `${surface} 缺少本轮 turn 所需的必需能力。`,
-            ),
-          });
-          executionDetailsLines.push(
-            this.formatSurfaceEligibilityFailureLine(surface, capabilityGapReason),
-          );
-          continue;
-        }
-      }
-      safeCandidateSurfaces.push(surface);
-      await this.publishSurfaceProbeEvent(options?.streamContext, surface, {
-        detail: this.localizeText(
-          `${surface} is eligible for this turn.`,
-          `${surface} 已通过本轮 turn 的资格检查。`,
+          options,
         ),
-      });
+      ),
+    );
+    const safeCandidateSurfaces: AdapterSurface[] = [];
+    for (const evaluation of evaluations) {
+      if (evaluation.safe) {
+        safeCandidateSurfaces.push(evaluation.surface);
+      }
+      if (evaluation.executionDetailsLine) {
+        executionDetailsLines.push(evaluation.executionDetailsLine);
+      }
     }
     return {
       safeCandidateSurfaces,
@@ -577,16 +523,136 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     };
   }
 
-  private async publishSurfaceProbeEvent(
-    streamContext:
+  private async evaluateCandidateSurface(
+    surface: AdapterSurface,
+    routeKey: string,
+    protocolBySurface: Record<string, AgentProtocolContract>,
+    capabilityRequirement: AgentCapabilityRequirement | undefined,
+    options:
       | {
-          context: SessionMainSupervisorTurnContext;
-          title: string;
-          stageId: string;
-          routeKey: string;
-          roleId?: string;
+          allowToolCapableSurfaces?: boolean;
+          streamContext?: SurfaceProbeStreamContext;
         }
       | undefined,
+  ): Promise<CandidateSurfaceEvaluation> {
+    const protocol = protocolBySurface[surface];
+    if (!protocol) {
+      await this.publishSurfaceProbeEvent(options?.streamContext, surface, {
+        detail: this.localizeText(
+          `${surface} skipped because no protocol implementation is registered.`,
+          `${surface} 已跳过，因为当前没有注册协议实现。`,
+        ),
+      });
+      return {
+        surface,
+        safe: false,
+        executionDetailsLine: this.localizeText(
+          `${surface} · skipped · no protocol implementation is registered.`,
+          `${surface} · 已跳过 · 当前没有注册协议实现。`,
+        ),
+      };
+    }
+    await this.publishSurfaceProbeEvent(options?.streamContext, surface, {
+      detail: this.localizeText(
+        `Probing ${surface} availability and route eligibility.`,
+        `正在探测 ${surface} 的可用性与路由资格。`,
+      ),
+    });
+    let probeResult: AgentProbeResult;
+    try {
+      probeResult = await protocol.probe({
+        routeKey,
+        ...(capabilityRequirement
+          ? {
+              requiredCapabilities: capabilityRequirement.requiredCapabilities,
+            }
+          : {}),
+      });
+    } catch (error) {
+      const probeFailureReason = this.readProbeFailureReason(error);
+      await this.publishSurfaceProbeEvent(options?.streamContext, surface, {
+        detail: this.localizeText(
+          `${surface} probe failed for this turn: ${probeFailureReason}`,
+          `${surface} 在本轮 turn 中的 probe 执行失败：${probeFailureReason}`,
+        ),
+      });
+      return {
+        surface,
+        safe: false,
+        executionDetailsLine: this.formatSurfaceEligibilityFailureLine(surface, probeFailureReason),
+      };
+    }
+    if (probeResult.availabilityStatus === AgentAvailabilityStatus.UNAVAILABLE) {
+      const unavailableReason = this.readProbeUnavailableReason(probeResult);
+      await this.publishSurfaceProbeEvent(options?.streamContext, surface, {
+        detail: this.localizeText(
+          `${surface} is unavailable for this turn: ${unavailableReason}`,
+          `${surface} 在本轮 turn 中不可用：${unavailableReason}`,
+        ),
+      });
+      return {
+        surface,
+        safe: false,
+        executionDetailsLine: this.formatSurfaceEligibilityFailureLine(surface, unavailableReason),
+      };
+    }
+    if (!this.isSafeDirectAnswerSurface(probeResult, options)) {
+      const rejectionReason = this.localizeText(
+        'route eligibility rejected this surface for the current turn.',
+        '当前 turn 的路由资格检查拒绝了这个 surface。',
+      );
+      await this.publishSurfaceProbeEvent(options?.streamContext, surface, {
+        detail: this.localizeText(
+          `${surface} failed the current route eligibility checks.`,
+          `${surface} 没有通过当前路由资格检查。`,
+        ),
+      });
+      return {
+        surface,
+        safe: false,
+        executionDetailsLine: this.formatSurfaceEligibilityFailureLine(surface, rejectionReason),
+      };
+    }
+    if (capabilityRequirement) {
+      const capabilityEvaluation = this.capabilityEvaluator.evaluate(
+        probeResult.capabilityMatrix,
+        capabilityRequirement,
+      );
+      if (!capabilityEvaluation.isSatisfied) {
+        const capabilityGapReason = this.localizeText(
+          `missing required capabilities: ${capabilityEvaluation.capabilityGaps.map((gap) => gap.capability).join(', ')}`,
+          `缺少必需能力：${capabilityEvaluation.capabilityGaps.map((gap) => gap.capability).join('、')}`,
+        );
+        await this.publishSurfaceProbeEvent(options?.streamContext, surface, {
+          detail: this.localizeText(
+            `${surface} is missing required capabilities for this turn.`,
+            `${surface} 缺少本轮 turn 所需的必需能力。`,
+          ),
+        });
+        return {
+          surface,
+          safe: false,
+          executionDetailsLine: this.formatSurfaceEligibilityFailureLine(
+            surface,
+            capabilityGapReason,
+          ),
+        };
+      }
+    }
+    await this.publishSurfaceProbeEvent(options?.streamContext, surface, {
+      detail: this.localizeText(
+        `${surface} is eligible for this turn.`,
+        `${surface} 已通过本轮 turn 的资格检查。`,
+      ),
+    });
+    return {
+      surface,
+      safe: true,
+    };
+  }
+
+  private async publishSurfaceProbeEvent(
+    streamContext: SurfaceProbeStreamContext | undefined,
     surface: AdapterSurface,
     payload: {
       detail: string;
@@ -614,21 +680,25 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     routeKey: string,
     protocolBySurface: Record<string, AgentProtocolContract>,
   ): Promise<AdapterSurface[]> {
-    const availableCandidateSurfaces: AdapterSurface[] = [];
-    for (const surface of candidateSurfaces) {
-      const protocol = protocolBySurface[surface];
-      if (!protocol) {
-        continue;
-      }
-      const probeResult = await protocol.probe({
-        routeKey,
-      });
-      if (probeResult.availabilityStatus === AgentAvailabilityStatus.UNAVAILABLE) {
-        continue;
-      }
-      availableCandidateSurfaces.push(surface);
-    }
-    return availableCandidateSurfaces;
+    const availabilityResults = await Promise.all(
+      candidateSurfaces.map(async (surface) => {
+        const protocol = protocolBySurface[surface];
+        if (!protocol) {
+          return null;
+        }
+        try {
+          const probeResult = await protocol.probe({
+            routeKey,
+          });
+          return probeResult.availabilityStatus === AgentAvailabilityStatus.UNAVAILABLE
+            ? null
+            : surface;
+        } catch {
+          return null;
+        }
+      }),
+    );
+    return availabilityResults.filter((surface): surface is AdapterSurface => surface !== null);
   }
 
   private async resolveSingleRoleDelegateTurn(
@@ -834,6 +904,48 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     return candidateSurfaces;
   }
 
+  private resolveSurfaceAvailabilityInspectionIntent(
+    userMessage: string,
+  ): SurfaceAvailabilityInspectionIntent | null {
+    if (!this.isSurfaceAvailabilityQuestion(userMessage)) {
+      return null;
+    }
+
+    const matches: SurfaceAvailabilityInspectionIntent[] = [];
+    if (/\bcodex\b/iu.test(userMessage)) {
+      matches.push({
+        surface: AdapterSurface.CODEX,
+        displayName: 'Codex CLI',
+      });
+    }
+    if (/(?:github[\s-]*copilot|copilot\s+cli|\bcopilot\b)/iu.test(userMessage)) {
+      matches.push({
+        surface: AdapterSurface.GITHUB_COPILOT,
+        displayName: 'GitHub Copilot CLI',
+      });
+    }
+    if (/(?:claude\s*code|\bclaude\b)/iu.test(userMessage)) {
+      matches.push({
+        surface: AdapterSurface.CLAUDE_CODE,
+        displayName: 'Claude Code',
+      });
+    }
+    if (/\bollama\b|local model|本地模型/iu.test(userMessage)) {
+      matches.push({
+        surface: AdapterSurface.OLLAMA,
+        displayName: 'Ollama',
+      });
+    }
+
+    return matches.length === 1 ? matches[0] : null;
+  }
+
+  private isSurfaceAvailabilityQuestion(userMessage: string): boolean {
+    return /(?:是否可用|可用性|能否(?:使用|可用)|能不能(?:使用|用)|可不可用|available|availability|usable|working|health(?:\s|-)?check|probe|探测|探针|健康检查)/iu.test(
+      userMessage,
+    );
+  }
+
   private resolveRoleDelegateCandidateSurfaces(
     preferredSurface: string,
     descriptor: SessionMainSubagentDescriptor,
@@ -912,6 +1024,28 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
           SESSION_MAIN_REPOSITORY_REVIEW_CAPABLE_SURFACES.has(surface),
         )
       : roleDelegateCandidateSurfaces;
+    const roleDelegateStreamContext = this.createRoleDelegateSurfaceProbeStreamContext(
+      context,
+      descriptor,
+    );
+    await this.publishStreamEvent(context, {
+      kind: 'lifecycle',
+      state: 'started',
+      title: roleDelegateStreamContext.title,
+      detail: this.localizeText(
+        `The supervisor is checking available ${descriptor.roleId} surfaces.`,
+        `supervisor 正在检查可用的 ${descriptor.roleId} surface。`,
+      ),
+      activityKey: `role-preflight:${descriptor.routeKey}:${descriptor.roleId}`,
+      roleId: descriptor.roleId,
+      stageId: descriptor.stageId,
+      routeKey: descriptor.routeKey,
+      ...(eligibleRoleDelegateCandidateSurfaces[0]
+        ? {
+            selectedSurface: eligibleRoleDelegateCandidateSurfaces[0],
+          }
+        : {}),
+    });
     let safeCandidateSurfaces = await this.resolveSafeCandidateSurfaces(
       eligibleRoleDelegateCandidateSurfaces,
       descriptor.routeKey,
@@ -919,6 +1053,7 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       capabilityRequirement,
       {
         allowToolCapableSurfaces: options?.allowToolCapableSurfaces,
+        streamContext: roleDelegateStreamContext,
       },
     );
     if (repositoryReviewRoleDispatch && safeCandidateSurfaces.length === 0) {
@@ -928,10 +1063,134 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
         protocolBySurface,
       );
     }
+    await this.publishStreamEvent(context, {
+      kind: 'lifecycle',
+      state: safeCandidateSurfaces.length > 0 ? 'completed' : 'failed',
+      title: roleDelegateStreamContext.title,
+      detail:
+        safeCandidateSurfaces.length > 0
+          ? this.localizeText(
+              `${descriptor.roleId} preflight checks completed; preparing dispatch.`,
+              `${descriptor.roleId} 角色预检已完成，正在准备调度。`,
+            )
+          : this.localizeText(
+              `No eligible ${descriptor.roleId} surface passed preflight checks.`,
+              `没有任何 ${descriptor.roleId} surface 通过预检。`,
+            ),
+      activityKey: `role-preflight:${descriptor.routeKey}:${descriptor.roleId}`,
+      roleId: descriptor.roleId,
+      stageId: descriptor.stageId,
+      routeKey: descriptor.routeKey,
+      ...(safeCandidateSurfaces[0]
+        ? {
+            selectedSurface: safeCandidateSurfaces[0],
+          }
+        : {}),
+    });
     return {
       descriptor,
       capabilityRequirement,
       safeCandidateSurfaces,
+    };
+  }
+
+  private async resolveSurfaceAvailabilityInspectionTurn(
+    context: SessionMainSupervisorTurnContext,
+    intent: SurfaceAvailabilityInspectionIntent,
+    protocolBySurface: Record<string, AgentProtocolContract>,
+    toolConfigBySurface: Map<AdapterSurface, NonNullable<AdaptersConfig['tools']>[number]>,
+  ): Promise<SessionMainSupervisorTurnOutcome> {
+    const toolConfig = toolConfigBySurface.get(intent.surface);
+    const protocol = protocolBySurface[intent.surface];
+    await this.publishStreamEvent(context, {
+      kind: 'lifecycle',
+      state: 'started',
+      title: this.localizeText('Session Main Answer', '主会话回答'),
+      detail: this.localizeText(
+        `The supervisor is checking ${intent.displayName} availability locally.`,
+        `supervisor 正在本地检查 ${intent.displayName} 的可用性。`,
+      ),
+      activityKey: SESSION_MAIN_ANSWER_PREFLIGHT_ACTIVITY_KEY,
+      stageId: SESSION_MAIN_ANSWER_STAGE_ID,
+      routeKey: SESSION_MAIN_ANSWER_ROUTE_KEY,
+      selectedSurface: intent.surface,
+    });
+
+    const probeStartedAtMs = Date.now();
+    let availabilityStatus = AgentAvailabilityStatus.UNAVAILABLE;
+    let detail: string | null = null;
+    let entrypoint: string | null = null;
+    if (!protocol) {
+      detail =
+        toolConfig === undefined
+          ? this.localizeText(
+              'this surface is not currently tracked by the active adapters config.',
+              '当前激活的 adapters 配置没有追踪这个 surface。',
+            )
+          : this.localizeText(
+              'no protocol implementation is currently registered for this surface.',
+              '当前没有为这个 surface 注册协议实现。',
+            );
+    } else {
+      try {
+        const probeResult = await protocol.probe({
+          routeKey: SESSION_MAIN_ANSWER_ROUTE_KEY,
+        });
+        availabilityStatus = probeResult.availabilityStatus;
+        entrypoint =
+          probeResult.healthCheck?.selectedEntrypoint ?? probeResult.identity.surface ?? null;
+        detail =
+          probeResult.availabilityStatus === AgentAvailabilityStatus.AVAILABLE
+            ? null
+            : this.readProbeUnavailableReason(probeResult);
+      } catch (error) {
+        detail = this.readProbeFailureReason(error);
+      }
+    }
+    const probeElapsedMs = Math.max(Date.now() - probeStartedAtMs, 0);
+    const assistantMessage = this.createSurfaceAvailabilityAssistantMessage({
+      displayName: intent.displayName,
+      surface: intent.surface,
+      availabilityStatus,
+      detail,
+      entrypoint,
+    });
+    await this.publishStreamEvent(context, {
+      kind: 'lifecycle',
+      state: 'completed',
+      title: this.localizeText('Session Main Answer', '主会话回答'),
+      detail: this.localizeText(
+        `${intent.displayName} local availability check finished.`,
+        `${intent.displayName} 的本地可用性检查已完成。`,
+      ),
+      activityKey: SESSION_MAIN_ANSWER_PREFLIGHT_ACTIVITY_KEY,
+      stageId: SESSION_MAIN_ANSWER_STAGE_ID,
+      routeKey: SESSION_MAIN_ANSWER_ROUTE_KEY,
+      selectedSurface: intent.surface,
+      selectedBy: SESSION_MAIN_SURFACE_AVAILABILITY_SELECTED_BY,
+    });
+
+    return {
+      responseMode: SESSION_MAIN_RESPONSE_MODE.ANSWER,
+      interactionMode: SESSION_MAIN_INTERACTION_MODE.DIRECT_ANSWER,
+      assistantDelta: this.createAssistantDelta(assistantMessage),
+      assistantMessage,
+      executionDetailsLines: this.buildSurfaceAvailabilityExecutionDetailsLines({
+        displayName: intent.displayName,
+        surface: intent.surface,
+        availabilityStatus,
+        detail,
+        elapsedMs: probeElapsedMs,
+      }),
+      routerDecisionReason: SESSION_MAIN_ROUTER_REASON_DIRECT_ANSWER_SURFACE_AVAILABILITY,
+      executionIntent: SESSION_MAIN_SURFACE_AVAILABILITY_EXECUTION_INTENT,
+      requiresConfirmation: false,
+      selectedSurface: intent.surface,
+      selectedBy: SESSION_MAIN_SURFACE_AVAILABILITY_SELECTED_BY,
+      sessionRoutingPreferenceApplied: context.sessionRoutingPreferenceApplied,
+      invokedRoleIds: [],
+      invokedRoles: [],
+      subagentCount: 0,
     };
   }
 
@@ -1219,6 +1478,22 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     };
   }
 
+  private createRoleDelegateSurfaceProbeStreamContext(
+    context: SessionMainSupervisorTurnContext,
+    descriptor: SessionMainSubagentDescriptor,
+  ): SurfaceProbeStreamContext {
+    return {
+      context,
+      title: this.localizeText(
+        `${this.formatRoleHeading(descriptor.roleId)} Delegate`,
+        `${descriptor.roleId} 角色委派`,
+      ),
+      stageId: descriptor.stageId,
+      routeKey: descriptor.routeKey,
+      roleId: descriptor.roleId,
+    };
+  }
+
   private resolveCapabilityRequirement(
     capabilityHints: string[],
   ): AgentCapabilityRequirement | undefined {
@@ -1268,6 +1543,14 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
   }
 
   private readProbeUnavailableReason(probeResult: AgentProbeResult): string {
+    const healthCheckDiagnostics = probeResult.healthCheck?.diagnostics;
+    if (healthCheckDiagnostics && healthCheckDiagnostics.length > 0) {
+      return healthCheckDiagnostics
+        .map((diagnostic) =>
+          diagnostic.detail ? `${diagnostic.code}:${diagnostic.detail}` : diagnostic.code,
+        )
+        .join(' | ');
+    }
     if (probeResult.unavailableReasons.length > 0) {
       return probeResult.unavailableReasons.join(' | ');
     }
@@ -1347,6 +1630,47 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     return /(?:\breview\b|\bcr\b|code review|worktree|diff|changes?|审查|评审|复核|改动|代码)/iu.test(
       userMessage,
     );
+  }
+
+  private createSurfaceAvailabilityAssistantMessage(options: {
+    displayName: string;
+    surface: AdapterSurface;
+    availabilityStatus: AgentAvailabilityStatus;
+    detail: string | null;
+    entrypoint: string | null;
+  }): string {
+    const summary =
+      options.availabilityStatus === AgentAvailabilityStatus.AVAILABLE
+        ? this.localizeText(
+            `${options.displayName} is currently available on this machine.`,
+            `${options.displayName} 当前在这台机器上可用。`,
+          )
+        : options.availabilityStatus === AgentAvailabilityStatus.DEGRADED
+          ? this.localizeText(
+              `${options.displayName} is currently degraded on this machine.`,
+              `${options.displayName} 当前在这台机器上处于降级可用状态。`,
+            )
+          : this.localizeText(
+              `${options.displayName} is currently unavailable on this machine.`,
+              `${options.displayName} 当前在这台机器上不可用。`,
+            );
+    return [
+      this.localizeText(
+        `## ${options.displayName} Availability`,
+        `## ${options.displayName} 可用性`,
+      ),
+      '',
+      summary,
+      '',
+      `- Surface: \`${options.surface}\``,
+      `- Status: \`${options.availabilityStatus}\``,
+      ...(options.entrypoint ? [`- Entrypoint: \`${options.entrypoint}\``] : []),
+      ...(options.detail ? [`- Detail: ${options.detail}`] : []),
+      `- ${this.localizeText(
+        'Scope: local adapter availability probe only; no answer-stage model invocation was dispatched.',
+        '范围：仅执行本地 adapter 可用性探测；没有调度 answer-stage 模型调用。',
+      )}`,
+    ].join('\n');
   }
 
   private createRoleDelegateGovernorInstructions(
@@ -1613,6 +1937,25 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       this.localizeText(
         `Performance: direct-answer invoke completed in ${String(options.invokeElapsedMs)}ms on ${options.selectedSurface}.`,
         `性能：direct-answer 调用在 ${options.selectedSurface} 上耗时 ${String(options.invokeElapsedMs)}ms 完成。`,
+      ),
+    ];
+  }
+
+  private buildSurfaceAvailabilityExecutionDetailsLines(options: {
+    displayName: string;
+    surface: AdapterSurface;
+    availabilityStatus: AgentAvailabilityStatus;
+    detail: string | null;
+    elapsedMs: number;
+  }): string[] {
+    return [
+      this.localizeText(
+        `Performance: local availability probe for ${options.displayName} finished in ${String(options.elapsedMs)}ms.`,
+        `性能：${options.displayName} 的本地可用性探测耗时 ${String(options.elapsedMs)}ms。`,
+      ),
+      this.localizeText(
+        `${options.surface} · availability=${options.availabilityStatus}${options.detail ? ` · ${options.detail}` : ''}`,
+        `${options.surface} · 可用性=${options.availabilityStatus}${options.detail ? ` · ${options.detail}` : ''}`,
       ),
     ];
   }

@@ -22,6 +22,10 @@ export {
 } from './constants/index.js';
 export { AgentCapabilityEvaluator } from './agent-capability-evaluator.js';
 export { AgentCliExecOperationsRuntime } from './agent-cli-exec-operations-runtime.js';
+export {
+  buildLayeredHealthCheckResult,
+  createLayeredHealthCheckFromLegacyReasons,
+} from './layered-health-check-runtime.js';
 export { resolveAgentStageExecutionPolicy } from './agent-stage-execution-policy.js';
 export { DefaultRestrictedNetworkFallbackHandler } from './restricted-network-fallback-handler.js';
 export { AgentProtocolErrorMapper } from './agent-protocol-error-mapper.js';
@@ -47,8 +51,12 @@ export type {
   AgentConfirmationRequest,
   AgentConfirmationResult,
   AgentContextWindowCapability,
+  AgentHealthCheckDiagnostic,
+  AgentHealthCheckLayer,
+  AgentHealthCheckLayerStatus,
   AgentInvokeStageRequest,
   AgentInvokeStageResult,
+  AgentLayeredHealthCheckResult,
   AgentProbeRequest,
   AgentProbeResult,
   AgentProtocolContract,

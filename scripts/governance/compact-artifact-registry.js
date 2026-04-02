@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 import {
   ARTIFACT_REGISTRY_ARCHIVE_VIEW_PATH,
@@ -76,145 +77,191 @@ function calculateDayDistance(fromDate, toDate) {
   return Math.floor((toDate.getTime() - fromDate.getTime()) / millisecondsPerDay);
 }
 
-const argv = process.argv.slice(2);
-const databaseFilePath = resolve(
-  process.cwd(),
-  readFlagValue(argv, '--database') ?? ARTIFACT_REGISTRY_SQLITE_PATH,
-);
-const mainRegistryPath = resolve(
-  process.cwd(),
-  readFlagValue(argv, '--main') ?? ARTIFACT_REGISTRY_MAIN_VIEW_PATH,
-);
-const archiveRegistryPath = resolve(
-  process.cwd(),
-  readFlagValue(argv, '--archive') ?? ARTIFACT_REGISTRY_ARCHIVE_VIEW_PATH,
-);
-const inactiveDays = Number(readFlagValue(argv, '--inactive-days') ?? '7');
-const deprecationDays = Number(readFlagValue(argv, '--deprecation-days') ?? '14');
-const dryRun = argv.includes('--dry-run');
-const bootstrapFromCsv = argv.includes('--bootstrap-from-csv');
-const today = parseDate(readFlagValue(argv, '--today') ?? formatDate(new Date())) ?? new Date();
+export function compactArtifactRegistry(options = {}) {
+  const databaseFilePath = resolve(
+    process.cwd(),
+    options.databaseFilePath ?? ARTIFACT_REGISTRY_SQLITE_PATH,
+  );
+  const mainRegistryPath = resolve(
+    process.cwd(),
+    options.mainRegistryPath ?? ARTIFACT_REGISTRY_MAIN_VIEW_PATH,
+  );
+  const archiveRegistryPath = resolve(
+    process.cwd(),
+    options.archiveRegistryPath ?? ARTIFACT_REGISTRY_ARCHIVE_VIEW_PATH,
+  );
+  const inactiveDays = Number(options.inactiveDays ?? 7);
+  const deprecationDays = Number(options.deprecationDays ?? 14);
+  const dryRun = options.dryRun === true;
+  const bootstrapFromCsv = options.bootstrapFromCsv === true;
+  const today =
+    options.today instanceof Date
+      ? options.today
+      : (parseDate(String(options.today ?? formatDate(new Date()))) ?? new Date());
+  const emitGateOutput = options.emitGateOutput !== false;
+  const writeOutputs = options.writeOutputs !== false;
 
-if (!Number.isFinite(inactiveDays) || inactiveDays < 0) {
-  throw new Error(`Invalid --inactive-days value: ${inactiveDays}`);
-}
-
-if (!Number.isFinite(deprecationDays) || deprecationDays < 0) {
-  throw new Error(`Invalid --deprecation-days value: ${deprecationDays}`);
-}
-
-const canonicalState = readArtifactRegistryCanonicalState({
-  databaseFilePath,
-  mainRegistryPath,
-  archiveRegistryPath,
-  bootstrapFromCsv,
-});
-const nextMainRows = [];
-const movedToArchiveRows = [];
-let markedDeprecatedCount = 0;
-
-for (const row of canonicalState.mainRows) {
-  const dependentTasks = parseDependentTasks(row.dependent_tasks ?? '');
-  const lastUpdatedDate = parseDate(row.last_updated_at ?? '') ?? today;
-  const ageInDays = calculateDayDistance(lastUpdatedDate, today);
-  const status = row.artifact_status;
-
-  if (status === 'archived' || status === 'retired') {
-    movedToArchiveRows.push({
-      ...row,
-      artifact_status: status,
-      dependent_tasks: '',
-      last_updated_at: formatDate(today),
-    });
-    continue;
+  if (!Number.isFinite(inactiveDays) || inactiveDays < 0) {
+    throw new Error(`Invalid inactiveDays value: ${inactiveDays}`);
   }
 
-  if (status === 'deprecated' && ageInDays >= deprecationDays) {
-    movedToArchiveRows.push({
-      ...row,
-      artifact_status: 'archived',
-      dependent_tasks: '',
-      last_updated_at: formatDate(today),
-    });
-    continue;
+  if (!Number.isFinite(deprecationDays) || deprecationDays < 0) {
+    throw new Error(`Invalid deprecationDays value: ${deprecationDays}`);
   }
 
-  if (
-    (status === 'active' || status === 'frozen') &&
-    (dependentTasks.values.length === 0 || dependentTasks.hasTbdPlaceholder) &&
-    ageInDays >= inactiveDays
-  ) {
+  const canonicalState =
+    options.mainRows && options.archiveRows
+      ? {
+          databaseFilePath,
+          mainRows: options.mainRows,
+          archiveRows: options.archiveRows,
+          bootstrappedFromCsv: false,
+        }
+      : readArtifactRegistryCanonicalState({
+          databaseFilePath,
+          mainRegistryPath,
+          archiveRegistryPath,
+          bootstrapFromCsv,
+        });
+  const nextMainRows = [];
+  const movedToArchiveRows = [];
+  let markedDeprecatedCount = 0;
+
+  for (const row of canonicalState.mainRows) {
+    const dependentTasks = parseDependentTasks(row.dependent_tasks ?? '');
+    const lastUpdatedDate = parseDate(row.last_updated_at ?? '') ?? today;
+    const ageInDays = calculateDayDistance(lastUpdatedDate, today);
+    const status = row.artifact_status;
+
+    if (status === 'archived' || status === 'retired') {
+      movedToArchiveRows.push({
+        ...row,
+        artifact_status: status,
+        dependent_tasks: '',
+        last_updated_at: formatDate(today),
+      });
+      continue;
+    }
+
+    if (status === 'deprecated' && ageInDays >= deprecationDays) {
+      movedToArchiveRows.push({
+        ...row,
+        artifact_status: 'archived',
+        dependent_tasks: '',
+        last_updated_at: formatDate(today),
+      });
+      continue;
+    }
+
+    if (
+      (status === 'active' || status === 'frozen') &&
+      (dependentTasks.values.length === 0 || dependentTasks.hasTbdPlaceholder) &&
+      ageInDays >= inactiveDays
+    ) {
+      nextMainRows.push({
+        ...row,
+        artifact_status: 'deprecated',
+        dependent_tasks: '',
+        last_updated_at: formatDate(today),
+      });
+      markedDeprecatedCount += 1;
+      continue;
+    }
+
     nextMainRows.push({
       ...row,
-      artifact_status: 'deprecated',
-      dependent_tasks: '',
-      last_updated_at: formatDate(today),
+      dependent_tasks: dependentTasks.values.join('|'),
     });
-    markedDeprecatedCount += 1;
-    continue;
   }
 
-  nextMainRows.push({
-    ...row,
-    dependent_tasks: dependentTasks.values.join('|'),
+  const archiveRowById = new Map(
+    canonicalState.archiveRows.map((row) => [`${row.artifact_id}@${row.artifact_version}`, row]),
+  );
+  for (const movedRow of movedToArchiveRows) {
+    archiveRowById.set(`${movedRow.artifact_id}@${movedRow.artifact_version}`, movedRow);
+  }
+
+  const finalArchiveRows = Array.from(archiveRowById.values()).sort((left, right) => {
+    const artifactIdOrder = left.artifact_id.localeCompare(right.artifact_id);
+    if (artifactIdOrder !== 0) {
+      return artifactIdOrder;
+    }
+
+    return right.artifact_version.localeCompare(left.artifact_version);
   });
-}
+  const finalMainRows = nextMainRows.sort((left, right) => {
+    const artifactIdOrder = left.artifact_id.localeCompare(right.artifact_id);
+    if (artifactIdOrder !== 0) {
+      return artifactIdOrder;
+    }
 
-const archiveRowById = new Map(
-  canonicalState.archiveRows.map((row) => [`${row.artifact_id}@${row.artifact_version}`, row]),
-);
-for (const movedRow of movedToArchiveRows) {
-  archiveRowById.set(`${movedRow.artifact_id}@${movedRow.artifact_version}`, movedRow);
-}
+    return right.artifact_version.localeCompare(left.artifact_version);
+  });
 
-const finalArchiveRows = Array.from(archiveRowById.values()).sort((left, right) => {
-  const artifactIdOrder = left.artifact_id.localeCompare(right.artifact_id);
-  if (artifactIdOrder !== 0) {
-    return artifactIdOrder;
-  }
-
-  return right.artifact_version.localeCompare(left.artifact_version);
-});
-const finalMainRows = nextMainRows.sort((left, right) => {
-  const artifactIdOrder = left.artifact_id.localeCompare(right.artifact_id);
-  if (artifactIdOrder !== 0) {
-    return artifactIdOrder;
-  }
-
-  return right.artifact_version.localeCompare(left.artifact_version);
-});
-
-const summary = {
-  dryRun,
-  databaseFilePath,
-  bootstrappedFromCsv: canonicalState.bootstrappedFromCsv,
-  inactiveDays,
-  deprecationDays,
-  mainRowsBefore: canonicalState.mainRows.length,
-  mainRowsAfter: finalMainRows.length,
-  archiveRowsBefore: canonicalState.archiveRows.length,
-  archiveRowsAfter: finalArchiveRows.length,
-  markedDeprecatedCount,
-  movedToArchiveCount: movedToArchiveRows.length,
-};
-
-if (!dryRun) {
-  replaceArtifactRegistryCanonicalState({
+  const summary = {
+    dryRun,
     databaseFilePath,
-    mainRows: finalMainRows,
-    archiveRows: finalArchiveRows,
-  });
-  renderArtifactRegistryCsvViews({
-    mainRows: finalMainRows,
-    archiveRows: finalArchiveRows,
+    bootstrappedFromCsv: canonicalState.bootstrappedFromCsv,
+    inactiveDays,
+    deprecationDays,
+    mainRowsBefore: canonicalState.mainRows.length,
+    mainRowsAfter: finalMainRows.length,
+    archiveRowsBefore: canonicalState.archiveRows.length,
+    archiveRowsAfter: finalArchiveRows.length,
+    markedDeprecatedCount,
+    movedToArchiveCount: movedToArchiveRows.length,
+  };
+
+  if (!dryRun && writeOutputs) {
+    replaceArtifactRegistryCanonicalState({
+      databaseFilePath,
+      mainRows: finalMainRows,
+      archiveRows: finalArchiveRows,
+    });
+    renderArtifactRegistryCsvViews({
+      mainRows: finalMainRows,
+      archiveRows: finalArchiveRows,
+      mainRegistryPath,
+      archiveRegistryPath,
+      writeFiles: true,
+    });
+  }
+
+  if (emitGateOutput) {
+    if (dryRun) {
+      gateInfo(GATE_NAME, `dry-run summary=${JSON.stringify(summary)}`);
+    } else {
+      gatePass(GATE_NAME, `applied summary=${JSON.stringify(summary)}`);
+    }
+  }
+
+  return {
+    summary,
+    databaseFilePath,
     mainRegistryPath,
     archiveRegistryPath,
-    writeFiles: true,
+    finalMainRows,
+    finalArchiveRows,
+    movedToArchiveRows,
+    markedDeprecatedCount,
+    bootstrappedFromCsv: canonicalState.bootstrappedFromCsv,
+  };
+}
+
+function runCli() {
+  const argv = process.argv.slice(2);
+  compactArtifactRegistry({
+    dryRun: argv.includes('--dry-run'),
+    bootstrapFromCsv: argv.includes('--bootstrap-from-csv'),
+    databaseFilePath: readFlagValue(argv, '--database') ?? ARTIFACT_REGISTRY_SQLITE_PATH,
+    mainRegistryPath: readFlagValue(argv, '--main') ?? ARTIFACT_REGISTRY_MAIN_VIEW_PATH,
+    archiveRegistryPath: readFlagValue(argv, '--archive') ?? ARTIFACT_REGISTRY_ARCHIVE_VIEW_PATH,
+    inactiveDays: Number(readFlagValue(argv, '--inactive-days') ?? '7'),
+    deprecationDays: Number(readFlagValue(argv, '--deprecation-days') ?? '14'),
+    today: parseDate(readFlagValue(argv, '--today') ?? formatDate(new Date())) ?? new Date(),
   });
 }
 
-if (dryRun) {
-  gateInfo(GATE_NAME, `dry-run summary=${JSON.stringify(summary)}`);
-} else {
-  gatePass(GATE_NAME, `applied summary=${JSON.stringify(summary)}`);
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  runCli();
 }

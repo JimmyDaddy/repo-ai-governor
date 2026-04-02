@@ -674,7 +674,7 @@ const DEFAULT_TRANSLATIONS: Record<string, string> = {
   'cli.sessionShell.responses.liveTurnThinking': 'Thinking...',
   'cli.sessionShell.responses.liveTurnThinkingPulse': 'Thinking{{suffix}}',
   'cli.sessionShell.responses.liveTurnThinkingDetail': 'Thinking: {{detail}}',
-  'cli.sessionShell.responses.liveTurnCurrentDetail': 'Current: {{detail}}',
+  'cli.sessionShell.responses.liveTurnCurrentDetail': '{{detail}}',
   'cli.sessionShell.responses.liveTurnRoleActivity': '{{role}}: {{detail}}',
   'cli.sessionShell.responses.liveTurnToolCall': 'Tool: {{toolName}} - {{detail}}',
   'cli.sessionShell.responses.liveTurnActivityTitle': 'Live activity',
@@ -1500,7 +1500,7 @@ describe('CliSessionShellRunner', () => {
               item.renderKind === 'live_activity' &&
               item.label === 'Live activity' &&
               item.summaryLine === 'Running · 0s' &&
-              item.lines.includes('Current: Planning current workspace answer.'),
+              item.lines.includes('Planning current workspace answer.'),
           ),
       ),
     ).toBe(true);
@@ -1657,7 +1657,7 @@ describe('CliSessionShellRunner', () => {
             item.label === 'Live activity' &&
             item.summaryLine === 'Running · 0s' &&
             item.lines.includes(
-              'Current: The shell is retrying your latest message in a new attached session.',
+              'The shell is retrying your latest message in a new attached session.',
             ),
         ),
       ),

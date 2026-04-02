@@ -15,6 +15,7 @@ import {
   type AgentStreamEvent,
   AgentStreamEventType,
   type AgentStreamEventsRequest,
+  createLayeredHealthCheckFromLegacyReasons,
 } from '@repo-ai-governor/adapter-sdk';
 import {
   GovernorErrorCode,
@@ -163,6 +164,27 @@ export class LocalModelAgentAdapter extends AgentProtocol {
    */
   public override async probe(request: AgentProbeRequest): Promise<AgentProbeResult> {
     const localModelProbe = await this.probeLocalModelReadiness(request.signal);
+    const capabilityMatrix = this.createCapabilityMatrix();
+    const availabilityStatus = this.mergeAvailabilityStatus(
+      this.options.availabilityStatus,
+      localModelProbe.availabilityStatus,
+    );
+    const unavailableReasons = [
+      ...this.options.unavailableReasons,
+      ...localModelProbe.unavailableReasons,
+    ].filter((reason, index, list) => list.indexOf(reason) === index);
+    const unsupportedCapabilities = (request.requiredCapabilities ?? []).filter((capability) => {
+      const capabilityState = capabilityMatrix.capabilityStates.find(
+        (candidateCapabilityState) => candidateCapabilityState.capability === capability,
+      );
+      return capabilityState?.supportLevel === AgentCapabilitySupportLevel.UNSUPPORTED;
+    });
+    const degradedCapabilities = (request.requiredCapabilities ?? []).filter((capability) => {
+      const capabilityState = capabilityMatrix.capabilityStates.find(
+        (candidateCapabilityState) => candidateCapabilityState.capability === capability,
+      );
+      return capabilityState?.supportLevel === AgentCapabilitySupportLevel.DEGRADED;
+    });
     return {
       identity: {
         agentId: this.options.agentId,
@@ -171,15 +193,21 @@ export class LocalModelAgentAdapter extends AgentProtocol {
         roleProfileId: this.options.roleProfileId,
         roleSource: this.options.roleSource,
       },
-      availabilityStatus: this.mergeAvailabilityStatus(
-        this.options.availabilityStatus,
-        localModelProbe.availabilityStatus,
-      ),
-      capabilityMatrix: this.createCapabilityMatrix(),
-      unavailableReasons: [
-        ...this.options.unavailableReasons,
-        ...localModelProbe.unavailableReasons,
-      ].filter((reason, index, list) => list.indexOf(reason) === index),
+      availabilityStatus,
+      capabilityMatrix,
+      unavailableReasons,
+      healthCheck: createLayeredHealthCheckFromLegacyReasons({
+        adapterId: this.options.agentId,
+        surfaceId: LOCAL_MODEL_SURFACE,
+        availabilityStatus,
+        selectedEntrypoint: this.options.localModel?.endpoint ?? LOCAL_MODEL_SURFACE,
+        routeKey: request.routeKey,
+        routeRequirements: (request.requiredCapabilities ?? []).map(String),
+        fallbackAllowed: true,
+        unavailableReasons,
+        unsupportedCapabilities: unsupportedCapabilities.map(String),
+        degradedCapabilities: degradedCapabilities.map(String),
+      }),
     };
   }
 

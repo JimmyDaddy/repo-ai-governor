@@ -80,6 +80,52 @@ export interface AgentProbeRequest {
 }
 
 /**
+ * Defines one normalized layer status inside adapter health-check diagnostics.
+ */
+export type AgentHealthCheckLayerStatus = 'pass' | 'warn' | 'fail';
+
+/**
+ * Defines supported layer identifiers in the normalized health-check contract.
+ */
+export type AgentHealthCheckLayer =
+  | 'install'
+  | 'auth'
+  | 'protocol'
+  | 'semantic'
+  | 'route_capability';
+
+/**
+ * Defines one stable machine-readable diagnostic row emitted by one adapter probe.
+ */
+export interface AgentHealthCheckDiagnostic {
+  layer: AgentHealthCheckLayer;
+  status: AgentHealthCheckLayerStatus;
+  code: string;
+  detail?: string;
+}
+
+/**
+ * Defines normalized layered adapter health-check output shared across CLIs/providers.
+ */
+export interface AgentLayeredHealthCheckResult {
+  adapterId: string;
+  surfaceId: string;
+  probeTimestamp: string;
+  installStatus: AgentHealthCheckLayerStatus;
+  authStatus: AgentHealthCheckLayerStatus;
+  protocolStatus: AgentHealthCheckLayerStatus;
+  semanticStatus: AgentHealthCheckLayerStatus;
+  routeCapabilityStatus: AgentHealthCheckLayerStatus;
+  overallStatus: AgentAvailabilityStatus;
+  reasonCodes: string[];
+  diagnostics: AgentHealthCheckDiagnostic[];
+  selectedEntrypoint: string;
+  routeKey: string;
+  routeRequirements: string[];
+  fallbackAllowed: boolean;
+}
+
+/**
  * Defines capability-probe result payload.
  */
 export interface AgentProbeResult {
@@ -87,6 +133,7 @@ export interface AgentProbeResult {
   availabilityStatus: AgentAvailabilityStatus;
   capabilityMatrix: AgentCapabilityMatrix;
   unavailableReasons: string[];
+  healthCheck?: AgentLayeredHealthCheckResult;
 }
 
 /**

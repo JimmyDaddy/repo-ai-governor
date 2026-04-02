@@ -101,10 +101,7 @@ describe('ReactCliRunner', () => {
           id: 'system:3',
           role: CliSessionTranscriptRole.SYSTEM,
           label: 'Live activity',
-          lines: [
-            'Current: Inspecting workspace state.',
-            'Tool: repo_status - Reading git status.',
-          ],
+          lines: ['Inspecting workspace state.', 'Tool: repo_status - Reading git status.'],
           renderKind: 'live_activity',
           summaryLine: 'Running · 0s',
         },
@@ -151,7 +148,7 @@ describe('ReactCliRunner', () => {
     expect(output).toContain('Current input');
     expect(output).toContain('Live activity');
     expect(output).toContain('Running · 0s');
-    expect(output).toContain('[Current] Inspecting workspace state.');
+    expect(output).toContain('Inspecting workspace state.');
     expect(output).toContain('governor>');
     expect(output).toContain('/workspace');
     expect(output).toContain('› ');

@@ -1,6 +1,6 @@
 # TK-483 align codex copilot claude and ollama probes with layered auth protocol route semantics
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-02
 - Owner: AI-Agent
 - Priority: P0
@@ -40,3 +40,4 @@
 ## 6. 执行记录
 
 1. 2026-04-02：任务创建，状态初始化为 `planned`；承接 Phase C adapter-specific layered probe rollout。
+2. 2026-04-02：完成 adapter rollout：`Codex`、`GitHub Copilot`、`Claude Code` 与 `Ollama` probe 结果均开始返回统一 `healthCheck` payload，能够保留各自底层探测差异的同时输出一致的 layered diagnostics、route requirement 与 selected entrypoint 语义；对应 smoke 回归全部通过，任务收口为 `completed`。

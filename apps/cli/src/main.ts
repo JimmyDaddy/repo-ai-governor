@@ -426,6 +426,7 @@ export async function runCli(
             workspace: runtimeContext.workspace,
             locale: resolvedLocale,
             adaptersConfig: runtimeContext.adapters,
+            adapterRoutingRuntimeCacheNamespace: `session-main:${runtimeContext.workspace.workspaceRoot}`,
             ...(codexExecRunner
               ? {
                   codexExecRunner,

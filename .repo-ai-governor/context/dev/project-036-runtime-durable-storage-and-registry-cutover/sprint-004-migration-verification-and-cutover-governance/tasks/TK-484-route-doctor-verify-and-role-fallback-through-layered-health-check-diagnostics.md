@@ -1,6 +1,6 @@
 # TK-484 route doctor verify and role fallback through layered health check diagnostics
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-02
 - Owner: AI-Agent
 - Priority: P0
@@ -41,3 +41,4 @@
 ## 6. 执行记录
 
 1. 2026-04-02：任务创建，状态初始化为 `planned`；承接 Phase D doctor/verify/route-consumer 切换。
+2. 2026-04-02：完成 doctor/verify/route consumer 切换：CLI tool snapshot、role evaluation、diagnostics artifact 与 session-main probe message 已优先消费 layered health-check result，`nextActions`、role fallback 解释与 user-visible unavailable reason 不再只依赖 legacy string prefix；定向 runtime tests、artifact lifecycle gate 与完整 build 全部通过，任务收口为 `completed`。

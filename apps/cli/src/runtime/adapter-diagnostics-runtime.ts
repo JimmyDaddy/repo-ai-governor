@@ -107,6 +107,7 @@ export class CliAdapterDiagnosticsRuntime {
         configuredAvailability: tool.configuredAvailability,
         availabilityStatus: tool.availabilityStatus,
         unavailableReasons: tool.unavailableReasons,
+        healthCheck: tool.healthCheck,
         failureAttributions: tool.failureAttributions,
         capabilitySupportByCapability: Object.fromEntries(
           tool.capabilitySupportByCapability.entries(),
@@ -122,6 +123,7 @@ export class CliAdapterDiagnosticsRuntime {
         unsupportedCapabilities: role.unsupportedCapabilities,
         degradedCapabilities: role.degradedCapabilities,
         unavailableReasons: role.unavailableReasons,
+        healthCheck: role.healthCheck,
         failureAttributions: role.failureAttributions,
         status: role.status,
       })),

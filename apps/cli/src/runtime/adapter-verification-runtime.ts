@@ -2,6 +2,7 @@ import {
   AgentAvailabilityStatus,
   AgentCapabilitySupportLevel,
   type AgentProbeResult,
+  buildLayeredHealthCheckResult,
 } from '@repo-ai-governor/adapter-sdk';
 import type { AdaptersConfig } from '@repo-ai-governor/config';
 import {
@@ -68,6 +69,16 @@ export class CliAdapterVerificationRuntime {
           unsupportedCapabilities: [],
           degradedCapabilities: [],
           unavailableReasons,
+          healthCheck: buildLayeredHealthCheckResult({
+            adapterId: role.roleId,
+            surfaceId: fallbackPrimarySurface,
+            availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+            selectedEntrypoint: fallbackPrimarySurface,
+            routeKey: `cli.adapter.role.${role.roleId}`,
+            routeRequirements: role.requiredCapabilities.map(String),
+            fallbackAllowed: false,
+            unavailableReasons,
+          }),
           failureAttributions: this.resolveFailureAttributions({
             unavailableReasons,
           }),
@@ -136,6 +147,19 @@ export class CliAdapterVerificationRuntime {
           unsupportedCapabilities: [],
           degradedCapabilities,
           unavailableReasons,
+          healthCheck: buildLayeredHealthCheckResult({
+            adapterId: role.roleId,
+            surfaceId: candidateSurface,
+            availabilityStatus: degraded
+              ? AgentAvailabilityStatus.DEGRADED
+              : AgentAvailabilityStatus.AVAILABLE,
+            selectedEntrypoint: toolSnapshot.healthCheck?.selectedEntrypoint ?? candidateSurface,
+            routeKey: `cli.adapter.role.${role.roleId}`,
+            routeRequirements: role.requiredCapabilities.map(String),
+            fallbackAllowed: selectedBy === CliAdapterRoleSelectionSource.FALLBACK,
+            unavailableReasons,
+            degradedCapabilities,
+          }),
           failureAttributions: this.resolveFailureAttributions({
             unavailableReasons,
             degradedCapabilities,
@@ -161,6 +185,16 @@ export class CliAdapterVerificationRuntime {
         unsupportedCapabilities: [],
         degradedCapabilities: [],
         unavailableReasons: resolvedUnavailableReasons,
+        healthCheck: buildLayeredHealthCheckResult({
+          adapterId: role.roleId,
+          surfaceId: roleBinding.primarySurface,
+          availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+          selectedEntrypoint: roleBinding.primarySurface,
+          routeKey: `cli.adapter.role.${role.roleId}`,
+          routeRequirements: role.requiredCapabilities.map(String),
+          fallbackAllowed: true,
+          unavailableReasons: resolvedUnavailableReasons,
+        }),
         failureAttributions: this.resolveFailureAttributions({
           unavailableReasons: resolvedUnavailableReasons,
         }),
@@ -201,12 +235,8 @@ export class CliAdapterVerificationRuntime {
       .map((tool) => tool.toolId);
     const missingCommands = this.collectMissingCommandsFromToolSnapshots(toolSnapshots);
     const failedProbeCommands = this.collectFailedProbeCommandsFromToolSnapshots(toolSnapshots);
-    const missingCredentials = this.collectToolReasonPayloads(toolSnapshots, 'credential_missing:');
-    const failedHealthChecks = [
-      ...this.collectToolReasonPayloads(toolSnapshots, 'health_check_timeout:'),
-      ...this.collectToolReasonPayloads(toolSnapshots, 'health_check_invalid_response:'),
-      ...this.collectToolReasonPayloads(toolSnapshots, 'health_check_failed:'),
-    ].filter((payload, index, list) => list.indexOf(payload) === index);
+    const missingCredentials = this.collectMissingCredentialsFromToolSnapshots(toolSnapshots);
+    const failedHealthChecks = this.collectFailedHealthChecksFromToolSnapshots(toolSnapshots);
     if (
       unavailableToolIds.length > 0 &&
       missingCommands.length === 0 &&
@@ -248,10 +278,7 @@ export class CliAdapterVerificationRuntime {
         }),
       );
     }
-    const missingLocalModels = this.collectToolReasonPayloads(
-      toolSnapshots,
-      'local_model_model_missing:',
-    );
+    const missingLocalModels = this.collectMissingLocalModelsFromToolSnapshots(toolSnapshots);
     if (missingLocalModels.length > 0) {
       nextActions.push(
         this.translate('cli.adapterVerification.pullLocalModels', {
@@ -259,10 +286,8 @@ export class CliAdapterVerificationRuntime {
         }),
       );
     }
-    const missingLocalModelConfigs = this.collectToolReasonPayloads(
-      toolSnapshots,
-      'local_model_config_missing:',
-    );
+    const missingLocalModelConfigs =
+      this.collectMissingLocalModelConfigsFromToolSnapshots(toolSnapshots);
     if (missingLocalModelConfigs.length > 0) {
       nextActions.push(
         this.translate('cli.adapterVerification.provideLocalModelConfig', {
@@ -271,10 +296,10 @@ export class CliAdapterVerificationRuntime {
       );
     }
     if (
-      this.collectToolReasonPayloads(toolSnapshots, 'local_model_endpoint_unreachable:').length >
-        0 ||
-      this.collectToolReasonPayloads(toolSnapshots, 'local_model_probe_invalid_response:').length >
-        0
+      this.collectToolReasonCodes(toolSnapshots, [
+        'install.local_model_endpoint_unreachable',
+        'protocol.local_model_invalid_response',
+      ]).length > 0
     ) {
       nextActions.push(this.translate('cli.adapterVerification.checkLocalModelEndpoint'));
     }
@@ -377,6 +402,20 @@ export class CliAdapterVerificationRuntime {
             localProbeResolution.availabilityStatus,
           ),
           unavailableReasons,
+          healthCheck: buildLayeredHealthCheckResult({
+            adapterId: probeResult.healthCheck?.adapterId ?? probeResult.identity.agentId,
+            surfaceId: surface,
+            availabilityStatus: this.localModelProbeRuntime.mergeAvailabilityStatus(
+              probeResult.availabilityStatus,
+              localProbeResolution.availabilityStatus,
+            ),
+            selectedEntrypoint:
+              probeResult.healthCheck?.selectedEntrypoint ?? probeResult.identity.surface,
+            routeKey: probeResult.healthCheck?.routeKey ?? `cli.adapter.probe.${surface}`,
+            routeRequirements: probeResult.healthCheck?.routeRequirements ?? [],
+            fallbackAllowed: probeResult.healthCheck?.fallbackAllowed ?? true,
+            unavailableReasons,
+          }),
           capabilitySupportByCapability: this.createCapabilitySupportMap(probeResult),
           failureAttributions: this.resolveFailureAttributions({
             unavailableReasons,
@@ -397,6 +436,14 @@ export class CliAdapterVerificationRuntime {
           configuredAvailability,
           availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
           unavailableReasons,
+          healthCheck: buildLayeredHealthCheckResult({
+            adapterId: surface,
+            surfaceId: surface,
+            availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+            selectedEntrypoint: surface,
+            routeKey: `cli.adapter.probe.${surface}`,
+            unavailableReasons,
+          }),
           capabilitySupportByCapability: new Map(),
           failureAttributions: this.resolveFailureAttributions({
             unavailableReasons,
@@ -430,6 +477,15 @@ export class CliAdapterVerificationRuntime {
   private collectMissingCommandsFromToolSnapshots(
     toolSnapshots: CliAdapterToolProbeSnapshot[],
   ): string[] {
+    const healthCheckCommands = this.collectToolDiagnosticDetails(toolSnapshots, [
+      'install.command_missing',
+    ])
+      .map((detail) => detail.split(':').at(-1) ?? detail)
+      .filter((detail, index, list) => detail.length > 0 && list.indexOf(detail) === index);
+    if (healthCheckCommands.length > 0) {
+      return healthCheckCommands;
+    }
+
     const commands: string[] = [];
     for (const snapshot of toolSnapshots) {
       for (const reason of snapshot.unavailableReasons) {
@@ -453,6 +509,18 @@ export class CliAdapterVerificationRuntime {
   private collectFailedProbeCommandsFromToolSnapshots(
     toolSnapshots: CliAdapterToolProbeSnapshot[],
   ): string[] {
+    const healthCheckProbeCommands = this.collectToolDiagnosticDetails(toolSnapshots, [
+      'install.command_probe_failed',
+    ])
+      .map((detail) => {
+        const [surface, command] = detail.split(':', 2);
+        return surface && command ? `${surface}:${command}` : detail;
+      })
+      .filter((detail, index, list) => detail.length > 0 && list.indexOf(detail) === index);
+    if (healthCheckProbeCommands.length > 0) {
+      return healthCheckProbeCommands;
+    }
+
     const failedCommands: string[] = [];
     for (const snapshot of toolSnapshots) {
       for (const reason of snapshot.unavailableReasons) {
@@ -495,6 +563,136 @@ export class CliAdapterVerificationRuntime {
       }
     }
     return payloads;
+  }
+
+  /**
+   * Collects unique normalized reason codes from tool snapshots.
+   * @param toolSnapshots Tool-level probe snapshots.
+   * @param expectedReasonCodes Stable reason codes to retain.
+   * @returns Unique matching reason codes.
+   */
+  private collectToolReasonCodes(
+    toolSnapshots: CliAdapterToolProbeSnapshot[],
+    expectedReasonCodes: string[],
+  ): string[] {
+    const matchedReasonCodes: string[] = [];
+    for (const snapshot of toolSnapshots) {
+      for (const reasonCode of snapshot.healthCheck?.reasonCodes ?? []) {
+        if (expectedReasonCodes.includes(reasonCode) && !matchedReasonCodes.includes(reasonCode)) {
+          matchedReasonCodes.push(reasonCode);
+        }
+      }
+    }
+    return matchedReasonCodes;
+  }
+
+  /**
+   * Collects diagnostic detail payloads for one or more normalized reason codes.
+   * @param toolSnapshots Tool-level probe snapshots.
+   * @param expectedReasonCodes Stable reason codes to retain.
+   * @returns Unique diagnostic detail payloads preserving encounter order.
+   */
+  private collectToolDiagnosticDetails(
+    toolSnapshots: CliAdapterToolProbeSnapshot[],
+    expectedReasonCodes: string[],
+  ): string[] {
+    const matchedDetails: string[] = [];
+    for (const snapshot of toolSnapshots) {
+      for (const diagnostic of snapshot.healthCheck?.diagnostics ?? []) {
+        if (!expectedReasonCodes.includes(diagnostic.code)) {
+          continue;
+        }
+        const detail = diagnostic.detail ?? snapshot.toolId;
+        if (!matchedDetails.includes(detail)) {
+          matchedDetails.push(detail);
+        }
+      }
+    }
+    return matchedDetails;
+  }
+
+  /**
+   * Collects missing-credential payloads from normalized tool health checks with legacy fallback.
+   * @param toolSnapshots Tool-level probe snapshots.
+   * @returns Unique credential payloads.
+   */
+  private collectMissingCredentialsFromToolSnapshots(
+    toolSnapshots: CliAdapterToolProbeSnapshot[],
+  ): string[] {
+    const healthCheckCredentials = this.collectToolDiagnosticDetails(toolSnapshots, [
+      'auth.credential_missing',
+      'auth.login_required',
+      'auth.unauthorized',
+      'auth.forbidden',
+    ]);
+    if (healthCheckCredentials.length > 0) {
+      return healthCheckCredentials;
+    }
+    return this.collectToolReasonPayloads(toolSnapshots, 'credential_missing:');
+  }
+
+  /**
+   * Collects health-check failures from normalized tool health checks with legacy fallback.
+   * @param toolSnapshots Tool-level probe snapshots.
+   * @returns Unique health-check failure details.
+   */
+  private collectFailedHealthChecksFromToolSnapshots(
+    toolSnapshots: CliAdapterToolProbeSnapshot[],
+  ): string[] {
+    const healthCheckFailures = this.collectToolDiagnosticDetails(toolSnapshots, [
+      'protocol.health_check_timeout',
+      'semantic.invalid_response',
+      'protocol.health_check_failed',
+      'protocol.rate_limited',
+      'protocol.quota_exhausted',
+      'protocol.probe_failed',
+    ]);
+    if (healthCheckFailures.length > 0) {
+      return healthCheckFailures;
+    }
+    return [
+      ...this.collectToolReasonPayloads(toolSnapshots, 'health_check_timeout:'),
+      ...this.collectToolReasonPayloads(toolSnapshots, 'health_check_invalid_response:'),
+      ...this.collectToolReasonPayloads(toolSnapshots, 'health_check_failed:'),
+    ].filter((payload, index, list) => list.indexOf(payload) === index);
+  }
+
+  /**
+   * Collects missing local-model names from normalized tool health checks with legacy fallback.
+   * @param toolSnapshots Tool-level probe snapshots.
+   * @returns Unique local-model payloads.
+   */
+  private collectMissingLocalModelsFromToolSnapshots(
+    toolSnapshots: CliAdapterToolProbeSnapshot[],
+  ): string[] {
+    const healthCheckModels = this.collectToolDiagnosticDetails(toolSnapshots, [
+      'route.local_model_model_missing',
+    ])
+      .map((detail) => detail.split(':').at(-1) ?? detail)
+      .filter((detail, index, list) => detail.length > 0 && list.indexOf(detail) === index);
+    if (healthCheckModels.length > 0) {
+      return healthCheckModels;
+    }
+    return this.collectToolReasonPayloads(toolSnapshots, 'local_model_model_missing:');
+  }
+
+  /**
+   * Collects missing local-model config payloads from normalized tool health checks.
+   * @param toolSnapshots Tool-level probe snapshots.
+   * @returns Unique local-model config payloads.
+   */
+  private collectMissingLocalModelConfigsFromToolSnapshots(
+    toolSnapshots: CliAdapterToolProbeSnapshot[],
+  ): string[] {
+    const healthCheckConfigs = this.collectToolDiagnosticDetails(toolSnapshots, [
+      'install.local_model_config_missing',
+    ])
+      .map((detail) => detail.split(':').at(-1) ?? detail)
+      .filter((detail, index, list) => detail.length > 0 && list.indexOf(detail) === index);
+    if (healthCheckConfigs.length > 0) {
+      return healthCheckConfigs;
+    }
+    return this.collectToolReasonPayloads(toolSnapshots, 'local_model_config_missing:');
   }
 
   /**

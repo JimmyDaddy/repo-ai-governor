@@ -2,6 +2,7 @@
 
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { basename, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 import {
   ARTIFACT_REGISTRY_MAIN_VIEW_PATH,
@@ -185,124 +186,159 @@ function parseDateWeight(rawValue) {
   return parsedDate.getTime();
 }
 
-const argv = process.argv.slice(2);
-const dryRun = argv.includes('--dry-run');
-const bootstrapFromCsv = argv.includes('--bootstrap-from-csv');
-const databaseFilePath = resolve(
-  process.cwd(),
-  argv.includes('--database')
-    ? (argv[argv.indexOf('--database') + 1] ?? ARTIFACT_REGISTRY_SQLITE_PATH)
-    : ARTIFACT_REGISTRY_SQLITE_PATH,
-);
-const mainRegistryPath = resolve(process.cwd(), ARTIFACT_REGISTRY_MAIN_VIEW_PATH);
-const taskLedgerRoot = resolve(process.cwd(), TASK_LEDGER_ROOT);
-const taskCardRoot = resolve(process.cwd(), TASK_CARD_ROOT);
-const today = new Date().toISOString().slice(0, 10);
+export function reconcileArtifactDependencies(options = {}) {
+  const dryRun = options.dryRun === true;
+  const bootstrapFromCsv = options.bootstrapFromCsv === true;
+  const databaseFilePath = resolve(
+    process.cwd(),
+    options.databaseFilePath ?? ARTIFACT_REGISTRY_SQLITE_PATH,
+  );
+  const mainRegistryPath = resolve(
+    process.cwd(),
+    options.mainRegistryPath ?? ARTIFACT_REGISTRY_MAIN_VIEW_PATH,
+  );
+  const taskLedgerRoot = resolve(process.cwd(), options.taskLedgerRoot ?? TASK_LEDGER_ROOT);
+  const taskCardRoot = resolve(process.cwd(), options.taskCardRoot ?? TASK_CARD_ROOT);
+  const today = options.today ?? new Date().toISOString().slice(0, 10);
+  const emitGateOutput = options.emitGateOutput !== false;
+  const writeOutputs = options.writeOutputs !== false;
 
-const canonicalState = readArtifactRegistryCanonicalState({
-  databaseFilePath,
-  mainRegistryPath,
-  bootstrapFromCsv,
-});
-const taskLedgerProjectionSummary = ensureTaskLedgerProjection({
-  taskLedgerRoot,
-});
-const latestTaskStatuses = readLatestTaskLedgerStatuses({
-  taskLedgerRoot,
-});
-const taskCardPaths = listTaskCardFiles(taskCardRoot);
-const { dependencyByArtifactId, openTaskCards, fallbackStatusCards } =
-  buildArtifactDependencyIndexFromTaskCards(taskCardPaths, latestTaskStatuses);
+  const canonicalState = readArtifactRegistryCanonicalState({
+    databaseFilePath,
+    mainRegistryPath,
+    bootstrapFromCsv,
+  });
+  const taskLedgerProjectionSummary = ensureTaskLedgerProjection({
+    taskLedgerRoot,
+  });
+  const latestTaskStatuses = readLatestTaskLedgerStatuses({
+    taskLedgerRoot,
+  });
+  const taskCardPaths = listTaskCardFiles(taskCardRoot);
+  const { dependencyByArtifactId, openTaskCards, fallbackStatusCards } =
+    buildArtifactDependencyIndexFromTaskCards(taskCardPaths, latestTaskStatuses);
 
-const registryArtifactIds = new Set(canonicalState.mainRows.map((row) => row.artifact_id));
-const unresolvedArtifactIds = Array.from(dependencyByArtifactId.keys())
-  .filter((artifactId) => !registryArtifactIds.has(artifactId))
-  .sort((left, right) => left.localeCompare(right));
+  const registryArtifactIds = new Set(canonicalState.mainRows.map((row) => row.artifact_id));
+  const unresolvedArtifactIds = Array.from(dependencyByArtifactId.keys())
+    .filter((artifactId) => !registryArtifactIds.has(artifactId))
+    .sort((left, right) => left.localeCompare(right));
 
-let updatedRowCount = 0;
-let correctedDateInversionCount = 0;
-let activeArtifactWithDependentsCount = 0;
-let activeArtifactWithoutDependentsCount = 0;
-let totalResolvedDependencyLinks = 0;
+  let updatedRowCount = 0;
+  let correctedDateInversionCount = 0;
+  let activeArtifactWithDependentsCount = 0;
+  let activeArtifactWithoutDependentsCount = 0;
+  let totalResolvedDependencyLinks = 0;
 
-const nextMainRows = canonicalState.mainRows.map((row) => ({ ...row }));
+  const nextMainRows = canonicalState.mainRows.map((row) => ({ ...row }));
 
-for (const row of nextMainRows) {
-  let changed = false;
+  for (const row of nextMainRows) {
+    let changed = false;
 
-  if (parseDateWeight(row.last_updated_at ?? '') < parseDateWeight(row.registered_at ?? '')) {
-    row.last_updated_at = today;
-    correctedDateInversionCount += 1;
-    changed = true;
-  }
+    if (parseDateWeight(row.last_updated_at ?? '') < parseDateWeight(row.registered_at ?? '')) {
+      row.last_updated_at = today;
+      correctedDateInversionCount += 1;
+      changed = true;
+    }
 
-  const artifactStatus = row.artifact_status;
-  const expectedDependentTasks = ACTIVE_REGISTRY_STATUSES.has(artifactStatus)
-    ? Array.from(dependencyByArtifactId.get(row.artifact_id) ?? []).sort((left, right) =>
-        left.localeCompare(right),
-      )
-    : [];
+    const artifactStatus = row.artifact_status;
+    const expectedDependentTasks = ACTIVE_REGISTRY_STATUSES.has(artifactStatus)
+      ? Array.from(dependencyByArtifactId.get(row.artifact_id) ?? []).sort((left, right) =>
+          left.localeCompare(right),
+        )
+      : [];
 
-  if (ACTIVE_REGISTRY_STATUSES.has(artifactStatus)) {
-    if (expectedDependentTasks.length > 0) {
-      activeArtifactWithDependentsCount += 1;
-      totalResolvedDependencyLinks += expectedDependentTasks.length;
-    } else {
-      activeArtifactWithoutDependentsCount += 1;
+    if (ACTIVE_REGISTRY_STATUSES.has(artifactStatus)) {
+      if (expectedDependentTasks.length > 0) {
+        activeArtifactWithDependentsCount += 1;
+        totalResolvedDependencyLinks += expectedDependentTasks.length;
+      } else {
+        activeArtifactWithoutDependentsCount += 1;
+      }
+    }
+
+    const nextDependentTasks = expectedDependentTasks.join('|');
+    if (nextDependentTasks !== String(row.dependent_tasks ?? '')) {
+      row.dependent_tasks = nextDependentTasks;
+      changed = true;
+    }
+
+    if (changed) {
+      row.last_updated_at = today;
+      updatedRowCount += 1;
     }
   }
 
-  const nextDependentTasks = expectedDependentTasks.join('|');
-  if (nextDependentTasks !== String(row.dependent_tasks ?? '')) {
-    row.dependent_tasks = nextDependentTasks;
-    changed = true;
+  if (!dryRun && writeOutputs) {
+    replaceArtifactRegistryCanonicalState({
+      databaseFilePath,
+      mainRows: nextMainRows,
+      archiveRows: canonicalState.archiveRows,
+    });
+    renderArtifactRegistryCsvViews({
+      mainRows: nextMainRows,
+      archiveRows: canonicalState.archiveRows,
+      writeFiles: true,
+    });
   }
 
-  if (changed) {
-    row.last_updated_at = today;
-    updatedRowCount += 1;
-  }
-}
-
-if (!dryRun) {
-  replaceArtifactRegistryCanonicalState({
+  const summary = {
+    dryRun,
     databaseFilePath,
-    mainRows: nextMainRows,
+    bootstrappedFromCsv: canonicalState.bootstrappedFromCsv,
+    taskCsvFiles: taskLedgerProjectionSummary.sourceCount,
+    indexedTasks: latestTaskStatuses.size,
+    taskCardFiles: taskCardPaths.length,
+    openTaskCards,
+    fallbackStatusCards,
+    updatedRows: updatedRowCount,
+    correctedDateInversionCount,
+    activeArtifactWithDependentsCount,
+    activeArtifactWithoutDependentsCount,
+    totalResolvedDependencyLinks,
+    unresolvedArtifactDependencyRefs: unresolvedArtifactIds.length,
+  };
+
+  if (emitGateOutput && unresolvedArtifactIds.length > 0) {
+    gateInfo(
+      GATE_NAME,
+      `unresolved artifact refs in open task cards=${unresolvedArtifactIds.join(',')}`,
+    );
+  }
+
+  if (emitGateOutput) {
+    if (dryRun) {
+      gateInfo(GATE_NAME, `dry-run summary=${JSON.stringify(summary)}`);
+    } else {
+      gatePass(GATE_NAME, `applied summary=${JSON.stringify(summary)}`);
+    }
+  }
+
+  return {
+    summary,
+    databaseFilePath,
+    taskLedgerProjectionSummary,
+    latestTaskStatuses,
+    taskCardPaths,
+    unresolvedArtifactIds,
+    nextMainRows,
     archiveRows: canonicalState.archiveRows,
-  });
-  renderArtifactRegistryCsvViews({
-    mainRows: nextMainRows,
-    archiveRows: canonicalState.archiveRows,
-    writeFiles: true,
+    bootstrappedFromCsv: canonicalState.bootstrappedFromCsv,
+  };
+}
+
+function runCli() {
+  const argv = process.argv.slice(2);
+  reconcileArtifactDependencies({
+    dryRun: argv.includes('--dry-run'),
+    bootstrapFromCsv: argv.includes('--bootstrap-from-csv'),
+    ...(argv.includes('--database')
+      ? {
+          databaseFilePath: argv[argv.indexOf('--database') + 1] ?? ARTIFACT_REGISTRY_SQLITE_PATH,
+        }
+      : {}),
   });
 }
 
-const summary = {
-  dryRun,
-  databaseFilePath,
-  bootstrappedFromCsv: canonicalState.bootstrappedFromCsv,
-  taskCsvFiles: taskLedgerProjectionSummary.sourceCount,
-  indexedTasks: latestTaskStatuses.size,
-  taskCardFiles: taskCardPaths.length,
-  openTaskCards,
-  fallbackStatusCards,
-  updatedRows: updatedRowCount,
-  correctedDateInversionCount,
-  activeArtifactWithDependentsCount,
-  activeArtifactWithoutDependentsCount,
-  totalResolvedDependencyLinks,
-  unresolvedArtifactDependencyRefs: unresolvedArtifactIds.length,
-};
-
-if (unresolvedArtifactIds.length > 0) {
-  gateInfo(
-    GATE_NAME,
-    `unresolved artifact refs in open task cards=${unresolvedArtifactIds.join(',')}`,
-  );
-}
-
-if (dryRun) {
-  gateInfo(GATE_NAME, `dry-run summary=${JSON.stringify(summary)}`);
-} else {
-  gatePass(GATE_NAME, `applied summary=${JSON.stringify(summary)}`);
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  runCli();
 }
