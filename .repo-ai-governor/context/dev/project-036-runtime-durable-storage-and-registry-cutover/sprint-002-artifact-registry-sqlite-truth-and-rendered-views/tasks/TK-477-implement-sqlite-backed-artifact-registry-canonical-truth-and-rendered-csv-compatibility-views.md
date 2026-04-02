@@ -1,6 +1,6 @@
 # TK-477 implement sqlite-backed artifact registry canonical truth and rendered CSV compatibility views
 
-- Status: active
+- Status: completed
 - Date: 2026-04-02
 - Owner: AI-Agent
 - Priority: P0
@@ -41,3 +41,8 @@
 
 1. 2026-04-02：任务创建，状态初始化为 `planned`。
 2. 2026-04-02：状态切换为 `active`，随 `sprint-002` 成为当前 primary planning surface；开始承接 artifact registry / archive registry 的 sqlite canonical truth 与 rendered CSV compatibility/export cutover。
+3. 2026-04-02：完成第一块基础实现，`packages/artifact-registry` 新增 `SqliteArtifactIndexStore`、main/archive lifecycle scope 常量与定向单测，为后续治理脚本切到 sqlite canonical truth 提供包级基线。
+4. 2026-04-02：完成治理脚本切换，`check-artifact-registry-lifecycle`、`reconcile-artifact-dependencies`、`compact-artifact-registry` 与 `render-artifact-registry-view` 已统一改读 sqlite canonical truth，并通过 rendered CSV compatibility view 回写主/归档 CSV。
+5. 2026-04-02：补齐 temp-workspace 级 canonical bootstrap/render 回归与 render view 集成验证；真实执行 `render/check/reconcile --dry-run/compact --dry-run` 均已通过。
+6. 2026-04-02：完成态验证通过，`pnpm run check` 全绿；`TK-477` 收口为 `completed`。
+7. 2026-04-02：补齐 artifact registry guide/index/governance/code standards 对 sqlite canonical truth 的规范口径，并新增 `.gitignore` 中 sqlite `-wal/-shm` 忽略规则；`check-artifact-registry-lifecycle`、task/sprint sync gate 与 `pnpm run check` 再次通过。

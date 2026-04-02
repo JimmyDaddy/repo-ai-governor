@@ -1,6 +1,6 @@
 # TK-478 build tasks.csv sqlite projection and route audit-query consumers through it
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-02
 - Owner: AI-Agent
 - Priority: P1
@@ -39,3 +39,8 @@
 ## 6. 执行记录
 
 1. 2026-04-02：任务创建，状态初始化为 `planned`。
+2. 2026-04-02：状态切换为 `active`，随 `sprint-003` 成为当前 primary planning surface；开始承接 `tasks.csv` sqlite projection/read-model 与 audit/query/UI consumer 切换。
+3. 2026-04-02：新增 `scripts/governance/task-ledger-projection.js`，建立 `tasks.csv -> sqlite` projection/read-model，并补齐 `test/task-ledger-projection.integration.test.ts` 的 rebuild / latest-row / status read-model 回归。
+4. 2026-04-02：将 `check-sprint-plan-status-sync`、`check-technical-solution-delivery-registry`、`check-artifact-registry-lifecycle`、`reconcile-artifact-dependencies` 切换为优先消费 sqlite projection，而不再重复解析 canonical `tasks.csv`。
+5. 2026-04-02：为 projection sqlite runtime 产物补充 `.gitignore` 规则，避免把 `.repo-ai-governor/context/dev/sqlite/task-ledger-projection.sqlite` 及其 `-wal/-shm` 临时文件误纳入版本库。
+6. 2026-04-02：验证通过 `pnpm exec biome check scripts/governance/task-ledger-projection.js scripts/governance/check-sprint-plan-status-sync.js scripts/governance/reconcile-artifact-dependencies.js scripts/governance/check-artifact-registry-lifecycle.js scripts/governance/check-technical-solution-delivery-registry.js test/task-ledger-projection.integration.test.ts test/technical-solution-delivery-registry-gate.integration.test.ts`、`/opt/homebrew/bin/node ./node_modules/vitest/vitest.mjs run test/task-ledger-projection.integration.test.ts test/technical-solution-delivery-registry-gate.integration.test.ts --maxWorkers=1 --maxConcurrency=1`、`node ./scripts/governance/reconcile-artifact-dependencies.js --dry-run`、`node ./scripts/governance/check-artifact-registry-lifecycle.js`、`node ./scripts/governance/check-sprint-plan-status-sync.js`、`node ./scripts/governance/check-technical-solution-delivery-registry.js --format json`、`pnpm run build`；任务收口为 `completed`。

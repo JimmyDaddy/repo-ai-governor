@@ -1,107 +1,31 @@
 #!/usr/bin/env node
 
-import { existsSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-
-const MAIN_REGISTRY_PATH = '.repo-ai-governor/context/artifact-registry/artifacts.csv';
-const ARCHIVE_REGISTRY_PATH =
-  '.repo-ai-governor/context/artifact-registry/archive/artifacts.archive.csv';
-const REQUIRED_HEADERS = [
-  'artifact_id',
-  'artifact_type',
-  'artifact_path',
-  'artifact_version',
-  'artifact_status',
-  'producer_task_id',
-  'producer_execution_id',
-  'registered_at',
-  'last_updated_at',
-  'dependent_tasks',
-];
+import {
+  ARTIFACT_REGISTRY_ARCHIVE_VIEW_PATH,
+  ARTIFACT_REGISTRY_MAIN_VIEW_PATH,
+  ARTIFACT_REGISTRY_SQLITE_PATH,
+  readArtifactRegistryCanonicalState,
+  renderArtifactRegistryCsvViews,
+} from './artifact-registry-canonical.js';
 
 /**
- * Parses one CSV line with quote support.
- * @param {string} line Raw CSV line.
- * @returns {string[]}
+ * Reads one CLI flag value.
+ * @param {string[]} argv Raw argv.
+ * @param {string} flagName Flag name.
+ * @returns {string | null}
  */
-function parseCsvLine(line) {
-  const values = [];
-  let currentValue = '';
-  let inQuotes = false;
-
-  for (let index = 0; index < line.length; index += 1) {
-    const character = line[index];
-
-    if (character === '"') {
-      const nextCharacter = line[index + 1];
-      if (inQuotes && nextCharacter === '"') {
-        currentValue += '"';
-        index += 1;
-        continue;
-      }
-
-      inQuotes = !inQuotes;
-      continue;
-    }
-
-    if (character === ',' && !inQuotes) {
-      values.push(currentValue);
-      currentValue = '';
-      continue;
-    }
-
-    currentValue += character;
+function readFlagValue(argv, flagName) {
+  const flagIndex = argv.indexOf(flagName);
+  if (flagIndex === -1) {
+    return null;
   }
 
-  values.push(currentValue);
-  return values;
-}
-
-/**
- * Reads one registry CSV file.
- * @param {string} relativeFilePath Relative CSV path.
- * @returns {Array<Record<string, string>>}
- */
-function readRegistry(relativeFilePath) {
-  const absoluteFilePath = resolve(process.cwd(), relativeFilePath);
-  if (!existsSync(absoluteFilePath)) {
-    throw new Error(`Registry file not found: ${relativeFilePath}`);
+  const nextValue = argv[flagIndex + 1];
+  if (!nextValue || nextValue.startsWith('--')) {
+    throw new Error(`Flag "${flagName}" requires a value.`);
   }
 
-  const lines = readFileSync(absoluteFilePath, 'utf8')
-    .split(/\r?\n/u)
-    .map((line) => line.trimEnd())
-    .filter((line) => line.trim().length > 0);
-
-  if (lines.length === 0) {
-    throw new Error(`Registry file is empty: ${relativeFilePath}`);
-  }
-
-  const headers = parseCsvLine(lines[0]).map((value) => value.trim());
-  for (const requiredHeader of REQUIRED_HEADERS) {
-    if (!headers.includes(requiredHeader)) {
-      throw new Error(
-        `Registry file missing required header "${requiredHeader}": ${relativeFilePath}`,
-      );
-    }
-  }
-
-  return lines.slice(1).map((line) => {
-    const values = parseCsvLine(line);
-    if (values.length !== headers.length) {
-      throw new Error(
-        `CSV row column mismatch in ${relativeFilePath}. Expected ${headers.length}, got ${values.length}.`,
-      );
-    }
-
-    /** @type {Record<string, string>} */
-    const row = {};
-    for (let index = 0; index < headers.length; index += 1) {
-      row[headers[index]] = values[index].trim();
-    }
-
-    return row;
-  });
+  return nextValue.trim();
 }
 
 /**
@@ -153,18 +77,41 @@ function renderRegistrySection(title, rows) {
 }
 
 try {
-  const mainRows = readRegistry(MAIN_REGISTRY_PATH);
-  const archiveRows = readRegistry(ARCHIVE_REGISTRY_PATH);
+  const argv = process.argv.slice(2);
+  const writeFiles = !argv.includes('--skip-write');
+  const bootstrapFromCsv = argv.includes('--bootstrap-from-csv');
+  const databaseFilePath = readFlagValue(argv, '--database') ?? ARTIFACT_REGISTRY_SQLITE_PATH;
+  const mainRegistryPath = readFlagValue(argv, '--main') ?? ARTIFACT_REGISTRY_MAIN_VIEW_PATH;
+  const archiveRegistryPath =
+    readFlagValue(argv, '--archive') ?? ARTIFACT_REGISTRY_ARCHIVE_VIEW_PATH;
+  const canonicalState = readArtifactRegistryCanonicalState({
+    databaseFilePath,
+    mainRegistryPath,
+    archiveRegistryPath,
+    bootstrapFromCsv,
+  });
+  const mainRows = canonicalState.mainRows;
+  const archiveRows = canonicalState.archiveRows;
+  renderArtifactRegistryCsvViews({
+    mainRows,
+    archiveRows,
+    mainRegistryPath,
+    archiveRegistryPath,
+    writeFiles,
+  });
   const renderedAt = new Date().toISOString().slice(0, 10);
 
   const output = [
     '# Artifact Registry View',
     '',
     `- Generated At: ${renderedAt}`,
-    `- Main Registry: \`${MAIN_REGISTRY_PATH}\``,
-    `- Archive Registry: \`${ARCHIVE_REGISTRY_PATH}\``,
+    `- Canonical Sqlite Registry: \`${databaseFilePath}\``,
+    `- Main Registry View: \`${mainRegistryPath}\``,
+    `- Archive Registry View: \`${archiveRegistryPath}\``,
+    `- CSV Views Updated: ${writeFiles ? 'yes' : 'no (skip-write)'}`,
     `- Main Status Summary: ${renderStatusSummary(mainRows)}`,
     `- Archive Status Summary: ${renderStatusSummary(archiveRows)}`,
+    `- Canonical Bootstrapped From CSV: ${canonicalState.bootstrappedFromCsv ? 'yes' : 'no'}`,
     '',
     renderRegistrySection('Main Registry', mainRows),
     '',

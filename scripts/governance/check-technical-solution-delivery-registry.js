@@ -4,6 +4,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { gateFail, gateInfo, gatePass } from './gate-output.js';
+import { readProjectedTaskRowsForSource } from './task-ledger-projection.js';
 import {
   DEFAULT_TECHNICAL_SOLUTION_DELIVERY_REGISTRY_PATH,
   SUPPORTED_TECHNICAL_SOLUTION_CONSUMER_SURFACES,
@@ -145,44 +146,6 @@ function buildFailure(ruleId, message, details) {
 }
 
 /**
- * Parses CSV rows with quote support.
- * @param {string} line One CSV line.
- * @returns {string[]}
- */
-function parseCsvLine(line) {
-  const values = [];
-  let currentValue = '';
-  let inQuotes = false;
-
-  for (let index = 0; index < line.length; index += 1) {
-    const character = line[index];
-
-    if (character === '"') {
-      const nextCharacter = line[index + 1];
-      if (inQuotes && nextCharacter === '"') {
-        currentValue += '"';
-        index += 1;
-        continue;
-      }
-
-      inQuotes = !inQuotes;
-      continue;
-    }
-
-    if (character === ',' && !inQuotes) {
-      values.push(currentValue);
-      currentValue = '';
-      continue;
-    }
-
-    currentValue += character;
-  }
-
-  values.push(currentValue);
-  return values;
-}
-
-/**
  * Loads one tasks.csv into row objects.
  * @param {string} taskCsvPath Repository-relative or absolute csv path.
  * @returns {Array<Record<string, string>>}
@@ -193,25 +156,8 @@ function loadTaskRows(taskCsvPath) {
     return [];
   }
 
-  const csvContent = readFileSync(absoluteTaskCsvPath, 'utf8');
-  const csvLines = csvContent
-    .split(/\r?\n/u)
-    .map((line) => line.trimEnd())
-    .filter((line) => line.trim().length > 0);
-
-  if (csvLines.length < 2) {
-    return [];
-  }
-
-  const headers = parseCsvLine(csvLines[0]).map((cell) => cell.trim());
-  return csvLines.slice(1).map((line) => {
-    const rowValues = parseCsvLine(line);
-    /** @type {Record<string, string>} */
-    const row = {};
-    for (let index = 0; index < headers.length; index += 1) {
-      row[headers[index]] = String(rowValues[index] ?? '').trim();
-    }
-    return row;
+  return readProjectedTaskRowsForSource({
+    taskCsvPath: absoluteTaskCsvPath,
   });
 }
 

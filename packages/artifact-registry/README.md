@@ -19,9 +19,16 @@
 3. `InMemoryArtifactIndexStore`
    - `list()`
    - `upsert(record)`
+4. `SqliteArtifactIndexStore`
+   - `list()`
+   - `listMainRegistry()`
+   - `listArchiveRegistry()`
+   - `upsert(record)`
+   - `replaceRegistryRows({ mainRecords, archiveRecords })`
 
 ## Notes
 
 1. 默认可解析状态仅 `active/frozen`，`deprecated/archived/retired` 只保留登记语义，不进入自动依赖注入。
 2. 依赖表达式支持 `artifactId`、`artifactId@vX.Y.Z` 与 `artifactId@^vX` 三种形态。
 3. 解析输出内置审计字段，供后续 runtime/reporting 层直接回链消费。
+4. `SqliteArtifactIndexStore` 为 `TK-477` 提供 canonical main/archive registry sqlite baseline；rendered CSV compatibility view 将在治理脚本链路继续接入。

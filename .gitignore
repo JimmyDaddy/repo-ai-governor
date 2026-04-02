@@ -4,6 +4,11 @@ coverage/
 .tmp/
 .turbo/
 .repo-ai-governor/reports/
+.repo-ai-governor/context/artifact-registry/sqlite/*.sqlite-wal
+.repo-ai-governor/context/artifact-registry/sqlite/*.sqlite-shm
+.repo-ai-governor/context/dev/sqlite/*.sqlite
+.repo-ai-governor/context/dev/sqlite/*.sqlite-wal
+.repo-ai-governor/context/dev/sqlite/*.sqlite-shm
 *.tsbuildinfo
 *.tgz
 .claude/settings.local.json

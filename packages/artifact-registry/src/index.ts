@@ -15,6 +15,7 @@ export {
 export { ArtifactRegistry } from './artifact-registry.js';
 export { ArtifactDependencyResolver } from './dependency-resolver.js';
 export { InMemoryArtifactIndexStore } from './in-memory-artifact-index-store.js';
+export { SqliteArtifactIndexStore } from './sqlite-artifact-index-store.js';
 export type {
   ArtifactDependencyExpression,
   ArtifactDependencyResolutionAuditFields,
@@ -26,4 +27,5 @@ export type {
   ParsedArtifactDependency,
   RegisterArtifactOptions,
   ResolveArtifactDependenciesOptions,
+  SqliteArtifactIndexStoreOptions,
 } from './types/index.js';

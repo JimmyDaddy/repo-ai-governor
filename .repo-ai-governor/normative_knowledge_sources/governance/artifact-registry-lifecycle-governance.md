@@ -1,7 +1,7 @@
 # Artifact Registry Lifecycle Governance
 
 - Status: active
-- Date: 2026-03-20
+- Date: 2026-04-02
 - Scope: `.repo-ai-governor/context/artifact-registry/**`
 
 ## 1. Purpose
@@ -23,16 +23,18 @@
 
 ## 3. Registry Split
 
-1. 主注册表：`.repo-ai-governor/context/artifact-registry/artifacts.csv`
+1. canonical registry：`.repo-ai-governor/context/artifact-registry/sqlite/artifact-registry.sqlite`
+   - 承担 machine-readable durable truth。
+2. rendered 主视图：`.repo-ai-governor/context/artifact-registry/artifacts.csv`
    - 仅允许 `active/frozen/deprecated`。
-2. 归档注册表：`.repo-ai-governor/context/artifact-registry/archive/artifacts.archive.csv`
+3. rendered 归档视图：`.repo-ai-governor/context/artifact-registry/archive/artifacts.archive.csv`
    - 仅允许 `archived/retired`。
 
 ## 4. Exit Rules
 
 1. `active` 且 `dependent_tasks` 为空（或仅 `TBD`）达到闲置阈值后，必须转 `deprecated`。
-2. `deprecated` 达到宽限期后，必须转 `archived` 并迁出主注册表。
-3. `archived/retired` 不允许留在主注册表。
+2. `deprecated` 达到宽限期后，必须转 `archived` 并迁出 main canonical scope。
+3. `archived/retired` 不允许留在 main canonical scope 或 rendered 主视图。
 4. 依赖解析只允许消费 `active/frozen`；命中 `deprecated/archived/retired` 按策略触发 `warn/block`。
 
 ## 5. Gate And Operations
@@ -48,16 +50,19 @@
 3. `reconcile-artifact-dependencies` 语义：
    - 自动从 `.repo-ai-governor/context/dev/**/tasks/TK-*.md` 的 `## 2. Depends On` 段落解析 `DA-*` 依赖。
    - 仅保留未关闭任务（`planned/in_progress/...`）作为 `dependent_tasks`，关闭任务依赖自动清退。
-   - 对未落盘的未来产物引用（例如 `DA-035` 尚未注册）输出提示，不直接写入主注册表。
+   - 对未落盘的未来产物引用（例如 `DA-035` 尚未注册）输出提示，不直接写入 main canonical registry。
 4. 默认策略：
    - 先通过 warning/计划窗口完成历史清理，再将生命周期规则纳入 blocking gate。
    - 默认闲置阈值：`inactive_days=7`（`active/frozen` 且无依赖连续 7 天后转 `deprecated`）。
    - 默认宽限阈值：`deprecation_days=14`（`deprecated` 连续 14 天后迁移 `archive`）。
 5. 推荐执行顺序：
    - 先执行依赖清理（移除已关闭或缺失任务引用），再执行 compact 状态迁移。
+6. rendered CSV view 不允许被当作独立手工真值维护。
+   - 任何机器链路都应优先读取 canonical sqlite registry。
+   - 人工修正 canonical truth 后，必须重新执行 render，使 CSV view 与 sqlite 保持一致。
 
 ## 6. Audit Requirements
 
 1. 任一状态迁移必须更新 `artifact_status` 与 `last_updated_at`。
-2. 主/归档注册表迁移必须在同一变更集提交。
+2. canonical sqlite registry 与 rendered main/archive view 的迁移必须在同一变更集提交。
 3. 对已归档产物的再消费请求必须记录任务级理由并触发人工确认。

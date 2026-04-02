@@ -9,3 +9,4 @@ export type {
   RegisterArtifactOptions,
   ResolveArtifactDependenciesOptions,
 } from './artifact-registry.interface.js';
+export type { SqliteArtifactIndexStoreOptions } from './sqlite-artifact-index-store.interface.js';

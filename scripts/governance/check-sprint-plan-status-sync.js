@@ -4,25 +4,10 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { gateFail, gateInfo, gatePass } from './gate-output.js';
+import { readLatestProjectedTaskRowsForSource } from './task-ledger-projection.js';
 
 const GATE_NAME = 'sprint-plan-status-sync';
 const DEV_CONTEXT_ROOT = '.repo-ai-governor/context/dev';
-const REQUIRED_TASK_HEADERS = [
-  'execution_id',
-  'task_id',
-  'title',
-  'owner',
-  'priority',
-  'due_date',
-  'status',
-  'project',
-  'sprint',
-  'plan',
-  'result',
-  'verify',
-  'review_delta',
-  'recorded_at',
-];
 const SPRINT_STATUS_MAP = new Map([
   ['planned', 'planned'],
   ['todo', 'planned'],
@@ -47,41 +32,6 @@ const TASK_STATUS_COMPLETED = new Set([
 ]);
 const TASK_STATUS_IN_PROGRESS = new Set(['in_progress', 'in-progress', 'active', 'running']);
 const TASK_STATUS_PLANNED = new Set(['planned', 'todo', 'backlog', 'pending']);
-
-/**
- * Parses one CSV line with quote support.
- * @param {string} line Raw CSV line.
- * @returns {string[]}
- */
-function parseCsvLine(line) {
-  const values = [];
-  let current = '';
-  let inQuotes = false;
-
-  for (let index = 0; index < line.length; index += 1) {
-    const character = line[index];
-    if (character === '"') {
-      if (inQuotes && line[index + 1] === '"') {
-        current += '"';
-        index += 1;
-        continue;
-      }
-      inQuotes = !inQuotes;
-      continue;
-    }
-
-    if (character === ',' && !inQuotes) {
-      values.push(current);
-      current = '';
-      continue;
-    }
-
-    current += character;
-  }
-
-  values.push(current);
-  return values;
-}
 
 /**
  * Recursively lists all sprint directories under context/dev.
@@ -124,62 +74,16 @@ function collectSprintDirectories(rootDirectory) {
  * @returns {Map<string, string>}
  */
 function readLatestTaskStatuses(tasksCsvPath) {
-  if (!existsSync(tasksCsvPath)) {
-    throw new Error(`tasks.csv not found: ${tasksCsvPath}`);
-  }
-
-  const lines = readFileSync(tasksCsvPath, 'utf8')
-    .split(/\r?\n/u)
-    .map((line) => line.trimEnd())
-    .filter((line) => line.trim().length > 0);
-  if (lines.length < 2) {
-    throw new Error(`tasks.csv has no task rows: ${tasksCsvPath}`);
-  }
-
-  const headers = parseCsvLine(lines[0]).map((value) => value.trim());
-  for (const requiredHeader of REQUIRED_TASK_HEADERS) {
-    if (!headers.includes(requiredHeader)) {
-      throw new Error(`tasks.csv missing required column "${requiredHeader}": ${tasksCsvPath}`);
-    }
-  }
-
-  /**
-   * @type {Map<string, {status: string, score: string}>}
-   */
-  const latestByTaskId = new Map();
-
-  for (let index = 1; index < lines.length; index += 1) {
-    const rowValues = parseCsvLine(lines[index]);
-    if (rowValues.length !== headers.length) {
-      throw new Error(
-        `CSV row column mismatch at ${tasksCsvPath}:${index + 1}. Expected ${headers.length}, got ${rowValues.length}.`,
-      );
-    }
-
-    /** @type {Record<string, string>} */
-    const row = {};
-    for (let headerIndex = 0; headerIndex < headers.length; headerIndex += 1) {
-      row[headers[headerIndex]] = rowValues[headerIndex].trim();
-    }
-
-    const taskId = row.task_id;
-    if (!taskId) {
-      continue;
-    }
-
-    const recordedAt = row.recorded_at || '0000-00-00';
-    const score = `${recordedAt}|${String(index).padStart(6, '0')}`;
-    const current = latestByTaskId.get(taskId);
-    if (!current || score >= current.score) {
-      latestByTaskId.set(taskId, {
-        status: normalizeTaskStatus(row.status),
-        score,
-      });
-    }
-  }
+  const latestRows = readLatestProjectedTaskRowsForSource({
+    taskCsvPath: tasksCsvPath,
+    taskLedgerRoot: DEV_CONTEXT_ROOT,
+  });
 
   return new Map(
-    Array.from(latestByTaskId.entries()).map(([taskId, value]) => [taskId, value.status]),
+    Array.from(latestRows.entries()).map(([taskId, row]) => [
+      taskId,
+      normalizeTaskStatus(row.status),
+    ]),
   );
 }
 

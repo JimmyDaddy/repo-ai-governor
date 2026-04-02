@@ -9,4 +9,5 @@ export type {
   ParsedArtifactDependency,
   RegisterArtifactOptions,
   ResolveArtifactDependenciesOptions,
+  SqliteArtifactIndexStoreOptions,
 } from './interfaces/index.js';

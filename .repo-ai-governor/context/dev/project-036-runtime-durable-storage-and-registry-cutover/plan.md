@@ -29,21 +29,21 @@
 
 ## 2.2 sprint-002-artifact-registry-sqlite-truth-and-rendered-views
 
-- Status: active
+- Status: completed
 - Sprint Goal: 将 Artifact Registry / Archive Registry 切为 sqlite canonical truth，并保留 rendered CSV 兼容视图。
 - Task Package: `TK-477`。
 
 ## 2.3 sprint-003-task-ledger-sqlite-projection-and-audit-read-model
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 为 `tasks.csv` 建立 sqlite projection/read-model，并让 audit/query/UI consumer 优先读取该 read-model。
 - Task Package: `TK-478`。
 
 ## 2.4 sprint-004-migration-verification-and-cutover-governance
 
-- Status: planned
-- Sprint Goal: 收口 migration、doctor/verify、rebuild/render 与 cutover governance，确保新旧工作区都有明确升级路径。
-- Task Package: `TK-479`。
+- Status: active
+- Sprint Goal: 收口 migration、doctor/verify、rebuild/render、artifact lifecycle automation 与 cutover governance，确保新旧工作区都有明确升级路径。
+- Task Package: `TK-479`、`TK-480`。
 
 ## 3. 任务拆解矩阵（WBS）
 
@@ -51,9 +51,10 @@
 |---|---|---|---|---|---|
 | TK-475 | sprint-001 | cut over runtime session durable truth to sqlite-fs default and durable schema baseline | runtime/session-storage | `runtime.durable-storage` formal module docs | completed |
 | TK-476 | sprint-001 | migrate shared session manager and runtime consumers to append-only session event log semantics | runtime/session-runtime | TK-475 | completed |
-| TK-477 | sprint-002 | implement sqlite-backed artifact registry canonical truth and rendered CSV compatibility views | runtime/artifact-registry | TK-475 | planned |
-| TK-478 | sprint-003 | build tasks.csv sqlite projection and route audit/query consumers through it | runtime/ledger-read-model | TK-477 | planned |
-| TK-479 | sprint-004 | deliver migration, verification, rebuild and cutover governance for durable storage surfaces | governance/cutover | TK-476、TK-477、TK-478 | planned |
+| TK-477 | sprint-002 | implement sqlite-backed artifact registry canonical truth and rendered CSV compatibility views | runtime/artifact-registry | TK-475 | completed |
+| TK-478 | sprint-003 | build tasks.csv sqlite projection and route audit/query consumers through it | runtime/ledger-read-model | TK-477 | completed |
+| TK-479 | sprint-004 | deliver migration, verification, rebuild and cutover governance for durable storage surfaces | governance/cutover | TK-476、TK-477、TK-478、TK-480 | active |
+| TK-480 | sprint-004 | automate artifact lifecycle maintenance and auto-archive from sqlite canonical truth | governance/artifact-lifecycle-automation | TK-477 | planned |
 
 ## 4. 依赖产物策略
 
@@ -70,6 +71,7 @@
 3. Artifact Registry / Archive Registry 已以 sqlite-backed registry 作为 canonical truth；`artifacts.csv` 仅保留 rendered/export 角色。
 4. `tasks.csv` 已具备 sqlite projection/read-model，且 audit/query/UI consumer 可优先读该 read-model。
 5. doctor/verify/migration/rebuild/render/cutover governance 已为上述 durable surfaces 提供可执行验证路径。
+6. artifact registry lifecycle 已具备基于 sqlite canonical truth 的自动维护与 auto-archive 路径。
 
 ## 6. 里程碑记录
 
@@ -78,3 +80,6 @@
 3. 2026-04-02：将 `sprint-001-session-durable-storage-foundation` 设为当前 primary planning surface，开始承接 sqlite-fs default cutover 与 append-only session event log 的任务拆解与后续实现基线。
 4. 2026-04-02：正式激活 `sprint-001`，`TK-475` 已切换为 `active`，开始收敛 memory provider 默认值、distribution truth 与 session durable schema baseline 的第一阶段实现。
 5. 2026-04-02：`sprint-001-session-durable-storage-foundation` 已完成，`TK-475/TK-476` 全部收口；当前 primary planning surface 前移至 `sprint-002-artifact-registry-sqlite-truth-and-rendered-views`。
+6. 2026-04-02：`sprint-002-artifact-registry-sqlite-truth-and-rendered-views` 已完成，`TK-477` 收口；当前 primary planning surface 前移至 `sprint-003-task-ledger-sqlite-projection-and-audit-read-model`。
+7. 2026-04-02：新增 `TK-480`，将 artifact lifecycle automation / auto-archive 纳入 `sprint-004` 的正式实施范围，作为 sqlite canonical truth 后续治理增强项。
+8. 2026-04-02：`sprint-003-task-ledger-sqlite-projection-and-audit-read-model` 已完成，`TK-478` 收口；当前 primary planning surface 前移至 `sprint-004-migration-verification-and-cutover-governance`，并激活 `TK-479`。

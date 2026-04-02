@@ -51,6 +51,23 @@ export const RESOLVABLE_ARTIFACT_STATUSES = new Set<string>([
 ]);
 
 /**
+ * Defines lifecycle statuses that belong in the main canonical registry surface.
+ */
+export const MAIN_ARTIFACT_REGISTRY_STATUSES = new Set<string>([
+  ArtifactLifecycleStatus.ACTIVE,
+  ArtifactLifecycleStatus.FROZEN,
+  ArtifactLifecycleStatus.DEPRECATED,
+]);
+
+/**
+ * Defines lifecycle statuses that belong in the archive canonical registry surface.
+ */
+export const ARCHIVE_ARTIFACT_REGISTRY_STATUSES = new Set<string>([
+  ArtifactLifecycleStatus.ARCHIVED,
+  ArtifactLifecycleStatus.RETIRED,
+]);
+
+/**
  * Defines all lifecycle statuses accepted by artifact registry runtime.
  */
 export const ALL_ARTIFACT_LIFECYCLE_STATUSES = new Set<string>(
