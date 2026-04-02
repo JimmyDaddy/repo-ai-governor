@@ -12,10 +12,11 @@
 
 ## 2. 职责边界
 
-1. 统一 `connect / doctor / verify` 的 onboarding contract、诊断语义和最小支持矩阵。
+1. 统一 `connect / doctor / verify` 的 onboarding contract、分层 adapter health check / route probe 语义和最小支持矩阵。
 2. 将 `connect` 默认保持为 analyze-first candidate 生成面，并通过显式 `diff/apply` follow-up surface 承接 reviewable write-back。
 3. 将 role、surface、session、capability、budget 与 timeout 组合成 agent descriptor 视图。
-4. 为 CLI、report、diagnostics 与后续 UI 提供同一份 agent projection 数据与 presenter-safe / panel-safe view model；phase-2 formal UI consumer baseline 通过 transport-neutral `AgentProjectionPanelViewModel` seam 落地。
+4. 将 install / auth / protocol / semantic / route-capability 五层 probe 结果归一化为 presenter-safe 的 health-check 事实，供 CLI、report、diagnostics 与路由 fallback 共用。
+5. 为 CLI、report、diagnostics 与后续 UI 提供同一份 agent projection 数据与 presenter-safe / panel-safe view model；phase-2 formal UI consumer baseline 通过 transport-neutral `AgentProjectionPanelViewModel` seam 落地。
 5. 将 `AgentSessionRegistry` 作为共享 session 的投影层，而不是新的会话事实源。
 6. 允许 LangGraph supervisor 消费 agent descriptor，但不把 supervisor 升格为新的 canonical runtime。
 
@@ -42,12 +43,13 @@
 
 1. `contract.runtime.agent-onboarding.v1`
 2. `contract.runtime.agent-projection.v1`
+3. `contract.runtime.adapter-health-check.v1`
 
 ## 7. Loading Guidance
 
 1. 命中 `runtime_contract_change`、`adapter_change`、`cli_ui_change`、`command_surface_change`、`technical_solution_module_change` 时加载。
 2. 默认只加载 overview 与 direct contracts，不递归展开 onboarding 命令实现或 projection presenter。
-3. 当问题涉及 `connect / doctor / verify`、agent descriptor、session projection 或 LangGraph multi-agent 消费时，优先补载本模块 contract。
+3. 当问题涉及 `connect / doctor / verify`、agent descriptor、session projection、adapter health check / route probe 或 LangGraph multi-agent 消费时，优先补载本模块 contract。
 4. 当问题涉及 candidate config apply、diff/merge explain、agent projection presenter、`AgentProjectionPanelViewModel` seam 或 desktop-ready projection consumer 时，也应优先补载本模块。
 
 ## 8. Detail Docs
@@ -55,6 +57,8 @@
 1. Contract:
    - `contracts/agent-onboarding-contract.md`
    - `contracts/agent-projection-contract.md`
+   - `contracts/adapter-health-and-route-probe-contract.md`
 2. ADR:
    - `adrs/multi-tool-onboarding-and-role-agent-projection-cutover.md`
    - `adrs/connect-apply-and-projection-consumer-productization.md`
+   - `adrs/layered-adapter-health-check-and-route-capability-probe.md`

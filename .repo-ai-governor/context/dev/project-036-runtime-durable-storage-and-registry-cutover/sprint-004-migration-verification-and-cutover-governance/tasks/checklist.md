@@ -14,5 +14,15 @@
   - 2026-04-02：已把“辅助文本事件透传”扩展到 GitHub Copilot；非 `assistant.*` 的带文本 JSON 事件现在也会直接进入 live activity，底层若吐出 `analysis/reasoning/notice` 之类说明，前台可直接看到。
   - 2026-04-02：已新增 adapter health check 分层方案 draft，明确 install/auth/protocol/semantic/route-capability 四层探测模型，并把 Codex、GitHub Copilot、Claude Code、Ollama 的收敛方向整理到统一技术方案中。
   - 2026-04-02：已完成 health-check Phase A 止血实现；shared `health-check-response` helper 已接入 `Codex`、`GitHub Copilot`、`Claude Code` probe，`OK.` 等 trivial 变体不再被误判 unavailable，并已补 shared/adapter smoke 回归。
+  - 2026-04-02：用户已批准 layered health-check / route-probe 方案，当前 sprint 已补入 `TK-481` promotion 与 `TK-482~TK-484` 实施拆分；`TK-479` 保留为 governance 主收口面，继续承接 Phase A 之后的 verify/doctor/route hardening 协调。
 - [ ] TK-480 automate artifact lifecycle maintenance and auto-archive from sqlite canonical truth
   - 2026-04-02：任务创建，状态初始化为 `planned`；承接 artifact registry sqlite canonical truth 后续的自动维护、auto-deprecate 与 auto-archive 收口。
+- [x] TK-481 promote layered adapter health check and route probe solution into runtime-agent-projection formal docs
+  - 2026-04-02：任务创建，状态初始化为 `planned`；承接用户已批准的 adapter health-check 技术方案 promotion。
+  - 2026-04-02：已完成 formal docs promotion、review evidence、delivery ownership 与 follow-up task decomposition；`runtime.agent-projection` 现已拥有正式的 layered health-check contract 与 route-probe ADR。
+- [ ] TK-482 implement layered adapter health check contract and shared probe runtime baseline
+  - 2026-04-02：任务创建，状态初始化为 `planned`；承接 shared/runtime 层的 layered probe orchestration 与稳定 reason-code 基线。
+- [ ] TK-483 align codex copilot claude and ollama probes with layered auth protocol route semantics
+  - 2026-04-02：任务创建，状态初始化为 `planned`；承接四类 adapter 的 auth/protocol/route-capability probe rollout。
+- [ ] TK-484 route doctor verify and role fallback through layered health check diagnostics
+  - 2026-04-02：任务创建，状态初始化为 `planned`；承接 doctor/verify presenter 与 role fallback 的 layered diagnostics 切换。

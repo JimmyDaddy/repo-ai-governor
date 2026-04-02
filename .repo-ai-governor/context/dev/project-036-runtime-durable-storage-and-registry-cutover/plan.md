@@ -9,7 +9,11 @@
   - `.repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-durable-storage/contracts/session-durable-storage-contract.md`
   - `.repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-durable-storage/contracts/registry-and-ledger-projection-contract.md`
   - `.repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-durable-storage/adrs/sqlite-fs-default-runtime-truth-and-rendered-csv-views.md`
+  - `.repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/module-overview.md`
+  - `.repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/contracts/adapter-health-and-route-probe-contract.md`
+  - `.repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/layered-adapter-health-check-and-route-capability-probe.md`
   - `.repo-ai-governor/draft/runtime-session-durable-memory-and-sqlite-fs-cutover-technical-solution.md`
+  - `.repo-ai-governor/draft/layered-adapter-health-check-and-route-probe-technical-solution.md`
   - `.repo-ai-governor/context/dev/project-035-session-main-supervisor-and-role-subagent-productization/sprint-004-streaming-and-host-parity/tasks/TK-474-promote-runtime-durable-storage-and-sqlite-fs-cutover-solution-into-formal-module-docs.md`
 
 ## 1. 目标
@@ -43,7 +47,7 @@
 
 - Status: active
 - Sprint Goal: 收口 migration、doctor/verify、rebuild/render、artifact lifecycle automation 与 cutover governance，确保新旧工作区都有明确升级路径。
-- Task Package: `TK-479`、`TK-480`。
+- Task Package: `TK-479`、`TK-480`、`TK-481`、`TK-482`、`TK-483`、`TK-484`。
 
 ## 3. 任务拆解矩阵（WBS）
 
@@ -55,6 +59,10 @@
 | TK-478 | sprint-003 | build tasks.csv sqlite projection and route audit/query consumers through it | runtime/ledger-read-model | TK-477 | completed |
 | TK-479 | sprint-004 | deliver migration, verification, rebuild and cutover governance for durable storage surfaces | governance/cutover | TK-476、TK-477、TK-478、TK-480 | active |
 | TK-480 | sprint-004 | automate artifact lifecycle maintenance and auto-archive from sqlite canonical truth | governance/artifact-lifecycle-automation | TK-477 | planned |
+| TK-481 | sprint-004 | promote layered adapter health check and route probe solution into runtime-agent-projection formal docs | docs/promotion | TK-479 | completed |
+| TK-482 | sprint-004 | implement layered adapter health check contract and shared probe runtime baseline | runtime/adapter-health-check | TK-479、TK-481 | planned |
+| TK-483 | sprint-004 | align codex copilot claude and ollama probes with layered auth protocol route semantics | runtime/adapter-probes | TK-482 | planned |
+| TK-484 | sprint-004 | route doctor verify and role fallback through layered health check diagnostics | cli/routing-diagnostics | TK-482、TK-483 | planned |
 
 ## 4. 依赖产物策略
 
@@ -83,3 +91,4 @@
 6. 2026-04-02：`sprint-002-artifact-registry-sqlite-truth-and-rendered-views` 已完成，`TK-477` 收口；当前 primary planning surface 前移至 `sprint-003-task-ledger-sqlite-projection-and-audit-read-model`。
 7. 2026-04-02：新增 `TK-480`，将 artifact lifecycle automation / auto-archive 纳入 `sprint-004` 的正式实施范围，作为 sqlite canonical truth 后续治理增强项。
 8. 2026-04-02：`sprint-003-task-ledger-sqlite-projection-and-audit-read-model` 已完成，`TK-478` 收口；当前 primary planning surface 前移至 `sprint-004-migration-verification-and-cutover-governance`，并激活 `TK-479`。
+9. 2026-04-02：将 layered adapter health check / route probe 技术方案正式并入 `runtime.agent-projection`，并在 `sprint-004` 中新增 `TK-481` promotion 与 `TK-482~TK-484` 的实现拆分，作为 durable storage governance 窗口下的 probe hardening follow-up。

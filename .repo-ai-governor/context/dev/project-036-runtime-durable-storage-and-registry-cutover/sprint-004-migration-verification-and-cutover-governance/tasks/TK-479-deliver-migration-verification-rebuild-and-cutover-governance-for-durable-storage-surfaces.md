@@ -57,3 +57,4 @@
 12. 2026-04-02：将“辅助文本事件透传”从 Codex 扩展到 GitHub Copilot：除 `assistant.*` 主回答 token 外，任何带文本的非 `result` JSON 事件都会作为 live activity detail 透出；这样如果 Copilot CLI 底层提供 `analysis/reasoning/notice` 之类说明，前台也能直接显示。
 13. 2026-04-02：沉淀 adapter health check 分层方案 draft：在 `.repo-ai-governor/draft/layered-adapter-health-check-and-route-probe-technical-solution.md` 中正式记录 install/auth/protocol/semantic/route-capability 分层模型，并结合 GitHub Copilot、Claude Code、Codex、Ollama 的官方资料明确后续 probe 收敛方向。
 14. 2026-04-02：完成 health-check Phase A 止血实现：新增 shared `health-check-response` 归一化 helper，并将 `Codex`、`GitHub Copilot`、`Claude Code` 的 probe 从“精确等于 OK”切换为“接受 `OK.` / 引号 / 大小写 / 空白等 trivial 变体”的宽松语义比较，同时补齐 shared 与三类 adapter smoke 回归。
+15. 2026-04-02：在用户批准 draft 后，当前 sprint 已将 layered adapter health-check / route-probe 方案正式提升为 `runtime.agent-projection` formal solution，并拆分出 `TK-482~TK-484` 承接 Phase B/C/D；`TK-479` 继续作为 cutover governance 总收口面协调 doctor/verify、routing fallback 与 rollout evidence。

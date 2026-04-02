@@ -9,6 +9,10 @@
 
 1. `TK-479` deliver migration, verification, rebuild and cutover governance for durable storage surfaces
 2. `TK-480` automate artifact lifecycle maintenance and auto-archive from sqlite canonical truth
+3. `TK-481` promote layered adapter health check and route probe solution into runtime-agent-projection formal docs
+4. `TK-482` implement layered adapter health check contract and shared probe runtime baseline
+5. `TK-483` align codex copilot claude and ollama probes with layered auth protocol route semantics
+6. `TK-484` route doctor verify and role fallback through layered health check diagnostics
 
 ## 2. Exit Criteria
 
@@ -16,6 +20,7 @@
 2. doctor/verify 能识别 sqlite-fs default truth、registry canonical truth 与 ledger projection 状态。
 3. rebuild/render/reconcile/cutover governance 有明确 gate 与回归验证。
 4. artifact lifecycle 具备基于 sqlite canonical truth 的自动维护与 auto-archive 路径。
+5. adapter health check / route probe 已具备 formal docs、delivery ownership 与可执行的后续任务拆分，不再停留在 draft + ad-hoc patch 阶段。
 
 ## 3. Milestones
 
@@ -31,3 +36,4 @@
 10. 2026-04-02：将辅助文本事件透传从 Codex 扩展到 GitHub Copilot：除了 `assistant.*` 主回答 token 外，带文本的非 `result` JSON 事件也会进入 live activity，使 Copilot 的 `analysis/reasoning/notice` 类说明能够直接在前台展示。
 11. 2026-04-02：补充 adapter health check 分层方案 draft：为 `codex`、`github-copilot`、`claude-code`、`ollama` 正式提出 install/auth/protocol/semantic/route-capability 四层 probe 模型，并将官方资料调研与落地建议收口到独立 draft，作为后续 probe 重构评审输入。
 12. 2026-04-02：完成 health-check Phase A 止血实现：shared `health-check-response` helper 已接入 `codex`、`github-copilot`、`claude-code`，probe 现在接受 `OK.` 等 trivial 语义变体，不再因标点或简单包裹格式误判 surface unavailable。
+13. 2026-04-02：用户已批准 layered adapter health check / route probe 技术方案；当前 sprint 新增 `TK-481` 负责 formal promotion，`TK-482`、`TK-483`、`TK-484` 负责承接 Phase B/C/D 的 shared probe runtime、adapter-specific rollout 与 doctor/verify/route consumer 切换。

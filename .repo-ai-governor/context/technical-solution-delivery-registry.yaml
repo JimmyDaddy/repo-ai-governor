@@ -306,3 +306,33 @@ deliveries:
       - .repo-ai-governor/context/dev/project-028-multi-ai-tools-onboarding-role-agent-projection/project-028-multi-ai-tools-onboarding-role-agent-projection-completion-audit-summary.md
       - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/connect-apply-and-projection-consumer-productization.md
     accepted_at: 2026-03-30
+
+  - solution_id: technical-solution.layered-adapter-health-check-and-route-probe
+    delivery_mode: existing_stream
+    consumer_surfaces:
+      - adopter_cli
+      - packaged_distribution
+      - runtime_service
+      - docs_playbook
+    user_impact_level: medium
+    execution_status: in_progress
+    rollout_status: in_progress
+    owner: runtime
+    project_ref: project-036-runtime-durable-storage-and-registry-cutover
+    sprint_ref: sprint-004-migration-verification-and-cutover-governance
+    task_ids:
+      - TK-479
+      - TK-481
+      - TK-482
+      - TK-483
+      - TK-484
+    project_plan_path: .repo-ai-governor/context/dev/project-036-runtime-durable-storage-and-registry-cutover/plan.md
+    sprint_plan_path: .repo-ai-governor/context/dev/project-036-runtime-durable-storage-and-registry-cutover/sprint-004-migration-verification-and-cutover-governance/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-036-runtime-durable-storage-and-registry-cutover/sprint-004-migration-verification-and-cutover-governance/tasks/tasks.csv
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-036-runtime-durable-storage-and-registry-cutover/sprint-004-migration-verification-and-cutover-governance/tasks/DA-481-layered-adapter-health-check-and-route-probe-technical-solution-promotion.md
+    rollout_artifacts:
+      - .repo-ai-governor/context/dev/project-036-runtime-durable-storage-and-registry-cutover/plan.md
+      - .repo-ai-governor/context/dev/project-036-runtime-durable-storage-and-registry-cutover/sprint-004-migration-verification-and-cutover-governance/plan.md
+      - .repo-ai-governor/context/dev/project-036-runtime-durable-storage-and-registry-cutover/sprint-004-migration-verification-and-cutover-governance/review/resolved_code_review_tk-481-layered-adapter-health-check-and-route-probe-promotion.md
+      - .repo-ai-governor/context/dev/project-036-runtime-durable-storage-and-registry-cutover/sprint-004-migration-verification-and-cutover-governance/tasks/DA-481-layered-adapter-health-check-and-route-probe-technical-solution-promotion.md
+    accepted_at: 2026-04-02

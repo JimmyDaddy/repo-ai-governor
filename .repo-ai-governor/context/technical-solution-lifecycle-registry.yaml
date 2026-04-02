@@ -276,6 +276,30 @@ solutions:
       - architecture.runtime-boundary
     supersedes: []
 
+  - solution_id: technical-solution.layered-adapter-health-check-and-route-probe
+    title: Layered adapter health check and route probe
+    status: active
+    owner: runtime
+    version: v1
+    scope: runtime
+    draft_paths:
+      - .repo-ai-governor/draft/layered-adapter-health-check-and-route-probe-technical-solution.md
+    review_paths:
+      - .repo-ai-governor/context/dev/project-036-runtime-durable-storage-and-registry-cutover/sprint-004-migration-verification-and-cutover-governance/review/resolved_code_review_tk-481-layered-adapter-health-check-and-route-probe-promotion.md
+    final_paths:
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/contracts/adapter-health-and-route-probe-contract.md
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/layered-adapter-health-check-and-route-capability-probe.md
+    target_module_ids:
+      - runtime.agent-projection
+    north_star_refs:
+      - prd.multi-agent-orchestration
+      - overall.graph-first-runtime
+      - architecture.runtime-boundary
+    approved_at: 2026-04-02
+    approved_by: User
+    activated_at: 2026-04-02
+    supersedes: []
+
   - solution_id: technical-solution.multi-ai-tools-onboarding-role-agent-projection
     title: Multi AI Tools Onboarding and Role-Agent Projection
     status: active
