@@ -1,5 +1,11 @@
 import { Locale } from '../src/constants/i18n.constant.js';
-import { GovernorErrorCode, I18nRuntime, standardizeError } from '../src/index.js';
+import {
+  GovernorErrorCode,
+  I18nRuntime,
+  matchesHealthCheckEchoResponse,
+  normalizeHealthCheckEchoResponse,
+  standardizeError,
+} from '../src/index.js';
 
 describe('shared unit', () => {
   it('resolves locale fallback and renders localized message', async () => {
@@ -25,5 +31,14 @@ describe('shared unit', () => {
 
     expect(standardizedError.code).toBe(GovernorErrorCode.UNKNOWN);
     expect(standardizedError.message).toContain('unexpected payload');
+  });
+
+  it('normalizes trivial health-check echo wrappers without accepting extra prose', () => {
+    expect(normalizeHealthCheckEchoResponse(' OK. ')).toBe('OK');
+    expect(normalizeHealthCheckEchoResponse('"OK"')).toBe('OK');
+    expect(normalizeHealthCheckEchoResponse('`ok`')).toBe('OK');
+    expect(matchesHealthCheckEchoResponse('OK.', 'OK')).toBe(true);
+    expect(matchesHealthCheckEchoResponse('"ok"', 'OK')).toBe(true);
+    expect(matchesHealthCheckEchoResponse('OK, ready to help.', 'OK')).toBe(false);
   });
 });

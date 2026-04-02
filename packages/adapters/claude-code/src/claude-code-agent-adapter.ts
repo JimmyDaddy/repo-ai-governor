@@ -25,7 +25,12 @@ import {
   DEFAULT_AGENT_CLI_EXEC_RETRY_BACKOFF_MS,
   resolveAgentStageExecutionPolicy,
 } from '@repo-ai-governor/adapter-sdk';
-import { GovernorErrorCode, RuntimeError, standardizeError } from '@repo-ai-governor/shared';
+import {
+  GovernorErrorCode,
+  RuntimeError,
+  matchesHealthCheckEchoResponse,
+  standardizeError,
+} from '@repo-ai-governor/shared';
 import { ClaudeCodeAgentAdapterExecutionMode } from './constants/claude-code-agent-adapter.constant.js';
 import type {
   ClaudeCodeAgentAdapterOptions,
@@ -769,7 +774,12 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
         executionResult,
         AgentCliExecOperation.PROBE,
       );
-      if (parsedOutput.responseText.trim() !== CLAUDE_CODE_HEALTH_CHECK_EXPECTED_RESPONSE) {
+      if (
+        !matchesHealthCheckEchoResponse(
+          parsedOutput.responseText,
+          CLAUDE_CODE_HEALTH_CHECK_EXPECTED_RESPONSE,
+        )
+      ) {
         return {
           availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
           unavailableReasons: [

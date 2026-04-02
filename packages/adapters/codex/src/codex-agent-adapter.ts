@@ -25,7 +25,12 @@ import {
   DEFAULT_AGENT_CLI_EXEC_RETRY_BACKOFF_MS,
   resolveAgentStageExecutionPolicy,
 } from '@repo-ai-governor/adapter-sdk';
-import { GovernorErrorCode, RuntimeError, standardizeError } from '@repo-ai-governor/shared';
+import {
+  GovernorErrorCode,
+  RuntimeError,
+  matchesHealthCheckEchoResponse,
+  standardizeError,
+} from '@repo-ai-governor/shared';
 import { CodexAgentAdapterExecutionMode } from './constants/codex-agent-adapter.constant.js';
 import type {
   CodexAgentAdapterOptions,
@@ -486,7 +491,12 @@ export class CodexAgentAdapter extends AgentProtocol {
         operation: AgentCliExecOperation.PROBE,
       });
       const parsedOutput = this.parseCodexCliOutput(executionResult, AgentCliExecOperation.PROBE);
-      if (parsedOutput.responseText.trim() !== CODEX_HEALTH_CHECK_EXPECTED_RESPONSE) {
+      if (
+        !matchesHealthCheckEchoResponse(
+          parsedOutput.responseText,
+          CODEX_HEALTH_CHECK_EXPECTED_RESPONSE,
+        )
+      ) {
         return {
           availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
           unavailableReasons: [
@@ -885,6 +895,7 @@ export class CodexAgentAdapter extends AgentProtocol {
         payload: {
           status: 'running',
           surface: CODEX_SURFACE,
+          detailOrigin: 'system',
           detail: this.shouldUseRepositoryReviewCommand(request)
             ? 'Codex repository review thread started.'
             : 'Codex thread started.',
@@ -904,6 +915,7 @@ export class CodexAgentAdapter extends AgentProtocol {
         payload: {
           status: 'running',
           surface: CODEX_SURFACE,
+          detailOrigin: 'system',
           detail: this.shouldUseRepositoryReviewCommand(request)
             ? 'Codex repository review started; waiting for CLI output.'
             : 'Codex turn started.',
@@ -926,6 +938,10 @@ export class CodexAgentAdapter extends AgentProtocol {
 
     if (parsedEvent.item?.type === 'todo_list') {
       this.pushTodoListEvents(state, request, parsedEvent);
+      return;
+    }
+
+    if (this.pushAuxiliaryItemStatusEvent(state, request, parsedEvent)) {
       return;
     }
 
@@ -1040,6 +1056,48 @@ export class CodexAgentAdapter extends AgentProtocol {
     });
   }
 
+  private pushAuxiliaryItemStatusEvent(
+    state: CodexCliExecutionState,
+    request: CodexCliExecutionRequest,
+    parsedEvent: CodexCliJsonEvent,
+  ): boolean {
+    const itemType = this.readOptionalRawString(parsedEvent.item?.type);
+    if (!itemType || itemType === 'agent_message') {
+      return false;
+    }
+
+    const candidateText = this.normalizeCliOutputLine(
+      this.extractRawTextFromUnknown(parsedEvent.item?.content) ??
+        this.readOptionalRawString(parsedEvent.item?.text) ??
+        this.readOptionalRawString(parsedEvent.item?.delta) ??
+        this.readOptionalRawString(parsedEvent.text) ??
+        this.readOptionalRawString(parsedEvent.delta) ??
+        '',
+    );
+    if (!candidateText) {
+      return false;
+    }
+
+    const activityKey = parsedEvent.item?.id
+      ? `${CODEX_SURFACE}:${itemType}:${parsedEvent.item.id}`
+      : `${CODEX_SURFACE}:${itemType}:${String(state.cliOutputSequence++)}`;
+    this.pushCliExecutionEvent(state, {
+      eventType: AgentStreamEventType.STATUS,
+      timestamp: new Date().toISOString(),
+      processId: request.processId,
+      executionId: request.executionId,
+      stageId: request.stageId,
+      routeKey: request.routeKey,
+      payload: {
+        status: 'running',
+        surface: CODEX_SURFACE,
+        detail: `${CODEX_SURFACE} ${itemType}: ${candidateText}`,
+        activityKey,
+      },
+    });
+    return true;
+  }
+
   private startRepositoryReviewProgress(
     state: CodexCliExecutionState,
     request: CodexCliExecutionRequest,
@@ -1072,6 +1130,7 @@ export class CodexAgentAdapter extends AgentProtocol {
       payload: {
         status: 'running',
         surface: CODEX_SURFACE,
+        detailOrigin: 'system',
         detail:
           elapsedSeconds === 0
             ? 'Codex repository review is running; waiting for CLI output.'

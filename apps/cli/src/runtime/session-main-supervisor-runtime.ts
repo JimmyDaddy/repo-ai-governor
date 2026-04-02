@@ -1137,6 +1137,8 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
             this.readOptionalString(event.payload.detail) ??
             this.readOptionalString(event.payload.status) ??
             this.readOptionalString(event.payload.message),
+          detailOrigin:
+            this.readOptionalString(event.payload.detailOrigin) === 'system' ? 'system' : undefined,
           activityKey: this.readOptionalString(event.payload.activityKey),
           chunkText:
             this.readOptionalString(event.payload.chunkText) ??

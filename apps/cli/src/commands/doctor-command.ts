@@ -7,6 +7,7 @@ import {
   ExecutionProgressStage,
   ExecutionProgressStatus,
   GovernorErrorCode,
+  MemoryStoreEngine,
   RuntimeError,
 } from '@repo-ai-governor/shared';
 import {
@@ -20,6 +21,7 @@ import {
   CLI_RUNTIME_OPERATION,
   CliGovernanceCheckStatus,
 } from '../constants/cli-governance-runtime.constant.js';
+import { CliDurableStorageDiagnosticsRuntime } from '../runtime/durable-storage-diagnostics-runtime.js';
 import type {
   CliAdapterVerificationResolution,
   CliCommandProgressEvent,
@@ -60,6 +62,7 @@ export class CliDoctorCommand implements CliCommandExecutor {
     > | null = null;
     let adapterStatus: CliGovernanceCheckStatus | null = null;
     let adapterVerificationSnapshot: CliAdapterVerificationResolution | null = null;
+    const durableStorageDiagnosticsRuntime = new CliDurableStorageDiagnosticsRuntime();
     const doctorId = `doctor-${Date.now()}`;
     const doctorDiagnosticsArtifactPath = resolve(
       context.options.workspace.workspaceRoot,
@@ -295,6 +298,16 @@ export class CliDoctorCommand implements CliCommandExecutor {
         detail: `descriptors=${agentView.descriptors.length} repair_scope=${runtimeDebugOptions.fix ? 'safe_local' : 'manual_only'}`,
       });
     }
+    const durableStorageDiagnostics = await durableStorageDiagnosticsRuntime.inspect({
+      workspaceRoot: context.options.workspace.workspaceRoot,
+      memoryStoreRoot:
+        context.options.memoryStoreRoot ??
+        resolve(context.options.workspace.workspaceRoot, 'context', 'memory', 'sqlite'),
+      configuredStoreEngine:
+        context.options.memoryConfig?.storeEngine ?? MemoryStoreEngine.SQLITE_FS,
+      memoryStoreProviderName: context.options.memoryStoreProviderName ?? 'sqlite-fs',
+    });
+    checks.push(...durableStorageDiagnosticsRuntime.createChecks(durableStorageDiagnostics));
     this.throwIfAborted(context);
     await context.artifactWriter.writeJsonArtifact(doctorDiagnosticsArtifactPath, {
       generatedAt: context.toRfc3339SecondsTimestamp(new Date()),
@@ -313,6 +326,7 @@ export class CliDoctorCommand implements CliCommandExecutor {
       ),
       ...(onboardingContract ? { onboardingContract } : {}),
       ...(agentView ? { agentView } : {}),
+      durableStorage: durableStorageDiagnostics,
       checks,
       ...(adapterVerificationSnapshot
         ? {
@@ -401,11 +415,14 @@ export class CliDoctorCommand implements CliCommandExecutor {
           `attach_mode=${attachMode}`,
           `adapter_probe=${runtimeDebugOptions.adapters}`,
           `safe_local_fix_applied=${safeLocalFixCount}`,
+          `durable_storage=${durableStorageDiagnosticsRuntime.resolveOverallStatus(durableStorageDiagnostics)}`,
         ],
         detailed: [
           `workspace_root=${context.options.workspace.workspaceRoot}`,
           `memory_root=${context.options.memoryStoreRoot}`,
           `next_actions=${nextActions.length}`,
+          `artifact_registry_state=${durableStorageDiagnostics.artifactRegistryCanonicalTruth.state}`,
+          `task_ledger_projection_state=${durableStorageDiagnostics.taskLedgerProjection.state}`,
         ],
       },
     });
@@ -429,6 +446,10 @@ export class CliDoctorCommand implements CliCommandExecutor {
           safe_local_fix_applied: safeLocalFixCount,
           repair_scope: runtimeDebugOptions.fix ? 'safe_local' : 'manual_only',
           adapter_status: adapterStatus,
+          durable_storage_status:
+            durableStorageDiagnosticsRuntime.resolveOverallStatus(durableStorageDiagnostics),
+          artifact_registry_status: durableStorageDiagnostics.artifactRegistryCanonicalTruth.status,
+          task_ledger_projection_status: durableStorageDiagnostics.taskLedgerProjection.status,
         },
       },
     };

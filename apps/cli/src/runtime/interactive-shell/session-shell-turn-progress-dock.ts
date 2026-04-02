@@ -15,6 +15,11 @@ interface LiveTurnActivityEntry {
   text: string;
 }
 
+interface LiveTurnActivityHistoryEntry {
+  detailLine: string;
+  text: string;
+}
+
 const LIVE_ACTIVITY_MAX_ENTRIES = 8;
 
 /**
@@ -31,7 +36,7 @@ export class CliSessionShellTurnProgressDock {
   private currentAssistantDraft: string | null = null;
   private liveTurnStartedAtMs: number | null = null;
   private readonly liveActivityEntries = new Map<string, LiveTurnActivityEntry>();
-  private readonly activityHistoryLines: string[] = [];
+  private readonly activityHistoryEntries: LiveTurnActivityHistoryEntry[] = [];
   private readonly completedTurnDetails = new Map<string, string[]>();
 
   public constructor(private readonly options: CliSessionShellTurnProgressDockOptions) {}
@@ -46,7 +51,7 @@ export class CliSessionShellTurnProgressDock {
     this.currentAssistantDraft = null;
     this.liveTurnStartedAtMs = Date.now();
     this.liveActivityEntries.clear();
-    this.activityHistoryLines.splice(0, this.activityHistoryLines.length);
+    this.activityHistoryEntries.splice(0, this.activityHistoryEntries.length);
     this.nextActivityOrder = 0;
   }
 
@@ -130,9 +135,12 @@ export class CliSessionShellTurnProgressDock {
       });
     }
 
-    const activityLines = [...this.liveActivityEntries.values()]
-      .sort((left, right) => left.order - right.order)
-      .map((entry) => entry.text);
+    const activityLines =
+      this.activityHistoryEntries.length > 0
+        ? this.activityHistoryEntries.map((entry) => entry.text)
+        : [...this.liveActivityEntries.values()]
+            .sort((left, right) => left.order - right.order)
+            .map((entry) => entry.text);
     const summaryLine = this.renderHeartbeatText();
     if (summaryLine || activityLines.length > 0) {
       projectedItems.push({
@@ -158,7 +166,7 @@ export class CliSessionShellTurnProgressDock {
     this.currentAssistantDraft = null;
     this.liveTurnStartedAtMs = null;
     this.liveActivityEntries.clear();
-    this.activityHistoryLines.splice(0, this.activityHistoryLines.length);
+    this.activityHistoryEntries.splice(0, this.activityHistoryEntries.length);
     this.nextActivityOrder = 0;
   }
 
@@ -268,10 +276,29 @@ export class CliSessionShellTurnProgressDock {
     }
 
     const roleId = this.readOptionalString(event.payload.roleId);
+    const detailOrigin =
+      this.readOptionalString(event.payload.detailOrigin) === 'system' ? 'system' : undefined;
     const entryKey =
       this.readOptionalString(event.payload.activityKey) ??
       (roleId ? `lifecycle:${roleId}` : 'lifecycle:session.main.detail');
-    const text = roleId
+    const text = this.formatLifecycleDetailText(detail, roleId, detailOrigin);
+
+    this.upsertActivityEntry(entryKey, text, event.createdAt);
+  }
+
+  private formatLifecycleDetailText(
+    detail: string,
+    roleId?: string,
+    detailOrigin?: 'system',
+  ): string {
+    if (detailOrigin === 'system') {
+      if (roleId) {
+        return `${roleId} system: ${detail}`;
+      }
+      return `system: ${detail}`;
+    }
+
+    return roleId
       ? this.options.translate('cli.sessionShell.responses.liveTurnRoleActivity', {
           role: roleId,
           detail,
@@ -279,8 +306,6 @@ export class CliSessionShellTurnProgressDock {
       : this.options.translate('cli.sessionShell.responses.liveTurnCurrentDetail', {
           detail,
         });
-
-    this.upsertActivityEntry(entryKey, text, event.createdAt);
   }
 
   private upsertActivityEntry(activityId: string, text: string, occurredAt?: string): void {
@@ -329,8 +354,8 @@ export class CliSessionShellTurnProgressDock {
     }
 
     const detailLines =
-      this.activityHistoryLines.length > 0
-        ? [...this.activityHistoryLines]
+      this.activityHistoryEntries.length > 0
+        ? this.activityHistoryEntries.map((entry) => entry.detailLine)
         : [...this.liveActivityEntries.values()]
             .sort((left, right) => left.order - right.order)
             .map((entry) => entry.text.trim())
@@ -349,17 +374,14 @@ export class CliSessionShellTurnProgressDock {
     }
 
     const timestampedLine = createTimestampedExecutionDetailLine(normalizedText, occurredAt);
-    const latestRecordedText = this.activityHistoryLines.at(-1);
-    if (latestRecordedText === timestampedLine) {
+    const latestRecordedEntry = this.activityHistoryEntries.at(-1);
+    if (latestRecordedEntry?.detailLine === timestampedLine) {
       return;
     }
 
-    this.activityHistoryLines.push(timestampedLine);
-    if (this.activityHistoryLines.length > LIVE_ACTIVITY_MAX_ENTRIES * 8) {
-      this.activityHistoryLines.splice(
-        0,
-        this.activityHistoryLines.length - LIVE_ACTIVITY_MAX_ENTRIES * 8,
-      );
-    }
+    this.activityHistoryEntries.push({
+      detailLine: timestampedLine,
+      text: normalizedText,
+    });
   }
 }

@@ -117,6 +117,30 @@ describe('codex-agent-adapter smoke', () => {
     expect(execRunner).toHaveBeenCalledTimes(2);
   });
 
+  it('accepts trivial punctuation variants in probe health-check responses', async () => {
+    const adapter = new CodexAgentAdapter({
+      executionMode: CodexAgentAdapterExecutionMode.CLI_EXEC,
+      execRunner: async () => ({
+        stdout: [
+          '{"type":"thread.started","thread_id":"thread-1"}',
+          '{"type":"item.completed","item":{"id":"item-1","type":"agent_message","text":"OK."}}',
+          '{"type":"turn.completed","usage":{"input_tokens":11,"output_tokens":7}}',
+        ].join('\n'),
+        stderr: '',
+        exitCode: 0,
+        signal: null,
+        elapsedMs: 12,
+      }),
+      currentWorkingDirectory: process.cwd(),
+    });
+
+    const probeResult = await adapter.probe({
+      routeKey: 'cli.adapter.probe.codex',
+    });
+
+    expect(probeResult.availabilityStatus).toBe('available');
+  });
+
   it('passes chat-only sandbox arguments into codex exec when direct-answer policy forbids tools', async () => {
     const execRunner = vi
       .fn<CodexExecRunner>()
@@ -553,15 +577,19 @@ describe('codex-agent-adapter smoke', () => {
 
     const detailsPromise = (async () => {
       const details: string[] = [];
+      const detailOrigins: string[] = [];
       for await (const event of adapter.streamEvents(reviewRequest)) {
         if (
           event.eventType === AgentStreamEventType.STATUS &&
           typeof event.payload.detail === 'string'
         ) {
           details.push(event.payload.detail);
+          if (typeof event.payload.detailOrigin === 'string') {
+            detailOrigins.push(event.payload.detailOrigin);
+          }
         }
       }
-      return details;
+      return { details, detailOrigins };
     })();
 
     await vi.advanceTimersByTimeAsync(31000);
@@ -578,7 +606,7 @@ describe('codex-agent-adapter smoke', () => {
       elapsedMs: 31000,
     });
 
-    const details = await detailsPromise;
+    const { details, detailOrigins } = await detailsPromise;
     vi.useRealTimers();
 
     expect(details).toContain('Codex repository review is running; waiting for CLI output.');
@@ -588,6 +616,7 @@ describe('codex-agent-adapter smoke', () => {
     expect(details).toContain(
       'Codex repository review is still running (30s elapsed); waiting for CLI output.',
     );
+    expect(detailOrigins).toContain('system');
   });
 
   it('forwards codex raw stdout warnings and stderr lines through stream events', async () => {
@@ -624,5 +653,49 @@ describe('codex-agent-adapter smoke', () => {
       'codex stdout: 2026-04-01T00:00:00Z WARN codex_state::runtime: failed to open state db',
     );
     expect(details).toContain('codex stderr: stderr progress line');
+  });
+
+  it('forwards auxiliary codex item text as live status details during repository review', async () => {
+    const execRunner = vi.fn<CodexExecRunner>().mockResolvedValue({
+      stdout: [
+        '{"type":"thread.started","thread_id":"thread-1"}',
+        '{"type":"turn.started"}',
+        '{"type":"item.updated","item":{"id":"item-0","type":"reasoning","text":"Inspecting changed files before drafting findings"}}',
+        '{"type":"item.completed","item":{"id":"item-1","type":"agent_message","text":"review findings"}}',
+        '{"type":"turn.completed","usage":{"input_tokens":11,"output_tokens":7}}',
+      ].join('\n'),
+      stderr: '',
+      exitCode: 0,
+      signal: null,
+      elapsedMs: 12,
+    });
+    const adapter = new CodexAgentAdapter({
+      executionMode: CodexAgentAdapterExecutionMode.CLI_EXEC,
+      execRunner,
+      currentWorkingDirectory: process.cwd(),
+    });
+
+    const details: string[] = [];
+    for await (const event of adapter.streamEvents({
+      processId: 'process-1',
+      executionId: 'execution-review-reasoning-1',
+      stageId: 'stage-session-main-role-reviewer',
+      routeKey: 'session.main.role.reviewer',
+      input: {
+        roleId: 'reviewer',
+        reviewScope: 'uncommitted_changes',
+        userMessage: '帮我 review 代码',
+        governorInstructions: 'inspect the repository in a read-only manner',
+      },
+    })) {
+      if (
+        event.eventType === AgentStreamEventType.STATUS &&
+        typeof event.payload.detail === 'string'
+      ) {
+        details.push(event.payload.detail);
+      }
+    }
+
+    expect(details).toContain('codex reasoning: Inspecting changed files before drafting findings');
   });
 });

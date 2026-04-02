@@ -704,6 +704,9 @@ export class LocalOrchestrationServiceSessionRuntime {
       ...(options.streamEvent.state ? { streamState: options.streamEvent.state } : {}),
       ...(options.streamEvent.title ? { title: options.streamEvent.title } : {}),
       ...(options.streamEvent.detail ? { detail: options.streamEvent.detail } : {}),
+      ...(options.streamEvent.detailOrigin
+        ? { detailOrigin: options.streamEvent.detailOrigin }
+        : {}),
       ...(options.streamEvent.activityKey ? { activityKey: options.streamEvent.activityKey } : {}),
       ...(options.streamEvent.chunkText ? { chunkText: options.streamEvent.chunkText } : {}),
       ...(options.streamEvent.accumulatedText

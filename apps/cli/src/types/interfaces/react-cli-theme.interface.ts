@@ -3,6 +3,7 @@ import type { CliReactThemePreset } from '../../constants/cli-react-theme.consta
 
 export interface ReactCliLiveActivityTagPalette {
   neutral: string;
+  system: string;
   role: string;
   running: string;
   completed: string;
@@ -17,6 +18,7 @@ export interface ReactCliLiveActivityPalette {
   bulletColor: string;
   primaryTextColor: string;
   secondaryTextColor: string;
+  systemTextColor: string;
   errorTextColor: string;
   tagPalette: ReactCliLiveActivityTagPalette;
 }

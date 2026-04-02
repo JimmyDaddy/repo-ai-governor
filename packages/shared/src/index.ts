@@ -44,6 +44,10 @@ export {
   RuntimeError,
   standardizeError,
 } from './errors/index.js';
+export {
+  matchesHealthCheckEchoResponse,
+  normalizeHealthCheckEchoResponse,
+} from './health-check-response.js';
 export type { StandardizedError } from './errors/index.js';
 export type {
   I18nRuntimeConfig,

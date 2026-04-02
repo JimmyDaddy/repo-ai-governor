@@ -25,7 +25,12 @@ import {
   DEFAULT_AGENT_CLI_EXEC_RETRY_BACKOFF_MS,
   resolveAgentStageExecutionPolicy,
 } from '@repo-ai-governor/adapter-sdk';
-import { GovernorErrorCode, RuntimeError, standardizeError } from '@repo-ai-governor/shared';
+import {
+  GovernorErrorCode,
+  RuntimeError,
+  matchesHealthCheckEchoResponse,
+  standardizeError,
+} from '@repo-ai-governor/shared';
 import { GithubCopilotAgentAdapterExecutionMode } from './constants/github-copilot-agent-adapter.constant.js';
 import type {
   GithubCopilotAgentAdapterOptions,
@@ -612,6 +617,10 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
       return;
     }
 
+    if (this.pushAuxiliaryStatusEvent(state, request, parsedEvent)) {
+      return;
+    }
+
     if (parsedEvent.type === 'result' && parsedEvent.exitCode === 0) {
       this.pushCliExecutionEvent(state, {
         eventType: AgentStreamEventType.STATUS,
@@ -627,6 +636,38 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
         },
       });
     }
+  }
+
+  private pushAuxiliaryStatusEvent(
+    state: GithubCopilotCliExecutionState,
+    request: GithubCopilotCliExecutionRequest,
+    parsedEvent: GithubCopilotCliJsonEvent,
+  ): boolean {
+    const eventType = parsedEvent.type?.trim();
+    if (!eventType || eventType.startsWith('assistant.') || eventType === 'result') {
+      return false;
+    }
+
+    const candidateText = this.normalizeCliOutputLine(this.extractAuxiliaryText(parsedEvent) ?? '');
+    if (!candidateText) {
+      return false;
+    }
+
+    this.pushCliExecutionEvent(state, {
+      eventType: AgentStreamEventType.STATUS,
+      timestamp: new Date().toISOString(),
+      processId: request.processId,
+      executionId: request.executionId,
+      stageId: request.stageId,
+      routeKey: request.routeKey,
+      payload: {
+        status: 'running',
+        surface: GITHUB_COPILOT_SURFACE,
+        detail: `${GITHUB_COPILOT_SURFACE} ${eventType}: ${candidateText}`,
+        activityKey: `${GITHUB_COPILOT_SURFACE}:${eventType}:${String(state.cliOutputSequence++)}`,
+      },
+    });
+    return true;
   }
 
   private maybePushAssistantTokenDelta(
@@ -919,7 +960,12 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
         executionResult,
         AgentCliExecOperation.PROBE,
       );
-      if (parsedOutput.responseText.trim() !== GITHUB_COPILOT_HEALTH_CHECK_EXPECTED_RESPONSE) {
+      if (
+        !matchesHealthCheckEchoResponse(
+          parsedOutput.responseText,
+          GITHUB_COPILOT_HEALTH_CHECK_EXPECTED_RESPONSE,
+        )
+      ) {
         return {
           availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
           unavailableReasons: [
@@ -1172,6 +1218,18 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
    */
   private extractAssistantText(event: GithubCopilotCliJsonEvent): string | null {
     const candidates = [event.data?.content, event.data?.text, event.data?.delta];
+    return (
+      candidates.find((candidate): candidate is string => typeof candidate === 'string') ?? null
+    );
+  }
+
+  private extractAuxiliaryText(event: GithubCopilotCliJsonEvent): string | null {
+    const candidates = [
+      event.data?.message,
+      event.data?.content,
+      event.data?.text,
+      event.data?.delta,
+    ];
     return (
       candidates.find((candidate): candidate is string => typeof candidate === 'string') ?? null
     );

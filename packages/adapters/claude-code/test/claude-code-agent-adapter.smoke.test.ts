@@ -87,6 +87,28 @@ describe('claude-code-agent-adapter smoke', () => {
     expect(probeResult.capabilityMatrix.cancellation.supportsCancel).toBe(false);
   });
 
+  it('accepts trivial punctuation variants in probe health-check responses', async () => {
+    const adapter = new ClaudeCodeAgentAdapter({
+      executionMode: ClaudeCodeAgentAdapterExecutionMode.CLI_EXEC,
+      execRunner: async ({ prompt, operation }) => ({
+        stdout:
+          operation === AgentCliExecOperation.PROBE || prompt.includes('Respond with exactly OK.')
+            ? 'OK.\n'
+            : 'simulated claude code response\n',
+        stderr: '',
+        exitCode: 0,
+        signal: null,
+        elapsedMs: 11,
+      }),
+    });
+
+    const probeResult = await adapter.probe({
+      routeKey: 'codegen',
+    });
+
+    expect(probeResult.availabilityStatus).toBe('available');
+  });
+
   it('returns normalized invocation output shape', async () => {
     const adapter = new ClaudeCodeAgentAdapter();
     const invokeResult = await adapter.invokeStage({

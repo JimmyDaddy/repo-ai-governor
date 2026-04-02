@@ -403,6 +403,58 @@ describe('ReactCliRunner', () => {
     expect(output).toContain('Not inside a trusted directory.');
   });
 
+  it('renders system-origin live activity lines with a distinct system tag', () => {
+    const runner = new ReactCliRunner();
+    const output = runner.renderSessionShellFrame({
+      sessionId: 'session-shell-live-activity-system-tag',
+      shellMode: CliSessionShellMode.SESSION_SHELL,
+      inputMode: CliSessionShellInputMode.PLAIN_TEXT,
+      transcriptItems: [
+        {
+          id: 'system:activity',
+          role: CliSessionTranscriptRole.SYSTEM,
+          label: 'Live activity',
+          lines: [
+            'reviewer system: Codex repository review is still running (15s elapsed); waiting for CLI output.',
+            'reviewer: Inspecting changed files before drafting findings',
+          ],
+          renderKind: 'live_activity',
+          summaryLine: 'Running · 15s',
+        },
+      ],
+      transcriptTitle: 'History',
+      composerTitle: 'Current input',
+      composerValue: '',
+      composerPlaceholder: 'Type a message, / for commands, or ? for shortcuts.',
+      slashQuery: '',
+      slashPaletteVisible: false,
+      slashSuggestions: [],
+      highlightedCommand: null,
+      slashPaletteTitle: 'Slash palette',
+      slashPaletteEmptyState: 'No slash commands matched.',
+      commandPreview: null,
+      handoffState: CliSessionShellHandoffState.IDLE,
+      cwd: '/workspace/repo',
+      workspaceSummary: 'workspace_id=repo mode=repo_local',
+      outputContract: ErrorOutputEnvironment.PRETTY,
+      persistenceOwner: CliSessionShellPersistenceOwner.LOCAL_ORCHESTRATION_SERVICE,
+      resumeSelector: 'latest',
+      foregroundInputOwner: CliSessionShellForegroundInputOwner.INK,
+      foregroundFocusTarget: CliSessionShellForegroundFocusTarget.COMPOSER,
+      inputActionContract: [...CLI_SESSION_SHELL_INPUT_ACTION_CONTRACT],
+      title: 'Repo AI Governor session shell',
+      subtitle: 'Session-first preview baseline.',
+      promptBarTitle: 'Prompt bar',
+      promptBarLines: ['? shortcuts · /status · Ctrl+D'],
+    });
+
+    expect(output).toContain('[reviewer system]');
+    expect(output).toContain('Codex repository review is still running');
+    expect(output).toContain('waiting for CLI output.');
+    expect(output).toContain('[reviewer]');
+    expect(output).toContain('Inspecting changed files before drafting findings');
+  });
+
   it('mounts the session-shell tree through Ink for live stderr rendering', () => {
     const fakeInstance = {
       rerender: vi.fn(),

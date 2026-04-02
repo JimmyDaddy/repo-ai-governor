@@ -30,6 +30,12 @@ const DISTRIBUTION_PACKAGES = [
     packageDistDirectory: resolve(PROJECT_ROOT, "packages/adapter-sdk/dist"),
   },
   {
+    packageName: "artifact-registry",
+    packageRoot: resolve(PROJECT_ROOT, "packages/artifact-registry"),
+    compiledDirectory: resolve(PROJECT_ROOT, "dist/packages/artifact-registry"),
+    packageDistDirectory: resolve(PROJECT_ROOT, "packages/artifact-registry/dist"),
+  },
+  {
     packageName: "adapter-codex",
     packageRoot: resolve(PROJECT_ROOT, "packages/adapters/codex"),
     compiledDirectory: resolve(PROJECT_ROOT, "dist/packages/adapters/codex"),

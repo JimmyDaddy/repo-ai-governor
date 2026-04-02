@@ -30,6 +30,7 @@ export interface SessionMainSupervisorStreamEvent {
   state?: 'started' | 'running' | 'completed' | 'failed';
   title?: string;
   detail?: string;
+  detailOrigin?: 'system';
   activityKey?: string;
   chunkText?: string;
   accumulatedText?: string;

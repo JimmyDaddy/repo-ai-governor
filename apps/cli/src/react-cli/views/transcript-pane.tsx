@@ -504,12 +504,14 @@ function renderLiveActivityLine(
   const contentColor =
     tagKind === 'error'
       ? shellPalette.liveActivityPalette.errorTextColor
-      : index === 0
-        ? shellPalette.liveActivityPalette.primaryTextColor
-        : shellPalette.liveActivityPalette.secondaryTextColor;
+      : tagKind === 'system'
+        ? shellPalette.liveActivityPalette.systemTextColor
+        : index === 0
+          ? shellPalette.liveActivityPalette.primaryTextColor
+          : shellPalette.liveActivityPalette.secondaryTextColor;
 
   return (
-    <Text color={contentColor}>
+    <Text color={contentColor} dimColor={tagKind === 'system'}>
       {parsedLine.prefix ? (
         <>
           <Text color={tagColor}>[{parsedLine.prefix}]</Text>{' '}
@@ -853,7 +855,14 @@ function shouldHideTranscriptLabel(role: CliSessionTranscriptRole): boolean {
   return role === CliSessionTranscriptRole.USER || role === CliSessionTranscriptRole.ASSISTANT;
 }
 
-type LiveActivityTagKind = 'neutral' | 'role' | 'running' | 'completed' | 'todo' | 'error';
+type LiveActivityTagKind =
+  | 'neutral'
+  | 'system'
+  | 'role'
+  | 'running'
+  | 'completed'
+  | 'todo'
+  | 'error';
 
 function parseLiveActivityLine(line: string): {
   prefix: string | null;
@@ -900,6 +909,10 @@ function classifyLiveActivityTagKind(
     return 'error';
   }
 
+  if (/system|系统/iu.test(normalizedPrefix)) {
+    return 'system';
+  }
+
   if (/^(completed|done|finished)\b/iu.test(normalizedContent)) {
     return 'completed';
   }
@@ -932,6 +945,8 @@ function resolveLiveActivityTagColor(
   shellPalette: ReactCliShellPalette,
 ): string {
   switch (tagKind) {
+    case 'system':
+      return shellPalette.liveActivityPalette.tagPalette.system;
     case 'role':
       return shellPalette.liveActivityPalette.tagPalette.role;
     case 'running':

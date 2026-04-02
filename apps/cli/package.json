@@ -16,6 +16,7 @@
     "@repo-ai-governor/adapter-github-copilot": "workspace:*",
     "@repo-ai-governor/adapter-local-model": "workspace:*",
     "@repo-ai-governor/adapter-sdk": "workspace:*",
+    "@repo-ai-governor/artifact-registry": "workspace:*",
     "@repo-ai-governor/config": "workspace:*",
     "@repo-ai-governor/core-agent-projection": "workspace:*",
     "@repo-ai-governor/core-change-risk": "workspace:*",

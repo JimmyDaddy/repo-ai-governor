@@ -85,6 +85,34 @@ describe('github-copilot-agent-adapter smoke', () => {
     expect(probeResult.capabilityMatrix.cancellation.supportsCancel).toBe(false);
   });
 
+  it('accepts trivial punctuation variants in probe health-check responses', async () => {
+    const adapter = new GithubCopilotAgentAdapter({
+      executionMode: GithubCopilotAgentAdapterExecutionMode.CLI_EXEC,
+      execRunner: async ({ prompt, operation }) => ({
+        stdout:
+          operation === AgentCliExecOperation.PROBE || prompt.includes('Respond with exactly OK.')
+            ? [
+                '{"type":"assistant.message","data":{"content":"OK."}}',
+                '{"type":"result","exitCode":0}',
+              ].join('\n')
+            : [
+                '{"type":"assistant.message","data":{"content":"simulated github copilot response"}}',
+                '{"type":"result","exitCode":0}',
+              ].join('\n'),
+        stderr: '',
+        exitCode: 0,
+        signal: null,
+        elapsedMs: 7,
+      }),
+    });
+
+    const probeResult = await adapter.probe({
+      routeKey: 'codegen',
+    });
+
+    expect(probeResult.availabilityStatus).toBe('available');
+  });
+
   it('returns normalized invocation output shape', async () => {
     const adapter = new GithubCopilotAgentAdapter();
     const invokeResult = await adapter.invokeStage({
@@ -490,5 +518,61 @@ describe('github-copilot-agent-adapter smoke', () => {
     }
 
     expect(events).toEqual([AgentStreamEventType.STATUS, AgentStreamEventType.COMPLETED]);
+  });
+
+  it('surfaces auxiliary text-bearing JSON events as live activity status details', async () => {
+    const adapter = new GithubCopilotAgentAdapter({
+      executionMode: GithubCopilotAgentAdapterExecutionMode.CLI_EXEC,
+      execRunner: async ({ prompt, operation }) => ({
+        stdout:
+          operation === AgentCliExecOperation.PROBE || prompt.includes('Respond with exactly OK.')
+            ? [
+                '{"type":"assistant.message","data":{"content":"OK"}}',
+                '{"type":"result","exitCode":0}',
+              ].join('\n')
+            : [
+                '{"type":"assistant.chunk","data":{"delta":"Review"}}',
+                '{"type":"analysis","data":{"message":"Inspecting changed files before drafting findings"}}',
+                '{"type":"assistant.message","data":{"content":"Review findings complete"}}',
+                '{"type":"result","exitCode":0}',
+              ].join('\n'),
+        stderr: '',
+        exitCode: 0,
+        signal: null,
+        elapsedMs: 9,
+      }),
+    });
+    const invokeRequest: AgentStreamEventsRequest = {
+      processId: 'process-review-1',
+      executionId: 'execution-review-1',
+      stageId: 'stage-session-main-role-reviewer',
+      routeKey: 'session.main.role.reviewer',
+      input: {
+        roleId: 'reviewer',
+        reviewScope: 'uncommitted_changes',
+        userMessage: '帮我 review 一下代码',
+      },
+    };
+
+    const detailsPromise = (async () => {
+      const details: string[] = [];
+      for await (const event of adapter.streamEvents(invokeRequest)) {
+        if (
+          event.eventType === AgentStreamEventType.STATUS &&
+          typeof event.payload.detail === 'string'
+        ) {
+          details.push(event.payload.detail);
+        }
+      }
+      return details;
+    })();
+    const invokeResultPromise = adapter.invokeStage(invokeRequest);
+
+    const [details, invokeResult] = await Promise.all([detailsPromise, invokeResultPromise]);
+
+    expect(details).toContain(
+      'github-copilot analysis: Inspecting changed files before drafting findings',
+    );
+    expect(invokeResult.output.responseText).toBe('Review findings complete');
   });
 });

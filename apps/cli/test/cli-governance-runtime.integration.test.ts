@@ -3,6 +3,7 @@ import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promis
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
+import { DatabaseSync } from 'node:sqlite';
 
 import type { ClaudeCodeExecRunner } from '@repo-ai-governor/adapter-claude-code';
 import type { CodexExecRunner } from '@repo-ai-governor/adapter-codex';
@@ -2962,6 +2963,113 @@ describe('CliGovernanceRuntime policy/review safeguards', () => {
     );
   });
 
+  it('writes durable-storage diagnostics into doctor artifacts', async () => {
+    await withRuntimeFixture(
+      async (fixture) => {
+        const doctorResult = await fixture.runtime.execute(CliCommandName.DOCTOR);
+        const diagnosticsArtifactPath = doctorResult.commandResult.artifacts?.find(
+          (artifact) => artifact.id === 'doctor_diagnostics',
+        )?.path;
+        expect(typeof diagnosticsArtifactPath).toBe('string');
+        expect(doctorResult.commandResult.details?.durable_storage_status).toBe('warn');
+
+        const diagnosticsPayload = JSON.parse(
+          await readFile(String(diagnosticsArtifactPath), 'utf8'),
+        ) as {
+          durableStorage?: {
+            sessionDurableTruth?: {
+              state?: string;
+            };
+            artifactRegistryCanonicalTruth?: {
+              state?: string;
+            };
+            taskLedgerProjection?: {
+              state?: string;
+            };
+          };
+          checks?: Array<{
+            id?: string;
+          }>;
+        };
+
+        expect(diagnosticsPayload.durableStorage?.sessionDurableTruth?.state).toBe(
+          'provider_override',
+        );
+        expect(diagnosticsPayload.durableStorage?.artifactRegistryCanonicalTruth?.state).toBe(
+          'uninitialized',
+        );
+        expect(diagnosticsPayload.durableStorage?.taskLedgerProjection?.state).toBe('no_sources');
+        expect(
+          (diagnosticsPayload.checks ?? []).some((check) => check.id === 'session_durable_truth'),
+        ).toBe(true);
+        expect(
+          (diagnosticsPayload.checks ?? []).some(
+            (check) => check.id === 'artifact_registry_canonical_truth',
+          ),
+        ).toBe(true);
+        expect(
+          (diagnosticsPayload.checks ?? []).some((check) => check.id === 'task_ledger_projection'),
+        ).toBe(true);
+      },
+      {
+        runtimeDebugOptions: {
+          dryRun: false,
+          trace: false,
+          replayPath: null,
+          adapters: false,
+        },
+      },
+    );
+  });
+
+  it('fails closed in doctor diagnostics when canonical artifact-registry sqlite is unreadable', async () => {
+    await withRuntimeFixture(
+      async (fixture) => {
+        const artifactRegistryRoot = resolve(
+          fixture.workspaceRoot,
+          'context',
+          'artifact-registry',
+          'sqlite',
+        );
+        await mkdir(artifactRegistryRoot, { recursive: true });
+        const databaseFilePath = resolve(artifactRegistryRoot, 'artifact-registry.sqlite');
+        const database = new DatabaseSync(databaseFilePath);
+        database.close();
+
+        const doctorResult = await fixture.runtime.execute(CliCommandName.DOCTOR);
+        expect(doctorResult.commandResult.details?.durable_storage_status).toBe('fail');
+        expect(doctorResult.commandResult.details?.artifact_registry_status).toBe('fail');
+
+        const diagnosticsArtifactPath = doctorResult.commandResult.artifacts?.find(
+          (artifact) => artifact.id === 'doctor_diagnostics',
+        )?.path;
+        expect(typeof diagnosticsArtifactPath).toBe('string');
+
+        const diagnosticsPayload = JSON.parse(
+          await readFile(String(diagnosticsArtifactPath), 'utf8'),
+        ) as {
+          durableStorage?: {
+            artifactRegistryCanonicalTruth?: {
+              state?: string;
+            };
+          };
+        };
+
+        expect(diagnosticsPayload.durableStorage?.artifactRegistryCanonicalTruth?.state).toBe(
+          'read_failed',
+        );
+      },
+      {
+        runtimeDebugOptions: {
+          dryRun: false,
+          trace: false,
+          replayPath: null,
+          adapters: false,
+        },
+      },
+    );
+  });
+
   it('emits actionable next-actions for missing command and probe failures', async () => {
     await withRuntimeFixture(
       async (fixture) => {
@@ -3065,6 +3173,15 @@ describe('CliGovernanceRuntime policy/review safeguards', () => {
 
         expect(verifyResult.commandResult.operation).toBe('adapter_verify');
         expect(verifyResult.commandResult.details?.adapters_status).toBe('pass');
+        expect(verifyResult.commandResult.details?.durable_storage_status).toBe('warn');
+        expect(
+          verifyResult.commandResult.checks?.some(
+            (check) => check.id === 'artifact_registry_canonical_truth',
+          ),
+        ).toBe(true);
+        expect(
+          verifyResult.commandResult.checks?.some((check) => check.id === 'task_ledger_projection'),
+        ).toBe(true);
         expect(
           verifyResult.commandResult.experience?.roleProgress.some(
             (row) =>
@@ -3072,6 +3189,79 @@ describe('CliGovernanceRuntime policy/review safeguards', () => {
               row.status === ExecutionProgressStatus.COMPLETED,
           ),
         ).toBe(true);
+      },
+      {
+        runtimeDebugOptions: {
+          dryRun: false,
+          trace: false,
+          replayPath: null,
+          adapters: true,
+        },
+      },
+    );
+  });
+
+  it('persists durable-storage diagnostics into verify artifacts', async () => {
+    await withRuntimeFixture(
+      async (fixture) => {
+        const verifyResult = await fixture.runtime.execute(CliCommandName.VERIFY);
+        const diagnosticsArtifactPath = verifyResult.commandResult.artifacts?.find(
+          (artifact) => artifact.id === 'verify_diagnostics',
+        )?.path;
+        expect(typeof diagnosticsArtifactPath).toBe('string');
+
+        const diagnosticsPayload = JSON.parse(
+          await readFile(String(diagnosticsArtifactPath), 'utf8'),
+        ) as {
+          durableStorage?: {
+            sessionDurableTruth?: {
+              state?: string;
+            };
+            artifactRegistryRenderedViews?: {
+              state?: string;
+            };
+            taskLedgerProjection?: {
+              state?: string;
+            };
+          };
+        };
+
+        expect(diagnosticsPayload.durableStorage?.sessionDurableTruth?.state).toBe(
+          'provider_override',
+        );
+        expect(diagnosticsPayload.durableStorage?.artifactRegistryRenderedViews?.state).toBe(
+          'uninitialized',
+        );
+        expect(diagnosticsPayload.durableStorage?.taskLedgerProjection?.state).toBe('no_sources');
+      },
+      {
+        runtimeDebugOptions: {
+          dryRun: false,
+          trace: false,
+          replayPath: null,
+          adapters: true,
+        },
+      },
+    );
+  });
+
+  it('fails verify with a deterministic durable-storage error code when canonical artifact-registry sqlite is unreadable', async () => {
+    await withRuntimeFixture(
+      async (fixture) => {
+        const artifactRegistryRoot = resolve(
+          fixture.workspaceRoot,
+          'context',
+          'artifact-registry',
+          'sqlite',
+        );
+        await mkdir(artifactRegistryRoot, { recursive: true });
+        const databaseFilePath = resolve(artifactRegistryRoot, 'artifact-registry.sqlite');
+        const database = new DatabaseSync(databaseFilePath);
+        database.close();
+
+        await expect(fixture.runtime.execute(CliCommandName.VERIFY)).rejects.toMatchObject({
+          code: GovernorErrorCode.DURABLE_STORAGE_VERIFY_FAILED,
+        });
       },
       {
         runtimeDebugOptions: {

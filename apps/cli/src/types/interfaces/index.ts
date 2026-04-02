@@ -25,6 +25,15 @@ export type {
   CliConnectRoleBindingOverride,
   CliRuntimeDebugOptions,
 } from './cli-runtime-debug.interface.js';
+export type {
+  CliArtifactRegistryCanonicalDiagnostics,
+  CliArtifactRegistryRenderedViewDiagnostics,
+  CliDurableStorageDiagnosticsSnapshot,
+  CliDurableStorageInspectionOptions,
+  CliDurableStorageSurfaceDiagnostics,
+  CliSessionDurableTruthDiagnostics,
+  CliTaskLedgerProjectionDiagnostics,
+} from './cli-durable-storage-diagnostics.interface.js';
 export type { ReactCliShellPalette, ReactCliThemeDefinition } from './react-cli-theme.interface.js';
 export type {
   CliCommandCancelCapability,

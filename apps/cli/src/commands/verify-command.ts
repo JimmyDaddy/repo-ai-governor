@@ -4,6 +4,7 @@ import {
   ExecutionProgressStage,
   ExecutionProgressStatus,
   GovernorErrorCode,
+  MemoryStoreEngine,
   RuntimeError,
 } from '@repo-ai-governor/shared';
 import { CliCommandResultCheckId } from '../constants/cli-command-result-check.constant.js';
@@ -12,6 +13,7 @@ import {
   CLI_RUNTIME_OPERATION,
   CliGovernanceCheckStatus,
 } from '../constants/cli-governance-runtime.constant.js';
+import { CliDurableStorageDiagnosticsRuntime } from '../runtime/durable-storage-diagnostics-runtime.js';
 import type {
   CliCommandProgressEvent,
   CliCommandResultArtifact,
@@ -32,6 +34,7 @@ export class CliVerifyCommand implements CliCommandExecutor {
 
   public async execute(context: CliCommandExecutorContext) {
     const runtimeDebugOptions = context.resolveRuntimeDebugOptions();
+    const durableStorageDiagnosticsRuntime = new CliDurableStorageDiagnosticsRuntime();
     const verifyId = `verify-${Date.now()}`;
     const diagnosticsArtifactPath = resolve(
       context.options.workspace.workspaceRoot,
@@ -117,6 +120,16 @@ export class CliVerifyCommand implements CliCommandExecutor {
       status: CliGovernanceCheckStatus.PASS,
       detail: `descriptors=${agentView.descriptors.length} execution_id=${verifyId}`,
     });
+    const durableStorageDiagnostics = await durableStorageDiagnosticsRuntime.inspect({
+      workspaceRoot: context.options.workspace.workspaceRoot,
+      memoryStoreRoot:
+        context.options.memoryStoreRoot ??
+        resolve(context.options.workspace.workspaceRoot, 'context', 'memory', 'sqlite'),
+      configuredStoreEngine:
+        context.options.memoryConfig?.storeEngine ?? MemoryStoreEngine.SQLITE_FS,
+      memoryStoreProviderName: context.options.memoryStoreProviderName ?? 'sqlite-fs',
+    });
+    checks.push(...durableStorageDiagnosticsRuntime.createChecks(durableStorageDiagnostics));
     this.emitProgress(context, {
       commandName: CliCommandName.VERIFY,
       statusLine: this.translate(context, 'cli.reactShell.progress.verify.writingArtifacts'),
@@ -150,6 +163,7 @@ export class CliVerifyCommand implements CliCommandExecutor {
       onboardingContract,
       matrix: matrixPayload,
       agentView,
+      durableStorage: durableStorageDiagnostics,
       verification:
         context.adapterDiagnosticsRuntime.createAdapterVerificationArtifactPayload(
           adapterVerification,
@@ -180,17 +194,25 @@ export class CliVerifyCommand implements CliCommandExecutor {
           `adapter_status=${adapterVerification.overallStatus}`,
           `required_roles=${adapterVerification.requiredRoleCount}`,
           `required_failures=${adapterVerification.requiredRoleFailedCount}`,
+          `durable_storage=${durableStorageDiagnosticsRuntime.resolveOverallStatus(durableStorageDiagnostics)}`,
         ],
         detailed: [
           `fallback_roles=${adapterVerification.fallbackRoleCount}`,
           `degraded_roles=${adapterVerification.degradedRoleCount}`,
           `diagnostics_path=${diagnosticsArtifactPath}`,
+          `artifact_registry_state=${durableStorageDiagnostics.artifactRegistryCanonicalTruth.state}`,
+          `task_ledger_projection_state=${durableStorageDiagnostics.taskLedgerProjection.state}`,
         ],
       },
     });
     const message = `Verify completed with adapters_status=${adapterVerification.overallStatus}.`;
+    const durableStorageStatus =
+      durableStorageDiagnosticsRuntime.resolveOverallStatus(durableStorageDiagnostics);
 
-    if (adapterVerification.overallStatus === CliGovernanceCheckStatus.FAIL) {
+    if (
+      adapterVerification.overallStatus === CliGovernanceCheckStatus.FAIL ||
+      durableStorageStatus === CliGovernanceCheckStatus.FAIL
+    ) {
       this.emitProgress(context, {
         commandName: CliCommandName.VERIFY,
         runState: 'failure',
@@ -211,11 +233,19 @@ export class CliVerifyCommand implements CliCommandExecutor {
         logLine: `adapter_status=${adapterVerification.overallStatus} required_failures=${adapterVerification.requiredRoleFailedCount}`,
       });
       throw new RuntimeError(
-        GovernorErrorCode.ADAPTER_ROUTE_NO_AVAILABLE_SURFACE,
-        `verify failed because required adapter roles are unavailable or capability gaps exist. diagnostics=${diagnosticsArtifactPath}`,
+        durableStorageStatus === CliGovernanceCheckStatus.FAIL
+          ? GovernorErrorCode.DURABLE_STORAGE_VERIFY_FAILED
+          : GovernorErrorCode.ADAPTER_ROUTE_NO_AVAILABLE_SURFACE,
+        durableStorageStatus === CliGovernanceCheckStatus.FAIL
+          ? context.localizeText(
+              `verify failed because durable storage surfaces have blocking issues. diagnostics=${diagnosticsArtifactPath}`,
+              `verify 失败，因为 durable storage surface 存在阻断问题。diagnostics=${diagnosticsArtifactPath}`,
+            )
+          : `verify failed because required adapter roles are unavailable or capability gaps exist. diagnostics=${diagnosticsArtifactPath}`,
         {
           reportPath: diagnosticsArtifactPath,
           adapterStatus: adapterVerification.overallStatus,
+          durableStorageStatus,
           requiredRoleCount: adapterVerification.requiredRoleCount,
           requiredRoleFailedCount: adapterVerification.requiredRoleFailedCount,
           degradedRoleCount: adapterVerification.degradedRoleCount,
@@ -263,6 +293,9 @@ export class CliVerifyCommand implements CliCommandExecutor {
           fallback_roles: adapterVerification.fallbackRoleCount,
           agent_descriptor_count: agentView.descriptors.length,
           diagnostics_path: diagnosticsArtifactPath,
+          durable_storage_status: durableStorageStatus,
+          artifact_registry_status: durableStorageDiagnostics.artifactRegistryCanonicalTruth.status,
+          task_ledger_projection_status: durableStorageDiagnostics.taskLedgerProjection.status,
         },
       },
     };
