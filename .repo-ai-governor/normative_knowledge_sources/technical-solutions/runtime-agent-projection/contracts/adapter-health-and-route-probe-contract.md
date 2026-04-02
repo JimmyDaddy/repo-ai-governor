@@ -26,6 +26,13 @@
 13. `route_key`
 14. `route_requirements[]`
 15. `fallback_allowed`
+16. `transport_kind`
+17. `provider_kind`
+18. `vendor_binding_kind`
+19. `model`
+20. `credential_source`
+21. `endpoint_source`
+22. `request_cancellation_mode`
 
 ## 3. Allowed Values
 
@@ -41,6 +48,10 @@
    - `available`
    - `degraded`
    - `unavailable`
+7. `request_cancellation_mode`
+   - `not_supported`
+   - `local_abort_only`
+   - `provider_cancel_attempted`
 
 ## 4. Required Constraints
 
@@ -50,6 +61,8 @@
 4. 不同 adapter 可以使用不同的底层探测方式，但归一化后的 contract payload 必须保持一致。
 5. `doctor` 与 `verify` 必须能够直接消费该 contract，而不需要再反向解析 adapter 私有 stdout。
 6. `diagnostics[]` 必须允许保留 adapter-specific 细节，但不得破坏稳定顶层字段。
+7. route fallback 必须把 `transport_kind / provider_kind / vendor_binding_kind` 一起纳入真值，不得再把同一 surface 的不同 transport 混为单一 availability。
+8. 当 `remote_api` binding 无法唯一解析或与 surface 不匹配时，probe 必须以结构化 reason code fail-closed，而不是静默退回默认 binding。
 
 ## 5. Output Semantics
 
@@ -59,9 +72,24 @@
 4. `semantic_status=warn/fail` 应表达轻量 no-op probe 的语义回声异常；`OK.`、空白和简单包裹差异应被视为 trivial variant，而不是 install/auth failure。
 5. `route_capability_status=fail` 应表达 adapter 当前不满足 reviewer/tester 等 route 的工具、权限、超时或 policy 约束。
 6. `overall_status=degraded` 允许表示“基础聊天可用，但当前 route 不可用”或“核心能力可用但诊断存在轻微风险”。
+7. `credential_source` 与 `endpoint_source` 应帮助 consumer 区分 repo 显式配置、env override、secret store、provider-local discovery 与 vendor default。
+8. `request_cancellation_mode=local_abort_only` 表示 Governor 只能保证本地 stream / request 已发出 abort，而不默认宣称 provider 端任务已被强取消。
 
-## 6. Compatibility
+## 6. Stable Reason Codes
+
+1. `cli_missing`
+2. `credential_missing`
+3. `credential_invalid`
+4. `endpoint_unreachable`
+5. `provider_rate_limited`
+6. `provider_quota_exhausted`
+7. `model_capability_missing`
+8. `provider_binding_mismatch`
+9. `vendor_binding_required`
+
+## 7. Compatibility
 
 1. `v1` 允许 `Codex`、`GitHub Copilot`、`Claude Code` 与 `Ollama` 各自保留不同的 probe 实现，只要最终能投影为同一 contract。
 2. `v1` 允许在 rollout 早期分阶段接入：先统一 shared normalization，再逐步替换 adapter-specific auth/protocol probe。
 3. `v1` 允许 route probe 继续复用现有 role binding / descriptor 结构，但 route 诊断必须能稳定回链 `route_key` 与 `surface_id`。
+4. `v1` 允许 CLI-only row 继续表达 `transport_kind=cli_exec` 与 `provider_kind/vendor_binding_kind=null`，同时对 `remote_api` row 增量补充 binding-aware 字段。

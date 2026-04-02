@@ -219,19 +219,21 @@ deliveries:
       - runtime_service
       - docs_playbook
     user_impact_level: high
-    execution_status: completed
-    rollout_status: completed
+    execution_status: planned
+    rollout_status: planned
     owner: runtime
-    project_ref: project-035-session-main-supervisor-and-role-subagent-productization
-    sprint_ref: sprint-005-conversational-chat-and-skill-handoff-productization
+    project_ref: project-038-session-main-capability-explainer-productization
+    sprint_ref: sprint-001-capability-catalog-and-turn-outcome-foundation
     task_ids:
-      - TK-471
-      - TK-472
-      - TK-473
-    project_plan_path: .repo-ai-governor/context/dev/project-035-session-main-supervisor-and-role-subagent-productization/plan.md
-    sprint_plan_path: .repo-ai-governor/context/dev/project-035-session-main-supervisor-and-role-subagent-productization/sprint-005-conversational-chat-and-skill-handoff-productization/plan.md
-    task_csv_path: .repo-ai-governor/context/dev/project-035-session-main-supervisor-and-role-subagent-productization/sprint-005-conversational-chat-and-skill-handoff-productization/tasks/tasks.csv
-    handoff_artifact_path: .repo-ai-governor/context/dev/project-035-session-main-supervisor-and-role-subagent-productization/sprint-003-role-collaboration-and-handoff-productization/tasks/DA-468-session-main-conversational-chat-and-skill-intent-promotion-cutover.md
+      - TK-495
+      - TK-496
+      - TK-497
+      - TK-498
+      - TK-499
+    project_plan_path: .repo-ai-governor/context/dev/project-038-session-main-capability-explainer-productization/plan.md
+    sprint_plan_path: .repo-ai-governor/context/dev/project-038-session-main-capability-explainer-productization/sprint-001-capability-catalog-and-turn-outcome-foundation/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-038-session-main-capability-explainer-productization/sprint-001-capability-catalog-and-turn-outcome-foundation/tasks/tasks.csv
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-037-agent-invoke-liveness-and-timeout-governance-rollout/sprint-001-shared-liveness-contract-and-codex-watchdog-baseline/tasks/DA-494-session-main-capability-explainer-and-contextual-guidance-promotion-cutover.md
     rollout_artifacts:
       - .repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation/plan.md
       - .repo-ai-governor/context/dev/project-027-cli-interactive-shell-implementation/project-027-completion-audit-summary.md
@@ -275,7 +277,11 @@ deliveries:
       - .repo-ai-governor/context/dev/project-035-session-main-supervisor-and-role-subagent-productization/sprint-005-conversational-chat-and-skill-handoff-productization/plan.md
       - .repo-ai-governor/context/dev/project-035-session-main-supervisor-and-role-subagent-productization/sprint-005-conversational-chat-and-skill-handoff-productization/sprint-005-completion-summary.md
       - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/adrs/session-main-supervisor-and-role-subagent-collaboration.md
-    accepted_at: 2026-04-01
+      - .repo-ai-governor/context/dev/project-037-agent-invoke-liveness-and-timeout-governance-rollout/sprint-001-shared-liveness-contract-and-codex-watchdog-baseline/review/resolved_code_review_tk-494-session-main-capability-explainer-and-contextual-guidance-promotion-cutover.md
+      - .repo-ai-governor/context/dev/project-037-agent-invoke-liveness-and-timeout-governance-rollout/sprint-001-shared-liveness-contract-and-codex-watchdog-baseline/tasks/DA-494-session-main-capability-explainer-and-contextual-guidance-promotion-cutover.md
+      - .repo-ai-governor/context/dev/project-038-session-main-capability-explainer-productization/plan.md
+      - .repo-ai-governor/context/dev/project-038-session-main-capability-explainer-productization/sprint-001-capability-catalog-and-turn-outcome-foundation/plan.md
+    accepted_at: 2026-04-02
 
   - solution_id: technical-solution.multi-ai-tools-onboarding-role-agent-projection
     delivery_mode: followup_required
@@ -315,8 +321,8 @@ deliveries:
       - runtime_service
       - docs_playbook
     user_impact_level: medium
-    execution_status: in_progress
-    rollout_status: in_progress
+    execution_status: completed
+    rollout_status: completed
     owner: runtime
     project_ref: project-036-runtime-durable-storage-and-registry-cutover
     sprint_ref: sprint-004-migration-verification-and-cutover-governance
@@ -335,4 +341,59 @@ deliveries:
       - .repo-ai-governor/context/dev/project-036-runtime-durable-storage-and-registry-cutover/sprint-004-migration-verification-and-cutover-governance/plan.md
       - .repo-ai-governor/context/dev/project-036-runtime-durable-storage-and-registry-cutover/sprint-004-migration-verification-and-cutover-governance/review/resolved_code_review_tk-481-layered-adapter-health-check-and-route-probe-promotion.md
       - .repo-ai-governor/context/dev/project-036-runtime-durable-storage-and-registry-cutover/sprint-004-migration-verification-and-cutover-governance/tasks/DA-481-layered-adapter-health-check-and-route-probe-technical-solution-promotion.md
+    accepted_at: 2026-04-02
+
+  - solution_id: technical-solution.agent-invoke-liveness-and-timeout-governance
+    delivery_mode: followup_required
+    consumer_surfaces:
+      - adopter_cli
+      - runtime_service
+      - docs_playbook
+    user_impact_level: medium
+    execution_status: planned
+    rollout_status: planned
+    owner: runtime
+    project_ref: project-037-agent-invoke-liveness-and-timeout-governance-rollout
+    sprint_ref: sprint-001-shared-liveness-contract-and-codex-watchdog-baseline
+    task_ids:
+      - TK-486
+      - TK-487
+    project_plan_path: .repo-ai-governor/context/dev/project-037-agent-invoke-liveness-and-timeout-governance-rollout/plan.md
+    sprint_plan_path: .repo-ai-governor/context/dev/project-037-agent-invoke-liveness-and-timeout-governance-rollout/sprint-001-shared-liveness-contract-and-codex-watchdog-baseline/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-037-agent-invoke-liveness-and-timeout-governance-rollout/sprint-001-shared-liveness-contract-and-codex-watchdog-baseline/tasks/tasks.csv
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-036-runtime-durable-storage-and-registry-cutover/sprint-004-migration-verification-and-cutover-governance/tasks/DA-485-agent-invoke-liveness-and-timeout-governance-technical-solution-promotion.md
+    rollout_artifacts:
+      - .repo-ai-governor/context/dev/project-036-runtime-durable-storage-and-registry-cutover/project-036-completion-audit-summary.md
+      - .repo-ai-governor/context/dev/project-036-runtime-durable-storage-and-registry-cutover/sprint-004-migration-verification-and-cutover-governance/tasks/DA-485-agent-invoke-liveness-and-timeout-governance-technical-solution-promotion.md
+      - .repo-ai-governor/context/dev/project-037-agent-invoke-liveness-and-timeout-governance-rollout/plan.md
+      - .repo-ai-governor/context/dev/project-037-agent-invoke-liveness-and-timeout-governance-rollout/sprint-001-shared-liveness-contract-and-codex-watchdog-baseline/plan.md
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/agent-invoke-liveness-and-timeout-governance.md
+    accepted_at: 2026-04-02
+
+  - solution_id: technical-solution.api-key-remote-adapter-invocation
+    delivery_mode: followup_required
+    consumer_surfaces:
+      - adopter_cli
+      - runtime_service
+      - docs_playbook
+    user_impact_level: medium
+    execution_status: planned
+    rollout_status: planned
+    owner: runtime
+    project_ref: project-037-agent-invoke-liveness-and-timeout-governance-rollout
+    sprint_ref: sprint-002-cross-adapter-liveness-rollout-and-diagnostics
+    task_ids:
+      - TK-501
+    project_plan_path: .repo-ai-governor/context/dev/project-037-agent-invoke-liveness-and-timeout-governance-rollout/plan.md
+    sprint_plan_path: .repo-ai-governor/context/dev/project-037-agent-invoke-liveness-and-timeout-governance-rollout/sprint-002-cross-adapter-liveness-rollout-and-diagnostics/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-037-agent-invoke-liveness-and-timeout-governance-rollout/sprint-002-cross-adapter-liveness-rollout-and-diagnostics/tasks/tasks.csv
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-037-agent-invoke-liveness-and-timeout-governance-rollout/sprint-001-shared-liveness-contract-and-codex-watchdog-baseline/tasks/DA-500-api-key-remote-adapter-invocation-technical-solution-promotion.md
+    rollout_artifacts:
+      - .repo-ai-governor/context/dev/project-037-agent-invoke-liveness-and-timeout-governance-rollout/plan.md
+      - .repo-ai-governor/context/dev/project-037-agent-invoke-liveness-and-timeout-governance-rollout/sprint-001-shared-liveness-contract-and-codex-watchdog-baseline/plan.md
+      - .repo-ai-governor/context/dev/project-037-agent-invoke-liveness-and-timeout-governance-rollout/sprint-001-shared-liveness-contract-and-codex-watchdog-baseline/review/resolved_code_review_tk-500-api-key-remote-adapter-invocation-promotion-cutover.md
+      - .repo-ai-governor/context/dev/project-037-agent-invoke-liveness-and-timeout-governance-rollout/sprint-001-shared-liveness-contract-and-codex-watchdog-baseline/tasks/DA-500-api-key-remote-adapter-invocation-technical-solution-promotion.md
+      - .repo-ai-governor/context/dev/project-037-agent-invoke-liveness-and-timeout-governance-rollout/sprint-002-cross-adapter-liveness-rollout-and-diagnostics/plan.md
+      - .repo-ai-governor/context/dev/project-037-agent-invoke-liveness-and-timeout-governance-rollout/sprint-002-cross-adapter-liveness-rollout-and-diagnostics/tasks/TK-501-roll-out-api-key-remote-adapter-invocation-runtime-transport-and-delivery-verification.md
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/remote-api-transport-and-provider-binding-seam.md
     accepted_at: 2026-04-02

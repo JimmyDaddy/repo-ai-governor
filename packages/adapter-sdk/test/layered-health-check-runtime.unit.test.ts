@@ -25,6 +25,8 @@ describe('layered health check runtime', () => {
     expect(result.reasonCodes).toContain('semantic.invalid_response');
     expect(result.reasonCodes).toContain('route.capability_unsupported');
     expect(result.selectedEntrypoint).toBe('copilot');
+    expect(result.transportKind).toBeNull();
+    expect(result.requestCancellationMode).toBe('not_supported');
   });
 
   it('treats route-surface wrapping and degraded capabilities as structured diagnostics', () => {

@@ -38,3 +38,6 @@
 - [x] TK-484 route doctor verify and role fallback through layered health check diagnostics
   - 2026-04-02：任务创建，状态初始化为 `planned`；承接 doctor/verify presenter 与 role fallback 的 layered diagnostics 切换。
   - 2026-04-02：已完成 CLI consumer 切换：tool snapshot、role evaluation、diagnostics artifact 与 session-main probe message 已接入 layered health-check，并通过 adapter verification/runtime tests、artifact lifecycle gate 与完整 build 验证。
+- [x] TK-485 promote agent invoke liveness and timeout governance solution into runtime-agent-projection formal docs
+  - 2026-04-02：任务创建，状态初始化为 `planned`；承接用户已批准的 invoke liveness / timeout governance 技术方案 promotion。
+  - 2026-04-02：已完成 formal docs promotion、review evidence 与 `followup_required` delivery handoff 收口；`runtime.agent-projection` 现已拥有正式的 invoke liveness contract 与 timeout/liveness governance ADR。

@@ -1,6 +1,9 @@
 import {
   AdapterAvailability,
+  AdapterProviderKind,
   AdapterSurface,
+  AdapterTransportKind,
+  AdapterVendorBindingKind,
   CliReactThemePreset,
   ConfigError,
   DefaultRoleProfileId,
@@ -222,6 +225,91 @@ describe('config unit', () => {
 
     expect(localModelTool?.localModel?.provider).toBe(LocalModelProvider.OLLAMA);
     expect(localModelTool?.localModel?.model).toBe('qwen2.5-coder:7b');
+  });
+
+  it('accepts codex remote_api tool config and materializes transport-aware fields', () => {
+    const validator = new SchemaValidator();
+    const baseConfig = createConfigFixture();
+    const baseAdapters = requireAdaptersFixture(baseConfig);
+    const configWithRemoteApi: GovernorConfig = {
+      ...baseConfig,
+      adapters: {
+        ...baseAdapters,
+        tools: [
+          {
+            toolId: AdapterSurface.CODEX,
+            enabled: true,
+            availability: AdapterAvailability.AVAILABLE,
+            transport: AdapterTransportKind.REMOTE_API,
+            remoteApi: {
+              provider: AdapterProviderKind.OPENAI,
+              vendorBinding: AdapterVendorBindingKind.OPENAI_RESPONSES,
+              model: 'gpt-5',
+              credentialEnvVar: 'OPENAI_API_KEY',
+            },
+          },
+        ],
+      },
+    };
+
+    const validatedConfig = validator.validateOrThrow(configWithRemoteApi);
+    const codexTool = validatedConfig.adapters?.tools?.find(
+      (tool) => tool.toolId === AdapterSurface.CODEX,
+    );
+
+    expect(codexTool?.transport).toBe(AdapterTransportKind.REMOTE_API);
+    expect(codexTool?.remoteApi?.provider).toBe(AdapterProviderKind.OPENAI);
+    expect(codexTool?.remoteApi?.vendorBinding).toBe(AdapterVendorBindingKind.OPENAI_RESPONSES);
+  });
+
+  it('rejects unsupported remote_api provider mapping for codex', () => {
+    const validator = new SchemaValidator();
+    const baseConfig = createConfigFixture();
+    const baseAdapters = requireAdaptersFixture(baseConfig);
+    const invalidConfig: GovernorConfig = {
+      ...baseConfig,
+      adapters: {
+        ...baseAdapters,
+        tools: [
+          {
+            toolId: AdapterSurface.CODEX,
+            transport: AdapterTransportKind.REMOTE_API,
+            remoteApi: {
+              provider: AdapterProviderKind.ANTHROPIC,
+              model: 'claude-sonnet-4-5',
+            },
+          },
+        ],
+      },
+    };
+
+    expect(() => validator.validateOrThrow(invalidConfig)).toThrowError(ConfigError);
+  });
+
+  it('rejects remote_api credentialRef until runtime resolution support exists', () => {
+    const validator = new SchemaValidator();
+    const baseConfig = createConfigFixture();
+    const baseAdapters = requireAdaptersFixture(baseConfig);
+    const invalidConfig: GovernorConfig = {
+      ...baseConfig,
+      adapters: {
+        ...baseAdapters,
+        tools: [
+          {
+            toolId: AdapterSurface.CODEX,
+            transport: AdapterTransportKind.REMOTE_API,
+            remoteApi: {
+              provider: AdapterProviderKind.OPENAI,
+              vendorBinding: AdapterVendorBindingKind.OPENAI_RESPONSES,
+              model: 'gpt-5',
+              credentialRef: 'secret://openai/api-key',
+            },
+          },
+        ],
+      },
+    };
+
+    expect(() => validator.validateOrThrow(invalidConfig)).toThrowError(ConfigError);
   });
 
   it('rejects local-model tool without local runtime config', () => {

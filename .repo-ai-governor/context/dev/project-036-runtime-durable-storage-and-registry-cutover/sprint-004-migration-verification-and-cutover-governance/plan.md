@@ -13,6 +13,7 @@
 4. `TK-482` implement layered adapter health check contract and shared probe runtime baseline
 5. `TK-483` align codex copilot claude and ollama probes with layered auth protocol route semantics
 6. `TK-484` route doctor verify and role fallback through layered health check diagnostics
+7. `TK-485` promote agent invoke liveness and timeout governance solution into runtime-agent-projection formal docs
 
 ## 2. Exit Criteria
 
@@ -21,6 +22,7 @@
 3. rebuild/render/reconcile/cutover governance 有明确 gate 与回归验证。
 4. artifact lifecycle 具备基于 sqlite canonical truth 的自动维护与 auto-archive 路径。
 5. adapter health check / route probe 已具备 formal docs、delivery ownership 与可执行的后续任务拆分，不再停留在 draft + ad-hoc patch 阶段。
+6. agent invoke liveness / timeout governance 已具备 formal docs、delivery ownership 与 rollout handoff，不再停留在 draft 讨论阶段。
 
 ## 3. Milestones
 
@@ -45,3 +47,4 @@
 19. 2026-04-02：完成 post-closeout live activity viewport hardening：运行中的 `live_activity` 改为受控窗口渲染，完整日志历史继续保留，但 React/Ink live shell 只显示当前切片并支持 `PgUp/PgDn/Home/End` 浏览，从而避免长日志在任务进行中持续拉长整棵 shell 并破坏滚动体验。
 20. 2026-04-02：完成 post-closeout agent reply history fix：`session-shell-turn-progress-dock` 已把 `agent_message/token` 草稿镜像成可更新的 role reply 活动条目，并将最新快照沉淀到 completed/failed turn execution details；因此 reviewer/Codex 在 command/todo 之外已生成的文本说明与回复，不再只停留在瞬时草稿区。
 21. 2026-04-02：完成 post-closeout timeout/liveness 技术方案收口：新增 `.repo-ai-governor/draft/agent-invoke-liveness-and-timeout-governance-technical-solution.md`，明确把固定 timeout 从主判定降级为最后保险丝，并提出基于 process liveness、transport activity、semantic progress、graceful interrupt 的统一状态机与 rollout 路线。
+22. 2026-04-02：完成 `TK-485` formal promotion：`agent invoke liveness / timeout governance` 已正式并入 `runtime.agent-projection` 模块，形成 `contract.runtime.agent-invoke-liveness.v1`、ADR、delivery ownership、promotion review 与 handoff artifact。

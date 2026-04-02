@@ -4,6 +4,7 @@
 export enum AgentCliExecutionMode {
   BASELINE = 'baseline',
   CLI_EXEC = 'cli_exec',
+  REMOTE_API = 'remote_api',
 }
 
 /**

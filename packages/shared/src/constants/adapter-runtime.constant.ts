@@ -13,6 +13,61 @@ export enum AdapterSurface {
 }
 
 /**
+ * Defines normalized transport kinds shared by config, routing, and diagnostics.
+ */
+export enum AdapterTransportKind {
+  BASELINE = 'baseline',
+  CLI_EXEC = 'cli_exec',
+  REMOTE_API = 'remote_api',
+}
+
+/**
+ * Defines remote provider identifiers used by remote-api capable adapter surfaces.
+ */
+export enum AdapterProviderKind {
+  OPENAI = 'openai',
+  ANTHROPIC = 'anthropic',
+  GITHUB_MODELS = 'github_models',
+}
+
+/**
+ * Defines canonical vendor-binding identifiers for provider-specific remote APIs.
+ */
+export enum AdapterVendorBindingKind {
+  OPENAI_RESPONSES = 'openai_responses',
+  ANTHROPIC_MESSAGES = 'anthropic_messages',
+  GITHUB_MODELS_INFERENCE = 'github_models_inference',
+}
+
+/**
+ * Defines credential resolution sources surfaced by transport-aware diagnostics.
+ */
+export enum AdapterCredentialSource {
+  NONE = 'none',
+  ENV_EXPLICIT = 'env_explicit',
+  ENV_DEFAULT = 'env_default',
+  CREDENTIAL_REF = 'credential_ref',
+  PROVIDER_LOCAL = 'provider_local',
+}
+
+/**
+ * Defines endpoint resolution sources surfaced by transport-aware diagnostics.
+ */
+export enum AdapterEndpointSource {
+  CONFIG_EXPLICIT = 'config_explicit',
+  VENDOR_DEFAULT = 'vendor_default',
+}
+
+/**
+ * Defines cancellation semantics exposed by transport-aware health checks.
+ */
+export enum AdapterRequestCancellationMode {
+  NOT_SUPPORTED = 'not_supported',
+  LOCAL_ABORT_ONLY = 'local_abort_only',
+  PROVIDER_CANCEL_ATTEMPTED = 'provider_cancel_attempted',
+}
+
+/**
  * Defines adapter availability states accepted by config/runtime diagnostics.
  *
  * Why this exists:

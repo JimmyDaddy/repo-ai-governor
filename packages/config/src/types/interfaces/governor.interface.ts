@@ -1,6 +1,8 @@
 import type {
   AdapterAvailability,
+  AdapterRemoteApiConfig,
   AdapterSurface,
+  AdapterTransportKind,
   CliReactThemePreset,
   LocalModelProvider,
   WorkspaceMigrationPolicy,
@@ -133,6 +135,8 @@ export interface AdapterToolConfig {
   enabled?: boolean;
   availability?: AdapterAvailability;
   unavailableReasons?: string[];
+  transport?: AdapterTransportKind;
+  remoteApi?: AdapterRemoteApiConfig;
   localModel?: AdapterToolLocalModelConfig;
 }
 

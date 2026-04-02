@@ -1,5 +1,14 @@
 export { ErrorOutputEnvironment, ErrorScenario } from './error.constant.js';
-export { AdapterAvailability, AdapterSurface } from './adapter-runtime.constant.js';
+export {
+  AdapterAvailability,
+  AdapterCredentialSource,
+  AdapterEndpointSource,
+  AdapterProviderKind,
+  AdapterRequestCancellationMode,
+  AdapterSurface,
+  AdapterTransportKind,
+  AdapterVendorBindingKind,
+} from './adapter-runtime.constant.js';
 export {
   EXECUTION_PROGRESS_STATUS_LABELS,
   ExecutionInteractionCategory,

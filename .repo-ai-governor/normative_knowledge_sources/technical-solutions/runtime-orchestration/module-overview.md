@@ -1,7 +1,7 @@
 # Runtime Orchestration Module Overview
 
 - Status: active
-- Date: 2026-04-01
+- Date: 2026-04-02
 - Module ID: `runtime.orchestration`
 - Owner: runtime
 - Layer: `runtime-core`
@@ -16,7 +16,7 @@
 2. 协调 provider loading、policy、artifact、notification 与 memory/session。
 3. 为 CLI 与未来 desktop / service host 提供统一 orchestration seam。
 4. 维持 `embedded / service-backed / sidecar_ipc` 三种 host surface 的一致执行约束。
-5. 承载 service-owned `session.main` supervisor runtime 的 turn lifecycle、conversation classification、skill-intent resolution、risk-tiered handoff policy 与 role-subagent orchestration boundary，但不把 presenter 或 projection 层升格为新的 runtime owner。
+5. 承载 service-owned `session.main` supervisor runtime 的 turn lifecycle、conversation classification、capability explanation、skill-intent resolution、risk-tiered handoff policy 与 role-subagent orchestration boundary，但不把 presenter 或 projection 层升格为新的 runtime owner。
 
 ## 3. 非目标
 
@@ -52,6 +52,7 @@
 4. `runtime.memory-provider-loading` 与 `runtime.memory-semantics` 仍通过 contract 引入，不允许 runtime 模块直接耦合 provider 实现包或 recall policy internals。
 5. 截至 `2026-03-31`，`v2` formal direction 已接受“service-owned session.main supervisor + role subagents / handoffs”作为前台自然语言入口的目标架构；该方向要求 runtime 在 answer / follow-up / command handoff / role collaboration 之间做正式 turn routing，但当前代码仍只完成 path-A productization，supervisor productization follow-up 由 `project-035-session-main-supervisor-and-role-subagent-productization` 承接。
 6. 截至 `2026-04-01`，在既有 `session.main supervisor` formal direction 基础上，runtime 现进一步接受“conversation-first chatability + risk-tiered skill handoff”补充方向；shared session truth 必须同时承载 `preview_confirm` 与 `direct_execute` continuity，并由 service-owned risk/policy gate 决定 `help`、`doctor`、`verify` 与 scope-resolved `review` 等低风险 skill 是否允许直接执行。
+7. 截至 `2026-04-02`，在既有 `session.main supervisor` formal direction 基础上，runtime 现进一步接受“service-owned capability explainer + contextual command guidance”补充方向；`runtime.orchestration` 必须拥有 locale-neutral governed capability catalog、availability overlay、capability explanation route 与 explanation-to-governed-execution bridge boundary，并将 capability answer metadata 投影到 shared session truth 供 CLI/desktop 统一消费。
 
 ## 9. Detail Docs
 

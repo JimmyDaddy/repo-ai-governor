@@ -5,7 +5,13 @@ export {
   DEFAULT_I18N_RUNTIME_CONFIG,
   DEFAULT_I18N_SUPPORTED_LOCALES,
   AdapterAvailability,
+  AdapterCredentialSource,
+  AdapterEndpointSource,
+  AdapterProviderKind,
+  AdapterRequestCancellationMode,
   AdapterSurface,
+  AdapterTransportKind,
+  AdapterVendorBindingKind,
   ALL_DEPENDENCY_RESOLUTION_STATUSES,
   CliReactThemePreset,
   CLI_REACT_THEME_PRESET_ORDER,
@@ -50,6 +56,7 @@ export {
 } from './health-check-response.js';
 export type { StandardizedError } from './errors/index.js';
 export type {
+  AdapterRemoteApiConfig,
   I18nRuntimeConfig,
   MemoryProviderRuntimeConfig,
   MemoryRuntimeConfig,

@@ -1,3 +1,4 @@
+export type { AdapterRemoteApiConfig } from './adapter-runtime-config.interface.js';
 export type { I18nRuntimeConfig } from './i18n-runtime-config.interface.js';
 export type {
   MemoryProviderRuntimeConfig,

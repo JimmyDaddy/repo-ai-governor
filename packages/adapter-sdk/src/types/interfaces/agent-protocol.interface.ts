@@ -1,4 +1,12 @@
 import type {
+  AdapterCredentialSource,
+  AdapterEndpointSource,
+  AdapterProviderKind,
+  AdapterRequestCancellationMode,
+  AdapterTransportKind,
+  AdapterVendorBindingKind,
+} from '@repo-ai-governor/shared';
+import type {
   AgentAvailabilityStatus,
   AgentCancellationReason,
   AgentCancellationScope,
@@ -123,6 +131,13 @@ export interface AgentLayeredHealthCheckResult {
   routeKey: string;
   routeRequirements: string[];
   fallbackAllowed: boolean;
+  transportKind: AdapterTransportKind | null;
+  providerKind: AdapterProviderKind | null;
+  vendorBindingKind: AdapterVendorBindingKind | null;
+  model: string | null;
+  credentialSource: AdapterCredentialSource | null;
+  endpointSource: AdapterEndpointSource | null;
+  requestCancellationMode: AdapterRequestCancellationMode;
 }
 
 /**

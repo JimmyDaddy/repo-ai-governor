@@ -1,7 +1,7 @@
 # Session Main Supervisor And Role Subagent Collaboration ADR
 
 - Status: active
-- Date: 2026-04-01
+- Date: 2026-04-02
 - Module ID: `runtime.orchestration`
 - ADR ID: `adr.runtime.orchestration.session-main-supervisor-role-subagents.v1`
 
@@ -12,6 +12,7 @@
 1. 普通问句虽然已经进入 `session.main`，但不一定能稳定得到真实 assistant 回答。
 2. `connect` 后拿到的 role / surface / fallback 结果仍主要停留在 projection descriptor，connected roles 之间缺少前台可协作的 runtime 语义。
 3. 即便自然语言已经明显命中一个前台动作意图，当前产品也仍容易停留在“只会展示 preview recap”的阶段，低风险 skill 缺少可治理的 direct-execute continuity。
+4. 当用户问“你能做什么”“review 是什么”“review 和 review verify 有什么区别”时，当前 supervisor taxonomy 仍缺少一条正式的 capability explanation route，导致能力介绍、help prose、slash discoverability 与 governed execution 之间容易分裂成多份事实源。
 
 同时，`runtime.cli-interactive-shell` 已正式接受：
 
@@ -29,13 +30,14 @@
 ## 2. Decision
 
 1. `runtime.orchestration` 正式接受 `session.main` 的目标架构为 `service-owned supervisor`，而不是继续停留在单一路由回执或单 agent answer executor。
-2. supervisor 前台 turn pipeline 必须先在统一入口中区分至少六类语义：
+2. supervisor 前台 turn pipeline 必须先在统一入口中区分至少七类语义：
    - `greeting / social chat`
-   - `repo question`
+   - `explicit role collaboration`
+   - `capability explanation`
    - `follow_up continuation`
    - `skill intent`
-   - `explicit role collaboration`
    - `slash-command-adjacent command handoff`
+   - `repo question`
 3. connected roles 不再只被视为静态 onboarding 结果；它们应被映射为 `session.main` 可调度的 role subagents / handoff targets，但该映射只能消费 projection truth，不能反向改写 projection truth。
 4. natural-language skill routing 必须先经过 service-owned risk/policy gate，而不是默认一刀切 `preview + confirm` 或无限制自动执行：
    - `help`、`doctor`、`verify` 与 scope-resolved `review.code` 等低风险只读 skill 可以被判定为 `direct_execute`
@@ -49,17 +51,28 @@
    - 再补 conversation-first chatability + risk-tiered skill handoff
    - 最后扩展多 role collaboration、streaming 与 sidecar parity
 6. `runtime.orchestration` 只拥有 supervisor lifecycle、turn outcome projection 与 shared session event contract；具体 route runner / protocol map 组装应沿 package-level seam 收口，不允许 `core-orchestration-service` 反向依赖 `apps/cli/**` 私有 runtime。
+7. `runtime.orchestration` 进一步正式接受一条 service-owned `session.main` capability explainer：
+   - 它必须拥有 locale-neutral governed capability seed / localized descriptor view，而不是继续复用某个 CLI-only help prose source
+   - 它必须先回答“能做什么 / 何时使用 / 有什么区别”，再决定是否桥接到 governed execution
+   - capability explanation 是插入现有 taxonomy 的正式分支，不替换 `greeting/social chat`、`repo question`、`skill intent` 或 `slash-command-adjacent command handoff`
+8. governed capability catalog 的单一事实来源只覆盖可解释的 governed bridge capabilities，不覆盖全部 shell-local builtins：
+   - `help`、`connect`、`doctor`、`verify`、`plan`、`review`、`review verify`、`run`、`workflow` 等可以进入 capability catalog
+   - `/confirm`、`/cancel`、`/clear`、`/exit`、`/resume`、`/history`、`/search`、`/multiline`、`/status`、`/theme`、`/agent` 等 CLI-only builtin 继续由 `runtime.cli-interactive-shell` slash registry 本地自治
+   - CLI presenter 可以把两类 discoverability 合并展示，但 orchestration 不得拥有 shell-local builtin 的 canonical truth
+9. 纯 capability explanation turn 仍属于 `answer` 路径；若同一句话同时包含 explanation 与 executable ask，runtime 必须先命中 capability explanation，再仅在 scope-resolved 且 policy 允许时桥接到既有 `direct_execute` 或 `command_handoff_preview` outcome，而不是发明一条新的 hybrid pending-state contract。
 
 ## 3. Consequences
 
-1. `TURN_COMPLETED.payload` 需要允许 service-owned runtime 回灌 richer turn metadata，例如 `interactionMode`、`invokedRoleIds[]`、`routerDecisionReason`、`selectedSurface`、`skillId`、`skillVersion`、`riskTier`、`confirmationMode` 与 `executionPath`，但 presenter 只做选择性呈现。
+1. `TURN_COMPLETED.payload` 需要允许 service-owned runtime 回灌 richer turn metadata，例如 `interactionMode`、`invokedRoleIds[]`、`routerDecisionReason`、`selectedSurface`、`skillId`、`skillVersion`、`riskTier`、`confirmationMode`、`executionPath`、`capabilityAnswerKind`、`referencedCapabilityIds[]` 与 `suggestedActions[]`，但 presenter 只做选择性呈现。
 2. `runtime.cli-interactive-shell` 继续只是 consumer：它可以呈现 answer / preview-confirm handoff / direct-execute skill recap / collaboration recap，但不得在本地选择 subagent、拼装 role truth、重算 risk tier 或模拟 supervisor 决策。
 3. shared session truth 需要同时保留两类 continuity：
    - `preview_confirm` 的 pending handoff 恢复链
    - `direct_execute` 的 executed-state / result-presentation 恢复链
+   - `capability explanation` 的 answer-only metadata 恢复链
 4. `runtime.agent-projection` 继续负责 `AgentDescriptor` truth；projection descriptor 可被 supervisor 派生成 subagent descriptor，但 projection module 不能被误用成第二套 execution runtime。
 5. 为了避免 embedded-only 临时路径长期固化，后续需要把 route runner / protocol map 组装继续抽离到 runtime-neutral package，并让 sidecar host 复用同一条 supervisor seam。
 6. 该 ADR 定义的是正式方向，不等于代码已全面完成；`project-035-session-main-supervisor-and-role-subagent-productization` 负责把 direct answer、role subagent bootstrap、risk-tiered skill handoff 与 command-handoff governance 真正产品化。
+7. 该 ADR 现进一步要求 capability prose 采用 locale-neutral seed + localized view 分层；`runtime.orchestration` 不得把某一种语言的 raw prose 文本写成 canonical truth，也不得反向依赖 CLI `--help` builder。
 
 ## 4. Boundary Clarifications
 
@@ -136,10 +149,23 @@ flowchart TD
    - 属于零副作用能力发现动作。
    - 可被判为 `answer` 或 `direct_execute`，不应强制额外确认。
 
+### 4.6 governed capability catalog 与 shell-local builtins 不是同一事实层
+
+1. service-owned capability catalog 只拥有可解释的 governed capability truth。
+2. shell-local builtins 继续由 `runtime.cli-interactive-shell` registry 维护。
+3. presenter 可以把 governed capabilities 与 builtin commands 组合成统一 discoverability surface，但组合结果不是新的 canonical source。
+
+### 4.7 capability explanation 的本地化与 shared-session 投影边界
+
+1. `runtime.orchestration` 应持有 locale-neutral capability seed，并通过 i18n runtime 渲染为当前 locale 的 descriptor view。
+2. shared session truth 只投影 capability answer kind、referenced capability ids 与 suggested actions，不把整份 localized prose 强行写成第二份 session-owned catalog。
+3. CLI 与 future desktop 只能消费这份 shared session metadata 与 localized answer output，不得各自再造平行 capability taxonomy。
+
 ## 5. Source Anchors
 
 1. `.repo-ai-governor/draft/session-main-agent-answer-and-command-handoff-technical-solution.md`
 2. `.repo-ai-governor/draft/session-main-conversational-chat-and-skill-intent-handoff-technical-solution.md`
-3. `.repo-ai-governor/context/dev/project-033-session-main-agent-runtime-productization/project-033-session-main-agent-runtime-productization-completion-audit-summary.md`
-4. `.repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/contracts/cli-session-shell-contract.md`
-5. `.repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/contracts/agent-projection-contract.md`
+3. `.repo-ai-governor/draft/session-main-capability-explainer-and-contextual-command-guidance-technical-solution.md`
+4. `.repo-ai-governor/context/dev/project-033-session-main-agent-runtime-productization/project-033-session-main-agent-runtime-productization-completion-audit-summary.md`
+5. `.repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/contracts/cli-session-shell-contract.md`
+6. `.repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/contracts/agent-projection-contract.md`

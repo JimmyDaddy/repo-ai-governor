@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import { setTimeout as delay } from 'node:timers/promises';
 
 import {
   AgentAvailabilityStatus,
@@ -27,6 +28,13 @@ import {
   resolveAgentStageExecutionPolicy,
 } from '@repo-ai-governor/adapter-sdk';
 import {
+  AdapterCredentialSource,
+  AdapterEndpointSource,
+  AdapterProviderKind,
+  type AdapterRemoteApiConfig,
+  AdapterRequestCancellationMode,
+  AdapterTransportKind,
+  AdapterVendorBindingKind,
   GovernorErrorCode,
   RuntimeError,
   matchesHealthCheckEchoResponse,
@@ -63,6 +71,10 @@ const CODEX_CHAT_ONLY_EXEC_ARGS = ['--sandbox', 'read-only'] as const;
 const CODEX_HEALTH_CHECK_PROMPT = 'Respond with exactly OK.';
 const CODEX_HEALTH_CHECK_EXPECTED_RESPONSE = 'OK';
 const CODEX_REPOSITORY_REVIEW_SCOPE = 'uncommitted_changes';
+const CODEX_REMOTE_API_DEFAULT_ENDPOINT = 'https://api.openai.com/v1/responses';
+const CODEX_REMOTE_API_DEFAULT_CREDENTIAL_ENV_VAR = 'OPENAI_API_KEY';
+const CODEX_REMOTE_API_DEFAULT_MAX_RETRIES = 2;
+const CODEX_REMOTE_API_SSE_EVENT_DELIMITER = '\n\n';
 
 const CODEX_BASELINE_CAPABILITY_SUPPORT: Record<AgentCapability, AgentCapabilitySupportLevel> = {
   [AgentCapability.TOOL_CALLING]: AgentCapabilitySupportLevel.SUPPORTED,
@@ -177,6 +189,20 @@ interface ResolvedCodexAgentAdapterOptions {
   probeCacheTtlMs: number;
   maxRetryAttempts: number;
   retryBackoffMs: number;
+  remoteApi?: AdapterRemoteApiConfig;
+  fetchImplementation: typeof fetch;
+}
+
+interface ResolvedCodexRemoteApiOptions {
+  provider: AdapterProviderKind.OPENAI;
+  vendorBinding: AdapterVendorBindingKind.OPENAI_RESPONSES;
+  model: string;
+  endpoint: string;
+  endpointSource: AdapterEndpointSource;
+  credentialEnvVar: string;
+  credentialSource: AdapterCredentialSource;
+  requestTimeoutMs: number;
+  maxRetries: number;
 }
 
 /**
@@ -215,6 +241,12 @@ export class CodexAgentAdapter extends AgentProtocol {
       probeCacheTtlMs: options.probeCacheTtlMs ?? CODEX_DEFAULT_PROBE_CACHE_TTL_MS,
       maxRetryAttempts: options.maxRetryAttempts ?? DEFAULT_AGENT_CLI_EXEC_MAX_RETRY_ATTEMPTS,
       retryBackoffMs: options.retryBackoffMs ?? DEFAULT_AGENT_CLI_EXEC_RETRY_BACKOFF_MS,
+      ...(options.remoteApi
+        ? {
+            remoteApi: options.remoteApi,
+          }
+        : {}),
+      fetchImplementation: options.fetchImplementation ?? fetch,
     };
     this.cliExecOperationsRuntime = new AgentCliExecOperationsRuntime(
       CODEX_SURFACE,
@@ -247,6 +279,7 @@ export class CodexAgentAdapter extends AgentProtocol {
    */
   public override async probe(request: AgentProbeRequest): Promise<AgentProbeResult> {
     const runtimeProbe = await this.resolveProbeResolution(request.signal);
+    const remoteApiOptions = this.resolveRemoteApiOptions();
     const capabilityMatrix = this.createCapabilityMatrix();
     const availabilityStatus = this.mergeAvailabilityStatus(
       this.options.availabilityStatus,
@@ -283,13 +316,28 @@ export class CodexAgentAdapter extends AgentProtocol {
         adapterId: this.options.agentId,
         surfaceId: CODEX_SURFACE,
         availabilityStatus,
-        selectedEntrypoint: this.options.command,
+        selectedEntrypoint: remoteApiOptions?.endpoint ?? this.options.command,
         routeKey: request.routeKey,
         routeRequirements: (request.requiredCapabilities ?? []).map(String),
         fallbackAllowed: true,
         unavailableReasons,
         unsupportedCapabilities: unsupportedCapabilities.map(String),
         degradedCapabilities: degradedCapabilities.map(String),
+        transportKind:
+          this.options.executionMode === CodexAgentAdapterExecutionMode.REMOTE_API
+            ? AdapterTransportKind.REMOTE_API
+            : this.options.executionMode === CodexAgentAdapterExecutionMode.CLI_EXEC
+              ? AdapterTransportKind.CLI_EXEC
+              : AdapterTransportKind.BASELINE,
+        providerKind: remoteApiOptions?.provider ?? null,
+        vendorBindingKind: remoteApiOptions?.vendorBinding ?? null,
+        model: remoteApiOptions?.model ?? null,
+        credentialSource: remoteApiOptions?.credentialSource ?? null,
+        endpointSource: remoteApiOptions?.endpointSource ?? null,
+        requestCancellationMode:
+          this.options.executionMode === CodexAgentAdapterExecutionMode.REMOTE_API
+            ? AdapterRequestCancellationMode.LOCAL_ABORT_ONLY
+            : AdapterRequestCancellationMode.NOT_SUPPORTED,
       }),
     };
   }
@@ -312,6 +360,10 @@ export class CodexAgentAdapter extends AgentProtocol {
         },
         elapsedMs: 1,
       };
+    }
+
+    if (this.options.executionMode === CodexAgentAdapterExecutionMode.REMOTE_API) {
+      return await this.invokeRemoteApiStage(request);
     }
 
     const execution = this.ensureCliExecution({
@@ -378,6 +430,11 @@ export class CodexAgentAdapter extends AgentProtocol {
       return;
     }
 
+    if (this.options.executionMode === CodexAgentAdapterExecutionMode.REMOTE_API) {
+      yield* this.streamRemoteApiEvents(request);
+      return;
+    }
+
     const execution = this.ensureCliExecution({
       processId: request.processId,
       executionId: request.executionId,
@@ -398,10 +455,16 @@ export class CodexAgentAdapter extends AgentProtocol {
   public override async requestConfirmation(
     _request: AgentConfirmationRequest,
   ): Promise<AgentConfirmationResult> {
-    if (this.options.executionMode === CodexAgentAdapterExecutionMode.CLI_EXEC) {
+    if (
+      this.options.executionMode === CodexAgentAdapterExecutionMode.CLI_EXEC ||
+      this.options.executionMode === CodexAgentAdapterExecutionMode.REMOTE_API
+    ) {
       return {
         decision: AgentConfirmationDecision.REVISE,
-        reason: 'codex-cli-confirmation-gate-unsupported',
+        reason:
+          this.options.executionMode === CodexAgentAdapterExecutionMode.REMOTE_API
+            ? 'codex-remote-api-confirmation-gate-unsupported'
+            : 'codex-cli-confirmation-gate-unsupported',
         constraints: ['escalate_to_human_gate'],
         decidedAt: new Date().toISOString(),
       };
@@ -423,6 +486,14 @@ export class CodexAgentAdapter extends AgentProtocol {
     if (this.options.executionMode === CodexAgentAdapterExecutionMode.CLI_EXEC) {
       return {
         acknowledged: false,
+        scope: request.scope,
+        reason: request.reason,
+        cancelledAt: new Date().toISOString(),
+      };
+    }
+    if (this.options.executionMode === CodexAgentAdapterExecutionMode.REMOTE_API) {
+      return {
+        acknowledged: true,
         scope: request.scope,
         reason: request.reason,
         cancelledAt: new Date().toISOString(),
@@ -463,7 +534,10 @@ export class CodexAgentAdapter extends AgentProtocol {
       },
       cancellation: {
         supportsCancel: supportsCancellation,
-        supportsReasonPropagation: supportsCancellation,
+        supportsReasonPropagation:
+          this.options.executionMode === CodexAgentAdapterExecutionMode.REMOTE_API
+            ? false
+            : supportsCancellation,
         supportsAbortSignal: supportsCancellation,
       },
       contextWindow: {
@@ -484,6 +558,10 @@ export class CodexAgentAdapter extends AgentProtocol {
         availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
         unavailableReasons: [],
       };
+    }
+
+    if (this.options.executionMode === CodexAgentAdapterExecutionMode.REMOTE_API) {
+      return await this.executeRemoteApiHealthProbe(signal);
     }
 
     if (this.options.availabilityStatus === AgentAvailabilityStatus.UNAVAILABLE) {
@@ -660,6 +738,648 @@ export class CodexAgentAdapter extends AgentProtocol {
         .map((line) => line.trim())
         .filter((line) => line.length > 0),
     };
+  }
+
+  private resolveRemoteApiOptions(): ResolvedCodexRemoteApiOptions | null {
+    if (this.options.executionMode !== CodexAgentAdapterExecutionMode.REMOTE_API) {
+      return null;
+    }
+
+    const configuredRemoteApi = this.options.remoteApi;
+    if (!configuredRemoteApi) {
+      return null;
+    }
+
+    if (configuredRemoteApi.credentialRef) {
+      throw new RuntimeError(
+        GovernorErrorCode.AGENT_PROTOCOL_INVALID,
+        `Codex remote API credentialRef "${configuredRemoteApi.credentialRef}" is not yet supported.`,
+        {
+          surface: CODEX_SURFACE,
+          credentialRef: configuredRemoteApi.credentialRef,
+        },
+      );
+    }
+
+    const credentialEnvVar =
+      configuredRemoteApi.credentialEnvVar ?? CODEX_REMOTE_API_DEFAULT_CREDENTIAL_ENV_VAR;
+    const credentialSource = configuredRemoteApi.credentialEnvVar
+      ? AdapterCredentialSource.ENV_EXPLICIT
+      : AdapterCredentialSource.ENV_DEFAULT;
+
+    return {
+      provider: AdapterProviderKind.OPENAI,
+      vendorBinding: AdapterVendorBindingKind.OPENAI_RESPONSES,
+      model: configuredRemoteApi.model,
+      endpoint: configuredRemoteApi.endpoint ?? CODEX_REMOTE_API_DEFAULT_ENDPOINT,
+      endpointSource: configuredRemoteApi.endpoint
+        ? AdapterEndpointSource.CONFIG_EXPLICIT
+        : AdapterEndpointSource.VENDOR_DEFAULT,
+      credentialEnvVar,
+      credentialSource,
+      requestTimeoutMs: configuredRemoteApi.requestTimeoutMs ?? this.options.requestTimeoutMs,
+      maxRetries: configuredRemoteApi.maxRetries ?? CODEX_REMOTE_API_DEFAULT_MAX_RETRIES,
+    };
+  }
+
+  private resolveRemoteApiCredentialValue(
+    remoteApiOptions: ResolvedCodexRemoteApiOptions,
+  ): string | null {
+    const environment = this.resolveEnvironment();
+    const credentialValue = environment[remoteApiOptions.credentialEnvVar];
+    if (typeof credentialValue !== 'string' || credentialValue.trim().length === 0) {
+      return null;
+    }
+    return credentialValue.trim();
+  }
+
+  private async executeRemoteApiHealthProbe(signal?: AbortSignal): Promise<CodexProbeResolution> {
+    const remoteApiOptions = this.resolveRemoteApiOptions();
+    if (!remoteApiOptions) {
+      return {
+        availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+        unavailableReasons: ['vendor_binding_required:codex'],
+      };
+    }
+
+    const credentialValue = this.resolveRemoteApiCredentialValue(remoteApiOptions);
+    if (!credentialValue) {
+      return {
+        availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+        unavailableReasons: [
+          `credential_missing:${CODEX_SURFACE}:${remoteApiOptions.credentialEnvVar}`,
+        ],
+      };
+    }
+
+    try {
+      const response = await this.executeRemoteApiJsonRequest({
+        prompt: CODEX_HEALTH_CHECK_PROMPT,
+        timeoutMs: remoteApiOptions.requestTimeoutMs,
+        signal,
+      });
+      if (
+        !matchesHealthCheckEchoResponse(response.responseText, CODEX_HEALTH_CHECK_EXPECTED_RESPONSE)
+      ) {
+        return {
+          availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+          unavailableReasons: [
+            `health_check_invalid_response:${CODEX_SURFACE}:${this.cliExecOperationsRuntime.sanitizeReasonSegment(response.responseText)}`,
+          ],
+        };
+      }
+
+      return {
+        availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+        unavailableReasons: [],
+      };
+    } catch (error) {
+      return {
+        availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+        unavailableReasons: this.resolveRemoteApiProbeFailureReasons(error, remoteApiOptions),
+      };
+    }
+  }
+
+  private async invokeRemoteApiStage(
+    request: AgentInvokeStageRequest,
+  ): Promise<AgentInvokeStageResult> {
+    const remoteApiOptions = this.requireRemoteApiOptions();
+    const prompt = this.shouldUseRepositoryReviewCommand(request)
+      ? this.renderRepositoryReviewPrompt(request)
+      : this.renderInvokePrompt(request);
+    const response = await this.executeRemoteApiJsonRequest({
+      prompt,
+      timeoutMs: this.resolveInvokeTimeoutMs(request),
+      ...(request.signal ? { signal: request.signal } : {}),
+    });
+
+    return {
+      output: {
+        adapterSurface: CODEX_SURFACE,
+        routeKey: request.routeKey,
+        stageId: request.stageId,
+        responseText: response.responseText,
+        threadId: response.responseId,
+        remoteResponseId: response.responseId,
+        vendorBindingKind: remoteApiOptions.vendorBinding,
+        echoedInput: request.input,
+      },
+      ...(response.usage ? { usage: response.usage } : {}),
+      elapsedMs: response.elapsedMs,
+    };
+  }
+
+  private async *streamRemoteApiEvents(
+    request: AgentStreamEventsRequest,
+  ): AsyncIterable<AgentStreamEvent> {
+    const remoteApiOptions = this.requireRemoteApiOptions();
+    const prompt = this.shouldUseRepositoryReviewCommand(request)
+      ? this.renderRepositoryReviewPrompt(request as AgentInvokeStageRequest)
+      : this.renderInvokePrompt(request as AgentInvokeStageRequest);
+    yield {
+      eventType: AgentStreamEventType.STATUS,
+      timestamp: new Date().toISOString(),
+      processId: request.processId,
+      executionId: request.executionId,
+      stageId: request.stageId,
+      routeKey: request.routeKey,
+      payload: {
+        status: 'running',
+        surface: CODEX_SURFACE,
+        transportKind: CodexAgentAdapterExecutionMode.REMOTE_API,
+        detail: 'Codex remote API stream started.',
+      },
+    };
+
+    let accumulatedText = '';
+    let completedEmitted = false;
+    try {
+      for await (const event of this.executeRemoteApiStreamRequest({
+        prompt,
+        timeoutMs: this.resolveStreamTimeoutMs(request),
+        ...(request.signal ? { signal: request.signal } : {}),
+      })) {
+        if (event.eventType === AgentStreamEventType.TOKEN) {
+          const text =
+            typeof event.payload.delta === 'string'
+              ? event.payload.delta
+              : typeof event.payload.text === 'string'
+                ? event.payload.text
+                : '';
+          accumulatedText += text;
+          yield {
+            ...event,
+            processId: request.processId,
+            executionId: request.executionId,
+            stageId: request.stageId,
+            routeKey: request.routeKey,
+            payload: {
+              ...event.payload,
+              surface: CODEX_SURFACE,
+              vendorBindingKind: remoteApiOptions.vendorBinding,
+              accumulatedText,
+            },
+          };
+          continue;
+        }
+
+        if (event.eventType === AgentStreamEventType.COMPLETED) {
+          completedEmitted = true;
+        }
+        yield {
+          ...event,
+          processId: request.processId,
+          executionId: request.executionId,
+          stageId: request.stageId,
+          routeKey: request.routeKey,
+          payload: {
+            ...event.payload,
+            surface: CODEX_SURFACE,
+            vendorBindingKind: remoteApiOptions.vendorBinding,
+            ...(accumulatedText.length > 0 ? { accumulatedText } : {}),
+          },
+        };
+      }
+      if (!completedEmitted) {
+        yield {
+          eventType: AgentStreamEventType.COMPLETED,
+          timestamp: new Date().toISOString(),
+          processId: request.processId,
+          executionId: request.executionId,
+          stageId: request.stageId,
+          routeKey: request.routeKey,
+          payload: {
+            status: 'completed',
+            surface: CODEX_SURFACE,
+            vendorBindingKind: remoteApiOptions.vendorBinding,
+            ...(accumulatedText.length > 0
+              ? { accumulatedText, responseText: accumulatedText }
+              : {}),
+          },
+        };
+      }
+    } catch (error) {
+      const standardizedError = standardizeError(error);
+      yield {
+        eventType: AgentStreamEventType.FAILED,
+        timestamp: new Date().toISOString(),
+        processId: request.processId,
+        executionId: request.executionId,
+        stageId: request.stageId,
+        routeKey: request.routeKey,
+        payload: {
+          status: 'failed',
+          surface: CODEX_SURFACE,
+          message: standardizedError.message,
+          vendorBindingKind: remoteApiOptions.vendorBinding,
+        },
+      };
+      throw error;
+    }
+  }
+
+  private async executeRemoteApiJsonRequest(request: {
+    prompt: string;
+    timeoutMs: number;
+    signal?: AbortSignal;
+  }): Promise<{
+    responseId: string | null;
+    responseText: string;
+    usage?: AgentInvokeStageResult['usage'];
+    elapsedMs: number;
+  }> {
+    const remoteApiOptions = this.requireRemoteApiOptions();
+    const credentialValue = this.resolveRemoteApiCredentialValue(remoteApiOptions);
+    if (!credentialValue) {
+      throw new RuntimeError(
+        GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED,
+        `Codex remote API credential "${remoteApiOptions.credentialEnvVar}" is missing.`,
+        {
+          surface: CODEX_SURFACE,
+          credentialEnvVar: remoteApiOptions.credentialEnvVar,
+        },
+      );
+    }
+
+    const startedAt = Date.now();
+    const response = await this.executeRemoteApiWithRetry(
+      request.timeoutMs,
+      request.signal,
+      async ({ timeoutMs, signal }) => {
+        const controller = this.createRemoteApiAbortController(signal, timeoutMs);
+        try {
+          return await this.options.fetchImplementation(remoteApiOptions.endpoint, {
+            method: 'POST',
+            headers: {
+              authorization: `Bearer ${credentialValue}`,
+              'content-type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: remoteApiOptions.model,
+              input: request.prompt,
+            }),
+            signal: controller.signal,
+          });
+        } finally {
+          controller.cleanup();
+        }
+      },
+    );
+    const responseBodyText = await response.text();
+    if (!response.ok) {
+      throw this.createRemoteApiHttpError(response.status, responseBodyText);
+    }
+
+    const parsedBody = JSON.parse(responseBodyText) as {
+      id?: string;
+      output_text?: string;
+      output?: Array<{
+        type?: string;
+        content?: Array<{
+          type?: string;
+          text?: string;
+        }>;
+      }>;
+      usage?: {
+        input_tokens?: number;
+        output_tokens?: number;
+        total_tokens?: number;
+      };
+    };
+    const responseText = this.extractRemoteApiResponseText(parsedBody);
+    return {
+      responseId: parsedBody.id ?? null,
+      responseText,
+      ...(parsedBody.usage
+        ? {
+            usage: {
+              inputTokens: parsedBody.usage.input_tokens,
+              outputTokens: parsedBody.usage.output_tokens,
+              totalTokens: parsedBody.usage.total_tokens,
+            },
+          }
+        : {}),
+      elapsedMs: Date.now() - startedAt,
+    };
+  }
+
+  private async *executeRemoteApiStreamRequest(request: {
+    prompt: string;
+    timeoutMs: number;
+    signal?: AbortSignal;
+  }): AsyncIterable<AgentStreamEvent> {
+    const remoteApiOptions = this.requireRemoteApiOptions();
+    const credentialValue = this.resolveRemoteApiCredentialValue(remoteApiOptions);
+    if (!credentialValue) {
+      throw new RuntimeError(
+        GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED,
+        `Codex remote API credential "${remoteApiOptions.credentialEnvVar}" is missing.`,
+        {
+          surface: CODEX_SURFACE,
+          credentialEnvVar: remoteApiOptions.credentialEnvVar,
+        },
+      );
+    }
+
+    const response = await this.executeRemoteApiWithRetry(
+      request.timeoutMs,
+      request.signal,
+      async ({ timeoutMs, signal }) => {
+        const controller = this.createRemoteApiAbortController(signal, timeoutMs);
+        try {
+          return await this.options.fetchImplementation(remoteApiOptions.endpoint, {
+            method: 'POST',
+            headers: {
+              authorization: `Bearer ${credentialValue}`,
+              'content-type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: remoteApiOptions.model,
+              input: request.prompt,
+              stream: true,
+            }),
+            signal: controller.signal,
+          });
+        } finally {
+          controller.cleanup();
+        }
+      },
+    );
+    if (!response.ok) {
+      throw this.createRemoteApiHttpError(response.status, await response.text());
+    }
+    if (!response.body) {
+      throw new RuntimeError(
+        GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
+        'Codex remote API stream response body is missing.',
+        {
+          surface: CODEX_SURFACE,
+        },
+      );
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const chunkResult = await reader.read();
+      if (chunkResult.done) {
+        if (buffer.trim().length > 0) {
+          yield* this.parseRemoteApiSseChunk(buffer);
+        }
+        return;
+      }
+      buffer += decoder.decode(chunkResult.value, {
+        stream: true,
+      });
+      const rawEvents = buffer.split(CODEX_REMOTE_API_SSE_EVENT_DELIMITER);
+      buffer = rawEvents.pop() ?? '';
+      for (const rawEvent of rawEvents) {
+        yield* this.parseRemoteApiSseChunk(rawEvent);
+      }
+    }
+  }
+
+  private async executeRemoteApiWithRetry<T>(
+    timeoutMs: number,
+    signal: AbortSignal | undefined,
+    runner: (request: {
+      timeoutMs: number;
+      signal?: AbortSignal;
+    }) => Promise<T>,
+  ): Promise<T> {
+    const remoteApiOptions = this.requireRemoteApiOptions();
+    const deadlineAt = Date.now() + Math.max(1, timeoutMs);
+    let attempt = 0;
+    let lastError: unknown;
+    while (true) {
+      const remainingTimeoutMs = this.resolveRemainingRemoteApiTimeoutMs(deadlineAt, timeoutMs);
+      if (remainingTimeoutMs <= 0) {
+        throw lastError ?? this.createRemoteApiTimeoutBudgetError(timeoutMs);
+      }
+      try {
+        return await runner({
+          timeoutMs: remainingTimeoutMs,
+          ...(signal ? { signal } : {}),
+        });
+      } catch (error) {
+        lastError = error;
+        attempt += 1;
+        if (
+          attempt > remoteApiOptions.maxRetries ||
+          signal?.aborted ||
+          this.isRemoteApiAbortError(error)
+        ) {
+          throw error;
+        }
+        const remainingBudgetAfterFailure = this.resolveRemainingRemoteApiTimeoutMs(
+          deadlineAt,
+          timeoutMs,
+        );
+        const retryBackoffMs = this.resolveRemoteApiRetryBackoffMs(
+          attempt,
+          remainingBudgetAfterFailure,
+        );
+        if (retryBackoffMs <= 0) {
+          throw error;
+        }
+        await delay(retryBackoffMs, undefined, {
+          ...(signal ? { signal } : {}),
+        });
+      }
+    }
+  }
+
+  private resolveRemainingRemoteApiTimeoutMs(
+    deadlineAt: number,
+    fallbackTimeoutMs: number,
+  ): number {
+    if (!Number.isFinite(deadlineAt)) {
+      return fallbackTimeoutMs;
+    }
+    return Math.max(0, deadlineAt - Date.now());
+  }
+
+  private resolveRemoteApiRetryBackoffMs(attempt: number, remainingBudgetMs: number): number {
+    if (remainingBudgetMs <= 0) {
+      return 0;
+    }
+    return Math.max(
+      0,
+      Math.min(Math.max(1, this.options.retryBackoffMs) * attempt, remainingBudgetMs),
+    );
+  }
+
+  private isRemoteApiAbortError(error: unknown): boolean {
+    if (!error || typeof error !== 'object') {
+      return false;
+    }
+    const name = (error as { name?: unknown }).name;
+    return typeof name === 'string' && name === 'AbortError';
+  }
+
+  private createRemoteApiTimeoutBudgetError(timeoutMs: number): RuntimeError {
+    return new RuntimeError(
+      GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
+      `Codex remote API request exhausted the timeout budget of ${timeoutMs}ms.`,
+      {
+        surface: CODEX_SURFACE,
+        timeoutMs,
+      },
+    );
+  }
+
+  private createRemoteApiAbortController(
+    signal: AbortSignal | undefined,
+    timeoutMs: number,
+  ): {
+    signal: AbortSignal;
+    cleanup: () => void;
+  } {
+    const controller = new AbortController();
+    const timeoutHandle = setTimeout(() => controller.abort(), timeoutMs);
+    if (signal) {
+      if (signal.aborted) {
+        controller.abort();
+      } else {
+        signal.addEventListener('abort', () => controller.abort(), { once: true });
+      }
+    }
+    return {
+      signal: controller.signal,
+      cleanup: () => {
+        clearTimeout(timeoutHandle);
+      },
+    };
+  }
+
+  private *parseRemoteApiSseChunk(rawEvent: string): Generator<AgentStreamEvent> {
+    const dataLines = rawEvent
+      .split(/\r?\n/u)
+      .map((line) => line.trim())
+      .filter((line) => line.startsWith('data:'))
+      .map((line) => line.slice('data:'.length).trim());
+    if (dataLines.length === 0) {
+      return;
+    }
+
+    const payloadText = dataLines.join('\n');
+    if (payloadText === '[DONE]') {
+      return;
+    }
+
+    const payload = JSON.parse(payloadText) as {
+      type?: string;
+      delta?: string;
+      response?: {
+        id?: string;
+      };
+    };
+    if (payload.type === 'response.output_text.delta' && typeof payload.delta === 'string') {
+      yield {
+        eventType: AgentStreamEventType.TOKEN,
+        timestamp: new Date().toISOString(),
+        processId: '',
+        executionId: '',
+        stageId: '',
+        routeKey: '',
+        payload: {
+          delta: payload.delta,
+          text: payload.delta,
+        },
+      };
+      return;
+    }
+
+    if (payload.type === 'response.completed') {
+      yield {
+        eventType: AgentStreamEventType.COMPLETED,
+        timestamp: new Date().toISOString(),
+        processId: '',
+        executionId: '',
+        stageId: '',
+        routeKey: '',
+        payload: {
+          status: 'completed',
+          remoteResponseId: payload.response?.id ?? null,
+        },
+      };
+    }
+  }
+
+  private extractRemoteApiResponseText(payload: {
+    output_text?: string;
+    output?: Array<{
+      type?: string;
+      content?: Array<{
+        type?: string;
+        text?: string;
+      }>;
+    }>;
+  }): string {
+    if (typeof payload.output_text === 'string' && payload.output_text.trim().length > 0) {
+      return payload.output_text;
+    }
+
+    const contentText = (payload.output ?? [])
+      .flatMap((outputItem) => outputItem.content ?? [])
+      .map((contentItem) => contentItem.text ?? '')
+      .join('')
+      .trim();
+    if (contentText.length > 0) {
+      return contentText;
+    }
+
+    throw new RuntimeError(
+      GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
+      'Codex remote API returned no output text.',
+      {
+        surface: CODEX_SURFACE,
+      },
+    );
+  }
+
+  private resolveRemoteApiProbeFailureReasons(
+    error: unknown,
+    remoteApiOptions: ResolvedCodexRemoteApiOptions,
+  ): string[] {
+    const standardizedError = standardizeError(error);
+    const detail = JSON.stringify(standardizedError.details ?? {});
+    if (detail.includes('"httpStatus":401') || detail.includes('"httpStatus":403')) {
+      return [`credential_invalid:${CODEX_SURFACE}:${remoteApiOptions.credentialEnvVar}`];
+    }
+    if (detail.includes('"httpStatus":429')) {
+      return [`provider_rate_limited:${CODEX_SURFACE}`];
+    }
+    return [`endpoint_unreachable:${CODEX_SURFACE}`];
+  }
+
+  private createRemoteApiHttpError(status: number, bodyText: string): RuntimeError {
+    return new RuntimeError(
+      GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
+      `Codex remote API request failed with status ${String(status)}.`,
+      {
+        surface: CODEX_SURFACE,
+        httpStatus: status,
+        responseBodySnippet: bodyText.slice(0, 400),
+      },
+    );
+  }
+
+  private requireRemoteApiOptions(): ResolvedCodexRemoteApiOptions {
+    const remoteApiOptions = this.resolveRemoteApiOptions();
+    if (remoteApiOptions) {
+      return remoteApiOptions;
+    }
+    throw new RuntimeError(
+      GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
+      'Codex remote API transport requires remoteApi config.',
+      {
+        surface: CODEX_SURFACE,
+      },
+    );
   }
 
   /**

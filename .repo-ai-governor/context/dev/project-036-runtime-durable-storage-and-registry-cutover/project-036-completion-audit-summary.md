@@ -25,6 +25,7 @@
 9. post-closeout follow-up：完成 live activity viewport hardening，运行中的 `live_activity` 改为受控窗口渲染；完整日志历史仍然保留，但 live shell 不会再随着流式日志无限长高，用户可以在任务进行中用 `PgUp/PgDn/Home/End` 浏览旧日志。
 10. post-closeout follow-up：完成 agent reply history fix，`agent_message/token` 草稿现在会被镜像成可更新的 role reply 活动条目，并在 completed/failed turn execution details 中保留最新快照；reviewer 等角色的文本输出不再只停留在瞬时草稿区，而是能跟 command/todo/thinking 一起进入执行过程历史。
 11. post-closeout follow-up：完成 timeout/liveness 技术方案 draft，明确后续 invoke 治理应从“固定 timeout 到点打断”转向“process liveness + transport activity + semantic progress + graceful interrupt + hard-timeout fuse”的统一状态机，并补齐一手外部资料作为决策依据。
+12. post-closeout follow-up：完成 agent invoke liveness / timeout governance formal promotion，该方案已正式并入 `runtime.agent-projection`，形成 `contract.runtime.agent-invoke-liveness.v1`、ADR、delivery ownership、promotion review 与 handoff artifact。
 
 ## 3. Verification Evidence
 
@@ -59,8 +60,17 @@
 29. `/opt/homebrew/bin/node ./scripts/governance/check-sprint-plan-status-sync.js`
 30. `/opt/homebrew/bin/node ./scripts/governance/check-task-ledger-sync.js`
 31. `/opt/homebrew/bin/node ./scripts/governance/check-sprint-plan-status-sync.js`
+32. `/opt/homebrew/bin/node ./scripts/governance/check-technical-solution-lifecycle-registry.js`
+33. `/opt/homebrew/bin/node ./scripts/governance/check-technical-solution-delivery-registry.js`
+34. `/opt/homebrew/bin/node ./scripts/governance/check-technical-solution-module-graph.js`
+35. `/opt/homebrew/bin/node ./scripts/governance/check-normative-loading-manifest.js --mode block`
+36. `/opt/homebrew/bin/node ./scripts/governance/check-docs-triad-sync.js`
+37. `/opt/homebrew/bin/node ./scripts/governance/check-task-ledger-sync.js`
+38. `/opt/homebrew/bin/node ./scripts/governance/check-sprint-plan-status-sync.js`
+39. `/opt/homebrew/bin/node ./scripts/governance/check-code-review-status-sync.js`
+40. `/opt/homebrew/bin/node ./scripts/governance/check-artifact-registry-lifecycle.js`
 
 ## 4. Residual Notes
 
 1. artifact lifecycle auto-maintenance 已具备批次摘要与 dry-run 能力；在当前仓库数据上 dry-run 会标记一批长期无依赖的 active artifacts 为 `deprecated`，后续执行 apply 前应结合运营节奏确认阈值。
-2. 当前未激活下一条 primary execution stream，因此 `project-036 / sprint-004` 会临时保留为 closeout surface，直到新的主执行流被显式声明。
+2. `technical-solution.agent-invoke-liveness-and-timeout-governance` 的后续实现已在同日切换到 `project-037-agent-invoke-liveness-and-timeout-governance-rollout`；因此 `project-036 / sprint-004` 不再承担 active closeout surface 角色，后续仅保留历史审计用途。

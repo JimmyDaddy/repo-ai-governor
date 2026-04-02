@@ -1,3 +1,4 @@
+import type { AdapterRemoteApiConfig } from '@repo-ai-governor/shared';
 import type {
   AgentAvailabilityStatus,
   AgentCliExecOperation,
@@ -55,5 +56,7 @@ export interface AgentCliAdapterOptions<TExecRunner = AgentCliExecRunner> {
   probeCacheTtlMs?: number;
   maxRetryAttempts?: number;
   retryBackoffMs?: number;
+  remoteApi?: AdapterRemoteApiConfig;
+  fetchImplementation?: typeof fetch;
   execRunner?: TExecRunner;
 }

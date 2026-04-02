@@ -11,9 +11,12 @@
   - `.repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-durable-storage/adrs/sqlite-fs-default-runtime-truth-and-rendered-csv-views.md`
   - `.repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/module-overview.md`
   - `.repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/contracts/adapter-health-and-route-probe-contract.md`
+  - `.repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/contracts/agent-invoke-liveness-contract.md`
   - `.repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/layered-adapter-health-check-and-route-capability-probe.md`
+  - `.repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/agent-invoke-liveness-and-timeout-governance.md`
   - `.repo-ai-governor/draft/runtime-session-durable-memory-and-sqlite-fs-cutover-technical-solution.md`
   - `.repo-ai-governor/draft/layered-adapter-health-check-and-route-probe-technical-solution.md`
+  - `.repo-ai-governor/draft/agent-invoke-liveness-and-timeout-governance-technical-solution.md`
   - `.repo-ai-governor/context/dev/project-035-session-main-supervisor-and-role-subagent-productization/sprint-004-streaming-and-host-parity/tasks/TK-474-promote-runtime-durable-storage-and-sqlite-fs-cutover-solution-into-formal-module-docs.md`
 
 ## 1. 目标
@@ -47,7 +50,7 @@
 
 - Status: completed
 - Sprint Goal: 收口 migration、doctor/verify、rebuild/render、artifact lifecycle automation 与 cutover governance，确保新旧工作区都有明确升级路径。
-- Task Package: `TK-479`、`TK-480`、`TK-481`、`TK-482`、`TK-483`、`TK-484`。
+- Task Package: `TK-479`、`TK-480`、`TK-481`、`TK-482`、`TK-483`、`TK-484`、`TK-485`。
 
 ## 3. 任务拆解矩阵（WBS）
 
@@ -63,6 +66,7 @@
 | TK-482 | sprint-004 | implement layered adapter health check contract and shared probe runtime baseline | runtime/adapter-health-check | TK-479、TK-481 | completed |
 | TK-483 | sprint-004 | align codex copilot claude and ollama probes with layered auth protocol route semantics | runtime/adapter-probes | TK-482 | completed |
 | TK-484 | sprint-004 | route doctor verify and role fallback through layered health check diagnostics | cli/routing-diagnostics | TK-482、TK-483 | completed |
+| TK-485 | sprint-004 | promote agent invoke liveness and timeout governance solution into runtime-agent-projection formal docs | docs/promotion | TK-479 | completed |
 
 ## 4. 依赖产物策略
 
@@ -101,3 +105,5 @@
 16. 2026-04-02：完成 post-closeout live activity viewport hardening；运行中的 `live_activity` 现在只渲染可滚动窗口而非无限增高的整段日志，完整历史仍保留，且用户可在任务进行中用 `PgUp/PgDn/Home/End` 浏览旧日志，不必再等到输出结束后才能恢复正常阅读。
 17. 2026-04-02：完成 post-closeout agent reply history fix；session shell 现在会把 `agent_message/token` 草稿同步成可更新的 role reply 活动条目，并在 completed/failed turn execution details 中保留最新快照，确保 reviewer 等角色的非命令文本输出也能稳定进入执行过程历史。
 18. 2026-04-02：完成 post-closeout timeout/liveness 技术方案 draft；在 `.repo-ai-governor/draft/agent-invoke-liveness-and-timeout-governance-technical-solution.md` 中正式提出“hard timeout 只做最后保险丝，多信号 liveness 判定作为主判断”的长期路线，供后续任务拆分与 formal promotion 使用。
+19. 2026-04-02：完成 `TK-485` formal promotion；`agent invoke liveness / timeout governance` 已正式并入 `runtime.agent-projection` 模块，形成 invoke-liveness contract、ADR、delivery ownership、promotion review 与 rollout handoff artifact。
+20. 2026-04-02：基于 `TK-485` 的 follow-up handoff，正式激活 `project-037-agent-invoke-liveness-and-timeout-governance-rollout` 作为独立 implementation stream；`project-036` 自此退出 temporary closeout surface，只保留 completed audit / history 角色。

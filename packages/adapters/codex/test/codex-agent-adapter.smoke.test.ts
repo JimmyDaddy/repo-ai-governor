@@ -9,7 +9,12 @@ import {
   AgentStreamEventType,
   type AgentStreamEventsRequest,
 } from '@repo-ai-governor/adapter-sdk';
-import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
+import {
+  AdapterProviderKind,
+  AdapterVendorBindingKind,
+  GovernorErrorCode,
+  RuntimeError,
+} from '@repo-ai-governor/shared';
 import {
   CodexAgentAdapter,
   CodexAgentAdapterExecutionMode,
@@ -115,6 +120,120 @@ describe('codex-agent-adapter smoke', () => {
     expect(invokeResult.output.threadId).toBe('thread-1');
     expect(invokeResult.usage?.totalTokens).toBe(18);
     expect(execRunner).toHaveBeenCalledTimes(2);
+  });
+
+  it('supports remote_api probe and invoke through OpenAI-compatible fetch', async () => {
+    const fetchImplementation = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        text: async () =>
+          JSON.stringify({
+            id: 'resp-probe',
+            output_text: 'OK',
+            usage: {
+              input_tokens: 3,
+              output_tokens: 1,
+              total_tokens: 4,
+            },
+          }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        text: async () =>
+          JSON.stringify({
+            id: 'resp-invoke',
+            output_text: 'remote codex response',
+            usage: {
+              input_tokens: 8,
+              output_tokens: 5,
+              total_tokens: 13,
+            },
+          }),
+      } as Response);
+    const adapter = new CodexAgentAdapter({
+      executionMode: CodexAgentAdapterExecutionMode.REMOTE_API,
+      fetchImplementation,
+      environment: {
+        OPENAI_API_KEY: 'test-key',
+      },
+      remoteApi: {
+        provider: AdapterProviderKind.OPENAI,
+        vendorBinding: AdapterVendorBindingKind.OPENAI_RESPONSES,
+        model: 'gpt-5',
+      },
+    });
+
+    const probeResult = await adapter.probe({
+      routeKey: 'cli.adapter.probe.codex',
+    });
+    const invokeResult = await adapter.invokeStage(createInvokeRequest());
+
+    expect(probeResult.availabilityStatus).toBe('available');
+    expect(probeResult.healthCheck?.transportKind).toBe('remote_api');
+    expect(probeResult.healthCheck?.providerKind).toBe(AdapterProviderKind.OPENAI);
+    expect(invokeResult.output.responseText).toBe('remote codex response');
+    expect(invokeResult.output.remoteResponseId).toBe('resp-invoke');
+    expect(fetchImplementation).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not restart remote_api fetch with a fresh timeout budget after one timed-out attempt', async () => {
+    const fetchImplementation = vi.fn<typeof fetch>().mockImplementation(async (_input, init) => {
+      if (init?.signal?.aborted) {
+        throw new DOMException('The operation was aborted.', 'AbortError');
+      }
+      await new Promise<never>((_, reject) => {
+        init?.signal?.addEventListener(
+          'abort',
+          () => reject(new DOMException('The operation was aborted.', 'AbortError')),
+          { once: true },
+        );
+      });
+    });
+    const adapter = new CodexAgentAdapter({
+      executionMode: CodexAgentAdapterExecutionMode.REMOTE_API,
+      fetchImplementation,
+      environment: {
+        OPENAI_API_KEY: 'test-key',
+      },
+      requestTimeoutMs: 20,
+      remoteApi: {
+        provider: AdapterProviderKind.OPENAI,
+        vendorBinding: AdapterVendorBindingKind.OPENAI_RESPONSES,
+        model: 'gpt-5',
+        maxRetries: 2,
+      },
+    });
+
+    await expect(adapter.invokeStage(createInvokeRequest())).rejects.toMatchObject({
+      name: 'AbortError',
+    });
+    expect(fetchImplementation).toHaveBeenCalledTimes(1);
+  });
+
+  it('fails closed when remote_api credentialRef is configured directly on the adapter', async () => {
+    const adapter = new CodexAgentAdapter({
+      executionMode: CodexAgentAdapterExecutionMode.REMOTE_API,
+      environment: {
+        OPENAI_API_KEY: 'test-key',
+      },
+      remoteApi: {
+        provider: AdapterProviderKind.OPENAI,
+        vendorBinding: AdapterVendorBindingKind.OPENAI_RESPONSES,
+        model: 'gpt-5',
+        credentialRef: 'secret://openai/api-key',
+      },
+    });
+
+    await expect(
+      adapter.probe({
+        routeKey: 'cli.adapter.probe.codex',
+      }),
+    ).rejects.toMatchObject({
+      code: GovernorErrorCode.AGENT_PROTOCOL_INVALID,
+    });
   });
 
   it('accepts trivial punctuation variants in probe health-check responses', async () => {

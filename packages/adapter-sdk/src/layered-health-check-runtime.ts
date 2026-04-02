@@ -1,3 +1,11 @@
+import {
+  type AdapterCredentialSource,
+  type AdapterEndpointSource,
+  type AdapterProviderKind,
+  AdapterRequestCancellationMode,
+  type AdapterTransportKind,
+  type AdapterVendorBindingKind,
+} from '@repo-ai-governor/shared';
 import { AgentAvailabilityStatus } from './constants/index.js';
 import type {
   AgentHealthCheckDiagnostic,
@@ -30,6 +38,13 @@ export interface BuildLayeredHealthCheckInput {
   diagnostics?: AgentHealthCheckDiagnostic[];
   unsupportedCapabilities?: string[];
   degradedCapabilities?: string[];
+  transportKind?: AdapterTransportKind | null;
+  providerKind?: AdapterProviderKind | null;
+  vendorBindingKind?: AdapterVendorBindingKind | null;
+  model?: string | null;
+  credentialSource?: AdapterCredentialSource | null;
+  endpointSource?: AdapterEndpointSource | null;
+  requestCancellationMode?: AdapterRequestCancellationMode;
 }
 
 /**
@@ -130,6 +145,14 @@ export function buildLayeredHealthCheckResult(
     routeKey: input.routeKey,
     routeRequirements: [...(input.routeRequirements ?? [])],
     fallbackAllowed: input.fallbackAllowed ?? true,
+    transportKind: input.transportKind ?? null,
+    providerKind: input.providerKind ?? null,
+    vendorBindingKind: input.vendorBindingKind ?? null,
+    model: input.model ?? null,
+    credentialSource: input.credentialSource ?? null,
+    endpointSource: input.endpointSource ?? null,
+    requestCancellationMode:
+      input.requestCancellationMode ?? AdapterRequestCancellationMode.NOT_SUPPORTED,
   };
 }
 

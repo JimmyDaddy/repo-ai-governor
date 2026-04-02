@@ -1,7 +1,7 @@
 # Runtime CLI Interactive Shell Module Overview
 
 - Status: active
-- Date: 2026-04-01
+- Date: 2026-04-02
 - Module ID: `runtime.cli-interactive-shell`
 - Owner: runtime
 - Layer: `runtime-core`
@@ -21,6 +21,7 @@
 7. 为命令执行期的 progress sink、AbortSignal cancel seam 与 React shell running panel 定义统一产品边界，但不让命令 executor 直接持有 Ink/React 实例。
 8. 为 session-shell transcript 的 render-kind、command recap / collaboration recap / system notice 分层、assistant Markdown 内容块，以及 `session.main` live draft / thinking / tool-use 的 transcript-native 呈现定义正式 presenter 方向，但不把真正的命令 running dock 退化为 append-only transcript 日志。
 9. 为 service-owned `session.main` supervisor 的 answer / follow-up / command handoff / low-risk direct-execute skill / role-collaboration 结果提供统一 transcript 与 recap presenter seam，并在 `preview_confirm` 与 `direct_execute` continuity 之间保持一致的 shell surface，但不在 CLI 侧重新拥有 supervisor runtime 决策逻辑。
+10. 消费 service-owned `session.main` capability explanation turn metadata，包括 capability answer kind、referenced capability ids 与 suggested follow-up actions，并把它们渲染为 transcript-native affordance；但不得把这些 affordance 升级为本地自动执行器，也不得把 shell-local builtin commands 误建模成 orchestration-owned capability truth。
 
 ## 3. 非目标
 
@@ -67,6 +68,7 @@
 10. 截至 `2026-03-31`，`v5.1` presenter semantics 已补充 `collaboration_recap` render-kind；role-based parallel/serial collaboration 的 recap、worker summary 与 handoff context 必须通过独立 transcript kind 呈现，避免继续挤占通用 `markdown` 或 `command_recap` 语义槽位。
 11. 截至 `2026-04-01`，在既有 `v5` supervisor formal direction 基础上，已进一步接受“conversation-first chatability + risk-tiered natural-language skill handoff”；session shell 现需同时消费 `preview_confirm` 与 `direct_execute` 两类受治理 continuity，并以同一份 shared session truth 呈现 `help`、`doctor`、`verify` 与 scope-resolved `review` 等低风险 skill 的执行/回放语义。
 12. 截至 `2026-04-01`，`session.main` streaming presenter 已接受“transcript-first live conversation”补充方向：对话流的 draft/thinking/tool-use 应优先进入 transcript 主画布，只有真正的命令执行进度继续停留在 progress panel / running dock。
+13. 截至 `2026-04-02`，`v6` formal direction 已接受“service-owned capability explainer + contextual command guidance”补充方向：session shell 必须消费 capability explanation turn metadata 与 suggested-action affordance，但 governed capability catalog 只拥有可解释的 bridge capabilities，`/confirm`、`/cancel`、`/clear`、`/exit`、`/resume` 等 shell-local builtins 继续留在 CLI registry 本地治理。
 
 ## 9. Detail Docs
 

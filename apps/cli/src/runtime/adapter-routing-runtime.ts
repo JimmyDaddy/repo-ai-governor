@@ -25,6 +25,7 @@ import type { AdaptersConfig } from '@repo-ai-governor/config';
 import {
   AdapterAvailability,
   AdapterSurface,
+  AdapterTransportKind,
   GovernorErrorCode,
   RuntimeError,
 } from '@repo-ai-governor/shared';
@@ -319,10 +320,16 @@ export class CliAdapterRoutingRuntime {
       unavailableReasons: string[];
     },
   ): AgentProtocolContract {
+    const transportKind = this.resolveSurfaceTransportKind(surface, toolConfig);
     if (surface === AdapterSurface.CODEX) {
       return new CodexAgentAdapter({
         ...adapterOptions,
-        executionMode: CodexAgentAdapterExecutionMode.CLI_EXEC,
+        executionMode: this.resolveCodexExecutionMode(transportKind),
+        ...(toolConfig?.remoteApi
+          ? {
+              remoteApi: toolConfig.remoteApi,
+            }
+          : {}),
         ...(this.options.codexExecRunner
           ? {
               execRunner: this.options.codexExecRunner,
@@ -334,7 +341,10 @@ export class CliAdapterRoutingRuntime {
     if (surface === AdapterSurface.GITHUB_COPILOT) {
       return new GithubCopilotAgentAdapter({
         ...adapterOptions,
-        executionMode: GithubCopilotAgentAdapterExecutionMode.CLI_EXEC,
+        executionMode:
+          transportKind === AdapterTransportKind.BASELINE
+            ? GithubCopilotAgentAdapterExecutionMode.BASELINE
+            : GithubCopilotAgentAdapterExecutionMode.CLI_EXEC,
         ...(this.options.githubCopilotExecRunner
           ? {
               execRunner: this.options.githubCopilotExecRunner,
@@ -346,7 +356,12 @@ export class CliAdapterRoutingRuntime {
     if (surface === AdapterSurface.CLAUDE_CODE) {
       return new ClaudeCodeAgentAdapter({
         ...adapterOptions,
-        executionMode: ClaudeCodeAgentAdapterExecutionMode.CLI_EXEC,
+        executionMode: this.resolveClaudeCodeExecutionMode(transportKind),
+        ...(toolConfig?.remoteApi
+          ? {
+              remoteApi: toolConfig.remoteApi,
+            }
+          : {}),
         ...(this.options.claudeCodeExecRunner
           ? {
               execRunner: this.options.claudeCodeExecRunner,
@@ -379,8 +394,53 @@ export class CliAdapterRoutingRuntime {
       configuredAvailability: toolConfig?.availability ?? null,
       availabilityStatus: adapterOptions.availabilityStatus,
       unavailableReasons: [...adapterOptions.unavailableReasons].sort(),
+      transportKind: this.resolveSurfaceTransportKind(surface, toolConfig),
+      remoteApi: toolConfig?.remoteApi ?? null,
       localModel: toolConfig?.localModel ?? null,
     });
+  }
+
+  private resolveSurfaceTransportKind(
+    surface: AdapterSurface,
+    toolConfig: NonNullable<AdaptersConfig['tools']>[number] | undefined,
+  ): AdapterTransportKind {
+    if (toolConfig?.transport) {
+      return toolConfig.transport;
+    }
+    if (toolConfig?.remoteApi) {
+      return AdapterTransportKind.REMOTE_API;
+    }
+    if (surface === AdapterSurface.CODEX || surface === AdapterSurface.GITHUB_COPILOT) {
+      return AdapterTransportKind.CLI_EXEC;
+    }
+    if (surface === AdapterSurface.CLAUDE_CODE) {
+      return AdapterTransportKind.CLI_EXEC;
+    }
+    return AdapterTransportKind.BASELINE;
+  }
+
+  private resolveCodexExecutionMode(
+    transportKind: AdapterTransportKind,
+  ): CodexAgentAdapterExecutionMode {
+    if (transportKind === AdapterTransportKind.BASELINE) {
+      return CodexAgentAdapterExecutionMode.BASELINE;
+    }
+    if (transportKind === AdapterTransportKind.REMOTE_API) {
+      return CodexAgentAdapterExecutionMode.REMOTE_API;
+    }
+    return CodexAgentAdapterExecutionMode.CLI_EXEC;
+  }
+
+  private resolveClaudeCodeExecutionMode(
+    transportKind: AdapterTransportKind,
+  ): ClaudeCodeAgentAdapterExecutionMode {
+    if (transportKind === AdapterTransportKind.BASELINE) {
+      return ClaudeCodeAgentAdapterExecutionMode.BASELINE;
+    }
+    if (transportKind === AdapterTransportKind.REMOTE_API) {
+      return ClaudeCodeAgentAdapterExecutionMode.REMOTE_API;
+    }
+    return ClaudeCodeAgentAdapterExecutionMode.CLI_EXEC;
   }
 
   private resolveProtocolCache(): Map<

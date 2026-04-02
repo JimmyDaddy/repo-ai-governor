@@ -1,5 +1,10 @@
 import type { AdaptersConfig } from '@repo-ai-governor/config';
-import { AdapterAvailability, AdapterSurface } from '@repo-ai-governor/shared';
+import {
+  AdapterAvailability,
+  AdapterProviderKind,
+  AdapterSurface,
+  AdapterTransportKind,
+} from '@repo-ai-governor/shared';
 import { CliAdapterRoutingRuntime } from '../../src/runtime/adapter-routing-runtime.js';
 
 describe('Cli adapter routing runtime', () => {
@@ -103,6 +108,32 @@ describe('Cli adapter routing runtime', () => {
     );
     expect(protocolBySurfaceB[AdapterSurface.CLAUDE_CODE]).toBe(
       protocolBySurfaceA[AdapterSurface.CLAUDE_CODE],
+    );
+  });
+
+  it('rebuilds the codex protocol when transport flips from cli_exec to remote_api', () => {
+    const runtime = new CliAdapterRoutingRuntime(adaptersConfig);
+    const baselineToolConfigBySurface = runtime.createToolConfigBySurfaceMap();
+    const protocolBySurfaceA = runtime.createProtocolBySurface(baselineToolConfigBySurface);
+    const reconfiguredToolConfigBySurface = new Map(baselineToolConfigBySurface);
+    const codexToolConfig = baselineToolConfigBySurface.get(AdapterSurface.CODEX);
+    expect(codexToolConfig).toBeDefined();
+    reconfiguredToolConfigBySurface.set(AdapterSurface.CODEX, {
+      ...codexToolConfig,
+      transport: AdapterTransportKind.REMOTE_API,
+      remoteApi: {
+        provider: AdapterProviderKind.OPENAI,
+        model: 'gpt-5',
+      },
+    });
+
+    const protocolBySurfaceB = runtime.createProtocolBySurface(reconfiguredToolConfigBySurface);
+
+    expect(protocolBySurfaceB[AdapterSurface.CODEX]).not.toBe(
+      protocolBySurfaceA[AdapterSurface.CODEX],
+    );
+    expect(protocolBySurfaceB[AdapterSurface.GITHUB_COPILOT]).toBe(
+      protocolBySurfaceA[AdapterSurface.GITHUB_COPILOT],
     );
   });
 });

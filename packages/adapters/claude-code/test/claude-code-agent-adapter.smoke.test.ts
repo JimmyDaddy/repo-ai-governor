@@ -11,7 +11,12 @@ import {
   AgentStreamEventType,
   type AgentStreamEventsRequest,
 } from '@repo-ai-governor/adapter-sdk';
-import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
+import {
+  AdapterProviderKind,
+  AdapterVendorBindingKind,
+  GovernorErrorCode,
+  RuntimeError,
+} from '@repo-ai-governor/shared';
 import {
   ClaudeCodeAgentAdapter,
   ClaudeCodeAgentAdapterExecutionMode,
@@ -142,6 +147,146 @@ describe('claude-code-agent-adapter smoke', () => {
 
     expect(invokeResult.output.adapterSurface).toBe('claude-code');
     expect(invokeResult.output.responseText).toContain('simulated claude code response');
+  });
+
+  it('supports remote_api probe and invoke through Anthropic-compatible fetch', async () => {
+    const fetchImplementation = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        text: async () =>
+          JSON.stringify({
+            id: 'msg-probe',
+            content: [
+              {
+                type: 'text',
+                text: 'OK',
+              },
+            ],
+            usage: {
+              input_tokens: 4,
+              output_tokens: 1,
+            },
+          }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        text: async () =>
+          JSON.stringify({
+            id: 'msg-invoke',
+            content: [
+              {
+                type: 'text',
+                text: 'remote claude response',
+              },
+            ],
+            usage: {
+              input_tokens: 7,
+              output_tokens: 5,
+            },
+          }),
+      } as Response);
+    const adapter = new ClaudeCodeAgentAdapter({
+      executionMode: ClaudeCodeAgentAdapterExecutionMode.REMOTE_API,
+      fetchImplementation,
+      environment: {
+        ANTHROPIC_API_KEY: 'test-key',
+      },
+      remoteApi: {
+        provider: AdapterProviderKind.ANTHROPIC,
+        vendorBinding: AdapterVendorBindingKind.ANTHROPIC_MESSAGES,
+        model: 'claude-sonnet-4-5',
+      },
+    });
+
+    const probeResult = await adapter.probe({
+      routeKey: 'cli.adapter.probe.claude-code',
+    });
+    const invokeResult = await adapter.invokeStage({
+      processId: 'process-1',
+      executionId: 'execution-1',
+      stageId: 'stage-1',
+      routeKey: 'codegen',
+      input: {
+        prompt: 'implement feature',
+      },
+    });
+
+    expect(probeResult.availabilityStatus).toBe('available');
+    expect(probeResult.healthCheck?.transportKind).toBe('remote_api');
+    expect(probeResult.healthCheck?.providerKind).toBe(AdapterProviderKind.ANTHROPIC);
+    expect(invokeResult.output.responseText).toBe('remote claude response');
+    expect(invokeResult.output.remoteMessageId).toBe('msg-invoke');
+    expect(fetchImplementation).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not restart remote_api fetch with a fresh timeout budget after one timed-out attempt', async () => {
+    const fetchImplementation = vi.fn<typeof fetch>().mockImplementation(async (_input, init) => {
+      if (init?.signal?.aborted) {
+        throw new DOMException('The operation was aborted.', 'AbortError');
+      }
+      await new Promise<never>((_, reject) => {
+        init?.signal?.addEventListener(
+          'abort',
+          () => reject(new DOMException('The operation was aborted.', 'AbortError')),
+          { once: true },
+        );
+      });
+    });
+    const adapter = new ClaudeCodeAgentAdapter({
+      executionMode: ClaudeCodeAgentAdapterExecutionMode.REMOTE_API,
+      fetchImplementation,
+      environment: {
+        ANTHROPIC_API_KEY: 'test-key',
+      },
+      requestTimeoutMs: 20,
+      remoteApi: {
+        provider: AdapterProviderKind.ANTHROPIC,
+        vendorBinding: AdapterVendorBindingKind.ANTHROPIC_MESSAGES,
+        model: 'claude-sonnet-4-5',
+        maxRetries: 2,
+      },
+    });
+
+    await expect(
+      adapter.invokeStage({
+        processId: 'process-1',
+        executionId: 'execution-1',
+        stageId: 'stage-1',
+        routeKey: 'codegen',
+        input: {
+          prompt: 'implement feature',
+        },
+      }),
+    ).rejects.toMatchObject({
+      name: 'AbortError',
+    });
+    expect(fetchImplementation).toHaveBeenCalledTimes(1);
+  });
+
+  it('fails closed when remote_api credentialRef is configured directly on the adapter', async () => {
+    const adapter = new ClaudeCodeAgentAdapter({
+      executionMode: ClaudeCodeAgentAdapterExecutionMode.REMOTE_API,
+      environment: {
+        ANTHROPIC_API_KEY: 'test-key',
+      },
+      remoteApi: {
+        provider: AdapterProviderKind.ANTHROPIC,
+        vendorBinding: AdapterVendorBindingKind.ANTHROPIC_MESSAGES,
+        model: 'claude-sonnet-4-5',
+        credentialRef: 'secret://anthropic/api-key',
+      },
+    });
+
+    await expect(
+      adapter.probe({
+        routeKey: 'cli.adapter.probe.claude-code',
+      }),
+    ).rejects.toMatchObject({
+      code: GovernorErrorCode.AGENT_PROTOCOL_INVALID,
+    });
   });
 
   it('passes no-tool command arguments when chat-only policy forbids tool use', async () => {

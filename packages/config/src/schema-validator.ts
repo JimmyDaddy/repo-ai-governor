@@ -1,6 +1,9 @@
 import {
   AdapterAvailability,
+  AdapterProviderKind,
   AdapterSurface,
+  AdapterTransportKind,
+  AdapterVendorBindingKind,
   CLI_REACT_THEME_VALUES,
   I18N_RUNTIME_ENGINE,
   LocalModelProvider,
@@ -12,6 +15,7 @@ import {
   WorkspaceMigrationPolicy,
   WorkspaceMode,
 } from '@repo-ai-governor/shared';
+import type { AdapterRemoteApiConfig } from '@repo-ai-governor/shared';
 import type { CliReactThemePreset } from '@repo-ai-governor/shared';
 import { ConfigError, GovernorErrorCode } from '@repo-ai-governor/shared';
 import { GovernorSchemaVersion, SUPPORTED_GOVERNOR_SCHEMA_VERSIONS } from './constants/index.js';
@@ -38,6 +42,9 @@ const ROLE_SOURCE_VALUES = new Set<string>(Object.values(RoleSource));
 const ROLE_PROFILE_STATUS_VALUES = new Set<string>(Object.values(RoleProfileStatus));
 const ADAPTER_SURFACE_VALUES = new Set<string>(Object.values(AdapterSurface));
 const ADAPTER_AVAILABILITY_VALUES = new Set<string>(Object.values(AdapterAvailability));
+const ADAPTER_TRANSPORT_KIND_VALUES = new Set<string>(Object.values(AdapterTransportKind));
+const ADAPTER_PROVIDER_KIND_VALUES = new Set<string>(Object.values(AdapterProviderKind));
+const ADAPTER_VENDOR_BINDING_KIND_VALUES = new Set<string>(Object.values(AdapterVendorBindingKind));
 const LOCAL_MODEL_PROVIDER_VALUES = new Set<string>(Object.values(LocalModelProvider));
 const MEMORY_PROVIDER_MODULE_PACKAGE_SPECIFIER_PATTERN =
   /^(?:@[a-z0-9][a-z0-9-.]*\/)?[a-z0-9][a-z0-9-.]*$/u;
@@ -895,7 +902,15 @@ export class SchemaValidator {
       const toolRecord = this.expectRecord(entry, toolPointer);
       this.assertNoUnknownKeys(
         toolRecord,
-        new Set(['toolId', 'enabled', 'availability', 'unavailableReasons', 'localModel']),
+        new Set([
+          'toolId',
+          'enabled',
+          'availability',
+          'unavailableReasons',
+          'transport',
+          'remoteApi',
+          'localModel',
+        ]),
         toolPointer,
       );
 
@@ -917,10 +932,43 @@ export class SchemaValidator {
         toolRecord.unavailableReasons,
         `${toolPointer}/unavailableReasons`,
       );
+      const transport = this.resolveAdapterTransportKind(
+        toolRecord.transport,
+        `${toolPointer}/transport`,
+      );
+      const remoteApi = this.validateAdapterToolRemoteApi(
+        toolRecord.remoteApi,
+        `${toolPointer}/remoteApi`,
+        toolId,
+      );
       if (toolId !== AdapterSurface.OLLAMA && toolRecord.localModel !== undefined) {
         this.throwConfigSchemaValidationError(
           `${toolPointer}/localModel is only supported when toolId="${AdapterSurface.OLLAMA}".`,
           `${toolPointer}/localModel`,
+        );
+      }
+      if (toolId === AdapterSurface.OLLAMA && toolRecord.transport !== undefined) {
+        this.throwConfigSchemaValidationError(
+          `${toolPointer}/transport is not supported when toolId="${AdapterSurface.OLLAMA}".`,
+          `${toolPointer}/transport`,
+        );
+      }
+      if (toolId === AdapterSurface.OLLAMA && toolRecord.remoteApi !== undefined) {
+        this.throwConfigSchemaValidationError(
+          `${toolPointer}/remoteApi is not supported when toolId="${AdapterSurface.OLLAMA}".`,
+          `${toolPointer}/remoteApi`,
+        );
+      }
+      if (remoteApi && transport && transport !== AdapterTransportKind.REMOTE_API) {
+        this.throwConfigSchemaValidationError(
+          `${toolPointer}/transport must be "${AdapterTransportKind.REMOTE_API}" when remoteApi is configured.`,
+          `${toolPointer}/transport`,
+        );
+      }
+      if (!remoteApi && transport === AdapterTransportKind.REMOTE_API) {
+        this.throwConfigSchemaValidationError(
+          `${toolPointer}/remoteApi is required when transport="${AdapterTransportKind.REMOTE_API}".`,
+          `${toolPointer}/remoteApi`,
         );
       }
       const localModel = this.validateAdapterToolLocalModel(
@@ -928,12 +976,15 @@ export class SchemaValidator {
         `${toolPointer}/localModel`,
         toolId === AdapterSurface.OLLAMA,
       );
+      const resolvedTransport = remoteApi ? AdapterTransportKind.REMOTE_API : transport;
 
       return {
         toolId,
         ...(enabled !== undefined ? { enabled } : {}),
         ...(availability ? { availability } : {}),
         ...(unavailableReasons ? { unavailableReasons } : {}),
+        ...(resolvedTransport ? { transport: resolvedTransport } : {}),
+        ...(remoteApi ? { remoteApi } : {}),
         ...(localModel ? { localModel } : {}),
       };
     });
@@ -1033,6 +1084,184 @@ export class SchemaValidator {
       );
     }
     return value as AdapterAvailability;
+  }
+
+  /**
+   * Resolves optional adapter-transport enum from unknown input.
+   * @param candidate Raw value.
+   * @param pointer Error pointer path.
+   * @returns Adapter transport enum value when provided.
+   */
+  private resolveAdapterTransportKind(
+    candidate: unknown,
+    pointer: string,
+  ): AdapterTransportKind | undefined {
+    const value = this.expectOptionalString(candidate, pointer);
+    if (!value) {
+      return undefined;
+    }
+    if (!ADAPTER_TRANSPORT_KIND_VALUES.has(value)) {
+      this.throwConfigSchemaValidationError(
+        `${pointer} must be one of: ${Array.from(ADAPTER_TRANSPORT_KIND_VALUES).join(', ')}.`,
+        pointer,
+      );
+    }
+    return value as AdapterTransportKind;
+  }
+
+  /**
+   * Validates optional remote-api runtime config for one adapter tool row.
+   * @param candidate Raw remote-api object.
+   * @param pointer Error pointer path.
+   * @param toolId Resolved adapter surface.
+   * @returns Normalized remote-api config when present.
+   */
+  private validateAdapterToolRemoteApi(
+    candidate: unknown,
+    pointer: string,
+    toolId: AdapterSurface,
+  ): AdapterRemoteApiConfig | undefined {
+    if (candidate === undefined) {
+      return undefined;
+    }
+
+    const remoteApi = this.expectRecord(candidate, pointer);
+    this.assertNoUnknownKeys(
+      remoteApi,
+      new Set([
+        'provider',
+        'vendorBinding',
+        'model',
+        'credentialEnvVar',
+        'credentialRef',
+        'endpoint',
+        'requestTimeoutMs',
+        'maxRetries',
+      ]),
+      pointer,
+    );
+
+    const provider = this.resolveAdapterProviderKind(remoteApi.provider, `${pointer}/provider`);
+    const vendorBinding = this.resolveAdapterVendorBindingKind(
+      remoteApi.vendorBinding,
+      `${pointer}/vendorBinding`,
+    );
+    const model = this.expectString(remoteApi.model, `${pointer}/model`);
+    const credentialEnvVar = this.expectOptionalString(
+      remoteApi.credentialEnvVar,
+      `${pointer}/credentialEnvVar`,
+    );
+    const credentialRef = this.expectOptionalString(
+      remoteApi.credentialRef,
+      `${pointer}/credentialRef`,
+    );
+    const endpoint = this.expectOptionalString(remoteApi.endpoint, `${pointer}/endpoint`);
+    const requestTimeoutMs = this.expectOptionalPositiveInteger(
+      remoteApi.requestTimeoutMs,
+      `${pointer}/requestTimeoutMs`,
+    );
+    const maxRetries = this.expectOptionalNonNegativeInteger(
+      remoteApi.maxRetries,
+      `${pointer}/maxRetries`,
+    );
+
+    if (toolId === AdapterSurface.GITHUB_COPILOT) {
+      this.throwConfigSchemaValidationError(
+        `${pointer} is not yet supported when toolId="${AdapterSurface.GITHUB_COPILOT}".`,
+        pointer,
+      );
+    }
+
+    if (toolId === AdapterSurface.CODEX && provider !== AdapterProviderKind.OPENAI) {
+      this.throwConfigSchemaValidationError(
+        `${pointer}/provider must be "${AdapterProviderKind.OPENAI}" when toolId="${AdapterSurface.CODEX}".`,
+        `${pointer}/provider`,
+      );
+    }
+    if (
+      toolId === AdapterSurface.CODEX &&
+      vendorBinding !== undefined &&
+      vendorBinding !== AdapterVendorBindingKind.OPENAI_RESPONSES
+    ) {
+      this.throwConfigSchemaValidationError(
+        `${pointer}/vendorBinding must be "${AdapterVendorBindingKind.OPENAI_RESPONSES}" when toolId="${AdapterSurface.CODEX}".`,
+        `${pointer}/vendorBinding`,
+      );
+    }
+
+    if (toolId === AdapterSurface.CLAUDE_CODE && provider !== AdapterProviderKind.ANTHROPIC) {
+      this.throwConfigSchemaValidationError(
+        `${pointer}/provider must be "${AdapterProviderKind.ANTHROPIC}" when toolId="${AdapterSurface.CLAUDE_CODE}".`,
+        `${pointer}/provider`,
+      );
+    }
+    if (
+      toolId === AdapterSurface.CLAUDE_CODE &&
+      vendorBinding !== undefined &&
+      vendorBinding !== AdapterVendorBindingKind.ANTHROPIC_MESSAGES
+    ) {
+      this.throwConfigSchemaValidationError(
+        `${pointer}/vendorBinding must be "${AdapterVendorBindingKind.ANTHROPIC_MESSAGES}" when toolId="${AdapterSurface.CLAUDE_CODE}".`,
+        `${pointer}/vendorBinding`,
+      );
+    }
+
+    if (credentialRef) {
+      this.throwConfigSchemaValidationError(
+        `${pointer}/credentialRef is not yet supported; use credentialEnvVar until credentialRef resolution lands.`,
+        `${pointer}/credentialRef`,
+      );
+    }
+
+    return {
+      provider,
+      model,
+      ...(vendorBinding !== undefined ? { vendorBinding } : {}),
+      ...(credentialEnvVar ? { credentialEnvVar } : {}),
+      ...(endpoint ? { endpoint } : {}),
+      ...(requestTimeoutMs !== undefined ? { requestTimeoutMs } : {}),
+      ...(maxRetries !== undefined ? { maxRetries } : {}),
+    };
+  }
+
+  /**
+   * Resolves optional adapter-provider enum from unknown input.
+   * @param candidate Raw value.
+   * @param pointer Error pointer path.
+   * @returns Adapter provider enum value.
+   */
+  private resolveAdapterProviderKind(candidate: unknown, pointer: string): AdapterProviderKind {
+    const value = this.expectString(candidate, pointer);
+    if (!ADAPTER_PROVIDER_KIND_VALUES.has(value)) {
+      this.throwConfigSchemaValidationError(
+        `${pointer} must be one of: ${Array.from(ADAPTER_PROVIDER_KIND_VALUES).join(', ')}.`,
+        pointer,
+      );
+    }
+    return value as AdapterProviderKind;
+  }
+
+  /**
+   * Resolves optional adapter vendor-binding enum from unknown input.
+   * @param candidate Raw value.
+   * @param pointer Error pointer path.
+   * @returns Adapter vendor-binding enum value when provided.
+   */
+  private resolveAdapterVendorBindingKind(
+    candidate: unknown,
+    pointer: string,
+  ): AdapterVendorBindingKind | undefined {
+    const value = this.expectOptionalString(candidate, pointer);
+    if (!value) {
+      return undefined;
+    }
+    if (!ADAPTER_VENDOR_BINDING_KIND_VALUES.has(value)) {
+      this.throwConfigSchemaValidationError(
+        `${pointer} must be one of: ${Array.from(ADAPTER_VENDOR_BINDING_KIND_VALUES).join(', ')}.`,
+        pointer,
+      );
+    }
+    return value as AdapterVendorBindingKind;
   }
 
   /**
