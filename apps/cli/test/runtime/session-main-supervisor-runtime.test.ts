@@ -10,6 +10,10 @@ import {
 } from '@repo-ai-governor/adapter-sdk';
 import { type AdaptersConfig, WorkspaceMode } from '@repo-ai-governor/config';
 import {
+  SESSION_MAIN_CAPABILITY_AVAILABILITY_STATUS,
+  SESSION_MAIN_CAPABILITY_ID,
+} from '@repo-ai-governor/core-orchestration-service';
+import {
   AdapterAvailability,
   AdapterSurface,
   GovernorErrorCode,
@@ -669,6 +673,64 @@ describe('Cli session-main supervisor runtime', () => {
     );
     expect(githubCopilotProbeSpy).toHaveBeenCalledTimes(1);
     expect(codexInvokeStageSpy).not.toHaveBeenCalled();
+  });
+
+  it('keeps local-only plan and review-verify capabilities available without adapter setup', async () => {
+    const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
+      adaptersConfig,
+    ) as CliAdapterRoutingRuntime & {
+      createProtocolBySurface: () => Record<string, AgentProtocolContract>;
+    };
+    adapterRoutingRuntime.createProtocolBySurface = () => ({
+      [AdapterSurface.CODEX]: createUnavailableProtocol(AdapterSurface.CODEX),
+      [AdapterSurface.CLAUDE_CODE]: createUnavailableProtocol(AdapterSurface.CLAUDE_CODE),
+      [AdapterSurface.OLLAMA]: createUnavailableProtocol(AdapterSurface.OLLAMA),
+    });
+
+    const runtime = new CliSessionMainSupervisorRuntime({
+      workspaceRoot: '/workspace/repo/.repo-ai-governor',
+      currentWorkingDirectory: '/workspace/repo',
+      workspace,
+      locale: 'en-US',
+      adaptersConfig,
+      adapterRoutingRuntime,
+    });
+    const availability = await runtime.resolveCapabilityAvailability(
+      {
+        sessionId: 'session-availability-local-001',
+        routeId: 'session.main',
+        turnId: 'turn-availability-local-001',
+        turnIndex: 1,
+        userMessage: 'recheck the review report and update the plan',
+        selectedSurface: AdapterSurface.CODEX,
+        selectedBy: 'session.main.default',
+        sessionRoutingPreferenceApplied: false,
+      },
+      [
+        SESSION_MAIN_CAPABILITY_ID.PLAN,
+        SESSION_MAIN_CAPABILITY_ID.REVIEW_VERIFY,
+        SESSION_MAIN_CAPABILITY_ID.REVIEW,
+      ],
+    );
+
+    expect(availability).toEqual([
+      expect.objectContaining({
+        capabilityId: SESSION_MAIN_CAPABILITY_ID.PLAN,
+        status: SESSION_MAIN_CAPABILITY_AVAILABILITY_STATUS.AVAILABLE,
+      }),
+      expect.objectContaining({
+        capabilityId: SESSION_MAIN_CAPABILITY_ID.REVIEW_VERIFY,
+        status: SESSION_MAIN_CAPABILITY_AVAILABILITY_STATUS.AVAILABLE,
+      }),
+      expect.objectContaining({
+        capabilityId: SESSION_MAIN_CAPABILITY_ID.REVIEW,
+        status: SESSION_MAIN_CAPABILITY_AVAILABILITY_STATUS.SETUP_REQUIRED,
+        requiresSetup: true,
+        suggestedNextStep: '/connect',
+      }),
+    ]);
+    expect(availability[0]).not.toHaveProperty('selectedSurface');
+    expect(availability[1]).not.toHaveProperty('selectedSurface');
   });
 
   it('falls back to the next available direct-answer surface while preserving chat-only governance', async () => {

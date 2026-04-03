@@ -5,6 +5,7 @@ import type {
   SessionMainInteractionMode,
   SessionMainResponseMode,
 } from '../aliases/index.js';
+import type { SessionMainCapabilityAvailability } from './session-main-capability-availability.interface.js';
 import type { SessionMainCapabilitySuggestedAction } from './session-main-capability-explainer.interface.js';
 
 /**
@@ -145,6 +146,17 @@ export interface SessionMainSupervisorRuntimeContract {
    * @returns Normalized role id when one configured role mention is present.
    */
   resolveMentionedRoleId?(userMessage: string): string | null;
+
+  /**
+   * Resolves additive capability-availability overlay facts for the current turn when supported.
+   * @param context Service-owned turn context with the current routing preference already projected.
+   * @param capabilityIds Capability ids referenced by the explainer/bridge path.
+   * @returns Dynamic availability overlay entries derived from runtime-exported truth.
+   */
+  resolveCapabilityAvailability?(
+    context: SessionMainSupervisorTurnContext,
+    capabilityIds: readonly SessionMainCapabilityId[],
+  ): Promise<readonly SessionMainCapabilityAvailability[]>;
 
   /**
    * Resolves one foreground `session.main` turn into a structured supervisor outcome.

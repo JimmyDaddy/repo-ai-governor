@@ -1,6 +1,6 @@
 # sprint-001-capability-catalog-and-turn-outcome-foundation 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-02
 - Project: `project-038-session-main-capability-explainer-productization`
 - Sprint Goal: 为 `session.main capability explainer` 建立 canonical capability catalog、shared turn outcome metadata 与首条 governed contextual guidance bridge。
@@ -31,3 +31,7 @@
 6. 2026-04-03：完成 `TK-496`，将 top-level/command help appendix 与 governed slash discoverability metadata 切到 canonical capability catalog，并保持 shell-local builtins / local bridges 自治。
 7. 2026-04-03：激活 `TK-497`，开始在 `session.main` dispatcher 中插入 capability explainer route，并为 overview/detail/examples/comparison 生成结构化 answer。
 8. 2026-04-03：完成 `TK-497`，capability explanation 已在 skill route 之前成为正式 answer 分支，并冻结 `SessionMainCapabilityAnswer` baseline 供 `TK-498` 投影共享 turn truth。
+9. 2026-04-03：激活 `TK-498`，开始把 capability explanation metadata 投影到 shared session `TURN_COMPLETED` payload 与 CLI transcript suggested-action affordance。
+10. 2026-04-03：完成 `TK-498`，`capabilityAnswerKind / referencedCapabilityIds / suggestedActions` 已进入 canonical `TURN_COMPLETED` payload，且 CLI transcript markdown answer 可正式渲染 suggested-action affordance。
+11. 2026-04-03：激活 `TK-499`，开始补 capability availability overlay、同轮 explain->execute governed bridge，以及 `sprint-001` exit acceptance baseline。
+12. 2026-04-03：完成 `TK-499`，`sprint-001` exit acceptance 达成；本轮实现冻结为 capability catalog truth、availability overlay、governed bridge 与 transcript/shared-session continuity baseline，详见 [sprint-001-exit-acceptance-summary.md](./sprint-001-exit-acceptance-summary.md)。

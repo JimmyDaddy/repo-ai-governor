@@ -1,7 +1,7 @@
 # TK-498 project capability explanation metadata into shared session truth and transcript affordances
 
-- Status: planned
-- Date: 2026-04-02
+- Status: completed
+- Date: 2026-04-03
 - Owner: AI-Agent
 - Priority: P0
 - Project: `project-038-session-main-capability-explainer-productization`
@@ -40,3 +40,6 @@
 ## 6. 执行记录
 
 1. 2026-04-02：任务创建，状态初始化为 `planned`；等待 `TK-497` 完成后执行。
+2. 2026-04-03：状态切换为 `active`；开始将 `capabilityAnswerKind / referencedCapabilityIds / suggestedActions` 写入 shared `TURN_COMPLETED` payload，并为 transcript markdown answer 增加 suggested-action affordance。
+3. 2026-04-03：任务完成；canonical `TURN_COMPLETED` payload 已正式投影 capability explanation metadata，CLI transcript markdown answer 已可渲染 suggested-action affordance，验证通过 targeted vitest、`pnpm run build` 与 `pnpm run check`。
+4. 2026-04-03：CR 复核认可 availability explanation 泄露 internal routing marker 的问题；已将 user-facing prose 中的 `selectedBy` 改为本地化标签并补齐回归测试，验证通过 targeted vitest 与 `pnpm run build`，CR 已收口为 `resolved_code_review_working-tree-20260403-2349.md`。

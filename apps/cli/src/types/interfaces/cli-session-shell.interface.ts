@@ -1,4 +1,9 @@
 import type {
+  SessionMainCapabilityAnswerKind,
+  SessionMainCapabilityId,
+  SessionMainCapabilitySuggestedAction,
+} from '@repo-ai-governor/core-orchestration-service';
+import type {
   OrchestrationAppendSessionMessageResponse,
   OrchestrationListSessionsRequest,
   OrchestrationListSessionsResponse,
@@ -56,6 +61,14 @@ export interface CliSessionShellTranscriptDetailsBlock {
 }
 
 /**
+ * Defines one follow-up affordance block rendered beneath a capability explanation answer.
+ */
+export interface CliSessionShellTranscriptSuggestedActionsBlock {
+  title: string;
+  actions: SessionMainCapabilitySuggestedAction[];
+}
+
+/**
  * Defines one transcript item rendered inside the session-shell transcript pane.
  */
 export interface CliSessionShellTranscriptItem {
@@ -68,6 +81,9 @@ export interface CliSessionShellTranscriptItem {
   markdownSource?: string;
   backlinks?: CliSessionShellTranscriptBacklink[];
   details?: CliSessionShellTranscriptDetailsBlock;
+  capabilityAnswerKind?: SessionMainCapabilityAnswerKind;
+  referencedCapabilityIds?: SessionMainCapabilityId[];
+  suggestedActionsBlock?: CliSessionShellTranscriptSuggestedActionsBlock;
 }
 
 /**

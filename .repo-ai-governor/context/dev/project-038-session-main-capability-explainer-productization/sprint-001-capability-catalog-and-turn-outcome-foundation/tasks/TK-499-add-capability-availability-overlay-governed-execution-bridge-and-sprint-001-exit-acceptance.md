@@ -1,7 +1,7 @@
 # TK-499 add capability availability overlay governed execution bridge and sprint-001 exit acceptance
 
-- Status: planned
-- Date: 2026-04-02
+- Status: completed
+- Date: 2026-04-03
 - Owner: AI-Agent
 - Priority: P1
 - Project: `project-038-session-main-capability-explainer-productization`
@@ -43,3 +43,6 @@
 ## 6. 执行记录
 
 1. 2026-04-02：任务创建，状态初始化为 `planned`；等待 `TK-496`、`TK-497` 与 `TK-498` 完成后执行。
+2. 2026-04-03：状态切换为 `active`；开始实现 capability availability overlay baseline、同轮 explain->execute bridge，以及 `sprint-001` exit acceptance 收口。
+3. 2026-04-03：完成 availability overlay、同轮 governed bridge、bridged transcript recap 与 `sprint-001` exit acceptance summary；验证通过 targeted vitest、`pnpm run build`、`pnpm run check` 与治理门禁，任务收口为 `completed`。
+4. 2026-04-03：CR 复核认可 local-only `plan` / `review_verify` 被错误纳入 surface gating 的问题；已将二者从 surface-dependent gating 中移出并新增未接入 workspace 的回归测试，验证通过 targeted vitest 与 `pnpm run build`，CR 已收口为 `resolved_code_review_working-tree-20260403-2349.md`。

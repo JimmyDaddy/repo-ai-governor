@@ -80,6 +80,7 @@ export type {
 export type {
   CliSessionShellTranscriptBacklink,
   CliSessionShellTranscriptDetailsBlock,
+  CliSessionShellTranscriptSuggestedActionsBlock,
   CliSessionShellTranscriptRenderKind,
   CliSessionShellInputAction,
   CliSessionShellInputActionResult,

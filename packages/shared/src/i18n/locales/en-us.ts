@@ -393,6 +393,7 @@ export const EN_US_TRANSLATIONS = {
         mainTurnExecutionIntent: 'Intent: {{executionIntent}}',
         mainTurnRoutingSelection: 'Routing: surface={{selectedSurface}} selected_by={{selectedBy}}',
         mainTurnBacklink: 'Backlink: kind={{kind}} label={{label}} target={{target}}',
+        mainTurnSuggestedActionsTitle: 'Suggested next steps',
         mainTurnFollowUpPrompt: 'The main agent needs one clarification before handoff:',
         sessionStarted: 'Started service-backed session {{sessionId}} on {{routeId}}.',
         sessionResumed: 'Resumed session {{sessionId}} via selector={{resumeSelector}}.',
@@ -969,6 +970,16 @@ export const EN_US_TRANSLATIONS = {
           0: 'Start implementing this task.',
           1: 'Run the next governed workflow for this repo.',
         },
+      },
+    },
+  },
+  __internal: {
+    availability: {
+      selection: {
+        preferred: 'preferred surface',
+        fallbackAfterProbe: 'fallback after availability probe',
+        defaultGovernedSurface: 'first ready governed surface',
+        intentRouter: 'default routing preference',
       },
     },
   },

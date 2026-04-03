@@ -23,7 +23,7 @@
 
 ## 2.1 sprint-001-capability-catalog-and-turn-outcome-foundation
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 为 capability explainer 建立单一事实来源、turn outcome metadata 与首条 governed bridge 实施包。
 - Task Package: `TK-495`、`TK-496`、`TK-497`、`TK-498`、`TK-499`。
 
@@ -31,11 +31,11 @@
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 |---|---|---|---|---|---|
-| TK-495 | sprint-001 | establish session.main capability descriptor seed-view contract and canonical catalog baseline | runtime/catalog-contract | `DA-494` + active interactive-cli formal docs | planned |
-| TK-496 | sprint-001 | cut over CLI help appendix and governed command discoverability to single-source capability catalog | cli/help-cutover | TK-495 | planned |
-| TK-497 | sprint-001 | add session.main capability intent routing and explanation answer generation | runtime/explainer-routing | TK-495 | planned |
-| TK-498 | sprint-001 | project capability explanation metadata into shared session truth and transcript affordances | runtime/shared-session-projection | TK-497 | planned |
-| TK-499 | sprint-001 | add capability availability overlay governed execution bridge and sprint-001 exit acceptance | runtime/bridge-and-closeout | TK-496、TK-497、TK-498 | planned |
+| TK-495 | sprint-001 | establish session.main capability descriptor seed-view contract and canonical catalog baseline | runtime/catalog-contract | `DA-494` + active interactive-cli formal docs | completed |
+| TK-496 | sprint-001 | cut over CLI help appendix and governed command discoverability to single-source capability catalog | cli/help-cutover | TK-495 | completed |
+| TK-497 | sprint-001 | add session.main capability intent routing and explanation answer generation | runtime/explainer-routing | TK-495 | completed |
+| TK-498 | sprint-001 | project capability explanation metadata into shared session truth and transcript affordances | runtime/shared-session-projection | TK-497 | completed |
+| TK-499 | sprint-001 | add capability availability overlay governed execution bridge and sprint-001 exit acceptance | runtime/bridge-and-closeout | TK-496、TK-497、TK-498 | completed |
 
 ## 4. 依赖产物策略
 
@@ -60,3 +60,4 @@
 3. 2026-04-02：将 `technical-solution.interactive-cli-react-style-cli` 的 delivery handoff 从历史 completed rollout 更新为 `followup_required -> planned project-038 / sprint-001`，确保当前 active solution 的实现 ownership 与 formal amendment 范围保持一致。
 4. 2026-04-03：显式激活 `project-038 / sprint-001` 作为新的 primary stream，并开始执行 `TK-495`。
 5. 2026-04-03：完成 `TK-495`，建立 `runtime.orchestration` 单写源 capability catalog baseline，后续 `TK-496 ~ TK-499` 在该 seed/view seam 上继续扩展。
+6. 2026-04-03：完成 `TK-499`，`sprint-001` exit acceptance 达成；availability overlay、同轮 governed bridge 与 transcript/shared-session continuity 基线已经冻结，见 [sprint-001-exit-acceptance-summary.md](./sprint-001-capability-catalog-and-turn-outcome-foundation/sprint-001-exit-acceptance-summary.md)。

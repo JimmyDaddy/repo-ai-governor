@@ -19,10 +19,14 @@ import {
 } from '@repo-ai-governor/adapter-sdk';
 import type { AdaptersConfig, ResolvedWorkspace } from '@repo-ai-governor/config';
 import {
+  SESSION_MAIN_CAPABILITY_AVAILABILITY_STATUS,
+  SESSION_MAIN_CAPABILITY_ID,
   SESSION_MAIN_INTERACTION_MODE,
   SESSION_MAIN_RESPONSE_MODE,
 } from '@repo-ai-governor/core-orchestration-service/constants';
 import type {
+  SessionMainCapabilityAvailability,
+  SessionMainCapabilityId,
   SessionMainSupervisorInvokeLiveness,
   SessionMainSupervisorInvokedRole,
   SessionMainSupervisorRuntimeContract,
@@ -83,6 +87,17 @@ const SESSION_MAIN_REPOSITORY_REVIEW_CAPABLE_SURFACES = new Set<AdapterSurface>(
   AdapterSurface.CLAUDE_CODE,
   AdapterSurface.GITHUB_COPILOT,
 ]);
+// `plan` / `review_verify` remain local CLI flows and should stay available without adapter setup.
+const SESSION_MAIN_SURFACE_DEPENDENT_CAPABILITY_IDS = new Set<SessionMainCapabilityId>([
+  SESSION_MAIN_CAPABILITY_ID.REVIEW,
+  SESSION_MAIN_CAPABILITY_ID.RUN,
+]);
+
+interface SessionMainCapabilitySurfaceAvailabilityFact {
+  surface: AdapterSurface;
+  availabilityStatus: AgentAvailabilityStatus;
+  detail: string | null;
+}
 
 interface PreparedRoleDispatch {
   descriptor: SessionMainSubagentDescriptor;
@@ -421,6 +436,166 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
 
   public resolveMentionedRoleId(userMessage: string): string | null {
     return this.subagentRegistry.resolveMentionedRoleId(userMessage);
+  }
+
+  public async resolveCapabilityAvailability(
+    context: SessionMainSupervisorTurnContext,
+    capabilityIds: readonly SessionMainCapabilityId[],
+  ): Promise<readonly SessionMainCapabilityAvailability[]> {
+    const toolConfigBySurface = this.adapterRoutingRuntime.createToolConfigBySurfaceMap();
+    const protocolBySurface =
+      this.adapterRoutingRuntime.createProtocolBySurface(toolConfigBySurface);
+    const trackedSurfaces =
+      this.adapterRoutingRuntime.resolveTrackedAdapterSurfaces(toolConfigBySurface);
+    const surfaceAvailabilityFacts = await this.probeSurfaceAvailabilityFacts(
+      trackedSurfaces,
+      protocolBySurface,
+      SESSION_MAIN_ANSWER_ROUTE_KEY,
+    );
+    const selectedSurfacePreference = this.readOptionalAdapterSurface(context.selectedSurface);
+
+    return capabilityIds.map((capabilityId) =>
+      this.createCapabilityAvailabilityOverlay(
+        capabilityId,
+        surfaceAvailabilityFacts,
+        selectedSurfacePreference,
+        context,
+      ),
+    );
+  }
+
+  private async probeSurfaceAvailabilityFacts(
+    surfaces: AdapterSurface[],
+    protocolBySurface: Record<string, AgentProtocolContract>,
+    routeKey: string,
+  ): Promise<SessionMainCapabilitySurfaceAvailabilityFact[]> {
+    return Promise.all(
+      surfaces.map(async (surface) => {
+        const protocol = protocolBySurface[surface];
+        if (!protocol) {
+          return {
+            surface,
+            availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+            detail: this.localizeText(
+              'No protocol implementation is registered for this surface.',
+              '这个 surface 当前没有注册协议实现。',
+            ),
+          };
+        }
+
+        try {
+          const probeResult = await protocol.probe({
+            routeKey,
+          });
+          return {
+            surface,
+            availabilityStatus: probeResult.availabilityStatus,
+            detail:
+              probeResult.availabilityStatus === AgentAvailabilityStatus.AVAILABLE
+                ? null
+                : this.readProbeUnavailableReason(probeResult),
+          };
+        } catch (error) {
+          return {
+            surface,
+            availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+            detail: this.readProbeFailureReason(error),
+          };
+        }
+      }),
+    );
+  }
+
+  private createCapabilityAvailabilityOverlay(
+    capabilityId: SessionMainCapabilityId,
+    surfaceAvailabilityFacts: readonly SessionMainCapabilitySurfaceAvailabilityFact[],
+    selectedSurfacePreference: AdapterSurface | null,
+    context: SessionMainSupervisorTurnContext,
+  ): SessionMainCapabilityAvailability {
+    if (capabilityId === SESSION_MAIN_CAPABILITY_ID.CONNECT) {
+      return {
+        capabilityId,
+        status: SESSION_MAIN_CAPABILITY_AVAILABILITY_STATUS.AVAILABLE,
+      };
+    }
+
+    if (
+      capabilityId === SESSION_MAIN_CAPABILITY_ID.HELP ||
+      capabilityId === SESSION_MAIN_CAPABILITY_ID.DOCTOR ||
+      capabilityId === SESSION_MAIN_CAPABILITY_ID.VERIFY ||
+      capabilityId === SESSION_MAIN_CAPABILITY_ID.WORKFLOW
+    ) {
+      return {
+        capabilityId,
+        status: SESSION_MAIN_CAPABILITY_AVAILABILITY_STATUS.AVAILABLE,
+      };
+    }
+
+    if (!SESSION_MAIN_SURFACE_DEPENDENT_CAPABILITY_IDS.has(capabilityId)) {
+      return {
+        capabilityId,
+        status: SESSION_MAIN_CAPABILITY_AVAILABILITY_STATUS.AVAILABLE,
+      };
+    }
+
+    const candidateFacts =
+      capabilityId === SESSION_MAIN_CAPABILITY_ID.REVIEW ||
+      capabilityId === SESSION_MAIN_CAPABILITY_ID.REVIEW_VERIFY
+        ? surfaceAvailabilityFacts.filter((fact) =>
+            SESSION_MAIN_REPOSITORY_REVIEW_CAPABLE_SURFACES.has(fact.surface),
+          )
+        : [...surfaceAvailabilityFacts];
+    const availableFacts = candidateFacts.filter(
+      (fact) => fact.availabilityStatus !== AgentAvailabilityStatus.UNAVAILABLE,
+    );
+    const preferredFact =
+      selectedSurfacePreference === null
+        ? null
+        : (candidateFacts.find((fact) => fact.surface === selectedSurfacePreference) ?? null);
+    const preferredAvailable =
+      preferredFact?.availabilityStatus !== AgentAvailabilityStatus.UNAVAILABLE
+        ? preferredFact
+        : null;
+    const selectedFact = preferredAvailable ?? availableFacts[0] ?? null;
+
+    if (!selectedFact) {
+      return {
+        capabilityId,
+        status: SESSION_MAIN_CAPABILITY_AVAILABILITY_STATUS.SETUP_REQUIRED,
+        requiresSetup: true,
+        suggestedNextStep: '/connect',
+        reason:
+          preferredFact?.detail ??
+          this.localizeText(
+            'No governed execution surface passed the local readiness checks for this capability.',
+            '当前没有任何受治理执行 surface 通过这个能力所需的本地就绪检查。',
+          ),
+      };
+    }
+
+    const selectedBy =
+      preferredAvailable && selectedSurfacePreference
+        ? context.selectedBy || 'session.main.preference'
+        : context.sessionRoutingPreferenceApplied
+          ? 'session.main.availability.fallback'
+          : 'session.main.availability.default';
+    const fallbackReason =
+      preferredFact &&
+      preferredFact.availabilityStatus === AgentAvailabilityStatus.UNAVAILABLE &&
+      preferredFact.detail
+        ? this.localizeText(
+            `Preferred surface ${preferredFact.surface} is unavailable right now; ${selectedFact.surface} is the next governed option. ${preferredFact.detail}`,
+            `首选 surface ${preferredFact.surface} 当前不可用；已改用下一个受治理候选 ${selectedFact.surface}。${preferredFact.detail}`,
+          )
+        : undefined;
+
+    return {
+      capabilityId,
+      status: SESSION_MAIN_CAPABILITY_AVAILABILITY_STATUS.AVAILABLE,
+      selectedSurface: selectedFact.surface,
+      selectedBy,
+      ...(fallbackReason ? { reason: fallbackReason } : {}),
+    };
   }
 
   private createRouteRunner(options: {
@@ -2305,6 +2480,13 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
 
   private isKnownAdapterSurface(candidate: string): candidate is AdapterSurface {
     return Object.values(AdapterSurface).includes(candidate as AdapterSurface);
+  }
+
+  private readOptionalAdapterSurface(candidate: unknown): AdapterSurface | null {
+    const normalizedCandidate = this.readOptionalString(candidate);
+    return normalizedCandidate && this.isKnownAdapterSurface(normalizedCandidate)
+      ? normalizedCandidate
+      : null;
   }
 
   private stripRoleMentions(userMessage: string): string {

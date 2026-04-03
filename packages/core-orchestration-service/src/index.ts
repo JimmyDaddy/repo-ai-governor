@@ -1,5 +1,6 @@
 export {
   SESSION_MAIN_CAPABILITY_ANSWER_KIND,
+  SESSION_MAIN_CAPABILITY_AVAILABILITY_STATUS,
   SESSION_MAIN_CAPABILITY_CATALOG_OWNER_MODULE_ID,
   SESSION_MAIN_CAPABILITY_DESCRIPTOR_VERSION,
   SESSION_MAIN_CAPABILITY_ID,
@@ -10,12 +11,14 @@ export {
   SESSION_MAIN_RESPONSE_MODE,
 } from './constants/index.js';
 export { LocalOrchestrationServiceSessionMainCapabilityCatalog } from './local-orchestration-service-session-main-capability-catalog.js';
+export { LocalOrchestrationServiceSessionMainCapabilityAvailabilityResolver } from './local-orchestration-service-session-main-capability-availability-resolver.js';
 export { LocalOrchestrationServiceSessionMainCapabilityExplainer } from './local-orchestration-service-session-main-capability-explainer.js';
 export { LocalOrchestrationServiceShell } from './local-orchestration-service-shell.js';
 export { LocalOrchestrationServiceSidecarClient } from './local-orchestration-service-sidecar-client.js';
 export { LocalOrchestrationServiceSidecarHost } from './local-orchestration-service-sidecar-host.js';
 export type {
   SessionMainCapabilityAnswer,
+  SessionMainCapabilityAvailability,
   LocalOrchestrationServicePublishEventRequest,
   LocalOrchestrationServiceSaveCheckpointRequest,
   LocalOrchestrationServiceSidecarClientDependencies,
@@ -30,6 +33,7 @@ export type {
   LocalOrchestrationServiceShellDependencies,
   LocalOrchestrationServiceStartExecutionRuntimeContext,
   SessionMainCapabilityAnswerKind,
+  SessionMainCapabilityAvailabilityStatus,
   SessionMainCapabilityCatalogOwnerModuleId,
   SessionMainCapabilityDescriptorSeed,
   SessionMainCapabilityDescriptorVersion,

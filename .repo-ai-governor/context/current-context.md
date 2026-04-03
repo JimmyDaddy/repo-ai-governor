@@ -8,7 +8,7 @@
 - Docs root: `.repo-ai-governor/context/dev/project-038-session-main-capability-explainer-productization`
 - Task records: `.repo-ai-governor/context/dev/project-038-session-main-capability-explainer-productization/sprint-001-capability-catalog-and-turn-outcome-foundation/tasks/`
 - Review records: `.repo-ai-governor/context/dev/project-038-session-main-capability-explainer-productization/sprint-001-capability-catalog-and-turn-outcome-foundation/review/`
-- Note: `TK-497` 已完成，当前主执行流已完成 capability intent routing 与 overview/detail/examples/comparison explanation answer generation，下一步可进入 capability metadata projection 与 transcript affordance cutover。
+- Note: `TK-499` 已完成，`sprint-001` 现已达到 exit acceptance 并切到 `completed`；当前 primary stream 仅作为临时 closeout surface 保留，等待下一条 `project-038` 实现流显式激活。
 
 ## Active Streams
 

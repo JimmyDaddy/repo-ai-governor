@@ -1,12 +1,17 @@
 import { AdapterSurface, GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import {
+  SESSION_MAIN_CAPABILITY_AVAILABILITY_STATUS,
   SESSION_MAIN_IMPLICIT_ROLE_DELEGATE_METADATA_KEY,
   SESSION_MAIN_INTERACTION_MODE,
   SESSION_MAIN_RESPONSE_MODE,
 } from './constants/index.js';
+import { LocalOrchestrationServiceSessionMainCapabilityAvailabilityResolver } from './local-orchestration-service-session-main-capability-availability-resolver.js';
+import { LocalOrchestrationServiceSessionMainCapabilityCatalog } from './local-orchestration-service-session-main-capability-catalog.js';
 import { LocalOrchestrationServiceSessionMainCapabilityExplainer } from './local-orchestration-service-session-main-capability-explainer.js';
 import { LocalOrchestrationServiceSessionMainSkillRegistry } from './local-orchestration-service-session-main-skill-registry.js';
 import type {
+  SessionMainCapabilityAvailability,
+  SessionMainCapabilityId,
   SessionMainSupervisorRuntimeContract,
   SessionMainSupervisorTurnContext,
   SessionMainSupervisorTurnOutcome,
@@ -22,6 +27,8 @@ const SESSION_MAIN_GREETING_PATTERN =
   /^(?:(?:hi|hello|hey|greetings)(?:\s+(?:governor|agent|there))?|你好|您好|哈喽|嗨|早上好|下午好|晚上好)[!,.? ]*$/iu;
 const SESSION_MAIN_FOLLOW_UP_PATTERN =
   /^(?:(?:继续|然后呢|下一步|接下来呢)|(?:next|what next|and then)\??)$|^(?:继续说|再继续一下)$|^(?:那然后呢)$|^(?:next step\??)$/iu;
+const SESSION_MAIN_SPLIT_INTENT_SEGMENT_SEPARATOR =
+  /\s*(?:,|，|;|；|然后|顺便|再帮我|再替我|接着|and then|then)\s*/iu;
 const SESSION_MAIN_ROUTING_PREFERENCE_ALIASES: Record<string, AdapterSurface> = {
   claude: AdapterSurface.CLAUDE_CODE,
   'claude-code': AdapterSurface.CLAUDE_CODE,
@@ -39,6 +46,11 @@ const SESSION_MAIN_ROUTING_PREFERENCE_ALIASES: Record<string, AdapterSurface> = 
  * `baseline_ack`, while keeping the implementation local, deterministic, and presenter-friendly.
  */
 export class LocalOrchestrationServiceSessionMainAgentDispatcher {
+  private readonly capabilityCatalog = new LocalOrchestrationServiceSessionMainCapabilityCatalog();
+
+  private readonly capabilityAvailabilityResolver =
+    new LocalOrchestrationServiceSessionMainCapabilityAvailabilityResolver();
+
   private readonly capabilityExplainer =
     new LocalOrchestrationServiceSessionMainCapabilityExplainer();
 
@@ -71,6 +83,13 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
     );
     const preferredSurface = this.resolvePreferredSurface(sessionRoutingPreference);
     const selectionMetadata = this.resolveSelectionMetadata(preferredSurface);
+    const splitIntentSkillPlan = this.resolveSplitIntentSkillPlan(
+      normalizedLowerMessageWithoutRoleMentions,
+      {
+        preferredSurface,
+        configuredRoleMentionPresent,
+      },
+    );
 
     if (
       this.includesAnyKeyword(
@@ -96,11 +115,63 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
       );
     }
 
-    const capabilityAnswer = await this.capabilityExplainer.resolveAnswer(
+    const provisionalCapabilityAnswer = await this.capabilityExplainer.resolveAnswer(
       normalizedMessageWithoutRoleMentions,
-      turnContext.locale,
+      {
+        locale: turnContext.locale,
+      },
     );
-    if (capabilityAnswer) {
+    if (provisionalCapabilityAnswer) {
+      const bridgeCapabilityId = splitIntentSkillPlan
+        ? this.resolveCapabilityIdFromSlashCommand(splitIntentSkillPlan.suggestedSlashCommand)
+        : null;
+      const availabilityOverlay = await this.resolveCapabilityAvailability(
+        turnContext,
+        [
+          ...provisionalCapabilityAnswer.referencedCapabilityIds,
+          ...(bridgeCapabilityId ? [bridgeCapabilityId] : []),
+        ],
+        selectionMetadata,
+      );
+      const capabilityAnswer =
+        (await this.capabilityExplainer.resolveAnswer(normalizedMessageWithoutRoleMentions, {
+          locale: turnContext.locale,
+          availabilityOverlay,
+        })) ?? provisionalCapabilityAnswer;
+      if (
+        splitIntentSkillPlan &&
+        bridgeCapabilityId &&
+        this.isCapabilityBridgeAvailabilityReady(availabilityOverlay, bridgeCapabilityId) &&
+        splitIntentSkillPlan.executionIntent === 'review.start' &&
+        this.sessionMainSupervisorRuntime &&
+        !hasAnyRoleMention
+      ) {
+        return this.sessionMainSupervisorRuntime.resolveTurn({
+          ...turnContext,
+          selectedSurface: selectionMetadata.selectedSurface,
+          selectedBy: selectionMetadata.selectedBy,
+          sessionRoutingPreferenceApplied: selectionMetadata.sessionRoutingPreferenceApplied,
+          metadata: {
+            ...(turnContext.metadata ? { ...turnContext.metadata } : {}),
+            [SESSION_MAIN_IMPLICIT_ROLE_DELEGATE_METADATA_KEY]:
+              SESSION_MAIN_IMPLICIT_REVIEW_ROLE_ID,
+          },
+        });
+      }
+      const bridgeCandidate =
+        splitIntentSkillPlan && bridgeCapabilityId
+          ? this.resolveCapabilityBridgeOutcome(
+              capabilityAnswer,
+              availabilityOverlay,
+              bridgeCapabilityId,
+              splitIntentSkillPlan,
+              selectionMetadata,
+            )
+          : null;
+      if (bridgeCandidate) {
+        return bridgeCandidate;
+      }
+
       return {
         responseMode: SESSION_MAIN_RESPONSE_MODE.ANSWER,
         interactionMode: SESSION_MAIN_INTERACTION_MODE.DIRECT_ANSWER,
@@ -199,6 +270,7 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
     routerDecisionReason: string;
     handoffCommandPreview: string;
     requiresConfirmation: boolean;
+    assistantMessage?: string;
     skillId?: string;
     skillVersion?: string;
     handoffExecutionMode?: 'preview_confirm' | 'direct_execute';
@@ -220,6 +292,7 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
       responseMode: SESSION_MAIN_RESPONSE_MODE.COMMAND_HANDOFF_PREVIEW,
       interactionMode: SESSION_MAIN_INTERACTION_MODE.COMMAND_HANDOFF,
       assistantDelta: options.suggestedSlashCommand,
+      ...(options.assistantMessage ? { assistantMessage: options.assistantMessage } : {}),
       routerDecisionReason: options.routerDecisionReason,
       suggestedSlashCommand: options.suggestedSlashCommand,
       executionIntent: options.executionIntent,
@@ -259,6 +332,140 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
         },
       ],
     };
+  }
+
+  private async resolveCapabilityAvailability(
+    turnContext: SessionMainSupervisorTurnContext,
+    capabilityIds: readonly SessionMainCapabilityId[],
+    selectionMetadata: {
+      selectedSurface: string;
+      selectedBy: string;
+      sessionRoutingPreferenceApplied: boolean;
+    },
+  ): Promise<SessionMainCapabilityAvailability[]> {
+    const uniqueCapabilityIds = [...new Set(capabilityIds)];
+    if (uniqueCapabilityIds.length === 0) {
+      return [];
+    }
+
+    const runtimeAvailability =
+      (await this.sessionMainSupervisorRuntime?.resolveCapabilityAvailability?.(
+        {
+          ...turnContext,
+          selectedSurface: selectionMetadata.selectedSurface,
+          selectedBy: selectionMetadata.selectedBy,
+          sessionRoutingPreferenceApplied: selectionMetadata.sessionRoutingPreferenceApplied,
+        },
+        uniqueCapabilityIds,
+      )) ?? [];
+
+    return this.capabilityAvailabilityResolver.resolveAvailability(uniqueCapabilityIds, {
+      runtimeAvailability,
+      selectedSurface: selectionMetadata.selectedSurface,
+      selectedBy: selectionMetadata.selectedBy,
+    });
+  }
+
+  private resolveCapabilityBridgeOutcome(
+    capabilityAnswer: {
+      assistantMessage: string;
+    },
+    availabilityOverlay: readonly SessionMainCapabilityAvailability[],
+    capabilityId: SessionMainCapabilityId,
+    skillPlan: {
+      suggestedSlashCommand: string;
+      executionIntent: string;
+      routerDecisionReason: string;
+      handoffCommandPreview: string;
+      handoffExecutionMode: 'preview_confirm' | 'direct_execute';
+      commandBatches: Array<{
+        slashQuery: string;
+        bridgeArgv: string[];
+        previewCommandLine: string;
+      }>;
+      handoffBacklinks: Array<{
+        kind: 'slash_command' | 'execution_intent' | 'command_preview' | 'artifact';
+        label: string;
+        target: string;
+      }>;
+      skillId: string;
+      skillVersion: string;
+    },
+    selectionMetadata: {
+      selectedSurface: string;
+      selectedBy: string;
+      sessionRoutingPreferenceApplied: boolean;
+    },
+  ): SessionMainSupervisorTurnOutcome | null {
+    if (!this.isCapabilityBridgeAvailabilityReady(availabilityOverlay, capabilityId)) {
+      return null;
+    }
+
+    return this.createCommandSuggestionResult({
+      suggestedSlashCommand: skillPlan.suggestedSlashCommand,
+      executionIntent: skillPlan.executionIntent,
+      routerDecisionReason: skillPlan.routerDecisionReason.replace(
+        'session.main.router.',
+        'session.main.router.capability_bridge.',
+      ),
+      handoffCommandPreview: skillPlan.handoffCommandPreview,
+      requiresConfirmation: skillPlan.handoffExecutionMode === 'preview_confirm',
+      assistantMessage: capabilityAnswer.assistantMessage,
+      skillId: skillPlan.skillId,
+      skillVersion: skillPlan.skillVersion,
+      handoffExecutionMode: skillPlan.handoffExecutionMode,
+      commandBatches: skillPlan.commandBatches,
+      handoffBacklinks: skillPlan.handoffBacklinks,
+      ...selectionMetadata,
+    });
+  }
+
+  private isCapabilityBridgeAvailabilityReady(
+    availabilityOverlay: readonly SessionMainCapabilityAvailability[],
+    capabilityId: SessionMainCapabilityId,
+  ): boolean {
+    const availability = availabilityOverlay.find(
+      (candidateAvailability) => candidateAvailability.capabilityId === capabilityId,
+    );
+    return availability?.status === SESSION_MAIN_CAPABILITY_AVAILABILITY_STATUS.AVAILABLE;
+  }
+
+  private resolveSplitIntentSkillPlan(
+    normalizedUserMessage: string,
+    options: {
+      preferredSurface: AdapterSurface | null;
+      configuredRoleMentionPresent: boolean;
+    },
+  ) {
+    const segments = normalizedUserMessage
+      .split(SESSION_MAIN_SPLIT_INTENT_SEGMENT_SEPARATOR)
+      .map((segment) => segment.trim())
+      .filter((segment) => segment.length > 0);
+    if (segments.length < 2) {
+      return null;
+    }
+
+    for (const segment of segments.slice(1)) {
+      const plan = this.skillRegistry.resolvePlan(segment, options);
+      if (plan) {
+        return plan;
+      }
+    }
+
+    return null;
+  }
+
+  private resolveCapabilityIdFromSlashCommand(
+    suggestedSlashCommand: string,
+  ): SessionMainCapabilityId | null {
+    const descriptorSeed =
+      this.capabilityCatalog
+        .listDescriptorSeeds()
+        .find(
+          (candidateDescriptorSeed) =>
+            candidateDescriptorSeed.suggestedSlashCommand === suggestedSlashCommand,
+        ) ?? null;
+    return descriptorSeed?.capabilityId ?? null;
   }
 
   private createFallbackAnswerResult(

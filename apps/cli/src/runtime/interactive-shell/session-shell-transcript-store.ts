@@ -92,12 +92,25 @@ export class CliSessionShellTranscriptStore {
     return this.transcriptItems.map((item) => ({
       ...item,
       lines: [...item.lines],
+      ...(item.referencedCapabilityIds
+        ? { referencedCapabilityIds: [...item.referencedCapabilityIds] }
+        : {}),
       ...(item.backlinks ? { backlinks: item.backlinks.map((backlink) => ({ ...backlink })) } : {}),
       ...(item.details
         ? {
             details: {
               ...item.details,
               lines: [...item.details.lines],
+            },
+          }
+        : {}),
+      ...(item.suggestedActionsBlock
+        ? {
+            suggestedActionsBlock: {
+              ...item.suggestedActionsBlock,
+              actions: item.suggestedActionsBlock.actions.map((action) => ({
+                ...action,
+              })),
             },
           }
         : {}),
@@ -206,6 +219,16 @@ export class CliSessionShellTranscriptStore {
       const responseMode = this.readOptionalString(event.payload.responseMode);
       const interactionMode = this.readOptionalString(event.payload.interactionMode);
       const handoffExecutionMode = this.readOptionalString(event.payload.handoffExecutionMode);
+      const capabilityAnswerKind = this.readOptionalCapabilityAnswerKind(
+        event.payload.capabilityAnswerKind,
+      );
+      const referencedCapabilityIds = this.readReferencedCapabilityIds(
+        event.payload.referencedCapabilityIds,
+      );
+      const suggestedActionsBlock = this.buildSuggestedActionsBlock(
+        event.payload.suggestedActions,
+        translate,
+      );
       const selectedSurface = this.readOptionalString(event.payload.selectedSurface);
       const selectedBy = this.readOptionalString(event.payload.selectedBy);
       const synthesisMode = this.readOptionalString(event.payload.synthesisMode);
@@ -232,7 +255,7 @@ export class CliSessionShellTranscriptStore {
         };
       }
 
-      if (assistantMessage) {
+      if (assistantMessage && responseMode !== 'command_handoff_preview') {
         return {
           id: `${event.sessionId}:${String(event.sequence)}`,
           role: CliSessionTranscriptRole.ASSISTANT,
@@ -240,6 +263,9 @@ export class CliSessionShellTranscriptStore {
           lines: [assistantMessage],
           renderKind: 'markdown',
           markdownSource: assistantMessage,
+          ...(capabilityAnswerKind ? { capabilityAnswerKind } : {}),
+          ...(referencedCapabilityIds ? { referencedCapabilityIds } : {}),
+          ...(suggestedActionsBlock ? { suggestedActionsBlock } : {}),
           ...(details ? { details } : {}),
         };
       }
@@ -288,6 +314,7 @@ export class CliSessionShellTranscriptStore {
               : []),
           ],
           renderKind: 'command_recap',
+          ...(assistantMessage ? { markdownSource: assistantMessage } : {}),
           backlinks: handoffBacklinks,
           ...(details ? { details } : {}),
         };
@@ -596,6 +623,61 @@ export class CliSessionShellTranscriptStore {
     return candidate.filter(
       (value): value is string => typeof value === 'string' && value.length > 0,
     );
+  }
+
+  private readOptionalCapabilityAnswerKind(
+    candidate: unknown,
+  ): CliSessionShellTranscriptItem['capabilityAnswerKind'] {
+    return this.readOptionalString(
+      candidate,
+    ) as CliSessionShellTranscriptItem['capabilityAnswerKind'];
+  }
+
+  private readReferencedCapabilityIds(
+    candidate: unknown,
+  ): CliSessionShellTranscriptItem['referencedCapabilityIds'] {
+    const capabilityIds = this.readStringArray(candidate);
+    return capabilityIds.length > 0
+      ? (capabilityIds as CliSessionShellTranscriptItem['referencedCapabilityIds'])
+      : undefined;
+  }
+
+  private buildSuggestedActionsBlock(
+    candidate: unknown,
+    translate: (key: string, interpolation?: Record<string, string>) => string,
+  ): CliSessionShellTranscriptItem['suggestedActionsBlock'] {
+    if (!Array.isArray(candidate)) {
+      return undefined;
+    }
+
+    const actions = candidate.flatMap((entry) => {
+      if (!entry || typeof entry !== 'object') {
+        return [];
+      }
+
+      const actionRecord = entry as Record<string, unknown>;
+      const label = this.readOptionalString(actionRecord.label);
+      const target = this.readOptionalString(actionRecord.target);
+      const suggestedSlashCommand = this.readOptionalString(actionRecord.suggestedSlashCommand);
+      if (!label || !target) {
+        return [];
+      }
+
+      return [
+        {
+          label,
+          target,
+          ...(suggestedSlashCommand ? { suggestedSlashCommand } : {}),
+        },
+      ];
+    });
+
+    return actions.length > 0
+      ? {
+          title: translate('cli.sessionShell.responses.mainTurnSuggestedActionsTitle'),
+          actions,
+        }
+      : undefined;
   }
 
   private readTranscriptRenderKind(

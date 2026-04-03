@@ -1,5 +1,6 @@
 export type {
   SessionMainCapabilityAnswerKind,
+  SessionMainCapabilityAvailabilityStatus,
   SessionMainCapabilityCatalogOwnerModuleId,
   SessionMainCapabilityDescriptorVersion,
   SessionMainCapabilityId,

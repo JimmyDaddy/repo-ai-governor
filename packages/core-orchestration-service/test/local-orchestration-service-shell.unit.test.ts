@@ -18,6 +18,7 @@ import {
   OrchestrationServiceTransportKind,
   OrchestrationSessionEventType,
   OrchestrationSessionRouteId,
+  OrchestrationSessionTranscriptRole,
 } from '@repo-ai-governor/orchestration-service-client';
 import {
   GovernorError,
@@ -722,6 +723,52 @@ describe('core-orchestration-service local shell', () => {
         }),
       );
       expect(completedEvent?.payload.invokedRoles).toEqual([]);
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('projects capability explanation metadata into the canonical TURN_COMPLETED payload', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot: temporaryRoot,
+    });
+
+    try {
+      const started = await orchestrationService.startSession({
+        routeId: OrchestrationSessionRouteId.MAIN,
+      });
+      await orchestrationService.sendSessionTurn({
+        sessionId: started.session.sessionId,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        userMessage: 'tell me about review',
+        metadata: {
+          locale: 'en-US',
+        },
+      });
+      const subscription = await orchestrationService.subscribeSession({
+        sessionId: started.session.sessionId,
+      });
+      const completedEvent = subscription.events.find(
+        (event) => event.type === OrchestrationSessionEventType.TURN_COMPLETED,
+      );
+
+      expect(completedEvent?.payload).toMatchObject({
+        role: OrchestrationSessionTranscriptRole.ASSISTANT,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        responseMode: 'answer',
+        capabilityAnswerKind: 'detail',
+        referencedCapabilityIds: ['review'],
+      });
+      expect(completedEvent?.payload.suggestedActions).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            label: 'Review',
+            target: '/review',
+            suggestedSlashCommand: '/review',
+          }),
+        ]),
+      );
     } finally {
       await rm(temporaryRoot, { recursive: true, force: true });
     }

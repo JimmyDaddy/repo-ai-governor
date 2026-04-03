@@ -128,6 +128,7 @@ function ReactCliCommandRecapTranscriptItem({
   shellPalette,
 }: ReactCliTranscriptItemRendererProps): React.JSX.Element {
   const recap = parseStructuredRecap(item.lines);
+  const responseBlocks = item.markdownSource ? parseMarkdownBlocks(item.markdownSource) : [];
   const backlinks = item.backlinks ?? [];
   const hasRelatedLinks = backlinks.length > 0;
   const transcriptLabelHidden = shouldHideTranscriptLabel(item.role);
@@ -195,6 +196,14 @@ function ReactCliCommandRecapTranscriptItem({
           marginTop: 1,
           paddingLeft: 1,
         })}
+        {responseBlocks.length > 0 ? (
+          <Box flexDirection='column' marginTop={1} paddingLeft={1}>
+            <Text bold color={shellPalette.promptTitleColor}>
+              Response
+            </Text>
+            {renderMarkdownBlocks(item.id, responseBlocks, shellPalette, item.role)}
+          </Box>
+        ) : null}
         {hasRelatedLinks ? (
           <Box flexDirection='column' marginTop={1} paddingLeft={1}>
             <Text bold color={shellPalette.helpColor}>
@@ -309,6 +318,7 @@ function ReactCliMarkdownTranscriptItem({
         renderMarkdownBlocks(item.id, blocks, shellPalette, item.role),
       )}
       {renderTranscriptDetailsBlock(item, shellPalette)}
+      {renderTranscriptSuggestedActionsBlock(item, shellPalette)}
     </Box>
   );
 }
@@ -405,6 +415,29 @@ function renderTranscriptDetailsBlock(
             );
           })
         : null}
+    </Box>
+  );
+}
+
+function renderTranscriptSuggestedActionsBlock(
+  item: CliSessionShellTranscriptItem,
+  shellPalette: ReactCliShellPalette,
+): React.JSX.Element | null {
+  const suggestedActionsBlock = item.suggestedActionsBlock;
+  if (!suggestedActionsBlock || suggestedActionsBlock.actions.length === 0) {
+    return null;
+  }
+
+  return (
+    <Box flexDirection='column' marginTop={1}>
+      <Text bold color={shellPalette.promptTitleColor}>
+        {suggestedActionsBlock.title}
+      </Text>
+      {suggestedActionsBlock.actions.map((action, index) => (
+        <Text key={`${item.id}:suggested-action:${index}`} color={shellPalette.helpColor}>
+          {`- ${action.label} -> ${action.suggestedSlashCommand ?? action.target}`}
+        </Text>
+      ))}
     </Box>
   );
 }

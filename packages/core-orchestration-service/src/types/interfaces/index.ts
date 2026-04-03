@@ -1,3 +1,4 @@
+export type { SessionMainCapabilityAvailability } from './session-main-capability-availability.interface.js';
 export type {
   SessionMainCapabilityAnswer,
   SessionMainCapabilitySuggestedAction,

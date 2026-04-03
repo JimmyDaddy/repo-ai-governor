@@ -352,6 +352,7 @@ export const ZH_CN_TRANSLATIONS = {
         mainTurnExecutionIntent: '意图：{{executionIntent}}',
         mainTurnRoutingSelection: '路由：surface={{selectedSurface}} selected_by={{selectedBy}}',
         mainTurnBacklink: '回链：kind={{kind}} label={{label}} target={{target}}',
+        mainTurnSuggestedActionsTitle: '建议下一步',
         mainTurnFollowUpPrompt: '主 agent 在 handoff 前还需要一次补充说明：',
         sessionStarted: '已在 {{routeId}} 上启动 service-backed session {{sessionId}}。',
         sessionResumed: '已通过 selector={{resumeSelector}} 恢复 session {{sessionId}}。',
@@ -903,6 +904,16 @@ export const ZH_CN_TRANSLATIONS = {
           0: '开始做这个任务。',
           1: '运行这个仓库接下来的 governed workflow。',
         },
+      },
+    },
+  },
+  __internal: {
+    availability: {
+      selection: {
+        preferred: '首选 surface',
+        fallbackAfterProbe: 'availability 探测后的回退选择',
+        defaultGovernedSurface: '首个就绪的受治理 surface',
+        intentRouter: '默认路由偏好',
       },
     },
   },

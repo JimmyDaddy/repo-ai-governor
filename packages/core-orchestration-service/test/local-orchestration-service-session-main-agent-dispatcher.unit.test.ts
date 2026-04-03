@@ -252,6 +252,146 @@ describe('LocalOrchestrationServiceSessionMainAgentDispatcher', () => {
     ]);
   });
 
+  it('bridges same-turn explain-plus-execute verify requests into direct-execute governed handoff', async () => {
+    const resolveTurn = vi.fn();
+    const dispatcher = new LocalOrchestrationServiceSessionMainAgentDispatcher({
+      resolveTurn,
+      resolveMentionedRoleId: () => null,
+      resolveCapabilityAvailability: async () => [
+        {
+          capabilityId: SESSION_MAIN_CAPABILITY_ID.VERIFY,
+          status: 'available',
+        },
+      ],
+    });
+
+    const result = await dispatcher.dispatch({
+      sessionId: 'session-skill-verify-bridge-001',
+      routeId: 'session.main',
+      turnId: 'turn-skill-verify-bridge-001',
+      turnIndex: 5,
+      userMessage: '给我一个 verify 的例子，然后顺便验证一下当前 adapter 状态',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+    });
+
+    expect(resolveTurn).not.toHaveBeenCalled();
+    expect(result).toEqual(
+      expect.objectContaining({
+        responseMode: 'command_handoff_preview',
+        handoffExecutionMode: 'direct_execute',
+        skillId: 'skill.verify.adapters',
+        requiresConfirmation: false,
+        executionIntent: 'verify.adapters',
+      }),
+    );
+    expect(result.assistantMessage).toContain('## Verify');
+    expect(result.commandBatches).toEqual([
+      {
+        slashQuery: '/verify',
+        bridgeArgv: ['verify', '--adapters', '--output', 'pretty'],
+        previewCommandLine: 'repo-ai-governor verify --adapters --output pretty',
+      },
+    ]);
+  });
+
+  it('keeps same-turn explain-plus-execute requests on the answer path when setup is still required', async () => {
+    const resolveTurn = vi.fn();
+    const dispatcher = new LocalOrchestrationServiceSessionMainAgentDispatcher({
+      resolveTurn,
+      resolveMentionedRoleId: () => null,
+      resolveCapabilityAvailability: async () => [
+        {
+          capabilityId: SESSION_MAIN_CAPABILITY_ID.REVIEW,
+          status: 'setup_required',
+          requiresSetup: true,
+          suggestedNextStep: '/connect',
+          reason: 'No governed reviewer surface passed the local readiness checks.',
+        },
+      ],
+    });
+
+    const result = await dispatcher.dispatch({
+      sessionId: 'session-skill-review-bridge-guard-001',
+      routeId: 'session.main',
+      turnId: 'turn-skill-review-bridge-guard-001',
+      turnIndex: 5,
+      userMessage: '先说说 review，再帮我 review 当前改动',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+    });
+
+    expect(resolveTurn).not.toHaveBeenCalled();
+    expect(result).toEqual(
+      expect.objectContaining({
+        responseMode: 'answer',
+        capabilityAnswerKind: 'detail',
+        referencedCapabilityIds: [SESSION_MAIN_CAPABILITY_ID.REVIEW],
+      }),
+    );
+    expect(result.assistantMessage).toContain('Current availability:');
+    expect(result.assistantMessage).toContain('/connect');
+    expect(result.suggestedActions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          suggestedSlashCommand: '/connect',
+        }),
+      ]),
+    );
+  });
+
+  it('reuses the implicit reviewer delegate seam for same-turn review bridge requests', async () => {
+    const resolveTurn = vi.fn(async () => ({
+      responseMode: 'role_collaboration' as const,
+      interactionMode: 'single_role_delegate' as const,
+      assistantDelta: '## Reviewer perspective',
+      assistantMessage: '## Reviewer perspective\n\n- one actionable finding',
+      executionIntent: 'session.role_delegate.reviewer',
+      requiresConfirmation: false,
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.router.single_role_delegate.implicit_role',
+      sessionRoutingPreferenceApplied: false,
+      invokedRoleIds: ['reviewer'],
+      subagentCount: 1,
+    }));
+    const dispatcher = new LocalOrchestrationServiceSessionMainAgentDispatcher({
+      resolveTurn,
+      resolveMentionedRoleId: () => null,
+      resolveCapabilityAvailability: async () => [
+        {
+          capabilityId: SESSION_MAIN_CAPABILITY_ID.REVIEW,
+          status: 'available',
+          selectedSurface: AdapterSurface.CODEX,
+          selectedBy: 'session.main.preference',
+        },
+      ],
+    });
+
+    const result = await dispatcher.dispatch({
+      sessionId: 'session-skill-review-bridge-001',
+      routeId: 'session.main',
+      turnId: 'turn-skill-review-bridge-001',
+      turnIndex: 7,
+      userMessage: '先说说 review，再帮我 review 当前改动',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+    });
+
+    expect(resolveTurn).toHaveBeenCalledTimes(1);
+    expect(resolveTurn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        metadata: {
+          [SESSION_MAIN_IMPLICIT_ROLE_DELEGATE_METADATA_KEY]: 'reviewer',
+        },
+      }),
+    );
+    expect(result.responseMode).toBe('role_collaboration');
+    expect(result.executionIntent).toBe('session.role_delegate.reviewer');
+  });
+
   it('routes current-project diagnosis requests into direct-execute doctor command batches', async () => {
     const resolveTurn = vi.fn();
     const dispatcher = new LocalOrchestrationServiceSessionMainAgentDispatcher({

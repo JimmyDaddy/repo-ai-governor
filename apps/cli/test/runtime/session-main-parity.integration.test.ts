@@ -339,6 +339,60 @@ describe('session.main parity integration', () => {
     }
   });
 
+  it('preserves capability explanation metadata and transcript affordances across resume', async () => {
+    const temporaryRoot = await mkdtemp(resolve(tmpdir(), 'session-main-parity-capability-'));
+    const workspaceRoot = resolve(temporaryRoot, '.repo-ai-governor');
+    await mkdir(workspaceRoot, { recursive: true });
+    const runtime = createRuntime(workspaceRoot);
+    const sessionClient = new CliSessionShellServiceClient(runtime, {
+      locale: 'en-US',
+    });
+
+    try {
+      const firstRenderer = new RecordingSessionShellRenderer();
+      const firstRunner = createRunner(firstRenderer, ['tell me about review', '/exit']);
+      const firstResult = await firstRunner.run(createRunOptions(sessionClient));
+      const firstSessionId = firstRenderer.frames[0]?.sessionId;
+      const firstAnswer = firstResult.transcriptItems.find(
+        (item) => item.renderKind === 'markdown',
+      );
+
+      expect(firstResult.exitReason).toBe(CliSessionShellExitReason.SLASH_EXIT);
+      expect(firstAnswer).toEqual(
+        expect.objectContaining({
+          capabilityAnswerKind: 'detail',
+          referencedCapabilityIds: ['review'],
+          suggestedActionsBlock: expect.objectContaining({
+            actions: expect.arrayContaining([
+              expect.objectContaining({
+                label: 'Review',
+                target: '/review',
+                suggestedSlashCommand: '/review',
+              }),
+            ]),
+          }),
+        }),
+      );
+
+      const resumedRenderer = new RecordingSessionShellRenderer();
+      const resumedRunner = createRunner(resumedRenderer, ['/exit']);
+      const resumedResult = await resumedRunner.run(
+        createRunOptions(sessionClient, {
+          resumeOnStartup: true,
+        }),
+      );
+      const resumedAnswer = resumedResult.transcriptItems.find(
+        (item) => item.renderKind === 'markdown',
+      );
+
+      expect(resumedRenderer.frames[0]?.sessionId).toBe(firstSessionId);
+      expect(resumedAnswer).toEqual(firstAnswer);
+    } finally {
+      await runtime.dispose();
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
   it('auto-executes low-risk verify skills without requiring /confirm', async () => {
     const temporaryRoot = await mkdtemp(resolve(tmpdir(), 'session-main-parity-verify-'));
     const workspaceRoot = resolve(temporaryRoot, '.repo-ai-governor');

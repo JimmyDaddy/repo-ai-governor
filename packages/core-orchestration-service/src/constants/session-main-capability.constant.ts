@@ -48,3 +48,16 @@ export const SESSION_MAIN_CAPABILITY_ANSWER_KIND = {
   EXAMPLES: 'examples',
   COMPARISON: 'comparison',
 } as const;
+
+/**
+ * Declares the dynamic availability status values projected on top of the static capability catalog.
+ *
+ * Why this exists:
+ * explainer answers need one governed vocabulary for "ready now" vs "setup required" decisions
+ * without reintroducing scattered string literals across dispatcher, runtime, and presenter seams.
+ */
+export const SESSION_MAIN_CAPABILITY_AVAILABILITY_STATUS = {
+  AVAILABLE: 'available',
+  SETUP_REQUIRED: 'setup_required',
+  UNAVAILABLE: 'unavailable',
+} as const;

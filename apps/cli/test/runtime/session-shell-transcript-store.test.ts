@@ -379,6 +379,128 @@ describe('CliSessionShellTranscriptStore', () => {
     expect(items[0]?.lines).toEqual(['# Plan\n- inspect repo\n- summarize risks']);
   });
 
+  it('preserves capability explanation metadata and suggested action affordances on markdown answers', () => {
+    const store = new CliSessionShellTranscriptStore();
+    const items = store.applyEvents(
+      'session-004-capability-answer',
+      [
+        {
+          eventId: 'event-1',
+          sequence: 1,
+          streamCursor: 'cursor-1',
+          sessionId: 'session-004-capability-answer',
+          type: OrchestrationSessionEventType.TURN_COMPLETED,
+          createdAt: '2026-04-03T22:00:00Z',
+          payload: {
+            role: OrchestrationSessionTranscriptRole.ASSISTANT,
+            routeId: 'session.main',
+            turnIndex: 1,
+            responseMode: 'answer',
+            capabilityAnswerKind: 'detail',
+            referencedCapabilityIds: ['review'],
+            suggestedActions: [
+              {
+                label: 'Review',
+                target: '/review',
+                suggestedSlashCommand: '/review',
+              },
+              {
+                label: 'Review Verify',
+                target: '/review verify',
+                suggestedSlashCommand: '/review verify',
+              },
+            ],
+            assistantMessage:
+              '## Review\n\nUse this capability when you want a governed code review.',
+          },
+        },
+      ],
+      (key) => {
+        if (key === 'cli.sessionShell.transcript.assistantLabel') {
+          return 'Governor';
+        }
+        if (key === 'cli.sessionShell.responses.mainTurnSuggestedActionsTitle') {
+          return 'Suggested next steps';
+        }
+        return key;
+      },
+    );
+
+    expect(items).toHaveLength(1);
+    expect(items[0]?.renderKind).toBe('markdown');
+    expect(items[0]?.capabilityAnswerKind).toBe('detail');
+    expect(items[0]?.referencedCapabilityIds).toEqual(['review']);
+    expect(items[0]?.suggestedActionsBlock).toEqual({
+      title: 'Suggested next steps',
+      actions: [
+        {
+          label: 'Review',
+          target: '/review',
+          suggestedSlashCommand: '/review',
+        },
+        {
+          label: 'Review Verify',
+          target: '/review verify',
+          suggestedSlashCommand: '/review verify',
+        },
+      ],
+    });
+  });
+
+  it('keeps explanation markdown attached to bridged command recap items', () => {
+    const store = new CliSessionShellTranscriptStore();
+    const items = store.applyEvents(
+      'session-004-capability-bridge',
+      [
+        {
+          eventId: 'event-1',
+          sequence: 1,
+          streamCursor: 'cursor-1',
+          sessionId: 'session-004-capability-bridge',
+          type: OrchestrationSessionEventType.TURN_COMPLETED,
+          createdAt: '2026-04-03T23:00:00Z',
+          payload: {
+            role: OrchestrationSessionTranscriptRole.ASSISTANT,
+            routeId: 'session.main',
+            turnIndex: 1,
+            responseMode: 'command_handoff_preview',
+            assistantMessage:
+              '## Verify\n\nThis capability is ready now, and I already prepared the governed execution handoff.',
+            suggestedSlashCommand: '/verify',
+            executionIntent: 'verify.adapters',
+            handoffExecutionMode: 'direct_execute',
+            requiresConfirmation: false,
+            handoffCommandPreview: 'repo-ai-governor verify --adapters --output pretty',
+          },
+        },
+      ],
+      (key, interpolation) => {
+        if (key === 'cli.sessionShell.transcript.assistantLabel') {
+          return 'Governor';
+        }
+        if (key === 'cli.sessionShell.responses.mainTurnAutoExecuteSlash') {
+          return `Auto-running: ${interpolation?.command ?? ''}`;
+        }
+        if (key === 'cli.sessionShell.responses.mainTurnAutoExecuteCommand') {
+          return `Running: ${interpolation?.preview ?? ''}`;
+        }
+        if (key === 'cli.sessionShell.responses.mainTurnExecutionIntent') {
+          return `Intent: ${interpolation?.executionIntent ?? ''}`;
+        }
+        return key;
+      },
+    );
+
+    expect(items).toHaveLength(1);
+    expect(items[0]?.renderKind).toBe('command_recap');
+    expect(items[0]?.markdownSource).toContain('## Verify');
+    expect(items[0]?.lines).toEqual([
+      'Auto-running: /verify',
+      'Running: repo-ai-governor verify --adapters --output pretty',
+      'Intent: verify.adapters',
+    ]);
+  });
+
   it('attaches completed-turn execution details carried directly on the payload', () => {
     const store = new CliSessionShellTranscriptStore();
     const items = store.applyEvents(

@@ -17,8 +17,14 @@
   - 2026-04-03：完成 overview/detail/examples/comparison explainer answer、dispatcher answer route 优先级与 shared turn outcome structured answer baseline。
   - 2026-04-03：验证通过 `vitest(core-orchestration-service/test)`、`pnpm run build` 与 `pnpm run check`；任务收口为 `completed`。
 
-- [ ] TK-498 project capability explanation metadata into shared session truth and transcript affordances
+- [x] TK-498 project capability explanation metadata into shared session truth and transcript affordances
   - 2026-04-02：任务创建，状态初始化为 `planned`；承接 shared session DTO、turn outcome payload、CLI transcript affordance 与 suggested action contract。
+  - 2026-04-03：状态切换为 `active`；开始把 capability explanation metadata 写入 canonical `TURN_COMPLETED` payload，并让 transcript markdown answer 消费 suggested action affordance。
+  - 2026-04-03：完成 canonical `TURN_COMPLETED` metadata projection、transcript markdown suggested-action affordance 与 capability answer resume parity；验证通过 targeted vitest、`pnpm run build` 与 `pnpm run check`。
+  - 2026-04-03：CR 复核认可并修复 availability explanation 泄露 internal routing marker 的问题；现已改为本地化的人类可读标签，验证通过 targeted vitest 与 `pnpm run build`，对应 CR 已收口为 `resolved_code_review_working-tree-20260403-2349.md`。
 
-- [ ] TK-499 add capability availability overlay governed execution bridge and sprint-001 exit acceptance
+- [x] TK-499 add capability availability overlay governed execution bridge and sprint-001 exit acceptance
   - 2026-04-02：任务创建，状态初始化为 `planned`；承接 availability overlay、explainer-to-skill governed bridge 与 sprint-001 验收收口。
+  - 2026-04-03：状态切换为 `active`；开始将 capability explanation 与动态 availability overlay、同轮 governed execution bridge 和 sprint-001 exit acceptance 结论一起收口。
+  - 2026-04-03：完成 capability availability overlay、same-turn governed bridge、command recap explanation markdown continuity 与 sprint-001 exit acceptance summary；验证通过 package/app tests、`pnpm run build`、`pnpm run check` 与治理门禁。
+  - 2026-04-03：CR 复核认可并修复 local-only `plan` / `review_verify` 被错误纳入 surface gating 的问题；未接入 workspace 下这两个能力现保持 `available`，验证通过 targeted vitest 与 `pnpm run build`，对应 CR 已收口为 `resolved_code_review_working-tree-20260403-2349.md`。

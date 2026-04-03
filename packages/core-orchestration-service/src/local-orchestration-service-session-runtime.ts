@@ -297,6 +297,21 @@ export class LocalOrchestrationServiceSessionRuntime {
           ...(dispatchResult.followUpQuestion
             ? { followUpQuestion: dispatchResult.followUpQuestion }
             : {}),
+          ...(dispatchResult.capabilityAnswerKind
+            ? { capabilityAnswerKind: dispatchResult.capabilityAnswerKind }
+            : {}),
+          ...(dispatchResult.referencedCapabilityIds
+            ? {
+                referencedCapabilityIds: [...dispatchResult.referencedCapabilityIds],
+              }
+            : {}),
+          ...(dispatchResult.suggestedActions
+            ? {
+                suggestedActions: dispatchResult.suggestedActions.map((suggestedAction) => ({
+                  ...suggestedAction,
+                })),
+              }
+            : {}),
           requiresConfirmation: dispatchResult.requiresConfirmation,
           selectedSurface: dispatchResult.selectedSurface,
           selectedBy: dispatchResult.selectedBy,

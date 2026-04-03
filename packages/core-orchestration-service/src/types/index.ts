@@ -1,10 +1,12 @@
 export type {
   SessionMainCapabilityAnswerKind,
+  SessionMainCapabilityAvailabilityStatus,
   SessionMainCapabilityCatalogOwnerModuleId,
   SessionMainCapabilityDescriptorVersion,
   SessionMainCapabilityId,
 } from './aliases/index.js';
 export type {
+  SessionMainCapabilityAvailability,
   LocalOrchestrationServiceMemoryProviderState,
   LocalOrchestrationServicePublishEventRequest,
   LocalOrchestrationServiceSaveCheckpointRequest,
