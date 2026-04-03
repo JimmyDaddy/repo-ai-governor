@@ -394,6 +394,19 @@ export const EN_US_TRANSLATIONS = {
         mainTurnRoutingSelection: 'Routing: surface={{selectedSurface}} selected_by={{selectedBy}}',
         mainTurnBacklink: 'Backlink: kind={{kind}} label={{label}} target={{target}}',
         mainTurnSuggestedActionsTitle: 'Suggested next steps',
+        providerContinuationTitle: 'Provider continuation',
+        providerContinuationModelSummary: ' model={{model}}',
+        providerContinuationReasonSummary: ' reason={{reason}}',
+        providerContinuationCreated:
+          '{{laneLabel}}: started backend conversation on {{surface}}{{modelSummary}}.',
+        providerContinuationReused:
+          '{{laneLabel}}: reused backend conversation on {{surface}}{{modelSummary}}.',
+        providerContinuationRefreshed:
+          '{{laneLabel}}: refreshed backend conversation on {{surface}}{{modelSummary}}{{reasonSummary}}.',
+        providerContinuationCleared:
+          '{{laneLabel}}: cleared backend conversation state on {{surface}}{{modelSummary}}{{reasonSummary}}.',
+        providerContinuationUnsupported:
+          '{{laneLabel}}: attempted backend conversation reuse on {{surface}}, but continuation is unsupported{{modelSummary}}{{reasonSummary}}.',
         mainTurnFollowUpPrompt: 'The main agent needs one clarification before handoff:',
         sessionStarted: 'Started service-backed session {{sessionId}} on {{routeId}}.',
         sessionResumed: 'Resumed session {{sessionId}} via selector={{resumeSelector}}.',

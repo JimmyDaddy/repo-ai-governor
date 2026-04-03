@@ -18,4 +18,5 @@ export type {
   SharedSession,
   SharedSessionSummaryRecord,
   UpdateSessionContextOptions,
+  UpdateSessionContextWithLatestOptions,
 } from './interfaces/index.js';

@@ -1892,6 +1892,160 @@ describe('core-orchestration-service local shell', () => {
     }
   });
 
+  it('persists provider continuation slots into session context and reloads them on resumed turns', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
+    const laneKey = 'session.main::stage-session-main-answer::session.main::codex::chat_only';
+    const createdSummary = {
+      laneKey,
+      laneLabel: 'session.main',
+      status: 'created',
+      surface: 'codex',
+      providerId: 'openai',
+      transportKind: 'remote_api',
+      model: 'gpt-5',
+      stageId: 'stage-session-main-answer',
+      roleId: null,
+      policyEnvelope: 'chat_only',
+    };
+    const firstResolveTurn = vi.fn(async () => ({
+      responseMode: 'answer',
+      interactionMode: 'direct_answer',
+      assistantDelta: 'continued answer',
+      assistantMessage: 'continued answer',
+      executionIntent: 'session.answer',
+      requiresConfirmation: false,
+      selectedSurface: 'codex',
+      selectedBy: 'session.main.answer.primary',
+      sessionRoutingPreferenceApplied: false,
+      invokedRoleIds: [],
+      subagentCount: 0,
+      providerContinuationSummaries: [createdSummary],
+      providerContinuationMutations: [
+        {
+          laneKey,
+          summary: createdSummary,
+          slot: {
+            laneKey,
+            routeId: 'session.main',
+            stageId: 'stage-session-main-answer',
+            roleId: null,
+            selectedSurface: 'codex',
+            providerId: 'openai',
+            transportKind: 'remote_api',
+            model: 'gpt-5',
+            policyEnvelope: 'chat_only',
+            workspaceRoot: temporaryRoot,
+            currentWorkingDirectory: temporaryRoot,
+            handle: {
+              providerId: 'openai',
+              surface: 'codex',
+              transportKind: 'remote_api',
+              handleKind: 'response_id',
+              value: 'resp-1',
+              model: 'gpt-5',
+              acquiredAt: '2026-04-04T12:00:00.000Z',
+            },
+            updatedAt: '2026-04-04T12:00:00.000Z',
+          },
+        },
+      ],
+    }));
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot: temporaryRoot,
+      sessionMainSupervisorRuntime: {
+        resolveTurn: firstResolveTurn,
+      },
+    });
+
+    try {
+      const started = await orchestrationService.startSession({
+        routeId: OrchestrationSessionRouteId.MAIN,
+      });
+      await orchestrationService.sendSessionTurn({
+        sessionId: started.session.sessionId,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        userMessage: 'continue the previous answer',
+      });
+      const session = await orchestrationService.getSession(started.session.sessionId);
+      const subscription = await orchestrationService.subscribeSession({
+        sessionId: started.session.sessionId,
+      });
+      const completedEvent = subscription.events.find(
+        (event) => event.type === OrchestrationSessionEventType.TURN_COMPLETED,
+      );
+
+      expect(firstResolveTurn).toHaveBeenCalledTimes(1);
+      expect(session?.context.providerContinuations).toEqual(
+        expect.objectContaining({
+          version: 1,
+          slots: {
+            [laneKey]: expect.objectContaining({
+              handle: expect.objectContaining({
+                value: 'resp-1',
+              }),
+            }),
+          },
+        }),
+      );
+      expect(completedEvent?.payload.providerContinuationSummaries).toEqual([
+        expect.objectContaining({
+          laneKey,
+          status: 'created',
+          surface: 'codex',
+        }),
+      ]);
+
+      const resumedResolveTurn = vi.fn(async (context) => {
+        expect(context.providerContinuationState?.slots[laneKey]?.handle.value).toBe('resp-1');
+        return {
+          responseMode: 'answer',
+          interactionMode: 'direct_answer',
+          assistantDelta: 'follow-up answer',
+          assistantMessage: 'follow-up answer',
+          executionIntent: 'session.answer',
+          requiresConfirmation: false,
+          selectedSurface: 'codex',
+          selectedBy: 'session.main.answer.primary',
+          sessionRoutingPreferenceApplied: false,
+          invokedRoleIds: [],
+          subagentCount: 0,
+        };
+      });
+      const resumedService = new LocalOrchestrationServiceShell({
+        workspaceRoot: temporaryRoot,
+        sessionMainSupervisorRuntime: {
+          resolveTurn: resumedResolveTurn,
+        },
+      });
+      const resumed = await resumedService.resumeSession({
+        sessionId: started.session.sessionId,
+      });
+
+      expect(resumed.session.context.providerContinuations).toEqual(
+        expect.objectContaining({
+          version: 1,
+          slots: {
+            [laneKey]: expect.objectContaining({
+              handle: expect.objectContaining({
+                value: 'resp-1',
+              }),
+            }),
+          },
+        }),
+      );
+
+      await resumedService.sendSessionTurn({
+        sessionId: started.session.sessionId,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        userMessage: 'continue once more',
+      });
+
+      expect(resumedResolveTurn).toHaveBeenCalledTimes(1);
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
   it('persists supervisor execution details lines on completed turns', async () => {
     const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
     const resolveTurn = vi.fn(async () => ({

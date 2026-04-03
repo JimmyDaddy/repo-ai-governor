@@ -16,6 +16,7 @@ import {
   type AgentProbeRequest,
   type AgentProbeResult,
   AgentProtocol,
+  AgentStageContinuationStatus,
   AgentStageExecutionMode,
   AgentStageToolUsePolicy,
   type AgentStreamEvent,
@@ -310,6 +311,7 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
   public override async invokeStage(
     request: AgentInvokeStageRequest,
   ): Promise<AgentInvokeStageResult> {
+    const unsupportedContinuation = this.createUnsupportedContinuationResult(request);
     if (this.options.executionMode === GithubCopilotAgentAdapterExecutionMode.BASELINE) {
       return {
         output: {
@@ -318,6 +320,11 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
           stageId: request.stageId,
           echoedInput: request.input,
         },
+        ...(unsupportedContinuation
+          ? {
+              continuation: unsupportedContinuation,
+            }
+          : {}),
         elapsedMs: 1,
       };
     }
@@ -345,7 +352,25 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
         warnings: parsedOutput.warnings,
         echoedInput: request.input,
       },
+      ...(unsupportedContinuation
+        ? {
+            continuation: unsupportedContinuation,
+          }
+        : {}),
       elapsedMs: executionResult.elapsedMs,
+    };
+  }
+
+  private createUnsupportedContinuationResult(
+    request: AgentInvokeStageRequest,
+  ): AgentInvokeStageResult['continuation'] | undefined {
+    if (!request.continuation) {
+      return undefined;
+    }
+
+    return {
+      status: AgentStageContinuationStatus.UNSUPPORTED,
+      ...(request.continuation.laneKey ? { laneKey: request.continuation.laneKey } : {}),
     };
   }
 

@@ -1,7 +1,7 @@
 # Session Main Supervisor And Role Subagent Collaboration ADR
 
 - Status: active
-- Date: 2026-04-02
+- Date: 2026-04-04
 - Module ID: `runtime.orchestration`
 - ADR ID: `adr.runtime.orchestration.session-main-supervisor-role-subagents.v1`
 
@@ -60,6 +60,10 @@
    - `/confirm`、`/cancel`、`/clear`、`/exit`、`/resume`、`/history`、`/search`、`/multiline`、`/status`、`/theme`、`/agent` 等 CLI-only builtin 继续由 `runtime.cli-interactive-shell` slash registry 本地自治
    - CLI presenter 可以把两类 discoverability 合并展示，但 orchestration 不得拥有 shell-local builtin 的 canonical truth
 9. 纯 capability explanation turn 仍属于 `answer` 路径；若同一句话同时包含 explanation 与 executable ask，runtime 必须先命中 capability explanation，再仅在 scope-resolved 且 policy 允许时桥接到既有 `direct_execute` 或 `command_handoff_preview` outcome，而不是发明一条新的 hybrid pending-state contract。
+10. `runtime.orchestration` 进一步正式接受“provider-native backend conversation continuity under shared-session truth”补充方向：
+   - shared session 继续是 canonical truth，provider continuation 只能作为 lane-scoped optimization seam 存在
+   - runtime 必须拥有 `laneKey` derivation、session-scoped continuation slot lifecycle、slot-aware mutation、invalidation rule 与 turn-level continuation summary projection
+   - raw provider handle 语义继续归 `runtime.agent-projection` adapter seam 所有，CLI/desktop 只能消费 presenter-safe summary
 
 ## 3. Consequences
 
@@ -69,10 +73,12 @@
    - `preview_confirm` 的 pending handoff 恢复链
    - `direct_execute` 的 executed-state / result-presentation 恢复链
    - `capability explanation` 的 answer-only metadata 恢复链
+   - `provider continuation` 的 lane-scoped slot 与 turn-level summary 恢复链
 4. `runtime.agent-projection` 继续负责 `AgentDescriptor` truth；projection descriptor 可被 supervisor 派生成 subagent descriptor，但 projection module 不能被误用成第二套 execution runtime。
 5. 为了避免 embedded-only 临时路径长期固化，后续需要把 route runner / protocol map 组装继续抽离到 runtime-neutral package，并让 sidecar host 复用同一条 supervisor seam。
 6. 该 ADR 定义的是正式方向，不等于代码已全面完成；`project-035-session-main-supervisor-and-role-subagent-productization` 负责把 direct answer、role subagent bootstrap、risk-tiered skill handoff 与 command-handoff governance 真正产品化。
 7. 该 ADR 现进一步要求 capability prose 采用 locale-neutral seed + localized view 分层；`runtime.orchestration` 不得把某一种语言的 raw prose 文本写成 canonical truth，也不得反向依赖 CLI `--help` builder。
+8. 当 provider continuation seam 后续真正实现时，shared session truth 必须高于 provider thread truth：本地 runtime 说不能复用，就不得因为 provider 端仍保留 thread 而继续复用。
 
 ## 4. Boundary Clarifications
 
@@ -161,11 +167,19 @@ flowchart TD
 2. shared session truth 只投影 capability answer kind、referenced capability ids 与 suggested actions，不把整份 localized prose 强行写成第二份 session-owned catalog。
 3. CLI 与 future desktop 只能消费这份 shared session metadata 与 localized answer output，不得各自再造平行 capability taxonomy。
 
+### 4.8 provider continuation 是 adapter-owned optimization seam，不是新的 session truth
+
+1. `laneKey`、slot lifecycle、turn-level continuation summaries 与 invalidation policy 由 `runtime.orchestration` 拥有。
+2. raw provider continuation handle 语义仍由 `runtime.agent-projection` adapter seam 拥有；orchestration 不得解析 provider-private `referenceValue` 语义。
+3. shared session truth 只允许持久化 session-scoped、lane-scoped continuation slots 与 presenter-safe summaries；不允许让 provider thread truth 反向替代 canonical session continuity。
+4. CLI 与 future desktop 只能消费 presenter-safe continuation summary，不得直接读取 raw handle 或自行决定“下一轮该复用哪一个 provider thread”。
+
 ## 5. Source Anchors
 
 1. `.repo-ai-governor/draft/session-main-agent-answer-and-command-handoff-technical-solution.md`
 2. `.repo-ai-governor/draft/session-main-conversational-chat-and-skill-intent-handoff-technical-solution.md`
 3. `.repo-ai-governor/draft/session-main-capability-explainer-and-contextual-command-guidance-technical-solution.md`
-4. `.repo-ai-governor/context/dev/project-033-session-main-agent-runtime-productization/project-033-session-main-agent-runtime-productization-completion-audit-summary.md`
-5. `.repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/contracts/cli-session-shell-contract.md`
-6. `.repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/contracts/agent-projection-contract.md`
+4. `.repo-ai-governor/draft/provider-session-reuse-and-backend-conversation-continuity-technical-solution.md`
+5. `.repo-ai-governor/context/dev/project-033-session-main-agent-runtime-productization/project-033-session-main-agent-runtime-productization-completion-audit-summary.md`
+6. `.repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/contracts/cli-session-shell-contract.md`
+7. `.repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/contracts/agent-projection-contract.md`

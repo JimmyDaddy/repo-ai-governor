@@ -14,6 +14,10 @@ import type {
   AgentCapabilityFallbackAction,
   AgentCapabilitySupportLevel,
   AgentConfirmationDecision,
+  AgentStageContinuationHandleKind,
+  AgentStageContinuationMode,
+  AgentStageContinuationStatus,
+  AgentStageContinuationTransportKind,
   AgentStageExecutionMode,
   AgentStageToolUsePolicy,
   AgentStreamEventType,
@@ -160,6 +164,40 @@ export interface AgentStageExecutionPolicy {
 }
 
 /**
+ * Defines one adapter-owned continuation handle carried opaquely by runtime.
+ */
+export interface ProviderContinuationHandle {
+  providerId: string;
+  surface: string;
+  transportKind: AgentStageContinuationTransportKind;
+  handleKind: AgentStageContinuationHandleKind;
+  value: string;
+  model?: string | null;
+  acquiredAt: string;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Defines continuation request metadata attached to one stage invocation.
+ */
+export interface AgentStageContinuationRequest {
+  mode?: AgentStageContinuationMode;
+  sessionId?: string | null;
+  laneKey?: string;
+  handle?: ProviderContinuationHandle | null;
+}
+
+/**
+ * Defines continuation lifecycle result returned by one adapter invocation.
+ */
+export interface AgentStageContinuationResult {
+  status: AgentStageContinuationStatus;
+  laneKey?: string;
+  handle?: ProviderContinuationHandle;
+  invalidationReason?: string;
+}
+
+/**
  * Defines stage invocation request payload.
  */
 export interface AgentInvokeStageRequest {
@@ -171,6 +209,7 @@ export interface AgentInvokeStageRequest {
   agentInvocationTimeoutMs?: number;
   stageTimeoutMs?: number;
   flowTimeoutMs?: number;
+  continuation?: AgentStageContinuationRequest;
   signal?: AbortSignal;
 }
 
@@ -190,6 +229,7 @@ export interface AgentTokenUsage {
 export interface AgentInvokeStageResult {
   output: Record<string, unknown>;
   usage?: AgentTokenUsage;
+  continuation?: AgentStageContinuationResult;
   elapsedMs: number;
 }
 
@@ -205,6 +245,7 @@ export interface AgentStreamEventsRequest {
   agentInvocationTimeoutMs?: number;
   stageTimeoutMs?: number;
   flowTimeoutMs?: number;
+  continuation?: AgentStageContinuationRequest;
   signal?: AbortSignal;
 }
 

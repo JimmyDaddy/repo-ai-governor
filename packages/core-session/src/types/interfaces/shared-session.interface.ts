@@ -105,6 +105,14 @@ export interface UpdateSessionContextOptions {
 }
 
 /**
+ * Defines lock-scoped context-update request payload built from the latest persisted context.
+ */
+export interface UpdateSessionContextWithLatestOptions {
+  sessionId: string;
+  contextPatchBuilder: (currentContext: Record<string, unknown>) => Record<string, unknown> | null;
+}
+
+/**
  * Defines finalize-session request payload.
  */
 export interface FinalizeSessionOptions {

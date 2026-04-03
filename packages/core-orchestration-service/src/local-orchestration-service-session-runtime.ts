@@ -51,6 +51,7 @@ import {
   standardizeError,
 } from '@repo-ai-governor/shared';
 import { LocalOrchestrationServiceSessionMainAgentDispatcher } from './local-orchestration-service-session-main-agent-dispatcher.js';
+import { ProviderContinuationSessionRuntime } from './provider-continuation-session-runtime.js';
 import type {
   LocalOrchestrationServicePublishEventRequest,
   SessionMainSupervisorRuntimeContract,
@@ -89,6 +90,7 @@ export class LocalOrchestrationServiceSessionRuntime {
   private readonly nowProvider: () => Date;
   private readonly memoryProviderRegistry: MemoryProviderRegistry;
   private readonly mainAgentDispatcher: LocalOrchestrationServiceSessionMainAgentDispatcher;
+  private readonly providerContinuationSessionRuntime = new ProviderContinuationSessionRuntime();
   private memoryProviderStatePromise: Promise<LocalOrchestrationServiceSessionMemoryProviderState> | null =
     null;
   private sharedSessionManagerPromise: Promise<SharedSessionManager> | null = null;
@@ -188,6 +190,38 @@ export class LocalOrchestrationServiceSessionRuntime {
       sessionPersistenceMetrics.writeCount += 1;
       return updatedSession;
     };
+    const updateSessionContext = async (
+      contextPatch: Record<string, unknown>,
+    ): Promise<SharedSession> => {
+      const persistStartedAtMs = this.currentTimeMs();
+      const updatedSession = await sessionManager.updateContext({
+        sessionId: request.sessionId,
+        contextPatch,
+      });
+      sessionPersistenceMetrics.totalElapsedMs += Math.max(
+        this.currentTimeMs() - persistStartedAtMs,
+        0,
+      );
+      sessionPersistenceMetrics.writeCount += 1;
+      return updatedSession;
+    };
+    const updateSessionContextWithLatest = async (
+      contextPatchBuilder: (
+        currentContext: Record<string, unknown>,
+      ) => Record<string, unknown> | null,
+    ): Promise<SharedSession> => {
+      const persistStartedAtMs = this.currentTimeMs();
+      const updatedSession = await sessionManager.updateContextWithLatest({
+        sessionId: request.sessionId,
+        contextPatchBuilder,
+      });
+      sessionPersistenceMetrics.totalElapsedMs += Math.max(
+        this.currentTimeMs() - persistStartedAtMs,
+        0,
+      );
+      sessionPersistenceMetrics.writeCount += 1;
+      return updatedSession;
+    };
     let emittedStreamDeltaCount = 0;
     await appendSessionEvent({
       sessionId: request.sessionId,
@@ -215,6 +249,9 @@ export class LocalOrchestrationServiceSessionRuntime {
         selectedSurface: '',
         selectedBy: '',
         sessionRoutingPreferenceApplied: false,
+        providerContinuationState: this.providerContinuationSessionRuntime.readSessionState(
+          existingSession.context,
+        ),
         publishStreamEvent: async (streamEvent) => {
           emittedStreamDeltaCount += 1;
           await appendSessionEvent({
@@ -249,6 +286,17 @@ export class LocalOrchestrationServiceSessionRuntime {
           },
         });
         emittedStreamDeltaCount += 1;
+      }
+      if (
+        dispatchResult.providerContinuationMutations &&
+        dispatchResult.providerContinuationMutations.length > 0
+      ) {
+        await updateSessionContextWithLatest((currentContext) =>
+          this.providerContinuationSessionRuntime.createContextPatch(
+            currentContext,
+            dispatchResult.providerContinuationMutations,
+          ),
+        );
       }
       const runtimePerformanceDetailLines = this.buildRuntimePerformanceDetailLines({
         dispatchElapsedMs: Math.max(this.currentTimeMs() - dispatchStartedAtMs, 0),
@@ -357,6 +405,15 @@ export class LocalOrchestrationServiceSessionRuntime {
                 })),
               }
             : {}),
+          ...(dispatchResult.providerContinuationSummaries
+            ? {
+                providerContinuationSummaries: dispatchResult.providerContinuationSummaries.map(
+                  (summary) => ({
+                    ...summary,
+                  }),
+                ),
+              }
+            : {}),
         },
       });
     } catch (error) {
@@ -391,12 +448,9 @@ export class LocalOrchestrationServiceSessionRuntime {
         },
       });
     }
-    await sessionManager.updateContext({
-      sessionId: request.sessionId,
-      contextPatch: {
-        [SESSION_CONTEXT_CURRENT_ROUTE_KEY]: currentRouteId,
-        [SESSION_CONTEXT_LATEST_TURN_ID_KEY]: turnId,
-      },
+    await updateSessionContext({
+      [SESSION_CONTEXT_CURRENT_ROUTE_KEY]: currentRouteId,
+      [SESSION_CONTEXT_LATEST_TURN_ID_KEY]: turnId,
     });
 
     const refreshedSession = await sessionManager.getSession(request.sessionId);

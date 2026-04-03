@@ -35,8 +35,10 @@ import type {
   SessionMainSupervisorTurnOutcome,
 } from '@repo-ai-governor/core-orchestration-service/types';
 import { AdapterSurface, standardizeError } from '@repo-ai-governor/shared';
+import { SessionMainProviderContinuationPolicyEnvelope } from '../constants/session-main-provider-continuation.constant.js';
 import type { SessionMainSubagentDescriptor } from '../types/index.js';
 import { CliAdapterRoutingRuntime } from './adapter-routing-runtime.js';
+import { SessionMainProviderContinuationRuntime } from './session-main-provider-continuation-runtime.js';
 import { CliSessionMainSubagentRegistry } from './session-main-subagent-registry.js';
 
 const SESSION_MAIN_ANSWER_ROUTE_KEY = 'session.main.answer';
@@ -110,6 +112,8 @@ interface ExecutedRoleDispatch {
   assistantMessage: string;
   selectedSurface: string;
   selectedBy: string;
+  providerContinuationSummaries?: SessionMainSupervisorTurnOutcome['providerContinuationSummaries'];
+  providerContinuationMutations?: SessionMainSupervisorTurnOutcome['providerContinuationMutations'];
 }
 
 interface ProtocolStreamRelayState {
@@ -149,6 +153,7 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
   private readonly adapterRoutingRuntime: CliAdapterRoutingRuntime;
   private readonly subagentRegistry: CliSessionMainSubagentRegistry;
   private readonly capabilityEvaluator = new AgentCapabilityEvaluator();
+  private readonly providerContinuationRuntime: SessionMainProviderContinuationRuntime;
 
   public constructor(
     private readonly options: {
@@ -179,6 +184,10 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
         adaptersConfig: options.adaptersConfig,
         workspace: options.workspace,
       });
+    this.providerContinuationRuntime = new SessionMainProviderContinuationRuntime({
+      workspaceRoot: options.workspaceRoot,
+      currentWorkingDirectory: options.currentWorkingDirectory,
+    });
   }
 
   /**
@@ -327,6 +336,16 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     });
     const answerInput = this.createAnswerInput(context);
     const primaryAnswerSurface = safeCandidateSurfaces[0] ?? AdapterSurface.CODEX;
+    const directAnswerContinuation = this.providerContinuationRuntime.prepareRequest({
+      sessionId: context.sessionId,
+      routeId: context.routeId,
+      stageId: SESSION_MAIN_ANSWER_STAGE_ID,
+      roleId: null,
+      selectedSurface: primaryAnswerSurface,
+      toolConfig: toolConfigBySurface.get(primaryAnswerSurface),
+      providerContinuationState: context.providerContinuationState,
+      policyEnvelope: SessionMainProviderContinuationPolicyEnvelope.CHAT_ONLY,
+    });
     const relayState = this.createProtocolStreamRelayState();
     await this.publishStreamEvent(context, {
       kind: 'lifecycle',
@@ -347,16 +366,23 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       stageId: SESSION_MAIN_ANSWER_STAGE_ID,
       routeKey: SESSION_MAIN_ANSWER_ROUTE_KEY,
       input: answerInput,
+      ...(directAnswerContinuation
+        ? {
+            continuation: directAnswerContinuation.request,
+          }
+        : {}),
       runtimeContext: {
         networkMode: AgentNetworkMode.STANDARD,
       },
     };
-    const relayPromise = this.relayProtocolStreamEvents(
-      context,
-      protocolBySurface[primaryAnswerSurface],
-      dispatchRequest,
-      relayState,
-    );
+    const relayPromise = directAnswerContinuation?.suppressStreamRelay
+      ? Promise.resolve()
+      : this.relayProtocolStreamEvents(
+          context,
+          protocolBySurface[primaryAnswerSurface],
+          dispatchRequest,
+          relayState,
+        );
     const directAnswerInvokeStartedAtMs = Date.now();
     let dispatchResult: Awaited<ReturnType<typeof routeRunner.dispatchStage>>;
     try {
@@ -412,6 +438,10 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       context.sessionRoutingPreferenceApplied,
       !safeCandidateSurfaces.includes(context.selectedSurface as AdapterSurface),
     );
+    const providerContinuationMutations = this.providerContinuationRuntime.resolveMutations(
+      directAnswerContinuation,
+      dispatchResult.invokeResult.continuation,
+    );
     return {
       responseMode: SESSION_MAIN_RESPONSE_MODE.ANSWER,
       interactionMode: SESSION_MAIN_INTERACTION_MODE.DIRECT_ANSWER,
@@ -431,6 +461,14 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       invokedRoleIds: [],
       invokedRoles: [],
       subagentCount: 0,
+      ...(providerContinuationMutations.length > 0
+        ? {
+            providerContinuationSummaries: providerContinuationMutations.map(
+              (mutation) => mutation.summary,
+            ),
+            providerContinuationMutations,
+          }
+        : {}),
     };
   }
 
@@ -909,6 +947,9 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       protocolBySurface,
       toolConfigBySurface,
     );
+    const providerContinuationMutations = this.collectProviderContinuationMutations([
+      executedDispatch,
+    ]);
     return {
       responseMode: SESSION_MAIN_RESPONSE_MODE.ROLE_COLLABORATION,
       interactionMode: SESSION_MAIN_INTERACTION_MODE.SINGLE_ROLE_DELEGATE,
@@ -924,6 +965,14 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       invokedRoleIds: [executedDispatch.descriptor.roleId],
       invokedRoles: [this.createInvokedRoleDescriptor(executedDispatch)],
       subagentCount: 1,
+      ...(providerContinuationMutations.length > 0
+        ? {
+            providerContinuationSummaries: providerContinuationMutations.map(
+              (mutation) => mutation.summary,
+            ),
+            providerContinuationMutations,
+          }
+        : {}),
     };
   }
 
@@ -972,6 +1021,8 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     }
 
     const assistantMessage = this.createSerialRoleCollaborationAssistantMessage(executedDispatches);
+    const providerContinuationMutations =
+      this.collectProviderContinuationMutations(executedDispatches);
     return {
       responseMode: SESSION_MAIN_RESPONSE_MODE.ROLE_COLLABORATION,
       interactionMode: SESSION_MAIN_INTERACTION_MODE.SERIAL_ROLE_COLLABORATION,
@@ -992,6 +1043,14 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
         this.createInvokedRoleDescriptor(candidate),
       ),
       subagentCount: executedDispatches.length,
+      ...(providerContinuationMutations.length > 0
+        ? {
+            providerContinuationSummaries: providerContinuationMutations.map(
+              (mutation) => mutation.summary,
+            ),
+            providerContinuationMutations,
+          }
+        : {}),
     };
   }
 
@@ -1037,6 +1096,8 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     );
 
     const assistantMessage = this.createParallelRoleFanoutAssistantMessage(executedDispatches);
+    const providerContinuationMutations =
+      this.collectProviderContinuationMutations(executedDispatches);
     return {
       responseMode: SESSION_MAIN_RESPONSE_MODE.ROLE_COLLABORATION,
       interactionMode: SESSION_MAIN_INTERACTION_MODE.PARALLEL_ROLE_FANOUT,
@@ -1058,6 +1119,14 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
         this.createInvokedRoleDescriptor(candidate),
       ),
       subagentCount: executedDispatches.length,
+      ...(providerContinuationMutations.length > 0
+        ? {
+            providerContinuationSummaries: providerContinuationMutations.map(
+              (mutation) => mutation.summary,
+            ),
+            providerContinuationMutations,
+          }
+        : {}),
     };
   }
 
@@ -1400,6 +1469,19 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     });
     const relayState = this.createProtocolStreamRelayState();
     const primaryRoleSurface = preparedDispatch.safeCandidateSurfaces[0] ?? AdapterSurface.CODEX;
+    const roleDelegateContinuation = this.providerContinuationRuntime.prepareRequest({
+      sessionId: context.sessionId,
+      routeId: context.routeId,
+      stageId: preparedDispatch.descriptor.stageId,
+      roleId: preparedDispatch.descriptor.roleId,
+      selectedSurface: primaryRoleSurface,
+      toolConfig: toolConfigBySurface.get(primaryRoleSurface),
+      providerContinuationState: context.providerContinuationState,
+      policyEnvelope: this.providerContinuationRuntime.resolvePolicyEnvelopeFromInput(
+        dispatchInput,
+        preparedDispatch.descriptor.roleId,
+      ),
+    });
     await this.publishStreamEvent(context, {
       kind: 'lifecycle',
       state: 'started',
@@ -1422,19 +1504,26 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       stageId: preparedDispatch.descriptor.stageId,
       routeKey: preparedDispatch.descriptor.routeKey,
       input: dispatchInput,
+      ...(roleDelegateContinuation
+        ? {
+            continuation: roleDelegateContinuation.request,
+          }
+        : {}),
       runtimeContext: {
         networkMode: AgentNetworkMode.STANDARD,
       },
     };
-    const relayPromise = this.relayProtocolStreamEvents(
-      context,
-      protocolBySurface[primaryRoleSurface],
-      dispatchRequest,
-      relayState,
-      {
-        roleId: preparedDispatch.descriptor.roleId,
-      },
-    );
+    const relayPromise = roleDelegateContinuation?.suppressStreamRelay
+      ? Promise.resolve()
+      : this.relayProtocolStreamEvents(
+          context,
+          protocolBySurface[primaryRoleSurface],
+          dispatchRequest,
+          relayState,
+          {
+            roleId: preparedDispatch.descriptor.roleId,
+          },
+        );
     let dispatchResult: Awaited<ReturnType<typeof routeRunner.dispatchStage>>;
     try {
       dispatchResult = await routeRunner.dispatchStage(dispatchRequest);
@@ -1467,6 +1556,10 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       dispatchResult.auditRecord.selectedBy,
       context.sessionRoutingPreferenceApplied,
       !preparedDispatch.safeCandidateSurfaces.includes(context.selectedSurface as AdapterSurface),
+    );
+    const providerContinuationMutations = this.providerContinuationRuntime.resolveMutations(
+      roleDelegateContinuation,
+      dispatchResult.invokeResult.continuation,
     );
     if (!relayState.sawToken) {
       await this.publishAssistantTokenStream(context, assistantMessage, {
@@ -1503,6 +1596,14 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       assistantMessage,
       selectedSurface: dispatchResult.selectedSurface,
       selectedBy,
+      ...(providerContinuationMutations.length > 0
+        ? {
+            providerContinuationMutations,
+            providerContinuationSummaries: providerContinuationMutations.map(
+              (mutation) => mutation.summary,
+            ),
+          }
+        : {}),
     };
   }
 
@@ -1696,6 +1797,14 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       dispatchBoundary: executedDispatch.descriptor.dispatchBoundary,
       transportKind: executedDispatch.descriptor.transportKind,
     };
+  }
+
+  private collectProviderContinuationMutations(
+    executedDispatches: readonly ExecutedRoleDispatch[],
+  ): NonNullable<SessionMainSupervisorTurnOutcome['providerContinuationMutations']> {
+    return executedDispatches.flatMap(
+      (executedDispatch) => executedDispatch.providerContinuationMutations ?? [],
+    );
   }
 
   private createRoleDelegateSurfaceProbeStreamContext(

@@ -185,6 +185,77 @@ describe('core-session unit', () => {
     ]);
   });
 
+  it('rebuilds context patches from the latest persisted state so sibling nested updates are preserved', async () => {
+    const inMemoryStore = createInMemoryStoreProvider();
+    const memoryManager = new MemoryManager(new MemoryStoreAdapter(inMemoryStore.provider));
+    const firstManager = new SharedSessionManager(memoryManager);
+    const secondManager = new SharedSessionManager(memoryManager);
+
+    const openedSession = await firstManager.openSession({
+      sessionId: 'session-unit-context-latest',
+      executionId: 'exec-unit-context-latest',
+    });
+    const staleSession = await firstManager.getSession(openedSession.sessionId);
+
+    expect(staleSession.context.providerContinuations).toBeUndefined();
+
+    await secondManager.updateContext({
+      sessionId: openedSession.sessionId,
+      contextPatch: {
+        providerContinuations: {
+          version: 1,
+          slots: {
+            'lane-a': {
+              handle: 'resp-a',
+            },
+          },
+        },
+      },
+    });
+
+    const updatedSession = await firstManager.updateContextWithLatest({
+      sessionId: openedSession.sessionId,
+      contextPatchBuilder: (currentContext) => {
+        expect(currentContext.providerContinuations).toEqual({
+          version: 1,
+          slots: {
+            'lane-a': {
+              handle: 'resp-a',
+            },
+          },
+        });
+
+        const providerContinuations = currentContext.providerContinuations as {
+          version: number;
+          slots: Record<string, unknown>;
+        };
+        return {
+          providerContinuations: {
+            version: providerContinuations.version,
+            slots: {
+              ...providerContinuations.slots,
+              'lane-b': {
+                handle: 'resp-b',
+              },
+            },
+          },
+        };
+      },
+    });
+
+    expect(updatedSession.context.providerContinuations).toEqual({
+      version: 1,
+      slots: {
+        'lane-a': {
+          handle: 'resp-a',
+        },
+        'lane-b': {
+          handle: 'resp-b',
+        },
+      },
+    });
+  });
+
   it('migrates legacy blob payloads into summary and append-only event records on first read', async () => {
     const inMemoryStore = createInMemoryStoreProvider();
     inMemoryStore.seedRecord({

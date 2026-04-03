@@ -41,9 +41,12 @@ export type {
   AgentProbeResult,
   AgentProtocolContract,
   AgentProtocolIdentity,
+  AgentStageContinuationRequest,
+  AgentStageContinuationResult,
   AgentStageExecutionPolicy,
   AgentStreamEvent,
   AgentStreamEventsRequest,
   AgentTimeoutCapability,
+  ProviderContinuationHandle,
   AgentTokenUsage,
 } from './interfaces/index.js';

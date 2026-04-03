@@ -8,6 +8,13 @@ export type {
   SessionMainCapabilityDescriptorView,
 } from './session-main-capability-catalog.interface.js';
 export type {
+  SessionProviderContinuationHandle,
+  SessionProviderContinuationMutation,
+  SessionProviderContinuationSessionState,
+  SessionProviderContinuationSlot,
+  SessionProviderContinuationSummary,
+} from './provider-continuation.interface.js';
+export type {
   LocalOrchestrationServiceMemoryProviderState,
   LocalOrchestrationServicePublishEventRequest,
   LocalOrchestrationServiceSaveCheckpointRequest,

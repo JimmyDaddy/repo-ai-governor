@@ -37,10 +37,13 @@ export type {
   AgentProbeResult,
   AgentProtocolContract,
   AgentProtocolIdentity,
+  AgentStageContinuationRequest,
+  AgentStageContinuationResult,
   AgentStageExecutionPolicy,
   AgentStreamEvent,
   AgentStreamEventsRequest,
   AgentTimeoutCapability,
+  ProviderContinuationHandle,
   AgentTokenUsage,
 } from './agent-protocol.interface.js';
 export type {

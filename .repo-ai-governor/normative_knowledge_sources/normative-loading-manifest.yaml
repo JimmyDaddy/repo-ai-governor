@@ -1,5 +1,5 @@
 schema_version: 1
-generated_at: 2026-04-02
+generated_at: 2026-04-04
 status: active
 owner: repo-ai-governor
 
@@ -439,7 +439,7 @@ documents:
       - technical_solution_module_change
       - technical_solution_promotion_change
     owner: architecture
-    last_reviewed_at: 2026-03-31
+    last_reviewed_at: 2026-04-04
 
   - doc_id: technical_solution_runtime_orchestration_contract
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/contracts/runtime-graph-execution-contract.md
@@ -479,7 +479,7 @@ documents:
       - technical_solution_module_change
       - technical_solution_promotion_change
     owner: architecture
-    last_reviewed_at: 2026-03-31
+    last_reviewed_at: 2026-04-04
 
   - doc_id: master_execution_plan
     path: .repo-ai-governor/normative_knowledge_sources/repo-ai-governor-master-execution-plan.md
@@ -633,7 +633,7 @@ documents:
       - technical_solution_module_change
       - technical_solution_promotion_change
     owner: runtime
-    last_reviewed_at: 2026-04-02
+    last_reviewed_at: 2026-04-04
 
   - doc_id: technical_solution_runtime_agent_projection_onboarding_contract
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/contracts/agent-onboarding-contract.md
@@ -663,7 +663,7 @@ documents:
       - technical_solution_module_change
       - technical_solution_promotion_change
     owner: runtime
-    last_reviewed_at: 2026-04-02
+    last_reviewed_at: 2026-04-04
 
   - doc_id: technical_solution_runtime_agent_projection_health_check_contract
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/contracts/adapter-health-and-route-probe-contract.md
@@ -770,6 +770,21 @@ documents:
     owner: runtime
     last_reviewed_at: 2026-04-02
 
+  - doc_id: technical_solution_runtime_agent_projection_provider_continuation_adr
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/provider-session-reuse-and-continuation-handle-seam.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - runtime_contract_change
+      - adapter_change
+      - cli_ui_change
+      - command_surface_change
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+    owner: runtime
+    last_reviewed_at: 2026-04-04
+
   - doc_id: runtime_cli_interactive_shell_module_overview
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/module-overview.md
     tier: L2
@@ -781,7 +796,7 @@ documents:
       - cli_ui_change
       - command_surface_change
     owner: runtime
-    last_reviewed_at: 2026-03-31
+    last_reviewed_at: 2026-04-04
 
   - doc_id: runtime_cli_interactive_shell_contract
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/contracts/cli-interactive-shell-contract.md

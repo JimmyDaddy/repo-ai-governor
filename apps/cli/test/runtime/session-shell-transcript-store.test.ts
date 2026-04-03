@@ -203,6 +203,132 @@ describe('CliSessionShellTranscriptStore', () => {
     });
   });
 
+  it('renders presenter-safe provider continuation recap blocks from completed turns', () => {
+    const store = new CliSessionShellTranscriptStore();
+    const items = store.applyEvents(
+      'session-001',
+      [
+        {
+          eventId: 'event-4',
+          sequence: 4,
+          streamCursor: 'cursor-4',
+          sessionId: 'session-001',
+          type: OrchestrationSessionEventType.TURN_COMPLETED,
+          createdAt: '2026-04-04T12:00:00Z',
+          payload: {
+            role: OrchestrationSessionTranscriptRole.ASSISTANT,
+            routeId: 'session.main',
+            turnIndex: 4,
+            responseMode: 'answer',
+            assistantMessage: 'Follow-up answer.',
+            providerContinuationSummaries: [
+              {
+                laneKey: 'session.main::stage-answer::session.main::codex::chat_only',
+                laneLabel: 'session.main',
+                status: 'reused',
+                surface: 'codex',
+                providerId: 'openai',
+                transportKind: 'remote_api',
+                model: 'gpt-5',
+                stageId: 'stage-answer',
+                roleId: null,
+                policyEnvelope: 'chat_only',
+              },
+            ],
+          },
+        },
+      ],
+      (key, interpolation) => {
+        if (key === 'cli.sessionShell.transcript.assistantLabel') {
+          return 'Governor';
+        }
+        if (key === 'cli.sessionShell.responses.providerContinuationTitle') {
+          return 'Provider continuation';
+        }
+        if (key === 'cli.sessionShell.responses.providerContinuationModelSummary') {
+          return ` model=${interpolation?.model ?? ''}`;
+        }
+        if (key === 'cli.sessionShell.responses.providerContinuationReused') {
+          return `${interpolation?.laneLabel ?? ''} reused on ${interpolation?.surface ?? ''}${interpolation?.modelSummary ?? ''}`;
+        }
+        return key;
+      },
+    );
+
+    expect(items).toHaveLength(1);
+    expect(items[0]?.renderKind).toBe('markdown');
+    expect(items[0]?.providerContinuationBlock).toEqual({
+      title: 'Provider continuation',
+      lines: ['session.main reused on codex model=gpt-5'],
+    });
+  });
+
+  it('renders unsupported provider continuation summaries instead of dropping them silently', () => {
+    const store = new CliSessionShellTranscriptStore();
+    const items = store.applyEvents(
+      'session-001',
+      [
+        {
+          eventId: 'event-unsupported-1',
+          sequence: 5,
+          streamCursor: 'cursor-5',
+          sessionId: 'session-001',
+          type: OrchestrationSessionEventType.TURN_COMPLETED,
+          createdAt: '2026-04-04T12:00:01Z',
+          payload: {
+            role: OrchestrationSessionTranscriptRole.ASSISTANT,
+            routeId: 'session.main',
+            turnIndex: 5,
+            responseMode: 'answer',
+            assistantMessage: 'Fresh stateless answer.',
+            providerContinuationSummaries: [
+              {
+                laneKey: 'session.main::stage-answer::session.main::codex::chat_only',
+                laneLabel: 'session.main',
+                status: 'unsupported',
+                surface: 'codex',
+                providerId: 'openai',
+                transportKind: 'remote_api',
+                model: 'gpt-5',
+                stageId: 'stage-answer',
+                roleId: null,
+                policyEnvelope: 'chat_only',
+                invalidationReason: 'provider_session_not_supported',
+              },
+            ],
+          },
+        },
+      ],
+      (key, interpolation) => {
+        if (key === 'cli.sessionShell.transcript.assistantLabel') {
+          return 'Governor';
+        }
+        if (key === 'cli.sessionShell.responses.providerContinuationTitle') {
+          return 'Provider continuation';
+        }
+        if (key === 'cli.sessionShell.responses.providerContinuationModelSummary') {
+          return ` model=${interpolation?.model ?? ''}`;
+        }
+        if (key === 'cli.sessionShell.responses.providerContinuationReasonSummary') {
+          return ` reason=${interpolation?.reason ?? ''}`;
+        }
+        if (key === 'cli.sessionShell.responses.providerContinuationUnsupported') {
+          return `${interpolation?.laneLabel ?? ''} unsupported on ${interpolation?.surface ?? ''}${interpolation?.modelSummary ?? ''}${interpolation?.reasonSummary ?? ''}`;
+        }
+        return key;
+      },
+    );
+
+    expect(items).toHaveLength(1);
+    expect(items[0]?.renderKind).toBe('markdown');
+    expect(items[0]?.providerContinuationBlock).toEqual({
+      title: 'Provider continuation',
+      lines: [
+        'session.main unsupported on codex model=gpt-5 reason=provider_session_not_supported',
+      ],
+    });
+  });
+
   it('renders failed and cancelled main-agent turn events as system transcript items', () => {
     const store = new CliSessionShellTranscriptStore();
     const items = store.applyEvents(

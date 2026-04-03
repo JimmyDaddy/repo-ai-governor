@@ -114,6 +114,14 @@ export class CliSessionShellTranscriptStore {
             },
           }
         : {}),
+      ...(item.providerContinuationBlock
+        ? {
+            providerContinuationBlock: {
+              ...item.providerContinuationBlock,
+              lines: [...item.providerContinuationBlock.lines],
+            },
+          }
+        : {}),
     }));
   }
 
@@ -229,6 +237,10 @@ export class CliSessionShellTranscriptStore {
         event.payload.suggestedActions,
         translate,
       );
+      const providerContinuationBlock = this.buildProviderContinuationBlock(
+        event.payload.providerContinuationSummaries,
+        translate,
+      );
       const selectedSurface = this.readOptionalString(event.payload.selectedSurface);
       const selectedBy = this.readOptionalString(event.payload.selectedBy);
       const synthesisMode = this.readOptionalString(event.payload.synthesisMode);
@@ -251,6 +263,7 @@ export class CliSessionShellTranscriptStore {
           }),
           renderKind: 'collaboration_recap',
           markdownSource: assistantMessage,
+          ...(providerContinuationBlock ? { providerContinuationBlock } : {}),
           ...(details ? { details } : {}),
         };
       }
@@ -266,6 +279,7 @@ export class CliSessionShellTranscriptStore {
           ...(capabilityAnswerKind ? { capabilityAnswerKind } : {}),
           ...(referencedCapabilityIds ? { referencedCapabilityIds } : {}),
           ...(suggestedActionsBlock ? { suggestedActionsBlock } : {}),
+          ...(providerContinuationBlock ? { providerContinuationBlock } : {}),
           ...(details ? { details } : {}),
         };
       }
@@ -316,6 +330,7 @@ export class CliSessionShellTranscriptStore {
           renderKind: 'command_recap',
           ...(assistantMessage ? { markdownSource: assistantMessage } : {}),
           backlinks: handoffBacklinks,
+          ...(providerContinuationBlock ? { providerContinuationBlock } : {}),
           ...(details ? { details } : {}),
         };
       }
@@ -376,6 +391,7 @@ export class CliSessionShellTranscriptStore {
         ],
         renderKind: 'command_recap',
         backlinks: handoffBacklinks,
+        ...(providerContinuationBlock ? { providerContinuationBlock } : {}),
         ...(details ? { details } : {}),
       };
     }
@@ -676,6 +692,95 @@ export class CliSessionShellTranscriptStore {
       ? {
           title: translate('cli.sessionShell.responses.mainTurnSuggestedActionsTitle'),
           actions,
+        }
+      : undefined;
+  }
+
+  private buildProviderContinuationBlock(
+    candidate: unknown,
+    translate: (key: string, interpolation?: Record<string, string>) => string,
+  ): CliSessionShellTranscriptItem['providerContinuationBlock'] {
+    if (!Array.isArray(candidate)) {
+      return undefined;
+    }
+
+    const lines = candidate.flatMap((entry, index) => {
+      if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+        return [];
+      }
+
+      const record = entry as Record<string, unknown>;
+      const laneLabel = this.readOptionalString(record.laneLabel) ?? `lane-${String(index + 1)}`;
+      const surface = this.readOptionalString(record.surface) ?? 'unknown';
+      const model = this.readOptionalString(record.model);
+      const invalidationReason = this.readOptionalString(record.invalidationReason);
+      const modelSummary = model
+        ? translate('cli.sessionShell.responses.providerContinuationModelSummary', {
+            model,
+          })
+        : '';
+      const reasonSummary = invalidationReason
+        ? translate('cli.sessionShell.responses.providerContinuationReasonSummary', {
+            reason: invalidationReason,
+          })
+        : '';
+      const status = this.readOptionalString(record.status);
+
+      if (status === 'created') {
+        return [
+          translate('cli.sessionShell.responses.providerContinuationCreated', {
+            laneLabel,
+            surface,
+            modelSummary,
+          }),
+        ];
+      }
+      if (status === 'reused') {
+        return [
+          translate('cli.sessionShell.responses.providerContinuationReused', {
+            laneLabel,
+            surface,
+            modelSummary,
+          }),
+        ];
+      }
+      if (status === 'refreshed') {
+        return [
+          translate('cli.sessionShell.responses.providerContinuationRefreshed', {
+            laneLabel,
+            surface,
+            modelSummary,
+            reasonSummary,
+          }),
+        ];
+      }
+      if (status === 'cleared' || status === 'invalid') {
+        return [
+          translate('cli.sessionShell.responses.providerContinuationCleared', {
+            laneLabel,
+            surface,
+            modelSummary,
+            reasonSummary,
+          }),
+        ];
+      }
+      if (status === 'unsupported') {
+        return [
+          translate('cli.sessionShell.responses.providerContinuationUnsupported', {
+            laneLabel,
+            surface,
+            modelSummary,
+            reasonSummary,
+          }),
+        ];
+      }
+      return [];
+    });
+
+    return lines.length > 0
+      ? {
+          title: translate('cli.sessionShell.responses.providerContinuationTitle'),
+          lines,
         }
       : undefined;
   }

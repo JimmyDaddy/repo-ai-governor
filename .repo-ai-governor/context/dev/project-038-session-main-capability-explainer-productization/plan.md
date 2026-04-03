@@ -36,6 +36,7 @@
 | TK-497 | sprint-001 | add session.main capability intent routing and explanation answer generation | runtime/explainer-routing | TK-495 | completed |
 | TK-498 | sprint-001 | project capability explanation metadata into shared session truth and transcript affordances | runtime/shared-session-projection | TK-497 | completed |
 | TK-499 | sprint-001 | add capability availability overlay governed execution bridge and sprint-001 exit acceptance | runtime/bridge-and-closeout | TK-496、TK-497、TK-498 | completed |
+| TK-507 | sprint-001 | promote provider session reuse and backend conversation continuity draft into active formal docs | docs/promotion | approved draft + resolved review evidence | completed |
 
 ## 4. 依赖产物策略
 
@@ -61,3 +62,5 @@
 4. 2026-04-03：显式激活 `project-038 / sprint-001` 作为新的 primary stream，并开始执行 `TK-495`。
 5. 2026-04-03：完成 `TK-495`，建立 `runtime.orchestration` 单写源 capability catalog baseline，后续 `TK-496 ~ TK-499` 在该 seed/view seam 上继续扩展。
 6. 2026-04-03：完成 `TK-499`，`sprint-001` exit acceptance 达成；availability overlay、同轮 governed bridge 与 transcript/shared-session continuity 基线已经冻结，见 [sprint-001-exit-acceptance-summary.md](./sprint-001-capability-catalog-and-turn-outcome-foundation/sprint-001-exit-acceptance-summary.md)。
+7. 2026-04-04：在 `sprint-001` closeout surface 上补充 `TK-507`，将 `provider session reuse and backend conversation continuity` draft 正式提升为 active runtime technical solution，并同步 lifecycle/delivery/module/manifest/review/DA 证据。
+8. 2026-04-04：根据用户确认的实现跟进需求，已创建 planned `project-039-provider-session-reuse-and-backend-conversation-continuity-rollout`，并将该 active solution 的 delivery handoff 从 promotion closeout surface 切换为 `followup_required`。

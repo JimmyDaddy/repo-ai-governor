@@ -59,6 +59,7 @@ export type {
   CliSessionShellTranscriptBacklink,
   CliSessionShellTranscriptDetailsBlock,
   CliSessionShellTranscriptItem,
+  CliSessionShellTranscriptProviderContinuationBlock,
   CliSessionShellTranscriptRenderKind,
   CliSessionShellViewModel,
   CliSessionSlashCommandHighlightSegment,

@@ -16,3 +16,7 @@ export {
   SESSION_MAIN_INTERACTION_MODE,
   SESSION_MAIN_RESPONSE_MODE,
 } from './session-main-supervisor.constant.js';
+export {
+  SESSION_PROVIDER_CONTINUATIONS_CONTEXT_KEY,
+  SESSION_PROVIDER_CONTINUATIONS_VERSION,
+} from './provider-continuation.constant.js';

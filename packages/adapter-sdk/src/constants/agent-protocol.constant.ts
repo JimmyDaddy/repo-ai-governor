@@ -144,6 +144,50 @@ export enum AgentStageToolUsePolicy {
 }
 
 /**
+ * Defines runtime request modes for provider-native continuation reuse attempts.
+ *
+ * Why this exists:
+ * runtime/orchestration should negotiate reuse with adapters through one shared
+ * finite vocabulary instead of ad-hoc string literals.
+ */
+export enum AgentStageContinuationMode {
+  DISABLED = 'disabled',
+  PREFER_REUSE = 'prefer_reuse',
+  REQUIRE_REUSE = 'require_reuse',
+}
+
+/**
+ * Defines continuation-capable transport kinds accepted by the continuation seam.
+ */
+export enum AgentStageContinuationTransportKind {
+  CLI_EXEC = 'cli_exec',
+  REMOTE_API = 'remote_api',
+}
+
+/**
+ * Defines provider-owned continuation handle kinds transported opaquely by runtime.
+ */
+export enum AgentStageContinuationHandleKind {
+  THREAD_ID = 'thread_id',
+  RESPONSE_ID = 'response_id',
+  CONVERSATION_ID = 'conversation_id',
+  MESSAGE_ID = 'message_id',
+  OPAQUE = 'opaque',
+}
+
+/**
+ * Defines adapter-reported continuation lifecycle outcomes.
+ */
+export enum AgentStageContinuationStatus {
+  UNSUPPORTED = 'unsupported',
+  CREATED = 'created',
+  REUSED = 'reused',
+  REFRESHED = 'refreshed',
+  CLEARED = 'cleared',
+  INVALID = 'invalid',
+}
+
+/**
  * Defines the synthetic surface id used by local restricted-network fallback execution.
  */
 export const AGENT_LOCAL_FALLBACK_SURFACE = 'local-governance-fallback';

@@ -3,6 +3,8 @@ import {
   AgentCapability,
   AgentCapabilitySupportLevel,
   AgentCliExecOperation,
+  AgentStageContinuationMode,
+  AgentStageContinuationStatus,
   AgentStageExecutionMode,
   AgentStageToolUsePolicy,
   AgentStreamEventType,
@@ -146,6 +148,34 @@ describe('github-copilot-agent-adapter smoke', () => {
 
     expect(invokeResult.output.adapterSurface).toBe('github-copilot');
     expect(invokeResult.output.responseText).toContain('simulated github copilot response');
+  });
+
+  it('returns explicit unsupported continuation truth in cli_exec mode', async () => {
+    const adapter = new GithubCopilotAgentAdapter({
+      executionMode: GithubCopilotAgentAdapterExecutionMode.CLI_EXEC,
+      execRunner: createGithubCopilotExecRunnerFixture(),
+    });
+
+    const invokeResult = await adapter.invokeStage({
+      processId: 'process-1',
+      executionId: 'execution-1',
+      stageId: 'stage-1',
+      routeKey: 'codegen',
+      input: {
+        prompt: 'implement feature',
+      },
+      continuation: {
+        mode: AgentStageContinuationMode.PREFER_REUSE,
+        sessionId: 'session-1',
+        laneKey: 'session.main::stage-1::session.main::github-copilot::chat_only',
+      },
+    });
+
+    expect(invokeResult.output.responseText).toContain('simulated github copilot response');
+    expect(invokeResult.continuation).toEqual({
+      status: AgentStageContinuationStatus.UNSUPPORTED,
+      laneKey: 'session.main::stage-1::session.main::github-copilot::chat_only',
+    });
   });
 
   it('passes no-tool command arguments when chat-only policy forbids tool use', async () => {

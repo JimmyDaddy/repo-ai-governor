@@ -15,6 +15,7 @@ import type {
   SharedSessionEventRecord,
   SharedSessionSummaryRecord,
   UpdateSessionContextOptions,
+  UpdateSessionContextWithLatestOptions,
 } from './types/index.js';
 
 const SESSION_TAG = 'session';
@@ -185,6 +186,45 @@ export class SharedSessionManager {
           ...session.context,
           ...options.contextPatch,
         },
+      };
+      await this.writeSessionSummaryRecord(updatedSession);
+
+      return this.cloneSession(updatedSession);
+    });
+  }
+
+  /**
+   * Builds one context patch from the latest persisted context while the session mutation lock is held.
+   * @param options Lock-scoped context update options.
+   * @returns Updated shared session payload.
+   */
+  public async updateContextWithLatest(
+    options: UpdateSessionContextWithLatestOptions,
+  ): Promise<SharedSession> {
+    return this.runWithSessionMutationLock(options.sessionId, async () => {
+      const session = await this.readPersistedSession(options.sessionId, undefined, {
+        mutationLockHeld: true,
+      });
+      this.assertSessionActiveOrThrow(session);
+
+      const contextPatch = options.contextPatchBuilder({
+        ...session.context,
+      });
+      if (!contextPatch || Object.keys(contextPatch).length === 0) {
+        return this.cloneSession(session);
+      }
+
+      const nextContext = {
+        ...session.context,
+        ...contextPatch,
+      };
+      if (isDeepStrictEqual(nextContext, session.context)) {
+        return this.cloneSession(session);
+      }
+
+      const updatedSession: SharedSession = {
+        ...session,
+        context: nextContext,
       };
       await this.writeSessionSummaryRecord(updatedSession);
 

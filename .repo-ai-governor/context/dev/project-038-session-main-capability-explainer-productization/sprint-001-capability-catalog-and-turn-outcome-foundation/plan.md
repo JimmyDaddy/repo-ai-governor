@@ -12,6 +12,7 @@
 3. `TK-497` add session.main capability intent routing and explanation answer generation
 4. `TK-498` project capability explanation metadata into shared session truth and transcript affordances
 5. `TK-499` add capability availability overlay governed execution bridge and sprint-001 exit acceptance
+6. `TK-507` promote provider session reuse and backend conversation continuity draft into active formal docs
 
 ## 2. Exit Criteria
 
@@ -35,3 +36,5 @@
 10. 2026-04-03：完成 `TK-498`，`capabilityAnswerKind / referencedCapabilityIds / suggestedActions` 已进入 canonical `TURN_COMPLETED` payload，且 CLI transcript markdown answer 可正式渲染 suggested-action affordance。
 11. 2026-04-03：激活 `TK-499`，开始补 capability availability overlay、同轮 explain->execute governed bridge，以及 `sprint-001` exit acceptance baseline。
 12. 2026-04-03：完成 `TK-499`，`sprint-001` exit acceptance 达成；本轮实现冻结为 capability catalog truth、availability overlay、governed bridge 与 transcript/shared-session continuity baseline，详见 [sprint-001-exit-acceptance-summary.md](./sprint-001-exit-acceptance-summary.md)。
+13. 2026-04-04：在当前 closeout surface 上补充 `TK-507`，将 `provider session reuse and backend conversation continuity` draft 正式提升为 active solution，并同步 promotion review、DA、registry/manifest 与 artifact registry 证据。
+14. 2026-04-04：已按用户批准创建 planned `project-039` follow-up rollout stream，并将该 solution 的 delivery handoff 改为 `followup_required -> sprint-001-continuation-contract-slot-lifecycle-and-codex-remote-baseline`。

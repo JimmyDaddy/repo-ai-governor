@@ -10,6 +10,8 @@ import {
   AgentCapabilitySupportLevel,
   AgentCliExecOperation,
   AgentConfirmationDecision,
+  AgentStageContinuationMode,
+  AgentStageContinuationStatus,
   AgentStageExecutionMode,
   AgentStageToolUsePolicy,
   AgentStreamEventType,
@@ -208,6 +210,34 @@ describe('claude-code-agent-adapter smoke', () => {
     expect(invokeResult.output.responseText).toContain('simulated claude code response');
   });
 
+  it('returns explicit unsupported continuation truth in cli_exec mode', async () => {
+    const adapter = new ClaudeCodeAgentAdapter({
+      executionMode: ClaudeCodeAgentAdapterExecutionMode.CLI_EXEC,
+      execRunner: createClaudeCodeExecRunner('simulated claude code response'),
+    });
+
+    const invokeResult = await adapter.invokeStage({
+      processId: 'process-1',
+      executionId: 'execution-1',
+      stageId: 'stage-1',
+      routeKey: 'codegen',
+      input: {
+        prompt: 'implement feature',
+      },
+      continuation: {
+        mode: AgentStageContinuationMode.PREFER_REUSE,
+        sessionId: 'session-1',
+        laneKey: 'session.main::stage-1::session.main::claude-code::chat_only',
+      },
+    });
+
+    expect(invokeResult.output.responseText).toContain('simulated claude code response');
+    expect(invokeResult.continuation).toEqual({
+      status: AgentStageContinuationStatus.UNSUPPORTED,
+      laneKey: 'session.main::stage-1::session.main::claude-code::chat_only',
+    });
+  });
+
   it('supports remote_api probe and invoke through Anthropic-compatible fetch', async () => {
     const fetchImplementation = vi
       .fn<typeof fetch>()
@@ -279,6 +309,60 @@ describe('claude-code-agent-adapter smoke', () => {
     expect(invokeResult.output.responseText).toBe('remote claude response');
     expect(invokeResult.output.remoteMessageId).toBe('msg-invoke');
     expect(fetchImplementation).toHaveBeenCalledTimes(2);
+  });
+
+  it('returns explicit unsupported continuation truth in remote_api mode', async () => {
+    const fetchImplementation = vi.fn<typeof fetch>().mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: async () =>
+        JSON.stringify({
+          id: 'msg-invoke',
+          content: [
+            {
+              type: 'text',
+              text: 'remote claude response',
+            },
+          ],
+          usage: {
+            input_tokens: 7,
+            output_tokens: 5,
+          },
+        }),
+    } as Response);
+    const adapter = new ClaudeCodeAgentAdapter({
+      executionMode: ClaudeCodeAgentAdapterExecutionMode.REMOTE_API,
+      fetchImplementation,
+      environment: {
+        ANTHROPIC_API_KEY: 'test-key',
+      },
+      remoteApi: {
+        provider: AdapterProviderKind.ANTHROPIC,
+        vendorBinding: AdapterVendorBindingKind.ANTHROPIC_MESSAGES,
+        model: 'claude-sonnet-4-5',
+      },
+    });
+
+    const invokeResult = await adapter.invokeStage({
+      processId: 'process-1',
+      executionId: 'execution-1',
+      stageId: 'stage-1',
+      routeKey: 'codegen',
+      input: {
+        prompt: 'implement feature',
+      },
+      continuation: {
+        mode: AgentStageContinuationMode.PREFER_REUSE,
+        sessionId: 'session-1',
+        laneKey: 'session.main::stage-1::session.main::claude-code::chat_only',
+      },
+    });
+
+    expect(invokeResult.output.remoteMessageId).toBe('msg-invoke');
+    expect(invokeResult.continuation).toEqual({
+      status: AgentStageContinuationStatus.UNSUPPORTED,
+      laneKey: 'session.main::stage-1::session.main::claude-code::chat_only',
+    });
   });
 
   it('projects remote_api stream liveness metadata and remote request ids', async () => {

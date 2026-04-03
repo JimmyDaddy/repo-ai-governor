@@ -5,6 +5,11 @@ import type {
   SessionMainInteractionMode,
   SessionMainResponseMode,
 } from '../aliases/index.js';
+import type {
+  SessionProviderContinuationMutation,
+  SessionProviderContinuationSessionState,
+  SessionProviderContinuationSummary,
+} from './provider-continuation.interface.js';
 import type { SessionMainCapabilityAvailability } from './session-main-capability-availability.interface.js';
 import type { SessionMainCapabilitySuggestedAction } from './session-main-capability-explainer.interface.js';
 
@@ -101,6 +106,7 @@ export interface SessionMainSupervisorTurnContext {
   selectedBy: string;
   sessionRoutingPreferenceApplied: boolean;
   metadata?: Record<string, unknown>;
+  providerContinuationState?: SessionProviderContinuationSessionState;
   publishStreamEvent?: (event: SessionMainSupervisorStreamEvent) => Promise<void>;
 }
 
@@ -134,6 +140,8 @@ export interface SessionMainSupervisorTurnOutcome {
   commandBatches?: SessionMainSupervisorCommandBatch[];
   handoffCommandPreview?: string;
   handoffBacklinks?: SessionMainSupervisorTurnBacklink[];
+  providerContinuationSummaries?: readonly SessionProviderContinuationSummary[];
+  providerContinuationMutations?: readonly SessionProviderContinuationMutation[];
 }
 
 /**

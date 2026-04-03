@@ -28,3 +28,9 @@
   - 2026-04-03：状态切换为 `active`；开始将 capability explanation 与动态 availability overlay、同轮 governed execution bridge 和 sprint-001 exit acceptance 结论一起收口。
   - 2026-04-03：完成 capability availability overlay、same-turn governed bridge、command recap explanation markdown continuity 与 sprint-001 exit acceptance summary；验证通过 package/app tests、`pnpm run build`、`pnpm run check` 与治理门禁。
   - 2026-04-03：CR 复核认可并修复 local-only `plan` / `review_verify` 被错误纳入 surface gating 的问题；未接入 workspace 下这两个能力现保持 `available`，验证通过 targeted vitest 与 `pnpm run build`，对应 CR 已收口为 `resolved_code_review_working-tree-20260403-2349.md`。
+
+- [x] TK-507 promote provider session reuse and backend conversation continuity draft into active formal docs
+  - 2026-04-04：任务创建并直接执行；范围限定为 approved draft -> active runtime formal solution cutover，不宣称代码已完成该方向实现。
+  - 2026-04-04：已同步 `runtime.agent-projection`、`runtime.orchestration` 与 `runtime.cli-interactive-shell` formal docs，正式接受 adapter-facing continuation seam、lane-scoped shared-session continuity 与 presenter-safe consumer boundary。
+  - 2026-04-04：已生成 `resolved_code_review_tk-507-provider-session-reuse-and-backend-conversation-continuity-promotion-cutover.md` 与 `DA-507-provider-session-reuse-and-backend-conversation-continuity-technical-solution-promotion.md`。
+  - 2026-04-04：已同步 lifecycle status=`active`、delivery handoff=`docs_only`、module registry、normative loading manifest 与 artifact registry。

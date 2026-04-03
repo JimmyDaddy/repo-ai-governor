@@ -9,6 +9,7 @@ export type {
   SharedSession,
   SharedSessionSummaryRecord,
   UpdateSessionContextOptions,
+  UpdateSessionContextWithLatestOptions,
 } from './shared-session.interface.js';
 export type {
   ApplyAuditRetentionOptions,

@@ -17,6 +17,9 @@ import {
   type AgentProbeRequest,
   type AgentProbeResult,
   AgentProtocol,
+  AgentStageContinuationHandleKind,
+  AgentStageContinuationStatus,
+  AgentStageContinuationTransportKind,
   AgentStageExecutionMode,
   AgentStageToolUsePolicy,
   type AgentStreamEvent,
@@ -24,6 +27,7 @@ import {
   type AgentStreamEventsRequest,
   DEFAULT_AGENT_CLI_EXEC_MAX_RETRY_ATTEMPTS,
   DEFAULT_AGENT_CLI_EXEC_RETRY_BACKOFF_MS,
+  type ProviderContinuationHandle,
   createLayeredHealthCheckFromLegacyReasons,
   resolveAgentStageExecutionPolicy,
 } from '@repo-ai-governor/adapter-sdk';
@@ -259,6 +263,13 @@ interface CodexRemoteApiLivenessState {
   latestTextPreview: string | null;
 }
 
+interface CodexRemoteApiContinuationReuseResolution {
+  laneKey?: string;
+  previousResponseId?: string;
+  priorHandlePresent: boolean;
+  invalidationReason?: string;
+}
+
 /**
  * Implements Codex adapter baseline under unified agent protocol.
  *
@@ -415,6 +426,14 @@ export class CodexAgentAdapter extends AgentProtocol {
           stageId: request.stageId,
           echoedInput: request.input,
         },
+        ...(request.continuation
+          ? {
+              continuation: {
+                status: AgentStageContinuationStatus.UNSUPPORTED,
+                ...(request.continuation.laneKey ? { laneKey: request.continuation.laneKey } : {}),
+              },
+            }
+          : {}),
         elapsedMs: 1,
       };
     }
@@ -444,6 +463,14 @@ export class CodexAgentAdapter extends AgentProtocol {
         warnings: parsedOutput.warnings,
         echoedInput: request.input,
       },
+      ...(request.continuation
+        ? {
+            continuation: {
+              status: AgentStageContinuationStatus.UNSUPPORTED,
+              ...(request.continuation.laneKey ? { laneKey: request.continuation.laneKey } : {}),
+            },
+          }
+        : {}),
       ...(parsedOutput.usage ? { usage: parsedOutput.usage } : {}),
       elapsedMs: executionResult.elapsedMs,
     };
@@ -919,11 +946,40 @@ export class CodexAgentAdapter extends AgentProtocol {
     const prompt = this.shouldUseRepositoryReviewCommand(request)
       ? this.renderRepositoryReviewPrompt(request)
       : this.renderInvokePrompt(request);
-    const response = await this.executeRemoteApiJsonRequest({
-      prompt,
-      timeoutMs: this.resolveInvokeTimeoutMs(request),
-      ...(request.signal ? { signal: request.signal } : {}),
-    });
+    const continuationReuse = this.resolveRemoteApiContinuationReuse(
+      request.continuation,
+      remoteApiOptions,
+    );
+    let invalidationReason = continuationReuse.invalidationReason;
+    let response: {
+      responseId: string | null;
+      responseText: string;
+      usage?: AgentInvokeStageResult['usage'];
+      elapsedMs: number;
+    };
+    try {
+      response = await this.executeRemoteApiJsonRequest({
+        prompt,
+        timeoutMs: this.resolveInvokeTimeoutMs(request),
+        ...(continuationReuse.previousResponseId
+          ? {
+              previousResponseId: continuationReuse.previousResponseId,
+            }
+          : {}),
+        ...(request.signal ? { signal: request.signal } : {}),
+      });
+    } catch (error) {
+      if (continuationReuse.previousResponseId && this.isInvalidRemoteApiContinuationError(error)) {
+        invalidationReason = this.resolveRemoteApiContinuationInvalidationReason(error);
+        response = await this.executeRemoteApiJsonRequest({
+          prompt,
+          timeoutMs: this.resolveInvokeTimeoutMs(request),
+          ...(request.signal ? { signal: request.signal } : {}),
+        });
+      } else {
+        throw error;
+      }
+    }
 
     return {
       output: {
@@ -936,8 +992,124 @@ export class CodexAgentAdapter extends AgentProtocol {
         vendorBindingKind: remoteApiOptions.vendorBinding,
         echoedInput: request.input,
       },
+      ...(request.continuation
+        ? {
+            continuation: this.buildRemoteApiContinuationResult({
+              request,
+              responseId: response.responseId,
+              remoteApiOptions,
+              continuationReuse: {
+                ...continuationReuse,
+                ...(invalidationReason ? { invalidationReason } : {}),
+              },
+            }),
+          }
+        : {}),
       ...(response.usage ? { usage: response.usage } : {}),
       elapsedMs: response.elapsedMs,
+    };
+  }
+
+  private resolveRemoteApiContinuationReuse(
+    continuation: AgentInvokeStageRequest['continuation'],
+    remoteApiOptions: ResolvedCodexRemoteApiOptions,
+  ): CodexRemoteApiContinuationReuseResolution {
+    if (!continuation) {
+      return {
+        priorHandlePresent: false,
+      };
+    }
+
+    if (!continuation.handle) {
+      return {
+        laneKey: continuation.laneKey,
+        priorHandlePresent: false,
+      };
+    }
+
+    const handle = continuation.handle;
+    if (handle.transportKind !== AgentStageContinuationTransportKind.REMOTE_API) {
+      return {
+        laneKey: continuation.laneKey,
+        priorHandlePresent: true,
+        invalidationReason: 'transport_incompatible',
+      };
+    }
+    if (handle.surface !== CODEX_SURFACE) {
+      return {
+        laneKey: continuation.laneKey,
+        priorHandlePresent: true,
+        invalidationReason: 'surface_incompatible',
+      };
+    }
+    if (handle.providerId !== remoteApiOptions.provider && handle.providerId !== CODEX_SURFACE) {
+      return {
+        laneKey: continuation.laneKey,
+        priorHandlePresent: true,
+        invalidationReason: 'provider_incompatible',
+      };
+    }
+    if (handle.handleKind !== AgentStageContinuationHandleKind.RESPONSE_ID) {
+      return {
+        laneKey: continuation.laneKey,
+        priorHandlePresent: true,
+        invalidationReason: 'handle_kind_incompatible',
+      };
+    }
+    if (
+      typeof handle.model === 'string' &&
+      handle.model.trim().length > 0 &&
+      handle.model !== remoteApiOptions.model
+    ) {
+      return {
+        laneKey: continuation.laneKey,
+        priorHandlePresent: true,
+        invalidationReason: 'model_incompatible',
+      };
+    }
+    if (handle.value.trim().length === 0) {
+      return {
+        laneKey: continuation.laneKey,
+        priorHandlePresent: true,
+        invalidationReason: 'handle_value_missing',
+      };
+    }
+
+    return {
+      laneKey: continuation.laneKey,
+      previousResponseId: handle.value,
+      priorHandlePresent: true,
+    };
+  }
+
+  private buildRemoteApiContinuationResult(options: {
+    request: AgentInvokeStageRequest;
+    responseId: string | null;
+    remoteApiOptions: ResolvedCodexRemoteApiOptions;
+    continuationReuse: CodexRemoteApiContinuationReuseResolution;
+  }): AgentInvokeStageResult['continuation'] {
+    const laneKey = options.request.continuation?.laneKey;
+    if (!options.responseId) {
+      return {
+        status: AgentStageContinuationStatus.CLEARED,
+        ...(laneKey ? { laneKey } : {}),
+        ...(options.continuationReuse.invalidationReason
+          ? { invalidationReason: options.continuationReuse.invalidationReason }
+          : {}),
+      };
+    }
+
+    return {
+      status: options.continuationReuse.invalidationReason
+        ? AgentStageContinuationStatus.REFRESHED
+        : options.continuationReuse.previousResponseId
+          ? AgentStageContinuationStatus.REUSED
+          : AgentStageContinuationStatus.CREATED,
+      ...(laneKey ? { laneKey } : {}),
+      handle: this.createRemoteApiContinuationHandle(options.responseId, options.remoteApiOptions),
+      ...(options.continuationReuse.invalidationReason
+        ? { invalidationReason: options.continuationReuse.invalidationReason }
+        : {}),
     };
   }
 
@@ -1166,9 +1338,68 @@ export class CodexAgentAdapter extends AgentProtocol {
     }
   }
 
+  private createRemoteApiContinuationHandle(
+    responseId: string,
+    remoteApiOptions: ResolvedCodexRemoteApiOptions,
+  ): ProviderContinuationHandle {
+    return {
+      providerId: remoteApiOptions.provider,
+      surface: CODEX_SURFACE,
+      transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+      handleKind: AgentStageContinuationHandleKind.RESPONSE_ID,
+      value: responseId,
+      model: remoteApiOptions.model,
+      acquiredAt: new Date().toISOString(),
+      metadata: {
+        vendorBindingKind: remoteApiOptions.vendorBinding,
+      },
+    };
+  }
+
+  private isInvalidRemoteApiContinuationError(error: unknown): boolean {
+    const standardizedError = standardizeError(error);
+    const details =
+      standardizedError.details && typeof standardizedError.details === 'object'
+        ? (standardizedError.details as Record<string, unknown>)
+        : {};
+    const httpStatus = typeof details.httpStatus === 'number' ? details.httpStatus : undefined;
+    const responseBodySnippet =
+      typeof details.responseBodySnippet === 'string'
+        ? details.responseBodySnippet.toLowerCase()
+        : '';
+    if (httpStatus === 404) {
+      return true;
+    }
+    if (httpStatus !== 400) {
+      return false;
+    }
+    return (
+      responseBodySnippet.includes('previous_response_id') ||
+      responseBodySnippet.includes('previous response') ||
+      responseBodySnippet.includes('response id') ||
+      responseBodySnippet.includes('conversation') ||
+      responseBodySnippet.includes('not found') ||
+      responseBodySnippet.includes('invalid')
+    );
+  }
+
+  private resolveRemoteApiContinuationInvalidationReason(error: unknown): string {
+    const standardizedError = standardizeError(error);
+    const details =
+      standardizedError.details && typeof standardizedError.details === 'object'
+        ? (standardizedError.details as Record<string, unknown>)
+        : {};
+    const httpStatus = typeof details.httpStatus === 'number' ? details.httpStatus : undefined;
+    if (httpStatus === 404) {
+      return 'provider_handle_not_found';
+    }
+    return 'provider_handle_invalid';
+  }
+
   private async executeRemoteApiJsonRequest(request: {
     prompt: string;
     timeoutMs: number;
+    previousResponseId?: string;
     signal?: AbortSignal;
   }): Promise<{
     responseId: string | null;
@@ -1205,6 +1436,11 @@ export class CodexAgentAdapter extends AgentProtocol {
             body: JSON.stringify({
               model: remoteApiOptions.model,
               input: request.prompt,
+              ...(request.previousResponseId
+                ? {
+                    previous_response_id: request.previousResponseId,
+                  }
+                : {}),
             }),
             signal: controller.signal,
           });

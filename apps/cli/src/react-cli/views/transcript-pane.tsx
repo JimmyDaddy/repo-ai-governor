@@ -97,6 +97,7 @@ function ReactCliPlainTranscriptItem({
         )),
       )}
       {renderTranscriptDetailsBlock(item, shellPalette)}
+      {renderTranscriptProviderContinuationBlock(item, shellPalette)}
     </Box>
   );
 }
@@ -119,6 +120,7 @@ function ReactCliSystemNoticeTranscriptItem({
         </Text>
       ))}
       {renderTranscriptDetailsBlock(item, shellPalette)}
+      {renderTranscriptProviderContinuationBlock(item, shellPalette)}
     </Box>
   );
 }
@@ -193,6 +195,10 @@ function ReactCliCommandRecapTranscriptItem({
           </Box>
         ))}
         {renderTranscriptDetailsBlock(item, shellPalette, {
+          marginTop: 1,
+          paddingLeft: 1,
+        })}
+        {renderTranscriptProviderContinuationBlock(item, shellPalette, {
           marginTop: 1,
           paddingLeft: 1,
         })}
@@ -292,6 +298,10 @@ function ReactCliCollaborationRecapTranscriptItem({
           marginTop: 1,
           paddingLeft: 1,
         })}
+        {renderTranscriptProviderContinuationBlock(item, shellPalette, {
+          marginTop: 1,
+          paddingLeft: 1,
+        })}
         <Box flexDirection='column' marginTop={1} paddingLeft={1}>
           <Text bold color={shellPalette.promptTitleColor}>
             Response
@@ -318,6 +328,7 @@ function ReactCliMarkdownTranscriptItem({
         renderMarkdownBlocks(item.id, blocks, shellPalette, item.role),
       )}
       {renderTranscriptDetailsBlock(item, shellPalette)}
+      {renderTranscriptProviderContinuationBlock(item, shellPalette)}
       {renderTranscriptSuggestedActionsBlock(item, shellPalette)}
     </Box>
   );
@@ -436,6 +447,37 @@ function renderTranscriptSuggestedActionsBlock(
       {suggestedActionsBlock.actions.map((action, index) => (
         <Text key={`${item.id}:suggested-action:${index}`} color={shellPalette.helpColor}>
           {`- ${action.label} -> ${action.suggestedSlashCommand ?? action.target}`}
+        </Text>
+      ))}
+    </Box>
+  );
+}
+
+function renderTranscriptProviderContinuationBlock(
+  item: CliSessionShellTranscriptItem,
+  shellPalette: ReactCliShellPalette,
+  options?: {
+    marginTop?: number;
+    paddingLeft?: number;
+  },
+): React.JSX.Element | null {
+  const providerContinuationBlock = item.providerContinuationBlock;
+  if (!providerContinuationBlock || providerContinuationBlock.lines.length === 0) {
+    return null;
+  }
+
+  return (
+    <Box
+      flexDirection='column'
+      marginTop={options?.marginTop ?? 1}
+      paddingLeft={options?.paddingLeft ?? 0}
+    >
+      <Text bold color={shellPalette.helpColor}>
+        {providerContinuationBlock.title}
+      </Text>
+      {providerContinuationBlock.lines.map((line, index) => (
+        <Text key={`${item.id}:provider-continuation:${index}`} color={shellPalette.helpColor}>
+          {`- ${line}`}
         </Text>
       ))}
     </Box>

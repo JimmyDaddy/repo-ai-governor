@@ -9,6 +9,8 @@ export {
   SESSION_MAIN_HANDOFF_EXECUTION_MODE,
   SESSION_MAIN_INTERACTION_MODE,
   SESSION_MAIN_RESPONSE_MODE,
+  SESSION_PROVIDER_CONTINUATIONS_CONTEXT_KEY,
+  SESSION_PROVIDER_CONTINUATIONS_VERSION,
 } from './constants/index.js';
 export { LocalOrchestrationServiceSessionMainCapabilityCatalog } from './local-orchestration-service-session-main-capability-catalog.js';
 export { LocalOrchestrationServiceSessionMainCapabilityAvailabilityResolver } from './local-orchestration-service-session-main-capability-availability-resolver.js';
@@ -42,6 +44,11 @@ export type {
   SessionMainCapabilitySuggestedAction,
   SessionMainHandoffExecutionMode,
   SessionMainInteractionMode,
+  SessionProviderContinuationHandle,
+  SessionProviderContinuationMutation,
+  SessionProviderContinuationSessionState,
+  SessionProviderContinuationSlot,
+  SessionProviderContinuationSummary,
   SessionMainResponseMode,
   SessionMainSupervisorCommandBatch,
   SessionMainSupervisorRuntimeContract,

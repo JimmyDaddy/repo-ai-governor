@@ -4,6 +4,10 @@ import {
   AgentCapability,
   AgentCapabilitySupportLevel,
   type AgentProtocolContract,
+  AgentStageContinuationHandleKind,
+  AgentStageContinuationMode,
+  AgentStageContinuationStatus,
+  AgentStageContinuationTransportKind,
   AgentStageExecutionMode,
   AgentStageToolUsePolicy,
   AgentStreamEventType,
@@ -12,10 +16,14 @@ import { type AdaptersConfig, WorkspaceMode } from '@repo-ai-governor/config';
 import {
   SESSION_MAIN_CAPABILITY_AVAILABILITY_STATUS,
   SESSION_MAIN_CAPABILITY_ID,
+  type SessionProviderContinuationSessionState,
 } from '@repo-ai-governor/core-orchestration-service';
 import {
   AdapterAvailability,
+  AdapterProviderKind,
   AdapterSurface,
+  AdapterTransportKind,
+  AdapterVendorBindingKind,
   GovernorErrorCode,
   LocalModelProvider,
   RuntimeError,
@@ -448,6 +456,240 @@ describe('Cli session-main supervisor runtime', () => {
     expect(outcome.selectedSurface).toBe(AdapterSurface.CODEX);
     expect(outcome.selectedBy).toBe('session.main.answer.primary');
     expect(outcome.routerDecisionReason).toBe('session.main.router.direct_answer.default');
+  });
+
+  it('passes lane-scoped continuation requests into direct-answer invocations and projects reuse summaries', async () => {
+    const laneKey = 'session.main::stage-session-main-answer::session.main::codex::chat_only';
+    const providerContinuationState: SessionProviderContinuationSessionState = {
+      version: 1,
+      slots: {
+        [laneKey]: {
+          laneKey,
+          routeId: 'session.main',
+          stageId: 'stage-session-main-answer',
+          roleId: null,
+          selectedSurface: AdapterSurface.CODEX,
+          providerId: AdapterProviderKind.OPENAI,
+          transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+          model: 'gpt-5',
+          policyEnvelope: 'chat_only',
+          workspaceRoot: '/workspace/repo/.repo-ai-governor',
+          currentWorkingDirectory: '/workspace/repo',
+          handle: {
+            providerId: AdapterProviderKind.OPENAI,
+            surface: AdapterSurface.CODEX,
+            transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+            handleKind: AgentStageContinuationHandleKind.RESPONSE_ID,
+            value: 'resp-existing',
+            model: 'gpt-5',
+            acquiredAt: '2026-04-04T00:00:00.000Z',
+          },
+          updatedAt: '2026-04-04T00:00:00.000Z',
+        },
+      },
+    };
+    const codexInvokeStage = vi.fn(async (request: Record<string, unknown>) => {
+      expect(request.continuation).toEqual(
+        expect.objectContaining({
+          mode: AgentStageContinuationMode.PREFER_REUSE,
+          sessionId: 'session-continuation-001',
+          laneKey,
+          handle: expect.objectContaining({
+            value: 'resp-existing',
+            handleKind: AgentStageContinuationHandleKind.RESPONSE_ID,
+          }),
+        }),
+      );
+      return {
+        output: {
+          responseText: 'continued direct answer',
+        },
+        continuation: {
+          status: AgentStageContinuationStatus.REUSED,
+          laneKey,
+          handle: {
+            providerId: AdapterProviderKind.OPENAI,
+            surface: AdapterSurface.CODEX,
+            transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+            handleKind: AgentStageContinuationHandleKind.RESPONSE_ID,
+            value: 'resp-next',
+            model: 'gpt-5',
+            acquiredAt: '2026-04-04T00:05:00.000Z',
+          },
+        },
+        elapsedMs: 1,
+      };
+    });
+    const continuationAdaptersConfig: AdaptersConfig = {
+      ...adaptersConfig,
+      tools:
+        adaptersConfig.tools?.map((tool) =>
+          tool.toolId === AdapterSurface.CODEX
+            ? {
+                ...tool,
+                transport: AdapterTransportKind.REMOTE_API,
+                remoteApi: {
+                  provider: AdapterProviderKind.OPENAI,
+                  vendorBinding: AdapterVendorBindingKind.OPENAI_RESPONSES,
+                  model: 'gpt-5',
+                },
+              }
+            : tool,
+        ) ?? [],
+    };
+    const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
+      continuationAdaptersConfig,
+    ) as CliAdapterRoutingRuntime & {
+      createProtocolBySurface: () => Record<string, AgentProtocolContract>;
+    };
+    adapterRoutingRuntime.createProtocolBySurface = () => ({
+      [AdapterSurface.CODEX]: createAvailableProtocol(AdapterSurface.CODEX, 'unused', {
+        invokeStageSpy: codexInvokeStage,
+      }),
+      [AdapterSurface.CLAUDE_CODE]: createUnavailableProtocol(AdapterSurface.CLAUDE_CODE),
+      [AdapterSurface.OLLAMA]: createUnavailableProtocol(AdapterSurface.OLLAMA),
+    });
+
+    const runtime = new CliSessionMainSupervisorRuntime({
+      workspaceRoot: '/workspace/repo/.repo-ai-governor',
+      currentWorkingDirectory: '/workspace/repo',
+      workspace,
+      locale: 'en-US',
+      adaptersConfig: continuationAdaptersConfig,
+      adapterRoutingRuntime,
+    });
+    const outcome = await runtime.resolveTurn({
+      sessionId: 'session-continuation-001',
+      routeId: 'session.main',
+      turnId: 'turn-continuation-001',
+      turnIndex: 1,
+      userMessage: 'follow up on the previous answer',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+      providerContinuationState,
+    });
+
+    expect(codexInvokeStage).toHaveBeenCalledTimes(1);
+    expect(outcome.assistantMessage).toBe('continued direct answer');
+    expect(outcome.providerContinuationSummaries).toEqual([
+      expect.objectContaining({
+        laneKey,
+        laneLabel: 'session.main',
+        status: AgentStageContinuationStatus.REUSED,
+        surface: AdapterSurface.CODEX,
+        providerId: AdapterProviderKind.OPENAI,
+        model: 'gpt-5',
+      }),
+    ]);
+    expect(outcome.providerContinuationMutations).toEqual([
+      expect.objectContaining({
+        laneKey,
+        slot: expect.objectContaining({
+          handle: expect.objectContaining({
+            value: 'resp-next',
+          }),
+        }),
+        summary: expect.objectContaining({
+          status: AgentStageContinuationStatus.REUSED,
+        }),
+      }),
+    ]);
+  });
+
+  it('projects unsupported continuation attempts into direct-answer outcomes even without an existing slot', async () => {
+    const laneKey = 'session.main::stage-session-main-answer::session.main::codex::chat_only';
+    const codexInvokeStage = vi.fn(async (request: Record<string, unknown>) => {
+      expect(request.continuation).toEqual(
+        expect.objectContaining({
+          mode: AgentStageContinuationMode.PREFER_REUSE,
+          sessionId: 'session-continuation-unsupported-001',
+          laneKey,
+        }),
+      );
+      return {
+        output: {
+          responseText: 'fresh stateless answer',
+        },
+        continuation: {
+          status: AgentStageContinuationStatus.UNSUPPORTED,
+          laneKey,
+          invalidationReason: 'provider_session_not_supported',
+        },
+        elapsedMs: 1,
+      };
+    });
+    const continuationAdaptersConfig: AdaptersConfig = {
+      ...adaptersConfig,
+      tools:
+        adaptersConfig.tools?.map((tool) =>
+          tool.toolId === AdapterSurface.CODEX
+            ? {
+                ...tool,
+                transport: AdapterTransportKind.REMOTE_API,
+                remoteApi: {
+                  provider: AdapterProviderKind.OPENAI,
+                  vendorBinding: AdapterVendorBindingKind.OPENAI_RESPONSES,
+                  model: 'gpt-5',
+                },
+              }
+            : tool,
+        ) ?? [],
+    };
+    const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
+      continuationAdaptersConfig,
+    ) as CliAdapterRoutingRuntime & {
+      createProtocolBySurface: () => Record<string, AgentProtocolContract>;
+    };
+    adapterRoutingRuntime.createProtocolBySurface = () => ({
+      [AdapterSurface.CODEX]: createAvailableProtocol(AdapterSurface.CODEX, 'unused', {
+        invokeStageSpy: codexInvokeStage,
+      }),
+      [AdapterSurface.CLAUDE_CODE]: createUnavailableProtocol(AdapterSurface.CLAUDE_CODE),
+      [AdapterSurface.OLLAMA]: createUnavailableProtocol(AdapterSurface.OLLAMA),
+    });
+
+    const runtime = new CliSessionMainSupervisorRuntime({
+      workspaceRoot: '/workspace/repo/.repo-ai-governor',
+      currentWorkingDirectory: '/workspace/repo',
+      workspace,
+      locale: 'en-US',
+      adaptersConfig: continuationAdaptersConfig,
+      adapterRoutingRuntime,
+    });
+    const outcome = await runtime.resolveTurn({
+      sessionId: 'session-continuation-unsupported-001',
+      routeId: 'session.main',
+      turnId: 'turn-continuation-unsupported-001',
+      turnIndex: 1,
+      userMessage: 'follow up on the previous answer',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+    });
+
+    expect(codexInvokeStage).toHaveBeenCalledTimes(1);
+    expect(outcome.assistantMessage).toBe('fresh stateless answer');
+    expect(outcome.providerContinuationSummaries).toEqual([
+      expect.objectContaining({
+        laneKey,
+        laneLabel: 'session.main',
+        status: AgentStageContinuationStatus.UNSUPPORTED,
+        surface: AdapterSurface.CODEX,
+        providerId: AdapterProviderKind.OPENAI,
+        model: 'gpt-5',
+        invalidationReason: 'provider_session_not_supported',
+      }),
+    ]);
+    expect(outcome.providerContinuationMutations).toEqual([
+      expect.objectContaining({
+        laneKey,
+        summary: expect.objectContaining({
+          status: AgentStageContinuationStatus.UNSUPPORTED,
+          invalidationReason: 'provider_session_not_supported',
+        }),
+      }),
+    ]);
   });
 
   it('publishes mapped direct-answer stream events while preserving empty invoked-role truth', async () => {

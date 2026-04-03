@@ -8,6 +8,8 @@ import {
   AgentCancellationScope,
   AgentCapability,
   AgentConfirmationDecision,
+  AgentStageContinuationMode,
+  AgentStageContinuationStatus,
   AgentStageExecutionMode,
   AgentStageToolUsePolicy,
   AgentStreamEventType,
@@ -235,6 +237,139 @@ describe('codex-agent-adapter smoke', () => {
     expect(invokeResult.output.responseText).toBe('remote codex response');
     expect(invokeResult.output.remoteResponseId).toBe('resp-invoke');
     expect(fetchImplementation).toHaveBeenCalledTimes(2);
+  });
+
+  it('creates, reuses, and refreshes remote_api continuation handles through previous_response_id', async () => {
+    const fetchImplementation = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        text: async () =>
+          JSON.stringify({
+            id: 'resp-created',
+            output_text: 'created response',
+            usage: {
+              input_tokens: 8,
+              output_tokens: 5,
+              total_tokens: 13,
+            },
+          }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        text: async () =>
+          JSON.stringify({
+            id: 'resp-reused',
+            output_text: 'reused response',
+            usage: {
+              input_tokens: 6,
+              output_tokens: 4,
+              total_tokens: 10,
+            },
+          }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        text: async () =>
+          JSON.stringify({
+            error: {
+              message: 'previous_response_id not found',
+            },
+          }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        text: async () =>
+          JSON.stringify({
+            id: 'resp-refreshed',
+            output_text: 'refreshed response',
+            usage: {
+              input_tokens: 7,
+              output_tokens: 3,
+              total_tokens: 10,
+            },
+          }),
+      } as Response);
+    const adapter = new CodexAgentAdapter({
+      executionMode: CodexAgentAdapterExecutionMode.REMOTE_API,
+      fetchImplementation,
+      environment: {
+        OPENAI_API_KEY: 'test-key',
+      },
+      remoteApi: {
+        provider: AdapterProviderKind.OPENAI,
+        vendorBinding: AdapterVendorBindingKind.OPENAI_RESPONSES,
+        model: 'gpt-5',
+      },
+    });
+
+    const firstInvokeResult = await adapter.invokeStage({
+      ...createInvokeRequest(),
+      continuation: {
+        mode: AgentStageContinuationMode.PREFER_REUSE,
+        sessionId: 'session-continuation-001',
+        laneKey: 'session.main::stage-1::session.main::codex::chat_only',
+      },
+    });
+    const firstHandle = firstInvokeResult.continuation?.handle;
+    const secondInvokeResult = await adapter.invokeStage({
+      ...createInvokeRequest(),
+      executionId: 'execution-2',
+      continuation: {
+        mode: AgentStageContinuationMode.PREFER_REUSE,
+        sessionId: 'session-continuation-001',
+        laneKey: 'session.main::stage-1::session.main::codex::chat_only',
+        handle: firstHandle,
+      },
+    });
+    const secondHandle = secondInvokeResult.continuation?.handle;
+    const thirdInvokeResult = await adapter.invokeStage({
+      ...createInvokeRequest(),
+      executionId: 'execution-3',
+      continuation: {
+        mode: AgentStageContinuationMode.PREFER_REUSE,
+        sessionId: 'session-continuation-001',
+        laneKey: 'session.main::stage-1::session.main::codex::chat_only',
+        handle: secondHandle,
+      },
+    });
+
+    const requestBodies = fetchImplementation.mock.calls.map(
+      ([, init]) => JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown>,
+    );
+
+    expect(firstInvokeResult.continuation).toMatchObject({
+      status: AgentStageContinuationStatus.CREATED,
+      laneKey: 'session.main::stage-1::session.main::codex::chat_only',
+      handle: expect.objectContaining({
+        value: 'resp-created',
+        model: 'gpt-5',
+      }),
+    });
+    expect(secondInvokeResult.continuation).toMatchObject({
+      status: AgentStageContinuationStatus.REUSED,
+      laneKey: 'session.main::stage-1::session.main::codex::chat_only',
+      handle: expect.objectContaining({
+        value: 'resp-reused',
+      }),
+    });
+    expect(thirdInvokeResult.continuation).toMatchObject({
+      status: AgentStageContinuationStatus.REFRESHED,
+      laneKey: 'session.main::stage-1::session.main::codex::chat_only',
+      invalidationReason: 'provider_handle_not_found',
+      handle: expect.objectContaining({
+        value: 'resp-refreshed',
+      }),
+    });
+    expect(requestBodies[0]?.previous_response_id).toBeUndefined();
+    expect(requestBodies[1]?.previous_response_id).toBe('resp-created');
+    expect(requestBodies[2]?.previous_response_id).toBe('resp-reused');
+    expect(requestBodies[3]?.previous_response_id).toBeUndefined();
+    expect(fetchImplementation).toHaveBeenCalledTimes(4);
   });
 
   it('projects remote_api stream liveness metadata and remote request ids', async () => {
@@ -501,6 +636,29 @@ describe('codex-agent-adapter smoke', () => {
 
     expect(invokeResult.output.responseText).toBe('chat-only response');
     expect(execRunner).toHaveBeenCalledTimes(2);
+  });
+
+  it('returns explicit unsupported continuation truth in cli_exec mode when reuse is requested', async () => {
+    const adapter = new CodexAgentAdapter({
+      executionMode: CodexAgentAdapterExecutionMode.CLI_EXEC,
+      execRunner: createExecRunner('cli response'),
+      currentWorkingDirectory: process.cwd(),
+    });
+
+    const invokeResult = await adapter.invokeStage({
+      ...createInvokeRequest(),
+      continuation: {
+        mode: AgentStageContinuationMode.PREFER_REUSE,
+        sessionId: 'session-continuation-cli-001',
+        laneKey: 'session.main::stage-1::session.main::codex::chat_only',
+      },
+    });
+
+    expect(invokeResult.output.responseText).toBe('cli response');
+    expect(invokeResult.continuation).toEqual({
+      status: AgentStageContinuationStatus.UNSUPPORTED,
+      laneKey: 'session.main::stage-1::session.main::codex::chat_only',
+    });
   });
 
   it('uses codex exec review for reviewer stages that target current repository changes', async () => {

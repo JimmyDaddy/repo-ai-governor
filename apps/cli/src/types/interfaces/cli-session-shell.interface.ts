@@ -69,6 +69,14 @@ export interface CliSessionShellTranscriptSuggestedActionsBlock {
 }
 
 /**
+ * Defines one presenter-safe provider continuation summary block rendered beneath a turn result.
+ */
+export interface CliSessionShellTranscriptProviderContinuationBlock {
+  title: string;
+  lines: string[];
+}
+
+/**
  * Defines one transcript item rendered inside the session-shell transcript pane.
  */
 export interface CliSessionShellTranscriptItem {
@@ -84,6 +92,7 @@ export interface CliSessionShellTranscriptItem {
   capabilityAnswerKind?: SessionMainCapabilityAnswerKind;
   referencedCapabilityIds?: SessionMainCapabilityId[];
   suggestedActionsBlock?: CliSessionShellTranscriptSuggestedActionsBlock;
+  providerContinuationBlock?: CliSessionShellTranscriptProviderContinuationBlock;
 }
 
 /**
