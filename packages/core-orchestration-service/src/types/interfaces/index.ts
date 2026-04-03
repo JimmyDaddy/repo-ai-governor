@@ -7,6 +7,7 @@ export type {
 } from './local-orchestration-service-shell.interface.js';
 export type {
   SessionMainSupervisorCommandBatch,
+  SessionMainSupervisorInvokeLiveness,
   SessionMainSupervisorInvokedRole,
   SessionMainSupervisorRuntimeContract,
   SessionMainSupervisorStreamEvent,

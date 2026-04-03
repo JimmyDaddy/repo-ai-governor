@@ -223,12 +223,12 @@ function addLegacyReasonDiagnostics(
   }
 
   if (reason.startsWith('credential_missing:')) {
-    const [, surface] = reason.split(':', 2);
+    const detail = reason.slice('credential_missing:'.length);
     pushDiagnostic({
       layer: 'auth',
       status: FAIL_STATUS,
       code: 'auth.credential_missing',
-      detail: surface,
+      ...(detail.length > 0 ? { detail } : {}),
     });
     return;
   }

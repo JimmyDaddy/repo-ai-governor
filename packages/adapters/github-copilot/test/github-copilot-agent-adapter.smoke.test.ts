@@ -451,12 +451,11 @@ describe('github-copilot-agent-adapter smoke', () => {
     };
 
     const streamPayloadsPromise = (async () => {
-      const payloads: Array<{ type: AgentStreamEventType; detail?: unknown; text?: unknown }> = [];
+      const payloads: Array<{ type: AgentStreamEventType; payload: Record<string, unknown> }> = [];
       for await (const event of adapter.streamEvents(invokeRequest)) {
         payloads.push({
           type: event.eventType,
-          detail: event.payload.detail,
-          text: event.payload.text,
+          payload: event.payload,
         });
       }
       return payloads;
@@ -469,44 +468,123 @@ describe('github-copilot-agent-adapter smoke', () => {
     ]);
 
     expect(execRunner).toHaveBeenCalledTimes(1);
-    expect(streamPayloads).toEqual([
-      {
-        type: AgentStreamEventType.STATUS,
-        detail: 'GitHub Copilot turn started.',
-        text: undefined,
-      },
-      {
-        type: AgentStreamEventType.TOKEN,
-        detail: undefined,
-        text: 'Review',
-      },
-      {
-        type: AgentStreamEventType.TOKEN,
-        detail: undefined,
-        text: ' findings',
-      },
-      {
-        type: AgentStreamEventType.TOKEN,
-        detail: undefined,
-        text: ' complete',
-      },
-      {
-        type: AgentStreamEventType.STATUS,
-        detail: 'GitHub Copilot CLI result received.',
-        text: undefined,
-      },
-      {
-        type: AgentStreamEventType.STATUS,
-        detail: 'github-copilot stderr: stderr progress line',
-        text: undefined,
-      },
-      {
-        type: AgentStreamEventType.COMPLETED,
-        detail: undefined,
-        text: undefined,
-      },
+    expect(streamPayloads.map((event) => event.type)).toEqual([
+      AgentStreamEventType.STATUS,
+      AgentStreamEventType.TOKEN,
+      AgentStreamEventType.TOKEN,
+      AgentStreamEventType.TOKEN,
+      AgentStreamEventType.STATUS,
+      AgentStreamEventType.STATUS,
+      AgentStreamEventType.COMPLETED,
     ]);
+    expect(streamPayloads[0]?.payload).toEqual(
+      expect.objectContaining({
+        detail: 'GitHub Copilot turn started.',
+        transportKind: 'cli_exec',
+        invokeLiveness: expect.objectContaining({
+          status: 'starting',
+          transportKind: 'cli_exec',
+          partialOutputPreserved: false,
+          cancelMechanism: 'none',
+        }),
+      }),
+    );
+    expect(streamPayloads[3]?.payload).toEqual(
+      expect.objectContaining({
+        text: ' complete',
+        accumulatedText: 'Review findings complete',
+        invokeLiveness: expect.objectContaining({
+          status: 'running',
+          lastTransportActivityAt: expect.any(String),
+          lastSemanticProgressAt: expect.any(String),
+          latestTextPreview: 'Review findings complete',
+          transportKind: 'cli_exec',
+        }),
+      }),
+    );
+    expect(streamPayloads[6]?.payload).toEqual(
+      expect.objectContaining({
+        responseText: 'Review findings complete',
+        invokeLiveness: expect.objectContaining({
+          status: 'completed',
+          lastTerminalSignalAt: expect.any(String),
+          partialOutputPreserved: false,
+        }),
+      }),
+    );
     expect(invokeResult.output.responseText).toBe('Review findings complete');
+  });
+
+  it('preserves partial cli_exec output and timeout reason codes when invocation fails', async () => {
+    const adapter = new GithubCopilotAgentAdapter({
+      executionMode: GithubCopilotAgentAdapterExecutionMode.CLI_EXEC,
+      maxRetryAttempts: 1,
+      execRunner: async (request) => {
+        request.onStdoutChunk?.('{"type":"assistant.delta","data":{"delta":"partial"}}\n');
+        request.onGracefulInterruptStart?.('process_signal');
+        throw new RuntimeError(
+          GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
+          'GitHub Copilot invoke timed out after 30ms.',
+          {
+            surface: 'github-copilot',
+            operation: AgentCliExecOperation.INVOKE,
+            timeoutMs: 30,
+          },
+        );
+      },
+    });
+
+    const invokeRequest = createStreamRequest();
+    const streamEventsPromise = (async () => {
+      const events: Array<{ type: AgentStreamEventType; payload: Record<string, unknown> }> = [];
+      for await (const event of adapter.streamEvents(createStreamRequest())) {
+        events.push({
+          type: event.eventType,
+          payload: event.payload,
+        });
+      }
+      return events;
+    })();
+    const invokeErrorPromise = adapter
+      .invokeStage(invokeRequest)
+      .then(() => null)
+      .catch((error) => error);
+
+    const [events, thrownError] = await Promise.all([streamEventsPromise, invokeErrorPromise]);
+
+    expect(thrownError).toBeInstanceOf(RuntimeError);
+    expect((thrownError as RuntimeError).message).toContain('timed out');
+    expect(events.map((event) => event.type)).toEqual([
+      AgentStreamEventType.STATUS,
+      AgentStreamEventType.TOKEN,
+      AgentStreamEventType.STATUS,
+      AgentStreamEventType.FAILED,
+    ]);
+    expect(events[2]?.payload).toEqual(
+      expect.objectContaining({
+        status: 'graceful_interrupting',
+        invokeLiveness: expect.objectContaining({
+          status: 'graceful_interrupting',
+          cancelMechanism: 'process_signal',
+          suspectReasonCodes: expect.arrayContaining(['invoke_hard_timeout']),
+        }),
+      }),
+    );
+    expect(events[3]?.payload).toEqual(
+      expect.objectContaining({
+        accumulatedText: 'partial',
+        responseText: 'partial',
+        invokeLiveness: expect.objectContaining({
+          status: 'failed',
+          partialOutputPreserved: true,
+          cancelMechanism: 'process_signal',
+          suspectReasonCodes: expect.arrayContaining([
+            'invoke_hard_timeout',
+            'invoke_partial_output_preserved',
+          ]),
+        }),
+      }),
+    );
   });
 
   it('streams status and completed events', async () => {

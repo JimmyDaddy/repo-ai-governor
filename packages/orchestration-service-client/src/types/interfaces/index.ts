@@ -1,6 +1,7 @@
 export type {
   OrchestrationAppendSessionMessageRequest,
   OrchestrationAppendSessionMessageResponse,
+  OrchestrationExecutionLivenessSnapshot,
   OrchestrationListExecutionsRequest,
   OrchestrationListExecutionsResponse,
   OrchestrationListExecutionsFilter,

@@ -55,6 +55,7 @@ export enum AdapterCredentialSource {
  */
 export enum AdapterEndpointSource {
   CONFIG_EXPLICIT = 'config_explicit',
+  PROVIDER_LOCAL = 'provider_local',
   VENDOR_DEFAULT = 'vendor_default',
 }
 

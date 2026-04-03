@@ -53,10 +53,10 @@
 | TK-500 | sprint-001 | promote api-key remote adapter invocation draft into active runtime-agent-projection formal docs | docs/promotion | TK-492 + approved draft | completed |
 | TK-488 | sprint-002 | align claude-code and github-copilot with shared invoke liveness contract | runtime/adapter-rollout | TK-486、TK-487 | planned |
 | TK-489 | sprint-002 | align ollama local-model and long-operation progress protections with invoke liveness governance | runtime/local-model-rollout | TK-486 | planned |
-| TK-501 | sprint-002 | roll out api-key remote adapter invocation runtime transport and delivery verification | runtime/adapter-rollout | `technical-solution.api-key-remote-adapter-invocation` active formal docs + TK-486 | active |
-| TK-502 | sprint-002 | integrate remote-api streaming liveness and execution diagnostics projection | runtime/diagnostics-rollout | TK-486、TK-501 | planned |
-| TK-503 | sprint-002 | extend remote-api onboarding verification and credential-boundary surfaces | cli/runtime-verification | `technical-solution.api-key-remote-adapter-invocation` active formal docs + TK-501 | planned |
-| TK-504 | sprint-002 | add remote-api delivery verification and clean-room smoke coverage | release/verification | TK-501 | planned |
+| TK-501 | sprint-002 | roll out api-key remote adapter invocation runtime transport and delivery verification | runtime/adapter-rollout | `technical-solution.api-key-remote-adapter-invocation` active formal docs + TK-486 | completed |
+| TK-502 | sprint-002 | integrate remote-api streaming liveness and execution diagnostics projection | runtime/diagnostics-rollout | TK-486、TK-501 | completed |
+| TK-503 | sprint-002 | extend remote-api onboarding verification and credential-boundary surfaces | cli/runtime-verification | `technical-solution.api-key-remote-adapter-invocation` active formal docs + TK-501 | completed |
+| TK-504 | sprint-002 | add remote-api delivery verification and clean-room smoke coverage | release/verification | TK-501 | completed |
 | TK-490 | sprint-003 | route session-main interactive shell and doctor verify through invoke liveness diagnostics | cli/runtime-diagnostics | TK-487、TK-488、TK-489 | planned |
 | TK-491 | sprint-003 | deliver invoke liveness regression budgets cutover governance and rollout closeout | governance/cutover | TK-490 | planned |
 
@@ -88,3 +88,4 @@
 7. 2026-04-02：完成 `TK-500` formal promotion；`technical-solution.api-key-remote-adapter-invocation` 已正式并入 `runtime.agent-projection` 模块，形成 transport-aware contract delta、remote-api binding ADR、delivery handoff 与 promotion review/DA 证据。
 8. 2026-04-02：在 planned `sprint-002` 中补充 `TK-501`，作为 `api-key remote adapter invocation` 的 runtime rollout / delivery verification follow-up surface。
 9. 2026-04-02：执行 `TK-501` baseline implementation，已交付 remote-api config/routing 与 Codex/Claude probe+invoke baseline；剩余流式 liveness、onboarding/credential boundary 与 delivery smoke 覆盖拆分为 `TK-502`、`TK-503`、`TK-504`。
+10. 2026-04-03：完成 `TK-502`、`TK-503`、`TK-504` 的 follow-through 收口；`api-key remote adapter invocation` 已补齐 streaming liveness、credential boundary、dist-binary remote-api rehearsal、clean-room `path/link/tgz` smoke 与 delivery evidence，delivery registry 现已同步为 `completed`。

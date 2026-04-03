@@ -23,6 +23,32 @@ export interface SessionMainSupervisorCommandBatch {
 }
 
 /**
+ * Defines one additive invoke-liveness snapshot preserved in session.main stream truth.
+ */
+export interface SessionMainSupervisorInvokeLiveness {
+  adapterId?: string;
+  surfaceId?: string;
+  routeKey?: string;
+  roleId?: string;
+  startedAt?: string;
+  status?: string;
+  lastTransportActivityAt?: string;
+  lastSemanticProgressAt?: string;
+  lastTerminalSignalAt?: string;
+  latestEventAt?: string;
+  latestEventType?: string;
+  latestTextPreview?: string;
+  activeOperationKind?: string;
+  activeOperationStartedAt?: string;
+  partialOutputPreserved?: boolean;
+  transportKind?: string;
+  vendorBindingKind?: string;
+  remoteRequestId?: string | null;
+  cancelMechanism?: string;
+  suspectReasonCodes?: string[];
+}
+
+/**
  * Defines one progressive stream event emitted while the supervisor is still resolving a turn.
  */
 export interface SessionMainSupervisorStreamEvent {
@@ -41,6 +67,7 @@ export interface SessionMainSupervisorStreamEvent {
   selectedBy?: string;
   toolName?: string;
   toolCallId?: string;
+  invokeLiveness?: SessionMainSupervisorInvokeLiveness;
 }
 
 /**

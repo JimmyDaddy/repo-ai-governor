@@ -422,6 +422,8 @@ Notes:
 1. Stage 9A baseline enforces repeated path/link validation.
 2. Stage 9B+ baseline includes `tgz` install smoke to verify packaged runtime dependency resolution.
 3. `tgz` validation is an online check, not proof of offline/self-contained installation.
+4. Stage 9 remote-api rehearsal is now part of the packaged-install smoke. It writes one repo-local config that routes `codex` and `claude-code` through local stub endpoints, injects `OPENAI_API_KEY` / `ANTHROPIC_API_KEY`, and verifies `doctor --adapters --fix` plus `verify --adapters` without requiring a real provider account.
+5. When you need an auditable machine-readable receipt, pass `--output <path>` to `release:verify-cleanroom-local-install`; the generated report includes per-mode remote-api rehearsal summaries.
 
 ## 9. Governance Gates For Adoption
 
@@ -433,6 +435,8 @@ pnpm run check
 pnpm run release:verify-local
 pnpm run release:ga-check
 ```
+
+`release:verify-local` now also includes one dist-binary remote-api rehearsal and can emit a JSON receipt via `pnpm run release:verify-local -- --output <path>`.
 
 ## 10. Upgrade Checklist
 

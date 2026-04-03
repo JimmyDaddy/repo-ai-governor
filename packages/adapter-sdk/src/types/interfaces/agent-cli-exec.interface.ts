@@ -18,6 +18,7 @@ export interface AgentCliExecRunnerRequest {
   operation: AgentCliExecOperation;
   onStdoutChunk?: (chunk: string) => void;
   onStderrChunk?: (chunk: string) => void;
+  onGracefulInterruptStart?: (cancelMechanism: 'process_signal' | 'abort_signal') => void;
 }
 
 /**

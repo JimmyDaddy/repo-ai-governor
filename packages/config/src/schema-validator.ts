@@ -1134,6 +1134,7 @@ export class SchemaValidator {
         'model',
         'credentialEnvVar',
         'credentialRef',
+        'allowProviderLocalConfig',
         'endpoint',
         'requestTimeoutMs',
         'maxRetries',
@@ -1154,6 +1155,10 @@ export class SchemaValidator {
     const credentialRef = this.expectOptionalString(
       remoteApi.credentialRef,
       `${pointer}/credentialRef`,
+    );
+    const allowProviderLocalConfig = this.expectOptionalBoolean(
+      remoteApi.allowProviderLocalConfig,
+      `${pointer}/allowProviderLocalConfig`,
     );
     const endpoint = this.expectOptionalString(remoteApi.endpoint, `${pointer}/endpoint`);
     const requestTimeoutMs = this.expectOptionalPositiveInteger(
@@ -1206,18 +1211,13 @@ export class SchemaValidator {
       );
     }
 
-    if (credentialRef) {
-      this.throwConfigSchemaValidationError(
-        `${pointer}/credentialRef is not yet supported; use credentialEnvVar until credentialRef resolution lands.`,
-        `${pointer}/credentialRef`,
-      );
-    }
-
     return {
       provider,
       model,
       ...(vendorBinding !== undefined ? { vendorBinding } : {}),
       ...(credentialEnvVar ? { credentialEnvVar } : {}),
+      ...(credentialRef ? { credentialRef } : {}),
+      ...(allowProviderLocalConfig !== undefined ? { allowProviderLocalConfig } : {}),
       ...(endpoint ? { endpoint } : {}),
       ...(requestTimeoutMs !== undefined ? { requestTimeoutMs } : {}),
       ...(maxRetries !== undefined ? { maxRetries } : {}),

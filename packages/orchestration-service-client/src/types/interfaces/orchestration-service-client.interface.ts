@@ -13,6 +13,29 @@ import type {
   OrchestrationSessionTranscriptRole,
 } from '../../constants/index.js';
 
+export interface OrchestrationExecutionLivenessSnapshot {
+  adapterId?: string;
+  surfaceId?: string;
+  routeKey?: string;
+  roleId?: string;
+  startedAt?: string;
+  status?: string;
+  lastTransportActivityAt?: string;
+  lastSemanticProgressAt?: string;
+  lastTerminalSignalAt?: string;
+  latestEventAt?: string;
+  latestEventType?: string;
+  latestTextPreview?: string;
+  activeOperationKind?: string;
+  activeOperationStartedAt?: string;
+  partialOutputPreserved?: boolean;
+  transportKind?: string;
+  vendorBindingKind?: string;
+  remoteRequestId?: string | null;
+  cancelMechanism?: string;
+  suspectReasonCodes?: string[];
+}
+
 export interface OrchestrationServiceHealthResponse {
   serviceHostKind: OrchestrationServiceHostKind;
   serviceTransportKind: OrchestrationServiceTransportKind;
@@ -67,6 +90,7 @@ export interface OrchestrationServiceEvent {
   projectId?: string;
   sprintId?: string;
   message: string;
+  livenessSnapshot?: OrchestrationExecutionLivenessSnapshot;
 }
 
 export interface OrchestrationExecutionSummary {
@@ -100,6 +124,18 @@ export interface OrchestrationExecutionSummary {
   checkpointSource?: string;
   checkpointPath?: string;
   recoveredNextNodeIds?: string[];
+  livenessStatus?: string;
+  livenessSuspectReasonCode?: string;
+  lastTransportActivityAt?: string;
+  lastSemanticProgressAt?: string;
+  latestLivenessEventAt?: string;
+  latestLivenessEventType?: string;
+  latestLivenessTextPreview?: string;
+  partialOutputPreserved?: boolean;
+  transportKind?: string;
+  vendorBindingKind?: string;
+  remoteRequestId?: string | null;
+  cancelMechanism?: string;
 }
 
 export interface OrchestrationListExecutionsFilter {

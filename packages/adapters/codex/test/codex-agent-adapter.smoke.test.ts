@@ -10,6 +10,7 @@ import {
   type AgentStreamEventsRequest,
 } from '@repo-ai-governor/adapter-sdk';
 import {
+  AdapterCredentialSource,
   AdapterProviderKind,
   AdapterVendorBindingKind,
   GovernorErrorCode,
@@ -43,6 +44,59 @@ function createInvokeRequest() {
       prompt: 'implement feature',
     },
   };
+}
+
+function createSseResponse(
+  chunks: string[],
+  signal?: AbortSignal,
+  options: {
+    stallAfterChunks?: boolean;
+  } = {},
+): Response {
+  const encoder = new TextEncoder();
+  return new Response(
+    new ReadableStream<Uint8Array>({
+      start(controller) {
+        let closed = false;
+        const close = () => {
+          if (!closed) {
+            closed = true;
+            controller.close();
+          }
+        };
+        const fail = () => {
+          if (!closed) {
+            closed = true;
+            controller.error(new DOMException('The operation was aborted.', 'AbortError'));
+          }
+        };
+        signal?.addEventListener('abort', fail, { once: true });
+        let index = 0;
+        const pump = () => {
+          if (index < chunks.length) {
+            controller.enqueue(encoder.encode(chunks[index] ?? ''));
+            index += 1;
+            if (index >= chunks.length && !options.stallAfterChunks) {
+              close();
+              return;
+            }
+            queueMicrotask(pump);
+            return;
+          }
+          if (!options.stallAfterChunks) {
+            close();
+          }
+        };
+        pump();
+      },
+    }),
+    {
+      status: 200,
+      headers: {
+        'content-type': 'text/event-stream',
+      },
+    },
+  );
 }
 
 describe('codex-agent-adapter smoke', () => {
@@ -179,6 +233,147 @@ describe('codex-agent-adapter smoke', () => {
     expect(fetchImplementation).toHaveBeenCalledTimes(2);
   });
 
+  it('projects remote_api stream liveness metadata and remote request ids', async () => {
+    const fetchImplementation = vi
+      .fn<typeof fetch>()
+      .mockImplementation(async (_input, init) =>
+        createSseResponse(
+          [
+            'data: {"type":"response.created","response":{"id":"resp-stream-1"}}\n\n',
+            'data: {"type":"response.output_text.delta","delta":"hello"}\n\n',
+            'data: {"type":"response.completed","response":{"id":"resp-stream-1"}}\n\n',
+          ],
+          init?.signal,
+        ),
+      );
+    const adapter = new CodexAgentAdapter({
+      executionMode: CodexAgentAdapterExecutionMode.REMOTE_API,
+      fetchImplementation,
+      environment: {
+        OPENAI_API_KEY: 'test-key',
+      },
+      remoteApi: {
+        provider: AdapterProviderKind.OPENAI,
+        vendorBinding: AdapterVendorBindingKind.OPENAI_RESPONSES,
+        model: 'gpt-5',
+      },
+    });
+
+    const events: AgentStreamEventType[] = [];
+    const payloads: Array<Record<string, unknown>> = [];
+    for await (const event of adapter.streamEvents(createStreamRequest())) {
+      events.push(event.eventType);
+      payloads.push(event.payload);
+    }
+
+    expect(events).toEqual([
+      AgentStreamEventType.STATUS,
+      AgentStreamEventType.STATUS,
+      AgentStreamEventType.TOKEN,
+      AgentStreamEventType.COMPLETED,
+    ]);
+    expect(payloads[1]).toEqual(
+      expect.objectContaining({
+        remoteRequestId: 'resp-stream-1',
+      }),
+    );
+    expect(payloads[2]).toEqual(
+      expect.objectContaining({
+        transportKind: 'remote_api',
+        vendorBindingKind: AdapterVendorBindingKind.OPENAI_RESPONSES,
+        remoteRequestId: 'resp-stream-1',
+        accumulatedText: 'hello',
+        invokeLiveness: expect.objectContaining({
+          status: 'running',
+          transportKind: 'remote_api',
+          vendorBindingKind: AdapterVendorBindingKind.OPENAI_RESPONSES,
+          remoteRequestId: 'resp-stream-1',
+          cancelMechanism: 'none',
+          partialOutputPreserved: false,
+          lastTransportActivityAt: expect.any(String),
+          lastSemanticProgressAt: expect.any(String),
+          latestTextPreview: 'hello',
+        }),
+      }),
+    );
+    expect(payloads[3]).toEqual(
+      expect.objectContaining({
+        remoteRequestId: 'resp-stream-1',
+        invokeLiveness: expect.objectContaining({
+          status: 'completed',
+          remoteRequestId: 'resp-stream-1',
+          lastTerminalSignalAt: expect.any(String),
+          latestTextPreview: 'hello',
+        }),
+      }),
+    );
+  });
+
+  it('keeps remote_api timeout coverage alive during stream consumption and preserves partial output', async () => {
+    const fetchImplementation = vi.fn<typeof fetch>().mockImplementation(async (_input, init) =>
+      createSseResponse(
+        [
+          'data: {"type":"response.created","response":{"id":"resp-stream-timeout-1"}}\n\n',
+          'data: {"type":"response.output_text.delta","delta":"partial"}\n\n',
+        ],
+        init?.signal,
+        {
+          stallAfterChunks: true,
+        },
+      ),
+    );
+    const adapter = new CodexAgentAdapter({
+      executionMode: CodexAgentAdapterExecutionMode.REMOTE_API,
+      fetchImplementation,
+      environment: {
+        OPENAI_API_KEY: 'test-key',
+      },
+      requestTimeoutMs: 30,
+      remoteApi: {
+        provider: AdapterProviderKind.OPENAI,
+        vendorBinding: AdapterVendorBindingKind.OPENAI_RESPONSES,
+        model: 'gpt-5',
+      },
+    });
+
+    const events: Array<{ type: AgentStreamEventType; payload: Record<string, unknown> }> = [];
+    let thrownError: unknown;
+    try {
+      for await (const event of adapter.streamEvents(createStreamRequest())) {
+        events.push({
+          type: event.eventType,
+          payload: event.payload,
+        });
+      }
+    } catch (error) {
+      thrownError = error;
+    }
+
+    expect(thrownError).toBeInstanceOf(RuntimeError);
+    expect((thrownError as RuntimeError).message).toContain('exhausted the timeout budget');
+    expect(events.map((event) => event.type)).toEqual([
+      AgentStreamEventType.STATUS,
+      AgentStreamEventType.STATUS,
+      AgentStreamEventType.TOKEN,
+      AgentStreamEventType.FAILED,
+    ]);
+    expect(events[3]?.payload).toEqual(
+      expect.objectContaining({
+        accumulatedText: 'partial',
+        invokeLiveness: expect.objectContaining({
+          status: 'failed',
+          cancelMechanism: 'http_stream_abort',
+          partialOutputPreserved: true,
+          remoteRequestId: 'resp-stream-timeout-1',
+          suspectReasonCodes: expect.arrayContaining([
+            'invoke_hard_timeout',
+            'invoke_partial_output_preserved',
+          ]),
+        }),
+      }),
+    );
+  });
+
   it('does not restart remote_api fetch with a fresh timeout budget after one timed-out attempt', async () => {
     const fetchImplementation = vi.fn<typeof fetch>().mockImplementation(async (_input, init) => {
       if (init?.signal?.aborted) {
@@ -208,17 +403,15 @@ describe('codex-agent-adapter smoke', () => {
     });
 
     await expect(adapter.invokeStage(createInvokeRequest())).rejects.toMatchObject({
-      name: 'AbortError',
+      code: GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
+      message: expect.stringContaining('exhausted the timeout budget'),
     });
     expect(fetchImplementation).toHaveBeenCalledTimes(1);
   });
 
-  it('fails closed when remote_api credentialRef is configured directly on the adapter', async () => {
+  it('surfaces credentialRef as manual-only probe truth when remote_api is configured directly', async () => {
     const adapter = new CodexAgentAdapter({
       executionMode: CodexAgentAdapterExecutionMode.REMOTE_API,
-      environment: {
-        OPENAI_API_KEY: 'test-key',
-      },
       remoteApi: {
         provider: AdapterProviderKind.OPENAI,
         vendorBinding: AdapterVendorBindingKind.OPENAI_RESPONSES,
@@ -227,13 +420,15 @@ describe('codex-agent-adapter smoke', () => {
       },
     });
 
-    await expect(
-      adapter.probe({
-        routeKey: 'cli.adapter.probe.codex',
-      }),
-    ).rejects.toMatchObject({
-      code: GovernorErrorCode.AGENT_PROTOCOL_INVALID,
+    const probeResult = await adapter.probe({
+      routeKey: 'cli.adapter.probe.codex',
     });
+
+    expect(probeResult.availabilityStatus).toBe('unavailable');
+    expect(probeResult.unavailableReasons).toContain(
+      'credential_missing:codex:secret://openai/api-key',
+    );
+    expect(probeResult.healthCheck?.credentialSource).toBe(AdapterCredentialSource.CREDENTIAL_REF);
   });
 
   it('accepts trivial punctuation variants in probe health-check responses', async () => {

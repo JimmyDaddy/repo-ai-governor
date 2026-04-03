@@ -9,6 +9,7 @@ export interface AdapterRemoteApiConfig {
   model: string;
   credentialEnvVar?: string;
   credentialRef?: string;
+  allowProviderLocalConfig?: boolean;
   endpoint?: string;
   requestTimeoutMs?: number;
   maxRetries?: number;

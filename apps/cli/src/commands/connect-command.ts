@@ -259,6 +259,7 @@ export class CliConnectCommand implements CliCommandExecutor {
       nextActions: adapterVerification.nextActions,
       enabledTools: candidateConfigResolution.selectedTools,
       adaptersConfig: effectiveCandidateConfig.adapters ?? context.options.adaptersConfig,
+      verification: adapterVerification,
       dryRun: runtimeDebugOptions.dryRun,
       overwrite: runtimeDebugOptions.overwrite,
       singleToolAllRoles: runtimeDebugOptions.singleToolAllRoles,

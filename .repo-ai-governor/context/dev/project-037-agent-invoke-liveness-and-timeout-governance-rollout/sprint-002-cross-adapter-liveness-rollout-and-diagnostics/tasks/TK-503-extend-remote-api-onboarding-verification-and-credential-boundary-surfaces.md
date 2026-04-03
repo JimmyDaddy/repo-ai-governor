@@ -1,7 +1,7 @@
 # TK-503 extend remote-api onboarding verification and credential-boundary surfaces
 
-- Status: planned
-- Date: 2026-04-02
+- Status: completed
+- Date: 2026-04-03
 - Owner: AI-Agent
 - Priority: P1
 - Project: `project-037-agent-invoke-liveness-and-timeout-governance-rollout`
@@ -43,3 +43,5 @@
 ## 6. 执行记录
 
 1. 2026-04-02：任务创建，状态初始化为 `planned`；从 `TK-501` baseline 拆分 onboarding verification / credential boundary follow-through。
+2. 2026-04-03：任务激活，先完成第一段 safe-local onboarding/verification 收口：`connect / doctor / verify` 现在会把 remote-api `tool_transport_matrix`、candidate config truth 与 probe truth 写入 onboarding / verify payload；`credential_missing:<surface>:<envVar>` 细节不再在 layered health-check 中丢失，`next_actions` 会优先产出更具体的 remote-api env/provider-local/credentialRef manual guidance；定向 vitest 与 `pnpm run build` 已通过。
+3. 2026-04-03：完成 schema/runtime discovery 收口：`remoteApi.credentialRef` 与 `allowProviderLocalConfig` 进入正式 config truth，Codex probe 会把 `credentialRef` materialize 为 manual-only `credential_source=credential_ref`，Claude Code 会在显式开启时只读解析官方 `~/.claude/settings.json` / `.claude/settings*.json` 中的 provider-local `ANTHROPIC_API_KEY` 与 `ANTHROPIC_BASE_URL`，并将其投影为 `credential_source=provider_local` / `endpoint_source=provider_local`；新增 config、CLI runtime、Codex、Claude Code 定向回归，`pnpm run build`、`check-task-ledger-sync`、`check-sprint-plan-status-sync` 通过，任务标记 `completed`。

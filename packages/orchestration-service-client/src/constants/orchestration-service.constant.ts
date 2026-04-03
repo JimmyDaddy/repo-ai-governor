@@ -61,6 +61,10 @@ export enum OrchestrationExecutionStatus {
  */
 export enum OrchestrationServiceEventType {
   EXECUTION_STARTED = 'execution.started',
+  EXECUTION_LIVENESS_UPDATED = 'execution.liveness.updated',
+  EXECUTION_GRACEFUL_INTERRUPT_STARTED = 'execution.graceful_interrupt.started',
+  EXECUTION_HARD_TERMINATION_STARTED = 'execution.hard_termination.started',
+  EXECUTION_PARTIAL_SNAPSHOT_PERSISTED = 'execution.partial_snapshot.persisted',
   STAGE_PROGRESS = 'stage.progress',
   STAGE_COMPLETED = 'stage.completed',
   ARTIFACT_READY = 'artifact.ready',

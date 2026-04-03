@@ -7,7 +7,9 @@ import {
 import type { AdaptersConfig } from '@repo-ai-governor/config';
 import {
   AdapterAvailability,
+  AdapterCredentialSource,
   AdapterSurface,
+  AdapterTransportKind,
   GovernorErrorCode,
   RuntimeError,
   standardizeError,
@@ -284,11 +286,52 @@ export class CliAdapterVerificationRuntime {
       );
     }
     if (missingCredentials.length > 0) {
-      nextActions.push(
-        this.translate('cli.adapterVerification.authenticateAdapters', {
-          credentials: missingCredentials.join(', '),
-        }),
+      const remoteApiEnvCredentials = this.collectRemoteApiCredentialDetailsFromToolSnapshots(
+        toolSnapshots,
+        [AdapterCredentialSource.ENV_DEFAULT, AdapterCredentialSource.ENV_EXPLICIT],
       );
+      const remoteApiProviderLocalCredentials =
+        this.collectRemoteApiCredentialDetailsFromToolSnapshots(toolSnapshots, [
+          AdapterCredentialSource.PROVIDER_LOCAL,
+        ]);
+      const remoteApiCredentialRefs = this.collectRemoteApiCredentialDetailsFromToolSnapshots(
+        toolSnapshots,
+        [AdapterCredentialSource.CREDENTIAL_REF],
+      );
+      const genericCredentialHints = missingCredentials.filter(
+        (credential) =>
+          !remoteApiEnvCredentials.includes(credential) &&
+          !remoteApiProviderLocalCredentials.includes(credential) &&
+          !remoteApiCredentialRefs.includes(credential),
+      );
+      if (remoteApiEnvCredentials.length > 0) {
+        nextActions.push(
+          this.translate('cli.adapterVerification.setRemoteApiCredentialEnvVars', {
+            credentials: remoteApiEnvCredentials.join(', '),
+          }),
+        );
+      }
+      if (remoteApiProviderLocalCredentials.length > 0) {
+        nextActions.push(
+          this.translate('cli.adapterVerification.verifyProviderLocalCredentialState', {
+            credentials: remoteApiProviderLocalCredentials.join(', '),
+          }),
+        );
+      }
+      if (remoteApiCredentialRefs.length > 0) {
+        nextActions.push(
+          this.translate('cli.adapterVerification.resolveCredentialReferencesManually', {
+            credentials: remoteApiCredentialRefs.join(', '),
+          }),
+        );
+      }
+      if (genericCredentialHints.length > 0) {
+        nextActions.push(
+          this.translate('cli.adapterVerification.authenticateAdapters', {
+            credentials: genericCredentialHints.join(', '),
+          }),
+        );
+      }
     }
     if (failedHealthChecks.length > 0) {
       nextActions.push(
@@ -661,6 +704,48 @@ export class CliAdapterVerificationRuntime {
       return healthCheckCredentials;
     }
     return this.collectToolReasonPayloads(toolSnapshots, 'credential_missing:');
+  }
+
+  /**
+   * Collects remote-api credential guidance details scoped to selected credential sources.
+   * @param toolSnapshots Tool-level probe snapshots.
+   * @param credentialSources Credential sources to retain.
+   * @returns Unique credential details preserving encounter order.
+   */
+  private collectRemoteApiCredentialDetailsFromToolSnapshots(
+    toolSnapshots: CliAdapterToolProbeSnapshot[],
+    credentialSources: AdapterCredentialSource[],
+  ): string[] {
+    const details: string[] = [];
+    for (const snapshot of toolSnapshots) {
+      if (snapshot.healthCheck?.transportKind !== AdapterTransportKind.REMOTE_API) {
+        continue;
+      }
+      if (
+        !snapshot.healthCheck.credentialSource ||
+        !credentialSources.includes(snapshot.healthCheck.credentialSource)
+      ) {
+        continue;
+      }
+      const authDiagnostic = snapshot.healthCheck.diagnostics.find((diagnostic) =>
+        [
+          'auth.credential_missing',
+          'auth.login_required',
+          'auth.unauthorized',
+          'auth.forbidden',
+        ].includes(diagnostic.code),
+      );
+      const detail =
+        authDiagnostic?.detail ??
+        snapshot.unavailableReasons
+          .find((reason) => reason.startsWith('credential_missing:'))
+          ?.slice('credential_missing:'.length) ??
+        snapshot.toolId;
+      if (detail.length > 0 && !details.includes(detail)) {
+        details.push(detail);
+      }
+    }
+    return details;
   }
 
   /**

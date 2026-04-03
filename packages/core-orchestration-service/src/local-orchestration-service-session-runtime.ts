@@ -20,6 +20,7 @@ import {
 import {
   type OrchestrationAppendSessionMessageRequest,
   type OrchestrationAppendSessionMessageResponse,
+  type OrchestrationExecutionLivenessSnapshot,
   type OrchestrationListSessionsFilter,
   type OrchestrationListSessionsRequest,
   type OrchestrationListSessionsResponse,
@@ -27,6 +28,7 @@ import {
   type OrchestrationResumeSessionResponse,
   type OrchestrationSendSessionTurnRequest,
   type OrchestrationSendSessionTurnResponse,
+  OrchestrationServiceEventType,
   type OrchestrationServiceHostKind,
   type OrchestrationServiceTransportKind,
   type OrchestrationSessionEvent,
@@ -50,6 +52,7 @@ import {
 } from '@repo-ai-governor/shared';
 import { LocalOrchestrationServiceSessionMainAgentDispatcher } from './local-orchestration-service-session-main-agent-dispatcher.js';
 import type {
+  LocalOrchestrationServicePublishEventRequest,
   SessionMainSupervisorRuntimeContract,
   SessionMainSupervisorStreamEvent,
 } from './types/index.js';
@@ -67,6 +70,7 @@ interface LocalOrchestrationServiceSessionRuntimeDependencies {
   memoryProviderRegistry?: MemoryProviderRegistry;
   memoryProviderRuntimeMode?: MemoryProviderRuntimeMode;
   sessionMainSupervisorRuntime?: SessionMainSupervisorRuntimeContract;
+  publishExecutionEvent?: (request: LocalOrchestrationServicePublishEventRequest) => Promise<void>;
   nowProvider?: () => Date;
 }
 
@@ -159,6 +163,7 @@ export class LocalOrchestrationServiceSessionRuntime {
     this.assertSupportedRouteId(currentRouteId);
 
     const existingSession = await sessionManager.getSession(request.sessionId);
+    const linkedExecutionId = existingSession.executionId ?? null;
     const acceptedAt = this.toTimestamp();
     const turnId = request.turnId ?? `turn-${randomUUID().replace(/-/gu, '')}`;
     const turnIndex = this.resolveNextTurnIndex(existingSession);
@@ -166,6 +171,10 @@ export class LocalOrchestrationServiceSessionRuntime {
     const sessionPersistenceMetrics = {
       totalElapsedMs: 0,
       writeCount: 0,
+    };
+    const executionLivenessRelayState = {
+      latestFingerprint: null as string | null,
+      partialSnapshotPersisted: false,
     };
     const appendSessionEvent = async (
       options: AppendSessionEventOptions,
@@ -216,6 +225,13 @@ export class LocalOrchestrationServiceSessionRuntime {
               turnId,
               streamEvent,
             }),
+          });
+          await this.publishExecutionLivenessEvent({
+            executionId: linkedExecutionId,
+            routeId: currentRouteId,
+            turnId,
+            streamEvent,
+            relayState: executionLivenessRelayState,
           });
         },
       });
@@ -721,7 +737,121 @@ export class LocalOrchestrationServiceSessionRuntime {
       ...(options.streamEvent.selectedBy ? { selectedBy: options.streamEvent.selectedBy } : {}),
       ...(options.streamEvent.toolName ? { toolName: options.streamEvent.toolName } : {}),
       ...(options.streamEvent.toolCallId ? { toolCallId: options.streamEvent.toolCallId } : {}),
+      ...(options.streamEvent.invokeLiveness
+        ? {
+            invokeLiveness: {
+              ...options.streamEvent.invokeLiveness,
+            },
+          }
+        : {}),
     };
+  }
+
+  private async publishExecutionLivenessEvent(options: {
+    executionId: string | null;
+    routeId: string;
+    turnId: string;
+    streamEvent: SessionMainSupervisorStreamEvent;
+    relayState: {
+      latestFingerprint: string | null;
+      partialSnapshotPersisted: boolean;
+    };
+  }): Promise<void> {
+    if (!options.executionId || !options.streamEvent.invokeLiveness) {
+      return;
+    }
+    if (!this.dependencies.publishExecutionEvent) {
+      return;
+    }
+
+    const livenessSnapshot = this.createExecutionLivenessSnapshot(
+      options.routeId,
+      options.streamEvent,
+    );
+    const eventType = this.resolveExecutionLivenessEventType(livenessSnapshot.status);
+    const fingerprint = JSON.stringify({
+      eventType,
+      livenessSnapshot,
+    });
+    if (fingerprint === options.relayState.latestFingerprint) {
+      return;
+    }
+
+    await this.dependencies.publishExecutionEvent({
+      executionId: options.executionId,
+      type: eventType,
+      stageId: options.streamEvent.stageId,
+      message: this.formatExecutionLivenessMessage(livenessSnapshot),
+      livenessSnapshot,
+    });
+    options.relayState.latestFingerprint = fingerprint;
+
+    if (livenessSnapshot.partialOutputPreserved && !options.relayState.partialSnapshotPersisted) {
+      await this.dependencies.publishExecutionEvent({
+        executionId: options.executionId,
+        type: OrchestrationServiceEventType.EXECUTION_PARTIAL_SNAPSHOT_PERSISTED,
+        stageId: options.streamEvent.stageId,
+        message: `Execution partial output snapshot persisted for turn ${options.turnId}.`,
+        livenessSnapshot,
+      });
+      options.relayState.partialSnapshotPersisted = true;
+    }
+  }
+
+  private createExecutionLivenessSnapshot(
+    routeId: string,
+    streamEvent: SessionMainSupervisorStreamEvent,
+  ): OrchestrationExecutionLivenessSnapshot {
+    return {
+      ...(streamEvent.invokeLiveness ? { ...streamEvent.invokeLiveness } : {}),
+      ...(streamEvent.routeKey ? { routeKey: streamEvent.routeKey } : { routeKey: routeId }),
+      ...(streamEvent.roleId ? { roleId: streamEvent.roleId } : {}),
+      ...(streamEvent.selectedSurface
+        ? { surfaceId: streamEvent.selectedSurface }
+        : streamEvent.invokeLiveness?.surfaceId
+          ? { surfaceId: streamEvent.invokeLiveness.surfaceId }
+          : {}),
+      ...(streamEvent.chunkText
+        ? { latestTextPreview: this.resolveLivenessTextPreview(streamEvent.chunkText) }
+        : streamEvent.accumulatedText
+          ? { latestTextPreview: this.resolveLivenessTextPreview(streamEvent.accumulatedText) }
+          : {}),
+      ...(streamEvent.state === 'completed' && !streamEvent.invokeLiveness?.status
+        ? { status: 'completed' }
+        : {}),
+      ...(streamEvent.state === 'failed' && !streamEvent.invokeLiveness?.status
+        ? { status: 'failed' }
+        : {}),
+    };
+  }
+
+  private resolveExecutionLivenessEventType(
+    status: string | undefined,
+  ): OrchestrationServiceEventType {
+    if (status === 'graceful_interrupting') {
+      return OrchestrationServiceEventType.EXECUTION_GRACEFUL_INTERRUPT_STARTED;
+    }
+    if (status === 'hard_terminating') {
+      return OrchestrationServiceEventType.EXECUTION_HARD_TERMINATION_STARTED;
+    }
+    return OrchestrationServiceEventType.EXECUTION_LIVENESS_UPDATED;
+  }
+
+  private formatExecutionLivenessMessage(snapshot: OrchestrationExecutionLivenessSnapshot): string {
+    const detailParts = [
+      snapshot.status ? `status=${snapshot.status}` : null,
+      snapshot.routeKey ? `route=${snapshot.routeKey}` : null,
+      snapshot.surfaceId ? `surface=${snapshot.surfaceId}` : null,
+      snapshot.remoteRequestId ? `remote_request_id=${snapshot.remoteRequestId}` : null,
+    ].filter((value): value is string => value !== null);
+    return detailParts.length > 0
+      ? `Execution liveness updated (${detailParts.join(' ')}).`
+      : 'Execution liveness updated.';
+  }
+
+  private resolveLivenessTextPreview(source: string): string {
+    const normalized = source.trim();
+    return normalized.length > 160 ? normalized.slice(-160) : normalized;
   }
 
   private toSessionEvents(session: SharedSession): OrchestrationSessionEvent[] {

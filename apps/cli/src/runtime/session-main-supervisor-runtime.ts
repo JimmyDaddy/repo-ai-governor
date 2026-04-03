@@ -23,6 +23,7 @@ import {
   SESSION_MAIN_RESPONSE_MODE,
 } from '@repo-ai-governor/core-orchestration-service/constants';
 import type {
+  SessionMainSupervisorInvokeLiveness,
   SessionMainSupervisorInvokedRole,
   SessionMainSupervisorRuntimeContract,
   SessionMainSupervisorStreamEvent,
@@ -1414,6 +1415,7 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
             this.readOptionalString(event.payload.toolName) ??
             this.readOptionalString(event.payload.name),
           toolCallId: this.readOptionalString(event.payload.toolCallId),
+          invokeLiveness: this.readInvokeLiveness(event.payload),
         });
       }
     } catch {
@@ -1462,6 +1464,49 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     event: SessionMainSupervisorStreamEvent,
   ): Promise<void> {
     await context.publishStreamEvent?.(event);
+  }
+
+  private readInvokeLiveness(
+    payload: Record<string, unknown>,
+  ): SessionMainSupervisorInvokeLiveness | undefined {
+    const candidate = payload.invokeLiveness;
+    if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) {
+      return undefined;
+    }
+
+    const record = candidate as Record<string, unknown>;
+    const suspectReasonCodes = Array.isArray(record.suspectReasonCodes)
+      ? record.suspectReasonCodes.filter((value): value is string => typeof value === 'string')
+      : undefined;
+
+    return {
+      adapterId: this.readOptionalString(record.adapterId),
+      surfaceId: this.readOptionalString(record.surfaceId),
+      routeKey: this.readOptionalString(record.routeKey),
+      roleId: this.readOptionalString(record.roleId),
+      startedAt: this.readOptionalString(record.startedAt),
+      status: this.readOptionalString(record.status),
+      lastTransportActivityAt: this.readOptionalString(record.lastTransportActivityAt),
+      lastSemanticProgressAt: this.readOptionalString(record.lastSemanticProgressAt),
+      lastTerminalSignalAt: this.readOptionalString(record.lastTerminalSignalAt),
+      latestEventAt: this.readOptionalString(record.latestEventAt),
+      latestEventType: this.readOptionalString(record.latestEventType),
+      latestTextPreview: this.readOptionalString(record.latestTextPreview),
+      activeOperationKind: this.readOptionalString(record.activeOperationKind),
+      activeOperationStartedAt: this.readOptionalString(record.activeOperationStartedAt),
+      ...(typeof record.partialOutputPreserved === 'boolean'
+        ? { partialOutputPreserved: record.partialOutputPreserved }
+        : {}),
+      transportKind: this.readOptionalString(record.transportKind),
+      vendorBindingKind: this.readOptionalString(record.vendorBindingKind),
+      ...(record.remoteRequestId === null
+        ? { remoteRequestId: null }
+        : this.readOptionalString(record.remoteRequestId)
+          ? { remoteRequestId: this.readOptionalString(record.remoteRequestId) }
+          : {}),
+      cancelMechanism: this.readOptionalString(record.cancelMechanism),
+      ...(suspectReasonCodes && suspectReasonCodes.length > 0 ? { suspectReasonCodes } : {}),
+    };
   }
 
   private createInvokedRoleDescriptor(

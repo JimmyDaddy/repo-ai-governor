@@ -1,3 +1,7 @@
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
 import {
   AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY,
   AgentCancellationReason,
@@ -12,6 +16,8 @@ import {
   type AgentStreamEventsRequest,
 } from '@repo-ai-governor/adapter-sdk';
 import {
+  AdapterCredentialSource,
+  AdapterEndpointSource,
   AdapterProviderKind,
   AdapterVendorBindingKind,
   GovernorErrorCode,
@@ -33,6 +39,59 @@ function createStreamRequest(): AgentStreamEventsRequest {
       prompt: 'implement feature',
     },
   };
+}
+
+function createSseResponse(
+  chunks: string[],
+  signal?: AbortSignal,
+  options: {
+    stallAfterChunks?: boolean;
+  } = {},
+): Response {
+  const encoder = new TextEncoder();
+  return new Response(
+    new ReadableStream<Uint8Array>({
+      start(controller) {
+        let closed = false;
+        const close = () => {
+          if (!closed) {
+            closed = true;
+            controller.close();
+          }
+        };
+        const fail = () => {
+          if (!closed) {
+            closed = true;
+            controller.error(new DOMException('The operation was aborted.', 'AbortError'));
+          }
+        };
+        signal?.addEventListener('abort', fail, { once: true });
+        let index = 0;
+        const pump = () => {
+          if (index < chunks.length) {
+            controller.enqueue(encoder.encode(chunks[index] ?? ''));
+            index += 1;
+            if (index >= chunks.length && !options.stallAfterChunks) {
+              close();
+              return;
+            }
+            queueMicrotask(pump);
+            return;
+          }
+          if (!options.stallAfterChunks) {
+            close();
+          }
+        };
+        pump();
+      },
+    }),
+    {
+      status: 200,
+      headers: {
+        'content-type': 'text/event-stream',
+      },
+    },
+  );
 }
 
 describe('claude-code-agent-adapter smoke', () => {
@@ -222,6 +281,147 @@ describe('claude-code-agent-adapter smoke', () => {
     expect(fetchImplementation).toHaveBeenCalledTimes(2);
   });
 
+  it('projects remote_api stream liveness metadata and remote request ids', async () => {
+    const fetchImplementation = vi
+      .fn<typeof fetch>()
+      .mockImplementation(async (_input, init) =>
+        createSseResponse(
+          [
+            'event: message_start\ndata: {"type":"message_start","message":{"id":"msg-stream-1"}}\n\n',
+            'event: content_block_delta\ndata: {"type":"content_block_delta","delta":{"type":"text_delta","text":"hello"}}\n\n',
+            'event: message_stop\ndata: {"type":"message_stop","message":{"id":"msg-stream-1"}}\n\n',
+          ],
+          init?.signal,
+        ),
+      );
+    const adapter = new ClaudeCodeAgentAdapter({
+      executionMode: ClaudeCodeAgentAdapterExecutionMode.REMOTE_API,
+      fetchImplementation,
+      environment: {
+        ANTHROPIC_API_KEY: 'test-key',
+      },
+      remoteApi: {
+        provider: AdapterProviderKind.ANTHROPIC,
+        vendorBinding: AdapterVendorBindingKind.ANTHROPIC_MESSAGES,
+        model: 'claude-sonnet-4-5',
+      },
+    });
+
+    const events: AgentStreamEventType[] = [];
+    const payloads: Array<Record<string, unknown>> = [];
+    for await (const event of adapter.streamEvents(createStreamRequest())) {
+      events.push(event.eventType);
+      payloads.push(event.payload);
+    }
+
+    expect(events).toEqual([
+      AgentStreamEventType.STATUS,
+      AgentStreamEventType.STATUS,
+      AgentStreamEventType.TOKEN,
+      AgentStreamEventType.COMPLETED,
+    ]);
+    expect(payloads[1]).toEqual(
+      expect.objectContaining({
+        remoteRequestId: 'msg-stream-1',
+      }),
+    );
+    expect(payloads[2]).toEqual(
+      expect.objectContaining({
+        transportKind: 'remote_api',
+        vendorBindingKind: AdapterVendorBindingKind.ANTHROPIC_MESSAGES,
+        remoteRequestId: 'msg-stream-1',
+        accumulatedText: 'hello',
+        invokeLiveness: expect.objectContaining({
+          status: 'running',
+          transportKind: 'remote_api',
+          vendorBindingKind: AdapterVendorBindingKind.ANTHROPIC_MESSAGES,
+          remoteRequestId: 'msg-stream-1',
+          cancelMechanism: 'none',
+          partialOutputPreserved: false,
+          lastTransportActivityAt: expect.any(String),
+          lastSemanticProgressAt: expect.any(String),
+          latestTextPreview: 'hello',
+        }),
+      }),
+    );
+    expect(payloads[3]).toEqual(
+      expect.objectContaining({
+        remoteRequestId: 'msg-stream-1',
+        invokeLiveness: expect.objectContaining({
+          status: 'completed',
+          remoteRequestId: 'msg-stream-1',
+          lastTerminalSignalAt: expect.any(String),
+          latestTextPreview: 'hello',
+        }),
+      }),
+    );
+  });
+
+  it('keeps remote_api timeout coverage alive during stream consumption and preserves partial output', async () => {
+    const fetchImplementation = vi.fn<typeof fetch>().mockImplementation(async (_input, init) =>
+      createSseResponse(
+        [
+          'event: message_start\ndata: {"type":"message_start","message":{"id":"msg-stream-timeout-1"}}\n\n',
+          'event: content_block_delta\ndata: {"type":"content_block_delta","delta":{"type":"text_delta","text":"partial"}}\n\n',
+        ],
+        init?.signal,
+        {
+          stallAfterChunks: true,
+        },
+      ),
+    );
+    const adapter = new ClaudeCodeAgentAdapter({
+      executionMode: ClaudeCodeAgentAdapterExecutionMode.REMOTE_API,
+      fetchImplementation,
+      environment: {
+        ANTHROPIC_API_KEY: 'test-key',
+      },
+      requestTimeoutMs: 30,
+      remoteApi: {
+        provider: AdapterProviderKind.ANTHROPIC,
+        vendorBinding: AdapterVendorBindingKind.ANTHROPIC_MESSAGES,
+        model: 'claude-sonnet-4-5',
+      },
+    });
+
+    const events: Array<{ type: AgentStreamEventType; payload: Record<string, unknown> }> = [];
+    let thrownError: unknown;
+    try {
+      for await (const event of adapter.streamEvents(createStreamRequest())) {
+        events.push({
+          type: event.eventType,
+          payload: event.payload,
+        });
+      }
+    } catch (error) {
+      thrownError = error;
+    }
+
+    expect(thrownError).toBeInstanceOf(RuntimeError);
+    expect((thrownError as RuntimeError).message).toContain('exhausted the timeout budget');
+    expect(events.map((event) => event.type)).toEqual([
+      AgentStreamEventType.STATUS,
+      AgentStreamEventType.STATUS,
+      AgentStreamEventType.TOKEN,
+      AgentStreamEventType.FAILED,
+    ]);
+    expect(events[3]?.payload).toEqual(
+      expect.objectContaining({
+        accumulatedText: 'partial',
+        invokeLiveness: expect.objectContaining({
+          status: 'failed',
+          cancelMechanism: 'http_stream_abort',
+          partialOutputPreserved: true,
+          remoteRequestId: 'msg-stream-timeout-1',
+          suspectReasonCodes: expect.arrayContaining([
+            'invoke_hard_timeout',
+            'invoke_partial_output_preserved',
+          ]),
+        }),
+      }),
+    );
+  });
+
   it('does not restart remote_api fetch with a fresh timeout budget after one timed-out attempt', async () => {
     const fetchImplementation = vi.fn<typeof fetch>().mockImplementation(async (_input, init) => {
       if (init?.signal?.aborted) {
@@ -261,17 +461,15 @@ describe('claude-code-agent-adapter smoke', () => {
         },
       }),
     ).rejects.toMatchObject({
-      name: 'AbortError',
+      code: GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
+      message: expect.stringContaining('exhausted the timeout budget'),
     });
     expect(fetchImplementation).toHaveBeenCalledTimes(1);
   });
 
-  it('fails closed when remote_api credentialRef is configured directly on the adapter', async () => {
+  it('surfaces credentialRef as manual-only probe truth when remote_api is configured directly', async () => {
     const adapter = new ClaudeCodeAgentAdapter({
       executionMode: ClaudeCodeAgentAdapterExecutionMode.REMOTE_API,
-      environment: {
-        ANTHROPIC_API_KEY: 'test-key',
-      },
       remoteApi: {
         provider: AdapterProviderKind.ANTHROPIC,
         vendorBinding: AdapterVendorBindingKind.ANTHROPIC_MESSAGES,
@@ -280,13 +478,165 @@ describe('claude-code-agent-adapter smoke', () => {
       },
     });
 
-    await expect(
-      adapter.probe({
-        routeKey: 'cli.adapter.probe.claude-code',
-      }),
-    ).rejects.toMatchObject({
-      code: GovernorErrorCode.AGENT_PROTOCOL_INVALID,
+    const probeResult = await adapter.probe({
+      routeKey: 'cli.adapter.probe.claude-code',
     });
+
+    expect(probeResult.availabilityStatus).toBe('unavailable');
+    expect(probeResult.unavailableReasons).toContain(
+      'credential_missing:claude-code:secret://anthropic/api-key',
+    );
+    expect(probeResult.healthCheck?.credentialSource).toBe(AdapterCredentialSource.CREDENTIAL_REF);
+  });
+
+  it('reads provider-local Claude settings in read-only mode when explicitly enabled', async () => {
+    const tempRoot = mkdtempSync(join(tmpdir(), 'claude-provider-local-'));
+    const projectRoot = join(tempRoot, 'workspace');
+    mkdirSync(join(tempRoot, '.claude'), { recursive: true });
+    mkdirSync(join(projectRoot, '.claude'), { recursive: true });
+    writeFileSync(
+      join(tempRoot, '.claude', 'settings.json'),
+      JSON.stringify({
+        env: {
+          ANTHROPIC_API_KEY: 'provider-local-key',
+          ANTHROPIC_BASE_URL: 'https://anthropic-proxy.example.test/v1/messages',
+        },
+      }),
+      'utf8',
+    );
+    const fetchImplementation = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            id: 'message-1',
+            content: [
+              {
+                type: 'text',
+                text: 'OK',
+              },
+            ],
+            usage: {
+              input_tokens: 11,
+              output_tokens: 7,
+            },
+          }),
+          {
+            status: 200,
+            headers: {
+              'content-type': 'application/json',
+            },
+          },
+        ),
+    );
+
+    try {
+      const adapter = new ClaudeCodeAgentAdapter({
+        executionMode: ClaudeCodeAgentAdapterExecutionMode.REMOTE_API,
+        currentWorkingDirectory: projectRoot,
+        environment: {
+          HOME: tempRoot,
+        },
+        fetchImplementation,
+        remoteApi: {
+          provider: AdapterProviderKind.ANTHROPIC,
+          vendorBinding: AdapterVendorBindingKind.ANTHROPIC_MESSAGES,
+          model: 'claude-sonnet-4-5',
+          allowProviderLocalConfig: true,
+        },
+      });
+
+      const probeResult = await adapter.probe({
+        routeKey: 'cli.adapter.probe.claude-code',
+      });
+
+      expect(probeResult.availabilityStatus).toBe('available');
+      expect(probeResult.healthCheck?.credentialSource).toBe(
+        AdapterCredentialSource.PROVIDER_LOCAL,
+      );
+      expect(probeResult.healthCheck?.endpointSource).toBe(AdapterEndpointSource.PROVIDER_LOCAL);
+      expect(fetchImplementation).toHaveBeenCalledWith(
+        'https://anthropic-proxy.example.test/v1/messages',
+        expect.any(Object),
+      );
+    } finally {
+      rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('discovers repo-root Claude settings when launched from a workspace subdirectory', async () => {
+    const tempRoot = mkdtempSync(join(tmpdir(), 'claude-provider-local-nested-'));
+    const projectRoot = join(tempRoot, 'workspace');
+    const launchDirectory = join(projectRoot, 'packages', 'feature-a');
+    mkdirSync(join(projectRoot, '.git'), { recursive: true });
+    mkdirSync(join(projectRoot, '.claude'), { recursive: true });
+    mkdirSync(launchDirectory, { recursive: true });
+    writeFileSync(
+      join(projectRoot, '.claude', 'settings.local.json'),
+      JSON.stringify({
+        env: {
+          ANTHROPIC_API_KEY: 'repo-root-provider-local-key',
+          ANTHROPIC_BASE_URL: 'https://repo-root-anthropic.example.test/v1/messages',
+        },
+      }),
+      'utf8',
+    );
+    const fetchImplementation = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            id: 'message-1',
+            content: [
+              {
+                type: 'text',
+                text: 'OK',
+              },
+            ],
+            usage: {
+              input_tokens: 11,
+              output_tokens: 7,
+            },
+          }),
+          {
+            status: 200,
+            headers: {
+              'content-type': 'application/json',
+            },
+          },
+        ),
+    );
+
+    try {
+      const adapter = new ClaudeCodeAgentAdapter({
+        executionMode: ClaudeCodeAgentAdapterExecutionMode.REMOTE_API,
+        currentWorkingDirectory: launchDirectory,
+        environment: {
+          HOME: tempRoot,
+        },
+        fetchImplementation,
+        remoteApi: {
+          provider: AdapterProviderKind.ANTHROPIC,
+          vendorBinding: AdapterVendorBindingKind.ANTHROPIC_MESSAGES,
+          model: 'claude-sonnet-4-5',
+          allowProviderLocalConfig: true,
+        },
+      });
+
+      const probeResult = await adapter.probe({
+        routeKey: 'cli.adapter.probe.claude-code',
+      });
+
+      expect(probeResult.availabilityStatus).toBe('available');
+      expect(probeResult.healthCheck?.credentialSource).toBe(
+        AdapterCredentialSource.PROVIDER_LOCAL,
+      );
+      expect(probeResult.healthCheck?.endpointSource).toBe(AdapterEndpointSource.PROVIDER_LOCAL);
+      expect(fetchImplementation).toHaveBeenCalledWith(
+        'https://repo-root-anthropic.example.test/v1/messages',
+        expect.any(Object),
+      );
+    } finally {
+      rmSync(tempRoot, { recursive: true, force: true });
+    }
   });
 
   it('passes no-tool command arguments when chat-only policy forbids tool use', async () => {
@@ -557,12 +907,11 @@ describe('claude-code-agent-adapter smoke', () => {
     };
 
     const streamPayloadsPromise = (async () => {
-      const payloads: Array<{ type: AgentStreamEventType; detail?: unknown; text?: unknown }> = [];
+      const payloads: Array<{ type: AgentStreamEventType; payload: Record<string, unknown> }> = [];
       for await (const event of adapter.streamEvents(invokeRequest)) {
         payloads.push({
           type: event.eventType,
-          detail: event.payload.detail,
-          text: event.payload.text,
+          payload: event.payload,
         });
       }
       return payloads;
@@ -575,34 +924,121 @@ describe('claude-code-agent-adapter smoke', () => {
     ]);
 
     expect(execRunner).toHaveBeenCalledTimes(1);
-    expect(streamPayloads).toEqual([
-      {
-        type: AgentStreamEventType.STATUS,
-        detail: 'Claude Code turn started.',
-        text: undefined,
-      },
-      {
-        type: AgentStreamEventType.TOKEN,
-        detail: undefined,
-        text: 'Review',
-      },
-      {
-        type: AgentStreamEventType.TOKEN,
-        detail: undefined,
-        text: ' findings',
-      },
-      {
-        type: AgentStreamEventType.STATUS,
-        detail: 'claude-code stderr: stderr progress line',
-        text: undefined,
-      },
-      {
-        type: AgentStreamEventType.COMPLETED,
-        detail: undefined,
-        text: undefined,
-      },
+    expect(streamPayloads.map((event) => event.type)).toEqual([
+      AgentStreamEventType.STATUS,
+      AgentStreamEventType.TOKEN,
+      AgentStreamEventType.TOKEN,
+      AgentStreamEventType.STATUS,
+      AgentStreamEventType.COMPLETED,
     ]);
+    expect(streamPayloads[0]?.payload).toEqual(
+      expect.objectContaining({
+        detail: 'Claude Code turn started.',
+        transportKind: 'cli_exec',
+        invokeLiveness: expect.objectContaining({
+          status: 'starting',
+          transportKind: 'cli_exec',
+          partialOutputPreserved: false,
+          cancelMechanism: 'none',
+        }),
+      }),
+    );
+    expect(streamPayloads[2]?.payload).toEqual(
+      expect.objectContaining({
+        text: ' findings',
+        accumulatedText: 'Review findings',
+        invokeLiveness: expect.objectContaining({
+          status: 'running',
+          lastTransportActivityAt: expect.any(String),
+          lastSemanticProgressAt: expect.any(String),
+          latestTextPreview: 'Review findings',
+          transportKind: 'cli_exec',
+        }),
+      }),
+    );
+    expect(streamPayloads[4]?.payload).toEqual(
+      expect.objectContaining({
+        responseText: 'Review findings',
+        invokeLiveness: expect.objectContaining({
+          status: 'completed',
+          lastTerminalSignalAt: expect.any(String),
+          partialOutputPreserved: false,
+        }),
+      }),
+    );
     expect(invokeResult.output.responseText).toBe('Review findings');
+  });
+
+  it('preserves partial cli_exec output and timeout reason codes when invocation fails', async () => {
+    const adapter = new ClaudeCodeAgentAdapter({
+      executionMode: ClaudeCodeAgentAdapterExecutionMode.CLI_EXEC,
+      maxRetryAttempts: 1,
+      execRunner: async (request) => {
+        request.onStdoutChunk?.('partial');
+        request.onGracefulInterruptStart?.('process_signal');
+        throw new RuntimeError(
+          GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
+          'Claude Code invoke timed out after 30ms.',
+          {
+            surface: 'claude-code',
+            operation: AgentCliExecOperation.INVOKE,
+            timeoutMs: 30,
+          },
+        );
+      },
+    });
+
+    const invokeRequest = createStreamRequest();
+    const streamEventsPromise = (async () => {
+      const events: Array<{ type: AgentStreamEventType; payload: Record<string, unknown> }> = [];
+      for await (const event of adapter.streamEvents(createStreamRequest())) {
+        events.push({
+          type: event.eventType,
+          payload: event.payload,
+        });
+      }
+      return events;
+    })();
+    const invokeErrorPromise = adapter
+      .invokeStage(invokeRequest)
+      .then(() => null)
+      .catch((error) => error);
+
+    const [events, thrownError] = await Promise.all([streamEventsPromise, invokeErrorPromise]);
+
+    expect(thrownError).toBeInstanceOf(RuntimeError);
+    expect((thrownError as RuntimeError).message).toContain('timed out');
+    expect(events.map((event) => event.type)).toEqual([
+      AgentStreamEventType.STATUS,
+      AgentStreamEventType.TOKEN,
+      AgentStreamEventType.STATUS,
+      AgentStreamEventType.FAILED,
+    ]);
+    expect(events[2]?.payload).toEqual(
+      expect.objectContaining({
+        status: 'graceful_interrupting',
+        invokeLiveness: expect.objectContaining({
+          status: 'graceful_interrupting',
+          cancelMechanism: 'process_signal',
+          suspectReasonCodes: expect.arrayContaining(['invoke_hard_timeout']),
+        }),
+      }),
+    );
+    expect(events[3]?.payload).toEqual(
+      expect.objectContaining({
+        accumulatedText: 'partial',
+        responseText: 'partial',
+        invokeLiveness: expect.objectContaining({
+          status: 'failed',
+          partialOutputPreserved: true,
+          cancelMechanism: 'process_signal',
+          suspectReasonCodes: expect.arrayContaining([
+            'invoke_hard_timeout',
+            'invoke_partial_output_preserved',
+          ]),
+        }),
+      }),
+    );
   });
 
   it('streams status and completed events', async () => {

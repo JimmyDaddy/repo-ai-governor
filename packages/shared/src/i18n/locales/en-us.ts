@@ -170,6 +170,12 @@ export const EN_US_TRANSLATIONS = {
       installMissingCommands: 'Install missing local commands before connect/verify: {{commands}}.',
       probeFailedCommands:
         'Some commands exist but probe failed ({{commands}}). Run them manually to verify login/extension status.',
+      setRemoteApiCredentialEnvVars:
+        'Set or export the required remote-api credential environment variables before connect/verify: {{credentials}}.',
+      verifyProviderLocalCredentialState:
+        'Remote-api credential discovery stays read-only here; verify provider-local login state manually for: {{credentials}}.',
+      resolveCredentialReferencesManually:
+        'Remote-api credential references cannot be materialized automatically; resolve them manually for: {{credentials}}.',
       authenticateAdapters:
         'Authenticate or refresh login for remote adapters before connect/verify: {{credentials}}.',
       investigateHealthChecks:

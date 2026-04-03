@@ -200,9 +200,36 @@ interface ResolvedCodexRemoteApiOptions {
   endpoint: string;
   endpointSource: AdapterEndpointSource;
   credentialEnvVar: string;
-  credentialSource: AdapterCredentialSource;
+  credentialEnvVarExplicit: boolean;
+  credentialRef: string | null;
   requestTimeoutMs: number;
   maxRetries: number;
+}
+
+interface CodexRemoteApiCredentialResolution {
+  source: AdapterCredentialSource;
+  value: string | null;
+  detail: string;
+}
+
+type CodexRemoteApiLivenessStatus = 'starting' | 'running' | 'completed' | 'failed' | 'cancelled';
+type CodexRemoteApiCancelMechanism = 'none' | 'http_stream_abort';
+
+interface CodexRemoteApiFetchResult {
+  response: Response;
+  cleanup: () => void;
+  didTimeout: () => boolean;
+}
+
+interface CodexRemoteApiLivenessState {
+  startedAt: string;
+  accumulatedText: string;
+  remoteRequestId: string | null;
+  lastTransportActivityAt: string | null;
+  lastSemanticProgressAt: string | null;
+  latestEventAt: string | null;
+  latestEventType: string | null;
+  latestTextPreview: string | null;
 }
 
 /**
@@ -280,6 +307,9 @@ export class CodexAgentAdapter extends AgentProtocol {
   public override async probe(request: AgentProbeRequest): Promise<AgentProbeResult> {
     const runtimeProbe = await this.resolveProbeResolution(request.signal);
     const remoteApiOptions = this.resolveRemoteApiOptions();
+    const remoteApiCredentialResolution = remoteApiOptions
+      ? this.resolveRemoteApiCredentialResolution(remoteApiOptions)
+      : null;
     const capabilityMatrix = this.createCapabilityMatrix();
     const availabilityStatus = this.mergeAvailabilityStatus(
       this.options.availabilityStatus,
@@ -332,7 +362,7 @@ export class CodexAgentAdapter extends AgentProtocol {
         providerKind: remoteApiOptions?.provider ?? null,
         vendorBindingKind: remoteApiOptions?.vendorBinding ?? null,
         model: remoteApiOptions?.model ?? null,
-        credentialSource: remoteApiOptions?.credentialSource ?? null,
+        credentialSource: remoteApiCredentialResolution?.source ?? null,
         endpointSource: remoteApiOptions?.endpointSource ?? null,
         requestCancellationMode:
           this.options.executionMode === CodexAgentAdapterExecutionMode.REMOTE_API
@@ -750,22 +780,8 @@ export class CodexAgentAdapter extends AgentProtocol {
       return null;
     }
 
-    if (configuredRemoteApi.credentialRef) {
-      throw new RuntimeError(
-        GovernorErrorCode.AGENT_PROTOCOL_INVALID,
-        `Codex remote API credentialRef "${configuredRemoteApi.credentialRef}" is not yet supported.`,
-        {
-          surface: CODEX_SURFACE,
-          credentialRef: configuredRemoteApi.credentialRef,
-        },
-      );
-    }
-
     const credentialEnvVar =
       configuredRemoteApi.credentialEnvVar ?? CODEX_REMOTE_API_DEFAULT_CREDENTIAL_ENV_VAR;
-    const credentialSource = configuredRemoteApi.credentialEnvVar
-      ? AdapterCredentialSource.ENV_EXPLICIT
-      : AdapterCredentialSource.ENV_DEFAULT;
 
     return {
       provider: AdapterProviderKind.OPENAI,
@@ -776,21 +792,43 @@ export class CodexAgentAdapter extends AgentProtocol {
         ? AdapterEndpointSource.CONFIG_EXPLICIT
         : AdapterEndpointSource.VENDOR_DEFAULT,
       credentialEnvVar,
-      credentialSource,
+      credentialEnvVarExplicit: configuredRemoteApi.credentialEnvVar !== undefined,
+      credentialRef: configuredRemoteApi.credentialRef ?? null,
       requestTimeoutMs: configuredRemoteApi.requestTimeoutMs ?? this.options.requestTimeoutMs,
       maxRetries: configuredRemoteApi.maxRetries ?? CODEX_REMOTE_API_DEFAULT_MAX_RETRIES,
     };
   }
 
-  private resolveRemoteApiCredentialValue(
+  private resolveRemoteApiCredentialResolution(
     remoteApiOptions: ResolvedCodexRemoteApiOptions,
-  ): string | null {
+  ): CodexRemoteApiCredentialResolution {
     const environment = this.resolveEnvironment();
     const credentialValue = environment[remoteApiOptions.credentialEnvVar];
-    if (typeof credentialValue !== 'string' || credentialValue.trim().length === 0) {
-      return null;
+    if (typeof credentialValue === 'string' && credentialValue.trim().length > 0) {
+      return {
+        source: remoteApiOptions.credentialEnvVarExplicit
+          ? AdapterCredentialSource.ENV_EXPLICIT
+          : AdapterCredentialSource.ENV_DEFAULT,
+        value: credentialValue.trim(),
+        detail: `${CODEX_SURFACE}:${remoteApiOptions.credentialEnvVar}`,
+      };
     }
-    return credentialValue.trim();
+
+    if (remoteApiOptions.credentialRef) {
+      return {
+        source: AdapterCredentialSource.CREDENTIAL_REF,
+        value: null,
+        detail: `${CODEX_SURFACE}:${remoteApiOptions.credentialRef}`,
+      };
+    }
+
+    return {
+      source: remoteApiOptions.credentialEnvVarExplicit
+        ? AdapterCredentialSource.ENV_EXPLICIT
+        : AdapterCredentialSource.ENV_DEFAULT,
+      value: null,
+      detail: `${CODEX_SURFACE}:${remoteApiOptions.credentialEnvVar}`,
+    };
   }
 
   private async executeRemoteApiHealthProbe(signal?: AbortSignal): Promise<CodexProbeResolution> {
@@ -802,13 +840,11 @@ export class CodexAgentAdapter extends AgentProtocol {
       };
     }
 
-    const credentialValue = this.resolveRemoteApiCredentialValue(remoteApiOptions);
-    if (!credentialValue) {
+    const credentialResolution = this.resolveRemoteApiCredentialResolution(remoteApiOptions);
+    if (!credentialResolution.value) {
       return {
         availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
-        unavailableReasons: [
-          `credential_missing:${CODEX_SURFACE}:${remoteApiOptions.credentialEnvVar}`,
-        ],
+        unavailableReasons: [`credential_missing:${credentialResolution.detail}`],
       };
     }
 
@@ -877,22 +913,39 @@ export class CodexAgentAdapter extends AgentProtocol {
     const prompt = this.shouldUseRepositoryReviewCommand(request)
       ? this.renderRepositoryReviewPrompt(request as AgentInvokeStageRequest)
       : this.renderInvokePrompt(request as AgentInvokeStageRequest);
+    const livenessState = this.createRemoteApiLivenessState();
+    this.recordRemoteApiObservedEvent(
+      livenessState,
+      livenessState.startedAt,
+      'status',
+      'Codex remote API stream started.',
+    );
     yield {
       eventType: AgentStreamEventType.STATUS,
-      timestamp: new Date().toISOString(),
+      timestamp: livenessState.startedAt,
       processId: request.processId,
       executionId: request.executionId,
       stageId: request.stageId,
       routeKey: request.routeKey,
       payload: {
-        status: 'running',
+        status: 'starting',
         surface: CODEX_SURFACE,
-        transportKind: CodexAgentAdapterExecutionMode.REMOTE_API,
+        transportKind: AdapterTransportKind.REMOTE_API,
+        vendorBindingKind: remoteApiOptions.vendorBinding,
         detail: 'Codex remote API stream started.',
+        invokeLiveness: this.buildRemoteApiInvokeLivenessSnapshot(
+          request,
+          remoteApiOptions,
+          livenessState,
+          {
+            status: 'starting',
+            cancelMechanism: 'none',
+            partialOutputPreserved: false,
+          },
+        ),
       },
     };
 
-    let accumulatedText = '';
     let completedEmitted = false;
     try {
       for await (const event of this.executeRemoteApiStreamRequest({
@@ -900,6 +953,7 @@ export class CodexAgentAdapter extends AgentProtocol {
         timeoutMs: this.resolveStreamTimeoutMs(request),
         ...(request.signal ? { signal: request.signal } : {}),
       })) {
+        this.captureRemoteApiTransportEvent(livenessState, event);
         if (event.eventType === AgentStreamEventType.TOKEN) {
           const text =
             typeof event.payload.delta === 'string'
@@ -907,7 +961,8 @@ export class CodexAgentAdapter extends AgentProtocol {
               : typeof event.payload.text === 'string'
                 ? event.payload.text
                 : '';
-          accumulatedText += text;
+          livenessState.accumulatedText += text;
+          this.captureRemoteApiSemanticProgress(livenessState, event.timestamp);
           yield {
             ...event,
             processId: request.processId,
@@ -917,8 +972,20 @@ export class CodexAgentAdapter extends AgentProtocol {
             payload: {
               ...event.payload,
               surface: CODEX_SURFACE,
+              transportKind: AdapterTransportKind.REMOTE_API,
               vendorBindingKind: remoteApiOptions.vendorBinding,
-              accumulatedText,
+              remoteRequestId: livenessState.remoteRequestId,
+              accumulatedText: livenessState.accumulatedText,
+              invokeLiveness: this.buildRemoteApiInvokeLivenessSnapshot(
+                request,
+                remoteApiOptions,
+                livenessState,
+                {
+                  status: 'running',
+                  cancelMechanism: 'none',
+                  partialOutputPreserved: false,
+                },
+              ),
             },
           };
           continue;
@@ -927,6 +994,8 @@ export class CodexAgentAdapter extends AgentProtocol {
         if (event.eventType === AgentStreamEventType.COMPLETED) {
           completedEmitted = true;
         }
+        const livenessStatus: CodexRemoteApiLivenessStatus =
+          event.eventType === AgentStreamEventType.COMPLETED ? 'completed' : 'running';
         yield {
           ...event,
           processId: request.processId,
@@ -936,15 +1005,44 @@ export class CodexAgentAdapter extends AgentProtocol {
           payload: {
             ...event.payload,
             surface: CODEX_SURFACE,
+            transportKind: AdapterTransportKind.REMOTE_API,
             vendorBindingKind: remoteApiOptions.vendorBinding,
-            ...(accumulatedText.length > 0 ? { accumulatedText } : {}),
+            remoteRequestId: livenessState.remoteRequestId,
+            ...(livenessState.accumulatedText.length > 0
+              ? {
+                  accumulatedText: livenessState.accumulatedText,
+                  responseText: livenessState.accumulatedText,
+                }
+              : {}),
+            invokeLiveness: this.buildRemoteApiInvokeLivenessSnapshot(
+              request,
+              remoteApiOptions,
+              livenessState,
+              {
+                status: livenessStatus,
+                cancelMechanism: 'none',
+                partialOutputPreserved: false,
+                ...(event.eventType === AgentStreamEventType.COMPLETED
+                  ? {
+                      lastTerminalSignalAt: event.timestamp,
+                    }
+                  : {}),
+              },
+            ),
           },
         };
       }
       if (!completedEmitted) {
+        const completedAt = new Date().toISOString();
+        this.recordRemoteApiObservedEvent(
+          livenessState,
+          completedAt,
+          AgentStreamEventType.COMPLETED,
+          livenessState.accumulatedText,
+        );
         yield {
           eventType: AgentStreamEventType.COMPLETED,
-          timestamp: new Date().toISOString(),
+          timestamp: completedAt,
           processId: request.processId,
           executionId: request.executionId,
           stageId: request.stageId,
@@ -952,18 +1050,46 @@ export class CodexAgentAdapter extends AgentProtocol {
           payload: {
             status: 'completed',
             surface: CODEX_SURFACE,
+            transportKind: AdapterTransportKind.REMOTE_API,
             vendorBindingKind: remoteApiOptions.vendorBinding,
-            ...(accumulatedText.length > 0
-              ? { accumulatedText, responseText: accumulatedText }
+            remoteRequestId: livenessState.remoteRequestId,
+            ...(livenessState.accumulatedText.length > 0
+              ? {
+                  accumulatedText: livenessState.accumulatedText,
+                  responseText: livenessState.accumulatedText,
+                }
               : {}),
+            invokeLiveness: this.buildRemoteApiInvokeLivenessSnapshot(
+              request,
+              remoteApiOptions,
+              livenessState,
+              {
+                status: 'completed',
+                cancelMechanism: 'none',
+                partialOutputPreserved: false,
+                lastTerminalSignalAt: completedAt,
+              },
+            ),
           },
         };
       }
     } catch (error) {
       const standardizedError = standardizeError(error);
+      const failedAt = new Date().toISOString();
+      const partialOutputPreserved = livenessState.accumulatedText.length > 0;
+      this.recordRemoteApiObservedEvent(
+        livenessState,
+        failedAt,
+        AgentStreamEventType.FAILED,
+        partialOutputPreserved ? livenessState.accumulatedText : standardizedError.message,
+      );
+      const suspectReasonCodes = [
+        ...(this.isRemoteApiTimeoutBudgetError(error) ? ['invoke_hard_timeout'] : []),
+        ...(partialOutputPreserved ? ['invoke_partial_output_preserved'] : []),
+      ];
       yield {
         eventType: AgentStreamEventType.FAILED,
-        timestamp: new Date().toISOString(),
+        timestamp: failedAt,
         processId: request.processId,
         executionId: request.executionId,
         stageId: request.stageId,
@@ -972,7 +1098,33 @@ export class CodexAgentAdapter extends AgentProtocol {
           status: 'failed',
           surface: CODEX_SURFACE,
           message: standardizedError.message,
+          transportKind: AdapterTransportKind.REMOTE_API,
           vendorBindingKind: remoteApiOptions.vendorBinding,
+          remoteRequestId: livenessState.remoteRequestId,
+          ...(partialOutputPreserved
+            ? {
+                accumulatedText: livenessState.accumulatedText,
+                responseText: livenessState.accumulatedText,
+              }
+            : {}),
+          invokeLiveness: this.buildRemoteApiInvokeLivenessSnapshot(
+            request,
+            remoteApiOptions,
+            livenessState,
+            {
+              status:
+                this.isRemoteApiAbortError(error) && request.signal?.aborted
+                  ? 'cancelled'
+                  : 'failed',
+              cancelMechanism:
+                this.isRemoteApiAbortError(error) || this.isRemoteApiTimeoutBudgetError(error)
+                  ? 'http_stream_abort'
+                  : 'none',
+              partialOutputPreserved,
+              lastTerminalSignalAt: failedAt,
+              ...(suspectReasonCodes.length > 0 ? { suspectReasonCodes } : {}),
+            },
+          ),
         },
       };
       throw error;
@@ -990,29 +1142,29 @@ export class CodexAgentAdapter extends AgentProtocol {
     elapsedMs: number;
   }> {
     const remoteApiOptions = this.requireRemoteApiOptions();
-    const credentialValue = this.resolveRemoteApiCredentialValue(remoteApiOptions);
-    if (!credentialValue) {
+    const credentialResolution = this.resolveRemoteApiCredentialResolution(remoteApiOptions);
+    if (!credentialResolution.value) {
       throw new RuntimeError(
         GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED,
-        `Codex remote API credential "${remoteApiOptions.credentialEnvVar}" is missing.`,
+        `Codex remote API credential selector "${credentialResolution.detail}" is missing.`,
         {
           surface: CODEX_SURFACE,
-          credentialEnvVar: remoteApiOptions.credentialEnvVar,
+          credentialSelector: credentialResolution.detail,
         },
       );
     }
 
     const startedAt = Date.now();
-    const response = await this.executeRemoteApiWithRetry(
+    const fetchResult = await this.executeRemoteApiWithRetry<CodexRemoteApiFetchResult>(
       request.timeoutMs,
       request.signal,
       async ({ timeoutMs, signal }) => {
         const controller = this.createRemoteApiAbortController(signal, timeoutMs);
         try {
-          return await this.options.fetchImplementation(remoteApiOptions.endpoint, {
+          const response = await this.options.fetchImplementation(remoteApiOptions.endpoint, {
             method: 'POST',
             headers: {
-              authorization: `Bearer ${credentialValue}`,
+              authorization: `Bearer ${credentialResolution.value}`,
               'content-type': 'application/json',
             },
             body: JSON.stringify({
@@ -1021,47 +1173,65 @@ export class CodexAgentAdapter extends AgentProtocol {
             }),
             signal: controller.signal,
           });
-        } finally {
+          return {
+            response,
+            cleanup: controller.cleanup,
+            didTimeout: controller.didTimeout,
+          };
+        } catch (error) {
           controller.cleanup();
+          if (this.isRemoteApiAbortError(error) && controller.didTimeout()) {
+            throw this.createRemoteApiTimeoutBudgetError(timeoutMs);
+          }
+          throw error;
         }
       },
     );
-    const responseBodyText = await response.text();
-    if (!response.ok) {
-      throw this.createRemoteApiHttpError(response.status, responseBodyText);
-    }
+    try {
+      const responseBodyText = await fetchResult.response.text();
+      if (!fetchResult.response.ok) {
+        throw this.createRemoteApiHttpError(fetchResult.response.status, responseBodyText);
+      }
 
-    const parsedBody = JSON.parse(responseBodyText) as {
-      id?: string;
-      output_text?: string;
-      output?: Array<{
-        type?: string;
-        content?: Array<{
+      const parsedBody = JSON.parse(responseBodyText) as {
+        id?: string;
+        output_text?: string;
+        output?: Array<{
           type?: string;
-          text?: string;
+          content?: Array<{
+            type?: string;
+            text?: string;
+          }>;
         }>;
-      }>;
-      usage?: {
-        input_tokens?: number;
-        output_tokens?: number;
-        total_tokens?: number;
+        usage?: {
+          input_tokens?: number;
+          output_tokens?: number;
+          total_tokens?: number;
+        };
       };
-    };
-    const responseText = this.extractRemoteApiResponseText(parsedBody);
-    return {
-      responseId: parsedBody.id ?? null,
-      responseText,
-      ...(parsedBody.usage
-        ? {
-            usage: {
-              inputTokens: parsedBody.usage.input_tokens,
-              outputTokens: parsedBody.usage.output_tokens,
-              totalTokens: parsedBody.usage.total_tokens,
-            },
-          }
-        : {}),
-      elapsedMs: Date.now() - startedAt,
-    };
+      const responseText = this.extractRemoteApiResponseText(parsedBody);
+      return {
+        responseId: parsedBody.id ?? null,
+        responseText,
+        ...(parsedBody.usage
+          ? {
+              usage: {
+                inputTokens: parsedBody.usage.input_tokens,
+                outputTokens: parsedBody.usage.output_tokens,
+                totalTokens: parsedBody.usage.total_tokens,
+              },
+            }
+          : {}),
+        elapsedMs: Date.now() - startedAt,
+      };
+    } catch (error) {
+      if (this.isRemoteApiAbortError(error) && fetchResult.didTimeout()) {
+        throw this.createRemoteApiTimeoutBudgetError(request.timeoutMs);
+      }
+      throw error;
+    } finally {
+      fetchResult.cleanup();
+    }
   }
 
   private async *executeRemoteApiStreamRequest(request: {
@@ -1070,28 +1240,28 @@ export class CodexAgentAdapter extends AgentProtocol {
     signal?: AbortSignal;
   }): AsyncIterable<AgentStreamEvent> {
     const remoteApiOptions = this.requireRemoteApiOptions();
-    const credentialValue = this.resolveRemoteApiCredentialValue(remoteApiOptions);
-    if (!credentialValue) {
+    const credentialResolution = this.resolveRemoteApiCredentialResolution(remoteApiOptions);
+    if (!credentialResolution.value) {
       throw new RuntimeError(
         GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED,
-        `Codex remote API credential "${remoteApiOptions.credentialEnvVar}" is missing.`,
+        `Codex remote API credential selector "${credentialResolution.detail}" is missing.`,
         {
           surface: CODEX_SURFACE,
-          credentialEnvVar: remoteApiOptions.credentialEnvVar,
+          credentialSelector: credentialResolution.detail,
         },
       );
     }
 
-    const response = await this.executeRemoteApiWithRetry(
+    const fetchResult = await this.executeRemoteApiWithRetry<CodexRemoteApiFetchResult>(
       request.timeoutMs,
       request.signal,
       async ({ timeoutMs, signal }) => {
         const controller = this.createRemoteApiAbortController(signal, timeoutMs);
         try {
-          return await this.options.fetchImplementation(remoteApiOptions.endpoint, {
+          const response = await this.options.fetchImplementation(remoteApiOptions.endpoint, {
             method: 'POST',
             headers: {
-              authorization: `Bearer ${credentialValue}`,
+              authorization: `Bearer ${credentialResolution.value}`,
               'content-type': 'application/json',
             },
             body: JSON.stringify({
@@ -1101,44 +1271,67 @@ export class CodexAgentAdapter extends AgentProtocol {
             }),
             signal: controller.signal,
           });
-        } finally {
+          return {
+            response,
+            cleanup: controller.cleanup,
+            didTimeout: controller.didTimeout,
+          };
+        } catch (error) {
           controller.cleanup();
+          if (this.isRemoteApiAbortError(error) && controller.didTimeout()) {
+            throw this.createRemoteApiTimeoutBudgetError(timeoutMs);
+          }
+          throw error;
         }
       },
     );
-    if (!response.ok) {
-      throw this.createRemoteApiHttpError(response.status, await response.text());
-    }
-    if (!response.body) {
-      throw new RuntimeError(
-        GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
-        'Codex remote API stream response body is missing.',
-        {
-          surface: CODEX_SURFACE,
-        },
-      );
-    }
+    let reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
+    try {
+      if (!fetchResult.response.ok) {
+        throw this.createRemoteApiHttpError(
+          fetchResult.response.status,
+          await fetchResult.response.text(),
+        );
+      }
+      if (!fetchResult.response.body) {
+        throw new RuntimeError(
+          GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
+          'Codex remote API stream response body is missing.',
+          {
+            surface: CODEX_SURFACE,
+          },
+        );
+      }
 
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
+      reader = fetchResult.response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
 
-    while (true) {
-      const chunkResult = await reader.read();
-      if (chunkResult.done) {
-        if (buffer.trim().length > 0) {
-          yield* this.parseRemoteApiSseChunk(buffer);
+      while (true) {
+        const chunkResult = await reader.read();
+        if (chunkResult.done) {
+          if (buffer.trim().length > 0) {
+            yield* this.parseRemoteApiSseChunk(buffer);
+          }
+          return;
         }
-        return;
+        buffer += decoder.decode(chunkResult.value, {
+          stream: true,
+        });
+        const rawEvents = buffer.split(CODEX_REMOTE_API_SSE_EVENT_DELIMITER);
+        buffer = rawEvents.pop() ?? '';
+        for (const rawEvent of rawEvents) {
+          yield* this.parseRemoteApiSseChunk(rawEvent);
+        }
       }
-      buffer += decoder.decode(chunkResult.value, {
-        stream: true,
-      });
-      const rawEvents = buffer.split(CODEX_REMOTE_API_SSE_EVENT_DELIMITER);
-      buffer = rawEvents.pop() ?? '';
-      for (const rawEvent of rawEvents) {
-        yield* this.parseRemoteApiSseChunk(rawEvent);
+    } catch (error) {
+      if (this.isRemoteApiAbortError(error) && fetchResult.didTimeout()) {
+        throw this.createRemoteApiTimeoutBudgetError(request.timeoutMs);
       }
+      throw error;
+    } finally {
+      await reader?.cancel().catch(() => undefined);
+      fetchResult.cleanup();
     }
   }
 
@@ -1220,6 +1413,16 @@ export class CodexAgentAdapter extends AgentProtocol {
     return typeof name === 'string' && name === 'AbortError';
   }
 
+  private isRemoteApiTimeoutBudgetError(error: unknown): boolean {
+    if (!(error instanceof RuntimeError)) {
+      return false;
+    }
+    return (
+      error.code === GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED &&
+      error.message.includes('exhausted the timeout budget')
+    );
+  }
+
   private createRemoteApiTimeoutBudgetError(timeoutMs: number): RuntimeError {
     return new RuntimeError(
       GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
@@ -1237,9 +1440,14 @@ export class CodexAgentAdapter extends AgentProtocol {
   ): {
     signal: AbortSignal;
     cleanup: () => void;
+    didTimeout: () => boolean;
   } {
     const controller = new AbortController();
-    const timeoutHandle = setTimeout(() => controller.abort(), timeoutMs);
+    let didTimeout = false;
+    const timeoutHandle = setTimeout(() => {
+      didTimeout = true;
+      controller.abort();
+    }, timeoutMs);
     if (signal) {
       if (signal.aborted) {
         controller.abort();
@@ -1252,7 +1460,139 @@ export class CodexAgentAdapter extends AgentProtocol {
       cleanup: () => {
         clearTimeout(timeoutHandle);
       },
+      didTimeout: () => didTimeout,
     };
+  }
+
+  private createRemoteApiLivenessState(): CodexRemoteApiLivenessState {
+    return {
+      startedAt: new Date().toISOString(),
+      accumulatedText: '',
+      remoteRequestId: null,
+      lastTransportActivityAt: null,
+      lastSemanticProgressAt: null,
+      latestEventAt: null,
+      latestEventType: null,
+      latestTextPreview: null,
+    };
+  }
+
+  private buildRemoteApiInvokeLivenessSnapshot(
+    request: Pick<AgentStreamEventsRequest, 'routeKey' | 'input'>,
+    remoteApiOptions: ResolvedCodexRemoteApiOptions,
+    state: CodexRemoteApiLivenessState,
+    options: {
+      status: CodexRemoteApiLivenessStatus;
+      cancelMechanism: CodexRemoteApiCancelMechanism;
+      partialOutputPreserved: boolean;
+      lastTerminalSignalAt?: string;
+      suspectReasonCodes?: string[];
+    },
+  ): Record<string, unknown> {
+    const roleId = this.resolveRemoteApiRoleId(request.input);
+    return {
+      adapterId: this.options.agentId,
+      surfaceId: CODEX_SURFACE,
+      routeKey: request.routeKey,
+      ...(roleId ? { roleId } : {}),
+      startedAt: state.startedAt,
+      status: options.status,
+      ...(state.lastTransportActivityAt
+        ? { lastTransportActivityAt: state.lastTransportActivityAt }
+        : {}),
+      ...(state.lastSemanticProgressAt
+        ? { lastSemanticProgressAt: state.lastSemanticProgressAt }
+        : {}),
+      ...(options.lastTerminalSignalAt
+        ? { lastTerminalSignalAt: options.lastTerminalSignalAt }
+        : {}),
+      ...(state.latestEventAt ? { latestEventAt: state.latestEventAt } : {}),
+      ...(state.latestEventType ? { latestEventType: state.latestEventType } : {}),
+      ...(state.latestTextPreview ? { latestTextPreview: state.latestTextPreview } : {}),
+      activeOperationKind: 'remote_api_stream',
+      activeOperationStartedAt: state.startedAt,
+      partialOutputPreserved: options.partialOutputPreserved,
+      transportKind: AdapterTransportKind.REMOTE_API,
+      vendorBindingKind: remoteApiOptions.vendorBinding,
+      remoteRequestId: state.remoteRequestId,
+      cancelMechanism: options.cancelMechanism,
+      ...(options.suspectReasonCodes && options.suspectReasonCodes.length > 0
+        ? { suspectReasonCodes: options.suspectReasonCodes }
+        : {}),
+    };
+  }
+
+  private captureRemoteApiTransportEvent(
+    state: CodexRemoteApiLivenessState,
+    event: AgentStreamEvent,
+  ): void {
+    state.lastTransportActivityAt = event.timestamp;
+    state.remoteRequestId = this.resolveRemoteApiRequestId(event.payload) ?? state.remoteRequestId;
+    this.recordRemoteApiObservedEvent(
+      state,
+      event.timestamp,
+      event.eventType,
+      this.resolveRemoteApiEventPreview(event.payload) ?? state.accumulatedText,
+    );
+  }
+
+  private captureRemoteApiSemanticProgress(
+    state: CodexRemoteApiLivenessState,
+    timestamp: string,
+  ): void {
+    state.lastSemanticProgressAt = timestamp;
+    state.latestTextPreview = this.resolveRemoteApiTextPreview(state.accumulatedText);
+  }
+
+  private recordRemoteApiObservedEvent(
+    state: CodexRemoteApiLivenessState,
+    timestamp: string,
+    eventType: string,
+    previewSource?: string,
+  ): void {
+    state.latestEventAt = timestamp;
+    state.latestEventType = eventType;
+    const preview = this.resolveRemoteApiTextPreview(previewSource);
+    if (preview) {
+      state.latestTextPreview = preview;
+    }
+  }
+
+  private resolveRemoteApiEventPreview(payload: Record<string, unknown>): string | undefined {
+    const candidates = [
+      payload.detail,
+      payload.message,
+      payload.responseText,
+      payload.accumulatedText,
+      payload.text,
+      payload.delta,
+    ];
+    const previewSource = candidates.find((candidate) => typeof candidate === 'string');
+    return typeof previewSource === 'string' ? previewSource : undefined;
+  }
+
+  private resolveRemoteApiRequestId(payload: Record<string, unknown>): string | null {
+    const candidates = [payload.remoteRequestId, payload.remoteResponseId];
+    const requestId = candidates.find(
+      (candidate) => typeof candidate === 'string' && candidate.trim().length > 0,
+    );
+    return typeof requestId === 'string' ? requestId : null;
+  }
+
+  private resolveRemoteApiTextPreview(source: string | undefined): string | null {
+    if (typeof source !== 'string') {
+      return null;
+    }
+    const normalized = source.trim();
+    if (normalized.length === 0) {
+      return null;
+    }
+    return normalized.length > 160 ? normalized.slice(-160) : normalized;
+  }
+
+  private resolveRemoteApiRoleId(input: Record<string, unknown>): string | undefined {
+    const roleId = input.roleId;
+    return typeof roleId === 'string' && roleId.trim().length > 0 ? roleId : undefined;
   }
 
   private *parseRemoteApiSseChunk(rawEvent: string): Generator<AgentStreamEvent> {
@@ -1277,6 +1617,27 @@ export class CodexAgentAdapter extends AgentProtocol {
         id?: string;
       };
     };
+    if (
+      payload.type === 'response.created' &&
+      typeof payload.response?.id === 'string' &&
+      payload.response.id.trim().length > 0
+    ) {
+      yield {
+        eventType: AgentStreamEventType.STATUS,
+        timestamp: new Date().toISOString(),
+        processId: '',
+        executionId: '',
+        stageId: '',
+        routeKey: '',
+        payload: {
+          status: 'running',
+          detail: 'Codex remote response created.',
+          remoteRequestId: payload.response.id,
+          remoteResponseId: payload.response.id,
+        },
+      };
+      return;
+    }
     if (payload.type === 'response.output_text.delta' && typeof payload.delta === 'string') {
       yield {
         eventType: AgentStreamEventType.TOKEN,
@@ -1303,6 +1664,7 @@ export class CodexAgentAdapter extends AgentProtocol {
         routeKey: '',
         payload: {
           status: 'completed',
+          remoteRequestId: payload.response?.id ?? null,
           remoteResponseId: payload.response?.id ?? null,
         },
       };

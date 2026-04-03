@@ -144,6 +144,12 @@ export const ZH_CN_TRANSLATIONS = {
       installMissingCommands: '请先安装缺失的本地命令后再执行 connect/verify：{{commands}}。',
       probeFailedCommands:
         '部分命令可执行但探测失败（{{commands}}），请手动执行命令确认登录/扩展状态。',
+      setRemoteApiCredentialEnvVars:
+        '请先设置或导出以下 remote-api 凭据环境变量，再执行 connect/verify：{{credentials}}。',
+      verifyProviderLocalCredentialState:
+        '当前只做只读发现；请手动确认以下 provider-local 登录状态：{{credentials}}。',
+      resolveCredentialReferencesManually:
+        '当前不会自动物化 remote-api credentialRef；请手动解析以下引用：{{credentials}}。',
       authenticateAdapters:
         '请先为以下远端 adapter 完成认证或刷新登录状态，再执行 connect/verify：{{credentials}}。',
       investigateHealthChecks:

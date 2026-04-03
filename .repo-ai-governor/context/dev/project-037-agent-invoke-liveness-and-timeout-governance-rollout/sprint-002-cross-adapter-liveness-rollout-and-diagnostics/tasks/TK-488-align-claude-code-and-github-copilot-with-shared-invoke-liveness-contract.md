@@ -1,7 +1,7 @@
 # TK-488 align claude-code and github-copilot with shared invoke liveness contract
 
-- Status: planned
-- Date: 2026-04-02
+- Status: completed
+- Date: 2026-04-03
 - Owner: AI-Agent
 - Priority: P0
 - Project: `project-037-agent-invoke-liveness-and-timeout-governance-rollout`
@@ -43,3 +43,7 @@
 ## 6. 执行记录
 
 1. 2026-04-02：任务创建，状态初始化为 `planned`。
+2. 2026-04-03：任务激活，开始对齐 `Claude Code CLI` 与 `GitHub Copilot CLI` 的 shared `invokeLiveness` snapshot、timeout/partial-output reason code、以及终态 diagnostics 投影。
+3. 2026-04-03：完成第一段 CLI invoke-liveness 对齐：`Claude Code CLI` 与 `GitHub Copilot CLI` stream event 现已产出 shared `invokeLiveness` snapshot、`transportKind=cli_exec`、`lastTransportActivityAt` / `lastSemanticProgressAt`、`latestTextPreview`、终态 `lastTerminalSignalAt`，并在 timeout 失败时保留 partial output 与 `invoke_hard_timeout` / `invoke_partial_output_preserved` reason code；两条 adapter smoke 测试与 `pnpm run build` 已通过，任务保持 `active` 继续收口。
+4. 2026-04-03：补齐 CLI graceful-interrupt 迁移：`Claude Code CLI` 与 `GitHub Copilot CLI` 在 timeout / abort 开始时会先发出 `graceful_interrupting` status，并在同一 shared `invokeLiveness` snapshot 中 materialize `cancelMechanism` 与 suspect reason code；adapter smoke、`pnpm run build` 与 ledger sync gates 通过，任务继续保持 `active`，待补 orchestration consumer 回归后收口。
+5. 2026-04-03：完成 orchestration consumer 收口：新增 linked `session.main -> execution` graceful-interrupt regression，验证 `EXECUTION_GRACEFUL_INTERRUPT_STARTED`、partial snapshot persisted 与 execution summary liveness truth 能正确承接 `Claude Code CLI` / `GitHub Copilot CLI` 的 shared invoke-liveness snapshot；core-orchestration-service 定向 vitest、adapter smoke、`pnpm run build` 与 ledger sync gates 通过，任务标记 `completed`。

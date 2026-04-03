@@ -638,6 +638,19 @@ describe('core-orchestration-service local shell', () => {
             selectedSurface: 'codex',
             stageId: 'stage-session-main-answer',
             routeKey: 'session.main.answer',
+            invokeLiveness: {
+              status: 'running',
+              transportKind: 'remote_api',
+              vendorBindingKind: 'openai_responses',
+              remoteRequestId: 'resp-session-1',
+              lastTransportActivityAt: '2026-04-03T10:00:00.000Z',
+              lastSemanticProgressAt: '2026-04-03T10:00:01.000Z',
+              latestEventAt: '2026-04-03T10:00:01.000Z',
+              latestEventType: 'token',
+              latestTextPreview: '## Workspace status',
+              partialOutputPreserved: false,
+              cancelMechanism: 'none',
+            },
           });
           return {
             responseMode: 'answer',
@@ -700,9 +713,343 @@ describe('core-orchestration-service local shell', () => {
           stageId: 'stage-session-main-answer',
           routeKey: 'session.main.answer',
           delta: '## Workspace status',
+          invokeLiveness: expect.objectContaining({
+            status: 'running',
+            remoteRequestId: 'resp-session-1',
+            lastTransportActivityAt: '2026-04-03T10:00:00.000Z',
+            lastSemanticProgressAt: '2026-04-03T10:00:01.000Z',
+          }),
         }),
       );
       expect(completedEvent?.payload.invokedRoles).toEqual([]);
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('projects session.main invoke liveness into linked orchestration execution summaries and events', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot: temporaryRoot,
+      executionIdProvider: () => 'exec-session-liveness-001',
+      executionSessionIdProvider: () => 'session-exec-liveness-001',
+      sessionMainSupervisorRuntime: {
+        resolveTurn: async (context) => {
+          await context.publishStreamEvent?.({
+            kind: 'token',
+            state: 'running',
+            title: 'Assistant Draft',
+            chunkText: 'remote draft',
+            accumulatedText: 'remote draft complete',
+            selectedSurface: 'codex',
+            stageId: 'stage-session-main-answer',
+            routeKey: 'session.main.answer',
+            invokeLiveness: {
+              status: 'running',
+              transportKind: 'remote_api',
+              vendorBindingKind: 'openai_responses',
+              remoteRequestId: 'resp-linked-1',
+              lastTransportActivityAt: '2026-04-03T12:00:00.000Z',
+              lastSemanticProgressAt: '2026-04-03T12:00:01.000Z',
+              latestEventAt: '2026-04-03T12:00:01.000Z',
+              latestEventType: 'token',
+              latestTextPreview: 'remote draft',
+              partialOutputPreserved: false,
+              cancelMechanism: 'none',
+            },
+          });
+          await context.publishStreamEvent?.({
+            kind: 'lifecycle',
+            state: 'completed',
+            title: 'Session Main Answer',
+            detail: 'Remote answer completed.',
+            selectedSurface: 'codex',
+            stageId: 'stage-session-main-answer',
+            routeKey: 'session.main.answer',
+            invokeLiveness: {
+              status: 'completed',
+              transportKind: 'remote_api',
+              vendorBindingKind: 'openai_responses',
+              remoteRequestId: 'resp-linked-1',
+              lastTransportActivityAt: '2026-04-03T12:00:02.000Z',
+              lastSemanticProgressAt: '2026-04-03T12:00:01.000Z',
+              lastTerminalSignalAt: '2026-04-03T12:00:02.000Z',
+              latestEventAt: '2026-04-03T12:00:02.000Z',
+              latestEventType: 'completed',
+              latestTextPreview: 'remote draft complete',
+              partialOutputPreserved: false,
+              cancelMechanism: 'none',
+            },
+          });
+          return {
+            responseMode: 'answer',
+            interactionMode: 'direct_answer',
+            assistantDelta: 'remote draft',
+            assistantMessage: 'remote draft complete',
+            requiresConfirmation: false,
+            selectedSurface: 'codex',
+            selectedBy: 'session.main.answer.primary',
+            sessionRoutingPreferenceApplied: false,
+            invokedRoleIds: [],
+            invokedRoles: [],
+            subagentCount: 0,
+          };
+        },
+      },
+    });
+
+    try {
+      const startedExecution = await orchestrationService.startExecution(
+        {
+          workspaceId: 'workspace-session-liveness',
+          workspaceRoot: temporaryRoot,
+          executionKind: OrchestrationExecutionKind.RUN,
+          clientSurface: OrchestrationClientSurface.CLI,
+        },
+        {
+          processId: 'process-session-liveness',
+        },
+      );
+      const startedSession = await orchestrationService.startSession({
+        routeId: OrchestrationSessionRouteId.MAIN,
+        executionId: startedExecution.executionId,
+        processId: 'process-session-liveness',
+      });
+
+      await orchestrationService.sendSessionTurn({
+        sessionId: startedSession.session.sessionId,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        userMessage: '请总结当前远端执行状态',
+      });
+
+      const executionSummary = await orchestrationService.getExecution(
+        startedExecution.executionId,
+      );
+      const executionSubscription = await orchestrationService.subscribeExecution({
+        executionId: startedExecution.executionId,
+      });
+
+      expect(executionSummary).toEqual(
+        expect.objectContaining({
+          livenessStatus: 'completed',
+          lastTransportActivityAt: '2026-04-03T12:00:02.000Z',
+          lastSemanticProgressAt: '2026-04-03T12:00:01.000Z',
+          latestLivenessEventAt: '2026-04-03T12:00:02.000Z',
+          latestLivenessEventType: 'completed',
+          latestLivenessTextPreview: 'remote draft complete',
+          partialOutputPreserved: false,
+          transportKind: 'remote_api',
+          vendorBindingKind: 'openai_responses',
+          remoteRequestId: 'resp-linked-1',
+          cancelMechanism: 'none',
+          latestEventType: OrchestrationServiceEventType.EXECUTION_LIVENESS_UPDATED,
+        }),
+      );
+      expect(
+        executionSubscription.events.filter(
+          (event) => event.type === OrchestrationServiceEventType.EXECUTION_LIVENESS_UPDATED,
+        ),
+      ).toEqual([
+        expect.objectContaining({
+          livenessSnapshot: expect.objectContaining({
+            status: 'running',
+            remoteRequestId: 'resp-linked-1',
+            latestTextPreview: 'remote draft',
+          }),
+        }),
+        expect.objectContaining({
+          livenessSnapshot: expect.objectContaining({
+            status: 'completed',
+            remoteRequestId: 'resp-linked-1',
+            latestTextPreview: 'remote draft complete',
+          }),
+        }),
+      ]);
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('projects graceful interrupt liveness transitions into linked orchestration execution events', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot: temporaryRoot,
+      executionIdProvider: () => 'exec-session-graceful-001',
+      executionSessionIdProvider: () => 'session-exec-graceful-001',
+      sessionMainSupervisorRuntime: {
+        resolveTurn: async (context) => {
+          await context.publishStreamEvent?.({
+            kind: 'token',
+            state: 'running',
+            title: 'Assistant Draft',
+            chunkText: 'partial draft',
+            accumulatedText: 'partial draft',
+            selectedSurface: 'github-copilot',
+            stageId: 'stage-session-main-answer',
+            routeKey: 'session.main.answer',
+            invokeLiveness: {
+              status: 'running',
+              transportKind: 'cli_exec',
+              lastTransportActivityAt: '2026-04-03T13:00:00.000Z',
+              lastSemanticProgressAt: '2026-04-03T13:00:01.000Z',
+              latestEventAt: '2026-04-03T13:00:01.000Z',
+              latestEventType: 'token',
+              latestTextPreview: 'partial draft',
+              partialOutputPreserved: false,
+              cancelMechanism: 'none',
+            },
+          });
+          await context.publishStreamEvent?.({
+            kind: 'lifecycle',
+            state: 'failed',
+            title: 'Assistant Interrupt',
+            detail: 'Graceful interrupt requested before timeout.',
+            selectedSurface: 'github-copilot',
+            stageId: 'stage-session-main-answer',
+            routeKey: 'session.main.answer',
+            invokeLiveness: {
+              status: 'graceful_interrupting',
+              transportKind: 'cli_exec',
+              lastTransportActivityAt: '2026-04-03T13:00:02.000Z',
+              lastSemanticProgressAt: '2026-04-03T13:00:01.000Z',
+              latestEventAt: '2026-04-03T13:00:02.000Z',
+              latestEventType: 'graceful_interrupting',
+              latestTextPreview: 'partial draft',
+              partialOutputPreserved: true,
+              cancelMechanism: 'process_signal',
+              suspectReasonCodes: ['invoke_hard_timeout', 'invoke_partial_output_preserved'],
+            },
+          });
+          await context.publishStreamEvent?.({
+            kind: 'lifecycle',
+            state: 'failed',
+            title: 'Assistant Timeout',
+            detail: 'Invocation timed out after graceful interrupt.',
+            selectedSurface: 'github-copilot',
+            stageId: 'stage-session-main-answer',
+            routeKey: 'session.main.answer',
+            invokeLiveness: {
+              status: 'failed',
+              transportKind: 'cli_exec',
+              lastTransportActivityAt: '2026-04-03T13:00:03.000Z',
+              lastSemanticProgressAt: '2026-04-03T13:00:01.000Z',
+              lastTerminalSignalAt: '2026-04-03T13:00:03.000Z',
+              latestEventAt: '2026-04-03T13:00:03.000Z',
+              latestEventType: 'failed',
+              latestTextPreview: 'partial draft',
+              partialOutputPreserved: true,
+              cancelMechanism: 'process_signal',
+              suspectReasonCodes: ['invoke_hard_timeout', 'invoke_partial_output_preserved'],
+            },
+          });
+          return {
+            responseMode: 'answer',
+            interactionMode: 'direct_answer',
+            assistantDelta: 'partial draft',
+            assistantMessage: 'partial draft',
+            requiresConfirmation: false,
+            selectedSurface: 'github-copilot',
+            selectedBy: 'session.main.answer.primary',
+            sessionRoutingPreferenceApplied: false,
+            invokedRoleIds: [],
+            invokedRoles: [],
+            subagentCount: 0,
+          };
+        },
+      },
+    });
+
+    try {
+      const startedExecution = await orchestrationService.startExecution(
+        {
+          workspaceId: 'workspace-session-graceful',
+          workspaceRoot: temporaryRoot,
+          executionKind: OrchestrationExecutionKind.RUN,
+          clientSurface: OrchestrationClientSurface.CLI,
+        },
+        {
+          processId: 'process-session-graceful',
+        },
+      );
+      const startedSession = await orchestrationService.startSession({
+        routeId: OrchestrationSessionRouteId.MAIN,
+        executionId: startedExecution.executionId,
+        processId: 'process-session-graceful',
+      });
+
+      await orchestrationService.sendSessionTurn({
+        sessionId: startedSession.session.sessionId,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        userMessage: '请总结当前超时中的执行状态',
+      });
+
+      const executionSummary = await orchestrationService.getExecution(
+        startedExecution.executionId,
+      );
+      const executionSubscription = await orchestrationService.subscribeExecution({
+        executionId: startedExecution.executionId,
+      });
+
+      expect(executionSummary).toEqual(
+        expect.objectContaining({
+          livenessStatus: 'failed',
+          livenessSuspectReasonCode: 'invoke_hard_timeout',
+          lastTransportActivityAt: '2026-04-03T13:00:03.000Z',
+          lastSemanticProgressAt: '2026-04-03T13:00:01.000Z',
+          latestLivenessEventAt: '2026-04-03T13:00:03.000Z',
+          latestLivenessEventType: 'failed',
+          latestLivenessTextPreview: 'partial draft',
+          partialOutputPreserved: true,
+          transportKind: 'cli_exec',
+          cancelMechanism: 'process_signal',
+          latestEventType: OrchestrationServiceEventType.EXECUTION_LIVENESS_UPDATED,
+        }),
+      );
+
+      const livenessEvents = executionSubscription.events.filter((event) =>
+        [
+          OrchestrationServiceEventType.EXECUTION_LIVENESS_UPDATED,
+          OrchestrationServiceEventType.EXECUTION_GRACEFUL_INTERRUPT_STARTED,
+          OrchestrationServiceEventType.EXECUTION_PARTIAL_SNAPSHOT_PERSISTED,
+        ].includes(event.type),
+      );
+
+      expect(livenessEvents.map((event) => event.type)).toEqual([
+        OrchestrationServiceEventType.EXECUTION_LIVENESS_UPDATED,
+        OrchestrationServiceEventType.EXECUTION_GRACEFUL_INTERRUPT_STARTED,
+        OrchestrationServiceEventType.EXECUTION_PARTIAL_SNAPSHOT_PERSISTED,
+        OrchestrationServiceEventType.EXECUTION_LIVENESS_UPDATED,
+      ]);
+      expect(livenessEvents[1]).toEqual(
+        expect.objectContaining({
+          type: OrchestrationServiceEventType.EXECUTION_GRACEFUL_INTERRUPT_STARTED,
+          livenessSnapshot: expect.objectContaining({
+            status: 'graceful_interrupting',
+            cancelMechanism: 'process_signal',
+            partialOutputPreserved: true,
+            suspectReasonCodes: ['invoke_hard_timeout', 'invoke_partial_output_preserved'],
+          }),
+        }),
+      );
+      expect(livenessEvents[2]).toEqual(
+        expect.objectContaining({
+          type: OrchestrationServiceEventType.EXECUTION_PARTIAL_SNAPSHOT_PERSISTED,
+          livenessSnapshot: expect.objectContaining({
+            status: 'graceful_interrupting',
+            partialOutputPreserved: true,
+          }),
+        }),
+      );
+      expect(livenessEvents[3]).toEqual(
+        expect.objectContaining({
+          type: OrchestrationServiceEventType.EXECUTION_LIVENESS_UPDATED,
+          livenessSnapshot: expect.objectContaining({
+            status: 'failed',
+            cancelMechanism: 'process_signal',
+            suspectReasonCodes: ['invoke_hard_timeout', 'invoke_partial_output_preserved'],
+          }),
+        }),
+      );
     } finally {
       await rm(temporaryRoot, { recursive: true, force: true });
     }

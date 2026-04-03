@@ -422,6 +422,8 @@ pnpm run release:verify-cleanroom-local-install
 1. Stage 9A 基线要求 path/link 多轮重复验证。
 2. Stage 9B+ 基线已将 `tgz` 安装 smoke 纳入验证，用于持续确认打包运行时依赖解析。
 3. `tgz` 验证属于联网校验，不代表离线自包含安装已成立。
+4. Stage 9 的 remote-api rehearsal 现已纳入 packaged-install smoke：脚本会写入一份 repo-local config，把 `codex` 与 `claude-code` 指向本地 stub endpoint，注入 `OPENAI_API_KEY` / `ANTHROPIC_API_KEY`，并在不依赖真实 provider 账号的前提下验证 `doctor --adapters --fix` 与 `verify --adapters`。
+5. 如需保留可审计的机器可读回执，可为 `release:verify-cleanroom-local-install` 追加 `--output <path>`；生成报告会包含各 install mode 的 remote-api rehearsal 摘要。
 
 ## 9. 接入期治理门禁
 
@@ -433,6 +435,8 @@ pnpm run check
 pnpm run release:verify-local
 pnpm run release:ga-check
 ```
+
+`release:verify-local` 现在也会执行一轮 dist-binary remote-api rehearsal，并支持通过 `pnpm run release:verify-local -- --output <path>` 产出 JSON 回执。
 
 ## 10. 升级检查清单
 

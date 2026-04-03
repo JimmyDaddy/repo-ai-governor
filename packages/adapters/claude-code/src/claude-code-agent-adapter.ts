@@ -40,6 +40,7 @@ import {
   matchesHealthCheckEchoResponse,
   standardizeError,
 } from '@repo-ai-governor/shared';
+import { ClaudeCodeProviderLocalConfigRuntime } from './claude-code-provider-local-config-runtime.js';
 import { ClaudeCodeAgentAdapterExecutionMode } from './constants/claude-code-agent-adapter.constant.js';
 import type {
   ClaudeCodeAgentAdapterOptions,
@@ -129,6 +130,12 @@ interface ClaudeCodeCliExecutionState {
   accumulatedAssistantText: string;
   cliOutputSequence: number;
   startedAtMs: number | null;
+  startedAt: string | null;
+  lastTransportActivityAt: string | null;
+  lastSemanticProgressAt: string | null;
+  latestEventAt: string | null;
+  latestEventType: string | null;
+  latestTextPreview: string | null;
   resultPromise: Promise<ClaudeCodeExecRunnerResult>;
   cleanupTimer: NodeJS.Timeout | null;
   progressTimer: NodeJS.Timeout | null;
@@ -170,9 +177,50 @@ interface ResolvedClaudeCodeRemoteApiOptions {
   endpoint: string;
   endpointSource: AdapterEndpointSource;
   credentialEnvVar: string;
-  credentialSource: AdapterCredentialSource;
+  credentialEnvVarExplicit: boolean;
+  credentialRef: string | null;
+  providerLocalDiscoveryEnabled: boolean;
+  providerLocalCredentialValue: string | null;
   requestTimeoutMs: number;
   maxRetries: number;
+}
+
+interface ClaudeCodeRemoteApiCredentialResolution {
+  source: AdapterCredentialSource;
+  value: string | null;
+  detail: string;
+}
+
+type ClaudeCodeRemoteApiLivenessStatus =
+  | 'starting'
+  | 'running'
+  | 'completed'
+  | 'failed'
+  | 'cancelled';
+type ClaudeCodeRemoteApiCancelMechanism = 'none' | 'http_stream_abort';
+type ClaudeCodeCliLivenessStatus =
+  | 'starting'
+  | 'running'
+  | 'graceful_interrupting'
+  | 'completed'
+  | 'failed';
+type ClaudeCodeCliCancelMechanism = 'none' | 'process_signal' | 'abort_signal';
+
+interface ClaudeCodeRemoteApiFetchResult {
+  response: Response;
+  cleanup: () => void;
+  didTimeout: () => boolean;
+}
+
+interface ClaudeCodeRemoteApiLivenessState {
+  startedAt: string;
+  accumulatedText: string;
+  remoteRequestId: string | null;
+  lastTransportActivityAt: string | null;
+  lastSemanticProgressAt: string | null;
+  latestEventAt: string | null;
+  latestEventType: string | null;
+  latestTextPreview: string | null;
 }
 
 /**
@@ -246,6 +294,9 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
   public override async probe(request: AgentProbeRequest): Promise<AgentProbeResult> {
     const runtimeProbe = await this.resolveProbeResolution(request.signal);
     const remoteApiOptions = this.resolveRemoteApiOptions();
+    const remoteApiCredentialResolution = remoteApiOptions
+      ? this.resolveRemoteApiCredentialResolution(remoteApiOptions)
+      : null;
     const capabilityMatrix = this.createCapabilityMatrix();
     const availabilityStatus = this.mergeAvailabilityStatus(
       this.options.availabilityStatus,
@@ -298,7 +349,7 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
         providerKind: remoteApiOptions?.provider ?? null,
         vendorBindingKind: remoteApiOptions?.vendorBinding ?? null,
         model: remoteApiOptions?.model ?? null,
-        credentialSource: remoteApiOptions?.credentialSource ?? null,
+        credentialSource: remoteApiCredentialResolution?.source ?? null,
         endpointSource: remoteApiOptions?.endpointSource ?? null,
         requestCancellationMode:
           this.options.executionMode === ClaudeCodeAgentAdapterExecutionMode.REMOTE_API
@@ -432,6 +483,12 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
       accumulatedAssistantText: '',
       cliOutputSequence: 0,
       startedAtMs: null,
+      startedAt: null,
+      lastTransportActivityAt: null,
+      lastSemanticProgressAt: null,
+      latestEventAt: null,
+      latestEventType: null,
+      latestTextPreview: null,
       resultPromise: Promise.resolve({
         stdout: '',
         stderr: '',
@@ -457,9 +514,10 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
   ): Promise<ClaudeCodeExecRunnerResult> {
     try {
       state.startedAtMs = Date.now();
+      state.startedAt = new Date().toISOString();
       this.pushCliExecutionEvent(state, {
         eventType: AgentStreamEventType.STATUS,
-        timestamp: new Date().toISOString(),
+        timestamp: state.startedAt,
         processId: request.processId,
         executionId: request.executionId,
         stageId: request.stageId,
@@ -467,9 +525,15 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
         payload: {
           status: 'running',
           surface: CLAUDE_CODE_SURFACE,
+          transportKind: AdapterTransportKind.CLI_EXEC,
           detail: this.shouldUseRepositoryReviewMode(request)
             ? 'Claude Code repository review started; waiting for CLI output.'
             : 'Claude Code turn started.',
+          invokeLiveness: this.buildCliInvokeLivenessSnapshot(request, state, {
+            status: 'starting',
+            partialOutputPreserved: false,
+            cancelMechanism: 'none',
+          }),
         },
       });
       if (this.shouldUseRepositoryReviewMode(request)) {
@@ -503,6 +567,9 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
         onStderrChunk: (chunk) => {
           this.ingestClaudeStderr(state, request, chunk);
         },
+        onGracefulInterruptStart: (cancelMechanism) => {
+          this.pushCliGracefulInterruptEvent(state, request, cancelMechanism);
+        },
       });
 
       if (this.usesInjectedExecRunner) {
@@ -520,9 +587,16 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
         state.accumulatedAssistantText.length > 0
           ? state.accumulatedAssistantText
           : executionResult.stdout.trim();
+      const completedAt = new Date().toISOString();
+      this.recordCliTransportEvent(
+        state,
+        completedAt,
+        AgentStreamEventType.COMPLETED,
+        completedResponseText.length > 0 ? completedResponseText : undefined,
+      );
       this.pushCliExecutionEvent(state, {
         eventType: AgentStreamEventType.COMPLETED,
-        timestamp: new Date().toISOString(),
+        timestamp: completedAt,
         processId: request.processId,
         executionId: request.executionId,
         stageId: request.stageId,
@@ -530,16 +604,33 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
         payload: {
           status: 'completed',
           surface: CLAUDE_CODE_SURFACE,
+          transportKind: AdapterTransportKind.CLI_EXEC,
           ...(completedResponseText.length > 0 ? { responseText: completedResponseText } : {}),
+          invokeLiveness: this.buildCliInvokeLivenessSnapshot(request, state, {
+            status: 'completed',
+            partialOutputPreserved: false,
+            cancelMechanism: 'none',
+            lastTerminalSignalAt: completedAt,
+          }),
         },
       });
       this.finishCliExecution(state);
       return executionResult;
     } catch (error) {
       const standardizedError = standardizeError(error);
+      const failedAt = new Date().toISOString();
+      const partialOutputPreserved = state.accumulatedAssistantText.length > 0;
+      const suspectReasonCodes = this.resolveCliFailureReasonCodes(error, partialOutputPreserved);
+      const cancelMechanism = this.resolveCliFailureCancelMechanism(error, request);
+      this.recordCliTransportEvent(
+        state,
+        failedAt,
+        AgentStreamEventType.FAILED,
+        partialOutputPreserved ? state.accumulatedAssistantText : standardizedError.message,
+      );
       this.pushCliExecutionEvent(state, {
         eventType: AgentStreamEventType.FAILED,
-        timestamp: new Date().toISOString(),
+        timestamp: failedAt,
         processId: request.processId,
         executionId: request.executionId,
         stageId: request.stageId,
@@ -548,6 +639,20 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
           status: 'failed',
           surface: CLAUDE_CODE_SURFACE,
           message: standardizedError.message,
+          transportKind: AdapterTransportKind.CLI_EXEC,
+          ...(partialOutputPreserved
+            ? {
+                accumulatedText: state.accumulatedAssistantText,
+                responseText: state.accumulatedAssistantText,
+              }
+            : {}),
+          invokeLiveness: this.buildCliInvokeLivenessSnapshot(request, state, {
+            status: 'failed',
+            partialOutputPreserved,
+            cancelMechanism,
+            lastTerminalSignalAt: failedAt,
+            ...(suspectReasonCodes.length > 0 ? { suspectReasonCodes } : {}),
+          }),
         },
       });
       this.finishCliExecution(state);
@@ -617,17 +722,30 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
 
     state.stdoutChunkObserved = true;
     state.accumulatedAssistantText += chunk;
+    const timestamp = new Date().toISOString();
+    this.recordCliSemanticProgress(
+      state,
+      timestamp,
+      AgentStreamEventType.TOKEN,
+      state.accumulatedAssistantText,
+    );
     this.pushCliExecutionEvent(state, {
       eventType: AgentStreamEventType.TOKEN,
-      timestamp: new Date().toISOString(),
+      timestamp,
       processId: request.processId,
       executionId: request.executionId,
       stageId: request.stageId,
       routeKey: request.routeKey,
       payload: {
         surface: CLAUDE_CODE_SURFACE,
+        transportKind: AdapterTransportKind.CLI_EXEC,
         text: chunk,
         accumulatedText: state.accumulatedAssistantText,
+        invokeLiveness: this.buildCliInvokeLivenessSnapshot(request, state, {
+          status: 'running',
+          partialOutputPreserved: false,
+          cancelMechanism: 'none',
+        }),
       },
     });
   }
@@ -662,9 +780,11 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
     if (!normalizedLine) {
       return;
     }
+    const timestamp = new Date().toISOString();
+    this.recordCliTransportEvent(state, timestamp, 'stderr', normalizedLine);
     this.pushCliExecutionEvent(state, {
       eventType: AgentStreamEventType.STATUS,
-      timestamp: new Date().toISOString(),
+      timestamp,
       processId: request.processId,
       executionId: request.executionId,
       stageId: request.stageId,
@@ -672,8 +792,14 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
       payload: {
         status: 'running',
         surface: CLAUDE_CODE_SURFACE,
+        transportKind: AdapterTransportKind.CLI_EXEC,
         detail: `${CLAUDE_CODE_SURFACE} stderr: ${normalizedLine}`,
         activityKey: `${CLAUDE_CODE_SURFACE}:stderr:${String(state.cliOutputSequence++)}`,
+        invokeLiveness: this.buildCliInvokeLivenessSnapshot(request, state, {
+          status: 'running',
+          partialOutputPreserved: false,
+          cancelMechanism: 'none',
+        }),
       },
     });
   }
@@ -710,10 +836,56 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
       payload: {
         status: 'running',
         surface: CLAUDE_CODE_SURFACE,
+        transportKind: AdapterTransportKind.CLI_EXEC,
         detail:
           elapsedSeconds === 0
             ? 'Claude Code repository review is running; waiting for CLI output.'
             : `Claude Code repository review is still running (${elapsedSeconds}s elapsed); waiting for CLI output.`,
+        invokeLiveness: this.buildCliInvokeLivenessSnapshot(request, state, {
+          status: 'running',
+          partialOutputPreserved: false,
+          cancelMechanism: 'none',
+        }),
+      },
+    });
+  }
+
+  private pushCliGracefulInterruptEvent(
+    state: ClaudeCodeCliExecutionState,
+    request: ClaudeCodeCliExecutionRequest,
+    cancelMechanism: ClaudeCodeCliCancelMechanism,
+  ): void {
+    const interruptedAt = new Date().toISOString();
+    this.recordCliTransportEvent(
+      state,
+      interruptedAt,
+      'graceful_interrupting',
+      state.accumulatedAssistantText.length > 0 ? state.accumulatedAssistantText : undefined,
+    );
+    this.pushCliExecutionEvent(state, {
+      eventType: AgentStreamEventType.STATUS,
+      timestamp: interruptedAt,
+      processId: request.processId,
+      executionId: request.executionId,
+      stageId: request.stageId,
+      routeKey: request.routeKey,
+      payload: {
+        status: 'graceful_interrupting',
+        surface: CLAUDE_CODE_SURFACE,
+        transportKind: AdapterTransportKind.CLI_EXEC,
+        detail:
+          cancelMechanism === 'abort_signal'
+            ? 'Claude Code invoke is being interrupted by abort signal.'
+            : 'Claude Code invoke exceeded its timeout budget; attempting graceful interrupt.',
+        invokeLiveness: this.buildCliInvokeLivenessSnapshot(request, state, {
+          status: 'graceful_interrupting',
+          partialOutputPreserved: state.accumulatedAssistantText.length > 0,
+          cancelMechanism,
+          lastTerminalSignalAt: interruptedAt,
+          ...(cancelMechanism === 'process_signal'
+            ? { suspectReasonCodes: ['invoke_hard_timeout'] }
+            : {}),
+        }),
       },
     });
   }
@@ -724,6 +896,100 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
       return undefined;
     }
     return normalizedLine.length > 240 ? `${normalizedLine.slice(0, 237)}...` : normalizedLine;
+  }
+
+  private recordCliTransportEvent(
+    state: ClaudeCodeCliExecutionState,
+    timestamp: string,
+    eventType: string,
+    previewText?: string,
+  ): void {
+    state.lastTransportActivityAt = timestamp;
+    state.latestEventAt = timestamp;
+    state.latestEventType = eventType;
+    if (previewText) {
+      state.latestTextPreview = previewText;
+    }
+  }
+
+  private recordCliSemanticProgress(
+    state: ClaudeCodeCliExecutionState,
+    timestamp: string,
+    eventType: string,
+    previewText: string,
+  ): void {
+    this.recordCliTransportEvent(state, timestamp, eventType, previewText);
+    state.lastSemanticProgressAt = timestamp;
+  }
+
+  private buildCliInvokeLivenessSnapshot(
+    request: ClaudeCodeCliExecutionRequest,
+    state: ClaudeCodeCliExecutionState,
+    options: {
+      status: ClaudeCodeCliLivenessStatus;
+      partialOutputPreserved: boolean;
+      cancelMechanism: ClaudeCodeCliCancelMechanism;
+      lastTerminalSignalAt?: string;
+      suspectReasonCodes?: string[];
+    },
+  ): Record<string, unknown> {
+    const startedAt = state.startedAt ?? new Date().toISOString();
+    return {
+      adapterId: this.options.agentId,
+      surfaceId: CLAUDE_CODE_SURFACE,
+      routeKey: request.routeKey,
+      startedAt,
+      status: options.status,
+      ...(state.lastTransportActivityAt
+        ? { lastTransportActivityAt: state.lastTransportActivityAt }
+        : {}),
+      ...(state.lastSemanticProgressAt
+        ? { lastSemanticProgressAt: state.lastSemanticProgressAt }
+        : {}),
+      ...(options.lastTerminalSignalAt
+        ? { lastTerminalSignalAt: options.lastTerminalSignalAt }
+        : {}),
+      ...(state.latestEventAt ? { latestEventAt: state.latestEventAt } : {}),
+      ...(state.latestEventType ? { latestEventType: state.latestEventType } : {}),
+      ...(state.latestTextPreview ? { latestTextPreview: state.latestTextPreview } : {}),
+      activeOperationKind: 'cli_exec_stream',
+      activeOperationStartedAt: startedAt,
+      partialOutputPreserved: options.partialOutputPreserved,
+      transportKind: AdapterTransportKind.CLI_EXEC,
+      cancelMechanism: options.cancelMechanism,
+      ...(options.suspectReasonCodes && options.suspectReasonCodes.length > 0
+        ? { suspectReasonCodes: options.suspectReasonCodes }
+        : {}),
+    };
+  }
+
+  private resolveCliFailureReasonCodes(error: unknown, partialOutputPreserved: boolean): string[] {
+    const detail = this.cliExecOperationsRuntime
+      .collectErrorDetail(error, standardizeError(error).message)
+      .toLowerCase();
+    return [
+      ...(this.isTimeoutFailure(detail) ? ['invoke_hard_timeout'] : []),
+      ...(partialOutputPreserved ? ['invoke_partial_output_preserved'] : []),
+    ];
+  }
+
+  private resolveCliFailureCancelMechanism(
+    error: unknown,
+    request: ClaudeCodeCliExecutionRequest,
+  ): ClaudeCodeCliCancelMechanism {
+    if (request.signal?.aborted) {
+      return 'abort_signal';
+    }
+    const detail = this.cliExecOperationsRuntime
+      .collectErrorDetail(error, standardizeError(error).message)
+      .toLowerCase();
+    if (/(timed out|timeout)/u.test(detail)) {
+      return 'process_signal';
+    }
+    if (/(aborterror|aborted)/u.test(detail)) {
+      return 'abort_signal';
+    }
+    return 'none';
   }
 
   /**
@@ -914,7 +1180,10 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
    * @returns Raw CLI execution result.
    */
   private async runClaudeCodeOperation(
-    request: Pick<ClaudeCodeExecRunnerRequest, 'prompt' | 'timeoutMs' | 'signal' | 'operation'> & {
+    request: Pick<
+      ClaudeCodeExecRunnerRequest,
+      'prompt' | 'timeoutMs' | 'signal' | 'operation' | 'onGracefulInterruptStart'
+    > & {
       commandArgumentsPrefixResolver?: (
         basePrefix: string[],
         executionPolicy?: ReturnType<typeof resolveAgentStageExecutionPolicy>,
@@ -950,6 +1219,7 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
                 operation: request.operation,
                 onStdoutChunk: request.onStdoutChunk,
                 onStderrChunk: request.onStderrChunk,
+                onGracefulInterruptStart: request.onGracefulInterruptStart,
               });
             } catch (error) {
               lastError = error;
@@ -1095,47 +1365,85 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
       return null;
     }
 
-    if (configuredRemoteApi.credentialRef) {
-      throw new RuntimeError(
-        GovernorErrorCode.AGENT_PROTOCOL_INVALID,
-        `Claude Code remote API credentialRef "${configuredRemoteApi.credentialRef}" is not yet supported.`,
-        {
-          surface: CLAUDE_CODE_SURFACE,
-          credentialRef: configuredRemoteApi.credentialRef,
-        },
-      );
-    }
-
+    const providerLocalDiscoveryEnabled = configuredRemoteApi.allowProviderLocalConfig === true;
+    const providerLocalConfig = providerLocalDiscoveryEnabled
+      ? new ClaudeCodeProviderLocalConfigRuntime({
+          currentWorkingDirectory: this.options.currentWorkingDirectory,
+          environment: this.options.environment,
+        }).discover()
+      : null;
     const credentialEnvVar =
       configuredRemoteApi.credentialEnvVar ?? CLAUDE_CODE_REMOTE_API_DEFAULT_CREDENTIAL_ENV_VAR;
-    const credentialSource = configuredRemoteApi.credentialEnvVar
-      ? AdapterCredentialSource.ENV_EXPLICIT
-      : AdapterCredentialSource.ENV_DEFAULT;
 
     return {
       provider: AdapterProviderKind.ANTHROPIC,
       vendorBinding: AdapterVendorBindingKind.ANTHROPIC_MESSAGES,
       model: configuredRemoteApi.model,
-      endpoint: configuredRemoteApi.endpoint ?? CLAUDE_CODE_REMOTE_API_DEFAULT_ENDPOINT,
+      endpoint:
+        configuredRemoteApi.endpoint ??
+        providerLocalConfig?.endpoint ??
+        CLAUDE_CODE_REMOTE_API_DEFAULT_ENDPOINT,
       endpointSource: configuredRemoteApi.endpoint
         ? AdapterEndpointSource.CONFIG_EXPLICIT
-        : AdapterEndpointSource.VENDOR_DEFAULT,
+        : providerLocalConfig?.endpoint
+          ? AdapterEndpointSource.PROVIDER_LOCAL
+          : AdapterEndpointSource.VENDOR_DEFAULT,
       credentialEnvVar,
-      credentialSource,
+      credentialEnvVarExplicit: configuredRemoteApi.credentialEnvVar !== undefined,
+      credentialRef: configuredRemoteApi.credentialRef ?? null,
+      providerLocalDiscoveryEnabled,
+      providerLocalCredentialValue: providerLocalConfig?.apiKey ?? null,
       requestTimeoutMs: configuredRemoteApi.requestTimeoutMs ?? this.options.requestTimeoutMs,
       maxRetries: configuredRemoteApi.maxRetries ?? CLAUDE_CODE_REMOTE_API_DEFAULT_MAX_RETRIES,
     };
   }
 
-  private resolveRemoteApiCredentialValue(
+  private resolveRemoteApiCredentialResolution(
     remoteApiOptions: ResolvedClaudeCodeRemoteApiOptions,
-  ): string | null {
+  ): ClaudeCodeRemoteApiCredentialResolution {
     const environment = this.resolveEnvironment();
     const credentialValue = environment[remoteApiOptions.credentialEnvVar];
-    if (typeof credentialValue !== 'string' || credentialValue.trim().length === 0) {
-      return null;
+    if (typeof credentialValue === 'string' && credentialValue.trim().length > 0) {
+      return {
+        source: remoteApiOptions.credentialEnvVarExplicit
+          ? AdapterCredentialSource.ENV_EXPLICIT
+          : AdapterCredentialSource.ENV_DEFAULT,
+        value: credentialValue.trim(),
+        detail: `${CLAUDE_CODE_SURFACE}:${remoteApiOptions.credentialEnvVar}`,
+      };
     }
-    return credentialValue.trim();
+
+    if (remoteApiOptions.credentialRef) {
+      return {
+        source: AdapterCredentialSource.CREDENTIAL_REF,
+        value: null,
+        detail: `${CLAUDE_CODE_SURFACE}:${remoteApiOptions.credentialRef}`,
+      };
+    }
+
+    if (remoteApiOptions.providerLocalCredentialValue) {
+      return {
+        source: AdapterCredentialSource.PROVIDER_LOCAL,
+        value: remoteApiOptions.providerLocalCredentialValue,
+        detail: `${CLAUDE_CODE_SURFACE}:provider-local`,
+      };
+    }
+
+    if (remoteApiOptions.providerLocalDiscoveryEnabled) {
+      return {
+        source: AdapterCredentialSource.PROVIDER_LOCAL,
+        value: null,
+        detail: `${CLAUDE_CODE_SURFACE}:provider-local`,
+      };
+    }
+
+    return {
+      source: remoteApiOptions.credentialEnvVarExplicit
+        ? AdapterCredentialSource.ENV_EXPLICIT
+        : AdapterCredentialSource.ENV_DEFAULT,
+      value: null,
+      detail: `${CLAUDE_CODE_SURFACE}:${remoteApiOptions.credentialEnvVar}`,
+    };
   }
 
   private async executeRemoteApiHealthProbe(
@@ -1149,13 +1457,11 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
       };
     }
 
-    const credentialValue = this.resolveRemoteApiCredentialValue(remoteApiOptions);
-    if (!credentialValue) {
+    const credentialResolution = this.resolveRemoteApiCredentialResolution(remoteApiOptions);
+    if (!credentialResolution.value) {
       return {
         availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
-        unavailableReasons: [
-          `credential_missing:${CLAUDE_CODE_SURFACE}:${remoteApiOptions.credentialEnvVar}`,
-        ],
+        unavailableReasons: [`credential_missing:${credentialResolution.detail}`],
       };
     }
 
@@ -1226,22 +1532,39 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
     const prompt = this.shouldUseRepositoryReviewMode(request as ClaudeCodeCliExecutionRequest)
       ? this.renderRepositoryReviewPrompt(request as AgentInvokeStageRequest)
       : this.renderInvokePrompt(request as AgentInvokeStageRequest);
+    const livenessState = this.createRemoteApiLivenessState();
+    this.recordRemoteApiObservedEvent(
+      livenessState,
+      livenessState.startedAt,
+      'status',
+      'Claude Code remote API stream started.',
+    );
     yield {
       eventType: AgentStreamEventType.STATUS,
-      timestamp: new Date().toISOString(),
+      timestamp: livenessState.startedAt,
       processId: request.processId,
       executionId: request.executionId,
       stageId: request.stageId,
       routeKey: request.routeKey,
       payload: {
-        status: 'running',
+        status: 'starting',
         surface: CLAUDE_CODE_SURFACE,
-        transportKind: ClaudeCodeAgentAdapterExecutionMode.REMOTE_API,
+        transportKind: AdapterTransportKind.REMOTE_API,
+        vendorBindingKind: remoteApiOptions.vendorBinding,
         detail: 'Claude Code remote API stream started.',
+        invokeLiveness: this.buildRemoteApiInvokeLivenessSnapshot(
+          request,
+          remoteApiOptions,
+          livenessState,
+          {
+            status: 'starting',
+            cancelMechanism: 'none',
+            partialOutputPreserved: false,
+          },
+        ),
       },
     };
 
-    let accumulatedText = '';
     let completedEmitted = false;
     try {
       for await (const event of this.executeRemoteApiStreamRequest({
@@ -1249,6 +1572,7 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
         timeoutMs: this.resolveStreamTimeoutMs(request),
         ...(request.signal ? { signal: request.signal } : {}),
       })) {
+        this.captureRemoteApiTransportEvent(livenessState, event);
         if (event.eventType === AgentStreamEventType.TOKEN) {
           const text =
             typeof event.payload.delta === 'string'
@@ -1256,7 +1580,8 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
               : typeof event.payload.text === 'string'
                 ? event.payload.text
                 : '';
-          accumulatedText += text;
+          livenessState.accumulatedText += text;
+          this.captureRemoteApiSemanticProgress(livenessState, event.timestamp);
           yield {
             ...event,
             processId: request.processId,
@@ -1266,8 +1591,20 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
             payload: {
               ...event.payload,
               surface: CLAUDE_CODE_SURFACE,
+              transportKind: AdapterTransportKind.REMOTE_API,
               vendorBindingKind: remoteApiOptions.vendorBinding,
-              accumulatedText,
+              remoteRequestId: livenessState.remoteRequestId,
+              accumulatedText: livenessState.accumulatedText,
+              invokeLiveness: this.buildRemoteApiInvokeLivenessSnapshot(
+                request,
+                remoteApiOptions,
+                livenessState,
+                {
+                  status: 'running',
+                  cancelMechanism: 'none',
+                  partialOutputPreserved: false,
+                },
+              ),
             },
           };
           continue;
@@ -1276,6 +1613,8 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
         if (event.eventType === AgentStreamEventType.COMPLETED) {
           completedEmitted = true;
         }
+        const livenessStatus: ClaudeCodeRemoteApiLivenessStatus =
+          event.eventType === AgentStreamEventType.COMPLETED ? 'completed' : 'running';
         yield {
           ...event,
           processId: request.processId,
@@ -1285,15 +1624,44 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
           payload: {
             ...event.payload,
             surface: CLAUDE_CODE_SURFACE,
+            transportKind: AdapterTransportKind.REMOTE_API,
             vendorBindingKind: remoteApiOptions.vendorBinding,
-            ...(accumulatedText.length > 0 ? { accumulatedText } : {}),
+            remoteRequestId: livenessState.remoteRequestId,
+            ...(livenessState.accumulatedText.length > 0
+              ? {
+                  accumulatedText: livenessState.accumulatedText,
+                  responseText: livenessState.accumulatedText,
+                }
+              : {}),
+            invokeLiveness: this.buildRemoteApiInvokeLivenessSnapshot(
+              request,
+              remoteApiOptions,
+              livenessState,
+              {
+                status: livenessStatus,
+                cancelMechanism: 'none',
+                partialOutputPreserved: false,
+                ...(event.eventType === AgentStreamEventType.COMPLETED
+                  ? {
+                      lastTerminalSignalAt: event.timestamp,
+                    }
+                  : {}),
+              },
+            ),
           },
         };
       }
       if (!completedEmitted) {
+        const completedAt = new Date().toISOString();
+        this.recordRemoteApiObservedEvent(
+          livenessState,
+          completedAt,
+          AgentStreamEventType.COMPLETED,
+          livenessState.accumulatedText,
+        );
         yield {
           eventType: AgentStreamEventType.COMPLETED,
-          timestamp: new Date().toISOString(),
+          timestamp: completedAt,
           processId: request.processId,
           executionId: request.executionId,
           stageId: request.stageId,
@@ -1301,18 +1669,46 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
           payload: {
             status: 'completed',
             surface: CLAUDE_CODE_SURFACE,
+            transportKind: AdapterTransportKind.REMOTE_API,
             vendorBindingKind: remoteApiOptions.vendorBinding,
-            ...(accumulatedText.length > 0
-              ? { accumulatedText, responseText: accumulatedText }
+            remoteRequestId: livenessState.remoteRequestId,
+            ...(livenessState.accumulatedText.length > 0
+              ? {
+                  accumulatedText: livenessState.accumulatedText,
+                  responseText: livenessState.accumulatedText,
+                }
               : {}),
+            invokeLiveness: this.buildRemoteApiInvokeLivenessSnapshot(
+              request,
+              remoteApiOptions,
+              livenessState,
+              {
+                status: 'completed',
+                cancelMechanism: 'none',
+                partialOutputPreserved: false,
+                lastTerminalSignalAt: completedAt,
+              },
+            ),
           },
         };
       }
     } catch (error) {
       const standardizedError = standardizeError(error);
+      const failedAt = new Date().toISOString();
+      const partialOutputPreserved = livenessState.accumulatedText.length > 0;
+      this.recordRemoteApiObservedEvent(
+        livenessState,
+        failedAt,
+        AgentStreamEventType.FAILED,
+        partialOutputPreserved ? livenessState.accumulatedText : standardizedError.message,
+      );
+      const suspectReasonCodes = [
+        ...(this.isRemoteApiTimeoutBudgetError(error) ? ['invoke_hard_timeout'] : []),
+        ...(partialOutputPreserved ? ['invoke_partial_output_preserved'] : []),
+      ];
       yield {
         eventType: AgentStreamEventType.FAILED,
-        timestamp: new Date().toISOString(),
+        timestamp: failedAt,
         processId: request.processId,
         executionId: request.executionId,
         stageId: request.stageId,
@@ -1321,7 +1717,33 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
           status: 'failed',
           surface: CLAUDE_CODE_SURFACE,
           message: standardizedError.message,
+          transportKind: AdapterTransportKind.REMOTE_API,
           vendorBindingKind: remoteApiOptions.vendorBinding,
+          remoteRequestId: livenessState.remoteRequestId,
+          ...(partialOutputPreserved
+            ? {
+                accumulatedText: livenessState.accumulatedText,
+                responseText: livenessState.accumulatedText,
+              }
+            : {}),
+          invokeLiveness: this.buildRemoteApiInvokeLivenessSnapshot(
+            request,
+            remoteApiOptions,
+            livenessState,
+            {
+              status:
+                this.isRemoteApiAbortError(error) && request.signal?.aborted
+                  ? 'cancelled'
+                  : 'failed',
+              cancelMechanism:
+                this.isRemoteApiAbortError(error) || this.isRemoteApiTimeoutBudgetError(error)
+                  ? 'http_stream_abort'
+                  : 'none',
+              partialOutputPreserved,
+              lastTerminalSignalAt: failedAt,
+              ...(suspectReasonCodes.length > 0 ? { suspectReasonCodes } : {}),
+            },
+          ),
         },
       };
       throw error;
@@ -1339,26 +1761,27 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
     elapsedMs: number;
   }> {
     const remoteApiOptions = this.requireRemoteApiOptions();
-    const credentialValue = this.resolveRemoteApiCredentialValue(remoteApiOptions);
-    if (!credentialValue) {
+    const credentialResolution = this.resolveRemoteApiCredentialResolution(remoteApiOptions);
+    if (!credentialResolution.value) {
       throw new RuntimeError(
         GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED,
-        `Claude Code remote API credential "${remoteApiOptions.credentialEnvVar}" is missing.`,
+        `Claude Code remote API credential selector "${credentialResolution.detail}" is missing.`,
         {
           surface: CLAUDE_CODE_SURFACE,
-          credentialEnvVar: remoteApiOptions.credentialEnvVar,
+          credentialSelector: credentialResolution.detail,
         },
       );
     }
+    const credentialValue = credentialResolution.value;
 
     const startedAt = Date.now();
-    const response = await this.executeRemoteApiWithRetry(
+    const fetchResult = await this.executeRemoteApiWithRetry<ClaudeCodeRemoteApiFetchResult>(
       request.timeoutMs,
       request.signal,
       async ({ timeoutMs, signal }) => {
         const controller = this.createRemoteApiAbortController(signal, timeoutMs);
         try {
-          return await this.options.fetchImplementation(remoteApiOptions.endpoint, {
+          const response = await this.options.fetchImplementation(remoteApiOptions.endpoint, {
             method: 'POST',
             headers: {
               'anthropic-version': '2023-06-01',
@@ -1377,43 +1800,61 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
             }),
             signal: controller.signal,
           });
-        } finally {
+          return {
+            response,
+            cleanup: controller.cleanup,
+            didTimeout: controller.didTimeout,
+          };
+        } catch (error) {
           controller.cleanup();
+          if (this.isRemoteApiAbortError(error) && controller.didTimeout()) {
+            throw this.createRemoteApiTimeoutBudgetError(timeoutMs);
+          }
+          throw error;
         }
       },
     );
-    const responseBodyText = await response.text();
-    if (!response.ok) {
-      throw this.createRemoteApiHttpError(response.status, responseBodyText);
-    }
+    try {
+      const responseBodyText = await fetchResult.response.text();
+      if (!fetchResult.response.ok) {
+        throw this.createRemoteApiHttpError(fetchResult.response.status, responseBodyText);
+      }
 
-    const parsedBody = JSON.parse(responseBodyText) as {
-      id?: string;
-      content?: Array<{
-        type?: string;
-        text?: string;
-      }>;
-      usage?: {
-        input_tokens?: number;
-        output_tokens?: number;
+      const parsedBody = JSON.parse(responseBodyText) as {
+        id?: string;
+        content?: Array<{
+          type?: string;
+          text?: string;
+        }>;
+        usage?: {
+          input_tokens?: number;
+          output_tokens?: number;
+        };
       };
-    };
-    const responseText = this.extractRemoteApiResponseText(parsedBody);
-    return {
-      responseId: parsedBody.id ?? null,
-      responseText,
-      ...(parsedBody.usage
-        ? {
-            usage: {
-              inputTokens: parsedBody.usage.input_tokens,
-              outputTokens: parsedBody.usage.output_tokens,
-              totalTokens:
-                (parsedBody.usage.input_tokens ?? 0) + (parsedBody.usage.output_tokens ?? 0),
-            },
-          }
-        : {}),
-      elapsedMs: Date.now() - startedAt,
-    };
+      const responseText = this.extractRemoteApiResponseText(parsedBody);
+      return {
+        responseId: parsedBody.id ?? null,
+        responseText,
+        ...(parsedBody.usage
+          ? {
+              usage: {
+                inputTokens: parsedBody.usage.input_tokens,
+                outputTokens: parsedBody.usage.output_tokens,
+                totalTokens:
+                  (parsedBody.usage.input_tokens ?? 0) + (parsedBody.usage.output_tokens ?? 0),
+              },
+            }
+          : {}),
+        elapsedMs: Date.now() - startedAt,
+      };
+    } catch (error) {
+      if (this.isRemoteApiAbortError(error) && fetchResult.didTimeout()) {
+        throw this.createRemoteApiTimeoutBudgetError(request.timeoutMs);
+      }
+      throw error;
+    } finally {
+      fetchResult.cleanup();
+    }
   }
 
   private async *executeRemoteApiStreamRequest(request: {
@@ -1422,25 +1863,26 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
     signal?: AbortSignal;
   }): AsyncIterable<AgentStreamEvent> {
     const remoteApiOptions = this.requireRemoteApiOptions();
-    const credentialValue = this.resolveRemoteApiCredentialValue(remoteApiOptions);
-    if (!credentialValue) {
+    const credentialResolution = this.resolveRemoteApiCredentialResolution(remoteApiOptions);
+    if (!credentialResolution.value) {
       throw new RuntimeError(
         GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED,
-        `Claude Code remote API credential "${remoteApiOptions.credentialEnvVar}" is missing.`,
+        `Claude Code remote API credential selector "${credentialResolution.detail}" is missing.`,
         {
           surface: CLAUDE_CODE_SURFACE,
-          credentialEnvVar: remoteApiOptions.credentialEnvVar,
+          credentialSelector: credentialResolution.detail,
         },
       );
     }
+    const credentialValue = credentialResolution.value;
 
-    const response = await this.executeRemoteApiWithRetry(
+    const fetchResult = await this.executeRemoteApiWithRetry<ClaudeCodeRemoteApiFetchResult>(
       request.timeoutMs,
       request.signal,
       async ({ timeoutMs, signal }) => {
         const controller = this.createRemoteApiAbortController(signal, timeoutMs);
         try {
-          return await this.options.fetchImplementation(remoteApiOptions.endpoint, {
+          const response = await this.options.fetchImplementation(remoteApiOptions.endpoint, {
             method: 'POST',
             headers: {
               'anthropic-version': '2023-06-01',
@@ -1460,43 +1902,66 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
             }),
             signal: controller.signal,
           });
-        } finally {
+          return {
+            response,
+            cleanup: controller.cleanup,
+            didTimeout: controller.didTimeout,
+          };
+        } catch (error) {
           controller.cleanup();
+          if (this.isRemoteApiAbortError(error) && controller.didTimeout()) {
+            throw this.createRemoteApiTimeoutBudgetError(timeoutMs);
+          }
+          throw error;
         }
       },
     );
-    if (!response.ok) {
-      throw this.createRemoteApiHttpError(response.status, await response.text());
-    }
-    if (!response.body) {
-      throw new RuntimeError(
-        GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
-        'Claude Code remote API stream response body is missing.',
-        {
-          surface: CLAUDE_CODE_SURFACE,
-        },
-      );
-    }
+    let reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
+    try {
+      if (!fetchResult.response.ok) {
+        throw this.createRemoteApiHttpError(
+          fetchResult.response.status,
+          await fetchResult.response.text(),
+        );
+      }
+      if (!fetchResult.response.body) {
+        throw new RuntimeError(
+          GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
+          'Claude Code remote API stream response body is missing.',
+          {
+            surface: CLAUDE_CODE_SURFACE,
+          },
+        );
+      }
 
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-    while (true) {
-      const chunkResult = await reader.read();
-      if (chunkResult.done) {
-        if (buffer.trim().length > 0) {
-          yield* this.parseRemoteApiSseChunk(buffer);
+      reader = fetchResult.response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      while (true) {
+        const chunkResult = await reader.read();
+        if (chunkResult.done) {
+          if (buffer.trim().length > 0) {
+            yield* this.parseRemoteApiSseChunk(buffer);
+          }
+          return;
         }
-        return;
+        buffer += decoder.decode(chunkResult.value, {
+          stream: true,
+        });
+        const rawEvents = buffer.split(CLAUDE_CODE_REMOTE_API_SSE_EVENT_DELIMITER);
+        buffer = rawEvents.pop() ?? '';
+        for (const rawEvent of rawEvents) {
+          yield* this.parseRemoteApiSseChunk(rawEvent);
+        }
       }
-      buffer += decoder.decode(chunkResult.value, {
-        stream: true,
-      });
-      const rawEvents = buffer.split(CLAUDE_CODE_REMOTE_API_SSE_EVENT_DELIMITER);
-      buffer = rawEvents.pop() ?? '';
-      for (const rawEvent of rawEvents) {
-        yield* this.parseRemoteApiSseChunk(rawEvent);
+    } catch (error) {
+      if (this.isRemoteApiAbortError(error) && fetchResult.didTimeout()) {
+        throw this.createRemoteApiTimeoutBudgetError(request.timeoutMs);
       }
+      throw error;
+    } finally {
+      await reader?.cancel().catch(() => undefined);
+      fetchResult.cleanup();
     }
   }
 
@@ -1578,6 +2043,16 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
     return typeof name === 'string' && name === 'AbortError';
   }
 
+  private isRemoteApiTimeoutBudgetError(error: unknown): boolean {
+    if (!(error instanceof RuntimeError)) {
+      return false;
+    }
+    return (
+      error.code === GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED &&
+      error.message.includes('exhausted the timeout budget')
+    );
+  }
+
   private createRemoteApiTimeoutBudgetError(timeoutMs: number): RuntimeError {
     return new RuntimeError(
       GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
@@ -1595,9 +2070,14 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
   ): {
     signal: AbortSignal;
     cleanup: () => void;
+    didTimeout: () => boolean;
   } {
     const controller = new AbortController();
-    const timeoutHandle = setTimeout(() => controller.abort(), timeoutMs);
+    let didTimeout = false;
+    const timeoutHandle = setTimeout(() => {
+      didTimeout = true;
+      controller.abort();
+    }, timeoutMs);
     if (signal) {
       if (signal.aborted) {
         controller.abort();
@@ -1610,7 +2090,139 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
       cleanup: () => {
         clearTimeout(timeoutHandle);
       },
+      didTimeout: () => didTimeout,
     };
+  }
+
+  private createRemoteApiLivenessState(): ClaudeCodeRemoteApiLivenessState {
+    return {
+      startedAt: new Date().toISOString(),
+      accumulatedText: '',
+      remoteRequestId: null,
+      lastTransportActivityAt: null,
+      lastSemanticProgressAt: null,
+      latestEventAt: null,
+      latestEventType: null,
+      latestTextPreview: null,
+    };
+  }
+
+  private buildRemoteApiInvokeLivenessSnapshot(
+    request: Pick<AgentStreamEventsRequest, 'routeKey' | 'input'>,
+    remoteApiOptions: ResolvedClaudeCodeRemoteApiOptions,
+    state: ClaudeCodeRemoteApiLivenessState,
+    options: {
+      status: ClaudeCodeRemoteApiLivenessStatus;
+      cancelMechanism: ClaudeCodeRemoteApiCancelMechanism;
+      partialOutputPreserved: boolean;
+      lastTerminalSignalAt?: string;
+      suspectReasonCodes?: string[];
+    },
+  ): Record<string, unknown> {
+    const roleId = this.resolveRemoteApiRoleId(request.input);
+    return {
+      adapterId: this.options.agentId,
+      surfaceId: CLAUDE_CODE_SURFACE,
+      routeKey: request.routeKey,
+      ...(roleId ? { roleId } : {}),
+      startedAt: state.startedAt,
+      status: options.status,
+      ...(state.lastTransportActivityAt
+        ? { lastTransportActivityAt: state.lastTransportActivityAt }
+        : {}),
+      ...(state.lastSemanticProgressAt
+        ? { lastSemanticProgressAt: state.lastSemanticProgressAt }
+        : {}),
+      ...(options.lastTerminalSignalAt
+        ? { lastTerminalSignalAt: options.lastTerminalSignalAt }
+        : {}),
+      ...(state.latestEventAt ? { latestEventAt: state.latestEventAt } : {}),
+      ...(state.latestEventType ? { latestEventType: state.latestEventType } : {}),
+      ...(state.latestTextPreview ? { latestTextPreview: state.latestTextPreview } : {}),
+      activeOperationKind: 'remote_api_stream',
+      activeOperationStartedAt: state.startedAt,
+      partialOutputPreserved: options.partialOutputPreserved,
+      transportKind: AdapterTransportKind.REMOTE_API,
+      vendorBindingKind: remoteApiOptions.vendorBinding,
+      remoteRequestId: state.remoteRequestId,
+      cancelMechanism: options.cancelMechanism,
+      ...(options.suspectReasonCodes && options.suspectReasonCodes.length > 0
+        ? { suspectReasonCodes: options.suspectReasonCodes }
+        : {}),
+    };
+  }
+
+  private captureRemoteApiTransportEvent(
+    state: ClaudeCodeRemoteApiLivenessState,
+    event: AgentStreamEvent,
+  ): void {
+    state.lastTransportActivityAt = event.timestamp;
+    state.remoteRequestId = this.resolveRemoteApiRequestId(event.payload) ?? state.remoteRequestId;
+    this.recordRemoteApiObservedEvent(
+      state,
+      event.timestamp,
+      event.eventType,
+      this.resolveRemoteApiEventPreview(event.payload) ?? state.accumulatedText,
+    );
+  }
+
+  private captureRemoteApiSemanticProgress(
+    state: ClaudeCodeRemoteApiLivenessState,
+    timestamp: string,
+  ): void {
+    state.lastSemanticProgressAt = timestamp;
+    state.latestTextPreview = this.resolveRemoteApiTextPreview(state.accumulatedText);
+  }
+
+  private recordRemoteApiObservedEvent(
+    state: ClaudeCodeRemoteApiLivenessState,
+    timestamp: string,
+    eventType: string,
+    previewSource?: string,
+  ): void {
+    state.latestEventAt = timestamp;
+    state.latestEventType = eventType;
+    const preview = this.resolveRemoteApiTextPreview(previewSource);
+    if (preview) {
+      state.latestTextPreview = preview;
+    }
+  }
+
+  private resolveRemoteApiEventPreview(payload: Record<string, unknown>): string | undefined {
+    const candidates = [
+      payload.detail,
+      payload.message,
+      payload.responseText,
+      payload.accumulatedText,
+      payload.text,
+      payload.delta,
+    ];
+    const previewSource = candidates.find((candidate) => typeof candidate === 'string');
+    return typeof previewSource === 'string' ? previewSource : undefined;
+  }
+
+  private resolveRemoteApiRequestId(payload: Record<string, unknown>): string | null {
+    const candidates = [payload.remoteRequestId, payload.remoteMessageId];
+    const requestId = candidates.find(
+      (candidate) => typeof candidate === 'string' && candidate.trim().length > 0,
+    );
+    return typeof requestId === 'string' ? requestId : null;
+  }
+
+  private resolveRemoteApiTextPreview(source: string | undefined): string | null {
+    if (typeof source !== 'string') {
+      return null;
+    }
+    const normalized = source.trim();
+    if (normalized.length === 0) {
+      return null;
+    }
+    return normalized.length > 160 ? normalized.slice(-160) : normalized;
+  }
+
+  private resolveRemoteApiRoleId(input: Record<string, unknown>): string | undefined {
+    const roleId = input.roleId;
+    return typeof roleId === 'string' && roleId.trim().length > 0 ? roleId : undefined;
   }
 
   private *parseRemoteApiSseChunk(rawEvent: string): Generator<AgentStreamEvent> {
@@ -1650,6 +2262,27 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
       };
     };
     if (
+      (eventName === 'message_start' || payload.type === 'message_start') &&
+      typeof payload.message?.id === 'string' &&
+      payload.message.id.trim().length > 0
+    ) {
+      yield {
+        eventType: AgentStreamEventType.STATUS,
+        timestamp: new Date().toISOString(),
+        processId: '',
+        executionId: '',
+        stageId: '',
+        routeKey: '',
+        payload: {
+          status: 'running',
+          detail: 'Claude Code remote message created.',
+          remoteRequestId: payload.message.id,
+          remoteMessageId: payload.message.id,
+        },
+      };
+      return;
+    }
+    if (
       (eventName === 'content_block_delta' || payload.type === 'content_block_delta') &&
       payload.delta?.type === 'text_delta' &&
       typeof payload.delta.text === 'string'
@@ -1679,6 +2312,7 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
         routeKey: '',
         payload: {
           status: 'completed',
+          remoteRequestId: payload.message?.id ?? null,
           remoteMessageId: payload.message?.id ?? null,
         },
       };
@@ -1921,6 +2555,17 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
       let stdout = '';
       let stderr = '';
       let settled = false;
+      let gracefulInterruptNotified = false;
+
+      const notifyGracefulInterrupt = (
+        cancelMechanism: 'process_signal' | 'abort_signal',
+      ): void => {
+        if (gracefulInterruptNotified) {
+          return;
+        }
+        gracefulInterruptNotified = true;
+        request.onGracefulInterruptStart?.(cancelMechanism);
+      };
 
       const settle = (
         result: ClaudeCodeExecRunnerResult | RuntimeError,
@@ -1933,6 +2578,7 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
         if (timeoutHandle) {
           clearTimeout(timeoutHandle);
         }
+        request.signal?.removeEventListener('abort', onAbortSignal);
         if (isError) {
           reject(result);
           return;
@@ -1940,7 +2586,14 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
         resolveResult(result as ClaudeCodeExecRunnerResult);
       };
 
+      const onAbortSignal = () => {
+        notifyGracefulInterrupt('abort_signal');
+      };
+
+      request.signal?.addEventListener('abort', onAbortSignal, { once: true });
+
       const timeoutHandle = setTimeout(() => {
+        notifyGracefulInterrupt('process_signal');
         childProcess.kill('SIGTERM');
         settle(
           new RuntimeError(

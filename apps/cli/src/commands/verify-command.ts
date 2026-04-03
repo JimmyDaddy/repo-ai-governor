@@ -87,6 +87,7 @@ export class CliVerifyCommand implements CliCommandExecutor {
         currentAdaptersConfig: context.options.adaptersConfig,
       }),
       adaptersConfig: context.options.adaptersConfig,
+      verification: adapterVerification,
       dryRun: runtimeDebugOptions.dryRun,
       overwrite: runtimeDebugOptions.overwrite,
       singleToolAllRoles: runtimeDebugOptions.singleToolAllRoles,

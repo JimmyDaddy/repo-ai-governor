@@ -1,7 +1,7 @@
 # TK-502 integrate remote-api streaming liveness and execution diagnostics projection
 
-- Status: planned
-- Date: 2026-04-02
+- Status: completed
+- Date: 2026-04-03
 - Owner: AI-Agent
 - Priority: P1
 - Project: `project-037-agent-invoke-liveness-and-timeout-governance-rollout`
@@ -44,3 +44,6 @@
 ## 6. 执行记录
 
 1. 2026-04-02：任务创建，状态初始化为 `planned`；从 `TK-501` baseline 拆分 remote-api streaming liveness / execution diagnostics follow-through。
+2. 2026-04-02：任务激活，开始将 Codex / Claude remote_api stream 的 activity、request id、abort/cancel 语义和 partial-output 快照接入 shared liveness projection。
+3. 2026-04-03：完成第一段 event-stream / diagnostics 投影实现：Codex 与 Claude Code remote_api stream 现在 materialize `remoteRequestId`、`lastTransportActivityAt`、`lastSemanticProgressAt`、`partialOutputPreserved`、timeout-budget / abort diagnostics，并通过 `session.main -> orchestration session stream` 保留 `invokeLiveness` snapshot；定向 vitest、`pnpm run build`、ledger gates 已通过。execution-summary 级 liveness 字段仍待引入，因此任务保持 `active` 继续收口。
+4. 2026-04-03：完成 execution-summary / execution event stream 收口：新增 `OrchestrationExecutionLivenessSnapshot` contract 与 `EXECUTION_LIVENESS_UPDATED` 等事件类型，将 linked `session.main` 的 `invokeLiveness` snapshot 回写到 orchestration execution summary 和 execution subscription event stream，并补齐 linked execution 回归测试；定向 vitest、`pnpm run build`、`check-task-ledger-sync`、`check-sprint-plan-status-sync` 全部通过，任务标记为 `completed`。

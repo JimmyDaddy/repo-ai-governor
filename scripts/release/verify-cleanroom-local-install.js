@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readFileSync,
   readdirSync,
   rmSync,
   unlinkSync,
@@ -14,6 +15,11 @@ import { tmpdir } from 'node:os';
 import { dirname, resolve } from 'node:path';
 
 import { gateFail, gateInfo, gatePass } from '../governance/gate-output.js';
+import {
+  REMOTE_API_SMOKE_ANTHROPIC_KEY,
+  REMOTE_API_SMOKE_OPENAI_KEY,
+  writeRemoteApiSmokeConfig,
+} from './remote-api-smoke-runtime.js';
 
 const GATE_NAME = 'release-verify-cleanroom-install';
 const PACKAGE_BINARY = 'repo-ai-governor';
@@ -433,6 +439,165 @@ function runCleanroomCliCommand(options) {
 }
 
 /**
+ * Starts the remote-api stub server in a separate child process so sync child commands can reach it.
+ * @returns {Promise<{
+ *   openAiEndpoint: string;
+ *   anthropicEndpoint: string;
+ *   close: () => Promise<void>;
+ * }>}
+ */
+async function startRemoteApiSmokeServerProcess() {
+  const child = spawn(process.execPath, ['./scripts/release/remote-api-smoke-server.entry.js'], {
+    cwd: process.cwd(),
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+
+  let stdoutBuffer = '';
+  let stderrBuffer = '';
+
+  const readyPayload = await new Promise((resolvePromise, rejectPromise) => {
+    const cleanup = () => {
+      child.stdout?.off('data', handleStdout);
+      child.stderr?.off('data', handleStderr);
+      child.off('exit', handleExit);
+      child.off('error', handleError);
+    };
+
+    const handleStdout = (chunk) => {
+      stdoutBuffer += chunk.toString();
+      const newlineIndex = stdoutBuffer.indexOf('\n');
+      if (newlineIndex === -1) {
+        return;
+      }
+      const line = stdoutBuffer.slice(0, newlineIndex).trim();
+      if (!line) {
+        return;
+      }
+      try {
+        const parsed = JSON.parse(line);
+        cleanup();
+        resolvePromise(parsed);
+      } catch (error) {
+        cleanup();
+        rejectPromise(error);
+      }
+    };
+
+    const handleStderr = (chunk) => {
+      stderrBuffer += chunk.toString();
+    };
+
+    const handleExit = (code) => {
+      cleanup();
+      rejectPromise(
+        new Error(
+          `Remote API smoke server exited before ready. code=${String(code)} stderr="${stderrBuffer.trim()}"`,
+        ),
+      );
+    };
+
+    const handleError = (error) => {
+      cleanup();
+      rejectPromise(error);
+    };
+
+    child.stdout?.on('data', handleStdout);
+    child.stderr?.on('data', handleStderr);
+    child.once('exit', handleExit);
+    child.once('error', handleError);
+  });
+
+  return {
+    openAiEndpoint: readyPayload.openAiEndpoint,
+    anthropicEndpoint: readyPayload.anthropicEndpoint,
+    close: async () => {
+      if (child.exitCode !== null) {
+        return;
+      }
+      await new Promise((resolvePromise) => {
+        child.once('exit', () => resolvePromise(undefined));
+        child.kill('SIGTERM');
+      });
+    },
+  };
+}
+
+/**
+ * Resolves one diagnostics artifact path from CLI JSON payload.
+ * @param {Record<string, unknown>} payload CLI output payload.
+ * @param {string} artifactId Artifact id.
+ * @param {string} label Human-readable label.
+ * @returns {string}
+ */
+function resolveArtifactPath(payload, artifactId, label) {
+  const artifacts = Array.isArray(payload.command_result?.artifacts)
+    ? payload.command_result.artifacts
+    : [];
+  const artifact = artifacts.find((candidate) => candidate?.id === artifactId);
+  if (!artifact || typeof artifact.path !== 'string' || artifact.path.trim().length === 0) {
+    throw new Error(`${label} did not produce artifact "${artifactId}".`);
+  }
+  return artifact.path;
+}
+
+/**
+ * Asserts one adapter verification payload exposes remote-api transport truth.
+ * @param {Record<string, unknown>} verification Adapter verification payload.
+ * @param {string} label Human-readable label.
+ */
+function assertRemoteApiVerificationPayload(verification, label) {
+  if (!verification || typeof verification !== 'object') {
+    throw new Error(`${label} is missing verification payload.`);
+  }
+
+  const tools = Array.isArray(verification.tools) ? verification.tools : [];
+  const codex = tools.find((tool) => tool?.toolId === 'codex');
+  const claudeCode = tools.find((tool) => tool?.toolId === 'claude-code');
+  if (!codex || !claudeCode) {
+    throw new Error(`${label} is missing codex/claude-code tool snapshots.`);
+  }
+
+  assertRemoteApiToolHealth(codex, {
+    label: `${label}/codex`,
+    providerKind: 'openai',
+    vendorBindingKind: 'openai_responses',
+  });
+  assertRemoteApiToolHealth(claudeCode, {
+    label: `${label}/claude-code`,
+    providerKind: 'anthropic',
+    vendorBindingKind: 'anthropic_messages',
+  });
+}
+
+/**
+ * Asserts one tool-level health payload.
+ * @param {Record<string, unknown>} toolSnapshot Tool snapshot payload.
+ * @param {{label: string; providerKind: string; vendorBindingKind: string}} expectations Expectations.
+ */
+function assertRemoteApiToolHealth(toolSnapshot, expectations) {
+  const healthCheck = toolSnapshot.healthCheck;
+  if (!healthCheck || typeof healthCheck !== 'object') {
+    throw new Error(`${expectations.label} is missing healthCheck payload.`);
+  }
+
+  const expectedFields = {
+    transportKind: 'remote_api',
+    providerKind: expectations.providerKind,
+    vendorBindingKind: expectations.vendorBindingKind,
+    credentialSource: 'env_explicit',
+    endpointSource: 'config_explicit',
+  };
+
+  for (const [fieldName, expectedValue] of Object.entries(expectedFields)) {
+    if (healthCheck[fieldName] !== expectedValue) {
+      throw new Error(
+        `${expectations.label} returned healthCheck.${fieldName}="${String(healthCheck[fieldName])}", expected "${expectedValue}"`,
+      );
+    }
+  }
+}
+
+/**
  * Executes one clean-room smoke chain iteration.
  * @param {{
  *   mode: string;
@@ -514,6 +679,106 @@ function runSmokeIteration(options) {
     install,
     steps,
   };
+}
+
+/**
+ * Runs one installed-package remote-api doctor/verify rehearsal against a local stub server.
+ * @param {{
+ *   mode: string;
+ *   workingRoot: string;
+ *   installAssets: {repositoryRoot: string; tarballPath: string | null};
+ * }} options Scenario options.
+ * @returns {Promise<Record<string, unknown>>}
+ */
+async function runRemoteApiSmokeScenario(options) {
+  const scenarioRoot = resolve(options.workingRoot, `remote-api-smoke-${options.mode}`);
+  const repositoryPath = resolve(scenarioRoot, 'target-repo');
+  const homePath = resolve(scenarioRoot, 'home');
+  const runtimeEnv = buildIsolatedRuntimeEnv(homePath);
+  initializeCleanroomRepository(repositoryPath, `cleanroom-remote-api-${options.mode}`);
+  const install = installCleanroomPackage({
+    mode: options.mode,
+    repositoryPath,
+    runtimeEnv,
+    installAssets: options.installAssets,
+  });
+
+  const server = await startRemoteApiSmokeServerProcess();
+  try {
+    const configPath = writeRemoteApiSmokeConfig(repositoryPath, {
+      openAiEndpoint: server.openAiEndpoint,
+      anthropicEndpoint: server.anthropicEndpoint,
+    });
+    const scenarioEnv = {
+      ...runtimeEnv,
+      OPENAI_API_KEY: REMOTE_API_SMOKE_OPENAI_KEY,
+      ANTHROPIC_API_KEY: REMOTE_API_SMOKE_ANTHROPIC_KEY,
+    };
+
+    const doctorStep = runCleanroomCliCommand({
+      repositoryPath,
+      runtimeEnv: scenarioEnv,
+      args: ['--output', 'json', 'doctor', '--adapters', '--fix'],
+      label: `doctor(remote-api/${options.mode})`,
+    });
+    const doctorPayload = parseJsonOutput(doctorStep.stdout, `doctor(remote-api/${options.mode})`);
+    assertCliSuccessPayload(doctorPayload, `doctor(remote-api/${options.mode})`);
+    const doctorDiagnosticsPath = resolveArtifactPath(
+      doctorPayload,
+      'doctor_diagnostics',
+      `doctor(remote-api/${options.mode})`,
+    );
+    const doctorDiagnostics = JSON.parse(readFileSync(doctorDiagnosticsPath, 'utf8'));
+    assertRemoteApiVerificationPayload(
+      doctorDiagnostics.verification,
+      `doctor(remote-api/${options.mode})`,
+    );
+
+    const verifyStep = runCleanroomCliCommand({
+      repositoryPath,
+      runtimeEnv: scenarioEnv,
+      args: ['--output', 'json', 'verify', '--adapters'],
+      label: `verify(remote-api/${options.mode})`,
+    });
+    const verifyPayload = parseJsonOutput(verifyStep.stdout, `verify(remote-api/${options.mode})`);
+    assertCliSuccessPayload(verifyPayload, `verify(remote-api/${options.mode})`);
+    const verifyDiagnosticsPath = resolveArtifactPath(
+      verifyPayload,
+      'verify_diagnostics',
+      `verify(remote-api/${options.mode})`,
+    );
+    const verifyDiagnostics = JSON.parse(readFileSync(verifyDiagnosticsPath, 'utf8'));
+    assertRemoteApiVerificationPayload(
+      verifyDiagnostics.verification,
+      `verify(remote-api/${options.mode})`,
+    );
+
+    return {
+      mode: options.mode,
+      status: 'passed',
+      repositoryPath,
+      configPath,
+      install,
+      doctor: {
+        command: doctorStep.command,
+        durationMs: doctorStep.durationMs,
+        diagnosticsPath: doctorDiagnosticsPath,
+        verificationStatus: doctorDiagnostics.verification?.overallStatus ?? null,
+      },
+      verify: {
+        command: verifyStep.command,
+        durationMs: verifyStep.durationMs,
+        diagnosticsPath: verifyDiagnosticsPath,
+        verificationStatus: verifyDiagnostics.verification?.overallStatus ?? null,
+      },
+      endpoints: {
+        openAi: server.openAiEndpoint,
+        anthropic: server.anthropicEndpoint,
+      },
+    };
+  } finally {
+    await server.close();
+  }
 }
 
 /**
@@ -1139,160 +1404,184 @@ function writeReport(reportPath, reportPayload) {
   writeFileSync(absolutePath, `${JSON.stringify(reportPayload, null, 2)}\n`, 'utf8');
 }
 
-const options = parseCliOptions();
-const createdTempRoot = mkdtempSync(resolve(tmpdir(), 'repo-ai-governor-cleanroom-'));
-const installAssets = prepareInstallAssets(options.modes, options.distributionMode);
+async function main() {
+  const options = parseCliOptions();
+  const createdTempRoot = mkdtempSync(resolve(tmpdir(), 'repo-ai-governor-cleanroom-'));
+  const installAssets = prepareInstallAssets(options.modes, options.distributionMode);
 
-let overallStatus = 'passed';
-let overallFailure = null;
-/** @type {Array<Record<string, unknown>>} */
-const modeResults = [];
-/** @type {Record<string, unknown> | null} */
-let workspaceSwitchRollback = null;
-/** @type {Record<string, unknown> | null} */
-let readOnlyAttachPrecheck = null;
-/** @type {Array<Record<string, unknown>>} */
-let pluginEnabledMemoryProviderScenarios = [];
-/** @type {Array<Record<string, unknown>>} */
-let serviceHostMemoryProviderScenarios = [];
+  let overallStatus = 'passed';
+  let overallFailure = null;
+  /** @type {Array<Record<string, unknown>>} */
+  const modeResults = [];
+  /** @type {Record<string, unknown> | null} */
+  let workspaceSwitchRollback = null;
+  /** @type {Record<string, unknown> | null} */
+  let readOnlyAttachPrecheck = null;
+  /** @type {Array<Record<string, unknown>>} */
+  let pluginEnabledMemoryProviderScenarios = [];
+  /** @type {Array<Record<string, unknown>>} */
+  let serviceHostMemoryProviderScenarios = [];
+  /** @type {Array<Record<string, unknown>>} */
+  const remoteApiScenarios = [];
 
-try {
-  for (const mode of options.modes) {
-    const modeRoot = resolve(createdTempRoot, mode);
-    mkdirSync(modeRoot, { recursive: true });
+  try {
+    for (const mode of options.modes) {
+      const modeRoot = resolve(createdTempRoot, mode);
+      mkdirSync(modeRoot, { recursive: true });
 
-    /** @type {Array<Record<string, unknown>>} */
-    const iterationResults = [];
-    for (let iteration = 1; iteration <= options.iterations; iteration += 1) {
-      const iterationResult = runSmokeIteration({
+      /** @type {Array<Record<string, unknown>>} */
+      const iterationResults = [];
+      for (let iteration = 1; iteration <= options.iterations; iteration += 1) {
+        const iterationResult = runSmokeIteration({
+          mode,
+          iteration,
+          workingRoot: modeRoot,
+          installAssets,
+        });
+        iterationResults.push(iterationResult);
+        gateInfo(
+          GATE_NAME,
+          `mode=${mode} iteration=${iteration}/${options.iterations} passed chain=${DEFAULT_REQUIRED_CHAIN.join(
+            '->',
+          )}`,
+        );
+      }
+
+      modeResults.push({
         mode,
-        iteration,
-        workingRoot: modeRoot,
-        installAssets,
+        status: 'passed',
+        passedIterations: iterationResults.length,
+        iterations: iterationResults,
       });
-      iterationResults.push(iterationResult);
-      gateInfo(
-        GATE_NAME,
-        `mode=${mode} iteration=${iteration}/${options.iterations} passed chain=${DEFAULT_REQUIRED_CHAIN.join(
-          '->',
-        )}`,
-      );
     }
 
-    modeResults.push({
-      mode,
-      status: 'passed',
-      passedIterations: iterationResults.length,
-      iterations: iterationResults,
-    });
-  }
-
-  workspaceSwitchRollback = runWorkspaceSwitchRollbackScenario({
-    mode: options.modes.includes(WORKSPACE_ROLLBACK_BASELINE_MODE)
-      ? WORKSPACE_ROLLBACK_BASELINE_MODE
-      : options.modes[0],
-    workingRoot: createdTempRoot,
-    installAssets,
-  });
-  gateInfo(GATE_NAME, 'workspace switch rollback scenario passed.');
-
-  readOnlyAttachPrecheck = runReadOnlyAttachPrecheck({
-    mode: options.modes.includes(READ_ONLY_ATTACH_PRECHECK_MODE)
-      ? READ_ONLY_ATTACH_PRECHECK_MODE
-      : options.modes[0],
-    workingRoot: createdTempRoot,
-    installAssets,
-  });
-  gateInfo(GATE_NAME, 'read-only attach precheck passed.');
-
-  serviceHostMemoryProviderScenarios = options.modes.map((mode) => {
-    const scenario = runServiceHostMemoryProviderScenario({
-      mode,
+    workspaceSwitchRollback = runWorkspaceSwitchRollbackScenario({
+      mode: options.modes.includes(WORKSPACE_ROLLBACK_BASELINE_MODE)
+        ? WORKSPACE_ROLLBACK_BASELINE_MODE
+        : options.modes[0],
       workingRoot: createdTempRoot,
       installAssets,
-      distributionMode: options.distributionMode,
     });
-    gateInfo(
-      GATE_NAME,
-      `service-host memory provider scenario passed for mode=${mode} distribution_mode=${options.distributionMode}.`,
-    );
-    return scenario;
-  });
+    gateInfo(GATE_NAME, 'workspace switch rollback scenario passed.');
 
-  if (options.distributionMode === PLUGIN_ENABLED_DISTRIBUTION_MODE) {
-    pluginEnabledMemoryProviderScenarios = options.modes.map((mode) => {
-      const scenario = runPluginEnabledMemoryProviderScenario({
+    readOnlyAttachPrecheck = runReadOnlyAttachPrecheck({
+      mode: options.modes.includes(READ_ONLY_ATTACH_PRECHECK_MODE)
+        ? READ_ONLY_ATTACH_PRECHECK_MODE
+        : options.modes[0],
+      workingRoot: createdTempRoot,
+      installAssets,
+    });
+    gateInfo(GATE_NAME, 'read-only attach precheck passed.');
+
+    serviceHostMemoryProviderScenarios = options.modes.map((mode) => {
+      const scenario = runServiceHostMemoryProviderScenario({
+        mode,
+        workingRoot: createdTempRoot,
+        installAssets,
+        distributionMode: options.distributionMode,
+      });
+      gateInfo(
+        GATE_NAME,
+        `service-host memory provider scenario passed for mode=${mode} distribution_mode=${options.distributionMode}.`,
+      );
+      return scenario;
+    });
+
+    for (const mode of options.modes) {
+      const scenario = await runRemoteApiSmokeScenario({
         mode,
         workingRoot: createdTempRoot,
         installAssets,
       });
-      gateInfo(GATE_NAME, `plugin-enabled memory provider scenario passed for mode=${mode}.`);
-      return scenario;
-    });
+      gateInfo(GATE_NAME, `remote-api smoke scenario passed for mode=${mode}.`);
+      remoteApiScenarios.push(scenario);
+    }
+
+    if (options.distributionMode === PLUGIN_ENABLED_DISTRIBUTION_MODE) {
+      pluginEnabledMemoryProviderScenarios = options.modes.map((mode) => {
+        const scenario = runPluginEnabledMemoryProviderScenario({
+          mode,
+          workingRoot: createdTempRoot,
+          installAssets,
+        });
+        gateInfo(GATE_NAME, `plugin-enabled memory provider scenario passed for mode=${mode}.`);
+        return scenario;
+      });
+    }
+  } catch (error) {
+    overallStatus = 'failed';
+    overallFailure = error instanceof Error ? error.message : String(error);
   }
-} catch (error) {
-  overallStatus = 'failed';
-  overallFailure = error instanceof Error ? error.message : String(error);
-}
 
-const reportPayload = {
-  reportType: 'cleanroom_local_install_verification_v1',
-  status: overallStatus,
-  generatedAt: new Date().toISOString(),
-  repositoryRoot: process.cwd(),
-  selectedModes: options.modes,
-  selectedModeCount: options.modes.length,
-  iterationsPerMode: options.iterations,
-  distributionMode: options.distributionMode,
-  requiredCommandChain: DEFAULT_REQUIRED_CHAIN,
-  modeResults,
-  workspaceSwitchRollback,
-  readOnlyAttachPrecheck,
-  serviceHostMemoryProviderScenarios,
-  pluginEnabledMemoryProviderScenarios,
-  stage9aHardExit: {
-    requiredModeMinimum: 2,
+  const reportPayload = {
+    reportType: 'cleanroom_local_install_verification_v2',
+    status: overallStatus,
+    generatedAt: new Date().toISOString(),
+    repositoryRoot: process.cwd(),
+    selectedModes: options.modes,
     selectedModeCount: options.modes.length,
-    perModeIterationsMinimum: 3,
-    configuredIterations: options.iterations,
-    commandChain: DEFAULT_REQUIRED_CHAIN,
-    passed: overallStatus === 'passed' && options.modes.length >= 2 && options.iterations >= 3,
-  },
-  notes: {
-    tgzModeSelected: options.modes.includes('tgz'),
-    pluginEnabledDistribution: options.distributionMode === PLUGIN_ENABLED_DISTRIBUTION_MODE,
-    cleanupPolicy: options.keepTemp || overallStatus === 'failed' ? 'keep_temp' : 'remove_temp',
-  },
-};
+    iterationsPerMode: options.iterations,
+    distributionMode: options.distributionMode,
+    requiredCommandChain: DEFAULT_REQUIRED_CHAIN,
+    modeResults,
+    workspaceSwitchRollback,
+    readOnlyAttachPrecheck,
+    serviceHostMemoryProviderScenarios,
+    remoteApiScenarios,
+    pluginEnabledMemoryProviderScenarios,
+    stage9aHardExit: {
+      requiredModeMinimum: 2,
+      selectedModeCount: options.modes.length,
+      perModeIterationsMinimum: 3,
+      configuredIterations: options.iterations,
+      commandChain: DEFAULT_REQUIRED_CHAIN,
+      passed: overallStatus === 'passed' && options.modes.length >= 2 && options.iterations >= 3,
+    },
+    notes: {
+      tgzModeSelected: options.modes.includes('tgz'),
+      pluginEnabledDistribution: options.distributionMode === PLUGIN_ENABLED_DISTRIBUTION_MODE,
+      cleanupPolicy: options.keepTemp || overallStatus === 'failed' ? 'keep_temp' : 'remove_temp',
+    },
+  };
 
-if (overallFailure) {
-  reportPayload.errorMessage = overallFailure;
-}
+  if (overallFailure) {
+    reportPayload.errorMessage = overallFailure;
+  }
 
-try {
-  writeReport(options.outputPath, reportPayload);
-  gateInfo(GATE_NAME, `report generated at ${options.outputPath}`);
-} catch (error) {
-  const message = error instanceof Error ? error.message : String(error);
-  gateFail(GATE_NAME, `failed to persist report: ${message}`);
+  try {
+    writeReport(options.outputPath, reportPayload);
+    gateInfo(GATE_NAME, `report generated at ${options.outputPath}`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    gateFail(GATE_NAME, `failed to persist report: ${message}`);
+    process.exit(1);
+  }
+
+  if (!options.keepTemp && overallStatus === 'passed') {
+    rmSync(createdTempRoot, { recursive: true, force: true });
+  }
+
+  if (installAssets.tarballPath && existsSync(installAssets.tarballPath)) {
+    rmSync(installAssets.tarballPath, { force: true });
+  }
+
+  if (overallStatus === 'passed') {
+    gatePass(
+      GATE_NAME,
+      `clean-room validation passed. modes=${options.modes.join(',')} iterations=${options.iterations}`,
+    );
+    return;
+  }
+
+  gateFail(GATE_NAME, overallFailure ?? 'clean-room validation failed.');
+  gateInfo(GATE_NAME, `temp artifacts kept at ${createdTempRoot}`);
   process.exit(1);
 }
 
-if (!options.keepTemp && overallStatus === 'passed') {
-  rmSync(createdTempRoot, { recursive: true, force: true });
-}
-
-if (installAssets.tarballPath && existsSync(installAssets.tarballPath)) {
-  rmSync(installAssets.tarballPath, { force: true });
-}
-
-if (overallStatus === 'passed') {
-  gatePass(
-    GATE_NAME,
-    `clean-room validation passed. modes=${options.modes.join(',')} iterations=${options.iterations}`,
-  );
-} else {
-  gateFail(GATE_NAME, overallFailure ?? 'clean-room validation failed.');
-  gateInfo(GATE_NAME, `temp artifacts kept at ${createdTempRoot}`);
+try {
+  await main();
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  gateFail(GATE_NAME, message);
   process.exit(1);
 }

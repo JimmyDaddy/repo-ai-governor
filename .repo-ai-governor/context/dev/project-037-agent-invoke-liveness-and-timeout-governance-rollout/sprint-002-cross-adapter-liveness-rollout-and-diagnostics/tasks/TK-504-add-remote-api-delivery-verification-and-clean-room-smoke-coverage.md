@@ -1,7 +1,7 @@
 # TK-504 add remote-api delivery verification and clean-room smoke coverage
 
-- Status: planned
-- Date: 2026-04-02
+- Status: completed
+- Date: 2026-04-03
 - Owner: AI-Agent
 - Priority: P1
 - Project: `project-037-agent-invoke-liveness-and-timeout-governance-rollout`
@@ -43,3 +43,4 @@
 ## 6. 执行记录
 
 1. 2026-04-02：任务创建，状态初始化为 `planned`；从 `TK-501` baseline 拆分 delivery verification / clean-room smoke follow-through。
+2. 2026-04-03：完成 release verification / clean-room smoke 收口：新增 remote-api stub runtime 与独立 server entry，`verify-local-distribution.js` 现已执行 dist-binary remote-api rehearsal，`verify-cleanroom-local-install.js` 现已覆盖 `path/link/tgz` remote-api rehearsal；playbook 文档、`DA-504` 与 delivery registry 已同步，`pnpm run build`、两条 release verify 命令通过，任务标记 `completed`。

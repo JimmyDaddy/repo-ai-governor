@@ -15,6 +15,7 @@ import {
 import {
   type OrchestrationAppendSessionMessageRequest,
   type OrchestrationAppendSessionMessageResponse,
+  type OrchestrationExecutionLivenessSnapshot,
   OrchestrationExecutionStatus,
   type OrchestrationExecutionSummary,
   type OrchestrationListExecutionsFilter,
@@ -141,6 +142,9 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
             sessionMainSupervisorRuntime: dependencies.sessionMainSupervisorRuntime,
           }
         : {}),
+      publishExecutionEvent: async (request) => {
+        await this.publishEvent(request);
+      },
       nowProvider: this.nowProvider,
     });
   }
@@ -505,6 +509,7 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
   public async publishEvent(request: LocalOrchestrationServicePublishEventRequest): Promise<void> {
     await this.ensureExecutionRecordsLoaded();
     const record = this.getExecutionRecordOrThrow(request.executionId);
+    const nextStatus = request.status ?? record.summary.status;
     const timestamp = this.toTimestamp();
     const sequence = (record.summary.latestEventSequence ?? 0) + 1;
     const event: OrchestrationServiceEvent = {
@@ -514,7 +519,7 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
       type: request.type,
       executionId: record.summary.executionId,
       executionSessionId: record.summary.executionSessionId,
-      status: request.status,
+      status: nextStatus,
       timestamp,
       taskId: record.summary.taskId,
       projectId: record.summary.projectId,
@@ -523,12 +528,17 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
       ...(request.stageId ? { stageId: request.stageId } : {}),
       ...(request.artifactId ? { artifactId: request.artifactId } : {}),
       ...(request.artifactPath ? { artifactPath: request.artifactPath } : {}),
+      ...(request.livenessSnapshot
+        ? {
+            livenessSnapshot: this.cloneExecutionLivenessSnapshot(request.livenessSnapshot),
+          }
+        : {}),
     };
     record.events.push(event);
     record.summary = {
       ...record.summary,
-      status: request.status,
-      pendingHitl: request.status === OrchestrationExecutionStatus.HITL_REQUIRED,
+      status: nextStatus,
+      pendingHitl: nextStatus === OrchestrationExecutionStatus.HITL_REQUIRED,
       lastEventAt: timestamp,
       latestEventType: request.type,
       latestEventSequence: sequence,
@@ -536,6 +546,7 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
       ...(request.stageId ? { currentStageId: request.stageId } : {}),
       ...(request.artifactId ? { latestArtifactId: request.artifactId } : {}),
       ...(request.artifactPath ? { latestArtifactPath: request.artifactPath } : {}),
+      ...this.buildExecutionLivenessSummaryPatch(request.livenessSnapshot),
       updatedAt: timestamp,
     };
     await this.persistExecutionRecord(record);
@@ -710,6 +721,54 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
         : {}),
       ...(summary.recoveredNextNodeIds
         ? { recoveredNextNodeIds: [...summary.recoveredNextNodeIds] }
+        : {}),
+    };
+  }
+
+  private buildExecutionLivenessSummaryPatch(
+    snapshot: OrchestrationExecutionLivenessSnapshot | undefined,
+  ): Partial<OrchestrationExecutionSummary> {
+    if (!snapshot) {
+      return {};
+    }
+
+    return {
+      ...(snapshot.status ? { livenessStatus: snapshot.status } : {}),
+      ...(snapshot.suspectReasonCodes?.[0]
+        ? { livenessSuspectReasonCode: snapshot.suspectReasonCodes[0] }
+        : {}),
+      ...(snapshot.lastTransportActivityAt
+        ? { lastTransportActivityAt: snapshot.lastTransportActivityAt }
+        : {}),
+      ...(snapshot.lastSemanticProgressAt
+        ? { lastSemanticProgressAt: snapshot.lastSemanticProgressAt }
+        : {}),
+      ...(snapshot.latestEventAt ? { latestLivenessEventAt: snapshot.latestEventAt } : {}),
+      ...(snapshot.latestEventType ? { latestLivenessEventType: snapshot.latestEventType } : {}),
+      ...(snapshot.latestTextPreview
+        ? { latestLivenessTextPreview: snapshot.latestTextPreview }
+        : {}),
+      ...(typeof snapshot.partialOutputPreserved === 'boolean'
+        ? { partialOutputPreserved: snapshot.partialOutputPreserved }
+        : {}),
+      ...(snapshot.transportKind ? { transportKind: snapshot.transportKind } : {}),
+      ...(snapshot.vendorBindingKind ? { vendorBindingKind: snapshot.vendorBindingKind } : {}),
+      ...(snapshot.remoteRequestId === null
+        ? { remoteRequestId: null }
+        : snapshot.remoteRequestId
+          ? { remoteRequestId: snapshot.remoteRequestId }
+          : {}),
+      ...(snapshot.cancelMechanism ? { cancelMechanism: snapshot.cancelMechanism } : {}),
+    };
+  }
+
+  private cloneExecutionLivenessSnapshot(
+    snapshot: OrchestrationExecutionLivenessSnapshot,
+  ): OrchestrationExecutionLivenessSnapshot {
+    return {
+      ...snapshot,
+      ...(snapshot.suspectReasonCodes
+        ? { suspectReasonCodes: [...snapshot.suspectReasonCodes] }
         : {}),
     };
   }

@@ -8,6 +8,7 @@ import type {
   MemoryProviderRuntimeMode,
 } from '@repo-ai-governor/memory-provider-registry';
 import type {
+  OrchestrationExecutionLivenessSnapshot,
   OrchestrationExecutionStatus,
   OrchestrationServiceEventType,
   OrchestrationServiceHostKind,
@@ -48,11 +49,12 @@ export interface LocalOrchestrationServiceStartExecutionRuntimeContext {
 export interface LocalOrchestrationServicePublishEventRequest {
   executionId: string;
   type: OrchestrationServiceEventType;
-  status: OrchestrationExecutionStatus;
+  status?: OrchestrationExecutionStatus;
   message: string;
   stageId?: string;
   artifactId?: string;
   artifactPath?: string;
+  livenessSnapshot?: OrchestrationExecutionLivenessSnapshot;
 }
 
 export interface LocalOrchestrationServiceSaveCheckpointRequest

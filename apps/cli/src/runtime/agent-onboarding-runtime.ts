@@ -88,6 +88,7 @@ export class CliAgentOnboardingRuntime {
     nextActions: string[];
     enabledTools: AdapterSurface[];
     adaptersConfig: AdaptersConfig;
+    verification?: CliAdapterVerificationResolution;
     dryRun: boolean;
     overwrite: boolean;
     singleToolAllRoles: boolean;
@@ -100,6 +101,11 @@ export class CliAgentOnboardingRuntime {
       command_name: options.commandName,
       preset_id: options.presetId ?? null,
       enabled_tools: [...options.enabledTools],
+      tool_transport_matrix: this.createToolTransportMatrixPayload({
+        enabledTools: options.enabledTools,
+        adaptersConfig: options.adaptersConfig,
+        verification: options.verification,
+      }),
       role_bindings: options.adaptersConfig.roles.map((role) => ({
         role_id: role.roleId,
         role_profile_id: role.roleProfileId,
@@ -130,6 +136,11 @@ export class CliAgentOnboardingRuntime {
     return {
       execution_id: options.executionId,
       summary: options.verification.overallStatus,
+      tool_transport_matrix: this.createToolTransportMatrixPayload({
+        enabledTools: (options.adaptersConfig.tools ?? []).map((tool) => tool.toolId),
+        adaptersConfig: options.adaptersConfig,
+        verification: options.verification,
+      }),
       tool_matrix: options.verification.roleEvaluations.map((roleEvaluation) => ({
         tool: roleEvaluation.selectedSurface ?? roleEvaluation.primarySurface,
         surface: roleEvaluation.selectedSurface ?? roleEvaluation.primarySurface,
@@ -159,6 +170,58 @@ export class CliAgentOnboardingRuntime {
         binding_status: roleEvaluation.status,
       })),
     };
+  }
+
+  private createToolTransportMatrixPayload(options: {
+    enabledTools: AdapterSurface[];
+    adaptersConfig: AdaptersConfig;
+    verification?: CliAdapterVerificationResolution;
+  }): Array<Record<string, unknown>> {
+    const configuredToolById = new Map(
+      (options.adaptersConfig.tools ?? []).map((tool) => [tool.toolId, tool]),
+    );
+    const verificationToolById = new Map(
+      (options.verification?.tools ?? []).map((tool) => [tool.toolId, tool]),
+    );
+
+    return options.enabledTools.map((toolId) => {
+      const configuredTool = configuredToolById.get(toolId);
+      const verificationTool = verificationToolById.get(toolId);
+      return {
+        tool_id: toolId,
+        enabled: configuredTool?.enabled ?? true,
+        configured_availability: configuredTool?.availability ?? null,
+        availability_status: verificationTool?.availabilityStatus ?? null,
+        transport:
+          configuredTool?.transport ?? verificationTool?.healthCheck?.transportKind ?? null,
+        remote_api_candidate: configuredTool?.remoteApi
+          ? {
+              provider: configuredTool.remoteApi.provider,
+              vendor_binding: configuredTool.remoteApi.vendorBinding ?? null,
+              model: configuredTool.remoteApi.model,
+              credential_env_var: configuredTool.remoteApi.credentialEnvVar ?? null,
+              credential_ref: configuredTool.remoteApi.credentialRef ?? null,
+              allow_provider_local_config:
+                configuredTool.remoteApi.allowProviderLocalConfig ?? false,
+              endpoint: configuredTool.remoteApi.endpoint ?? null,
+              request_timeout_ms: configuredTool.remoteApi.requestTimeoutMs ?? null,
+              max_retries: configuredTool.remoteApi.maxRetries ?? null,
+              discovery_mode: 'read_only',
+              mutation_scope: 'manual_only',
+            }
+          : null,
+        probe_truth: verificationTool?.healthCheck
+          ? {
+              transport_kind: verificationTool.healthCheck.transportKind,
+              provider_kind: verificationTool.healthCheck.providerKind,
+              vendor_binding_kind: verificationTool.healthCheck.vendorBindingKind,
+              model: verificationTool.healthCheck.model,
+              credential_source: verificationTool.healthCheck.credentialSource,
+              endpoint_source: verificationTool.healthCheck.endpointSource,
+            }
+          : null,
+      };
+    });
   }
 
   private buildCandidateAdaptersConfig(options: {

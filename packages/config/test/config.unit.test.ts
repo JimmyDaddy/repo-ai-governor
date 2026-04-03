@@ -286,11 +286,11 @@ describe('config unit', () => {
     expect(() => validator.validateOrThrow(invalidConfig)).toThrowError(ConfigError);
   });
 
-  it('rejects remote_api credentialRef until runtime resolution support exists', () => {
+  it('accepts remote_api credentialRef and provider-local discovery flags', () => {
     const validator = new SchemaValidator();
     const baseConfig = createConfigFixture();
     const baseAdapters = requireAdaptersFixture(baseConfig);
-    const invalidConfig: GovernorConfig = {
+    const configWithCredentialRef: GovernorConfig = {
       ...baseConfig,
       adapters: {
         ...baseAdapters,
@@ -303,13 +303,20 @@ describe('config unit', () => {
               vendorBinding: AdapterVendorBindingKind.OPENAI_RESPONSES,
               model: 'gpt-5',
               credentialRef: 'secret://openai/api-key',
+              allowProviderLocalConfig: true,
             },
           },
         ],
       },
     };
 
-    expect(() => validator.validateOrThrow(invalidConfig)).toThrowError(ConfigError);
+    const validatedConfig = validator.validateOrThrow(configWithCredentialRef);
+    const codexTool = validatedConfig.adapters?.tools?.find(
+      (tool) => tool.toolId === AdapterSurface.CODEX,
+    );
+
+    expect(codexTool?.remoteApi?.credentialRef).toBe('secret://openai/api-key');
+    expect(codexTool?.remoteApi?.allowProviderLocalConfig).toBe(true);
   });
 
   it('rejects local-model tool without local runtime config', () => {
