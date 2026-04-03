@@ -19,6 +19,7 @@ export interface AgentCliExecRunnerRequest {
   onStdoutChunk?: (chunk: string) => void;
   onStderrChunk?: (chunk: string) => void;
   onGracefulInterruptStart?: (cancelMechanism: 'process_signal' | 'abort_signal') => void;
+  onHardTerminateStart?: (cancelMechanism: 'process_signal' | 'abort_signal') => void;
 }
 
 /**

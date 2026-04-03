@@ -1,3 +1,7 @@
+import { chmod, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
 import {
   AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY,
   AgentCancellationReason,
@@ -686,6 +690,77 @@ describe('codex-agent-adapter smoke', () => {
     expect(invokeResult.output.responseText).toBe('shared response');
   });
 
+  it('projects cli_exec invoke liveness metadata for Codex token and completion events', async () => {
+    const execRunner = vi.fn<CodexExecRunner>().mockResolvedValue({
+      stdout: [
+        '{"type":"thread.started","thread_id":"thread-1"}',
+        '{"type":"turn.started"}',
+        '{"type":"item.updated","item":{"id":"item-1","type":"agent_message","text":"Review"}}',
+        '{"type":"item.completed","item":{"id":"item-1","type":"agent_message","text":"Review findings"}}',
+        '{"type":"turn.completed","usage":{"input_tokens":11,"output_tokens":7}}',
+      ].join('\n'),
+      stderr: '',
+      exitCode: 0,
+      signal: null,
+      elapsedMs: 12,
+    });
+    const adapter = new CodexAgentAdapter({
+      executionMode: CodexAgentAdapterExecutionMode.CLI_EXEC,
+      execRunner,
+      currentWorkingDirectory: process.cwd(),
+    });
+
+    const payloads: Array<{ type: AgentStreamEventType; payload: Record<string, unknown> }> = [];
+    for await (const event of adapter.streamEvents(createInvokeRequest())) {
+      payloads.push({
+        type: event.eventType,
+        payload: event.payload,
+      });
+    }
+
+    expect(payloads.map((event) => event.type)).toEqual([
+      AgentStreamEventType.STATUS,
+      AgentStreamEventType.STATUS,
+      AgentStreamEventType.TOKEN,
+      AgentStreamEventType.TOKEN,
+      AgentStreamEventType.COMPLETED,
+    ]);
+    expect(payloads[1]?.payload).toEqual(
+      expect.objectContaining({
+        transportKind: 'cli_exec',
+        invokeLiveness: expect.objectContaining({
+          status: 'running',
+          transportKind: 'cli_exec',
+          partialOutputPreserved: false,
+          cancelMechanism: 'none',
+          lastTransportActivityAt: expect.any(String),
+        }),
+      }),
+    );
+    expect(payloads[3]?.payload).toEqual(
+      expect.objectContaining({
+        accumulatedText: 'Review findings',
+        invokeLiveness: expect.objectContaining({
+          status: 'running',
+          lastTransportActivityAt: expect.any(String),
+          lastSemanticProgressAt: expect.any(String),
+          latestTextPreview: 'Review findings',
+          transportKind: 'cli_exec',
+        }),
+      }),
+    );
+    expect(payloads[4]?.payload).toEqual(
+      expect.objectContaining({
+        responseText: 'Review findings',
+        invokeLiveness: expect.objectContaining({
+          status: 'completed',
+          lastTerminalSignalAt: expect.any(String),
+          partialOutputPreserved: false,
+        }),
+      }),
+    );
+  });
+
   it('reuses one repository-review cli_exec invocation across streamEvents and invokeStage with the elevated timeout budget', async () => {
     const abortController = new AbortController();
     const execRunner = vi.fn<CodexExecRunner>().mockImplementation(async (request) => {
@@ -930,7 +1005,281 @@ describe('codex-agent-adapter smoke', () => {
     expect(details).toContain(
       'Codex repository review is still running (30s elapsed); waiting for CLI output.',
     );
+    expect(details).toContain(
+      'Codex invoke looks transport-idle; waiting for last real CLI output before escalating.',
+    );
     expect(detailOrigins).toContain('system');
+  });
+
+  it('emits semantic stall suspect when codex transport keeps moving without semantic progress', async () => {
+    vi.useFakeTimers();
+    let resolveExecution: ((result: Awaited<ReturnType<CodexExecRunner>>) => void) | null = null;
+    let heartbeatTimer: NodeJS.Timeout | null = null;
+    const execRunner = vi.fn<CodexExecRunner>().mockImplementation(async (request) => {
+      request.onStdoutChunk?.('{"type":"thread.started","thread_id":"thread-1"}\n');
+      request.onStdoutChunk?.('{"type":"turn.started"}\n');
+      request.onStderrChunk?.('stderr heartbeat line\n');
+      heartbeatTimer = setInterval(() => {
+        request.onStderrChunk?.('stderr heartbeat line\n');
+      }, 1000);
+      return await new Promise((resolve) => {
+        resolveExecution = resolve;
+      });
+    });
+    const adapter = new CodexAgentAdapter({
+      executionMode: CodexAgentAdapterExecutionMode.CLI_EXEC,
+      execRunner,
+      currentWorkingDirectory: process.cwd(),
+    });
+
+    const statusesPromise = (async () => {
+      const statuses: string[] = [];
+      for await (const event of adapter.streamEvents({
+        processId: 'process-semantic-stall-1',
+        executionId: 'execution-semantic-stall-1',
+        stageId: 'stage-session-main-answer',
+        routeKey: 'session.main.answer',
+        agentInvocationTimeoutMs: 30000,
+        input: {
+          prompt: 'continue',
+        },
+      })) {
+        if (typeof event.payload.status === 'string') {
+          statuses.push(event.payload.status);
+        }
+      }
+      return statuses;
+    })();
+
+    await vi.advanceTimersByTimeAsync(19000);
+    if (heartbeatTimer) {
+      clearInterval(heartbeatTimer);
+    }
+    resolveExecution?.({
+      stdout: [
+        '{"type":"item.completed","item":{"id":"item-1","type":"agent_message","text":"final answer"}}',
+        '{"type":"turn.completed","usage":{"input_tokens":4,"output_tokens":2}}',
+      ].join('\n'),
+      stderr: 'stderr heartbeat line\n',
+      exitCode: 0,
+      signal: null,
+      elapsedMs: 19000,
+    });
+
+    const statuses = await statusesPromise;
+    vi.useRealTimers();
+
+    expect(statuses).toContain('semantic_stall_suspect');
+  });
+
+  it('preserves partial cli_exec output and emits graceful plus hard termination states when codex times out', async () => {
+    const adapter = new CodexAgentAdapter({
+      executionMode: CodexAgentAdapterExecutionMode.CLI_EXEC,
+      maxRetryAttempts: 1,
+      execRunner: async (request) => {
+        request.onStdoutChunk?.('{"type":"thread.started","thread_id":"thread-1"}\n');
+        request.onStdoutChunk?.('{"type":"turn.started"}\n');
+        request.onStdoutChunk?.(
+          '{"type":"item.updated","item":{"id":"item-1","type":"agent_message","text":"partial"}}\n',
+        );
+        request.onGracefulInterruptStart?.('process_signal');
+        request.onHardTerminateStart?.('process_signal');
+        throw new RuntimeError(
+          GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
+          'Codex invoke timed out after 30ms and exceeded graceful interrupt window.',
+          {
+            surface: 'codex',
+            operation: 'invoke',
+            timeoutMs: 30,
+            hardTerminated: true,
+          },
+        );
+      },
+    });
+
+    const streamEventsPromise = (async () => {
+      const events: Array<{ type: AgentStreamEventType; payload: Record<string, unknown> }> = [];
+      for await (const event of adapter.streamEvents(createStreamRequest())) {
+        events.push({
+          type: event.eventType,
+          payload: event.payload,
+        });
+      }
+      return events;
+    })();
+    const invokeErrorPromise = adapter
+      .invokeStage(createInvokeRequest())
+      .then(() => null)
+      .catch((error) => error);
+
+    const [events, thrownError] = await Promise.all([streamEventsPromise, invokeErrorPromise]);
+
+    expect(thrownError).toBeInstanceOf(RuntimeError);
+    expect((thrownError as RuntimeError).message).toContain('timed out');
+    expect(events.map((event) => event.type)).toEqual([
+      AgentStreamEventType.STATUS,
+      AgentStreamEventType.STATUS,
+      AgentStreamEventType.TOKEN,
+      AgentStreamEventType.STATUS,
+      AgentStreamEventType.STATUS,
+      AgentStreamEventType.FAILED,
+    ]);
+    expect(events[3]?.payload).toEqual(
+      expect.objectContaining({
+        status: 'graceful_interrupting',
+        invokeLiveness: expect.objectContaining({
+          status: 'graceful_interrupting',
+          cancelMechanism: 'process_signal',
+          suspectReasonCodes: expect.arrayContaining(['invoke_hard_timeout']),
+        }),
+      }),
+    );
+    expect(events[4]?.payload).toEqual(
+      expect.objectContaining({
+        status: 'hard_terminating',
+        invokeLiveness: expect.objectContaining({
+          status: 'hard_terminating',
+          cancelMechanism: 'process_signal',
+          suspectReasonCodes: expect.arrayContaining([
+            'invoke_hard_timeout',
+            'invoke_graceful_interrupt_exceeded',
+          ]),
+        }),
+      }),
+    );
+    expect(events[5]?.payload).toEqual(
+      expect.objectContaining({
+        accumulatedText: 'partial',
+        responseText: 'partial',
+        invokeLiveness: expect.objectContaining({
+          status: 'failed',
+          partialOutputPreserved: true,
+          cancelMechanism: 'process_signal',
+          suspectReasonCodes: expect.arrayContaining([
+            'invoke_hard_timeout',
+            'invoke_graceful_interrupt_exceeded',
+            'invoke_partial_output_preserved',
+          ]),
+        }),
+      }),
+    );
+  });
+
+  it('keeps the hard-terminate fuse alive for real-spawn aborts until the child actually exits', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'codex-real-spawn-abort-'));
+    const commandPath = join(temporaryRoot, 'fake-codex.sh');
+    await writeFile(
+      commandPath,
+      [
+        '#!/bin/sh',
+        'trap "" TERM',
+        'cat >/dev/null',
+        'echo \'{"type":"thread.started","thread_id":"thread-1"}\'',
+        'echo \'{"type":"turn.started"}\'',
+        'echo \'{"type":"item.updated","item":{"id":"item-1","type":"agent_message","text":"partial"}}\'',
+        'while true; do',
+        '  sleep 1',
+        'done',
+      ].join('\n'),
+      'utf8',
+    );
+    await chmod(commandPath, 0o755);
+
+    const abortController = new AbortController();
+    const adapter = new CodexAgentAdapter({
+      executionMode: CodexAgentAdapterExecutionMode.CLI_EXEC,
+      command: commandPath,
+      currentWorkingDirectory: temporaryRoot,
+      requestTimeoutMs: 5000,
+    });
+    const request = {
+      processId: 'process-real-abort-1',
+      executionId: 'execution-real-abort-1',
+      stageId: 'stage-real-abort-1',
+      routeKey: 'codegen',
+      agentInvocationTimeoutMs: 5000,
+      signal: abortController.signal,
+      input: {
+        prompt: 'implement feature',
+      },
+    };
+
+    try {
+      let resolveTokenObserved: (() => void) | null = null;
+      const tokenObservedPromise = new Promise<void>((resolve) => {
+        resolveTokenObserved = resolve;
+      });
+      const streamEventsPromise = (async () => {
+        const events: Array<{ type: AgentStreamEventType; payload: Record<string, unknown> }> = [];
+        for await (const event of adapter.streamEvents(request)) {
+          events.push({
+            type: event.eventType,
+            payload: event.payload,
+          });
+          if (event.eventType === AgentStreamEventType.TOKEN) {
+            resolveTokenObserved?.();
+          }
+        }
+        return events;
+      })();
+      const invokeErrorPromise = adapter
+        .invokeStage(request)
+        .then(() => null)
+        .catch((error) => error);
+
+      await tokenObservedPromise;
+      abortController.abort();
+
+      const [events, thrownError] = await Promise.all([streamEventsPromise, invokeErrorPromise]);
+
+      expect(thrownError).toBeInstanceOf(RuntimeError);
+      expect((thrownError as RuntimeError).message).toContain('aborted');
+      expect(events.map((event) => event.type)).toEqual([
+        AgentStreamEventType.STATUS,
+        AgentStreamEventType.STATUS,
+        AgentStreamEventType.TOKEN,
+        AgentStreamEventType.STATUS,
+        AgentStreamEventType.STATUS,
+        AgentStreamEventType.FAILED,
+      ]);
+      expect(events[3]?.payload).toEqual(
+        expect.objectContaining({
+          status: 'graceful_interrupting',
+          invokeLiveness: expect.objectContaining({
+            status: 'graceful_interrupting',
+            cancelMechanism: 'abort_signal',
+            partialOutputPreserved: true,
+          }),
+        }),
+      );
+      expect(events[4]?.payload).toEqual(
+        expect.objectContaining({
+          status: 'hard_terminating',
+          invokeLiveness: expect.objectContaining({
+            status: 'hard_terminating',
+            cancelMechanism: 'abort_signal',
+            suspectReasonCodes: expect.arrayContaining(['invoke_graceful_interrupt_exceeded']),
+          }),
+        }),
+      );
+      expect(events[5]?.payload).toEqual(
+        expect.objectContaining({
+          accumulatedText: 'partial',
+          responseText: 'partial',
+          invokeLiveness: expect.objectContaining({
+            status: 'failed',
+            cancelMechanism: 'abort_signal',
+            partialOutputPreserved: true,
+            suspectReasonCodes: expect.arrayContaining([
+              'invoke_graceful_interrupt_exceeded',
+              'invoke_partial_output_preserved',
+            ]),
+          }),
+        }),
+      );
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
   });
 
   it('forwards codex raw stdout warnings and stderr lines through stream events', async () => {

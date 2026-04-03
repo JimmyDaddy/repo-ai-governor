@@ -1,6 +1,6 @@
 # TK-487 roll codex onto shared invoke liveness watchdog graceful interrupt and partial output preservation
 
-- Status: active
+- Status: completed
 - Date: 2026-04-03
 - Owner: AI-Agent
 - Priority: P0
@@ -45,3 +45,5 @@
 1. 2026-04-02：任务创建，状态初始化为 `planned`。
 2. 2026-04-03：经 project-037 sprint 台账复核，确认本任务未在 `sprint-001` 内完成闭环；shared baseline 已由 `TK-486` 与后续 rollout 吸收，但 Codex-specific watchdog/graceful-interrupt follow-through 仍需独立收口，因此任务迁移到 `sprint-003-graceful-interrupt-cutover-and-governance-closeout` 并保持 `planned`。
 3. 2026-04-03：随着 `TK-489` 收口、`sprint-002` 完成，本任务被提升为新的 primary implementation surface；当前状态切换为 `active`，下一步将承接 Codex-specific watchdog / graceful interrupt / hard terminate closeout。
+4. 2026-04-03：完成 `Codex` `cli_exec` invoke-liveness 补齐：adapter 现已 materialize `transport_idle_suspect / semantic_stall_suspect / graceful_interrupting / hard_terminating`、partial-output preservation 与 dual-stage terminate fuse，并在 injected exec-runner 与真实 spawn 路径上统一 `cancelMechanism / suspectReasonCodes / latestTextPreview` 语义。
+5. 2026-04-03：定向验证通过：`packages/adapters/codex/test/codex-agent-adapter.smoke.test.ts`、`packages/core-orchestration-service/test/local-orchestration-service-shell.unit.test.ts`、`apps/cli/test/runtime/session-main-supervisor-runtime.test.ts`、`pnpm run build`；任务状态切换为 `completed`，剩余 consumer / governance closeout 交由 `TK-490`、`TK-491` 承接。

@@ -59,6 +59,14 @@ const CODEX_REPOSITORY_REVIEW_TIMEOUT_MS = 600000;
 const CODEX_REPOSITORY_REVIEW_PROGRESS_INTERVAL_MS = 15000;
 const CODEX_DEFAULT_PROBE_CACHE_TTL_MS = 30000;
 const CODEX_CLI_EXECUTION_CACHE_TTL_MS = 30000;
+const CODEX_CLI_WATCHDOG_MIN_INTERVAL_MS = 1000;
+const CODEX_CLI_WATCHDOG_MAX_INTERVAL_MS = 5000;
+const CODEX_CLI_WATCHDOG_MIN_TRANSPORT_IDLE_MS = 5000;
+const CODEX_CLI_WATCHDOG_MAX_TRANSPORT_IDLE_MS = 15000;
+const CODEX_CLI_WATCHDOG_MIN_SEMANTIC_STALL_MS = 8000;
+const CODEX_CLI_WATCHDOG_MAX_SEMANTIC_STALL_MS = 20000;
+const CODEX_CLI_TERMINATE_GRACE_MIN_MS = 250;
+const CODEX_CLI_TERMINATE_GRACE_MAX_MS = 2000;
 const CODEX_EXEC_ARGS = ['exec', '--skip-git-repo-check', '--json', '-'] as const;
 const CODEX_REVIEW_EXEC_ARGS = [
   'exec',
@@ -159,9 +167,18 @@ interface CodexCliExecutionState {
   accumulatedAssistantText: string;
   cliOutputSequence: number;
   startedAtMs: number | null;
+  startedAt: string | null;
+  lastTransportActivityAt: string | null;
+  lastSemanticProgressAt: string | null;
+  latestEventAt: string | null;
+  latestEventType: string | null;
+  latestTextPreview: string | null;
+  transportIdleSuspectActive: boolean;
+  semanticStallSuspectActive: boolean;
   resultPromise: Promise<CodexExecRunnerResult>;
   cleanupTimer: NodeJS.Timeout | null;
   progressTimer: NodeJS.Timeout | null;
+  watchdogTimer: NodeJS.Timeout | null;
 }
 
 interface CodexProbeResolution {
@@ -214,6 +231,16 @@ interface CodexRemoteApiCredentialResolution {
 
 type CodexRemoteApiLivenessStatus = 'starting' | 'running' | 'completed' | 'failed' | 'cancelled';
 type CodexRemoteApiCancelMechanism = 'none' | 'http_stream_abort';
+type CodexCliLivenessStatus =
+  | 'starting'
+  | 'running'
+  | 'transport_idle_suspect'
+  | 'semantic_stall_suspect'
+  | 'graceful_interrupting'
+  | 'hard_terminating'
+  | 'completed'
+  | 'failed';
+type CodexCliCancelMechanism = 'none' | 'process_signal' | 'abort_signal';
 
 interface CodexRemoteApiFetchResult {
   response: Response;
@@ -662,6 +689,10 @@ export class CodexAgentAdapter extends AgentProtocol {
     request: Pick<CodexExecRunnerRequest, 'prompt' | 'timeoutMs' | 'signal' | 'operation'> & {
       commandArguments?: string[];
       executionPolicy?: ReturnType<typeof resolveAgentStageExecutionPolicy>;
+      onStdoutChunk?: (chunk: string) => void;
+      onStderrChunk?: (chunk: string) => void;
+      onGracefulInterruptStart?: (cancelMechanism: 'process_signal' | 'abort_signal') => void;
+      onHardTerminateStart?: (cancelMechanism: 'process_signal' | 'abort_signal') => void;
     },
   ): Promise<CodexExecRunnerResult> {
     try {
@@ -678,6 +709,10 @@ export class CodexAgentAdapter extends AgentProtocol {
             timeoutMs: remainingTimeoutMs ?? request.timeoutMs,
             signal: request.signal,
             operation: request.operation,
+            onStdoutChunk: request.onStdoutChunk,
+            onStderrChunk: request.onStderrChunk,
+            onGracefulInterruptStart: request.onGracefulInterruptStart,
+            onHardTerminateStart: request.onHardTerminateStart,
           });
         },
         {
@@ -1800,6 +1835,14 @@ export class CodexAgentAdapter extends AgentProtocol {
       accumulatedAssistantText: '',
       cliOutputSequence: 0,
       startedAtMs: null,
+      startedAt: null,
+      lastTransportActivityAt: null,
+      lastSemanticProgressAt: null,
+      latestEventAt: null,
+      latestEventType: null,
+      latestTextPreview: null,
+      transportIdleSuspectActive: false,
+      semanticStallSuspectActive: false,
       resultPromise: Promise.resolve({
         stdout: '',
         stderr: '',
@@ -1809,6 +1852,7 @@ export class CodexAgentAdapter extends AgentProtocol {
       }),
       cleanupTimer: null,
       progressTimer: null,
+      watchdogTimer: null,
     };
     executionState.resultPromise = this.startCliExecution(executionState, request);
     this.inflightCliExecutions.set(key, executionState);
@@ -1825,6 +1869,8 @@ export class CodexAgentAdapter extends AgentProtocol {
   ): Promise<CodexExecRunnerResult> {
     try {
       state.startedAtMs = Date.now();
+      state.startedAt = new Date(state.startedAtMs).toISOString();
+      this.startCliWatchdog(state, request);
       if (this.shouldUseRepositoryReviewCommand(request)) {
         this.startRepositoryReviewProgress(state, request);
       }
@@ -1841,15 +1887,44 @@ export class CodexAgentAdapter extends AgentProtocol {
           operation: AgentCliExecOperation.INVOKE,
           executionPolicy,
           commandArguments,
+          onStdoutChunk: (chunk) => {
+            state.stdout += chunk;
+            this.ingestCodexStdout(state, request, chunk);
+          },
+          onStderrChunk: (chunk) => {
+            state.stderr += chunk;
+            this.ingestCodexStderr(state, request, chunk);
+          },
+          onGracefulInterruptStart: (cancelMechanism) => {
+            this.pushCliGracefulInterruptEvent(state, request, cancelMechanism);
+          },
+          onHardTerminateStart: (cancelMechanism) => {
+            this.pushCliHardTerminationEvent(state, request, cancelMechanism);
+          },
         });
-        state.stdout = executionResult.stdout;
-        state.stderr = executionResult.stderr;
-        this.ingestCodexStdout(state, request, executionResult.stdout, true);
-        this.ingestCodexStderr(state, request, executionResult.stderr, true);
+        if (state.stdout.length === 0 && executionResult.stdout.length > 0) {
+          state.stdout = executionResult.stdout;
+          this.ingestCodexStdout(state, request, executionResult.stdout, true);
+        } else {
+          this.ingestCodexStdout(state, request, '', true);
+        }
+        if (state.stderr.length === 0 && executionResult.stderr.length > 0) {
+          state.stderr = executionResult.stderr;
+          this.ingestCodexStderr(state, request, executionResult.stderr, true);
+        } else {
+          this.ingestCodexStderr(state, request, '', true);
+        }
         if (!state.events.some((event) => event.eventType === AgentStreamEventType.COMPLETED)) {
+          const completedAt = new Date().toISOString();
+          this.recordCliTransportEvent(
+            state,
+            completedAt,
+            AgentStreamEventType.COMPLETED,
+            state.accumulatedAssistantText.length > 0 ? state.accumulatedAssistantText : undefined,
+          );
           this.pushCliExecutionEvent(state, {
             eventType: AgentStreamEventType.COMPLETED,
-            timestamp: new Date().toISOString(),
+            timestamp: completedAt,
             processId: request.processId,
             executionId: request.executionId,
             stageId: request.stageId,
@@ -1857,9 +1932,16 @@ export class CodexAgentAdapter extends AgentProtocol {
             payload: {
               status: 'completed',
               surface: CODEX_SURFACE,
+              transportKind: AdapterTransportKind.CLI_EXEC,
               ...(state.accumulatedAssistantText
                 ? { responseText: state.accumulatedAssistantText }
                 : {}),
+              invokeLiveness: this.buildCliInvokeLivenessSnapshot(request, state, {
+                status: 'completed',
+                partialOutputPreserved: false,
+                cancelMechanism: 'none',
+                lastTerminalSignalAt: completedAt,
+              }),
             },
           });
         }
@@ -1872,9 +1954,23 @@ export class CodexAgentAdapter extends AgentProtocol {
       return executionResult;
     } catch (error) {
       const standardizedError = standardizeError(error);
+      const failedAt = new Date().toISOString();
+      const partialOutputPreserved = state.accumulatedAssistantText.length > 0;
+      const cancelMechanism = this.resolveCliFailureCancelMechanism(error, request);
+      const suspectReasonCodes = this.resolveCliFailureReasonCodes(
+        error,
+        partialOutputPreserved,
+        state,
+      );
+      this.recordCliTransportEvent(
+        state,
+        failedAt,
+        AgentStreamEventType.FAILED,
+        partialOutputPreserved ? state.accumulatedAssistantText : standardizedError.message,
+      );
       this.pushCliExecutionEvent(state, {
         eventType: AgentStreamEventType.FAILED,
-        timestamp: new Date().toISOString(),
+        timestamp: failedAt,
         processId: request.processId,
         executionId: request.executionId,
         stageId: request.stageId,
@@ -1883,6 +1979,20 @@ export class CodexAgentAdapter extends AgentProtocol {
           status: 'failed',
           surface: CODEX_SURFACE,
           message: standardizedError.message,
+          transportKind: AdapterTransportKind.CLI_EXEC,
+          ...(partialOutputPreserved
+            ? {
+                accumulatedText: state.accumulatedAssistantText,
+                responseText: state.accumulatedAssistantText,
+              }
+            : {}),
+          invokeLiveness: this.buildCliInvokeLivenessSnapshot(request, state, {
+            status: 'failed',
+            partialOutputPreserved,
+            cancelMechanism,
+            lastTerminalSignalAt: failedAt,
+            ...(suspectReasonCodes.length > 0 ? { suspectReasonCodes } : {}),
+          }),
         },
       });
       this.finishCliExecution(state);
@@ -1926,6 +2036,10 @@ export class CodexAgentAdapter extends AgentProtocol {
     if (state.progressTimer) {
       clearInterval(state.progressTimer);
       state.progressTimer = null;
+    }
+    if (state.watchdogTimer) {
+      clearInterval(state.watchdogTimer);
+      state.watchdogTimer = null;
     }
     for (const waiter of state.waiters) {
       waiter();
@@ -1995,9 +2109,11 @@ export class CodexAgentAdapter extends AgentProtocol {
     }
 
     if (parsedEvent.type === 'thread.started') {
+      const timestamp = new Date().toISOString();
+      this.recordCliTransportEvent(state, timestamp, parsedEvent.type);
       this.pushCliExecutionEvent(state, {
         eventType: AgentStreamEventType.STATUS,
-        timestamp: new Date().toISOString(),
+        timestamp,
         processId: request.processId,
         executionId: request.executionId,
         stageId: request.stageId,
@@ -2005,19 +2121,27 @@ export class CodexAgentAdapter extends AgentProtocol {
         payload: {
           status: 'running',
           surface: CODEX_SURFACE,
+          transportKind: AdapterTransportKind.CLI_EXEC,
           detailOrigin: 'system',
           detail: this.shouldUseRepositoryReviewCommand(request)
             ? 'Codex repository review thread started.'
             : 'Codex thread started.',
+          invokeLiveness: this.buildCliInvokeLivenessSnapshot(request, state, {
+            status: 'starting',
+            partialOutputPreserved: false,
+            cancelMechanism: 'none',
+          }),
         },
       });
       return;
     }
 
     if (parsedEvent.type === 'turn.started') {
+      const timestamp = new Date().toISOString();
+      this.recordCliTransportEvent(state, timestamp, parsedEvent.type);
       this.pushCliExecutionEvent(state, {
         eventType: AgentStreamEventType.STATUS,
-        timestamp: new Date().toISOString(),
+        timestamp,
         processId: request.processId,
         executionId: request.executionId,
         stageId: request.stageId,
@@ -2025,10 +2149,16 @@ export class CodexAgentAdapter extends AgentProtocol {
         payload: {
           status: 'running',
           surface: CODEX_SURFACE,
+          transportKind: AdapterTransportKind.CLI_EXEC,
           detailOrigin: 'system',
           detail: this.shouldUseRepositoryReviewCommand(request)
             ? 'Codex repository review started; waiting for CLI output.'
             : 'Codex turn started.',
+          invokeLiveness: this.buildCliInvokeLivenessSnapshot(request, state, {
+            status: 'running',
+            partialOutputPreserved: false,
+            cancelMechanism: 'none',
+          }),
         },
       });
       return;
@@ -2056,9 +2186,16 @@ export class CodexAgentAdapter extends AgentProtocol {
     }
 
     if (parsedEvent.type === 'turn.completed') {
+      const timestamp = new Date().toISOString();
+      this.recordCliTransportEvent(
+        state,
+        timestamp,
+        parsedEvent.type,
+        state.accumulatedAssistantText.length > 0 ? state.accumulatedAssistantText : undefined,
+      );
       this.pushCliExecutionEvent(state, {
         eventType: AgentStreamEventType.COMPLETED,
-        timestamp: new Date().toISOString(),
+        timestamp,
         processId: request.processId,
         executionId: request.executionId,
         stageId: request.stageId,
@@ -2066,9 +2203,16 @@ export class CodexAgentAdapter extends AgentProtocol {
         payload: {
           status: 'completed',
           surface: CODEX_SURFACE,
+          transportKind: AdapterTransportKind.CLI_EXEC,
           ...(state.accumulatedAssistantText
             ? { responseText: state.accumulatedAssistantText }
             : {}),
+          invokeLiveness: this.buildCliInvokeLivenessSnapshot(request, state, {
+            status: 'completed',
+            partialOutputPreserved: false,
+            cancelMechanism: 'none',
+            lastTerminalSignalAt: timestamp,
+          }),
         },
       });
     }
@@ -2091,9 +2235,16 @@ export class CodexAgentAdapter extends AgentProtocol {
       parsedEvent.type === 'item.completed'
         ? `Completed command${this.formatExitCodeSuffix(parsedEvent.item?.exit_code)}: ${commandSummary}`
         : `Running command: ${commandSummary}`;
+    const timestamp = new Date().toISOString();
+    this.recordCliSemanticProgress(
+      state,
+      timestamp,
+      parsedEvent.type ?? 'command_execution',
+      detail,
+    );
     this.pushCliExecutionEvent(state, {
       eventType: AgentStreamEventType.STATUS,
-      timestamp: new Date().toISOString(),
+      timestamp,
       processId: request.processId,
       executionId: request.executionId,
       stageId: request.stageId,
@@ -2101,8 +2252,14 @@ export class CodexAgentAdapter extends AgentProtocol {
       payload: {
         status: 'running',
         surface: CODEX_SURFACE,
+        transportKind: AdapterTransportKind.CLI_EXEC,
         detail,
         activityKey,
+        invokeLiveness: this.buildCliInvokeLivenessSnapshot(request, state, {
+          status: 'running',
+          partialOutputPreserved: false,
+          cancelMechanism: 'none',
+        }),
       },
     });
   }
@@ -2121,9 +2278,11 @@ export class CodexAgentAdapter extends AgentProtocol {
         ? `${CODEX_SURFACE}:todo:${parsedEvent.item.id}:${String(index)}`
         : `${CODEX_SURFACE}:todo:${String(index)}`;
       const detail = todoItem.completed ? `Completed todo: ${todoText}` : `Todo: ${todoText}`;
+      const timestamp = new Date().toISOString();
+      this.recordCliSemanticProgress(state, timestamp, parsedEvent.type ?? 'todo_list', detail);
       this.pushCliExecutionEvent(state, {
         eventType: AgentStreamEventType.STATUS,
-        timestamp: new Date().toISOString(),
+        timestamp,
         processId: request.processId,
         executionId: request.executionId,
         stageId: request.stageId,
@@ -2131,8 +2290,14 @@ export class CodexAgentAdapter extends AgentProtocol {
         payload: {
           status: 'running',
           surface: CODEX_SURFACE,
+          transportKind: AdapterTransportKind.CLI_EXEC,
           detail,
           activityKey,
+          invokeLiveness: this.buildCliInvokeLivenessSnapshot(request, state, {
+            status: 'running',
+            partialOutputPreserved: false,
+            cancelMechanism: 'none',
+          }),
         },
       });
     }
@@ -2150,9 +2315,11 @@ export class CodexAgentAdapter extends AgentProtocol {
     }
     const detail = `${CODEX_SURFACE} ${source}: ${sanitizedLine}`;
     const activityKey = `${CODEX_SURFACE}:${source}:${String(state.cliOutputSequence++)}`;
+    const timestamp = new Date().toISOString();
+    this.recordCliTransportEvent(state, timestamp, source, sanitizedLine);
     this.pushCliExecutionEvent(state, {
       eventType: AgentStreamEventType.STATUS,
-      timestamp: new Date().toISOString(),
+      timestamp,
       processId: request.processId,
       executionId: request.executionId,
       stageId: request.stageId,
@@ -2160,8 +2327,14 @@ export class CodexAgentAdapter extends AgentProtocol {
       payload: {
         status: 'running',
         surface: CODEX_SURFACE,
+        transportKind: AdapterTransportKind.CLI_EXEC,
         detail,
         activityKey,
+        invokeLiveness: this.buildCliInvokeLivenessSnapshot(request, state, {
+          status: 'running',
+          partialOutputPreserved: false,
+          cancelMechanism: 'none',
+        }),
       },
     });
   }
@@ -2191,9 +2364,11 @@ export class CodexAgentAdapter extends AgentProtocol {
     const activityKey = parsedEvent.item?.id
       ? `${CODEX_SURFACE}:${itemType}:${parsedEvent.item.id}`
       : `${CODEX_SURFACE}:${itemType}:${String(state.cliOutputSequence++)}`;
+    const timestamp = new Date().toISOString();
+    this.recordCliSemanticProgress(state, timestamp, itemType, candidateText);
     this.pushCliExecutionEvent(state, {
       eventType: AgentStreamEventType.STATUS,
-      timestamp: new Date().toISOString(),
+      timestamp,
       processId: request.processId,
       executionId: request.executionId,
       stageId: request.stageId,
@@ -2201,8 +2376,14 @@ export class CodexAgentAdapter extends AgentProtocol {
       payload: {
         status: 'running',
         surface: CODEX_SURFACE,
+        transportKind: AdapterTransportKind.CLI_EXEC,
         detail: `${CODEX_SURFACE} ${itemType}: ${candidateText}`,
         activityKey,
+        invokeLiveness: this.buildCliInvokeLivenessSnapshot(request, state, {
+          status: 'running',
+          partialOutputPreserved: false,
+          cancelMechanism: 'none',
+        }),
       },
     });
     return true;
@@ -2240,13 +2421,342 @@ export class CodexAgentAdapter extends AgentProtocol {
       payload: {
         status: 'running',
         surface: CODEX_SURFACE,
+        transportKind: AdapterTransportKind.CLI_EXEC,
         detailOrigin: 'system',
         detail:
           elapsedSeconds === 0
             ? 'Codex repository review is running; waiting for CLI output.'
             : `Codex repository review is still running (${elapsedSeconds}s elapsed); waiting for CLI output.`,
+        invokeLiveness: this.buildCliInvokeLivenessSnapshot(request, state, {
+          status: 'running',
+          partialOutputPreserved: false,
+          cancelMechanism: 'none',
+        }),
       },
     });
+  }
+
+  private startCliWatchdog(state: CodexCliExecutionState, request: CodexCliExecutionRequest): void {
+    const intervalMs = this.resolveCliWatchdogIntervalMs(request.timeoutMs);
+    state.watchdogTimer = setInterval(() => {
+      if (state.settled) {
+        return;
+      }
+
+      const suspectStatus = this.resolveCliWatchdogSuspectStatus(state, request.timeoutMs);
+      if (suspectStatus === 'transport_idle_suspect') {
+        if (!state.transportIdleSuspectActive) {
+          state.transportIdleSuspectActive = true;
+          state.semanticStallSuspectActive = false;
+          this.pushCliSuspectEvent(state, request, suspectStatus);
+        }
+        return;
+      }
+
+      state.transportIdleSuspectActive = false;
+
+      if (suspectStatus === 'semantic_stall_suspect') {
+        if (!state.semanticStallSuspectActive) {
+          state.semanticStallSuspectActive = true;
+          this.pushCliSuspectEvent(state, request, suspectStatus);
+        }
+        return;
+      }
+
+      state.semanticStallSuspectActive = false;
+    }, intervalMs);
+    state.watchdogTimer.unref?.();
+  }
+
+  private resolveCliWatchdogSuspectStatus(
+    state: CodexCliExecutionState,
+    timeoutMs: number,
+  ): Extract<CodexCliLivenessStatus, 'transport_idle_suspect' | 'semantic_stall_suspect'> | null {
+    const startedAtMs = state.startedAtMs;
+    if (startedAtMs === null) {
+      return null;
+    }
+
+    const now = Date.now();
+    const transportIdleTimeoutMs = this.resolveCliTransportIdleTimeoutMs(timeoutMs);
+    const semanticStallTimeoutMs = this.resolveCliSemanticStallTimeoutMs(timeoutMs);
+    const lastTransportAtMs = state.lastTransportActivityAt
+      ? Date.parse(state.lastTransportActivityAt)
+      : startedAtMs;
+    const lastSemanticAtMs = state.lastSemanticProgressAt
+      ? Date.parse(state.lastSemanticProgressAt)
+      : startedAtMs;
+
+    if (now - lastTransportAtMs >= transportIdleTimeoutMs) {
+      return 'transport_idle_suspect';
+    }
+
+    if (now - lastSemanticAtMs >= semanticStallTimeoutMs) {
+      return 'semantic_stall_suspect';
+    }
+
+    return null;
+  }
+
+  private pushCliSuspectEvent(
+    state: CodexCliExecutionState,
+    request: CodexCliExecutionRequest,
+    status: Extract<CodexCliLivenessStatus, 'transport_idle_suspect' | 'semantic_stall_suspect'>,
+  ): void {
+    const emittedAt = new Date().toISOString();
+    const suspectReasonCode =
+      status === 'transport_idle_suspect'
+        ? 'invoke_transport_idle_timeout'
+        : 'invoke_semantic_stall_timeout';
+    this.pushCliExecutionEvent(state, {
+      eventType: AgentStreamEventType.STATUS,
+      timestamp: emittedAt,
+      processId: request.processId,
+      executionId: request.executionId,
+      stageId: request.stageId,
+      routeKey: request.routeKey,
+      payload: {
+        status,
+        surface: CODEX_SURFACE,
+        transportKind: AdapterTransportKind.CLI_EXEC,
+        detail:
+          status === 'transport_idle_suspect'
+            ? 'Codex invoke looks transport-idle; waiting for last real CLI output before escalating.'
+            : 'Codex invoke still has transport activity but no semantic progress; waiting through grace before escalation.',
+        invokeLiveness: this.buildCliInvokeLivenessSnapshot(request, state, {
+          status,
+          partialOutputPreserved: state.accumulatedAssistantText.length > 0,
+          cancelMechanism: 'none',
+          suspectReasonCodes: [suspectReasonCode],
+        }),
+      },
+    });
+  }
+
+  private pushCliGracefulInterruptEvent(
+    state: CodexCliExecutionState,
+    request: CodexCliExecutionRequest,
+    cancelMechanism: CodexCliCancelMechanism,
+  ): void {
+    const interruptedAt = new Date().toISOString();
+    const suspectReasonCodes = this.resolveActiveCliSuspectReasonCodes(state, cancelMechanism);
+    this.recordCliTransportEvent(
+      state,
+      interruptedAt,
+      'graceful_interrupting',
+      state.accumulatedAssistantText.length > 0 ? state.accumulatedAssistantText : undefined,
+    );
+    this.pushCliExecutionEvent(state, {
+      eventType: AgentStreamEventType.STATUS,
+      timestamp: interruptedAt,
+      processId: request.processId,
+      executionId: request.executionId,
+      stageId: request.stageId,
+      routeKey: request.routeKey,
+      payload: {
+        status: 'graceful_interrupting',
+        surface: CODEX_SURFACE,
+        transportKind: AdapterTransportKind.CLI_EXEC,
+        detail:
+          cancelMechanism === 'abort_signal'
+            ? 'Codex invoke is being interrupted by abort signal.'
+            : 'Codex invoke exceeded its timeout budget; attempting graceful interrupt.',
+        invokeLiveness: this.buildCliInvokeLivenessSnapshot(request, state, {
+          status: 'graceful_interrupting',
+          partialOutputPreserved: state.accumulatedAssistantText.length > 0,
+          cancelMechanism,
+          lastTerminalSignalAt: interruptedAt,
+          ...(suspectReasonCodes.length > 0 ? { suspectReasonCodes } : {}),
+        }),
+      },
+    });
+  }
+
+  private pushCliHardTerminationEvent(
+    state: CodexCliExecutionState,
+    request: CodexCliExecutionRequest,
+    cancelMechanism: CodexCliCancelMechanism,
+  ): void {
+    const terminatedAt = new Date().toISOString();
+    const suspectReasonCodes = [
+      ...this.resolveActiveCliSuspectReasonCodes(state, cancelMechanism),
+      'invoke_graceful_interrupt_exceeded',
+    ].filter((value, index, list) => list.indexOf(value) === index);
+    this.recordCliTransportEvent(
+      state,
+      terminatedAt,
+      'hard_terminating',
+      state.accumulatedAssistantText.length > 0 ? state.accumulatedAssistantText : undefined,
+    );
+    this.pushCliExecutionEvent(state, {
+      eventType: AgentStreamEventType.STATUS,
+      timestamp: terminatedAt,
+      processId: request.processId,
+      executionId: request.executionId,
+      stageId: request.stageId,
+      routeKey: request.routeKey,
+      payload: {
+        status: 'hard_terminating',
+        surface: CODEX_SURFACE,
+        transportKind: AdapterTransportKind.CLI_EXEC,
+        detail:
+          cancelMechanism === 'abort_signal'
+            ? 'Codex invoke did not stop after abort signal; forcing hard termination.'
+            : 'Codex invoke did not stop after graceful interrupt; forcing hard termination.',
+        invokeLiveness: this.buildCliInvokeLivenessSnapshot(request, state, {
+          status: 'hard_terminating',
+          partialOutputPreserved: state.accumulatedAssistantText.length > 0,
+          cancelMechanism,
+          lastTerminalSignalAt: terminatedAt,
+          suspectReasonCodes,
+        }),
+      },
+    });
+  }
+
+  private recordCliTransportEvent(
+    state: CodexCliExecutionState,
+    timestamp: string,
+    eventType: string,
+    previewText?: string,
+  ): void {
+    state.transportIdleSuspectActive = false;
+    state.lastTransportActivityAt = timestamp;
+    state.latestEventAt = timestamp;
+    state.latestEventType = eventType;
+    if (previewText) {
+      state.latestTextPreview = previewText;
+    }
+  }
+
+  private recordCliSemanticProgress(
+    state: CodexCliExecutionState,
+    timestamp: string,
+    eventType: string,
+    previewText: string,
+  ): void {
+    this.recordCliTransportEvent(state, timestamp, eventType, previewText);
+    state.lastSemanticProgressAt = timestamp;
+    state.transportIdleSuspectActive = false;
+    state.semanticStallSuspectActive = false;
+  }
+
+  private buildCliInvokeLivenessSnapshot(
+    request: CodexCliExecutionRequest,
+    state: CodexCliExecutionState,
+    options: {
+      status: CodexCliLivenessStatus;
+      partialOutputPreserved: boolean;
+      cancelMechanism: CodexCliCancelMechanism;
+      lastTerminalSignalAt?: string;
+      suspectReasonCodes?: string[];
+    },
+  ): Record<string, unknown> {
+    const startedAt = state.startedAt ?? new Date().toISOString();
+    return {
+      adapterId: this.options.agentId,
+      surfaceId: CODEX_SURFACE,
+      routeKey: request.routeKey,
+      startedAt,
+      status: options.status,
+      ...(state.lastTransportActivityAt
+        ? { lastTransportActivityAt: state.lastTransportActivityAt }
+        : {}),
+      ...(state.lastSemanticProgressAt
+        ? { lastSemanticProgressAt: state.lastSemanticProgressAt }
+        : {}),
+      ...(options.lastTerminalSignalAt
+        ? { lastTerminalSignalAt: options.lastTerminalSignalAt }
+        : {}),
+      ...(state.latestEventAt ? { latestEventAt: state.latestEventAt } : {}),
+      ...(state.latestEventType ? { latestEventType: state.latestEventType } : {}),
+      ...(state.latestTextPreview ? { latestTextPreview: state.latestTextPreview } : {}),
+      activeOperationKind: 'cli_exec_stream',
+      activeOperationStartedAt: startedAt,
+      partialOutputPreserved: options.partialOutputPreserved,
+      transportKind: AdapterTransportKind.CLI_EXEC,
+      cancelMechanism: options.cancelMechanism,
+      ...(options.suspectReasonCodes && options.suspectReasonCodes.length > 0
+        ? { suspectReasonCodes: options.suspectReasonCodes }
+        : {}),
+    };
+  }
+
+  private resolveActiveCliSuspectReasonCodes(
+    state: CodexCliExecutionState,
+    cancelMechanism: CodexCliCancelMechanism,
+  ): string[] {
+    return [
+      ...(state.transportIdleSuspectActive ? ['invoke_transport_idle_timeout'] : []),
+      ...(state.semanticStallSuspectActive ? ['invoke_semantic_stall_timeout'] : []),
+      ...(cancelMechanism === 'process_signal' ? ['invoke_hard_timeout'] : []),
+    ].filter((value, index, list) => list.indexOf(value) === index);
+  }
+
+  private resolveCliFailureReasonCodes(
+    error: unknown,
+    partialOutputPreserved: boolean,
+    state: CodexCliExecutionState,
+  ): string[] {
+    const detail = this.cliExecOperationsRuntime
+      .collectErrorDetail(error, standardizeError(error).message)
+      .toLowerCase();
+    return [
+      ...(state.transportIdleSuspectActive ? ['invoke_transport_idle_timeout'] : []),
+      ...(state.semanticStallSuspectActive ? ['invoke_semantic_stall_timeout'] : []),
+      ...(this.isTimeoutFailure(detail) ? ['invoke_hard_timeout'] : []),
+      ...(/graceful interrupt (window|exceeded)|hardterminated/u.test(detail)
+        ? ['invoke_graceful_interrupt_exceeded']
+        : []),
+      ...(partialOutputPreserved ? ['invoke_partial_output_preserved'] : []),
+    ].filter((value, index, list) => list.indexOf(value) === index);
+  }
+
+  private resolveCliFailureCancelMechanism(
+    error: unknown,
+    request: CodexCliExecutionRequest,
+  ): CodexCliCancelMechanism {
+    if (request.signal?.aborted) {
+      return 'abort_signal';
+    }
+    const detail = this.cliExecOperationsRuntime
+      .collectErrorDetail(error, standardizeError(error).message)
+      .toLowerCase();
+    if (/(timed out|timeout)/u.test(detail)) {
+      return 'process_signal';
+    }
+    if (/(aborterror|aborted)/u.test(detail)) {
+      return 'abort_signal';
+    }
+    return 'none';
+  }
+
+  private resolveCliWatchdogIntervalMs(timeoutMs: number): number {
+    return Math.min(
+      CODEX_CLI_WATCHDOG_MAX_INTERVAL_MS,
+      Math.max(CODEX_CLI_WATCHDOG_MIN_INTERVAL_MS, Math.floor(timeoutMs / 10)),
+    );
+  }
+
+  private resolveCliTransportIdleTimeoutMs(timeoutMs: number): number {
+    return Math.min(
+      CODEX_CLI_WATCHDOG_MAX_TRANSPORT_IDLE_MS,
+      Math.max(CODEX_CLI_WATCHDOG_MIN_TRANSPORT_IDLE_MS, Math.floor(timeoutMs * 0.4)),
+    );
+  }
+
+  private resolveCliSemanticStallTimeoutMs(timeoutMs: number): number {
+    return Math.min(
+      CODEX_CLI_WATCHDOG_MAX_SEMANTIC_STALL_MS,
+      Math.max(CODEX_CLI_WATCHDOG_MIN_SEMANTIC_STALL_MS, Math.floor(timeoutMs * 0.6)),
+    );
+  }
+
+  private resolveCliTerminateGraceMs(timeoutMs: number): number {
+    return Math.min(
+      CODEX_CLI_TERMINATE_GRACE_MAX_MS,
+      Math.max(CODEX_CLI_TERMINATE_GRACE_MIN_MS, Math.floor(timeoutMs * 0.1)),
+    );
   }
 
   private normalizeCliOutputLine(line: string): string | undefined {
@@ -2293,17 +2803,30 @@ export class CodexAgentAdapter extends AgentProtocol {
     }
 
     state.accumulatedAssistantText = nextTokenState.accumulatedText;
+    const timestamp = new Date().toISOString();
+    this.recordCliSemanticProgress(
+      state,
+      timestamp,
+      parsedEvent.type ?? AgentStreamEventType.TOKEN,
+      nextTokenState.accumulatedText,
+    );
     this.pushCliExecutionEvent(state, {
       eventType: AgentStreamEventType.TOKEN,
-      timestamp: new Date().toISOString(),
+      timestamp,
       processId: request.processId,
       executionId: request.executionId,
       stageId: request.stageId,
       routeKey: request.routeKey,
       payload: {
         surface: CODEX_SURFACE,
+        transportKind: AdapterTransportKind.CLI_EXEC,
         text: nextTokenState.chunkText,
         accumulatedText: nextTokenState.accumulatedText,
+        invokeLiveness: this.buildCliInvokeLivenessSnapshot(request, state, {
+          status: 'running',
+          partialOutputPreserved: false,
+          cancelMechanism: 'none',
+        }),
       },
     });
     return true;
@@ -2484,17 +3007,64 @@ export class CodexAgentAdapter extends AgentProtocol {
         cwd: request.cwd,
         env: request.env,
         stdio: ['pipe', 'pipe', 'pipe'],
-        signal: request.signal,
       });
 
       let stdout = '';
       let stderr = '';
       let settled = false;
       let timedOut = false;
+      let abortRequested = false;
+      let hardTerminated = false;
+      let gracefulInterruptNotified = false;
+      let hardTerminateNotified = false;
+      let hardTerminateHandle: NodeJS.Timeout | null = null;
+
+      const notifyGracefulInterrupt = (
+        cancelMechanism: 'process_signal' | 'abort_signal',
+      ): void => {
+        if (gracefulInterruptNotified) {
+          return;
+        }
+        gracefulInterruptNotified = true;
+        request.onGracefulInterruptStart?.(cancelMechanism);
+      };
+
+      const notifyHardTerminate = (cancelMechanism: 'process_signal' | 'abort_signal'): void => {
+        if (hardTerminateNotified) {
+          return;
+        }
+        hardTerminateNotified = true;
+        request.onHardTerminateStart?.(cancelMechanism);
+      };
+
+      const clearTerminationTimers = (): void => {
+        if (timeoutHandle) {
+          clearTimeout(timeoutHandle);
+        }
+        if (hardTerminateHandle) {
+          clearTimeout(hardTerminateHandle);
+          hardTerminateHandle = null;
+        }
+      };
+
+      const startHardTerminationFuse = (
+        cancelMechanism: 'process_signal' | 'abort_signal',
+      ): void => {
+        if (hardTerminateHandle) {
+          return;
+        }
+        hardTerminateHandle = setTimeout(() => {
+          hardTerminated = true;
+          notifyHardTerminate(cancelMechanism);
+          child.kill('SIGKILL');
+        }, this.resolveCliTerminateGraceMs(request.timeoutMs));
+      };
 
       const timeoutHandle = setTimeout(() => {
         timedOut = true;
+        notifyGracefulInterrupt('process_signal');
         child.kill('SIGTERM');
+        startHardTerminationFuse('process_signal');
       }, request.timeoutMs);
 
       const finishReject = (error: unknown) => {
@@ -2502,9 +3072,22 @@ export class CodexAgentAdapter extends AgentProtocol {
           return;
         }
         settled = true;
-        clearTimeout(timeoutHandle);
+        clearTerminationTimers();
+        request.signal?.removeEventListener('abort', onAbortSignal);
         reject(error);
       };
+
+      const onAbortSignal = () => {
+        abortRequested = true;
+        notifyGracefulInterrupt('abort_signal');
+        child.kill('SIGTERM');
+        startHardTerminationFuse('abort_signal');
+      };
+
+      request.signal?.addEventListener('abort', onAbortSignal, { once: true });
+      if (request.signal?.aborted) {
+        onAbortSignal();
+      }
 
       child.on('error', (error) => {
         finishReject(error);
@@ -2525,7 +3108,8 @@ export class CodexAgentAdapter extends AgentProtocol {
           return;
         }
         settled = true;
-        clearTimeout(timeoutHandle);
+        clearTerminationTimers();
+        request.signal?.removeEventListener('abort', onAbortSignal);
 
         if (timedOut) {
           reject(
@@ -2533,7 +3117,9 @@ export class CodexAgentAdapter extends AgentProtocol {
               request.operation === AgentCliExecOperation.PROBE
                 ? GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED
                 : GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
-              `Codex ${request.operation} timed out after ${request.timeoutMs}ms.`,
+              hardTerminated
+                ? `Codex ${request.operation} timed out after ${request.timeoutMs}ms and exceeded graceful interrupt window.`
+                : `Codex ${request.operation} timed out after ${request.timeoutMs}ms.`,
               this.cliExecOperationsRuntime.createRedactedProcessDetails({
                 surface: CODEX_SURFACE,
                 operation: request.operation,
@@ -2542,6 +3128,32 @@ export class CodexAgentAdapter extends AgentProtocol {
                 stderr,
                 exitCode,
                 signal,
+                ...(hardTerminated ? { hardTerminated: true } : {}),
+              }),
+            ),
+          );
+          return;
+        }
+
+        if (abortRequested) {
+          reject(
+            new RuntimeError(
+              request.operation === AgentCliExecOperation.PROBE
+                ? GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED
+                : GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
+              hardTerminated
+                ? `Codex ${request.operation} aborted and exceeded graceful interrupt window.`
+                : `Codex ${request.operation} aborted before completion.`,
+              this.cliExecOperationsRuntime.createRedactedProcessDetails({
+                surface: CODEX_SURFACE,
+                operation: request.operation,
+                timeoutMs: request.timeoutMs,
+                stdout,
+                stderr,
+                exitCode,
+                signal,
+                aborted: true,
+                ...(hardTerminated ? { hardTerminated: true } : {}),
               }),
             ),
           );
@@ -2598,16 +3210,63 @@ export class CodexAgentAdapter extends AgentProtocol {
           cwd: this.options.currentWorkingDirectory,
           env: this.resolveEnvironment(),
           stdio: ['pipe', 'pipe', 'pipe'],
-          ...(request.signal ? { signal: request.signal } : {}),
         },
       );
 
       let settled = false;
       let timedOut = false;
+      let abortRequested = false;
+      let hardTerminated = false;
+      let hardTerminateHandle: NodeJS.Timeout | null = null;
+      let gracefulInterruptNotified = false;
+      let hardTerminateNotified = false;
+
+      const notifyGracefulInterrupt = (
+        cancelMechanism: 'process_signal' | 'abort_signal',
+      ): void => {
+        if (gracefulInterruptNotified) {
+          return;
+        }
+        gracefulInterruptNotified = true;
+        this.pushCliGracefulInterruptEvent(state, request, cancelMechanism);
+      };
+
+      const notifyHardTerminate = (cancelMechanism: 'process_signal' | 'abort_signal'): void => {
+        if (hardTerminateNotified) {
+          return;
+        }
+        hardTerminateNotified = true;
+        this.pushCliHardTerminationEvent(state, request, cancelMechanism);
+      };
+
+      const clearTerminationTimers = (): void => {
+        if (timeoutHandle) {
+          clearTimeout(timeoutHandle);
+        }
+        if (hardTerminateHandle) {
+          clearTimeout(hardTerminateHandle);
+          hardTerminateHandle = null;
+        }
+      };
+
+      const startHardTerminationFuse = (
+        cancelMechanism: 'process_signal' | 'abort_signal',
+      ): void => {
+        if (hardTerminateHandle) {
+          return;
+        }
+        hardTerminateHandle = setTimeout(() => {
+          hardTerminated = true;
+          notifyHardTerminate(cancelMechanism);
+          child.kill('SIGKILL');
+        }, this.resolveCliTerminateGraceMs(request.timeoutMs));
+      };
 
       const timeoutHandle = setTimeout(() => {
         timedOut = true;
+        notifyGracefulInterrupt('process_signal');
         child.kill('SIGTERM');
+        startHardTerminationFuse('process_signal');
       }, request.timeoutMs);
 
       const finishReject = (error: unknown): void => {
@@ -2615,9 +3274,22 @@ export class CodexAgentAdapter extends AgentProtocol {
           return;
         }
         settled = true;
-        clearTimeout(timeoutHandle);
+        clearTerminationTimers();
+        request.signal?.removeEventListener('abort', onAbortSignal);
         reject(error);
       };
+
+      const onAbortSignal = () => {
+        abortRequested = true;
+        notifyGracefulInterrupt('abort_signal');
+        child.kill('SIGTERM');
+        startHardTerminationFuse('abort_signal');
+      };
+
+      request.signal?.addEventListener('abort', onAbortSignal, { once: true });
+      if (request.signal?.aborted) {
+        onAbortSignal();
+      }
 
       child.on('error', (error) => {
         finishReject(error);
@@ -2640,7 +3312,8 @@ export class CodexAgentAdapter extends AgentProtocol {
           return;
         }
         settled = true;
-        clearTimeout(timeoutHandle);
+        clearTerminationTimers();
+        request.signal?.removeEventListener('abort', onAbortSignal);
         this.ingestCodexStdout(state, request, '', true);
         this.ingestCodexStderr(state, request, '', true);
 
@@ -2648,7 +3321,9 @@ export class CodexAgentAdapter extends AgentProtocol {
           reject(
             new RuntimeError(
               GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
-              `Codex invoke timed out after ${request.timeoutMs}ms.`,
+              hardTerminated
+                ? `Codex invoke timed out after ${request.timeoutMs}ms and exceeded graceful interrupt window.`
+                : `Codex invoke timed out after ${request.timeoutMs}ms.`,
               this.cliExecOperationsRuntime.createRedactedProcessDetails({
                 surface: CODEX_SURFACE,
                 operation: AgentCliExecOperation.INVOKE,
@@ -2657,6 +3332,30 @@ export class CodexAgentAdapter extends AgentProtocol {
                 stderr: state.stderr,
                 exitCode,
                 signal,
+                ...(hardTerminated ? { hardTerminated: true } : {}),
+              }),
+            ),
+          );
+          return;
+        }
+
+        if (abortRequested) {
+          reject(
+            new RuntimeError(
+              GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
+              hardTerminated
+                ? 'Codex invoke aborted and exceeded graceful interrupt window.'
+                : 'Codex invoke aborted before completion.',
+              this.cliExecOperationsRuntime.createRedactedProcessDetails({
+                surface: CODEX_SURFACE,
+                operation: AgentCliExecOperation.INVOKE,
+                timeoutMs: request.timeoutMs,
+                stdout: state.stdout,
+                stderr: state.stderr,
+                exitCode,
+                signal,
+                aborted: true,
+                ...(hardTerminated ? { hardTerminated: true } : {}),
               }),
             ),
           );
