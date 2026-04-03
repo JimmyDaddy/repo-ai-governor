@@ -21,6 +21,13 @@ interface LiveTurnActivityHistoryEntry {
   text: string;
 }
 
+interface LiveTurnInvokeLivenessSnapshot {
+  status?: string;
+  surfaceId?: string;
+  partialOutputPreserved?: boolean;
+  suspectReasonCodes: string[];
+}
+
 const LIVE_ACTIVITY_MAX_ENTRIES = 8;
 
 /**
@@ -36,6 +43,7 @@ export class CliSessionShellTurnProgressDock {
   private nextActivityOrder = 0;
   private currentAssistantDraft: string | null = null;
   private liveTurnStartedAtMs: number | null = null;
+  private latestInvokeLiveness: LiveTurnInvokeLivenessSnapshot | null = null;
   private readonly liveActivityEntries = new Map<string, LiveTurnActivityEntry>();
   private readonly activityHistoryEntries: LiveTurnActivityHistoryEntry[] = [];
   private readonly completedTurnDetails = new Map<string, string[]>();
@@ -51,6 +59,7 @@ export class CliSessionShellTurnProgressDock {
     this.activeTurnId = null;
     this.currentAssistantDraft = null;
     this.liveTurnStartedAtMs = Date.now();
+    this.latestInvokeLiveness = null;
     this.liveActivityEntries.clear();
     this.activityHistoryEntries.splice(0, this.activityHistoryEntries.length);
     this.nextActivityOrder = 0;
@@ -166,6 +175,7 @@ export class CliSessionShellTurnProgressDock {
     this.liveTurnActive = false;
     this.currentAssistantDraft = null;
     this.liveTurnStartedAtMs = null;
+    this.latestInvokeLiveness = null;
     this.liveActivityEntries.clear();
     this.activityHistoryEntries.splice(0, this.activityHistoryEntries.length);
     this.nextActivityOrder = 0;
@@ -206,6 +216,10 @@ export class CliSessionShellTurnProgressDock {
 
     this.activeTurnId = turnId;
     this.liveTurnActive = true;
+    const invokeLiveness = this.readInvokeLiveness(event.payload);
+    if (invokeLiveness) {
+      this.latestInvokeLiveness = invokeLiveness;
+    }
 
     const streamKind = this.readOptionalString(event.payload.streamKind) ?? 'lifecycle';
     if (streamKind === 'token') {
@@ -286,7 +300,13 @@ export class CliSessionShellTurnProgressDock {
       this.readOptionalString(event.payload.accumulatedText) ??
       this.readOptionalString(event.payload.chunkText) ??
       this.readOptionalString(event.payload.title);
-    if (!detail) {
+    const invokeLiveness = this.readInvokeLiveness(event.payload);
+    const detailWithLiveness = this.formatInvokeLivenessDetail(
+      invokeLiveness,
+      this.readOptionalString(event.payload.selectedSurface),
+      detail,
+    );
+    if (!detailWithLiveness) {
       return;
     }
 
@@ -295,10 +315,20 @@ export class CliSessionShellTurnProgressDock {
       this.readOptionalString(event.payload.detailOrigin) === 'system' ? 'system' : undefined;
     const entryKey =
       this.readOptionalString(event.payload.activityKey) ??
-      (roleId ? `lifecycle:${roleId}` : 'lifecycle:session.main.detail');
-    const text = this.formatLifecycleDetailText(detail, roleId, detailOrigin);
+      this.createFallbackActivityKey(roleId, invokeLiveness);
+    const text = this.formatLifecycleDetailText(detailWithLiveness, roleId, detailOrigin);
 
     this.upsertActivityEntry(entryKey, text, event.createdAt);
+  }
+
+  private createFallbackActivityKey(
+    roleId?: string,
+    invokeLiveness?: LiveTurnInvokeLivenessSnapshot,
+  ): string {
+    if (invokeLiveness?.status) {
+      return `${roleId ? `liveness:${roleId}` : 'liveness:session.main'}:${invokeLiveness.status}`;
+    }
+    return roleId ? `lifecycle:${roleId}` : 'lifecycle:session.main.detail';
   }
 
   private formatLifecycleDetailText(
@@ -373,9 +403,147 @@ export class CliSessionShellTurnProgressDock {
       this.liveTurnStartedAtMs === null
         ? 0
         : Math.max(0, Math.floor((Date.now() - this.liveTurnStartedAtMs) / 1000));
-    return this.options.translate('cli.sessionShell.responses.liveTurnRunningSummary', {
-      elapsed: `${elapsedSeconds}s`,
-    });
+    return this.options.translate(
+      this.resolveLivenessSummaryTranslationKey(this.latestInvokeLiveness?.status),
+      {
+        elapsed: `${elapsedSeconds}s`,
+      },
+    );
+  }
+
+  private resolveLivenessSummaryTranslationKey(status?: string): string {
+    switch (status) {
+      case 'transport_idle_suspect':
+        return 'cli.sessionShell.responses.liveTurnWaitingTransportSummary';
+      case 'semantic_stall_suspect':
+        return 'cli.sessionShell.responses.liveTurnWaitingProgressSummary';
+      case 'graceful_interrupting':
+        return 'cli.sessionShell.responses.liveTurnGracefulInterruptSummary';
+      case 'hard_terminating':
+        return 'cli.sessionShell.responses.liveTurnHardTerminateSummary';
+      default:
+        return 'cli.sessionShell.responses.liveTurnRunningSummary';
+    }
+  }
+
+  private formatInvokeLivenessDetail(
+    invokeLiveness: LiveTurnInvokeLivenessSnapshot | undefined,
+    selectedSurface: string | undefined,
+    fallbackDetail: string | undefined,
+  ): string | undefined {
+    if (!invokeLiveness) {
+      return fallbackDetail;
+    }
+
+    const surface = invokeLiveness.surfaceId ?? selectedSurface ?? 'current-adapter';
+    const statusDetail = this.resolveInvokeLivenessStatusDetail(invokeLiveness.status, surface);
+    const extraDetails: string[] = [];
+    const humanizedReasons = invokeLiveness.suspectReasonCodes
+      .map((reasonCode) => this.humanizeInvokeLivenessReasonCode(reasonCode))
+      .filter((reason): reason is string => reason.length > 0);
+    if (humanizedReasons.length > 0) {
+      extraDetails.push(
+        this.options.translate('cli.sessionShell.responses.liveTurnLivenessReasons', {
+          reasons: humanizedReasons.join(', '),
+        }),
+      );
+    }
+    if (invokeLiveness.partialOutputPreserved) {
+      extraDetails.push(
+        this.options.translate('cli.sessionShell.responses.liveTurnPartialOutputPreserved'),
+      );
+    }
+
+    const detailParts = [
+      statusDetail,
+      statusDetail
+        ? fallbackDetail && fallbackDetail !== statusDetail
+          ? fallbackDetail
+          : null
+        : (fallbackDetail ?? null),
+      ...extraDetails,
+    ].filter((detail): detail is string => typeof detail === 'string' && detail.trim().length > 0);
+    return detailParts.length > 0 ? detailParts.join(' ') : undefined;
+  }
+
+  private resolveInvokeLivenessStatusDetail(
+    status: string | undefined,
+    surface: string,
+  ): string | undefined {
+    switch (status) {
+      case 'transport_idle_suspect':
+        return this.options.translate('cli.sessionShell.responses.liveTurnWaitingTransportDetail', {
+          surface,
+        });
+      case 'semantic_stall_suspect':
+        return this.options.translate('cli.sessionShell.responses.liveTurnWaitingProgressDetail', {
+          surface,
+        });
+      case 'graceful_interrupting':
+        return this.options.translate(
+          'cli.sessionShell.responses.liveTurnGracefulInterruptDetail',
+          {
+            surface,
+          },
+        );
+      case 'hard_terminating':
+        return this.options.translate('cli.sessionShell.responses.liveTurnHardTerminateDetail', {
+          surface,
+        });
+      default:
+        return undefined;
+    }
+  }
+
+  private humanizeInvokeLivenessReasonCode(reasonCode: string): string {
+    switch (reasonCode) {
+      case 'invoke_hard_timeout':
+        return this.options.translate('cli.sessionShell.responses.liveTurnReasonHardTimeout');
+      case 'invoke_partial_output_preserved':
+        return this.options.translate(
+          'cli.sessionShell.responses.liveTurnReasonPartialOutputPreserved',
+        );
+      case 'invoke_transport_idle_timeout':
+        return this.options.translate(
+          'cli.sessionShell.responses.liveTurnReasonTransportIdleTimeout',
+        );
+      case 'invoke_semantic_stall_timeout':
+        return this.options.translate(
+          'cli.sessionShell.responses.liveTurnReasonSemanticStallTimeout',
+        );
+      case 'invoke_graceful_interrupt_exceeded':
+        return this.options.translate(
+          'cli.sessionShell.responses.liveTurnReasonGracefulInterruptExceeded',
+        );
+      default:
+        return reasonCode;
+    }
+  }
+
+  private readInvokeLiveness(
+    payload: Record<string, unknown>,
+  ): LiveTurnInvokeLivenessSnapshot | undefined {
+    const candidate = payload.invokeLiveness;
+    if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) {
+      return undefined;
+    }
+
+    const record = candidate as Record<string, unknown>;
+    return {
+      status: this.readOptionalString(record.status),
+      surfaceId:
+        this.readOptionalString(record.surfaceId) ??
+        this.readOptionalString(payload.selectedSurface),
+      ...(typeof record.partialOutputPreserved === 'boolean'
+        ? { partialOutputPreserved: record.partialOutputPreserved }
+        : {}),
+      suspectReasonCodes: Array.isArray(record.suspectReasonCodes)
+        ? record.suspectReasonCodes.filter(
+            (reasonCode): reasonCode is string =>
+              typeof reasonCode === 'string' && reasonCode.trim().length > 0,
+          )
+        : [],
+    };
   }
 
   private readOptionalString(candidate: unknown): string | undefined {

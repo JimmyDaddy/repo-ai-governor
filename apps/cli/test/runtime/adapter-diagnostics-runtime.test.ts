@@ -1,10 +1,14 @@
 import {
   AgentAvailabilityStatus,
   AgentCapabilitySupportLevel,
+  buildLayeredHealthCheckResult,
 } from '@repo-ai-governor/adapter-sdk';
 import {
   AdapterAvailability,
+  AdapterEndpointSource,
+  AdapterRequestCancellationMode,
   AdapterSurface,
+  AdapterTransportKind,
   DEFAULT_I18N_RUNTIME_CONFIG,
   ExecutionProgressStage,
   I18nRuntime,
@@ -34,6 +38,23 @@ function createVerificationFixture(): CliAdapterVerificationResolution {
           'local_model_endpoint_unreachable:ollama:http%3A%2F%2F127.0.0.1%3A11434:ECONNREFUSED:refused',
         ],
         failureAttributions: ['configuration_missing'],
+        healthCheck: buildLayeredHealthCheckResult({
+          adapterId: 'ollama-agent',
+          surfaceId: AdapterSurface.OLLAMA,
+          availabilityStatus: AgentAvailabilityStatus.DEGRADED,
+          selectedEntrypoint: AdapterSurface.OLLAMA,
+          routeKey: 'cli.adapter.probe.ollama',
+          unavailableReasons: [
+            'local_model_endpoint_unreachable:ollama:http%3A%2F%2F127.0.0.1%3A11434:ECONNREFUSED:refused',
+          ],
+          transportKind: AdapterTransportKind.BASELINE,
+          providerKind: null,
+          vendorBindingKind: null,
+          model: 'qwen2.5-coder:7b',
+          credentialSource: null,
+          endpointSource: AdapterEndpointSource.CONFIG_EXPLICIT,
+          requestCancellationMode: AdapterRequestCancellationMode.LOCAL_ABORT_ONLY,
+        }),
         capabilitySupportByCapability: new Map([
           ['structured_output', AgentCapabilitySupportLevel.SUPPORTED],
         ]),
@@ -51,6 +72,21 @@ function createVerificationFixture(): CliAdapterVerificationResolution {
         degradedCapabilities: ['structured_output'],
         unavailableReasons: ['surface_unavailable:claude_code:login_required'],
         failureAttributions: ['configuration_missing'],
+        healthCheck: buildLayeredHealthCheckResult({
+          adapterId: 'ollama-agent',
+          surfaceId: AdapterSurface.OLLAMA,
+          availabilityStatus: AgentAvailabilityStatus.DEGRADED,
+          selectedEntrypoint: AdapterSurface.OLLAMA,
+          routeKey: 'cli.adapter.role.reviewer',
+          unavailableReasons: ['surface_unavailable:claude_code:login_required'],
+          transportKind: AdapterTransportKind.BASELINE,
+          providerKind: null,
+          vendorBindingKind: null,
+          model: 'qwen2.5-coder:7b',
+          credentialSource: null,
+          endpointSource: AdapterEndpointSource.CONFIG_EXPLICIT,
+          requestCancellationMode: AdapterRequestCancellationMode.LOCAL_ABORT_ONLY,
+        }),
         status: CliGovernanceCheckStatus.WARN,
       },
     ],
@@ -81,6 +117,9 @@ describe('Cli adapter diagnostics runtime', () => {
     expect(detail).toContain('availability=degraded');
     expect(detail).toContain('attribution=configuration_missing');
     expect(detail).toContain('local-model surface "ollama" cannot reach endpoint');
+    expect(detail).toContain('transport=baseline');
+    expect(detail).toContain('model=qwen2.5-coder:7b');
+    expect(detail).toContain('cancel=local_abort_only');
     expect(safeLocalBoundary.mode).toBe('safe_local_only');
     expect(safeLocalBoundary.fixEnabled).toBe(true);
   });
@@ -113,6 +152,8 @@ describe('Cli adapter diagnostics runtime', () => {
     expect(payload.failureAttributionSummary?.configuration_missing).toBe(2);
     expect(rows[0]?.roleId).toBe('reviewer');
     expect(rows[0]?.status).toBe('warning');
+    expect(rows[0]?.detail).toContain('transport=baseline');
+    expect(rows[0]?.detail).toContain('cancel=local_abort_only');
     expect(rows[0]?.backlink?.artifactPath).toBe('/tmp/connect.json');
     expect(prompts[0]?.blocking).toBe(false);
     expect(prompts[0]?.title).toBe('Adapter route attention');

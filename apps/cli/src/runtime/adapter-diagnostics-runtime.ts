@@ -1,4 +1,7 @@
-import { AgentAvailabilityStatus } from '@repo-ai-governor/adapter-sdk';
+import {
+  AgentAvailabilityStatus,
+  type AgentLayeredHealthCheckResult,
+} from '@repo-ai-governor/adapter-sdk';
 import { ExecutionInteractionCategory, ExecutionProgressStatus } from '@repo-ai-governor/shared';
 import type { ExecutionProgressStage } from '@repo-ai-governor/shared';
 import { CliGovernanceCheckStatus } from '../constants/cli-governance-runtime.constant.js';
@@ -58,7 +61,13 @@ export class CliAdapterDiagnosticsRuntime {
     const attributionLabel = this.translate('cli.adapterDiagnostics.attribution');
     const availabilityLabel = this.translate('cli.adapterDiagnostics.availability');
     const reasonsLabel = this.translate('cli.adapterDiagnostics.reasons');
-    return `${availabilityLabel}=${snapshot.availabilityStatus} ${attributionLabel}=${snapshot.failureAttributions.join('|') || 'none'} ${reasonsLabel}=${readableReasons.join(' | ')}`;
+    const livenessFootnote = this.formatHealthCheckDiagnosticFootnote(snapshot.healthCheck);
+    return [
+      `${availabilityLabel}=${snapshot.availabilityStatus} ${attributionLabel}=${snapshot.failureAttributions.join('|') || 'none'} ${reasonsLabel}=${readableReasons.join(' | ')}`,
+      livenessFootnote,
+    ]
+      .filter((part) => part.length > 0)
+      .join(' ');
   }
 
   /**
@@ -231,7 +240,33 @@ export class CliAdapterDiagnosticsRuntime {
       roleEvaluation.failureAttributions.length > 0
         ? roleEvaluation.failureAttributions.join('|')
         : 'none';
-    return `required=${roleEvaluation.required} selected=${roleEvaluation.selectedSurface ?? 'none'} selected_by=${roleEvaluation.selectedBy} unsupported=${unsupported} degraded=${degraded} attribution=${failureAttributions} reasons=${unavailableReasons}`;
+    const livenessFootnote = this.formatHealthCheckDiagnosticFootnote(roleEvaluation.healthCheck);
+    return [
+      `required=${roleEvaluation.required} selected=${roleEvaluation.selectedSurface ?? 'none'} selected_by=${roleEvaluation.selectedBy} unsupported=${unsupported} degraded=${degraded} attribution=${failureAttributions} reasons=${unavailableReasons}`,
+      livenessFootnote,
+    ]
+      .filter((part) => part.length > 0)
+      .join(' ');
+  }
+
+  private formatHealthCheckDiagnosticFootnote(healthCheck?: AgentLayeredHealthCheckResult): string {
+    if (!healthCheck) {
+      return '';
+    }
+
+    const reasonCodes =
+      healthCheck.reasonCodes.length > 0 ? healthCheck.reasonCodes.join('|') : 'none';
+    return [
+      healthCheck.transportKind ? `transport=${healthCheck.transportKind}` : '',
+      healthCheck.providerKind ? `provider=${healthCheck.providerKind}` : '',
+      healthCheck.vendorBindingKind ? `vendor_binding=${healthCheck.vendorBindingKind}` : '',
+      healthCheck.model ? `model=${healthCheck.model}` : '',
+      `cancel=${healthCheck.requestCancellationMode}`,
+      `route=${healthCheck.routeKey}`,
+      `reason_codes=${reasonCodes}`,
+    ]
+      .filter((part) => part.length > 0)
+      .join(' ');
   }
 
   /**

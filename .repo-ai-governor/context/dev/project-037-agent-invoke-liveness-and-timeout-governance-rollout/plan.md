@@ -57,7 +57,7 @@
 | TK-503 | sprint-002 | extend remote-api onboarding verification and credential-boundary surfaces | cli/runtime-verification | `technical-solution.api-key-remote-adapter-invocation` active formal docs + TK-501 | completed |
 | TK-504 | sprint-002 | add remote-api delivery verification and clean-room smoke coverage | release/verification | TK-501 | completed |
 | TK-487 | sprint-003 | roll codex onto shared invoke liveness watchdog graceful interrupt and partial output preservation | runtime/codex-adapter | TK-486、TK-488 | completed |
-| TK-490 | sprint-003 | route session-main interactive shell and doctor verify through invoke liveness diagnostics | cli/runtime-diagnostics | TK-487、TK-488、TK-489 | planned |
+| TK-490 | sprint-003 | route session-main interactive shell and doctor verify through invoke liveness diagnostics | cli/runtime-diagnostics | TK-487、TK-488、TK-489 | completed |
 | TK-491 | sprint-003 | deliver invoke liveness regression budgets cutover governance and rollout closeout | governance/cutover | TK-490 | planned |
 
 ## 4. 依赖产物策略
@@ -93,3 +93,4 @@
 12. 2026-04-03：执行 sprint-001 台账纠偏：`TK-486` 回填为 `completed`，`TK-487` 迁移到 `sprint-003` 继续承接残余 Codex-specific watchdog closeout；`sprint-001` 现正式切换为 `completed`，active primary stream 转为 `sprint-002`。
 13. 2026-04-03：完成 `TK-489` 收口并结束 `sprint-002`：`Ollama / local-model` 已对齐 shared invoke-liveness snapshot、done reason、timeout budget、partial-output preservation 与长 idle progress protection；cross-adapter rollout / remote-api follow-through package 全部完成，primary planning surface 切换到 `sprint-003`。
 14. 2026-04-03：完成 `TK-487`：`Codex cli_exec` 已正式对齐 shared invoke-liveness watchdog、suspect stall、graceful interrupt / hard terminate 与 partial-output preservation；`sprint-003` 的剩余 open scope 收敛为 `TK-490` consumer diagnostics 与 `TK-491` governance closeout。
+15. 2026-04-03：完成 `TK-490`：`session.main` / interactive shell / execution details 已正式消费 invoke-liveness projection，`doctor/verify` 也已输出 cancellation mode、reason code 与 budget 相关 structured diagnostics；`project-037` 当前仅剩 `TK-491` 的 governance closeout。

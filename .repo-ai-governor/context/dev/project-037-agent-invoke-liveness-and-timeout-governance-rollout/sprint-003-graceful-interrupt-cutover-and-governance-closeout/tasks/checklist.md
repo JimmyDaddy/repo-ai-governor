@@ -6,8 +6,10 @@
   - 2026-04-03：随着 `TK-489` 收口、`sprint-002` 完成，本任务被提升为新的 primary implementation surface，状态切换为 `active`。
   - 2026-04-03：完成 Codex `cli_exec` invoke-liveness 补齐：shared snapshot、`transport_idle_suspect / semantic_stall_suspect / graceful_interrupting / hard_terminating`、dual-stage terminate fuse、partial-output preservation 与 smoke 回归已全部通过；任务状态切换为 `completed`。
 
-- [ ] TK-490 route session-main interactive shell and doctor verify through invoke liveness diagnostics
+- [x] TK-490 route session-main interactive shell and doctor verify through invoke liveness diagnostics
   - 2026-04-02：任务创建，状态初始化为 `planned`；承接 session.main、interactive shell、doctor/verify 与 invoke-liveness diagnostics 的正式接线。
+  - 2026-04-03：任务状态切换为 `active`，开始补齐 session.main live shell 呈现、execution details 与 doctor/verify invoke-liveness diagnostics 投影。
+  - 2026-04-03：任务完成：interactive shell 已显式呈现 suspect stall / graceful interrupt / partial output preserved，execution details 会保留这些细节；doctor/verify matrix/detail 已补齐 cancellation mode、reason codes 与 budget diagnostics，并通过定向回归、i18n gate、台账 gate 与 `build`。
 
 - [ ] TK-491 deliver invoke liveness regression budgets cutover governance and rollout closeout
   - 2026-04-02：任务创建，状态初始化为 `planned`；承接 budget matrix、cutover governance、回归矩阵与项目 closeout 收口。

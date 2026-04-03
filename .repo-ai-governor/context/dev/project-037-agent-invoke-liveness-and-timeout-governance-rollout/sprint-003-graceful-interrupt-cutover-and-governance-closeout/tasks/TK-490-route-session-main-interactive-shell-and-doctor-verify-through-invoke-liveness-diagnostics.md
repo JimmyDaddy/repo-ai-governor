@@ -1,7 +1,7 @@
 # TK-490 route session-main interactive shell and doctor verify through invoke liveness diagnostics
 
-- Status: planned
-- Date: 2026-04-02
+- Status: completed
+- Date: 2026-04-03
 - Owner: AI-Agent
 - Priority: P0
 - Project: `project-037-agent-invoke-liveness-and-timeout-governance-rollout`
@@ -44,3 +44,5 @@
 ## 6. 执行记录
 
 1. 2026-04-02：任务创建，状态初始化为 `planned`。
+2. 2026-04-03：任务切换为 `active`，开始接线 `session.main` / interactive shell / doctor / verify 对 shared invoke-liveness diagnostics 的正式消费。
+3. 2026-04-03：完成 `session.main` live invoke-liveness shell 呈现、execution details 细化，以及 `doctor/verify` 的 invoke-liveness structured diagnostics 投影；定向 `vitest`、`check-i18n-parity-fallback`、ledger gates 与 `pnpm run build` 全部通过，任务切换为 `completed`。

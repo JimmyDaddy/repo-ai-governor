@@ -15,7 +15,10 @@ import {
   GovernorErrorCode,
 } from '@repo-ai-governor/shared';
 import { CliAgentOnboardingPreset } from '../../src/constants/cli-agent-onboarding.constant.js';
-import { CliGovernanceCheckStatus } from '../../src/constants/cli-governance-runtime.constant.js';
+import {
+  CliAdapterRoleSelectionSource,
+  CliGovernanceCheckStatus,
+} from '../../src/constants/cli-governance-runtime.constant.js';
 import { CliAgentOnboardingRuntime } from '../../src/runtime/agent-onboarding-runtime.js';
 
 function createGovernorConfigFixture() {
@@ -250,9 +253,164 @@ describe('CliAgentOnboardingRuntime', () => {
           vendor_binding_kind: AdapterVendorBindingKind.OPENAI_RESPONSES,
           credential_source: AdapterCredentialSource.ENV_DEFAULT,
           endpoint_source: AdapterEndpointSource.VENDOR_DEFAULT,
+          request_cancellation_mode: AdapterRequestCancellationMode.LOCAL_ABORT_ONLY,
+          reason_codes: ['auth.credential_missing'],
+        }),
+        invoke_liveness_diagnostics: expect.objectContaining({
+          transport_kind: AdapterTransportKind.REMOTE_API,
+          provider_kind: AdapterProviderKind.OPENAI,
+          vendor_binding_kind: AdapterVendorBindingKind.OPENAI_RESPONSES,
+          request_cancellation_mode: AdapterRequestCancellationMode.LOCAL_ABORT_ONLY,
+          reason_codes: ['auth.credential_missing'],
+          unavailable_reasons: ['credential_missing:codex:OPENAI_API_KEY'],
+          failure_attributions: ['environment_precondition'],
         }),
       }),
     ]);
     expect(verifyPayload.tool_transport_matrix).toEqual(onboardingPayload.tool_transport_matrix);
+    expect(verifyPayload.role_binding_matrix).toEqual([]);
+  });
+
+  it('projects invoke-liveness diagnostics into verify role binding rows', () => {
+    const runtime = new CliAgentOnboardingRuntime();
+    const sourceConfig = createGovernorConfigFixture();
+    sourceConfig.adapters.tools = [
+      {
+        toolId: AdapterSurface.CODEX,
+        enabled: true,
+        availability: AdapterAvailability.AVAILABLE,
+        transport: AdapterTransportKind.REMOTE_API,
+        remoteApi: {
+          provider: AdapterProviderKind.OPENAI,
+          vendorBinding: AdapterVendorBindingKind.OPENAI_RESPONSES,
+          model: 'gpt-5',
+          credentialEnvVar: 'OPENAI_API_KEY',
+          requestTimeoutMs: 90000,
+          maxRetries: 2,
+        },
+      },
+    ];
+
+    const verification = {
+      overallStatus: CliGovernanceCheckStatus.WARN,
+      tools: [],
+      roleEvaluations: [
+        {
+          roleId: 'planner',
+          roleProfileId: 'planner-default',
+          required: true,
+          primarySurface: AdapterSurface.CODEX,
+          selectedSurface: AdapterSurface.CODEX,
+          selectedBy: CliAdapterRoleSelectionSource.PRIMARY,
+          unsupportedCapabilities: [],
+          degradedCapabilities: [],
+          unavailableReasons: ['credential_missing:codex:OPENAI_API_KEY'],
+          healthCheck: buildLayeredHealthCheckResult({
+            adapterId: 'codex-agent',
+            surfaceId: AdapterSurface.CODEX,
+            availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+            selectedEntrypoint: AdapterSurface.CODEX,
+            routeKey: 'cli.adapter.role.planner',
+            unavailableReasons: ['credential_missing:codex:OPENAI_API_KEY'],
+            transportKind: AdapterTransportKind.REMOTE_API,
+            providerKind: AdapterProviderKind.OPENAI,
+            vendorBindingKind: AdapterVendorBindingKind.OPENAI_RESPONSES,
+            model: 'gpt-5',
+            credentialSource: AdapterCredentialSource.ENV_DEFAULT,
+            endpointSource: AdapterEndpointSource.VENDOR_DEFAULT,
+            requestCancellationMode: AdapterRequestCancellationMode.LOCAL_ABORT_ONLY,
+          }),
+          failureAttributions: ['environment_precondition'],
+          status: CliGovernanceCheckStatus.WARN,
+        },
+      ],
+      requiredRoleCount: 1,
+      requiredRoleFailedCount: 0,
+      degradedRoleCount: 1,
+      fallbackRoleCount: 0,
+      nextActions: ['Set OPENAI_API_KEY before verify.'],
+    };
+
+    const verifyPayload = runtime.createVerifyMatrixPayload({
+      executionId: 'verify-456',
+      verification,
+      adaptersConfig: sourceConfig.adapters,
+    });
+
+    expect(verifyPayload.role_binding_matrix).toEqual([
+      expect.objectContaining({
+        role_profile_id: 'planner-default',
+        primary_tool: AdapterSurface.CODEX,
+        binding_status: CliGovernanceCheckStatus.WARN,
+        invoke_liveness_diagnostics: expect.objectContaining({
+          transport_kind: AdapterTransportKind.REMOTE_API,
+          provider_kind: AdapterProviderKind.OPENAI,
+          vendor_binding_kind: AdapterVendorBindingKind.OPENAI_RESPONSES,
+          request_timeout_ms: 90000,
+          max_retries: 2,
+          request_cancellation_mode: AdapterRequestCancellationMode.LOCAL_ABORT_ONLY,
+          reason_codes: ['auth.credential_missing'],
+          unavailable_reasons: ['credential_missing:codex:OPENAI_API_KEY'],
+          failure_attributions: ['environment_precondition'],
+        }),
+      }),
+    ]);
+  });
+
+  it('projects CLI-backed runtime budget defaults into invoke-liveness diagnostics', () => {
+    const runtime = new CliAgentOnboardingRuntime();
+    const sourceConfig = createGovernorConfigFixture();
+
+    const verification = {
+      overallStatus: CliGovernanceCheckStatus.PASS,
+      tools: [
+        {
+          toolId: AdapterSurface.CODEX,
+          enabled: true,
+          configuredAvailability: AdapterAvailability.AVAILABLE,
+          availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+          unavailableReasons: [],
+          healthCheck: buildLayeredHealthCheckResult({
+            adapterId: 'codex-agent',
+            surfaceId: AdapterSurface.CODEX,
+            availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+            selectedEntrypoint: AdapterSurface.CODEX,
+            routeKey: 'cli.adapter.probe.codex',
+            unavailableReasons: [],
+            transportKind: AdapterTransportKind.CLI_EXEC,
+            requestCancellationMode: AdapterRequestCancellationMode.PROCESS_SIGNAL,
+          }),
+          capabilitySupportByCapability: new Map(),
+          failureAttributions: [],
+        },
+      ],
+      roleEvaluations: [],
+      requiredRoleCount: 1,
+      requiredRoleFailedCount: 0,
+      degradedRoleCount: 0,
+      fallbackRoleCount: 0,
+      nextActions: [],
+    };
+
+    const verifyPayload = runtime.createVerifyMatrixPayload({
+      executionId: 'verify-cli-budget',
+      verification,
+      adaptersConfig: sourceConfig.adapters,
+    });
+
+    expect(verifyPayload.tool_transport_matrix).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          tool_id: AdapterSurface.CODEX,
+          transport: AdapterTransportKind.CLI_EXEC,
+          invoke_liveness_diagnostics: expect.objectContaining({
+            transport_kind: AdapterTransportKind.CLI_EXEC,
+            request_timeout_ms: 30000,
+            max_retries: 2,
+            route_key: 'cli.adapter.probe.codex',
+          }),
+        }),
+      ]),
+    );
   });
 });
