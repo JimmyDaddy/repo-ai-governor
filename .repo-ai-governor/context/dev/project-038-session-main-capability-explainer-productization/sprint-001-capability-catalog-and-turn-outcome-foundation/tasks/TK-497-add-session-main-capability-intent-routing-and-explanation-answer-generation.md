@@ -1,7 +1,7 @@
 # TK-497 add session.main capability intent routing and explanation answer generation
 
-- Status: planned
-- Date: 2026-04-02
+- Status: completed
+- Date: 2026-04-03
 - Owner: AI-Agent
 - Priority: P0
 - Project: `project-038-session-main-capability-explainer-productization`
@@ -39,3 +39,6 @@
 ## 6. 执行记录
 
 1. 2026-04-02：任务创建，状态初始化为 `planned`；等待 `TK-495` 完成后执行。
+2. 2026-04-03：状态切换为 `active`；开始实现 capability explainer classifier、dispatcher precedence 与 `SessionMainCapabilityAnswer` baseline。
+3. 2026-04-03：完成 overview/detail/examples/comparison explainer answer、dispatcher answer route 优先级与 shared turn outcome structured answer baseline。
+4. 2026-04-03：验证通过 `vitest(core-orchestration-service/test)`、`pnpm run build` 与 `pnpm run check`；任务收口为 `completed`。

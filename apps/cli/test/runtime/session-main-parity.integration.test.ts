@@ -464,10 +464,12 @@ describe('session.main parity integration', () => {
 
       expect(resolveTurn).toHaveBeenCalledWith(
         expect.objectContaining({
+          locale: 'en-US',
           userMessage: '很好,帮我 review 一下代码',
-          metadata: {
+          metadata: expect.objectContaining({
             [SESSION_MAIN_IMPLICIT_ROLE_DELEGATE_METADATA_KEY]: 'reviewer',
-          },
+            locale: 'en-US',
+          }),
         }),
       );
       expect(commandExecutor).not.toHaveBeenCalled();

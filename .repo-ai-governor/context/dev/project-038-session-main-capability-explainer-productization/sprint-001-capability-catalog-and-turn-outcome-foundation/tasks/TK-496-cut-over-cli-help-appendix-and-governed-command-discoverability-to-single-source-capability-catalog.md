@@ -1,7 +1,7 @@
 # TK-496 cut over CLI help appendix and governed command discoverability to single-source capability catalog
 
-- Status: planned
-- Date: 2026-04-02
+- Status: completed
+- Date: 2026-04-03
 - Owner: AI-Agent
 - Priority: P1
 - Project: `project-038-session-main-capability-explainer-productization`
@@ -39,3 +39,5 @@
 ## 6. 执行记录
 
 1. 2026-04-02：任务创建，状态初始化为 `planned`；等待 `TK-495` 完成后执行。
+2. 2026-04-03：状态切换为 `active`；开始将 CLI help appendix 与 session-shell governed discoverability metadata 切到 canonical capability catalog，同时保留 shell-local builtins 继续由 CLI registry 自治。
+3. 2026-04-03：完成 catalog-backed discoverability runtime、slash registry governed/builtin 分层、top-level/command help appendix cutover 与相关 CLI/i18n 回归；验证通过 `vitest apps/cli/test`、`check-i18n-parity-fallback`、`check-task-ledger-sync`、`check-sprint-plan-status-sync`、`pnpm run build` 与 `pnpm run check`。

@@ -1,8 +1,11 @@
 import type {
+  SessionMainCapabilityAnswerKind,
+  SessionMainCapabilityId,
   SessionMainHandoffExecutionMode,
   SessionMainInteractionMode,
   SessionMainResponseMode,
 } from '../aliases/index.js';
+import type { SessionMainCapabilitySuggestedAction } from './session-main-capability-explainer.interface.js';
 
 /**
  * Defines one structured backlink returned by the `session.main` supervisor.
@@ -92,6 +95,7 @@ export interface SessionMainSupervisorTurnContext {
   turnId: string;
   turnIndex: number;
   userMessage: string;
+  locale?: string;
   selectedSurface: string;
   selectedBy: string;
   sessionRoutingPreferenceApplied: boolean;
@@ -107,6 +111,9 @@ export interface SessionMainSupervisorTurnOutcome {
   interactionMode: SessionMainInteractionMode;
   assistantDelta: string;
   assistantMessage?: string;
+  capabilityAnswerKind?: SessionMainCapabilityAnswerKind;
+  referencedCapabilityIds?: readonly SessionMainCapabilityId[];
+  suggestedActions?: readonly SessionMainCapabilitySuggestedAction[];
   executionDetailsLines?: string[];
   routerDecisionReason?: string;
   synthesisMode?: string;

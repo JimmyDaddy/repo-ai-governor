@@ -1,4 +1,6 @@
 export { I18nRuntime } from './i18n/index.js';
+export { EN_US_TRANSLATIONS } from './i18n/locales/en-us.js';
+export { ZH_CN_TRANSLATIONS } from './i18n/locales/zh-cn.js';
 export {
   DEFAULT_I18N_FALLBACK_LOCALE,
   DEFAULT_I18N_LOCALE,

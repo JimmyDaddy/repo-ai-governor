@@ -1,9 +1,11 @@
+import { SESSION_MAIN_HANDOFF_EXECUTION_MODE } from '@repo-ai-governor/core-orchestration-service';
 import { CliCommandName } from '../../constants/cli-command.constant.js';
 import type {
   CliSessionSlashCommandHighlightSegment,
   CliSessionSlashCommandMetadata,
   CliSessionSlashCommandSuggestion,
 } from '../../types/index.js';
+import { CliSessionMainCapabilityDiscoverabilityRuntime } from '../session-main-capability-discoverability-runtime.js';
 
 type SessionSlashCommandKind = 'builtin' | 'bridge';
 type SessionSlashCommandExecutionMode = 'direct' | 'confirm';
@@ -27,7 +29,7 @@ interface SessionSlashCommandSuggestOptions {
   surface?: 'launcher' | 'full';
 }
 
-const SESSION_SLASH_COMMAND_DEFINITIONS: SessionSlashCommandDefinition[] = [
+const SESSION_SLASH_BUILTIN_DEFINITIONS: SessionSlashCommandDefinition[] = [
   { command: '/help', summaryKey: 'cli.sessionShell.commands.help.summary', kind: 'builtin' },
   { command: '/confirm', summaryKey: 'cli.sessionShell.commands.confirm.summary', kind: 'builtin' },
   { command: '/cancel', summaryKey: 'cli.sessionShell.commands.cancel.summary', kind: 'builtin' },
@@ -48,27 +50,12 @@ const SESSION_SLASH_COMMAND_DEFINITIONS: SessionSlashCommandDefinition[] = [
   { command: '/status', summaryKey: 'cli.sessionShell.commands.status.summary', kind: 'builtin' },
   { command: '/theme', summaryKey: 'cli.sessionShell.commands.theme.summary', kind: 'builtin' },
   { command: '/agent', summaryKey: 'cli.sessionShell.commands.agent.summary', kind: 'builtin' },
+];
+
+const SESSION_SLASH_LOCAL_BRIDGE_DEFINITIONS: SessionSlashCommandDefinition[] = [
   {
     command: '/init',
     summaryKey: 'cli.commands.init.description',
-    kind: 'bridge',
-    executionMode: 'direct',
-  },
-  {
-    command: '/connect',
-    summaryKey: 'cli.commands.connect.description',
-    kind: 'bridge',
-    executionMode: 'direct',
-  },
-  {
-    command: '/doctor',
-    summaryKey: 'cli.commands.doctor.description',
-    kind: 'bridge',
-    executionMode: 'direct',
-  },
-  {
-    command: '/verify',
-    summaryKey: 'cli.commands.verify.description',
     kind: 'bridge',
     executionMode: 'direct',
   },
@@ -78,36 +65,37 @@ const SESSION_SLASH_COMMAND_DEFINITIONS: SessionSlashCommandDefinition[] = [
     kind: 'bridge',
     executionMode: 'confirm',
   },
-  {
-    command: '/workflow',
-    summaryKey: 'cli.commands.workflow.description',
-    kind: 'bridge',
-    executionMode: 'confirm',
-  },
-  {
-    command: '/run',
-    summaryKey: 'cli.commands.run.description',
-    kind: 'bridge',
-    executionMode: 'confirm',
-  },
-  {
-    command: '/plan',
-    summaryKey: 'cli.commands.plan.description',
-    kind: 'bridge',
-    executionMode: 'direct',
-  },
-  {
-    command: '/review',
-    summaryKey: 'cli.commands.review.description',
-    kind: 'bridge',
-    executionMode: 'direct',
-  },
 ];
 
 const SESSION_SLASH_COMMAND_ALIASES: Record<string, string> = {
   '?': '/help',
   '/routing': '/agent',
 };
+
+const SESSION_SLASH_COMMAND_FULL_ORDER = [
+  '/help',
+  '/confirm',
+  '/cancel',
+  '/clear',
+  '/exit',
+  '/resume',
+  '/history',
+  '/search',
+  '/multiline',
+  '/status',
+  '/theme',
+  '/agent',
+  '/init',
+  '/connect',
+  '/doctor',
+  '/verify',
+  '/workspace',
+  '/workflow',
+  '/plan',
+  '/review',
+  '/review verify',
+  '/run',
+] as const;
 
 const SESSION_SLASH_COMMAND_LAUNCHER_ORDER = [
   '/workspace',
@@ -124,6 +112,9 @@ const SESSION_SLASH_COMMAND_LAUNCHER_ORDER = [
  * Owns slash-command metadata, prefix filtering, and handoff argv resolution for the session shell.
  */
 export class CliSessionSlashCommandRegistry {
+  private readonly capabilityDiscoverabilityRuntime =
+    new CliSessionMainCapabilityDiscoverabilityRuntime();
+
   /**
    * Lists the current session-shell slash-command set in stable order.
    * @param translate i18n translation function for summaries.
@@ -132,10 +123,7 @@ export class CliSessionSlashCommandRegistry {
   public listCommands(
     translate: (key: string, interpolation?: Record<string, string>) => string,
   ): CliSessionSlashCommandMetadata[] {
-    return SESSION_SLASH_COMMAND_DEFINITIONS.map((definition) => ({
-      command: definition.command,
-      summary: translate(definition.summaryKey),
-    }));
+    return this.listLocalizedCommandMetadata(translate, 'full');
   }
 
   /**
@@ -148,18 +136,14 @@ export class CliSessionSlashCommandRegistry {
     query: string,
     translate: (key: string, interpolation?: Record<string, string>) => string,
   ): CliSessionSlashCommandMetadata | null {
-    const normalizedCommand = this.resolveCommandToken(query);
-    const match = SESSION_SLASH_COMMAND_DEFINITIONS.find(
-      (definition) => definition.command === normalizedCommand,
-    );
-
-    if (!match) {
+    const definition = this.resolveDefinition(query);
+    if (!definition) {
       return null;
     }
 
     return {
-      command: match.command,
-      summary: translate(match.summaryKey),
+      command: definition.command,
+      summary: translate(definition.summaryKey),
     };
   }
 
@@ -169,49 +153,30 @@ export class CliSessionSlashCommandRegistry {
    * @returns Runtime command resolution or `null` when no exact command exists.
    */
   public resolveAction(query: string): SessionSlashCommandResolution | null {
-    const normalizedCommand = this.resolveCommandToken(query);
-    const argumentTokens = this.resolveArgumentTokens(query);
-    const match = SESSION_SLASH_COMMAND_DEFINITIONS.find(
-      (definition) => definition.command === normalizedCommand,
-    );
+    const normalizedQuery = this.normalizeAliasedQuery(query);
+    const definition = this.resolveDefinition(query);
 
-    if (!match) {
+    if (!definition) {
       return null;
     }
 
+    const argumentTokens = this.resolveArgumentTokens(normalizedQuery, definition.command);
+
     return {
-      command: match.command,
-      summaryKey: match.summaryKey,
-      kind: match.kind,
-      ...(match.kind === 'bridge'
+      command: definition.command,
+      summaryKey: definition.summaryKey,
+      kind: definition.kind,
+      ...(definition.kind === 'bridge'
         ? {
             executionMode: this.resolveExecutionMode(
-              match.command,
+              definition.command,
               argumentTokens,
-              match.executionMode ?? 'confirm',
+              definition.executionMode ?? 'confirm',
             ),
-            bridgeArgv: this.resolveBridgeArgv(match.command, argumentTokens),
+            bridgeArgv: this.resolveBridgeArgv(definition.command, argumentTokens),
           }
         : {}),
     };
-  }
-
-  private resolveExecutionMode(
-    command: string,
-    argumentTokens: string[],
-    defaultMode: SessionSlashCommandExecutionMode,
-  ): SessionSlashCommandExecutionMode {
-    if (command === '/review') {
-      const reviewAction = argumentTokens[0]?.toLowerCase() ?? 'start';
-      return reviewAction === 'verify' ? 'confirm' : defaultMode;
-    }
-
-    if (command === '/workflow') {
-      const workflowAction = argumentTokens[0]?.toLowerCase() ?? 'preview';
-      return workflowAction === 'preview' ? 'direct' : 'confirm';
-    }
-
-    return defaultMode;
   }
 
   /**
@@ -225,11 +190,11 @@ export class CliSessionSlashCommandRegistry {
     translate: (key: string, interpolation?: Record<string, string>) => string,
     options: SessionSlashCommandSuggestOptions = {},
   ): CliSessionSlashCommandSuggestion[] {
-    const normalizedPrefix = this.normalizePrefix(this.resolveCommandToken(query));
+    const normalizedPrefix = this.normalizePrefix(this.normalizeAliasedQuery(query));
     const commandList =
       normalizedPrefix.length === 0 && options.surface !== 'full'
-        ? this.listLauncherCommands(translate)
-        : this.listCommands(translate);
+        ? this.listLocalizedCommandMetadata(translate, 'launcher')
+        : this.listLocalizedCommandMetadata(translate, 'full');
 
     return commandList
       .filter(
@@ -243,25 +208,91 @@ export class CliSessionSlashCommandRegistry {
       }));
   }
 
-  private listLauncherCommands(
+  private listLocalizedCommandMetadata(
     translate: (key: string, interpolation?: Record<string, string>) => string,
+    surface: 'launcher' | 'full',
   ): CliSessionSlashCommandMetadata[] {
-    const commandMap = new Map(
-      this.listCommands(translate).map((definition) => [definition.command, definition]),
+    const orderedCommands =
+      surface === 'launcher'
+        ? SESSION_SLASH_COMMAND_LAUNCHER_ORDER
+        : SESSION_SLASH_COMMAND_FULL_ORDER;
+    const metadataMap = new Map(
+      this.listAllDefinitions().map((definition) => [
+        definition.command,
+        {
+          command: definition.command,
+          summary: translate(definition.summaryKey),
+        } satisfies CliSessionSlashCommandMetadata,
+      ]),
     );
 
-    return SESSION_SLASH_COMMAND_LAUNCHER_ORDER.map((command) => commandMap.get(command)).filter(
-      (definition): definition is CliSessionSlashCommandMetadata => definition !== undefined,
+    return orderedCommands
+      .map((command) => metadataMap.get(command))
+      .filter(
+        (definition): definition is CliSessionSlashCommandMetadata => definition !== undefined,
+      );
+  }
+
+  private listAllDefinitions(): SessionSlashCommandDefinition[] {
+    return [
+      ...SESSION_SLASH_BUILTIN_DEFINITIONS,
+      ...SESSION_SLASH_LOCAL_BRIDGE_DEFINITIONS,
+      ...this.capabilityDiscoverabilityRuntime
+        .listGovernedDescriptorSeeds('full')
+        .map((descriptorSeed) => ({
+          command: descriptorSeed.suggestedSlashCommand,
+          summaryKey: descriptorSeed.summaryKey,
+          kind: 'bridge' as const,
+          executionMode:
+            descriptorSeed.handoffExecutionMode ===
+            SESSION_MAIN_HANDOFF_EXECUTION_MODE.DIRECT_EXECUTE
+              ? ('direct' as const)
+              : ('confirm' as const),
+        })),
+    ];
+  }
+
+  private resolveExecutionMode(
+    command: string,
+    argumentTokens: string[],
+    defaultMode: SessionSlashCommandExecutionMode,
+  ): SessionSlashCommandExecutionMode {
+    if (command === '/workflow') {
+      const workflowAction = argumentTokens[0]?.toLowerCase() ?? 'preview';
+      return workflowAction === 'preview' ? 'direct' : 'confirm';
+    }
+
+    return defaultMode;
+  }
+
+  private resolveDefinition(query: string): SessionSlashCommandDefinition | null {
+    const normalizedQuery = this.normalizeAliasedQuery(query);
+    if (normalizedQuery.length === 0) {
+      return null;
+    }
+
+    const definitions = [...this.listAllDefinitions()].sort(
+      (leftDefinition, rightDefinition) =>
+        rightDefinition.command.length - leftDefinition.command.length,
+    );
+
+    return (
+      definitions.find((definition) =>
+        this.matchesSlashCommand(normalizedQuery, definition.command),
+      ) ?? null
     );
   }
 
   private resolveBridgeArgv(command: string, argumentTokens: string[]): string[] {
-    if (command === '/review' && argumentTokens[0]?.toLowerCase() === 'verify') {
-      return [CliCommandName.REVIEW_VERIFY, ...argumentTokens.slice(1)];
+    if (command === '/review verify') {
+      return [CliCommandName.REVIEW_VERIFY, ...argumentTokens];
     }
 
-    if (command === '/workflow' && argumentTokens.length > 0) {
-      return [CliCommandName.WORKFLOW, ...argumentTokens];
+    if (command === '/workflow') {
+      return [
+        CliCommandName.WORKFLOW,
+        ...(argumentTokens.length > 0 ? argumentTokens : ['preview']),
+      ];
     }
 
     if (command === '/workspace' && argumentTokens.length > 0) {
@@ -275,14 +306,28 @@ export class CliSessionSlashCommandRegistry {
     return query.replace(/^\//u, '').trim().toLowerCase();
   }
 
-  private resolveCommandToken(query: string): string {
-    const rawToken = query.trim().split(/\s+/u)[0]?.toLowerCase() ?? '';
-    return SESSION_SLASH_COMMAND_ALIASES[rawToken] ?? rawToken;
+  private normalizeAliasedQuery(query: string): string {
+    const tokens = query
+      .trim()
+      .toLowerCase()
+      .split(/\s+/u)
+      .filter((token) => token.length > 0);
+
+    if (tokens.length === 0) {
+      return '';
+    }
+
+    const normalizedCommand = SESSION_SLASH_COMMAND_ALIASES[tokens[0] ?? ''] ?? tokens[0] ?? '';
+    return [normalizedCommand, ...tokens.slice(1)].join(' ');
   }
 
-  private resolveArgumentTokens(query: string): string[] {
-    const [, ...argumentsList] = query.trim().split(/\s+/u);
-    return argumentsList.filter((token) => token.length > 0);
+  private resolveArgumentTokens(normalizedQuery: string, command: string): string[] {
+    const argumentQuery = normalizedQuery.slice(command.length).trim();
+    return argumentQuery.length === 0 ? [] : argumentQuery.split(/\s+/u);
+  }
+
+  private matchesSlashCommand(normalizedQuery: string, command: string): boolean {
+    return normalizedQuery === command || normalizedQuery.startsWith(`${command} `);
   }
 
   private buildHighlightSegments(

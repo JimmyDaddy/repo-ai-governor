@@ -14,6 +14,11 @@ import {
   WorkspaceResolver,
 } from '@repo-ai-governor/config';
 import {
+  SESSION_MAIN_CAPABILITY_ID,
+  SESSION_MAIN_HANDOFF_EXECUTION_MODE,
+  type SessionMainCapabilityId,
+} from '@repo-ai-governor/core-orchestration-service';
+import {
   MemoryProviderRegistry,
   type MemoryProviderRegistryLoadResult,
 } from '@repo-ai-governor/memory-provider-registry';
@@ -102,6 +107,7 @@ import { CliLiveCommandCancelController } from './runtime/live-command-cancel-co
 import { CliLiveCommandCancellationPolicy } from './runtime/live-command-cancellation-policy.js';
 import { CliNotificationProviderRegistryRuntime } from './runtime/notification-provider-registry-runtime.js';
 import { CliOrchestrationServiceRuntime } from './runtime/orchestration-service-runtime.js';
+import { CliSessionMainCapabilityDiscoverabilityRuntime } from './runtime/session-main-capability-discoverability-runtime.js';
 import { CliSessionMainSupervisorRuntime } from './runtime/session-main-supervisor-runtime.js';
 export {
   IDE_SURFACE_REGISTRY,
@@ -448,6 +454,9 @@ export async function runCli(
     );
     const sessionShellServiceClient = new CliSessionShellServiceClient(
       sessionShellOrchestrationServiceRuntime,
+      {
+        locale: resolvedLocale,
+      },
     );
     const sessionShellEntrypointRuntime = new CliSessionShellEntrypointRuntime({
       sessionClient: sessionShellServiceClient,
@@ -597,6 +606,11 @@ export async function runCli(
       writeErr: () => undefined,
     });
     program.exitOverride();
+    const capabilityDiscoverabilityRuntime = new CliSessionMainCapabilityDiscoverabilityRuntime();
+    program.addHelpText(
+      'after',
+      buildSessionMainCapabilityCatalogHelpText(runtimeI18n, capabilityDiscoverabilityRuntime),
+    );
 
     const executeCliCommand = async (
       resolvedCommandName: CliCommandName,
@@ -728,12 +742,25 @@ export async function runCli(
         continue;
       }
 
-      program
+      const command = program
         .command(commandDefinition.name)
-        .description(runtimeI18n.t(commandDefinition.descriptionKey))
-        .action(async () => {
-          await executeCliCommand(commandDefinition.name);
-        });
+        .description(runtimeI18n.t(commandDefinition.descriptionKey));
+      const governedCapabilityId = resolveGovernedCapabilityIdForCommand(commandDefinition.name);
+
+      if (governedCapabilityId !== null) {
+        command.addHelpText(
+          'after',
+          buildGovernedCapabilityHelpText(
+            runtimeI18n,
+            capabilityDiscoverabilityRuntime,
+            governedCapabilityId,
+          ),
+        );
+      }
+
+      command.action(async () => {
+        await executeCliCommand(commandDefinition.name);
+      });
     }
 
     program
@@ -744,6 +771,14 @@ export async function runCli(
       .option('--latest', runtimeI18n.t('cli.options.latest'))
       .option('--force', runtimeI18n.t('cli.options.force'))
       .option('--no-rollback', runtimeI18n.t('cli.options.noRollback'))
+      .addHelpText(
+        'after',
+        buildGovernedCapabilityHelpText(
+          runtimeI18n,
+          capabilityDiscoverabilityRuntime,
+          SESSION_MAIN_CAPABILITY_ID.CONNECT,
+        ),
+      )
       .addHelpText('after', buildConnectHelpText(runtimeI18n))
       .action(async () => {
         await executeCliCommand(CliCommandName.CONNECT);
@@ -807,6 +842,14 @@ export async function runCli(
     const workflowCommand = program
       .command(CliCommandName.WORKFLOW)
       .description(runtimeI18n.t('cli.commands.workflow.description'))
+      .addHelpText(
+        'after',
+        buildGovernedCapabilityHelpText(
+          runtimeI18n,
+          capabilityDiscoverabilityRuntime,
+          SESSION_MAIN_CAPABILITY_ID.WORKFLOW,
+        ),
+      )
       .action(async () => {
         throw new RuntimeError(
           GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
@@ -972,6 +1015,116 @@ function buildConnectHelpText(i18n: I18nRuntime): string {
     `  ${CLI_PROGRAM_NAME} connect apply --latest --output pretty`,
     `  ${CLI_PROGRAM_NAME} connect apply ./context/diagnostics/connect/connect-1234567890.governor.yaml --force`,
   ].join('\n');
+}
+
+/**
+ * Builds one localized governed-capability appendix for the top-level CLI help output.
+ * @param i18n Initialized CLI i18n runtime.
+ * @param capabilityDiscoverabilityRuntime Catalog-backed discoverability runtime.
+ * @returns Multi-line help text appended after Commander-generated options.
+ */
+function buildSessionMainCapabilityCatalogHelpText(
+  i18n: I18nRuntime,
+  capabilityDiscoverabilityRuntime: CliSessionMainCapabilityDiscoverabilityRuntime,
+): string {
+  const capabilityViews = capabilityDiscoverabilityRuntime.listCapabilityViews((translationKey) =>
+    i18n.t(translationKey),
+  );
+
+  return [
+    '',
+    i18n.t('sessionMainCapabilities.helpAppendix.catalogTitle'),
+    ...capabilityViews.map(
+      (capabilityView) =>
+        `  ${capabilityView.suggestedSlashCommand.padEnd(16)} ${capabilityView.title}: ${capabilityView.summary}`,
+    ),
+  ].join('\n');
+}
+
+/**
+ * Builds one localized governed-capability help block for explicit CLI commands.
+ * @param i18n Initialized CLI i18n runtime.
+ * @param capabilityDiscoverabilityRuntime Catalog-backed discoverability runtime.
+ * @param capabilityId Governed capability id that owns the command surface.
+ * @returns Multi-line help text appended after Commander-generated options.
+ */
+function buildGovernedCapabilityHelpText(
+  i18n: I18nRuntime,
+  capabilityDiscoverabilityRuntime: CliSessionMainCapabilityDiscoverabilityRuntime,
+  capabilityId: SessionMainCapabilityId,
+): string {
+  const descriptorView = capabilityDiscoverabilityRuntime.findCapabilityViewById(
+    capabilityId,
+    (translationKey) => i18n.t(translationKey),
+  );
+
+  if (descriptorView === null) {
+    return '';
+  }
+
+  const relatedCapabilityViews = capabilityDiscoverabilityRuntime.listRelatedCapabilityViews(
+    capabilityId,
+    (translationKey) => i18n.t(translationKey),
+  );
+  const executionModeSummary =
+    descriptorView.handoffExecutionMode === SESSION_MAIN_HANDOFF_EXECUTION_MODE.DIRECT_EXECUTE
+      ? i18n.t('sessionMainCapabilities.helpAppendix.executionModes.directExecute')
+      : i18n.t('sessionMainCapabilities.helpAppendix.executionModes.previewConfirm');
+
+  return [
+    '',
+    i18n.t('sessionMainCapabilities.helpAppendix.capabilityTitle', {
+      title: descriptorView.title,
+    }),
+    `  ${descriptorView.summary}`,
+    `  ${descriptorView.detail}`,
+    '',
+    `${i18n.t('sessionMainCapabilities.helpAppendix.suggestedSlashCommand')} ${descriptorView.suggestedSlashCommand}`,
+    `${i18n.t('sessionMainCapabilities.helpAppendix.executionMode')} ${executionModeSummary}`,
+    '',
+    i18n.t('sessionMainCapabilities.helpAppendix.examplePromptsTitle'),
+    ...descriptorView.examplePrompts.map((examplePrompt) => `  ${examplePrompt}`),
+    ...(relatedCapabilityViews.length > 0
+      ? [
+          '',
+          i18n.t('sessionMainCapabilities.helpAppendix.relatedCapabilitiesTitle'),
+          ...relatedCapabilityViews.map(
+            (relatedCapabilityView) =>
+              `  ${relatedCapabilityView.suggestedSlashCommand.padEnd(16)} ${relatedCapabilityView.title}: ${relatedCapabilityView.summary}`,
+          ),
+        ]
+      : []),
+  ].join('\n');
+}
+
+/**
+ * Resolves the governed capability id that owns one explicit CLI command.
+ * @param commandName Explicit CLI command name.
+ * @returns Matching governed capability id when the command belongs to the single-source catalog.
+ */
+function resolveGovernedCapabilityIdForCommand(
+  commandName: CliCommandName,
+): SessionMainCapabilityId | null {
+  switch (commandName) {
+    case CliCommandName.CONNECT:
+      return SESSION_MAIN_CAPABILITY_ID.CONNECT;
+    case CliCommandName.DOCTOR:
+      return SESSION_MAIN_CAPABILITY_ID.DOCTOR;
+    case CliCommandName.RUN:
+      return SESSION_MAIN_CAPABILITY_ID.RUN;
+    case CliCommandName.REVIEW:
+      return SESSION_MAIN_CAPABILITY_ID.REVIEW;
+    case CliCommandName.REVIEW_VERIFY:
+      return SESSION_MAIN_CAPABILITY_ID.REVIEW_VERIFY;
+    case CliCommandName.VERIFY:
+      return SESSION_MAIN_CAPABILITY_ID.VERIFY;
+    case CliCommandName.PLAN:
+      return SESSION_MAIN_CAPABILITY_ID.PLAN;
+    case CliCommandName.WORKFLOW:
+      return SESSION_MAIN_CAPABILITY_ID.WORKFLOW;
+    default:
+      return null;
+  }
 }
 
 /**

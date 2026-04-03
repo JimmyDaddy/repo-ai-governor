@@ -1,4 +1,8 @@
 export type {
+  SessionMainCapabilityAnswer,
+  SessionMainCapabilitySuggestedAction,
+} from './session-main-capability-explainer.interface.js';
+export type {
   SessionMainCapabilityDescriptorSeed,
   SessionMainCapabilityDescriptorView,
 } from './session-main-capability-catalog.interface.js';

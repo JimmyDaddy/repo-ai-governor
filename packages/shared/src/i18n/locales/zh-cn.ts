@@ -803,6 +803,18 @@ export const ZH_CN_TRANSLATIONS = {
     },
   },
   sessionMainCapabilities: {
+    helpAppendix: {
+      catalogTitle: '受治理能力目录：',
+      capabilityTitle: 'session.main 受治理能力：{{title}}',
+      suggestedSlashCommand: '建议的 slash command：',
+      executionMode: '执行路径：',
+      examplePromptsTitle: '示例提示词：',
+      relatedCapabilitiesTitle: '相关能力：',
+      executionModes: {
+        directExecute: '直接执行（无需额外确认）',
+        previewConfirm: '先预览，再确认执行',
+      },
+    },
     catalog: {
       help: {
         title: '帮助',

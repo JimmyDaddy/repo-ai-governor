@@ -17,6 +17,10 @@ export type {
   SessionMainResponseMode,
 } from './aliases/index.js';
 export type {
+  SessionMainCapabilityAnswer,
+  SessionMainCapabilitySuggestedAction,
+} from './interfaces/index.js';
+export type {
   SessionMainCapabilityDescriptorSeed,
   SessionMainCapabilityDescriptorView,
   SessionMainSupervisorCommandBatch,

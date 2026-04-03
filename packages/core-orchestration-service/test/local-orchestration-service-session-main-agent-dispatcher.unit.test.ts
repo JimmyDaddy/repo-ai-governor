@@ -1,5 +1,8 @@
 import { AdapterSurface } from '@repo-ai-governor/shared';
-import { SESSION_MAIN_IMPLICIT_ROLE_DELEGATE_METADATA_KEY } from '../src/constants/index.js';
+import {
+  SESSION_MAIN_CAPABILITY_ID,
+  SESSION_MAIN_IMPLICIT_ROLE_DELEGATE_METADATA_KEY,
+} from '../src/constants/index.js';
 import { LocalOrchestrationServiceSessionMainAgentDispatcher } from '../src/local-orchestration-service-session-main-agent-dispatcher.js';
 
 describe('LocalOrchestrationServiceSessionMainAgentDispatcher', () => {
@@ -114,6 +117,107 @@ describe('LocalOrchestrationServiceSessionMainAgentDispatcher', () => {
     expect(resolveTurn).toHaveBeenCalledTimes(1);
     expect(result.responseMode).toBe('answer');
     expect(result.assistantMessage).toContain('天气');
+  });
+
+  it('routes explicit capability explanation requests before governed skill intent routing', async () => {
+    const resolveTurn = vi.fn();
+    const dispatcher = new LocalOrchestrationServiceSessionMainAgentDispatcher({
+      resolveTurn,
+      resolveMentionedRoleId: () => null,
+    });
+
+    const result = await dispatcher.dispatch({
+      sessionId: 'session-capability-001',
+      routeId: 'session.main',
+      turnId: 'turn-capability-001',
+      turnIndex: 4,
+      userMessage: '先说说 review 是做什么的',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+    });
+
+    expect(resolveTurn).not.toHaveBeenCalled();
+    expect(result).toEqual(
+      expect.objectContaining({
+        responseMode: 'answer',
+        interactionMode: 'direct_answer',
+        capabilityAnswerKind: 'detail',
+        executionIntent: 'session.capability_explainer',
+        referencedCapabilityIds: [SESSION_MAIN_CAPABILITY_ID.REVIEW],
+        suggestedActions: expect.arrayContaining([
+          expect.objectContaining({
+            suggestedSlashCommand: '/review',
+          }),
+        ]),
+      }),
+    );
+    expect(result.assistantMessage).toContain('/review');
+  });
+
+  it('keeps capability explanation output aligned with the active locale instead of the prompt script', async () => {
+    const resolveTurn = vi.fn();
+    const dispatcher = new LocalOrchestrationServiceSessionMainAgentDispatcher({
+      resolveTurn,
+      resolveMentionedRoleId: () => null,
+    });
+
+    const result = await dispatcher.dispatch({
+      sessionId: 'session-capability-locale-001',
+      routeId: 'session.main',
+      turnId: 'turn-capability-locale-001',
+      turnIndex: 5,
+      userMessage: 'tell me about review',
+      locale: 'zh-CN',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+    });
+
+    expect(resolveTurn).not.toHaveBeenCalled();
+    expect(result).toEqual(
+      expect.objectContaining({
+        responseMode: 'answer',
+        capabilityAnswerKind: 'detail',
+        executionIntent: 'session.capability_explainer',
+        referencedCapabilityIds: [SESSION_MAIN_CAPABILITY_ID.REVIEW],
+      }),
+    );
+    expect(result.assistantMessage).toContain('建议的 slash command：');
+    expect(result.assistantMessage).toContain('执行路径：');
+  });
+
+  it('keeps capability comparison questions on the explainer route instead of review-verify handoff', async () => {
+    const resolveTurn = vi.fn();
+    const dispatcher = new LocalOrchestrationServiceSessionMainAgentDispatcher({
+      resolveTurn,
+      resolveMentionedRoleId: () => null,
+    });
+
+    const result = await dispatcher.dispatch({
+      sessionId: 'session-capability-compare-001',
+      routeId: 'session.main',
+      turnId: 'turn-capability-compare-001',
+      turnIndex: 5,
+      userMessage: 'compare review and review verify',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+    });
+
+    expect(resolveTurn).not.toHaveBeenCalled();
+    expect(result).toEqual(
+      expect.objectContaining({
+        responseMode: 'answer',
+        capabilityAnswerKind: 'comparison',
+        executionIntent: 'session.capability_explainer',
+        referencedCapabilityIds: [
+          SESSION_MAIN_CAPABILITY_ID.REVIEW_VERIFY,
+          SESSION_MAIN_CAPABILITY_ID.REVIEW,
+        ],
+      }),
+    );
+    expect(result.assistantMessage).toContain('/review verify');
   });
 
   it('projects low-risk natural-language verify intents into direct-execute command batches', async () => {

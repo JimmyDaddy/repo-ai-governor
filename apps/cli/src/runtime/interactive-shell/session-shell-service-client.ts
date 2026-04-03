@@ -9,6 +9,7 @@ import type {
   OrchestrationSubscribeSessionRequest,
   OrchestrationSubscribeSessionResponse,
 } from '@repo-ai-governor/orchestration-service-client';
+import { DEFAULT_I18N_FALLBACK_LOCALE } from '@repo-ai-governor/shared';
 import type { CliOrchestrationServiceRuntime } from '../orchestration-service-runtime.js';
 
 /**
@@ -21,7 +22,14 @@ import type { CliOrchestrationServiceRuntime } from '../orchestration-service-ru
 export class CliSessionShellServiceClient {
   public constructor(
     private readonly orchestrationServiceRuntime: CliOrchestrationServiceRuntime,
-  ) {}
+    options?: {
+      locale?: string;
+    },
+  ) {
+    this.locale = options?.locale ?? DEFAULT_I18N_FALLBACK_LOCALE;
+  }
+
+  private readonly locale: string;
 
   /**
    * Starts a brand-new canonical session owned by the orchestration service.
@@ -56,6 +64,9 @@ export class CliSessionShellServiceClient {
       sessionId,
       routeId: OrchestrationSessionRouteId.MAIN,
       userMessage,
+      metadata: {
+        locale: this.locale,
+      },
     });
   }
 

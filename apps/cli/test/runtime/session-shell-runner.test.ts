@@ -660,14 +660,23 @@ const DEFAULT_TRANSLATIONS: Record<string, string> = {
   'cli.sessionShell.commands.theme.summary': 'Inspect or update the theme.',
   'cli.sessionShell.commands.agent.summary': 'Inspect the current foreground route.',
   'cli.commands.init.description': 'Initialize governor workspace baseline.',
-  'cli.commands.connect.description': 'Generate adapter onboarding diagnostics baseline.',
-  'cli.commands.doctor.description': 'Run environment diagnostics baseline.',
-  'cli.commands.verify.description': 'Verify adapter routing pass/warn/fail baseline.',
   'cli.commands.workspace.description': 'Plan or execute workspace migration baseline.',
-  'cli.commands.workflow.description': 'Preview or edit workflow definitions.',
-  'cli.commands.run.description': 'Execute process runtime baseline.',
-  'cli.commands.plan.description': 'Generate or update execution plan baseline.',
-  'cli.commands.review.description': 'Generate code review baseline output.',
+  'sessionMainCapabilities.catalog.connect.summary':
+    'Prepare and apply adapter onboarding changes for this workspace.',
+  'sessionMainCapabilities.catalog.doctor.summary':
+    'Diagnose adapter health, environment readiness, and route blockers.',
+  'sessionMainCapabilities.catalog.verify.summary':
+    'Verify routing, projection, and adapter readiness truth.',
+  'sessionMainCapabilities.catalog.workflow.summary':
+    'Preview or enter the governed workflow definition surface.',
+  'sessionMainCapabilities.catalog.run.summary':
+    'Start a governed execution flow for implementation or workflow work.',
+  'sessionMainCapabilities.catalog.plan.summary':
+    'Generate or refine a task breakdown for the current goal.',
+  'sessionMainCapabilities.catalog.review.summary':
+    'Run the governed code-review path for the current scope.',
+  'sessionMainCapabilities.catalog.review_verify.summary':
+    'Recheck a review report and confirm whether accepted findings are actually fixed.',
   'cli.sessionShell.responses.welcome': 'Session shell is active.',
   'cli.sessionShell.responses.stderrOnly': 'Live UI renders only to stderr.',
   'cli.sessionShell.responses.liveTurnRunningSummary': 'Running · {{elapsed}}',
@@ -1151,6 +1160,51 @@ describe('CliSessionShellRunner', () => {
     expect(
       result.transcriptItems.some((item) => item.lines.includes('Run /confirm or /cancel.')),
     ).toBe(false);
+  });
+
+  it('bridges bare /workflow into workflow preview so discoverability affordances stay truthful', async () => {
+    const renderer = new RecordingSessionShellRenderer();
+    const commandExecutor = vi.fn<
+      (argv: string[]) => Promise<CliSessionShellCommandExecutionResult>
+    >(async (argv) => ({
+      artifactPaths: [],
+      commandLine: argv.join(' '),
+      message: 'workflow preview completed',
+      status: 'success',
+      summaryLines: ['Summary: workflow preview completed'],
+    }));
+    const runner = new CliSessionShellRunner(
+      undefined,
+      renderer as never,
+      () => new StubSessionShellPromptAdapter(['/workflow', '/exit']),
+      undefined,
+      undefined,
+      () => false,
+      () => new Date('2026-03-30T12:00:00Z'),
+    );
+
+    const result = await runner.run(
+      DEFAULT_RUN_OPTIONS({
+        commandExecutor,
+      }),
+    );
+
+    expect(commandExecutor).toHaveBeenCalledWith(
+      ['workflow', 'preview'],
+      expect.objectContaining({
+        progressSink: expect.objectContaining({
+          publish: expect.any(Function),
+        }),
+      }),
+    );
+    expect(
+      renderer.frames.some((frame) => frame.commandPreview === 'Ready: workflow preview'),
+    ).toBe(false);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes('Summary: workflow preview completed'),
+      ),
+    ).toBe(true);
   });
 
   it('forwards shared command execution options into direct bridge runs', async () => {

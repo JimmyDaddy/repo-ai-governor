@@ -866,6 +866,18 @@ export const EN_US_TRANSLATIONS = {
     },
   },
   sessionMainCapabilities: {
+    helpAppendix: {
+      catalogTitle: 'Governed capability catalog:',
+      capabilityTitle: 'Session.main governed capability: {{title}}',
+      suggestedSlashCommand: 'Suggested slash command:',
+      executionMode: 'Execution path:',
+      examplePromptsTitle: 'Example prompts:',
+      relatedCapabilitiesTitle: 'Related capabilities:',
+      executionModes: {
+        directExecute: 'direct execute (no extra confirmation)',
+        previewConfirm: 'preview first, then confirm',
+      },
+    },
     catalog: {
       help: {
         title: 'Help',

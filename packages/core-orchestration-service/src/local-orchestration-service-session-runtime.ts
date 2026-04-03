@@ -210,6 +210,7 @@ export class LocalOrchestrationServiceSessionRuntime {
         turnId,
         turnIndex,
         userMessage: request.userMessage,
+        locale: this.readOptionalMetadataString(request.metadata, 'locale'),
         metadata: request.metadata,
         selectedSurface: '',
         selectedBy: '',
@@ -932,6 +933,32 @@ export class LocalOrchestrationServiceSessionRuntime {
     return (
       this.readOptionalContextString(context, SESSION_CONTEXT_CURRENT_ROUTE_KEY) ??
       OrchestrationSessionRouteId.MAIN
+    );
+  }
+
+  private readOptionalMetadataString(
+    metadata: Record<string, unknown> | undefined,
+    fieldName: string,
+  ): string | undefined {
+    if (!metadata) {
+      return undefined;
+    }
+
+    const candidate = metadata[fieldName];
+    if (candidate === undefined) {
+      return undefined;
+    }
+
+    if (typeof candidate === 'string' && candidate.length > 0) {
+      return candidate;
+    }
+
+    throw new RuntimeError(
+      GovernorErrorCode.MEMORY_SESSION_PAYLOAD_INVALID,
+      `Session turn metadata field "${fieldName}" must be a non-empty string when present.`,
+      {
+        fieldName,
+      },
     );
   }
 

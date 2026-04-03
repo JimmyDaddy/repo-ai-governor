@@ -802,6 +802,28 @@ describe('CLI output contract integration', () => {
     );
   });
 
+  it('renders connect help with catalog-backed governed capability guidance', async () => {
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false);
+
+    const exitCode = await runCli(
+      ['node', 'repo-ai-governor', '--locale', 'en-US', 'connect', '--help'],
+      io,
+    );
+    const stdout = stdoutBuffer.join('');
+
+    expect(exitCode).toBe(0);
+    expect(stderrBuffer.join('')).toBe('');
+    expect(stdout).toContain('Usage: repo-ai-governor connect [options] [action] [candidate]');
+    expect(stdout).toContain('Session.main governed capability: Connect');
+    expect(stdout).toContain('Suggested slash command: /connect');
+    expect(stdout).toContain('Execution path: preview first, then confirm');
+    expect(stdout).toContain('Example prompts:');
+    expect(stdout).toContain('Help me connect Codex and Claude Code.');
+    expect(stdout).toContain('Related capabilities:');
+    expect(stdout).toContain('/doctor');
+    expect(stdout).toContain('/verify');
+  });
+
   it('renders top-level set-ui-theme help with direct examples', async () => {
     const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false);
 

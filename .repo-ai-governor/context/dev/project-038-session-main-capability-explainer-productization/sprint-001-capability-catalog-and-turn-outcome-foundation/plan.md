@@ -27,3 +27,7 @@
 2. 2026-04-02：在 `current-context.md` 中登记 `project-038 / sprint-001` 为 planned follow-up stream，同时保持 `project-037` 仍为唯一 active primary stream。
 3. 2026-04-03：激活 `TK-495`，并将 `project-038 / sprint-001` 切换为当前 primary implementation stream。
 4. 2026-04-03：完成 `TK-495`，冻结 orchestration-owned governed capability ids、descriptor seed/view contract、canonical catalog baseline 与 shared i18n descriptor view truth。
+5. 2026-04-03：激活 `TK-496`，开始将 CLI help appendix 与 session-shell governed discoverability metadata 切到 single-source capability catalog，同时保持 shell-local builtins 自治。
+6. 2026-04-03：完成 `TK-496`，将 top-level/command help appendix 与 governed slash discoverability metadata 切到 canonical capability catalog，并保持 shell-local builtins / local bridges 自治。
+7. 2026-04-03：激活 `TK-497`，开始在 `session.main` dispatcher 中插入 capability explainer route，并为 overview/detail/examples/comparison 生成结构化 answer。
+8. 2026-04-03：完成 `TK-497`，capability explanation 已在 skill route 之前成为正式 answer 分支，并冻结 `SessionMainCapabilityAnswer` baseline 供 `TK-498` 投影共享 turn truth。

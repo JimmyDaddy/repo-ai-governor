@@ -4,6 +4,7 @@ import {
   SESSION_MAIN_INTERACTION_MODE,
   SESSION_MAIN_RESPONSE_MODE,
 } from './constants/index.js';
+import { LocalOrchestrationServiceSessionMainCapabilityExplainer } from './local-orchestration-service-session-main-capability-explainer.js';
 import { LocalOrchestrationServiceSessionMainSkillRegistry } from './local-orchestration-service-session-main-skill-registry.js';
 import type {
   SessionMainSupervisorRuntimeContract,
@@ -38,6 +39,9 @@ const SESSION_MAIN_ROUTING_PREFERENCE_ALIASES: Record<string, AdapterSurface> = 
  * `baseline_ack`, while keeping the implementation local, deterministic, and presenter-friendly.
  */
 export class LocalOrchestrationServiceSessionMainAgentDispatcher {
+  private readonly capabilityExplainer =
+    new LocalOrchestrationServiceSessionMainCapabilityExplainer();
+
   private readonly skillRegistry = new LocalOrchestrationServiceSessionMainSkillRegistry();
 
   public constructor(
@@ -53,9 +57,9 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
     turnContext: SessionMainSupervisorTurnContext,
   ): Promise<SessionMainSupervisorTurnOutcome> {
     const normalizedMessage = turnContext.userMessage.trim();
-    const normalizedLowerMessage = normalizedMessage.toLowerCase();
+    const normalizedMessageWithoutRoleMentions = this.stripRoleMentions(normalizedMessage);
     const normalizedLowerMessageWithoutRoleMentions =
-      this.stripRoleMentions(normalizedLowerMessage);
+      normalizedMessageWithoutRoleMentions.toLowerCase();
     const hasAnyRoleMention = SESSION_MAIN_ROLE_MENTION_PRESENCE_PATTERN.test(
       turnContext.userMessage,
     );
@@ -90,6 +94,31 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
         GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
         'The main-agent dispatcher rejected the turn during intent resolution.',
       );
+    }
+
+    const capabilityAnswer = await this.capabilityExplainer.resolveAnswer(
+      normalizedMessageWithoutRoleMentions,
+      turnContext.locale,
+    );
+    if (capabilityAnswer) {
+      return {
+        responseMode: SESSION_MAIN_RESPONSE_MODE.ANSWER,
+        interactionMode: SESSION_MAIN_INTERACTION_MODE.DIRECT_ANSWER,
+        assistantDelta: capabilityAnswer.assistantDelta,
+        assistantMessage: capabilityAnswer.assistantMessage,
+        capabilityAnswerKind: capabilityAnswer.answerKind,
+        referencedCapabilityIds: [...capabilityAnswer.referencedCapabilityIds],
+        suggestedActions: capabilityAnswer.suggestedActions.map((suggestedAction) => ({
+          ...suggestedAction,
+        })),
+        routerDecisionReason: capabilityAnswer.routerDecisionReason,
+        executionIntent: 'session.capability_explainer',
+        requiresConfirmation: false,
+        selectedSurface: selectionMetadata.selectedSurface,
+        selectedBy: selectionMetadata.selectedBy,
+        sessionRoutingPreferenceApplied: selectionMetadata.sessionRoutingPreferenceApplied,
+        invokedRoleIds: [],
+      };
     }
 
     const skillPlan = this.skillRegistry.resolvePlan(normalizedLowerMessageWithoutRoleMentions, {

@@ -10,10 +10,12 @@ export {
   SESSION_MAIN_RESPONSE_MODE,
 } from './constants/index.js';
 export { LocalOrchestrationServiceSessionMainCapabilityCatalog } from './local-orchestration-service-session-main-capability-catalog.js';
+export { LocalOrchestrationServiceSessionMainCapabilityExplainer } from './local-orchestration-service-session-main-capability-explainer.js';
 export { LocalOrchestrationServiceShell } from './local-orchestration-service-shell.js';
 export { LocalOrchestrationServiceSidecarClient } from './local-orchestration-service-sidecar-client.js';
 export { LocalOrchestrationServiceSidecarHost } from './local-orchestration-service-sidecar-host.js';
 export type {
+  SessionMainCapabilityAnswer,
   LocalOrchestrationServicePublishEventRequest,
   LocalOrchestrationServiceSaveCheckpointRequest,
   LocalOrchestrationServiceSidecarClientDependencies,
@@ -33,6 +35,7 @@ export type {
   SessionMainCapabilityDescriptorVersion,
   SessionMainCapabilityDescriptorView,
   SessionMainCapabilityId,
+  SessionMainCapabilitySuggestedAction,
   SessionMainHandoffExecutionMode,
   SessionMainInteractionMode,
   SessionMainResponseMode,

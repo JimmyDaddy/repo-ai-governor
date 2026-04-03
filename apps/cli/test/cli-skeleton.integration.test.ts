@@ -48,7 +48,7 @@ describe('CLI command integration', () => {
   it('shows help with all Stage-1 commands', async () => {
     const { stdoutBuffer, stderrBuffer, io } = createBufferedIo();
 
-    const exitCode = await runCli(['node', 'repo-ai-governor', '--help'], io);
+    const exitCode = await runCli(['node', 'repo-ai-governor', '--locale', 'en-US', '--help'], io);
 
     expect(exitCode).toBe(0);
     expect(stderrBuffer.join('')).toBe('');
@@ -59,6 +59,8 @@ describe('CLI command integration', () => {
     expect(stdoutBuffer.join('')).toContain('set-ui-theme');
     expect(stdoutBuffer.join('')).toContain('workspace');
     expect(stdoutBuffer.join('')).toContain('workflow');
+    expect(stdoutBuffer.join('')).toContain('Governed capability catalog:');
+    expect(stdoutBuffer.join('')).toContain('/review verify');
   });
 
   it('shows explicit workflow create/edit/preview subcommands in workflow help', async () => {
