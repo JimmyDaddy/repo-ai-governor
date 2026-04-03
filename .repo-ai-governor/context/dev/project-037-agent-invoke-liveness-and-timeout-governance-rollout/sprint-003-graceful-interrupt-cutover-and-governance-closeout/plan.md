@@ -1,6 +1,6 @@
 # sprint-003-graceful-interrupt-cutover-and-governance-closeout 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-03
 - Project: `project-037-agent-invoke-liveness-and-timeout-governance-rollout`
 - Sprint Goal: 承接从 `sprint-001` 迁入的 `Codex` graceful interrupt / watchdog 残余实现，并将 invoke-liveness state machine 正式接入 `session.main`、interactive shell、doctor/verify 与 delivery gate，完成预算、回归矩阵与 cutover closeout。
@@ -27,3 +27,5 @@
 4. 2026-04-03：完成 `TK-487`：`Codex cli_exec` 已补齐 shared invoke-liveness `transport_idle_suspect / semantic_stall_suspect / graceful_interrupting / hard_terminating`、dual-stage terminate fuse 与 partial-output preservation，下一步主面切换到 `TK-490` / `TK-491` 的 consumer 与 governance closeout。
 5. 2026-04-03：激活 `TK-490`，开始将 `session.main`、interactive shell、execution details 与 `doctor/verify` 正式接到 shared invoke-liveness diagnostics consumer surface。
 6. 2026-04-03：完成 `TK-490`：interactive shell live summary/detail 与 execution details 已显式消费 suspect stall / graceful interrupt / partial-output preserved；`doctor/verify` matrix/detail 已补齐 cancellation mode、reason codes 与 budget diagnostics。`sprint-003` 当前剩余 open scope 收敛到 `TK-491` governance closeout。
+7. 2026-04-03：激活 `TK-491`，并冻结首版 [invoke liveness budget regression and closeout baseline](./invoke-liveness-budget-regression-and-closeout-baseline.md)；当前 focus 转入 budget matrix、regression suite、cutover/rollback guidance 与 project closeout 输入收口。
+8. 2026-04-03：完成 `TK-491`，已产出 [DA-491](./tasks/DA-491-invoke-liveness-regression-budgets-cutover-governance-and-rollout-closeout.md) 与 [project-037 completion audit summary](../project-037-agent-invoke-liveness-and-timeout-governance-rollout-completion-audit-summary.md)；`sprint-003` 正式切换为 `completed`。

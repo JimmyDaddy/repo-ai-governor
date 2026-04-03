@@ -350,8 +350,8 @@ deliveries:
       - runtime_service
       - docs_playbook
     user_impact_level: medium
-    execution_status: in_progress
-    rollout_status: in_progress
+    execution_status: completed
+    rollout_status: completed
     owner: runtime
     project_ref: project-037-agent-invoke-liveness-and-timeout-governance-rollout
     sprint_ref: sprint-003-graceful-interrupt-cutover-and-governance-closeout
@@ -362,7 +362,7 @@ deliveries:
     project_plan_path: .repo-ai-governor/context/dev/project-037-agent-invoke-liveness-and-timeout-governance-rollout/plan.md
     sprint_plan_path: .repo-ai-governor/context/dev/project-037-agent-invoke-liveness-and-timeout-governance-rollout/sprint-003-graceful-interrupt-cutover-and-governance-closeout/plan.md
     task_csv_path: .repo-ai-governor/context/dev/project-037-agent-invoke-liveness-and-timeout-governance-rollout/sprint-003-graceful-interrupt-cutover-and-governance-closeout/tasks/tasks.csv
-    handoff_artifact_path: .repo-ai-governor/context/dev/project-036-runtime-durable-storage-and-registry-cutover/sprint-004-migration-verification-and-cutover-governance/tasks/DA-485-agent-invoke-liveness-and-timeout-governance-technical-solution-promotion.md
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-037-agent-invoke-liveness-and-timeout-governance-rollout/sprint-003-graceful-interrupt-cutover-and-governance-closeout/tasks/DA-491-invoke-liveness-regression-budgets-cutover-governance-and-rollout-closeout.md
     rollout_artifacts:
       - .repo-ai-governor/context/dev/project-036-runtime-durable-storage-and-registry-cutover/project-036-completion-audit-summary.md
       - .repo-ai-governor/context/dev/project-036-runtime-durable-storage-and-registry-cutover/sprint-004-migration-verification-and-cutover-governance/tasks/DA-485-agent-invoke-liveness-and-timeout-governance-technical-solution-promotion.md
@@ -370,6 +370,9 @@ deliveries:
       - .repo-ai-governor/context/dev/project-037-agent-invoke-liveness-and-timeout-governance-rollout/sprint-001-shared-liveness-contract-and-codex-watchdog-baseline/plan.md
       - .repo-ai-governor/context/dev/project-037-agent-invoke-liveness-and-timeout-governance-rollout/sprint-002-cross-adapter-liveness-rollout-and-diagnostics/plan.md
       - .repo-ai-governor/context/dev/project-037-agent-invoke-liveness-and-timeout-governance-rollout/sprint-003-graceful-interrupt-cutover-and-governance-closeout/plan.md
+      - .repo-ai-governor/context/dev/project-037-agent-invoke-liveness-and-timeout-governance-rollout/sprint-003-graceful-interrupt-cutover-and-governance-closeout/invoke-liveness-budget-regression-and-closeout-baseline.md
+      - .repo-ai-governor/context/dev/project-037-agent-invoke-liveness-and-timeout-governance-rollout/sprint-003-graceful-interrupt-cutover-and-governance-closeout/tasks/DA-491-invoke-liveness-regression-budgets-cutover-governance-and-rollout-closeout.md
+      - .repo-ai-governor/context/dev/project-037-agent-invoke-liveness-and-timeout-governance-rollout/project-037-agent-invoke-liveness-and-timeout-governance-rollout-completion-audit-summary.md
       - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/agent-invoke-liveness-and-timeout-governance.md
     accepted_at: 2026-04-02
 

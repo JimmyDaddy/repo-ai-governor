@@ -1,6 +1,6 @@
 # project-037-agent-invoke-liveness-and-timeout-governance-rollout 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-02
 - Stage Mapping: Runtime agent invoke governance implementation
 - Phase Mapping: Shared liveness contract rollout / Codex-first watchdog baseline / cross-adapter alignment / diagnostics cutover and governance closeout
@@ -58,7 +58,7 @@
 | TK-504 | sprint-002 | add remote-api delivery verification and clean-room smoke coverage | release/verification | TK-501 | completed |
 | TK-487 | sprint-003 | roll codex onto shared invoke liveness watchdog graceful interrupt and partial output preservation | runtime/codex-adapter | TK-486、TK-488 | completed |
 | TK-490 | sprint-003 | route session-main interactive shell and doctor verify through invoke liveness diagnostics | cli/runtime-diagnostics | TK-487、TK-488、TK-489 | completed |
-| TK-491 | sprint-003 | deliver invoke liveness regression budgets cutover governance and rollout closeout | governance/cutover | TK-490 | planned |
+| TK-491 | sprint-003 | deliver invoke liveness regression budgets cutover governance and rollout closeout | governance/cutover | TK-490 | completed |
 
 ## 4. 依赖产物策略
 
@@ -94,3 +94,5 @@
 13. 2026-04-03：完成 `TK-489` 收口并结束 `sprint-002`：`Ollama / local-model` 已对齐 shared invoke-liveness snapshot、done reason、timeout budget、partial-output preservation 与长 idle progress protection；cross-adapter rollout / remote-api follow-through package 全部完成，primary planning surface 切换到 `sprint-003`。
 14. 2026-04-03：完成 `TK-487`：`Codex cli_exec` 已正式对齐 shared invoke-liveness watchdog、suspect stall、graceful interrupt / hard terminate 与 partial-output preservation；`sprint-003` 的剩余 open scope 收敛为 `TK-490` consumer diagnostics 与 `TK-491` governance closeout。
 15. 2026-04-03：完成 `TK-490`：`session.main` / interactive shell / execution details 已正式消费 invoke-liveness projection，`doctor/verify` 也已输出 cancellation mode、reason code 与 budget 相关 structured diagnostics；`project-037` 当前仅剩 `TK-491` 的 governance closeout。
+16. 2026-04-03：激活 `TK-491` 并冻结首版 budget/regression/cutover baseline；`project-037` 当前 open scope 继续收敛为项目 closeout、completion audit 与最终 exit acceptance。
+17. 2026-04-03：完成 `TK-491`，已收口 `technical-solution.agent-invoke-liveness-and-timeout-governance` delivery registry、产出 [DA-491](./sprint-003-graceful-interrupt-cutover-and-governance-closeout/tasks/DA-491-invoke-liveness-regression-budgets-cutover-governance-and-rollout-closeout.md) 与 [project-037 completion audit summary](./project-037-agent-invoke-liveness-and-timeout-governance-rollout-completion-audit-summary.md)，`project-037` 正式切换为 `completed`。

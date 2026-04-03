@@ -1,7 +1,7 @@
 # TK-491 deliver invoke liveness regression budgets cutover governance and rollout closeout
 
-- Status: planned
-- Date: 2026-04-02
+- Status: completed
+- Date: 2026-04-03
 - Owner: AI-Agent
 - Priority: P0
 - Project: `project-037-agent-invoke-liveness-and-timeout-governance-rollout`
@@ -42,3 +42,5 @@
 ## 6. 执行记录
 
 1. 2026-04-02：任务创建，状态初始化为 `planned`。
+2. 2026-04-03：状态切换为 `active`，开始冻结 route / role / surface timeout budget matrix、回归矩阵与 cutover / rollback baseline，首版基线文档已落到 `invoke-liveness-budget-regression-and-closeout-baseline.md`。
+3. 2026-04-03：已完成 `DA-491`、`project-037` completion audit summary、delivery registry completed truth 与 project/sprint closeout 同步；任务状态切换为 `completed`。
