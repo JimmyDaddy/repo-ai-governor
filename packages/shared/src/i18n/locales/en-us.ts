@@ -865,4 +865,99 @@ export const EN_US_TRANSLATIONS = {
       },
     },
   },
+  sessionMainCapabilities: {
+    catalog: {
+      help: {
+        title: 'Help',
+        summary: 'Explain the governed commands and how to use them from session.main.',
+        detail:
+          'Use help when you want a capability overview or need to understand which governed action to pick next.',
+        examples: {
+          0: 'What can you do here?',
+          1: 'Explain the difference between review and review verify.',
+        },
+      },
+      connect: {
+        title: 'Connect',
+        summary: 'Prepare and apply adapter onboarding changes for this workspace.',
+        detail:
+          'Connect is the governed onboarding entry when you need to bind roles, surfaces, or remote credentials before execution.',
+        examples: {
+          0: 'Help me connect Codex and Claude Code.',
+          1: 'Set up adapter onboarding for this repo.',
+        },
+      },
+      doctor: {
+        title: 'Doctor',
+        summary: 'Diagnose adapter health, environment readiness, and route blockers.',
+        detail:
+          'Doctor is the fast read-only diagnostic path when you want to inspect current workspace or adapter health.',
+        examples: {
+          0: 'Diagnose the current workspace.',
+          1: 'Check whether my adapters are healthy.',
+        },
+      },
+      verify: {
+        title: 'Verify',
+        summary: 'Verify routing, projection, and adapter readiness truth.',
+        detail:
+          'Verify is the governed validation path for adapter coverage, route status, and readiness before unattended execution.',
+        examples: {
+          0: 'Verify adapter readiness.',
+          1: 'Check whether the current routing configuration is valid.',
+        },
+      },
+      workflow: {
+        title: 'Workflow',
+        summary: 'Preview or enter the governed workflow definition surface.',
+        detail:
+          'Workflow is the governed bridge for template preview and workflow authoring entrypoints when you want to inspect or shape one saved process definition.',
+        examples: {
+          0: 'Show me the workflow preview.',
+          1: 'Open the workflow template surface for this repo.',
+        },
+      },
+      plan: {
+        title: 'Plan',
+        summary: 'Generate or refine a task breakdown for the current goal.',
+        detail:
+          'Plan is the low-risk execution-prep path when you want a structured task package before implementation.',
+        examples: {
+          0: 'Break this work into tasks.',
+          1: 'Create an execution plan for the next sprint.',
+        },
+      },
+      review: {
+        title: 'Review',
+        summary: 'Run the governed code-review path for the current scope.',
+        detail:
+          'Review is the primary read-only inspection path when you want findings, risks, or change assessment for current work.',
+        examples: {
+          0: 'Review the current changes.',
+          1: 'Help me do a code review on this branch.',
+        },
+      },
+      review_verify: {
+        title: 'Review Verify',
+        summary:
+          'Recheck a review report and confirm whether accepted findings are actually fixed.',
+        detail:
+          'Review verify is the formal verification path for existing review findings, so it keeps preview-confirm governance.',
+        examples: {
+          0: 'Verify that the review findings are fixed.',
+          1: 'Recheck the current CR report and validate the fixes.',
+        },
+      },
+      run: {
+        title: 'Run',
+        summary: 'Start a governed execution flow for implementation or workflow work.',
+        detail:
+          'Run is the higher-impact execution path for task delivery, so it keeps preview-confirm continuity instead of silent execution.',
+        examples: {
+          0: 'Start implementing this task.',
+          1: 'Run the next governed workflow for this repo.',
+        },
+      },
+    },
+  },
 } as const;

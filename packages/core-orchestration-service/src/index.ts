@@ -1,10 +1,15 @@
 export {
+  SESSION_MAIN_CAPABILITY_ANSWER_KIND,
+  SESSION_MAIN_CAPABILITY_CATALOG_OWNER_MODULE_ID,
+  SESSION_MAIN_CAPABILITY_DESCRIPTOR_VERSION,
+  SESSION_MAIN_CAPABILITY_ID,
   LOCAL_ORCHESTRATION_SERVICE_SIDECAR_PROTOCOL_VERSION,
   LocalOrchestrationServiceSidecarOperation,
   SESSION_MAIN_HANDOFF_EXECUTION_MODE,
   SESSION_MAIN_INTERACTION_MODE,
   SESSION_MAIN_RESPONSE_MODE,
 } from './constants/index.js';
+export { LocalOrchestrationServiceSessionMainCapabilityCatalog } from './local-orchestration-service-session-main-capability-catalog.js';
 export { LocalOrchestrationServiceShell } from './local-orchestration-service-shell.js';
 export { LocalOrchestrationServiceSidecarClient } from './local-orchestration-service-sidecar-client.js';
 export { LocalOrchestrationServiceSidecarHost } from './local-orchestration-service-sidecar-host.js';
@@ -22,6 +27,12 @@ export type {
   LocalOrchestrationServiceSidecarStartExecutionPayload,
   LocalOrchestrationServiceShellDependencies,
   LocalOrchestrationServiceStartExecutionRuntimeContext,
+  SessionMainCapabilityAnswerKind,
+  SessionMainCapabilityCatalogOwnerModuleId,
+  SessionMainCapabilityDescriptorSeed,
+  SessionMainCapabilityDescriptorVersion,
+  SessionMainCapabilityDescriptorView,
+  SessionMainCapabilityId,
   SessionMainHandoffExecutionMode,
   SessionMainInteractionMode,
   SessionMainResponseMode,

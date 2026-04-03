@@ -1,6 +1,6 @@
 # sprint-001-capability-catalog-and-turn-outcome-foundation 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-02
 - Project: `project-038-session-main-capability-explainer-productization`
 - Sprint Goal: 为 `session.main capability explainer` 建立 canonical capability catalog、shared turn outcome metadata 与首条 governed contextual guidance bridge。
@@ -25,3 +25,5 @@
 
 1. 2026-04-02：创建 `sprint-001` planned skeleton，并冻结 `TK-495` ~ `TK-499` 作为 capability explainer implementation package。
 2. 2026-04-02：在 `current-context.md` 中登记 `project-038 / sprint-001` 为 planned follow-up stream，同时保持 `project-037` 仍为唯一 active primary stream。
+3. 2026-04-03：激活 `TK-495`，并将 `project-038 / sprint-001` 切换为当前 primary implementation stream。
+4. 2026-04-03：完成 `TK-495`，冻结 orchestration-owned governed capability ids、descriptor seed/view contract、canonical catalog baseline 与 shared i18n descriptor view truth。

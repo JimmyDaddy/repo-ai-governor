@@ -1,6 +1,6 @@
 # project-038-session-main-capability-explainer-productization 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-02
 - Stage Mapping: Interactive CLI capability explanation implementation follow-up
 - Phase Mapping: Capability catalog truth / explainer routing / shared-session projection / governed guidance bridge
@@ -58,3 +58,5 @@
 1. 2026-04-02：用户确认 capability explainer 方案不应只停留在 formal promotion 记录上，需要补充独立 implementation task decomposition。
 2. 2026-04-02：创建 `project-038-session-main-capability-explainer-productization`，并以 `sprint-001-capability-catalog-and-turn-outcome-foundation` 作为首个 planned implementation sprint。
 3. 2026-04-02：将 `technical-solution.interactive-cli-react-style-cli` 的 delivery handoff 从历史 completed rollout 更新为 `followup_required -> planned project-038 / sprint-001`，确保当前 active solution 的实现 ownership 与 formal amendment 范围保持一致。
+4. 2026-04-03：显式激活 `project-038 / sprint-001` 作为新的 primary stream，并开始执行 `TK-495`。
+5. 2026-04-03：完成 `TK-495`，建立 `runtime.orchestration` 单写源 capability catalog baseline，后续 `TK-496 ~ TK-499` 在该 seed/view seam 上继续扩展。

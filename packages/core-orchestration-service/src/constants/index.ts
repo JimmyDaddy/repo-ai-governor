@@ -4,6 +4,12 @@ export {
   LocalOrchestrationServiceSidecarOperation,
 } from './local-orchestration-service-sidecar.constant.js';
 export {
+  SESSION_MAIN_CAPABILITY_ANSWER_KIND,
+  SESSION_MAIN_CAPABILITY_CATALOG_OWNER_MODULE_ID,
+  SESSION_MAIN_CAPABILITY_DESCRIPTOR_VERSION,
+  SESSION_MAIN_CAPABILITY_ID,
+} from './session-main-capability.constant.js';
+export {
   SESSION_MAIN_HANDOFF_EXECUTION_MODE,
   SESSION_MAIN_IMPLICIT_ROLE_DELEGATE_METADATA_KEY,
   SESSION_MAIN_INTERACTION_MODE,

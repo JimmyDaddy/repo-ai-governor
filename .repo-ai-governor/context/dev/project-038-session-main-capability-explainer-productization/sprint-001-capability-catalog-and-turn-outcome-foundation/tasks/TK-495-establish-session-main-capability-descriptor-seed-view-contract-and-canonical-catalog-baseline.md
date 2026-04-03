@@ -1,7 +1,7 @@
 # TK-495 establish session.main capability descriptor seed-view contract and canonical catalog baseline
 
-- Status: planned
-- Date: 2026-04-02
+- Status: completed
+- Date: 2026-04-03
 - Owner: AI-Agent
 - Priority: P1
 - Project: `project-038-session-main-capability-explainer-productization`
@@ -40,3 +40,7 @@
 ## 6. 执行记录
 
 1. 2026-04-02：任务创建，状态初始化为 `planned`；等待 `project-038 / sprint-001` 激活后执行。
+2. 2026-04-03：任务激活；开始冻结 `SessionMainCapabilityDescriptorSeed / localized view / canonical catalog` seam，并将 `project-038 / sprint-001` 升级为 primary stream。
+3. 2026-04-03：已在 `core-orchestration-service` 落地 `SESSION_MAIN_CAPABILITY_ID / ANSWER_KIND` 常量、`SessionMainCapabilityDescriptorSeed / View` 契约与 `LocalOrchestrationServiceSessionMainCapabilityCatalog`，并将 `LocalOrchestrationServiceSessionMainSkillRegistry` 切到 canonical catalog truth。
+4. 2026-04-03：补齐 `sessionMainCapabilities.catalog.*` shared i18n keys 和 package 级 unit tests，确认 localized descriptor view 与 governed capability metadata 能从单一 orchestration-owned seed 渲染。
+5. 2026-04-03：验证通过 `pnpm exec vitest run packages/core-orchestration-service/test --maxWorkers=1 --maxConcurrency=1`、`pnpm exec vitest run apps/cli/test/runtime/session-main-parity.integration.test.ts --maxWorkers=1 --maxConcurrency=1`、`check-i18n-parity-fallback`、`check-task-ledger-sync`、`check-sprint-plan-status-sync`、`pnpm run check`、`pnpm run build`；`pnpm -s tsc -p tsconfig.json --noEmit` 仍暴露仓库内既有、与 `TK-495` 无关的测试面 type drift，不作为本次 baseline 回退依据。

@@ -1,4 +1,8 @@
 export type {
+  SessionMainCapabilityDescriptorSeed,
+  SessionMainCapabilityDescriptorView,
+} from './session-main-capability-catalog.interface.js';
+export type {
   LocalOrchestrationServiceMemoryProviderState,
   LocalOrchestrationServicePublishEventRequest,
   LocalOrchestrationServiceSaveCheckpointRequest,

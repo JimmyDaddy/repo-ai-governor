@@ -1,4 +1,10 @@
 export type {
+  SessionMainCapabilityAnswerKind,
+  SessionMainCapabilityCatalogOwnerModuleId,
+  SessionMainCapabilityDescriptorVersion,
+  SessionMainCapabilityId,
+} from './aliases/index.js';
+export type {
   LocalOrchestrationServiceMemoryProviderState,
   LocalOrchestrationServicePublishEventRequest,
   LocalOrchestrationServiceSaveCheckpointRequest,
@@ -11,6 +17,8 @@ export type {
   SessionMainResponseMode,
 } from './aliases/index.js';
 export type {
+  SessionMainCapabilityDescriptorSeed,
+  SessionMainCapabilityDescriptorView,
   SessionMainSupervisorCommandBatch,
   SessionMainSupervisorInvokeLiveness,
   SessionMainSupervisorInvokedRole,

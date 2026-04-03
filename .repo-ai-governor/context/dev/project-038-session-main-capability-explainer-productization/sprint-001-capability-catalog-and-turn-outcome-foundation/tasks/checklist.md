@@ -1,7 +1,10 @@
 # checklist
 
-- [ ] TK-495 establish session.main capability descriptor seed-view contract and canonical catalog baseline
+- [x] TK-495 establish session.main capability descriptor seed-view contract and canonical catalog baseline
   - 2026-04-02：任务创建，状态初始化为 `planned`；承接 capability seed/view contract、single-source catalog owner seam 与 shared 常量冻结。
+  - 2026-04-03：状态切换为 `active`；主执行流切换到 `project-038 / sprint-001`，开始冻结 service-owned capability catalog baseline 与 localized descriptor view contract。
+  - 2026-04-03：完成 `SESSION_MAIN_CAPABILITY_ID / ANSWER_KIND` 常量、descriptor seed/view 契约、canonical catalog class 与 skill registry metadata cutover。
+  - 2026-04-03：验证通过 package tests、session-main parity integration、i18n parity、ledger gates、`pnpm run check` 与 `pnpm run build`；任务收口为 `completed`。
 
 - [ ] TK-496 cut over CLI help appendix and governed command discoverability to single-source capability catalog
   - 2026-04-02：任务创建，状态初始化为 `planned`；承接 CLI help appendix、governed slash discoverability 与 catalog truth 的首轮收敛。

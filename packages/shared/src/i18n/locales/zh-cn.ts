@@ -802,4 +802,96 @@ export const ZH_CN_TRANSLATIONS = {
       },
     },
   },
+  sessionMainCapabilities: {
+    catalog: {
+      help: {
+        title: '帮助',
+        summary: '解释受治理命令的用途，以及如何从 session.main 进入它们。',
+        detail:
+          '当你想先了解有哪些能力、它们分别适合什么场景，或需要判断下一步该走哪条 governed action 时，使用 help。',
+        examples: {
+          0: '你现在能做什么？',
+          1: '讲讲 review 和 review verify 有什么区别。',
+        },
+      },
+      connect: {
+        title: '接入',
+        summary: '为当前工作区准备并应用 adapter onboarding 变更。',
+        detail:
+          '当你需要先把角色、surface 或远端凭据接到当前仓库，再进入执行流时，应该使用 connect。',
+        examples: {
+          0: '帮我把 Codex 和 Claude Code 接上。',
+          1: '给这个仓库做一遍 adapter onboarding。',
+        },
+      },
+      doctor: {
+        title: '诊断',
+        summary: '诊断 adapter 健康、环境就绪度与路由阻断原因。',
+        detail:
+          '当你想只读地检查当前 workspace 或 adapter 健康状态，而不是直接改配置时，应该使用 doctor。',
+        examples: {
+          0: '帮我诊断一下当前项目。',
+          1: '检查一下我的 adapters 现在是否健康。',
+        },
+      },
+      verify: {
+        title: '验证',
+        summary: '验证路由、projection 与 adapter readiness 真值。',
+        detail:
+          '当你需要在无人值守执行前确认 adapter 覆盖、route 状态和 readiness 结论时，应该使用 verify。',
+        examples: {
+          0: '帮我验证 adapter readiness。',
+          1: '检查当前 routing 配置是不是有效。',
+        },
+      },
+      workflow: {
+        title: '流程',
+        summary: '预览或进入受治理的 workflow 定义面。',
+        detail:
+          '当你想查看模板预览，或进入 workflow authoring 相关入口去检查当前保存的 process definition 时，应该使用 workflow。',
+        examples: {
+          0: '给我看一下 workflow preview。',
+          1: '打开这个仓库的 workflow 模板入口。',
+        },
+      },
+      plan: {
+        title: '计划',
+        summary: '为当前目标生成或细化任务拆解。',
+        detail: '当你想在开始实现前先把工作拆成结构化任务包，并冻结执行顺序时，应该使用 plan。',
+        examples: {
+          0: '帮我拆一下这项工作的任务。',
+          1: '给下一个 sprint 做一份执行计划。',
+        },
+      },
+      review: {
+        title: '评审',
+        summary: '对当前范围执行受治理的代码评审路径。',
+        detail: '当你需要对当前改动做只读检查、识别风险或输出 findings 时，review 是主路径。',
+        examples: {
+          0: '帮我 review 当前改动。',
+          1: '帮我对这个分支做一轮 code review。',
+        },
+      },
+      review_verify: {
+        title: '评审复核',
+        summary: '复查已有评审报告，并确认已接受的问题是否真的修好。',
+        detail:
+          'review verify 属于正式的评审验证动作，因此默认保留 preview-confirm 治理，而不是静默直接执行。',
+        examples: {
+          0: '帮我验证 review findings 是否都修好了。',
+          1: '复核当前 CR 报告并确认修复结果。',
+        },
+      },
+      run: {
+        title: '执行',
+        summary: '启动实现或 workflow 的受治理执行流。',
+        detail:
+          '当你要真正进入任务交付或运行 workflow 时，run 是高影响路径，因此保留 preview-confirm continuity。',
+        examples: {
+          0: '开始做这个任务。',
+          1: '运行这个仓库接下来的 governed workflow。',
+        },
+      },
+    },
+  },
 } as const;

@@ -1,0 +1,18 @@
+import type {
+  SESSION_MAIN_CAPABILITY_ANSWER_KIND,
+  SESSION_MAIN_CAPABILITY_CATALOG_OWNER_MODULE_ID,
+  SESSION_MAIN_CAPABILITY_DESCRIPTOR_VERSION,
+  SESSION_MAIN_CAPABILITY_ID,
+} from '../../constants/index.js';
+
+export type SessionMainCapabilityCatalogOwnerModuleId =
+  typeof SESSION_MAIN_CAPABILITY_CATALOG_OWNER_MODULE_ID;
+
+export type SessionMainCapabilityDescriptorVersion =
+  typeof SESSION_MAIN_CAPABILITY_DESCRIPTOR_VERSION;
+
+export type SessionMainCapabilityId =
+  (typeof SESSION_MAIN_CAPABILITY_ID)[keyof typeof SESSION_MAIN_CAPABILITY_ID];
+
+export type SessionMainCapabilityAnswerKind =
+  (typeof SESSION_MAIN_CAPABILITY_ANSWER_KIND)[keyof typeof SESSION_MAIN_CAPABILITY_ANSWER_KIND];

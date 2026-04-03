@@ -1,12 +1,16 @@
-import type { AdapterSurface } from '@repo-ai-governor/shared';
-import { SESSION_MAIN_HANDOFF_EXECUTION_MODE } from './constants/index.js';
+import { type AdapterSurface, GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
+import {
+  SESSION_MAIN_CAPABILITY_ID,
+  SESSION_MAIN_HANDOFF_EXECUTION_MODE,
+} from './constants/index.js';
+import { LocalOrchestrationServiceSessionMainCapabilityCatalog } from './local-orchestration-service-session-main-capability-catalog.js';
 import type {
+  SessionMainCapabilityId,
   SessionMainHandoffExecutionMode,
   SessionMainSupervisorCommandBatch,
   SessionMainSupervisorTurnBacklink,
 } from './types/index.js';
 
-const SESSION_MAIN_SKILL_VERSION = '2026-04-01';
 const SESSION_MAIN_CONNECT_KEYWORDS = ['connect', '连接', '连一下', '接上', '接好'];
 const SESSION_MAIN_DOCTOR_KEYWORDS = [
   'doctor',
@@ -21,6 +25,7 @@ const SESSION_MAIN_DOCTOR_PATTERNS = [
   /(?:diagnose|health check|inspect|troubleshoot|check)\s+(?:the\s+)?(?:current\s+)?(?:project|repo|repository|workspace)(?:\s+(?:health|environment|setup|adapters?))?/iu,
 ];
 const SESSION_MAIN_VERIFY_KEYWORDS = ['verify', 'validation', 'validate', '验证', '校验'];
+const SESSION_MAIN_WORKFLOW_KEYWORDS = ['workflow', '流程', 'workflow preview', '流程预览'];
 const SESSION_MAIN_PLAN_KEYWORDS = ['plan', 'planning', 'break down', 'task breakdown', '拆任务'];
 const SESSION_MAIN_PLAN_PATTERNS = [
   /(?:帮我|请)?(?:拆|做|生成|整理)?(?:一下)?(?:任务|执行)?计划/iu,
@@ -57,6 +62,8 @@ interface SessionMainForegroundSkillPlan {
  * across ad-hoc keyword checks inside the dispatcher.
  */
 export class LocalOrchestrationServiceSessionMainSkillRegistry {
+  private readonly capabilityCatalog = new LocalOrchestrationServiceSessionMainCapabilityCatalog();
+
   /**
    * Resolves one natural-language request into a deterministic foreground skill plan.
    * @param userMessage Raw user message after role-mention handling is applied by the dispatcher.
@@ -73,8 +80,9 @@ export class LocalOrchestrationServiceSessionMainSkillRegistry {
     const normalizedMessage = userMessage.trim().toLowerCase();
 
     if (this.matchesAnyPattern(normalizedMessage, SESSION_MAIN_ONBOARDING_PATTERNS)) {
-      return this.createPlan({
+      return this.createPlanFromInlineBundle({
         skillId: 'skill.onboard.adapters',
+        skillVersion: '2026-04-01',
         executionIntent: 'skill.onboard.adapters',
         suggestedSlashCommand: 'adapter onboarding bundle',
         routerDecisionReason: 'session.main.router.command_bundle.onboard_adapters',
@@ -95,12 +103,9 @@ export class LocalOrchestrationServiceSessionMainSkillRegistry {
     }
 
     if (this.includesAnyKeyword(normalizedMessage, SESSION_MAIN_REVIEW_VERIFY_KEYWORDS)) {
-      return this.createPlan({
-        skillId: 'skill.review.verify',
-        executionIntent: 'review.verify',
-        suggestedSlashCommand: '/review verify',
+      return this.createPlanFromCapabilityId({
+        capabilityId: SESSION_MAIN_CAPABILITY_ID.REVIEW_VERIFY,
         routerDecisionReason: 'session.main.router.command_handoff_preview.review_verify',
-        handoffExecutionMode: SESSION_MAIN_HANDOFF_EXECUTION_MODE.PREVIEW_CONFIRM,
         commandBatches: [
           this.createCommandBatch('/review verify', ['review-verify'], options.preferredSurface),
         ],
@@ -111,12 +116,9 @@ export class LocalOrchestrationServiceSessionMainSkillRegistry {
       this.matchesAnyPattern(normalizedMessage, SESSION_MAIN_DOCTOR_PATTERNS) ||
       this.includesAnyKeyword(normalizedMessage, SESSION_MAIN_DOCTOR_KEYWORDS)
     ) {
-      return this.createPlan({
-        skillId: 'skill.doctor.environment',
-        executionIntent: 'doctor.adapters',
-        suggestedSlashCommand: '/doctor',
+      return this.createPlanFromCapabilityId({
+        capabilityId: SESSION_MAIN_CAPABILITY_ID.DOCTOR,
         routerDecisionReason: 'session.main.router.direct_execute.doctor',
-        handoffExecutionMode: SESSION_MAIN_HANDOFF_EXECUTION_MODE.DIRECT_EXECUTE,
         commandBatches: [
           this.createCommandBatch(
             '/doctor',
@@ -128,12 +130,9 @@ export class LocalOrchestrationServiceSessionMainSkillRegistry {
     }
 
     if (this.includesAnyKeyword(normalizedMessage, SESSION_MAIN_CONNECT_KEYWORDS)) {
-      return this.createPlan({
-        skillId: 'skill.connect.adapters',
-        executionIntent: 'connect.adapters.bootstrap',
-        suggestedSlashCommand: '/connect',
+      return this.createPlanFromCapabilityId({
+        capabilityId: SESSION_MAIN_CAPABILITY_ID.CONNECT,
         routerDecisionReason: 'session.main.router.command_handoff_preview.connect',
-        handoffExecutionMode: SESSION_MAIN_HANDOFF_EXECUTION_MODE.PREVIEW_CONFIRM,
         commandBatches: [
           this.createCommandBatch(
             '/connect',
@@ -145,12 +144,9 @@ export class LocalOrchestrationServiceSessionMainSkillRegistry {
     }
 
     if (this.includesAnyKeyword(normalizedMessage, SESSION_MAIN_VERIFY_KEYWORDS)) {
-      return this.createPlan({
-        skillId: 'skill.verify.adapters',
-        executionIntent: 'verify.adapters',
-        suggestedSlashCommand: '/verify',
+      return this.createPlanFromCapabilityId({
+        capabilityId: SESSION_MAIN_CAPABILITY_ID.VERIFY,
         routerDecisionReason: 'session.main.router.direct_execute.verify',
-        handoffExecutionMode: SESSION_MAIN_HANDOFF_EXECUTION_MODE.DIRECT_EXECUTE,
         commandBatches: [
           this.createCommandBatch(
             '/verify',
@@ -161,17 +157,24 @@ export class LocalOrchestrationServiceSessionMainSkillRegistry {
       });
     }
 
+    if (this.includesAnyKeyword(normalizedMessage, SESSION_MAIN_WORKFLOW_KEYWORDS)) {
+      return this.createPlanFromCapabilityId({
+        capabilityId: SESSION_MAIN_CAPABILITY_ID.WORKFLOW,
+        routerDecisionReason: 'session.main.router.direct_execute.workflow',
+        commandBatches: [
+          this.createCommandBatch('/workflow', ['workflow', 'preview'], options.preferredSurface),
+        ],
+      });
+    }
+
     if (
       !options.configuredRoleMentionPresent &&
       (this.includesAnyKeyword(normalizedMessage, SESSION_MAIN_PLAN_KEYWORDS) ||
         this.matchesAnyPattern(normalizedMessage, SESSION_MAIN_PLAN_PATTERNS))
     ) {
-      return this.createPlan({
-        skillId: 'skill.plan.task',
-        executionIntent: 'plan.generate',
-        suggestedSlashCommand: '/plan',
+      return this.createPlanFromCapabilityId({
+        capabilityId: SESSION_MAIN_CAPABILITY_ID.PLAN,
         routerDecisionReason: 'session.main.router.direct_execute.plan',
-        handoffExecutionMode: SESSION_MAIN_HANDOFF_EXECUTION_MODE.DIRECT_EXECUTE,
         commandBatches: [
           this.createCommandBatch(
             '/plan',
@@ -186,12 +189,9 @@ export class LocalOrchestrationServiceSessionMainSkillRegistry {
       !options.configuredRoleMentionPresent &&
       this.includesAnyKeyword(normalizedMessage, SESSION_MAIN_REVIEW_KEYWORDS)
     ) {
-      return this.createPlan({
-        skillId: 'skill.review.code',
-        executionIntent: 'review.start',
-        suggestedSlashCommand: '/review',
+      return this.createPlanFromCapabilityId({
+        capabilityId: SESSION_MAIN_CAPABILITY_ID.REVIEW,
         routerDecisionReason: 'session.main.router.direct_execute.review',
-        handoffExecutionMode: SESSION_MAIN_HANDOFF_EXECUTION_MODE.DIRECT_EXECUTE,
         commandBatches: [
           this.createCommandBatch(
             '/review',
@@ -203,12 +203,9 @@ export class LocalOrchestrationServiceSessionMainSkillRegistry {
     }
 
     if (this.includesAnyKeyword(normalizedMessage, SESSION_MAIN_RUN_KEYWORDS)) {
-      return this.createPlan({
-        skillId: 'skill.run.task',
-        executionIntent: 'run.task',
-        suggestedSlashCommand: '/run',
+      return this.createPlanFromCapabilityId({
+        capabilityId: SESSION_MAIN_CAPABILITY_ID.RUN,
         routerDecisionReason: 'session.main.router.command_handoff_preview.run',
-        handoffExecutionMode: SESSION_MAIN_HANDOFF_EXECUTION_MODE.PREVIEW_CONFIRM,
         commandBatches: [
           this.createCommandBatch(
             '/run',
@@ -222,8 +219,34 @@ export class LocalOrchestrationServiceSessionMainSkillRegistry {
     return null;
   }
 
-  private createPlan(options: {
+  private createPlanFromCapabilityId(options: {
+    capabilityId: SessionMainCapabilityId;
+    routerDecisionReason: string;
+    commandBatches: SessionMainSupervisorCommandBatch[];
+  }): SessionMainForegroundSkillPlan {
+    const descriptorSeed = this.capabilityCatalog.getDescriptorSeed(options.capabilityId);
+    if (descriptorSeed === null) {
+      throw new RuntimeError(
+        GovernorErrorCode.AGENT_PROTOCOL_INVALID,
+        `Missing capability descriptor seed for capabilityId="${options.capabilityId}".`,
+        { capabilityId: options.capabilityId },
+      );
+    }
+
+    return this.createPlanFromInlineBundle({
+      skillId: descriptorSeed.skillId,
+      skillVersion: descriptorSeed.skillVersion,
+      executionIntent: descriptorSeed.executionIntent,
+      suggestedSlashCommand: descriptorSeed.suggestedSlashCommand,
+      routerDecisionReason: options.routerDecisionReason,
+      handoffExecutionMode: descriptorSeed.handoffExecutionMode,
+      commandBatches: options.commandBatches,
+    });
+  }
+
+  private createPlanFromInlineBundle(options: {
     skillId: string;
+    skillVersion: string;
     executionIntent: string;
     suggestedSlashCommand: string;
     routerDecisionReason: string;
@@ -240,7 +263,7 @@ export class LocalOrchestrationServiceSessionMainSkillRegistry {
             .join('\n');
     return {
       skillId: options.skillId,
-      skillVersion: SESSION_MAIN_SKILL_VERSION,
+      skillVersion: options.skillVersion,
       executionIntent: options.executionIntent,
       suggestedSlashCommand: options.suggestedSlashCommand,
       routerDecisionReason: options.routerDecisionReason,
