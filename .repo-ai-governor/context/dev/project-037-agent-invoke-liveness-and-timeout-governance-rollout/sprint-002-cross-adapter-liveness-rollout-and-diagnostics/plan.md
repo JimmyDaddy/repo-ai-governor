@@ -1,6 +1,6 @@
 # sprint-002-cross-adapter-liveness-rollout-and-diagnostics 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-02
 - Project: `project-037-agent-invoke-liveness-and-timeout-governance-rollout`
 - Sprint Goal: 将 shared invoke-liveness contract 扩展到 `GitHub Copilot`、`Claude Code` 与 `Ollama / local-model`，并承接 `api-key remote adapter invocation` formal solution 的 transport-aware rollout / delivery verification follow-through。
@@ -17,7 +17,7 @@
 ## 2. Exit Criteria
 
 1. `GitHub Copilot` 与 `Claude Code` 已映射到 shared invoke-liveness contract。
-2. `Ollama / local-model` 已接入统一状态机，并为长 thinking / tool call / stream idle 场景补齐保护。
+2. `Ollama / local-model` 已接入统一状态机，并为当前 surface 已支持的 `stream content / done_reason / stream idle` 场景补齐保护；不存在结构化 `thinking/tool_call` 事件源时 capability truth 继续保持保守。
 3. 各 adapter 在 reason code、status projection 与 partial-output 语义上不再漂移。
 4. 主要 adapter 路径已具备结构化 diagnostics 快照。
 5. `api-key remote adapter invocation` 的 transport-aware routing、binding truthfulness、credential boundary 与 delivery verification follow-through 已有明确实现承接面。
@@ -36,3 +36,4 @@
 10. 2026-04-03：完成 `TK-488` 第一段实现：`Claude Code CLI` / `GitHub Copilot CLI` stream event 已对齐 shared `invokeLiveness` snapshot 与 timeout/partial-output reason code，adapter smoke、`pnpm run build` 与 ledger sync gates 通过；任务继续保持 `active`，后续收口 graceful interrupt / broader diagnostics consistency。
 11. 2026-04-03：推进 `TK-488` 第二段实现：`Claude Code CLI` / `GitHub Copilot CLI` 在 timeout / abort 开始时会先 materialize `graceful_interrupting`，并在 shared `invokeLiveness` snapshot 中保留 `cancelMechanism` 与 suspect reason code；adapter smoke、`pnpm run build` 与 ledger sync gates 通过。
 12. 2026-04-03：完成 `TK-488` 收口：新增 orchestration consumer regression，linked `session.main -> execution` 现已验证 `EXECUTION_GRACEFUL_INTERRUPT_STARTED`、partial snapshot persisted 与 execution summary liveness truth 对 shared CLI invoke-liveness snapshot 的承接闭环；core-orchestration-service 定向 vitest、adapter smoke、`pnpm run build` 与 ledger sync gates 通过，任务标记 `completed`。
+13. 2026-04-03：完成 `TK-489` 收口：`Ollama / local-model` stream 现已 materialize shared `invokeLiveness` snapshot、`transportKind=baseline`、`done_reason`/终态 reason code、覆盖 body consumption 的 timeout budget、partial-output preservation 与长 idle progress protection；由于当前 surface 没有结构化 `thinking/tool_call` 事件源，capability truth 继续保持 `TOOL_CALLING=UNSUPPORTED`。local-model smoke、`pnpm run build` 与 ledger sync gates 通过，`sprint-002` 正式切换为 `completed`。

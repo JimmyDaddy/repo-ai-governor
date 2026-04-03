@@ -31,13 +31,13 @@
 
 ## 2.2 sprint-002-cross-adapter-liveness-rollout-and-diagnostics
 
-- Status: active
+- Status: completed
 - Sprint Goal: 将 shared invoke-liveness contract 扩展到 `GitHub Copilot`、`Claude Code` 与 `Ollama / local-model`，并承接 `api-key remote adapter invocation` formal solution 的 transport-aware rollout / delivery verification follow-through。
 - Task Package: `TK-488`、`TK-489`、`TK-501`、`TK-502`、`TK-503`、`TK-504`。
 
 ## 2.3 sprint-003-graceful-interrupt-cutover-and-governance-closeout
 
-- Status: planned
+- Status: active
 - Sprint Goal: 承接从 `sprint-001` 迁入的 `Codex` graceful interrupt / watchdog 残余实现，并将 invoke-liveness state machine 正式接入 `session.main`、interactive shell、doctor/verify 与 delivery gate，完成预算、回归矩阵与 cutover closeout。
 - Task Package: `TK-487`、`TK-490`、`TK-491`。
 
@@ -51,7 +51,7 @@
 | TK-494 | sprint-001 | promote session-main capability explainer and contextual guidance draft into active interactive-cli formal docs | docs/governance | `technical-solution.interactive-cli-react-style-cli` active formal docs + approved draft | completed |
 | TK-500 | sprint-001 | promote api-key remote adapter invocation draft into active runtime-agent-projection formal docs | docs/promotion | TK-492 + approved draft | completed |
 | TK-488 | sprint-002 | align claude-code and github-copilot with shared invoke liveness contract | runtime/adapter-rollout | TK-486 | completed |
-| TK-489 | sprint-002 | align ollama local-model and long-operation progress protections with invoke liveness governance | runtime/local-model-rollout | TK-486 | planned |
+| TK-489 | sprint-002 | align ollama local-model and long-operation progress protections with invoke liveness governance | runtime/local-model-rollout | TK-486 | completed |
 | TK-501 | sprint-002 | roll out api-key remote adapter invocation runtime transport and delivery verification | runtime/adapter-rollout | `technical-solution.api-key-remote-adapter-invocation` active formal docs + TK-486 | completed |
 | TK-502 | sprint-002 | integrate remote-api streaming liveness and execution diagnostics projection | runtime/diagnostics-rollout | TK-486、TK-501 | completed |
 | TK-503 | sprint-002 | extend remote-api onboarding verification and credential-boundary surfaces | cli/runtime-verification | `technical-solution.api-key-remote-adapter-invocation` active formal docs + TK-501 | completed |
@@ -91,3 +91,4 @@
 10. 2026-04-03：完成 `TK-502`、`TK-503`、`TK-504` 的 follow-through 收口；`api-key remote adapter invocation` 已补齐 streaming liveness、credential boundary、dist-binary remote-api rehearsal、clean-room `path/link/tgz` smoke 与 delivery evidence，delivery registry 现已同步为 `completed`。
 11. 2026-04-03：完成 `TK-488`，`Claude Code CLI / GitHub Copilot CLI` 已对齐 shared invoke-liveness 状态机与 graceful-interrupt orchestration consumer 回归。
 12. 2026-04-03：执行 sprint-001 台账纠偏：`TK-486` 回填为 `completed`，`TK-487` 迁移到 `sprint-003` 继续承接残余 Codex-specific watchdog closeout；`sprint-001` 现正式切换为 `completed`，active primary stream 转为 `sprint-002`。
+13. 2026-04-03：完成 `TK-489` 收口并结束 `sprint-002`：`Ollama / local-model` 已对齐 shared invoke-liveness snapshot、done reason、timeout budget、partial-output preservation 与长 idle progress protection；cross-adapter rollout / remote-api follow-through package 全部完成，primary planning surface 切换到 `sprint-003`。

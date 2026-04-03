@@ -7,7 +7,11 @@ import {
   AgentStreamEventType,
   type AgentStreamEventsRequest,
 } from '@repo-ai-governor/adapter-sdk';
-import { GovernorErrorCode, LocalModelProvider } from '@repo-ai-governor/shared';
+import {
+  AdapterTransportKind,
+  GovernorErrorCode,
+  LocalModelProvider,
+} from '@repo-ai-governor/shared';
 import { LocalModelAgentAdapter } from '../src/index.js';
 
 function createStreamRequest(): AgentStreamEventsRequest {
@@ -24,6 +28,7 @@ function createStreamRequest(): AgentStreamEventsRequest {
 
 describe('local-model-agent-adapter smoke', () => {
   afterEach(() => {
+    vi.useRealTimers();
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });
@@ -260,6 +265,82 @@ describe('local-model-agent-adapter smoke', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
+  it('stops retry backoff when the invoke timeout budget expires', async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi.fn().mockRejectedValueOnce(new TypeError('socket hang up'));
+    const adapter = new LocalModelAgentAdapter({
+      localModel: {
+        provider: LocalModelProvider.OLLAMA,
+        endpoint: 'http://127.0.0.1:11434',
+        model: 'qwen2.5-coder:7b',
+        requestTimeoutMs: 50,
+        maxRetries: 1,
+      },
+      fetchFn: fetchMock as typeof fetch,
+    });
+    const request = {
+      processId: 'process-1',
+      executionId: 'execution-retry-timeout-1',
+      stageId: 'stage-1',
+      routeKey: 'codegen',
+      input: {
+        prompt: 'retry then timeout',
+      },
+    };
+
+    const streamPayloadsPromise = (async () => {
+      const payloads: Array<{
+        type: AgentStreamEventType;
+        detail?: unknown;
+        livenessStatus?: unknown;
+        cancelMechanism?: unknown;
+        suspectReasonCodes?: unknown;
+      }> = [];
+      for await (const event of adapter.streamEvents(request)) {
+        payloads.push({
+          type: event.eventType,
+          detail: event.payload.detail ?? event.payload.message,
+          livenessStatus: (event.payload.invokeLiveness as { status?: unknown } | undefined)
+            ?.status,
+          cancelMechanism: (
+            event.payload.invokeLiveness as { cancelMechanism?: unknown } | undefined
+          )?.cancelMechanism,
+          suspectReasonCodes: (
+            event.payload.invokeLiveness as { suspectReasonCodes?: unknown } | undefined
+          )?.suspectReasonCodes,
+        });
+      }
+      return payloads;
+    })();
+    const invokeResultPromise = adapter.invokeStage(request);
+    const invokeResultExpectation = expect(invokeResultPromise).rejects.toMatchObject({
+      code: GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
+      message: 'Local model invoke exceeded timeout budget (50ms).',
+    });
+
+    await vi.advanceTimersByTimeAsync(60);
+
+    await invokeResultExpectation;
+    const streamPayloads = await streamPayloadsPromise;
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(streamPayloads).toEqual([
+      {
+        type: AgentStreamEventType.STATUS,
+        detail: 'Ollama turn started.',
+        livenessStatus: 'starting',
+        cancelMechanism: 'none',
+        suspectReasonCodes: undefined,
+      },
+      {
+        type: AgentStreamEventType.FAILED,
+        detail: 'Local model invoke exceeded timeout budget (50ms).',
+        livenessStatus: 'failed',
+        cancelMechanism: 'timeout_abort',
+        suspectReasonCodes: ['invoke_hard_timeout'],
+      },
+    ]);
+  });
+
   it('reuses one streaming local-model invocation across streamEvents and invokeStage', async () => {
     const encoder = new TextEncoder();
     const fetchMock = vi.fn(async (_input: string | URL | Request, init?: RequestInit) => {
@@ -281,7 +362,7 @@ describe('local-model-agent-adapter smoke', () => {
             );
             controller.enqueue(
               encoder.encode(
-                `${JSON.stringify({ done: true, prompt_eval_count: 12, eval_count: 34 })}\n`,
+                `${JSON.stringify({ done: true, done_reason: 'stop', prompt_eval_count: 12, eval_count: 34 })}\n`,
               ),
             );
             controller.close();
@@ -314,12 +395,23 @@ describe('local-model-agent-adapter smoke', () => {
     };
 
     const streamPayloadsPromise = (async () => {
-      const payloads: Array<{ type: AgentStreamEventType; detail?: unknown; text?: unknown }> = [];
+      const payloads: Array<{
+        type: AgentStreamEventType;
+        detail?: unknown;
+        text?: unknown;
+        doneReason?: unknown;
+        transportKind?: unknown;
+        livenessStatus?: unknown;
+      }> = [];
       for await (const event of adapter.streamEvents(request)) {
         payloads.push({
           type: event.eventType,
           detail: event.payload.detail,
           text: event.payload.text,
+          doneReason: event.payload.doneReason,
+          transportKind: event.payload.transportKind,
+          livenessStatus: (event.payload.invokeLiveness as { status?: unknown } | undefined)
+            ?.status,
         });
       }
       return payloads;
@@ -337,26 +429,41 @@ describe('local-model-agent-adapter smoke', () => {
         type: AgentStreamEventType.STATUS,
         detail: 'Ollama turn started.',
         text: undefined,
+        doneReason: undefined,
+        transportKind: AdapterTransportKind.BASELINE,
+        livenessStatus: 'starting',
       },
       {
         type: AgentStreamEventType.TOKEN,
         detail: undefined,
         text: 'Hello',
+        doneReason: undefined,
+        transportKind: AdapterTransportKind.BASELINE,
+        livenessStatus: 'running',
       },
       {
         type: AgentStreamEventType.TOKEN,
         detail: undefined,
         text: ' world',
+        doneReason: undefined,
+        transportKind: AdapterTransportKind.BASELINE,
+        livenessStatus: 'running',
       },
       {
         type: AgentStreamEventType.STATUS,
-        detail: 'Ollama stream completed; finalizing response.',
+        detail: 'Ollama stream completed with reason "stop"; finalizing response.',
         text: undefined,
+        doneReason: 'stop',
+        transportKind: AdapterTransportKind.BASELINE,
+        livenessStatus: 'running',
       },
       {
         type: AgentStreamEventType.COMPLETED,
         detail: undefined,
         text: undefined,
+        doneReason: undefined,
+        transportKind: AdapterTransportKind.BASELINE,
+        livenessStatus: 'completed',
       },
     ]);
     expect(invokeResult.output.responseText).toBe('Hello world');
@@ -401,32 +508,227 @@ describe('local-model-agent-adapter smoke', () => {
     };
 
     const streamPayloadsPromise = (async () => {
-      const payloads: Array<{ type: AgentStreamEventType; detail?: unknown }> = [];
+      const payloads: Array<{
+        type: AgentStreamEventType;
+        detail?: unknown;
+        livenessStatus?: unknown;
+        cancelMechanism?: unknown;
+      }> = [];
       for await (const event of adapter.streamEvents(request)) {
         payloads.push({
           type: event.eventType,
           detail: event.payload.detail ?? event.payload.message,
+          livenessStatus: (event.payload.invokeLiveness as { status?: unknown } | undefined)
+            ?.status,
+          cancelMechanism: (
+            event.payload.invokeLiveness as { cancelMechanism?: unknown } | undefined
+          )?.cancelMechanism,
         });
       }
       return payloads;
     })();
     const invokeResultPromise = adapter.invokeStage(request);
-    abortController.abort('user-requested');
-
-    await expect(invokeResultPromise).rejects.toMatchObject({
+    const invokeResultExpectation = expect(invokeResultPromise).rejects.toMatchObject({
       code: GovernorErrorCode.PROCESS_RUNTIME_CANCELLED,
     });
+    abortController.abort('user-requested');
+
+    await invokeResultExpectation;
     await expect(streamPayloadsPromise).resolves.toEqual([
       {
         type: AgentStreamEventType.STATUS,
         detail: 'Ollama turn started.',
+        livenessStatus: 'starting',
+        cancelMechanism: 'none',
       },
       {
         type: AgentStreamEventType.FAILED,
         detail: 'Local model invoke cancelled before completion.',
+        livenessStatus: 'cancelled',
+        cancelMechanism: 'abort_signal',
       },
     ]);
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('emits idle progress protection events while waiting for local-model stream output', async () => {
+    vi.useFakeTimers();
+    const encoder = new TextEncoder();
+    const fetchMock = vi.fn(async (_input: string | URL | Request, init?: RequestInit) => {
+      const signal = init?.signal;
+      return new Response(
+        new ReadableStream({
+          start(controller) {
+            signal?.addEventListener(
+              'abort',
+              () => controller.error(new DOMException('aborted', 'AbortError')),
+              { once: true },
+            );
+            setTimeout(() => {
+              controller.enqueue(
+                encoder.encode(`${JSON.stringify({ response: 'late token', done: false })}\n`),
+              );
+            }, 16000);
+            setTimeout(() => {
+              controller.enqueue(encoder.encode(`${JSON.stringify({ done: true })}\n`));
+              controller.close();
+            }, 16100);
+          },
+        }),
+        {
+          status: 200,
+          headers: {
+            'content-type': 'application/x-ndjson',
+          },
+        },
+      );
+    });
+    const adapter = new LocalModelAgentAdapter({
+      localModel: {
+        provider: LocalModelProvider.OLLAMA,
+        endpoint: 'http://127.0.0.1:11434',
+        model: 'qwen2.5-coder:7b',
+      },
+      fetchFn: fetchMock as typeof fetch,
+    });
+
+    const streamPayloadsPromise = (async () => {
+      const payloads: Array<{
+        type: AgentStreamEventType;
+        detail?: unknown;
+        livenessStatus?: unknown;
+      }> = [];
+      for await (const event of adapter.streamEvents(createStreamRequest())) {
+        payloads.push({
+          type: event.eventType,
+          detail: event.payload.detail,
+          livenessStatus: (event.payload.invokeLiveness as { status?: unknown } | undefined)
+            ?.status,
+        });
+      }
+      return payloads;
+    })();
+
+    await vi.advanceTimersByTimeAsync(16200);
+
+    const streamPayloads = await streamPayloadsPromise;
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(streamPayloads).toEqual(
+      expect.arrayContaining([
+        {
+          type: AgentStreamEventType.STATUS,
+          detail: 'Ollama turn started.',
+          livenessStatus: 'starting',
+        },
+        {
+          type: AgentStreamEventType.STATUS,
+          detail:
+            'Ollama invoke is still running (15s elapsed); waiting for local-model stream output.',
+          livenessStatus: 'running',
+        },
+      ]),
+    );
+  });
+
+  it('classifies timeout budget failures and preserves partial output for local-model streams', async () => {
+    vi.useFakeTimers();
+    const encoder = new TextEncoder();
+    const fetchMock = vi.fn(async (_input: string | URL | Request, init?: RequestInit) => {
+      const signal = init?.signal;
+      return new Response(
+        new ReadableStream({
+          start(controller) {
+            signal?.addEventListener(
+              'abort',
+              () => controller.error(new DOMException('aborted', 'AbortError')),
+              { once: true },
+            );
+            controller.enqueue(
+              encoder.encode(`${JSON.stringify({ response: 'partial output', done: false })}\n`),
+            );
+          },
+        }),
+        {
+          status: 200,
+          headers: {
+            'content-type': 'application/x-ndjson',
+          },
+        },
+      );
+    });
+    const adapter = new LocalModelAgentAdapter({
+      localModel: {
+        provider: LocalModelProvider.OLLAMA,
+        endpoint: 'http://127.0.0.1:11434',
+        model: 'qwen2.5-coder:7b',
+        requestTimeoutMs: 500,
+      },
+      fetchFn: fetchMock as typeof fetch,
+    });
+    const request = {
+      processId: 'process-1',
+      executionId: 'execution-timeout-1',
+      stageId: 'stage-1',
+      routeKey: 'codegen',
+      input: {
+        prompt: 'implement feature',
+      },
+    };
+
+    const streamPayloadsPromise = (async () => {
+      const payloads: Array<{
+        type: AgentStreamEventType;
+        detail?: unknown;
+        accumulatedText?: unknown;
+        livenessStatus?: unknown;
+        cancelMechanism?: unknown;
+        suspectReasonCodes?: unknown;
+      }> = [];
+      for await (const event of adapter.streamEvents(request)) {
+        payloads.push({
+          type: event.eventType,
+          detail: event.payload.detail ?? event.payload.message,
+          accumulatedText: event.payload.accumulatedText,
+          livenessStatus: (event.payload.invokeLiveness as { status?: unknown } | undefined)
+            ?.status,
+          cancelMechanism: (
+            event.payload.invokeLiveness as { cancelMechanism?: unknown } | undefined
+          )?.cancelMechanism,
+          suspectReasonCodes: (
+            event.payload.invokeLiveness as { suspectReasonCodes?: unknown } | undefined
+          )?.suspectReasonCodes,
+        });
+      }
+      return payloads;
+    })();
+    const invokeResultPromise = adapter.invokeStage(request);
+    const invokeResultExpectation = expect(invokeResultPromise).rejects.toMatchObject({
+      code: GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
+      message: 'Local model invoke exceeded timeout budget (500ms).',
+    });
+
+    await vi.advanceTimersByTimeAsync(600);
+
+    await invokeResultExpectation;
+    const streamPayloads = await streamPayloadsPromise;
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(streamPayloads).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: AgentStreamEventType.TOKEN,
+          accumulatedText: 'partial output',
+          livenessStatus: 'running',
+        }),
+        expect.objectContaining({
+          type: AgentStreamEventType.FAILED,
+          detail: 'Local model invoke exceeded timeout budget (500ms).',
+          accumulatedText: 'partial output',
+          livenessStatus: 'failed',
+          cancelMechanism: 'timeout_abort',
+          suspectReasonCodes: ['invoke_hard_timeout', 'invoke_partial_output_preserved'],
+        }),
+      ]),
+    );
   });
 
   it('rethrows probe aborts as standardized cancellation without consuming retry budget', async () => {

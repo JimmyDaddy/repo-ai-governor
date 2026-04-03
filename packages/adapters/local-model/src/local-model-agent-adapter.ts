@@ -18,6 +18,7 @@ import {
   createLayeredHealthCheckFromLegacyReasons,
 } from '@repo-ai-governor/adapter-sdk';
 import {
+  AdapterTransportKind,
   GovernorErrorCode,
   LocalModelProvider,
   RuntimeError,
@@ -34,6 +35,8 @@ const OLLAMA_GENERATE_PATH = 'api/generate';
 const LOCAL_MODEL_DEFAULT_TIMEOUT_MS = 30000;
 const LOCAL_MODEL_RETRY_DELAY_MS = 150;
 const LOCAL_MODEL_EXECUTION_CACHE_TTL_MS = 30000;
+const LOCAL_MODEL_PROGRESS_INTERVAL_MS = 15000;
+const LOCAL_MODEL_PREVIEW_TEXT_MAX_LENGTH = 240;
 
 const LOCAL_MODEL_CAPABILITY_SUPPORT: Record<AgentCapability, AgentCapabilitySupportLevel> = {
   [AgentCapability.TOOL_CALLING]: AgentCapabilitySupportLevel.UNSUPPORTED,
@@ -67,6 +70,7 @@ interface OllamaModelDescriptor {
 interface OllamaGenerateResponse {
   response?: string;
   done?: boolean;
+  done_reason?: string | null;
   prompt_eval_count?: number;
   eval_count?: number;
 }
@@ -93,8 +97,18 @@ interface LocalModelExecutionState {
   waiters: Set<() => void>;
   lineBuffer: string;
   accumulatedText: string;
+  startedAtMs: number | null;
+  startedAt: string | null;
+  lastTransportActivityAtMs: number | null;
+  lastTransportActivityAt: string | null;
+  lastSemanticProgressAtMs: number | null;
+  lastSemanticProgressAt: string | null;
+  latestEventAt: string | null;
+  latestEventType: string | null;
+  latestTextPreview: string | null;
   settled: boolean;
   cleanupTimer: NodeJS.Timeout | null;
+  progressTimer: NodeJS.Timeout | null;
   resultPromise: Promise<LocalModelExecutionResult>;
 }
 
@@ -112,6 +126,15 @@ interface ResolvedLocalModelAgentAdapterOptions {
   unavailableReasons: string[];
   localModel: LocalModelRuntimeConfig | null;
   fetchFn: typeof fetch;
+}
+
+type LocalModelLivenessStatus = 'starting' | 'running' | 'completed' | 'failed' | 'cancelled';
+type LocalModelCancelMechanism = 'none' | 'abort_signal' | 'timeout_abort';
+
+interface LocalModelRequestTimeoutBudget {
+  signal: AbortSignal;
+  cleanup: () => void;
+  didTimeout: () => boolean;
 }
 
 /**
@@ -324,8 +347,18 @@ export class LocalModelAgentAdapter extends AgentProtocol {
       waiters: new Set(),
       lineBuffer: '',
       accumulatedText: '',
+      startedAtMs: null,
+      startedAt: null,
+      lastTransportActivityAtMs: null,
+      lastTransportActivityAt: null,
+      lastSemanticProgressAtMs: null,
+      lastSemanticProgressAt: null,
+      latestEventAt: null,
+      latestEventType: null,
+      latestTextPreview: null,
       settled: false,
       cleanupTimer: null,
+      progressTimer: null,
       resultPromise: Promise.resolve({
         responseText: '',
         elapsedMs: 0,
@@ -350,10 +383,12 @@ export class LocalModelAgentAdapter extends AgentProtocol {
     }
 
     try {
-      const startedAt = Date.now();
+      state.startedAtMs = Date.now();
+      state.startedAt = new Date(state.startedAtMs).toISOString();
+      this.recordLocalModelTransportEvent(state, state.startedAt, 'invoke_started');
       this.pushExecutionEvent(state, {
         eventType: AgentStreamEventType.STATUS,
-        timestamp: new Date().toISOString(),
+        timestamp: state.startedAt,
         processId: request.processId,
         executionId: request.executionId,
         stageId: request.stageId,
@@ -362,31 +397,53 @@ export class LocalModelAgentAdapter extends AgentProtocol {
           status: 'running',
           surface: LOCAL_MODEL_SURFACE,
           detail: 'Ollama turn started.',
+          transportKind: AdapterTransportKind.BASELINE,
+          invokeLiveness: this.buildLocalModelInvokeLivenessSnapshot(request, state, {
+            status: 'starting',
+            partialOutputPreserved: false,
+            cancelMechanism: 'none',
+          }),
         },
       });
+      this.startLongOperationProgress(state, request);
+      const startedAt = state.startedAtMs;
 
       const prompt = this.renderPrompt(request.input);
-      const response = await this.requestResponse({
-        localModel: this.options.localModel,
-        path: OLLAMA_GENERATE_PATH,
-        method: 'POST',
-        request: {
-          processId: request.processId,
-          executionId: request.executionId,
-          stageId: request.stageId,
-          routeKey: request.routeKey,
-          input: request.input,
-          agentInvocationTimeoutMs: request.timeoutMs,
+      const timeoutBudget = this.createRequestTimeoutBudget(request.timeoutMs, request.signal);
+      let usage: AgentInvokeStageResult['usage'] | undefined;
+      try {
+        const response = await this.requestResponse({
+          localModel: this.options.localModel,
+          path: OLLAMA_GENERATE_PATH,
+          method: 'POST',
+          request: {
+            processId: request.processId,
+            executionId: request.executionId,
+            stageId: request.stageId,
+            routeKey: request.routeKey,
+            input: request.input,
+            agentInvocationTimeoutMs: request.timeoutMs,
+            ...(request.signal ? { signal: request.signal } : {}),
+          },
           ...(request.signal ? { signal: request.signal } : {}),
-        },
-        body: {
-          model: this.options.localModel.model,
-          prompt,
-          stream: true,
-        },
-        operation: 'invoke',
-      });
-      const usage = await this.consumeGenerateStream(state, request, response);
+          timeoutSignal: timeoutBudget.signal,
+          body: {
+            model: this.options.localModel.model,
+            prompt,
+            stream: true,
+          },
+          operation: 'invoke',
+        });
+        usage = await this.consumeGenerateStream(state, request, response);
+      } catch (error) {
+        if (timeoutBudget.didTimeout() && this.isAbortError(error)) {
+          throw this.createLocalModelTimeoutBudgetError(request, error);
+        }
+        this.throwIfCancelled(error, request.signal, 'invoke');
+        throw error;
+      } finally {
+        timeoutBudget.cleanup();
+      }
       const responseText = state.accumulatedText.trim();
       if (responseText.length === 0) {
         throw new RuntimeError(
@@ -400,9 +457,16 @@ export class LocalModelAgentAdapter extends AgentProtocol {
         );
       }
 
+      const completedAt = new Date().toISOString();
+      this.recordLocalModelTransportEvent(
+        state,
+        completedAt,
+        AgentStreamEventType.COMPLETED,
+        responseText,
+      );
       this.pushExecutionEvent(state, {
         eventType: AgentStreamEventType.COMPLETED,
-        timestamp: new Date().toISOString(),
+        timestamp: completedAt,
         processId: request.processId,
         executionId: request.executionId,
         stageId: request.stageId,
@@ -410,7 +474,15 @@ export class LocalModelAgentAdapter extends AgentProtocol {
         payload: {
           status: 'completed',
           surface: LOCAL_MODEL_SURFACE,
+          transportKind: AdapterTransportKind.BASELINE,
+          accumulatedText: state.accumulatedText,
           responseText,
+          invokeLiveness: this.buildLocalModelInvokeLivenessSnapshot(request, state, {
+            status: 'completed',
+            partialOutputPreserved: false,
+            cancelMechanism: 'none',
+            lastTerminalSignalAt: completedAt,
+          }),
         },
       });
       this.finishExecution(state);
@@ -421,9 +493,23 @@ export class LocalModelAgentAdapter extends AgentProtocol {
       };
     } catch (error) {
       const standardizedError = standardizeError(error);
+      const failedAt = new Date().toISOString();
+      const partialOutputPreserved = state.accumulatedText.trim().length > 0;
+      const cancelMechanism = this.resolveLocalModelFailureCancelMechanism(error, request);
+      const failureStatus = this.resolveLocalModelFailureStatus(error);
+      const suspectReasonCodes = this.resolveLocalModelFailureReasonCodes(
+        error,
+        partialOutputPreserved,
+      );
+      this.recordLocalModelTransportEvent(
+        state,
+        failedAt,
+        AgentStreamEventType.FAILED,
+        partialOutputPreserved ? state.accumulatedText : standardizedError.message,
+      );
       this.pushExecutionEvent(state, {
         eventType: AgentStreamEventType.FAILED,
-        timestamp: new Date().toISOString(),
+        timestamp: failedAt,
         processId: request.processId,
         executionId: request.executionId,
         stageId: request.stageId,
@@ -432,6 +518,20 @@ export class LocalModelAgentAdapter extends AgentProtocol {
           status: 'failed',
           surface: LOCAL_MODEL_SURFACE,
           message: standardizedError.message,
+          transportKind: AdapterTransportKind.BASELINE,
+          ...(partialOutputPreserved
+            ? {
+                accumulatedText: state.accumulatedText,
+                responseText: state.accumulatedText,
+              }
+            : {}),
+          invokeLiveness: this.buildLocalModelInvokeLivenessSnapshot(request, state, {
+            status: failureStatus,
+            partialOutputPreserved,
+            cancelMechanism,
+            lastTerminalSignalAt: failedAt,
+            ...(suspectReasonCodes.length > 0 ? { suspectReasonCodes } : {}),
+          }),
         },
       });
       this.finishExecution(state);
@@ -472,6 +572,10 @@ export class LocalModelAgentAdapter extends AgentProtocol {
 
   private finishExecution(state: LocalModelExecutionState): void {
     state.settled = true;
+    if (state.progressTimer) {
+      clearInterval(state.progressTimer);
+      state.progressTimer = null;
+    }
     for (const waiter of state.waiters) {
       waiter();
     }
@@ -570,23 +674,42 @@ export class LocalModelAgentAdapter extends AgentProtocol {
   ): void {
     if (typeof payload.response === 'string' && payload.response.length > 0) {
       state.accumulatedText += payload.response;
+      const timestamp = new Date().toISOString();
+      this.recordLocalModelSemanticProgress(
+        state,
+        timestamp,
+        AgentStreamEventType.TOKEN,
+        state.accumulatedText,
+      );
       this.pushExecutionEvent(state, {
         eventType: AgentStreamEventType.TOKEN,
-        timestamp: new Date().toISOString(),
+        timestamp,
         processId: request.processId,
         executionId: request.executionId,
         stageId: request.stageId,
         routeKey: request.routeKey,
         payload: {
           surface: LOCAL_MODEL_SURFACE,
+          transportKind: AdapterTransportKind.BASELINE,
           text: payload.response,
           accumulatedText: state.accumulatedText,
+          invokeLiveness: this.buildLocalModelInvokeLivenessSnapshot(request, state, {
+            status: 'running',
+            partialOutputPreserved: false,
+            cancelMechanism: 'none',
+          }),
         },
       });
     }
 
-    const timestamp = new Date().toISOString();
     if (payload.done) {
+      const timestamp = new Date().toISOString();
+      this.recordLocalModelTransportEvent(
+        state,
+        timestamp,
+        'done',
+        typeof payload.done_reason === 'string' ? payload.done_reason : state.accumulatedText,
+      );
       this.pushExecutionEvent(state, {
         eventType: AgentStreamEventType.STATUS,
         timestamp,
@@ -597,7 +720,19 @@ export class LocalModelAgentAdapter extends AgentProtocol {
         payload: {
           status: 'running',
           surface: LOCAL_MODEL_SURFACE,
-          detail: 'Ollama stream completed; finalizing response.',
+          transportKind: AdapterTransportKind.BASELINE,
+          detail:
+            typeof payload.done_reason === 'string' && payload.done_reason.trim().length > 0
+              ? `Ollama stream completed with reason "${payload.done_reason}"; finalizing response.`
+              : 'Ollama stream completed; finalizing response.',
+          ...(typeof payload.done_reason === 'string' && payload.done_reason.trim().length > 0
+            ? { doneReason: payload.done_reason }
+            : {}),
+          invokeLiveness: this.buildLocalModelInvokeLivenessSnapshot(request, state, {
+            status: 'running',
+            partialOutputPreserved: false,
+            cancelMechanism: 'none',
+          }),
         },
       });
     }
@@ -736,6 +871,7 @@ export class LocalModelAgentAdapter extends AgentProtocol {
     operation: 'probe' | 'invoke';
     request?: AgentInvokeStageRequest;
     signal?: AbortSignal;
+    timeoutSignal?: AbortSignal;
     body?: Record<string, unknown>;
   }): Promise<T> {
     const response = await this.requestResponse(options);
@@ -767,17 +903,19 @@ export class LocalModelAgentAdapter extends AgentProtocol {
     operation: 'probe' | 'invoke';
     request?: AgentInvokeStageRequest;
     signal?: AbortSignal;
+    timeoutSignal?: AbortSignal;
     body?: Record<string, unknown>;
   }): Promise<Response> {
     const maxRetries = Math.max(0, options.localModel.maxRetries ?? 0);
     const totalAttempts = maxRetries + 1;
+    const retrySignal = options.timeoutSignal ?? options.signal ?? options.request?.signal;
 
     for (let attempt = 0; attempt < totalAttempts; attempt += 1) {
       try {
         const response = await this.fetchWithTimeout(options);
         if (!response.ok) {
           if (this.isRetryableStatusCode(response.status) && attempt + 1 < totalAttempts) {
-            await this.delayRetry(attempt);
+            await this.delayRetry(attempt, retrySignal);
             continue;
           }
           throw new RuntimeError(
@@ -797,7 +935,7 @@ export class LocalModelAgentAdapter extends AgentProtocol {
       } catch (error) {
         this.throwIfCancelled(error, options.signal ?? options.request?.signal, options.operation);
         if (attempt + 1 < totalAttempts && this.isRetryableRequestError(error)) {
-          await this.delayRetry(attempt);
+          await this.delayRetry(attempt, retrySignal);
           continue;
         }
         throw error;
@@ -826,8 +964,21 @@ export class LocalModelAgentAdapter extends AgentProtocol {
     method: 'GET' | 'POST';
     request?: AgentInvokeStageRequest;
     signal?: AbortSignal;
+    timeoutSignal?: AbortSignal;
     body?: Record<string, unknown>;
   }): Promise<Response> {
+    if (options.timeoutSignal) {
+      return await this.options.fetchFn(this.resolveEndpointUrl(options.localModel, options.path), {
+        method: options.method,
+        headers: {
+          accept: 'application/json',
+          ...(options.method === 'POST' ? { 'content-type': 'application/json' } : {}),
+        },
+        ...(options.body ? { body: JSON.stringify(options.body) } : {}),
+        signal: options.timeoutSignal,
+      });
+    }
+
     const timeoutMs = this.resolveRequestTimeoutMs(options.localModel, options.request);
     const abortController = new AbortController();
     const timeoutHandle = setTimeout(() => {
@@ -1049,6 +1200,229 @@ export class LocalModelAgentAdapter extends AgentProtocol {
     return false;
   }
 
+  private startLongOperationProgress(
+    state: LocalModelExecutionState,
+    request: LocalModelExecutionRequest,
+  ): void {
+    state.progressTimer = setInterval(() => {
+      if (state.settled || !this.shouldEmitLongOperationProgress(state)) {
+        return;
+      }
+      this.pushLongOperationProgressEvent(state, request);
+    }, LOCAL_MODEL_PROGRESS_INTERVAL_MS);
+    state.progressTimer.unref?.();
+  }
+
+  private shouldEmitLongOperationProgress(state: LocalModelExecutionState): boolean {
+    const baselineMs = state.lastTransportActivityAtMs ?? state.startedAtMs;
+    if (baselineMs === null) {
+      return false;
+    }
+    return Date.now() - baselineMs >= LOCAL_MODEL_PROGRESS_INTERVAL_MS;
+  }
+
+  private pushLongOperationProgressEvent(
+    state: LocalModelExecutionState,
+    request: LocalModelExecutionRequest,
+  ): void {
+    const elapsedSeconds =
+      state.startedAtMs === null
+        ? 0
+        : Math.max(0, Math.floor((Date.now() - state.startedAtMs) / 1000));
+    this.pushExecutionEvent(state, {
+      eventType: AgentStreamEventType.STATUS,
+      timestamp: new Date().toISOString(),
+      processId: request.processId,
+      executionId: request.executionId,
+      stageId: request.stageId,
+      routeKey: request.routeKey,
+      payload: {
+        status: 'running',
+        surface: LOCAL_MODEL_SURFACE,
+        transportKind: AdapterTransportKind.BASELINE,
+        detail:
+          elapsedSeconds === 0
+            ? 'Ollama invoke is still running; waiting for local-model stream output.'
+            : `Ollama invoke is still running (${elapsedSeconds}s elapsed); waiting for local-model stream output.`,
+        activityKey: `${LOCAL_MODEL_SURFACE}:progress:${elapsedSeconds}`,
+        invokeLiveness: this.buildLocalModelInvokeLivenessSnapshot(request, state, {
+          status: 'running',
+          partialOutputPreserved: state.accumulatedText.trim().length > 0,
+          cancelMechanism: 'none',
+        }),
+      },
+    });
+  }
+
+  private recordLocalModelTransportEvent(
+    state: LocalModelExecutionState,
+    timestamp: string,
+    eventType: string,
+    previewText?: string,
+  ): void {
+    state.lastTransportActivityAt = timestamp;
+    state.lastTransportActivityAtMs = Date.parse(timestamp);
+    state.latestEventAt = timestamp;
+    state.latestEventType = eventType;
+    if (previewText) {
+      state.latestTextPreview = this.normalizeLocalModelPreviewText(previewText);
+    }
+  }
+
+  private recordLocalModelSemanticProgress(
+    state: LocalModelExecutionState,
+    timestamp: string,
+    eventType: string,
+    previewText: string,
+  ): void {
+    this.recordLocalModelTransportEvent(state, timestamp, eventType, previewText);
+    state.lastSemanticProgressAt = timestamp;
+    state.lastSemanticProgressAtMs = Date.parse(timestamp);
+  }
+
+  private normalizeLocalModelPreviewText(text: string): string {
+    const normalizedText = text.replace(/\s+/gu, ' ').trim();
+    if (normalizedText.length <= LOCAL_MODEL_PREVIEW_TEXT_MAX_LENGTH) {
+      return normalizedText;
+    }
+    return `${normalizedText.slice(0, LOCAL_MODEL_PREVIEW_TEXT_MAX_LENGTH - 3)}...`;
+  }
+
+  private buildLocalModelInvokeLivenessSnapshot(
+    request: LocalModelExecutionRequest,
+    state: LocalModelExecutionState,
+    options: {
+      status: LocalModelLivenessStatus;
+      partialOutputPreserved: boolean;
+      cancelMechanism: LocalModelCancelMechanism;
+      lastTerminalSignalAt?: string;
+      suspectReasonCodes?: string[];
+    },
+  ): Record<string, unknown> {
+    const startedAt = state.startedAt ?? new Date().toISOString();
+    return {
+      adapterId: this.options.agentId,
+      surfaceId: LOCAL_MODEL_SURFACE,
+      routeKey: request.routeKey,
+      startedAt,
+      status: options.status,
+      ...(state.lastTransportActivityAt
+        ? { lastTransportActivityAt: state.lastTransportActivityAt }
+        : {}),
+      ...(state.lastSemanticProgressAt
+        ? { lastSemanticProgressAt: state.lastSemanticProgressAt }
+        : {}),
+      ...(options.lastTerminalSignalAt
+        ? { lastTerminalSignalAt: options.lastTerminalSignalAt }
+        : {}),
+      ...(state.latestEventAt ? { latestEventAt: state.latestEventAt } : {}),
+      ...(state.latestEventType ? { latestEventType: state.latestEventType } : {}),
+      ...(state.latestTextPreview ? { latestTextPreview: state.latestTextPreview } : {}),
+      activeOperationKind: 'local_model_stream',
+      activeOperationStartedAt: startedAt,
+      partialOutputPreserved: options.partialOutputPreserved,
+      transportKind: AdapterTransportKind.BASELINE,
+      cancelMechanism: options.cancelMechanism,
+      ...(options.suspectReasonCodes && options.suspectReasonCodes.length > 0
+        ? { suspectReasonCodes: options.suspectReasonCodes }
+        : {}),
+    };
+  }
+
+  private resolveLocalModelFailureStatus(error: unknown): LocalModelLivenessStatus {
+    return standardizeError(error).code === GovernorErrorCode.PROCESS_RUNTIME_CANCELLED
+      ? 'cancelled'
+      : 'failed';
+  }
+
+  private resolveLocalModelFailureCancelMechanism(
+    error: unknown,
+    request: LocalModelExecutionRequest,
+  ): LocalModelCancelMechanism {
+    if (
+      request.signal?.aborted ||
+      standardizeError(error).code === GovernorErrorCode.PROCESS_RUNTIME_CANCELLED
+    ) {
+      return 'abort_signal';
+    }
+    if (this.isLocalModelTimeoutBudgetError(error)) {
+      return 'timeout_abort';
+    }
+    return 'none';
+  }
+
+  private resolveLocalModelFailureReasonCodes(
+    error: unknown,
+    partialOutputPreserved: boolean,
+  ): string[] {
+    return [
+      ...(this.isLocalModelTimeoutBudgetError(error) ? ['invoke_hard_timeout'] : []),
+      ...(partialOutputPreserved ? ['invoke_partial_output_preserved'] : []),
+    ];
+  }
+
+  private createLocalModelTimeoutBudgetError(
+    request: LocalModelExecutionRequest,
+    cause: unknown,
+  ): RuntimeError {
+    return new RuntimeError(
+      GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
+      `Local model invoke exceeded timeout budget (${String(request.timeoutMs)}ms).`,
+      {
+        surface: LOCAL_MODEL_SURFACE,
+        routeKey: request.routeKey,
+        stageId: request.stageId,
+        timeoutMs: request.timeoutMs,
+        timeoutBudgetExceeded: true,
+      },
+      cause,
+    );
+  }
+
+  private isLocalModelTimeoutBudgetError(error: unknown): boolean {
+    if (!(error instanceof RuntimeError)) {
+      return false;
+    }
+    return (
+      error.code === GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED &&
+      error.details?.timeoutBudgetExceeded === true
+    );
+  }
+
+  private createRequestTimeoutBudget(
+    timeoutMs: number,
+    upstreamSignal?: AbortSignal,
+  ): LocalModelRequestTimeoutBudget {
+    const timeoutController = new AbortController();
+    let didTimeout = false;
+    const timeoutHandle = setTimeout(() => {
+      didTimeout = true;
+      timeoutController.abort(`timeout:${String(timeoutMs)}`);
+    }, timeoutMs);
+    const onAbort = (): void => {
+      timeoutController.abort(upstreamSignal?.reason);
+    };
+
+    if (upstreamSignal) {
+      if (upstreamSignal.aborted) {
+        timeoutController.abort(upstreamSignal.reason);
+      } else {
+        upstreamSignal.addEventListener('abort', onAbort, { once: true });
+      }
+    }
+
+    return {
+      signal: timeoutController.signal,
+      cleanup: () => {
+        clearTimeout(timeoutHandle);
+        if (upstreamSignal) {
+          upstreamSignal.removeEventListener('abort', onAbort);
+        }
+      },
+      didTimeout: () => didTimeout,
+    };
+  }
+
   /**
    * Rethrows upstream aborts as standardized cancellation errors before probe fallback logic runs.
    * @param error Unknown request/probe failure.
@@ -1095,9 +1469,30 @@ export class LocalModelAgentAdapter extends AgentProtocol {
    * Waits briefly before the next retry attempt.
    * @param attempt Current zero-based attempt index.
    */
-  private async delayRetry(attempt: number): Promise<void> {
-    await new Promise((resolve) => {
-      setTimeout(resolve, LOCAL_MODEL_RETRY_DELAY_MS * (attempt + 1));
+  private async delayRetry(attempt: number, signal?: AbortSignal): Promise<void> {
+    await new Promise<void>((resolve, reject) => {
+      if (signal?.aborted) {
+        reject(new DOMException('aborted', 'AbortError'));
+        return;
+      }
+
+      const timeoutHandle = setTimeout(
+        () => {
+          if (signal) {
+            signal.removeEventListener('abort', onAbort);
+          }
+          resolve();
+        },
+        LOCAL_MODEL_RETRY_DELAY_MS * (attempt + 1),
+      );
+
+      const onAbort = (): void => {
+        clearTimeout(timeoutHandle);
+        signal?.removeEventListener('abort', onAbort);
+        reject(new DOMException('aborted', 'AbortError'));
+      };
+
+      signal?.addEventListener('abort', onAbort, { once: true });
     });
   }
 

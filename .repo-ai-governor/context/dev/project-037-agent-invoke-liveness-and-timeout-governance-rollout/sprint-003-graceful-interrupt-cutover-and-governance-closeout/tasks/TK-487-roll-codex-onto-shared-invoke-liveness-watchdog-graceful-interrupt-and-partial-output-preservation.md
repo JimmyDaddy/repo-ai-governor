@@ -1,6 +1,6 @@
 # TK-487 roll codex onto shared invoke liveness watchdog graceful interrupt and partial output preservation
 
-- Status: planned
+- Status: active
 - Date: 2026-04-03
 - Owner: AI-Agent
 - Priority: P0
@@ -44,3 +44,4 @@
 
 1. 2026-04-02：任务创建，状态初始化为 `planned`。
 2. 2026-04-03：经 project-037 sprint 台账复核，确认本任务未在 `sprint-001` 内完成闭环；shared baseline 已由 `TK-486` 与后续 rollout 吸收，但 Codex-specific watchdog/graceful-interrupt follow-through 仍需独立收口，因此任务迁移到 `sprint-003-graceful-interrupt-cutover-and-governance-closeout` 并保持 `planned`。
+3. 2026-04-03：随着 `TK-489` 收口、`sprint-002` 完成，本任务被提升为新的 primary implementation surface；当前状态切换为 `active`，下一步将承接 Codex-specific watchdog / graceful interrupt / hard terminate closeout。

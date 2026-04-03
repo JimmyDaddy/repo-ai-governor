@@ -7,8 +7,10 @@
   - 2026-04-03：补齐 CLI graceful-interrupt 迁移：timeout / abort 开始时两条 adapter 会先发出 `graceful_interrupting` status，再进入终态 failed/cancelled path；定向 smoke、`pnpm run build`、ledger sync gates 通过，任务继续保持 `active`。
   - 2026-04-03：完成 orchestration consumer 收口：linked `session.main -> execution` 现已通过 graceful-interrupt regression 覆盖 `EXECUTION_GRACEFUL_INTERRUPT_STARTED`、partial snapshot persisted 与 execution summary liveness truth；core-orchestration-service 定向 vitest、adapter smoke、`pnpm run build` 与 ledger sync gates 通过，任务标记 `completed`。
 
-- [ ] TK-489 align ollama local-model and long-operation progress protections with invoke liveness governance
+- [x] TK-489 align ollama local-model and long-operation progress protections with invoke liveness governance
   - 2026-04-02：任务创建，状态初始化为 `planned`；承接 Ollama / local-model 的 invoke-liveness 对齐与长 thinking / tool-call 保护。
+  - 2026-04-03：任务激活，开始为 Ollama / local-model 补齐 shared `invokeLiveness` snapshot、stream idle progress protection、timeout budget 终态分类与 partial-output preservation。
+  - 2026-04-03：完成收口：`local-model` stream 现已对齐 shared `invokeLiveness` snapshot、`transportKind=baseline`、`done_reason`/终态 reason code、body-consumption timeout budget 与长 idle progress protection；由于当前 surface 没有结构化 `thinking/tool_call` 事件源，capability truth 继续保持 `TOOL_CALLING=UNSUPPORTED`。local-model smoke、`pnpm run build`、ledger sync gates 通过，任务标记 `completed`。
 
 - [x] TK-501 roll out api-key remote adapter invocation runtime transport and delivery verification
   - 2026-04-02：任务创建，状态初始化为 `planned`；承接 `technical-solution.api-key-remote-adapter-invocation` 的 remote-api runtime baseline 落地。
