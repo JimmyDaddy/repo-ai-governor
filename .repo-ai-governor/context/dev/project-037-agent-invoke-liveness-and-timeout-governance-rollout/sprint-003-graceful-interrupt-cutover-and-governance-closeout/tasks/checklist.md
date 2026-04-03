@@ -1,5 +1,9 @@
 # checklist
 
+- [ ] TK-487 roll codex onto shared invoke liveness watchdog graceful interrupt and partial output preservation
+  - 2026-04-02：任务创建，状态初始化为 `planned`。
+  - 2026-04-03：由 `sprint-001` 迁入；承接残余 Codex-specific watchdog、graceful interrupt、hard terminate、partial-output preservation 与 reviewer 长任务保护 closeout。
+
 - [ ] TK-490 route session-main interactive shell and doctor verify through invoke liveness diagnostics
   - 2026-04-02：任务创建，状态初始化为 `planned`；承接 session.main、interactive shell、doctor/verify 与 invoke-liveness diagnostics 的正式接线。
 

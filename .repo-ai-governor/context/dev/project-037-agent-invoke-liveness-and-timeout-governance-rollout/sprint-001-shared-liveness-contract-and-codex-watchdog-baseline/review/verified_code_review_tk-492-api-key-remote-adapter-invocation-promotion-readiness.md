@@ -1,6 +1,6 @@
 # Code Review: TK-492 api-key remote adapter invocation promotion readiness
 
-- Status: review_pending
+- Status: verified
 - Date: 2026-04-02
 - Reviewer: AI-Agent
 - Task: `TK-492`
@@ -48,3 +48,18 @@
 3. `/opt/homebrew/bin/node ./scripts/governance/check-sprint-plan-status-sync.js`
 4. `/opt/homebrew/bin/node ./scripts/governance/check-code-review-status-sync.js`
 5. docs-only readiness window；未修改 `apps/**`、`packages/**`、`bin/**`、`test/**`，因此 `pnpm run build` not required
+
+## 复核结论（2026-04-03）
+
+- 整体结论：**认可**
+
+### 逐条复核
+1. `## 2. Findings`
+   - 判定：**认可**
+   - 证据：当前 `technical-solution.api-key-remote-adapter-invocation` 已在 `.repo-ai-governor/context/technical-solution-lifecycle-registry.yaml` 中处于 `active`，对应 delivery handoff 已登记在 `.repo-ai-governor/context/technical-solution-delivery-registry.yaml`，且正式 ADR `.repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/remote-api-transport-and-provider-binding-seam.md` 已存在。说明本报告当时给出的“无继续阻断 prepare-promotion 的结构性问题”判断成立，后续 formal cutover 也已按预期落地。
+   - 处理：将该 readiness review 从 `review_pending` 推进为 `verified`；formal promotion 与交付闭环继续以 `TK-500` / `DA-500` / sprint-002 rollout 记录为准。
+
+### 验证命令
+1. `PATH="/Users/jimmydaddy/Library/pnpm:/opt/homebrew/bin:$PATH" /opt/homebrew/bin/node ./scripts/governance/check-technical-solution-lifecycle-registry.js`（通过）
+2. `PATH="/Users/jimmydaddy/Library/pnpm:/opt/homebrew/bin:$PATH" /opt/homebrew/bin/node ./scripts/governance/check-task-ledger-sync.js`（通过）
+3. `PATH="/Users/jimmydaddy/Library/pnpm:/opt/homebrew/bin:$PATH" /opt/homebrew/bin/node ./scripts/governance/check-sprint-plan-status-sync.js`（通过）

@@ -1,7 +1,7 @@
 # TK-486 implement shared invoke liveness runtime telemetry and watchdog baseline
 
-- Status: planned
-- Date: 2026-04-02
+- Status: completed
+- Date: 2026-04-03
 - Owner: AI-Agent
 - Priority: P0
 - Project: `project-037-agent-invoke-liveness-and-timeout-governance-rollout`
@@ -42,3 +42,4 @@
 ## 6. 执行记录
 
 1. 2026-04-02：任务创建，状态初始化为 `planned`。
+2. 2026-04-03：治理纠偏回填完成。shared invoke-liveness runtime、timeout budget、reason code、telemetry hook 与 execution/session projection seam 已由后续 `TK-488`、`TK-501`、`TK-502` 的 rollout 实质吸收交付；本任务在 `sprint-001` 中标记为 `completed`，剩余未收口的 Codex-specific graceful interrupt / hard terminate follow-through 已剥离到 `TK-487` 并迁入 `sprint-003`。

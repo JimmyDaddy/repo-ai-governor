@@ -14,9 +14,8 @@
 ## 2. Depends On
 
 1. `TK-486`
-2. `TK-487`
-3. `packages/adapters/claude-code/src/claude-code-agent-adapter.ts`
-4. `packages/adapters/github-copilot/src/github-copilot-agent-adapter.ts`
+2. `packages/adapters/claude-code/src/claude-code-agent-adapter.ts`
+3. `packages/adapters/github-copilot/src/github-copilot-agent-adapter.ts`
 
 ## 3. 预期产物
 

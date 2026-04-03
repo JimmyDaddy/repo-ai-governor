@@ -387,7 +387,7 @@ solutions:
     draft_paths:
       - .repo-ai-governor/draft/api-key-remote-adapter-invocation-technical-solution.md
     review_paths:
-      - .repo-ai-governor/context/dev/project-037-agent-invoke-liveness-and-timeout-governance-rollout/sprint-001-shared-liveness-contract-and-codex-watchdog-baseline/review/code_review_tk-492-api-key-remote-adapter-invocation-promotion-readiness.md
+      - .repo-ai-governor/context/dev/project-037-agent-invoke-liveness-and-timeout-governance-rollout/sprint-001-shared-liveness-contract-and-codex-watchdog-baseline/review/verified_code_review_tk-492-api-key-remote-adapter-invocation-promotion-readiness.md
       - .repo-ai-governor/context/dev/project-037-agent-invoke-liveness-and-timeout-governance-rollout/sprint-001-shared-liveness-contract-and-codex-watchdog-baseline/review/resolved_code_review_tk-500-api-key-remote-adapter-invocation-promotion-cutover.md
     final_paths:
       - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/remote-api-transport-and-provider-binding-seam.md
