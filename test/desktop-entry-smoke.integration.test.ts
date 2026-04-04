@@ -15,8 +15,8 @@ import {
   OrchestrationServiceTransportKind,
 } from '@repo-ai-governor/orchestration-service-client';
 import { MemoryStoreEngine } from '@repo-ai-governor/shared';
-import { CliOrchestrationServiceRuntimeMode } from '../apps/cli/src/constants/orchestration-service-runtime.constant.js';
-import { CliOrchestrationServiceRuntime } from '../apps/cli/src/runtime/orchestration-service-runtime.js';
+import { DesktopArtifactQueryGateState } from '../apps/desktop/src/constants/index.js';
+import { DesktopShellBootstrap } from '../apps/desktop/src/runtime/desktop-shell-bootstrap.js';
 
 describe('desktop entry smoke integration', () => {
   it.each([
@@ -50,19 +50,21 @@ describe('desktop entry smoke integration', () => {
       },
     },
   ])(
-    'runs desktop execution over the sidecar IPC runtime for $distributionMode distribution',
+    'runs desktop shell bootstrap over the sidecar IPC runtime for $distributionMode distribution',
     async ({ memoryConfig, expectedMemoryProvider }) => {
       const tempRoot = await mkdtemp(resolve(tmpdir(), 'repo-ai-governor-desktop-entry-'));
       const workspaceRoot = resolve(tempRoot, '.repo-ai-governor');
 
       try {
-        const runtime = new CliOrchestrationServiceRuntime(workspaceRoot, {
-          runtimeMode: CliOrchestrationServiceRuntimeMode.SIDECAR_IPC,
-          memoryConfig,
+        const bootstrap = new DesktopShellBootstrap(workspaceRoot, {
+          runtimeDependencies: {
+            memoryConfig,
+          },
         });
-
-        const health = await runtime.getHealth();
-        const started = await runtime.startExecution(
+        const preloadBridge = bootstrap.getPreloadBridge();
+        const bootstrapSnapshot = await preloadBridge.bootstrap();
+        const health = await preloadBridge.getHealth();
+        const started = await preloadBridge.startExecution(
           {
             workspaceId: 'desktop-workspace',
             workspaceRoot,
@@ -76,7 +78,7 @@ describe('desktop entry smoke integration', () => {
           },
         );
 
-        await runtime.publishEvent({
+        await preloadBridge.publishEvent({
           executionId: started.executionId,
           type: OrchestrationServiceEventType.ARTIFACT_READY,
           status: OrchestrationExecutionStatus.RUNNING,
@@ -84,24 +86,49 @@ describe('desktop entry smoke integration', () => {
           artifactPath: resolve(workspaceRoot, 'artifact-desktop.json'),
           message: 'desktop artifact ready',
         });
-        await runtime.publishEvent({
+        await preloadBridge.publishEvent({
           executionId: started.executionId,
           type: OrchestrationServiceEventType.EXECUTION_COMPLETED,
           status: OrchestrationExecutionStatus.COMPLETED,
           message: 'desktop execution completed',
         });
 
-        const summary = await runtime.getExecution(started.executionId);
-        const listed = await runtime.listExecutions({
+        const session = await preloadBridge.startSession();
+        await preloadBridge.appendMessage(session.session.sessionId, 'assistant', [
+          'desktop baseline active',
+        ]);
+        const resumed = await preloadBridge.resumeSession(session.session.sessionId);
+        const listedSessions = await preloadBridge.listSessions({
+          limit: 1,
+        });
+        const subscribedSession = await preloadBridge.subscribeSession({
+          sessionId: session.session.sessionId,
+        });
+        const listedExecutions = await preloadBridge.listExecutions({
           filter: {
             workspaceId: 'desktop-workspace',
           },
         });
-        const subscribed = await runtime.subscribeExecution({
+        const subscribedExecution = await preloadBridge.subscribeExecution({
           executionId: started.executionId,
         });
+        const wakeSnapshot = await preloadBridge.requestWindowWake('main-window');
+        const notificationSnapshot = await preloadBridge.registerNotification('review-ready');
+        const restartSnapshot = await preloadBridge.restartServiceHost('desktop-smoke-restart');
+        const consoleSnapshot = await preloadBridge.buildGovernanceConsoleSnapshot({
+          locale: 'en-US',
+          workspaceLabel: 'desktop-workspace',
+          agentView: createAgentView() as never,
+        });
 
-        expect(health.serviceHostKind).toBe(OrchestrationServiceHostKind.SIDECAR);
+        expect(bootstrapSnapshot.baseline.packageName).toBe('@repo-ai-governor/desktop');
+        expect(bootstrapSnapshot.baseline.artifactQueryGateState).toBe(
+          DesktopArtifactQueryGateState.BLOCKED,
+        );
+        expect(bootstrapSnapshot.baseline.sessionBridgeOperations).toContain(
+          'buildGovernanceConsoleSnapshot',
+        );
+        expect(bootstrapSnapshot.health.serviceHostKind).toBe(OrchestrationServiceHostKind.SIDECAR);
         expect(health.serviceTransportKind).toBe(OrchestrationServiceTransportKind.IPC);
         expect(health.memoryProvider).toEqual(
           expect.objectContaining({
@@ -113,21 +140,67 @@ describe('desktop entry smoke integration', () => {
         expect(started.serviceHostKind).toBe(OrchestrationServiceHostKind.SIDECAR);
         expect(started.serviceTransportKind).toBe(OrchestrationServiceTransportKind.IPC);
         expect(started.memoryProvider).toEqual(health.memoryProvider);
-        expect(summary?.serviceHostKind).toBe(OrchestrationServiceHostKind.SIDECAR);
-        expect(summary?.serviceTransportKind).toBe(OrchestrationServiceTransportKind.IPC);
-        expect(summary?.memoryProvider).toEqual(health.memoryProvider);
-        expect(listed.executions).toHaveLength(1);
-        expect(listed.executions[0]?.memoryProvider).toEqual(health.memoryProvider);
-        expect(subscribed.events.map((event) => event.type)).toEqual([
+        expect(listedExecutions.executions).toHaveLength(1);
+        expect(listedExecutions.executions[0]?.memoryProvider).toEqual(health.memoryProvider);
+        expect(subscribedExecution.events.map((event) => event.type)).toEqual([
           OrchestrationServiceEventType.EXECUTION_STARTED,
           OrchestrationServiceEventType.ARTIFACT_READY,
           OrchestrationServiceEventType.EXECUTION_COMPLETED,
         ]);
+        expect(resumed.session.sessionId).toBe(session.session.sessionId);
+        expect(listedSessions.sessions[0]?.sessionId).toBe(session.session.sessionId);
+        expect(subscribedSession.session.sessionId).toBe(session.session.sessionId);
+        expect(wakeSnapshot.windowWakeCount).toBe(1);
+        expect(notificationSnapshot.notificationCount).toBe(1);
+        expect(restartSnapshot.restartCount).toBe(1);
+        expect(consoleSnapshot.workspaceHome.title).toBe('Workspace home');
+        expect(consoleSnapshot.agentProjectionPanel?.rows[0]?.title).toBe(
+          'coder -> github-copilot',
+        );
 
-        await runtime.dispose();
+        await bootstrap.dispose();
       } finally {
         await rm(tempRoot, { recursive: true, force: true });
       }
     },
   );
 });
+
+function createAgentView() {
+  return {
+    descriptors: [
+      {
+        agentId: 'coder:coder:coder',
+        agentRole: 'coder',
+        roleProfileId: 'coder-default',
+        roleSource: 'default',
+        primarySurface: 'codex',
+        fallbackSurfaces: ['github-copilot'],
+        capabilities: ['tool_calling'],
+        permissionLevel: 'edit',
+        inputSchemaRef: null,
+        outputSchemaRef: null,
+        errorContractRef: null,
+        maxExecutionTimeSeconds: 300,
+        stageTimeoutSeconds: 300,
+        tokenBudget: null,
+        costBudget: null,
+        timeBudgetSeconds: null,
+        retryPolicyRef: null,
+        timeoutPolicyRef: null,
+        budgetPolicyRef: null,
+        workspaceId: 'desktop-workspace',
+        workspaceMode: 'repo_local',
+        executionId: 'desktop-execution',
+        sessionId: null,
+        selectedBy: 'fallback',
+        selectedSurface: 'github-copilot',
+        projectionStatus: 'warn',
+        failureReasons: ['primary_surface_unavailable'],
+        unsupportedCapabilities: [],
+        degradedCapabilities: ['tool_calling'],
+      },
+    ],
+    sessionProjection: null,
+  };
+}

@@ -24,6 +24,12 @@ const DISTRIBUTION_PACKAGES = [
     packageDistDirectory: resolve(PROJECT_ROOT, "apps/cli/dist"),
   },
   {
+    packageName: "desktop",
+    packageRoot: resolve(PROJECT_ROOT, "apps/desktop"),
+    compiledDirectory: resolve(PROJECT_ROOT, "dist/apps/desktop"),
+    packageDistDirectory: resolve(PROJECT_ROOT, "apps/desktop/dist"),
+  },
+  {
     packageName: "adapter-sdk",
     packageRoot: resolve(PROJECT_ROOT, "packages/adapter-sdk"),
     compiledDirectory: resolve(PROJECT_ROOT, "dist/packages/adapter-sdk"),

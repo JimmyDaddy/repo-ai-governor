@@ -1,6 +1,6 @@
 # TK-540 implement utility-process desktop host bootstrap typed preload bridge and shared agent projection seam extraction
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-04
 - Owner: AI-Agent
 - Priority: P0
@@ -56,9 +56,11 @@
 ## 9. 执行记录
 
 1. 2026-04-04：任务创建，状态初始化为 `planned`；承接 utility-process bootstrap、typed preload bridge 与 shared seam extraction 实现。
+2. 2026-04-04：完成 `DesktopShellBootstrap`、`DesktopPreloadBridge`、`DesktopSessionBridge` 与 `DesktopOrchestrationServiceRuntime`，正式建立 desktop host bootstrap、typed preload 与 canonical session lane bridge。
+3. 2026-04-04：完成 `packages/reporting` 中的 shared agent projection seam extraction，并将 CLI 切换为兼容 wrapper，desktop 不再依赖 `apps/cli` 内部 presenter 实现。
 
 ## 10. 产出
 
-1. 待执行：desktop host bootstrap implementation
-2. 待执行：typed preload bridge implementation
-3. 待执行：shared agent projection seam extraction record
+1. 已完成：desktop host bootstrap implementation -> `apps/desktop/src/runtime/desktop-shell-bootstrap.ts`
+2. 已完成：typed preload bridge implementation -> `apps/desktop/src/runtime/desktop-preload-bridge.ts`
+3. 已完成：shared agent projection seam extraction record -> `packages/reporting/src/agent-projection-panel-view-model-builder.ts` + `packages/reporting/src/agent-projection-presenter.ts`

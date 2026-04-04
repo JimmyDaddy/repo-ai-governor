@@ -122,9 +122,10 @@ Keep the printed `plan-path`. It is your rollback reference for that workspace m
 ## 3. Notes For External Adopters
 
 1. `dist` binary rehearsal proves CLI/runtime behavior, not packaged-install behavior.
-2. `tgz` is not offline/self-contained; package installation still resolves external dependencies.
+2. `tgz` is not offline/self-contained; package installation still resolves external dependencies from the npm registry.
 3. If a target repository already uses Yarn/npm or has a dirty worktree, start with the `dist` binary path and move to package installation later.
 4. Session shell, React-shell command surfaces, workflow editing, upgrade analysis, HITL notifications, and troubleshooting details are covered in the local adoption playbook.
+5. Repository-local Codex workflow helpers ship under `.codex/skills/`; they are included for self-host and maintainer flows, but external adopters do not need to vendor them unless they want the same local skill ergonomics inside their own repository.
 
 ## 4. Read More
 

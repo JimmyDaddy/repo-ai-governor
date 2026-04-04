@@ -6,6 +6,7 @@
   "expectedServiceHostKind": "sidecar",
   "expectedServiceTransportKind": "ipc",
   "expectedLifecycleStatus": "ready",
+  "expectedArtifactQueryGateState": "blocked",
   "defaultMemoryProvider": {
     "memoryStoreEngine": "fs_csv",
     "memoryStoreProvider": "FsCsvMemoryStoreProvider",
@@ -31,6 +32,16 @@
     "publishEvent",
     "listExecutions",
     "subscribeExecution",
-    "dispose"
+    "startSession",
+    "sendMainTurn",
+    "appendMessage",
+    "resumeSession",
+    "listSessions",
+    "subscribeSession",
+    "getLifecycleSnapshot",
+    "requestWindowWake",
+    "registerNotification",
+    "restartServiceHost",
+    "buildGovernanceConsoleSnapshot"
   ]
 }

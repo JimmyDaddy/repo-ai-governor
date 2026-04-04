@@ -122,9 +122,10 @@ pnpm exec repo-ai-governor workspace rollback <plan-path> --output json
 ## 3. 给外部 adopter 的提醒
 
 1. `dist` 二进制演练证明的是 CLI/runtime 行为，不等于已经验证 package install surface。
-2. `tgz` 不是离线自包含安装；安装阶段仍会解析外部依赖。
+2. `tgz` 不是离线自包含安装；安装阶段仍会从 npm registry 解析外部依赖。
 3. 如果目标仓库本身是 Yarn/npm，或者已有脏工作树，建议先走 `dist` 二进制路径，再决定是否切到 package 安装。
 4. session shell、React shell、workflow/upgrade、HITL 通知、故障排查等更完整说明，请看本地接入手册。
+5. 仓库内的 Codex 本地工作流辅助能力位于 `.codex/skills/`；它们主要服务 self-host 与维护者流程，外部 adopter 只有在希望复用同样的本地 skill 体验时才需要一并 vendoring。
 
 ## 4. 继续阅读
 

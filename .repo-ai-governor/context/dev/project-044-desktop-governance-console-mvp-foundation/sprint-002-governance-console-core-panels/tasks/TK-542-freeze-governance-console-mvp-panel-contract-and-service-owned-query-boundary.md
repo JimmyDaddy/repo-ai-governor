@@ -1,6 +1,6 @@
 # TK-542 freeze governance console mvp panel contract and service-owned query boundary
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-04
 - Owner: AI-Agent
 - Priority: P0
@@ -57,9 +57,11 @@
 ## 9. 执行记录
 
 1. 2026-04-04：任务创建，状态初始化为 `planned`；承接 governance console panel contract 与 query boundary 冻结。
+2. 2026-04-04：完成 `desktop-governance-console.interface.ts`、`desktop-shell.interface.ts` 与 `desktop.constant.ts` 的 section / lifecycle / artifact gate contract freeze。
+3. 2026-04-04：在 `integrations/desktop/README.md` 中固定 renderer 只消费 service-owned DTO/event/query seam，`artifact pane` 继续保持 gated deferred behavior。
 
 ## 10. 产出
 
-1. 待执行：governance console panel contract baseline
-2. 待执行：service-owned query boundary note
-3. 待执行：artifact-pane gate freeze record
+1. 已完成：governance console panel contract baseline -> `apps/desktop/src/types/interfaces/desktop-governance-console.interface.ts`
+2. 已完成：service-owned query boundary note -> `integrations/desktop/README.md`
+3. 已完成：artifact-pane gate freeze record -> `apps/desktop/src/constants/desktop.constant.ts`

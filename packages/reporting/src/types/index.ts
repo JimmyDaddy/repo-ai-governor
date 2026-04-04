@@ -1,5 +1,7 @@
 export type { ReportStatusBreakdown } from './aliases/index.js';
 export type {
+  AgentProjectionPanelRowViewModel,
+  AgentProjectionPanelViewModel,
   AuditRecordReader,
   BuildExecutionReportOptions,
   CreateReplaySnapshotOptions,

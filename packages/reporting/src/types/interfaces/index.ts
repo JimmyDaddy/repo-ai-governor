@@ -1,4 +1,8 @@
 export type {
+  AgentProjectionPanelRowViewModel,
+  AgentProjectionPanelViewModel,
+} from './agent-projection-panel.interface.js';
+export type {
   AuditRecordReader,
   BuildExecutionReportOptions,
   CreateReplaySnapshotOptions,

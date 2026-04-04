@@ -1,6 +1,6 @@
 # TK-539 freeze electron desktop shell package layout preload contract and phase-0 gate baseline
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-04
 - Owner: AI-Agent
 - Priority: P0
@@ -58,9 +58,12 @@
 ## 9. 执行记录
 
 1. 2026-04-04：任务创建，状态初始化为 `planned`；承接 desktop shell contract 与 phase-0 gate 冻结，不在本任务里直接实现 utility-process bootstrap。
+2. 2026-04-04：任务切换为 `active`；开始盘点现有 desktop entry smoke、service-host published surface、session bridge seams 与 shared agent projection seam 的可复用范围。
+3. 2026-04-04：完成 `integrations/desktop/README.md`、`integrations/desktop/examples/README.md` 与 `integrations/desktop/examples/desktop-sidecar-runtime.sample.json` 的 baseline freeze，明确 desktop 只消费 service-owned contract 且 artifact pane 继续 gated。
+4. 2026-04-04：通过 `apps/desktop/README.md` 与 `apps/desktop/src/constants/desktop.constant.ts` 冻结 `apps/desktop` 的 package ownership、session bridge operations 与 artifact-pane deferred baseline。
 
 ## 10. 产出
 
-1. 待执行：desktop shell ownership baseline
-2. 待执行：typed preload contract freeze note
-3. 待执行：phase-0 smoke baseline
+1. 已完成：desktop shell ownership baseline -> `integrations/desktop/README.md` + `apps/desktop/README.md`
+2. 已完成：typed preload contract freeze note -> `integrations/desktop/examples/desktop-sidecar-runtime.sample.json`
+3. 已完成：phase-0 smoke baseline -> `apps/desktop/src/constants/desktop.constant.ts`

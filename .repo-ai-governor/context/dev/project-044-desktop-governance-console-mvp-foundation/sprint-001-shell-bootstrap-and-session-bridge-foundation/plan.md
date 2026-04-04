@@ -1,6 +1,6 @@
 # sprint-001-shell-bootstrap-and-session-bridge-foundation 计划
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-04
 - Project: `project-044-desktop-governance-console-mvp-foundation`
 - Sprint Goal: 建立 Electron shell、typed preload、utility-process sidecar 与 session bridge 的 Phase 0 foundation。
@@ -22,3 +22,5 @@
 
 1. 2026-04-04：创建 `sprint-001-shell-bootstrap-and-session-bridge-foundation`，作为 `project-044` 的首个 planned execution sprint。
 2. 2026-04-04：完成 `TK-539`、`TK-540`、`TK-541` 任务卡拆解，并将 `project-044 / sprint-001` 登记到 `current-context.md` planned follow-up streams。
+3. 2026-04-04：根据用户指令将 `project-044 / sprint-001` 激活为当前 primary execution surface，并将 `TK-539` 作为当前 in-flight 任务。
+4. 2026-04-04：完成 `apps/desktop` 正式 package baseline、typed preload bridge、desktop session bridge 与 shared `@repo-ai-governor/reporting` seam extraction，并通过 build + desktop smoke + package/integration suites 证据收口。

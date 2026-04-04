@@ -1,6 +1,6 @@
 # TK-541 add shell bootstrap smoke session bridge validation and sprint-001 closeout evidence
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-04
 - Owner: AI-Agent
 - Priority: P1
@@ -58,9 +58,11 @@
 ## 9. 执行记录
 
 1. 2026-04-04：任务创建，状态初始化为 `planned`；承接 sprint-001 的 smoke、session bridge validation 与 closeout evidence。
+2. 2026-04-04：完成 `scripts/examples/check-desktop-entry-smoke.js` 与 `test/desktop-entry-smoke.integration.test.ts` 的 default/plugin-enabled desktop smoke 覆盖，验证 bootstrap、session bridge、governance console snapshot 与 lifecycle operations。
+3. 2026-04-04：通过 `pnpm run build`、`pnpm run check:desktop-entry-smoke`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 与 `pnpm run test:integration -- --maxWorkers=1 --maxConcurrency=1`，完成 sprint-001 closeout evidence。
 
 ## 10. 产出
 
-1. 待执行：desktop shell smoke evidence
-2. 待执行：session bridge validation record
-3. 待执行：sprint-001 closeout entry
+1. 已完成：desktop shell smoke evidence -> `scripts/examples/check-desktop-entry-smoke.js`
+2. 已完成：session bridge validation record -> `test/desktop-entry-smoke.integration.test.ts`
+3. 已完成：sprint-001 closeout entry -> `tasks/checklist.md` + `tasks/tasks.csv`

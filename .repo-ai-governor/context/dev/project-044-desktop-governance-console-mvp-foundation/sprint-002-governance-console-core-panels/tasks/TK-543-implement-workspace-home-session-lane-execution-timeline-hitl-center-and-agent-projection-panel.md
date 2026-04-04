@@ -1,6 +1,6 @@
 # TK-543 implement workspace home session lane execution timeline hitl center and agent projection panel
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-04
 - Owner: AI-Agent
 - Priority: P0
@@ -56,9 +56,11 @@
 ## 9. 执行记录
 
 1. 2026-04-04：任务创建，状态初始化为 `planned`；承接 governance console core panels 实现。
+2. 2026-04-04：完成 `DesktopGovernanceConsoleViewModelBuilder`，落地 workspace home、session lane、execution timeline 与 HITL center 的 transport-neutral section builder。
+3. 2026-04-04：通过 shared `AgentProjectionPanelViewModelBuilder` 接入 agent projection panel，desktop renderer 不再重写 CLI 私有 presenter 字符串。
 
 ## 10. 产出
 
-1. 待执行：workspace home implementation
-2. 待执行：session lane / execution timeline / HITL center implementation
-3. 待执行：shared agent projection panel integration
+1. 已完成：workspace home implementation -> `apps/desktop/src/runtime/desktop-governance-console-view-model-builder.ts`
+2. 已完成：session lane / execution timeline / HITL center implementation -> `apps/desktop/src/runtime/desktop-governance-console-view-model-builder.ts`
+3. 已完成：shared agent projection panel integration -> `packages/reporting/src/agent-projection-panel-view-model-builder.ts`

@@ -1,6 +1,6 @@
 # TK-546 implement notification window-lifecycle restart guards and conditional artifact-query integration seam
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-04
 - Owner: AI-Agent
 - Priority: P0
@@ -56,9 +56,11 @@
 ## 9. 执行记录
 
 1. 2026-04-04：任务创建，状态初始化为 `planned`；承接 desktop lifecycle / restart guards 与 conditional artifact-query seam 实现。
+2. 2026-04-04：完成 `DesktopRuntimeLifecycleGuard` 与 preload bridge 对 `requestWindowWake`、`registerNotification`、`restartServiceHost` 的正式接线，desktop shell 具备 lifecycle/restart bookkeeping。
+3. 2026-04-04：保持 `DesktopArtifactQueryGateState.BLOCKED` 与 deferred note 真值，artifact query seam 仅以 gated form 进入 desktop MVP，不引入 filesystem bypass。
 
 ## 10. 产出
 
-1. 待执行：desktop lifecycle / restart guard implementation
-2. 待执行：notification ownership implementation
-3. 待执行：conditional artifact-query integration seam
+1. 已完成：desktop lifecycle / restart guard implementation -> `apps/desktop/src/runtime/desktop-runtime-lifecycle-guard.ts`
+2. 已完成：notification ownership implementation -> `apps/desktop/src/runtime/desktop-preload-bridge.ts`
+3. 已完成：conditional artifact-query integration seam -> `apps/desktop/src/runtime/desktop-shell-bootstrap.ts`

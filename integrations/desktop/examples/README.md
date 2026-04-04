@@ -12,9 +12,10 @@
 
 desktop / richer UI 如需显示 `agent projection`，当前推荐复用以下正式 seam，而不是直接消费命令私有字符串摘要：
 
-1. transport-neutral panel view-model builder：`apps/cli/src/runtime/presentation/agent-projection-panel-view-model-builder.ts`
-2. panel view-model type：`apps/cli/src/types/interfaces/cli-agent-projection-panel.interface.ts`
-3. 首个正式 consumer：`apps/cli/src/react-cli/views/agent-projection-panel.tsx`，当前由 `connect` command-level React shell 接入
+1. transport-neutral panel view-model builder：`packages/reporting/src/agent-projection-panel-view-model-builder.ts`
+2. panel view-model type：`packages/reporting/src/types/interfaces/agent-projection-panel.interface.ts`
+3. 当前桌面端 implementation entry：`apps/desktop/src/runtime/desktop-shell-bootstrap.ts`
+4. 首个正式 consumer：`apps/cli/src/react-cli/views/agent-projection-panel.tsx`，当前由 `connect` command-level React shell 接入
 
 这条 seam 的目标是让 desktop surface 继续以 shared `agentView` 为事实来源，同时复用 phase-2 已正式化的 presenter / panel contract。
 
@@ -26,5 +27,7 @@ desktop / richer UI 如需显示 `agent projection`，当前推荐复用以下�
 
 1. 固定 desktop surface 的默认 `runtimeMode`
 2. 固定期望的 `serviceHostKind / serviceTransportKind`
-3. 固定 default / plugin-enabled 两条 memory provider 预期基线
-4. 为 `check:desktop-entry-smoke` 和 release local verification 提供统一输入
+3. 固定 artifact-pane gate 仍为 `blocked`
+4. 固定 default / plugin-enabled 两条 memory provider 预期基线
+5. 固定 preload bridge 所需的最小 operation contract
+6. 为 `check:desktop-entry-smoke` 和 release local verification 提供统一输入

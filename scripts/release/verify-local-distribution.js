@@ -19,8 +19,11 @@ const DIST_CLI_ENTRY_PATH = 'dist/bin/repo-ai-governor.js';
 const REQUIRED_PACKED_PATH_SUFFIXES = [
   'dist/bin/repo-ai-governor.js',
   'dist/apps/cli/src/main.js',
+  'dist/apps/desktop/src/index.js',
   'dist/node_modules/@repo-ai-governor/cli/package.json',
   'dist/node_modules/@repo-ai-governor/cli/dist/src/main.js',
+  'dist/node_modules/@repo-ai-governor/desktop/package.json',
+  'dist/node_modules/@repo-ai-governor/desktop/dist/src/index.js',
   'dist/node_modules/@repo-ai-governor/artifact-registry/package.json',
   'dist/node_modules/@repo-ai-governor/artifact-registry/dist/src/index.js',
   'dist/node_modules/@repo-ai-governor/config/package.json',

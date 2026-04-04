@@ -1,6 +1,6 @@
 # sprint-003-release-smoke-and-mvp-closeout 计划
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-04
 - Project: `project-044-desktop-governance-console-mvp-foundation`
 - Sprint Goal: 补齐 desktop release smoke、window lifecycle / notification / restart guards，并在 artifact query gate 约束下完成 MVP closeout。
@@ -22,3 +22,4 @@
 
 1. 2026-04-04：创建 `sprint-003-release-smoke-and-mvp-closeout`，作为 desktop MVP foundation 的收尾 sprint。
 2. 2026-04-04：完成 `TK-545`、`TK-546`、`TK-547` 任务卡拆解，并将 release smoke 与 artifact gate 收口条件写入 closeout 计划。
+3. 2026-04-04：完成 desktop lifecycle / restart guard、package/runtime distribution truthfulness、release smoke closeout 与项目级 completion audit，并通过 `pnpm run release:verify-local` 验证。

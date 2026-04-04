@@ -1,3 +1,4 @@
+import { AgentProjectionPanelStatusVariant } from '@repo-ai-governor/reporting';
 import { Box, Text } from 'ink';
 import type React from 'react';
 import type {
@@ -58,7 +59,10 @@ function resolveRowColor(
   row: CliAgentProjectionPanelRowViewModel,
   shellPalette: ReactCliShellPalette,
 ): string {
-  if (row.statusVariant === 'warning' || row.statusVariant === 'error') {
+  if (
+    row.statusVariant === AgentProjectionPanelStatusVariant.WARNING ||
+    row.statusVariant === AgentProjectionPanelStatusVariant.ERROR
+  ) {
     return shellPalette.attentionColor;
   }
 

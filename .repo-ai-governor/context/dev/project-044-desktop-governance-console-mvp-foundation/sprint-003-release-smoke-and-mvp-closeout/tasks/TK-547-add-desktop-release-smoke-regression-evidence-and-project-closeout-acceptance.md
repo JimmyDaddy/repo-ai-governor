@@ -1,6 +1,6 @@
 # TK-547 add desktop release-smoke regression evidence and project closeout acceptance
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-04
 - Owner: AI-Agent
 - Priority: P1
@@ -59,9 +59,11 @@
 ## 9. 执行记录
 
 1. 2026-04-04：任务创建，状态初始化为 `planned`；承接 desktop release-smoke evidence 与 project closeout acceptance。
+2. 2026-04-04：通过 `pnpm run build`、`pnpm run check:desktop-entry-smoke`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、`pnpm run test:integration -- --maxWorkers=1 --maxConcurrency=1` 与 `pnpm run release:verify-local` 收集 project closeout evidence。
+3. 2026-04-04：产出 project completion audit summary、resolved review artifact 与 current-context closeout note，完成 `project-044` 的受审计收口。
 
 ## 10. 产出
 
-1. 待执行：desktop release-smoke evidence
-2. 待执行：project closeout acceptance record
-3. 待执行：project-level completion audit inputs
+1. 已完成：desktop release-smoke evidence -> `pnpm run release:verify-local`
+2. 已完成：project closeout acceptance record -> `sprint-003/review/resolved_review_tk-539-tk-547-desktop-governance-console-mvp-foundation.md`
+3. 已完成：project-level completion audit inputs -> `project-044-desktop-governance-console-mvp-foundation-completion-audit-summary.md`

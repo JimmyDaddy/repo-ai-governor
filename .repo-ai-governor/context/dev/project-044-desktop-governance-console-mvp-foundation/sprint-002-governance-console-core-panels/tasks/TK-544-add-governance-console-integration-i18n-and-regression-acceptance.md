@@ -1,6 +1,6 @@
 # TK-544 add governance console integration i18n and regression acceptance
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-04
 - Owner: AI-Agent
 - Priority: P1
@@ -58,9 +58,11 @@
 ## 9. 执行记录
 
 1. 2026-04-04：任务创建，状态初始化为 `planned`；承接 governance console 的 i18n 与 regression closeout。
+2. 2026-04-04：在 governance console builder 与 shared reporting seam 中补齐 bilingual copy，保持用户可见字符串走 `localizeText(english chinese)` bridge。
+3. 2026-04-04：通过 `apps/desktop/test/desktop-governance-console-view-model-builder.test.ts` 与 root integration/package suites 完成 sprint-002 regression acceptance。
 
 ## 10. 产出
 
-1. 待执行：desktop governance console i18n evidence
-2. 待执行：panel regression evidence
-3. 待执行：sprint-002 closeout acceptance
+1. 已完成：desktop governance console i18n evidence -> `apps/desktop/src/runtime/desktop-governance-console-view-model-builder.ts`
+2. 已完成：panel regression evidence -> `apps/desktop/test/desktop-governance-console-view-model-builder.test.ts`
+3. 已完成：sprint-002 closeout acceptance -> `tasks/checklist.md` + `tasks/tasks.csv`
