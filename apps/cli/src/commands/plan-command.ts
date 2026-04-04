@@ -445,16 +445,14 @@ export class CliPlanCommand implements CliCommandExecutor {
     const retainedTaskIds: string[] = [];
     const finalTaskPackage = previewState.taskPackage.map((task) => {
       const normalizedTitle = this.normalizeTitle(task.title);
-      const alreadyExists =
-        existingTaskIds.has(task.provisionalTaskId) || existingTaskTitles.has(normalizedTitle);
-      if (task.projectionAction === CliPlanTaskProjectionAction.RETAIN_EXISTING || alreadyExists) {
-        retainedTaskIds.push(
-          alreadyExists
-            ? (existingTaskTitles.get(normalizedTitle) ?? task.provisionalTaskId)
-            : task.provisionalTaskId,
-        );
+      const retainedTaskId = existingTaskIds.has(task.provisionalTaskId)
+        ? task.provisionalTaskId
+        : (existingTaskTitles.get(normalizedTitle) ?? null);
+      if (task.projectionAction === CliPlanTaskProjectionAction.RETAIN_EXISTING || retainedTaskId) {
+        retainedTaskIds.push(retainedTaskId ?? task.provisionalTaskId);
         return {
           ...task,
+          provisionalTaskId: retainedTaskId ?? task.provisionalTaskId,
           projectionAction: CliPlanTaskProjectionAction.RETAIN_EXISTING,
         };
       }
@@ -665,7 +663,7 @@ export class CliPlanCommand implements CliCommandExecutor {
       };
     }
 
-    const repositoryRoot = context.options.currentWorkingDirectory;
+    const repositoryRoot = context.options.workspace.repositoryRoot;
     const tasksDirPath = this.resolveRepoRelativePath(
       repositoryRoot,
       this.extractBacktickField(primaryDescriptor, 'tasks'),

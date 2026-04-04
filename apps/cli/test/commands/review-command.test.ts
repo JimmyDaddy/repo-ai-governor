@@ -60,6 +60,7 @@ async function createReviewFixture(): Promise<ReviewFixture> {
       currentWorkingDirectory: tempRoot,
       workspace: {
         workspaceId: 'test-workspace',
+        repositoryRoot: tempRoot,
         workspaceRoot,
       },
       locale: 'en-US',
@@ -154,6 +155,24 @@ async function initGitRepository(repositoryRoot: string): Promise<void> {
   await execFileAsync('git', ['init'], {
     cwd: repositoryRoot,
   });
+  await execFileAsync('git', ['config', 'commit.gpgSign', 'false'], {
+    cwd: repositoryRoot,
+  });
+  await execFileAsync('git', ['config', 'user.email', 'codex@example.com'], {
+    cwd: repositoryRoot,
+  });
+  await execFileAsync('git', ['config', 'user.name', 'Codex Test'], {
+    cwd: repositoryRoot,
+  });
+}
+
+async function commitAll(repositoryRoot: string, message: string): Promise<void> {
+  await execFileAsync('git', ['add', '.'], {
+    cwd: repositoryRoot,
+  });
+  await execFileAsync('git', ['commit', '--no-verify', '-m', message], {
+    cwd: repositoryRoot,
+  });
 }
 
 async function writeCurrentContextFixture(workspaceRoot: string): Promise<void> {
@@ -244,6 +263,62 @@ describe('CliReviewCommand', () => {
       ) as CliReviewRequestArtifactPayload;
       expect(requestPayload.reviewArtifactStatus).toBe('resolved');
       expect(requestPayload.findings).toHaveLength(0);
+    } finally {
+      await rm(fixture.tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('keeps ordinary unstaged paths intact when parsing porcelain status output', async () => {
+    const fixture = await createReviewFixture();
+
+    try {
+      await writeCurrentContextFixture(fixture.workspaceRoot);
+      await initGitRepository(fixture.tempRoot);
+      const changedFilePath = resolve(fixture.tempRoot, 'apps', 'cli', 'src', 'review-scope.ts');
+      await mkdir(dirname(changedFilePath), { recursive: true });
+      await writeFile(changedFilePath, 'export const reviewScope = 1;\n', 'utf8');
+      await commitAll(fixture.tempRoot, 'baseline');
+      await writeFile(changedFilePath, 'export const reviewScope = 2;\n', 'utf8');
+
+      const commandResult = await fixture.command.execute(fixture.context);
+      const requestPath = commandResult.commandResult.artifacts?.find(
+        (artifact) => artifact.id === 'review_request',
+      )?.path;
+      const requestPayload = JSON.parse(
+        await readFile(String(requestPath), 'utf8'),
+      ) as CliReviewRequestArtifactPayload;
+
+      expect(requestPayload.scope.reviewedPaths).toContain('apps/cli/src/review-scope.ts');
+      expect(requestPayload.scope.reviewedPaths).not.toContain('pps/cli/src/review-scope.ts');
+    } finally {
+      await rm(fixture.tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('routes active-stream review artifacts to the repository root even when invoked from a subdirectory', async () => {
+    const fixture = await createReviewFixture();
+
+    try {
+      await writeCurrentContextFixture(fixture.workspaceRoot);
+      await initGitRepository(fixture.tempRoot);
+      const subdirectoryCwd = resolve(fixture.tempRoot, 'apps', 'cli');
+      await mkdir(subdirectoryCwd, { recursive: true });
+      fixture.context.options.currentWorkingDirectory = subdirectoryCwd;
+      const changedFilePath = resolve(fixture.tempRoot, 'apps', 'cli', 'src', 'review-scope.ts');
+      await mkdir(dirname(changedFilePath), { recursive: true });
+      await writeFile(changedFilePath, 'export const reviewScope = 1;\n', 'utf8');
+
+      const commandResult = await fixture.command.execute(fixture.context);
+      const reviewArtifactPath = commandResult.commandResult.artifacts?.find(
+        (artifact) => artifact.id === 'review_artifact',
+      )?.path;
+
+      expect(String(reviewArtifactPath)).toContain(
+        `${fixture.workspaceRoot}/context/dev/project-042-review-command-fixture/sprint-003-review-lifecycle/review/code_review_`,
+      );
+      expect(String(reviewArtifactPath)).not.toContain(
+        `${subdirectoryCwd}/.repo-ai-governor/context/dev/`,
+      );
     } finally {
       await rm(fixture.tempRoot, { recursive: true, force: true });
     }

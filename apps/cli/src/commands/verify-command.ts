@@ -13,7 +13,6 @@ import {
   CLI_RUNTIME_OPERATION,
   CliGovernanceCheckStatus,
 } from '../constants/cli-governance-runtime.constant.js';
-import { CliDurableStorageDiagnosticsRuntime } from '../runtime/durable-storage-diagnostics-runtime.js';
 import type {
   CliCommandProgressEvent,
   CliCommandResultArtifact,
@@ -34,7 +33,7 @@ export class CliVerifyCommand implements CliCommandExecutor {
 
   public async execute(context: CliCommandExecutorContext) {
     const runtimeDebugOptions = context.resolveRuntimeDebugOptions();
-    const durableStorageDiagnosticsRuntime = new CliDurableStorageDiagnosticsRuntime();
+    const durableStorageDiagnosticsRuntime = await this.createDurableStorageDiagnosticsRuntime();
     const verifyId = `verify-${Date.now()}`;
     const diagnosticsArtifactPath = resolve(
       context.options.workspace.workspaceRoot,
@@ -352,5 +351,17 @@ export class CliVerifyCommand implements CliCommandExecutor {
         command: CliCommandName.VERIFY,
       },
     );
+  }
+
+  /**
+   * Lazily resolves durable-storage diagnostics so CLI help avoids eager sqlite warnings.
+   * @returns Constructed durable-storage diagnostics runtime.
+   */
+  private async createDurableStorageDiagnosticsRuntime() {
+    // dynamic-import-allowed: verify only needs sqlite diagnostics during actual command execution.
+    const { CliDurableStorageDiagnosticsRuntime } = await import(
+      '../runtime/durable-storage-diagnostics-runtime.js'
+    );
+    return new CliDurableStorageDiagnosticsRuntime();
   }
 }

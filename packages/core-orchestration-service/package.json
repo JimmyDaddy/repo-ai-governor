@@ -15,6 +15,10 @@
     "./types": {
       "types": "./src/types/index.ts",
       "default": "./dist/src/types/index.js"
+    },
+    "./session-main-capability-catalog": {
+      "types": "./src/local-orchestration-service-session-main-capability-catalog.ts",
+      "default": "./dist/src/local-orchestration-service-session-main-capability-catalog.js"
     }
   },
   "dependencies": {

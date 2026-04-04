@@ -43,11 +43,11 @@ export class CliReviewCommand implements CliCommandExecutor {
     const runtimeDebugOptions = context.resolveRuntimeDebugOptions();
     const reviewQueueDirectories = context.reviewQueueRuntime.resolveReviewQueueDirectories();
     const reviewRuntime = new CliReviewLifecycleRuntime(
-      context.options.currentWorkingDirectory,
+      context.options.workspace.repositoryRoot,
       context.options.workspace.workspaceRoot,
     );
     const findingGenerator = new CliReviewFindingGenerator(
-      context.options.currentWorkingDirectory,
+      context.options.workspace.repositoryRoot,
       (english, chinese) => context.localizeText(english, chinese),
     );
     const requestId = `review-${Date.now()}`;

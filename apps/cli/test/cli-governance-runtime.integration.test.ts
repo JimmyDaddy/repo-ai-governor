@@ -114,6 +114,76 @@ interface PlanCommandFixture {
   createdTaskTitle: string;
 }
 
+async function writePlanTaskCardFixture(options: {
+  tasksDirPath: string;
+  taskId: string;
+  title: string;
+  projectId: string;
+  sprintId: string;
+  projectPlanPath: string;
+  sprintPlanPath: string;
+}): Promise<string> {
+  const taskCardPath = resolve(options.tasksDirPath, `${options.taskId}-${options.title}.md`);
+  await writeFile(
+    taskCardPath,
+    [
+      `# ${options.taskId} ${options.title}`,
+      '',
+      '- Status: planned',
+      '- Date: 2026-04-04',
+      '- Owner: AI-Agent',
+      '- Priority: P0',
+      `- Project: \`${options.projectId}\``,
+      `- Sprint: \`${options.sprintId}\``,
+      '',
+      '## 1. 任务目标',
+      '',
+      `为 ${options.title} 提供 fixture 输入。`,
+      '',
+      '## 2. Depends On',
+      '',
+      '1. `session.main` planning contract',
+      '',
+      '## 3. 预期产物',
+      '',
+      `1. ${options.title}`,
+      '',
+      '## 4. Required Inputs',
+      '',
+      `1. \`${options.sprintPlanPath}\``,
+      `2. \`${options.projectPlanPath}\``,
+      '',
+      '## 5. Traceback References',
+      '',
+      '1. `context/plan/*.preview.json`',
+      '',
+      '## 6. 实施计划',
+      '',
+      `1. 保留 ${options.title}。`,
+      '',
+      '## 7. Development Verification',
+      '',
+      '1. 覆盖 plan commit 漂移回归测试。',
+      '',
+      '## 8. Delivery Verification',
+      '',
+      '1. 运行 plan commit 集成回归。',
+      '',
+      '## 9. 执行记录',
+      '',
+      '1. 2026-04-04：任务创建，状态初始化为 `planned`。',
+      '',
+      '## 10. 产出',
+      '',
+      `1. 待执行：${options.title}`,
+      '',
+    ].join('\n'),
+    'utf8',
+  );
+
+  return taskCardPath;
+}
+
 function createCodexExecRunnerFixture(): CodexExecRunner {
   return async ({ prompt, operation }) => {
     const responseText =
@@ -2428,6 +2498,36 @@ describe('CliGovernanceRuntime policy/review safeguards', () => {
     });
   });
 
+  it('resolves active-stream plan paths from the repository root when invoked from a subdirectory', async () => {
+    await withRuntimeFixture(async (fixture) => {
+      const planFixture = await writePlanCommandFixture(fixture.workspaceRoot);
+      const subdirectoryCwd = resolve(fixture.tempRoot, 'apps', 'cli');
+      await mkdir(subdirectoryCwd, { recursive: true });
+      const runtimeWithOptions = fixture.runtime as unknown as {
+        options: {
+          currentWorkingDirectory: string;
+        };
+      };
+      runtimeWithOptions.options.currentWorkingDirectory = subdirectoryCwd;
+
+      const previewResult = await fixture.runtime.execute(CliCommandName.PLAN);
+      const previewPath = String(previewResult.commandResult.details?.preview_path);
+      const previewPayload = JSON.parse(await readFile(previewPath, 'utf8')) as {
+        targetStream?: {
+          sprintPlanPath?: string;
+          tasksDirPath?: string;
+        };
+      };
+
+      expect(previewResult.commandResult.details?.sprint_plan_path).toBe(
+        planFixture.sprintPlanPath,
+      );
+      expect(previewResult.commandResult.details?.tasks_dir).toBe(planFixture.tasksDirPath);
+      expect(previewPayload.targetStream?.sprintPlanPath).toBe(planFixture.sprintPlanPath);
+      expect(previewPayload.targetStream?.tasksDirPath).toBe(planFixture.tasksDirPath);
+    });
+  });
+
   it('commits approved plan previews into sprint ledgers and derived task views', async () => {
     await withRuntimeFixture(async (fixture) => {
       const planFixture = await writePlanCommandFixture(fixture.workspaceRoot);
@@ -2479,6 +2579,58 @@ describe('CliGovernanceRuntime policy/review safeguards', () => {
       expect(tasksCsvContent).toContain(planFixture.createdTaskId);
       expect(tasksCsvContent).toContain(planFixture.createdTaskTitle);
       expect(sprintPlanContent).toContain(
+        `\`${planFixture.createdTaskId}\` ${planFixture.createdTaskTitle}`,
+      );
+    });
+  });
+
+  it('rewrites sprint plan and receipt to the retained canonical task id when preview create items drift to existing titles before commit', async () => {
+    await withRuntimeFixture(async (fixture) => {
+      const planFixture = await writePlanCommandFixture(fixture.workspaceRoot);
+      const previewResult = await fixture.runtime.execute(CliCommandName.PLAN);
+      const driftedTaskId = 'TK-525';
+      await writePlanTaskCardFixture({
+        tasksDirPath: planFixture.tasksDirPath,
+        taskId: driftedTaskId,
+        title: planFixture.createdTaskTitle,
+        projectId: planFixture.projectId,
+        sprintId: planFixture.sprintId,
+        projectPlanPath: planFixture.projectPlanPath,
+        sprintPlanPath: planFixture.sprintPlanPath,
+      });
+
+      const runtimeWithPlanOptions = fixture.runtime as unknown as {
+        options: {
+          planCommandOptions?: {
+            action: string | null;
+            artifactPath: string | null;
+            confirmationDecision: string | null;
+          };
+        };
+      };
+      runtimeWithPlanOptions.options.planCommandOptions = {
+        action: 'commit',
+        artifactPath: String(previewResult.commandResult.details?.preview_path),
+        confirmationDecision: 'approve',
+      };
+
+      const commitResult = await fixture.runtime.execute(CliCommandName.PLAN);
+      const receiptPath = String(commitResult.commandResult.details?.receipt_path);
+      const receiptPayload = JSON.parse(await readFile(receiptPath, 'utf8')) as {
+        createdTaskIds?: string[];
+        retainedTaskIds?: string[];
+      };
+      const taskFileNames = await readdir(planFixture.tasksDirPath);
+      const sprintPlanContent = await readFile(planFixture.sprintPlanPath, 'utf8');
+
+      expect(commitResult.commandResult.operation).toBe('plan_commit');
+      expect(receiptPayload.createdTaskIds).toEqual([]);
+      expect(receiptPayload.retainedTaskIds).toEqual([planFixture.existingTaskId, driftedTaskId]);
+      expect(
+        taskFileNames.some((fileName) => fileName.startsWith(`${planFixture.createdTaskId}-`)),
+      ).toBe(false);
+      expect(sprintPlanContent).toContain(`\`${driftedTaskId}\` ${planFixture.createdTaskTitle}`);
+      expect(sprintPlanContent).not.toContain(
         `\`${planFixture.createdTaskId}\` ${planFixture.createdTaskTitle}`,
       );
     });

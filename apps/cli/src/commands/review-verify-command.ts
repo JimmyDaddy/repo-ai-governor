@@ -93,6 +93,27 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
   }
 
   /**
+   * Identifies queued requests that still deserve default verification priority.
+   * Why: resolved/no-op requests may remain queued for explicit closure receipts, but
+   * they should not displace real pending reviews during the default "latest" selection.
+   * Managed ledger-backfill requests stay prioritized even when the review artifact is resolved.
+   * @param requestPayload Parsed queued review payload.
+   * @returns True when default no-arg review-verify should prefer this request.
+   */
+  private shouldPrioritizeForDefaultSelection(
+    requestPayload: CliReviewRequestArtifactPayload | null,
+  ): boolean {
+    if (!requestPayload) {
+      return false;
+    }
+
+    return (
+      requestPayload.reviewArtifactStatus !== CliReviewLifecycleStatus.RESOLVED ||
+      requestPayload.recordLedger === true
+    );
+  }
+
+  /**
    * Selects the queued review request that this verify attempt should consume.
    * @param context Command execution context.
    * @param queuedRequestArtifacts Candidate queued request artifacts.
@@ -146,7 +167,17 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
       return selectedQueuedRequest;
     }
 
-    const latestQueuedRequest = queuedRequestSelections[queuedRequestSelections.length - 1] ?? null;
+    const readableQueuedRequests = queuedRequestSelections.filter(
+      ({ requestPayload }) => requestPayload !== null,
+    );
+    const prioritizedQueuedRequests = readableQueuedRequests.filter(({ requestPayload }) =>
+      this.shouldPrioritizeForDefaultSelection(requestPayload),
+    );
+    const latestQueuedRequest =
+      prioritizedQueuedRequests[prioritizedQueuedRequests.length - 1] ??
+      readableQueuedRequests[readableQueuedRequests.length - 1] ??
+      queuedRequestSelections[queuedRequestSelections.length - 1] ??
+      null;
     if (!latestQueuedRequest) {
       throw new RuntimeError(
         GovernorErrorCode.UNKNOWN,
@@ -164,11 +195,11 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
     const runtimeDebugOptions = context.resolveRuntimeDebugOptions();
     const reviewQueueDirectories = context.reviewQueueRuntime.resolveReviewQueueDirectories();
     const reviewRuntime = new CliReviewLifecycleRuntime(
-      context.options.currentWorkingDirectory,
+      context.options.workspace.repositoryRoot,
       context.options.workspace.workspaceRoot,
     );
     const findingGenerator = new CliReviewFindingGenerator(
-      context.options.currentWorkingDirectory,
+      context.options.workspace.repositoryRoot,
       (english, chinese) => context.localizeText(english, chinese),
     );
     await mkdir(reviewQueueDirectories.requestDirectoryPath, { recursive: true });

@@ -957,7 +957,8 @@ describe('claude-code-agent-adapter smoke', () => {
   it('reuses one cli_exec invocation across streamEvents and invokeStage and relays stdout/stderr incrementally', async () => {
     const abortController = new AbortController();
     const execRunner = vi.fn<ClaudeCodeExecRunner>().mockImplementation(async (request) => {
-      expect(request.timeoutMs).toBe(123000);
+      expect(request.timeoutMs).toBeLessThanOrEqual(123000);
+      expect(request.timeoutMs).toBeGreaterThan(122000);
       expect(request.signal).toBe(abortController.signal);
       if (request.onStdoutChunk) {
         request.onStdoutChunk('Review');

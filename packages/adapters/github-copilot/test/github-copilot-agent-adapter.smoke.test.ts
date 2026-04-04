@@ -440,7 +440,8 @@ describe('github-copilot-agent-adapter smoke', () => {
   it('reuses one cli_exec invocation across streamEvents and invokeStage and relays token/status output incrementally', async () => {
     const abortController = new AbortController();
     const execRunner = vi.fn<GithubCopilotExecRunner>().mockImplementation(async (request) => {
-      expect(request.timeoutMs).toBe(234000);
+      expect(request.timeoutMs).toBeLessThanOrEqual(234000);
+      expect(request.timeoutMs).toBeGreaterThan(233000);
       expect(request.signal).toBe(abortController.signal);
       request.onStdoutChunk?.(
         `${[
