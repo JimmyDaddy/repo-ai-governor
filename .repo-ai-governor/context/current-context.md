@@ -2,21 +2,21 @@
 
 ## Primary Stream
 
-- Status: active
-- Project: `project-044-desktop-governance-console-mvp-foundation`
-- Sprint: `sprint-003-release-smoke-and-mvp-closeout`
-- Docs root: `.repo-ai-governor/context/dev/project-044-desktop-governance-console-mvp-foundation`
-- Task records: `.repo-ai-governor/context/dev/project-044-desktop-governance-console-mvp-foundation/sprint-003-release-smoke-and-mvp-closeout/tasks/`
-- Review records: `.repo-ai-governor/context/dev/project-044-desktop-governance-console-mvp-foundation/sprint-003-release-smoke-and-mvp-closeout/review/`
-- Note: `project-044` completed on 2026-04-04; `sprint-003` is retained as the active closeout surface until the next primary stream is explicitly activated.
+- Status: idle
+- Project: `none`
+- Sprint: `none`
+- Docs root: `none`
+- Task records: `none`
+- Review records: `none`
+- Note: `project-047-governance-surface-clients-solution-promotion-and-decomposition / sprint-001-promotion-and-followup-decomposition` completed on 2026-04-05 and was moved into completed stream history; `project-048-governance-surface-clients-rollout / sprint-001-shared-core-and-actionable-console-baseline` is now registered as a planned follow-up stream.
 
 ## Active Streams
 
-- `primary`: project=`project-044-desktop-governance-console-mvp-foundation`, sprint=`sprint-003-release-smoke-and-mvp-closeout`, docs=`.repo-ai-governor/context/dev/project-044-desktop-governance-console-mvp-foundation`, plan=`.repo-ai-governor/context/dev/project-044-desktop-governance-console-mvp-foundation/sprint-003-release-smoke-and-mvp-closeout/plan.md`, tasks=`.repo-ai-governor/context/dev/project-044-desktop-governance-console-mvp-foundation/sprint-003-release-smoke-and-mvp-closeout/tasks/`, checklist=`.repo-ai-governor/context/dev/project-044-desktop-governance-console-mvp-foundation/sprint-003-release-smoke-and-mvp-closeout/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-044-desktop-governance-console-mvp-foundation/sprint-003-release-smoke-and-mvp-closeout/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-044-desktop-governance-console-mvp-foundation/sprint-003-release-smoke-and-mvp-closeout/review/`, status=`active`, note=`Project-044 completed on 2026-04-04; sprint-003 remains the active closeout surface until the next primary stream is activated`
+- None currently registered.
 
 ## Planned Follow-Up Streams
 
-- None currently registered.
+- `stream-project-048-sprint-001`: status=`planned`, project=`project-048-governance-surface-clients-rollout`, sprint=`sprint-001-shared-core-and-actionable-console-baseline`, docs=`.repo-ai-governor/context/dev/project-048-governance-surface-clients-rollout`, plan=`.repo-ai-governor/context/dev/project-048-governance-surface-clients-rollout/sprint-001-shared-core-and-actionable-console-baseline/plan.md`, tasks=`.repo-ai-governor/context/dev/project-048-governance-surface-clients-rollout/sprint-001-shared-core-and-actionable-console-baseline/tasks/`, checklist=`.repo-ai-governor/context/dev/project-048-governance-surface-clients-rollout/sprint-001-shared-core-and-actionable-console-baseline/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-048-governance-surface-clients-rollout/sprint-001-shared-core-and-actionable-console-baseline/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-048-governance-surface-clients-rollout/sprint-001-shared-core-and-actionable-console-baseline/review/`, note=`technical-solution.governance-surface-clients accepted on 2026-04-05; sprint-001 starts with shared-core command/query seam plus actionable desktop console baseline, then hands off to VS Code companion and deeper desktop rollout sprints`
 
 ## Completed Stream History
 

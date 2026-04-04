@@ -8,6 +8,6 @@
 2. typed preload bridge
 3. session bridge
 4. governance console transport-neutral view-model
-5. lifecycle / restart / artifact-pane gate baseline
+5. lifecycle / restart / service-owned artifact-pane contract baseline
 
 这个包当前不直接引入 Electron runtime，而是先冻结桌面端需要遵守的 host / preload / renderer / utility-process contract，并让 smoke、tests、release verification 都基于这条正式包级 surface 验证。

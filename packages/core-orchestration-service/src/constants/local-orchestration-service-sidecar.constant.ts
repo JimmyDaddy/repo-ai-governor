@@ -7,6 +7,7 @@ export enum LocalOrchestrationServiceSidecarOperation {
   START_EXECUTION = 'start_execution',
   GET_EXECUTION = 'get_execution',
   LIST_EXECUTIONS = 'list_executions',
+  QUERY_ARTIFACT_PANE = 'query_artifact_pane',
   SUBSCRIBE_EXECUTION = 'subscribe_execution',
   SUBMIT_HITL_DECISION = 'submit_hitl_decision',
   RECOVER_EXECUTION = 'recover_execution',

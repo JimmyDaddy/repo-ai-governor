@@ -12,6 +12,11 @@ export {
   OrchestrationServiceTransportKind,
 } from './constants/index.js';
 export type {
+  OrchestrationArtifactPaneArtifactEntry,
+  OrchestrationArtifactPaneQueryRequest,
+  OrchestrationArtifactPaneQueryResponse,
+  OrchestrationArtifactPaneReviewEntry,
+  OrchestrationArtifactPaneTranscriptEntry,
   OrchestrationArchiveSessionRequest,
   OrchestrationArchiveSessionResponse,
   OrchestrationAppendSessionMessageRequest,

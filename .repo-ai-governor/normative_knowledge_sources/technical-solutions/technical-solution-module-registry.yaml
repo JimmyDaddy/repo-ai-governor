@@ -1,5 +1,5 @@
 schema_version: 2
-generated_at: 2026-04-04
+generated_at: 2026-04-05
 status: active
 owner: architecture
 
@@ -502,6 +502,64 @@ modules:
           - module_registry
           - overall_technical_solution
           - architecture_and_repo_layering
+      registry_change:
+        classification: module_registry_change
+        requires_sync: []
+        recommends_sync:
+          - overall_technical_solution
+          - architecture_and_repo_layering
+
+  - module_id: runtime.governance-clients
+    status: active
+    owner: runtime
+    layer: runtime-core
+    summary_doc: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/module-overview.md
+    detail_docs:
+      - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/contracts/governance-surface-client-contract.md
+        kind: contract
+      - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/desktop-command-center-and-vscode-editor-companion-split.md
+        kind: adr
+    north_star_refs:
+      - prd.multi-agent-orchestration
+      - overall.graph-first-runtime
+      - architecture.runtime-boundary
+      - architecture.governance-boundary
+    exports_contracts:
+      - contract.runtime.governance-surface-client.v1
+    imports_contracts:
+      - contract.runtime.graph-execution.v1
+      - contract.runtime.agent-projection.v1
+      - contract.cli.session-shell.v1
+    depends_on_modules:
+      - runtime.orchestration
+      - runtime.agent-projection
+      - runtime.cli-interactive-shell
+    load_triggers:
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+      - runtime_contract_change
+      - desktop_surface_change
+      - ide_surface_change
+      - command_surface_change
+    change_impact_policy:
+      summary_doc_change:
+        classification: local_detail_change
+        requires_sync: []
+        recommends_sync: []
+      contract_doc_change:
+        classification: exported_contract_change
+        requires_sync:
+          - summary_doc
+        recommends_sync:
+          - module_registry
+          - direct_consumers
+          - overall_technical_solution
+          - architecture_and_repo_layering
+      adr_doc_change:
+        classification: local_detail_change
+        requires_sync: []
+        recommends_sync:
+          - summary_doc
       registry_change:
         classification: module_registry_change
         requires_sync: []

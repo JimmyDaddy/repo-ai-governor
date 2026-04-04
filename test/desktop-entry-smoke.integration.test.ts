@@ -13,6 +13,7 @@ import {
   OrchestrationServiceEventType,
   OrchestrationServiceHostKind,
   OrchestrationServiceTransportKind,
+  OrchestrationSessionTranscriptRole,
 } from '@repo-ai-governor/orchestration-service-client';
 import { MemoryStoreEngine } from '@repo-ai-governor/shared';
 import { DesktopArtifactQueryGateState } from '../apps/desktop/src/constants/index.js';
@@ -94,9 +95,11 @@ describe('desktop entry smoke integration', () => {
         });
 
         const session = await preloadBridge.startSession();
-        await preloadBridge.appendMessage(session.session.sessionId, 'assistant', [
-          'desktop baseline active',
-        ]);
+        await preloadBridge.appendMessage(
+          session.session.sessionId,
+          OrchestrationSessionTranscriptRole.ASSISTANT,
+          ['desktop baseline active'],
+        );
         const resumed = await preloadBridge.resumeSession(session.session.sessionId);
         const listedSessions = await preloadBridge.listSessions({
           limit: 1,
@@ -115,6 +118,10 @@ describe('desktop entry smoke integration', () => {
         const wakeSnapshot = await preloadBridge.requestWindowWake('main-window');
         const notificationSnapshot = await preloadBridge.registerNotification('review-ready');
         const restartSnapshot = await preloadBridge.restartServiceHost('desktop-smoke-restart');
+        const artifactPane = await preloadBridge.queryArtifactPane({
+          executionId: started.executionId,
+          sessionId: session.session.sessionId,
+        });
         const consoleSnapshot = await preloadBridge.buildGovernanceConsoleSnapshot({
           locale: 'en-US',
           workspaceLabel: 'desktop-workspace',
@@ -123,11 +130,12 @@ describe('desktop entry smoke integration', () => {
 
         expect(bootstrapSnapshot.baseline.packageName).toBe('@repo-ai-governor/desktop');
         expect(bootstrapSnapshot.baseline.artifactQueryGateState).toBe(
-          DesktopArtifactQueryGateState.BLOCKED,
+          DesktopArtifactQueryGateState.READY,
         );
         expect(bootstrapSnapshot.baseline.sessionBridgeOperations).toContain(
           'buildGovernanceConsoleSnapshot',
         );
+        expect(bootstrapSnapshot.baseline.sessionBridgeOperations).toContain('queryArtifactPane');
         expect(bootstrapSnapshot.health.serviceHostKind).toBe(OrchestrationServiceHostKind.SIDECAR);
         expect(health.serviceTransportKind).toBe(OrchestrationServiceTransportKind.IPC);
         expect(health.memoryProvider).toEqual(
@@ -153,7 +161,14 @@ describe('desktop entry smoke integration', () => {
         expect(wakeSnapshot.windowWakeCount).toBe(1);
         expect(notificationSnapshot.notificationCount).toBe(1);
         expect(restartSnapshot.restartCount).toBe(1);
+        expect(artifactPane.resolvedExecutionId).toBe(started.executionId);
+        expect(artifactPane.resolvedSessionId).toBe(session.session.sessionId);
+        expect(artifactPane.transcript[0]?.lines).toContain('desktop baseline active');
         expect(consoleSnapshot.workspaceHome.title).toBe('Workspace home');
+        expect(consoleSnapshot.artifactPane.gateState).toBe(DesktopArtifactQueryGateState.READY);
+        expect(consoleSnapshot.artifactPane.transcript.entries[0]?.detailLines).toContain(
+          'desktop baseline active',
+        );
         expect(consoleSnapshot.agentProjectionPanel?.rows[0]?.title).toBe(
           'coder -> github-copilot',
         );

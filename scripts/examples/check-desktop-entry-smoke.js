@@ -169,6 +169,7 @@ try {
     OrchestrationExecutionKind,
     OrchestrationExecutionStatus,
     OrchestrationServiceEventType,
+    OrchestrationSessionTranscriptRole,
   } = clientIndex;
 
   if (sample.surface !== OrchestrationClientSurface.DESKTOP) {
@@ -180,8 +181,8 @@ try {
   if (sample.executionKind !== OrchestrationExecutionKind.RUN) {
     throw new Error('desktop runtime sample must declare executionKind=run.');
   }
-  if (sample.expectedArtifactQueryGateState !== DesktopArtifactQueryGateState.BLOCKED) {
-    throw new Error('desktop runtime sample must declare expectedArtifactQueryGateState=blocked.');
+  if (sample.expectedArtifactQueryGateState !== DesktopArtifactQueryGateState.READY) {
+    throw new Error('desktop runtime sample must declare expectedArtifactQueryGateState=ready.');
   }
 
   const tempRoot = mkdtempSync(resolve(tmpdir(), 'repo-ai-governor-desktop-sidecar-'));
@@ -241,13 +242,19 @@ try {
     });
 
     const session = await preloadBridge.startSession();
-    await preloadBridge.appendMessage(session.session.sessionId, 'assistant', [
-      'desktop baseline active',
-    ]);
+    await preloadBridge.appendMessage(
+      session.session.sessionId,
+      OrchestrationSessionTranscriptRole.ASSISTANT,
+      ['desktop baseline active'],
+    );
     const listedExecutions = await preloadBridge.listExecutions({
       filter: {
         workspaceId: 'desktop-workspace',
       },
+    });
+    const artifactPane = await preloadBridge.queryArtifactPane({
+      executionId: started.executionId,
+      sessionId: session.session.sessionId,
     });
     const subscribedExecutions = await preloadBridge.subscribeExecution({
       executionId: started.executionId,
@@ -298,6 +305,12 @@ try {
     }
     if (subscribedSessions.session.sessionId !== session.session.sessionId) {
       throw new Error('desktop subscribeSession did not attach to the started session.');
+    }
+    if (artifactPane.resolvedSessionId !== session.session.sessionId) {
+      throw new Error('desktop queryArtifactPane did not resolve the active session.');
+    }
+    if (!artifactPane.transcript[0]?.lines.includes('desktop baseline active')) {
+      throw new Error('desktop queryArtifactPane did not return the appended transcript row.');
     }
     if (wakeSnapshot.windowWakeCount !== 1 || notificationSnapshot.notificationCount !== 1) {
       throw new Error('desktop lifecycle guard counts were not recorded as expected.');

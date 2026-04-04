@@ -55,6 +55,43 @@ export interface UiConfig {
 }
 
 /**
+ * Defines one standards runtime source reference consumed by runtime loaders.
+ */
+export interface StandardsPackSourceConfig {
+  module: string;
+  exportName: string;
+  enabled?: boolean;
+}
+
+/**
+ * Defines layered standards source groups aligned with official/team/repository precedence.
+ */
+export interface StandardsPackSourcesConfig {
+  official?: StandardsPackSourceConfig[];
+  team?: StandardsPackSourceConfig[];
+  repository?: StandardsPackSourceConfig[];
+}
+
+/**
+ * Defines one standards projection target emitted by the runtime loader.
+ */
+export interface StandardsProjectionTargetConfig {
+  targetFile: string;
+  locale?: string;
+}
+
+/**
+ * Defines standards runtime config consumed by product/runtime surfaces.
+ */
+export interface StandardsConfig {
+  packSources: StandardsPackSourcesConfig;
+  renderTargets?: Array<'human' | 'ai' | 'agents'>;
+  projectionTargets?: StandardsProjectionTargetConfig[];
+  defaultLocale?: string;
+  fallbackLocale?: string;
+}
+
+/**
  * Defines one profile payload that can override workspace/i18n fields.
  */
 export interface GovernorProfile {
@@ -158,6 +195,7 @@ export interface GovernorConfig {
   i18n: I18nConfig;
   memory?: Partial<MemoryConfig>;
   ui?: UiConfig;
+  standards?: StandardsConfig;
   roles?: RoleProfileConfig[];
   adapters?: AdaptersConfig;
   activeProfile?: string;

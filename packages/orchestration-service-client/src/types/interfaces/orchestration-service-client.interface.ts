@@ -175,6 +175,54 @@ export interface OrchestrationSubscribeExecutionRequest {
   limit?: number;
 }
 
+export interface OrchestrationArtifactPaneQueryRequest {
+  executionId?: string;
+  sessionId?: string;
+  artifactLimit?: number;
+  reviewLimit?: number;
+  transcriptLimit?: number;
+}
+
+export interface OrchestrationArtifactPaneArtifactEntry {
+  artifactId: string;
+  artifactType: string;
+  artifactPath: string;
+  artifactVersion: string;
+  artifactStatus: string;
+  producerTaskId: string;
+  producerExecutionId: string;
+  registeredAt: string;
+  lastUpdatedAt: string;
+}
+
+export interface OrchestrationArtifactPaneReviewEntry {
+  reviewId: string;
+  title: string;
+  lifecycleStatus: string;
+  filePath: string;
+  scope?: string;
+  updatedAt: string;
+}
+
+export interface OrchestrationArtifactPaneTranscriptEntry {
+  entryId: string;
+  sessionId: string;
+  eventType: string;
+  role: OrchestrationSessionTranscriptRole | string;
+  routeId?: string;
+  lines: string[];
+  createdAt: string;
+}
+
+export interface OrchestrationArtifactPaneQueryResponse {
+  artifacts: OrchestrationArtifactPaneArtifactEntry[];
+  reviews: OrchestrationArtifactPaneReviewEntry[];
+  transcript: OrchestrationArtifactPaneTranscriptEntry[];
+  resolvedExecutionId?: string;
+  resolvedSessionId?: string;
+  reviewSourcePath?: string;
+}
+
 export interface OrchestrationSubmitHitlDecisionRequest {
   executionId: string;
   executionSessionId: string;
@@ -375,6 +423,9 @@ export interface OrchestrationServiceClient {
   listExecutions(
     request?: OrchestrationListExecutionsRequest,
   ): Promise<OrchestrationListExecutionsResponse>;
+  queryArtifactPane(
+    request?: OrchestrationArtifactPaneQueryRequest,
+  ): Promise<OrchestrationArtifactPaneQueryResponse>;
   subscribeExecution(
     request: OrchestrationSubscribeExecutionRequest,
   ): Promise<OrchestrationSubscribeExecutionResponse>;

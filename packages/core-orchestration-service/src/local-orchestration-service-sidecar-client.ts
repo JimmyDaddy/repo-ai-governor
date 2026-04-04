@@ -9,6 +9,8 @@ import type {
   OrchestrationAppendSessionMessageResponse,
   OrchestrationArchiveSessionRequest,
   OrchestrationArchiveSessionResponse,
+  OrchestrationArtifactPaneQueryRequest,
+  OrchestrationArtifactPaneQueryResponse,
   OrchestrationExecutionSummary,
   OrchestrationForkSessionRequest,
   OrchestrationForkSessionResponse,
@@ -109,6 +111,15 @@ export class LocalOrchestrationServiceSidecarClient {
   ): Promise<OrchestrationListExecutionsResponse> {
     return this.sendRequest<OrchestrationListExecutionsResponse>(
       LocalOrchestrationServiceSidecarOperation.LIST_EXECUTIONS,
+      request,
+    );
+  }
+
+  public async queryArtifactPane(
+    request?: OrchestrationArtifactPaneQueryRequest,
+  ): Promise<OrchestrationArtifactPaneQueryResponse> {
+    return this.sendRequest<OrchestrationArtifactPaneQueryResponse>(
+      LocalOrchestrationServiceSidecarOperation.QUERY_ARTIFACT_PANE,
       request,
     );
   }

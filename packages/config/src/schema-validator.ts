@@ -30,6 +30,10 @@ import type {
   I18nConfig,
   MemoryConfig,
   RoleProfileConfig,
+  StandardsConfig,
+  StandardsPackSourceConfig,
+  StandardsPackSourcesConfig,
+  StandardsProjectionTargetConfig,
   UiConfig,
   UiReactConfig,
   WorkspaceConfig,
@@ -46,6 +50,8 @@ const ADAPTER_TRANSPORT_KIND_VALUES = new Set<string>(Object.values(AdapterTrans
 const ADAPTER_PROVIDER_KIND_VALUES = new Set<string>(Object.values(AdapterProviderKind));
 const ADAPTER_VENDOR_BINDING_KIND_VALUES = new Set<string>(Object.values(AdapterVendorBindingKind));
 const LOCAL_MODEL_PROVIDER_VALUES = new Set<string>(Object.values(LocalModelProvider));
+const STANDARDS_RENDER_TARGET_VALUES = new Set(['human', 'ai', 'agents']);
+const STANDARDS_PACK_LAYER_VALUES = new Set(['official', 'team', 'repository']);
 const MEMORY_PROVIDER_MODULE_PACKAGE_SPECIFIER_PATTERN =
   /^(?:@[a-z0-9][a-z0-9-.]*\/)?[a-z0-9][a-z0-9-.]*$/u;
 const MEMORY_PROVIDER_EXPORT_NAME_PATTERN = /^[A-Za-z_$][A-Za-z0-9_$]*$/u;
@@ -78,6 +84,7 @@ export class SchemaValidator {
       | Partial<MemoryConfig>
       | undefined;
     const ui = this.validateUi(root.ui, '/ui');
+    const standards = this.validateStandards(root.standards, '/standards');
     const roles = this.validateRoles(root.roles, '/roles');
     const adapters = this.validateAdapters(root.adapters, '/adapters', false) as
       | AdaptersConfig
@@ -93,6 +100,7 @@ export class SchemaValidator {
         'i18n',
         'memory',
         'ui',
+        'standards',
         'roles',
         'adapters',
         'activeProfile',
@@ -107,6 +115,7 @@ export class SchemaValidator {
       i18n,
       ...(memory ? { memory } : {}),
       ...(ui ? { ui } : {}),
+      ...(standards ? { standards } : {}),
       ...(roles ? { roles } : {}),
       ...(adapters ? { adapters } : {}),
       ...(activeProfile ? { activeProfile } : {}),
@@ -251,6 +260,191 @@ export class SchemaValidator {
     return {
       ...(react ? { react } : {}),
     };
+  }
+
+  /**
+   * Validates standards runtime config used for pack auto-loading and projection defaults.
+   * @param candidate Raw standards config payload.
+   * @param pointer Error pointer path.
+   * @returns Typed standards config when provided.
+   */
+  private validateStandards(candidate: unknown, pointer: string): StandardsConfig | undefined {
+    if (candidate === undefined) {
+      return undefined;
+    }
+
+    const standards = this.expectRecord(candidate, pointer);
+    this.assertNoUnknownKeys(
+      standards,
+      new Set([
+        'packSources',
+        'renderTargets',
+        'projectionTargets',
+        'defaultLocale',
+        'fallbackLocale',
+      ]),
+      pointer,
+    );
+
+    const packSources = this.validateStandardsPackSources(
+      standards.packSources,
+      `${pointer}/packSources`,
+    );
+    const renderTargets = this.validateStandardsRenderTargets(
+      standards.renderTargets,
+      `${pointer}/renderTargets`,
+    );
+    const projectionTargets = this.validateStandardsProjectionTargets(
+      standards.projectionTargets,
+      `${pointer}/projectionTargets`,
+    );
+    const defaultLocale = this.expectOptionalString(
+      standards.defaultLocale,
+      `${pointer}/defaultLocale`,
+    );
+    const fallbackLocale = this.expectOptionalString(
+      standards.fallbackLocale,
+      `${pointer}/fallbackLocale`,
+    );
+
+    return {
+      packSources,
+      ...(renderTargets ? { renderTargets } : {}),
+      ...(projectionTargets ? { projectionTargets } : {}),
+      ...(defaultLocale ? { defaultLocale } : {}),
+      ...(fallbackLocale ? { fallbackLocale } : {}),
+    };
+  }
+
+  /**
+   * Validates grouped standards source references for official/team/repository layers.
+   * @param candidate Raw pack source record.
+   * @param pointer Error pointer path.
+   * @returns Typed layered source config.
+   */
+  private validateStandardsPackSources(
+    candidate: unknown,
+    pointer: string,
+  ): StandardsPackSourcesConfig {
+    const packSources = this.expectRecord(candidate, pointer);
+    this.assertNoUnknownKeys(packSources, STANDARDS_PACK_LAYER_VALUES, pointer);
+
+    return {
+      ...(packSources.official !== undefined
+        ? {
+            official: this.validateStandardsPackSourceList(
+              packSources.official,
+              `${pointer}/official`,
+            ),
+          }
+        : {}),
+      ...(packSources.team !== undefined
+        ? {
+            team: this.validateStandardsPackSourceList(packSources.team, `${pointer}/team`),
+          }
+        : {}),
+      ...(packSources.repository !== undefined
+        ? {
+            repository: this.validateStandardsPackSourceList(
+              packSources.repository,
+              `${pointer}/repository`,
+            ),
+          }
+        : {}),
+    };
+  }
+
+  /**
+   * Validates one list of standards source descriptors.
+   * @param candidate Raw list payload.
+   * @param pointer Error pointer path.
+   * @returns Typed source descriptor array.
+   */
+  private validateStandardsPackSourceList(
+    candidate: unknown,
+    pointer: string,
+  ): StandardsPackSourceConfig[] {
+    const sourceList = this.expectArray(candidate, pointer);
+
+    return sourceList.map((entry, index) => {
+      const sourcePointer = `${pointer}/${index}`;
+      const source = this.expectRecord(entry, sourcePointer);
+      this.assertNoUnknownKeys(source, new Set(['module', 'exportName', 'enabled']), sourcePointer);
+
+      const module = this.expectRequiredString(source.module, `${sourcePointer}/module`);
+      const exportName = this.expectRequiredString(
+        source.exportName,
+        `${sourcePointer}/exportName`,
+      );
+      const enabled = this.expectOptionalBoolean(source.enabled, `${sourcePointer}/enabled`);
+
+      return {
+        module,
+        exportName,
+        ...(enabled !== undefined ? { enabled } : {}),
+      };
+    });
+  }
+
+  /**
+   * Validates standards render target declarations.
+   * @param candidate Raw render target list.
+   * @param pointer Error pointer path.
+   * @returns Typed target list when provided.
+   */
+  private validateStandardsRenderTargets(
+    candidate: unknown,
+    pointer: string,
+  ): StandardsConfig['renderTargets'] {
+    if (candidate === undefined) {
+      return undefined;
+    }
+
+    const renderTargets = this.expectArray(candidate, pointer);
+    return renderTargets.map((entry, index) => {
+      const value = this.expectRequiredString(entry, `${pointer}/${index}`);
+      if (!STANDARDS_RENDER_TARGET_VALUES.has(value)) {
+        this.throwConfigSchemaValidationError(
+          `${pointer}/${index} must be one of: ${Array.from(STANDARDS_RENDER_TARGET_VALUES).join(', ')}.`,
+          `${pointer}/${index}`,
+        );
+      }
+
+      return value as 'human' | 'ai' | 'agents';
+    });
+  }
+
+  /**
+   * Validates standards projection target declarations.
+   * @param candidate Raw projection target list.
+   * @param pointer Error pointer path.
+   * @returns Typed projection target list when provided.
+   */
+  private validateStandardsProjectionTargets(
+    candidate: unknown,
+    pointer: string,
+  ): StandardsProjectionTargetConfig[] | undefined {
+    if (candidate === undefined) {
+      return undefined;
+    }
+
+    const projectionTargets = this.expectArray(candidate, pointer);
+    return projectionTargets.map((entry, index) => {
+      const targetPointer = `${pointer}/${index}`;
+      const projectionTarget = this.expectRecord(entry, targetPointer);
+      this.assertNoUnknownKeys(projectionTarget, new Set(['targetFile', 'locale']), targetPointer);
+
+      const targetFile = this.expectRequiredString(
+        projectionTarget.targetFile,
+        `${targetPointer}/targetFile`,
+      );
+      const locale = this.expectOptionalString(projectionTarget.locale, `${targetPointer}/locale`);
+
+      return {
+        targetFile,
+        ...(locale ? { locale } : {}),
+      };
+    });
   }
 
   /**
@@ -1413,6 +1607,21 @@ export class SchemaValidator {
   }
 
   /**
+   * Reads one required string field and emits a schema pointer on failure.
+   * @param candidate Raw candidate value.
+   * @param pointer Error pointer path.
+   * @returns Trimmed string value.
+   */
+  private expectRequiredString(candidate: unknown, pointer: string): string {
+    const value = this.expectOptionalString(candidate, pointer);
+    if (value) {
+      return value;
+    }
+
+    this.throwConfigSchemaValidationError(`${pointer} is required.`, pointer);
+  }
+
+  /**
    * Validates optional boolean fields when present.
    * @param candidate Value to validate.
    * @param pointer Error pointer path.
@@ -1428,6 +1637,20 @@ export class SchemaValidator {
     }
 
     return candidate;
+  }
+
+  /**
+   * Validates array payloads and preserves item typing for downstream validators.
+   * @param candidate Value to validate.
+   * @param pointer Error pointer path.
+   * @returns Array payload.
+   */
+  private expectArray(candidate: unknown, pointer: string): unknown[] {
+    if (Array.isArray(candidate)) {
+      return candidate;
+    }
+
+    this.throwConfigSchemaValidationError(`${pointer} must be an array.`, pointer);
   }
 
   /**

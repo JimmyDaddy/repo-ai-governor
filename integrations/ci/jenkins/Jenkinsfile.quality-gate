@@ -1,0 +1,39 @@
+pipeline {
+  agent any
+
+  options {
+    timeout(time: 15, unit: 'MINUTES')
+  }
+
+  environment {
+    STAGE9_HANDOFF_PATH = '.repo-ai-governor/context/dev/project-009-production-readiness/sprint-001-local-adoption-and-install-readiness/tasks/TK-080-sprint-001-exit-acceptance-and-sprint-002-input-constraints.md'
+  }
+
+  stages {
+    stage('Checkout') {
+      steps {
+        checkout scm
+      }
+    }
+
+    stage('Install') {
+      steps {
+        sh 'corepack enable'
+        sh 'corepack prepare pnpm@10.30.3 --activate'
+        sh 'pnpm install --frozen-lockfile'
+      }
+    }
+
+    stage('Stage9 Handoff') {
+      steps {
+        sh 'pnpm run check:stage9-handoff'
+      }
+    }
+
+    stage('Quality Gate') {
+      steps {
+        sh 'pnpm run check'
+      }
+    }
+  }
+}

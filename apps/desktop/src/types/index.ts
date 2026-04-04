@@ -1,4 +1,7 @@
 export type {
+  DesktopArtifactPaneCollectionViewModel,
+  DesktopArtifactPaneEntryViewModel,
+  DesktopArtifactPaneViewModel,
   DesktopOrchestrationServiceOwner,
   DesktopOrchestrationServiceRuntimeDependencies,
   DesktopLifecycleSnapshot,

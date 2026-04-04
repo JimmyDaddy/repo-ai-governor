@@ -1,4 +1,9 @@
 export type {
+  OrchestrationArtifactPaneArtifactEntry,
+  OrchestrationArtifactPaneQueryRequest,
+  OrchestrationArtifactPaneQueryResponse,
+  OrchestrationArtifactPaneReviewEntry,
+  OrchestrationArtifactPaneTranscriptEntry,
   OrchestrationArchiveSessionRequest,
   OrchestrationArchiveSessionResponse,
   OrchestrationAppendSessionMessageRequest,

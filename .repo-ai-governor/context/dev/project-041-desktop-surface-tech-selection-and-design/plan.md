@@ -23,7 +23,7 @@
 
 ## 2.1 sprint-001-codex-reference-research-and-shell-selection
 
-- Status: active
+- Status: completed
 - Sprint Goal: 产出桌面端产品形态与宿主框架的正式选型基线，并明确 MVP 设计边界与下一轮实现输入。
 - Task Package: `TK-514`、`TK-515`、`TK-516`、`TK-517`。
 

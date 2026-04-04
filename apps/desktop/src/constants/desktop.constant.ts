@@ -14,6 +14,7 @@ export const DESKTOP_SESSION_BRIDGE_OPERATIONS = [
   'getHealth',
   'startExecution',
   'listExecutions',
+  'queryArtifactPane',
   'subscribeExecution',
   'startSession',
   'sendMainTurn',
@@ -37,3 +38,5 @@ export const DESKTOP_SHELL_COMPONENT_OWNERS = {
 
 export const DESKTOP_ARTIFACT_PANE_DEFERRED_REASON =
   'service-owned artifact query contract is not ready; filesystem bypass remains blocked.';
+export const DESKTOP_ARTIFACT_PANE_READY_NOTE =
+  'service-owned artifact pane contract is ready for desktop renderer consumers.';

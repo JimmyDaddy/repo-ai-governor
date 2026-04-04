@@ -17,6 +17,8 @@ import {
   type OrchestrationAppendSessionMessageResponse,
   type OrchestrationArchiveSessionRequest,
   type OrchestrationArchiveSessionResponse,
+  type OrchestrationArtifactPaneQueryRequest,
+  type OrchestrationArtifactPaneQueryResponse,
   type OrchestrationExecutionLivenessSnapshot,
   OrchestrationExecutionStatus,
   type OrchestrationExecutionSummary,
@@ -55,6 +57,7 @@ import {
   type OrchestrationUnarchiveSessionResponse,
 } from '@repo-ai-governor/orchestration-service-client';
 import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
+import { LocalOrchestrationServiceArtifactPaneQueryRuntime } from './local-orchestration-service-artifact-pane-query-runtime.js';
 import { LocalOrchestrationServiceSessionRuntime } from './local-orchestration-service-session-runtime.js';
 import type {
   LocalOrchestrationServiceMemoryProviderState,
@@ -94,6 +97,7 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
   private readonly startedAt: string;
   private readonly memoryProviderRegistry: MemoryProviderRegistry;
   private readonly sessionRuntime: LocalOrchestrationServiceSessionRuntime;
+  private readonly artifactPaneQueryRuntime: LocalOrchestrationServiceArtifactPaneQueryRuntime;
   private executionRecordsLoadedPromise: Promise<void> | null = null;
   private memoryProviderStatePromise: Promise<LocalOrchestrationServiceMemoryProviderState | null> | null =
     null;
@@ -152,6 +156,18 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
         await this.publishEvent(request);
       },
       nowProvider: this.nowProvider,
+    });
+    this.artifactPaneQueryRuntime = new LocalOrchestrationServiceArtifactPaneQueryRuntime({
+      workspaceRoot: dependencies.workspaceRoot,
+      getExecution: async (executionId) => this.getExecution(executionId),
+      listExecutions: async () => this.listExecutions(),
+      getSession: async (sessionId) => this.sessionRuntime.getSession(sessionId),
+      listSessions: async () => this.sessionRuntime.listSessions(),
+      subscribeSession: async (sessionId, afterSequence) =>
+        this.sessionRuntime.subscribeSession({
+          sessionId,
+          afterSequence,
+        }),
     });
   }
 
@@ -308,6 +324,18 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
       returnedCount: executions.length,
       totalMatchedCount: matchedExecutions.length,
     };
+  }
+
+  /**
+   * Returns one service-owned artifact-pane payload for desktop consumers.
+   * @param request Optional execution/session selectors and slice limits.
+   * @returns Artifact-pane query response.
+   */
+  public async queryArtifactPane(
+    request?: OrchestrationArtifactPaneQueryRequest,
+  ): Promise<OrchestrationArtifactPaneQueryResponse> {
+    await this.ensureExecutionRecordsLoaded();
+    return this.artifactPaneQueryRuntime.query(request);
   }
 
   public async subscribeExecution(

@@ -1,4 +1,5 @@
 import type {
+  OrchestrationArtifactPaneQueryResponse,
   OrchestrationExecutionSummary,
   OrchestrationServiceHealthResponse,
   OrchestrationSessionSummary,
@@ -30,6 +31,37 @@ export interface DesktopExecutionTimelineEntryViewModel {
 }
 
 /**
+ * Defines one artifact-pane row rendered inside desktop governance console slices.
+ */
+export interface DesktopArtifactPaneEntryViewModel {
+  id: string;
+  title: string;
+  detailLines: string[];
+}
+
+/**
+ * Defines one artifact-pane sub-collection rendered inside the governance console.
+ */
+export interface DesktopArtifactPaneCollectionViewModel {
+  title: string;
+  emptyState: string;
+  entries: DesktopArtifactPaneEntryViewModel[];
+}
+
+/**
+ * Defines one structured artifact-pane snapshot for desktop renderer consumers.
+ */
+export interface DesktopArtifactPaneViewModel {
+  title: string;
+  statusVariant: AgentProjectionPanelStatusVariant;
+  gateState: DesktopLifecycleSnapshot['artifactQueryGateState'];
+  detailLines: string[];
+  artifacts: DesktopArtifactPaneCollectionViewModel;
+  reviews: DesktopArtifactPaneCollectionViewModel;
+  transcript: DesktopArtifactPaneCollectionViewModel;
+}
+
+/**
  * Defines one transport-neutral governance-console snapshot for desktop renderer consumers.
  */
 export interface DesktopGovernanceConsoleViewModel {
@@ -37,7 +69,7 @@ export interface DesktopGovernanceConsoleViewModel {
   sessionLane: DesktopGovernanceConsoleSectionViewModel;
   executionTimeline: DesktopExecutionTimelineEntryViewModel[];
   hitlCenter: DesktopGovernanceConsoleSectionViewModel;
-  artifactPaneNote: string;
+  artifactPane: DesktopArtifactPaneViewModel;
   agentProjectionPanel?: AgentProjectionPanelViewModel;
 }
 
@@ -51,5 +83,7 @@ export interface DesktopGovernanceConsoleBuildOptions {
   sessions: OrchestrationSessionSummary[];
   executions: OrchestrationExecutionSummary[];
   lifecycle: DesktopLifecycleSnapshot;
+  artifactPane?: OrchestrationArtifactPaneQueryResponse;
+  artifactPaneDeferredReason?: string;
   agentView?: ExecutionReportAgentView | null;
 }

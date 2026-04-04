@@ -1,0 +1,26 @@
+stages:
+  - quality
+
+default:
+  image: node:20-bullseye
+  before_script:
+    - corepack enable
+    - corepack prepare pnpm@10.30.3 --activate
+    - pnpm config set store-dir .pnpm-store
+    - pnpm install --frozen-lockfile
+  cache:
+    key: "${CI_COMMIT_REF_SLUG}"
+    paths:
+      - .pnpm-store
+
+variables:
+  STAGE9_HANDOFF_PATH: .repo-ai-governor/context/dev/project-009-production-readiness/sprint-001-local-adoption-and-install-readiness/tasks/TK-080-sprint-001-exit-acceptance-and-sprint-002-input-constraints.md
+
+quality_gate:
+  stage: quality
+  script:
+    - pnpm run check:stage9-handoff
+    - pnpm run check
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH'

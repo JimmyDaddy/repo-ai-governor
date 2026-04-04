@@ -1,4 +1,5 @@
 import {
+  type OrchestrationArtifactPaneQueryResponse,
   OrchestrationExecutionStatus,
   OrchestrationSessionStatus,
 } from '@repo-ai-governor/orchestration-service-client';
@@ -6,8 +7,14 @@ import {
   AgentProjectionPanelStatusVariant,
   AgentProjectionPanelViewModelBuilder,
 } from '@repo-ai-governor/reporting';
-import { DESKTOP_ARTIFACT_PANE_DEFERRED_REASON } from '../constants/index.js';
+import {
+  DESKTOP_ARTIFACT_PANE_DEFERRED_REASON,
+  DESKTOP_ARTIFACT_PANE_READY_NOTE,
+  DesktopArtifactQueryGateState,
+} from '../constants/index.js';
 import type {
+  DesktopArtifactPaneCollectionViewModel,
+  DesktopArtifactPaneEntryViewModel,
   DesktopExecutionTimelineEntryViewModel,
   DesktopGovernanceConsoleBuildOptions,
   DesktopGovernanceConsoleSectionViewModel,
@@ -41,10 +48,11 @@ export class DesktopGovernanceConsoleViewModelBuilder {
         options.executions,
         options.lifecycle.restartCount,
       ),
-      artifactPaneNote: this.localizeText(
+      artifactPane: this.buildArtifactPane(
         options.locale,
-        DESKTOP_ARTIFACT_PANE_DEFERRED_REASON,
-        'service-owned artifact query contract 尚未就绪；当前仍阻止 filesystem bypass。',
+        options.lifecycle.artifactQueryGateState,
+        options.artifactPane,
+        options.artifactPaneDeferredReason,
       ),
       ...(options.agentView
         ? {
@@ -56,6 +64,147 @@ export class DesktopGovernanceConsoleViewModelBuilder {
             }),
           }
         : {}),
+    };
+  }
+
+  private buildArtifactPane(
+    locale: string,
+    gateState: DesktopArtifactQueryGateState,
+    artifactPane: OrchestrationArtifactPaneQueryResponse | undefined,
+    deferredReason?: string,
+  ): DesktopGovernanceConsoleViewModel['artifactPane'] {
+    if (gateState === DesktopArtifactQueryGateState.BLOCKED) {
+      return {
+        title: this.localizeText(locale, 'Artifact pane', '产物面板'),
+        statusVariant: AgentProjectionPanelStatusVariant.INFO,
+        gateState,
+        detailLines: [
+          this.localizeText(
+            locale,
+            deferredReason ?? DESKTOP_ARTIFACT_PANE_DEFERRED_REASON,
+            'service-owned artifact query contract 尚未就绪；当前仍阻止 filesystem bypass。',
+          ),
+        ],
+        artifacts: this.buildArtifactPaneCollection(locale, 'Artifacts', '产物', [], {
+          english: 'Artifact query gate is still blocked.',
+          chinese: '当前 artifact query gate 仍然阻止中。',
+        }),
+        reviews: this.buildArtifactPaneCollection(locale, 'Reviews', '评审', [], {
+          english: 'Review query stays deferred until the service contract is ready.',
+          chinese: 'review query 会在 service contract 就绪前继续延后。',
+        }),
+        transcript: this.buildArtifactPaneCollection(locale, 'Transcript', '转录', [], {
+          english: 'Transcript query stays service-owned and currently deferred.',
+          chinese: 'transcript query 继续保持 service-owned，当前仍延后。',
+        }),
+      };
+    }
+
+    const resolvedArtifactPane = artifactPane ?? {
+      artifacts: [],
+      reviews: [],
+      transcript: [],
+    };
+    const detailLines = [
+      this.localizeText(
+        locale,
+        deferredReason ?? DESKTOP_ARTIFACT_PANE_READY_NOTE,
+        'service-owned artifact pane contract 已就绪，可直接供 desktop renderer 消费。',
+      ),
+      ...(resolvedArtifactPane.resolvedExecutionId
+        ? [
+            this.localizeText(
+              locale,
+              `execution=${resolvedArtifactPane.resolvedExecutionId}`,
+              `执行=${resolvedArtifactPane.resolvedExecutionId}`,
+            ),
+          ]
+        : []),
+      ...(resolvedArtifactPane.resolvedSessionId
+        ? [
+            this.localizeText(
+              locale,
+              `session=${resolvedArtifactPane.resolvedSessionId}`,
+              `会话=${resolvedArtifactPane.resolvedSessionId}`,
+            ),
+          ]
+        : []),
+      ...(resolvedArtifactPane.reviewSourcePath
+        ? [
+            this.localizeText(
+              locale,
+              `review_source=${resolvedArtifactPane.reviewSourcePath}`,
+              `评审源=${resolvedArtifactPane.reviewSourcePath}`,
+            ),
+          ]
+        : []),
+    ];
+
+    return {
+      title: this.localizeText(locale, 'Artifact pane', '产物面板'),
+      statusVariant: this.resolveArtifactPaneStatusVariant(resolvedArtifactPane),
+      gateState,
+      detailLines,
+      artifacts: this.buildArtifactPaneCollection(
+        locale,
+        'Artifacts',
+        '产物',
+        resolvedArtifactPane.artifacts.map(
+          (artifact: OrchestrationArtifactPaneQueryResponse['artifacts'][number]) => ({
+            id: artifact.artifactId,
+            title: `${artifact.artifactType} -> ${artifact.artifactStatus}`,
+            detailLines: [
+              `artifact=${artifact.artifactId} version=${artifact.artifactVersion}`,
+              `task=${artifact.producerTaskId} execution=${artifact.producerExecutionId}`,
+              `path=${artifact.artifactPath}`,
+            ],
+          }),
+        ),
+        {
+          english: 'No service-owned artifacts are available yet.',
+          chinese: '当前还没有可用的 service-owned 产物。',
+        },
+      ),
+      reviews: this.buildArtifactPaneCollection(
+        locale,
+        'Reviews',
+        '评审',
+        resolvedArtifactPane.reviews.map(
+          (review: OrchestrationArtifactPaneQueryResponse['reviews'][number]) => ({
+            id: review.reviewId,
+            title: `${review.lifecycleStatus} -> ${review.title}`,
+            detailLines: [
+              `file=${review.filePath}`,
+              ...(review.scope ? [`scope=${review.scope}`] : []),
+              `updated=${review.updatedAt}`,
+            ],
+          }),
+        ),
+        {
+          english: 'No review lifecycle records were found.',
+          chinese: '当前没有发现评审生命周期记录。',
+        },
+      ),
+      transcript: this.buildArtifactPaneCollection(
+        locale,
+        'Transcript',
+        '转录',
+        resolvedArtifactPane.transcript.map(
+          (entry: OrchestrationArtifactPaneQueryResponse['transcript'][number]) => ({
+            id: entry.entryId,
+            title: `${entry.role} -> ${entry.eventType}`,
+            detailLines: [
+              `session=${entry.sessionId} route=${entry.routeId ?? 'main'}`,
+              `at=${entry.createdAt}`,
+              ...entry.lines,
+            ],
+          }),
+        ),
+        {
+          english: 'No service-owned transcript events are available yet.',
+          chinese: '当前还没有可用的 service-owned transcript 事件。',
+        },
+      ),
     };
   }
 
@@ -220,6 +369,46 @@ export class DesktopGovernanceConsoleViewModelBuilder {
     }
 
     return AgentProjectionPanelStatusVariant.INFO;
+  }
+
+  private resolveArtifactPaneStatusVariant(
+    artifactPane: OrchestrationArtifactPaneQueryResponse,
+  ): AgentProjectionPanelStatusVariant {
+    if (
+      artifactPane.reviews.some(
+        (review: OrchestrationArtifactPaneQueryResponse['reviews'][number]) =>
+          review.lifecycleStatus === 'review_pending',
+      )
+    ) {
+      return AgentProjectionPanelStatusVariant.WARNING;
+    }
+
+    if (
+      artifactPane.artifacts.length > 0 ||
+      artifactPane.reviews.length > 0 ||
+      artifactPane.transcript.length > 0
+    ) {
+      return AgentProjectionPanelStatusVariant.SUCCESS;
+    }
+
+    return AgentProjectionPanelStatusVariant.INFO;
+  }
+
+  private buildArtifactPaneCollection(
+    locale: string,
+    englishTitle: string,
+    chineseTitle: string,
+    entries: DesktopArtifactPaneEntryViewModel[],
+    emptyState: {
+      english: string;
+      chinese: string;
+    },
+  ): DesktopArtifactPaneCollectionViewModel {
+    return {
+      title: this.localizeText(locale, englishTitle, chineseTitle),
+      emptyState: this.localizeText(locale, emptyState.english, emptyState.chinese),
+      entries,
+    };
   }
 
   private localizeText(locale: string, english: string, chinese: string): string {

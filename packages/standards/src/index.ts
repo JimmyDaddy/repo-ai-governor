@@ -35,6 +35,7 @@ export { goMinimalGovernancePack, pythonMinimalGovernancePack } from './examples
 export { RuleRenderer } from './rule-renderer.js';
 export { StandardsUpgradePlanner } from './standards-upgrade-planner.js';
 export { StandardsPackRegistry } from './standards-pack-registry.js';
+export { StandardsRuntimeLoader } from './standards-runtime-loader.js';
 export type {
   AgentsProjectionNowProviderContract,
   AgentsProjectionSourcePackRef,
@@ -49,6 +50,13 @@ export type {
   StandardsProjectionParityResult,
   StandardsProjectionParityViolation,
   StandardsPack,
+  StandardsRuntimeConfig,
+  StandardsRuntimeLoadedPack,
+  StandardsRuntimeLoadInput,
+  StandardsRuntimeLoadResult,
+  StandardsRuntimePackSourceConfig,
+  StandardsRuntimePackSourcesConfig,
+  StandardsRuntimeProjectionTargetConfig,
   StandardsPackListOptions,
   StandardsPackRegistryOptions,
   StandardsPackRegistryReader,

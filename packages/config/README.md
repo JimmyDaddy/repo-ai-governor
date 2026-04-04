@@ -25,6 +25,8 @@
 6. `UpgradeSchemaDiffService`
    - 输出 `schema diff -> 迁移建议 -> 人工确认决策` 结果。
    - 支持从 `schemaVersion: 1.0` 升级到 `1.1` 的自动建议草案（例如补齐 `workspace.migrationPolicy`）。
+7. `standards` config
+   - 允许声明 `official / team / repository` runtime pack sources、`renderTargets`、`projectionTargets` 与 locale defaults，供 `@repo-ai-governor/standards` 的 `StandardsRuntimeLoader` 自动装配。
 
 ## CLI Consumption Contract
 
@@ -61,6 +63,15 @@ const migrationPlan = migrationService.plan({
 });
 const migrationResult = await migrationService.execute(migrationPlan);
 
+if (resolved.config.standards) {
+  const { StandardsRuntimeLoader } = await import("@repo-ai-governor/standards");
+  const standardsLoader = new StandardsRuntimeLoader();
+  const standardsRuntime = await standardsLoader.load({
+    baseDirectory: process.cwd(),
+    standards: resolved.config.standards,
+  });
+}
+
 const upgradeService = new UpgradeSchemaDiffService();
 const upgradeReport = upgradeService.analyze({
   sourceConfig: resolved.config,
@@ -77,3 +88,4 @@ const upgradeReport = upgradeService.analyze({
 5. `WorkspaceMigrationService` 的 rollback 只恢复 target 侧切换状态；源 workspace 默认保留用于审计与二次恢复。
 6. `SchemaValidator` 当前支持 `schemaVersion`：`1.0`、`1.1`；其中 `1.1` 要求显式 `workspace.migrationPolicy`。
 7. `UpgradeSchemaDiffService` 生成的 `autoMigratedConfig` 只包含可自动应用建议，`schemaVersion` 变更默认保留人工确认入口。
+8. `standards` 配置当前只作为 top-level runtime contract 校验，不进入 profile override，避免把团队/仓库级 pack layering 做成一次命令级临时切换。

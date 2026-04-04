@@ -1,5 +1,5 @@
 schema_version: 1
-generated_at: 2026-04-04
+generated_at: 2026-04-05
 status: active
 owner: architecture
 
@@ -220,7 +220,7 @@ deliveries:
       - docs_playbook
     user_impact_level: high
     execution_status: completed
-    rollout_status: planned
+    rollout_status: completed
     owner: runtime
     project_ref: project-038-session-main-capability-explainer-productization
     sprint_ref: sprint-001-capability-catalog-and-turn-outcome-foundation
@@ -321,7 +321,7 @@ deliveries:
       - docs_playbook
     user_impact_level: medium
     execution_status: completed
-    rollout_status: planned
+    rollout_status: completed
     owner: runtime
     project_ref: project-030-runtime-agent-projection-phase-2-productization
     sprint_ref: sprint-001-technical-solution-and-phase-map
@@ -468,3 +468,32 @@ deliveries:
       - .repo-ai-governor/context/dev/project-039-provider-session-reuse-and-backend-conversation-continuity-rollout/sprint-002-summary-projection-and-provider-readiness-governance/plan.md
       - .repo-ai-governor/context/dev/project-039-provider-session-reuse-and-backend-conversation-continuity-rollout/project-039-provider-session-reuse-and-backend-conversation-continuity-rollout-completion-audit-summary.md
     accepted_at: 2026-04-04
+
+  - solution_id: technical-solution.governance-surface-clients
+    delivery_mode: followup_required
+    consumer_surfaces:
+      - runtime_service
+      - packaged_distribution
+      - docs_playbook
+    user_impact_level: high
+    execution_status: planned
+    rollout_status: planned
+    owner: runtime
+    project_ref: project-048-governance-surface-clients-rollout
+    sprint_ref: sprint-001-shared-core-and-actionable-console-baseline
+    task_ids:
+      - TK-559
+      - TK-560
+      - TK-561
+    project_plan_path: .repo-ai-governor/context/dev/project-048-governance-surface-clients-rollout/plan.md
+    sprint_plan_path: .repo-ai-governor/context/dev/project-048-governance-surface-clients-rollout/sprint-001-shared-core-and-actionable-console-baseline/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-048-governance-surface-clients-rollout/sprint-001-shared-core-and-actionable-console-baseline/tasks/tasks.csv
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-047-governance-surface-clients-solution-promotion-and-decomposition/sprint-001-promotion-and-followup-decomposition/tasks/DA-558-governance-surface-clients-promotion-and-rollout-decomposition-handoff.md
+    rollout_artifacts:
+      - .repo-ai-governor/context/dev/project-047-governance-surface-clients-solution-promotion-and-decomposition/sprint-001-promotion-and-followup-decomposition/tasks/DA-558-governance-surface-clients-promotion-and-rollout-decomposition-handoff.md
+      - .repo-ai-governor/context/dev/project-048-governance-surface-clients-rollout/plan.md
+      - .repo-ai-governor/context/dev/project-048-governance-surface-clients-rollout/sprint-001-shared-core-and-actionable-console-baseline/plan.md
+      - .repo-ai-governor/context/dev/project-048-governance-surface-clients-rollout/sprint-002-vscode-editor-companion-mvp/plan.md
+      - .repo-ai-governor/context/dev/project-048-governance-surface-clients-rollout/sprint-003-desktop-governance-evidence-surface/plan.md
+      - .repo-ai-governor/context/dev/project-048-governance-surface-clients-rollout/sprint-004-automation-queue-and-multi-workspace-governance/plan.md
+    accepted_at: 2026-04-05

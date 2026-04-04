@@ -592,4 +592,45 @@ describe('config unit', () => {
 
     expect(() => validator.validateOrThrow(invalidConfig)).toThrowError(ConfigError);
   });
+
+  it('accepts standards runtime config for layered pack loading and projection defaults', () => {
+    const validator = new SchemaValidator();
+    const configWithStandards: GovernorConfig = {
+      ...createConfigFixture(),
+      standards: {
+        packSources: {
+          official: [
+            {
+              module: './standards/official-pack.ts',
+              exportName: 'officialPack',
+            },
+          ],
+          repository: [
+            {
+              module: './standards/repository-pack.ts',
+              exportName: 'repositoryPack',
+              enabled: true,
+            },
+          ],
+        },
+        renderTargets: ['human', 'agents'],
+        projectionTargets: [
+          {
+            targetFile: 'AGENTS.md',
+            locale: 'zh-CN',
+          },
+        ],
+        defaultLocale: 'zh-CN',
+        fallbackLocale: 'en-US',
+      },
+    };
+
+    const validatedConfig = validator.validateOrThrow(configWithStandards);
+
+    expect(validatedConfig.standards?.packSources.official?.[0]?.module).toBe(
+      './standards/official-pack.ts',
+    );
+    expect(validatedConfig.standards?.renderTargets).toEqual(['human', 'agents']);
+    expect(validatedConfig.standards?.projectionTargets?.[0]?.targetFile).toBe('AGENTS.md');
+  });
 });

@@ -1,5 +1,5 @@
 schema_version: 1
-generated_at: 2026-04-04
+generated_at: 2026-04-05
 status: active
 owner: repo-ai-governor
 
@@ -888,3 +888,47 @@ documents:
       - command_surface_change
     owner: runtime
     last_reviewed_at: 2026-04-04
+
+  - doc_id: runtime_governance_clients_module_overview
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/module-overview.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+      - runtime_contract_change
+      - desktop_surface_change
+      - ide_surface_change
+      - command_surface_change
+    owner: runtime
+    last_reviewed_at: 2026-04-05
+
+  - doc_id: runtime_governance_surface_client_contract
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/contracts/governance-surface-client-contract.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+      - runtime_contract_change
+      - desktop_surface_change
+      - ide_surface_change
+      - command_surface_change
+    owner: runtime
+    last_reviewed_at: 2026-04-05
+
+  - doc_id: runtime_governance_surface_split_adr
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/desktop-command-center-and-vscode-editor-companion-split.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+      - desktop_surface_change
+      - ide_surface_change
+      - command_surface_change
+    owner: runtime
+    last_reviewed_at: 2026-04-05

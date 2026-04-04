@@ -26,7 +26,41 @@
 1. `official`：由产品官方维护的基础 pack，作为最低优先级基线进入 `StandardsPackRegistry`，建议固定较低 `mergePrecedence`（例如 `10`）。
 2. `team`：由团队发布为独立 npm 包或内部 Git 源码包，消费方通过根入口导出 `StandardsPack` 对象接入 registry，建议位于 `official` 与 `repository` 之间（例如 `50`）。
 3. `repository`：由目标仓库就地维护的 pack，承接仓库级覆盖规则，建议使用最高 `mergePrecedence`（例如 `100`）以覆盖 team / official 基线。
-4. 当前代码基线的真实消费方式是“调用方显式组装 packs 后传给 `new StandardsPackRegistry({ packs })`”；`.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-overall-technical-solution.md` 中提到的 `governor.yaml.standards` 仍是后续运行时加载北极星，而不是当前仓库内已经落地的自动 loader。
+4. 当前代码基线同时支持两条真实消费路径：
+   - 调用方显式组装 packs 后传给 `new StandardsPackRegistry({ packs })`
+   - 通过 `governor.yaml.standards` + `StandardsRuntimeLoader` 自动装配 runtime registry/render/projector
+
+## Runtime Loader
+
+`packages/standards` 现在补齐了 `StandardsRuntimeLoader`，用于把 `governor.yaml.standards` 从“规划中的配置模型”推进成真实运行时装配链：
+
+1. 按 `official / team / repository` 三层 source group 动态加载 pack module。
+2. 校验每个 pack 的 `packSource` 与声明层级一致，避免把 repository override 误挂到 official layer。
+3. 自动组装 `StandardsPackRegistry -> RuleRenderer -> AgentsProjector`。
+4. 若未显式声明 `projectionTargets`，默认回落到 `AGENTS.md`。
+
+最小示例：
+
+```ts
+import { ConfigLoader } from "@repo-ai-governor/config";
+import { StandardsRuntimeLoader } from "@repo-ai-governor/standards";
+import { dirname } from "node:path";
+
+const configLoader = new ConfigLoader();
+const configPath = "/workspace/.repo-ai-governor/governor.yaml";
+const config = configLoader.loadFromFile(configPath);
+
+const standardsLoader = new StandardsRuntimeLoader();
+const runtime = await standardsLoader.load({
+  baseDirectory: dirname(configPath),
+  standards: config.standards,
+});
+
+const agentsProjections = await standardsLoader.projectAgents({
+  baseDirectory: dirname(configPath),
+  standards: config.standards,
+});
+```
 
 最小示例：
 
@@ -122,5 +156,5 @@ const registry = new StandardsPackRegistry({
 
 说明：
 
-1. 这两套模板仍遵循 `official -> team -> repository` layering 口径，不引入额外 loader。
+1. 这两套模板仍遵循 `official -> team -> repository` layering 口径，并可作为 `StandardsRuntimeLoader` 的官方 pack 输入。
 2. 它们是“最小可用”产品化模板，而不是完整语言最佳实践全集；团队仍可在其上叠加自己的 team / repository overrides。

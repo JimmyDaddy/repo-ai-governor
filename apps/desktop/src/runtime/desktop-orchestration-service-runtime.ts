@@ -8,6 +8,8 @@ import type { LangGraphRecoveredExecution } from '@repo-ai-governor/core-runtime
 import type {
   OrchestrationAppendSessionMessageRequest,
   OrchestrationAppendSessionMessageResponse,
+  OrchestrationArtifactPaneQueryRequest,
+  OrchestrationArtifactPaneQueryResponse,
   OrchestrationExecutionSummary,
   OrchestrationListExecutionsRequest,
   OrchestrationListExecutionsResponse,
@@ -78,6 +80,13 @@ export class DesktopOrchestrationServiceRuntime {
   ): Promise<OrchestrationListExecutionsResponse> {
     const service = await this.resolveServiceOwner();
     return service.listExecutions(request);
+  }
+
+  public async queryArtifactPane(
+    request?: OrchestrationArtifactPaneQueryRequest,
+  ): Promise<OrchestrationArtifactPaneQueryResponse> {
+    const service = await this.resolveServiceOwner();
+    return service.queryArtifactPane(request);
   }
 
   public async subscribeExecution(

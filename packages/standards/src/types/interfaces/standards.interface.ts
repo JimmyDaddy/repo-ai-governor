@@ -1,3 +1,4 @@
+import type { AgentsProjector } from '../../agents-projector.js';
 import type {
   StandardsPackScope,
   StandardsPackSource,
@@ -10,6 +11,8 @@ import type {
   StandardsUpgradeRollbackStrategy,
   StandardsVersionPinMode,
 } from '../../constants/index.js';
+import type { RuleRenderer } from '../../rule-renderer.js';
+import type { StandardsPackRegistry } from '../../standards-pack-registry.js';
 import type {
   StandardsRenderInterpolation,
   StandardsRuleLocalizedTemplateMap,
@@ -38,6 +41,73 @@ export interface StandardsPack {
   mergePrecedence: number;
   status: StandardsPackStatus;
   rules: StandardsRuleDefinition[];
+}
+
+/**
+ * Defines one runtime pack source descriptor resolved from config.
+ */
+export interface StandardsRuntimePackSourceConfig {
+  module: string;
+  exportName: string;
+  enabled?: boolean;
+}
+
+/**
+ * Defines grouped runtime pack sources aligned to official/team/repository layers.
+ */
+export interface StandardsRuntimePackSourcesConfig {
+  official?: StandardsRuntimePackSourceConfig[];
+  team?: StandardsRuntimePackSourceConfig[];
+  repository?: StandardsRuntimePackSourceConfig[];
+}
+
+/**
+ * Defines one projection target row consumed by runtime standards loading.
+ */
+export interface StandardsRuntimeProjectionTargetConfig {
+  targetFile: string;
+  locale?: string;
+}
+
+/**
+ * Defines runtime config used to auto-load standards packs and projection defaults.
+ */
+export interface StandardsRuntimeConfig {
+  packSources: StandardsRuntimePackSourcesConfig;
+  renderTargets?: StandardsRenderTarget[];
+  projectionTargets?: StandardsRuntimeProjectionTargetConfig[];
+  defaultLocale?: string;
+  fallbackLocale?: string;
+}
+
+/**
+ * Defines one runtime-loaded pack with provenance back to the config layer entry.
+ */
+export interface StandardsRuntimeLoadedPack {
+  layer: keyof StandardsRuntimePackSourcesConfig;
+  module: string;
+  exportName: string;
+  pack: StandardsPack;
+}
+
+/**
+ * Defines input used to assemble runtime standards services from config.
+ */
+export interface StandardsRuntimeLoadInput {
+  baseDirectory: string;
+  standards?: StandardsRuntimeConfig;
+}
+
+/**
+ * Defines one assembled standards runtime bundle ready for registry/render/projection use.
+ */
+export interface StandardsRuntimeLoadResult {
+  loadedPacks: StandardsRuntimeLoadedPack[];
+  renderTargets: StandardsRenderTarget[];
+  projectionTargets: StandardsRuntimeProjectionTargetConfig[];
+  registry: StandardsPackRegistry;
+  renderer: RuleRenderer;
+  projector: AgentsProjector;
 }
 
 /**

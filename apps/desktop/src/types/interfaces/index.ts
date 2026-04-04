@@ -8,6 +8,9 @@ export type {
   DesktopShellBootstrapSnapshot,
 } from './desktop-shell.interface.js';
 export type {
+  DesktopArtifactPaneCollectionViewModel,
+  DesktopArtifactPaneEntryViewModel,
+  DesktopArtifactPaneViewModel,
   DesktopExecutionTimelineEntryViewModel,
   DesktopGovernanceConsoleBuildOptions,
   DesktopGovernanceConsoleSectionViewModel,

@@ -82,6 +82,12 @@ export class LocalOrchestrationServiceSidecarHost
     return this.shell.listExecutions(request);
   }
 
+  public queryArtifactPane(
+    request?: Parameters<LocalOrchestrationServiceSidecarDispatchTable['queryArtifactPane']>[0],
+  ) {
+    return this.shell.queryArtifactPane(request);
+  }
+
   public subscribeExecution(
     request: Parameters<LocalOrchestrationServiceSidecarDispatchTable['subscribeExecution']>[0],
   ) {
@@ -220,6 +226,12 @@ export class LocalOrchestrationServiceSidecarHost
       case LocalOrchestrationServiceSidecarOperation.LIST_EXECUTIONS:
         return this.listExecutions(
           payload as Parameters<LocalOrchestrationServiceSidecarDispatchTable['listExecutions']>[0],
+        );
+      case LocalOrchestrationServiceSidecarOperation.QUERY_ARTIFACT_PANE:
+        return this.queryArtifactPane(
+          payload as Parameters<
+            LocalOrchestrationServiceSidecarDispatchTable['queryArtifactPane']
+          >[0],
         );
       case LocalOrchestrationServiceSidecarOperation.SUBSCRIBE_EXECUTION:
         return this.subscribeExecution(

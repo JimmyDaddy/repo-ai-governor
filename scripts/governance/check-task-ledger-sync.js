@@ -22,7 +22,8 @@ const ACTIVE_STREAM_STATUSES = new Set(['active', 'in_progress', 'running']);
  * and completed streams should already be moved into the history index.
  * @returns {{
  *   streamDefinitions: Array<{streamKey: string, tasksDirPath: string, checklistPath: string, csvPath: string}>,
- *   invalidStreamEntries: string[]
+ *   invalidStreamEntries: string[],
+ *   idleWithoutActiveStreams: boolean
  * }}
  */
 function resolveActiveStreams() {
@@ -34,6 +35,7 @@ function resolveActiveStreams() {
 
   const contextContent = readFileSync(contextPath, 'utf8');
   const activeStreamsSection = extractMarkdownSection(contextContent, 'Active Streams');
+  const primaryStreamSection = extractMarkdownSection(contextContent, 'Primary Stream');
   const streamDefinitions = [];
   const invalidStreamEntries = [];
 
@@ -72,12 +74,24 @@ function resolveActiveStreams() {
   }
 
   if (streamDefinitions.length === 0) {
+    if (normalizePrimaryStatus(primaryStreamSection) === 'idle') {
+      return {
+        streamDefinitions,
+        invalidStreamEntries,
+        idleWithoutActiveStreams: true,
+      };
+    }
+
     throw new Error(
       'No active stream entry with `tasks/checklist/csv` paths was found under `## Active Streams` in current-context.',
     );
   }
 
-  return { streamDefinitions, invalidStreamEntries };
+  return {
+    streamDefinitions,
+    invalidStreamEntries,
+    idleWithoutActiveStreams: false,
+  };
 }
 
 /**
@@ -130,6 +144,16 @@ function normalizeSectionHeading(headingText) {
  */
 function normalizeStreamStatus(status) {
   return (status ?? '').trim().toLowerCase().replace(/\s+/gu, '_').replace(/-/gu, '_');
+}
+
+/**
+ * Reads primary-stream status from current-context.
+ * @param {string} primaryStreamSection Raw `## Primary Stream` section content.
+ * @returns {string}
+ */
+function normalizePrimaryStatus(primaryStreamSection) {
+  const primaryStatusMatch = primaryStreamSection.match(/^- Status:\s*(.+)$/imu);
+  return normalizeStreamStatus(primaryStatusMatch?.[1] ?? '');
 }
 
 /**
@@ -632,10 +656,16 @@ function buildBigrams(value) {
 }
 
 try {
-  const { streamDefinitions, invalidStreamEntries } = resolveActiveStreams();
+  const { streamDefinitions, invalidStreamEntries, idleWithoutActiveStreams } =
+    resolveActiveStreams();
   const issues = invalidStreamEntries.map(
     (entry) => `current-context Active Streams contains non-active entry: ${entry}`,
   );
+
+  if (idleWithoutActiveStreams && issues.length === 0) {
+    gatePass(GATE_NAME, 'No active streams registered; current-context primary stream is idle.');
+    process.exit(0);
+  }
 
   for (const streamDefinition of streamDefinitions) {
     const taskCards = parseCanonicalTaskCards(streamDefinition.tasksDirPath);

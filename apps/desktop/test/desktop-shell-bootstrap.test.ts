@@ -40,6 +40,11 @@ describe('DesktopShellBootstrap', () => {
               returnedCount: 0,
               totalMatchedCount: 0,
             }),
+            queryArtifactPane: async () => ({
+              artifacts: [],
+              reviews: [],
+              transcript: [],
+            }),
             subscribeExecution: async () => ({
               executionId: 'execution-1',
               eventStreamToken: 'token',
@@ -198,7 +203,10 @@ describe('DesktopShellBootstrap', () => {
 
     expect(baseline.packageName).toBe('@repo-ai-governor/desktop');
     expect(baseline.runtimeMode).toBe(DesktopOrchestrationRuntimeMode.SIDECAR_IPC);
+    expect(baseline.artifactQueryGateState).toBe(DesktopArtifactQueryGateState.BLOCKED);
+    expect(baseline.artifactPaneDeferredReason).toContain('service-owned artifact query contract');
     expect(baseline.sessionBridgeOperations).toContain('buildGovernanceConsoleSnapshot');
+    expect(baseline.sessionBridgeOperations).toContain('queryArtifactPane');
     expect(snapshot.health.serviceHostKind).toBe('sidecar');
     expect(wakeSnapshot.windowWakeCount).toBe(1);
     expect(notificationSnapshot.notificationCount).toBe(1);

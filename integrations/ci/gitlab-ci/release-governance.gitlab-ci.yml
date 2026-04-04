@@ -1,0 +1,180 @@
+stages:
+  - release
+
+default:
+  image: node:20-bullseye
+  before_script:
+    - corepack enable
+    - corepack prepare pnpm@10.30.3 --activate
+    - pnpm config set store-dir .pnpm-store
+    - pnpm install --frozen-lockfile
+  cache:
+    key: "${CI_COMMIT_REF_SLUG}"
+    paths:
+      - .pnpm-store
+
+variables:
+  STAGE9_HANDOFF_PATH: .repo-ai-governor/context/dev/project-009-production-readiness/sprint-001-local-adoption-and-install-readiness/tasks/TK-080-sprint-001-exit-acceptance-and-sprint-002-input-constraints.md
+  RELEASE_CHANNEL:
+    value: "rc"
+    description: "Supported values: canary, rc, ga"
+  RUN_ROLLBACK_ON_FAILURE:
+    value: "true"
+    description: "Run rollback rehearsal automatically when GA validation fails"
+  CI_RELEASE_REPORT_ROOT: .tmp/ci/release
+  GA_UNIFIED_GATE_REPORT: .tmp/ci/release/ga-candidate-unified-gate-report.json
+  ROLLBACK_REHEARSAL_REPORT: .tmp/ci/release/rollback-rehearsal-report.json
+
+release_governance:
+  stage: release
+  script:
+    - pnpm run check:stage9-handoff
+    - |
+      mkdir -p "${CI_RELEASE_REPORT_ROOT}"
+      channel="${RELEASE_CHANNEL}"
+      if [ "$channel" = "canary" ]; then
+        command='pnpm run release:check && pnpm run test:contract -- --maxWorkers=1 --maxConcurrency=1'
+      elif [ "$channel" = "rc" ]; then
+        command='pnpm run release:candidate'
+      else
+        command='pnpm run release:ga-candidate-unified-gate -- --output "${GA_UNIFIED_GATE_REPORT}"'
+      fi
+
+      set +e
+      bash -lc "$command"
+      release_exit_code=$?
+      rollback_exit_code=""
+      if [ "$channel" = "ga" ] && [ "$release_exit_code" -ne 0 ] && [ "${RUN_ROLLBACK_ON_FAILURE}" = "true" ]; then
+        pnpm run release:rollback-rehearsal -- --output "${ROLLBACK_REHEARSAL_REPORT}"
+        rollback_exit_code=$?
+      fi
+
+      export RELEASE_COMMAND="$command"
+      export RELEASE_EXIT_CODE="$release_exit_code"
+      export ROLLBACK_EXIT_CODE="$rollback_exit_code"
+      node -e '
+        const fs = require("node:fs");
+        const path = require("node:path");
+        const root = process.env.CI_RELEASE_REPORT_ROOT;
+        fs.mkdirSync(root, { recursive: true });
+        const payload = {
+          reportType: "release_governance_gitlab_summary_v1",
+          generatedAt: new Date().toISOString(),
+          releaseChannel: process.env.RELEASE_CHANNEL,
+          releaseCommand: process.env.RELEASE_COMMAND,
+          releaseExitCode: Number(process.env.RELEASE_EXIT_CODE),
+          rollbackExitCode:
+            typeof process.env.ROLLBACK_EXIT_CODE === "string" &&
+            process.env.ROLLBACK_EXIT_CODE.length > 0
+              ? Number(process.env.ROLLBACK_EXIT_CODE)
+              : null,
+          reports: {
+            gaUnifiedGateReport: process.env.GA_UNIFIED_GATE_REPORT,
+            rollbackRehearsalReport: process.env.ROLLBACK_REHEARSAL_REPORT,
+          },
+        };
+        fs.writeFileSync(
+          path.join(root, "release-channel-summary.json"),
+          `${JSON.stringify(payload, null, 2)}\n`,
+          "utf8",
+        );
+      '
+
+      if [ "$release_exit_code" -ne 0 ]; then
+        echo "release channel command failed: ${release_exit_code}" >&2
+        exit "$release_exit_code"
+      fi
+      if [ -n "$rollback_exit_code" ] && [ "$rollback_exit_code" -ne 0 ]; then
+        echo "rollback rehearsal failed: ${rollback_exit_code}" >&2
+        exit "$rollback_exit_code"
+      fi
+  artifacts:
+    when: always
+    paths:
+      - .tmp/ci/release/*.json
+    expire_in: 7 days
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v.*/'
+      variables:
+        RELEASE_CHANNEL: "ga"
+    - if: '$CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "pipeline"'
+*** Add File: /Users/jimmydaddy/study/ai-governor/integrations/ci/jenkins/Jenkinsfile.quality-gate
+pipeline {
+  agent any
+
+  options {
+    timeout(time: 15, unit: 'MINUTES')
+  }
+
+  environment {
+    STAGE9_HANDOFF_PATH = '.repo-ai-governor/context/dev/project-009-production-readiness/sprint-001-local-adoption-and-install-readiness/tasks/TK-080-sprint-001-exit-acceptance-and-sprint-002-input-constraints.md'
+  }
+
+  stages {
+    stage('Checkout') {
+      steps {
+        checkout scm
+      }
+    }
+
+    stage('Install') {
+      steps {
+        sh 'corepack enable'
+        sh 'corepack prepare pnpm@10.30.3 --activate'
+        sh 'pnpm install --frozen-lockfile'
+      }
+    }
+
+    stage('Stage9 Handoff') {
+      steps {
+        sh 'pnpm run check:stage9-handoff'
+      }
+    }
+
+    stage('Quality Gate') {
+      steps {
+        sh 'pnpm run check'
+      }
+    }
+  }
+}
+*** Add File: /Users/jimmydaddy/study/ai-governor/integrations/ci/jenkins/Jenkinsfile.quality-gate
+pipeline {
+  agent any
+
+  options {
+    timeout(time: 15, unit: 'MINUTES')
+  }
+
+  environment {
+    STAGE9_HANDOFF_PATH = '.repo-ai-governor/context/dev/project-009-production-readiness/sprint-001-local-adoption-and-install-readiness/tasks/TK-080-sprint-001-exit-acceptance-and-sprint-002-input-constraints.md'
+  }
+
+  stages {
+    stage('Checkout') {
+      steps {
+        checkout scm
+      }
+    }
+
+    stage('Install') {
+      steps {
+        sh 'corepack enable'
+        sh 'corepack prepare pnpm@10.30.3 --activate'
+        sh 'pnpm install --frozen-lockfile'
+      }
+    }
+
+    stage('Stage9 Handoff') {
+      steps {
+        sh 'pnpm run check:stage9-handoff'
+      }
+    }
+
+    stage('Quality Gate') {
+      steps {
+        sh 'pnpm run check'
+      }
+    }
+  }
+}

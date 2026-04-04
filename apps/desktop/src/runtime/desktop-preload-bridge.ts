@@ -4,6 +4,8 @@ import type {
 } from '@repo-ai-governor/core-orchestration-service';
 import type {
   OrchestrationAppendSessionMessageResponse,
+  OrchestrationArtifactPaneQueryRequest,
+  OrchestrationArtifactPaneQueryResponse,
   OrchestrationListExecutionsRequest,
   OrchestrationListExecutionsResponse,
   OrchestrationListSessionsRequest,
@@ -21,7 +23,10 @@ import type {
   OrchestrationSubscribeSessionResponse,
 } from '@repo-ai-governor/orchestration-service-client';
 import type { ExecutionReportAgentView } from '@repo-ai-governor/reporting';
-import { DESKTOP_CONSOLE_DEFAULT_EXECUTION_LIMIT } from '../constants/index.js';
+import {
+  DESKTOP_CONSOLE_DEFAULT_EXECUTION_LIMIT,
+  DesktopArtifactQueryGateState,
+} from '../constants/index.js';
 import type {
   DesktopGovernanceConsoleViewModel,
   DesktopLifecycleSnapshot,
@@ -71,6 +76,12 @@ export class DesktopPreloadBridge implements DesktopPreloadBridgeApi {
     request?: OrchestrationListExecutionsRequest,
   ): Promise<OrchestrationListExecutionsResponse> {
     return this.orchestrationRuntime.listExecutions(request);
+  }
+
+  public async queryArtifactPane(
+    request?: OrchestrationArtifactPaneQueryRequest,
+  ): Promise<OrchestrationArtifactPaneQueryResponse> {
+    return this.orchestrationRuntime.queryArtifactPane(request);
   }
 
   public async subscribeExecution(
@@ -156,6 +167,17 @@ export class DesktopPreloadBridge implements DesktopPreloadBridgeApi {
       }),
       this.getLifecycleSnapshot(),
     ]);
+    const latestExecution = executions.executions[0];
+    // Keep transcript selection aligned with sessionLane when a newer standalone session exists.
+    const artifactPaneSessionId =
+      sessions.sessions[0]?.sessionId ?? latestExecution?.executionSessionId;
+    const artifactPane =
+      lifecycle.artifactQueryGateState === DesktopArtifactQueryGateState.READY
+        ? await this.orchestrationRuntime.queryArtifactPane({
+            executionId: latestExecution?.executionId,
+            sessionId: artifactPaneSessionId,
+          })
+        : undefined;
 
     return this.governanceConsoleBuilder.build({
       locale: options.locale,
@@ -164,6 +186,11 @@ export class DesktopPreloadBridge implements DesktopPreloadBridgeApi {
       sessions: sessions.sessions,
       executions: executions.executions,
       lifecycle,
+      ...(artifactPane
+        ? {
+            artifactPane,
+          }
+        : {}),
       ...(options.agentView
         ? {
             agentView: options.agentView,

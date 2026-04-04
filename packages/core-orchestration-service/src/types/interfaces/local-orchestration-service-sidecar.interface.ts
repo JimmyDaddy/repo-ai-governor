@@ -6,6 +6,8 @@ import type {
   OrchestrationAppendSessionMessageResponse,
   OrchestrationArchiveSessionRequest,
   OrchestrationArchiveSessionResponse,
+  OrchestrationArtifactPaneQueryRequest,
+  OrchestrationArtifactPaneQueryResponse,
   OrchestrationExecutionSummary,
   OrchestrationForkSessionRequest,
   OrchestrationForkSessionResponse,
@@ -80,6 +82,9 @@ export interface LocalOrchestrationServiceSidecarDispatchTable {
   listExecutions(
     request?: OrchestrationListExecutionsRequest,
   ): Promise<OrchestrationListExecutionsResponse>;
+  queryArtifactPane(
+    request?: OrchestrationArtifactPaneQueryRequest,
+  ): Promise<OrchestrationArtifactPaneQueryResponse>;
   subscribeExecution(
     request: OrchestrationSubscribeExecutionRequest,
   ): Promise<OrchestrationSubscribeExecutionResponse>;

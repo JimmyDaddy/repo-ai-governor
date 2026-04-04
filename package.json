@@ -29,6 +29,7 @@
     "dist",
     "docs",
     ".codex/skills",
+    "integrations/ci",
     "integrations/ide",
     "integrations/desktop",
     "scripts/examples",
