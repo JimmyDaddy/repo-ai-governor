@@ -170,7 +170,7 @@ async function commitAll(repositoryRoot: string, message: string): Promise<void>
   await execFileAsync('git', ['add', '.'], {
     cwd: repositoryRoot,
   });
-  await execFileAsync('git', ['commit', '-m', message], {
+  await execFileAsync('git', ['commit', '--no-verify', '-m', message], {
     cwd: repositoryRoot,
   });
 }

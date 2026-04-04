@@ -68,6 +68,7 @@
 7. 2026-04-04：修复 CLI `--help` 路径上的 SQLite experimental warning 污染：将 `doctor/verify` 的 durable diagnostics runtime 改为执行时按需加载，并把 `runCli()` 的 memory provider / governance runtime 初始化后移到真正的命令执行路径，避免 help/e2e/CI 因 eager sqlite loading 在 stderr 出现噪音；验证 `pnpm exec vitest run test/e2e/cli-help.e2e.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm run build`、`node ./dist/bin/repo-ai-governor.js --help`（stderr 为 0 字节）、`pnpm run test:e2e`、`pnpm run check:full` 均通过。
 8. 2026-04-04：进一步修复 CLI help 启动路径仍经由 `@repo-ai-governor/core-orchestration-service` 根导出链路触发 `node:sqlite` 静态加载的问题：把 capability 常量/类型改为子路径导入，并为 session-main capability catalog 增加 package export，彻底切断 help-only 场景对 sqlite checkpointer 的提前触达；同时将 `packages/adapters/github-copilot/test/github-copilot-agent-adapter.smoke.test.ts` 的 timeout budget 断言放宽为“保留近完整预算但不超过初始预算”，消除 CI 上 1ms 级剩余时间抖动导致的误报；验证 `pnpm exec vitest run packages/adapters/github-copilot/test/github-copilot-agent-adapter.smoke.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm run build`、`pnpm run check:full` 均通过。
 9. 2026-04-04：根据后续 review 意见加固 `apps/cli/test/commands/review-command.test.ts` 的 git fixture：在 `initGitRepository()` 中显式写入 `commit.gpgSign=false`，避免开发机或 CI 的全局 Git 配置开启 GPG 签名时让 `commitAll()` 产生环境依赖；验证 `pnpm exec vitest run apps/cli/test/commands/review-command.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm run build` 均通过。
+10. 2026-04-04：根据新一轮 follow-up CR 收口 `review-verify` 默认选择对坏 payload 的优先级漂移与 `review-command` fixture commit 的 hooks 环境依赖：默认队列选择现在会优先读取可读 payload，并在无高优先级项时回退到最新可读请求；`commitAll()` 同时改为 `git commit --no-verify`，避免全局 hooks 干扰测试；验证 `pnpm exec vitest run apps/cli/test/commands/review-command.test.ts apps/cli/test/commands/review-verify-command.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm run build` 均通过。
 
 ## 10. 产出
 
@@ -86,3 +87,5 @@
 13. `packages/core-orchestration-service/package.json`
 14. `packages/adapters/github-copilot/test/github-copilot-agent-adapter.smoke.test.ts`
 15. `apps/cli/test/commands/review-command.test.ts`
+16. `apps/cli/src/commands/review-verify-command.ts`
+17. `apps/cli/test/commands/review-verify-command.test.ts`

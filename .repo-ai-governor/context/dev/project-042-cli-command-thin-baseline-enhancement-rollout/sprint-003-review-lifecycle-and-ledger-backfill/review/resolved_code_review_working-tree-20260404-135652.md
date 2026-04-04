@@ -138,3 +138,32 @@
    - 变更文件：`apps/cli/src/commands/review-verify-command.ts`、`apps/cli/test/commands/review-verify-command.test.ts`
    - 验证：`pnpm exec vitest run apps/cli/test/commands/review-command.test.ts apps/cli/test/commands/review-verify-command.test.ts apps/cli/test/cli-governance-runtime.integration.test.ts --maxWorkers=1 --maxConcurrency=1`（通过）
    - 说明：resolved no-op review 请求仍保留显式 closure/ledger 路径，但默认 `review-verify` 已不会优先消费它们。
+
+## 复核结论（2026-04-04）
+
+- 整体结论：**部分认可**
+
+### 逐条复核
+1. `follow-up-1`
+   - 判定：**认可**
+   - 证据：`review-verify` 默认选择阶段会对 queued request 再次读取 JSON；旧实现把 `safeReadJson()` 返回 `null` 的 payload 也当作优先候选，可能让并发损坏/改写的请求压过最新可读请求。现已改为只优先可读 payload，并在无高优先级时先回退到“最新可读请求”。
+   - 处理：已修复。
+2. `follow-up-2`
+   - 判定：**部分认可**
+   - 证据：`initGitRepository()` 已在前一修复窗口显式写入 `commit.gpgSign=false`，所以 GPG 子项不再成立；但 `commitAll()` 之前仍会继承全局 hook 校验，继续加 `--no-verify` 能消除这部分测试环境依赖。
+   - 处理：接受 hooks 隔离子项并已修复。
+
+### 验证命令
+1. `pnpm exec vitest run apps/cli/test/commands/review-command.test.ts apps/cli/test/commands/review-verify-command.test.ts --maxWorkers=1 --maxConcurrency=1`（通过）
+2. `pnpm run build`（通过）
+
+## 修复执行记录（2026-04-04）
+
+1. `follow-up-1`：已完成
+   - 变更文件：`apps/cli/src/commands/review-verify-command.ts`、`apps/cli/test/commands/review-verify-command.test.ts`
+   - 验证：`pnpm exec vitest run apps/cli/test/commands/review-command.test.ts apps/cli/test/commands/review-verify-command.test.ts --maxWorkers=1 --maxConcurrency=1`（通过）
+   - 说明：默认 `review-verify` 现在会先选择可读且值得优先处理的 queued request，再回退到最新可读请求，只有在没有任何可读 payload 时才兜底选取原始队列项。
+2. `follow-up-2`：已完成
+   - 变更文件：`apps/cli/test/commands/review-command.test.ts`
+   - 验证：`pnpm exec vitest run apps/cli/test/commands/review-command.test.ts apps/cli/test/commands/review-verify-command.test.ts --maxWorkers=1 --maxConcurrency=1`（通过）、`pnpm run build`（通过）
+   - 说明：`commitAll()` 已改为使用 `git commit --no-verify`，与仓库级 `commit.gpgSign=false` 共同保证 fixture commit 不受本机 Git 环境影响。

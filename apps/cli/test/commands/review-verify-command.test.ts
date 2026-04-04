@@ -485,6 +485,91 @@ describe('CliReviewVerifyCommand', () => {
     }
   });
 
+  it('prefers readable queued requests when a newer queued payload becomes unreadable during selection', async () => {
+    const fixture = await createReviewVerifyFixture();
+
+    try {
+      const pendingReviewArtifactPath = await writeReviewArtifact(
+        fixture.reviewDirPath,
+        'code_review_working-tree-readable.md',
+        {
+          status: CliReviewLifecycleStatus.REVIEW_PENDING,
+          taskId: null,
+        },
+      );
+      const unreadableReviewArtifactPath = await writeReviewArtifact(
+        fixture.reviewDirPath,
+        'resolved_code_review_working-tree-unreadable.md',
+        {
+          status: CliReviewLifecycleStatus.RESOLVED,
+          taskId: null,
+        },
+      );
+      const pendingFinding: CliReviewFinding = {
+        findingId: 'code-change-without-test-change-apps-cli-src-readable-scope-ts',
+        fingerprint: `${CliReviewFindingRuleId.CODE_CHANGE_WITHOUT_TEST_CHANGE}:apps/cli/src/readable-scope.ts:0`,
+        ruleId: CliReviewFindingRuleId.CODE_CHANGE_WITHOUT_TEST_CHANGE,
+        severity: CliReviewFindingSeverity.P2,
+        title: 'Code change is missing matching test updates',
+        file: 'apps/cli/src/readable-scope.ts',
+        summary: 'fixture summary',
+        impact: 'fixture impact',
+        suggestedAction: 'fixture action',
+        evidence: ['apps/cli/src/readable-scope.ts'],
+      };
+      const readableRequestPath = await writeQueuedRequest(
+        fixture,
+        'review-100.json',
+        createRequestPayload({
+          requestId: 'review-100',
+          workspaceRoot: fixture.workspaceRoot,
+          reviewArtifactPath: pendingReviewArtifactPath,
+          reviewArtifactStatus: CliReviewLifecycleStatus.REVIEW_PENDING,
+          reviewSlug: 'working-tree-readable',
+          findings: [pendingFinding],
+        }),
+      );
+      const unreadableRequestPath = await writeQueuedRequest(
+        fixture,
+        'review-200.json',
+        createRequestPayload({
+          requestId: 'review-200',
+          workspaceRoot: fixture.workspaceRoot,
+          reviewArtifactPath: unreadableReviewArtifactPath,
+          reviewArtifactStatus: CliReviewLifecycleStatus.RESOLVED,
+          reviewSlug: 'working-tree-unreadable',
+        }),
+      );
+      const originalSafeReadJson = fixture.context.artifactWriter.safeReadJson;
+      fixture.context.artifactWriter.safeReadJson = async (filePath: string) =>
+        filePath === unreadableRequestPath ? null : originalSafeReadJson(filePath);
+
+      const commandResult = await fixture.command.execute(fixture.context);
+      const verifyArtifactPath = commandResult.commandResult.artifacts?.find(
+        (artifact) => artifact.id === 'review_verify_result',
+      )?.path;
+      expect(typeof verifyArtifactPath).toBe('string');
+
+      const verifyPayload = JSON.parse(await readFile(String(verifyArtifactPath), 'utf8')) as {
+        sourceRequestPath?: string;
+      };
+      expect(verifyPayload.sourceRequestPath).toBe(readableRequestPath);
+
+      const readableRequestPayload = JSON.parse(await readFile(readableRequestPath, 'utf8')) as {
+        status?: string;
+      };
+      const unreadableRequestPayload = JSON.parse(
+        await readFile(unreadableRequestPath, 'utf8'),
+      ) as {
+        status?: string;
+      };
+      expect(readableRequestPayload.status).toBe(CLI_REVIEW_REQUEST_STATUS.VERIFIED);
+      expect(unreadableRequestPayload.status).toBe(CLI_REVIEW_REQUEST_STATUS.QUEUED);
+    } finally {
+      await rm(fixture.tempRoot, { recursive: true, force: true });
+    }
+  });
+
   it('keeps the source request queued and transitions the artifact to verified when findings remain reproducible', async () => {
     const fixture = await createReviewVerifyFixture({
       taskId: 'TK-130',

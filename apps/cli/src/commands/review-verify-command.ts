@@ -104,7 +104,7 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
     requestPayload: CliReviewRequestArtifactPayload | null,
   ): boolean {
     if (!requestPayload) {
-      return true;
+      return false;
     }
 
     return (
@@ -167,11 +167,15 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
       return selectedQueuedRequest;
     }
 
-    const prioritizedQueuedRequests = queuedRequestSelections.filter(({ requestPayload }) =>
+    const readableQueuedRequests = queuedRequestSelections.filter(
+      ({ requestPayload }) => requestPayload !== null,
+    );
+    const prioritizedQueuedRequests = readableQueuedRequests.filter(({ requestPayload }) =>
       this.shouldPrioritizeForDefaultSelection(requestPayload),
     );
     const latestQueuedRequest =
       prioritizedQueuedRequests[prioritizedQueuedRequests.length - 1] ??
+      readableQueuedRequests[readableQueuedRequests.length - 1] ??
       queuedRequestSelections[queuedRequestSelections.length - 1] ??
       null;
     if (!latestQueuedRequest) {
