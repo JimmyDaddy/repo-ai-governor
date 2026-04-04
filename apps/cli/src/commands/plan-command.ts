@@ -445,16 +445,14 @@ export class CliPlanCommand implements CliCommandExecutor {
     const retainedTaskIds: string[] = [];
     const finalTaskPackage = previewState.taskPackage.map((task) => {
       const normalizedTitle = this.normalizeTitle(task.title);
-      const alreadyExists =
-        existingTaskIds.has(task.provisionalTaskId) || existingTaskTitles.has(normalizedTitle);
-      if (task.projectionAction === CliPlanTaskProjectionAction.RETAIN_EXISTING || alreadyExists) {
-        retainedTaskIds.push(
-          alreadyExists
-            ? (existingTaskTitles.get(normalizedTitle) ?? task.provisionalTaskId)
-            : task.provisionalTaskId,
-        );
+      const retainedTaskId = existingTaskIds.has(task.provisionalTaskId)
+        ? task.provisionalTaskId
+        : (existingTaskTitles.get(normalizedTitle) ?? null);
+      if (task.projectionAction === CliPlanTaskProjectionAction.RETAIN_EXISTING || retainedTaskId) {
+        retainedTaskIds.push(retainedTaskId ?? task.provisionalTaskId);
         return {
           ...task,
+          provisionalTaskId: retainedTaskId ?? task.provisionalTaskId,
           projectionAction: CliPlanTaskProjectionAction.RETAIN_EXISTING,
         };
       }
