@@ -64,6 +64,7 @@
 3. 2026-04-04：完成交付验证：`node ./scripts/governance/check-task-ledger-sync.js`、`node ./scripts/governance/check-sprint-plan-status-sync.js`、`node ./scripts/governance/check-code-review-status-sync.js`、`node ./scripts/governance/check-i18n-parity-fallback.js`、`node ./scripts/governance/check-technical-solution-delivery-registry.js`、`pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、`pnpm run test:integration -- --maxWorkers=1 --maxConcurrency=1`。
 4. 2026-04-04：完成 working-tree CR 尾项收口：修复 `plan commit` 同标题漂移时的 canonical task id 回写缺口，并把 `code_review_working-tree-20260404-135652.md` 收口为 `resolved_code_review_working-tree-20260404-135652.md`。
 5. 2026-04-04：修复 CI `pnpm install --frozen-lockfile` 失败：重新生成 `pnpm-lock.yaml`，补齐 `packages/core-agent-projection` 及其上游 importer 的 workspace 依赖投影，验证 `pnpm install --frozen-lockfile` 与 `pnpm run check` 均通过。
+6. 2026-04-04：修复 `packages/adapters/claude-code/test/claude-code-agent-adapter.smoke.test.ts` 的 timeout budget 脆弱断言，将首轮 `cli_exec` 调用的验证调整为“不超过初始预算且保留近完整预算”，避免 CI 因 1ms 级剩余时间差异误判失败；验证 `pnpm exec vitest run packages/adapters/claude-code/test/claude-code-agent-adapter.smoke.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm run build`、`pnpm run check:full` 均通过。
 
 ## 10. 产出
 
@@ -73,3 +74,4 @@
 4. `.repo-ai-governor/context/technical-solution-delivery-registry.yaml`
 5. `.repo-ai-governor/context/dev/project-042-cli-command-thin-baseline-enhancement-rollout/sprint-003-review-lifecycle-and-ledger-backfill/review/resolved_code_review_working-tree-20260404-135652.md`
 6. `pnpm-lock.yaml`
+7. `packages/adapters/claude-code/test/claude-code-agent-adapter.smoke.test.ts`
