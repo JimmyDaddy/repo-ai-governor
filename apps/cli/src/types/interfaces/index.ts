@@ -32,6 +32,7 @@ export type {
   CliDurableStorageInspectionOptions,
   CliDurableStorageSurfaceDiagnostics,
   CliSessionDurableTruthDiagnostics,
+  CliTaskLedgerCanonicalTruthDiagnostics,
   CliTaskLedgerProjectionDiagnostics,
 } from './cli-durable-storage-diagnostics.interface.js';
 export type { ReactCliShellPalette, ReactCliThemeDefinition } from './react-cli-theme.interface.js';
@@ -57,6 +58,15 @@ export type {
 } from './cli-agent-projection-panel.interface.js';
 export type { CliWorkspaceCommandOptions } from './cli-workspace-command.interface.js';
 export type { CliWorkflowCommandOptions } from './cli-workflow-command.interface.js';
+export type { CliPlanCommandOptions } from './cli-plan-command.interface.js';
+export type {
+  CliReviewFinding,
+  CliReviewRequestArtifactPayload,
+  CliReviewScopeSnapshot,
+  CliReviewStreamContext,
+  CliReviewVerifyResultArtifactPayload,
+} from './cli-review-command.interface.js';
+export type { CliUpgradeCommandOptions } from './cli-upgrade-command.interface.js';
 export type {
   CliWorkflowEditorConditionBranchSummary,
   CliWorkflowEditorEdgeSummary,

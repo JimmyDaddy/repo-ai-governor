@@ -2,6 +2,10 @@
 
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
+import {
+  readProjectedTaskRowsForSource,
+  replaceTaskLedgerCanonicalRowsForSource,
+} from './task-ledger-projection.js';
 const TASK_CARD_FILE_PATTERN = /^TK-\d{3}.*\.md$/u;
 const TASK_STATUS_COMPLETED = new Set([
   'completed',
@@ -11,23 +15,6 @@ const TASK_STATUS_COMPLETED = new Set([
   'archived',
   'retired',
 ]);
-const CSV_HEADERS = [
-  'execution_id',
-  'task_id',
-  'title',
-  'owner',
-  'priority',
-  'due_date',
-  'status',
-  'project',
-  'sprint',
-  'plan',
-  'result',
-  'verify',
-  'review_delta',
-  'recorded_at',
-];
-
 function parseArgs(argv) {
   /** @type {Record<string, string | boolean | null>} */
   const options = {
@@ -123,48 +110,6 @@ function stripMarkdownWrappers(value) {
 
 function normalizeStatus(value) {
   return value.trim().toLowerCase().replace(/\s+/gu, '_').replace(/-/gu, '_');
-}
-
-function parseCsvLine(line) {
-  const values = [];
-  let currentValue = '';
-  let inQuotes = false;
-
-  for (let index = 0; index < line.length; index += 1) {
-    const character = line[index];
-
-    if (character === '"') {
-      const nextCharacter = line[index + 1];
-      if (inQuotes && nextCharacter === '"') {
-        currentValue += '"';
-        index += 1;
-        continue;
-      }
-
-      inQuotes = !inQuotes;
-      continue;
-    }
-
-    if (character === ',' && !inQuotes) {
-      values.push(currentValue);
-      currentValue = '';
-      continue;
-    }
-
-    currentValue += character;
-  }
-
-  values.push(currentValue);
-  return values;
-}
-
-function toCsvCell(value) {
-  const normalizedValue = String(value ?? '');
-  if (!/[",\n]/u.test(normalizedValue)) {
-    return normalizedValue;
-  }
-
-  return `"${normalizedValue.replace(/"/gu, '""')}"`;
 }
 
 function parseMetadataSection(content) {
@@ -385,43 +330,6 @@ function renderChecklist(taskCards, checklistState, options) {
   return `${lines.join('\n')}`;
 }
 
-function parseTasksCsv(csvPath) {
-  if (!existsSync(csvPath)) {
-    return {
-      headers: [...CSV_HEADERS],
-      rows: [],
-    };
-  }
-
-  const lines = readFileSync(csvPath, 'utf8')
-    .split(/\r?\n/u)
-    .map((line) => line.trimEnd())
-    .filter((line) => line.trim().length > 0);
-
-  if (lines.length === 0) {
-    return {
-      headers: [...CSV_HEADERS],
-      rows: [],
-    };
-  }
-
-  const headers = parseCsvLine(lines[0]).map((value) => value.trim());
-  const rows = lines.slice(1).map((line, index) => {
-    const values = parseCsvLine(line);
-    const row = {
-      __rowNumber: index + 2,
-    };
-
-    for (let headerIndex = 0; headerIndex < headers.length; headerIndex += 1) {
-      row[headers[headerIndex]] = values[headerIndex]?.trim() ?? '';
-    }
-
-    return row;
-  });
-
-  return { headers, rows };
-}
-
 function buildLatestCsvRowMap(rows) {
   const latestRows = new Map();
 
@@ -605,15 +513,6 @@ function shouldAppendCsvRow(taskCard, latestRow, options) {
   return false;
 }
 
-function renderTasksCsv(headers, rows) {
-  const renderedRows = [
-    headers.join(','),
-    ...rows.map((row) => headers.map((header) => toCsvCell(row[header] ?? '')).join(',')),
-  ];
-  renderedRows.push('');
-  return renderedRows.join('\n');
-}
-
 function syncTaskLedger(options) {
   const tasksDirPath = resolveTasksDirectory(options);
   const checklistPath = resolve(tasksDirPath, 'checklist.md');
@@ -625,7 +524,11 @@ function syncTaskLedger(options) {
   }
 
   const checklistState = parseChecklist(checklistPath);
-  const tasksCsvState = parseTasksCsv(csvPath);
+  const tasksCsvState = {
+    rows: readProjectedTaskRowsForSource({
+      taskCsvPath: csvPath,
+    }),
+  };
   const latestRows = buildLatestCsvRowMap(tasksCsvState.rows);
   const targetTaskIds = options.taskId ? [options.taskId] : Array.from(taskCards.keys()).sort();
 
@@ -650,10 +553,13 @@ function syncTaskLedger(options) {
   }
 
   const renderedChecklist = renderChecklist(taskCards, checklistState, options);
-  const renderedCsv = renderTasksCsv(tasksCsvState.headers, tasksCsvState.rows);
 
   writeFileSync(checklistPath, renderedChecklist, 'utf8');
-  writeFileSync(csvPath, renderedCsv, 'utf8');
+  replaceTaskLedgerCanonicalRowsForSource({
+    taskCsvPath: csvPath,
+    rows: tasksCsvState.rows,
+    writeRenderedView: true,
+  });
 
   return {
     tasksDirPath,

@@ -71,12 +71,14 @@ import {
   DEFAULT_CLI_VERBOSITY,
   NON_TTY_FALLBACK_OUTPUT_MODE,
 } from './constants/cli-output.constant.js';
+import { CliPlanAction } from './constants/cli-plan.constant.js';
 import {
   CLI_REACT_THEME_PRESET_ORDER,
   CLI_REACT_THEME_VALUES,
   type CliReactThemePreset,
   DEFAULT_CLI_REACT_THEME_PRESET,
 } from './constants/cli-react-theme.constant.js';
+import { CliUpgradeAction } from './constants/cli-upgrade.constant.js';
 import { CliWorkflowAction } from './constants/cli-workflow.constant.js';
 import { CliWorkspaceAction, CliWorkspaceThemeScope } from './constants/cli-workspace.constant.js';
 import { CliCodexExecFixtureEnvironmentKey } from './constants/codex-exec-fixture.constant.js';
@@ -143,9 +145,11 @@ import type {
   CliGovernanceCommandExecutionOptions,
   CliLocalAdapterProbeOverride,
   CliNestedCommandExecutionOptions,
+  CliPlanCommandOptions,
   CliResolvedOutputContext,
   CliRuntimeDebugOptions,
   CliSuccessOutputPayload,
+  CliUpgradeCommandOptions,
   CliWorkflowCommandOptions,
   CliWorkspaceCommandOptions,
 } from './types/index.js';
@@ -411,6 +415,8 @@ export async function runCli(
       workspaceCommandOptions,
     );
     const workflowCommandOptions = resolveWorkflowCommandOptions(rawArgs);
+    const planCommandOptions = resolvePlanCommandOptions(rawArgs);
+    const upgradeCommandOptions = resolveUpgradeCommandOptions(rawArgs);
     memoryStoreComposition = await DEFAULT_MEMORY_PROVIDER_REGISTRY.loadProvider({
       workspaceRoot: runtimeContext.workspace.workspaceRoot,
       memoryConfig: runtimeContext.memory,
@@ -509,6 +515,8 @@ export async function runCli(
       memoryStoreProvider: activeMemoryStoreComposition.provider,
       workspaceCommandOptions,
       workflowCommandOptions,
+      planCommandOptions,
+      upgradeCommandOptions,
       orchestrationServiceRuntimeDependencies: {
         memoryConfig: runtimeContext.memory,
       },
@@ -580,6 +588,9 @@ export async function runCli(
     program.option('--workspace-root <path>', runtimeI18n.t('cli.options.workspaceRoot'));
     program.option('--workspace-plan <path>', runtimeI18n.t('cli.options.workspacePlan'));
     program.option('--theme-scope <scope>', runtimeI18n.t('cli.options.themeScope'));
+    program.option('--target-version <version>', runtimeI18n.t('cli.options.targetVersion'));
+    program.option('--confirm-plan <decision>', runtimeI18n.t('cli.options.confirmPlan'));
+    program.option('--confirm-upgrade <decision>', runtimeI18n.t('cli.options.confirmUpgrade'));
     program.option(
       '--hitl-decision <decision>',
       'HITL decision receipt (`approve`, `reject`, or `revise`).',
@@ -735,6 +746,8 @@ export async function runCli(
     for (const commandDefinition of CLI_COMMAND_DEFINITIONS) {
       if (
         commandDefinition.name === CliCommandName.CONNECT ||
+        commandDefinition.name === CliCommandName.PLAN ||
+        commandDefinition.name === CliCommandName.UPGRADE ||
         commandDefinition.name === CliCommandName.WORKFLOW ||
         commandDefinition.name === CliCommandName.WORKSPACE ||
         commandDefinition.name === CliCommandName.RESUME
@@ -782,6 +795,29 @@ export async function runCli(
       .addHelpText('after', buildConnectHelpText(runtimeI18n))
       .action(async () => {
         await executeCliCommand(CliCommandName.CONNECT);
+      });
+
+    program
+      .command(CliCommandName.PLAN)
+      .description(runtimeI18n.t('cli.commands.plan.description'))
+      .argument('[action]', runtimeI18n.t('cli.commands.plan.actionArgument'))
+      .argument('[artifact]', runtimeI18n.t('cli.commands.plan.artifactArgument'))
+      .option('--confirm-plan <decision>', runtimeI18n.t('cli.options.confirmPlan'))
+      .addHelpText('after', buildPlanHelpText(runtimeI18n))
+      .action(async () => {
+        await executeCliCommand(CliCommandName.PLAN);
+      });
+
+    program
+      .command(CliCommandName.UPGRADE)
+      .description(runtimeI18n.t('cli.commands.upgrade.description'))
+      .argument('[action]', runtimeI18n.t('cli.commands.upgrade.actionArgument'))
+      .argument('[artifact]', runtimeI18n.t('cli.commands.upgrade.artifactArgument'))
+      .option('--target-version <version>', runtimeI18n.t('cli.options.targetVersion'))
+      .option('--confirm-upgrade <decision>', runtimeI18n.t('cli.options.confirmUpgrade'))
+      .addHelpText('after', buildUpgradeHelpText(runtimeI18n))
+      .action(async () => {
+        await executeCliCommand(CliCommandName.UPGRADE);
       });
 
     program
@@ -1014,6 +1050,45 @@ function buildConnectHelpText(i18n: I18nRuntime): string {
     `  ${CLI_PROGRAM_NAME} connect diff --latest --output json`,
     `  ${CLI_PROGRAM_NAME} connect apply --latest --output pretty`,
     `  ${CLI_PROGRAM_NAME} connect apply ./context/diagnostics/connect/connect-1234567890.governor.yaml --force`,
+  ].join('\n');
+}
+
+/**
+ * Builds one localized upgrade-command help appendix covering preview/apply/rollback flows.
+ * @param i18n Initialized CLI i18n runtime.
+ * @returns Multi-line help text appended after Commander-generated options.
+ */
+function buildUpgradeHelpText(i18n: I18nRuntime): string {
+  return [
+    '',
+    i18n.t('cli.commands.upgrade.actionGuideTitle'),
+    `  ${CliUpgradeAction.PREVIEW.padEnd(12)} ${i18n.t('cli.commands.upgrade.actionGuidePreview')}`,
+    `  ${CliUpgradeAction.APPLY.padEnd(12)} ${i18n.t('cli.commands.upgrade.actionGuideApply')}`,
+    `  ${CliUpgradeAction.ROLLBACK.padEnd(12)} ${i18n.t('cli.commands.upgrade.actionGuideRollback')}`,
+    '',
+    i18n.t('cli.commands.upgrade.examplesTitle'),
+    `  ${CLI_PROGRAM_NAME} upgrade --output pretty`,
+    `  ${CLI_PROGRAM_NAME} upgrade apply ./context/upgrade/upgrade-1234567890.report.json --confirm-upgrade approve --output pretty`,
+    `  ${CLI_PROGRAM_NAME} upgrade rollback ./context/upgrade/upgrade-apply-1234567890.apply-receipt.json --output pretty`,
+  ].join('\n');
+}
+
+/**
+ * Builds one localized `plan` command help appendix covering preview/commit flows.
+ * @param i18n Initialized CLI i18n runtime.
+ * @returns Multi-line help text appended after Commander-generated options.
+ */
+function buildPlanHelpText(i18n: I18nRuntime): string {
+  return [
+    '',
+    i18n.t('cli.commands.plan.actionGuideTitle'),
+    `  ${CliPlanAction.PREVIEW.padEnd(12)} ${i18n.t('cli.commands.plan.actionGuidePreview')}`,
+    `  ${CliPlanAction.COMMIT.padEnd(12)} ${i18n.t('cli.commands.plan.actionGuideCommit')}`,
+    '',
+    i18n.t('cli.commands.plan.examplesTitle'),
+    `  ${CLI_PROGRAM_NAME} plan --output pretty`,
+    `  ${CLI_PROGRAM_NAME} plan commit ./context/plan/plan-1234567890.preview.json --confirm-plan approve --output pretty`,
+    `  ${CLI_PROGRAM_NAME} plan commit ./context/plan/plan-1234567890.preview.json --confirm-plan reject --output json`,
   ].join('\n');
 }
 
@@ -2339,6 +2414,33 @@ function resolveWorkflowCommandOptions(args: string[]): CliWorkflowCommandOption
   return {
     action: resolveNestedSubcommandToken(args, CliCommandName.WORKFLOW),
     templateId: readOptionValue(args, '--workflow-template') ?? null,
+  };
+}
+
+/**
+ * Resolves raw plan-command option values from CLI args.
+ * @param args CLI args excluding node and binary.
+ * @returns Parsed plan command options.
+ */
+function resolvePlanCommandOptions(args: string[]): CliPlanCommandOptions {
+  return {
+    action: resolveNestedSubcommandToken(args, CliCommandName.PLAN),
+    artifactPath: resolvePositionalTokenAfterCommand(args, CliCommandName.PLAN, 1),
+    confirmationDecision: readOptionValue(args, '--confirm-plan') ?? null,
+  };
+}
+
+/**
+ * Resolves raw upgrade-command option values from CLI args.
+ * @param args CLI args excluding node and binary.
+ * @returns Parsed upgrade command options.
+ */
+function resolveUpgradeCommandOptions(args: string[]): CliUpgradeCommandOptions {
+  return {
+    action: resolveNestedSubcommandToken(args, CliCommandName.UPGRADE),
+    artifactPath: resolvePositionalTokenAfterCommand(args, CliCommandName.UPGRADE, 1),
+    targetVersion: readOptionValue(args, '--target-version') ?? null,
+    confirmationDecision: readOptionValue(args, '--confirm-upgrade') ?? null,
   };
 }
 

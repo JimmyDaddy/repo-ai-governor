@@ -1,6 +1,6 @@
 {
   "expectedCommandOperations": {
-    "plan": "plan_snapshot",
+    "plan": "plan_preview",
     "run": "governance_run",
     "review": "review_queue",
     "review-verify": "review_verify"

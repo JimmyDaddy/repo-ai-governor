@@ -219,7 +219,7 @@ deliveries:
       - runtime_service
       - docs_playbook
     user_impact_level: high
-    execution_status: planned
+    execution_status: completed
     rollout_status: planned
     owner: runtime
     project_ref: project-038-session-main-capability-explainer-productization
@@ -282,6 +282,36 @@ deliveries:
       - .repo-ai-governor/context/dev/project-038-session-main-capability-explainer-productization/plan.md
       - .repo-ai-governor/context/dev/project-038-session-main-capability-explainer-productization/sprint-001-capability-catalog-and-turn-outcome-foundation/plan.md
     accepted_at: 2026-04-02
+
+  - solution_id: technical-solution.cli-capability-maturity-and-baseline-enhancement-priority
+    delivery_mode: followup_required
+    consumer_surfaces:
+      - internal_governance
+      - adopter_cli
+      - runtime_service
+      - docs_playbook
+    user_impact_level: high
+    execution_status: completed
+    rollout_status: completed
+    owner: runtime
+    project_ref: project-042-cli-command-thin-baseline-enhancement-rollout
+    sprint_ref: sprint-003-review-lifecycle-and-ledger-backfill
+    task_ids:
+      - TK-526
+      - TK-527
+      - TK-528
+    project_plan_path: .repo-ai-governor/context/dev/project-042-cli-command-thin-baseline-enhancement-rollout/plan.md
+    sprint_plan_path: .repo-ai-governor/context/dev/project-042-cli-command-thin-baseline-enhancement-rollout/sprint-003-review-lifecycle-and-ledger-backfill/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-042-cli-command-thin-baseline-enhancement-rollout/sprint-003-review-lifecycle-and-ledger-backfill/tasks/tasks.csv
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-038-session-main-capability-explainer-productization/sprint-002-cli-benchmark-and-borrowing-analysis/tasks/DA-519-cli-capability-maturity-analysis-promotion-cutover.md
+    rollout_artifacts:
+      - .repo-ai-governor/context/dev/project-042-cli-command-thin-baseline-enhancement-rollout/plan.md
+      - .repo-ai-governor/context/dev/project-042-cli-command-thin-baseline-enhancement-rollout/sprint-001-upgrade-controlled-apply-and-rollback/plan.md
+      - .repo-ai-governor/context/dev/project-042-cli-command-thin-baseline-enhancement-rollout/sprint-002-plan-breakdown-and-ledger-commit-productization/plan.md
+      - .repo-ai-governor/context/dev/project-042-cli-command-thin-baseline-enhancement-rollout/sprint-003-review-lifecycle-and-ledger-backfill/plan.md
+      - .repo-ai-governor/context/dev/project-042-cli-command-thin-baseline-enhancement-rollout/sprint-003-review-lifecycle-and-ledger-backfill/review/resolved_review_tk-526-tk-528-review-lifecycle-productization.md
+      - .repo-ai-governor/context/dev/project-042-cli-command-thin-baseline-enhancement-rollout/project-042-cli-command-thin-baseline-enhancement-rollout-completion-audit-summary.md
+    accepted_at: 2026-04-04
 
   - solution_id: technical-solution.multi-ai-tools-onboarding-role-agent-projection
     delivery_mode: followup_required

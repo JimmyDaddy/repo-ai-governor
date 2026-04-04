@@ -11,7 +11,7 @@ import type {
   CliDurableStorageDiagnosticsSnapshot,
   CliDurableStorageInspectionOptions,
   CliSessionDurableTruthDiagnostics,
-  CliTaskLedgerProjectionDiagnostics,
+  CliTaskLedgerCanonicalTruthDiagnostics,
 } from '../types/index.js';
 
 const ARTIFACT_REGISTRY_SQLITE_FILE_SEGMENTS = [
@@ -32,14 +32,22 @@ const ARTIFACT_REGISTRY_ARCHIVE_VIEW_SEGMENTS = [
   'artifacts.archive.csv',
 ] as const;
 const TASK_LEDGER_ROOT_SEGMENTS = ['context', 'dev'] as const;
-const TASK_LEDGER_PROJECTION_FILE_SEGMENTS = [
+const TASK_LEDGER_CANONICAL_TRUTH_FILE_SEGMENTS = [
+  'context',
+  'dev',
+  'sqlite',
+  'task-ledger.sqlite',
+] as const;
+const TASK_LEDGER_LEGACY_PROJECTION_FILE_SEGMENTS = [
   'context',
   'dev',
   'sqlite',
   'task-ledger-projection.sqlite',
 ] as const;
-const TASK_LEDGER_PROJECTION_SOURCES_TABLE_NAME = 'task_ledger_projection_sources';
-const TASK_LEDGER_PROJECTION_ROWS_TABLE_NAME = 'task_ledger_projection_rows';
+const TASK_LEDGER_CANONICAL_SOURCES_TABLE_NAME = 'task_ledger_sources';
+const TASK_LEDGER_CANONICAL_ROWS_TABLE_NAME = 'task_ledger_rows';
+const TASK_LEDGER_LEGACY_SOURCES_TABLE_NAME = 'task_ledger_projection_sources';
+const TASK_LEDGER_LEGACY_ROWS_TABLE_NAME = 'task_ledger_projection_rows';
 const ARTIFACT_REGISTRY_MAIN_TABLE_NAME = 'artifact_registry_main';
 const ARTIFACT_REGISTRY_ARCHIVE_TABLE_NAME = 'artifact_registry_archive';
 // literal-allowed: mirrors the sqlite-fs provider durable database filename contract.
@@ -48,7 +56,7 @@ const DURABLE_STORAGE_CHECK_IDS = {
   SESSION_DURABLE_TRUTH: 'session_durable_truth',
   ARTIFACT_REGISTRY_CANONICAL_TRUTH: 'artifact_registry_canonical_truth',
   ARTIFACT_REGISTRY_RENDERED_VIEWS: 'artifact_registry_rendered_views',
-  TASK_LEDGER_PROJECTION: 'task_ledger_projection',
+  TASK_LEDGER_CANONICAL_TRUTH: 'task_ledger_canonical_truth',
 } as const;
 const CSV_REGISTRY_HEADERS = [
   'artifact_id',
@@ -70,7 +78,7 @@ interface TaskLedgerCsvSourceSummary {
   rowCount: number;
 }
 
-interface TaskLedgerProjectionSourceRow {
+interface TaskLedgerCanonicalSourceRow {
   sourcePath: string;
   sourceMtimeMs: number;
   sourceSize: number;
@@ -96,13 +104,13 @@ export class CliDurableStorageDiagnosticsRuntime {
     const artifactRegistryRenderedViews = this.inspectArtifactRegistryRenderedViews(
       artifactRegistryCanonicalTruth,
     );
-    const taskLedgerProjection = this.inspectTaskLedgerProjection(options.workspaceRoot);
+    const taskLedgerCanonicalTruth = this.inspectTaskLedgerCanonicalTruth(options.workspaceRoot);
 
     return {
       sessionDurableTruth,
       artifactRegistryCanonicalTruth,
       artifactRegistryRenderedViews,
-      taskLedgerProjection,
+      taskLedgerCanonicalTruth,
     };
   }
 
@@ -129,9 +137,9 @@ export class CliDurableStorageDiagnosticsRuntime {
         detail: snapshot.artifactRegistryRenderedViews.detail,
       },
       {
-        id: DURABLE_STORAGE_CHECK_IDS.TASK_LEDGER_PROJECTION,
-        status: snapshot.taskLedgerProjection.status,
-        detail: snapshot.taskLedgerProjection.detail,
+        id: DURABLE_STORAGE_CHECK_IDS.TASK_LEDGER_CANONICAL_TRUTH,
+        status: snapshot.taskLedgerCanonicalTruth.status,
+        detail: snapshot.taskLedgerCanonicalTruth.detail,
       },
     ];
   }
@@ -148,7 +156,7 @@ export class CliDurableStorageDiagnosticsRuntime {
       snapshot.sessionDurableTruth.status,
       snapshot.artifactRegistryCanonicalTruth.status,
       snapshot.artifactRegistryRenderedViews.status,
-      snapshot.taskLedgerProjection.status,
+      snapshot.taskLedgerCanonicalTruth.status,
     ];
 
     if (statuses.includes(CliGovernanceCheckStatus.FAIL)) {
@@ -432,15 +440,27 @@ export class CliDurableStorageDiagnosticsRuntime {
   }
 
   /**
-   * Inspects tasks.csv sqlite projection/read-model state without rebuilding it.
+   * Inspects task-ledger sqlite canonical truth state without mutating the workspace.
    * @param workspaceRoot Active CLI workspace root.
-   * @returns Projection diagnostics.
+   * @returns Canonical truth diagnostics.
    */
-  private inspectTaskLedgerProjection(workspaceRoot: string): CliTaskLedgerProjectionDiagnostics {
+  private inspectTaskLedgerCanonicalTruth(
+    workspaceRoot: string,
+  ): CliTaskLedgerCanonicalTruthDiagnostics {
     const taskLedgerRoot = resolve(workspaceRoot, ...TASK_LEDGER_ROOT_SEGMENTS);
-    const databaseFilePath = resolve(workspaceRoot, ...TASK_LEDGER_PROJECTION_FILE_SEGMENTS);
+    const canonicalDatabaseFilePath = resolve(
+      workspaceRoot,
+      ...TASK_LEDGER_CANONICAL_TRUTH_FILE_SEGMENTS,
+    );
+    const legacyDatabaseFilePath = resolve(
+      workspaceRoot,
+      ...TASK_LEDGER_LEGACY_PROJECTION_FILE_SEGMENTS,
+    );
     const sources = this.collectTaskLedgerCsvSources(taskLedgerRoot);
     const sourceRowCount = sources.reduce((total, source) => total + source.rowCount, 0);
+    const databaseFilePath = existsSync(canonicalDatabaseFilePath)
+      ? canonicalDatabaseFilePath
+      : legacyDatabaseFilePath;
     const databaseFileExists = existsSync(databaseFilePath);
 
     if (!databaseFileExists) {
@@ -452,16 +472,16 @@ export class CliDurableStorageDiagnosticsRuntime {
           'database_present=false',
           `source_count=${sources.length}`,
           `source_rows=${sourceRowCount}`,
-          'projected_source_count=0',
-          'projected_rows=0',
-          `database_path=${databaseFilePath}`,
+          'canonical_source_count=0',
+          'canonical_rows=0',
+          `database_path=${canonicalDatabaseFilePath}`,
         ].join(' '),
         taskLedgerRoot,
-        databaseFilePath,
+        databaseFilePath: canonicalDatabaseFilePath,
         sourceCount: sources.length,
         sourceRowCount,
-        projectedSourceCount: 0,
-        projectedRowCount: 0,
+        canonicalSourceCount: 0,
+        canonicalRowCount: 0,
         databaseFileExists: false,
       };
     }
@@ -469,6 +489,7 @@ export class CliDurableStorageDiagnosticsRuntime {
     const databaseConnection = this.openReadOnlySqliteDatabase(databaseFilePath);
 
     try {
+      const tableNames = this.resolveTaskLedgerTableNames(databaseConnection);
       const projectedSources = databaseConnection
         .prepare(
           `
@@ -476,23 +497,23 @@ export class CliDurableStorageDiagnosticsRuntime {
               source_path AS sourcePath,
               source_mtime_ms AS sourceMtimeMs,
               source_size AS sourceSize
-            FROM ${TASK_LEDGER_PROJECTION_SOURCES_TABLE_NAME}
+            FROM ${tableNames.sourcesTableName}
             ORDER BY source_path ASC
           `,
         )
-        .all() as unknown as TaskLedgerProjectionSourceRow[];
+        .all() as unknown as TaskLedgerCanonicalSourceRow[];
       const projectedRowCountRecord = databaseConnection
-        .prepare(`SELECT COUNT(*) AS total FROM ${TASK_LEDGER_PROJECTION_ROWS_TABLE_NAME}`)
+        .prepare(`SELECT COUNT(*) AS total FROM ${tableNames.rowsTableName}`)
         .get() as { total?: number } | undefined;
-      const projectedRowCount = Number(projectedRowCountRecord?.total ?? 0);
-      const projectionMatchesSources = this.taskLedgerProjectionMatchesSources(
+      const canonicalRowCount = Number(projectedRowCountRecord?.total ?? 0);
+      const canonicalTruthMatchesSources = this.taskLedgerCanonicalTruthMatchesSources(
         sources,
         projectedSources,
       );
-      const rowCountMatches = sourceRowCount === projectedRowCount;
-      const projectedSourceCount = projectedSources.length;
+      const rowCountMatches = sourceRowCount === canonicalRowCount;
+      const canonicalSourceCount = projectedSources.length;
 
-      if (sources.length === 0 && projectedSourceCount === 0 && projectedRowCount === 0) {
+      if (sources.length === 0 && canonicalSourceCount === 0 && canonicalRowCount === 0) {
         return {
           status: CliGovernanceCheckStatus.WARN,
           state: 'no_sources',
@@ -501,21 +522,21 @@ export class CliDurableStorageDiagnosticsRuntime {
             'database_present=true',
             'source_count=0',
             'source_rows=0',
-            'projected_source_count=0',
-            'projected_rows=0',
+            'canonical_source_count=0',
+            'canonical_rows=0',
             `database_path=${databaseFilePath}`,
           ].join(' '),
           taskLedgerRoot,
           databaseFilePath,
           sourceCount: 0,
           sourceRowCount: 0,
-          projectedSourceCount,
-          projectedRowCount,
+          canonicalSourceCount,
+          canonicalRowCount,
           databaseFileExists: true,
         };
       }
 
-      if (projectionMatchesSources && rowCountMatches) {
+      if (canonicalTruthMatchesSources && rowCountMatches) {
         return {
           status: CliGovernanceCheckStatus.PASS,
           state: 'in_sync',
@@ -524,16 +545,16 @@ export class CliDurableStorageDiagnosticsRuntime {
             'database_present=true',
             `source_count=${sources.length}`,
             `source_rows=${sourceRowCount}`,
-            `projected_source_count=${projectedSourceCount}`,
-            `projected_rows=${projectedRowCount}`,
+            `canonical_source_count=${canonicalSourceCount}`,
+            `canonical_rows=${canonicalRowCount}`,
             `database_path=${databaseFilePath}`,
           ].join(' '),
           taskLedgerRoot,
           databaseFilePath,
           sourceCount: sources.length,
           sourceRowCount,
-          projectedSourceCount,
-          projectedRowCount,
+          canonicalSourceCount,
+          canonicalRowCount,
           databaseFileExists: true,
         };
       }
@@ -546,16 +567,16 @@ export class CliDurableStorageDiagnosticsRuntime {
           'database_present=true',
           `source_count=${sources.length}`,
           `source_rows=${sourceRowCount}`,
-          `projected_source_count=${projectedSourceCount}`,
-          `projected_rows=${projectedRowCount}`,
+          `canonical_source_count=${canonicalSourceCount}`,
+          `canonical_rows=${canonicalRowCount}`,
           `database_path=${databaseFilePath}`,
         ].join(' '),
         taskLedgerRoot,
         databaseFilePath,
         sourceCount: sources.length,
         sourceRowCount,
-        projectedSourceCount,
-        projectedRowCount,
+        canonicalSourceCount,
+        canonicalRowCount,
         databaseFileExists: true,
       };
     } catch (error) {
@@ -573,8 +594,8 @@ export class CliDurableStorageDiagnosticsRuntime {
         databaseFilePath,
         sourceCount: sources.length,
         sourceRowCount,
-        projectedSourceCount: 0,
-        projectedRowCount: 0,
+        canonicalSourceCount: 0,
+        canonicalRowCount: 0,
         databaseFileExists: true,
       };
     } finally {
@@ -769,32 +790,70 @@ export class CliDurableStorageDiagnosticsRuntime {
   }
 
   /**
-   * Compares canonical `tasks.csv` source metadata against projection metadata rows.
+   * Compares rendered `tasks.csv` source metadata against canonical sqlite metadata rows.
    * @param sources Canonical source metadata.
-   * @param projectedSources Projection metadata rows.
-   * @returns Whether projection metadata still matches canonical sources.
+   * @param canonicalSources Canonical sqlite metadata rows.
+   * @returns Whether canonical sqlite metadata still matches rendered sources.
    */
-  private taskLedgerProjectionMatchesSources(
+  private taskLedgerCanonicalTruthMatchesSources(
     sources: TaskLedgerCsvSourceSummary[],
-    projectedSources: TaskLedgerProjectionSourceRow[],
+    canonicalSources: TaskLedgerCanonicalSourceRow[],
   ): boolean {
-    if (sources.length !== projectedSources.length) {
+    if (sources.length !== canonicalSources.length) {
       return false;
     }
 
     for (let index = 0; index < sources.length; index += 1) {
       const source = sources[index];
-      const projectedSource = projectedSources[index];
+      const canonicalSource = canonicalSources[index];
       if (
-        projectedSource?.sourcePath !== source.absolutePath ||
-        Number(projectedSource?.sourceMtimeMs ?? -1) !== source.mtimeMs ||
-        Number(projectedSource?.sourceSize ?? -1) !== source.size
+        canonicalSource?.sourcePath !== source.absolutePath ||
+        Number(canonicalSource?.sourceMtimeMs ?? -1) !== source.mtimeMs ||
+        Number(canonicalSource?.sourceSize ?? -1) !== source.size
       ) {
         return false;
       }
     }
 
     return true;
+  }
+
+  /**
+   * Resolves the available task-ledger table names, supporting legacy database schemas.
+   * @param databaseConnection Open sqlite connection.
+   * @returns {{ sourcesTableName: string; rowsTableName: string }}
+   */
+  private resolveTaskLedgerTableNames(databaseConnection: DatabaseSync): {
+    sourcesTableName: string;
+    rowsTableName: string;
+  } {
+    const canonicalTablesExist =
+      this.sqliteTableExists(databaseConnection, TASK_LEDGER_CANONICAL_SOURCES_TABLE_NAME) &&
+      this.sqliteTableExists(databaseConnection, TASK_LEDGER_CANONICAL_ROWS_TABLE_NAME);
+    if (canonicalTablesExist) {
+      return {
+        sourcesTableName: TASK_LEDGER_CANONICAL_SOURCES_TABLE_NAME,
+        rowsTableName: TASK_LEDGER_CANONICAL_ROWS_TABLE_NAME,
+      };
+    }
+
+    return {
+      sourcesTableName: TASK_LEDGER_LEGACY_SOURCES_TABLE_NAME,
+      rowsTableName: TASK_LEDGER_LEGACY_ROWS_TABLE_NAME,
+    };
+  }
+
+  /**
+   * Checks whether one sqlite table exists before probing schema-specific diagnostics.
+   * @param databaseConnection Open sqlite connection.
+   * @param tableName Target table name.
+   * @returns Whether the table exists.
+   */
+  private sqliteTableExists(databaseConnection: DatabaseSync, tableName: string): boolean {
+    const tableRecord = databaseConnection
+      .prepare(`SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?`)
+      .get(tableName) as { name?: string } | undefined;
+    return typeof tableRecord?.name === 'string' && tableRecord.name.length > 0;
   }
 
   /**

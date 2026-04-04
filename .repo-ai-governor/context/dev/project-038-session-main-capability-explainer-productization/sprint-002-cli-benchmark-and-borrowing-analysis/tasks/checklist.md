@@ -1,0 +1,23 @@
+# checklist
+
+- [x] TK-517 analyze borrowable cli capabilities from claude-code and codex and record draft recommendations
+  - 2026-04-04：任务创建，状态初始化为 `planned`；范围限定为本地 benchmark 分析与 draft 沉淀，不引入新的 runtime 或 CLI 行为变更。
+  - 2026-04-04：完成对 `repo-ai-governor` interactive shell、session client、governed slash discoverability 与 React shell UI 基线的梳理。
+  - 2026-04-04：完成对 `claude-code` 的命令注册、skills/plugin 装载、session memory、remote session 管理与启动优化路径的定向阅读。
+  - 2026-04-04：完成对 `codex` 的 top-level CLI/TUI 分层、tool registry、app-server、SQLite state 与自适应终端行为文档的定向阅读。
+  - 2026-04-04：已将结论写入 `.repo-ai-governor/draft/cli-borrowing-analysis-against-claude-code-and-codex.md`，并给出 adoption priority。
+  - 2026-04-04：对 draft 执行定向 review，生成 `review/code_review_tk-517-cli-borrowing-analysis-against-claude-code-and-codex.md`，当前识别出 2 条待修复文档问题，分别涉及 benchmark source provenance 与 benchmark reproducibility。
+  - 2026-04-04：根据 review 补充 benchmark corpus（含 `claude-code` / `codex` sampled commit 与 sampled date）与 Claude Code 样本来源边界说明，并将对应 CR 收口为 `resolved_code_review_tk-517-cli-borrowing-analysis-against-claude-code-and-codex.md`。
+- [x] TK-518 supplement review review-verify and upgrade contract drafts and cross-link cli maturity analysis
+  - 2026-04-04：任务创建，状态初始化为 `planned`；范围限定为 draft 补强与 cross-link，不引入新的 runtime 行为变更。
+  - 2026-04-04：确认当前薄基线命令里，`plan` 已有专项 contract，而 `review / review-verify / upgrade` 仍缺 follow-up draft。
+  - 2026-04-04：已新增 `.repo-ai-governor/draft/session-main-review-generation-verification-and-ledger-backfill-contract.md` 与 `.repo-ai-governor/draft/upgrade-analysis-apply-and-rollback-contract.md`。
+  - 2026-04-04：已将 CLI 成熟度分析文补成薄基线命令 contract coverage 入口，并为后续立项补充联读与检查点。
+  - 2026-04-04：根据 follow-up review comments，为 `review / review-verify` 与 `upgrade` draft 补充 enum/constant 集中管理边界；同时明确 `review` 相关用户可见状态与结论必须通过 i18n key 映射，而不是直接把中文文案写入 contract truth。
+- [x] TK-519 promote cli capability maturity analysis draft into active formal docs
+  - 2026-04-04：用户在当前对话中明确要求“然后提升 `.repo-ai-governor/draft/cli-capability-maturity-and-baseline-enhancement-priority-analysis.md` 这个技术方案”，可作为本轮 formal cutover 的审批前提。
+  - 2026-04-04：已确认 `review / review-verify` 与 `upgrade` companion contract draft 与成熟度分析文保持双向挂链，因此无需额外补写重复关联。
+  - 2026-04-04：已新增 `cli-command-capability-maturity-and-baseline-enhancement-priority.md` ADR，并同步 `runtime.cli-interactive-shell` module overview / module registry / normative-loading-manifest。
+  - 2026-04-04：已将 `technical-solution.cli-capability-maturity-and-baseline-enhancement-priority` lifecycle 状态切为 `active`，并补齐 `final_paths`、promotion review path 与 approval metadata。
+  - 2026-04-04：已在 delivery registry 中登记 `docs_only` handoff，并生成 `DA-519-cli-capability-maturity-analysis-promotion-cutover.md`。
+  - 2026-04-04：promotion gates 已全部通过，包括 lifecycle / delivery / module graph / manifest / docs triad / task ledger / sprint plan / code review / artifact lifecycle；本轮仍为 docs-only formal cutover，因此 `pnpm run build` not required。

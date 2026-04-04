@@ -1,6 +1,8 @@
+import { execFile } from 'node:child_process';
 import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { dirname, resolve } from 'node:path';
+import { dirname, relative, resolve } from 'node:path';
+import { promisify } from 'node:util';
 
 import {
   CliReactThemePreset,
@@ -14,12 +16,25 @@ import {
   CLI_REVIEW_REQUEST_STATUS,
 } from '../../src/constants/cli-governance-runtime.constant.js';
 import { CliInteractiveUiMode } from '../../src/constants/cli-interactive-shell.constant.js';
+import {
+  CliReviewFindingRuleId,
+  CliReviewFindingSeverity,
+  CliReviewLifecycleStatus,
+  CliReviewScopeMode,
+} from '../../src/constants/cli-review.constant.js';
 import { CliReviewQueueRuntime } from '../../src/runtime/artifacts/review-queue-runtime.js';
-import type { CliCommandExecutorContext } from '../../src/types/interfaces/cli-governance-runtime.interface.js';
+import type {
+  CliCommandExecutorContext,
+  CliReviewFinding,
+  CliReviewRequestArtifactPayload,
+} from '../../src/types/interfaces/index.js';
+
+const execFileAsync = promisify(execFile);
 
 interface ReviewVerifyFixture {
   tempRoot: string;
   workspaceRoot: string;
+  reviewDirPath: string;
   requestDirectoryPath: string;
   resultDirectoryPath: string;
   command: CliReviewVerifyCommand;
@@ -35,6 +50,7 @@ async function createReviewVerifyFixture(
 ): Promise<ReviewVerifyFixture> {
   const tempRoot = await mkdtemp(resolve(tmpdir(), 'review-verify-command-'));
   const workspaceRoot = resolve(tempRoot, '.repo-ai-governor');
+  const reviewDirPath = resolve(workspaceRoot, 'context', 'review');
   const reviewQueueRuntime = new CliReviewQueueRuntime(workspaceRoot, async (filePath) => {
     try {
       return JSON.parse(await readFile(filePath, 'utf8')) as Record<string, unknown>;
@@ -46,6 +62,7 @@ async function createReviewVerifyFixture(
     reviewQueueRuntime.resolveReviewQueueDirectories();
   await mkdir(requestDirectoryPath, { recursive: true });
   await mkdir(resultDirectoryPath, { recursive: true });
+  await mkdir(reviewDirPath, { recursive: true });
 
   const artifactWriter = {
     writeTextArtifact: async (filePath: string, content: string) => {
@@ -67,6 +84,7 @@ async function createReviewVerifyFixture(
 
   const context = {
     options: {
+      currentWorkingDirectory: tempRoot,
       workspace: {
         workspaceId: 'test-workspace',
         workspaceRoot,
@@ -156,6 +174,7 @@ async function createReviewVerifyFixture(
   return {
     tempRoot,
     workspaceRoot,
+    reviewDirPath,
     requestDirectoryPath,
     resultDirectoryPath,
     command: new CliReviewVerifyCommand(),
@@ -163,14 +182,116 @@ async function createReviewVerifyFixture(
   };
 }
 
-async function writeQueuedRequest(
-  requestDirectoryPath: string,
+async function initGitRepository(repositoryRoot: string): Promise<void> {
+  await execFileAsync('git', ['init'], {
+    cwd: repositoryRoot,
+  });
+}
+
+async function writeReviewArtifact(
+  reviewDirPath: string,
   fileName: string,
-  payload: Record<string, unknown>,
+  options: {
+    status: CliReviewLifecycleStatus;
+    taskId?: string | null;
+  },
 ): Promise<string> {
-  const filePath = resolve(requestDirectoryPath, fileName);
-  await writeFile(filePath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+  const filePath = resolve(reviewDirPath, fileName);
+  await writeFile(
+    filePath,
+    [
+      `# ${options.taskId ? `Code Review: ${options.taskId}` : 'Code Review: working tree'}`,
+      '',
+      `- Status: ${options.status}`,
+      '- Date: 2026-04-04',
+      '- Reviewer: repo-ai-governor CLI',
+      `- Task: \`${options.taskId ?? 'n/a'}\``,
+      '',
+      '## 1. Review Scope',
+      '',
+      '1. fixture scope',
+      '',
+      '## 2. Findings',
+      '',
+      'No actionable findings were identified for the current scope.',
+      '',
+      '## 3. Notes',
+      '',
+      '1. fixture note',
+      '',
+    ].join('\n'),
+    'utf8',
+  );
   return filePath;
+}
+
+async function writeQueuedRequest(
+  fixture: ReviewVerifyFixture,
+  fileName: string,
+  payload: Omit<CliReviewRequestArtifactPayload, 'generatedArtifactPaths'>,
+): Promise<string> {
+  const filePath = resolve(fixture.requestDirectoryPath, fileName);
+  await writeFile(
+    filePath,
+    `${JSON.stringify(
+      {
+        ...payload,
+        generatedArtifactPaths: [
+          relative(fixture.tempRoot, filePath).replace(/\\/gu, '/'),
+          relative(fixture.tempRoot, payload.reviewArtifactPath).replace(/\\/gu, '/'),
+        ],
+      },
+      null,
+      2,
+    )}\n`,
+    'utf8',
+  );
+  return filePath;
+}
+
+function createRequestPayload(options: {
+  requestId: string;
+  workspaceRoot: string;
+  reviewArtifactPath: string;
+  reviewArtifactStatus: CliReviewLifecycleStatus;
+  reviewSlug: string;
+  findings?: CliReviewFinding[];
+  taskId?: string | null;
+  recordLedger?: boolean;
+}): Omit<CliReviewRequestArtifactPayload, 'generatedArtifactPaths'> {
+  return {
+    requestId: options.requestId,
+    status: CLI_REVIEW_REQUEST_STATUS.QUEUED,
+    createdAt: '2026-04-04T00:00:00Z',
+    workspaceId: 'test-workspace',
+    workspaceRoot: options.workspaceRoot,
+    locale: 'en-US',
+    outputMode: 'plain',
+    ...(options.taskId ? { taskId: options.taskId } : {}),
+    recordLedger: options.recordLedger === true,
+    reviewSlug: options.reviewSlug,
+    reviewArtifactPath: options.reviewArtifactPath,
+    reviewArtifactStatus: options.reviewArtifactStatus,
+    scope: {
+      reviewMode: options.taskId ? CliReviewScopeMode.TASK_SCOPE : CliReviewScopeMode.WORKING_TREE,
+      scopeSummary: 'fixture review scope',
+      reviewedPaths: [],
+      excludedPaths: [],
+      riskLevel: 'low',
+      requiredAction: 'allow',
+    },
+    findings: options.findings ?? [],
+    notes: [],
+    diagnosticContext: {
+      correlationId: `review-chain-${options.requestId}`,
+      queueStage: 'review',
+      chain: 'review->review-verify->ledger-backfill',
+      ...(options.taskId ? { taskId: options.taskId } : {}),
+      reviewChainMode: options.recordLedger ? 'managed_task_chain' : 'queued_external_chain',
+    },
+    orchestrationExecutionId: options.requestId,
+    orchestrationEventStreamToken: `stream-${options.requestId}`,
+  };
 }
 
 describe('CliReviewVerifyCommand', () => {
@@ -180,23 +301,45 @@ describe('CliReviewVerifyCommand', () => {
     });
 
     try {
-      const tk130RequestPath = await writeQueuedRequest(
-        fixture.requestDirectoryPath,
-        'review-100.json',
+      const tk130ReviewArtifactPath = await writeReviewArtifact(
+        fixture.reviewDirPath,
+        'resolved_code_review_tk-130-review.md',
         {
-          requestId: 'review-100',
-          status: CLI_REVIEW_REQUEST_STATUS.QUEUED,
+          status: CliReviewLifecycleStatus.RESOLVED,
           taskId: 'TK-130',
         },
       );
-      const tk131RequestPath = await writeQueuedRequest(
-        fixture.requestDirectoryPath,
-        'review-200.json',
+      const tk131ReviewArtifactPath = await writeReviewArtifact(
+        fixture.reviewDirPath,
+        'resolved_code_review_tk-131-review.md',
         {
-          requestId: 'review-200',
-          status: CLI_REVIEW_REQUEST_STATUS.QUEUED,
+          status: CliReviewLifecycleStatus.RESOLVED,
           taskId: 'TK-131',
         },
+      );
+      const tk130RequestPath = await writeQueuedRequest(
+        fixture,
+        'review-100.json',
+        createRequestPayload({
+          requestId: 'review-100',
+          workspaceRoot: fixture.workspaceRoot,
+          reviewArtifactPath: tk130ReviewArtifactPath,
+          reviewArtifactStatus: CliReviewLifecycleStatus.RESOLVED,
+          reviewSlug: 'tk-130-review',
+          taskId: 'TK-130',
+        }),
+      );
+      const tk131RequestPath = await writeQueuedRequest(
+        fixture,
+        'review-200.json',
+        createRequestPayload({
+          requestId: 'review-200',
+          workspaceRoot: fixture.workspaceRoot,
+          reviewArtifactPath: tk131ReviewArtifactPath,
+          reviewArtifactStatus: CliReviewLifecycleStatus.RESOLVED,
+          reviewSlug: 'tk-131-review',
+          taskId: 'TK-131',
+        }),
       );
 
       const commandResult = await fixture.command.execute(fixture.context);
@@ -231,16 +374,106 @@ describe('CliReviewVerifyCommand', () => {
     });
 
     try {
-      await writeQueuedRequest(fixture.requestDirectoryPath, 'review-100.json', {
-        requestId: 'review-100',
-        status: CLI_REVIEW_REQUEST_STATUS.QUEUED,
-        taskId: 'TK-130',
-      });
+      const reviewArtifactPath = await writeReviewArtifact(
+        fixture.reviewDirPath,
+        'resolved_code_review_tk-130-review.md',
+        {
+          status: CliReviewLifecycleStatus.RESOLVED,
+          taskId: 'TK-130',
+        },
+      );
+      await writeQueuedRequest(
+        fixture,
+        'review-100.json',
+        createRequestPayload({
+          requestId: 'review-100',
+          workspaceRoot: fixture.workspaceRoot,
+          reviewArtifactPath,
+          reviewArtifactStatus: CliReviewLifecycleStatus.RESOLVED,
+          reviewSlug: 'tk-130-review',
+          taskId: 'TK-130',
+        }),
+      );
 
       await expect(fixture.command.execute(fixture.context)).rejects.toMatchObject({
         code: GovernorErrorCode.UNKNOWN,
         message: expect.stringContaining('task_id=TK-999'),
       });
+    } finally {
+      await rm(fixture.tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('keeps the source request queued and transitions the artifact to verified when findings remain reproducible', async () => {
+    const fixture = await createReviewVerifyFixture({
+      taskId: 'TK-130',
+    });
+
+    try {
+      await initGitRepository(fixture.tempRoot);
+      const changedFilePath = resolve(fixture.tempRoot, 'apps', 'cli', 'src', 'open-scope.ts');
+      await mkdir(dirname(changedFilePath), { recursive: true });
+      await writeFile(changedFilePath, 'export const openScope = 1;\n', 'utf8');
+
+      const sourceReviewArtifactPath = await writeReviewArtifact(
+        fixture.reviewDirPath,
+        'code_review_tk-130-open.md',
+        {
+          status: CliReviewLifecycleStatus.REVIEW_PENDING,
+          taskId: 'TK-130',
+        },
+      );
+      const sourceFinding: CliReviewFinding = {
+        findingId: 'code-change-without-test-change-apps-cli-src-open-scope-ts',
+        fingerprint: `${CliReviewFindingRuleId.CODE_CHANGE_WITHOUT_TEST_CHANGE}:apps/cli/src/open-scope.ts:0`,
+        ruleId: CliReviewFindingRuleId.CODE_CHANGE_WITHOUT_TEST_CHANGE,
+        severity: CliReviewFindingSeverity.P2,
+        title: 'Code change is missing matching test updates',
+        file: 'apps/cli/src/open-scope.ts',
+        summary: 'fixture summary',
+        impact: 'fixture impact',
+        suggestedAction: 'fixture action',
+        evidence: ['apps/cli/src/open-scope.ts'],
+      };
+      const sourceRequestPath = await writeQueuedRequest(
+        fixture,
+        'review-100.json',
+        createRequestPayload({
+          requestId: 'review-100',
+          workspaceRoot: fixture.workspaceRoot,
+          reviewArtifactPath: sourceReviewArtifactPath,
+          reviewArtifactStatus: CliReviewLifecycleStatus.REVIEW_PENDING,
+          reviewSlug: 'tk-130-open',
+          taskId: 'TK-130',
+          findings: [sourceFinding],
+        }),
+      );
+
+      const commandResult = await fixture.command.execute(fixture.context);
+      const verifyArtifactPath = commandResult.commandResult.artifacts?.find(
+        (artifact) => artifact.id === 'review_verify_result',
+      )?.path;
+      const transitionedReviewArtifactPath = commandResult.commandResult.artifacts?.find(
+        (artifact) => artifact.id === 'review_artifact',
+      )?.path;
+
+      expect(String(transitionedReviewArtifactPath)).toContain('verified_review_tk-130-open.md');
+
+      const verifyPayload = JSON.parse(await readFile(String(verifyArtifactPath), 'utf8')) as {
+        overallDecision?: string;
+        reviewArtifactStatus?: string;
+      };
+      expect(verifyPayload.overallDecision).toBe('accepted');
+      expect(verifyPayload.reviewArtifactStatus).toBe('verified');
+
+      const sourceRequestPayload = JSON.parse(await readFile(sourceRequestPath, 'utf8')) as {
+        status?: string;
+        reviewArtifactStatus?: string;
+        lastVerifyAttemptAt?: string;
+      };
+      expect(sourceRequestPayload.status).toBe(CLI_REVIEW_REQUEST_STATUS.QUEUED);
+      expect(sourceRequestPayload.reviewArtifactStatus).toBe('verified');
+      expect(typeof sourceRequestPayload.lastVerifyAttemptAt).toBe('string');
     } finally {
       await rm(fixture.tempRoot, { recursive: true, force: true });
     }
@@ -256,15 +489,26 @@ describe('CliReviewVerifyCommand', () => {
     });
 
     try {
-      const sourceRequestPath = await writeQueuedRequest(
-        fixture.requestDirectoryPath,
-        'review-100.json',
+      const sourceReviewArtifactPath = await writeReviewArtifact(
+        fixture.reviewDirPath,
+        'resolved_code_review_tk-130-review.md',
         {
+          status: CliReviewLifecycleStatus.RESOLVED,
+          taskId: 'TK-130',
+        },
+      );
+      const sourceRequestPath = await writeQueuedRequest(
+        fixture,
+        'review-100.json',
+        createRequestPayload({
           requestId: 'review-100',
-          status: CLI_REVIEW_REQUEST_STATUS.QUEUED,
+          workspaceRoot: fixture.workspaceRoot,
+          reviewArtifactPath: sourceReviewArtifactPath,
+          reviewArtifactStatus: CliReviewLifecycleStatus.RESOLVED,
+          reviewSlug: 'tk-130-review',
           taskId: 'TK-130',
           recordLedger: true,
-        },
+        }),
       );
 
       await expect(fixture.command.execute(fixture.context)).rejects.toMatchObject({
@@ -276,10 +520,12 @@ describe('CliReviewVerifyCommand', () => {
         consumedAt?: string;
         lastVerifyAttemptAt?: string;
         ledgerBackfillStatus?: string;
+        reviewArtifactStatus?: string;
       };
       expect(sourceRequestPayload.status).toBe(CLI_REVIEW_REQUEST_STATUS.QUEUED);
       expect(sourceRequestPayload.consumedAt).toBeUndefined();
       expect(typeof sourceRequestPayload.lastVerifyAttemptAt).toBe('string');
+      expect(sourceRequestPayload.reviewArtifactStatus).toBe('resolved');
       expect(sourceRequestPayload.ledgerBackfillStatus).toBe(
         CLI_REVIEW_LEDGER_BACKFILL_STATUS.FAILED,
       );

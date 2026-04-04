@@ -28,6 +28,7 @@ import {
   LocalModelProvider,
   RuntimeError,
 } from '@repo-ai-governor/shared';
+import { SessionMainProviderContinuationPolicyEnvelope } from '../../src/constants/session-main-provider-continuation.constant.js';
 import { CliAdapterRoutingRuntime } from '../../src/runtime/adapter-routing-runtime.js';
 import { CliSessionMainSupervisorRuntime } from '../../src/runtime/session-main-supervisor-runtime.js';
 
@@ -690,6 +691,135 @@ describe('Cli session-main supervisor runtime', () => {
         }),
       }),
     ]);
+  });
+
+  it('preserves unsupported continuation summaries while clearing an existing reused slot', async () => {
+    const laneKey = 'session.main::stage-session-main-answer::session.main::codex::chat_only';
+    const providerContinuationState: SessionProviderContinuationSessionState = {
+      version: 1,
+      slots: {
+        [laneKey]: {
+          laneKey,
+          routeId: 'session.main',
+          stageId: 'stage-session-main-answer',
+          roleId: null,
+          selectedSurface: AdapterSurface.CODEX,
+          providerId: AdapterProviderKind.OPENAI,
+          transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+          model: 'gpt-5',
+          policyEnvelope: SessionMainProviderContinuationPolicyEnvelope.CHAT_ONLY,
+          workspaceRoot: '/workspace/repo/.repo-ai-governor',
+          currentWorkingDirectory: '/workspace/repo',
+          handle: {
+            providerId: AdapterProviderKind.OPENAI,
+            surface: AdapterSurface.CODEX,
+            transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+            handleKind: AgentStageContinuationHandleKind.RESPONSE_ID,
+            value: 'resp-existing',
+            model: 'gpt-5',
+            acquiredAt: '2026-04-04T12:00:00.000Z',
+          },
+          updatedAt: '2026-04-04T12:00:00.000Z',
+        },
+      },
+    };
+    const codexInvokeStage = vi.fn(async (request: Record<string, unknown>) => {
+      expect(request.continuation).toEqual(
+        expect.objectContaining({
+          mode: AgentStageContinuationMode.PREFER_REUSE,
+          sessionId: 'session-continuation-unsupported-existing-001',
+          laneKey,
+          handle: expect.objectContaining({
+            value: 'resp-existing',
+          }),
+        }),
+      );
+      return {
+        output: {
+          responseText: 'fresh stateless answer after unsupported reuse',
+        },
+        continuation: {
+          status: AgentStageContinuationStatus.UNSUPPORTED,
+          laneKey,
+          invalidationReason: 'provider_session_not_supported',
+        },
+        elapsedMs: 1,
+      };
+    });
+    const continuationAdaptersConfig: AdaptersConfig = {
+      ...adaptersConfig,
+      tools:
+        adaptersConfig.tools?.map((tool) =>
+          tool.toolId === AdapterSurface.CODEX
+            ? {
+                ...tool,
+                transport: AdapterTransportKind.REMOTE_API,
+                remoteApi: {
+                  provider: AdapterProviderKind.OPENAI,
+                  vendorBinding: AdapterVendorBindingKind.OPENAI_RESPONSES,
+                  model: 'gpt-5',
+                },
+              }
+            : tool,
+        ) ?? [],
+    };
+    const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
+      continuationAdaptersConfig,
+    ) as CliAdapterRoutingRuntime & {
+      createProtocolBySurface: () => Record<string, AgentProtocolContract>;
+    };
+    adapterRoutingRuntime.createProtocolBySurface = () => ({
+      [AdapterSurface.CODEX]: createAvailableProtocol(AdapterSurface.CODEX, 'unused', {
+        invokeStageSpy: codexInvokeStage,
+      }),
+      [AdapterSurface.CLAUDE_CODE]: createUnavailableProtocol(AdapterSurface.CLAUDE_CODE),
+      [AdapterSurface.OLLAMA]: createUnavailableProtocol(AdapterSurface.OLLAMA),
+    });
+
+    const runtime = new CliSessionMainSupervisorRuntime({
+      workspaceRoot: '/workspace/repo/.repo-ai-governor',
+      currentWorkingDirectory: '/workspace/repo',
+      workspace,
+      locale: 'en-US',
+      adaptersConfig: continuationAdaptersConfig,
+      adapterRoutingRuntime,
+    });
+    const outcome = await runtime.resolveTurn({
+      sessionId: 'session-continuation-unsupported-existing-001',
+      routeId: 'session.main',
+      turnId: 'turn-continuation-unsupported-existing-001',
+      turnIndex: 2,
+      userMessage: 'follow up on the previous answer again',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+      providerContinuationState,
+    });
+
+    expect(codexInvokeStage).toHaveBeenCalledTimes(1);
+    expect(outcome.assistantMessage).toBe('fresh stateless answer after unsupported reuse');
+    expect(outcome.providerContinuationSummaries).toEqual([
+      expect.objectContaining({
+        laneKey,
+        laneLabel: 'session.main',
+        status: AgentStageContinuationStatus.UNSUPPORTED,
+        surface: AdapterSurface.CODEX,
+        providerId: AdapterProviderKind.OPENAI,
+        model: 'gpt-5',
+        invalidationReason: 'provider_session_not_supported',
+      }),
+    ]);
+    expect(outcome.providerContinuationMutations).toHaveLength(1);
+    expect(outcome.providerContinuationMutations?.[0]).toEqual(
+      expect.objectContaining({
+        laneKey,
+        summary: expect.objectContaining({
+          status: AgentStageContinuationStatus.UNSUPPORTED,
+          invalidationReason: 'provider_session_not_supported',
+        }),
+      }),
+    );
+    expect(outcome.providerContinuationMutations?.[0]?.slot).toBeUndefined();
   });
 
   it('publishes mapped direct-answer stream events while preserving empty invoked-role truth', async () => {

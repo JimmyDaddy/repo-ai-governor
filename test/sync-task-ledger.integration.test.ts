@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process';
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { access, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -7,6 +7,12 @@ import { promisify } from 'node:util';
 
 const execFileAsync = promisify(execFile);
 const REPOSITORY_ROOT_PATH = resolve(fileURLToPath(new URL('..', import.meta.url)));
+const SYNC_TASK_LEDGER_SCRIPT_PATH = resolve(
+  REPOSITORY_ROOT_PATH,
+  'scripts',
+  'governance',
+  'sync-task-ledger.js',
+);
 
 describe('sync-task-ledger.js', () => {
   it('refreshes checklist execution notes from canonical task cards while preserving extra runtime notes', async () => {
@@ -18,6 +24,14 @@ describe('sync-task-ledger.js', () => {
     );
     const checklistPath = resolve(tasksDirPath, 'checklist.md');
     const csvPath = resolve(tasksDirPath, 'tasks.csv');
+    const sqlitePath = resolve(
+      tempRoot,
+      '.repo-ai-governor',
+      'context',
+      'dev',
+      'sqlite',
+      'task-ledger.sqlite',
+    );
 
     try {
       await mkdir(tasksDirPath, { recursive: true });
@@ -61,16 +75,16 @@ describe('sync-task-ledger.js', () => {
 
       await execFileAsync(
         process.execPath,
-        ['./scripts/governance/sync-task-ledger.js', '--tasks-dir', tasksDirPath],
+        [SYNC_TASK_LEDGER_SCRIPT_PATH, '--tasks-dir', tasksDirPath],
         {
-          cwd: REPOSITORY_ROOT_PATH,
+          cwd: tempRoot,
         },
       );
 
       await execFileAsync(
         process.execPath,
         [
-          './scripts/governance/sync-task-ledger.js',
+          SYNC_TASK_LEDGER_SCRIPT_PATH,
           '--tasks-dir',
           tasksDirPath,
           '--task-id',
@@ -79,15 +93,18 @@ describe('sync-task-ledger.js', () => {
           '2026-03-24：运行时附加备注。',
         ],
         {
-          cwd: REPOSITORY_ROOT_PATH,
+          cwd: tempRoot,
         },
       );
 
       const checklistContent = await readFile(checklistPath, 'utf8');
+      const csvContent = await readFile(csvPath, 'utf8');
       expect(checklistContent).toContain('2026-03-24：新 canonical 摘要。');
       expect(checklistContent).toContain('2026-03-24：第二条 canonical 摘要。');
       expect(checklistContent).toContain('2026-03-24：运行时附加备注。');
       expect(checklistContent).not.toContain('2026-03-24：旧 checklist 摘要。');
+      expect(csvContent).toContain('TK-130');
+      await expect(access(sqlitePath)).resolves.toBeUndefined();
     } finally {
       await rm(tempRoot, { recursive: true, force: true });
     }

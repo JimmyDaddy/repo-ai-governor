@@ -52,8 +52,12 @@ export enum CliRuntimeOperation {
   SESSION_RESUME = 'session_resume',
   REVIEW_QUEUE = 'review_queue',
   REVIEW_VERIFY = 'review_verify',
+  PLAN_PREVIEW = 'plan_preview',
+  PLAN_COMMIT = 'plan_commit',
   PLAN_SNAPSHOT = 'plan_snapshot',
   SCHEMA_UPGRADE_ANALYZE = 'schema_upgrade_analyze',
+  SCHEMA_UPGRADE_APPLY = 'schema_upgrade_apply',
+  SCHEMA_UPGRADE_ROLLBACK = 'schema_upgrade_rollback',
   WORKSPACE_MIGRATION_PLAN = 'workspace_migration_plan',
   WORKSPACE_MIGRATION_EXECUTE = 'workspace_migration_execute',
   WORKSPACE_MIGRATION_ROLLBACK = 'workspace_migration_rollback',
@@ -97,6 +101,7 @@ export enum CliDiagnosticRootCause {
  * Defines review-verify ledger backfill lifecycle statuses.
  */
 export enum CliReviewLedgerBackfillStatus {
+  NOT_REQUESTED = 'not_requested',
   PENDING = 'pending',
   APPLIED = 'applied',
   FAILED = 'failed',

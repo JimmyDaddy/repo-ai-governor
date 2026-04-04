@@ -40,7 +40,7 @@
 plan 约束：
 
 1. `project/sprint plan` 只承载 scope、里程碑、任务包概览与退出条件。
-2. task-level status 以 `TK/checklist/tasks.csv` 的最新 canonical 记录为准，不再在 plan 中重复维护逐任务状态矩阵。
+2. task-level status 以 `TK/checklist` 驱动的 sqlite canonical ledger 最新记录为准；`tasks.csv` 只作为对应的 rendered view，不再在 plan 中重复维护逐任务状态矩阵。
 
 ## 4. Task Card Minimum Template
 
@@ -71,11 +71,11 @@ Concrete template source of truth:
 
 ## 5. Ledger Rules
 
-1. `tasks.csv` 使用追加行记录状态演进，不覆盖历史行。
+1. sqlite canonical ledger 使用追加行记录状态演进，不覆盖历史行；`tasks.csv` 由 canonical truth 渲染。
 2. `checklist.md` 保留勾选状态并在任务下追加执行轨迹摘要，不复制任务卡的长段计划与输入清单。
-3. `tasks.csv` 只保留机器审计必需字段，不承载完整 tracebacks。
-4. `TK` 状态、checklist 勾选、csv 最新 canonical 行必须一致。
-5. 推荐使用 `node ./scripts/governance/sync-task-ledger.js --task-id <TK-xxx>` 来回写派生台账，而不是手工分别编辑 checklist 和 CSV。
+3. `tasks.csv` 只保留从 canonical truth 渲染出的机器审计必需字段，不承载完整 tracebacks，也不作为手工真值入口。
+4. `TK` 状态、checklist 勾选、sqlite 最新 canonical 行与 rendered `tasks.csv` 必须一致。
+5. 推荐使用 `node ./scripts/governance/sync-task-ledger.js --task-id <TK-xxx>` 来更新 sqlite canonical ledger 并回写派生视图，而不是手工分别编辑 checklist 和 CSV。
 
 ## 6. Exit Checklist
 

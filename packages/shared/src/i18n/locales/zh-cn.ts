@@ -41,6 +41,9 @@ export const ZH_CN_TRANSLATIONS = {
       workspaceMode: '指定 workspace 迁移目标模式：repo_local|tool_managed。',
       workspaceRoot: '指定 workspace 迁移命令使用的目标根路径覆盖。',
       workspacePlan: '指定 rollback 动作使用的 workspace migration plan 产物路径。',
+      targetVersion: '指定 upgrade preview 使用的目标 schema 版本；默认采用当前支持的最新版本。',
+      confirmPlan: '指定 plan commit 的显式确认决策：approve|reject。',
+      confirmUpgrade: '指定 upgrade apply 的显式确认决策：approve|reject。',
       workflowTemplate: '指定 workflow create/edit/preview 子命令使用的流程模板标识。',
     },
     commands: {
@@ -61,12 +64,33 @@ export const ZH_CN_TRANSLATIONS = {
       review: { description: '生成代码评审基线输出。' },
       reviewVerify: { description: '验证代码评审基线输出。' },
       verify: { description: '校验适配器路由 pass/warn/fail 基线。' },
-      plan: { description: '生成或更新执行计划基线。' },
+      plan: {
+        description: '预览或提交结构化 sprint planning 产物。',
+        actionArgument: '可选 plan 动作：preview|commit。',
+        artifactArgument: 'commit 动作使用的可选 preview 产物路径。',
+        actionGuideTitle: '动作说明：',
+        actionGuidePreview:
+          '基于当前 sprint 的 Task Package 生成结构化 preview，并展示 commit readiness。',
+        actionGuideCommit:
+          '在显式确认后，把一份 preview 产物受控提交到 sprint plan/TK/checklist/tasks.csv。',
+        examplesTitle: '示例：',
+      },
       resume: {
         description: '恢复最近一次或指定的 session-shell 会话。',
         sessionIdArgument: '可选 session id；不传时默认恢复最近一次 shell 会话。',
       },
-      upgrade: { description: '执行工作区与配置升级基线。' },
+      upgrade: {
+        description: '预览、应用或回滚一条受控的工作区/配置升级基线。',
+        actionArgument: '可选 upgrade 动作：preview|apply|rollback。',
+        artifactArgument:
+          'apply/rollback 使用的可选产物路径，支持 report/apply-receipt/rollback-snapshot。',
+        actionGuideTitle: '动作说明：',
+        actionGuidePreview: '分析当前 governor.yaml，生成 preview 产物，并保持当前配置不变。',
+        actionGuideApply: '在显式确认后应用一份 preview report，并输出 apply/verify receipt。',
+        actionGuideRollback:
+          '根据 apply receipt 或 rollback snapshot 恢复旧配置，并输出 rollback receipt。',
+        examplesTitle: '示例：',
+      },
       setUiTheme: {
         description:
           '通过顶层快捷入口持久化 React shell 主题，或在交互式 pretty 模式中打开 selector。',
@@ -411,17 +435,98 @@ export const ZH_CN_TRANSLATIONS = {
         safeLocalFixHint:
           'safe_local 仅会创建可写的 workspace/config/memory 基线路径；不会安装命令、处理 adapter 登录态，也不会拉取本地模型。',
       },
+      plan: {
+        defaultSprintGoal: '为当前 active sprint 生成结构化 planning preview。',
+        inspectPreview: '检查 preview 产物：{{previewPath}}。',
+        runCommit: '准备提交时，执行 {{command}} 将该 preview 落入 sprint 台账。',
+        reviewSprintPlan:
+          '先检查当前 sprint plan 与 Task Package 输入，然后重新执行 `plan` preview。',
+        previewCompleted: 'Plan preview 已完成，readiness={{readiness}}；preview={{previewPath}}。',
+        previewCompletedReadOnly:
+          'Plan preview 已完成，但当前还不满足 commit 条件（readiness={{readiness}}）；preview={{previewPath}}。',
+        nextStepTitle: '下一步',
+        missingArtifactPath:
+          'plan commit 需要一个 preview 产物路径参数；如缺少对应产物，请先重新执行 `plan` preview。',
+        commitTargetDrift:
+          'plan commit 已被阻止，因为当前 active primary stream 与 preview 目标 stream 不再一致。',
+        invalidPreviewArtifact:
+          'Plan preview 产物不完整或已过期：{{previewPath}}。请重新执行 `plan` preview。',
+        commitRejected: 'Plan commit 在改写台账前被拒绝；receipt={{receiptPath}}。',
+        commitPreviewNotReady:
+          'plan commit 不能继续，因为 {{previewPath}} 当前还不满足 commit 条件（readiness={{readiness}}）。',
+        commitCompleted:
+          'Plan commit 已完成；receipt={{receiptPath}} created={{createdCount}} retained={{retainedCount}}。',
+        inspectCommitReceipt: '检查 commit receipt：{{receiptPath}}。',
+        invalidAction: '不支持的 plan 动作 "{{action}}"。支持的动作：{{supported}}。',
+        commitRequiresConfirmationDecision:
+          'plan commit 必须显式传入 `--confirm-plan approve|reject`。',
+        invalidConfirmationDecision:
+          '不支持的 plan 确认决策 "{{decision}}"。请使用 `approve` 或 `reject`。',
+        syncTaskLedgerUnavailable:
+          '当前安装中缺少 task-ledger 同步脚本，因此无法完成 plan commit。',
+      },
       upgrade: {
+        missingConfig: 'upgrade 需要先在 {{configPath}} 读取配置文件；请先执行 `init`。',
+        missingArtifactPath:
+          'upgrade {{action}} 需要一个产物路径参数；如缺少对应产物，请先重新执行 preview。',
+        missingRollbackSnapshot:
+          '缺少回滚快照：{{artifactPath}}。请重新执行 `upgrade` preview 以重新生成。',
+        missingRollbackSource: '缺少回滚来源产物：{{artifactPath}}。',
+        invalidAction: '不支持的 upgrade 动作 "{{action}}"。支持的动作：{{supported}}。',
+        invalidConfirmationDecision:
+          '不支持的 upgrade 确认决策 "{{decision}}"。请使用 `approve` 或 `reject`。',
+        unsupportedTargetVersion:
+          '不支持的目标 schema 版本 {{targetVersion}}。支持的版本：{{supported}}。',
+        invalidReportArtifact:
+          'Upgrade report 产物不完整或已过期：{{reportPath}}。请重新执行 `upgrade` preview。',
+        invalidAutoMigratedConfigArtifact:
+          '自动迁移配置产物不完整或已过期：{{artifactPath}}。请重新执行 `upgrade` preview。',
+        reportWorkspaceMismatch:
+          'Upgrade report 中的配置路径 {{reportConfigPath}} 与当前工作区配置 {{workspaceConfigPath}} 不一致。',
+        applySourceDrift:
+          'upgrade apply 已被阻止，因为当前 governor.yaml 自 {{reportPath}} 生成后已经发生变化。',
+        applyBlocked:
+          'Upgrade apply 已被阻止；请重新生成 preview 产物并确保其处于 apply-ready 状态。',
+        confirmationRequiredForApply:
+          '当 preview 报告包含 confirmation item 时，upgrade apply 必须显式传入 `--confirm-upgrade approve|reject`。',
+        applyRequiresWriteAccess: 'upgrade apply 需要对 {{configPath}} 的写权限。',
+        rollbackRequiresWriteAccess: 'upgrade rollback 需要对 {{configPath}} 的写权限。',
+        rollbackReferenceReason: '受控升级 preview 会保留当前配置快照，作为显式回滚来源。',
         inspectReport:
           '先检查 {{reportPath}}，并将其与 {{autoMigratedConfigPath}} 对比后再决定是否写回配置。',
         confirmItems: '在替换 governor.yaml 之前，先逐条确认所有 confirmation item。',
         keepRollback: '如果后续要写回迁移后的配置，请保留 {{rollbackSnapshotPath}} 作为回滚来源。',
+        applyWithReport: '准备写回时，请执行 {{command}} 通过受控 apply 路径落配置。',
+        rollbackWithReceipt: '如果后续想恢复旧配置，请执行 {{command}}。',
         artifactsGenerated: '升级分析产物已生成。',
+        previewCompleted: '升级 preview 已完成，readiness={{readiness}}；report={{reportPath}}。',
+        previewReadiness: 'Preview readiness={{readiness}}。',
         manualConfirmationRequired: '写回升级变更前需要人工确认。',
         noManualConfirmation: '当前分析的升级路径无需人工确认。',
+        applyCompleted:
+          'Upgrade apply 已完成；apply_receipt={{applyReceiptPath}} verify_receipt={{verifyReceiptPath}}。',
+        applyRejected: 'Upgrade apply 在改写前被拒绝；apply_receipt={{applyReceiptPath}}。',
+        applyRejectedSummary: 'Upgrade apply 因显式 reject 决策而停止。',
+        applyResultSummary: 'Upgrade apply 状态={{status}}。',
+        verifyResultSummary: 'Upgrade verify 状态={{status}}。',
+        verifyFailed:
+          'Upgrade verify 在写回后失败；请检查 {{verifyReceiptPath}} 了解详情与恢复证据。',
+        confirmationApplied: '受控 apply 已接受确认决策。',
+        rollbackCompleted: 'Upgrade rollback 已完成；rollback_receipt={{rollbackReceiptPath}}。',
+        rollbackResultSummary: 'Upgrade rollback 已恢复旧配置快照。',
         reviewUpgradeArtifacts: '检查升级产物',
         confirmUpgradeChanges: '确认升级变更',
+        runControlledApply: '执行受控 apply',
         retainRollbackSnapshot: '保留回滚快照',
+        runRollback: '执行回滚',
+        inspectApplyReceiptTitle: '检查 apply receipt',
+        inspectVerifyReceiptTitle: '检查 verify receipt',
+        inspectRollbackReceiptTitle: '检查 rollback receipt',
+        inspectApplyReceipt: '检查 apply receipt：{{applyReceiptPath}}。',
+        inspectVerifyReceipt: '检查 verify receipt：{{verifyReceiptPath}}。',
+        inspectRollbackReceipt: '检查 rollback receipt：{{rollbackReceiptPath}}。',
+        rerunPreviewAfterRollback:
+          '如果要基于已恢复的配置重新生成升级报告，请重新执行 `upgrade` preview。',
       },
       init: {
         selectWorkspaceMode: '选择工作区模式 [1=tool_managed, 2=repo_local]（默认 1）: ',
@@ -588,19 +693,28 @@ export const ZH_CN_TRANSLATIONS = {
         },
         help: {
           analyzeOnly:
-            'upgrade 目前仍保持 analyze-only；React shell 只预览 report、migrated-config 与 rollback reference，不会直接改写 governor.yaml。',
+            'Preview 阶段不会改写 governor.yaml；受控 apply 与 rollback 也继续共用同一套 React shell 摘要，但不持有 mutation 真值。',
           rollbackReference:
-            '如果后续应用迁移结果，请保留 rollback snapshot，便于显式恢复当前分析前的配置。',
+            '请保留 rollback snapshot 与 receipts，让 preview/apply/rollback 都可回放、可诊断。',
         },
         status: {
           manualConfirmation: '在应用 {{count}} 个阻断性升级变更前，仍需人工确认。',
-          analysisReady: '升级分析已就绪，目标版本={{targetVersion}}。',
+          previewReady: '升级 preview 已就绪，目标版本={{targetVersion}}。',
+          applyBlocked: 'Upgrade apply 当前处于 blocked；请重新生成 preview 产物。',
+          applyCompleted: '受控 upgrade apply 已成功完成。',
+          applyRejected: '受控 upgrade apply 在改写前被拒绝。',
+          verifyFailed: 'Upgrade verify 在写回后失败，且已记录恢复证据。',
+          rollbackCompleted: 'Upgrade rollback 已成功完成。',
         },
         summary: {
           reportPath: '升级报告：{{path}}',
           autoMigratedConfigPath: '自动迁移配置：{{path}}',
           rollbackSnapshotPath: '回滚快照：{{path}}',
+          applyReceiptPath: 'Apply receipt：{{path}}',
+          verifyReceiptPath: 'Verify receipt：{{path}}',
+          rollbackReceiptPath: 'Rollback receipt：{{path}}',
           counts: '建议={{suggestions}}；确认项={{confirmations}}；阻断={{blocking}}。',
+          applyReadiness: 'Apply readiness={{readiness}}。',
         },
       },
       workspace: {
@@ -791,9 +905,17 @@ export const ZH_CN_TRANSLATIONS = {
     output: {
       pretty: {
         checkLabels: {
+          planTaskPackage: 'Plan 任务包',
+          planCommitReadiness: 'Plan 提交就绪度',
+          planLedgerProjection: 'Plan 台账投影',
+          planCommitReceipt: 'Plan commit receipt',
           upgradeSchemaDiff: '升级 schema diff',
           migrationSuggestions: '迁移建议',
           confirmationItems: '确认项',
+          upgradeApplyReadiness: '升级 apply readiness',
+          upgradeApplyReceipt: '升级 apply receipt',
+          upgradeVerifyReceipt: '升级 verify receipt',
+          upgradeRollbackReceipt: '升级 rollback receipt',
           rollbackReference: '回滚参考',
           workspaceAction: '工作区动作',
           workspaceTarget: '工作区目标',
@@ -803,9 +925,18 @@ export const ZH_CN_TRANSLATIONS = {
           workflowCompileStatus: '流程编译状态',
         },
         checkDetails: {
+          planTaskPackage: '{{total}} 条任务，新增 {{create}} 条，复用 {{retain}} 条',
+          planCommitReadiness: 'readiness {{readiness}}，缺少 {{missing}} 个字段',
+          planLedgerProjection:
+            'plan.md {{planMd}}，checklist.md {{checklistMd}}，tasks.csv {{tasksCsv}}，TK 文件 {{tkFiles}}',
+          planCommitReceipt:
+            '状态 {{status}}，新增 {{created}} 条，复用 {{retained}} 条，receipt {{path}}',
           upgradeSchemaDiff: '差异 {{diffs}} 项，{{source}} -> {{target}}',
           migrationSuggestions: '{{count}} 条建议',
           confirmationItems: '决策 {{decision}}，确认项 {{count}} 条，阻断 {{blocking}} 条',
+          upgradeApplyReadiness:
+            'readiness {{readiness}}，决策 {{decision}}，确认项 {{count}} 条，阻断 {{blocking}} 条',
+          upgradeReceipt: '状态 {{status}}，receipt {{path}}',
           workspaceTarget: '模式 {{mode}}，根路径 {{root}}',
           workspaceScratchCleanupRemoved: 'scratch 根目录已移除：{{root}}',
           workspaceScratchCleanupRetained: 'scratch 根目录保留：{{root}}',

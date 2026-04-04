@@ -1,9 +1,10 @@
 import { once } from 'node:events';
-import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
+import { stringify } from 'yaml';
 
 import type { ClaudeCodeExecRunner } from '@repo-ai-governor/adapter-claude-code';
 import type { CodexExecRunner } from '@repo-ai-governor/adapter-codex';
@@ -49,6 +50,7 @@ import {
   I18nRuntime,
   LocalModelProvider,
   RuntimeError,
+  WorkspaceMigrationPolicy,
 } from '@repo-ai-governor/shared';
 import { CliGovernanceRuntime } from '../src/cli-governance-runtime.js';
 import { CliCommandName } from '../src/constants/cli-command.constant.js';
@@ -56,6 +58,7 @@ import type {
   CliCommandProgressEvent,
   CliOrchestrationServiceRuntimeDependencies,
   CliRuntimeDebugOptions,
+  CliUpgradeCommandOptions,
   CliWorkspaceCommandOptions,
 } from '../src/types/index.js';
 
@@ -71,6 +74,9 @@ interface RuntimeFixture {
 interface RuntimeFixtureOptions {
   runtimeDebugOptions?: CliRuntimeDebugOptions;
   workspaceCommandOptions?: CliWorkspaceCommandOptions;
+  upgradeCommandOptions?: CliUpgradeCommandOptions;
+  config?: GovernorConfig;
+  writeConfigFile?: boolean;
   adaptersConfig?: AdaptersConfig;
   adapterLocalProbeOverrides?: Partial<
     Record<
@@ -94,6 +100,18 @@ interface NotificationEndpointFixture {
   url: string;
   requests: Array<Record<string, unknown>>;
   close(): Promise<void>;
+}
+
+interface PlanCommandFixture {
+  projectId: string;
+  sprintId: string;
+  currentContextPath: string;
+  projectPlanPath: string;
+  sprintPlanPath: string;
+  tasksDirPath: string;
+  existingTaskId: string;
+  createdTaskId: string;
+  createdTaskTitle: string;
 }
 
 function createCodexExecRunnerFixture(): CodexExecRunner {
@@ -316,7 +334,7 @@ function createGovernorConfigFixture(adaptersConfig: AdaptersConfig): GovernorCo
     schemaVersion: '1.1',
     workspace: {
       mode: WorkspaceMode.REPO_LOCAL,
-      migrationPolicy: 'copy_verify_switch_rollback',
+      migrationPolicy: WorkspaceMigrationPolicy.COPY_VERIFY_SWITCH_ROLLBACK,
     },
     i18n: {
       runtimeEngine: 'i18next',
@@ -329,6 +347,21 @@ function createGovernorConfigFixture(adaptersConfig: AdaptersConfig): GovernorCo
       storeRoot: 'context/memory',
     },
     adapters: structuredClone(adaptersConfig),
+  };
+}
+
+/**
+ * Creates one legacy schema config fixture that requires preview confirmation before apply.
+ * @param adaptersConfig Adapters config captured in the fixture.
+ * @returns Upgradeable v1.0 governor config.
+ */
+function createLegacyGovernorConfigFixture(adaptersConfig: AdaptersConfig): GovernorConfig {
+  return {
+    ...createGovernorConfigFixture(adaptersConfig),
+    schemaVersion: '1.0',
+    workspace: {
+      mode: WorkspaceMode.REPO_LOCAL,
+    },
   };
 }
 
@@ -467,10 +500,14 @@ async function createRuntimeFixture(options: RuntimeFixtureOptions = {}): Promis
     rootDirectory: memoryStoreRoot,
   });
   const adaptersConfig = options.adaptersConfig ?? createAdaptersConfigFixture();
+  const config = options.config ?? createGovernorConfigFixture(adaptersConfig);
+  if (options.writeConfigFile === true) {
+    await writeFile(workspace.configPath, `${stringify(config).trimEnd()}\n`, 'utf8');
+  }
   const runtime = new CliGovernanceRuntime({
     currentWorkingDirectory: tempRoot,
     workspace,
-    config: createGovernorConfigFixture(adaptersConfig),
+    config,
     configSource: 'default',
     profileId: null,
     locale: 'en-US',
@@ -487,6 +524,7 @@ async function createRuntimeFixture(options: RuntimeFixtureOptions = {}): Promis
       i18nRuntime.t(key, interpolation),
     adaptersConfig,
     workspaceCommandOptions: options.workspaceCommandOptions,
+    upgradeCommandOptions: options.upgradeCommandOptions,
     runtimeDebugOptions: options.runtimeDebugOptions,
     adapterLocalProbeOverrides:
       options.adapterLocalProbeOverrides ?? createAdapterLocalProbeOverrides(),
@@ -619,6 +657,160 @@ async function writeDeliveryTaskCardFixture(
   );
 
   return taskCardPath;
+}
+
+/**
+ * Writes one active-stream planning fixture used by plan preview/commit integration tests.
+ * @param workspaceRoot Workspace root under the isolated fixture.
+ * @returns Absolute paths and ids used by plan-command assertions.
+ */
+async function writePlanCommandFixture(workspaceRoot: string): Promise<PlanCommandFixture> {
+  const projectId = 'project-042-plan-command-fixture';
+  const sprintId = 'sprint-002-plan-command-fixture';
+  const existingTaskId = 'TK-523';
+  const createdTaskId = 'TK-524';
+  const createdTaskTitle = 'align plan commit presenter and regression acceptance';
+  const docsRootRelative = `.repo-ai-governor/context/dev/${projectId}`;
+  const sprintRootRelative = `${docsRootRelative}/${sprintId}`;
+  const tasksRelative = `${sprintRootRelative}/tasks/`;
+  const reviewRelative = `${sprintRootRelative}/review/`;
+  const checklistRelative = `${tasksRelative}checklist.md`;
+  const csvRelative = `${tasksRelative}tasks.csv`;
+  const currentContextPath = resolve(workspaceRoot, 'context', 'current-context.md');
+  const projectPlanPath = resolve(workspaceRoot, 'context', 'dev', projectId, 'plan.md');
+  const sprintPlanPath = resolve(workspaceRoot, 'context', 'dev', projectId, sprintId, 'plan.md');
+  const tasksDirPath = resolve(workspaceRoot, 'context', 'dev', projectId, sprintId, 'tasks');
+  const reviewDirPath = resolve(workspaceRoot, 'context', 'dev', projectId, sprintId, 'review');
+
+  await mkdir(tasksDirPath, { recursive: true });
+  await mkdir(reviewDirPath, { recursive: true });
+  await writeFile(
+    currentContextPath,
+    [
+      '# Workspace Current Context',
+      '',
+      '## Primary Stream',
+      '',
+      '- Status: active',
+      `- Project: \`${projectId}\``,
+      `- Sprint: \`${sprintId}\``,
+      `- Docs root: \`${docsRootRelative}\``,
+      `- Task records: \`${tasksRelative}\``,
+      `- Review records: \`${reviewRelative}\``,
+      '',
+      '## Active Streams',
+      '',
+      `- \`primary\`: project=\`${projectId}\`, sprint=\`${sprintId}\`, docs=\`${docsRootRelative}\`, plan=\`${docsRootRelative}/plan.md\`, tasks=\`${tasksRelative}\`, checklist=\`${checklistRelative}\`, csv=\`${csvRelative}\`, review=\`${reviewRelative}\`, status=\`active\`, note=\`fixture for plan preview and commit tests\``,
+      '',
+    ].join('\n'),
+    'utf8',
+  );
+  await writeFile(
+    projectPlanPath,
+    [
+      `# ${projectId} 计划`,
+      '',
+      '- Status: active',
+      '- Date: 2026-04-04',
+      '- Stage Mapping: fixture',
+      '',
+      '## 1. 目标',
+      '',
+      '1. Validate plan preview and commit productization.',
+      '',
+    ].join('\n'),
+    'utf8',
+  );
+  await writeFile(
+    sprintPlanPath,
+    [
+      `# ${sprintId} 计划`,
+      '',
+      '- Status: active',
+      '- Date: 2026-04-04',
+      `- Project: \`${projectId}\``,
+      '- Sprint Goal: Productize plan preview and commit.',
+      '',
+      '## 1. Task Package',
+      '',
+      `1. \`${existingTaskId}\` keep existing plan preview baseline`,
+      `2. ${createdTaskTitle}`,
+      '',
+      '## 2. Exit Criteria',
+      '',
+      '1. plan preview and commit artifacts remain replayable and diagnosable.',
+      '',
+    ].join('\n'),
+    'utf8',
+  );
+  await writeFile(
+    resolve(tasksDirPath, `${existingTaskId}-keep-existing-plan-preview-baseline.md`),
+    [
+      `# ${existingTaskId} keep existing plan preview baseline`,
+      '',
+      '- Status: planned',
+      '- Date: 2026-04-04',
+      '- Owner: AI-Agent',
+      '- Priority: P0',
+      `- Project: \`${projectId}\``,
+      `- Sprint: \`${sprintId}\``,
+      '',
+      '## 1. 任务目标',
+      '',
+      '保留现有 plan preview 基线，并为受控 commit 产品化提供输入。',
+      '',
+      '## 2. Depends On',
+      '',
+      '1. `session.main` planning contract',
+      '',
+      '## 3. 预期产物',
+      '',
+      '1. 稳定的 plan preview 行为',
+      '',
+      '## 4. Required Inputs',
+      '',
+      `1. \`${sprintPlanPath}\``,
+      `2. \`${projectPlanPath}\``,
+      '',
+      '## 5. Traceback References',
+      '',
+      '1. `context/plan/*.preview.json`',
+      '',
+      '## 6. 实施计划',
+      '',
+      '1. 保持 preview 结构稳定。',
+      '',
+      '## 7. Development Verification',
+      '',
+      '1. 覆盖 plan preview 集成测试。',
+      '',
+      '## 8. Delivery Verification',
+      '',
+      '1. 覆盖 plan commit 与台账同步验证。',
+      '',
+      '## 9. 执行记录',
+      '',
+      '1. 2026-04-04：任务创建，状态初始化为 `planned`。',
+      '',
+      '## 10. 产出',
+      '',
+      '1. 待执行：keep existing plan preview baseline',
+      '',
+    ].join('\n'),
+    'utf8',
+  );
+
+  return {
+    projectId,
+    sprintId,
+    currentContextPath,
+    projectPlanPath,
+    sprintPlanPath,
+    tasksDirPath,
+    existingTaskId,
+    createdTaskId,
+    createdTaskTitle,
+  };
 }
 
 describe('CliGovernanceRuntime policy/review safeguards', () => {
@@ -1706,7 +1898,7 @@ describe('CliGovernanceRuntime policy/review safeguards', () => {
     );
   });
 
-  it('drains queued review request after review-verify emits verify/backfill artifacts', async () => {
+  it('consumes resolved review requests and records non-task ledger-backfill as not requested', async () => {
     await withRuntimeFixture(async (fixture) => {
       const reviewResult = await fixture.runtime.execute(CliCommandName.REVIEW);
       expect(reviewResult.commandResult.details?.orchestration_execution_id).toMatch(/^review-/u);
@@ -1755,7 +1947,7 @@ describe('CliGovernanceRuntime policy/review safeguards', () => {
         experience?.roleProgress.some(
           (row) =>
             row.stage === ExecutionProgressStage.LEDGER_BACKFILL &&
-            row.status === ExecutionProgressStatus.WAITING,
+            row.status === ExecutionProgressStatus.COMPLETED,
         ),
       ).toBe(true);
 
@@ -1789,6 +1981,9 @@ describe('CliGovernanceRuntime policy/review safeguards', () => {
       const reviewRequestPath = reviewResult.commandResult.artifacts?.find(
         (artifact) => artifact.id === 'review_request',
       )?.path;
+      const reviewArtifactPath = reviewResult.commandResult.artifacts?.find(
+        (artifact) => artifact.id === 'review_artifact',
+      )?.path;
       const reviewSummary = await runtimeWithOrchestration.orchestrationServiceRuntime.getExecution(
         String(reviewResult.commandResult.details?.orchestration_execution_id),
       );
@@ -1801,8 +1996,8 @@ describe('CliGovernanceRuntime policy/review safeguards', () => {
       expect(reviewResult.commandResult.details?.orchestration_service_transport_kind).toBe(
         'in_process',
       );
-      expect(reviewSummary?.latestArtifactId).toBe('review_request');
-      expect(reviewSummary?.latestArtifactPath).toBe(reviewRequestPath);
+      expect(reviewSummary?.latestArtifactId).toBe('review_artifact');
+      expect(reviewSummary?.latestArtifactPath).toBe(reviewArtifactPath);
       expect(
         reviewSubscription.events.some(
           (event) =>
@@ -1811,10 +2006,21 @@ describe('CliGovernanceRuntime policy/review safeguards', () => {
             event.artifactPath === reviewRequestPath,
         ),
       ).toBe(true);
+      expect(
+        reviewSubscription.events.some(
+          (event) =>
+            event.type === OrchestrationServiceEventType.ARTIFACT_READY &&
+            event.artifactId === 'review_artifact' &&
+            event.artifactPath === reviewArtifactPath,
+        ),
+      ).toBe(true);
 
       const verifyResult = await fixture.runtime.execute(CliCommandName.REVIEW_VERIFY);
       const ledgerBackfillPath = verifyResult.commandResult.artifacts?.find(
         (artifact) => artifact.id === 'review_ledger_backfill',
+      )?.path;
+      const verifyReviewArtifactPath = verifyResult.commandResult.artifacts?.find(
+        (artifact) => artifact.id === 'review_artifact',
       )?.path;
       const verifySummary = await runtimeWithOrchestration.orchestrationServiceRuntime.getExecution(
         String(verifyResult.commandResult.details?.orchestration_execution_id),
@@ -1828,14 +2034,22 @@ describe('CliGovernanceRuntime policy/review safeguards', () => {
       expect(verifyResult.commandResult.details?.orchestration_service_transport_kind).toBe(
         'in_process',
       );
-      expect(verifySummary?.latestArtifactId).toBe('review_ledger_backfill');
-      expect(verifySummary?.latestArtifactPath).toBe(ledgerBackfillPath);
+      expect(verifySummary?.latestArtifactId).toBe('review_artifact');
+      expect(verifySummary?.latestArtifactPath).toBe(verifyReviewArtifactPath);
       expect(
         verifySubscription.events.some(
           (event) =>
             event.type === OrchestrationServiceEventType.ARTIFACT_READY &&
             event.artifactId === 'review_ledger_backfill' &&
             event.artifactPath === ledgerBackfillPath,
+        ),
+      ).toBe(true);
+      expect(
+        verifySubscription.events.some(
+          (event) =>
+            event.type === OrchestrationServiceEventType.ARTIFACT_READY &&
+            event.artifactId === 'review_artifact' &&
+            event.artifactPath === verifyReviewArtifactPath,
         ),
       ).toBe(true);
       expect(verifySubscription.events.at(-1)?.type).toBe(
@@ -2042,7 +2256,7 @@ describe('CliGovernanceRuntime policy/review safeguards', () => {
         attribution?: { chain?: string };
       };
       expect(verifyPayload.ledgerBackfillPath).toBe(backfillArtifactPath);
-      expect(backfillPayload.status).toBe('pending');
+      expect(backfillPayload.status).toBe('not_requested');
       expect(backfillPayload.attribution?.chain).toBe('review->review-verify->ledger-backfill');
     });
   });
@@ -2088,8 +2302,10 @@ describe('CliGovernanceRuntime policy/review safeguards', () => {
 
         expect(tasksCsvContent).toContain('TK-130');
         expect(tasksCsvContent).toContain('review-verify review-verify-');
-        expect(tasksCsvContent).toContain('managed ledger backfill applied from review-verify-');
-        expect(checklistContent).toContain('自动消费 review-verify 产物并完成 ledger backfill');
+        expect(tasksCsvContent).toContain('review artifact');
+        expect(tasksCsvContent).toContain('transitioned to resolved');
+        expect(checklistContent).toContain('review-verify updated');
+        expect(checklistContent).toContain('applied ledger backfill');
       },
       {
         runtimeDebugOptions: {
@@ -2173,28 +2389,195 @@ describe('CliGovernanceRuntime policy/review safeguards', () => {
 
       expect(initResult.commandResult.operation).toBe('workspace_init');
       expect(checkResult.commandResult.operation).toBe('governance_check');
-      expect(planResult.commandResult.operation).toBe('plan_snapshot');
+      expect(planResult.commandResult.operation).toBe('plan_preview');
       expect(upgradeResult.commandResult.operation).toBe('schema_upgrade_analyze');
       expect(workspaceResult.commandResult.operation).toBe('workspace_migration_plan');
       expect(runResult.commandResult.operation).toBe('governance_run');
     });
   });
 
-  it('writes upgrade adopter-facing artifacts including rollback snapshot and migrated config', async () => {
+  it('writes plan preview artifacts from the active sprint task package', async () => {
     await withRuntimeFixture(async (fixture) => {
-      const upgradeResult = await fixture.runtime.execute(CliCommandName.UPGRADE);
-      const artifactIds =
-        upgradeResult.commandResult.artifacts?.map((artifact) => artifact.id).sort() ?? [];
+      const planFixture = await writePlanCommandFixture(fixture.workspaceRoot);
+      const previewResult = await fixture.runtime.execute(CliCommandName.PLAN);
+      const previewPath = String(previewResult.commandResult.details?.preview_path);
+      const previewPayload = JSON.parse(await readFile(previewPath, 'utf8')) as {
+        preview?: {
+          commitReadiness?: string;
+          taskPackage?: Array<{
+            provisionalTaskId?: string;
+          }>;
+        };
+      };
 
-      expect(artifactIds).toEqual([
-        'upgrade_auto_migrated_config',
-        'upgrade_report',
-        'upgrade_rollback_snapshot',
+      expect(previewResult.commandResult.operation).toBe('plan_preview');
+      expect(previewResult.commandResult.artifacts?.map((artifact) => artifact.id)).toEqual([
+        'plan_preview',
       ]);
-      expect(upgradeResult.commandResult.details?.rollback_snapshot_path).toBeTypeOf('string');
-      expect(upgradeResult.commandResult.details?.auto_migrated_config_path).toBeTypeOf('string');
-      expect(upgradeResult.commandResult.details?.confirmation_count).toBeTypeOf('number');
+      expect(previewResult.commandResult.details?.target_project_id).toBe(planFixture.projectId);
+      expect(previewResult.commandResult.details?.target_sprint_id).toBe(planFixture.sprintId);
+      expect(previewResult.commandResult.details?.commit_readiness).toBe('ready');
+      expect(previewResult.commandResult.details?.task_package_total).toBe(2);
+      expect(previewResult.commandResult.details?.task_package_create_count).toBe(1);
+      expect(previewResult.commandResult.details?.task_package_retain_count).toBe(1);
+      expect(previewPayload.preview?.commitReadiness).toBe('ready');
+      expect(previewPayload.preview?.taskPackage?.map((task) => task.provisionalTaskId)).toEqual([
+        planFixture.existingTaskId,
+        planFixture.createdTaskId,
+      ]);
     });
+  });
+
+  it('commits approved plan previews into sprint ledgers and derived task views', async () => {
+    await withRuntimeFixture(async (fixture) => {
+      const planFixture = await writePlanCommandFixture(fixture.workspaceRoot);
+      const previewResult = await fixture.runtime.execute(CliCommandName.PLAN);
+      const runtimeWithPlanOptions = fixture.runtime as unknown as {
+        options: {
+          planCommandOptions?: {
+            action: string | null;
+            artifactPath: string | null;
+            confirmationDecision: string | null;
+          };
+        };
+      };
+      runtimeWithPlanOptions.options.planCommandOptions = {
+        action: 'commit',
+        artifactPath: String(previewResult.commandResult.details?.preview_path),
+        confirmationDecision: 'approve',
+      };
+
+      const commitResult = await fixture.runtime.execute(CliCommandName.PLAN);
+      const receiptPath = String(commitResult.commandResult.details?.receipt_path);
+      const receiptPayload = JSON.parse(await readFile(receiptPath, 'utf8')) as {
+        status?: string;
+        createdTaskIds?: string[];
+        retainedTaskIds?: string[];
+      };
+      const taskFileNames = await readdir(planFixture.tasksDirPath);
+      const checklistContent = await readFile(
+        resolve(planFixture.tasksDirPath, 'checklist.md'),
+        'utf8',
+      );
+      const tasksCsvContent = await readFile(
+        resolve(planFixture.tasksDirPath, 'tasks.csv'),
+        'utf8',
+      );
+      const sprintPlanContent = await readFile(planFixture.sprintPlanPath, 'utf8');
+
+      expect(commitResult.commandResult.operation).toBe('plan_commit');
+      expect(commitResult.commandResult.details?.commit_status).toBe('committed');
+      expect(receiptPayload.status).toBe('committed');
+      expect(receiptPayload.createdTaskIds).toEqual([planFixture.createdTaskId]);
+      expect(receiptPayload.retainedTaskIds).toEqual([planFixture.existingTaskId]);
+      expect(
+        taskFileNames.some((fileName) => fileName.startsWith(`${planFixture.createdTaskId}-`)),
+      ).toBe(true);
+      expect(checklistContent).toContain(
+        `${planFixture.createdTaskId} ${planFixture.createdTaskTitle}`,
+      );
+      expect(tasksCsvContent).toContain(planFixture.createdTaskId);
+      expect(tasksCsvContent).toContain(planFixture.createdTaskTitle);
+      expect(sprintPlanContent).toContain(
+        `\`${planFixture.createdTaskId}\` ${planFixture.createdTaskTitle}`,
+      );
+    });
+  });
+
+  it('writes upgrade adopter-facing artifacts including rollback snapshot and migrated config', async () => {
+    await withRuntimeFixture(
+      async (fixture) => {
+        const upgradeResult = await fixture.runtime.execute(CliCommandName.UPGRADE);
+        const artifactIds =
+          upgradeResult.commandResult.artifacts?.map((artifact) => artifact.id).sort() ?? [];
+
+        expect(artifactIds).toEqual([
+          'upgrade_auto_migrated_config',
+          'upgrade_report',
+          'upgrade_rollback_snapshot',
+        ]);
+        expect(upgradeResult.commandResult.details?.rollback_snapshot_path).toBeTypeOf('string');
+        expect(upgradeResult.commandResult.details?.auto_migrated_config_path).toBeTypeOf('string');
+        expect(upgradeResult.commandResult.details?.confirmation_count).toBeTypeOf('number');
+      },
+      { writeConfigFile: true },
+    );
+  });
+
+  it('applies an upgrade report with explicit confirmation and writes verify receipts', async () => {
+    await withRuntimeFixture(
+      async (fixture) => {
+        const previewResult = await fixture.runtime.execute(CliCommandName.UPGRADE);
+        const runtimeWithUpgradeOptions = fixture.runtime as unknown as {
+          options: {
+            upgradeCommandOptions?: CliUpgradeCommandOptions;
+          };
+        };
+        runtimeWithUpgradeOptions.options.upgradeCommandOptions = {
+          action: 'apply',
+          artifactPath: String(previewResult.commandResult.details?.report_path),
+          targetVersion: null,
+          confirmationDecision: 'approve',
+        };
+
+        const applyResult = await fixture.runtime.execute(CliCommandName.UPGRADE);
+        const artifactIds =
+          applyResult.commandResult.artifacts?.map((artifact) => artifact.id).sort() ?? [];
+        const configContent = await readFile(fixture.workspace.configPath, 'utf8');
+
+        expect(applyResult.commandResult.operation).toBe('schema_upgrade_apply');
+        expect(artifactIds).toEqual(['upgrade_apply_receipt', 'upgrade_verify_receipt']);
+        expect(applyResult.commandResult.details?.apply_status).toBe('applied');
+        expect(applyResult.commandResult.details?.verify_status).toBe('passed');
+        expect(configContent).toContain('schemaVersion: "1.1"');
+        expect(configContent).toContain('migrationPolicy: copy_verify_switch_rollback');
+      },
+      {
+        config: createLegacyGovernorConfigFixture(createAdaptersConfigFixture()),
+        writeConfigFile: true,
+      },
+    );
+  });
+
+  it('rolls back an applied upgrade from the apply receipt path', async () => {
+    await withRuntimeFixture(
+      async (fixture) => {
+        const previewResult = await fixture.runtime.execute(CliCommandName.UPGRADE);
+        const runtimeWithUpgradeOptions = fixture.runtime as unknown as {
+          options: {
+            upgradeCommandOptions?: CliUpgradeCommandOptions;
+          };
+        };
+        runtimeWithUpgradeOptions.options.upgradeCommandOptions = {
+          action: 'apply',
+          artifactPath: String(previewResult.commandResult.details?.report_path),
+          targetVersion: null,
+          confirmationDecision: 'approve',
+        };
+        const applyResult = await fixture.runtime.execute(CliCommandName.UPGRADE);
+
+        runtimeWithUpgradeOptions.options.upgradeCommandOptions = {
+          action: 'rollback',
+          artifactPath: String(applyResult.commandResult.details?.apply_receipt_path),
+          targetVersion: null,
+          confirmationDecision: null,
+        };
+        const rollbackResult = await fixture.runtime.execute(CliCommandName.UPGRADE);
+        const artifactIds =
+          rollbackResult.commandResult.artifacts?.map((artifact) => artifact.id).sort() ?? [];
+        const configContent = await readFile(fixture.workspace.configPath, 'utf8');
+
+        expect(rollbackResult.commandResult.operation).toBe('schema_upgrade_rollback');
+        expect(artifactIds).toEqual(['upgrade_rollback_receipt', 'upgrade_verify_receipt']);
+        expect(rollbackResult.commandResult.details?.verify_status).toBe('passed');
+        expect(configContent).toContain('schemaVersion: "1.0"');
+        expect(configContent).not.toContain('migrationPolicy: copy_verify_switch_rollback');
+      },
+      {
+        config: createLegacyGovernorConfigFixture(createAdaptersConfigFixture()),
+        writeConfigFile: true,
+      },
+    );
   });
 
   it('assembles task-driven run flow when --task-id points to a canonical task card', async () => {
@@ -2983,7 +3366,7 @@ describe('CliGovernanceRuntime policy/review safeguards', () => {
             artifactRegistryCanonicalTruth?: {
               state?: string;
             };
-            taskLedgerProjection?: {
+            taskLedgerCanonicalTruth?: {
               state?: string;
             };
           };
@@ -2998,7 +3381,9 @@ describe('CliGovernanceRuntime policy/review safeguards', () => {
         expect(diagnosticsPayload.durableStorage?.artifactRegistryCanonicalTruth?.state).toBe(
           'uninitialized',
         );
-        expect(diagnosticsPayload.durableStorage?.taskLedgerProjection?.state).toBe('no_sources');
+        expect(diagnosticsPayload.durableStorage?.taskLedgerCanonicalTruth?.state).toBe(
+          'no_sources',
+        );
         expect(
           (diagnosticsPayload.checks ?? []).some((check) => check.id === 'session_durable_truth'),
         ).toBe(true);
@@ -3008,7 +3393,9 @@ describe('CliGovernanceRuntime policy/review safeguards', () => {
           ),
         ).toBe(true);
         expect(
-          (diagnosticsPayload.checks ?? []).some((check) => check.id === 'task_ledger_projection'),
+          (diagnosticsPayload.checks ?? []).some(
+            (check) => check.id === 'task_ledger_canonical_truth',
+          ),
         ).toBe(true);
       },
       {
@@ -3058,6 +3445,164 @@ describe('CliGovernanceRuntime policy/review safeguards', () => {
         expect(diagnosticsPayload.durableStorage?.artifactRegistryCanonicalTruth?.state).toBe(
           'read_failed',
         );
+      },
+      {
+        runtimeDebugOptions: {
+          dryRun: false,
+          trace: false,
+          replayPath: null,
+          adapters: false,
+        },
+      },
+    );
+  });
+
+  it('reads legacy task-ledger sqlite naming as canonical truth in doctor diagnostics', async () => {
+    await withRuntimeFixture(
+      async (fixture) => {
+        const taskLedgerTasksRoot = resolve(
+          fixture.workspaceRoot,
+          'context',
+          'dev',
+          'project-legacy',
+          'sprint-001-demo',
+          'tasks',
+        );
+        await mkdir(taskLedgerTasksRoot, { recursive: true });
+        const taskCsvPath = resolve(taskLedgerTasksRoot, 'tasks.csv');
+        const headerLine =
+          'execution_id,task_id,title,owner,priority,due_date,status,project,sprint,plan,result,verify,review_delta,recorded_at';
+        await writeFile(
+          taskCsvPath,
+          `${[
+            headerLine,
+            'exec-legacy,TK-990,Legacy task,AI-Agent,P0,2026-04-10,completed,project-legacy,sprint-001-demo,legacy plan,legacy result,legacy verify,legacy review,2026-04-04',
+          ].join('\n')}\n`,
+          'utf8',
+        );
+        const taskCsvStat = await stat(taskCsvPath);
+
+        const legacySqliteRoot = resolve(fixture.workspaceRoot, 'context', 'dev', 'sqlite');
+        await mkdir(legacySqliteRoot, { recursive: true });
+        const legacyDatabasePath = resolve(legacySqliteRoot, 'task-ledger-projection.sqlite');
+        const legacyDatabase = new DatabaseSync(legacyDatabasePath);
+        legacyDatabase.exec(`
+          CREATE TABLE task_ledger_projection_sources (
+            source_path TEXT PRIMARY KEY,
+            source_mtime_ms INTEGER NOT NULL,
+            source_size INTEGER NOT NULL,
+            row_count INTEGER NOT NULL,
+            synced_at TEXT NOT NULL
+          );
+        `);
+        legacyDatabase.exec(`
+          CREATE TABLE task_ledger_projection_rows (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            source_path TEXT NOT NULL,
+            source_row_number INTEGER NOT NULL,
+            execution_id TEXT NOT NULL,
+            task_id TEXT NOT NULL,
+            title TEXT NOT NULL,
+            owner TEXT NOT NULL,
+            priority TEXT NOT NULL,
+            due_date TEXT NOT NULL,
+            status TEXT NOT NULL,
+            project TEXT NOT NULL,
+            sprint TEXT NOT NULL,
+            plan TEXT NOT NULL,
+            result TEXT NOT NULL,
+            verify TEXT NOT NULL,
+            review_delta TEXT NOT NULL,
+            recorded_at TEXT NOT NULL,
+            UNIQUE(source_path, source_row_number)
+          );
+        `);
+        legacyDatabase
+          .prepare(
+            `
+              INSERT INTO task_ledger_projection_sources (
+                source_path,
+                source_mtime_ms,
+                source_size,
+                row_count,
+                synced_at
+              ) VALUES (?, ?, ?, ?, ?)
+            `,
+          )
+          .run(
+            taskCsvPath,
+            Math.trunc(taskCsvStat.mtimeMs),
+            taskCsvStat.size,
+            1,
+            '2026-04-04T00:00:00.000Z',
+          );
+        legacyDatabase
+          .prepare(
+            `
+              INSERT INTO task_ledger_projection_rows (
+                source_path,
+                source_row_number,
+                execution_id,
+                task_id,
+                title,
+                owner,
+                priority,
+                due_date,
+                status,
+                project,
+                sprint,
+                plan,
+                result,
+                verify,
+                review_delta,
+                recorded_at
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `,
+          )
+          .run(
+            taskCsvPath,
+            2,
+            'exec-legacy',
+            'TK-990',
+            'Legacy task',
+            'AI-Agent',
+            'P0',
+            '2026-04-10',
+            'completed',
+            'project-legacy',
+            'sprint-001-demo',
+            'legacy plan',
+            'legacy result',
+            'legacy verify',
+            'legacy review',
+            '2026-04-04',
+          );
+        legacyDatabase.close();
+
+        const doctorResult = await fixture.runtime.execute(CliCommandName.DOCTOR);
+        expect(doctorResult.commandResult.details?.task_ledger_canonical_truth_status).toBe('pass');
+        expect(
+          doctorResult.commandResult.checks?.some(
+            (check) => check.id === 'task_ledger_canonical_truth',
+          ),
+        ).toBe(true);
+
+        const diagnosticsArtifactPath = doctorResult.commandResult.artifacts?.find(
+          (artifact) => artifact.id === 'doctor_diagnostics',
+        )?.path;
+        expect(typeof diagnosticsArtifactPath).toBe('string');
+
+        const diagnosticsPayload = JSON.parse(
+          await readFile(String(diagnosticsArtifactPath), 'utf8'),
+        ) as {
+          durableStorage?: {
+            taskLedgerCanonicalTruth?: {
+              state?: string;
+            };
+          };
+        };
+
+        expect(diagnosticsPayload.durableStorage?.taskLedgerCanonicalTruth?.state).toBe('in_sync');
       },
       {
         runtimeDebugOptions: {
@@ -3180,7 +3725,9 @@ describe('CliGovernanceRuntime policy/review safeguards', () => {
           ),
         ).toBe(true);
         expect(
-          verifyResult.commandResult.checks?.some((check) => check.id === 'task_ledger_projection'),
+          verifyResult.commandResult.checks?.some(
+            (check) => check.id === 'task_ledger_canonical_truth',
+          ),
         ).toBe(true);
         expect(
           verifyResult.commandResult.experience?.roleProgress.some(
@@ -3220,7 +3767,7 @@ describe('CliGovernanceRuntime policy/review safeguards', () => {
             artifactRegistryRenderedViews?: {
               state?: string;
             };
-            taskLedgerProjection?: {
+            taskLedgerCanonicalTruth?: {
               state?: string;
             };
           };
@@ -3232,7 +3779,9 @@ describe('CliGovernanceRuntime policy/review safeguards', () => {
         expect(diagnosticsPayload.durableStorage?.artifactRegistryRenderedViews?.state).toBe(
           'uninitialized',
         );
-        expect(diagnosticsPayload.durableStorage?.taskLedgerProjection?.state).toBe('no_sources');
+        expect(diagnosticsPayload.durableStorage?.taskLedgerCanonicalTruth?.state).toBe(
+          'no_sources',
+        );
       },
       {
         runtimeDebugOptions: {

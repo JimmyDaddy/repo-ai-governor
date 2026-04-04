@@ -27,6 +27,24 @@
 - Sprint Goal: 为 capability explainer 建立单一事实来源、turn outcome metadata 与首条 governed bridge 实施包。
 - Task Package: `TK-495`、`TK-496`、`TK-497`、`TK-498`、`TK-499`。
 
+## 2.2 sprint-002-cli-benchmark-and-borrowing-analysis
+
+- Status: completed
+- Sprint Goal: 对标 `claude-code` 与 `codex` 的 CLI 架构、交互层与扩展能力，沉淀 `repo-ai-governor` 可借鉴能力分层建议与近期 adoption 顺序。
+- Task Package: `TK-517`、`TK-518`、`TK-519`。
+
+## 2.3 sprint-003-cli-borrowed-capabilities-technical-solution-drafting
+
+- Status: completed
+- Sprint Goal: 将 CLI benchmark 分析收敛为一份可行的技术方案草案，明确模块落点、 phased rollout 与 deferred bucket。
+- Task Package: `TK-520`。
+
+## 2.4 sprint-004-cli-borrowed-capabilities-rollout-decomposition
+
+- Status: completed
+- Sprint Goal: 基于 CLI 借鉴能力产品化技术方案草案，继续拆出 planned implementation project / sprint / task package。
+- Task Package: `TK-529`。
+
 ## 3. 任务拆解矩阵（WBS）
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
@@ -37,6 +55,11 @@
 | TK-498 | sprint-001 | project capability explanation metadata into shared session truth and transcript affordances | runtime/shared-session-projection | TK-497 | completed |
 | TK-499 | sprint-001 | add capability availability overlay governed execution bridge and sprint-001 exit acceptance | runtime/bridge-and-closeout | TK-496、TK-497、TK-498 | completed |
 | TK-507 | sprint-001 | promote provider session reuse and backend conversation continuity draft into active formal docs | docs/promotion | approved draft + resolved review evidence | completed |
+| TK-517 | sprint-002 | analyze borrowable cli capabilities from claude-code and codex and record draft recommendations | docs/cli-benchmark-analysis | current interactive shell baseline + local benchmark repos | completed |
+| TK-518 | sprint-002 | supplement review review-verify and upgrade contract drafts and cross-link cli maturity analysis | docs/followup-contract-drafts | TK-517 | completed |
+| TK-519 | sprint-002 | promote cli capability maturity analysis draft into active formal docs | docs/promotion | TK-518 + promotion review evidence | completed |
+| TK-520 | sprint-003 | convert cli borrowing analysis into feasible technical solution draft | docs/technical-solution-draft | TK-517 + active interactive-shell and durable-storage formal docs | completed |
+| TK-529 | sprint-004 | decompose cli borrowed capabilities draft into planned implementation rollout project and sprint packages | docs/implementation-decomposition | TK-520 + cli borrowed capabilities draft | completed |
 
 ## 4. 依赖产物策略
 
@@ -64,3 +87,12 @@
 6. 2026-04-03：完成 `TK-499`，`sprint-001` exit acceptance 达成；availability overlay、同轮 governed bridge 与 transcript/shared-session continuity 基线已经冻结，见 [sprint-001-exit-acceptance-summary.md](./sprint-001-capability-catalog-and-turn-outcome-foundation/sprint-001-exit-acceptance-summary.md)。
 7. 2026-04-04：在 `sprint-001` closeout surface 上补充 `TK-507`，将 `provider session reuse and backend conversation continuity` draft 正式提升为 active runtime technical solution，并同步 lifecycle/delivery/module/manifest/review/DA 证据。
 8. 2026-04-04：根据用户确认的实现跟进需求，已创建 planned `project-039-provider-session-reuse-and-backend-conversation-continuity-rollout`，并将该 active solution 的 delivery handoff 从 promotion closeout surface 切换为 `followup_required`。
+9. 2026-04-04：用户要求结合本地 `claude-code` 与 `codex` 仓库，对 `repo-ai-governor` CLI 做一次面向借鉴学习的对标分析；已为该工作创建 `sprint-002-cli-benchmark-and-borrowing-analysis`。
+10. 2026-04-04：完成 `TK-517`，已将可借鉴能力分为“立即可借鉴 / 条件化引入 / 暂不建议照搬”，并写入 [CLI benchmark draft](../../../../draft/cli-borrowing-analysis-against-claude-code-and-codex.md)。
+11. 2026-04-04：完成 `TK-518`，已补齐 `review / review-verify / upgrade` 的专项 contract draft，并与 CLI 成熟度分析文保持双向挂链。
+12. 2026-04-04：完成 `TK-519`，已将 CLI 能力成熟度分析文正式化为 `runtime.cli-interactive-shell` ADR，并同步 lifecycle / delivery / module registry / manifest / review / DA 证据。
+13. 2026-04-04：根据已正式化的 CLI 能力成熟度 ADR，已创建 planned `project-042-cli-command-thin-baseline-enhancement-rollout`，按 `upgrade -> plan -> review/review-verify` 三段式拆解 follow-up implementation stream。
+14. 2026-04-04：用户进一步要求将 CLI benchmark 分析整理成可行技术方案草案；已创建 `sprint-003-cli-borrowed-capabilities-technical-solution-drafting` 作为 docs-only follow-up sprint。
+15. 2026-04-04：完成 `TK-520`，已新增 [CLI borrowed capabilities productization draft](../../../../draft/cli-borrowed-capabilities-productization-technical-solution.md)，明确 session lifecycle、projection、adaptive runtime、dynamic discoverability、session note 与 startup budget 的 phased rollout。
+16. 2026-04-04：用户继续要求“直接拆成 implementation sprint/task package”；已创建 `sprint-004-cli-borrowed-capabilities-rollout-decomposition` 作为 docs-only decomposition sprint。
+17. 2026-04-04：完成 `TK-529`，已新增 planned [project-043-cli-session-shell-productization-rollout](../../project-043-cli-session-shell-productization-rollout/plan.md)，并将技术方案拆成 `sprint-001 ~ sprint-003` 与 `TK-530 ~ TK-538` 的实体 task package。

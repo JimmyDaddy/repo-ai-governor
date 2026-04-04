@@ -177,7 +177,7 @@ describe('CLI blackbox governance flow e2e', () => {
     const replayPath = resolveArtifactPath(runPayload, 'replay_explain');
 
     expect(planPayload.status).toBe('success');
-    expect(planPayload.command_result?.operation).toBe('plan_snapshot');
+    expect(planPayload.command_result?.operation).toBe('plan_preview');
     expect(runPayload.status).toBe('success');
     expect(runPayload.command_result?.operation).toBe('governance_run');
     expect(typeof reportPath).toBe('string');

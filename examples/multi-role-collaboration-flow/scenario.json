@@ -9,8 +9,8 @@
       "expect": {
         "status": "success",
         "command": "plan",
-        "operation": "plan_snapshot",
-        "requiredArtifactIds": ["plan_snapshot"]
+        "operation": "plan_preview",
+        "requiredArtifactIds": ["plan_preview"]
       }
     },
     {

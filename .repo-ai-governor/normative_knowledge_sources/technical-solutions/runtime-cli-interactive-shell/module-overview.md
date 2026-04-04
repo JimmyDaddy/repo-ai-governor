@@ -23,6 +23,7 @@
 9. 为 service-owned `session.main` supervisor 的 answer / follow-up / command handoff / low-risk direct-execute skill / role-collaboration 结果提供统一 transcript 与 recap presenter seam，并在 `preview_confirm` 与 `direct_execute` continuity 之间保持一致的 shell surface，但不在 CLI 侧重新拥有 supervisor runtime 决策逻辑。
 10. 消费 service-owned `session.main` capability explanation turn metadata，包括 capability answer kind、referenced capability ids 与 suggested follow-up actions，并把它们渲染为 transcript-native affordance；但不得把这些 affordance 升级为本地自动执行器，也不得把 shell-local builtin commands 误建模成 orchestration-owned capability truth。
 11. 当 shared session truth 后续暴露 presenter-safe continuation summaries 时，CLI 只能把它们用作 transcript / resume / diagnostics affordance；不得直接消费 raw provider handle、slot map 或 provider-private continuation semantics。
+12. 为 interactive CLI command surface 的 maturity layering、thin-baseline enhancement priority 与 companion contract linked-input policy 提供正式 planning ADR，但不得把优先级分析误当作 command runtime truth。
 
 ## 3. 非目标
 
@@ -71,6 +72,7 @@
 12. 截至 `2026-04-01`，`session.main` streaming presenter 已接受“transcript-first live conversation”补充方向：对话流的 draft/thinking/tool-use 应优先进入 transcript 主画布，只有真正的命令执行进度继续停留在 progress panel / running dock。
 13. 截至 `2026-04-02`，`v6` formal direction 已接受“service-owned capability explainer + contextual command guidance”补充方向：session shell 必须消费 capability explanation turn metadata 与 suggested-action affordance，但 governed capability catalog 只拥有可解释的 bridge capabilities，`/confirm`、`/cancel`、`/clear`、`/exit`、`/resume` 等 shell-local builtins 继续留在 CLI registry 本地治理。
 14. 截至 `2026-04-04`，在既有 session truth consumer 方向基础上，CLI shell 现进一步接受“presenter-safe provider continuation summary consumer”补充边界：shell 可以展示 continuation reuse / invalidation 的摘要结果，但 raw provider handle 与 slot lifecycle 仍属于 runtime/service seam。
+15. 截至 `2026-04-04`，本模块进一步接受“CLI command capability maturity layering + thin-baseline enhancement priority”补充方向：`plan / review / review-verify / upgrade` 现被正式视为 linked thin-baseline command set；后续立项默认需联读成熟度 ADR 与各自 companion contract draft，但该优先级分析不进入 command runtime truth。
 
 ## 9. Detail Docs
 
@@ -82,3 +84,4 @@
    - `adrs/ink-owned-input-and-action-driven-session-shell.md`
    - `adrs/live-command-progress-and-running-react-shell.md`
    - `adrs/structured-session-output-and-markdown-content-blocks.md`
+   - `adrs/cli-command-capability-maturity-and-baseline-enhancement-priority.md`

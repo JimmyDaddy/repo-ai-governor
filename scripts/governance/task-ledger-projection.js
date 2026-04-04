@@ -1,10 +1,21 @@
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  renameSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { basename, dirname, resolve } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 
 export const TASK_LEDGER_ROOT = '.repo-ai-governor/context/dev';
-export const TASK_LEDGER_PROJECTION_SQLITE_PATH =
+export const TASK_LEDGER_CANONICAL_SQLITE_PATH =
+  '.repo-ai-governor/context/dev/sqlite/task-ledger.sqlite';
+export const TASK_LEDGER_LEGACY_PROJECTION_SQLITE_PATH =
   '.repo-ai-governor/context/dev/sqlite/task-ledger-projection.sqlite';
+export const TASK_LEDGER_PROJECTION_SQLITE_PATH = TASK_LEDGER_CANONICAL_SQLITE_PATH;
 export const TASK_LEDGER_REQUIRED_HEADERS = [
   'execution_id',
   'task_id',
@@ -22,8 +33,16 @@ export const TASK_LEDGER_REQUIRED_HEADERS = [
   'recorded_at',
 ];
 
-const PROJECTION_SOURCES_TABLE_NAME = 'task_ledger_projection_sources';
-const PROJECTION_ROWS_TABLE_NAME = 'task_ledger_projection_rows';
+const CANONICAL_SOURCES_TABLE_NAME = 'task_ledger_sources';
+const CANONICAL_ROWS_TABLE_NAME = 'task_ledger_rows';
+const LEGACY_SOURCES_TABLE_NAME = 'task_ledger_projection_sources';
+const LEGACY_ROWS_TABLE_NAME = 'task_ledger_projection_rows';
+const CANONICAL_TASK_ID_INDEX_NAME = 'idx_task_ledger_task_id';
+const CANONICAL_SOURCE_INDEX_NAME = 'idx_task_ledger_source';
+const CANONICAL_PROJECT_SPRINT_INDEX_NAME = 'idx_task_ledger_project_sprint';
+const LEGACY_TASK_ID_INDEX_NAME = 'idx_task_ledger_projection_task_id';
+const LEGACY_SOURCE_INDEX_NAME = 'idx_task_ledger_projection_source';
+const LEGACY_PROJECT_SPRINT_INDEX_NAME = 'idx_task_ledger_projection_project_sprint';
 const SQLITE_LOCK_RETRY_LIMIT = 5;
 const SQLITE_LOCK_RETRY_BASE_DELAY_MS = 50;
 
@@ -66,7 +85,8 @@ export function parseTaskLedgerCsvLine(line) {
 }
 
 /**
- * Collects all canonical task-ledger CSV sources plus optional ad-hoc sources.
+ * Collects all rendered task-ledger CSV views plus optional ad-hoc sources.
+ * These files are compatibility/rendered views; sqlite is the canonical truth after bootstrap.
  * @param {{
  *   taskLedgerRoot?: string;
  *   extraTaskCsvPaths?: string[];
@@ -121,41 +141,41 @@ export function collectTaskLedgerCsvSources(options = {}) {
 }
 
 /**
- * Ensures sqlite projection is synchronized with canonical task-ledger CSV sources.
+ * Ensures sqlite canonical state exists and bootstraps missing sources from CSV views when needed.
+ * Why: task-ledger sqlite now owns canonical truth, but existing repositories still need one-time
+ * seeding from historical tasks.csv files during migration.
  * @param {{
  *   taskLedgerRoot?: string;
  *   databaseFilePath?: string;
  *   extraTaskCsvPaths?: string[];
- * }} [options] Projection options.
- * @returns {{ databaseFilePath: string, rebuilt: boolean, sourceCount: number, rowCount: number }}
+ *   bootstrapFromCsv?: boolean;
+ * }} [options] Canonical-state options.
+ * @returns {{ databaseFilePath: string, bootstrappedFromCsv: boolean, sourceCount: number, rowCount: number }}
  */
 export function ensureTaskLedgerProjection(options = {}) {
   return runWithSqliteLockRetry(() => {
     const databaseFilePath = resolve(
       process.cwd(),
-      options.databaseFilePath ?? TASK_LEDGER_PROJECTION_SQLITE_PATH,
+      options.databaseFilePath ?? TASK_LEDGER_CANONICAL_SQLITE_PATH,
     );
-    const sources = collectTaskLedgerCsvSources({
+    const csvSources = collectTaskLedgerCsvSources({
       taskLedgerRoot: options.taskLedgerRoot,
       extraTaskCsvPaths: options.extraTaskCsvPaths,
     });
     const databaseConnection = openTaskLedgerProjectionDatabase(databaseFilePath);
 
     try {
-      const rebuildRequired = isProjectionRebuildRequired(databaseConnection, sources);
-      if (rebuildRequired) {
-        replaceTaskLedgerProjectionRows(databaseConnection, sources);
-      }
-
-      const rowCountRecord = databaseConnection
-        .prepare(`SELECT COUNT(*) AS total FROM ${PROJECTION_ROWS_TABLE_NAME}`)
-        .get();
+      const summary = ensureCanonicalStateInternal(databaseConnection, {
+        csvSources,
+        bootstrapFromCsv: options.bootstrapFromCsv !== false,
+      });
 
       return {
         databaseFilePath,
-        rebuilt: rebuildRequired,
-        sourceCount: sources.length,
-        rowCount: Number(rowCountRecord?.total ?? 0),
+        bootstrappedFromCsv: summary.bootstrappedFromCsv,
+        rebuilt: summary.bootstrappedFromCsv,
+        sourceCount: summary.sourceCount,
+        rowCount: summary.rowCount,
       };
     } finally {
       databaseConnection.close();
@@ -164,11 +184,236 @@ export function ensureTaskLedgerProjection(options = {}) {
 }
 
 /**
- * Reads latest canonical row per task id from projection.
+ * Reads canonical sqlite state grouped by source path.
  * @param {{
  *   taskLedgerRoot?: string;
  *   databaseFilePath?: string;
  *   extraTaskCsvPaths?: string[];
+ *   bootstrapFromCsv?: boolean;
+ * }} [options] Read options.
+ * @returns {{
+ *   databaseFilePath: string;
+ *   bootstrappedFromCsv: boolean;
+ *   sources: Array<{
+ *     sourcePath: string;
+ *     sourceMtimeMs: number;
+ *     sourceSize: number;
+ *     rowCount: number;
+ *     syncedAt: string;
+ *     rows: Array<Record<string, string> & { __rowNumber: number }>;
+ *   }>;
+ * }}
+ */
+export function readTaskLedgerCanonicalState(options = {}) {
+  return runWithSqliteLockRetry(() => {
+    const databaseFilePath = resolve(
+      process.cwd(),
+      options.databaseFilePath ?? TASK_LEDGER_CANONICAL_SQLITE_PATH,
+    );
+    const summary = ensureTaskLedgerProjection(options);
+    const databaseConnection = openTaskLedgerProjectionDatabase(databaseFilePath);
+
+    try {
+      const sourceRows = readCanonicalSourceMetadata(databaseConnection);
+      return {
+        databaseFilePath,
+        bootstrappedFromCsv: summary.bootstrappedFromCsv,
+        sources: sourceRows.map((sourceRow) => ({
+          sourcePath: sourceRow.sourcePath,
+          sourceMtimeMs: sourceRow.sourceMtimeMs,
+          sourceSize: sourceRow.sourceSize,
+          rowCount: sourceRow.rowCount,
+          syncedAt: sourceRow.syncedAt,
+          rows: readCanonicalRowsForSourceInternal(databaseConnection, sourceRow.sourcePath),
+        })),
+      };
+    } finally {
+      databaseConnection.close();
+    }
+  });
+}
+
+/**
+ * Replaces one canonical source inside sqlite and optionally re-renders its CSV view.
+ * @param {{
+ *   taskCsvPath: string;
+ *   rows: Array<Record<string, string> & { __rowNumber?: number }>;
+ *   taskLedgerRoot?: string;
+ *   databaseFilePath?: string;
+ *   bootstrapFromCsv?: boolean;
+ *   writeRenderedView?: boolean;
+ * }} options Replacement payload.
+ * @returns {{ databaseFilePath: string, taskCsvPath: string, rowCount: number }}
+ */
+export function replaceTaskLedgerCanonicalRowsForSource(options) {
+  return runWithSqliteLockRetry(() => {
+    const absoluteTaskCsvPath = resolve(process.cwd(), options.taskCsvPath);
+    const databaseFilePath = resolve(
+      process.cwd(),
+      options.databaseFilePath ?? TASK_LEDGER_CANONICAL_SQLITE_PATH,
+    );
+
+    ensureTaskLedgerProjection({
+      taskLedgerRoot: options.taskLedgerRoot,
+      databaseFilePath,
+      extraTaskCsvPaths: existsSync(absoluteTaskCsvPath) ? [absoluteTaskCsvPath] : [],
+      bootstrapFromCsv: options.bootstrapFromCsv !== false,
+    });
+
+    const databaseConnection = openTaskLedgerProjectionDatabase(databaseFilePath);
+
+    try {
+      replaceCanonicalRowsForOneSourceInternal(
+        databaseConnection,
+        createSourcePayloadFromRows(absoluteTaskCsvPath, options.rows),
+      );
+    } finally {
+      databaseConnection.close();
+    }
+
+    if (options.writeRenderedView !== false) {
+      renderTaskLedgerCsvViews({
+        databaseFilePath,
+        taskCsvPath: absoluteTaskCsvPath,
+        writeFiles: true,
+      });
+    }
+
+    return {
+      databaseFilePath,
+      taskCsvPath: absoluteTaskCsvPath,
+      rowCount: options.rows.length,
+    };
+  });
+}
+
+/**
+ * Renders canonical sqlite rows into compatibility `tasks.csv` views.
+ * @param {{
+ *   taskLedgerRoot?: string;
+ *   databaseFilePath?: string;
+ *   taskCsvPath?: string;
+ *   extraTaskCsvPaths?: string[];
+ *   bootstrapFromCsv?: boolean;
+ *   writeFiles?: boolean;
+ * }} [options] Render options.
+ * @returns {{
+ *   databaseFilePath: string;
+ *   renderedSources: Array<{ sourcePath: string, rowCount: number, content: string }>;
+ * }}
+ */
+export function renderTaskLedgerCsvViews(options = {}) {
+  return runWithSqliteLockRetry(() => {
+    const databaseFilePath = resolve(
+      process.cwd(),
+      options.databaseFilePath ?? TASK_LEDGER_CANONICAL_SQLITE_PATH,
+    );
+    const absoluteTaskCsvPath = options.taskCsvPath
+      ? resolve(process.cwd(), options.taskCsvPath)
+      : null;
+
+    ensureTaskLedgerProjection({
+      taskLedgerRoot: options.taskLedgerRoot,
+      databaseFilePath,
+      extraTaskCsvPaths:
+        absoluteTaskCsvPath && existsSync(absoluteTaskCsvPath)
+          ? [absoluteTaskCsvPath]
+          : options.extraTaskCsvPaths,
+      bootstrapFromCsv: options.bootstrapFromCsv !== false,
+    });
+
+    const databaseConnection = openTaskLedgerProjectionDatabase(databaseFilePath);
+
+    try {
+      const sourceMetadata = readCanonicalSourceMetadata(databaseConnection).filter((sourceRow) =>
+        absoluteTaskCsvPath ? sourceRow.sourcePath === absoluteTaskCsvPath : true,
+      );
+      const renderedSources = [];
+
+      for (const sourceRow of sourceMetadata) {
+        const rows = readCanonicalRowsForSourceInternal(databaseConnection, sourceRow.sourcePath);
+        const content = serializeTaskLedgerRows(rows);
+        renderedSources.push({
+          sourcePath: sourceRow.sourcePath,
+          rowCount: rows.length,
+          content,
+        });
+      }
+
+      if (options.writeFiles !== false) {
+        for (const renderedSource of renderedSources) {
+          mkdirSync(dirname(renderedSource.sourcePath), { recursive: true });
+          writeFileSync(renderedSource.sourcePath, renderedSource.content, 'utf8');
+          const renderedFileStat = statSync(renderedSource.sourcePath);
+          updateCanonicalSourceMetadata(
+            databaseConnection,
+            renderedSource.sourcePath,
+            Math.trunc(renderedFileStat.mtimeMs),
+            renderedFileStat.size,
+            renderedSource.rowCount,
+          );
+        }
+      }
+
+      return {
+        databaseFilePath,
+        renderedSources,
+      };
+    } finally {
+      databaseConnection.close();
+    }
+  });
+}
+
+/**
+ * Compares rendered CSV views against canonical sqlite-rendered content.
+ * @param {{
+ *   taskLedgerRoot?: string;
+ *   databaseFilePath?: string;
+ *   taskCsvPath?: string;
+ *   extraTaskCsvPaths?: string[];
+ *   bootstrapFromCsv?: boolean;
+ * }} [options] Drift options.
+ * @returns {{
+ *   databaseFilePath: string;
+ *   views: Array<{
+ *     sourcePath: string;
+ *     rowCount: number;
+ *     matches: boolean;
+ *     expectedContent: string;
+ *     actualContent: string;
+ *   }>;
+ * }}
+ */
+export function compareRenderedTaskLedgerCsvViews(options = {}) {
+  const renderSummary = renderTaskLedgerCsvViews({
+    taskLedgerRoot: options.taskLedgerRoot,
+    databaseFilePath: options.databaseFilePath,
+    taskCsvPath: options.taskCsvPath,
+    extraTaskCsvPaths: options.extraTaskCsvPaths,
+    bootstrapFromCsv: options.bootstrapFromCsv,
+    writeFiles: false,
+  });
+
+  return {
+    databaseFilePath: renderSummary.databaseFilePath,
+    views: renderSummary.renderedSources.map((renderedSource) => ({
+      sourcePath: renderedSource.sourcePath,
+      rowCount: renderedSource.rowCount,
+      matches: readTextIfExists(renderedSource.sourcePath) === renderedSource.content,
+      expectedContent: renderedSource.content,
+      actualContent: readTextIfExists(renderedSource.sourcePath),
+    })),
+  };
+}
+
+/**
+ * Reads latest canonical row per task id from sqlite truth.
+ * @param {{
+ *   taskLedgerRoot?: string;
+ *   databaseFilePath?: string;
+ *   extraTaskCsvPaths?: string[];
+ *   bootstrapFromCsv?: boolean;
  * }} [options] Read options.
  * @returns {Map<string, Record<string, string>>}
  */
@@ -177,11 +422,12 @@ export function readLatestProjectedTaskRows(options = {}) {
 }
 
 /**
- * Reads latest canonical row per task id for one specific tasks.csv source.
+ * Reads latest canonical row per task id for one specific source.
  * @param {{
  *   taskCsvPath: string;
  *   taskLedgerRoot?: string;
  *   databaseFilePath?: string;
+ *   bootstrapFromCsv?: boolean;
  * }} options Source-specific read options.
  * @returns {Map<string, Record<string, string>>}
  */
@@ -190,6 +436,7 @@ export function readLatestProjectedTaskRowsForSource(options) {
     taskCsvPath: options.taskCsvPath,
     taskLedgerRoot: options.taskLedgerRoot,
     databaseFilePath: options.databaseFilePath,
+    bootstrapFromCsv: options.bootstrapFromCsv,
   });
   const latestRows = new Map();
 
@@ -201,57 +448,34 @@ export function readLatestProjectedTaskRowsForSource(options) {
 }
 
 /**
- * Reads all projected rows for one tasks.csv source in canonical source order.
+ * Reads all canonical rows for one specific source in source order.
  * @param {{
  *   taskCsvPath: string;
  *   taskLedgerRoot?: string;
  *   databaseFilePath?: string;
+ *   bootstrapFromCsv?: boolean;
  * }} options Source-specific read options.
- * @returns {Array<Record<string, string>>}
+ * @returns {Array<Record<string, string> & { __rowNumber: number }>}
  */
 export function readProjectedTaskRowsForSource(options) {
   return runWithSqliteLockRetry(() => {
     const absoluteTaskCsvPath = resolve(process.cwd(), options.taskCsvPath);
     const databaseFilePath = resolve(
       process.cwd(),
-      options.databaseFilePath ?? TASK_LEDGER_PROJECTION_SQLITE_PATH,
+      options.databaseFilePath ?? TASK_LEDGER_CANONICAL_SQLITE_PATH,
     );
 
     ensureTaskLedgerProjection({
       taskLedgerRoot: options.taskLedgerRoot,
       databaseFilePath,
-      extraTaskCsvPaths: [absoluteTaskCsvPath],
+      extraTaskCsvPaths: existsSync(absoluteTaskCsvPath) ? [absoluteTaskCsvPath] : [],
+      bootstrapFromCsv: options.bootstrapFromCsv !== false,
     });
 
     const databaseConnection = openTaskLedgerProjectionDatabase(databaseFilePath);
 
     try {
-      const rows = databaseConnection
-        .prepare(
-          `
-            SELECT
-              execution_id,
-              task_id,
-              title,
-              owner,
-              priority,
-              due_date,
-              status,
-              project,
-              sprint,
-              plan,
-              result,
-              verify,
-              review_delta,
-              recorded_at
-            FROM ${PROJECTION_ROWS_TABLE_NAME}
-            WHERE source_path = ?
-            ORDER BY source_row_number ASC
-          `,
-        )
-        .all(absoluteTaskCsvPath);
-
-      return rows.map((row) => normalizeProjectedTaskRow(row));
+      return readCanonicalRowsForSourceInternal(databaseConnection, absoluteTaskCsvPath);
     } finally {
       databaseConnection.close();
     }
@@ -259,11 +483,12 @@ export function readProjectedTaskRowsForSource(options) {
 }
 
 /**
- * Reads latest normalized task statuses from projection.
+ * Reads latest normalized task statuses from canonical sqlite truth.
  * @param {{
  *   taskLedgerRoot?: string;
  *   databaseFilePath?: string;
  *   extraTaskCsvPaths?: string[];
+ *   bootstrapFromCsv?: boolean;
  * }} [options] Read options.
  * @returns {Map<string, string>}
  */
@@ -276,7 +501,7 @@ export function readLatestTaskLedgerStatuses(options = {}) {
 }
 
 /**
- * Reads and validates one canonical tasks.csv source.
+ * Reads one rendered `tasks.csv` view into row objects.
  * @param {string} absolutePath Absolute source path.
  * @returns {Array<Record<string, string> & { __rowNumber: number }>}
  */
@@ -286,8 +511,8 @@ function readTaskLedgerCsvRows(absolutePath) {
     .map((line) => line.trimEnd())
     .filter((line) => line.trim().length > 0);
 
-  if (csvLines.length < 2) {
-    throw new Error(`tasks.csv has no task rows: ${absolutePath}`);
+  if (csvLines.length === 0) {
+    return [];
   }
 
   const headers = parseTaskLedgerCsvLine(csvLines[0]).map((cell) => cell.trim());
@@ -314,11 +539,12 @@ function readTaskLedgerCsvRows(absolutePath) {
 }
 
 /**
- * Opens projection sqlite database and initializes schema.
+ * Opens task-ledger sqlite database and initializes canonical schema.
  * @param {string} databaseFilePath Absolute sqlite file path.
  * @returns {DatabaseSync}
  */
 function openTaskLedgerProjectionDatabase(databaseFilePath) {
+  migrateLegacyTaskLedgerDatabaseFile(databaseFilePath);
   const databaseAlreadyExists = existsSync(databaseFilePath);
   mkdirSync(dirname(databaseFilePath), { recursive: true });
   const databaseConnection = new DatabaseSync(databaseFilePath);
@@ -326,120 +552,314 @@ function openTaskLedgerProjectionDatabase(databaseFilePath) {
   if (!databaseAlreadyExists) {
     databaseConnection.exec('PRAGMA journal_mode = WAL;');
   }
-  databaseConnection.exec(`
-    CREATE TABLE IF NOT EXISTS ${PROJECTION_SOURCES_TABLE_NAME} (
-      source_path TEXT PRIMARY KEY,
-      source_mtime_ms INTEGER NOT NULL,
-      source_size INTEGER NOT NULL,
-      row_count INTEGER NOT NULL,
-      synced_at TEXT NOT NULL
-    );
-  `);
-  databaseConnection.exec(`
-    CREATE TABLE IF NOT EXISTS ${PROJECTION_ROWS_TABLE_NAME} (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      source_path TEXT NOT NULL,
-      source_row_number INTEGER NOT NULL,
-      execution_id TEXT NOT NULL,
-      task_id TEXT NOT NULL,
-      title TEXT NOT NULL,
-      owner TEXT NOT NULL,
-      priority TEXT NOT NULL,
-      due_date TEXT NOT NULL,
-      status TEXT NOT NULL,
-      project TEXT NOT NULL,
-      sprint TEXT NOT NULL,
-      plan TEXT NOT NULL,
-      result TEXT NOT NULL,
-      verify TEXT NOT NULL,
-      review_delta TEXT NOT NULL,
-      recorded_at TEXT NOT NULL,
-      UNIQUE(source_path, source_row_number)
-    );
-  `);
-  databaseConnection.exec(`
-    CREATE INDEX IF NOT EXISTS idx_task_ledger_projection_task_id
-    ON ${PROJECTION_ROWS_TABLE_NAME}(task_id, source_row_number);
-  `);
-  databaseConnection.exec(`
-    CREATE INDEX IF NOT EXISTS idx_task_ledger_projection_source
-    ON ${PROJECTION_ROWS_TABLE_NAME}(source_path, source_row_number);
-  `);
-  databaseConnection.exec(`
-    CREATE INDEX IF NOT EXISTS idx_task_ledger_projection_project_sprint
-    ON ${PROJECTION_ROWS_TABLE_NAME}(project, sprint, source_row_number);
-  `);
+  ensureCanonicalTaskLedgerSchema(databaseConnection);
 
   return databaseConnection;
 }
 
 /**
- * Checks whether projection metadata still matches all canonical CSV sources.
- * @param {DatabaseSync} databaseConnection Open sqlite connection.
- * @param {Array<{ absolutePath: string, mtimeMs: number, size: number }>} sources Canonical sources.
- * @returns {boolean}
+ * Moves legacy default sqlite files to the canonical filename when callers request the new path.
+ * @param {string} databaseFilePath Absolute canonical sqlite file path.
+ * @returns {void}
  */
-function isProjectionRebuildRequired(databaseConnection, sources) {
-  const sourceRecords = databaseConnection
-    .prepare(
-      `
-        SELECT source_path, source_mtime_ms, source_size
-        FROM ${PROJECTION_SOURCES_TABLE_NAME}
-        ORDER BY source_path ASC
-      `,
-    )
-    .all();
-
-  if (sourceRecords.length !== sources.length) {
-    return true;
+function migrateLegacyTaskLedgerDatabaseFile(databaseFilePath) {
+  const canonicalFileName = basename(TASK_LEDGER_CANONICAL_SQLITE_PATH);
+  if (basename(databaseFilePath) !== canonicalFileName) {
+    return;
   }
 
-  for (let index = 0; index < sources.length; index += 1) {
-    const source = sources[index];
-    const record = sourceRecords[index];
+  const legacyDatabaseFilePath = resolve(
+    dirname(databaseFilePath),
+    basename(TASK_LEDGER_LEGACY_PROJECTION_SQLITE_PATH),
+  );
+  if (existsSync(databaseFilePath) || !existsSync(legacyDatabaseFilePath)) {
+    return;
+  }
 
-    if (
-      record?.source_path !== source.absolutePath ||
-      Number(record?.source_mtime_ms ?? -1) !== source.mtimeMs ||
-      Number(record?.source_size ?? -1) !== source.size
-    ) {
-      return true;
+  mkdirSync(dirname(databaseFilePath), { recursive: true });
+  renameSync(legacyDatabaseFilePath, databaseFilePath);
+
+  for (const suffix of ['-wal', '-shm']) {
+    const legacySidecarPath = `${legacyDatabaseFilePath}${suffix}`;
+    const canonicalSidecarPath = `${databaseFilePath}${suffix}`;
+    if (existsSync(legacySidecarPath) && !existsSync(canonicalSidecarPath)) {
+      renameSync(legacySidecarPath, canonicalSidecarPath);
     }
   }
-
-  return false;
 }
 
 /**
- * Replaces projection state from canonical CSV sources inside one transaction.
+ * Ensures canonical tables/indexes exist and folds any legacy table naming into the new schema.
  * @param {DatabaseSync} databaseConnection Open sqlite connection.
- * @param {Array<{ absolutePath: string, mtimeMs: number, size: number }>} sources Canonical sources.
  * @returns {void}
  */
-function replaceTaskLedgerProjectionRows(databaseConnection, sources) {
-  const synchronizedAt = new Date().toISOString();
-
+function ensureCanonicalTaskLedgerSchema(databaseConnection) {
   databaseConnection.exec('BEGIN IMMEDIATE TRANSACTION');
 
   try {
-    databaseConnection.prepare(`DELETE FROM ${PROJECTION_ROWS_TABLE_NAME}`).run();
-    databaseConnection.prepare(`DELETE FROM ${PROJECTION_SOURCES_TABLE_NAME}`).run();
-
-    const sourceInsertStatement = databaseConnection.prepare(
-      `
-        INSERT INTO ${PROJECTION_SOURCES_TABLE_NAME} (
-          source_path,
-          source_mtime_ms,
-          source_size,
-          row_count,
-          synced_at
-        ) VALUES (?, ?, ?, ?, ?)
-      `,
+    renameLegacyTableIfNeeded(
+      databaseConnection,
+      LEGACY_SOURCES_TABLE_NAME,
+      CANONICAL_SOURCES_TABLE_NAME,
     );
-    const rowInsertStatement = databaseConnection.prepare(
+    renameLegacyTableIfNeeded(
+      databaseConnection,
+      LEGACY_ROWS_TABLE_NAME,
+      CANONICAL_ROWS_TABLE_NAME,
+    );
+
+    databaseConnection.exec(`
+      CREATE TABLE IF NOT EXISTS ${CANONICAL_SOURCES_TABLE_NAME} (
+        source_path TEXT PRIMARY KEY,
+        source_mtime_ms INTEGER NOT NULL,
+        source_size INTEGER NOT NULL,
+        row_count INTEGER NOT NULL,
+        synced_at TEXT NOT NULL
+      );
+    `);
+    databaseConnection.exec(`
+      CREATE TABLE IF NOT EXISTS ${CANONICAL_ROWS_TABLE_NAME} (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        source_path TEXT NOT NULL,
+        source_row_number INTEGER NOT NULL,
+        execution_id TEXT NOT NULL,
+        task_id TEXT NOT NULL,
+        title TEXT NOT NULL,
+        owner TEXT NOT NULL,
+        priority TEXT NOT NULL,
+        due_date TEXT NOT NULL,
+        status TEXT NOT NULL,
+        project TEXT NOT NULL,
+        sprint TEXT NOT NULL,
+        plan TEXT NOT NULL,
+        result TEXT NOT NULL,
+        verify TEXT NOT NULL,
+        review_delta TEXT NOT NULL,
+        recorded_at TEXT NOT NULL,
+        UNIQUE(source_path, source_row_number)
+      );
+    `);
+
+    migrateResidualLegacyRows(databaseConnection);
+
+    databaseConnection.exec(`DROP INDEX IF EXISTS ${LEGACY_TASK_ID_INDEX_NAME}`);
+    databaseConnection.exec(`DROP INDEX IF EXISTS ${LEGACY_SOURCE_INDEX_NAME}`);
+    databaseConnection.exec(`DROP INDEX IF EXISTS ${LEGACY_PROJECT_SPRINT_INDEX_NAME}`);
+
+    databaseConnection.exec(`
+      CREATE INDEX IF NOT EXISTS ${CANONICAL_TASK_ID_INDEX_NAME}
+      ON ${CANONICAL_ROWS_TABLE_NAME}(task_id, source_row_number);
+    `);
+    databaseConnection.exec(`
+      CREATE INDEX IF NOT EXISTS ${CANONICAL_SOURCE_INDEX_NAME}
+      ON ${CANONICAL_ROWS_TABLE_NAME}(source_path, source_row_number);
+    `);
+    databaseConnection.exec(`
+      CREATE INDEX IF NOT EXISTS ${CANONICAL_PROJECT_SPRINT_INDEX_NAME}
+      ON ${CANONICAL_ROWS_TABLE_NAME}(project, sprint, source_row_number);
+    `);
+
+    databaseConnection.exec('COMMIT');
+  } catch (error) {
+    try {
+      databaseConnection.exec('ROLLBACK');
+    } catch {
+      // Keep original failure visible.
+    }
+
+    throw error;
+  }
+}
+
+/**
+ * Renames one legacy sqlite table into its canonical name when the canonical table is absent.
+ * @param {DatabaseSync} databaseConnection Open sqlite connection.
+ * @param {string} legacyTableName Legacy table name.
+ * @param {string} canonicalTableName Canonical table name.
+ * @returns {void}
+ */
+function renameLegacyTableIfNeeded(databaseConnection, legacyTableName, canonicalTableName) {
+  if (
+    sqliteTableExists(databaseConnection, legacyTableName) &&
+    !sqliteTableExists(databaseConnection, canonicalTableName)
+  ) {
+    databaseConnection.exec(`ALTER TABLE ${legacyTableName} RENAME TO ${canonicalTableName}`);
+  }
+}
+
+/**
+ * Folds any residual legacy-named tables into canonical tables, then drops the legacy copies.
+ * @param {DatabaseSync} databaseConnection Open sqlite connection.
+ * @returns {void}
+ */
+function migrateResidualLegacyRows(databaseConnection) {
+  if (sqliteTableExists(databaseConnection, LEGACY_SOURCES_TABLE_NAME)) {
+    databaseConnection.exec(`
+      INSERT OR REPLACE INTO ${CANONICAL_SOURCES_TABLE_NAME} (
+        source_path,
+        source_mtime_ms,
+        source_size,
+        row_count,
+        synced_at
+      )
+      SELECT
+        source_path,
+        source_mtime_ms,
+        source_size,
+        row_count,
+        synced_at
+      FROM ${LEGACY_SOURCES_TABLE_NAME};
+    `);
+    databaseConnection.exec(`DROP TABLE ${LEGACY_SOURCES_TABLE_NAME}`);
+  }
+
+  if (sqliteTableExists(databaseConnection, LEGACY_ROWS_TABLE_NAME)) {
+    databaseConnection.exec(`
+      INSERT OR REPLACE INTO ${CANONICAL_ROWS_TABLE_NAME} (
+        source_path,
+        source_row_number,
+        execution_id,
+        task_id,
+        title,
+        owner,
+        priority,
+        due_date,
+        status,
+        project,
+        sprint,
+        plan,
+        result,
+        verify,
+        review_delta,
+        recorded_at
+      )
+      SELECT
+        source_path,
+        source_row_number,
+        execution_id,
+        task_id,
+        title,
+        owner,
+        priority,
+        due_date,
+        status,
+        project,
+        sprint,
+        plan,
+        result,
+        verify,
+        review_delta,
+        recorded_at
+      FROM ${LEGACY_ROWS_TABLE_NAME};
+    `);
+    databaseConnection.exec(`DROP TABLE ${LEGACY_ROWS_TABLE_NAME}`);
+  }
+}
+
+/**
+ * Checks whether one sqlite table currently exists.
+ * @param {DatabaseSync} databaseConnection Open sqlite connection.
+ * @param {string} tableName Target table name.
+ * @returns {boolean}
+ */
+function sqliteTableExists(databaseConnection, tableName) {
+  const tableRecord = databaseConnection
+    .prepare(`SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?`)
+    .get(tableName);
+  return Boolean(tableRecord);
+}
+
+/**
+ * Ensures sqlite canonical state is ready and optionally bootstraps from CSV views.
+ * @param {DatabaseSync} databaseConnection Open sqlite connection.
+ * @param {{
+ *   csvSources: Array<{ absolutePath: string, mtimeMs: number, size: number }>;
+ *   bootstrapFromCsv: boolean;
+ * }} options Canonical-state options.
+ * @returns {{ bootstrappedFromCsv: boolean, sourceCount: number, rowCount: number }}
+ */
+function ensureCanonicalStateInternal(databaseConnection, options) {
+  const csvSources = options.csvSources;
+  const bootstrapFromCsv = options.bootstrapFromCsv === true;
+  const canonicalSources = readCanonicalSourceMetadata(databaseConnection);
+  const canonicalSourcePaths = new Set(canonicalSources.map((row) => row.sourcePath));
+  const canonicalRowCount = countTableRows(databaseConnection, CANONICAL_ROWS_TABLE_NAME);
+  let bootstrappedFromCsv = false;
+
+  if (canonicalSources.length === 0 && canonicalRowCount === 0) {
+    if (csvSources.length > 0) {
+      if (!bootstrapFromCsv) {
+        throw new Error(
+          'Canonical task-ledger sqlite is empty while rendered tasks.csv views still contain data. Run an explicit bootstrap before using read-only governance consumers.',
+        );
+      }
+
+      replaceTaskLedgerCanonicalRowsInternal(
+        databaseConnection,
+        csvSources.map((source) => buildSourcePayloadFromCsvSource(source)),
+      );
+      bootstrappedFromCsv = true;
+    }
+  } else if (bootstrapFromCsv) {
+    const missingCsvSources = csvSources.filter(
+      (source) => !canonicalSourcePaths.has(source.absolutePath),
+    );
+    if (missingCsvSources.length > 0) {
+      appendTaskLedgerCanonicalSourcesInternal(
+        databaseConnection,
+        missingCsvSources.map((source) => buildSourcePayloadFromCsvSource(source)),
+      );
+      bootstrappedFromCsv = true;
+    }
+  }
+
+  return {
+    bootstrappedFromCsv,
+    sourceCount: countTableRows(databaseConnection, CANONICAL_SOURCES_TABLE_NAME),
+    rowCount: countTableRows(databaseConnection, CANONICAL_ROWS_TABLE_NAME),
+  };
+}
+
+/**
+ * Reads canonical source metadata rows.
+ * @param {DatabaseSync} databaseConnection Open sqlite connection.
+ * @returns {Array<{ sourcePath: string, sourceMtimeMs: number, sourceSize: number, rowCount: number, syncedAt: string }>}
+ */
+function readCanonicalSourceMetadata(databaseConnection) {
+  return databaseConnection
+    .prepare(
       `
-        INSERT INTO ${PROJECTION_ROWS_TABLE_NAME} (
-          source_path,
+        SELECT
+          source_path AS sourcePath,
+          source_mtime_ms AS sourceMtimeMs,
+          source_size AS sourceSize,
+          row_count AS rowCount,
+          synced_at AS syncedAt
+        FROM ${CANONICAL_SOURCES_TABLE_NAME}
+        ORDER BY source_path ASC
+      `,
+    )
+    .all()
+    .map((row) => ({
+      sourcePath: String(row.sourcePath ?? ''),
+      sourceMtimeMs: Number(row.sourceMtimeMs ?? 0),
+      sourceSize: Number(row.sourceSize ?? 0),
+      rowCount: Number(row.rowCount ?? 0),
+      syncedAt: String(row.syncedAt ?? ''),
+    }));
+}
+
+/**
+ * Reads all canonical rows for one source.
+ * @param {DatabaseSync} databaseConnection Open sqlite connection.
+ * @param {string} sourcePath Absolute source path.
+ * @returns {Array<Record<string, string> & { __rowNumber: number }>}
+ */
+function readCanonicalRowsForSourceInternal(databaseConnection, sourcePath) {
+  const rows = databaseConnection
+    .prepare(
+      `
+        SELECT
           source_row_number,
           execution_id,
           task_id,
@@ -455,42 +875,34 @@ function replaceTaskLedgerProjectionRows(databaseConnection, sources) {
           verify,
           review_delta,
           recorded_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        FROM ${CANONICAL_ROWS_TABLE_NAME}
+        WHERE source_path = ?
+        ORDER BY source_row_number ASC
       `,
-    );
+    )
+    .all(sourcePath);
 
-    for (const source of sources) {
-      const rows = readTaskLedgerCsvRows(source.absolutePath);
-      sourceInsertStatement.run(
-        source.absolutePath,
-        source.mtimeMs,
-        source.size,
-        rows.length,
-        synchronizedAt,
-      );
+  return rows.map((row) => normalizeProjectedTaskRow(row));
+}
 
-      for (const row of rows) {
-        rowInsertStatement.run(
-          source.absolutePath,
-          row.__rowNumber,
-          row.execution_id,
-          row.task_id,
-          row.title,
-          row.owner,
-          row.priority,
-          row.due_date,
-          row.status,
-          row.project,
-          row.sprint,
-          row.plan,
-          row.result,
-          row.verify,
-          row.review_delta,
-          row.recorded_at,
-        );
-      }
-    }
+/**
+ * Replaces all canonical state rows in one transaction.
+ * @param {DatabaseSync} databaseConnection Open sqlite connection.
+ * @param {Array<{
+ *   sourcePath: string;
+ *   sourceMtimeMs: number;
+ *   sourceSize: number;
+ *   rows: Array<Record<string, string> & { __rowNumber?: number }>;
+ * }>} sourcePayloads Canonical replacement payload.
+ * @returns {void}
+ */
+function replaceTaskLedgerCanonicalRowsInternal(databaseConnection, sourcePayloads) {
+  databaseConnection.exec('BEGIN IMMEDIATE TRANSACTION');
 
+  try {
+    databaseConnection.prepare(`DELETE FROM ${CANONICAL_ROWS_TABLE_NAME}`).run();
+    databaseConnection.prepare(`DELETE FROM ${CANONICAL_SOURCES_TABLE_NAME}`).run();
+    insertCanonicalSourcePayloads(databaseConnection, sourcePayloads);
     databaseConnection.exec('COMMIT');
   } catch (error) {
     try {
@@ -504,11 +916,267 @@ function replaceTaskLedgerProjectionRows(databaseConnection, sources) {
 }
 
 /**
- * Reads latest canonical row per task id after ensuring projection is current.
+ * Appends missing canonical sources into sqlite without touching existing rows.
+ * @param {DatabaseSync} databaseConnection Open sqlite connection.
+ * @param {Array<{
+ *   sourcePath: string;
+ *   sourceMtimeMs: number;
+ *   sourceSize: number;
+ *   rows: Array<Record<string, string> & { __rowNumber?: number }>;
+ * }>} sourcePayloads Source payloads.
+ * @returns {void}
+ */
+function appendTaskLedgerCanonicalSourcesInternal(databaseConnection, sourcePayloads) {
+  if (sourcePayloads.length === 0) {
+    return;
+  }
+
+  databaseConnection.exec('BEGIN IMMEDIATE TRANSACTION');
+
+  try {
+    insertCanonicalSourcePayloads(databaseConnection, sourcePayloads);
+    databaseConnection.exec('COMMIT');
+  } catch (error) {
+    try {
+      databaseConnection.exec('ROLLBACK');
+    } catch {
+      // Keep original failure visible.
+    }
+
+    throw error;
+  }
+}
+
+/**
+ * Replaces one canonical source row set inside sqlite.
+ * @param {DatabaseSync} databaseConnection Open sqlite connection.
+ * @param {{
+ *   sourcePath: string;
+ *   sourceMtimeMs: number;
+ *   sourceSize: number;
+ *   rows: Array<Record<string, string> & { __rowNumber?: number }>;
+ * }} sourcePayload Source payload.
+ * @returns {void}
+ */
+function replaceCanonicalRowsForOneSourceInternal(databaseConnection, sourcePayload) {
+  databaseConnection.exec('BEGIN IMMEDIATE TRANSACTION');
+
+  try {
+    databaseConnection
+      .prepare(`DELETE FROM ${CANONICAL_ROWS_TABLE_NAME} WHERE source_path = ?`)
+      .run(sourcePayload.sourcePath);
+    databaseConnection
+      .prepare(`DELETE FROM ${CANONICAL_SOURCES_TABLE_NAME} WHERE source_path = ?`)
+      .run(sourcePayload.sourcePath);
+    insertCanonicalSourcePayloads(databaseConnection, [sourcePayload]);
+    databaseConnection.exec('COMMIT');
+  } catch (error) {
+    try {
+      databaseConnection.exec('ROLLBACK');
+    } catch {
+      // Keep original failure visible.
+    }
+
+    throw error;
+  }
+}
+
+/**
+ * Inserts canonical source payloads into sqlite.
+ * @param {DatabaseSync} databaseConnection Open sqlite connection.
+ * @param {Array<{
+ *   sourcePath: string;
+ *   sourceMtimeMs: number;
+ *   sourceSize: number;
+ *   rows: Array<Record<string, string> & { __rowNumber?: number }>;
+ * }>} sourcePayloads Source payloads.
+ * @returns {void}
+ */
+function insertCanonicalSourcePayloads(databaseConnection, sourcePayloads) {
+  const synchronizedAt = new Date().toISOString();
+  const sourceInsertStatement = databaseConnection.prepare(
+    `
+      INSERT OR REPLACE INTO ${CANONICAL_SOURCES_TABLE_NAME} (
+        source_path,
+        source_mtime_ms,
+        source_size,
+        row_count,
+        synced_at
+      ) VALUES (?, ?, ?, ?, ?)
+    `,
+  );
+  const rowInsertStatement = databaseConnection.prepare(
+    `
+      INSERT OR REPLACE INTO ${CANONICAL_ROWS_TABLE_NAME} (
+        source_path,
+        source_row_number,
+        execution_id,
+        task_id,
+        title,
+        owner,
+        priority,
+        due_date,
+        status,
+        project,
+        sprint,
+        plan,
+        result,
+        verify,
+        review_delta,
+        recorded_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `,
+  );
+
+  for (const sourcePayload of sourcePayloads.sort((left, right) =>
+    left.sourcePath.localeCompare(right.sourcePath),
+  )) {
+    sourceInsertStatement.run(
+      sourcePayload.sourcePath,
+      sourcePayload.sourceMtimeMs,
+      sourcePayload.sourceSize,
+      sourcePayload.rows.length,
+      synchronizedAt,
+    );
+
+    sourcePayload.rows.forEach((row, index) => {
+      const sourceRowNumber =
+        typeof row.__rowNumber === 'number' && Number.isFinite(row.__rowNumber)
+          ? row.__rowNumber
+          : index + 2;
+      rowInsertStatement.run(
+        sourcePayload.sourcePath,
+        sourceRowNumber,
+        row.execution_id,
+        row.task_id,
+        row.title,
+        row.owner,
+        row.priority,
+        row.due_date,
+        row.status,
+        row.project,
+        row.sprint,
+        row.plan,
+        row.result,
+        row.verify,
+        row.review_delta,
+        row.recorded_at,
+      );
+    });
+  }
+}
+
+/**
+ * Builds one source payload from existing CSV view.
+ * @param {{ absolutePath: string, mtimeMs: number, size: number }} source CSV source metadata.
+ * @returns {{
+ *   sourcePath: string;
+ *   sourceMtimeMs: number;
+ *   sourceSize: number;
+ *   rows: Array<Record<string, string> & { __rowNumber: number }>;
+ * }}
+ */
+function buildSourcePayloadFromCsvSource(source) {
+  return {
+    sourcePath: source.absolutePath,
+    sourceMtimeMs: source.mtimeMs,
+    sourceSize: source.size,
+    rows: readTaskLedgerCsvRows(source.absolutePath),
+  };
+}
+
+/**
+ * Builds one source payload from normalized row objects.
+ * @param {string} sourcePath Absolute tasks.csv path.
+ * @param {Array<Record<string, string> & { __rowNumber?: number }>} rows Source rows.
+ * @returns {{
+ *   sourcePath: string;
+ *   sourceMtimeMs: number;
+ *   sourceSize: number;
+ *   rows: Array<Record<string, string> & { __rowNumber?: number }>;
+ * }}
+ */
+function createSourcePayloadFromRows(sourcePath, rows) {
+  const existingFileStat = existsSync(sourcePath) ? statSync(sourcePath) : null;
+  return {
+    sourcePath,
+    sourceMtimeMs: existingFileStat ? Math.trunc(existingFileStat.mtimeMs) : 0,
+    sourceSize: existingFileStat ? existingFileStat.size : 0,
+    rows: rows.map((row) => ({
+      ...normalizeTaskLedgerRow(row),
+      __rowNumber: row.__rowNumber,
+    })),
+  };
+}
+
+/**
+ * Updates canonical metadata for one rendered CSV view.
+ * @param {DatabaseSync} databaseConnection Open sqlite connection.
+ * @param {string} sourcePath Absolute tasks.csv path.
+ * @param {number} sourceMtimeMs Rendered file mtime.
+ * @param {number} sourceSize Rendered file size.
+ * @param {number} rowCount Canonical row count.
+ * @returns {void}
+ */
+function updateCanonicalSourceMetadata(
+  databaseConnection,
+  sourcePath,
+  sourceMtimeMs,
+  sourceSize,
+  rowCount,
+) {
+  databaseConnection
+    .prepare(
+      `
+        UPDATE ${CANONICAL_SOURCES_TABLE_NAME}
+        SET
+          source_mtime_ms = ?,
+          source_size = ?,
+          row_count = ?,
+          synced_at = ?
+        WHERE source_path = ?
+      `,
+    )
+    .run(sourceMtimeMs, sourceSize, rowCount, new Date().toISOString(), sourcePath);
+}
+
+/**
+ * Serializes normalized rows into deterministic CSV view content.
+ * @param {Array<Record<string, string>>} rows Canonical rows.
+ * @returns {string}
+ */
+function serializeTaskLedgerRows(rows) {
+  const renderedRows = [
+    TASK_LEDGER_REQUIRED_HEADERS.join(','),
+    ...rows.map((row) =>
+      TASK_LEDGER_REQUIRED_HEADERS.map((header) => escapeCsvCell(row[header] ?? '')).join(','),
+    ),
+  ];
+  renderedRows.push('');
+  return renderedRows.join('\n');
+}
+
+/**
+ * Escapes one CSV cell for deterministic serialization.
+ * @param {string} value Raw CSV cell.
+ * @returns {string}
+ */
+function escapeCsvCell(value) {
+  const normalizedValue = String(value ?? '');
+  if (!/[",\n]/u.test(normalizedValue)) {
+    return normalizedValue;
+  }
+
+  return `"${normalizedValue.replace(/"/gu, '""')}"`;
+}
+
+/**
+ * Reads latest canonical row per task id after ensuring sqlite truth is ready.
  * @param {{
  *   taskLedgerRoot?: string;
  *   databaseFilePath?: string;
  *   extraTaskCsvPaths?: string[];
+ *   bootstrapFromCsv?: boolean;
  * }} [options] Read options.
  * @returns {Map<string, Record<string, string>>}
  */
@@ -516,13 +1184,14 @@ function readLatestProjectedTaskRowsInternal(options = {}) {
   return runWithSqliteLockRetry(() => {
     const databaseFilePath = resolve(
       process.cwd(),
-      options.databaseFilePath ?? TASK_LEDGER_PROJECTION_SQLITE_PATH,
+      options.databaseFilePath ?? TASK_LEDGER_CANONICAL_SQLITE_PATH,
     );
 
     ensureTaskLedgerProjection({
       taskLedgerRoot: options.taskLedgerRoot,
       databaseFilePath,
       extraTaskCsvPaths: options.extraTaskCsvPaths,
+      bootstrapFromCsv: options.bootstrapFromCsv !== false,
     });
 
     const databaseConnection = openTaskLedgerProjectionDatabase(databaseFilePath);
@@ -532,7 +1201,6 @@ function readLatestProjectedTaskRowsInternal(options = {}) {
         .prepare(
           `
             SELECT
-              source_path,
               source_row_number,
               execution_id,
               task_id,
@@ -548,7 +1216,7 @@ function readLatestProjectedTaskRowsInternal(options = {}) {
               verify,
               review_delta,
               recorded_at
-            FROM ${PROJECTION_ROWS_TABLE_NAME}
+            FROM ${CANONICAL_ROWS_TABLE_NAME}
             ORDER BY source_path ASC, source_row_number ASC
           `,
         )
@@ -578,6 +1246,19 @@ function readLatestProjectedTaskRowsInternal(options = {}) {
       databaseConnection.close();
     }
   });
+}
+
+/**
+ * Counts rows from one table.
+ * @param {DatabaseSync} databaseConnection Open sqlite connection.
+ * @param {string} tableName Table name.
+ * @returns {number}
+ */
+function countTableRows(databaseConnection, tableName) {
+  const rowCountRecord = databaseConnection
+    .prepare(`SELECT COUNT(*) AS total FROM ${tableName}`)
+    .get();
+  return Number(rowCountRecord?.total ?? 0);
 }
 
 /**
@@ -625,11 +1306,45 @@ function sleepMilliseconds(milliseconds) {
 }
 
 /**
- * Normalizes one projected sqlite row back into CSV-shaped fields.
+ * Reads one text file if present.
+ * @param {string} filePath Absolute file path.
+ * @returns {string}
+ */
+function readTextIfExists(filePath) {
+  return existsSync(filePath) ? readFileSync(filePath, 'utf8') : '';
+}
+
+/**
+ * Normalizes one sqlite row back into task-ledger fields.
  * @param {Record<string, unknown>} row Raw sqlite row.
- * @returns {Record<string, string>}
+ * @returns {Record<string, string> & { __rowNumber: number }}
  */
 function normalizeProjectedTaskRow(row) {
+  return {
+    __rowNumber: Number(row.source_row_number ?? 0),
+    execution_id: String(row.execution_id ?? '').trim(),
+    task_id: String(row.task_id ?? '').trim(),
+    title: String(row.title ?? '').trim(),
+    owner: String(row.owner ?? '').trim(),
+    priority: String(row.priority ?? '').trim(),
+    due_date: String(row.due_date ?? '').trim(),
+    status: String(row.status ?? '').trim(),
+    project: String(row.project ?? '').trim(),
+    sprint: String(row.sprint ?? '').trim(),
+    plan: String(row.plan ?? '').trim(),
+    result: String(row.result ?? '').trim(),
+    verify: String(row.verify ?? '').trim(),
+    review_delta: String(row.review_delta ?? '').trim(),
+    recorded_at: String(row.recorded_at ?? '').trim(),
+  };
+}
+
+/**
+ * Normalizes one row payload before sqlite insertion.
+ * @param {Record<string, string>} row Raw row payload.
+ * @returns {Record<string, string>}
+ */
+function normalizeTaskLedgerRow(row) {
   return {
     execution_id: String(row.execution_id ?? '').trim(),
     task_id: String(row.task_id ?? '').trim(),

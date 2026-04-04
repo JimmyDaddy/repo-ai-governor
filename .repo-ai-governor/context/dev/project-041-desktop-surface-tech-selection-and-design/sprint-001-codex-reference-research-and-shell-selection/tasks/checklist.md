@@ -1,0 +1,24 @@
+# checklist
+
+- [x] TK-514 activate project-041 and freeze desktop planning constraints
+  - 2026-04-04：任务创建，状态初始化为 `planned`。
+  - 2026-04-04：执行过程中发现 `current-context.md` 已被另一条 closeout 工作流切到 `project-040-task-ledger-sqlite-canonical-truth-cutover`。
+  - 2026-04-04：为避免覆盖现有 primary，本任务将桌面端选型流改为并行 active stream，并顺延编号为 `project-041`。
+  - 2026-04-04：冻结本轮 planning 的内部硬约束：继续复用 `sidecar + ipc`、`@repo-ai-governor/orchestration-service-client` DTO/event seam、shared `AgentProjectionPanelViewModel`，desktop renderer 不得直接拥有 runtime internals。
+- [x] TK-515 benchmark Codex-inspired desktop architecture and shell options
+  - 2026-04-04：任务创建，状态初始化为 `planned`。
+  - 2026-04-04：完成官方资料收集，覆盖 `openai/codex` README、OpenAI App Server engineering article、Electron official process/security/utility-process docs、Tauri official process/shell docs 与 VS Code architecture wiki。
+  - 2026-04-04：形成双层结论：产品形态优先走“Codex-like local agent cockpit / governance console”，宿主框架当前优先 `Electron + utility process + existing Node service host`；`Tauri` 保留为 service host 原生化或打包体积成为 P0 之后的下一阶段备选。
+- [x] TK-516 author desktop technical selection and phased design baseline
+  - 2026-04-04：任务创建，状态初始化为 `planned`。
+  - 2026-04-04：产出 `.repo-ai-governor/draft/desktop-surface-technical-selection-and-design.md`，结论冻结为：
+  - 产品形态：先做 local orchestration service 的 desktop governance console / agent cockpit，不做 full IDE fork。
+  - MVP shell：首选 `Electron + React + utility process sidecar`。
+  - 长期备选：待 service host 原生可执行化或打包体积成为主矛盾后，再评估 `Tauri`。
+  - 2026-04-04：根据 review findings 补充 MVP contract gate：
+  - `session bridge` 进入 MVP 前置条件，明确 desktop 必须预留 `start/send/append/resume/list/subscribe session` 入口。
+  - `AgentProjectionPanelViewModel` 只能复用共享语义，实施前必须从 `apps/cli` 提取到 shared package，禁止 desktop 直接依赖 CLI 内部实现。
+  - `Review / Artifact Pane` 改为依赖 service-owned artifact/review/transcript query contract，禁止通过 `.repo-ai-governor` 文件系统旁路。
+- [ ] TK-517 convert selected direction into MVP implementation task package and activation handoff
+  - 2026-04-04：任务创建，状态初始化为 `planned`；待用户确认本轮桌面端选型结论后继续激活。
+  - 2026-04-04：当前桌面端 planning stream 继续保持 `active`，本任务作为 handoff/activation work item 挂起，不直接展开桌面端工程实现。

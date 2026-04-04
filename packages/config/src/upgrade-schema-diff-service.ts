@@ -54,6 +54,7 @@ export class UpgradeSchemaDiffService {
     this.collectSchemaVersionDiff(
       sourceConfig.schemaVersion,
       targetVersion,
+      autoMigratedConfig,
       diffs,
       suggestions,
       confirmationItems,
@@ -89,6 +90,7 @@ export class UpgradeSchemaDiffService {
   private collectSchemaVersionDiff(
     sourceVersion: string,
     targetVersion: GovernorSchemaVersion,
+    autoMigratedConfig: GovernorConfig,
     diffs: UpgradeSchemaDiffItem[],
     suggestions: UpgradeMigrationSuggestion[],
     confirmationItems: UpgradeConfirmationItem[],
@@ -120,6 +122,7 @@ export class UpgradeSchemaDiffService {
       paths: ['/schemaVersion'],
       blocking: false,
     });
+    autoMigratedConfig.schemaVersion = targetVersion;
   }
 
   /**

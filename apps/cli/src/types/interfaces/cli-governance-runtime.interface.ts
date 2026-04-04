@@ -35,10 +35,12 @@ import type {
   CliCommandExecutionResultPayload,
   CliCommandResultCheck,
 } from './cli-output.interface.js';
+import type { CliPlanCommandOptions } from './cli-plan-command.interface.js';
 import type {
   CliConnectRoleBindingOverride,
   CliRuntimeDebugOptions,
 } from './cli-runtime-debug.interface.js';
+import type { CliUpgradeCommandOptions } from './cli-upgrade-command.interface.js';
 import type { CliWorkflowCommandOptions } from './cli-workflow-command.interface.js';
 import type { CliWorkspaceCommandOptions } from './cli-workspace-command.interface.js';
 
@@ -62,6 +64,8 @@ export interface CliGovernanceRuntimeOptions {
   adaptersConfig: AdaptersConfig;
   workspaceCommandOptions?: CliWorkspaceCommandOptions;
   workflowCommandOptions?: CliWorkflowCommandOptions;
+  planCommandOptions?: CliPlanCommandOptions;
+  upgradeCommandOptions?: CliUpgradeCommandOptions;
   runtimeDebugOptions?: CliRuntimeDebugOptions;
   adapterLocalProbeOverrides?: Partial<Record<AdapterSurface, CliLocalAdapterProbeOverride>>;
   commandProbeExecutor?: (

@@ -202,7 +202,7 @@ export class CliVerifyCommand implements CliCommandExecutor {
           `degraded_roles=${adapterVerification.degradedRoleCount}`,
           `diagnostics_path=${diagnosticsArtifactPath}`,
           `artifact_registry_state=${durableStorageDiagnostics.artifactRegistryCanonicalTruth.state}`,
-          `task_ledger_projection_state=${durableStorageDiagnostics.taskLedgerProjection.state}`,
+          `task_ledger_canonical_truth_state=${durableStorageDiagnostics.taskLedgerCanonicalTruth.state}`,
         ],
       },
     });
@@ -296,7 +296,8 @@ export class CliVerifyCommand implements CliCommandExecutor {
           diagnostics_path: diagnosticsArtifactPath,
           durable_storage_status: durableStorageStatus,
           artifact_registry_status: durableStorageDiagnostics.artifactRegistryCanonicalTruth.status,
-          task_ledger_projection_status: durableStorageDiagnostics.taskLedgerProjection.status,
+          task_ledger_canonical_truth_status:
+            durableStorageDiagnostics.taskLedgerCanonicalTruth.status,
         },
       },
     };

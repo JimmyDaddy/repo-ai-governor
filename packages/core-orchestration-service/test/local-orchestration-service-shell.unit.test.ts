@@ -2104,4 +2104,169 @@ describe('core-orchestration-service local shell', () => {
       await rm(temporaryRoot, { recursive: true, force: true });
     }
   });
+
+  it('keeps unsupported continuation summaries replayable while clearing persisted slots', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
+    const laneKey = 'session.main::stage-session-main-answer::session.main::codex::chat_only';
+    const createdSummary = {
+      laneKey,
+      laneLabel: 'session.main',
+      status: 'created',
+      surface: 'codex',
+      providerId: 'openai',
+      transportKind: 'remote_api',
+      model: 'gpt-5',
+      stageId: 'stage-session-main-answer',
+      roleId: null,
+      policyEnvelope: 'chat_only',
+    };
+    const firstResolveTurn = vi.fn(async () => ({
+      responseMode: 'answer',
+      interactionMode: 'direct_answer',
+      assistantDelta: 'continued answer',
+      assistantMessage: 'continued answer',
+      executionIntent: 'session.answer',
+      requiresConfirmation: false,
+      selectedSurface: 'codex',
+      selectedBy: 'session.main.answer.primary',
+      sessionRoutingPreferenceApplied: false,
+      invokedRoleIds: [],
+      subagentCount: 0,
+      providerContinuationSummaries: [createdSummary],
+      providerContinuationMutations: [
+        {
+          laneKey,
+          summary: createdSummary,
+          slot: {
+            laneKey,
+            routeId: 'session.main',
+            stageId: 'stage-session-main-answer',
+            roleId: null,
+            selectedSurface: 'codex',
+            providerId: 'openai',
+            transportKind: 'remote_api',
+            model: 'gpt-5',
+            policyEnvelope: 'chat_only',
+            workspaceRoot: temporaryRoot,
+            currentWorkingDirectory: temporaryRoot,
+            handle: {
+              providerId: 'openai',
+              surface: 'codex',
+              transportKind: 'remote_api',
+              handleKind: 'response_id',
+              value: 'resp-1',
+              model: 'gpt-5',
+              acquiredAt: '2026-04-04T12:00:00.000Z',
+            },
+            updatedAt: '2026-04-04T12:00:00.000Z',
+          },
+        },
+      ],
+    }));
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot: temporaryRoot,
+      sessionMainSupervisorRuntime: {
+        resolveTurn: firstResolveTurn,
+      },
+    });
+
+    try {
+      const started = await orchestrationService.startSession({
+        routeId: OrchestrationSessionRouteId.MAIN,
+      });
+      await orchestrationService.sendSessionTurn({
+        sessionId: started.session.sessionId,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        userMessage: 'continue the previous answer',
+      });
+
+      const resumedResolveTurn = vi.fn(async (context) => {
+        expect(context.providerContinuationState?.slots[laneKey]?.handle.value).toBe('resp-1');
+        return {
+          responseMode: 'answer',
+          interactionMode: 'direct_answer',
+          assistantDelta: 'stateless follow-up answer',
+          assistantMessage: 'stateless follow-up answer',
+          executionIntent: 'session.answer',
+          requiresConfirmation: false,
+          selectedSurface: 'codex',
+          selectedBy: 'session.main.answer.primary',
+          sessionRoutingPreferenceApplied: false,
+          invokedRoleIds: [],
+          subagentCount: 0,
+          providerContinuationSummaries: [
+            {
+              laneKey,
+              laneLabel: 'session.main',
+              status: 'unsupported',
+              surface: 'codex',
+              providerId: 'openai',
+              transportKind: 'remote_api',
+              model: 'gpt-5',
+              stageId: 'stage-session-main-answer',
+              roleId: null,
+              policyEnvelope: 'chat_only',
+              invalidationReason: 'provider_session_not_supported',
+            },
+          ],
+          providerContinuationMutations: [
+            {
+              laneKey,
+              summary: {
+                laneKey,
+                laneLabel: 'session.main',
+                status: 'unsupported',
+                surface: 'codex',
+                providerId: 'openai',
+                transportKind: 'remote_api',
+                model: 'gpt-5',
+                stageId: 'stage-session-main-answer',
+                roleId: null,
+                policyEnvelope: 'chat_only',
+                invalidationReason: 'provider_session_not_supported',
+              },
+            },
+          ],
+        };
+      });
+      const resumedService = new LocalOrchestrationServiceShell({
+        workspaceRoot: temporaryRoot,
+        sessionMainSupervisorRuntime: {
+          resolveTurn: resumedResolveTurn,
+        },
+      });
+
+      await resumedService.resumeSession({
+        sessionId: started.session.sessionId,
+      });
+      await resumedService.sendSessionTurn({
+        sessionId: started.session.sessionId,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        userMessage: 'continue once more',
+      });
+
+      const session = await resumedService.getSession(started.session.sessionId);
+      const subscription = await resumedService.subscribeSession({
+        sessionId: started.session.sessionId,
+      });
+      const unsupportedCompletedEvent = subscription.events
+        .filter((event) => event.type === OrchestrationSessionEventType.TURN_COMPLETED)
+        .at(-1);
+
+      expect(resumedResolveTurn).toHaveBeenCalledTimes(1);
+      expect(session?.context.providerContinuations).toEqual({
+        version: 1,
+        slots: {},
+      });
+      expect(unsupportedCompletedEvent?.payload.providerContinuationSummaries).toEqual([
+        expect.objectContaining({
+          laneKey,
+          status: 'unsupported',
+          invalidationReason: 'provider_session_not_supported',
+        }),
+      ]);
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
 });

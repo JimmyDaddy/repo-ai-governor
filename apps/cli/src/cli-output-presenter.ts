@@ -5,6 +5,12 @@ import {
   CliCommandResultCheckId,
   CliConfirmationItemsDetailField,
   CliMigrationSuggestionDetailField,
+  CliPlanCommitReadinessDetailField,
+  CliPlanLedgerProjectionDetailField,
+  CliPlanReceiptDetailField,
+  CliPlanTaskPackageDetailField,
+  CliUpgradeApplyReadinessDetailField,
+  CliUpgradeReceiptDetailField,
   CliUpgradeSchemaDiffDetailField,
   CliWorkflowCompileStatusDetailField,
   CliWorkflowPreviewModeDetailField,
@@ -70,9 +76,17 @@ interface CliPrettyLabels {
   detailedLogsLabel: string;
   adapterVerificationLabel: string;
   adapterToolLabelPrefix: string;
+  planTaskPackageLabel: string;
+  planCommitReadinessLabel: string;
+  planLedgerProjectionLabel: string;
+  planCommitReceiptLabel: string;
   upgradeSchemaDiffLabel: string;
   migrationSuggestionsLabel: string;
   confirmationItemsLabel: string;
+  upgradeApplyReadinessLabel: string;
+  upgradeApplyReceiptLabel: string;
+  upgradeVerifyReceiptLabel: string;
+  upgradeRollbackReceiptLabel: string;
   rollbackReferenceLabel: string;
   workspaceActionLabel: string;
   workspaceTargetLabel: string;
@@ -93,6 +107,22 @@ const CLI_OUTPUT_TRANSLATION_FALLBACKS = {
     en: '{{diffs}} diffs, {{source}} -> {{target}}',
     zh: '差异 {{diffs}} 项，{{source}} -> {{target}}',
   },
+  'cli.output.pretty.checkDetails.planTaskPackage': {
+    en: '{{total}} tasks, {{create}} create, {{retain}} retain',
+    zh: '{{total}} 条任务，新增 {{create}} 条，复用 {{retain}} 条',
+  },
+  'cli.output.pretty.checkDetails.planCommitReadiness': {
+    en: 'readiness {{readiness}}, {{missing}} missing fields',
+    zh: 'readiness {{readiness}}，缺少 {{missing}} 个字段',
+  },
+  'cli.output.pretty.checkDetails.planLedgerProjection': {
+    en: 'plan.md {{planMd}}, checklist.md {{checklistMd}}, tasks.csv {{tasksCsv}}, TK files {{tkFiles}}',
+    zh: 'plan.md {{planMd}}，checklist.md {{checklistMd}}，tasks.csv {{tasksCsv}}，TK 文件 {{tkFiles}}',
+  },
+  'cli.output.pretty.checkDetails.planCommitReceipt': {
+    en: 'status {{status}}, {{created}} created, {{retained}} retained, receipt {{path}}',
+    zh: '状态 {{status}}，新增 {{created}} 条，复用 {{retained}} 条，receipt {{path}}',
+  },
   'cli.output.pretty.checkDetails.migrationSuggestions': {
     en: '{{count}} suggestions',
     zh: '{{count}} 条建议',
@@ -100,6 +130,14 @@ const CLI_OUTPUT_TRANSLATION_FALLBACKS = {
   'cli.output.pretty.checkDetails.confirmationItems': {
     en: 'decision {{decision}}, {{count}} items, {{blocking}} blocking',
     zh: '决策 {{decision}}，确认项 {{count}} 条，阻断 {{blocking}} 条',
+  },
+  'cli.output.pretty.checkDetails.upgradeApplyReadiness': {
+    en: 'readiness {{readiness}}, decision {{decision}}, {{count}} items, {{blocking}} blocking',
+    zh: 'readiness {{readiness}}，决策 {{decision}}，确认项 {{count}} 条，阻断 {{blocking}} 条',
+  },
+  'cli.output.pretty.checkDetails.upgradeReceipt': {
+    en: 'status {{status}}, receipt {{path}}',
+    zh: '状态 {{status}}，receipt {{path}}',
   },
   'cli.output.pretty.checkDetails.workspaceTarget': {
     en: 'mode {{mode}}, root {{root}}',
@@ -129,6 +167,22 @@ const CLI_OUTPUT_TRANSLATION_FALLBACKS = {
     en: 'Upgrade schema diff',
     zh: '升级 schema diff',
   },
+  'cli.output.pretty.checkLabels.planTaskPackage': {
+    en: 'Plan task package',
+    zh: 'Plan 任务包',
+  },
+  'cli.output.pretty.checkLabels.planCommitReadiness': {
+    en: 'Plan commit readiness',
+    zh: 'Plan 提交就绪度',
+  },
+  'cli.output.pretty.checkLabels.planLedgerProjection': {
+    en: 'Plan ledger projection',
+    zh: 'Plan 台账投影',
+  },
+  'cli.output.pretty.checkLabels.planCommitReceipt': {
+    en: 'Plan commit receipt',
+    zh: 'Plan commit receipt',
+  },
   'cli.output.pretty.checkLabels.migrationSuggestions': {
     en: 'Migration suggestions',
     zh: '迁移建议',
@@ -136,6 +190,22 @@ const CLI_OUTPUT_TRANSLATION_FALLBACKS = {
   'cli.output.pretty.checkLabels.confirmationItems': {
     en: 'Confirmation items',
     zh: '确认项',
+  },
+  'cli.output.pretty.checkLabels.upgradeApplyReadiness': {
+    en: 'Upgrade apply readiness',
+    zh: '升级 apply readiness',
+  },
+  'cli.output.pretty.checkLabels.upgradeApplyReceipt': {
+    en: 'Upgrade apply receipt',
+    zh: '升级 apply receipt',
+  },
+  'cli.output.pretty.checkLabels.upgradeVerifyReceipt': {
+    en: 'Upgrade verify receipt',
+    zh: '升级 verify receipt',
+  },
+  'cli.output.pretty.checkLabels.upgradeRollbackReceipt': {
+    en: 'Upgrade rollback receipt',
+    zh: '升级 rollback receipt',
   },
   'cli.output.pretty.checkLabels.rollbackReference': {
     en: 'Rollback reference',
@@ -667,12 +737,28 @@ export class CliOutputPresenter {
     switch (checkId) {
       case CliCommandResultCheckId.ADAPTER_VERIFICATION:
         return labels.adapterVerificationLabel;
+      case CliCommandResultCheckId.PLAN_TASK_PACKAGE:
+        return labels.planTaskPackageLabel;
+      case CliCommandResultCheckId.PLAN_COMMIT_READINESS:
+        return labels.planCommitReadinessLabel;
+      case CliCommandResultCheckId.PLAN_LEDGER_PROJECTION:
+        return labels.planLedgerProjectionLabel;
+      case CliCommandResultCheckId.PLAN_COMMIT_RECEIPT:
+        return labels.planCommitReceiptLabel;
       case CliCommandResultCheckId.UPGRADE_SCHEMA_DIFF:
         return labels.upgradeSchemaDiffLabel;
       case CliCommandResultCheckId.MIGRATION_SUGGESTIONS:
         return labels.migrationSuggestionsLabel;
       case CliCommandResultCheckId.CONFIRMATION_ITEMS:
         return labels.confirmationItemsLabel;
+      case CliCommandResultCheckId.UPGRADE_APPLY_READINESS:
+        return labels.upgradeApplyReadinessLabel;
+      case CliCommandResultCheckId.UPGRADE_APPLY_RECEIPT:
+        return labels.upgradeApplyReceiptLabel;
+      case CliCommandResultCheckId.UPGRADE_VERIFY_RECEIPT:
+        return labels.upgradeVerifyReceiptLabel;
+      case CliCommandResultCheckId.UPGRADE_ROLLBACK_RECEIPT:
+        return labels.upgradeRollbackReceiptLabel;
       case CliCommandResultCheckId.ROLLBACK_REFERENCE:
         return labels.rollbackReferenceLabel;
       case CliCommandResultCheckId.WORKSPACE_ACTION:
@@ -706,12 +792,26 @@ export class CliOutputPresenter {
     switch (check.id) {
       case CliCommandResultCheckId.ADAPTER_VERIFICATION:
         return this.humanizeAdapterVerificationDetail(check.detail, locale);
+      case CliCommandResultCheckId.PLAN_TASK_PACKAGE:
+        return this.humanizePlanTaskPackageDetail(check.detail, locale);
+      case CliCommandResultCheckId.PLAN_COMMIT_READINESS:
+        return this.humanizePlanCommitReadinessDetail(check.detail, locale);
+      case CliCommandResultCheckId.PLAN_LEDGER_PROJECTION:
+        return this.humanizePlanLedgerProjectionDetail(check.detail, locale);
+      case CliCommandResultCheckId.PLAN_COMMIT_RECEIPT:
+        return this.humanizePlanCommitReceiptDetail(check.detail, locale);
       case CliCommandResultCheckId.UPGRADE_SCHEMA_DIFF:
         return this.humanizeUpgradeSchemaDiffDetail(check.detail, locale);
       case CliCommandResultCheckId.MIGRATION_SUGGESTIONS:
         return this.humanizeMigrationSuggestionDetail(check.detail, locale);
       case CliCommandResultCheckId.CONFIRMATION_ITEMS:
         return this.humanizeConfirmationItemsDetail(check.detail, locale);
+      case CliCommandResultCheckId.UPGRADE_APPLY_READINESS:
+        return this.humanizeUpgradeApplyReadinessDetail(check.detail, locale);
+      case CliCommandResultCheckId.UPGRADE_APPLY_RECEIPT:
+      case CliCommandResultCheckId.UPGRADE_VERIFY_RECEIPT:
+      case CliCommandResultCheckId.UPGRADE_ROLLBACK_RECEIPT:
+        return this.humanizeUpgradeReceiptDetail(check.detail, locale);
       case CliCommandResultCheckId.WORKSPACE_ACTION:
         return this.humanizeWorkspaceActionDetail(check.detail);
       case CliCommandResultCheckId.WORKSPACE_TARGET:
@@ -809,6 +909,84 @@ export class CliOutputPresenter {
   }
 
   /**
+   * Converts plan task-package detail into readable text.
+   * @param detail Raw detail string.
+   * @param locale Active output locale.
+   * @returns Human-readable task-package summary.
+   */
+  private humanizePlanTaskPackageDetail(detail: string, locale: string): string {
+    const detailMap = this.parseJsonOrSpaceSeparatedKeyValueDetail(detail);
+    const total = detailMap[CliPlanTaskPackageDetailField.TOTAL] ?? '0';
+    const create = detailMap[CliPlanTaskPackageDetailField.CREATE] ?? '0';
+    const retain = detailMap[CliPlanTaskPackageDetailField.RETAIN] ?? '0';
+
+    return this.translateText('cli.output.pretty.checkDetails.planTaskPackage', locale, {
+      total,
+      create,
+      retain,
+    });
+  }
+
+  /**
+   * Converts plan commit-readiness detail into readable text.
+   * @param detail Raw detail string.
+   * @param locale Active output locale.
+   * @returns Human-readable readiness summary.
+   */
+  private humanizePlanCommitReadinessDetail(detail: string, locale: string): string {
+    const detailMap = this.parseJsonOrSpaceSeparatedKeyValueDetail(detail);
+    const readiness = detailMap[CliPlanCommitReadinessDetailField.READINESS] ?? 'unknown';
+    const missing = detailMap[CliPlanCommitReadinessDetailField.MISSING] ?? '0';
+
+    return this.translateText('cli.output.pretty.checkDetails.planCommitReadiness', locale, {
+      readiness,
+      missing,
+    });
+  }
+
+  /**
+   * Converts plan ledger-projection detail into readable text.
+   * @param detail Raw detail string.
+   * @param locale Active output locale.
+   * @returns Human-readable ledger-projection summary.
+   */
+  private humanizePlanLedgerProjectionDetail(detail: string, locale: string): string {
+    const detailMap = this.parseJsonOrSpaceSeparatedKeyValueDetail(detail);
+    const planMd = detailMap[CliPlanLedgerProjectionDetailField.PLAN_MD] ?? 'unknown';
+    const checklistMd = detailMap[CliPlanLedgerProjectionDetailField.CHECKLIST_MD] ?? 'unknown';
+    const tasksCsv = detailMap[CliPlanLedgerProjectionDetailField.TASKS_CSV] ?? 'unknown';
+    const tkFiles = detailMap[CliPlanLedgerProjectionDetailField.TK_FILES] ?? 'unknown';
+
+    return this.translateText('cli.output.pretty.checkDetails.planLedgerProjection', locale, {
+      planMd,
+      checklistMd,
+      tasksCsv,
+      tkFiles,
+    });
+  }
+
+  /**
+   * Converts plan commit-receipt detail into readable text.
+   * @param detail Raw detail string.
+   * @param locale Active output locale.
+   * @returns Human-readable plan-commit receipt summary.
+   */
+  private humanizePlanCommitReceiptDetail(detail: string, locale: string): string {
+    const detailMap = this.parseJsonOrSpaceSeparatedKeyValueDetail(detail);
+    const status = detailMap[CliPlanReceiptDetailField.STATUS] ?? 'unknown';
+    const created = detailMap[CliPlanReceiptDetailField.CREATED] ?? '0';
+    const retained = detailMap[CliPlanReceiptDetailField.RETAINED] ?? '0';
+    const path = detailMap[CliPlanReceiptDetailField.PATH] ?? detail;
+
+    return this.translateText('cli.output.pretty.checkDetails.planCommitReceipt', locale, {
+      status,
+      created,
+      retained,
+      path,
+    });
+  }
+
+  /**
    * Converts migration suggestion count detail into readable text.
    * @param detail Raw detail string.
    * @param locale Active output locale.
@@ -839,6 +1017,44 @@ export class CliOutputPresenter {
       decision,
       count,
       blocking,
+    });
+  }
+
+  /**
+   * Converts upgrade apply-readiness detail into readable text.
+   * @param detail Raw detail string.
+   * @param locale Active output locale.
+   * @returns Human-readable readiness summary.
+   */
+  private humanizeUpgradeApplyReadinessDetail(detail: string, locale: string): string {
+    const detailMap = this.parseSpaceSeparatedKeyValueDetail(detail);
+    const readiness = detailMap[CliUpgradeApplyReadinessDetailField.READINESS] ?? 'unknown';
+    const decision = detailMap[CliUpgradeApplyReadinessDetailField.DECISION] ?? 'unknown';
+    const count = detailMap[CliUpgradeApplyReadinessDetailField.COUNT] ?? '0';
+    const blocking = detailMap[CliUpgradeApplyReadinessDetailField.BLOCKING] ?? '0';
+
+    return this.translateText('cli.output.pretty.checkDetails.upgradeApplyReadiness', locale, {
+      readiness,
+      decision,
+      count,
+      blocking,
+    });
+  }
+
+  /**
+   * Converts upgrade receipt detail into readable text.
+   * @param detail Raw detail string.
+   * @param locale Active output locale.
+   * @returns Human-readable receipt summary.
+   */
+  private humanizeUpgradeReceiptDetail(detail: string, locale: string): string {
+    const detailMap = this.parseSpaceSeparatedKeyValueDetail(detail);
+    const status = detailMap[CliUpgradeReceiptDetailField.STATUS] ?? 'unknown';
+    const path = detailMap[CliUpgradeReceiptDetailField.PATH] ?? detail;
+
+    return this.translateText('cli.output.pretty.checkDetails.upgradeReceipt', locale, {
+      status,
+      path,
     });
   }
 
@@ -1145,6 +1361,22 @@ export class CliOutputPresenter {
         detailedLogsLabel: '详细日志',
         adapterVerificationLabel: 'Adapter 校验',
         adapterToolLabelPrefix: 'Adapter 工具',
+        planTaskPackageLabel: this.translateText(
+          'cli.output.pretty.checkLabels.planTaskPackage',
+          locale,
+        ),
+        planCommitReadinessLabel: this.translateText(
+          'cli.output.pretty.checkLabels.planCommitReadiness',
+          locale,
+        ),
+        planLedgerProjectionLabel: this.translateText(
+          'cli.output.pretty.checkLabels.planLedgerProjection',
+          locale,
+        ),
+        planCommitReceiptLabel: this.translateText(
+          'cli.output.pretty.checkLabels.planCommitReceipt',
+          locale,
+        ),
         upgradeSchemaDiffLabel: this.translateText(
           'cli.output.pretty.checkLabels.upgradeSchemaDiff',
           locale,
@@ -1155,6 +1387,22 @@ export class CliOutputPresenter {
         ),
         confirmationItemsLabel: this.translateText(
           'cli.output.pretty.checkLabels.confirmationItems',
+          locale,
+        ),
+        upgradeApplyReadinessLabel: this.translateText(
+          'cli.output.pretty.checkLabels.upgradeApplyReadiness',
+          locale,
+        ),
+        upgradeApplyReceiptLabel: this.translateText(
+          'cli.output.pretty.checkLabels.upgradeApplyReceipt',
+          locale,
+        ),
+        upgradeVerifyReceiptLabel: this.translateText(
+          'cli.output.pretty.checkLabels.upgradeVerifyReceipt',
+          locale,
+        ),
+        upgradeRollbackReceiptLabel: this.translateText(
+          'cli.output.pretty.checkLabels.upgradeRollbackReceipt',
           locale,
         ),
         rollbackReferenceLabel: this.translateText(
@@ -1229,6 +1477,22 @@ export class CliOutputPresenter {
       detailedLogsLabel: 'Detailed logs',
       adapterVerificationLabel: 'Adapter verification',
       adapterToolLabelPrefix: 'Adapter tool',
+      planTaskPackageLabel: this.translateText(
+        'cli.output.pretty.checkLabels.planTaskPackage',
+        locale,
+      ),
+      planCommitReadinessLabel: this.translateText(
+        'cli.output.pretty.checkLabels.planCommitReadiness',
+        locale,
+      ),
+      planLedgerProjectionLabel: this.translateText(
+        'cli.output.pretty.checkLabels.planLedgerProjection',
+        locale,
+      ),
+      planCommitReceiptLabel: this.translateText(
+        'cli.output.pretty.checkLabels.planCommitReceipt',
+        locale,
+      ),
       upgradeSchemaDiffLabel: this.translateText(
         'cli.output.pretty.checkLabels.upgradeSchemaDiff',
         locale,
@@ -1239,6 +1503,22 @@ export class CliOutputPresenter {
       ),
       confirmationItemsLabel: this.translateText(
         'cli.output.pretty.checkLabels.confirmationItems',
+        locale,
+      ),
+      upgradeApplyReadinessLabel: this.translateText(
+        'cli.output.pretty.checkLabels.upgradeApplyReadiness',
+        locale,
+      ),
+      upgradeApplyReceiptLabel: this.translateText(
+        'cli.output.pretty.checkLabels.upgradeApplyReceipt',
+        locale,
+      ),
+      upgradeVerifyReceiptLabel: this.translateText(
+        'cli.output.pretty.checkLabels.upgradeVerifyReceipt',
+        locale,
+      ),
+      upgradeRollbackReceiptLabel: this.translateText(
+        'cli.output.pretty.checkLabels.upgradeRollbackReceipt',
         locale,
       ),
       rollbackReferenceLabel: this.translateText(

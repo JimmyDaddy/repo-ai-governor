@@ -50,6 +50,10 @@ export const EN_US_TRANSLATIONS = {
         'Workspace target mode for migration planning/execution: repo_local|tool_managed.',
       workspaceRoot: 'Workspace target root override used by the workspace migration command.',
       workspacePlan: 'Workspace migration plan artifact path used by the rollback action.',
+      targetVersion:
+        'Upgrade target schema version used by the preview action. Defaults to the latest supported version.',
+      confirmPlan: 'Explicit plan confirmation decision for commit: approve|reject.',
+      confirmUpgrade: 'Explicit upgrade confirmation decision for apply: approve|reject.',
       workflowTemplate:
         'Workflow template id used by the workflow create/edit/preview subcommands.',
     },
@@ -75,12 +79,36 @@ export const EN_US_TRANSLATIONS = {
       review: { description: 'Generate code review baseline output.' },
       reviewVerify: { description: 'Verify code review baseline output.' },
       verify: { description: 'Verify adapter routing pass/warn/fail baseline.' },
-      plan: { description: 'Generate or update execution plan baseline.' },
+      plan: {
+        description: 'Preview or commit structured sprint planning output.',
+        actionArgument: 'Optional plan action: preview|commit.',
+        artifactArgument: 'Optional preview artifact path used by the commit action.',
+        actionGuideTitle: 'Action guide:',
+        actionGuidePreview:
+          'Generate a structured preview from the active sprint Task Package and show commit readiness.',
+        actionGuideCommit:
+          'Commit one preview artifact into sprint plan/TK/checklist/tasks.csv after explicit confirmation.',
+        examplesTitle: 'Examples:',
+      },
       resume: {
         description: 'Resume the latest or one explicit session-shell conversation.',
         sessionIdArgument: 'Optional session id to resume instead of the latest shell session.',
       },
-      upgrade: { description: 'Run workspace/config upgrade baseline.' },
+      upgrade: {
+        description:
+          'Preview, apply, or roll back one controlled workspace/config upgrade baseline.',
+        actionArgument: 'Optional upgrade action: preview|apply|rollback.',
+        artifactArgument:
+          'Optional report/apply-receipt/rollback-snapshot path used by apply or rollback.',
+        actionGuideTitle: 'Action guide:',
+        actionGuidePreview:
+          'Analyze the active governor.yaml, write preview artifacts, and keep the current config unchanged.',
+        actionGuideApply:
+          'Apply one preview report after explicit confirmation and emit apply/verify receipts.',
+        actionGuideRollback:
+          'Restore the prior config from one apply receipt or rollback snapshot and emit a rollback receipt.',
+        examplesTitle: 'Examples:',
+      },
       setUiTheme: {
         description:
           'Persist the React shell theme through a top-level shortcut, or open a selector in interactive pretty mode.',
@@ -456,19 +484,104 @@ export const EN_US_TRANSLATIONS = {
         safeLocalFixHint:
           'safe_local fix only creates writable workspace/config/memory baseline paths; it never installs commands, logs in adapters, or pulls local models.',
       },
+      plan: {
+        defaultSprintGoal: 'Structured planning preview for the active sprint.',
+        inspectPreview: 'Inspect preview artifact at {{previewPath}}.',
+        runCommit: 'When ready, run {{command}} to commit this preview into the sprint ledger.',
+        reviewSprintPlan:
+          'Review the active sprint plan and Task Package inputs, then rerun `plan` preview.',
+        previewCompleted:
+          'Plan preview completed with readiness={{readiness}}; preview={{previewPath}}.',
+        previewCompletedReadOnly:
+          'Plan preview completed in non-commit-ready mode (readiness={{readiness}}); preview={{previewPath}}.',
+        nextStepTitle: 'Next step',
+        missingArtifactPath:
+          'plan commit requires one preview artifact path argument. Re-run `plan` preview first when needed.',
+        commitTargetDrift:
+          'plan commit is blocked because the active primary stream no longer matches the preview target stream.',
+        invalidPreviewArtifact:
+          'Plan preview artifact is incomplete or outdated: {{previewPath}}. Re-run `plan` preview.',
+        commitRejected: 'Plan commit was rejected before ledger mutation; receipt={{receiptPath}}.',
+        commitPreviewNotReady:
+          'plan commit cannot continue because {{previewPath}} is not commit-ready (readiness={{readiness}}).',
+        commitCompleted:
+          'Plan commit completed; receipt={{receiptPath}} created={{createdCount}} retained={{retainedCount}}.',
+        inspectCommitReceipt: 'Inspect commit receipt at {{receiptPath}}.',
+        invalidAction: 'Unsupported plan action "{{action}}". Supported actions: {{supported}}.',
+        commitRequiresConfirmationDecision: 'plan commit requires `--confirm-plan approve|reject`.',
+        invalidConfirmationDecision:
+          'Unsupported plan confirmation decision "{{decision}}". Use `approve` or `reject`.',
+        syncTaskLedgerUnavailable:
+          'Task-ledger sync script is unavailable in the current installation; cannot finish plan commit.',
+      },
       upgrade: {
+        missingConfig: 'upgrade requires config file at {{configPath}}; run `init` first.',
+        missingArtifactPath:
+          'upgrade {{action}} requires one artifact path argument. Re-run the preview first when needed.',
+        missingRollbackSnapshot:
+          'Rollback snapshot is missing: {{artifactPath}}. Re-run `upgrade` preview to regenerate it.',
+        missingRollbackSource: 'Rollback source artifact is missing: {{artifactPath}}.',
+        invalidAction: 'Unsupported upgrade action "{{action}}". Supported actions: {{supported}}.',
+        invalidConfirmationDecision:
+          'Unsupported upgrade confirmation decision "{{decision}}". Use `approve` or `reject`.',
+        unsupportedTargetVersion:
+          'Unsupported target schema version {{targetVersion}}. Supported versions: {{supported}}.',
+        invalidReportArtifact:
+          'Upgrade report artifact is incomplete or outdated: {{reportPath}}. Re-run `upgrade` preview.',
+        invalidAutoMigratedConfigArtifact:
+          'Auto-migrated config artifact is incomplete or outdated: {{artifactPath}}. Re-run `upgrade` preview.',
+        reportWorkspaceMismatch:
+          'Upgrade report config path {{reportConfigPath}} does not match the active workspace config {{workspaceConfigPath}}.',
+        applySourceDrift:
+          'upgrade apply is blocked because the active governor.yaml has changed since {{reportPath}} was generated.',
+        applyBlocked:
+          'Upgrade apply is blocked until preview artifacts are regenerated and become apply-ready.',
+        confirmationRequiredForApply:
+          'upgrade apply requires `--confirm-upgrade approve|reject` when preview reported confirmation items.',
+        applyRequiresWriteAccess: 'upgrade apply requires write access to {{configPath}}.',
+        rollbackRequiresWriteAccess: 'upgrade rollback requires write access to {{configPath}}.',
+        rollbackReferenceReason:
+          'Controlled upgrade preview keeps the current config snapshot as the explicit rollback source.',
         inspectReport:
           'Inspect {{reportPath}} and compare it with {{autoMigratedConfigPath}} before applying any config change.',
         confirmItems: 'Confirm every listed confirmation item before replacing governor.yaml.',
         keepRollback:
           'Keep {{rollbackSnapshotPath}} as the rollback source if you later write the migrated config back.',
+        applyWithReport:
+          'When ready, run {{command}} to write the migrated config through the controlled apply path.',
+        rollbackWithReceipt: 'If you want to restore the prior config later, run {{command}}.',
         artifactsGenerated: 'Upgrade analysis artifacts were generated.',
+        previewCompleted:
+          'Upgrade preview completed with readiness={{readiness}}; report={{reportPath}}.',
+        previewReadiness: 'Preview readiness={{readiness}}.',
         manualConfirmationRequired:
           'Manual confirmation is required before applying upgrade changes.',
         noManualConfirmation: 'No manual confirmation is required for the analyzed upgrade path.',
+        applyCompleted:
+          'Upgrade apply completed; apply_receipt={{applyReceiptPath}} verify_receipt={{verifyReceiptPath}}.',
+        applyRejected:
+          'Upgrade apply was rejected before mutation; apply_receipt={{applyReceiptPath}}.',
+        applyRejectedSummary: 'Upgrade apply stopped after an explicit reject decision.',
+        applyResultSummary: 'Upgrade apply status={{status}}.',
+        verifyResultSummary: 'Upgrade verify status={{status}}.',
+        verifyFailed:
+          'Upgrade verify failed after write; inspect {{verifyReceiptPath}} for details and recovery evidence.',
+        confirmationApplied: 'Confirmation decision accepted for controlled apply.',
+        rollbackCompleted: 'Upgrade rollback completed; rollback_receipt={{rollbackReceiptPath}}.',
+        rollbackResultSummary: 'Upgrade rollback restored the prior config snapshot.',
         reviewUpgradeArtifacts: 'Review upgrade artifacts',
         confirmUpgradeChanges: 'Confirm upgrade changes',
+        runControlledApply: 'Run controlled apply',
         retainRollbackSnapshot: 'Retain rollback snapshot',
+        runRollback: 'Run rollback',
+        inspectApplyReceiptTitle: 'Inspect apply receipt',
+        inspectVerifyReceiptTitle: 'Inspect verify receipt',
+        inspectRollbackReceiptTitle: 'Inspect rollback receipt',
+        inspectApplyReceipt: 'Inspect apply receipt at {{applyReceiptPath}}.',
+        inspectVerifyReceipt: 'Inspect verify receipt at {{verifyReceiptPath}}.',
+        inspectRollbackReceipt: 'Inspect rollback receipt at {{rollbackReceiptPath}}.',
+        rerunPreviewAfterRollback:
+          'Re-run `upgrade` preview when you want to generate a fresh upgrade report from the restored config.',
       },
       init: {
         selectWorkspaceMode: 'Select workspace mode [1=tool_managed, 2=repo_local] (default: 1): ',
@@ -640,21 +753,32 @@ export const EN_US_TRANSLATIONS = {
         },
         help: {
           analyzeOnly:
-            'Upgrade remains analyze-only; the React shell previews report, migrated-config, and rollback references without mutating governor.yaml.',
+            'Preview keeps governor.yaml unchanged; controlled apply and rollback continue to use the same React shell summary without owning mutation truth.',
           rollbackReference:
-            'Keep the rollback snapshot so the analyzed config can be reverted explicitly if you later apply the migration.',
+            'Keep the rollback snapshot and receipts so preview/apply/rollback remain replayable and diagnosable.',
         },
         status: {
           manualConfirmation:
             'Manual confirmation remains required before applying {{count}} blocking upgrade change(s).',
-          analysisReady: 'Upgrade analysis is ready for targetVersion={{targetVersion}}.',
+          previewReady: 'Upgrade preview is ready for targetVersion={{targetVersion}}.',
+          applyBlocked:
+            'Upgrade apply is currently blocked until preview artifacts are regenerated.',
+          applyCompleted: 'Controlled upgrade apply completed successfully.',
+          applyRejected: 'Controlled upgrade apply was rejected before mutation.',
+          verifyFailed:
+            'Upgrade verify failed after the write path and recovery evidence was recorded.',
+          rollbackCompleted: 'Upgrade rollback completed successfully.',
         },
         summary: {
           reportPath: 'Upgrade report: {{path}}',
           autoMigratedConfigPath: 'Auto-migrated config: {{path}}',
           rollbackSnapshotPath: 'Rollback snapshot: {{path}}',
+          applyReceiptPath: 'Apply receipt: {{path}}',
+          verifyReceiptPath: 'Verify receipt: {{path}}',
+          rollbackReceiptPath: 'Rollback receipt: {{path}}',
           counts:
             'Suggestions={{suggestions}} confirmations={{confirmations}} blocking={{blocking}}.',
+          applyReadiness: 'Apply readiness={{readiness}}.',
         },
       },
       workspace: {
@@ -854,9 +978,17 @@ export const EN_US_TRANSLATIONS = {
     output: {
       pretty: {
         checkLabels: {
+          planTaskPackage: 'Plan task package',
+          planCommitReadiness: 'Plan commit readiness',
+          planLedgerProjection: 'Plan ledger projection',
+          planCommitReceipt: 'Plan commit receipt',
           upgradeSchemaDiff: 'Upgrade schema diff',
           migrationSuggestions: 'Migration suggestions',
           confirmationItems: 'Confirmation items',
+          upgradeApplyReadiness: 'Upgrade apply readiness',
+          upgradeApplyReceipt: 'Upgrade apply receipt',
+          upgradeVerifyReceipt: 'Upgrade verify receipt',
+          upgradeRollbackReceipt: 'Upgrade rollback receipt',
           rollbackReference: 'Rollback reference',
           workspaceAction: 'Workspace action',
           workspaceTarget: 'Workspace target',
@@ -866,9 +998,18 @@ export const EN_US_TRANSLATIONS = {
           workflowCompileStatus: 'Workflow compile status',
         },
         checkDetails: {
+          planTaskPackage: '{{total}} tasks, {{create}} create, {{retain}} retain',
+          planCommitReadiness: 'readiness {{readiness}}, {{missing}} missing fields',
+          planLedgerProjection:
+            'plan.md {{planMd}}, checklist.md {{checklistMd}}, tasks.csv {{tasksCsv}}, TK files {{tkFiles}}',
+          planCommitReceipt:
+            'status {{status}}, {{created}} created, {{retained}} retained, receipt {{path}}',
           upgradeSchemaDiff: '{{diffs}} diffs, {{source}} -> {{target}}',
           migrationSuggestions: '{{count}} suggestions',
           confirmationItems: 'decision {{decision}}, {{count}} items, {{blocking}} blocking',
+          upgradeApplyReadiness:
+            'readiness {{readiness}}, decision {{decision}}, {{count}} items, {{blocking}} blocking',
+          upgradeReceipt: 'status {{status}}, receipt {{path}}',
           workspaceTarget: 'mode {{mode}}, root {{root}}',
           workspaceScratchCleanupRemoved: 'scratch root removed: {{root}}',
           workspaceScratchCleanupRetained: 'scratch root retained: {{root}}',

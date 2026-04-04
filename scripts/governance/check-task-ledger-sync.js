@@ -4,27 +4,15 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { gateFail, gateInfo, gatePass } from './gate-output.js';
+import {
+  compareRenderedTaskLedgerCsvViews,
+  readProjectedTaskRowsForSource,
+} from './task-ledger-projection.js';
 
 const GATE_NAME = 'task-ledger-sync';
 const CURRENT_CONTEXT_PATH = '.repo-ai-governor/context/current-context.md';
 const TASK_CARD_FILE_PATTERN = /^TK-\d{3}.*\.md$/;
 const REQUIRED_TASK_METADATA_KEYS = ['Status', 'Date', 'Owner', 'Priority', 'Project', 'Sprint'];
-const REQUIRED_CSV_HEADERS = [
-  'execution_id',
-  'task_id',
-  'title',
-  'owner',
-  'priority',
-  'due_date',
-  'status',
-  'project',
-  'sprint',
-  'plan',
-  'result',
-  'verify',
-  'review_delta',
-  'recorded_at',
-];
 const PLACEHOLDER_VALUES = new Set(['待执行', '待验证']);
 const ACTIVE_STREAM_STATUSES = new Set(['active', 'in_progress', 'running']);
 
@@ -154,88 +142,6 @@ function extractBacktickField(descriptor, fieldName) {
   const fieldPattern = new RegExp(`${fieldName}=\\\`([^\\\`]+)\\\``);
   const fieldMatch = descriptor.match(fieldPattern);
   return fieldMatch ? fieldMatch[1] : null;
-}
-
-/**
- * Parses a CSV row with quote support.
- * @param {string} line One CSV line.
- * @returns {string[]}
- */
-function parseCsvLine(line) {
-  const values = [];
-  let currentValue = '';
-  let inQuotes = false;
-
-  for (let index = 0; index < line.length; index += 1) {
-    const character = line[index];
-
-    if (character === '"') {
-      const nextCharacter = line[index + 1];
-      if (inQuotes && nextCharacter === '"') {
-        currentValue += '"';
-        index += 1;
-        continue;
-      }
-
-      inQuotes = !inQuotes;
-      continue;
-    }
-
-    if (character === ',' && !inQuotes) {
-      values.push(currentValue);
-      currentValue = '';
-      continue;
-    }
-
-    currentValue += character;
-  }
-
-  values.push(currentValue);
-  return values;
-}
-
-/**
- * Parses tasks CSV into row objects with row number context.
- * @param {string} csvPath Absolute csv path.
- * @returns {Array<Record<string, string> & {__rowNumber: number}>}
- */
-function parseTasksCsv(csvPath) {
-  if (!existsSync(csvPath)) {
-    throw new Error(`tasks.csv not found: ${csvPath}`);
-  }
-
-  const csvContent = readFileSync(csvPath, 'utf8');
-  const csvLines = csvContent
-    .split(/\r?\n/)
-    .map((line) => line.trimEnd())
-    .filter((line) => line.trim().length > 0);
-
-  if (csvLines.length < 2) {
-    throw new Error(`tasks.csv has no task rows: ${csvPath}`);
-  }
-
-  const headerCells = parseCsvLine(csvLines[0]).map((cell) => cell.trim());
-  for (const requiredHeader of REQUIRED_CSV_HEADERS) {
-    if (!headerCells.includes(requiredHeader)) {
-      throw new Error(`tasks.csv missing required column \`${requiredHeader}\`: ${csvPath}`);
-    }
-  }
-
-  return csvLines.slice(1).map((line, index) => {
-    const rowValues = parseCsvLine(line);
-    if (rowValues.length !== headerCells.length) {
-      throw new Error(
-        `CSV row column count mismatch at ${csvPath}:${index + 2}. Expected ${headerCells.length}, got ${rowValues.length}.`,
-      );
-    }
-
-    /** @type {Record<string, string> & {__rowNumber: number}} */
-    const row = { __rowNumber: index + 2 };
-    for (let headerIndex = 0; headerIndex < headerCells.length; headerIndex += 1) {
-      row[headerCells[headerIndex]] = rowValues[headerIndex].trim();
-    }
-    return row;
-  });
 }
 
 /**
@@ -734,7 +640,23 @@ try {
   for (const streamDefinition of streamDefinitions) {
     const taskCards = parseCanonicalTaskCards(streamDefinition.tasksDirPath);
     const checklistMap = parseChecklist(streamDefinition.checklistPath);
-    const csvRows = parseTasksCsv(streamDefinition.csvPath);
+    const csvRows = readProjectedTaskRowsForSource({
+      taskCsvPath: streamDefinition.csvPath,
+      taskLedgerRoot: '.repo-ai-governor/context/dev',
+    });
+    const renderedViewComparison = compareRenderedTaskLedgerCsvViews({
+      taskCsvPath: streamDefinition.csvPath,
+      taskLedgerRoot: '.repo-ai-governor/context/dev',
+    });
+    const renderedView = renderedViewComparison.views[0] ?? null;
+
+    if (!renderedView) {
+      issues.push(`[${streamDefinition.streamKey}] missing canonical sqlite source for tasks.csv`);
+    } else if (!renderedView.matches) {
+      issues.push(
+        `[${streamDefinition.streamKey}] rendered tasks.csv drifted from sqlite canonical truth`,
+      );
+    }
 
     issues.push(
       ...collectDriftIssues(streamDefinition.streamKey, taskCards, checklistMap, csvRows),

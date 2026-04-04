@@ -57,17 +57,23 @@ export interface CliArtifactRegistryRenderedViewDiagnostics
 }
 
 /**
- * Defines diagnostics for tasks.csv sqlite projection/read-model state.
+ * Defines diagnostics for task-ledger sqlite canonical truth state.
  */
-export interface CliTaskLedgerProjectionDiagnostics extends CliDurableStorageSurfaceDiagnostics {
+export interface CliTaskLedgerCanonicalTruthDiagnostics
+  extends CliDurableStorageSurfaceDiagnostics {
   taskLedgerRoot: string;
   databaseFilePath: string;
   sourceCount: number;
   sourceRowCount: number;
-  projectedSourceCount: number;
-  projectedRowCount: number;
+  canonicalSourceCount: number;
+  canonicalRowCount: number;
   databaseFileExists: boolean;
 }
+
+/**
+ * Keeps the previous interface name available for incremental in-tree migration.
+ */
+export type CliTaskLedgerProjectionDiagnostics = CliTaskLedgerCanonicalTruthDiagnostics;
 
 /**
  * Defines the full durable-storage diagnostic snapshot shared by `doctor` and `verify`.
@@ -76,5 +82,5 @@ export interface CliDurableStorageDiagnosticsSnapshot {
   sessionDurableTruth: CliSessionDurableTruthDiagnostics;
   artifactRegistryCanonicalTruth: CliArtifactRegistryCanonicalDiagnostics;
   artifactRegistryRenderedViews: CliArtifactRegistryRenderedViewDiagnostics;
-  taskLedgerProjection: CliTaskLedgerProjectionDiagnostics;
+  taskLedgerCanonicalTruth: CliTaskLedgerCanonicalTruthDiagnostics;
 }

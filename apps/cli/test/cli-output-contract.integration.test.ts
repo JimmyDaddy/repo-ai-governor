@@ -242,6 +242,169 @@ async function createWorkspaceMigrationFixtureRepo(
 }
 
 /**
+ * Creates one temporary repo with an active plan stream and sprint Task Package inputs.
+ * @returns Temporary repository absolute path.
+ */
+async function createPlanFixtureRepo(): Promise<string> {
+  const temporaryRepositoryRoot = await mkdtemp(resolve(tmpdir(), 'cli-output-plan-'));
+  const workspaceRoot = resolve(temporaryRepositoryRoot, '.repo-ai-governor');
+  const projectId = 'project-042-plan-output-fixture';
+  const sprintId = 'sprint-002-plan-output-fixture';
+  const existingTaskId = 'TK-523';
+  const docsRootRelative = `.repo-ai-governor/context/dev/${projectId}`;
+  const sprintRootRelative = `${docsRootRelative}/${sprintId}`;
+  const tasksRelative = `${sprintRootRelative}/tasks/`;
+  const reviewRelative = `${sprintRootRelative}/review/`;
+  const checklistRelative = `${tasksRelative}checklist.md`;
+  const csvRelative = `${tasksRelative}tasks.csv`;
+  const tasksDirPath = resolve(workspaceRoot, 'context', 'dev', projectId, sprintId, 'tasks');
+  const reviewDirPath = resolve(workspaceRoot, 'context', 'dev', projectId, sprintId, 'review');
+  const sprintPlanPath = resolve(workspaceRoot, 'context', 'dev', projectId, sprintId, 'plan.md');
+  const projectPlanPath = resolve(workspaceRoot, 'context', 'dev', projectId, 'plan.md');
+
+  await mkdir(resolve(workspaceRoot, 'context', 'memory'), { recursive: true });
+  await mkdir(tasksDirPath, { recursive: true });
+  await mkdir(reviewDirPath, { recursive: true });
+  await writeFile(
+    resolve(workspaceRoot, 'governor.yaml'),
+    [
+      'schemaVersion: "1.1"',
+      'workspace:',
+      '  mode: repo_local',
+      '  migrationPolicy: copy_verify_switch_rollback',
+      'i18n:',
+      '  runtimeEngine: i18next',
+      '  defaultLocale: en-US',
+      '  fallbackLocale: en-US',
+      '  supportedLocales:',
+      '    - en-US',
+      'memory:',
+      '  storeEngine: fs_csv',
+      '  storeRoot: context/memory',
+      '',
+    ].join('\n'),
+    'utf8',
+  );
+  await writeFile(
+    resolve(workspaceRoot, 'context', 'current-context.md'),
+    [
+      '# Workspace Current Context',
+      '',
+      '## Primary Stream',
+      '',
+      '- Status: active',
+      `- Project: \`${projectId}\``,
+      `- Sprint: \`${sprintId}\``,
+      `- Docs root: \`${docsRootRelative}\``,
+      `- Task records: \`${tasksRelative}\``,
+      `- Review records: \`${reviewRelative}\``,
+      '',
+      '## Active Streams',
+      '',
+      `- \`primary\`: project=\`${projectId}\`, sprint=\`${sprintId}\`, docs=\`${docsRootRelative}\`, plan=\`${docsRootRelative}/plan.md\`, tasks=\`${tasksRelative}\`, checklist=\`${checklistRelative}\`, csv=\`${csvRelative}\`, review=\`${reviewRelative}\`, status=\`active\`, note=\`fixture for plan output tests\``,
+      '',
+    ].join('\n'),
+    'utf8',
+  );
+  await writeFile(
+    projectPlanPath,
+    [
+      `# ${projectId} 计划`,
+      '',
+      '- Status: active',
+      '- Date: 2026-04-04',
+      '- Stage Mapping: fixture',
+      '',
+      '## 1. 目标',
+      '',
+      '1. Validate plan CLI output and commit contract.',
+      '',
+    ].join('\n'),
+    'utf8',
+  );
+  await writeFile(
+    sprintPlanPath,
+    [
+      `# ${sprintId} 计划`,
+      '',
+      '- Status: active',
+      '- Date: 2026-04-04',
+      `- Project: \`${projectId}\``,
+      '- Sprint Goal: Productize plan preview and commit.',
+      '',
+      '## 1. Task Package',
+      '',
+      `1. \`${existingTaskId}\` keep existing plan preview baseline`,
+      '2. align plan commit presenter and regression acceptance',
+      '',
+      '## 2. Exit Criteria',
+      '',
+      '1. plan preview and commit artifacts remain replayable and diagnosable.',
+      '',
+    ].join('\n'),
+    'utf8',
+  );
+  await writeFile(
+    resolve(tasksDirPath, `${existingTaskId}-keep-existing-plan-preview-baseline.md`),
+    [
+      `# ${existingTaskId} keep existing plan preview baseline`,
+      '',
+      '- Status: planned',
+      '- Date: 2026-04-04',
+      '- Owner: AI-Agent',
+      '- Priority: P0',
+      `- Project: \`${projectId}\``,
+      `- Sprint: \`${sprintId}\``,
+      '',
+      '## 1. 任务目标',
+      '',
+      '保留现有 plan preview 基线，并为 commit 契约回归提供输入。',
+      '',
+      '## 2. Depends On',
+      '',
+      '1. `session.main` planning contract',
+      '',
+      '## 3. 预期产物',
+      '',
+      '1. 现有 preview 基线',
+      '',
+      '## 4. Required Inputs',
+      '',
+      `1. \`${sprintPlanPath}\``,
+      `2. \`${projectPlanPath}\``,
+      '',
+      '## 5. Traceback References',
+      '',
+      '1. `context/plan/*.preview.json`',
+      '',
+      '## 6. 实施计划',
+      '',
+      '1. 保持 preview 行为稳定。',
+      '',
+      '## 7. Development Verification',
+      '',
+      '1. 覆盖 plan 输出契约测试。',
+      '',
+      '## 8. Delivery Verification',
+      '',
+      '1. 覆盖 plan commit 受控提交测试。',
+      '',
+      '## 9. 执行记录',
+      '',
+      '1. 2026-04-04：任务创建，状态初始化为 `planned`。',
+      '',
+      '## 10. 产出',
+      '',
+      '1. 待执行：keep existing plan preview baseline',
+      '',
+    ].join('\n'),
+    'utf8',
+  );
+
+  return temporaryRepositoryRoot;
+}
+
+/**
  * Creates one isolated HOME directory with a persisted global CLI theme preference file.
  * @param themePreset Global React-shell theme preset to persist.
  * @returns Absolute HOME directory used by the preference file.
@@ -268,13 +431,44 @@ async function createWorkflowPreviewFixtureRepo(): Promise<string> {
   const workspaceRoot = resolve(temporaryRepositoryRoot, '.repo-ai-governor');
   await mkdir(resolve(workspaceRoot, 'context', 'memory'), { recursive: true });
   await mkdir(resolve(workspaceRoot, 'context', 'compiled-ir'), { recursive: true });
+  const schemaVersion = '1.1';
   await writeFile(
     resolve(workspaceRoot, 'governor.yaml'),
     [
-      'schemaVersion: "1.1"',
+      `schemaVersion: "${schemaVersion}"`,
       'workspace:',
       '  mode: repo_local',
-      '  migrationPolicy: copy_verify_switch_rollback',
+      ...(schemaVersion === '1.1' ? ['  migrationPolicy: copy_verify_switch_rollback'] : []),
+      'i18n:',
+      '  runtimeEngine: i18next',
+      '  defaultLocale: en-US',
+      '  fallbackLocale: en-US',
+      '  supportedLocales:',
+      '    - en-US',
+      'memory:',
+      '  storeEngine: fs_csv',
+      '  storeRoot: context/memory',
+      '',
+    ].join('\n'),
+    'utf8',
+  );
+  return temporaryRepositoryRoot;
+}
+
+/**
+ * Creates one temporary repo with a legacy v1.0 config for upgrade apply/rollback output tests.
+ * @returns Temporary repository absolute path.
+ */
+async function createLegacyUpgradeFixtureRepo(): Promise<string> {
+  const temporaryRepositoryRoot = await mkdtemp(resolve(tmpdir(), 'cli-output-upgrade-'));
+  const workspaceRoot = resolve(temporaryRepositoryRoot, '.repo-ai-governor');
+  await mkdir(resolve(workspaceRoot, 'context', 'memory'), { recursive: true });
+  await writeFile(
+    resolve(workspaceRoot, 'governor.yaml'),
+    [
+      'schemaVersion: "1.0"',
+      'workspace:',
+      '  mode: repo_local',
       'i18n:',
       '  runtimeEngine: i18next',
       '  defaultLocale: en-US',
@@ -769,6 +963,51 @@ describe('CLI output contract integration', () => {
     }
   });
 
+  it('renders plan preview output in stable JSON shape', async () => {
+    const temporaryRepositoryRoot = await createPlanFixtureRepo();
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, temporaryRepositoryRoot);
+
+    try {
+      const exitCode = await runCli(
+        ['node', 'repo-ai-governor', '--locale', 'en-US', '--output', 'json', 'plan'],
+        io,
+      );
+      const payload = JSON.parse(stdoutBuffer.join(''));
+
+      expect(exitCode).toBe(0);
+      expect(stderrBuffer.join('')).toBe('');
+      expect(payload.command).toBe('plan');
+      expect(payload.command_result.operation).toBe('plan_preview');
+      expect(payload.command_result.details.commit_readiness).toBe('ready');
+      expect(payload.command_result.details.task_package_total).toBe(2);
+      expect(payload.command_result.artifacts[0].id).toBe('plan_preview');
+    } finally {
+      await rm(temporaryRepositoryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('renders actionable plan help with preview and commit guidance', async () => {
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false);
+
+    const exitCode = await runCli(
+      ['node', 'repo-ai-governor', '--locale', 'en-US', 'plan', '--help'],
+      io,
+    );
+    const stdout = stdoutBuffer.join('');
+
+    expect(exitCode).toBe(0);
+    expect(stderrBuffer.join('')).toBe('');
+    expect(stdout).toContain('Usage: repo-ai-governor plan [options] [action] [artifact]');
+    expect(stdout).toContain('--confirm-plan <decision>');
+    expect(stdout).toContain('Action guide:');
+    expect(stdout).toContain('preview');
+    expect(stdout).toContain('commit');
+    expect(stdout).toContain('repo-ai-governor plan --output pretty');
+    expect(stdout).toContain(
+      'repo-ai-governor plan commit ./context/plan/plan-1234567890.preview.json --confirm-plan approve --output pretty',
+    );
+  });
+
   it('renders actionable workspace help instead of an empty command shell', async () => {
     const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false);
 
@@ -884,6 +1123,38 @@ describe('CLI output contract integration', () => {
       expect(stdout).toContain('Workspace action: dry_run');
       expect(stdout).toContain(`Workspace target: mode tool_managed, root ${managedRoot}`);
       expect(stdout).toContain('Rollback reference:');
+    } finally {
+      await rm(temporaryRepositoryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('renders plan preview key details in pretty mode', async () => {
+    const temporaryRepositoryRoot = await createPlanFixtureRepo();
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(true, temporaryRepositoryRoot);
+
+    try {
+      const exitCode = await runCli(
+        [
+          'node',
+          'repo-ai-governor',
+          '--locale',
+          'en-US',
+          '--output',
+          'pretty',
+          '--no-color',
+          'plan',
+        ],
+        io,
+      );
+      const stdout = stdoutBuffer.join('');
+
+      expect(exitCode).toBe(0);
+      expect(stderrBuffer.join('')).toBe('');
+      expect(stdout).toContain('Plan task package: 2 tasks, 1 create, 1 retain');
+      expect(stdout).toContain('Plan commit readiness: readiness ready, 0 missing fields');
+      expect(stdout).toContain(
+        'Plan ledger projection: plan.md update, checklist.md append, tasks.csv append, TK files create',
+      );
     } finally {
       await rm(temporaryRepositoryRoot, { recursive: true, force: true });
     }
@@ -1590,6 +1861,103 @@ describe('CLI output contract integration', () => {
       expect(stderr).toContain('Review analyzed upgrade artifacts');
       expect(stdout).toContain('repo-ai-governor: command succeeded');
       expect(stdout).not.toContain('[react-shell:upgrade]');
+    } finally {
+      await rm(temporaryRepositoryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('parses upgrade apply with explicit confirmation and keeps json output machine-readable', async () => {
+    const temporaryRepositoryRoot = await createLegacyUpgradeFixtureRepo();
+    const previewIo = createBufferedIo(false, temporaryRepositoryRoot);
+
+    try {
+      const previewExitCode = await runCli(
+        ['node', 'repo-ai-governor', '--locale', 'en-US', '--output', 'json', 'upgrade'],
+        previewIo.io,
+      );
+      const previewPayload = JSON.parse(previewIo.stdoutBuffer.join('')) as {
+        command_result?: {
+          details?: {
+            report_path?: string;
+          };
+        };
+      };
+      const reportPath = previewPayload.command_result?.details?.report_path;
+      const applyIo = createBufferedIo(false, temporaryRepositoryRoot);
+      const applyExitCode = await runCli(
+        [
+          'node',
+          'repo-ai-governor',
+          '--locale',
+          'en-US',
+          '--output',
+          'json',
+          'upgrade',
+          'apply',
+          String(reportPath),
+          '--confirm-upgrade',
+          'approve',
+        ],
+        applyIo.io,
+      );
+      const applyPayload = JSON.parse(applyIo.stdoutBuffer.join(''));
+
+      expect(previewExitCode).toBe(0);
+      expect(reportPath).toBeTypeOf('string');
+      expect(applyExitCode).toBe(0);
+      expect(applyIo.stderrBuffer.join('')).toBe('');
+      expect(applyPayload.command_result.operation).toBe('schema_upgrade_apply');
+      expect(applyPayload.command_result.details.apply_status).toBe('applied');
+      expect(applyPayload.command_result.details.verify_status).toBe('passed');
+    } finally {
+      await rm(temporaryRepositoryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('parses plan commit with explicit confirmation and keeps json output machine-readable', async () => {
+    const temporaryRepositoryRoot = await createPlanFixtureRepo();
+    const previewIo = createBufferedIo(false, temporaryRepositoryRoot);
+
+    try {
+      const previewExitCode = await runCli(
+        ['node', 'repo-ai-governor', '--locale', 'en-US', '--output', 'json', 'plan'],
+        previewIo.io,
+      );
+      const previewPayload = JSON.parse(previewIo.stdoutBuffer.join('')) as {
+        command_result?: {
+          details?: {
+            preview_path?: string;
+          };
+        };
+      };
+      const previewPath = previewPayload.command_result?.details?.preview_path;
+      const commitIo = createBufferedIo(false, temporaryRepositoryRoot);
+      const commitExitCode = await runCli(
+        [
+          'node',
+          'repo-ai-governor',
+          '--locale',
+          'en-US',
+          '--output',
+          'json',
+          'plan',
+          'commit',
+          String(previewPath),
+          '--confirm-plan',
+          'approve',
+        ],
+        commitIo.io,
+      );
+      const commitPayload = JSON.parse(commitIo.stdoutBuffer.join(''));
+
+      expect(previewExitCode).toBe(0);
+      expect(previewPath).toBeTypeOf('string');
+      expect(commitExitCode).toBe(0);
+      expect(commitIo.stderrBuffer.join('')).toBe('');
+      expect(commitPayload.command_result.operation).toBe('plan_commit');
+      expect(commitPayload.command_result.details.commit_status).toBe('committed');
+      expect(commitPayload.command_result.details.created_task_count).toBe(1);
+      expect(commitPayload.command_result.details.retained_task_count).toBe(1);
     } finally {
       await rm(temporaryRepositoryRoot, { recursive: true, force: true });
     }
