@@ -1,6 +1,6 @@
 # sprint-002-adaptive-interaction-runtime-and-discoverability 计划
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-04
 - Project: `project-043-cli-session-shell-productization-rollout`
 - Sprint Goal: 为 interactive shell 建立 adaptive interaction runtime policy，并让 skills/presets/builtins 进入统一 discoverability surface。
@@ -22,3 +22,4 @@
 
 1. 2026-04-04：创建 `sprint-002-adaptive-interaction-runtime-and-discoverability`，作为 `project-043` 的第二条 planned execution sprint。
 2. 2026-04-04：完成 `TK-533`、`TK-534`、`TK-535` 任务卡拆解。
+3. 2026-04-04：已确认 adaptive UI mode policy、bridge discoverability registry 与 governed slash launcher 已在 `apps/cli` 落地，并通过 session-shell package/integration suites 验证。

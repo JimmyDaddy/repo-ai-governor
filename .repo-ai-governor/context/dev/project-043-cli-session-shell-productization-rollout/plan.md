@@ -1,6 +1,6 @@
 # project-043-cli-session-shell-productization-rollout 计划
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-04
 - Stage Mapping: CLI session shell productization rollout
 - Phase Mapping: Session lifecycle completeness / session projection and resume read model / adaptive interaction runtime / unified discoverability / session note / startup budget
@@ -26,19 +26,19 @@
 
 ## 2.1 sprint-001-session-lifecycle-and-read-model-foundation
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 为 session shell 补齐 lifecycle action seam 与 session projection/read-model 基线。
 - Task Package: `TK-530`、`TK-531`、`TK-532`。
 
 ## 2.2 sprint-002-adaptive-interaction-runtime-and-discoverability
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 为 interactive shell 建立 adaptive interaction runtime policy，并让 skills/presets/builtins 进入统一 discoverability surface。
 - Task Package: `TK-533`、`TK-534`、`TK-535`。
 
 ## 2.3 sprint-003-session-note-and-startup-budget
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 为 session continuity 建立 lightweight session note，并给 session-first entry 建立 startup budget 与 lazy-load 治理。
 - Task Package: `TK-536`、`TK-537`、`TK-538`。
 
@@ -46,15 +46,15 @@
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 |---|---|---|---|---|---|
-| TK-530 | sprint-001 | freeze session lifecycle dto action seam and projection schema baseline | runtime/session-contract | active draft + cli session shell contract | planned |
-| TK-531 | sprint-001 | implement session lifecycle service actions and sqlite-backed session projection read model | runtime/session-lifecycle-and-read-model | TK-530 | planned |
-| TK-532 | sprint-001 | wire resume picker session list fork archive presenter and regression acceptance | cli/session-shell-lifecycle-presenter | TK-530、TK-531 | planned |
-| TK-533 | sprint-002 | freeze adaptive interaction runtime policy and unified discoverability registry baseline | runtime/interaction-policy | active draft + cli session shell contract | planned |
-| TK-534 | sprint-002 | implement alt-screen inline overlay fallback runtime and request-user-input seam | cli/interaction-runtime | TK-533 | planned |
-| TK-535 | sprint-002 | add skills presets builtins unified discoverability registry presenter and regression acceptance | cli/discoverability-registry | TK-533、TK-534 | planned |
-| TK-536 | sprint-003 | freeze session note trigger schema and startup budget instrumentation boundary | runtime/session-note-and-startup-contract | active draft + durable storage overview | planned |
-| TK-537 | sprint-003 | implement session note persistence projection and session-shell startup lazy-load cutover | runtime/session-note-and-startup-implementation | TK-536 | planned |
-| TK-538 | sprint-003 | add session note presenter startup diagnostics regression evidence and rollout closeout acceptance | cli/closeout-and-rollout | TK-536、TK-537 | planned |
+| TK-530 | sprint-001 | freeze session lifecycle dto action seam and projection schema baseline | runtime/session-contract | active draft + cli session shell contract | completed |
+| TK-531 | sprint-001 | implement session lifecycle service actions and sqlite-backed session projection read model | runtime/session-lifecycle-and-read-model | TK-530 | completed |
+| TK-532 | sprint-001 | wire resume picker session list fork archive presenter and regression acceptance | cli/session-shell-lifecycle-presenter | TK-530、TK-531 | completed |
+| TK-533 | sprint-002 | freeze adaptive interaction runtime policy and unified discoverability registry baseline | runtime/interaction-policy | active draft + cli session shell contract | completed |
+| TK-534 | sprint-002 | implement alt-screen inline overlay fallback runtime and request-user-input seam | cli/interaction-runtime | TK-533 | completed |
+| TK-535 | sprint-002 | add skills presets builtins unified discoverability registry presenter and regression acceptance | cli/discoverability-registry | TK-533、TK-534 | completed |
+| TK-536 | sprint-003 | freeze session note trigger schema and startup budget instrumentation boundary | runtime/session-note-and-startup-contract | active draft + durable storage overview | completed |
+| TK-537 | sprint-003 | implement session note persistence projection and session-shell startup lazy-load cutover | runtime/session-note-and-startup-implementation | TK-536 | completed |
+| TK-538 | sprint-003 | add session note presenter startup diagnostics regression evidence and rollout closeout acceptance | cli/closeout-and-rollout | TK-536、TK-537 | completed |
 
 ## 4. 依赖产物策略
 
@@ -78,3 +78,6 @@
 2. 2026-04-04：用户进一步要求“继续拆成 implementation sprint/task package”，因此创建 `project-043-cli-session-shell-productization-rollout` 作为新的 planned follow-up stream。
 3. 2026-04-04：已在 `current-context.md` 中登记 `project-043 / sprint-001` 为 planned follow-up stream，同时保持 `project-038 / sprint-004` 作为临时 closeout primary surface。
 4. 2026-04-04：已将技术方案中的 3 个 phase 实体化为 `sprint-001 ~ sprint-003`，并拆成 `TK-530 ~ TK-538` 九个任务卡，后续可按 sprint 顺序直接激活执行。
+5. 2026-04-04：在 closeout 核验中确认 `fork/archive/unarchive` lifecycle seam、presenter-safe continuity 与 startup diagnostics 仍有产品化缺口，随后补齐 orchestration client、shared session、local orchestration runtime 与 CLI shell 全链路实现，并同步 `project-043` 三个 sprint 的完成真值。
+6. 2026-04-04：已通过 `pnpm run build`、session-shell package suites 与 CLI integration suites 重新验证 `project-043` 目标能力，确认三段式 rollout 已完成。
+7. 2026-04-04：`project-043` 已完成 CLI session shell productization rollout；项目级完成态审计摘要见 `.repo-ai-governor/context/dev/project-043-cli-session-shell-productization-rollout/project-043-cli-session-shell-productization-rollout-completion-audit-summary.md`。

@@ -1,6 +1,6 @@
 # TK-530 freeze session lifecycle dto action seam and projection schema baseline
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-04
 - Owner: AI-Agent
 - Priority: P0
@@ -58,9 +58,10 @@
 ## 9. 执行记录
 
 1. 2026-04-04：任务创建，状态初始化为 `planned`；承接 lifecycle seam 与 projection schema 冻结，不在本任务里直接实现 service action。
+2. 2026-04-04：完成 session lifecycle seam freeze 回填；`apps/cli/src/runtime/interactive-shell/session-shell-service-client.ts` 与 `apps/cli/src/runtime/interactive-shell/session-shell-transcript-store.ts` 已形成统一 lifecycle/projection contract。
 
 ## 10. 产出
 
-1. 待执行：session lifecycle action seam alignment note
-2. 待执行：session projection/read-model field baseline
-3. 待执行：`TK-531 / TK-532` 实施边界冻结记录
+1. 已完成：session lifecycle action seam alignment note -> `apps/cli/src/runtime/interactive-shell/session-shell-service-client.ts`
+2. 已完成：session projection/read-model field baseline -> `apps/cli/src/runtime/interactive-shell/session-shell-transcript-store.ts`
+3. 已完成：`TK-531 / TK-532` 实施边界冻结记录 -> `apps/cli/src/runtime/interactive-shell/session-shell-runner.ts`

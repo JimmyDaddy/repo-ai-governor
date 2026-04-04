@@ -7,7 +7,11 @@ import type { LangGraphRecoveredExecution } from '@repo-ai-governor/core-runtime
 import type {
   OrchestrationAppendSessionMessageRequest,
   OrchestrationAppendSessionMessageResponse,
+  OrchestrationArchiveSessionRequest,
+  OrchestrationArchiveSessionResponse,
   OrchestrationExecutionSummary,
+  OrchestrationForkSessionRequest,
+  OrchestrationForkSessionResponse,
   OrchestrationListExecutionsRequest,
   OrchestrationListExecutionsResponse,
   OrchestrationListSessionsRequest,
@@ -30,6 +34,8 @@ import type {
   OrchestrationSubscribeExecutionResponse,
   OrchestrationSubscribeSessionRequest,
   OrchestrationSubscribeSessionResponse,
+  OrchestrationUnarchiveSessionRequest,
+  OrchestrationUnarchiveSessionResponse,
 } from '@repo-ai-governor/orchestration-service-client';
 import { CliOrchestrationServiceRuntimeMode } from '../constants/orchestration-service-runtime.constant.js';
 import type {
@@ -146,6 +152,27 @@ export class CliOrchestrationServiceRuntime {
   ): Promise<OrchestrationResumeSessionResponse> {
     const service = await this.resolveServiceOwner();
     return service.resumeSession(request);
+  }
+
+  public async forkSession(
+    request: OrchestrationForkSessionRequest,
+  ): Promise<OrchestrationForkSessionResponse> {
+    const service = await this.resolveServiceOwner();
+    return service.forkSession(request);
+  }
+
+  public async archiveSession(
+    request: OrchestrationArchiveSessionRequest,
+  ): Promise<OrchestrationArchiveSessionResponse> {
+    const service = await this.resolveServiceOwner();
+    return service.archiveSession(request);
+  }
+
+  public async unarchiveSession(
+    request: OrchestrationUnarchiveSessionRequest,
+  ): Promise<OrchestrationUnarchiveSessionResponse> {
+    const service = await this.resolveServiceOwner();
+    return service.unarchiveSession(request);
   }
 
   public async publishEvent(request: LocalOrchestrationServicePublishEventRequest): Promise<void> {

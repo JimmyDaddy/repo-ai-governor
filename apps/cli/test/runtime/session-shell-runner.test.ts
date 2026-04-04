@@ -1,5 +1,7 @@
 import {
   type OrchestrationAppendSessionMessageResponse,
+  type OrchestrationArchiveSessionResponse,
+  type OrchestrationForkSessionResponse,
   type OrchestrationListSessionsRequest,
   type OrchestrationListSessionsResponse,
   type OrchestrationResumeSessionResponse,
@@ -12,6 +14,7 @@ import {
   type OrchestrationStartSessionResponse,
   type OrchestrationSubscribeSessionRequest,
   type OrchestrationSubscribeSessionResponse,
+  type OrchestrationUnarchiveSessionResponse,
 } from '@repo-ai-governor/orchestration-service-client';
 import {
   ErrorOutputEnvironment,
@@ -188,12 +191,31 @@ class FakeSessionShellServiceClient {
     { summary: OrchestrationSessionSummary; events: OrchestrationSessionEvent[] }
   >();
   protected sessionSequence = 0;
+  private readonly seedSessionId: string;
+  private seedSessionConsumed = false;
 
   public constructor(seedSessionId = 'session-shell-001') {
+    this.seedSessionId = seedSessionId;
+    this.sessionSequence = this.parseSessionSequence(seedSessionId);
     this.createSession(seedSessionId);
   }
 
   public async startSession(): Promise<OrchestrationStartSessionResponse> {
+    const seedSession = this.sessions.get(this.seedSessionId);
+    if (
+      this.seedSessionConsumed === false &&
+      seedSession?.summary.status === OrchestrationSessionStatus.ACTIVE
+    ) {
+      this.seedSessionConsumed = true;
+      return {
+        created: true,
+        session: seedSession.summary,
+        latestEventSequence: seedSession.summary.latestEventSequence,
+        nextCursor: seedSession.summary.nextCursor,
+      };
+    }
+
+    this.seedSessionConsumed = true;
     this.sessionSequence += 1;
     const sessionId = `session-shell-${String(this.sessionSequence).padStart(3, '0')}`;
     return this.createSession(sessionId);
@@ -232,11 +254,13 @@ class FakeSessionShellServiceClient {
     const turnIndex =
       session.events.filter((event) => event.type === OrchestrationSessionEventType.TURN_COMPLETED)
         .length + 1;
+    const turnId = `turn-${String(turnIndex)}`;
     this.appendEvent(sessionId, {
       type: OrchestrationSessionEventType.TURN_SUBMITTED,
       payload: {
         role: OrchestrationSessionTranscriptRole.USER,
         routeId: OrchestrationSessionRouteId.MAIN,
+        turnId,
         content: userMessage,
       },
     });
@@ -253,10 +277,18 @@ class FakeSessionShellServiceClient {
       payload: {
         role: OrchestrationSessionTranscriptRole.ASSISTANT,
         routeId: OrchestrationSessionRouteId.MAIN,
+        turnId,
         turnIndex,
         latestUserMessage: userMessage,
       },
     });
+    session.summary.context = {
+      ...session.summary.context,
+      latestTurnId: turnId,
+      latestTurnAt: '2026-03-30T12:00:00Z',
+      previewSummary: `answer:${userMessage}`,
+      latestNoteSummary: `goal=${userMessage} | last_reply=answer:${userMessage}`,
+    };
     session.summary = this.rebuildSummary(sessionId);
   }
 
@@ -302,13 +334,104 @@ class FakeSessionShellServiceClient {
   public async listSessions(
     request?: OrchestrationListSessionsRequest,
   ): Promise<OrchestrationListSessionsResponse> {
-    const sessions = Array.from(this.sessions.values()).map((entry) => entry.summary);
+    const sessions = Array.from(this.sessions.values())
+      .map((entry) => entry.summary)
+      .filter((summary) =>
+        request?.filter?.status ? summary.status === request.filter.status : true,
+      );
     const limitedSessions =
       typeof request?.limit === 'number' ? sessions.slice(0, request.limit) : sessions;
     return {
       sessions: limitedSessions,
       returnedCount: limitedSessions.length,
       totalMatchedCount: sessions.length,
+    };
+  }
+
+  public async forkSession(
+    sourceSessionId: string,
+    displayName?: string,
+  ): Promise<OrchestrationForkSessionResponse> {
+    const sourceSession = this.requireSession(sourceSessionId);
+    this.sessionSequence += 1;
+    const sessionId = `session-shell-${String(this.sessionSequence).padStart(3, '0')}`;
+    const started = this.createSession(sessionId, {
+      sourceKind: 'forked',
+      sourceSessionId,
+      ...(displayName ? { displayName } : {}),
+      ...(typeof sourceSession.summary.context.latestNoteSummary === 'string'
+        ? {
+            latestNoteSummary: sourceSession.summary.context.latestNoteSummary,
+          }
+        : {}),
+      ...(typeof sourceSession.summary.context.previewSummary === 'string'
+        ? {
+            previewSummary: sourceSession.summary.context.previewSummary,
+          }
+        : {}),
+    });
+    return {
+      session: started.session,
+      sourceSessionId,
+      latestEventSequence: started.latestEventSequence,
+      nextCursor: started.nextCursor,
+    };
+  }
+
+  public async archiveSession(sessionId: string): Promise<OrchestrationArchiveSessionResponse> {
+    const session = this.requireSession(sessionId);
+    session.summary = {
+      ...session.summary,
+      status: OrchestrationSessionStatus.ARCHIVED,
+      context: {
+        ...session.summary.context,
+        archivedAt: '2026-03-30T13:00:00Z',
+      },
+    };
+    const event = this.appendEvent(sessionId, {
+      type: OrchestrationSessionEventType.SESSION_MESSAGE_APPENDED,
+      payload: {
+        role: OrchestrationSessionTranscriptRole.SYSTEM,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        lines: [`Archived session ${sessionId}.`],
+        metadata: {
+          renderKind: 'system_notice',
+        },
+      },
+    });
+    session.summary = this.rebuildSummary(sessionId);
+    return {
+      session: session.summary,
+      archivedAt: '2026-03-30T13:00:00Z',
+      latestEventSequence: event.sequence,
+      nextCursor: event.streamCursor,
+    };
+  }
+
+  public async unarchiveSession(sessionId: string): Promise<OrchestrationUnarchiveSessionResponse> {
+    const session = this.requireSession(sessionId);
+    const { archivedAt: _archivedAt, ...nextContext } = session.summary.context;
+    session.summary = {
+      ...session.summary,
+      status: OrchestrationSessionStatus.ACTIVE,
+      context: nextContext,
+    };
+    const event = this.appendEvent(sessionId, {
+      type: OrchestrationSessionEventType.SESSION_MESSAGE_APPENDED,
+      payload: {
+        role: OrchestrationSessionTranscriptRole.SYSTEM,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        lines: [`Restored archived session ${sessionId} to active status.`],
+        metadata: {
+          renderKind: 'system_notice',
+        },
+      },
+    });
+    session.summary = this.rebuildSummary(sessionId);
+    return {
+      session: session.summary,
+      latestEventSequence: event.sequence,
+      nextCursor: event.streamCursor,
     };
   }
 
@@ -347,7 +470,10 @@ class FakeSessionShellServiceClient {
     session.summary = this.rebuildSummary(options.sessionId);
   }
 
-  protected createSession(sessionId: string): OrchestrationStartSessionResponse {
+  protected createSession(
+    sessionId: string,
+    contextPatch: Record<string, unknown> = {},
+  ): OrchestrationStartSessionResponse {
     const summary: OrchestrationSessionSummary = {
       sessionId,
       status: OrchestrationSessionStatus.ACTIVE,
@@ -358,6 +484,8 @@ class FakeSessionShellServiceClient {
       eventCount: 0,
       context: {
         currentRouteId: OrchestrationSessionRouteId.MAIN,
+        sourceKind: 'new',
+        ...contextPatch,
       },
     };
     this.sessions.set(sessionId, { summary, events: [] });
@@ -423,6 +551,11 @@ class FakeSessionShellServiceClient {
 
   protected createCursor(sessionId: string, sequence: number): string {
     return `cursor:${sessionId}:${String(sequence)}`;
+  }
+
+  private parseSessionSequence(sessionId: string): number {
+    const parsedSuffix = Number(sessionId.split('-').at(-1));
+    return Number.isInteger(parsedSuffix) && parsedSuffix > 0 ? parsedSuffix : 0;
   }
 }
 
@@ -617,6 +750,46 @@ class MissingSessionThenDelayedTurnWithoutStreamSessionShellServiceClient extend
   }
 }
 
+class FailingLifecycleCommandSessionShellServiceClient extends FakeSessionShellServiceClient {
+  public constructor(
+    private readonly failureMode: 'fork' | 'archive' | 'unarchive',
+    private readonly failureMessage: string,
+  ) {
+    super();
+  }
+
+  public override async forkSession(
+    sourceSessionId: string,
+    displayName?: string,
+  ): Promise<OrchestrationForkSessionResponse> {
+    if (this.failureMode === 'fork') {
+      throw new RuntimeError(GovernorErrorCode.MEMORY_SESSION_NOT_FOUND, this.failureMessage);
+    }
+
+    return super.forkSession(sourceSessionId, displayName);
+  }
+
+  public override async archiveSession(
+    sessionId: string,
+  ): Promise<OrchestrationArchiveSessionResponse> {
+    if (this.failureMode === 'archive') {
+      throw new RuntimeError(GovernorErrorCode.MEMORY_SESSION_NOT_FOUND, this.failureMessage);
+    }
+
+    return super.archiveSession(sessionId);
+  }
+
+  public override async unarchiveSession(
+    sessionId: string,
+  ): Promise<OrchestrationUnarchiveSessionResponse> {
+    if (this.failureMode === 'unarchive') {
+      throw new RuntimeError(GovernorErrorCode.MEMORY_SESSION_NOT_FOUND, this.failureMessage);
+    }
+
+    return super.unarchiveSession(sessionId);
+  }
+}
+
 const DEFAULT_TRANSLATIONS: Record<string, string> = {
   'cli.sessionShell.title': 'Repo AI Governor session shell',
   'cli.sessionShell.subtitle': 'Session shell baseline.',
@@ -652,6 +825,10 @@ const DEFAULT_TRANSLATIONS: Record<string, string> = {
   'cli.sessionShell.commands.clear.summary': 'Clear the local transcript view.',
   'cli.sessionShell.commands.exit.summary': 'Exit the foreground shell.',
   'cli.sessionShell.commands.resume.summary': 'Resume the current or named session.',
+  'cli.sessionShell.commands.sessions.summary': 'List recent active or archived sessions.',
+  'cli.sessionShell.commands.fork.summary': 'Fork the current session into a new branch.',
+  'cli.sessionShell.commands.archive.summary': 'Archive the current or named session.',
+  'cli.sessionShell.commands.unarchive.summary': 'Restore an archived session and attach to it.',
   'cli.sessionShell.commands.history.summary': 'Show recent shell input history.',
   'cli.sessionShell.commands.search.summary': 'Search transcript and history.',
   'cli.sessionShell.commands.multiline.summary': 'Capture one multi-line turn.',
@@ -743,10 +920,25 @@ const DEFAULT_TRANSLATIONS: Record<string, string> = {
   'cli.sessionShell.responses.searchRequiresQuery': 'Pass a search term after /search.',
   'cli.sessionShell.responses.searchMatches': 'Matched transcript/history lines for {{query}}:',
   'cli.sessionShell.responses.searchNoMatch': 'No transcript or history lines matched {{query}}.',
+  'cli.sessionShell.responses.sessionsHeading': 'Recent sessions (filter={{filter}}):',
+  'cli.sessionShell.responses.sessionsEmpty': 'No recent sessions matched filter={{filter}}.',
+  'cli.sessionShell.responses.sessionsEntry':
+    'session={{sessionId}} status={{status}} source={{sourceKind}} opened_at={{openedAt}}',
+  'cli.sessionShell.responses.sessionsDisplayName': 'display_name={{displayName}}',
+  'cli.sessionShell.responses.sessionsNoteSummary': 'note={{summary}}',
+  'cli.sessionShell.responses.sessionsPreviewSummary': 'preview={{summary}}',
+  'cli.sessionShell.responses.sessionsArchivedAt': 'archived_at={{archivedAt}}',
+  'cli.sessionShell.responses.sessionsUnknownFilter':
+    'Unsupported /sessions filter {{filter}}. Use active, archived, or all.',
+  'cli.sessionShell.responses.sessionsFailed': 'Failed to list sessions. reason={{reason}}',
   'cli.sessionShell.responses.statusAttached': 'Attached to session {{sessionId}} on {{routeId}}.',
   'cli.sessionShell.responses.statusRuntime':
     'Resume={{resumeSelector}} persistence={{persistenceOwner}} theme={{theme}} output={{output}}.',
   'cli.sessionShell.responses.statusWorkspace': 'Workspace: {{workspace}}',
+  'cli.sessionShell.responses.statusStartup':
+    'Startup path={{startupPath}} lazy_boundary={{lazyBoundary}} bootstrap_ms={{bootstrapMs}}.',
+  'cli.sessionShell.responses.statusProjection':
+    'Projection source={{sourceKind}} display_name={{displayName}}.',
   'cli.sessionShell.responses.themeCurrent': 'Current session theme={{theme}}.',
   'cli.sessionShell.responses.themeAvailable': 'Available themes: {{themes}}.',
   'cli.sessionShell.responses.themeUnknown': 'Unknown theme {{theme}}. Choose one of: {{themes}}.',
@@ -760,6 +952,21 @@ const DEFAULT_TRANSLATIONS: Record<string, string> = {
     'Failed to resume {{resumeSelector}}. reason={{reason}}',
   'cli.sessionShell.responses.resumeAvailableSessions': 'Known sessions: {{sessionIds}}',
   'cli.sessionShell.responses.resumeRecoverableHint': 'Resume is recoverable.',
+  'cli.sessionShell.responses.sessionForkedFrom':
+    'Forked session {{sourceSessionId}} into the current branch {{sessionId}}.',
+  'cli.sessionShell.responses.sessionNoteSummary': 'Note: {{summary}}',
+  'cli.sessionShell.responses.sessionPreviewSummary': 'Preview: {{summary}}',
+  'cli.sessionShell.responses.sessionArchivedAt': 'Archived at {{archivedAt}}.',
+  'cli.sessionShell.responses.sessionArchived': 'Archived session {{sessionId}}.',
+  'cli.sessionShell.responses.sessionArchiveReplacementAttached':
+    'Attached a fresh session {{sessionId}} so the foreground shell can keep running.',
+  'cli.sessionShell.responses.forkFailed': 'Failed to fork the current session. reason={{reason}}',
+  'cli.sessionShell.responses.archiveFailed':
+    'Failed to archive the requested session. reason={{reason}}',
+  'cli.sessionShell.responses.unarchiveRequiresSessionId':
+    'Pass one archived session id after /unarchive so the shell knows which session to restore.',
+  'cli.sessionShell.responses.unarchiveFailed':
+    'Failed to restore the requested session. reason={{reason}}',
   'cli.sessionShell.responses.resumeRecoveredWithNewSession':
     'A new session was created so the shell can stay attached.',
   'cli.sessionShell.responses.turnRetryingAfterSessionRecovery':
@@ -1019,7 +1226,336 @@ describe('CliSessionShellRunner', () => {
         ),
       ),
     ).toBe(true);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes(
+          'Startup path=default_session_shell lazy_boundary=session_shell_only bootstrap_ms=0.',
+        ),
+      ),
+    ).toBe(true);
     expect(renderer.frames.at(-1)?.promptBarLines).toEqual(['? shortcuts · /status · Ctrl+D']);
+  });
+
+  it('lists archived sessions through /sessions and surfaces projection note summaries', async () => {
+    const sessionClient = new FakeSessionShellServiceClient('session-shell-001');
+    await sessionClient.sendMainTurn('session-shell-001', 'hello governor');
+    await sessionClient.archiveSession('session-shell-001');
+    const renderer = new RecordingSessionShellRenderer();
+    const runner = new CliSessionShellRunner(
+      undefined,
+      renderer as never,
+      () => new StubSessionShellPromptAdapter(['/sessions archived', '/exit']),
+      undefined,
+      undefined,
+      () => false,
+      () => new Date('2026-03-30T12:00:00Z'),
+    );
+
+    const result = await runner.run(
+      DEFAULT_RUN_OPTIONS({
+        sessionClient,
+      }),
+    );
+
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes('Recent sessions (filter=archived):'),
+      ),
+    ).toBe(true);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes(
+          'session=session-shell-001 status=archived source=new opened_at=2026-03-30T12:00:00Z',
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes('note=goal=hello governor | last_reply=answer:hello governor'),
+      ),
+    ).toBe(true);
+  });
+
+  it('forks the current session into a new branch and exposes fork projection details in /status', async () => {
+    const sessionClient = new FakeSessionShellServiceClient('session-shell-001');
+    await sessionClient.sendMainTurn('session-shell-001', 'ship the release note');
+    const renderer = new RecordingSessionShellRenderer();
+    const runner = new CliSessionShellRunner(
+      undefined,
+      renderer as never,
+      () => new StubSessionShellPromptAdapter(['/fork release-note', '/status', '/exit']),
+      undefined,
+      undefined,
+      () => false,
+      () => new Date('2026-03-30T12:00:00Z'),
+    );
+
+    const result = await runner.run(
+      DEFAULT_RUN_OPTIONS({
+        sessionClient,
+      }),
+    );
+
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes(
+          'Forked session session-shell-001 into the current branch session-shell-002.',
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes('Projection source=forked display_name=release-note.'),
+      ),
+    ).toBe(true);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes(
+          'Note: goal=ship the release note | last_reply=answer:ship the release note',
+        ),
+      ),
+    ).toBe(true);
+  });
+
+  it('surfaces a presenter-safe receipt when /fork fails and keeps the current attachment', async () => {
+    const sessionClient = new FailingLifecycleCommandSessionShellServiceClient(
+      'fork',
+      'fork is temporarily unavailable.',
+    );
+    const renderer = new RecordingSessionShellRenderer();
+    const runner = new CliSessionShellRunner(
+      undefined,
+      renderer as never,
+      () => new StubSessionShellPromptAdapter(['/fork release-note', '/status', '/exit']),
+      undefined,
+      undefined,
+      () => false,
+      () => new Date('2026-03-30T12:00:00Z'),
+    );
+
+    const result = await runner.run(
+      DEFAULT_RUN_OPTIONS({
+        sessionClient,
+      }),
+    );
+
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes(
+          'Failed to fork the current session. reason=fork is temporarily unavailable.',
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes('Attached to session session-shell-001 on session.main.'),
+      ),
+    ).toBe(true);
+  });
+
+  it('archives the current session and attaches a fresh session so the shell can continue', async () => {
+    const sessionClient = new FakeSessionShellServiceClient('session-shell-001');
+    const renderer = new RecordingSessionShellRenderer();
+    const runner = new CliSessionShellRunner(
+      undefined,
+      renderer as never,
+      () => new StubSessionShellPromptAdapter(['/archive', '/status', '/exit']),
+      undefined,
+      undefined,
+      () => false,
+      () => new Date('2026-03-30T12:00:00Z'),
+    );
+
+    const result = await runner.run(
+      DEFAULT_RUN_OPTIONS({
+        sessionClient,
+      }),
+    );
+
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes('Archived session session-shell-001.'),
+      ),
+    ).toBe(true);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes(
+          'Attached a fresh session session-shell-002 so the foreground shell can keep running.',
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes('Attached to session session-shell-002 on session.main.'),
+      ),
+    ).toBe(true);
+  });
+
+  it('surfaces a presenter-safe receipt when /archive fails and keeps the current attachment', async () => {
+    const sessionClient = new FailingLifecycleCommandSessionShellServiceClient(
+      'archive',
+      'archive is temporarily unavailable.',
+    );
+    const renderer = new RecordingSessionShellRenderer();
+    const runner = new CliSessionShellRunner(
+      undefined,
+      renderer as never,
+      () => new StubSessionShellPromptAdapter(['/archive', '/status', '/exit']),
+      undefined,
+      undefined,
+      () => false,
+      () => new Date('2026-03-30T12:00:00Z'),
+    );
+
+    const result = await runner.run(
+      DEFAULT_RUN_OPTIONS({
+        sessionClient,
+      }),
+    );
+
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes(
+          'Failed to archive the requested session. reason=archive is temporarily unavailable.',
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes('Attached to session session-shell-001 on session.main.'),
+      ),
+    ).toBe(true);
+  });
+
+  it('restores an archived session through /unarchive and reattaches the foreground shell', async () => {
+    const sessionClient = new FakeSessionShellServiceClient('session-shell-001');
+    await sessionClient.startSession();
+    await sessionClient.startSession();
+    await sessionClient.sendMainTurn('session-shell-002', 'restore the release context');
+    await sessionClient.archiveSession('session-shell-002');
+    const renderer = new RecordingSessionShellRenderer();
+    const runner = new CliSessionShellRunner(
+      undefined,
+      renderer as never,
+      () => new StubSessionShellPromptAdapter(['/unarchive session-shell-002', '/status', '/exit']),
+      undefined,
+      undefined,
+      () => false,
+      () => new Date('2026-03-30T12:00:00Z'),
+    );
+
+    const result = await runner.run(
+      DEFAULT_RUN_OPTIONS({
+        sessionClient,
+      }),
+    );
+
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes('Restored archived session session-shell-002 to active status.'),
+      ),
+    ).toBe(true);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes('Attached to session session-shell-002 on session.main.'),
+      ),
+    ).toBe(true);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes(
+          'Note: goal=restore the release context | last_reply=answer:restore the release context',
+        ),
+      ),
+    ).toBe(true);
+  });
+
+  it('surfaces a presenter-safe receipt when /unarchive fails and keeps the current attachment', async () => {
+    const sessionClient = new FailingLifecycleCommandSessionShellServiceClient(
+      'unarchive',
+      'restore is temporarily unavailable.',
+    );
+    const renderer = new RecordingSessionShellRenderer();
+    const runner = new CliSessionShellRunner(
+      undefined,
+      renderer as never,
+      () => new StubSessionShellPromptAdapter(['/unarchive session-shell-002', '/status', '/exit']),
+      undefined,
+      undefined,
+      () => false,
+      () => new Date('2026-03-30T12:00:00Z'),
+    );
+
+    const result = await runner.run(
+      DEFAULT_RUN_OPTIONS({
+        sessionClient,
+      }),
+    );
+
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes(
+          'Failed to restore the requested session. reason=restore is temporarily unavailable.',
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes('Attached to session session-shell-001 on session.main.'),
+      ),
+    ).toBe(true);
+  });
+
+  it('requires an explicit session id before attempting /unarchive', async () => {
+    const renderer = new RecordingSessionShellRenderer();
+    const runner = new CliSessionShellRunner(
+      undefined,
+      renderer as never,
+      () => new StubSessionShellPromptAdapter(['/unarchive', '/exit']),
+      undefined,
+      undefined,
+      () => false,
+      () => new Date('2026-03-30T12:00:00Z'),
+    );
+
+    const result = await runner.run(DEFAULT_RUN_OPTIONS());
+
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes(
+          'Pass one archived session id after /unarchive so the shell knows which session to restore.',
+        ),
+      ),
+    ).toBe(true);
+  });
+
+  it('surfaces presenter-safe note summary when resuming a session on startup', async () => {
+    const sessionClient = new FakeSessionShellServiceClient('session-shell-001');
+    await sessionClient.sendMainTurn('session-shell-001', 'summarize the sprint');
+    const renderer = new RecordingSessionShellRenderer();
+    const runner = new CliSessionShellRunner(
+      undefined,
+      renderer as never,
+      () => new StubSessionShellPromptAdapter(['/exit']),
+      undefined,
+      undefined,
+      () => false,
+      () => new Date('2026-03-30T12:00:00Z'),
+    );
+
+    const result = await runner.run(
+      DEFAULT_RUN_OPTIONS({
+        sessionClient,
+        resumeOnStartup: true,
+      }),
+    );
+
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes(
+          'Note: goal=summarize the sprint | last_reply=answer:summarize the sprint',
+        ),
+      ),
+    ).toBe(true);
   });
 
   it('starts a fresh session and retries the turn when the attached session disappears', async () => {

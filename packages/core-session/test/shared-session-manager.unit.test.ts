@@ -155,6 +155,39 @@ describe('core-session unit', () => {
     expect(finalizedSession.status).toBe(SessionStatus.COMPLETED);
   });
 
+  it('transitions sessions between active and archived while preserving mutable context patches', async () => {
+    const inMemoryStore = createInMemoryStoreProvider();
+    const memoryManager = new MemoryManager(new MemoryStoreAdapter(inMemoryStore.provider));
+    const sessionManager = new SharedSessionManager(memoryManager);
+
+    await sessionManager.openSession({
+      sessionId: 'session-unit-archive',
+      executionId: 'exec-unit-archive',
+    });
+
+    const archivedSession = await sessionManager.transitionSessionStatus({
+      sessionId: 'session-unit-archive',
+      status: SessionStatus.ARCHIVED,
+      closedAt: '2026-04-04T12:00:00Z',
+      contextPatch: {
+        archivedAt: '2026-04-04T12:00:00Z',
+        archiveReasonSummary: 'close out the old branch',
+      },
+    });
+    const restoredSession = await sessionManager.transitionSessionStatus({
+      sessionId: 'session-unit-archive',
+      status: SessionStatus.ACTIVE,
+      contextKeysToDelete: ['archivedAt', 'archiveReasonSummary'],
+    });
+
+    expect(archivedSession.status).toBe(SessionStatus.ARCHIVED);
+    expect(archivedSession.context.archivedAt).toBe('2026-04-04T12:00:00Z');
+    expect(restoredSession.status).toBe(SessionStatus.ACTIVE);
+    expect(restoredSession.closedAt).toBeUndefined();
+    expect(restoredSession.context.archivedAt).toBeUndefined();
+    expect(restoredSession.context.archiveReasonSummary).toBeUndefined();
+  });
+
   it('reads fresh session state on mutating paths so cross-manager appends do not overwrite events', async () => {
     const inMemoryStore = createInMemoryStoreProvider();
     const memoryManager = new MemoryManager(new MemoryStoreAdapter(inMemoryStore.provider));

@@ -1,6 +1,6 @@
 # TK-537 implement session note persistence projection and session-shell startup lazy-load cutover
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-04
 - Owner: AI-Agent
 - Priority: P1
@@ -59,9 +59,11 @@
 ## 9. 执行记录
 
 1. 2026-04-04：任务创建，状态初始化为 `planned`；承接 session note persistence 与 startup lazy-load cutover 实现。
+2. 2026-04-04：确认 persisted transcript note continuity、session-first startup path 与 startup diagnostics 已在 CLI 现有实现落地，并通过 build + regression suites 验证。
+3. 2026-04-04：补齐 `previewSummary/latestNoteSummary` 投影、fork/archive continuity 摘要与 startup continuation notice，并通过 runner 与 entrypoint regression 验证 continuity/stability。
 
 ## 10. 产出
 
-1. 待执行：session note persistence/projection implementation
-2. 待执行：startup lazy-load cutover
-3. 待执行：startup instrumentation evidence
+1. 已完成：session note persistence/projection implementation -> `packages/core-orchestration-service/src/local-orchestration-service-session-runtime.ts` + `apps/cli/src/runtime/interactive-shell/session-shell-runner.ts`
+2. 已完成：startup lazy-load cutover -> `apps/cli/src/main.ts` + `apps/cli/src/runtime/interactive-shell/session-shell-entrypoint-runtime.ts`
+3. 已完成：startup instrumentation evidence -> `apps/cli/test/runtime/session-shell-runner.test.ts` + `apps/cli/test/runtime/session-shell-entrypoint-runtime.test.ts` + `apps/cli/test/cli-output-contract.integration.test.ts`

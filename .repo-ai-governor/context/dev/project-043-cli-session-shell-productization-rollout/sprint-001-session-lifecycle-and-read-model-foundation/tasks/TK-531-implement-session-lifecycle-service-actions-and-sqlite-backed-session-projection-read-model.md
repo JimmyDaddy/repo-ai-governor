@@ -1,6 +1,6 @@
 # TK-531 implement session lifecycle service actions and sqlite-backed session projection read model
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-04
 - Owner: AI-Agent
 - Priority: P0
@@ -59,9 +59,11 @@
 ## 9. 执行记录
 
 1. 2026-04-04：任务创建，状态初始化为 `planned`；承接 lifecycle service action 与 sqlite-backed session projection 实现。
+2. 2026-04-04：确认 service-backed `start/resume/send/append/list/subscribe` 与 transcript projection/read-model 已在 CLI 现有实现落地，并通过 build + session-shell regression suites 验证。
+3. 2026-04-04：补齐 `ARCHIVED` 状态、`forkSession/archiveSession/unarchiveSession` contract、shared-session status transition 与 local orchestration runtime projection 字段，并通过 targeted lifecycle suites 验证真实实现。
 
 ## 10. 产出
 
-1. 待执行：session lifecycle service action implementation
-2. 待执行：session projection/read-model implementation
-3. 待执行：lifecycle/projection verification evidence
+1. 已完成：session lifecycle service action implementation -> `packages/orchestration-service-client/src/types/interfaces/orchestration-service-client.interface.ts` + `packages/core-orchestration-service/src/local-orchestration-service-session-runtime.ts` + `apps/cli/src/runtime/orchestration-service-runtime.ts`
+2. 已完成：session projection/read-model implementation -> `packages/core-session/src/shared-session-manager.ts` + `packages/core-orchestration-service/src/local-orchestration-service-session-runtime.ts`
+3. 已完成：lifecycle/projection verification evidence -> `packages/core-session/test/shared-session-manager.unit.test.ts` + `packages/core-orchestration-service/test/local-orchestration-service-shell.unit.test.ts`

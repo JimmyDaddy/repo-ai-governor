@@ -37,6 +37,22 @@ const SESSION_SLASH_BUILTIN_DEFINITIONS: SessionSlashCommandDefinition[] = [
   { command: '/exit', summaryKey: 'cli.sessionShell.commands.exit.summary', kind: 'builtin' },
   { command: '/resume', summaryKey: 'cli.sessionShell.commands.resume.summary', kind: 'builtin' },
   {
+    command: '/sessions',
+    summaryKey: 'cli.sessionShell.commands.sessions.summary',
+    kind: 'builtin',
+  },
+  { command: '/fork', summaryKey: 'cli.sessionShell.commands.fork.summary', kind: 'builtin' },
+  {
+    command: '/archive',
+    summaryKey: 'cli.sessionShell.commands.archive.summary',
+    kind: 'builtin',
+  },
+  {
+    command: '/unarchive',
+    summaryKey: 'cli.sessionShell.commands.unarchive.summary',
+    kind: 'builtin',
+  },
+  {
     command: '/history',
     summaryKey: 'cli.sessionShell.commands.history.summary',
     kind: 'builtin',
@@ -79,6 +95,10 @@ const SESSION_SLASH_COMMAND_FULL_ORDER = [
   '/clear',
   '/exit',
   '/resume',
+  '/sessions',
+  '/fork',
+  '/archive',
+  '/unarchive',
   '/history',
   '/search',
   '/multiline',

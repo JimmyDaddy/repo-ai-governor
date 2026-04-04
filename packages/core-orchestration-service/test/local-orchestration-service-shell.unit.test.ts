@@ -18,6 +18,7 @@ import {
   OrchestrationServiceTransportKind,
   OrchestrationSessionEventType,
   OrchestrationSessionRouteId,
+  OrchestrationSessionStatus,
   OrchestrationSessionTranscriptRole,
 } from '@repo-ai-governor/orchestration-service-client';
 import {
@@ -1887,6 +1888,85 @@ describe('core-orchestration-service local shell', () => {
       expect(cancelledEvent?.payload.turnIndex).toBe(2);
       expect(completedEvents[0]?.payload.turnIndex).toBe(3);
       expect(submittedEvents.map((event) => event.payload.turnIndex)).toEqual([1, 2, 3]);
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('supports fork, archive, and unarchive across the shared session lifecycle surface', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot: temporaryRoot,
+      sessionMainSupervisorRuntime: {
+        resolveTurn: async () => ({
+          responseMode: 'answer',
+          interactionMode: 'direct_answer',
+          assistantDelta: 'reply',
+          assistantMessage: 'reply',
+          executionIntent: 'session.answer',
+          requiresConfirmation: false,
+          selectedSurface: 'codex',
+          selectedBy: 'session.main.answer.primary',
+          sessionRoutingPreferenceApplied: false,
+          invokedRoleIds: [],
+          subagentCount: 0,
+        }),
+      },
+    });
+
+    try {
+      const started = await orchestrationService.startSession({
+        routeId: OrchestrationSessionRouteId.MAIN,
+      });
+      await orchestrationService.sendSessionTurn({
+        sessionId: started.session.sessionId,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        userMessage: 'draft the rollout note',
+      });
+
+      const forked = await orchestrationService.forkSession({
+        sourceSessionId: started.session.sessionId,
+        displayName: 'branch-alpha',
+      });
+      const archived = await orchestrationService.archiveSession({
+        sessionId: started.session.sessionId,
+      });
+      const archivedList = await orchestrationService.listSessions({
+        filter: {
+          status: OrchestrationSessionStatus.ARCHIVED,
+        },
+      });
+
+      expect(forked.session.context.sourceKind).toBe('forked');
+      expect(forked.session.context.sourceSessionId).toBe(started.session.sessionId);
+      expect(forked.session.context.displayName).toBe('branch-alpha');
+      expect(forked.session.context.latestNoteSummary).toBe(
+        'goal=draft the rollout note | last_reply=reply | surface=codex',
+      );
+      expect(archived.session.status).toBe(OrchestrationSessionStatus.ARCHIVED);
+      expect(archived.session.context.archivedAt).toBe(archived.archivedAt);
+      expect(archivedList.sessions.map((session) => session.sessionId)).toContain(
+        started.session.sessionId,
+      );
+      await expect(
+        orchestrationService.resumeSession({
+          sessionId: started.session.sessionId,
+        }),
+      ).rejects.toMatchObject({
+        code: GovernorErrorCode.MEMORY_SESSION_ALREADY_CLOSED,
+      });
+
+      const restored = await orchestrationService.unarchiveSession({
+        sessionId: started.session.sessionId,
+      });
+      const resumed = await orchestrationService.resumeSession({
+        sessionId: started.session.sessionId,
+      });
+
+      expect(restored.session.status).toBe(OrchestrationSessionStatus.ACTIVE);
+      expect(restored.session.context.archivedAt).toBeUndefined();
+      expect(resumed.session.sessionId).toBe(started.session.sessionId);
+      expect(resumed.session.status).toBe(OrchestrationSessionStatus.ACTIVE);
     } finally {
       await rm(temporaryRoot, { recursive: true, force: true });
     }

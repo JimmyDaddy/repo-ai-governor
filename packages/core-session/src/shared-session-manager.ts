@@ -14,6 +14,7 @@ import type {
   SharedSessionDiagnosticRecord,
   SharedSessionEventRecord,
   SharedSessionSummaryRecord,
+  TransitionSessionStatusOptions,
   UpdateSessionContextOptions,
   UpdateSessionContextWithLatestOptions,
 } from './types/index.js';
@@ -264,6 +265,47 @@ export class SharedSessionManager {
       await this.writeSessionSummaryRecord(finalizedSession);
 
       return this.cloneSession(finalizedSession);
+    });
+  }
+
+  /**
+   * Transitions one session between mutable lifecycle states such as active/archive.
+   * @param options Status-transition options.
+   * @returns Updated shared session payload.
+   */
+  public async transitionSessionStatus(
+    options: TransitionSessionStatusOptions,
+  ): Promise<SharedSession> {
+    return this.runWithSessionMutationLock(options.sessionId, async () => {
+      const session = await this.readPersistedSession(options.sessionId, undefined, {
+        mutationLockHeld: true,
+      });
+      this.assertSessionStatusTransitionAllowed(session.status, options.status, options.sessionId);
+
+      const nextContext = {
+        ...session.context,
+        ...(options.contextPatch ?? {}),
+      };
+      for (const contextKey of options.contextKeysToDelete ?? []) {
+        delete nextContext[contextKey];
+      }
+
+      const { closedAt: _closedAt, ...sessionWithoutClosedAt } = session;
+      const transitionedSessionBase: SharedSession = {
+        ...(options.status === SessionStatus.ACTIVE ? sessionWithoutClosedAt : session),
+        status: options.status,
+        context: nextContext,
+      };
+      const transitionedSession: SharedSession =
+        options.status === SessionStatus.ACTIVE
+          ? transitionedSessionBase
+          : {
+              ...transitionedSessionBase,
+              closedAt: options.closedAt ?? new Date().toISOString(),
+            };
+
+      await this.writeSessionSummaryRecord(transitionedSession);
+      return this.cloneSession(transitionedSession);
     });
   }
 
@@ -1156,6 +1198,41 @@ export class SharedSessionManager {
       {
         sessionId: session.sessionId,
         status: session.status,
+      },
+    );
+  }
+
+  /**
+   * Validates the limited mutable session lifecycle transitions supported by the shared store.
+   * @param currentStatus Current persisted status.
+   * @param nextStatus Requested next status.
+   * @param sessionId Session identifier for diagnostics.
+   * @returns Void.
+   */
+  private assertSessionStatusTransitionAllowed(
+    currentStatus: SessionStatus,
+    nextStatus: SessionStatus,
+    sessionId: string,
+  ): void {
+    if (currentStatus === nextStatus) {
+      return;
+    }
+
+    const allowedTransition =
+      (currentStatus === SessionStatus.ACTIVE && nextStatus === SessionStatus.ARCHIVED) ||
+      (currentStatus === SessionStatus.ARCHIVED && nextStatus === SessionStatus.ACTIVE);
+
+    if (allowedTransition) {
+      return;
+    }
+
+    throw new RuntimeError(
+      GovernorErrorCode.MEMORY_SESSION_INVALID_STATUS,
+      `Session "${sessionId}" cannot transition from "${currentStatus}" to "${nextStatus}".`,
+      {
+        sessionId,
+        currentStatus,
+        nextStatus,
       },
     );
   }

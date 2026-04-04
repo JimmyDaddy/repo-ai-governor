@@ -4,7 +4,11 @@ import type { LangGraphRecoveredExecution } from '@repo-ai-governor/core-runtime
 import type {
   OrchestrationAppendSessionMessageRequest,
   OrchestrationAppendSessionMessageResponse,
+  OrchestrationArchiveSessionRequest,
+  OrchestrationArchiveSessionResponse,
   OrchestrationExecutionSummary,
+  OrchestrationForkSessionRequest,
+  OrchestrationForkSessionResponse,
   OrchestrationListExecutionsRequest,
   OrchestrationListExecutionsResponse,
   OrchestrationListSessionsRequest,
@@ -27,6 +31,8 @@ import type {
   OrchestrationSubscribeExecutionResponse,
   OrchestrationSubscribeSessionRequest,
   OrchestrationSubscribeSessionResponse,
+  OrchestrationUnarchiveSessionRequest,
+  OrchestrationUnarchiveSessionResponse,
 } from '@repo-ai-governor/orchestration-service-client';
 import type { GovernorErrorCode, MemoryRuntimeConfig } from '@repo-ai-governor/shared';
 import type { LocalOrchestrationServiceSidecarOperation } from '../../constants/index.js';
@@ -102,6 +108,13 @@ export interface LocalOrchestrationServiceSidecarDispatchTable {
   resumeSession(
     request?: OrchestrationResumeSessionRequest,
   ): Promise<OrchestrationResumeSessionResponse>;
+  forkSession(request: OrchestrationForkSessionRequest): Promise<OrchestrationForkSessionResponse>;
+  archiveSession(
+    request: OrchestrationArchiveSessionRequest,
+  ): Promise<OrchestrationArchiveSessionResponse>;
+  unarchiveSession(
+    request: OrchestrationUnarchiveSessionRequest,
+  ): Promise<OrchestrationUnarchiveSessionResponse>;
   publishEvent(request: LocalOrchestrationServicePublishEventRequest): Promise<void>;
   saveCheckpoint(
     request: LocalOrchestrationServiceSaveCheckpointRequest,

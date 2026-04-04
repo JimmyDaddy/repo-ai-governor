@@ -12,9 +12,13 @@ export {
   OrchestrationServiceTransportKind,
 } from './constants/index.js';
 export type {
+  OrchestrationArchiveSessionRequest,
+  OrchestrationArchiveSessionResponse,
   OrchestrationAppendSessionMessageRequest,
   OrchestrationAppendSessionMessageResponse,
   OrchestrationExecutionLivenessSnapshot,
+  OrchestrationForkSessionRequest,
+  OrchestrationForkSessionResponse,
   OrchestrationListExecutionsRequest,
   OrchestrationListExecutionsResponse,
   OrchestrationListExecutionsFilter,
@@ -43,4 +47,6 @@ export type {
   OrchestrationSubscribeExecutionResponse,
   OrchestrationSubmitHitlDecisionRequest,
   OrchestrationSubmitHitlDecisionResponse,
+  OrchestrationUnarchiveSessionRequest,
+  OrchestrationUnarchiveSessionResponse,
 } from './types/index.js';

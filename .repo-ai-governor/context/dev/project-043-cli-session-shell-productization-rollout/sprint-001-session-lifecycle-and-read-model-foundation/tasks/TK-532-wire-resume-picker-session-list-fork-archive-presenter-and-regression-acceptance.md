@@ -1,6 +1,6 @@
 # TK-532 wire resume picker session list fork archive presenter and regression acceptance
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-04
 - Owner: AI-Agent
 - Priority: P1
@@ -58,9 +58,13 @@
 ## 9. 执行记录
 
 1. 2026-04-04：任务创建，状态初始化为 `planned`；承接 sprint-001 的 presenter 接线与回归收口。
+2. 2026-04-04：完成 resume continuity 与 sprint-001 regression closeout；session parity 与 output contract integration 已覆盖 presenter-safe affordance。
+3. 2026-04-04：补齐 `/sessions` `/fork` `/archive` `/unarchive` 接线、continuation notice 与 `/status` projection 输出，并通过 runner/package/integration suites 验证。
+4. 2026-04-04：补齐 `/unarchive <sessionId>` 成功 attach 与缺参校验的 runner 回归，收口前台恢复路径的 presenter 分支覆盖。
+5. 2026-04-04：补齐 `/fork` `/archive` `/unarchive` failure-path runner 回归，验证 presenter-safe 错误回执与失败后的 current attachment 稳定性。
 
 ## 10. 产出
 
-1. 待执行：resume picker / session list presenter integration
-2. 待执行：fork/archive presenter-safe affordance
-3. 待执行：sprint-001 regression acceptance evidence
+1. 已完成：resume picker / session list presenter integration -> `apps/cli/src/runtime/interactive-shell/session-shell-runner.ts`
+2. 已完成：fork/archive/unarchive presenter-safe affordance -> `apps/cli/src/runtime/interactive-shell/session-slash-command-registry.ts` + `apps/cli/src/runtime/interactive-shell/session-shell-runner.ts`
+3. 已完成：sprint-001 regression acceptance evidence -> `apps/cli/test/runtime/session-shell-runner.test.ts` + `apps/cli/test/runtime/session-main-parity.integration.test.ts` + `apps/cli/test/cli-output-contract.integration.test.ts`

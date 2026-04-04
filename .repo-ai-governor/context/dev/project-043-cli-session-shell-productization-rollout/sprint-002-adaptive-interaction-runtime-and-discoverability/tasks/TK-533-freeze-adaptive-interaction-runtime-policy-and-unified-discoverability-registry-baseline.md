@@ -1,6 +1,6 @@
 # TK-533 freeze adaptive interaction runtime policy and unified discoverability registry baseline
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-04
 - Owner: AI-Agent
 - Priority: P0
@@ -58,9 +58,10 @@
 ## 9. 执行记录
 
 1. 2026-04-04：任务创建，状态初始化为 `planned`；承接 interaction runtime policy 与 discoverability contract 冻结。
+2. 2026-04-04：完成 adaptive UI mode 与 discoverability baseline freeze 回填；policy 与 governed registry contract 已由现有 CLI runtime 承接。
 
 ## 10. 产出
 
-1. 待执行：adaptive interaction runtime policy baseline
-2. 待执行：unified discoverability registry contract baseline
-3. 待执行：`TK-534 / TK-535` 实施边界冻结记录
+1. 已完成：adaptive interaction runtime policy baseline -> `apps/cli/src/runtime/interactive-shell/interactive-shell-ui-mode-resolver.ts`
+2. 已完成：unified discoverability registry contract baseline -> `apps/cli/src/runtime/session-main-capability-discoverability-runtime.ts`
+3. 已完成：`TK-534 / TK-535` 实施边界冻结记录 -> `apps/cli/src/runtime/interactive-shell/session-slash-command-registry.ts`

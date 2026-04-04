@@ -140,6 +140,24 @@ export class LocalOrchestrationServiceSidecarHost
     return this.shell.resumeSession(request);
   }
 
+  public forkSession(
+    request: Parameters<LocalOrchestrationServiceSidecarDispatchTable['forkSession']>[0],
+  ) {
+    return this.shell.forkSession(request);
+  }
+
+  public archiveSession(
+    request: Parameters<LocalOrchestrationServiceSidecarDispatchTable['archiveSession']>[0],
+  ) {
+    return this.shell.archiveSession(request);
+  }
+
+  public unarchiveSession(
+    request: Parameters<LocalOrchestrationServiceSidecarDispatchTable['unarchiveSession']>[0],
+  ) {
+    return this.shell.unarchiveSession(request);
+  }
+
   public publishEvent(
     request: Parameters<LocalOrchestrationServiceSidecarDispatchTable['publishEvent']>[0],
   ) {
@@ -254,6 +272,24 @@ export class LocalOrchestrationServiceSidecarHost
       case LocalOrchestrationServiceSidecarOperation.RESUME_SESSION:
         return this.resumeSession(
           payload as Parameters<LocalOrchestrationServiceSidecarDispatchTable['resumeSession']>[0],
+        );
+      case LocalOrchestrationServiceSidecarOperation.FORK_SESSION:
+        return this.forkSession(
+          this.assertPayload<
+            Parameters<LocalOrchestrationServiceSidecarDispatchTable['forkSession']>[0]
+          >(payload, operation),
+        );
+      case LocalOrchestrationServiceSidecarOperation.ARCHIVE_SESSION:
+        return this.archiveSession(
+          this.assertPayload<
+            Parameters<LocalOrchestrationServiceSidecarDispatchTable['archiveSession']>[0]
+          >(payload, operation),
+        );
+      case LocalOrchestrationServiceSidecarOperation.UNARCHIVE_SESSION:
+        return this.unarchiveSession(
+          this.assertPayload<
+            Parameters<LocalOrchestrationServiceSidecarDispatchTable['unarchiveSession']>[0]
+          >(payload, operation),
         );
       case LocalOrchestrationServiceSidecarOperation.PUBLISH_EVENT:
         return this.publishEvent(

@@ -1,6 +1,6 @@
 # TK-536 freeze session note trigger schema and startup budget instrumentation boundary
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-04
 - Owner: AI-Agent
 - Priority: P1
@@ -58,9 +58,10 @@
 ## 9. 执行记录
 
 1. 2026-04-04：任务创建，状态初始化为 `planned`；承接 session note / startup budget contract 冻结。
+2. 2026-04-04：完成 session note / startup diagnostics baseline freeze 回填；startup query 与 transcript note contract 已由现有 CLI runtime 承接。
 
 ## 10. 产出
 
-1. 待执行：session note trigger/schema/projection baseline
-2. 待执行：startup budget instrumentation boundary
-3. 待执行：`TK-537 / TK-538` 实施边界冻结记录
+1. 已完成：session note trigger/schema/projection baseline -> `apps/cli/src/runtime/interactive-shell/session-shell-runner.ts`
+2. 已完成：startup budget instrumentation boundary -> `apps/cli/src/main.ts` + `apps/cli/src/runtime/interactive-shell/session-shell-entrypoint-runtime.ts`
+3. 已完成：`TK-537 / TK-538` 实施边界冻结记录 -> `apps/cli/test/runtime/session-shell-runner.test.ts`

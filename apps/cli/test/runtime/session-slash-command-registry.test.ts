@@ -7,6 +7,10 @@ const TRANSLATIONS: Record<string, string> = {
   'cli.sessionShell.commands.clear.summary': 'Clear the local transcript view.',
   'cli.sessionShell.commands.exit.summary': 'Exit the foreground shell.',
   'cli.sessionShell.commands.resume.summary': 'Resume the current or named session.',
+  'cli.sessionShell.commands.sessions.summary': 'List recent active or archived sessions.',
+  'cli.sessionShell.commands.fork.summary': 'Fork the current session into a new branch.',
+  'cli.sessionShell.commands.archive.summary': 'Archive the current or named session.',
+  'cli.sessionShell.commands.unarchive.summary': 'Restore an archived session and attach to it.',
   'cli.sessionShell.commands.history.summary': 'Show recent shell input history.',
   'cli.sessionShell.commands.search.summary': 'Search transcript and history.',
   'cli.sessionShell.commands.multiline.summary': 'Capture one multi-line turn.',
@@ -80,6 +84,10 @@ describe('CliSessionSlashCommandRegistry', () => {
     });
 
     expect(suggestions.map((suggestion) => suggestion.command)).toContain('/confirm');
+    expect(suggestions.map((suggestion) => suggestion.command)).toContain('/sessions');
+    expect(suggestions.map((suggestion) => suggestion.command)).toContain('/fork');
+    expect(suggestions.map((suggestion) => suggestion.command)).toContain('/archive');
+    expect(suggestions.map((suggestion) => suggestion.command)).toContain('/unarchive');
     expect(suggestions.map((suggestion) => suggestion.command)).toContain('/workflow');
     expect(suggestions.map((suggestion) => suggestion.command)).toContain('/review verify');
     expect(suggestions[0]?.command).toBe('/help');

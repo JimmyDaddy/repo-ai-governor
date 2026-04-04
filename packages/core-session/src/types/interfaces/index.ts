@@ -8,6 +8,7 @@ export type {
   SharedSessionEventRecord,
   SharedSession,
   SharedSessionSummaryRecord,
+  TransitionSessionStatusOptions,
   UpdateSessionContextOptions,
   UpdateSessionContextWithLatestOptions,
 } from './shared-session.interface.js';

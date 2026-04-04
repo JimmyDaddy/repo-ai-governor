@@ -16,7 +16,7 @@
 
 ## Planned Follow-Up Streams
 
-- `cli-session-shell-rollout`: project=`project-043-cli-session-shell-productization-rollout`, sprint=`sprint-001-session-lifecycle-and-read-model-foundation`, docs=`.repo-ai-governor/context/dev/project-043-cli-session-shell-productization-rollout`, plan=`.repo-ai-governor/context/dev/project-043-cli-session-shell-productization-rollout/sprint-001-session-lifecycle-and-read-model-foundation/plan.md`, tasks=`.repo-ai-governor/context/dev/project-043-cli-session-shell-productization-rollout/sprint-001-session-lifecycle-and-read-model-foundation/tasks/`, checklist=`.repo-ai-governor/context/dev/project-043-cli-session-shell-productization-rollout/sprint-001-session-lifecycle-and-read-model-foundation/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-043-cli-session-shell-productization-rollout/sprint-001-session-lifecycle-and-read-model-foundation/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-043-cli-session-shell-productization-rollout/sprint-001-session-lifecycle-and-read-model-foundation/review/`, status=`planned`, note=`Created on 2026-04-04 from cli-borrowed-capabilities productization draft decomposition; keeps project-038 as temporary closeout surface until explicit activation`
+- None currently registered.
 
 ## Completed Stream History
 

@@ -1,6 +1,8 @@
 import { OrchestrationSessionRouteId } from '@repo-ai-governor/orchestration-service-client';
 import type {
   OrchestrationAppendSessionMessageResponse,
+  OrchestrationArchiveSessionResponse,
+  OrchestrationForkSessionResponse,
   OrchestrationListSessionsRequest,
   OrchestrationListSessionsResponse,
   OrchestrationResumeSessionResponse,
@@ -8,6 +10,7 @@ import type {
   OrchestrationStartSessionResponse,
   OrchestrationSubscribeSessionRequest,
   OrchestrationSubscribeSessionResponse,
+  OrchestrationUnarchiveSessionResponse,
 } from '@repo-ai-governor/orchestration-service-client';
 import { DEFAULT_I18N_FALLBACK_LOCALE } from '@repo-ai-governor/shared';
 import type { CliOrchestrationServiceRuntime } from '../orchestration-service-runtime.js';
@@ -113,5 +116,48 @@ export class CliSessionShellServiceClient {
     request?: OrchestrationListSessionsRequest,
   ): Promise<OrchestrationListSessionsResponse> {
     return this.orchestrationServiceRuntime.listSessions(request);
+  }
+
+  /**
+   * Forks the current or named session into a new active branch session.
+   * @param sourceSessionId Existing canonical session identifier.
+   * @param displayName Optional branch display label.
+   * @returns Newly-created fork session response.
+   */
+  public async forkSession(
+    sourceSessionId: string,
+    displayName?: string,
+  ): Promise<OrchestrationForkSessionResponse> {
+    return this.orchestrationServiceRuntime.forkSession({
+      sourceSessionId,
+      ...(displayName ? { displayName } : {}),
+    });
+  }
+
+  /**
+   * Archives one active session so it no longer appears in default resume flows.
+   * @param sessionId Canonical session identifier.
+   * @param archiveReasonSummary Optional operator-facing archive note.
+   * @returns Archive receipt.
+   */
+  public async archiveSession(
+    sessionId: string,
+    archiveReasonSummary?: string,
+  ): Promise<OrchestrationArchiveSessionResponse> {
+    return this.orchestrationServiceRuntime.archiveSession({
+      sessionId,
+      ...(archiveReasonSummary ? { archiveReasonSummary } : {}),
+    });
+  }
+
+  /**
+   * Restores one archived session to active status.
+   * @param sessionId Canonical session identifier.
+   * @returns Unarchive receipt.
+   */
+  public async unarchiveSession(sessionId: string): Promise<OrchestrationUnarchiveSessionResponse> {
+    return this.orchestrationServiceRuntime.unarchiveSession({
+      sessionId,
+    });
   }
 }

@@ -5,6 +5,8 @@ import type {
 } from '@repo-ai-governor/core-orchestration-service';
 import type {
   OrchestrationAppendSessionMessageResponse,
+  OrchestrationArchiveSessionResponse,
+  OrchestrationForkSessionResponse,
   OrchestrationListSessionsRequest,
   OrchestrationListSessionsResponse,
   OrchestrationResumeSessionResponse,
@@ -12,6 +14,7 @@ import type {
   OrchestrationStartSessionResponse,
   OrchestrationSubscribeSessionRequest,
   OrchestrationSubscribeSessionResponse,
+  OrchestrationUnarchiveSessionResponse,
 } from '@repo-ai-governor/orchestration-service-client';
 import type { ErrorOutputEnvironment } from '@repo-ai-governor/shared';
 import type { CliReactThemePreset } from '../../constants/cli-react-theme.constant.js';
@@ -225,6 +228,15 @@ export interface CliSessionShellServiceClientLike {
   listSessions(
     request?: OrchestrationListSessionsRequest,
   ): Promise<OrchestrationListSessionsResponse>;
+  forkSession(
+    sourceSessionId: string,
+    displayName?: string,
+  ): Promise<OrchestrationForkSessionResponse>;
+  archiveSession(
+    sessionId: string,
+    archiveReasonSummary?: string,
+  ): Promise<OrchestrationArchiveSessionResponse>;
+  unarchiveSession(sessionId: string): Promise<OrchestrationUnarchiveSessionResponse>;
 }
 
 /**

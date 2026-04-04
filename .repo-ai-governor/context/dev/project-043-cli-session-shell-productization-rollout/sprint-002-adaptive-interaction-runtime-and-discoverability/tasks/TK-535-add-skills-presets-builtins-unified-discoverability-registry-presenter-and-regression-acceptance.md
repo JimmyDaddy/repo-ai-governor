@@ -1,6 +1,6 @@
 # TK-535 add skills presets builtins unified discoverability registry presenter and regression acceptance
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-04
 - Owner: AI-Agent
 - Priority: P1
@@ -59,9 +59,11 @@
 ## 9. 执行记录
 
 1. 2026-04-04：任务创建，状态初始化为 `planned`；承接 discoverability registry presenter 与 sprint-002 回归收口。
+2. 2026-04-04：完成 governed capabilities + builtins unified discoverability presenter 与 sprint-002 regression closeout。
+3. 2026-04-04：将 `/sessions` `/fork` `/archive` `/unarchive` 纳入统一 slash discoverability registry，并补齐 i18n 文案与 runner 回归验证。
 
 ## 10. 产出
 
-1. 待执行：unified discoverability registry presenter integration
-2. 待执行：skills/presets/builtins merge policy implementation
-3. 待执行：sprint-002 regression acceptance evidence
+1. 已完成：unified discoverability registry presenter integration -> `apps/cli/src/runtime/session-main-capability-discoverability-runtime.ts`
+2. 已完成：skills/presets/builtins merge policy implementation -> `apps/cli/src/runtime/interactive-shell/session-slash-command-registry.ts` + `packages/shared/src/i18n/locales/en-us.ts` + `packages/shared/src/i18n/locales/zh-cn.ts`
+3. 已完成：sprint-002 regression acceptance evidence -> `apps/cli/test/runtime/session-slash-command-registry.test.ts` + `apps/cli/test/runtime/session-shell-runner.test.ts`
