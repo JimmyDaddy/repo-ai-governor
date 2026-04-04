@@ -1,10 +1,10 @@
-import {
-  LocalOrchestrationServiceSessionMainCapabilityCatalog,
-  SESSION_MAIN_CAPABILITY_ID,
-  type SessionMainCapabilityDescriptorSeed,
-  type SessionMainCapabilityDescriptorView,
-  type SessionMainCapabilityId,
-} from '@repo-ai-governor/core-orchestration-service';
+import { SESSION_MAIN_CAPABILITY_ID } from '@repo-ai-governor/core-orchestration-service/constants';
+import { LocalOrchestrationServiceSessionMainCapabilityCatalog } from '@repo-ai-governor/core-orchestration-service/session-main-capability-catalog';
+import type {
+  SessionMainCapabilityDescriptorSeed,
+  SessionMainCapabilityDescriptorView,
+  SessionMainCapabilityId,
+} from '@repo-ai-governor/core-orchestration-service/types';
 import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import type { CliSessionSlashCommandMetadata } from '../types/index.js';
 

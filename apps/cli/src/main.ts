@@ -16,8 +16,8 @@ import {
 import {
   SESSION_MAIN_CAPABILITY_ID,
   SESSION_MAIN_HANDOFF_EXECUTION_MODE,
-  type SessionMainCapabilityId,
-} from '@repo-ai-governor/core-orchestration-service';
+} from '@repo-ai-governor/core-orchestration-service/constants';
+import type { SessionMainCapabilityId } from '@repo-ai-governor/core-orchestration-service/types';
 import {
   MemoryProviderRegistry,
   type MemoryProviderRegistryLoadResult,

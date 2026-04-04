@@ -1,4 +1,4 @@
-import { SESSION_MAIN_HANDOFF_EXECUTION_MODE } from '@repo-ai-governor/core-orchestration-service';
+import { SESSION_MAIN_HANDOFF_EXECUTION_MODE } from '@repo-ai-governor/core-orchestration-service/constants';
 import { CliCommandName } from '../../constants/cli-command.constant.js';
 import type {
   CliSessionSlashCommandHighlightSegment,

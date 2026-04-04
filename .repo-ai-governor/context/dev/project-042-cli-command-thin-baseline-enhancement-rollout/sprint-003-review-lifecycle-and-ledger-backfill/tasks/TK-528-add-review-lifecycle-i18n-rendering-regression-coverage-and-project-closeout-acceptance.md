@@ -66,6 +66,7 @@
 5. 2026-04-04：修复 CI `pnpm install --frozen-lockfile` 失败：重新生成 `pnpm-lock.yaml`，补齐 `packages/core-agent-projection` 及其上游 importer 的 workspace 依赖投影，验证 `pnpm install --frozen-lockfile` 与 `pnpm run check` 均通过。
 6. 2026-04-04：修复 `packages/adapters/claude-code/test/claude-code-agent-adapter.smoke.test.ts` 的 timeout budget 脆弱断言，将首轮 `cli_exec` 调用的验证调整为“不超过初始预算且保留近完整预算”，避免 CI 因 1ms 级剩余时间差异误判失败；验证 `pnpm exec vitest run packages/adapters/claude-code/test/claude-code-agent-adapter.smoke.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm run build`、`pnpm run check:full` 均通过。
 7. 2026-04-04：修复 CLI `--help` 路径上的 SQLite experimental warning 污染：将 `doctor/verify` 的 durable diagnostics runtime 改为执行时按需加载，并把 `runCli()` 的 memory provider / governance runtime 初始化后移到真正的命令执行路径，避免 help/e2e/CI 因 eager sqlite loading 在 stderr 出现噪音；验证 `pnpm exec vitest run test/e2e/cli-help.e2e.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm run build`、`node ./dist/bin/repo-ai-governor.js --help`（stderr 为 0 字节）、`pnpm run test:e2e`、`pnpm run check:full` 均通过。
+8. 2026-04-04：进一步修复 CLI help 启动路径仍经由 `@repo-ai-governor/core-orchestration-service` 根导出链路触发 `node:sqlite` 静态加载的问题：把 capability 常量/类型改为子路径导入，并为 session-main capability catalog 增加 package export，彻底切断 help-only 场景对 sqlite checkpointer 的提前触达；同时将 `packages/adapters/github-copilot/test/github-copilot-agent-adapter.smoke.test.ts` 的 timeout budget 断言放宽为“保留近完整预算但不超过初始预算”，消除 CI 上 1ms 级剩余时间抖动导致的误报；验证 `pnpm exec vitest run packages/adapters/github-copilot/test/github-copilot-agent-adapter.smoke.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm run build`、`pnpm run check:full` 均通过。
 
 ## 10. 产出
 
@@ -79,3 +80,7 @@
 8. `apps/cli/src/main.ts`
 9. `apps/cli/src/commands/doctor-command.ts`
 10. `apps/cli/src/commands/verify-command.ts`
+11. `apps/cli/src/runtime/session-main-capability-discoverability-runtime.ts`
+12. `apps/cli/src/runtime/interactive-shell/session-slash-command-registry.ts`
+13. `packages/core-orchestration-service/package.json`
+14. `packages/adapters/github-copilot/test/github-copilot-agent-adapter.smoke.test.ts`
