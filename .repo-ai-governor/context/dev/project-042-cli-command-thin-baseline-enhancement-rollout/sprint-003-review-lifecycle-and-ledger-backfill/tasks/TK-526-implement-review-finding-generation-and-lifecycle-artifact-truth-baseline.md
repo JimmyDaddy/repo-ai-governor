@@ -60,6 +60,7 @@
 2. 2026-04-04：任务切换为 `active`；`sprint-002 plan` 已完成 closeout，当前开始盘点 `review-command` / `review-verify-command` 现状与 review lifecycle companion contract 之间的真实缺口。
 3. 2026-04-04：完成 `review` lifecycle baseline 实现：新增 structured finding generator、canonical review artifact / queue transport 分层、review scope active-stream 路由与 file-level git changed-path 采集，修复 untracked code path 被目录级 porcelain 输出吞掉的问题。
 4. 2026-04-04：完成验证：`pnpm exec vitest run apps/cli/test/commands/review-command.test.ts apps/cli/test/commands/review-verify-command.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm exec vitest run apps/cli/test/cli-governance-runtime.integration.test.ts apps/cli/test/cli-output-contract.integration.test.ts test/e2e/blackbox-governance-flow.e2e.test.ts test/sync-task-ledger.integration.test.ts test/task-ledger-projection.integration.test.ts --maxWorkers=1 --maxConcurrency=1`。
+5. 2026-04-04：根据 working-tree CR 补修 `git status --porcelain` 普通未暂存路径截断，并把 active-stream repo-relative 路由统一绑定到 `workspace.repositoryRoot`，补齐 `review-command` 与 `plan` 的子目录调用回归覆盖。
 
 ## 10. 产出
 
@@ -69,3 +70,5 @@
 4. `apps/cli/src/constants/cli-review.constant.ts`
 5. `apps/cli/src/types/interfaces/cli-review-command.interface.ts`
 6. `apps/cli/test/commands/review-command.test.ts`
+7. `apps/cli/src/commands/plan-command.ts`
+8. `apps/cli/test/cli-governance-runtime.integration.test.ts`

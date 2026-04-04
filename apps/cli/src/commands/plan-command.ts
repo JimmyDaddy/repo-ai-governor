@@ -665,7 +665,7 @@ export class CliPlanCommand implements CliCommandExecutor {
       };
     }
 
-    const repositoryRoot = context.options.currentWorkingDirectory;
+    const repositoryRoot = context.options.workspace.repositoryRoot;
     const tasksDirPath = this.resolveRepoRelativePath(
       repositoryRoot,
       this.extractBacktickField(primaryDescriptor, 'tasks'),

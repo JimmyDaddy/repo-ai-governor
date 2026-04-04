@@ -2428,6 +2428,36 @@ describe('CliGovernanceRuntime policy/review safeguards', () => {
     });
   });
 
+  it('resolves active-stream plan paths from the repository root when invoked from a subdirectory', async () => {
+    await withRuntimeFixture(async (fixture) => {
+      const planFixture = await writePlanCommandFixture(fixture.workspaceRoot);
+      const subdirectoryCwd = resolve(fixture.tempRoot, 'apps', 'cli');
+      await mkdir(subdirectoryCwd, { recursive: true });
+      const runtimeWithOptions = fixture.runtime as unknown as {
+        options: {
+          currentWorkingDirectory: string;
+        };
+      };
+      runtimeWithOptions.options.currentWorkingDirectory = subdirectoryCwd;
+
+      const previewResult = await fixture.runtime.execute(CliCommandName.PLAN);
+      const previewPath = String(previewResult.commandResult.details?.preview_path);
+      const previewPayload = JSON.parse(await readFile(previewPath, 'utf8')) as {
+        targetStream?: {
+          sprintPlanPath?: string;
+          tasksDirPath?: string;
+        };
+      };
+
+      expect(previewResult.commandResult.details?.sprint_plan_path).toBe(
+        planFixture.sprintPlanPath,
+      );
+      expect(previewResult.commandResult.details?.tasks_dir).toBe(planFixture.tasksDirPath);
+      expect(previewPayload.targetStream?.sprintPlanPath).toBe(planFixture.sprintPlanPath);
+      expect(previewPayload.targetStream?.tasksDirPath).toBe(planFixture.tasksDirPath);
+    });
+  });
+
   it('commits approved plan previews into sprint ledgers and derived task views', async () => {
     await withRuntimeFixture(async (fixture) => {
       const planFixture = await writePlanCommandFixture(fixture.workspaceRoot);

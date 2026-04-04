@@ -87,6 +87,7 @@ async function createReviewVerifyFixture(
       currentWorkingDirectory: tempRoot,
       workspace: {
         workspaceId: 'test-workspace',
+        repositoryRoot: tempRoot,
         workspaceRoot,
       },
       locale: 'en-US',
@@ -399,6 +400,86 @@ describe('CliReviewVerifyCommand', () => {
         code: GovernorErrorCode.UNKNOWN,
         message: expect.stringContaining('task_id=TK-999'),
       });
+    } finally {
+      await rm(fixture.tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('prefers unresolved queued requests over newer resolved no-op requests by default', async () => {
+    const fixture = await createReviewVerifyFixture();
+
+    try {
+      const pendingReviewArtifactPath = await writeReviewArtifact(
+        fixture.reviewDirPath,
+        'code_review_working-tree-open.md',
+        {
+          status: CliReviewLifecycleStatus.REVIEW_PENDING,
+          taskId: null,
+        },
+      );
+      const resolvedReviewArtifactPath = await writeReviewArtifact(
+        fixture.reviewDirPath,
+        'resolved_code_review_working-tree-closed.md',
+        {
+          status: CliReviewLifecycleStatus.RESOLVED,
+          taskId: null,
+        },
+      );
+      const pendingFinding: CliReviewFinding = {
+        findingId: 'code-change-without-test-change-apps-cli-src-open-scope-ts',
+        fingerprint: `${CliReviewFindingRuleId.CODE_CHANGE_WITHOUT_TEST_CHANGE}:apps/cli/src/open-scope.ts:0`,
+        ruleId: CliReviewFindingRuleId.CODE_CHANGE_WITHOUT_TEST_CHANGE,
+        severity: CliReviewFindingSeverity.P2,
+        title: 'Code change is missing matching test updates',
+        file: 'apps/cli/src/open-scope.ts',
+        summary: 'fixture summary',
+        impact: 'fixture impact',
+        suggestedAction: 'fixture action',
+        evidence: ['apps/cli/src/open-scope.ts'],
+      };
+      const pendingRequestPath = await writeQueuedRequest(
+        fixture,
+        'review-100.json',
+        createRequestPayload({
+          requestId: 'review-100',
+          workspaceRoot: fixture.workspaceRoot,
+          reviewArtifactPath: pendingReviewArtifactPath,
+          reviewArtifactStatus: CliReviewLifecycleStatus.REVIEW_PENDING,
+          reviewSlug: 'working-tree-open',
+          findings: [pendingFinding],
+        }),
+      );
+      const resolvedRequestPath = await writeQueuedRequest(
+        fixture,
+        'review-200.json',
+        createRequestPayload({
+          requestId: 'review-200',
+          workspaceRoot: fixture.workspaceRoot,
+          reviewArtifactPath: resolvedReviewArtifactPath,
+          reviewArtifactStatus: CliReviewLifecycleStatus.RESOLVED,
+          reviewSlug: 'working-tree-closed',
+        }),
+      );
+
+      const commandResult = await fixture.command.execute(fixture.context);
+      const verifyArtifactPath = commandResult.commandResult.artifacts?.find(
+        (artifact) => artifact.id === 'review_verify_result',
+      )?.path;
+      expect(typeof verifyArtifactPath).toBe('string');
+
+      const verifyPayload = JSON.parse(await readFile(String(verifyArtifactPath), 'utf8')) as {
+        sourceRequestPath?: string;
+      };
+      expect(verifyPayload.sourceRequestPath).toBe(pendingRequestPath);
+
+      const pendingRequestPayload = JSON.parse(await readFile(pendingRequestPath, 'utf8')) as {
+        status?: string;
+      };
+      const resolvedRequestPayload = JSON.parse(await readFile(resolvedRequestPath, 'utf8')) as {
+        status?: string;
+      };
+      expect(pendingRequestPayload.status).toBe(CLI_REVIEW_REQUEST_STATUS.VERIFIED);
+      expect(resolvedRequestPayload.status).toBe(CLI_REVIEW_REQUEST_STATUS.QUEUED);
     } finally {
       await rm(fixture.tempRoot, { recursive: true, force: true });
     }

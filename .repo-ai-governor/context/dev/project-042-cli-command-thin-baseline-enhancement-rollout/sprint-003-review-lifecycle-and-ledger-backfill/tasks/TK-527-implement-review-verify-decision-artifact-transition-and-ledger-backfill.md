@@ -59,6 +59,7 @@
 1. 2026-04-04：任务创建，状态初始化为 `planned`；承接 `review-verify` 决策迁移与 ledger backfill 实现。
 2. 2026-04-04：完成 `review-verify` lifecycle 实现：accepted/rejected finding projection、verified/resolved artifact transition、queued/open/resolved request 状态、`not_requested/applied/failed` ledger backfill 投影与 service-backed summary/update 对齐。
 3. 2026-04-04：完成验证：`pnpm exec vitest run apps/cli/test/commands/review-command.test.ts apps/cli/test/commands/review-verify-command.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm exec vitest run apps/cli/test/cli-governance-runtime.integration.test.ts apps/cli/test/cli-output-contract.integration.test.ts test/e2e/blackbox-governance-flow.e2e.test.ts test/sync-task-ledger.integration.test.ts test/task-ledger-projection.integration.test.ts --maxWorkers=1 --maxConcurrency=1`。
+4. 2026-04-04：根据 working-tree CR 同步将 `review-verify` 的 changed-path / artifact 路由切到 `workspace.repositoryRoot`，并保留 resolved no-op 请求默认不抢占未解决 review 的队列优先级回归覆盖。
 
 ## 10. 产出
 

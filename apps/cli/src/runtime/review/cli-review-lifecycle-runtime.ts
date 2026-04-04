@@ -126,9 +126,10 @@ export class CliReviewLifecycleRuntime {
       );
       const changedPaths = result.stdout
         .split(/\r?\n/u)
-        .map((line) => line.trim())
         .filter((line) => line.length > 3)
-        .map((line) => line.slice(3))
+        // Porcelain v1 reserves the first 2 columns for XY status plus 1 separator column.
+        // Preserve those columns so ordinary unstaged lines like " M path" keep the full path.
+        .map((line) => line.slice(3).trim())
         .map((line) => {
           const renameArrowIndex = line.indexOf(' -> ');
           return renameArrowIndex >= 0 ? line.slice(renameArrowIndex + 4) : line;
