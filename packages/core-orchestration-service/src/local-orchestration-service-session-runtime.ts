@@ -20,7 +20,11 @@ import {
 import {
   type OrchestrationAppendSessionMessageRequest,
   type OrchestrationAppendSessionMessageResponse,
+  type OrchestrationArchiveSessionRequest,
+  type OrchestrationArchiveSessionResponse,
   type OrchestrationExecutionLivenessSnapshot,
+  type OrchestrationForkSessionRequest,
+  type OrchestrationForkSessionResponse,
   type OrchestrationListSessionsFilter,
   type OrchestrationListSessionsRequest,
   type OrchestrationListSessionsResponse,
@@ -41,6 +45,8 @@ import {
   type OrchestrationStartSessionResponse,
   type OrchestrationSubscribeSessionRequest,
   type OrchestrationSubscribeSessionResponse,
+  type OrchestrationUnarchiveSessionRequest,
+  type OrchestrationUnarchiveSessionResponse,
 } from '@repo-ai-governor/orchestration-service-client';
 import {
   DEFAULT_MEMORY_RUNTIME_CONFIG,
@@ -77,6 +83,15 @@ interface LocalOrchestrationServiceSessionRuntimeDependencies {
 
 const SESSION_CONTEXT_CURRENT_ROUTE_KEY = 'currentRouteId';
 const SESSION_CONTEXT_LATEST_TURN_ID_KEY = 'latestTurnId';
+const SESSION_CONTEXT_LATEST_TURN_AT_KEY = 'latestTurnAt';
+const SESSION_CONTEXT_SOURCE_KIND_KEY = 'sourceKind';
+const SESSION_CONTEXT_SOURCE_SESSION_ID_KEY = 'sourceSessionId';
+const SESSION_CONTEXT_FORK_FROM_TURN_ID_KEY = 'forkFromTurnId';
+const SESSION_CONTEXT_DISPLAY_NAME_KEY = 'displayName';
+const SESSION_CONTEXT_PREVIEW_SUMMARY_KEY = 'previewSummary';
+const SESSION_CONTEXT_LATEST_NOTE_SUMMARY_KEY = 'latestNoteSummary';
+const SESSION_CONTEXT_ARCHIVED_AT_KEY = 'archivedAt';
+const SESSION_CONTEXT_ARCHIVE_REASON_SUMMARY_KEY = 'archiveReasonSummary';
 const SESSION_CURSOR_VERSION = 1;
 
 /**
@@ -126,6 +141,9 @@ export class LocalOrchestrationServiceSessionRuntime {
       initialContext: {
         ...(request.initialContext ?? {}),
         [SESSION_CONTEXT_CURRENT_ROUTE_KEY]: currentRouteId,
+        [SESSION_CONTEXT_SOURCE_KIND_KEY]:
+          (request.initialContext?.[SESSION_CONTEXT_SOURCE_KIND_KEY] as string | undefined) ??
+          'new',
       },
       openedAt: this.toTimestamp(),
     });
@@ -170,6 +188,11 @@ export class LocalOrchestrationServiceSessionRuntime {
     const turnId = request.turnId ?? `turn-${randomUUID().replace(/-/gu, '')}`;
     const turnIndex = this.resolveNextTurnIndex(existingSession);
     const turnStartedAtMs = this.currentTimeMs();
+    const sessionProjectionContextPatch: Record<string, unknown> = {
+      [SESSION_CONTEXT_CURRENT_ROUTE_KEY]: currentRouteId,
+      [SESSION_CONTEXT_LATEST_TURN_ID_KEY]: turnId,
+      [SESSION_CONTEXT_LATEST_TURN_AT_KEY]: acceptedAt,
+    };
     const sessionPersistenceMetrics = {
       totalElapsedMs: 0,
       writeCount: 0,
@@ -416,6 +439,22 @@ export class LocalOrchestrationServiceSessionRuntime {
             : {}),
         },
       });
+      sessionProjectionContextPatch[SESSION_CONTEXT_PREVIEW_SUMMARY_KEY] =
+        this.buildSessionPreviewSummary({
+          latestUserMessage: request.userMessage,
+          assistantMessage: dispatchResult.assistantMessage,
+          followUpQuestion: dispatchResult.followUpQuestion,
+          suggestedSlashCommand: dispatchResult.suggestedSlashCommand,
+        });
+      sessionProjectionContextPatch[SESSION_CONTEXT_LATEST_NOTE_SUMMARY_KEY] =
+        this.buildTurnNoteSummary({
+          latestUserMessage: request.userMessage,
+          assistantMessage: dispatchResult.assistantMessage,
+          followUpQuestion: dispatchResult.followUpQuestion,
+          suggestedSlashCommand: dispatchResult.suggestedSlashCommand,
+          responseMode: dispatchResult.responseMode,
+          selectedSurface: dispatchResult.selectedSurface,
+        });
     } catch (error) {
       const standardizedError = standardizeError(error);
       const formattedFailure = this.formatTurnFailure(error, standardizedError);
@@ -447,10 +486,16 @@ export class LocalOrchestrationServiceSessionRuntime {
             : {}),
         },
       });
+      sessionProjectionContextPatch[SESSION_CONTEXT_PREVIEW_SUMMARY_KEY] = this.toSingleLineSummary(
+        request.userMessage,
+      );
+      sessionProjectionContextPatch[SESSION_CONTEXT_LATEST_NOTE_SUMMARY_KEY] = [
+        `goal=${this.toSingleLineSummary(request.userMessage)}`,
+        `last_status=failed:${this.toSingleLineSummary(formattedFailure.message)}`,
+      ].join(' | ');
     }
     await updateSessionContext({
-      [SESSION_CONTEXT_CURRENT_ROUTE_KEY]: currentRouteId,
-      [SESSION_CONTEXT_LATEST_TURN_ID_KEY]: turnId,
+      ...sessionProjectionContextPatch,
     });
 
     const refreshedSession = await sessionManager.getSession(request.sessionId);
@@ -503,6 +548,16 @@ export class LocalOrchestrationServiceSessionRuntime {
         ...(request.metadata ? { metadata: { ...request.metadata } } : {}),
       },
     });
+    const noteContextPatch = this.buildAppendedMessageContextPatch(
+      normalizedLines,
+      request.metadata,
+    );
+    if (Object.keys(noteContextPatch).length > 0) {
+      await sessionManager.updateContext({
+        sessionId: request.sessionId,
+        contextPatch: noteContextPatch,
+      });
+    }
 
     const refreshedSession = await sessionManager.getSession(request.sessionId);
     const summary = this.toSessionSummary(refreshedSession);
@@ -547,7 +602,11 @@ export class LocalOrchestrationServiceSessionRuntime {
     const sessionManager = await this.resolveSharedSessionManager();
     const matchedSessions = (await sessionManager.listSessions())
       .filter((session) => this.matchesSessionFilter(session, request?.filter))
-      .sort((left, right) => right.openedAt.localeCompare(left.openedAt))
+      .sort((left, right) =>
+        this.resolveSessionSortTimestamp(right).localeCompare(
+          this.resolveSessionSortTimestamp(left),
+        ),
+      )
       .map((session) => this.toSessionSummary(session));
     const sessions =
       typeof request?.limit === 'number'
@@ -627,6 +686,7 @@ export class LocalOrchestrationServiceSessionRuntime {
         },
       );
     }
+    this.assertSessionResumable(session, resumeSelector);
 
     await sessionManager.appendEvent({
       sessionId: session.sessionId,
@@ -644,6 +704,216 @@ export class LocalOrchestrationServiceSessionRuntime {
     return {
       session: summary,
       resumeSelector,
+      latestEventSequence: summary.latestEventSequence,
+      nextCursor: summary.nextCursor,
+    };
+  }
+
+  /**
+   * Creates one new active branch session using an existing session as the source pointer.
+   * @param request Fork request.
+   * @returns Forked session summary and receipt cursor.
+   */
+  public async forkSession(
+    request: OrchestrationForkSessionRequest,
+  ): Promise<OrchestrationForkSessionResponse> {
+    const sessionManager = await this.resolveSharedSessionManager();
+    const sourceSession = await sessionManager.getSession(request.sourceSessionId);
+    const currentRouteId = this.readCurrentRouteId(sourceSession.context);
+    const forkedFromTurnId =
+      request.forkFromTurnId ??
+      this.readOptionalContextString(sourceSession.context, SESSION_CONTEXT_LATEST_TURN_ID_KEY);
+    const forkedSession = await sessionManager.openSession({
+      initialContext: {
+        [SESSION_CONTEXT_CURRENT_ROUTE_KEY]: currentRouteId,
+        [SESSION_CONTEXT_SOURCE_KIND_KEY]: 'forked',
+        [SESSION_CONTEXT_SOURCE_SESSION_ID_KEY]: sourceSession.sessionId,
+        ...(forkedFromTurnId
+          ? {
+              [SESSION_CONTEXT_FORK_FROM_TURN_ID_KEY]: forkedFromTurnId,
+            }
+          : {}),
+        ...(request.displayName
+          ? {
+              [SESSION_CONTEXT_DISPLAY_NAME_KEY]: request.displayName,
+            }
+          : {}),
+        ...(this.readOptionalContextString(
+          sourceSession.context,
+          SESSION_CONTEXT_PREVIEW_SUMMARY_KEY,
+        )
+          ? {
+              [SESSION_CONTEXT_PREVIEW_SUMMARY_KEY]: this.readOptionalContextString(
+                sourceSession.context,
+                SESSION_CONTEXT_PREVIEW_SUMMARY_KEY,
+              ),
+            }
+          : {}),
+        ...(this.readOptionalContextString(
+          sourceSession.context,
+          SESSION_CONTEXT_LATEST_NOTE_SUMMARY_KEY,
+        )
+          ? {
+              [SESSION_CONTEXT_LATEST_NOTE_SUMMARY_KEY]: this.readOptionalContextString(
+                sourceSession.context,
+                SESSION_CONTEXT_LATEST_NOTE_SUMMARY_KEY,
+              ),
+            }
+          : {}),
+      },
+      openedAt: this.toTimestamp(),
+    });
+    await sessionManager.appendEvent({
+      sessionId: forkedSession.sessionId,
+      type: OrchestrationSessionEventType.SESSION_STARTED,
+      createdAt: this.toTimestamp(),
+      payload: {
+        role: OrchestrationSessionTranscriptRole.SYSTEM,
+        routeId: currentRouteId,
+      },
+    });
+    await sessionManager.appendEvent({
+      sessionId: forkedSession.sessionId,
+      type: OrchestrationSessionEventType.SESSION_MESSAGE_APPENDED,
+      createdAt: this.toTimestamp(),
+      payload: {
+        role: OrchestrationSessionTranscriptRole.SYSTEM,
+        routeId: currentRouteId,
+        lines: [
+          `Forked from session ${sourceSession.sessionId}.`,
+          ...(forkedFromTurnId ? [`Fork anchor turn=${forkedFromTurnId}.`] : []),
+        ],
+        metadata: {
+          renderKind: 'system_notice',
+        },
+      },
+    });
+
+    const refreshedSession = await sessionManager.getSession(forkedSession.sessionId);
+    const summary = this.toSessionSummary(refreshedSession);
+    return {
+      session: summary,
+      sourceSessionId: sourceSession.sessionId,
+      ...(forkedFromTurnId ? { forkedFromTurnId } : {}),
+      latestEventSequence: summary.latestEventSequence,
+      nextCursor: summary.nextCursor,
+    };
+  }
+
+  /**
+   * Archives one active session so default resume flows only target active sessions.
+   * @param request Archive request.
+   * @returns Archive receipt summary.
+   */
+  public async archiveSession(
+    request: OrchestrationArchiveSessionRequest,
+  ): Promise<OrchestrationArchiveSessionResponse> {
+    const sessionManager = await this.resolveSharedSessionManager();
+    const session = await sessionManager.getSession(request.sessionId);
+    if (session.status !== SessionStatus.ACTIVE) {
+      throw new RuntimeError(
+        GovernorErrorCode.MEMORY_SESSION_ALREADY_CLOSED,
+        'Only active sessions can be archived.',
+        {
+          sessionId: request.sessionId,
+          status: session.status,
+        },
+      );
+    }
+
+    const archivedAt = this.toTimestamp();
+    await sessionManager.appendEvent({
+      sessionId: request.sessionId,
+      type: OrchestrationSessionEventType.SESSION_MESSAGE_APPENDED,
+      createdAt: archivedAt,
+      payload: {
+        role: OrchestrationSessionTranscriptRole.SYSTEM,
+        routeId: this.readCurrentRouteId(session.context),
+        lines: [
+          `Archived session ${request.sessionId}.`,
+          ...(request.archiveReasonSummary ? [request.archiveReasonSummary] : []),
+        ],
+        metadata: {
+          renderKind: 'system_notice',
+        },
+      },
+    });
+    await sessionManager.transitionSessionStatus({
+      sessionId: request.sessionId,
+      status: SessionStatus.ARCHIVED,
+      closedAt: archivedAt,
+      contextPatch: {
+        [SESSION_CONTEXT_ARCHIVED_AT_KEY]: archivedAt,
+        ...(request.archiveReasonSummary
+          ? {
+              [SESSION_CONTEXT_ARCHIVE_REASON_SUMMARY_KEY]: request.archiveReasonSummary,
+            }
+          : {}),
+      },
+    });
+
+    const refreshedSession = await sessionManager.getSession(request.sessionId);
+    const summary = this.toSessionSummary(refreshedSession);
+    return {
+      session: summary,
+      archivedAt,
+      ...(request.archiveReasonSummary
+        ? {
+            archiveReasonSummary: request.archiveReasonSummary,
+          }
+        : {}),
+      latestEventSequence: summary.latestEventSequence,
+      nextCursor: summary.nextCursor,
+    };
+  }
+
+  /**
+   * Restores one archived session to active status so it can be resumed again.
+   * @param request Unarchive request.
+   * @returns Unarchive receipt summary.
+   */
+  public async unarchiveSession(
+    request: OrchestrationUnarchiveSessionRequest,
+  ): Promise<OrchestrationUnarchiveSessionResponse> {
+    const sessionManager = await this.resolveSharedSessionManager();
+    const session = await sessionManager.getSession(request.sessionId);
+    if (session.status !== SessionStatus.ARCHIVED) {
+      throw new RuntimeError(
+        GovernorErrorCode.MEMORY_SESSION_INVALID_STATUS,
+        'Only archived sessions can be restored.',
+        {
+          sessionId: request.sessionId,
+          status: session.status,
+        },
+      );
+    }
+
+    await sessionManager.transitionSessionStatus({
+      sessionId: request.sessionId,
+      status: SessionStatus.ACTIVE,
+      contextKeysToDelete: [
+        SESSION_CONTEXT_ARCHIVED_AT_KEY,
+        SESSION_CONTEXT_ARCHIVE_REASON_SUMMARY_KEY,
+      ],
+    });
+    await sessionManager.appendEvent({
+      sessionId: request.sessionId,
+      type: OrchestrationSessionEventType.SESSION_MESSAGE_APPENDED,
+      createdAt: this.toTimestamp(),
+      payload: {
+        role: OrchestrationSessionTranscriptRole.SYSTEM,
+        routeId: this.readCurrentRouteId(session.context),
+        lines: [`Restored archived session ${request.sessionId} to active status.`],
+        metadata: {
+          renderKind: 'system_notice',
+        },
+      },
+    });
+
+    const refreshedSession = await sessionManager.getSession(request.sessionId);
+    const summary = this.toSessionSummary(refreshedSession);
+    return {
+      session: summary,
       latestEventSequence: summary.latestEventSequence,
       nextCursor: summary.nextCursor,
     };
@@ -708,8 +978,12 @@ export class LocalOrchestrationServiceSessionRuntime {
   private async resolveLatestSession(
     sessionManager: SharedSessionManager,
   ): Promise<SharedSession | undefined> {
-    const sessions = await sessionManager.listSessions();
-    return [...sessions].sort((left, right) => right.openedAt.localeCompare(left.openedAt))[0];
+    const sessions = await sessionManager.listSessions({
+      status: SessionStatus.ACTIVE,
+    });
+    return [...sessions].sort((left, right) =>
+      this.resolveSessionSortTimestamp(right).localeCompare(this.resolveSessionSortTimestamp(left)),
+    )[0];
   }
 
   private matchesSessionFilter(
@@ -989,6 +1263,9 @@ export class LocalOrchestrationServiceSessionRuntime {
     if (status === SessionStatus.ACTIVE) {
       return OrchestrationSessionStatus.ACTIVE;
     }
+    if (status === SessionStatus.ARCHIVED) {
+      return OrchestrationSessionStatus.ARCHIVED;
+    }
     if (status === SessionStatus.COMPLETED) {
       return OrchestrationSessionStatus.COMPLETED;
     }
@@ -1051,6 +1328,104 @@ export class LocalOrchestrationServiceSessionRuntime {
         fieldName,
       },
     );
+  }
+
+  private assertSessionResumable(session: SharedSession, resumeSelector: string): void {
+    if (session.status === SessionStatus.ACTIVE) {
+      return;
+    }
+
+    throw new RuntimeError(
+      GovernorErrorCode.MEMORY_SESSION_ALREADY_CLOSED,
+      'The requested session is not resumable in its current lifecycle state.',
+      {
+        resumeSelector,
+        sessionId: session.sessionId,
+        status: session.status,
+      },
+    );
+  }
+
+  private resolveSessionSortTimestamp(session: SharedSession): string {
+    return (
+      this.readOptionalContextString(session.context, SESSION_CONTEXT_LATEST_TURN_AT_KEY) ??
+      this.readOptionalContextString(session.context, SESSION_CONTEXT_ARCHIVED_AT_KEY) ??
+      session.closedAt ??
+      session.openedAt
+    );
+  }
+
+  private buildAppendedMessageContextPatch(
+    lines: string[],
+    metadata?: Record<string, unknown>,
+  ): Record<string, unknown> {
+    if (!metadata || typeof metadata !== 'object') {
+      return {};
+    }
+
+    const renderKind = this.readOptionalMetadataString(metadata, 'renderKind');
+    const commandLine = this.readOptionalMetadataString(metadata, 'commandLine');
+    if (!commandLine && renderKind !== 'collaboration_recap') {
+      return {};
+    }
+
+    const previewSummary = lines[0] ? this.toSingleLineSummary(lines[0]) : undefined;
+    const latestNoteSummary = commandLine
+      ? `last_command=${this.toSingleLineSummary(commandLine)}`
+      : previewSummary;
+
+    return {
+      ...(previewSummary ? { [SESSION_CONTEXT_PREVIEW_SUMMARY_KEY]: previewSummary } : {}),
+      ...(latestNoteSummary
+        ? { [SESSION_CONTEXT_LATEST_NOTE_SUMMARY_KEY]: latestNoteSummary }
+        : {}),
+    };
+  }
+
+  private buildSessionPreviewSummary(options: {
+    latestUserMessage: string;
+    assistantMessage?: string;
+    followUpQuestion?: string;
+    suggestedSlashCommand?: string;
+  }): string {
+    return this.toSingleLineSummary(
+      options.assistantMessage ??
+        options.followUpQuestion ??
+        options.suggestedSlashCommand ??
+        options.latestUserMessage,
+    );
+  }
+
+  private buildTurnNoteSummary(options: {
+    latestUserMessage: string;
+    assistantMessage?: string;
+    followUpQuestion?: string;
+    suggestedSlashCommand?: string;
+    responseMode: string;
+    selectedSurface?: string;
+  }): string {
+    const segments = [`goal=${this.toSingleLineSummary(options.latestUserMessage)}`];
+    if (options.responseMode === 'command_handoff_preview' && options.suggestedSlashCommand) {
+      segments.push(`next=${this.toSingleLineSummary(options.suggestedSlashCommand)}`);
+    } else if (options.responseMode === 'follow_up_question' && options.followUpQuestion) {
+      segments.push(`follow_up=${this.toSingleLineSummary(options.followUpQuestion)}`);
+    } else if (options.responseMode === 'role_collaboration') {
+      segments.push('last_status=role_collaboration_completed');
+    } else if (options.assistantMessage) {
+      segments.push(`last_reply=${this.toSingleLineSummary(options.assistantMessage)}`);
+    }
+    if (options.selectedSurface) {
+      segments.push(`surface=${this.toSingleLineSummary(options.selectedSurface)}`);
+    }
+    return segments.join(' | ');
+  }
+
+  private toSingleLineSummary(candidate: string, maxLength = 140): string {
+    const normalized = candidate.replace(/\s+/gu, ' ').trim();
+    if (normalized.length <= maxLength) {
+      return normalized;
+    }
+    return `${normalized.slice(0, Math.max(maxLength - 3, 1))}...`;
   }
 
   private createSessionCursor(sessionId: string, sequence: number): string {

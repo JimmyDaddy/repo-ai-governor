@@ -1,6 +1,6 @@
 # sprint-001-session-lifecycle-and-read-model-foundation 计划
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-04
 - Project: `project-043-cli-session-shell-productization-rollout`
 - Sprint Goal: 为 session shell 补齐 lifecycle action seam 与 session projection/read-model 基线。
@@ -22,3 +22,4 @@
 
 1. 2026-04-04：创建 `sprint-001-session-lifecycle-and-read-model-foundation`，作为 `project-043` 的首个 planned execution sprint。
 2. 2026-04-04：完成 `TK-530`、`TK-531`、`TK-532` 任务卡拆解，并将 `project-043 / sprint-001` 登记到 `current-context.md` planned follow-up streams。
+3. 2026-04-04：已确认 service-backed session lifecycle seam、transcript projection/read-model 与 resume/list continuity 已在 `apps/cli` 落地，并通过 build + session-shell package/integration suites 验证。

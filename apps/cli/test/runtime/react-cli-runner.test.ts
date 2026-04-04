@@ -1,3 +1,4 @@
+import { AgentProjectionPanelStatusVariant } from '@repo-ai-governor/reporting';
 import { ErrorOutputEnvironment, Locale } from '@repo-ai-governor/shared';
 import { CliCommandName } from '../../src/constants/cli-command.constant.js';
 import {
@@ -27,7 +28,7 @@ describe('ReactCliRunner', () => {
       title: '[react-shell:init] Bootstrap workspace defaults',
       subtitle: 'state=editing ui=react stdout=pretty stderr=stderr_only',
       statusMessage: 'Validation feedback requires another input pass.',
-      statusVariant: 'warning',
+      statusVariant: AgentProjectionPanelStatusVariant.WARNING,
       attentionSection: {
         title: 'Attention',
         lines: ['Adapter verification: warn'],
@@ -55,7 +56,7 @@ describe('ReactCliRunner', () => {
               'profile=coder-default selected_by=fallback status=warn',
               'capability_gap=degraded:tool_calling',
             ],
-            statusVariant: 'warning',
+            statusVariant: AgentProjectionPanelStatusVariant.WARNING,
           },
         ],
       },

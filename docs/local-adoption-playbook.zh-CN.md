@@ -170,13 +170,33 @@ pnpm exec repo-ai-governor run --output json
 
 ## 9. 故障排查与已知限制
 
-1. `pnpm add <tarball>` 报 `ENOTFOUND` 时，通常是安装环境无法访问 registry；请改用 `path`、`link` 或 `dist-binary`。
+1. `pnpm add <tarball>` 报 `ENOTFOUND` 时，通常是安装环境无法访问 npm registry；请改用 `path`、`link` 或 `dist-binary`。
 2. `dist-binary` 验证的是 CLI/runtime 行为，不等于验证了 package install surface。
 3. `tgz` 不是离线自包含安装；安装阶段仍会解析外部依赖。
 4. 如果目标仓库本身是 Yarn/npm 或已有脏工作树，建议先用 `dist-binary`，再决定是否切换到 package 安装。
 5. `baseline_docs missing=5/5`、`script_not_found` 这类 self-host warning，在外部 adopter 仓库里通常是预期现象。
 
-## 10. 下一步
+## 10. 可选 self-host 资产
+
+1. 仓库内的 Codex 辅助能力位于 `.codex/skills/`；外部 adopter 如果不打算复用同样的 self-host skill/workflow，可以直接忽略。
+2. 这些资产属于本地 AI 工具辅助层，不是上文安装路径成立的前置条件。
+
+## 11. Remote-api rehearsal
+
+只有当你想验证真实 provider 调用，而不是 fixture/local smoke 时，才需要执行这条 remote-api rehearsal：
+
+```bash
+export OPENAI_API_KEY="sk-..."
+export ANTHROPIC_API_KEY="sk-ant-..."
+pnpm run release:verify-local
+```
+
+说明：
+
+1. `OPENAI_API_KEY` 和 `ANTHROPIC_API_KEY` 只在 remote-api rehearsal 窗口需要；普通本地接入仍可停留在 fixture-backed 或 dist-binary 路径。
+2. 如果你选择的安装方式仍需解析依赖，这条演练同样要求环境能访问 npm registry。
+
+## 12. 下一步
 
 1. `docs/support-matrix.zh-CN.md`：查看当前 install mode、adapter 与验证边界。
 2. `examples/`：作为团队接入演练和模板资产入口。

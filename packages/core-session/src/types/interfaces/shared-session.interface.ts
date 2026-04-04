@@ -122,6 +122,17 @@ export interface FinalizeSessionOptions {
 }
 
 /**
+ * Defines session-status transition request payload.
+ */
+export interface TransitionSessionStatusOptions {
+  sessionId: string;
+  status: SessionStatus;
+  closedAt?: string;
+  contextPatch?: Record<string, unknown>;
+  contextKeysToDelete?: string[];
+}
+
+/**
  * Defines session-list query request payload.
  */
 export interface ListSharedSessionsOptions {

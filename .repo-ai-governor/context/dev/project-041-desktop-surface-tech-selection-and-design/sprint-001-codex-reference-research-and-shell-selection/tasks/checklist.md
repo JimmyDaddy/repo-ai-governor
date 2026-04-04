@@ -19,6 +19,9 @@
   - `session bridge` 进入 MVP 前置条件，明确 desktop 必须预留 `start/send/append/resume/list/subscribe session` 入口。
   - `AgentProjectionPanelViewModel` 只能复用共享语义，实施前必须从 `apps/cli` 提取到 shared package，禁止 desktop 直接依赖 CLI 内部实现。
   - `Review / Artifact Pane` 改为依赖 service-owned artifact/review/transcript query contract，禁止通过 `.repo-ai-governor` 文件系统旁路。
-- [ ] TK-517 convert selected direction into MVP implementation task package and activation handoff
+- [x] TK-517 convert selected direction into MVP implementation task package and activation handoff
   - 2026-04-04：任务创建，状态初始化为 `planned`；待用户确认本轮桌面端选型结论后继续激活。
   - 2026-04-04：当前桌面端 planning stream 继续保持 `active`，本任务作为 handoff/activation work item 挂起，不直接展开桌面端工程实现。
+  - 2026-04-04：已将桌面端选型结论收敛为 `.repo-ai-governor/context/dev/project-041-desktop-surface-tech-selection-and-design/project-041-desktop-mvp-implementation-activation-handoff.md`，明确下一条执行流只覆盖 `Phase 0 + Phase 1`，并把 `review/artifact pane` 保持在 service-owned query gate 之后。
+  - 2026-04-04：已创建 planned follow-up stream `project-044-desktop-governance-console-mvp-foundation`，拆分 `sprint-001 ~ sprint-003` 与 `TK-539 ~ TK-547`，并同步 `current-context.md`、completed stream history 与 project-041 closeout audit。
+  - 2026-04-04：通过 sync-task-ledger 将 TK-517 的 completed 状态回写到 canonical sqlite 与 rendered CSV，确保 project-041 closeout 与 project-044 handoff 的状态真值一致。

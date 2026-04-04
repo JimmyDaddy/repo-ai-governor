@@ -1,8 +1,8 @@
 # Repo AI Governor 正式支持矩阵
 
 - 状态：active
-- 最后更新：2026-03-28
-- 适用范围：`project-026 / sprint-004`（`TK-301`）正式支持声明
+- 最后更新：2026-04-04
+- 适用范围：由 `project-026 / sprint-004`（`TK-301`）与 `project-044 / sprint-003`（`TK-547`）共同刷新后的正式支持声明
 
 ## 1. 安装模式
 
@@ -42,12 +42,16 @@
 | Surface | 支持状态 | 说明 |
 |---|---|---|
 | CLI | Supported | 当前生产主入口。 |
-| Desktop sidecar entry | Smoke 基线支持 | `check-desktop-entry-smoke` 已通过；完整 desktop 产品面仍按后续阶段演进。 |
+| Desktop sidecar entry | Smoke 基线支持 | `apps/desktop` 已成为正式桌面 foundation package；`check-desktop-entry-smoke` 与 `release:verify-local` 已通过，完整 desktop 产品面仍按后续阶段演进。 |
 
-## 6. Clean-room Smoke 快照（TK-301）
+## 6. Clean-room Smoke 快照（TK-301 + TK-547）
 
 | 时间（UTC） | 命令 | 结果 | 证据摘要 |
 |---|---|---|---|
+| 2026-04-04T12:09:14Z | `pnpm run build` | Pass | `dist/apps/desktop` 与 `dist/node_modules/@repo-ai-governor/desktop` 已完成本地分发所需产物 |
+| 2026-04-04T12:09:14Z | `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` | Pass | `118` 个文件与 `734` 个测试通过 |
+| 2026-04-04T12:09:14Z | `pnpm run test:integration -- --maxWorkers=1 --maxConcurrency=1` | Pass | `19` 个文件与 `47` 个测试通过 |
+| 2026-04-04T12:12:23Z | `pnpm run release:verify-local` | Pass | CLI help smoke + desktop entry smoke + examples runtime smoke + dist-binary remote-api smoke + packaged surface truthfulness 全部通过 |
 | 2026-03-27T22:38:31Z | `node ./dist/bin/repo-ai-governor.js doctor --output pretty` | Pass | `attach_mode=read_write`，`operation=env_doctor` |
 | 2026-03-27T22:38:38Z | `node ./dist/bin/repo-ai-governor.js verify --output pretty --adapters` | Warn（非阻断） | `adapters_status=warn`，required role failures `0` |
 | 2026-03-27T22:39:17Z | `node ./dist/bin/repo-ai-governor.js workspace --workspace-action dry-run --workspace-mode repo_local --output pretty` | Pass | workspace plan 已在活动 workspace 根生成 |
@@ -57,4 +61,5 @@
 ## 7. 备注
 
 1. 本快照中的 adapter warning 属于环境前置条件（`github-copilot` quota/probe）而非治理链路失败。
-2. 本文档定义 `TK-301` 的正式支持边界；GA Readiness 全量信号覆盖在 `TK-302` 继续沉淀。
+2. `project-044` 将 desktop smoke baseline 刷新为正式 `apps/desktop` package，但 `artifact pane` 仍在 service-owned query contract ready 前保持 gated deferred 状态。
+3. 本文档定义 `TK-301` 与 desktop baseline refresh `TK-547` 的正式支持边界；GA Readiness 全量信号覆盖在 `TK-302` 继续沉淀。

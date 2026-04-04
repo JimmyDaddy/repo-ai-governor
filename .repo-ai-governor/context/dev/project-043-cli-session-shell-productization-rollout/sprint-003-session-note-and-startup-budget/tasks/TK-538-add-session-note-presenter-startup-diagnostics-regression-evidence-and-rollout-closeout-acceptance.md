@@ -1,6 +1,6 @@
 # TK-538 add session note presenter startup diagnostics regression evidence and rollout closeout acceptance
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-04
 - Owner: AI-Agent
 - Priority: P1
@@ -58,9 +58,11 @@
 ## 9. 执行记录
 
 1. 2026-04-04：任务创建，状态初始化为 `planned`；承接 sprint-003 的 presenter / diagnostics / closeout acceptance 收口。
+2. 2026-04-04：完成 resolved review、completion audit summary 与 `project-043` closeout acceptance 收口。
+3. 2026-04-04：补齐 startup diagnostics 与 `/status` projection 输出回归，并以真实 build/test evidence 重写 resolved review 与 completion audit summary。
 
 ## 10. 产出
 
-1. 待执行：session note presenter integration
-2. 待执行：startup diagnostics regression evidence
-3. 待执行：project-043 closeout acceptance package
+1. 已完成：session note presenter integration -> `apps/cli/src/runtime/interactive-shell/session-shell-runner.ts`
+2. 已完成：startup diagnostics regression evidence -> `apps/cli/test/runtime/session-shell-runner.test.ts` + `apps/cli/test/runtime/session-main-parity.integration.test.ts` + `apps/cli/test/cli-output-contract.integration.test.ts`
+3. 已完成：project-043 closeout acceptance package -> `resolved_review_tk-530-tk-538-cli-session-shell-productization-rollout.md` + `project-043-cli-session-shell-productization-rollout-completion-audit-summary.md`

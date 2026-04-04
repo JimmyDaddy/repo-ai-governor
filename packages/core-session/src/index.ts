@@ -25,5 +25,6 @@ export type {
   RecordAuditEventOptions,
   SessionEvent,
   SharedSession,
+  TransitionSessionStatusOptions,
   UpdateSessionContextOptions,
 } from './types/index.js';

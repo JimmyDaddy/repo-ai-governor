@@ -1,3 +1,4 @@
+export { AgentProjectionPanelStatusVariant } from './agent-projection-panel.constant.js';
 export {
   DEFAULT_REPLAY_EXPLAIN_LIMIT,
   MAX_REPLAY_EXPLAIN_LIMIT,

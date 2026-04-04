@@ -1,6 +1,6 @@
 # sprint-003-session-note-and-startup-budget 计划
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-04
 - Project: `project-043-cli-session-shell-productization-rollout`
 - Sprint Goal: 为 session continuity 建立 lightweight session note，并给 session-first entry 建立 startup budget 与 lazy-load 治理。
@@ -22,3 +22,4 @@
 
 1. 2026-04-04：创建 `sprint-003-session-note-and-startup-budget`，作为 `project-043` 的第三条 planned execution sprint。
 2. 2026-04-04：完成 `TK-536`、`TK-537`、`TK-538` 任务卡拆解。
+3. 2026-04-04：已确认 session-first startup query、persisted transcript note continuity、startup diagnostics 与 closeout review 已在 `apps/cli` 落地，并通过 build + session-shell regression suites 收口。

@@ -170,13 +170,33 @@ Use them as a starting baseline, then layer team or repository overrides on top.
 
 ## 9. Troubleshooting And Known Limitations
 
-1. `pnpm add <tarball>` failing with `ENOTFOUND` usually means the install environment cannot reach the registry; use `path`, `link`, or `dist-binary` instead.
+1. `pnpm add <tarball>` failing with `ENOTFOUND` usually means the install environment cannot reach the npm registry; use `path`, `link`, or `dist-binary` instead.
 2. `dist-binary` validates CLI/runtime behavior, not packaged-install behavior.
 3. `tgz` is not offline/self-contained; installation still resolves external dependencies.
 4. If a target repository already uses Yarn/npm or has a dirty worktree, start with `dist-binary` before switching to package installation.
 5. Self-host warnings such as `baseline_docs missing=5/5` or `script_not_found` are expected in fresh external repos unless you intentionally vendor this repository's own governance stack.
 
-## 10. Next Steps
+## 10. Optional Self-host Assets
+
+1. Repository-local Codex helpers live under `.codex/skills/`; external adopters can ignore them unless they want the same self-host skill prompts and delivery workflows inside the target repository.
+2. These assets are operational helpers for local AI tooling, not a requirement for the CLI install surfaces documented above.
+
+## 11. Remote-api Rehearsal
+
+Use this remote-api rehearsal only when you want to validate provider-backed behavior instead of fixture-backed local smoke:
+
+```bash
+export OPENAI_API_KEY="sk-..."
+export ANTHROPIC_API_KEY="sk-ant-..."
+pnpm run release:verify-local
+```
+
+Notes:
+
+1. `OPENAI_API_KEY` and `ANTHROPIC_API_KEY` are only needed for remote-api rehearsal windows; normal local adoption can stay on fixture-backed and dist-binary flows.
+2. This rehearsal still assumes network access to the npm registry when your chosen install mode needs dependency resolution.
+
+## 12. Next Steps
 
 1. Use `docs/support-matrix.md` for current support boundaries.
 2. Use `examples/` as starter assets for team adoption drills.

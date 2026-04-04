@@ -1,7 +1,11 @@
 export type {
+  OrchestrationArchiveSessionRequest,
+  OrchestrationArchiveSessionResponse,
   OrchestrationAppendSessionMessageRequest,
   OrchestrationAppendSessionMessageResponse,
   OrchestrationExecutionLivenessSnapshot,
+  OrchestrationForkSessionRequest,
+  OrchestrationForkSessionResponse,
   OrchestrationListExecutionsRequest,
   OrchestrationListExecutionsResponse,
   OrchestrationListExecutionsFilter,
@@ -30,4 +34,6 @@ export type {
   OrchestrationSubscribeExecutionResponse,
   OrchestrationSubmitHitlDecisionRequest,
   OrchestrationSubmitHitlDecisionResponse,
+  OrchestrationUnarchiveSessionRequest,
+  OrchestrationUnarchiveSessionResponse,
 } from './orchestration-service-client.interface.js';

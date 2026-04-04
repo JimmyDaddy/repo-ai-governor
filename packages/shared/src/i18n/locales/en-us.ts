@@ -311,6 +311,18 @@ export const EN_US_TRANSLATIONS = {
         resume: {
           summary: 'Resume the latest or explicitly requested session transcript.',
         },
+        sessions: {
+          summary: 'List recent active or archived sessions.',
+        },
+        fork: {
+          summary: 'Fork the current session into a new branch.',
+        },
+        archive: {
+          summary: 'Archive the current or named session.',
+        },
+        unarchive: {
+          summary: 'Restore an archived session and attach to it.',
+        },
         history: {
           summary: 'Show recent shell inputs collected in this foreground attachment.',
         },
@@ -438,6 +450,30 @@ export const EN_US_TRANSLATIONS = {
         mainTurnFollowUpPrompt: 'The main agent needs one clarification before handoff:',
         sessionStarted: 'Started service-backed session {{sessionId}} on {{routeId}}.',
         sessionResumed: 'Resumed session {{sessionId}} via selector={{resumeSelector}}.',
+        sessionForkedFrom:
+          'Forked session {{sourceSessionId}} into the current branch {{sessionId}}.',
+        sessionNoteSummary: 'Note: {{summary}}',
+        sessionPreviewSummary: 'Preview: {{summary}}',
+        sessionArchivedAt: 'Archived at {{archivedAt}}.',
+        sessionsHeading: 'Recent sessions (filter={{filter}}):',
+        sessionsEmpty: 'No recent sessions matched filter={{filter}}.',
+        sessionsEntry:
+          'session={{sessionId}} status={{status}} source={{sourceKind}} opened_at={{openedAt}}',
+        sessionsDisplayName: 'display_name={{displayName}}',
+        sessionsNoteSummary: 'note={{summary}}',
+        sessionsPreviewSummary: 'preview={{summary}}',
+        sessionsArchivedAt: 'archived_at={{archivedAt}}',
+        sessionsUnknownFilter:
+          'Unsupported /sessions filter {{filter}}. Use active, archived, or all.',
+        sessionsFailed: 'Failed to list sessions. reason={{reason}}',
+        sessionArchived: 'Archived session {{sessionId}}.',
+        sessionArchiveReplacementAttached:
+          'Attached a fresh session {{sessionId}} so the foreground shell can keep running.',
+        forkFailed: 'Failed to fork the current session. reason={{reason}}',
+        archiveFailed: 'Failed to archive the requested session. reason={{reason}}',
+        unarchiveRequiresSessionId:
+          'Pass one archived session id after /unarchive so the shell knows which session to restore.',
+        unarchiveFailed: 'Failed to restore the requested session. reason={{reason}}',
         resumeFailed: 'Failed to resume {{resumeSelector}}. reason={{reason}}',
         resumeAvailableSessions: 'Known resumable sessions: {{sessionIds}}',
         resumeRecoverableHint:
@@ -456,6 +492,9 @@ export const EN_US_TRANSLATIONS = {
         statusRuntime:
           'Resume={{resumeSelector}} persistence={{persistenceOwner}} theme={{theme}} output={{output}}.',
         statusWorkspace: 'Workspace: {{workspace}}',
+        statusStartup:
+          'Startup path={{startupPath}} lazy_boundary={{lazyBoundary}} bootstrap_ms={{bootstrapMs}}.',
+        statusProjection: 'Projection source={{sourceKind}} display_name={{displayName}}.',
         themeCurrent: 'Current session theme={{theme}}.',
         themeAvailable: 'Available themes: {{themes}}.',
         themeUnknown: 'Unknown theme {{theme}}. Choose one of: {{themes}}.',

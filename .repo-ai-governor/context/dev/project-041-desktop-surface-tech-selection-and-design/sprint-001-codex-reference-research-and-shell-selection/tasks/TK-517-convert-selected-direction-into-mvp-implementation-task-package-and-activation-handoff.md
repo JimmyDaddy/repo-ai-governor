@@ -1,6 +1,6 @@
 # TK-517 convert selected direction into MVP implementation task package and activation handoff
 
-- Status: active
+- Status: completed
 - Date: 2026-04-04
 - Owner: AI-Agent
 - Priority: P1
@@ -29,7 +29,10 @@
 
 ## 5. Development Verification
 
-1. planning only；待执行
+1. `node ./scripts/governance/check-task-ledger-sync.js`
+2. `node ./scripts/governance/check-sprint-plan-status-sync.js`
+3. `node ./scripts/governance/check-worktree-review-target.js`
+4. docs-only handoff；未修改 `apps/**`、`packages/**`、`bin/**`、`test/**`
 
 ## 6. Delivery Verification
 
@@ -41,3 +44,11 @@
 
 1. 2026-04-04：任务创建，状态初始化为 `planned`；待用户确认本轮桌面端选型结论后继续激活。
 2. 2026-04-04：当前桌面端 planning stream 继续保持 `active`，本任务作为 handoff/activation work item 挂起，不直接展开桌面端工程实现。
+3. 2026-04-04：已将桌面端选型结论收敛为 `.repo-ai-governor/context/dev/project-041-desktop-surface-tech-selection-and-design/project-041-desktop-mvp-implementation-activation-handoff.md`，明确下一条执行流只覆盖 `Phase 0 + Phase 1`，并把 `review/artifact pane` 保持在 service-owned query gate 之后。
+4. 2026-04-04：已创建 planned follow-up stream `project-044-desktop-governance-console-mvp-foundation`，拆分 `sprint-001 ~ sprint-003` 与 `TK-539 ~ TK-547`，并同步 `current-context.md`、completed stream history 与 project-041 closeout audit。
+
+## 8. 产出
+
+1. `.repo-ai-governor/context/dev/project-041-desktop-surface-tech-selection-and-design/project-041-desktop-mvp-implementation-activation-handoff.md`
+2. `.repo-ai-governor/context/dev/project-044-desktop-governance-console-mvp-foundation/plan.md`
+3. `.repo-ai-governor/context/dev/project-041-desktop-surface-tech-selection-and-design/project-041-desktop-surface-tech-selection-and-design-completion-audit-summary.md`

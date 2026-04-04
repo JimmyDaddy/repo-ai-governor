@@ -329,6 +329,43 @@ export interface OrchestrationResumeSessionResponse {
   nextCursor: string;
 }
 
+export interface OrchestrationForkSessionRequest {
+  sourceSessionId: string;
+  forkFromTurnId?: string;
+  displayName?: string;
+}
+
+export interface OrchestrationForkSessionResponse {
+  session: OrchestrationSessionSummary;
+  sourceSessionId: string;
+  forkedFromTurnId?: string;
+  latestEventSequence: number;
+  nextCursor: string;
+}
+
+export interface OrchestrationArchiveSessionRequest {
+  sessionId: string;
+  archiveReasonSummary?: string;
+}
+
+export interface OrchestrationArchiveSessionResponse {
+  session: OrchestrationSessionSummary;
+  archivedAt: string;
+  archiveReasonSummary?: string;
+  latestEventSequence: number;
+  nextCursor: string;
+}
+
+export interface OrchestrationUnarchiveSessionRequest {
+  sessionId: string;
+}
+
+export interface OrchestrationUnarchiveSessionResponse {
+  session: OrchestrationSessionSummary;
+  latestEventSequence: number;
+  nextCursor: string;
+}
+
 export interface OrchestrationServiceClient {
   getHealth(): Promise<OrchestrationServiceHealthResponse>;
   startExecution(
@@ -366,4 +403,11 @@ export interface OrchestrationServiceClient {
   resumeSession(
     request?: OrchestrationResumeSessionRequest,
   ): Promise<OrchestrationResumeSessionResponse>;
+  forkSession(request: OrchestrationForkSessionRequest): Promise<OrchestrationForkSessionResponse>;
+  archiveSession(
+    request: OrchestrationArchiveSessionRequest,
+  ): Promise<OrchestrationArchiveSessionResponse>;
+  unarchiveSession(
+    request: OrchestrationUnarchiveSessionRequest,
+  ): Promise<OrchestrationUnarchiveSessionResponse>;
 }

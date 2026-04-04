@@ -1,3 +1,4 @@
+import { AgentProjectionPanelStatusVariant } from '@repo-ai-governor/reporting';
 import { ReactCliSessionController } from '../../src/react-cli/index.js';
 
 describe('ReactCliSessionController', () => {
@@ -47,7 +48,7 @@ describe('ReactCliSessionController', () => {
           id: 'coder:default',
           title: 'coder -> github-copilot',
           detailLines: ['profile=coder-default selected_by=fallback status=warn'],
-          statusVariant: 'warning' as const,
+          statusVariant: AgentProjectionPanelStatusVariant.WARNING,
         },
       ],
     };
@@ -82,7 +83,7 @@ describe('ReactCliSessionController', () => {
           id: 'reviewer:default',
           title: 'reviewer -> claude-code',
           detailLines: ['profile=reviewer-default selected_by=primary status=pass'],
-          statusVariant: 'success' as const,
+          statusVariant: AgentProjectionPanelStatusVariant.SUCCESS,
         },
       ],
     };

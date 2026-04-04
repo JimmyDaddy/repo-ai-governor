@@ -1,3 +1,4 @@
+import { AgentProjectionPanelStatusVariant } from '@repo-ai-governor/reporting';
 import { CliAgentProjectionPanelViewModelBuilder } from '../../src/runtime/presentation/agent-projection-panel-view-model-builder.js';
 
 describe('CliAgentProjectionPanelViewModelBuilder', () => {
@@ -16,7 +17,7 @@ describe('CliAgentProjectionPanelViewModelBuilder', () => {
     expect(panel.summaryBadges).toEqual(['fallback=1', 'degraded=1', 'blocked=0', 'session=none']);
     expect(panel.rows[0]).toMatchObject({
       title: 'coder -> github-copilot',
-      statusVariant: 'warning',
+      statusVariant: AgentProjectionPanelStatusVariant.WARNING,
     });
     expect(panel.rows[0]?.detailLines).toContain(
       'profile=coder-default selected_by=fallback status=warn',

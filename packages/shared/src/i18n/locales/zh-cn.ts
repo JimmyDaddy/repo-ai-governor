@@ -275,6 +275,18 @@ export const ZH_CN_TRANSLATIONS = {
         resume: {
           summary: '恢复最近一次或指定的 session transcript。',
         },
+        sessions: {
+          summary: '列出最近的 active 或 archived sessions。',
+        },
+        fork: {
+          summary: '将当前 session fork 成新的分支 session。',
+        },
+        archive: {
+          summary: '归档当前或指定 session。',
+        },
+        unarchive: {
+          summary: '恢复一个 archived session 并切换附着到它。',
+        },
         history: {
           summary: '查看当前前台附着过程中记录的最近输入历史。',
         },
@@ -393,6 +405,29 @@ export const ZH_CN_TRANSLATIONS = {
         mainTurnFollowUpPrompt: '主 agent 在 handoff 前还需要一次补充说明：',
         sessionStarted: '已在 {{routeId}} 上启动 service-backed session {{sessionId}}。',
         sessionResumed: '已通过 selector={{resumeSelector}} 恢复 session {{sessionId}}。',
+        sessionForkedFrom: '已将 session {{sourceSessionId}} fork 到当前分支 {{sessionId}}。',
+        sessionNoteSummary: '会话摘要：{{summary}}',
+        sessionPreviewSummary: '预览：{{summary}}',
+        sessionArchivedAt: '归档时间：{{archivedAt}}。',
+        sessionsHeading: '最近 sessions（filter={{filter}}）：',
+        sessionsEmpty: '没有命中 filter={{filter}} 的最近 sessions。',
+        sessionsEntry:
+          'session={{sessionId}} status={{status}} source={{sourceKind}} opened_at={{openedAt}}',
+        sessionsDisplayName: 'display_name={{displayName}}',
+        sessionsNoteSummary: 'note={{summary}}',
+        sessionsPreviewSummary: 'preview={{summary}}',
+        sessionsArchivedAt: 'archived_at={{archivedAt}}',
+        sessionsUnknownFilter:
+          '不支持的 /sessions filter {{filter}}。请使用 active、archived 或 all。',
+        sessionsFailed: '列出 sessions 失败。原因：{{reason}}',
+        sessionArchived: '已归档 session {{sessionId}}。',
+        sessionArchiveReplacementAttached:
+          '已附着到新的 session {{sessionId}}，确保前台 shell 可继续运行。',
+        forkFailed: 'fork 当前 session 失败。原因：{{reason}}',
+        archiveFailed: '归档指定 session 失败。原因：{{reason}}',
+        unarchiveRequiresSessionId:
+          '请在 /unarchive 后面传入一个 archived session id，才能恢复对应 session。',
+        unarchiveFailed: '恢复指定 session 失败。原因：{{reason}}',
         resumeFailed: '恢复 {{resumeSelector}} 失败。原因：{{reason}}',
         resumeAvailableSessions: '当前可恢复的已知 sessions：{{sessionIds}}',
         resumeRecoverableHint:
@@ -409,6 +444,9 @@ export const ZH_CN_TRANSLATIONS = {
         statusRuntime:
           'resume={{resumeSelector}} persistence={{persistenceOwner}} theme={{theme}} output={{output}}。',
         statusWorkspace: '当前工作区：{{workspace}}',
+        statusStartup:
+          'startup path={{startupPath}} lazy_boundary={{lazyBoundary}} bootstrap_ms={{bootstrapMs}}。',
+        statusProjection: 'projection source={{sourceKind}} display_name={{displayName}}。',
         themeCurrent: '当前会话主题={{theme}}。',
         themeAvailable: '可用主题：{{themes}}。',
         themeUnknown: '未知主题 {{theme}}。可选值：{{themes}}。',

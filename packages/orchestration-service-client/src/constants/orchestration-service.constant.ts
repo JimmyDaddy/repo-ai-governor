@@ -79,6 +79,7 @@ export enum OrchestrationServiceEventType {
  */
 export enum OrchestrationSessionStatus {
   ACTIVE = 'active',
+  ARCHIVED = 'archived',
   COMPLETED = 'completed',
   CANCELLED = 'cancelled',
   FAILED = 'failed',

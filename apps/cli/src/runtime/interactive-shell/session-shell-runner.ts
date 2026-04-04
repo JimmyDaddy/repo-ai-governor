@@ -5,6 +5,8 @@ import {
   type OrchestrationSessionEvent,
   OrchestrationSessionEventType,
   OrchestrationSessionRouteId,
+  OrchestrationSessionStatus,
+  type OrchestrationSessionSummary,
   OrchestrationSessionTranscriptRole,
   type OrchestrationStartSessionResponse,
   type OrchestrationSubscribeSessionResponse,
@@ -84,11 +86,15 @@ const SESSION_MAIN_MISSING_SESSION_RECOVERY_MAX_ATTEMPTS = 3;
 
 interface CliSessionShellRuntimeState {
   currentRouteId: string;
+  currentSessionContext: Record<string, unknown>;
+  localTranscriptItems: CliSessionShellTranscriptItem[];
   inputHistory: CliSessionShellHistoryEntry[];
   pendingCommand: PendingCommandExecution | null;
   historyNavigationCursor: number | null;
   historyNavigationDraftValue: string | null;
   recoveredTurnRetryPending: boolean;
+  startupPath: 'default_session_shell' | 'startup_prompt' | 'resume_command';
+  startupBootstrapElapsedMs: number;
 }
 
 /**
@@ -118,15 +124,26 @@ export class CliSessionShellRunner {
    */
   public async run(options: CliSessionShellRunOptions): Promise<CliSessionShellRunResult> {
     const transcriptStore = new CliSessionShellTranscriptStore();
+    const bootstrapStartedAtMs = this.nowProvider().getTime();
     const bootstrapped = await this.bootstrapSession(options);
+    const startupBootstrapElapsedMs = Math.max(
+      this.nowProvider().getTime() - bootstrapStartedAtMs,
+      0,
+    );
     const runtimeState: CliSessionShellRuntimeState = {
       currentRouteId:
         bootstrapped.session.session.currentRouteId ?? OrchestrationSessionRouteId.MAIN,
+      currentSessionContext: {
+        ...bootstrapped.session.session.context,
+      },
+      localTranscriptItems: [],
       inputHistory: [],
       pendingCommand: null,
       historyNavigationCursor: null,
       historyNavigationDraftValue: null,
       recoveredTurnRetryPending: false,
+      startupPath: this.resolveStartupPath(options),
+      startupBootstrapElapsedMs,
     };
     const viewModel = this.createInitialViewModel(
       options,
@@ -155,10 +172,22 @@ export class CliSessionShellRunner {
     }
 
     if (bootstrapped.startupNoticeLines.length > 0) {
-      this.appendLocalTranscriptItem(viewModel, {
+      this.appendLocalTranscriptItem(viewModel, runtimeState, {
         role: CliSessionTranscriptRole.SYSTEM,
         label: options.translate('cli.sessionShell.transcript.systemLabel'),
         lines: bootstrapped.startupNoticeLines,
+        renderKind: 'system_notice',
+      });
+    }
+    const continuationNoticeLines = this.buildSessionContinuationNoticeLines(
+      bootstrapped.session.session,
+      options,
+    );
+    if (continuationNoticeLines.length > 0) {
+      this.appendLocalTranscriptItem(viewModel, runtimeState, {
+        role: CliSessionTranscriptRole.SYSTEM,
+        label: options.translate('cli.sessionShell.transcript.systemLabel'),
+        lines: continuationNoticeLines,
         renderKind: 'system_notice',
       });
     }
@@ -313,7 +342,12 @@ export class CliSessionShellRunner {
 
         if (action.type === CliSessionShellInputActionType.SESSION_TOGGLE_LATEST_DETAILS) {
           if (transcriptStore.toggleLatestExecutionDetails(options.translate)) {
-            this.refreshRenderedTranscript(viewModel, transcriptStore, turnProgressDock);
+            this.refreshRenderedTranscript(
+              viewModel,
+              transcriptStore,
+              runtimeState,
+              turnProgressDock,
+            );
             viewModel.promptBarLines = this.buildPromptBarLines(viewModel, options, runtimeState);
             this.renderActiveSurface(viewModel);
           }
@@ -596,7 +630,7 @@ export class CliSessionShellRunner {
       );
       runtimeState.recoveredTurnRetryPending = false;
     }
-    this.refreshRenderedTranscript(viewModel, transcriptStore, turnProgressDock);
+    this.refreshRenderedTranscript(viewModel, transcriptStore, runtimeState, turnProgressDock);
     this.renderActiveSurface(viewModel);
 
     while (!turnCompleted) {
@@ -780,6 +814,47 @@ export class CliSessionShellRunner {
       if (!recoveredPendingCommand) {
         this.resetPromptState(viewModel, options, runtimeState);
       }
+      return null;
+    }
+
+    if (exactCommand.command === '/sessions') {
+      await this.handleSessionsCommand(query, viewModel, transcriptStore, options, runtimeState);
+      return null;
+    }
+
+    if (exactCommand.command === '/fork') {
+      await this.handleForkCommand(
+        query,
+        viewModel,
+        transcriptStore,
+        options,
+        runtimeState,
+        turnProgressDock,
+      );
+      return null;
+    }
+
+    if (exactCommand.command === '/archive') {
+      await this.handleArchiveCommand(
+        query,
+        viewModel,
+        transcriptStore,
+        options,
+        runtimeState,
+        turnProgressDock,
+      );
+      return null;
+    }
+
+    if (exactCommand.command === '/unarchive') {
+      await this.handleUnarchiveCommand(
+        query,
+        viewModel,
+        transcriptStore,
+        options,
+        runtimeState,
+        turnProgressDock,
+      );
       return null;
     }
 
@@ -1009,29 +1084,15 @@ export class CliSessionShellRunner {
 
     try {
       const resumedSession = await options.sessionClient.resumeSession(requestedSessionId);
-      viewModel.sessionId = resumedSession.session.sessionId;
-      viewModel.resumeSelector = resumedSession.resumeSelector;
-      runtimeState.currentRouteId =
-        resumedSession.session.currentRouteId ?? OrchestrationSessionRouteId.MAIN;
-      runtimeState.pendingCommand = null;
-      await this.syncTranscript(
+      return await this.attachToSession(
         viewModel,
         transcriptStore,
         options,
         runtimeState,
         turnProgressDock,
-        true,
+        resumedSession.session,
+        resumedSession.resumeSelector,
       );
-      if (runtimeState.pendingCommand) {
-        return await this.recoverPendingCommandState(
-          viewModel,
-          transcriptStore,
-          options,
-          runtimeState,
-          turnProgressDock,
-        );
-      }
-      return false;
     } catch (error) {
       const standardizedError = standardizeError(error);
       const knownSessions = await options.sessionClient
@@ -1060,6 +1121,295 @@ export class CliSessionShellRunner {
       );
       return false;
     }
+  }
+
+  private async handleSessionsCommand(
+    query: string,
+    viewModel: CliSessionShellViewModel,
+    transcriptStore: CliSessionShellTranscriptStore,
+    options: CliSessionShellRunOptions,
+    runtimeState: CliSessionShellRuntimeState,
+  ): Promise<void> {
+    const requestedFilter = this.resolveSlashCommandArgument(query)?.toLowerCase() ?? 'all';
+    const statusFilter =
+      requestedFilter === 'active'
+        ? OrchestrationSessionStatus.ACTIVE
+        : requestedFilter === 'archived'
+          ? OrchestrationSessionStatus.ARCHIVED
+          : requestedFilter === 'all'
+            ? null
+            : undefined;
+    if (statusFilter === undefined) {
+      await this.appendServiceTranscriptItem(
+        viewModel,
+        transcriptStore,
+        options,
+        runtimeState,
+        OrchestrationSessionTranscriptRole.SYSTEM,
+        [
+          options.translate('cli.sessionShell.responses.sessionsUnknownFilter', {
+            filter: requestedFilter,
+          }),
+        ],
+      );
+      this.resetPromptState(viewModel, options, runtimeState);
+      return;
+    }
+
+    try {
+      const listedSessions = await options.sessionClient.listSessions({
+        ...(statusFilter
+          ? {
+              filter: {
+                status: statusFilter,
+              },
+            }
+          : {}),
+        limit: 10,
+      });
+      const relevantSessions = listedSessions.sessions.filter(
+        (session) =>
+          session.status === OrchestrationSessionStatus.ACTIVE ||
+          session.status === OrchestrationSessionStatus.ARCHIVED,
+      );
+      await this.appendServiceTranscriptItem(
+        viewModel,
+        transcriptStore,
+        options,
+        runtimeState,
+        OrchestrationSessionTranscriptRole.ASSISTANT,
+        this.buildSessionListLines(relevantSessions, requestedFilter, options),
+      );
+    } catch (error) {
+      await this.appendServiceTranscriptItem(
+        viewModel,
+        transcriptStore,
+        options,
+        runtimeState,
+        OrchestrationSessionTranscriptRole.SYSTEM,
+        [
+          options.translate('cli.sessionShell.responses.sessionsFailed', {
+            reason: standardizeError(error).message,
+          }),
+        ],
+      );
+    }
+    this.resetPromptState(viewModel, options, runtimeState);
+  }
+
+  private async handleForkCommand(
+    query: string,
+    viewModel: CliSessionShellViewModel,
+    transcriptStore: CliSessionShellTranscriptStore,
+    options: CliSessionShellRunOptions,
+    runtimeState: CliSessionShellRuntimeState,
+    turnProgressDock: CliSessionShellTurnProgressDock,
+  ): Promise<void> {
+    const displayName = this.resolveSlashCommandArgument(query);
+
+    try {
+      const forkedSession = await options.sessionClient.forkSession(
+        viewModel.sessionId,
+        displayName,
+      );
+      const recoveredPendingCommand = await this.attachToSession(
+        viewModel,
+        transcriptStore,
+        options,
+        runtimeState,
+        turnProgressDock,
+        forkedSession.session,
+        forkedSession.session.sessionId,
+      );
+      if (!recoveredPendingCommand) {
+        this.resetPromptState(viewModel, options, runtimeState);
+      }
+    } catch (error) {
+      await this.appendServiceTranscriptItem(
+        viewModel,
+        transcriptStore,
+        options,
+        runtimeState,
+        OrchestrationSessionTranscriptRole.SYSTEM,
+        [
+          options.translate('cli.sessionShell.responses.forkFailed', {
+            reason: standardizeError(error).message,
+          }),
+        ],
+      );
+      this.resetPromptState(viewModel, options, runtimeState);
+    }
+  }
+
+  private async handleArchiveCommand(
+    query: string,
+    viewModel: CliSessionShellViewModel,
+    transcriptStore: CliSessionShellTranscriptStore,
+    options: CliSessionShellRunOptions,
+    runtimeState: CliSessionShellRuntimeState,
+    turnProgressDock: CliSessionShellTurnProgressDock,
+  ): Promise<void> {
+    const targetSessionId = this.resolveSlashCommandArgument(query) ?? viewModel.sessionId;
+
+    try {
+      const archivedSession = await options.sessionClient.archiveSession(targetSessionId);
+      if (targetSessionId === viewModel.sessionId) {
+        const replacementSession = await options.sessionClient.startSession();
+        await this.attachToSession(
+          viewModel,
+          transcriptStore,
+          options,
+          runtimeState,
+          turnProgressDock,
+          replacementSession.session,
+          options.translate('cli.sessionShell.resumeSelector.latest'),
+        );
+        this.appendLocalTranscriptItem(viewModel, runtimeState, {
+          role: CliSessionTranscriptRole.SYSTEM,
+          label: options.translate('cli.sessionShell.transcript.systemLabel'),
+          lines: [
+            options.translate('cli.sessionShell.responses.sessionArchived', {
+              sessionId: targetSessionId,
+            }),
+            options.translate('cli.sessionShell.responses.sessionArchiveReplacementAttached', {
+              sessionId: replacementSession.session.sessionId,
+            }),
+          ],
+          renderKind: 'system_notice',
+        });
+        this.resetPromptState(viewModel, options, runtimeState);
+        return;
+      }
+
+      await this.appendServiceTranscriptItem(
+        viewModel,
+        transcriptStore,
+        options,
+        runtimeState,
+        OrchestrationSessionTranscriptRole.SYSTEM,
+        [
+          options.translate('cli.sessionShell.responses.sessionArchived', {
+            sessionId: archivedSession.session.sessionId,
+          }),
+        ],
+      );
+      this.resetPromptState(viewModel, options, runtimeState);
+    } catch (error) {
+      await this.appendServiceTranscriptItem(
+        viewModel,
+        transcriptStore,
+        options,
+        runtimeState,
+        OrchestrationSessionTranscriptRole.SYSTEM,
+        [
+          options.translate('cli.sessionShell.responses.archiveFailed', {
+            reason: standardizeError(error).message,
+          }),
+        ],
+      );
+      this.resetPromptState(viewModel, options, runtimeState);
+    }
+  }
+
+  private async handleUnarchiveCommand(
+    query: string,
+    viewModel: CliSessionShellViewModel,
+    transcriptStore: CliSessionShellTranscriptStore,
+    options: CliSessionShellRunOptions,
+    runtimeState: CliSessionShellRuntimeState,
+    turnProgressDock: CliSessionShellTurnProgressDock,
+  ): Promise<void> {
+    const requestedSessionId = this.resolveSlashCommandArgument(query);
+    if (!requestedSessionId) {
+      await this.appendServiceTranscriptItem(
+        viewModel,
+        transcriptStore,
+        options,
+        runtimeState,
+        OrchestrationSessionTranscriptRole.SYSTEM,
+        [options.translate('cli.sessionShell.responses.unarchiveRequiresSessionId')],
+      );
+      this.resetPromptState(viewModel, options, runtimeState);
+      return;
+    }
+
+    try {
+      const unarchivedSession = await options.sessionClient.unarchiveSession(requestedSessionId);
+      const recoveredPendingCommand = await this.attachToSession(
+        viewModel,
+        transcriptStore,
+        options,
+        runtimeState,
+        turnProgressDock,
+        unarchivedSession.session,
+        requestedSessionId,
+      );
+      if (!recoveredPendingCommand) {
+        this.resetPromptState(viewModel, options, runtimeState);
+      }
+    } catch (error) {
+      await this.appendServiceTranscriptItem(
+        viewModel,
+        transcriptStore,
+        options,
+        runtimeState,
+        OrchestrationSessionTranscriptRole.SYSTEM,
+        [
+          options.translate('cli.sessionShell.responses.unarchiveFailed', {
+            reason: standardizeError(error).message,
+          }),
+        ],
+      );
+      this.resetPromptState(viewModel, options, runtimeState);
+    }
+  }
+
+  private async attachToSession(
+    viewModel: CliSessionShellViewModel,
+    transcriptStore: CliSessionShellTranscriptStore,
+    options: CliSessionShellRunOptions,
+    runtimeState: CliSessionShellRuntimeState,
+    turnProgressDock: CliSessionShellTurnProgressDock,
+    sessionSummary: OrchestrationSessionSummary,
+    resumeSelector: string,
+  ): Promise<boolean> {
+    viewModel.sessionId = sessionSummary.sessionId;
+    viewModel.resumeSelector = resumeSelector;
+    runtimeState.currentRouteId = sessionSummary.currentRouteId ?? OrchestrationSessionRouteId.MAIN;
+    runtimeState.currentSessionContext = {
+      ...sessionSummary.context,
+    };
+    runtimeState.pendingCommand = null;
+    await this.syncTranscript(
+      viewModel,
+      transcriptStore,
+      options,
+      runtimeState,
+      turnProgressDock,
+      true,
+    );
+    const continuationNoticeLines = this.buildSessionContinuationNoticeLines(
+      sessionSummary,
+      options,
+    );
+    if (continuationNoticeLines.length > 0) {
+      this.appendLocalTranscriptItem(viewModel, runtimeState, {
+        role: CliSessionTranscriptRole.SYSTEM,
+        label: options.translate('cli.sessionShell.transcript.systemLabel'),
+        lines: continuationNoticeLines,
+        renderKind: 'system_notice',
+      });
+    }
+    if (runtimeState.pendingCommand) {
+      return await this.recoverPendingCommandState(
+        viewModel,
+        transcriptStore,
+        options,
+        runtimeState,
+        turnProgressDock,
+      );
+    }
+    return false;
   }
 
   private async handleMultilineCommand(
@@ -1387,7 +1737,7 @@ export class CliSessionShellRunner {
         : exitReason === CliSessionShellExitReason.SIGINT
           ? options.translate('cli.sessionShell.responses.exitBySigint')
           : options.translate('cli.sessionShell.responses.exitByEof');
-    this.appendLocalTranscriptItem(viewModel, {
+    this.appendLocalTranscriptItem(viewModel, runtimeState, {
       role: CliSessionTranscriptRole.SYSTEM,
       label: options.translate('cli.sessionShell.transcript.systemLabel'),
       lines: [exitMessage, options.translate('cli.sessionShell.responses.exitKeepsTranscript')],
@@ -1450,6 +1800,7 @@ export class CliSessionShellRunner {
   ): Promise<OrchestrationSubscribeSessionResponse> {
     if (reset) {
       transcriptStore.reset(viewModel.sessionId);
+      runtimeState.localTranscriptItems = [];
       runtimeState.pendingCommand = null;
       turnProgressDock?.clear();
     }
@@ -1465,6 +1816,9 @@ export class CliSessionShellRunner {
             sessionId: viewModel.sessionId,
           },
     );
+    runtimeState.currentSessionContext = {
+      ...subscription.session.context,
+    };
     turnProgressDock?.applySessionEvents(subscription.events);
     const baseTranscriptItems = transcriptStore.applyEvents(
       viewModel.sessionId,
@@ -1475,6 +1829,7 @@ export class CliSessionShellRunner {
     viewModel.transcriptItems = this.projectTranscriptItems(
       viewModel.sessionId,
       baseTranscriptItems,
+      runtimeState.localTranscriptItems,
       turnProgressDock,
     );
     this.reconcilePendingCommandFromEvents(subscription.events, runtimeState);
@@ -1594,6 +1949,15 @@ export class CliSessionShellRunner {
     options: CliSessionShellRunOptions,
     runtimeState: CliSessionShellRuntimeState,
   ): string[] {
+    const sourceKind = this.readSessionContextString(
+      runtimeState.currentSessionContext,
+      'sourceKind',
+    );
+    const displayName = this.readSessionContextString(
+      runtimeState.currentSessionContext,
+      'displayName',
+    );
+
     return [
       options.translate('cli.sessionShell.responses.statusAttached', {
         sessionId: viewModel.sessionId,
@@ -1608,6 +1972,19 @@ export class CliSessionShellRunner {
       options.translate('cli.sessionShell.responses.statusWorkspace', {
         workspace: viewModel.workspaceSummary,
       }),
+      options.translate('cli.sessionShell.responses.statusStartup', {
+        startupPath: runtimeState.startupPath,
+        lazyBoundary: 'session_shell_only',
+        bootstrapMs: String(runtimeState.startupBootstrapElapsedMs),
+      }),
+      ...(sourceKind || displayName
+        ? [
+            options.translate('cli.sessionShell.responses.statusProjection', {
+              sourceKind: sourceKind ?? 'new',
+              displayName: displayName ?? '-',
+            }),
+          ]
+        : []),
     ];
   }
 
@@ -1714,8 +2091,9 @@ export class CliSessionShellRunner {
     this.activeInkRunner?.requestViewportClear();
     transcriptStore.clearView();
     turnProgressDock?.clear();
+    runtimeState.localTranscriptItems = [];
     viewModel.transcriptItems = [];
-    this.appendLocalTranscriptItem(viewModel, {
+    this.appendLocalTranscriptItem(viewModel, runtimeState, {
       role: CliSessionTranscriptRole.SYSTEM,
       label: options.translate('cli.sessionShell.transcript.systemLabel'),
       lines: [options.translate('cli.sessionShell.responses.localTranscriptCleared')],
@@ -1784,6 +2162,141 @@ export class CliSessionShellRunner {
     viewModel.promptBarLines = this.buildPromptBarLines(viewModel, options, runtimeState);
   }
 
+  private buildSessionContinuationNoticeLines(
+    session: OrchestrationSessionSummary,
+    options: CliSessionShellRunOptions,
+  ): string[] {
+    const context = session.context;
+    const lines: string[] = [];
+    const sourceKind = this.readSessionContextString(context, 'sourceKind');
+    const sourceSessionId = this.readSessionContextString(context, 'sourceSessionId');
+    const latestNoteSummary = this.readSessionContextString(context, 'latestNoteSummary');
+    const previewSummary = this.readSessionContextString(context, 'previewSummary');
+    const archivedAt = this.readSessionContextString(context, 'archivedAt');
+
+    if (sourceKind === 'forked' && sourceSessionId) {
+      lines.push(
+        options.translate('cli.sessionShell.responses.sessionForkedFrom', {
+          sourceSessionId,
+          sessionId: session.sessionId,
+        }),
+      );
+    }
+    if (latestNoteSummary) {
+      lines.push(
+        options.translate('cli.sessionShell.responses.sessionNoteSummary', {
+          summary: latestNoteSummary,
+        }),
+      );
+    } else if (previewSummary) {
+      lines.push(
+        options.translate('cli.sessionShell.responses.sessionPreviewSummary', {
+          summary: previewSummary,
+        }),
+      );
+    }
+    if (archivedAt) {
+      lines.push(
+        options.translate('cli.sessionShell.responses.sessionArchivedAt', {
+          archivedAt,
+        }),
+      );
+    }
+
+    return lines;
+  }
+
+  private buildSessionListLines(
+    sessions: OrchestrationSessionSummary[],
+    filterLabel: string,
+    options: CliSessionShellRunOptions,
+  ): string[] {
+    if (sessions.length === 0) {
+      return [
+        options.translate('cli.sessionShell.responses.sessionsEmpty', {
+          filter: filterLabel,
+        }),
+      ];
+    }
+
+    return [
+      options.translate('cli.sessionShell.responses.sessionsHeading', {
+        filter: filterLabel,
+      }),
+      ...sessions.flatMap((session) => this.buildSessionListEntryLines(session, options)),
+    ];
+  }
+
+  private buildSessionListEntryLines(
+    session: OrchestrationSessionSummary,
+    options: CliSessionShellRunOptions,
+  ): string[] {
+    const context = session.context;
+    const sourceKind = this.readSessionContextString(context, 'sourceKind') ?? 'new';
+    const displayName = this.readSessionContextString(context, 'displayName');
+    const latestNoteSummary = this.readSessionContextString(context, 'latestNoteSummary');
+    const previewSummary = this.readSessionContextString(context, 'previewSummary');
+    const archivedAt = this.readSessionContextString(context, 'archivedAt');
+
+    return [
+      options.translate('cli.sessionShell.responses.sessionsEntry', {
+        sessionId: session.sessionId,
+        status: session.status,
+        sourceKind,
+        openedAt: session.openedAt,
+      }),
+      ...(displayName
+        ? [
+            options.translate('cli.sessionShell.responses.sessionsDisplayName', {
+              displayName,
+            }),
+          ]
+        : []),
+      ...(latestNoteSummary
+        ? [
+            options.translate('cli.sessionShell.responses.sessionsNoteSummary', {
+              summary: latestNoteSummary,
+            }),
+          ]
+        : previewSummary
+          ? [
+              options.translate('cli.sessionShell.responses.sessionsPreviewSummary', {
+                summary: previewSummary,
+              }),
+            ]
+          : []),
+      ...(archivedAt
+        ? [
+            options.translate('cli.sessionShell.responses.sessionsArchivedAt', {
+              archivedAt,
+            }),
+          ]
+        : []),
+    ];
+  }
+
+  private resolveStartupPath(
+    options: CliSessionShellRunOptions,
+  ): CliSessionShellRuntimeState['startupPath'] {
+    if (options.resumeOnStartup) {
+      return 'resume_command';
+    }
+    if (options.initialPrompt?.trim()) {
+      return 'startup_prompt';
+    }
+    return 'default_session_shell';
+  }
+
+  private readSessionContextString(
+    context: Record<string, unknown>,
+    fieldName: string,
+  ): string | undefined {
+    const candidate = context[fieldName];
+    return typeof candidate === 'string' && candidate.trim().length > 0
+      ? candidate.trim()
+      : undefined;
+  }
+
   private resolveSlashCommandArgument(query: string): string | undefined {
     const [, ...argumentsList] = query.trim().split(/\s+/u);
     const resolvedArgument = argumentsList.join(' ').trim();
@@ -1792,22 +2305,27 @@ export class CliSessionShellRunner {
 
   private appendLocalTranscriptItem(
     viewModel: CliSessionShellViewModel,
+    runtimeState: CliSessionShellRuntimeState,
     item: Omit<CliSessionShellTranscriptItem, 'id'>,
   ): void {
-    viewModel.transcriptItems.push({
+    const transcriptItem = {
       id: `${viewModel.sessionId}:${viewModel.transcriptItems.length + 1}:local`,
       ...item,
-    });
+    };
+    runtimeState.localTranscriptItems.push(transcriptItem);
+    viewModel.transcriptItems.push(transcriptItem);
   }
 
   private refreshRenderedTranscript(
     viewModel: CliSessionShellViewModel,
     transcriptStore: CliSessionShellTranscriptStore,
+    runtimeState: CliSessionShellRuntimeState,
     turnProgressDock?: CliSessionShellTurnProgressDock,
   ): void {
     viewModel.transcriptItems = this.projectTranscriptItems(
       viewModel.sessionId,
       transcriptStore.listItems(),
+      runtimeState.localTranscriptItems,
       turnProgressDock,
     );
   }
@@ -1815,11 +2333,13 @@ export class CliSessionShellRunner {
   private projectTranscriptItems(
     sessionId: string,
     baseTranscriptItems: CliSessionShellTranscriptItem[],
+    localTranscriptItems: CliSessionShellTranscriptItem[],
     turnProgressDock?: CliSessionShellTurnProgressDock,
   ): CliSessionShellTranscriptItem[] {
-    return turnProgressDock
+    const projectedItems = turnProgressDock
       ? turnProgressDock.projectTranscriptItems(sessionId, baseTranscriptItems)
       : [...baseTranscriptItems];
+    return [...projectedItems, ...localTranscriptItems];
   }
 
   private async appendServiceTranscriptItem(
@@ -1875,6 +2395,9 @@ export class CliSessionShellRunner {
       viewModel.resumeSelector = options.translate('cli.sessionShell.resumeSelector.latest');
       runtimeState.currentRouteId =
         startedSession.session.currentRouteId ?? OrchestrationSessionRouteId.MAIN;
+      runtimeState.currentSessionContext = {
+        ...startedSession.session.context,
+      };
       runtimeState.pendingCommand = null;
       runtimeState.recoveredTurnRetryPending = recoveryOptions.retryCurrentTurn;
       transcriptStore.reset(viewModel.sessionId);
@@ -1904,7 +2427,7 @@ export class CliSessionShellRunner {
           turnProgressDock,
         );
       } catch {
-        this.appendLocalTranscriptItem(viewModel, {
+        this.appendLocalTranscriptItem(viewModel, runtimeState, {
           role: CliSessionTranscriptRole.SYSTEM,
           label: options.translate('cli.sessionShell.transcript.systemLabel'),
           lines: recoveryLines,

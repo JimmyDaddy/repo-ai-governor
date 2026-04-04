@@ -15,9 +15,13 @@ import {
 import {
   type OrchestrationAppendSessionMessageRequest,
   type OrchestrationAppendSessionMessageResponse,
+  type OrchestrationArchiveSessionRequest,
+  type OrchestrationArchiveSessionResponse,
   type OrchestrationExecutionLivenessSnapshot,
   OrchestrationExecutionStatus,
   type OrchestrationExecutionSummary,
+  type OrchestrationForkSessionRequest,
+  type OrchestrationForkSessionResponse,
   type OrchestrationListExecutionsFilter,
   type OrchestrationListExecutionsRequest,
   type OrchestrationListExecutionsResponse,
@@ -47,6 +51,8 @@ import {
   type OrchestrationSubscribeExecutionResponse,
   type OrchestrationSubscribeSessionRequest,
   type OrchestrationSubscribeSessionResponse,
+  type OrchestrationUnarchiveSessionRequest,
+  type OrchestrationUnarchiveSessionResponse,
 } from '@repo-ai-governor/orchestration-service-client';
 import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import { LocalOrchestrationServiceSessionRuntime } from './local-orchestration-service-session-runtime.js';
@@ -504,6 +510,24 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
     request?: OrchestrationResumeSessionRequest,
   ): Promise<OrchestrationResumeSessionResponse> {
     return this.sessionRuntime.resumeSession(request);
+  }
+
+  public async forkSession(
+    request: OrchestrationForkSessionRequest,
+  ): Promise<OrchestrationForkSessionResponse> {
+    return this.sessionRuntime.forkSession(request);
+  }
+
+  public async archiveSession(
+    request: OrchestrationArchiveSessionRequest,
+  ): Promise<OrchestrationArchiveSessionResponse> {
+    return this.sessionRuntime.archiveSession(request);
+  }
+
+  public async unarchiveSession(
+    request: OrchestrationUnarchiveSessionRequest,
+  ): Promise<OrchestrationUnarchiveSessionResponse> {
+    return this.sessionRuntime.unarchiveSession(request);
   }
 
   public async publishEvent(request: LocalOrchestrationServicePublishEventRequest): Promise<void> {

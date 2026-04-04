@@ -13,49 +13,28 @@ const PLUGIN_ENABLED_DISTRIBUTION_MODE = 'plugin-enabled';
 const DESKTOP_README_PATH = 'integrations/desktop/README.md';
 const DESKTOP_EXAMPLES_README_PATH = 'integrations/desktop/examples/README.md';
 const DESKTOP_SAMPLE_PATH = 'integrations/desktop/examples/desktop-sidecar-runtime.sample.json';
-const DIST_CLI_RUNTIME_PATH =
-  'dist/node_modules/@repo-ai-governor/cli/dist/src/runtime/orchestration-service-runtime.js';
-const DIST_CLI_RUNTIME_MODE_CONSTANT_PATH =
-  'dist/node_modules/@repo-ai-governor/cli/dist/src/constants/orchestration-service-runtime.constant.js';
+const DIST_DESKTOP_INDEX_PATH = 'dist/node_modules/@repo-ai-governor/desktop/dist/src/index.js';
 const DIST_ORCHESTRATION_CLIENT_INDEX_PATH =
   'dist/node_modules/@repo-ai-governor/orchestration-service-client/dist/src/index.js';
 const DIST_CORE_ORCHESTRATION_SIDECAR_ENTRY_PATH =
   'dist/node_modules/@repo-ai-governor/core-orchestration-service/dist/src/local-orchestration-service-sidecar-entry.js';
 
-/**
- * Reads one repository-relative JSON file.
- * @param {string} relativePath Repository-relative JSON path.
- * @returns {unknown}
- */
 function readJson(relativePath) {
   return JSON.parse(readFileSync(resolve(process.cwd(), relativePath), 'utf8'));
 }
 
-/**
- * Ensures one required file exists.
- * @param {string} relativePath Repository-relative path.
- */
 function ensureFileExists(relativePath) {
   if (!existsSync(resolve(process.cwd(), relativePath))) {
     throw new Error(`required file is missing: ${relativePath}`);
   }
 }
 
-/**
- * Ensures one value is a non-empty string.
- * @param {unknown} value Candidate value.
- * @param {string} fieldName Field name for diagnostics.
- */
 function assertNonEmptyString(value, fieldName) {
   if (typeof value !== 'string' || value.trim().length === 0) {
     throw new Error(`Field "${fieldName}" must be a non-empty string.`);
   }
 }
 
-/**
- * Parses CLI options for distribution-sensitive smoke coverage.
- * @returns {{distributionMode: "default" | "plugin-enabled"}}
- */
 function parseCliOptions() {
   const rawArgs = process.argv.slice(2);
   const distributionModeIndex = rawArgs.findIndex((arg) => arg === '--distribution-mode');
@@ -78,12 +57,6 @@ function parseCliOptions() {
   };
 }
 
-/**
- * Normalizes expected memory-provider composition from the desktop sample.
- * @param {unknown} expectedRaw Raw expected block.
- * @param {string} fieldName Field name for diagnostics.
- * @returns {Record<string, string>}
- */
 function normalizeExpectedMemoryProvider(expectedRaw, fieldName) {
   if (!expectedRaw || typeof expectedRaw !== 'object' || Array.isArray(expectedRaw)) {
     throw new Error(`Field "${fieldName}" must be an object.`);
@@ -98,21 +71,6 @@ function normalizeExpectedMemoryProvider(expectedRaw, fieldName) {
   return normalizedEntries;
 }
 
-/**
- * Normalizes desktop sample payload.
- * @param {unknown} sampleRaw Parsed sample JSON.
- * @returns {{
- *   surface: string;
- *   runtimeMode: string;
- *   executionKind: string;
- *   expectedServiceHostKind: string;
- *   expectedServiceTransportKind: string;
- *   expectedLifecycleStatus: string;
- *   defaultMemoryProvider: Record<string, string>;
- *   pluginEnabledMemoryProvider: Record<string, string>;
- *   requiredOperations: string[];
- * }}
- */
 function normalizeSample(sampleRaw) {
   if (!sampleRaw || typeof sampleRaw !== 'object' || Array.isArray(sampleRaw)) {
     throw new Error('desktop runtime sample must be an object.');
@@ -124,6 +82,7 @@ function normalizeSample(sampleRaw) {
   assertNonEmptyString(sampleRaw.expectedServiceHostKind, 'expectedServiceHostKind');
   assertNonEmptyString(sampleRaw.expectedServiceTransportKind, 'expectedServiceTransportKind');
   assertNonEmptyString(sampleRaw.expectedLifecycleStatus, 'expectedLifecycleStatus');
+  assertNonEmptyString(sampleRaw.expectedArtifactQueryGateState, 'expectedArtifactQueryGateState');
 
   if (!Array.isArray(sampleRaw.requiredOperations) || sampleRaw.requiredOperations.length === 0) {
     throw new Error('requiredOperations must be a non-empty array.');
@@ -136,6 +95,7 @@ function normalizeSample(sampleRaw) {
     expectedServiceHostKind: sampleRaw.expectedServiceHostKind.trim(),
     expectedServiceTransportKind: sampleRaw.expectedServiceTransportKind.trim(),
     expectedLifecycleStatus: sampleRaw.expectedLifecycleStatus.trim(),
+    expectedArtifactQueryGateState: sampleRaw.expectedArtifactQueryGateState.trim(),
     defaultMemoryProvider: normalizeExpectedMemoryProvider(
       sampleRaw.defaultMemoryProvider,
       'defaultMemoryProvider',
@@ -151,23 +111,11 @@ function normalizeSample(sampleRaw) {
   };
 }
 
-/**
- * Imports one ESM module from repository-relative path.
- * @template T
- * @param {string} relativePath Repository-relative module path.
- * @returns {Promise<T>}
- */
 async function importDistModule(relativePath) {
   const absolutePath = resolve(process.cwd(), relativePath);
   return await import(pathToFileURL(absolutePath).href);
 }
 
-/**
- * Asserts one actual memory-provider composition against expected string fields.
- * @param {unknown} actualMemoryProvider Actual runtime composition.
- * @param {Record<string, string>} expectedMemoryProvider Expected memory-provider fields.
- * @param {string} label Assertion label.
- */
 function assertExpectedMemoryProvider(actualMemoryProvider, expectedMemoryProvider, label) {
   if (
     !actualMemoryProvider ||
@@ -186,13 +134,20 @@ function assertExpectedMemoryProvider(actualMemoryProvider, expectedMemoryProvid
   }
 }
 
+function assertRequiredOperations(bridge, requiredOperations) {
+  for (const operationName of requiredOperations) {
+    if (typeof bridge[operationName] !== 'function') {
+      throw new Error(`desktop preload bridge is missing required operation "${operationName}"`);
+    }
+  }
+}
+
 try {
   const options = parseCliOptions();
   ensureFileExists(DESKTOP_README_PATH);
   ensureFileExists(DESKTOP_EXAMPLES_README_PATH);
   ensureFileExists(DESKTOP_SAMPLE_PATH);
-  ensureFileExists(DIST_CLI_RUNTIME_PATH);
-  ensureFileExists(DIST_CLI_RUNTIME_MODE_CONSTANT_PATH);
+  ensureFileExists(DIST_DESKTOP_INDEX_PATH);
   ensureFileExists(DIST_ORCHESTRATION_CLIENT_INDEX_PATH);
   ensureFileExists(DIST_CORE_ORCHESTRATION_SIDECAR_ENTRY_PATH);
 
@@ -201,12 +156,13 @@ try {
     options.distributionMode === PLUGIN_ENABLED_DISTRIBUTION_MODE
       ? sample.pluginEnabledMemoryProvider
       : sample.defaultMemoryProvider;
-  const [{ CliOrchestrationServiceRuntime }, { CliOrchestrationServiceRuntimeMode }, clientIndex] =
-    await Promise.all([
-      importDistModule(DIST_CLI_RUNTIME_PATH),
-      importDistModule(DIST_CLI_RUNTIME_MODE_CONSTANT_PATH),
-      importDistModule(DIST_ORCHESTRATION_CLIENT_INDEX_PATH),
-    ]);
+  const [
+    { DesktopArtifactQueryGateState, DesktopOrchestrationRuntimeMode, DesktopShellBootstrap },
+    clientIndex,
+  ] = await Promise.all([
+    importDistModule(DIST_DESKTOP_INDEX_PATH),
+    importDistModule(DIST_ORCHESTRATION_CLIENT_INDEX_PATH),
+  ]);
 
   const {
     OrchestrationClientSurface,
@@ -218,37 +174,44 @@ try {
   if (sample.surface !== OrchestrationClientSurface.DESKTOP) {
     throw new Error('desktop runtime sample must declare surface=desktop.');
   }
-  if (sample.runtimeMode !== CliOrchestrationServiceRuntimeMode.SIDECAR_IPC) {
+  if (sample.runtimeMode !== DesktopOrchestrationRuntimeMode.SIDECAR_IPC) {
     throw new Error('desktop runtime sample must declare runtimeMode=sidecar_ipc.');
   }
   if (sample.executionKind !== OrchestrationExecutionKind.RUN) {
     throw new Error('desktop runtime sample must declare executionKind=run.');
+  }
+  if (sample.expectedArtifactQueryGateState !== DesktopArtifactQueryGateState.BLOCKED) {
+    throw new Error('desktop runtime sample must declare expectedArtifactQueryGateState=blocked.');
   }
 
   const tempRoot = mkdtempSync(resolve(tmpdir(), 'repo-ai-governor-desktop-sidecar-'));
   const workspaceRoot = resolve(tempRoot, '.repo-ai-governor');
 
   try {
-    const runtime = new CliOrchestrationServiceRuntime(workspaceRoot, {
-      runtimeMode: CliOrchestrationServiceRuntimeMode.SIDECAR_IPC,
-      memoryConfig:
-        options.distributionMode === PLUGIN_ENABLED_DISTRIBUTION_MODE
-          ? {
-              storeEngine: 'sqlite_fs',
-              storeRoot: 'context/memory/desktop-plugin',
-              provider: {
-                module: '@repo-ai-governor/memory-provider-sqlite-fs',
-                exportName: 'createMemoryStoreProvider',
+    const bootstrap = new DesktopShellBootstrap(workspaceRoot, {
+      runtimeDependencies: {
+        memoryConfig:
+          options.distributionMode === PLUGIN_ENABLED_DISTRIBUTION_MODE
+            ? {
+                storeEngine: 'sqlite_fs',
+                storeRoot: 'context/memory/desktop-plugin',
+                provider: {
+                  module: '@repo-ai-governor/memory-provider-sqlite-fs',
+                  exportName: 'createMemoryStoreProvider',
+                },
+              }
+            : {
+                storeEngine: 'fs_csv',
+                storeRoot: 'context/memory/desktop-default',
               },
-            }
-          : {
-              storeEngine: 'fs_csv',
-              storeRoot: 'context/memory/desktop-default',
-            },
+      },
     });
+    const preloadBridge = bootstrap.getPreloadBridge();
+    assertRequiredOperations(preloadBridge, sample.requiredOperations);
 
-    const health = await runtime.getHealth();
-    const started = await runtime.startExecution(
+    const bootstrapSnapshot = await preloadBridge.bootstrap();
+    const health = await preloadBridge.getHealth();
+    const started = await preloadBridge.startExecution(
       {
         workspaceId: 'desktop-workspace',
         workspaceRoot,
@@ -262,100 +225,112 @@ try {
       },
     );
 
-    await runtime.publishEvent({
+    await preloadBridge.publishEvent({
       executionId: started.executionId,
       type: OrchestrationServiceEventType.ARTIFACT_READY,
       status: OrchestrationExecutionStatus.RUNNING,
-      artifactId: 'desktop-artifact',
-      artifactPath: resolve(workspaceRoot, 'desktop-artifact.json'),
+      artifactId: 'artifact-desktop',
+      artifactPath: resolve(workspaceRoot, 'artifact-desktop.json'),
       message: 'desktop artifact ready',
     });
-    await runtime.publishEvent({
+    await preloadBridge.publishEvent({
       executionId: started.executionId,
       type: OrchestrationServiceEventType.EXECUTION_COMPLETED,
       status: OrchestrationExecutionStatus.COMPLETED,
       message: 'desktop execution completed',
     });
 
-    const summary = await runtime.getExecution(started.executionId);
-    const listed = await runtime.listExecutions({
+    const session = await preloadBridge.startSession();
+    await preloadBridge.appendMessage(session.session.sessionId, 'assistant', [
+      'desktop baseline active',
+    ]);
+    const listedExecutions = await preloadBridge.listExecutions({
       filter: {
         workspaceId: 'desktop-workspace',
       },
     });
-    const subscribed = await runtime.subscribeExecution({
+    const subscribedExecutions = await preloadBridge.subscribeExecution({
       executionId: started.executionId,
     });
+    const resumedSession = await preloadBridge.resumeSession(session.session.sessionId);
+    const listedSessions = await preloadBridge.listSessions({
+      limit: 1,
+    });
+    const subscribedSessions = await preloadBridge.subscribeSession({
+      sessionId: session.session.sessionId,
+    });
+    const wakeSnapshot = await preloadBridge.requestWindowWake('main-window');
+    const notificationSnapshot = await preloadBridge.registerNotification('review-ready');
+    const restartSnapshot = await preloadBridge.restartServiceHost('desktop-smoke-restart');
+    const consoleSnapshot = await preloadBridge.buildGovernanceConsoleSnapshot({
+      locale: 'en-US',
+      workspaceLabel: 'desktop-workspace',
+    });
 
-    if (health.lifecycleStatus !== sample.expectedLifecycleStatus) {
+    if (bootstrapSnapshot.health.lifecycleStatus !== sample.expectedLifecycleStatus) {
       throw new Error(
-        `desktop sidecar health returned lifecycleStatus="${health.lifecycleStatus}", expected "${sample.expectedLifecycleStatus}"`,
+        `desktop bootstrap lifecycle="${bootstrapSnapshot.health.lifecycleStatus}", expected "${sample.expectedLifecycleStatus}"`,
       );
     }
-    if (health.serviceHostKind !== sample.expectedServiceHostKind) {
+    if (
+      bootstrapSnapshot.baseline.artifactQueryGateState !== sample.expectedArtifactQueryGateState
+    ) {
       throw new Error(
-        `desktop sidecar health returned host="${health.serviceHostKind}", expected "${sample.expectedServiceHostKind}"`,
+        `desktop artifact gate="${bootstrapSnapshot.baseline.artifactQueryGateState}", expected "${sample.expectedArtifactQueryGateState}"`,
       );
     }
-    if (health.serviceTransportKind !== sample.expectedServiceTransportKind) {
-      throw new Error(
-        `desktop sidecar health returned transport="${health.serviceTransportKind}", expected "${sample.expectedServiceTransportKind}"`,
-      );
-    }
-    assertExpectedMemoryProvider(
-      health.memoryProvider,
-      expectedMemoryProvider,
-      'desktop sidecar health',
-    );
-    if (started.serviceHostKind !== sample.expectedServiceHostKind) {
-      throw new Error('desktop sidecar execution host kind drifted from sample baseline.');
-    }
-    if (started.serviceTransportKind !== sample.expectedServiceTransportKind) {
-      throw new Error('desktop sidecar execution transport kind drifted from sample baseline.');
-    }
+
+    assertExpectedMemoryProvider(health.memoryProvider, expectedMemoryProvider, 'desktop health');
     assertExpectedMemoryProvider(
       started.memoryProvider,
       expectedMemoryProvider,
-      'desktop sidecar startExecution',
+      'desktop startExecution',
     );
-    assertExpectedMemoryProvider(
-      summary?.memoryProvider,
-      expectedMemoryProvider,
-      'desktop sidecar getExecution',
-    );
-    if (listed.executions.length !== 1) {
-      throw new Error(`desktop sidecar listExecutions returned ${listed.executions.length} items.`);
+
+    if (listedExecutions.executions.length !== 1) {
+      throw new Error('desktop execution list did not return exactly one execution.');
     }
-    assertExpectedMemoryProvider(
-      listed.executions[0]?.memoryProvider,
-      expectedMemoryProvider,
-      'desktop sidecar listExecutions',
-    );
-    if (subscribed.serviceHostKind !== sample.expectedServiceHostKind) {
-      throw new Error('desktop sidecar subscribeExecution host kind drifted from sample baseline.');
+    if (resumedSession.session.sessionId !== session.session.sessionId) {
+      throw new Error('desktop resumeSession did not return the started session.');
     }
-    if (subscribed.serviceTransportKind !== sample.expectedServiceTransportKind) {
+    if (listedSessions.sessions[0]?.sessionId !== session.session.sessionId) {
+      throw new Error('desktop listSessions did not return the started session.');
+    }
+    if (subscribedSessions.session.sessionId !== session.session.sessionId) {
+      throw new Error('desktop subscribeSession did not attach to the started session.');
+    }
+    if (wakeSnapshot.windowWakeCount !== 1 || notificationSnapshot.notificationCount !== 1) {
+      throw new Error('desktop lifecycle guard counts were not recorded as expected.');
+    }
+    if (restartSnapshot.restartCount !== 1) {
+      throw new Error('desktop restart lifecycle guard did not increment restartCount.');
+    }
+    if (!consoleSnapshot.workspaceHome || !consoleSnapshot.sessionLane) {
+      throw new Error('desktop governance console snapshot is incomplete.');
+    }
+    if (
+      subscribedExecutions.events.map((event) => event.type).join('|') !==
+      [
+        OrchestrationServiceEventType.EXECUTION_STARTED,
+        OrchestrationServiceEventType.ARTIFACT_READY,
+        OrchestrationServiceEventType.EXECUTION_COMPLETED,
+      ].join('|')
+    ) {
       throw new Error(
-        'desktop sidecar subscribeExecution transport kind drifted from sample baseline.',
+        'desktop execution subscribe sequence did not match the expected smoke flow.',
       );
     }
-    if (subscribed.events.length < 3) {
-      throw new Error('desktop sidecar subscribeExecution returned too few events.');
-    }
 
-    await runtime.dispose();
-    gateInfo(
-      GATE_NAME,
-      `desktop sidecar runtime smoke passed operations=${sample.requiredOperations.join(',')} distribution_mode=${options.distributionMode}`,
-    );
+    await bootstrap.dispose();
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
   }
 
-  gatePass(
+  gateInfo(
     GATE_NAME,
-    `desktop execution surface verified using ${sample.runtimeMode} and ${sample.expectedServiceHostKind}/${sample.expectedServiceTransportKind} distribution_mode=${options.distributionMode}`,
+    `desktop shell bootstrap smoke passed for ${options.distributionMode} distribution mode.`,
   );
+  gatePass(GATE_NAME, 'desktop entry smoke passed.');
 } catch (error) {
   gateFail(GATE_NAME, error instanceof Error ? error.message : String(error));
   process.exit(1);

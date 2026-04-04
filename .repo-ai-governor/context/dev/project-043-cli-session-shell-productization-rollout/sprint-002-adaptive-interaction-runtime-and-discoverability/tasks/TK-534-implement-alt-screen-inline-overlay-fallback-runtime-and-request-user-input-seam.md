@@ -1,6 +1,6 @@
 # TK-534 implement alt-screen inline overlay fallback runtime and request-user-input seam
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-04
 - Owner: AI-Agent
 - Priority: P0
@@ -58,9 +58,10 @@
 ## 9. 执行记录
 
 1. 2026-04-04：任务创建，状态初始化为 `planned`；承接 adaptive runtime 与 request-user-input seam 实现。
+2. 2026-04-04：确认 fallback-aware entrypoint/runtime 与统一输入层已在 session shell 现有实现落地，并通过 package/integration suites 验证。
 
 ## 10. 产出
 
-1. 待执行：adaptive interaction runtime implementation
-2. 待执行：request-user-input seam
-3. 待执行：small-terminal / fallback regression evidence
+1. 已完成：adaptive interaction runtime implementation -> `apps/cli/src/runtime/interactive-shell/session-shell-entrypoint-runtime.ts` + `apps/cli/src/runtime/interactive-shell/interactive-shell-ui-mode-resolver.ts`
+2. 已完成：request-user-input seam -> `apps/cli/src/runtime/interactive-shell/session-shell-runner.ts` + `apps/cli/src/runtime/interactive-shell/session-shell-ink-controller.ts`
+3. 已完成：small-terminal / fallback regression evidence -> `apps/cli/test/runtime/interactive-shell-ui-mode-resolver.test.ts` + `apps/cli/test/cli-output-contract.integration.test.ts`

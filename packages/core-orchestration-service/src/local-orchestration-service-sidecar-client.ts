@@ -7,7 +7,11 @@ import type { LangGraphRecoveredExecution } from '@repo-ai-governor/core-runtime
 import type {
   OrchestrationAppendSessionMessageRequest,
   OrchestrationAppendSessionMessageResponse,
+  OrchestrationArchiveSessionRequest,
+  OrchestrationArchiveSessionResponse,
   OrchestrationExecutionSummary,
+  OrchestrationForkSessionRequest,
+  OrchestrationForkSessionResponse,
   OrchestrationListExecutionsRequest,
   OrchestrationListExecutionsResponse,
   OrchestrationListSessionsRequest,
@@ -30,6 +34,8 @@ import type {
   OrchestrationSubscribeExecutionResponse,
   OrchestrationSubscribeSessionRequest,
   OrchestrationSubscribeSessionResponse,
+  OrchestrationUnarchiveSessionRequest,
+  OrchestrationUnarchiveSessionResponse,
 } from '@repo-ai-governor/orchestration-service-client';
 import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import {
@@ -191,6 +197,33 @@ export class LocalOrchestrationServiceSidecarClient {
   ): Promise<OrchestrationResumeSessionResponse> {
     return this.sendRequest<OrchestrationResumeSessionResponse>(
       LocalOrchestrationServiceSidecarOperation.RESUME_SESSION,
+      request,
+    );
+  }
+
+  public async forkSession(
+    request: OrchestrationForkSessionRequest,
+  ): Promise<OrchestrationForkSessionResponse> {
+    return this.sendRequest<OrchestrationForkSessionResponse>(
+      LocalOrchestrationServiceSidecarOperation.FORK_SESSION,
+      request,
+    );
+  }
+
+  public async archiveSession(
+    request: OrchestrationArchiveSessionRequest,
+  ): Promise<OrchestrationArchiveSessionResponse> {
+    return this.sendRequest<OrchestrationArchiveSessionResponse>(
+      LocalOrchestrationServiceSidecarOperation.ARCHIVE_SESSION,
+      request,
+    );
+  }
+
+  public async unarchiveSession(
+    request: OrchestrationUnarchiveSessionRequest,
+  ): Promise<OrchestrationUnarchiveSessionResponse> {
+    return this.sendRequest<OrchestrationUnarchiveSessionResponse>(
+      LocalOrchestrationServiceSidecarOperation.UNARCHIVE_SESSION,
       request,
     );
   }
