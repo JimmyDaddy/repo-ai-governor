@@ -1,6 +1,6 @@
 # sprint-001-codex-reference-research-and-shell-selection 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-04
 - Project: `project-041-desktop-surface-tech-selection-and-design`
 - Sprint Goal: 结合 `openai/codex` 与官方 desktop framework 资料，产出 Repo AI Governor 桌面端的产品形态、宿主框架与 MVP 架构推荐。
@@ -27,3 +27,4 @@
 3. 2026-04-04：完成 `TK-515`，已汇总 `openai/codex`、OpenAI App Server engineering article、Electron official docs、Tauri official docs 与 VS Code architecture wiki。
 4. 2026-04-04：完成 `TK-516`，已产出 `.repo-ai-governor/draft/desktop-surface-technical-selection-and-design.md` 并冻结本轮推荐架构。
 5. 2026-04-04：将 `TK-517` 维持为 active handoff 任务，用于把当前选型结论转成实现型 stream/sprint 的激活包。
+6. 2026-04-04：完成 `TK-517`，已将桌面端 MVP 后续执行面实体化为 `project-044 / sprint-001 ~ sprint-003`，并把 `project-041` 收口为 completed planning stream。

@@ -1,6 +1,6 @@
 # project-041-desktop-surface-tech-selection-and-design 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-04
 - Stage Mapping: Desktop surface planning follow-up
 - Phase Mapping: Codex reference research / product-form selection / shell selection / MVP handoff
@@ -34,7 +34,7 @@
 | TK-514 | sprint-001 | activate project-041 and freeze desktop planning constraints | bootstrap/governance | current-context + desktop baseline docs | completed |
 | TK-515 | sprint-001 | benchmark Codex-inspired desktop architecture and shell options | research/selection-matrix | TK-514 | completed |
 | TK-516 | sprint-001 | author desktop technical selection and phased design baseline | planning/design-doc | TK-515 | completed |
-| TK-517 | sprint-001 | convert selected direction into MVP implementation task package and activation handoff | planning/handoff | TK-516 | active |
+| TK-517 | sprint-001 | convert selected direction into MVP implementation task package and activation handoff | planning/handoff | TK-516 | completed |
 
 ## 4. 依赖产物策略
 
@@ -59,3 +59,5 @@
 3. 2026-04-04：完成 `TK-515`，已形成“Codex-like shared app server pattern + repo runtime constraints + desktop shell options”三者对齐的选择矩阵。
 4. 2026-04-04：完成 `TK-516`，已产出 `.repo-ai-governor/draft/desktop-surface-technical-selection-and-design.md`，结论为“产品形态参考 Codex agent cockpit，MVP shell 首选 Electron；Tauri 保留为 service host 原生化后的下一阶段备选”。
 5. 2026-04-04：将 `TK-517` 维持为 active handoff 任务，用于把当前选型结论转成下一条实现型 sprint 的任务包。
+6. 2026-04-04：完成 `TK-517`，已产出 `.repo-ai-governor/context/dev/project-041-desktop-surface-tech-selection-and-design/project-041-desktop-mvp-implementation-activation-handoff.md`，并创建 planned follow-up stream `project-044-desktop-governance-console-mvp-foundation`，将范围明确收敛为 `Phase 0 + Phase 1`。
+7. 2026-04-04：`project-041` 已完成 planning closeout；项目级完成态审计摘要见 `.repo-ai-governor/context/dev/project-041-desktop-surface-tech-selection-and-design/project-041-desktop-surface-tech-selection-and-design-completion-audit-summary.md`。
