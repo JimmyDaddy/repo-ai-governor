@@ -155,6 +155,9 @@ async function initGitRepository(repositoryRoot: string): Promise<void> {
   await execFileAsync('git', ['init'], {
     cwd: repositoryRoot,
   });
+  await execFileAsync('git', ['config', 'commit.gpgSign', 'false'], {
+    cwd: repositoryRoot,
+  });
   await execFileAsync('git', ['config', 'user.email', 'codex@example.com'], {
     cwd: repositoryRoot,
   });
