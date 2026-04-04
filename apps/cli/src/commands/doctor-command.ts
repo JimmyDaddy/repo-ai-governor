@@ -21,7 +21,6 @@ import {
   CLI_RUNTIME_OPERATION,
   CliGovernanceCheckStatus,
 } from '../constants/cli-governance-runtime.constant.js';
-import { CliDurableStorageDiagnosticsRuntime } from '../runtime/durable-storage-diagnostics-runtime.js';
 import type {
   CliAdapterVerificationResolution,
   CliCommandProgressEvent,
@@ -47,6 +46,7 @@ export class CliDoctorCommand implements CliCommandExecutor {
 
   public async execute(context: CliCommandExecutorContext) {
     const runtimeDebugOptions = context.resolveRuntimeDebugOptions();
+    const durableStorageDiagnosticsRuntime = await this.createDurableStorageDiagnosticsRuntime();
     const totalSteps = runtimeDebugOptions.adapters
       ? DOCTOR_PROGRESS_STEPS_WITH_ADAPTERS
       : DOCTOR_PROGRESS_STEPS_BASELINE_ONLY;
@@ -62,7 +62,6 @@ export class CliDoctorCommand implements CliCommandExecutor {
     > | null = null;
     let adapterStatus: CliGovernanceCheckStatus | null = null;
     let adapterVerificationSnapshot: CliAdapterVerificationResolution | null = null;
-    const durableStorageDiagnosticsRuntime = new CliDurableStorageDiagnosticsRuntime();
     const doctorId = `doctor-${Date.now()}`;
     const doctorDiagnosticsArtifactPath = resolve(
       context.options.workspace.workspaceRoot,
@@ -470,6 +469,18 @@ export class CliDoctorCommand implements CliCommandExecutor {
     event: CliCommandProgressEvent,
   ): void {
     context.progressSink?.publish(event);
+  }
+
+  /**
+   * Lazily resolves durable-storage diagnostics so CLI help avoids eager sqlite warnings.
+   * @returns Constructed durable-storage diagnostics runtime.
+   */
+  private async createDurableStorageDiagnosticsRuntime() {
+    // dynamic-import-allowed: doctor only needs sqlite diagnostics during actual command execution.
+    const { CliDurableStorageDiagnosticsRuntime } = await import(
+      '../runtime/durable-storage-diagnostics-runtime.js'
+    );
+    return new CliDurableStorageDiagnosticsRuntime();
   }
 
   private resolveProgressStatus(status: CliGovernanceCheckStatus): ExecutionProgressStatus {

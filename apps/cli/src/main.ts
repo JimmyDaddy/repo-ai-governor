@@ -417,11 +417,6 @@ export async function runCli(
     const workflowCommandOptions = resolveWorkflowCommandOptions(rawArgs);
     const planCommandOptions = resolvePlanCommandOptions(rawArgs);
     const upgradeCommandOptions = resolveUpgradeCommandOptions(rawArgs);
-    memoryStoreComposition = await DEFAULT_MEMORY_PROVIDER_REGISTRY.loadProvider({
-      workspaceRoot: runtimeContext.workspace.workspaceRoot,
-      memoryConfig: runtimeContext.memory,
-    });
-    const activeMemoryStoreComposition = memoryStoreComposition;
 
     i18nRuntime = new I18nRuntime();
     const runtimeI18n = i18nRuntime;
@@ -498,56 +493,76 @@ export async function runCli(
       translate: (key: string, interpolation?: Record<string, string>) =>
         runtimeI18n.t(key, interpolation),
     });
-    const governanceRuntime = new CliGovernanceRuntime({
-      currentWorkingDirectory: io.cwd(),
-      workspace: runtimeContext.workspace,
-      config: runtimeContext.config,
-      configSource: runtimeContext.configSource,
-      profileId: runtimeContext.profileId,
-      locale: resolvedLocale,
-      translate: (key: string, interpolation?: Record<string, string>) =>
-        runtimeI18n.t(key, interpolation),
-      outputMode: outputContext.outputMode,
-      isTty: outputContext.isTty,
-      memoryConfig: runtimeContext.memory,
-      memoryStoreRoot: activeMemoryStoreComposition.memoryStoreRoot,
-      memoryStoreProviderName: activeMemoryStoreComposition.providerName,
-      memoryStoreProvider: activeMemoryStoreComposition.provider,
-      workspaceCommandOptions,
-      workflowCommandOptions,
-      planCommandOptions,
-      upgradeCommandOptions,
-      orchestrationServiceRuntimeDependencies: {
+    let governanceRuntime: CliGovernanceRuntime | undefined;
+    const resolveMemoryStoreComposition = async (): Promise<MemoryProviderRegistryLoadResult> => {
+      if (memoryStoreComposition) {
+        return memoryStoreComposition;
+      }
+
+      memoryStoreComposition = await DEFAULT_MEMORY_PROVIDER_REGISTRY.loadProvider({
+        workspaceRoot: runtimeContext.workspace.workspaceRoot,
         memoryConfig: runtimeContext.memory,
-      },
-      adaptersConfig: runtimeContext.adapters,
-      ...(notificationProviders.length > 0
-        ? {
-            notificationProviders,
-          }
-        : {}),
-      ...(adapterLocalProbeOverrides
-        ? {
-            adapterLocalProbeOverrides,
-          }
-        : {}),
-      runtimeDebugOptions,
-      ...(codexExecRunner
-        ? {
-            codexExecRunner,
-          }
-        : {}),
-      ...(claudeCodeExecRunner
-        ? {
-            claudeCodeExecRunner,
-          }
-        : {}),
-      ...(githubCopilotExecRunner
-        ? {
-            githubCopilotExecRunner,
-          }
-        : {}),
-    });
+      });
+      return memoryStoreComposition;
+    };
+    const resolveGovernanceRuntime = async (): Promise<CliGovernanceRuntime> => {
+      if (governanceRuntime) {
+        return governanceRuntime;
+      }
+
+      const activeMemoryStoreComposition = await resolveMemoryStoreComposition();
+      governanceRuntime = new CliGovernanceRuntime({
+        currentWorkingDirectory: io.cwd(),
+        workspace: runtimeContext.workspace,
+        config: runtimeContext.config,
+        configSource: runtimeContext.configSource,
+        profileId: runtimeContext.profileId,
+        locale: resolvedLocale,
+        translate: (key: string, interpolation?: Record<string, string>) =>
+          runtimeI18n.t(key, interpolation),
+        outputMode: outputContext.outputMode,
+        isTty: outputContext.isTty,
+        memoryConfig: runtimeContext.memory,
+        memoryStoreRoot: activeMemoryStoreComposition.memoryStoreRoot,
+        memoryStoreProviderName: activeMemoryStoreComposition.providerName,
+        memoryStoreProvider: activeMemoryStoreComposition.provider,
+        workspaceCommandOptions,
+        workflowCommandOptions,
+        planCommandOptions,
+        upgradeCommandOptions,
+        orchestrationServiceRuntimeDependencies: {
+          memoryConfig: runtimeContext.memory,
+        },
+        adaptersConfig: runtimeContext.adapters,
+        ...(notificationProviders.length > 0
+          ? {
+              notificationProviders,
+            }
+          : {}),
+        ...(adapterLocalProbeOverrides
+          ? {
+              adapterLocalProbeOverrides,
+            }
+          : {}),
+        runtimeDebugOptions,
+        ...(codexExecRunner
+          ? {
+              codexExecRunner,
+            }
+          : {}),
+        ...(claudeCodeExecRunner
+          ? {
+              claudeCodeExecRunner,
+            }
+          : {}),
+        ...(githubCopilotExecRunner
+          ? {
+              githubCopilotExecRunner,
+            }
+          : {}),
+      });
+      return governanceRuntime;
+    };
     const reactCliStderrFramePresenter = new ReactCliStderrFramePresenter(io.stderr);
 
     const program = new Command();
@@ -627,6 +642,8 @@ export async function runCli(
       resolvedCommandName: CliCommandName,
       presentedCommandName: string = resolvedCommandName,
     ) => {
+      const activeMemoryStoreComposition = await resolveMemoryStoreComposition();
+      const governanceRuntime = await resolveGovernanceRuntime();
       const nestedCommandExecutionOptions = dependencies.nestedCommandExecutionOptions;
       const relayProgressSink = nestedCommandExecutionOptions?.progressSink;
       const diagnostics: CliCommandDiagnostics = {

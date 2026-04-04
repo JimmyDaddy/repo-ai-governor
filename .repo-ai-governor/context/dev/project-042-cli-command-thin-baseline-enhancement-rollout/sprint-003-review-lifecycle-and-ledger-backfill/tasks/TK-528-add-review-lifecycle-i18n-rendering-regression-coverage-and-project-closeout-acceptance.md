@@ -65,6 +65,7 @@
 4. 2026-04-04：完成 working-tree CR 尾项收口：修复 `plan commit` 同标题漂移时的 canonical task id 回写缺口，并把 `code_review_working-tree-20260404-135652.md` 收口为 `resolved_code_review_working-tree-20260404-135652.md`。
 5. 2026-04-04：修复 CI `pnpm install --frozen-lockfile` 失败：重新生成 `pnpm-lock.yaml`，补齐 `packages/core-agent-projection` 及其上游 importer 的 workspace 依赖投影，验证 `pnpm install --frozen-lockfile` 与 `pnpm run check` 均通过。
 6. 2026-04-04：修复 `packages/adapters/claude-code/test/claude-code-agent-adapter.smoke.test.ts` 的 timeout budget 脆弱断言，将首轮 `cli_exec` 调用的验证调整为“不超过初始预算且保留近完整预算”，避免 CI 因 1ms 级剩余时间差异误判失败；验证 `pnpm exec vitest run packages/adapters/claude-code/test/claude-code-agent-adapter.smoke.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm run build`、`pnpm run check:full` 均通过。
+7. 2026-04-04：修复 CLI `--help` 路径上的 SQLite experimental warning 污染：将 `doctor/verify` 的 durable diagnostics runtime 改为执行时按需加载，并把 `runCli()` 的 memory provider / governance runtime 初始化后移到真正的命令执行路径，避免 help/e2e/CI 因 eager sqlite loading 在 stderr 出现噪音；验证 `pnpm exec vitest run test/e2e/cli-help.e2e.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm run build`、`node ./dist/bin/repo-ai-governor.js --help`（stderr 为 0 字节）、`pnpm run test:e2e`、`pnpm run check:full` 均通过。
 
 ## 10. 产出
 
@@ -75,3 +76,6 @@
 5. `.repo-ai-governor/context/dev/project-042-cli-command-thin-baseline-enhancement-rollout/sprint-003-review-lifecycle-and-ledger-backfill/review/resolved_code_review_working-tree-20260404-135652.md`
 6. `pnpm-lock.yaml`
 7. `packages/adapters/claude-code/test/claude-code-agent-adapter.smoke.test.ts`
+8. `apps/cli/src/main.ts`
+9. `apps/cli/src/commands/doctor-command.ts`
+10. `apps/cli/src/commands/verify-command.ts`
