@@ -1,0 +1,4 @@
+interface:
+  display_name: "Workspace Scoped CR Loop"
+  short_description: "执行范围并循环委托子 agent 做 CR 直到干净"
+  default_prompt: "使用 $workspace-scoped-cr-loop 执行指定 task、sprint 或 project，并要求每个 review 边界都调起新的子 agent 循环 CR，直到没有 actionable findings。"

@@ -7,9 +7,15 @@
     ".": {
       "types": "./src/index.ts",
       "default": "./dist/src/index.js"
+    },
+    "./host-renderer": {
+      "types": "./src/codex-host-renderer.ts",
+      "default": "./dist/src/codex-host-renderer.js"
     }
   },
   "dependencies": {
-    "@repo-ai-governor/adapter-sdk": "workspace:*"
+    "@repo-ai-governor/adapter-sdk": "workspace:*",
+    "@repo-ai-governor/standards": "workspace:*",
+    "@repo-ai-governor/shared": "workspace:*"
   }
 }

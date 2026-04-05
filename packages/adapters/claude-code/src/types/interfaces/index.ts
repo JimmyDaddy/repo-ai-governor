@@ -1,0 +1,16 @@
+export type {
+  HostApplyReport,
+  HostDistributionDiscoveryState,
+  HostDistributionHandoffBridge,
+  HostDistributionHost,
+  HostDistributionMode,
+  HostDistributionTarget,
+  HostExportManifest,
+  HostExportProjectedFile,
+  HostPackReport,
+  HostRendererRenderInput,
+  HostRendererRenderResult,
+  StructuredWorkflowAssetRecord,
+  HostTargetCapabilities,
+  HostVerificationSummary,
+} from './host-distribution.interface.js';

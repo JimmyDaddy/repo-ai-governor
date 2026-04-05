@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs';
 import { readFile, readdir, stat } from 'node:fs/promises';
-import { dirname, resolve } from 'node:path';
+import { resolve } from 'node:path';
 
 import { ArtifactRegistry, SqliteArtifactIndexStore } from '@repo-ai-governor/artifact-registry';
 import {
@@ -16,6 +16,7 @@ import {
   type OrchestrationSessionSummary,
   type OrchestrationSubscribeSessionResponse,
 } from '@repo-ai-governor/orchestration-service-client';
+import { LocalOrchestrationServiceReviewRoutingRuntime } from './local-orchestration-service-review-routing-runtime.js';
 
 interface LocalOrchestrationServiceArtifactPaneQueryRuntimeDependencies {
   workspaceRoot: string;
@@ -35,8 +36,6 @@ const ARTIFACT_REGISTRY_SQLITE_FILE_SEGMENTS = [
   'sqlite',
   'artifact-registry.sqlite',
 ] as const;
-const CURRENT_CONTEXT_FILE_SEGMENTS = ['context', 'current-context.md'] as const;
-
 /**
  * Reads service-owned artifact, review, and transcript slices for desktop artifact-pane consumers.
  *
@@ -45,9 +44,15 @@ const CURRENT_CONTEXT_FILE_SEGMENTS = ['context', 'current-context.md'] as const
  * workspace files directly from the renderer.
  */
 export class LocalOrchestrationServiceArtifactPaneQueryRuntime {
+  private readonly reviewRoutingRuntime: LocalOrchestrationServiceReviewRoutingRuntime;
+
   public constructor(
     private readonly dependencies: LocalOrchestrationServiceArtifactPaneQueryRuntimeDependencies,
-  ) {}
+  ) {
+    this.reviewRoutingRuntime = new LocalOrchestrationServiceReviewRoutingRuntime({
+      workspaceRoot: dependencies.workspaceRoot,
+    });
+  }
 
   /**
    * Queries one normalized artifact-pane payload from runtime-owned sources.
@@ -62,22 +67,41 @@ export class LocalOrchestrationServiceArtifactPaneQueryRuntime {
       this.resolveSessionSummary(request.sessionId),
       this.resolvePrimaryReviewDirectoryPath(),
     ]);
+    const reviewDocumentPath = executionSummary
+      ? await this.reviewRoutingRuntime.resolveExecutionReviewDocumentPath(executionSummary)
+      : undefined;
     const artifactLimit = this.normalizeLimit(request.artifactLimit, 5);
     const reviewLimit = this.normalizeLimit(request.reviewLimit, 5);
     const transcriptLimit = this.normalizeLimit(request.transcriptLimit, 8);
-    const [artifacts, reviews, transcript] = await Promise.all([
-      this.readArtifacts(executionSummary?.executionId, artifactLimit),
-      this.readReviews(reviewSourcePath, reviewLimit),
+    const [allArtifacts, allReviews, transcript] = await Promise.all([
+      this.readArtifacts(executionSummary?.executionId),
+      this.readReviews(reviewSourcePath),
       this.readTranscript(sessionSummary, transcriptLimit),
     ]);
+    const artifacts = allArtifacts.slice(0, artifactLimit);
+    const executionScopedReviews = this.scopeReviewsToExecution(
+      executionSummary,
+      allReviews,
+      reviewDocumentPath,
+    );
+    const reviews = executionScopedReviews.slice(0, reviewLimit);
 
     return {
       artifacts,
       reviews,
       transcript,
+      reviewLifecycle: this.buildReviewLifecycleDetail(reviewSourcePath, executionScopedReviews),
+      workbench: this.buildWorkbenchDetail(executionSummary, artifacts, reviews, transcript),
+      evidenceBacklinks: this.buildEvidenceBacklinks(
+        executionSummary,
+        artifacts,
+        reviews,
+        transcript,
+      ),
       ...(executionSummary
         ? {
             resolvedExecutionId: executionSummary.executionId,
+            policyTrace: this.buildPolicyTraceDetail(executionSummary, reviewDocumentPath),
           }
         : {}),
       ...(sessionSummary
@@ -117,7 +141,6 @@ export class LocalOrchestrationServiceArtifactPaneQueryRuntime {
 
   private async readArtifacts(
     executionId: string | undefined,
-    limit: number,
   ): Promise<OrchestrationArtifactPaneArtifactEntry[]> {
     const databaseFilePath = resolve(
       this.dependencies.workspaceRoot,
@@ -137,7 +160,6 @@ export class LocalOrchestrationServiceArtifactPaneQueryRuntime {
       return records
         .filter((record) => (executionId ? record.producerExecutionId === executionId : true))
         .sort((left, right) => right.lastUpdatedAt.localeCompare(left.lastUpdatedAt))
-        .slice(0, limit)
         .map((record) => ({
           artifactId: record.artifactId,
           artifactType: record.artifactType,
@@ -156,7 +178,6 @@ export class LocalOrchestrationServiceArtifactPaneQueryRuntime {
 
   private async readReviews(
     reviewDirectoryPath: string | undefined,
-    limit: number,
   ): Promise<OrchestrationArtifactPaneReviewEntry[]> {
     if (!reviewDirectoryPath || !existsSync(reviewDirectoryPath)) {
       return [];
@@ -190,19 +211,17 @@ export class LocalOrchestrationServiceArtifactPaneQueryRuntime {
         }),
     );
 
-    return reviewEntries
-      .sort(
-        (left: OrchestrationArtifactPaneReviewEntry, right: OrchestrationArtifactPaneReviewEntry) =>
-          right.updatedAt.localeCompare(left.updatedAt),
-      )
-      .slice(0, limit);
+    return reviewEntries.sort(
+      (left: OrchestrationArtifactPaneReviewEntry, right: OrchestrationArtifactPaneReviewEntry) =>
+        right.updatedAt.localeCompare(left.updatedAt),
+    );
   }
 
   private async readTranscript(
     sessionSummary: OrchestrationSessionSummary | undefined,
     limit: number,
   ): Promise<OrchestrationArtifactPaneTranscriptEntry[]> {
-    if (!sessionSummary) {
+    if (!sessionSummary || limit <= 0) {
       return [];
     }
 
@@ -276,33 +295,7 @@ export class LocalOrchestrationServiceArtifactPaneQueryRuntime {
   }
 
   private async resolvePrimaryReviewDirectoryPath(): Promise<string | undefined> {
-    const currentContextPath = resolve(
-      this.dependencies.workspaceRoot,
-      ...CURRENT_CONTEXT_FILE_SEGMENTS,
-    );
-    if (!existsSync(currentContextPath)) {
-      return undefined;
-    }
-
-    const currentContextContent = await readFile(currentContextPath, 'utf8');
-    const configuredReviewDirectoryPath =
-      this.readSectionMetadataField(
-        this.extractMarkdownSection(currentContextContent, 'Worktree Review Target'),
-        'Review records',
-      ) ??
-      this.readSectionMetadataField(
-        this.extractMarkdownSection(currentContextContent, 'Primary Stream'),
-        'Review records',
-      );
-    if (!configuredReviewDirectoryPath || configuredReviewDirectoryPath === 'none') {
-      return undefined;
-    }
-
-    const resolvedReviewDirectoryPath = resolve(
-      dirname(this.dependencies.workspaceRoot),
-      configuredReviewDirectoryPath,
-    );
-    return existsSync(resolvedReviewDirectoryPath) ? resolvedReviewDirectoryPath : undefined;
+    return this.reviewRoutingRuntime.resolvePrimaryReviewDirectoryPath();
   }
 
   private normalizeLimit(candidate: number | undefined, defaultLimit: number): number {
@@ -316,48 +309,6 @@ export class LocalOrchestrationServiceArtifactPaneQueryRuntime {
   private readReviewMetadataField(content: string, fieldName: string): string | undefined {
     const match = content.match(new RegExp(`^- ${fieldName}: (.+)$`, 'mu'));
     return match?.[1]?.trim();
-  }
-
-  private extractMarkdownSection(content: string, headingText: string): string {
-    const normalizedHeadingText = this.normalizeSectionHeading(headingText);
-    const headingPattern = /^##\s+([^\n]+)$/gmu;
-    const headingMatches = Array.from(content.matchAll(headingPattern));
-
-    for (let index = 0; index < headingMatches.length; index += 1) {
-      const headingMatch = headingMatches[index];
-      const rawHeadingText = headingMatch[1]?.trim() ?? '';
-      const headingIndex = headingMatch.index;
-      if (
-        typeof headingIndex !== 'number' ||
-        this.normalizeSectionHeading(rawHeadingText) !== normalizedHeadingText
-      ) {
-        continue;
-      }
-
-      const sectionStart = headingIndex + headingMatch[0].length;
-      const sectionEnd = headingMatches[index + 1]?.index ?? content.length;
-      return content.slice(sectionStart, sectionEnd).trim();
-    }
-
-    return '';
-  }
-
-  private normalizeSectionHeading(headingText: string): string {
-    return headingText
-      .replace(/^\d+(?:\.\d+)*\.?\s*/u, '')
-      .trim()
-      .toLowerCase();
-  }
-
-  private readSectionMetadataField(sectionContent: string, fieldName: string): string | undefined {
-    const fieldMatch = sectionContent.match(new RegExp(`^- ${fieldName}:\\s*(.+)$`, 'mu'));
-    const rawValue = fieldMatch?.[1]?.trim();
-    if (!rawValue) {
-      return undefined;
-    }
-
-    const backtickMatch = rawValue.match(/^`([^`]+)`$/u);
-    return backtickMatch?.[1]?.trim() ?? rawValue;
   }
 
   private inferReviewLifecycleStatus(fileName: string): string {
@@ -392,5 +343,180 @@ export class LocalOrchestrationServiceArtifactPaneQueryRuntime {
       .filter((item): item is string => typeof item === 'string')
       .map((item) => item.trim())
       .filter((item) => item.length > 0);
+  }
+
+  private buildPolicyTraceDetail(
+    executionSummary: OrchestrationExecutionSummary,
+    reviewDocumentPath: string | undefined,
+  ): OrchestrationArtifactPaneQueryResponse['policyTrace'] {
+    return {
+      executionId: executionSummary.executionId,
+      executionStatus: executionSummary.status,
+      pendingHitl: executionSummary.pendingHitl,
+      recoveryCapable: executionSummary.recoveryCapable,
+      ...(executionSummary.currentStageId
+        ? {
+            currentStageId: executionSummary.currentStageId,
+          }
+        : {}),
+      ...(executionSummary.latestEventType
+        ? {
+            latestEventType: executionSummary.latestEventType,
+          }
+        : {}),
+      ...(executionSummary.latestArtifactId
+        ? {
+            latestArtifactId: executionSummary.latestArtifactId,
+          }
+        : {}),
+      ...(executionSummary.latestArtifactPath
+        ? {
+            latestArtifactPath: executionSummary.latestArtifactPath,
+          }
+        : {}),
+      ...(executionSummary.taskId
+        ? {
+            taskId: executionSummary.taskId,
+          }
+        : {}),
+      ...(executionSummary.projectId
+        ? {
+            projectId: executionSummary.projectId,
+          }
+        : {}),
+      ...(executionSummary.sprintId
+        ? {
+            sprintId: executionSummary.sprintId,
+          }
+        : {}),
+      ...(reviewDocumentPath
+        ? {
+            reviewDocumentPath,
+          }
+        : {}),
+    };
+  }
+
+  private buildReviewLifecycleDetail(
+    reviewSourcePath: string | undefined,
+    reviews: OrchestrationArtifactPaneReviewEntry[],
+  ): OrchestrationArtifactPaneQueryResponse['reviewLifecycle'] {
+    const latestReview = reviews[0];
+    const pendingReviewCount = reviews.filter(
+      (review) => review.lifecycleStatus === 'review_pending',
+    ).length;
+    const verifiedReviewCount = reviews.filter(
+      (review) => review.lifecycleStatus === 'verified',
+    ).length;
+    const resolvedReviewCount = reviews.filter(
+      (review) => review.lifecycleStatus === 'resolved',
+    ).length;
+
+    return {
+      ...(reviewSourcePath
+        ? {
+            reviewSourcePath,
+          }
+        : {}),
+      ...(latestReview
+        ? {
+            latestReviewId: latestReview.reviewId,
+            latestLifecycleStatus: latestReview.lifecycleStatus,
+            latestReviewFilePath: latestReview.filePath,
+          }
+        : {}),
+      totalReviewCount: reviews.length,
+      pendingReviewCount,
+      verifiedReviewCount,
+      resolvedReviewCount,
+      navigationReviewIds: reviews.map((review) => review.reviewId),
+    };
+  }
+
+  private buildWorkbenchDetail(
+    executionSummary: OrchestrationExecutionSummary | undefined,
+    artifacts: OrchestrationArtifactPaneArtifactEntry[],
+    reviews: OrchestrationArtifactPaneReviewEntry[],
+    transcript: OrchestrationArtifactPaneTranscriptEntry[],
+  ): OrchestrationArtifactPaneQueryResponse['workbench'] {
+    const latestArtifact = artifacts[0];
+    const latestReview = reviews[0];
+    const latestTranscriptEntry = transcript[transcript.length - 1];
+
+    return {
+      artifactCount: artifacts.length,
+      reviewCount: reviews.length,
+      transcriptCount: transcript.length,
+      ...(latestArtifact ||
+      executionSummary?.latestArtifactId ||
+      executionSummary?.latestArtifactPath
+        ? {
+            latestArtifactId: latestArtifact?.artifactId ?? executionSummary?.latestArtifactId,
+            latestArtifactPath:
+              latestArtifact?.artifactPath ?? executionSummary?.latestArtifactPath,
+          }
+        : {}),
+      ...(latestReview
+        ? {
+            latestReviewId: latestReview.reviewId,
+            latestReviewFilePath: latestReview.filePath,
+          }
+        : {}),
+      ...(latestTranscriptEntry
+        ? {
+            latestTranscriptEntryId: latestTranscriptEntry.entryId,
+            latestTranscriptCreatedAt: latestTranscriptEntry.createdAt,
+          }
+        : {}),
+    };
+  }
+
+  private buildEvidenceBacklinks(
+    executionSummary: OrchestrationExecutionSummary | undefined,
+    artifacts: OrchestrationArtifactPaneArtifactEntry[],
+    reviews: OrchestrationArtifactPaneReviewEntry[],
+    transcript: OrchestrationArtifactPaneTranscriptEntry[],
+  ): OrchestrationArtifactPaneQueryResponse['evidenceBacklinks'] {
+    return {
+      ...(executionSummary?.workspaceRoot || this.dependencies.workspaceRoot
+        ? {
+            governanceWorkspacePath:
+              executionSummary?.workspaceRoot ?? this.dependencies.workspaceRoot,
+          }
+        : {}),
+      artifactPaths: this.deduplicateDefinedStrings(
+        artifacts.map((artifact) => artifact.artifactPath),
+      ),
+      reviewPaths: this.deduplicateDefinedStrings(reviews.map((review) => review.filePath)),
+      transcriptEntryIds: this.deduplicateDefinedStrings(transcript.map((entry) => entry.entryId)),
+    };
+  }
+
+  private deduplicateDefinedStrings(candidates: Array<string | undefined>): string[] {
+    return Array.from(
+      new Set(
+        candidates.filter(
+          (candidate): candidate is string =>
+            typeof candidate === 'string' && candidate.trim().length > 0,
+        ),
+      ),
+    );
+  }
+
+  private scopeReviewsToExecution(
+    executionSummary: OrchestrationExecutionSummary | undefined,
+    reviews: OrchestrationArtifactPaneReviewEntry[],
+    reviewDocumentPath: string | undefined,
+  ): OrchestrationArtifactPaneReviewEntry[] {
+    if (!executionSummary) {
+      return reviews;
+    }
+
+    if (!reviewDocumentPath) {
+      return [];
+    }
+
+    const matchedReview = reviews.find((review) => review.filePath === reviewDocumentPath);
+    return matchedReview ? [matchedReview] : [];
   }
 }

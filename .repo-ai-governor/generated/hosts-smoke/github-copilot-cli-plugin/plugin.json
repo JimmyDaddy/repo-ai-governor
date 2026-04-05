@@ -1,0 +1,40 @@
+{
+  "host": "github-copilot",
+  "target": "github_copilot.cli_plugin",
+  "mode": "plugin-bundle",
+  "handoffBridge": "cli_wrapper",
+  "serviceHostPackageExport": "@cjhdev/repo-ai-governor/service-host",
+  "workflowIds": [
+    "technical-solution-promotion",
+    "workspace-code-review-workflow",
+    "workspace-delivery-finisher",
+    "workspace-scoped-cr-loop"
+  ],
+  "canonicalSourceRefs": [
+    ".codex/skills/technical-solution-promotion/SKILL.md",
+    ".codex/skills/workspace-code-review-workflow/SKILL.md",
+    ".codex/skills/workspace-delivery-finisher/SKILL.md",
+    ".codex/skills/workspace-scoped-cr-loop/SKILL.md"
+  ],
+  "sourcePackRefs": [
+    "repo-local-skill:technical-solution-promotion",
+    "repo-local-skill:workspace-code-review-workflow",
+    "repo-local-skill:workspace-delivery-finisher",
+    "repo-local-skill:workspace-scoped-cr-loop"
+  ],
+  "entrypoints": {
+    "skills": [
+      "skills/technical-solution-promotion/SKILL.md",
+      "skills/workspace-code-review-workflow/SKILL.md",
+      "skills/workspace-delivery-finisher/SKILL.md",
+      "skills/workspace-scoped-cr-loop/SKILL.md"
+    ],
+    "agents": [
+      "agents/technical-solution-promotion.agent.md",
+      "agents/workspace-code-review-workflow.agent.md",
+      "agents/workspace-delivery-finisher.agent.md",
+      "agents/workspace-scoped-cr-loop.agent.md"
+    ],
+    "hooks": ["hooks/hooks.json"]
+  }
+}

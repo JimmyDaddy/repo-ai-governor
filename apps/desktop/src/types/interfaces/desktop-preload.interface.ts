@@ -6,10 +6,19 @@ import type {
   OrchestrationAppendSessionMessageResponse,
   OrchestrationArtifactPaneQueryRequest,
   OrchestrationArtifactPaneQueryResponse,
+  OrchestrationExecutionBoardQueryRequest,
+  OrchestrationExecutionBoardQueryResponse,
+  OrchestrationExecutionSummary,
+  OrchestrationHitlInboxQueryRequest,
+  OrchestrationHitlInboxQueryResponse,
   OrchestrationListExecutionsRequest,
   OrchestrationListExecutionsResponse,
   OrchestrationListSessionsRequest,
   OrchestrationListSessionsResponse,
+  OrchestrationQueueOverviewQueryRequest,
+  OrchestrationQueueOverviewQueryResponse,
+  OrchestrationRecoverExecutionRequest,
+  OrchestrationRecoverExecutionResponse,
   OrchestrationResumeSessionResponse,
   OrchestrationSendSessionTurnResponse,
   OrchestrationServiceHealthResponse,
@@ -17,10 +26,14 @@ import type {
   OrchestrationStartExecutionRequest,
   OrchestrationStartExecutionResponse,
   OrchestrationStartSessionResponse,
+  OrchestrationSubmitHitlDecisionRequest,
+  OrchestrationSubmitHitlDecisionResponse,
   OrchestrationSubscribeExecutionRequest,
   OrchestrationSubscribeExecutionResponse,
   OrchestrationSubscribeSessionRequest,
   OrchestrationSubscribeSessionResponse,
+  OrchestrationTerminateExecutionRequest,
+  OrchestrationTerminateExecutionResponse,
 } from '@repo-ai-governor/orchestration-service-client';
 import type { ExecutionReportAgentView } from '@repo-ai-governor/reporting';
 import type { DesktopGovernanceConsoleViewModel } from './desktop-governance-console.interface.js';
@@ -40,6 +53,16 @@ export interface DesktopPreloadBridgeApi {
     request: OrchestrationStartExecutionRequest,
     runtimeContext?: LocalOrchestrationServiceStartExecutionRuntimeContext,
   ): Promise<OrchestrationStartExecutionResponse>;
+  getExecution(executionId: string): Promise<OrchestrationExecutionSummary | undefined>;
+  queryExecutionBoard(
+    request?: OrchestrationExecutionBoardQueryRequest,
+  ): Promise<OrchestrationExecutionBoardQueryResponse>;
+  queryHitlInbox(
+    request?: OrchestrationHitlInboxQueryRequest,
+  ): Promise<OrchestrationHitlInboxQueryResponse>;
+  queryQueueOverview(
+    request?: OrchestrationQueueOverviewQueryRequest,
+  ): Promise<OrchestrationQueueOverviewQueryResponse>;
   listExecutions(
     request?: OrchestrationListExecutionsRequest,
   ): Promise<OrchestrationListExecutionsResponse>;
@@ -49,6 +72,15 @@ export interface DesktopPreloadBridgeApi {
   subscribeExecution(
     request: OrchestrationSubscribeExecutionRequest,
   ): Promise<OrchestrationSubscribeExecutionResponse>;
+  submitHitlDecision(
+    request: OrchestrationSubmitHitlDecisionRequest,
+  ): Promise<OrchestrationSubmitHitlDecisionResponse>;
+  recoverExecution(
+    request: OrchestrationRecoverExecutionRequest,
+  ): Promise<OrchestrationRecoverExecutionResponse>;
+  terminateExecution(
+    request: OrchestrationTerminateExecutionRequest,
+  ): Promise<OrchestrationTerminateExecutionResponse>;
   startSession(): Promise<OrchestrationStartSessionResponse>;
   sendMainTurn(
     sessionId: string,

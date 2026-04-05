@@ -1,0 +1,21 @@
+{
+  "extension.displayName": "Repo AI Governor",
+  "extension.description": "面向工作区的 VS Code 治理伴侣，聚焦治理状态、HITL 动作与评审下钻。",
+  "trust.description": "在工作区未受信任前，Governor 会限制依赖信任的命令与 service-backed handoff 动作。",
+  "views.container.title": "Governor",
+  "views.executionBoard.title": "执行看板",
+  "views.hitlInbox.title": "HITL 收件箱",
+  "views.workspaceContext.title": "工作区上下文",
+  "views.reviewDetail.title": "评审详情",
+  "commands.category": "Governor",
+  "commands.refresh.title": "刷新 Governor 视图",
+  "commands.openReviewDetail.title": "打开 Governor 评审详情",
+  "commands.openHandoffTarget.title": "打开 Governor 交接目标",
+  "commands.submitHitlDecision.title": "提交 Governor HITL 决策",
+  "commands.recoverExecution.title": "恢复 Governor 执行",
+  "commands.terminateExecution.title": "终止 Governor 执行",
+  "chat.participant.fullName": "Repo AI Governor",
+  "chat.participant.description": "询问治理状态、评审交接与 HITL 处理工作。",
+  "chat.commands.status.description": "汇总当前工作区的治理状态。",
+  "chat.commands.review.description": "聚焦评审生命周期与交接指导。"
+}

@@ -1,0 +1,28 @@
+{
+  "host": "claude-code",
+  "target": "claude_code.project_local",
+  "mode": "project-local",
+  "handoffBridge": "cli_wrapper",
+  "hooks": [
+    {
+      "hookName": "technical-solution-promotion",
+      "path": "hooks/technical-solution-promotion.hook.json",
+      "handoffTarget": "repo-ai-governor technical-solution-promotion"
+    },
+    {
+      "hookName": "workspace-code-review-workflow",
+      "path": "hooks/workspace-code-review-workflow.hook.json",
+      "handoffTarget": "repo-ai-governor workspace-code-review-workflow"
+    },
+    {
+      "hookName": "workspace-delivery-finisher",
+      "path": "hooks/workspace-delivery-finisher.hook.json",
+      "handoffTarget": "repo-ai-governor workspace-delivery-finisher"
+    },
+    {
+      "hookName": "workspace-scoped-cr-loop",
+      "path": "hooks/workspace-scoped-cr-loop.hook.json",
+      "handoffTarget": "repo-ai-governor workspace-scoped-cr-loop"
+    }
+  ]
+}

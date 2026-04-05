@@ -10,11 +10,17 @@ import type {
   OrchestrationAppendSessionMessageResponse,
   OrchestrationArtifactPaneQueryRequest,
   OrchestrationArtifactPaneQueryResponse,
+  OrchestrationExecutionBoardQueryRequest,
+  OrchestrationExecutionBoardQueryResponse,
   OrchestrationExecutionSummary,
+  OrchestrationHitlInboxQueryRequest,
+  OrchestrationHitlInboxQueryResponse,
   OrchestrationListExecutionsRequest,
   OrchestrationListExecutionsResponse,
   OrchestrationListSessionsRequest,
   OrchestrationListSessionsResponse,
+  OrchestrationQueueOverviewQueryRequest,
+  OrchestrationQueueOverviewQueryResponse,
   OrchestrationRecoverExecutionRequest,
   OrchestrationRecoverExecutionResponse,
   OrchestrationResumeSessionRequest,
@@ -33,6 +39,8 @@ import type {
   OrchestrationSubscribeExecutionResponse,
   OrchestrationSubscribeSessionRequest,
   OrchestrationSubscribeSessionResponse,
+  OrchestrationTerminateExecutionRequest,
+  OrchestrationTerminateExecutionResponse,
 } from '@repo-ai-governor/orchestration-service-client';
 import { DesktopOrchestrationRuntimeMode } from '../constants/index.js';
 import type {
@@ -75,6 +83,27 @@ export class DesktopOrchestrationServiceRuntime {
     return service.getExecution(executionId);
   }
 
+  public async queryExecutionBoard(
+    request?: OrchestrationExecutionBoardQueryRequest,
+  ): Promise<OrchestrationExecutionBoardQueryResponse> {
+    const service = await this.resolveServiceOwner();
+    return service.queryExecutionBoard(request);
+  }
+
+  public async queryHitlInbox(
+    request?: OrchestrationHitlInboxQueryRequest,
+  ): Promise<OrchestrationHitlInboxQueryResponse> {
+    const service = await this.resolveServiceOwner();
+    return service.queryHitlInbox(request);
+  }
+
+  public async queryQueueOverview(
+    request?: OrchestrationQueueOverviewQueryRequest,
+  ): Promise<OrchestrationQueueOverviewQueryResponse> {
+    const service = await this.resolveServiceOwner();
+    return service.queryQueueOverview(request);
+  }
+
   public async listExecutions(
     request?: OrchestrationListExecutionsRequest,
   ): Promise<OrchestrationListExecutionsResponse> {
@@ -108,6 +137,13 @@ export class DesktopOrchestrationServiceRuntime {
   ): Promise<OrchestrationRecoverExecutionResponse> {
     const service = await this.resolveServiceOwner();
     return service.recoverExecution(request);
+  }
+
+  public async terminateExecution(
+    request: OrchestrationTerminateExecutionRequest,
+  ): Promise<OrchestrationTerminateExecutionResponse> {
+    const service = await this.resolveServiceOwner();
+    return service.terminateExecution(request);
   }
 
   public async startSession(

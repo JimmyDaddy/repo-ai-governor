@@ -252,6 +252,17 @@ try {
         workspaceId: 'desktop-workspace',
       },
     });
+    const fetchedExecution = await preloadBridge.getExecution(started.executionId);
+    const executionBoard = await preloadBridge.queryExecutionBoard({
+      filter: {
+        workspaceId: 'desktop-workspace',
+      },
+    });
+    const hitlInbox = await preloadBridge.queryHitlInbox({
+      filter: {
+        workspaceId: 'desktop-workspace',
+      },
+    });
     const artifactPane = await preloadBridge.queryArtifactPane({
       executionId: started.executionId,
       sessionId: session.session.sessionId,
@@ -297,6 +308,15 @@ try {
     if (listedExecutions.executions.length !== 1) {
       throw new Error('desktop execution list did not return exactly one execution.');
     }
+    if (fetchedExecution?.executionId !== started.executionId) {
+      throw new Error('desktop getExecution did not return the started execution.');
+    }
+    if (executionBoard.executions[0]?.execution.executionId !== started.executionId) {
+      throw new Error('desktop queryExecutionBoard did not return the started execution.');
+    }
+    if (hitlInbox.pendingDecisions.length !== 0) {
+      throw new Error('desktop queryHitlInbox returned unexpected pending decisions.');
+    }
     if (resumedSession.session.sessionId !== session.session.sessionId) {
       throw new Error('desktop resumeSession did not return the started session.');
     }
@@ -320,6 +340,9 @@ try {
     }
     if (!consoleSnapshot.workspaceHome || !consoleSnapshot.sessionLane) {
       throw new Error('desktop governance console snapshot is incomplete.');
+    }
+    if (consoleSnapshot.executionBoard.entries[0]?.title !== 'desktop-execution -> completed') {
+      throw new Error('desktop execution board did not render the completed execution.');
     }
     if (
       subscribedExecutions.events.map((event) => event.type).join('|') !==

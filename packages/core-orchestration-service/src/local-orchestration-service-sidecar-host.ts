@@ -78,6 +78,24 @@ export class LocalOrchestrationServiceSidecarHost
     return this.shell.getExecution(executionId);
   }
 
+  public queryExecutionBoard(
+    request?: Parameters<LocalOrchestrationServiceSidecarDispatchTable['queryExecutionBoard']>[0],
+  ) {
+    return this.shell.queryExecutionBoard(request);
+  }
+
+  public queryHitlInbox(
+    request?: Parameters<LocalOrchestrationServiceSidecarDispatchTable['queryHitlInbox']>[0],
+  ) {
+    return this.shell.queryHitlInbox(request);
+  }
+
+  public queryQueueOverview(
+    request?: Parameters<LocalOrchestrationServiceSidecarDispatchTable['queryQueueOverview']>[0],
+  ) {
+    return this.shell.queryQueueOverview(request);
+  }
+
   public listExecutions(request?: Parameters<LocalOrchestrationServiceShell['listExecutions']>[0]) {
     return this.shell.listExecutions(request);
   }
@@ -104,6 +122,12 @@ export class LocalOrchestrationServiceSidecarHost
     request: Parameters<LocalOrchestrationServiceSidecarDispatchTable['recoverExecution']>[0],
   ) {
     return this.shell.recoverExecution(request);
+  }
+
+  public terminateExecution(
+    request: Parameters<LocalOrchestrationServiceSidecarDispatchTable['terminateExecution']>[0],
+  ) {
+    return this.shell.terminateExecution(request);
   }
 
   public startSession(
@@ -223,6 +247,22 @@ export class LocalOrchestrationServiceSidecarHost
         );
       case LocalOrchestrationServiceSidecarOperation.GET_EXECUTION:
         return this.getExecution(this.assertPayload<string>(payload, operation));
+      case LocalOrchestrationServiceSidecarOperation.QUERY_EXECUTION_BOARD:
+        return this.queryExecutionBoard(
+          payload as Parameters<
+            LocalOrchestrationServiceSidecarDispatchTable['queryExecutionBoard']
+          >[0],
+        );
+      case LocalOrchestrationServiceSidecarOperation.QUERY_HITL_INBOX:
+        return this.queryHitlInbox(
+          payload as Parameters<LocalOrchestrationServiceSidecarDispatchTable['queryHitlInbox']>[0],
+        );
+      case LocalOrchestrationServiceSidecarOperation.QUERY_QUEUE_OVERVIEW:
+        return this.queryQueueOverview(
+          payload as Parameters<
+            LocalOrchestrationServiceSidecarDispatchTable['queryQueueOverview']
+          >[0],
+        );
       case LocalOrchestrationServiceSidecarOperation.LIST_EXECUTIONS:
         return this.listExecutions(
           payload as Parameters<LocalOrchestrationServiceSidecarDispatchTable['listExecutions']>[0],
@@ -249,6 +289,12 @@ export class LocalOrchestrationServiceSidecarHost
         return this.recoverExecution(
           this.assertPayload<
             Parameters<LocalOrchestrationServiceSidecarDispatchTable['recoverExecution']>[0]
+          >(payload, operation),
+        );
+      case LocalOrchestrationServiceSidecarOperation.TERMINATE_EXECUTION:
+        return this.terminateExecution(
+          this.assertPayload<
+            Parameters<LocalOrchestrationServiceSidecarDispatchTable['terminateExecution']>[0]
           >(payload, operation),
         );
       case LocalOrchestrationServiceSidecarOperation.START_SESSION:

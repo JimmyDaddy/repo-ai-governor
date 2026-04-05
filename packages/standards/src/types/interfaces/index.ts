@@ -35,3 +35,16 @@ export type {
   StandardsRuleDefinition,
   StandardsRuleResolveOptions,
 } from './standards.interface.js';
+export type {
+  HostApplyReport,
+  HostExportManifest,
+  HostExportProjectedFile,
+  HostPackReport,
+  HostRendererRenderInput,
+  HostRendererRenderResult,
+  HostTargetCapabilities,
+  HostVerificationCheck,
+  HostVerificationSummary,
+  StructuredWorkflowAssetRecord,
+  StructuredWorkflowAssetRegistryOptions,
+} from './host-distribution.interface.js';

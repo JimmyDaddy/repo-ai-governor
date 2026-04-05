@@ -10,11 +10,17 @@ import type {
   OrchestrationAppendSessionMessageResponse,
   OrchestrationArtifactPaneQueryRequest,
   OrchestrationArtifactPaneQueryResponse,
+  OrchestrationExecutionBoardQueryRequest,
+  OrchestrationExecutionBoardQueryResponse,
   OrchestrationExecutionSummary,
+  OrchestrationHitlInboxQueryRequest,
+  OrchestrationHitlInboxQueryResponse,
   OrchestrationListExecutionsRequest,
   OrchestrationListExecutionsResponse,
   OrchestrationListSessionsRequest,
   OrchestrationListSessionsResponse,
+  OrchestrationQueueOverviewQueryRequest,
+  OrchestrationQueueOverviewQueryResponse,
   OrchestrationRecoverExecutionRequest,
   OrchestrationRecoverExecutionResponse,
   OrchestrationResumeSessionRequest,
@@ -33,6 +39,8 @@ import type {
   OrchestrationSubscribeExecutionResponse,
   OrchestrationSubscribeSessionRequest,
   OrchestrationSubscribeSessionResponse,
+  OrchestrationTerminateExecutionRequest,
+  OrchestrationTerminateExecutionResponse,
 } from '@repo-ai-governor/orchestration-service-client';
 import type { MemoryRuntimeConfig } from '@repo-ai-governor/shared';
 import type { DesktopOrchestrationRuntimeMode } from '../../constants/index.js';
@@ -47,6 +55,15 @@ export interface DesktopOrchestrationServiceOwner {
     runtimeContext?: LocalOrchestrationServiceStartExecutionRuntimeContext,
   ): Promise<OrchestrationStartExecutionResponse>;
   getExecution(executionId: string): Promise<OrchestrationExecutionSummary | undefined>;
+  queryExecutionBoard(
+    request?: OrchestrationExecutionBoardQueryRequest,
+  ): Promise<OrchestrationExecutionBoardQueryResponse>;
+  queryHitlInbox(
+    request?: OrchestrationHitlInboxQueryRequest,
+  ): Promise<OrchestrationHitlInboxQueryResponse>;
+  queryQueueOverview(
+    request?: OrchestrationQueueOverviewQueryRequest,
+  ): Promise<OrchestrationQueueOverviewQueryResponse>;
   listExecutions(
     request?: OrchestrationListExecutionsRequest,
   ): Promise<OrchestrationListExecutionsResponse>;
@@ -62,6 +79,9 @@ export interface DesktopOrchestrationServiceOwner {
   recoverExecution(
     request: OrchestrationRecoverExecutionRequest,
   ): Promise<OrchestrationRecoverExecutionResponse>;
+  terminateExecution(
+    request: OrchestrationTerminateExecutionRequest,
+  ): Promise<OrchestrationTerminateExecutionResponse>;
   startSession(
     request: OrchestrationStartSessionRequest,
   ): Promise<OrchestrationStartSessionResponse>;

@@ -44,6 +44,24 @@ describe('DesktopShellBootstrap', () => {
               artifacts: [],
               reviews: [],
               transcript: [],
+              reviewLifecycle: {
+                totalReviewCount: 0,
+                pendingReviewCount: 0,
+                verifiedReviewCount: 0,
+                resolvedReviewCount: 0,
+                navigationReviewIds: [],
+              },
+              workbench: {
+                artifactCount: 0,
+                reviewCount: 0,
+                transcriptCount: 0,
+              },
+              evidenceBacklinks: {
+                governanceWorkspacePath: '/tmp/workspace/.repo-ai-governor',
+                artifactPaths: [],
+                reviewPaths: [],
+                transcriptEntryIds: [],
+              },
             }),
             subscribeExecution: async () => ({
               executionId: 'execution-1',
@@ -207,6 +225,9 @@ describe('DesktopShellBootstrap', () => {
     expect(baseline.artifactPaneDeferredReason).toContain('service-owned artifact query contract');
     expect(baseline.sessionBridgeOperations).toContain('buildGovernanceConsoleSnapshot');
     expect(baseline.sessionBridgeOperations).toContain('queryArtifactPane');
+    expect(baseline.sessionBridgeOperations).toContain('queryExecutionBoard');
+    expect(baseline.sessionBridgeOperations).toContain('queryQueueOverview');
+    expect(baseline.sessionBridgeOperations).toContain('terminateExecution');
     expect(snapshot.health.serviceHostKind).toBe('sidecar');
     expect(wakeSnapshot.windowWakeCount).toBe(1);
     expect(notificationSnapshot.notificationCount).toBe(1);

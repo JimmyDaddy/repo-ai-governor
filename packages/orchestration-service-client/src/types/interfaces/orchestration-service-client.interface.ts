@@ -3,6 +3,13 @@ import type {
   OrchestrationClientSurface,
   OrchestrationExecutionKind,
   OrchestrationExecutionStatus,
+  OrchestrationGovernanceActionDisabledReason,
+  OrchestrationGovernanceActionKind,
+  OrchestrationGovernanceAttentionLevel,
+  OrchestrationGovernanceFollowUpSlaState,
+  OrchestrationGovernanceNotificationStatus,
+  OrchestrationGovernanceQueueKind,
+  OrchestrationHandoffTargetKind,
   OrchestrationServiceEventType,
   OrchestrationServiceHostKind,
   OrchestrationServiceLifecycleStatus,
@@ -214,6 +221,52 @@ export interface OrchestrationArtifactPaneTranscriptEntry {
   createdAt: string;
 }
 
+export interface OrchestrationArtifactPanePolicyTraceDetail {
+  executionId: string;
+  executionStatus: OrchestrationExecutionStatus;
+  pendingHitl: boolean;
+  recoveryCapable: boolean;
+  currentStageId?: string;
+  latestEventType?: OrchestrationServiceEventType;
+  latestArtifactId?: string;
+  latestArtifactPath?: string;
+  taskId?: string;
+  projectId?: string;
+  sprintId?: string;
+  reviewDocumentPath?: string;
+}
+
+export interface OrchestrationArtifactPaneReviewLifecycleDetail {
+  reviewSourcePath?: string;
+  latestReviewId?: string;
+  latestLifecycleStatus?: string;
+  latestReviewFilePath?: string;
+  totalReviewCount: number;
+  pendingReviewCount: number;
+  verifiedReviewCount: number;
+  resolvedReviewCount: number;
+  navigationReviewIds: string[];
+}
+
+export interface OrchestrationArtifactPaneWorkbenchDetail {
+  artifactCount: number;
+  reviewCount: number;
+  transcriptCount: number;
+  latestArtifactId?: string;
+  latestArtifactPath?: string;
+  latestReviewId?: string;
+  latestReviewFilePath?: string;
+  latestTranscriptEntryId?: string;
+  latestTranscriptCreatedAt?: string;
+}
+
+export interface OrchestrationArtifactPaneEvidenceBacklinks {
+  governanceWorkspacePath?: string;
+  artifactPaths: string[];
+  reviewPaths: string[];
+  transcriptEntryIds: string[];
+}
+
 export interface OrchestrationArtifactPaneQueryResponse {
   artifacts: OrchestrationArtifactPaneArtifactEntry[];
   reviews: OrchestrationArtifactPaneReviewEntry[];
@@ -221,6 +274,10 @@ export interface OrchestrationArtifactPaneQueryResponse {
   resolvedExecutionId?: string;
   resolvedSessionId?: string;
   reviewSourcePath?: string;
+  policyTrace?: OrchestrationArtifactPanePolicyTraceDetail;
+  reviewLifecycle: OrchestrationArtifactPaneReviewLifecycleDetail;
+  workbench: OrchestrationArtifactPaneWorkbenchDetail;
+  evidenceBacklinks: OrchestrationArtifactPaneEvidenceBacklinks;
 }
 
 export interface OrchestrationSubmitHitlDecisionRequest {
@@ -257,6 +314,157 @@ export interface OrchestrationRecoverExecutionResponse {
   nextCursor: string;
   executionSummary: OrchestrationExecutionSummary;
   nextNodeIds?: string[];
+}
+
+export interface OrchestrationTerminateExecutionRequest {
+  executionId: string;
+  actor: string;
+  reason?: string;
+  preservePartialOutput?: boolean;
+  partialSnapshotArtifactPath?: string;
+}
+
+export interface OrchestrationTerminateExecutionResponse {
+  terminated: boolean;
+  nextStatus: OrchestrationExecutionStatus;
+  partialSnapshotArtifactPath?: string;
+  latestEventSequence: number;
+  nextCursor: string;
+  executionSummary: OrchestrationExecutionSummary;
+}
+
+export interface OrchestrationHitlDecisionOption {
+  optionId: string;
+  decision: string;
+  resumeAction: string;
+}
+
+export interface OrchestrationGovernanceActionAffordance {
+  actionId: string;
+  actionKind: OrchestrationGovernanceActionKind;
+  executionId: string;
+  enabled: boolean;
+  requiresConfirmation: boolean;
+  targetId?: string;
+  disabledReason?: OrchestrationGovernanceActionDisabledReason;
+  hitlDecisionOptions?: OrchestrationHitlDecisionOption[];
+}
+
+export interface OrchestrationHandoffTarget {
+  targetId: string;
+  executionId: string;
+  targetKind: OrchestrationHandoffTargetKind;
+  targetPath?: string;
+  exists: boolean;
+}
+
+export interface OrchestrationExecutionBoardEntry {
+  execution: OrchestrationExecutionSummary;
+  actions: OrchestrationGovernanceActionAffordance[];
+  handoffTargets: OrchestrationHandoffTarget[];
+}
+
+export interface OrchestrationExecutionBoardQueryRequest {
+  filter?: OrchestrationListExecutionsFilter;
+  limit?: number;
+}
+
+export interface OrchestrationExecutionBoardQueryResponse {
+  executions: OrchestrationExecutionBoardEntry[];
+  returnedCount: number;
+  totalMatchedCount: number;
+}
+
+export interface OrchestrationHitlInboxEntry extends OrchestrationExecutionBoardEntry {}
+
+export interface OrchestrationHitlInboxQueryRequest {
+  filter?: OrchestrationListExecutionsFilter;
+  limit?: number;
+}
+
+export interface OrchestrationHitlInboxQueryResponse {
+  pendingDecisions: OrchestrationHitlInboxEntry[];
+  returnedCount: number;
+  totalMatchedCount: number;
+}
+
+export interface OrchestrationQueueOverviewQueryRequest {
+  filter?: OrchestrationListExecutionsFilter;
+  limit?: number;
+  laneLimit?: number;
+  workspaceLimit?: number;
+}
+
+export interface OrchestrationGovernanceQueueEntry {
+  queueEntryId: string;
+  queueKind: OrchestrationGovernanceQueueKind;
+  workspaceId: string;
+  workspaceRoot: string;
+  executionId?: string;
+  executionKind?: OrchestrationExecutionKind;
+  executionStatus?: OrchestrationExecutionStatus;
+  taskId?: string;
+  projectId?: string;
+  sprintId?: string;
+  reviewId?: string;
+  reviewLifecycleStatus?: string;
+  reviewFilePath?: string;
+  attentionLevel: OrchestrationGovernanceAttentionLevel;
+  notificationStatus: OrchestrationGovernanceNotificationStatus;
+  followUpSlaState: OrchestrationGovernanceFollowUpSlaState;
+  followUpDueAt?: string;
+  pendingSince?: string;
+  updatedAt?: string;
+  actions: OrchestrationGovernanceActionAffordance[];
+  handoffTargets: OrchestrationHandoffTarget[];
+}
+
+export interface OrchestrationGovernanceParallelLaneEntry {
+  laneId: string;
+  workspaceId: string;
+  workspaceRoot: string;
+  activeExecutionIds: string[];
+  activeExecutionCount: number;
+  runningExecutionCount: number;
+  pendingHitlCount: number;
+  interruptedCount: number;
+  attentionExecutionCount: number;
+  attentionLevel: OrchestrationGovernanceAttentionLevel;
+  latestExecutionId?: string;
+  latestUpdatedAt?: string;
+}
+
+export interface OrchestrationGovernanceWorkspaceSummary {
+  workspaceId: string;
+  workspaceRoot: string;
+  totalExecutionCount: number;
+  activeExecutionCount: number;
+  pendingHitlCount: number;
+  automationInboxCount: number;
+  reviewQueueCount: number;
+  overdueFollowUpCount: number;
+  attentionLevel: OrchestrationGovernanceAttentionLevel;
+  latestExecutionId?: string;
+  latestUpdatedAt?: string;
+}
+
+export interface OrchestrationGovernanceNotificationOwnership {
+  ownerSurface: OrchestrationClientSurface;
+  pendingItemCount: number;
+  dueSoonItemCount: number;
+  overdueItemCount: number;
+  activeWorkspaceCount: number;
+  defaultFollowUpSlaMinutes: number;
+  notificationStatus: OrchestrationGovernanceNotificationStatus;
+}
+
+export interface OrchestrationQueueOverviewQueryResponse {
+  generatedAt: string;
+  automationInbox: OrchestrationGovernanceQueueEntry[];
+  reviewQueue: OrchestrationGovernanceQueueEntry[];
+  parallelLanes: OrchestrationGovernanceParallelLaneEntry[];
+  workspaceSummary: OrchestrationGovernanceWorkspaceSummary[];
+  notificationOwnership: OrchestrationGovernanceNotificationOwnership;
 }
 
 export interface OrchestrationSessionEvent {
@@ -420,6 +628,15 @@ export interface OrchestrationServiceClient {
     request: OrchestrationStartExecutionRequest,
   ): Promise<OrchestrationStartExecutionResponse>;
   getExecution(executionId: string): Promise<OrchestrationExecutionSummary | undefined>;
+  queryExecutionBoard(
+    request?: OrchestrationExecutionBoardQueryRequest,
+  ): Promise<OrchestrationExecutionBoardQueryResponse>;
+  queryHitlInbox(
+    request?: OrchestrationHitlInboxQueryRequest,
+  ): Promise<OrchestrationHitlInboxQueryResponse>;
+  queryQueueOverview(
+    request?: OrchestrationQueueOverviewQueryRequest,
+  ): Promise<OrchestrationQueueOverviewQueryResponse>;
   listExecutions(
     request?: OrchestrationListExecutionsRequest,
   ): Promise<OrchestrationListExecutionsResponse>;
@@ -435,6 +652,9 @@ export interface OrchestrationServiceClient {
   recoverExecution(
     request: OrchestrationRecoverExecutionRequest,
   ): Promise<OrchestrationRecoverExecutionResponse>;
+  terminateExecution(
+    request: OrchestrationTerminateExecutionRequest,
+  ): Promise<OrchestrationTerminateExecutionResponse>;
   startSession(
     request: OrchestrationStartSessionRequest,
   ): Promise<OrchestrationStartSessionResponse>;

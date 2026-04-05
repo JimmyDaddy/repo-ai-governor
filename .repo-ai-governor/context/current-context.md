@@ -2,21 +2,21 @@
 
 ## Primary Stream
 
-- Status: idle
-- Project: `none`
-- Sprint: `none`
-- Docs root: `none`
-- Task records: `none`
-- Review records: `none`
-- Note: `project-047-governance-surface-clients-solution-promotion-and-decomposition / sprint-001-promotion-and-followup-decomposition` completed on 2026-04-05 and was moved into completed stream history; `project-048-governance-surface-clients-rollout / sprint-001-shared-core-and-actionable-console-baseline` is now registered as a planned follow-up stream.
+- Status: active
+- Project: `project-050-governance-surface-clients-host-distribution-rollout`
+- Sprint: `sprint-004-mcp-bridge-and-advanced-host-integrations`
+- Docs root: `.repo-ai-governor/context/dev/project-050-governance-surface-clients-host-distribution-rollout`
+- Task records: `.repo-ai-governor/context/dev/project-050-governance-surface-clients-host-distribution-rollout/sprint-004-mcp-bridge-and-advanced-host-integrations/tasks/`
+- Review records: `.repo-ai-governor/context/dev/project-050-governance-surface-clients-host-distribution-rollout/sprint-004-mcp-bridge-and-advanced-host-integrations/review/`
+- Note: `2026-04-06` project-050 已达到 `completed` 真值；在下一条 primary stream 显式激活前，临时保留 `sprint-004` 作为 latest completed closeout surface。
 
 ## Active Streams
 
-- None currently registered.
+- `active-1`: role=`primary`, project=`project-050-governance-surface-clients-host-distribution-rollout`, sprint=`sprint-004-mcp-bridge-and-advanced-host-integrations`, docs=`.repo-ai-governor/context/dev/project-050-governance-surface-clients-host-distribution-rollout`, plan=`.repo-ai-governor/context/dev/project-050-governance-surface-clients-host-distribution-rollout/sprint-004-mcp-bridge-and-advanced-host-integrations/plan.md`, tasks=`.repo-ai-governor/context/dev/project-050-governance-surface-clients-host-distribution-rollout/sprint-004-mcp-bridge-and-advanced-host-integrations/tasks/`, checklist=`.repo-ai-governor/context/dev/project-050-governance-surface-clients-host-distribution-rollout/sprint-004-mcp-bridge-and-advanced-host-integrations/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-050-governance-surface-clients-host-distribution-rollout/sprint-004-mcp-bridge-and-advanced-host-integrations/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-050-governance-surface-clients-host-distribution-rollout/sprint-004-mcp-bridge-and-advanced-host-integrations/review/`, status=`active`, note=`Completed on 2026-04-06 and temporarily retained as latest completed closeout surface pending next activation`
 
 ## Planned Follow-Up Streams
 
-- `stream-project-048-sprint-001`: status=`planned`, project=`project-048-governance-surface-clients-rollout`, sprint=`sprint-001-shared-core-and-actionable-console-baseline`, docs=`.repo-ai-governor/context/dev/project-048-governance-surface-clients-rollout`, plan=`.repo-ai-governor/context/dev/project-048-governance-surface-clients-rollout/sprint-001-shared-core-and-actionable-console-baseline/plan.md`, tasks=`.repo-ai-governor/context/dev/project-048-governance-surface-clients-rollout/sprint-001-shared-core-and-actionable-console-baseline/tasks/`, checklist=`.repo-ai-governor/context/dev/project-048-governance-surface-clients-rollout/sprint-001-shared-core-and-actionable-console-baseline/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-048-governance-surface-clients-rollout/sprint-001-shared-core-and-actionable-console-baseline/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-048-governance-surface-clients-rollout/sprint-001-shared-core-and-actionable-console-baseline/review/`, note=`technical-solution.governance-surface-clients accepted on 2026-04-05; sprint-001 starts with shared-core command/query seam plus actionable desktop console baseline, then hands off to VS Code companion and deeper desktop rollout sprints`
+- none
 
 ## Completed Stream History
 

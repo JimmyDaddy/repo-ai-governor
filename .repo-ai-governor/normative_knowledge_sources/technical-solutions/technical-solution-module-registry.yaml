@@ -1,5 +1,5 @@
 schema_version: 2
-generated_at: 2026-04-05
+generated_at: 2026-04-06
 status: active
 owner: architecture
 
@@ -517,7 +517,11 @@ modules:
     detail_docs:
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/contracts/governance-surface-client-contract.md
         kind: contract
+      - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/contracts/governance-host-distribution-contract.md
+        kind: contract
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/desktop-command-center-and-vscode-editor-companion-split.md
+        kind: adr
+      - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/host-native-distribution-and-target-specific-consumption.md
         kind: adr
     north_star_refs:
       - prd.multi-agent-orchestration
@@ -526,6 +530,7 @@ modules:
       - architecture.governance-boundary
     exports_contracts:
       - contract.runtime.governance-surface-client.v1
+      - contract.runtime.governance-host-distribution.v1
     imports_contracts:
       - contract.runtime.graph-execution.v1
       - contract.runtime.agent-projection.v1

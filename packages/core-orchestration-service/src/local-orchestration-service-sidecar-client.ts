@@ -11,13 +11,19 @@ import type {
   OrchestrationArchiveSessionResponse,
   OrchestrationArtifactPaneQueryRequest,
   OrchestrationArtifactPaneQueryResponse,
+  OrchestrationExecutionBoardQueryRequest,
+  OrchestrationExecutionBoardQueryResponse,
   OrchestrationExecutionSummary,
   OrchestrationForkSessionRequest,
   OrchestrationForkSessionResponse,
+  OrchestrationHitlInboxQueryRequest,
+  OrchestrationHitlInboxQueryResponse,
   OrchestrationListExecutionsRequest,
   OrchestrationListExecutionsResponse,
   OrchestrationListSessionsRequest,
   OrchestrationListSessionsResponse,
+  OrchestrationQueueOverviewQueryRequest,
+  OrchestrationQueueOverviewQueryResponse,
   OrchestrationRecoverExecutionRequest,
   OrchestrationRecoverExecutionResponse,
   OrchestrationResumeSessionRequest,
@@ -36,6 +42,8 @@ import type {
   OrchestrationSubscribeExecutionResponse,
   OrchestrationSubscribeSessionRequest,
   OrchestrationSubscribeSessionResponse,
+  OrchestrationTerminateExecutionRequest,
+  OrchestrationTerminateExecutionResponse,
   OrchestrationUnarchiveSessionRequest,
   OrchestrationUnarchiveSessionResponse,
 } from '@repo-ai-governor/orchestration-service-client';
@@ -106,6 +114,33 @@ export class LocalOrchestrationServiceSidecarClient {
     );
   }
 
+  public async queryExecutionBoard(
+    request?: OrchestrationExecutionBoardQueryRequest,
+  ): Promise<OrchestrationExecutionBoardQueryResponse> {
+    return this.sendRequest<OrchestrationExecutionBoardQueryResponse>(
+      LocalOrchestrationServiceSidecarOperation.QUERY_EXECUTION_BOARD,
+      request,
+    );
+  }
+
+  public async queryHitlInbox(
+    request?: OrchestrationHitlInboxQueryRequest,
+  ): Promise<OrchestrationHitlInboxQueryResponse> {
+    return this.sendRequest<OrchestrationHitlInboxQueryResponse>(
+      LocalOrchestrationServiceSidecarOperation.QUERY_HITL_INBOX,
+      request,
+    );
+  }
+
+  public async queryQueueOverview(
+    request?: OrchestrationQueueOverviewQueryRequest,
+  ): Promise<OrchestrationQueueOverviewQueryResponse> {
+    return this.sendRequest<OrchestrationQueueOverviewQueryResponse>(
+      LocalOrchestrationServiceSidecarOperation.QUERY_QUEUE_OVERVIEW,
+      request,
+    );
+  }
+
   public async listExecutions(
     request?: OrchestrationListExecutionsRequest,
   ): Promise<OrchestrationListExecutionsResponse> {
@@ -147,6 +182,15 @@ export class LocalOrchestrationServiceSidecarClient {
   ): Promise<OrchestrationRecoverExecutionResponse> {
     return this.sendRequest<OrchestrationRecoverExecutionResponse>(
       LocalOrchestrationServiceSidecarOperation.RECOVER_EXECUTION,
+      request,
+    );
+  }
+
+  public async terminateExecution(
+    request: OrchestrationTerminateExecutionRequest,
+  ): Promise<OrchestrationTerminateExecutionResponse> {
+    return this.sendRequest<OrchestrationTerminateExecutionResponse>(
+      LocalOrchestrationServiceSidecarOperation.TERMINATE_EXECUTION,
       request,
     );
   }

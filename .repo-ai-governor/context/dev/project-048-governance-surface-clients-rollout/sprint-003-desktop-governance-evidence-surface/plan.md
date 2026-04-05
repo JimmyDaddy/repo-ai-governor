@@ -1,6 +1,6 @@
 # sprint-003-desktop-governance-evidence-surface 计划
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-05
 - Project: `project-048-governance-surface-clients-rollout`
 - Sprint Goal: 为 desktop 补齐 policy trace、review lifecycle、artifact workbench detail 与 governance evidence surface。
@@ -20,3 +20,6 @@
 ## 3. Milestones
 
 1. 2026-04-05：创建 `sprint-003-desktop-governance-evidence-surface`，作为 desktop governance differentiation sprint。
+2. 2026-04-05：在 `sprint-002` reviewer loop 收口为零 actionable finding 后切换为 active primary sprint，并激活 `TK-565` 冻结 evidence read model、artifact workbench detail contract 与 review lifecycle baseline。
+3. 2026-04-05：已完成 `TK-565` contract freeze、`TK-566` implementation、targeted tests、`pnpm run build`、`pnpm run check:desktop-entry-smoke` 与 desktop docs sync；当前 sprint 保持 `active` 以承接 reviewer 子 agent CR 闭环。
+4. 2026-04-05：reviewer 子 agent 最终复审返回 `No actionable findings.`，`sprint-003-desktop-governance-evidence-surface` 正式收口为 `completed`。

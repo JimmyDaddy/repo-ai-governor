@@ -1,0 +1,247 @@
+{
+  "schemaVersion": "host-verification-summary-v1",
+  "status": "pass",
+  "verifiedAt": "2026-04-05T20:51:11.817Z",
+  "verificationSummaryPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-final/claude-code/host-verification.summary.json",
+  "exportManifestPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-final/claude-code/host-export.manifest.json",
+  "checks": [
+    {
+      "checkId": "schema-version",
+      "status": "pass",
+      "detail": "schema_version=host-export-manifest-v1",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-final/claude-code/host-export.manifest.json",
+      "expectedValue": "host-export-manifest-v1",
+      "actualValue": "host-export-manifest-v1"
+    },
+    {
+      "checkId": "canonical-source-refs",
+      "status": "pass",
+      "detail": "canonical_source_refs=5",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-final/claude-code/host-export.manifest.json",
+      "expectedValue": "all canonical source refs exist",
+      "actualValue": "5"
+    },
+    {
+      "checkId": "target-capability",
+      "status": "pass",
+      "detail": "mvp_target=true",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-final/claude-code/host-export.manifest.json",
+      "expectedValue": "true",
+      "actualValue": "true"
+    },
+    {
+      "checkId": "deprecated-github-app-path",
+      "status": "pass",
+      "detail": "github_app_copilot_extension_path_blocked=true",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-final/claude-code/host-export.manifest.json",
+      "expectedValue": "no deprecated GitHub App Copilot Extension path",
+      "actualValue": "deprecated path absent"
+    },
+    {
+      "checkId": "required-target-paths",
+      "status": "pass",
+      "detail": "required_paths_checked=claude_code.project_local",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-final/claude-code/host-export.manifest.json",
+      "expectedValue": "required paths present",
+      "actualValue": "claude_code.project_local"
+    },
+    {
+      "checkId": "staged:.claude/skills/technical-solution-promotion/SKILL.md",
+      "status": "pass",
+      "detail": "staged_file=.claude/skills/technical-solution-promotion/SKILL.md",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-final/claude-code/.claude/skills/technical-solution-promotion/SKILL.md",
+      "expectedValue": "staged file content matches manifest",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "staged:.claude/skills/workspace-code-review-workflow/SKILL.md",
+      "status": "pass",
+      "detail": "staged_file=.claude/skills/workspace-code-review-workflow/SKILL.md",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-final/claude-code/.claude/skills/workspace-code-review-workflow/SKILL.md",
+      "expectedValue": "staged file content matches manifest",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "staged:.claude/skills/workspace-delivery-finisher/SKILL.md",
+      "status": "pass",
+      "detail": "staged_file=.claude/skills/workspace-delivery-finisher/SKILL.md",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-final/claude-code/.claude/skills/workspace-delivery-finisher/SKILL.md",
+      "expectedValue": "staged file content matches manifest",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "staged:.claude/skills/workspace-scoped-cr-loop/SKILL.md",
+      "status": "pass",
+      "detail": "staged_file=.claude/skills/workspace-scoped-cr-loop/SKILL.md",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-final/claude-code/.claude/skills/workspace-scoped-cr-loop/SKILL.md",
+      "expectedValue": "staged file content matches manifest",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "staged:.claude/agents/technical-solution-promotion.agent.md",
+      "status": "pass",
+      "detail": "staged_file=.claude/agents/technical-solution-promotion.agent.md",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-final/claude-code/.claude/agents/technical-solution-promotion.agent.md",
+      "expectedValue": "staged file content matches manifest",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "staged:.claude/agents/workspace-code-review-workflow.agent.md",
+      "status": "pass",
+      "detail": "staged_file=.claude/agents/workspace-code-review-workflow.agent.md",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-final/claude-code/.claude/agents/workspace-code-review-workflow.agent.md",
+      "expectedValue": "staged file content matches manifest",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "staged:.claude/agents/workspace-delivery-finisher.agent.md",
+      "status": "pass",
+      "detail": "staged_file=.claude/agents/workspace-delivery-finisher.agent.md",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-final/claude-code/.claude/agents/workspace-delivery-finisher.agent.md",
+      "expectedValue": "staged file content matches manifest",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "staged:.claude/agents/workspace-scoped-cr-loop.agent.md",
+      "status": "pass",
+      "detail": "staged_file=.claude/agents/workspace-scoped-cr-loop.agent.md",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-final/claude-code/.claude/agents/workspace-scoped-cr-loop.agent.md",
+      "expectedValue": "staged file content matches manifest",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "staged:.claude/settings.json",
+      "status": "pass",
+      "detail": "staged_file=.claude/settings.json",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-final/claude-code/.claude/settings.json",
+      "expectedValue": "staged file content matches manifest",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "staged:.claude/hooks/hooks.json",
+      "status": "pass",
+      "detail": "staged_file=.claude/hooks/hooks.json",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-final/claude-code/.claude/hooks/hooks.json",
+      "expectedValue": "staged file content matches manifest",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "staged:.mcp.json",
+      "status": "pass",
+      "detail": "staged_file=.mcp.json",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-final/claude-code/.mcp.json",
+      "expectedValue": "staged file content matches manifest",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "apply-report-presence",
+      "status": "pass",
+      "detail": "apply_report=/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-final/claude-code/host-apply.report.json",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-final/claude-code/host-apply.report.json",
+      "expectedValue": "apply report exists when manifest declares apply report path",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "applied:.claude/skills/technical-solution-promotion/SKILL.md",
+      "status": "pass",
+      "detail": "applied_file=.claude/skills/technical-solution-promotion/SKILL.md",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/applied-final/claude-code/.claude/skills/technical-solution-promotion/SKILL.md",
+      "expectedValue": "applied file content matches staged export",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "applied:.claude/skills/workspace-code-review-workflow/SKILL.md",
+      "status": "pass",
+      "detail": "applied_file=.claude/skills/workspace-code-review-workflow/SKILL.md",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/applied-final/claude-code/.claude/skills/workspace-code-review-workflow/SKILL.md",
+      "expectedValue": "applied file content matches staged export",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "applied:.claude/skills/workspace-delivery-finisher/SKILL.md",
+      "status": "pass",
+      "detail": "applied_file=.claude/skills/workspace-delivery-finisher/SKILL.md",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/applied-final/claude-code/.claude/skills/workspace-delivery-finisher/SKILL.md",
+      "expectedValue": "applied file content matches staged export",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "applied:.claude/skills/workspace-scoped-cr-loop/SKILL.md",
+      "status": "pass",
+      "detail": "applied_file=.claude/skills/workspace-scoped-cr-loop/SKILL.md",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/applied-final/claude-code/.claude/skills/workspace-scoped-cr-loop/SKILL.md",
+      "expectedValue": "applied file content matches staged export",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "applied:.claude/agents/technical-solution-promotion.agent.md",
+      "status": "pass",
+      "detail": "applied_file=.claude/agents/technical-solution-promotion.agent.md",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/applied-final/claude-code/.claude/agents/technical-solution-promotion.agent.md",
+      "expectedValue": "applied file content matches staged export",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "applied:.claude/agents/workspace-code-review-workflow.agent.md",
+      "status": "pass",
+      "detail": "applied_file=.claude/agents/workspace-code-review-workflow.agent.md",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/applied-final/claude-code/.claude/agents/workspace-code-review-workflow.agent.md",
+      "expectedValue": "applied file content matches staged export",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "applied:.claude/agents/workspace-delivery-finisher.agent.md",
+      "status": "pass",
+      "detail": "applied_file=.claude/agents/workspace-delivery-finisher.agent.md",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/applied-final/claude-code/.claude/agents/workspace-delivery-finisher.agent.md",
+      "expectedValue": "applied file content matches staged export",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "applied:.claude/agents/workspace-scoped-cr-loop.agent.md",
+      "status": "pass",
+      "detail": "applied_file=.claude/agents/workspace-scoped-cr-loop.agent.md",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/applied-final/claude-code/.claude/agents/workspace-scoped-cr-loop.agent.md",
+      "expectedValue": "applied file content matches staged export",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "applied:.claude/settings.json",
+      "status": "pass",
+      "detail": "applied_file=.claude/settings.json",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/applied-final/claude-code/.claude/settings.json",
+      "expectedValue": "applied file content matches staged export",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "applied:.claude/hooks/hooks.json",
+      "status": "pass",
+      "detail": "applied_file=.claude/hooks/hooks.json",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/applied-final/claude-code/.claude/hooks/hooks.json",
+      "expectedValue": "applied file content matches staged export",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "applied:.mcp.json",
+      "status": "pass",
+      "detail": "applied_file=.mcp.json",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/applied-final/claude-code/.mcp.json",
+      "expectedValue": "applied file content matches staged export",
+      "actualValue": "present"
+    }
+  ],
+  "inspectedPaths": [
+    ".claude/skills/technical-solution-promotion/SKILL.md",
+    ".claude/skills/workspace-code-review-workflow/SKILL.md",
+    ".claude/skills/workspace-delivery-finisher/SKILL.md",
+    ".claude/skills/workspace-scoped-cr-loop/SKILL.md",
+    ".claude/agents/technical-solution-promotion.agent.md",
+    ".claude/agents/workspace-code-review-workflow.agent.md",
+    ".claude/agents/workspace-delivery-finisher.agent.md",
+    ".claude/agents/workspace-scoped-cr-loop.agent.md",
+    ".claude/settings.json",
+    ".claude/hooks/hooks.json",
+    ".mcp.json"
+  ],
+  "driftDetected": false
+}

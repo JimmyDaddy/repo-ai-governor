@@ -51,6 +51,7 @@
 3. 当前项目内可直接引用的 skill：
    - 技术方案提升 / draft 转正式：`.codex/skills/technical-solution-promotion/SKILL.md`
    - 当前工作区 code review / CR 复核 / CR 修复：`.codex/skills/workspace-code-review-workflow/SKILL.md`
+   - 当前工作区 task/sprint/project 执行 + 子 agent 循环 CR：`.codex/skills/workspace-scoped-cr-loop/SKILL.md`
    - 当前工作区收尾 / 提交 / 推送：`.codex/skills/workspace-delivery-finisher/SKILL.md`
 4. 命中 skill 后，先遵循本文件和仓库规范入口，再读取对应 `SKILL.md` 执行其细化流程；若 `SKILL.md` 与仓库规范冲突，仍以 `.repo-ai-governor/**` 下结构化真值和本文件约束为准。
 

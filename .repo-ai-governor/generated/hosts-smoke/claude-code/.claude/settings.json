@@ -1,0 +1,18 @@
+{
+  "host": "claude-code",
+  "target": "claude_code.project_local",
+  "mode": "project-local",
+  "handoffBridge": "cli_wrapper",
+  "workflowIds": [
+    "technical-solution-promotion",
+    "workspace-code-review-workflow",
+    "workspace-delivery-finisher",
+    "workspace-scoped-cr-loop"
+  ],
+  "canonicalSourceRefs": [
+    ".codex/skills/technical-solution-promotion/SKILL.md",
+    ".codex/skills/workspace-code-review-workflow/SKILL.md",
+    ".codex/skills/workspace-delivery-finisher/SKILL.md",
+    ".codex/skills/workspace-scoped-cr-loop/SKILL.md"
+  ]
+}

@@ -1,6 +1,6 @@
 # sprint-001-shared-core-and-actionable-console-baseline 计划
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-05
 - Project: `project-048-governance-surface-clients-rollout`
 - Sprint Goal: 为 governance surface clients 补齐 shared command/query seam 与 actionable desktop console baseline。
@@ -22,3 +22,5 @@
 
 1. 2026-04-05：创建 `sprint-001-shared-core-and-actionable-console-baseline` 作为 `project-048` 的首个 planned execution sprint。
 2. 2026-04-05：完成 `TK-559 ~ TK-561` 任务卡拆解，并将 `project-048 / sprint-001` 登记到 `current-context.md` planned follow-up streams。
+3. 2026-04-05：将 `project-048 / sprint-001` 切换为 active primary stream，并先行激活 `TK-559` 冻结 command/query seam 与 acceptance scope。
+4. 2026-04-05：已完成 reviewer 子 agent CR -> 主 agent 修复 -> reviewer 复审闭环，`resolved_code_review_tk-559-561-shared-core-and-actionable-console-baseline.md` 收口为零 actionable finding，sprint-001 切换为 `completed`。

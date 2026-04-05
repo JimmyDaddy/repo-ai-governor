@@ -1,0 +1,92 @@
+{
+  "schemaVersion": "host-verification-summary-v1",
+  "status": "fail",
+  "verifiedAt": "2026-04-05T20:17:00.053Z",
+  "verificationSummaryPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-smoke-postbuild/github-copilot-github-com-agent/host-verification.summary.json",
+  "exportManifestPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-smoke-postbuild/github-copilot-github-com-agent/host-export.manifest.json",
+  "checks": [
+    {
+      "checkId": "canonical-source-refs",
+      "status": "pass",
+      "detail": "Canonical source refs were captured for the export.",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-smoke-postbuild/github-copilot-github-com-agent/host-export.manifest.json",
+      "expectedValue": "at least one canonical source ref",
+      "actualValue": "AGENTS.md, .codex/skills/technical-solution-promotion/SKILL.md, .codex/skills/workspace-code-review-workflow/SKILL.md, .codex/skills/workspace-delivery-finisher/SKILL.md, .codex/skills/workspace-scoped-cr-loop/SKILL.md"
+    },
+    {
+      "checkId": "source-pack-refs",
+      "status": "pass",
+      "detail": "Source pack refs were captured for the export.",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-smoke-postbuild/github-copilot-github-com-agent/host-export.manifest.json",
+      "expectedValue": "at least one source pack ref",
+      "actualValue": "repo-local-skill:technical-solution-promotion, repo-local-skill:workspace-code-review-workflow, repo-local-skill:workspace-delivery-finisher, repo-local-skill:workspace-scoped-cr-loop"
+    },
+    {
+      "checkId": "host-target-alignment",
+      "status": "pass",
+      "detail": "Target github_copilot.github_com_agent belongs to host github-copilot.",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-smoke-postbuild/github-copilot-github-com-agent/host-export.manifest.json",
+      "expectedValue": "github-copilot",
+      "actualValue": "github-copilot"
+    },
+    {
+      "checkId": "mode-support",
+      "status": "warn",
+      "detail": "Target github_copilot.github_com_agent is reserved and does not yet advertise supported modes.",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-smoke-postbuild/github-copilot-github-com-agent/host-export.manifest.json",
+      "expectedValue": "reserved target",
+      "actualValue": "project-local"
+    },
+    {
+      "checkId": "target-capability",
+      "status": "fail",
+      "detail": "Target is reserved for follow-up and remains schema-safe only.",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-smoke-postbuild/github-copilot-github-com-agent/host-export.manifest.json",
+      "expectedValue": "MVP target",
+      "actualValue": "github_copilot.github_com_agent"
+    },
+    {
+      "checkId": "rendered-files",
+      "status": "pass",
+      "detail": "Rendered files were produced for the requested target.",
+      "inspectedPath": "AGENTS.md",
+      "expectedValue": "at least one projected file",
+      "actualValue": "16"
+    },
+    {
+      "checkId": "handoff-bridge",
+      "status": "pass",
+      "detail": "Handoff bridge is cli_wrapper.",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-smoke-postbuild/github-copilot-github-com-agent/host-export.manifest.json",
+      "expectedValue": "cli_wrapper",
+      "actualValue": "cli_wrapper"
+    },
+    {
+      "checkId": "discovery-state",
+      "status": "pass",
+      "detail": "Discovery state is staged_export.",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-smoke-postbuild/github-copilot-github-com-agent/host-export.manifest.json",
+      "expectedValue": "staged_export",
+      "actualValue": "staged_export"
+    }
+  ],
+  "inspectedPaths": [
+    "AGENTS.md",
+    ".github/copilot-instructions.md",
+    ".github/instructions/technical-solution-promotion.instructions.md",
+    ".github/instructions/workspace-code-review-workflow.instructions.md",
+    ".github/instructions/workspace-delivery-finisher.instructions.md",
+    ".github/instructions/workspace-scoped-cr-loop.instructions.md",
+    ".github/skills/technical-solution-promotion/SKILL.md",
+    ".github/skills/workspace-code-review-workflow/SKILL.md",
+    ".github/skills/workspace-delivery-finisher/SKILL.md",
+    ".github/skills/workspace-scoped-cr-loop/SKILL.md",
+    ".github/agents/technical-solution-promotion.agent.md",
+    ".github/agents/workspace-code-review-workflow.agent.md",
+    ".github/agents/workspace-delivery-finisher.agent.md",
+    ".github/agents/workspace-scoped-cr-loop.agent.md",
+    ".github/hooks/hooks.json",
+    ".github/mcp.json"
+  ],
+  "driftDetected": true
+}

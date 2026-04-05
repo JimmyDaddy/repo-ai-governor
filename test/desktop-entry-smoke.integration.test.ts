@@ -112,6 +112,17 @@ describe('desktop entry smoke integration', () => {
             workspaceId: 'desktop-workspace',
           },
         });
+        const fetchedExecution = await preloadBridge.getExecution(started.executionId);
+        const executionBoard = await preloadBridge.queryExecutionBoard({
+          filter: {
+            workspaceId: 'desktop-workspace',
+          },
+        });
+        const hitlInbox = await preloadBridge.queryHitlInbox({
+          filter: {
+            workspaceId: 'desktop-workspace',
+          },
+        });
         const subscribedExecution = await preloadBridge.subscribeExecution({
           executionId: started.executionId,
         });
@@ -136,6 +147,7 @@ describe('desktop entry smoke integration', () => {
           'buildGovernanceConsoleSnapshot',
         );
         expect(bootstrapSnapshot.baseline.sessionBridgeOperations).toContain('queryArtifactPane');
+        expect(bootstrapSnapshot.baseline.sessionBridgeOperations).toContain('queryQueueOverview');
         expect(bootstrapSnapshot.health.serviceHostKind).toBe(OrchestrationServiceHostKind.SIDECAR);
         expect(health.serviceTransportKind).toBe(OrchestrationServiceTransportKind.IPC);
         expect(health.memoryProvider).toEqual(
@@ -148,8 +160,11 @@ describe('desktop entry smoke integration', () => {
         expect(started.serviceHostKind).toBe(OrchestrationServiceHostKind.SIDECAR);
         expect(started.serviceTransportKind).toBe(OrchestrationServiceTransportKind.IPC);
         expect(started.memoryProvider).toEqual(health.memoryProvider);
+        expect(fetchedExecution?.executionId).toBe(started.executionId);
         expect(listedExecutions.executions).toHaveLength(1);
         expect(listedExecutions.executions[0]?.memoryProvider).toEqual(health.memoryProvider);
+        expect(executionBoard.executions[0]?.execution.executionId).toBe(started.executionId);
+        expect(hitlInbox.pendingDecisions).toEqual([]);
         expect(subscribedExecution.events.map((event) => event.type)).toEqual([
           OrchestrationServiceEventType.EXECUTION_STARTED,
           OrchestrationServiceEventType.ARTIFACT_READY,
@@ -165,6 +180,14 @@ describe('desktop entry smoke integration', () => {
         expect(artifactPane.resolvedSessionId).toBe(session.session.sessionId);
         expect(artifactPane.transcript[0]?.lines).toContain('desktop baseline active');
         expect(consoleSnapshot.workspaceHome.title).toBe('Workspace home');
+        expect(consoleSnapshot.executionBoard.entries[0]?.title).toBe(
+          'desktop-execution -> completed',
+        );
+        expect(consoleSnapshot.hitlInbox.entries).toEqual([]);
+        expect(consoleSnapshot.queueOverview.title).toBe('Queue & workspace overview');
+        expect(consoleSnapshot.queueOverview.notificationOwnership.title).toBe(
+          'Notification ownership',
+        );
         expect(consoleSnapshot.artifactPane.gateState).toBe(DesktopArtifactQueryGateState.READY);
         expect(consoleSnapshot.artifactPane.transcript.entries[0]?.detailLines).toContain(
           'desktop baseline active',

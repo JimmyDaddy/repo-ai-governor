@@ -1,0 +1,10 @@
+{
+  "host": "codex",
+  "target": "codex.project_local",
+  "mode": "project-local",
+  "workflowId": "workspace-scoped-cr-loop",
+  "displayName": "Workspace Scoped Cr Loop",
+  "semanticOwnerModule": "runtime.governance-clients",
+  "canonicalSourceRefs": [".codex/skills/workspace-scoped-cr-loop/SKILL.md"],
+  "serviceHostPackageExport": "@cjhdev/repo-ai-governor/service-host"
+}

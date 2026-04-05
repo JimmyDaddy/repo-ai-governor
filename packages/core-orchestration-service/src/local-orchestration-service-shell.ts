@@ -19,16 +19,22 @@ import {
   type OrchestrationArchiveSessionResponse,
   type OrchestrationArtifactPaneQueryRequest,
   type OrchestrationArtifactPaneQueryResponse,
+  type OrchestrationExecutionBoardQueryRequest,
+  type OrchestrationExecutionBoardQueryResponse,
   type OrchestrationExecutionLivenessSnapshot,
   OrchestrationExecutionStatus,
   type OrchestrationExecutionSummary,
   type OrchestrationForkSessionRequest,
   type OrchestrationForkSessionResponse,
+  type OrchestrationHitlInboxQueryRequest,
+  type OrchestrationHitlInboxQueryResponse,
   type OrchestrationListExecutionsFilter,
   type OrchestrationListExecutionsRequest,
   type OrchestrationListExecutionsResponse,
   type OrchestrationListSessionsRequest,
   type OrchestrationListSessionsResponse,
+  type OrchestrationQueueOverviewQueryRequest,
+  type OrchestrationQueueOverviewQueryResponse,
   type OrchestrationRecoverExecutionRequest,
   type OrchestrationRecoverExecutionResponse,
   type OrchestrationResumeSessionRequest,
@@ -53,11 +59,15 @@ import {
   type OrchestrationSubscribeExecutionResponse,
   type OrchestrationSubscribeSessionRequest,
   type OrchestrationSubscribeSessionResponse,
+  type OrchestrationTerminateExecutionRequest,
+  type OrchestrationTerminateExecutionResponse,
   type OrchestrationUnarchiveSessionRequest,
   type OrchestrationUnarchiveSessionResponse,
 } from '@repo-ai-governor/orchestration-service-client';
 import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import { LocalOrchestrationServiceArtifactPaneQueryRuntime } from './local-orchestration-service-artifact-pane-query-runtime.js';
+import { LocalOrchestrationServiceGovernanceQueryRuntime } from './local-orchestration-service-governance-query-runtime.js';
+import { LocalOrchestrationServiceQueueOverviewQueryRuntime } from './local-orchestration-service-queue-overview-query-runtime.js';
 import { LocalOrchestrationServiceSessionRuntime } from './local-orchestration-service-session-runtime.js';
 import type {
   LocalOrchestrationServiceMemoryProviderState,
@@ -98,6 +108,8 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
   private readonly memoryProviderRegistry: MemoryProviderRegistry;
   private readonly sessionRuntime: LocalOrchestrationServiceSessionRuntime;
   private readonly artifactPaneQueryRuntime: LocalOrchestrationServiceArtifactPaneQueryRuntime;
+  private readonly governanceQueryRuntime: LocalOrchestrationServiceGovernanceQueryRuntime;
+  private readonly queueOverviewQueryRuntime: LocalOrchestrationServiceQueueOverviewQueryRuntime;
   private executionRecordsLoadedPromise: Promise<void> | null = null;
   private memoryProviderStatePromise: Promise<LocalOrchestrationServiceMemoryProviderState | null> | null =
     null;
@@ -168,6 +180,15 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
           sessionId,
           afterSequence,
         }),
+    });
+    this.governanceQueryRuntime = new LocalOrchestrationServiceGovernanceQueryRuntime({
+      workspaceRoot: dependencies.workspaceRoot,
+      listExecutions: async (request) => this.listExecutions(request),
+    });
+    this.queueOverviewQueryRuntime = new LocalOrchestrationServiceQueueOverviewQueryRuntime({
+      workspaceRoot: dependencies.workspaceRoot,
+      listExecutions: async (request) => this.listExecutions(request),
+      nowProvider: this.nowProvider,
     });
   }
 
@@ -303,6 +324,42 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
     await this.ensureExecutionRecordsLoaded();
     const summary = this.executionRecords.get(executionId)?.summary;
     return summary ? this.cloneExecutionSummary(summary) : undefined;
+  }
+
+  /**
+   * Returns the service-owned execution-board read model for governance surface consumers.
+   * @param request Optional execution filter and limit.
+   * @returns Execution-board read model.
+   */
+  public async queryExecutionBoard(
+    request?: OrchestrationExecutionBoardQueryRequest,
+  ): Promise<OrchestrationExecutionBoardQueryResponse> {
+    await this.ensureExecutionRecordsLoaded();
+    return this.governanceQueryRuntime.queryExecutionBoard(request);
+  }
+
+  /**
+   * Returns the service-owned HITL inbox read model for governance surface consumers.
+   * @param request Optional execution filter and limit.
+   * @returns HITL inbox read model.
+   */
+  public async queryHitlInbox(
+    request?: OrchestrationHitlInboxQueryRequest,
+  ): Promise<OrchestrationHitlInboxQueryResponse> {
+    await this.ensureExecutionRecordsLoaded();
+    return this.governanceQueryRuntime.queryHitlInbox(request);
+  }
+
+  /**
+   * Returns the service-owned queue/overview read model for desktop command-center consumers.
+   * @param request Optional execution filter and collection limits.
+   * @returns Automation/review queue plus multi-workspace overview DTOs.
+   */
+  public async queryQueueOverview(
+    request?: OrchestrationQueueOverviewQueryRequest,
+  ): Promise<OrchestrationQueueOverviewQueryResponse> {
+    await this.ensureExecutionRecordsLoaded();
+    return this.queueOverviewQueryRuntime.query(request);
   }
 
   public async listExecutions(
@@ -497,6 +554,63 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
         record.summary.nextCursor ?? this.createStreamCursor(record.summary.eventStreamToken, 0),
       executionSummary: this.cloneExecutionSummary(record.summary),
       nextNodeIds: [...recoveredExecution.nextNodeIds],
+    };
+  }
+
+  /**
+   * Terminates one execution through the service-owned execution owner contract.
+   * @param request Termination metadata plus optional partial-snapshot persistence options.
+   * @returns Termination result and refreshed execution summary.
+   */
+  public async terminateExecution(
+    request: OrchestrationTerminateExecutionRequest,
+  ): Promise<OrchestrationTerminateExecutionResponse> {
+    await this.ensureExecutionRecordsLoaded();
+    const record = this.getExecutionRecordOrThrow(request.executionId);
+    if (this.isTerminalExecutionStatus(record.summary.status)) {
+      return {
+        terminated: false,
+        nextStatus: record.summary.status,
+        latestEventSequence: record.summary.latestEventSequence ?? 0,
+        nextCursor:
+          record.summary.nextCursor ?? this.createStreamCursor(record.summary.eventStreamToken, 0),
+        executionSummary: this.cloneExecutionSummary(record.summary),
+      };
+    }
+
+    const partialSnapshotArtifactPath =
+      request.preservePartialOutput === false
+        ? undefined
+        : await this.persistExecutionTerminationSnapshot(record, request);
+    if (partialSnapshotArtifactPath) {
+      await this.publishEvent({
+        executionId: request.executionId,
+        type: OrchestrationServiceEventType.EXECUTION_PARTIAL_SNAPSHOT_PERSISTED,
+        status: record.summary.status,
+        artifactId: 'execution_partial_snapshot',
+        artifactPath: partialSnapshotArtifactPath,
+        message: `Persisted partial execution snapshot before termination by ${request.actor}.`,
+      });
+    }
+    await this.publishEvent({
+      executionId: request.executionId,
+      type: OrchestrationServiceEventType.EXECUTION_HARD_TERMINATION_STARTED,
+      status: OrchestrationExecutionStatus.CANCELLED,
+      message: `Termination requested by ${request.actor}${request.reason ? `: ${request.reason}` : '.'}`,
+    });
+
+    return {
+      terminated: true,
+      nextStatus: record.summary.status,
+      ...(partialSnapshotArtifactPath
+        ? {
+            partialSnapshotArtifactPath,
+          }
+        : {}),
+      latestEventSequence: record.summary.latestEventSequence ?? 0,
+      nextCursor:
+        record.summary.nextCursor ?? this.createStreamCursor(record.summary.eventStreamToken, 0),
+      executionSummary: this.cloneExecutionSummary(record.summary),
     };
   }
 
@@ -697,6 +811,43 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
       )}\n`,
       'utf8',
     );
+  }
+
+  private async persistExecutionTerminationSnapshot(
+    record: LocalOrchestrationExecutionRecord,
+    request: OrchestrationTerminateExecutionRequest,
+  ): Promise<string> {
+    const persistedAt = this.toTimestamp();
+    const artifactPath =
+      request.partialSnapshotArtifactPath ??
+      resolve(
+        this.executionRecordsDirectory,
+        record.summary.executionId,
+        `partial-snapshot-${persistedAt.replace(/[:.]/gu, '-')}.json`,
+      );
+    await mkdir(dirname(artifactPath), { recursive: true });
+    await writeFile(
+      artifactPath,
+      `${JSON.stringify(
+        {
+          executionId: record.summary.executionId,
+          executionSessionId: record.summary.executionSessionId,
+          actor: request.actor,
+          ...(request.reason
+            ? {
+                reason: request.reason,
+              }
+            : {}),
+          persistedAt,
+          executionSummary: this.cloneExecutionSummary(record.summary),
+          events: record.events.map((event) => ({ ...event })),
+        },
+        null,
+        2,
+      )}\n`,
+      'utf8',
+    );
+    return artifactPath;
   }
 
   private applyRecoveredExecution(

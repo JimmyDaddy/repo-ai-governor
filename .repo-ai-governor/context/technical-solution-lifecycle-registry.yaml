@@ -1,5 +1,5 @@
 schema_version: 1
-generated_at: 2026-04-05
+generated_at: 2026-04-06
 status: active
 owner: architecture
 
@@ -454,21 +454,26 @@ solutions:
     supersedes: []
 
   - solution_id: technical-solution.governance-surface-clients
-    title: Governance surface clients technical solution
+    title: Governance surface clients and host-native distribution technical solution
     status: active
     owner: runtime
-    version: v1
+    version: v2
     scope: cross-cutting
     draft_paths:
       - .repo-ai-governor/draft/desktop-surface-technical-selection-and-design.md
       - .repo-ai-governor/draft/repo-ai-governor-desktop-complete-product-surface-benchmark-and-decision.md
       - .repo-ai-governor/draft/repo-ai-governor-desktop-governance-command-center-detailed-solution.md
+      - .repo-ai-governor/draft/codex-claude-code-and-github-copilot-host-native-packaging-technical-solution.md
     review_paths:
       - .repo-ai-governor/context/dev/project-047-governance-surface-clients-solution-promotion-and-decomposition/sprint-001-promotion-and-followup-decomposition/review/resolved_code_review_tk-556-558-governance-surface-clients-promotion-and-decomposition.md
+      - .repo-ai-governor/context/dev/project-048-governance-surface-clients-rollout/sprint-004-automation-queue-and-multi-workspace-governance/review/resolved_code_review_codex-claude-code-and-github-copilot-host-native-packaging-solution.md
+      - .repo-ai-governor/context/dev/project-049-governance-surface-clients-host-distribution-promotion-and-decomposition/sprint-001-promotion-and-followup-decomposition/review/resolved_code_review_tk-571-573-governance-surface-clients-host-distribution-promotion-and-decomposition.md
     final_paths:
       - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/module-overview.md
       - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/contracts/governance-surface-client-contract.md
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/contracts/governance-host-distribution-contract.md
       - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/desktop-command-center-and-vscode-editor-companion-split.md
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/host-native-distribution-and-target-specific-consumption.md
     target_module_ids:
       - runtime.governance-clients
     north_star_refs:
@@ -476,7 +481,7 @@ solutions:
       - overall.graph-first-runtime
       - architecture.runtime-boundary
       - architecture.governance-boundary
-    approved_at: 2026-04-05
+    approved_at: 2026-04-06
     approved_by: User
-    activated_at: 2026-04-05
+    activated_at: 2026-04-06
     supersedes: []

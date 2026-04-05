@@ -1,0 +1,10 @@
+{
+  "host": "codex",
+  "target": "codex.project_local",
+  "mode": "project-local",
+  "workflowId": "workspace-delivery-finisher",
+  "displayName": "Workspace Delivery Finisher",
+  "semanticOwnerModule": "runtime.governance-clients",
+  "canonicalSourceRefs": [".codex/skills/workspace-delivery-finisher/SKILL.md"],
+  "serviceHostPackageExport": "@cjhdev/repo-ai-governor/service-host"
+}

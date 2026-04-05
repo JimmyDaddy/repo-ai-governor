@@ -61,17 +61,59 @@ function createSessionSummary(sessionId: string) {
   };
 }
 
+function createExecutionBoardResponse(
+  executions: Array<ReturnType<typeof createExecutionSummary>>,
+) {
+  return {
+    executions: executions.map((execution) => ({
+      execution,
+      actions: [],
+      handoffTargets: [],
+    })),
+    returnedCount: executions.length,
+    totalMatchedCount: executions.length,
+  };
+}
+
+function createHitlInboxResponse() {
+  return {
+    pendingDecisions: [],
+    returnedCount: 0,
+    totalMatchedCount: 0,
+  };
+}
+
+function createQueueOverviewResponse() {
+  return {
+    generatedAt: '2026-04-05T00:05:00.000Z',
+    automationInbox: [],
+    reviewQueue: [],
+    parallelLanes: [],
+    workspaceSummary: [],
+    notificationOwnership: {
+      ownerSurface: OrchestrationClientSurface.DESKTOP,
+      pendingItemCount: 0,
+      dueSoonItemCount: 0,
+      overdueItemCount: 0,
+      activeWorkspaceCount: 0,
+      defaultFollowUpSlaMinutes: 60,
+      notificationStatus: 'idle',
+    },
+  };
+}
+
 describe('DesktopPreloadBridge', () => {
   it('prefers the latest standalone session over the execution session when building the governance console snapshot', async () => {
     const artifactPaneRequests: Array<Record<string, unknown>> = [];
     const bridge = new DesktopPreloadBridge(
       {
         getHealth: async () => createHealthResponse(),
-        listExecutions: async () => ({
-          executions: [createExecutionSummary('execution-2', 'execution-session-2')],
-          returnedCount: 1,
-          totalMatchedCount: 1,
-        }),
+        queryExecutionBoard: async () =>
+          createExecutionBoardResponse([
+            createExecutionSummary('execution-2', 'execution-session-2'),
+          ]),
+        queryHitlInbox: async () => createHitlInboxResponse(),
+        queryQueueOverview: async () => createQueueOverviewResponse(),
         queryArtifactPane: async (request) => {
           artifactPaneRequests.push({ ...(request ?? {}) });
           return {
@@ -120,11 +162,9 @@ describe('DesktopPreloadBridge', () => {
     const bridge = new DesktopPreloadBridge(
       {
         getHealth: async () => createHealthResponse(),
-        listExecutions: async () => ({
-          executions: [],
-          returnedCount: 0,
-          totalMatchedCount: 0,
-        }),
+        queryExecutionBoard: async () => createExecutionBoardResponse([]),
+        queryHitlInbox: async () => createHitlInboxResponse(),
+        queryQueueOverview: async () => createQueueOverviewResponse(),
         queryArtifactPane: async (request) => {
           artifactPaneRequests.push({ ...(request ?? {}) });
           return {
@@ -173,11 +213,12 @@ describe('DesktopPreloadBridge', () => {
     const bridge = new DesktopPreloadBridge(
       {
         getHealth: async () => createHealthResponse(),
-        listExecutions: async () => ({
-          executions: [createExecutionSummary('execution-2', 'execution-session-2')],
-          returnedCount: 1,
-          totalMatchedCount: 1,
-        }),
+        queryExecutionBoard: async () =>
+          createExecutionBoardResponse([
+            createExecutionSummary('execution-2', 'execution-session-2'),
+          ]),
+        queryHitlInbox: async () => createHitlInboxResponse(),
+        queryQueueOverview: async () => createQueueOverviewResponse(),
         queryArtifactPane: async (request) => {
           artifactPaneRequests.push({ ...(request ?? {}) });
           return {

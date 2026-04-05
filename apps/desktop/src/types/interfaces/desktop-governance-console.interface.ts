@@ -1,6 +1,13 @@
 import type {
   OrchestrationArtifactPaneQueryResponse,
-  OrchestrationExecutionSummary,
+  OrchestrationExecutionBoardQueryResponse,
+  OrchestrationGovernanceActionAffordance,
+  OrchestrationGovernanceActionDisabledReason,
+  OrchestrationGovernanceActionKind,
+  OrchestrationHandoffTarget,
+  OrchestrationHandoffTargetKind,
+  OrchestrationHitlInboxQueryResponse,
+  OrchestrationQueueOverviewQueryResponse,
   OrchestrationServiceHealthResponse,
   OrchestrationSessionSummary,
 } from '@repo-ai-governor/orchestration-service-client';
@@ -21,13 +28,58 @@ export interface DesktopGovernanceConsoleSectionViewModel {
 }
 
 /**
- * Defines one execution-timeline row rendered inside the desktop governance console.
+ * Defines one service-owned governance action rendered by the desktop console.
  */
-export interface DesktopExecutionTimelineEntryViewModel {
+export interface DesktopGovernanceActionViewModel {
+  id: string;
+  actionKind: OrchestrationGovernanceActionKind;
+  enabled: boolean;
+  requiresConfirmation: boolean;
+  title: string;
+  disabledReason?: OrchestrationGovernanceActionDisabledReason;
+  targetId?: string;
+  detailLines: string[];
+}
+
+/**
+ * Defines one service-owned handoff target rendered by the desktop console.
+ */
+export interface DesktopHandoffTargetViewModel {
+  id: string;
+  targetKind: OrchestrationHandoffTargetKind;
+  title: string;
+  exists: boolean;
+  targetPath?: string;
+  detailLines: string[];
+}
+
+/**
+ * Defines one execution-board row rendered inside the desktop governance console.
+ */
+export interface DesktopExecutionBoardEntryViewModel {
   id: string;
   title: string;
   statusVariant: AgentProjectionPanelStatusVariant;
   detailLines: string[];
+  actions: DesktopGovernanceActionViewModel[];
+  handoffTargets: DesktopHandoffTargetViewModel[];
+}
+
+/**
+ * Backward-compatible alias kept for packages that still reference the timeline name.
+ */
+export type DesktopExecutionTimelineEntryViewModel = DesktopExecutionBoardEntryViewModel;
+
+/**
+ * Defines one HITL inbox row rendered inside the desktop governance console.
+ */
+export interface DesktopHitlInboxEntryViewModel {
+  id: string;
+  title: string;
+  statusVariant: AgentProjectionPanelStatusVariant;
+  detailLines: string[];
+  actions: DesktopGovernanceActionViewModel[];
+  handoffTargets: DesktopHandoffTargetViewModel[];
 }
 
 /**
@@ -56,9 +108,69 @@ export interface DesktopArtifactPaneViewModel {
   statusVariant: AgentProjectionPanelStatusVariant;
   gateState: DesktopLifecycleSnapshot['artifactQueryGateState'];
   detailLines: string[];
+  policyTrace: DesktopGovernanceConsoleSectionViewModel;
+  reviewLifecycle: DesktopGovernanceConsoleSectionViewModel;
+  workbench: DesktopGovernanceConsoleSectionViewModel;
+  evidenceBacklinks: DesktopArtifactPaneCollectionViewModel;
   artifacts: DesktopArtifactPaneCollectionViewModel;
   reviews: DesktopArtifactPaneCollectionViewModel;
   transcript: DesktopArtifactPaneCollectionViewModel;
+}
+
+/**
+ * Defines one queue entry rendered inside the desktop governance queue overview.
+ */
+export interface DesktopGovernanceQueueEntryViewModel {
+  id: string;
+  title: string;
+  statusVariant: AgentProjectionPanelStatusVariant;
+  detailLines: string[];
+  actions: DesktopGovernanceActionViewModel[];
+  handoffTargets: DesktopHandoffTargetViewModel[];
+}
+
+/**
+ * Defines one parallel-lane summary rendered inside the desktop governance queue overview.
+ */
+export interface DesktopGovernanceParallelLaneViewModel {
+  id: string;
+  title: string;
+  statusVariant: AgentProjectionPanelStatusVariant;
+  detailLines: string[];
+}
+
+/**
+ * Defines one workspace summary row rendered inside the desktop governance queue overview.
+ */
+export interface DesktopGovernanceWorkspaceSummaryViewModel {
+  id: string;
+  title: string;
+  statusVariant: AgentProjectionPanelStatusVariant;
+  detailLines: string[];
+}
+
+/**
+ * Defines one queue/overview snapshot rendered inside the desktop governance console.
+ */
+export interface DesktopGovernanceQueueOverviewViewModel {
+  title: string;
+  statusVariant: AgentProjectionPanelStatusVariant;
+  detailLines: string[];
+  notificationOwnership: DesktopGovernanceConsoleSectionViewModel;
+  automationInbox: DesktopGovernanceConsoleCollectionViewModel<DesktopGovernanceQueueEntryViewModel>;
+  reviewQueue: DesktopGovernanceConsoleCollectionViewModel<DesktopGovernanceQueueEntryViewModel>;
+  parallelLanes: DesktopGovernanceConsoleCollectionViewModel<DesktopGovernanceParallelLaneViewModel>;
+  workspaceSummary: DesktopGovernanceConsoleCollectionViewModel<DesktopGovernanceWorkspaceSummaryViewModel>;
+}
+
+/**
+ * Defines one collection slice rendered inside the desktop governance console.
+ */
+export interface DesktopGovernanceConsoleCollectionViewModel<TEntry> {
+  title: string;
+  statusVariant: AgentProjectionPanelStatusVariant;
+  emptyState: string;
+  entries: TEntry[];
 }
 
 /**
@@ -67,8 +179,9 @@ export interface DesktopArtifactPaneViewModel {
 export interface DesktopGovernanceConsoleViewModel {
   workspaceHome: DesktopGovernanceConsoleSectionViewModel;
   sessionLane: DesktopGovernanceConsoleSectionViewModel;
-  executionTimeline: DesktopExecutionTimelineEntryViewModel[];
-  hitlCenter: DesktopGovernanceConsoleSectionViewModel;
+  executionBoard: DesktopGovernanceConsoleCollectionViewModel<DesktopExecutionBoardEntryViewModel>;
+  hitlInbox: DesktopGovernanceConsoleCollectionViewModel<DesktopHitlInboxEntryViewModel>;
+  queueOverview: DesktopGovernanceQueueOverviewViewModel;
   artifactPane: DesktopArtifactPaneViewModel;
   agentProjectionPanel?: AgentProjectionPanelViewModel;
 }
@@ -81,9 +194,21 @@ export interface DesktopGovernanceConsoleBuildOptions {
   workspaceLabel: string;
   health: OrchestrationServiceHealthResponse;
   sessions: OrchestrationSessionSummary[];
-  executions: OrchestrationExecutionSummary[];
+  executionBoard: OrchestrationExecutionBoardQueryResponse;
+  hitlInbox: OrchestrationHitlInboxQueryResponse;
+  queueOverview?: OrchestrationQueueOverviewQueryResponse;
   lifecycle: DesktopLifecycleSnapshot;
   artifactPane?: OrchestrationArtifactPaneQueryResponse;
   artifactPaneDeferredReason?: string;
   agentView?: ExecutionReportAgentView | null;
+}
+
+export interface DesktopGovernanceActionBuildInput {
+  locale: string;
+  affordance: OrchestrationGovernanceActionAffordance;
+}
+
+export interface DesktopHandoffTargetBuildInput {
+  locale: string;
+  target: OrchestrationHandoffTarget;
 }
