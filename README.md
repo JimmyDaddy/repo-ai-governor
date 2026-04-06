@@ -21,6 +21,15 @@ Repository-local AI governance CLI for teams that want to connect tools like Cod
 
 Assume this repository is `<governor-repo>` and your target repository is `<target-repo>`.
 
+Recommended start order:
+
+1. Start with `path` when the target repo already uses `pnpm` and you want the default local adoption route.
+2. Move to `link` only when the target repo should follow local governor source changes closely.
+3. Use `dist-binary` when the target repo is dirty, uses Yarn/npm, or you want a no-install CLI/runtime rehearsal first.
+4. Use `tgz` only for a packaged-install rehearsal in an environment that can still reach the npm registry.
+
+The formal acceptance contract for these install modes lives in `docs/support-matrix.md`.
+
 #### Option A: `path`
 
 ```bash
@@ -37,7 +46,7 @@ cd <target-repo>
 pnpm add --save-exact link:<governor-repo>
 ```
 
-Use this when you frequently edit governor source and want the target repo to follow it closely.
+Use this when the target repo should follow local governor source changes closely.
 
 #### Option C: `tgz`
 
@@ -51,7 +60,7 @@ pnpm add --save-exact /absolute/path/to/cjhdev-repo-ai-governor-<version>.tgz
 
 Use this when you want a packaged-install rehearsal. It still requires registry access for external dependencies.
 
-#### Option D: `dist` binary
+#### Option D: `dist-binary`
 
 ```bash
 cd <governor-repo>
@@ -72,7 +81,7 @@ pnpm exec repo-ai-governor doctor --output json
 pnpm exec repo-ai-governor check --output json
 ```
 
-If you use the `dist` binary path, replace `pnpm exec repo-ai-governor` with:
+If you use the `dist-binary` path, replace `pnpm exec repo-ai-governor` with:
 
 ```bash
 node <governor-repo>/dist/bin/repo-ai-governor.js <command>
@@ -123,9 +132,9 @@ Keep the printed `plan-path`. It is your rollback reference for that workspace m
 
 ## 3. Notes For External Adopters
 
-1. `dist` binary rehearsal proves CLI/runtime behavior, not packaged-install behavior.
+1. `dist-binary` rehearsal proves CLI/runtime behavior, not packaged-install behavior.
 2. `tgz` is not offline/self-contained; package installation still resolves external dependencies from the npm registry.
-3. If a target repository already uses Yarn/npm or has a dirty worktree, start with the `dist` binary path and move to package installation later.
+3. If a target repository already uses Yarn/npm or has a dirty worktree, start with `dist-binary`; otherwise start with `path` and move to `link` or `tgz` only when the workflow requires it.
 4. Session shell, React-shell command surfaces, workflow editing, upgrade analysis, HITL notifications, and troubleshooting details are covered in the local adoption playbook.
 5. Repository-local Codex workflow helpers ship under `.codex/skills/`; they are included for self-host and maintainer flows, but external adopters do not need to vendor them unless they want the same local skill ergonomics inside their own repository.
 

@@ -2,16 +2,24 @@
 
 - 状态：active
 - 最后更新：2026-04-06
-- 适用范围：由 `project-026 / sprint-004`（`TK-301`）、`project-044 / sprint-003`（`TK-547`）与 `project-046 / sprint-001`（`TK-551`、`TK-552`、`TK-554`）共同刷新后的正式支持声明
+- 适用范围：由 `project-026 / sprint-004`（`TK-301`）、`project-044 / sprint-003`（`TK-547`）、`project-046 / sprint-001`（`TK-551`、`TK-552`、`TK-554`）与 `project-052 / sprint-001`（`TK-589`、`TK-590`、`TK-591`）共同刷新后的正式支持声明
 
 ## 1. 安装模式
 
 | 模式 | 支持状态 | 说明 |
 |---|---|---|
 | `path`（`pnpm add <repo>`） | Supported | 默认本地接入路径，适合持续迭代。 |
-| `link`（`pnpm add link:<repo>`） | Supported | 适合高频源码联调。 |
-| `dist` 二进制（`node dist/bin/repo-ai-governor.js`） | Supported | 适合脏工作树或非 `pnpm` 仓库的无侵入演练。 |
+| `link`（`pnpm add link:<repo>`） | Supported | 仅适用于目标仓库需要跟随本地 governor 源码变化的场景。 |
+| `dist-binary`（`node dist/bin/repo-ai-governor.js`） | Supported | 适合脏工作树或非 `pnpm` 仓库的无侵入演练。 |
 | `tgz`（`pnpm pack` + `pnpm add <tarball>`） | Supported（联网） | 安装阶段仍需要可访问 registry 解析运行时依赖。 |
+
+### 1.1 Adopter Acceptance Contract
+
+1. 文档中的 `Supported` 表示：该安装模式在说明列声明的前置条件下，可以稳定复现文档约定的基线命令链。
+2. `path` 是干净 `pnpm` 目标仓库的默认推荐安装路径。
+3. `link` 仍然正式支持，但只适用于目标仓库明确要跟随本地 governor 源码变化的场景。
+4. `dist-binary` 是脏工作树或非 `pnpm` 目标仓库的首选路径，它证明的是 CLI/runtime 行为，不等于 packaged install 行为已经成立。
+5. `tgz` 只支持“可访问 registry 的 packaged-install 演练”；离线或自包含 tarball 安装仍不在支持范围内。
 
 ## 2. 适配器 Surface
 
@@ -46,10 +54,12 @@
 | CLI | Supported | 当前生产主入口。 |
 | Desktop sidecar entry | MVP foundation 正式支持 | `apps/desktop` 已提供正式 desktop shell package，并通过 service-owned session/execution/HITL/artifact-pane seam 暴露桌面 MVP foundation；更丰富的 desktop 面板仍按后续阶段演进。 |
 
-## 6. 验证快照（TK-301 + TK-547 + TK-551/TK-552/TK-554）
+## 6. 验证快照（TK-301 + TK-547 + TK-551/TK-552/TK-554 + TK-589/TK-590/TK-591）
 
 | 时间（UTC） | 命令 | 结果 | 证据摘要 |
 |---|---|---|---|
+| 2026-04-06T12:09:11Z | `node ./scripts/release/verify-cleanroom-local-install.js --modes path,link --iterations 1 --output .tmp/project-052-sprint-001-cleanroom-report.json` | Pass | `path` 与 `link` 各完成 1 轮 clean-room 基线链路；workspace switch rollback、read-only attach precheck、service-host memory provider 与 remote-api smoke 也全部通过。 |
+| 2026-04-06T12:08:49Z | `node ./scripts/release/verify-local-distribution.js --output .tmp/project-052-sprint-001-local-distribution-report.json` | Pass | 本地分发验证通过，`pack_file=cjhdev-repo-ai-governor-0.1.5.tgz`；standards runtime-loader dist smoke 与 dist-binary remote-api smoke 均通过，adapter `doctor/verify` 继续维持非阻断 `warn`。 |
 | 2026-04-04T12:09:14Z | `pnpm run build` | Pass | `dist/apps/desktop` 与 `dist/node_modules/@repo-ai-governor/desktop` 已完成本地分发所需产物 |
 | 2026-04-04T12:09:14Z | `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` | Pass | `118` 个文件与 `734` 个测试通过 |
 | 2026-04-04T12:09:14Z | `pnpm run test:integration -- --maxWorkers=1 --maxConcurrency=1` | Pass | `19` 个文件与 `47` 个测试通过 |
@@ -67,4 +77,4 @@
 1. adapter 的 degrade / warning 仍属于环境前置条件（如 `github-copilot` quota/probe、`claude-code` credential/probe、`local-model` endpoint/model capability 限制），而不是治理链路失败。
 2. `project-046` 已把 desktop artifact pane 从 deferred gate 推进为 service-owned typed query contract；renderer 仍不允许直接旁路 workspace 文件系统。
 3. 官方 `GitLab CI` 与 `Jenkins` 模板现已发布到 `integrations/ci/`，并复用与 GitHub Actions 相同的 install、quality-gate 与 release-governance 命令契约。
-4. 本文档定义 `TK-301`、desktop baseline refresh `TK-547` 与 `project-046` P1 收口工作的正式支持边界；GA Readiness 全量信号覆盖仍在 `TK-302` 持续沉淀。
+4. 本文档定义 `TK-301`、desktop baseline refresh `TK-547`、`project-046` P1 收口工作，以及 `project-052 / sprint-001` install-mode truth refresh 的正式支持边界；GA Readiness 全量信号覆盖仍在 `TK-302` 持续沉淀。

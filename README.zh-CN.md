@@ -21,6 +21,15 @@
 
 假设本仓库根目录为 `<governor-repo>`，目标仓库为 `<target-repo>`。
 
+推荐决策顺序：
+
+1. 目标仓库已经使用 `pnpm`，且想走默认本地接入时，先选 `path`。
+2. 只有在目标仓库需要紧跟本地 governor 源码变化时，才切到 `link`。
+3. 目标仓库是脏工作树、使用 Yarn/npm，或你想先做无安装的 CLI/runtime 演练时，使用 `dist-binary`。
+4. 只有在安装环境仍能访问 npm registry、且你明确要做打包安装演练时，才使用 `tgz`。
+
+这些安装模式的正式 acceptance contract 以 `docs/support-matrix.zh-CN.md` 为准。
+
 #### 方式 A：`path`
 
 ```bash
@@ -37,7 +46,7 @@ cd <target-repo>
 pnpm add --save-exact link:<governor-repo>
 ```
 
-适合频繁联调 governor 源码。
+适合让目标仓库持续跟随本地 governor 源码变化。
 
 #### 方式 C：`tgz`
 
@@ -51,7 +60,7 @@ pnpm add --save-exact /绝对路径/cjhdev-repo-ai-governor-<version>.tgz
 
 适合做打包安装演练，但仍需要安装环境能访问 registry。
 
-#### 方式 D：`dist` 二进制
+#### 方式 D：`dist-binary`
 
 ```bash
 cd <governor-repo>
@@ -72,7 +81,7 @@ pnpm exec repo-ai-governor doctor --output json
 pnpm exec repo-ai-governor check --output json
 ```
 
-如果你走的是 `dist` 二进制路径，请把 `pnpm exec repo-ai-governor` 替换为：
+如果你走的是 `dist-binary` 路径，请把 `pnpm exec repo-ai-governor` 替换为：
 
 ```bash
 node <governor-repo>/dist/bin/repo-ai-governor.js <command>
@@ -121,9 +130,9 @@ pnpm exec repo-ai-governor workspace rollback <plan-path> --output json
 
 ## 3. 给外部 adopter 的提醒
 
-1. `dist` 二进制演练证明的是 CLI/runtime 行为，不等于已经验证 package install surface。
+1. `dist-binary` 演练证明的是 CLI/runtime 行为，不等于已经验证 package install surface。
 2. `tgz` 不是离线自包含安装；安装阶段仍会从 npm registry 解析外部依赖。
-3. 如果目标仓库本身是 Yarn/npm，或者已有脏工作树，建议先走 `dist` 二进制路径，再决定是否切到 package 安装。
+3. 如果目标仓库本身是 Yarn/npm，或者已有脏工作树，建议先走 `dist-binary`；否则默认先用 `path`，只有在工作流需要时再切到 `link` 或 `tgz`。
 4. session shell、React shell、workflow/upgrade、HITL 通知、故障排查等更完整说明，请看本地接入手册。
 5. 仓库内的 Codex 本地工作流辅助能力位于 `.codex/skills/`；它们主要服务 self-host 与维护者流程，外部 adopter 只有在希望复用同样的本地 skill 体验时才需要一并 vendoring。
 

@@ -18,9 +18,11 @@
 选择建议：
 
 1. 默认先选 `path`。
-2. 高频修改 governor 源码时选 `link`。
-3. 想演练打包安装时选 `tgz`。
-4. 想先验证 CLI 行为、暂时不动目标仓库依赖图时选 `dist-binary`。
+2. 只有在目标仓库需要跟随本地 governor 源码变化时，才选 `link`。
+3. 只有在安装环境仍能访问 npm registry、且你明确要演练打包安装时，才选 `tgz`。
+4. 目标仓库是脏工作树、使用 Yarn/npm，或你只想先验证 CLI/runtime 行为时，选 `dist-binary`。
+
+这些安装模式的正式 acceptance contract 以 `docs/support-matrix.zh-CN.md` 为准。
 
 ## 3. 初始化目标仓库
 
@@ -178,7 +180,7 @@ pnpm exec repo-ai-governor run --output json
 1. `pnpm add <tarball>` 报 `ENOTFOUND` 时，通常是安装环境无法访问 npm registry；请改用 `path`、`link` 或 `dist-binary`。
 2. `dist-binary` 验证的是 CLI/runtime 行为，不等于验证了 package install surface。
 3. `tgz` 不是离线自包含安装；安装阶段仍会解析外部依赖。
-4. 如果目标仓库本身是 Yarn/npm 或已有脏工作树，建议先用 `dist-binary`，再决定是否切换到 package 安装。
+4. 如果目标仓库本身是 Yarn/npm 或已有脏工作树，建议先用 `dist-binary`；否则默认先用 `path`，只有在工作流需要时再切换到 `link` 或 `tgz`。
 5. `baseline_docs missing=5/5`、`script_not_found` 这类 self-host warning，在外部 adopter 仓库里通常是预期现象。
 
 ## 10. 可选 self-host 资产

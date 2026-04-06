@@ -18,9 +18,11 @@ If you maintain or release `repo-ai-governor` itself, use `docs/maintainer-valid
 Choose the lightest path that matches your goal:
 
 1. Start with `path` unless you have a reason not to.
-2. Use `link` when you actively edit governor source.
-3. Use `tgz` when you want to rehearse a packaged install.
-4. Use `dist-binary` when you want to validate behavior before touching the target repo dependency graph.
+2. Use `link` only when the target repo should follow local governor source changes.
+3. Use `tgz` only when you want a packaged-install rehearsal and the environment can still reach the npm registry.
+4. Use `dist-binary` when the target repo is dirty or non-`pnpm`, or when you want to validate CLI/runtime behavior before touching the target repo dependency graph.
+
+The formal acceptance contract for these install modes lives in `docs/support-matrix.md`.
 
 ## 3. Bootstrap A Target Repository
 
@@ -178,7 +180,7 @@ Then layer the language pack you need, plus any team or repository overrides, on
 1. `pnpm add <tarball>` failing with `ENOTFOUND` usually means the install environment cannot reach the npm registry; use `path`, `link`, or `dist-binary` instead.
 2. `dist-binary` validates CLI/runtime behavior, not packaged-install behavior.
 3. `tgz` is not offline/self-contained; installation still resolves external dependencies.
-4. If a target repository already uses Yarn/npm or has a dirty worktree, start with `dist-binary` before switching to package installation.
+4. If a target repository already uses Yarn/npm or has a dirty worktree, start with `dist-binary`; otherwise start with `path` and move to `link` or `tgz` only when the workflow requires it.
 5. Self-host warnings such as `baseline_docs missing=5/5` or `script_not_found` are expected in fresh external repos unless you intentionally vendor this repository's own governance stack.
 
 ## 10. Optional Self-host Assets

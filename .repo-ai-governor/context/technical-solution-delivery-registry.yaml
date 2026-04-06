@@ -504,25 +504,29 @@ deliveries:
       - packaged_distribution
       - docs_playbook
     user_impact_level: high
-    execution_status: planned
-    rollout_status: planned
+    execution_status: in_progress
+    rollout_status: in_progress
     owner: runtime
     project_ref: project-052-adopter-truthfulness-and-ga-closeout
-    sprint_ref: sprint-001-install-mode-truth-and-playbook-alignment
+    sprint_ref: sprint-002-upgrade-workspace-ux-and-rollback-closeout
     task_ids:
-      - TK-589
-      - TK-590
-      - TK-591
+      - TK-592
+      - TK-593
+      - TK-594
     project_plan_path: .repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/plan.md
-    sprint_plan_path: .repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/sprint-001-install-mode-truth-and-playbook-alignment/plan.md
-    task_csv_path: .repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/sprint-001-install-mode-truth-and-playbook-alignment/tasks/tasks.csv
+    sprint_plan_path: .repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/sprint-002-upgrade-workspace-ux-and-rollback-closeout/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/sprint-002-upgrade-workspace-ux-and-rollback-closeout/tasks/tasks.csv
     handoff_artifact_path: .repo-ai-governor/context/dev/project-051-priority-roadmap-promotion-and-decomposition/sprint-001-promotion-and-followup-decomposition/tasks/DA-588-priority-roadmap-promotion-and-rollout-decomposition-handoff.md
     rollout_artifacts:
       - .repo-ai-governor/context/dev/project-051-priority-roadmap-promotion-and-decomposition/sprint-001-promotion-and-followup-decomposition/tasks/DA-588-priority-roadmap-promotion-and-rollout-decomposition-handoff.md
       - .repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/plan.md
+      - .repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/sprint-001-install-mode-truth-and-playbook-alignment/plan.md
+      - .repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/sprint-001-install-mode-truth-and-playbook-alignment/tasks/DA-636-sprint-001-closeout-and-sprint-002-activation-handoff.md
+      - .repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/sprint-002-upgrade-workspace-ux-and-rollback-closeout/plan.md
       - .repo-ai-governor/context/dev/project-053-real-adapter-invocation-productization/plan.md
       - .repo-ai-governor/context/dev/project-054-vscode-secondary-surface-rollout/plan.md
       - .repo-ai-governor/context/dev/project-055-ga-evidence-and-adopter-pilot-closeout/plan.md
+      - .repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization/plan.md
       - .repo-ai-governor/context/dev/project-056-standards-runtime-loader-and-pack-productization/plan.md
     accepted_at: 2026-04-06
 

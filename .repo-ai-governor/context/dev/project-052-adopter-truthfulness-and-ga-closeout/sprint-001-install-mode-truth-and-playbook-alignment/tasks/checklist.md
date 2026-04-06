@@ -1,8 +1,25 @@
 # checklist
 
-- [ ] TK-589 freeze adopter install mode support matrix and acceptance contract
-  - 2026-04-06：任务创建，状态初始化为 `planned`。
-- [ ] TK-590 align README local adoption playbook and support matrix install-mode truth
-  - 2026-04-06：任务创建，状态初始化为 `planned`。
-- [ ] TK-591 close install-mode truthfulness with clean-room and dist-binary rehearsal evidence
-  - 2026-04-06：任务创建，状态初始化为 `planned`。
+- [x] TK-589 freeze adopter install mode support matrix and acceptance contract
+  - 2026-04-06：任务创建，等待 `project-052` 激活。
+  - 2026-04-06：状态切换为 `in_progress`，开始冻结 install mode support matrix、acceptance contract 与正式支持边界。
+  - 2026-04-06：已完成 install mode acceptance contract 冻结，support matrix / README / playbook 已统一声明 `path`、`link`、`dist-binary`、`tgz` 的正式支持边界，并产出 `DA-589`。
+- [x] TK-590 align README local adoption playbook and support matrix install-mode truth
+  - 2026-04-06：任务创建，等待 `TK-589` 完成。
+  - 2026-04-06：开始对齐 README、README.zh-CN、双语 local adoption playbook 与双语 support matrix 的 install-mode 叙事。
+  - 2026-04-06：已完成双语 README / playbook / support matrix 对齐，统一 `dist-binary` 命名、install-mode 推荐顺序与 support boundary 回链，并产出 `DA-590`。
+- [x] TK-591 close install-mode truthfulness with clean-room and dist-binary rehearsal evidence
+  - 2026-04-06：任务创建，等待 `TK-589 / TK-590` 完成。
+  - 2026-04-06：状态切换为 `in_progress`，开始刷新 clean-room install 与 dist-binary / local distribution rehearsal evidence。
+  - 2026-04-06：`verify-cleanroom-local-install` 与 `verify-local-distribution` 均通过，support matrix 已写回最新 install-mode evidence，并产出 `DA-591`。
+- [x] CR-001 sprint-001-install-mode-truth-and-playbook-alignment delegated review loop round 1
+  - 2026-04-06：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-06：fresh reviewer round 1 提出 1 条 accepted finding：`TK-589`、`TK-590`、`TK-591` 与 `CR-001` 缺少显式 `Task ID` 元数据；当前 round 推进到 `verified`。
+  - 2026-04-06：已恢复 4 张 canonical task card 的 `Task ID` 元数据，并通过 task-ledger / sprint-plan / code-review sync 检查；round 1 收口为 `resolved`。
+- [x] CR-002 sprint-001-install-mode-truth-and-playbook-alignment delegated recheck loop round 2
+  - 2026-04-06：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-06：按放宽后的执行规则尝试多次 fresh reviewer recheck，但子 agent 均未返回可用 verdict；改由主 agent 执行本地 fallback recheck。
+  - 2026-04-06：fallback recheck 未发现新的 actionable finding；`CR-002` 收口为 `resolved`。
+- [x] TK-636 sprint-001 exit acceptance and sprint-002 activation handoff
+  - 2026-04-06：任务创建并切换为 `in_progress`，开始执行 sprint-001 closeout 与 sprint-002 activation handoff。
+  - 2026-04-06：已完成 `DA-636`、project/sprint/context/history 写回，并激活 `sprint-002` 与 `TK-592`。
