@@ -27,7 +27,7 @@
 5. Desktop targeted tests: `pnpm vitest run apps/desktop/test/desktop-governance-console-view-model-builder.test.ts apps/desktop/test/desktop-shell-bootstrap.test.ts apps/desktop/test/desktop-session-bridge.test.ts test/desktop-entry-smoke.integration.test.ts --maxWorkers=1 --maxConcurrency=1`
 6. Standards/config targeted tests: `pnpm vitest run packages/config/test/config.unit.test.ts packages/standards/test/standards-registry-and-renderer.unit.test.ts packages/standards/test/standards-runtime-loader.integration.test.ts --maxWorkers=1 --maxConcurrency=1`
 7. Adapter targeted tests: `pnpm vitest run packages/adapters/github-copilot/test/github-copilot-agent-adapter.smoke.test.ts packages/adapters/claude-code/test/claude-code-agent-adapter.smoke.test.ts packages/adapters/local-model/test/local-model-agent-adapter.smoke.test.ts test/first-batch-adapters-route.integration.test.ts --maxWorkers=1 --maxConcurrency=1`
-8. GA timing artifact: `/Users/jimmydaddy/study/ai-governor/.tmp/project-046-p1-ga-onboarding-timing.json`
+8. GA timing artifact: `.tmp/project-046-p1-ga-onboarding-timing.json`
 9. Workflow closeout gates: `node ./scripts/governance/check-task-ledger-sync.js`、`node ./scripts/governance/check-sprint-plan-status-sync.js`、`node ./scripts/governance/check-code-review-status-sync.js`、`node ./scripts/governance/check-worktree-review-target.js`、`node ./scripts/governance/check-technical-solution-delivery-registry.js`
 
 ## 4. Artifacts

@@ -192,18 +192,33 @@ importers:
       '@repo-ai-governor/shared':
         specifier: workspace:*
         version: link:../../shared
+      '@repo-ai-governor/standards':
+        specifier: workspace:*
+        version: link:../../standards
 
   packages/adapters/codex:
     dependencies:
       '@repo-ai-governor/adapter-sdk':
         specifier: workspace:*
         version: link:../../adapter-sdk
+      '@repo-ai-governor/shared':
+        specifier: workspace:*
+        version: link:../../shared
+      '@repo-ai-governor/standards':
+        specifier: workspace:*
+        version: link:../../standards
 
   packages/adapters/github-copilot:
     dependencies:
       '@repo-ai-governor/adapter-sdk':
         specifier: workspace:*
         version: link:../../adapter-sdk
+      '@repo-ai-governor/shared':
+        specifier: workspace:*
+        version: link:../../shared
+      '@repo-ai-governor/standards':
+        specifier: workspace:*
+        version: link:../../standards
 
   packages/adapters/local-model:
     dependencies:

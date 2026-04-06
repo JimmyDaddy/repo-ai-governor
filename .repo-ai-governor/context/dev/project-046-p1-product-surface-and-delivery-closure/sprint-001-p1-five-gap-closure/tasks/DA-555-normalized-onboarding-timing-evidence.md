@@ -16,11 +16,12 @@
 
 ## 2. Evidence
 
-1. JSON timing artifact: `/Users/jimmydaddy/study/ai-governor/.tmp/project-046-p1-ga-onboarding-timing.json`
-2. Simple pilot repo: `/Users/jimmydaddy/study/playground`
-3. Complex pilot repo: `/Users/jimmydaddy/study/react-native-image-marker-1.1.x`
+1. JSON timing artifact: `.tmp/project-046-p1-ga-onboarding-timing.json`
+2. Simple pilot repo: `<local pilot checkout>/playground`
+3. Complex pilot repo: `<local pilot checkout>/react-native-image-marker-1.1.x`
 
 ## 3. Notes
 
 1. 复杂仓库沿用 project-020 pilot 的 `dist` binary rehearsal 路径，避免为既有 Yarn / dirty worktree 仓库引入额外 package-manager 变量。
 2. `doctor` / `check` 中出现的 external-adopter baseline warnings 继续记录为非阻断已知现象，不影响 onboarding timing signal 的通过结论。
+3. 上述试点仓库均来自本地 checkout；如需复现，请在对应试点仓库重新执行文中命令链，并在仓库根目录下重新生成 `.tmp/project-046-p1-ga-onboarding-timing.json`。
