@@ -10,6 +10,7 @@
 - Pass：11 / 11
 - Conditional pass：0 / 11
 - Fail：0 / 11
+- 当前 adopter / maintainer surface 的公开 support truth 已在 `project-052 / sprint-003 / TK-596` 窗口收敛到 `docs/support-matrix.md` 与 `docs/support-matrix.zh-CN.md`；本文件继续承担 program-level signal matrix 角色，而不是再维护一份平行的公开支持声明。
 
 ## 2. 信号矩阵
 

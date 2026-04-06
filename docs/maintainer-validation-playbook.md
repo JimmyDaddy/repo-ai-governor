@@ -10,6 +10,12 @@ Use this playbook when you need to:
 2. Validate real-project interactive behavior before rollout.
 3. Run clean-room and GA-style verification from the governor repository.
 
+### 1.1 Formal Support Truth Route
+
+1. Use `docs/support-matrix.md` as the single public support truth surface; `## 9. GA Support Truthfulness Snapshot` is the current closeout-facing summary.
+2. Use this playbook for command order, operator intent, and backlinks to the underlying evidence files.
+3. Use `docs/ga-readiness-evidence.md` for the broader program-level GA signal matrix.
+
 ## 2. Published Package Surface Expectations
 
 Published tarballs are expected to include:
@@ -111,6 +117,8 @@ Notes:
 1. `release:verify-cleanroom-local-install` validates packaged-install paths and can emit a machine-readable report with `--output <path>`.
 2. `release:verify-local` includes local verification surfaces that are useful before rollout.
 3. `release:ga-check` is for maintainers deciding whether the current state is ready for broader release, not for ordinary adopters.
+4. Current `project-052` evidence backlinks expected by this playbook are `.tmp/project-052-sprint-001-cleanroom-report.json`, `.tmp/project-052-sprint-001-local-distribution-report.json`, and `.tmp/project-052-sprint-002-command-rehearsal-summary.json`.
+5. When those signals change, update `docs/support-matrix.md` first instead of creating a second status table in this playbook.
 
 ## 6. Interpreting External-adopter Warnings
 
@@ -132,3 +140,6 @@ Interpretation:
 4. `docs/local-adoption-playbook.zh-CN.md`
 5. `docs/support-matrix.md`
 6. `docs/ga-readiness-evidence.md`
+7. `.tmp/project-052-sprint-001-cleanroom-report.json`
+8. `.tmp/project-052-sprint-001-local-distribution-report.json`
+9. `.tmp/project-052-sprint-002-command-rehearsal-summary.json`

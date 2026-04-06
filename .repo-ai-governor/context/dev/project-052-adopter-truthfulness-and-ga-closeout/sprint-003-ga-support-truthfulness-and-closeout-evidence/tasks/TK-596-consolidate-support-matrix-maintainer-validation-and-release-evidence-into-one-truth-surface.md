@@ -1,6 +1,6 @@
 # TK-596 consolidate support matrix maintainer validation and release evidence into one truth surface
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-06
 - Task ID: `TK-596`
 - Owner: `AI-Agent`
@@ -62,8 +62,15 @@
 ## 9. 执行记录
 
 1. 2026-04-06：任务创建，状态初始化为 `planned`，等待 `TK-595` 完成。
+2. 2026-04-06：`DA-595` 已冻结统一 schema 与 cross-link contract，任务切换为 `in_progress`，开始把 support matrix、maintainer validation 与 release evidence 汇总到同一 truth surface。
+3. 2026-04-06：已产出 `DA-596`，将 `docs/support-matrix*.md` 升级为统一 GA support truth surface，并把 maintainer playbook 与 GA evidence 回链到该 surface；同窗口 `pnpm run check` 与治理检查全部通过，任务切换为 `completed`。
 
 ## 10. 产出
 
-1. 待执行：unified GA truth surface
-2. 待执行：maintainer validation / release evidence consolidation
+1. `.repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/sprint-003-ga-support-truthfulness-and-closeout-evidence/tasks/DA-596-ga-support-truth-surface-consolidation.md`
+2. `docs/support-matrix.md`
+3. `docs/support-matrix.zh-CN.md`
+4. `docs/maintainer-validation-playbook.md`
+5. `docs/maintainer-validation-playbook.zh-CN.md`
+6. `docs/ga-readiness-evidence.md`
+7. `docs/ga-readiness-evidence.zh-CN.md`

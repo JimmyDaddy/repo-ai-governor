@@ -2,7 +2,7 @@
 
 - Status: active
 - Last updated: 2026-04-06
-- Scope: formal support declaration refreshed by `project-026 / sprint-004` (`TK-301`), `project-044 / sprint-003` (`TK-547`), `project-046 / sprint-001` (`TK-551`, `TK-552`, `TK-554`), `project-052 / sprint-001` (`TK-589`, `TK-590`, `TK-591`), and `project-052 / sprint-002` (`TK-592`, `TK-593`, `TK-594`)
+- Scope: formal support declaration refreshed by `project-026 / sprint-004` (`TK-301`), `project-044 / sprint-003` (`TK-547`), `project-046 / sprint-001` (`TK-551`, `TK-552`, `TK-554`), `project-052 / sprint-001` (`TK-589`, `TK-590`, `TK-591`), `project-052 / sprint-002` (`TK-592`, `TK-593`, `TK-594`), and `project-052 / sprint-003` (`TK-595`, `TK-596`)
 
 ## 1. Installation Modes
 
@@ -88,9 +88,25 @@
 4. Rehearsal and pilot runs should use target repositories or isolated external temp directories; running workspace migration from the governor source repository can attach to the outer Git root and create misleading artifacts.
 5. `.tmp/project-052-sprint-002-command-rehearsal-summary.json` is the formal sprint-002 acceptance evidence for the repo-external upgrade/workspace closeout path.
 
-## 9. Notes
+## 9. GA Support Truthfulness Snapshot (TK-596)
+
+1. `docs/support-matrix*.md` is now the single public truth surface for current support status plus GA support truthfulness.
+2. `docs/maintainer-validation-playbook*.md` remains the maintainer runbook and backlink router; it should not keep a parallel support-status table.
+3. `docs/ga-readiness-evidence*.md` remains the program-level signal matrix and may backlink to this section, but it does not redefine the public support boundary.
+
+| Claim scope | Audience | Surface | Status | Evidence time (UTC) | Evidence command / artifact | Evidence summary | Backlink target | Refresh trigger | Residual risk |
+|---|---|---|---|---|---|---|---|---|---|
+| clean-room install baseline | adopter + maintainer | `path` / `link` install modes | Pass | 2026-04-06T12:09:11Z | `.tmp/project-052-sprint-001-cleanroom-report.json` | `path` and `link` both passed the clean-room chain and covered workspace-switch rollback prechecks. | `docs/maintainer-validation-playbook.md`, `.tmp/project-052-sprint-001-cleanroom-report.json` | install-mode contract or packaged runtime changes | Wider `tgz` / registry-backed packaged install still depends on separate packaged distribution rehearsal. |
+| packaged distribution rehearsal | maintainer | local distribution / packaged surface | Pass | 2026-04-06T12:08:49Z | `.tmp/project-052-sprint-001-local-distribution-report.json` | Local distribution verified the packed governor surface and kept adapter `doctor/verify` as non-blocking warn rather than a hard support failure. | `docs/maintainer-validation-playbook.md`, `.tmp/project-052-sprint-001-local-distribution-report.json` | packaging layout, release asset, or dist runtime changes | Adapter warn semantics remain environment-precondition dependent. |
+| repo-external upgrade/workspace closeout | adopter + maintainer | `upgrade` and `workspace` user path | Pass | 2026-04-06T21:29:47Z | `.tmp/project-052-sprint-002-command-rehearsal-summary.json` | External rehearsal passed `preview -> apply -> rollback` and `dry-run -> execute -> rollback`, including rollback verification and scratch cleanup. | `docs/local-adoption-playbook.md`, `.tmp/project-052-sprint-002-command-rehearsal-summary.json` | command contract, rollback artifact semantics, or troubleshooting flow changes | Final project completion promotion still depends on clean sprint/project review loops. |
+| maintainer release runbook | maintainer | local release-gate rehearsal | Pass | 2026-04-04T12:12:23Z | `pnpm run release:verify-local` | The maintainer gate still proves CLI help smoke, desktop entry smoke, examples runtime smoke, dist-binary remote-api smoke, and packed-surface truthfulness in one runbook step. | `docs/maintainer-validation-playbook.md` | release gate composition or packaged surface changes | This row is a runbook-backed rehearsal, not a new public support contract. |
+| program-level GA signals | maintainer + project-closeout | cross-stage GA readiness | Pass | 2026-04-05 | `docs/ga-readiness-evidence.md` | The broader GA signal matrix remains green and now back-links to this support truth surface instead of serving as a parallel public claim. | `docs/ga-readiness-evidence.md` | GA signal thresholds or upstream evidence refresh | The completion recommendation is prepared; final project completion promotion still depends on clean sprint/project review loops. |
+
+4. The prepared `project-052` closeout recommendation now lives in `.repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/project-052-adopter-truthfulness-and-ga-closeout-completion-audit-summary.md`; the final `completed` verdict still depends on clean sprint-003 and project-final review loops.
+
+## 10. Notes
 
 1. Adapter degrade or warning signals remain environment-precondition related (`github-copilot` quota/probe, `claude-code` credential/probe, `local-model` endpoint/model capability limits) rather than governance-chain failure.
 2. `project-046` promotes the desktop artifact pane from deferred gate to a service-owned typed query contract; renderer consumers still do not bypass the workspace filesystem directly.
 3. Official `GitLab CI` and `Jenkins` templates are now published under `integrations/ci/` and reuse the same install, quality-gate, and release-governance command contract as GitHub Actions.
-4. This matrix defines current formal support boundaries for `TK-301`, the desktop MVP foundation refresh in `TK-547`, the P1 product-surface closure work in `project-046`, the install-mode truth refresh in `project-052 / sprint-001`, and the upgrade/workspace contract plus acceptance closeout in `project-052 / sprint-002`; GA readiness signal closure continues in `TK-302`.
+4. This matrix defines current formal support boundaries for `TK-301`, the desktop MVP foundation refresh in `TK-547`, the P1 product-surface closure work in `project-046`, the install-mode truth refresh in `project-052 / sprint-001`, the upgrade/workspace contract plus acceptance closeout in `project-052 / sprint-002`, and the GA support truthfulness consolidation in `project-052 / sprint-003`; broader GA readiness signal closure continues in `TK-302`.

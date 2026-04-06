@@ -10,6 +10,12 @@
 2. 在扩大 rollout 前验证真实项目中的交互行为。
 3. 在 governor 仓库里执行 clean-room、release、GA 风格的维护者验证。
 
+### 1.1 正式 Support Truth 路由
+
+1. `docs/support-matrix.zh-CN.md` 是唯一的公开 support truth surface；其中 `## 9. GA Support Truthfulness 快照` 是当前 closeout-facing 总结。
+2. 本手册只负责命令顺序、维护者意图说明，以及到底层 evidence 文件的 backlinks。
+3. `docs/ga-readiness-evidence.zh-CN.md` 负责更宽的 program-level GA signal matrix。
+
 ## 2. 已发布包的参考资产面
 
 已发布 tarball 预期包含：
@@ -111,6 +117,8 @@ pnpm run release:ga-check
 1. `release:verify-cleanroom-local-install` 用于验证 packaged-install 路径，并支持通过 `--output <path>` 输出机器可读报告。
 2. `release:verify-local` 适合 rollout 前的本地维护者验证。
 3. `release:ga-check` 面向维护者的发布准备判断，不适合作为普通 adopter 的日常命令。
+4. 当前本手册预期回链的 `project-052` 结构化 evidence 包括 `.tmp/project-052-sprint-001-cleanroom-report.json`、`.tmp/project-052-sprint-001-local-distribution-report.json` 与 `.tmp/project-052-sprint-002-command-rehearsal-summary.json`。
+5. 当这些信号变化时，应先更新 `docs/support-matrix.zh-CN.md`，而不是在本手册里再维护第二张状态表。
 
 ## 6. 如何理解 external-adopter warning
 
@@ -132,3 +140,6 @@ pnpm run release:ga-check
 4. `docs/local-adoption-playbook.zh-CN.md`
 5. `docs/support-matrix.zh-CN.md`
 6. `docs/ga-readiness-evidence.zh-CN.md`
+7. `.tmp/project-052-sprint-001-cleanroom-report.json`
+8. `.tmp/project-052-sprint-001-local-distribution-report.json`
+9. `.tmp/project-052-sprint-002-command-rehearsal-summary.json`

@@ -30,9 +30,9 @@
 
 ## 2.3 sprint-003-ga-support-truthfulness-and-closeout-evidence
 
-- Status: active
+- Status: completed
 - Sprint Goal: 将 support matrix、maintainer playbook、clean-room/release evidence 汇总成统一 closeout truth。
-- Task Package: `TK-595`、`TK-596`、`TK-597`。
+- Task Package: `TK-595`、`TK-596`、`TK-597`、`TK-638`。
 
 ## 3. 任务拆解矩阵（WBS）
 
@@ -46,9 +46,10 @@
 | TK-593 | sprint-002 | implement and document upgrade preview apply rollback plus workspace migration closeout path | implementation/docs | TK-592 | completed |
 | TK-594 | sprint-002 | close adopter-facing upgrade and workspace UX with troubleshooting acceptance | closeout/acceptance | TK-592、TK-593 | completed |
 | TK-637 | sprint-002 | sprint-002 exit acceptance and sprint-003 activation handoff | closeout/handoff | TK-592、TK-593、TK-594、CR-001 | completed |
-| TK-595 | sprint-003 | freeze GA support truthfulness evidence schema and maintainer cross-link contract | contract/evidence | TK-594 | in_progress |
-| TK-596 | sprint-003 | consolidate support matrix maintainer validation and release evidence into one truth surface | docs/evidence | TK-595 | planned |
-| TK-597 | sprint-003 | close project-052 with adopter truthfulness audit summary and next-stream recommendation | project/closeout | TK-595、TK-596 | planned |
+| TK-595 | sprint-003 | freeze GA support truthfulness evidence schema and maintainer cross-link contract | contract/evidence | TK-594 | completed |
+| TK-596 | sprint-003 | consolidate support matrix maintainer validation and release evidence into one truth surface | docs/evidence | TK-595 | completed |
+| TK-597 | sprint-003 | close project-052 with adopter truthfulness audit summary and next-stream recommendation | project/closeout | TK-595、TK-596 | completed |
+| TK-638 | sprint-003 | sprint-003 exit acceptance and project-final review handoff | closeout/handoff | TK-595、TK-596、TK-597、CR-001、CR-002、CR-003 | completed |
 
 ## 4. 依赖产物策略
 
@@ -75,3 +76,7 @@
 7. 2026-04-06：`TK-593` 已完成 repo-external command rehearsal 与 adopter-facing path 文档化，`TK-594` 已接棒进入 troubleshooting / acceptance closeout。
 8. 2026-04-06：`TK-594` 已完成 troubleshooting / acceptance closeout，`sprint-002` 的实现边界现已全部 ready for scoped CR loop。
 9. 2026-04-06：`CR-001` 已在放宽后的 fallback local recheck 下 clean 收口；`TK-637 / DA-637` 已完成 sprint-002 closeout 并激活 `sprint-003 / TK-595`。
+10. 2026-04-06：`TK-595` 已完成 `DA-595`，冻结 support matrix 作为统一 GA support truth surface，并把 `TK-596` 切换为 `in_progress`。
+11. 2026-04-06：`TK-596` 已完成 `DA-596` 与 support matrix / maintainer playbook / GA evidence 收口，`TK-597` 已切换为 `in_progress` 准备 project closeout。
+12. 2026-04-06：`TK-597` 已生成 `project-052` completion audit summary（prepared，路径：`.repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/project-052-adopter-truthfulness-and-ga-closeout-completion-audit-summary.md`）与 `project-053` next-stream recommendation，`sprint-003` 的实现边界现已全部完成，下一步进入 scoped CR loop。
+13. 2026-04-06：`CR-001`、`CR-002`、`CR-003` 已全部 `resolved`；`TK-638 / DA-638` 已完成 sprint-003 closeout，并把下一边界固定为 project-final scoped CR loop。

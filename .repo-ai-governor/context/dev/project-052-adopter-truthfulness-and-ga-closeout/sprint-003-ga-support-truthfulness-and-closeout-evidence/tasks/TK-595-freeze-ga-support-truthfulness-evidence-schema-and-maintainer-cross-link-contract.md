@@ -1,6 +1,6 @@
 # TK-595 freeze GA support truthfulness evidence schema and maintainer cross-link contract
 
-- Status: in_progress
+- Status: completed
 - Date: 2026-04-06
 - Task ID: `TK-595`
 - Owner: `AI-Agent`
@@ -62,8 +62,10 @@
 
 1. 2026-04-06：任务创建，状态初始化为 `planned`，等待 `sprint-002` 收口。
 2. 2026-04-06：`TK-637 / DA-637` 已完成 sprint-002 closeout 与 sprint-003 activation handoff，任务切换为 `in_progress`。
+3. 2026-04-06：已产出 `DA-595`，冻结 `docs/support-matrix*.md` 为统一 GA support truth surface，并明确 maintainer playbook 与 GA evidence 的 backlink contract，任务切换为 `completed`。
 
 ## 10. 产出
 
-1. 待执行：GA support truthfulness evidence schema
-2. 待执行：maintainer cross-link contract
+1. `.repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/sprint-003-ga-support-truthfulness-and-closeout-evidence/tasks/DA-595-ga-support-truthfulness-evidence-schema-and-maintainer-cross-link-contract.md`
+2. 冻结后的 GA support truthfulness evidence schema
+3. 冻结后的 maintainer cross-link contract

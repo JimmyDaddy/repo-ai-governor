@@ -2,7 +2,7 @@
 
 - 状态：active
 - 最后更新：2026-04-06
-- 适用范围：由 `project-026 / sprint-004`（`TK-301`）、`project-044 / sprint-003`（`TK-547`）、`project-046 / sprint-001`（`TK-551`、`TK-552`、`TK-554`）、`project-052 / sprint-001`（`TK-589`、`TK-590`、`TK-591`）与 `project-052 / sprint-002`（`TK-592`、`TK-593`、`TK-594`）共同刷新后的正式支持声明
+- 适用范围：由 `project-026 / sprint-004`（`TK-301`）、`project-044 / sprint-003`（`TK-547`）、`project-046 / sprint-001`（`TK-551`、`TK-552`、`TK-554`）、`project-052 / sprint-001`（`TK-589`、`TK-590`、`TK-591`）、`project-052 / sprint-002`（`TK-592`、`TK-593`、`TK-594`）与 `project-052 / sprint-003`（`TK-595`、`TK-596`）共同刷新后的正式支持声明
 
 ## 1. 安装模式
 
@@ -88,9 +88,25 @@
 4. rehearsal 或 pilot 应在目标仓库或隔离的外部临时目录中执行；若直接从 governor 源仓库发起 workspace migration，命令可能附着到外层 Git root 并产生误导性产物。
 5. `.tmp/project-052-sprint-002-command-rehearsal-summary.json` 是 sprint-002 repo-external upgrade/workspace closeout 路径的正式 acceptance evidence。
 
-## 9. 备注
+## 9. GA Support Truthfulness 快照（TK-596）
+
+1. `docs/support-matrix*.md` 现在是当前支持状态与 GA support truthfulness 的唯一公开 truth surface。
+2. `docs/maintainer-validation-playbook*.md` 保留为 maintainer runbook 与 backlink router，不再维护一张平行的 support-status 表。
+3. `docs/ga-readiness-evidence*.md` 保留为 program-level signal matrix；它可以回链这里，但不再独立重定义公开支持边界。
+
+| Claim scope | Audience | Surface | Status | 证据时间（UTC） | 证据命令 / 产物 | 证据摘要 | Backlink target | Refresh trigger | Residual risk |
+|---|---|---|---|---|---|---|---|---|---|
+| clean-room install baseline | adopter + maintainer | `path` / `link` 安装模式 | Pass | 2026-04-06T12:09:11Z | `.tmp/project-052-sprint-001-cleanroom-report.json` | `path` 与 `link` 都通过了 clean-room 链路，并覆盖 workspace-switch rollback 相关预检。 | `docs/maintainer-validation-playbook.zh-CN.md`、`.tmp/project-052-sprint-001-cleanroom-report.json` | install-mode contract 或 packaged runtime 变化 | 更宽的 `tgz` / registry-backed packaged install 仍依赖单独的 packaged distribution rehearsal。 |
+| packaged distribution rehearsal | maintainer | local distribution / packaged surface | Pass | 2026-04-06T12:08:49Z | `.tmp/project-052-sprint-001-local-distribution-report.json` | 本地分发验证通过，且 adapter `doctor/verify` 继续以非阻断 warn 处理，而不是被误判成支持失败。 | `docs/maintainer-validation-playbook.zh-CN.md`、`.tmp/project-052-sprint-001-local-distribution-report.json` | packaging layout、release asset 或 dist runtime 变化 | adapter warn 语义仍与环境前置条件有关。 |
+| repo-external upgrade/workspace closeout | adopter + maintainer | `upgrade` 与 `workspace` 用户路径 | Pass | 2026-04-06T21:29:47Z | `.tmp/project-052-sprint-002-command-rehearsal-summary.json` | 外部 rehearsal 已通过 `preview -> apply -> rollback` 与 `dry-run -> execute -> rollback`，并验证 rollback 与 scratch cleanup 都成立。 | `docs/local-adoption-playbook.zh-CN.md`、`.tmp/project-052-sprint-002-command-rehearsal-summary.json` | command contract、rollback artifact 语义或 troubleshooting 流程变化 | 最终 project completion promotion 仍取决于 sprint/project review loop clean 收口。 |
+| maintainer release runbook | maintainer | 本地 release-gate rehearsal | Pass | 2026-04-04T12:12:23Z | `pnpm run release:verify-local` | maintainer gate 继续在一条 runbook 步骤里验证 CLI help smoke、desktop entry smoke、examples runtime smoke、dist-binary remote-api smoke 与 packed-surface truthfulness。 | `docs/maintainer-validation-playbook.zh-CN.md` | release gate 组成或 packaged surface 变化 | 这一行是 runbook-backed rehearsal，不是新的公开 support contract。 |
+| program-level GA signals | maintainer + project-closeout | 跨阶段 GA readiness | Pass | 2026-04-05 | `docs/ga-readiness-evidence.zh-CN.md` | 更广义的 GA signal matrix 仍然全绿，并改为回链本 section，而不是再充当一份平行的公开 support claim。 | `docs/ga-readiness-evidence.zh-CN.md` | GA signal threshold 或上游 evidence refresh 变化 | completion recommendation 已准备完成；最终 project completion promotion 仍取决于 sprint/project review loop clean 收口。 |
+
+4. `project-052` 的 prepared closeout recommendation 现已写入 `.repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/project-052-adopter-truthfulness-and-ga-closeout-completion-audit-summary.md`；最终 `completed` verdict 仍取决于 sprint-003 与 project-final review loop clean 收口。
+
+## 10. 备注
 
 1. adapter 的 degrade / warning 仍属于环境前置条件（如 `github-copilot` quota/probe、`claude-code` credential/probe、`local-model` endpoint/model capability 限制），而不是治理链路失败。
 2. `project-046` 已把 desktop artifact pane 从 deferred gate 推进为 service-owned typed query contract；renderer 仍不允许直接旁路 workspace 文件系统。
 3. 官方 `GitLab CI` 与 `Jenkins` 模板现已发布到 `integrations/ci/`，并复用与 GitHub Actions 相同的 install、quality-gate 与 release-governance 命令契约。
-4. 本文档定义 `TK-301`、desktop baseline refresh `TK-547`、`project-046` P1 收口工作、`project-052 / sprint-001` install-mode truth refresh，以及 `project-052 / sprint-002` upgrade/workspace contract 与 acceptance closeout 的正式支持边界；GA Readiness 全量信号覆盖仍在 `TK-302` 持续沉淀。
+4. 本文档定义 `TK-301`、desktop baseline refresh `TK-547`、`project-046` P1 收口工作、`project-052 / sprint-001` install-mode truth refresh、`project-052 / sprint-002` upgrade/workspace contract 与 acceptance closeout，以及 `project-052 / sprint-003` 的 GA support truthfulness consolidation 这些正式支持边界；更广义的 GA Readiness 全量信号覆盖仍在 `TK-302` 持续沉淀。

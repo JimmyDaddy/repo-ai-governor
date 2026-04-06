@@ -10,6 +10,7 @@
 - Pass: 11 / 11
 - Conditional pass: 0 / 11
 - Fail: 0 / 11
+- Public support truth for the current adopter/maintainer surface is consolidated in `docs/support-matrix.md` and `docs/support-matrix.zh-CN.md` as of `project-052 / sprint-003 / TK-596`; this document remains the program-level signal matrix rather than a parallel public support claim.
 
 ## 2. Signal Matrix
 
