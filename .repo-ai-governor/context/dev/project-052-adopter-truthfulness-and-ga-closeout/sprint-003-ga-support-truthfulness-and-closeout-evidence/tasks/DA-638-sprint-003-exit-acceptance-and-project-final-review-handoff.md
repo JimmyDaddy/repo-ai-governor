@@ -11,7 +11,7 @@
 
 `accept`
 
-`project-052 / sprint-003-ga-support-truthfulness-and-closeout-evidence` 已满足当前 sprint 的退出条件。GA support truth surface、prepared completion audit summary、以及 3 轮 sprint-level scoped CR loop 收口都已形成可回放事实链，因此该 sprint 可以正式结束，并把同一 review surface 继续作为 `project-052` project-final scoped CR loop 的执行边界。
+`project-052 / sprint-003-ga-support-truthfulness-and-closeout-evidence` 已满足当前 sprint 的退出条件。GA support truth surface、prepared completion audit summary、以及 3 轮 sprint-level scoped CR loop 收口都已形成可回放事实链，因此 sprint-level exit acceptance 已完成；但由于 project-final CR rounds 继续复用同一 sprint ledger，该 stream 在 project closeout 前仍保持 active review surface。
 
 本次 sprint closeout 窗口只包含 docs / governance / ledger 写回，没有修改 `apps/**`、`packages/**`、`bin/**` 或 `test/**` 下的可执行代码，因此 `build not required`；closeout 证据以同窗口通过的治理检查与 `pnpm run check` 为准。
 
@@ -27,8 +27,8 @@
    - `CR-001`、`CR-002`、`CR-003` 均已 `resolved`
    - 最新 round 未留下 deferred finding
 4. project-final handoff：
-   - `sprint-003` plan 已切换为 `completed`
-   - 当前 sprint 仍保留在 `current-context.md` 的 active surface，用于 project-final scoped CR loop
+   - `sprint-003` 的 sprint-level exit acceptance 已完成，但 sprint plan / ledger 会在 project-final CR 活跃期间继续保持 `active`
+   - 当前 sprint 保留在 `current-context.md` 的 active surface，用于 project-final scoped CR loop
 
 ## 3. 出口判定
 

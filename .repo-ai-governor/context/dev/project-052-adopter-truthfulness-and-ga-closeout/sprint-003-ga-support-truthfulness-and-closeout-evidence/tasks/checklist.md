@@ -27,3 +27,17 @@
 - [x] TK-638 sprint-003 exit acceptance and project-final review handoff
   - 2026-04-06：任务创建并在同一窗口完成，确认 `sprint-003` 的全部实现任务与 sprint-level CR rounds 已进入终态。
   - 2026-04-06：已完成 `DA-638`、sprint/project/current-context 写回，并把下一边界固定为 `project-052` 的 project-final scoped CR loop。
+- [x] CR-004 project-052-adopter-truthfulness-and-ga-closeout final delegated review loop round 4
+  - 2026-04-06：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-06：project-final fresh reviewer round 4 返回 2 条 actionable finding；主 agent 已复核并认可，任务切换为 `verified`。
+  - 2026-04-06：round-4 全部 accepted findings 已完成修复并通过同窗口治理检查与 `pnpm run check`，任务切换为 `resolved`。
+- [x] CR-005 project-052-adopter-truthfulness-and-ga-closeout final delegated review loop round 5
+  - 2026-04-06：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-06：project-final fresh reviewer round 5 返回 2 条 actionable finding；主 agent 已复核并认可，任务切换为 `verified`。
+  - 2026-04-06：round-5 全部 accepted findings 已完成修复并通过同窗口治理检查与 `pnpm run check`，任务切换为 `resolved`。
+- [x] CR-006 project-052-adopter-truthfulness-and-ga-closeout final delegated review loop round 6
+  - 2026-04-06：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-06：project-final fresh reviewer round 6 clean，无 actionable finding，任务直接切换为 `resolved`。
+- [x] TK-639 finalize project-052 closeout and activate project-053 primary stream
+  - 2026-04-06：任务在 `CR-006` clean 后创建并于同一窗口完成，完成 `project-052` 的 final closeout write-back。
+  - 2026-04-06：已提升 completion audit summary 为 `completed`，同步 project / sprint / context / history / registry，并激活 `project-053 / sprint-001` 作为下一条 primary stream。

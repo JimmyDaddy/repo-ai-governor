@@ -1,6 +1,6 @@
 # project-052-adopter-truthfulness-and-ga-closeout 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-06
 - Stage Mapping: adopter truthfulness and GA closeout
 - Phase Mapping: install truth / upgrade and workspace UX / GA support evidence
@@ -32,7 +32,7 @@
 
 - Status: completed
 - Sprint Goal: 将 support matrix、maintainer playbook、clean-room/release evidence 汇总成统一 closeout truth。
-- Task Package: `TK-595`、`TK-596`、`TK-597`、`TK-638`。
+- Task Package: `TK-595`、`TK-596`、`TK-597`、`TK-638`、`TK-639`。
 
 ## 3. 任务拆解矩阵（WBS）
 
@@ -50,6 +50,7 @@
 | TK-596 | sprint-003 | consolidate support matrix maintainer validation and release evidence into one truth surface | docs/evidence | TK-595 | completed |
 | TK-597 | sprint-003 | close project-052 with adopter truthfulness audit summary and next-stream recommendation | project/closeout | TK-595、TK-596 | completed |
 | TK-638 | sprint-003 | sprint-003 exit acceptance and project-final review handoff | closeout/handoff | TK-595、TK-596、TK-597、CR-001、CR-002、CR-003 | completed |
+| TK-639 | sprint-003 | finalize project-052 closeout and activate project-053 primary stream | closeout/handoff | TK-597、TK-638、CR-004、CR-005、CR-006 | completed |
 
 ## 4. 依赖产物策略
 
@@ -79,4 +80,5 @@
 10. 2026-04-06：`TK-595` 已完成 `DA-595`，冻结 support matrix 作为统一 GA support truth surface，并把 `TK-596` 切换为 `in_progress`。
 11. 2026-04-06：`TK-596` 已完成 `DA-596` 与 support matrix / maintainer playbook / GA evidence 收口，`TK-597` 已切换为 `in_progress` 准备 project closeout。
 12. 2026-04-06：`TK-597` 已生成 `project-052` completion audit summary（prepared，路径：`.repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/project-052-adopter-truthfulness-and-ga-closeout-completion-audit-summary.md`）与 `project-053` next-stream recommendation，`sprint-003` 的实现边界现已全部完成，下一步进入 scoped CR loop。
-13. 2026-04-06：`CR-001`、`CR-002`、`CR-003` 已全部 `resolved`；`TK-638 / DA-638` 已完成 sprint-003 closeout，并把下一边界固定为 project-final scoped CR loop。
+13. 2026-04-06：`CR-001`、`CR-002`、`CR-003` 已全部 `resolved`；`TK-638 / DA-638` 已完成 sprint-level closeout，并把同一 sprint ledger 继续作为 project-final scoped CR loop 的 active review surface。
+14. 2026-04-06：`CR-004`、`CR-005`、`CR-006` 已全部 `resolved`；`TK-639 / DA-639` 已完成最终 closeout write-back，`project-052` 正式进入 `completed`，并在此里程碑回链 completion audit summary：`.repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/project-052-adopter-truthfulness-and-ga-closeout-completion-audit-summary.md`。
