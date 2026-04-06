@@ -1,18 +1,20 @@
 # Task Ledger Single Write Source Contract
 
 - Status: active
-- Date: 2026-04-04
-- Scope: execution ledger governance (`TK/checklist/sqlite/tasks.csv`)
+- Date: 2026-04-06
+- Scope: execution ledger governance (`TK/CR/checklist/sqlite/tasks.csv`)
 - Owner: `project-008-workflow-optimization / TK-042`
 
 ## 1. Purpose
 
-1. 以 `TK` 作为台账主写入源，降低多点维护导致的漂移。
+1. 以 `TK/CR` 作为台账主写入源，降低多点维护导致的漂移。
 2. 保证 `CS-021` 在执行过程中可持续满足。
 
 ## 2. Canonical Source Rule
 
-1. 任务语义主源：`tasks/TK-xxx*.md`。
+1. 任务语义主源：
+   - `tasks/TK-xxx*.md`
+   - `tasks/CR-xxx*.md`
 2. 衍生台账：
    - `tasks/checklist.md`：任务状态可视化与执行轨迹摘要。
    - `context/dev/sqlite/task-ledger.sqlite`：默认机器可读 canonical execution ledger 与审计证据；兼容迁移窗口内允许从 legacy `task-ledger-projection.sqlite` 自动迁移。
@@ -21,7 +23,7 @@
 
 ## 3. Minimum Canonical Fields
 
-`TK` 必填字段：
+`TK` / `CR` 必填字段：
 
 1. `task_id`
 2. `title`
@@ -53,26 +55,27 @@ sqlite canonical ledger 与 `tasks.csv` rendered view 需与主源对齐字段�
 
 ## 3.3 Sync Mechanism Boundary
 
-1. `scripts/governance/sync-task-ledger.js` 是推荐的派生台账同步器，用于从 canonical `TK` 更新 sqlite canonical ledger，并回写 `checklist.md` 与 `tasks.csv` rendered view。
+1. `scripts/governance/sync-task-ledger.js` 是推荐的派生台账同步器，用于从 canonical `TK/CR` 更新 sqlite canonical ledger，并回写 `checklist.md` 与 `tasks.csv` rendered view。
 2. project/sprint plan 只保留任务包概览、目标与里程碑，不再重复维护 task-level status 矩阵。
 3. 若任务需要在不改动 canonical `TK` 状态的前提下回填 review/verify 审计字段，允许同步器为 sqlite canonical ledger 追加新行，并同步渲染新的 `tasks.csv` 视图，同时在 checklist 追加执行摘要。
 
 ## 4. Sync Triggers
 
-1. 任务创建：同步创建 checklist 条目、sqlite canonical planned 行与 rendered `tasks.csv`。
-2. 状态变更：向 sqlite canonical ledger 追加新 execution 行（`in_progress/completed`），并重渲染 `tasks.csv`。
+1. 任务创建：同步创建 checklist 条目、sqlite canonical planned/review_pending 行与 rendered `tasks.csv`。
+2. 状态变更：向 sqlite canonical ledger 追加新 execution 行（例如 `in_progress/completed/verified/resolved`），并重渲染 `tasks.csv`。
 3. 任务完成：写入验证证据、review 变更、结果摘要。
 4. review/verify 子链若命中 managed ledger backfill，可通过同步器自动回填 checklist/tasks.csv，而不再要求手工消费 pending artifact。
+5. 若某 sprint 下所有 `TK` 最新状态为 `completed` 且所有 `CR` 最新状态为 `resolved`，必须立即创建或推进 closeout 任务。
 
 ## 5. Conflict Resolution
 
-1. 若 `TK` 与 sqlite canonical ledger 冲突，以最新 `TK` 状态为准并通过同步器回写 sqlite/csv。
+1. 若 `TK/CR` 与 sqlite canonical ledger 冲突，以最新任务卡状态为准并通过同步器回写 sqlite/csv。
 2. 若 checklist 勾选状态与 `tasks.csv` 不一致，以 sqlite canonical ledger 的最新行语义为准并修复 checklist/CSV 视图。
 
 ## 6. Drift Governance
 
 1. 每次状态切换后至少运行：
-   - `node ./scripts/governance/sync-task-ledger.js --task-id <TK-xxx>`（推荐，在 task-aware 执行流中）
+   - `node ./scripts/governance/sync-task-ledger.js --task-id <TK-xxx|CR-xxx>`（推荐，在 task-aware 执行流中）
    - `node ./scripts/governance/check-task-ledger-sync.js`
    - `node ./scripts/governance/check-sprint-plan-status-sync.js`
 2. 漂移修复遵循“先修复主源，再修复衍生台账”。

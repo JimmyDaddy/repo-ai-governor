@@ -102,7 +102,7 @@ function readChecklistAggregateStatus(checklistPath) {
   let currentEntry = null;
 
   for (const line of checklistContent.split(/\r?\n/u)) {
-    const taskLineMatch = line.match(/^- \[(x| )\] (TK-\d{3}) /iu);
+    const taskLineMatch = line.match(/^- \[(x| )\] ((?:TK|CR)-\d{3}) /iu);
     if (taskLineMatch) {
       currentEntry = {
         checked: taskLineMatch[1].toLowerCase() === 'x',

@@ -27,7 +27,7 @@ desktop / richer UI 如需显示 `agent projection`，当前推荐复用以下�
 
 1. 固定 desktop surface 的默认 `runtimeMode`
 2. 固定期望的 `serviceHostKind / serviceTransportKind`
-3. 固定 artifact-pane gate 仍为 `blocked`
+3. 固定 execution board / HITL inbox / queue overview / artifact-pane 的 service-owned preload operation contract
 4. 固定 default / plugin-enabled 两条 memory provider 预期基线
 5. 固定 preload bridge 所需的最小 operation contract
 6. 为 `check:desktop-entry-smoke` 和 release local verification 提供统一输入

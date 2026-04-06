@@ -109,6 +109,8 @@ Expected outputs are stored under the active workspace root. Common locations in
 2. `context/review-queue/results`
 3. `context/ledger-backfill/review-verify`
 
+When the active workspace exposes canonical sprint `tasks/`, the review chain also allocates a `CR-xxx` task card and keeps that card synchronized with the review lifecycle status.
+
 ## 7. Workspace Mode And Rollback
 
 Default mode is `tool_managed`. Switch to `repo_local` only when you want the governance workspace persisted inside the target repository.
@@ -159,14 +161,17 @@ export REPO_AI_GOVERNOR_NOTIFICATION_CHAT_IM_URL="https://example.com/chat-im"
 pnpm exec repo-ai-governor run --output json
 ```
 
-### 8.3 Minimal Language Packs
+### 8.3 Built-in Governance Packs
 
-The published package exposes two built-in minimal governance packs through `@repo-ai-governor/standards`:
+The published package exposes three built-in governance packs through `@repo-ai-governor/standards`:
 
-1. `pythonMinimalGovernancePack`
-2. `goMinimalGovernancePack`
+1. `workflowReviewGovernancePack`
+2. `pythonMinimalGovernancePack`
+3. `goMinimalGovernancePack`
 
-Use them as a starting baseline, then layer team or repository overrides on top.
+Use `workflowReviewGovernancePack` when you want the adopter-facing governance flow itself to allocate standalone `CR-xxx` review task cards and keep the `review_pending -> verified -> resolved` lifecycle synchronized.
+
+Then layer the language pack you need, plus any team or repository overrides, on top.
 
 ## 9. Troubleshooting And Known Limitations
 

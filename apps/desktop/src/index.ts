@@ -1,5 +1,6 @@
 export {
   DESKTOP_ARTIFACT_PANE_DEFERRED_REASON,
+  DESKTOP_ARTIFACT_PANE_READY_NOTE,
   DESKTOP_CONSOLE_DEFAULT_EXECUTION_LIMIT,
   DESKTOP_SESSION_BRIDGE_OPERATIONS,
   DESKTOP_SHELL_COMPONENT_OWNERS,
@@ -14,10 +15,20 @@ export { DesktopOrchestrationServiceRuntime } from './runtime/desktop-orchestrat
 export { DesktopSessionBridge } from './runtime/desktop-session-bridge.js';
 export { DesktopShellBootstrap } from './runtime/desktop-shell-bootstrap.js';
 export type {
+  DesktopArtifactPaneCollectionViewModel,
+  DesktopArtifactPaneEntryViewModel,
+  DesktopArtifactPaneViewModel,
+  DesktopExecutionBoardEntryViewModel,
   DesktopExecutionTimelineEntryViewModel,
+  DesktopGovernanceActionBuildInput,
+  DesktopGovernanceActionViewModel,
   DesktopGovernanceConsoleBuildOptions,
+  DesktopGovernanceConsoleCollectionViewModel,
   DesktopGovernanceConsoleSectionViewModel,
   DesktopGovernanceConsoleViewModel,
+  DesktopHandoffTargetBuildInput,
+  DesktopHandoffTargetViewModel,
+  DesktopHitlInboxEntryViewModel,
   DesktopLifecycleSnapshot,
   DesktopOrchestrationServiceOwner,
   DesktopOrchestrationServiceRuntimeDependencies,

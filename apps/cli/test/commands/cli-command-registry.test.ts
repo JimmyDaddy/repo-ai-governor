@@ -3,6 +3,7 @@ import type { CliCommandExecutor } from '../../src/commands/cli-command-executor
 import { CliCommandRegistry } from '../../src/commands/cli-command-registry.js';
 import { CliConnectCommand } from '../../src/commands/connect-command.js';
 import { CliDoctorCommand } from '../../src/commands/doctor-command.js';
+import { CliHostCommand } from '../../src/commands/host-command.js';
 import { CliInitCommand } from '../../src/commands/init-command.js';
 import { CliPlanCommand } from '../../src/commands/plan-command.js';
 import { CliReviewCommand } from '../../src/commands/review-command.js';
@@ -23,6 +24,7 @@ describe('Cli command registry', () => {
       new CliCheckCommand(),
       new CliVerifyCommand(),
       new CliPlanCommand(),
+      new CliHostCommand(),
       new CliRunCommand(),
       new CliReviewCommand(),
       new CliReviewVerifyCommand(),

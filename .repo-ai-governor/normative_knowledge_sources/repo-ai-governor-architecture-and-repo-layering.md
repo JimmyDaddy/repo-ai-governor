@@ -1,7 +1,7 @@
 # Repo AI Governor 可扩展架构图与仓库分层结构
 
 - Status: active
-- Date: 2026-04-02
+- Date: 2026-04-06
 - Role: implementation blueprint
 - Basis:
   - `.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-overall-technical-solution.md`
@@ -440,7 +440,7 @@ ai-governor/
 
 说明：`context/artifact-registry/*.csv` 可以继续作为 rendered compatibility/human-readable view 暴露；machine-readable canonical registry 可由 sqlite 等等价 durable backend 承担，但不得再维护第二份手工 truth。
 
-`context/current-context.md` 除 primary/active stream 元数据外，还可在极少数已完成 stream 的 CR 收口场景下声明单值 `Worktree Review Target`；该 override 只负责默认 `review/` 路由，不改变 active task ledger 的 project/sprint 归属。
+`context/current-context.md` 除 primary/active stream 元数据外，还可在极少数已完成 stream 的 CR 收口场景下声明单值 `Worktree Review Target`；该 override 只负责默认 `review/` 路由，不改变 active task ledger 的 project/sprint 归属。任务治理真值继续固定为 `tasks/TK-xxx.md` 与 `tasks/CR-xxx.md` 两类任务卡，以及 `review/code_review_*.md -> verified_code_review_*.md -> resolved_code_review_*.md` 的 review lifecycle。
 
 ## 5.1 Monorepo 版本与发布策略（Baseline）
 

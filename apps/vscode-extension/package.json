@@ -1,0 +1,165 @@
+{
+  "name": "@repo-ai-governor/vscode-extension",
+  "displayName": "%extension.displayName%",
+  "description": "%extension.description%",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "vscode": "^1.95.0"
+  },
+  "main": "../../dist/apps/vscode-extension/src/extension.js",
+  "categories": ["Other", "Chat"],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "%trust.description%"
+    }
+  },
+  "activationEvents": [
+    "workspaceContains:.repo-ai-governor",
+    "onView:repoAiGovernor.executionBoard",
+    "onView:repoAiGovernor.hitlInbox",
+    "onView:repoAiGovernor.workspaceContext",
+    "onView:repoAiGovernor.reviewDetail",
+    "onCommand:repoAiGovernor.refresh",
+    "onCommand:repoAiGovernor.openReviewDetail",
+    "onCommand:repoAiGovernor.openHandoffTarget",
+    "onCommand:repoAiGovernor.submitHitlDecision",
+    "onCommand:repoAiGovernor.recoverExecution",
+    "onCommand:repoAiGovernor.terminateExecution",
+    "onChatParticipant:repo-ai-governor.governor"
+  ],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "repoAiGovernor",
+          "title": "%views.container.title%",
+          "icon": "resources/governor.svg"
+        }
+      ]
+    },
+    "views": {
+      "repoAiGovernor": [
+        {
+          "id": "repoAiGovernor.executionBoard",
+          "name": "%views.executionBoard.title%",
+          "contextualTitle": "%views.container.title%"
+        },
+        {
+          "id": "repoAiGovernor.hitlInbox",
+          "name": "%views.hitlInbox.title%",
+          "contextualTitle": "%views.container.title%"
+        },
+        {
+          "id": "repoAiGovernor.workspaceContext",
+          "name": "%views.workspaceContext.title%",
+          "contextualTitle": "%views.container.title%"
+        },
+        {
+          "id": "repoAiGovernor.reviewDetail",
+          "type": "webview",
+          "name": "%views.reviewDetail.title%",
+          "contextualTitle": "%views.container.title%"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "repoAiGovernor.refresh",
+        "title": "%commands.refresh.title%",
+        "category": "%commands.category%"
+      },
+      {
+        "command": "repoAiGovernor.openReviewDetail",
+        "title": "%commands.openReviewDetail.title%",
+        "category": "%commands.category%"
+      },
+      {
+        "command": "repoAiGovernor.openHandoffTarget",
+        "title": "%commands.openHandoffTarget.title%",
+        "category": "%commands.category%"
+      },
+      {
+        "command": "repoAiGovernor.submitHitlDecision",
+        "title": "%commands.submitHitlDecision.title%",
+        "category": "%commands.category%"
+      },
+      {
+        "command": "repoAiGovernor.recoverExecution",
+        "title": "%commands.recoverExecution.title%",
+        "category": "%commands.category%"
+      },
+      {
+        "command": "repoAiGovernor.terminateExecution",
+        "title": "%commands.terminateExecution.title%",
+        "category": "%commands.category%"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "repoAiGovernor.refresh",
+          "when": "view == repoAiGovernor.executionBoard || view == repoAiGovernor.hitlInbox || view == repoAiGovernor.workspaceContext",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "repoAiGovernor.openReviewDetail",
+          "when": "view == repoAiGovernor.executionBoard || view == repoAiGovernor.hitlInbox || view == repoAiGovernor.workspaceContext",
+          "group": "inline"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "repoAiGovernor.openHandoffTarget",
+          "when": "isWorkspaceTrusted"
+        },
+        {
+          "command": "repoAiGovernor.submitHitlDecision",
+          "when": "isWorkspaceTrusted"
+        },
+        {
+          "command": "repoAiGovernor.recoverExecution",
+          "when": "isWorkspaceTrusted"
+        },
+        {
+          "command": "repoAiGovernor.terminateExecution",
+          "when": "isWorkspaceTrusted"
+        }
+      ]
+    },
+    "chatParticipants": [
+      {
+        "id": "repo-ai-governor.governor",
+        "name": "governor",
+        "fullName": "%chat.participant.fullName%",
+        "description": "%chat.participant.description%",
+        "isSticky": true,
+        "commands": [
+          {
+            "name": "status",
+            "description": "%chat.commands.status.description%"
+          },
+          {
+            "name": "review",
+            "description": "%chat.commands.review.description%"
+          }
+        ]
+      }
+    ]
+  },
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "../../dist/apps/vscode-extension/src/index.js"
+    }
+  },
+  "dependencies": {
+    "@repo-ai-governor/core-orchestration-service": "workspace:*",
+    "@repo-ai-governor/orchestration-service-client": "workspace:*",
+    "@repo-ai-governor/shared": "workspace:*"
+  }
+}

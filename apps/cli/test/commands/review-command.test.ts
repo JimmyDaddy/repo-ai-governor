@@ -194,7 +194,7 @@ async function writeCurrentContextFixture(workspaceRoot: string): Promise<void> 
       '',
       '## Active Streams',
       '',
-      '- `primary`: project=`project-042-review-command-fixture`, sprint=`sprint-003-review-lifecycle`, docs=`.repo-ai-governor/context/dev/project-042-review-command-fixture`, plan=`.repo-ai-governor/context/dev/project-042-review-command-fixture/plan.md`, tasks=`.repo-ai-governor/context/dev/project-042-review-command-fixture/sprint-003-review-lifecycle/tasks/`, checklist=`.repo-ai-governor/context/dev/project-042-review-command-fixture/sprint-003-review-lifecycle/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-042-review-command-fixture/sprint-003-review-lifecycle/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-042-review-command-fixture/sprint-003-review-lifecycle/review/`, status=`active`, note=`fixture for review command tests`',
+      '- `active-1`: role=`primary`, project=`project-042-review-command-fixture`, sprint=`sprint-003-review-lifecycle`, docs=`.repo-ai-governor/context/dev/project-042-review-command-fixture`, plan=`.repo-ai-governor/context/dev/project-042-review-command-fixture/plan.md`, tasks=`.repo-ai-governor/context/dev/project-042-review-command-fixture/sprint-003-review-lifecycle/tasks/`, checklist=`.repo-ai-governor/context/dev/project-042-review-command-fixture/sprint-003-review-lifecycle/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-042-review-command-fixture/sprint-003-review-lifecycle/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-042-review-command-fixture/sprint-003-review-lifecycle/review/`, status=`active`, note=`fixture for review command tests`',
       '',
     ].join('\n'),
     'utf8',
@@ -228,10 +228,23 @@ describe('CliReviewCommand', () => {
       const requestPayload = JSON.parse(await readFile(String(requestPath), 'utf8')) as {
         status?: string;
         reviewArtifactStatus?: string;
+        reviewTaskId?: string;
+        reviewTaskCardPath?: string;
         findings?: Array<{ ruleId?: string }>;
       };
       expect(requestPayload.status).toBe(CLI_REVIEW_REQUEST_STATUS.QUEUED);
       expect(requestPayload.reviewArtifactStatus).toBe('review_pending');
+      expect(requestPayload.reviewTaskId).toBe('CR-001');
+      expect(typeof requestPayload.reviewTaskCardPath).toBe('string');
+      expect(String(requestPayload.reviewTaskCardPath)).toContain(
+        '.repo-ai-governor/context/dev/project-042-review-command-fixture/sprint-003-review-lifecycle/tasks/CR-001-',
+      );
+      const reviewTaskCardContent = await readFile(
+        String(requestPayload.reviewTaskCardPath),
+        'utf8',
+      );
+      expect(reviewTaskCardContent).toContain('# CR-001 working tree review lifecycle');
+      expect(reviewTaskCardContent).toContain('- Status: review_pending');
       expect(
         requestPayload.findings?.some(
           (finding) => finding.ruleId === 'code_change_without_test_change',

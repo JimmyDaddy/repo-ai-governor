@@ -44,6 +44,17 @@ export const ZH_CN_TRANSLATIONS = {
       targetVersion: '指定 upgrade preview 使用的目标 schema 版本；默认采用当前支持的最新版本。',
       confirmPlan: '指定 plan commit 的显式确认决策：approve|reject。',
       confirmUpgrade: '指定 upgrade apply 的显式确认决策：approve|reject。',
+      host: '指定 host distribution 命令使用的宿主族。',
+      hostMode: '指定 host distribution 模式：project-local|plugin-bundle。',
+      hostTarget: '指定显式 host target，例如 codex.project_local。',
+      githubCopilotTarget:
+        '指定 GitHub Copilot target 短写：repo-local|cli-plugin|github-com-agent。',
+      hostOutputDir: '指定 host export/verify/pack 使用的 staged export 目录。',
+      hostManifest: '指定 host verify 使用的 host-export manifest 路径。',
+      hostApplyToRepo: '指定把 project-local assets apply 到目标仓库根路径的位置。',
+      hostBundleDir: '指定 host pack 产出的 bundle 目录。',
+      hostHandoffBridge: '指定导出宿主资产使用的回接桥：cli_wrapper|mcp。',
+      hostWorkflowId: '可重复传入的 workflow id 过滤器，供 host 命令选择导出范围。',
       workflowTemplate: '指定 workflow create/edit/preview 子命令使用的流程模板标识。',
     },
     commands: {
@@ -74,6 +85,24 @@ export const ZH_CN_TRANSLATIONS = {
         actionGuideCommit:
           '在显式确认后，把一份 preview 产物受控提交到 sprint plan/TK/checklist/tasks.csv。',
         examplesTitle: '示例：',
+      },
+      host: {
+        description: '渲染 staged host assets、校验导出的宿主树，或打包 installable host bundle。',
+        exportDescription: '渲染 staged host export tree，并按需 apply repo-local assets。',
+        verifyDescription: '校验 staged host export，以及已 apply 或已 pack 的资产一致性。',
+        packDescription: '渲染 staged plugin export，并物化 installable bundle。',
+        actionGuideTitle: '动作说明：',
+        actionGuideExport:
+          '渲染 staged host tree，写入 host-export manifest 与 verification summary，并可选地 apply repo-local assets。',
+        actionGuideVerify:
+          '检查 manifest/source 回链、staged export 内容，以及 applied 或 packed 产物 drift。',
+        actionGuidePack: '渲染 plugin target，物化 installable bundle，并输出 pack receipt。',
+        examplesTitle: '示例：',
+        subcommandRequired:
+          'host 需要显式子命令；请使用 `host export`、`host verify` 或 `host pack`。',
+        exportCompleted: '{{target}} 的 host export 已完成。',
+        verifyCompleted: '{{target}} 的 host verify 已完成。',
+        packCompleted: '{{target}} 的 host pack 已完成。',
       },
       resume: {
         description: '恢复最近一次或指定的 session-shell 会话。',

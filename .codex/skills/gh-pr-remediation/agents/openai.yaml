@@ -1,0 +1,4 @@
+interface:
+  display_name: "GitHub PR Remediation"
+  short_description: "检查当前分支 PR 状态并修复 review/gate 问题"
+  default_prompt: "使用 $gh-pr-remediation 获取当前分支对应 GitHub PR 的状态，分析未解决 review 评论与门禁失败项，并推进修复与收口。"

@@ -54,6 +54,18 @@ export const EN_US_TRANSLATIONS = {
         'Upgrade target schema version used by the preview action. Defaults to the latest supported version.',
       confirmPlan: 'Explicit plan confirmation decision for commit: approve|reject.',
       confirmUpgrade: 'Explicit upgrade confirmation decision for apply: approve|reject.',
+      host: 'Host family used by the host distribution command.',
+      hostMode: 'Host distribution mode: project-local|plugin-bundle.',
+      hostTarget: 'Explicit host target override such as codex.project_local.',
+      githubCopilotTarget:
+        'GitHub Copilot target shorthand: repo-local|cli-plugin|github-com-agent.',
+      hostOutputDir: 'Staged export directory used by host export/verify/pack.',
+      hostManifest: 'Explicit host-export manifest path used by host verify.',
+      hostApplyToRepo:
+        'Repository root that receives applied project-local assets from staged export.',
+      hostBundleDir: 'Bundle output directory used by host pack.',
+      hostHandoffBridge: 'Handoff bridge used by exported host assets: cli_wrapper|mcp.',
+      hostWorkflowId: 'Repeatable workflow id filter used by the host command.',
       workflowTemplate:
         'Workflow template id used by the workflow create/edit/preview subcommands.',
     },
@@ -89,6 +101,27 @@ export const EN_US_TRANSLATIONS = {
         actionGuideCommit:
           'Commit one preview artifact into sprint plan/TK/checklist/tasks.csv after explicit confirmation.',
         examplesTitle: 'Examples:',
+      },
+      host: {
+        description:
+          'Render staged host assets, verify exported host trees, or package installable host bundles.',
+        exportDescription:
+          'Render one staged host export tree and optionally apply repo-local assets.',
+        verifyDescription: 'Verify one staged host export plus applied or packed assets.',
+        packDescription: 'Render one staged plugin export and materialize the installable bundle.',
+        actionGuideTitle: 'Action guide:',
+        actionGuideExport:
+          'Render the staged host tree, write host-export manifest and verification summary, and optionally apply repo-local assets.',
+        actionGuideVerify:
+          'Check manifest/source back-links, staged export content, and applied or packed drift.',
+        actionGuidePack:
+          'Render plugin targets, materialize the installable bundle, and emit pack receipts.',
+        examplesTitle: 'Examples:',
+        subcommandRequired:
+          'host requires an explicit subcommand; use `host export`, `host verify`, or `host pack`.',
+        exportCompleted: 'Host export completed for {{target}}.',
+        verifyCompleted: 'Host verify completed for {{target}}.',
+        packCompleted: 'Host pack completed for {{target}}.',
       },
       resume: {
         description: 'Resume the latest or one explicit session-shell conversation.',

@@ -1,0 +1,24 @@
+# checklist
+
+- [x] TK-551 close desktop artifact pane query contract and typed renderer consumption
+  - 2026-04-05：任务创建，状态初始化为 `planned`；承接 desktop artifact pane query gate 的正式收口。
+  - 2026-04-05：完成 orchestration service client / core service / desktop shell 的 `queryArtifactPane` seam、artifact-pane typed view-model、desktop smoke sample 与 gate 同步。
+  - 2026-04-05：验证通过 `pnpm run build`、`pnpm vitest run apps/desktop/test/desktop-governance-console-view-model-builder.test.ts apps/desktop/test/desktop-shell-bootstrap.test.ts apps/desktop/test/desktop-session-bridge.test.ts test/desktop-entry-smoke.integration.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm run check:desktop-entry-smoke`。
+  - 2026-04-05：基于 `working-tree-20260405-0700` CR follow-up，补齐 artifact-pane 对 `Worktree Review Target`/`Review records: none` 的解析，以及 governance console 对 latest execution session 的绑定，并新增 targeted tests。
+- [x] TK-552 strengthen formal adapter support matrix and local-model positioning evidence
+  - 2026-04-05：任务创建，状态初始化为 `planned`；承接 adapter 正式支持矩阵与 local-model 产品定位收口。
+  - 2026-04-05：完成 `docs/support-matrix*.md`、adapter README 与 desktop README 的正式支持口径收口，并补齐 targeted adapter smoke/routing evidence。
+  - 2026-04-05：验证通过 `pnpm vitest run packages/adapters/github-copilot/test/github-copilot-agent-adapter.smoke.test.ts packages/adapters/claude-code/test/claude-code-agent-adapter.smoke.test.ts packages/adapters/local-model/test/local-model-agent-adapter.smoke.test.ts test/first-batch-adapters-route.integration.test.ts --maxWorkers=1 --maxConcurrency=1`。
+- [x] TK-553 land standards runtime loader and governor config assembly contract
+  - 2026-04-05：任务创建，状态初始化为 `planned`；承接 standards runtime loader 与 config contract 收口。
+  - 2026-04-05：完成 `GovernorConfig.standards` schema、`StandardsRuntimeLoader`、runtime fixture tests 与 README/runtime loader 用法文档。
+  - 2026-04-05：验证通过 `pnpm vitest run packages/config/test/config.unit.test.ts packages/standards/test/standards-registry-and-renderer.unit.test.ts packages/standards/test/standards-runtime-loader.integration.test.ts --maxWorkers=1 --maxConcurrency=1` 与 `pnpm run build`。
+- [x] TK-554 publish official GitLab CI and Jenkins templates for P1 baseline
+  - 2026-04-05：任务创建，状态初始化为 `planned`；承接 GitLab/Jenkins 官方模板补齐。
+  - 2026-04-05：完成 `integrations/ci/gitlab-ci/**`、`integrations/ci/jenkins/**` 与 `integrations/ci/README.md` 的官方模板发布。
+  - 2026-04-05：验证通过 `pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 与 `pnpm run test:integration -- --maxWorkers=1 --maxConcurrency=1`。
+  - 2026-04-05：基于 `working-tree-20260405-0700` CR follow-up，将 `integrations/ci` 纳入 npm 发布白名单与 local-distribution packed-path 校验，并同步 `project-046` 顶层 plan 的 sprint 完成态。
+- [x] TK-555 close GA readiness signal #1 with normalized onboarding timing evidence
+  - 2026-04-05：任务创建，状态初始化为 `planned`；承接 GA readiness 最后一个 conditional 信号收口。
+  - 2026-04-05：产出 [DA-555-normalized-onboarding-timing-evidence.md](./DA-555-normalized-onboarding-timing-evidence.md)，并将 `docs/ga-readiness-evidence*.md` 的 signal #1 从 conditional 收口为 pass。
+  - 2026-04-05：验证通过 `.tmp/project-046-p1-ga-onboarding-timing.json`、`pnpm run build` 与 `pnpm run test:integration -- --maxWorkers=1 --maxConcurrency=1`。

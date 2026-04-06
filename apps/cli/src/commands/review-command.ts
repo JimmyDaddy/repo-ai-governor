@@ -1,4 +1,6 @@
-import { resolve } from 'node:path';
+import { existsSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { ChangeRiskEvaluationResult } from '@repo-ai-governor/core-change-risk';
 import {
   OrchestrationClientSurface,
@@ -10,6 +12,8 @@ import {
   ExecutionInteractionCategory,
   ExecutionProgressStage,
   ExecutionProgressStatus,
+  GovernorErrorCode,
+  RuntimeError,
 } from '@repo-ai-governor/shared';
 import { CliCommandName } from '../constants/cli-command.constant.js';
 import {
@@ -24,6 +28,7 @@ import {
 } from '../constants/cli-review.constant.js';
 import { CliReviewFindingGenerator } from '../runtime/review/cli-review-finding-generator.js';
 import { CliReviewLifecycleRuntime } from '../runtime/review/cli-review-lifecycle-runtime.js';
+import { CliReviewTaskCardRuntime } from '../runtime/review/cli-review-task-card-runtime.js';
 import type { CliCommandResultArtifact, CliCommandResultCheck } from '../types/interfaces/index.js';
 import type {
   CliCommandExecutorContext,
@@ -32,6 +37,35 @@ import type {
   CliReviewStreamContext,
 } from '../types/interfaces/index.js';
 import type { CliCommandExecutor } from './cli-command-executor.interface.js';
+
+function resolveTaskLedgerSyncScriptPath(): string | null {
+  const sourceFilePath = fileURLToPath(import.meta.url);
+  const searchRoots = [process.cwd(), dirname(sourceFilePath)];
+
+  for (const searchRoot of searchRoots) {
+    let currentDirectory = searchRoot;
+    for (let depth = 0; depth < 8; depth += 1) {
+      const candidatePath = resolve(
+        currentDirectory,
+        'scripts',
+        'governance',
+        'sync-task-ledger.js',
+      );
+      if (existsSync(candidatePath)) {
+        return candidatePath;
+      }
+
+      const parentDirectory = resolve(currentDirectory, '..');
+      if (parentDirectory === currentDirectory) {
+        break;
+      }
+
+      currentDirectory = parentDirectory;
+    }
+  }
+
+  return null;
+}
 
 /**
  * Owns `review` command execution outside the runtime facade.
@@ -43,6 +77,10 @@ export class CliReviewCommand implements CliCommandExecutor {
     const runtimeDebugOptions = context.resolveRuntimeDebugOptions();
     const reviewQueueDirectories = context.reviewQueueRuntime.resolveReviewQueueDirectories();
     const reviewRuntime = new CliReviewLifecycleRuntime(
+      context.options.workspace.repositoryRoot,
+      context.options.workspace.workspaceRoot,
+    );
+    const reviewTaskCardRuntime = new CliReviewTaskCardRuntime(
       context.options.workspace.repositoryRoot,
       context.options.workspace.workspaceRoot,
     );
@@ -92,12 +130,29 @@ export class CliReviewCommand implements CliCommandExecutor {
       streamContext,
     );
     const notes = this.buildReviewNotes(context, reviewStatus, changedPaths.length);
-    const reviewDocument = this.renderReviewArtifact(context, {
+    const managedReviewContext = await reviewTaskCardRuntime.resolveManagedContext({
+      streamContext,
+      scopeTaskId: taskId,
+    });
+    const reviewTaskRecord = managedReviewContext
+      ? await reviewTaskCardRuntime.createReviewTaskCard(context, {
+          managedContext: managedReviewContext,
+          reviewMode,
+          scopeTaskId: taskId,
+          reviewSlug,
+          reviewStatus,
+          occurredAt: generatedAtTimestamp,
+          reviewArtifactPath,
+          requestPath,
+        })
+      : null;
+    const finalizedReviewDocument = this.renderReviewArtifact(context, {
       requestId,
       generatedAt,
       taskId,
       reviewMode,
       reviewStatus,
+      reviewTaskId: reviewTaskRecord?.reviewTaskId ?? null,
       reviewSlug,
       reviewArtifactPath,
       changedPaths,
@@ -122,6 +177,12 @@ export class CliReviewCommand implements CliCommandExecutor {
       reviewSlug,
       reviewArtifactPath,
       reviewArtifactStatus: reviewStatus,
+      ...(reviewTaskRecord
+        ? {
+            reviewTaskId: reviewTaskRecord.reviewTaskId,
+            reviewTaskCardPath: reviewTaskRecord.reviewTaskCardPath,
+          }
+        : {}),
       scope: {
         reviewMode,
         scopeSummary,
@@ -135,6 +196,9 @@ export class CliReviewCommand implements CliCommandExecutor {
       generatedArtifactPaths: [
         reviewRuntime.toRepositoryRelativePath(requestPath),
         reviewRuntime.toRepositoryRelativePath(reviewArtifactPath),
+        ...(reviewTaskRecord
+          ? [reviewRuntime.toRepositoryRelativePath(reviewTaskRecord.reviewTaskCardPath)]
+          : []),
       ],
       diagnosticContext: {
         correlationId,
@@ -166,8 +230,15 @@ export class CliReviewCommand implements CliCommandExecutor {
     reviewRequestPayload.orchestrationExecutionId = orchestrationExecution.executionId;
     reviewRequestPayload.orchestrationEventStreamToken = orchestrationExecution.eventStreamToken;
 
-    await context.artifactWriter.writeTextArtifact(reviewArtifactPath, reviewDocument);
+    await context.artifactWriter.writeTextArtifact(reviewArtifactPath, finalizedReviewDocument);
     await context.artifactWriter.writeJsonArtifact(requestPath, reviewRequestPayload);
+    if (reviewTaskRecord) {
+      await this.runTaskLedgerSync(context, {
+        reviewTaskId: reviewTaskRecord.reviewTaskId,
+        reviewStatus,
+        reviewArtifactPath,
+      });
+    }
     await context.orchestrationServiceRuntime.publishEvent({
       executionId: requestId,
       type: OrchestrationServiceEventType.ARTIFACT_READY,
@@ -222,6 +293,14 @@ export class CliReviewCommand implements CliCommandExecutor {
         id: CliReviewArtifactId.REVIEW_ARTIFACT,
         path: reviewArtifactPath,
       },
+      ...(reviewTaskRecord
+        ? [
+            {
+              id: CliReviewArtifactId.REVIEW_TASK_CARD,
+              path: reviewTaskRecord.reviewTaskCardPath,
+            } satisfies CliCommandResultArtifact,
+          ]
+        : []),
     ];
     const experience = context.commandExperienceBuilder.buildExperiencePayload({
       roleProgress: [
@@ -322,6 +401,12 @@ export class CliReviewCommand implements CliCommandExecutor {
           review_artifact_path: reviewArtifactPath,
           review_status: reviewStatus,
           review_mode: reviewMode,
+          ...(reviewTaskRecord
+            ? {
+                review_task_id: reviewTaskRecord.reviewTaskId,
+                review_task_card_path: reviewTaskRecord.reviewTaskCardPath,
+              }
+            : {}),
           request_path: requestPath,
           finding_count: findings.length,
           reviewed_path_count: changedPaths.length,
@@ -366,6 +451,46 @@ export class CliReviewCommand implements CliCommandExecutor {
         detail: `count=${findings.length}`,
       },
     ];
+  }
+
+  private async runTaskLedgerSync(
+    context: CliCommandExecutorContext,
+    options: {
+      reviewTaskId: string;
+      reviewStatus: CliReviewLifecycleStatus;
+      reviewArtifactPath: string;
+    },
+  ): Promise<void> {
+    const syncScriptPath = resolveTaskLedgerSyncScriptPath();
+    if (!syncScriptPath) {
+      throw new RuntimeError(
+        GovernorErrorCode.UNKNOWN,
+        context.localizeText(
+          'sync-task-ledger.js could not be resolved from current installation.',
+          '当前安装中无法解析 sync-task-ledger.js。',
+        ),
+      );
+    }
+
+    await context.runNodeScript(syncScriptPath, [
+      '--workspace-root',
+      context.options.workspace.workspaceRoot,
+      '--task-id',
+      options.reviewTaskId,
+      '--execution-id',
+      `review-${Date.now()}`,
+      '--result',
+      `review artifact ${options.reviewArtifactPath} created with status ${options.reviewStatus}`,
+      '--verify',
+      `review command initialized ${options.reviewTaskId} as ${options.reviewStatus}`,
+      '--review-delta',
+      options.reviewArtifactPath,
+      '--checklist-note',
+      context.localizeText(
+        `review initialized ${options.reviewTaskId} from ${options.reviewArtifactPath}.`,
+        `review 已从 ${options.reviewArtifactPath} 初始化 ${options.reviewTaskId}。`,
+      ),
+    ]);
   }
 
   private buildScopeSummary(
@@ -428,6 +553,7 @@ export class CliReviewCommand implements CliCommandExecutor {
       taskId: string | null;
       reviewMode: CliReviewScopeMode;
       reviewStatus: CliReviewLifecycleStatus;
+      reviewTaskId: string | null;
       reviewSlug: string;
       reviewArtifactPath: string;
       changedPaths: string[];
@@ -476,6 +602,9 @@ export class CliReviewCommand implements CliCommandExecutor {
       `- Date: ${dateOnly}`,
       `- Reviewer: ${context.localizeText('repo-ai-governor CLI', 'repo-ai-governor CLI')}`,
       `- Task: \`${options.taskId ?? 'n/a'}\``,
+      ...(options.reviewTaskId
+        ? [`- ${context.localizeText('Review Task', 'Review Task')}: \`${options.reviewTaskId}\``]
+        : []),
       `- ${context.localizeText('Review Type', 'Review Type')}: ${
         options.reviewMode === CliReviewScopeMode.TASK_SCOPE
           ? context.localizeText('task-aware review', 'task-aware review')

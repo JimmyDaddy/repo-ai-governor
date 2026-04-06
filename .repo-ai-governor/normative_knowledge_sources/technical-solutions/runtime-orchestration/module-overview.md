@@ -1,7 +1,7 @@
 # Runtime Orchestration Module Overview
 
 - Status: active
-- Date: 2026-04-04
+- Date: 2026-04-06
 - Module ID: `runtime.orchestration`
 - Owner: runtime
 - Layer: `runtime-core`
@@ -56,6 +56,7 @@
 6. 截至 `2026-04-01`，在既有 `session.main supervisor` formal direction 基础上，runtime 现进一步接受“conversation-first chatability + risk-tiered skill handoff”补充方向；shared session truth 必须同时承载 `preview_confirm` 与 `direct_execute` continuity，并由 service-owned risk/policy gate 决定 `help`、`doctor`、`verify` 与 scope-resolved `review` 等低风险 skill 是否允许直接执行。
 7. 截至 `2026-04-02`，在既有 `session.main supervisor` formal direction 基础上，runtime 现进一步接受“service-owned capability explainer + contextual command guidance”补充方向；`runtime.orchestration` 必须拥有 locale-neutral governed capability catalog、availability overlay、capability explanation route 与 explanation-to-governed-execution bridge boundary，并将 capability answer metadata 投影到 shared session truth 供 CLI/desktop 统一消费。
 8. 截至 `2026-04-04`，在既有 shared-session continuity 基础上，runtime 现进一步接受“lane-scoped provider-native continuation under shared-session truth”补充方向；`runtime.orchestration` 必须拥有 provider continuation slot lifecycle、turn-level continuation summaries 与 invalidation policy，但 raw provider handle 语义仍由 adapter/projection seam 持有。
+9. 截至 `2026-04-06`，本模块进一步接受“standards-native review engine + provenance-aware governed CR”补充方向：`runtime.orchestration` 必须拥有 review-rule projection 的执行顺序、`deterministic -> delegated` 混合评审流水线、finding dedupe、same-round verify 与 fresh recheck 分叉语义，但 canonical `CR-xxx` / review artifact 真值仍由既有治理链路承载。
 
 ## 9. Detail Docs
 
@@ -64,3 +65,4 @@
 2. ADR:
    - `adrs/graph-first-runtime-and-service-backed-execution-cutover.md`
    - `adrs/session-main-supervisor-and-role-subagent-collaboration.md`
+   - `adrs/standards-native-review-engine-and-provenance-aware-cr.md`

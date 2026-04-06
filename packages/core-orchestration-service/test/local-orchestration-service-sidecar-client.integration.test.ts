@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -160,6 +160,295 @@ describe('LocalOrchestrationServiceSidecarClient', () => {
         OrchestrationServiceEventType.ARTIFACT_READY,
         OrchestrationServiceEventType.EXECUTION_COMPLETED,
       ]);
+    } finally {
+      await client.dispose();
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('exposes governance read models and terminateExecution over the sidecar IPC contract', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-sidecar-governance-'));
+    const workspaceRoot = join(temporaryRoot, '.repo-ai-governor');
+    const reviewDirectoryPath = join(workspaceRoot, 'context/dev/project-048/sprint-001/review');
+    const executionWorkspaceRoot = join(temporaryRoot, 'workspace');
+    const client = new LocalOrchestrationServiceSidecarClient(workspaceRoot);
+
+    try {
+      await mkdir(join(workspaceRoot, 'context'), { recursive: true });
+      await mkdir(reviewDirectoryPath, { recursive: true });
+      await mkdir(executionWorkspaceRoot, { recursive: true });
+      await writeFile(
+        join(workspaceRoot, 'context/current-context.md'),
+        `# Workspace Current Context
+
+## Primary Stream
+
+- Status: active
+- Project: \`project-048\`
+- Sprint: \`sprint-001\`
+- Docs root: \`.repo-ai-governor/context/dev/project-048\`
+- Task records: \`.repo-ai-governor/context/dev/project-048/sprint-001/tasks/\`
+- Review records: \`.repo-ai-governor/context/dev/project-048/sprint-001/review\`
+`,
+      );
+      const reviewDocumentPath560 = join(reviewDirectoryPath, 'code_review_tk-560.md');
+      const reviewDocumentPath561 = join(reviewDirectoryPath, 'code_review_tk-561.md');
+      await writeFile(
+        reviewDocumentPath560,
+        '# Code Review: TK-560\n\n- Status: review_pending\n- Task: `TK-560`\n- Scope: `project-048 / sprint-001`\n',
+      );
+      await writeFile(
+        reviewDocumentPath561,
+        '# Code Review: TK-561\n\n- Status: review_pending\n- Task: `TK-561`\n- Scope: `project-048 / sprint-001`\n',
+      );
+
+      const started560 = await client.startExecution(
+        {
+          workspaceId: 'workspace-sidecar',
+          workspaceRoot: executionWorkspaceRoot,
+          executionKind: OrchestrationExecutionKind.RUN,
+          clientSurface: OrchestrationClientSurface.DESKTOP,
+          taskId: 'TK-560',
+          projectId: 'project-048',
+          sprintId: 'sprint-001',
+        },
+        {
+          processId: 'process-sidecar-governance-560',
+          executionId: 'exec-sidecar-governance-560',
+          executionSessionId: 'session-sidecar-governance-560',
+        },
+      );
+      const started561 = await client.startExecution(
+        {
+          workspaceId: 'workspace-sidecar',
+          workspaceRoot: executionWorkspaceRoot,
+          executionKind: OrchestrationExecutionKind.RUN,
+          clientSurface: OrchestrationClientSurface.DESKTOP,
+          taskId: 'TK-561',
+          projectId: 'project-048',
+          sprintId: 'sprint-001',
+        },
+        {
+          processId: 'process-sidecar-governance-561',
+          executionId: 'exec-sidecar-governance-561',
+          executionSessionId: 'session-sidecar-governance-561',
+        },
+      );
+      await client.publishEvent({
+        executionId: started560.executionId,
+        type: OrchestrationServiceEventType.HITL_REQUIRED,
+        status: OrchestrationExecutionStatus.HITL_REQUIRED,
+        message: 'Awaiting HITL decision.',
+      });
+      await client.publishEvent({
+        executionId: started561.executionId,
+        type: OrchestrationServiceEventType.HITL_REQUIRED,
+        status: OrchestrationExecutionStatus.HITL_REQUIRED,
+        message: 'Awaiting HITL decision.',
+      });
+
+      const executionBoard = await client.queryExecutionBoard({
+        filter: {
+          projectId: 'project-048',
+        },
+      });
+      const hitlInbox = await client.queryHitlInbox({
+        filter: {
+          sprintId: 'sprint-001',
+        },
+      });
+      const queueOverview = await client.queryQueueOverview({
+        filter: {
+          projectId: 'project-048',
+        },
+      });
+      const termination = await client.terminateExecution({
+        executionId: started560.executionId,
+        actor: 'desktop-reviewer',
+        reason: 'Stop execution',
+      });
+      const execution560 = executionBoard.executions.find(
+        (entry) => entry.execution.executionId === started560.executionId,
+      );
+      const execution561 = executionBoard.executions.find(
+        (entry) => entry.execution.executionId === started561.executionId,
+      );
+
+      expect(execution560?.execution.executionId).toBe(started560.executionId);
+      expect(execution560?.handoffTargets).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            targetKind: 'worktree',
+            targetPath: executionWorkspaceRoot,
+          }),
+          expect.objectContaining({
+            targetKind: 'review_document',
+            targetPath: reviewDocumentPath560,
+          }),
+        ]),
+      );
+      expect(execution561?.handoffTargets).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            targetKind: 'review_document',
+            targetPath: reviewDocumentPath561,
+          }),
+        ]),
+      );
+      expect(hitlInbox.pendingDecisions).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            execution: expect.objectContaining({
+              executionId: started560.executionId,
+            }),
+          }),
+          expect.objectContaining({
+            execution: expect.objectContaining({
+              executionId: started561.executionId,
+            }),
+          }),
+        ]),
+      );
+      expect(queueOverview.automationInbox).toHaveLength(2);
+      expect(queueOverview.reviewQueue).toHaveLength(2);
+      expect(queueOverview.parallelLanes[0]?.activeExecutionCount).toBe(2);
+      expect(queueOverview.notificationOwnership.pendingItemCount).toBe(4);
+      expect(termination.terminated).toBe(true);
+      expect(termination.nextStatus).toBe(OrchestrationExecutionStatus.CANCELLED);
+      expect(termination.executionSummary.serviceHostKind).toBe(
+        OrchestrationServiceHostKind.SIDECAR,
+      );
+    } finally {
+      await client.dispose();
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('keeps review-document handoff unavailable when the lone review file does not match execution ownership', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-sidecar-review-miss-'));
+    const workspaceRoot = join(temporaryRoot, '.repo-ai-governor');
+    const reviewDirectoryPath = join(workspaceRoot, 'context/dev/project-048/sprint-001/review');
+    const executionWorkspaceRoot = join(temporaryRoot, 'workspace');
+    const client = new LocalOrchestrationServiceSidecarClient(workspaceRoot);
+
+    try {
+      await mkdir(join(workspaceRoot, 'context'), { recursive: true });
+      await mkdir(reviewDirectoryPath, { recursive: true });
+      await mkdir(executionWorkspaceRoot, { recursive: true });
+      await writeFile(
+        join(workspaceRoot, 'context/current-context.md'),
+        `# Workspace Current Context
+
+## Primary Stream
+
+- Status: active
+- Project: \`project-048\`
+- Sprint: \`sprint-001\`
+- Docs root: \`.repo-ai-governor/context/dev/project-048\`
+- Task records: \`.repo-ai-governor/context/dev/project-048/sprint-001/tasks/\`
+- Review records: \`.repo-ai-governor/context/dev/project-048/sprint-001/review\`
+`,
+      );
+      await writeFile(
+        join(reviewDirectoryPath, 'code_review_tk-999.md'),
+        '# Code Review: TK-999\n\n- Status: review_pending\n- Task: `TK-999`\n- Scope: `project-048 / sprint-001`\n',
+      );
+
+      const started = await client.startExecution(
+        {
+          workspaceId: 'workspace-sidecar',
+          workspaceRoot: executionWorkspaceRoot,
+          executionKind: OrchestrationExecutionKind.RUN,
+          clientSurface: OrchestrationClientSurface.DESKTOP,
+          taskId: 'TK-560',
+          projectId: 'project-048',
+          sprintId: 'sprint-001',
+        },
+        {
+          processId: 'process-sidecar-review-miss',
+          executionId: 'exec-sidecar-review-miss',
+          executionSessionId: 'session-sidecar-review-miss',
+        },
+      );
+
+      const executionBoard = await client.queryExecutionBoard({
+        filter: {
+          projectId: 'project-048',
+        },
+      });
+      const reviewTarget = executionBoard.executions
+        .find((entry) => entry.execution.executionId === started.executionId)
+        ?.handoffTargets.find((target) => target.targetKind === 'review_document');
+
+      expect(reviewTarget?.exists).toBe(false);
+      expect(reviewTarget?.targetPath).toBeUndefined();
+    } finally {
+      await client.dispose();
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('keeps review-document handoff unavailable when multiple review files tie on project and sprint only', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-sidecar-review-tie-'));
+    const workspaceRoot = join(temporaryRoot, '.repo-ai-governor');
+    const reviewDirectoryPath = join(workspaceRoot, 'context/dev/project-048/sprint-001/review');
+    const executionWorkspaceRoot = join(temporaryRoot, 'workspace');
+    const client = new LocalOrchestrationServiceSidecarClient(workspaceRoot);
+
+    try {
+      await mkdir(join(workspaceRoot, 'context'), { recursive: true });
+      await mkdir(reviewDirectoryPath, { recursive: true });
+      await mkdir(executionWorkspaceRoot, { recursive: true });
+      await writeFile(
+        join(workspaceRoot, 'context/current-context.md'),
+        `# Workspace Current Context
+
+## Primary Stream
+
+- Status: active
+- Project: \`project-048\`
+- Sprint: \`sprint-001\`
+- Docs root: \`.repo-ai-governor/context/dev/project-048\`
+- Task records: \`.repo-ai-governor/context/dev/project-048/sprint-001/tasks/\`
+- Review records: \`.repo-ai-governor/context/dev/project-048/sprint-001/review\`
+`,
+      );
+      await writeFile(
+        join(reviewDirectoryPath, 'code_review_scope-a.md'),
+        '# Code Review: Scope A\n\n- Status: review_pending\n- Scope: `project-048 / sprint-001`\n',
+      );
+      await writeFile(
+        join(reviewDirectoryPath, 'code_review_scope-b.md'),
+        '# Code Review: Scope B\n\n- Status: review_pending\n- Scope: `project-048 / sprint-001`\n',
+      );
+
+      const started = await client.startExecution(
+        {
+          workspaceId: 'workspace-sidecar',
+          workspaceRoot: executionWorkspaceRoot,
+          executionKind: OrchestrationExecutionKind.RUN,
+          clientSurface: OrchestrationClientSurface.DESKTOP,
+          projectId: 'project-048',
+          sprintId: 'sprint-001',
+        },
+        {
+          processId: 'process-sidecar-review-tie',
+          executionId: 'exec-sidecar-review-tie',
+          executionSessionId: 'session-sidecar-review-tie',
+        },
+      );
+
+      const executionBoard = await client.queryExecutionBoard({
+        filter: {
+          projectId: 'project-048',
+        },
+      });
+      const reviewTarget = executionBoard.executions
+        .find((entry) => entry.execution.executionId === started.executionId)
+        ?.handoffTargets.find((target) => target.targetKind === 'review_document');
+
+      expect(reviewTarget?.exists).toBe(false);
+      expect(reviewTarget?.targetPath).toBeUndefined();
     } finally {
       await client.dispose();
       await rm(temporaryRoot, { recursive: true, force: true });

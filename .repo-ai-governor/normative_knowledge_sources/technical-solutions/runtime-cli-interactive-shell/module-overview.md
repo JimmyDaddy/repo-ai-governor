@@ -1,7 +1,7 @@
 # Runtime CLI Interactive Shell Module Overview
 
 - Status: active
-- Date: 2026-04-04
+- Date: 2026-04-06
 - Module ID: `runtime.cli-interactive-shell`
 - Owner: runtime
 - Layer: `runtime-core`
@@ -73,6 +73,7 @@
 13. 截至 `2026-04-02`，`v6` formal direction 已接受“service-owned capability explainer + contextual command guidance”补充方向：session shell 必须消费 capability explanation turn metadata 与 suggested-action affordance，但 governed capability catalog 只拥有可解释的 bridge capabilities，`/confirm`、`/cancel`、`/clear`、`/exit`、`/resume` 等 shell-local builtins 继续留在 CLI registry 本地治理。
 14. 截至 `2026-04-04`，在既有 session truth consumer 方向基础上，CLI shell 现进一步接受“presenter-safe provider continuation summary consumer”补充边界：shell 可以展示 continuation reuse / invalidation 的摘要结果，但 raw provider handle 与 slot lifecycle 仍属于 runtime/service seam。
 15. 截至 `2026-04-04`，本模块进一步接受“CLI command capability maturity layering + thin-baseline enhancement priority”补充方向：`plan / review / review-verify / upgrade` 现被正式视为 linked thin-baseline command set；后续立项默认需联读成熟度 ADR 与各自 companion contract draft，但该优先级分析不进入 command runtime truth。
+16. 截至 `2026-04-06`，本模块进一步接受“standards-native review engine presentation”补充方向：`review / review-verify` 的 CLI surface 应显式区分 deterministic rule findings、standards-guided findings 与 residual risk observations，并把 provenance-aware closure 结果呈现为 review artifact / transcript affordance，但不得在 CLI 本地重算 review engine 语义。
 
 ## 9. Detail Docs
 

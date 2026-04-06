@@ -1,4 +1,14 @@
 export {
+  HOST_APPLY_REPORT_SCHEMA_VERSION,
+  HOST_DISTRIBUTION_DISCOVERY_STATE_VALUES,
+  HOST_DISTRIBUTION_HANDOFF_BRIDGE_VALUES,
+  HOST_DISTRIBUTION_HOST_VALUES,
+  HOST_DISTRIBUTION_MODE_VALUES,
+  HOST_DISTRIBUTION_TARGET_VALUES,
+  HOST_EXPORT_MANIFEST_SCHEMA_VERSION,
+  HOST_PACK_REPORT_SCHEMA_VERSION,
+  HOST_VERIFICATION_SUMMARY_SCHEMA_VERSION,
+  HOST_VERIFICATION_STATUS_VALUES,
   AgentsProjectionMetadataKey,
   DEFAULT_AGENTS_PROJECTION_TARGET,
   DEFAULT_STANDARDS_ALLOW_MINOR_AUTO_UPGRADE,
@@ -6,6 +16,12 @@ export {
   DEFAULT_STANDARDS_FALLBACK_LOCALE,
   DEFAULT_STANDARDS_RENDER_LOCALE,
   DEFAULT_STANDARDS_VERSION_PIN_MODE,
+  HostDistributionDiscoveryState,
+  HostDistributionHandoffBridge,
+  HostDistributionHost,
+  HostDistributionMode,
+  HostDistributionTarget,
+  HostVerificationStatus,
   StandardsPackScope,
   StandardsPackSource,
   StandardsPackStatus,
@@ -31,11 +47,28 @@ export {
   AgentsProjectionNowProvider,
   DefaultAgentsProjectionNowProvider,
 } from './providers/index.js';
-export { goMinimalGovernancePack, pythonMinimalGovernancePack } from './examples/index.js';
+export {
+  goMinimalGovernancePack,
+  pythonMinimalGovernancePack,
+  workflowReviewGovernancePack,
+} from './examples/index.js';
 export { RuleRenderer } from './rule-renderer.js';
+export { StructuredWorkflowAssetRegistry } from './structured-workflow-asset-registry.js';
 export { StandardsUpgradePlanner } from './standards-upgrade-planner.js';
 export { StandardsPackRegistry } from './standards-pack-registry.js';
+export { StandardsRuntimeLoader } from './standards-runtime-loader.js';
 export type {
+  HostApplyReport,
+  HostExportManifest,
+  HostExportProjectedFile,
+  HostPackReport,
+  HostRendererRenderInput,
+  HostRendererRenderResult,
+  HostTargetCapabilities,
+  HostVerificationCheck,
+  HostVerificationSummary,
+  StructuredWorkflowAssetRecord,
+  StructuredWorkflowAssetRegistryOptions,
   AgentsProjectionNowProviderContract,
   AgentsProjectionSourcePackRef,
   AgentsProjectorOptions,
@@ -49,6 +82,13 @@ export type {
   StandardsProjectionParityResult,
   StandardsProjectionParityViolation,
   StandardsPack,
+  StandardsRuntimeConfig,
+  StandardsRuntimeLoadedPack,
+  StandardsRuntimeLoadInput,
+  StandardsRuntimeLoadResult,
+  StandardsRuntimePackSourceConfig,
+  StandardsRuntimePackSourcesConfig,
+  StandardsRuntimeProjectionTargetConfig,
   StandardsPackListOptions,
   StandardsPackRegistryOptions,
   StandardsPackRegistryReader,

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Workspace Scoped CR Loop"
+  short_description: "执行范围、可恢复 CR round 循环与边界本地提交"
+  default_prompt: "使用 $workspace-scoped-cr-loop 执行指定 task、sprint 或 project，按可恢复的 CR round 流程调起子 agent 做 fresh CR、主 agent 复核修复并循环到清零；每个 clean 边界再做一次本地 commit。"

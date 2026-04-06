@@ -1,0 +1,29 @@
+export { activate, deactivate } from './extension.js';
+export { VsCodeExtensionContract } from './runtime/vscode-extension-contract.js';
+export { VsCodeExtensionPresentationBuilder } from './runtime/vscode-extension-presentation-builder.js';
+export {
+  VSCODE_EXTENSION_CONTEXT_KEYS,
+  VSCODE_EXTENSION_DEFAULT_EXECUTION_LIMIT,
+  VSCODE_EXTENSION_CHAT_COMMAND_REVIEW,
+  VSCODE_EXTENSION_CHAT_COMMAND_STATUS,
+  VSCODE_EXTENSION_CHAT_PARTICIPANT_ID,
+  VSCODE_EXTENSION_CHAT_PARTICIPANT_NAME,
+  VSCODE_EXTENSION_COMMAND_IDS,
+  VSCODE_EXTENSION_CONTAINER_ID,
+  VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES,
+  VSCODE_EXTENSION_TRUST_MANAGE_COMMAND_ID,
+  VSCODE_EXTENSION_TRUST_GATED_COMMAND_IDS,
+  VSCODE_EXTENSION_VIEW_IDS,
+} from './constants/index.js';
+export type {
+  VsCodeExtensionChatCommandContribution,
+  VsCodeExtensionCommandRequest,
+  VsCodeExtensionCommandContribution,
+  VsCodeExtensionContractSnapshot,
+  VsCodeExtensionReviewDetailSnapshot,
+  VsCodeExtensionSelectionSnapshot,
+  VsCodeExtensionTreeNodeCommandDescriptor,
+  VsCodeExtensionTreeNodeDescriptor,
+  VsCodeExtensionViewContribution,
+  VsCodeExtensionWorkspaceContextSnapshot,
+} from './types/index.js';

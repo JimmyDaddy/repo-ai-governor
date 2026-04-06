@@ -1,7 +1,7 @@
 # Runtime Agent Projection Module Overview
 
 - Status: active
-- Date: 2026-04-04
+- Date: 2026-04-06
 - Module ID: `runtime.agent-projection`
 - Owner: runtime
 - Layer: `runtime-core`
@@ -22,6 +22,7 @@
 8. 将 `AgentSessionRegistry` 作为共享 session 的投影层，而不是新的会话事实源。
 9. 允许 LangGraph supervisor 消费 agent descriptor，但不把 supervisor 升格为新的 canonical runtime。
 10. 在 secret store 与 provider-owned config 上保持 analyze-first / read-only 边界；`connect / doctor / verify` 与 continuation seam 都只能生成 candidate、diagnostics、`next_action` 或非敏感 provider reference，不得静默写入 keychain、provider 配置或持久化 bearer-like continuation token。
+11. 正式拥有 standards-guided delegated reviewer handoff 的 projection 语义：orchestration service 只产出结构化 review request，projection 模块负责把 `projectedRules / deterministicFindings / uncoveredRuleIds` 等事实渲染到具体宿主 surface，并将 reviewer 输出归一化回 provenance-aware finding 结构，但不得把 prompt prose 自身升格为事实源。
 
 ## 3. 非目标
 
@@ -60,6 +61,7 @@
 5. 当问题涉及 invoke timeout、长任务 stall 判定、graceful interrupt、partial output preservation 或 watchdog / liveness telemetry 时，也应优先补载本模块。
 6. 当问题涉及 candidate config apply、diff/merge explain、agent projection presenter、`AgentProjectionPanelViewModel` seam 或 desktop-ready projection consumer 时，也应优先补载本模块。
 7. 当问题涉及 provider session reuse、backend conversation continuity、continuation handle compatibility、transport-aware reuse 或 adapter-facing continuation request/result seam 时，也应优先补载本模块。
+8. 当问题涉及 delegated reviewer request normalization、standards-guided review handoff、review finding transport projection 或 reviewer 输出归一化时，也应优先补载本模块。
 
 ## 8. Detail Docs
 

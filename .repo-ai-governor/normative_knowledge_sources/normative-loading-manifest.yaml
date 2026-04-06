@@ -1,5 +1,5 @@
 schema_version: 1
-generated_at: 2026-04-04
+generated_at: 2026-04-06
 status: active
 owner: repo-ai-governor
 
@@ -481,6 +481,19 @@ documents:
     owner: architecture
     last_reviewed_at: 2026-04-04
 
+  - doc_id: technical_solution_runtime_orchestration_standards_native_review_engine_adr
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/adrs/standards-native-review-engine-and-provenance-aware-cr.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - runtime_contract_change
+      - governance_engine_change
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+    owner: architecture
+    last_reviewed_at: 2026-04-06
+
   - doc_id: master_execution_plan
     path: .repo-ai-governor/normative_knowledge_sources/repo-ai-governor-master-execution-plan.md
     tier: L1
@@ -888,3 +901,90 @@ documents:
       - command_surface_change
     owner: runtime
     last_reviewed_at: 2026-04-04
+
+  - doc_id: runtime_governance_clients_module_overview
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/module-overview.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+      - runtime_contract_change
+      - desktop_surface_change
+      - ide_surface_change
+      - command_surface_change
+    owner: runtime
+    last_reviewed_at: 2026-04-06
+
+  - doc_id: runtime_governance_surface_client_contract
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/contracts/governance-surface-client-contract.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+      - runtime_contract_change
+      - desktop_surface_change
+      - ide_surface_change
+      - command_surface_change
+    owner: runtime
+    last_reviewed_at: 2026-04-05
+
+  - doc_id: runtime_governance_host_distribution_contract
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/contracts/governance-host-distribution-contract.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+      - runtime_contract_change
+      - command_surface_change
+      - ide_surface_change
+    owner: runtime
+    last_reviewed_at: 2026-04-06
+
+  - doc_id: runtime_governance_surface_split_adr
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/desktop-command-center-and-vscode-editor-companion-split.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+      - desktop_surface_change
+      - ide_surface_change
+      - command_surface_change
+    owner: runtime
+    last_reviewed_at: 2026-04-05
+
+  - doc_id: runtime_governance_host_distribution_adr
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/host-native-distribution-and-target-specific-consumption.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+      - command_surface_change
+      - ide_surface_change
+      - runtime_contract_change
+    owner: runtime
+    last_reviewed_at: 2026-04-06
+
+  - doc_id: runtime_governance_adopter_productization_priority_adr
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/adopter-productization-priority-and-surface-sequencing.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+      - runtime_contract_change
+      - desktop_surface_change
+      - ide_surface_change
+      - command_surface_change
+    owner: runtime
+    last_reviewed_at: 2026-04-06

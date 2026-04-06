@@ -1,6 +1,13 @@
 export {
+  OrchestrationGovernanceAttentionLevel,
   OrchestrationClientSurface,
   OrchestrationExecutionKind,
+  OrchestrationGovernanceActionDisabledReason,
+  OrchestrationGovernanceActionKind,
+  OrchestrationGovernanceFollowUpSlaState,
+  OrchestrationGovernanceNotificationStatus,
+  OrchestrationGovernanceQueueKind,
+  OrchestrationHandoffTargetKind,
   OrchestrationExecutionStatus,
   OrchestrationSessionEventType,
   OrchestrationSessionRouteId,

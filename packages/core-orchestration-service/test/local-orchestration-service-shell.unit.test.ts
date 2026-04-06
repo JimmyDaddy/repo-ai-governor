@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, utimes, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -251,6 +251,561 @@ describe('core-orchestration-service local shell', () => {
         OrchestrationServiceEventType.ARTIFACT_READY,
       );
       expect(subscription.events[2]?.artifactPath).toBe(decisionResult.decisionReceiptArtifactPath);
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('builds execution-board and HITL inbox read models with service-owned actions and handoff targets', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-governance-'));
+    const workspaceRoot = join(temporaryRoot, '.repo-ai-governor');
+    const executionWorkspaceRoot = join(temporaryRoot, 'workspace');
+    const reviewDirectoryPath = join(workspaceRoot, 'context/dev/project-048/sprint-001/review');
+    const artifactPath = join(executionWorkspaceRoot, 'artifacts/summary.md');
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot,
+    });
+
+    try {
+      await mkdir(join(workspaceRoot, 'context'), { recursive: true });
+      await mkdir(join(executionWorkspaceRoot, 'artifacts'), { recursive: true });
+      await mkdir(reviewDirectoryPath, { recursive: true });
+      await writeFile(
+        join(workspaceRoot, 'context/current-context.md'),
+        `# Workspace Current Context
+
+## Primary Stream
+
+- Status: active
+- Project: \`project-048\`
+- Sprint: \`sprint-001\`
+- Docs root: \`.repo-ai-governor/context/dev/project-048\`
+- Task records: \`.repo-ai-governor/context/dev/project-048/sprint-001/tasks/\`
+- Review records: \`.repo-ai-governor/context/dev/project-048/sprint-001/review\`
+`,
+      );
+      const reviewDocumentPath560 = join(reviewDirectoryPath, 'code_review_tk-560.md');
+      const reviewDocumentPath561 = join(reviewDirectoryPath, 'code_review_tk-561.md');
+      await writeFile(
+        reviewDocumentPath560,
+        '# Code Review: TK-560\n\n- Status: review_pending\n- Task: `TK-560`\n- Scope: `project-048 / sprint-001`\n',
+      );
+      await writeFile(
+        reviewDocumentPath561,
+        '# Code Review: TK-561\n\n- Status: review_pending\n- Task: `TK-561`\n- Scope: `project-048 / sprint-001`\n',
+      );
+      await writeFile(artifactPath, 'artifact ready\n');
+
+      const started560 = await orchestrationService.startExecution(
+        {
+          workspaceId: 'workspace-governance',
+          workspaceRoot: executionWorkspaceRoot,
+          executionKind: OrchestrationExecutionKind.RUN,
+          clientSurface: OrchestrationClientSurface.DESKTOP,
+          taskId: 'TK-560',
+          projectId: 'project-048',
+          sprintId: 'sprint-001',
+        },
+        {
+          executionId: 'exec-governance-560',
+          executionSessionId: 'session-governance-560',
+          processId: 'process-governance-560',
+        },
+      );
+      const started561 = await orchestrationService.startExecution(
+        {
+          workspaceId: 'workspace-governance',
+          workspaceRoot: executionWorkspaceRoot,
+          executionKind: OrchestrationExecutionKind.RUN,
+          clientSurface: OrchestrationClientSurface.DESKTOP,
+          taskId: 'TK-561',
+          projectId: 'project-048',
+          sprintId: 'sprint-001',
+        },
+        {
+          executionId: 'exec-governance-561',
+          executionSessionId: 'session-governance-561',
+          processId: 'process-governance-561',
+        },
+      );
+      await orchestrationService.publishEvent({
+        executionId: started560.executionId,
+        type: OrchestrationServiceEventType.ARTIFACT_READY,
+        status: OrchestrationExecutionStatus.RUNNING,
+        artifactId: 'artifact-summary',
+        artifactPath,
+        message: 'artifact ready',
+      });
+      await orchestrationService.publishEvent({
+        executionId: started560.executionId,
+        type: OrchestrationServiceEventType.HITL_REQUIRED,
+        status: OrchestrationExecutionStatus.HITL_REQUIRED,
+        message: 'Awaiting HITL decision.',
+      });
+      await orchestrationService.publishEvent({
+        executionId: started561.executionId,
+        type: OrchestrationServiceEventType.HITL_REQUIRED,
+        status: OrchestrationExecutionStatus.HITL_REQUIRED,
+        message: 'Awaiting HITL decision.',
+      });
+
+      const executionBoard = await orchestrationService.queryExecutionBoard({
+        filter: {
+          projectId: 'project-048',
+        },
+      });
+      const hitlInbox = await orchestrationService.queryHitlInbox({
+        filter: {
+          sprintId: 'sprint-001',
+        },
+      });
+      const queueOverview = await orchestrationService.queryQueueOverview({
+        filter: {
+          projectId: 'project-048',
+        },
+      });
+      const execution560 = executionBoard.executions.find(
+        (entry) => entry.execution.executionId === started560.executionId,
+      );
+      const execution561 = executionBoard.executions.find(
+        (entry) => entry.execution.executionId === started561.executionId,
+      );
+
+      expect(executionBoard.totalMatchedCount).toBe(2);
+      expect(execution560?.actions).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            actionKind: 'submit_hitl_decision',
+            enabled: true,
+            hitlDecisionOptions: expect.arrayContaining([
+              expect.objectContaining({
+                decision: 'approve',
+                resumeAction: 'resume',
+              }),
+            ]),
+          }),
+          expect.objectContaining({
+            actionKind: 'open_handoff_target',
+            targetId: 'exec-governance-560:review-document',
+          }),
+        ]),
+      );
+      expect(execution560?.handoffTargets).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            targetKind: 'worktree',
+            targetPath: executionWorkspaceRoot,
+          }),
+          expect.objectContaining({
+            targetKind: 'editor',
+            targetPath: artifactPath,
+          }),
+          expect.objectContaining({
+            targetKind: 'review_document',
+            targetPath: reviewDocumentPath560,
+          }),
+        ]),
+      );
+      expect(execution561?.handoffTargets).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            targetKind: 'review_document',
+            targetPath: reviewDocumentPath561,
+          }),
+        ]),
+      );
+      expect(hitlInbox.totalMatchedCount).toBe(2);
+      expect(hitlInbox.pendingDecisions).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            execution: expect.objectContaining({
+              executionId: started560.executionId,
+            }),
+          }),
+          expect.objectContaining({
+            execution: expect.objectContaining({
+              executionId: started561.executionId,
+            }),
+          }),
+        ]),
+      );
+      expect(queueOverview.automationInbox).toHaveLength(2);
+      expect(queueOverview.reviewQueue).toHaveLength(2);
+      expect(queueOverview.parallelLanes).toHaveLength(1);
+      expect(queueOverview.parallelLanes[0]?.activeExecutionCount).toBe(2);
+      expect(queueOverview.workspaceSummary).toHaveLength(1);
+      expect(queueOverview.workspaceSummary[0]?.workspaceId).toBe('workspace-governance');
+      expect(queueOverview.workspaceSummary[0]?.reviewQueueCount).toBe(2);
+      expect(queueOverview.notificationOwnership.ownerSurface).toBe(
+        OrchestrationClientSurface.DESKTOP,
+      );
+      expect(queueOverview.notificationOwnership.pendingItemCount).toBe(4);
+      expect(queueOverview.automationInbox[0]?.handoffTargets).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            targetKind: 'review_document',
+          }),
+        ]),
+      );
+      expect(queueOverview.reviewQueue[0]?.reviewId).toContain('code_review_tk-');
+      expect(queueOverview.reviewQueue[0]?.reviewFilePath).toContain('/review/code_review_tk-');
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('preserves aggregate queue truth when returned desktop collections are UI-limited', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-queue-limit-'));
+    const workspaceRoot = join(temporaryRoot, '.repo-ai-governor');
+    const workspaceARoot = join(temporaryRoot, 'workspace-a');
+    const workspaceBRoot = join(temporaryRoot, 'workspace-b');
+    const reviewDirectoryPath = join(workspaceRoot, 'context/dev/project-048/sprint-004/review');
+    const reviewPathA = join(reviewDirectoryPath, 'code_review_tk-568.md');
+    const reviewPathB = join(reviewDirectoryPath, 'verified_code_review_tk-569.md');
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot,
+      executionIdProvider: (() => {
+        const executionIds = ['exec-queue-limit-001', 'exec-queue-limit-002'];
+        return () => executionIds.shift() ?? 'exec-queue-limit-fallback';
+      })(),
+      executionSessionIdProvider: (executionId) => `session-${executionId}`,
+      nowProvider: (() => {
+        const timestamps = [
+          new Date('2026-03-25T09:30:00Z'),
+          new Date('2026-03-25T10:00:00Z'),
+          new Date('2026-03-25T10:00:00Z'),
+          new Date('2026-03-25T10:00:00Z'),
+          new Date('2026-03-25T10:20:00Z'),
+          new Date('2026-03-25T10:20:00Z'),
+          new Date('2026-03-25T10:20:00Z'),
+        ];
+        return () => timestamps.shift() ?? new Date('2026-03-25T11:10:00Z');
+      })(),
+    });
+
+    try {
+      await mkdir(join(workspaceRoot, 'context'), { recursive: true });
+      await mkdir(reviewDirectoryPath, { recursive: true });
+      await mkdir(workspaceARoot, { recursive: true });
+      await mkdir(workspaceBRoot, { recursive: true });
+      await writeFile(
+        join(workspaceRoot, 'context/current-context.md'),
+        `# Workspace Current Context
+
+## Primary Stream
+
+- Status: active
+- Project: \`project-048\`
+- Sprint: \`sprint-004\`
+- Docs root: \`.repo-ai-governor/context/dev/project-048\`
+- Task records: \`.repo-ai-governor/context/dev/project-048/sprint-004/tasks/\`
+- Review records: \`.repo-ai-governor/context/dev/project-048/sprint-004/review\`
+`,
+      );
+      await writeFile(
+        reviewPathA,
+        '# Code Review: TK-568\n\n- Status: review_pending\n- Task: `TK-568`\n- Scope: `project-048 / sprint-004`\n',
+      );
+      await writeFile(
+        reviewPathB,
+        '# Code Review: TK-569\n\n- Status: verified\n- Task: `TK-569`\n- Scope: `project-048 / sprint-004`\n',
+      );
+      await utimes(reviewPathA, new Date('2026-03-25T10:00:00Z'), new Date('2026-03-25T10:00:00Z'));
+      await utimes(reviewPathB, new Date('2026-03-25T10:20:00Z'), new Date('2026-03-25T10:20:00Z'));
+
+      const firstExecution = await orchestrationService.startExecution({
+        workspaceId: 'workspace-a',
+        workspaceRoot: workspaceARoot,
+        executionKind: OrchestrationExecutionKind.RUN,
+        clientSurface: OrchestrationClientSurface.DESKTOP,
+        taskId: 'TK-568',
+        projectId: 'project-048',
+        sprintId: 'sprint-004',
+      });
+      await orchestrationService.publishEvent({
+        executionId: firstExecution.executionId,
+        type: OrchestrationServiceEventType.HITL_REQUIRED,
+        status: OrchestrationExecutionStatus.HITL_REQUIRED,
+        message: 'Awaiting queue review.',
+      });
+
+      const secondExecution = await orchestrationService.startExecution({
+        workspaceId: 'workspace-b',
+        workspaceRoot: workspaceBRoot,
+        executionKind: OrchestrationExecutionKind.RUN,
+        clientSurface: OrchestrationClientSurface.DESKTOP,
+        taskId: 'TK-569',
+        projectId: 'project-048',
+        sprintId: 'sprint-004',
+      });
+      await orchestrationService.publishEvent({
+        executionId: secondExecution.executionId,
+        type: OrchestrationServiceEventType.HITL_REQUIRED,
+        status: OrchestrationExecutionStatus.HITL_REQUIRED,
+        message: 'Awaiting queue review.',
+      });
+
+      const queueOverview = await orchestrationService.queryQueueOverview({
+        filter: {
+          projectId: 'project-048',
+        },
+        limit: 1,
+        workspaceLimit: 1,
+      });
+
+      expect(queueOverview.automationInbox).toHaveLength(1);
+      expect(queueOverview.reviewQueue).toHaveLength(1);
+      expect(queueOverview.parallelLanes).toHaveLength(2);
+      expect(queueOverview.workspaceSummary).toHaveLength(1);
+      expect(queueOverview.notificationOwnership.pendingItemCount).toBe(4);
+      expect(queueOverview.notificationOwnership.dueSoonItemCount).toBe(2);
+      expect(queueOverview.notificationOwnership.overdueItemCount).toBe(2);
+      expect(queueOverview.notificationOwnership.activeWorkspaceCount).toBe(2);
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('includes a review-only governance workspace in queue overview summary', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-queue-review-'));
+    const workspaceRoot = join(temporaryRoot, '.repo-ai-governor');
+    const reviewDirectoryPath = join(workspaceRoot, 'context/dev/project-048/sprint-004/review');
+    const reviewPath = join(reviewDirectoryPath, 'code_review_tk-570.md');
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot,
+      nowProvider: () => new Date('2026-03-25T11:10:00Z'),
+    });
+
+    try {
+      await mkdir(join(workspaceRoot, 'context'), { recursive: true });
+      await mkdir(reviewDirectoryPath, { recursive: true });
+      await writeFile(
+        join(workspaceRoot, 'context/current-context.md'),
+        `# Workspace Current Context
+
+## Primary Stream
+
+- Status: active
+- Project: \`project-048\`
+- Sprint: \`sprint-004\`
+- Docs root: \`.repo-ai-governor/context/dev/project-048\`
+- Task records: \`.repo-ai-governor/context/dev/project-048/sprint-004/tasks/\`
+- Review records: \`.repo-ai-governor/context/dev/project-048/sprint-004/review\`
+`,
+      );
+      await writeFile(
+        reviewPath,
+        '# Code Review: TK-570\n\n- Status: review_pending\n- Task: `TK-570`\n- Scope: `project-048 / sprint-004`\n',
+      );
+      await utimes(reviewPath, new Date('2026-03-25T10:20:00Z'), new Date('2026-03-25T10:20:00Z'));
+
+      const queueOverview = await orchestrationService.queryQueueOverview({
+        filter: {
+          projectId: 'project-048',
+        },
+      });
+
+      expect(queueOverview.automationInbox).toHaveLength(0);
+      expect(queueOverview.reviewQueue).toHaveLength(1);
+      expect(queueOverview.parallelLanes).toHaveLength(0);
+      expect(queueOverview.workspaceSummary).toHaveLength(1);
+      expect(queueOverview.workspaceSummary[0]).toEqual(
+        expect.objectContaining({
+          workspaceId: 'governance-workspace',
+          workspaceRoot,
+          totalExecutionCount: 0,
+          activeExecutionCount: 0,
+          reviewQueueCount: 1,
+        }),
+      );
+      expect(queueOverview.notificationOwnership.pendingItemCount).toBe(1);
+      expect(queueOverview.notificationOwnership.activeWorkspaceCount).toBe(0);
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('omits review-document handoff when a lone review file does not match execution ownership', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-review-miss-'));
+    const workspaceRoot = join(temporaryRoot, '.repo-ai-governor');
+    const executionWorkspaceRoot = join(temporaryRoot, 'workspace');
+    const reviewDirectoryPath = join(workspaceRoot, 'context/dev/project-048/sprint-001/review');
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot,
+    });
+
+    try {
+      await mkdir(join(workspaceRoot, 'context'), { recursive: true });
+      await mkdir(reviewDirectoryPath, { recursive: true });
+      await mkdir(executionWorkspaceRoot, { recursive: true });
+      await writeFile(
+        join(workspaceRoot, 'context/current-context.md'),
+        `# Workspace Current Context
+
+## Primary Stream
+
+- Status: active
+- Project: \`project-048\`
+- Sprint: \`sprint-001\`
+- Docs root: \`.repo-ai-governor/context/dev/project-048\`
+- Task records: \`.repo-ai-governor/context/dev/project-048/sprint-001/tasks/\`
+- Review records: \`.repo-ai-governor/context/dev/project-048/sprint-001/review\`
+`,
+      );
+      await writeFile(
+        join(reviewDirectoryPath, 'code_review_tk-999.md'),
+        '# Code Review: TK-999\n\n- Status: review_pending\n- Task: `TK-999`\n- Scope: `project-048 / sprint-001`\n',
+      );
+
+      const started = await orchestrationService.startExecution(
+        {
+          workspaceId: 'workspace-governance',
+          workspaceRoot: executionWorkspaceRoot,
+          executionKind: OrchestrationExecutionKind.RUN,
+          clientSurface: OrchestrationClientSurface.DESKTOP,
+          taskId: 'TK-560',
+          projectId: 'project-048',
+          sprintId: 'sprint-001',
+        },
+        {
+          executionId: 'exec-governance-review-miss',
+          executionSessionId: 'session-governance-review-miss',
+          processId: 'process-governance-review-miss',
+        },
+      );
+
+      const executionBoard = await orchestrationService.queryExecutionBoard({
+        filter: {
+          projectId: 'project-048',
+        },
+      });
+      const reviewTarget = executionBoard.executions
+        .find((entry) => entry.execution.executionId === started.executionId)
+        ?.handoffTargets.find((target) => target.targetKind === 'review_document');
+
+      expect(reviewTarget?.exists).toBe(false);
+      expect(reviewTarget?.targetPath).toBeUndefined();
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('omits review-document handoff when multiple review files tie on non-task ownership facts', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-review-tie-'));
+    const workspaceRoot = join(temporaryRoot, '.repo-ai-governor');
+    const executionWorkspaceRoot = join(temporaryRoot, 'workspace');
+    const reviewDirectoryPath = join(workspaceRoot, 'context/dev/project-048/sprint-001/review');
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot,
+    });
+
+    try {
+      await mkdir(join(workspaceRoot, 'context'), { recursive: true });
+      await mkdir(reviewDirectoryPath, { recursive: true });
+      await mkdir(executionWorkspaceRoot, { recursive: true });
+      await writeFile(
+        join(workspaceRoot, 'context/current-context.md'),
+        `# Workspace Current Context
+
+## Primary Stream
+
+- Status: active
+- Project: \`project-048\`
+- Sprint: \`sprint-001\`
+- Docs root: \`.repo-ai-governor/context/dev/project-048\`
+- Task records: \`.repo-ai-governor/context/dev/project-048/sprint-001/tasks/\`
+- Review records: \`.repo-ai-governor/context/dev/project-048/sprint-001/review\`
+`,
+      );
+      await writeFile(
+        join(reviewDirectoryPath, 'code_review_scope-a.md'),
+        '# Code Review: Scope A\n\n- Status: review_pending\n- Scope: `project-048 / sprint-001`\n',
+      );
+      await writeFile(
+        join(reviewDirectoryPath, 'code_review_scope-b.md'),
+        '# Code Review: Scope B\n\n- Status: review_pending\n- Scope: `project-048 / sprint-001`\n',
+      );
+
+      const started = await orchestrationService.startExecution(
+        {
+          workspaceId: 'workspace-governance',
+          workspaceRoot: executionWorkspaceRoot,
+          executionKind: OrchestrationExecutionKind.RUN,
+          clientSurface: OrchestrationClientSurface.DESKTOP,
+          projectId: 'project-048',
+          sprintId: 'sprint-001',
+        },
+        {
+          executionId: 'exec-governance-review-tie',
+          executionSessionId: 'session-governance-review-tie',
+          processId: 'process-governance-review-tie',
+        },
+      );
+
+      const executionBoard = await orchestrationService.queryExecutionBoard({
+        filter: {
+          projectId: 'project-048',
+        },
+      });
+      const reviewTarget = executionBoard.executions
+        .find((entry) => entry.execution.executionId === started.executionId)
+        ?.handoffTargets.find((target) => target.targetKind === 'review_document');
+
+      expect(reviewTarget?.exists).toBe(false);
+      expect(reviewTarget?.targetPath).toBeUndefined();
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('terminates an execution and persists a partial snapshot before cancelling it', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-terminate-'));
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot: temporaryRoot,
+      executionIdProvider: () => 'exec-terminate-001',
+      executionSessionIdProvider: () => 'session-terminate-001',
+    });
+
+    try {
+      const started = await orchestrationService.startExecution(
+        {
+          workspaceId: 'workspace-terminate',
+          workspaceRoot: temporaryRoot,
+          executionKind: OrchestrationExecutionKind.RUN,
+          clientSurface: OrchestrationClientSurface.DESKTOP,
+        },
+        {
+          processId: 'process-terminate-001',
+        },
+      );
+
+      const termination = await orchestrationService.terminateExecution({
+        executionId: started.executionId,
+        actor: 'desktop-user',
+        reason: 'Manual stop',
+      });
+      const summary = await orchestrationService.getExecution(started.executionId);
+      const subscription = await orchestrationService.subscribeExecution({
+        executionId: started.executionId,
+      });
+      const partialSnapshotPayload = JSON.parse(
+        await readFile(termination.partialSnapshotArtifactPath as string, 'utf8'),
+      ) as {
+        actor: string;
+        reason: string;
+      };
+
+      expect(termination.terminated).toBe(true);
+      expect(termination.nextStatus).toBe(OrchestrationExecutionStatus.CANCELLED);
+      expect(termination.partialSnapshotArtifactPath).toContain('partial-snapshot-');
+      expect(partialSnapshotPayload.actor).toBe('desktop-user');
+      expect(partialSnapshotPayload.reason).toBe('Manual stop');
+      expect(summary?.status).toBe(OrchestrationExecutionStatus.CANCELLED);
+      expect(subscription.events.map((event) => event.type)).toEqual([
+        OrchestrationServiceEventType.EXECUTION_STARTED,
+        OrchestrationServiceEventType.EXECUTION_PARTIAL_SNAPSHOT_PERSISTED,
+        OrchestrationServiceEventType.EXECUTION_HARD_TERMINATION_STARTED,
+      ]);
     } finally {
       await rm(temporaryRoot, { recursive: true, force: true });
     }

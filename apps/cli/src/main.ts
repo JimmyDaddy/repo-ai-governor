@@ -55,6 +55,7 @@ import {
   CliConnectAction,
   CliConnectWriteMode,
 } from './constants/cli-connect.constant.js';
+import { type CliGithubCopilotTargetOption, CliHostAction } from './constants/cli-host.constant.js';
 import {
   CLI_INTERACTIVE_UI_MODE_VALUES,
   CliInteractiveUiMode,
@@ -143,6 +144,7 @@ import type {
   CliConnectRoleBindingOverride,
   CliErrorOutputPayload,
   CliGovernanceCommandExecutionOptions,
+  CliHostCommandOptions,
   CliLocalAdapterProbeOverride,
   CliNestedCommandExecutionOptions,
   CliPlanCommandOptions,
@@ -416,6 +418,7 @@ export async function runCli(
     );
     const workflowCommandOptions = resolveWorkflowCommandOptions(rawArgs);
     const planCommandOptions = resolvePlanCommandOptions(rawArgs);
+    const hostCommandOptions = resolveHostCommandOptions(rawArgs);
     const upgradeCommandOptions = resolveUpgradeCommandOptions(rawArgs);
 
     i18nRuntime = new I18nRuntime();
@@ -529,6 +532,7 @@ export async function runCli(
         workspaceCommandOptions,
         workflowCommandOptions,
         planCommandOptions,
+        hostCommandOptions,
         upgradeCommandOptions,
         orchestrationServiceRuntimeDependencies: {
           memoryConfig: runtimeContext.memory,
@@ -764,6 +768,7 @@ export async function runCli(
       if (
         commandDefinition.name === CliCommandName.CONNECT ||
         commandDefinition.name === CliCommandName.PLAN ||
+        commandDefinition.name === CliCommandName.HOST ||
         commandDefinition.name === CliCommandName.UPGRADE ||
         commandDefinition.name === CliCommandName.WORKFLOW ||
         commandDefinition.name === CliCommandName.WORKSPACE ||
@@ -823,6 +828,56 @@ export async function runCli(
       .addHelpText('after', buildPlanHelpText(runtimeI18n))
       .action(async () => {
         await executeCliCommand(CliCommandName.PLAN);
+      });
+
+    const hostCommand = program
+      .command(CliCommandName.HOST)
+      .description(runtimeI18n.t('cli.commands.host.description'))
+      .addHelpText('after', buildHostHelpText(runtimeI18n))
+      .action(async () => {
+        throw new RuntimeError(
+          GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+          runtimeI18n.t('cli.commands.host.subcommandRequired'),
+          {
+            command: CliCommandName.HOST,
+          },
+        );
+      });
+    hostCommand
+      .command(CliHostAction.EXPORT)
+      .description(runtimeI18n.t('cli.commands.host.exportDescription'))
+      .option('--host <host>', runtimeI18n.t('cli.options.host'))
+      .option('--mode <mode>', runtimeI18n.t('cli.options.hostMode'))
+      .option('--target <target>', runtimeI18n.t('cli.options.hostTarget'))
+      .option('--copilot-target <target>', runtimeI18n.t('cli.options.githubCopilotTarget'))
+      .option('--output-dir <path>', runtimeI18n.t('cli.options.hostOutputDir'))
+      .option('--apply-to-repo <path>', runtimeI18n.t('cli.options.hostApplyToRepo'))
+      .option('--handoff-bridge <bridge>', runtimeI18n.t('cli.options.hostHandoffBridge'))
+      .option('--workflow-id <workflowId>', runtimeI18n.t('cli.options.hostWorkflowId'))
+      .action(async () => {
+        await executeCliCommand(CliCommandName.HOST);
+      });
+    hostCommand
+      .command(CliHostAction.VERIFY)
+      .description(runtimeI18n.t('cli.commands.host.verifyDescription'))
+      .option('--manifest <path>', runtimeI18n.t('cli.options.hostManifest'))
+      .option('--output-dir <path>', runtimeI18n.t('cli.options.hostOutputDir'))
+      .action(async () => {
+        await executeCliCommand(CliCommandName.HOST);
+      });
+    hostCommand
+      .command(CliHostAction.PACK)
+      .description(runtimeI18n.t('cli.commands.host.packDescription'))
+      .option('--host <host>', runtimeI18n.t('cli.options.host'))
+      .option('--mode <mode>', runtimeI18n.t('cli.options.hostMode'))
+      .option('--target <target>', runtimeI18n.t('cli.options.hostTarget'))
+      .option('--copilot-target <target>', runtimeI18n.t('cli.options.githubCopilotTarget'))
+      .option('--output-dir <path>', runtimeI18n.t('cli.options.hostOutputDir'))
+      .option('--bundle-dir <path>', runtimeI18n.t('cli.options.hostBundleDir'))
+      .option('--handoff-bridge <bridge>', runtimeI18n.t('cli.options.hostHandoffBridge'))
+      .option('--workflow-id <workflowId>', runtimeI18n.t('cli.options.hostWorkflowId'))
+      .action(async () => {
+        await executeCliCommand(CliCommandName.HOST);
       });
 
     program
@@ -1106,6 +1161,27 @@ function buildPlanHelpText(i18n: I18nRuntime): string {
     `  ${CLI_PROGRAM_NAME} plan --output pretty`,
     `  ${CLI_PROGRAM_NAME} plan commit ./context/plan/plan-1234567890.preview.json --confirm-plan approve --output pretty`,
     `  ${CLI_PROGRAM_NAME} plan commit ./context/plan/plan-1234567890.preview.json --confirm-plan reject --output json`,
+  ].join('\n');
+}
+
+/**
+ * Builds one localized `host` command help appendix covering export/verify/pack flows.
+ * @param i18n Initialized CLI i18n runtime.
+ * @returns Multi-line help text appended after Commander-generated options.
+ */
+function buildHostHelpText(i18n: I18nRuntime): string {
+  return [
+    '',
+    i18n.t('cli.commands.host.actionGuideTitle'),
+    `  ${CliHostAction.EXPORT.padEnd(12)} ${i18n.t('cli.commands.host.actionGuideExport')}`,
+    `  ${CliHostAction.VERIFY.padEnd(12)} ${i18n.t('cli.commands.host.actionGuideVerify')}`,
+    `  ${CliHostAction.PACK.padEnd(12)} ${i18n.t('cli.commands.host.actionGuidePack')}`,
+    '',
+    i18n.t('cli.commands.host.examplesTitle'),
+    `  ${CLI_PROGRAM_NAME} host export --host codex --mode project-local --output-dir .repo-ai-governor/generated/hosts/codex`,
+    `  ${CLI_PROGRAM_NAME} host export --host github-copilot --mode project-local --copilot-target repo-local --apply-to-repo .`,
+    `  ${CLI_PROGRAM_NAME} host verify --output-dir .repo-ai-governor/generated/hosts/github-copilot`,
+    `  ${CLI_PROGRAM_NAME} host pack --host claude-code --mode plugin-bundle --bundle-dir .repo-ai-governor/generated/bundles/claude`,
   ].join('\n');
 }
 
@@ -2444,6 +2520,30 @@ function resolvePlanCommandOptions(args: string[]): CliPlanCommandOptions {
     action: resolveNestedSubcommandToken(args, CliCommandName.PLAN),
     artifactPath: resolvePositionalTokenAfterCommand(args, CliCommandName.PLAN, 1),
     confirmationDecision: readOptionValue(args, '--confirm-plan') ?? null,
+  };
+}
+
+/**
+ * Resolves raw host-command option values from CLI args.
+ * @param args CLI args excluding node and binary.
+ * @returns Parsed host command options.
+ */
+function resolveHostCommandOptions(args: string[]): CliHostCommandOptions {
+  return {
+    action:
+      (resolveNestedSubcommandToken(args, CliCommandName.HOST) as CliHostAction | null) ?? null,
+    host: (readOptionValue(args, '--host') as CliHostCommandOptions['host']) ?? null,
+    mode: (readOptionValue(args, '--mode') as CliHostCommandOptions['mode']) ?? null,
+    target: (readOptionValue(args, '--target') as CliHostCommandOptions['target']) ?? null,
+    githubCopilotTarget:
+      (readOptionValue(args, '--copilot-target') as CliGithubCopilotTargetOption | null) ?? null,
+    outputDir: readOptionValue(args, '--output-dir') ?? null,
+    manifestPath: readOptionValue(args, '--manifest') ?? null,
+    applyToRepo: readOptionValue(args, '--apply-to-repo') ?? null,
+    bundleDir: readOptionValue(args, '--bundle-dir') ?? null,
+    handoffBridge:
+      (readOptionValue(args, '--handoff-bridge') as CliHostCommandOptions['handoffBridge']) ?? null,
+    workflowIds: readRepeatedOptionValues(args, '--workflow-id'),
   };
 }
 

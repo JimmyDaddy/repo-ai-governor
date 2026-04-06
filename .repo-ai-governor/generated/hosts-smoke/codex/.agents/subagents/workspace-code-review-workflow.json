@@ -1,0 +1,10 @@
+{
+  "host": "codex",
+  "target": "codex.project_local",
+  "mode": "project-local",
+  "workflowId": "workspace-code-review-workflow",
+  "displayName": "Workspace Code Review Workflow",
+  "semanticOwnerModule": "runtime.governance-clients",
+  "canonicalSourceRefs": [".codex/skills/workspace-code-review-workflow/SKILL.md"],
+  "serviceHostPackageExport": "@cjhdev/repo-ai-governor/service-host"
+}

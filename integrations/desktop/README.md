@@ -22,15 +22,20 @@
 5. execution list / subscribe / recovery / HITL 都必须继续走 service-owned contract，而不是访问 CLI/runtime 内部状态
 6. memory provider 必须通过 shared loader 由 service host 自行解析，并在 `getHealth/startExecution/getExecution/listExecutions` 中回传 `memoryProvider` composition summary
 7. 任何 future desktop panel 都应消费共享 `agent projection` panel/view-model seam，而不是直接耦合 `CliAgentProjectionPresenter` 或命令私有字符串摘要。
-8. 当前 artifact / review query contract 仍未就绪，因此 desktop MVP 只能通过 gated note 暴露 deferred state，不允许 filesystem bypass。
+8. 当前 desktop governance console 已冻结为 `execution board + HITL inbox + queue overview + artifact pane` 的 service-owned read-model 组合，renderer 不能自行拼 execution/HITL/path/workspace truth。
+9. `artifact pane` 在 `sprint-003` 起已补齐 evidence-oriented detail：`policy trace`、`review lifecycle navigation`、`artifact & review workbench` 与 `governance evidence backlinks`，仍然只消费 orchestration-owned DTO。
+10. `queue overview` 在 `sprint-004` 起正式补齐 `automation inbox / review queue / parallel lane / workspace summary / notification ownership`，follow-up SLA 与 notification ownership 继续由 service-owned DTO 承担。
+11. `getExecution / submitHitlDecision / recoverExecution / terminateExecution / queryExecutionBoard / queryHitlInbox / queryQueueOverview / queryArtifactPane` 已纳入正式 preload/service seam。
+12. worktree / editor / terminal / review doc handoff 必须走 service-owned handoff target contract，renderer 不得自行重建路径真值。
 
 ## Assets
 
 1. 示例说明：`integrations/desktop/examples/README.md`
 2. desktop sidecar baseline：`integrations/desktop/examples/desktop-sidecar-runtime.sample.json`
 3. 当前 formal shell/bootstrap implementation：`apps/desktop/src/runtime/desktop-shell-bootstrap.ts`
-4. 当前 shared agent projection seam：`packages/reporting/src/agent-projection-panel-view-model-builder.ts`
-5. 当前 formal UI consumer 参考实现：`apps/cli/src/react-cli/views/agent-projection-panel.tsx`
+4. 当前 actionable console builder：`apps/desktop/src/runtime/desktop-governance-console-view-model-builder.ts`
+5. 当前 shared agent projection seam：`packages/reporting/src/agent-projection-panel-view-model-builder.ts`
+6. 当前 formal UI consumer 参考实现：`apps/cli/src/react-cli/views/agent-projection-panel.tsx`
 
 ## Verification
 

@@ -1,0 +1,10 @@
+{
+  "host": "codex",
+  "target": "codex.project_local",
+  "mode": "project-local",
+  "workflowId": "technical-solution-promotion",
+  "displayName": "Technical Solution Promotion",
+  "semanticOwnerModule": "runtime.governance-clients",
+  "canonicalSourceRefs": [".codex/skills/technical-solution-promotion/SKILL.md"],
+  "serviceHostPackageExport": "@cjhdev/repo-ai-governor/service-host"
+}

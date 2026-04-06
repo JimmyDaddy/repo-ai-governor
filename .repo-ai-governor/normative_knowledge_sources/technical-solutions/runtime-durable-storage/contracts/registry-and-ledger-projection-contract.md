@@ -28,6 +28,6 @@
 
 ## 4. Boundary Rules
 
-1. `TK task card` 仍是任务语义主源；sqlite canonical ledger 与 rendered `tasks.csv` 必须可由 `TK` 驱动的同步链稳定更新。
+1. `TK/CR task card` 仍是任务语义主源；sqlite canonical ledger 与 rendered `tasks.csv` 必须可由 `TK/CR` 驱动的同步链稳定更新。
 2. 明显属于结构化索引/注册表或 machine-consumer 高频读取的 surface，应优先评估切到 sqlite canonical truth。
 3. rendered CSV view / sqlite canonical ledger 必须可重建、可校验，并保留来源事实链。

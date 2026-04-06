@@ -30,7 +30,7 @@ export interface DesktopShellBaseline {
   };
   sessionBridgeOperations: string[];
   artifactQueryGateState: DesktopArtifactQueryGateState;
-  artifactPaneDeferredReason: string;
+  artifactPaneDeferredReason?: string;
 }
 
 /**

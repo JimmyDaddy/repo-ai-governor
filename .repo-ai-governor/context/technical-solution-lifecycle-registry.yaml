@@ -1,5 +1,5 @@
 schema_version: 1
-generated_at: 2026-04-04
+generated_at: 2026-04-06
 status: active
 owner: architecture
 
@@ -283,6 +283,55 @@ solutions:
     activated_at: 2026-04-04
     supersedes: []
 
+  - solution_id: technical-solution.scoped-delegated-cr-loop-productization
+    title: Scoped delegated CR loop productization
+    status: draft
+    owner: runtime
+    version: v1
+    scope: cross-cutting
+    draft_paths:
+      - .repo-ai-governor/draft/scoped-delegated-cr-loop-productization-technical-solution.md
+    review_paths: []
+    final_paths: []
+    target_module_ids:
+      - runtime.orchestration
+      - runtime.durable-storage
+      - runtime.agent-projection
+      - runtime.cli-interactive-shell
+    north_star_refs:
+      - prd.multi-agent-orchestration
+      - overall.graph-first-runtime
+      - architecture.runtime-boundary
+      - architecture.governance-boundary
+    supersedes: []
+
+  - solution_id: technical-solution.standards-native-code-review-engine-follow-up
+    title: Standards-native code review engine follow-up
+    status: active
+    owner: runtime
+    version: v1
+    scope: cross-cutting
+    draft_paths:
+      - .repo-ai-governor/draft/standards-native-code-review-engine-follow-up-technical-solution.md
+    review_paths:
+      - .repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization/sprint-001-review-rule-registry-and-provenance-baseline/review/resolved_code_review_tk-621-623-standards-native-review-engine-promotion-cutover.md
+    final_paths:
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/adrs/standards-native-review-engine-and-provenance-aware-cr.md
+    target_module_ids:
+      - runtime.orchestration
+      - runtime.durable-storage
+      - runtime.agent-projection
+      - runtime.cli-interactive-shell
+    north_star_refs:
+      - prd.multi-agent-orchestration
+      - overall.graph-first-runtime
+      - architecture.runtime-boundary
+      - architecture.governance-boundary
+    approved_at: 2026-04-06
+    approved_by: User
+    activated_at: 2026-04-06
+    supersedes: []
+
   - solution_id: technical-solution.session-main-capability-explainer-and-contextual-guidance
     title: Session main capability explainer and contextual command guidance
     status: archived
@@ -451,4 +500,62 @@ solutions:
     approved_at: 2026-04-04
     approved_by: User
     activated_at: 2026-04-04
+    supersedes: []
+
+  - solution_id: technical-solution.adopter-productization-priority-roadmap
+    title: Adopter productization priority roadmap based on current surface status
+    status: active
+    owner: runtime
+    version: v1
+    scope: cross-cutting
+    draft_paths:
+      - .repo-ai-governor/draft/repo-ai-governor-next-priority-roadmap-based-on-current-surface-status.md
+      - .repo-ai-governor/draft/repo-ai-governor-priority-roadmap-project-sprint-task-package-proposal.md
+    review_paths:
+      - .repo-ai-governor/context/dev/project-051-priority-roadmap-promotion-and-decomposition/sprint-001-promotion-and-followup-decomposition/review/resolved_code_review_tk-586-588-priority-roadmap-promotion-and-decomposition.md
+    final_paths:
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/adopter-productization-priority-and-surface-sequencing.md
+    target_module_ids:
+      - runtime.governance-clients
+    north_star_refs:
+      - prd.multi-agent-orchestration
+      - overall.graph-first-runtime
+      - architecture.runtime-boundary
+      - architecture.governance-boundary
+    approved_at: 2026-04-06
+    approved_by: User
+    activated_at: 2026-04-06
+    supersedes: []
+
+  - solution_id: technical-solution.governance-surface-clients
+    title: Governance surface clients and host-native distribution technical solution
+    status: active
+    owner: runtime
+    version: v2
+    scope: cross-cutting
+    draft_paths:
+      - .repo-ai-governor/draft/desktop-surface-technical-selection-and-design.md
+      - .repo-ai-governor/draft/repo-ai-governor-desktop-complete-product-surface-benchmark-and-decision.md
+      - .repo-ai-governor/draft/repo-ai-governor-desktop-governance-command-center-detailed-solution.md
+      - .repo-ai-governor/draft/codex-claude-code-and-github-copilot-host-native-packaging-technical-solution.md
+    review_paths:
+      - .repo-ai-governor/context/dev/project-047-governance-surface-clients-solution-promotion-and-decomposition/sprint-001-promotion-and-followup-decomposition/review/resolved_code_review_tk-556-558-governance-surface-clients-promotion-and-decomposition.md
+      - .repo-ai-governor/context/dev/project-048-governance-surface-clients-rollout/sprint-004-automation-queue-and-multi-workspace-governance/review/resolved_code_review_codex-claude-code-and-github-copilot-host-native-packaging-solution.md
+      - .repo-ai-governor/context/dev/project-049-governance-surface-clients-host-distribution-promotion-and-decomposition/sprint-001-promotion-and-followup-decomposition/review/resolved_code_review_tk-571-573-governance-surface-clients-host-distribution-promotion-and-decomposition.md
+    final_paths:
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/module-overview.md
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/contracts/governance-surface-client-contract.md
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/contracts/governance-host-distribution-contract.md
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/desktop-command-center-and-vscode-editor-companion-split.md
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/host-native-distribution-and-target-specific-consumption.md
+    target_module_ids:
+      - runtime.governance-clients
+    north_star_refs:
+      - prd.multi-agent-orchestration
+      - overall.graph-first-runtime
+      - architecture.runtime-boundary
+      - architecture.governance-boundary
+    approved_at: 2026-04-06
+    approved_by: User
+    activated_at: 2026-04-06
     supersedes: []

@@ -1,7 +1,7 @@
 # Repo AI Governor 工具级总技术方案
 
 - Status: active
-- Date: 2026-04-02
+- Date: 2026-04-06
 - Scope: whole product (tool-level)
 - Basis:
   - `.repo-ai-governor/normative_knowledge_sources/product-requirements-brief.md`
@@ -566,8 +566,8 @@
 1. `plan.md`
 2. `tasks/checklist.md`
 3. `tasks/tasks.csv`
-4. `tasks/TK-xxx.md`
-5. `review/review_*.md -> verified_*.md -> resolved_*.md`
+4. `tasks/TK-xxx.md` 与 `tasks/CR-xxx.md`
+5. `review/code_review_*.md -> verified_code_review_*.md -> resolved_code_review_*.md`
    - 默认 review 输出目录跟随 active primary stream；若 `current-context.md` 声明单值 `Worktree Review Target`，则在该 override 存活期间优先写入其 `review/` 目录，直到最后一个 open CR 生命周期文件收口。
 6. Artifact Registry machine-readable canonical registry（默认目标为 sqlite-backed main registry）
 7. Artifact Registry machine-readable archive registry（默认目标为 sqlite-backed archive registry）

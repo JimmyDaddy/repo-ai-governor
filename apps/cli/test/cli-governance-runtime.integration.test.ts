@@ -2335,8 +2335,11 @@ describe('CliGovernanceRuntime policy/review safeguards', () => {
     await withRuntimeFixture(
       async (fixture) => {
         await writeTaskCardFixture(fixture.workspaceRoot, 'TK-130');
-        await fixture.runtime.execute(CliCommandName.REVIEW);
+        const reviewResult = await fixture.runtime.execute(CliCommandName.REVIEW);
         const verifyResult = await fixture.runtime.execute(CliCommandName.REVIEW_VERIFY);
+        const reviewTaskCardPath = reviewResult.commandResult.artifacts?.find(
+          (artifact) => artifact.id === 'review_task_card',
+        )?.path;
 
         const backfillArtifactPath = verifyResult.commandResult.artifacts?.find(
           (artifact) => artifact.id === 'review_ledger_backfill',
@@ -2348,9 +2351,13 @@ describe('CliGovernanceRuntime policy/review safeguards', () => {
         ) as {
           status?: string;
           taskId?: string;
+          reviewTaskId?: string;
+          reviewTaskCardPath?: string;
         };
         expect(backfillPayload.status).toBe('applied');
-        expect(backfillPayload.taskId).toBe('TK-130');
+        expect(backfillPayload.taskId).toBe('CR-001');
+        expect(backfillPayload.reviewTaskId).toBe('CR-001');
+        expect(backfillPayload.reviewTaskCardPath).toBe(reviewTaskCardPath);
         expect(
           verifyResult.commandResult.experience?.roleProgress.some(
             (row) =>
@@ -2370,12 +2377,15 @@ describe('CliGovernanceRuntime policy/review safeguards', () => {
         const tasksCsvContent = await readFile(tasksCsvPath, 'utf8');
         const checklistContent = await readFile(checklistPath, 'utf8');
 
-        expect(tasksCsvContent).toContain('TK-130');
+        expect(tasksCsvContent).toContain('CR-001');
         expect(tasksCsvContent).toContain('review-verify review-verify-');
         expect(tasksCsvContent).toContain('review artifact');
         expect(tasksCsvContent).toContain('transitioned to resolved');
         expect(checklistContent).toContain('review-verify updated');
         expect(checklistContent).toContain('applied ledger backfill');
+        expect(typeof reviewTaskCardPath).toBe('string');
+        const reviewTaskCardContent = await readFile(String(reviewTaskCardPath), 'utf8');
+        expect(reviewTaskCardContent).toContain('- Status: resolved');
       },
       {
         runtimeDebugOptions: {

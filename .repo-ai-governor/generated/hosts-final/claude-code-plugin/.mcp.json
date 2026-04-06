@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "repo-ai-governor": {
+      "packageExport": "@cjhdev/repo-ai-governor/service-host",
+      "hostClass": "LocalOrchestrationServiceSidecarHost",
+      "host": "claude-code",
+      "target": "claude_code.plugin",
+      "mode": "plugin-bundle",
+      "bridge": "cli_wrapper",
+      "workflowIds": [
+        "technical-solution-promotion",
+        "workspace-code-review-workflow",
+        "workspace-delivery-finisher",
+        "workspace-scoped-cr-loop"
+      ]
+    }
+  }
+}

@@ -4,10 +4,21 @@ import type {
 } from '@repo-ai-governor/core-orchestration-service';
 import type {
   OrchestrationAppendSessionMessageResponse,
+  OrchestrationArtifactPaneQueryRequest,
+  OrchestrationArtifactPaneQueryResponse,
+  OrchestrationExecutionBoardQueryRequest,
+  OrchestrationExecutionBoardQueryResponse,
+  OrchestrationExecutionSummary,
+  OrchestrationHitlInboxQueryRequest,
+  OrchestrationHitlInboxQueryResponse,
   OrchestrationListExecutionsRequest,
   OrchestrationListExecutionsResponse,
   OrchestrationListSessionsRequest,
   OrchestrationListSessionsResponse,
+  OrchestrationQueueOverviewQueryRequest,
+  OrchestrationQueueOverviewQueryResponse,
+  OrchestrationRecoverExecutionRequest,
+  OrchestrationRecoverExecutionResponse,
   OrchestrationResumeSessionResponse,
   OrchestrationSendSessionTurnResponse,
   OrchestrationServiceHealthResponse,
@@ -15,13 +26,20 @@ import type {
   OrchestrationStartExecutionRequest,
   OrchestrationStartExecutionResponse,
   OrchestrationStartSessionResponse,
+  OrchestrationSubmitHitlDecisionRequest,
+  OrchestrationSubmitHitlDecisionResponse,
   OrchestrationSubscribeExecutionRequest,
   OrchestrationSubscribeExecutionResponse,
   OrchestrationSubscribeSessionRequest,
   OrchestrationSubscribeSessionResponse,
+  OrchestrationTerminateExecutionRequest,
+  OrchestrationTerminateExecutionResponse,
 } from '@repo-ai-governor/orchestration-service-client';
 import type { ExecutionReportAgentView } from '@repo-ai-governor/reporting';
-import { DESKTOP_CONSOLE_DEFAULT_EXECUTION_LIMIT } from '../constants/index.js';
+import {
+  DESKTOP_CONSOLE_DEFAULT_EXECUTION_LIMIT,
+  DesktopArtifactQueryGateState,
+} from '../constants/index.js';
 import type {
   DesktopGovernanceConsoleViewModel,
   DesktopLifecycleSnapshot,
@@ -67,16 +85,64 @@ export class DesktopPreloadBridge implements DesktopPreloadBridgeApi {
     return this.orchestrationRuntime.startExecution(request, runtimeContext);
   }
 
+  public async getExecution(
+    executionId: string,
+  ): Promise<OrchestrationExecutionSummary | undefined> {
+    return this.orchestrationRuntime.getExecution(executionId);
+  }
+
+  public async queryExecutionBoard(
+    request?: OrchestrationExecutionBoardQueryRequest,
+  ): Promise<OrchestrationExecutionBoardQueryResponse> {
+    return this.orchestrationRuntime.queryExecutionBoard(request);
+  }
+
+  public async queryHitlInbox(
+    request?: OrchestrationHitlInboxQueryRequest,
+  ): Promise<OrchestrationHitlInboxQueryResponse> {
+    return this.orchestrationRuntime.queryHitlInbox(request);
+  }
+
+  public async queryQueueOverview(
+    request?: OrchestrationQueueOverviewQueryRequest,
+  ): Promise<OrchestrationQueueOverviewQueryResponse> {
+    return this.orchestrationRuntime.queryQueueOverview(request);
+  }
+
   public async listExecutions(
     request?: OrchestrationListExecutionsRequest,
   ): Promise<OrchestrationListExecutionsResponse> {
     return this.orchestrationRuntime.listExecutions(request);
   }
 
+  public async queryArtifactPane(
+    request?: OrchestrationArtifactPaneQueryRequest,
+  ): Promise<OrchestrationArtifactPaneQueryResponse> {
+    return this.orchestrationRuntime.queryArtifactPane(request);
+  }
+
   public async subscribeExecution(
     request: OrchestrationSubscribeExecutionRequest,
   ): Promise<OrchestrationSubscribeExecutionResponse> {
     return this.orchestrationRuntime.subscribeExecution(request);
+  }
+
+  public async submitHitlDecision(
+    request: OrchestrationSubmitHitlDecisionRequest,
+  ): Promise<OrchestrationSubmitHitlDecisionResponse> {
+    return this.orchestrationRuntime.submitHitlDecision(request);
+  }
+
+  public async recoverExecution(
+    request: OrchestrationRecoverExecutionRequest,
+  ): Promise<OrchestrationRecoverExecutionResponse> {
+    return this.orchestrationRuntime.recoverExecution(request);
+  }
+
+  public async terminateExecution(
+    request: OrchestrationTerminateExecutionRequest,
+  ): Promise<OrchestrationTerminateExecutionResponse> {
+    return this.orchestrationRuntime.terminateExecution(request);
   }
 
   public async startSession(): Promise<OrchestrationStartSessionResponse> {
@@ -146,24 +212,51 @@ export class DesktopPreloadBridge implements DesktopPreloadBridgeApi {
     agentView?: ExecutionReportAgentView | null;
     executionLimit?: number;
   }): Promise<DesktopGovernanceConsoleViewModel> {
-    const [health, sessions, executions, lifecycle] = await Promise.all([
-      this.orchestrationRuntime.getHealth(),
-      this.sessionBridge.listSessions({
-        limit: 1,
-      }),
-      this.orchestrationRuntime.listExecutions({
-        limit: options.executionLimit ?? DESKTOP_CONSOLE_DEFAULT_EXECUTION_LIMIT,
-      }),
-      this.getLifecycleSnapshot(),
-    ]);
+    const [health, sessions, executionBoard, hitlInbox, queueOverview, lifecycle] =
+      await Promise.all([
+        this.orchestrationRuntime.getHealth(),
+        this.sessionBridge.listSessions({
+          limit: 1,
+        }),
+        this.orchestrationRuntime.queryExecutionBoard({
+          limit: options.executionLimit ?? DESKTOP_CONSOLE_DEFAULT_EXECUTION_LIMIT,
+        }),
+        this.orchestrationRuntime.queryHitlInbox({
+          limit: options.executionLimit ?? DESKTOP_CONSOLE_DEFAULT_EXECUTION_LIMIT,
+        }),
+        this.orchestrationRuntime.queryQueueOverview({
+          limit: options.executionLimit ?? DESKTOP_CONSOLE_DEFAULT_EXECUTION_LIMIT,
+          laneLimit: options.executionLimit ?? DESKTOP_CONSOLE_DEFAULT_EXECUTION_LIMIT,
+          workspaceLimit: options.executionLimit ?? DESKTOP_CONSOLE_DEFAULT_EXECUTION_LIMIT,
+        }),
+        this.getLifecycleSnapshot(),
+      ]);
+    const latestExecution = executionBoard.executions[0]?.execution;
+    // Keep transcript selection aligned with sessionLane when a newer standalone session exists.
+    const artifactPaneSessionId =
+      sessions.sessions[0]?.sessionId ?? latestExecution?.executionSessionId;
+    const artifactPane =
+      lifecycle.artifactQueryGateState === DesktopArtifactQueryGateState.READY
+        ? await this.orchestrationRuntime.queryArtifactPane({
+            executionId: latestExecution?.executionId,
+            sessionId: artifactPaneSessionId,
+          })
+        : undefined;
 
     return this.governanceConsoleBuilder.build({
       locale: options.locale,
       workspaceLabel: options.workspaceLabel,
       health,
       sessions: sessions.sessions,
-      executions: executions.executions,
+      executionBoard,
+      hitlInbox,
+      queueOverview,
       lifecycle,
+      ...(artifactPane
+        ? {
+            artifactPane,
+          }
+        : {}),
       ...(options.agentView
         ? {
             agentView: options.agentView,

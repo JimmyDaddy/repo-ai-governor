@@ -1,4 +1,7 @@
-import { OrchestrationSessionRouteId } from '@repo-ai-governor/orchestration-service-client';
+import {
+  OrchestrationSessionRouteId,
+  OrchestrationSessionTranscriptRole,
+} from '@repo-ai-governor/orchestration-service-client';
 import { DesktopSessionBridge } from '../src/runtime/desktop-session-bridge.js';
 
 describe('DesktopSessionBridge', () => {
@@ -115,7 +118,7 @@ describe('DesktopSessionBridge', () => {
     await bridge.startSession();
     await bridge.resumeSession('session-1');
     await bridge.sendMainTurn('session-1', 'hello');
-    await bridge.appendMessage('session-1', 'assistant', ['hi']);
+    await bridge.appendMessage('session-1', OrchestrationSessionTranscriptRole.ASSISTANT, ['hi']);
     await bridge.listSessions();
     await bridge.subscribeSession({ sessionId: 'session-1' });
 

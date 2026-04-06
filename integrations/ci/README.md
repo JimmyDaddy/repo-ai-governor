@@ -1,8 +1,8 @@
 # integrations/ci Baseline
 
 - Status: active
-- Date: 2026-03-19
-- Scope: `project-001-foundation / TK-004`
+- Date: 2026-04-05
+- Scope: `project-001-foundation / TK-004` + `project-046 / sprint-001 / TK-554`
 
 ## Purpose
 
@@ -11,8 +11,12 @@
 ## Directory Contract
 
 1. `integrations/ci/github-actions/`: GitHub Actions 模板。
-2. 模板最小集合：`quality-gate.yml`（PR/主分支质量门禁）、`release-governance.yml`（canary/rc/ga 发布治理与失败回滚信号）。
-3. 后续新增 CI 平台模板时，保持同级目录命名并复用同一命令契约。
+2. `integrations/ci/gitlab-ci/`: GitLab CI 官方模板。
+3. `integrations/ci/jenkins/`: Jenkins declarative pipeline 官方模板。
+4. 模板最小集合：
+   - quality gate：PR / merge-request / 主分支质量门禁
+   - release governance：`canary` / `rc` / `ga` 发布治理与失败回滚信号
+5. 后续新增 CI 平台模板时，保持同级目录命名并复用同一命令契约。
 
 ## Gate Command Contract
 
@@ -27,6 +31,18 @@
 2. rc：`pnpm run release:candidate`
 3. ga：`pnpm run release:ga-candidate-unified-gate -- --output <report>`
 4. ga 失败时：`pnpm run release:rollback-rehearsal -- --output <report>`
+
+## Template Set
+
+1. GitHub Actions
+   - `github-actions/quality-gate.yml`
+   - `github-actions/release-governance.yml`
+2. GitLab CI
+   - `gitlab-ci/quality-gate.gitlab-ci.yml`
+   - `gitlab-ci/release-governance.gitlab-ci.yml`
+3. Jenkins
+   - `jenkins/Jenkinsfile.quality-gate`
+   - `jenkins/Jenkinsfile.release-governance`
 
 ## High-Risk Change Reminder
 

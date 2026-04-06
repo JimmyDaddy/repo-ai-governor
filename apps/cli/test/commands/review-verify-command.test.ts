@@ -258,6 +258,8 @@ function createRequestPayload(options: {
   reviewSlug: string;
   findings?: CliReviewFinding[];
   taskId?: string | null;
+  reviewTaskId?: string | null;
+  reviewTaskCardPath?: string | null;
   recordLedger?: boolean;
 }): Omit<CliReviewRequestArtifactPayload, 'generatedArtifactPaths'> {
   return {
@@ -273,6 +275,8 @@ function createRequestPayload(options: {
     reviewSlug: options.reviewSlug,
     reviewArtifactPath: options.reviewArtifactPath,
     reviewArtifactStatus: options.reviewArtifactStatus,
+    ...(options.reviewTaskId ? { reviewTaskId: options.reviewTaskId } : {}),
+    ...(options.reviewTaskCardPath ? { reviewTaskCardPath: options.reviewTaskCardPath } : {}),
     scope: {
       reviewMode: options.taskId ? CliReviewScopeMode.TASK_SCOPE : CliReviewScopeMode.WORKING_TREE,
       scopeSummary: 'fixture review scope',
@@ -293,6 +297,115 @@ function createRequestPayload(options: {
     orchestrationExecutionId: options.requestId,
     orchestrationEventStreamToken: `stream-${options.requestId}`,
   };
+}
+
+async function writeManagedReviewStreamFixture(workspaceRoot: string): Promise<{
+  tasksDirPath: string;
+  reviewDirPath: string;
+}> {
+  const projectId = 'project-042-review-verify-command-fixture';
+  const sprintId = 'sprint-003-review-lifecycle';
+  const tasksDirPath = resolve(workspaceRoot, 'context', 'dev', projectId, sprintId, 'tasks');
+  const reviewDirPath = resolve(workspaceRoot, 'context', 'dev', projectId, sprintId, 'review');
+  const currentContextPath = resolve(workspaceRoot, 'context', 'current-context.md');
+
+  await mkdir(tasksDirPath, { recursive: true });
+  await mkdir(reviewDirPath, { recursive: true });
+  await writeFile(
+    currentContextPath,
+    [
+      '# Workspace Current Context',
+      '',
+      '## Primary Stream',
+      '',
+      '- Status: active',
+      `- Project: \`${projectId}\``,
+      `- Sprint: \`${sprintId}\``,
+      `- Docs root: \`.repo-ai-governor/context/dev/${projectId}\``,
+      `- Task records: \`.repo-ai-governor/context/dev/${projectId}/${sprintId}/tasks/\``,
+      `- Review records: \`.repo-ai-governor/context/dev/${projectId}/${sprintId}/review/\``,
+      '',
+      '## Active Streams',
+      '',
+      `- \`primary\`: project=\`${projectId}\`, sprint=\`${sprintId}\`, docs=\`.repo-ai-governor/context/dev/${projectId}\`, plan=\`.repo-ai-governor/context/dev/${projectId}/${sprintId}/plan.md\`, tasks=\`.repo-ai-governor/context/dev/${projectId}/${sprintId}/tasks/\`, checklist=\`.repo-ai-governor/context/dev/${projectId}/${sprintId}/tasks/checklist.md\`, csv=\`.repo-ai-governor/context/dev/${projectId}/${sprintId}/tasks/tasks.csv\`, review=\`.repo-ai-governor/context/dev/${projectId}/${sprintId}/review/\`, status=\`active\`, note=\`fixture for review verify command tests\``,
+      '',
+    ].join('\n'),
+    'utf8',
+  );
+
+  return {
+    tasksDirPath,
+    reviewDirPath,
+  };
+}
+
+async function writeTaskCardFixture(options: {
+  tasksDirPath: string;
+  taskId: string;
+  title: string;
+  status: string;
+}): Promise<string> {
+  const taskCardPath = resolve(
+    options.tasksDirPath,
+    `${options.taskId}-${options.title.replace(/\s+/gu, '-').toLowerCase()}.md`,
+  );
+  await writeFile(
+    taskCardPath,
+    [
+      `# ${options.taskId} ${options.title}`,
+      '',
+      `- Status: ${options.status}`,
+      '- Date: 2026-04-04',
+      '- Owner: AI-Agent',
+      '- Priority: P1',
+      '- Project: `project-042-review-verify-command-fixture`',
+      '- Sprint: `sprint-003-review-lifecycle`',
+      '',
+      '## 1. 任务目标',
+      '',
+      '同步 review lifecycle fixture。',
+      '',
+      '## 2. Depends On',
+      '',
+      '1. `TK-130`',
+      '',
+      '## 3. 预期产物',
+      '',
+      '1. fixture output',
+      '',
+      '## 4. Required Inputs',
+      '',
+      '1. `.repo-ai-governor/context/current-context.md`',
+      '',
+      '## 5. Traceback References',
+      '',
+      '1. `fixture`',
+      '',
+      '## 6. 实施计划',
+      '',
+      '1. fixture',
+      '',
+      '## 7. Development Verification',
+      '',
+      '1. fixture',
+      '',
+      '## 8. Delivery Verification',
+      '',
+      '1. fixture',
+      '',
+      '## 9. 执行记录',
+      '',
+      `1. 2026-04-04：任务创建，状态初始化为 \`${options.status}\`。`,
+      '',
+      '## 10. 产出',
+      '',
+      '1. fixture output',
+      '',
+    ].join('\n'),
+    'utf8',
+  );
+
+  return taskCardPath;
 }
 
 describe('CliReviewVerifyCommand', () => {
@@ -640,6 +753,83 @@ describe('CliReviewVerifyCommand', () => {
       expect(sourceRequestPayload.status).toBe(CLI_REVIEW_REQUEST_STATUS.QUEUED);
       expect(sourceRequestPayload.reviewArtifactStatus).toBe('verified');
       expect(typeof sourceRequestPayload.lastVerifyAttemptAt).toBe('string');
+    } finally {
+      await rm(fixture.tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('updates the paired CR task card when review-verify advances the lifecycle', async () => {
+    const fixture = await createReviewVerifyFixture({
+      taskId: 'TK-130',
+    });
+
+    try {
+      const { tasksDirPath, reviewDirPath } = await writeManagedReviewStreamFixture(
+        fixture.workspaceRoot,
+      );
+      await initGitRepository(fixture.tempRoot);
+      const changedFilePath = resolve(fixture.tempRoot, 'apps', 'cli', 'src', 'open-scope.ts');
+      await mkdir(dirname(changedFilePath), { recursive: true });
+      await writeFile(changedFilePath, 'export const openScope = 1;\n', 'utf8');
+
+      await writeTaskCardFixture({
+        tasksDirPath,
+        taskId: 'TK-130',
+        title: 'source task fixture',
+        status: 'in_progress',
+      });
+      const reviewTaskCardPath = await writeTaskCardFixture({
+        tasksDirPath,
+        taskId: 'CR-001',
+        title: 'review lifecycle for TK-130',
+        status: 'review_pending',
+      });
+      const sourceReviewArtifactPath = await writeReviewArtifact(
+        reviewDirPath,
+        'code_review_tk-130-open.md',
+        {
+          status: CliReviewLifecycleStatus.REVIEW_PENDING,
+          taskId: 'TK-130',
+        },
+      );
+      const sourceFinding: CliReviewFinding = {
+        findingId: 'code-change-without-test-change-apps-cli-src-open-scope-ts',
+        fingerprint: `${CliReviewFindingRuleId.CODE_CHANGE_WITHOUT_TEST_CHANGE}:apps/cli/src/open-scope.ts:0`,
+        ruleId: CliReviewFindingRuleId.CODE_CHANGE_WITHOUT_TEST_CHANGE,
+        severity: CliReviewFindingSeverity.P2,
+        title: 'Code change is missing matching test updates',
+        file: 'apps/cli/src/open-scope.ts',
+        summary: 'fixture summary',
+        impact: 'fixture impact',
+        suggestedAction: 'fixture action',
+        evidence: ['apps/cli/src/open-scope.ts'],
+      };
+      await writeQueuedRequest(
+        fixture,
+        'review-100.json',
+        createRequestPayload({
+          requestId: 'review-100',
+          workspaceRoot: fixture.workspaceRoot,
+          reviewArtifactPath: sourceReviewArtifactPath,
+          reviewArtifactStatus: CliReviewLifecycleStatus.REVIEW_PENDING,
+          reviewSlug: 'tk-130-open',
+          taskId: 'TK-130',
+          reviewTaskId: 'CR-001',
+          reviewTaskCardPath,
+          findings: [sourceFinding],
+        }),
+      );
+
+      const commandResult = await fixture.command.execute(fixture.context);
+      const updatedReviewTaskCardPath = commandResult.commandResult.artifacts?.find(
+        (artifact) => artifact.id === 'review_task_card',
+      )?.path;
+
+      expect(updatedReviewTaskCardPath).toBe(reviewTaskCardPath);
+      const reviewTaskCardContent = await readFile(reviewTaskCardPath, 'utf8');
+      expect(reviewTaskCardContent).toContain('- Status: verified');
+      expect(reviewTaskCardContent).toContain('review-verify moved CR-001 to verified');
+      expect(reviewTaskCardContent).toContain('ledger backfill applied for CR-001');
     } finally {
       await rm(fixture.tempRoot, { recursive: true, force: true });
     }

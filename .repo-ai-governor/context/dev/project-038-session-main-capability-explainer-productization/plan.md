@@ -1,7 +1,7 @@
 # project-038-session-main-capability-explainer-productization 计划
 
-- Status: active
-- Date: 2026-04-02
+- Status: completed
+- Date: 2026-04-05
 - Stage Mapping: Interactive CLI capability explanation implementation follow-up
 - Phase Mapping: Capability catalog truth / explainer routing / shared-session projection / governed guidance bridge
 - Upstream:
@@ -96,3 +96,4 @@
 15. 2026-04-04：完成 `TK-520`，已新增 [CLI borrowed capabilities productization draft](../../../../draft/cli-borrowed-capabilities-productization-technical-solution.md)，明确 session lifecycle、projection、adaptive runtime、dynamic discoverability、session note 与 startup budget 的 phased rollout。
 16. 2026-04-04：用户继续要求“直接拆成 implementation sprint/task package”；已创建 `sprint-004-cli-borrowed-capabilities-rollout-decomposition` 作为 docs-only decomposition sprint。
 17. 2026-04-04：完成 `TK-529`，已新增 planned [project-043-cli-session-shell-productization-rollout](../../project-043-cli-session-shell-productization-rollout/plan.md)，并将技术方案拆成 `sprint-001 ~ sprint-003` 与 `TK-530 ~ TK-538` 的实体 task package。
+18. 2026-04-05：完成 `project-038` 的治理真值对齐；确认 `sprint-001 ~ sprint-004` 全部 completed，且 downstream `project-039` 与 `project-043` 已分别完成 rollout / completion audit，因此将本项目正式切换为 `completed`，并新增 [project-038 completion audit summary](./project-038-session-main-capability-explainer-productization-completion-audit-summary.md) 作为项目级收口证据。

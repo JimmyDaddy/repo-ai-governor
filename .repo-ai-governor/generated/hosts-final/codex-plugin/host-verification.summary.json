@@ -1,0 +1,230 @@
+{
+  "schemaVersion": "host-verification-summary-v1",
+  "status": "pass",
+  "verifiedAt": "2026-04-05T20:51:13.057Z",
+  "verificationSummaryPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-final/codex-plugin/host-verification.summary.json",
+  "exportManifestPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-final/codex-plugin/host-export.manifest.json",
+  "checks": [
+    {
+      "checkId": "schema-version",
+      "status": "pass",
+      "detail": "schema_version=host-export-manifest-v1",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-final/codex-plugin/host-export.manifest.json",
+      "expectedValue": "host-export-manifest-v1",
+      "actualValue": "host-export-manifest-v1"
+    },
+    {
+      "checkId": "canonical-source-refs",
+      "status": "pass",
+      "detail": "canonical_source_refs=5",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-final/codex-plugin/host-export.manifest.json",
+      "expectedValue": "all canonical source refs exist",
+      "actualValue": "5"
+    },
+    {
+      "checkId": "target-capability",
+      "status": "pass",
+      "detail": "mvp_target=true",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-final/codex-plugin/host-export.manifest.json",
+      "expectedValue": "true",
+      "actualValue": "true"
+    },
+    {
+      "checkId": "deprecated-github-app-path",
+      "status": "pass",
+      "detail": "github_app_copilot_extension_path_blocked=true",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-final/codex-plugin/host-export.manifest.json",
+      "expectedValue": "no deprecated GitHub App Copilot Extension path",
+      "actualValue": "deprecated path absent"
+    },
+    {
+      "checkId": "required-target-paths",
+      "status": "pass",
+      "detail": "required_paths_checked=codex.plugin",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-final/codex-plugin/host-export.manifest.json",
+      "expectedValue": "required paths present",
+      "actualValue": "codex.plugin"
+    },
+    {
+      "checkId": "staged:.codex-plugin/plugin.json",
+      "status": "pass",
+      "detail": "staged_file=.codex-plugin/plugin.json",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-final/codex-plugin/.codex-plugin/plugin.json",
+      "expectedValue": "staged file content matches manifest",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "staged:skills/technical-solution-promotion/SKILL.md",
+      "status": "pass",
+      "detail": "staged_file=skills/technical-solution-promotion/SKILL.md",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-final/codex-plugin/skills/technical-solution-promotion/SKILL.md",
+      "expectedValue": "staged file content matches manifest",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "staged:skills/workspace-code-review-workflow/SKILL.md",
+      "status": "pass",
+      "detail": "staged_file=skills/workspace-code-review-workflow/SKILL.md",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-final/codex-plugin/skills/workspace-code-review-workflow/SKILL.md",
+      "expectedValue": "staged file content matches manifest",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "staged:skills/workspace-delivery-finisher/SKILL.md",
+      "status": "pass",
+      "detail": "staged_file=skills/workspace-delivery-finisher/SKILL.md",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-final/codex-plugin/skills/workspace-delivery-finisher/SKILL.md",
+      "expectedValue": "staged file content matches manifest",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "staged:skills/workspace-scoped-cr-loop/SKILL.md",
+      "status": "pass",
+      "detail": "staged_file=skills/workspace-scoped-cr-loop/SKILL.md",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-final/codex-plugin/skills/workspace-scoped-cr-loop/SKILL.md",
+      "expectedValue": "staged file content matches manifest",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "staged:agents/technical-solution-promotion.agent.md",
+      "status": "pass",
+      "detail": "staged_file=agents/technical-solution-promotion.agent.md",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-final/codex-plugin/agents/technical-solution-promotion.agent.md",
+      "expectedValue": "staged file content matches manifest",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "staged:agents/workspace-code-review-workflow.agent.md",
+      "status": "pass",
+      "detail": "staged_file=agents/workspace-code-review-workflow.agent.md",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-final/codex-plugin/agents/workspace-code-review-workflow.agent.md",
+      "expectedValue": "staged file content matches manifest",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "staged:agents/workspace-delivery-finisher.agent.md",
+      "status": "pass",
+      "detail": "staged_file=agents/workspace-delivery-finisher.agent.md",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-final/codex-plugin/agents/workspace-delivery-finisher.agent.md",
+      "expectedValue": "staged file content matches manifest",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "staged:agents/workspace-scoped-cr-loop.agent.md",
+      "status": "pass",
+      "detail": "staged_file=agents/workspace-scoped-cr-loop.agent.md",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-final/codex-plugin/agents/workspace-scoped-cr-loop.agent.md",
+      "expectedValue": "staged file content matches manifest",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "staged:.mcp.json",
+      "status": "pass",
+      "detail": "staged_file=.mcp.json",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-final/codex-plugin/.mcp.json",
+      "expectedValue": "staged file content matches manifest",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "pack-report-presence",
+      "status": "pass",
+      "detail": "pack_report=/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-final/codex-plugin/host-pack.report.json",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/hosts-final/codex-plugin/host-pack.report.json",
+      "expectedValue": "pack report exists when manifest declares pack report path",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "packed:.codex-plugin/plugin.json",
+      "status": "pass",
+      "detail": "packed_file=.codex-plugin/plugin.json",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/bundles-final/codex-plugin/.codex-plugin/plugin.json",
+      "expectedValue": "packed file content matches staged export",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "packed:skills/technical-solution-promotion/SKILL.md",
+      "status": "pass",
+      "detail": "packed_file=skills/technical-solution-promotion/SKILL.md",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/bundles-final/codex-plugin/skills/technical-solution-promotion/SKILL.md",
+      "expectedValue": "packed file content matches staged export",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "packed:skills/workspace-code-review-workflow/SKILL.md",
+      "status": "pass",
+      "detail": "packed_file=skills/workspace-code-review-workflow/SKILL.md",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/bundles-final/codex-plugin/skills/workspace-code-review-workflow/SKILL.md",
+      "expectedValue": "packed file content matches staged export",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "packed:skills/workspace-delivery-finisher/SKILL.md",
+      "status": "pass",
+      "detail": "packed_file=skills/workspace-delivery-finisher/SKILL.md",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/bundles-final/codex-plugin/skills/workspace-delivery-finisher/SKILL.md",
+      "expectedValue": "packed file content matches staged export",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "packed:skills/workspace-scoped-cr-loop/SKILL.md",
+      "status": "pass",
+      "detail": "packed_file=skills/workspace-scoped-cr-loop/SKILL.md",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/bundles-final/codex-plugin/skills/workspace-scoped-cr-loop/SKILL.md",
+      "expectedValue": "packed file content matches staged export",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "packed:agents/technical-solution-promotion.agent.md",
+      "status": "pass",
+      "detail": "packed_file=agents/technical-solution-promotion.agent.md",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/bundles-final/codex-plugin/agents/technical-solution-promotion.agent.md",
+      "expectedValue": "packed file content matches staged export",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "packed:agents/workspace-code-review-workflow.agent.md",
+      "status": "pass",
+      "detail": "packed_file=agents/workspace-code-review-workflow.agent.md",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/bundles-final/codex-plugin/agents/workspace-code-review-workflow.agent.md",
+      "expectedValue": "packed file content matches staged export",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "packed:agents/workspace-delivery-finisher.agent.md",
+      "status": "pass",
+      "detail": "packed_file=agents/workspace-delivery-finisher.agent.md",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/bundles-final/codex-plugin/agents/workspace-delivery-finisher.agent.md",
+      "expectedValue": "packed file content matches staged export",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "packed:agents/workspace-scoped-cr-loop.agent.md",
+      "status": "pass",
+      "detail": "packed_file=agents/workspace-scoped-cr-loop.agent.md",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/bundles-final/codex-plugin/agents/workspace-scoped-cr-loop.agent.md",
+      "expectedValue": "packed file content matches staged export",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "packed:.mcp.json",
+      "status": "pass",
+      "detail": "packed_file=.mcp.json",
+      "inspectedPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/generated/bundles-final/codex-plugin/.mcp.json",
+      "expectedValue": "packed file content matches staged export",
+      "actualValue": "present"
+    }
+  ],
+  "inspectedPaths": [
+    ".codex-plugin/plugin.json",
+    "skills/technical-solution-promotion/SKILL.md",
+    "skills/workspace-code-review-workflow/SKILL.md",
+    "skills/workspace-delivery-finisher/SKILL.md",
+    "skills/workspace-scoped-cr-loop/SKILL.md",
+    "agents/technical-solution-promotion.agent.md",
+    "agents/workspace-code-review-workflow.agent.md",
+    "agents/workspace-delivery-finisher.agent.md",
+    "agents/workspace-scoped-cr-loop.agent.md",
+    ".mcp.json"
+  ],
+  "driftDetected": false
+}

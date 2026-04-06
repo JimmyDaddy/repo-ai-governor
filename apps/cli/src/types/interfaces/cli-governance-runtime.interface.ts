@@ -30,6 +30,7 @@ import type { CliCommandExperienceBuilder } from '../../runtime/presentation/com
 import type { CliLocalAdapterProbeOverride } from './cli-adapter-verification.interface.js';
 import type { CliAdapterVerificationResolution } from './cli-adapter-verification.interface.js';
 import type { CliCommandProgressSink } from './cli-command-progress.interface.js';
+import type { CliHostCommandOptions } from './cli-host-command.interface.js';
 import type { CliOrchestrationServiceRuntimeDependencies } from './cli-orchestration-service-runtime.interface.js';
 import type {
   CliCommandExecutionResultPayload,
@@ -65,6 +66,7 @@ export interface CliGovernanceRuntimeOptions {
   workspaceCommandOptions?: CliWorkspaceCommandOptions;
   workflowCommandOptions?: CliWorkflowCommandOptions;
   planCommandOptions?: CliPlanCommandOptions;
+  hostCommandOptions?: CliHostCommandOptions;
   upgradeCommandOptions?: CliUpgradeCommandOptions;
   runtimeDebugOptions?: CliRuntimeDebugOptions;
   adapterLocalProbeOverrides?: Partial<Record<AdapterSurface, CliLocalAdapterProbeOverride>>;

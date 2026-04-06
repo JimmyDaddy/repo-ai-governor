@@ -31,6 +31,7 @@ import {
 } from '../constants/cli-review.constant.js';
 import { CliReviewFindingGenerator } from '../runtime/review/cli-review-finding-generator.js';
 import { CliReviewLifecycleRuntime } from '../runtime/review/cli-review-lifecycle-runtime.js';
+import { CliReviewTaskCardRuntime } from '../runtime/review/cli-review-task-card-runtime.js';
 import type {
   CliCommandExecutorContext,
   CliCommandResultArtifact,
@@ -93,6 +94,37 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
   }
 
   /**
+   * Resolves managed `CR-xxx` review task id from queued request payload or runtime options.
+   * @param requestPayload Parsed queued request payload.
+   * @param runtimeTaskId Task id requested through runtime debug options.
+   * @returns Review task id when the chain is CR-managed.
+   */
+  private resolveReviewTaskId(
+    requestPayload: CliReviewRequestArtifactPayload | null,
+    runtimeTaskId: string | null,
+  ): string | null {
+    if (
+      requestPayload &&
+      typeof requestPayload.reviewTaskId === 'string' &&
+      requestPayload.reviewTaskId.trim().length > 0
+    ) {
+      return requestPayload.reviewTaskId.trim();
+    }
+
+    const candidateTaskIds = [requestPayload?.taskId ?? null, runtimeTaskId];
+    for (const candidateTaskId of candidateTaskIds) {
+      if (
+        typeof candidateTaskId === 'string' &&
+        candidateTaskId.trim().toUpperCase().startsWith('CR-')
+      ) {
+        return candidateTaskId.trim();
+      }
+    }
+
+    return null;
+  }
+
+  /**
    * Identifies queued requests that still deserve default verification priority.
    * Why: resolved/no-op requests may remain queued for explicit closure receipts, but
    * they should not displace real pending reviews during the default "latest" selection.
@@ -146,7 +178,9 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
 
     if (requestedTaskId) {
       const matchingQueuedRequests = queuedRequestSelections.filter(
-        ({ requestPayload }) => this.resolveRequestTaskId(requestPayload) === requestedTaskId,
+        ({ requestPayload }) =>
+          this.resolveRequestTaskId(requestPayload) === requestedTaskId ||
+          this.resolveReviewTaskId(requestPayload, requestedTaskId) === requestedTaskId,
       );
       const selectedQueuedRequest =
         matchingQueuedRequests[matchingQueuedRequests.length - 1] ?? null;
@@ -198,6 +232,10 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
       context.options.workspace.repositoryRoot,
       context.options.workspace.workspaceRoot,
     );
+    const reviewTaskCardRuntime = new CliReviewTaskCardRuntime(
+      context.options.workspace.repositoryRoot,
+      context.options.workspace.workspaceRoot,
+    );
     const findingGenerator = new CliReviewFindingGenerator(
       context.options.workspace.repositoryRoot,
       (english, chinese) => context.localizeText(english, chinese),
@@ -233,10 +271,13 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
         : latestQueuedRequest.requestId;
     const requestTaskId = this.resolveRequestTaskId(requestPayload);
     const taskId = requestTaskId ?? runtimeDebugOptions.taskId;
+    const reviewTaskId = this.resolveReviewTaskId(requestPayload, runtimeDebugOptions.taskId);
+    const ledgerTaskId = reviewTaskId ?? taskId;
     const shouldAutoApplyLedgerBackfill =
-      Boolean(taskId) &&
-      ((requestPayload && requestPayload.recordLedger === true) ||
-        runtimeDebugOptions.recordLedger);
+      Boolean(reviewTaskId) ||
+      (Boolean(taskId) &&
+        ((requestPayload && requestPayload.recordLedger === true) ||
+          runtimeDebugOptions.recordLedger));
     const diagnosticContext =
       requestPayload &&
       typeof requestPayload.diagnosticContext === 'object' &&
@@ -352,7 +393,32 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
     let ledgerBackfillApplied = false;
     let ledgerBackfillErrorMessage: string | null = null;
 
-    if (shouldAutoApplyLedgerBackfill && taskId) {
+    const managedReviewContext = reviewTaskId
+      ? await reviewTaskCardRuntime.resolveManagedContext({
+          streamContext,
+          scopeTaskId: taskId ?? reviewTaskId,
+        })
+      : null;
+    let reviewTaskCardRecord = reviewTaskId
+      ? await reviewTaskCardRuntime.updateReviewTaskCard(context, {
+          managedContext: managedReviewContext,
+          reviewTaskId,
+          reviewTaskCardPath: requestPayload?.reviewTaskCardPath ?? null,
+          reviewMode:
+            requestPayload?.scope?.reviewMode === CliReviewScopeMode.TASK_SCOPE
+              ? CliReviewScopeMode.TASK_SCOPE
+              : CliReviewScopeMode.WORKING_TREE,
+          scopeTaskId: taskId,
+          reviewSlug,
+          reviewStatus: reviewArtifactStatus,
+          occurredAt: verifiedAt,
+          reviewArtifactPath,
+          requestPath: latestQueuedRequest.filePath,
+          executionNote: `${verifiedAt.slice(0, 10)}: review-verify moved ${reviewTaskId} to ${reviewArtifactStatus} (verify_id=${verifyId}).`,
+        })
+      : null;
+
+    if (shouldAutoApplyLedgerBackfill && ledgerTaskId) {
       const syncScriptPath = resolveTaskLedgerSyncScriptPath();
       if (!syncScriptPath) {
         ledgerBackfillStatus = CLI_REVIEW_LEDGER_BACKFILL_STATUS.FAILED;
@@ -366,7 +432,7 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
             '--workspace-root',
             context.options.workspace.workspaceRoot,
             '--task-id',
-            taskId,
+            ledgerTaskId,
             '--execution-id',
             verifyId,
             '--result',
@@ -383,6 +449,30 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
           ]);
           ledgerBackfillStatus = CLI_REVIEW_LEDGER_BACKFILL_STATUS.APPLIED;
           ledgerBackfillApplied = true;
+          if (reviewTaskId) {
+            reviewTaskCardRecord =
+              (await reviewTaskCardRuntime.updateReviewTaskCard(context, {
+                managedContext: managedReviewContext,
+                reviewTaskId,
+                reviewTaskCardPath:
+                  reviewTaskCardRecord?.reviewTaskCardPath ??
+                  requestPayload?.reviewTaskCardPath ??
+                  null,
+                reviewMode:
+                  requestPayload?.scope?.reviewMode === CliReviewScopeMode.TASK_SCOPE
+                    ? CliReviewScopeMode.TASK_SCOPE
+                    : CliReviewScopeMode.WORKING_TREE,
+                scopeTaskId: taskId,
+                reviewSlug,
+                reviewStatus: reviewArtifactStatus,
+                occurredAt: verifiedAt,
+                reviewArtifactPath,
+                requestPath: latestQueuedRequest.filePath,
+                verifyResultPath: verifyPath,
+                ledgerBackfillPath,
+                executionNote: `${verifiedAt.slice(0, 10)}: ledger backfill applied for ${reviewTaskId} after review-verify ${verifyId}.`,
+              })) ?? reviewTaskCardRecord;
+          }
         } catch (error) {
           ledgerBackfillStatus = CLI_REVIEW_LEDGER_BACKFILL_STATUS.FAILED;
           ledgerBackfillErrorMessage = context.formatExecFailureDetail(error);
@@ -401,7 +491,13 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
       reviewArtifactPath,
       workspaceId: context.options.workspace.workspaceId,
       workspaceRoot: context.options.workspace.workspaceRoot,
-      ...(taskId ? { taskId } : {}),
+      ...(ledgerTaskId ? { taskId: ledgerTaskId } : {}),
+      ...(reviewTaskCardRecord
+        ? {
+            reviewTaskId: reviewTaskCardRecord.reviewTaskId,
+            reviewTaskCardPath: reviewTaskCardRecord.reviewTaskCardPath,
+          }
+        : {}),
       ...(ledgerBackfillApplied ? { appliedAt: verifiedAt } : {}),
       attribution: {
         correlationId,
@@ -451,12 +547,18 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
       sourceReviewArtifactPath,
       reviewArtifactPath,
       reviewArtifactStatus,
+      ...(reviewTaskCardRecord
+        ? {
+            reviewTaskId: reviewTaskCardRecord.reviewTaskId,
+            reviewTaskCardPath: reviewTaskCardRecord.reviewTaskCardPath,
+          }
+        : {}),
       overallDecision,
       acceptedFindingIds: acceptedFindings.map((finding) => finding.findingId),
       rejectedFindingIds: rejectedFindings.map((finding) => finding.findingId),
       ledgerBackfillPath,
       ledgerBackfillStatus,
-      ...(taskId ? { taskId } : {}),
+      ...(ledgerTaskId ? { taskId: ledgerTaskId } : {}),
       diagnosticAttribution: {
         correlationId,
         chain: 'review->review-verify->ledger-backfill',
@@ -472,6 +574,12 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
       requestId: sourceRequestId,
       status: sourceRequestStatus,
       ...(taskId ? { taskId } : {}),
+      ...(reviewTaskCardRecord
+        ? {
+            reviewTaskId: reviewTaskCardRecord.reviewTaskId,
+            reviewTaskCardPath: reviewTaskCardRecord.reviewTaskCardPath,
+          }
+        : {}),
       reviewSlug,
       reviewArtifactPath,
       reviewArtifactStatus,
@@ -483,6 +591,9 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
       generatedArtifactPaths: [
         reviewRuntime.toRepositoryRelativePath(latestQueuedRequest.filePath),
         reviewRuntime.toRepositoryRelativePath(reviewArtifactPath),
+        ...(reviewTaskCardRecord
+          ? [reviewRuntime.toRepositoryRelativePath(reviewTaskCardRecord.reviewTaskCardPath)]
+          : []),
       ],
       ...(sourceRequestStatus === CLI_REVIEW_REQUEST_STATUS.VERIFIED
         ? {
@@ -506,7 +617,7 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
               ? 'review-verify-open'
               : 'review-verify-consumed',
         chain: 'review->review-verify->ledger-backfill',
-        ...(taskId ? { taskId } : {}),
+        ...(ledgerTaskId ? { taskId: ledgerTaskId } : {}),
         reviewChainMode: shouldAutoApplyLedgerBackfill
           ? 'managed_task_chain'
           : 'queued_external_chain',
@@ -576,11 +687,11 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
       throw new RuntimeError(
         GovernorErrorCode.UNKNOWN,
         context.localizeText(
-          `review-verify updated the review artifact but failed to apply managed ledger backfill for ${taskId ?? sourceRequestId}.`,
-          `review-verify 已更新 review artifact，但未能为 ${taskId ?? sourceRequestId} 完成 managed ledger backfill。`,
+          `review-verify updated the review artifact but failed to apply managed ledger backfill for ${ledgerTaskId ?? sourceRequestId}.`,
+          `review-verify 已更新 review artifact，但未能为 ${ledgerTaskId ?? sourceRequestId} 完成 managed ledger backfill。`,
         ),
         {
-          taskId,
+          taskId: ledgerTaskId,
           verifyId,
           reviewArtifactPath,
           ledgerBackfillPath,
@@ -634,6 +745,14 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
         id: CliReviewArtifactId.REVIEW_LEDGER_BACKFILL,
         path: ledgerBackfillPath,
       },
+      ...(reviewTaskCardRecord
+        ? [
+            {
+              id: CliReviewArtifactId.REVIEW_TASK_CARD,
+              path: reviewTaskCardRecord.reviewTaskCardPath,
+            } satisfies CliCommandResultArtifact,
+          ]
+        : []),
     ];
     const experience = context.commandExperienceBuilder.buildExperiencePayload({
       roleProgress: [
@@ -679,7 +798,7 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
                   '本次 verify 路径没有请求 ledger backfill。',
                 ),
           detail: taskId
-            ? `source_request_id=${sourceRequestId} task_id=${taskId}`
+            ? `source_request_id=${sourceRequestId} task_id=${ledgerTaskId ?? taskId}`
             : `source_request_id=${sourceRequestId}`,
           backlink: {
             stageId: ExecutionProgressStage.LEDGER_BACKFILL,
@@ -717,7 +836,7 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
           `source_review_artifact_path=${sourceReviewArtifactPath}`,
           `review_artifact_path=${reviewArtifactPath}`,
           `ledger_backfill_path=${ledgerBackfillPath}`,
-          ...(taskId ? [`task_id=${taskId}`] : []),
+          ...(ledgerTaskId ? [`task_id=${ledgerTaskId}`] : []),
         ],
       },
     });
@@ -735,6 +854,12 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
           overall_decision: overallDecision,
           review_artifact_path: reviewArtifactPath,
           review_status: reviewArtifactStatus,
+          ...(reviewTaskCardRecord
+            ? {
+                review_task_id: reviewTaskCardRecord.reviewTaskId,
+                review_task_card_path: reviewTaskCardRecord.reviewTaskCardPath,
+              }
+            : {}),
           accepted_finding_count: acceptedFindings.length,
           rejected_finding_count: rejectedFindings.length,
           ledger_backfill_status: ledgerBackfillStatus,
@@ -910,6 +1035,9 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
         `- Date: ${dateOnly}`,
         `- Reviewer: ${context.localizeText('repo-ai-governor CLI', 'repo-ai-governor CLI')}`,
         `- Task: \`${options.taskId ?? 'n/a'}\``,
+        ...(options.requestPayload?.reviewTaskId
+          ? [`- Review Task: \`${options.requestPayload.reviewTaskId}\``]
+          : []),
         `- Review Type: ${
           options.reviewMode === CliReviewScopeMode.TASK_SCOPE
             ? context.localizeText('task-aware review', 'task-aware review')

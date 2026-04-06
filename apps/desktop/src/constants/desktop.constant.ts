@@ -13,8 +13,16 @@ export const DESKTOP_CONSOLE_DEFAULT_EXECUTION_LIMIT = 5;
 export const DESKTOP_SESSION_BRIDGE_OPERATIONS = [
   'getHealth',
   'startExecution',
+  'getExecution',
+  'queryExecutionBoard',
+  'queryHitlInbox',
+  'queryQueueOverview',
   'listExecutions',
+  'queryArtifactPane',
   'subscribeExecution',
+  'submitHitlDecision',
+  'recoverExecution',
+  'terminateExecution',
   'startSession',
   'sendMainTurn',
   'appendMessage',
@@ -37,3 +45,5 @@ export const DESKTOP_SHELL_COMPONENT_OWNERS = {
 
 export const DESKTOP_ARTIFACT_PANE_DEFERRED_REASON =
   'service-owned artifact query contract is not ready; filesystem bypass remains blocked.';
+export const DESKTOP_ARTIFACT_PANE_READY_NOTE =
+  'service-owned artifact pane contract is ready for desktop renderer consumers.';

@@ -1,0 +1,21 @@
+{
+  "extension.displayName": "Repo AI Governor",
+  "extension.description": "Workspace-native VS Code companion for governance status, HITL actions, and review drill-down.",
+  "trust.description": "Governor limits trust-sensitive commands and service-backed handoff actions until the workspace is trusted.",
+  "views.container.title": "Governor",
+  "views.executionBoard.title": "Execution Board",
+  "views.hitlInbox.title": "HITL Inbox",
+  "views.workspaceContext.title": "Workspace Context",
+  "views.reviewDetail.title": "Review Detail",
+  "commands.category": "Governor",
+  "commands.refresh.title": "Refresh Governor Views",
+  "commands.openReviewDetail.title": "Open Governor Review Detail",
+  "commands.openHandoffTarget.title": "Open Governor Handoff Target",
+  "commands.submitHitlDecision.title": "Submit Governor HITL Decision",
+  "commands.recoverExecution.title": "Recover Governor Execution",
+  "commands.terminateExecution.title": "Terminate Governor Execution",
+  "chat.participant.fullName": "Repo AI Governor",
+  "chat.participant.description": "Ask about governance status, review handoff, and HITL work.",
+  "chat.commands.status.description": "Summarize current governance status for the workspace.",
+  "chat.commands.review.description": "Focus on review lifecycle and handoff guidance."
+}

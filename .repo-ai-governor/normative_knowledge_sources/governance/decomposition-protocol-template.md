@@ -1,14 +1,15 @@
 # Decomposition Protocol Template
 
 - Status: active
-- Date: 2026-03-28
+- Date: 2026-04-06
 - Scope: project/sprint/task decomposition
 - Owner: `project-008-workflow-optimization / TK-044`
 
 ## 1. Purpose
 
 1. 标准化“总纲 -> project -> sprint -> task”拆解路径。
-2. 让拆解结果可直接落到 `plan/checklist/tasks.csv/TK/review`。
+2. 让拆解结果可直接落到 `plan/checklist/tasks.csv/TK/CR/review`。
+3. 避免任务卡、checklist 和 CSV 因自由发挥而持续漂移。
 
 ## 2. Input Contract
 
@@ -35,19 +36,20 @@
 3. `sprint-xxx/tasks/checklist.md`
 4. `sprint-xxx/tasks/tasks.csv`
 5. `sprint-xxx/tasks/TK-xxx-*.md`
-6. `sprint-xxx/review/.gitkeep`
+6. `sprint-xxx/tasks/CR-xxx-*.md`（命中 review workflow 时）
+7. `sprint-xxx/review/.gitkeep`
 
 plan 约束：
 
 1. `project/sprint plan` 只承载 scope、里程碑、任务包概览与退出条件。
-2. task-level status 以 `TK/checklist` 驱动的 sqlite canonical ledger 最新记录为准；`tasks.csv` 只作为对应的 rendered view，不再在 plan 中重复维护逐任务状态矩阵。
+2. task-level status 以 `TK/CR + checklist` 驱动的 sqlite canonical ledger 最新记录为准；`tasks.csv` 只作为对应的 rendered view，不再在 plan 中重复维护逐任务状态矩阵。
 
 ## 4. Task Card Minimum Template
 
 Concrete template source of truth:
 
 1. `.repo-ai-governor/normative_knowledge_sources/governance/task-card-template.md`
-2. 生成新的 `TK-xxx` 时，默认实例化 concrete template，而不是只参考本节的最小章节列表。
+2. 生成新的 `TK-xxx` 或 `CR-xxx` 时，默认实例化 concrete template，而不是只参考本节的最小章节列表。
 
 1. 元数据：`Status/Date/Owner/Priority/Project/Sprint`
 2. `## 1. 任务目标`
@@ -74,12 +76,14 @@ Concrete template source of truth:
 1. sqlite canonical ledger 使用追加行记录状态演进，不覆盖历史行；`tasks.csv` 由 canonical truth 渲染。
 2. `checklist.md` 保留勾选状态并在任务下追加执行轨迹摘要，不复制任务卡的长段计划与输入清单。
 3. `tasks.csv` 只保留从 canonical truth 渲染出的机器审计必需字段，不承载完整 tracebacks，也不作为手工真值入口。
-4. `TK` 状态、checklist 勾选、sqlite 最新 canonical 行与 rendered `tasks.csv` 必须一致。
-5. 推荐使用 `node ./scripts/governance/sync-task-ledger.js --task-id <TK-xxx>` 来更新 sqlite canonical ledger 并回写派生视图，而不是手工分别编辑 checklist 和 CSV。
+4. `TK` 与 `CR` 的状态、checklist 勾选、sqlite 最新 canonical 行与 rendered `tasks.csv` 必须一致；`TK` 终态为 `completed`，`CR` 终态为 `resolved`。
+5. 推荐使用 `node ./scripts/governance/sync-task-ledger.js --task-id <TK-xxx|CR-xxx>` 来更新 sqlite canonical ledger 并回写派生视图，而不是手工分别编辑 checklist 和 CSV。
+6. 当某 sprint 下所有 `TK` 与 `CR` 均进入终态时，必须立即补入 closeout 任务，避免 active sprint 处于“全终态无 closeout”的悬空状态。
 
 ## 6. Exit Checklist
 
 1. 所有 in-scope 任务均有明确状态。
-2. 至少 1 份 verified review 产物可回链。
+2. 至少 1 份 task-level 产物或 verified review 产物可回链。
 3. 依赖产物已登记到 artifact registry（符合登记规则时）。
-4. `check-task-ledger-sync` 与 `check-sprint-plan-status-sync` 通过。
+4. 若实现任务与评审任务均进入终态，closeout 任务已创建或已执行。
+5. `check-task-ledger-sync` 与 `check-sprint-plan-status-sync` 通过。

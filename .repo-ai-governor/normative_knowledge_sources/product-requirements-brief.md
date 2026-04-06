@@ -2,7 +2,7 @@
 
 - 文档版本：brief-v1
 - 状态：active
-- 日期：2026-04-02
+- 日期：2026-04-06
 - 对齐来源：`.repo-ai-governor/normative_knowledge_sources/product-requirements.md`（完整版）
 - 实施总纲：`.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-overall-technical-solution.md`
 - 工程蓝图：`.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-architecture-and-repo-layering.md`
@@ -100,11 +100,12 @@
    - `tasks/checklist.md`
    - `tasks/tasks.csv`
    - `tasks/TK-xxx.md`
+   - `tasks/CR-xxx.md`（命中 review task 管理时）
    - `review/`（当前 sprint 的评审产物目录；若存在 `Worktree Review Target`，默认 CR 输出目录优先取其 `review/`）
 3. Code review 文件生命周期：
-   - `review_<slug>.md`
-   - `verified_review_<slug>.md`
-   - `resolved_review_<slug>.md`
+   - `code_review_<slug>.md`
+   - `verified_code_review_<slug>.md`
+   - `resolved_code_review_<slug>.md`
 
 ## 7. 完成定义（执行层）
 

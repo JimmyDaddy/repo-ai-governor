@@ -55,6 +55,7 @@ describe('CLI command integration', () => {
     expect(stdoutBuffer.join('')).toContain('connect');
     expect(stdoutBuffer.join('')).toContain('review-verify');
     expect(stdoutBuffer.join('')).toContain('verify');
+    expect(stdoutBuffer.join('')).toContain('host');
     expect(stdoutBuffer.join('')).toContain('upgrade');
     expect(stdoutBuffer.join('')).toContain('set-ui-theme');
     expect(stdoutBuffer.join('')).toContain('workspace');
@@ -73,6 +74,18 @@ describe('CLI command integration', () => {
     expect(stdoutBuffer.join('')).toContain('create');
     expect(stdoutBuffer.join('')).toContain('edit');
     expect(stdoutBuffer.join('')).toContain('preview');
+  });
+
+  it('shows explicit host export/verify/pack subcommands in host help', async () => {
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo();
+
+    const exitCode = await runCli(['node', 'repo-ai-governor', 'host', '--help'], io);
+
+    expect(exitCode).toBe(0);
+    expect(stderrBuffer.join('')).toBe('');
+    expect(stdoutBuffer.join('')).toContain('export');
+    expect(stdoutBuffer.join('')).toContain('verify');
+    expect(stdoutBuffer.join('')).toContain('pack');
   });
 
   it('shows workspace action shorthand in workspace help', async () => {

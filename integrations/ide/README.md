@@ -12,7 +12,7 @@
 
 1. `contracts/`：命令包装与规范注入的机器可读契约示例。
 2. `examples/`：IDE 入口调用样例（当前提供 VS Code、JetBrains、Cursor 与 Claude Code 官方模板）。
-3. 代码实现入口统一复用 `apps/cli/src/ide-command-wrapper.ts`，不在 `integrations/ide` 内重复实现业务逻辑。
+3. `integrations/ide` 只保留 wrapper/contracts/examples 角色；真实 VS Code extension app 固定落在 `apps/vscode-extension`，并消费 shared/service-owned seam。
 4. `command-wrapper.contract.json` 现在显式声明 `generic_ide / vscode / jetbrains / cursor / claude_code / web_ide` surface registry、能力声明、降级目标与 `nextAction`。
 5. `integrations/ide/examples/README.md` 记录官方模板、`check:ide-entry-smoke` 与 `check:ide-docs-parity` 的执行基线。
 

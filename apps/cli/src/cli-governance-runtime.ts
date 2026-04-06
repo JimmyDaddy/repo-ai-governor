@@ -73,6 +73,7 @@ import { CliCheckCommand } from './commands/check-command.js';
 import { CliCommandRegistry } from './commands/cli-command-registry.js';
 import { CliConnectCommand } from './commands/connect-command.js';
 import { CliDoctorCommand } from './commands/doctor-command.js';
+import { CliHostCommand } from './commands/host-command.js';
 import { CliInitCommand } from './commands/init-command.js';
 import { CliPlanCommand } from './commands/plan-command.js';
 import { CliReviewCommand } from './commands/review-command.js';
@@ -250,6 +251,7 @@ export class CliGovernanceRuntime {
       new CliCheckCommand(),
       new CliVerifyCommand(),
       new CliPlanCommand(),
+      new CliHostCommand(),
       new CliRunCommand(),
       new CliReviewCommand(),
       new CliReviewVerifyCommand(),
@@ -367,7 +369,7 @@ export class CliGovernanceRuntime {
       validateGovernorConfig: (candidate: unknown) =>
         this.schemaValidator.validateOrThrow(candidate),
       canWritePath: async (filePath: string) => this.canWritePath(filePath),
-      localizeText: (english: string, _chinese: string) => english,
+      localizeText: (english: string, chinese: string) => this.localizeText(english, chinese),
       translate: (key: string, interpolation?: Record<string, string>) =>
         runtimeTranslate?.(key, interpolation) ?? key,
       runNodeScript: async (scriptPath: string, args: string[] = []) =>

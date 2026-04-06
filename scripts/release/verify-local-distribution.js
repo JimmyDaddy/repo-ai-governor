@@ -4,6 +4,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 import { gateFail, gateInfo, gatePass } from '../governance/gate-output.js';
 import {
@@ -16,6 +17,7 @@ const GATE_NAME = 'release-verify-local';
 const DEFAULT_DISTRIBUTION_MODE = 'default';
 const PLUGIN_ENABLED_DISTRIBUTION_MODE = 'plugin-enabled';
 const DIST_CLI_ENTRY_PATH = 'dist/bin/repo-ai-governor.js';
+const DIST_STANDARDS_INDEX_PATH = 'dist/node_modules/@repo-ai-governor/standards/dist/src/index.js';
 const REQUIRED_PACKED_PATH_SUFFIXES = [
   'dist/bin/repo-ai-governor.js',
   'dist/apps/cli/src/main.js',
@@ -52,6 +54,9 @@ const REQUIRED_PACKED_PATH_SUFFIXES = [
   'dist/node_modules/@repo-ai-governor/orchestration-service-client/dist/src/index.js',
   'dist/node_modules/@repo-ai-governor/shared/package.json',
   'dist/node_modules/@repo-ai-governor/shared/dist/src/index.js',
+  'dist/node_modules/@repo-ai-governor/standards/package.json',
+  'dist/node_modules/@repo-ai-governor/standards/dist/src/index.js',
+  'dist/node_modules/@repo-ai-governor/standards/dist/src/standards-runtime-loader.js',
   'dist/node_modules/@repo-ai-governor/cli/dist/src/runtime/orchestration-service-runtime.js',
   'dist/packages/published-surfaces/service-host.js',
   'dist/packages/published-surfaces/service-host.d.ts',
@@ -61,6 +66,13 @@ const REQUIRED_PACKED_PATH_SUFFIXES = [
   'examples/README.md',
   'examples/single-role-minimal-flow/scenario.json',
   'examples/single-role-minimal-flow/expected/runtime-baseline.json',
+  'integrations/ci/README.md',
+  'integrations/ci/github-actions/quality-gate.yml',
+  'integrations/ci/github-actions/release-governance.yml',
+  'integrations/ci/gitlab-ci/quality-gate.gitlab-ci.yml',
+  'integrations/ci/gitlab-ci/release-governance.gitlab-ci.yml',
+  'integrations/ci/jenkins/Jenkinsfile.quality-gate',
+  'integrations/ci/jenkins/Jenkinsfile.release-governance',
   'integrations/ide/README.md',
   'integrations/desktop/README.md',
   'integrations/desktop/examples/README.md',
@@ -422,6 +434,30 @@ function writeReport(outputPath, reportPayload) {
 }
 
 /**
+ * Imports one built distribution module from the repository dist tree.
+ * @param {string} relativePath Repository-relative dist module path.
+ * @returns {Promise<Record<string, unknown>>}
+ */
+async function importDistModule(relativePath) {
+  const absolutePath = resolve(process.cwd(), relativePath);
+  return await import(pathToFileURL(absolutePath).href);
+}
+
+/**
+ * Writes one dist-safe standards-pack fixture module.
+ * @param {string} filePath Absolute fixture module path.
+ * @param {string} exportName Exported pack symbol name.
+ * @param {Record<string, unknown>} pack Standards pack payload.
+ */
+function writeStandardsRuntimePackFixture(filePath, exportName, pack) {
+  writeFileSync(
+    filePath,
+    `export const ${exportName} = ${JSON.stringify(pack, null, 2)};\n`,
+    'utf8',
+  );
+}
+
+/**
  * Starts the remote-api stub server in a separate child process.
  * @returns {Promise<{
  *   openAiEndpoint: string;
@@ -678,6 +714,167 @@ async function runRemoteApiDistSmokeScenario() {
   }
 }
 
+/**
+ * Verifies the built `@repo-ai-governor/standards` runtime loader against dist-safe pack fixtures.
+ * @returns {Promise<Record<string, unknown>>}
+ */
+async function runStandardsRuntimeLoaderDistSmoke() {
+  const scenarioRoot = mkdtempSync(resolve(tmpdir(), 'repo-ai-governor-standards-runtime-'));
+  const fixtureRoot = resolve(scenarioRoot, 'fixtures');
+  let shouldCleanup = true;
+
+  try {
+    mkdirSync(fixtureRoot, { recursive: true });
+    writeStandardsRuntimePackFixture(
+      resolve(fixtureRoot, 'official-runtime-pack.fixture.mjs'),
+      'officialRuntimePackFixture',
+      {
+        packId: 'pack.official.runtime-fixture',
+        packVersion: '1.0.0',
+        packSource: 'official',
+        scope: 'global',
+        mergePrecedence: 10,
+        status: 'active',
+        rules: [
+          {
+            ruleId: 'rule.runtime.fixture.review',
+            semanticKey: 'rule.review.required',
+            severity: 'required',
+            enabled: true,
+            localizedTemplates: {
+              'zh-CN': {
+                human: '正式规则要求在提交前完成 review。',
+                ai: '正式规则要求在提交前完成 review。',
+                agents: '正式规则要求在提交前完成 review。',
+              },
+              'en-US': {
+                human: 'Official runtime fixture requires review before commit.',
+                ai: 'Official runtime fixture requires review before commit.',
+                agents: 'Official runtime fixture requires review before commit.',
+              },
+            },
+          },
+        ],
+      },
+    );
+    writeStandardsRuntimePackFixture(
+      resolve(fixtureRoot, 'repository-runtime-pack.fixture.mjs'),
+      'repositoryRuntimePackFixture',
+      {
+        packId: 'pack.repository.runtime-fixture',
+        packVersion: '1.0.0',
+        packSource: 'repository',
+        scope: 'repository',
+        mergePrecedence: 100,
+        status: 'active',
+        rules: [
+          {
+            ruleId: 'rule.runtime.fixture.review.repository',
+            semanticKey: 'rule.review.required',
+            severity: 'required',
+            enabled: true,
+            localizedTemplates: {
+              'zh-CN': {
+                human: '仓库覆盖规则要求在合并前完成 review。',
+                ai: '仓库覆盖规则要求在合并前完成 review。',
+                agents: '仓库覆盖规则要求在合并前完成 review。',
+              },
+              'en-US': {
+                human: 'Repository runtime fixture requires review before merge.',
+                ai: 'Repository runtime fixture requires review before merge.',
+                agents: 'Repository runtime fixture requires review before merge.',
+              },
+            },
+          },
+        ],
+      },
+    );
+
+    const { StandardsRuntimeLoader, StandardsRenderTarget } =
+      await importDistModule(DIST_STANDARDS_INDEX_PATH);
+    const loader = new StandardsRuntimeLoader();
+    const standardsConfig = {
+      packSources: {
+        official: [
+          {
+            module: './official-runtime-pack.fixture.mjs',
+            exportName: 'officialRuntimePackFixture',
+          },
+        ],
+        repository: [
+          {
+            module: './repository-runtime-pack.fixture.mjs',
+            exportName: 'repositoryRuntimePackFixture',
+          },
+        ],
+      },
+      renderTargets: [StandardsRenderTarget.AGENTS],
+      projectionTargets: [
+        {
+          targetFile: 'AGENTS.fixture.md',
+          locale: 'en-US',
+        },
+      ],
+      defaultLocale: 'en-US',
+      fallbackLocale: 'zh-CN',
+    };
+    const runtime = await loader.load({
+      baseDirectory: fixtureRoot,
+      standards: standardsConfig,
+    });
+    const projections = await loader.projectAgents({
+      baseDirectory: fixtureRoot,
+      standards: standardsConfig,
+    });
+    const resolvedRules = runtime.registry.resolveRules();
+
+    if (runtime.loadedPacks.length !== 2) {
+      throw new Error('Standards runtime loader dist smoke did not load both pack layers.');
+    }
+    if (
+      runtime.renderTargets.length !== 1 ||
+      runtime.renderTargets[0] !== StandardsRenderTarget.AGENTS
+    ) {
+      throw new Error(
+        'Standards runtime loader dist smoke did not preserve configured renderTargets.',
+      );
+    }
+    if (resolvedRules[0]?.sourcePackId !== 'pack.repository.runtime-fixture') {
+      throw new Error(
+        'Standards runtime loader dist smoke did not preserve repository override precedence.',
+      );
+    }
+    if (projections[0]?.projectionTarget !== 'AGENTS.fixture.md') {
+      throw new Error(
+        'Standards runtime loader dist smoke did not preserve the configured projection target.',
+      );
+    }
+    if (
+      typeof projections[0]?.projectedContent !== 'string' ||
+      !projections[0].projectedContent.includes(
+        'Repository runtime fixture requires review before merge.',
+      )
+    ) {
+      throw new Error(
+        'Standards runtime loader dist smoke did not project repository rule content.',
+      );
+    }
+
+    return {
+      status: 'passed',
+      fixtureRoot,
+    };
+  } catch (error) {
+    shouldCleanup = false;
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new Error(`${detail} temp_root=${scenarioRoot}`);
+  } finally {
+    if (shouldCleanup) {
+      rmSync(scenarioRoot, { recursive: true, force: true });
+    }
+  }
+}
+
 async function main() {
   const options = parseCliOptions();
   const absoluteCliEntryPath = resolve(process.cwd(), DIST_CLI_ENTRY_PATH);
@@ -712,6 +909,9 @@ async function main() {
     GATE_NAME,
     `Examples runtime smoke check passed for distribution_mode=${options.distributionMode}.`,
   );
+
+  const standardsRuntimeLoaderDistSmoke = await runStandardsRuntimeLoaderDistSmoke();
+  gateInfo(GATE_NAME, 'Standards runtime-loader dist smoke passed.');
 
   const remoteApiDistSmoke = await runRemoteApiDistSmokeScenario();
   gateInfo(GATE_NAME, 'Dist-binary remote-api smoke passed.');
@@ -765,6 +965,7 @@ async function main() {
       packFile: rawFilename.trim(),
       packedFileCount: packedFilePaths.length,
       requiredPackedPathCount: REQUIRED_PACKED_PATH_SUFFIXES.length,
+      standardsRuntimeLoaderDistSmoke,
       remoteApiDistSmoke,
     });
     gateInfo(GATE_NAME, `report generated at ${options.outputPath}`);

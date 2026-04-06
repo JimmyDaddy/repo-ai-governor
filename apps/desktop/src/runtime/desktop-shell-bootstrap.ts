@@ -1,5 +1,6 @@
 import {
   DESKTOP_ARTIFACT_PANE_DEFERRED_REASON,
+  DESKTOP_ARTIFACT_PANE_READY_NOTE,
   DESKTOP_SESSION_BRIDGE_OPERATIONS,
   DESKTOP_SHELL_COMPONENT_OWNERS,
   DESKTOP_SHELL_PACKAGE_NAME,
@@ -45,7 +46,7 @@ export class DesktopShellBootstrap {
       locale: dependencies.locale,
     });
     this.lifecycleGuard = new DesktopRuntimeLifecycleGuard(
-      dependencies.artifactQueryGateState ?? DesktopArtifactQueryGateState.BLOCKED,
+      dependencies.artifactQueryGateState ?? DesktopArtifactQueryGateState.READY,
     );
     this.preloadBridge = new DesktopPreloadBridge(
       this.orchestrationRuntime,
@@ -68,8 +69,15 @@ export class DesktopShellBootstrap {
       componentOwners: { ...DESKTOP_SHELL_COMPONENT_OWNERS },
       sessionBridgeOperations: [...DESKTOP_SESSION_BRIDGE_OPERATIONS],
       artifactQueryGateState:
-        this.dependencies.artifactQueryGateState ?? DesktopArtifactQueryGateState.BLOCKED,
-      artifactPaneDeferredReason: DESKTOP_ARTIFACT_PANE_DEFERRED_REASON,
+        this.dependencies.artifactQueryGateState ?? DesktopArtifactQueryGateState.READY,
+      ...((this.dependencies.artifactQueryGateState ?? DesktopArtifactQueryGateState.READY) ===
+      DesktopArtifactQueryGateState.BLOCKED
+        ? {
+            artifactPaneDeferredReason: DESKTOP_ARTIFACT_PANE_DEFERRED_REASON,
+          }
+        : {
+            artifactPaneDeferredReason: DESKTOP_ARTIFACT_PANE_READY_NOTE,
+          }),
     };
   }
 

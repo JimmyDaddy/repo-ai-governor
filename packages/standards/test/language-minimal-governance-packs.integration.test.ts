@@ -5,8 +5,9 @@ import {
   StandardsRenderTarget,
   goMinimalGovernancePack,
   pythonMinimalGovernancePack,
+  workflowReviewGovernancePack,
 } from '../src/index.js';
-import type { StandardsPack } from '../src/index.js';
+import type { AgentsProjectorProjectResult, StandardsPack } from '../src/index.js';
 
 const RENDER_TARGETS = [
   StandardsRenderTarget.HUMAN,
@@ -15,10 +16,10 @@ const RENDER_TARGETS = [
 ] as const;
 
 /**
- * Verifies one minimal language pack can be rendered across all targets.
- * @param pack Target language pack.
+ * Verifies one built-in governance pack can be rendered across all targets.
+ * @param pack Target pack.
  */
-function expectPackToRender(pack: StandardsPack): void {
+function expectPackToRender(pack: StandardsPack): AgentsProjectorProjectResult {
   const standardsPackRegistry = new StandardsPackRegistry({
     packs: [pack],
   });
@@ -53,9 +54,21 @@ function expectPackToRender(pack: StandardsPack): void {
     },
   ]);
   expect(zhProjection.renderedRules).toHaveLength(pack.rules.length);
+  return zhProjection;
 }
 
-describe('minimal language governance packs', () => {
+describe('built-in governance packs', () => {
+  it('provides one renderable workflow review governance baseline pack', () => {
+    expect(workflowReviewGovernancePack.rules.map((rule) => rule.semanticKey)).toEqual([
+      'rule.workflow.review.cr-task-card',
+      'rule.workflow.review.lifecycle-sync',
+    ]);
+
+    const projection = expectPackToRender(workflowReviewGovernancePack);
+    expect(projection.projectedContent).toContain('CR-xxx');
+    expect(projection.projectedContent).toContain('review_pending -> verified -> resolved');
+  });
+
   it('provides one renderable Python governance baseline pack', () => {
     expect(pythonMinimalGovernancePack.rules.map((rule) => rule.semanticKey)).toEqual([
       'rule.python.project.pyproject',

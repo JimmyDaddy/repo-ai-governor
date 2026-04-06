@@ -16,7 +16,7 @@ export class DesktopRuntimeLifecycleGuard {
   private lastRestartReason: string | undefined;
 
   public constructor(
-    private readonly artifactQueryGateState: DesktopArtifactQueryGateState = DesktopArtifactQueryGateState.BLOCKED,
+    private readonly artifactQueryGateState: DesktopArtifactQueryGateState = DesktopArtifactQueryGateState.READY,
   ) {}
 
   public recordWindowWake(
