@@ -643,7 +643,16 @@ export class CliPlanCommand implements CliCommandExecutor {
 
     const currentContextContent = await readFile(currentContextPath, 'utf8');
     const activeStreamsSection = this.extractSection(currentContextContent, 'Active Streams');
-    const primaryDescriptor = activeStreamsSection.match(/^- `primary`: (.+)$/mu)?.[1] ?? null;
+    const primaryDescriptor =
+      activeStreamsSection
+        .split(/\r?\n/u)
+        .map((line) => line.trim())
+        .find(
+          (line) =>
+            /^- `[^`]+`: /u.test(line) &&
+            (line.startsWith('- `primary`:') || line.includes('role=`primary`')),
+        )
+        ?.replace(/^- `[^`]+`: /u, '') ?? null;
     const primaryProjectId =
       currentContextContent.match(/^- Project:\s*`([^`]+)`/mu)?.[1]?.trim() ?? null;
     const primarySprintId =

@@ -194,7 +194,7 @@ async function writeCurrentContextFixture(workspaceRoot: string): Promise<void> 
       '',
       '## Active Streams',
       '',
-      '- `primary`: project=`project-042-review-command-fixture`, sprint=`sprint-003-review-lifecycle`, docs=`.repo-ai-governor/context/dev/project-042-review-command-fixture`, plan=`.repo-ai-governor/context/dev/project-042-review-command-fixture/plan.md`, tasks=`.repo-ai-governor/context/dev/project-042-review-command-fixture/sprint-003-review-lifecycle/tasks/`, checklist=`.repo-ai-governor/context/dev/project-042-review-command-fixture/sprint-003-review-lifecycle/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-042-review-command-fixture/sprint-003-review-lifecycle/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-042-review-command-fixture/sprint-003-review-lifecycle/review/`, status=`active`, note=`fixture for review command tests`',
+      '- `active-1`: role=`primary`, project=`project-042-review-command-fixture`, sprint=`sprint-003-review-lifecycle`, docs=`.repo-ai-governor/context/dev/project-042-review-command-fixture`, plan=`.repo-ai-governor/context/dev/project-042-review-command-fixture/plan.md`, tasks=`.repo-ai-governor/context/dev/project-042-review-command-fixture/sprint-003-review-lifecycle/tasks/`, checklist=`.repo-ai-governor/context/dev/project-042-review-command-fixture/sprint-003-review-lifecycle/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-042-review-command-fixture/sprint-003-review-lifecycle/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-042-review-command-fixture/sprint-003-review-lifecycle/review/`, status=`active`, note=`fixture for review command tests`',
       '',
     ].join('\n'),
     'utf8',

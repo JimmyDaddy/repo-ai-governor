@@ -301,7 +301,7 @@ async function createPlanFixtureRepo(): Promise<string> {
       '',
       '## Active Streams',
       '',
-      `- \`primary\`: project=\`${projectId}\`, sprint=\`${sprintId}\`, docs=\`${docsRootRelative}\`, plan=\`${docsRootRelative}/plan.md\`, tasks=\`${tasksRelative}\`, checklist=\`${checklistRelative}\`, csv=\`${csvRelative}\`, review=\`${reviewRelative}\`, status=\`active\`, note=\`fixture for plan output tests\``,
+      `- \`active-1\`: role=\`primary\`, project=\`${projectId}\`, sprint=\`${sprintId}\`, docs=\`${docsRootRelative}\`, plan=\`${docsRootRelative}/plan.md\`, tasks=\`${tasksRelative}\`, checklist=\`${checklistRelative}\`, csv=\`${csvRelative}\`, review=\`${reviewRelative}\`, status=\`active\`, note=\`fixture for plan output tests\``,
       '',
     ].join('\n'),
     'utf8',

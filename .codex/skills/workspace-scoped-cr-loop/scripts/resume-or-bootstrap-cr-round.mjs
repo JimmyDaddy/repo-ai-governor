@@ -189,8 +189,18 @@ function readCurrentContextPrimary() {
   }
 
   const content = readFileSync(absolutePath, 'utf8');
-  const primaryMatch = content.match(
-    /- `primary`: .*?project=`([^`]+)`, sprint=`([^`]+)`, docs=`([^`]+)`, plan=`([^`]+)`, tasks=`([^`]+)`, checklist=`([^`]+)`, csv=`([^`]+)`, review=`([^`]+)`, status=`([^`]+)`/su,
+  const activeStreamsSectionMatch = content.match(/## Active Streams\s+([\s\S]*?)(?:\n## |\s*$)/u);
+  const activeStreamsSection = activeStreamsSectionMatch?.[1] ?? '';
+  const primaryLine = activeStreamsSection
+    .split(/\r?\n/u)
+    .map((line) => line.trim())
+    .find(
+      (line) =>
+        /^- `[^`]+`: /u.test(line) &&
+        (line.startsWith('- `primary`:') || line.includes('role=`primary`')),
+    );
+  const primaryMatch = primaryLine?.match(
+    /project=`([^`]+)`, sprint=`([^`]+)`, docs=`([^`]+)`, plan=`([^`]+)`, tasks=`([^`]+)`, checklist=`([^`]+)`, csv=`([^`]+)`, review=`([^`]+)`, status=`([^`]+)`/u,
   );
 
   if (!primaryMatch) {
