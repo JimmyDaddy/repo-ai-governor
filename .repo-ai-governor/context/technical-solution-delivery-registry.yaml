@@ -313,6 +313,33 @@ deliveries:
       - .repo-ai-governor/context/dev/project-042-cli-command-thin-baseline-enhancement-rollout/project-042-cli-command-thin-baseline-enhancement-rollout-completion-audit-summary.md
     accepted_at: 2026-04-04
 
+  - solution_id: technical-solution.standards-native-code-review-engine-follow-up
+    delivery_mode: followup_required
+    consumer_surfaces:
+      - internal_governance
+      - adopter_cli
+      - runtime_service
+      - docs_playbook
+    user_impact_level: high
+    execution_status: planned
+    rollout_status: planned
+    owner: runtime
+    project_ref: project-057-standards-native-review-engine-productization
+    sprint_ref: sprint-001-review-rule-registry-and-provenance-baseline
+    task_ids:
+      - TK-621
+      - TK-622
+      - TK-623
+    project_plan_path: .repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization/plan.md
+    sprint_plan_path: .repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization/sprint-001-review-rule-registry-and-provenance-baseline/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization/sprint-001-review-rule-registry-and-provenance-baseline/tasks/tasks.csv
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization/sprint-001-review-rule-registry-and-provenance-baseline/tasks/DA-621-standards-native-review-engine-promotion-and-rollout-handoff.md
+    rollout_artifacts:
+      - .repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization/plan.md
+      - .repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization/sprint-001-review-rule-registry-and-provenance-baseline/plan.md
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/adrs/standards-native-review-engine-and-provenance-aware-cr.md
+    accepted_at: 2026-04-06
+
   - solution_id: technical-solution.multi-ai-tools-onboarding-role-agent-projection
     delivery_mode: followup_required
     consumer_surfaces:
@@ -468,6 +495,36 @@ deliveries:
       - .repo-ai-governor/context/dev/project-039-provider-session-reuse-and-backend-conversation-continuity-rollout/sprint-002-summary-projection-and-provider-readiness-governance/plan.md
       - .repo-ai-governor/context/dev/project-039-provider-session-reuse-and-backend-conversation-continuity-rollout/project-039-provider-session-reuse-and-backend-conversation-continuity-rollout-completion-audit-summary.md
     accepted_at: 2026-04-04
+
+  - solution_id: technical-solution.adopter-productization-priority-roadmap
+    delivery_mode: followup_required
+    consumer_surfaces:
+      - adopter_cli
+      - runtime_service
+      - packaged_distribution
+      - docs_playbook
+    user_impact_level: high
+    execution_status: planned
+    rollout_status: planned
+    owner: runtime
+    project_ref: project-052-adopter-truthfulness-and-ga-closeout
+    sprint_ref: sprint-001-install-mode-truth-and-playbook-alignment
+    task_ids:
+      - TK-589
+      - TK-590
+      - TK-591
+    project_plan_path: .repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/plan.md
+    sprint_plan_path: .repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/sprint-001-install-mode-truth-and-playbook-alignment/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/sprint-001-install-mode-truth-and-playbook-alignment/tasks/tasks.csv
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-051-priority-roadmap-promotion-and-decomposition/sprint-001-promotion-and-followup-decomposition/tasks/DA-588-priority-roadmap-promotion-and-rollout-decomposition-handoff.md
+    rollout_artifacts:
+      - .repo-ai-governor/context/dev/project-051-priority-roadmap-promotion-and-decomposition/sprint-001-promotion-and-followup-decomposition/tasks/DA-588-priority-roadmap-promotion-and-rollout-decomposition-handoff.md
+      - .repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/plan.md
+      - .repo-ai-governor/context/dev/project-053-real-adapter-invocation-productization/plan.md
+      - .repo-ai-governor/context/dev/project-054-vscode-secondary-surface-rollout/plan.md
+      - .repo-ai-governor/context/dev/project-055-ga-evidence-and-adopter-pilot-closeout/plan.md
+      - .repo-ai-governor/context/dev/project-056-standards-runtime-loader-and-pack-productization/plan.md
+    accepted_at: 2026-04-06
 
   - solution_id: technical-solution.governance-surface-clients
     delivery_mode: followup_required

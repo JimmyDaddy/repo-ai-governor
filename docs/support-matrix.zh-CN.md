@@ -1,7 +1,7 @@
 # Repo AI Governor 正式支持矩阵
 
 - 状态：active
-- 最后更新：2026-04-05
+- 最后更新：2026-04-06
 - 适用范围：由 `project-026 / sprint-004`（`TK-301`）、`project-044 / sprint-003`（`TK-547`）与 `project-046 / sprint-001`（`TK-551`、`TK-552`、`TK-554`）共同刷新后的正式支持声明
 
 ## 1. 安装模式
@@ -22,11 +22,12 @@
 | `claude-code` | Fixture-backed | 当 credential 或 probe 前置条件失败时，仍通过 fallback / degraded 路由保持正式支持。 |
 | `local-model`（`ollama`） | Fixture-backed（本地运行时受限） | 作为正式本地 fallback surface 支持；`tool_calling`、`structured_output`、`confirmation_gate` 继续保持保守/降级口径。 |
 
-## 3. 语言治理模板
+## 3. 已发布治理模板
 
-| 语言 | 支持状态 | 说明 |
+| 模板 | 支持状态 | 说明 |
 |---|---|---|
-| TypeScript | Built-in | 仓库基线已内置完整治理链。 |
+| TypeScript 仓库基线 | Built-in | 仓库基线已内置完整治理链。 |
+| Workflow review | Minimal baseline | 通过 `@repo-ai-governor/standards` 发布 `workflowReviewGovernancePack`，并内置 `CR-xxx` 评审任务卡生命周期。 |
 | Python | Minimal baseline | 通过 `@repo-ai-governor/standards` 发布 `pythonMinimalGovernancePack`。 |
 | Go | Minimal baseline | 通过 `@repo-ai-governor/standards` 发布 `goMinimalGovernancePack`。 |
 

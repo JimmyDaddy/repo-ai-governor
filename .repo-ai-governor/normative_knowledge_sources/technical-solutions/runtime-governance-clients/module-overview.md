@@ -20,6 +20,7 @@
 6. 约束所有表面都只能消费 service-owned query/command seam，不得直接读取 `.repo-ai-governor/**` canonical truth，也不得在 surface 或 plugin 内维护第二份 orchestration state。
 7. 拥有 worktree / editor / terminal / review 文档等 handoff affordance 与 host distribution apply/pack/verify 语义的正式产品边界，但不把 handoff consumer 或宿主插件升格为新的 runtime owner。
 8. 为 multi-workspace overview、parallel execution lane、background queue、notification ownership 与 host-native rollout phase map 提供正式方向，但不宣称这些方向已在代码面全部交付。
+9. 为 adopter truthfulness、real adapter invocation、secondary surface sequencing、GA evidence consolidation 与 standards runtime productization 提供 planning-side formal direction，但不把路线图判断误报为已完成交付。
 
 ## 3. 非目标
 
@@ -65,6 +66,7 @@
    - `GitHub Copilot` 采用 `repo-local assets + Copilot CLI plugin` 的 MVP target，并为 `github-com-agent` 保留 schema。
    - `staged export`、`apply/sync`、`pack`、`target-aware verify` 成为正式 contract，而不是文档层建议。
 5. 本模块 formalize 的是 surface boundary、host distribution boundary 与 phased rollout，不自动宣称 host renderer、bundle packager 或 MCP bridge 已全部实现；真实 delivery follow-up 由 `project-050-governance-surface-clients-host-distribution-rollout` 承接。
+6. 截至 `2026-04-06`，本模块进一步接受“adopter productization priority and surface sequencing”补充方向：当前 follow-up 固定先收口 CLI adopter truthfulness 与 GA closeout，再推进 real adapter invocation；secondary surface 固定采取 `VS Code first / desktop foundation`；GA evidence consolidation 与 standards runtime loader / pack productization 随后承接。
 
 ## 9. Detail Docs
 
@@ -74,3 +76,4 @@
 2. ADR:
    - `adrs/desktop-command-center-and-vscode-editor-companion-split.md`
    - `adrs/host-native-distribution-and-target-specific-consumption.md`
+   - `adrs/adopter-productization-priority-and-surface-sequencing.md`

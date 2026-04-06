@@ -1,7 +1,7 @@
 # Repo AI Governor Support Matrix
 
 - Status: active
-- Last updated: 2026-04-05
+- Last updated: 2026-04-06
 - Scope: formal support declaration refreshed by `project-026 / sprint-004` (`TK-301`), `project-044 / sprint-003` (`TK-547`), and `project-046 / sprint-001` (`TK-551`, `TK-552`, `TK-554`)
 
 ## 1. Installation Modes
@@ -22,11 +22,12 @@
 | `claude-code` | Fixture-backed | Supported adapter surface with fallback/degraded routing semantics when credential or probe preconditions fail. |
 | `local-model` (`ollama`) | Fixture-backed (local-runtime constrained) | Supported local fallback surface; `tool_calling`, `structured_output`, and `confirmation_gate` remain conservative/degraded by design. |
 
-## 3. Language Governance Templates
+## 3. Published Governance Packs
 
-| Language | Status | Notes |
+| Pack | Status | Notes |
 |---|---|---|
-| TypeScript | Built-in | Full governance chain in repository baseline. |
+| TypeScript repository baseline | Built-in | Full governance chain in repository baseline. |
+| Workflow review | Minimal baseline | `workflowReviewGovernancePack` is published via `@repo-ai-governor/standards` and carries the `CR-xxx` review task-card lifecycle. |
 | Python | Minimal baseline | `pythonMinimalGovernancePack` is published via `@repo-ai-governor/standards`. |
 | Go | Minimal baseline | `goMinimalGovernancePack` is published via `@repo-ai-governor/standards`. |
 

@@ -228,10 +228,23 @@ describe('CliReviewCommand', () => {
       const requestPayload = JSON.parse(await readFile(String(requestPath), 'utf8')) as {
         status?: string;
         reviewArtifactStatus?: string;
+        reviewTaskId?: string;
+        reviewTaskCardPath?: string;
         findings?: Array<{ ruleId?: string }>;
       };
       expect(requestPayload.status).toBe(CLI_REVIEW_REQUEST_STATUS.QUEUED);
       expect(requestPayload.reviewArtifactStatus).toBe('review_pending');
+      expect(requestPayload.reviewTaskId).toBe('CR-001');
+      expect(typeof requestPayload.reviewTaskCardPath).toBe('string');
+      expect(String(requestPayload.reviewTaskCardPath)).toContain(
+        '.repo-ai-governor/context/dev/project-042-review-command-fixture/sprint-003-review-lifecycle/tasks/CR-001-',
+      );
+      const reviewTaskCardContent = await readFile(
+        String(requestPayload.reviewTaskCardPath),
+        'utf8',
+      );
+      expect(reviewTaskCardContent).toContain('# CR-001 working tree review lifecycle');
+      expect(reviewTaskCardContent).toContain('- Status: review_pending');
       expect(
         requestPayload.findings?.some(
           (finding) => finding.ruleId === 'code_change_without_test_change',

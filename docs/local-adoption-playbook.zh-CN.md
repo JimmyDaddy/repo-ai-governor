@@ -109,6 +109,8 @@ pnpm exec repo-ai-governor review-verify --output json
 2. `context/review-queue/results`
 3. `context/ledger-backfill/review-verify`
 
+当 active workspace 暴露 canonical sprint `tasks/` 时，这条 review 链还会自动分配一张 `CR-xxx` 任务卡，并让它和 review lifecycle 状态保持同步。
+
 ## 7. Workspace 模式与回滚
 
 默认模式是 `tool_managed`。只有当你希望把治理工作区持久化到目标仓库内时，再切换到 `repo_local`。
@@ -159,14 +161,17 @@ export REPO_AI_GOVERNOR_NOTIFICATION_CHAT_IM_URL="https://example.com/chat-im"
 pnpm exec repo-ai-governor run --output json
 ```
 
-### 8.3 最小语言模板
+### 8.3 内置治理模板
 
-已发布包通过 `@repo-ai-governor/standards` 暴露两套内置最小治理模板：
+已发布包通过 `@repo-ai-governor/standards` 暴露三套内置治理模板：
 
-1. `pythonMinimalGovernancePack`
-2. `goMinimalGovernancePack`
+1. `workflowReviewGovernancePack`
+2. `pythonMinimalGovernancePack`
+3. `goMinimalGovernancePack`
 
-你可以把它们当作起点，再叠加团队或仓库自己的 override。
+如果你希望 adopter-facing 的治理流程本身就内置独立 `CR-xxx` 评审任务卡，以及 `review_pending -> verified -> resolved` 生命周期同步，请先引入 `workflowReviewGovernancePack`。
+
+然后再按语言需要叠加 `pythonMinimalGovernancePack` 或 `goMinimalGovernancePack`，以及团队或仓库自己的 override。
 
 ## 9. 故障排查与已知限制
 

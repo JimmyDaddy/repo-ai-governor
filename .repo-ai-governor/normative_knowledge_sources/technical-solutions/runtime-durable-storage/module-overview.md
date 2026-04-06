@@ -1,7 +1,7 @@
 # Runtime Durable Storage Module Overview
 
 - Status: active
-- Date: 2026-04-04
+- Date: 2026-04-06
 - Module ID: `runtime.durable-storage`
 - Owner: runtime
 - Layer: `runtime-core`
@@ -22,7 +22,7 @@
 
 1. 不负责 memory provider 的 allowlist、resolution priority 或 distribution truthfulness；这些继续由 `runtime.memory-provider-loading` 承担。
 2. 不负责 recall policy、context assembly 或长期记忆语义；这些继续由 `runtime.memory-semantics` 承担。
-3. 不替代 `current-context`、`review lifecycle`、`TK task card / checklist` 等 human-readable canonical source。
+3. 不替代 `current-context`、`review lifecycle`、`TK/CR task card / checklist` 等 human-readable canonical source。
 4. 不拥有 orchestration runtime、interactive shell 或 UI presentation 状态机。
 
 ## 4. North Star References
@@ -55,6 +55,7 @@
 4. task ledger 的当前正式方向是 sqlite canonical truth + `tasks.csv` rendered compatibility/export view；机器 consumer 应优先读取 sqlite，而不是重复解析 CSV。
 5. task ledger 的默认 canonical sqlite 文件名已收口为 `.repo-ai-governor/context/dev/sqlite/task-ledger.sqlite`；legacy `task-ledger-projection.sqlite` 与旧表名只保留自动迁移兼容职责。
 6. `fs-csv` 可以继续存在，但其长期定位是 export/debug/fallback，而不是 runtime durable truth。
+7. 截至 `2026-04-06`，在既有 registry / ledger projection 边界基础上，本模块进一步接受“provenance-aware review finding persistence”补充方向：`review/code_review_*`、`verified_code_review_*`、`resolved_code_review_*` 与配对 `CR-xxx` 继续是 canonical governance truth，但来源类型、规则标识与 round diagnostics 可以作为 durable projection 字段进入受治理持久化链路。
 
 ## 9. Detail Docs
 

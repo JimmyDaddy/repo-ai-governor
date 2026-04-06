@@ -58,37 +58,41 @@
 ## 工作规则
 
 1. 新的规划或执行工作应遵循 `.repo-ai-governor/context/current-context.md` 中声明的活跃执行流路径。
-2. 主执行流的任务分解必须更新上下文文件中声明的执行流专属 `plan.md`、`tasks/checklist.md`、`tasks/tasks.csv` 和 `tasks/TK-xxx.md` 路径。
+2. 主执行流必须维护对应的 `plan.md`、canonical task-ledger sqlite、rendered `tasks/checklist.md`、rendered `tasks/tasks.csv` 与任务卡；实现任务使用 `tasks/TK-xxx.md`，code review 管理任务使用 `tasks/CR-xxx.md`。
 3. 代码评审输出必须写入 `current-context.md` 解析出的默认 `review/` 目录：默认使用 active primary stream；若存在 `Worktree Review Target`，则优先写入其 `review/` 目录，并使用有意义的状态前缀文件名。
 4. 默认 CR 生命周期：
-   - `code_review_<slug>.md`：评审已生成，待验证
-   - `verified_code_review_<slug>.md`：验证已完成
-   - `resolved_code_review_<slug>.md`：已接受的发现已解决
-5. 评审复查必须将结果追加到同一 CR 文件中，然后将文件重命名为下一状态。
-6. 迭代执行进度必须维护在主执行流的检查清单中，每个任务条目应追加执行记录。
-7. 每个 `project-xxx` 在收尾为 `completed` 前，必须产出项目级完成态审计摘要（推荐命名 `project-xxx-completion-audit-summary.md`），并在项目 `plan.md` 中新增“里程碑记录”入口回链该文档。
+   - `code_review_<slug>.md`
+   - `verified_code_review_<slug>.md`
+   - `resolved_code_review_<slug>.md`
+5. 实施进度必须先写 canonical task-ledger sqlite，再重渲染 `checklist.md` 与 `tasks.csv`。
+6. 新建 `TK-xxx` 时，默认遵循 `task-card-template.md`。
+7. 新建 `CR-xxx` 时，默认也遵循 `task-card-template.md`，但状态流转使用 `review_pending -> verified -> resolved`，且不得复用实现任务 `TK-xxx` 的编号空间。
+8. `TK` 与 `CR` 共同构成任务语义主写入面；task-ledger sqlite 是任务账面 canonical truth；`checklist.md` 与 `tasks.csv` 为 rendered/derived views，修复漂移时先修语义文档或 canonical sqlite，再重渲染派生面。
+9. 当某 sprint 下所有 `TK` 最新状态均为 `completed` 且所有 `CR` 最新状态均为 `resolved` 时，必须立即创建并推进该 sprint 的 closeout 任务；不得让 active sprint 长时间停留在“全部任务已终态但仍未 closeout”的状态。
+10. `code_review_`、`verified_code_review_`、`resolved_code_review_` 的文件名前缀与顶部 `Status` 必须同步推进；若该评审已纳入任务台账，则对应 `CR-xxx` 状态也必须同步推进。
+11. 每个 `project-xxx` 在收尾为 `completed` 前，必须产出项目级完成态审计摘要（推荐命名 `project-xxx-completion-audit-summary.md`），并在项目 `plan.md` 中新增“里程碑记录”入口回链该文档。
 
 ## 命名规则
 
 1. 项目目录格式：`.repo-ai-governor/context/dev/<project-xxx>/`,其中 `xxx` 是项目有意义的名字，例如 `project-001-demo`、`project-002-core-features` 等
 2. 迭代目录格式：`sprint-xxx`，其中 `xxx` 是迭代有意义的名字，例如 `sprint-001-initial-setup`、`sprint-002-core-features` 等
-3. 任务文件格式：`TK-xxx.md`
-4. CSV 任务登记文件：`tasks.csv`
-5. 检查清单文件：`checklist.md`
-6. CR 文件格式：`code_review_<slug>.md`、`verified_code_review_<slug>.md`、`resolved_code_review_<slug>.md`
-7. `<slug>` 应包含任务 ID 或变更范围，例如 `tk-001-initialize-sprint-templates`
-8. `tasks/checklist.md` 使用扁平任务列表，并在每个任务下追加多条执行记录
-9. `tasks/tasks.csv` 每行存储一条执行记录，字段为 `execution_id,task_id,title,owner,priority,due_date,status,project,sprint,plan,result,verify,review_delta,recorded_at`
+3. 实现任务文件格式：`tasks/TK-xxx.md`
+4. 评审任务文件格式：`tasks/CR-xxx.md`
+5. CSV 任务登记文件：`tasks.csv`
+6. 检查清单文件：`checklist.md`
+7. CR 文件格式：`code_review_<slug>.md`、`verified_code_review_<slug>.md`、`resolved_code_review_<slug>.md`
+8. `<slug>` 应包含任务 ID 或变更范围，例如 `tk-001-initialize-sprint-templates`
+9. `tasks/checklist.md` 使用扁平任务列表，并在每个任务下追加多条执行记录
+10. `tasks/tasks.csv` 每行存储一条执行记录，字段为 `execution_id,task_id,title,owner,priority,due_date,status,project,sprint,plan,result,verify,review_delta,recorded_at`
 
 ## 默认工作流
 
 1. 更新或创建计划。
-2. 拆分任务并同步检查清单和 CSV。
+2. 拆分任务并同步任务卡与 canonical task-ledger sqlite，再重渲染 `checklist.md` 与 `tasks.csv`：实现任务使用 `TK-xxx.md`，review 管理任务使用 `CR-xxx.md`。
 3. 执行实现。
 4. 运行自检。
-5. 编写 `review_<slug>.md`。
-6. 将验证结果追加到同一 review 文件中，并将其重命名为 `verified_review_<slug>.md`。
-7. 已接受的问题修复后，将其重命名为 `resolved_review_<slug>.md`。
-8. 将执行记录追加到 `tasks/checklist.md` 和 `tasks/tasks.csv`。
-9. project 收尾时生成 `project-xxx-completion-audit-summary.md`。
-10. 在项目 `plan.md` 的“里程碑记录”中登记该审计摘要入口并保留历史记录。
+5. 产出或更新评审文档；若评审生命周期纳入台账，则同步推进 `CR-xxx`。
+6. 同步 canonical task-ledger sqlite、rendered checklist/CSV 与 review 生命周期状态。
+7. 当 sprint 下实现任务与 CR 任务全部进入终态时，立即创建并推进 sprint closeout 任务。
+8. project 收尾时生成 `project-xxx-completion-audit-summary.md`。
+9. 在项目 `plan.md` 的“里程碑记录”中登记该审计摘要入口并保留历史记录。

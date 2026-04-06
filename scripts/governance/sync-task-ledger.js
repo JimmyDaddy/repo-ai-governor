@@ -6,8 +6,8 @@ import {
   readProjectedTaskRowsForSource,
   replaceTaskLedgerCanonicalRowsForSource,
 } from './task-ledger-projection.js';
-const TASK_CARD_FILE_PATTERN = /^TK-\d{3}.*\.md$/u;
-const TASK_STATUS_COMPLETED = new Set([
+const TASK_CARD_FILE_PATTERN = /^(?:TK|CR)-\d{3}.*\.md$/u;
+const TASK_STATUS_TERMINAL = new Set([
   'completed',
   'done',
   'closed',
@@ -92,7 +92,7 @@ function printHelp() {
       '',
       'Options:',
       '  --workspace-root <path>   Workspace root that contains context/current-context.md',
-      '  --tasks-dir <path>        Tasks directory that contains TK/checklist/tasks.csv',
+      '  --tasks-dir <path>        Tasks directory that contains TK/CR/checklist/tasks.csv',
       '  --task-id <id>            Sync one specific task card and its derived ledgers',
       '  --execution-id <id>       Execution id used when appending one canonical csv row',
       '  --status <status>         Optional status override; must match task-card status',
@@ -196,7 +196,7 @@ function parseTaskExecutionNotes(content) {
 }
 
 function parseTaskCard(content, filePath) {
-  const headingMatch = content.match(/^#\s*(TK-\d{3})\s+(.+?)\s*$/mu);
+  const headingMatch = content.match(/^#\s*((?:TK|CR)-\d{3})\s+(.+?)\s*$/mu);
   if (!headingMatch) {
     return null;
   }
@@ -262,7 +262,7 @@ function parseChecklist(checklistPath) {
   let currentTaskId = null;
 
   for (const line of lines) {
-    const taskLineMatch = line.match(/^- \[(x| )\] (TK-\d{3}) (.+)$/iu);
+    const taskLineMatch = line.match(/^- \[(x| )\] ((?:TK|CR)-\d{3}) (.+)$/iu);
     if (taskLineMatch) {
       currentTaskId = taskLineMatch[2];
       if (!entries.has(currentTaskId)) {
@@ -309,7 +309,7 @@ function renderChecklist(taskCards, checklistState, options) {
       continue;
     }
 
-    const checked = TASK_STATUS_COMPLETED.has(taskCard.status);
+    const checked = TASK_STATUS_TERMINAL.has(taskCard.status);
     lines.push(`- [${checked ? 'x' : ' '}] ${taskId} ${taskCard.title}`);
 
     const detailLines = taskCard.executionNotes.map((note) => `  - ${note}`);
@@ -380,12 +380,18 @@ function resolveTasksDirectory(options) {
 
   const currentContextContent = readFileSync(currentContextPath, 'utf8');
   const activeStreamsSection = extractSection(currentContextContent, 'Active Streams');
-  const primaryMatch = activeStreamsSection.match(/^- `primary`: (.+)$/mu);
-  if (!primaryMatch) {
+  const primaryStreamLine = activeStreamsSection
+    .split(/\r?\n/u)
+    .find(
+      (line) =>
+        /^- `[^`]+`: /u.test(line) &&
+        (line.startsWith('- `primary`:') || line.includes('role=`primary`')),
+    );
+  if (!primaryStreamLine) {
     throw new Error(`Primary active stream not found in: ${currentContextPath}`);
   }
 
-  const tasksDirectoryPath = primaryMatch[1].match(/tasks=`([^`]+)`/u)?.[1];
+  const tasksDirectoryPath = primaryStreamLine.match(/tasks=`([^`]+)`/u)?.[1];
   if (!tasksDirectoryPath) {
     throw new Error(`Primary stream tasks directory missing in: ${currentContextPath}`);
   }
@@ -409,7 +415,11 @@ function findTaskCardPath(rootDirectory, taskId) {
         continue;
       }
 
-      if (entry.isFile() && entry.name.startsWith(`${taskId}-`) && entry.name.endsWith('.md')) {
+      if (
+        entry.isFile() &&
+        (entry.name === `${taskId}.md` ||
+          (entry.name.startsWith(`${taskId}-`) && entry.name.endsWith('.md')))
+      ) {
         return entryPath;
       }
     }

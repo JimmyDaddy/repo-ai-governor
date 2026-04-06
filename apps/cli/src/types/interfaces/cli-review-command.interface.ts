@@ -72,6 +72,8 @@ export interface CliReviewRequestArtifactPayload {
   reviewSlug: string;
   reviewArtifactPath: string;
   reviewArtifactStatus: CliReviewLifecycleStatus;
+  reviewTaskId?: string;
+  reviewTaskCardPath?: string;
   scope: CliReviewScopeSnapshot;
   findings: CliReviewFinding[];
   notes: string[];
@@ -110,6 +112,8 @@ export interface CliReviewVerifyResultArtifactPayload {
   sourceReviewArtifactPath: string;
   reviewArtifactPath: string;
   reviewArtifactStatus: CliReviewLifecycleStatus;
+  reviewTaskId?: string;
+  reviewTaskCardPath?: string;
   overallDecision: CliReviewVerifyDecision;
   acceptedFindingIds: string[];
   rejectedFindingIds: string[];

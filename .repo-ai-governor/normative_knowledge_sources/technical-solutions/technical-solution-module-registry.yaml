@@ -334,6 +334,8 @@ modules:
         kind: adr
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/adrs/session-main-supervisor-and-role-subagent-collaboration.md
         kind: adr
+      - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/adrs/standards-native-review-engine-and-provenance-aware-cr.md
+        kind: adr
     north_star_refs:
       - prd.multi-agent-orchestration
       - overall.graph-first-runtime
@@ -522,6 +524,8 @@ modules:
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/desktop-command-center-and-vscode-editor-companion-split.md
         kind: adr
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/host-native-distribution-and-target-specific-consumption.md
+        kind: adr
+      - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/adopter-productization-priority-and-surface-sequencing.md
         kind: adr
     north_star_refs:
       - prd.multi-agent-orchestration

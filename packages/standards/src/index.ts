@@ -47,7 +47,11 @@ export {
   AgentsProjectionNowProvider,
   DefaultAgentsProjectionNowProvider,
 } from './providers/index.js';
-export { goMinimalGovernancePack, pythonMinimalGovernancePack } from './examples/index.js';
+export {
+  goMinimalGovernancePack,
+  pythonMinimalGovernancePack,
+  workflowReviewGovernancePack,
+} from './examples/index.js';
 export { RuleRenderer } from './rule-renderer.js';
 export { StructuredWorkflowAssetRegistry } from './structured-workflow-asset-registry.js';
 export { StandardsUpgradePlanner } from './standards-upgrade-planner.js';

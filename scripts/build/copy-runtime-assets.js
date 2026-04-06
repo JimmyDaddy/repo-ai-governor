@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 
-import { cpSync, existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const PROJECT_ROOT = fileURLToPath(new URL("../..", import.meta.url));
 const COMPILED_CLI_ENTRY_PATH = resolve(PROJECT_ROOT, "dist/bin/repo-ai-governor.js");
-const DIST_SCOPE_NODE_MODULES = resolve(PROJECT_ROOT, "dist/node_modules/@repo-ai-governor");
+const DIST_NODE_MODULES_ROOT = resolve(PROJECT_ROOT, "dist/node_modules");
 const DIST_PUBLISHED_SURFACES_ROOT = resolve(PROJECT_ROOT, "dist/packages/published-surfaces");
 const DEFAULT_DISTRIBUTION_MODE = "default";
 const PLUGIN_ENABLED_DISTRIBUTION_MODE = "plugin-enabled";
@@ -332,15 +332,43 @@ function pruneOptionalPackagesFromDefaultDistribution(distributionMode) {
 }
 
 /**
- * Creates self-contained runtime package snapshots under `dist/node_modules`.
+ * Creates one unique staging directory for `dist/node_modules` replacement.
+ * @returns {string}
+ */
+function createDistributionNodeModulesStageRoot() {
+  return resolve(
+    PROJECT_ROOT,
+    "dist",
+    `.node_modules-stage-${process.pid}-${Date.now()}`,
+  );
+}
+
+/**
+ * Creates one unique backup directory for `dist/node_modules` replacement rollback.
+ * @returns {string}
+ */
+function createDistributionNodeModulesBackupRoot() {
+  return resolve(
+    PROJECT_ROOT,
+    "dist",
+    `.node_modules-backup-${process.pid}-${Date.now()}`,
+  );
+}
+
+/**
+ * Populates one complete staged runtime package tree before any live distribution swap.
  *
  * Why this exists:
- * released tarballs should resolve internal workspace packages without relying
- * on source-workspace paths that do not exist in clean-room environments.
+ * released tarballs should resolve internal workspace packages without relying on
+ * source-workspace paths that do not exist in clean-room environments, and staged
+ * writes avoid exposing half-copied runtime packages to concurrent smoke commands.
+ * @param {"default" | "plugin-enabled"} distributionMode Selected distribution mode.
+ * @returns {string}
  */
-function materializeWorkspacePackagesForDistributionRuntime(distributionMode) {
-  rmSync(DIST_SCOPE_NODE_MODULES, { recursive: true, force: true });
-  mkdirSync(DIST_SCOPE_NODE_MODULES, { recursive: true });
+function stageWorkspacePackagesForDistributionRuntime(distributionMode) {
+  const stageRoot = createDistributionNodeModulesStageRoot();
+  const stageScopeRoot = resolve(stageRoot, "@repo-ai-governor");
+  mkdirSync(stageScopeRoot, { recursive: true });
 
   for (const distributionPackage of DISTRIBUTION_PACKAGES) {
     if (
@@ -353,13 +381,65 @@ function materializeWorkspacePackagesForDistributionRuntime(distributionMode) {
     assertBuildArtifact(packageJsonPath, "workspace package manifest");
     assertBuildArtifact(distributionPackage.compiledDirectory, "compiled package directory");
 
-    const runtimePackageRoot = resolve(DIST_SCOPE_NODE_MODULES, distributionPackage.packageName);
+    const runtimePackageRoot = resolve(stageScopeRoot, distributionPackage.packageName);
     const runtimePackageDistDirectory = resolve(runtimePackageRoot, "dist");
-    rmSync(runtimePackageRoot, { recursive: true, force: true });
     mkdirSync(runtimePackageRoot, { recursive: true });
     cpSync(packageJsonPath, resolve(runtimePackageRoot, "package.json"));
     cpSync(distributionPackage.compiledDirectory, runtimePackageDistDirectory, { recursive: true });
   }
+
+  return stageRoot;
+}
+
+/**
+ * Swaps one fully staged runtime package tree into the published `dist/node_modules` path.
+ *
+ * Why this exists:
+ * concurrent CLI smoke runs should see either the previous complete runtime package tree
+ * or the next complete tree, instead of the partially mirrored state created by rm/cp loops.
+ * @param {string} stageRoot Fully populated staging directory.
+ */
+function replaceDistributionNodeModules(stageRoot) {
+  const backupRoot = createDistributionNodeModulesBackupRoot();
+  let shouldDeleteBackupRoot = false;
+
+  try {
+    if (existsSync(DIST_NODE_MODULES_ROOT)) {
+      renameSync(DIST_NODE_MODULES_ROOT, backupRoot);
+      shouldDeleteBackupRoot = true;
+    }
+
+    renameSync(stageRoot, DIST_NODE_MODULES_ROOT);
+  } catch (error) {
+    if (
+      shouldDeleteBackupRoot &&
+      !existsSync(DIST_NODE_MODULES_ROOT) &&
+      existsSync(backupRoot)
+    ) {
+      renameSync(backupRoot, DIST_NODE_MODULES_ROOT);
+      shouldDeleteBackupRoot = false;
+    }
+
+    throw error;
+  } finally {
+    rmSync(stageRoot, { recursive: true, force: true });
+    if (shouldDeleteBackupRoot) {
+      rmSync(backupRoot, { recursive: true, force: true });
+    }
+  }
+}
+
+/**
+ * Creates self-contained runtime package snapshots under `dist/node_modules`.
+ *
+ * Why this exists:
+ * released tarballs should resolve internal workspace packages without relying on
+ * source-workspace paths that do not exist in clean-room environments.
+ * @param {"default" | "plugin-enabled"} distributionMode Selected distribution mode.
+ */
+function materializeWorkspacePackagesForDistributionRuntime(distributionMode) {
+  const stageRoot = stageWorkspacePackagesForDistributionRuntime(distributionMode);
+  replaceDistributionNodeModules(stageRoot);
 }
 
 /**

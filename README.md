@@ -109,6 +109,8 @@ pnpm exec repo-ai-governor review-verify --output json
 
 Use this when you want the full plan -> run -> review -> verify path with audit artifacts under the active workspace.
 
+In managed review workspaces, `review` allocates a canonical `CR-xxx` task card for the round, and `review-verify` advances that same card through `review_pending -> verified -> resolved`.
+
 ### 2.3 Switch workspace mode
 
 ```bash

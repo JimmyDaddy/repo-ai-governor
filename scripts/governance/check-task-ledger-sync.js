@@ -11,10 +11,18 @@ import {
 
 const GATE_NAME = 'task-ledger-sync';
 const CURRENT_CONTEXT_PATH = '.repo-ai-governor/context/current-context.md';
-const TASK_CARD_FILE_PATTERN = /^TK-\d{3}.*\.md$/;
+const TASK_CARD_FILE_PATTERN = /^(?:TK|CR)-\d{3}.*\.md$/;
 const REQUIRED_TASK_METADATA_KEYS = ['Status', 'Date', 'Owner', 'Priority', 'Project', 'Sprint'];
 const PLACEHOLDER_VALUES = new Set(['待执行', '待验证']);
 const ACTIVE_STREAM_STATUSES = new Set(['active', 'in_progress', 'running']);
+const TERMINAL_TASK_STATUSES = new Set([
+  'completed',
+  'done',
+  'closed',
+  'resolved',
+  'archived',
+  'retired',
+]);
 
 /**
  * Resolves the active stream document roots from the `## Active Streams` section in current context.
@@ -238,7 +246,7 @@ function parseCanonicalTaskCards(tasksDirPath) {
  * }}
  */
 function parseCanonicalTaskCard(content, filePath) {
-  const headingMatch = content.match(/^#\s*(TK-\d{3})\s+(.+?)\s*$/m);
+  const headingMatch = content.match(/^#\s*((?:TK|CR)-\d{3})\s+(.+?)\s*$/m);
   if (!headingMatch) {
     return null;
   }
@@ -328,7 +336,7 @@ function parseTaskGoal(content) {
 }
 
 /**
- * Parses checklist rows (`- [x] TK-001 xxx`) for status/title alignment.
+ * Parses checklist rows (`- [x] TK-001 xxx` / `- [x] CR-001 xxx`) for status/title alignment.
  * @param {string} checklistPath Absolute checklist path.
  * @returns {Map<string, {checked: boolean, title: string}>}
  */
@@ -341,7 +349,7 @@ function parseChecklist(checklistPath) {
   const checklistMap = new Map();
 
   for (const line of checklistContent.split(/\r?\n/)) {
-    const checklistMatch = line.match(/^- \[(x| )\] (TK-\d{3}) (.+)$/i);
+    const checklistMatch = line.match(/^- \[(x| )\] ((?:TK|CR)-\d{3}) (.+)$/i);
     if (!checklistMatch) {
       continue;
     }
@@ -514,40 +522,40 @@ function collectDriftIssues(streamKey, taskCards, checklistMap, csvRows) {
       );
     }
 
-    if (checklistItem.checked && csvStatus !== 'completed') {
+    if (checklistItem.checked && !TERMINAL_TASK_STATUSES.has(csvStatus)) {
       issues.push(
         `[${streamKey}] ${taskId}: checklist is checked but tasks.csv status is "${csvStatus}" at line ${canonicalRow.__rowNumber}`,
       );
     }
 
-    if (!checklistItem.checked && csvStatus === 'completed') {
+    if (!checklistItem.checked && TERMINAL_TASK_STATUSES.has(csvStatus)) {
       issues.push(
-        `[${streamKey}] ${taskId}: checklist is unchecked but tasks.csv status is completed at line ${canonicalRow.__rowNumber}`,
+        `[${streamKey}] ${taskId}: checklist is unchecked but tasks.csv status is terminal ("${csvStatus}") at line ${canonicalRow.__rowNumber}`,
       );
     }
 
-    if (csvStatus === 'completed') {
+    if (TERMINAL_TASK_STATUSES.has(csvStatus)) {
       if (normalizeText(canonicalRow.owner ?? '') === 'tbd') {
         issues.push(
-          `[${streamKey}] ${taskId}: completed row has owner=TBD at tasks.csv#L${canonicalRow.__rowNumber}`,
+          `[${streamKey}] ${taskId}: terminal row has owner=TBD at tasks.csv#L${canonicalRow.__rowNumber}`,
         );
       }
 
       if (PLACEHOLDER_VALUES.has((canonicalRow.result ?? '').trim())) {
         issues.push(
-          `[${streamKey}] ${taskId}: completed row has placeholder result at tasks.csv#L${canonicalRow.__rowNumber}`,
+          `[${streamKey}] ${taskId}: terminal row has placeholder result at tasks.csv#L${canonicalRow.__rowNumber}`,
         );
       }
 
       if (PLACEHOLDER_VALUES.has((canonicalRow.verify ?? '').trim())) {
         issues.push(
-          `[${streamKey}] ${taskId}: completed row has placeholder verify at tasks.csv#L${canonicalRow.__rowNumber}`,
+          `[${streamKey}] ${taskId}: terminal row has placeholder verify at tasks.csv#L${canonicalRow.__rowNumber}`,
         );
       }
 
       if (PLACEHOLDER_VALUES.has((canonicalRow.review_delta ?? '').trim())) {
         issues.push(
-          `[${streamKey}] ${taskId}: completed row has placeholder review_delta at tasks.csv#L${canonicalRow.__rowNumber}`,
+          `[${streamKey}] ${taskId}: terminal row has placeholder review_delta at tasks.csv#L${canonicalRow.__rowNumber}`,
         );
       }
     }

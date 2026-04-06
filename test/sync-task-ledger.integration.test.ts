@@ -109,4 +109,61 @@ describe('sync-task-ledger.js', () => {
       await rm(tempRoot, { recursive: true, force: true });
     }
   });
+
+  it('syncs CR task cards into checklist and tasks.csv using resolved as terminal status', async () => {
+    const tempRoot = await mkdtemp(resolve(tmpdir(), 'sync-task-ledger-cr-'));
+    const tasksDirPath = resolve(tempRoot, 'tasks');
+    const taskCardPath = resolve(tasksDirPath, 'CR-130-ledger-review-lifecycle-governance.md');
+    const checklistPath = resolve(tasksDirPath, 'checklist.md');
+    const csvPath = resolve(tasksDirPath, 'tasks.csv');
+
+    try {
+      await mkdir(tasksDirPath, { recursive: true });
+      await writeFile(
+        taskCardPath,
+        `# CR-130 台账评审生命周期治理
+
+- Status: resolved
+- Date: 2026-04-06
+- Owner: AI-Agent
+- Priority: P1
+- Project: \`project-051-priority-roadmap-promotion-and-decomposition\`
+- Sprint: \`sprint-001-promotion-and-followup-decomposition\`
+
+## 1. 任务目标
+
+让评审任务进入独立的 \`CR\` 编号空间并完成收口。
+
+## 9. 执行记录
+
+1. 2026-04-06：评审任务创建并完成收口。
+`,
+        'utf8',
+      );
+      await writeFile(checklistPath, '# checklist\n', 'utf8');
+      await writeFile(
+        csvPath,
+        'execution_id,task_id,title,owner,priority,due_date,status,project,sprint,plan,result,verify,review_delta,recorded_at\n',
+        'utf8',
+      );
+
+      await execFileAsync(
+        process.execPath,
+        [SYNC_TASK_LEDGER_SCRIPT_PATH, '--tasks-dir', tasksDirPath],
+        {
+          cwd: tempRoot,
+        },
+      );
+
+      const checklistContent = await readFile(checklistPath, 'utf8');
+      const csvContent = await readFile(csvPath, 'utf8');
+
+      expect(checklistContent).toContain('- [x] CR-130 台账评审生命周期治理');
+      expect(checklistContent).toContain('2026-04-06：评审任务创建并完成收口。');
+      expect(csvContent).toContain('CR-130');
+      expect(csvContent).toContain(',resolved,');
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
 });

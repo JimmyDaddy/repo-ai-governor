@@ -1,32 +1,33 @@
 # Task Card Template
 
 - Status: active
-- Date: 2026-03-28
-- Scope: canonical `TK-xxx` task-card generation under `.repo-ai-governor/context/dev/**`
-- Owner: `delivery / governance`
+- Date: 2026-04-06
+- Scope: canonical `TK-xxx` / `CR-xxx` task-card generation under `.repo-ai-governor/context/dev/**`
+- Owner: `project-008-workflow-optimization / TK-044`
 
 ## 1. Purpose
 
-1. 为后续 `TK-xxx` 任务卡提供可直接复用的统一骨架。
+1. 为后续 `TK-xxx` / `CR-xxx` 任务卡提供可直接复用的统一骨架。
 2. 消除“只有最小模板说明、没有 concrete task-card 模板文件”导致的生成漂移。
-3. 让新任务卡默认满足 `TK` canonical source、`Required Inputs + Traceback References` 分层与交付验证分离要求。
+3. 让新任务卡默认满足 `TK/CR` canonical source、`Required Inputs + Traceback References` 分层与交付验证分离要求。
 
 ## 2. Usage Rules
 
-1. 生成新的 `TK-xxx` 时，默认从本模板实例化，而不是自由发挥章节结构。
-2. 顶部元数据至少填写 `Status/Date/Owner/Priority/Project/Sprint`；`task_id` 由 `# TK-xxx <title>` heading 承担。
+1. 生成新的 `TK-xxx` 或 `CR-xxx` 时，默认从本模板实例化，而不是自由发挥章节结构。
+2. 顶部元数据至少填写 `Status/Date/Owner/Priority/Project/Sprint`；`task_id` 由 `# <TASK-ID> <title>` heading 承担。
 3. `## 4. Required Inputs` 只放执行当前任务必需阅读的输入，建议控制在 `3-5` 条。
 4. `## 5. Traceback References` 只放追溯、handoff、review、历史计划或 audit 资料，不进入默认执行输入面。
-5. `## 7. Development Verification` 默认记录 fast/targeted verification；`## 8. Delivery Verification` 记录切换到 `completed` 前必须满足的 gate、release 或 closeout 验证。
-6. `## 9. 执行记录` 采用时间顺序追加；任务创建时至少写入一条“状态初始化为 `planned`”或“切换为 `in_progress`”记录。
-7. `## 10. 产出` 对 `planned` 任务允许写“待执行：…”占位；切到 `completed` 后应补齐实际产物路径或明确产物名称。
+5. `## 7. Development Verification` 默认记录 fast/targeted verification；`## 8. Delivery Verification` 记录切换到终态前必须满足的 gate、release 或 closeout 验证。
+6. `## 9. 执行记录` 采用时间顺序追加；任务创建时至少写入一条“状态初始化为 `planned` / `review_pending`”或“切换为进行中状态”记录。
+7. `## 10. 产出` 对 `planned` / `review_pending` / `verified` 任务允许写“待执行：…”占位；切到 `completed` / `resolved` 后应补齐实际产物路径或明确产物名称。
+8. 实现任务使用 `TK-xxx` 与 `planned / in_progress / completed`；评审任务使用 `CR-xxx` 与 `review_pending / verified / resolved`。
 
 ## 3. Concrete Template
 
 ```md
-# TK-<ID> <任务标题>
+# <TASK-ID> <任务标题>
 
-- Status: <planned|in_progress|completed>
+- Status: <planned|in_progress|completed|review_pending|verified|resolved>
 - Date: <YYYY-MM-DD>
 - Owner: <owner>
 - Priority: <P0|P1|P2>
@@ -77,7 +78,7 @@
 
 ## 9. 执行记录
 
-1. <YYYY-MM-DD>：任务创建，状态初始化为 `planned`。
+1. <YYYY-MM-DD>：任务创建，状态初始化为 `<planned|review_pending>`。
 
 ## 10. 产出
 
@@ -88,5 +89,6 @@
 ## 4. Notes
 
 1. 已存在的历史任务卡不要求批量回写到完全一致，但新生成任务卡默认必须遵循本模板。
-2. 若任务属于 exit acceptance / closeout / completion audit 类，可在 `## 6. 实施计划` 与 `## 8. Delivery Verification` 中展开验收矩阵，但仍保留本模板的章节骨架。
-3. 若任务确实不需要 `Traceback References`，章节可保留并写明 `不适用`，避免后续再次出现章节缺失导致的结构漂移。
+2. `TK` 任务用于实现、closeout、activation、治理收口等执行项；`CR` 任务用于 review / recheck / fix 的独立管理。
+3. 若任务属于 exit acceptance / closeout / completion audit 类，可在 `## 6. 实施计划` 与 `## 8. Delivery Verification` 中展开验收矩阵，但仍保留本模板的章节骨架。
+4. 若任务确实不需要 `Traceback References`，章节可保留并写明 `不适用`，避免后续再次出现章节缺失导致的结构漂移。

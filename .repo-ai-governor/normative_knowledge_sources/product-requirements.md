@@ -2,7 +2,7 @@
 
 - 文档版本：v0.3
 - 状态：执行中（MVP 已完成，P1 深化中）
-- 日期：2026-04-02
+- 日期：2026-04-06
 - 暂定产品名：Repo AI Governor
 
 ## 0. v0.3 更新说明
@@ -274,8 +274,9 @@ AI 先完成方案与实现，再进入评审 Agent 与复核 Agent 的循环；
    - 方案文档
    - 任务 checklist，采用单列表结构；每个任务条目至少包含任务编号、标题、负责人、优先级、截止日期、状态，并在条目下持续追加执行记录
    - CSV 任务记录，采用追加式执行台账；每条执行记录单独一行，至少包含 `execution_id`、`task_id`、`title`、`owner`、`priority`、`due_date`、`status`、`project`、`sprint`、`plan`、`result`、`verify`、`review_delta`、`recorded_at`
-   - 单独 `review/` 目录中的 CR 文件，命名采用 `review_<slug>.md`
-   - 复核结果直接追加到同一个 CR 文件中，并在状态流转时重命名为 `verified_review_<slug>.md`、`resolved_review_<slug>.md`
+   - `tasks/TK-xxx.md` 与 `tasks/CR-xxx.md` 两类任务卡；其中 `CR-xxx` 作为 review / recheck / fix 的独立编号空间，状态流转使用 `review_pending -> verified -> resolved`
+   - 单独 `review/` 目录中的 CR 文件，命名采用 `code_review_<slug>.md`
+   - 复核结果直接追加到同一个 CR 文件中，并在状态流转时重命名为 `verified_code_review_<slug>.md`、`resolved_code_review_<slug>.md`
    - 若当前 worktree 的待收口 CR 明确仍归属于某个已 `completed` 的 stream，可在 `current-context.md` 中显式声明单值 `Worktree Review Target` 作为默认 CR 输出 override；当目标 `review/` 目录只剩 `resolved` 或无生命周期文件时，必须移除该 override
 
 ### 8.5.1 多 Agent 协议与运行时

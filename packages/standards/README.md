@@ -129,14 +129,17 @@ const agentsProjection = projector.project({
 2. 团队 pack：以组织/团队维度独立发布，承接跨仓库协作规范。
 3. 仓库 pack：与业务仓库一起演进，只保存该仓库的最终覆盖规则。
 
-## Minimal Language Packs
+## Built-in Governance Packs
 
-`packages/standards` 现在内置两套可直接复用的最小语言治理模板：
+`packages/standards` 现在内置三套可直接复用的治理模板：
 
-1. `pythonMinimalGovernancePack`
+1. `workflowReviewGovernancePack`
+   - 聚焦 `CR-xxx` 评审任务卡、`review_pending -> verified -> resolved` 生命周期，以及 review 文档与任务台账同步
+   - 适合作为 adopter 面向用户工具治理流程里的 review 基线
+2. `pythonMinimalGovernancePack`
    - 聚焦 `pyproject.toml`、`ruff format/check`、`pytest`、`pyright`
    - 适合作为 Python adopter 的最低可用 pack 基线
-2. `goMinimalGovernancePack`
+3. `goMinimalGovernancePack`
    - 聚焦 `go.mod/go.sum`、`go fmt ./...`、`go test ./...`、`go vet ./...`
    - 适合作为 Go adopter 的最低可用 pack 基线
 
@@ -147,14 +150,20 @@ import {
   StandardsPackRegistry,
   goMinimalGovernancePack,
   pythonMinimalGovernancePack,
+  workflowReviewGovernancePack,
 } from "@repo-ai-governor/standards";
 
 const registry = new StandardsPackRegistry({
-  packs: [pythonMinimalGovernancePack, goMinimalGovernancePack],
+  packs: [
+    workflowReviewGovernancePack,
+    pythonMinimalGovernancePack,
+    goMinimalGovernancePack,
+  ],
 });
 ```
 
 说明：
 
-1. 这两套模板仍遵循 `official -> team -> repository` layering 口径，并可作为 `StandardsRuntimeLoader` 的官方 pack 输入。
-2. 它们是“最小可用”产品化模板，而不是完整语言最佳实践全集；团队仍可在其上叠加自己的 team / repository overrides。
+1. `workflowReviewGovernancePack` 用于把 `CR-xxx` 评审任务卡语义带到 adopter-facing 治理流程；建议与任一语言 pack 叠加使用。
+2. 这三套模板仍遵循 `official -> team -> repository` layering 口径，并可作为 `StandardsRuntimeLoader` 的官方 pack 输入。
+3. 它们是“最小可用”产品化模板，而不是完整语言或流程最佳实践全集；团队仍可在其上叠加自己的 team / repository overrides。

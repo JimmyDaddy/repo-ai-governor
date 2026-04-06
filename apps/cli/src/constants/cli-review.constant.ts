@@ -53,6 +53,7 @@ export enum CliReviewFindingRuleId {
 export enum CliReviewArtifactId {
   REVIEW_REQUEST = 'review_request',
   REVIEW_ARTIFACT = 'review_artifact',
+  REVIEW_TASK_CARD = 'review_task_card',
   REVIEW_VERIFY_RESULT = 'review_verify_result',
   REVIEW_LEDGER_BACKFILL = 'review_ledger_backfill',
 }
