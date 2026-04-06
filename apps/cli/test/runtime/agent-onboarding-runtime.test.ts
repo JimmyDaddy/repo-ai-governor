@@ -413,4 +413,35 @@ describe('CliAgentOnboardingRuntime', () => {
       ]),
     );
   });
+
+  it('projects default cli_exec transport truth for Claude Code without explicit transport config', () => {
+    const runtime = new CliAgentOnboardingRuntime();
+    const sourceConfig = createGovernorConfigFixture();
+
+    const onboardingPayload = runtime.createOnboardingContractPayload({
+      commandName: 'connect',
+      executionId: 'connect-claude-default-transport',
+      workspaceId: 'workspace-1',
+      verificationStatus: CliGovernanceCheckStatus.PASS,
+      nextActions: [],
+      enabledTools: [AdapterSurface.CLAUDE_CODE],
+      adaptersConfig: sourceConfig.adapters,
+      dryRun: true,
+      overwrite: false,
+      singleToolAllRoles: false,
+      diagnosticSummary: 'status=pass',
+    });
+
+    expect(onboardingPayload.tool_transport_matrix).toEqual([
+      expect.objectContaining({
+        tool_id: AdapterSurface.CLAUDE_CODE,
+        transport: AdapterTransportKind.CLI_EXEC,
+        invoke_liveness_diagnostics: expect.objectContaining({
+          transport_kind: AdapterTransportKind.CLI_EXEC,
+          request_timeout_ms: 30000,
+          max_retries: 2,
+        }),
+      }),
+    ]);
+  });
 });

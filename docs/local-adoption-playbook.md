@@ -87,12 +87,15 @@ What to pay attention to:
 2. `doctor --adapters --fix` performs safe-local repairs only; authentication and tool installation remain follow-up actions.
 3. `verify --adapters` should be treated as the readiness decision before real execution.
 4. `run --dry-run --trace` is the safest way to validate routing and projected descriptors before a real run.
+5. `tool_transport_matrix` now projects effective transport truth; CLI-backed adapters such as `codex`, `claude-code`, and `github-copilot` show `cli_exec` even when config omits an explicit `transport`.
+6. A `warn` or failed dry-run still counts as useful evidence when `report`, `replay`, and `diagnostics_trace` artifacts are emitted, because those artifacts preserve the failing stage and adapter attribution for follow-up routing fixes.
 
 Helpful artifact paths:
 
 1. Candidate config: `<workspace_root>/context/diagnostics/connect/<connect-id>.governor.yaml`
 2. Candidate diagnostics: `<workspace_root>/context/diagnostics/connect/<connect-id>.json`
-3. Traced dry-run diagnostics: `<workspace_root>/context/diagnostics/run/`
+3. Verify diagnostics: `<workspace_root>/context/diagnostics/verify/`
+4. Traced dry-run diagnostics: `<workspace_root>/context/diagnostics/run/` and `<workspace_root>/context/diagnostics/trace/`
 
 ## 6. First Governed Flow
 

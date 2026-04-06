@@ -87,12 +87,15 @@ pnpm exec repo-ai-governor run --output json --dry-run --trace
 2. `doctor --adapters --fix` 只做 safe-local 修复；认证、安装和下载仍属于 follow-up。
 3. `verify --adapters` 可以看作真实执行前的 readiness 决策点。
 4. `run --dry-run --trace` 是验证路由和 projected descriptor 最安全的方式。
+5. `tool_transport_matrix` 现在会投影 effective transport truth；像 `codex`、`claude-code`、`github-copilot` 这样的 CLI-backed adapter，即使配置里没显式写 `transport`，也会显示 `cli_exec`。
+6. 只要 `report`、`replay`、`diagnostics_trace` 都已落盘，`warn` 或失败的 dry-run 仍然是有价值的正式证据，因为它保留了失败 stage 与 adapter attribution，便于后续修正 routing。
 
 常用产物路径：
 
 1. candidate 配置：`<workspace_root>/context/diagnostics/connect/<connect-id>.governor.yaml`
 2. candidate 诊断：`<workspace_root>/context/diagnostics/connect/<connect-id>.json`
-3. traced dry-run 诊断：`<workspace_root>/context/diagnostics/run/`
+3. verify 诊断：`<workspace_root>/context/diagnostics/verify/`
+4. traced dry-run 诊断：`<workspace_root>/context/diagnostics/run/` 与 `<workspace_root>/context/diagnostics/trace/`
 
 ## 6. 第一条受治理流程
 

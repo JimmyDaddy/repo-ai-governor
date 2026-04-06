@@ -1,6 +1,6 @@
 # project-053-real-adapter-invocation-productization 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-06
 - Stage Mapping: adapter real-invocation rollout
 - Phase Mapping: Claude Code baseline / Codex rollout / Copilot boundary and local-model positioning
@@ -18,7 +18,7 @@
 
 ## 2.1 sprint-001-claude-code-real-invocation-baseline
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 先收口最容易形成真实调用产品路径的 `Claude Code`。
 - Task Package: `TK-598`、`TK-599`、`TK-600`。
 
@@ -65,3 +65,5 @@
 
 1. 2026-04-06：基于 `DA-588` 创建 `project-053` planned stream，作为 priority roadmap 的第二顺位 implementation line。
 2. 2026-04-06：已写入 `sprint-001 ~ sprint-003` 与 `TK-598 ~ TK-606` skeleton，待后续按顺序激活。
+3. 2026-04-06：`project-052` final closeout 完成后，`project-053 / sprint-001` 被激活为当前 primary stream，`TK-598` 进入 `in_progress`。
+4. 2026-04-07：`sprint-001` 已通过 `CR-001` clean closeout，`TK-607 / DA-607` 固定下一边界为 `sprint-002 / TK-601`，等待 sprint-001 boundary commit 后激活。
