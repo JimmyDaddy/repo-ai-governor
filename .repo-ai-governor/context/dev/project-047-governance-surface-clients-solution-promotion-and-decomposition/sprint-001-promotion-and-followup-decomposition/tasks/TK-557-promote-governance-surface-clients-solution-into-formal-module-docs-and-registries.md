@@ -1,7 +1,9 @@
 # TK-557 promote governance surface clients solution into formal module docs and registries
 
 - Status: completed
-- Task ID: `TK-557`
+- Date: 2026-04-05
+- Owner: AI-Agent
+- Priority: P0
 - Sprint: `sprint-001-promotion-and-followup-decomposition`
 - Project: `project-047-governance-surface-clients-solution-promotion-and-decomposition`
 

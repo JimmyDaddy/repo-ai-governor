@@ -1,7 +1,9 @@
 # TK-556 activate project-047 and freeze governance surface clients promotion scope
 
 - Status: completed
-- Task ID: `TK-556`
+- Date: 2026-04-05
+- Owner: AI-Agent
+- Priority: P0
 - Sprint: `sprint-001-promotion-and-followup-decomposition`
 - Project: `project-047-governance-surface-clients-solution-promotion-and-decomposition`
 
