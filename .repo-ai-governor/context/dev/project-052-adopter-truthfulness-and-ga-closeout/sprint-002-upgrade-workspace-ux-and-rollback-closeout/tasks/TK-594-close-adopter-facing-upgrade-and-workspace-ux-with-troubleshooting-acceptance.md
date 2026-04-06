@@ -1,6 +1,6 @@
 # TK-594 close adopter-facing upgrade and workspace UX with troubleshooting acceptance
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-06
 - Task ID: `TK-594`
 - Owner: `AI-Agent`
@@ -63,9 +63,12 @@
 ## 9. 执行记录
 
 1. 2026-04-06：任务创建，等待 `TK-592 / TK-593` 完成。
+2. 2026-04-06：`TK-592` / `TK-593` 已完成，任务切换为 `in_progress`，开始汇总 troubleshooting guide、acceptance evidence 与 sprint-002 closeout truth。
+3. 2026-04-06：已产出 `DA-594`，把 repo-external rehearsal evidence、rollback hand-off 约束与 adopter troubleshooting guidance 收口到 playbook / support matrix 双语真值面，供 sprint-002 scoped CR loop 直接消费。
 
 ## 10. 产出
 
-1. 待执行：`DA-594-upgrade-and-workspace-ux-troubleshooting-and-acceptance-closeout.md`
-2. 待执行：troubleshooting 指南与 acceptance evidence
-3. 待执行：供 sprint-002 closeout 与 project-level final CR loop 消费的最终输入
+1. `.repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/sprint-002-upgrade-workspace-ux-and-rollback-closeout/tasks/DA-594-upgrade-and-workspace-ux-troubleshooting-and-acceptance-closeout.md`
+2. `docs/local-adoption-playbook.md` / `docs/local-adoption-playbook.zh-CN.md`
+3. `docs/support-matrix.md` / `docs/support-matrix.zh-CN.md`
+4. `.tmp/project-052-sprint-002-command-rehearsal-summary.json`

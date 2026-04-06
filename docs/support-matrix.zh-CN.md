@@ -2,7 +2,7 @@
 
 - 状态：active
 - 最后更新：2026-04-06
-- 适用范围：由 `project-026 / sprint-004`（`TK-301`）、`project-044 / sprint-003`（`TK-547`）、`project-046 / sprint-001`（`TK-551`、`TK-552`、`TK-554`）与 `project-052 / sprint-001`（`TK-589`、`TK-590`、`TK-591`）共同刷新后的正式支持声明
+- 适用范围：由 `project-026 / sprint-004`（`TK-301`）、`project-044 / sprint-003`（`TK-547`）、`project-046 / sprint-001`（`TK-551`、`TK-552`、`TK-554`）、`project-052 / sprint-001`（`TK-589`、`TK-590`、`TK-591`）与 `project-052 / sprint-002`（`TK-592`、`TK-593`、`TK-594`）共同刷新后的正式支持声明
 
 ## 1. 安装模式
 
@@ -54,10 +54,12 @@
 | CLI | Supported | 当前生产主入口。 |
 | Desktop sidecar entry | MVP foundation 正式支持 | `apps/desktop` 已提供正式 desktop shell package，并通过 service-owned session/execution/HITL/artifact-pane seam 暴露桌面 MVP foundation；更丰富的 desktop 面板仍按后续阶段演进。 |
 
-## 6. 验证快照（TK-301 + TK-547 + TK-551/TK-552/TK-554 + TK-589/TK-590/TK-591）
+## 6. 验证快照（TK-301 + TK-547 + TK-551/TK-552/TK-554 + TK-589/TK-590/TK-591 + TK-592/TK-593/TK-594）
 
 | 时间（UTC） | 命令 | 结果 | 证据摘要 |
 |---|---|---|---|
+| 2026-04-06T21:29:47Z | `repo-external upgrade rehearsal (preview -> apply -> rollback)` | Pass | `.tmp/project-052-sprint-002-command-rehearsal-summary.json` 记录了 `schema_upgrade_analyze`、`schema_upgrade_apply` 与 `schema_upgrade_rollback`；apply 与 rollback 都以 `verify_status=passed` 结束。 |
+| 2026-04-06T21:29:47Z | `repo-external workspace rehearsal (dry-run -> execute -> rollback)` | Pass | `.tmp/project-052-sprint-002-command-rehearsal-summary.json` 记录了 `workspace_migration_plan`、`workspace_migration_execute` 与 `workspace_migration_rollback`；rollback 返回 source workspace，且 `scratch_cleanup_status=removed`。 |
 | 2026-04-06T12:09:11Z | `node ./scripts/release/verify-cleanroom-local-install.js --modes path,link --iterations 1 --output .tmp/project-052-sprint-001-cleanroom-report.json` | Pass | `path` 与 `link` 各完成 1 轮 clean-room 基线链路；workspace switch rollback、read-only attach precheck、service-host memory provider 与 remote-api smoke 也全部通过。 |
 | 2026-04-06T12:08:49Z | `node ./scripts/release/verify-local-distribution.js --output .tmp/project-052-sprint-001-local-distribution-report.json` | Pass | 本地分发验证通过，`pack_file=cjhdev-repo-ai-governor-0.1.5.tgz`；standards runtime-loader dist smoke 与 dist-binary remote-api smoke 均通过，adapter `doctor/verify` 继续维持非阻断 `warn`。 |
 | 2026-04-04T12:09:14Z | `pnpm run build` | Pass | `dist/apps/desktop` 与 `dist/node_modules/@repo-ai-governor/desktop` 已完成本地分发所需产物 |
@@ -72,9 +74,23 @@
 | 2026-03-27T22:39:21Z | `node ./scripts/release/verify-local-distribution.js` | Pass | 本地分发验证通过，`pack_file=cjhdev-repo-ai-governor-0.1.5.tgz` |
 | 2026-03-27T22:39:31Z | `node ./scripts/examples/check-desktop-entry-smoke.js` | Pass | 默认分发模式下 desktop sidecar smoke 通过 |
 
-## 7. 备注
+## 7. Upgrade / Workspace Contract 快照（TK-592）
+
+1. `workspace` 的正式 adopter 路径是 `dry-run -> execute -> rollback`；`rollback` 只接受保存下来的 `plan-path`，而 execute 失败时会先落一份 `context/workspace/<migration-id>.failure.json` 再决定是否重试。
+2. `upgrade` 的正式 adopter 路径是 `preview -> apply -> rollback`；`apply` 只接受 preview 产出的 `report_path` 加显式 `--confirm-upgrade approve`，而 rollback 接受 apply receipt 或 rollback snapshot。
+3. `docs/local-adoption-playbook*.md` 是 artifact hand-off 与 troubleshooting 的 canonical adopter 指南；`README*` 只保留最小命令入口。
+
+## 8. Troubleshooting / Acceptance 快照（TK-594）
+
+1. 在改变 adopter 状态前，请先保存 `plan_path`、`report_path`，以及至少一份 rollback hand-off artifact（`apply_receipt_path` 或 `rollback_snapshot_path`）；正式 closeout 路径依赖这些产物。
+2. 如果 `upgrade` preview 提示 blocking confirmation items，请在 `apply` 前先停下，审阅 preview 产物并确认配置漂移原因，再重新 preview。
+3. `workspace execute` 或 `workspace rollback` 之后，应重新执行 `doctor` 来确认活动 `workspaceRoot`，不要只凭目录结构变化推断成功。
+4. rehearsal 或 pilot 应在目标仓库或隔离的外部临时目录中执行；若直接从 governor 源仓库发起 workspace migration，命令可能附着到外层 Git root 并产生误导性产物。
+5. `.tmp/project-052-sprint-002-command-rehearsal-summary.json` 是 sprint-002 repo-external upgrade/workspace closeout 路径的正式 acceptance evidence。
+
+## 9. 备注
 
 1. adapter 的 degrade / warning 仍属于环境前置条件（如 `github-copilot` quota/probe、`claude-code` credential/probe、`local-model` endpoint/model capability 限制），而不是治理链路失败。
 2. `project-046` 已把 desktop artifact pane 从 deferred gate 推进为 service-owned typed query contract；renderer 仍不允许直接旁路 workspace 文件系统。
 3. 官方 `GitLab CI` 与 `Jenkins` 模板现已发布到 `integrations/ci/`，并复用与 GitHub Actions 相同的 install、quality-gate 与 release-governance 命令契约。
-4. 本文档定义 `TK-301`、desktop baseline refresh `TK-547`、`project-046` P1 收口工作，以及 `project-052 / sprint-001` install-mode truth refresh 的正式支持边界；GA Readiness 全量信号覆盖仍在 `TK-302` 持续沉淀。
+4. 本文档定义 `TK-301`、desktop baseline refresh `TK-547`、`project-046` P1 收口工作、`project-052 / sprint-001` install-mode truth refresh，以及 `project-052 / sprint-002` upgrade/workspace contract 与 acceptance closeout 的正式支持边界；GA Readiness 全量信号覆盖仍在 `TK-302` 持续沉淀。

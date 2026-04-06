@@ -128,6 +128,16 @@ pnpm exec repo-ai-governor workspace rollback <plan-path> --output json
 
 请保留命令输出中的 `plan-path`，它就是这次迁移的 rollback 参考。
 
+### 2.4 预览、应用与回滚 Upgrade
+
+```bash
+pnpm exec repo-ai-governor upgrade --output json
+pnpm exec repo-ai-governor upgrade apply <report-path> --confirm-upgrade approve --output json
+pnpm exec repo-ai-governor upgrade rollback <apply-receipt-or-rollback-snapshot> --output json
+```
+
+先跑 `upgrade` preview。保留 preview 输出里的 `report_path`，以及 apply 输出里的 `apply_receipt_path`；这两类产物就是 adopter-facing apply/rollback 路径的正式 hand-off 参考。
+
 ## 3. 给外部 adopter 的提醒
 
 1. `dist-binary` 演练证明的是 CLI/runtime 行为，不等于已经验证 package install surface。

@@ -1,6 +1,6 @@
 # TK-592 freeze upgrade workspace migration rollback user-path contract
 
-- Status: in_progress
+- Status: completed
 - Date: 2026-04-06
 - Task ID: `TK-592`
 - Owner: `AI-Agent`
@@ -61,9 +61,11 @@
 
 1. 2026-04-06：任务创建，等待 `sprint-001` 收口。
 2. 2026-04-06：状态切换为 `in_progress`，开始冻结 `upgrade / workspace migration / rollback` adopter 用户路径 contract。
+3. 2026-04-06：已产出 `DA-592`，并将 README / adoption playbook / support matrix 的正式用户路径统一为 `workspace dry-run -> execute -> rollback` 与 `upgrade preview -> apply -> rollback`。
 
 ## 10. 产出
 
-1. 待执行：`DA-592-upgrade-workspace-migration-rollback-user-path-contract-freeze.md`
-2. 待执行：`README*` / `docs/local-adoption-playbook*` / `docs/support-matrix*` 的 sprint-002 contract 差异清单
-3. 待执行：`TK-593` / `TK-594` 输入约束写回
+1. `.repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/sprint-002-upgrade-workspace-ux-and-rollback-closeout/tasks/DA-592-upgrade-workspace-migration-rollback-user-path-contract-freeze.md`
+2. `README.md` / `README.zh-CN.md`
+3. `docs/local-adoption-playbook.md` / `docs/local-adoption-playbook.zh-CN.md`
+4. `docs/support-matrix.md` / `docs/support-matrix.zh-CN.md`

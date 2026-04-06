@@ -1,6 +1,6 @@
 # TK-593 implement and document upgrade preview apply rollback plus workspace migration closeout path
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-06
 - Task ID: `TK-593`
 - Owner: `AI-Agent`
@@ -61,9 +61,12 @@
 ## 9. 执行记录
 
 1. 2026-04-06：任务创建，等待 `TK-592` 完成。
+2. 2026-04-06：`TK-592` 已完成 contract freeze，任务切换为 `in_progress`，开始推进 preview/apply/rollback 与 workspace migration closeout 的实现面。
+3. 2026-04-06：已产出 `DA-593`，并在 repo 外隔离 fixture 中完成 upgrade 与 workspace 全链路 rehearsal，把现有 CLI/runtime 能力收口为正式 adopter path。
 
 ## 10. 产出
 
-1. 待执行：`DA-593-upgrade-preview-apply-rollback-and-workspace-migration-closeout-path.md`
-2. 待执行：CLI/runtime 变更与 adopter-facing 文档更新
-3. 待执行：供 `TK-594` 消费的 troubleshooting / acceptance 输入
+1. `.repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/sprint-002-upgrade-workspace-ux-and-rollback-closeout/tasks/DA-593-upgrade-preview-apply-rollback-and-workspace-migration-closeout-path.md`
+2. `README.md` / `README.zh-CN.md`
+3. `docs/local-adoption-playbook.md` / `docs/local-adoption-playbook.zh-CN.md`
+4. `.tmp/project-052-sprint-002-command-rehearsal-summary.json`

@@ -4,15 +4,15 @@
 
 - Status: active
 - Project: `project-052-adopter-truthfulness-and-ga-closeout`
-- Sprint: `sprint-002-upgrade-workspace-ux-and-rollback-closeout`
+- Sprint: `sprint-003-ga-support-truthfulness-and-closeout-evidence`
 - Docs root: `.repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout`
-- Task records: `.repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/sprint-002-upgrade-workspace-ux-and-rollback-closeout/tasks/`
-- Review records: `.repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/sprint-002-upgrade-workspace-ux-and-rollback-closeout/review/`
-- Note: `2026-04-06` 已完成 `sprint-001` closeout，并按 `TK-636 / DA-636` 切换 `sprint-002` 为新的 primary implementation stream。
+- Task records: `.repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/sprint-003-ga-support-truthfulness-and-closeout-evidence/tasks/`
+- Review records: `.repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/sprint-003-ga-support-truthfulness-and-closeout-evidence/review/`
+- Note: `2026-04-06` 已完成 `sprint-002` closeout，并按 `TK-637 / DA-637` 切换 `sprint-003` 为新的 primary implementation stream。
 
 ## Active Streams
 
-- `active-1`: role=`primary`, project=`project-052-adopter-truthfulness-and-ga-closeout`, sprint=`sprint-002-upgrade-workspace-ux-and-rollback-closeout`, docs=`.repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout`, plan=`.repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/sprint-002-upgrade-workspace-ux-and-rollback-closeout/plan.md`, tasks=`.repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/sprint-002-upgrade-workspace-ux-and-rollback-closeout/tasks/`, checklist=`.repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/sprint-002-upgrade-workspace-ux-and-rollback-closeout/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/sprint-002-upgrade-workspace-ux-and-rollback-closeout/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/sprint-002-upgrade-workspace-ux-and-rollback-closeout/review/`, status=`active`, note=`Activated on 2026-04-06 after sprint-001 closeout and handoff via TK-636`
+- `active-1`: role=`primary`, project=`project-052-adopter-truthfulness-and-ga-closeout`, sprint=`sprint-003-ga-support-truthfulness-and-closeout-evidence`, docs=`.repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout`, plan=`.repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/sprint-003-ga-support-truthfulness-and-closeout-evidence/plan.md`, tasks=`.repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/sprint-003-ga-support-truthfulness-and-closeout-evidence/tasks/`, checklist=`.repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/sprint-003-ga-support-truthfulness-and-closeout-evidence/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/sprint-003-ga-support-truthfulness-and-closeout-evidence/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/sprint-003-ga-support-truthfulness-and-closeout-evidence/review/`, status=`active`, note=`Activated on 2026-04-06 after sprint-002 closeout and handoff via TK-637`
 
 ## Planned Follow-Up Streams
 

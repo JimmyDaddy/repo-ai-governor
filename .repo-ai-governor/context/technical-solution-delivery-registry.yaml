@@ -508,21 +508,23 @@ deliveries:
     rollout_status: in_progress
     owner: runtime
     project_ref: project-052-adopter-truthfulness-and-ga-closeout
-    sprint_ref: sprint-002-upgrade-workspace-ux-and-rollback-closeout
+    sprint_ref: sprint-003-ga-support-truthfulness-and-closeout-evidence
     task_ids:
-      - TK-592
-      - TK-593
-      - TK-594
+      - TK-595
+      - TK-596
+      - TK-597
     project_plan_path: .repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/plan.md
-    sprint_plan_path: .repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/sprint-002-upgrade-workspace-ux-and-rollback-closeout/plan.md
-    task_csv_path: .repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/sprint-002-upgrade-workspace-ux-and-rollback-closeout/tasks/tasks.csv
-    handoff_artifact_path: .repo-ai-governor/context/dev/project-051-priority-roadmap-promotion-and-decomposition/sprint-001-promotion-and-followup-decomposition/tasks/DA-588-priority-roadmap-promotion-and-rollout-decomposition-handoff.md
+    sprint_plan_path: .repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/sprint-003-ga-support-truthfulness-and-closeout-evidence/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/sprint-003-ga-support-truthfulness-and-closeout-evidence/tasks/tasks.csv
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/sprint-002-upgrade-workspace-ux-and-rollback-closeout/tasks/DA-637-sprint-002-closeout-and-sprint-003-activation-handoff.md
     rollout_artifacts:
       - .repo-ai-governor/context/dev/project-051-priority-roadmap-promotion-and-decomposition/sprint-001-promotion-and-followup-decomposition/tasks/DA-588-priority-roadmap-promotion-and-rollout-decomposition-handoff.md
       - .repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/plan.md
       - .repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/sprint-001-install-mode-truth-and-playbook-alignment/plan.md
       - .repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/sprint-001-install-mode-truth-and-playbook-alignment/tasks/DA-636-sprint-001-closeout-and-sprint-002-activation-handoff.md
       - .repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/sprint-002-upgrade-workspace-ux-and-rollback-closeout/plan.md
+      - .repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/sprint-002-upgrade-workspace-ux-and-rollback-closeout/tasks/DA-637-sprint-002-closeout-and-sprint-003-activation-handoff.md
+      - .repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/sprint-003-ga-support-truthfulness-and-closeout-evidence/plan.md
       - .repo-ai-governor/context/dev/project-053-real-adapter-invocation-productization/plan.md
       - .repo-ai-governor/context/dev/project-054-vscode-secondary-surface-rollout/plan.md
       - .repo-ai-governor/context/dev/project-055-ga-evidence-and-adopter-pilot-closeout/plan.md

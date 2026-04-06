@@ -24,13 +24,13 @@
 
 ## 2.2 sprint-002-upgrade-workspace-ux-and-rollback-closeout
 
-- Status: active
+- Status: completed
 - Sprint Goal: 把 `upgrade` 与 `workspace dry-run/execute/rollback` 的 adopter 用户路径真正收口。
-- Task Package: `TK-592`、`TK-593`、`TK-594`。
+- Task Package: `TK-592`、`TK-593`、`TK-594`、`TK-637`。
 
 ## 2.3 sprint-003-ga-support-truthfulness-and-closeout-evidence
 
-- Status: planned
+- Status: active
 - Sprint Goal: 将 support matrix、maintainer playbook、clean-room/release evidence 汇总成统一 closeout truth。
 - Task Package: `TK-595`、`TK-596`、`TK-597`。
 
@@ -42,10 +42,11 @@
 | TK-590 | sprint-001 | align README local adoption playbook and support matrix install-mode truth | docs/alignment | TK-589 | completed |
 | TK-591 | sprint-001 | close install-mode truthfulness with clean-room and dist-binary rehearsal evidence | acceptance/evidence | TK-589、TK-590 | completed |
 | TK-636 | sprint-001 | sprint-001 exit acceptance and sprint-002 activation handoff | closeout/handoff | TK-589、TK-590、TK-591、CR-001、CR-002 | completed |
-| TK-592 | sprint-002 | freeze upgrade workspace migration rollback user-path contract | contract/ux | TK-591、TK-636 | in_progress |
-| TK-593 | sprint-002 | implement and document upgrade preview apply rollback plus workspace migration closeout path | implementation/docs | TK-592 | planned |
-| TK-594 | sprint-002 | close adopter-facing upgrade and workspace UX with troubleshooting acceptance | closeout/acceptance | TK-592、TK-593 | planned |
-| TK-595 | sprint-003 | freeze GA support truthfulness evidence schema and maintainer cross-link contract | contract/evidence | TK-594 | planned |
+| TK-592 | sprint-002 | freeze upgrade workspace migration rollback user-path contract | contract/ux | TK-591、TK-636 | completed |
+| TK-593 | sprint-002 | implement and document upgrade preview apply rollback plus workspace migration closeout path | implementation/docs | TK-592 | completed |
+| TK-594 | sprint-002 | close adopter-facing upgrade and workspace UX with troubleshooting acceptance | closeout/acceptance | TK-592、TK-593 | completed |
+| TK-637 | sprint-002 | sprint-002 exit acceptance and sprint-003 activation handoff | closeout/handoff | TK-592、TK-593、TK-594、CR-001 | completed |
+| TK-595 | sprint-003 | freeze GA support truthfulness evidence schema and maintainer cross-link contract | contract/evidence | TK-594 | in_progress |
 | TK-596 | sprint-003 | consolidate support matrix maintainer validation and release evidence into one truth surface | docs/evidence | TK-595 | planned |
 | TK-597 | sprint-003 | close project-052 with adopter truthfulness audit summary and next-stream recommendation | project/closeout | TK-595、TK-596 | planned |
 
@@ -70,3 +71,7 @@
 3. 2026-04-06：`project-052 / sprint-001` 被激活为当前 primary implementation stream，开始收口 adopter install-mode truth。
 4. 2026-04-06：`TK-589 ~ TK-591` 的 install-mode 文档与证据实现面已完成，进入 `sprint-001` scoped CR loop。
 5. 2026-04-06：`TK-636` 完成 sprint-001 closeout 与 sprint-002 activation handoff；`sprint-001` 已迁入 completed history，`sprint-002` 已激活且 `TK-592` 进入 `in_progress`。
+6. 2026-04-06：`TK-592` 已完成 upgrade/workspace/rollback adopter contract freeze，并切换 `TK-593` 为 `in_progress` 进入 sprint-002 实装面。
+7. 2026-04-06：`TK-593` 已完成 repo-external command rehearsal 与 adopter-facing path 文档化，`TK-594` 已接棒进入 troubleshooting / acceptance closeout。
+8. 2026-04-06：`TK-594` 已完成 troubleshooting / acceptance closeout，`sprint-002` 的实现边界现已全部 ready for scoped CR loop。
+9. 2026-04-06：`CR-001` 已在放宽后的 fallback local recheck 下 clean 收口；`TK-637 / DA-637` 已完成 sprint-002 closeout 并激活 `sprint-003 / TK-595`。

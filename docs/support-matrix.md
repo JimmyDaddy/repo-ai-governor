@@ -2,7 +2,7 @@
 
 - Status: active
 - Last updated: 2026-04-06
-- Scope: formal support declaration refreshed by `project-026 / sprint-004` (`TK-301`), `project-044 / sprint-003` (`TK-547`), `project-046 / sprint-001` (`TK-551`, `TK-552`, `TK-554`), and `project-052 / sprint-001` (`TK-589`, `TK-590`, `TK-591`)
+- Scope: formal support declaration refreshed by `project-026 / sprint-004` (`TK-301`), `project-044 / sprint-003` (`TK-547`), `project-046 / sprint-001` (`TK-551`, `TK-552`, `TK-554`), `project-052 / sprint-001` (`TK-589`, `TK-590`, `TK-591`), and `project-052 / sprint-002` (`TK-592`, `TK-593`, `TK-594`)
 
 ## 1. Installation Modes
 
@@ -54,10 +54,12 @@
 | CLI | Supported | Primary production entry. |
 | Desktop sidecar entry | Supported for MVP foundation | `apps/desktop` now exposes the formal desktop shell package with service-owned session/execution/HITL/artifact-pane seams; `check-desktop-entry-smoke` and `release:verify-local` stay in the release baseline while richer desktop panels remain staged evolution. |
 
-## 6. Verification Snapshot (TK-301 + TK-547 + TK-551/TK-552/TK-554 + TK-589/TK-590/TK-591)
+## 6. Verification Snapshot (TK-301 + TK-547 + TK-551/TK-552/TK-554 + TK-589/TK-590/TK-591 + TK-592/TK-593/TK-594)
 
 | Time (UTC) | Command | Result | Evidence |
 |---|---|---|---|
+| 2026-04-06T21:29:47Z | `repo-external upgrade rehearsal (preview -> apply -> rollback)` | Pass | `.tmp/project-052-sprint-002-command-rehearsal-summary.json` recorded `schema_upgrade_analyze`, `schema_upgrade_apply`, and `schema_upgrade_rollback`; apply and rollback both finished with `verify_status=passed`. |
+| 2026-04-06T21:29:47Z | `repo-external workspace rehearsal (dry-run -> execute -> rollback)` | Pass | `.tmp/project-052-sprint-002-command-rehearsal-summary.json` recorded `workspace_migration_plan`, `workspace_migration_execute`, and `workspace_migration_rollback`; rollback returned to the source workspace and `scratch_cleanup_status=removed`. |
 | 2026-04-06T12:09:11Z | `node ./scripts/release/verify-cleanroom-local-install.js --modes path,link --iterations 1 --output .tmp/project-052-sprint-001-cleanroom-report.json` | Pass | `path` and `link` both passed one clean-room baseline iteration; workspace switch rollback, read-only attach precheck, service-host memory provider, and remote-api smoke also passed for both modes. |
 | 2026-04-06T12:08:49Z | `node ./scripts/release/verify-local-distribution.js --output .tmp/project-052-sprint-001-local-distribution-report.json` | Pass | local distribution verified, `pack_file=cjhdev-repo-ai-governor-0.1.5.tgz`; standards runtime-loader dist smoke and dist-binary remote-api smoke passed, while adapter `doctor/verify` stayed at non-blocking `warn`. |
 | 2026-04-04T12:09:14Z | `pnpm run build` | Pass | `dist/apps/desktop` and `dist/node_modules/@repo-ai-governor/desktop` materialized for local distribution validation |
@@ -72,9 +74,23 @@
 | 2026-03-27T22:39:21Z | `node ./scripts/release/verify-local-distribution.js` | Pass | local distribution verified, `pack_file=cjhdev-repo-ai-governor-0.1.5.tgz` |
 | 2026-03-27T22:39:31Z | `node ./scripts/examples/check-desktop-entry-smoke.js` | Pass | desktop sidecar runtime smoke passed for default distribution mode |
 
-## 7. Notes
+## 7. Upgrade / Workspace Contract Snapshot (TK-592)
+
+1. `workspace` formal adopter path is `dry-run -> execute -> rollback`; `rollback` only consumes the saved `plan-path`, and failed execute flows persist `context/workspace/<migration-id>.failure.json` before retry.
+2. `upgrade` formal adopter path is `preview -> apply -> rollback`; `apply` only consumes one preview `report_path` plus explicit `--confirm-upgrade approve`, and rollback accepts one apply receipt or rollback snapshot.
+3. `docs/local-adoption-playbook*.md` is the canonical adopter guide for artifact hand-off and troubleshooting, while `README*` keeps only the minimal command surface.
+
+## 8. Troubleshooting / Acceptance Snapshot (TK-594)
+
+1. Save `plan_path`, `report_path`, and at least one rollback hand-off artifact (`apply_receipt_path` or `rollback_snapshot_path`) before mutating adopter state; the supported closeout path depends on those artifacts.
+2. If `upgrade` preview reports blocking confirmation items, stop before `apply`, review the preview artifacts, and rerun preview only after the configuration drift is understood.
+3. After `workspace execute` or `workspace rollback`, rerun `doctor` to confirm the active `workspaceRoot` instead of inferring success from directory layout alone.
+4. Rehearsal and pilot runs should use target repositories or isolated external temp directories; running workspace migration from the governor source repository can attach to the outer Git root and create misleading artifacts.
+5. `.tmp/project-052-sprint-002-command-rehearsal-summary.json` is the formal sprint-002 acceptance evidence for the repo-external upgrade/workspace closeout path.
+
+## 9. Notes
 
 1. Adapter degrade or warning signals remain environment-precondition related (`github-copilot` quota/probe, `claude-code` credential/probe, `local-model` endpoint/model capability limits) rather than governance-chain failure.
 2. `project-046` promotes the desktop artifact pane from deferred gate to a service-owned typed query contract; renderer consumers still do not bypass the workspace filesystem directly.
 3. Official `GitLab CI` and `Jenkins` templates are now published under `integrations/ci/` and reuse the same install, quality-gate, and release-governance command contract as GitHub Actions.
-4. This matrix defines current formal support boundaries for `TK-301`, the desktop MVP foundation refresh in `TK-547`, the P1 product-surface closure work in `project-046`, and the install-mode truth refresh in `project-052 / sprint-001`; GA readiness signal closure continues in `TK-302`.
+4. This matrix defines current formal support boundaries for `TK-301`, the desktop MVP foundation refresh in `TK-547`, the P1 product-surface closure work in `project-046`, the install-mode truth refresh in `project-052 / sprint-001`, and the upgrade/workspace contract plus acceptance closeout in `project-052 / sprint-002`; GA readiness signal closure continues in `TK-302`.

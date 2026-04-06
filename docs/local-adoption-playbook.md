@@ -123,6 +123,13 @@ pnpm exec repo-ai-governor workspace execute --workspace-mode repo_local --outpu
 pnpm exec repo-ai-governor workspace rollback <plan-path> --output json
 ```
 
+Formal contract:
+
+1. `dry-run` and `execute` require `--workspace-mode <repo_local|tool_managed>` and always hand off one saved `plan_path`.
+2. `execute` writes the migrated plan plus `context/workspace/<migration-id>.execution.json`; failed execute flows persist `context/workspace/<migration-id>.failure.json` before retry.
+3. `rollback` only consumes the saved `plan-path` and writes `context/workspace/<migration-id>.rollback.json`.
+4. Re-run `doctor` after execute or rollback so you can confirm the active `workspaceRoot`.
+
 Recommended habits:
 
 1. Keep the printed `plan-path` from `workspace dry-run` or `workspace execute`.
@@ -139,19 +146,34 @@ pnpm exec repo-ai-governor workflow create --workflow-template condition-route -
 pnpm exec repo-ai-governor workflow edit --output pretty
 pnpm exec repo-ai-governor upgrade --output pretty
 pnpm exec repo-ai-governor upgrade --output json
+pnpm exec repo-ai-governor upgrade apply <report-path> --confirm-upgrade approve --output json
+pnpm exec repo-ai-governor upgrade rollback <apply-receipt-or-rollback-snapshot> --output json
 ```
 
 Use these when you want to:
 
 1. Preview or persist active workflow definitions.
-2. Inspect schema upgrades before changing `governor.yaml`.
-3. Use the React-shell surfaces for richer local TTY interaction.
+2. Preview schema upgrades before changing `governor.yaml`.
+3. Apply one reviewed upgrade report with explicit confirmation.
+4. Roll back one applied upgrade from an apply receipt or rollback snapshot.
+5. Use the React-shell surfaces for richer local TTY interaction.
+
+Formal upgrade contract:
+
+1. Preview writes `context/upgrade/<upgrade-id>.report.json`, `<upgrade-id>.auto-migrated-config.json`, and `<upgrade-id>.rollback-snapshot.yaml`.
+2. Apply only consumes one preview `report_path` plus explicit `--confirm-upgrade approve`, and then writes one `*.apply-receipt.json` plus one verify receipt.
+3. Rollback consumes one apply receipt or rollback snapshot and writes one `*.rollback-receipt.json` plus one verify receipt.
+4. If preview reports blocking confirmation items, stop before apply and review them first.
 
 Common artifacts:
 
 1. Workflow definition: `<workspace_root>/context/workflow/active-workflow.definition.json`
 2. Compiled IR snapshot: `<workspace_root>/context/compiled-ir/<execution_id>.json`
-3. Upgrade report: `<workspace_root>/context/upgrade/`
+3. Upgrade report: `<workspace_root>/context/upgrade/<upgrade-id>.report.json`
+4. Auto-migrated config preview: `<workspace_root>/context/upgrade/<upgrade-id>.auto-migrated-config.json`
+5. Upgrade rollback snapshot: `<workspace_root>/context/upgrade/<upgrade-id>.rollback-snapshot.yaml`
+6. Upgrade apply receipt: `<workspace_root>/context/upgrade/<apply-id>.apply-receipt.json`
+7. Upgrade rollback receipt: `<workspace_root>/context/upgrade/<rollback-id>.rollback-receipt.json`
 
 ### 8.2 HITL Notification Providers
 
@@ -182,6 +204,11 @@ Then layer the language pack you need, plus any team or repository overrides, on
 3. `tgz` is not offline/self-contained; installation still resolves external dependencies.
 4. If a target repository already uses Yarn/npm or has a dirty worktree, start with `dist-binary`; otherwise start with `path` and move to `link` or `tgz` only when the workflow requires it.
 5. Self-host warnings such as `baseline_docs missing=5/5` or `script_not_found` are expected in fresh external repos unless you intentionally vendor this repository's own governance stack.
+6. If `upgrade` preview reports blocking confirmation items, stop before `apply`, review the saved `report_path` and `auto_migrated_config_path`, then rerun preview after fixing the configuration drift.
+7. Keep both the preview `report_path` and either the `apply_receipt_path` or `rollback_snapshot_path`; supported rollback depends on those hand-off artifacts rather than manual path guessing.
+8. After `workspace execute` or `workspace rollback`, rerun `doctor` to confirm the active `workspaceRoot` instead of inferring success from directory layout alone.
+9. When rehearsing workspace migration, use a real target repository or an isolated external temp directory. Running the command from the governor source repository can reattach to that repo's Git root and create misleading workspace artifacts.
+10. Keep the generated `*.rollback.json` or `*.rollback-receipt.json` artifacts in your acceptance window; they are the audit trail that proves the migration or upgrade closeout completed cleanly.
 
 ## 10. Optional Self-host Assets
 

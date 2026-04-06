@@ -123,6 +123,13 @@ pnpm exec repo-ai-governor workspace execute --workspace-mode repo_local --outpu
 pnpm exec repo-ai-governor workspace rollback <plan-path> --output json
 ```
 
+正式 contract：
+
+1. `dry-run` 与 `execute` 都要求传 `--workspace-mode <repo_local|tool_managed>`，并且都会交付一个可保存的 `plan_path`。
+2. `execute` 会写出迁移后的 plan，以及 `context/workspace/<migration-id>.execution.json`；如果 execute 失败，重试前先看 `context/workspace/<migration-id>.failure.json`。
+3. `rollback` 只接受前面保存下来的 `plan-path`，并写出 `context/workspace/<migration-id>.rollback.json`。
+4. execute 或 rollback 之后都应重新跑 `doctor`，确认活动 `workspaceRoot`。
+
 建议习惯：
 
 1. 保留 `workspace dry-run` 或 `workspace execute` 输出里的 `plan-path`。
@@ -139,19 +146,34 @@ pnpm exec repo-ai-governor workflow create --workflow-template condition-route -
 pnpm exec repo-ai-governor workflow edit --output pretty
 pnpm exec repo-ai-governor upgrade --output pretty
 pnpm exec repo-ai-governor upgrade --output json
+pnpm exec repo-ai-governor upgrade apply <report-path> --confirm-upgrade approve --output json
+pnpm exec repo-ai-governor upgrade rollback <apply-receipt-or-rollback-snapshot> --output json
 ```
 
 这些命令适合：
 
 1. 预览或持久化活动 workflow 定义。
-2. 在修改 `governor.yaml` 前先分析 schema upgrade。
-3. 在本地 TTY 中使用更丰富的 React shell 交互面。
+2. 在修改 `governor.yaml` 前先预览 schema upgrade。
+3. 基于已审阅的 upgrade report 做一次显式确认 apply。
+4. 从 apply receipt 或 rollback snapshot 回滚一次已应用的 upgrade。
+5. 在本地 TTY 中使用更丰富的 React shell 交互面。
+
+正式 upgrade contract：
+
+1. Preview 会写出 `context/upgrade/<upgrade-id>.report.json`、`<upgrade-id>.auto-migrated-config.json` 与 `<upgrade-id>.rollback-snapshot.yaml`。
+2. Apply 只接受 preview 的 `report_path` 加显式 `--confirm-upgrade approve`，随后写出一份 `*.apply-receipt.json` 与一份 verify receipt。
+3. Rollback 接受 apply receipt 或 rollback snapshot，并写出一份 `*.rollback-receipt.json` 与一份 verify receipt。
+4. 如果 preview 提示 blocking confirmation items，先停下来处理这些项，不要直接 apply。
 
 常见产物：
 
 1. workflow definition：`<workspace_root>/context/workflow/active-workflow.definition.json`
 2. compiled IR snapshot：`<workspace_root>/context/compiled-ir/<execution_id>.json`
-3. upgrade report：`<workspace_root>/context/upgrade/`
+3. upgrade report：`<workspace_root>/context/upgrade/<upgrade-id>.report.json`
+4. auto-migrated config preview：`<workspace_root>/context/upgrade/<upgrade-id>.auto-migrated-config.json`
+5. upgrade rollback snapshot：`<workspace_root>/context/upgrade/<upgrade-id>.rollback-snapshot.yaml`
+6. upgrade apply receipt：`<workspace_root>/context/upgrade/<apply-id>.apply-receipt.json`
+7. upgrade rollback receipt：`<workspace_root>/context/upgrade/<rollback-id>.rollback-receipt.json`
 
 ### 8.2 HITL 通知 Provider
 
@@ -182,6 +204,11 @@ pnpm exec repo-ai-governor run --output json
 3. `tgz` 不是离线自包含安装；安装阶段仍会解析外部依赖。
 4. 如果目标仓库本身是 Yarn/npm 或已有脏工作树，建议先用 `dist-binary`；否则默认先用 `path`，只有在工作流需要时再切换到 `link` 或 `tgz`。
 5. `baseline_docs missing=5/5`、`script_not_found` 这类 self-host warning，在外部 adopter 仓库里通常是预期现象。
+6. 如果 `upgrade` preview 提示存在 blocking confirmation items，不要直接 `apply`；先查看保存下来的 `report_path` 与 `auto_migrated_config_path`，修完配置漂移后再重新 preview。
+7. 请同时保留 preview 的 `report_path`，以及 `apply_receipt_path` 或 `rollback_snapshot_path` 之一；正式 rollback 依赖这些 hand-off artifact，而不是靠手工猜路径。
+8. `workspace execute` 或 `workspace rollback` 之后，都应重新执行 `doctor` 来确认活动 `workspaceRoot`，不要只凭目录结构变化判断是否成功。
+9. 做 workspace migration 演练时，请在真实目标仓库或隔离的外部临时目录中执行。若直接在 governor 源仓库里跑，命令可能重新附着到该仓库的 Git root，产生误导性的 workspace 产物。
+10. 在 acceptance 窗口里保留生成出的 `*.rollback.json` 或 `*.rollback-receipt.json`；它们就是证明迁移或 upgrade closeout 已干净完成的审计凭证。
 
 ## 10. 可选 self-host 资产
 

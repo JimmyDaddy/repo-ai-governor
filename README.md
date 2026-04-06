@@ -130,6 +130,16 @@ pnpm exec repo-ai-governor workspace rollback <plan-path> --output json
 
 Keep the printed `plan-path`. It is your rollback reference for that workspace migration.
 
+### 2.4 Preview, Apply, Or Roll Back Upgrades
+
+```bash
+pnpm exec repo-ai-governor upgrade --output json
+pnpm exec repo-ai-governor upgrade apply <report-path> --confirm-upgrade approve --output json
+pnpm exec repo-ai-governor upgrade rollback <apply-receipt-or-rollback-snapshot> --output json
+```
+
+Use `upgrade` preview first. Keep the emitted `report_path` from preview and the `apply_receipt_path` from apply; those are the supported hand-off artifacts for the adopter-facing apply/rollback path.
+
 ## 3. Notes For External Adopters
 
 1. `dist-binary` rehearsal proves CLI/runtime behavior, not packaged-install behavior.
