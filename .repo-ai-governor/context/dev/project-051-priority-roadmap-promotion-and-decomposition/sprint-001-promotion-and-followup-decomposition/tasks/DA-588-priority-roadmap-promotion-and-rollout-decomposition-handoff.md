@@ -18,8 +18,8 @@
    - `project-055`: GA evidence and adopter pilot closeout
    - `project-056`: standards runtime loader and pack productization
 4. deferred follow-up 保持为：
-   - `project-057-github-com-agent-target-followup`
-   - `project-058-language-pack-and-ecosystem-expansion`
+   - `project-058-github-com-agent-target-followup`
+   - `project-059-language-pack-and-ecosystem-expansion`
 
 ## 2. Immediate Activation Recommendation
 
@@ -40,11 +40,11 @@
 
 ## 4. Deferred Skeleton
 
-1. `project-057`
-   - `TK-621` freeze GitHub.com coding agent target contract and non-MVP exit criteria
-   - `TK-622` implement export apply verify extension for `github_com_agent` target
-   - `TK-623` close reserved target follow-up with host distribution evidence refresh
-2. `project-058`
-   - `TK-624` freeze next-wave language pack target matrix and adopter scenarios
-   - `TK-625` implement one to two new official language packs or richer examples
-   - `TK-626` close language-pack expansion with docs and consumption examples
+1. `project-058`
+   - `TK-618` freeze GitHub.com coding agent target contract and non-MVP exit criteria
+   - `TK-619` implement export apply verify extension for `github_com_agent` target
+   - `TK-620` close reserved target follow-up with host distribution evidence refresh
+2. `project-059`
+   - `TK-621` freeze next-wave language pack target matrix and adopter scenarios
+   - `TK-622` implement one to two new official language packs or richer examples
+   - `TK-623` close language-pack expansion with docs and consumption examples
