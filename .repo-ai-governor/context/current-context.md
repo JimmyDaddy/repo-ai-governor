@@ -4,15 +4,15 @@
 
 - Status: active
 - Project: `project-053-real-adapter-invocation-productization`
-- Sprint: `sprint-001-claude-code-real-invocation-baseline`
+- Sprint: `sprint-002-codex-real-invocation-and-cross-tool-routing`
 - Docs root: `.repo-ai-governor/context/dev/project-053-real-adapter-invocation-productization`
-- Task records: `.repo-ai-governor/context/dev/project-053-real-adapter-invocation-productization/sprint-001-claude-code-real-invocation-baseline/tasks/`
-- Review records: `.repo-ai-governor/context/dev/project-053-real-adapter-invocation-productization/sprint-001-claude-code-real-invocation-baseline/review/`
-- Note: `2026-04-06` 通过 `TK-639 / DA-639` 完成 `project-052` final closeout 后切换为当前 primary stream；执行顺序固定为 `Claude Code -> Codex -> GitHub Copilot/local-model`，且 `codex/project-053-holding-wip` 只允许 selective inspection，不做整支并入。
+- Task records: `.repo-ai-governor/context/dev/project-053-real-adapter-invocation-productization/sprint-002-codex-real-invocation-and-cross-tool-routing/tasks/`
+- Review records: `.repo-ai-governor/context/dev/project-053-real-adapter-invocation-productization/sprint-002-codex-real-invocation-and-cross-tool-routing/review/`
+- Note: `2026-04-07` 在 `sprint-001` boundary commit `e75028f` 后切换到 `sprint-002`；执行顺序继续固定为 `Claude Code -> Codex -> GitHub Copilot/local-model`，且 `codex/project-053-holding-wip` 只允许 selective inspection，不做整支并入。
 
 ## Active Streams
 
-- `active-1`: role=`primary`, project=`project-053-real-adapter-invocation-productization`, sprint=`sprint-001-claude-code-real-invocation-baseline`, docs=`.repo-ai-governor/context/dev/project-053-real-adapter-invocation-productization`, plan=`.repo-ai-governor/context/dev/project-053-real-adapter-invocation-productization/sprint-001-claude-code-real-invocation-baseline/plan.md`, tasks=`.repo-ai-governor/context/dev/project-053-real-adapter-invocation-productization/sprint-001-claude-code-real-invocation-baseline/tasks/`, checklist=`.repo-ai-governor/context/dev/project-053-real-adapter-invocation-productization/sprint-001-claude-code-real-invocation-baseline/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-053-real-adapter-invocation-productization/sprint-001-claude-code-real-invocation-baseline/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-053-real-adapter-invocation-productization/sprint-001-claude-code-real-invocation-baseline/review/`, status=`active`, note=`Activated on 2026-04-06 after project-052 final closeout via TK-639 / DA-639`
+- `active-1`: role=`primary`, project=`project-053-real-adapter-invocation-productization`, sprint=`sprint-002-codex-real-invocation-and-cross-tool-routing`, docs=`.repo-ai-governor/context/dev/project-053-real-adapter-invocation-productization`, plan=`.repo-ai-governor/context/dev/project-053-real-adapter-invocation-productization/sprint-002-codex-real-invocation-and-cross-tool-routing/plan.md`, tasks=`.repo-ai-governor/context/dev/project-053-real-adapter-invocation-productization/sprint-002-codex-real-invocation-and-cross-tool-routing/tasks/`, checklist=`.repo-ai-governor/context/dev/project-053-real-adapter-invocation-productization/sprint-002-codex-real-invocation-and-cross-tool-routing/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-053-real-adapter-invocation-productization/sprint-002-codex-real-invocation-and-cross-tool-routing/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-053-real-adapter-invocation-productization/sprint-002-codex-real-invocation-and-cross-tool-routing/review/`, status=`active`, note=`Activated on 2026-04-07 after sprint-001 boundary commit e75028f`
 
 ## Planned Follow-Up Streams
 

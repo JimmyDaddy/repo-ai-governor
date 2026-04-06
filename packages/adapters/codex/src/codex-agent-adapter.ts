@@ -2022,13 +2022,37 @@ export class CodexAgentAdapter extends AgentProtocol {
    */
   private renderInvokePrompt(request: AgentInvokeStageRequest): string {
     const renderedInput = JSON.stringify(request.input, null, 2);
+    const executionPolicy = resolveAgentStageExecutionPolicy(request.input);
     return [
       'You are executing one Repo AI Governor stage through Codex CLI.',
       `Route Key: ${request.routeKey}`,
       `Stage ID: ${request.stageId}`,
+      ...(this.shouldUseDryRunFastPathPrompt(request.input, executionPolicy)
+        ? [
+            [
+              'Dry-run fast path instructions:',
+              '- The canonical input declares dryRun=true under a chat-only, no-tool execution policy.',
+              '- Do not attempt repository execution, file inspection, planning, or permission escalation.',
+              '- Do not ask follow-up questions or wait for additional input.',
+              '- Return immediately with a compact JSON object containing stageId, routeKey, phase, dryRun, status, summary, sideEffects, and nextStepRequirements.',
+              '- Set status to "simulated" and sideEffects to "none".',
+            ].join('\n'),
+          ]
+        : []),
       'Treat the following JSON payload as the canonical stage input.',
       renderedInput,
     ].join('\n\n');
+  }
+
+  private shouldUseDryRunFastPathPrompt(
+    input: Record<string, unknown>,
+    executionPolicy?: ReturnType<typeof resolveAgentStageExecutionPolicy>,
+  ): boolean {
+    return (
+      input.dryRun === true &&
+      executionPolicy?.interactionMode === AgentStageExecutionMode.CHAT_ONLY &&
+      executionPolicy.toolUsePolicy === AgentStageToolUsePolicy.FORBIDDEN
+    );
   }
 
   private renderRepositoryReviewPrompt(request: AgentInvokeStageRequest): string {

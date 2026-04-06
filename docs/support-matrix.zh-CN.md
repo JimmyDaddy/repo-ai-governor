@@ -2,7 +2,7 @@
 
 - 状态：active
 - 最后更新：2026-04-06
-- 适用范围：由 `project-026 / sprint-004`（`TK-301`）、`project-044 / sprint-003`（`TK-547`）、`project-046 / sprint-001`（`TK-551`、`TK-552`、`TK-554`）、`project-052 / sprint-001`（`TK-589`、`TK-590`、`TK-591`）、`project-052 / sprint-002`（`TK-592`、`TK-593`、`TK-594`）、`project-052 / sprint-003`（`TK-595`、`TK-596`）与 `project-053 / sprint-001`（`TK-598`、`TK-599`、`TK-600`）共同刷新后的正式支持声明
+- 适用范围：由 `project-026 / sprint-004`（`TK-301`）、`project-044 / sprint-003`（`TK-547`）、`project-046 / sprint-001`（`TK-551`、`TK-552`、`TK-554`）、`project-052 / sprint-001`（`TK-589`、`TK-590`、`TK-591`）、`project-052 / sprint-002`（`TK-592`、`TK-593`、`TK-594`）、`project-052 / sprint-003`（`TK-595`、`TK-596`）、`project-053 / sprint-001`（`TK-598`、`TK-599`、`TK-600`）与 `project-053 / sprint-002`（`TK-601`、`TK-602`、`TK-603`）共同刷新后的正式支持声明
 
 ## 1. 安装模式
 
@@ -25,7 +25,7 @@
 
 | 适配器 surface | 支持状态 | 说明 |
 |---|---|---|
-| `codex` | Fixture-backed | 当前验证快照中的主路由。 |
+| `codex` | Real-path available（environment-gated） | `cli_exec` 现已成为基线 `prepare -> execute -> report` dry-run 的已验证真实 transport；当本地 Codex CLI 可用时，`verify --adapters` 会把 `planner` / `architect` / `coder` / `reviewer` / `verifier` 的 primary route 如实投影为 `codex + cli_exec`。 |
 | `github-copilot` | Fixture-backed | 当 quota 或 probe 前置条件失败时，仍通过 fallback / degraded 路由保持正式支持。 |
 | `claude-code` | Real-path available（environment-gated） | 被选中时默认真实 transport 为 `cli_exec`，`remote_api` 仍是可选路径；`verify --adapters` 现在会在未显式声明 `transport` 时投影 effective default transport truth，但当前 workspace 若本地 Claude health-check 失败仍会如实给出 warning。 |
 | `local-model`（`ollama`） | Fixture-backed（本地运行时受限） | 作为正式本地 fallback surface 支持；`tool_calling`、`structured_output`、`confirmation_gate` 继续保持保守/降级口径。 |
@@ -59,10 +59,12 @@
 | CLI | Supported | 当前生产主入口。 |
 | Desktop sidecar entry | MVP foundation 正式支持 | `apps/desktop` 已提供正式 desktop shell package，并通过 service-owned session/execution/HITL/artifact-pane seam 暴露桌面 MVP foundation；更丰富的 desktop 面板仍按后续阶段演进。 |
 
-## 6. 验证快照（TK-301 + TK-547 + TK-551/TK-552/TK-554 + TK-589/TK-590/TK-591 + TK-592/TK-593/TK-594 + TK-598/TK-599/TK-600）
+## 6. 验证快照（TK-301 + TK-547 + TK-551/TK-552/TK-554 + TK-589/TK-590/TK-591 + TK-592/TK-593/TK-594 + TK-598/TK-599/TK-600 + TK-601/TK-602/TK-603）
 
 | 时间（UTC） | 命令 | 结果 | 证据摘要 |
 |---|---|---|---|
+| 2026-04-06T17:45:29Z | `node ./dist/bin/repo-ai-governor.js --output json --adapters --dry-run --trace run` | Pass | `.tmp/project-053-sprint-002-run-dry-run-trace.json` 以及生成的 report/replay/diagnostics 产物现已保留 `dry_run=true`、`policy_outcome=allow`，并在默认 `codex` primary route 下完成了完整的基线 `prepare -> execute -> report` 成功链路。 |
+| 2026-04-06T17:44:58Z | `node ./dist/bin/repo-ai-governor.js --output json --adapters verify` | Warn（非阻断） | `.tmp/project-053-sprint-002-verify-adapters.json` 与 verify diagnostics artifact 已把 `planner` / `architect` / `coder` / `reviewer` / `verifier` 投影为 `codex + cli_exec`；剩余 warning 仅限于 tool-managed workspace 的 durable-storage、artifact-registry 与 task-ledger 初始化真值。 |
 | 2026-04-06T16:26:31Z | `node ./dist/bin/repo-ai-governor.js --output json --adapters --dry-run --trace run` | Warn | `.tmp/project-053-sprint-001-run-dry-run-trace.json` 以及生成的 report/replay/diagnostics 产物完整保留了 `dry_run=true`、`policy_outcome=allow` 和 `stage-task-prepare` 的 stage-level failure attribution；当前默认 route 仍失败在 `codex`，但证据链已可回放。 |
 | 2026-04-06T16:25:22Z | `node ./dist/bin/repo-ai-governor.js --output json --adapters verify` | Warn（非阻断） | `.tmp/project-053-sprint-001-verify-adapters.json` 与 verify diagnostics artifact 明确给出 `claude-code` 的 effective `cli_exec`、`request_timeout_ms=30000`、`max_retries=2`，并把本地 health-check failure 保持为 environment-precondition warning，而不是静默 `null` transport。 |
 | 2026-04-06T21:29:47Z | `repo-external upgrade rehearsal (preview -> apply -> rollback)` | Pass | `.tmp/project-052-sprint-002-command-rehearsal-summary.json` 记录了 `schema_upgrade_analyze`、`schema_upgrade_apply` 与 `schema_upgrade_rollback`；apply 与 rollback 都以 `verify_status=passed` 结束。 |
@@ -116,4 +118,4 @@
 1. adapter 的 degrade / warning 仍属于环境前置条件（如 `github-copilot` quota/probe、`claude-code` CLI health-check / auth 前置条件、`local-model` endpoint/model capability 限制），而不是治理链路失败。
 2. `project-046` 已把 desktop artifact pane 从 deferred gate 推进为 service-owned typed query contract；renderer 仍不允许直接旁路 workspace 文件系统。
 3. 官方 `GitLab CI` 与 `Jenkins` 模板现已发布到 `integrations/ci/`，并复用与 GitHub Actions 相同的 install、quality-gate 与 release-governance 命令契约。
-4. 本文档定义 `TK-301`、desktop baseline refresh `TK-547`、`project-046` P1 收口工作、`project-052 / sprint-001` install-mode truth refresh、`project-052 / sprint-002` upgrade/workspace contract 与 acceptance closeout、`project-052 / sprint-003` 的 GA support truthfulness consolidation，以及 `project-053 / sprint-001` 的 `claude-code` real-path baseline truth refresh 这些正式支持边界；更广义的 GA Readiness 与其余 adapter rollout 仍在后续 `project-053` sprint 中继续收口。
+4. 本文档定义 `TK-301`、desktop baseline refresh `TK-547`、`project-046` P1 收口工作、`project-052 / sprint-001` install-mode truth refresh、`project-052 / sprint-002` upgrade/workspace contract 与 acceptance closeout、`project-052 / sprint-003` 的 GA support truthfulness consolidation，以及 `project-053 / sprint-001` 的 `claude-code` real-path baseline truth refresh 和 `project-053 / sprint-002` 的 `codex` real-path plus routed dry-run acceptance refresh 这些正式支持边界；更广义的 GA Readiness 与其余 adapter rollout 仍在后续 `project-053` sprint 中继续收口。

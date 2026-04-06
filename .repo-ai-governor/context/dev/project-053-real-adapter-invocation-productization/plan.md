@@ -24,7 +24,7 @@
 
 ## 2.2 sprint-002-codex-real-invocation-and-cross-tool-routing
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 推进 `Codex` 真实调用，并验证跨工具 routing handoff。
 - Task Package: `TK-601`、`TK-602`、`TK-603`。
 
@@ -67,3 +67,5 @@
 2. 2026-04-06：已写入 `sprint-001 ~ sprint-003` 与 `TK-598 ~ TK-606` skeleton，待后续按顺序激活。
 3. 2026-04-06：`project-052` final closeout 完成后，`project-053 / sprint-001` 被激活为当前 primary stream，`TK-598` 进入 `in_progress`。
 4. 2026-04-07：`sprint-001` 已通过 `CR-001` clean closeout，`TK-607 / DA-607` 固定下一边界为 `sprint-002 / TK-601`，等待 sprint-001 boundary commit 后激活。
+5. 2026-04-07：`sprint-001` boundary commit `e75028f` 已完成，primary stream 切换到 `sprint-002`，`TK-601` 进入 `in_progress`。
+6. 2026-04-07：`sprint-002` 已完成 accepted finding 修复与 fresh clean recheck，`TK-608 / DA-608` 已完成 sprint closeout，并将下一边界固定为 `sprint-003 / TK-604`，等待 sprint-002 boundary commit 后激活。

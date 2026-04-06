@@ -388,7 +388,9 @@ export class CliAgentOnboardingRuntime {
         toolId,
         enabled: true,
         availability: currentTool?.availability ?? AdapterAvailability.AVAILABLE,
-        ...(currentTool?.localModel ? { localModel: currentTool.localModel } : {}),
+        ...(currentTool?.transport ? { transport: currentTool.transport } : {}),
+        ...(currentTool?.remoteApi ? { remoteApi: { ...currentTool.remoteApi } } : {}),
+        ...(currentTool?.localModel ? { localModel: { ...currentTool.localModel } } : {}),
         ...(currentTool?.unavailableReasons
           ? { unavailableReasons: [...currentTool.unavailableReasons] }
           : {}),

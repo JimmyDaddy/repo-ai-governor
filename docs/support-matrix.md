@@ -2,7 +2,7 @@
 
 - Status: active
 - Last updated: 2026-04-06
-- Scope: formal support declaration refreshed by `project-026 / sprint-004` (`TK-301`), `project-044 / sprint-003` (`TK-547`), `project-046 / sprint-001` (`TK-551`, `TK-552`, `TK-554`), `project-052 / sprint-001` (`TK-589`, `TK-590`, `TK-591`), `project-052 / sprint-002` (`TK-592`, `TK-593`, `TK-594`), `project-052 / sprint-003` (`TK-595`, `TK-596`), and `project-053 / sprint-001` (`TK-598`, `TK-599`, `TK-600`)
+- Scope: formal support declaration refreshed by `project-026 / sprint-004` (`TK-301`), `project-044 / sprint-003` (`TK-547`), `project-046 / sprint-001` (`TK-551`, `TK-552`, `TK-554`), `project-052 / sprint-001` (`TK-589`, `TK-590`, `TK-591`), `project-052 / sprint-002` (`TK-592`, `TK-593`, `TK-594`), `project-052 / sprint-003` (`TK-595`, `TK-596`), `project-053 / sprint-001` (`TK-598`, `TK-599`, `TK-600`), and `project-053 / sprint-002` (`TK-601`, `TK-602`, `TK-603`)
 
 ## 1. Installation Modes
 
@@ -25,7 +25,7 @@
 
 | Adapter surface | Status | Notes |
 |---|---|---|
-| `codex` | Fixture-backed | Primary route in current verification baseline. |
+| `codex` | Real-path available (environment-gated) | `cli_exec` is now the validated real transport for baseline `prepare -> execute -> report` dry-runs, and `verify --adapters` projects `codex` as the primary `cli_exec` route for `planner` / `architect` / `coder` / `reviewer` / `verifier` when the local Codex CLI is available. |
 | `github-copilot` | Fixture-backed | Supported adapter surface with fallback/degraded routing semantics when quota or probe preconditions fail. |
 | `claude-code` | Real-path available (environment-gated) | `cli_exec` is the default real transport when selected, `remote_api` remains optional, and `verify --adapters` now projects the effective default transport truth even when config omits `transport`; current workspace readiness still warns when the local Claude health-check fails. |
 | `local-model` (`ollama`) | Fixture-backed (local-runtime constrained) | Supported local fallback surface; `tool_calling`, `structured_output`, and `confirmation_gate` remain conservative/degraded by design. |
@@ -59,10 +59,12 @@
 | CLI | Supported | Primary production entry. |
 | Desktop sidecar entry | Supported for MVP foundation | `apps/desktop` now exposes the formal desktop shell package with service-owned session/execution/HITL/artifact-pane seams; `check-desktop-entry-smoke` and `release:verify-local` stay in the release baseline while richer desktop panels remain staged evolution. |
 
-## 6. Verification Snapshot (TK-301 + TK-547 + TK-551/TK-552/TK-554 + TK-589/TK-590/TK-591 + TK-592/TK-593/TK-594 + TK-598/TK-599/TK-600)
+## 6. Verification Snapshot (TK-301 + TK-547 + TK-551/TK-552/TK-554 + TK-589/TK-590/TK-591 + TK-592/TK-593/TK-594 + TK-598/TK-599/TK-600 + TK-601/TK-602/TK-603)
 
 | Time (UTC) | Command | Result | Evidence |
 |---|---|---|---|
+| 2026-04-06T17:45:29Z | `node ./dist/bin/repo-ai-governor.js --output json --adapters --dry-run --trace run` | Pass | `.tmp/project-053-sprint-002-run-dry-run-trace.json` plus the emitted report/replay/diagnostics artifacts now preserve `dry_run=true`, `policy_outcome=allow`, and a fully successful baseline `prepare -> execute -> report` run on the default `codex` primary route. |
+| 2026-04-06T17:44:58Z | `node ./dist/bin/repo-ai-governor.js --output json --adapters verify` | Warn (non-blocking) | `.tmp/project-053-sprint-002-verify-adapters.json` and the verify diagnostics artifact project `codex` as primary `cli_exec` for `planner` / `architect` / `coder` / `reviewer` / `verifier`; remaining warns are limited to durable-storage, artifact-registry, and task-ledger initialization truth in the tool-managed workspace. |
 | 2026-04-06T16:26:31Z | `node ./dist/bin/repo-ai-governor.js --output json --adapters --dry-run --trace run` | Warn | `.tmp/project-053-sprint-001-run-dry-run-trace.json` plus the emitted report/replay/diagnostics artifacts preserved `dry_run=true`, `policy_outcome=allow`, and stage-level failure attribution at `stage-task-prepare`, even though the current default route still failed on `codex`. |
 | 2026-04-06T16:25:22Z | `node ./dist/bin/repo-ai-governor.js --output json --adapters verify` | Warn (non-blocking) | `.tmp/project-053-sprint-001-verify-adapters.json` and the verify diagnostics artifact surfaced `claude-code` as effective `cli_exec` with `request_timeout_ms=30000`, `max_retries=2`, and an environment-precondition health-check warning instead of a silent `null` transport. |
 | 2026-04-06T21:29:47Z | `repo-external upgrade rehearsal (preview -> apply -> rollback)` | Pass | `.tmp/project-052-sprint-002-command-rehearsal-summary.json` recorded `schema_upgrade_analyze`, `schema_upgrade_apply`, and `schema_upgrade_rollback`; apply and rollback both finished with `verify_status=passed`. |
@@ -116,4 +118,4 @@
 1. Adapter degrade or warning signals remain environment-precondition related (`github-copilot` quota/probe, `claude-code` CLI health-check/auth preconditions, `local-model` endpoint/model capability limits) rather than governance-chain failure.
 2. `project-046` promotes the desktop artifact pane from deferred gate to a service-owned typed query contract; renderer consumers still do not bypass the workspace filesystem directly.
 3. Official `GitLab CI` and `Jenkins` templates are now published under `integrations/ci/` and reuse the same install, quality-gate, and release-governance command contract as GitHub Actions.
-4. This matrix defines current formal support boundaries for `TK-301`, the desktop MVP foundation refresh in `TK-547`, the P1 product-surface closure work in `project-046`, the install-mode truth refresh in `project-052 / sprint-001`, the upgrade/workspace contract plus acceptance closeout in `project-052 / sprint-002`, the GA support truthfulness consolidation in `project-052 / sprint-003`, and the `claude-code` real-path baseline truth refresh in `project-053 / sprint-001`; broader GA readiness signal closure and the remaining adapter rollout continue in later project-053 sprints.
+4. This matrix defines current formal support boundaries for `TK-301`, the desktop MVP foundation refresh in `TK-547`, the P1 product-surface closure work in `project-046`, the install-mode truth refresh in `project-052 / sprint-001`, the upgrade/workspace contract plus acceptance closeout in `project-052 / sprint-002`, the GA support truthfulness consolidation in `project-052 / sprint-003`, the `claude-code` real-path baseline truth refresh in `project-053 / sprint-001`, and the `codex` real-path plus routed dry-run acceptance refresh in `project-053 / sprint-002`; broader GA readiness signal closure and the remaining adapter rollout continue in later project-053 sprints.
