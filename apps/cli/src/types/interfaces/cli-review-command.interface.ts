@@ -1,5 +1,11 @@
 import type { ErrorOutputEnvironment } from '@repo-ai-governor/shared';
 import type {
+  ProjectedReviewRuleBundle,
+  ReviewFindingSourceType,
+  ReviewRuleDefinition,
+  ReviewRuleExecutionMode,
+} from '@repo-ai-governor/standards';
+import type {
   CliReviewLedgerBackfillStatus,
   CliReviewRequestStatus,
 } from '../../constants/cli-governance-runtime.constant.js';
@@ -33,6 +39,11 @@ export interface CliReviewFinding {
   fingerprint: string;
   ruleId: CliReviewFindingRuleId;
   severity: CliReviewFindingSeverity;
+  sourceType?: ReviewFindingSourceType;
+  executionMode?: ReviewRuleExecutionMode;
+  semanticKey?: string;
+  standardsSourceRefs?: string[];
+  projectedPackRefs?: string[];
   title: string;
   file: string;
   line?: number;
@@ -40,6 +51,21 @@ export interface CliReviewFinding {
   impact: string;
   suggestedAction: string;
   evidence: string[];
+  confidence?: number;
+}
+
+/**
+ * Describes the hybrid review pipeline context retained for delegated handoff and audit.
+ */
+export interface CliHybridReviewContext {
+  projectedRuleBundle: ProjectedReviewRuleBundle;
+  projectedRules: ReviewRuleDefinition[];
+  deterministicFindings: CliReviewFinding[];
+  standardsGuidedFindings: CliReviewFinding[];
+  riskFindings: CliReviewFinding[];
+  uncoveredRuleIds: string[];
+  delegatedReviewEnabled: boolean;
+  dedupeStrategy: string;
 }
 
 /**
@@ -76,6 +102,7 @@ export interface CliReviewRequestArtifactPayload {
   reviewTaskCardPath?: string;
   scope: CliReviewScopeSnapshot;
   findings: CliReviewFinding[];
+  hybridReviewContext?: CliHybridReviewContext;
   notes: string[];
   generatedArtifactPaths: string[];
   diagnosticContext: {

@@ -1,6 +1,6 @@
 # TK-630 定义 standards-guided reviewer handoff contract 与 adapter-neutral projection seam
 
-- Status: planned
+- Status: in_progress
 - Date: 2026-04-06
 - Owner: `AI-Agent`
 - Priority: `P1`
@@ -54,6 +54,7 @@
 ## 9. 执行记录
 
 1. 2026-04-06：任务创建，状态初始化为 `planned`。
+2. 2026-04-07：`TK-647` 完成 sprint-002 closeout 后被激活为 `in_progress`，作为 `project-057 / sprint-003` 的首个执行边界。
 
 ## 10. 产出
 

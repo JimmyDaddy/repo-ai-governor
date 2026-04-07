@@ -1,3 +1,9 @@
+import {
+  ReviewFindingSourceType,
+  ReviewRuleExecutionMode,
+  ReviewRuleSeverity,
+} from '@repo-ai-governor/standards';
+
 /**
  * Defines review scope modes supported by the CLI review lifecycle.
  */
@@ -25,25 +31,24 @@ export enum CliReviewVerifyDecision {
 }
 
 /**
- * Defines severity levels used by structured review findings.
+ * Re-exports governed source-type values used by structured review findings.
  */
-export enum CliReviewFindingSeverity {
-  P0 = 'P0',
-  P1 = 'P1',
-  P2 = 'P2',
-  P3 = 'P3',
-}
+export {
+  ReviewFindingSourceType as CliReviewFindingSourceType,
+  ReviewRuleExecutionMode as CliReviewFindingExecutionMode,
+  ReviewRuleSeverity as CliReviewFindingSeverity,
+};
 
 /**
- * Defines stable finding-rule identifiers emitted by the heuristic review baseline.
+ * Defines stable rule or classifier identifiers emitted by the CLI review pipeline.
  */
 export enum CliReviewFindingRuleId {
+  CS_003_UNRESOLVED_MARKERS = 'review-rule.cs-003-unresolved-markers',
   LOCKFILE_DELTA = 'lockfile_delta',
   MIGRATION_DETECTED = 'migration_detected',
   CI_WORKFLOW_CHANGED = 'ci_workflow_changed',
   RELEASE_SCRIPT_CHANGED = 'release_script_changed',
   SENSITIVE_PATH_CHANGED = 'sensitive_path_changed',
-  TODO_MARKER = 'todo_marker',
   CODE_CHANGE_WITHOUT_TEST_CHANGE = 'code_change_without_test_change',
 }
 
@@ -83,9 +88,45 @@ export const CLI_REVIEW_TODO_MARKERS = ['TODO', 'FIXME', 'HACK'] as const;
 /**
  * Defines severity ordering used for stable finding sorting.
  */
-export const CLI_REVIEW_FINDING_SEVERITY_PRIORITY: Record<CliReviewFindingSeverity, number> = {
-  [CliReviewFindingSeverity.P0]: 0,
-  [CliReviewFindingSeverity.P1]: 1,
-  [CliReviewFindingSeverity.P2]: 2,
-  [CliReviewFindingSeverity.P3]: 3,
+export const CLI_REVIEW_FINDING_SEVERITY_PRIORITY: Record<ReviewRuleSeverity, number> = {
+  [ReviewRuleSeverity.P0]: 0,
+  [ReviewRuleSeverity.P1]: 1,
+  [ReviewRuleSeverity.P2]: 2,
+  [ReviewRuleSeverity.P3]: 3,
 };
+
+/**
+ * Declares the current deterministic check ids already wired into native CLI review.
+ */
+export const CLI_REVIEW_SUPPORTED_DETERMINISTIC_CHECK_IDS = [
+  'cli-review.todo-marker-scan',
+] as const;
+
+/**
+ * Narrows CS-033 follow-up to paths that are likely to own user-facing copy.
+ */
+export const CLI_REVIEW_USER_FACING_TEXT_PATH_PATTERNS = [
+  /^apps\/[^/]+\/src\/commands\//u,
+  /^apps\/[^/]+\/src\/(i18n|locales|prompts|ui)\//u,
+  /^packages\/[^/]+\/src\/(i18n|locales|prompts|ui)\//u,
+] as const;
+
+/**
+ * Provides lightweight content hints for changed files that likely own user-facing copy.
+ */
+export const CLI_REVIEW_USER_FACING_TEXT_CONTENT_MARKERS = [
+  'localizeText(',
+  'I18nRuntime',
+  '.t(',
+] as const;
+
+/**
+ * Identifies test-only files that should not trigger user-facing text follow-up on their own.
+ */
+export const CLI_REVIEW_TEST_FILE_PATH_PATTERN =
+  /(?:^test\/|\/test\/|\.test\.ts$|\.integration\.test\.ts$|\.e2e\.test\.ts$|\.contract\.test\.ts$)/u;
+
+/**
+ * Declares the canonical dedupe key strategy shared by hybrid review passes.
+ */
+export const CLI_REVIEW_HYBRID_DEDUPE_STRATEGY = 'ruleId+file+line';

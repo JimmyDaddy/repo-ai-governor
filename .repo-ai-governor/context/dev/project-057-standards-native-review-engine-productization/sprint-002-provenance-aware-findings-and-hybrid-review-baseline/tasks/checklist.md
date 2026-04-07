@@ -1,9 +1,35 @@
 # checklist
 
-- [ ] TK-627 实现 provenance-aware finding contract 与 durable projection baseline
+- [x] TK-627 实现 provenance-aware finding contract 与 durable projection baseline
   - 2026-04-06：任务创建，状态初始化为 `planned`。
   - 2026-04-07：`sprint-001` closeout 完成后被激活为 `in_progress`，作为 `project-057 / sprint-002` 的首个执行边界。
-- [ ] TK-628 更新 deterministic finding rule projection 与 review artifact rendering sections
+  - 2026-04-07：已把 `CliReviewFinding` 扩展为 provenance-aware contract，新增 `sourceType/executionMode/semanticKey/standardsSourceRefs/projectedPackRefs/confidence` 字段，并在 queued transport artifact 中落入 `hybridReviewContext` 作为 durable delegated handoff baseline。
+  - 2026-04-07：已通过 `pnpm run build` 与定向 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1 apps/cli/test/commands/review-command.test.ts apps/cli/test/commands/review-verify-command.test.ts`。
+- [x] TK-628 更新 deterministic finding rule projection 与 review artifact rendering sections
   - 2026-04-06：任务创建，状态初始化为 `planned`。
-- [ ] TK-629 接入 hybrid deterministic-plus-delegated review generation 与 dedupe merge baseline
+  - 2026-04-07：已把 TODO marker finding 投影到正式 `review-rule.cs-003-unresolved-markers` rule id，并通过 `phaseA` projected review-rule registry 回填 `semanticKey/standardsSourceRefs/projectedPackRefs`。
+  - 2026-04-07：已将 canonical review artifact 渲染拆分为 `Deterministic Rule Findings / Standards-Guided Findings / Residual Risk Observations` 三段，显式呈现 provenance-aware 字段。
+  - 2026-04-07：已通过 `pnpm run build` 与定向 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1 apps/cli/test/commands/review-command.test.ts apps/cli/test/commands/review-verify-command.test.ts`。
+- [x] TK-629 接入 hybrid deterministic-plus-delegated review generation 与 dedupe merge baseline
   - 2026-04-06：任务创建，状态初始化为 `planned`。
+  - 2026-04-07：已新增 `apps/cli/src/runtime/review/cli-hybrid-review-runtime.ts`，把 projected rule bundle、applicable rules、uncovered rule ids 与 `ruleId+file+line` dedupe 策略收口为 native review 的正式 merge seam。
+  - 2026-04-07：`review` 命令现已在 deterministic findings 生成后统一构建 `hybridReviewContext`，为 sprint-003 的 structured reviewer handoff 保留 `projectedRules/deterministicFindings/uncoveredRuleIds` 输入位。
+  - 2026-04-07：已通过 `pnpm run build` 与定向 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1 apps/cli/test/commands/review-command.test.ts apps/cli/test/commands/review-verify-command.test.ts`。
+- [x] CR-001 sprint-002-provenance-aware-findings-and-hybrid-review-baseline delegated review loop round 1
+  - 2026-04-07：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-07：fresh reviewer round 1 已完成；主 agent 复核后接受 3 条 findings，准备进入修复闭环并推进到 `verified`。
+  - 2026-04-07：已完成 accepted findings 修复、回归测试与完整门禁重跑，`CR-001` 推进到 `resolved`。
+- [x] TK-646 创建 technical-solution-review skill workflow 与 approval guardrails
+  - 2026-04-07：任务创建，状态初始化为 `planned`。
+  - 2026-04-07：已在 `.codex/skills/technical-solution-review/` 初始化新的 repo-local skill 骨架，并默认落在仓库本地 `.codex/skills` 而非 `$CODEX_HOME/skills`。
+  - 2026-04-07：已完成 `technical-solution-review` workflow，覆盖 scope resolve、review loop、approval handoff、promotion interlock、review artifact contract 与 lifecycle guardrails。
+  - 2026-04-07：已同步 `AGENTS.md`、active sprint plan 与 task ledger，并通过 skill 校验与相关 ledger/status 检查。
+- [x] CR-002 sprint-002-provenance-aware-findings-and-hybrid-review-baseline delegated review loop round 2
+  - 2026-04-07：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-07：fresh reviewer round 2 已完成；主 agent 复核后接受 2 条 findings，并将 round 推进到 `verified`。
+  - 2026-04-07：已完成 accepted findings 修复，并在 `resolved` 终态上重跑 `pnpm run build`、定向 `test:packages`、`test:integration`、`pnpm run check` 与治理同步检查。
+- [x] TK-647 sprint-002 exit acceptance and sprint-003 activation handoff
+  - 2026-04-07：在 `TK-627`、`TK-628`、`TK-629`、`TK-646` 与 `CR-001` 全部进入终态后创建本任务。
+  - 2026-04-07：状态切换为 `in_progress`，开始整理 sprint-002 closeout 与 sprint-003 activation handoff 输入。
+  - 2026-04-07：`CR-002` clean `resolved` 后，已完成 `DA-647`、project/sprint/context/history 写回，并激活 `sprint-003 / TK-630`。
+  - 2026-04-07：已完成 DA-647、project/sprint/context/history 写回，并激活 sprint-003 / TK-630。

@@ -1,6 +1,6 @@
 # sprint-003-standards-guided-reviewer-handoff-and-source-aware-closure 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-06
 - Project: `project-057-standards-native-review-engine-productization`
 - Sprint Goal: 收口 standards-guided reviewer handoff、adapter-neutral projection 与 `review-verify` source-aware closure 语义。
@@ -20,3 +20,4 @@
 ## 3. Milestones
 
 1. 2026-04-06：作为 project-057 Phase C sprint 被创建，当前保持 `planned`。
+2. 2026-04-07：在 `TK-647` 完成 sprint-002 closeout 后被激活为当前 primary sprint，`TK-630` 已切换为 `in_progress`。

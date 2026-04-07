@@ -1,6 +1,6 @@
 # TK-628 更新 deterministic finding rule projection 与 review artifact rendering sections
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-06
 - Owner: `AI-Agent`
 - Priority: `P1`
@@ -52,8 +52,11 @@
 ## 9. 执行记录
 
 1. 2026-04-06：任务创建，状态初始化为 `planned`。
+2. 2026-04-07：已把 TODO marker finding 投影到正式 `review-rule.cs-003-unresolved-markers` rule id，并通过 `phaseA` projected review-rule registry 回填 `semanticKey/standardsSourceRefs/projectedPackRefs`。
+3. 2026-04-07：已将 canonical review artifact 渲染拆分为 `Deterministic Rule Findings / Standards-Guided Findings / Residual Risk Observations` 三段，显式呈现 provenance-aware 字段。
+4. 2026-04-07：已通过 `pnpm run build` 与定向 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1 apps/cli/test/commands/review-command.test.ts apps/cli/test/commands/review-verify-command.test.ts`。
 
 ## 10. 产出
 
-1. 待执行：artifact rendering update
-2. 待执行：deterministic finding rule projection 说明
+1. `apps/cli/src/constants/cli-review.constant.ts` 与 `apps/cli/src/runtime/review/cli-review-finding-generator.ts` 已把 deterministic rule-backed finding 与 risk classifier id 分层明确化。
+2. `apps/cli/src/commands/review-command.ts` 已完成 review artifact rendering update，并在测试中验证 deterministic rule section 与 provenance 字段输出。

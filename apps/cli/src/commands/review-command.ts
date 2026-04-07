@@ -15,6 +15,7 @@ import {
   GovernorErrorCode,
   RuntimeError,
 } from '@repo-ai-governor/shared';
+import { ReviewFindingSourceType } from '@repo-ai-governor/standards';
 import { CliCommandName } from '../constants/cli-command.constant.js';
 import {
   CLI_REVIEW_REQUEST_STATUS,
@@ -26,12 +27,14 @@ import {
   CliReviewLifecycleStatus,
   CliReviewScopeMode,
 } from '../constants/cli-review.constant.js';
+import { CliHybridReviewRuntime } from '../runtime/review/cli-hybrid-review-runtime.js';
 import { CliReviewFindingGenerator } from '../runtime/review/cli-review-finding-generator.js';
 import { CliReviewLifecycleRuntime } from '../runtime/review/cli-review-lifecycle-runtime.js';
 import { CliReviewTaskCardRuntime } from '../runtime/review/cli-review-task-card-runtime.js';
 import type { CliCommandResultArtifact, CliCommandResultCheck } from '../types/interfaces/index.js';
 import type {
   CliCommandExecutorContext,
+  CliHybridReviewContext,
   CliReviewFinding,
   CliReviewRequestArtifactPayload,
   CliReviewStreamContext,
@@ -84,6 +87,9 @@ export class CliReviewCommand implements CliCommandExecutor {
       context.options.workspace.repositoryRoot,
       context.options.workspace.workspaceRoot,
     );
+    const hybridReviewRuntime = new CliHybridReviewRuntime(
+      context.options.workspace.repositoryRoot,
+    );
     const findingGenerator = new CliReviewFindingGenerator(
       context.options.workspace.repositoryRoot,
       (english, chinese) => context.localizeText(english, chinese),
@@ -104,18 +110,28 @@ export class CliReviewCommand implements CliCommandExecutor {
       excludePaths: reviewRuntime.resolveGeneratedPathPrefixes(),
     });
     const riskEvaluation = reviewRuntime.evaluateRisk(changedPaths);
-    const findings = await findingGenerator.generateFindings({
+    const generatedFindings = await findingGenerator.generateFindings({
       changedPaths,
       riskEvaluation,
     });
+    const hybridReviewContext = hybridReviewRuntime.buildHybridReviewContext({
+      changedPaths,
+      findings: generatedFindings,
+    });
+    const findings = hybridReviewRuntime.mergeFindings({
+      deterministicFindings: hybridReviewContext.deterministicFindings,
+      delegatedFindings: hybridReviewContext.standardsGuidedFindings,
+      riskFindings: hybridReviewContext.riskFindings,
+    });
+    const hasOpenReviewLifecycle = findings.length > 0;
+    const hasCoverageGap = hybridReviewContext.uncoveredRuleIds.length > 0;
     const reviewSlug = reviewRuntime.createReviewSlug({
       taskId,
       createdAt: generatedAt,
     });
-    const reviewStatus =
-      findings.length > 0
-        ? CliReviewLifecycleStatus.REVIEW_PENDING
-        : CliReviewLifecycleStatus.RESOLVED;
+    const reviewStatus = hasOpenReviewLifecycle
+      ? CliReviewLifecycleStatus.REVIEW_PENDING
+      : CliReviewLifecycleStatus.RESOLVED;
     const reviewArtifactPath = reviewRuntime.resolveArtifactPath({
       reviewDirPath: streamContext.reviewDirPath,
       status: reviewStatus,
@@ -129,7 +145,13 @@ export class CliReviewCommand implements CliCommandExecutor {
       riskEvaluation,
       streamContext,
     );
-    const notes = this.buildReviewNotes(context, reviewStatus, changedPaths.length);
+    const notes = this.buildReviewNotes(
+      context,
+      reviewStatus,
+      changedPaths.length,
+      findings.length,
+      hybridReviewContext,
+    );
     const managedReviewContext = await reviewTaskCardRuntime.resolveManagedContext({
       streamContext,
       scopeTaskId: taskId,
@@ -157,6 +179,7 @@ export class CliReviewCommand implements CliCommandExecutor {
       reviewArtifactPath,
       changedPaths,
       findings,
+      hybridReviewContext,
       scopeSummary,
       notes,
       streamContext,
@@ -192,6 +215,7 @@ export class CliReviewCommand implements CliCommandExecutor {
         requiredAction: riskEvaluation.requiredAction,
       },
       findings,
+      hybridReviewContext,
       notes,
       generatedArtifactPaths: [
         reviewRuntime.toRepositoryRelativePath(requestPath),
@@ -283,7 +307,13 @@ export class CliReviewCommand implements CliCommandExecutor {
           'Execute `repo-ai-governor review-verify` to verify the persisted review artifact.',
           '执行 `repo-ai-governor review-verify` 以复核已落盘的 review artifact。',
         );
-    const checks = this.buildChecks(findings, reviewStatus, requestPath, reviewArtifactPath);
+    const checks = this.buildChecks(
+      findings,
+      reviewStatus,
+      requestPath,
+      reviewArtifactPath,
+      hybridReviewContext,
+    );
     const artifacts: CliCommandResultArtifact[] = [
       {
         id: CliReviewArtifactId.REVIEW_REQUEST,
@@ -310,10 +340,10 @@ export class CliReviewCommand implements CliCommandExecutor {
           status: ExecutionProgressStatus.COMPLETED,
           category: ExecutionInteractionCategory.NONE,
           summary: context.localizeText(
-            findings.length > 0
+            hasOpenReviewLifecycle
               ? 'Review findings were generated and persisted.'
               : 'Review completed with no actionable findings.',
-            findings.length > 0
+            hasOpenReviewLifecycle
               ? '已生成并落盘 review findings。'
               : 'review 已完成，当前没有可执行 finding。',
           ),
@@ -326,24 +356,25 @@ export class CliReviewCommand implements CliCommandExecutor {
         {
           roleId: 'verifier',
           stage: ExecutionProgressStage.REVIEW_VERIFY,
-          status:
-            findings.length > 0
-              ? ExecutionProgressStatus.QUEUED
-              : ExecutionProgressStatus.COMPLETED,
-          category:
-            findings.length > 0
-              ? ExecutionInteractionCategory.POLICY_WAITING
-              : ExecutionInteractionCategory.NONE,
-          summary:
-            findings.length > 0
-              ? context.localizeText(
-                  'Review verify is available for the persisted artifact.',
-                  '已可针对落盘的 review artifact 执行 review-verify。',
-                )
-              : context.localizeText(
-                  'No follow-up verify action is required unless you want an explicit closure record.',
-                  '除非你需要显式 closure 记录，否则当前无需额外执行 review-verify。',
-                ),
+          status: hasOpenReviewLifecycle
+            ? ExecutionProgressStatus.QUEUED
+            : ExecutionProgressStatus.COMPLETED,
+          category: hasOpenReviewLifecycle
+            ? ExecutionInteractionCategory.POLICY_WAITING
+            : ExecutionInteractionCategory.NONE,
+          summary: hasOpenReviewLifecycle
+            ? context.localizeText(
+                'Review verify is available for the persisted artifact.',
+                '已可针对落盘的 review artifact 执行 review-verify。',
+              )
+            : context.localizeText(
+                hasCoverageGap
+                  ? 'No review-verify action is required because no findings were emitted; uncovered projected rules were recorded for future delegated or manual follow-up.'
+                  : 'No follow-up verify action is required unless you want an explicit closure record.',
+                hasCoverageGap
+                  ? '由于当前没有生成 finding，因此无需执行 review-verify；uncovered projected rules 已记录为后续 delegated 或人工补充复核的输入。'
+                  : '除非你需要显式 closure 记录，否则当前无需额外执行 review-verify。',
+              ),
           detail: taskId ? `chain=${correlationId} task_id=${taskId}` : `chain=${correlationId}`,
           backlink: {
             stageId: ExecutionProgressStage.REVIEW_VERIFY,
@@ -351,42 +382,46 @@ export class CliReviewCommand implements CliCommandExecutor {
           },
         },
       ],
-      interactionPrompts:
-        findings.length > 0
-          ? [
-              {
-                category: ExecutionInteractionCategory.POLICY_WAITING,
-                stage: ExecutionProgressStage.REVIEW_VERIFY,
-                title: context.localizeText('Run review-verify', '执行 review-verify'),
-                action: reviewVerifyAction,
-                blocking: false,
-              },
-            ]
-          : [],
+      interactionPrompts: hasOpenReviewLifecycle
+        ? [
+            {
+              category: ExecutionInteractionCategory.POLICY_WAITING,
+              stage: ExecutionProgressStage.REVIEW_VERIFY,
+              title: context.localizeText('Run review-verify', '执行 review-verify'),
+              action: reviewVerifyAction,
+              blocking: false,
+            },
+          ]
+        : [],
       layeredLogs: {
         summary: [
           `review_request=${requestId}`,
           `review_status=${reviewStatus}`,
           `finding_count=${findings.length}`,
+          `uncovered_rule_count=${hybridReviewContext.uncoveredRuleIds.length}`,
         ],
         detailed: [
           `request_path=${requestPath}`,
           `review_artifact_path=${reviewArtifactPath}`,
           `scope_mode=${reviewMode}`,
+          `projected_rule_bundle=${hybridReviewContext.projectedRuleBundle.bundleId}@${hybridReviewContext.projectedRuleBundle.bundleVersion}`,
           ...(taskId ? [`task_id=${taskId}`] : []),
         ],
       },
     });
-    const message =
-      findings.length > 0
-        ? context.localizeText(
-            `Review completed with ${findings.length} finding(s); artifact=${reviewArtifactPath}.`,
-            `review 已完成，共生成 ${findings.length} 条 finding；artifact=${reviewArtifactPath}。`,
-          )
-        : context.localizeText(
-            `Review completed with no actionable findings; artifact=${reviewArtifactPath}.`,
-            `review 已完成，当前没有可执行 finding；artifact=${reviewArtifactPath}。`,
-          );
+    const message = hasOpenReviewLifecycle
+      ? context.localizeText(
+          `Review completed with ${findings.length} finding(s); artifact=${reviewArtifactPath}.`,
+          `review 已完成，共生成 ${findings.length} 条 finding；artifact=${reviewArtifactPath}。`,
+        )
+      : context.localizeText(
+          hasCoverageGap
+            ? `Review completed with no actionable findings; uncovered projected rules were recorded for future delegated or manual follow-up; artifact=${reviewArtifactPath}.`
+            : `Review completed with no actionable findings; artifact=${reviewArtifactPath}.`,
+          hasCoverageGap
+            ? `review 已完成，当前没有可执行 finding；uncovered projected rules 已记录为后续 delegated 或人工补充复核输入；artifact=${reviewArtifactPath}。`
+            : `review 已完成，当前没有可执行 finding；artifact=${reviewArtifactPath}。`,
+        );
 
     return {
       message,
@@ -409,6 +444,12 @@ export class CliReviewCommand implements CliCommandExecutor {
             : {}),
           request_path: requestPath,
           finding_count: findings.length,
+          deterministic_finding_count: hybridReviewContext.deterministicFindings.length,
+          standards_guided_finding_count: hybridReviewContext.standardsGuidedFindings.length,
+          risk_finding_count: hybridReviewContext.riskFindings.length,
+          projected_rule_bundle_id: hybridReviewContext.projectedRuleBundle.bundleId,
+          projected_rule_bundle_version: hybridReviewContext.projectedRuleBundle.bundleVersion,
+          uncovered_rule_count: hybridReviewContext.uncoveredRuleIds.length,
           reviewed_path_count: changedPaths.length,
           orchestration_execution_id: orchestrationExecution.executionId,
           orchestration_event_stream_token: orchestrationExecution.eventStreamToken,
@@ -433,6 +474,7 @@ export class CliReviewCommand implements CliCommandExecutor {
     reviewStatus: CliReviewLifecycleStatus,
     requestPath: string,
     reviewArtifactPath: string,
+    hybridReviewContext: CliHybridReviewContext,
   ): CliCommandResultCheck[] {
     return [
       {
@@ -447,8 +489,11 @@ export class CliReviewCommand implements CliCommandExecutor {
       },
       {
         id: 'review_findings',
-        status: findings.length > 0 ? CliGovernanceCheckStatus.WARN : CliGovernanceCheckStatus.PASS,
-        detail: `count=${findings.length}`,
+        status:
+          findings.length > 0 || hybridReviewContext.uncoveredRuleIds.length > 0
+            ? CliGovernanceCheckStatus.WARN
+            : CliGovernanceCheckStatus.PASS,
+        detail: `count=${findings.length} deterministic=${hybridReviewContext.deterministicFindings.length} standards_guided=${hybridReviewContext.standardsGuidedFindings.length} risk=${hybridReviewContext.riskFindings.length}`,
       },
     ];
   }
@@ -522,8 +567,37 @@ export class CliReviewCommand implements CliCommandExecutor {
     context: CliCommandExecutorContext,
     reviewStatus: CliReviewLifecycleStatus,
     changedPathCount: number,
+    _findingCount: number,
+    hybridReviewContext: CliHybridReviewContext,
   ): string[] {
+    const applicableRuleIds = hybridReviewContext.projectedRules.map((rule) => rule.ruleId);
+    const uncoveredRuleIds = hybridReviewContext.uncoveredRuleIds;
+
     return [
+      context.localizeText(
+        `Projected rule bundle: ${hybridReviewContext.projectedRuleBundle.bundleId}@${hybridReviewContext.projectedRuleBundle.bundleVersion}.`,
+        `已加载 projected rule bundle：${hybridReviewContext.projectedRuleBundle.bundleId}@${hybridReviewContext.projectedRuleBundle.bundleVersion}。`,
+      ),
+      context.localizeText(
+        applicableRuleIds.length > 0
+          ? `Applicable projected rules: ${applicableRuleIds.join(', ')}.`
+          : 'No projected review rules were applicable to the current scope.',
+        applicableRuleIds.length > 0
+          ? `当前 scope 适用的 projected rules：${applicableRuleIds.join('、')}。`
+          : '当前 scope 没有命中的 projected review rules。',
+      ),
+      context.localizeText(
+        uncoveredRuleIds.length > 0
+          ? `Uncovered rule ids reserved for future delegated review: ${uncoveredRuleIds.join(', ')}.`
+          : 'No projected rule coverage gaps remain for the current scope.',
+        uncoveredRuleIds.length > 0
+          ? `已为后续 delegated review 预留 uncovered rule ids：${uncoveredRuleIds.join('、')}。`
+          : '当前 scope 没有剩余的 projected rule coverage gap。',
+      ),
+      context.localizeText(
+        `Hybrid dedupe strategy: ${hybridReviewContext.dedupeStrategy}.`,
+        `hybrid 去重策略：${hybridReviewContext.dedupeStrategy}。`,
+      ),
       context.localizeText(
         'Queued review request artifacts remain transport-only; the lifecycle markdown artifact is the canonical review truth.',
         'queued review request 产物只保留为 transport-only；canonical review truth 固定落在 lifecycle markdown artifact。',
@@ -533,15 +607,20 @@ export class CliReviewCommand implements CliCommandExecutor {
             'No git working-tree paths were detected for the current scope, so this review resolved without actionable findings.',
             '当前 scope 没有检测到 git working-tree 路径，因此这次 review 以“无可执行 finding”收口。',
           )
-        : reviewStatus === CliReviewLifecycleStatus.REVIEW_PENDING
+        : reviewStatus === CliReviewLifecycleStatus.RESOLVED && uncoveredRuleIds.length > 0
           ? context.localizeText(
-              'Run review-verify after applying fixes or when you want an explicit verification decision.',
-              '当修复完成，或需要显式 verification decision 时，再执行 review-verify。',
+              'This lifecycle artifact resolved without emitted findings; uncovered projected rules were recorded for future delegated or manual follow-up outside review-verify.',
+              '这份 lifecycle artifact 已在“无 emitted finding”状态下 resolved；uncovered projected rules 已记录为后续 delegated 或人工补充复核输入，不再通过 review-verify 持续保持 pending。',
             )
-          : context.localizeText(
-              'This review already resolved at generation time; review-verify is optional and only needed for an explicit closure receipt.',
-              '这次 review 在生成阶段就已 resolved；review-verify 仅在需要显式 closure receipt 时才是可选动作。',
-            ),
+          : reviewStatus === CliReviewLifecycleStatus.REVIEW_PENDING
+            ? context.localizeText(
+                'Run review-verify after applying fixes or when you want an explicit verification decision.',
+                '当修复完成，或需要显式 verification decision 时，再执行 review-verify。',
+              )
+            : context.localizeText(
+                'This review already resolved at generation time; review-verify is optional and only needed for an explicit closure receipt.',
+                '这次 review 在生成阶段就已 resolved；review-verify 仅在需要显式 closure receipt 时才是可选动作。',
+              ),
     ];
   }
 
@@ -558,6 +637,7 @@ export class CliReviewCommand implements CliCommandExecutor {
       reviewArtifactPath: string;
       changedPaths: string[];
       findings: CliReviewFinding[];
+      hybridReviewContext: CliHybridReviewContext;
       scopeSummary: string;
       notes: string[];
       streamContext: CliReviewStreamContext;
@@ -569,31 +649,28 @@ export class CliReviewCommand implements CliCommandExecutor {
       ? context.localizeText(`Code Review: ${options.taskId}`, `代码评审：${options.taskId}`)
       : context.localizeText('Code Review: working tree', '代码评审：working tree');
     const scopeHeading = context.localizeText('## 1. Review Scope', '## 1. 评审范围');
-    const findingsHeading = context.localizeText('## 2. Findings', '## 2. Findings');
-    const notesHeading = context.localizeText('## 3. Notes', '## 3. 说明');
-    const noFindingsLine = context.localizeText(
-      'No actionable findings were identified for the current scope.',
-      '当前 scope 没有识别到可执行的 finding。',
+    const deterministicHeading = context.localizeText(
+      '## 2. Deterministic Rule Findings',
+      '## 2. 确定性规则发现',
     );
-    const findingsSection =
-      options.findings.length > 0
-        ? options.findings
-            .map((finding, index) =>
-              [
-                `### 2.${index + 1} [${finding.severity}] ${finding.title}`,
-                `- ${context.localizeText('Finding ID', 'Finding ID')}: \`${finding.findingId}\``,
-                `- ${context.localizeText('File', '文件')}: \`${finding.file}\`${typeof finding.line === 'number' ? `:${finding.line}` : ''}`,
-                `- ${context.localizeText('Summary', '摘要')}: ${finding.summary}`,
-                `- ${context.localizeText('Impact', '影响')}: ${finding.impact}`,
-                `- ${context.localizeText('Suggested Action', '建议动作')}: ${finding.suggestedAction}`,
-                ...finding.evidence.map(
-                  (evidence, evidenceIndex) =>
-                    `- ${context.localizeText('Evidence', '证据')} ${evidenceIndex + 1}: ${evidence}`,
-                ),
-              ].join('\n'),
-            )
-            .join('\n\n')
-        : noFindingsLine;
+    const standardsGuidedHeading = context.localizeText(
+      '## 3. Standards-Guided Findings',
+      '## 3. 标准引导推断发现',
+    );
+    const riskHeading = context.localizeText(
+      '## 4. Residual Risk Observations',
+      '## 4. 剩余风险观察',
+    );
+    const notesHeading = context.localizeText('## 5. Notes', '## 5. 说明');
+    const deterministicFindings = options.findings.filter(
+      (finding) => finding.sourceType === ReviewFindingSourceType.DETERMINISTIC_RULE,
+    );
+    const standardsGuidedFindings = options.findings.filter(
+      (finding) => finding.sourceType === ReviewFindingSourceType.STANDARDS_GUIDED_INFERENCE,
+    );
+    const riskFindings = options.findings.filter(
+      (finding) => finding.sourceType === ReviewFindingSourceType.RISK_INFERENCE,
+    );
 
     return [
       `# ${title}`,
@@ -603,17 +680,18 @@ export class CliReviewCommand implements CliCommandExecutor {
       `- Reviewer: ${context.localizeText('repo-ai-governor CLI', 'repo-ai-governor CLI')}`,
       `- Task: \`${options.taskId ?? 'n/a'}\``,
       ...(options.reviewTaskId
-        ? [`- ${context.localizeText('Review Task', 'Review Task')}: \`${options.reviewTaskId}\``]
+        ? [`- ${context.localizeText('Review Task', '评审任务')}: \`${options.reviewTaskId}\``]
         : []),
-      `- ${context.localizeText('Review Type', 'Review Type')}: ${
+      `- ${context.localizeText('Review Type', '评审类型')}: ${
         options.reviewMode === CliReviewScopeMode.TASK_SCOPE
-          ? context.localizeText('task-aware review', 'task-aware review')
-          : context.localizeText('working tree review', 'working tree review')
+          ? context.localizeText('task-aware review', '任务感知评审')
+          : context.localizeText('working tree review', '工作树评审')
       }`,
-      `- ${context.localizeText('Scope Mode', 'Scope Mode')}: \`${options.reviewMode}\``,
-      `- ${context.localizeText('Request ID', 'Request ID')}: \`${options.requestId}\``,
-      `- ${context.localizeText('Review Slug', 'Review Slug')}: \`${options.reviewSlug}\``,
-      `- ${context.localizeText('Review Artifact', 'Review Artifact')}: \`${options.reviewArtifactPath}\``,
+      `- ${context.localizeText('Scope Mode', '范围模式')}: \`${options.reviewMode}\``,
+      `- ${context.localizeText('Request ID', '请求 ID')}: \`${options.requestId}\``,
+      `- ${context.localizeText('Review Slug', '评审 Slug')}: \`${options.reviewSlug}\``,
+      `- ${context.localizeText('Review Artifact', '评审产物')}: \`${options.reviewArtifactPath}\``,
+      `- ${context.localizeText('Projected Rule Bundle', '规则投影包')}: \`${options.hybridReviewContext.projectedRuleBundle.bundleId}@${options.hybridReviewContext.projectedRuleBundle.bundleVersion}\``,
       ...(options.streamContext.projectId
         ? [`- Project: \`${options.streamContext.projectId}\``]
         : []),
@@ -637,16 +715,88 @@ export class CliReviewCommand implements CliCommandExecutor {
           ]),
       `${options.changedPaths.length + 3}. ${context.localizeText('Risk level', '风险级别')}: \`${options.riskEvaluation.riskLevel}\``,
       `${options.changedPaths.length + 4}. ${context.localizeText('Required action', '所需动作')}: \`${options.riskEvaluation.requiredAction}\``,
+      `${options.changedPaths.length + 5}. ${context.localizeText('Applicable projected rules', '适用 projected rules')}: ${options.hybridReviewContext.projectedRules.length}`,
+      `${options.changedPaths.length + 6}. ${context.localizeText('Uncovered delegated rules', '待 delegated 覆盖规则数')}: ${options.hybridReviewContext.uncoveredRuleIds.length}`,
       '',
-      findingsHeading,
+      deterministicHeading,
       '',
-      findingsSection,
+      this.renderFindingSection(context, deterministicFindings, 2),
+      '',
+      standardsGuidedHeading,
+      '',
+      this.renderFindingSection(context, standardsGuidedFindings, 3),
+      '',
+      riskHeading,
+      '',
+      this.renderFindingSection(context, riskFindings, 4),
       '',
       notesHeading,
       '',
       ...options.notes.map((note, index) => `${index + 1}. ${note}`),
       '',
     ].join('\n');
+  }
+
+  private renderFindingSection(
+    context: CliCommandExecutorContext,
+    findings: CliReviewFinding[],
+    sectionNumber: number,
+  ): string {
+    if (findings.length === 0) {
+      return context.localizeText(
+        'No actionable findings were identified for this provenance group.',
+        '该 provenance 分组下没有识别到可执行的 finding。',
+      );
+    }
+
+    return findings
+      .map((finding, index) => this.renderFindingEntry(context, finding, sectionNumber, index + 1))
+      .join('\n\n');
+  }
+
+  private renderFindingEntry(
+    context: CliCommandExecutorContext,
+    finding: CliReviewFinding,
+    sectionNumber: number,
+    findingNumber: number,
+  ): string {
+    return [
+      `### ${sectionNumber}.${findingNumber} [${finding.severity}] ${finding.title}`,
+      `- ${context.localizeText('Finding ID', '发现 ID')}: \`${finding.findingId}\``,
+      `- ${context.localizeText('Rule ID', '规则 ID')}: \`${finding.ruleId}\``,
+      ...(finding.sourceType
+        ? [`- ${context.localizeText('Source Type', '来源类型')}: \`${finding.sourceType}\``]
+        : []),
+      ...(finding.executionMode
+        ? [`- ${context.localizeText('Execution Mode', '执行模式')}: \`${finding.executionMode}\``]
+        : []),
+      ...(finding.semanticKey
+        ? [`- ${context.localizeText('Semantic Key', '语义键')}: \`${finding.semanticKey}\``]
+        : []),
+      `- ${context.localizeText('File', '文件')}: \`${finding.file}\`${typeof finding.line === 'number' ? `:${finding.line}` : ''}`,
+      `- ${context.localizeText('Summary', '摘要')}: ${finding.summary}`,
+      `- ${context.localizeText('Impact', '影响')}: ${finding.impact}`,
+      `- ${context.localizeText('Suggested Action', '建议动作')}: ${finding.suggestedAction}`,
+      ...(typeof finding.confidence === 'number'
+        ? [`- ${context.localizeText('Confidence', '置信度')}: \`${finding.confidence}\``]
+        : []),
+      ...this.renderListField(
+        context.localizeText('Standards Source', '规范来源'),
+        finding.standardsSourceRefs ?? [],
+      ),
+      ...this.renderListField(
+        context.localizeText('Projected Pack', '投影包'),
+        finding.projectedPackRefs ?? [],
+      ),
+      ...finding.evidence.map(
+        (evidence, evidenceIndex) =>
+          `- ${context.localizeText('Evidence', '证据')} ${evidenceIndex + 1}: ${evidence}`,
+      ),
+    ].join('\n');
+  }
+
+  private renderListField(label: string, values: string[]): string[] {
+    return values.map((value, index) => `- ${label} ${index + 1}: ${value}`);
   }
 
   private formatDateOnly(value: Date): string {

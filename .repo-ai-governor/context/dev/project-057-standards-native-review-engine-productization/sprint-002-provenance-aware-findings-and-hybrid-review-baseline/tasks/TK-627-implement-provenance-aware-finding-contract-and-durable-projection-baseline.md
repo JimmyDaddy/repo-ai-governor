@@ -1,6 +1,6 @@
 # TK-627 实现 provenance-aware finding contract 与 durable projection baseline
 
-- Status: in_progress
+- Status: completed
 - Date: 2026-04-06
 - Owner: `AI-Agent`
 - Priority: `P1`
@@ -55,8 +55,10 @@
 
 1. 2026-04-06：任务创建，状态初始化为 `planned`。
 2. 2026-04-07：`sprint-001` closeout 完成后被激活为 `in_progress`，作为 `project-057 / sprint-002` 的首个执行边界。
+3. 2026-04-07：已把 `CliReviewFinding` 扩展为 provenance-aware contract，新增 `sourceType/executionMode/semanticKey/standardsSourceRefs/projectedPackRefs/confidence` 字段，并在 queued transport artifact 中落入 `hybridReviewContext` 作为 durable delegated handoff baseline。
+4. 2026-04-07：已通过 `pnpm run build` 与定向 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1 apps/cli/test/commands/review-command.test.ts apps/cli/test/commands/review-verify-command.test.ts`。
 
 ## 10. 产出
 
-1. 待执行：provenance-aware finding contract
-2. 待执行：durable projection boundary 说明
+1. `apps/cli/src/types/interfaces/cli-review-command.interface.ts` 已落地 provenance-aware finding contract 与 `hybridReviewContext` durable projection seam。
+2. `apps/cli/src/runtime/review/cli-review-finding-generator.ts` 已把 native findings 标准化为带 provenance 的结构，风险型 finding 保留 `risk_inference + deterministic` 执行语义。

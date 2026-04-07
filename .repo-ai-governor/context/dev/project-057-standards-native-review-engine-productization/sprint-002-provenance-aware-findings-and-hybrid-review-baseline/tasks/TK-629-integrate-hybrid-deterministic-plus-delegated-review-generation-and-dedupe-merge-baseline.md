@@ -1,6 +1,6 @@
 # TK-629 接入 hybrid deterministic-plus-delegated review generation 与 dedupe merge baseline
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-06
 - Owner: `AI-Agent`
 - Priority: `P1`
@@ -53,8 +53,11 @@
 ## 9. 执行记录
 
 1. 2026-04-06：任务创建，状态初始化为 `planned`。
+2. 2026-04-07：已新增 `apps/cli/src/runtime/review/cli-hybrid-review-runtime.ts`，把 projected rule bundle、applicable rules、uncovered rule ids 与 `ruleId+file+line` dedupe 策略收口为 native review 的正式 merge seam。
+3. 2026-04-07：`review` 命令现已在 deterministic findings 生成后统一构建 `hybridReviewContext`，为 sprint-003 的 structured reviewer handoff 保留 `projectedRules/deterministicFindings/uncoveredRuleIds` 输入位。
+4. 2026-04-07：已通过 `pnpm run build` 与定向 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1 apps/cli/test/commands/review-command.test.ts apps/cli/test/commands/review-verify-command.test.ts`。
 
 ## 10. 产出
 
-1. 待执行：hybrid review generation baseline
-2. 待执行：merge/dedupe 规则说明
+1. `apps/cli/src/runtime/review/cli-hybrid-review-runtime.ts` 已落地 hybrid review generation baseline 与 delegated coverage gap projection。
+2. `apps/cli/src/commands/review-command.ts` 已通过 `hybridReviewContext` 持久化 dedupe 策略、projected bundle 元数据与 uncovered rule ids。

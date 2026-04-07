@@ -4,15 +4,15 @@
 
 - Status: active
 - Project: `project-057-standards-native-review-engine-productization`
-- Sprint: `sprint-002-provenance-aware-findings-and-hybrid-review-baseline`
+- Sprint: `sprint-003-standards-guided-reviewer-handoff-and-source-aware-closure`
 - Docs root: `.repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization`
-- Task records: `.repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization/sprint-002-provenance-aware-findings-and-hybrid-review-baseline/tasks/`
-- Review records: `.repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization/sprint-002-provenance-aware-findings-and-hybrid-review-baseline/review/`
-- Note: `2026-04-07` 在 `TK-624` 完成 `sprint-001` closeout 后切换到 `project-057 / sprint-002`；当前按既定顺序继续执行 `project-057 -> project-056`。
+- Task records: `.repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization/sprint-003-standards-guided-reviewer-handoff-and-source-aware-closure/tasks/`
+- Review records: `.repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization/sprint-003-standards-guided-reviewer-handoff-and-source-aware-closure/review/`
+- Note: `2026-04-07` 在 `TK-647` 完成 `sprint-002` closeout 后切换到 `project-057 / sprint-003`；当前按既定顺序继续执行 `project-057 -> project-056`。
 
 ## Active Streams
 
-- `active-1`: role=`primary`, project=`project-057-standards-native-review-engine-productization`, sprint=`sprint-002-provenance-aware-findings-and-hybrid-review-baseline`, docs=`.repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization`, plan=`.repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization/sprint-002-provenance-aware-findings-and-hybrid-review-baseline/plan.md`, tasks=`.repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization/sprint-002-provenance-aware-findings-and-hybrid-review-baseline/tasks/`, checklist=`.repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization/sprint-002-provenance-aware-findings-and-hybrid-review-baseline/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization/sprint-002-provenance-aware-findings-and-hybrid-review-baseline/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization/sprint-002-provenance-aware-findings-and-hybrid-review-baseline/review/`, status=`active`, note=`Activated on 2026-04-07 after TK-624 completed sprint-001 closeout; TK-627 is the first in-progress boundary`
+- `active-1`: role=`primary`, project=`project-057-standards-native-review-engine-productization`, sprint=`sprint-003-standards-guided-reviewer-handoff-and-source-aware-closure`, docs=`.repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization`, plan=`.repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization/sprint-003-standards-guided-reviewer-handoff-and-source-aware-closure/plan.md`, tasks=`.repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization/sprint-003-standards-guided-reviewer-handoff-and-source-aware-closure/tasks/`, checklist=`.repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization/sprint-003-standards-guided-reviewer-handoff-and-source-aware-closure/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization/sprint-003-standards-guided-reviewer-handoff-and-source-aware-closure/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization/sprint-003-standards-guided-reviewer-handoff-and-source-aware-closure/review/`, status=`active`, note=`Activated on 2026-04-07 after TK-647 completed sprint-002 closeout; TK-630 is the first in-progress boundary`
 
 ## Planned Follow-Up Streams
 

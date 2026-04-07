@@ -26,13 +26,13 @@
 
 ## 2.2 sprint-002-provenance-aware-findings-and-hybrid-review-baseline
 
-- Status: active
+- Status: completed
 - Sprint Goal: 把 provenance-aware governed findings、artifact rendering 分层与 hybrid review generation baseline 落到正式实现路径。
-- Task Package: `TK-627`、`TK-628`、`TK-629`。
+- Task Package: `TK-627`、`TK-628`、`TK-629`、`TK-646`、`TK-647`。
 
 ## 2.3 sprint-003-standards-guided-reviewer-handoff-and-source-aware-closure
 
-- Status: planned
+- Status: active
 - Sprint Goal: 收口 standards-guided reviewer handoff、adapter-neutral projection 与 `review-verify` source-aware closure 语义。
 - Task Package: `TK-630`、`TK-631`、`TK-632`。
 
@@ -50,10 +50,12 @@
 | TK-622 | sprint-001 | 冻结 first-phase projected rule subset 与 standards source mapping | contract/projection | TK-621 | completed |
 | TK-623 | sprint-001 | 收口 Phase A integration seam inventory 与 acceptance baseline | planning/acceptance | TK-621、TK-622 | completed |
 | TK-624 | sprint-001 | sprint-001 exit acceptance and sprint-002 activation handoff | closeout/handoff | TK-621、TK-622、TK-623、CR-001 | completed |
-| TK-627 | sprint-002 | 实现 provenance-aware finding contract 与 durable projection baseline | runtime/model | TK-621、TK-622 | in_progress |
-| TK-628 | sprint-002 | 更新 deterministic finding rule projection 与 review artifact rendering sections | runtime/rendering | TK-627 | planned |
-| TK-629 | sprint-002 | 接入 hybrid deterministic-plus-delegated review generation 与 dedupe merge baseline | runtime/orchestration | TK-627、TK-628 | planned |
-| TK-630 | sprint-003 | 定义 standards-guided reviewer handoff contract 与 adapter-neutral projection seam | contract/agent-projection | TK-621、TK-629 | planned |
+| TK-627 | sprint-002 | 实现 provenance-aware finding contract 与 durable projection baseline | runtime/model | TK-621、TK-622 | completed |
+| TK-628 | sprint-002 | 更新 deterministic finding rule projection 与 review artifact rendering sections | runtime/rendering | TK-627 | completed |
+| TK-629 | sprint-002 | 接入 hybrid deterministic-plus-delegated review generation 与 dedupe merge baseline | runtime/orchestration | TK-627、TK-628 | completed |
+| TK-646 | sprint-002 | 创建 technical-solution-review skill workflow 与 approval guardrails | workflow/skill | technical-solution.lifecycle-and-promotion-governance、TK-629 | completed |
+| TK-647 | sprint-002 | sprint-002 exit acceptance and sprint-003 activation handoff | closeout/handoff | TK-627、TK-628、TK-629、TK-646、CR-001、CR-002 | completed |
+| TK-630 | sprint-003 | 定义 standards-guided reviewer handoff contract 与 adapter-neutral projection seam | contract/agent-projection | TK-621、TK-629 | in_progress |
 | TK-631 | sprint-003 | 实现 review-verify source-aware closure semantics 与 rationale persistence | runtime/review-verify | TK-627、TK-628、TK-630 | planned |
 | TK-632 | sprint-003 | 集成 delegated CR loop projected rule loading 与 normalized finding ingestion | runtime/integration | TK-629、TK-630、TK-631 | planned |
 | TK-633 | sprint-004 | 增加 review rule coverage metrics 与 provenance-aware reporting surface | reporting/metrics | TK-629、TK-631 | planned |
@@ -81,3 +83,6 @@
 3. 2026-04-06：本次拆解将 `project-057` 从单 sprint 粗骨架扩展为 Phase A-D 对齐的 4 个顺序 sprint 与 12 个可执行任务。
 4. 2026-04-07：`project-055` final closeout 完成后，`project-057 / sprint-001` 被激活为当前 primary stream，`TK-621` 已切换为 `in_progress`。
 5. 2026-04-07：`sprint-001` 已在 `CR-001` clean `resolved` 后完成 closeout，并将 primary stream 推进到 `sprint-002 / TK-627`。
+6. 2026-04-07：按用户请求补充 `TK-646`，将 technical-solution review workflow skill 化并纳入 `sprint-002` 的治理收口面。
+7. 2026-04-07：`TK-627`、`TK-628`、`TK-629`、`TK-646` 与 `CR-001` 全部进入终态后，已立即创建 `TK-647` 作为 mandatory sprint closeout/handoff 任务。
+8. 2026-04-07：`CR-002` clean `resolved` 后，`TK-647 / DA-647` 已完成 sprint-002 closeout，并将 primary stream 推进到 `sprint-003 / TK-630`。
