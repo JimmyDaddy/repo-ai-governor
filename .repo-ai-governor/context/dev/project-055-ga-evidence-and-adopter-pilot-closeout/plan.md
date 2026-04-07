@@ -18,13 +18,13 @@
 
 ## 2.1 sprint-001-real-target-repo-adopter-pilot
 
-- Status: active
+- Status: completed
 - Sprint Goal: 选择真实目标仓库并完成 adopter rehearsal。
 - Task Package: `TK-613`、`TK-614`、`TK-615`。
 
 ## 2.2 sprint-002-ga-evidence-consolidation-and-closeout
 
-- Status: planned
+- Status: active
 - Sprint Goal: 将 pilot、timing、support matrix 与 maintainer evidence 汇总为统一 closeout 结论。
 - Task Package: `TK-616`、`TK-617`。
 
@@ -32,10 +32,10 @@
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 |---|---|---|---|---|---|
-| TK-613 | sprint-001 | freeze adopter pilot repository selection and acceptance rubric | pilot/contract | project-052、053 recommended | in_progress |
-| TK-614 | sprint-001 | execute pilot-1 install init doctor check verify dry-run rehearsal with timing evidence | pilot/execution | TK-613 | planned |
-| TK-615 | sprint-001 | execute pilot-2 upgrade workspace migration rollback rehearsal and capture delta findings | pilot/execution | TK-613 | planned |
-| TK-616 | sprint-002 | consolidate support matrix GA evidence and maintainer validation outputs into one dossier | evidence/docs | TK-614、TK-615 | planned |
+| TK-613 | sprint-001 | freeze adopter pilot repository selection and acceptance rubric | pilot/contract | project-052、053 recommended | completed |
+| TK-614 | sprint-001 | execute pilot-1 install init doctor check verify dry-run rehearsal with timing evidence | pilot/execution | TK-613 | completed |
+| TK-615 | sprint-001 | execute pilot-2 upgrade workspace migration rollback rehearsal and capture delta findings | pilot/execution | TK-613 | completed |
+| TK-616 | sprint-002 | consolidate support matrix GA evidence and maintainer validation outputs into one dossier | evidence/docs | TK-614、TK-615 | in_progress |
 | TK-617 | sprint-002 | close project-055 with GA readiness recommendation blockers and next-step decision memo | project/closeout | TK-616 | planned |
 
 ## 4. 依赖产物策略
@@ -55,3 +55,7 @@
 1. 2026-04-06：基于 `DA-588` 创建 `project-055` planned stream，作为 GA evidence consolidation follow-up。
 2. 2026-04-06：已写入 `sprint-001 ~ sprint-002` 与 `TK-613 ~ TK-617` skeleton，待后续按顺序激活。
 3. 2026-04-07：`project-054` final closeout 完成后，`project-055 / sprint-001` 被激活为当前 primary stream，`TK-613` 已切换为 `in_progress`。
+4. 2026-04-07：`TK-613 / DA-613` 已完成 pilot 仓库与 acceptance rubric 冻结；`TK-614` 已切换为 `in_progress`，开始 `playground` 的 simple pilot rehearsal。
+5. 2026-04-07：`TK-615` 已切换为 `in_progress`，开始在 `react-native-image-marker-1.1.x` 上执行 complex pilot rehearsal。
+6. 2026-04-07：`TK-614 / DA-614` 与 `TK-615 / DA-615` 已完成两条 adopter rehearsal；`sprint-001` 实现边界已结束，下一步进入 sprint-scoped CR loop。
+7. 2026-04-07：`CR-001` 已 resolved，`TK-643 / DA-643` 已完成 sprint-001 closeout，并激活 `sprint-002 / TK-616`。

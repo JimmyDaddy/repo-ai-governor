@@ -4,15 +4,15 @@
 
 - Status: active
 - Project: `project-055-ga-evidence-and-adopter-pilot-closeout`
-- Sprint: `sprint-001-real-target-repo-adopter-pilot`
+- Sprint: `sprint-002-ga-evidence-consolidation-and-closeout`
 - Docs root: `.repo-ai-governor/context/dev/project-055-ga-evidence-and-adopter-pilot-closeout`
-- Task records: `.repo-ai-governor/context/dev/project-055-ga-evidence-and-adopter-pilot-closeout/sprint-001-real-target-repo-adopter-pilot/tasks/`
-- Review records: `.repo-ai-governor/context/dev/project-055-ga-evidence-and-adopter-pilot-closeout/sprint-001-real-target-repo-adopter-pilot/review/`
-- Note: `2026-04-07` 在 `TK-642` 完成 `project-054` final closeout 后切换到 `project-055 / sprint-001`；执行顺序继续固定为 `project-055 -> project-057 -> project-056`。
+- Task records: `.repo-ai-governor/context/dev/project-055-ga-evidence-and-adopter-pilot-closeout/sprint-002-ga-evidence-consolidation-and-closeout/tasks/`
+- Review records: `.repo-ai-governor/context/dev/project-055-ga-evidence-and-adopter-pilot-closeout/sprint-002-ga-evidence-consolidation-and-closeout/review/`
+- Note: `2026-04-07` 在 `TK-643` 完成 `project-055 / sprint-001` closeout 后切换到 `project-055 / sprint-002`；执行顺序继续固定为 `project-055 -> project-057 -> project-056`。
 
 ## Active Streams
 
-- `active-1`: role=`primary`, project=`project-055-ga-evidence-and-adopter-pilot-closeout`, sprint=`sprint-001-real-target-repo-adopter-pilot`, docs=`.repo-ai-governor/context/dev/project-055-ga-evidence-and-adopter-pilot-closeout`, plan=`.repo-ai-governor/context/dev/project-055-ga-evidence-and-adopter-pilot-closeout/sprint-001-real-target-repo-adopter-pilot/plan.md`, tasks=`.repo-ai-governor/context/dev/project-055-ga-evidence-and-adopter-pilot-closeout/sprint-001-real-target-repo-adopter-pilot/tasks/`, checklist=`.repo-ai-governor/context/dev/project-055-ga-evidence-and-adopter-pilot-closeout/sprint-001-real-target-repo-adopter-pilot/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-055-ga-evidence-and-adopter-pilot-closeout/sprint-001-real-target-repo-adopter-pilot/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-055-ga-evidence-and-adopter-pilot-closeout/sprint-001-real-target-repo-adopter-pilot/review/`, status=`active`, note=`Activated on 2026-04-07 after TK-642 completed project-054 final closeout`
+- `active-1`: role=`primary`, project=`project-055-ga-evidence-and-adopter-pilot-closeout`, sprint=`sprint-002-ga-evidence-consolidation-and-closeout`, docs=`.repo-ai-governor/context/dev/project-055-ga-evidence-and-adopter-pilot-closeout`, plan=`.repo-ai-governor/context/dev/project-055-ga-evidence-and-adopter-pilot-closeout/sprint-002-ga-evidence-consolidation-and-closeout/plan.md`, tasks=`.repo-ai-governor/context/dev/project-055-ga-evidence-and-adopter-pilot-closeout/sprint-002-ga-evidence-consolidation-and-closeout/tasks/`, checklist=`.repo-ai-governor/context/dev/project-055-ga-evidence-and-adopter-pilot-closeout/sprint-002-ga-evidence-consolidation-and-closeout/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-055-ga-evidence-and-adopter-pilot-closeout/sprint-002-ga-evidence-consolidation-and-closeout/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-055-ga-evidence-and-adopter-pilot-closeout/sprint-002-ga-evidence-consolidation-and-closeout/review/`, status=`active`, note=`Activated on 2026-04-07 after TK-643 completed sprint-001 closeout`
 
 ## Planned Follow-Up Streams
 

@@ -1,6 +1,6 @@
 # TK-616 consolidate support matrix GA evidence and maintainer validation outputs into one dossier
 
-- Status: planned
+- Status: in_progress
 - Date: 2026-04-06
 - Task ID: `TK-616`
 - Owner: `AI-Agent`
@@ -54,6 +54,7 @@
 ## 9. 执行记录
 
 1. 2026-04-06：任务创建，等待 `sprint-001` 收口。
+2. 2026-04-07：`TK-643 / DA-643` 完成 `sprint-001` closeout 与 activation handoff 后，当前任务切换为 `in_progress`。
 
 ## 10. 产出
 

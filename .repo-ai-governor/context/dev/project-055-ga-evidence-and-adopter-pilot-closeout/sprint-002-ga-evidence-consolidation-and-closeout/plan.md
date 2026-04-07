@@ -1,6 +1,6 @@
 # sprint-002-ga-evidence-consolidation-and-closeout 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-06
 - Project: `project-055-ga-evidence-and-adopter-pilot-closeout`
 - Sprint Goal: 将 pilot、timing、support matrix 与 maintainer evidence 汇总为统一 closeout 结论。
@@ -19,3 +19,4 @@
 ## 3. Milestones
 
 1. 2026-04-06：作为 `project-055` 的第二个 planned sprint 创建，等待 `sprint-001` 收口后激活。
+2. 2026-04-07：`TK-643 / DA-643` 完成后被激活为当前 primary sprint，`TK-616` 已切换为 `in_progress`。
