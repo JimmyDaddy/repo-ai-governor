@@ -1,6 +1,6 @@
 # sprint-004-coverage-reporting-and-rollout-adoption 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-06
 - Project: `project-057-standards-native-review-engine-productization`
 - Sprint Goal: 建立 review coverage metrics、delegated review activation policy 与 project-057 closeout/handoff 基线。
@@ -20,3 +20,4 @@
 ## 3. Milestones
 
 1. 2026-04-06：作为 project-057 Phase D sprint 被创建，当前保持 `planned`。
+2. 2026-04-07：`TK-648 / DA-648` 完成 sprint-003 closeout 后被激活为当前 primary sprint，`TK-633` 已切换为 `in_progress`。

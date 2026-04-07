@@ -15,6 +15,7 @@ import {
   ExecutionProgressStage,
   ExecutionProgressStatus,
 } from '@repo-ai-governor/shared';
+import { ReviewFindingSourceType } from '@repo-ai-governor/standards';
 import { CliCommandName } from '../constants/cli-command.constant.js';
 import {
   CLI_DIAGNOSTIC_ROOT_CAUSE,
@@ -25,6 +26,8 @@ import {
 } from '../constants/cli-governance-runtime.constant.js';
 import {
   CliReviewArtifactId,
+  CliReviewFindingVerificationDecision,
+  CliReviewFindingVerificationMatchStrategy,
   CliReviewLifecycleStatus,
   CliReviewScopeMode,
   CliReviewVerifyDecision,
@@ -37,6 +40,7 @@ import type {
   CliCommandResultArtifact,
   CliCommandResultCheck,
   CliReviewFinding,
+  CliReviewFindingVerificationRecord,
   CliReviewRequestArtifactPayload,
   CliReviewStreamContext,
   CliReviewVerifyResultArtifactPayload,
@@ -350,14 +354,24 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
       changedPaths,
       riskEvaluation,
     });
-    const currentFindingFingerprints = new Set(
-      currentFindings.map((finding) => finding.fingerprint),
+    const findingDecisions = this.buildFindingVerificationRecords(
+      context,
+      sourceFindings,
+      currentFindings,
     );
     const acceptedFindings = sourceFindings.filter((finding) =>
-      currentFindingFingerprints.has(finding.fingerprint),
+      findingDecisions.some(
+        (decision) =>
+          decision.findingId === finding.findingId &&
+          decision.decision === CliReviewFindingVerificationDecision.ACCEPTED,
+      ),
     );
-    const rejectedFindings = sourceFindings.filter(
-      (finding) => !currentFindingFingerprints.has(finding.fingerprint),
+    const rejectedFindings = sourceFindings.filter((finding) =>
+      findingDecisions.some(
+        (decision) =>
+          decision.findingId === finding.findingId &&
+          decision.decision === CliReviewFindingVerificationDecision.REJECTED,
+      ),
     );
     const overallDecision =
       acceptedFindings.length > 0 && rejectedFindings.length > 0
@@ -382,6 +396,7 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
       verifiedAt,
       acceptedFindings,
       rejectedFindings,
+      findingDecisions,
       overallDecision,
       changedPaths,
       riskEvaluation,
@@ -556,6 +571,7 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
       overallDecision,
       acceptedFindingIds: acceptedFindings.map((finding) => finding.findingId),
       rejectedFindingIds: rejectedFindings.map((finding) => finding.findingId),
+      findingDecisions,
       ledgerBackfillPath,
       ledgerBackfillStatus,
       ...(ledgerTaskId ? { taskId: ledgerTaskId } : {}),
@@ -588,6 +604,7 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
       overallDecision,
       acceptedFindingIds: acceptedFindings.map((finding) => finding.findingId),
       rejectedFindingIds: rejectedFindings.map((finding) => finding.findingId),
+      findingDecisions,
       generatedArtifactPaths: [
         reviewRuntime.toRepositoryRelativePath(latestQueuedRequest.filePath),
         reviewRuntime.toRepositoryRelativePath(reviewArtifactPath),
@@ -912,6 +929,157 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
     ];
   }
 
+  private buildFindingVerificationRecords(
+    context: CliCommandExecutorContext,
+    sourceFindings: CliReviewFinding[],
+    currentFindings: CliReviewFinding[],
+  ): CliReviewFindingVerificationRecord[] {
+    return sourceFindings.map((sourceFinding) => {
+      const matchedCurrentFinding = this.findCurrentFindingMatch(sourceFinding, currentFindings);
+      const decision =
+        sourceFinding.sourceType === ReviewFindingSourceType.STANDARDS_GUIDED_INFERENCE ||
+        matchedCurrentFinding
+          ? CliReviewFindingVerificationDecision.ACCEPTED
+          : CliReviewFindingVerificationDecision.REJECTED;
+
+      return {
+        findingId: sourceFinding.findingId,
+        ruleId: sourceFinding.ruleId,
+        sourceType: sourceFinding.sourceType,
+        decision,
+        matchStrategy: this.resolveMatchStrategy(sourceFinding),
+        ...(matchedCurrentFinding
+          ? { matchedCurrentFindingId: matchedCurrentFinding.findingId }
+          : {}),
+        ...(this.buildReviewerRationale(sourceFinding)
+          ? { reviewerRationale: this.buildReviewerRationale(sourceFinding) }
+          : {}),
+        verificationRationale: this.buildVerificationRationale(
+          context,
+          sourceFinding,
+          matchedCurrentFinding,
+        ),
+      };
+    });
+  }
+
+  private findCurrentFindingMatch(
+    sourceFinding: CliReviewFinding,
+    currentFindings: CliReviewFinding[],
+  ): CliReviewFinding | undefined {
+    const matchStrategy = this.resolveMatchStrategy(sourceFinding);
+
+    switch (matchStrategy) {
+      case CliReviewFindingVerificationMatchStrategy.RULE_AND_FILE:
+        return currentFindings.find(
+          (currentFinding) =>
+            currentFinding.file === sourceFinding.file &&
+            (currentFinding.ruleId === sourceFinding.ruleId ||
+              (sourceFinding.semanticKey &&
+                currentFinding.semanticKey === sourceFinding.semanticKey)),
+        );
+      case CliReviewFindingVerificationMatchStrategy.FILE_AND_RISK_SIGNAL:
+        return currentFindings.find(
+          (currentFinding) =>
+            currentFinding.file === sourceFinding.file &&
+            (currentFinding.sourceType === ReviewFindingSourceType.RISK_INFERENCE ||
+              currentFinding.ruleId === sourceFinding.ruleId),
+        );
+      default:
+        return currentFindings.find(
+          (currentFinding) => currentFinding.fingerprint === sourceFinding.fingerprint,
+        );
+    }
+  }
+
+  private resolveMatchStrategy(
+    sourceFinding: CliReviewFinding,
+  ): CliReviewFindingVerificationMatchStrategy {
+    switch (sourceFinding.sourceType) {
+      case ReviewFindingSourceType.STANDARDS_GUIDED_INFERENCE:
+        return CliReviewFindingVerificationMatchStrategy.RULE_AND_FILE;
+      case ReviewFindingSourceType.RISK_INFERENCE:
+        return CliReviewFindingVerificationMatchStrategy.FILE_AND_RISK_SIGNAL;
+      default:
+        return CliReviewFindingVerificationMatchStrategy.FINGERPRINT_EXACT;
+    }
+  }
+
+  private buildReviewerRationale(sourceFinding: CliReviewFinding): string | undefined {
+    if (
+      typeof sourceFinding.reviewerRationale === 'string' &&
+      sourceFinding.reviewerRationale.trim().length > 0
+    ) {
+      return sourceFinding.reviewerRationale.trim();
+    }
+
+    if (sourceFinding.sourceType === ReviewFindingSourceType.STANDARDS_GUIDED_INFERENCE) {
+      return `${sourceFinding.summary} ${sourceFinding.impact}`.trim();
+    }
+
+    if (sourceFinding.sourceType === ReviewFindingSourceType.RISK_INFERENCE) {
+      return sourceFinding.impact.trim();
+    }
+
+    return undefined;
+  }
+
+  private buildVerificationRationale(
+    context: CliCommandExecutorContext,
+    sourceFinding: CliReviewFinding,
+    matchedCurrentFinding: CliReviewFinding | undefined,
+  ): string {
+    const matchStrategy = this.resolveMatchStrategy(sourceFinding);
+
+    if (
+      sourceFinding.sourceType === ReviewFindingSourceType.STANDARDS_GUIDED_INFERENCE &&
+      !matchedCurrentFinding
+    ) {
+      return context.localizeText(
+        'Same-round review-verify does not have fresh delegated recheck evidence for a standards-guided finding. Keep the finding open, preserve the reviewer rationale, and require a fresh reviewer round before closure.',
+        '同轮 review-verify 没有 fresh delegated recheck 证据来关闭 standards-guided finding；当前需保持该 finding 为 open，保留 reviewer rationale，并等待新的 reviewer round 再决定 closure。',
+      );
+    }
+
+    if (matchedCurrentFinding) {
+      switch (matchStrategy) {
+        case CliReviewFindingVerificationMatchStrategy.RULE_AND_FILE:
+          return context.localizeText(
+            'Standards-guided concern remains open because the same projected rule semantics still appear on the same file in the current scope.',
+            'standards-guided concern 仍保持 open，因为相同的 projected rule 语义仍出现在当前 scope 的同一文件上。',
+          );
+        case CliReviewFindingVerificationMatchStrategy.FILE_AND_RISK_SIGNAL:
+          return context.localizeText(
+            'Risk observation remains open because a current risk signal still exists on the same file.',
+            'risk observation 仍保持 open，因为同一文件上仍存在当前风险信号。',
+          );
+        default:
+          return context.localizeText(
+            'Finding remains open because the exact deterministic fingerprint still reproduces in the current scope.',
+            'finding 仍保持 open，因为精确 deterministic fingerprint 在当前 scope 中仍可复现。',
+          );
+      }
+    }
+
+    switch (matchStrategy) {
+      case CliReviewFindingVerificationMatchStrategy.RULE_AND_FILE:
+        return context.localizeText(
+          'No current finding with the same projected rule semantics remains on the same file. The original reviewer rationale is preserved for audit, and this same-round verify path closes the standards-guided concern.',
+          '同一文件上已没有匹配的 projected rule 语义 finding；原始 reviewer rationale 会保留为审计证据，而这次同轮 verify 将关闭该 standards-guided concern。',
+        );
+      case CliReviewFindingVerificationMatchStrategy.FILE_AND_RISK_SIGNAL:
+        return context.localizeText(
+          'No current risk signal remains on the same file. The risk observation is rejected while keeping the audit trail intact.',
+          '同一文件上已没有当前风险信号；该 risk observation 会被 reject，但审计轨迹会继续保留。',
+        );
+      default:
+        return context.localizeText(
+          'The exact deterministic fingerprint no longer reproduces in the current scope, so this verification pass rejects the finding with an explicit closure reason.',
+          '精确 deterministic fingerprint 已不再能在当前 scope 中复现，因此本次 verification 会以显式 closure 理由 reject 该 finding。',
+        );
+    }
+  }
+
   private resolveSourceFindings(
     requestPayload: CliReviewRequestArtifactPayload | null,
   ): CliReviewFinding[] {
@@ -1082,6 +1250,7 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
       verifiedAt: string;
       acceptedFindings: CliReviewFinding[];
       rejectedFindings: CliReviewFinding[];
+      findingDecisions: CliReviewFindingVerificationRecord[];
       overallDecision: CliReviewVerifyDecision;
       changedPaths: string[];
       riskEvaluation: ReturnType<CliReviewLifecycleRuntime['evaluateRisk']>;
@@ -1112,35 +1281,28 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
       verifiedAt: string;
       acceptedFindings: CliReviewFinding[];
       rejectedFindings: CliReviewFinding[];
+      findingDecisions: CliReviewFindingVerificationRecord[];
       overallDecision: CliReviewVerifyDecision;
       changedPaths: string[];
       riskEvaluation: ReturnType<CliReviewLifecycleRuntime['evaluateRisk']>;
     },
   ): string {
-    const acceptedSection =
-      options.acceptedFindings.length > 0
-        ? options.acceptedFindings
-            .map(
-              (finding, index) =>
-                `${index + 1}. \`${finding.findingId}\` ${context.localizeText('still reproduces in the current scope.', '在当前 scope 中仍可复现。')}`,
-            )
-            .join('\n')
-        : context.localizeText(
-            '1. No findings remain reproducible in the current scope.',
-            '1. 当前 scope 中已没有仍可复现的 finding。',
-          );
-    const rejectedSection =
-      options.rejectedFindings.length > 0
-        ? options.rejectedFindings
-            .map(
-              (finding, index) =>
-                `${index + 1}. \`${finding.findingId}\` ${context.localizeText('no longer reproduces in the current scope.', '在当前 scope 中已不再复现。')}`,
-            )
-            .join('\n')
-        : context.localizeText(
-            '1. No findings were rejected in this verification pass.',
-            '1. 本次 verification 没有 rejected finding。',
-          );
+    const acceptedSection = this.renderFindingDecisionSection(context, {
+      findingDecisions: options.findingDecisions,
+      decision: CliReviewFindingVerificationDecision.ACCEPTED,
+      fallback: context.localizeText(
+        'No findings remain reproducible in the current scope.',
+        '当前 scope 中已没有仍可复现的 finding。',
+      ),
+    });
+    const rejectedSection = this.renderFindingDecisionSection(context, {
+      findingDecisions: options.findingDecisions,
+      decision: CliReviewFindingVerificationDecision.REJECTED,
+      fallback: context.localizeText(
+        'No findings were rejected in this verification pass.',
+        '本次 verification 没有 rejected finding。',
+      ),
+    });
 
     return [
       `## ${context.localizeText('Verification Decision', '复核结论')} (${options.verifiedAt.slice(0, 10)})`,
@@ -1174,5 +1336,46 @@ export class CliReviewVerifyCommand implements CliCommandExecutor {
           )}`,
       '',
     ].join('\n');
+  }
+
+  private renderFindingDecisionSection(
+    context: CliCommandExecutorContext,
+    options: {
+      findingDecisions: CliReviewFindingVerificationRecord[];
+      decision: CliReviewFindingVerificationDecision;
+      fallback: string;
+    },
+  ): string {
+    const filteredFindingDecisions = options.findingDecisions.filter(
+      (findingDecision) => findingDecision.decision === options.decision,
+    );
+
+    if (filteredFindingDecisions.length === 0) {
+      return `1. ${options.fallback}`;
+    }
+
+    return filteredFindingDecisions
+      .map((findingDecision, index) => {
+        const lines = [
+          `${index + 1}. \`${findingDecision.findingId}\` (${findingDecision.sourceType ?? 'legacy_untyped'})`,
+          `   - ${context.localizeText('Match Strategy', '匹配策略')}: \`${findingDecision.matchStrategy}\``,
+          `   - ${context.localizeText('Verification Rationale', '复核理由')}: ${findingDecision.verificationRationale}`,
+        ];
+
+        if (findingDecision.reviewerRationale) {
+          lines.push(
+            `   - ${context.localizeText('Reviewer Rationale', 'Reviewer 理由')}: ${findingDecision.reviewerRationale}`,
+          );
+        }
+
+        if (findingDecision.matchedCurrentFindingId) {
+          lines.push(
+            `   - ${context.localizeText('Matched Current Finding', '命中的当前 finding')}: \`${findingDecision.matchedCurrentFindingId}\``,
+          );
+        }
+
+        return lines.join('\n');
+      })
+      .join('\n');
   }
 }

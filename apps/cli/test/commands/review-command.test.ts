@@ -230,6 +230,7 @@ describe('CliReviewCommand', () => {
       expect(typeof requestPath).toBe('string');
 
       const requestPayload = JSON.parse(await readFile(String(requestPath), 'utf8')) as {
+        requestId?: string;
         status?: string;
         reviewArtifactStatus?: string;
         reviewTaskId?: string;
@@ -244,6 +245,11 @@ describe('CliReviewCommand', () => {
           projectedRuleBundle?: { bundleId?: string };
           uncoveredRuleIds?: string[];
           delegatedReviewEnabled?: boolean;
+          delegatedReviewRequest?: {
+            requestId?: string;
+            reviewSurface?: string[];
+            requiredNormativeInputs?: string[];
+          };
         };
       };
       expect(requestPayload.status).toBe(CLI_REVIEW_REQUEST_STATUS.QUEUED);
@@ -271,6 +277,15 @@ describe('CliReviewCommand', () => {
         'bundle.review.phase-a',
       );
       expect(requestPayload.hybridReviewContext?.delegatedReviewEnabled).toBe(false);
+      expect(requestPayload.hybridReviewContext?.delegatedReviewRequest?.requestId).toBe(
+        requestPayload.requestId,
+      );
+      expect(requestPayload.hybridReviewContext?.delegatedReviewRequest?.reviewSurface).toEqual(
+        expect.arrayContaining(['apps/cli/src/review-scope.ts']),
+      );
+      expect(
+        requestPayload.hybridReviewContext?.delegatedReviewRequest?.requiredNormativeInputs,
+      ).toEqual(expect.arrayContaining(['AGENTS.md']));
       expect(requestPayload.hybridReviewContext?.uncoveredRuleIds).toEqual(
         expect.arrayContaining(['review-rule.cs-034-build-evidence']),
       );
@@ -279,6 +294,8 @@ describe('CliReviewCommand', () => {
       expect(reviewArtifactContent).toContain('## 2. Deterministic Rule Findings');
       expect(reviewArtifactContent).toContain('## 3. Standards-Guided Findings');
       expect(reviewArtifactContent).toContain('## 4. Residual Risk Observations');
+      expect(reviewArtifactContent).toContain('## 6. Delegated Reviewer Handoff');
+      expect(reviewArtifactContent).toContain('transport view');
       expect(reviewArtifactContent).toContain('code_change_without_test_change');
       expect(reviewArtifactContent).toContain('risk_inference');
     } finally {

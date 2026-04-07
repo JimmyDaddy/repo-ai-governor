@@ -32,13 +32,13 @@
 
 ## 2.3 sprint-003-standards-guided-reviewer-handoff-and-source-aware-closure
 
-- Status: active
+- Status: completed
 - Sprint Goal: 收口 standards-guided reviewer handoff、adapter-neutral projection 与 `review-verify` source-aware closure 语义。
-- Task Package: `TK-630`、`TK-631`、`TK-632`。
+- Task Package: `TK-630`、`TK-631`、`TK-632`、`TK-648`。
 
 ## 2.4 sprint-004-coverage-reporting-and-rollout-adoption
 
-- Status: planned
+- Status: active
 - Sprint Goal: 建立 review coverage metrics、delegated review activation policy 与 project-057 closeout/handoff 基线。
 - Task Package: `TK-633`、`TK-634`、`TK-635`。
 
@@ -55,9 +55,10 @@
 | TK-629 | sprint-002 | 接入 hybrid deterministic-plus-delegated review generation 与 dedupe merge baseline | runtime/orchestration | TK-627、TK-628 | completed |
 | TK-646 | sprint-002 | 创建 technical-solution-review skill workflow 与 approval guardrails | workflow/skill | technical-solution.lifecycle-and-promotion-governance、TK-629 | completed |
 | TK-647 | sprint-002 | sprint-002 exit acceptance and sprint-003 activation handoff | closeout/handoff | TK-627、TK-628、TK-629、TK-646、CR-001、CR-002 | completed |
-| TK-630 | sprint-003 | 定义 standards-guided reviewer handoff contract 与 adapter-neutral projection seam | contract/agent-projection | TK-621、TK-629 | in_progress |
-| TK-631 | sprint-003 | 实现 review-verify source-aware closure semantics 与 rationale persistence | runtime/review-verify | TK-627、TK-628、TK-630 | planned |
-| TK-632 | sprint-003 | 集成 delegated CR loop projected rule loading 与 normalized finding ingestion | runtime/integration | TK-629、TK-630、TK-631 | planned |
+| TK-630 | sprint-003 | 定义 standards-guided reviewer handoff contract 与 adapter-neutral projection seam | contract/agent-projection | TK-621、TK-629 | completed |
+| TK-631 | sprint-003 | 实现 review-verify source-aware closure semantics 与 rationale persistence | runtime/review-verify | TK-627、TK-628、TK-630 | completed |
+| TK-632 | sprint-003 | 集成 delegated CR loop projected rule loading 与 normalized finding ingestion | runtime/integration | TK-629、TK-630、TK-631 | completed |
+| TK-648 | sprint-003 | sprint-003 exit acceptance and sprint-004 activation handoff | closeout/handoff | TK-630、TK-631、TK-632、CR-001 | completed |
 | TK-633 | sprint-004 | 增加 review rule coverage metrics 与 provenance-aware reporting surface | reporting/metrics | TK-629、TK-631 | planned |
 | TK-634 | sprint-004 | 定义 deterministic coverage incomplete 的 delegated review activation policy | policy/rollout | TK-633 | planned |
 | TK-635 | sprint-004 | 完成 project-057 rollout handoff、adoption evidence 与 closeout baseline | closeout/handoff | TK-633、TK-634 | planned |
@@ -86,3 +87,5 @@
 6. 2026-04-07：按用户请求补充 `TK-646`，将 technical-solution review workflow skill 化并纳入 `sprint-002` 的治理收口面。
 7. 2026-04-07：`TK-627`、`TK-628`、`TK-629`、`TK-646` 与 `CR-001` 全部进入终态后，已立即创建 `TK-647` 作为 mandatory sprint closeout/handoff 任务。
 8. 2026-04-07：`CR-002` clean `resolved` 后，`TK-647 / DA-647` 已完成 sprint-002 closeout，并将 primary stream 推进到 `sprint-003 / TK-630`。
+9. 2026-04-07：`TK-630`、`TK-631`、`TK-632` 的实现与边界验证已完成，`sprint-003` 准备进入 fresh reviewer CR round。
+10. 2026-04-07：`CR-001` clean `resolved` 后，`TK-648 / DA-648` 已完成 sprint-003 closeout，并将 primary stream 推进到 `sprint-004 / TK-633`。

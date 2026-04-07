@@ -1,6 +1,6 @@
 # TK-630 定义 standards-guided reviewer handoff contract 与 adapter-neutral projection seam
 
-- Status: in_progress
+- Status: completed
 - Date: 2026-04-06
 - Owner: `AI-Agent`
 - Priority: `P1`
@@ -55,8 +55,9 @@
 
 1. 2026-04-06：任务创建，状态初始化为 `planned`。
 2. 2026-04-07：`TK-647` 完成 sprint-002 closeout 后被激活为 `in_progress`，作为 `project-057 / sprint-003` 的首个执行边界。
+3. 2026-04-07：已将 delegated reviewer handoff 明确为结构化 contract，并让 `workspace-scoped-cr-loop` 的 bootstrap/render prompt 输出把 markdown prompt 降级为 transport view；CLI `hybridReviewContext` 也开始保留结构化 delegated handoff 请求。
 
 ## 10. 产出
 
-1. 待执行：standards-guided reviewer handoff contract
-2. 待执行：adapter-neutral projection seam 说明
+1. 已完成：standards-guided reviewer handoff contract
+2. 已完成：adapter-neutral projection seam 说明

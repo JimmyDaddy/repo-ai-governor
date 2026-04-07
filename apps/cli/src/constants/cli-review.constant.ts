@@ -31,6 +31,23 @@ export enum CliReviewVerifyDecision {
 }
 
 /**
+ * Defines per-finding verification decisions retained for source-aware closure audit.
+ */
+export enum CliReviewFindingVerificationDecision {
+  ACCEPTED = 'accepted',
+  REJECTED = 'rejected',
+}
+
+/**
+ * Defines matching strategies used by review-verify for different finding provenance groups.
+ */
+export enum CliReviewFindingVerificationMatchStrategy {
+  FINGERPRINT_EXACT = 'fingerprint_exact',
+  RULE_AND_FILE = 'rule_and_file',
+  FILE_AND_RISK_SIGNAL = 'file_and_risk_signal',
+}
+
+/**
  * Re-exports governed source-type values used by structured review findings.
  */
 export {
@@ -62,6 +79,21 @@ export enum CliReviewArtifactId {
   REVIEW_VERIFY_RESULT = 'review_verify_result',
   REVIEW_LEDGER_BACKFILL = 'review_ledger_backfill',
 }
+
+/**
+ * Declares the baseline normative inputs that delegated reviewer handoff must keep explicit.
+ */
+export const CLI_REVIEW_REQUIRED_NORMATIVE_INPUTS = [
+  'AGENTS.md',
+  '.repo-ai-governor/context/current-context.md',
+  '.repo-ai-governor/normative_knowledge_sources/normative-loading-manifest.yaml',
+  '.repo-ai-governor/normative_knowledge_sources/product-requirements-brief.md',
+  '.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md',
+  '.repo-ai-governor/normative_knowledge_sources/governance/cr-lifecycle-threshold-spec.md',
+  '.repo-ai-governor/normative_knowledge_sources/governance/task-ledger-single-write-source-contract.md',
+  '.repo-ai-governor/normative_knowledge_sources/governance/execution-gate-layering-spec.md',
+  '.repo-ai-governor/normative_knowledge_sources/governance/long-term-maintenance-guide.md',
+] as const;
 
 /**
  * Maps lifecycle status to canonical review filename prefixes accepted by governance gates.

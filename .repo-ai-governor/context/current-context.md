@@ -4,15 +4,15 @@
 
 - Status: active
 - Project: `project-057-standards-native-review-engine-productization`
-- Sprint: `sprint-003-standards-guided-reviewer-handoff-and-source-aware-closure`
+- Sprint: `sprint-004-coverage-reporting-and-rollout-adoption`
 - Docs root: `.repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization`
-- Task records: `.repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization/sprint-003-standards-guided-reviewer-handoff-and-source-aware-closure/tasks/`
-- Review records: `.repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization/sprint-003-standards-guided-reviewer-handoff-and-source-aware-closure/review/`
-- Note: `2026-04-07` 在 `TK-647` 完成 `sprint-002` closeout 后切换到 `project-057 / sprint-003`；当前按既定顺序继续执行 `project-057 -> project-056`。
+- Task records: `.repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization/sprint-004-coverage-reporting-and-rollout-adoption/tasks/`
+- Review records: `.repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization/sprint-004-coverage-reporting-and-rollout-adoption/review/`
+- Note: `2026-04-07` 在 `TK-648` 完成 `sprint-003` closeout 后切换到 `project-057 / sprint-004`；当前按既定顺序继续执行 `project-057 -> project-056`。
 
 ## Active Streams
 
-- `active-1`: role=`primary`, project=`project-057-standards-native-review-engine-productization`, sprint=`sprint-003-standards-guided-reviewer-handoff-and-source-aware-closure`, docs=`.repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization`, plan=`.repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization/sprint-003-standards-guided-reviewer-handoff-and-source-aware-closure/plan.md`, tasks=`.repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization/sprint-003-standards-guided-reviewer-handoff-and-source-aware-closure/tasks/`, checklist=`.repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization/sprint-003-standards-guided-reviewer-handoff-and-source-aware-closure/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization/sprint-003-standards-guided-reviewer-handoff-and-source-aware-closure/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization/sprint-003-standards-guided-reviewer-handoff-and-source-aware-closure/review/`, status=`active`, note=`Activated on 2026-04-07 after TK-647 completed sprint-002 closeout; TK-630 is the first in-progress boundary`
+- `active-1`: role=`primary`, project=`project-057-standards-native-review-engine-productization`, sprint=`sprint-004-coverage-reporting-and-rollout-adoption`, docs=`.repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization`, plan=`.repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization/sprint-004-coverage-reporting-and-rollout-adoption/plan.md`, tasks=`.repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization/sprint-004-coverage-reporting-and-rollout-adoption/tasks/`, checklist=`.repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization/sprint-004-coverage-reporting-and-rollout-adoption/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization/sprint-004-coverage-reporting-and-rollout-adoption/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization/sprint-004-coverage-reporting-and-rollout-adoption/review/`, status=`active`, note=`Activated on 2026-04-07 after TK-648 completed sprint-003 closeout; TK-633 is the first in-progress boundary`
 
 ## Planned Follow-Up Streams
 

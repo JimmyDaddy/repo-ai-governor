@@ -19,6 +19,8 @@ import { CliInteractiveUiMode } from '../../src/constants/cli-interactive-shell.
 import {
   CliReviewFindingRuleId,
   CliReviewFindingSeverity,
+  CliReviewFindingSourceType,
+  CliReviewFindingVerificationMatchStrategy,
   CliReviewLifecycleStatus,
   CliReviewScopeMode,
 } from '../../src/constants/cli-review.constant.js';
@@ -830,6 +832,90 @@ describe('CliReviewVerifyCommand', () => {
       expect(reviewTaskCardContent).toContain('- Status: verified');
       expect(reviewTaskCardContent).toContain('review-verify moved CR-001 to verified');
       expect(reviewTaskCardContent).toContain('ledger backfill applied for CR-001');
+    } finally {
+      await rm(fixture.tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('keeps standards-guided findings open until a fresh delegated recheck while preserving rationale', async () => {
+    const fixture = await createReviewVerifyFixture();
+
+    try {
+      await initGitRepository(fixture.tempRoot);
+      const sourceReviewArtifactPath = await writeReviewArtifact(
+        fixture.reviewDirPath,
+        'code_review_working-tree-standards-guided.md',
+        {
+          status: CliReviewLifecycleStatus.REVIEW_PENDING,
+          taskId: null,
+        },
+      );
+      await writeQueuedRequest(
+        fixture,
+        'review-100.json',
+        createRequestPayload({
+          requestId: 'review-100',
+          workspaceRoot: fixture.workspaceRoot,
+          reviewArtifactPath: sourceReviewArtifactPath,
+          reviewArtifactStatus: CliReviewLifecycleStatus.REVIEW_PENDING,
+          reviewSlug: 'working-tree-standards-guided',
+          findings: [
+            {
+              findingId: 'review-rule-cs-033-user-facing-i18n-apps-cli-src-commands-review-ts-0',
+              fingerprint: 'review-rule.cs-033-user-facing-i18n:apps/cli/src/commands/review.ts:0',
+              ruleId: 'review-rule.cs-033-user-facing-i18n',
+              severity: CliReviewFindingSeverity.P1,
+              sourceType: CliReviewFindingSourceType.STANDARDS_GUIDED_INFERENCE,
+              title: 'User-facing copy bypasses i18n',
+              file: 'apps/cli/src/commands/review.ts',
+              summary: 'Reviewer observed direct user-facing copy in the command surface.',
+              impact: 'Adopter-facing output may drift from the repository i18n baseline.',
+              suggestedAction: 'Move the copy through localizeText or an i18n key.',
+              evidence: ['apps/cli/src/commands/review.ts'],
+              reviewerRationale:
+                'The delegated reviewer saw user-facing command copy that was not obviously routed through i18n.',
+            },
+          ],
+        }),
+      );
+
+      const commandResult = await fixture.command.execute(fixture.context);
+      const verifyArtifactPath = commandResult.commandResult.artifacts?.find(
+        (artifact) => artifact.id === 'review_verify_result',
+      )?.path;
+      const reviewArtifactPath = commandResult.commandResult.artifacts?.find(
+        (artifact) => artifact.id === 'review_artifact',
+      )?.path;
+      expect(typeof verifyArtifactPath).toBe('string');
+      expect(typeof reviewArtifactPath).toBe('string');
+
+      const verifyPayload = JSON.parse(await readFile(String(verifyArtifactPath), 'utf8')) as {
+        overallDecision?: string;
+        reviewArtifactStatus?: string;
+        findingDecisions?: Array<{
+          matchStrategy?: string;
+          reviewerRationale?: string;
+          verificationRationale?: string;
+        }>;
+      };
+      expect(verifyPayload.overallDecision).toBe('accepted');
+      expect(verifyPayload.reviewArtifactStatus).toBe('verified');
+      expect(verifyPayload.findingDecisions).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            matchStrategy: CliReviewFindingVerificationMatchStrategy.RULE_AND_FILE,
+            reviewerRationale:
+              'The delegated reviewer saw user-facing command copy that was not obviously routed through i18n.',
+          }),
+        ]),
+      );
+      expect(verifyPayload.findingDecisions?.[0]?.verificationRationale).toContain(
+        'fresh delegated recheck',
+      );
+
+      const reviewArtifactContent = await readFile(String(reviewArtifactPath), 'utf8');
+      expect(reviewArtifactContent).toContain('Reviewer Rationale');
+      expect(reviewArtifactContent).toContain('fresh delegated recheck');
     } finally {
       await rm(fixture.tempRoot, { recursive: true, force: true });
     }

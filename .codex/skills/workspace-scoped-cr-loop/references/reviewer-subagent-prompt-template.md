@@ -17,6 +17,7 @@ Use this template when `workspace-scoped-cr-loop` spawns a fresh reviewer. Fill 
 11. `<extra_normative_docs>`: optional additional docs triggered by the scope
 12. `<review_focus>`: optional extra emphasis for known risk areas
 13. `<review_surface>`: exact paths or boundary slices the reviewer should prioritize inside the scope
+14. `<structured_handoff_contract>`: rendered JSON transport view of the canonical delegated reviewer handoff contract
 
 ## Assembly Rules
 
@@ -72,6 +73,11 @@ Verification context:
 Additional focus:
 <review_focus>
 
+Structured handoff contract:
+```json
+<structured_handoff_contract>
+```
+
 Expected output:
 1. Severity-ordered actionable findings with:
    - short title
@@ -80,6 +86,18 @@ Expected output:
    - normative citation when applicable
 2. Residual risks or missing-test notes that do not rise to actionable findings
 3. A short verification note describing what evidence you relied on and what still needs rerun after fixes
+4. When actionable findings exist, append a fenced `json` array containing normalized reviewer findings with fields:
+   - `ruleId` when applicable
+   - `sourceType` (`standards_guided_inference` or `risk_inference`)
+   - `severity`
+   - `title`
+   - `file`
+   - `line` when known
+   - `summary`
+   - `impact`
+   - `suggestedAction`
+   - `evidence`
+   - `reviewerRationale`
 
 If you believe the round is clean, say so explicitly and state that no actionable findings were identified for this scope.
 ```

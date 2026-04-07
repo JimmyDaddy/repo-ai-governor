@@ -6,6 +6,7 @@ function parseArgs(argv) {
     verification: [],
     reviewFocus: [],
     reviewSurface: [],
+    uncoveredRuleIds: [],
     json: false,
     help: false,
     resume: false,
@@ -85,6 +86,15 @@ function parseArgs(argv) {
       case 'review-surface':
         options.reviewSurface.push(value);
         break;
+      case 'projected-rules-json':
+        options.projectedRulesJson = value;
+        break;
+      case 'deterministic-findings-json':
+        options.deterministicFindingsJson = value;
+        break;
+      case 'uncovered-rule-id':
+        options.uncoveredRuleIds.push(value);
+        break;
       default:
         fail(`Unknown option: --${key}`);
     }
@@ -93,8 +103,12 @@ function parseArgs(argv) {
   return options;
 }
 
+function printLine(value = '') {
+  process.stdout.write(`${value}\n`);
+}
+
 function printHelp() {
-  console.log(`Usage:
+  printLine(`Usage:
   node ./.codex/skills/workspace-scoped-cr-loop/scripts/render-reviewer-subagent-prompt.mjs \\
     --tasks-dir <sprint-tasks-dir> \\
     --scope-kind <task|sprint|project> \\
@@ -106,6 +120,9 @@ function printHelp() {
     [--verification "<command>"]... \\
     [--review-surface "<path-or-slice>"]... \\
     [--extra-doc <path>]... \\
+    [--projected-rules-json <path>] \\
+    [--deterministic-findings-json <path>] \\
+    [--uncovered-rule-id <rule-id>]... \\
     [--review-focus "<note>"]... \\
     [--json]
 
@@ -126,28 +143,32 @@ function ensureRequired(options, key) {
 }
 
 function printTextResult(result) {
-  console.log(`CR_TASK_ID=${result.crTaskId}`);
-  console.log(`CR_TASK_ID_SOURCE=${result.crTaskIdSource}`);
+  printLine(`CR_TASK_ID=${result.crTaskId}`);
+  printLine(`CR_TASK_ID_SOURCE=${result.crTaskIdSource}`);
   if (result.crReservationPath) {
-    console.log(`CR_RESERVATION_PATH=${result.crReservationPath}`);
+    printLine(`CR_RESERVATION_PATH=${result.crReservationPath}`);
   }
-  console.log(`ROUND_NUMBER=${result.roundNumber}`);
-  console.log(`REPORT_SLUG=${result.reportSlug}`);
-  console.log(`REVIEW_DIR=${result.reviewDir}`);
-  console.log(`ENCLOSING_SPRINT_LABEL=${result.enclosingSprintLabel}`);
-  console.log(`REVIEW_SURFACE_COUNT=${result.reviewSurface.length}`);
+  printLine(`ROUND_NUMBER=${result.roundNumber}`);
+  printLine(`REPORT_SLUG=${result.reportSlug}`);
+  printLine(`REVIEW_DIR=${result.reviewDir}`);
+  printLine(`ENCLOSING_SPRINT_LABEL=${result.enclosingSprintLabel}`);
+  printLine(`REVIEW_SURFACE_COUNT=${result.reviewSurface.length}`);
 
   if (result.reviewSurface.length > 0) {
-    console.log('REVIEW_SURFACE:');
+    printLine('REVIEW_SURFACE:');
     for (const reviewSurfaceEntry of result.reviewSurface) {
-      console.log(`- ${reviewSurfaceEntry}`);
+      printLine(`- ${reviewSurfaceEntry}`);
     }
   }
 
-  console.log('');
-  console.log('--- BEGIN PROMPT ---');
-  console.log(result.prompt);
-  console.log('--- END PROMPT ---');
+  printLine();
+  printLine('--- BEGIN STRUCTURED HANDOFF CONTRACT ---');
+  printLine(JSON.stringify(result.delegatedReviewRequest, null, 2));
+  printLine('--- END STRUCTURED HANDOFF CONTRACT ---');
+  printLine();
+  printLine('--- BEGIN PROMPT ---');
+  printLine(result.prompt);
+  printLine('--- END PROMPT ---');
 }
 
 function main() {
@@ -166,7 +187,7 @@ function main() {
   const result = buildPromptResult(options);
 
   if (options.json) {
-    console.log(JSON.stringify(result, null, 2));
+    printLine(JSON.stringify(result, null, 2));
     return;
   }
 

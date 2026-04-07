@@ -114,7 +114,24 @@ export class CliReviewCommand implements CliCommandExecutor {
       changedPaths,
       riskEvaluation,
     });
+    const scopeSummary = this.buildScopeSummary(
+      context,
+      reviewMode,
+      taskId,
+      changedPaths,
+      riskEvaluation,
+      streamContext,
+    );
     const hybridReviewContext = hybridReviewRuntime.buildHybridReviewContext({
+      requestId,
+      scope: {
+        reviewMode,
+        scopeSummary,
+        reviewedPaths: changedPaths,
+        excludedPaths: reviewRuntime.resolveGeneratedPathPrefixes(),
+        riskLevel: riskEvaluation.riskLevel,
+        requiredAction: riskEvaluation.requiredAction,
+      },
       changedPaths,
       findings: generatedFindings,
     });
@@ -137,14 +154,6 @@ export class CliReviewCommand implements CliCommandExecutor {
       status: reviewStatus,
       slug: reviewSlug,
     });
-    const scopeSummary = this.buildScopeSummary(
-      context,
-      reviewMode,
-      taskId,
-      changedPaths,
-      riskEvaluation,
-      streamContext,
-    );
     const notes = this.buildReviewNotes(
       context,
       reviewStatus,
@@ -662,6 +671,10 @@ export class CliReviewCommand implements CliCommandExecutor {
       '## 4. 剩余风险观察',
     );
     const notesHeading = context.localizeText('## 5. Notes', '## 5. 说明');
+    const handoffHeading = context.localizeText(
+      '## 6. Delegated Reviewer Handoff',
+      '## 6. 委托 reviewer 交接契约',
+    );
     const deterministicFindings = options.findings.filter(
       (finding) => finding.sourceType === ReviewFindingSourceType.DETERMINISTIC_RULE,
     );
@@ -734,6 +747,10 @@ export class CliReviewCommand implements CliCommandExecutor {
       '',
       ...options.notes.map((note, index) => `${index + 1}. ${note}`),
       '',
+      handoffHeading,
+      '',
+      ...this.renderDelegatedReviewHandoff(context, options.hybridReviewContext),
+      '',
     ].join('\n');
   }
 
@@ -797,6 +814,33 @@ export class CliReviewCommand implements CliCommandExecutor {
 
   private renderListField(label: string, values: string[]): string[] {
     return values.map((value, index) => `- ${label} ${index + 1}: ${value}`);
+  }
+
+  private renderDelegatedReviewHandoff(
+    context: CliCommandExecutorContext,
+    hybridReviewContext: CliHybridReviewContext,
+  ): string[] {
+    const delegatedReviewRequest = hybridReviewContext.delegatedReviewRequest;
+
+    return [
+      `1. ${context.localizeText('Structured request id', '结构化请求 ID')}: \`${delegatedReviewRequest.requestId}\``,
+      `2. ${context.localizeText('Review surface count', 'review surface 数量')}: ${delegatedReviewRequest.reviewSurface.length}`,
+      `3. ${context.localizeText('Projected rules handed off', '交接的 projected rules 数量')}: ${delegatedReviewRequest.projectedRules.length}`,
+      `4. ${context.localizeText('Uncovered delegated rule ids', '待 delegated 处理规则数')}: ${delegatedReviewRequest.uncoveredRuleIds.length}`,
+      `5. ${context.localizeText('Deterministic findings already covered', '已覆盖的 deterministic finding 数量')}: ${delegatedReviewRequest.deterministicFindings.length}`,
+      `6. ${context.localizeText('Adapter-neutral transport note', 'adapter-neutral 传输说明')}: ${context.localizeText(
+        'The markdown reviewer prompt is only a rendered transport view of this structured handoff contract.',
+        'markdown reviewer prompt 只是这份结构化 handoff contract 的 transport view。',
+      )}`,
+      ...delegatedReviewRequest.reviewSurface.map(
+        (reviewSurface, index) =>
+          `- ${context.localizeText('Review Surface', 'Review Surface')} ${index + 1}: \`${reviewSurface}\``,
+      ),
+      ...delegatedReviewRequest.requiredNormativeInputs.map(
+        (requiredInput, index) =>
+          `- ${context.localizeText('Required Normative Input', '必需规范输入')} ${index + 1}: \`${requiredInput}\``,
+      ),
+    ];
   }
 
   private formatDateOnly(value: Date): string {

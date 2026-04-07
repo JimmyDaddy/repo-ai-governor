@@ -1,6 +1,6 @@
 # TK-631 实现 review-verify source-aware closure semantics 与 rationale persistence
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-06
 - Owner: `AI-Agent`
 - Priority: `P1`
@@ -54,8 +54,9 @@
 ## 9. 执行记录
 
 1. 2026-04-06：任务创建，状态初始化为 `planned`。
+2. 2026-04-07：已为 `review-verify` 增加 source-aware per-finding closure records，按 provenance 使用不同 match strategy，并在 verify payload / queued request / lifecycle artifact 中保留 reviewer rationale 与 verification rationale。
 
 ## 10. 产出
 
-1. 待执行：source-aware review-verify closure baseline
-2. 待执行：reviewer rationale persistence 说明
+1. 已完成：source-aware review-verify closure baseline
+2. 已完成：reviewer rationale persistence 说明

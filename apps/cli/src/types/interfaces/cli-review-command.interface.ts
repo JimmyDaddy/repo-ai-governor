@@ -12,6 +12,8 @@ import type {
 import type {
   CliReviewFindingRuleId,
   CliReviewFindingSeverity,
+  CliReviewFindingVerificationDecision,
+  CliReviewFindingVerificationMatchStrategy,
   CliReviewLifecycleStatus,
   CliReviewScopeMode,
   CliReviewVerifyDecision,
@@ -37,7 +39,7 @@ export interface CliReviewStreamContext {
 export interface CliReviewFinding {
   findingId: string;
   fingerprint: string;
-  ruleId: CliReviewFindingRuleId;
+  ruleId: CliReviewFindingRuleId | string;
   severity: CliReviewFindingSeverity;
   sourceType?: ReviewFindingSourceType;
   executionMode?: ReviewRuleExecutionMode;
@@ -52,6 +54,36 @@ export interface CliReviewFinding {
   suggestedAction: string;
   evidence: string[];
   confidence?: number;
+  reviewerRationale?: string;
+}
+
+/**
+ * Describes the hybrid review pipeline context retained for delegated handoff and audit.
+ */
+export interface CliDelegatedReviewRequest {
+  requestId: string;
+  scopeSummary: string;
+  reviewMode: CliReviewScopeMode;
+  reviewSurface: string[];
+  requiredNormativeInputs: string[];
+  projectedRuleBundle: ProjectedReviewRuleBundle;
+  projectedRules: ReviewRuleDefinition[];
+  deterministicFindings: CliReviewFinding[];
+  uncoveredRuleIds: string[];
+}
+
+/**
+ * Describes one source-aware per-finding verification record retained for audit.
+ */
+export interface CliReviewFindingVerificationRecord {
+  findingId: string;
+  ruleId: CliReviewFindingRuleId | string;
+  sourceType?: ReviewFindingSourceType;
+  decision: CliReviewFindingVerificationDecision;
+  matchStrategy: CliReviewFindingVerificationMatchStrategy;
+  matchedCurrentFindingId?: string;
+  reviewerRationale?: string;
+  verificationRationale: string;
 }
 
 /**
@@ -66,6 +98,7 @@ export interface CliHybridReviewContext {
   uncoveredRuleIds: string[];
   delegatedReviewEnabled: boolean;
   dedupeStrategy: string;
+  delegatedReviewRequest: CliDelegatedReviewRequest;
 }
 
 /**
@@ -103,6 +136,7 @@ export interface CliReviewRequestArtifactPayload {
   scope: CliReviewScopeSnapshot;
   findings: CliReviewFinding[];
   hybridReviewContext?: CliHybridReviewContext;
+  findingDecisions?: CliReviewFindingVerificationRecord[];
   notes: string[];
   generatedArtifactPaths: string[];
   diagnosticContext: {
@@ -144,6 +178,7 @@ export interface CliReviewVerifyResultArtifactPayload {
   overallDecision: CliReviewVerifyDecision;
   acceptedFindingIds: string[];
   rejectedFindingIds: string[];
+  findingDecisions: CliReviewFindingVerificationRecord[];
   ledgerBackfillPath: string;
   ledgerBackfillStatus: CliReviewLedgerBackfillStatus;
   taskId?: string;
