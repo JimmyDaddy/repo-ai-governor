@@ -140,6 +140,21 @@ pnpm exec repo-ai-governor upgrade rollback <apply-receipt-or-rollback-snapshot>
 
 Use `upgrade` preview first. Keep the emitted `report_path` from preview and the `apply_receipt_path` from apply; those are the supported hand-off artifacts for the adopter-facing apply/rollback path.
 
+### 2.5 Refresh Optional Codex / Claude Code Host Assets
+
+```bash
+pnpm exec repo-ai-governor host export --host codex --mode project-local --output-dir .repo-ai-governor/generated/hosts/codex --apply-to-repo /absolute/path/to/<target-repo>
+pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/hosts/codex/host-export.manifest.json
+pnpm exec repo-ai-governor host pack --host claude-code --mode plugin-bundle --output-dir .repo-ai-governor/generated/hosts/claude-code-plugin --bundle-dir .repo-ai-governor/generated/bundles/claude-code
+pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/hosts/claude-code-plugin/host-export.manifest.json
+```
+
+Run these commands from `<governor-repo>` and point `--apply-to-repo` at the actual adopter repository root you want to receive the generated files.
+
+Use this only when you are working from a built governor source checkout and want optional Codex / Claude Code host-native assets on top of the normal CLI bootstrap path.
+
+The supported refresh path is: update the governor source checkout or the vendored host-facing skills, rerun `host export` or `host pack`, then rerun `host verify`. This is a source-checkout follow-up surface, not a packaged-install baseline or a separate installer contract.
+
 ## 3. Notes For External Adopters
 
 1. `dist-binary` rehearsal proves CLI/runtime behavior, not packaged-install behavior.
@@ -149,6 +164,7 @@ Use `upgrade` preview first. Keep the emitted `report_path` from preview and the
 5. Session shell, React-shell command surfaces, workflow editing, upgrade analysis, HITL notifications, and troubleshooting details are covered in the local adoption playbook.
 6. The optional VS Code companion surface currently runs only from a built governor source checkout via `apps/vscode-extension`; published npm/tgz install may still carry internal `dist/apps/vscode-extension/**` payloads, but it does not provide a supported VSIX, Marketplace, or installable extension bundle.
 7. Repository-local Codex workflow helpers ship under `.codex/skills/`; they are included for self-host and maintainer flows, but external adopters do not need to vendor them unless they want the same local skill ergonomics inside their own repository.
+8. Optional Codex / Claude Code host-native assets (`host export` / `host verify` / `host pack`) are supported only as source-checkout follow-up surfaces. After a governor or skill refresh, rerun the host command plus `host verify`; do not treat that path as packaged-install proof or a separate host upgrader.
 
 ## 4. Read More
 

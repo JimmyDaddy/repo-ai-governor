@@ -126,6 +126,22 @@ code --extensionDevelopmentPath <governor-repo>/apps/vscode-extension <target-re
 4. 当前仍没有专门的自动化 extension-development-host launch smoke；手动 `code --extensionDevelopmentPath ...` 演练只属于补充证据，不单独升级支持声明。
 5. `project-054` 继续把 desktop 保留为 foundation-only surface；本 runbook 用来验证 VS Code companion 路径，而不是扩大 desktop 的公开支持口径。
 
+### 4.2 宿主原生资产验证
+
+当你需要刷新 Codex / Claude Code 宿主原生 follow-up 支持边界时，使用这条 runbook：
+
+```bash
+pnpm exec vitest run apps/cli/test/commands/host-command.test.ts apps/cli/test/host-command.integration.test.ts packages/adapters/codex/test/codex-host-renderer.test.ts packages/adapters/claude-code/test/claude-code-host-renderer.test.ts --maxWorkers=1 --maxConcurrency=1
+pnpm run build
+pnpm run release:verify-host-distribution -- --output .tmp/project-067-sprint-001-host-distribution-report.json
+```
+
+说明：
+
+1. 这条 runbook 只验证“已构建源码仓上的 Codex / Claude Code 宿主 follow-up surface”，也就是 `project-local` export/apply 与 plugin-bundle pack/verify。
+2. `host verify` 是每次 manifest 刷新后的正式复核步骤；这些资产的“升级”语义固定为源码仓或 vendored skills 变化后重新渲染并重新校验，而不是新增一条独立 installer 路径。
+3. 只要渲染资产形态、支持 target 或刷新契约有变化，就必须同步收口 `README*`、`docs/local-adoption-playbook*` 与 `docs/support-matrix*` 中的公开叙事。
+
 ## 5. Clean-room 与 Release 验证
 
 在 `<governor-repo>` 执行 clean-room 安装验证：
@@ -138,6 +154,7 @@ pnpm run release:verify-cleanroom-local-install
 
 ```bash
 pnpm run check
+pnpm run release:verify-host-distribution
 pnpm run release:verify-local
 pnpm run release:ga-check
 ```
@@ -148,7 +165,7 @@ pnpm run release:ga-check
 2. 当你刷新“联网 tarball 安装支持边界”时，应显式使用 `--modes tgz --iterations 1`，而不是只沿用旧的 `path/link` 基线。
 3. `release:verify-local` 适合 rollout 前的本地维护者验证，并会覆盖已发布文档与参考资产的 packed-surface truthfulness。
 4. `release:ga-check` 面向维护者的发布准备判断，不适合作为普通 adopter 的日常命令。
-5. 当前本手册预期回链的结构化 evidence 包括 `.tmp/project-052-sprint-001-cleanroom-report.json`、`.tmp/project-052-sprint-001-local-distribution-report.json`、`.tmp/project-063-sprint-001-cleanroom-tgz-report.json`、`.tmp/project-063-sprint-001-local-distribution-report.json`、`.tmp/project-052-sprint-002-command-rehearsal-summary.json`、`.tmp/project-055-sprint-001-pilot-1-rehearsal-summary.json`、`.tmp/project-055-sprint-001-pilot-2-rehearsal-summary.json`，以及 `.repo-ai-governor/context/dev/project-055-ga-evidence-and-adopter-pilot-closeout/sprint-002-ga-evidence-consolidation-and-closeout/tasks/DA-616-ga-evidence-dossier-and-cross-surface-backlinks.md`。
+5. 当前本手册预期回链的结构化 evidence 包括 `.tmp/project-052-sprint-001-cleanroom-report.json`、`.tmp/project-052-sprint-001-local-distribution-report.json`、`.tmp/project-052-sprint-002-command-rehearsal-summary.json`、`.tmp/project-055-sprint-001-pilot-1-rehearsal-summary.json`、`.tmp/project-055-sprint-001-pilot-2-rehearsal-summary.json`、`.tmp/project-063-sprint-001-cleanroom-tgz-report.json`、`.tmp/project-063-sprint-001-local-distribution-report.json`、`.tmp/project-067-sprint-001-host-distribution-report.json`，以及 `.repo-ai-governor/context/dev/project-055-ga-evidence-and-adopter-pilot-closeout/sprint-002-ga-evidence-consolidation-and-closeout/tasks/DA-616-ga-evidence-dossier-and-cross-surface-backlinks.md`。
 6. 当这些信号变化时，应先更新 `docs/support-matrix.zh-CN.md`，而不是在本手册里再维护第二张状态表。
 
 ## 6. 如何理解 external-adopter warning

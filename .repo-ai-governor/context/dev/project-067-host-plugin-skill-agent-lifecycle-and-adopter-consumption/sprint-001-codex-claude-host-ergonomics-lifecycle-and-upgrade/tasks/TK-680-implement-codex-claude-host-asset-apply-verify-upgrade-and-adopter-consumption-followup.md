@@ -1,6 +1,6 @@
 # TK-680 implement codex claude host asset apply verify upgrade and adopter-consumption follow-up
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-08
 - Owner: `AI-Agent`
 - Priority: `P1`
@@ -52,8 +52,11 @@
 ## 9. 执行记录
 
 1. 2026-04-08：任务创建，状态初始化为 `planned`。
+2. 2026-04-08：新增 `scripts/release/verify-host-distribution.js` 与 `package.json -> release:verify-host-distribution`，把 Codex / Claude Code 的 `project-local export/apply/verify` 与 `plugin-bundle pack/verify` 收敛为可复跑的 source-checkout evidence 脚本。
+3. 2026-04-08：已生成 `.tmp/project-067-sprint-001-host-distribution-report.json`，其中记录了 Codex / Claude Code 两条 host family 的 staged manifest、apply/pack report、verify summary 与目标文件投影结果。
 
 ## 10. 产出
 
-1. 待执行：apply / verify / upgrade follow-up
-2. 待执行：adopter-consumption docs input
+1. `scripts/release/verify-host-distribution.js`
+2. `package.json`
+3. `.tmp/project-067-sprint-001-host-distribution-report.json`

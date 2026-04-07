@@ -1,6 +1,6 @@
 {
   "schemaVersion": "release_governance_v1",
-  "updatedAt": "2026-03-25",
+  "updatedAt": "2026-04-08",
   "versioningStrategy": {
     "lockstep": ["core-*", "adapter-sdk", "shared"],
     "independent": ["adapters/*", "memory-providers/*", "notification-providers/*"]
@@ -33,11 +33,17 @@
   ],
   "minimumAuditEvidence": [
     "release_check_report",
+    "host_distribution_verify_result",
     "distribution_verify_result",
     "channel_promotion_record",
     "stage9_blackbox_ga_report"
   ],
   "auditEvidenceSources": {
+    "host_distribution_verify_result": {
+      "sourceType": "report_file",
+      "reportPath": ".tmp/release-host-distribution-validation-report.json",
+      "requiredStatus": "pass"
+    },
     "stage9_blackbox_ga_report": {
       "sourceType": "report_file",
       "reportPath": ".tmp/ci/stage9-blackbox-ga/stage9-blackbox-ga-report.json",

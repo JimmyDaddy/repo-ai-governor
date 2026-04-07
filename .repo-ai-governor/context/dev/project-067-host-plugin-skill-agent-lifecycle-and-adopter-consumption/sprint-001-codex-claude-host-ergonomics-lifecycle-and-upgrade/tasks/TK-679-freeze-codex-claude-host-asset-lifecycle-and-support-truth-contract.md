@@ -1,6 +1,6 @@
 # TK-679 freeze codex claude host asset lifecycle and support-truth contract
 
-- Status: in_progress
+- Status: completed
 - Date: 2026-04-08
 - Owner: `AI-Agent`
 - Priority: `P1`
@@ -54,8 +54,13 @@
 
 1. 2026-04-08：任务创建，状态初始化为 `planned`。
 2. 2026-04-08：`project-063` final closeout 已完成，当前任务切换为 `in_progress`，开始冻结 Codex / Claude Code host asset lifecycle、upgrade path 与 support-truth contract。
+3. 2026-04-08：已冻结正式 contract truth：`host export / host verify / host pack` 只承接 Codex / Claude Code 的 source-checkout follow-up surface；`project-local` 与 `plugin-bundle` 是当前正式支持的 host-native lifecycle 载体；所谓“upgrade”语义固定为 governor 源码或 vendored skills 更新后重新渲染并重新 `host verify`，而不是新增一条独立安装器路径。
 
 ## 10. 产出
 
-1. 待执行：host asset lifecycle contract
-2. 待执行：support-truth contract
+1. `README.md`
+2. `README.zh-CN.md`
+3. `docs/local-adoption-playbook.md`
+4. `docs/local-adoption-playbook.zh-CN.md`
+5. `docs/support-matrix.md`
+6. `docs/support-matrix.zh-CN.md`

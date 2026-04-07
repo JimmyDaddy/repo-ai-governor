@@ -21,20 +21,22 @@
 
 - Status: active
 - Sprint Goal: 为 Codex / Claude Code plugin / skill / agent 资产冻结 lifecycle、upgrade、support-truth 与 adopter-consumption contract。
-- Task Package: `TK-679`、`TK-680`、`TK-681`。
+- Task Package: `TK-679`、`TK-680`、`TK-681`、`TK-702`。
 
 ## 3. 任务拆解矩阵（WBS）
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 | --- | --- | --- | --- | --- | --- |
-| TK-679 | sprint-001 | freeze codex claude host asset lifecycle and support-truth contract | host/contract | project-050 closeout + project-070 triad sync + project-063 recommended | in_progress |
-| TK-680 | sprint-001 | implement codex claude host asset apply verify upgrade and adopter-consumption follow-up | host/implementation/docs | TK-679 | planned |
-| TK-681 | sprint-001 | close codex claude host ergonomics follow-up with README support-matrix playbook and packaging evidence refresh | host/closeout | TK-679、TK-680 | planned |
+| TK-679 | sprint-001 | freeze codex claude host asset lifecycle and support-truth contract | host/contract | project-050 closeout + project-070 triad sync + project-063 recommended | completed |
+| TK-680 | sprint-001 | implement codex claude host asset apply verify upgrade and adopter-consumption follow-up | host/implementation/docs | TK-679 | completed |
+| TK-681 | sprint-001 | close codex claude host ergonomics follow-up with README support-matrix playbook and packaging evidence refresh | host/closeout | TK-679、TK-680 | completed |
+| TK-702 | sprint-001 | sprint-001 exit acceptance and project-final review activation handoff | closeout/handoff | TK-679、TK-680、TK-681、CR-004 | completed |
 
 ## 4. 依赖产物策略
 
 1. 先冻结 lifecycle / support-truth，再推进 apply / verify / upgrade 与 adopter consumption。
 2. closeout 必须把 README、support matrix、playbook 与 target-specific evidence 收到一条 narrative 上。
+3. sprint closeout 之后继续复用同一 sprint surface 打开 `project-067` project-final CR loop。
 
 ## 5. DoD（project-067）
 
@@ -46,3 +48,5 @@
 
 1. 2026-04-08：作为 `project-072` follow-up decomposition 产物创建，当前保持 `planned`。
 2. 2026-04-08：`project-063` final closeout 完成后被激活为当前 primary project，`sprint-001 / TK-679` 进入执行窗口。
+3. 2026-04-08：`TK-679 ~ TK-681` 已完成实现与文档/evidence 收口，当前等待 sprint-level CR loop、closeout 与本地边界 commit。
+4. 2026-04-08：`CR-004` clean `resolved`；`TK-702 / DA-702` 已把 `sprint-001` 收口为 project-final-ready surface，当前下一边界固定为 `project-067` project-final delegated CR loop。

@@ -126,6 +126,22 @@ Notes:
 4. There is still no dedicated automated extension-development-host launch smoke; the manual `code --extensionDevelopmentPath ...` rehearsal remains optional supporting evidence only.
 5. `project-054` keeps desktop as a foundation-only surface; use this runbook to validate the VS Code companion path, not to widen desktop support claims.
 
+### 4.2 Host-native Asset Validation
+
+Use this runbook when refreshing the Codex / Claude Code host-native follow-up boundary:
+
+```bash
+pnpm exec vitest run apps/cli/test/commands/host-command.test.ts apps/cli/test/host-command.integration.test.ts packages/adapters/codex/test/codex-host-renderer.test.ts packages/adapters/claude-code/test/claude-code-host-renderer.test.ts --maxWorkers=1 --maxConcurrency=1
+pnpm run build
+pnpm run release:verify-host-distribution -- --output .tmp/project-067-sprint-001-host-distribution-report.json
+```
+
+Notes:
+
+1. This runbook validates only the built source-checkout host follow-up surface for Codex / Claude Code `project-local` export/apply plus plugin-bundle pack/verify.
+2. Treat `host verify` as the contract recheck after every regenerated manifest. “Upgrade” for these assets means rerender plus verify after source or vendored-skill changes, not a standalone installer path.
+3. Keep the public narrative aligned in `README*`, `docs/local-adoption-playbook*`, and `docs/support-matrix*` whenever the rendered asset shape, supported targets, or refresh contract changes.
+
 ## 5. Clean-room And Release Verification
 
 Run clean-room install verification from `<governor-repo>`:
@@ -138,6 +154,7 @@ Run broader maintainer gates from `<governor-repo>`:
 
 ```bash
 pnpm run check
+pnpm run release:verify-host-distribution
 pnpm run release:verify-local
 pnpm run release:ga-check
 ```
@@ -148,7 +165,7 @@ Notes:
 2. Use `--modes tgz --iterations 1` when you are refreshing the online tarball-install support boundary instead of the older `path/link` baseline only.
 3. `release:verify-local` includes local verification surfaces that are useful before rollout, including packed-surface truthfulness for shipped docs and reference assets.
 4. `release:ga-check` is for maintainers deciding whether the current state is ready for broader release, not for ordinary adopters.
-5. Current evidence backlinks expected by this playbook are `.tmp/project-052-sprint-001-cleanroom-report.json`, `.tmp/project-052-sprint-001-local-distribution-report.json`, `.tmp/project-063-sprint-001-cleanroom-tgz-report.json`, `.tmp/project-063-sprint-001-local-distribution-report.json`, `.tmp/project-052-sprint-002-command-rehearsal-summary.json`, `.tmp/project-055-sprint-001-pilot-1-rehearsal-summary.json`, `.tmp/project-055-sprint-001-pilot-2-rehearsal-summary.json`, and `.repo-ai-governor/context/dev/project-055-ga-evidence-and-adopter-pilot-closeout/sprint-002-ga-evidence-consolidation-and-closeout/tasks/DA-616-ga-evidence-dossier-and-cross-surface-backlinks.md`.
+5. Current evidence backlinks expected by this playbook are `.tmp/project-052-sprint-001-cleanroom-report.json`, `.tmp/project-052-sprint-001-local-distribution-report.json`, `.tmp/project-052-sprint-002-command-rehearsal-summary.json`, `.tmp/project-055-sprint-001-pilot-1-rehearsal-summary.json`, `.tmp/project-055-sprint-001-pilot-2-rehearsal-summary.json`, `.tmp/project-063-sprint-001-cleanroom-tgz-report.json`, `.tmp/project-063-sprint-001-local-distribution-report.json`, `.tmp/project-067-sprint-001-host-distribution-report.json`, and `.repo-ai-governor/context/dev/project-055-ga-evidence-and-adopter-pilot-closeout/sprint-002-ga-evidence-consolidation-and-closeout/tasks/DA-616-ga-evidence-dossier-and-cross-surface-backlinks.md`.
 6. When those signals change, update `docs/support-matrix.md` first instead of creating a second status table in this playbook.
 
 ## 6. Interpreting External-adopter Warnings

@@ -1,6 +1,6 @@
 # TK-681 close codex claude host ergonomics follow-up with README support-matrix playbook and packaging evidence refresh
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-08
 - Owner: `AI-Agent`
 - Priority: `P1`
@@ -52,8 +52,17 @@
 ## 9. 执行记录
 
 1. 2026-04-08：任务创建，状态初始化为 `planned`。
+2. 2026-04-08：已将 README、local adoption playbook、maintainer validation playbook 与 support matrix 的中英文版本收敛到同一条 narrative：Codex / Claude Code host-native assets 是可选 source-checkout follow-up surface，正式 refresh path 为 rerender + verify，不扩大为 packaged-install baseline。
+3. 2026-04-08：support truth 已显式保留与 packaged VS Code surface、desktop foundation surface 以及 `project-068` reserved-target follow-up 的边界分离。
 
 ## 10. 产出
 
-1. 待执行：README/support-matrix/playbook refresh
-2. 待执行：packaging evidence refresh
+1. `README.md`
+2. `README.zh-CN.md`
+3. `docs/local-adoption-playbook.md`
+4. `docs/local-adoption-playbook.zh-CN.md`
+5. `docs/maintainer-validation-playbook.md`
+6. `docs/maintainer-validation-playbook.zh-CN.md`
+7. `docs/support-matrix.md`
+8. `docs/support-matrix.zh-CN.md`
+9. `.tmp/project-067-sprint-001-host-distribution-report.json`

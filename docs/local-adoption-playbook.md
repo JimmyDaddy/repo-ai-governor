@@ -240,6 +240,36 @@ Then layer the language pack you need, plus any team or repository overrides, on
 2. These assets are operational helpers for local AI tooling, not a requirement for the CLI install surfaces documented above.
 3. `apps/vscode-extension` is an optional secondary surface for source-checkout evaluation, not part of the published package-install baseline.
 
+### 10.1 Optional Codex / Claude Code Host-native Lifecycle
+
+Use this path only when you already have a built governor source checkout and want generated Codex / Claude Code assets inside the target repository or as plugin bundles:
+
+Run these commands from `<governor-repo>`, and point `--apply-to-repo` at the adopter repository root that should receive the generated files.
+
+```bash
+pnpm exec repo-ai-governor host export --host codex --mode project-local --output-dir .repo-ai-governor/generated/hosts/codex --apply-to-repo /absolute/path/to/<target-repo>
+pnpm exec repo-ai-governor host export --host claude-code --mode project-local --output-dir .repo-ai-governor/generated/hosts/claude-code --apply-to-repo /absolute/path/to/<target-repo>
+pnpm exec repo-ai-governor host pack --host codex --mode plugin-bundle --output-dir .repo-ai-governor/generated/hosts/codex-plugin --bundle-dir .repo-ai-governor/generated/bundles/codex
+pnpm exec repo-ai-governor host pack --host claude-code --mode plugin-bundle --output-dir .repo-ai-governor/generated/hosts/claude-code-plugin --bundle-dir .repo-ai-governor/generated/bundles/claude-code
+```
+
+Then recheck the staged manifest that belongs to the export or bundle you just rendered:
+
+```bash
+pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/hosts/codex/host-export.manifest.json
+pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/hosts/claude-code/host-export.manifest.json
+pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/hosts/codex-plugin/host-export.manifest.json
+pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/hosts/claude-code-plugin/host-export.manifest.json
+```
+
+Formal contract:
+
+1. `host export` is the supported path for Codex / Claude Code `project-local` follow-up assets when you want generated AGENTS/skills/agents/hooks/MCP files in a target repository.
+2. `host pack` is the supported path for Codex / Claude Code plugin bundles when you want one installable host-side bundle materialized from the same built source checkout.
+3. `host verify` must be rerun against the generated manifest after every `host export` or `host pack`, and again after any governor source or vendored-skill refresh.
+4. “Upgrade” for these host-native assets means rerender plus verify after the source checkout or vendored skills changed. It is not a separate packaged installer, and it is not the same contract as `repo-ai-governor upgrade`.
+5. These generated host assets are source-checkout follow-up surfaces and adopter-facing distribution artifacts. They do not replace the canonical governor workspace truth under `context/`, `tasks/`, `review/`, or audit ledgers.
+
 ## 11. Remote-api Rehearsal
 
 Use this remote-api rehearsal only when you want to validate provider-backed behavior instead of the default local CLI-backed or fallback rehearsal:

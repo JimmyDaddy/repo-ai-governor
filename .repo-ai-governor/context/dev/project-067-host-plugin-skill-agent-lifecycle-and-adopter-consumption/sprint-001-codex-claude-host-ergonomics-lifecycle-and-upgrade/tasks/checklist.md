@@ -1,9 +1,34 @@
 # checklist
 
-- [ ] TK-679 freeze codex claude host asset lifecycle and support-truth contract
+- [x] TK-679 freeze codex claude host asset lifecycle and support-truth contract
   - 2026-04-08：任务创建，状态初始化为 `planned`。
   - 2026-04-08：`project-063` final closeout 已完成，当前任务切换为 `in_progress`，开始冻结 Codex / Claude Code host asset lifecycle、upgrade path 与 support-truth contract。
-- [ ] TK-680 implement codex claude host asset apply verify upgrade and adopter-consumption follow-up
+  - 2026-04-08：已冻结正式 contract truth：`host export / host verify / host pack` 只承接 Codex / Claude Code 的 source-checkout follow-up surface；`project-local` 与 `plugin-bundle` 是当前正式支持的 host-native lifecycle 载体；所谓“upgrade”语义固定为 governor 源码或 vendored skills 更新后重新渲染并重新 `host verify`，而不是新增一条独立安装器路径。
+- [x] TK-680 implement codex claude host asset apply verify upgrade and adopter-consumption follow-up
   - 2026-04-08：任务创建，状态初始化为 `planned`。
-- [ ] TK-681 close codex claude host ergonomics follow-up with README support-matrix playbook and packaging evidence refresh
+  - 2026-04-08：新增 `scripts/release/verify-host-distribution.js` 与 `package.json -> release:verify-host-distribution`，把 Codex / Claude Code 的 `project-local export/apply/verify` 与 `plugin-bundle pack/verify` 收敛为可复跑的 source-checkout evidence 脚本。
+  - 2026-04-08：已生成 `.tmp/project-067-sprint-001-host-distribution-report.json`，其中记录了 Codex / Claude Code 两条 host family 的 staged manifest、apply/pack report、verify summary 与目标文件投影结果。
+- [x] TK-681 close codex claude host ergonomics follow-up with README support-matrix playbook and packaging evidence refresh
   - 2026-04-08：任务创建，状态初始化为 `planned`。
+  - 2026-04-08：已将 README、local adoption playbook、maintainer validation playbook 与 support matrix 的中英文版本收敛到同一条 narrative：Codex / Claude Code host-native assets 是可选 source-checkout follow-up surface，正式 refresh path 为 rerender + verify，不扩大为 packaged-install baseline。
+  - 2026-04-08：support truth 已显式保留与 packaged VS Code surface、desktop foundation surface 以及 `project-068` reserved-target follow-up 的边界分离。
+- [x] CR-001 sprint-001-codex-claude-host-ergonomics-lifecycle-and-upgrade delegated review loop round 1
+  - 2026-04-08：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-08：fresh reviewer round 返回 2 条 actionable findings；主 agent 复核后均判定为 `accepted`，分别对应 release/GA 路径缺口与 adopter 命令示例误导问题。
+  - 2026-04-08：已补齐 `release:verify-host-distribution` 在 automated GA release path、release-ready gate、release-notes verification commands 与 release audit evidence policy 中的接线，同时修正文档示例里的 `--apply-to-repo` 目标仓根路径说明；修复后重跑 `pnpm run build`、定向 host tests、`verify-host-distribution` 与 `pnpm run test:packages`，当前 round 收口为 `resolved`。
+- [x] CR-002 sprint-001-codex-claude-host-ergonomics-lifecycle-and-upgrade delegated recheck loop round 2
+  - 2026-04-08：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-08：fresh reviewer round 2 返回 1 条 actionable finding；主 agent 复核后判定为 `accepted`，确认 `verify-host-distribution` 的 `--working-root` 删除边界必须限制在受控 `.tmp` 子树内，避免误删仓库根或父目录。
+  - 2026-04-08：已为 `verify-host-distribution` 增加受控 temp subtree guard，并新增 `test/release-host-distribution-working-root.integration.test.ts` 固定拒绝 repo root / parent path 的 contract；修复后重跑 `pnpm run build`、定向 host tests、`verify-host-distribution`、`pnpm run test:packages` 与 `pnpm run test:integration`，当前 round 收口为 `resolved`。
+- [x] CR-003 sprint-001-codex-claude-host-ergonomics-lifecycle-and-upgrade delegated recheck loop round 3
+  - 2026-04-08：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-08：fresh reviewer round 3 返回 2 条 actionable findings；主 agent 复核后均判定为 `accepted`，分别对应 `release:ga-check` 未真正接到 GA unified gate，以及 `release:notes` 的 verification command 仍与 policy-config release flow 漂移。
+  - 2026-04-08：已新增 `release:ga-entry-check` 以拆解 non-recursive GA entry chain，并把对外 `release:ga-check` 接到 unified gate；同时让 `release:check` 显式校验这层 wiring、`release:notes` 从 policy + GA gate config 派生命令列表，并新增 `test/release-governance-wiring.integration.test.ts` 固定 contract。修复后重跑 `pnpm run build`、定向 host tests、`verify-host-distribution`、`pnpm run test:packages`、`pnpm run test:integration`、`pnpm run release:check` 与 `pnpm run release:notes -- --output .tmp/project-067-release-notes.md` 均通过；`pnpm run release:ga-check` 已按新 wiring 进入 unified gate，但最终被当前 repo 既有的跨模块 typecheck 失败阻断，因此作为额外验证尝试记录而不宣称为通过。
+- [x] CR-004 sprint-001-codex-claude-host-ergonomics-lifecycle-and-upgrade delegated recheck loop round 4
+  - 2026-04-08：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-08：fresh reviewer `Ampere` 返回 clean 结论，主 agent 复核当前 host lifecycle / release wiring / docs boundary 并确认无新增 actionable finding，任务切换为 `resolved`。
+- [ ] CR-005 project-067-host-plugin-skill-agent-lifecycle-and-adopter-consumption final delegated review loop round 5
+  - 2026-04-08：任务创建，状态初始化为 `review_pending`。
+- [x] TK-702 sprint-001 exit acceptance and project-final review activation handoff
+  - 2026-04-08：任务在 `TK-679`、`TK-680`、`TK-681` 与 `CR-001 ~ CR-004` 全部进入终态后创建。
+  - 2026-04-08：已写入 `DA-702`、project/sprint closeout handoff 与 `current-context` note；当前 sprint surface 保留给后续 `project-067` project-final CR loop。

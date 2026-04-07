@@ -29,7 +29,7 @@ const UNIFIED_GATE_STEPS = [
   },
   {
     stepId: 'release-ga-check',
-    command: ['pnpm', 'run', 'release:ga-check'],
+    command: ['pnpm', 'run', 'release:ga-entry-check'],
   },
   {
     stepId: 'rollback-rehearsal',

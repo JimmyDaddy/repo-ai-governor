@@ -240,6 +240,36 @@ pnpm exec repo-ai-governor run --output json
 2. 这些资产属于本地 AI 工具辅助层，不是上文安装路径成立的前置条件。
 3. `apps/vscode-extension` 只是面向源码仓评估的可选 secondary surface，不属于已发布 package-install baseline。
 
+### 10.1 可选的 Codex / Claude Code 宿主原生生命周期
+
+只有当你已经持有一份已构建的 governor 源码仓，并且希望把生成后的 Codex / Claude Code 资产应用到目标仓库或打成 plugin bundle 时，才走这条路径：
+
+这些命令应从 `<governor-repo>` 执行，且 `--apply-to-repo` 必须显式指向真正接收生成文件的 adopter 仓库根目录。
+
+```bash
+pnpm exec repo-ai-governor host export --host codex --mode project-local --output-dir .repo-ai-governor/generated/hosts/codex --apply-to-repo /absolute/path/to/<target-repo>
+pnpm exec repo-ai-governor host export --host claude-code --mode project-local --output-dir .repo-ai-governor/generated/hosts/claude-code --apply-to-repo /absolute/path/to/<target-repo>
+pnpm exec repo-ai-governor host pack --host codex --mode plugin-bundle --output-dir .repo-ai-governor/generated/hosts/codex-plugin --bundle-dir .repo-ai-governor/generated/bundles/codex
+pnpm exec repo-ai-governor host pack --host claude-code --mode plugin-bundle --output-dir .repo-ai-governor/generated/hosts/claude-code-plugin --bundle-dir .repo-ai-governor/generated/bundles/claude-code
+```
+
+随后请针对刚刚生成的 export 或 bundle manifest 重新执行校验：
+
+```bash
+pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/hosts/codex/host-export.manifest.json
+pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/hosts/claude-code/host-export.manifest.json
+pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/hosts/codex-plugin/host-export.manifest.json
+pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/hosts/claude-code-plugin/host-export.manifest.json
+```
+
+正式 contract：
+
+1. `host export` 是 Codex / Claude Code `project-local` follow-up 资产的正式路径，适用于把生成后的 AGENTS/skills/agents/hooks/MCP 文件落到目标仓库。
+2. `host pack` 是 Codex / Claude Code plugin bundle 的正式路径，适用于从同一份已构建源码仓生成一份可安装的宿主侧 bundle。
+3. 每次执行 `host export` 或 `host pack` 后，都必须针对对应 manifest 重新执行一次 `host verify`；只要 governor 源码或 vendored skills 有刷新，也必须再执行一轮。
+4. 这些宿主原生资产的“升级”语义固定为：源码仓或 vendored skills 更新后，重新渲染并重新校验。它不是单独的 packaged installer，也不等于 `repo-ai-governor upgrade` 的契约。
+5. 这些生成后的宿主资产属于源码仓 follow-up surface 和 adopter-facing distribution artifact；它们不能反向替代 `context/`、`tasks/`、`review/` 或审计台账这些 canonical governor workspace 真值。
+
 ## 11. Remote-api rehearsal
 
 只有当你想验证真实 provider 调用，而不是默认的本地 CLI-backed / fallback 演练时，才需要执行这条 remote-api rehearsal：

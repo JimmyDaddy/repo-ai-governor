@@ -138,6 +138,21 @@ pnpm exec repo-ai-governor upgrade rollback <apply-receipt-or-rollback-snapshot>
 
 先跑 `upgrade` preview。保留 preview 输出里的 `report_path`，以及 apply 输出里的 `apply_receipt_path`；这两类产物就是 adopter-facing apply/rollback 路径的正式 hand-off 参考。
 
+### 2.5 刷新可选的 Codex / Claude Code 宿主资产
+
+```bash
+pnpm exec repo-ai-governor host export --host codex --mode project-local --output-dir .repo-ai-governor/generated/hosts/codex --apply-to-repo /absolute/path/to/<target-repo>
+pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/hosts/codex/host-export.manifest.json
+pnpm exec repo-ai-governor host pack --host claude-code --mode plugin-bundle --output-dir .repo-ai-governor/generated/hosts/claude-code-plugin --bundle-dir .repo-ai-governor/generated/bundles/claude-code
+pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/hosts/claude-code-plugin/host-export.manifest.json
+```
+
+这些命令应从 `<governor-repo>` 执行，且 `--apply-to-repo` 必须显式指向真正接收生成文件的 adopter 仓库根目录。
+
+只有当你在已构建的 governor 源码仓上，需要在常规 CLI bootstrap 之外再生成可选的 Codex / Claude Code 宿主原生资产时，才使用这条路径。
+
+正式刷新路径固定为：更新 governor 源码 checkout 或 vendored 的宿主侧 skills，然后重新执行 `host export` 或 `host pack`，最后重新执行 `host verify`。这属于源码仓 follow-up surface，不属于 packaged-install baseline，也不是一条独立的 host installer contract。
+
 ## 3. 给外部 adopter 的提醒
 
 1. `dist-binary` 演练证明的是 CLI/runtime 行为，不等于已经验证 package install surface。
@@ -147,6 +162,7 @@ pnpm exec repo-ai-governor upgrade rollback <apply-receipt-or-rollback-snapshot>
 5. session shell、React shell、workflow/upgrade、HITL 通知、故障排查等更完整说明，请看本地接入手册。
 6. 可选的 VS Code companion surface 目前只支持从已构建的 governor 源码仓通过 `apps/vscode-extension` 启动；已发布的 npm/tgz 安装面即便仍带有内部 `dist/apps/vscode-extension/**` 产物，也不提供正式支持的 VSIX、Marketplace 或可安装扩展 bundle。
 7. 仓库内的 Codex 本地工作流辅助能力位于 `.codex/skills/`；它们主要服务 self-host 与维护者流程，外部 adopter 只有在希望复用同样的本地 skill 体验时才需要一并 vendoring。
+8. 可选的 Codex / Claude Code 宿主原生资产（`host export` / `host verify` / `host pack`）只在源码仓 follow-up surface 上正式支持。只要 governor 或技能资产有刷新，就要重新执行对应 host 命令并重新 `host verify`；不要把这条路径当成 packaged-install 证明或独立的 host upgrader。
 
 ## 4. 继续阅读
 
